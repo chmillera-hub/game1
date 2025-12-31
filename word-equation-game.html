@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Word Equation Game</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 600px;
+            width: 100%;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 32px;
+        }
+
+        .instructions {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .word-cell {
+            background: #f8f9fa;
+            padding: 25px 15px;
+            border-radius: 12px;
+            text-align: center;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 3px solid transparent;
+            user-select: none;
+        }
+
+        .word-cell:hover:not(.solved) {
+            background: #e9ecef;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .word-cell.selected {
+            background: #667eea;
+            color: white;
+            border-color: #5568d3;
+            transform: scale(1.05);
+        }
+
+        .word-cell.solved {
+            background: #48bb78;
+            color: white;
+            cursor: default;
+            border-color: #38a169;
+        }
+
+        .selected-words {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            min-height: 80px;
+        }
+
+        .selected-words h3 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+
+        .selected-display {
+            font-size: 18px;
+            color: #667eea;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        .equation-display {
+            font-size: 16px;
+            color: #666;
+            margin-top: 8px;
+        }
+
+        .buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        button {
+            padding: 12px 30px;
+            font-size: 16px;
+            font-weight: bold;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .check-btn {
+            background: #667eea;
+            color: white;
+        }
+
+        .check-btn:hover:not(:disabled) {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .check-btn:disabled {
+            background: #cbd5e0;
+            cursor: not-allowed;
+        }
+
+        .clear-btn {
+            background: #e53e3e;
+            color: white;
+        }
+
+        .clear-btn:hover {
+            background: #c53030;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(229, 62, 62, 0.4);
+        }
+
+        .new-game-btn {
+            background: #48bb78;
+            color: white;
+        }
+
+        .new-game-btn:hover {
+            background: #38a169;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(72, 187, 120, 0.4);
+        }
+
+        .message {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 16px;
+            font-weight: bold;
+            min-height: 24px;
+        }
+
+        .message.success {
+            color: #48bb78;
+        }
+
+        .message.error {
+            color: #e53e3e;
+        }
+
+        .solved-equations {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+        }
+
+        .solved-equations h3 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+
+        .solved-equation {
+            background: #48bb78;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            margin: 5px 0;
+            font-weight: bold;
+        }
+
+        .win-message {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+            text-align: center;
+            z-index: 1000;
+            display: none;
+        }
+
+        .win-message.show {
+            display: block;
+            animation: popIn 0.5s ease;
+        }
+
+        @keyframes popIn {
+            0% {
+                transform: translate(-50%, -50%) scale(0.5);
+                opacity: 0;
+            }
+            100% {
+                transform: translate(-50%, -50%) scale(1);
+                opacity: 1;
+            }
+        }
+
+        .win-message h2 {
+            color: #48bb78;
+            font-size: 36px;
+            margin-bottom: 20px;
+        }
+
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+            display: none;
+        }
+
+        .overlay.show {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="overlay" id="overlay"></div>
+
+    <div class="win-message" id="winMessage">
+        <h2>🎉 Congratulations! 🎉</h2>
+        <p style="font-size: 18px; margin-bottom: 20px;">You solved all the equations!</p>
+        <button class="new-game-btn" onclick="newGame()">Play Again</button>
+    </div>
+
+    <div class="container">
+        <h1>Word Equation Game</h1>
+        <p class="instructions">
+            Find 3 equations by selecting words that combine!<br>
+            Click 3 words that form an equation: word1 + word2 = word3
+        </p>
+
+        <div class="solved-equations" id="solvedEquations" style="display: none;">
+            <h3>Solved Equations:</h3>
+            <div id="solvedList"></div>
+        </div>
+
+        <div class="selected-words">
+            <h3>Selected Words:</h3>
+            <div class="selected-display" id="selectedDisplay">Click words to select them</div>
+        </div>
+
+        <div class="grid" id="grid"></div>
+
+        <div class="buttons">
+            <button class="check-btn" id="checkBtn" onclick="checkEquation()" disabled>Check Equation</button>
+            <button class="clear-btn" onclick="clearSelection()">Clear Selection</button>
+            <button class="new-game-btn" onclick="newGame()">New Game</button>
+        </div>
+
+        <div class="message" id="message"></div>
+    </div>
+
+    <script>
+        // Equation sets - each set has 3 equations with 9 total words
+        const equationSets = [
+            [
+                { words: ['dough', 'cheese', 'pizza'], result: 'pizza' },
+                { words: ['rectangle', 'suit', 'card'], result: 'card' },
+                { words: ['arrow', 'bow', 'archery'], result: 'archery' }
+            ],
+            [
+                { words: ['left', 'right', 'direction'], result: 'direction' },
+                { words: ['click', 'highlight', 'mouse'], result: 'mouse' },
+                { words: ['sun', 'moon', 'sky'], result: 'sky' }
+            ],
+            [
+                { words: ['fire', 'water', 'steam'], result: 'steam' },
+                { words: ['bread', 'butter', 'toast'], result: 'toast' },
+                { words: ['pen', 'paper', 'writing'], result: 'writing' }
+            ],
+            [
+                { words: ['lock', 'key', 'security'], result: 'security' },
+                { words: ['cloud', 'rain', 'weather'], result: 'weather' },
+                { words: ['tree', 'leaf', 'nature'], result: 'nature' }
+            ],
+            [
+                { words: ['cat', 'dog', 'pets'], result: 'pets' },
+                { words: ['hammer', 'nail', 'construction'], result: 'construction' },
+                { words: ['book', 'shelf', 'library'], result: 'library' }
+            ]
+        ];
+
+        let currentEquations = [];
+        let allWords = [];
+        let selectedWords = [];
+        let solvedEquations = [];
+
+        function shuffle(array) {
+            const newArray = [...array];
+            for (let i = newArray.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+            }
+            return newArray;
+        }
+
+        function initGame() {
+            // Pick a random equation set
+            const setIndex = Math.floor(Math.random() * equationSets.length);
+            currentEquations = equationSets[setIndex];
+
+            // Collect all words and shuffle them
+            allWords = [];
+            currentEquations.forEach(eq => {
+                allWords.push(...eq.words);
+            });
+            allWords = shuffle(allWords);
+
+            selectedWords = [];
+            solvedEquations = [];
+
+            renderGrid();
+            updateSelectedDisplay();
+            updateSolvedDisplay();
+            document.getElementById('message').textContent = '';
+            document.getElementById('checkBtn').disabled = true;
+        }
+
+        function renderGrid() {
+            const grid = document.getElementById('grid');
+            grid.innerHTML = '';
+
+            allWords.forEach((word, index) => {
+                const cell = document.createElement('div');
+                cell.className = 'word-cell';
+                cell.textContent = word;
+                cell.dataset.word = word;
+                cell.onclick = () => toggleWord(word, cell);
+                grid.appendChild(cell);
+            });
+        }
+
+        function toggleWord(word, cell) {
+            // Don't allow interaction with solved words
+            if (cell.classList.contains('solved')) return;
+
+            const index = selectedWords.indexOf(word);
+
+            if (index > -1) {
+                // Deselect
+                selectedWords.splice(index, 1);
+                cell.classList.remove('selected');
+            } else {
+                // Select (max 3)
+                if (selectedWords.length < 3) {
+                    selectedWords.push(word);
+                    cell.classList.add('selected');
+                }
+            }
+
+            updateSelectedDisplay();
+            document.getElementById('checkBtn').disabled = selectedWords.length !== 3;
+            document.getElementById('message').textContent = '';
+        }
+
+        function updateSelectedDisplay() {
+            const display = document.getElementById('selectedDisplay');
+
+            if (selectedWords.length === 0) {
+                display.textContent = 'Click words to select them';
+            } else {
+                display.textContent = selectedWords.join(' + ');
+            }
+        }
+
+        function updateSolvedDisplay() {
+            const container = document.getElementById('solvedEquations');
+            const list = document.getElementById('solvedList');
+
+            if (solvedEquations.length === 0) {
+                container.style.display = 'none';
+            } else {
+                container.style.display = 'block';
+                list.innerHTML = solvedEquations.map(eq =>
+                    `<div class="solved-equation">${eq}</div>`
+                ).join('');
+            }
+        }
+
+        function checkEquation() {
+            if (selectedWords.length !== 3) return;
+
+            const message = document.getElementById('message');
+            let isValid = false;
+
+            // Check if the selected words form a valid equation
+            for (let equation of currentEquations) {
+                // Check if all three words are in this equation
+                const hasAllWords = equation.words.every(w => selectedWords.includes(w));
+
+                if (hasAllWords) {
+                    isValid = true;
+
+                    // Find which word is the result
+                    const result = equation.result;
+                    const parts = selectedWords.filter(w => w !== result);
+
+                    // Mark as solved
+                    selectedWords.forEach(word => {
+                        const cells = document.querySelectorAll('.word-cell');
+                        cells.forEach(cell => {
+                            if (cell.dataset.word === word) {
+                                cell.classList.remove('selected');
+                                cell.classList.add('solved');
+                            }
+                        });
+                    });
+
+                    solvedEquations.push(`${parts[0]} + ${parts[1]} = ${result}`);
+                    updateSolvedDisplay();
+
+                    message.textContent = '✓ Correct equation!';
+                    message.className = 'message success';
+
+                    selectedWords = [];
+                    updateSelectedDisplay();
+                    document.getElementById('checkBtn').disabled = true;
+
+                    // Check if all equations are solved
+                    if (solvedEquations.length === 3) {
+                        setTimeout(() => {
+                            showWinMessage();
+                        }, 500);
+                    }
+
+                    break;
+                }
+            }
+
+            if (!isValid) {
+                message.textContent = '✗ These words don\'t form an equation. Try again!';
+                message.className = 'message error';
+            }
+        }
+
+        function clearSelection() {
+            selectedWords = [];
+            const cells = document.querySelectorAll('.word-cell');
+            cells.forEach(cell => {
+                if (!cell.classList.contains('solved')) {
+                    cell.classList.remove('selected');
+                }
+            });
+            updateSelectedDisplay();
+            document.getElementById('checkBtn').disabled = true;
+            document.getElementById('message').textContent = '';
+        }
+
+        function showWinMessage() {
+            document.getElementById('overlay').classList.add('show');
+            document.getElementById('winMessage').classList.add('show');
+        }
+
+        function hideWinMessage() {
+            document.getElementById('overlay').classList.remove('show');
+            document.getElementById('winMessage').classList.remove('show');
+        }
+
+        function newGame() {
+            hideWinMessage();
+            initGame();
+        }
+
+        // Start the game
+        initGame();
+    </script>
+</body>
+</html>
