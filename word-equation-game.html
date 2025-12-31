@@ -26,7 +26,7 @@
             padding: 40px;
             border-radius: 20px;
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-            max-width: 600px;
+            max-width: 700px;
             width: 100%;
         }
 
@@ -47,22 +47,26 @@
 
         .grid {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 15px;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 10px;
             margin-bottom: 30px;
         }
 
         .word-cell {
             background: #f8f9fa;
-            padding: 25px 15px;
-            border-radius: 12px;
+            padding: 15px 8px;
+            border-radius: 8px;
             text-align: center;
-            font-size: 18px;
+            font-size: 14px;
             font-weight: bold;
             cursor: pointer;
             transition: all 0.3s ease;
             border: 3px solid transparent;
             user-select: none;
+            min-height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         .word-cell:hover:not(.solved) {
@@ -268,8 +272,9 @@
     <div class="container">
         <h1>Word Equation Game</h1>
         <p class="instructions">
-            Find 3 equations by selecting words that combine!<br>
-            Click 3 words that form an equation: word1 + word2 = word3
+            Find 3 equations hidden in the 5x5 grid!<br>
+            Click 3 words that form an equation: word1 + word2 = word3<br>
+            <em>Watch out for distractor words!</em>
         </p>
 
         <div class="solved-equations" id="solvedEquations" style="display: none;">
@@ -294,33 +299,66 @@
     </div>
 
     <script>
-        // Equation sets - each set has 3 equations with 9 total words
-        const equationSets = [
-            [
-                { words: ['dough', 'cheese', 'pizza'], result: 'pizza' },
-                { words: ['rectangle', 'suit', 'card'], result: 'card' },
-                { words: ['arrow', 'bow', 'archery'], result: 'archery' }
-            ],
-            [
-                { words: ['left', 'right', 'direction'], result: 'direction' },
-                { words: ['click', 'highlight', 'mouse'], result: 'mouse' },
-                { words: ['sun', 'moon', 'sky'], result: 'sky' }
-            ],
-            [
-                { words: ['fire', 'water', 'steam'], result: 'steam' },
-                { words: ['bread', 'butter', 'toast'], result: 'toast' },
-                { words: ['pen', 'paper', 'writing'], result: 'writing' }
-            ],
-            [
-                { words: ['lock', 'key', 'security'], result: 'security' },
-                { words: ['cloud', 'rain', 'weather'], result: 'weather' },
-                { words: ['tree', 'leaf', 'nature'], result: 'nature' }
-            ],
-            [
-                { words: ['cat', 'dog', 'pets'], result: 'pets' },
-                { words: ['hammer', 'nail', 'construction'], result: 'construction' },
-                { words: ['book', 'shelf', 'library'], result: 'library' }
-            ]
+        // Large pool of unique equations
+        const allEquations = [
+            // Original equations
+            { words: ['dough', 'cheese', 'pizza'], result: 'pizza' },
+            { words: ['rectangle', 'suit', 'card'], result: 'card' },
+            { words: ['arrow', 'bow', 'archery'], result: 'archery' },
+            { words: ['left', 'right', 'direction'], result: 'direction' },
+            { words: ['click', 'highlight', 'mouse'], result: 'mouse' },
+            { words: ['sun', 'moon', 'sky'], result: 'sky' },
+            { words: ['fire', 'water', 'steam'], result: 'steam' },
+            { words: ['bread', 'butter', 'toast'], result: 'toast' },
+            { words: ['pen', 'paper', 'writing'], result: 'writing' },
+            { words: ['lock', 'key', 'security'], result: 'security' },
+            { words: ['cloud', 'rain', 'weather'], result: 'weather' },
+            { words: ['tree', 'leaf', 'nature'], result: 'nature' },
+            { words: ['cat', 'dog', 'pets'], result: 'pets' },
+            { words: ['hammer', 'nail', 'construction'], result: 'construction' },
+            { words: ['book', 'shelf', 'library'], result: 'library' },
+
+            // New equations
+            { words: ['snow', 'ice', 'winter'], result: 'winter' },
+            { words: ['sand', 'ocean', 'beach'], result: 'beach' },
+            { words: ['note', 'song', 'music'], result: 'music' },
+            { words: ['paint', 'canvas', 'art'], result: 'art' },
+            { words: ['flour', 'egg', 'baking'], result: 'baking' },
+            { words: ['wheel', 'pedal', 'bicycle'], result: 'bicycle' },
+            { words: ['lens', 'shutter', 'camera'], result: 'camera' },
+            { words: ['keyboard', 'screen', 'computer'], result: 'computer' },
+            { words: ['actor', 'stage', 'theater'], result: 'theater' },
+            { words: ['seed', 'soil', 'garden'], result: 'garden' },
+            { words: ['coffee', 'milk', 'latte'], result: 'latte' },
+            { words: ['chocolate', 'cream', 'dessert'], result: 'dessert' },
+            { words: ['bone', 'muscle', 'body'], result: 'body' },
+            { words: ['word', 'sentence', 'language'], result: 'language' },
+            { words: ['star', 'planet', 'space'], result: 'space' },
+            { words: ['thread', 'needle', 'sewing'], result: 'sewing' },
+            { words: ['fish', 'rod', 'fishing'], result: 'fishing' },
+            { words: ['ball', 'net', 'sport'], result: 'sport' },
+            { words: ['helmet', 'bike', 'safety'], result: 'safety' },
+            { words: ['coin', 'wallet', 'money'], result: 'money' },
+            { words: ['map', 'compass', 'navigation'], result: 'navigation' },
+            { words: ['lamp', 'bulb', 'light'], result: 'light' },
+            { words: ['soap', 'towel', 'bath'], result: 'bath' },
+            { words: ['plate', 'fork', 'dining'], result: 'dining' },
+            { words: ['brush', 'color', 'painting'], result: 'painting' },
+            { words: ['drum', 'beat', 'rhythm'], result: 'rhythm' },
+            { words: ['wind', 'kite', 'flying'], result: 'flying' },
+            { words: ['dice', 'board', 'game'], result: 'game' },
+            { words: ['glass', 'frame', 'window'], result: 'window' },
+            { words: ['brick', 'cement', 'building'], result: 'building' },
+            { words: ['ring', 'finger', 'jewelry'], result: 'jewelry' },
+            { words: ['ticket', 'seat', 'cinema'], result: 'cinema' },
+            { words: ['shirt', 'pants', 'outfit'], result: 'outfit' },
+            { words: ['shoe', 'lace', 'footwear'], result: 'footwear' },
+            { words: ['bag', 'strap', 'luggage'], result: 'luggage' },
+            { words: ['cup', 'saucer', 'tea'], result: 'tea' },
+            { words: ['blade', 'handle', 'knife'], result: 'knife' },
+            { words: ['phone', 'charger', 'device'], result: 'device' },
+            { words: ['vine', 'grape', 'vineyard'], result: 'vineyard' },
+            { words: ['wave', 'surf', 'surfing'], result: 'surfing' }
         ];
 
         let currentEquations = [];
@@ -338,15 +376,36 @@
         }
 
         function initGame() {
-            // Pick a random equation set
-            const setIndex = Math.floor(Math.random() * equationSets.length);
-            currentEquations = equationSets[setIndex];
+            // Randomly select 3 equations from the pool
+            const shuffledEquations = shuffle([...allEquations]);
+            currentEquations = shuffledEquations.slice(0, 3);
 
-            // Collect all words and shuffle them
+            // Collect words from the selected equations
             allWords = [];
             currentEquations.forEach(eq => {
                 allWords.push(...eq.words);
             });
+
+            // Add distractor words from other equations to fill 5x5 grid (25 words total)
+            // We have 9 words from 3 equations, need 16 more distractor words
+            const distractorEquations = shuffledEquations.slice(3);
+            const distractorWords = [];
+
+            // Collect distractor words from remaining equations
+            distractorEquations.forEach(eq => {
+                eq.words.forEach(word => {
+                    // Make sure the word isn't already in our current equations
+                    if (!allWords.includes(word)) {
+                        distractorWords.push(word);
+                    }
+                });
+            });
+
+            // Shuffle and take 16 distractor words
+            const shuffledDistractors = shuffle(distractorWords);
+            allWords.push(...shuffledDistractors.slice(0, 16));
+
+            // Shuffle all 25 words for the grid
             allWords = shuffle(allWords);
 
             selectedWords = [];
