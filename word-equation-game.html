@@ -272,9 +272,9 @@
     <div class="container">
         <h1>Word Equation Game</h1>
         <p class="instructions">
-            Find 3 equations hidden in the 5x5 grid!<br>
+            Find 8 equations hidden in the 5x5 grid!<br>
             Click 3 words that form an equation: word1 + word2 = word3<br>
-            <em>Watch out for distractor words!</em>
+            <em>One word doesn't belong to any equation!</em>
         </p>
 
         <div class="solved-equations" id="solvedEquations" style="display: none;">
@@ -299,7 +299,7 @@
     </div>
 
     <script>
-        // Large pool of unique equations
+        // Large pool of 100+ unique equations
         const allEquations = [
             // Original equations
             { words: ['dough', 'cheese', 'pizza'], result: 'pizza' },
@@ -358,7 +358,59 @@
             { words: ['blade', 'handle', 'knife'], result: 'knife' },
             { words: ['phone', 'charger', 'device'], result: 'device' },
             { words: ['vine', 'grape', 'vineyard'], result: 'vineyard' },
-            { words: ['wave', 'surf', 'surfing'], result: 'surfing' }
+            { words: ['wave', 'surf', 'surfing'], result: 'surfing' },
+
+            // Additional 50 equations to reach 100 total
+            { words: ['engine', 'road', 'vehicle'], result: 'vehicle' },
+            { words: ['pilot', 'plane', 'aviation'], result: 'aviation' },
+            { words: ['sailor', 'ship', 'sailing'], result: 'sailing' },
+            { words: ['chef', 'kitchen', 'cooking'], result: 'cooking' },
+            { words: ['doctor', 'hospital', 'medicine'], result: 'medicine' },
+            { words: ['teacher', 'classroom', 'education'], result: 'education' },
+            { words: ['artist', 'studio', 'creation'], result: 'creation' },
+            { words: ['code', 'bug', 'debugging'], result: 'debugging' },
+            { words: ['melody', 'harmony', 'symphony'], result: 'symphony' },
+            { words: ['flour', 'water', 'dough'], result: 'dough' },
+            { words: ['grape', 'bottle', 'wine'], result: 'wine' },
+            { words: ['hop', 'malt', 'beer'], result: 'beer' },
+            { words: ['leaf', 'hot', 'beverage'], result: 'beverage' },
+            { words: ['grain', 'mill', 'flour'], result: 'flour' },
+            { words: ['fruit', 'blend', 'smoothie'], result: 'smoothie' },
+            { words: ['tomato', 'basil', 'sauce'], result: 'sauce' },
+            { words: ['lettuce', 'dressing', 'salad'], result: 'salad' },
+            { words: ['rice', 'seaweed', 'sushi'], result: 'sushi' },
+            { words: ['noodle', 'broth', 'soup'], result: 'soup' },
+            { words: ['meat', 'grill', 'barbecue'], result: 'barbecue' },
+            { words: ['ice', 'cone', 'sundae'], result: 'sundae' },
+            { words: ['sugar', 'caramel', 'candy'], result: 'candy' },
+            { words: ['cocoa', 'bar', 'chocolate'], result: 'chocolate' },
+            { words: ['flower', 'bouquet', 'arrangement'], result: 'arrangement' },
+            { words: ['petal', 'stem', 'rose'], result: 'rose' },
+            { words: ['root', 'trunk', 'tree'], result: 'tree' },
+            { words: ['branch', 'nest', 'bird'], result: 'bird' },
+            { words: ['feather', 'wing', 'flight'], result: 'flight' },
+            { words: ['fin', 'scale', 'fish'], result: 'fish' },
+            { words: ['shell', 'pearl', 'oyster'], result: 'oyster' },
+            { words: ['claw', 'shell', 'crab'], result: 'crab' },
+            { words: ['stripe', 'mane', 'zebra'], result: 'zebra' },
+            { words: ['spot', 'neck', 'giraffe'], result: 'giraffe' },
+            { words: ['tusk', 'trunk', 'elephant'], result: 'elephant' },
+            { words: ['pouch', 'hop', 'kangaroo'], result: 'kangaroo' },
+            { words: ['hump', 'desert', 'camel'], result: 'camel' },
+            { words: ['horn', 'charge', 'rhino'], result: 'rhino' },
+            { words: ['fang', 'venom', 'snake'], result: 'snake' },
+            { words: ['web', 'silk', 'spider'], result: 'spider' },
+            { words: ['hive', 'honey', 'bee'], result: 'bee' },
+            { words: ['antenna', 'colony', 'ant'], result: 'ant' },
+            { words: ['cocoon', 'wings', 'butterfly'], result: 'butterfly' },
+            { words: ['larva', 'metamorphosis', 'insect'], result: 'insect' },
+            { words: ['mountain', 'peak', 'summit'], result: 'summit' },
+            { words: ['valley', 'river', 'canyon'], result: 'canyon' },
+            { words: ['cave', 'stalactite', 'cavern'], result: 'cavern' },
+            { words: ['volcano', 'lava', 'eruption'], result: 'eruption' },
+            { words: ['quake', 'shake', 'earthquake'], result: 'earthquake' },
+            { words: ['tide', 'moon', 'ocean'], result: 'ocean' },
+            { words: ['current', 'flow', 'stream'], result: 'stream' }
         ];
 
         let currentEquations = [];
@@ -376,34 +428,21 @@
         }
 
         function initGame() {
-            // Randomly select 3 equations from the pool
+            // Randomly select 8 equations from the pool of 100
             const shuffledEquations = shuffle([...allEquations]);
-            currentEquations = shuffledEquations.slice(0, 3);
+            currentEquations = shuffledEquations.slice(0, 8);
 
-            // Collect words from the selected equations
+            // Collect words from the selected 8 equations (8 equations × 3 words = 24 words)
             allWords = [];
             currentEquations.forEach(eq => {
                 allWords.push(...eq.words);
             });
 
-            // Add distractor words from other equations to fill 5x5 grid (25 words total)
-            // We have 9 words from 3 equations, need 16 more distractor words
-            const distractorEquations = shuffledEquations.slice(3);
-            const distractorWords = [];
-
-            // Collect distractor words from remaining equations
-            distractorEquations.forEach(eq => {
-                eq.words.forEach(word => {
-                    // Make sure the word isn't already in our current equations
-                    if (!allWords.includes(word)) {
-                        distractorWords.push(word);
-                    }
-                });
-            });
-
-            // Shuffle and take 16 distractor words
-            const shuffledDistractors = shuffle(distractorWords);
-            allWords.push(...shuffledDistractors.slice(0, 16));
+            // Add 1 random word from a leftover equation to make 25 words for 5x5 grid
+            const leftoverEquations = shuffledEquations.slice(8);
+            const randomLeftoverEquation = leftoverEquations[Math.floor(Math.random() * leftoverEquations.length)];
+            const randomWord = randomLeftoverEquation.words[Math.floor(Math.random() * randomLeftoverEquation.words.length)];
+            allWords.push(randomWord);
 
             // Shuffle all 25 words for the grid
             allWords = shuffle(allWords);
@@ -519,7 +558,7 @@
                     document.getElementById('checkBtn').disabled = true;
 
                     // Check if all equations are solved
-                    if (solvedEquations.length === 3) {
+                    if (solvedEquations.length === 8) {
                         setTimeout(() => {
                             showWinMessage();
                         }, 500);
