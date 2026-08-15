@@ -6,6 +6,8 @@
 <title>Letter Tiles</title>
 <style>
   :root {
+    --cell: 56px;
+    --tile: 48px;
     --bg: #eef1f0;
     --bar-bg: #ffffff;
     --tile-bg: #fdfcf8;
@@ -17,6 +19,12 @@
     --btn-text: #4a463d;
     --btn-active-bg: #f0ece0;
     --accent: #6b8f71;
+    --grid-line: rgba(60, 50, 30, 0.07);
+    --grid-bg: #e6e9e6;
+    --hand-bg: #ffffff;
+    --hand-border: #e2ddd0;
+    --deck-bg: #4a5a4d;
+    --deck-back: #5c6f60;
   }
 
   * {
@@ -45,10 +53,10 @@
     align-items: center;
     justify-content: center;
     gap: 10px;
-    padding: 12px 14px;
+    padding: 10px 14px;
     background: var(--bar-bg);
     box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-    z-index: 100;
+    z-index: 200;
     position: relative;
   }
 
@@ -59,7 +67,7 @@
     color: var(--btn-text);
     font-size: 14px;
     font-weight: 600;
-    padding: 10px 16px;
+    padding: 9px 15px;
     border-radius: 10px;
     cursor: pointer;
     user-select: none;
@@ -84,7 +92,7 @@
     text-align: center;
     font-size: 12px;
     color: #8a8578;
-    padding: 4px 10px 8px;
+    padding: 4px 10px 6px;
     background: var(--bar-bg);
     transition: opacity 0.6s ease;
   }
@@ -96,64 +104,172 @@
     overflow: hidden;
   }
 
-  #playArea {
-    flex: 1 1 auto;
-    position: relative;
-    overflow: hidden;
-    background:
-      radial-gradient(circle at 1px 1px, rgba(0,0,0,0.035) 1px, transparent 0) 0 0/24px 24px,
-      var(--bg);
+  /* --- Hand + deck row --- */
+
+  .handRow {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: stretch;
+    gap: 8px;
+    padding: 8px 10px;
+    background: var(--hand-bg);
+    border-bottom: 1px solid var(--hand-border);
+    z-index: 150;
   }
 
-  .tile {
+  .handTray {
+    flex: 1 1 auto;
+    display: flex;
+    flex-wrap: wrap;
+    align-content: flex-start;
+    gap: 6px;
+    padding: 4px;
+    max-height: calc(var(--tile) * 2 + 30px);
+    overflow-y: auto;
+    overflow-x: hidden;
+    touch-action: pan-y;
+  }
+
+  .deckPile {
+    flex: 0 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    width: 72px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    padding: 4px 2px;
+    border-radius: 10px;
+    font-family: inherit;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .deckPile:active .deckStack {
+    transform: scale(0.94);
+  }
+
+  .deckPile:disabled {
+    cursor: default;
+    opacity: 0.4;
+  }
+
+  .deckStack {
+    position: relative;
+    width: var(--tile);
+    height: var(--tile);
+    transition: transform 0.1s ease;
+  }
+
+  .deckBack {
     position: absolute;
-    width: 56px;
-    height: 56px;
+    inset: 0;
+    background: var(--deck-back);
+    border: 1px solid rgba(0,0,0,0.15);
+    border-radius: 8px;
+    box-shadow: 0 2px 3px rgba(0,0,0,0.15);
+  }
+
+  .deckBack::after {
+    content: "";
+    position: absolute;
+    inset: 6px;
+    border: 1.5px solid rgba(255,255,255,0.18);
+    border-radius: 4px;
+  }
+
+  .deckBack.b1 { transform: translate(0, 0) rotate(0deg); background: var(--deck-bg); z-index: 3; }
+  .deckBack.b2 { transform: translate(-3px, 2px) rotate(-4deg); z-index: 2; }
+  .deckBack.b3 { transform: translate(3px, 3px) rotate(3deg); z-index: 1; }
+
+  .deckInfo {
+    text-align: center;
+    line-height: 1.2;
+  }
+
+  .deckCount {
+    display: block;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--btn-text);
+  }
+
+  .deckLabel {
+    display: block;
+    font-size: 9px;
+    color: #9a9484;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  /* --- Grid --- */
+
+  #gridViewport {
+    flex: 1 1 auto;
+    position: relative;
+    overflow: auto;
+    background: var(--grid-bg);
+    touch-action: pan-x pan-y;
+  }
+
+  #gridInner {
+    position: relative;
+    background-image:
+      repeating-linear-gradient(to right, var(--grid-line), var(--grid-line) 1px, transparent 1px, transparent var(--cell)),
+      repeating-linear-gradient(to bottom, var(--grid-line), var(--grid-line) 1px, transparent 1px, transparent var(--cell));
+    border: 1px solid var(--grid-line);
+  }
+
+  /* --- Tiles --- */
+
+  .tile {
+    width: var(--tile);
+    height: var(--tile);
     background: var(--tile-bg);
     border: 1px solid var(--tile-border);
-    border-radius: 9px;
+    border-radius: 8px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 26px;
+    font-size: calc(var(--tile) * 0.46);
     font-weight: 700;
     color: var(--tile-text);
     box-shadow: 0 2px 0 rgba(0,0,0,0.08), 0 3px 6px var(--tile-shadow);
     cursor: grab;
     user-select: none;
     touch-action: none;
-    left: 0;
-    top: 0;
-    will-change: transform;
-    transition: box-shadow 0.15s ease;
+    flex: 0 0 auto;
+  }
+
+  .tile.on-grid {
+    position: absolute;
   }
 
   .tile.dragging {
     cursor: grabbing;
-    box-shadow: 0 10px 18px rgba(0,0,0,0.28), 0 4px 6px rgba(0,0,0,0.15);
-    z-index: 1000;
-    transition: none;
+    transform: scale(1.1);
+    box-shadow: 0 12px 20px rgba(0,0,0,0.28), 0 4px 6px rgba(0,0,0,0.15);
   }
 
-  .tile.settle {
-    transition: transform 0.35s cubic-bezier(.34, 1.56, .64, 1);
+  .tile.drop-bounce {
+    animation: dropBounce 0.28s ease;
   }
 
-  .tile.shuffling {
-    transition: transform 0.5s cubic-bezier(.34, 1.2, .64, 1);
+  .tile.deal {
+    animation: dealIn 0.32s cubic-bezier(.34, 1.56, .64, 1);
   }
 
-  @media (max-width: 480px) {
-    .tile {
-      width: 46px;
-      height: 46px;
-      font-size: 21px;
-      border-radius: 7px;
-    }
-    .btn {
-      padding: 9px 12px;
-      font-size: 13px;
-    }
+  @keyframes dropBounce {
+    0% { transform: scale(0.9); }
+    55% { transform: scale(1.08); }
+    100% { transform: scale(1); }
+  }
+
+  @keyframes dealIn {
+    from { transform: scale(0.3); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
   }
 
   @media (prefers-color-scheme: dark) {
@@ -169,11 +285,12 @@
       --btn-text: #d8d4c8;
       --btn-active-bg: #40444b;
       --accent: #7ea885;
-    }
-    #playArea {
-      background:
-        radial-gradient(circle at 1px 1px, rgba(255,255,255,0.04) 1px, transparent 0) 0 0/24px 24px,
-        var(--bg);
+      --grid-line: rgba(255, 255, 255, 0.07);
+      --grid-bg: #1c1f23;
+      --hand-bg: #2b2f36;
+      --hand-border: #3a3e44;
+      --deck-bg: #6b8f71;
+      --deck-back: #454a45;
     }
   }
 </style>
@@ -181,20 +298,37 @@
 <body>
 
   <div class="toolbar">
-    <button class="btn primary" id="newLettersBtn">New Letters</button>
-    <button class="btn" id="shuffleBtn">Shuffle</button>
-    <button class="btn" id="clearBtn">Clear</button>
+    <button class="btn primary" id="newGameBtn">New Game</button>
+    <button class="btn" id="shuffleBtn">Shuffle Hand</button>
+    <button class="btn" id="clearGridBtn">Clear Grid</button>
   </div>
-  <div class="hint" id="hint">Drag the tiles to arrange them into words</div>
+  <div class="hint" id="hint">Drag letters onto the grid to arrange words &middot; tap the deck to draw more</div>
 
-  <div id="playArea"></div>
+  <div class="handRow">
+    <div class="handTray" id="handTray"></div>
+    <button class="deckPile" id="deckPile" title="Draw a letter">
+      <div class="deckStack">
+        <div class="deckBack b3"></div>
+        <div class="deckBack b2"></div>
+        <div class="deckBack b1"></div>
+      </div>
+      <div class="deckInfo">
+        <span class="deckCount" id="deckCount">43</span>
+        <span class="deckLabel">draw</span>
+      </div>
+    </button>
+  </div>
+
+  <div id="gridViewport">
+    <div id="gridInner"></div>
+  </div>
 
   <script>
     (function () {
       "use strict";
 
-      // Approximate English letter frequency (Scrabble-like distribution),
-      // weighted so common letters appear more often but rare ones can still show up.
+      // Approximate English letter frequency, weighted so common letters
+      // (E, A, I, O, N...) appear more often but rare ones can still show up.
       const LETTER_WEIGHTS = {
         E: 12, A: 9, I: 9, O: 8, N: 7, R: 7, T: 7, L: 4, S: 6, U: 4,
         D: 4, G: 3, B: 2, C: 2, M: 2, P: 2, F: 2, H: 2, V: 2, W: 2,
@@ -210,94 +344,172 @@
         return LETTER_POOL[Math.floor(Math.random() * LETTER_POOL.length)];
       }
 
-      const TILE_COUNT = 25;
-      const playArea = document.getElementById("playArea");
+      function generateLetters(count) {
+        const letters = [];
+        for (let i = 0; i < count; i++) letters.push(randomLetter());
+        return letters;
+      }
+
+      const TOTAL_LETTERS = 50;
+      const HAND_SIZE = 7;
+      const GRID_SIZE = 20;
+
+      const gridViewport = document.getElementById("gridViewport");
+      const gridInner = document.getElementById("gridInner");
+      const handTray = document.getElementById("handTray");
+      const deckPile = document.getElementById("deckPile");
+      const deckCountEl = document.getElementById("deckCount");
       const hint = document.getElementById("hint");
 
-      let tiles = []; // { el, x, y, w, h }
+      let CELL = 56;
+      let deck = [];
+      let tilesById = new Map();
+      let occupied = new Map(); // "x,y" -> tileId
       let zCounter = 10;
+      let nextId = 1;
       let hintTimer = null;
 
       function hideHintSoon() {
         if (hintTimer) clearTimeout(hintTimer);
-        hintTimer = setTimeout(() => hint.classList.add("hidden"), 4000);
+        hintTimer = setTimeout(() => hint.classList.add("hidden"), 5000);
       }
 
-      function areaSize() {
-        const rect = playArea.getBoundingClientRect();
-        return { width: rect.width, height: rect.height };
+      function computeCell() {
+        return window.innerWidth < 480 ? 42 : 56;
       }
 
-      function randomPosition(tileSize, area) {
-        const margin = 8;
-        const maxX = Math.max(margin, area.width - tileSize - margin);
-        const maxY = Math.max(margin, area.height - tileSize - margin);
-        return {
-          x: margin + Math.random() * (maxX - margin),
-          y: margin + Math.random() * (maxY - margin)
-        };
+      function applySizes() {
+        CELL = computeCell();
+        const tile = CELL - 8;
+        document.documentElement.style.setProperty("--cell", CELL + "px");
+        document.documentElement.style.setProperty("--tile", tile + "px");
+        gridInner.style.width = (CELL * GRID_SIZE) + "px";
+        gridInner.style.height = (CELL * GRID_SIZE) + "px";
+
+        // Reposition any tiles already placed on the grid.
+        tilesById.forEach(tile => {
+          if (tile.container === "grid") positionGridTile(tile);
+        });
       }
 
-      function setTilePosition(tile, x, y) {
-        tile.x = x;
-        tile.y = y;
-        tile.el.style.transform = `translate(${x}px, ${y}px)`;
+      function cellPad() {
+        const tileSize = CELL - 8;
+        return (CELL - tileSize) / 2;
       }
+
+      function positionGridTile(tile) {
+        const pad = cellPad();
+        tile.el.style.left = (tile.gridX * CELL + pad) + "px";
+        tile.el.style.top = (tile.gridY * CELL + pad) + "px";
+      }
+
+      function centerGridScroll() {
+        const vpRect = gridViewport.getBoundingClientRect();
+        gridViewport.scrollLeft = Math.max(0, (gridInner.offsetWidth - vpRect.width) / 2);
+        gridViewport.scrollTop = Math.max(0, (gridInner.offsetHeight - vpRect.height) / 2);
+      }
+
+      // --- Tile creation ---
 
       function createTile(letter) {
         const el = document.createElement("div");
         el.className = "tile";
         el.textContent = letter;
         el.setAttribute("data-letter", letter);
-        playArea.appendChild(el);
 
-        const tile = { el, x: 0, y: 0 };
+        const tile = { id: nextId++, letter, el, container: "hand", gridX: null, gridY: null };
+        tilesById.set(tile.id, tile);
         attachDragHandlers(tile);
         return tile;
       }
 
-      function buildTiles() {
-        tiles.forEach(t => t.el.remove());
-        tiles = [];
-
-        const area = areaSize();
-        // Determine tile size from computed style (matches CSS breakpoints)
-        const probe = document.createElement("div");
-        probe.className = "tile";
-        probe.style.visibility = "hidden";
-        playArea.appendChild(probe);
-        const tileSize = probe.getBoundingClientRect().width || 56;
-        probe.remove();
-
-        for (let i = 0; i < TILE_COUNT; i++) {
-          const letter = randomLetter();
-          const tile = createTile(letter);
-          const pos = randomPosition(tileSize, area);
-          setTilePosition(tile, pos.x, pos.y);
-          tile.el.style.zIndex = ++zCounter;
-          tiles.push(tile);
+      function addTileToHand(tile, animate) {
+        tile.container = "hand";
+        tile.el.classList.remove("on-grid");
+        tile.el.style.position = "";
+        tile.el.style.left = "";
+        tile.el.style.top = "";
+        handTray.appendChild(tile.el);
+        if (animate) {
+          tile.el.classList.add("deal");
+          tile.el.addEventListener("animationend", function handler() {
+            tile.el.classList.remove("deal");
+            tile.el.removeEventListener("animationend", handler);
+          });
         }
       }
 
-      function shuffleTiles() {
-        const area = areaSize();
-        const tileSize = tiles[0] ? tiles[0].el.getBoundingClientRect().width : 56;
+      // --- Deck / hand / grid setup ---
 
-        tiles.forEach(tile => {
-          tile.el.classList.add("shuffling");
-          const pos = randomPosition(tileSize, area);
-          setTilePosition(tile, pos.x, pos.y);
-          tile.el.style.zIndex = ++zCounter;
+      function newGame() {
+        occupied.clear();
+        tilesById.forEach(t => t.el.remove());
+        tilesById.clear();
+        handTray.innerHTML = "";
+        gridInner.innerHTML = "";
+
+        const pool = generateLetters(TOTAL_LETTERS);
+        const handLetters = pool.slice(0, HAND_SIZE);
+        deck = pool.slice(HAND_SIZE);
+
+        handLetters.forEach(letter => {
+          const tile = createTile(letter);
+          addTileToHand(tile, false);
+        });
+
+        updateDeckUI();
+        centerGridScroll();
+      }
+
+      function updateDeckUI() {
+        deckCountEl.textContent = String(deck.length);
+        deckPile.disabled = deck.length === 0;
+      }
+
+      function drawTile() {
+        if (deck.length === 0) return;
+        const letter = deck.shift();
+        const tile = createTile(letter);
+        addTileToHand(tile, true);
+        updateDeckUI();
+      }
+
+      function clearGrid() {
+        const gridTiles = Array.from(tilesById.values()).filter(t => t.container === "grid");
+        gridTiles.forEach(tile => addTileToHand(tile, false));
+        occupied.clear();
+      }
+
+      function shuffleHand() {
+        const children = Array.from(handTray.children);
+        if (children.length < 2) return;
+        const firstRects = new Map(children.map(el => [el, el.getBoundingClientRect()]));
+
+        for (let i = children.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [children[i], children[j]] = [children[j], children[i]];
+        }
+        children.forEach(el => handTray.appendChild(el));
+
+        children.forEach(el => {
+          const first = firstRects.get(el);
+          const last = el.getBoundingClientRect();
+          const dx = first.left - last.left;
+          const dy = first.top - last.top;
+          el.style.transition = "none";
+          el.style.transform = `translate(${dx}px, ${dy}px)`;
+          requestAnimationFrame(() => {
+            el.style.transition = "transform 0.4s cubic-bezier(.34, 1.4, .64, 1)";
+            el.style.transform = "translate(0, 0)";
+          });
         });
 
         setTimeout(() => {
-          tiles.forEach(tile => tile.el.classList.remove("shuffling"));
-        }, 520);
-      }
-
-      function clearTiles() {
-        tiles.forEach(t => t.el.remove());
-        tiles = [];
+          children.forEach(el => {
+            el.style.transition = "";
+            el.style.transform = "";
+          });
+        }, 450);
       }
 
       // --- Dragging ---
@@ -305,23 +517,37 @@
       function attachDragHandlers(tile) {
         const el = tile.el;
         let dragging = false;
-        let startPointerX = 0;
-        let startPointerY = 0;
-        let startTileX = 0;
-        let startTileY = 0;
+        let offsetX = 0;
+        let offsetY = 0;
+        let originalContainer = null;
+        let originalGridX = null;
+        let originalGridY = null;
+        let originalIndex = -1;
 
         function onPointerDown(e) {
           if (e.button !== undefined && e.button !== 0) return;
           dragging = true;
-          el.classList.remove("settle");
-          el.classList.add("dragging");
-          el.style.zIndex = ++zCounter;
-          el.setPointerCapture && el.setPointerCapture(e.pointerId);
 
-          startPointerX = e.clientX;
-          startPointerY = e.clientY;
-          startTileX = tile.x;
-          startTileY = tile.y;
+          const rect = el.getBoundingClientRect();
+          offsetX = e.clientX - rect.left;
+          offsetY = e.clientY - rect.top;
+
+          originalContainer = tile.container;
+          originalGridX = tile.gridX;
+          originalGridY = tile.gridY;
+          originalIndex = Array.from(handTray.children).indexOf(el);
+
+          el.style.transition = "none";
+          el.style.transform = "";
+          el.classList.remove("drop-bounce");
+          el.classList.add("dragging");
+          el.style.position = "fixed";
+          el.style.left = rect.left + "px";
+          el.style.top = rect.top + "px";
+          el.style.margin = "0";
+          el.style.zIndex = ++zCounter;
+          document.body.appendChild(el);
+          el.setPointerCapture && el.setPointerCapture(e.pointerId);
 
           hint.classList.add("hidden");
           if (hintTimer) clearTimeout(hintTimer);
@@ -331,9 +557,8 @@
 
         function onPointerMove(e) {
           if (!dragging) return;
-          const dx = e.clientX - startPointerX;
-          const dy = e.clientY - startPointerY;
-          setTilePosition(tile, startTileX + dx, startTileY + dy);
+          el.style.left = (e.clientX - offsetX) + "px";
+          el.style.top = (e.clientY - offsetY) + "px";
           e.preventDefault();
         }
 
@@ -341,17 +566,35 @@
           if (!dragging) return;
           dragging = false;
           el.classList.remove("dragging");
-          el.classList.add("settle");
+          el.style.zIndex = "";
+          el.style.margin = "";
+          el.style.transition = "";
 
-          // Clamp gently within the play area so tiles don't get lost off-screen.
-          const area = areaSize();
-          const size = el.getBoundingClientRect().width;
-          const margin = 4;
-          const clampedX = Math.min(Math.max(tile.x, margin), Math.max(margin, area.width - size - margin));
-          const clampedY = Math.min(Math.max(tile.y, margin), Math.max(margin, area.height - size - margin));
-          setTilePosition(tile, clampedX, clampedY);
+          const px = e.clientX;
+          const py = e.clientY;
+          const gridRect = gridViewport.getBoundingClientRect();
+          const handRect = handTray.getBoundingClientRect();
 
-          setTimeout(() => el.classList.remove("settle"), 400);
+          let placed = false;
+
+          if (px >= gridRect.left && px <= gridRect.right && py >= gridRect.top && py <= gridRect.bottom) {
+            placed = tryPlaceOnGrid(tile, px, py);
+          }
+
+          if (!placed && px >= handRect.left && px <= handRect.right && py >= handRect.top && py <= handRect.bottom) {
+            placeInHand(tile, px);
+            placed = true;
+          }
+
+          if (!placed) {
+            revertTile(tile, originalContainer, originalGridX, originalGridY, originalIndex);
+          }
+
+          el.classList.add("drop-bounce");
+          el.addEventListener("animationend", function handler() {
+            el.classList.remove("drop-bounce");
+            el.removeEventListener("animationend", handler);
+          });
 
           try { el.releasePointerCapture && el.releasePointerCapture(e.pointerId); } catch (err) {}
         }
@@ -362,28 +605,120 @@
         el.addEventListener("pointercancel", onPointerUp);
       }
 
+      function tryPlaceOnGrid(tile, clientX, clientY) {
+        const innerRect = gridInner.getBoundingClientRect();
+        const pad = cellPad();
+        const localX = clientX - innerRect.left;
+        const localY = clientY - innerRect.top;
+
+        let cellX = Math.floor(localX / CELL);
+        let cellY = Math.floor(localY / CELL);
+        cellX = Math.min(Math.max(cellX, 0), GRID_SIZE - 1);
+        cellY = Math.min(Math.max(cellY, 0), GRID_SIZE - 1);
+
+        const key = cellX + "," + cellY;
+        const occupant = occupied.get(key);
+        if (occupant !== undefined && occupant !== tile.id) {
+          return false;
+        }
+
+        if (tile.container === "grid") {
+          occupied.delete(tile.gridX + "," + tile.gridY);
+        }
+
+        tile.container = "grid";
+        tile.gridX = cellX;
+        tile.gridY = cellY;
+        occupied.set(key, tile.id);
+
+        tile.el.classList.add("on-grid");
+        tile.el.style.margin = "";
+        gridInner.appendChild(tile.el);
+        tile.el.style.position = "absolute";
+        positionGridTile(tile);
+
+        return true;
+      }
+
+      function placeInHand(tile, clientX) {
+        if (tile.container === "grid") {
+          occupied.delete(tile.gridX + "," + tile.gridY);
+        }
+
+        tile.container = "hand";
+        tile.gridX = null;
+        tile.gridY = null;
+        tile.el.classList.remove("on-grid");
+        tile.el.style.position = "";
+        tile.el.style.left = "";
+        tile.el.style.top = "";
+
+        const siblings = Array.from(handTray.children);
+        let insertBefore = null;
+        for (const sib of siblings) {
+          const r = sib.getBoundingClientRect();
+          if (clientX < r.left + r.width / 2) {
+            insertBefore = sib;
+            break;
+          }
+        }
+        if (insertBefore) {
+          handTray.insertBefore(tile.el, insertBefore);
+        } else {
+          handTray.appendChild(tile.el);
+        }
+      }
+
+      function revertTile(tile, originalContainer, originalGridX, originalGridY, originalIndex) {
+        if (originalContainer === "grid") {
+          tile.container = "grid";
+          tile.gridX = originalGridX;
+          tile.gridY = originalGridY;
+          tile.el.classList.add("on-grid");
+          gridInner.appendChild(tile.el);
+          tile.el.style.position = "absolute";
+          positionGridTile(tile);
+        } else {
+          tile.container = "hand";
+          tile.gridX = null;
+          tile.gridY = null;
+          tile.el.classList.remove("on-grid");
+          tile.el.style.position = "";
+          tile.el.style.left = "";
+          tile.el.style.top = "";
+
+          const children = Array.from(handTray.children);
+          const idx = Math.min(Math.max(originalIndex, 0), children.length);
+          if (idx >= children.length) {
+            handTray.appendChild(tile.el);
+          } else {
+            handTray.insertBefore(tile.el, children[idx]);
+          }
+        }
+      }
+
       // --- Controls ---
 
-      document.getElementById("newLettersBtn").addEventListener("click", buildTiles);
-      document.getElementById("shuffleBtn").addEventListener("click", shuffleTiles);
-      document.getElementById("clearBtn").addEventListener("click", clearTiles);
+      document.getElementById("newGameBtn").addEventListener("click", newGame);
+      document.getElementById("shuffleBtn").addEventListener("click", shuffleHand);
+      document.getElementById("clearGridBtn").addEventListener("click", clearGrid);
+      deckPile.addEventListener("click", drawTile);
 
-      // Prevent page scroll/bounce on touch devices while interacting with the play area.
-      playArea.addEventListener("touchmove", (e) => e.preventDefault(), { passive: false });
+      // Prevent page scroll/bounce on touch devices outside the scrollable regions.
+      document.body.addEventListener("touchmove", (e) => {
+        if (!e.target.closest("#gridViewport") && !e.target.closest(".handTray")) {
+          e.preventDefault();
+        }
+      }, { passive: false });
 
-      // Keep tiles within bounds on resize/orientation change.
+      let resizeTimer = null;
       window.addEventListener("resize", () => {
-        const area = areaSize();
-        tiles.forEach(tile => {
-          const size = tile.el.getBoundingClientRect().width;
-          const margin = 4;
-          const clampedX = Math.min(Math.max(tile.x, margin), Math.max(margin, area.width - size - margin));
-          const clampedY = Math.min(Math.max(tile.y, margin), Math.max(margin, area.height - size - margin));
-          setTilePosition(tile, clampedX, clampedY);
-        });
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(applySizes, 150);
       });
 
-      buildTiles();
+      applySizes();
+      newGame();
       hideHintSoon();
     })();
   </script>
