@@ -359,6 +359,7 @@
       const handTray = document.getElementById("handTray");
       const deckPile = document.getElementById("deckPile");
       const deckCountEl = document.getElementById("deckCount");
+      const deckLabelEl = document.querySelector(".deckLabel");
       const hint = document.getElementById("hint");
 
       let CELL = 56;
@@ -461,13 +462,19 @@
         centerGridScroll();
       }
 
+      function handCount() {
+        return handTray.children.length;
+      }
+
       function updateDeckUI() {
         deckCountEl.textContent = String(deck.length);
-        deckPile.disabled = deck.length === 0;
+        const handFull = handCount() >= HAND_SIZE;
+        deckPile.disabled = deck.length === 0 || handFull;
+        deckLabelEl.textContent = deck.length === 0 ? "empty" : (handFull ? "hand full" : "draw");
       }
 
       function drawTile() {
-        if (deck.length === 0) return;
+        if (deck.length === 0 || handCount() >= HAND_SIZE) return;
         const letter = deck.shift();
         const tile = createTile(letter);
         addTileToHand(tile, true);
@@ -478,6 +485,7 @@
         const gridTiles = Array.from(tilesById.values()).filter(t => t.container === "grid");
         gridTiles.forEach(tile => addTileToHand(tile, false));
         occupied.clear();
+        updateDeckUI();
       }
 
       function shuffleHand() {
@@ -636,6 +644,7 @@
         gridInner.appendChild(tile.el);
         tile.el.style.position = "absolute";
         positionGridTile(tile);
+        updateDeckUI();
 
         return true;
       }
@@ -667,6 +676,7 @@
         } else {
           handTray.appendChild(tile.el);
         }
+        updateDeckUI();
       }
 
       function revertTile(tile, originalContainer, originalGridX, originalGridY, originalIndex) {
@@ -694,6 +704,7 @@
           } else {
             handTray.insertBefore(tile.el, children[idx]);
           }
+          updateDeckUI();
         }
       }
 
