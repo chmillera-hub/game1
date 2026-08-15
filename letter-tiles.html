@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>Letter Tiles</title>
+<style>
+  :root {
+    --bg: #eef1f0;
+    --bar-bg: #ffffff;
+    --tile-bg: #fdfcf8;
+    --tile-border: #d8d2c4;
+    --tile-shadow: rgba(60, 50, 30, 0.18);
+    --tile-text: #3a3630;
+    --btn-bg: #ffffff;
+    --btn-border: #cfcabb;
+    --btn-text: #4a463d;
+    --btn-active-bg: #f0ece0;
+    --accent: #6b8f71;
+  }
+
+  * {
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    overflow: hidden;
+    background: var(--bg);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+
+  body {
+    display: flex;
+    flex-direction: column;
+    touch-action: none;
+  }
+
+  .toolbar {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 12px 14px;
+    background: var(--bar-bg);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    z-index: 100;
+    position: relative;
+  }
+
+  .btn {
+    appearance: none;
+    border: 1px solid var(--btn-border);
+    background: var(--btn-bg);
+    color: var(--btn-text);
+    font-size: 14px;
+    font-weight: 600;
+    padding: 10px 16px;
+    border-radius: 10px;
+    cursor: pointer;
+    user-select: none;
+    transition: transform 0.08s ease, background 0.15s ease, box-shadow 0.15s ease;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+    letter-spacing: 0.02em;
+  }
+
+  .btn:active {
+    transform: scale(0.95);
+    background: var(--btn-active-bg);
+  }
+
+  .btn.primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+  }
+
+  .hint {
+    flex: 0 0 auto;
+    text-align: center;
+    font-size: 12px;
+    color: #8a8578;
+    padding: 4px 10px 8px;
+    background: var(--bar-bg);
+    transition: opacity 0.6s ease;
+  }
+
+  .hint.hidden {
+    opacity: 0;
+    height: 0;
+    padding: 0;
+    overflow: hidden;
+  }
+
+  #playArea {
+    flex: 1 1 auto;
+    position: relative;
+    overflow: hidden;
+    background:
+      radial-gradient(circle at 1px 1px, rgba(0,0,0,0.035) 1px, transparent 0) 0 0/24px 24px,
+      var(--bg);
+  }
+
+  .tile {
+    position: absolute;
+    width: 56px;
+    height: 56px;
+    background: var(--tile-bg);
+    border: 1px solid var(--tile-border);
+    border-radius: 9px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 26px;
+    font-weight: 700;
+    color: var(--tile-text);
+    box-shadow: 0 2px 0 rgba(0,0,0,0.08), 0 3px 6px var(--tile-shadow);
+    cursor: grab;
+    user-select: none;
+    touch-action: none;
+    left: 0;
+    top: 0;
+    will-change: transform;
+    transition: box-shadow 0.15s ease;
+  }
+
+  .tile.dragging {
+    cursor: grabbing;
+    box-shadow: 0 10px 18px rgba(0,0,0,0.28), 0 4px 6px rgba(0,0,0,0.15);
+    z-index: 1000;
+    transition: none;
+  }
+
+  .tile.settle {
+    transition: transform 0.35s cubic-bezier(.34, 1.56, .64, 1);
+  }
+
+  .tile.shuffling {
+    transition: transform 0.5s cubic-bezier(.34, 1.2, .64, 1);
+  }
+
+  @media (max-width: 480px) {
+    .tile {
+      width: 46px;
+      height: 46px;
+      font-size: 21px;
+      border-radius: 7px;
+    }
+    .btn {
+      padding: 9px 12px;
+      font-size: 13px;
+    }
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #23262b;
+      --bar-bg: #2b2f36;
+      --tile-bg: #3a3d42;
+      --tile-border: #4c4f55;
+      --tile-shadow: rgba(0, 0, 0, 0.45);
+      --tile-text: #eee8d9;
+      --btn-bg: #34383e;
+      --btn-border: #4a4e55;
+      --btn-text: #d8d4c8;
+      --btn-active-bg: #40444b;
+      --accent: #7ea885;
+    }
+    #playArea {
+      background:
+        radial-gradient(circle at 1px 1px, rgba(255,255,255,0.04) 1px, transparent 0) 0 0/24px 24px,
+        var(--bg);
+    }
+  }
+</style>
+</head>
+<body>
+
+  <div class="toolbar">
+    <button class="btn primary" id="newLettersBtn">New Letters</button>
+    <button class="btn" id="shuffleBtn">Shuffle</button>
+    <button class="btn" id="clearBtn">Clear</button>
+  </div>
+  <div class="hint" id="hint">Drag the tiles to arrange them into words</div>
+
+  <div id="playArea"></div>
+
+  <script>
+    (function () {
+      "use strict";
+
+      // Approximate English letter frequency (Scrabble-like distribution),
+      // weighted so common letters appear more often but rare ones can still show up.
+      const LETTER_WEIGHTS = {
+        E: 12, A: 9, I: 9, O: 8, N: 7, R: 7, T: 7, L: 4, S: 6, U: 4,
+        D: 4, G: 3, B: 2, C: 2, M: 2, P: 2, F: 2, H: 2, V: 2, W: 2,
+        Y: 2, K: 1, J: 1, X: 1, Q: 1, Z: 1
+      };
+
+      const LETTER_POOL = [];
+      Object.entries(LETTER_WEIGHTS).forEach(([letter, weight]) => {
+        for (let i = 0; i < weight; i++) LETTER_POOL.push(letter);
+      });
+
+      function randomLetter() {
+        return LETTER_POOL[Math.floor(Math.random() * LETTER_POOL.length)];
+      }
+
+      const TILE_COUNT = 25;
+      const playArea = document.getElementById("playArea");
+      const hint = document.getElementById("hint");
+
+      let tiles = []; // { el, x, y, w, h }
+      let zCounter = 10;
+      let hintTimer = null;
+
+      function hideHintSoon() {
+        if (hintTimer) clearTimeout(hintTimer);
+        hintTimer = setTimeout(() => hint.classList.add("hidden"), 4000);
+      }
+
+      function areaSize() {
+        const rect = playArea.getBoundingClientRect();
+        return { width: rect.width, height: rect.height };
+      }
+
+      function randomPosition(tileSize, area) {
+        const margin = 8;
+        const maxX = Math.max(margin, area.width - tileSize - margin);
+        const maxY = Math.max(margin, area.height - tileSize - margin);
+        return {
+          x: margin + Math.random() * (maxX - margin),
+          y: margin + Math.random() * (maxY - margin)
+        };
+      }
+
+      function setTilePosition(tile, x, y) {
+        tile.x = x;
+        tile.y = y;
+        tile.el.style.transform = `translate(${x}px, ${y}px)`;
+      }
+
+      function createTile(letter) {
+        const el = document.createElement("div");
+        el.className = "tile";
+        el.textContent = letter;
+        el.setAttribute("data-letter", letter);
+        playArea.appendChild(el);
+
+        const tile = { el, x: 0, y: 0 };
+        attachDragHandlers(tile);
+        return tile;
+      }
+
+      function buildTiles() {
+        tiles.forEach(t => t.el.remove());
+        tiles = [];
+
+        const area = areaSize();
+        // Determine tile size from computed style (matches CSS breakpoints)
+        const probe = document.createElement("div");
+        probe.className = "tile";
+        probe.style.visibility = "hidden";
+        playArea.appendChild(probe);
+        const tileSize = probe.getBoundingClientRect().width || 56;
+        probe.remove();
+
+        for (let i = 0; i < TILE_COUNT; i++) {
+          const letter = randomLetter();
+          const tile = createTile(letter);
+          const pos = randomPosition(tileSize, area);
+          setTilePosition(tile, pos.x, pos.y);
+          tile.el.style.zIndex = ++zCounter;
+          tiles.push(tile);
+        }
+      }
+
+      function shuffleTiles() {
+        const area = areaSize();
+        const tileSize = tiles[0] ? tiles[0].el.getBoundingClientRect().width : 56;
+
+        tiles.forEach(tile => {
+          tile.el.classList.add("shuffling");
+          const pos = randomPosition(tileSize, area);
+          setTilePosition(tile, pos.x, pos.y);
+          tile.el.style.zIndex = ++zCounter;
+        });
+
+        setTimeout(() => {
+          tiles.forEach(tile => tile.el.classList.remove("shuffling"));
+        }, 520);
+      }
+
+      function clearTiles() {
+        tiles.forEach(t => t.el.remove());
+        tiles = [];
+      }
+
+      // --- Dragging ---
+
+      function attachDragHandlers(tile) {
+        const el = tile.el;
+        let dragging = false;
+        let startPointerX = 0;
+        let startPointerY = 0;
+        let startTileX = 0;
+        let startTileY = 0;
+
+        function onPointerDown(e) {
+          if (e.button !== undefined && e.button !== 0) return;
+          dragging = true;
+          el.classList.remove("settle");
+          el.classList.add("dragging");
+          el.style.zIndex = ++zCounter;
+          el.setPointerCapture && el.setPointerCapture(e.pointerId);
+
+          startPointerX = e.clientX;
+          startPointerY = e.clientY;
+          startTileX = tile.x;
+          startTileY = tile.y;
+
+          hint.classList.add("hidden");
+          if (hintTimer) clearTimeout(hintTimer);
+
+          e.preventDefault();
+        }
+
+        function onPointerMove(e) {
+          if (!dragging) return;
+          const dx = e.clientX - startPointerX;
+          const dy = e.clientY - startPointerY;
+          setTilePosition(tile, startTileX + dx, startTileY + dy);
+          e.preventDefault();
+        }
+
+        function onPointerUp(e) {
+          if (!dragging) return;
+          dragging = false;
+          el.classList.remove("dragging");
+          el.classList.add("settle");
+
+          // Clamp gently within the play area so tiles don't get lost off-screen.
+          const area = areaSize();
+          const size = el.getBoundingClientRect().width;
+          const margin = 4;
+          const clampedX = Math.min(Math.max(tile.x, margin), Math.max(margin, area.width - size - margin));
+          const clampedY = Math.min(Math.max(tile.y, margin), Math.max(margin, area.height - size - margin));
+          setTilePosition(tile, clampedX, clampedY);
+
+          setTimeout(() => el.classList.remove("settle"), 400);
+
+          try { el.releasePointerCapture && el.releasePointerCapture(e.pointerId); } catch (err) {}
+        }
+
+        el.addEventListener("pointerdown", onPointerDown);
+        el.addEventListener("pointermove", onPointerMove);
+        el.addEventListener("pointerup", onPointerUp);
+        el.addEventListener("pointercancel", onPointerUp);
+      }
+
+      // --- Controls ---
+
+      document.getElementById("newLettersBtn").addEventListener("click", buildTiles);
+      document.getElementById("shuffleBtn").addEventListener("click", shuffleTiles);
+      document.getElementById("clearBtn").addEventListener("click", clearTiles);
+
+      // Prevent page scroll/bounce on touch devices while interacting with the play area.
+      playArea.addEventListener("touchmove", (e) => e.preventDefault(), { passive: false });
+
+      // Keep tiles within bounds on resize/orientation change.
+      window.addEventListener("resize", () => {
+        const area = areaSize();
+        tiles.forEach(tile => {
+          const size = tile.el.getBoundingClientRect().width;
+          const margin = 4;
+          const clampedX = Math.min(Math.max(tile.x, margin), Math.max(margin, area.width - size - margin));
+          const clampedY = Math.min(Math.max(tile.y, margin), Math.max(margin, area.height - size - margin));
+          setTilePosition(tile, clampedX, clampedY);
+        });
+      });
+
+      buildTiles();
+      hideHintSoon();
+    })();
+  </script>
+</body>
+</html>
