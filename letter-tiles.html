@@ -222,6 +222,14 @@
     border: 1px solid var(--grid-line);
   }
 
+  #gridZones {
+    position: absolute;
+    top: 0;
+    left: 0;
+    display: block;
+    pointer-events: none;
+  }
+
   /* --- Tiles --- */
 
   .tile {
@@ -320,7 +328,9 @@
   </div>
 
   <div id="gridViewport">
-    <div id="gridInner"></div>
+    <div id="gridInner">
+      <canvas id="gridZones"></canvas>
+    </div>
   </div>
 
   <script>
@@ -356,6 +366,7 @@
 
       const gridViewport = document.getElementById("gridViewport");
       const gridInner = document.getElementById("gridInner");
+      const gridZones = document.getElementById("gridZones");
       const handTray = document.getElementById("handTray");
       const deckPile = document.getElementById("deckPile");
       const deckCountEl = document.getElementById("deckCount");
@@ -391,6 +402,65 @@
         tilesById.forEach(tile => {
           if (tile.container === "grid") positionGridTile(tile);
         });
+
+        drawZones();
+      }
+
+      // Soft color zones radiating out (in concentric squares) from the
+      // grid's center, so players get a gentle visual cue before they
+      // wander close to the edge — a faded green "safe" core, fading
+      // through yellow, to a faded red border near the last few cells.
+      function drawZones() {
+        const size = CELL * GRID_SIZE;
+        gridZones.width = size;
+        gridZones.height = size;
+        gridZones.style.width = size + "px";
+        gridZones.style.height = size + "px";
+
+        const ctx = gridZones.getContext("2d");
+        ctx.clearRect(0, 0, size, size);
+
+        const isDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+        const boost = isDark ? 1.5 : 1;
+
+        const center = GRID_SIZE / 2;
+        const maxDist = center - 0.5;
+
+        // Distance (in cells) -> [r, g, b, alpha] anchor stops.
+        // ~4 cells out ≈ the 8x8 green core, ~7.5 ≈ the 15x15 ring,
+        // maxDist ≈ the outer edge of the 20x20 board.
+        const stops = [
+          { d: 0, c: [110, 168, 120, 0.04 * boost] },
+          { d: 4, c: [110, 168, 120, 0.16 * boost] },
+          { d: 7.5, c: [219, 181, 74, 0.20 * boost] },
+          { d: maxDist, c: [204, 90, 78, 0.30 * boost] }
+        ];
+
+        function colorAt(d) {
+          if (d <= stops[0].d) return stops[0].c;
+          for (let i = 0; i < stops.length - 1; i++) {
+            const a = stops[i], b = stops[i + 1];
+            if (d <= b.d) {
+              const t = (d - a.d) / (b.d - a.d);
+              return [
+                a.c[0] + (b.c[0] - a.c[0]) * t,
+                a.c[1] + (b.c[1] - a.c[1]) * t,
+                a.c[2] + (b.c[2] - a.c[2]) * t,
+                a.c[3] + (b.c[3] - a.c[3]) * t
+              ];
+            }
+          }
+          return stops[stops.length - 1].c;
+        }
+
+        for (let y = 0; y < GRID_SIZE; y++) {
+          for (let x = 0; x < GRID_SIZE; x++) {
+            const d = Math.max(Math.abs(x + 0.5 - center), Math.abs(y + 0.5 - center));
+            const [r, g, b, a] = colorAt(d);
+            ctx.fillStyle = `rgba(${r | 0}, ${g | 0}, ${b | 0}, ${a.toFixed(3)})`;
+            ctx.fillRect(x * CELL, y * CELL, CELL, CELL);
+          }
+        }
       }
 
       function cellPad() {
@@ -446,8 +516,6 @@
         occupied.clear();
         tilesById.forEach(t => t.el.remove());
         tilesById.clear();
-        handTray.innerHTML = "";
-        gridInner.innerHTML = "";
 
         const pool = generateLetters(TOTAL_LETTERS);
         const handLetters = pool.slice(0, HAND_SIZE);
@@ -727,6 +795,11 @@
         clearTimeout(resizeTimer);
         resizeTimer = setTimeout(applySizes, 150);
       });
+
+      const darkModeQuery = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)");
+      if (darkModeQuery && darkModeQuery.addEventListener) {
+        darkModeQuery.addEventListener("change", drawZones);
+      }
 
       applySizes();
       newGame();
