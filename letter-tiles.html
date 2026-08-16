@@ -362,7 +362,7 @@
 
       const TOTAL_LETTERS = 50;
       const HAND_SIZE = 7;
-      const GRID_SIZE = 20;
+      const GRID_SIZE = 50;
 
       const gridViewport = document.getElementById("gridViewport");
       const gridInner = document.getElementById("gridInner");
@@ -426,13 +426,13 @@
         const center = GRID_SIZE / 2;
         const maxDist = center - 0.5;
 
-        // Distance (in cells) -> [r, g, b, alpha] anchor stops.
-        // ~4 cells out ≈ the 8x8 green core, ~7.5 ≈ the 15x15 ring,
-        // maxDist ≈ the outer edge of the 20x20 board.
+        // Distance (in cells) -> [r, g, b, alpha] anchor stops, scaled
+        // proportionally to the board so the bands keep roughly the same
+        // "40% core, 75% caution ring" feel at any GRID_SIZE.
         const stops = [
           { d: 0, c: [110, 168, 120, 0.04 * boost] },
-          { d: 4, c: [110, 168, 120, 0.16 * boost] },
-          { d: 7.5, c: [219, 181, 74, 0.20 * boost] },
+          { d: center * 0.4, c: [110, 168, 120, 0.16 * boost] },
+          { d: center * 0.75, c: [219, 181, 74, 0.20 * boost] },
           { d: maxDist, c: [204, 90, 78, 0.30 * boost] }
         ];
 
