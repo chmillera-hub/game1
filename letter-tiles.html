@@ -222,14 +222,6 @@
     border: 1px solid var(--grid-line);
   }
 
-  #gridZones {
-    position: absolute;
-    top: 0;
-    left: 0;
-    display: block;
-    pointer-events: none;
-  }
-
   /* --- Tiles --- */
 
   .tile {
@@ -328,9 +320,7 @@
   </div>
 
   <div id="gridViewport">
-    <div id="gridInner">
-      <canvas id="gridZones"></canvas>
-    </div>
+    <div id="gridInner"></div>
   </div>
 
   <script>
@@ -362,11 +352,12 @@
 
       const TOTAL_LETTERS = 50;
       const HAND_SIZE = 7;
-      const GRID_SIZE = 50;
+      const INITIAL_GRID_SIZE = 50;
+      const EXPAND_BY = 20;
+      const EXPAND_MARGIN_CELLS = 6;
 
       const gridViewport = document.getElementById("gridViewport");
       const gridInner = document.getElementById("gridInner");
-      const gridZones = document.getElementById("gridZones");
       const handTray = document.getElementById("handTray");
       const deckPile = document.getElementById("deckPile");
       const deckCountEl = document.getElementById("deckCount");
@@ -374,6 +365,8 @@
       const hint = document.getElementById("hint");
 
       let CELL = 56;
+      let gridCols = INITIAL_GRID_SIZE;
+      let gridRows = INITIAL_GRID_SIZE;
       let deck = [];
       let tilesById = new Map();
       let occupied = new Map(); // "x,y" -> tileId
@@ -395,72 +388,63 @@
         const tile = CELL - 8;
         document.documentElement.style.setProperty("--cell", CELL + "px");
         document.documentElement.style.setProperty("--tile", tile + "px");
-        gridInner.style.width = (CELL * GRID_SIZE) + "px";
-        gridInner.style.height = (CELL * GRID_SIZE) + "px";
+        gridInner.style.width = (CELL * gridCols) + "px";
+        gridInner.style.height = (CELL * gridRows) + "px";
 
         // Reposition any tiles already placed on the grid.
         tilesById.forEach(tile => {
           if (tile.container === "grid") positionGridTile(tile);
         });
-
-        drawZones();
       }
 
-      // Soft color zones radiating out (in concentric squares) from the
-      // grid's center, so players get a gentle visual cue before they
-      // wander close to the edge — a faded green "safe" core, fading
-      // through yellow, to a faded red border near the last few cells.
-      function drawZones() {
-        const size = CELL * GRID_SIZE;
-        gridZones.width = size;
-        gridZones.height = size;
-        gridZones.style.width = size + "px";
-        gridZones.style.height = size + "px";
+      // Grows the board by EXPAND_BY cells on whichever side(s) the player
+      // has scrolled close to, so the edge of the grid is never something
+      // to plan around. Growing on the left/top shifts every placed tile's
+      // coordinates (and the scroll position) so nothing visually jumps.
+      function checkExpand() {
+        const vpRect = gridViewport.getBoundingClientRect();
+        const margin = EXPAND_MARGIN_CELLS * CELL;
 
-        const ctx = gridZones.getContext("2d");
-        ctx.clearRect(0, 0, size, size);
+        const nearLeft = gridViewport.scrollLeft < margin;
+        const nearTop = gridViewport.scrollTop < margin;
+        const nearRight = gridViewport.scrollLeft + vpRect.width > gridInner.offsetWidth - margin;
+        const nearBottom = gridViewport.scrollTop + vpRect.height > gridInner.offsetHeight - margin;
 
-        const isDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
-        const boost = isDark ? 1.5 : 1;
+        if (!nearLeft && !nearTop && !nearRight && !nearBottom) return;
 
-        const center = GRID_SIZE / 2;
-        const maxDist = center - 0.5;
+        const addLeft = nearLeft ? EXPAND_BY : 0;
+        const addTop = nearTop ? EXPAND_BY : 0;
+        const addRight = nearRight ? EXPAND_BY : 0;
+        const addBottom = nearBottom ? EXPAND_BY : 0;
 
-        // Distance (in cells) -> [r, g, b, alpha] anchor stops, scaled
-        // proportionally to the board so the bands keep roughly the same
-        // "40% core, 75% caution ring" feel at any GRID_SIZE.
-        const stops = [
-          { d: 0, c: [110, 168, 120, 0.04 * boost] },
-          { d: center * 0.4, c: [110, 168, 120, 0.16 * boost] },
-          { d: center * 0.75, c: [219, 181, 74, 0.20 * boost] },
-          { d: maxDist, c: [204, 90, 78, 0.30 * boost] }
-        ];
+        if (addLeft || addTop) shiftGrid(addLeft, addTop);
 
-        function colorAt(d) {
-          if (d <= stops[0].d) return stops[0].c;
-          for (let i = 0; i < stops.length - 1; i++) {
-            const a = stops[i], b = stops[i + 1];
-            if (d <= b.d) {
-              const t = (d - a.d) / (b.d - a.d);
-              return [
-                a.c[0] + (b.c[0] - a.c[0]) * t,
-                a.c[1] + (b.c[1] - a.c[1]) * t,
-                a.c[2] + (b.c[2] - a.c[2]) * t,
-                a.c[3] + (b.c[3] - a.c[3]) * t
-              ];
-            }
+        gridCols += addLeft + addRight;
+        gridRows += addTop + addBottom;
+        gridInner.style.width = (CELL * gridCols) + "px";
+        gridInner.style.height = (CELL * gridRows) + "px";
+
+        if (addLeft) gridViewport.scrollLeft += addLeft * CELL;
+        if (addTop) gridViewport.scrollTop += addTop * CELL;
+      }
+
+      function shiftGrid(dx, dy) {
+        if (!dx && !dy) return;
+
+        tilesById.forEach(tile => {
+          if (tile.container === "grid") {
+            tile.gridX += dx;
+            tile.gridY += dy;
+            positionGridTile(tile);
           }
-          return stops[stops.length - 1].c;
-        }
+        });
 
-        for (let y = 0; y < GRID_SIZE; y++) {
-          for (let x = 0; x < GRID_SIZE; x++) {
-            const d = Math.max(Math.abs(x + 0.5 - center), Math.abs(y + 0.5 - center));
-            const [r, g, b, a] = colorAt(d);
-            ctx.fillStyle = `rgba(${r | 0}, ${g | 0}, ${b | 0}, ${a.toFixed(3)})`;
-            ctx.fillRect(x * CELL, y * CELL, CELL, CELL);
-          }
-        }
+        const shifted = new Map();
+        occupied.forEach((tileId, key) => {
+          const [x, y] = key.split(",").map(Number);
+          shifted.set((x + dx) + "," + (y + dy), tileId);
+        });
+        occupied = shifted;
       }
 
       function cellPad() {
@@ -689,8 +673,8 @@
 
         let cellX = Math.floor(localX / CELL);
         let cellY = Math.floor(localY / CELL);
-        cellX = Math.min(Math.max(cellX, 0), GRID_SIZE - 1);
-        cellY = Math.min(Math.max(cellY, 0), GRID_SIZE - 1);
+        cellX = Math.min(Math.max(cellX, 0), gridCols - 1);
+        cellY = Math.min(Math.max(cellY, 0), gridRows - 1);
 
         const key = cellX + "," + cellY;
         const occupant = occupied.get(key);
@@ -793,16 +777,25 @@
       let resizeTimer = null;
       window.addEventListener("resize", () => {
         clearTimeout(resizeTimer);
-        resizeTimer = setTimeout(applySizes, 150);
+        resizeTimer = setTimeout(() => {
+          applySizes();
+          checkExpand();
+        }, 150);
       });
 
-      const darkModeQuery = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)");
-      if (darkModeQuery && darkModeQuery.addEventListener) {
-        darkModeQuery.addEventListener("change", drawZones);
-      }
+      let expandQueued = false;
+      gridViewport.addEventListener("scroll", () => {
+        if (expandQueued) return;
+        expandQueued = true;
+        requestAnimationFrame(() => {
+          expandQueued = false;
+          checkExpand();
+        });
+      }, { passive: true });
 
       applySizes();
       newGame();
+      checkExpand();
       hideHintSoon();
     })();
   </script>
