@@ -209,13 +209,16 @@
   #gridViewport {
     flex: 1 1 auto;
     position: relative;
-    overflow: auto;
+    overflow: hidden;
     background: var(--grid-bg);
-    touch-action: pan-x pan-y;
+    touch-action: none;
   }
 
   #gridInner {
-    position: relative;
+    position: absolute;
+    top: 0;
+    left: 0;
+    transform-origin: 0 0;
     background-repeat: repeat;
     border: 1px solid var(--grid-line);
   }
@@ -397,6 +400,8 @@
       const INITIAL_GRID_SIZE = 50;
       const EXPAND_BY = 20;
       const EXPAND_MARGIN_CELLS = 6;
+      const MIN_SCALE = 0.3;
+      const MAX_SCALE = 2.5;
 
       const gridViewport = document.getElementById("gridViewport");
       const gridInner = document.getElementById("gridInner");
@@ -411,6 +416,9 @@
       let CELL = 56;
       let gridCols = INITIAL_GRID_SIZE;
       let gridRows = INITIAL_GRID_SIZE;
+      let scale = 1;
+      let panX = 0;
+      let panY = 0;
       let deck = [];
       let tilesById = new Map();
       let occupied = new Map(); // "x,y" -> tileId
@@ -425,6 +433,17 @@
 
       function computeCell() {
         return window.innerWidth < 480 ? 42 : 56;
+      }
+
+      function clamp(value, min, max) {
+        return Math.min(Math.max(value, min), max);
+      }
+
+      // The grid is panned/zoomed with a manual CSS transform (instead of
+      // native scrolling) so pinch-to-zoom and drag-to-pan can share one
+      // consistent coordinate system.
+      function applyTransform() {
+        gridInner.style.transform = `translate(${panX}px, ${panY}px) scale(${scale})`;
       }
 
       function applySizes() {
@@ -456,17 +475,23 @@
       }
 
       // Grows the board by EXPAND_BY cells on whichever side(s) the player
-      // has scrolled close to, so the edge of the grid is never something
-      // to plan around. Growing on the left/top shifts every placed tile's
-      // coordinates (and the scroll position) so nothing visually jumps.
+      // has panned close to, so the edge of the grid is never something to
+      // plan around. Growing on the left/top shifts every placed tile's
+      // coordinates (and compensates panX/panY) so nothing visually jumps.
       function checkExpand() {
         const vpRect = gridViewport.getBoundingClientRect();
-        const margin = EXPAND_MARGIN_CELLS * CELL;
+        const marginWorld = EXPAND_MARGIN_CELLS * CELL;
 
-        const nearLeft = gridViewport.scrollLeft < margin;
-        const nearTop = gridViewport.scrollTop < margin;
-        const nearRight = gridViewport.scrollLeft + vpRect.width > gridInner.offsetWidth - margin;
-        const nearBottom = gridViewport.scrollTop + vpRect.height > gridInner.offsetHeight - margin;
+        // Visible viewport edges, converted into grid ("world") coordinates.
+        const viewLeft = -panX / scale;
+        const viewTop = -panY / scale;
+        const viewRight = (vpRect.width - panX) / scale;
+        const viewBottom = (vpRect.height - panY) / scale;
+
+        const nearLeft = viewLeft < marginWorld;
+        const nearTop = viewTop < marginWorld;
+        const nearRight = viewRight > gridCols * CELL - marginWorld;
+        const nearBottom = viewBottom > gridRows * CELL - marginWorld;
 
         if (!nearLeft && !nearTop && !nearRight && !nearBottom) return;
 
@@ -481,9 +506,7 @@
         gridRows += addTop + addBottom;
         gridInner.style.width = (CELL * gridCols) + "px";
         gridInner.style.height = (CELL * gridRows) + "px";
-
-        if (addLeft) gridViewport.scrollLeft += addLeft * CELL;
-        if (addTop) gridViewport.scrollTop += addTop * CELL;
+        applyTransform();
       }
 
       function shiftGrid(dx, dy) {
@@ -503,6 +526,12 @@
           shifted.set((x + dx) + "," + (y + dy), tileId);
         });
         occupied = shifted;
+
+        // Inserting cells before the old origin shifts every existing
+        // grid-space coordinate by (dx, dy) * CELL, so pan by the same
+        // amount (scaled) to keep everything visually where it was.
+        panX -= dx * CELL * scale;
+        panY -= dy * CELL * scale;
       }
 
       function cellPad() {
@@ -516,10 +545,12 @@
         tile.el.style.top = (tile.gridY * CELL + pad) + "px";
       }
 
-      function centerGridScroll() {
+      function centerView() {
+        scale = 1;
         const vpRect = gridViewport.getBoundingClientRect();
-        gridViewport.scrollLeft = Math.max(0, (gridInner.offsetWidth - vpRect.width) / 2);
-        gridViewport.scrollTop = Math.max(0, (gridInner.offsetHeight - vpRect.height) / 2);
+        panX = (vpRect.width - gridCols * CELL * scale) / 2;
+        panY = (vpRect.height - gridRows * CELL * scale) / 2;
+        applyTransform();
       }
 
       // --- "Where did my letters go?" indicator ---
@@ -555,10 +586,10 @@
         const bottom = (bounds.maxY + 1) * CELL;
 
         const vpRect = gridViewport.getBoundingClientRect();
-        const viewLeft = gridViewport.scrollLeft;
-        const viewTop = gridViewport.scrollTop;
-        const viewRight = viewLeft + vpRect.width;
-        const viewBottom = viewTop + vpRect.height;
+        const viewLeft = -panX / scale;
+        const viewTop = -panY / scale;
+        const viewRight = (vpRect.width - panX) / scale;
+        const viewBottom = (vpRect.height - panY) / scale;
 
         const buffer = CELL; // small grace margin before treating it as "off-screen"
         const isVisible = right > viewLeft - buffer && left < viewRight + buffer &&
@@ -573,13 +604,35 @@
 
         const targetCx = (left + right) / 2;
         const targetCy = (top + bottom) / 2;
-        const viewCx = viewLeft + vpRect.width / 2;
-        const viewCy = viewTop + vpRect.height / 2;
+        const viewCx = (viewLeft + viewRight) / 2;
+        const viewCy = (viewTop + viewBottom) / 2;
 
         const dx = targetCx - viewCx;
         const dy = targetCy - viewCy;
         const angle = Math.atan2(dx, -dy) * 180 / Math.PI;
         locateArrow.style.transform = `rotate(${angle}deg)`;
+      }
+
+      let panAnimFrame = null;
+      function animatePanTo(targetX, targetY, duration) {
+        if (panAnimFrame) cancelAnimationFrame(panAnimFrame);
+        const startX = panX, startY = panY, startTime = performance.now();
+
+        function step(now) {
+          const t = Math.min(1, (now - startTime) / duration);
+          const eased = 1 - Math.pow(1 - t, 3);
+          panX = startX + (targetX - startX) * eased;
+          panY = startY + (targetY - startY) * eased;
+          applyTransform();
+          if (t < 1) {
+            panAnimFrame = requestAnimationFrame(step);
+          } else {
+            panAnimFrame = null;
+            checkExpand();
+            updateLocateIndicator();
+          }
+        }
+        panAnimFrame = requestAnimationFrame(step);
       }
 
       function jumpToPlacedTiles() {
@@ -588,11 +641,7 @@
         const cx = ((bounds.minX + bounds.maxX + 1) / 2) * CELL;
         const cy = ((bounds.minY + bounds.maxY + 1) / 2) * CELL;
         const vpRect = gridViewport.getBoundingClientRect();
-        gridViewport.scrollTo({
-          left: Math.max(0, cx - vpRect.width / 2),
-          top: Math.max(0, cy - vpRect.height / 2),
-          behavior: "smooth"
-        });
+        animatePanTo(vpRect.width / 2 - cx * scale, vpRect.height / 2 - cy * scale, 400);
       }
 
       // --- Tile creation ---
@@ -642,7 +691,7 @@
         });
 
         updateDeckUI();
-        centerGridScroll();
+        centerView();
         updateLocateIndicator();
       }
 
@@ -801,8 +850,10 @@
       function tryPlaceOnGrid(tile, clientX, clientY) {
         const innerRect = gridInner.getBoundingClientRect();
         const pad = cellPad();
-        const localX = clientX - innerRect.left;
-        const localY = clientY - innerRect.top;
+        // innerRect already reflects the current pan/zoom transform, so
+        // dividing by scale converts back into unscaled grid-cell units.
+        const localX = (clientX - innerRect.left) / scale;
+        const localY = (clientY - innerRect.top) / scale;
 
         let cellX = Math.floor(localX / CELL);
         let cellY = Math.floor(localY / CELL);
@@ -921,16 +972,144 @@
         }, 150);
       });
 
-      let expandQueued = false;
-      gridViewport.addEventListener("scroll", () => {
-        if (expandQueued) return;
-        expandQueued = true;
+      let checkQueued = false;
+      function queueCheck() {
+        if (checkQueued) return;
+        checkQueued = true;
         requestAnimationFrame(() => {
-          expandQueued = false;
+          checkQueued = false;
           checkExpand();
           updateLocateIndicator();
         });
-      }, { passive: true });
+      }
+
+      // --- Pan (drag) and pinch-to-zoom on the grid background ---
+      // Native scrolling is off (see #gridViewport { overflow: hidden }),
+      // so panning/zooming is driven entirely by pointer + wheel events,
+      // updating panX/panY/scale and re-applying one CSS transform.
+
+      const activePointers = new Map(); // pointerId -> {x, y}
+      let panning = false;
+      let panStartX = 0, panStartY = 0, panOrigX = 0, panOrigY = 0;
+      let pinchStartDist = 0, pinchStartScale = 1;
+      let pinchAnchorX = 0, pinchAnchorY = 0;
+
+      function distanceBetween(points) {
+        const [a, b] = points;
+        return Math.hypot(a.x - b.x, a.y - b.y);
+      }
+
+      function midpointOf(points) {
+        const [a, b] = points;
+        return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+      }
+
+      function beginPan(x, y) {
+        panning = true;
+        panStartX = x;
+        panStartY = y;
+        panOrigX = panX;
+        panOrigY = panY;
+      }
+
+      function beginPinch() {
+        panning = false;
+        const points = Array.from(activePointers.values());
+        pinchStartDist = distanceBetween(points) || 1;
+        pinchStartScale = scale;
+        const vpRect = gridViewport.getBoundingClientRect();
+        const mid = midpointOf(points);
+        // Fixed grid-space point that should stay under the pinch midpoint.
+        pinchAnchorX = (mid.x - vpRect.left - panX) / scale;
+        pinchAnchorY = (mid.y - vpRect.top - panY) / scale;
+      }
+
+      gridViewport.addEventListener("pointerdown", (e) => {
+        if (e.target.closest(".tile")) return;
+        if (e.button !== undefined && e.button !== 0 && e.pointerType === "mouse") return;
+
+        activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+        try { gridViewport.setPointerCapture && gridViewport.setPointerCapture(e.pointerId); } catch (err) {}
+
+        if (activePointers.size === 1) {
+          beginPan(e.clientX, e.clientY);
+        } else if (activePointers.size === 2) {
+          beginPinch();
+        }
+
+        hint.classList.add("hidden");
+        if (hintTimer) clearTimeout(hintTimer);
+
+        e.preventDefault();
+      });
+
+      gridViewport.addEventListener("pointermove", (e) => {
+        if (!activePointers.has(e.pointerId)) return;
+        activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+        if (activePointers.size === 1 && panning) {
+          panX = panOrigX + (e.clientX - panStartX);
+          panY = panOrigY + (e.clientY - panStartY);
+          applyTransform();
+          queueCheck();
+        } else if (activePointers.size === 2) {
+          const points = Array.from(activePointers.values());
+          const dist = distanceBetween(points) || 1;
+          const newScale = clamp(pinchStartScale * (dist / pinchStartDist), MIN_SCALE, MAX_SCALE);
+          const mid = midpointOf(points);
+          const vpRect = gridViewport.getBoundingClientRect();
+          panX = (mid.x - vpRect.left) - pinchAnchorX * newScale;
+          panY = (mid.y - vpRect.top) - pinchAnchorY * newScale;
+          scale = newScale;
+          applyTransform();
+          queueCheck();
+        }
+
+        e.preventDefault();
+      });
+
+      function endPointer(e) {
+        if (!activePointers.has(e.pointerId)) return;
+        activePointers.delete(e.pointerId);
+        try { gridViewport.releasePointerCapture && gridViewport.releasePointerCapture(e.pointerId); } catch (err) {}
+
+        if (activePointers.size === 1) {
+          // One finger remains after a pinch: resume single-finger panning.
+          const [remaining] = activePointers.values();
+          beginPan(remaining.x, remaining.y);
+        } else if (activePointers.size === 0) {
+          panning = false;
+          checkExpand();
+          updateLocateIndicator();
+        }
+      }
+
+      gridViewport.addEventListener("pointerup", endPointer);
+      gridViewport.addEventListener("pointercancel", endPointer);
+
+      // Desktop: plain wheel/trackpad-scroll pans; Ctrl/Cmd+wheel (and
+      // trackpad pinch, which browsers report as a ctrl-wheel event) zooms.
+      gridViewport.addEventListener("wheel", (e) => {
+        e.preventDefault();
+
+        if (e.ctrlKey || e.metaKey) {
+          const vpRect = gridViewport.getBoundingClientRect();
+          const mx = e.clientX - vpRect.left;
+          const my = e.clientY - vpRect.top;
+          const anchorX = (mx - panX) / scale;
+          const anchorY = (my - panY) / scale;
+          const newScale = clamp(scale * Math.exp(-e.deltaY * 0.01), MIN_SCALE, MAX_SCALE);
+          scale = newScale;
+          panX = mx - anchorX * newScale;
+          panY = my - anchorY * newScale;
+        } else {
+          panX -= e.deltaX;
+          panY -= e.deltaY;
+        }
+
+        applyTransform();
+        queueCheck();
+      }, { passive: false });
 
       const darkModeQuery = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)");
       if (darkModeQuery && darkModeQuery.addEventListener) {
