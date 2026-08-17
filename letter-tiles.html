@@ -216,9 +216,7 @@
 
   #gridInner {
     position: relative;
-    background-image:
-      repeating-linear-gradient(to right, var(--grid-line), var(--grid-line) 1px, transparent 1px, transparent var(--cell)),
-      repeating-linear-gradient(to bottom, var(--grid-line), var(--grid-line) 1px, transparent 1px, transparent var(--cell));
+    background-repeat: repeat;
     border: 1px solid var(--grid-line);
   }
 
@@ -272,6 +270,44 @@
     to { transform: scale(1); opacity: 1; }
   }
 
+  /* --- Locate indicator --- */
+
+  .locate-btn {
+    position: fixed;
+    right: 18px;
+    bottom: 22px;
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    border: none;
+    background: var(--accent);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.3);
+    cursor: pointer;
+    opacity: 0;
+    pointer-events: none;
+    transform: scale(0.7);
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    z-index: 250;
+  }
+
+  .locate-btn.visible {
+    opacity: 0.94;
+    pointer-events: auto;
+    transform: scale(1);
+  }
+
+  .locate-btn:active {
+    transform: scale(0.92);
+  }
+
+  #locateArrow {
+    transition: transform 0.15s ease;
+  }
+
   @media (prefers-color-scheme: dark) {
     :root {
       --bg: #23262b;
@@ -323,6 +359,12 @@
     <div id="gridInner"></div>
   </div>
 
+  <button class="locate-btn" id="locateBtn" title="Jump to your letters">
+    <svg id="locateArrow" width="22" height="22" viewBox="0 0 24 24">
+      <path d="M12 2 L20 21 L12 16 L4 21 Z" fill="currentColor"/>
+    </svg>
+  </button>
+
   <script>
     (function () {
       "use strict";
@@ -363,6 +405,8 @@
       const deckCountEl = document.getElementById("deckCount");
       const deckLabelEl = document.querySelector(".deckLabel");
       const hint = document.getElementById("hint");
+      const locateBtn = document.getElementById("locateBtn");
+      const locateArrow = document.getElementById("locateArrow");
 
       let CELL = 56;
       let gridCols = INITIAL_GRID_SIZE;
@@ -390,11 +434,25 @@
         document.documentElement.style.setProperty("--tile", tile + "px");
         gridInner.style.width = (CELL * gridCols) + "px";
         gridInner.style.height = (CELL * gridRows) + "px";
+        updateGridBackground();
 
         // Reposition any tiles already placed on the grid.
         tilesById.forEach(tile => {
           if (tile.container === "grid") positionGridTile(tile);
         });
+      }
+
+      // A small tiled SVG pattern for the grid lines instead of a single
+      // huge CSS gradient spanning the whole (auto-growing) board — large
+      // repeating-gradient backgrounds can shimmer/rescale oddly on some
+      // mobile GPUs as you scroll across a very large element.
+      function updateGridBackground() {
+        const isDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+        const color = isDark ? "rgba(255,255,255,0.07)" : "rgba(60,50,30,0.07)";
+        const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${CELL}" height="${CELL}">` +
+          `<path d="M ${CELL} 0 L 0 0 0 ${CELL}" fill="none" stroke="${color}" stroke-width="1"/></svg>`;
+        gridInner.style.backgroundImage = `url("data:image/svg+xml,${encodeURIComponent(svg)}")`;
+        gridInner.style.backgroundSize = CELL + "px " + CELL + "px";
       }
 
       // Grows the board by EXPAND_BY cells on whichever side(s) the player
@@ -464,6 +522,79 @@
         gridViewport.scrollTop = Math.max(0, (gridInner.offsetHeight - vpRect.height) / 2);
       }
 
+      // --- "Where did my letters go?" indicator ---
+      // Tracks the bounding box (in cell coordinates) of every tile placed
+      // on the grid. If that box scrolls out of view, a floating arrow
+      // rotates to point toward it; tapping the arrow scrolls back to it.
+
+      function placedTilesBounds() {
+        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+        let any = false;
+        tilesById.forEach(t => {
+          if (t.container === "grid") {
+            any = true;
+            if (t.gridX < minX) minX = t.gridX;
+            if (t.gridY < minY) minY = t.gridY;
+            if (t.gridX > maxX) maxX = t.gridX;
+            if (t.gridY > maxY) maxY = t.gridY;
+          }
+        });
+        return any ? { minX, minY, maxX, maxY } : null;
+      }
+
+      function updateLocateIndicator() {
+        const bounds = placedTilesBounds();
+        if (!bounds) {
+          locateBtn.classList.remove("visible");
+          return;
+        }
+
+        const left = bounds.minX * CELL;
+        const top = bounds.minY * CELL;
+        const right = (bounds.maxX + 1) * CELL;
+        const bottom = (bounds.maxY + 1) * CELL;
+
+        const vpRect = gridViewport.getBoundingClientRect();
+        const viewLeft = gridViewport.scrollLeft;
+        const viewTop = gridViewport.scrollTop;
+        const viewRight = viewLeft + vpRect.width;
+        const viewBottom = viewTop + vpRect.height;
+
+        const buffer = CELL; // small grace margin before treating it as "off-screen"
+        const isVisible = right > viewLeft - buffer && left < viewRight + buffer &&
+                           bottom > viewTop - buffer && top < viewBottom + buffer;
+
+        if (isVisible) {
+          locateBtn.classList.remove("visible");
+          return;
+        }
+
+        locateBtn.classList.add("visible");
+
+        const targetCx = (left + right) / 2;
+        const targetCy = (top + bottom) / 2;
+        const viewCx = viewLeft + vpRect.width / 2;
+        const viewCy = viewTop + vpRect.height / 2;
+
+        const dx = targetCx - viewCx;
+        const dy = targetCy - viewCy;
+        const angle = Math.atan2(dx, -dy) * 180 / Math.PI;
+        locateArrow.style.transform = `rotate(${angle}deg)`;
+      }
+
+      function jumpToPlacedTiles() {
+        const bounds = placedTilesBounds();
+        if (!bounds) return;
+        const cx = ((bounds.minX + bounds.maxX + 1) / 2) * CELL;
+        const cy = ((bounds.minY + bounds.maxY + 1) / 2) * CELL;
+        const vpRect = gridViewport.getBoundingClientRect();
+        gridViewport.scrollTo({
+          left: Math.max(0, cx - vpRect.width / 2),
+          top: Math.max(0, cy - vpRect.height / 2),
+          behavior: "smooth"
+        });
+      }
+
       // --- Tile creation ---
 
       function createTile(letter) {
@@ -512,6 +643,7 @@
 
         updateDeckUI();
         centerGridScroll();
+        updateLocateIndicator();
       }
 
       function handCount() {
@@ -538,6 +670,7 @@
         gridTiles.forEach(tile => addTileToHand(tile, false));
         occupied.clear();
         updateDeckUI();
+        updateLocateIndicator();
       }
 
       function shuffleHand() {
@@ -697,6 +830,7 @@
         tile.el.style.position = "absolute";
         positionGridTile(tile);
         updateDeckUI();
+        updateLocateIndicator();
 
         return true;
       }
@@ -729,6 +863,7 @@
           handTray.appendChild(tile.el);
         }
         updateDeckUI();
+        updateLocateIndicator();
       }
 
       function revertTile(tile, originalContainer, originalGridX, originalGridY, originalIndex) {
@@ -757,6 +892,7 @@
             handTray.insertBefore(tile.el, children[idx]);
           }
           updateDeckUI();
+          updateLocateIndicator();
         }
       }
 
@@ -766,6 +902,7 @@
       document.getElementById("shuffleBtn").addEventListener("click", shuffleHand);
       document.getElementById("clearGridBtn").addEventListener("click", clearGrid);
       deckPile.addEventListener("click", drawTile);
+      locateBtn.addEventListener("click", jumpToPlacedTiles);
 
       // Prevent page scroll/bounce on touch devices outside the scrollable regions.
       document.body.addEventListener("touchmove", (e) => {
@@ -780,6 +917,7 @@
         resizeTimer = setTimeout(() => {
           applySizes();
           checkExpand();
+          updateLocateIndicator();
         }, 150);
       });
 
@@ -790,12 +928,19 @@
         requestAnimationFrame(() => {
           expandQueued = false;
           checkExpand();
+          updateLocateIndicator();
         });
       }, { passive: true });
+
+      const darkModeQuery = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)");
+      if (darkModeQuery && darkModeQuery.addEventListener) {
+        darkModeQuery.addEventListener("change", updateGridBackground);
+      }
 
       applySizes();
       newGame();
       checkExpand();
+      updateLocateIndicator();
       hideHintSoon();
     })();
   </script>
