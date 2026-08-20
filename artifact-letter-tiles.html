@@ -1,0 +1,1174 @@
+<title>Letter Tiles</title>
+<style>
+  :root {
+    --cell: 56px;
+    --tile: 48px;
+    --bg: #eef1f0;
+    --bar-bg: #ffffff;
+    --tile-bg: #fdfcf8;
+    --tile-border: #d8d2c4;
+    --tile-shadow: rgba(60, 50, 30, 0.18);
+    --tile-text: #3a3630;
+    --btn-bg: #ffffff;
+    --btn-border: #cfcabb;
+    --btn-text: #4a463d;
+    --btn-active-bg: #f0ece0;
+    --accent: #6b8f71;
+    --grid-line: rgba(60, 50, 30, 0.07);
+    --grid-bg: #e6e9e6;
+    --hand-bg: #ffffff;
+    --hand-border: #e2ddd0;
+    --deck-bg: #4a5a4d;
+    --deck-back: #5c6f60;
+    --url-bg: #f5f2e9;
+  }
+
+  * {
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    overflow: hidden;
+    background: var(--bg);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+
+  body {
+    display: flex;
+    flex-direction: column;
+    touch-action: none;
+  }
+
+  /* --- Shareable URL strip --- */
+  /* Baked into the page itself (not the app chrome) so it always shows
+     up in a screenshot, no matter what viewer it's opened in. */
+
+  .urlBar {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 7px 12px;
+    background: var(--url-bg);
+    border-bottom: 1px solid var(--hand-border);
+  }
+
+  .urlBar a {
+    color: var(--btn-text);
+    text-decoration: none;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 11px;
+    line-height: 1.3;
+    text-align: center;
+    word-break: break-all;
+  }
+
+  .urlBar a:active {
+    opacity: 0.7;
+  }
+
+  .toolbar {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 10px 14px;
+    background: var(--bar-bg);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    z-index: 200;
+    position: relative;
+  }
+
+  .btn {
+    appearance: none;
+    border: 1px solid var(--btn-border);
+    background: var(--btn-bg);
+    color: var(--btn-text);
+    font-size: 14px;
+    font-weight: 600;
+    padding: 9px 15px;
+    border-radius: 10px;
+    cursor: pointer;
+    user-select: none;
+    transition: transform 0.08s ease, background 0.15s ease, box-shadow 0.15s ease;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+    letter-spacing: 0.02em;
+  }
+
+  .btn:active {
+    transform: scale(0.95);
+    background: var(--btn-active-bg);
+  }
+
+  .btn.primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+  }
+
+  .hint {
+    flex: 0 0 auto;
+    text-align: center;
+    font-size: 12px;
+    color: #8a8578;
+    padding: 4px 10px 6px;
+    background: var(--bar-bg);
+    transition: opacity 0.6s ease;
+  }
+
+  .hint.hidden {
+    opacity: 0;
+    height: 0;
+    padding: 0;
+    overflow: hidden;
+  }
+
+  /* --- Hand + deck row --- */
+
+  .handRow {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: stretch;
+    gap: 8px;
+    padding: 8px 10px;
+    background: var(--hand-bg);
+    border-bottom: 1px solid var(--hand-border);
+    z-index: 150;
+  }
+
+  .handTray {
+    flex: 1 1 auto;
+    display: flex;
+    flex-wrap: wrap;
+    align-content: flex-start;
+    gap: 6px;
+    padding: 4px;
+    max-height: calc(var(--tile) * 2 + 30px);
+    overflow-y: auto;
+    overflow-x: hidden;
+    touch-action: pan-y;
+  }
+
+  .deckPile {
+    flex: 0 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    width: 72px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    padding: 4px 2px;
+    border-radius: 10px;
+    font-family: inherit;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .deckPile:active .deckStack {
+    transform: scale(0.94);
+  }
+
+  .deckPile:disabled {
+    cursor: default;
+    opacity: 0.4;
+  }
+
+  .deckStack {
+    position: relative;
+    width: var(--tile);
+    height: var(--tile);
+    transition: transform 0.1s ease;
+  }
+
+  .deckBack {
+    position: absolute;
+    inset: 0;
+    background: var(--deck-back);
+    border: 1px solid rgba(0,0,0,0.15);
+    border-radius: 8px;
+    box-shadow: 0 2px 3px rgba(0,0,0,0.15);
+  }
+
+  .deckBack::after {
+    content: "";
+    position: absolute;
+    inset: 6px;
+    border: 1.5px solid rgba(255,255,255,0.18);
+    border-radius: 4px;
+  }
+
+  .deckBack.b1 { transform: translate(0, 0) rotate(0deg); background: var(--deck-bg); z-index: 3; }
+  .deckBack.b2 { transform: translate(-3px, 2px) rotate(-4deg); z-index: 2; }
+  .deckBack.b3 { transform: translate(3px, 3px) rotate(3deg); z-index: 1; }
+
+  .deckInfo {
+    text-align: center;
+    line-height: 1.2;
+  }
+
+  .deckCount {
+    display: block;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--btn-text);
+  }
+
+  .deckLabel {
+    display: block;
+    font-size: 9px;
+    color: #9a9484;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  /* --- Grid --- */
+
+  #gridViewport {
+    flex: 1 1 auto;
+    position: relative;
+    overflow: hidden;
+    background: var(--grid-bg);
+    touch-action: none;
+  }
+
+  #gridInner {
+    position: absolute;
+    top: 0;
+    left: 0;
+    transform-origin: 0 0;
+    background-repeat: repeat;
+    border: 1px solid var(--grid-line);
+  }
+
+  /* --- Tiles --- */
+
+  .tile {
+    width: var(--tile);
+    height: var(--tile);
+    background: var(--tile-bg);
+    border: 1px solid var(--tile-border);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: calc(var(--tile) * 0.46);
+    font-weight: 700;
+    color: var(--tile-text);
+    box-shadow: 0 2px 0 rgba(0,0,0,0.08), 0 3px 6px var(--tile-shadow);
+    cursor: grab;
+    user-select: none;
+    touch-action: none;
+    flex: 0 0 auto;
+  }
+
+  .tile.on-grid {
+    position: absolute;
+  }
+
+  .tile.dragging {
+    cursor: grabbing;
+    transform: scale(1.1);
+    box-shadow: 0 12px 20px rgba(0,0,0,0.28), 0 4px 6px rgba(0,0,0,0.15);
+  }
+
+  .tile.drop-bounce {
+    animation: dropBounce 0.28s ease;
+  }
+
+  .tile.deal {
+    animation: dealIn 0.32s cubic-bezier(.34, 1.56, .64, 1);
+  }
+
+  @keyframes dropBounce {
+    0% { transform: scale(0.9); }
+    55% { transform: scale(1.08); }
+    100% { transform: scale(1); }
+  }
+
+  @keyframes dealIn {
+    from { transform: scale(0.3); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+  }
+
+  /* --- Locate indicator --- */
+
+  .locate-btn {
+    position: fixed;
+    right: 18px;
+    bottom: 22px;
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    border: none;
+    background: var(--accent);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.3);
+    cursor: pointer;
+    opacity: 0;
+    pointer-events: none;
+    transform: scale(0.7);
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    z-index: 250;
+  }
+
+  .locate-btn.visible {
+    opacity: 0.94;
+    pointer-events: auto;
+    transform: scale(1);
+  }
+
+  .locate-btn:active {
+    transform: scale(0.92);
+  }
+
+  #locateArrow {
+    transition: transform 0.15s ease;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #23262b;
+      --bar-bg: #2b2f36;
+      --tile-bg: #3a3d42;
+      --tile-border: #4c4f55;
+      --tile-shadow: rgba(0, 0, 0, 0.45);
+      --tile-text: #eee8d9;
+      --btn-bg: #34383e;
+      --btn-border: #4a4e55;
+      --btn-text: #d8d4c8;
+      --btn-active-bg: #40444b;
+      --accent: #7ea885;
+      --grid-line: rgba(255, 255, 255, 0.07);
+      --grid-bg: #1c1f23;
+      --hand-bg: #2b2f36;
+      --hand-border: #3a3e44;
+      --deck-bg: #6b8f71;
+      --deck-back: #454a45;
+      --url-bg: #2b2f36;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --bg: #23262b;
+    --bar-bg: #2b2f36;
+    --tile-bg: #3a3d42;
+    --tile-border: #4c4f55;
+    --tile-shadow: rgba(0, 0, 0, 0.45);
+    --tile-text: #eee8d9;
+    --btn-bg: #34383e;
+    --btn-border: #4a4e55;
+    --btn-text: #d8d4c8;
+    --btn-active-bg: #40444b;
+    --accent: #7ea885;
+    --grid-line: rgba(255, 255, 255, 0.07);
+    --grid-bg: #1c1f23;
+    --hand-bg: #2b2f36;
+    --hand-border: #3a3e44;
+    --deck-bg: #6b8f71;
+    --deck-back: #454a45;
+    --url-bg: #2b2f36;
+  }
+</style>
+
+  <div class="urlBar">
+    <a href="https://claude.ai/code/artifact/a09c13de-e8cb-4bd7-9bd6-6f57f3078556" target="_blank" rel="noopener">https://claude.ai/code/artifact/a09c13de-e8cb-4bd7-9bd6-6f57f3078556</a>
+  </div>
+
+  <div class="toolbar">
+    <button class="btn primary" id="newGameBtn">New Game</button>
+    <button class="btn" id="shuffleBtn">Shuffle Hand</button>
+    <button class="btn" id="clearGridBtn">Clear Grid</button>
+  </div>
+  <div class="hint" id="hint">Drag letters onto the grid to arrange words &middot; tap the deck to draw more</div>
+
+  <div class="handRow">
+    <div class="handTray" id="handTray"></div>
+    <button class="deckPile" id="deckPile" title="Draw a letter">
+      <div class="deckStack">
+        <div class="deckBack b3"></div>
+        <div class="deckBack b2"></div>
+        <div class="deckBack b1"></div>
+      </div>
+      <div class="deckInfo">
+        <span class="deckCount" id="deckCount">43</span>
+        <span class="deckLabel">draw</span>
+      </div>
+    </button>
+  </div>
+
+  <div id="gridViewport">
+    <div id="gridInner"></div>
+  </div>
+
+  <button class="locate-btn" id="locateBtn" title="Jump to your letters">
+    <svg id="locateArrow" width="22" height="22" viewBox="0 0 24 24">
+      <path d="M12 2 L20 21 L12 16 L4 21 Z" fill="currentColor"/>
+    </svg>
+  </button>
+
+  <script>
+    (function () {
+      "use strict";
+
+      // Approximate English letter frequency, weighted so common letters
+      // (E, A, I, O, N...) appear more often but rare ones can still show up.
+      const LETTER_WEIGHTS = {
+        E: 12, A: 9, I: 9, O: 8, N: 7, R: 7, T: 7, L: 4, S: 6, U: 4,
+        D: 4, G: 3, B: 2, C: 2, M: 2, P: 2, F: 2, H: 2, V: 2, W: 2,
+        Y: 2, K: 1, J: 1, X: 1, Q: 1, Z: 1
+      };
+
+      const LETTER_POOL = [];
+      Object.entries(LETTER_WEIGHTS).forEach(([letter, weight]) => {
+        for (let i = 0; i < weight; i++) LETTER_POOL.push(letter);
+      });
+
+      function randomLetter() {
+        return LETTER_POOL[Math.floor(Math.random() * LETTER_POOL.length)];
+      }
+
+      function generateLetters(count) {
+        const letters = [];
+        for (let i = 0; i < count; i++) letters.push(randomLetter());
+        return letters;
+      }
+
+      const TOTAL_LETTERS = 50;
+      const HAND_SIZE = 7;
+      const INITIAL_GRID_SIZE = 50;
+      const EXPAND_BY = 20;
+      const EXPAND_MARGIN_CELLS = 6;
+      const MIN_SCALE = 0.3;
+      const MAX_SCALE = 2.5;
+
+      const gridViewport = document.getElementById("gridViewport");
+      const gridInner = document.getElementById("gridInner");
+      const handTray = document.getElementById("handTray");
+      const deckPile = document.getElementById("deckPile");
+      const deckCountEl = document.getElementById("deckCount");
+      const deckLabelEl = document.querySelector(".deckLabel");
+      const hint = document.getElementById("hint");
+      const locateBtn = document.getElementById("locateBtn");
+      const locateArrow = document.getElementById("locateArrow");
+
+      let CELL = 56;
+      let gridCols = INITIAL_GRID_SIZE;
+      let gridRows = INITIAL_GRID_SIZE;
+      let scale = 1;
+      let panX = 0;
+      let panY = 0;
+      let deck = [];
+      let tilesById = new Map();
+      let occupied = new Map(); // "x,y" -> tileId
+      let zCounter = 10;
+      let nextId = 1;
+      let hintTimer = null;
+
+      function hideHintSoon() {
+        if (hintTimer) clearTimeout(hintTimer);
+        hintTimer = setTimeout(() => hint.classList.add("hidden"), 5000);
+      }
+
+      function computeCell() {
+        return window.innerWidth < 480 ? 42 : 56;
+      }
+
+      function clamp(value, min, max) {
+        return Math.min(Math.max(value, min), max);
+      }
+
+      // The grid is panned/zoomed with a manual CSS transform (instead of
+      // native scrolling) so pinch-to-zoom and drag-to-pan can share one
+      // consistent coordinate system.
+      function applyTransform() {
+        gridInner.style.transform = `translate(${panX}px, ${panY}px) scale(${scale})`;
+      }
+
+      function applySizes() {
+        CELL = computeCell();
+        const tile = CELL - 8;
+        document.documentElement.style.setProperty("--cell", CELL + "px");
+        document.documentElement.style.setProperty("--tile", tile + "px");
+        gridInner.style.width = (CELL * gridCols) + "px";
+        gridInner.style.height = (CELL * gridRows) + "px";
+        updateGridBackground();
+
+        // Reposition any tiles already placed on the grid.
+        tilesById.forEach(tile => {
+          if (tile.container === "grid") positionGridTile(tile);
+        });
+      }
+
+      // A small tiled SVG pattern for the grid lines instead of a single
+      // huge CSS gradient spanning the whole (auto-growing) board — large
+      // repeating-gradient backgrounds can shimmer/rescale oddly on some
+      // mobile GPUs as you scroll across a very large element.
+      function updateGridBackground() {
+        const isDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+        const color = isDark ? "rgba(255,255,255,0.07)" : "rgba(60,50,30,0.07)";
+        const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${CELL}" height="${CELL}">` +
+          `<path d="M ${CELL} 0 L 0 0 0 ${CELL}" fill="none" stroke="${color}" stroke-width="1"/></svg>`;
+        gridInner.style.backgroundImage = `url("data:image/svg+xml,${encodeURIComponent(svg)}")`;
+        gridInner.style.backgroundSize = CELL + "px " + CELL + "px";
+      }
+
+      // Grows the board by EXPAND_BY cells on whichever side(s) the player
+      // has panned close to, so the edge of the grid is never something to
+      // plan around. Growing on the left/top shifts every placed tile's
+      // coordinates (and compensates panX/panY) so nothing visually jumps.
+      function checkExpand() {
+        const vpRect = gridViewport.getBoundingClientRect();
+        const marginWorld = EXPAND_MARGIN_CELLS * CELL;
+
+        // Visible viewport edges, converted into grid ("world") coordinates.
+        const viewLeft = -panX / scale;
+        const viewTop = -panY / scale;
+        const viewRight = (vpRect.width - panX) / scale;
+        const viewBottom = (vpRect.height - panY) / scale;
+
+        const nearLeft = viewLeft < marginWorld;
+        const nearTop = viewTop < marginWorld;
+        const nearRight = viewRight > gridCols * CELL - marginWorld;
+        const nearBottom = viewBottom > gridRows * CELL - marginWorld;
+
+        if (!nearLeft && !nearTop && !nearRight && !nearBottom) return;
+
+        const addLeft = nearLeft ? EXPAND_BY : 0;
+        const addTop = nearTop ? EXPAND_BY : 0;
+        const addRight = nearRight ? EXPAND_BY : 0;
+        const addBottom = nearBottom ? EXPAND_BY : 0;
+
+        if (addLeft || addTop) shiftGrid(addLeft, addTop);
+
+        gridCols += addLeft + addRight;
+        gridRows += addTop + addBottom;
+        gridInner.style.width = (CELL * gridCols) + "px";
+        gridInner.style.height = (CELL * gridRows) + "px";
+        applyTransform();
+      }
+
+      function shiftGrid(dx, dy) {
+        if (!dx && !dy) return;
+
+        tilesById.forEach(tile => {
+          if (tile.container === "grid") {
+            tile.gridX += dx;
+            tile.gridY += dy;
+            positionGridTile(tile);
+          }
+        });
+
+        const shifted = new Map();
+        occupied.forEach((tileId, key) => {
+          const [x, y] = key.split(",").map(Number);
+          shifted.set((x + dx) + "," + (y + dy), tileId);
+        });
+        occupied = shifted;
+
+        // Inserting cells before the old origin shifts every existing
+        // grid-space coordinate by (dx, dy) * CELL, so pan by the same
+        // amount (scaled) to keep everything visually where it was.
+        panX -= dx * CELL * scale;
+        panY -= dy * CELL * scale;
+      }
+
+      function cellPad() {
+        const tileSize = CELL - 8;
+        return (CELL - tileSize) / 2;
+      }
+
+      function positionGridTile(tile) {
+        const pad = cellPad();
+        tile.el.style.left = (tile.gridX * CELL + pad) + "px";
+        tile.el.style.top = (tile.gridY * CELL + pad) + "px";
+      }
+
+      function centerView() {
+        scale = 1;
+        const vpRect = gridViewport.getBoundingClientRect();
+        panX = (vpRect.width - gridCols * CELL * scale) / 2;
+        panY = (vpRect.height - gridRows * CELL * scale) / 2;
+        applyTransform();
+      }
+
+      // --- "Where did my letters go?" indicator ---
+      // Tracks the bounding box (in cell coordinates) of every tile placed
+      // on the grid. If that box scrolls out of view, a floating arrow
+      // rotates to point toward it; tapping the arrow scrolls back to it.
+
+      function placedTilesBounds() {
+        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+        let any = false;
+        tilesById.forEach(t => {
+          if (t.container === "grid") {
+            any = true;
+            if (t.gridX < minX) minX = t.gridX;
+            if (t.gridY < minY) minY = t.gridY;
+            if (t.gridX > maxX) maxX = t.gridX;
+            if (t.gridY > maxY) maxY = t.gridY;
+          }
+        });
+        return any ? { minX, minY, maxX, maxY } : null;
+      }
+
+      function updateLocateIndicator() {
+        const bounds = placedTilesBounds();
+        if (!bounds) {
+          locateBtn.classList.remove("visible");
+          return;
+        }
+
+        const left = bounds.minX * CELL;
+        const top = bounds.minY * CELL;
+        const right = (bounds.maxX + 1) * CELL;
+        const bottom = (bounds.maxY + 1) * CELL;
+
+        const vpRect = gridViewport.getBoundingClientRect();
+        const viewLeft = -panX / scale;
+        const viewTop = -panY / scale;
+        const viewRight = (vpRect.width - panX) / scale;
+        const viewBottom = (vpRect.height - panY) / scale;
+
+        const buffer = CELL; // small grace margin before treating it as "off-screen"
+        const isVisible = right > viewLeft - buffer && left < viewRight + buffer &&
+                           bottom > viewTop - buffer && top < viewBottom + buffer;
+
+        if (isVisible) {
+          locateBtn.classList.remove("visible");
+          return;
+        }
+
+        locateBtn.classList.add("visible");
+
+        const targetCx = (left + right) / 2;
+        const targetCy = (top + bottom) / 2;
+        const viewCx = (viewLeft + viewRight) / 2;
+        const viewCy = (viewTop + viewBottom) / 2;
+
+        const dx = targetCx - viewCx;
+        const dy = targetCy - viewCy;
+        const angle = Math.atan2(dx, -dy) * 180 / Math.PI;
+        locateArrow.style.transform = `rotate(${angle}deg)`;
+      }
+
+      let panAnimFrame = null;
+      function animatePanTo(targetX, targetY, duration) {
+        if (panAnimFrame) cancelAnimationFrame(panAnimFrame);
+        const startX = panX, startY = panY, startTime = performance.now();
+
+        function step(now) {
+          const t = Math.min(1, (now - startTime) / duration);
+          const eased = 1 - Math.pow(1 - t, 3);
+          panX = startX + (targetX - startX) * eased;
+          panY = startY + (targetY - startY) * eased;
+          applyTransform();
+          if (t < 1) {
+            panAnimFrame = requestAnimationFrame(step);
+          } else {
+            panAnimFrame = null;
+            checkExpand();
+            updateLocateIndicator();
+          }
+        }
+        panAnimFrame = requestAnimationFrame(step);
+      }
+
+      function jumpToPlacedTiles() {
+        const bounds = placedTilesBounds();
+        if (!bounds) return;
+        const cx = ((bounds.minX + bounds.maxX + 1) / 2) * CELL;
+        const cy = ((bounds.minY + bounds.maxY + 1) / 2) * CELL;
+        const vpRect = gridViewport.getBoundingClientRect();
+        animatePanTo(vpRect.width / 2 - cx * scale, vpRect.height / 2 - cy * scale, 400);
+      }
+
+      // --- Tile creation ---
+
+      function createTile(letter) {
+        const el = document.createElement("div");
+        el.className = "tile";
+        el.textContent = letter;
+        el.setAttribute("data-letter", letter);
+
+        const tile = { id: nextId++, letter, el, container: "hand", gridX: null, gridY: null };
+        tilesById.set(tile.id, tile);
+        attachDragHandlers(tile);
+        return tile;
+      }
+
+      function addTileToHand(tile, animate) {
+        tile.container = "hand";
+        tile.el.classList.remove("on-grid");
+        tile.el.style.position = "";
+        tile.el.style.left = "";
+        tile.el.style.top = "";
+        handTray.appendChild(tile.el);
+        if (animate) {
+          tile.el.classList.add("deal");
+          tile.el.addEventListener("animationend", function handler() {
+            tile.el.classList.remove("deal");
+            tile.el.removeEventListener("animationend", handler);
+          });
+        }
+      }
+
+      // --- Deck / hand / grid setup ---
+
+      function newGame() {
+        occupied.clear();
+        tilesById.forEach(t => t.el.remove());
+        tilesById.clear();
+
+        const pool = generateLetters(TOTAL_LETTERS);
+        const handLetters = pool.slice(0, HAND_SIZE);
+        deck = pool.slice(HAND_SIZE);
+
+        handLetters.forEach(letter => {
+          const tile = createTile(letter);
+          addTileToHand(tile, false);
+        });
+
+        updateDeckUI();
+        centerView();
+        updateLocateIndicator();
+      }
+
+      function handCount() {
+        return handTray.children.length;
+      }
+
+      function updateDeckUI() {
+        deckCountEl.textContent = String(deck.length);
+        const handFull = handCount() >= HAND_SIZE;
+        deckPile.disabled = deck.length === 0 || handFull;
+        deckLabelEl.textContent = deck.length === 0 ? "empty" : (handFull ? "hand full" : "draw");
+      }
+
+      function drawTile() {
+        if (deck.length === 0 || handCount() >= HAND_SIZE) return;
+        const letter = deck.shift();
+        const tile = createTile(letter);
+        addTileToHand(tile, true);
+        updateDeckUI();
+      }
+
+      function clearGrid() {
+        const gridTiles = Array.from(tilesById.values()).filter(t => t.container === "grid");
+        gridTiles.forEach(tile => addTileToHand(tile, false));
+        occupied.clear();
+        updateDeckUI();
+        updateLocateIndicator();
+      }
+
+      function shuffleHand() {
+        const children = Array.from(handTray.children);
+        if (children.length < 2) return;
+        const firstRects = new Map(children.map(el => [el, el.getBoundingClientRect()]));
+
+        for (let i = children.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [children[i], children[j]] = [children[j], children[i]];
+        }
+        children.forEach(el => handTray.appendChild(el));
+
+        children.forEach(el => {
+          const first = firstRects.get(el);
+          const last = el.getBoundingClientRect();
+          const dx = first.left - last.left;
+          const dy = first.top - last.top;
+          el.style.transition = "none";
+          el.style.transform = `translate(${dx}px, ${dy}px)`;
+          requestAnimationFrame(() => {
+            el.style.transition = "transform 0.4s cubic-bezier(.34, 1.4, .64, 1)";
+            el.style.transform = "translate(0, 0)";
+          });
+        });
+
+        setTimeout(() => {
+          children.forEach(el => {
+            el.style.transition = "";
+            el.style.transform = "";
+          });
+        }, 450);
+      }
+
+      // --- Dragging ---
+
+      function attachDragHandlers(tile) {
+        const el = tile.el;
+        let dragging = false;
+        let offsetX = 0;
+        let offsetY = 0;
+        let originalContainer = null;
+        let originalGridX = null;
+        let originalGridY = null;
+        let originalIndex = -1;
+
+        function onPointerDown(e) {
+          if (e.button !== undefined && e.button !== 0) return;
+          dragging = true;
+
+          const rect = el.getBoundingClientRect();
+          offsetX = e.clientX - rect.left;
+          offsetY = e.clientY - rect.top;
+
+          originalContainer = tile.container;
+          originalGridX = tile.gridX;
+          originalGridY = tile.gridY;
+          originalIndex = Array.from(handTray.children).indexOf(el);
+
+          el.style.transition = "none";
+          el.style.transform = "";
+          el.classList.remove("drop-bounce");
+          el.classList.add("dragging");
+          el.style.position = "fixed";
+          el.style.left = rect.left + "px";
+          el.style.top = rect.top + "px";
+          el.style.margin = "0";
+          el.style.zIndex = ++zCounter;
+          document.body.appendChild(el);
+          el.setPointerCapture && el.setPointerCapture(e.pointerId);
+
+          hint.classList.add("hidden");
+          if (hintTimer) clearTimeout(hintTimer);
+
+          e.preventDefault();
+        }
+
+        function onPointerMove(e) {
+          if (!dragging) return;
+          el.style.left = (e.clientX - offsetX) + "px";
+          el.style.top = (e.clientY - offsetY) + "px";
+          e.preventDefault();
+        }
+
+        function onPointerUp(e) {
+          if (!dragging) return;
+          dragging = false;
+          el.classList.remove("dragging");
+          el.style.zIndex = "";
+          el.style.margin = "";
+          el.style.transition = "";
+
+          const px = e.clientX;
+          const py = e.clientY;
+          const gridRect = gridViewport.getBoundingClientRect();
+          const handRect = handTray.getBoundingClientRect();
+
+          let placed = false;
+
+          if (px >= gridRect.left && px <= gridRect.right && py >= gridRect.top && py <= gridRect.bottom) {
+            placed = tryPlaceOnGrid(tile, px, py);
+          }
+
+          if (!placed && px >= handRect.left && px <= handRect.right && py >= handRect.top && py <= handRect.bottom) {
+            placeInHand(tile, px);
+            placed = true;
+          }
+
+          if (!placed) {
+            revertTile(tile, originalContainer, originalGridX, originalGridY, originalIndex);
+          }
+
+          el.classList.add("drop-bounce");
+          el.addEventListener("animationend", function handler() {
+            el.classList.remove("drop-bounce");
+            el.removeEventListener("animationend", handler);
+          });
+
+          try { el.releasePointerCapture && el.releasePointerCapture(e.pointerId); } catch (err) {}
+        }
+
+        el.addEventListener("pointerdown", onPointerDown);
+        el.addEventListener("pointermove", onPointerMove);
+        el.addEventListener("pointerup", onPointerUp);
+        el.addEventListener("pointercancel", onPointerUp);
+      }
+
+      function tryPlaceOnGrid(tile, clientX, clientY) {
+        const innerRect = gridInner.getBoundingClientRect();
+        const pad = cellPad();
+        // innerRect already reflects the current pan/zoom transform, so
+        // dividing by scale converts back into unscaled grid-cell units.
+        const localX = (clientX - innerRect.left) / scale;
+        const localY = (clientY - innerRect.top) / scale;
+
+        let cellX = Math.floor(localX / CELL);
+        let cellY = Math.floor(localY / CELL);
+        cellX = Math.min(Math.max(cellX, 0), gridCols - 1);
+        cellY = Math.min(Math.max(cellY, 0), gridRows - 1);
+
+        const key = cellX + "," + cellY;
+        const occupant = occupied.get(key);
+        if (occupant !== undefined && occupant !== tile.id) {
+          return false;
+        }
+
+        if (tile.container === "grid") {
+          occupied.delete(tile.gridX + "," + tile.gridY);
+        }
+
+        tile.container = "grid";
+        tile.gridX = cellX;
+        tile.gridY = cellY;
+        occupied.set(key, tile.id);
+
+        tile.el.classList.add("on-grid");
+        tile.el.style.margin = "";
+        gridInner.appendChild(tile.el);
+        tile.el.style.position = "absolute";
+        positionGridTile(tile);
+        updateDeckUI();
+        updateLocateIndicator();
+
+        return true;
+      }
+
+      function placeInHand(tile, clientX) {
+        if (tile.container === "grid") {
+          occupied.delete(tile.gridX + "," + tile.gridY);
+        }
+
+        tile.container = "hand";
+        tile.gridX = null;
+        tile.gridY = null;
+        tile.el.classList.remove("on-grid");
+        tile.el.style.position = "";
+        tile.el.style.left = "";
+        tile.el.style.top = "";
+
+        const siblings = Array.from(handTray.children);
+        let insertBefore = null;
+        for (const sib of siblings) {
+          const r = sib.getBoundingClientRect();
+          if (clientX < r.left + r.width / 2) {
+            insertBefore = sib;
+            break;
+          }
+        }
+        if (insertBefore) {
+          handTray.insertBefore(tile.el, insertBefore);
+        } else {
+          handTray.appendChild(tile.el);
+        }
+        updateDeckUI();
+        updateLocateIndicator();
+      }
+
+      function revertTile(tile, originalContainer, originalGridX, originalGridY, originalIndex) {
+        if (originalContainer === "grid") {
+          tile.container = "grid";
+          tile.gridX = originalGridX;
+          tile.gridY = originalGridY;
+          tile.el.classList.add("on-grid");
+          gridInner.appendChild(tile.el);
+          tile.el.style.position = "absolute";
+          positionGridTile(tile);
+        } else {
+          tile.container = "hand";
+          tile.gridX = null;
+          tile.gridY = null;
+          tile.el.classList.remove("on-grid");
+          tile.el.style.position = "";
+          tile.el.style.left = "";
+          tile.el.style.top = "";
+
+          const children = Array.from(handTray.children);
+          const idx = Math.min(Math.max(originalIndex, 0), children.length);
+          if (idx >= children.length) {
+            handTray.appendChild(tile.el);
+          } else {
+            handTray.insertBefore(tile.el, children[idx]);
+          }
+          updateDeckUI();
+          updateLocateIndicator();
+        }
+      }
+
+      // --- Controls ---
+
+      document.getElementById("newGameBtn").addEventListener("click", newGame);
+      document.getElementById("shuffleBtn").addEventListener("click", shuffleHand);
+      document.getElementById("clearGridBtn").addEventListener("click", clearGrid);
+      deckPile.addEventListener("click", drawTile);
+      locateBtn.addEventListener("click", jumpToPlacedTiles);
+
+      // Prevent page scroll/bounce on touch devices outside the scrollable regions.
+      document.body.addEventListener("touchmove", (e) => {
+        if (!e.target.closest("#gridViewport") && !e.target.closest(".handTray")) {
+          e.preventDefault();
+        }
+      }, { passive: false });
+
+      let resizeTimer = null;
+      window.addEventListener("resize", () => {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(() => {
+          applySizes();
+          checkExpand();
+          updateLocateIndicator();
+        }, 150);
+      });
+
+      let checkQueued = false;
+      function queueCheck() {
+        if (checkQueued) return;
+        checkQueued = true;
+        requestAnimationFrame(() => {
+          checkQueued = false;
+          checkExpand();
+          updateLocateIndicator();
+        });
+      }
+
+      // --- Pan (drag) and pinch-to-zoom on the grid background ---
+      // Native scrolling is off (see #gridViewport { overflow: hidden }),
+      // so panning/zooming is driven entirely by pointer + wheel events,
+      // updating panX/panY/scale and re-applying one CSS transform.
+
+      const activePointers = new Map(); // pointerId -> {x, y}
+      let panning = false;
+      let panStartX = 0, panStartY = 0, panOrigX = 0, panOrigY = 0;
+      let pinchStartDist = 0, pinchStartScale = 1;
+      let pinchAnchorX = 0, pinchAnchorY = 0;
+
+      function distanceBetween(points) {
+        const [a, b] = points;
+        return Math.hypot(a.x - b.x, a.y - b.y);
+      }
+
+      function midpointOf(points) {
+        const [a, b] = points;
+        return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+      }
+
+      function beginPan(x, y) {
+        panning = true;
+        panStartX = x;
+        panStartY = y;
+        panOrigX = panX;
+        panOrigY = panY;
+      }
+
+      function beginPinch() {
+        panning = false;
+        const points = Array.from(activePointers.values());
+        pinchStartDist = distanceBetween(points) || 1;
+        pinchStartScale = scale;
+        const vpRect = gridViewport.getBoundingClientRect();
+        const mid = midpointOf(points);
+        // Fixed grid-space point that should stay under the pinch midpoint.
+        pinchAnchorX = (mid.x - vpRect.left - panX) / scale;
+        pinchAnchorY = (mid.y - vpRect.top - panY) / scale;
+      }
+
+      gridViewport.addEventListener("pointerdown", (e) => {
+        if (e.target.closest(".tile")) return;
+        if (e.button !== undefined && e.button !== 0 && e.pointerType === "mouse") return;
+
+        activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+        try { gridViewport.setPointerCapture && gridViewport.setPointerCapture(e.pointerId); } catch (err) {}
+
+        if (activePointers.size === 1) {
+          beginPan(e.clientX, e.clientY);
+        } else if (activePointers.size === 2) {
+          beginPinch();
+        }
+
+        hint.classList.add("hidden");
+        if (hintTimer) clearTimeout(hintTimer);
+
+        e.preventDefault();
+      });
+
+      gridViewport.addEventListener("pointermove", (e) => {
+        if (!activePointers.has(e.pointerId)) return;
+        activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+        if (activePointers.size === 1 && panning) {
+          panX = panOrigX + (e.clientX - panStartX);
+          panY = panOrigY + (e.clientY - panStartY);
+          applyTransform();
+          queueCheck();
+        } else if (activePointers.size === 2) {
+          const points = Array.from(activePointers.values());
+          const dist = distanceBetween(points) || 1;
+          const newScale = clamp(pinchStartScale * (dist / pinchStartDist), MIN_SCALE, MAX_SCALE);
+          const mid = midpointOf(points);
+          const vpRect = gridViewport.getBoundingClientRect();
+          panX = (mid.x - vpRect.left) - pinchAnchorX * newScale;
+          panY = (mid.y - vpRect.top) - pinchAnchorY * newScale;
+          scale = newScale;
+          applyTransform();
+          queueCheck();
+        }
+
+        e.preventDefault();
+      });
+
+      function endPointer(e) {
+        if (!activePointers.has(e.pointerId)) return;
+        activePointers.delete(e.pointerId);
+        try { gridViewport.releasePointerCapture && gridViewport.releasePointerCapture(e.pointerId); } catch (err) {}
+
+        if (activePointers.size === 1) {
+          // One finger remains after a pinch: resume single-finger panning.
+          const [remaining] = activePointers.values();
+          beginPan(remaining.x, remaining.y);
+        } else if (activePointers.size === 0) {
+          panning = false;
+          checkExpand();
+          updateLocateIndicator();
+        }
+      }
+
+      gridViewport.addEventListener("pointerup", endPointer);
+      gridViewport.addEventListener("pointercancel", endPointer);
+
+      // Desktop: plain wheel/trackpad-scroll pans; Ctrl/Cmd+wheel (and
+      // trackpad pinch, which browsers report as a ctrl-wheel event) zooms.
+      gridViewport.addEventListener("wheel", (e) => {
+        e.preventDefault();
+
+        if (e.ctrlKey || e.metaKey) {
+          const vpRect = gridViewport.getBoundingClientRect();
+          const mx = e.clientX - vpRect.left;
+          const my = e.clientY - vpRect.top;
+          const anchorX = (mx - panX) / scale;
+          const anchorY = (my - panY) / scale;
+          const newScale = clamp(scale * Math.exp(-e.deltaY * 0.01), MIN_SCALE, MAX_SCALE);
+          scale = newScale;
+          panX = mx - anchorX * newScale;
+          panY = my - anchorY * newScale;
+        } else {
+          panX -= e.deltaX;
+          panY -= e.deltaY;
+        }
+
+        applyTransform();
+        queueCheck();
+      }, { passive: false });
+
+      const darkModeQuery = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)");
+      if (darkModeQuery && darkModeQuery.addEventListener) {
+        darkModeQuery.addEventListener("change", updateGridBackground);
+      }
+
+      applySizes();
+      newGame();
+      checkExpand();
+      updateLocateIndicator();
+      hideHintSoon();
+    })();
+  </script>
