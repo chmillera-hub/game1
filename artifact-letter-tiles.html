@@ -91,6 +91,8 @@
     border-radius: 10px;
     cursor: pointer;
     user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
     transition: transform 0.08s ease, background 0.15s ease, box-shadow 0.15s ease;
     box-shadow: 0 1px 2px rgba(0,0,0,0.06);
     letter-spacing: 0.02em;
@@ -140,6 +142,9 @@
     padding: 4px 10px 6px;
     background: var(--bar-bg);
     transition: opacity 0.6s ease;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
   }
 
   .hint.hidden {
@@ -186,6 +191,9 @@
     border: none;
     background: transparent;
     cursor: pointer;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
     padding: 4px 2px;
     border-radius: 10px;
     font-family: inherit;
@@ -401,10 +409,6 @@
   }
 </style>
 
-  <div class="urlBar">
-    <span class="urlText">https://claude.ai/code/artifact/a09c13de-e8cb-4bd7-9bd6-6f57f3078556</span>
-  </div>
-
   <div class="toolbar">
     <button class="btn primary" id="newGameBtn">New Game</button>
     <button class="btn" id="shuffleBtn">Shuffle Hand</button>
@@ -428,6 +432,10 @@
         <span class="deckLabel">draw</span>
       </div>
     </button>
+  </div>
+
+  <div class="urlBar">
+    <span class="urlText">https://claude.ai/code/artifact/a09c13de-e8cb-4bd7-9bd6-6f57f3078556</span>
   </div>
 
   <div id="gridViewport">
@@ -971,8 +979,7 @@
           }
 
           if (!placed && px >= handRect.left && px <= handRect.right && py >= handRect.top && py <= handRect.bottom) {
-            placeInHand(tile, px);
-            placed = true;
+            placed = placeInHand(tile, px);
           }
 
           if (!placed) {
@@ -1034,6 +1041,13 @@
       }
 
       function placeInHand(tile, clientX) {
+        // Dragging a tile in from the grid must respect the 7-tile cap too
+        // (reordering a tile already in the hand never changes the count,
+        // so that's always allowed).
+        if (tile.container !== "hand" && handCount() >= HAND_SIZE) {
+          return false;
+        }
+
         if (tile.container === "grid") {
           occupied.delete(tile.gridX + "," + tile.gridY);
         }
@@ -1062,6 +1076,7 @@
         }
         updateDeckUI();
         updateLocateIndicator();
+        return true;
       }
 
       function revertTile(tile, originalContainer, originalGridX, originalGridY, originalIndex) {
