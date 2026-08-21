@@ -147,13 +147,6 @@
     -webkit-touch-callout: none;
   }
 
-  .hint.hidden {
-    opacity: 0;
-    height: 0;
-    padding: 0;
-    overflow: hidden;
-  }
-
   /* --- Hand + deck row --- */
 
   .handRow {
@@ -532,12 +525,6 @@
       let occupied = new Map(); // "x,y" -> tileId
       let zCounter = 10;
       let nextId = 1;
-      let hintTimer = null;
-
-      function hideHintSoon() {
-        if (hintTimer) clearTimeout(hintTimer);
-        hintTimer = setTimeout(() => hint.classList.add("hidden"), 5000);
-      }
 
       function computeCell() {
         return window.innerWidth < 480 ? 42 : 56;
@@ -946,9 +933,6 @@
           document.body.appendChild(el);
           el.setPointerCapture && el.setPointerCapture(e.pointerId);
 
-          hint.classList.add("hidden");
-          if (hintTimer) clearTimeout(hintTimer);
-
           e.preventDefault();
         }
 
@@ -1201,9 +1185,6 @@
           beginPinch();
         }
 
-        hint.classList.add("hidden");
-        if (hintTimer) clearTimeout(hintTimer);
-
         e.preventDefault();
       });
 
@@ -1284,6 +1265,5 @@
       newGame();
       checkExpand();
       updateLocateIndicator();
-      hideHintSoon();
     })();
   </script>
