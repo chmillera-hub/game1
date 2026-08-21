@@ -420,7 +420,35 @@
       function generateLetters(count) {
         const letters = [];
         for (let i = 0; i < count; i++) letters.push(randomLetter());
+        enforceLetterRules(letters);
         return letters;
+      }
+
+      // Random weighted draws can occasionally produce a Q with no U
+      // anywhere in the set, forcing obscure words like QI/QAT. Guarantee
+      // at most one Q, and at least one U, without changing the odds for
+      // any other letter.
+      function enforceLetterRules(letters) {
+        let sawQ = false;
+        for (let i = 0; i < letters.length; i++) {
+          if (letters[i] !== "Q") continue;
+          if (sawQ) {
+            let replacement;
+            do { replacement = randomLetter(); } while (replacement === "Q");
+            letters[i] = replacement;
+          } else {
+            sawQ = true;
+          }
+        }
+
+        if (!letters.includes("U")) {
+          const nonQIndices = [];
+          for (let i = 0; i < letters.length; i++) {
+            if (letters[i] !== "Q") nonQIndices.push(i);
+          }
+          const idx = nonQIndices[Math.floor(Math.random() * nonQIndices.length)];
+          letters[idx] = "U";
+        }
       }
 
       const TOTAL_LETTERS = 50;
