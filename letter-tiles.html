@@ -459,7 +459,11 @@
       // anywhere in the set, forcing obscure words like QI/QAT. Guarantee
       // at most one Q, and at least one U, without changing the odds for
       // any other letter.
+      const VOWELS = new Set(["A", "E", "I", "O", "U"]);
+      const MAX_VOWELS = 25;
+
       function enforceLetterRules(letters) {
+        // At most one Q.
         let sawQ = false;
         for (let i = 0; i < letters.length; i++) {
           if (letters[i] !== "Q") continue;
@@ -472,6 +476,7 @@
           }
         }
 
+        // At least one U.
         if (!letters.includes("U")) {
           const nonQIndices = [];
           for (let i = 0; i < letters.length; i++) {
@@ -479,6 +484,39 @@
           }
           const idx = nonQIndices[Math.floor(Math.random() * nonQIndices.length)];
           letters[idx] = "U";
+        }
+
+        // At most MAX_VOWELS vowels. A weighted draw can occasionally
+        // clump into a hand that's almost all vowels, which makes every
+        // word need 2-3 vowels per consonant and drags a puzzle out.
+        // Downgrade random excess vowels to consonants, preferring to
+        // keep the (now-guaranteed) U over other vowels.
+        const vowelIndices = [];
+        for (let i = 0; i < letters.length; i++) {
+          if (VOWELS.has(letters[i])) vowelIndices.push(i);
+        }
+
+        if (vowelIndices.length > MAX_VOWELS) {
+          const excess = vowelIndices.length - MAX_VOWELS;
+          const preferred = vowelIndices.filter(i => letters[i] !== "U");
+          const fallback = vowelIndices.filter(i => letters[i] === "U");
+
+          const downgrade = (pool, count) => {
+            for (let k = 0; k < count && pool.length > 0; k++) {
+              const pick = Math.floor(Math.random() * pool.length);
+              const idx = pool[pick];
+              pool.splice(pick, 1);
+              let replacement;
+              do {
+                replacement = randomLetter();
+              } while (VOWELS.has(replacement) || (letters.includes("Q") && replacement === "Q"));
+              letters[idx] = replacement;
+            }
+          };
+
+          const fromPreferred = Math.min(excess, preferred.length);
+          downgrade(preferred, fromPreferred);
+          downgrade(fallback, excess - fromPreferred);
         }
       }
 
