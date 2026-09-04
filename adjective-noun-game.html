@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Story Sparks</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            display: flex;
+            justify-content: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #ff7e5f 0%, #6a3093 100%);
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 760px;
+            width: 100%;
+            height: fit-content;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 32px;
+        }
+
+        .instructions {
+            text-align: center;
+            color: #666;
+            margin-bottom: 25px;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 25px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+
+        .tab-btn {
+            flex: 1;
+            background: none;
+            border: none;
+            padding: 12px;
+            font-size: 15px;
+            font-weight: bold;
+            color: #999;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            transition: all 0.2s ease;
+        }
+
+        .tab-btn.active {
+            color: #6a3093;
+            border-bottom-color: #6a3093;
+        }
+
+        .tab-panel {
+            display: none;
+        }
+
+        .tab-panel.active {
+            display: block;
+        }
+
+        .pairs-row {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 18px;
+            margin-bottom: 25px;
+        }
+
+        .pair-group {
+            display: flex;
+            gap: 8px;
+        }
+
+        .word-card {
+            padding: 18px 16px;
+            border-radius: 12px;
+            text-align: center;
+            font-size: 17px;
+            font-weight: bold;
+            min-width: 110px;
+            color: white;
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+        }
+
+        .word-card.adj {
+            background: linear-gradient(135deg, #ff7e5f, #feb47b);
+        }
+
+        .word-card.noun {
+            background: linear-gradient(135deg, #6a3093, #a044ff);
+        }
+
+        .pair-divider {
+            display: flex;
+            align-items: center;
+            font-size: 22px;
+            color: #ccc;
+            font-weight: bold;
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 160px;
+            padding: 15px;
+            border-radius: 12px;
+            border: 2px solid #eee;
+            font-size: 15px;
+            font-family: inherit;
+            line-height: 1.5;
+            resize: vertical;
+            margin-bottom: 15px;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #a044ff;
+        }
+
+        .buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 15px;
+        }
+
+        button.action-btn {
+            padding: 12px 26px;
+            font-size: 15px;
+            font-weight: bold;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .shuffle-btn {
+            background: #f0f0f0;
+            color: #555;
+        }
+
+        .shuffle-btn:hover {
+            background: #e2e2e2;
+        }
+
+        .save-btn {
+            background: #6a3093;
+            color: white;
+        }
+
+        .save-btn:hover {
+            background: #582980;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(106, 48, 147, 0.4);
+        }
+
+        .status-message {
+            text-align: center;
+            min-height: 20px;
+            font-size: 14px;
+            font-weight: bold;
+            color: #48bb78;
+        }
+
+        .status-message.error {
+            color: #e53e3e;
+        }
+
+        .stories-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 18px;
+        }
+
+        .stories-header h2 {
+            font-size: 18px;
+            color: #333;
+        }
+
+        .stories-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .small-btn {
+            padding: 8px 14px;
+            font-size: 13px;
+            font-weight: bold;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            background: #f0f0f0;
+            color: #555;
+        }
+
+        .small-btn:hover {
+            background: #e2e2e2;
+        }
+
+        .small-btn.danger {
+            color: #e53e3e;
+        }
+
+        .empty-state {
+            text-align: center;
+            color: #999;
+            padding: 40px 0;
+            font-size: 14px;
+        }
+
+        .story-entry {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 18px;
+            margin-bottom: 15px;
+        }
+
+        .story-entry-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+
+        .story-pairs {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .badge {
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            color: white;
+        }
+
+        .badge.adj {
+            background: #ff7e5f;
+        }
+
+        .badge.noun {
+            background: #a044ff;
+        }
+
+        .story-timestamp {
+            font-size: 12px;
+            color: #999;
+            white-space: nowrap;
+        }
+
+        .story-text {
+            white-space: pre-wrap;
+            font-size: 14px;
+            line-height: 1.6;
+            color: #333;
+            margin-bottom: 12px;
+        }
+
+        .story-entry-actions {
+            display: flex;
+            gap: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Story Sparks</h1>
+        <p class="instructions">
+            Two random word pairs. One little story or reflection.<br>
+            Play a few rounds, save what you write, then revisit your collection anytime.
+        </p>
+
+        <div class="tabs">
+            <button class="tab-btn active" id="playTabBtn" onclick="switchTab('play')">Play</button>
+            <button class="tab-btn" id="storiesTabBtn" onclick="switchTab('stories')">My Stories (<span id="storyCount">0</span>)</button>
+        </div>
+
+        <div class="tab-panel active" id="playPanel">
+            <div class="pairs-row" id="pairsRow"></div>
+
+            <textarea id="storyInput" placeholder="What do these words spark? Write a quick story, a memory, a scene, or a stray reflection..."></textarea>
+
+            <div class="buttons">
+                <button class="action-btn shuffle-btn" onclick="shufflePairs()">🔀 New Pairs</button>
+                <button class="action-btn save-btn" onclick="saveStory()">💾 Save Story</button>
+            </div>
+
+            <p class="status-message" id="statusMessage"></p>
+        </div>
+
+        <div class="tab-panel" id="storiesPanel">
+            <div class="stories-header">
+                <h2>Your Collection</h2>
+                <div class="stories-actions">
+                    <button class="small-btn" onclick="copyAllStories()">📋 Copy All</button>
+                    <button class="small-btn" onclick="downloadStories()">⬇️ Download</button>
+                    <button class="small-btn danger" onclick="clearAllStories()">🗑️ Clear All</button>
+                </div>
+            </div>
+            <div id="storiesList"></div>
+        </div>
+    </div>
+
+    <script>
+        const ADJECTIVES = [
+            'clandestine', 'gilded', 'feral', 'wistful', 'labyrinthine', 'smoldering', 'iridescent',
+            'forsaken', 'ravenous', 'spectral', 'brittle', 'ornery', 'luminous', 'threadbare',
+            'unhinged', 'velvet', 'crooked', 'haunted', 'restless', 'gluttonous', 'electric',
+            'rusted', 'whispering', 'petrified', 'audacious', 'melancholy', 'feverish', 'gnarled',
+            'vagabond', 'incandescent', 'salvaged', 'forgotten', 'untamed', 'weatherworn',
+            'phosphorescent', 'unraveling', 'clockwork', 'moonlit', 'sunbaked', 'tattered',
+            'glacial', 'molten', 'vengeful', 'wayward', 'shimmering', 'cursed', 'nomadic',
+            'crumbling', 'feathered', 'jagged', 'rickety', 'velveteen', 'smoky', 'waterlogged',
+            'gilt', 'sardonic', 'quixotic', 'ramshackle', 'lurking', 'stoic', 'flickering',
+            'ancient', 'abandoned', 'defiant', 'mischievous', 'ethereal', 'grizzled', 'fossilized',
+            'rebellious', 'clairvoyant', 'mercurial', 'obsolete', 'belligerent', 'waning',
+            'gargantuan', 'diminutive', 'clattering', 'disheveled', 'enchanted', 'fermented',
+            'fluorescent', 'forbidden', 'galvanized', 'hollowed', 'imperious', 'infernal',
+            'insomniac', 'jittery', 'kinetic', 'lopsided', 'marooned', 'nocturnal', 'opaque',
+            'paranoid', 'pixelated', 'quivering', 'radioactive', 'scorched', 'tarnished', 'unruly',
+            'vindictive', 'wobbly'
+        ];
+
+        const NOUNS = [
+            'toaster', 'hyperdrive', 'lighthouse', 'typewriter', 'carousel', 'compass', 'orchard',
+            'submarine', 'attic', 'cathedral', 'junkyard', 'greenhouse', 'observatory', 'puppeteer',
+            'locksmith', 'beekeeper', 'astronaut', 'smuggler', 'oracle', 'gargoyle', 'kaleidoscope',
+            'metronome', 'lantern', 'shipwreck', 'carnival', 'labyrinth', 'apothecary', 'blacksmith',
+            'scarecrow', 'windmill', 'telescope', 'gondola', 'mothership', 'cauldron', 'chandelier',
+            'catacomb', 'phonograph', 'hourglass', 'marionette', 'birdcage', 'seashell', 'bunker',
+            'orchestra', 'tollbooth', 'pawnshop', 'speakeasy', 'conservatory', 'aqueduct', 'fortress',
+            'tavern', 'monastery', 'bazaar', 'caravan', 'galleon', 'zeppelin', 'rickshaw', 'gramophone',
+            'sextant', 'astrolabe', 'obelisk', 'mausoleum', 'grotto', 'quarry', 'foundry', 'sawmill',
+            'silo', 'hive', 'warren', 'burrow', 'nest', 'cocoon', 'chrysalis', 'amulet', 'talisman',
+            'relic', 'artifact', 'scroll', 'grimoire', 'codex', 'tome', 'quill', 'inkwell', 'parchment',
+            'tapestry', 'mosaic', 'fresco', 'statue', 'fountain', 'courtyard', 'parapet', 'turret',
+            'drawbridge', 'moat', 'catapult', 'trebuchet', 'cannon', 'musket', 'saber', 'dagger',
+            'goblet', 'banana', 'accordion'
+        ];
+
+        const PAIR_COUNT = 2;
+        const STORAGE_KEY = 'storySparks.entries.v1';
+
+        let currentPairs = [];
+
+        function shuffle(array) {
+            const copy = [...array];
+            for (let i = copy.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [copy[i], copy[j]] = [copy[j], copy[i]];
+            }
+            return copy;
+        }
+
+        function drawPairs(count) {
+            const adjs = shuffle(ADJECTIVES).slice(0, count);
+            const nouns = shuffle(NOUNS).slice(0, count);
+            return adjs.map((adj, i) => ({ adj, noun: nouns[i] }));
+        }
+
+        function isSamePairs(a, b) {
+            if (!a || !b || a.length !== b.length) return false;
+            return a.every((pair, i) => pair.adj === b[i].adj && pair.noun === b[i].noun);
+        }
+
+        function renderPairs() {
+            const row = document.getElementById('pairsRow');
+            row.innerHTML = '';
+
+            currentPairs.forEach((pair, i) => {
+                if (i > 0) {
+                    const divider = document.createElement('div');
+                    divider.className = 'pair-divider';
+                    divider.textContent = '&';
+                    row.appendChild(divider);
+                }
+
+                const group = document.createElement('div');
+                group.className = 'pair-group';
+
+                const adjCard = document.createElement('div');
+                adjCard.className = 'word-card adj';
+                adjCard.textContent = pair.adj;
+
+                const nounCard = document.createElement('div');
+                nounCard.className = 'word-card noun';
+                nounCard.textContent = pair.noun;
+
+                group.appendChild(adjCard);
+                group.appendChild(nounCard);
+                row.appendChild(group);
+            });
+        }
+
+        function setStatus(text, isError) {
+            const el = document.getElementById('statusMessage');
+            el.textContent = text;
+            el.className = 'status-message' + (isError ? ' error' : '');
+        }
+
+        function shufflePairs() {
+            const textarea = document.getElementById('storyInput');
+            if (textarea.value.trim().length > 0) {
+                const proceed = confirm('You have unsaved writing. Draw new pairs anyway and lose it?');
+                if (!proceed) return;
+            }
+
+            let next;
+            do {
+                next = drawPairs(PAIR_COUNT);
+            } while (isSamePairs(next, currentPairs) && ADJECTIVES.length > PAIR_COUNT);
+
+            currentPairs = next;
+            renderPairs();
+            textarea.value = '';
+            setStatus('');
+        }
+
+        function loadEntries() {
+            try {
+                const raw = localStorage.getItem(STORAGE_KEY);
+                return raw ? JSON.parse(raw) : [];
+            } catch (e) {
+                return [];
+            }
+        }
+
+        function saveEntries(entries) {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+        }
+
+        function saveStory() {
+            const textarea = document.getElementById('storyInput');
+            const story = textarea.value.trim();
+
+            if (!story) {
+                setStatus('Write something before saving!', true);
+                return;
+            }
+
+            const entries = loadEntries();
+            entries.unshift({
+                id: Date.now(),
+                timestamp: new Date().toISOString(),
+                pairs: currentPairs,
+                story
+            });
+            saveEntries(entries);
+            renderStoriesList();
+
+            setStatus('Saved! Here are your next pairs.', false);
+            currentPairs = drawPairs(PAIR_COUNT);
+            renderPairs();
+            textarea.value = '';
+        }
+
+        function formatPairsLabel(pairs) {
+            return pairs.map(p => `${p.adj} ${p.noun}`).join(' & ');
+        }
+
+        function formatTimestamp(iso) {
+            const d = new Date(iso);
+            return d.toLocaleString();
+        }
+
+        function renderStoriesList() {
+            const entries = loadEntries();
+            document.getElementById('storyCount').textContent = entries.length;
+
+            const list = document.getElementById('storiesList');
+            list.innerHTML = '';
+
+            if (entries.length === 0) {
+                const empty = document.createElement('div');
+                empty.className = 'empty-state';
+                empty.textContent = 'No stories saved yet. Play a round and hit Save Story!';
+                list.appendChild(empty);
+                return;
+            }
+
+            entries.forEach(entry => {
+                const card = document.createElement('div');
+                card.className = 'story-entry';
+
+                const header = document.createElement('div');
+                header.className = 'story-entry-header';
+
+                const pairsWrap = document.createElement('div');
+                pairsWrap.className = 'story-pairs';
+                entry.pairs.forEach(p => {
+                    const adjBadge = document.createElement('span');
+                    adjBadge.className = 'badge adj';
+                    adjBadge.textContent = p.adj;
+                    const nounBadge = document.createElement('span');
+                    nounBadge.className = 'badge noun';
+                    nounBadge.textContent = p.noun;
+                    pairsWrap.appendChild(adjBadge);
+                    pairsWrap.appendChild(nounBadge);
+                });
+
+                const timestamp = document.createElement('span');
+                timestamp.className = 'story-timestamp';
+                timestamp.textContent = formatTimestamp(entry.timestamp);
+
+                header.appendChild(pairsWrap);
+                header.appendChild(timestamp);
+
+                const text = document.createElement('div');
+                text.className = 'story-text';
+                text.textContent = entry.story;
+
+                const actions = document.createElement('div');
+                actions.className = 'story-entry-actions';
+
+                const copyBtn = document.createElement('button');
+                copyBtn.className = 'small-btn';
+                copyBtn.textContent = '📋 Copy';
+                copyBtn.onclick = () => copyEntry(entry);
+
+                const deleteBtn = document.createElement('button');
+                deleteBtn.className = 'small-btn danger';
+                deleteBtn.textContent = '🗑️ Delete';
+                deleteBtn.onclick = () => deleteEntry(entry.id);
+
+                actions.appendChild(copyBtn);
+                actions.appendChild(deleteBtn);
+
+                card.appendChild(header);
+                card.appendChild(text);
+                card.appendChild(actions);
+                list.appendChild(card);
+            });
+        }
+
+        function entryToText(entry) {
+            return `${formatPairsLabel(entry.pairs)}\n${formatTimestamp(entry.timestamp)}\n\n${entry.story}`;
+        }
+
+        function copyEntry(entry) {
+            navigator.clipboard.writeText(entryToText(entry)).catch(() => {});
+        }
+
+        function copyAllStories() {
+            const entries = loadEntries();
+            const text = entries.map(entryToText).join('\n\n---\n\n');
+            navigator.clipboard.writeText(text).catch(() => {});
+        }
+
+        function downloadStories() {
+            const entries = loadEntries();
+            const text = entries.map(entryToText).join('\n\n---\n\n');
+            const blob = new Blob([text], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'story-sparks.txt';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        function deleteEntry(id) {
+            const entries = loadEntries().filter(e => e.id !== id);
+            saveEntries(entries);
+            renderStoriesList();
+        }
+
+        function clearAllStories() {
+            if (!confirm('Delete all saved stories? This cannot be undone.')) return;
+            saveEntries([]);
+            renderStoriesList();
+        }
+
+        function switchTab(tab) {
+            const playPanel = document.getElementById('playPanel');
+            const storiesPanel = document.getElementById('storiesPanel');
+            const playTabBtn = document.getElementById('playTabBtn');
+            const storiesTabBtn = document.getElementById('storiesTabBtn');
+
+            if (tab === 'play') {
+                playPanel.classList.add('active');
+                storiesPanel.classList.remove('active');
+                playTabBtn.classList.add('active');
+                storiesTabBtn.classList.remove('active');
+            } else {
+                playPanel.classList.remove('active');
+                storiesPanel.classList.add('active');
+                playTabBtn.classList.remove('active');
+                storiesTabBtn.classList.add('active');
+                renderStoriesList();
+            }
+        }
+
+        function init() {
+            currentPairs = drawPairs(PAIR_COUNT);
+            renderPairs();
+            renderStoriesList();
+        }
+
+        init();
+    </script>
+</body>
+</html>
