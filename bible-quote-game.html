@@ -224,6 +224,36 @@
     }
     .reveal-card .ref { font-weight: 700; color: #d4af37; margin-bottom: 6px; font-family: 'Work Sans', -apple-system, sans-serif; font-size: 13px; text-transform: uppercase; letter-spacing: 1px; }
     .reveal-card .txt { font-size: 15px; line-height: 1.5; }
+    .reveal-card .emoji-badge { font-size: 32px; margin-top: 12px; }
+
+    .emoji-prompt {
+        font-size: 13px;
+        font-weight: 600;
+        color: #3a2a52;
+        text-align: center;
+    }
+    .emoji-picker {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        justify-content: center;
+        max-width: 480px;
+    }
+    .emoji-btn {
+        font-size: 26px;
+        width: 50px;
+        height: 50px;
+        background: #fffdf8;
+        border: 2px solid #e6dcc0;
+        border-radius: 10px;
+        cursor: pointer;
+        transition: all 0.15s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        line-height: 1;
+    }
+    .emoji-btn:hover { border-color: #b3432f; transform: translateY(-2px) scale(1.06); }
 
     .hand-label {
         font-weight: 700;
@@ -314,6 +344,9 @@
     .thread-item.ai .who { color: #5b3f8a; }
     .thread-item.player .who { color: #b3432f; }
     .thread-item .ref { font-weight: 700; color: #3a2a52; margin-bottom: 2px; }
+    .thread-item .who-row { display: flex; align-items: center; gap: 6px; margin-bottom: 3px; }
+    .thread-item .who-row .who { margin-bottom: 0; }
+    .thread-item .emoji-tag { font-size: 15px; line-height: 1; }
 
     /* Modal / overlay */
     .overlay {
@@ -507,6 +540,28 @@ const QUOTES = [{"id": 0, "ref": "Genesis 1:1-5", "text": "In the beginning God 
 
 const STORAGE_KEY = 'scriptureExchangeHistory';
 
+const EMOJI_DECK = ['😊', '🙏', '💃', '😢', '😌', '🔥', '🤔', '😲', '❤️', '💪'];
+
+const THEME_EMOJI_MAP = [
+    { emojis: ['💃', '😊'], keywords: ['joy', 'praise', 'thanksgiving', 'blessing'] },
+    { emojis: ['❤️'], keywords: ['love', 'compassion', 'kindness', 'god'] },
+    { emojis: ['🙏'], keywords: ['worship', 'holiness', 'glory', 'prayer'] },
+    { emojis: ['😢'], keywords: ['suffering', 'sin', 'sorrow', 'affliction', 'judgment'] },
+    { emojis: ['😌'], keywords: ['peace', 'rest', 'comfort', 'trust'] },
+    { emojis: ['💪', '🔥'], keywords: ['courage', 'strength', 'spiritualwarfare', 'armor', 'perseverance'] },
+    { emojis: ['😲'], keywords: ['wonder', 'creation', 'knowledge', 'omniscience'] },
+    { emojis: ['🤔'], keywords: ['wisdom', 'meditation', 'guidance', 'discernment'] }
+];
+
+function pickAiEmoji(quote) {
+    for (const group of THEME_EMOJI_MAP) {
+        if (quote.themes.some(t => group.keywords.includes(t))) {
+            return group.emojis[Math.floor(Math.random() * group.emojis.length)];
+        }
+    }
+    return EMOJI_DECK[Math.floor(Math.random() * EMOJI_DECK.length)];
+}
+
 let pickedIds = new Set();
 let playerHand = [];
 let aiHand = [];
@@ -515,6 +570,7 @@ let aiPlayedCount = 0;
 let playerPlayedCount = 0;
 let awaitingPlayer = false;
 let currentRatingValue = 0;
+let pendingPlayerEntry = null;
 
 function shuffle(arr) {
     const a = arr.slice();
@@ -619,6 +675,7 @@ function beginConversation() {
     aiPlayedCount = 0;
     playerPlayedCount = 0;
     awaitingPlayer = false;
+    pendingPlayerEntry = null;
 
     document.getElementById('screenSelect').classList.add('hidden');
     document.getElementById('screenGame').classList.remove('hidden');
@@ -667,10 +724,11 @@ function aiPlay() {
 
         chosen.played = true;
         aiPlayedCount++;
-        thread.push({ side: 'ai', quote: chosen });
+        const emoji = pickAiEmoji(chosen);
+        thread.push({ side: 'ai', quote: chosen, emoji });
 
         document.getElementById('aiStatusText').textContent = '';
-        stage.innerHTML = `<div class="reveal-card"><div class="ref">AI plays &mdash; ${chosen.ref}</div><div class="txt">${chosen.text}</div></div>`;
+        stage.innerHTML = `<div class="reveal-card"><div class="ref">AI plays &mdash; ${chosen.ref}</div><div class="txt">${chosen.text}</div><div class="emoji-badge">${emoji}</div></div>`;
 
         awaitingPlayer = true;
         renderThread();
@@ -705,19 +763,48 @@ function playerPlay(id) {
     awaitingPlayer = false;
     card.played = true;
     playerPlayedCount++;
-    thread.push({ side: 'player', quote: card });
 
-    const stage = document.getElementById('stage');
-    stage.innerHTML = `<div class="reveal-card" style="background:#b3432f;"><div class="ref" style="color:#fdfaf3;">You play &mdash; ${card.ref}</div><div class="txt">${card.text}</div></div>`;
+    const entry = { side: 'player', quote: card, emoji: null };
+    thread.push(entry);
+    pendingPlayerEntry = entry;
 
     renderThread();
     renderPlayerHand();
     updateExchangeLabel();
+    renderPlayerEmojiPicker(card);
+}
+
+function renderPlayerEmojiPicker(card) {
+    const stage = document.getElementById('stage');
+    stage.innerHTML = `
+        <div class="reveal-card" style="background:#b3432f;">
+            <div class="ref" style="color:#fdfaf3;">You play &mdash; ${card.ref}</div>
+            <div class="txt">${card.text}</div>
+        </div>
+        <div class="emoji-prompt">Pick an emoji to set the tone</div>
+        <div class="emoji-picker" id="emojiPicker"></div>
+    `;
+    const picker = document.getElementById('emojiPicker');
+    EMOJI_DECK.forEach(e => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'emoji-btn';
+        btn.textContent = e;
+        btn.addEventListener('click', () => choosePlayerEmoji(e));
+        picker.appendChild(btn);
+    });
+}
+
+function choosePlayerEmoji(emoji) {
+    if (!pendingPlayerEntry) return;
+    pendingPlayerEntry.emoji = emoji;
+    pendingPlayerEntry = null;
+    renderThread();
 
     if (playerPlayedCount >= 4) {
-        setTimeout(endConversation, 1200);
+        setTimeout(endConversation, 900);
     } else {
-        setTimeout(aiPlay, 1200);
+        setTimeout(aiPlay, 900);
     }
 }
 
@@ -739,7 +826,8 @@ function renderThread() {
     thread.forEach(entry => {
         const div = document.createElement('div');
         div.className = 'thread-item ' + entry.side;
-        div.innerHTML = `<div class="who">${entry.side === 'ai' ? 'AI' : 'You'}</div><div class="ref">${entry.quote.ref}</div><div>${entry.quote.text}</div>`;
+        const emojiTag = entry.emoji ? `<span class="emoji-tag">${entry.emoji}</span>` : '';
+        div.innerHTML = `<div class="who-row"><span class="who">${entry.side === 'ai' ? 'AI' : 'You'}</span>${emojiTag}</div><div class="ref">${entry.quote.ref}</div><div>${entry.quote.text}</div>`;
         list.appendChild(div);
     });
     list.scrollTop = list.scrollHeight;
@@ -771,7 +859,7 @@ function submitRating() {
         id: Date.now(),
         date: new Date().toISOString(),
         rating: currentRatingValue,
-        thread: thread.map(e => ({ side: e.side, ref: e.quote.ref, text: e.quote.text }))
+        thread: thread.map(e => ({ side: e.side, ref: e.quote.ref, text: e.quote.text, emoji: e.emoji }))
     });
     localStorage.setItem(STORAGE_KEY, JSON.stringify(history));
     document.getElementById('ratingOverlay').classList.remove('show');
@@ -825,7 +913,8 @@ function renderHistory() {
         entry.thread.forEach(t => {
             const item = document.createElement('div');
             item.className = 'thread-item ' + t.side;
-            item.innerHTML = `<div class="who">${t.side === 'ai' ? 'AI' : 'You'}</div><div class="ref">${t.ref}</div><div>${t.text}</div>`;
+            const emojiTag = t.emoji ? `<span class="emoji-tag">${t.emoji}</span>` : '';
+            item.innerHTML = `<div class="who-row"><span class="who">${t.side === 'ai' ? 'AI' : 'You'}</span>${emojiTag}</div><div class="ref">${t.ref}</div><div>${t.text}</div>`;
             detail.appendChild(item);
         });
 
