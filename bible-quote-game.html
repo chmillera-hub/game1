@@ -283,44 +283,6 @@
     .hand-card .ref { font-weight: 700; color: #3a2a52; font-size: 12px; margin-bottom: 3px; font-family: 'Work Sans', -apple-system, sans-serif; }
     .hand-card .full-text { font-size: 12px; color: #4a4438; line-height: 1.35; }
 
-    .ai-hand-note {
-        font-size: 13px;
-        color: #7a6b4d;
-        text-align: center;
-        margin: 10px 0 6px;
-    }
-
-    .ai-hand-row {
-        display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: 10px;
-        max-width: 480px;
-        margin: 0 auto 8px;
-    }
-    .ai-hand-card {
-        background: linear-gradient(135deg, #3a2a52, #1b2340);
-        border: 1px solid #d4af37;
-        border-radius: 10px;
-        padding: 12px 8px;
-        min-height: 64px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        text-align: center;
-    }
-    .ai-hand-card .highlight-row {
-        flex-direction: column;
-        align-items: stretch;
-        gap: 5px;
-    }
-    .ai-hand-card .highlight-chip {
-        background: rgba(255,255,255,0.08);
-        border-color: rgba(212,175,55,0.5);
-        color: #e6c452;
-        white-space: normal;
-        text-align: center;
-    }
-
     /* ---------- Shared highlight phrases (skim aid under full quotes) ---------- */
     .highlight-row {
         display: flex;
@@ -545,9 +507,6 @@
             <div>
                 <div class="stage" id="stage"></div>
 
-                <div class="ai-hand-note">AI's hand &mdash; backs only, for inspiration</div>
-                <div class="ai-hand-row" id="aiHandBacks"></div>
-
                 <div class="hand-label">Your hand &mdash; choose one of your 3 verses to respond</div>
                 <div class="player-hand" id="playerHand"></div>
             </div>
@@ -751,7 +710,6 @@ function beginConversation() {
     document.getElementById('screenGame').classList.remove('hidden');
 
     renderThread();
-    renderAiHandBacks();
     document.getElementById('playerHand').innerHTML = '';
     updateExchangeLabel();
 
@@ -803,7 +761,6 @@ function aiPlay() {
 
         awaitingPlayer = true;
         renderThread();
-        renderAiHandBacks();
         renderPlayerHand();
         updateExchangeLabel();
     }, 800);
@@ -879,17 +836,6 @@ function choosePlayerEmoji(emoji) {
     } else {
         setTimeout(aiPlay, 900);
     }
-}
-
-function renderAiHandBacks() {
-    const row = document.getElementById('aiHandBacks');
-    row.innerHTML = '';
-    aiHandCards.forEach(c => {
-        const d = document.createElement('div');
-        d.className = 'ai-hand-card';
-        d.innerHTML = highlightsHTML(c.highlights);
-        row.appendChild(d);
-    });
 }
 
 function renderThread() {
