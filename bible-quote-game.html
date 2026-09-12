@@ -888,12 +888,13 @@ function submitRating() {
 
 function buildReflectionText(entry) {
     const lines = [];
-    lines.push("This is a conversation I had with an AI, built entirely from Bible quotes we each played in turn. Can you help me reflect on it — what emotional, spiritual, or other themes come through? I'd love your in-depth reaction, referencing specific quotes from the conversation.");
+    lines.push("This is a conversation I had with an AI, built entirely from Bible quotes we each played in turn. Can you help me reflect on it — what emotional, spiritual, or other themes come through? Next to each reference below are a few standout phrases from that verse; I may have chosen my responses partly because of those phrases, so weigh them as clues to my reasoning. I'd love your in-depth reaction, referencing specific quotes from the conversation.");
     lines.push('');
     entry.thread.forEach((t, i) => {
         const speaker = t.side === 'ai' ? 'AI' : 'Me';
         const emoji = t.emoji ? ' ' + t.emoji : '';
-        lines.push(`${i + 1}. ${speaker} played ${t.ref}${emoji}`);
+        const highlightsStr = (t.highlights || []).map(h => `"${h}"`).join(' ');
+        lines.push(`${i + 1}. ${speaker} - ${t.ref}${emoji}${highlightsStr ? ' ' + highlightsStr : ''}`);
         lines.push(`"${t.text}"`);
         lines.push('');
     });
