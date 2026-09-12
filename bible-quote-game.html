@@ -482,7 +482,7 @@
         <div class="select-header">
             <div class="select-count">Choose your 12 verses &mdash; <span id="pickCount">0</span>/12 selected</div>
             <div style="display:flex; gap:8px; flex-wrap:wrap;">
-                <button class="btn secondary" id="randomizeBtn">Randomize My Hand</button>
+                <button class="btn secondary" id="randomizeBtn">Randomize &amp; Play</button>
                 <button class="btn secondary" id="clearPickBtn">Clear</button>
             </div>
         </div>
@@ -673,7 +673,7 @@ function updateSelectUI() {
 
 function randomizeHand() {
     pickedIds = new Set(shuffle(QUOTES.map(q => q.id)).slice(0, 12));
-    updateSelectUI();
+    beginConversation();
 }
 
 function clearPick() {
