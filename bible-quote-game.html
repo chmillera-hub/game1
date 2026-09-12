@@ -888,7 +888,7 @@ function submitRating() {
 
 function buildReflectionText(entry) {
     const lines = [];
-    lines.push("This is a conversation I had with an AI, built entirely from Bible quotes we each played in turn. Can you help me reflect on it — what emotional, spiritual, or other themes come through? Next to each reference below are a few standout phrases from that verse; I may have chosen my responses partly because of those phrases, so weigh them as clues to my reasoning. I'd love your in-depth reaction, referencing specific quotes from the conversation.");
+    lines.push("This is a conversation I had with an AI, built entirely from Bible quotes we each played in turn. Can you help me reflect on it — what emotional, spiritual, or other themes come through? Next to each reference below are a few standout phrases from that verse; I may have chosen my responses partly because of those phrases, so weigh them as clues to my reasoning, but when you quote the text back to me in your response, please pull different phrases from the full verse rather than repeating the standout phrases listed here — that keeps your response from just echoing what I already gave you. I'd love your in-depth reaction, referencing specific quotes from the conversation.");
     lines.push('');
     entry.thread.forEach((t, i) => {
         const speaker = t.side === 'ai' ? 'AI' : 'Me';
