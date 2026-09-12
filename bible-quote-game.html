@@ -438,6 +438,16 @@
     }
     .history-detail.show { display: block; }
     .history-detail .thread-item { margin-bottom: 6px; }
+    .copy-row {
+        display: flex;
+        justify-content: flex-end;
+        margin-bottom: 10px;
+    }
+    .copy-btn {
+        font-size: 12px;
+        padding: 6px 12px;
+        min-width: 168px;
+    }
     .history-empty {
         text-align: center;
         color: #7a6b4d;
@@ -891,6 +901,56 @@ function submitRating() {
 
 /* ---------------- History ---------------- */
 
+function buildReflectionText(entry) {
+    const lines = [];
+    lines.push("This is a conversation I had with an AI, built entirely from Bible quotes we each played in turn. Can you help me reflect on it — what emotional, spiritual, or other themes come through? I'd love your in-depth reaction, referencing specific quotes from the conversation.");
+    lines.push('');
+    entry.thread.forEach((t, i) => {
+        const speaker = t.side === 'ai' ? 'AI' : 'Me';
+        const emoji = t.emoji ? ' ' + t.emoji : '';
+        lines.push(`${i + 1}. ${speaker} played ${t.ref}${emoji}`);
+        lines.push(`"${t.text}"`);
+        lines.push('');
+    });
+    lines.push(`I rated this conversation ${entry.rating}/5.`);
+    return lines.join('\n');
+}
+
+function fallbackCopy(text) {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    let ok = false;
+    try {
+        ok = document.execCommand('copy');
+    } catch (e) {
+        ok = false;
+    }
+    document.body.removeChild(ta);
+    return ok;
+}
+
+function copyConversation(entry, btn) {
+    const text = buildReflectionText(entry);
+    const originalLabel = btn.textContent;
+    const showResult = (label) => {
+        btn.textContent = label;
+        setTimeout(() => { btn.textContent = originalLabel; }, 1800);
+    };
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text)
+            .then(() => showResult('Copied!'))
+            .catch(() => showResult(fallbackCopy(text) ? 'Copied!' : 'Copy failed'));
+    } else {
+        showResult(fallbackCopy(text) ? 'Copied!' : 'Copy failed');
+    }
+}
+
 function loadHistory() {
     try {
         const raw = localStorage.getItem(STORAGE_KEY);
@@ -933,6 +993,17 @@ function renderHistory() {
 
         const detail = document.createElement('div');
         detail.className = 'history-detail';
+
+        const copyRow = document.createElement('div');
+        copyRow.className = 'copy-row';
+        const copyBtn = document.createElement('button');
+        copyBtn.type = 'button';
+        copyBtn.className = 'btn secondary copy-btn';
+        copyBtn.textContent = 'Copy for AI reflection';
+        copyBtn.addEventListener('click', () => copyConversation(entry, copyBtn));
+        copyRow.appendChild(copyBtn);
+        detail.appendChild(copyRow);
+
         entry.thread.forEach(t => {
             const item = document.createElement('div');
             item.className = 'thread-item ' + t.side;
