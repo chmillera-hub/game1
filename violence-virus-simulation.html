@@ -163,7 +163,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
       <h2>Chamber</h2>
       <span class="tag" id="tick-count">collisions = 0</span>
     </div>
-    <div id="stage-wrap"><canvas id="stage" width="640" height="480"></canvas></div>
+    <div id="stage-wrap"><canvas id="stage" width="360" height="270"></canvas></div>
     <div class="legend">
       <span class="mono">≈0%</span>
       <div class="bar"></div>
@@ -227,7 +227,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
   </div>
 </div>
 
-<footer>Bodies are labeled with their live violence percentage. Color still encodes it on a log scale (green ≈ calm, red ≈ violent) but is clamped below 10⁻⁸ so the conscious body always reads as fully calm rather than pixel-identical black.</footer>
+<footer>Bodies are labeled with their live violence percentage. Color still encodes it on a log scale (green ≈ calm, red ≈ violent) but is clamped below 10⁻⁸ so the conscious body always reads as fully calm rather than pixel-identical black. Chamber is compressed and bodies enlarged (not sped up) to raise collision frequency — time-to-pacify scales with arena area ÷ (radius × speed), independent of body count, so a smaller box gets there faster without any ball moving faster.</footer>
 
 <script>
 (function(){
@@ -272,7 +272,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
   function makeBodies(){
     const n = Number(els.n.value);
     const arr = [];
-    const r = 12;
+    const r = 20;
     for (let i=0;i<n;i++){
       arr.push({
         id: i,
