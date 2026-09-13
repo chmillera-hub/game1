@@ -104,6 +104,11 @@ header p{color:var(--text-dim); font-size:14.5px; max-width:66ch; line-height:1.
 }
 #inspector b{color:var(--text); font-weight:600;}
 #inspector .ring{color:var(--accent);}
+#milestone{
+  margin-bottom:14px; padding:8px 10px; font-size:12.5px; line-height:1.5;
+  background:var(--panel-2); border:1px solid var(--line); border-radius:6px; color:var(--text-dim);
+}
+#milestone.done{ border-color:var(--calm); color:var(--calm); font-weight:600; }
 .legend .bar{
   flex:1; height:8px; border-radius:4px;
   background:linear-gradient(90deg, hsl(140,80%,55%), hsl(90,75%,50%), hsl(45,80%,50%), hsl(0,70%,30%));
@@ -210,14 +215,17 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
       <div class="stat"><div class="k">Seed body</div><div class="v calm mono" id="s-vc">1.0×10⁻¹⁰⁰ %</div></div>
       <div class="stat"><div class="k">Total system violence</div><div class="v mono" id="s-total">100.0%</div></div>
       <div class="stat"><div class="k">Conscious bodies</div><div class="v calm mono" id="s-conv">1 / 100</div></div>
+      <div class="stat"><div class="k">Elapsed time</div><div class="v mono" id="s-time">0:00.0</div></div>
       <div class="stat"><div class="k">Conscious-role hits</div><div class="v mono" id="s-hits">0</div></div>
+      <div class="stat"><div class="k">Avg hits / conversion</div><div class="v mono" id="s-avghits">—</div></div>
       <div class="stat"><div class="k">Ambient injection</div><div class="v mono" id="s-amb">+100.0 %/s</div></div>
     </div>
+    <div id="milestone" class="mono">Not yet fully conscious.</div>
     <div id="chart-wrap"><canvas id="chart" width="560" height="180"></canvas></div>
     <div class="chartkey">
-      <span><i style="background:var(--alarm)"></i>total violence (actual, % of start)</span>
-      <span><i style="background:var(--text-dim); border-top:2px dashed var(--text-dim); height:0;"></i>predicted e^(−t/N²)</span>
-      <span><i style="background:var(--calm)"></i>conscious body (log scale)</span>
+      <span><i style="background:var(--alarm)"></i>total violence (% avg, vs. elapsed time)</span>
+      <span><i style="background:var(--accent)"></i>conscious bodies (% of N)</span>
+      <span><i style="background:var(--calm)"></i>seed body (log scale)</span>
     </div>
   </div>
 </div>
@@ -264,9 +272,10 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     tick: document.getElementById('tick-count'),
     sVc: document.getElementById('s-vc'), sTotal: document.getElementById('s-total'),
     sConv: document.getElementById('s-conv'), sHits: document.getElementById('s-hits'),
-    sAmb: document.getElementById('s-amb'),
+    sAmb: document.getElementById('s-amb'), sTime: document.getElementById('s-time'),
+    sAvgHits: document.getElementById('s-avghits'),
     verify: document.getElementById('verify'), legendLo: document.getElementById('legend-lo'),
-    inspector: document.getElementById('inspector'),
+    inspector: document.getElementById('inspector'), milestone: document.getElementById('milestone'),
   };
 
   let bodies = [];
@@ -274,9 +283,10 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
   let collisions = 0;
   let consciousHits = 0;
   let conversions = 0;
-  let S0 = 1;
   let history = [];
   let selectedId = null;
+  let elapsedSec = 0;
+  let fullAt = null;
   const CONSCIOUS_ID = 0;
 
   function startExp(){ return Number(els.exp.value); }
@@ -299,6 +309,11 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     if (pct === 0) return "0 %";
     if (pct >= 0.001) return pct.toFixed(8) + " %";
     return pct.toExponential(8) + " %";
+  }
+  function fmtTime(s){
+    const m = Math.floor(s/60);
+    const sec = s - m*60;
+    return `${m}:${sec.toFixed(1).padStart(4,'0')}`;
   }
 
   function makeBodies(){
@@ -327,8 +342,9 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     collisions = 0;
     consciousHits = 0;
     conversions = 0;
-    S0 = totalViolence();
-    history = [{t:0, S: S0, vc: bodies[CONSCIOUS_ID].v}];
+    elapsedSec = 0;
+    fullAt = null;
+    history = [{t:0, S: totalViolence(), vc: bodies[CONSCIOUS_ID].v, frac: 1/bodies.length}];
     draw();
     updateReadouts();
     updateVerify();
@@ -441,13 +457,29 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     const nConscious = bodies.filter(b=>b.conscious).length;
     els.sConv.textContent = `${nConscious} / ${bodies.length}`;
     els.sHits.textContent = consciousHits;
+    els.sAvgHits.textContent = conversions>0 ? (consciousHits/conversions).toFixed(1) : '—';
+    els.sTime.textContent = fmtTime(elapsedSec);
     const ambPct = Number(els.amb.value)*bodies.length;
     els.sAmb.textContent = (ambPct>=0?'+':'') + ambPct.toFixed(1) + ' %/s';
-    els.tick.textContent = `collisions = ${collisions}`;
+    els.tick.textContent = `collisions = ${collisions} · t = ${elapsedSec.toFixed(1)}s`;
     updateInspector();
 
-    history.push({t: collisions, S: total, vc: c.v});
-    if (history.length > 400) history.shift();
+    if (!fullAt && nConscious === bodies.length){
+      fullAt = { time: elapsedSec, hits: consciousHits, collisions, avg: consciousHits/Math.max(1,conversions) };
+    }
+    if (fullAt){
+      els.milestone.classList.add('done');
+      els.milestone.textContent =
+        `Full consciousness reached at t=${fmtTime(fullAt.time)} — ${fullAt.hits} conscious-role hits total `+
+        `(avg ${fullAt.avg.toFixed(1)} hits per body converted), ${fullAt.collisions} collisions.`;
+    } else {
+      els.milestone.classList.remove('done');
+      els.milestone.textContent = `Not yet fully conscious — ${nConscious}/${bodies.length} converted, `+
+        `avg ${conversions>0 ? (consciousHits/conversions).toFixed(1) : '—'} hits per conversion so far.`;
+    }
+
+    history.push({t: elapsedSec, S: total, vc: c.v, frac: nConscious/bodies.length});
+    if (history.length > 600) history.shift();
     drawChart();
   }
 
@@ -460,8 +492,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     const pad = 8;
     const maxT = history[history.length-1].t;
     const minT = history[0].t;
-    const span = Math.max(1, maxT-minT);
-    const N = bodies.length;
+    const span = Math.max(0.5, maxT-minT);
     function xFor(t){ return pad + (t-minT)/span * (w-2*pad); }
     function yForFrac(f){ return h-pad - Math.min(1,Math.max(0,f))*(h-2*pad); }
     function yForLog(v){
@@ -475,17 +506,23 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
       const y = pad + f*(h-2*pad);
       cctx.beginPath(); cctx.moveTo(pad,y); cctx.lineTo(w-pad,y); cctx.stroke();
     }
-    cctx.strokeStyle = getComputedStyle(document.body).getPropertyValue('--text-dim') || '#888';
-    cctx.lineWidth = 1.5;
-    cctx.setLineDash([4,4]);
-    cctx.beginPath();
-    history.forEach((p,i)=>{ const pred = Math.exp(-p.t/(N*N)); const x=xFor(p.t), y=yForFrac(pred); i?cctx.lineTo(x,y):cctx.moveTo(x,y); });
-    cctx.stroke();
-    cctx.setLineDash([]);
+    if (fullAt){
+      cctx.strokeStyle = getComputedStyle(document.body).getPropertyValue('--calm') || '#3d6';
+      cctx.lineWidth = 1;
+      cctx.setLineDash([3,3]);
+      const x = xFor(fullAt.time);
+      cctx.beginPath(); cctx.moveTo(x,pad); cctx.lineTo(x,h-pad); cctx.stroke();
+      cctx.setLineDash([]);
+    }
     cctx.strokeStyle = getComputedStyle(document.body).getPropertyValue('--alarm') || '#c33';
     cctx.lineWidth = 2;
     cctx.beginPath();
-    history.forEach((p,i)=>{ const x=xFor(p.t), y=yForFrac(p.S/S0); i?cctx.lineTo(x,y):cctx.moveTo(x,y); });
+    history.forEach((p,i)=>{ const x=xFor(p.t), y=yForFrac(p.S/bodies.length); i?cctx.lineTo(x,y):cctx.moveTo(x,y); });
+    cctx.stroke();
+    cctx.strokeStyle = getComputedStyle(document.body).getPropertyValue('--accent') || '#d90';
+    cctx.lineWidth = 2;
+    cctx.beginPath();
+    history.forEach((p,i)=>{ const x=xFor(p.t), y=yForFrac(p.frac); i?cctx.lineTo(x,y):cctx.moveTo(x,y); });
     cctx.stroke();
     cctx.strokeStyle = getComputedStyle(document.body).getPropertyValue('--calm') || '#3d6';
     cctx.lineWidth = 2;
@@ -530,6 +567,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     if (lastT == null) lastT = now;
     const dtSec = Math.min(0.25, (now-lastT)/1000);
     lastT = now;
+    elapsedSec += dtSec;
     const speed = Number(els.speed.value);
     for (let s=0;s<speed;s++) step();
     applyAmbient(dtSec);
