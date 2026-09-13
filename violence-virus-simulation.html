@@ -100,6 +100,12 @@ button.tag.copied{border-color:var(--calm); color:var(--calm);}
 #run-settings{font-size:11.5px; color:var(--text-dim); margin-bottom:10px; overflow-wrap:anywhere;}
 
 #stage-wrap{position:relative; border-radius:8px; overflow:hidden; border:1px solid var(--line); background:var(--panel-2);}
+#scrub-wrap{margin-top:8px;}
+.scrub-row{display:flex; align-items:center; gap:8px;}
+.scrub-row input[type=range]{flex:1; accent-color:var(--accent);}
+.scrub-end{font-size:10.5px; color:var(--text-dim); flex:none;}
+#scrub-label{font-size:11px; color:var(--text-dim); margin-top:4px;}
+#scrub-label.scrubbing{color:var(--accent);}
 #stage{display:block; width:100%; height:auto; aspect-ratio:4/3; cursor:pointer;}
 #inspector{
   margin-top:8px; padding:8px 10px; font-size:12px; line-height:1.55;
@@ -202,6 +208,14 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
       <span class="tag" id="tick-count">conscious hits = 0</span>
     </div>
     <div id="stage-wrap"><canvas id="stage" width="480" height="360"></canvas></div>
+    <div id="scrub-wrap">
+      <div class="scrub-row">
+        <span class="mono scrub-end">0:00.0</span>
+        <input type="range" id="scrub" min="0" max="0" value="0" step="1">
+        <span class="mono scrub-end">live</span>
+      </div>
+      <div id="scrub-label" class="mono">History bar — once the run has a few snapshots, drag to look back at any point (pauses the sim while you do).</div>
+    </div>
     <div class="rolekey">
       <span><i class="chip" style="background:hsl(0,72%,45%)"></i>red — violent, ≥ 51%</span>
       <span><i class="chip" style="background:hsl(55,95%,58%)"></i>yellow — violent, 10–50%</span>
@@ -291,7 +305,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
   </div>
 </div>
 
-<footer>Color is the only at-a-glance signal now — no on-ball text, and no gradient either: a non-conscious body is one of three fixed colors by band, not a ramp — red at 51% or above, yellow from 10% up to 50%, green under 10%. A conscious body is always exactly 0% violence, so it always gets the same fixed gold fill and gold ring, chosen to sit well apart from the yellow band so the two are never confusable at a glance — a body a divine ball just halved from 100% down to 50% reads as yellow, not gold, exactly marking it as "recently touched, not yet converted." (The gold ring's faint halo turns off above 1,000 bodies, purely so thousands of per-ball gradients don't tank the frame rate — the flat gold fill stays either way.) Click any ball to read its exact value in the inspector above the chart. Bodies range from 4 up to 10,000; the chamber and ball radius scale together to keep a reasonable, visible size and packing density at any count, and past 300 bodies collision detection switches from checking every pair to a spatial grid (only nearby bodies are checked against each other) so the frame rate doesn't collapse at high counts. Background violence radiation only touches bodies not yet flagged conscious, so a body's crossing into consciousness is a real, permanent immunity to that rising background hazard.</footer>
+<footer>Color is the only at-a-glance signal now — no on-ball text, and no gradient either: a non-conscious body is one of three fixed colors by band, not a ramp — red at 51% or above, yellow from 10% up to 50%, green under 10%. A conscious body is always exactly 0% violence, so it always gets the same fixed gold fill and gold ring, chosen to sit well apart from the yellow band so the two are never confusable at a glance — a body a divine ball just halved from 100% down to 50% reads as yellow, not gold, exactly marking it as "recently touched, not yet converted." (The gold ring's faint halo turns off above 1,000 bodies, purely so thousands of per-ball gradients don't tank the frame rate — the flat gold fill stays either way.) Click any ball to read its exact value in the inspector above the chart. Bodies range from 4 up to 10,000; the chamber and ball radius scale together to keep a reasonable, visible size and packing density at any count, and past 300 bodies collision detection switches from checking every pair to a spatial grid (only nearby bodies are checked against each other) so the frame rate doesn't collapse at high counts. Background violence radiation only touches bodies not yet flagged conscious, so a body's crossing into consciousness is a real, permanent immunity to that rising background hazard. The history bar under the chamber takes a snapshot of every ball's position and violence every 1-5 seconds (spaced further apart at very high body counts to keep memory bounded), up to 600 snapshots per run; dragging it pauses the sim and repaints the chamber and headline stats as they were at that moment, and dragging back to the right end (or pressing Run) returns to live.</footer>
 
 <script>
 (function(){
@@ -321,6 +335,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     runSettings: document.getElementById('run-settings'), copyBtn: document.getElementById('btn-copy'),
     sbTotal: document.getElementById('sb-total'), sbTime: document.getElementById('sb-time'),
     sbConv: document.getElementById('sb-conv'), sbMin: document.getElementById('sb-min'),
+    scrub: document.getElementById('scrub'), scrubLabel: document.getElementById('scrub-label'),
   };
 
   let bodies = [];
@@ -333,6 +348,11 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
   let elapsedSec = 0;
   let fullAt = null;
   let recordLowV = 1;
+  let snapshots = [];
+  let snapInterval = 1;
+  let lastSnapTime = 0;
+  let scrubIndex = null;
+  const MAX_SNAPSHOTS = 600;
   let convMilestones = [];
   const MAX_MILESTONES = 5;
   let axisMin = 0, axisMax = 12;
@@ -420,6 +440,14 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     axisMin = 0; axisMax = LIVE_WINDOW;
     S0 = totalViolence();
     history = [{t:0, S: S0, frac: 1/bodies.length}];
+    snapshots = [];
+    lastSnapTime = 0;
+    scrubIndex = null;
+    snapInterval = bodies.length > 2000 ? 5 : (bodies.length > 500 ? 2 : 1);
+    els.scrub.min = 0; els.scrub.max = 0; els.scrub.value = 0;
+    els.scrubLabel.textContent = `History bar — a snapshot every ${snapInterval}s once running; drag to look back (pauses the sim while you do).`;
+    els.scrubLabel.classList.remove('scrubbing');
+    captureSnapshot(); // t=0 snapshot, so the far left of the bar is the true start
     draw();
     updateReadouts();
     updateVerify();
@@ -893,6 +921,75 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
       b.v = Math.min(1, Math.max(0, b.v + rate*dtSec));
     }
   }
+  function captureSnapshot(){
+    if (snapshots.length >= MAX_SNAPSHOTS) return;
+    lastSnapTime = elapsedSec;
+    const n = bodies.length;
+    const xs = new Float32Array(n), ys = new Float32Array(n), vs = new Float32Array(n), cs = new Uint8Array(n);
+    let nConscious = 0;
+    for (let i=0;i<n;i++){
+      const b = bodies[i];
+      xs[i]=b.x; ys[i]=b.y; vs[i]=b.v; cs[i]=b.conscious?1:0;
+      if (b.conscious) nConscious++;
+    }
+    snapshots.push({t: elapsedSec, xs, ys, vs, cs, total: totalViolence()*100, nConscious});
+    els.scrub.max = snapshots.length;
+    if (scrubIndex === null) els.scrub.value = snapshots.length;
+  }
+
+  function maybeSnapshot(){
+    if (elapsedSec - lastSnapTime < snapInterval) return;
+    captureSnapshot();
+  }
+
+  function renderScrub(index){
+    const snap = snapshots[index];
+    if (!snap) return;
+    ctx.clearRect(0,0,W,H);
+    ctx.fillStyle = getComputedStyle(document.body).getPropertyValue('--panel-2') || '#111';
+    ctx.fillRect(0,0,W,H);
+    const n = snap.xs.length;
+    const showHalo = n <= 1000;
+    for (let i=0;i<n;i++){
+      const isConscious = snap.cs[i]===1;
+      const {rgb, ring} = colorFor(snap.vs[i], isConscious);
+      const x=snap.xs[i], y=snap.ys[i], r=BALL_R;
+      if (isConscious && showHalo){
+        const haloR = r*3.2;
+        const grad = ctx.createRadialGradient(x,y,r*0.6,x,y,haloR);
+        grad.addColorStop(0, 'rgba(255,214,90,0.38)');
+        grad.addColorStop(1, 'rgba(255,214,90,0)');
+        ctx.fillStyle = grad;
+        ctx.beginPath(); ctx.arc(x,y,haloR,0,Math.PI*2); ctx.fill();
+      }
+      ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fillStyle = rgb; ctx.fill();
+      if (isConscious){
+        ctx.lineWidth = Math.max(1, r*0.15);
+        ctx.strokeStyle = ring;
+        ctx.stroke();
+      }
+    }
+    els.scrubLabel.textContent = `Viewing history at t=${fmtTime(snap.t)} — sim paused, drag to "live" (right end) to resume watching.`;
+    els.scrubLabel.classList.add('scrubbing');
+    els.sTotal.textContent = snap.total.toFixed(1);
+    els.sConv.textContent = `${snap.nConscious} / ${n}`;
+    els.sTime.textContent = fmtTime(snap.t);
+    els.sbTotal.textContent = snap.total.toFixed(1);
+    els.sbConv.textContent = `${snap.nConscious}/${n}`;
+    els.sbTime.textContent = fmtTime(snap.t);
+    els.tick.textContent = `history snapshot @ t=${snap.t.toFixed(1)}s`;
+  }
+
+  function exitScrub(){
+    if (scrubIndex === null) return;
+    scrubIndex = null;
+    els.scrub.value = snapshots.length;
+    els.scrubLabel.classList.remove('scrubbing');
+    els.scrubLabel.textContent = 'History bar — drag to look back at any point (pauses the sim while you do); back at "live" now.';
+    draw();
+    updateReadouts();
+  }
+
   function loop(now){
     if (lastT == null) lastT = now;
     const dtSec = Math.min(0.25, (now-lastT)/1000);
@@ -904,6 +1001,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     applyAmbient(simDt);
     draw();
     updateReadouts();
+    maybeSnapshot();
     if (running) rafId = requestAnimationFrame(loop);
   }
 
@@ -947,6 +1045,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     running = !running;
     els.run.textContent = running ? 'Pause' : 'Run';
     if (running){
+      exitScrub();
       if (chartAnimId){ cancelAnimationFrame(chartAnimId); chartAnimId = null; }
       lastT = null; loop(performance.now());
     } else {
@@ -956,11 +1055,48 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
   });
   els.reset.addEventListener('click', ()=>{ selectedId = null; reset(); });
 
+  els.scrub.addEventListener('input', ()=>{
+    if (running){
+      running = false;
+      els.run.textContent = 'Run';
+      if (rafId) cancelAnimationFrame(rafId);
+      shrinkChartToFullRun();
+    }
+    const val = Number(els.scrub.value);
+    if (val >= snapshots.length){
+      exitScrub();
+    } else {
+      scrubIndex = val;
+      renderScrub(val);
+    }
+  });
+
   stage.addEventListener('click', (e)=>{
     const rect = stage.getBoundingClientRect();
     const scaleX = stage.width/rect.width, scaleY = stage.height/rect.height;
     const mx = (e.clientX-rect.left)*scaleX, my = (e.clientY-rect.top)*scaleY;
     const tolerance = Math.max(8, scaleX*10); // keep a roughly constant on-screen hit radius even when canvas is heavily downscaled
+
+    if (scrubIndex !== null){
+      const snap = snapshots[scrubIndex];
+      let best = -1, bestD = Infinity;
+      for (let i=0;i<snap.xs.length;i++){
+        const d = Math.hypot(snap.xs[i]-mx, snap.ys[i]-my);
+        if (d < BALL_R+tolerance && d < bestD){ best = i; bestD = d; }
+      }
+      if (best >= 0){
+        const isConscious = snap.cs[best]===1;
+        els.inspector.innerHTML =
+          `Body #${best}${best===CONSCIOUS_ID?' (seed)':''} — `+
+          `<span class="${isConscious?'ring':''}">${isConscious?'conscious':'non-conscious'}</span> — `+
+          `exact violence at t=${fmtTime(snap.t)}: <b>${fmtFull(snap.vs[best])}</b>`;
+      } else {
+        els.inspector.textContent = 'Click any ball to zoom in on its exact violence level — color alone won\'t show the exact number.';
+      }
+      renderScrub(scrubIndex);
+      return;
+    }
+
     let best = null, bestD = Infinity;
     for (const b of bodies){
       const d = Math.hypot(b.x-mx, b.y-my);
