@@ -190,6 +190,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
       <span><i class="chip" style="background:hsl(0,70%,30%)"></i>violent, not yet conscious</span>
       <span><i class="chip" style="background:hsl(140,80%,55%)"></i>newly conscious, calm</span>
       <span><i class="chip" style="background:hsl(42,90%,50%)"></i>conscious, violence redoubled — still de-escalating</span>
+      <span><i class="chip" style="background:hsl(42,90%,50%); box-shadow:0 0 6px 3px rgba(255,214,90,0.55);"></i>divine conscious — back to 100%, still spreading calm</span>
     </div>
     <div id="inspector" class="mono">Click any ball to zoom in on its exact violence level — the on-ball labels are too small to read at a glance on purpose.</div>
     <div class="controls">
@@ -266,7 +267,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
   </div>
 </div>
 
-<footer>Bodies are labeled with their live violence percentage. Fill color runs a log-scaled spectrum from bright green at (or below) the conversion threshold up to a body's "hot" end — dark red for a body not yet conscious, gold for one that is: a conscious body's own value still climbs back up from repeated doubling, but it never reads as red again, because the color is meant to say what the body is doing, not just what number it's holding. The gold ring marks any body currently flagged conscious as a secondary cue at any zoom level. Chamber is compressed and bodies are small (radius halved from an earlier version) to fit up to 200 on screen; every ball carries a deliberately tiny live percentage label — click one to read its exact value in the inspector above the chart. Ambient drift only touches bodies not yet flagged conscious, so a body's crossing into consciousness is a real, permanent immunity to the background field, not just a color that happens to sit near green.</footer>
+<footer>Bodies are labeled with their live violence percentage. Fill color runs a log-scaled spectrum from bright green at (or below) the conversion threshold up to a body's "hot" end — dark red for a body not yet conscious, gold for one that is: a conscious body's own value still climbs back up from repeated doubling, but it never reads as red again, because the color is meant to say what the body is doing, not just what number it's holding. The gold ring marks any body currently flagged conscious as a secondary cue at any zoom level. A conscious body whose own value has climbed back to essentially 100% gets a faint yellow halo on top of that — a body can be holding a full charge of violence internally and still, by role, be the one halving whoever it touches; the halo is there so that fact reads at a glance instead of getting lost in "it's basically red again." Chamber is compressed and bodies are small (radius halved from an earlier version) to fit up to 200 on screen; every ball carries a deliberately tiny live percentage label — click one to read its exact value in the inspector above the chart. Ambient drift only touches bodies not yet flagged conscious, so a body's crossing into consciousness is a real, permanent immunity to the background field, not just a color that happens to sit near green.</footer>
 
 <script>
 (function(){
@@ -305,6 +306,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
   let S0 = 1;
   let chartAnimId = null;
   const LIVE_WINDOW = 12;
+  const DIVINE_THRESHOLD = 0.999;
   const CONSCIOUS_ID = 0;
 
   function startExp(){ return Number(els.exp.value); }
@@ -455,6 +457,17 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     ctx.textAlign = 'center';
     for (const b of bodies){
       const {rgb, ring} = colorFor(b.v, b.conscious);
+      const divine = b.conscious && b.v >= DIVINE_THRESHOLD;
+      if (divine){
+        const haloR = b.r*3.2;
+        const grad = ctx.createRadialGradient(b.x, b.y, b.r*0.6, b.x, b.y, haloR);
+        grad.addColorStop(0, 'rgba(255,214,90,0.38)');
+        grad.addColorStop(1, 'rgba(255,214,90,0)');
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.arc(b.x, b.y, haloR, 0, Math.PI*2);
+        ctx.fill();
+      }
       ctx.beginPath();
       ctx.arc(b.x, b.y, b.r, 0, Math.PI*2);
       ctx.fillStyle = rgb;
