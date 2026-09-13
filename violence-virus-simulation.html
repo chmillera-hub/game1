@@ -234,7 +234,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
         <input type="range" id="thr" min="0.1" max="10" value="0.5" step="0.1">
       </div>
       <div class="ctrl" style="grid-column:1/-1;">
-        <label>Ambient violence, per body per second <span class="val" id="v-amb">+1.0 %/s</span></label>
+        <label>Background violence radiation, per body per second <span class="val" id="v-amb">+1.0 %/s</span></label>
         <input type="range" id="amb" min="-2" max="10" value="1" step="0.1">
       </div>
     </div>
@@ -249,7 +249,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
       <h2>Readout</h2>
       <button id="btn-copy" class="tag" style="cursor:pointer;">Copy summary</button>
     </div>
-    <div id="run-settings" class="mono">Bodies=100 · speed=1× · seed start=10⁻²⁰⁰% · threshold=0.5% · ambient=+1.0%/s</div>
+    <div id="run-settings" class="mono">Bodies=100 · speed=1× · seed start=10⁻²⁰⁰% · threshold=0.5% · radiation=+1.0%/s</div>
     <div class="readouts">
       <div class="stat"><div class="k">Seed body</div><div class="v calm mono" id="s-vc">1.0×10⁻²⁰⁰ %</div></div>
       <div class="stat"><div class="k">Total system violence (Σ %)</div><div class="v mono" id="s-total">9900.0</div></div>
@@ -257,7 +257,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
       <div class="stat"><div class="k">Elapsed time</div><div class="v mono" id="s-time">0:00.0</div></div>
       <div class="stat"><div class="k">Conscious-role hits</div><div class="v mono" id="s-hits">0</div></div>
       <div class="stat"><div class="k">Avg hits / conversion</div><div class="v mono" id="s-avghits">—</div></div>
-      <div class="stat"><div class="k">Ambient injection</div><div class="v mono" id="s-amb">+100.0 %/s</div></div>
+      <div class="stat"><div class="k">Background radiation, total</div><div class="v mono" id="s-amb">+100.0 %/s</div></div>
     </div>
     <div id="milestone" class="mono">Not yet fully conscious.</div>
     <div id="chart-wrap"><canvas id="chart" width="560" height="180"></canvas></div>
@@ -282,9 +282,9 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     <h3 style="font-size:17px;margin:16px 0 8px;">Why one seed is enough for all of them</h3>
     <p>Fix any body still above T. Each time it collides with a conscious-flagged body, its value is exactly halved — a geometric decay with no floor besides 0. However small T is, that body crosses it after a finite number of such hits:</p>
     <div class="formula">hits needed ≈ log₂(v / T)</div>
-    <p>In a well-mixed chamber every pair collides again and again over time, so the probability any one body is <i>never</i> hit by a conscious body, forever, is zero. Conclusion: for any fixed T &gt; 0 <i>with no ambient term</i>, full conversion — every body conscious, total violence → 0 — isn't just likely, it's the guaranteed long-run outcome.</p>
-    <h3 style="font-size:17px;margin:16px 0 8px;">What the ambient slider breaks</h3>
-    <p>The ambient term adds a continuous drift <span class="mono">dv/dt = rate</span> to every body, independent of collisions — a background field, not an interaction. That guarantee above assumed nothing was fighting the cascade. A positive rate is exactly that fight: it can drag a body back over T between hits, faster than the cascade can push it down. There's a real tug-of-war here between a discrete, collision-driven cooling process and a continuous, time-driven heating one — set the rate negative and you're adding a second calming channel on top of the cascade; push it toward +10 and you're watching the same "runs away past a critical value" behavior from the very first version of this model, just driven by a clock instead of a doubling.</p>
+    <p>In a well-mixed chamber every pair collides again and again over time, so the probability any one body is <i>never</i> hit by a conscious body, forever, is zero. Conclusion: for any fixed T &gt; 0 <i>with no background violence radiation</i>, full conversion — every body conscious, total violence → 0 — isn't just likely, it's the guaranteed long-run outcome.</p>
+    <h3 style="font-size:17px;margin:16px 0 8px;">What background violence radiation breaks</h3>
+    <p>This slider models the ambient, everywhere-at-once violence of a world that keeps generating friction on its own — not a person-to-person interaction, but a background condition every still-non-conscious body is bathed in continuously, raising its violence by a fixed amount every second whether or not it's currently colliding with anything. At its default positive setting it is, by design, a rising tide: it actively works against the cascade, dragging a body's violence back up over T between hits, faster than conversions can push it down. (The slider also allows negative values, as a deliberate inversion for experimentation — a "calming radiation" that adds a second, contact-free channel toward zero — but the intended, default reading of this control is an increasing background hazard, not a decreasing one.) There's a real tug-of-war between a discrete, collision-driven cooling process and this continuous, clock-driven heating one — push it toward +10 and you're watching the same "runs away past a critical value" behavior from the very first version of this model, just driven by a clock instead of a doubling.</p>
   </div>
   <div>
     <h3 style="font-size:17px;margin-bottom:8px;">Verifying the cascade actually accelerates</h3>
@@ -294,7 +294,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
   </div>
 </div>
 
-<footer>Bodies are labeled with their live violence percentage. Fill color runs a log-scaled spectrum from bright green at (or below) the conversion threshold up to a body's "hot" end — dark red for a body not yet conscious, gold for one that is: a conscious body's own value still climbs back up from repeated doubling, but it never reads as red again, because the color is meant to say what the body is doing, not just what number it's holding. The gold ring marks any body currently flagged conscious as a secondary cue at any zoom level. A conscious body whose own value has climbed back to essentially 100% gets a faint yellow halo on top of that — a body can be holding a full charge of violence internally and still, by role, be the one halving whoever it touches; the halo is there so that fact reads at a glance instead of getting lost in "it's basically red again." Chamber is compressed and bodies are small (radius halved from an earlier version) to fit up to 200 on screen; every ball carries a deliberately tiny live percentage label — click one to read its exact value in the inspector above the chart. Ambient drift only touches bodies not yet flagged conscious, so a body's crossing into consciousness is a real, permanent immunity to the background field, not just a color that happens to sit near green.</footer>
+<footer>Bodies are labeled with their live violence percentage. Fill color runs a log-scaled spectrum from bright green at (or below) the conversion threshold up to a body's "hot" end — dark red for a body not yet conscious, gold for one that is: a conscious body's own value still climbs back up from repeated doubling, but it never reads as red again, because the color is meant to say what the body is doing, not just what number it's holding. The gold ring marks any body currently flagged conscious as a secondary cue at any zoom level. A conscious body whose own value has climbed back to essentially 100% gets a faint yellow halo on top of that — a body can be holding a full charge of violence internally and still, by role, be the one halving whoever it touches; the halo is there so that fact reads at a glance instead of getting lost in "it's basically red again." Chamber is compressed and bodies are small (radius halved from an earlier version) to fit up to 200 on screen; every ball carries a deliberately tiny live percentage label — click one to read its exact value in the inspector above the chart. Background violence radiation only touches bodies not yet flagged conscious, so a body's crossing into consciousness is a real, permanent immunity to that rising background hazard, not just a color that happens to sit near green.</footer>
 
 <script>
 (function(){
@@ -647,7 +647,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
   function updateRunSettingsLine(){
     els.runSettings.textContent =
       `Bodies=${els.n.value} · speed=${els.speed.value}× · seed start=10⁻${Math.abs(Number(els.exp.value))}% · `+
-      `threshold=${(threshold()*100).toFixed(1)}% · ambient=${(Number(els.amb.value)>=0?'+':'')}${els.amb.value}%/s`;
+      `threshold=${(threshold()*100).toFixed(1)}% · radiation=${(Number(els.amb.value)>=0?'+':'')}${els.amb.value}%/s`;
   }
 
   function buildSummaryText(){
@@ -691,17 +691,21 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
       `This flag never reverts, even if that body's own v is later driven back up by repeated`,
       `doubling from rule 2 while it plays the "conscious" role in future collisions.`,
       '',
-      `Ambient drift: independent of collisions, every body still flagged false gains (or, if`,
-      `the ambient rate is set negative, loses) a fixed percent of violence per elapsed second,`,
-      `continuously. Bodies already flagged true are completely immune to this drift. This is a`,
-      `background field that competes against the collision-driven cascade above: positive`,
-      `ambient can indefinitely delay or even prevent full conversion; negative ambient adds a`,
-      `second, independent channel that also drives violence toward zero.`,
+      `Background violence radiation: independent of collisions, every body still flagged`,
+      `false continuously gains a fixed percent of violence per elapsed second -- modeling the`,
+      `ambient, everywhere-at-once violence of a world that generates friction on its own, not`,
+      `person-to-person contact. This is the DEFAULT, positive-rate reading of the control: a`,
+      `rising background hazard that competes against the collision-driven cascade above and`,
+      `can indefinitely delay or even prevent full conversion. The rate can also be set`,
+      `negative as a deliberate inversion for experimentation (a contact-free "calming`,
+      `radiation" that adds a second channel toward zero) -- but that is an inverted, atypical`,
+      `mode, not the intended meaning of the control. Bodies already flagged true are`,
+      `completely immune to this radiation either way.`,
       '',
       `Speed control: the "speed" multiplier scales how many physics steps run per rendered`,
       `frame, and it scales elapsed/simulated time by the same factor (so "8x" genuinely means`,
-      `8 simulated seconds per real second, including the ambient rate, not just faster`,
-      `collisions against a real-time ambient clock).`,
+      `8 simulated seconds per real second, including the radiation rate, not just faster`,
+      `collisions against a real-time radiation clock).`,
       '',
       `"Total system violence" accounting: only bodies still flagged false are summed into the`,
       `displayed total, as raw percentage points (NOT averaged, NOT divided by N) -- e.g. ten`,
@@ -724,7 +728,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
       `  Speed: ${els.speed.value}×`,
       `  Seed starting violence: 10^-${Math.abs(Number(els.exp.value))}%`,
       `  Conversion threshold: ${(threshold()*100).toFixed(1)}%`,
-      `  Ambient violence: ${(Number(els.amb.value)>=0?'+':'')}${els.amb.value}%/s per body`,
+      `  Background violence radiation: ${(Number(els.amb.value)>=0?'+':'')}${els.amb.value}%/s per body`,
       '',
       'Live readout:',
       `  Elapsed time: ${fmtTime(elapsedSec)}`,
