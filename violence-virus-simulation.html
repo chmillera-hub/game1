@@ -92,6 +92,12 @@ header p{color:var(--text-dim); font-size:14.5px; max-width:66ch; line-height:1.
 }
 .panel-title h2{font-size:19px; color:var(--text);}
 .panel-title .tag{font-size:11px; color:var(--text-dim); font-family:"IBM Plex Mono",monospace; text-transform:none; letter-spacing:0.04em;}
+button.tag{
+  background:var(--panel-2); border:1px solid var(--line); border-radius:5px; padding:4px 9px;
+}
+button.tag:hover{border-color:var(--calm); color:var(--text);}
+button.tag.copied{border-color:var(--calm); color:var(--calm);}
+#run-settings{font-size:11.5px; color:var(--text-dim); margin-bottom:10px; overflow-wrap:anywhere;}
 
 #stage-wrap{position:relative; border-radius:8px; overflow:hidden; border:1px solid var(--line); background:var(--panel-2);}
 #stage{display:block; width:100%; height:auto; aspect-ratio:4/3; cursor:pointer;}
@@ -239,7 +245,11 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
   </div>
 
   <div class="panel">
-    <div class="panel-title"><h2>Readout</h2><span class="tag">live</span></div>
+    <div class="panel-title">
+      <h2>Readout</h2>
+      <button id="btn-copy" class="tag" style="cursor:pointer;">Copy summary</button>
+    </div>
+    <div id="run-settings" class="mono">Bodies=100 · speed=1× · seed start=10⁻²⁰⁰% · threshold=0.5% · ambient=+1.0%/s</div>
     <div class="readouts">
       <div class="stat"><div class="k">Seed body</div><div class="v calm mono" id="s-vc">1.0×10⁻²⁰⁰ %</div></div>
       <div class="stat"><div class="k">Total system violence (Σ %)</div><div class="v mono" id="s-total">9900.0</div></div>
@@ -308,6 +318,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     sAvgHits: document.getElementById('s-avghits'),
     verify: document.getElementById('verify'), legendLo: document.getElementById('legend-lo'),
     inspector: document.getElementById('inspector'), milestone: document.getElementById('milestone'),
+    runSettings: document.getElementById('run-settings'), copyBtn: document.getElementById('btn-copy'),
     sbTotal: document.getElementById('sb-total'), sbTime: document.getElementById('sb-time'),
     sbConv: document.getElementById('sb-conv'), sbMin: document.getElementById('sb-min'),
   };
@@ -390,6 +401,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     draw();
     updateReadouts();
     updateVerify();
+    updateRunSettingsLine();
   }
 
   function colorFor(v, conscious){
@@ -632,6 +644,71 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
       `exact violence: <b>${fmtFull(b.v)}</b>`;
   }
 
+  function updateRunSettingsLine(){
+    els.runSettings.textContent =
+      `Bodies=${els.n.value} · speed=${els.speed.value}× · seed start=10⁻${Math.abs(Number(els.exp.value))}% · `+
+      `threshold=${(threshold()*100).toFixed(1)}% · ambient=${(Number(els.amb.value)>=0?'+':'')}${els.amb.value}%/s`;
+  }
+
+  function buildSummaryText(){
+    const nConscious = bodies.filter(b=>b.conscious).length;
+    const total = totalViolence();
+    const ordinary = bodies.filter(b=>!b.conscious);
+    const closest = ordinary.length
+      ? `${fmtPct(Math.min(...ordinary.map(b=>b.v)))} (~${Math.max(0,Math.ceil(Math.log2(Math.min(...ordinary.map(b=>b.v))/threshold())))} hits away)`
+      : 'none — all conscious';
+    const lines = [
+      'Violence Virus Threshold — run summary',
+      '',
+      'Settings:',
+      `  Bodies: ${els.n.value}`,
+      `  Speed: ${els.speed.value}×`,
+      `  Seed starting violence: 10^-${Math.abs(Number(els.exp.value))}%`,
+      `  Conversion threshold: ${(threshold()*100).toFixed(1)}%`,
+      `  Ambient violence: ${(Number(els.amb.value)>=0?'+':'')}${els.amb.value}%/s per body`,
+      '',
+      'Live readout:',
+      `  Elapsed time: ${fmtTime(elapsedSec)}`,
+      `  Collisions: ${collisions}`,
+      `  Total system violence (Σ% of non-conscious bodies): ${(total*100).toFixed(2)}`,
+      `  Conscious bodies: ${nConscious} / ${bodies.length}`,
+      `  Conscious-role hits: ${consciousHits}`,
+      `  Avg hits per conversion: ${conversions>0 ? (consciousHits/conversions).toFixed(2) : 'n/a'}`,
+      `  Closest still-violent body to threshold: ${closest}`,
+      `  Seed body's own value: ${fmtSci(bodies[CONSCIOUS_ID].v)}`,
+      '',
+      'Status:',
+      `  ${fullAt
+        ? `Simulation complete — full consciousness reached at t=${fmtTime(fullAt.time)}, total violence at 0%. ${fullAt.hits} conscious-role hits total (avg ${fullAt.avg.toFixed(2)} hits per body converted), ${fullAt.collisions} collisions.`
+        : `Still running/paused — ${nConscious}/${bodies.length} converted.`}`,
+    ];
+    return lines.join('\n');
+  }
+
+  function copySummary(){
+    const text = buildSummaryText();
+    const done = () => {
+      els.copyBtn.textContent = 'Copied!';
+      els.copyBtn.classList.add('copied');
+      setTimeout(()=>{ els.copyBtn.textContent = 'Copy summary'; els.copyBtn.classList.remove('copied'); }, 1600);
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).then(done).catch(()=>fallbackCopy(text, done));
+    } else {
+      fallbackCopy(text, done);
+    }
+  }
+  function fallbackCopy(text, done){
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.focus(); ta.select();
+    try { document.execCommand('copy'); done(); } catch(e){}
+    document.body.removeChild(ta);
+  }
+
   function updateVerify(){
     const N = Number(els.n.value);
     const T = threshold();
@@ -668,20 +745,23 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     if (running) rafId = requestAnimationFrame(loop);
   }
 
-  els.n.addEventListener('input', ()=>{ els.vN.textContent = els.n.value; updateVerify(); });
-  els.speed.addEventListener('input', ()=>{ els.vSpeed.textContent = els.speed.value + '×'; });
-  els.exp.addEventListener('input', ()=>{ els.vExp.textContent = '10⁻'+Math.abs(els.exp.value)+' %'; updateVerify(); });
+  els.n.addEventListener('input', ()=>{ els.vN.textContent = els.n.value; updateVerify(); updateRunSettingsLine(); });
+  els.speed.addEventListener('input', ()=>{ els.vSpeed.textContent = els.speed.value + '×'; updateRunSettingsLine(); });
+  els.exp.addEventListener('input', ()=>{ els.vExp.textContent = '10⁻'+Math.abs(els.exp.value)+' %'; updateVerify(); updateRunSettingsLine(); });
   els.thr.addEventListener('input', ()=>{
     const T = threshold();
     els.vThr.textContent = (T*100).toFixed(1) + ' %';
     els.legendLo.textContent = `bright green ≤ ${(T*100).toFixed(1)}%`;
     updateVerify();
+    updateRunSettingsLine();
   });
   els.amb.addEventListener('input', ()=>{
     const v = Number(els.amb.value);
     els.vAmb.textContent = (v>=0?'+':'') + v.toFixed(1) + ' %/s';
     updateReadouts();
+    updateRunSettingsLine();
   });
+  els.copyBtn.addEventListener('click', copySummary);
 
   function shrinkChartToFullRun(){
     const targetMax = Math.max(LIVE_WINDOW, elapsedSec);
