@@ -94,10 +94,16 @@ header p{color:var(--text-dim); font-size:14.5px; max-width:66ch; line-height:1.
 .panel-title .tag{font-size:11px; color:var(--text-dim); font-family:"IBM Plex Mono",monospace; text-transform:none; letter-spacing:0.04em;}
 
 #stage-wrap{position:relative; border-radius:8px; overflow:hidden; border:1px solid var(--line); background:var(--panel-2);}
-#stage{display:block; width:100%; height:auto; aspect-ratio:4/3;}
+#stage{display:block; width:100%; height:auto; aspect-ratio:4/3; cursor:pointer;}
 .legend{
   display:flex; align-items:center; gap:10px; margin-top:10px; font-size:12px; color:var(--text-dim);
 }
+#inspector{
+  margin-top:8px; padding:8px 10px; font-size:12px; line-height:1.55;
+  background:var(--panel-2); border:1px dashed var(--line); border-radius:6px; color:var(--text-dim);
+}
+#inspector b{color:var(--text); font-weight:600;}
+#inspector .ring{color:var(--accent);}
 .legend .bar{
   flex:1; height:8px; border-radius:4px;
   background:linear-gradient(90deg, hsl(140,80%,55%), hsl(90,75%,50%), hsl(45,80%,50%), hsl(0,70%,30%));
@@ -169,6 +175,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
       <div class="bar" id="legend-bar"></div>
       <span class="mono">dark red = 100%</span>
     </div>
+    <div id="inspector" class="mono">Click any ball to zoom in on its exact violence level — the on-ball labels are too small to read at a glance on purpose.</div>
     <div class="controls">
       <div class="ctrl">
         <label>Bodies <span class="val" id="v-n">100</span></label>
@@ -237,7 +244,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
   </div>
 </div>
 
-<footer>Bodies are labeled with their live violence percentage. Color runs a log-scaled spectrum from dark red at 100% violence down to bright green at (or below) the conversion threshold; the gold ring marks any body currently flagged conscious, whatever its raw color says. Chamber is compressed and bodies are small (radius halved from the last version) to fit up to 200 on screen; percentage labels hide above 60 bodies to keep the chamber readable, color and the gold ring still carry the same information at any count.</footer>
+<footer>Bodies are labeled with their live violence percentage. Color runs a log-scaled spectrum from dark red at 100% violence down to bright green at (or below) the conversion threshold; the gold ring marks any body currently flagged conscious, whatever its raw color says. Chamber is compressed and bodies are small (radius halved from the last version) to fit up to 200 on screen; every ball carries a deliberately tiny live percentage label — click one to read its exact value in the inspector above the chart. Ambient drift only touches bodies not yet flagged conscious, so a body's crossing into consciousness is a real, permanent immunity to the background field, not just a color that happens to sit near green.</footer>
 
 <script>
 (function(){
@@ -259,6 +266,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     sConv: document.getElementById('s-conv'), sHits: document.getElementById('s-hits'),
     sAmb: document.getElementById('s-amb'),
     verify: document.getElementById('verify'), legendLo: document.getElementById('legend-lo'),
+    inspector: document.getElementById('inspector'),
   };
 
   let bodies = [];
@@ -268,6 +276,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
   let conversions = 0;
   let S0 = 1;
   let history = [];
+  let selectedId = null;
   const CONSCIOUS_ID = 0;
 
   function startExp(){ return Number(els.exp.value); }
@@ -284,6 +293,12 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
   function fmtSci(v){
     if (v === 0) return "0%";
     return v.toExponential(2) + "%";
+  }
+  function fmtFull(v){
+    const pct = v*100;
+    if (pct === 0) return "0 %";
+    if (pct >= 0.001) return pct.toFixed(8) + " %";
+    return pct.toExponential(8) + " %";
   }
 
   function makeBodies(){
@@ -389,8 +404,8 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     ctx.fillStyle = getComputedStyle(document.body).getPropertyValue('--panel-2') || '#111';
     ctx.fillRect(0,0,W,H);
     const textColor = getComputedStyle(document.body).getPropertyValue('--text') || '#eee';
-    const showLabels = bodies.length <= 60;
-    ctx.font = '9px "IBM Plex Mono", monospace';
+    const selColor = getComputedStyle(document.body).getPropertyValue('--text') || '#fff';
+    ctx.font = '5px "IBM Plex Mono", monospace';
     ctx.textAlign = 'center';
     for (const b of bodies){
       const {rgb, ring} = colorFor(b.v, b.conscious);
@@ -403,11 +418,18 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
         ctx.strokeStyle = ring;
         ctx.stroke();
       }
-      if (showLabels){
-        ctx.fillStyle = textColor;
-        const label = b.conscious ? fmtSci(b.v) : (b.v*100).toFixed(0)+'%';
-        ctx.fillText(label, b.x, b.y - b.r - 3);
+      if (b.id === selectedId){
+        ctx.lineWidth = 1.5;
+        ctx.strokeStyle = selColor;
+        ctx.setLineDash([2,2]);
+        ctx.beginPath();
+        ctx.arc(b.x, b.y, b.r+3, 0, Math.PI*2);
+        ctx.stroke();
+        ctx.setLineDash([]);
       }
+      ctx.fillStyle = textColor;
+      const label = b.conscious ? fmtSci(b.v) : (b.v*100).toFixed(1)+'%';
+      ctx.fillText(label, b.x, b.y - b.r - 2);
     }
   }
 
@@ -422,6 +444,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     const ambPct = Number(els.amb.value)*bodies.length;
     els.sAmb.textContent = (ambPct>=0?'+':'') + ambPct.toFixed(1) + ' %/s';
     els.tick.textContent = `collisions = ${collisions}`;
+    updateInspector();
 
     history.push({t: collisions, S: total, vc: c.v});
     if (history.length > 400) history.shift();
@@ -471,6 +494,16 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     cctx.stroke();
   }
 
+  function updateInspector(){
+    if (selectedId == null) return;
+    const b = bodies.find(x=>x.id===selectedId);
+    if (!b){ selectedId = null; return; }
+    els.inspector.innerHTML =
+      `Body #${b.id}${b.id===CONSCIOUS_ID?' (seed)':''} — `+
+      `<span class="${b.conscious?'ring':''}">${b.conscious?'conscious':'ordinary'}</span> — `+
+      `exact violence: <b>${fmtFull(b.v)}</b>`;
+  }
+
   function updateVerify(){
     const N = Number(els.n.value);
     const T = threshold();
@@ -489,6 +522,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     const rate = ambient();
     if (rate === 0) return;
     for (const b of bodies){
+      if (b.conscious) continue;
       b.v = Math.min(1, Math.max(0, b.v + rate*dtSec));
     }
   }
@@ -525,7 +559,24 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     if (running){ lastT = null; loop(performance.now()); }
     else if (rafId) cancelAnimationFrame(rafId);
   });
-  els.reset.addEventListener('click', reset);
+  els.reset.addEventListener('click', ()=>{ selectedId = null; reset(); });
+
+  stage.addEventListener('click', (e)=>{
+    const rect = stage.getBoundingClientRect();
+    const scaleX = stage.width/rect.width, scaleY = stage.height/rect.height;
+    const mx = (e.clientX-rect.left)*scaleX, my = (e.clientY-rect.top)*scaleY;
+    let best = null, bestD = Infinity;
+    for (const b of bodies){
+      const d = Math.hypot(b.x-mx, b.y-my);
+      if (d < b.r+8 && d < bestD){ best = b; bestD = d; }
+    }
+    selectedId = best ? best.id : null;
+    updateInspector();
+    if (!best){
+      els.inspector.textContent = 'Click any ball to zoom in on its exact violence level — the on-ball labels are too small to read at a glance on purpose.';
+    }
+    draw();
+  });
 
   reset();
 })();
