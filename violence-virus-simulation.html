@@ -171,7 +171,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
 <header>
   <div class="eyebrow">Interaction dynamics — threshold-triggered cascade</div>
   <h1>Violence Virus Threshold</h1>
-  <p>One body starts at 10⁻¹⁰⁰ percent violence. Every collision it takes part in halves the other body's violence and doubles its own — and any body whose violence is driven below the conversion threshold flips permanently into the same role, halving whoever <i>it</i> touches from then on. Two ordinary bodies still just average on contact. Watch calm spread the way violence usually does.</p>
+  <p>One body starts at 10⁻²⁰⁰ percent violence. Every collision it takes part in halves the other body's violence and doubles its own — and any body whose violence is driven below the conversion threshold flips permanently into the same role, halving whoever <i>it</i> touches from then on. Two ordinary bodies still just average on contact. Watch calm spread the way violence usually does.</p>
 </header>
 
 <div class="console">
@@ -203,8 +203,8 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
         <input type="range" id="speed" min="1" max="8" value="1" step="1">
       </div>
       <div class="ctrl">
-        <label>Seed body starting violence <span class="val" id="v-exp">10⁻¹⁰⁰ %</span></label>
-        <input type="range" id="exp" min="-150" max="-6" value="-100" step="1">
+        <label>Seed body starting violence <span class="val" id="v-exp">10⁻²⁰⁰ %</span></label>
+        <input type="range" id="exp" min="-250" max="-6" value="-200" step="1">
       </div>
       <div class="ctrl">
         <label>Conversion threshold <span class="val" id="v-thr">0.01 %</span></label>
@@ -224,7 +224,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
   <div class="panel">
     <div class="panel-title"><h2>Readout</h2><span class="tag">live</span></div>
     <div class="readouts">
-      <div class="stat"><div class="k">Seed body</div><div class="v calm mono" id="s-vc">1.0×10⁻¹⁰⁰ %</div></div>
+      <div class="stat"><div class="k">Seed body</div><div class="v calm mono" id="s-vc">1.0×10⁻²⁰⁰ %</div></div>
       <div class="stat"><div class="k">Total system violence (Σ %)</div><div class="v mono" id="s-total">9900.0</div></div>
       <div class="stat"><div class="k">Conscious bodies</div><div class="v calm mono" id="s-conv">1 / 100</div></div>
       <div class="stat"><div class="k">Elapsed time</div><div class="v mono" id="s-time">0:00.0</div></div>
