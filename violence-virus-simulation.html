@@ -101,9 +101,6 @@ button.tag.copied{border-color:var(--calm); color:var(--calm);}
 
 #stage-wrap{position:relative; border-radius:8px; overflow:hidden; border:1px solid var(--line); background:var(--panel-2);}
 #stage{display:block; width:100%; height:auto; aspect-ratio:4/3; cursor:pointer;}
-.legend{
-  display:flex; align-items:center; gap:10px; margin-top:10px; font-size:12px; color:var(--text-dim);
-}
 #inspector{
   margin-top:8px; padding:8px 10px; font-size:12px; line-height:1.55;
   background:var(--panel-2); border:1px dashed var(--line); border-radius:6px; color:var(--text-dim);
@@ -126,10 +123,6 @@ button.tag.copied{border-color:var(--calm); color:var(--calm);}
 }
 .rolekey span{display:inline-flex; align-items:center; gap:5px;}
 .rolekey .chip{width:9px; height:9px; border-radius:50%; display:inline-block; flex:none;}
-.legend .bar{
-  flex:1; height:8px; border-radius:4px;
-  background:linear-gradient(90deg, hsl(140,80%,55%), hsl(90,75%,50%), hsl(45,80%,50%), hsl(0,70%,30%));
-}
 
 .controls{display:grid; grid-template-columns:1fr 1fr; gap:10px 16px; margin-top:14px;}
 .ctrl{display:flex; flex-direction:column; gap:4px;}
@@ -209,14 +202,11 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
       <span class="tag" id="tick-count">conscious hits = 0</span>
     </div>
     <div id="stage-wrap"><canvas id="stage" width="480" height="360"></canvas></div>
-    <div class="legend">
-      <span class="mono" id="legend-lo">bright green ≤ 0.5%</span>
-      <div class="bar" id="legend-bar"></div>
-      <span class="mono">dark red = 100%</span>
-    </div>
     <div class="rolekey">
-      <span><i class="chip" style="background:hsl(0,70%,30%)"></i>violent, not yet conscious (0–100%)</span>
-      <span><i class="chip" style="background:hsl(42,90%,50%); box-shadow:0 0 6px 3px rgba(255,214,90,0.55);"></i>conscious — permanently at exactly 0%, still de-escalating</span>
+      <span><i class="chip" style="background:hsl(0,72%,45%)"></i>red — violent, ≥ 51%</span>
+      <span><i class="chip" style="background:hsl(55,95%,58%)"></i>yellow — violent, 10–50%</span>
+      <span><i class="chip" style="background:hsl(132,75%,42%)"></i>green — violent, &lt; 10%</span>
+      <span><i class="chip" style="background:hsl(38,90%,48%); box-shadow:0 0 6px 3px rgba(255,214,90,0.55);"></i>gold — conscious, permanently 0%</span>
     </div>
     <div id="inspector" class="mono">Click any ball to zoom in on its exact violence level — only color shows at a glance, click for the number.</div>
     <div class="controls">
@@ -301,7 +291,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
   </div>
 </div>
 
-<footer>Color is the only at-a-glance signal now — no on-ball text. A non-conscious body's fill runs a log-scaled spectrum from bright green near the conversion threshold up to dark red at 100%. A conscious body is always exactly 0% violence, so it always gets the same fixed gold fill and gold ring — there's nothing to ramp, since its number never changes once it converts (its faint yellow halo turns off above 1,000 bodies, purely so thousands of per-ball gradients don't tank the frame rate). Click any ball to read its exact value in the inspector above the chart instead. Bodies range from 4 up to 10,000; the chamber and ball radius scale together to keep a reasonable, visible size and packing density at any count, and past 300 bodies collision detection switches from checking every pair to a spatial grid (only nearby bodies are checked against each other) so the frame rate doesn't collapse at high counts. Background violence radiation only touches bodies not yet flagged conscious, so a body's crossing into consciousness is a real, permanent immunity to that rising background hazard.</footer>
+<footer>Color is the only at-a-glance signal now — no on-ball text, and no gradient either: a non-conscious body is one of three fixed colors by band, not a ramp — red at 51% or above, yellow from 10% up to 50%, green under 10%. A conscious body is always exactly 0% violence, so it always gets the same fixed gold fill and gold ring, chosen to sit well apart from the yellow band so the two are never confusable at a glance — a body a divine ball just halved from 100% down to 50% reads as yellow, not gold, exactly marking it as "recently touched, not yet converted." (The gold ring's faint halo turns off above 1,000 bodies, purely so thousands of per-ball gradients don't tank the frame rate — the flat gold fill stays either way.) Click any ball to read its exact value in the inspector above the chart. Bodies range from 4 up to 10,000; the chamber and ball radius scale together to keep a reasonable, visible size and packing density at any count, and past 300 bodies collision detection switches from checking every pair to a spatial grid (only nearby bodies are checked against each other) so the frame rate doesn't collapse at high counts. Background violence radiation only touches bodies not yet flagged conscious, so a body's crossing into consciousness is a real, permanent immunity to that rising background hazard.</footer>
 
 <script>
 (function(){
@@ -325,7 +315,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     sAmb: document.getElementById('s-amb'), sTime: document.getElementById('s-time'),
     sMiracle: document.getElementById('s-miracle'),
     sAvgHits: document.getElementById('s-avghits'),
-    verify: document.getElementById('verify'), legendLo: document.getElementById('legend-lo'),
+    verify: document.getElementById('verify'),
     inspector: document.getElementById('inspector'), milestone: document.getElementById('milestone'),
     milestoneList: document.getElementById('milestone-list'),
     runSettings: document.getElementById('run-settings'), copyBtn: document.getElementById('btn-copy'),
@@ -439,18 +429,14 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
   function colorFor(v, conscious){
     if (conscious){
       // always exactly 0 violence -- a fixed gold, nothing to ramp
-      return {rgb:'hsl(42,90%,50%)', ring:'#b98418'};
+      return {rgb:'hsl(38,90%,48%)', ring:'#b98418'};
     }
-    const T = threshold();
-    const lv = Math.log10(Math.max(v, 1e-300));
-    const lo = Math.log10(T);
-    let t = lo >= 0 ? (v<=T?0:1) : (lv - lo) / (0 - lo);
-    t = Math.min(1, Math.max(0, t));
-    // green (calm) -> dark red (violent, not yet conscious)
-    const hue = 140 - t*140;
-    const sat = 78 - t*8;
-    const light = 55 - t*25;
-    return {rgb:`hsl(${hue.toFixed(0)},${sat.toFixed(0)}%,${light.toFixed(0)}%)`, ring:'transparent'};
+    // discrete bands, not a ramp: red >=51%, yellow 10-50%, green <10% --
+    // yellow's hue/lightness deliberately sit far from the divine gold above
+    // so the two are never confusable at a glance
+    if (v >= 0.51) return {rgb:'hsl(0,72%,45%)', ring:'transparent'};
+    if (v >= 0.10) return {rgb:'hsl(55,95%,58%)', ring:'transparent'};
+    return {rgb:'hsl(132,75%,42%)', ring:'transparent'};
   }
 
   function resolvePair(a, c){
@@ -926,7 +912,6 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
   els.thr.addEventListener('input', ()=>{
     const T = threshold();
     els.vThr.textContent = (T*100).toFixed(1) + ' %';
-    els.legendLo.textContent = `bright green ≤ ${(T*100).toFixed(1)}%`;
     updateVerify();
     updateRunSettingsLine();
   });
