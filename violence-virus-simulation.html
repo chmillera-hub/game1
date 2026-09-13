@@ -231,6 +231,10 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
         <label>Background violence radiation, per body per second <span class="val" id="v-amb">+1.0 %/s</span></label>
         <input type="range" id="amb" min="-2" max="10" value="1" step="0.1">
       </div>
+      <div class="ctrl" style="grid-column:1/-1;">
+        <label>Miracle power (bonus subtraction on direct contact, % of radiation) <span class="val" id="v-miracle">0 %</span></label>
+        <input type="range" id="miracle" min="0" max="100" value="0" step="1">
+      </div>
     </div>
     <div class="btnrow">
       <button class="primary" id="btn-run">Run</button>
@@ -267,7 +271,8 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
   <div>
     <h3 style="font-size:17px;margin-bottom:8px;">The update rules</h3>
     <div class="formula">non-conscious ⨯ non-conscious:  a, b → (a+b)/2, (a+b)/2</div>
-    <div class="formula">conscious ⨯ non-conscious:  v → v/2,  &nbsp; v_role stays 0 (2·0 = 0)</div>
+    <div class="formula">conscious ⨯ non-conscious:  v → max(0, v/2 − bonus),  &nbsp; v_role stays 0 (2·0 = 0)</div>
+    <div class="formula">bonus = max(0, radiation %/s) × (miracle power / 100), in percentage points</div>
     <div class="formula">if v ≤ T after that hit:  v is reset to exactly 0, body flips to conscious, permanently</div>
     <p><b>The simplification:</b> a body doesn't drift down to <i>near</i> zero and then keep existing at some tiny residual — the instant it crosses T, its value is reset to exactly 0. Every conscious body's own violence is therefore always precisely 0, forever: the seed starts there, and every later conversion lands there too. Doubling a body that's exactly 0 leaves it at exactly 0 (0·2=0), so there's no drift, no residual number to worry about, and no separate "has it climbed back up" question to track. Once a body converts it stops counting toward the room's total for the simplest possible reason: its own value really is 0, not merely excluded by convention. Consequently the total can only reach exactly 0 once every body has converted — it is mathematically impossible for one to happen without the other.</p>
     <p>"Total system violence" is a plain sum, not an average — ten bodies sitting at 18% each read as <span class="mono">180.0</span>, not <span class="mono">18.0%</span>. With N bodies starting near 100% each, expect the starting number in the thousands; the chart's total-violence line still plots it as a fraction of that starting sum, purely so it fits the same 0–100% axis as the other two lines.</p>
@@ -278,6 +283,8 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     <p>In a well-mixed chamber every pair collides again and again over time, so the probability any one body is <i>never</i> hit by a conscious body, forever, is zero. Conclusion: for any fixed T &gt; 0 <i>with no background violence radiation</i>, full conversion — every body conscious, total violence → 0 — isn't just likely, it's the guaranteed long-run outcome.</p>
     <h3 style="font-size:17px;margin:16px 0 8px;">What background violence radiation breaks</h3>
     <p>This slider models the ambient, everywhere-at-once violence of a world that keeps generating friction on its own — not a person-to-person interaction, but a background condition every still-non-conscious body is bathed in continuously, raising its violence by a fixed amount every second whether or not it's currently colliding with anything. At its default positive setting it is, by design, a rising tide: it actively works against the cascade, dragging a body's violence back up over T between hits, faster than conversions can push it down. (The slider also allows negative values, as a deliberate inversion for experimentation — a "calming radiation" that adds a second, contact-free channel toward zero — but the intended, default reading of this control is an increasing background hazard, not a decreasing one.) There's a real tug-of-war between a discrete, collision-driven cooling process and this continuous, clock-driven heating one — push it toward +10 and you're watching the same "runs away past a critical value" behavior from the very first version of this model, just driven by a clock instead of a doubling.</p>
+    <h3 style="font-size:17px;margin:16px 0 8px;">Miracle power</h3>
+    <p>Direct contact already halves a body; miracle power adds a flat bonus on top of that halving, sized as a fraction of whatever the radiation slider currently reads (never a fraction of the body's own violence). At radiation=10%/s and miracle=100%, a body at 100% goes to 50% from the halving, then to 40% from the bonus — one collision, two separate deductions. At the default miracle=0% this term is always exactly 0 and contact is plain halving, same as before this control existed. Raising it doesn't change the average outcome much on its own; it raises the odds of a body getting unlucky in one specific way — repeated direct contact with the same conscious body in a short span, each hit chipping off extra — crossing threshold T sooner, or even in a single hit, when plain halving alone wouldn't have gotten there yet.</p>
   </div>
   <div>
     <h3 style="font-size:17px;margin-bottom:8px;">Verifying the cascade actually accelerates</h3>
@@ -302,6 +309,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     speed: document.getElementById('speed'), vSpeed: document.getElementById('v-speed'),
     thr: document.getElementById('thr'), vThr: document.getElementById('v-thr'),
     amb: document.getElementById('amb'), vAmb: document.getElementById('v-amb'),
+    miracle: document.getElementById('miracle'), vMiracle: document.getElementById('v-miracle'),
     run: document.getElementById('btn-run'), reset: document.getElementById('btn-reset'),
     tick: document.getElementById('tick-count'),
     sVc: document.getElementById('s-vc'), sTotal: document.getElementById('s-total'),
@@ -335,6 +343,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
 
   function threshold(){ return Number(els.thr.value)/100; }
   function ambient(){ return Number(els.amb.value)/100; }
+  function miraclePower(){ return Number(els.miracle.value)/100; }
 
   function fmtPct(v){
     const pct = v*100;
@@ -455,7 +464,8 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     if (a.conscious !== c.conscious){
       const cons = a.conscious ? a : c;
       const other = a.conscious ? c : a;
-      other.v = other.v/2;
+      const bonus = (Math.max(0, Number(els.amb.value)) * miraclePower()) / 100;
+      other.v = Math.max(0, other.v/2 - bonus);
       cons.v = Math.min(1, cons.v*2);
       consciousHits++;
     } else {
@@ -641,7 +651,8 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
   function updateRunSettingsLine(){
     els.runSettings.textContent =
       `Bodies=${els.n.value} · speed=${els.speed.value}× · `+
-      `threshold=${(threshold()*100).toFixed(1)}% · radiation=${(Number(els.amb.value)>=0?'+':'')}${els.amb.value}%/s`;
+      `threshold=${(threshold()*100).toFixed(1)}% · radiation=${(Number(els.amb.value)>=0?'+':'')}${els.amb.value}%/s · `+
+      `miracle=${els.miracle.value}%`;
   }
 
   function buildSummaryText(){
@@ -666,13 +677,14 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
       `  1. non-conscious x non-conscious (both flags false): both bodies' v are replaced by`,
       `     their average, (v_a+v_b)/2 each. This exactly conserves the pair's summed`,
       `     violence -- it only redistributes, it never creates or destroys any.`,
-      `  2. conscious x non-conscious (flags differ): the non-conscious body is halved,`,
-      `     v -> v/2. The conscious body is simultaneously doubled and capped at 1,`,
-      `     v -> min(1, 2v) -- but since every conscious body's v is always exactly 0`,
+      `  2. conscious x non-conscious (flags differ): the non-conscious body is halved and`,
+      `     then hit with a flat "miracle" bonus subtraction (see below),`,
+      `     v -> max(0, v/2 - bonus). The conscious body is simultaneously doubled and capped`,
+      `     at 1, v -> min(1, 2v) -- but since every conscious body's v is always exactly 0`,
       `     (see conversion rule below), this is 0 -> min(1, 0) = 0, i.e. it never actually`,
       `     changes. This step does NOT conserve the sum -- roughly half of the non-conscious`,
-      `     body's value is deleted from the system outright, not transferred to the`,
-      `     conscious body.`,
+      `     body's value (plus the bonus) is deleted from the system outright, not`,
+      `     transferred to the conscious body.`,
       `  3. conscious x conscious (both flags true): treated the same as rule 1 (plain average`,
       `     of two zeros, i.e. still 0).`,
       '',
@@ -697,6 +709,19 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
       `radiation" that adds a second channel toward zero) -- but that is an inverted, atypical`,
       `mode, not the intended meaning of the control. Bodies already flagged true are`,
       `completely immune to this radiation either way.`,
+      '',
+      `Miracle power: a second, optional bonus applied only at the instant of direct contact`,
+      `(rule 2 above), on top of the halving. It draws its size from the CURRENT background`,
+      `radiation rate: bonus (in percentage points) = max(0, radiation rate in %/s) x`,
+      `(miracle power / 100). E.g. radiation=10%/s and miracle=100% gives a flat bonus of 10`,
+      `percentage points per direct hit, so a body at 100% goes to 50% from the halving, then`,
+      `to 40% from the bonus, in that one collision. At miracle=0% (the default) this term is`,
+      `always exactly 0 and rule 2 reduces to plain halving. A negative radiation rate is`,
+      `clamped to 0 for this calculation, so a "calming radiation" setup never turns the bonus`,
+      `into a penalty that adds violence back. The point of this control is to raise the odds`,
+      `of a "miracle" -- a body being knocked below threshold T in a single direct hit, or in`,
+      `fewer hits than plain halving alone would need, purely from unlucky/lucky repeated`,
+      `contact with the same conscious body.`,
       '',
       `Speed control: the "speed" multiplier scales how many physics steps run per rendered`,
       `frame, and it scales elapsed/simulated time by the same factor (so "8x" genuinely means`,
@@ -733,6 +758,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
       `  Speed: ${els.speed.value}×`,
       `  Conversion threshold: ${(threshold()*100).toFixed(1)}%`,
       `  Background violence radiation: ${(Number(els.amb.value)>=0?'+':'')}${els.amb.value}%/s per body`,
+      `  Miracle power: ${els.miracle.value}%`,
       '',
       'Live readout:',
       `  Elapsed time: ${fmtTime(elapsedSec)}`,
@@ -825,6 +851,10 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     const v = Number(els.amb.value);
     els.vAmb.textContent = (v>=0?'+':'') + v.toFixed(1) + ' %/s';
     updateReadouts();
+    updateRunSettingsLine();
+  });
+  els.miracle.addEventListener('input', ()=>{
+    els.vMiracle.textContent = els.miracle.value + ' %';
     updateRunSettingsLine();
   });
   els.copyBtn.addEventListener('click', copySummary);
