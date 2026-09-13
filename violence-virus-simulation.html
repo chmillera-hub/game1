@@ -163,7 +163,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
       <h2>Chamber</h2>
       <span class="tag" id="tick-count">collisions = 0</span>
     </div>
-    <div id="stage-wrap"><canvas id="stage" width="360" height="270"></canvas></div>
+    <div id="stage-wrap"><canvas id="stage" width="480" height="360"></canvas></div>
     <div class="legend">
       <span class="mono" id="legend-lo">bright green ≤ 0.01%</span>
       <div class="bar" id="legend-bar"></div>
@@ -171,8 +171,8 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     </div>
     <div class="controls">
       <div class="ctrl">
-        <label>Bodies <span class="val" id="v-n">18</span></label>
-        <input type="range" id="n" min="4" max="36" value="18" step="1">
+        <label>Bodies <span class="val" id="v-n">100</span></label>
+        <input type="range" id="n" min="4" max="200" value="100" step="1">
       </div>
       <div class="ctrl">
         <label>Speed <span class="val" id="v-speed">1×</span></label>
@@ -186,6 +186,10 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
         <label>Conversion threshold <span class="val" id="v-thr">0.01 %</span></label>
         <input type="range" id="thr" min="-8" max="-1" value="-4" step="1">
       </div>
+      <div class="ctrl" style="grid-column:1/-1;">
+        <label>Ambient violence, per body per second <span class="val" id="v-amb">+1.0 %/s</span></label>
+        <input type="range" id="amb" min="-2" max="10" value="1" step="0.5">
+      </div>
     </div>
     <div class="btnrow">
       <button class="primary" id="btn-run">Run</button>
@@ -198,8 +202,9 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     <div class="readouts">
       <div class="stat"><div class="k">Seed body</div><div class="v calm mono" id="s-vc">1.0×10⁻¹⁰⁰ %</div></div>
       <div class="stat"><div class="k">Total system violence</div><div class="v mono" id="s-total">100.0%</div></div>
-      <div class="stat"><div class="k">Conscious bodies</div><div class="v calm mono" id="s-conv">1 / 18</div></div>
+      <div class="stat"><div class="k">Conscious bodies</div><div class="v calm mono" id="s-conv">1 / 100</div></div>
       <div class="stat"><div class="k">Conscious-role hits</div><div class="v mono" id="s-hits">0</div></div>
+      <div class="stat"><div class="k">Ambient injection</div><div class="v mono" id="s-amb">+100.0 %/s</div></div>
     </div>
     <div id="chart-wrap"><canvas id="chart" width="560" height="180"></canvas></div>
     <div class="chartkey">
@@ -220,7 +225,9 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     <h3 style="font-size:17px;margin:16px 0 8px;">Why one seed is enough for all of them</h3>
     <p>Fix any body still above T. Each time it collides with a conscious-flagged body, its value is exactly halved — a geometric decay with no floor besides 0. However small T is, that body crosses it after a finite number of such hits:</p>
     <div class="formula">hits needed ≈ log₂(v / T)</div>
-    <p>In a well-mixed chamber every pair collides again and again over time, so the probability any one body is <i>never</i> hit by a conscious body, forever, is zero. Conclusion: for any fixed T &gt; 0, full conversion — every body conscious, total violence → 0 — isn't just likely, it's the guaranteed long-run outcome of this rule set.</p>
+    <p>In a well-mixed chamber every pair collides again and again over time, so the probability any one body is <i>never</i> hit by a conscious body, forever, is zero. Conclusion: for any fixed T &gt; 0 <i>with no ambient term</i>, full conversion — every body conscious, total violence → 0 — isn't just likely, it's the guaranteed long-run outcome.</p>
+    <h3 style="font-size:17px;margin:16px 0 8px;">What the ambient slider breaks</h3>
+    <p>The ambient term adds a continuous drift <span class="mono">dv/dt = rate</span> to every body, independent of collisions — a background field, not an interaction. That guarantee above assumed nothing was fighting the cascade. A positive rate is exactly that fight: it can drag a body back over T between hits, faster than the cascade can push it down. There's a real tug-of-war here between a discrete, collision-driven cooling process and a continuous, time-driven heating one — set the rate negative and you're adding a second calming channel on top of the cascade; push it toward +10 and you're watching the same "runs away past a critical value" behavior from the very first version of this model, just driven by a clock instead of a doubling.</p>
   </div>
   <div>
     <h3 style="font-size:17px;margin-bottom:8px;">Verifying the cascade actually accelerates</h3>
@@ -230,7 +237,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
   </div>
 </div>
 
-<footer>Bodies are labeled with their live violence percentage. Color runs a log-scaled spectrum from dark red at 100% violence down to bright green at (or below) the conversion threshold; the gold ring marks any body currently flagged conscious, whatever its raw color says. Chamber is compressed and bodies enlarged (not sped up) to raise collision frequency — time-to-pacify scales with arena area ÷ (radius × speed), independent of body count, so a smaller box gets there faster without any ball moving faster.</footer>
+<footer>Bodies are labeled with their live violence percentage. Color runs a log-scaled spectrum from dark red at 100% violence down to bright green at (or below) the conversion threshold; the gold ring marks any body currently flagged conscious, whatever its raw color says. Chamber is compressed and bodies are small (radius halved from the last version) to fit up to 200 on screen; percentage labels hide above 60 bodies to keep the chamber readable, color and the gold ring still carry the same information at any count.</footer>
 
 <script>
 (function(){
@@ -245,10 +252,12 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     speed: document.getElementById('speed'), vSpeed: document.getElementById('v-speed'),
     exp: document.getElementById('exp'), vExp: document.getElementById('v-exp'),
     thr: document.getElementById('thr'), vThr: document.getElementById('v-thr'),
+    amb: document.getElementById('amb'), vAmb: document.getElementById('v-amb'),
     run: document.getElementById('btn-run'), reset: document.getElementById('btn-reset'),
     tick: document.getElementById('tick-count'),
     sVc: document.getElementById('s-vc'), sTotal: document.getElementById('s-total'),
     sConv: document.getElementById('s-conv'), sHits: document.getElementById('s-hits'),
+    sAmb: document.getElementById('s-amb'),
     verify: document.getElementById('verify'), legendLo: document.getElementById('legend-lo'),
   };
 
@@ -263,6 +272,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
 
   function startExp(){ return Number(els.exp.value); }
   function threshold(){ return Math.pow(10, Number(els.thr.value)); }
+  function ambient(){ return Number(els.amb.value)/100; }
 
   function fmtPct(v){
     const pct = v*100;
@@ -279,7 +289,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
   function makeBodies(){
     const n = Number(els.n.value);
     const arr = [];
-    const r = 20;
+    const r = 10;
     for (let i=0;i<n;i++){
       arr.push({
         id: i,
@@ -379,7 +389,8 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     ctx.fillStyle = getComputedStyle(document.body).getPropertyValue('--panel-2') || '#111';
     ctx.fillRect(0,0,W,H);
     const textColor = getComputedStyle(document.body).getPropertyValue('--text') || '#eee';
-    ctx.font = '10px "IBM Plex Mono", monospace';
+    const showLabels = bodies.length <= 60;
+    ctx.font = '9px "IBM Plex Mono", monospace';
     ctx.textAlign = 'center';
     for (const b of bodies){
       const {rgb, ring} = colorFor(b.v, b.conscious);
@@ -388,13 +399,15 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
       ctx.fillStyle = rgb;
       ctx.fill();
       if (b.conscious){
-        ctx.lineWidth = 2.5;
+        ctx.lineWidth = Math.max(1.5, b.r*0.15);
         ctx.strokeStyle = ring;
         ctx.stroke();
       }
-      ctx.fillStyle = textColor;
-      const label = b.conscious ? fmtSci(b.v) : (b.v*100).toFixed(0)+'%';
-      ctx.fillText(label, b.x, b.y - b.r - 3);
+      if (showLabels){
+        ctx.fillStyle = textColor;
+        const label = b.conscious ? fmtSci(b.v) : (b.v*100).toFixed(0)+'%';
+        ctx.fillText(label, b.x, b.y - b.r - 3);
+      }
     }
   }
 
@@ -406,6 +419,8 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     const nConscious = bodies.filter(b=>b.conscious).length;
     els.sConv.textContent = `${nConscious} / ${bodies.length}`;
     els.sHits.textContent = consciousHits;
+    const ambPct = Number(els.amb.value)*bodies.length;
+    els.sAmb.textContent = (ambPct>=0?'+':'') + ambPct.toFixed(1) + ' %/s';
     els.tick.textContent = `collisions = ${collisions}`;
 
     history.push({t: collisions, S: total, vc: c.v});
@@ -469,9 +484,21 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
   }
 
   let rafId = null;
-  function loop(){
+  let lastT = null;
+  function applyAmbient(dtSec){
+    const rate = ambient();
+    if (rate === 0) return;
+    for (const b of bodies){
+      b.v = Math.min(1, Math.max(0, b.v + rate*dtSec));
+    }
+  }
+  function loop(now){
+    if (lastT == null) lastT = now;
+    const dtSec = Math.min(0.25, (now-lastT)/1000);
+    lastT = now;
     const speed = Number(els.speed.value);
     for (let s=0;s<speed;s++) step();
+    applyAmbient(dtSec);
     draw();
     updateReadouts();
     if (running) rafId = requestAnimationFrame(loop);
@@ -486,11 +513,16 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     els.legendLo.textContent = `bright green ≤ ${(T*100)}%`;
     updateVerify();
   });
+  els.amb.addEventListener('input', ()=>{
+    const v = Number(els.amb.value);
+    els.vAmb.textContent = (v>=0?'+':'') + v.toFixed(1) + ' %/s';
+    updateReadouts();
+  });
 
   els.run.addEventListener('click', ()=>{
     running = !running;
     els.run.textContent = running ? 'Pause' : 'Run';
-    if (running) loop();
+    if (running){ lastT = null; loop(performance.now()); }
     else if (rafId) cancelAnimationFrame(rafId);
   });
   els.reset.addEventListener('click', reset);
