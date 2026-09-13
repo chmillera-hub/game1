@@ -115,6 +115,11 @@ button.tag.copied{border-color:var(--calm); color:var(--calm);}
   background:var(--panel-2); border:1px solid var(--line); border-radius:6px; color:var(--text-dim);
 }
 #milestone.done{ border-color:var(--calm); color:var(--calm); font-weight:600; }
+#milestone-list{
+  margin-bottom:14px; padding:8px 10px; font-size:11.5px; line-height:1.6;
+  background:var(--panel-2); border:1px dashed var(--line); border-radius:6px; color:var(--text-dim);
+  overflow-wrap:anywhere;
+}
 .rolekey{
   display:flex; flex-wrap:wrap; gap:6px 14px; margin-top:6px;
   font-size:11px; color:var(--text-dim);
@@ -232,8 +237,8 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
         <input type="range" id="amb" min="-2" max="10" value="1" step="0.1">
       </div>
       <div class="ctrl" style="grid-column:1/-1;">
-        <label>Miracle power (bonus subtraction on direct contact, % of radiation) <span class="val" id="v-miracle">0 %</span></label>
-        <input type="range" id="miracle" min="0" max="100" value="0" step="1">
+        <label>Miracle power (bonus subtraction on direct contact, % of radiation) <span class="val" id="v-miracle">10 %</span></label>
+        <input type="range" id="miracle" min="0" max="100" value="10" step="1">
       </div>
     </div>
     <div class="btnrow">
@@ -259,6 +264,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
       <div class="stat"><div class="k">Miracle violence removed (Σ %)</div><div class="v mono" id="s-miracle">0.0</div></div>
     </div>
     <div id="milestone" class="mono">Not yet fully conscious.</div>
+    <div id="milestone-list" class="mono">No non-seed body has become conscious yet.</div>
     <div id="chart-wrap"><canvas id="chart" width="560" height="180"></canvas></div>
     <div class="chartkey">
       <span><i style="background:var(--alarm)"></i>total violence (Σ%, as fraction of starting sum)</span>
@@ -320,6 +326,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     sAvgHits: document.getElementById('s-avghits'),
     verify: document.getElementById('verify'), legendLo: document.getElementById('legend-lo'),
     inspector: document.getElementById('inspector'), milestone: document.getElementById('milestone'),
+    milestoneList: document.getElementById('milestone-list'),
     runSettings: document.getElementById('run-settings'), copyBtn: document.getElementById('btn-copy'),
     sbTotal: document.getElementById('sb-total'), sbTime: document.getElementById('sb-time'),
     sbConv: document.getElementById('sb-conv'), sbMin: document.getElementById('sb-min'),
@@ -335,8 +342,8 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
   let elapsedSec = 0;
   let fullAt = null;
   let recordLowV = 1;
-  let recordLowLocked = false;
-  let recordLowAt = null;
+  let convMilestones = [];
+  const MAX_MILESTONES = 5;
   let axisMin = 0, axisMax = 12;
   let S0 = 1;
   let chartAnimId = null;
@@ -400,8 +407,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     elapsedSec = 0;
     fullAt = null;
     recordLowV = 1;
-    recordLowLocked = false;
-    recordLowAt = null;
+    convMilestones = [];
     if (chartAnimId){ cancelAnimationFrame(chartAnimId); chartAnimId = null; }
     axisMin = 0; axisMax = LIVE_WINDOW;
     S0 = totalViolence();
@@ -477,9 +483,13 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     }
     for (const b of [a,c]){
       if (!b.conscious && b.v <= T){
+        const crossingValue = b.v;
         b.conscious = true;
         b.v = 0;
         conversions++;
+        if (convMilestones.length < MAX_MILESTONES){
+          convMilestones.push({n: conversions, value: crossingValue, time: elapsedSec});
+        }
       }
     }
   }
@@ -543,24 +553,25 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     els.sbTime.textContent = fmtTime(elapsedSec);
     els.sbConv.textContent = `${nConscious}/${bodies.length}`;
     const ordinary = bodies.filter(b=>!b.conscious);
-    if (!recordLowLocked){
+    if (convMilestones.length === 0){
       if (ordinary.length){
         const curMin = Math.min(...ordinary.map(b=>b.v));
         if (curMin < recordLowV) recordLowV = curMin;
       }
-      if (recordLowV <= threshold()){
-        recordLowLocked = true;
-        recordLowAt = elapsedSec;
+      if (ordinary.length){
+        const hitsAway = Math.max(0, Math.ceil(Math.log2(recordLowV/threshold())));
+        els.sbMin.textContent = `${fmtPct(recordLowV)} record low (~${hitsAway} hit${hitsAway===1?'':'s'} away)`;
+      } else {
+        els.sbMin.textContent = 'none — all conscious';
       }
-    }
-    if (recordLowLocked){
-      els.sbMin.textContent = `${fmtPct(recordLowV)} at t=${fmtTime(recordLowAt)} — first conscious ball`;
-    } else if (ordinary.length){
-      const hitsAway = Math.max(0, Math.ceil(Math.log2(recordLowV/threshold())));
-      els.sbMin.textContent = `${fmtPct(recordLowV)} record low (~${hitsAway} hit${hitsAway===1?'':'s'} away)`;
     } else {
-      els.sbMin.textContent = 'none — all conscious';
+      const m0 = convMilestones[0];
+      els.sbMin.textContent = `${fmtPct(m0.value)} at t=${fmtTime(m0.time)} — first conscious ball`;
     }
+    els.milestoneList.textContent = convMilestones.length
+      ? convMilestones.map(m=>`#${m.n} ${fmtPct(m.value)} @${fmtTime(m.time)}`).join('  ·  ') +
+        (conversions > MAX_MILESTONES ? `  ·  (+${conversions-MAX_MILESTONES} more, not logged)` : '')
+      : 'No non-seed body has become conscious yet.';
     const ambPct = Number(els.amb.value)*bodies.length;
     els.sAmb.textContent = (ambPct>=0?'+':'') + ambPct.toFixed(1) + ' %/s';
     els.sMiracle.textContent = (consciousHits * bonusPerHit() * 100).toFixed(1);
@@ -663,9 +674,12 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     const nConscious = bodies.filter(b=>b.conscious).length;
     const total = totalViolence();
     const ordinary = bodies.filter(b=>!b.conscious);
-    const recordLow = recordLowLocked
-      ? `${fmtPct(recordLowV)} at t=${fmtTime(recordLowAt)} (first conscious ball)`
+    const recordLow = convMilestones.length
+      ? `${fmtPct(convMilestones[0].value)} at t=${fmtTime(convMilestones[0].time)} (first conscious ball)`
       : (ordinary.length ? `${fmtPct(recordLowV)} record low so far` : 'none — all conscious');
+    const milestoneLines = convMilestones.length
+      ? convMilestones.map(m=>`    #${m.n}: ${fmtPct(m.value)} at t=${fmtTime(m.time)}`)
+      : ['    (none yet)'];
     const lines = [
       'Violence Virus Threshold — run summary',
       '',
@@ -756,13 +770,20 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
       `above, shown as a fraction of the run's starting total; (2) the fraction of bodies`,
       `currently flagged conscious.`,
       '',
-      `Record-low tracker: a running minimum of every still-violent body's v, sampled once per`,
-      `frame -- it only ever decreases (a body's v rising again, e.g. from averaging with a`,
-      `higher body, never raises the record back up), so unlike watching the raw current`,
-      `minimum, this number doesn't fluctuate. The moment it falls to or below the conversion`,
-      `threshold T, it freezes permanently at that value together with the elapsed time it`,
-      `happened -- this is, by construction, the exact moment the first violent body (after`,
-      `the seed) becomes conscious.`,
+      `Record-low tracker: until the first non-seed conversion, a running minimum of every`,
+      `still-violent body's v, sampled once per frame -- it only ever decreases (a body's v`,
+      `rising again, e.g. from averaging with a higher body, never raises the record back up),`,
+      `so unlike watching the raw current minimum, this number doesn't fluctuate.`,
+      '',
+      `Conversion milestones: the exact v a body held the instant it crossed threshold T`,
+      `(right before that v is reset to 0), together with the elapsed time, is logged for each`,
+      `of the first ${MAX_MILESTONES} non-seed conversions in the run, in order (#1, #2, ... #${MAX_MILESTONES}).`,
+      `Recording stops after the ${MAX_MILESTONES}th -- by that point conversions are typically cascading fast`,
+      `enough that individually logging each one stops being informative. #1's value here is`,
+      `the precise crossing value, which is usually slightly lower than (or equal to) whatever`,
+      `the frame-sampled record-low tracker above had most recently observed, since that`,
+      `tracker only samples once per rendered frame while multiple collisions can happen`,
+      `within a single frame.`,
       '',
       'Settings for this run:',
       `  Bodies: ${els.n.value}`,
@@ -780,6 +801,9 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
       `  Miracle violence removed (Σ %, at current miracle/radiation settings): ${(consciousHits*bonusPerHit()*100).toFixed(2)}`,
       `  Avg hits per conversion: ${conversions>0 ? (consciousHits/conversions).toFixed(2) : 'n/a'}`,
       `  Record-low violence among still-violent bodies: ${recordLow}`,
+      `  First ${MAX_MILESTONES} non-seed conversions (value at crossing, elapsed time):`,
+      ...milestoneLines,
+      conversions > MAX_MILESTONES ? `    (+${conversions-MAX_MILESTONES} further conversions since, not individually logged)` : '',
       `  Seed body's own value: ${fmtSci(bodies[CONSCIOUS_ID].v)}`,
       '',
       'Status:',
