@@ -186,6 +186,8 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
 }
 #stickybar span.k{font-size:10px; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.06em; margin-right:6px;}
 #stickybar span.v{font-size:15px; font-weight:600; color:var(--text); font-variant-numeric:tabular-nums;}
+#stickybar span:has(#sb-min){min-width:0; flex:1 1 auto;}
+#sb-min{overflow-wrap:anywhere; white-space:normal;}
 </style>
 
 <header>
@@ -218,8 +220,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     </div>
     <div class="rolekey">
       <span><i class="chip" style="background:hsl(0,72%,45%)"></i>red — violent, ≥ 51%</span>
-      <span><i class="chip" style="background:hsl(55,95%,58%)"></i>yellow — violent, 10–50%</span>
-      <span><i class="chip" style="background:hsl(132,75%,42%)"></i>green — violent, &lt; 10%</span>
+      <span><i class="chip" style="background:hsl(132,75%,42%)"></i>green — violent, ≤ 50%</span>
       <span><i class="chip" style="background:hsl(38,90%,48%); box-shadow:0 0 6px 3px rgba(255,214,90,0.55);"></i>gold — conscious, permanently 0%</span>
     </div>
     <div id="inspector" class="mono">Click any ball to zoom in on its exact violence level — only color shows at a glance, click for the number.</div>
@@ -305,7 +306,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
   </div>
 </div>
 
-<footer>Color is the only at-a-glance signal now — no on-ball text, and no gradient either: a non-conscious body is one of three fixed colors by band, not a ramp — red at 51% or above, yellow from 10% up to 50%, green under 10%. A conscious body is always exactly 0% violence, so it always gets the same fixed gold fill and gold ring, chosen to sit well apart from the yellow band so the two are never confusable at a glance — a body a divine ball just halved from 100% down to 50% reads as yellow, not gold, exactly marking it as "recently touched, not yet converted." (The gold ring's faint halo turns off above 1,000 bodies, purely so thousands of per-ball gradients don't tank the frame rate — the flat gold fill stays either way.) Click any ball to read its exact value in the inspector above the chart. Bodies range from 4 up to 10,000; the chamber and ball radius scale together to keep a reasonable, visible size and packing density at any count, and past 300 bodies collision detection switches from checking every pair to a spatial grid (only nearby bodies are checked against each other) so the frame rate doesn't collapse at high counts. Background violence radiation only touches bodies not yet flagged conscious, so a body's crossing into consciousness is a real, permanent immunity to that rising background hazard. The history bar under the chamber takes a snapshot of every ball's position and violence every 1-5 seconds (spaced further apart at very high body counts to keep memory bounded), up to 600 snapshots per run; dragging it pauses the sim and repaints the chamber and headline stats as they were at that moment, and dragging back to the right end (or pressing Run) returns to live.</footer>
+<footer>Color is the only at-a-glance signal now — no on-ball text, and no gradient either: a non-conscious body is one of two fixed colors by band, not a ramp — red at 51% or above, green at 50% or below. A third "almost there" color was cut on purpose: bodies under 50% tend to convert fast enough that a middle band added visual noise without adding useful signal. A conscious body is always exactly 0% violence, so it always gets the same fixed gold fill and gold ring, chosen to sit well apart from the green band so the two are never confusable at a glance. (The gold ring's faint halo turns off above 1,000 bodies, purely so thousands of per-ball gradients don't tank the frame rate — the flat gold fill stays either way.) Click any ball to read its exact value in the inspector above the chart. Bodies range from 4 up to 10,000; the chamber and ball radius scale together to keep a reasonable, visible size and packing density at any count, and past 300 bodies collision detection switches from checking every pair to a spatial grid (only nearby bodies are checked against each other) so the frame rate doesn't collapse at high counts. Background violence radiation only touches bodies not yet flagged conscious, so a body's crossing into consciousness is a real, permanent immunity to that rising background hazard. The history bar under the chamber takes a snapshot of every ball's position and violence every 1-5 seconds (spaced further apart at very high body counts to keep memory bounded), up to 600 snapshots per run; dragging it pauses the sim and repaints the chamber and headline stats as they were at that moment, and dragging back to the right end (or pressing Run) returns to live.</footer>
 
 <script>
 (function(){
@@ -354,7 +355,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
   let scrubIndex = null;
   const MAX_SNAPSHOTS = 600;
   let convMilestones = [];
-  const MAX_MILESTONES = 5;
+  const MAX_MILESTONES = 10;
   let axisMin = 0, axisMax = 12;
   let S0 = 1;
   let chartAnimId = null;
@@ -388,6 +389,12 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     const sec = s - m*60;
     return `${m}:${sec.toFixed(1).padStart(4,'0')}`;
   }
+  function fmtTimeShort(s){
+    const m = Math.floor(s/60);
+    const sec = Math.floor(s - m*60);
+    return `${m}:${String(sec).padStart(2,'0')}`;
+  }
+  const CIRCLED = ['①','②','③','④','⑤','⑥','⑦','⑧','⑨','⑩'];
 
   function computeLayout(n){
     const P = 0.2;              // target packing fraction
@@ -459,11 +466,9 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
       // always exactly 0 violence -- a fixed gold, nothing to ramp
       return {rgb:'hsl(38,90%,48%)', ring:'#b98418'};
     }
-    // discrete bands, not a ramp: red >=51%, yellow 10-50%, green <10% --
-    // yellow's hue/lightness deliberately sit far from the divine gold above
-    // so the two are never confusable at a glance
+    // two fixed bands, not a ramp: red >=51%, green <=50% -- bodies under 50%
+    // convert fast enough that a third band added clutter without adding signal
     if (v >= 0.51) return {rgb:'hsl(0,72%,45%)', ring:'transparent'};
-    if (v >= 0.10) return {rgb:'hsl(55,95%,58%)', ring:'transparent'};
     return {rgb:'hsl(132,75%,42%)', ring:'transparent'};
   }
 
@@ -626,8 +631,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
         els.sbMin.textContent = 'none — all conscious';
       }
     } else {
-      const m0 = convMilestones[0];
-      els.sbMin.textContent = `${fmtPct(m0.value)} at t=${fmtTime(m0.time)} — first conscious ball`;
+      els.sbMin.textContent = convMilestones.map((m,i)=>`${CIRCLED[i]||('#'+(i+1))}${fmtTimeShort(m.time)}`).join(' ');
     }
     els.milestoneList.textContent = convMilestones.length
       ? convMilestones.map(m=>`#${m.n} ${fmtPct(m.value)} @${fmtTime(m.time)}`).join('  ·  ') +
