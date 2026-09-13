@@ -182,7 +182,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     </div>
     <div id="stage-wrap"><canvas id="stage" width="480" height="360"></canvas></div>
     <div class="legend">
-      <span class="mono" id="legend-lo">bright green ≤ 0.01%</span>
+      <span class="mono" id="legend-lo">bright green ≤ 0.5%</span>
       <div class="bar" id="legend-bar"></div>
       <span class="mono">dark red = 100%</span>
     </div>
@@ -207,12 +207,12 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
         <input type="range" id="exp" min="-250" max="-6" value="-200" step="1">
       </div>
       <div class="ctrl">
-        <label>Conversion threshold <span class="val" id="v-thr">0.01 %</span></label>
-        <input type="range" id="thr" min="-8" max="-1" value="-4" step="1">
+        <label>Conversion threshold <span class="val" id="v-thr">0.5 %</span></label>
+        <input type="range" id="thr" min="0.1" max="10" value="0.5" step="0.1">
       </div>
       <div class="ctrl" style="grid-column:1/-1;">
         <label>Ambient violence, per body per second <span class="val" id="v-amb">+1.0 %/s</span></label>
-        <input type="range" id="amb" min="-2" max="10" value="1" step="0.5">
+        <input type="range" id="amb" min="-2" max="10" value="1" step="0.1">
       </div>
     </div>
     <div class="btnrow">
@@ -310,7 +310,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
   const CONSCIOUS_ID = 0;
 
   function startExp(){ return Number(els.exp.value); }
-  function threshold(){ return Math.pow(10, Number(els.thr.value)); }
+  function threshold(){ return Number(els.thr.value)/100; }
   function ambient(){ return Number(els.amb.value)/100; }
 
   function fmtPct(v){
@@ -608,7 +608,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     const thrPct = T*100;
     const hitsNeeded = Math.log2(1/T);
     els.verify.innerHTML =
-      `N = ${N} bodies, threshold T = <b>${thrPct}%</b><br>`+
+      `N = ${N} bodies, threshold T = <b>${thrPct.toFixed(1)}%</b><br>`+
       `direct hits to take one body from 100% down to T: <b>${Math.ceil(hitsNeeded)}</b> (= log₂(1/T))<br>`+
       `each conversion adds another body that can deliver those hits, so the rate of new`+
       ` conversions rises as the conscious count grows — a bootstrap cascade, not a fixed drain.`;
@@ -642,8 +642,8 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
   els.exp.addEventListener('input', ()=>{ els.vExp.textContent = '10⁻'+Math.abs(els.exp.value)+' %'; updateVerify(); });
   els.thr.addEventListener('input', ()=>{
     const T = threshold();
-    els.vThr.textContent = (T*100) + ' %';
-    els.legendLo.textContent = `bright green ≤ ${(T*100)}%`;
+    els.vThr.textContent = (T*100).toFixed(1) + ' %';
+    els.legendLo.textContent = `bright green ≤ ${(T*100).toFixed(1)}%`;
     updateVerify();
   });
   els.amb.addEventListener('input', ()=>{
