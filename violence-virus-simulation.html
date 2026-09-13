@@ -70,7 +70,7 @@ header .eyebrow{
   text-transform:uppercase; color:var(--text-dim);
 }
 header h1{font-size:clamp(28px,5vw,42px); font-weight:700; line-height:1.02;}
-header p{color:var(--text-dim); font-size:14.5px; max-width:62ch; line-height:1.55; margin:0;}
+header p{color:var(--text-dim); font-size:14.5px; max-width:66ch; line-height:1.55; margin:0;}
 
 .console{
   display:grid;
@@ -94,7 +94,7 @@ header p{color:var(--text-dim); font-size:14.5px; max-width:62ch; line-height:1.
 .panel-title .tag{font-size:11px; color:var(--text-dim); font-family:"IBM Plex Mono",monospace; text-transform:none; letter-spacing:0.04em;}
 
 #stage-wrap{position:relative; border-radius:8px; overflow:hidden; border:1px solid var(--line); background:var(--panel-2);}
-#stage{display:block; width:100%; height:auto; aspect-ratio:4/3; cursor:crosshair;}
+#stage{display:block; width:100%; height:auto; aspect-ratio:4/3;}
 .legend{
   display:flex; align-items:center; gap:10px; margin-top:10px; font-size:12px; color:var(--text-dim);
 }
@@ -116,7 +116,6 @@ button{
 }
 button:hover{border-color:var(--calm);}
 button.primary{background:var(--calm); color:#08130e; border-color:var(--calm); font-weight:600;}
-button.warn{background:var(--alarm); color:#1a0603; border-color:var(--alarm); font-weight:600;}
 button:focus-visible, input:focus-visible{outline:2px solid var(--calm); outline-offset:2px;}
 
 .readouts{display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:14px;}
@@ -124,12 +123,15 @@ button:focus-visible, input:focus-visible{outline:2px solid var(--calm); outline
   background:var(--panel-2); border:1px solid var(--line); border-radius:8px; padding:10px 12px;
 }
 .stat .k{font-size:10.5px; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.08em;}
-.stat .v{font-family:"IBM Plex Mono",monospace; font-size:18px; margin-top:2px; font-variant-numeric:tabular-nums;}
+.stat .v{font-family:"IBM Plex Mono",monospace; font-size:17px; margin-top:2px; font-variant-numeric:tabular-nums;}
 .stat .v.calm{color:var(--calm);}
 .stat .v.alarm{color:var(--alarm);}
 
 #chart-wrap{border:1px solid var(--line); border-radius:8px; background:var(--panel-2); padding:8px;}
 canvas#chart{display:block; width:100%; height:180px;}
+.chartkey{display:flex; gap:16px; font-size:11.5px; color:var(--text-dim); margin-top:8px; flex-wrap:wrap;}
+.chartkey span{display:inline-flex; align-items:center; gap:6px;}
+.chartkey i{width:14px; height:2px; display:inline-block;}
 
 .bench{
   display:grid; grid-template-columns:1fr 1fr; gap:16px;
@@ -140,90 +142,92 @@ canvas#chart{display:block; width:100%; height:180px;}
   font-family:"IBM Plex Mono",monospace; background:var(--panel-2); border:1px solid var(--line);
   border-radius:6px; padding:10px 12px; font-size:13px; margin:10px 0; overflow-x:auto;
 }
-.trace{
-  font-family:"IBM Plex Mono",monospace; font-size:12.5px; line-height:1.9;
-  background:var(--panel-2); border:1px solid var(--line); border-radius:6px; padding:10px 12px;
-  max-height:150px; overflow-y:auto;
+#verify{
+  font-family:"IBM Plex Mono",monospace; background:var(--panel-2); border:1px solid var(--line);
+  border-radius:6px; padding:12px; font-size:12.5px; line-height:1.9;
 }
-.trace .up{color:var(--alarm);}
-.trace .down{color:var(--calm);}
+#verify b{color:var(--calm);}
 
 footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); color:var(--text-dim); font-size:12px;}
 </style>
 
 <header>
-  <div class="eyebrow">Interaction dynamics — bistable contagion model</div>
+  <div class="eyebrow">Interaction dynamics — dissipative consensus model</div>
   <h1>Violence Virus Threshold</h1>
-  <p>Billiard bodies collide in a box. Untouched, contact <b>doubles</b> reactivity in both parties — a runaway contagion. One body starts near machine-epsilon violence and carries a fixed subtractive discipline term. Watch whether it gets swept up, or quietly disarms everything it touches.</p>
+  <p>One body starts at 10⁻¹⁰⁰ percent violence — a number small enough to ignore. Every collision it takes part in halves the other body's violence and doubles its own. Every collision <i>between two ordinary bodies</i> instead averages them. Watch whether that one body's number ever catches up before it quietly drains the whole room.</p>
 </header>
 
 <div class="console">
   <div class="panel">
     <div class="panel-title">
       <h2>Chamber</h2>
-      <span class="tag" id="tick-count">t = 0</span>
+      <span class="tag" id="tick-count">collisions = 0</span>
     </div>
     <div id="stage-wrap"><canvas id="stage" width="640" height="480"></canvas></div>
     <div class="legend">
-      <span class="mono">10⁻¹⁴</span>
+      <span class="mono">≈0%</span>
       <div class="bar"></div>
-      <span class="mono">1.0</span>
+      <span class="mono">100%</span>
     </div>
     <div class="controls">
       <div class="ctrl">
         <label>Bodies <span class="val" id="v-n">18</span></label>
-        <input type="range" id="n" min="4" max="40" value="18" step="1">
+        <input type="range" id="n" min="4" max="36" value="18" step="1">
       </div>
       <div class="ctrl">
-        <label>Speed <span class="val" id="v-speed">1.0×</span></label>
-        <input type="range" id="speed" min="1" max="6" value="1" step="1">
+        <label>Speed <span class="val" id="v-speed">1×</span></label>
+        <input type="range" id="speed" min="1" max="8" value="1" step="1">
       </div>
-      <div class="ctrl">
-        <label>Discipline k (self-subtraction) <span class="val" id="v-k">0.0100</span></label>
-        <input type="range" id="k" min="0" max="300" value="100" step="1">
-      </div>
-      <div class="ctrl">
-        <label>Conversion threshold T <span class="val" id="v-t">1e-12</span></label>
-        <input type="range" id="t" min="6" max="16" value="12" step="1">
+      <div class="ctrl" style="grid-column:1/-1;">
+        <label>Conscious body starting violence <span class="val" id="v-exp">10⁻¹⁰⁰ %</span></label>
+        <input type="range" id="exp" min="-150" max="-6" value="-100" step="1">
       </div>
     </div>
     <div class="btnrow">
       <button class="primary" id="btn-run">Run</button>
       <button id="btn-reset">Reset chamber</button>
-      <button class="warn" id="btn-shock">Shock conscious body (push k → over threshold)</button>
     </div>
   </div>
 
   <div class="panel">
-    <div class="panel-title"><h2>Readout</h2><span class="tag">log₁₀ scale</span></div>
+    <div class="panel-title"><h2>Readout</h2><span class="tag">live</span></div>
     <div class="readouts">
-      <div class="stat"><div class="k">Conscious body v_c</div><div class="v calm mono" id="s-vc">1.0e-14</div></div>
-      <div class="stat"><div class="k">Mean violence</div><div class="v mono" id="s-mean">—</div></div>
-      <div class="stat"><div class="k">Converted bodies</div><div class="v mono" id="s-conv">0 / 18</div></div>
+      <div class="stat"><div class="k">Conscious body</div><div class="v calm mono" id="s-vc">1.0×10⁻¹⁰⁰ %</div></div>
+      <div class="stat"><div class="k">Total system violence</div><div class="v mono" id="s-total">100.0%</div></div>
+      <div class="stat"><div class="k">Conscious-body hits</div><div class="v mono" id="s-hits">0</div></div>
     </div>
     <div id="chart-wrap"><canvas id="chart" width="560" height="180"></canvas></div>
-    <div class="trace mono" id="trace"></div>
+    <div class="chartkey">
+      <span><i style="background:var(--alarm)"></i>total violence (actual, % of start)</span>
+      <span><i style="background:var(--text-dim); border-top:2px dashed var(--text-dim); height:0;"></i>predicted e^(−t/N²)</span>
+      <span><i style="background:var(--calm)"></i>conscious body (log scale)</span>
+    </div>
   </div>
 </div>
 
 <div class="panel bench">
   <div>
-    <h3 style="font-size:17px;margin-bottom:8px;">Why it doesn't explode</h3>
-    <p>Every collision applies <span class="mono">v → 2v</span> — pure contagion, unbounded. The conscious body also gets doubled on contact; there is no exemption. What saves it is a fixed subtraction <span class="mono">k</span> applied immediately after:</p>
-    <div class="formula">v<sub>n+1</sub> = max(0, 2·v<sub>n</sub> − k)</div>
-    <p>This affine map has one fixed point, found by setting v<sub>n+1</sub>=v<sub>n</sub>=v*:</p>
-    <div class="formula">v* = 2v* − k  ⟶  <b>v* = k</b></div>
-    <p>It's <i>unstable</i> — slope 2 at the fixed point. Below v*, each iteration nets a <i>decrease</i> (2v−k &lt; v exactly when v&lt;k), and the floor at 0 turns "decrease" into "absorbed at zero forever." Above v*, each iteration nets an increase that compounds — divergence. v*=k is the separatrix: a critical mass, an epidemic's R₀=1, a nuclear pile's k-effective=1. Same shape, different noun.</p>
+    <h3 style="font-size:17px;margin-bottom:8px;">The two update rules</h3>
+    <div class="formula">ordinary ⨯ ordinary:  a, b → (a+b)/2, (a+b)/2</div>
+    <div class="formula">conscious ⨯ ordinary:  v → v/2,  &nbsp; v_c → min(1, 2·v_c)</div>
+    <p>Averaging <i>conserves</i> the pair's sum exactly — it only spreads violence around, it never removes any. Only contact with the conscious body deletes anything: half of the struck body's value simply vanishes from the system. The conscious body's own doubling is a separate, independent bookkeeping line, not a transfer — it is not "absorbing" what it removes, it's catalyzing the loss while barely changing itself. That asymmetry is the whole mechanism.</p>
+    <h3 style="font-size:17px;margin:16px 0 8px;">The decay law for the whole room</h3>
+    <p>Let S = total violence, N = body count. Any random collision has probability 2/N of touching the conscious body; when it does, the partner (≈ the population mean m) loses m/2. Averaging collisions leave S untouched. So per collision:</p>
+    <div class="formula">E[ΔS] = (2/N)·(−m/2) ≈ −S/N²</div>
+    <p>which integrates to a clean exponential — no approximation needed beyond mean-field mixing:</p>
+    <div class="formula">S(t) ≈ S₀ · e^(−t/N²)</div>
   </div>
   <div>
-    <h3 style="font-size:17px;margin-bottom:8px;">Closed form &amp; why 10⁻¹⁴ survives</h3>
-    <div class="formula">v<sub>n</sub> = 2<sup>n</sup>(v₀ − k) + k</div>
-    <p>Starting at v₀=10⁻¹⁴ with k=0.01, deviation (v₀−k)≈−0.01 gets doubled each hit, but it takes n≈log₂(0.01/10⁻¹⁴)≈40 doublings just to erode the gap — and the floor clips it to exactly 0 the first time the raw value would go negative, which happens on the <i>very first</i> hit. So the "conscious" body isn't slowly winning a race against infinity; the subtraction makes 0 an absorbing state before growth ever gets a foothold. Hit "Shock" above to move k below the body's current value and watch the same equation flip sign and run away.</p>
-    <div class="formula" id="cobweb-trace">2·(1.0e-14) − 0.01 → clamped to 0 (0 &lt; k, absorbed)</div>
+    <h3 style="font-size:17px;margin-bottom:8px;">Verifying "it won't need to be worried about"</h3>
+    <p>Reaching 1% of the starting total takes t₉₉ = N²·ln(100) collisions. The conscious body is expected to be part of only 2/N of them:</p>
+    <div class="formula">n_c = 2N·ln(100) ≈ 9.2N doublings</div>
+    <p>at the moment the room is 99% pacified. Plugged into the current slider values:</p>
+    <div id="verify"></div>
+    <p>That's the whole argument in one number: by the time this single body has single-handedly wiped out 99% of the room's violence, its own value has crept up by less than a hundred doublings — nowhere close to catching the 10⁻¹⁰⁰ → 10⁰ climb it would need to become a threat itself.</p>
   </div>
 </div>
 
-<footer>Chamber rule: two non-conscious bodies meeting mutually double (capped at 1.0). A conscious body meeting a live one halves the other's violence (v/2) and self-corrects by k; any body whose violence falls below T flips to conscious permanently and starts disarming on contact itself.</footer>
+<footer>Bodies are labeled with their live violence percentage. Color still encodes it on a log scale (green ≈ calm, red ≈ violent) but is clamped below 10⁻⁸ so the conscious body always reads as fully calm rather than pixel-identical black.</footer>
 
 <script>
 (function(){
@@ -236,68 +240,76 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
   const els = {
     n: document.getElementById('n'), vN: document.getElementById('v-n'),
     speed: document.getElementById('speed'), vSpeed: document.getElementById('v-speed'),
-    k: document.getElementById('k'), vK: document.getElementById('v-k'),
-    t: document.getElementById('t'), vT: document.getElementById('v-t'),
+    exp: document.getElementById('exp'), vExp: document.getElementById('v-exp'),
     run: document.getElementById('btn-run'), reset: document.getElementById('btn-reset'),
-    shock: document.getElementById('btn-shock'),
     tick: document.getElementById('tick-count'),
-    sVc: document.getElementById('s-vc'), sMean: document.getElementById('s-mean'), sConv: document.getElementById('s-conv'),
-    trace: document.getElementById('trace'), cobweb: document.getElementById('cobweb-trace'),
+    sVc: document.getElementById('s-vc'), sTotal: document.getElementById('s-total'), sHits: document.getElementById('s-hits'),
+    verify: document.getElementById('verify'),
   };
-
-  function kVal(){ return els.k.value / 10000; }
-  function tVal(){ return Math.pow(10, -Number(els.t.value)); }
 
   let bodies = [];
   let running = false;
-  let tick = 0;
+  let collisions = 0;
+  let consciousHits = 0;
+  let S0 = 1;
   let history = [];
   const CONSCIOUS_ID = 0;
 
-  function fmt(v){
-    if (v === 0) return "0";
-    if (v < 1e-3) return v.toExponential(2);
-    return v.toFixed(4);
+  function startExp(){ return Number(els.exp.value); }
+
+  function fmtPct(v){
+    const pct = v*100;
+    if (pct === 0) return "0%";
+    if (pct < 1e-3) return pct.toExponential(2) + "%";
+    if (pct < 1) return pct.toFixed(4) + "%";
+    return pct.toFixed(1) + "%";
+  }
+  function fmtSci(v){
+    if (v === 0) return "0%";
+    return v.toExponential(2) + "%";
   }
 
   function makeBodies(){
     const n = Number(els.n.value);
     const arr = [];
-    const r = 11;
+    const r = 12;
     for (let i=0;i<n;i++){
       arr.push({
         id: i,
         x: r + Math.random()*(W-2*r),
         y: r + Math.random()*(H-2*r),
-        vx: (Math.random()-0.5)*2.4,
-        vy: (Math.random()-0.5)*2.4,
+        vx: (Math.random()-0.5)*2.6,
+        vy: (Math.random()-0.5)*2.6,
         r,
-        v: i===CONSCIOUS_ID ? 1e-14 : 0.55+Math.random()*0.45,
+        v: i===CONSCIOUS_ID ? Math.pow(10, startExp()) : 1.0,
         conscious: i===CONSCIOUS_ID,
       });
     }
     return arr;
   }
 
+  function totalViolence(){ return bodies.reduce((s,b)=>s+b.v,0); }
+
   function reset(){
     bodies = makeBodies();
-    tick = 0;
-    history = [];
-    els.trace.innerHTML = '';
+    collisions = 0;
+    consciousHits = 0;
+    S0 = totalViolence();
+    history = [{t:0, S: S0, vc: bodies[CONSCIOUS_ID].v}];
     draw();
     updateReadouts();
+    updateVerify();
   }
 
   function colorFor(v, conscious){
-    const lv = Math.log10(Math.max(v, 1e-15));
-    const t = Math.min(1, Math.max(0, (lv + 14) / 14));
-    const calm = [61,220,151], alarm=[255,106,82];
+    const lv = Math.log10(Math.max(v, 1e-9));
+    const t = Math.min(1, Math.max(0, (lv + 8) / 8));
+    const calm = [31,157,115], alarm=[200,64,42];
     const c = calm.map((c0,i)=> Math.round(c0 + (alarm[i]-c0)*t));
-    return {rgb:`rgb(${c[0]},${c[1]},${c[2]})`, ring: conscious ? '#ffcc4d' : 'transparent'};
+    return {rgb:`rgb(${c[0]},${c[1]},${c[2]})`, ring: conscious ? '#b98418' : 'transparent'};
   }
 
   function step(){
-    const k = kVal(), T = tVal();
     const n = bodies.length;
     for (const b of bodies){
       b.x += b.vx; b.y += b.vy;
@@ -323,45 +335,23 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
           a.x -= nx*overlap; a.y -= ny*overlap;
           c.x += nx*overlap; c.y += ny*overlap;
 
-          applyInteraction(a, c, k, T);
+          applyInteraction(a, c);
+          collisions++;
         }
       }
     }
-    tick++;
   }
 
-  function logTrace(msg, cls){
-    const line = document.createElement('div');
-    if (cls) line.className = cls;
-    line.textContent = msg;
-    els.trace.prepend(line);
-    while (els.trace.children.length > 40) els.trace.removeChild(els.trace.lastChild);
-  }
-
-  function applyInteraction(a, c, k, T){
-    const aConscious = a.conscious, cConscious = c.conscious;
-    if (!aConscious && !cConscious){
-      a.v = Math.min(1, a.v*2);
-      c.v = Math.min(1, c.v*2);
-    } else if (aConscious !== cConscious){
-      const cons = aConscious ? a : c;
-      const other = aConscious ? c : a;
-      const before = cons.v;
-      const doubled = Math.min(1, cons.v*2);
-      cons.v = Math.max(0, doubled - k);
-      other.v = Math.max(0, other.v/2 - k*0.15);
-      if (cons.id === CONSCIOUS_ID){
-        const sign = doubled - k >= 0 ? 'up' : 'down';
-        logTrace(`t${tick}  2×(${before.toExponential(2)}) − k → ${cons.v===0? '0 (absorbed)' : cons.v.toExponential(2)}`, sign==='up' && cons.v>1e-6 ? 'up':'down');
-        els.cobweb.textContent = `2·(${before.toExponential(3)}) − ${k.toFixed(4)} = ${(doubled-k).toExponential(3)} → ${cons.v===0?'clamped to 0 (absorbed)':cons.v.toExponential(3)+' (over threshold — growing)'}`;
-      }
-      if (!other.conscious && other.v < T){
-        other.conscious = true;
-        logTrace(`t${tick}  body #${other.id} crosses T → converts to conscious`, 'down');
-      }
+  function applyInteraction(a, c){
+    if (a.conscious || c.conscious){
+      const cons = a.conscious ? a : c;
+      const other = a.conscious ? c : a;
+      other.v = other.v/2;
+      cons.v = Math.min(1, cons.v*2);
+      consciousHits++;
     } else {
-      a.v = Math.max(0, a.v - k*0.05);
-      c.v = Math.max(0, c.v - k*0.05);
+      const m = (a.v + c.v)/2;
+      a.v = m; c.v = m;
     }
   }
 
@@ -369,6 +359,9 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     ctx.clearRect(0,0,W,H);
     ctx.fillStyle = getComputedStyle(document.body).getPropertyValue('--panel-2') || '#111';
     ctx.fillRect(0,0,W,H);
+    const textColor = getComputedStyle(document.body).getPropertyValue('--text') || '#eee';
+    ctx.font = '10px "IBM Plex Mono", monospace';
+    ctx.textAlign = 'center';
     for (const b of bodies){
       const {rgb, ring} = colorFor(b.v, b.conscious);
       ctx.beginPath();
@@ -380,21 +373,22 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
         ctx.strokeStyle = ring;
         ctx.stroke();
       }
+      ctx.fillStyle = textColor;
+      const label = b.conscious ? fmtSci(b.v) : (b.v*100).toFixed(0)+'%';
+      ctx.fillText(label, b.x, b.y - b.r - 3);
     }
   }
 
   function updateReadouts(){
     const c = bodies[CONSCIOUS_ID];
-    els.sVc.textContent = fmt(c.v);
-    els.sVc.className = 'v mono ' + (c.v < 1e-6 ? 'calm' : 'alarm');
-    const mean = bodies.reduce((s,b)=>s+b.v,0)/bodies.length;
-    els.sMean.textContent = fmt(mean);
-    const convCount = bodies.filter(b=>b.conscious).length;
-    els.sConv.textContent = `${convCount} / ${bodies.length}`;
-    els.tick.textContent = `t = ${tick}`;
+    els.sVc.textContent = fmtSci(c.v);
+    const total = totalViolence();
+    els.sTotal.textContent = (total/bodies.length*100).toFixed(2) + '% avg';
+    els.sHits.textContent = consciousHits;
+    els.tick.textContent = `collisions = ${collisions}`;
 
-    history.push({t:tick, vc:c.v, mean});
-    if (history.length > 300) history.shift();
+    history.push({t: collisions, S: total, vc: c.v});
+    if (history.length > 400) history.shift();
     drawChart();
   }
 
@@ -408,10 +402,12 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     const maxT = history[history.length-1].t;
     const minT = history[0].t;
     const span = Math.max(1, maxT-minT);
+    const N = bodies.length;
     function xFor(t){ return pad + (t-minT)/span * (w-2*pad); }
+    function yForFrac(f){ return h-pad - Math.min(1,Math.max(0,f))*(h-2*pad); }
     function yForLog(v){
-      const lv = Math.log10(Math.max(v,1e-15));
-      const t = (lv+15)/15;
+      const lv = Math.log10(Math.max(v,1e-160));
+      const t = (lv+160)/160;
       return h-pad - t*(h-2*pad);
     }
     cctx.strokeStyle = getComputedStyle(document.body).getPropertyValue('--line') || '#333';
@@ -420,16 +416,36 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
       const y = pad + f*(h-2*pad);
       cctx.beginPath(); cctx.moveTo(pad,y); cctx.lineTo(w-pad,y); cctx.stroke();
     }
-    cctx.strokeStyle = getComputedStyle(document.body).getPropertyValue('--alarm') || '#f55';
+    cctx.strokeStyle = getComputedStyle(document.body).getPropertyValue('--text-dim') || '#888';
+    cctx.lineWidth = 1.5;
+    cctx.setLineDash([4,4]);
+    cctx.beginPath();
+    history.forEach((p,i)=>{ const pred = Math.exp(-p.t/(N*N)); const x=xFor(p.t), y=yForFrac(pred); i?cctx.lineTo(x,y):cctx.moveTo(x,y); });
+    cctx.stroke();
+    cctx.setLineDash([]);
+    cctx.strokeStyle = getComputedStyle(document.body).getPropertyValue('--alarm') || '#c33';
     cctx.lineWidth = 2;
     cctx.beginPath();
-    history.forEach((p,i)=>{ const x=xFor(p.t), y=yForLog(p.mean); i?cctx.lineTo(x,y):cctx.moveTo(x,y); });
+    history.forEach((p,i)=>{ const x=xFor(p.t), y=yForFrac(p.S/S0); i?cctx.lineTo(x,y):cctx.moveTo(x,y); });
     cctx.stroke();
     cctx.strokeStyle = getComputedStyle(document.body).getPropertyValue('--calm') || '#3d6';
     cctx.lineWidth = 2;
     cctx.beginPath();
     history.forEach((p,i)=>{ const x=xFor(p.t), y=yForLog(p.vc); i?cctx.lineTo(x,y):cctx.moveTo(x,y); });
     cctx.stroke();
+  }
+
+  function updateVerify(){
+    const N = Number(els.n.value);
+    const e0 = startExp();
+    const t99 = N*N*Math.log(100);
+    const nc99 = 2*N*Math.log(100);
+    const predExp = e0 + nc99*Math.log10(2);
+    els.verify.innerHTML =
+      `N = ${N} bodies<br>`+
+      `collisions to reach 1% of starting violence: t₉₉ ≈ <b>${t99.toFixed(0)}</b><br>`+
+      `expected conscious-body doublings by then: n_c ≈ <b>${nc99.toFixed(1)}</b><br>`+
+      `conscious body's value at that point: 10^${e0} → <b>10^${predExp.toFixed(1)}</b> %`;
   }
 
   let rafId = null;
@@ -441,30 +457,18 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     if (running) rafId = requestAnimationFrame(loop);
   }
 
-  els.n.addEventListener('input', ()=>{ els.vN.textContent = els.n.value; });
-  els.speed.addEventListener('input', ()=>{ els.vSpeed.textContent = els.speed.value + '.0×'; });
-  els.k.addEventListener('input', ()=>{ els.vK.textContent = kVal().toFixed(4); });
-  els.t.addEventListener('input', ()=>{ els.vT.textContent = '1e-' + els.t.value; });
+  els.n.addEventListener('input', ()=>{ els.vN.textContent = els.n.value; updateVerify(); });
+  els.speed.addEventListener('input', ()=>{ els.vSpeed.textContent = els.speed.value + '×'; });
+  els.exp.addEventListener('input', ()=>{ els.vExp.textContent = '10⁻'+Math.abs(els.exp.value)+' %'; updateVerify(); });
 
   els.run.addEventListener('click', ()=>{
     running = !running;
     els.run.textContent = running ? 'Pause' : 'Run';
-    els.run.classList.toggle('primary', !running ? true : true);
     if (running) loop();
     else if (rafId) cancelAnimationFrame(rafId);
   });
   els.reset.addEventListener('click', reset);
-  els.shock.addEventListener('click', ()=>{
-    const c = bodies[CONSCIOUS_ID];
-    els.k.value = 1;
-    els.vK.textContent = kVal().toFixed(4);
-    c.v = Math.max(c.v, kVal()*2.2);
-    c.conscious = true;
-    logTrace(`t${tick}  SHOCK: k cut to ${kVal().toFixed(4)}, v_c pushed to ${c.v.toExponential(2)} — above fixed point, next doublings compound`, 'up');
-    updateReadouts();
-  });
 
   reset();
-  draw();
 })();
 </script>
