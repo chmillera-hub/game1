@@ -109,6 +109,12 @@ header p{color:var(--text-dim); font-size:14.5px; max-width:66ch; line-height:1.
   background:var(--panel-2); border:1px solid var(--line); border-radius:6px; color:var(--text-dim);
 }
 #milestone.done{ border-color:var(--calm); color:var(--calm); font-weight:600; }
+.rolekey{
+  display:flex; flex-wrap:wrap; gap:6px 14px; margin-top:6px;
+  font-size:11px; color:var(--text-dim);
+}
+.rolekey span{display:inline-flex; align-items:center; gap:5px;}
+.rolekey .chip{width:9px; height:9px; border-radius:50%; display:inline-block; flex:none;}
 .legend .bar{
   flex:1; height:8px; border-radius:4px;
   background:linear-gradient(90deg, hsl(140,80%,55%), hsl(90,75%,50%), hsl(45,80%,50%), hsl(0,70%,30%));
@@ -179,6 +185,11 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
       <span class="mono" id="legend-lo">bright green ≤ 0.01%</span>
       <div class="bar" id="legend-bar"></div>
       <span class="mono">dark red = 100%</span>
+    </div>
+    <div class="rolekey">
+      <span><i class="chip" style="background:hsl(0,70%,30%)"></i>violent, not yet conscious</span>
+      <span><i class="chip" style="background:hsl(140,80%,55%)"></i>newly conscious, calm</span>
+      <span><i class="chip" style="background:hsl(42,90%,50%)"></i>conscious, violence redoubled — still de-escalating</span>
     </div>
     <div id="inspector" class="mono">Click any ball to zoom in on its exact violence level — the on-ball labels are too small to read at a glance on purpose.</div>
     <div class="controls">
@@ -255,7 +266,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
   </div>
 </div>
 
-<footer>Bodies are labeled with their live violence percentage. Color runs a log-scaled spectrum from dark red at 100% violence down to bright green at (or below) the conversion threshold; the gold ring marks any body currently flagged conscious, whatever its raw color says. Chamber is compressed and bodies are small (radius halved from the last version) to fit up to 200 on screen; every ball carries a deliberately tiny live percentage label — click one to read its exact value in the inspector above the chart. Ambient drift only touches bodies not yet flagged conscious, so a body's crossing into consciousness is a real, permanent immunity to the background field, not just a color that happens to sit near green.</footer>
+<footer>Bodies are labeled with their live violence percentage. Fill color runs a log-scaled spectrum from bright green at (or below) the conversion threshold up to a body's "hot" end — dark red for a body not yet conscious, gold for one that is: a conscious body's own value still climbs back up from repeated doubling, but it never reads as red again, because the color is meant to say what the body is doing, not just what number it's holding. The gold ring marks any body currently flagged conscious as a secondary cue at any zoom level. Chamber is compressed and bodies are small (radius halved from an earlier version) to fit up to 200 on screen; every ball carries a deliberately tiny live percentage label — click one to read its exact value in the inspector above the chart. Ambient drift only touches bodies not yet flagged conscious, so a body's crossing into consciousness is a real, permanent immunity to the background field, not just a color that happens to sit near green.</footer>
 
 <script>
 (function(){
@@ -366,9 +377,18 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     const lo = Math.log10(T);
     let t = lo >= 0 ? (v<=T?0:1) : (lv - lo) / (0 - lo);
     t = Math.min(1, Math.max(0, t));
-    const hue = 140 - t*140;
-    const sat = 78 - t*8;
-    const light = 55 - t*25;
+    let hue, sat, light;
+    if (conscious){
+      // green (calm) -> gold (understands violence, still de-escalating), never red
+      hue = 140 - t*98;
+      sat = 75 + t*15;
+      light = 55 - t*5;
+    } else {
+      // green (calm) -> dark red (violent, not yet conscious)
+      hue = 140 - t*140;
+      sat = 78 - t*8;
+      light = 55 - t*25;
+    }
     return {rgb:`hsl(${hue.toFixed(0)},${sat.toFixed(0)}%,${light.toFixed(0)}%)`, ring: conscious ? '#b98418' : 'transparent'};
   }
 
