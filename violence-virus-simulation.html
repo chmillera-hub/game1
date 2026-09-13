@@ -216,7 +216,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
         <input type="range" id="n" min="4" max="200" value="100" step="1">
       </div>
       <div class="ctrl">
-        <label>Speed <span class="val" id="v-speed">1×</span></label>
+        <label>Speed (scales elapsed time too) <span class="val" id="v-speed">1×</span></label>
         <input type="range" id="speed" min="1" max="8" value="1" step="1">
       </div>
       <div class="ctrl">
@@ -658,10 +658,11 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     if (lastT == null) lastT = now;
     const dtSec = Math.min(0.25, (now-lastT)/1000);
     lastT = now;
-    elapsedSec += dtSec;
     const speed = Number(els.speed.value);
+    const simDt = dtSec * speed;
+    elapsedSec += simDt;
     for (let s=0;s<speed;s++) step();
-    applyAmbient(dtSec);
+    applyAmbient(simDt);
     draw();
     updateReadouts();
     if (running) rafId = requestAnimationFrame(loop);
