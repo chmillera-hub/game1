@@ -227,6 +227,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
       <span><i style="background:var(--accent)"></i>conscious bodies (% of N)</span>
       <span><i style="background:var(--calm)"></i>seed body (log scale)</span>
     </div>
+    <p style="font-size:11.5px; color:var(--text-dim); margin-top:6px;">While running, the x-axis scrolls a live window; pause and it shrinks to show the whole run, 0 to the moment you paused.</p>
   </div>
 </div>
 
@@ -287,6 +288,9 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
   let selectedId = null;
   let elapsedSec = 0;
   let fullAt = null;
+  let axisMin = 0, axisMax = 12;
+  let chartAnimId = null;
+  const LIVE_WINDOW = 12;
   const CONSCIOUS_ID = 0;
 
   function startExp(){ return Number(els.exp.value); }
@@ -344,6 +348,8 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     conversions = 0;
     elapsedSec = 0;
     fullAt = null;
+    if (chartAnimId){ cancelAnimationFrame(chartAnimId); chartAnimId = null; }
+    axisMin = 0; axisMax = LIVE_WINDOW;
     history = [{t:0, S: totalViolence(), vc: bodies[CONSCIOUS_ID].v, frac: 1/bodies.length}];
     draw();
     updateReadouts();
@@ -479,7 +485,13 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     }
 
     history.push({t: elapsedSec, S: total, vc: c.v, frac: nConscious/bodies.length});
-    if (history.length > 600) history.shift();
+    if (running){
+      const nowT = elapsedSec;
+      const winStart = Math.max(0, nowT - LIVE_WINDOW);
+      const winEnd = Math.max(nowT, LIVE_WINDOW);
+      axisMin += (winStart-axisMin)*0.3;
+      axisMax += (winEnd-axisMax)*0.3;
+    }
     drawChart();
   }
 
@@ -489,29 +501,35 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     cctx.fillStyle = getComputedStyle(document.body).getPropertyValue('--panel-2') || '#111';
     cctx.fillRect(0,0,w,h);
     if (history.length < 2) return;
-    const pad = 8;
-    const maxT = history[history.length-1].t;
-    const minT = history[0].t;
-    const span = Math.max(0.5, maxT-minT);
+    const pad = 8, padBottom = 16;
+    const minT = axisMin, span = Math.max(0.5, axisMax-axisMin);
     function xFor(t){ return pad + (t-minT)/span * (w-2*pad); }
-    function yForFrac(f){ return h-pad - Math.min(1,Math.max(0,f))*(h-2*pad); }
+    function yForFrac(f){ return h-padBottom - Math.min(1,Math.max(0,f))*(h-pad-padBottom); }
     function yForLog(v){
       const lv = Math.log10(Math.max(v,1e-160));
       const t = (lv+160)/160;
-      return h-pad - t*(h-2*pad);
+      return h-padBottom - t*(h-pad-padBottom);
     }
     cctx.strokeStyle = getComputedStyle(document.body).getPropertyValue('--line') || '#333';
     cctx.lineWidth = 1;
     for (let f=0; f<=1; f+=0.25){
-      const y = pad + f*(h-2*pad);
+      const y = pad + f*(h-pad-padBottom);
       cctx.beginPath(); cctx.moveTo(pad,y); cctx.lineTo(w-pad,y); cctx.stroke();
     }
+    const dimColor = getComputedStyle(document.body).getPropertyValue('--text-dim') || '#888';
+    cctx.fillStyle = dimColor;
+    cctx.font = '10px "IBM Plex Mono", monospace';
+    cctx.textAlign = 'left';
+    cctx.fillText(fmtTime(axisMin), pad, h-3);
+    cctx.textAlign = 'right';
+    cctx.fillText((running ? 'now ' : 'end ') + fmtTime(axisMax), w-pad, h-3);
+    cctx.textAlign = 'left';
     if (fullAt){
       cctx.strokeStyle = getComputedStyle(document.body).getPropertyValue('--calm') || '#3d6';
       cctx.lineWidth = 1;
       cctx.setLineDash([3,3]);
       const x = xFor(fullAt.time);
-      cctx.beginPath(); cctx.moveTo(x,pad); cctx.lineTo(x,h-pad); cctx.stroke();
+      cctx.beginPath(); cctx.moveTo(x,pad); cctx.lineTo(x,h-padBottom); cctx.stroke();
       cctx.setLineDash([]);
     }
     cctx.strokeStyle = getComputedStyle(document.body).getPropertyValue('--alarm') || '#c33';
@@ -591,11 +609,32 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     updateReadouts();
   });
 
+  function shrinkChartToFullRun(){
+    const targetMax = Math.max(LIVE_WINDOW, elapsedSec);
+    if (chartAnimId) cancelAnimationFrame(chartAnimId);
+    function step(){
+      axisMin += (0-axisMin)*0.15;
+      axisMax += (targetMax-axisMax)*0.15;
+      drawChart();
+      if (Math.abs(axisMin) > 0.02 || Math.abs(targetMax-axisMax) > Math.max(0.05, targetMax*0.01)){
+        chartAnimId = requestAnimationFrame(step);
+      } else {
+        axisMin = 0; axisMax = targetMax; drawChart(); chartAnimId = null;
+      }
+    }
+    step();
+  }
+
   els.run.addEventListener('click', ()=>{
     running = !running;
     els.run.textContent = running ? 'Pause' : 'Run';
-    if (running){ lastT = null; loop(performance.now()); }
-    else if (rafId) cancelAnimationFrame(rafId);
+    if (running){
+      if (chartAnimId){ cancelAnimationFrame(chartAnimId); chartAnimId = null; }
+      lastT = null; loop(performance.now());
+    } else {
+      if (rafId) cancelAnimationFrame(rafId);
+      shrinkChartToFullRun();
+    }
   });
   els.reset.addEventListener('click', ()=>{ selectedId = null; reset(); });
 
