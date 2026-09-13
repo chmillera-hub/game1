@@ -188,6 +188,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
   <span><span class="k">Total violence (Σ%)</span> <span class="v mono" id="sb-total">0.0</span></span>
   <span><span class="k">Elapsed</span> <span class="v mono" id="sb-time">0:00.0</span></span>
   <span><span class="k">Conscious</span> <span class="v mono" id="sb-conv">1/100</span></span>
+  <span><span class="k">Closest to threshold</span> <span class="v mono" id="sb-min">—</span></span>
 </div>
 
 <div class="console">
@@ -308,7 +309,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     verify: document.getElementById('verify'), legendLo: document.getElementById('legend-lo'),
     inspector: document.getElementById('inspector'), milestone: document.getElementById('milestone'),
     sbTotal: document.getElementById('sb-total'), sbTime: document.getElementById('sb-time'),
-    sbConv: document.getElementById('sb-conv'),
+    sbConv: document.getElementById('sb-conv'), sbMin: document.getElementById('sb-min'),
   };
 
   let bodies = [];
@@ -523,6 +524,14 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     els.sbTotal.textContent = (total*100).toFixed(1);
     els.sbTime.textContent = fmtTime(elapsedSec);
     els.sbConv.textContent = `${nConscious}/${bodies.length}`;
+    const ordinary = bodies.filter(b=>!b.conscious);
+    if (ordinary.length){
+      const minV = Math.min(...ordinary.map(b=>b.v));
+      const hitsAway = Math.max(0, Math.ceil(Math.log2(minV/threshold())));
+      els.sbMin.textContent = `${fmtPct(minV)} (~${hitsAway} hit${hitsAway===1?'':'s'} away)`;
+    } else {
+      els.sbMin.textContent = 'none — all conscious';
+    }
     const ambPct = Number(els.amb.value)*bodies.length;
     els.sAmb.textContent = (ambPct>=0?'+':'') + ambPct.toFixed(1) + ' %/s';
     els.tick.textContent = `collisions = ${collisions} · t = ${elapsedSec.toFixed(1)}s`;
