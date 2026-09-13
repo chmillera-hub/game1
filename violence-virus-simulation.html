@@ -194,7 +194,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
   <span><span class="k">Total violence (Σ%)</span> <span class="v mono" id="sb-total">0.0</span></span>
   <span><span class="k">Elapsed</span> <span class="v mono" id="sb-time">0:00.0</span></span>
   <span><span class="k">Conscious</span> <span class="v mono" id="sb-conv">1/100</span></span>
-  <span><span class="k">Closest to threshold</span> <span class="v mono" id="sb-min">—</span></span>
+  <span><span class="k">Record-low violence</span> <span class="v mono" id="sb-min">—</span></span>
 </div>
 
 <div class="console">
@@ -324,6 +324,9 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
   let selectedId = null;
   let elapsedSec = 0;
   let fullAt = null;
+  let recordLowV = 1;
+  let recordLowLocked = false;
+  let recordLowAt = null;
   let axisMin = 0, axisMax = 12;
   let S0 = 1;
   let chartAnimId = null;
@@ -384,6 +387,9 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     conversions = 0;
     elapsedSec = 0;
     fullAt = null;
+    recordLowV = 1;
+    recordLowLocked = false;
+    recordLowAt = null;
     if (chartAnimId){ cancelAnimationFrame(chartAnimId); chartAnimId = null; }
     axisMin = 0; axisMax = LIVE_WINDOW;
     S0 = totalViolence();
@@ -524,10 +530,21 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     els.sbTime.textContent = fmtTime(elapsedSec);
     els.sbConv.textContent = `${nConscious}/${bodies.length}`;
     const ordinary = bodies.filter(b=>!b.conscious);
-    if (ordinary.length){
-      const minV = Math.min(...ordinary.map(b=>b.v));
-      const hitsAway = Math.max(0, Math.ceil(Math.log2(minV/threshold())));
-      els.sbMin.textContent = `${fmtPct(minV)} (~${hitsAway} hit${hitsAway===1?'':'s'} away)`;
+    if (!recordLowLocked){
+      if (ordinary.length){
+        const curMin = Math.min(...ordinary.map(b=>b.v));
+        if (curMin < recordLowV) recordLowV = curMin;
+      }
+      if (recordLowV <= threshold()){
+        recordLowLocked = true;
+        recordLowAt = elapsedSec;
+      }
+    }
+    if (recordLowLocked){
+      els.sbMin.textContent = `${fmtPct(recordLowV)} at t=${fmtTime(recordLowAt)} — first conscious ball`;
+    } else if (ordinary.length){
+      const hitsAway = Math.max(0, Math.ceil(Math.log2(recordLowV/threshold())));
+      els.sbMin.textContent = `${fmtPct(recordLowV)} record low (~${hitsAway} hit${hitsAway===1?'':'s'} away)`;
     } else {
       els.sbMin.textContent = 'none — all conscious';
     }
@@ -631,9 +648,9 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     const nConscious = bodies.filter(b=>b.conscious).length;
     const total = totalViolence();
     const ordinary = bodies.filter(b=>!b.conscious);
-    const closest = ordinary.length
-      ? `${fmtPct(Math.min(...ordinary.map(b=>b.v)))} (~${Math.max(0,Math.ceil(Math.log2(Math.min(...ordinary.map(b=>b.v))/threshold())))} hits away)`
-      : 'none — all conscious';
+    const recordLow = recordLowLocked
+      ? `${fmtPct(recordLowV)} at t=${fmtTime(recordLowAt)} (first conscious ball)`
+      : (ordinary.length ? `${fmtPct(recordLowV)} record low so far` : 'none — all conscious');
     const lines = [
       'Violence Virus Threshold — run summary',
       '',
@@ -703,6 +720,14 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
       `above, shown as a fraction of the run's starting total; (2) the fraction of bodies`,
       `currently flagged conscious.`,
       '',
+      `Record-low tracker: a running minimum of every still-violent body's v, sampled once per`,
+      `frame -- it only ever decreases (a body's v rising again, e.g. from averaging with a`,
+      `higher body, never raises the record back up), so unlike watching the raw current`,
+      `minimum, this number doesn't fluctuate. The moment it falls to or below the conversion`,
+      `threshold T, it freezes permanently at that value together with the elapsed time it`,
+      `happened -- this is, by construction, the exact moment the first violent body (after`,
+      `the seed) becomes conscious.`,
+      '',
       'Settings for this run:',
       `  Bodies: ${els.n.value}`,
       `  Speed: ${els.speed.value}×`,
@@ -716,7 +741,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
       `  Conscious bodies: ${nConscious} / ${bodies.length}`,
       `  Conscious-role hits: ${consciousHits}`,
       `  Avg hits per conversion: ${conversions>0 ? (consciousHits/conversions).toFixed(2) : 'n/a'}`,
-      `  Closest still-violent body to threshold: ${closest}`,
+      `  Record-low violence among still-violent bodies: ${recordLow}`,
       `  Seed body's own value: ${fmtSci(bodies[CONSCIOUS_ID].v)}`,
       '',
       'Status:',
