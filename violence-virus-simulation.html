@@ -187,7 +187,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
 <header>
   <div class="eyebrow">Interaction dynamics — threshold-triggered cascade</div>
   <h1>Violence Virus Threshold</h1>
-  <p>One body starts at 10⁻²⁰⁰ percent violence. Every collision it takes part in halves the other body's violence and doubles its own — and any body whose violence is driven below the conversion threshold flips permanently into the same role, halving whoever <i>it</i> touches from then on. Two ordinary bodies still just average on contact. Watch calm spread the way violence usually does.</p>
+  <p>One body starts at 10⁻²⁰⁰ percent violence. Every collision it takes part in halves the other body's violence and doubles its own — and any body whose violence is driven below the conversion threshold flips permanently into the same role, halving whoever <i>it</i> touches from then on. Two non-conscious bodies still just average on contact. Watch calm spread the way violence usually does.</p>
 </header>
 
 <div id="stickybar">
@@ -273,8 +273,8 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
 <div class="panel bench">
   <div>
     <h3 style="font-size:17px;margin-bottom:8px;">The update rules</h3>
-    <div class="formula">ordinary ⨯ ordinary:  a, b → (a+b)/2, (a+b)/2</div>
-    <div class="formula">conscious ⨯ ordinary:  v → v/2,  &nbsp; v_role → min(1, 2·v_role)</div>
+    <div class="formula">non-conscious ⨯ non-conscious:  a, b → (a+b)/2, (a+b)/2</div>
+    <div class="formula">conscious ⨯ non-conscious:  v → v/2,  &nbsp; v_role → min(1, 2·v_role)</div>
     <div class="formula">if v ≤ T after that hit:  body flips to conscious, permanently</div>
     <p><b>Accounting rule:</b> once a body is flagged conscious, its own violence value stops counting toward the room's total. It still exists — click it in the inspector to see its exact number, which can drift back up from repeated doubling as it keeps disarming others — but a conscious body's residual value is treated as no longer live in the system, the way a recovered case stops counting as infectious even though the virus's genetic material might still be technically present. Without this, the total could visibly tick back up near the end of a run, when most collisions are between two already-conscious bodies with occasionally-inflated values — an artifact of what's being counted, not a real resurgence of violence. The simulation auto-pauses and the chart auto-shrinks to the full run the instant every body converts, since at that point the (correctly accounted) total is exactly zero and there's nothing left to simulate.</p>
     <p>"Total system violence" is a plain sum, not an average — ten bodies sitting at 18% each read as <span class="mono">180.0</span>, not <span class="mono">18.0%</span>. With N bodies starting near 100% each, expect the starting number in the thousands; the chart's total-violence line still plots it as a fraction of that starting sum, purely so it fits the same 0–100% axis as the other two lines.</p>
@@ -288,7 +288,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
   </div>
   <div>
     <h3 style="font-size:17px;margin-bottom:8px;">Verifying the cascade actually accelerates</h3>
-    <p>With C conscious bodies out of N, a random collision has probability ≈ 2C(N−C)/[N(N−1)/2] of pairing a conscious body with an ordinary one — that probability, and so the expected conversion rate, <i>rises</i> as C grows, then falls back off as ordinary bodies run out. That's a classic S-curve: slow start, fast middle, saturating tail — the same shape as an epidemic curve, just running toward zero violence instead of away from it. At the current slider values:</p>
+    <p>With C conscious bodies out of N, a random collision has probability ≈ 2C(N−C)/[N(N−1)/2] of pairing a conscious body with a non-conscious one — that probability, and so the expected conversion rate, <i>rises</i> as C grows, then falls back off as non-conscious bodies run out. That's a classic S-curve: slow start, fast middle, saturating tail — the same shape as an epidemic curve, just running toward zero violence instead of away from it. At the current slider values:</p>
     <div id="verify"></div>
     <p>The seed body's own number barely moves in this process (see the log trace below) — it's the <i>count</i> of conscious bodies, not any one body's value, that does the work of erasing the room's violence.</p>
   </div>
@@ -640,7 +640,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     if (!b){ selectedId = null; return; }
     els.inspector.innerHTML =
       `Body #${b.id}${b.id===CONSCIOUS_ID?' (seed)':''} — `+
-      `<span class="${b.conscious?'ring':''}">${b.conscious?'conscious':'ordinary'}</span> — `+
+      `<span class="${b.conscious?'ring':''}">${b.conscious?'conscious':'non-conscious'}</span> — `+
       `exact violence: <b>${fmtFull(b.v)}</b>`;
   }
 
@@ -670,16 +670,21 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
       '',
       `On every physical collision between two bodies, exactly one of these update rules fires,`,
       `chosen by the two bodies' conscious flags:`,
-      `  1. ordinary x ordinary (both flags false): both bodies' v are replaced by their`,
-      `     average, (v_a+v_b)/2 each. This exactly conserves the pair's summed violence --`,
-      `     it only redistributes, it never creates or destroys any.`,
-      `  2. conscious x ordinary (flags differ): the ordinary body is halved, v -> v/2. The`,
-      `     conscious body is simultaneously doubled and capped at 1, v -> min(1, 2v),`,
-      `     independent of the ordinary body's new value. This step does NOT conserve the`,
-      `     sum -- roughly half of the ordinary body's value is deleted from the system`,
-      `     outright, not transferred to the conscious body. The conscious body's doubling`,
-      `     is a separate, unrelated bookkeeping change, not a receipt for what was removed.`,
+      `  1. non-conscious x non-conscious (both flags false): both bodies' v are replaced by`,
+      `     their average, (v_a+v_b)/2 each. This exactly conserves the pair's summed`,
+      `     violence -- it only redistributes, it never creates or destroys any.`,
+      `  2. conscious x non-conscious (flags differ): the non-conscious body is halved,`,
+      `     v -> v/2. The conscious body is simultaneously doubled and capped at 1,`,
+      `     v -> min(1, 2v), independent of the non-conscious body's new value. This step`,
+      `     does NOT conserve the sum -- roughly half of the non-conscious body's value is`,
+      `     deleted from the system outright, not transferred to the conscious body. The`,
+      `     conscious body's doubling is a separate, unrelated bookkeeping change, not a`,
+      `     receipt for what was removed.`,
       `  3. conscious x conscious (both flags true): treated the same as rule 1 (plain average).`,
+      '',
+      `"Non-conscious" here means only: a body whose violence has NOT yet fallen to or below`,
+      `the conversion threshold T -- i.e. it still has the "conscious" flag set to false. It`,
+      `does not imply anything else about the body.`,
       '',
       `Conversion rule: immediately after any update, any body with flag=false whose v has`,
       `fallen to or below a fixed "conversion threshold" T flips its flag to true, permanently.`,
