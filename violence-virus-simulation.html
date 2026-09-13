@@ -210,10 +210,8 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
       <span class="mono">dark red = 100%</span>
     </div>
     <div class="rolekey">
-      <span><i class="chip" style="background:hsl(0,70%,30%)"></i>violent, not yet conscious</span>
-      <span><i class="chip" style="background:hsl(140,80%,55%)"></i>newly conscious, calm</span>
-      <span><i class="chip" style="background:hsl(42,90%,50%)"></i>conscious, violence redoubled — still de-escalating</span>
-      <span><i class="chip" style="background:hsl(42,90%,50%); box-shadow:0 0 6px 3px rgba(255,214,90,0.55);"></i>divine conscious — back to 100%, still spreading calm</span>
+      <span><i class="chip" style="background:hsl(0,70%,30%)"></i>violent, not yet conscious (0–100%)</span>
+      <span><i class="chip" style="background:hsl(42,90%,50%); box-shadow:0 0 6px 3px rgba(255,214,90,0.55);"></i>conscious — permanently at exactly 0%, still de-escalating</span>
     </div>
     <div id="inspector" class="mono">Click any ball to zoom in on its exact violence level — the on-ball labels are too small to read at a glance on purpose.</div>
     <div class="controls">
@@ -224,10 +222,6 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
       <div class="ctrl">
         <label>Speed (scales elapsed time too) <span class="val" id="v-speed">1×</span></label>
         <input type="range" id="speed" min="1" max="8" value="1" step="1">
-      </div>
-      <div class="ctrl">
-        <label>Seed body starting violence <span class="val" id="v-exp">10⁻²⁰⁰ %</span></label>
-        <input type="range" id="exp" min="-250" max="-6" value="-200" step="1">
       </div>
       <div class="ctrl">
         <label>Conversion threshold <span class="val" id="v-thr">0.5 %</span></label>
@@ -249,9 +243,9 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
       <h2>Readout</h2>
       <button id="btn-copy" class="tag" style="cursor:pointer;">Copy summary</button>
     </div>
-    <div id="run-settings" class="mono">Bodies=100 · speed=1× · seed start=10⁻²⁰⁰% · threshold=0.5% · radiation=+1.0%/s</div>
+    <div id="run-settings" class="mono">Bodies=100 · speed=1× · threshold=0.5% · radiation=+1.0%/s</div>
     <div class="readouts">
-      <div class="stat"><div class="k">Seed body</div><div class="v calm mono" id="s-vc">1.0×10⁻²⁰⁰ %</div></div>
+      <div class="stat"><div class="k">Seed body</div><div class="v calm mono" id="s-vc">0%</div></div>
       <div class="stat"><div class="k">Total system violence (Σ %)</div><div class="v mono" id="s-total">9900.0</div></div>
       <div class="stat"><div class="k">Conscious bodies</div><div class="v calm mono" id="s-conv">1 / 100</div></div>
       <div class="stat"><div class="k">Elapsed time</div><div class="v mono" id="s-time">0:00.0</div></div>
@@ -264,7 +258,6 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     <div class="chartkey">
       <span><i style="background:var(--alarm)"></i>total violence (Σ%, as fraction of starting sum)</span>
       <span><i style="background:var(--accent)"></i>conscious bodies (% of N)</span>
-      <span><i style="background:var(--calm)"></i>seed body (log scale)</span>
     </div>
     <p style="font-size:11.5px; color:var(--text-dim); margin-top:6px;">While running, the x-axis scrolls a live window; pause and it shrinks to show the whole run, 0 to the moment you paused.</p>
   </div>
@@ -274,9 +267,9 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
   <div>
     <h3 style="font-size:17px;margin-bottom:8px;">The update rules</h3>
     <div class="formula">non-conscious ⨯ non-conscious:  a, b → (a+b)/2, (a+b)/2</div>
-    <div class="formula">conscious ⨯ non-conscious:  v → v/2,  &nbsp; v_role → min(1, 2·v_role)</div>
-    <div class="formula">if v ≤ T after that hit:  body flips to conscious, permanently</div>
-    <p><b>Accounting rule:</b> once a body is flagged conscious, its own violence value stops counting toward the room's total. It still exists — click it in the inspector to see its exact number, which can drift back up from repeated doubling as it keeps disarming others — but a conscious body's residual value is treated as no longer live in the system, the way a recovered case stops counting as infectious even though the virus's genetic material might still be technically present. Without this, the total could visibly tick back up near the end of a run, when most collisions are between two already-conscious bodies with occasionally-inflated values — an artifact of what's being counted, not a real resurgence of violence. The simulation auto-pauses and the chart auto-shrinks to the full run the instant every body converts, since at that point the (correctly accounted) total is exactly zero and there's nothing left to simulate.</p>
+    <div class="formula">conscious ⨯ non-conscious:  v → v/2,  &nbsp; v_role stays 0 (2·0 = 0)</div>
+    <div class="formula">if v ≤ T after that hit:  v is reset to exactly 0, body flips to conscious, permanently</div>
+    <p><b>The simplification:</b> a body doesn't drift down to <i>near</i> zero and then keep existing at some tiny residual — the instant it crosses T, its value is reset to exactly 0. Every conscious body's own violence is therefore always precisely 0, forever: the seed starts there, and every later conversion lands there too. Doubling a body that's exactly 0 leaves it at exactly 0 (0·2=0), so there's no drift, no residual number to worry about, and no separate "has it climbed back up" question to track. Once a body converts it stops counting toward the room's total for the simplest possible reason: its own value really is 0, not merely excluded by convention. Consequently the total can only reach exactly 0 once every body has converted — it is mathematically impossible for one to happen without the other.</p>
     <p>"Total system violence" is a plain sum, not an average — ten bodies sitting at 18% each read as <span class="mono">180.0</span>, not <span class="mono">18.0%</span>. With N bodies starting near 100% each, expect the starting number in the thousands; the chart's total-violence line still plots it as a fraction of that starting sum, purely so it fits the same 0–100% axis as the other two lines.</p>
     <p>Averaging <i>conserves</i> the pair's sum — it only spreads violence around, never removes any. Only a conscious-role hit deletes anything, and it also grows the population that can delete things: every body it drives below the threshold T becomes a second source of the same effect. That's a bootstrap cascade (the same shape as bootstrap percolation / the Watts threshold model of social contagion), not a fixed sink — the "infection" here is calm, and it compounds.</p>
     <h3 style="font-size:17px;margin:16px 0 8px;">Why one seed is enough for all of them</h3>
@@ -290,11 +283,11 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     <h3 style="font-size:17px;margin-bottom:8px;">Verifying the cascade actually accelerates</h3>
     <p>With C conscious bodies out of N, a random collision has probability ≈ 2C(N−C)/[N(N−1)/2] of pairing a conscious body with a non-conscious one — that probability, and so the expected conversion rate, <i>rises</i> as C grows, then falls back off as non-conscious bodies run out. That's a classic S-curve: slow start, fast middle, saturating tail — the same shape as an epidemic curve, just running toward zero violence instead of away from it. At the current slider values:</p>
     <div id="verify"></div>
-    <p>The seed body's own number barely moves in this process (see the log trace below) — it's the <i>count</i> of conscious bodies, not any one body's value, that does the work of erasing the room's violence.</p>
+    <p>The seed body's own number never moves at all — it's exactly 0 from the first frame to the last. It's the <i>count</i> of conscious bodies, not any one body's value, that does the work of erasing the room's violence.</p>
   </div>
 </div>
 
-<footer>Bodies are labeled with their live violence percentage. Fill color runs a log-scaled spectrum from bright green at (or below) the conversion threshold up to a body's "hot" end — dark red for a body not yet conscious, gold for one that is: a conscious body's own value still climbs back up from repeated doubling, but it never reads as red again, because the color is meant to say what the body is doing, not just what number it's holding. The gold ring marks any body currently flagged conscious as a secondary cue at any zoom level. A conscious body whose own value has climbed back to essentially 100% gets a faint yellow halo on top of that — a body can be holding a full charge of violence internally and still, by role, be the one halving whoever it touches; the halo is there so that fact reads at a glance instead of getting lost in "it's basically red again." Chamber is compressed and bodies are small (radius halved from an earlier version) to fit up to 200 on screen; every ball carries a deliberately tiny live percentage label — click one to read its exact value in the inspector above the chart. Background violence radiation only touches bodies not yet flagged conscious, so a body's crossing into consciousness is a real, permanent immunity to that rising background hazard, not just a color that happens to sit near green.</footer>
+<footer>Bodies are labeled with their live violence percentage. A non-conscious body's fill runs a log-scaled spectrum from bright green near the conversion threshold up to dark red at 100%. A conscious body is always exactly 0% violence, so it always gets the same fixed gold fill, gold ring, and faint yellow halo — there's nothing to ramp, since its number never changes once it converts. The halo exists so a conscious body reads as visually distinct at a glance, not because it's "holding" anything. Chamber is compressed and bodies are small (radius halved from an earlier version) to fit up to 200 on screen; every ball carries a deliberately tiny live percentage label — click one to read its exact value in the inspector above the chart. Background violence radiation only touches bodies not yet flagged conscious, so a body's crossing into consciousness is a real, permanent immunity to that rising background hazard.</footer>
 
 <script>
 (function(){
@@ -307,7 +300,6 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
   const els = {
     n: document.getElementById('n'), vN: document.getElementById('v-n'),
     speed: document.getElementById('speed'), vSpeed: document.getElementById('v-speed'),
-    exp: document.getElementById('exp'), vExp: document.getElementById('v-exp'),
     thr: document.getElementById('thr'), vThr: document.getElementById('v-thr'),
     amb: document.getElementById('amb'), vAmb: document.getElementById('v-amb'),
     run: document.getElementById('btn-run'), reset: document.getElementById('btn-reset'),
@@ -336,10 +328,8 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
   let S0 = 1;
   let chartAnimId = null;
   const LIVE_WINDOW = 12;
-  const DIVINE_THRESHOLD = 0.999;
   const CONSCIOUS_ID = 0;
 
-  function startExp(){ return Number(els.exp.value); }
   function threshold(){ return Number(els.thr.value)/100; }
   function ambient(){ return Number(els.amb.value)/100; }
 
@@ -378,7 +368,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
         vx: (Math.random()-0.5)*2.6,
         vy: (Math.random()-0.5)*2.6,
         r,
-        v: i===CONSCIOUS_ID ? Math.pow(10, startExp()) : 1.0,
+        v: i===CONSCIOUS_ID ? 0 : 1.0,
         conscious: i===CONSCIOUS_ID,
       });
     }
@@ -397,7 +387,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     if (chartAnimId){ cancelAnimationFrame(chartAnimId); chartAnimId = null; }
     axisMin = 0; axisMax = LIVE_WINDOW;
     S0 = totalViolence();
-    history = [{t:0, S: S0, vc: bodies[CONSCIOUS_ID].v, frac: 1/bodies.length}];
+    history = [{t:0, S: S0, frac: 1/bodies.length}];
     draw();
     updateReadouts();
     updateVerify();
@@ -405,24 +395,20 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
   }
 
   function colorFor(v, conscious){
+    if (conscious){
+      // always exactly 0 violence -- a fixed gold, nothing to ramp
+      return {rgb:'hsl(42,90%,50%)', ring:'#b98418'};
+    }
     const T = threshold();
     const lv = Math.log10(Math.max(v, 1e-300));
     const lo = Math.log10(T);
     let t = lo >= 0 ? (v<=T?0:1) : (lv - lo) / (0 - lo);
     t = Math.min(1, Math.max(0, t));
-    let hue, sat, light;
-    if (conscious){
-      // green (calm) -> gold (understands violence, still de-escalating), never red
-      hue = 140 - t*98;
-      sat = 75 + t*15;
-      light = 55 - t*5;
-    } else {
-      // green (calm) -> dark red (violent, not yet conscious)
-      hue = 140 - t*140;
-      sat = 78 - t*8;
-      light = 55 - t*25;
-    }
-    return {rgb:`hsl(${hue.toFixed(0)},${sat.toFixed(0)}%,${light.toFixed(0)}%)`, ring: conscious ? '#b98418' : 'transparent'};
+    // green (calm) -> dark red (violent, not yet conscious)
+    const hue = 140 - t*140;
+    const sat = 78 - t*8;
+    const light = 55 - t*25;
+    return {rgb:`hsl(${hue.toFixed(0)},${sat.toFixed(0)}%,${light.toFixed(0)}%)`, ring:'transparent'};
   }
 
   function step(){
@@ -473,6 +459,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     for (const b of [a,c]){
       if (!b.conscious && b.v <= T){
         b.conscious = true;
+        b.v = 0;
         conversions++;
       }
     }
@@ -488,7 +475,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     ctx.textAlign = 'center';
     for (const b of bodies){
       const {rgb, ring} = colorFor(b.v, b.conscious);
-      const divine = b.conscious && b.v >= DIVINE_THRESHOLD;
+      const divine = b.conscious;
       if (divine){
         const haloR = b.r*3.2;
         const grad = ctx.createRadialGradient(b.x, b.y, b.r*0.6, b.x, b.y, haloR);
@@ -569,7 +556,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
         `avg ${conversions>0 ? (consciousHits/conversions).toFixed(1) : '—'} hits per conversion so far.`;
     }
 
-    history.push({t: elapsedSec, S: total, vc: c.v, frac: nConscious/bodies.length});
+    history.push({t: elapsedSec, S: total, frac: nConscious/bodies.length});
     if (running){
       const nowT = elapsedSec;
       const winStart = Math.max(0, nowT - LIVE_WINDOW);
@@ -590,11 +577,6 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     const minT = axisMin, span = Math.max(0.5, axisMax-axisMin);
     function xFor(t){ return pad + (t-minT)/span * (w-2*pad); }
     function yForFrac(f){ return h-padBottom - Math.min(1,Math.max(0,f))*(h-pad-padBottom); }
-    function yForLog(v){
-      const lv = Math.log10(Math.max(v,1e-160));
-      const t = (lv+160)/160;
-      return h-padBottom - t*(h-pad-padBottom);
-    }
     cctx.strokeStyle = getComputedStyle(document.body).getPropertyValue('--line') || '#333';
     cctx.lineWidth = 1;
     for (let f=0; f<=1; f+=0.25){
@@ -627,11 +609,6 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     cctx.beginPath();
     history.forEach((p,i)=>{ const x=xFor(p.t), y=yForFrac(p.frac); i?cctx.lineTo(x,y):cctx.moveTo(x,y); });
     cctx.stroke();
-    cctx.strokeStyle = getComputedStyle(document.body).getPropertyValue('--calm') || '#3d6';
-    cctx.lineWidth = 2;
-    cctx.beginPath();
-    history.forEach((p,i)=>{ const x=xFor(p.t), y=yForLog(p.vc); i?cctx.lineTo(x,y):cctx.moveTo(x,y); });
-    cctx.stroke();
   }
 
   function updateInspector(){
@@ -646,7 +623,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
 
   function updateRunSettingsLine(){
     els.runSettings.textContent =
-      `Bodies=${els.n.value} · speed=${els.speed.value}× · seed start=10⁻${Math.abs(Number(els.exp.value))}% · `+
+      `Bodies=${els.n.value} · speed=${els.speed.value}× · `+
       `threshold=${(threshold()*100).toFixed(1)}% · radiation=${(Number(els.amb.value)>=0?'+':'')}${els.amb.value}%/s`;
   }
 
@@ -664,9 +641,8 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
       `This is a 2D billiard simulation of N circular bodies bouncing elastically inside a`,
       `bounded rectangular chamber (walls reflect velocity, no friction). Each body i carries a`,
       `scalar "violence" value v_i in [0,1], displayed as a percentage. One designated "seed"`,
-      `body starts at an extremely small value (10^-k%, k set by the "seed start" slider); every`,
-      `other body starts at v=1.0 (100%). Bodies also carry a sticky boolean flag "conscious",`,
-      `false for everyone except the seed at t=0.`,
+      `body starts at EXACTLY v=0; every other body starts at v=1.0 (100%). Bodies also carry`,
+      `a sticky boolean flag "conscious", false for everyone except the seed at t=0.`,
       '',
       `On every physical collision between two bodies, exactly one of these update rules fires,`,
       `chosen by the two bodies' conscious flags:`,
@@ -675,21 +651,24 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
       `     violence -- it only redistributes, it never creates or destroys any.`,
       `  2. conscious x non-conscious (flags differ): the non-conscious body is halved,`,
       `     v -> v/2. The conscious body is simultaneously doubled and capped at 1,`,
-      `     v -> min(1, 2v), independent of the non-conscious body's new value. This step`,
-      `     does NOT conserve the sum -- roughly half of the non-conscious body's value is`,
-      `     deleted from the system outright, not transferred to the conscious body. The`,
-      `     conscious body's doubling is a separate, unrelated bookkeeping change, not a`,
-      `     receipt for what was removed.`,
-      `  3. conscious x conscious (both flags true): treated the same as rule 1 (plain average).`,
+      `     v -> min(1, 2v) -- but since every conscious body's v is always exactly 0`,
+      `     (see conversion rule below), this is 0 -> min(1, 0) = 0, i.e. it never actually`,
+      `     changes. This step does NOT conserve the sum -- roughly half of the non-conscious`,
+      `     body's value is deleted from the system outright, not transferred to the`,
+      `     conscious body.`,
+      `  3. conscious x conscious (both flags true): treated the same as rule 1 (plain average`,
+      `     of two zeros, i.e. still 0).`,
       '',
       `"Non-conscious" here means only: a body whose violence has NOT yet fallen to or below`,
       `the conversion threshold T -- i.e. it still has the "conscious" flag set to false. It`,
       `does not imply anything else about the body.`,
       '',
       `Conversion rule: immediately after any update, any body with flag=false whose v has`,
-      `fallen to or below a fixed "conversion threshold" T flips its flag to true, permanently.`,
-      `This flag never reverts, even if that body's own v is later driven back up by repeated`,
-      `doubling from rule 2 while it plays the "conscious" role in future collisions.`,
+      `fallen to or below a fixed "conversion threshold" T has its v reset to EXACTLY 0 and`,
+      `its flag flipped to true, permanently. Because 0 doubled is still 0 (rule 2), a`,
+      `converted body's own violence never changes again for the rest of the run -- there is`,
+      `no residual value and no drift; every conscious body, at every moment, holds exactly`,
+      `0% violence.`,
       '',
       `Background violence radiation: independent of collisions, every body still flagged`,
       `false continuously gains a fixed percent of violence per elapsed second -- modeling the`,
@@ -709,10 +688,11 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
       '',
       `"Total system violence" accounting: only bodies still flagged false are summed into the`,
       `displayed total, as raw percentage points (NOT averaged, NOT divided by N) -- e.g. ten`,
-      `bodies at 18% each read as a total of 180.0, not 18.0%. A converted body's own residual`,
-      `value keeps existing (visible per-body) but stops counting toward this total the moment`,
-      `it converts. Consequently the total can only reach exactly 0 once every body has`,
-      `converted -- it is mathematically impossible for one to happen without the other.`,
+      `bodies at 18% each read as a total of 180.0, not 18.0%. This exclusion is really just`,
+      `bookkeeping for a fact that's already true: a converted body's own violence really is`,
+      `exactly 0, so summing it in would add nothing anyway. Consequently the total can only`,
+      `reach exactly 0 once every body has converted -- it is mathematically impossible for`,
+      `one to happen without the other.`,
       '',
       `Auto-stop: the simulation pauses itself automatically the instant every body is flagged`,
       `conscious (equivalently, the instant total violence hits exactly 0), and the chart's`,
@@ -721,12 +701,11 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
       '',
       `Chart series (x-axis = elapsed simulated seconds): (1) total system violence as defined`,
       `above, shown as a fraction of the run's starting total; (2) the fraction of bodies`,
-      `currently flagged conscious; (3) the seed body's own v on a log scale.`,
+      `currently flagged conscious.`,
       '',
       'Settings for this run:',
       `  Bodies: ${els.n.value}`,
       `  Speed: ${els.speed.value}×`,
-      `  Seed starting violence: 10^-${Math.abs(Number(els.exp.value))}%`,
       `  Conversion threshold: ${(threshold()*100).toFixed(1)}%`,
       `  Background violence radiation: ${(Number(els.amb.value)>=0?'+':'')}${els.amb.value}%/s per body`,
       '',
@@ -810,7 +789,6 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
 
   els.n.addEventListener('input', ()=>{ els.vN.textContent = els.n.value; updateVerify(); updateRunSettingsLine(); });
   els.speed.addEventListener('input', ()=>{ els.vSpeed.textContent = els.speed.value + '×'; updateRunSettingsLine(); });
-  els.exp.addEventListener('input', ()=>{ els.vExp.textContent = '10⁻'+Math.abs(els.exp.value)+' %'; updateVerify(); updateRunSettingsLine(); });
   els.thr.addEventListener('input', ()=>{
     const T = threshold();
     els.vThr.textContent = (T*100).toFixed(1) + ' %';
