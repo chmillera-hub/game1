@@ -100,7 +100,7 @@ header p{color:var(--text-dim); font-size:14.5px; max-width:66ch; line-height:1.
 }
 .legend .bar{
   flex:1; height:8px; border-radius:4px;
-  background:linear-gradient(90deg,var(--calm),var(--track) 45%,var(--track) 55%,var(--alarm));
+  background:linear-gradient(90deg, hsl(140,80%,55%), hsl(90,75%,50%), hsl(45,80%,50%), hsl(0,70%,30%));
 }
 
 .controls{display:grid; grid-template-columns:1fr 1fr; gap:10px 16px; margin-top:14px;}
@@ -118,7 +118,7 @@ button:hover{border-color:var(--calm);}
 button.primary{background:var(--calm); color:#08130e; border-color:var(--calm); font-weight:600;}
 button:focus-visible, input:focus-visible{outline:2px solid var(--calm); outline-offset:2px;}
 
-.readouts{display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:14px;}
+.readouts{display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:10px; margin-bottom:14px;}
 .stat{
   background:var(--panel-2); border:1px solid var(--line); border-radius:8px; padding:10px 12px;
 }
@@ -152,9 +152,9 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
 </style>
 
 <header>
-  <div class="eyebrow">Interaction dynamics — dissipative consensus model</div>
+  <div class="eyebrow">Interaction dynamics — threshold-triggered cascade</div>
   <h1>Violence Virus Threshold</h1>
-  <p>One body starts at 10⁻¹⁰⁰ percent violence — a number small enough to ignore. Every collision it takes part in halves the other body's violence and doubles its own. Every collision <i>between two ordinary bodies</i> instead averages them. Watch whether that one body's number ever catches up before it quietly drains the whole room.</p>
+  <p>One body starts at 10⁻¹⁰⁰ percent violence. Every collision it takes part in halves the other body's violence and doubles its own — and any body whose violence is driven below the conversion threshold flips permanently into the same role, halving whoever <i>it</i> touches from then on. Two ordinary bodies still just average on contact. Watch calm spread the way violence usually does.</p>
 </header>
 
 <div class="console">
@@ -165,9 +165,9 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     </div>
     <div id="stage-wrap"><canvas id="stage" width="360" height="270"></canvas></div>
     <div class="legend">
-      <span class="mono">≈0%</span>
-      <div class="bar"></div>
-      <span class="mono">100%</span>
+      <span class="mono" id="legend-lo">bright green ≤ 0.01%</span>
+      <div class="bar" id="legend-bar"></div>
+      <span class="mono">dark red = 100%</span>
     </div>
     <div class="controls">
       <div class="ctrl">
@@ -178,9 +178,13 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
         <label>Speed <span class="val" id="v-speed">1×</span></label>
         <input type="range" id="speed" min="1" max="8" value="1" step="1">
       </div>
-      <div class="ctrl" style="grid-column:1/-1;">
-        <label>Conscious body starting violence <span class="val" id="v-exp">10⁻¹⁰⁰ %</span></label>
+      <div class="ctrl">
+        <label>Seed body starting violence <span class="val" id="v-exp">10⁻¹⁰⁰ %</span></label>
         <input type="range" id="exp" min="-150" max="-6" value="-100" step="1">
+      </div>
+      <div class="ctrl">
+        <label>Conversion threshold <span class="val" id="v-thr">0.01 %</span></label>
+        <input type="range" id="thr" min="-8" max="-1" value="-4" step="1">
       </div>
     </div>
     <div class="btnrow">
@@ -192,9 +196,10 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
   <div class="panel">
     <div class="panel-title"><h2>Readout</h2><span class="tag">live</span></div>
     <div class="readouts">
-      <div class="stat"><div class="k">Conscious body</div><div class="v calm mono" id="s-vc">1.0×10⁻¹⁰⁰ %</div></div>
+      <div class="stat"><div class="k">Seed body</div><div class="v calm mono" id="s-vc">1.0×10⁻¹⁰⁰ %</div></div>
       <div class="stat"><div class="k">Total system violence</div><div class="v mono" id="s-total">100.0%</div></div>
-      <div class="stat"><div class="k">Conscious-body hits</div><div class="v mono" id="s-hits">0</div></div>
+      <div class="stat"><div class="k">Conscious bodies</div><div class="v calm mono" id="s-conv">1 / 18</div></div>
+      <div class="stat"><div class="k">Conscious-role hits</div><div class="v mono" id="s-hits">0</div></div>
     </div>
     <div id="chart-wrap"><canvas id="chart" width="560" height="180"></canvas></div>
     <div class="chartkey">
@@ -207,27 +212,25 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
 
 <div class="panel bench">
   <div>
-    <h3 style="font-size:17px;margin-bottom:8px;">The two update rules</h3>
+    <h3 style="font-size:17px;margin-bottom:8px;">The update rules</h3>
     <div class="formula">ordinary ⨯ ordinary:  a, b → (a+b)/2, (a+b)/2</div>
-    <div class="formula">conscious ⨯ ordinary:  v → v/2,  &nbsp; v_c → min(1, 2·v_c)</div>
-    <p>Averaging <i>conserves</i> the pair's sum exactly — it only spreads violence around, it never removes any. Only contact with the conscious body deletes anything: half of the struck body's value simply vanishes from the system. The conscious body's own doubling is a separate, independent bookkeeping line, not a transfer — it is not "absorbing" what it removes, it's catalyzing the loss while barely changing itself. That asymmetry is the whole mechanism.</p>
-    <h3 style="font-size:17px;margin:16px 0 8px;">The decay law for the whole room</h3>
-    <p>Let S = total violence, N = body count. Any random collision has probability 2/N of touching the conscious body; when it does, the partner (≈ the population mean m) loses m/2. Averaging collisions leave S untouched. So per collision:</p>
-    <div class="formula">E[ΔS] = (2/N)·(−m/2) ≈ −S/N²</div>
-    <p>which integrates to a clean exponential — no approximation needed beyond mean-field mixing:</p>
-    <div class="formula">S(t) ≈ S₀ · e^(−t/N²)</div>
+    <div class="formula">conscious ⨯ ordinary:  v → v/2,  &nbsp; v_role → min(1, 2·v_role)</div>
+    <div class="formula">if v ≤ T after that hit:  body flips to conscious, permanently</div>
+    <p>Averaging <i>conserves</i> the pair's sum — it only spreads violence around, never removes any. Only a conscious-role hit deletes anything, and it also grows the population that can delete things: every body it drives below the threshold T becomes a second source of the same effect. That's a bootstrap cascade (the same shape as bootstrap percolation / the Watts threshold model of social contagion), not a fixed sink — the "infection" here is calm, and it compounds.</p>
+    <h3 style="font-size:17px;margin:16px 0 8px;">Why one seed is enough for all of them</h3>
+    <p>Fix any body still above T. Each time it collides with a conscious-flagged body, its value is exactly halved — a geometric decay with no floor besides 0. However small T is, that body crosses it after a finite number of such hits:</p>
+    <div class="formula">hits needed ≈ log₂(v / T)</div>
+    <p>In a well-mixed chamber every pair collides again and again over time, so the probability any one body is <i>never</i> hit by a conscious body, forever, is zero. Conclusion: for any fixed T &gt; 0, full conversion — every body conscious, total violence → 0 — isn't just likely, it's the guaranteed long-run outcome of this rule set.</p>
   </div>
   <div>
-    <h3 style="font-size:17px;margin-bottom:8px;">Verifying "it won't need to be worried about"</h3>
-    <p>Reaching 1% of the starting total takes t₉₉ = N²·ln(100) collisions. The conscious body is expected to be part of only 2/N of them:</p>
-    <div class="formula">n_c = 2N·ln(100) ≈ 9.2N doublings</div>
-    <p>at the moment the room is 99% pacified. Plugged into the current slider values:</p>
+    <h3 style="font-size:17px;margin-bottom:8px;">Verifying the cascade actually accelerates</h3>
+    <p>With C conscious bodies out of N, a random collision has probability ≈ 2C(N−C)/[N(N−1)/2] of pairing a conscious body with an ordinary one — that probability, and so the expected conversion rate, <i>rises</i> as C grows, then falls back off as ordinary bodies run out. That's a classic S-curve: slow start, fast middle, saturating tail — the same shape as an epidemic curve, just running toward zero violence instead of away from it. At the current slider values:</p>
     <div id="verify"></div>
-    <p>That's the whole argument in one number: by the time this single body has single-handedly wiped out 99% of the room's violence, its own value has crept up by less than a hundred doublings — nowhere close to catching the 10⁻¹⁰⁰ → 10⁰ climb it would need to become a threat itself.</p>
+    <p>The seed body's own number barely moves in this process (see the log trace below) — it's the <i>count</i> of conscious bodies, not any one body's value, that does the work of erasing the room's violence.</p>
   </div>
 </div>
 
-<footer>Bodies are labeled with their live violence percentage. Color still encodes it on a log scale (green ≈ calm, red ≈ violent) but is clamped below 10⁻⁸ so the conscious body always reads as fully calm rather than pixel-identical black. Chamber is compressed and bodies enlarged (not sped up) to raise collision frequency — time-to-pacify scales with arena area ÷ (radius × speed), independent of body count, so a smaller box gets there faster without any ball moving faster.</footer>
+<footer>Bodies are labeled with their live violence percentage. Color runs a log-scaled spectrum from dark red at 100% violence down to bright green at (or below) the conversion threshold; the gold ring marks any body currently flagged conscious, whatever its raw color says. Chamber is compressed and bodies enlarged (not sped up) to raise collision frequency — time-to-pacify scales with arena area ÷ (radius × speed), independent of body count, so a smaller box gets there faster without any ball moving faster.</footer>
 
 <script>
 (function(){
@@ -241,21 +244,25 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     n: document.getElementById('n'), vN: document.getElementById('v-n'),
     speed: document.getElementById('speed'), vSpeed: document.getElementById('v-speed'),
     exp: document.getElementById('exp'), vExp: document.getElementById('v-exp'),
+    thr: document.getElementById('thr'), vThr: document.getElementById('v-thr'),
     run: document.getElementById('btn-run'), reset: document.getElementById('btn-reset'),
     tick: document.getElementById('tick-count'),
-    sVc: document.getElementById('s-vc'), sTotal: document.getElementById('s-total'), sHits: document.getElementById('s-hits'),
-    verify: document.getElementById('verify'),
+    sVc: document.getElementById('s-vc'), sTotal: document.getElementById('s-total'),
+    sConv: document.getElementById('s-conv'), sHits: document.getElementById('s-hits'),
+    verify: document.getElementById('verify'), legendLo: document.getElementById('legend-lo'),
   };
 
   let bodies = [];
   let running = false;
   let collisions = 0;
   let consciousHits = 0;
+  let conversions = 0;
   let S0 = 1;
   let history = [];
   const CONSCIOUS_ID = 0;
 
   function startExp(){ return Number(els.exp.value); }
+  function threshold(){ return Math.pow(10, Number(els.thr.value)); }
 
   function fmtPct(v){
     const pct = v*100;
@@ -294,6 +301,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     bodies = makeBodies();
     collisions = 0;
     consciousHits = 0;
+    conversions = 0;
     S0 = totalViolence();
     history = [{t:0, S: S0, vc: bodies[CONSCIOUS_ID].v}];
     draw();
@@ -302,11 +310,15 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
   }
 
   function colorFor(v, conscious){
-    const lv = Math.log10(Math.max(v, 1e-9));
-    const t = Math.min(1, Math.max(0, (lv + 8) / 8));
-    const calm = [31,157,115], alarm=[200,64,42];
-    const c = calm.map((c0,i)=> Math.round(c0 + (alarm[i]-c0)*t));
-    return {rgb:`rgb(${c[0]},${c[1]},${c[2]})`, ring: conscious ? '#b98418' : 'transparent'};
+    const T = threshold();
+    const lv = Math.log10(Math.max(v, 1e-300));
+    const lo = Math.log10(T);
+    let t = lo >= 0 ? (v<=T?0:1) : (lv - lo) / (0 - lo);
+    t = Math.min(1, Math.max(0, t));
+    const hue = 140 - t*140;
+    const sat = 78 - t*8;
+    const light = 55 - t*25;
+    return {rgb:`hsl(${hue.toFixed(0)},${sat.toFixed(0)}%,${light.toFixed(0)}%)`, ring: conscious ? '#b98418' : 'transparent'};
   }
 
   function step(){
@@ -343,7 +355,8 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
   }
 
   function applyInteraction(a, c){
-    if (a.conscious || c.conscious){
+    const T = threshold();
+    if (a.conscious !== c.conscious){
       const cons = a.conscious ? a : c;
       const other = a.conscious ? c : a;
       other.v = other.v/2;
@@ -352,6 +365,12 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     } else {
       const m = (a.v + c.v)/2;
       a.v = m; c.v = m;
+    }
+    for (const b of [a,c]){
+      if (!b.conscious && b.v <= T){
+        b.conscious = true;
+        conversions++;
+      }
     }
   }
 
@@ -384,6 +403,8 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     els.sVc.textContent = fmtSci(c.v);
     const total = totalViolence();
     els.sTotal.textContent = (total/bodies.length*100).toFixed(2) + '% avg';
+    const nConscious = bodies.filter(b=>b.conscious).length;
+    els.sConv.textContent = `${nConscious} / ${bodies.length}`;
     els.sHits.textContent = consciousHits;
     els.tick.textContent = `collisions = ${collisions}`;
 
@@ -437,15 +458,14 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
 
   function updateVerify(){
     const N = Number(els.n.value);
-    const e0 = startExp();
-    const t99 = N*N*Math.log(100);
-    const nc99 = 2*N*Math.log(100);
-    const predExp = e0 + nc99*Math.log10(2);
+    const T = threshold();
+    const thrPct = T*100;
+    const hitsNeeded = Math.log2(1/T);
     els.verify.innerHTML =
-      `N = ${N} bodies<br>`+
-      `collisions to reach 1% of starting violence: t₉₉ ≈ <b>${t99.toFixed(0)}</b><br>`+
-      `expected conscious-body doublings by then: n_c ≈ <b>${nc99.toFixed(1)}</b><br>`+
-      `conscious body's value at that point: 10^${e0} → <b>10^${predExp.toFixed(1)}</b> %`;
+      `N = ${N} bodies, threshold T = <b>${thrPct}%</b><br>`+
+      `direct hits to take one body from 100% down to T: <b>${Math.ceil(hitsNeeded)}</b> (= log₂(1/T))<br>`+
+      `each conversion adds another body that can deliver those hits, so the rate of new`+
+      ` conversions rises as the conscious count grows — a bootstrap cascade, not a fixed drain.`;
   }
 
   let rafId = null;
@@ -460,6 +480,12 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
   els.n.addEventListener('input', ()=>{ els.vN.textContent = els.n.value; updateVerify(); });
   els.speed.addEventListener('input', ()=>{ els.vSpeed.textContent = els.speed.value + '×'; });
   els.exp.addEventListener('input', ()=>{ els.vExp.textContent = '10⁻'+Math.abs(els.exp.value)+' %'; updateVerify(); });
+  els.thr.addEventListener('input', ()=>{
+    const T = threshold();
+    els.vThr.textContent = (T*100) + ' %';
+    els.legendLo.textContent = `bright green ≤ ${(T*100)}%`;
+    updateVerify();
+  });
 
   els.run.addEventListener('click', ()=>{
     running = !running;
