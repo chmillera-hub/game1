@@ -218,11 +218,11 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
       <span><i class="chip" style="background:hsl(0,70%,30%)"></i>violent, not yet conscious (0–100%)</span>
       <span><i class="chip" style="background:hsl(42,90%,50%); box-shadow:0 0 6px 3px rgba(255,214,90,0.55);"></i>conscious — permanently at exactly 0%, still de-escalating</span>
     </div>
-    <div id="inspector" class="mono">Click any ball to zoom in on its exact violence level — the on-ball labels are too small to read at a glance on purpose.</div>
+    <div id="inspector" class="mono">Click any ball to zoom in on its exact violence level — only color shows at a glance, click for the number.</div>
     <div class="controls">
       <div class="ctrl">
         <label>Bodies <span class="val" id="v-n">100</span></label>
-        <input type="range" id="n" min="4" max="200" value="100" step="1">
+        <input type="range" id="n" min="4" max="10000" value="100" step="1">
       </div>
       <div class="ctrl">
         <label>Speed (scales elapsed time too) <span class="val" id="v-speed">1×</span></label>
@@ -301,7 +301,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
   </div>
 </div>
 
-<footer>Bodies are labeled with their live violence percentage. A non-conscious body's fill runs a log-scaled spectrum from bright green near the conversion threshold up to dark red at 100%. A conscious body is always exactly 0% violence, so it always gets the same fixed gold fill, gold ring, and faint yellow halo — there's nothing to ramp, since its number never changes once it converts. The halo exists so a conscious body reads as visually distinct at a glance, not because it's "holding" anything. Chamber is compressed and bodies are small (radius halved from an earlier version) to fit up to 200 on screen; every ball carries a deliberately tiny live percentage label — click one to read its exact value in the inspector above the chart. Background violence radiation only touches bodies not yet flagged conscious, so a body's crossing into consciousness is a real, permanent immunity to that rising background hazard.</footer>
+<footer>Color is the only at-a-glance signal now — no on-ball text. A non-conscious body's fill runs a log-scaled spectrum from bright green near the conversion threshold up to dark red at 100%. A conscious body is always exactly 0% violence, so it always gets the same fixed gold fill and gold ring — there's nothing to ramp, since its number never changes once it converts (its faint yellow halo turns off above 1,000 bodies, purely so thousands of per-ball gradients don't tank the frame rate). Click any ball to read its exact value in the inspector above the chart instead. Bodies range from 4 up to 10,000; the chamber and ball radius scale together to keep a reasonable, visible size and packing density at any count, and past 300 bodies collision detection switches from checking every pair to a spatial grid (only nearby bodies are checked against each other) so the frame rate doesn't collapse at high counts. Background violence radiation only touches bodies not yet flagged conscious, so a body's crossing into consciousness is a real, permanent immunity to that rising background hazard.</footer>
 
 <script>
 (function(){
@@ -309,7 +309,8 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
   const ctx = stage.getContext('2d');
   const chart = document.getElementById('chart');
   const cctx = chart.getContext('2d');
-  const W = stage.width, H = stage.height;
+  let W = stage.width, H = stage.height;
+  let BALL_R = 10;
 
   const els = {
     n: document.getElementById('n'), vN: document.getElementById('v-n'),
@@ -378,10 +379,27 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     return `${m}:${sec.toFixed(1).padStart(4,'0')}`;
   }
 
+  function computeLayout(n){
+    const P = 0.2;              // target packing fraction
+    const rMax = 10, rMin = 1.5;
+    const baseArea = 480*360;
+    const maxArea = 1600*1200;  // internal-resolution cap; CSS still scales it to fit the container
+    let area = Math.max(baseArea, (n*Math.PI*rMax*rMax)/P);
+    area = Math.min(area, maxArea);
+    let r = Math.sqrt((area*P)/(n*Math.PI));
+    r = Math.max(rMin, Math.min(rMax, r));
+    const w = Math.round(Math.sqrt(area*4/3));
+    const h = Math.round(w*3/4);
+    return {w, h, r};
+  }
+
   function makeBodies(){
     const n = Number(els.n.value);
+    const layout = computeLayout(n);
+    W = layout.w; H = layout.h; BALL_R = layout.r;
+    stage.width = W; stage.height = H;
+    const r = BALL_R;
     const arr = [];
-    const r = 10;
     for (let i=0;i<n;i++){
       arr.push({
         id: i,
@@ -435,6 +453,26 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     return {rgb:`hsl(${hue.toFixed(0)},${sat.toFixed(0)}%,${light.toFixed(0)}%)`, ring:'transparent'};
   }
 
+  function resolvePair(a, c){
+    const dx=c.x-a.x, dy=c.y-a.y;
+    const dist = Math.hypot(dx,dy);
+    if (dist < a.r+c.r && dist > 0){
+      const nx=dx/dist, ny=dy/dist;
+      const rvx=c.vx-a.vx, rvy=c.vy-a.vy;
+      const rel = rvx*nx+rvy*ny;
+      if (rel < 0){
+        a.vx += rel*nx; a.vy += rel*ny;
+        c.vx -= rel*nx; c.vy -= rel*ny;
+      }
+      const overlap = (a.r+c.r-dist)/2;
+      a.x -= nx*overlap; a.y -= ny*overlap;
+      c.x += nx*overlap; c.y += ny*overlap;
+
+      applyInteraction(a, c);
+      collisions++;
+    }
+  }
+
   function step(){
     const n = bodies.length;
     for (const b of bodies){
@@ -444,25 +482,40 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
       if (b.y - b.r < 0){ b.y = b.r; b.vy *= -1; }
       if (b.y + b.r > H){ b.y = H-b.r; b.vy *= -1; }
     }
-    for (let i=0;i<n;i++){
-      for (let j=i+1;j<n;j++){
-        const a=bodies[i], c=bodies[j];
-        const dx=c.x-a.x, dy=c.y-a.y;
-        const dist = Math.hypot(dx,dy);
-        if (dist < a.r+c.r && dist > 0){
-          const nx=dx/dist, ny=dy/dist;
-          const rvx=c.vx-a.vx, rvy=c.vy-a.vy;
-          const rel = rvx*nx+rvy*ny;
-          if (rel < 0){
-            a.vx += rel*nx; a.vy += rel*ny;
-            c.vx -= rel*nx; c.vy -= rel*ny;
+    if (n < 300){
+      // plain O(n^2) is fine (and simplest/most exact) at small counts
+      for (let i=0;i<n;i++){
+        for (let j=i+1;j<n;j++) resolvePair(bodies[i], bodies[j]);
+      }
+      return;
+    }
+    // spatial grid for large n: bucket bodies into cells ~2r wide, only test
+    // each body against others in its own cell and the 8 neighboring cells
+    const cellSize = Math.max(4, BALL_R*2);
+    const cols = Math.max(1, Math.ceil(W/cellSize));
+    const rows = Math.max(1, Math.ceil(H/cellSize));
+    const grid = new Array(cols*rows);
+    for (let k=0;k<grid.length;k++) grid[k] = [];
+    for (let idx=0; idx<n; idx++){
+      const b = bodies[idx];
+      let cx = Math.floor(b.x/cellSize); if (cx<0) cx=0; else if (cx>=cols) cx=cols-1;
+      let cy = Math.floor(b.y/cellSize); if (cy<0) cy=0; else if (cy>=rows) cy=rows-1;
+      b._cx = cx; b._cy = cy;
+      grid[cy*cols+cx].push(idx);
+    }
+    for (let idx=0; idx<n; idx++){
+      const a = bodies[idx];
+      for (let dy=-1; dy<=1; dy++){
+        const ny = a._cy+dy;
+        if (ny<0 || ny>=rows) continue;
+        for (let dx=-1; dx<=1; dx++){
+          const nx = a._cx+dx;
+          if (nx<0 || nx>=cols) continue;
+          const cell = grid[ny*cols+nx];
+          for (const jdx of cell){
+            if (jdx <= idx) continue;
+            resolvePair(a, bodies[jdx]);
           }
-          const overlap = (a.r+c.r-dist)/2;
-          a.x -= nx*overlap; a.y -= ny*overlap;
-          c.x += nx*overlap; c.y += ny*overlap;
-
-          applyInteraction(a, c);
-          collisions++;
         }
       }
     }
@@ -498,14 +551,11 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     ctx.clearRect(0,0,W,H);
     ctx.fillStyle = getComputedStyle(document.body).getPropertyValue('--panel-2') || '#111';
     ctx.fillRect(0,0,W,H);
-    const textColor = getComputedStyle(document.body).getPropertyValue('--text') || '#eee';
     const selColor = getComputedStyle(document.body).getPropertyValue('--text') || '#fff';
-    ctx.font = '5px "IBM Plex Mono", monospace';
-    ctx.textAlign = 'center';
+    const showHalo = bodies.length <= 1000; // per-ball radial gradients get expensive at scale
     for (const b of bodies){
       const {rgb, ring} = colorFor(b.v, b.conscious);
-      const divine = b.conscious;
-      if (divine){
+      if (b.conscious && showHalo){
         const haloR = b.r*3.2;
         const grad = ctx.createRadialGradient(b.x, b.y, b.r*0.6, b.x, b.y, haloR);
         grad.addColorStop(0, 'rgba(255,214,90,0.38)');
@@ -520,7 +570,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
       ctx.fillStyle = rgb;
       ctx.fill();
       if (b.conscious){
-        ctx.lineWidth = Math.max(1.5, b.r*0.15);
+        ctx.lineWidth = Math.max(1, b.r*0.15);
         ctx.strokeStyle = ring;
         ctx.stroke();
       }
@@ -533,9 +583,6 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
         ctx.stroke();
         ctx.setLineDash([]);
       }
-      ctx.fillStyle = textColor;
-      const label = b.conscious ? fmtSci(b.v) : (b.v*100).toFixed(1)+'%';
-      ctx.fillText(label, b.x, b.y - b.r - 2);
     }
   }
 
@@ -928,15 +975,16 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     const rect = stage.getBoundingClientRect();
     const scaleX = stage.width/rect.width, scaleY = stage.height/rect.height;
     const mx = (e.clientX-rect.left)*scaleX, my = (e.clientY-rect.top)*scaleY;
+    const tolerance = Math.max(8, scaleX*10); // keep a roughly constant on-screen hit radius even when canvas is heavily downscaled
     let best = null, bestD = Infinity;
     for (const b of bodies){
       const d = Math.hypot(b.x-mx, b.y-my);
-      if (d < b.r+8 && d < bestD){ best = b; bestD = d; }
+      if (d < b.r+tolerance && d < bestD){ best = b; bestD = d; }
     }
     selectedId = best ? best.id : null;
     updateInspector();
     if (!best){
-      els.inspector.textContent = 'Click any ball to zoom in on its exact violence level — the on-ball labels are too small to read at a glance on purpose.';
+      els.inspector.textContent = 'Click any ball to zoom in on its exact violence level — color alone won\'t show the exact number.';
     }
     draw();
   });
