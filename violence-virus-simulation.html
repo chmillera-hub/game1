@@ -237,6 +237,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     <div class="formula">ordinary ⨯ ordinary:  a, b → (a+b)/2, (a+b)/2</div>
     <div class="formula">conscious ⨯ ordinary:  v → v/2,  &nbsp; v_role → min(1, 2·v_role)</div>
     <div class="formula">if v ≤ T after that hit:  body flips to conscious, permanently</div>
+    <p><b>Accounting rule:</b> once a body is flagged conscious, its own violence value stops counting toward the room's total. It still exists — click it in the inspector to see its exact number, which can drift back up from repeated doubling as it keeps disarming others — but a conscious body's residual value is treated as no longer live in the system, the way a recovered case stops counting as infectious even though the virus's genetic material might still be technically present. Without this, the total could visibly tick back up near the end of a run, when most collisions are between two already-conscious bodies with occasionally-inflated values — an artifact of what's being counted, not a real resurgence of violence. The simulation auto-pauses and the chart auto-shrinks to the full run the instant every body converts, since at that point the (correctly accounted) total is exactly zero and there's nothing left to simulate.</p>
     <p>Averaging <i>conserves</i> the pair's sum — it only spreads violence around, never removes any. Only a conscious-role hit deletes anything, and it also grows the population that can delete things: every body it drives below the threshold T becomes a second source of the same effect. That's a bootstrap cascade (the same shape as bootstrap percolation / the Watts threshold model of social contagion), not a fixed sink — the "infection" here is calm, and it compounds.</p>
     <h3 style="font-size:17px;margin:16px 0 8px;">Why one seed is enough for all of them</h3>
     <p>Fix any body still above T. Each time it collides with a conscious-flagged body, its value is exactly halved — a geometric decay with no floor besides 0. However small T is, that body crosses it after a finite number of such hits:</p>
@@ -339,7 +340,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     return arr;
   }
 
-  function totalViolence(){ return bodies.reduce((s,b)=>s+b.v,0); }
+  function totalViolence(){ return bodies.reduce((s,b)=> s + (b.conscious ? 0 : b.v), 0); }
 
   function reset(){
     bodies = makeBodies();
@@ -472,12 +473,18 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
 
     if (!fullAt && nConscious === bodies.length){
       fullAt = { time: elapsedSec, hits: consciousHits, collisions, avg: consciousHits/Math.max(1,conversions) };
+      if (running){
+        running = false;
+        els.run.textContent = 'Run';
+        if (rafId) cancelAnimationFrame(rafId);
+        shrinkChartToFullRun();
+      }
     }
     if (fullAt){
       els.milestone.classList.add('done');
       els.milestone.textContent =
-        `Full consciousness reached at t=${fmtTime(fullAt.time)} — ${fullAt.hits} conscious-role hits total `+
-        `(avg ${fullAt.avg.toFixed(1)} hits per body converted), ${fullAt.collisions} collisions.`;
+        `Simulation complete — full consciousness reached at t=${fmtTime(fullAt.time)}, total violence at 0%. `+
+        `${fullAt.hits} conscious-role hits total (avg ${fullAt.avg.toFixed(1)} hits per body converted), ${fullAt.collisions} collisions.`;
     } else {
       els.milestone.classList.remove('done');
       els.milestone.textContent = `Not yet fully conscious — ${nConscious}/${bodies.length} converted, `+
