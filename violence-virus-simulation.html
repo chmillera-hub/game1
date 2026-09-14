@@ -635,7 +635,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
       if (curMin < recordLowV) recordLowV = curMin;
     }
     const stamps = convMilestones.map((m,i)=>`${CIRCLED[i]||('#'+(i+1))}${fmtTimeShort(m.time)}`).join(' ');
-    els.sbConv.textContent = `${nConscious}/${bodies.length}` + (stamps ? ' ' + stamps : '');
+    els.sbConv.textContent = `${nConscious}/${bodies.length} (↓${fmtPct(recordLowV)})` + (stamps ? ' ' + stamps : '');
     els.milestoneList.textContent = convMilestones.length
       ? convMilestones.map(m=>`#${m.n} ${fmtPct(m.value)} @${fmtTime(m.time)}`).join('  ·  ') +
         (conversions > MAX_MILESTONES ? `  ·  (+${conversions-MAX_MILESTONES} more, not logged)` : '')
