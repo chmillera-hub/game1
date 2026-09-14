@@ -245,7 +245,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
       </div>
       <div class="ctrl" style="grid-column:1/-1;">
         <label>Background violence radiation, per body per second <span class="val" id="v-amb">+1.0 %/s</span></label>
-        <input type="range" id="amb" min="0" max="10" value="1" step="0.1">
+        <input type="range" id="amb" min="0" max="102" value="12" step="1">
       </div>
       <div class="ctrl" style="grid-column:1/-1;">
         <label>Miracle power (bonus subtraction on direct contact, % of radiation) <span class="val" id="v-miracle">100 %</span></label>
@@ -393,12 +393,15 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
   for (let v=1; v<=100; v++) THR_STEPS.push(v/10);
   const EXCH_STEPS = [0.01, 0.05];
   for (let v=1; v<=50; v++) EXCH_STEPS.push(v);
+  const AMB_STEPS = [0, 0.01, 0.05];
+  for (let v=1; v<=100; v++) AMB_STEPS.push(v/10);
 
   function thrPct(){ return THR_STEPS[Number(els.thr.value)]; }
   function threshold(){ return thrPct()/100; }
-  function ambient(){ return Number(els.amb.value)/100; }
+  function ambRatePct(){ return AMB_STEPS[Number(els.amb.value)]; }
+  function ambient(){ return ambRatePct()/100; }
   function miraclePower(){ return Number(els.miracle.value)/100; }
-  function bonusPerHit(){ return (Math.max(0, Number(els.amb.value)) * miraclePower()) / 100; }
+  function bonusPerHit(){ return (Math.max(0, ambRatePct()) * miraclePower()) / 100; }
   function exchCapPct(){ return EXCH_STEPS[Number(els.exch.value)]; }
   function exchangeCap(){ return exchCapPct()/100; }
   function fmtSliderPct(v){ return v < 0.1 ? v.toFixed(2) : v.toFixed(1); }
@@ -700,8 +703,8 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
       ? convMilestones.map(m=>`#${m.n} ${fmtPct(m.value)} @${fmtTime(m.time)}`).join('  ·  ') +
         (conversions > MAX_MILESTONES ? `  ·  (+${conversions-MAX_MILESTONES} more, not logged)` : '')
       : 'No non-seed body has become conscious yet.';
-    const ambPct = Number(els.amb.value)*bodies.length;
-    els.sAmb.textContent = (ambPct>=0?'+':'') + ambPct.toFixed(1) + ' %/s';
+    const ambPct = ambRatePct()*bodies.length;
+    els.sAmb.textContent = '+' + fmtSliderPct(ambPct) + ' %/s';
     els.sMiracle.textContent = (consciousHits * bonusPerHit() * 100).toFixed(1);
     els.tick.textContent = `conscious hits = ${consciousHits} · t = ${elapsedSec.toFixed(1)}s`;
     updateInspector();
@@ -795,7 +798,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
   function updateRunSettingsLine(){
     els.runSettings.textContent =
       `Bodies=${nBodies()} · seeds=${numSeeds()} · speed=${els.speed.value}× · `+
-      `threshold=${fmtSliderPct(thrPct())}% · radiation=${(Number(els.amb.value)>=0?'+':'')}${els.amb.value}%/s · `+
+      `threshold=${fmtSliderPct(thrPct())}% · radiation=+${fmtSliderPct(ambRatePct())}%/s · `+
       `miracle=${els.miracle.value}% · exchange cap=${exchCapPct()>=50?'none':fmtSliderPct(exchCapPct())+'%'}`;
   }
 
@@ -931,7 +934,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
       `  Seed bodies (start conscious): ${seedCount}`,
       `  Speed: ${els.speed.value}×`,
       `  Conversion threshold: ${fmtSliderPct(thrPct())}%`,
-      `  Background violence radiation: ${(Number(els.amb.value)>=0?'+':'')}${els.amb.value}%/s per body`,
+      `  Background violence radiation: +${fmtSliderPct(ambRatePct())}%/s per body`,
       `  Miracle power: ${els.miracle.value}%`,
       `  Violence exchange cap (non-divine hits): ${exchCapPct()>=50?'none (plain average)':fmtSliderPct(exchCapPct())+' percentage points per hit'}`,
       '',
@@ -1143,8 +1146,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     updateRunSettingsLine();
   });
   els.amb.addEventListener('input', ()=>{
-    const v = Number(els.amb.value);
-    els.vAmb.textContent = (v>=0?'+':'') + v.toFixed(1) + ' %/s';
+    els.vAmb.textContent = '+' + fmtSliderPct(ambRatePct()) + ' %/s';
     updateReadouts();
     updateRunSettingsLine();
   });
