@@ -251,6 +251,10 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
         <label>Miracle power (bonus subtraction on direct contact, % of radiation) <span class="val" id="v-miracle">100 %</span></label>
         <input type="range" id="miracle" min="0" max="100" value="100" step="1">
       </div>
+      <div class="ctrl" style="grid-column:1/-1;">
+        <label>Violence exchange cap, non-divine hits (max points traded per collision) <span class="val" id="v-exch">50 % (no cap)</span></label>
+        <input type="range" id="exch" min="1" max="50" value="50" step="1">
+      </div>
     </div>
     <div class="lock-note" id="lock-note" hidden>Only Speed can be changed while running — the other sliders lock so a mid-run tweak can't skew this run's data. Pause or Reset chamber to change them.</div>
     <div class="btnrow">
@@ -289,13 +293,13 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
 <div class="panel bench">
   <div>
     <h3 style="font-size:17px;margin-bottom:8px;">The update rules</h3>
-    <div class="formula">non-conscious ⨯ non-conscious:  a, b → (a+b)/2, (a+b)/2</div>
+    <div class="formula">non-conscious ⨯ non-conscious:  transfer = clamp((b−a)/2, ±cap);  a → a+transfer, b → b−transfer</div>
     <div class="formula">conscious ⨯ non-conscious:  v → max(0, v/2 − bonus),  &nbsp; v_role stays 0 (2·0 = 0)</div>
     <div class="formula">bonus = max(0, radiation %/s) × (miracle power / 100), in percentage points</div>
     <div class="formula">if v ≤ T after that hit:  v is reset to exactly 0, body flips to conscious, permanently</div>
     <p><b>The simplification:</b> a body doesn't drift down to <i>near</i> zero and then keep existing at some tiny residual — the instant it crosses T, its value is reset to exactly 0. Every conscious body's own violence is therefore always precisely 0, forever: the seed starts there, and every later conversion lands there too. Doubling a body that's exactly 0 leaves it at exactly 0 (0·2=0), so there's no drift, no residual number to worry about, and no separate "has it climbed back up" question to track. Once a body converts it stops counting toward the room's total for the simplest possible reason: its own value really is 0, not merely excluded by convention. Consequently the total can only reach exactly 0 once every body has converted — it is mathematically impossible for one to happen without the other.</p>
     <p>"Total system violence" is a plain sum, not an average — ten bodies sitting at 18% each read as <span class="mono">180.0</span>, not <span class="mono">18.0%</span>. With N bodies starting near 100% each, expect the starting number in the thousands; the chart's total-violence line still plots it as a fraction of that starting sum, purely so it fits the same 0–100% axis as the other two lines.</p>
-    <p>Averaging <i>conserves</i> the pair's sum — it only spreads violence around, never removes any. Only a conscious-role hit deletes anything, and it also grows the population that can delete things: every body it drives below the threshold T becomes a second source of the same effect. That's a bootstrap cascade (the same shape as bootstrap percolation / the Watts threshold model of social contagion), not a fixed sink — the "infection" here is calm, and it compounds.</p>
+    <p>Averaging <i>conserves</i> the pair's sum — it only spreads violence around, never removes any — and the "violence exchange cap" slider only throttles how much of that spread one hit can deliver: at its max (50, the largest possible half-gap between two bodies) it never binds, so nothing changes from the plain average. Dial it down and a single collision can only move a pair partway to their average, capped at that many percentage points; the two still keep colliding, so they keep closing the rest of the gap over several hits instead of one. This exists to protect progress a divine ball has already made on a body: without a cap, a body a divine ball has patiently halved down near threshold T (say to 1%) gets yanked straight back up to ~50% the instant it collides with one ordinary 100% body — one plain-average hit erases many divine hits' worth of work. With the cap on, that same collision only pulls the low body up by the capped amount (26% at cap=25, not 50%), so the divine ball's progress survives ordinary contact and it can keep working the body down toward T across repeated divine hits instead of racing an unbounded reset. Only a conscious-role hit deletes anything, and it also grows the population that can delete things: every body it drives below the threshold T becomes a second source of the same effect. That's a bootstrap cascade (the same shape as bootstrap percolation / the Watts threshold model of social contagion), not a fixed sink — the "infection" here is calm, and it compounds.</p>
     <h3 style="font-size:17px;margin:16px 0 8px;">Why a single seed is already enough for all of them</h3>
     <p>Fix any body still above T. Each time it collides with a conscious-flagged body, its value is exactly halved — a geometric decay with no floor besides 0. However small T is, that body crosses it after a finite number of such hits:</p>
     <div class="formula">hits needed ≈ log₂(v / T)</div>
@@ -331,6 +335,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     thr: document.getElementById('thr'), vThr: document.getElementById('v-thr'),
     amb: document.getElementById('amb'), vAmb: document.getElementById('v-amb'),
     miracle: document.getElementById('miracle'), vMiracle: document.getElementById('v-miracle'),
+    exch: document.getElementById('exch'), vExch: document.getElementById('v-exch'),
     run: document.getElementById('btn-run'), reset: document.getElementById('btn-reset'),
     tick: document.getElementById('tick-count'),
     sVc: document.getElementById('s-vc'), sTotal: document.getElementById('s-total'),
@@ -347,7 +352,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     scrub: document.getElementById('scrub'), scrubLabel: document.getElementById('scrub-label'),
     lockNote: document.getElementById('lock-note'),
   };
-  const LOCKABLE_SLIDERS = ['n', 'seeds', 'thr', 'amb', 'miracle'];
+  const LOCKABLE_SLIDERS = ['n', 'seeds', 'thr', 'amb', 'miracle', 'exch'];
   function syncSliderLocks(){
     const locked = running;
     for (const key of LOCKABLE_SLIDERS) els[key].disabled = locked;
@@ -381,6 +386,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
   function ambient(){ return Number(els.amb.value)/100; }
   function miraclePower(){ return Number(els.miracle.value)/100; }
   function bonusPerHit(){ return (Math.max(0, Number(els.amb.value)) * miraclePower()) / 100; }
+  function exchangeCap(){ return Number(els.exch.value)/100; }
 
   function fmtPct(v){
     const pct = v*100;
@@ -581,8 +587,10 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
       cons.v = Math.min(1, cons.v*2);
       consciousHits++;
     } else {
-      const m = (a.v + c.v)/2;
-      a.v = m; c.v = m;
+      const halfDiff = (c.v - a.v)/2;
+      const transfer = Math.sign(halfDiff) * Math.min(Math.abs(halfDiff), exchangeCap());
+      a.v = a.v + transfer;
+      c.v = c.v - transfer;
     }
     for (const b of [a,c]){
       if (!b.conscious && b.v <= T){
@@ -755,7 +763,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     els.runSettings.textContent =
       `Bodies=${nBodies()} · seeds=${numSeeds()} · speed=${els.speed.value}× · `+
       `threshold=${(threshold()*100).toFixed(1)}% · radiation=${(Number(els.amb.value)>=0?'+':'')}${els.amb.value}%/s · `+
-      `miracle=${els.miracle.value}%`;
+      `miracle=${els.miracle.value}% · exchange cap=${els.exch.value>=50?'none':els.exch.value+'%'}`;
   }
 
   function buildSummaryText(){
@@ -781,9 +789,13 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
       '',
       `On every physical collision between two bodies, exactly one of these update rules fires,`,
       `chosen by the two bodies' conscious flags:`,
-      `  1. non-conscious x non-conscious (both flags false): both bodies' v are replaced by`,
-      `     their average, (v_a+v_b)/2 each. This exactly conserves the pair's summed`,
-      `     violence -- it only redistributes, it never creates or destroys any.`,
+      `  1. non-conscious x non-conscious (both flags false): v moves toward the pair's`,
+      `     average, (v_a+v_b)/2 each, but the amount transferred in one hit is capped at`,
+      `     the "violence exchange cap" slider (${Number(els.exch.value)>=50?'currently OFF, i.e. no cap -- full jump to the average, same as before this slider existed':'currently '+els.exch.value+' percentage points'}).`,
+      `     Below that cap this exactly conserves the pair's summed violence -- it only`,
+      `     redistributes, it never creates or destroys any; the cap only slows how fast a`,
+      `     single hit can close a large gap, e.g. a repeatedly-hit low body climbs back up`,
+      `     in capped steps instead of snapping straight to the average of whatever it hits.`,
       `  2. conscious x non-conscious (flags differ): the non-conscious body is halved and`,
       `     then hit with a flat "miracle" bonus subtraction (see below),`,
       `     v -> max(0, v/2 - bonus). The conscious body is simultaneously doubled and capped`,
@@ -881,6 +893,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
       `  Conversion threshold: ${(threshold()*100).toFixed(1)}%`,
       `  Background violence radiation: ${(Number(els.amb.value)>=0?'+':'')}${els.amb.value}%/s per body`,
       `  Miracle power: ${els.miracle.value}%`,
+      `  Violence exchange cap (non-divine hits): ${Number(els.exch.value)>=50?'none (plain average)':els.exch.value+' percentage points per hit'}`,
       '',
       'Live readout:',
       `  Elapsed time: ${fmtTime(elapsedSec)}`,
@@ -1052,6 +1065,11 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
   });
   els.miracle.addEventListener('input', ()=>{
     els.vMiracle.textContent = els.miracle.value + ' %';
+    updateRunSettingsLine();
+  });
+  els.exch.addEventListener('input', ()=>{
+    const v = Number(els.exch.value);
+    els.vExch.textContent = v + ' %' + (v>=50 ? ' (no cap)' : '');
     updateRunSettingsLine();
   });
   els.copyBtn.addEventListener('click', copySummary);
