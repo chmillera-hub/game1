@@ -213,11 +213,11 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     <div id="stage-wrap"><canvas id="stage" width="480" height="360"></canvas></div>
     <div id="scrub-wrap">
       <div class="scrub-row">
-        <span class="mono scrub-end">0:00.0</span>
+        <span class="mono scrub-end">oldest</span>
         <input type="range" id="scrub" min="0" max="0" value="0" step="1">
         <span class="mono scrub-end">live</span>
       </div>
-      <div id="scrub-label" class="mono">History bar — once the run has a few snapshots, drag to look back at any point (pauses the sim while you do).</div>
+      <div id="scrub-label" class="mono">Conversion replay — captures 20 physics steps before and 20 after each of the first 20 conscious-ball formations; nothing to browse yet.</div>
     </div>
     <div class="rolekey">
       <span><i class="chip" style="background:hsl(0,72%,45%)"></i>red — violent, ≥ 51%</span>
@@ -317,7 +317,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
   </div>
 </div>
 
-<footer>Color is the only at-a-glance signal now — no on-ball text, and no gradient either: a non-conscious body is one of three fixed colors by band, not a ramp — red at 51% or above, green from 11% to 50%, yellow at 10% or below. Yellow exists specifically to flag "getting close to the conversion threshold" without implying it's already converted, since a body that's crossed below 10% is usually only a hit or two away. A conscious body is always exactly 0% violence, so it always gets the same fixed gold fill and gold ring — a brighter, cooler yellow (hue 58) was picked deliberately far from that warmer, darker gold (hue 38) so the two never get confused even at very small ball sizes. (The gold ring's faint halo turns off above 1,000 bodies, purely so thousands of per-ball gradients don't tank the frame rate — the flat gold fill stays either way.) Click any ball to read its exact value in the inspector above the chart. Bodies range from 10 up to 10,000, in steps of 10 below 100 and steps of 100 from 100 up, so the slider always lands on a round number instead of an arbitrary one; the chamber and ball radius scale together to keep a reasonable, visible size and packing density at any count, and past 300 bodies collision detection switches from checking every pair to a spatial grid (only nearby bodies are checked against each other) so the frame rate doesn't collapse at high counts. Background violence radiation only touches bodies not yet flagged conscious, so a body's crossing into consciousness is a real, permanent immunity to that rising background hazard. The history bar under the chamber takes a snapshot of every ball's position and violence every 1-5 seconds (spaced further apart at very high body counts to keep memory bounded), up to 600 snapshots per run; dragging it pauses the sim and repaints the chamber and headline stats as they were at that moment, and dragging back to the right end (or pressing Run) returns to live.</footer>
+<footer>Color is the only at-a-glance signal now — no on-ball text, and no gradient either: a non-conscious body is one of three fixed colors by band, not a ramp — red at 51% or above, green from 11% to 50%, yellow at 10% or below. Yellow exists specifically to flag "getting close to the conversion threshold" without implying it's already converted, since a body that's crossed below 10% is usually only a hit or two away. A conscious body is always exactly 0% violence, so it always gets the same fixed gold fill and gold ring — a brighter, cooler yellow (hue 58) was picked deliberately far from that warmer, darker gold (hue 38) so the two never get confused even at very small ball sizes. (The gold ring's faint halo turns off above 1,000 bodies, purely so thousands of per-ball gradients don't tank the frame rate — the flat gold fill stays either way.) Click any ball to read its exact value in the inspector above the chart. Bodies range from 10 up to 10,000, in steps of 10 below 100 and steps of 100 from 100 up, so the slider always lands on a round number instead of an arbitrary one; the chamber and ball radius scale together to keep a reasonable, visible size and packing density at any count, and past 300 bodies collision detection switches from checking every pair to a spatial grid (only nearby bodies are checked against each other) so the frame rate doesn't collapse at high counts. Background violence radiation only touches bodies not yet flagged conscious, so a body's crossing into consciousness is a real, permanent immunity to that rising background hazard. The bar under the chamber is a conversion replay, not a full-run scrubber: it only ever holds the first 20 conscious-ball formations, each captured as its own clip of 20 physics steps immediately before that ball crossed threshold, the crossing step itself, and 20 steps immediately after -- every step recorded individually rather than sampled over real time, so dragging within one clip shows the exact collision-by-collision sequence around that conversion. Everything else in the run -- the long stretches between conversions -- is simply never captured, so the bar has nothing to show there; drag past the end of one clip and you land on the start of the next. Dragging pauses the sim and repaints the chamber and headline stats as they were at that exact step, and dragging back to the right end (or pressing Run) returns to live.</footer>
 
 <script>
 (function(){
@@ -372,13 +372,14 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
   let recordLowVTime = 0;
   let recordLowTotal = 100;
   let recordLowTotalTime = 0;
-  let snapshots = [];
-  let snapInterval = 1;
-  let lastSnapTime = 0;
   let scrubIndex = null;
-  const MAX_SNAPSHOTS = 600;
   let convMilestones = [];
   const MAX_MILESTONES = 20;
+  const REPLAY_WINDOW = 20; // physics steps captured before/after each of the first MAX_MILESTONES conversions
+  let stepRing = []; // rolling buffer of the last REPLAY_WINDOW physics-step body-states
+  let eventWindows = []; // one entry per conversion, index-aligned with convMilestones: {frames, preCount, milestoneIndex}
+  let activeWindows = []; // eventWindows entries still collecting their post-conversion frames
+  let nextMilestoneToWindow = 0;
   let decileTimestamps = new Array(10).fill(null);
   let axisMin = 0, axisMax = 12;
   let S0 = 1;
@@ -508,14 +509,14 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     recordLowTotal = S0*100;
     recordLowTotalTime = 0;
     history = [{t:0, S: S0, frac: 1/bodies.length}];
-    snapshots = [];
-    lastSnapTime = 0;
     scrubIndex = null;
-    snapInterval = bodies.length > 2000 ? 5 : (bodies.length > 500 ? 2 : 1);
+    stepRing = [];
+    eventWindows = [];
+    activeWindows = [];
+    nextMilestoneToWindow = 0;
     els.scrub.min = 0; els.scrub.max = 0; els.scrub.value = 0;
-    els.scrubLabel.textContent = `History bar — a snapshot every ${snapInterval}s once running; drag to look back (pauses the sim while you do).`;
+    els.scrubLabel.textContent = `Conversion replay — captures ${REPLAY_WINDOW} physics steps before and ${REPLAY_WINDOW} after each of the first ${MAX_MILESTONES} conscious-ball formations; nothing to browse yet.`;
     els.scrubLabel.classList.remove('scrubbing');
-    captureSnapshot(); // t=0 snapshot, so the far left of the bar is the true start
     draw();
     updateReadouts();
     updateVerify();
@@ -1004,37 +1005,75 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
       b.v = Math.min(1, Math.max(0, b.v + rate*dtSec));
     }
   }
-  function captureSnapshot(){
-    if (snapshots.length >= MAX_SNAPSHOTS) return;
-    lastSnapTime = elapsedSec;
+  function snapshotBodies(){
     const n = bodies.length;
     const xs = new Float32Array(n), ys = new Float32Array(n), vs = new Float32Array(n), cs = new Uint8Array(n);
-    let nConscious = 0;
+    let nConscious = 0, totalV = 0;
     for (let i=0;i<n;i++){
       const b = bodies[i];
       xs[i]=b.x; ys[i]=b.y; vs[i]=b.v; cs[i]=b.conscious?1:0;
-      if (b.conscious) nConscious++;
+      if (b.conscious) nConscious++; else totalV += b.v;
     }
-    snapshots.push({t: elapsedSec, xs, ys, vs, cs, total: totalViolence()*100, nConscious, recLowV: recordLowV, recLowVTime: recordLowVTime});
-    els.scrub.max = snapshots.length;
-    if (scrubIndex === null) els.scrub.value = snapshots.length;
+    return {t: elapsedSec, xs, ys, vs, cs, nConscious, total: totalV*100};
   }
 
-  function maybeSnapshot(){
-    if (elapsedSec - lastSnapTime < snapInterval) return;
-    captureSnapshot();
+  // Called once per physics step (not once per rendered frame -- at Speed>1x several
+  // steps happen per frame). Feeds any in-progress replay windows their next post-conversion
+  // frame, opens a new window for any conversion(s) that just happened this step (borrowing
+  // its pre-conversion frames straight from the rolling ring buffer), then rolls the ring
+  // buffer forward. Once the first MAX_MILESTONES conversions are fully captured, this is a
+  // no-op so it costs nothing for the remainder of a long run.
+  function afterStepCapture(){
+    if (nextMilestoneToWindow >= MAX_MILESTONES && activeWindows.length === 0) return;
+    const snap = snapshotBodies();
+    for (const w of activeWindows) w.frames.push(snap);
+    activeWindows = activeWindows.filter(w => w.frames.length < w.preCount + 1 + REPLAY_WINDOW);
+    while (nextMilestoneToWindow < convMilestones.length && eventWindows.length < MAX_MILESTONES){
+      const preFrames = stepRing.slice();
+      const w = { frames: [...preFrames, snap], preCount: preFrames.length, milestoneIndex: nextMilestoneToWindow };
+      eventWindows.push(w);
+      activeWindows.push(w);
+      nextMilestoneToWindow++;
+    }
+    stepRing.push(snap);
+    if (stepRing.length > REPLAY_WINDOW) stepRing.shift();
+    const total = totalReplayFrames();
+    els.scrub.max = total;
+    if (scrubIndex === null) els.scrub.value = total;
+  }
+
+  function totalReplayFrames(){
+    let s = 0;
+    for (const w of eventWindows) s += w.frames.length;
+    return s;
+  }
+
+  // Maps a single global scrub-bar index to the specific captured frame, which conversion
+  // window it belongs to, and its offset from that conversion's moment (0 = the moment
+  // itself, negative = steps before, positive = steps after).
+  function frameAt(globalIndex){
+    let idx = globalIndex;
+    for (let wi=0; wi<eventWindows.length; wi++){
+      const w = eventWindows[wi];
+      if (idx < w.frames.length) return { snap: w.frames[idx], window: w, windowIndex: wi, offset: idx - w.preCount };
+      idx -= w.frames.length;
+    }
+    return null;
   }
 
   function renderScrub(index){
-    const snap = snapshots[index];
-    if (!snap) return;
+    const hit = frameAt(index);
+    if (!hit) return;
+    const { snap, window, offset } = hit;
     ctx.clearRect(0,0,W,H);
     ctx.fillStyle = getComputedStyle(document.body).getPropertyValue('--panel-2') || '#111';
     ctx.fillRect(0,0,W,H);
     const n = snap.xs.length;
     const showHalo = n <= 1000;
+    let curMin = 1;
     for (let i=0;i<n;i++){
       const isConscious = snap.cs[i]===1;
+      if (!isConscious && snap.vs[i] < curMin) curMin = snap.vs[i];
       const {rgb, ring} = colorFor(snap.vs[i], isConscious);
       const x=snap.xs[i], y=snap.ys[i], r=BALL_R;
       if (isConscious && showHalo){
@@ -1052,29 +1091,31 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
         ctx.stroke();
       }
     }
-    els.scrubLabel.textContent = `Viewing history at t=${fmtTime(snap.t)} — sim paused, drag to "live" (right end) to resume watching.`;
+    const milestone = convMilestones[window.milestoneIndex];
+    const eventNum = window.milestoneIndex + 1;
+    const offsetLabel = offset === 0 ? 'the moment of conversion'
+      : (offset < 0 ? `${-offset} step${-offset===1?'':'s'} before` : `${offset} step${offset===1?'':'s'} after`);
+    els.scrubLabel.textContent = `Conversion #${eventNum} of ${convMilestones.length} (crossed to ${fmtPct(milestone.value)} at t=${fmtTime(milestone.time)}) — ${offsetLabel}. Sim paused; drag to browse, or to "live" (right end) to resume.`;
     els.scrubLabel.classList.add('scrubbing');
-    let recTotal = snapshots[0].total, recTotalTime = snapshots[0].t;
-    for (let i=1;i<=index;i++){
-      if (snapshots[i].total < recTotal){ recTotal = snapshots[i].total; recTotalTime = snapshots[i].t; }
-    }
-    const scrubTotalStr = `${recTotal.toFixed(1)} (@${fmtTimeShort(recTotalTime)})`;
+    const scrubTotalStr = `${snap.total.toFixed(1)} (@${fmtTimeShort(snap.t)})`;
     els.sTotal.textContent = scrubTotalStr;
     els.sConv.textContent = `${snap.nConscious} / ${n}`;
     els.sTime.textContent = fmtTime(snap.t);
     els.sbTotal.textContent = scrubTotalStr;
     const scrubStamps = convMilestones.map((m,i)=>`${CIRCLED[i]||('#'+(i+1))}${fmtTimeShort(m.time)}`).join(' ');
-    els.sbConv.textContent = `${snap.nConscious}/${n} (↓${fmtPct(snap.recLowV)} @${fmtTimeShort(snap.recLowVTime)})` + (scrubStamps ? ' ' + scrubStamps : '');
+    els.sbConv.textContent = `${snap.nConscious}/${n} (↓${fmtPct(curMin)})` + (scrubStamps ? ' ' + scrubStamps : '');
     els.sbTime.textContent = fmtTime(snap.t);
-    els.tick.textContent = `history snapshot @ t=${snap.t.toFixed(1)}s`;
+    els.tick.textContent = `conversion #${eventNum} replay, ${offsetLabel} @ t=${snap.t.toFixed(1)}s`;
   }
 
   function exitScrub(){
     if (scrubIndex === null) return;
     scrubIndex = null;
-    els.scrub.value = snapshots.length;
+    els.scrub.value = totalReplayFrames();
     els.scrubLabel.classList.remove('scrubbing');
-    els.scrubLabel.textContent = 'History bar — drag to look back at any point (pauses the sim while you do); back at "live" now.';
+    els.scrubLabel.textContent = eventWindows.length
+      ? `Conversion replay — ${eventWindows.length} of ${MAX_MILESTONES} conscious-ball formation${eventWindows.length===1?'':'s'} captured so far; drag to browse, back at "live" now.`
+      : `Conversion replay — captures ${REPLAY_WINDOW} physics steps before and ${REPLAY_WINDOW} after each of the first ${MAX_MILESTONES} conscious-ball formations; nothing to browse yet.`;
     draw();
     updateReadouts();
   }
@@ -1086,11 +1127,10 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     const speed = Number(els.speed.value);
     const simDt = dtSec * speed;
     elapsedSec += simDt;
-    for (let s=0;s<speed;s++) step();
+    for (let s=0;s<speed;s++){ step(); afterStepCapture(); }
     applyAmbient(simDt);
     draw();
     updateReadouts();
-    maybeSnapshot();
     if (running) rafId = requestAnimationFrame(loop);
   }
 
@@ -1159,7 +1199,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
       syncSliderLocks();
     }
     const val = Number(els.scrub.value);
-    if (val >= snapshots.length){
+    if (val >= totalReplayFrames()){
       exitScrub();
     } else {
       scrubIndex = val;
@@ -1174,7 +1214,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     const tolerance = Math.max(8, scaleX*10); // keep a roughly constant on-screen hit radius even when canvas is heavily downscaled
 
     if (scrubIndex !== null){
-      const snap = snapshots[scrubIndex];
+      const snap = frameAt(scrubIndex).snap;
       let best = -1, bestD = Infinity;
       for (let i=0;i<snap.xs.length;i++){
         const d = Math.hypot(snap.xs[i]-mx, snap.ys[i]-my);
