@@ -305,7 +305,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     <div class="formula">hits needed ≈ log₂(v / T)</div>
     <p>In a well-mixed chamber every pair collides again and again over time, so the probability any one body is <i>never</i> hit by a conscious body, forever, is zero. Conclusion: for any fixed T &gt; 0 <i>with no background violence radiation</i>, full conversion — every body conscious, total violence → 0 — isn't just likely, it's the guaranteed long-run outcome.</p>
     <h3 style="font-size:17px;margin:16px 0 8px;">What background violence radiation breaks</h3>
-    <p>This slider models the ambient, everywhere-at-once violence of a world that keeps generating friction on its own — not a person-to-person interaction, but a background condition every still-non-conscious body is bathed in continuously, raising its violence by a fixed amount every second whether or not it's currently colliding with anything. It's a rising tide by design, from 0 (off) up to +10%/s: it actively works against the cascade, dragging a body's violence back up over T between hits, faster than conversions can push it down. There's a real tug-of-war between a discrete, collision-driven cooling process and this continuous, clock-driven heating one — push it toward +10 and you're watching the same "runs away past a critical value" behavior from the very first version of this model, just driven by a clock instead of a doubling. (There's no negative/"calming radiation" option — a contact-free channel straight to zero would trivially and near-instantly convert every body on its own, without any of the collision dynamics this simulation is actually about.)</p>
+    <p>This slider models the ambient, everywhere-at-once violence of a world that keeps generating friction on its own — not a person-to-person interaction, but a background condition every still-non-conscious body is bathed in continuously, raising its violence by a fixed amount every second whether or not it's currently colliding with anything. It's a rising tide by design, from +0.001%/s up to +10%/s: it actively works against the cascade, dragging a body's violence back up over T between hits, faster than conversions can push it down. There's a real tug-of-war between a discrete, collision-driven cooling process and this continuous, clock-driven heating one — push it toward +10 and you're watching the same "runs away past a critical value" behavior from the very first version of this model, just driven by a clock instead of a doubling. (There's no negative/"calming radiation" option, and no exact-zero option either — a contact-free channel straight to zero would trivially and near-instantly convert every body on its own with the divine side guaranteed to win, bypassing the collision dynamics this simulation is actually about; a real world always has some baseline source of friction above zero — comets, asteroids, natural disasters — so the slider's floor reflects that a truly violence-free background isn't a realistic setting to leave on, even if it's a fine idealization to reason about mathematically.)</p>
     <h3 style="font-size:17px;margin:16px 0 8px;">Miracle power</h3>
     <p>Direct contact already halves a body; miracle power adds a flat bonus on top of that halving, sized as a fraction of whatever the radiation slider currently reads (never a fraction of the body's own violence). At radiation=10%/s and miracle=100%, a body at 100% goes to 50% from the halving, then to 40% from the bonus — one collision, two separate deductions. At the default miracle=0% this term is always exactly 0 and contact is plain halving, same as before this control existed. Raising it doesn't change the average outcome much on its own; it raises the odds of a body getting unlucky in one specific way — repeated direct contact with the same conscious body in a short span, each hit chipping off extra — crossing threshold T sooner, or even in a single hit, when plain halving alone wouldn't have gotten there yet. That's why the Chamber's live tag counts <i>conscious hits</i> (direct conscious-vs-non-conscious collisions) rather than every collision in the room: multiply that count by the current bonus per hit and you get the "Miracle violence removed" stat below directly — hits × bonus, no need to do the arithmetic by hand.</p>
   </div>
@@ -408,7 +408,9 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
   for (let v=1; v<=100; v++) THR_STEPS.push(v/10);
   const EXCH_STEPS = [0.01, 0.05];
   for (let v=1; v<=50; v++) EXCH_STEPS.push(v);
-  const AMB_STEPS = [0, 0.01, 0.05];
+  // no exact-zero option: a real background rate is always above zero, and zero would let
+  // the divine side win trivially every time (see the bench explainer below)
+  const AMB_STEPS = [0.001, 0.01, 0.05];
   for (let v=1; v<=100; v++) AMB_STEPS.push(v/10);
 
   function thrPct(){ return THR_STEPS[Number(els.thr.value)]; }
@@ -419,7 +421,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
   function bonusPerHit(){ return (Math.max(0, ambRatePct()) * miraclePower()) / 100; }
   function exchCapPct(){ return EXCH_STEPS[Number(els.exch.value)]; }
   function exchangeCap(){ return exchCapPct()/100; }
-  function fmtSliderPct(v){ return v < 0.1 ? v.toFixed(2) : v.toFixed(1); }
+  function fmtSliderPct(v){ return v < 0.01 ? v.toFixed(3) : (v < 0.1 ? v.toFixed(2) : v.toFixed(1)); }
   // Given a Σ% total-violence figure, what % of the run's STARTING Σ% total that represents --
   // e.g. starting at 10000 and dropping to 3000 reports 30% (of the original total) remaining.
   function reportPctLeft(totalPctValue){
@@ -881,14 +883,17 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
       `0% violence.`,
       '',
       `Background violence radiation: independent of collisions, every body still flagged`,
-      `false continuously gains a fixed percent of violence per elapsed second (0 to +10%/s) --`,
-      `modeling the ambient, everywhere-at-once violence of a world that generates friction on`,
-      `its own, not person-to-person contact. It is always a rising background hazard that`,
-      `competes against the collision-driven cascade above and can indefinitely delay or even`,
-      `prevent full conversion; there is no negative/"calming radiation" setting, since a`,
-      `contact-free channel straight to zero would trivially and near-instantly convert every`,
-      `body on its own, bypassing the collision dynamics entirely. Bodies already flagged true`,
-      `are completely immune to this radiation.`,
+      `false continuously gains a fixed percent of violence per elapsed second (+0.001 to`,
+      `+10%/s) -- modeling the ambient, everywhere-at-once violence of a world that generates`,
+      `friction on its own, not person-to-person contact. It is always a rising background`,
+      `hazard that competes against the collision-driven cascade above and can indefinitely`,
+      `delay or even prevent full conversion; there is no negative/"calming radiation" setting`,
+      `and no exact-zero setting either, since a contact-free channel straight to zero (or a`,
+      `background rate of exactly zero) would trivially and near-instantly convert every body`,
+      `on its own with the divine side guaranteed to win, bypassing the collision dynamics`,
+      `entirely -- the slider's floor reflects that a real world always has some baseline`,
+      `source of friction above zero. Bodies already flagged true are completely immune to`,
+      `this radiation.`,
       '',
       `Miracle power: a second, optional bonus applied only at the instant of direct contact`,
       `(rule 2 above), on top of the halving. It draws its size from the CURRENT background`,
