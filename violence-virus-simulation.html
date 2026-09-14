@@ -135,6 +135,8 @@ button.tag.copied{border-color:var(--calm); color:var(--calm);}
 .ctrl label{font-size:11.5px; color:var(--text-dim); display:flex; justify-content:space-between;}
 .ctrl label span.val{font-family:"IBM Plex Mono",monospace; color:var(--text);}
 input[type=range]{ accent-color: var(--calm); width:100%; }
+input[type=range]:disabled{ opacity:0.35; cursor:not-allowed; }
+.lock-note{grid-column:1/-1; font-size:11px; color:var(--text-dim); font-style:italic; margin-top:-2px;}
 .btnrow{display:flex; gap:8px; margin-top:14px; flex-wrap:wrap;}
 button{
   font-family:"IBM Plex Mono",monospace; font-size:12.5px; letter-spacing:0.03em;
@@ -250,6 +252,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
         <input type="range" id="miracle" min="0" max="100" value="100" step="1">
       </div>
     </div>
+    <div class="lock-note" id="lock-note" hidden>Only Speed can be changed while running — the other sliders lock so a mid-run tweak can't skew this run's data. Pause or Reset chamber to change them.</div>
     <div class="btnrow">
       <button class="primary" id="btn-run">Run</button>
       <button id="btn-reset">Reset chamber</button>
@@ -342,7 +345,14 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     sbTotal: document.getElementById('sb-total'), sbTime: document.getElementById('sb-time'),
     sbConv: document.getElementById('sb-conv'),
     scrub: document.getElementById('scrub'), scrubLabel: document.getElementById('scrub-label'),
+    lockNote: document.getElementById('lock-note'),
   };
+  const LOCKABLE_SLIDERS = ['n', 'seeds', 'thr', 'amb', 'miracle'];
+  function syncSliderLocks(){
+    const locked = running;
+    for (const key of LOCKABLE_SLIDERS) els[key].disabled = locked;
+    els.lockNote.hidden = !locked;
+  }
 
   let bodies = [];
   let running = false;
@@ -476,6 +486,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     updateReadouts();
     updateVerify();
     updateRunSettingsLine();
+    syncSliderLocks();
   }
 
   function colorFor(v, conscious){
@@ -661,6 +672,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
         els.run.textContent = 'Run';
         if (rafId) cancelAnimationFrame(rafId);
         shrinkChartToFullRun();
+        syncSliderLocks();
       }
     }
     if (fullAt){
@@ -1071,6 +1083,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
       if (rafId) cancelAnimationFrame(rafId);
       shrinkChartToFullRun();
     }
+    syncSliderLocks();
   });
   els.reset.addEventListener('click', ()=>{ selectedId = null; reset(); });
 
@@ -1080,6 +1093,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
       els.run.textContent = 'Run';
       if (rafId) cancelAnimationFrame(rafId);
       shrinkChartToFullRun();
+      syncSliderLocks();
     }
     const val = Number(els.scrub.value);
     if (val >= snapshots.length){
