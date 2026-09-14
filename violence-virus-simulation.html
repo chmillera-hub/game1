@@ -982,7 +982,8 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     els.sConv.textContent = `${snap.nConscious} / ${n}`;
     els.sTime.textContent = fmtTime(snap.t);
     els.sbTotal.textContent = snap.total.toFixed(1);
-    els.sbConv.textContent = `${snap.nConscious}/${n}`;
+    const scrubStamps = convMilestones.map((m,i)=>`${CIRCLED[i]||('#'+(i+1))}${fmtTimeShort(m.time)}`).join(' ');
+    els.sbConv.textContent = `${snap.nConscious}/${n} (↓${fmtPct(recordLowV)})` + (scrubStamps ? ' ' + scrubStamps : '');
     els.sbTime.textContent = fmtTime(snap.t);
     els.tick.textContent = `history snapshot @ t=${snap.t.toFixed(1)}s`;
   }
