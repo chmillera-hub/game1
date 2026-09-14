@@ -186,8 +186,8 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
 }
 #stickybar span.k{font-size:10px; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.06em; margin-right:6px;}
 #stickybar span.v{font-size:15px; font-weight:600; color:var(--text); font-variant-numeric:tabular-nums;}
-#stickybar span:has(#sb-min){min-width:0; flex:1 1 auto;}
-#sb-min{overflow-wrap:anywhere; white-space:normal;}
+#stickybar span:has(#sb-conv){min-width:0; flex:1 1 auto;}
+#sb-conv{overflow-wrap:anywhere; white-space:normal;}
 </style>
 
 <header>
@@ -200,7 +200,6 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
   <span><span class="k">Total violence (Σ%)</span> <span class="v mono" id="sb-total">0.0</span></span>
   <span><span class="k">Elapsed</span> <span class="v mono" id="sb-time">0:00.0</span></span>
   <span><span class="k">Conscious</span> <span class="v mono" id="sb-conv">1/100</span></span>
-  <span><span class="k">Record-low violence</span> <span class="v mono" id="sb-min">—</span></span>
 </div>
 
 <div class="console">
@@ -336,7 +335,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     milestoneList: document.getElementById('milestone-list'),
     runSettings: document.getElementById('run-settings'), copyBtn: document.getElementById('btn-copy'),
     sbTotal: document.getElementById('sb-total'), sbTime: document.getElementById('sb-time'),
-    sbConv: document.getElementById('sb-conv'), sbMin: document.getElementById('sb-min'),
+    sbConv: document.getElementById('sb-conv'),
     scrub: document.getElementById('scrub'), scrubLabel: document.getElementById('scrub-label'),
   };
 
@@ -356,7 +355,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
   let scrubIndex = null;
   const MAX_SNAPSHOTS = 600;
   let convMilestones = [];
-  const MAX_MILESTONES = 10;
+  const MAX_MILESTONES = 20;
   let axisMin = 0, axisMax = 12;
   let S0 = 1;
   let chartAnimId = null;
@@ -395,7 +394,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     const sec = Math.floor(s - m*60);
     return `${m}:${String(sec).padStart(2,'0')}`;
   }
-  const CIRCLED = ['①','②','③','④','⑤','⑥','⑦','⑧','⑨','⑩'];
+  const CIRCLED = ['①','②','③','④','⑤','⑥','⑦','⑧','⑨','⑩','⑪','⑫','⑬','⑭','⑮','⑯','⑰','⑱','⑲','⑳'];
 
   // "Bodies" slider is index-based, not a direct value: steps of 10 below
   // 100, steps of 100 from 100 up to 10,000, so the slider thumb always
@@ -630,22 +629,13 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     els.sTime.textContent = fmtTime(elapsedSec);
     els.sbTotal.textContent = (total*100).toFixed(1);
     els.sbTime.textContent = fmtTime(elapsedSec);
-    els.sbConv.textContent = `${nConscious}/${bodies.length}`;
     const ordinary = bodies.filter(b=>!b.conscious);
-    if (convMilestones.length === 0){
-      if (ordinary.length){
-        const curMin = Math.min(...ordinary.map(b=>b.v));
-        if (curMin < recordLowV) recordLowV = curMin;
-      }
-      if (ordinary.length){
-        const hitsAway = Math.max(0, Math.ceil(Math.log2(recordLowV/threshold())));
-        els.sbMin.textContent = `${fmtPct(recordLowV)} record low (~${hitsAway} hit${hitsAway===1?'':'s'} away)`;
-      } else {
-        els.sbMin.textContent = 'none — all conscious';
-      }
-    } else {
-      els.sbMin.textContent = convMilestones.map((m,i)=>`${CIRCLED[i]||('#'+(i+1))}${fmtTimeShort(m.time)}`).join(' ');
+    if (ordinary.length){
+      const curMin = Math.min(...ordinary.map(b=>b.v));
+      if (curMin < recordLowV) recordLowV = curMin;
     }
+    const stamps = convMilestones.map((m,i)=>`${CIRCLED[i]||('#'+(i+1))}${fmtTimeShort(m.time)}`).join(' ');
+    els.sbConv.textContent = `${nConscious}/${bodies.length}` + (stamps ? ' ' + stamps : '');
     els.milestoneList.textContent = convMilestones.length
       ? convMilestones.map(m=>`#${m.n} ${fmtPct(m.value)} @${fmtTime(m.time)}`).join('  ·  ') +
         (conversions > MAX_MILESTONES ? `  ·  (+${conversions-MAX_MILESTONES} more, not logged)` : '')
