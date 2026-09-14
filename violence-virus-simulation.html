@@ -317,7 +317,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
   </div>
 </div>
 
-<footer>Color is the only at-a-glance signal now — no on-ball text, and no gradient either: a non-conscious body is one of three fixed colors by band, not a ramp — red at 51% or above, green from 11% to 50%, yellow at 10% or below. Yellow exists specifically to flag "getting close to the conversion threshold" without implying it's already converted, since a body that's crossed below 10% is usually only a hit or two away. A conscious body is always exactly 0% violence, so it always gets the same fixed gold fill and gold ring — a brighter, cooler yellow (hue 58) was picked deliberately far from that warmer, darker gold (hue 38) so the two never get confused even at very small ball sizes. (The gold ring's faint halo turns off above 1,000 bodies, purely so thousands of per-ball gradients don't tank the frame rate — the flat gold fill stays either way.) Click any ball to read its exact value in the inspector above the chart. Bodies range from 10 up to 10,000, in steps of 10 below 100 and steps of 100 from 100 up, so the slider always lands on a round number instead of an arbitrary one; the chamber and ball radius scale together to keep a reasonable, visible size and packing density at any count, and past 300 bodies collision detection switches from checking every pair to a spatial grid (only nearby bodies are checked against each other) so the frame rate doesn't collapse at high counts. Background violence radiation only touches bodies not yet flagged conscious, so a body's crossing into consciousness is a real, permanent immunity to that rising background hazard. The bar under the chamber is a conversion replay, not a full-run scrubber: it only ever holds the first 20 conscious-ball formations, each captured as its own clip spanning 30 simulated seconds immediately before that ball crossed threshold, the crossing moment itself, and 10 simulated seconds immediately after -- long enough after to see whether the same divine ball (or another) goes on to hit it, or others nearby, again. Every physics step is captured individually rather than sampled over real time, so dragging within one clip shows the exact collision-by-collision sequence (at very high body counts, where a full-precision 40-second clip would use too much memory, capture spaces itself out just enough to stay within a fixed budget -- still every step at typical body counts). Everything else in the run -- the long stretches between conversions -- is simply never captured, so the bar has nothing to show there; drag past the end of one clip and you land on the start of the next. Dragging pauses the sim and repaints the chamber and headline stats as they were at that exact moment, and dragging back to the right end (or pressing Run) returns to live.</footer>
+<footer>Color is the only at-a-glance signal now — no on-ball text, and no gradient either: a non-conscious body is one of three fixed colors by band, not a ramp — red at 51% or above, green from 11% to 50%, yellow at 10% or below. Yellow exists specifically to flag "getting close to the conversion threshold" without implying it's already converted, since a body that's crossed below 10% is usually only a hit or two away. A conscious body is always exactly 0% violence, so it always gets the same fixed gold fill and gold ring — a brighter, cooler yellow (hue 58) was picked deliberately far from that warmer, darker gold (hue 38) so the two never get confused even at very small ball sizes. (The gold ring's faint halo turns off above 1,000 bodies, purely so thousands of per-ball gradients don't tank the frame rate — the flat gold fill stays either way.) Click any ball to read its exact value in the inspector above the chart. Bodies range from 10 up to 10,000, in steps of 10 below 100 and steps of 100 from 100 up, so the slider always lands on a round number instead of an arbitrary one; the chamber and ball radius scale together to keep a reasonable, visible size and packing density at any count, and past 300 bodies collision detection switches from checking every pair to a spatial grid (only nearby bodies are checked against each other) so the frame rate doesn't collapse at high counts. Background violence radiation only touches bodies not yet flagged conscious, so a body's crossing into consciousness is a real, permanent immunity to that rising background hazard. The bar under the chamber is a conversion replay, not a full-run scrubber: it only ever holds the first 20 conscious-ball formations, each captured as its own clip spanning 30 simulated seconds immediately before that ball crossed threshold, the crossing moment itself, and 10 simulated seconds immediately after -- long enough after to see whether the same divine ball (or another) goes on to hit it, or others nearby, again. Every physics step is captured individually rather than sampled over real time, so dragging within one clip shows the exact collision-by-collision sequence (at very high body counts, where a full-precision 40-second clip would use too much memory, capture spaces itself out just enough to stay within a fixed budget -- still every step at typical body counts). Whichever body that clip is about gets an extra purple glow and ring throughout the entire clip, on top of whatever color it's already showing (red, green, or yellow beforehand, gold after) -- so it stays trackable as the one specific ball being followed, not lost in a crowd of same-colored bodies, and you can watch it get hit again within the same clip if it does. Everything else in the run -- the long stretches between conversions -- is simply never captured, so the bar has nothing to show there; drag past the end of one clip and you land on the start of the next. Dragging pauses the sim and repaints the chamber and headline stats as they were at that exact moment, and dragging back to the right end (or pressing Run) returns to live.</footer>
 
 <script>
 (function(){
@@ -656,7 +656,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
         b.v = 0;
         conversions++;
         if (convMilestones.length < MAX_MILESTONES){
-          convMilestones.push({n: conversions, value: crossingValue, time: elapsedSec});
+          convMilestones.push({n: conversions, value: crossingValue, time: elapsedSec, bodyId: b.id});
         }
       }
     }
@@ -1109,6 +1109,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     const hit = frameAt(index);
     if (!hit) return;
     const { snap, window, offsetSec } = hit;
+    const milestone = convMilestones[window.milestoneIndex];
     ctx.clearRect(0,0,W,H);
     ctx.fillStyle = getComputedStyle(document.body).getPropertyValue('--panel-2') || '#111';
     ctx.fillRect(0,0,W,H);
@@ -1120,6 +1121,17 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
       if (!isConscious && snap.vs[i] < curMin) curMin = snap.vs[i];
       const {rgb, ring} = colorFor(snap.vs[i], isConscious);
       const x=snap.xs[i], y=snap.ys[i], r=BALL_R;
+      const isTheConvertingBody = i === milestone.bodyId;
+      if (isTheConvertingBody){
+        // marks the one body this whole clip is about, in every frame of it, regardless of
+        // its own color -- so it stays trackable as it shifts from green/yellow to gold
+        const haloR = r*4.5;
+        const grad = ctx.createRadialGradient(x,y,r*0.6,x,y,haloR);
+        grad.addColorStop(0, 'rgba(168,85,247,0.55)');
+        grad.addColorStop(1, 'rgba(168,85,247,0)');
+        ctx.fillStyle = grad;
+        ctx.beginPath(); ctx.arc(x,y,haloR,0,Math.PI*2); ctx.fill();
+      }
       if (isConscious && showHalo){
         const haloR = r*3.2;
         const grad = ctx.createRadialGradient(x,y,r*0.6,x,y,haloR);
@@ -1134,8 +1146,12 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
         ctx.strokeStyle = ring;
         ctx.stroke();
       }
+      if (isTheConvertingBody){
+        ctx.lineWidth = Math.max(1.5, r*0.22);
+        ctx.strokeStyle = '#a855f7';
+        ctx.beginPath(); ctx.arc(x,y,r+ctx.lineWidth,0,Math.PI*2); ctx.stroke();
+      }
     }
-    const milestone = convMilestones[window.milestoneIndex];
     const eventNum = window.milestoneIndex + 1;
     const offsetLabel = Math.abs(offsetSec) < 1e-6 ? 'the moment of conversion'
       : (offsetSec < 0 ? `${(-offsetSec).toFixed(1)}s before` : `${offsetSec.toFixed(1)}s after`);
