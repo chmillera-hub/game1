@@ -228,7 +228,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     <div class="controls">
       <div class="ctrl">
         <label>Bodies <span class="val" id="v-n">100</span></label>
-        <input type="range" id="n" min="4" max="10000" value="100" step="1">
+        <input type="range" id="n" min="0" max="108" value="9" step="1">
       </div>
       <div class="ctrl">
         <label>Speed (scales elapsed time too) <span class="val" id="v-speed">1×</span></label>
@@ -307,7 +307,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
   </div>
 </div>
 
-<footer>Color is the only at-a-glance signal now — no on-ball text, and no gradient either: a non-conscious body is one of three fixed colors by band, not a ramp — red at 51% or above, green from 11% to 50%, yellow at 10% or below. Yellow exists specifically to flag "getting close to the conversion threshold" without implying it's already converted, since a body that's crossed below 10% is usually only a hit or two away. A conscious body is always exactly 0% violence, so it always gets the same fixed gold fill and gold ring — a brighter, cooler yellow (hue 58) was picked deliberately far from that warmer, darker gold (hue 38) so the two never get confused even at very small ball sizes. (The gold ring's faint halo turns off above 1,000 bodies, purely so thousands of per-ball gradients don't tank the frame rate — the flat gold fill stays either way.) Click any ball to read its exact value in the inspector above the chart. Bodies range from 4 up to 10,000; the chamber and ball radius scale together to keep a reasonable, visible size and packing density at any count, and past 300 bodies collision detection switches from checking every pair to a spatial grid (only nearby bodies are checked against each other) so the frame rate doesn't collapse at high counts. Background violence radiation only touches bodies not yet flagged conscious, so a body's crossing into consciousness is a real, permanent immunity to that rising background hazard. The history bar under the chamber takes a snapshot of every ball's position and violence every 1-5 seconds (spaced further apart at very high body counts to keep memory bounded), up to 600 snapshots per run; dragging it pauses the sim and repaints the chamber and headline stats as they were at that moment, and dragging back to the right end (or pressing Run) returns to live.</footer>
+<footer>Color is the only at-a-glance signal now — no on-ball text, and no gradient either: a non-conscious body is one of three fixed colors by band, not a ramp — red at 51% or above, green from 11% to 50%, yellow at 10% or below. Yellow exists specifically to flag "getting close to the conversion threshold" without implying it's already converted, since a body that's crossed below 10% is usually only a hit or two away. A conscious body is always exactly 0% violence, so it always gets the same fixed gold fill and gold ring — a brighter, cooler yellow (hue 58) was picked deliberately far from that warmer, darker gold (hue 38) so the two never get confused even at very small ball sizes. (The gold ring's faint halo turns off above 1,000 bodies, purely so thousands of per-ball gradients don't tank the frame rate — the flat gold fill stays either way.) Click any ball to read its exact value in the inspector above the chart. Bodies range from 10 up to 10,000, in steps of 10 below 100 and steps of 100 from 100 up, so the slider always lands on a round number instead of an arbitrary one; the chamber and ball radius scale together to keep a reasonable, visible size and packing density at any count, and past 300 bodies collision detection switches from checking every pair to a spatial grid (only nearby bodies are checked against each other) so the frame rate doesn't collapse at high counts. Background violence radiation only touches bodies not yet flagged conscious, so a body's crossing into consciousness is a real, permanent immunity to that rising background hazard. The history bar under the chamber takes a snapshot of every ball's position and violence every 1-5 seconds (spaced further apart at very high body counts to keep memory bounded), up to 600 snapshots per run; dragging it pauses the sim and repaints the chamber and headline stats as they were at that moment, and dragging back to the right end (or pressing Run) returns to live.</footer>
 
 <script>
 (function(){
@@ -397,6 +397,15 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
   }
   const CIRCLED = ['①','②','③','④','⑤','⑥','⑦','⑧','⑨','⑩'];
 
+  // "Bodies" slider is index-based, not a direct value: steps of 10 below
+  // 100, steps of 100 from 100 up to 10,000, so the slider thumb always
+  // moves in precisely one of those two increments instead of a single
+  // uniform step across the whole 10-10,000 range.
+  const N_STEPS = [];
+  for (let v=10; v<100; v+=10) N_STEPS.push(v);
+  for (let v=100; v<=10000; v+=100) N_STEPS.push(v);
+  function nBodies(){ return N_STEPS[Number(els.n.value)]; }
+
   function computeLayout(n){
     const P = 0.2;              // target packing fraction
     const rMax = 10, rMin = 1.5;
@@ -412,7 +421,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
   }
 
   function makeBodies(){
-    const n = Number(els.n.value);
+    const n = nBodies();
     const layout = computeLayout(n);
     W = layout.w; H = layout.h; BALL_R = layout.r;
     stage.width = W; stage.height = H;
@@ -734,7 +743,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
 
   function updateRunSettingsLine(){
     els.runSettings.textContent =
-      `Bodies=${els.n.value} · speed=${els.speed.value}× · `+
+      `Bodies=${nBodies()} · speed=${els.speed.value}× · `+
       `threshold=${(threshold()*100).toFixed(1)}% · radiation=${(Number(els.amb.value)>=0?'+':'')}${els.amb.value}%/s · `+
       `miracle=${els.miracle.value}%`;
   }
@@ -855,7 +864,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
       `within a single frame.`,
       '',
       'Settings for this run:',
-      `  Bodies: ${els.n.value}`,
+      `  Bodies: ${nBodies()}`,
       `  Speed: ${els.speed.value}×`,
       `  Conversion threshold: ${(threshold()*100).toFixed(1)}%`,
       `  Background violence radiation: ${(Number(els.amb.value)>=0?'+':'')}${els.amb.value}%/s per body`,
@@ -908,7 +917,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
   }
 
   function updateVerify(){
-    const N = Number(els.n.value);
+    const N = nBodies();
     const T = threshold();
     const thrPct = T*100;
     const hitsNeeded = Math.log2(1/T);
@@ -1013,7 +1022,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     if (running) rafId = requestAnimationFrame(loop);
   }
 
-  els.n.addEventListener('input', ()=>{ els.vN.textContent = els.n.value; updateVerify(); updateRunSettingsLine(); });
+  els.n.addEventListener('input', ()=>{ els.vN.textContent = nBodies(); updateVerify(); updateRunSettingsLine(); });
   els.speed.addEventListener('input', ()=>{ els.vSpeed.textContent = els.speed.value + '×'; updateRunSettingsLine(); });
   els.thr.addEventListener('input', ()=>{
     const T = threshold();
