@@ -230,6 +230,10 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
         <input type="range" id="n" min="0" max="108" value="9" step="1">
       </div>
       <div class="ctrl">
+        <label>Divine balls to start with <span class="val" id="v-seeds">1</span></label>
+        <input type="range" id="seeds" min="1" max="10" value="1" step="1">
+      </div>
+      <div class="ctrl">
         <label>Speed (scales elapsed time too) <span class="val" id="v-speed">1×</span></label>
         <input type="range" id="speed" min="1" max="8" value="1" step="1">
       </div>
@@ -289,7 +293,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     <p><b>The simplification:</b> a body doesn't drift down to <i>near</i> zero and then keep existing at some tiny residual — the instant it crosses T, its value is reset to exactly 0. Every conscious body's own violence is therefore always precisely 0, forever: the seed starts there, and every later conversion lands there too. Doubling a body that's exactly 0 leaves it at exactly 0 (0·2=0), so there's no drift, no residual number to worry about, and no separate "has it climbed back up" question to track. Once a body converts it stops counting toward the room's total for the simplest possible reason: its own value really is 0, not merely excluded by convention. Consequently the total can only reach exactly 0 once every body has converted — it is mathematically impossible for one to happen without the other.</p>
     <p>"Total system violence" is a plain sum, not an average — ten bodies sitting at 18% each read as <span class="mono">180.0</span>, not <span class="mono">18.0%</span>. With N bodies starting near 100% each, expect the starting number in the thousands; the chart's total-violence line still plots it as a fraction of that starting sum, purely so it fits the same 0–100% axis as the other two lines.</p>
     <p>Averaging <i>conserves</i> the pair's sum — it only spreads violence around, never removes any. Only a conscious-role hit deletes anything, and it also grows the population that can delete things: every body it drives below the threshold T becomes a second source of the same effect. That's a bootstrap cascade (the same shape as bootstrap percolation / the Watts threshold model of social contagion), not a fixed sink — the "infection" here is calm, and it compounds.</p>
-    <h3 style="font-size:17px;margin:16px 0 8px;">Why one seed is enough for all of them</h3>
+    <h3 style="font-size:17px;margin:16px 0 8px;">Why a single seed is already enough for all of them</h3>
     <p>Fix any body still above T. Each time it collides with a conscious-flagged body, its value is exactly halved — a geometric decay with no floor besides 0. However small T is, that body crosses it after a finite number of such hits:</p>
     <div class="formula">hits needed ≈ log₂(v / T)</div>
     <p>In a well-mixed chamber every pair collides again and again over time, so the probability any one body is <i>never</i> hit by a conscious body, forever, is zero. Conclusion: for any fixed T &gt; 0 <i>with no background violence radiation</i>, full conversion — every body conscious, total violence → 0 — isn't just likely, it's the guaranteed long-run outcome.</p>
@@ -302,7 +306,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     <h3 style="font-size:17px;margin-bottom:8px;">Verifying the cascade actually accelerates</h3>
     <p>With C conscious bodies out of N, a random collision has probability ≈ 2C(N−C)/[N(N−1)/2] of pairing a conscious body with a non-conscious one — that probability, and so the expected conversion rate, <i>rises</i> as C grows, then falls back off as non-conscious bodies run out. That's a classic S-curve: slow start, fast middle, saturating tail — the same shape as an epidemic curve, just running toward zero violence instead of away from it. At the current slider values:</p>
     <div id="verify"></div>
-    <p>The seed body's own number never moves at all — it's exactly 0 from the first frame to the last. It's the <i>count</i> of conscious bodies, not any one body's value, that does the work of erasing the room's violence.</p>
+    <p>A seed body's own number never moves at all — it's exactly 0 from the first frame to the last. It's the <i>count</i> of conscious bodies, not any one body's value, that does the work of erasing the room's violence — starting with more seeds only raises that count sooner.</p>
   </div>
 </div>
 
@@ -319,6 +323,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
 
   const els = {
     n: document.getElementById('n'), vN: document.getElementById('v-n'),
+    seeds: document.getElementById('seeds'), vSeeds: document.getElementById('v-seeds'),
     speed: document.getElementById('speed'), vSpeed: document.getElementById('v-speed'),
     thr: document.getElementById('thr'), vThr: document.getElementById('v-thr'),
     amb: document.getElementById('amb'), vAmb: document.getElementById('v-amb'),
@@ -419,12 +424,15 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     return {w, h, r};
   }
 
+  function numSeeds(){ return Math.min(Number(els.seeds.value), nBodies()); }
+
   function makeBodies(){
     const n = nBodies();
     const layout = computeLayout(n);
     W = layout.w; H = layout.h; BALL_R = layout.r;
     stage.width = W; stage.height = H;
     const r = BALL_R;
+    const seeds = numSeeds();
     const arr = [];
     for (let i=0;i<n;i++){
       arr.push({
@@ -434,8 +442,8 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
         vx: (Math.random()-0.5)*2.6,
         vy: (Math.random()-0.5)*2.6,
         r,
-        v: i===CONSCIOUS_ID ? 0 : 1.0,
-        conscious: i===CONSCIOUS_ID,
+        v: i<seeds ? 0 : 1.0,
+        conscious: i<seeds,
       });
     }
     return arr;
@@ -733,7 +741,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
 
   function updateRunSettingsLine(){
     els.runSettings.textContent =
-      `Bodies=${nBodies()} · speed=${els.speed.value}× · `+
+      `Bodies=${nBodies()} · seeds=${numSeeds()} · speed=${els.speed.value}× · `+
       `threshold=${(threshold()*100).toFixed(1)}% · radiation=${(Number(els.amb.value)>=0?'+':'')}${els.amb.value}%/s · `+
       `miracle=${els.miracle.value}%`;
   }
@@ -742,6 +750,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     const nConscious = bodies.filter(b=>b.conscious).length;
     const total = totalViolence();
     const ordinary = bodies.filter(b=>!b.conscious);
+    const seedCount = numSeeds();
     const recordLow = convMilestones.length
       ? `${fmtPct(convMilestones[0].value)} at t=${fmtTime(convMilestones[0].time)} (first conscious ball)`
       : (ordinary.length ? `${fmtPct(recordLowV)} record low so far` : 'none — all conscious');
@@ -754,9 +763,9 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
       'SIMULATION RULES (read this before analyzing the data below):',
       `This is a 2D billiard simulation of N circular bodies bouncing elastically inside a`,
       `bounded rectangular chamber (walls reflect velocity, no friction). Each body i carries a`,
-      `scalar "violence" value v_i in [0,1], displayed as a percentage. One designated "seed"`,
-      `body starts at EXACTLY v=0; every other body starts at v=1.0 (100%). Bodies also carry`,
-      `a sticky boolean flag "conscious", false for everyone except the seed at t=0.`,
+      `scalar "violence" value v_i in [0,1], displayed as a percentage. ${seedCount} designated "seed"`,
+      `${seedCount===1?'body starts':'bodies start'} at EXACTLY v=0; every other body starts at v=1.0 (100%). Bodies also carry`,
+      `a sticky boolean flag "conscious", false for everyone except the seed${seedCount===1?'':'s'} at t=0.`,
       '',
       `On every physical collision between two bodies, exactly one of these update rules fires,`,
       `chosen by the two bodies' conscious flags:`,
@@ -855,6 +864,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
       '',
       'Settings for this run:',
       `  Bodies: ${nBodies()}`,
+      `  Seed bodies (start conscious): ${seedCount}`,
       `  Speed: ${els.speed.value}×`,
       `  Conversion threshold: ${(threshold()*100).toFixed(1)}%`,
       `  Background violence radiation: ${(Number(els.amb.value)>=0?'+':'')}${els.amb.value}%/s per body`,
@@ -872,7 +882,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
       `  First ${MAX_MILESTONES} non-seed conversions (value at crossing, elapsed time):`,
       ...milestoneLines,
       conversions > MAX_MILESTONES ? `    (+${conversions-MAX_MILESTONES} further conversions since, not individually logged)` : '',
-      `  Seed body's own value: ${fmtSci(bodies[CONSCIOUS_ID].v)}`,
+      `  Seed body #${CONSCIOUS_ID}'s own value: ${fmtSci(bodies[CONSCIOUS_ID].v)}`,
       '',
       'Status:',
       `  ${fullAt
@@ -1014,6 +1024,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
   }
 
   els.n.addEventListener('input', ()=>{ els.vN.textContent = nBodies(); updateVerify(); updateRunSettingsLine(); });
+  els.seeds.addEventListener('input', ()=>{ els.vSeeds.textContent = els.seeds.value; updateVerify(); updateRunSettingsLine(); });
   els.speed.addEventListener('input', ()=>{ els.vSpeed.textContent = els.speed.value + '×'; updateRunSettingsLine(); });
   els.thr.addEventListener('input', ()=>{
     const T = threshold();
