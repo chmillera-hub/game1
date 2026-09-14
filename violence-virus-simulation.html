@@ -217,7 +217,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
         <input type="range" id="scrub" min="0" max="0" value="0" step="1">
         <span class="mono scrub-end">live</span>
       </div>
-      <div id="scrub-label" class="mono">Conversion replay — captures 20 physics steps before and 20 after each of the first 20 conscious-ball formations; nothing to browse yet.</div>
+      <div id="scrub-label" class="mono">Conversion replay — captures 30s before and 10s after each of the first 20 conscious-ball formations; nothing to browse yet.</div>
     </div>
     <div class="rolekey">
       <span><i class="chip" style="background:hsl(0,72%,45%)"></i>red — violent, ≥ 51%</span>
@@ -317,7 +317,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
   </div>
 </div>
 
-<footer>Color is the only at-a-glance signal now — no on-ball text, and no gradient either: a non-conscious body is one of three fixed colors by band, not a ramp — red at 51% or above, green from 11% to 50%, yellow at 10% or below. Yellow exists specifically to flag "getting close to the conversion threshold" without implying it's already converted, since a body that's crossed below 10% is usually only a hit or two away. A conscious body is always exactly 0% violence, so it always gets the same fixed gold fill and gold ring — a brighter, cooler yellow (hue 58) was picked deliberately far from that warmer, darker gold (hue 38) so the two never get confused even at very small ball sizes. (The gold ring's faint halo turns off above 1,000 bodies, purely so thousands of per-ball gradients don't tank the frame rate — the flat gold fill stays either way.) Click any ball to read its exact value in the inspector above the chart. Bodies range from 10 up to 10,000, in steps of 10 below 100 and steps of 100 from 100 up, so the slider always lands on a round number instead of an arbitrary one; the chamber and ball radius scale together to keep a reasonable, visible size and packing density at any count, and past 300 bodies collision detection switches from checking every pair to a spatial grid (only nearby bodies are checked against each other) so the frame rate doesn't collapse at high counts. Background violence radiation only touches bodies not yet flagged conscious, so a body's crossing into consciousness is a real, permanent immunity to that rising background hazard. The bar under the chamber is a conversion replay, not a full-run scrubber: it only ever holds the first 20 conscious-ball formations, each captured as its own clip of 20 physics steps immediately before that ball crossed threshold, the crossing step itself, and 20 steps immediately after -- every step recorded individually rather than sampled over real time, so dragging within one clip shows the exact collision-by-collision sequence around that conversion. Everything else in the run -- the long stretches between conversions -- is simply never captured, so the bar has nothing to show there; drag past the end of one clip and you land on the start of the next. Dragging pauses the sim and repaints the chamber and headline stats as they were at that exact step, and dragging back to the right end (or pressing Run) returns to live.</footer>
+<footer>Color is the only at-a-glance signal now — no on-ball text, and no gradient either: a non-conscious body is one of three fixed colors by band, not a ramp — red at 51% or above, green from 11% to 50%, yellow at 10% or below. Yellow exists specifically to flag "getting close to the conversion threshold" without implying it's already converted, since a body that's crossed below 10% is usually only a hit or two away. A conscious body is always exactly 0% violence, so it always gets the same fixed gold fill and gold ring — a brighter, cooler yellow (hue 58) was picked deliberately far from that warmer, darker gold (hue 38) so the two never get confused even at very small ball sizes. (The gold ring's faint halo turns off above 1,000 bodies, purely so thousands of per-ball gradients don't tank the frame rate — the flat gold fill stays either way.) Click any ball to read its exact value in the inspector above the chart. Bodies range from 10 up to 10,000, in steps of 10 below 100 and steps of 100 from 100 up, so the slider always lands on a round number instead of an arbitrary one; the chamber and ball radius scale together to keep a reasonable, visible size and packing density at any count, and past 300 bodies collision detection switches from checking every pair to a spatial grid (only nearby bodies are checked against each other) so the frame rate doesn't collapse at high counts. Background violence radiation only touches bodies not yet flagged conscious, so a body's crossing into consciousness is a real, permanent immunity to that rising background hazard. The bar under the chamber is a conversion replay, not a full-run scrubber: it only ever holds the first 20 conscious-ball formations, each captured as its own clip spanning 30 simulated seconds immediately before that ball crossed threshold, the crossing moment itself, and 10 simulated seconds immediately after -- long enough after to see whether the same divine ball (or another) goes on to hit it, or others nearby, again. Every physics step is captured individually rather than sampled over real time, so dragging within one clip shows the exact collision-by-collision sequence (at very high body counts, where a full-precision 40-second clip would use too much memory, capture spaces itself out just enough to stay within a fixed budget -- still every step at typical body counts). Everything else in the run -- the long stretches between conversions -- is simply never captured, so the bar has nothing to show there; drag past the end of one clip and you land on the start of the next. Dragging pauses the sim and repaints the chamber and headline stats as they were at that exact moment, and dragging back to the right end (or pressing Run) returns to live.</footer>
 
 <script>
 (function(){
@@ -375,11 +375,26 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
   let scrubIndex = null;
   let convMilestones = [];
   const MAX_MILESTONES = 20;
-  const REPLAY_WINDOW = 20; // physics steps captured before/after each of the first MAX_MILESTONES conversions
-  let stepRing = []; // rolling buffer of the last REPLAY_WINDOW physics-step body-states
-  let eventWindows = []; // one entry per conversion, index-aligned with convMilestones: {frames, preCount, milestoneIndex}
+  const REPLAY_PRE_SECONDS = 30; // simulated seconds captured before each conversion
+  const REPLAY_POST_SECONDS = 10; // simulated seconds captured after, e.g. to see repeated hits on the same body
+  const REPLAY_STEPS_PER_SIM_SECOND = 60; // physics steps happen once per rendered frame per unit of Speed, and simulated time is diluted by that same Speed factor, so steps-per-simulated-second stays ~60 (one rendered frame's worth) regardless of the Speed slider
+  const REPLAY_BUDGET_BYTES_PER_WINDOW = 5000000; // ~5MB/window cap (~100MB worst case across MAX_MILESTONES windows), independent of body count -- see computeCaptureStride()
+  let stepRing = []; // rolling buffer holding the last REPLAY_PRE_SECONDS worth of captured body-states
+  let eventWindows = []; // one entry per conversion, index-aligned with convMilestones: {frames, preCount, milestoneIndex, momentTime}
   let activeWindows = []; // eventWindows entries still collecting their post-conversion frames
   let nextMilestoneToWindow = 0;
+  let captureStride = 1; // physics steps between captures; recomputed per-run in reset() so memory stays bounded at high body counts
+  let stepCounter = 0;
+
+  // At small/typical body counts this captures every single physics step (stride=1) so no
+  // collision is ever missed; only once the body count would blow the per-window memory
+  // budget does capturing skip steps, spacing them out just enough to stay under budget.
+  function computeCaptureStride(n){
+    const naturalFrames = (REPLAY_PRE_SECONDS + REPLAY_POST_SECONDS) * REPLAY_STEPS_PER_SIM_SECOND;
+    const bytesPerFrame = n * 13; // 3 Float32 arrays (4 bytes) + 1 Uint8 array (1 byte) per body
+    const targetFrames = Math.max(20, Math.floor(REPLAY_BUDGET_BYTES_PER_WINDOW / bytesPerFrame));
+    return Math.max(1, Math.ceil(naturalFrames / targetFrames));
+  }
   let decileTimestamps = new Array(10).fill(null);
   let axisMin = 0, axisMax = 12;
   let S0 = 1;
@@ -405,6 +420,12 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
   function exchCapPct(){ return EXCH_STEPS[Number(els.exch.value)]; }
   function exchangeCap(){ return exchCapPct()/100; }
   function fmtSliderPct(v){ return v < 0.1 ? v.toFixed(2) : v.toFixed(1); }
+  // Given a Σ% total-violence figure, what % of the run's STARTING Σ% total that represents --
+  // e.g. starting at 10000 and dropping to 3000 reports 30% (of the original total) remaining.
+  function reportPctLeft(totalPctValue){
+    const startTotalPct = S0*100;
+    return startTotalPct > 0 ? (totalPctValue/startTotalPct*100) : 0;
+  }
 
   function fmtPct(v){
     const pct = v*100;
@@ -517,8 +538,10 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     eventWindows = [];
     activeWindows = [];
     nextMilestoneToWindow = 0;
+    stepCounter = 0;
+    captureStride = computeCaptureStride(bodies.length);
     els.scrub.min = 0; els.scrub.max = 0; els.scrub.value = 0;
-    els.scrubLabel.textContent = `Conversion replay — captures ${REPLAY_WINDOW} physics steps before and ${REPLAY_WINDOW} after each of the first ${MAX_MILESTONES} conscious-ball formations; nothing to browse yet.`;
+    els.scrubLabel.textContent = `Conversion replay — captures ${REPLAY_PRE_SECONDS}s before and ${REPLAY_POST_SECONDS}s after each of the first ${MAX_MILESTONES} conscious-ball formations; nothing to browse yet.`;
     els.scrubLabel.classList.remove('scrubbing');
     draw();
     updateReadouts();
@@ -682,7 +705,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     const total = totalViolence();
     const totalPct = total*100;
     if (totalPct < recordLowTotal){ recordLowTotal = totalPct; recordLowTotalTime = elapsedSec; }
-    const totalStr = `${recordLowTotal.toFixed(1)} (@${fmtTimeShort(recordLowTotalTime)})`;
+    const totalStr = `${recordLowTotal.toFixed(1)} (${reportPctLeft(recordLowTotal).toFixed(1)}% left @${fmtTimeShort(recordLowTotalTime)})`;
     els.sTotal.textContent = totalStr;
     const nConscious = bodies.filter(b=>b.conscious).length;
     updateDecileTimestamps(nConscious);
@@ -941,8 +964,8 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
       'Live readout:',
       `  Elapsed time: ${fmtTime(elapsedSec)}`,
       `  Collisions: ${collisions}`,
-      `  Total system violence (Σ% of non-conscious bodies), current: ${(total*100).toFixed(2)}`,
-      `  Total system violence (Σ%), lowest so far: ${recordLowTotal.toFixed(2)} (@ t=${fmtTime(recordLowTotalTime)})`,
+      `  Total system violence (Σ% of non-conscious bodies), current: ${(total*100).toFixed(2)} (${reportPctLeft((total*100)).toFixed(1)}% of starting total remains)`,
+      `  Total system violence (Σ%), lowest so far: ${recordLowTotal.toFixed(2)} (${reportPctLeft(recordLowTotal).toFixed(1)}% of starting total, @ t=${fmtTime(recordLowTotalTime)})`,
       `  Conscious bodies: ${nConscious} / ${bodies.length}`,
       `  Conscious-role hits: ${consciousHits}`,
       `  Miracle violence removed (Σ %, at current miracle/radiation settings): ${(consciousHits*bonusPerHit()*100).toFixed(2)}`,
@@ -1020,26 +1043,36 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     return {t: elapsedSec, xs, ys, vs, cs, nConscious, total: totalV*100};
   }
 
-  // Called once per physics step (not once per rendered frame -- at Speed>1x several
-  // steps happen per frame). Feeds any in-progress replay windows their next post-conversion
-  // frame, opens a new window for any conversion(s) that just happened this step (borrowing
-  // its pre-conversion frames straight from the rolling ring buffer), then rolls the ring
-  // buffer forward. Once the first MAX_MILESTONES conversions are fully captured, this is a
-  // no-op so it costs nothing for the remainder of a long run.
+  // Called once per physics step (not once per rendered frame -- at Speed>1x several steps
+  // happen per frame). Feeds any in-progress replay windows their next post-conversion frame,
+  // opens a new window for any conversion(s) that just happened this step (borrowing its
+  // pre-conversion frames straight from the rolling ring buffer), then rolls the ring buffer
+  // forward by simulated time. captureStride thins out how often a step is actually captured
+  // (see computeCaptureStride()) -- except the exact step a conversion happens on is always
+  // captured regardless of stride, so the "moment" frame is never approximate. Once the first
+  // MAX_MILESTONES conversions are fully captured, this is a no-op so it costs nothing for the
+  // remainder of a long run.
   function afterStepCapture(){
     if (nextMilestoneToWindow >= MAX_MILESTONES && activeWindows.length === 0) return;
+    stepCounter++;
+    const newConversionThisStep = nextMilestoneToWindow < convMilestones.length;
+    const onStride = (stepCounter % captureStride === 0);
+    if (!onStride && !newConversionThisStep){
+      while (stepRing.length && elapsedSec - stepRing[0].t > REPLAY_PRE_SECONDS) stepRing.shift();
+      return;
+    }
     const snap = snapshotBodies();
     for (const w of activeWindows) w.frames.push(snap);
-    activeWindows = activeWindows.filter(w => w.frames.length < w.preCount + 1 + REPLAY_WINDOW);
+    activeWindows = activeWindows.filter(w => (snap.t - w.momentTime) < REPLAY_POST_SECONDS);
     while (nextMilestoneToWindow < convMilestones.length && eventWindows.length < MAX_MILESTONES){
       const preFrames = stepRing.slice();
-      const w = { frames: [...preFrames, snap], preCount: preFrames.length, milestoneIndex: nextMilestoneToWindow };
+      const w = { frames: [...preFrames, snap], preCount: preFrames.length, milestoneIndex: nextMilestoneToWindow, momentTime: snap.t };
       eventWindows.push(w);
       activeWindows.push(w);
       nextMilestoneToWindow++;
     }
     stepRing.push(snap);
-    if (stepRing.length > REPLAY_WINDOW) stepRing.shift();
+    while (stepRing.length && elapsedSec - stepRing[0].t > REPLAY_PRE_SECONDS) stepRing.shift();
     const total = totalReplayFrames();
     els.scrub.max = total;
     if (scrubIndex === null) els.scrub.value = total;
@@ -1052,13 +1085,16 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
   }
 
   // Maps a single global scrub-bar index to the specific captured frame, which conversion
-  // window it belongs to, and its offset from that conversion's moment (0 = the moment
-  // itself, negative = steps before, positive = steps after).
+  // window it belongs to, and its offset in simulated seconds from that conversion's moment
+  // (0 = the moment itself, negative = before, positive = after).
   function frameAt(globalIndex){
     let idx = globalIndex;
     for (let wi=0; wi<eventWindows.length; wi++){
       const w = eventWindows[wi];
-      if (idx < w.frames.length) return { snap: w.frames[idx], window: w, windowIndex: wi, offset: idx - w.preCount };
+      if (idx < w.frames.length){
+        const snap = w.frames[idx];
+        return { snap, window: w, windowIndex: wi, offsetSec: snap.t - w.momentTime };
+      }
       idx -= w.frames.length;
     }
     return null;
@@ -1067,7 +1103,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
   function renderScrub(index){
     const hit = frameAt(index);
     if (!hit) return;
-    const { snap, window, offset } = hit;
+    const { snap, window, offsetSec } = hit;
     ctx.clearRect(0,0,W,H);
     ctx.fillStyle = getComputedStyle(document.body).getPropertyValue('--panel-2') || '#111';
     ctx.fillRect(0,0,W,H);
@@ -1096,11 +1132,11 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     }
     const milestone = convMilestones[window.milestoneIndex];
     const eventNum = window.milestoneIndex + 1;
-    const offsetLabel = offset === 0 ? 'the moment of conversion'
-      : (offset < 0 ? `${-offset} step${-offset===1?'':'s'} before` : `${offset} step${offset===1?'':'s'} after`);
+    const offsetLabel = Math.abs(offsetSec) < 1e-6 ? 'the moment of conversion'
+      : (offsetSec < 0 ? `${(-offsetSec).toFixed(1)}s before` : `${offsetSec.toFixed(1)}s after`);
     els.scrubLabel.textContent = `Conversion #${eventNum} of ${convMilestones.length} (crossed to ${fmtPct(milestone.value)} at t=${fmtTime(milestone.time)}) — ${offsetLabel}. Sim paused; drag to browse, or to "live" (right end) to resume.`;
     els.scrubLabel.classList.add('scrubbing');
-    const scrubTotalStr = `${snap.total.toFixed(1)} (@${fmtTimeShort(snap.t)})`;
+    const scrubTotalStr = `${snap.total.toFixed(1)} (${reportPctLeft(snap.total).toFixed(1)}% left @${fmtTimeShort(snap.t)})`;
     els.sTotal.textContent = scrubTotalStr;
     els.sConv.textContent = `${snap.nConscious} / ${n}`;
     els.sTime.textContent = fmtTime(snap.t);
@@ -1118,7 +1154,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     els.scrubLabel.classList.remove('scrubbing');
     els.scrubLabel.textContent = eventWindows.length
       ? `Conversion replay — ${eventWindows.length} of ${MAX_MILESTONES} conscious-ball formation${eventWindows.length===1?'':'s'} captured so far; drag to browse, back at "live" now.`
-      : `Conversion replay — captures ${REPLAY_WINDOW} physics steps before and ${REPLAY_WINDOW} after each of the first ${MAX_MILESTONES} conscious-ball formations; nothing to browse yet.`;
+      : `Conversion replay — captures ${REPLAY_PRE_SECONDS}s before and ${REPLAY_POST_SECONDS}s after each of the first ${MAX_MILESTONES} conscious-ball formations; nothing to browse yet.`;
     draw();
     updateReadouts();
   }
