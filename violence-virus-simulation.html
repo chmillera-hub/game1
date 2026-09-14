@@ -378,6 +378,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
   const MAX_SNAPSHOTS = 600;
   let convMilestones = [];
   const MAX_MILESTONES = 20;
+  let decileTimestamps = new Array(10).fill(null);
   let axisMin = 0, axisMax = 12;
   let S0 = 1;
   let chartAnimId = null;
@@ -469,6 +470,15 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
 
   function totalViolence(){ return bodies.reduce((s,b)=> s + (b.conscious ? 0 : b.v), 0); }
 
+  function updateDecileTimestamps(nConscious){
+    const frac = nConscious / bodies.length;
+    for (let i=0;i<10;i++){
+      if (decileTimestamps[i] === null && frac >= (i+1)/10){
+        decileTimestamps[i] = elapsedSec;
+      }
+    }
+  }
+
   function reset(){
     bodies = makeBodies();
     collisions = 0;
@@ -478,6 +488,8 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     fullAt = null;
     recordLowV = 1;
     convMilestones = [];
+    decileTimestamps = new Array(10).fill(null);
+    updateDecileTimestamps(bodies.filter(b=>b.conscious).length);
     if (chartAnimId){ cancelAnimationFrame(chartAnimId); chartAnimId = null; }
     axisMin = 0; axisMax = LIVE_WINDOW;
     S0 = totalViolence();
@@ -657,6 +669,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     const totalStr = `${recordLowTotal.toFixed(1)} (@${fmtTimeShort(recordLowTotalTime)})`;
     els.sTotal.textContent = totalStr;
     const nConscious = bodies.filter(b=>b.conscious).length;
+    updateDecileTimestamps(nConscious);
     els.sConv.textContent = `${nConscious} / ${bodies.length}`;
     els.sHits.textContent = consciousHits;
     els.sAvgHits.textContent = conversions>0 ? (consciousHits/conversions).toFixed(1) : '—';
@@ -784,6 +797,9 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     const milestoneLines = convMilestones.length
       ? convMilestones.map(m=>`    #${m.n}: ${fmtPct(m.value)} at t=${fmtTime(m.time)}`)
       : ['    (none yet)'];
+    const decileLines = decileTimestamps.map((t,i)=>
+      `    ${(i+1)*10}% conscious: ${t===null ? 'not reached yet' : `t=${fmtTime(t)}`}`
+    );
     const lines = [
       'Violence Virus Threshold — run summary',
       '',
@@ -893,6 +909,13 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
       `tracker only samples once per rendered frame while multiple collisions can happen`,
       `within a single frame.`,
       '',
+      `Consciousness curve: the elapsed time the very first moment at least 10%, 20%, 30%,`,
+      `... up through 100% of all bodies were conscious, in order. Since conversion is`,
+      `permanent, this list is monotonically non-decreasing by construction -- these ten`,
+      `numbers alone sketch the run's S-curve (slow start, fast middle, saturating tail)`,
+      `without needing the full chart, e.g. for describing the shape of this run's cascade`,
+      `to a chatbot from pasted text alone.`,
+      '',
       'Settings for this run:',
       `  Bodies: ${nBodies()}`,
       `  Seed bodies (start conscious): ${seedCount}`,
@@ -916,6 +939,8 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
       ...milestoneLines,
       conversions > MAX_MILESTONES ? `    (+${conversions-MAX_MILESTONES} further conversions since, not individually logged)` : '',
       `  Seed body #${CONSCIOUS_ID}'s own value: ${fmtSci(bodies[CONSCIOUS_ID].v)}`,
+      `  Consciousness curve (time each 10% milestone of the population was first reached):`,
+      ...decileLines,
       '',
       'Status:',
       `  ${fullAt
