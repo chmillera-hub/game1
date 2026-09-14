@@ -369,6 +369,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
   let elapsedSec = 0;
   let fullAt = null;
   let recordLowV = 1;
+  let recordLowVTime = 0;
   let recordLowTotal = 100;
   let recordLowTotalTime = 0;
   let snapshots = [];
@@ -497,6 +498,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     elapsedSec = 0;
     fullAt = null;
     recordLowV = 1;
+    recordLowVTime = 0;
     convMilestones = [];
     decileTimestamps = new Array(10).fill(null);
     updateDecileTimestamps(bodies.filter(b=>b.conscious).length);
@@ -689,10 +691,10 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     const ordinary = bodies.filter(b=>!b.conscious);
     if (ordinary.length){
       const curMin = Math.min(...ordinary.map(b=>b.v));
-      if (curMin < recordLowV) recordLowV = curMin;
+      if (curMin < recordLowV){ recordLowV = curMin; recordLowVTime = elapsedSec; }
     }
     const stamps = convMilestones.map((m,i)=>`${CIRCLED[i]||('#'+(i+1))}${fmtTimeShort(m.time)}`).join(' ');
-    els.sbConv.textContent = `${nConscious}/${bodies.length} (↓${fmtPct(recordLowV)})` + (stamps ? ' ' + stamps : '');
+    els.sbConv.textContent = `${nConscious}/${bodies.length} (↓${fmtPct(recordLowV)} @${fmtTimeShort(recordLowVTime)})` + (stamps ? ' ' + stamps : '');
     els.milestoneList.textContent = convMilestones.length
       ? convMilestones.map(m=>`#${m.n} ${fmtPct(m.value)} @${fmtTime(m.time)}`).join('  ·  ') +
         (conversions > MAX_MILESTONES ? `  ·  (+${conversions-MAX_MILESTONES} more, not logged)` : '')
@@ -1013,7 +1015,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
       xs[i]=b.x; ys[i]=b.y; vs[i]=b.v; cs[i]=b.conscious?1:0;
       if (b.conscious) nConscious++;
     }
-    snapshots.push({t: elapsedSec, xs, ys, vs, cs, total: totalViolence()*100, nConscious});
+    snapshots.push({t: elapsedSec, xs, ys, vs, cs, total: totalViolence()*100, nConscious, recLowV: recordLowV, recLowVTime: recordLowVTime});
     els.scrub.max = snapshots.length;
     if (scrubIndex === null) els.scrub.value = snapshots.length;
   }
@@ -1062,7 +1064,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     els.sTime.textContent = fmtTime(snap.t);
     els.sbTotal.textContent = scrubTotalStr;
     const scrubStamps = convMilestones.map((m,i)=>`${CIRCLED[i]||('#'+(i+1))}${fmtTimeShort(m.time)}`).join(' ');
-    els.sbConv.textContent = `${snap.nConscious}/${n} (↓${fmtPct(recordLowV)})` + (scrubStamps ? ' ' + scrubStamps : '');
+    els.sbConv.textContent = `${snap.nConscious}/${n} (↓${fmtPct(snap.recLowV)} @${fmtTimeShort(snap.recLowVTime)})` + (scrubStamps ? ' ' + scrubStamps : '');
     els.sbTime.textContent = fmtTime(snap.t);
     els.tick.textContent = `history snapshot @ t=${snap.t.toFixed(1)}s`;
   }
