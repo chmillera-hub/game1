@@ -333,7 +333,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     <h3 style="font-size:17px;margin:16px 0 8px;">Miracle power</h3>
     <p>Direct contact already halves a body; miracle power adds a flat bonus on top of that halving, sized as a fraction of whatever the radiation slider currently reads (never a fraction of the body's own violence). At radiation=10%/s and miracle=100%, a body at 100% goes to 50% from the halving, then to 40% from the bonus — one collision, two separate deductions. At the default miracle=0% this term is always exactly 0 and contact is plain halving, same as before this control existed. Raising it doesn't change the average outcome much on its own; it raises the odds of a body getting unlucky in one specific way — repeated direct contact with the same conscious body in a short span, each hit chipping off extra — crossing threshold T sooner, or even in a single hit, when plain halving alone wouldn't have gotten there yet. That's why the Chamber's live tag counts <i>conscious hits</i> (direct conscious-vs-non-conscious collisions) rather than every collision in the room: multiply that count by the current bonus per hit and you get the "Miracle violence removed" stat below directly — hits × bonus, no need to do the arithmetic by hand.</p>
     <h3 style="font-size:17px;margin:16px 0 8px;">Devil balls</h3>
-    <p>Off by default (0 starting devils). When enabled, a devil ball starts identical to any other 100%-violence body except for one property: for as long as at least one <i>normal</i> violent body (non-seed, non-devil) still exists, a devil ball can never lose any violence — a divine ball's halving does nothing to it, and it always reads exactly 100%, no matter what it collides with. It isn't inert, though: touch it with an ordinary violent body and, instead of the usual average-toward-the-midpoint exchange, that body's violence jumps up by a flat dose (the "violence exchange cap" slider) every single hit, while the devil itself never gives up any of its own — an infinite fountain of violence for as long as any minions are left to top back up. The asymmetry cuts the opposite way on contact with a divine ball specifically: instead of donating violence, the devil ball adds a flat percentage (the "devil damage" slider) straight onto that divine ball's violence, every hit. Enough repeated hits and a divine ball's v climbs all the way back to exactly 100% — at which point it corrupts: it stops being conscious and becomes a devil ball itself, immune like the others, undoing one of the run's conversions; if every single conscious body eventually gets corrupted this way, the devils have won outright and the run ends (see the milestone banner). Only once <i>every</i> normal violent body has converted does devil immunity lift — from that point on a devil ball is just an ordinary non-conscious body, fully vulnerable to halving and averaging like anything else, and can itself eventually convert once its v drops to threshold T. The intended shape: normal violent bodies are the "minions" that have to be cleared first, since they're the only thing standing between the room and full consciousness while devils stonewall (and actively re-arm) every violent body around them; the devils are the "boss fight" that only becomes winnable once the minions are gone.</p>
+    <p>Off by default (0 starting devils). A devil ball's defining property, permanent for as long as it stays a devil: it can <i>never</i> lose violence to another violent body, ever, of any kind — the only thing that ever reduces a devil ball's own v is a direct hit from a divine ball, and even that only starts working once every <i>normal</i> violent body (non-seed, non-devil) has converted (the "minions" have to be cleared first). Touching any other still-violent body — an ordinary minion, or another devil — never averages with it; instead the side with MORE violence donates a flat dose onto the side with less, capped at both the exchange-cap slider AND the donor's own current value (it can't give away more violence than it currently holds), while the donor's own v never drops. So a devil sitting at exactly 100% (its value before it's ever been hit by anything) donates the full exchange-cap amount every touch, an effectively infinite fountain; a devil that's since been knocked down to, say, 10% by divine hits can still only ever donate up to that 10% per touch, never more, and still never loses any of it doing so. Contact with a divine ball specifically is the other half of the asymmetry: instead of donating, the devil ball adds a flat percentage (the "devil damage" slider) straight onto that divine ball's violence, every hit — enough repeated hits and the divine ball's v climbs all the way back to exactly 100%, at which point it corrupts: it stops being conscious and becomes a devil ball itself, undoing one of the run's conversions; if every single conscious body eventually gets corrupted this way, the devils have won outright and the run ends (see the milestone banner). Once every normal violent body has converted, a devil ball becomes vulnerable to divine halving for the first time and can itself eventually convert once its v drops to threshold T — but it still never loses anything to another devil, even after that point; only a divine hit ever pulls a devil's own number down. The intended shape: normal violent bodies are the "minions" that have to be cleared first, since they're the only thing standing between the room and full consciousness while devils stonewall (and actively re-arm) every violent body around them; the devils are the "boss fight" that only becomes winnable once the minions are gone, and even then only divine contact -- never devil infighting -- ever chips away at one.</p>
   </div>
   <div>
     <h3 style="font-size:17px;margin-bottom:8px;">Verifying the cascade actually accelerates</h3>
@@ -713,18 +713,26 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
         consciousHits++;
       }
     } else {
-      // a.conscious === c.conscious (both true, or both false)
-      const aImmune = a.devil && !a.conscious && minionsRemaining > 0;
-      const cImmune = c.devil && !c.conscious && minionsRemaining > 0;
-      if (aImmune && cImmune){
-        // two immune devils: both already pinned at the ceiling, nothing to exchange
-      } else if (aImmune || cImmune){
-        // an infinite fountain of violence: the immune devil donates a flat dose (the
-        // exchange-cap amount) onto whatever non-devil body it touches, every single hit,
-        // while never losing any of its own 100% -- so a devil can keep topping its
-        // "minions" back up for as long as any of them still exist to be topped up
-        const other = aImmune ? c : a;
-        other.v = Math.min(1, other.v + exchangeCap());
+      // a.conscious === c.conscious (both true, or both false). A devil ball's own v can
+      // ONLY ever be reduced by a direct hit from a divine ball (handled above, and only
+      // once minions are cleared) -- never by exchange with another violent body, devil or
+      // not, at any point. So whenever at least one side is a still-non-conscious devil,
+      // donation replaces averaging entirely: whichever side has MORE violence donates a
+      // flat dose -- capped at both the exchange-cap slider AND its own current value, since
+      // it can't give away more than it currently holds -- onto the other, while its own v
+      // never drops. Two ordinary (non-devil) bodies still use plain averaging.
+      const aDevil = a.devil && !a.conscious;
+      const cDevil = c.devil && !c.conscious;
+      if (aDevil && cDevil){
+        if (a.v !== c.v){
+          const donor = a.v > c.v ? a : c;
+          const recipient = a.v > c.v ? c : a;
+          recipient.v = Math.min(1, recipient.v + Math.min(exchangeCap(), donor.v));
+        }
+      } else if (aDevil || cDevil){
+        const devilBody = aDevil ? a : c;
+        const other = aDevil ? c : a;
+        other.v = Math.min(1, other.v + Math.min(exchangeCap(), devilBody.v));
       } else {
         const halfDiff = (c.v - a.v)/2;
         const transfer = Math.sign(halfDiff) * Math.min(Math.abs(halfDiff), exchangeCap());
@@ -993,11 +1001,14 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
       `     redistributes, it never creates or destroys any; the cap only slows how fast a`,
       `     single hit can close a large gap, e.g. a repeatedly-hit low body climbs back up`,
       `     in capped steps instead of snapping straight to the average of whatever it hits.`,
-      `     EXCEPTION: if exactly one body is a still-immune devil ball (see Devil balls`,
-      `     below), the plain-average formula above is replaced entirely -- the OTHER body's`,
-      `     v jumps up by a full exchange-cap dose (not half the gap), while the devil's own`,
-      `     v never changes. If BOTH bodies are still-immune devils, neither changes (both`,
-      `     are already pinned at 1).`,
+      `     EXCEPTION: if either body is a non-conscious devil ball, the plain-average`,
+      `     formula above is replaced entirely -- whichever side has MORE violence donates a`,
+      `     flat dose onto the other, capped at both the exchange-cap slider AND the donor's`,
+      `     own current v (it can never give away more than it currently holds), while the`,
+      `     donor's own v never drops. If both sides are devils at equal v, nothing changes.`,
+      `     This exception is permanent for a devil ball -- unlike rule 2's devil exception`,
+      `     below, it does NOT go away once minions are cleared; a devil ball never loses`,
+      `     violence to another violent body, devil or not, ever, only to rule 2.`,
       `  2. conscious x non-conscious (flags differ): the non-conscious body is halved and`,
       `     then hit with a flat "miracle" bonus subtraction (see below),`,
       `     v -> max(0, v/2 - bonus). The conscious body is simultaneously doubled and capped`,
@@ -1006,7 +1017,9 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
       `     changes. This step does NOT conserve the sum -- roughly half of the non-conscious`,
       `     body's value (plus the bonus) is deleted from the system outright, not`,
       `     transferred to the conscious body. EXCEPTION: if the non-conscious body is a`,
-      `     still-immune devil ball, this entire rule is replaced -- see Devil balls below.`,
+      `     devil ball AND minions remain, this entire rule is replaced -- see Devil balls`,
+      `     below. Once minions are cleared this exception stops applying and rule 2 fires`,
+      `     as written -- a divine ball CAN halve a devil ball at that point.`,
       `  3. conscious x conscious (both flags true): treated the same as rule 1 (plain average`,
       `     of two zeros, i.e. still 0).`,
       '',
@@ -1022,23 +1035,31 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
       `the rest of the run absent that exception -- there is no residual value and no drift;`,
       `every conscious body, at every moment, holds exactly 0% violence.`,
       '',
-      `Devil balls (${numDevils()===0?'0 in this run, so none of this applies':`${numDevils()} in this run, devil damage=${devilDamagePct()}% per hit`}): a devil ball`,
-      `starts identical to a normal 100%-violence body except: for as long as at least one`,
-      `normal violent body (non-seed, non-devil) still exists ("minions remaining"), a devil`,
-      `ball can never lose violence -- it always reads exactly 100%, whatever it collides`,
-      `with. Rule 1 is replaced for it specifically: touching an ordinary violent body adds a`,
-      `full exchange-cap dose to THAT body's v (not half the gap), while the devil's own v`,
-      `stays at 1 -- an unlimited source that can keep re-arming minions for as long as any`,
-      `remain. Rule 2 is also replaced on devil-vs-divine contact: instead of taking damage,`,
-      `the devil ball adds a flat percentage (the devil-damage setting) onto the divine`,
-      `ball's v, every hit, capped only by v's own ceiling of 1. If that pushes a divine`,
-      `ball's v to exactly 1, it corrupts: flag flips back to false and it becomes a devil`,
-      `ball itself, undoing that conversion. If every single conscious body in the run`,
-      `eventually gets corrupted this way (conscious count hits exactly 0), the devils have`,
-      `won outright and the run ends -- see Status below. Once every normal violent body has`,
-      `converted (minions remaining = 0), devil-ball immunity lifts permanently -- from then`,
-      `on a devil ball is just an ordinary non-conscious body, fully subject to rules 1 and 2,`,
-      `and can itself eventually convert.`,
+      `Devil balls (${numDevils()===0?'0 in this run, so none of this applies':`${numDevils()} in this run, devil damage=${devilDamagePct()}% per hit`}): a devil`,
+      `ball's defining property, permanent for as long as it stays a devil: it can NEVER lose`,
+      `violence to another violent body, devil or not -- the only thing that ever reduces a`,
+      `devil's own v is a direct divine-ball hit, and that only starts working once minions`,
+      `remaining = 0 (rule 2's devil exception above). Rule 1 is replaced for a devil ball`,
+      `against ANY other still-violent body, permanently, not just while minions remain:`,
+      `whichever side has more v donates a flat dose onto the other, capped at both the`,
+      `exchange-cap slider AND the donor's own current v (it can't give away more than it`,
+      `holds), while the donor's own v never drops. A devil that's never been hit sits at`,
+      `exactly 1 and so donates the full exchange-cap amount every touch (an effectively`,
+      `unlimited fountain); a devil already knocked down to some lower v by divine hits can`,
+      `still only ever donate up to that lower amount, never more, and still never loses any`,
+      `of it doing so -- this applies devil-vs-minion AND devil-vs-devil alike, before or`,
+      `after minions clear. Rule 2 is separately replaced on devil-vs-divine contact while`,
+      `minions remain: instead of taking damage, the devil ball adds a flat percentage (the`,
+      `devil-damage setting) onto the divine ball's v, every hit, capped only by v's own`,
+      `ceiling of 1. If that pushes a divine ball's v to exactly 1, it corrupts: flag flips`,
+      `back to false and it becomes a devil ball itself, undoing that conversion. If every`,
+      `single conscious body in the run eventually gets corrupted this way (conscious count`,
+      `hits exactly 0), the devils have won outright and the run ends -- see Status below.`,
+      `Once every normal violent body has converted (minions remaining = 0), a devil ball`,
+      `becomes vulnerable to divine halving (rule 2 as written) for the first time and can`,
+      `itself eventually convert once its v drops to T -- but the rule-1 exception above`,
+      `never lifts: a devil still never loses violence to another devil, even after that`,
+      `point. Only a divine hit ever pulls a devil's own number down.`,
       '',
       `Background violence radiation: independent of collisions, every body still flagged`,
       `false continuously gains a fixed percent of violence per elapsed second (+0.001 to`,
