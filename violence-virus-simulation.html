@@ -275,8 +275,8 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
         <input type="range" id="devils" min="0" max="10" value="0" step="1">
       </div>
       <div class="ctrl">
-        <label>Devil damage per hit on divine balls <span class="val" id="v-devildmg">5 %</span></label>
-        <input type="range" id="devildmg" min="1" max="10" value="5" step="1">
+        <label>Devil damage per hit on divine balls <span class="val" id="v-devildmg">5.0 %</span></label>
+        <input type="range" id="devildmg" min="0" max="11" value="6" step="1">
       </div>
     </div>
     <div class="lock-note" id="lock-note" hidden>Only Speed can be changed while running — the other sliders lock so a mid-run tweak can't skew this run's data. Pause or Reset chamber to change them.</div>
@@ -454,6 +454,8 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
   // the divine side win trivially every time (see the bench explainer below)
   const AMB_STEPS = [0.001, 0.01, 0.05];
   for (let v=1; v<=100; v++) AMB_STEPS.push(v/10);
+  const DEVILDMG_STEPS = [0.01, 0.1];
+  for (let v=1; v<=10; v++) DEVILDMG_STEPS.push(v);
 
   function thrPct(){ return THR_STEPS[Number(els.thr.value)]; }
   function threshold(){ return thrPct()/100; }
@@ -525,7 +527,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
 
   function numSeeds(){ return Math.min(Number(els.seeds.value), nBodies()); }
   function numDevils(){ return Math.min(Number(els.devils.value), Math.max(0, nBodies() - numSeeds())); }
-  function devilDamagePct(){ return Number(els.devildmg.value); }
+  function devilDamagePct(){ return DEVILDMG_STEPS[Number(els.devildmg.value)]; }
   function devilDamage(){ return devilDamagePct()/100; }
 
   function makeBodies(){
@@ -1004,7 +1006,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
       `Bodies=${nBodies()} · seeds=${numSeeds()} · speed=${els.speed.value}× · `+
       `threshold=${fmtSliderPct(thrPct())}% · radiation=+${fmtSliderPct(ambRatePct())}%/s · `+
       `miracle=${els.miracle.value}% · exchange cap=${fmtSliderPct(exchCapPct())}%`+
-      (devilCount>0 ? ` · devils=${devilCount}@${devilDamagePct()}%/hit` : '');
+      (devilCount>0 ? ` · devils=${devilCount}@${fmtSliderPct(devilDamagePct())}%/hit` : '');
   }
 
   function buildSummaryText(){
@@ -1076,7 +1078,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
       `the rest of the run absent that exception -- there is no residual value and no drift;`,
       `every conscious body, at every moment, holds exactly 0% violence.`,
       '',
-      `Devil balls (${numDevils()===0?'0 in this run, so none of this applies':`${numDevils()} in this run, devil damage=${devilDamagePct()}% per hit`}): a devil`,
+      `Devil balls (${numDevils()===0?'0 in this run, so none of this applies':`${numDevils()} in this run, devil damage=${fmtSliderPct(devilDamagePct())}% per hit`}): a devil`,
       `ball's defining property, permanent for as long as it stays a devil: it can NEVER lose`,
       `violence to another violent body, devil or not -- the only thing that ever reduces a`,
       `devil's own v is a direct divine-ball hit, and that only starts working once minions`,
@@ -1185,7 +1187,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
       `  Background violence radiation: +${fmtSliderPct(ambRatePct())}%/s per body`,
       `  Miracle power: ${els.miracle.value}%`,
       `  Violence exchange cap (non-divine hits): ${fmtSliderPct(exchCapPct())} percentage points per hit`,
-      `  Devil balls: ${numDevils()===0?'none':`${numDevils()} starting bodies, ${devilDamagePct()}% violence added to a divine ball per hit while immune`}`,
+      `  Devil balls: ${numDevils()===0?'none':`${numDevils()} starting bodies, ${fmtSliderPct(devilDamagePct())}% violence added to a divine ball per hit while immune`}`,
       '',
       'Live readout:',
       `  Elapsed time: ${fmtTime(elapsedSec)}`,
@@ -1553,7 +1555,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     updateRunSettingsLine();
   });
   els.devildmg.addEventListener('input', ()=>{
-    els.vDevildmg.textContent = devilDamagePct() + ' %';
+    els.vDevildmg.textContent = fmtSliderPct(devilDamagePct()) + ' %';
     updateRunSettingsLine();
   });
   els.copyBtn.addEventListener('click', copySummary);
