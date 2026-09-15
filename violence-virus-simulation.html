@@ -118,6 +118,7 @@ button.tag.copied{border-color:var(--calm); color:var(--calm);}
   background:var(--panel-2); border:1px solid var(--line); border-radius:6px; color:var(--text-dim);
 }
 #milestone.done{ border-color:var(--calm); color:var(--calm); font-weight:600; }
+#milestone.devils-won{ border-color:var(--alarm); color:var(--alarm); font-weight:600; }
 #milestone-list{
   margin-bottom:14px; padding:8px 10px; font-size:11.5px; line-height:1.6;
   background:var(--panel-2); border:1px dashed var(--line); border-radius:6px; color:var(--text-dim);
@@ -319,7 +320,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     <h3 style="font-size:17px;margin:16px 0 8px;">Miracle power</h3>
     <p>Direct contact already halves a body; miracle power adds a flat bonus on top of that halving, sized as a fraction of whatever the radiation slider currently reads (never a fraction of the body's own violence). At radiation=10%/s and miracle=100%, a body at 100% goes to 50% from the halving, then to 40% from the bonus — one collision, two separate deductions. At the default miracle=0% this term is always exactly 0 and contact is plain halving, same as before this control existed. Raising it doesn't change the average outcome much on its own; it raises the odds of a body getting unlucky in one specific way — repeated direct contact with the same conscious body in a short span, each hit chipping off extra — crossing threshold T sooner, or even in a single hit, when plain halving alone wouldn't have gotten there yet. That's why the Chamber's live tag counts <i>conscious hits</i> (direct conscious-vs-non-conscious collisions) rather than every collision in the room: multiply that count by the current bonus per hit and you get the "Miracle violence removed" stat below directly — hits × bonus, no need to do the arithmetic by hand.</p>
     <h3 style="font-size:17px;margin:16px 0 8px;">Devil balls</h3>
-    <p>Off by default (0 starting devils). When enabled, a devil ball starts identical to any other 100%-violence body except for one property: for as long as at least one <i>normal</i> violent body (non-seed, non-devil) still exists, a devil ball is completely immune to violence exchange of any kind — a divine ball's halving does nothing to it, and it doesn't even participate in ordinary averaging with other violent bodies; it simply bounces, unaffected, always reading exactly 100%. The asymmetry cuts the other way on contact with a divine ball specifically: instead of taking damage, the devil ball adds a flat percentage (the "devil damage" slider) straight onto that divine ball's violence, every single hit. Enough repeated hits and a divine ball's v climbs all the way back to exactly 100% — at which point it corrupts: it stops being conscious and becomes a devil ball itself, immune like the others, undoing one of the run's conversions. Only once <i>every</i> normal violent body has converted does the immunity lift — from that point on a devil ball is just an ordinary non-conscious body, fully vulnerable to halving and averaging like anything else, and can itself eventually convert once its v drops to threshold T. The intended shape: normal violent bodies are the "minions" that have to be cleared first, since they're the only thing standing between the room and full consciousness while devils stonewall every divine ball that reaches them; the devils are the "boss fight" that only becomes winnable once the minions are gone.</p>
+    <p>Off by default (0 starting devils). When enabled, a devil ball starts identical to any other 100%-violence body except for one property: for as long as at least one <i>normal</i> violent body (non-seed, non-devil) still exists, a devil ball can never lose any violence — a divine ball's halving does nothing to it, and it always reads exactly 100%, no matter what it collides with. It isn't inert, though: touch it with an ordinary violent body and, instead of the usual average-toward-the-midpoint exchange, that body's violence jumps up by a flat dose (the "violence exchange cap" slider) every single hit, while the devil itself never gives up any of its own — an infinite fountain of violence for as long as any minions are left to top back up. The asymmetry cuts the opposite way on contact with a divine ball specifically: instead of donating violence, the devil ball adds a flat percentage (the "devil damage" slider) straight onto that divine ball's violence, every hit. Enough repeated hits and a divine ball's v climbs all the way back to exactly 100% — at which point it corrupts: it stops being conscious and becomes a devil ball itself, immune like the others, undoing one of the run's conversions; if every single conscious body eventually gets corrupted this way, the devils have won outright and the run ends (see the milestone banner). Only once <i>every</i> normal violent body has converted does devil immunity lift — from that point on a devil ball is just an ordinary non-conscious body, fully vulnerable to halving and averaging like anything else, and can itself eventually convert once its v drops to threshold T. The intended shape: normal violent bodies are the "minions" that have to be cleared first, since they're the only thing standing between the room and full consciousness while devils stonewall (and actively re-arm) every violent body around them; the devils are the "boss fight" that only becomes winnable once the minions are gone.</p>
   </div>
   <div>
     <h3 style="font-size:17px;margin-bottom:8px;">Verifying the cascade actually accelerates</h3>
@@ -386,6 +387,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
   let selectedId = null;
   let elapsedSec = 0;
   let fullAt = null;
+  let devilsWonAt = null; // set if every conscious body eventually gets corrupted back to a devil (nConscious hits exactly 0)
   let recordLowV = 1;
   let recordLowVTime = 0;
   let recordLowTotal = 100;
@@ -552,6 +554,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     minionsRemaining = bodies.filter(b=>!b.conscious && !b.devil).length;
     elapsedSec = 0;
     fullAt = null;
+    devilsWonAt = null;
     recordLowV = 1;
     recordLowVTime = 0;
     convMilestones = [];
@@ -685,11 +688,19 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
         consciousHits++;
       }
     } else {
-      // a.conscious === c.conscious (both true, or both false) -- a fully-immune devil
-      // takes part in no violence exchange at all while minions remain
+      // a.conscious === c.conscious (both true, or both false)
       const aImmune = a.devil && !a.conscious && minionsRemaining > 0;
       const cImmune = c.devil && !c.conscious && minionsRemaining > 0;
-      if (!aImmune && !cImmune){
+      if (aImmune && cImmune){
+        // two immune devils: both already pinned at the ceiling, nothing to exchange
+      } else if (aImmune || cImmune){
+        // an infinite fountain of violence: the immune devil donates a flat dose (the
+        // exchange-cap amount) onto whatever non-devil body it touches, every single hit,
+        // while never losing any of its own 100% -- so a devil can keep topping its
+        // "minions" back up for as long as any of them still exist to be topped up
+        const other = aImmune ? c : a;
+        other.v = Math.min(1, other.v + exchangeCap());
+      } else {
         const halfDiff = (c.v - a.v)/2;
         const transfer = Math.sign(halfDiff) * Math.min(Math.abs(halfDiff), exchangeCap());
         a.v = a.v + transfer;
@@ -808,8 +819,18 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     els.tick.textContent = `conscious hits = ${consciousHits} · t = ${elapsedSec.toFixed(1)}s`;
     updateInspector();
 
-    if (!fullAt && nConscious === bodies.length){
+    if (!fullAt && !devilsWonAt && nConscious === bodies.length){
       fullAt = { time: elapsedSec, hits: consciousHits, collisions, avg: consciousHits/Math.max(1,conversions) };
+      if (running){
+        running = false;
+        els.run.textContent = 'Run';
+        if (rafId) cancelAnimationFrame(rafId);
+        shrinkChartToFullRun();
+        syncSliderLocks();
+      }
+    }
+    if (!fullAt && !devilsWonAt && nConscious === 0){
+      devilsWonAt = { time: elapsedSec, collisions, corruptions };
       if (running){
         running = false;
         els.run.textContent = 'Run';
@@ -820,12 +841,21 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     }
     if (fullAt){
       els.milestone.classList.add('done');
+      els.milestone.classList.remove('devils-won');
       els.milestone.textContent =
         `Simulation complete — full consciousness reached at t=${fmtTime(fullAt.time)}, total violence at 0%. `+
         `${fullAt.hits} conscious-role hits total (avg ${fullAt.avg.toFixed(1)} hits per body converted), ${fullAt.collisions} collisions.`+
         (corruptions>0 ? ` ${corruptions} divine ball${corruptions===1?'':'s'} fell to devil corruption along the way but ultimately reconverted.` : '');
+    } else if (devilsWonAt){
+      els.milestone.classList.add('devils-won');
+      els.milestone.classList.remove('done');
+      els.milestone.textContent =
+        `The devils have taken over — every divine ball was corrupted back by t=${fmtTime(devilsWonAt.time)}, `+
+        `zero conscious bodies remain. ${devilsWonAt.corruptions} total corruption${devilsWonAt.corruptions===1?'':'s'}, ${devilsWonAt.collisions} collisions. `+
+        `Reset the chamber to try again.`;
     } else {
       els.milestone.classList.remove('done');
+      els.milestone.classList.remove('devils-won');
       els.milestone.textContent = `Not yet fully conscious — ${nConscious}/${bodies.length} converted, `+
         `avg ${conversions>0 ? (consciousHits/conversions).toFixed(1) : '—'} hits per conversion so far.`;
     }
@@ -938,8 +968,11 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
       `     redistributes, it never creates or destroys any; the cap only slows how fast a`,
       `     single hit can close a large gap, e.g. a repeatedly-hit low body climbs back up`,
       `     in capped steps instead of snapping straight to the average of whatever it hits.`,
-      `     EXCEPTION: if either body is a still-immune devil ball (see Devil balls below),`,
-      `     neither body's v changes at all -- an immune devil takes part in no exchange.`,
+      `     EXCEPTION: if exactly one body is a still-immune devil ball (see Devil balls`,
+      `     below), the plain-average formula above is replaced entirely -- the OTHER body's`,
+      `     v jumps up by a full exchange-cap dose (not half the gap), while the devil's own`,
+      `     v never changes. If BOTH bodies are still-immune devils, neither changes (both`,
+      `     are already pinned at 1).`,
       `  2. conscious x non-conscious (flags differ): the non-conscious body is halved and`,
       `     then hit with a flat "miracle" bonus subtraction (see below),`,
       `     v -> max(0, v/2 - bonus). The conscious body is simultaneously doubled and capped`,
@@ -967,15 +1000,20 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
       `Devil balls (${numDevils()===0?'0 in this run, so none of this applies':`${numDevils()} in this run, devil damage=${devilDamagePct()}% per hit`}): a devil ball`,
       `starts identical to a normal 100%-violence body except: for as long as at least one`,
       `normal violent body (non-seed, non-devil) still exists ("minions remaining"), a devil`,
-      `ball is fully immune to violence exchange of every kind (rules 1 and 2 above both`,
-      `become no-ops for it) -- it always reads exactly 100%. The one thing that DOES happen`,
-      `on devil-vs-divine contact during immunity: the devil ball adds a flat percentage`,
-      `(the devil-damage setting) onto the divine ball's v, every hit, uncapped by anything`,
-      `except v's own ceiling of 1. If that pushes a divine ball's v to exactly 1, it corrupts:`,
-      `flag flips back to false and it becomes a devil ball itself, undoing that conversion.`,
-      `Once every normal violent body has converted (minions remaining = 0), devil-ball`,
-      `immunity lifts permanently -- from then on a devil ball is just an ordinary`,
-      `non-conscious body, fully subject to rules 1 and 2, and can itself eventually convert.`,
+      `ball can never lose violence -- it always reads exactly 100%, whatever it collides`,
+      `with. Rule 1 is replaced for it specifically: touching an ordinary violent body adds a`,
+      `full exchange-cap dose to THAT body's v (not half the gap), while the devil's own v`,
+      `stays at 1 -- an unlimited source that can keep re-arming minions for as long as any`,
+      `remain. Rule 2 is also replaced on devil-vs-divine contact: instead of taking damage,`,
+      `the devil ball adds a flat percentage (the devil-damage setting) onto the divine`,
+      `ball's v, every hit, capped only by v's own ceiling of 1. If that pushes a divine`,
+      `ball's v to exactly 1, it corrupts: flag flips back to false and it becomes a devil`,
+      `ball itself, undoing that conversion. If every single conscious body in the run`,
+      `eventually gets corrupted this way (conscious count hits exactly 0), the devils have`,
+      `won outright and the run ends -- see Status below. Once every normal violent body has`,
+      `converted (minions remaining = 0), devil-ball immunity lifts permanently -- from then`,
+      `on a devil ball is just an ordinary non-conscious body, fully subject to rules 1 and 2,`,
+      `and can itself eventually convert.`,
       '',
       `Background violence radiation: independent of collisions, every body still flagged`,
       `false continuously gains a fixed percent of violence per elapsed second (+0.001 to`,
@@ -1083,6 +1121,8 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
       'Status:',
       `  ${fullAt
         ? `Simulation complete — full consciousness reached at t=${fmtTime(fullAt.time)}, total violence at 0%. ${fullAt.hits} conscious-role hits total (avg ${fullAt.avg.toFixed(2)} hits per body converted), ${fullAt.collisions} collisions.`+(corruptions>0?` ${corruptions} divine ball(s) fell to devil corruption along the way but were ultimately reconverted.`:'')
+        : devilsWonAt
+        ? `The devils won — every conscious body was corrupted back to a devil by t=${fmtTime(devilsWonAt.time)}, zero conscious bodies remain. ${devilsWonAt.corruptions} total corruptions, ${devilsWonAt.collisions} collisions.`
         : `Still running/paused — ${nConscious}/${bodies.length} converted.`}`,
     ];
     return lines.join('\n');
