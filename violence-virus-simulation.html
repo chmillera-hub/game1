@@ -238,7 +238,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
       <span><i class="chip" style="background:hsl(132,75%,42%)"></i>green — violent, 11–50%</span>
       <span><i class="chip" style="background:hsl(58,100%,62%)"></i>yellow — violent, ≤ 10% (close to threshold)</span>
       <span><i class="chip" style="background:hsl(38,90%,48%); box-shadow:0 0 6px 3px rgba(255,214,90,0.55);"></i>gold — conscious, permanently 0%</span>
-      <span><i class="chip" style="background:hsl(0,72%,45%); box-shadow:0 0 6px 3px rgba(139,0,0,0.7);"></i>dark red aura + little horns — devil ball, immune until all normal violent balls convert</span>
+      <span><i class="chip" style="background:hsl(0,72%,45%); box-shadow:0 0 6px 3px rgba(139,0,0,0.7); border:1.5px solid #000;"></i>black outline + dark red ring + little horns — devil ball, immune until all normal violent balls convert</span>
     </div>
     <div id="inspector" class="mono">Click any ball to zoom in on its exact violence level — only color shows at a glance, click for the number.</div>
     <div class="controls">
@@ -823,6 +823,15 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
         ctx.stroke();
       }
       if (b.devil && !b.conscious){
+        // thick black outline right at the ball's own edge, plus the dark-red ring further
+        // out and the horns on top -- three purely-visual layers, none of them touch b.r
+        // (the actual collision radius used by resolvePair()/step()), so none of this
+        // affects physics in any way
+        ctx.lineWidth = Math.max(1.5, b.r*0.18);
+        ctx.strokeStyle = '#000000';
+        ctx.beginPath();
+        ctx.arc(b.x, b.y, b.r - ctx.lineWidth*0.4, 0, Math.PI*2);
+        ctx.stroke();
         ctx.lineWidth = Math.max(1.5, b.r*0.22);
         ctx.strokeStyle = '#8b0000';
         ctx.beginPath();
@@ -1426,6 +1435,9 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
         ctx.stroke();
       }
       if (isDevil && !isConscious){
+        ctx.lineWidth = Math.max(1.5, r*0.18);
+        ctx.strokeStyle = '#000000';
+        ctx.beginPath(); ctx.arc(x,y,r-ctx.lineWidth*0.4,0,Math.PI*2); ctx.stroke();
         ctx.lineWidth = Math.max(1.5, r*0.22);
         ctx.strokeStyle = '#8b0000';
         ctx.beginPath(); ctx.arc(x,y,r+ctx.lineWidth,0,Math.PI*2); ctx.stroke();
