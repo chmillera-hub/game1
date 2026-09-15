@@ -238,7 +238,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
       <span><i class="chip" style="background:hsl(132,75%,42%)"></i>green — violent, 11–50%</span>
       <span><i class="chip" style="background:hsl(58,100%,62%)"></i>yellow — violent, ≤ 10% (close to threshold)</span>
       <span><i class="chip" style="background:hsl(38,90%,48%); box-shadow:0 0 6px 3px rgba(255,214,90,0.55);"></i>gold — conscious, permanently 0%</span>
-      <span><i class="chip" style="background:hsl(0,72%,45%); box-shadow:0 0 6px 3px rgba(139,0,0,0.7);"></i>dark red aura — devil ball, immune until all normal violent balls convert</span>
+      <span><i class="chip" style="background:hsl(0,72%,45%); box-shadow:0 0 6px 3px rgba(139,0,0,0.7);"></i>dark red aura + little horns — devil ball, immune until all normal violent balls convert</span>
     </div>
     <div id="inspector" class="mono">Click any ball to zoom in on its exact violence level — only color shows at a glance, click for the number.</div>
     <div class="controls">
@@ -622,6 +622,33 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     return {rgb:'hsl(132,75%,42%)', ring:'transparent'};
   }
 
+  // Two little red devil horns poking up off a devil ball -- purely for fun/at-a-glance
+  // distinction, drawn on top of the ball fill so they're always visible regardless of the
+  // ball's own color. Cheap (two tiny triangles) and there are never more than 10 devils.
+  function drawDevilHorns(targetCtx, x, y, r){
+    targetCtx.fillStyle = '#c41e1e';
+    targetCtx.strokeStyle = '#7a0f0f';
+    targetCtx.lineWidth = Math.max(0.5, r*0.06);
+    const hornLen = r*0.9, baseSpread = 0.22;
+    for (const side of [-1, 1]){
+      const baseAngle = -Math.PI/2 + side*0.55;
+      const tipAngle = -Math.PI/2 + side*0.95;
+      const bx1 = x + Math.cos(baseAngle-baseSpread)*r*0.85;
+      const by1 = y + Math.sin(baseAngle-baseSpread)*r*0.85;
+      const bx2 = x + Math.cos(baseAngle+baseSpread)*r*0.85;
+      const by2 = y + Math.sin(baseAngle+baseSpread)*r*0.85;
+      const tx = x + Math.cos(tipAngle)*(r+hornLen);
+      const ty = y + Math.sin(tipAngle)*(r+hornLen);
+      targetCtx.beginPath();
+      targetCtx.moveTo(bx1,by1);
+      targetCtx.lineTo(tx,ty);
+      targetCtx.lineTo(bx2,by2);
+      targetCtx.closePath();
+      targetCtx.fill();
+      targetCtx.stroke();
+    }
+  }
+
   function resolvePair(a, c){
     const dx=c.x-a.x, dy=c.y-a.y;
     const dist = Math.hypot(dx,dy);
@@ -801,6 +828,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
         ctx.beginPath();
         ctx.arc(b.x, b.y, b.r+ctx.lineWidth, 0, Math.PI*2);
         ctx.stroke();
+        drawDevilHorns(ctx, b.x, b.y, b.r);
       }
       if (b.id === selectedId){
         ctx.lineWidth = 1.5;
@@ -1401,6 +1429,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
         ctx.lineWidth = Math.max(1.5, r*0.22);
         ctx.strokeStyle = '#8b0000';
         ctx.beginPath(); ctx.arc(x,y,r+ctx.lineWidth,0,Math.PI*2); ctx.stroke();
+        drawDevilHorns(ctx, x, y, r);
       }
       if (isTheConvertingBody){
         ctx.lineWidth = Math.max(1.5, r*0.22);
