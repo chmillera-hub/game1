@@ -101,9 +101,13 @@ button.tag.copied{border-color:var(--calm); color:var(--calm);}
 
 #stage-wrap{position:relative; border-radius:8px; overflow:hidden; border:1px solid var(--line); background:var(--panel-2);}
 #scrub-wrap{margin-top:8px;}
-.scrub-row{display:flex; align-items:center; gap:8px;}
+.scrub-row{display:flex; align-items:center; gap:8px; margin-top:6px;}
 .scrub-row input[type=range]{flex:1; accent-color:var(--accent);}
-.scrub-end{font-size:10.5px; color:var(--text-dim); flex:none;}
+.scrub-row input[type=range]:disabled{opacity:0.35; cursor:not-allowed;}
+.scrub-nav-row{display:flex; align-items:center; justify-content:space-between; gap:8px; margin-top:6px;}
+.scrub-nav-row button.tag{flex:none; font-size:11px; padding:3px 8px;}
+.scrub-nav-row button.tag:disabled{opacity:0.35; cursor:not-allowed;}
+#clip-label{flex:1; text-align:center; font-size:11.5px; color:var(--text-dim); overflow-wrap:anywhere;}
 #scrub-label{font-size:11px; color:var(--text-dim); margin-top:4px;}
 #scrub-label.scrubbing{color:var(--accent);}
 #stage{display:block; width:100%; height:auto; aspect-ratio:4/3; cursor:pointer;}
@@ -213,10 +217,19 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     </div>
     <div id="stage-wrap"><canvas id="stage" width="480" height="360"></canvas></div>
     <div id="scrub-wrap">
+      <div class="scrub-nav-row">
+        <button id="btn-prev-clip" class="tag" disabled>◀ Prev</button>
+        <span id="clip-label" class="mono">No conversions captured yet</span>
+        <button id="btn-next-clip" class="tag" disabled>Next ▶</button>
+      </div>
       <div class="scrub-row">
-        <span class="mono scrub-end">oldest</span>
-        <input type="range" id="scrub" min="0" max="0" value="0" step="1">
-        <span class="mono scrub-end">live</span>
+        <button id="btn-frame-back" class="tag" disabled>◀</button>
+        <input type="range" id="scrub" min="0" max="0" value="0" step="1" disabled>
+        <button id="btn-frame-fwd" class="tag" disabled>▶</button>
+      </div>
+      <div class="scrub-nav-row">
+        <button id="btn-play-clip" class="tag" disabled>▶ Play clip</button>
+        <button id="btn-live" class="tag" disabled>● Back to live</button>
       </div>
       <div id="scrub-label" class="mono">Conversion replay — captures 30s before and 10s after each of the first 20 conscious-ball formations; nothing to browse yet.</div>
     </div>
@@ -330,7 +343,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
   </div>
 </div>
 
-<footer>Color is the only at-a-glance signal now — no on-ball text, and no gradient either: a non-conscious body is one of three fixed colors by band, not a ramp — red at 51% or above, green from 11% to 50%, yellow at 10% or below. Yellow exists specifically to flag "getting close to the conversion threshold" without implying it's already converted, since a body that's crossed below 10% is usually only a hit or two away. A conscious body is always exactly 0% violence, so it always gets the same fixed gold fill and gold ring — a brighter, cooler yellow (hue 58) was picked deliberately far from that warmer, darker gold (hue 38) so the two never get confused even at very small ball sizes. (The gold ring's faint halo turns off above 1,000 bodies, purely so thousands of per-ball gradients don't tank the frame rate — the flat gold fill stays either way.) Click any ball to read its exact value in the inspector above the chart. Bodies range from 10 up to 10,000, in steps of 10 below 100 and steps of 100 from 100 up, so the slider always lands on a round number instead of an arbitrary one; the chamber and ball radius scale together to keep a reasonable, visible size and packing density at any count, and past 300 bodies collision detection switches from checking every pair to a spatial grid (only nearby bodies are checked against each other) so the frame rate doesn't collapse at high counts. Background violence radiation only touches bodies not yet flagged conscious, so a body's crossing into consciousness is a real immunity to that rising background hazard -- permanent, unless devil balls are in play and later corrupt it back (see the "Devil balls" section in the explainer above, and the dark-red-aura chip in the legend). The bar under the chamber is a conversion replay, not a full-run scrubber: it only ever holds the first 20 conscious-ball formations, each captured as its own clip spanning 30 simulated seconds immediately before that ball crossed threshold, the crossing moment itself, and 10 simulated seconds immediately after -- long enough after to see whether the same divine ball (or another) goes on to hit it, or others nearby, again. Every physics step is captured individually rather than sampled over real time, so dragging within one clip shows the exact collision-by-collision sequence (at very high body counts, where a full-precision 40-second clip would use too much memory, capture spaces itself out just enough to stay within a fixed budget -- still every step at typical body counts). Whichever body that clip is about gets an extra purple glow and ring throughout the entire clip, on top of whatever color it's already showing (red, green, or yellow beforehand, gold after) -- so it stays trackable as the one specific ball being followed, not lost in a crowd of same-colored bodies, and you can watch it get hit again within the same clip if it does. Everything else in the run -- the long stretches between conversions -- is simply never captured, so the bar has nothing to show there; drag past the end of one clip and you land on the start of the next. Dragging pauses the sim and repaints the chamber and headline stats as they were at that exact moment, and dragging back to the right end (or pressing Run) returns to live.</footer>
+<footer>Color is the only at-a-glance signal now — no on-ball text, and no gradient either: a non-conscious body is one of three fixed colors by band, not a ramp — red at 51% or above, green from 11% to 50%, yellow at 10% or below. Yellow exists specifically to flag "getting close to the conversion threshold" without implying it's already converted, since a body that's crossed below 10% is usually only a hit or two away. A conscious body is always exactly 0% violence, so it always gets the same fixed gold fill and gold ring — a brighter, cooler yellow (hue 58) was picked deliberately far from that warmer, darker gold (hue 38) so the two never get confused even at very small ball sizes. (The gold ring's faint halo turns off above 1,000 bodies, purely so thousands of per-ball gradients don't tank the frame rate — the flat gold fill stays either way.) Click any ball to read its exact value in the inspector above the chart. Bodies range from 10 up to 10,000, in steps of 10 below 100 and steps of 100 from 100 up, so the slider always lands on a round number instead of an arbitrary one; the chamber and ball radius scale together to keep a reasonable, visible size and packing density at any count, and past 300 bodies collision detection switches from checking every pair to a spatial grid (only nearby bodies are checked against each other) so the frame rate doesn't collapse at high counts. Background violence radiation only touches bodies not yet flagged conscious, so a body's crossing into consciousness is a real immunity to that rising background hazard -- permanent, unless devil balls are in play and later corrupt it back (see the "Devil balls" section in the explainer above, and the dark-red-aura chip in the legend). The bar under the chamber is a conversion replay, not a full-run scrubber: it only ever holds the first 20 conscious-ball formations, each captured as its own clip spanning 30 simulated seconds immediately before that ball crossed threshold, the crossing moment itself, and 10 simulated seconds immediately after -- long enough after to see whether the same divine ball (or another) goes on to hit it, or others nearby, again. Every physics step is captured individually rather than sampled over real time (at very high body counts, where a full-precision 40-second clip would use too much memory, capture spaces itself out just enough to stay within a fixed budget -- still every step at typical body counts). Whichever body that clip is about gets an extra purple glow and ring throughout the entire clip, on top of whatever color it's already showing (red, green, or yellow beforehand, gold after) -- so it stays trackable as the one specific ball being followed, not lost in a crowd of same-colored bodies, and you can watch it get hit again within the same clip if it does. Everything else in the run -- the long stretches between conversions -- is simply never captured. Browsing is Prev/Next-driven, not one giant bar for every clip stitched together: Prev/Next picks which conversion you're looking at (label shows which one and its crossing value), and the slider only ever spans that one clip's own frames, so dragging it stays fine-grained instead of each pixel of mouse movement skipping over dozens of frames the way one shared 20-clip-long bar would. The ◀/▶ buttons step exactly one frame at a time for total precision, and "Play clip" auto-advances through the whole thing at a fixed slow pace if you'd rather just watch it than drag anything. Selecting a clip pauses the sim and repaints the chamber and headline stats at that exact frame; "Back to live" (or pressing Run) returns to the live view.</footer>
 
 <script>
 (function(){
@@ -366,6 +379,10 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     sbTotal: document.getElementById('sb-total'), sbTime: document.getElementById('sb-time'),
     sbConv: document.getElementById('sb-conv'),
     scrub: document.getElementById('scrub'), scrubLabel: document.getElementById('scrub-label'),
+    clipLabel: document.getElementById('clip-label'),
+    prevClip: document.getElementById('btn-prev-clip'), nextClip: document.getElementById('btn-next-clip'),
+    frameBack: document.getElementById('btn-frame-back'), frameFwd: document.getElementById('btn-frame-fwd'),
+    playClip: document.getElementById('btn-play-clip'), backLive: document.getElementById('btn-live'),
     lockNote: document.getElementById('lock-note'),
   };
   const LOCKABLE_SLIDERS = ['n', 'seeds', 'thr', 'amb', 'miracle', 'exch', 'devils', 'devildmg'];
@@ -392,7 +409,11 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
   let recordLowVTime = 0;
   let recordLowTotal = 100;
   let recordLowTotalTime = 0;
-  let scrubIndex = null;
+  let selectedClip = null; // index into eventWindows currently being browsed, or null when live
+  let clipFrame = 0; // index into eventWindows[selectedClip].frames
+  let clipPlaying = false;
+  let clipPlayTimer = null;
+  const CLIP_PLAY_MS = 90; // ms between frames during auto-play
   let convMilestones = [];
   const MAX_MILESTONES = 20;
   const REPLAY_PRE_SECONDS = 30; // simulated seconds captured before each conversion
@@ -566,7 +587,9 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     recordLowTotal = S0*100;
     recordLowTotalTime = 0;
     history = [{t:0, S: S0, frac: 1/bodies.length}];
-    scrubIndex = null;
+    selectedClip = null;
+    clipFrame = 0;
+    stopClipPlay();
     stepRing = [];
     eventWindows = [];
     activeWindows = [];
@@ -576,6 +599,8 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     els.scrub.min = 0; els.scrub.max = 0; els.scrub.value = 0;
     els.scrubLabel.textContent = `Conversion replay — captures ${REPLAY_PRE_SECONDS}s before and ${REPLAY_POST_SECONDS}s after each of the first ${MAX_MILESTONES} conscious-ball formations; nothing to browse yet.`;
     els.scrubLabel.classList.remove('scrubbing');
+    els.clipLabel.textContent = 'No conversions captured yet';
+    syncClipNavButtons();
     draw();
     updateReadouts();
     updateVerify();
@@ -1215,38 +1240,97 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     }
     stepRing.push(snap);
     while (stepRing.length && elapsedSec - stepRing[0].t > REPLAY_PRE_SECONDS) stepRing.shift();
-    const total = totalReplayFrames();
-    els.scrub.max = total;
-    if (scrubIndex === null) els.scrub.value = total;
-  }
-
-  function totalReplayFrames(){
-    let s = 0;
-    for (const w of eventWindows) s += w.frames.length;
-    return s;
-  }
-
-  // Maps a single global scrub-bar index to the specific captured frame, which conversion
-  // window it belongs to, and its offset in simulated seconds from that conversion's moment
-  // (0 = the moment itself, negative = before, positive = after).
-  function frameAt(globalIndex){
-    let idx = globalIndex;
-    for (let wi=0; wi<eventWindows.length; wi++){
-      const w = eventWindows[wi];
-      if (idx < w.frames.length){
-        const snap = w.frames[idx];
-        return { snap, window: w, windowIndex: wi, offsetSec: snap.t - w.momentTime };
-      }
-      idx -= w.frames.length;
+    // capture only ever runs while the sim is live (browsing a clip pauses it first), so the
+    // clip currently being viewed, if any, never grows out from under the user mid-drag --
+    // this is just keeping the nav controls' enabled state and count in sync
+    if (selectedClip === null && eventWindows.length > 0){
+      els.clipLabel.textContent = `${eventWindows.length} conversion${eventWindows.length===1?'':'s'} captured — Prev/Next to browse`;
     }
-    return null;
+    syncClipNavButtons();
   }
 
-  function renderScrub(index){
-    const hit = frameAt(index);
-    if (!hit) return;
-    const { snap, window, offsetSec } = hit;
-    const milestone = convMilestones[window.milestoneIndex];
+  function currentClip(){ return selectedClip===null ? null : eventWindows[selectedClip]; }
+
+  function stopClipPlay(){
+    clipPlaying = false;
+    if (clipPlayTimer){ clearInterval(clipPlayTimer); clipPlayTimer = null; }
+    if (els.playClip) els.playClip.textContent = '▶ Play clip';
+  }
+
+  function syncClipNavButtons(){
+    const has = eventWindows.length > 0;
+    const viewing = selectedClip !== null;
+    els.prevClip.disabled = !has || (viewing && selectedClip <= 0);
+    els.nextClip.disabled = !has || (viewing && selectedClip >= eventWindows.length-1);
+    els.playClip.disabled = !viewing;
+    els.backLive.disabled = !viewing;
+    els.frameBack.disabled = !viewing;
+    els.frameFwd.disabled = !viewing;
+    els.scrub.disabled = !viewing;
+  }
+
+  // Selects clip `idx` (clamped into range) for browsing -- always starts at that clip's
+  // first frame. Pauses the live sim first, same as the old drag-to-scrub behavior did.
+  function selectClip(idx){
+    if (eventWindows.length === 0) return;
+    idx = Math.max(0, Math.min(eventWindows.length-1, idx));
+    stopClipPlay();
+    if (running){
+      running = false;
+      els.run.textContent = 'Run';
+      if (rafId) cancelAnimationFrame(rafId);
+      shrinkChartToFullRun();
+      syncSliderLocks();
+    }
+    selectedClip = idx;
+    clipFrame = 0;
+    const clip = eventWindows[idx];
+    els.scrub.min = 0;
+    els.scrub.max = clip.frames.length - 1;
+    els.scrub.value = 0;
+    syncClipNavButtons();
+    renderClipFrame();
+  }
+
+  // delta=+1 (Next) from live lands on the first clip; delta=-1 (Prev) from live lands on
+  // the most recent one -- either button works as a natural way to enter recap browsing.
+  function navClip(delta){
+    if (eventWindows.length === 0) return;
+    const base = selectedClip === null ? (delta > 0 ? -1 : eventWindows.length) : selectedClip;
+    selectClip(base + delta);
+  }
+
+  function stepFrame(delta){
+    if (selectedClip === null) return;
+    stopClipPlay();
+    const clip = currentClip();
+    clipFrame = Math.max(0, Math.min(clip.frames.length-1, clipFrame+delta));
+    els.scrub.value = clipFrame;
+    renderClipFrame();
+  }
+
+  function toggleClipPlay(){
+    if (selectedClip === null) return;
+    if (clipPlaying){ stopClipPlay(); return; }
+    const clip = currentClip();
+    if (clipFrame >= clip.frames.length-1) clipFrame = 0;
+    clipPlaying = true;
+    els.playClip.textContent = '⏸ Pause';
+    clipPlayTimer = setInterval(()=>{
+      const c = currentClip();
+      if (!c || clipFrame >= c.frames.length-1){ stopClipPlay(); return; }
+      clipFrame++;
+      els.scrub.value = clipFrame;
+      renderClipFrame();
+    }, CLIP_PLAY_MS);
+  }
+
+  function renderClipFrame(){
+    const clip = currentClip();
+    if (!clip) return;
+    const snap = clip.frames[clipFrame];
+    const offsetSec = snap.t - clip.momentTime;
+    const milestone = convMilestones[clip.milestoneIndex];
     ctx.clearRect(0,0,W,H);
     ctx.fillStyle = getComputedStyle(document.body).getPropertyValue('--panel-2') || '#111';
     ctx.fillRect(0,0,W,H);
@@ -1303,10 +1387,11 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
         ctx.beginPath(); ctx.arc(x,y,r+ctx.lineWidth,0,Math.PI*2); ctx.stroke();
       }
     }
-    const eventNum = window.milestoneIndex + 1;
+    const eventNum = clip.milestoneIndex + 1;
     const offsetLabel = Math.abs(offsetSec) < 1e-6 ? 'the moment of conversion'
       : (offsetSec < 0 ? `${(-offsetSec).toFixed(1)}s before` : `${offsetSec.toFixed(1)}s after`);
-    els.scrubLabel.textContent = `Conversion #${eventNum} of ${convMilestones.length} (crossed to ${fmtPct(milestone.value)} at t=${fmtTime(milestone.time)}) — ${offsetLabel}. Sim paused; drag to browse, or to "live" (right end) to resume.`;
+    els.clipLabel.textContent = `Conversion #${eventNum} of ${eventWindows.length} captured (crossed to ${fmtPct(milestone.value)} at t=${fmtTime(milestone.time)})`;
+    els.scrubLabel.textContent = `${offsetLabel} — frame ${clipFrame+1} of ${clip.frames.length}. Sim paused; step with ◀▶, drag the bar, or Play clip; "Back to live" to resume.`;
     els.scrubLabel.classList.add('scrubbing');
     const scrubTotalStr = `${snap.total.toFixed(1)} (${reportPctLeft(snap.total).toFixed(1)}% left @${fmtTimeShort(snap.t)})`;
     els.sTotal.textContent = scrubTotalStr;
@@ -1319,14 +1404,20 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     els.tick.textContent = `conversion #${eventNum} replay, ${offsetLabel} @ t=${snap.t.toFixed(1)}s`;
   }
 
-  function exitScrub(){
-    if (scrubIndex === null) return;
-    scrubIndex = null;
-    els.scrub.value = totalReplayFrames();
+  function exitToLive(){
+    if (selectedClip === null) return;
+    stopClipPlay();
+    selectedClip = null;
+    clipFrame = 0;
+    els.scrub.min = 0; els.scrub.max = 0; els.scrub.value = 0;
     els.scrubLabel.classList.remove('scrubbing');
     els.scrubLabel.textContent = eventWindows.length
-      ? `Conversion replay — ${eventWindows.length} of ${MAX_MILESTONES} conscious-ball formation${eventWindows.length===1?'':'s'} captured so far; drag to browse, back at "live" now.`
+      ? `Conversion replay — ${eventWindows.length} of ${MAX_MILESTONES} conscious-ball formation${eventWindows.length===1?'':'s'} captured so far. Use Prev/Next to browse.`
       : `Conversion replay — captures ${REPLAY_PRE_SECONDS}s before and ${REPLAY_POST_SECONDS}s after each of the first ${MAX_MILESTONES} conscious-ball formations; nothing to browse yet.`;
+    els.clipLabel.textContent = eventWindows.length
+      ? `${eventWindows.length} conversion${eventWindows.length===1?'':'s'} captured — Prev/Next to browse`
+      : 'No conversions captured yet';
+    syncClipNavButtons();
     draw();
     updateReadouts();
   }
@@ -1397,7 +1488,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     running = !running;
     els.run.textContent = running ? 'Pause' : 'Run';
     if (running){
-      exitScrub();
+      exitToLive();
       if (chartAnimId){ cancelAnimationFrame(chartAnimId); chartAnimId = null; }
       lastT = null; loop(performance.now());
     } else {
@@ -1408,21 +1499,19 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
   });
   els.reset.addEventListener('click', ()=>{ selectedId = null; reset(); });
 
+  els.prevClip.addEventListener('click', ()=> navClip(-1));
+  els.nextClip.addEventListener('click', ()=> navClip(1));
+  els.frameBack.addEventListener('click', ()=> stepFrame(-1));
+  els.frameFwd.addEventListener('click', ()=> stepFrame(1));
+  els.playClip.addEventListener('click', toggleClipPlay);
+  els.backLive.addEventListener('click', exitToLive);
+
   els.scrub.addEventListener('input', ()=>{
-    if (running){
-      running = false;
-      els.run.textContent = 'Run';
-      if (rafId) cancelAnimationFrame(rafId);
-      shrinkChartToFullRun();
-      syncSliderLocks();
-    }
-    const val = Number(els.scrub.value);
-    if (val >= totalReplayFrames()){
-      exitScrub();
-    } else {
-      scrubIndex = val;
-      renderScrub(val);
-    }
+    if (selectedClip === null) return;
+    stopClipPlay();
+    const clip = currentClip();
+    clipFrame = Math.max(0, Math.min(clip.frames.length-1, Number(els.scrub.value)));
+    renderClipFrame();
   });
 
   stage.addEventListener('click', (e)=>{
@@ -1431,8 +1520,8 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     const mx = (e.clientX-rect.left)*scaleX, my = (e.clientY-rect.top)*scaleY;
     const tolerance = Math.max(8, scaleX*10); // keep a roughly constant on-screen hit radius even when canvas is heavily downscaled
 
-    if (scrubIndex !== null){
-      const snap = frameAt(scrubIndex).snap;
+    if (selectedClip !== null){
+      const snap = currentClip().frames[clipFrame];
       let best = -1, bestD = Infinity;
       for (let i=0;i<snap.xs.length;i++){
         const d = Math.hypot(snap.xs[i]-mx, snap.ys[i]-my);
@@ -1447,7 +1536,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
       } else {
         els.inspector.textContent = 'Click any ball to zoom in on its exact violence level — color alone won\'t show the exact number.';
       }
-      renderScrub(scrubIndex);
+      renderClipFrame();
       return;
     }
 
