@@ -231,7 +231,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
         <button id="btn-play-clip" class="tag" disabled>▶ Play clip</button>
         <button id="btn-live" class="tag" disabled>● Back to live</button>
       </div>
-      <div id="scrub-label" class="mono">Conversion replay — captures 30s before and 10s after each of the first 20 conscious-ball formations; nothing to browse yet.</div>
+      <div id="scrub-label" class="mono">Conversion replay — captures 15s before and 5s after each of the first 20 conscious-ball formations; nothing to browse yet.</div>
     </div>
     <div class="rolekey">
       <span><i class="chip" style="background:hsl(0,72%,45%)"></i>red — violent, ≥ 51%</span>
@@ -343,7 +343,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
   </div>
 </div>
 
-<footer>Color is the only at-a-glance signal now — no on-ball text, and no gradient either: a non-conscious body is one of three fixed colors by band, not a ramp — red at 51% or above, green from 11% to 50%, yellow at 10% or below. Yellow exists specifically to flag "getting close to the conversion threshold" without implying it's already converted, since a body that's crossed below 10% is usually only a hit or two away. A conscious body is always exactly 0% violence, so it always gets the same fixed gold fill and gold ring — a brighter, cooler yellow (hue 58) was picked deliberately far from that warmer, darker gold (hue 38) so the two never get confused even at very small ball sizes. (The gold ring's faint halo turns off above 1,000 bodies, purely so thousands of per-ball gradients don't tank the frame rate — the flat gold fill stays either way.) Click any ball to read its exact value in the inspector above the chart. Bodies range from 10 up to 10,000, in steps of 10 below 100 and steps of 100 from 100 up, so the slider always lands on a round number instead of an arbitrary one; the chamber and ball radius scale together to keep a reasonable, visible size and packing density at any count, and past 300 bodies collision detection switches from checking every pair to a spatial grid (only nearby bodies are checked against each other) so the frame rate doesn't collapse at high counts. Background violence radiation only touches bodies not yet flagged conscious, so a body's crossing into consciousness is a real immunity to that rising background hazard -- permanent, unless devil balls are in play and later corrupt it back (see the "Devil balls" section in the explainer above, and the dark-red-aura chip in the legend). The bar under the chamber is a conversion replay, not a full-run scrubber: it only ever holds the first 20 conscious-ball formations, each captured as its own clip spanning 30 simulated seconds immediately before that ball crossed threshold, the crossing moment itself, and 10 simulated seconds immediately after -- long enough after to see whether the same divine ball (or another) goes on to hit it, or others nearby, again. Every physics step is captured individually rather than sampled over real time (at very high body counts, where a full-precision 40-second clip would use too much memory, capture spaces itself out just enough to stay within a fixed budget -- still every step at typical body counts). Whichever body that clip is about gets an extra purple glow and ring throughout the entire clip, on top of whatever color it's already showing (red, green, or yellow beforehand, gold after) -- so it stays trackable as the one specific ball being followed, not lost in a crowd of same-colored bodies, and you can watch it get hit again within the same clip if it does. Everything else in the run -- the long stretches between conversions -- is simply never captured. Browsing is Prev/Next-driven, not one giant bar for every clip stitched together: Prev/Next picks which conversion you're looking at (label shows which one and its crossing value), and the slider only ever spans that one clip's own frames, so dragging it stays fine-grained instead of each pixel of mouse movement skipping over dozens of frames the way one shared 20-clip-long bar would. The ◀/▶ buttons step exactly one frame at a time for total precision, and "Play clip" auto-advances through the whole thing at a fixed slow pace if you'd rather just watch it than drag anything. Selecting a clip pauses the sim and repaints the chamber and headline stats at that exact frame; "Back to live" (or pressing Run) returns to the live view.</footer>
+<footer>Color is the only at-a-glance signal now — no on-ball text, and no gradient either: a non-conscious body is one of three fixed colors by band, not a ramp — red at 51% or above, green from 11% to 50%, yellow at 10% or below. Yellow exists specifically to flag "getting close to the conversion threshold" without implying it's already converted, since a body that's crossed below 10% is usually only a hit or two away. A conscious body is always exactly 0% violence, so it always gets the same fixed gold fill and gold ring — a brighter, cooler yellow (hue 58) was picked deliberately far from that warmer, darker gold (hue 38) so the two never get confused even at very small ball sizes. (The gold ring's faint halo turns off above 1,000 bodies, purely so thousands of per-ball gradients don't tank the frame rate — the flat gold fill stays either way.) Click any ball to read its exact value in the inspector above the chart. Bodies range from 10 up to 10,000, in steps of 10 below 100 and steps of 100 from 100 up, so the slider always lands on a round number instead of an arbitrary one; the chamber and ball radius scale together to keep a reasonable, visible size and packing density at any count, and past 300 bodies collision detection switches from checking every pair to a spatial grid (only nearby bodies are checked against each other) so the frame rate doesn't collapse at high counts. Background violence radiation only touches bodies not yet flagged conscious, so a body's crossing into consciousness is a real immunity to that rising background hazard -- permanent, unless devil balls are in play and later corrupt it back (see the "Devil balls" section in the explainer above, and the dark-red-aura chip in the legend). The bar under the chamber is a conversion replay, not a full-run scrubber: it only ever holds the first 20 conscious-ball formations, each captured as its own clip spanning 15 simulated seconds immediately before that ball crossed threshold, the crossing moment itself, and 5 simulated seconds immediately after -- long enough after to see whether the same divine ball (or another) goes on to hit it, or others nearby, again. Every physics step is captured individually rather than sampled over real time (at very high body counts, where a full-precision 20-second clip would use too much memory, capture spaces itself out just enough to stay within a fixed budget -- still every step at typical body counts). Whichever body that clip is about gets an extra purple glow and ring throughout the entire clip, on top of whatever color it's already showing (red, green, or yellow beforehand, gold after) -- so it stays trackable as the one specific ball being followed, not lost in a crowd of same-colored bodies, and you can watch it get hit again within the same clip if it does. That same body is also auto-selected in the inspector for the whole clip, so its exact violence number updates live as the clip plays or you scrub through it, without having to click it yourself -- click any other ball in the clip to inspect that one instead, until the next clip is picked. Everything else in the run -- the long stretches between conversions -- is simply never captured. Browsing is Prev/Next-driven, not one giant bar for every clip stitched together: Prev/Next picks which conversion you're looking at (label shows which one and its crossing value), and the slider only ever spans that one clip's own frames, so dragging it stays fine-grained instead of each pixel of mouse movement skipping over dozens of frames the way one shared 20-clip-long bar would. The ◀/▶ buttons step exactly one frame at a time for total precision, and "Play clip" auto-advances through the whole thing at a fixed slow pace if you'd rather just watch it than drag anything. Selecting a clip pauses the sim and repaints the chamber and headline stats at that exact frame; "Back to live" (or pressing Run) returns to the live view.</footer>
 
 <script>
 (function(){
@@ -411,13 +411,14 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
   let recordLowTotalTime = 0;
   let selectedClip = null; // index into eventWindows currently being browsed, or null when live
   let clipFrame = 0; // index into eventWindows[selectedClip].frames
+  let clipInspectId = null; // null = auto-follow the converting body; otherwise a body the user clicked on within this clip
   let clipPlaying = false;
   let clipPlayTimer = null;
   const CLIP_PLAY_MS = 90; // ms between frames during auto-play
   let convMilestones = [];
   const MAX_MILESTONES = 20;
-  const REPLAY_PRE_SECONDS = 30; // simulated seconds captured before each conversion
-  const REPLAY_POST_SECONDS = 10; // simulated seconds captured after, e.g. to see repeated hits on the same body
+  const REPLAY_PRE_SECONDS = 15; // simulated seconds captured before each conversion
+  const REPLAY_POST_SECONDS = 5; // simulated seconds captured after, e.g. to see repeated hits on the same body
   const REPLAY_STEPS_PER_SIM_SECOND = 60; // physics steps happen once per rendered frame per unit of Speed, and simulated time is diluted by that same Speed factor, so steps-per-simulated-second stays ~60 (one rendered frame's worth) regardless of the Speed slider
   const REPLAY_BUDGET_BYTES_PER_WINDOW = 5000000; // ~5MB/window cap (~100MB worst case across MAX_MILESTONES windows), independent of body count -- see computeCaptureStride()
   let stepRing = []; // rolling buffer holding the last REPLAY_PRE_SECONDS worth of captured body-states
@@ -589,6 +590,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     history = [{t:0, S: S0, frac: 1/bodies.length}];
     selectedClip = null;
     clipFrame = 0;
+    clipInspectId = null;
     stopClipPlay();
     stepRing = [];
     eventWindows = [];
@@ -1344,6 +1346,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     }
     selectedClip = idx;
     clipFrame = 0;
+    clipInspectId = null;
     const clip = eventWindows[idx];
     els.scrub.min = 0;
     els.scrub.max = clip.frames.length - 1;
@@ -1391,6 +1394,11 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     const snap = clip.frames[clipFrame];
     const offsetSec = snap.t - clip.momentTime;
     const milestone = convMilestones[clip.milestoneIndex];
+    // defaults to the converting body itself so its exact violence is always visible in the
+    // inspector as the clip plays, without needing to click it; clicking a different ball in
+    // the clip (see stage click handler) overrides this until a new clip is selected
+    const inspectId = clipInspectId !== null ? clipInspectId : milestone.bodyId;
+    const selColor = getComputedStyle(document.body).getPropertyValue('--text') || '#fff';
     ctx.clearRect(0,0,W,H);
     ctx.fillStyle = getComputedStyle(document.body).getPropertyValue('--panel-2') || '#111';
     ctx.fillRect(0,0,W,H);
@@ -1450,6 +1458,23 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
         ctx.strokeStyle = '#a855f7';
         ctx.beginPath(); ctx.arc(x,y,r+ctx.lineWidth,0,Math.PI*2); ctx.stroke();
       }
+      if (i === inspectId){
+        ctx.lineWidth = 1.5;
+        ctx.strokeStyle = selColor;
+        ctx.setLineDash([2,2]);
+        ctx.beginPath(); ctx.arc(x,y,r+6,0,Math.PI*2); ctx.stroke();
+        ctx.setLineDash([]);
+      }
+    }
+    {
+      const isConscious = snap.cs[inspectId]===1;
+      const isDevil = snap.ds[inspectId]===1;
+      const devilTag = isDevil && !isConscious ? ' (devil)' : '';
+      const followTag = clipInspectId === null ? ' — converting body' : '';
+      els.inspector.innerHTML =
+        `Body #${inspectId}${inspectId===CONSCIOUS_ID?' (seed)':''}${devilTag}${followTag} — `+
+        `<span class="${isConscious?'ring':''}">${isConscious?'conscious':'non-conscious'}</span> — `+
+        `exact violence at t=${fmtTime(snap.t)}: <b>${fmtFull(snap.vs[inspectId])}</b>`;
     }
     const eventNum = clip.milestoneIndex + 1;
     const offsetLabel = Math.abs(offsetSec) < 1e-6 ? 'the moment of conversion'
@@ -1473,6 +1498,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     stopClipPlay();
     selectedClip = null;
     clipFrame = 0;
+    clipInspectId = null;
     els.scrub.min = 0; els.scrub.max = 0; els.scrub.value = 0;
     els.scrubLabel.classList.remove('scrubbing');
     els.scrubLabel.textContent = eventWindows.length
@@ -1591,15 +1617,10 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
         const d = Math.hypot(snap.xs[i]-mx, snap.ys[i]-my);
         if (d < BALL_R+tolerance && d < bestD){ best = i; bestD = d; }
       }
-      if (best >= 0){
-        const isConscious = snap.cs[best]===1;
-        els.inspector.innerHTML =
-          `Body #${best}${best===CONSCIOUS_ID?' (seed)':''} — `+
-          `<span class="${isConscious?'ring':''}">${isConscious?'conscious':'non-conscious'}</span> — `+
-          `exact violence at t=${fmtTime(snap.t)}: <b>${fmtFull(snap.vs[best])}</b>`;
-      } else {
-        els.inspector.textContent = 'Click any ball to zoom in on its exact violence level — color alone won\'t show the exact number.';
-      }
+      // best>=0 pins the inspector to that body until a new clip is picked; a miss goes back
+      // to auto-following the converting body rather than a static "click a ball" message,
+      // since that auto-follow is the default view now
+      clipInspectId = best >= 0 ? best : null;
       renderClipFrame();
       return;
     }
