@@ -660,16 +660,22 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
       const nx=dx/dist, ny=dy/dist;
       const rvx=c.vx-a.vx, rvy=c.vy-a.vy;
       const rel = rvx*nx+rvy*ny;
-      if (rel < 0){
-        a.vx += rel*nx; a.vy += rel*ny;
-        c.vx -= rel*nx; c.vy -= rel*ny;
-      }
+      // un-overlap every step regardless (keeps packed bodies from visibly sinking into
+      // each other), but only treat it as an actual collision -- impulse, violence exchange,
+      // counters -- the step they're genuinely approaching. Two bodies can stay geometrically
+      // overlapping for many consecutive steps in a dense chamber while position correction
+      // slowly separates them; without this guard, applyInteraction() re-fired every single
+      // one of those steps as if it were a fresh hit, which for something purely additive
+      // like devil damage could rack up dozens of "hits" out of one real touch.
       const overlap = (a.r+c.r-dist)/2;
       a.x -= nx*overlap; a.y -= ny*overlap;
       c.x += nx*overlap; c.y += ny*overlap;
-
-      applyInteraction(a, c);
-      collisions++;
+      if (rel < 0){
+        a.vx += rel*nx; a.vy += rel*ny;
+        c.vx -= rel*nx; c.vy -= rel*ny;
+        applyInteraction(a, c);
+        collisions++;
+      }
     }
   }
 
