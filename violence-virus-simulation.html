@@ -224,6 +224,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
       <span><i class="chip" style="background:hsl(132,75%,42%)"></i>green — violent, 11–50%</span>
       <span><i class="chip" style="background:hsl(58,100%,62%)"></i>yellow — violent, ≤ 10% (close to threshold)</span>
       <span><i class="chip" style="background:hsl(38,90%,48%); box-shadow:0 0 6px 3px rgba(255,214,90,0.55);"></i>gold — conscious, permanently 0%</span>
+      <span><i class="chip" style="background:hsl(0,72%,45%); box-shadow:0 0 6px 3px rgba(139,0,0,0.7);"></i>dark red aura — devil ball, immune until all normal violent balls convert</span>
     </div>
     <div id="inspector" class="mono">Click any ball to zoom in on its exact violence level — only color shows at a glance, click for the number.</div>
     <div class="controls">
@@ -255,6 +256,14 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
         <label>Violence exchange cap, non-divine hits (max points traded per collision) <span class="val" id="v-exch">1.0 %</span></label>
         <input type="range" id="exch" min="0" max="51" value="2" step="1">
       </div>
+      <div class="ctrl">
+        <label>Devil balls to start with <span class="val" id="v-devils">0</span></label>
+        <input type="range" id="devils" min="0" max="10" value="0" step="1">
+      </div>
+      <div class="ctrl">
+        <label>Devil damage per hit on divine balls <span class="val" id="v-devildmg">5 %</span></label>
+        <input type="range" id="devildmg" min="1" max="10" value="5" step="1">
+      </div>
     </div>
     <div class="lock-note" id="lock-note" hidden>Only Speed can be changed while running — the other sliders lock so a mid-run tweak can't skew this run's data. Pause or Reset chamber to change them.</div>
     <div class="btnrow">
@@ -278,6 +287,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
       <div class="stat"><div class="k">Avg hits / conversion</div><div class="v mono" id="s-avghits">—</div></div>
       <div class="stat"><div class="k">Background radiation, total</div><div class="v mono" id="s-amb">+100.0 %/s</div></div>
       <div class="stat"><div class="k">Miracle violence removed (Σ %)</div><div class="v mono" id="s-miracle">0.0</div></div>
+      <div class="stat"><div class="k">Devil status</div><div class="v mono" id="s-devil">none in this run</div></div>
     </div>
     <div id="milestone" class="mono">Not yet fully conscious.</div>
     <div id="milestone-list" class="mono">No non-seed body has become conscious yet.</div>
@@ -296,18 +306,20 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     <div class="formula">non-conscious ⨯ non-conscious:  transfer = clamp((b−a)/2, ±cap);  a → a+transfer, b → b−transfer</div>
     <div class="formula">conscious ⨯ non-conscious:  v → max(0, v/2 − bonus),  &nbsp; v_role stays 0 (2·0 = 0)</div>
     <div class="formula">bonus = max(0, radiation %/s) × (miracle power / 100), in percentage points</div>
-    <div class="formula">if v ≤ T after that hit:  v is reset to exactly 0, body flips to conscious, permanently</div>
-    <p><b>The simplification:</b> a body doesn't drift down to <i>near</i> zero and then keep existing at some tiny residual — the instant it crosses T, its value is reset to exactly 0. Every conscious body's own violence is therefore always precisely 0, forever: the seed starts there, and every later conversion lands there too. Doubling a body that's exactly 0 leaves it at exactly 0 (0·2=0), so there's no drift, no residual number to worry about, and no separate "has it climbed back up" question to track. Once a body converts it stops counting toward the room's total for the simplest possible reason: its own value really is 0, not merely excluded by convention. Consequently the total can only reach exactly 0 once every body has converted — it is mathematically impossible for one to happen without the other.</p>
+    <div class="formula">if v ≤ T after that hit:  v is reset to exactly 0, body flips to conscious, permanently (unless corrupted by a devil ball -- see below)</div>
+    <p><b>The simplification:</b> a body doesn't drift down to <i>near</i> zero and then keep existing at some tiny residual — the instant it crosses T, its value is reset to exactly 0. Every conscious body's own violence is therefore always precisely 0, forever: the seed starts there, and every later conversion lands there too. Doubling a body that's exactly 0 leaves it at exactly 0 (0·2=0), so there's no drift, no residual number to worry about, and no separate "has it climbed back up" question to track. Once a body converts it stops counting toward the room's total for the simplest possible reason: its own value really is 0, not merely excluded by convention. Consequently the total can only reach exactly 0 once every body has converted — it is mathematically impossible for one to happen without the other. (This permanence has exactly one exception: with devil balls in play, repeated devil hits can drive a divine ball's v back up to exactly 1, at which point it corrupts back into a devil ball itself — see "Devil balls" below. With Devil balls = 0, the default, none of this applies and conversion really is permanent.)</p>
     <p>"Total system violence" is a plain sum, not an average — ten bodies sitting at 18% each read as <span class="mono">180.0</span>, not <span class="mono">18.0%</span>. With N bodies starting near 100% each, expect the starting number in the thousands; the chart's total-violence line still plots the live, instantaneous sum as a fraction of that starting sum, purely so it fits the same 0–100% axis as the other two lines. The stat card and sticky bar, however, don't show that live number at all — they show the <i>lowest</i> this sum has ever been so far in the run, with the elapsed time that low was hit in parentheses right after it, since total violence isn't monotonic (background violence radiation keeps adding to it between hits, and a positive setting can push it back up faster than collisions bring it down) and the running minimum is the more useful "how much progress has this run banked" number to glance at.</p>
     <p>Averaging <i>conserves</i> the pair's sum — it only spreads violence around, never removes any — and the "violence exchange cap" slider only throttles how much of that spread one hit can deliver: at its max (50, the largest possible half-gap between two bodies) it never binds, so nothing changes from the plain average. Dial it down and a single collision can only move a pair partway to their average, capped at that many percentage points; the two still keep colliding, so they keep closing the rest of the gap over several hits instead of one. This exists to protect progress a divine ball has already made on a body: without a cap, a body a divine ball has patiently halved down near threshold T (say to 1%) gets yanked straight back up to ~50% the instant it collides with one ordinary 100% body — one plain-average hit erases many divine hits' worth of work. With the cap on, that same collision only pulls the low body up by the capped amount (26% at cap=25, not 50%), so the divine ball's progress survives ordinary contact and it can keep working the body down toward T across repeated divine hits instead of racing an unbounded reset. Only a conscious-role hit deletes anything, and it also grows the population that can delete things: every body it drives below the threshold T becomes a second source of the same effect. That's a bootstrap cascade (the same shape as bootstrap percolation / the Watts threshold model of social contagion), not a fixed sink — the "infection" here is calm, and it compounds.</p>
     <h3 style="font-size:17px;margin:16px 0 8px;">Why a single seed is already enough for all of them</h3>
     <p>Fix any body still above T. Each time it collides with a conscious-flagged body, its value is exactly halved — a geometric decay with no floor besides 0. However small T is, that body crosses it after a finite number of such hits:</p>
     <div class="formula">hits needed ≈ log₂(v / T)</div>
-    <p>In a well-mixed chamber every pair collides again and again over time, so the probability any one body is <i>never</i> hit by a conscious body, forever, is zero. Conclusion: for any fixed T &gt; 0 <i>with no background violence radiation</i>, full conversion — every body conscious, total violence → 0 — isn't just likely, it's the guaranteed long-run outcome.</p>
+    <p>In a well-mixed chamber every pair collides again and again over time, so the probability any one body is <i>never</i> hit by a conscious body, forever, is zero. Conclusion: for any fixed T &gt; 0 <i>with no background violence radiation and no devil balls</i>, full conversion — every body conscious, total violence → 0 — isn't just likely, it's the guaranteed long-run outcome. Two sliders can each break that guarantee in their own way, one on by default (radiation) and one off by default (devil balls) — read on for what each one does.</p>
     <h3 style="font-size:17px;margin:16px 0 8px;">What background violence radiation breaks</h3>
     <p>This slider models the ambient, everywhere-at-once violence of a world that keeps generating friction on its own — not a person-to-person interaction, but a background condition every still-non-conscious body is bathed in continuously, raising its violence by a fixed amount every second whether or not it's currently colliding with anything. It's a rising tide by design, from +0.001%/s up to +10%/s: it actively works against the cascade, dragging a body's violence back up over T between hits, faster than conversions can push it down. There's a real tug-of-war between a discrete, collision-driven cooling process and this continuous, clock-driven heating one — push it toward +10 and you're watching the same "runs away past a critical value" behavior from the very first version of this model, just driven by a clock instead of a doubling. (There's no negative/"calming radiation" option, and no exact-zero option either — a contact-free channel straight to zero would trivially and near-instantly convert every body on its own with the divine side guaranteed to win, bypassing the collision dynamics this simulation is actually about; a real world always has some baseline source of friction above zero — comets, asteroids, natural disasters — so the slider's floor reflects that a truly violence-free background isn't a realistic setting to leave on, even if it's a fine idealization to reason about mathematically.)</p>
     <h3 style="font-size:17px;margin:16px 0 8px;">Miracle power</h3>
     <p>Direct contact already halves a body; miracle power adds a flat bonus on top of that halving, sized as a fraction of whatever the radiation slider currently reads (never a fraction of the body's own violence). At radiation=10%/s and miracle=100%, a body at 100% goes to 50% from the halving, then to 40% from the bonus — one collision, two separate deductions. At the default miracle=0% this term is always exactly 0 and contact is plain halving, same as before this control existed. Raising it doesn't change the average outcome much on its own; it raises the odds of a body getting unlucky in one specific way — repeated direct contact with the same conscious body in a short span, each hit chipping off extra — crossing threshold T sooner, or even in a single hit, when plain halving alone wouldn't have gotten there yet. That's why the Chamber's live tag counts <i>conscious hits</i> (direct conscious-vs-non-conscious collisions) rather than every collision in the room: multiply that count by the current bonus per hit and you get the "Miracle violence removed" stat below directly — hits × bonus, no need to do the arithmetic by hand.</p>
+    <h3 style="font-size:17px;margin:16px 0 8px;">Devil balls</h3>
+    <p>Off by default (0 starting devils). When enabled, a devil ball starts identical to any other 100%-violence body except for one property: for as long as at least one <i>normal</i> violent body (non-seed, non-devil) still exists, a devil ball is completely immune to violence exchange of any kind — a divine ball's halving does nothing to it, and it doesn't even participate in ordinary averaging with other violent bodies; it simply bounces, unaffected, always reading exactly 100%. The asymmetry cuts the other way on contact with a divine ball specifically: instead of taking damage, the devil ball adds a flat percentage (the "devil damage" slider) straight onto that divine ball's violence, every single hit. Enough repeated hits and a divine ball's v climbs all the way back to exactly 100% — at which point it corrupts: it stops being conscious and becomes a devil ball itself, immune like the others, undoing one of the run's conversions. Only once <i>every</i> normal violent body has converted does the immunity lift — from that point on a devil ball is just an ordinary non-conscious body, fully vulnerable to halving and averaging like anything else, and can itself eventually convert once its v drops to threshold T. The intended shape: normal violent bodies are the "minions" that have to be cleared first, since they're the only thing standing between the room and full consciousness while devils stonewall every divine ball that reaches them; the devils are the "boss fight" that only becomes winnable once the minions are gone.</p>
   </div>
   <div>
     <h3 style="font-size:17px;margin-bottom:8px;">Verifying the cascade actually accelerates</h3>
@@ -317,7 +329,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
   </div>
 </div>
 
-<footer>Color is the only at-a-glance signal now — no on-ball text, and no gradient either: a non-conscious body is one of three fixed colors by band, not a ramp — red at 51% or above, green from 11% to 50%, yellow at 10% or below. Yellow exists specifically to flag "getting close to the conversion threshold" without implying it's already converted, since a body that's crossed below 10% is usually only a hit or two away. A conscious body is always exactly 0% violence, so it always gets the same fixed gold fill and gold ring — a brighter, cooler yellow (hue 58) was picked deliberately far from that warmer, darker gold (hue 38) so the two never get confused even at very small ball sizes. (The gold ring's faint halo turns off above 1,000 bodies, purely so thousands of per-ball gradients don't tank the frame rate — the flat gold fill stays either way.) Click any ball to read its exact value in the inspector above the chart. Bodies range from 10 up to 10,000, in steps of 10 below 100 and steps of 100 from 100 up, so the slider always lands on a round number instead of an arbitrary one; the chamber and ball radius scale together to keep a reasonable, visible size and packing density at any count, and past 300 bodies collision detection switches from checking every pair to a spatial grid (only nearby bodies are checked against each other) so the frame rate doesn't collapse at high counts. Background violence radiation only touches bodies not yet flagged conscious, so a body's crossing into consciousness is a real, permanent immunity to that rising background hazard. The bar under the chamber is a conversion replay, not a full-run scrubber: it only ever holds the first 20 conscious-ball formations, each captured as its own clip spanning 30 simulated seconds immediately before that ball crossed threshold, the crossing moment itself, and 10 simulated seconds immediately after -- long enough after to see whether the same divine ball (or another) goes on to hit it, or others nearby, again. Every physics step is captured individually rather than sampled over real time, so dragging within one clip shows the exact collision-by-collision sequence (at very high body counts, where a full-precision 40-second clip would use too much memory, capture spaces itself out just enough to stay within a fixed budget -- still every step at typical body counts). Whichever body that clip is about gets an extra purple glow and ring throughout the entire clip, on top of whatever color it's already showing (red, green, or yellow beforehand, gold after) -- so it stays trackable as the one specific ball being followed, not lost in a crowd of same-colored bodies, and you can watch it get hit again within the same clip if it does. Everything else in the run -- the long stretches between conversions -- is simply never captured, so the bar has nothing to show there; drag past the end of one clip and you land on the start of the next. Dragging pauses the sim and repaints the chamber and headline stats as they were at that exact moment, and dragging back to the right end (or pressing Run) returns to live.</footer>
+<footer>Color is the only at-a-glance signal now — no on-ball text, and no gradient either: a non-conscious body is one of three fixed colors by band, not a ramp — red at 51% or above, green from 11% to 50%, yellow at 10% or below. Yellow exists specifically to flag "getting close to the conversion threshold" without implying it's already converted, since a body that's crossed below 10% is usually only a hit or two away. A conscious body is always exactly 0% violence, so it always gets the same fixed gold fill and gold ring — a brighter, cooler yellow (hue 58) was picked deliberately far from that warmer, darker gold (hue 38) so the two never get confused even at very small ball sizes. (The gold ring's faint halo turns off above 1,000 bodies, purely so thousands of per-ball gradients don't tank the frame rate — the flat gold fill stays either way.) Click any ball to read its exact value in the inspector above the chart. Bodies range from 10 up to 10,000, in steps of 10 below 100 and steps of 100 from 100 up, so the slider always lands on a round number instead of an arbitrary one; the chamber and ball radius scale together to keep a reasonable, visible size and packing density at any count, and past 300 bodies collision detection switches from checking every pair to a spatial grid (only nearby bodies are checked against each other) so the frame rate doesn't collapse at high counts. Background violence radiation only touches bodies not yet flagged conscious, so a body's crossing into consciousness is a real immunity to that rising background hazard -- permanent, unless devil balls are in play and later corrupt it back (see the "Devil balls" section in the explainer above, and the dark-red-aura chip in the legend). The bar under the chamber is a conversion replay, not a full-run scrubber: it only ever holds the first 20 conscious-ball formations, each captured as its own clip spanning 30 simulated seconds immediately before that ball crossed threshold, the crossing moment itself, and 10 simulated seconds immediately after -- long enough after to see whether the same divine ball (or another) goes on to hit it, or others nearby, again. Every physics step is captured individually rather than sampled over real time, so dragging within one clip shows the exact collision-by-collision sequence (at very high body counts, where a full-precision 40-second clip would use too much memory, capture spaces itself out just enough to stay within a fixed budget -- still every step at typical body counts). Whichever body that clip is about gets an extra purple glow and ring throughout the entire clip, on top of whatever color it's already showing (red, green, or yellow beforehand, gold after) -- so it stays trackable as the one specific ball being followed, not lost in a crowd of same-colored bodies, and you can watch it get hit again within the same clip if it does. Everything else in the run -- the long stretches between conversions -- is simply never captured, so the bar has nothing to show there; drag past the end of one clip and you land on the start of the next. Dragging pauses the sim and repaints the chamber and headline stats as they were at that exact moment, and dragging back to the right end (or pressing Run) returns to live.</footer>
 
 <script>
 (function(){
@@ -336,12 +348,15 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     amb: document.getElementById('amb'), vAmb: document.getElementById('v-amb'),
     miracle: document.getElementById('miracle'), vMiracle: document.getElementById('v-miracle'),
     exch: document.getElementById('exch'), vExch: document.getElementById('v-exch'),
+    devils: document.getElementById('devils'), vDevils: document.getElementById('v-devils'),
+    devildmg: document.getElementById('devildmg'), vDevildmg: document.getElementById('v-devildmg'),
     run: document.getElementById('btn-run'), reset: document.getElementById('btn-reset'),
     tick: document.getElementById('tick-count'),
     sVc: document.getElementById('s-vc'), sTotal: document.getElementById('s-total'),
     sConv: document.getElementById('s-conv'), sHits: document.getElementById('s-hits'),
     sAmb: document.getElementById('s-amb'), sTime: document.getElementById('s-time'),
     sMiracle: document.getElementById('s-miracle'),
+    sDevil: document.getElementById('s-devil'),
     sAvgHits: document.getElementById('s-avghits'),
     verify: document.getElementById('verify'),
     inspector: document.getElementById('inspector'), milestone: document.getElementById('milestone'),
@@ -352,7 +367,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     scrub: document.getElementById('scrub'), scrubLabel: document.getElementById('scrub-label'),
     lockNote: document.getElementById('lock-note'),
   };
-  const LOCKABLE_SLIDERS = ['n', 'seeds', 'thr', 'amb', 'miracle', 'exch'];
+  const LOCKABLE_SLIDERS = ['n', 'seeds', 'thr', 'amb', 'miracle', 'exch', 'devils', 'devildmg'];
   function syncSliderLocks(){
     const locked = running;
     for (const key of LOCKABLE_SLIDERS) els[key].disabled = locked;
@@ -364,6 +379,9 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
   let collisions = 0;
   let consciousHits = 0;
   let conversions = 0;
+  let devilHits = 0; // devil-ball hits that damaged a divine ball while immune (kept separate from consciousHits so "Miracle violence removed" stays accurate)
+  let corruptions = 0; // divine balls that fell to 100% devil damage and flipped back into a devil ball
+  let minionsRemaining = 0; // bodies that are neither conscious nor devil; devils stay fully immune while this is > 0
   let history = [];
   let selectedId = null;
   let elapsedSec = 0;
@@ -482,6 +500,9 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
   }
 
   function numSeeds(){ return Math.min(Number(els.seeds.value), nBodies()); }
+  function numDevils(){ return Math.min(Number(els.devils.value), Math.max(0, nBodies() - numSeeds())); }
+  function devilDamagePct(){ return Number(els.devildmg.value); }
+  function devilDamage(){ return devilDamagePct()/100; }
 
   function makeBodies(){
     const n = nBodies();
@@ -490,8 +511,11 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     stage.width = W; stage.height = H;
     const r = BALL_R;
     const seeds = numSeeds();
+    const devilCount = numDevils();
     const arr = [];
     for (let i=0;i<n;i++){
+      const isSeed = i < seeds;
+      const isDevil = !isSeed && i < seeds + devilCount;
       arr.push({
         id: i,
         x: r + Math.random()*(W-2*r),
@@ -499,8 +523,9 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
         vx: (Math.random()-0.5)*2.6,
         vy: (Math.random()-0.5)*2.6,
         r,
-        v: i<seeds ? 0 : 1.0,
-        conscious: i<seeds,
+        v: isSeed ? 0 : 1.0,
+        conscious: isSeed,
+        devil: isDevil,
       });
     }
     return arr;
@@ -522,6 +547,9 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     collisions = 0;
     consciousHits = 0;
     conversions = 0;
+    devilHits = 0;
+    corruptions = 0;
+    minionsRemaining = bodies.filter(b=>!b.conscious && !b.devil).length;
     elapsedSec = 0;
     fullAt = null;
     recordLowV = 1;
@@ -639,22 +667,44 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     if (a.conscious !== c.conscious){
       const cons = a.conscious ? a : c;
       const other = a.conscious ? c : a;
-      const bonus = bonusPerHit();
-      other.v = Math.max(0, other.v/2 - bonus);
-      cons.v = Math.min(1, cons.v*2);
-      consciousHits++;
+      if (other.devil && minionsRemaining > 0){
+        // devil balls are fully immune until every normal (non-devil) violent body has
+        // converted -- other's own v never changes; instead it damages the divine ball
+        cons.v = Math.min(1, cons.v + devilDamage());
+        devilHits++;
+        if (cons.v >= 1){
+          // corrupted: this divine ball falls back into a devil ball itself
+          cons.conscious = false;
+          cons.devil = true;
+          corruptions++;
+        }
+      } else {
+        const bonus = bonusPerHit();
+        other.v = Math.max(0, other.v/2 - bonus);
+        cons.v = Math.min(1, cons.v*2);
+        consciousHits++;
+      }
     } else {
-      const halfDiff = (c.v - a.v)/2;
-      const transfer = Math.sign(halfDiff) * Math.min(Math.abs(halfDiff), exchangeCap());
-      a.v = a.v + transfer;
-      c.v = c.v - transfer;
+      // a.conscious === c.conscious (both true, or both false) -- a fully-immune devil
+      // takes part in no violence exchange at all while minions remain
+      const aImmune = a.devil && !a.conscious && minionsRemaining > 0;
+      const cImmune = c.devil && !c.conscious && minionsRemaining > 0;
+      if (!aImmune && !cImmune){
+        const halfDiff = (c.v - a.v)/2;
+        const transfer = Math.sign(halfDiff) * Math.min(Math.abs(halfDiff), exchangeCap());
+        a.v = a.v + transfer;
+        c.v = c.v - transfer;
+      }
     }
     for (const b of [a,c]){
+      // a devil ball's v can only ever reach T once it's no longer immune, so this
+      // naturally covers both a normal minion converting and a devil finally falling
       if (!b.conscious && b.v <= T){
         const crossingValue = b.v;
         b.conscious = true;
         b.v = 0;
         conversions++;
+        if (!b.devil) minionsRemaining--;
         if (convMilestones.length < MAX_MILESTONES){
           convMilestones.push({n: conversions, value: crossingValue, time: elapsedSec, bodyId: b.id});
         }
@@ -670,6 +720,18 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     const showHalo = bodies.length <= 1000; // per-ball radial gradients get expensive at scale
     for (const b of bodies){
       const {rgb, ring} = colorFor(b.v, b.conscious);
+      // devil balls (never more than 10) always get their dark-red aura, cheap regardless
+      // of body count -- marks them out whatever their own fill color is at the moment
+      if (b.devil && !b.conscious){
+        const haloR = b.r*4;
+        const grad = ctx.createRadialGradient(b.x, b.y, b.r*0.6, b.x, b.y, haloR);
+        grad.addColorStop(0, 'rgba(139,0,0,0.6)');
+        grad.addColorStop(1, 'rgba(139,0,0,0)');
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.arc(b.x, b.y, haloR, 0, Math.PI*2);
+        ctx.fill();
+      }
       if (b.conscious && showHalo){
         const haloR = b.r*3.2;
         const grad = ctx.createRadialGradient(b.x, b.y, b.r*0.6, b.x, b.y, haloR);
@@ -687,6 +749,13 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
       if (b.conscious){
         ctx.lineWidth = Math.max(1, b.r*0.15);
         ctx.strokeStyle = ring;
+        ctx.stroke();
+      }
+      if (b.devil && !b.conscious){
+        ctx.lineWidth = Math.max(1.5, b.r*0.22);
+        ctx.strokeStyle = '#8b0000';
+        ctx.beginPath();
+        ctx.arc(b.x, b.y, b.r+ctx.lineWidth, 0, Math.PI*2);
         ctx.stroke();
       }
       if (b.id === selectedId){
@@ -731,6 +800,11 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     const ambPct = ambRatePct()*bodies.length;
     els.sAmb.textContent = '+' + fmtSliderPct(ambPct) + ' %/s';
     els.sMiracle.textContent = (consciousHits * bonusPerHit() * 100).toFixed(1);
+    const devilsLeft = bodies.filter(b=>b.devil && !b.conscious).length;
+    els.sDevil.textContent = numDevils()===0 ? 'none in this run'
+      : minionsRemaining>0 ? `${minionsRemaining} minion${minionsRemaining===1?'':'s'} left, ${devilsLeft} devil${devilsLeft===1?'':'s'} immune (${corruptions} corrupted)`
+      : devilsLeft>0 ? `minions cleared -- ${devilsLeft} devil${devilsLeft===1?'':'s'} now vulnerable`
+      : `all devils defeated (${corruptions} corrupted along the way)`;
     els.tick.textContent = `conscious hits = ${consciousHits} · t = ${elapsedSec.toFixed(1)}s`;
     updateInspector();
 
@@ -748,7 +822,8 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
       els.milestone.classList.add('done');
       els.milestone.textContent =
         `Simulation complete — full consciousness reached at t=${fmtTime(fullAt.time)}, total violence at 0%. `+
-        `${fullAt.hits} conscious-role hits total (avg ${fullAt.avg.toFixed(1)} hits per body converted), ${fullAt.collisions} collisions.`;
+        `${fullAt.hits} conscious-role hits total (avg ${fullAt.avg.toFixed(1)} hits per body converted), ${fullAt.collisions} collisions.`+
+        (corruptions>0 ? ` ${corruptions} divine ball${corruptions===1?'':'s'} fell to devil corruption along the way but ultimately reconverted.` : '');
     } else {
       els.milestone.classList.remove('done');
       els.milestone.textContent = `Not yet fully conscious — ${nConscious}/${bodies.length} converted, `+
@@ -814,17 +889,20 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     if (selectedId == null) return;
     const b = bodies.find(x=>x.id===selectedId);
     if (!b){ selectedId = null; return; }
+    const devilTag = b.devil && !b.conscious ? (minionsRemaining>0 ? ' (devil, immune)' : ' (devil, vulnerable)') : '';
     els.inspector.innerHTML =
-      `Body #${b.id}${b.id===CONSCIOUS_ID?' (seed)':''} — `+
+      `Body #${b.id}${b.id===CONSCIOUS_ID?' (seed)':''}${devilTag} — `+
       `<span class="${b.conscious?'ring':''}">${b.conscious?'conscious':'non-conscious'}</span> — `+
       `exact violence: <b>${fmtFull(b.v)}</b>`;
   }
 
   function updateRunSettingsLine(){
+    const devilCount = numDevils();
     els.runSettings.textContent =
       `Bodies=${nBodies()} · seeds=${numSeeds()} · speed=${els.speed.value}× · `+
       `threshold=${fmtSliderPct(thrPct())}% · radiation=+${fmtSliderPct(ambRatePct())}%/s · `+
-      `miracle=${els.miracle.value}% · exchange cap=${exchCapPct()>=50?'none':fmtSliderPct(exchCapPct())+'%'}`;
+      `miracle=${els.miracle.value}% · exchange cap=${exchCapPct()>=50?'none':fmtSliderPct(exchCapPct())+'%'}`+
+      (devilCount>0 ? ` · devils=${devilCount}@${devilDamagePct()}%/hit` : '');
   }
 
   function buildSummaryText(){
@@ -860,6 +938,8 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
       `     redistributes, it never creates or destroys any; the cap only slows how fast a`,
       `     single hit can close a large gap, e.g. a repeatedly-hit low body climbs back up`,
       `     in capped steps instead of snapping straight to the average of whatever it hits.`,
+      `     EXCEPTION: if either body is a still-immune devil ball (see Devil balls below),`,
+      `     neither body's v changes at all -- an immune devil takes part in no exchange.`,
       `  2. conscious x non-conscious (flags differ): the non-conscious body is halved and`,
       `     then hit with a flat "miracle" bonus subtraction (see below),`,
       `     v -> max(0, v/2 - bonus). The conscious body is simultaneously doubled and capped`,
@@ -867,7 +947,8 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
       `     (see conversion rule below), this is 0 -> min(1, 0) = 0, i.e. it never actually`,
       `     changes. This step does NOT conserve the sum -- roughly half of the non-conscious`,
       `     body's value (plus the bonus) is deleted from the system outright, not`,
-      `     transferred to the conscious body.`,
+      `     transferred to the conscious body. EXCEPTION: if the non-conscious body is a`,
+      `     still-immune devil ball, this entire rule is replaced -- see Devil balls below.`,
       `  3. conscious x conscious (both flags true): treated the same as rule 1 (plain average`,
       `     of two zeros, i.e. still 0).`,
       '',
@@ -877,10 +958,24 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
       '',
       `Conversion rule: immediately after any update, any body with flag=false whose v has`,
       `fallen to or below a fixed "conversion threshold" T has its v reset to EXACTLY 0 and`,
-      `its flag flipped to true, permanently. Because 0 doubled is still 0 (rule 2), a`,
-      `converted body's own violence never changes again for the rest of the run -- there is`,
-      `no residual value and no drift; every conscious body, at every moment, holds exactly`,
-      `0% violence.`,
+      `its flag flipped to true, permanently -- UNLESS devil balls later corrupt it back (see`,
+      `below); with Devil balls = 0 (the default) this exception never applies. Because 0`,
+      `doubled is still 0 (rule 2), a converted body's own violence never changes again for`,
+      `the rest of the run absent that exception -- there is no residual value and no drift;`,
+      `every conscious body, at every moment, holds exactly 0% violence.`,
+      '',
+      `Devil balls (${numDevils()===0?'0 in this run, so none of this applies':`${numDevils()} in this run, devil damage=${devilDamagePct()}% per hit`}): a devil ball`,
+      `starts identical to a normal 100%-violence body except: for as long as at least one`,
+      `normal violent body (non-seed, non-devil) still exists ("minions remaining"), a devil`,
+      `ball is fully immune to violence exchange of every kind (rules 1 and 2 above both`,
+      `become no-ops for it) -- it always reads exactly 100%. The one thing that DOES happen`,
+      `on devil-vs-divine contact during immunity: the devil ball adds a flat percentage`,
+      `(the devil-damage setting) onto the divine ball's v, every hit, uncapped by anything`,
+      `except v's own ceiling of 1. If that pushes a divine ball's v to exactly 1, it corrupts:`,
+      `flag flips back to false and it becomes a devil ball itself, undoing that conversion.`,
+      `Once every normal violent body has converted (minions remaining = 0), devil-ball`,
+      `immunity lifts permanently -- from then on a devil ball is just an ordinary`,
+      `non-conscious body, fully subject to rules 1 and 2, and can itself eventually convert.`,
       '',
       `Background violence radiation: independent of collisions, every body still flagged`,
       `false continuously gains a fixed percent of violence per elapsed second (+0.001 to`,
@@ -965,6 +1060,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
       `  Background violence radiation: +${fmtSliderPct(ambRatePct())}%/s per body`,
       `  Miracle power: ${els.miracle.value}%`,
       `  Violence exchange cap (non-divine hits): ${exchCapPct()>=50?'none (plain average)':fmtSliderPct(exchCapPct())+' percentage points per hit'}`,
+      `  Devil balls: ${numDevils()===0?'none':`${numDevils()} starting bodies, ${devilDamagePct()}% violence added to a divine ball per hit while immune`}`,
       '',
       'Live readout:',
       `  Elapsed time: ${fmtTime(elapsedSec)}`,
@@ -974,6 +1070,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
       `  Conscious bodies: ${nConscious} / ${bodies.length}`,
       `  Conscious-role hits: ${consciousHits}`,
       `  Miracle violence removed (Σ %, at current miracle/radiation settings): ${(consciousHits*bonusPerHit()*100).toFixed(2)}`,
+      `  Devil status: ${numDevils()===0?'none in this run':(minionsRemaining>0?`${minionsRemaining} minion(s) left, ${bodies.filter(b=>b.devil&&!b.conscious).length} devil(s) still immune, ${devilHits} devil hits landed on divine balls, ${corruptions} corruption(s) so far`:`minions cleared, devils now vulnerable, ${bodies.filter(b=>b.devil&&!b.conscious).length} devil(s) remaining, ${corruptions} corruption(s) happened before the clear`)}`,
       `  Avg hits per conversion: ${conversions>0 ? (consciousHits/conversions).toFixed(2) : 'n/a'}`,
       `  Record-low violence among still-violent bodies: ${recordLow}`,
       `  First ${MAX_MILESTONES} non-seed conversions (value at crossing, elapsed time):`,
@@ -985,7 +1082,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
       '',
       'Status:',
       `  ${fullAt
-        ? `Simulation complete — full consciousness reached at t=${fmtTime(fullAt.time)}, total violence at 0%. ${fullAt.hits} conscious-role hits total (avg ${fullAt.avg.toFixed(2)} hits per body converted), ${fullAt.collisions} collisions.`
+        ? `Simulation complete — full consciousness reached at t=${fmtTime(fullAt.time)}, total violence at 0%. ${fullAt.hits} conscious-role hits total (avg ${fullAt.avg.toFixed(2)} hits per body converted), ${fullAt.collisions} collisions.`+(corruptions>0?` ${corruptions} divine ball(s) fell to devil corruption along the way but were ultimately reconverted.`:'')
         : `Still running/paused — ${nConscious}/${bodies.length} converted.`}`,
     ];
     return lines.join('\n');
@@ -1038,14 +1135,14 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
   }
   function snapshotBodies(){
     const n = bodies.length;
-    const xs = new Float32Array(n), ys = new Float32Array(n), vs = new Float32Array(n), cs = new Uint8Array(n);
+    const xs = new Float32Array(n), ys = new Float32Array(n), vs = new Float32Array(n), cs = new Uint8Array(n), ds = new Uint8Array(n);
     let nConscious = 0, totalV = 0;
     for (let i=0;i<n;i++){
       const b = bodies[i];
-      xs[i]=b.x; ys[i]=b.y; vs[i]=b.v; cs[i]=b.conscious?1:0;
+      xs[i]=b.x; ys[i]=b.y; vs[i]=b.v; cs[i]=b.conscious?1:0; ds[i]=b.devil?1:0;
       if (b.conscious) nConscious++; else totalV += b.v;
     }
-    return {t: elapsedSec, xs, ys, vs, cs, nConscious, total: totalV*100};
+    return {t: elapsedSec, xs, ys, vs, cs, ds, nConscious, total: totalV*100};
   }
 
   // Called once per physics step (not once per rendered frame -- at Speed>1x several steps
@@ -1118,10 +1215,19 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     let curMin = 1;
     for (let i=0;i<n;i++){
       const isConscious = snap.cs[i]===1;
+      const isDevil = snap.ds[i]===1;
       if (!isConscious && snap.vs[i] < curMin) curMin = snap.vs[i];
       const {rgb, ring} = colorFor(snap.vs[i], isConscious);
       const x=snap.xs[i], y=snap.ys[i], r=BALL_R;
       const isTheConvertingBody = i === milestone.bodyId;
+      if (isDevil && !isConscious){
+        const haloR = r*4;
+        const grad = ctx.createRadialGradient(x,y,r*0.6,x,y,haloR);
+        grad.addColorStop(0, 'rgba(139,0,0,0.6)');
+        grad.addColorStop(1, 'rgba(139,0,0,0)');
+        ctx.fillStyle = grad;
+        ctx.beginPath(); ctx.arc(x,y,haloR,0,Math.PI*2); ctx.fill();
+      }
       if (isTheConvertingBody){
         // marks the one body this whole clip is about, in every frame of it, regardless of
         // its own color -- so it stays trackable as it shifts from green/yellow to gold
@@ -1145,6 +1251,11 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
         ctx.lineWidth = Math.max(1, r*0.15);
         ctx.strokeStyle = ring;
         ctx.stroke();
+      }
+      if (isDevil && !isConscious){
+        ctx.lineWidth = Math.max(1.5, r*0.22);
+        ctx.strokeStyle = '#8b0000';
+        ctx.beginPath(); ctx.arc(x,y,r+ctx.lineWidth,0,Math.PI*2); ctx.stroke();
       }
       if (isTheConvertingBody){
         ctx.lineWidth = Math.max(1.5, r*0.22);
@@ -1214,6 +1325,14 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
   els.exch.addEventListener('input', ()=>{
     const v = exchCapPct();
     els.vExch.textContent = fmtSliderPct(v) + ' %' + (v>=50 ? ' (no cap)' : '');
+    updateRunSettingsLine();
+  });
+  els.devils.addEventListener('input', ()=>{
+    els.vDevils.textContent = numDevils();
+    updateRunSettingsLine();
+  });
+  els.devildmg.addEventListener('input', ()=>{
+    els.vDevildmg.textContent = devilDamagePct() + ' %';
     updateRunSettingsLine();
   });
   els.copyBtn.addEventListener('click', copySummary);
