@@ -589,7 +589,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     S0 = totalViolence();
     recordLowTotal = S0*100;
     recordLowTotalTime = 0;
-    history = [{t:0, S: S0, frac: 1/bodies.length}];
+    history = [{t:0, S: S0, frac: 1/bodies.length, devils: numDevils()}];
     selectedClip = null;
     clipFrame = 0;
     clipInspectId = null;
@@ -957,7 +957,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
         `avg ${conversions>0 ? (consciousHits/conversions).toFixed(1) : '—'} hits per conversion so far.`;
     }
 
-    history.push({t: elapsedSec, S: total, frac: nConscious/bodies.length});
+    history.push({t: elapsedSec, S: total, frac: nConscious/bodies.length, devils: devilsLeft});
     if (running){
       const nowT = elapsedSec;
       const winStart = Math.max(0, nowT - LIVE_WINDOW);
@@ -1032,6 +1032,31 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
       (devilCount>0 ? ` · devils=${devilCount}@${fmtSliderPct(devilDamagePct())}%/hit` : '');
   }
 
+  // Samples the recorded history at 10%, 20%, ..., 90% of the run's total elapsed time so far
+  // (never 0% or 100% -- those are already implied by the starting "Devil balls" setting and
+  // the current/final "Devil status" line respectively) and reports how many devil balls were
+  // alive (devil flag true, not yet reconverted) at each of those nine moments. This lets a
+  // reader reconstruct the shape of the devil population over time -- e.g. did it spike early
+  // and get beaten back down, climb steadily until it overtook the divine balls, or stay near
+  // zero for most of the run and then surge right at the end -- without needing the live chart.
+  function devilPopulationOverTime(){
+    if (elapsedSec <= 0 || history.length === 0) return null;
+    const totalT = elapsedSec;
+    const out = [];
+    let hIdx = 0;
+    for (let i=1; i<=9; i++){
+      const target = totalT * i/10;
+      while (hIdx < history.length-1 && history[hIdx+1].t <= target) hIdx++;
+      let best = history[hIdx];
+      if (hIdx+1 < history.length){
+        const next = history[hIdx+1];
+        if (Math.abs(next.t-target) < Math.abs(best.t-target)) best = next;
+      }
+      out.push({pct: i*10, t: best.t, devils: best.devils ?? 0});
+    }
+    return out;
+  }
+
   function buildSummaryText(){
     const nConscious = bodies.filter(b=>b.conscious).length;
     const total = totalViolence();
@@ -1046,6 +1071,10 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     const decileLines = decileTimestamps.map((t,i)=>
       `    ${(i+1)*10}% conscious: ${t===null ? 'not reached yet' : `t=${fmtTime(t)}`}`
     );
+    const devilPop = numDevils()>0 ? devilPopulationOverTime() : null;
+    const devilPopLines = devilPop
+      ? devilPop.map(p=>`    ${p.pct}% of elapsed time (t=${fmtTime(p.t)}): ${p.devils} devil ball${p.devils===1?'':'s'} alive`)
+      : ['    (not enough elapsed time yet to sample)'];
     const lines = [
       'Violence Virus Threshold — run summary',
       '',
@@ -1055,6 +1084,27 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
       `scalar "violence" value v_i in [0,1], displayed as a percentage. ${seedCount} designated "seed"`,
       `${seedCount===1?'body starts':'bodies start'} at EXACTLY v=0; every other body starts at v=1.0 (100%). Bodies also carry`,
       `a sticky boolean flag "conscious", false for everyone except the seed${seedCount===1?'':'s'} at t=0.`,
+      '',
+      `Quick glossary of the three roles a body can be in, for a reader skimming this before the`,
+      `precise rules below -- every body is exactly one of these at any given moment:`,
+      `  - DIVINE / "conscious" ball: conscious=true. Gold on-screen. Its own v sits at exactly`,
+      `    0% unless devil balls are in play (see Devil balls below). Never exchanges, averages,`,
+      `    or loses/gains violence from touching another divine ball (rule 3), and an ordinary`,
+      `    minion touching it never changes its v either (rule 2) -- the ONLY thing that can ever`,
+      `    move a divine ball's own v is contact with a devil ball.`,
+      `  - MINION ball: conscious=false AND devil=false -- an ordinary still-violent body, red/`,
+      `    green/yellow on-screen by its current v band. Averages toward whatever it collides`,
+      `    with, capped by the exchange-cap slider (rule 1); gets halved by direct divine contact`,
+      `    (rule 2); permanently converts to divine once its v falls to or below the conversion`,
+      `    threshold T. "Minions remaining" (used throughout the Devil balls section below) means`,
+      `    the count of bodies that are still minions by this definition -- neither divine nor a`,
+      `    devil.`,
+      `  - DEVIL ball: devil=true. Dark red ring/horns on-screen. Starts pinned at v=100% and`,
+      `    stays there, immune to losing violence to anything, for as long as any minion remains`,
+      `    anywhere in the room. Damages every divine ball it touches, every touch, for the whole`,
+      `    run; can corrupt a divine ball back into a devil outright; and only becomes vulnerable`,
+      `    to being fought back down (by divine balls specifically, never by other devils) once`,
+      `    every minion has converted. Full mechanics in the "Devil balls" paragraph below.`,
       '',
       `On every physical collision between two bodies, exactly one of these update rules fires,`,
       `chosen by the two bodies' conscious flags:`,
@@ -1209,6 +1259,19 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
       `without needing the full chart, e.g. for describing the shape of this run's cascade`,
       `to a chatbot from pasted text alone.`,
       '',
+      `Devil ball population over time: unlike the consciousness curve above, this is NOT`,
+      `monotonic -- a devil ball can appear (a divine ball corrupting at v=1) or disappear`,
+      `(a devil getting fought back down to T and converting, only possible once minions are`,
+      `cleared) at any point, so the live devil count can rise and fall repeatedly over a`,
+      `run. Nine snapshots are logged below, at 10%, 20%, ... 90% of the run's total elapsed`,
+      `time so far (t=0%/start and t=100%/now are skipped since they're already given by the`,
+      `"Devil balls" starting count in Settings and the "Devil status" line in Live readout`,
+      `respectively). Reading the nine numbers in order shows the shape of the devil`,
+      `population's trajectory -- e.g. roughly flat near the starting count then a late spike`,
+      `means devils mostly appeared near the end; a rise partway through followed by a fall`,
+      `back down means an early surge that divine balls then beat back; a steady climb with`,
+      `no fall means devils were gradually overtaking the divine balls throughout.`,
+      '',
       'Settings for this run:',
       `  Bodies: ${nBodies()}`,
       `  Seed bodies (start conscious): ${seedCount}`,
@@ -1217,7 +1280,8 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
       `  Background violence radiation: +${fmtSliderPct(ambRatePct())}%/s per body`,
       `  Miracle power: ${els.miracle.value}%`,
       `  Violence exchange cap (non-divine hits): ${fmtSliderPct(exchCapPct())} percentage points per hit`,
-      `  Devil balls: ${numDevils()===0?'none':`${numDevils()} starting bodies, ${fmtSliderPct(devilDamagePct())}% violence added to a divine ball per hit while immune`}`,
+      `  Devil balls to start with: ${numDevils()}`,
+      `  Devil damage per hit on divine balls: ${fmtSliderPct(devilDamagePct())}%`,
       '',
       'Live readout:',
       `  Elapsed time: ${fmtTime(elapsedSec)}`,
@@ -1236,6 +1300,8 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
       `  Seed body #${CONSCIOUS_ID}'s own value: ${fmtSci(bodies[CONSCIOUS_ID].v)}`,
       `  Consciousness curve (time each 10% milestone of the population was first reached):`,
       ...decileLines,
+      numDevils()>0 ? `  Devil ball population over time (sampled at 10%-90% of elapsed time; not monotonic):` : `  Devil ball population over time: no devil balls in this run (0 at start, so 0 throughout).`,
+      ...(numDevils()>0 ? devilPopLines : []),
       '',
       'Status:',
       `  ${fullAt
