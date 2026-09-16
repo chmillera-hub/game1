@@ -100,6 +100,9 @@ button.tag{
 }
 button.tag:hover{border-color:var(--calm); color:var(--text);}
 button.tag.copied{border-color:var(--calm); color:var(--calm);}
+button.tag.copy-cta{background:var(--calm); border-color:var(--calm); color:#08130e; font-weight:600;}
+button.tag.copy-cta:hover{filter:brightness(1.08); color:#08130e;}
+button.tag.copy-cta.copied{background:var(--panel-2); color:var(--calm); font-weight:600;}
 #run-settings{font-size:11.5px; color:var(--text-dim); margin-bottom:10px; overflow-wrap:anywhere;}
 
 #stage-wrap{position:relative; border-radius:8px; overflow:hidden; border:1px solid var(--line); background:var(--panel-2);}
@@ -203,7 +206,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
 <header>
   <div class="eyebrow">Interaction dynamics — threshold-triggered cascade</div>
   <h1>Violence Virus Threshold</h1>
-  <p>One body starts at 10⁻²⁰⁰ percent violence. Every collision it takes part in halves the other body's violence and doubles its own — and any body whose violence is driven below the conversion threshold flips permanently into the same role, halving whoever <i>it</i> touches from then on. Two non-conscious bodies still just average on contact. Watch calm spread the way violence usually does.</p>
+  <p>One or more seed bodies start at exactly 0% violence — "divine." Every collision a divine ball takes part in halves the other body's violence, while two still-violent bodies just average toward each other instead; any body driven down to a fixed conversion threshold flips permanently into the divine role itself, halving whoever <i>it</i> touches from then on. Optional devil balls invert the fight — immune to divine hits until every ordinary violent body has converted, and able to corrupt a divine ball back into a devil. Watch calm spread the way violence usually does.</p>
 </header>
 
 <div id="stickybar">
@@ -292,7 +295,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
   <div class="panel">
     <div class="panel-title">
       <h2>Readout</h2>
-      <button id="btn-copy" class="tag" style="cursor:pointer;">Copy summary</button>
+      <button id="btn-copy" class="tag copy-cta" style="cursor:pointer;">Copy summary</button>
     </div>
     <div id="run-settings" class="mono">Bodies=100 · speed=1× · threshold=1.0% · radiation=+1.0%/s · miracle=100%</div>
     <div class="readouts">
