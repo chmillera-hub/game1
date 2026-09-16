@@ -13,6 +13,7 @@
   --alarm:#c8402a;
   --alarm-glow:#c8402a33;
   --accent:#b98418;
+  --devil-line:#7e22ce;
   --track:#e4dfd0;
 }
 @media (prefers-color-scheme: dark){
@@ -28,6 +29,7 @@
     --alarm:#ff6a52;
     --alarm-glow:#ff6a5233;
     --accent:#ffcc4d;
+    --devil-line:#c084fc;
     --track:#1d2320;
   }
 }
@@ -43,6 +45,7 @@
   --alarm:#ff6a52;
   --alarm-glow:#ff6a5233;
   --accent:#ffcc4d;
+  --devil-line:#c084fc;
   --track:#1d2320;
 }
 
@@ -309,6 +312,7 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     <div class="chartkey">
       <span><i style="background:var(--alarm)"></i>total violence (Σ%, as fraction of starting sum)</span>
       <span><i style="background:var(--accent)"></i>conscious bodies (% of N)</span>
+      <span><i style="background:var(--devil-line)"></i>devil bodies (% of N)</span>
     </div>
     <p style="font-size:11.5px; color:var(--text-dim); margin-top:6px;">While running, the x-axis scrolls a live window; pause and it shrinks to show the whole run, 0 to the moment you paused.</p>
   </div>
@@ -1010,6 +1014,12 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
     cctx.beginPath();
     history.forEach((p,i)=>{ const x=xFor(p.t), y=yForFrac(p.frac); i?cctx.lineTo(x,y):cctx.moveTo(x,y); });
     cctx.stroke();
+    const nBod = Math.max(1, bodies.length);
+    cctx.strokeStyle = getComputedStyle(document.body).getPropertyValue('--devil-line') || '#a855f7';
+    cctx.lineWidth = 2;
+    cctx.beginPath();
+    history.forEach((p,i)=>{ const x=xFor(p.t), y=yForFrac((p.devils ?? 0)/nBod); i?cctx.lineTo(x,y):cctx.moveTo(x,y); });
+    cctx.stroke();
   }
 
   function updateInspector(){
@@ -1235,7 +1245,9 @@ footer{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); colo
       '',
       `Chart series (x-axis = elapsed simulated seconds): (1) total system violence as defined`,
       `above, shown as a fraction of the run's starting total; (2) the fraction of bodies`,
-      `currently flagged conscious.`,
+      `currently flagged conscious; (3) the fraction of bodies currently flagged devil (devil=true`,
+      `and not yet reconverted) -- unlike series (2), this one is not monotonic, since a devil can`,
+      `appear (corruption) or disappear (defeat, post-minion-clear) at any point in the run.`,
       '',
       `Record-low tracker: until the first non-seed conversion, a running minimum of every`,
       `still-violent body's v, sampled once per frame -- it only ever decreases (a body's v`,
