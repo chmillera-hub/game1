@@ -305,9 +305,12 @@
             perfect 1.0, running down to the last, least-extreme crystal. Every crystal starts
             with its own northern point pointing straight up, then turns very slowly around
             that same fixed point — about one full rotation a minute — so the point itself never
-            moves while you compare shapes. The hand-drawn chart behind each one plots exactly
-            where its score falls on that 0 to 1 scale. Click any crystal
-            to see its hidden vector data.
+            moves while you compare shapes. Each crystal sits in front of a precise coordinate
+            grid, origin centered exactly on the crystal, with both axes running −1 to 1 on the
+            same scale as the crystal's own points — so you can read a vertex's actual
+            coordinates straight off the grid and compare sizes and proportions between
+            crystals directly. The red dot marks exactly where that crystal's northern point
+            lands. Click any crystal to see its hidden vector data.
         </div>
     </div>
 </div>
@@ -1641,9 +1644,14 @@
         }
 
         // Start the crystal in its "northernmost orientation": rotate the
-        // whole group once so the northern-point direction points exactly
-        // straight up.
-        group.quaternion.setFromUnitVectors(dirs[northDimIndex], new THREE.Vector3(0, 1, 0));
+        // whole group once so the northern point -- the actual value-scaled
+        // vertex, not just its raw direction -- lands exactly straight up.
+        // If that dimension's value is negative, aligning the raw direction
+        // to +Y would flip the scaled point back down below center, so aim
+        // the direction at the value's sign instead (down, if negative) so
+        // it always lands above the origin once scaled.
+        var upTarget = new THREE.Vector3(0, values[northDimIndex] < 0 ? -1 : 1, 0);
+        group.quaternion.setFromUnitVectors(dirs[northDimIndex], upTarget);
 
         group.userData = {
             values: values.slice(),
@@ -1666,89 +1674,118 @@
     }
 
     // ---------------------------------------------------------------
-    // "Informal" hand-drawn-looking background chart: a -1..1 number
-    // line with a marker showing this crystal's north score.
+    // Formal background chart: a precise X/Y coordinate grid with its
+    // origin exactly centered on the crystal, axes running -1 to 1 on
+    // the same scale as the crystal's own point coordinates -- so a
+    // vertex sitting at local (0.8, 0.3, ...) lines up with grid
+    // position (0.8, 0.3) exactly, letting proportions be read directly.
     // ---------------------------------------------------------------
-    function sketchyLine(ctx, x1, y1, x2, y2) {
-        var segments = 6;
-        ctx.beginPath();
-        ctx.moveTo(x1, y1);
-        for (var i = 1; i <= segments; i++) {
-            var t = i / segments;
-            var x = x1 + (x2 - x1) * t;
-            var y = y1 + (y2 - y1) * t;
-            var wobble = (Math.random() - 0.5) * 1.6;
-            var nx = -(y2 - y1), ny = (x2 - x1);
-            var len = Math.sqrt(nx * nx + ny * ny) || 1;
-            ctx.lineTo(x + (nx / len) * wobble, y + (ny / len) * wobble);
-        }
-        ctx.stroke();
-    }
+    var CHART_CANVAS = 512;
+    var CHART_MARGIN = 50;
+    var CHART_PLOT = CHART_CANVAS - 2 * CHART_MARGIN; // pixels spanning value -1..1
+    var CHART_WORLD_SIZE = 2 * (CHART_CANVAS / CHART_PLOT); // world units spanned by the whole plane
 
-    function createNorthChartTexture(score, dimLabel, rank) {
-        var w = 320, h = 200;
+    function chartX(v) { return CHART_MARGIN + ((v + 1) / 2) * CHART_PLOT; }
+    function chartY(v) { return CHART_CANVAS - CHART_MARGIN - ((v + 1) / 2) * CHART_PLOT; }
+
+    function createNorthChartTexture(dimLabel, rank, northValue) {
+        var w = CHART_CANVAS, h = CHART_CANVAS;
         var canvas = document.createElement('canvas');
         canvas.width = w;
         canvas.height = h;
         var ctx = canvas.getContext('2d');
 
-        ctx.fillStyle = '#f4efe1';
+        ctx.fillStyle = '#fbfbfa';
         ctx.fillRect(0, 0, w, h);
 
-        // faint graph-paper grid, slightly jittered for a hand-drawn feel
-        ctx.strokeStyle = 'rgba(120, 130, 150, 0.35)';
+        // fine grid every 0.1
+        ctx.strokeStyle = '#dfe3e8';
         ctx.lineWidth = 1;
-        for (var gx = 20; gx < w; gx += 20) { sketchyLine(ctx, gx, 10, gx, h - 10); }
-        for (var gy = 10; gy < h; gy += 20) { sketchyLine(ctx, 20, gy, w - 20, gy); }
+        for (var g = -1; g <= 1.0001; g += 0.1) {
+            ctx.beginPath();
+            ctx.moveTo(chartX(g), CHART_MARGIN);
+            ctx.lineTo(chartX(g), h - CHART_MARGIN);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(CHART_MARGIN, chartY(g));
+            ctx.lineTo(w - CHART_MARGIN, chartY(g));
+            ctx.stroke();
+        }
 
-        // main axis from 0 to 1 (absolute value -- an observer with no
-        // external reference can't tell north from south, only how extreme
-        // a point is)
-        var axisY = h - 46;
-        var axisX1 = 30, axisX2 = w - 30;
-        ctx.strokeStyle = '#2b2b28';
-        ctx.lineWidth = 2.5;
-        sketchyLine(ctx, axisX1, axisY, axisX2, axisY);
-
-        ctx.font = '15px "Comic Sans MS", "Bradley Hand", cursive, sans-serif';
-        ctx.fillStyle = '#2b2b28';
-        ctx.textAlign = 'center';
-        [0, 0.25, 0.5, 0.75, 1].forEach(function (v) {
-            var tx = axisX1 + v * (axisX2 - axisX1);
-            ctx.lineWidth = 2;
-            sketchyLine(ctx, tx, axisY - 6, tx, axisY + 6);
-            ctx.fillText(String(v), tx, axisY + 26);
+        // major ticks + labels every 0.5
+        ctx.strokeStyle = '#aab2bd';
+        ctx.lineWidth = 1.25;
+        ctx.font = '13px Arial, Helvetica, sans-serif';
+        ctx.fillStyle = '#3a3f47';
+        [-1, -0.5, 0, 0.5, 1].forEach(function (v) {
+            var x = chartX(v), y = chartY(v);
+            ctx.beginPath();
+            ctx.moveTo(x, CHART_MARGIN);
+            ctx.lineTo(x, h - CHART_MARGIN);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(CHART_MARGIN, y);
+            ctx.lineTo(w - CHART_MARGIN, y);
+            ctx.stroke();
+            ctx.textAlign = 'center';
+            ctx.fillText(String(v), x, h - CHART_MARGIN + 18);
+            if (v !== 0) {
+                ctx.textAlign = 'right';
+                ctx.fillText(String(v), CHART_MARGIN - 8, y + 4);
+            }
         });
 
-        // marker at this crystal's north score
-        var mx = axisX1 + score * (axisX2 - axisX1);
-        ctx.strokeStyle = '#c0392b';
-        ctx.lineWidth = 3;
-        sketchyLine(ctx, mx, axisY + 14, mx, axisY - 34);
+        // border frame around the -1..1 plot square
+        ctx.strokeStyle = '#8a929c';
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(CHART_MARGIN, CHART_MARGIN, CHART_PLOT, CHART_PLOT);
+
+        // bold origin-crossing axes
+        ctx.strokeStyle = '#1a1d22';
+        ctx.lineWidth = 2;
         ctx.beginPath();
-        ctx.fillStyle = '#c0392b';
-        ctx.arc(mx + (Math.random() - 0.5) * 1.5, axisY - 36, 6.5, 0, Math.PI * 2.05);
+        ctx.moveTo(chartX(0), CHART_MARGIN);
+        ctx.lineTo(chartX(0), h - CHART_MARGIN);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(CHART_MARGIN, chartY(0));
+        ctx.lineTo(w - CHART_MARGIN, chartY(0));
+        ctx.stroke();
+
+        // origin marker
+        ctx.beginPath();
+        ctx.fillStyle = '#1a1d22';
+        ctx.arc(chartX(0), chartY(0), 3, 0, Math.PI * 2);
         ctx.fill();
 
-        ctx.font = 'bold 20px "Comic Sans MS", "Bradley Hand", cursive, sans-serif';
-        ctx.fillStyle = '#1a1a17';
+        // the northern point itself always lands exactly on the vertical
+        // axis at (0, |value|) after the crystal's corrective rotation --
+        // note this is the dimension's actual value, not its alignment
+        // score, which is a different number used only for ranking
+        ctx.beginPath();
+        ctx.fillStyle = '#c0392b';
+        ctx.arc(chartX(0), chartY(Math.abs(northValue)), 5, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.font = 'bold 15px Arial, Helvetica, sans-serif';
+        ctx.fillStyle = '#111318';
         ctx.textAlign = 'left';
-        ctx.fillText('#' + rank + '  ·  ' + dimLabel + ' → ' + score.toFixed(2), 22, 30);
+        ctx.fillText('#' + rank + '  ·  ' + dimLabel + ' = ' + northValue.toFixed(2), 14, 22);
 
         var texture = new THREE.CanvasTexture(canvas);
         texture.needsUpdate = true;
         return texture;
     }
 
-    function createNorthChartBackdrop(score, dimLabel, rank) {
-        var texture = createNorthChartTexture(score, dimLabel, rank);
+    function createNorthChartBackdrop(dimLabel, rank, northValue) {
+        var texture = createNorthChartTexture(dimLabel, rank, northValue);
         var mat = new THREE.MeshBasicMaterial({
             map: texture,
             transparent: true,
-            opacity: 0.9,
+            opacity: 0.95,
             side: THREE.DoubleSide
         });
-        var geo = new THREE.PlaneGeometry(2.35, 1.47);
+        var geo = new THREE.PlaneGeometry(CHART_WORLD_SIZE, CHART_WORLD_SIZE);
         return new THREE.Mesh(geo, mat);
     }
 
@@ -1868,11 +1905,13 @@
             shapeGroups.push(crystal);
 
             var dimLabel = DIM_LABELS[crystal.userData.northDimIndex];
-            var backdrop = createNorthChartBackdrop(crystal.userData.northScore, dimLabel, rank + 1);
+            var northValue = crystal.userData.values[crystal.userData.northDimIndex];
+            var backdrop = createNorthChartBackdrop(dimLabel, rank + 1, northValue);
             backdrop.position.set(pos.x, pos.y, pos.z - 0.55);
             backdrop.userData.homePosition = backdrop.position.clone();
             gallery.add(backdrop);
             backdropMeshes.push(backdrop);
+            crystal.userData.backdrop = backdrop;
         });
 
         var span = Math.max(layout.cols, layout.rows) * layout.spacing;
@@ -1934,8 +1973,9 @@
         shapeGroups.forEach(function (g) {
             g.visible = (g === group);
         });
-        backdropMeshes.forEach(function (b) { b.visible = false; });
+        backdropMeshes.forEach(function (b) { b.visible = (b === group.userData.backdrop); });
         group.position.set(0, 0, 0);
+        if (group.userData.backdrop) group.userData.backdrop.position.set(0, 0, -0.55);
 
         controls.autoRotate = false;
         controls.target.set(0, 0, 0);
@@ -1976,7 +2016,10 @@
             g.visible = true;
             g.position.copy(g.userData.homePosition);
         });
-        backdropMeshes.forEach(function (b) { b.visible = true; });
+        backdropMeshes.forEach(function (b) {
+            b.visible = true;
+            b.position.copy(b.userData.homePosition);
+        });
         if (wasSelected) {
             controls.target.set(0, 0, 0);
             camera.position.copy(savedCameraPosition);
