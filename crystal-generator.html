@@ -299,9 +299,11 @@
             drawn through them instead. Every crystal's <i>own</i> best-aligned point — whichever
             of its 10 random directions lands closest to true north — becomes that crystal's
             "northern point," and the gallery is ranked by it: crystal #1 has the northern point
-            closest to a perfect 1.0, running down to the last, least-aligned crystal. The
-            hand-drawn chart behind each one plots exactly where its score falls on that −1 to 1
-            scale. Click any crystal to see its hidden vector data.
+            closest to a perfect 1.0, running down to the last, least-aligned crystal. Every
+            crystal is rotated once so its own northern point sits straight up and then held
+            still there — no spinning — so they're easy to compare side by side. The hand-drawn
+            chart behind each one plots exactly where its score falls on that −1 to 1 scale.
+            Click any crystal to see its hidden vector data.
         </div>
     </div>
 </div>
@@ -1629,6 +1631,12 @@
             group.add(new THREE.LineSegments(edgeGeom, edgeMat));
         }
 
+        // Hold the crystal still in its "northernmost orientation": rotate the
+        // whole group once so the northern-point direction points exactly
+        // straight up. No ongoing spin -- every crystal just sits there with
+        // its northern point at the top, so they're easy to compare side by side.
+        group.quaternion.setFromUnitVectors(dirs[northDimIndex], new THREE.Vector3(0, 1, 0));
+
         group.userData = {
             values: values.slice(),
             dirs: dirs,
@@ -1638,13 +1646,6 @@
             northDimIndex: northDimIndex,
             mainMesh: mesh
         };
-        // Spin around the northern point's own direction vector -- since that
-        // point lies exactly on this axis, it stays perfectly fixed in place
-        // (like a top balanced on its tip) while the rest of the crystal
-        // turns around it, instead of tumbling around some random axis.
-        group.userData.spinAxis = dirs[northDimIndex].clone();
-        group.userData.spinSpeed = 0.15 + Math.random() * 0.3;
-        group.userData.baseScale = 1;
 
         return group;
     }
@@ -1752,8 +1753,7 @@
     controls.dampingFactor = 0.08;
     controls.minDistance = 2;
     controls.maxDistance = 120;
-    controls.autoRotate = true;
-    controls.autoRotateSpeed = 0.6;
+    controls.autoRotate = false;
 
     scene.add(new THREE.AmbientLight(0x8888aa, 0.6));
     var keyLight = new THREE.DirectionalLight(0xffffff, 0.9);
@@ -1956,7 +1956,6 @@
         if (wasSelected) {
             controls.target.set(0, 0, 0);
             camera.position.copy(savedCameraPosition);
-            controls.autoRotate = true;
         }
         if (shapeGroups.length) {
             document.getElementById('statusText').textContent =
@@ -1967,18 +1966,11 @@
     document.getElementById('deselectBtn').addEventListener('click', deselect);
 
     // ---------------------------------------------------------------
-    // Animation loop
+    // Render loop (still needed for OrbitControls damping/dragging and
+    // keeping the background charts billboarded to the camera)
     // ---------------------------------------------------------------
-    var clock = new THREE.Clock();
-
     function animate() {
         requestAnimationFrame(animate);
-        var dt = clock.getDelta();
-
-        shapeGroups.forEach(function (g) {
-            if (!g.visible) return;
-            g.rotateOnAxis(g.userData.spinAxis, g.userData.spinSpeed * dt);
-        });
 
         controls.update();
 
