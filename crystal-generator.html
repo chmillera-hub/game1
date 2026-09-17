@@ -91,6 +91,15 @@
         margin-bottom: 10px;
     }
 
+    .dim-caption {
+        font-size: 10.5px;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        opacity: 0.7;
+        margin-bottom: 3px;
+    }
+    .dim-caption b { opacity: 1; }
+
     .dim-row {
         display: grid;
         grid-template-columns: 22px 1fr 46px;
@@ -252,10 +261,10 @@
 <div id="sidebar">
     <h1>💎 Crystal Generator</h1>
     <div class="subtitle">
-        Pick a fixed value for each dimension below (−1 to 1). Each dimension controls a real
-        visual property — color, size, twist, and more. Every time you generate, the same 10
-        numbers get reshuffled into different roles, so the exact same data drives a different
-        crystal each time.
+        Pick a fixed value for each dimension below (−1 to 1). Each one is labeled with the
+        visual property it starts out controlling — color, size, twist, and more. Every time you
+        generate, the same 10 numbers get reshuffled into different roles, so the exact same
+        data drives a different crystal each time.
     </div>
 
     <div class="panel">
@@ -1388,6 +1397,24 @@
     var DIM_LABELS = ['X', 'Y', 'Z', 'A', 'B', 'C', 'D', 'E', 'F', 'G'];
     var DIM_COUNT = DIM_LABELS.length;
 
+    // Each dimension slot controls one real visual property, always in this
+    // order -- DIM_LABELS[i] and SLOT_PROPERTIES[i] are the same slot. What
+    // varies between crystals is which of the 10 *values* gets shuffled into
+    // which slot; the numbers themselves never change, and a slider's letter
+    // shows where its value starts out before that shuffle.
+    var SLOT_PROPERTIES = [
+        { key: 'color', label: 'Color' },
+        { key: 'size', label: 'Size' },
+        { key: 'twist', label: 'Twistiness' },
+        { key: 'stretchX', label: 'Width stretch' },
+        { key: 'stretchY', label: 'Height stretch' },
+        { key: 'stretchZ', label: 'Depth stretch' },
+        { key: 'taper', label: 'Taper' },
+        { key: 'bend', label: 'Bend' },
+        { key: 'facets', label: 'Facet complexity' },
+        { key: 'finish', label: 'Surface finish' }
+    ];
+
     var dimValues = DIM_LABELS.map(function () { return roundTo(Math.random() * 2 - 1, 2); });
 
     function roundTo(v, d) { var f = Math.pow(10, d); return Math.round(v * f) / f; }
@@ -1400,6 +1427,11 @@
     var valueLabelEls = [];
 
     DIM_LABELS.forEach(function (label, i) {
+        var caption = document.createElement('div');
+        caption.className = 'dim-caption';
+        caption.innerHTML = '<b>' + label + '</b> starts as ' + SLOT_PROPERTIES[i].label;
+        dimList.appendChild(caption);
+
         var row = document.createElement('div');
         row.className = 'dim-row';
 
@@ -1469,25 +1501,6 @@
     var countSlider = document.getElementById('countSlider');
     var countLabel = document.getElementById('countLabel');
     countSlider.addEventListener('input', function () { countLabel.textContent = countSlider.value; });
-
-    // ---------------------------------------------------------------
-    // Each of the 10 dimension slots controls one real visual property,
-    // always in this order. What varies between crystals is which of the
-    // 10 *values* gets shuffled into which slot -- the numbers themselves
-    // never change.
-    // ---------------------------------------------------------------
-    var SLOT_PROPERTIES = [
-        { key: 'color', label: 'Color' },
-        { key: 'size', label: 'Size' },
-        { key: 'twist', label: 'Twistiness' },
-        { key: 'stretchX', label: 'Width stretch' },
-        { key: 'stretchY', label: 'Height stretch' },
-        { key: 'stretchZ', label: 'Depth stretch' },
-        { key: 'taper', label: 'Taper' },
-        { key: 'bend', label: 'Bend' },
-        { key: 'facets', label: 'Facet complexity' },
-        { key: 'finish', label: 'Surface finish' }
-    ];
 
     function lerp(a, b, t) { return a + (b - a) * t; }
 
