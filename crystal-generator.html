@@ -1638,7 +1638,11 @@
             northDimIndex: northDimIndex,
             mainMesh: mesh
         };
-        group.userData.spinAxis = randomUnitVector();
+        // Spin around the northern point's own direction vector -- since that
+        // point lies exactly on this axis, it stays perfectly fixed in place
+        // (like a top balanced on its tip) while the rest of the crystal
+        // turns around it, instead of tumbling around some random axis.
+        group.userData.spinAxis = dirs[northDimIndex].clone();
         group.userData.spinSpeed = 0.15 + Math.random() * 0.3;
         group.userData.baseScale = 1;
 
