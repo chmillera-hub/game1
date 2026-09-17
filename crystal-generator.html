@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Crystal Generator</title>
+<style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html, body {
+        height: 100%;
+        overflow: hidden;
+        font-family: 'Arial', sans-serif;
+        background: #0a0a14;
+    }
+
+    body {
+        display: flex;
+    }
+
+    /* ---------- Sidebar ---------- */
+    #sidebar {
+        width: 340px;
+        min-width: 340px;
+        height: 100%;
+        overflow-y: auto;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 24px 22px;
+    }
+
+    #sidebar h1 {
+        font-size: 22px;
+        margin-bottom: 6px;
+    }
+
+    #sidebar .subtitle {
+        font-size: 12.5px;
+        opacity: 0.85;
+        line-height: 1.5;
+        margin-bottom: 18px;
+    }
+
+    .panel {
+        background: rgba(255, 255, 255, 0.12);
+        border-radius: 12px;
+        padding: 14px 16px;
+        margin-bottom: 16px;
+        backdrop-filter: blur(4px);
+    }
+
+    .panel h3 {
+        font-size: 13px;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        opacity: 0.85;
+        margin-bottom: 10px;
+    }
+
+    .dim-row {
+        display: grid;
+        grid-template-columns: 22px 1fr 46px;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 8px;
+    }
+
+    .dim-label {
+        font-weight: bold;
+        font-size: 14px;
+        text-align: center;
+        background: rgba(255, 255, 255, 0.18);
+        border-radius: 6px;
+        padding: 3px 0;
+    }
+
+    .dim-row input[type="range"] {
+        width: 100%;
+        accent-color: #ffd166;
+    }
+
+    .dim-value {
+        font-size: 12.5px;
+        font-variant-numeric: tabular-nums;
+        text-align: right;
+        opacity: 0.9;
+    }
+
+    .field-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 12.5px;
+        margin-bottom: 10px;
+    }
+
+    .field-row input[type="range"] {
+        width: 140px;
+        accent-color: #ffd166;
+    }
+
+    .btn-row {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 8px;
+    }
+
+    button {
+        cursor: pointer;
+        border: none;
+        border-radius: 8px;
+        font-size: 13px;
+        font-weight: bold;
+        padding: 10px 12px;
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
+        flex: 1;
+    }
+
+    button:active { transform: scale(0.97); }
+
+    .btn-primary {
+        background: #ffd166;
+        color: #4a3300;
+    }
+    .btn-primary:hover { box-shadow: 0 4px 14px rgba(255, 209, 102, 0.5); }
+
+    .btn-secondary {
+        background: rgba(255, 255, 255, 0.18);
+        color: white;
+    }
+    .btn-secondary:hover { background: rgba(255, 255, 255, 0.3); }
+
+    #generateBtn {
+        width: 100%;
+        padding: 14px;
+        font-size: 15px;
+        background: linear-gradient(135deg, #ffd166, #f77f00);
+        color: #3a2200;
+        margin-top: 4px;
+    }
+    #generateBtn:hover { box-shadow: 0 6px 20px rgba(247, 127, 0, 0.5); }
+
+    #selectionPanel { display: none; }
+    #selectionPanel table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 11.5px;
+    }
+    #selectionPanel th, #selectionPanel td {
+        text-align: left;
+        padding: 3px 4px;
+        border-bottom: 1px solid rgba(255,255,255,0.15);
+    }
+    #selectionPanel th { opacity: 0.75; font-weight: normal; }
+
+    /* ---------- Main viewport ---------- */
+    #main {
+        flex: 1;
+        position: relative;
+        height: 100%;
+        background: radial-gradient(circle at 50% 30%, #1b1b34 0%, #05050c 75%);
+    }
+
+    #canvasHost { width: 100%; height: 100%; display: block; }
+
+    #topBar {
+        position: absolute;
+        top: 14px;
+        left: 18px;
+        right: 18px;
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        pointer-events: none;
+        color: white;
+        font-size: 13px;
+        text-shadow: 0 1px 4px rgba(0,0,0,0.6);
+    }
+
+    #topBar .hint { opacity: 0.7; font-size: 12px; max-width: 360px; text-align: right; }
+
+    #emptyState {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: rgba(255,255,255,0.5);
+        font-size: 14px;
+        text-align: center;
+        padding: 40px;
+        pointer-events: none;
+    }
+</style>
+</head>
+<body>
+
+<div id="sidebar">
+    <h1>💎 Crystal Generator</h1>
+    <div class="subtitle">
+        Pick a fixed value for each dimension below (−1 to 1). Every time you generate,
+        each dimension gets assigned a fresh random 3D direction — same underlying numbers,
+        completely different crystal shapes.
+    </div>
+
+    <div class="panel">
+        <h3>Dimensions</h3>
+        <div id="dimList"></div>
+        <div class="btn-row" style="margin-top: 10px;">
+            <button class="btn-secondary" id="randomizeValuesBtn">Randomize Values</button>
+            <button class="btn-secondary" id="resetValuesBtn">Reset</button>
+        </div>
+    </div>
+
+    <div class="panel">
+        <h3>Batch Settings</h3>
+        <div class="field-row">
+            <span>Number of shapes</span>
+            <span><input type="range" id="countSlider" min="1" max="100" value="24"><b id="countLabel">24</b></span>
+        </div>
+        <div class="field-row">
+            <span>Min. direction spacing</span>
+            <span><input type="range" id="spacingSlider" min="0" max="45" value="18"><b id="spacingLabel">18°</b></span>
+        </div>
+        <button id="generateBtn">Generate Crystals</button>
+    </div>
+
+    <div class="panel" id="selectionPanel">
+        <h3>Selected Shape <span id="selIndex"></span></h3>
+        <table>
+            <thead><tr><th>Dim</th><th>Value</th><th>Direction (unit vector)</th></tr></thead>
+            <tbody id="selTableBody"></tbody>
+        </table>
+        <div class="btn-row" style="margin-top: 10px;">
+            <button class="btn-secondary" id="deselectBtn">Back to gallery</button>
+        </div>
+    </div>
+
+    <div class="panel">
+        <h3>How it works</h3>
+        <div class="subtitle" style="margin-bottom: 0;">
+            Each shape's points sit at <i>value × direction</i> from the origin, one point
+            per dimension. The convex "skin" wrapping those points becomes the crystal facets.
+            If the points are too flat to wrap (e.g. many zero values), a smooth ribbon is
+            drawn through them instead. Click any crystal to see its hidden vector data.
+        </div>
+    </div>
+</div>
+
+<div id="main">
+    <div id="canvasHost"></div>
+    <div id="topBar">
+        <div id="statusText">Generate a batch to begin.</div>
+        <div class="hint">Drag to orbit · scroll to zoom · click a shape for its data</div>
+    </div>
+    <div id="emptyState">Set your 10 values on the left, then hit <b>&nbsp;Generate Crystals&nbsp;</b>.</div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+(function () {
+    "use strict";
+
+    var DIM_LABELS = ['X', 'Y', 'Z', 'A', 'B', 'C', 'D', 'E', 'F', 'G'];
+    var DIM_COUNT = DIM_LABELS.length;
+
+    var dimValues = DIM_LABELS.map(function () { return roundTo(Math.random() * 2 - 1, 2); });
+
+    function roundTo(v, d) { var f = Math.pow(10, d); return Math.round(v * f) / f; }
+
+    // ---------------------------------------------------------------
+    // Sidebar: dimension sliders
+    // ---------------------------------------------------------------
+    var dimList = document.getElementById('dimList');
+    var sliderEls = [];
+    var valueLabelEls = [];
+
+    DIM_LABELS.forEach(function (label, i) {
+        var row = document.createElement('div');
+        row.className = 'dim-row';
+
+        var labelEl = document.createElement('div');
+        labelEl.className = 'dim-label';
+        labelEl.textContent = label;
+
+        var slider = document.createElement('input');
+        slider.type = 'range';
+        slider.min = '-1';
+        slider.max = '1';
+        slider.step = '0.01';
+        slider.value = String(dimValues[i]);
+
+        var valueEl = document.createElement('div');
+        valueEl.className = 'dim-value';
+        valueEl.textContent = dimValues[i].toFixed(2);
+
+        slider.addEventListener('input', function () {
+            dimValues[i] = parseFloat(slider.value);
+            valueEl.textContent = dimValues[i].toFixed(2);
+        });
+
+        row.appendChild(labelEl);
+        row.appendChild(slider);
+        row.appendChild(valueEl);
+        dimList.appendChild(row);
+
+        sliderEls.push(slider);
+        valueLabelEls.push(valueEl);
+    });
+
+    function refreshSliderUI() {
+        for (var i = 0; i < DIM_COUNT; i++) {
+            sliderEls[i].value = String(dimValues[i]);
+            valueLabelEls[i].textContent = dimValues[i].toFixed(2);
+        }
+    }
+
+    document.getElementById('randomizeValuesBtn').addEventListener('click', function () {
+        dimValues = DIM_LABELS.map(function () { return roundTo(Math.random() * 2 - 1, 2); });
+        refreshSliderUI();
+    });
+
+    document.getElementById('resetValuesBtn').addEventListener('click', function () {
+        dimValues = DIM_LABELS.map(function () { return 0; });
+        refreshSliderUI();
+    });
+
+    var countSlider = document.getElementById('countSlider');
+    var countLabel = document.getElementById('countLabel');
+    countSlider.addEventListener('input', function () { countLabel.textContent = countSlider.value; });
+
+    var spacingSlider = document.getElementById('spacingSlider');
+    var spacingLabel = document.getElementById('spacingLabel');
+    spacingSlider.addEventListener('input', function () { spacingLabel.textContent = spacingSlider.value + '°'; });
+
+    // ---------------------------------------------------------------
+    // Math: random directions with a minimum angular spacing
+    // ---------------------------------------------------------------
+    function randomUnitVector() {
+        // Marsaglia method for a uniform point on the unit sphere.
+        var x1, x2, s;
+        do {
+            x1 = Math.random() * 2 - 1;
+            x2 = Math.random() * 2 - 1;
+            s = x1 * x1 + x2 * x2;
+        } while (s >= 1 || s === 0);
+        var f = 2 * Math.sqrt(1 - s);
+        return new THREE.Vector3(f * x1, f * x2, 1 - 2 * s);
+    }
+
+    function generateSpacedDirections(n, minAngleDeg) {
+        var minCos = Math.cos(minAngleDeg * Math.PI / 180);
+        var dirs = [];
+        for (var i = 0; i < n; i++) {
+            var best = null, bestScore = -Infinity;
+            var attempts = minAngleDeg > 0 ? 250 : 1;
+            for (var a = 0; a < attempts; a++) {
+                var candidate = randomUnitVector();
+                var ok = true, worstCos = -Infinity;
+                for (var j = 0; j < dirs.length; j++) {
+                    var c = candidate.dot(dirs[j]);
+                    if (c > worstCos) worstCos = c;
+                    if (c > minCos) ok = false;
+                }
+                if (ok) { best = candidate; break; }
+                // keep the least-bad candidate in case we run out of attempts
+                var score = -worstCos;
+                if (score > bestScore) { bestScore = score; best = candidate; }
+            }
+            dirs.push(best);
+        }
+        return dirs;
+    }
+
+    // ---------------------------------------------------------------
+    // Math: brute-force convex hull for a small point set (n <= ~12)
+    // ---------------------------------------------------------------
+    function computeConvexHullFaces(points) {
+        var n = points.length;
+        var centroid = new THREE.Vector3();
+        for (var i = 0; i < n; i++) centroid.add(points[i]);
+        centroid.multiplyScalar(1 / n);
+
+        var faces = [];
+        var eps = 1e-6;
+
+        for (var i0 = 0; i0 < n; i0++) {
+            for (var j0 = i0 + 1; j0 < n; j0++) {
+                for (var k0 = j0 + 1; k0 < n; k0++) {
+                    var pi = points[i0], pj = points[j0], pk = points[k0];
+                    var e1 = pj.clone().sub(pi);
+                    var e2 = pk.clone().sub(pi);
+                    var normal = e1.clone().cross(e2);
+                    var len = normal.length();
+                    if (len < eps) continue; // collinear triple
+                    normal.multiplyScalar(1 / len);
+
+                    var toCentroid = centroid.clone().sub(pi);
+                    var flip = normal.dot(toCentroid) > 0;
+                    var outward = flip ? normal.clone().negate() : normal;
+
+                    var allInside = true;
+                    for (var m = 0; m < n; m++) {
+                        if (m === i0 || m === j0 || m === k0) continue;
+                        var d = outward.dot(points[m].clone().sub(pi));
+                        if (d > 1e-5) { allInside = false; break; }
+                    }
+                    if (!allInside) continue;
+
+                    faces.push(flip ? [i0, k0, j0] : [i0, j0, k0]);
+                }
+            }
+        }
+        return faces;
+    }
+
+    // ---------------------------------------------------------------
+    // Build a single crystal (Three.js group) from values + fresh directions
+    // ---------------------------------------------------------------
+    function buildCrystal(values, hue) {
+        var minAngle = parseFloat(spacingSlider.value);
+        var dirs = generateSpacedDirections(values.length, minAngle);
+        var points = values.map(function (v, i) { return dirs[i].clone().multiplyScalar(v); });
+
+        var maxRadius = Math.max.apply(null, values.map(Math.abs).concat([0.15]));
+        var faces = computeConvexHullFaces(points);
+
+        var color = new THREE.Color();
+        color.setHSL(hue, 0.65, 0.58);
+
+        var geometry;
+        var isSmoothFallback = faces.length < 4;
+
+        if (!isSmoothFallback) {
+            geometry = new THREE.BufferGeometry();
+            var positions = [];
+            faces.forEach(function (f) {
+                [f[0], f[1], f[2]].forEach(function (idx) {
+                    var p = points[idx];
+                    positions.push(p.x, p.y, p.z);
+                });
+            });
+            geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+            geometry.computeVertexNormals();
+        } else {
+            // Fallback: not enough spread for a solid hull (e.g. many zero
+            // values collapse points onto a plane/line) -> draw a smooth
+            // closed ribbon threading through the points instead.
+            var ordered = points.slice().sort(function (a, b) {
+                return Math.atan2(a.y, a.x) - Math.atan2(b.y, b.x);
+            });
+            if (ordered.length < 2) ordered = [new THREE.Vector3(0, 0, 0), new THREE.Vector3(0.001, 0, 0)];
+            var curve = new THREE.CatmullRomCurve3(ordered, true);
+            var tubeRadius = Math.max(maxRadius * 0.05, 0.02);
+            geometry = new THREE.TubeGeometry(curve, 128, tubeRadius, 8, true);
+        }
+
+        var material = new THREE.MeshPhongMaterial({
+            color: color,
+            emissive: color.clone().multiplyScalar(0.15),
+            shininess: 90,
+            specular: 0xffffff,
+            transparent: true,
+            opacity: 0.88,
+            side: THREE.DoubleSide,
+            flatShading: !isSmoothFallback
+        });
+
+        var mesh = new THREE.Mesh(geometry, material);
+
+        var group = new THREE.Group();
+        group.add(mesh);
+
+        if (!isSmoothFallback) {
+            var edgeGeom = new THREE.EdgesGeometry(geometry, 1);
+            var edgeMat = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.35 });
+            group.add(new THREE.LineSegments(edgeGeom, edgeMat));
+        }
+
+        group.userData = {
+            values: values.slice(),
+            dirs: dirs,
+            points: points,
+            isFallback: isSmoothFallback
+        };
+        group.userData.spinAxis = randomUnitVector();
+        group.userData.spinSpeed = 0.15 + Math.random() * 0.3;
+        group.userData.baseScale = 1;
+
+        return group;
+    }
+
+    // ---------------------------------------------------------------
+    // Three.js scene setup
+    // ---------------------------------------------------------------
+    var host = document.getElementById('canvasHost');
+    var scene = new THREE.Scene();
+    var camera = new THREE.PerspectiveCamera(50, host.clientWidth / host.clientHeight, 0.1, 500);
+    camera.position.set(0, 4, 14);
+
+    var renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setSize(host.clientWidth, host.clientHeight);
+    host.appendChild(renderer.domElement);
+
+    var controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.08;
+    controls.minDistance = 2;
+    controls.maxDistance = 120;
+    controls.autoRotate = true;
+    controls.autoRotateSpeed = 0.6;
+
+    scene.add(new THREE.AmbientLight(0x8888aa, 0.6));
+    var keyLight = new THREE.DirectionalLight(0xffffff, 0.9);
+    keyLight.position.set(6, 10, 8);
+    scene.add(keyLight);
+    var rimLight = new THREE.PointLight(0x88aaff, 0.8, 100);
+    rimLight.position.set(-8, -4, -6);
+    scene.add(rimLight);
+
+    window.addEventListener('resize', function () {
+        camera.aspect = host.clientWidth / host.clientHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(host.clientWidth, host.clientHeight);
+    });
+
+    var gallery = new THREE.Group();
+    scene.add(gallery);
+
+    var shapeGroups = [];
+    var selectedGroup = null;
+    var galleryCameraTarget = new THREE.Vector3(0, 0, 0);
+    var galleryCameraDistance = 14;
+    var savedCameraPosition = new THREE.Vector3();
+
+    function layoutGrid(n) {
+        var cols = Math.ceil(Math.sqrt(n));
+        var rows = Math.ceil(n / cols);
+        var spacing = 2.6;
+        var positions = [];
+        for (var i = 0; i < n; i++) {
+            var col = i % cols;
+            var row = Math.floor(i / cols);
+            var x = (col - (cols - 1) / 2) * spacing;
+            var y = ((rows - 1) / 2 - row) * spacing;
+            positions.push(new THREE.Vector3(x, y, 0));
+        }
+        return { positions: positions, cols: cols, rows: rows, spacing: spacing };
+    }
+
+    function clearGallery() {
+        while (gallery.children.length) {
+            var g = gallery.children.pop();
+            g.traverse(function (obj) {
+                if (obj.geometry) obj.geometry.dispose();
+                if (obj.material) obj.material.dispose();
+            });
+        }
+        shapeGroups = [];
+    }
+
+    function generateBatch() {
+        clearGallery();
+        deselect();
+
+        var n = parseInt(countSlider.value, 10);
+        var layout = layoutGrid(n);
+
+        for (var i = 0; i < n; i++) {
+            var hue = (i / n + 0.02) % 1;
+            var crystal = buildCrystal(dimValues, hue);
+            crystal.position.copy(layout.positions[i]);
+            crystal.userData.homePosition = layout.positions[i].clone();
+            crystal.userData.index = i;
+            gallery.add(crystal);
+            shapeGroups.push(crystal);
+        }
+
+        var span = Math.max(layout.cols, layout.rows) * layout.spacing;
+        galleryCameraDistance = Math.max(10, span * 1.3);
+        galleryCameraTarget.set(0, 0, 0);
+        controls.target.set(0, 0, 0);
+        camera.position.set(0, galleryCameraDistance * 0.35, galleryCameraDistance);
+
+        document.getElementById('emptyState').style.display = 'none';
+        document.getElementById('statusText').textContent =
+            n + ' crystals · same 10 values · independent random directions each';
+    }
+
+    document.getElementById('generateBtn').addEventListener('click', generateBatch);
+
+    // ---------------------------------------------------------------
+    // Selection / focus handling
+    // ---------------------------------------------------------------
+    var raycaster = new THREE.Raycaster();
+    var mouse = new THREE.Vector2();
+    var isDragging = false;
+
+    renderer.domElement.addEventListener('pointerdown', function () { isDragging = false; });
+    renderer.domElement.addEventListener('pointermove', function () { isDragging = true; });
+    renderer.domElement.addEventListener('pointerup', function (ev) {
+        if (isDragging) return; // was an orbit drag, not a click
+        var rect = renderer.domElement.getBoundingClientRect();
+        mouse.x = ((ev.clientX - rect.left) / rect.width) * 2 - 1;
+        mouse.y = -((ev.clientY - rect.top) / rect.height) * 2 + 1;
+        raycaster.setFromCamera(mouse, camera);
+
+        var meshes = [];
+        shapeGroups.forEach(function (g) { g.traverse(function (o) { if (o.isMesh) { o.userData.__group = g; meshes.push(o); } }); });
+        var hits = raycaster.intersectObjects(meshes);
+        if (hits.length > 0) {
+            selectShape(hits[0].object.userData.__group);
+        }
+    });
+
+    function selectShape(group) {
+        if (!selectedGroup) {
+            savedCameraPosition.copy(camera.position);
+        }
+        selectedGroup = group;
+        shapeGroups.forEach(function (g) {
+            g.visible = (g === group);
+        });
+        group.position.set(0, 0, 0);
+
+        controls.autoRotate = false;
+        controls.target.set(0, 0, 0);
+        var maxVal = Math.max.apply(null, group.userData.values.map(Math.abs).concat([0.3]));
+        var focusDistance = Math.max(3, maxVal * 4);
+        var dir = camera.position.clone().sub(controls.target);
+        if (dir.lengthSq() < 1e-6) dir.set(0, 0.35, 1);
+        dir.normalize().multiplyScalar(focusDistance);
+        camera.position.copy(controls.target).add(dir);
+
+        var panel = document.getElementById('selectionPanel');
+        panel.style.display = 'block';
+        document.getElementById('selIndex').textContent = '#' + (group.userData.index + 1);
+        var body = document.getElementById('selTableBody');
+        body.innerHTML = '';
+        DIM_LABELS.forEach(function (label, i) {
+            var dir = group.userData.dirs[i];
+            var row = document.createElement('tr');
+            row.innerHTML = '<td>' + label + '</td>' +
+                '<td>' + group.userData.values[i].toFixed(2) + '</td>' +
+                '<td>(' + dir.x.toFixed(2) + ', ' + dir.y.toFixed(2) + ', ' + dir.z.toFixed(2) + ')</td>';
+            body.appendChild(row);
+        });
+
+        document.getElementById('statusText').textContent =
+            'Focused on crystal #' + (group.userData.index + 1) + (group.userData.isFallback ? ' (smooth fallback — points were too flat for a hull)' : '');
+    }
+
+    function deselect() {
+        var wasSelected = !!selectedGroup;
+        selectedGroup = null;
+        document.getElementById('selectionPanel').style.display = 'none';
+        shapeGroups.forEach(function (g) {
+            g.visible = true;
+            g.position.copy(g.userData.homePosition);
+        });
+        if (wasSelected) {
+            controls.target.set(0, 0, 0);
+            camera.position.copy(savedCameraPosition);
+            controls.autoRotate = true;
+        }
+        if (shapeGroups.length) {
+            document.getElementById('statusText').textContent =
+                shapeGroups.length + ' crystals · same 10 values · independent random directions each';
+        }
+    }
+
+    document.getElementById('deselectBtn').addEventListener('click', deselect);
+
+    // ---------------------------------------------------------------
+    // Animation loop
+    // ---------------------------------------------------------------
+    var clock = new THREE.Clock();
+
+    function animate() {
+        requestAnimationFrame(animate);
+        var dt = clock.getDelta();
+
+        shapeGroups.forEach(function (g) {
+            if (!g.visible) return;
+            g.rotateOnAxis(g.userData.spinAxis, g.userData.spinSpeed * dt);
+        });
+
+        controls.update();
+        renderer.render(scene, camera);
+    }
+    animate();
+
+    // Kick off with an initial batch so the viewport isn't empty of context.
+    generateBatch();
+})();
+</script>
+</body>
+</html>
