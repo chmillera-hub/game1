@@ -91,6 +91,28 @@
         margin-bottom: 10px;
     }
 
+    #previewPanel {
+        position: sticky;
+        top: -24px;
+        z-index: 5;
+        background: #4c3f9e;
+        box-shadow: 0 8px 16px -8px rgba(0, 0, 0, 0.4);
+    }
+
+    #previewHost {
+        width: 100%;
+        height: 200px;
+        border-radius: 10px;
+        overflow: hidden;
+        background: radial-gradient(circle at 50% 35%, #1b1b34 0%, #05050c 80%);
+    }
+
+    #previewHost canvas {
+        display: block;
+        width: 100%;
+        height: 100%;
+    }
+
     .dim-caption {
         font-size: 10.5px;
         text-transform: uppercase;
@@ -265,6 +287,15 @@
         visual property it starts out controlling — color, size, twist, and more. Every time you
         generate, the same 10 numbers get reshuffled into different roles, so the exact same
         data drives a different crystal each time.
+    </div>
+
+    <div class="panel" id="previewPanel">
+        <h3>Reference Crystal</h3>
+        <div id="previewHost"></div>
+        <div class="subtitle" style="margin-bottom: 0; margin-top: 8px;">
+            Your 10 values in order, unshuffled (X→Color, Y→Size, Z→Twist...) — updates live as
+            you drag. This is the reference to compare the shuffled batch below against.
+        </div>
     </div>
 
     <div class="panel">
@@ -1453,6 +1484,7 @@
         slider.addEventListener('input', function () {
             dimValues[i] = parseFloat(slider.value);
             valueEl.textContent = dimValues[i].toFixed(2);
+            updatePreview();
         });
 
         row.appendChild(labelEl);
@@ -1491,11 +1523,13 @@
     document.getElementById('randomizeValuesBtn').addEventListener('click', function () {
         dimValues = DIM_LABELS.map(function () { return roundTo(Math.random() * 2 - 1, 2); });
         refreshSliderUI();
+        updatePreview();
     });
 
     document.getElementById('resetValuesBtn').addEventListener('click', function () {
         dimValues = DIM_LABELS.map(function () { return 0; });
         refreshSliderUI();
+        updatePreview();
     });
 
     var countSlider = document.getElementById('countSlider');
@@ -1709,6 +1743,61 @@
         var geo = new THREE.PlaneGeometry(DECODER_WORLD_W, DECODER_WORLD_H);
         return new THREE.Mesh(geo, mat);
     }
+
+    // ---------------------------------------------------------------
+    // Live reference preview: the crystal built straight from the current
+    // slider values with no shuffling (slot i always gets dimValues[i]) --
+    // a fixed point of comparison for the shuffled batch below. Its own
+    // small scene, independent of the main gallery.
+    // ---------------------------------------------------------------
+    var previewHost = document.getElementById('previewHost');
+    var previewScene = new THREE.Scene();
+    var previewCamera = new THREE.PerspectiveCamera(45, previewHost.clientWidth / previewHost.clientHeight, 0.1, 100);
+    previewCamera.position.set(0, 0, 4);
+
+    var previewRenderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    previewRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    previewRenderer.setSize(previewHost.clientWidth, previewHost.clientHeight);
+    previewHost.appendChild(previewRenderer.domElement);
+
+    previewScene.add(new THREE.AmbientLight(0x8888aa, 0.7));
+    var previewKeyLight = new THREE.DirectionalLight(0xffffff, 1.0);
+    previewKeyLight.position.set(3, 5, 4);
+    previewScene.add(previewKeyLight);
+    var previewRimLight = new THREE.PointLight(0x88aaff, 0.7, 50);
+    previewRimLight.position.set(-3, -2, -3);
+    previewScene.add(previewRimLight);
+
+    var previewCrystal = null;
+    var PREVIEW_SPIN_SPEED = (Math.PI * 2) / 20; // one rotation every 20s -- livelier than the gallery
+
+    function disposeGroup(group) {
+        group.traverse(function (obj) {
+            if (obj.geometry) obj.geometry.dispose();
+            if (obj.material) {
+                if (obj.material.map) obj.material.map.dispose();
+                obj.material.dispose();
+            }
+        });
+    }
+
+    function updatePreview() {
+        if (previewCrystal) {
+            previewScene.remove(previewCrystal);
+            disposeGroup(previewCrystal);
+        }
+        var identityPerm = dimValues.map(function (v, i) { return i; });
+        previewCrystal = buildCrystal(dimValues.slice(), identityPerm);
+        previewScene.add(previewCrystal);
+    }
+
+    window.addEventListener('resize', function () {
+        previewCamera.aspect = previewHost.clientWidth / previewHost.clientHeight;
+        previewCamera.updateProjectionMatrix();
+        previewRenderer.setSize(previewHost.clientWidth, previewHost.clientHeight);
+    });
+
+    updatePreview();
 
     // ---------------------------------------------------------------
     // Three.js scene setup
@@ -1976,6 +2065,11 @@
         });
 
         renderer.render(scene, camera);
+
+        if (previewCrystal) {
+            previewCrystal.rotation.y += PREVIEW_SPIN_SPEED * dt;
+            previewRenderer.render(previewScene, previewCamera);
+        }
     }
     animate();
 
