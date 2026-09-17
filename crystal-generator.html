@@ -9,24 +9,58 @@
 
     html, body {
         height: 100%;
+        height: 100dvh;
         overflow: hidden;
         font-family: 'Arial', sans-serif;
         background: #0a0a14;
+        overscroll-behavior: none;
     }
 
     body {
-        display: flex;
+        position: relative;
     }
 
     /* ---------- Sidebar ---------- */
     #sidebar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        z-index: 30;
         width: 340px;
-        min-width: 340px;
+        max-width: 85vw;
         height: 100%;
+        height: 100dvh;
         overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         color: white;
         padding: 24px 22px;
+        box-shadow: 6px 0 30px rgba(0, 0, 0, 0.45);
+        transform: translateX(0);
+        transition: transform 0.25s ease;
+    }
+
+    #sidebar.collapsed {
+        transform: translateX(-100%);
+    }
+
+    #menuToggle {
+        position: fixed;
+        top: 14px;
+        left: 14px;
+        z-index: 40;
+        width: 44px;
+        height: 44px;
+        flex: none;
+        border-radius: 10px;
+        background: rgba(15, 15, 28, 0.75);
+        color: white;
+        font-size: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        backdrop-filter: blur(4px);
     }
 
     #sidebar h1 {
@@ -155,22 +189,25 @@
 
     /* ---------- Main viewport ---------- */
     #main {
-        flex: 1;
-        position: relative;
-        height: 100%;
+        position: absolute;
+        inset: 0;
         background: radial-gradient(circle at 50% 30%, #1b1b34 0%, #05050c 75%);
     }
 
     #canvasHost { width: 100%; height: 100%; display: block; }
+    #canvasHost canvas { touch-action: none; }
 
     #topBar {
         position: absolute;
         top: 14px;
         left: 18px;
         right: 18px;
+        padding-left: 52px;
         display: flex;
+        flex-wrap: wrap;
         justify-content: space-between;
         align-items: flex-start;
+        gap: 8px;
         pointer-events: none;
         color: white;
         font-size: 13px;
@@ -194,6 +231,8 @@
 </style>
 </head>
 <body>
+
+<button id="menuToggle" aria-label="Toggle controls">&#9776;</button>
 
 <div id="sidebar">
     <h1>💎 Crystal Generator</h1>
@@ -251,9 +290,9 @@
     <div id="canvasHost"></div>
     <div id="topBar">
         <div id="statusText">Generate a batch to begin.</div>
-        <div class="hint">Drag to orbit · scroll to zoom · click a shape for its data</div>
+        <div class="hint">Drag/swipe to orbit · pinch or scroll to zoom · tap a shape for its data</div>
     </div>
-    <div id="emptyState">Set your 10 values on the left, then hit <b>&nbsp;Generate Crystals&nbsp;</b>.</div>
+    <div id="emptyState">Tap <b>&#9776;</b> to open the controls, set your 10 values, then hit <b>&nbsp;Generate Crystals&nbsp;</b>.</div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
@@ -315,6 +354,23 @@
             valueLabelEls[i].textContent = dimValues[i].toFixed(2);
         }
     }
+
+    // ---------------------------------------------------------------
+    // Mobile: collapsible sidebar drawer
+    // ---------------------------------------------------------------
+    var sidebarEl = document.getElementById('sidebar');
+    var menuToggle = document.getElementById('menuToggle');
+    var MOBILE_BREAKPOINT = 900;
+    var isMobileLayout = window.innerWidth < MOBILE_BREAKPOINT;
+    if (isMobileLayout) sidebarEl.classList.add('collapsed');
+
+    menuToggle.addEventListener('click', function () {
+        sidebarEl.classList.toggle('collapsed');
+    });
+
+    window.addEventListener('resize', function () {
+        isMobileLayout = window.innerWidth < MOBILE_BREAKPOINT;
+    });
 
     document.getElementById('randomizeValuesBtn').addEventListener('click', function () {
         dimValues = DIM_LABELS.map(function () { return roundTo(Math.random() * 2 - 1, 2); });
@@ -587,6 +643,8 @@
         document.getElementById('emptyState').style.display = 'none';
         document.getElementById('statusText').textContent =
             n + ' crystals · same 10 values · independent random directions each';
+
+        if (isMobileLayout) sidebarEl.classList.add('collapsed');
     }
 
     document.getElementById('generateBtn').addEventListener('click', generateBatch);
@@ -597,11 +655,23 @@
     var raycaster = new THREE.Raycaster();
     var mouse = new THREE.Vector2();
     var isDragging = false;
+    var pointerDownPos = null;
+    var DRAG_THRESHOLD_SQ = 100; // ~10px of movement (touch taps jitter a little)
 
-    renderer.domElement.addEventListener('pointerdown', function () { isDragging = false; });
-    renderer.domElement.addEventListener('pointermove', function () { isDragging = true; });
+    renderer.domElement.addEventListener('pointerdown', function (ev) {
+        isDragging = false;
+        pointerDownPos = { x: ev.clientX, y: ev.clientY };
+    });
+    renderer.domElement.addEventListener('pointermove', function (ev) {
+        if (!pointerDownPos) return;
+        var dx = ev.clientX - pointerDownPos.x;
+        var dy = ev.clientY - pointerDownPos.y;
+        if (dx * dx + dy * dy > DRAG_THRESHOLD_SQ) isDragging = true;
+    });
     renderer.domElement.addEventListener('pointerup', function (ev) {
-        if (isDragging) return; // was an orbit drag, not a click
+        var wasDragging = isDragging;
+        pointerDownPos = null;
+        if (wasDragging) return; // was an orbit drag/swipe, not a tap
         var rect = renderer.domElement.getBoundingClientRect();
         mouse.x = ((ev.clientX - rect.left) / rect.width) * 2 - 1;
         mouse.y = -((ev.clientY - rect.top) / rect.height) * 2 + 1;
