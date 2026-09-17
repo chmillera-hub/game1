@@ -283,10 +283,12 @@
 <div id="sidebar">
     <h1>💎 Crystal Generator</h1>
     <div class="subtitle">
-        Pick a fixed value for each dimension below (−1 to 1). Each one is labeled with the
-        visual property it starts out controlling — color, size, twist, and more. Every time you
-        generate, the same 10 numbers get reshuffled into different roles, so the exact same
-        data drives a different crystal each time.
+        Pick a fixed value for each dimension below. Each slider clicks between 5 stops — −1
+        (small), −0.5, 0 (medium), 0.5, 1 (large) — so it's easy to tell what you're setting
+        without hunting through decimals. Each one is labeled with the visual property it starts
+        out controlling — color, size, twist, and more. Every time you generate, the same 10
+        numbers get reshuffled into different roles, so the exact same data drives a different
+        crystal each time.
     </div>
 
     <div class="panel" id="previewPanel">
@@ -301,6 +303,13 @@
     <div class="panel">
         <h3>Dimensions</h3>
         <div id="dimList"></div>
+        <datalist id="snapPoints">
+            <option value="-1"></option>
+            <option value="-0.5"></option>
+            <option value="0"></option>
+            <option value="0.5"></option>
+            <option value="1"></option>
+        </datalist>
         <div class="btn-row" style="margin-top: 10px;">
             <button class="btn-secondary" id="randomizeValuesBtn">Randomize Values</button>
             <button class="btn-secondary" id="resetValuesBtn">Reset</button>
@@ -1446,9 +1455,14 @@
         { key: 'finish', label: 'Surface finish' }
     ];
 
-    var dimValues = DIM_LABELS.map(function () { return roundTo(Math.random() * 2 - 1, 2); });
+    // Sliders snap to 5 stops instead of continuous hundredths, so a value's
+    // rough size is obvious at a glance instead of buried in decimal noise.
+    var SNAP_VALUES = [-1, -0.5, 0, 0.5, 1];
+    var SNAP_STEP = 0.5;
 
-    function roundTo(v, d) { var f = Math.pow(10, d); return Math.round(v * f) / f; }
+    function randomSnapValue() { return SNAP_VALUES[Math.floor(Math.random() * SNAP_VALUES.length)]; }
+
+    var dimValues = DIM_LABELS.map(randomSnapValue);
 
     // ---------------------------------------------------------------
     // Sidebar: dimension sliders
@@ -1474,16 +1488,17 @@
         slider.type = 'range';
         slider.min = '-1';
         slider.max = '1';
-        slider.step = '0.01';
+        slider.step = String(SNAP_STEP);
+        slider.setAttribute('list', 'snapPoints');
         slider.value = String(dimValues[i]);
 
         var valueEl = document.createElement('div');
         valueEl.className = 'dim-value';
-        valueEl.textContent = dimValues[i].toFixed(2);
+        valueEl.textContent = dimValues[i].toFixed(1);
 
         slider.addEventListener('input', function () {
             dimValues[i] = parseFloat(slider.value);
-            valueEl.textContent = dimValues[i].toFixed(2);
+            valueEl.textContent = dimValues[i].toFixed(1);
             updatePreview();
         });
 
@@ -1499,7 +1514,7 @@
     function refreshSliderUI() {
         for (var i = 0; i < DIM_COUNT; i++) {
             sliderEls[i].value = String(dimValues[i]);
-            valueLabelEls[i].textContent = dimValues[i].toFixed(2);
+            valueLabelEls[i].textContent = dimValues[i].toFixed(1);
         }
     }
 
@@ -1521,7 +1536,7 @@
     });
 
     document.getElementById('randomizeValuesBtn').addEventListener('click', function () {
-        dimValues = DIM_LABELS.map(function () { return roundTo(Math.random() * 2 - 1, 2); });
+        dimValues = DIM_LABELS.map(randomSnapValue);
         refreshSliderUI();
         updatePreview();
     });
@@ -1703,7 +1718,7 @@
             ctx.font = 'bold 12px Arial, Helvetica, sans-serif';
             ctx.fillStyle = '#111318';
             ctx.textAlign = 'right';
-            ctx.fillText(value.toFixed(2) + ' ← ' + fromLabel, w - 14, y + 16);
+            ctx.fillText(value.toFixed(1) + ' ← ' + fromLabel, w - 14, y + 16);
 
             // mini -1..1 number line with a marker
             var barX0 = 14, barW = w - 28;
@@ -2009,7 +2024,7 @@
             var fromLabel = DIM_LABELS[group.userData.perm[i]];
             var row = document.createElement('tr');
             row.innerHTML = '<td>' + prop.label + '</td>' +
-                '<td>' + value.toFixed(2) + '</td>' +
+                '<td>' + value.toFixed(1) + '</td>' +
                 '<td>' + fromLabel + '</td>';
             body.appendChild(row);
         });
