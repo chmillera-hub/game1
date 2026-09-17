@@ -252,9 +252,10 @@
 <div id="sidebar">
     <h1>💎 Crystal Generator</h1>
     <div class="subtitle">
-        Pick a fixed value for each dimension below (−1 to 1). Every time you generate,
-        each dimension gets assigned a fresh random 3D direction — same underlying numbers,
-        completely different crystal shapes.
+        Pick a fixed value for each dimension below (−1 to 1). Each dimension controls a real
+        visual property — color, size, twist, and more. Every time you generate, the same 10
+        numbers get reshuffled into different roles, so the exact same data drives a different
+        crystal each time.
     </div>
 
     <div class="panel">
@@ -272,17 +273,13 @@
             <span>Number of shapes</span>
             <span><input type="range" id="countSlider" min="1" max="100" value="24"><b id="countLabel">24</b></span>
         </div>
-        <div class="field-row">
-            <span>Min. direction spacing</span>
-            <span><input type="range" id="spacingSlider" min="0" max="45" value="18"><b id="spacingLabel">18°</b></span>
-        </div>
         <button id="generateBtn">Generate Crystals</button>
     </div>
 
     <div class="panel" id="selectionPanel">
         <h3>Selected Shape <span id="selIndex"></span></h3>
         <table>
-            <thead><tr><th>Dim</th><th>Value</th><th>Direction (unit vector)</th></tr></thead>
+            <thead><tr><th>Property</th><th>Value</th><th>From</th></tr></thead>
             <tbody id="selTableBody"></tbody>
         </table>
         <div class="btn-row" style="margin-top: 10px;">
@@ -293,24 +290,16 @@
     <div class="panel">
         <h3>How it works</h3>
         <div class="subtitle" style="margin-bottom: 0;">
-            Each shape's points sit at <i>value × direction</i> from the origin, one point
-            per dimension. The convex "skin" wrapping those points becomes the crystal facets.
-            If the points are too flat to wrap (e.g. many zero values), a smooth ribbon is
-            drawn through them instead. An observer can't tell which way is "really" north just
-            by looking at a shape — like a pebble picked up on a beach — so each crystal's
-            <i>own</i> most extreme point defines it instead: whichever of its 10 random
-            directions has an absolute vertical component closest to 1 (pointing nearly straight
-            up <i>or</i> down — both count equally) becomes that crystal's "northern point." The
-            gallery is ranked by that score: crystal #1 has the northern point closest to a
-            perfect 1.0, running down to the last, least-extreme crystal. Every crystal starts
-            with its own northern point pointing straight up, then turns very slowly around
-            that same fixed point — about one full rotation a minute — so the point itself never
-            moves while you compare shapes. Each crystal sits in front of a precise coordinate
-            grid, origin centered exactly on the crystal, with both axes running −1 to 1 on the
-            same scale as the crystal's own points — so you can read a vertex's actual
-            coordinates straight off the grid and compare sizes and proportions between
-            crystals directly. The red dot marks exactly where that crystal's northern point
-            lands. Click any crystal to see its hidden vector data.
+            Each of the 10 dimensions controls one real visual property of the crystal, always
+            in the same order: <b>Color</b> (bright blue at −1, black at 0, bright red at +1),
+            <b>Size</b>, <b>Twistiness</b> (left-handed at −1, right-handed at +1),
+            <b>width/height/depth stretch</b>, <b>Taper</b>, <b>Bend</b>,
+            <b>Facet complexity</b> (a rough low-poly gem vs. a smooth many-faceted one), and
+            <b>Surface finish</b> (matte vs. glossy). Your 10 slider values never change — but
+            every crystal you generate reshuffles which value lands in which role, so the exact
+            same number might color one crystal and size the next. The card behind each crystal
+            decodes it: every property's value, and which of your original letters it came from.
+            Click any crystal for the same breakdown up close.
         </div>
     </div>
 </div>
@@ -1481,192 +1470,135 @@
     var countLabel = document.getElementById('countLabel');
     countSlider.addEventListener('input', function () { countLabel.textContent = countSlider.value; });
 
-    var spacingSlider = document.getElementById('spacingSlider');
-    var spacingLabel = document.getElementById('spacingLabel');
-    spacingSlider.addEventListener('input', function () { spacingLabel.textContent = spacingSlider.value + '°'; });
+    // ---------------------------------------------------------------
+    // Each of the 10 dimension slots controls one real visual property,
+    // always in this order. What varies between crystals is which of the
+    // 10 *values* gets shuffled into which slot -- the numbers themselves
+    // never change.
+    // ---------------------------------------------------------------
+    var SLOT_PROPERTIES = [
+        { key: 'color', label: 'Color' },
+        { key: 'size', label: 'Size' },
+        { key: 'twist', label: 'Twistiness' },
+        { key: 'stretchX', label: 'Width stretch' },
+        { key: 'stretchY', label: 'Height stretch' },
+        { key: 'stretchZ', label: 'Depth stretch' },
+        { key: 'taper', label: 'Taper' },
+        { key: 'bend', label: 'Bend' },
+        { key: 'facets', label: 'Facet complexity' },
+        { key: 'finish', label: 'Surface finish' }
+    ];
 
-    // ---------------------------------------------------------------
-    // Math: random directions with a minimum angular spacing
-    // ---------------------------------------------------------------
-    function randomUnitVector() {
-        // Marsaglia method for a uniform point on the unit sphere.
-        var x1, x2, s;
-        do {
-            x1 = Math.random() * 2 - 1;
-            x2 = Math.random() * 2 - 1;
-            s = x1 * x1 + x2 * x2;
-        } while (s >= 1 || s === 0);
-        var f = 2 * Math.sqrt(1 - s);
-        return new THREE.Vector3(f * x1, f * x2, 1 - 2 * s);
+    function lerp(a, b, t) { return a + (b - a) * t; }
+
+    function randomPermutation(n) {
+        var arr = [];
+        for (var i = 0; i < n; i++) arr.push(i);
+        for (var i = n - 1; i > 0; i--) {
+            var j = Math.floor(Math.random() * (i + 1));
+            var tmp = arr[i]; arr[i] = arr[j]; arr[j] = tmp;
+        }
+        return arr;
     }
 
-    function generateSpacedDirections(n, minAngleDeg) {
-        var minCos = Math.cos(minAngleDeg * Math.PI / 180);
-        var dirs = [];
-        for (var i = 0; i < n; i++) {
-            var best = null, bestScore = -Infinity;
-            var attempts = minAngleDeg > 0 ? 250 : 1;
-            for (var a = 0; a < attempts; a++) {
-                var candidate = randomUnitVector();
-                var ok = true, worstCos = -Infinity;
-                for (var j = 0; j < dirs.length; j++) {
-                    var c = candidate.dot(dirs[j]);
-                    if (c > worstCos) worstCos = c;
-                    if (c > minCos) ok = false;
-                }
-                if (ok) { best = candidate; break; }
-                // keep the least-bad candidate in case we run out of attempts
-                var score = -worstCos;
-                if (score > bestScore) { bestScore = score; best = candidate; }
-            }
-            dirs.push(best);
-        }
-        return dirs;
+    // -1 = bright blue, 0 = black, +1 = bright red
+    function colorForValue(v) {
+        return new THREE.Color(Math.max(0, v), 0, Math.max(0, -v));
     }
-
-    // ---------------------------------------------------------------
-    // Math: brute-force convex hull for a small point set (n <= ~12)
-    // ---------------------------------------------------------------
-    function computeConvexHullFaces(points) {
-        var n = points.length;
-        var centroid = new THREE.Vector3();
-        for (var i = 0; i < n; i++) centroid.add(points[i]);
-        centroid.multiplyScalar(1 / n);
-
-        var faces = [];
-        var eps = 1e-6;
-
-        for (var i0 = 0; i0 < n; i0++) {
-            for (var j0 = i0 + 1; j0 < n; j0++) {
-                for (var k0 = j0 + 1; k0 < n; k0++) {
-                    var pi = points[i0], pj = points[j0], pk = points[k0];
-                    var e1 = pj.clone().sub(pi);
-                    var e2 = pk.clone().sub(pi);
-                    var normal = e1.clone().cross(e2);
-                    var len = normal.length();
-                    if (len < eps) continue; // collinear triple
-                    normal.multiplyScalar(1 / len);
-
-                    var toCentroid = centroid.clone().sub(pi);
-                    var flip = normal.dot(toCentroid) > 0;
-                    var outward = flip ? normal.clone().negate() : normal;
-
-                    var allInside = true;
-                    for (var m = 0; m < n; m++) {
-                        if (m === i0 || m === j0 || m === k0) continue;
-                        var d = outward.dot(points[m].clone().sub(pi));
-                        if (d > 1e-5) { allInside = false; break; }
-                    }
-                    if (!allInside) continue;
-
-                    faces.push(flip ? [i0, k0, j0] : [i0, j0, k0]);
-                }
-            }
-        }
-        return faces;
+    function colorCssForValue(v) {
+        var r = Math.round(255 * Math.max(0, v));
+        var b = Math.round(255 * Math.max(0, -v));
+        return 'rgb(' + r + ',0,' + b + ')';
     }
 
     // ---------------------------------------------------------------
-    // Build a single crystal (Three.js group) from values + fresh directions
+    // Build a single crystal (Three.js group) from 10 slot-assigned values.
+    // slotValues[i] drives SLOT_PROPERTIES[i]; perm[i] is the original
+    // dimension index (into DIM_LABELS/dimValues) that value came from.
     // ---------------------------------------------------------------
-    function buildCrystal(values) {
-        var minAngle = parseFloat(spacingSlider.value);
-        var dirs = generateSpacedDirections(values.length, minAngle);
-        var points = values.map(function (v, i) { return dirs[i].clone().multiplyScalar(v); });
+    function buildCrystal(slotValues, perm) {
+        var color = slotValues[0];
+        var size = slotValues[1];
+        var twist = slotValues[2];
+        var stretchX = slotValues[3];
+        var stretchY = slotValues[4];
+        var stretchZ = slotValues[5];
+        var taper = slotValues[6];
+        var bend = slotValues[7];
+        var facets = slotValues[8];
+        var finish = slotValues[9];
 
-        // The "northern point" is whichever of this crystal's own random
-        // directions has an absolute y-component closest to 1 -- a direction
-        // pointing nearly straight down (y close to -1) is just as extreme/
-        // polar as one pointing nearly straight up, since there's no way for
-        // an observer to know which end is "really" north just by looking at
-        // the object (like a pebble picked up on a beach). Since directions
-        // are independent per crystal, this score varies crystal to crystal
-        // even though all crystals share the same 10 values -- that's what
-        // lets the gallery be ranked by it.
-        var northScore = -Infinity, northDimIndex = 0;
-        for (var ni = 0; ni < dirs.length; ni++) {
-            var absY = Math.abs(dirs[ni].y);
-            if (absY > northScore) { northScore = absY; northDimIndex = ni; }
+        var detail = Math.round((facets + 1) / 2 * 2); // 0 (rough gem), 1, or 2 (smooth)
+        var geometry = new THREE.IcosahedronGeometry(0.8, detail);
+        var posAttr = geometry.attributes.position;
+
+        var maxY = 0;
+        for (var i = 0; i < posAttr.count; i++) maxY = Math.max(maxY, Math.abs(posAttr.getY(i)));
+        if (maxY === 0) maxY = 1;
+
+        var TWIST_TURNS = 2.5;
+        var BEND_AMOUNT = 0.5;
+        var sx = lerp(0.5, 2, (stretchX + 1) / 2);
+        var sy = lerp(0.5, 2, (stretchY + 1) / 2);
+        var sz = lerp(0.5, 2, (stretchZ + 1) / 2);
+
+        for (var i = 0; i < posAttr.count; i++) {
+            var x = posAttr.getX(i), y = posAttr.getY(i), z = posAttr.getZ(i);
+            var t = y / maxY; // -1..1, bottom to top
+
+            var taperFactor = Math.max(0.15, 1 + taper * t * 0.6);
+            x *= taperFactor; z *= taperFactor;
+
+            x += bend * t * BEND_AMOUNT;
+
+            var angle = twist * t * TWIST_TURNS * Math.PI;
+            var cosA = Math.cos(angle), sinA = Math.sin(angle);
+            var nx = x * cosA - z * sinA;
+            var nz = x * sinA + z * cosA;
+            x = nx; z = nz;
+
+            x *= sx; y *= sy; z *= sz;
+
+            posAttr.setXYZ(i, x, y, z);
         }
+        posAttr.needsUpdate = true;
+        geometry.computeVertexNormals();
 
-        var maxRadius = Math.max.apply(null, values.map(Math.abs).concat([0.15]));
-        var faces = computeConvexHullFaces(points);
-
-        var color = new THREE.Color(0xffffff); // placeholder; recolored by rank after sorting
-
-        var geometry;
-        var isSmoothFallback = faces.length < 4;
-
-        if (!isSmoothFallback) {
-            geometry = new THREE.BufferGeometry();
-            var positions = [];
-            faces.forEach(function (f) {
-                [f[0], f[1], f[2]].forEach(function (idx) {
-                    var p = points[idx];
-                    positions.push(p.x, p.y, p.z);
-                });
-            });
-            geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-            geometry.computeVertexNormals();
-        } else {
-            // Fallback: not enough spread for a solid hull (e.g. many zero
-            // values collapse points onto a plane/line) -> draw a smooth
-            // closed ribbon threading through the points instead.
-            var ordered = points.slice().sort(function (a, b) {
-                return Math.atan2(a.y, a.x) - Math.atan2(b.y, b.x);
-            });
-            if (ordered.length < 2) ordered = [new THREE.Vector3(0, 0, 0), new THREE.Vector3(0.001, 0, 0)];
-            var curve = new THREE.CatmullRomCurve3(ordered, true);
-            var tubeRadius = Math.max(maxRadius * 0.05, 0.02);
-            geometry = new THREE.TubeGeometry(curve, 128, tubeRadius, 8, true);
-        }
+        var sizeScale = size < 0 ? lerp(0.45, 1, size + 1) : lerp(1, 2.2, size);
+        var col = colorForValue(color);
+        var shininess = lerp(10, 150, (finish + 1) / 2);
+        var specIntensity = lerp(0.15, 1.0, (finish + 1) / 2);
+        var flat = detail < 2;
 
         var material = new THREE.MeshPhongMaterial({
-            color: color,
-            emissive: color.clone().multiplyScalar(0.15),
-            shininess: 90,
-            specular: 0xffffff,
+            color: col,
+            emissive: col.clone().multiplyScalar(0.12),
+            shininess: shininess,
+            specular: new THREE.Color(specIntensity, specIntensity, specIntensity),
             transparent: true,
-            opacity: 0.88,
+            opacity: 0.92,
             side: THREE.DoubleSide,
-            flatShading: !isSmoothFallback
+            flatShading: flat
         });
 
         var mesh = new THREE.Mesh(geometry, material);
-
         var group = new THREE.Group();
         group.add(mesh);
 
-        if (!isSmoothFallback) {
-            var edgeGeom = new THREE.EdgesGeometry(geometry, 1);
-            var edgeMat = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.35 });
+        if (flat) {
+            var edgeGeom = new THREE.EdgesGeometry(geometry, 20);
+            var edgeMat = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.3 });
             group.add(new THREE.LineSegments(edgeGeom, edgeMat));
         }
 
-        // Start the crystal in its "northernmost orientation": rotate the
-        // whole group once so the northern point -- the actual value-scaled
-        // vertex, not just its raw direction -- lands exactly straight up.
-        // If that dimension's value is negative, aligning the raw direction
-        // to +Y would flip the scaled point back down below center, so aim
-        // the direction at the value's sign instead (down, if negative) so
-        // it always lands above the origin once scaled.
-        var upTarget = new THREE.Vector3(0, values[northDimIndex] < 0 ? -1 : 1, 0);
-        group.quaternion.setFromUnitVectors(dirs[northDimIndex], upTarget);
+        group.scale.setScalar(sizeScale);
+        geometry.computeBoundingSphere();
 
         group.userData = {
-            values: values.slice(),
-            dirs: dirs,
-            points: points,
-            isFallback: isSmoothFallback,
-            northScore: northScore,
-            northDimIndex: northDimIndex,
-            mainMesh: mesh
+            slotValues: slotValues.slice(),
+            perm: perm.slice(),
+            boundingRadius: geometry.boundingSphere.radius * sizeScale
         };
-        // Very slow ongoing spin around the northern point's own direction --
-        // since that point lies exactly on this axis, it stays perfectly
-        // fixed in place while the rest of the crystal slowly turns around
-        // it, about one full rotation per minute.
-        group.userData.spinAxis = dirs[northDimIndex].clone();
         var oneRotationPerMinute = (Math.PI * 2) / 60;
         group.userData.spinSpeed = oneRotationPerMinute * (0.85 + Math.random() * 0.3) * (Math.random() < 0.5 ? 1 : -1);
 
@@ -1674,22 +1606,17 @@
     }
 
     // ---------------------------------------------------------------
-    // Formal background chart: a precise X/Y coordinate grid with its
-    // origin exactly centered on the crystal, axes running -1 to 1 on
-    // the same scale as the crystal's own point coordinates -- so a
-    // vertex sitting at local (0.8, 0.3, ...) lines up with grid
-    // position (0.8, 0.3) exactly, letting proportions be read directly.
+    // Decoder card: lists this crystal's 10 properties, each one's value,
+    // and which original letter (X, Y, Z...) that value came from -- so
+    // the shuffle is fully readable, not just implied.
     // ---------------------------------------------------------------
-    var CHART_CANVAS = 512;
-    var CHART_MARGIN = 50;
-    var CHART_PLOT = CHART_CANVAS - 2 * CHART_MARGIN; // pixels spanning value -1..1
-    var CHART_WORLD_SIZE = 2 * (CHART_CANVAS / CHART_PLOT); // world units spanned by the whole plane
+    var DECODER_CANVAS_W = 380;
+    var DECODER_CANVAS_H = 460;
+    var DECODER_WORLD_W = 1.9;
+    var DECODER_WORLD_H = DECODER_WORLD_W * (DECODER_CANVAS_H / DECODER_CANVAS_W);
 
-    function chartX(v) { return CHART_MARGIN + ((v + 1) / 2) * CHART_PLOT; }
-    function chartY(v) { return CHART_CANVAS - CHART_MARGIN - ((v + 1) / 2) * CHART_PLOT; }
-
-    function createNorthChartTexture(dimLabel, rank, northValue) {
-        var w = CHART_CANVAS, h = CHART_CANVAS;
+    function createDecoderTexture(slotValues, perm, index) {
+        var w = DECODER_CANVAS_W, h = DECODER_CANVAS_H;
         var canvas = document.createElement('canvas');
         canvas.width = w;
         canvas.height = h;
@@ -1697,95 +1624,76 @@
 
         ctx.fillStyle = '#fbfbfa';
         ctx.fillRect(0, 0, w, h);
-
-        // fine grid every 0.1
-        ctx.strokeStyle = '#dfe3e8';
-        ctx.lineWidth = 1;
-        for (var g = -1; g <= 1.0001; g += 0.1) {
-            ctx.beginPath();
-            ctx.moveTo(chartX(g), CHART_MARGIN);
-            ctx.lineTo(chartX(g), h - CHART_MARGIN);
-            ctx.stroke();
-            ctx.beginPath();
-            ctx.moveTo(CHART_MARGIN, chartY(g));
-            ctx.lineTo(w - CHART_MARGIN, chartY(g));
-            ctx.stroke();
-        }
-
-        // major ticks + labels every 0.5
-        ctx.strokeStyle = '#aab2bd';
-        ctx.lineWidth = 1.25;
-        ctx.font = '13px Arial, Helvetica, sans-serif';
-        ctx.fillStyle = '#3a3f47';
-        [-1, -0.5, 0, 0.5, 1].forEach(function (v) {
-            var x = chartX(v), y = chartY(v);
-            ctx.beginPath();
-            ctx.moveTo(x, CHART_MARGIN);
-            ctx.lineTo(x, h - CHART_MARGIN);
-            ctx.stroke();
-            ctx.beginPath();
-            ctx.moveTo(CHART_MARGIN, y);
-            ctx.lineTo(w - CHART_MARGIN, y);
-            ctx.stroke();
-            ctx.textAlign = 'center';
-            ctx.fillText(String(v), x, h - CHART_MARGIN + 18);
-            if (v !== 0) {
-                ctx.textAlign = 'right';
-                ctx.fillText(String(v), CHART_MARGIN - 8, y + 4);
-            }
-        });
-
-        // border frame around the -1..1 plot square
-        ctx.strokeStyle = '#8a929c';
-        ctx.lineWidth = 1.5;
-        ctx.strokeRect(CHART_MARGIN, CHART_MARGIN, CHART_PLOT, CHART_PLOT);
-
-        // bold origin-crossing axes
-        ctx.strokeStyle = '#1a1d22';
+        ctx.strokeStyle = '#c7cdd6';
         ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.moveTo(chartX(0), CHART_MARGIN);
-        ctx.lineTo(chartX(0), h - CHART_MARGIN);
-        ctx.stroke();
-        ctx.beginPath();
-        ctx.moveTo(CHART_MARGIN, chartY(0));
-        ctx.lineTo(w - CHART_MARGIN, chartY(0));
-        ctx.stroke();
+        ctx.strokeRect(1, 1, w - 2, h - 2);
 
-        // origin marker
-        ctx.beginPath();
-        ctx.fillStyle = '#1a1d22';
-        ctx.arc(chartX(0), chartY(0), 3, 0, Math.PI * 2);
-        ctx.fill();
-
-        // the northern point itself always lands exactly on the vertical
-        // axis at (0, |value|) after the crystal's corrective rotation --
-        // note this is the dimension's actual value, not its alignment
-        // score, which is a different number used only for ranking
-        ctx.beginPath();
-        ctx.fillStyle = '#c0392b';
-        ctx.arc(chartX(0), chartY(Math.abs(northValue)), 5, 0, Math.PI * 2);
-        ctx.fill();
-
-        ctx.font = 'bold 15px Arial, Helvetica, sans-serif';
+        ctx.font = 'bold 17px Arial, Helvetica, sans-serif';
         ctx.fillStyle = '#111318';
         ctx.textAlign = 'left';
-        ctx.fillText('#' + rank + '  ·  ' + dimLabel + ' = ' + northValue.toFixed(2), 14, 22);
+        ctx.fillText('#' + index, 14, 26);
+
+        var top = 42;
+        var rowH = (h - top - 8) / SLOT_PROPERTIES.length;
+
+        SLOT_PROPERTIES.forEach(function (prop, i) {
+            var y = top + i * rowH;
+            var value = slotValues[i];
+            var fromLabel = DIM_LABELS[perm[i]];
+
+            ctx.strokeStyle = '#e7e9ec';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(12, y + rowH - 1);
+            ctx.lineTo(w - 12, y + rowH - 1);
+            ctx.stroke();
+
+            ctx.font = '13px Arial, Helvetica, sans-serif';
+            ctx.fillStyle = '#3a3f47';
+            ctx.textAlign = 'left';
+            ctx.fillText(prop.label, 14, y + 16);
+
+            ctx.font = 'bold 12px Arial, Helvetica, sans-serif';
+            ctx.fillStyle = '#111318';
+            ctx.textAlign = 'right';
+            ctx.fillText(value.toFixed(2) + ' ← ' + fromLabel, w - 14, y + 16);
+
+            // mini -1..1 number line with a marker
+            var barX0 = 14, barW = w - 28;
+            var barY = y + 30;
+            ctx.strokeStyle = '#c7cdd6';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(barX0, barY);
+            ctx.lineTo(barX0 + barW, barY);
+            ctx.stroke();
+            var midX = barX0 + barW / 2;
+            ctx.beginPath();
+            ctx.moveTo(midX, barY - 4);
+            ctx.lineTo(midX, barY + 4);
+            ctx.stroke();
+
+            var markerX = barX0 + ((value + 1) / 2) * barW;
+            ctx.beginPath();
+            ctx.fillStyle = i === 0 ? colorCssForValue(value) : '#c0392b';
+            ctx.arc(markerX, barY, 4, 0, Math.PI * 2);
+            ctx.fill();
+        });
 
         var texture = new THREE.CanvasTexture(canvas);
         texture.needsUpdate = true;
         return texture;
     }
 
-    function createNorthChartBackdrop(dimLabel, rank, northValue) {
-        var texture = createNorthChartTexture(dimLabel, rank, northValue);
+    function createDecoderBackdrop(slotValues, perm, index) {
+        var texture = createDecoderTexture(slotValues, perm, index);
         var mat = new THREE.MeshBasicMaterial({
             map: texture,
             transparent: true,
             opacity: 0.95,
             side: THREE.DoubleSide
         });
-        var geo = new THREE.PlaneGeometry(CHART_WORLD_SIZE, CHART_WORLD_SIZE);
+        var geo = new THREE.PlaneGeometry(DECODER_WORLD_W, DECODER_WORLD_H);
         return new THREE.Mesh(geo, mat);
     }
 
@@ -1840,19 +1748,18 @@
     var galleryCameraDistance = 14;
     var savedCameraPosition = new THREE.Vector3();
 
-    function layoutGrid(n) {
+    function layoutGrid(n, colSpacing, rowSpacing) {
         var cols = Math.ceil(Math.sqrt(n));
         var rows = Math.ceil(n / cols);
-        var spacing = 2.6;
         var positions = [];
         for (var i = 0; i < n; i++) {
             var col = i % cols;
             var row = Math.floor(i / cols);
-            var x = (col - (cols - 1) / 2) * spacing;
-            var y = ((rows - 1) / 2 - row) * spacing;
+            var x = (col - (cols - 1) / 2) * colSpacing;
+            var y = ((rows - 1) / 2 - row) * rowSpacing;
             positions.push(new THREE.Vector3(x, y, 0));
         }
-        return { positions: positions, cols: cols, rows: rows, spacing: spacing };
+        return { positions: positions, cols: cols, rows: rows, colSpacing: colSpacing, rowSpacing: rowSpacing };
     }
 
     function clearGallery() {
@@ -1875,54 +1782,57 @@
         deselect();
 
         var n = parseInt(countSlider.value, 10);
-        var layout = layoutGrid(n);
 
+        // Build every crystal first so we know how big the biggest one
+        // actually turned out (size and stretch can make one several times
+        // its base radius) before deciding how far apart to space the grid --
+        // otherwise a few oversized crystals swallow their neighbors.
         var built = [];
         for (var i = 0; i < n; i++) {
-            built.push(buildCrystal(dimValues));
+            // The 10 values never change -- only which slot (color, size,
+            // twist...) each one lands in for this particular crystal.
+            var perm = randomPermutation(DIM_COUNT);
+            var slotValues = perm.map(function (srcIdx) { return dimValues[srcIdx]; });
+            built.push(buildCrystal(slotValues, perm));
         }
 
-        // Rank by each crystal's own most extreme point (absolute vertical
-        // component closest to 1) -- #1 is the most extreme, last is the
-        // least. This is purely a byproduct of each crystal's independent
-        // random directions, so it varies even though every crystal shares
-        // the same 10 underlying values.
-        built.sort(function (a, b) { return b.userData.northScore - a.userData.northScore; });
+        var maxRadius = 0.5;
+        built.forEach(function (c) { maxRadius = Math.max(maxRadius, c.userData.boundingRadius); });
 
-        built.forEach(function (crystal, rank) {
-            var hue = (rank / n + 0.02) % 1;
-            var color = new THREE.Color();
-            color.setHSL(hue, 0.65, 0.58);
-            crystal.userData.mainMesh.material.color.copy(color);
-            crystal.userData.mainMesh.material.emissive.copy(color.clone().multiplyScalar(0.15));
+        var GAP = 0.5;
+        var colSpacing = 2 * maxRadius + GAP;
+        var rowSpacing = 2 * maxRadius + GAP + DECODER_WORLD_H + GAP;
+        var layout = layoutGrid(n, colSpacing, rowSpacing);
+        // The decoder card sits below each crystal rather than behind it --
+        // otherwise a large, opaque crystal would simply hide its own card.
+        var cardOffsetY = -(maxRadius + DECODER_WORLD_H / 2 + GAP * 0.6);
 
-            var pos = layout.positions[rank];
+        built.forEach(function (crystal, i) {
+            var pos = layout.positions[i];
             crystal.position.copy(pos);
             crystal.userData.homePosition = pos.clone();
-            crystal.userData.index = rank;
-            crystal.userData.rank = rank + 1;
+            crystal.userData.index = i;
             gallery.add(crystal);
             shapeGroups.push(crystal);
 
-            var dimLabel = DIM_LABELS[crystal.userData.northDimIndex];
-            var northValue = crystal.userData.values[crystal.userData.northDimIndex];
-            var backdrop = createNorthChartBackdrop(dimLabel, rank + 1, northValue);
-            backdrop.position.set(pos.x, pos.y, pos.z - 0.55);
-            backdrop.userData.homePosition = backdrop.position.clone();
+            var backdrop = createDecoderBackdrop(crystal.userData.slotValues, crystal.userData.perm, i + 1);
+            var cardPos = new THREE.Vector3(pos.x, pos.y + cardOffsetY, pos.z - 0.05);
+            backdrop.position.copy(cardPos);
+            backdrop.userData.homePosition = cardPos.clone();
             gallery.add(backdrop);
             backdropMeshes.push(backdrop);
             crystal.userData.backdrop = backdrop;
         });
 
-        var span = Math.max(layout.cols, layout.rows) * layout.spacing;
-        galleryCameraDistance = Math.max(10, span * 1.3);
+        var span = Math.max(layout.cols * layout.colSpacing, layout.rows * layout.rowSpacing);
+        galleryCameraDistance = Math.max(10, span * 0.9);
         galleryCameraTarget.set(0, 0, 0);
         controls.target.set(0, 0, 0);
         camera.position.set(0, 0, galleryCameraDistance);
 
         document.getElementById('emptyState').style.display = 'none';
         document.getElementById('statusText').textContent =
-            n + ' crystals · ranked #1 (most extreme point, |score| closest to 1) → #' + n + ' (farthest) · same 10 values each';
+            n + ' crystals · same 10 values, shuffled into different roles each time';
 
         if (isMobileLayout) sidebarEl.classList.add('collapsed');
     }
@@ -1975,37 +1885,34 @@
         });
         backdropMeshes.forEach(function (b) { b.visible = (b === group.userData.backdrop); });
         group.position.set(0, 0, 0);
-        if (group.userData.backdrop) group.userData.backdrop.position.set(0, 0, -0.55);
+        if (group.userData.backdrop) {
+            var focusCardOffsetY = -(group.userData.boundingRadius + DECODER_WORLD_H / 2 + 0.3);
+            group.userData.backdrop.position.set(0, focusCardOffsetY, -0.05);
+        }
 
-        controls.autoRotate = false;
         controls.target.set(0, 0, 0);
-        var maxVal = Math.max.apply(null, group.userData.values.map(Math.abs).concat([0.3]));
-        var focusDistance = Math.max(3, maxVal * 4);
+        var focusDistance = Math.max(4.5, group.userData.boundingRadius * 2.4 + DECODER_WORLD_H);
         var dir = camera.position.clone().sub(controls.target);
-        if (dir.lengthSq() < 1e-6) dir.set(0, 0.35, 1);
+        if (dir.lengthSq() < 1e-6) dir.set(0, 0, 1);
         dir.normalize().multiplyScalar(focusDistance);
         camera.position.copy(controls.target).add(dir);
 
         var panel = document.getElementById('selectionPanel');
         panel.style.display = 'block';
-        document.getElementById('selIndex').textContent = '#' + group.userData.rank;
+        document.getElementById('selIndex').textContent = '#' + (group.userData.index + 1);
         var body = document.getElementById('selTableBody');
         body.innerHTML = '';
-        DIM_LABELS.forEach(function (label, i) {
-            var dir = group.userData.dirs[i];
-            var isNorth = i === group.userData.northDimIndex;
+        SLOT_PROPERTIES.forEach(function (prop, i) {
+            var value = group.userData.slotValues[i];
+            var fromLabel = DIM_LABELS[group.userData.perm[i]];
             var row = document.createElement('tr');
-            if (isNorth) row.style.background = 'rgba(255, 209, 102, 0.25)';
-            row.innerHTML = '<td>' + label + (isNorth ? ' ↑' : '') + '</td>' +
-                '<td>' + group.userData.values[i].toFixed(2) + '</td>' +
-                '<td>(' + dir.x.toFixed(2) + ', ' + dir.y.toFixed(2) + ', ' + dir.z.toFixed(2) + ')</td>';
+            row.innerHTML = '<td>' + prop.label + '</td>' +
+                '<td>' + value.toFixed(2) + '</td>' +
+                '<td>' + fromLabel + '</td>';
             body.appendChild(row);
         });
 
-        document.getElementById('statusText').textContent =
-            'Focused on crystal #' + group.userData.rank + ' · northern point ' + DIM_LABELS[group.userData.northDimIndex] +
-            ' (score ' + group.userData.northScore.toFixed(2) + ')' +
-            (group.userData.isFallback ? ' · smooth fallback — points were too flat for a hull' : '');
+        document.getElementById('statusText').textContent = 'Focused on crystal #' + (group.userData.index + 1);
     }
 
     function deselect() {
@@ -2026,7 +1933,7 @@
         }
         if (shapeGroups.length) {
             document.getElementById('statusText').textContent =
-                shapeGroups.length + ' crystals · ranked #1 (most extreme point, |score| closest to 1) → #' + shapeGroups.length + ' (farthest) · same 10 values each';
+                shapeGroups.length + ' crystals · same 10 values, shuffled into different roles each time';
         }
     }
 
@@ -2034,8 +1941,8 @@
 
     // ---------------------------------------------------------------
     // Render loop: very slow per-crystal spin (about one rotation a
-    // minute) around each crystal's own northern-point axis, plus
-    // OrbitControls damping/dragging and billboarding the charts.
+    // minute) around each crystal's own vertical axis, plus OrbitControls
+    // damping/dragging and billboarding the decoder cards.
     // ---------------------------------------------------------------
     var clock = new THREE.Clock();
 
@@ -2045,7 +1952,7 @@
 
         shapeGroups.forEach(function (g) {
             if (!g.visible) return;
-            g.rotateOnAxis(g.userData.spinAxis, g.userData.spinSpeed * dt);
+            g.rotation.y += g.userData.spinSpeed * dt;
         });
 
         controls.update();
