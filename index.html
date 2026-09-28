@@ -1,0 +1,380 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Grid Toons</title>
+<style>
+  :root {
+    --bg:#14161c; --panel:#1e2129; --panel2:#272b35; --line:#3a3f4c; --text:#eceef3; --dim:#98a0b3;
+    --accent:#ffb020; --good:#4cd07d; --bad:#ff6b6b;
+    --c-black:#15151a; --c-red:#e53935; --c-yellow:#fdd835; --c-blue:#1e9be9; --c-silver:#b6b9c0;
+    --cw:150px; --ch:190px;
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); font:15px/1.35 system-ui,-apple-system,Segoe UI,Roboto,sans-serif; }
+  header { padding:12px 16px; display:flex; flex-wrap:wrap; gap:12px 24px; align-items:center; border-bottom:1px solid var(--line); background:var(--panel); }
+  h1 { margin:0; font-size:20px; letter-spacing:.5px; }
+  .stat { display:flex; flex-direction:column; }
+  .stat b { font-size:22px; line-height:1; }
+  .stat span { color:var(--dim); font-size:12px; text-transform:uppercase; letter-spacing:.06em; }
+  .spacer { flex:1; }
+  button { background:var(--panel2); color:var(--text); border:1px solid var(--line); border-radius:8px; padding:9px 16px; font:inherit; font-weight:600; cursor:pointer; }
+  button:hover:not(:disabled) { border-color:var(--accent); }
+  button:disabled { opacity:.4; cursor:not-allowed; }
+  button.primary { background:var(--accent); color:#1b1400; border-color:var(--accent); }
+  main { display:grid; grid-template-columns:minmax(0,1fr) 340px; gap:16px; padding:16px; max-width:1300px; margin:0 auto; }
+  @media (max-width:980px) { main { grid-template-columns:1fr; } }
+  section { background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:14px; }
+  section h2 { margin:0 0 10px; font-size:13px; text-transform:uppercase; letter-spacing:.08em; color:var(--dim); }
+  .board { display:flex; flex-direction:column; gap:10px; align-items:flex-start; overflow-x:auto; padding-bottom:4px; }
+  .row { display:flex; gap:10px; }
+  .row.bottom { margin-left:calc((var(--cw) + 10px) / 2); }
+  .slot { width:var(--cw); height:var(--ch); border:2px dashed var(--line); border-radius:12px; position:relative; flex:none; display:flex; align-items:center; justify-content:center; color:var(--dim); }
+  .slot.over, .slot.target { border-color:var(--accent); }
+  .slot .num { position:absolute; top:4px; left:8px; font-size:12px; color:var(--dim); }
+  .slot .kind { position:absolute; bottom:4px; right:8px; font-size:10px; color:var(--dim); text-transform:uppercase; letter-spacing:.06em; }
+  .slot.corner, .slot.middle { border-style:solid; }
+  .slot.corner .kind::before { content:"corner"; } .slot.middle .kind::before { content:"middle"; }
+  .slot.filled { border-style:solid; padding:0; }
+  .hand { display:flex; flex-wrap:wrap; gap:10px; min-height:var(--ch); }
+  .card { width:var(--cw); height:var(--ch); background:#f4f1e8; color:#16161a; border-radius:11px; border:2px solid #000; padding:6px; display:flex; flex-direction:column; gap:4px; cursor:pointer; position:relative; flex:none; user-select:none; text-align:left; }
+  .card.sel { outline:3px solid var(--accent); outline-offset:2px; }
+  .card .top { display:flex; align-items:center; gap:6px; }
+  .card .val { font:900 26px/1 "Arial Black",Impact,sans-serif; min-width:22px; }
+  .card .dot { width:20px; height:20px; border-radius:50%; border:2px solid #000; flex:none; }
+  .card .nm { font-weight:800; font-size:12.5px; line-height:1.1; flex:1; }
+  .card .fx { font-size:11px; line-height:1.25; flex:1; overflow:auto; border-top:1px solid #0002; padding-top:3px; }
+  .card .fx p { margin:0 0 3px; }
+  .card .tags { display:flex; gap:3px; flex-wrap:wrap; }
+  .tag { font-size:9.5px; font-weight:700; padding:1px 5px; border-radius:6px; background:#16161a; color:#fff; }
+  .card .badge { position:absolute; top:-10px; right:-8px; font-weight:800; font-size:14px; padding:2px 8px; border-radius:12px; background:var(--panel); color:var(--text); border:2px solid var(--line); }
+  .badge.pos { border-color:var(--good); color:var(--good); } .badge.neg { border-color:var(--bad); color:var(--bad); }
+  .c-black{background:var(--c-black)} .c-red{background:var(--c-red)} .c-yellow{background:var(--c-yellow)} .c-blue{background:var(--c-blue)} .c-silver{background:var(--c-silver)}
+  .msg { min-height:20px; color:var(--dim); margin:8px 2px 0; font-size:13px; }
+  table { width:100%; border-collapse:collapse; font-size:13px; }
+  td, th { padding:4px 6px; border-bottom:1px solid var(--line); text-align:left; vertical-align:top; }
+  th { color:var(--dim); font-weight:600; font-size:11px; text-transform:uppercase; }
+  td.n { text-align:right; white-space:nowrap; font-variant-numeric:tabular-nums; }
+  .pos { color:var(--good); } .neg { color:var(--bad); }
+  .hist { display:flex; flex-direction:column; gap:6px; max-height:260px; overflow:auto; }
+  .hist button { display:flex; justify-content:space-between; text-align:left; font-weight:500; }
+  .hist button.active { border-color:var(--accent); }
+  .hist .best { color:var(--accent); font-weight:800; }
+  .mini { display:flex; flex-direction:column; gap:4px; margin:8px 0; }
+  .mini .row { gap:4px; } .mini .row.bottom { margin-left:calc((72px + 4px) / 2); }
+  .mini .m { width:72px; height:52px; border-radius:6px; border:1.5px solid #000; background:#f4f1e8; color:#111; font-size:10px; font-weight:700; padding:2px 3px; line-height:1.05; position:relative; overflow:hidden; }
+  .mini .m i { position:absolute; right:2px; bottom:1px; font-style:normal; font-size:12px; font-weight:900; }
+  .mini .m u { position:absolute; right:3px; top:3px; width:9px; height:9px; border-radius:50%; border:1px solid #000; }
+  details { margin-top:10px; color:var(--dim); font-size:13px; }
+  details p { margin:6px 0; }
+  @media (max-width:560px) { :root { --cw:118px; --ch:170px; } .card .nm { font-size:11px; } .card .fx { font-size:10px; } .card .val { font-size:22px; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>Grid Toons</h1>
+  <div class="stat"><b id="hCur">–</b><span>Current score</span></div>
+  <div class="stat"><b id="hBest">–</b><span>Best submitted (this hand)</span></div>
+  <div class="stat"><b id="hAll">–</b><span>Best of session</span></div>
+  <div class="stat"><b id="hHand">1</b><span>Hand #</span></div>
+  <div class="spacer"></div>
+  <button id="btnClear">Clear board</button>
+  <button id="btnSubmit" class="primary">Submit</button>
+  <button id="btnDeal">Deal new hand</button>
+</header>
+
+<main>
+  <div style="display:flex;flex-direction:column;gap:16px;min-width:0">
+    <section>
+      <h2>Board — place 7 cards</h2>
+      <div class="board" id="board"></div>
+      <div class="msg" id="msg"></div>
+    </section>
+    <section>
+      <h2>Your hand (<span id="handCount"></span>) — click a card, then a slot (or drag)</h2>
+      <div class="hand" id="hand"></div>
+    </section>
+    <section>
+      <h2>Score breakdown (current board)</h2>
+      <div id="breakdown"></div>
+    </section>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:16px;min-width:0">
+    <section>
+      <h2>Submissions this hand</h2>
+      <div class="hist" id="hist"></div>
+      <div id="snap"></div>
+    </section>
+    <section>
+      <h2>Hands played</h2>
+      <div id="hands" style="color:var(--dim);font-size:13px">No hands finished yet.</div>
+    </section>
+    <section>
+      <h2>How it works</h2>
+      <details open><summary>Board layout</summary>
+        <p>Top row: slots 1–4. Bottom row: slots 5–7, offset so 5 sits between 1&amp;2, 6 between 2&amp;3, 7 between 3&amp;4.</p>
+        <p><b>Corners</b>: 1, 4, 5, 7. <b>Middle</b>: 2, 3, 6. <b>Adjacent</b> = touching (e.g. 3 touches 2, 4, 6, 7).</p>
+        <p><b>Opposing row</b> = the other row. Group checks (row, corners, middle) include the card itself unless the card says "another", "other" or "sharing … with this card".</p>
+      </details>
+      <details><summary>Scoring</summary>
+        <p>Each card scores its face value plus/minus its text. Your score is the sum of all 7. Only <b>submitted</b> boards count toward your best score.</p>
+      </details>
+    </section>
+  </div>
+</main>
+
+<script>
+/* ---------- Board geometry (0-based slots; UI shows +1) ---------- */
+const TOP=[0,1,2,3], BOT=[4,5,6], CORNERS=[0,3,4,6], MID=[1,2,5];
+const ADJ=[[1,4],[0,2,4,5],[1,3,5,6],[2,6],[0,1,5],[1,2,4,6],[2,3,5]];
+const rowOf=i=>i<4?TOP:BOT, oppOf=i=>i<4?BOT:TOP;
+
+/* ---------- Predicates ---------- */
+const col=c=>x=>x.color===c, tag=t=>x=>x.tags.includes(t);
+const and=(...f)=>x=>f.every(g=>g(x)), or=(...f)=>x=>f.some(g=>g(x));
+
+/* Effect context: g.n(slots,pred) counts matching cards; g.adj/g.opp/g.rowOthers are slot lists. */
+const E=(t,f)=>({t,f});
+const gain=(n,t,f)=>E(`Gain +${n} ${t}`,f), lose=(n,t,f)=>E(`Lose ${n} ${t}`,f);
+const sum=(g,idx)=>idx.reduce((s,k)=>s+g.b[k].value,0);
+const without=(a,i)=>a.filter(k=>k!==i);
+
+/* ---------- Deck (transcribed from the card pages) ---------- */
+const DECK=[
+ {name:'Aku Beast Form',value:8,color:'black',tags:['Animal','Villain'],fx:[
+   lose(5,'for each adjacent blue',g=>-5*g.n(g.adj,col('blue'))),
+   lose(3,'for each villain in the opposing row',g=>-3*g.n(g.opp,tag('Villain')))]},
+ {name:'Amazo',value:9,color:'red',tags:['Male','Villain','Prop'],fx:[
+   lose(3,'for each adjacent card with face-value under 6',g=>-3*g.n(g.adj,x=>x.value<6)),
+   lose(3,'for each corner male',g=>-3*g.n(CORNERS,tag('Male')))]},
+ {name:'Action Hank',value:2,color:'yellow',tags:['Male','Hero'],fx:[
+   gain(2,'for each bottom row blue',g=>2*g.n(BOT,col('blue')))]},
+ {name:'Agent Honeydew Snowball',value:5,color:'blue',tags:['Female','Hero'],fx:[
+   gain(1,'for each middle prop',g=>g.n(MID,tag('Prop')))]},
+ {name:'Aku',value:8,color:'black',tags:['Male','Villain'],fx:[
+   lose(5,'for each adjacent red',g=>-5*g.n(g.adj,col('red'))),
+   lose(4,'if another villain shares this row',g=>g.n(g.rowOthers,tag('Villain'))?-4:0)]},
+ {name:'Aku Bat Form',value:8,color:'black',tags:['Animal','Villain'],fx:[
+   lose(5,'for each adjacent yellow',g=>-5*g.n(g.adj,col('yellow'))),
+   lose(3,'if in the bottom row',g=>BOT.includes(g.i)?-3:0)]},
+ {name:'Alfred Pennyworth Snowball',value:3,color:'red',tags:['Male'],fx:[
+   gain(4,'if this shares a row with only heroes',g=>g.rowOthers.every(k=>g.b[k].tags.includes('Hero'))?4:0)]},
+ {name:'Amoeba Boys',value:1,color:'yellow',tags:['Male','Villain'],fx:[
+   gain(2,'for each silver in the corners',g=>2*g.n(CORNERS,col('silver')))]},
+ {name:'Daffy Duck',value:8,color:'black',tags:['Male','Animal'],fx:[
+   lose(4,'for each bottom row animal',g=>-4*g.n(BOT,tag('Animal'))),
+   lose(3,'for each adjacent silver',g=>-3*g.n(g.adj,col('silver')))]},
+ {name:'Bugs Bunny',value:1,color:'silver',tags:['Male','Animal'],fx:[
+   gain(3,'if adjacent to an animal',g=>g.n(g.adj,tag('Animal'))?3:0)]},
+ {name:'Atomic Betty',value:2,color:'yellow',tags:['Female','Hero'],fx:[
+   gain(3,'for each female sharing the middle with this card',g=>MID.includes(g.i)?3*g.n(without(MID,g.i),tag('Female')):0)]},
+ {name:'Aquaman',value:1,color:'red',tags:['Male','Hero'],fx:[
+   gain(2,'for each blue in the opposing row',g=>2*g.n(g.opp,col('blue')))]},
+ {name:'Astro Boy',value:2,color:'red',tags:['Male','Hero'],fx:[
+   gain(5,'if sharing the middle with another male hero',g=>MID.includes(g.i)&&g.n(without(MID,g.i),and(tag('Male'),tag('Hero')))?5:0)]},
+ {name:'Lola',value:3,color:'yellow',tags:['Female','Animal'],fx:[
+   gain(4,'if there are 3 or more reds in any row',g=>g.n(TOP,col('red'))>=3||g.n(BOT,col('red'))>=3?4:0)]},
+ {name:'Tasmanian Devil',value:6,color:'red',tags:['Male','Animal'],fx:[
+   lose(2,'for each top row blue',g=>-2*g.n(TOP,col('blue')))]},
+ {name:'Billy’s Dad',value:2,color:'red',tags:['Male'],fx:[
+   gain(5,'if sharing the corners with another male',g=>CORNERS.includes(g.i)&&g.n(without(CORNERS,g.i),tag('Male'))?5:0),
+   lose(1,'for each corner hero',g=>-g.n(CORNERS,tag('Hero')))]},
+ {name:'Billy',value:4,color:'red',tags:['Male'],fx:[
+   gain(3,'if adjacent to only 1 kind of color',g=>new Set(g.adj.map(k=>g.b[k].color)).size===1?3:0)]},
+ {name:'Batarang',value:0,color:'silver',tags:['Prop'],fx:[
+   gain(3,'for each blue villain or blue hero in the middle',g=>3*g.n(MID,and(col('blue'),or(tag('Villain'),tag('Hero')))))]},
+ {name:'Batgirl',value:8,color:'black',tags:['Female','Hero'],fx:[
+   lose(5,'if there is a corner villain',g=>g.n(CORNERS,tag('Villain'))?-5:0),
+   lose(2,'for each top row silver',g=>-2*g.n(TOP,col('silver')))]},
+ {name:'Betty Rubble',value:5,color:'blue',tags:['Female'],fx:[
+   gain(3,'if adjacent to a blue, red, and yellow',g=>['blue','red','yellow'].every(c=>g.n(g.adj,col(c))>0)?3:0)]},
+ {name:'Beast Boy',value:3,color:'black',tags:['Male','Hero'],fx:[
+   gain(5,'if there is exactly 1 top row female',g=>g.n(TOP,tag('Female'))===1?5:0)]},
+ {name:'Batman',value:6,color:'blue',tags:['Male','Hero'],fx:[
+   lose(2,'for each bottom row villain',g=>-2*g.n(BOT,tag('Villain')))]},
+ {name:'Batmobile',value:2,color:'black',tags:['Prop'],fx:[
+   gain(5,'if there is exactly 1 blue in the middle',g=>g.n(MID,col('blue'))===1?5:0)]},
+ {name:'Duck Dodgers',value:5,color:'yellow',tags:['Male','Hero'],fx:[
+   gain(3,'if there is exactly 1 bottom row black',g=>g.n(BOT,col('black'))===1?3:0)]},
+ {name:'Brainiac',value:3,color:'black',tags:['Male','Villain'],fx:[
+   gain(5,'if the middle face-values add up to exactly 10',g=>sum(g,MID)===10?5:0)]},
+ {name:'Buttercup',value:0,color:'silver',tags:['Female','Hero'],fx:[
+   gain(5,'if adjacent to 2 cards with the same face-value',g=>{const v=g.adj.map(k=>g.b[k].value);return v.some((x,a)=>v.indexOf(x)!==a)?5:0;})]},
+ {name:'Bubbles',value:0,color:'blue',tags:['Female','Hero'],fx:[
+   gain(2,'for each red in the opposing row',g=>2*g.n(g.opp,col('red')))]},
+ {name:'Boo Boo Bear',value:2,color:'silver',tags:['Male','Animal'],fx:[
+   gain(4,'if sharing the middle with another animal',g=>MID.includes(g.i)&&g.n(without(MID,g.i),tag('Animal'))?4:0)]},
+ {name:'Blossom',value:1,color:'red',tags:['Female','Hero'],fx:[
+   gain(3,'for each row with a villain',g=>3*[TOP,BOT].filter(r=>g.n(r,tag('Villain'))>0).length)]},
+ {name:'Bloo',value:1,color:'blue',tags:['Male'],fx:[
+   gain(7,'if the top row face-values add up to exactly 10',g=>sum(g,TOP)===10?7:0)]},
+ {name:'Billy’s Mom',value:3,color:'blue',tags:['Female'],fx:[
+   gain(4,'if only yellows or reds share this row',g=>g.rowOthers.every(k=>['yellow','red'].includes(g.b[k].color))?4:0)]},
+];
+DECK.forEach((c,i)=>c.id=i);
+
+/* ---------- Scoring ---------- */
+// b: array of 7 cards (slot order). Returns per-slot {base, mods:[{t,pts}], total} and the grand total.
+function scoreBoard(b){
+  const per=b.map((card,i)=>{
+    const g={b,i,adj:ADJ[i],opp:oppOf(i),rowOthers:without(rowOf(i),i),
+             n:(idx,p)=>idx.filter(k=>p(b[k])).length};
+    const mods=card.fx.map(e=>({t:e.t,pts:e.f(g)}));
+    return {card,base:card.value,mods,total:card.value+mods.reduce((s,m)=>s+m.pts,0)};
+  });
+  return {per,total:per.reduce((s,p)=>s+p.total,0)};
+}
+
+/* ---------- State ---------- */
+const S={hand:[],board:Array(7).fill(null),sel:null,subs:[],view:null,handNo:1,sessionBest:null,hands:[]};
+const $=id=>document.getElementById(id);
+const sgn=n=>n>0?'+'+n:''+n, cls=n=>n>0?'pos':n<0?'neg':'';
+
+function deal(){
+  const ids=DECK.map(c=>c.id);
+  for(let i=ids.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[ids[i],ids[j]]=[ids[j],ids[i]];}
+  S.hand=ids.slice(0,10); S.board=Array(7).fill(null); S.sel=null; S.subs=[]; S.view=null;
+}
+const bestOfHand=()=>S.subs.length?Math.max(...S.subs.map(s=>s.score)):null;
+const placed=()=>S.board.filter(x=>x!==null).length;
+const inTray=id=>S.hand.includes(id)&&!S.board.includes(id);
+function say(t){$('msg').textContent=t||'';}
+
+/* ---------- Actions ---------- */
+function pick(sel){ S.sel=(S.sel&&S.sel.kind===sel.kind&&S.sel.v===sel.v)?null:sel; render(); }
+function dropTo(slot,sel){
+  const id=sel.kind==='hand'?sel.v:S.board[sel.v];
+  if(id==null) return;
+  const occ=S.board[slot];
+  if(sel.kind==='board'){ if(sel.v===slot) return; S.board[sel.v]=occ; }      // swap
+  else if(placed()>=7&&occ===null) return;
+  S.board[slot]=id; S.sel=null; say(''); render();
+}
+function toTray(sel){ if(sel.kind==='board'){ S.board[sel.v]=null; S.sel=null; render(); } }
+function slotClick(i){
+  if(S.sel) return dropTo(i,S.sel);
+  if(S.board[i]!==null) pick({kind:'board',v:i});
+}
+function submit(){
+  if(placed()<7) return;
+  const key=S.board.join(',');
+  if(S.subs.some(s=>s.slots.join(',')===key)){ say('You already submitted that exact arrangement.'); return; }
+  const score=scoreBoard(S.board.map(id=>DECK[id])).total;
+  S.subs.push({n:S.subs.length+1,score,slots:S.board.slice()});
+  S.view=S.subs.length-1;
+  if(S.sessionBest===null||score>S.sessionBest) S.sessionBest=score;
+  say(`Locked in ${score}. Rearrange and submit again to try to beat ${bestOfHand()}, or deal a new hand.`);
+  render();
+}
+function newHand(){
+  if(S.subs.length) S.hands.push({n:S.handNo,best:bestOfHand(),tries:S.subs.length});
+  S.handNo++; deal(); say(''); render();
+}
+
+/* ---------- Rendering ---------- */
+function cardEl(card,{badge=null,selected=false}={}){
+  const d=document.createElement('div');
+  d.className='card'+(selected?' sel':'');
+  d.innerHTML=`<div class="top"><span class="val">${card.value}</span><span class="nm">${card.name}</span><span class="dot c-${card.color}" title="${card.color}"></span></div>
+    <div class="fx">${card.fx.map(e=>`<p>${e.t}</p>`).join('')}</div>
+    <div class="tags">${card.tags.map(t=>`<span class="tag">${t}</span>`).join('')}</div>`;
+  if(badge!==null){const b=document.createElement('span');b.className='badge '+cls(badge-card.value);b.textContent=badge;d.appendChild(b);}
+  return d;
+}
+const KIND=i=>CORNERS.includes(i)?'corner':MID.includes(i)?'middle':'';
+
+function render(){
+  const cards=S.board.map(id=>id===null?null:DECK[id]);
+  const full=placed()===7;
+  const sc=full?scoreBoard(cards):null;
+
+  // header
+  $('hCur').textContent=full?sc.total:'–';
+  $('hBest').textContent=S.subs.length?bestOfHand():'–';
+  $('hAll').textContent=S.sessionBest===null?'–':S.sessionBest;
+  $('hHand').textContent=S.handNo;
+  $('btnSubmit').disabled=!full;
+
+  // board
+  const board=$('board'); board.innerHTML='';
+  [[0,1,2,3],[4,5,6]].forEach((idxs,r)=>{
+    const row=document.createElement('div'); row.className='row'+(r?' bottom':'');
+    idxs.forEach(i=>{
+      const s=document.createElement('div');
+      s.className='slot '+KIND(i)+(cards[i]?' filled':'')+(S.sel?' target':'');
+      s.innerHTML=cards[i]?'':`<span class="num">${i+1}</span><span class="kind"></span>`;
+      if(cards[i]){
+        const c=cardEl(cards[i],{badge:sc?sc.per[i].total:null,selected:S.sel&&S.sel.kind==='board'&&S.sel.v===i});
+        c.draggable=true;
+        c.addEventListener('dragstart',e=>{e.dataTransfer.setData('text/plain',JSON.stringify({kind:'board',v:i}));});
+        s.appendChild(c);
+        const n=document.createElement('span'); n.className='num'; n.style.cssText='top:-9px;left:6px;z-index:2;background:var(--panel);padding:0 4px;border-radius:4px'; n.textContent=i+1; s.appendChild(n);
+      }
+      s.addEventListener('click',()=>slotClick(i));
+      s.addEventListener('dragover',e=>{e.preventDefault();s.classList.add('over');});
+      s.addEventListener('dragleave',()=>s.classList.remove('over'));
+      s.addEventListener('drop',e=>{e.preventDefault();s.classList.remove('over');try{dropTo(i,JSON.parse(e.dataTransfer.getData('text/plain')));}catch(_){}});
+      row.appendChild(s);
+    });
+    board.appendChild(row);
+  });
+
+  // hand
+  const hand=$('hand'); hand.innerHTML='';
+  const tray=S.hand.filter(inTray);
+  $('handCount').textContent=`${tray.length} left`;
+  tray.forEach(id=>{
+    const c=cardEl(DECK[id],{selected:S.sel&&S.sel.kind==='hand'&&S.sel.v===id});
+    c.draggable=true;
+    c.addEventListener('dragstart',e=>e.dataTransfer.setData('text/plain',JSON.stringify({kind:'hand',v:id})));
+    c.addEventListener('click',()=>{ if(S.sel&&S.sel.kind==='board') toTray(S.sel); else pick({kind:'hand',v:id}); });
+    hand.appendChild(c);
+  });
+  hand.ondragover=e=>e.preventDefault();
+  hand.ondrop=e=>{e.preventDefault();try{toTray(JSON.parse(e.dataTransfer.getData('text/plain')));}catch(_){}};
+
+  // breakdown
+  $('breakdown').innerHTML=full?`<table><tr><th>#</th><th>Card</th><th class="n">Base</th><th>Modifiers</th><th class="n">Total</th></tr>`+
+    sc.per.map((p,i)=>`<tr><td>${i+1}</td><td>${p.card.name}</td><td class="n">${p.base}</td>
+      <td>${p.mods.map(m=>`<div class="${cls(m.pts)}">${sgn(m.pts)} <span style="color:var(--dim)">${m.t}</span></div>`).join('')}</td>
+      <td class="n"><b>${p.total}</b></td></tr>`).join('')+
+    `<tr><td></td><td><b>Total</b></td><td></td><td></td><td class="n"><b>${sc.total}</b></td></tr></table>`
+    :`<span style="color:var(--dim)">Place all 7 cards to see the score.</span>`;
+
+  // history
+  const hb=bestOfHand();
+  $('hist').innerHTML=S.subs.length?'':'<span style="color:var(--dim);font-size:13px">Nothing submitted yet.</span>';
+  S.subs.forEach((s,k)=>{
+    const b=document.createElement('button'); b.className=S.view===k?'active':'';
+    b.innerHTML=`<span>Try ${s.n}</span><span class="${s.score===hb?'best':''}">${s.score}${s.score===hb?' ★':''}</span>`;
+    b.onclick=()=>{S.view=k;render();};
+    $('hist').appendChild(b);
+  });
+  renderSnap();
+
+  $('hands').innerHTML=S.hands.length?`<table>${S.hands.map(h=>`<tr><td>Hand ${h.n}</td><td class="n">${h.tries} tries</td><td class="n"><b>${h.best}</b></td></tr>`).join('')}</table>`:'No hands finished yet.';
+}
+
+function renderSnap(){
+  const el=$('snap'); el.innerHTML='';
+  if(S.view===null||!S.subs[S.view]) return;
+  const s=S.subs[S.view], r=scoreBoard(s.slots.map(id=>DECK[id]));
+  const mini=i=>{const c=DECK[s.slots[i]];return `<div class="m" title="${c.name}">${c.name}<u class="c-${c.color}"></u><i class="${cls(r.per[i].total-c.value)}">${r.per[i].total}</i></div>`;};
+  el.innerHTML=`<div style="margin-top:10px;font-weight:700">Try ${s.n} snapshot — ${s.score} pts</div>
+    <div class="mini"><div class="row">${[0,1,2,3].map(mini).join('')}</div><div class="row bottom">${[4,5,6].map(mini).join('')}</div></div>
+    <button id="btnLoad">Load onto board</button>`;
+  $('btnLoad').onclick=()=>{S.board=s.slots.slice();S.sel=null;say(`Loaded Try ${s.n}. Tweak it and submit again.`);render();};
+}
+
+$('btnSubmit').onclick=submit;
+$('btnClear').onclick=()=>{S.board=Array(7).fill(null);S.sel=null;say('');render();};
+$('btnDeal').onclick=()=>{
+  if(!S.subs.length && !confirm('You have not submitted anything for this hand. Deal anyway?')) return;
+  newHand();
+};
+deal(); render();
+</script>
+</body>
+</html>
