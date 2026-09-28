@@ -109,6 +109,16 @@
     .insp { flex-direction:column; align-items:center; }
     .big { --cw:min(230px,62vw); }
     .inspside { width:100%; }
+    /* hand: two wide cards per row with the full text in small print, so nothing needs a tap */
+    .hand { min-height:0; }
+    .hand .card { width:calc((100% - var(--gap)) / 2); height:auto; min-height:88px; padding:6px 7px; gap:4px; }
+    .hand .card .val { font-size:22px; } .hand .card .dot { width:15px; height:15px; }
+    .hand .card .nm { font-size:11.5px; }
+    .hand .card .fx { display:block; flex:none; font-size:9.5px; line-height:1.2; padding-top:3px; overflow:visible; }
+    .hand .card .fx p { margin:0 0 2px; }
+    .hand .card .tags { display:flex; gap:3px; }
+    .hand .card .tag { font-size:8px; padding:0 5px; }
+    .hand .card .top { flex-wrap:nowrap; gap:6px; }
   }
 </style>
 <header>
