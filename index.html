@@ -184,7 +184,7 @@
         <p><b>Opposing row</b> = the other row. Group checks (row, corners, middle) include the card itself unless the card says "another", "other" or "sharing … with this card".</p>
       </details>
       <details open><summary>Silver cards</summary>
-        <p>Silver only helps you. For bonuses, a silver card counts as <b>every</b> color at once. Color penalties never trigger on silver. Cards that name silver directly (like "adjacent silver") work as written.</p>
+        <p>Silver only helps you. For bonuses, a silver card counts as <b>every color except black</b> at once. Silver is never black. Color penalties never trigger on silver. Cards that name silver directly (like "adjacent silver") work as written.</p>
       </details>
       <details><summary>Scoring</summary>
         <p>Each card scores its face value plus or minus its text. Your score is the sum of all 7. Only <b>submitted</b> boards count toward your best score.</p>
@@ -204,7 +204,7 @@ const rowOf=i=>i<4?TOP:BOT, oppOf=i=>i<4?BOT:TOP;
 
 /* ---------- Predicates ---------- */
 const colx=c=>x=>x.color===c;                          // exact colour (used by penalties)
-const col=c=>x=>x.color===c||x.color==='silver';       // silver counts as every colour (bonuses only)
+const col=c=>x=>x.color===c||(x.color==='silver'&&c!=='black'); // silver counts as every colour except black (bonuses only)
 const tag=t=>x=>x.tags.includes(t);
 const and=(...f)=>x=>f.every(g=>g(x)), or=(...f)=>x=>f.some(g=>g(x));
 
@@ -296,7 +296,7 @@ function scoreBoard(b){
              n:(idx,p)=>idx.filter(k=>p(b[k])).length,
              // true if exactly k cards of colour c is possible, letting silver count either way (whichever helps the player)
              exactly:(idx,c,k)=>{const base=idx.filter(j=>b[j].color===c).length,
-               sil=c==='silver'?0:idx.filter(j=>b[j].color==='silver').length;return base<=k&&k<=base+sil;}};
+               sil=(c==='silver'||c==='black')?0:idx.filter(j=>b[j].color==='silver').length;return base<=k&&k<=base+sil;}};
     const mods=card.fx.map(e=>({t:e.t,pts:e.f(g)}));
     return {card,base:card.value,mods,total:card.value+mods.reduce((s,m)=>s+m.pts,0)};
   });
@@ -377,7 +377,7 @@ function renderInsp(){
   el.querySelector('.big').appendChild(cardEl(card));
   const side=el.querySelector('.inspside');
   let h=`<div class="h">${card.name}</div><div class="dim">${card.color} · ${card.tags.join(', ')} · face value ${card.value}</div>`;
-  if(card.color==='silver') h+=`<div>Silver: counts as every color for bonuses. Color penalties never hit it.</div>`;
+  if(card.color==='silver') h+=`<div>Silver: counts as every color except black for bonuses. Color penalties never hit it.</div>`;
   if(slot<0) h+=`<div>In your hand. Select it, then tap a slot.</div>`;
   else if(sc){
     const p=sc.per[slot];
