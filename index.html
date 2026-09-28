@@ -59,7 +59,7 @@
   .tag { font-size:6.4cqw; font-weight:700; padding:.5cqw 3cqw; border-radius:6px; background:#16161a; color:#fff; }
   .card .badge { position:absolute; top:-10px; right:-6px; font-weight:800; font-size:max(11px,12cqw); padding:1px 7px; border-radius:12px; background:var(--panel); color:var(--text); border:2px solid var(--line); font-variant-numeric:tabular-nums; }
   .badge.pos { border-color:var(--good); color:var(--good); } .badge.neg { border-color:var(--bad); color:var(--bad); }
-  /* squished cards: drop the small print, keep value / name / colour, read the rest in the Card detail panel */
+  /* squished cards: drop the small print, keep value / name / colour */
   @container (max-width:118px) {
     .card { padding:3.5cqw; gap:2cqw; border-radius:7px; }
     .card .top { gap:2.5cqw; align-items:flex-start; }
@@ -81,12 +81,6 @@
   .msg { min-height:18px; color:var(--dim); margin:8px 2px 0; font-size:13px; }
   .dim { color:var(--dim); }
 
-  .insp { display:flex; gap:14px; align-items:flex-start; }
-  .big { --cw:min(210px,44vw); --ch:calc(var(--cw) * 1.27); flex:none; }
-  .big .card { cursor:default; transform:none !important; box-shadow:none !important; }
-  .inspside { min-width:0; flex:1; font-size:13.5px; }
-  .inspside .h { font-weight:800; font-size:15px; margin-bottom:4px; }
-  .inspside div { margin:3px 0; }
 
   .tablewrap { overflow-x:auto; }
   table { width:100%; border-collapse:collapse; font-size:13px; }
@@ -112,9 +106,6 @@
     :root { --gut:12px; --gap:6px; --base:calc((100vw - 2*var(--gut) - 2*12px - 2px - 3*var(--gap)) / 4); }
     section { padding:10px; }
     .stat b { font-size:18px; }
-    .insp { flex-direction:column; align-items:center; }
-    .big { --cw:min(230px,62vw); }
-    .inspside { width:100%; }
     .board { --ch:calc(var(--cw) * 1.75); }
     /* hand: two wide cards per row with the full text in small print, so nothing needs a tap */
     .hand { min-height:0; }
@@ -145,20 +136,14 @@
         <div class="zoom">Zoom <button id="zOut" aria-label="Zoom out">−</button><span id="zLbl">1×</span><button id="zIn" aria-label="Zoom in">+</button></div>
       </div>
       <div class="boardwrap" id="boardWrap"><div class="board" id="board"></div></div>
+      <div class="sech" style="margin-top:14px"><h2>Spare cards — <span id="handCount"></span></h2></div>
+      <div class="hand" id="hand"></div>
       <div class="actions">
         <button id="btnClear">Clear</button>
         <button id="btnSubmit" class="primary">Submit</button>
         <button id="btnDeal">Deal new hand</button>
       </div>
       <div class="msg" id="msg"></div>
-    </section>
-    <section>
-      <div class="sech"><h2>Card detail</h2><span class="dim" style="font-size:12px">tap or hover a card</span></div>
-      <div id="insp"></div>
-    </section>
-    <section>
-      <div class="sech"><h2>Spare cards — <span id="handCount"></span></h2></div>
-      <div class="hand" id="hand"></div>
     </section>
     <section>
       <div class="sech"><h2>Score breakdown</h2></div>
@@ -190,7 +175,7 @@
         <p>Each card scores its face value plus or minus its text. Your score is the sum of all 7. Only <b>submitted</b> boards count toward your best score.</p>
       </details>
       <details><summary>Reading small cards</summary>
-        <p>Tap a card to read it in Card detail. Pinch the board, or use the Zoom buttons, to enlarge it. On a computer, hover a card to enlarge it.</p>
+        <p>Pinch the board, or use the Zoom buttons, to enlarge it. On a computer, hover a card to enlarge it.</p>
       </details>
     </section>
   </div>
@@ -304,7 +289,7 @@ function scoreBoard(b){
 }
 
 /* ---------- State ---------- */
-const S={hand:[],board:Array(7).fill(null),sel:null,insp:null,subs:[],view:null,handNo:1,sessionBest:null,hands:[]};
+const S={hand:[],board:Array(7).fill(null),sel:null,subs:[],view:null,handNo:1,sessionBest:null,hands:[]};
 const $=id=>document.getElementById(id);
 const sgn=n=>n>0?'+'+n:''+n, cls=n=>n>0?'pos':n<0?'neg':'';
 
@@ -312,7 +297,7 @@ function deal(){
   const ids=DECK.map(c=>c.id);
   for(let i=ids.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[ids[i],ids[j]]=[ids[j],ids[i]];}
   S.hand=ids.slice(0,10); S.board=S.hand.slice(0,7);   // start with 7 already placed; the other 3 wait in the hand
-  S.sel=null; S.insp=null; S.subs=[]; S.view=null;
+  S.sel=null; S.subs=[]; S.view=null;
 }
 const bestOfHand=()=>S.subs.length?Math.max(...S.subs.map(s=>s.score)):null;
 const placed=()=>S.board.filter(x=>x!==null).length;
@@ -324,17 +309,16 @@ const currentScore=()=>placed()===7?scoreBoard(S.board.map(id=>DECK[id])):null;
 function pick(sel){
   const same=S.sel&&S.sel.kind===sel.kind&&S.sel.v===sel.v;
   S.sel=same?null:sel;
-  S.insp=sel.kind==='hand'?sel.v:S.board[sel.v];
-  render();
+    render();
 }
 function dropTo(slot,sel){
   const id=sel.kind==='hand'?sel.v:S.board[sel.v];
   if(id==null) return;
   const occ=S.board[slot];
   if(sel.kind==='board'){ if(sel.v===slot) return; S.board[sel.v]=occ; }      // swap
-  S.board[slot]=id; S.sel=null; S.insp=id; say(''); render();
+  S.board[slot]=id; S.sel=null; say(''); render();
 }
-function toTray(sel){ if(sel.kind==='board'){ S.insp=S.board[sel.v]; S.board[sel.v]=null; S.sel=null; render(); } }
+function toTray(sel){ if(sel.kind==='board'){ S.board[sel.v]=null; S.sel=null; render(); } }
 function slotClick(i){
   if(S.sel) return dropTo(i,S.sel);
   if(S.board[i]!==null) pick({kind:'board',v:i});
@@ -366,25 +350,7 @@ function cardEl(card,{badge=null,selected=false}={}){
   return d;
 }
 const KIND=i=>CORNERS.includes(i)?'corner':MID.includes(i)?'middle':'';
-const canHover=window.matchMedia('(hover:hover)');
-function hoverInspect(el,id){ el.addEventListener('mouseenter',()=>{ if(canHover.matches&&S.insp!==id){S.insp=id;renderInsp();} }); }
 
-function renderInsp(){
-  const el=$('insp');
-  if(S.insp==null){ el.innerHTML='<span class="dim">Tap a card on the board or in your hand to read it here.</span>'; return; }
-  const card=DECK[S.insp], slot=S.board.indexOf(S.insp), sc=currentScore();
-  el.innerHTML='<div class="insp"><div class="big"></div><div class="inspside"></div></div>';
-  el.querySelector('.big').appendChild(cardEl(card));
-  const side=el.querySelector('.inspside');
-  let h=`<div class="h">${card.name}</div><div class="dim">${card.color} · ${card.tags.join(', ')} · face value ${card.value}</div>`;
-  if(card.color==='silver') h+=`<div>Silver: counts as every color except black for bonuses. Color penalties never hit it.</div>`;
-  if(slot<0) h+=`<div>In your hand. Select it, then tap a slot.</div>`;
-  else if(sc){
-    const p=sc.per[slot];
-    h+=`<div><b>Slot ${slot+1}</b>: base ${p.base}</div>`+p.mods.map(m=>`<div class="${cls(m.pts)}">${sgn(m.pts)} <span class="dim">${m.t}</span></div>`).join('')+`<div><b>Card total: ${p.total}</b></div>`;
-  } else h+=`<div>On the board (slot ${slot+1}). Fill all 7 slots to see its score.</div>`;
-  side.innerHTML=h;
-}
 
 function render(){
   const cards=S.board.map(id=>id===null?null:DECK[id]);
@@ -408,7 +374,6 @@ function render(){
         const c=cardEl(cards[i],{badge:sc?sc.per[i].total:null,selected:S.sel&&S.sel.kind==='board'&&S.sel.v===i});
         c.draggable=true;
         c.addEventListener('dragstart',e=>{e.dataTransfer.setData('text/plain',JSON.stringify({kind:'board',v:i}));});
-        hoverInspect(c,S.board[i]);
         s.appendChild(c);
         const n=document.createElement('span'); n.className='num'; n.style.cssText='top:-9px;left:4px;z-index:2;background:var(--panel);padding:0 4px;border-radius:4px'; n.textContent=i+1; s.appendChild(n);
       }
@@ -429,13 +394,11 @@ function render(){
     c.draggable=true;
     c.addEventListener('dragstart',e=>e.dataTransfer.setData('text/plain',JSON.stringify({kind:'hand',v:id})));
     c.addEventListener('click',()=>{ if(S.sel&&S.sel.kind==='board') toTray(S.sel); else pick({kind:'hand',v:id}); });
-    hoverInspect(c,id);
     hand.appendChild(c);
   });
   hand.ondragover=e=>e.preventDefault();
   hand.ondrop=e=>{e.preventDefault();try{toTray(JSON.parse(e.dataTransfer.getData('text/plain')));}catch(_){}};
 
-  renderInsp();
 
   $('breakdown').innerHTML=full?`<table><tr><th>#</th><th>Card</th><th class="n">Base</th><th>Modifiers</th><th class="n">Total</th></tr>`+
     sc.per.map((p,i)=>`<tr><td>${i+1}</td><td>${p.card.name}</td><td class="n">${p.base}</td>
