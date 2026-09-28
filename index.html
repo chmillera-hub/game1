@@ -157,7 +157,7 @@
       <div id="insp"></div>
     </section>
     <section>
-      <div class="sech"><h2>Your hand — <span id="handCount"></span></h2></div>
+      <div class="sech"><h2>Spare cards — <span id="handCount"></span></h2></div>
       <div class="hand" id="hand"></div>
     </section>
     <section>
@@ -311,7 +311,8 @@ const sgn=n=>n>0?'+'+n:''+n, cls=n=>n>0?'pos':n<0?'neg':'';
 function deal(){
   const ids=DECK.map(c=>c.id);
   for(let i=ids.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[ids[i],ids[j]]=[ids[j],ids[i]];}
-  S.hand=ids.slice(0,10); S.board=Array(7).fill(null); S.sel=null; S.insp=null; S.subs=[]; S.view=null;
+  S.hand=ids.slice(0,10); S.board=S.hand.slice(0,7);   // start with 7 already placed; the other 3 wait in the hand
+  S.sel=null; S.insp=null; S.subs=[]; S.view=null;
 }
 const bestOfHand=()=>S.subs.length?Math.max(...S.subs.map(s=>s.score)):null;
 const placed=()=>S.board.filter(x=>x!==null).length;
@@ -422,7 +423,7 @@ function render(){
 
   const hand=$('hand'); hand.innerHTML='';
   const tray=S.hand.filter(inTray);
-  $('handCount').textContent=`${tray.length} left`;
+  $('handCount').textContent=`${tray.length} to swap in`;
   tray.forEach(id=>{
     const c=cardEl(DECK[id],{selected:S.sel&&S.sel.kind==='hand'&&S.sel.v===id});
     c.draggable=true;
