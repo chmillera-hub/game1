@@ -101,7 +101,7 @@
 <div class="hud" id="bl"></div>
 <div class="hud" id="ammo"></div>
 <div class="hud" id="sec"></div>
-<div class="hud" id="bc"><div id="mult"></div><div id="jumphint">JUMP <span class="kq"><kbd>Q</kbd> hold</span></div><div id="jumpbar"><div id="jumpfill"></div></div></div>
+<div class="hud" id="bc"><div id="mult"></div><div id="jumphint">JUMP <span class="kq"><kbd>Q</kbd> hold</span> <span id="jcount"></span></div><div id="jumpbar"><div id="jumpfill"></div></div></div>
 <div id="touch">
   <div id="look"></div>
   <div id="joy"><div id="stick"></div></div>
@@ -146,8 +146,9 @@ let tracers = [];
 let levelTime = 0, levelHits = 0;
 let curWeapon = 0, fireCd = 0;
 const relT = [0, 0, 0, 0], relTot = [1, 1, 1, 1];   // per-weapon reload timers (run in the background)
-let jumping = false, jumpHeld = false, jumpCd = 0, jvy = 0, jspeed = 0, jdx = 0, jdz = 0;
-const JUMP_CD = 3;
+let jumping = false, jumpHeld = false, jumpCd = 0, jvy = 0, jdx = 0, jdz = 0;
+const JUMP_CD = 2.5;
+let jumpsLeft = 0;
 let shake = 0;
 const P = { x:0, z:0, vx:0, vz:0, kx:0, kz:0, yaw:0, pitch:0, roll:0, h:0, stun:0, inv:0 };
 const keys = {};
@@ -159,7 +160,7 @@ const inControl = () => isTouch || document.pointerLockElement === canvas;
 function newRun() {
   run = { coins:0, lives:START_LIVES, owned:[true,false,false,false], kills:0, rerolls:0,
     wu: WEAPONS.map(() => ({ clip:0, reload:0, dmg:0, range:0, rate:0 })),
-    g: { speed:0, coin:0, refund:0 }, ammo:[], sec:{ grenade:0, glue:0, shock:0 }, jump:{ h:0, d:0, dmg:0 } };
+    g: { speed:0, coin:0, refund:0 }, ammo:[], sec:{ grenade:0, glue:0, shock:0 }, jump:{ h:0, dmg:0, multi:0 } };
   WEAPONS.forEach((w, i) => run.ammo[i] = ws(i).clip);
   curWeapon = 0; relT.fill(0); secBag = [];
 }
@@ -489,21 +490,22 @@ function updateSec(dt) {
 /* ============================ JUMP ============================ */
 // Leap in the direction you face. Hold to float. Damage is reduced while airborne.
 const airDmg = () => jumping ? Math.min(1, 0.5 + 0.1 * run.jump.dmg) : 1;
+const jumpVy = () => Math.sqrt(2 * 14 * 4.2 * (1 + 0.15 * run.jump.h));   // ~4.2 units apex, ~1.5s in the air (hold to float longer)
 function tryJump() {
-  if (state !== "play" || jumping || jumpCd > 0 || P.stun > 0) return;
-  const u = run.jump;
-  jumping = true; jumpCd = JUMP_CD;
-  jvy = Math.sqrt(2 * 12 * 3.0 * (1 + 0.15 * u.h));      // ~3 units apex while floating (hold), clears normal balls
-  jspeed = 11 * (1 + 0.15 * u.d);
+  if (state !== "play" || P.stun > 0) return;
+  if (jumping) { if (jumpsLeft <= 0) return; jumpsLeft--; }          // double jump in mid-air
+  else { if (jumpCd > 0) return; jumping = true; jumpsLeft = run.jump.multi; P.h = 0.01; }
+  jumpCd = JUMP_CD;
+  jvy = jumpVy();
   jdx = -Math.sin(P.yaw); jdz = -Math.cos(P.yaw);
-  P.vx = jdx * jspeed; P.vz = jdz * jspeed; P.h = 0.01;
-  beep(240, .25, "sine", .1, 400);
+  P.vx = jdx * 9; P.vz = jdz * 9;
+  beep(jumpsLeft < run.jump.multi ? 380 : 240, .25, "sine", .1, 400);
 }
 
 /* ============================ PLAYER HIT ============================ */
 function playerHit(b) {
   run.lives--; levelHits++;
-  P.stun = STUN; P.inv = 2.2; jumping = false; jumpHeld = false;
+  P.stun = STUN; P.inv = 2.2; jumping = false; jumpHeld = false; jumpCd = JUMP_CD;
   let nx = P.x - b.x, nz = P.z - b.z; const l = Math.hypot(nx, nz) || 1; nx /= l; nz /= l;
   P.kx = nx * 34; P.kz = nz * 34; P.vx = P.vz = 0;
   shake = .6; sfx.ouch();
@@ -527,7 +529,7 @@ function startLevel() {
   balls.forEach(removeBall); balls = [];
   tracers.forEach(t => scene.remove(t.line)); tracers = [];
   P.x = P.z = P.vx = P.vz = P.kx = P.kz = 0; P.stun = 0; P.h = 0; P.roll = 0; P.inv = 1.2;
-  P.yaw = 0; P.pitch = 0; jumping = false; jumpHeld = false; jumpCd = 0;
+  P.yaw = 0; P.pitch = 0; jumping = false; jumpHeld = false; jumpCd = 0; jumpsLeft = 0;
   clearSec(); fillBag();
   levelTime = 0; levelHits = 0; relT.fill(0); fireCd = .5;
   WEAPONS.forEach((w, i) => run.ammo[i] = ws(i).clip);
@@ -590,8 +592,8 @@ for (const k in GLOBAL) { const g = GLOBAL[k];
   UPG[k] = { title:g.title, desc:g.desc, color:0xffffff, base:g.base, max:g.max,
     lvl:() => k === "life" ? 0 : run.g[k], avail:() => true,
     apply:() => { if (k === "life") run.lives += 2; else run.g[k]++; } }; }
-[["h","Higher jump","+15% jump height",60],["d","Longer jump","+15% jump distance",60],["dmg","Steady aim","+10% damage while jumping (starts at 50%)",70]].forEach(([st, title, desc, base]) => {
-  UPG["jump." + st] = { title, desc, color:0xffffff, base, max:5, lvl:() => run.jump[st], avail:() => true, apply:() => { run.jump[st]++; } }; });
+[["h","Higher jump","+15% jump height",60,5],["dmg","Steady aim","+10% damage while jumping (starts at 50%)",70,5],["multi","Double jump","+1 extra jump in mid-air: double-tap again while airborne",300,3]].forEach(([st, title, desc, base, max]) => {
+  UPG["jump." + st] = { title, desc, color:0xffffff, base, max, lvl:() => run.jump[st], avail:() => true, apply:() => { run.jump[st]++; } }; });
 const upgOk = k => UPG[k].avail() && UPG[k].lvl() < UPG[k].max;
 const upgCost = k => UPG[k].base * (UPG[k].lvl() + 1);
 function draw(n, keys) {
@@ -669,8 +671,8 @@ function showMenu() {
     <p>Glowing floor lines show where each ball is heading. Weapons have <b>limited range</b>, and the red corner zones
     pay <b>fewer coins</b>. After each level pick one of three free upgrades, then spend coins in the shop.
     You have ${START_LIVES} lives and ${LAST_LEVEL} levels to clear.</p>
-    <p class="pcOnly"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> move · mouse look · <kbd>Q</kbd> jump (hold to float) · <kbd>Esc</kbd> pause</p>
-    ${isTouch ? "<p>Touch: left stick moves, drag anywhere on the right to look, the big badge shows your current gun and ammo, the round badge counts down to your next secondary, <b>double-tap the screen and hold</b> to jump in the direction you face (your damage is halved in the air). Works in portrait or landscape.</p>" : ""}
+    <p class="pcOnly"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> move · mouse look · <kbd>Q</kbd> jump (hold to float, press again in the air for a double jump if you own it) · <kbd>Esc</kbd> pause</p>
+    ${isTouch ? "<p>Touch: left stick moves, drag anywhere on the right to look, the big badge shows your current gun and ammo, the round badge counts down to your next secondary, <b>double-tap the screen</b> to jump in the direction you face (keep holding to float longer, steer with the stick, your damage is halved in the air). With the Double jump upgrade, double-tap again in mid-air. Works in portrait or landscape.</p>" : ""}
     <div class="row"><button class="go" id="start">Start</button></div>`);
   if (isTouch) document.querySelector(".pcOnly").style.display = "none";
   document.getElementById("start").onclick = () => { newRun(); level = 1; startLevel(); lock(); overlay(false); };
@@ -754,7 +756,7 @@ if (isTouch) {
 /* ============================ UPDATE ============================ */
 function update(dt) {
   // --- player ---
-  P.inv = Math.max(0, P.inv - dt); fireCd -= dt; jumpCd = Math.max(0, jumpCd - dt);
+  P.inv = Math.max(0, P.inv - dt); fireCd -= dt; if (!jumping) jumpCd = Math.max(0, jumpCd - dt);
   if (P.stun > 0) {
     P.stun = Math.max(0, P.stun - dt);
     const t = 1 - P.stun / STUN;
@@ -763,17 +765,19 @@ function update(dt) {
   } else {
     P.roll = 0;
     if (jumping) {
-      jvy -= 16 * (jumpHeld ? .75 : 1) * dt; P.h += jvy * dt;
-      if (P.h <= 0) { P.h = 0; jumping = false; jumpHeld = false; }
-      else if (jumpHeld) { jdx = -Math.sin(P.yaw); jdz = -Math.cos(P.yaw); }   // float where you point
+      jvy -= 14 * (jumpHeld ? .75 : 1) * dt; P.h += jvy * dt;
+      if (P.h > 6.5) { P.h = 6.5; jvy = Math.min(jvy, 0); }   // ceiling so double jumps never leave the view too high
+      if (P.h <= 0) { P.h = 0; jumping = false; jumpHeld = false; jumpCd = JUMP_CD; }
     } else P.h = 0;
     let fx = (keys.KeyD ? 1 : 0) - (keys.KeyA ? 1 : 0), fz = (keys.KeyS ? 1 : 0) - (keys.KeyW ? 1 : 0);
     const l = Math.hypot(fx, fz) || 1; fx /= l; fz /= l;
     if (Math.hypot(joyX, joyZ) > 0.12) { fx = joyX; fz = joyZ; }
     const s = Math.sin(P.yaw), c = Math.cos(P.yaw), sp = 10 * speedMult();
     let tx = (fx*c + fz*s) * sp, tz = (-fx*s + fz*c) * sp;
-    if (jumping) { tx = jdx * jspeed; tz = jdz * jspeed; }
-    const k = 1 - Math.exp(-14 * dt);
+    let k = 1 - Math.exp(-14 * dt);
+    if (jumping) {                       // air control: steer with the stick, or keep your momentum
+      if (Math.hypot(fx, fz) > .1) k = 1 - Math.exp(-5 * dt); else { tx = P.vx; tz = P.vz; }
+    }
     P.vx += (tx - P.vx) * k; P.vz += (tz - P.vz) * k;
   }
   const fr = Math.exp(-(P.stun > 0 ? 0.8 : 4) * dt);
@@ -878,6 +882,7 @@ function render(dt) {
     rb.style.background = rl ? `linear-gradient(to top, #ffb44daa ${(frac*100).toFixed(0)}%, #ffffff22 ${(frac*100).toFixed(0)}%)` : "";
     document.getElementById("touch").style.display = state === "play" || state === "dying" ? "block" : "none";
   }
+  hud("jcount").textContent = run && run.jump.multi ? `· ${jumping ? jumpsLeft : run.jump.multi} extra` : "";
   hud("jumpfill").style.width = (100 * (1 - jumpCd / JUMP_CD)) + "%";
 
   const fl = hud("flash"); fl.style.opacity = Math.max(0, parseFloat(fl.style.opacity || 0) - dt * 1.6);
@@ -894,7 +899,7 @@ function loop(now) {
 }
 newRun(); setGunLook(); showMenu();
 requestAnimationFrame(loop);
-window.__game = { P, balls: () => balls, get state() { return state; }, update, fire, startLevel, run: () => run, relT, tryJump, jumpState: () => ({ jumping, jumpCd, h:P.h }), showShop, pickStock, offerDefs, deploySec, secTimer: () => secTimer, ws, secBag: () => secBag, proj: () => proj, puddles: () => puddles, UPG, draw, upgOk, dbg: () => ({ ammo: run.ammo.slice(), relT: relT.slice(), curWeapon }) };
+window.__game = { P, balls: () => balls, get state() { return state; }, update, fire, startLevel, run: () => run, relT, tryJump, jumpState: () => ({ jumping, jumpCd, h:P.h, jumpsLeft }), showShop, pickStock, offerDefs, deploySec, secTimer: () => secTimer, ws, secBag: () => secBag, proj: () => proj, puddles: () => puddles, UPG, draw, upgOk, dbg: () => ({ ammo: run.ammo.slice(), relT: relT.slice(), curWeapon }) };
 </script>
 </body>
 </html>
