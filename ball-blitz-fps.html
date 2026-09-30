@@ -283,7 +283,7 @@ function killBall(b) {
   balls.splice(idx, 1);
   run.kills++;
   const m = coinMult();
-  run.coins += (10 + b.r * 6) * m;
+  run.coins += (5 + b.r * 3) * m;
   sfx.kill(); shake = Math.max(shake, .15);
   if (run.g.refund && reloadT <= 0) run.ammo[curWeapon] = Math.min(ws(curWeapon).clip, run.ammo[curWeapon] + run.g.refund);
   const kids = [];
@@ -297,7 +297,7 @@ function killBall(b) {
 }
 function damageBall(b, d) {
   b.hp -= d; b.flash = .12;
-  run.coins += d * 2 * coinMult();
+  run.coins += d * 1 * coinMult();
   if (b.hp <= 0) killBall(b); else sfx.hit();
 }
 
@@ -418,8 +418,8 @@ function startLevel() {
 function levelClear() {
   state = "shop";
   document.exitPointerLock && document.exitPointerLock();
-  const timeBonus = Math.max(0, Math.floor(50 + level*6 - levelTime));
-  const cleanBonus = levelHits === 0 ? 60 : 0;
+  const timeBonus = Math.max(0, Math.floor((50 + level*6 - levelTime) / 2));
+  const cleanBonus = levelHits === 0 ? 30 : 0;
   run.coins += timeBonus + cleanBonus;
   if (level >= LAST_LEVEL) return showWin(timeBonus, cleanBonus);
   showPick(timeBonus, cleanBonus);
