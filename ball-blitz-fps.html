@@ -66,12 +66,13 @@
   /* touch controls */
   #touch { display:none; }
   body.touch #touch { display:block; }
-  body.touch #bl { display:none; }
+  body.touch #bl { top:66px; left:10px; bottom:auto; font-size:12px; }
+  body.touch .wep { display:block; margin:0 0 3px; padding:1px 6px; border-width:1px; }
   #look { position:fixed; inset:0; }
   .tbtn { position:fixed; border-radius:50%; border:3px solid #ffffff88; background:#ffffff22; color:#fff; font-weight:900;
     display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; touch-action:none; text-shadow:0 2px 4px #000; }
   .tbtn.down { background:#4de1ff88; }
-  #reloadBtn { right:max(18px,env(safe-area-inset-right)); bottom:max(28px,env(safe-area-inset-bottom)); width:104px; height:104px; font-size:14px; line-height:1.2; border-color:#ffffffaa; overflow:hidden; }
+  #reloadBtn { pointer-events:none; right:max(18px,env(safe-area-inset-right)); bottom:max(28px,env(safe-area-inset-bottom)); width:104px; height:104px; font-size:14px; line-height:1.2; border-color:#ffffffaa; overflow:hidden; }
   #reloadBtn b { font-size:26px; display:block; }
   #dashBtn { right:max(138px,calc(env(safe-area-inset-right) + 120px)); bottom:max(28px,env(safe-area-inset-bottom)); width:68px; height:68px; font-size:13px; }
   #wepBtn { right:max(30px,env(safe-area-inset-right)); bottom:170px; width:74px; height:52px; border-radius:14px; font-size:13px; }
@@ -79,9 +80,10 @@
   #joy { position:fixed; left:max(22px,env(safe-area-inset-left)); bottom:max(30px,env(safe-area-inset-bottom)); width:140px; height:140px; border-radius:50%;
     border:3px solid #ffffff55; background:#ffffff14; touch-action:none; }
   #stick { position:absolute; left:50px; top:50px; width:40px; height:40px; border-radius:50%; background:#ffffffaa; }
-  body.touch #bc { bottom:auto; top:64px; width:200px; }
+  body.touch #bc { bottom:auto; left:auto; right:10px; transform:none; top:96px; width:150px; text-align:right; }
   body.touch #bc div:nth-child(2) { display:none; }
-  body.touch #jumphint::after { content:" (double-tap)"; }
+  body.touch #jumphint::after { content:"double-tap"; }
+  body.touch .kq { display:none; }
   #jumpfill { height:100%; width:100%; background:#ffd54a; }
   #jumphint { margin-top:4px; }
   @media (max-width:640px) {
@@ -102,15 +104,14 @@
 <div class="hud" id="bl"></div>
 <div class="hud" id="ammo"></div>
 <div class="hud" id="sec"></div>
-<div class="hud" id="bc"><div id="mult"></div><div>DASH <kbd>Shift</kbd></div><div id="dashbar"><div id="dashfill"></div></div><div id="jumphint">JUMP <kbd>Q</kbd> hold</div><div id="dashbar"><div id="jumpfill"></div></div></div>
+<div class="hud" id="bc"><div id="mult"></div><div>DASH <kbd>Shift</kbd></div><div id="dashbar"><div id="dashfill"></div></div><div id="jumphint">JUMP <span class="kq"><kbd>Q</kbd> hold</span></div><div id="dashbar"><div id="jumpfill"></div></div></div>
 <div id="touch">
   <div id="look"></div>
   <div id="joy"><div id="stick"></div></div>
-  <div class="tbtn" id="reloadBtn"><b>0</b>RELOAD</div>
+  <div class="tbtn" id="reloadBtn"><b>0</b>Pistol</div>
   <div class="tbtn" id="dashBtn">DASH</div>
   <div class="tbtn" id="secBtn"><b>0</b>THROW</div>
-  <div class="tbtn" id="wepBtn">Pistol</div>
-  <div class="tbtn" id="pauseBtn">II</div>
+    <div class="tbtn" id="pauseBtn">II</div>
 </div>
 <div id="overlay"><div class="card" id="card"></div></div>
 
@@ -127,11 +128,11 @@ const STUN = 1.1;             // seconds you fly through the air after a hit
 const CORNER_R = 8;           // "camping zone" radius around each corner
 
 const WEAPONS = [
-  // clip/reload: tradeoffs. clipInc = rounds gained per Magazine upgrade.
-  { name:"Pistol",  dmg:1.0,  cd:0.30, range:26, pellets:1, spread:0.004, clip:12, reload:1.5, clipInc:4,  color:0x66ccff, cost:0,   size:[0.05,0.07,0.35], blurb:"12 rounds · 1.5s reload · balanced" },
-  { name:"SMG",     dmg:0.45, cd:0.09, range:19, pellets:1, spread:0.03,  clip:30, reload:1.2, clipInc:10, color:0xff66cc, cost:200, size:[0.06,0.08,0.38], blurb:"30 rounds · 1.2s reload · short range, weak shots" },
-  { name:"Shotgun", dmg:0.8,  cd:0.80, range:13, pellets:8, spread:0.07,  clip:6,  reload:2.4, clipInc:2,  color:0xffaa44, cost:160,  size:[0.1,0.09,0.4],   blurb:"6 shells · 2.4s reload · 8 pellets, very short range" },
-  { name:"Sniper",  dmg:3.5,  cd:1.00, range:50, pellets:1, spread:0,     clip:3,  reload:3.2, clipInc:1,  color:0x9dff66, cost:240, size:[0.05,0.06,0.6],  blurb:"3 rounds · 3.2s reload · pierces every ball in line", pierce:true },
+  // Pistol: weak but always available (short reload, forever). Other primaries: strong, but a long background reload.
+  { name:"Pistol",  dmg:0.7,  cd:0.30, range:22, pellets:1, spread:0.004, clip:12, reload:1.5,  clipInc:4,  color:0x66ccff, cost:0,   size:[0.05,0.07,0.35], blurb:"12 rounds · 1.5s reload · weak, but never runs dry" },
+  { name:"SMG",     dmg:0.45, cd:0.09, range:19, pellets:1, spread:0.03,  clip:30, reload:10,   clipInc:10, color:0xff66cc, cost:200, size:[0.06,0.08,0.38], blurb:"30 rounds · 10s reload · fast fire, short range" },
+  { name:"Shotgun", dmg:0.8,  cd:0.80, range:13, pellets:8, spread:0.07,  clip:6,  reload:12.5, clipInc:2,  color:0xffaa44, cost:160, size:[0.1,0.09,0.4],   blurb:"6 shells · 12.5s reload · 8 pellets, very short range" },
+  { name:"Sniper",  dmg:3.5,  cd:1.00, range:50, pellets:1, spread:0,     clip:3,  reload:15,   clipInc:1,  color:0x9dff66, cost:240, size:[0.05,0.06,0.6],  blurb:"3 rounds · 15s reload · pierces every ball in line", pierce:true },
 ];
 
 const BALL_TYPES = {
@@ -147,7 +148,8 @@ let run;                      // per-run persistent data (coins, upgrades, weapo
 let balls = [];
 let tracers = [];
 let levelTime = 0, levelHits = 0;
-let curWeapon = 0, fireCd = 0, reloadT = 0, reloadTotal = 1;
+let curWeapon = 0, fireCd = 0;
+const relT = [0, 0, 0, 0], relTot = [1, 1, 1, 1];   // per-weapon reload timers (run in the background)
 let dashCd = 0, dashT = 0, dashDx = 0, dashDz = 0;
 let jumping = false, jumpHeld = false, jumpCd = 0, jvy = 0, jspeed = 0, jdx = 0, jdz = 0;
 const JUMP_CD = 3;
@@ -164,7 +166,7 @@ function newRun() {
     wu: WEAPONS.map(() => ({ clip:0, reload:0, dmg:0, range:0, rate:0 })),
     g: { speed:0, dashcd:0, coin:0, refund:0, dashReload:0 }, ammo:[], sec:{ grenade:0, glue:0, shock:0 }, jump:{ h:0, d:0, dmg:0 } };
   WEAPONS.forEach((w, i) => run.ammo[i] = ws(i).clip);
-  curWeapon = 0; reloadT = 0; secBag = [];
+  curWeapon = 0; relT.fill(0); secBag = [];
 }
 // effective stats for weapon i, after upgrades
 function ws(i) {
@@ -300,7 +302,7 @@ function killBall(b) {
   const m = coinMult();
   run.coins += (5 + b.r * 3) * m;
   sfx.kill(); shake = Math.max(shake, .15);
-  if (run.g.refund && reloadT <= 0) run.ammo[curWeapon] = Math.min(ws(curWeapon).clip, run.ammo[curWeapon] + run.g.refund);
+  if (run.g.refund && relT[curWeapon] <= 0) run.ammo[curWeapon] = Math.min(ws(curWeapon).clip, run.ammo[curWeapon] + run.g.refund);
   const kids = [];
   if (b.type === "splitter" && b.gen < 2) {
     const ang = Math.atan2(b.dz, b.dx);
@@ -354,12 +356,25 @@ function targetInSights(range) {
   camera.getWorldDirection(_d);
   return !!rayBall(camera.position, _d, range, 0.35).ball;
 }
-function startReload() {
-  if (state !== "play" || reloadT > 0) return;
-  const s = ws(curWeapon);
-  if (run.ammo[curWeapon] >= s.clip) return;
-  reloadT = reloadTotal = s.reload; beep(180, .1, "square", .05, 60);
+function startReload(i) {
+  if (relT[i] > 0 || run.ammo[i] >= ws(i).clip) return;
+  relT[i] = relTot[i] = ws(i).reload;
 }
+const wReady = i => run.owned[i] && relT[i] <= 0 && run.ammo[i] > 0;
+function chooseWeapon(exclude) {   // random ready primary (not the pistol), else the pistol
+  const opts = [1, 2, 3].filter(i => i !== exclude && wReady(i));
+  return opts.length ? opts[Math.floor(Math.random() * opts.length)] : 0;
+}
+function setWeapon(i) { if (i !== curWeapon) { curWeapon = i; fireCd = Math.max(fireCd, .25); setGunLook(); beep(420, .06, "square", .04, 100); } }
+function updateWeapons(dt) {
+  for (let i = 0; i < WEAPONS.length; i++) {
+    if (relT[i] > 0) { relT[i] -= dt; if (relT[i] <= 0) { relT[i] = 0; run.ammo[i] = ws(i).clip; } }
+    else if (run.owned[i] && run.ammo[i] <= 0) startReload(i);
+  }
+  // auto-switch: leave the pistol as soon as a primary is ready; leave a primary when it runs dry
+  if (curWeapon === 0 || !wReady(curWeapon)) { const n = chooseWeapon(curWeapon); if (n !== 0 || !wReady(curWeapon)) setWeapon(n); }
+}
+
 function fire() {
   const w = WEAPONS[curWeapon], s = ws(curWeapon);
   fireCd = s.cd; run.ammo[curWeapon]--;
@@ -521,14 +536,14 @@ function startLevel() {
   P.x = P.z = P.vx = P.vz = P.kx = P.kz = 0; P.stun = 0; P.h = 0; P.roll = 0; P.inv = 1.2;
   P.yaw = 0; P.pitch = 0; dashT = 0; dashCd = 0; jumping = false; jumpHeld = false; jumpCd = 0;
   clearSec(); fillBag();
-  levelTime = 0; levelHits = 0; reloadT = 0; fireCd = .5;
+  levelTime = 0; levelHits = 0; relT.fill(0); fireCd = .5;
   WEAPONS.forEach((w, i) => run.ammo[i] = ws(i).clip);
   for (const type of levelPlan(level)) {
     let x, z, tries = 0;
     do { x = (Math.random()*2-1)*(A-3); z = (Math.random()*2-1)*(A-3); } while (Math.hypot(x, z) < 13 && ++tries < 50);
     spawnBall(type, x, z, Math.random()*Math.PI*2);
   }
-  state = "play"; setGunLook();
+  state = "play"; curWeapon = -1; setWeapon(chooseWeapon(-1)); setGunLook();
   say("LEVEL " + level);
 }
 function levelClear() {
@@ -578,7 +593,7 @@ const GLOBAL = {
   dashcd:     { title:"Quick dash",   desc:"dash cooldown 15% shorter",                 base:70, max:4 },
   coin:       { title:"Prospector",   desc:"+15% coins from everything",                base:80, max:4 },
   refund:     { title:"Scavenger",    desc:"every kill refunds +1 round",               base:90, max:3 },
-  dashReload: { title:"Dash reload",  desc:"dashing instantly finishes your reload",    base:120, max:1 },
+  dashReload: { title:"Dash reload",  desc:"each dash takes 2s off every weapon reload",    base:120, max:1 },
 };
 for (const k in GLOBAL) { const g = GLOBAL[k];
   UPG[k] = { title:g.title, desc:g.desc, color:0xffffff, base:g.base, max:g.max,
@@ -610,7 +625,7 @@ const LIFE_COST = 100;           // 3 lives, unlimited purchases
 function offerDefs() {
   const d = {};
   WEAPONS.forEach((w, i) => { if (!run.owned[i]) d["w:" + i] = { cat:"New weapon", title:w.name, desc:w.blurb, color:w.color, cost:w.cost,
-    apply:() => { run.owned[i] = true; curWeapon = i; setGunLook(); } }; });
+    apply:() => { run.owned[i] = true; } }; });
   for (const k in UPG) if (upgOk(k)) { const u = UPG[k];
     d["u:" + k] = { cat:k[0] === "w" && k[1] !== "." ? "Weapon upgrade" : k.startsWith("jump") ? "Jump upgrade" : "Upgrade", title:u.title, desc:u.desc, color:u.color, cost:upgCost(k), apply:() => u.apply() }; }
   for (const k in SEC) if (run.sec[k] < 5) { const sc = SEC[k], n = run.sec[k];
@@ -654,16 +669,17 @@ function showMenu() {
       <li><span class="swatch" style="background:#55ff77"></span><b>Splitter</b> – bursts into two smaller balls when destroyed.</li>
       <li><span class="swatch" style="background:#ffaa33"></span><b>Berserker</b> – tough, and speeds up the more damage it takes.</li>
     </ul>
-    <p><b>Weapons fire automatically</b> whenever a ball is in your sights and in range. Your job is to aim, move, and manage
-    <b>ammo</b>: each gun has its own magazine and reload time (the Sniper holds 3 rounds and reloads slowly, the SMG holds 30 and reloads fast).
-    Reload early while nothing is near you.</p>
+    <p><b>Weapons fire automatically</b> whenever a ball is in your sights and in range, and <b>weapons switch automatically</b> too.
+    The Pistol is weak but never runs dry. Every other gun hits harder, but once its magazine is empty it needs a long reload (10-15 seconds) in the background.
+    You start each level with a random ready gun; when it runs empty the game picks another at random, and falls back to the Pistol when everything is reloading.
+    The moment a gun finishes reloading you switch back to it. Own several guns and upgrade them.</p>
     <p><b>Secondary weapons</b> (buy them in the shop): Grenades, Glue puddles and Shockwaves. Each purchase gives one charge per round,
     and charge upgrades are pricey. They fire on their own: one every 7-10 seconds after a level starts, drawn at random from your bag.</p>
     <p>Glowing floor lines show where each ball is heading. Weapons have <b>limited range</b>, and the red corner zones
     pay <b>fewer coins</b>. After each level pick one of three free upgrades, then spend coins in the shop.
     You have ${START_LIVES} lives and ${LAST_LEVEL} levels to clear.</p>
-    <p class="pcOnly"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> move · mouse look · <kbd>R</kbd> reload · <kbd>Shift</kbd>/<kbd>Space</kbd> dash · <kbd>Q</kbd> jump (hold to float) · <kbd>1</kbd>-<kbd>4</kbd> or wheel switch weapon · <kbd>Esc</kbd> pause</p>
-    ${isTouch ? "<p>Touch: left stick moves, drag anywhere on the right to look, the big button reloads (it shows your ammo), the round badge counts down to your next secondary, <b>double-tap the screen and hold</b> to jump in the direction you face (your damage is halved in the air), DASH dodges, the weapon button cycles guns. Works in portrait or landscape.</p>" : ""}
+    <p class="pcOnly"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> move · mouse look · <kbd>Shift</kbd>/<kbd>Space</kbd> dash · <kbd>Q</kbd> jump (hold to float) · <kbd>Esc</kbd> pause</p>
+    ${isTouch ? "<p>Touch: left stick moves, drag anywhere on the right to look, the big badge shows your current gun and ammo, the round badge counts down to your next secondary, <b>double-tap the screen and hold</b> to jump in the direction you face (your damage is halved in the air), DASH dodges. Works in portrait or landscape.</p>" : ""}
     <div class="row"><button class="go" id="start">Start</button></div>`);
   if (isTouch) document.querySelector(".pcOnly").style.display = "none";
   document.getElementById("start").onclick = () => { newRun(); level = 1; startLevel(); lock(); overlay(false); };
@@ -682,8 +698,6 @@ addEventListener("keydown", e => {
   keys[e.code] = true;
   if (state !== "play") return;
   if (e.code === "Space" || e.code === "ShiftLeft" || e.code === "ShiftRight") tryDash();
-  if (e.code >= "Digit1" && e.code <= "Digit4") selectWeapon(+e.code.slice(5) - 1);
-  if (e.code === "KeyR") startReload();
   if (e.code === "KeyQ" && !e.repeat) { tryJump(); jumpHeld = true; }
   if (e.code === "Space") e.preventDefault();
 });
@@ -694,13 +708,6 @@ addEventListener("mousemove", e => {
   P.yaw -= e.movementX * 0.0022;
   P.pitch = Math.max(-1.2, Math.min(1.2, P.pitch - e.movementY * 0.0022));
 });
-addEventListener("wheel", e => {
-  if (state !== "play") return;
-  const dir = e.deltaY > 0 ? 1 : -1; let i = curWeapon;
-  for (let k = 0; k < WEAPONS.length; k++) { i = (i + dir + WEAPONS.length) % WEAPONS.length; if (run.owned[i]) break; }
-  selectWeapon(i);
-});
-function selectWeapon(i) { if (run.owned[i] && i !== curWeapon) { curWeapon = i; reloadT = 0; fireCd = Math.max(fireCd, .3); setGunLook(); } }
 function tryDash() {
   if (dashCd > 0 || P.stun > 0 || jumping) return;
   let fx = (keys.KeyD ? 1 : 0) - (keys.KeyA ? 1 : 0), fz = (keys.KeyS ? 1 : 0) - (keys.KeyW ? 1 : 0);
@@ -710,7 +717,7 @@ function tryDash() {
   const s = Math.sin(P.yaw), c = Math.cos(P.yaw);
   dashDx = fx*c + fz*s; dashDz = -fx*s + fz*c;
   dashT = .16; dashCd = dashMax(); sfx.dash();
-  if (run.g.dashReload && reloadT > 0) { reloadT = 0; run.ammo[curWeapon] = ws(curWeapon).clip; }
+  if (run.g.dashReload) for (let i = 0; i < WEAPONS.length; i++) if (relT[i] > 0) relT[i] = Math.max(.01, relT[i] - 2);
 }
 
 /* touch input */
@@ -762,13 +769,7 @@ if (isTouch) {
     const end = e => { el.classList.remove("down"); up && up(); e.preventDefault(); };
     el.addEventListener("touchend", end, { passive:false }); el.addEventListener("touchcancel", end, { passive:false });
   };
-  bind("reloadBtn", startReload);
   bind("dashBtn", () => { if (state === "play") tryDash(); });
-  bind("wepBtn", () => {
-    if (state !== "play") return;
-    let i = curWeapon; for (let k = 0; k < WEAPONS.length; k++) { i = (i + 1) % WEAPONS.length; if (run.owned[i]) break; }
-    selectWeapon(i);
-  });
   bind("pauseBtn", () => { if (state === "play") { state = "paused"; showPause(); } });
   document.addEventListener("visibilitychange", () => { if (document.hidden && state === "play") { state = "paused"; showPause(); } });
   document.addEventListener("contextmenu", e => e.preventDefault());
@@ -811,12 +812,9 @@ function update(dt) {
 
   // --- weapon: auto-fire + reload ---
   syncCamera();
+  updateWeapons(dt);
   const cw = curWeapon, s = ws(cw);
-  if (reloadT > 0) {
-    reloadT -= dt;
-    if (reloadT <= 0) { reloadT = 0; run.ammo[cw] = s.clip; beep(520, .08, "square", .05, 200); }
-  } else if (run.ammo[cw] <= 0) startReload();
-  if (reloadT <= 0 && fireCd <= 0 && P.stun <= 0 && run.ammo[cw] > 0 && targetInSights(s.range)) fire();
+  if (relT[cw] <= 0 && fireCd <= 0 && P.stun <= 0 && run.ammo[cw] > 0 && targetInSights(s.range)) fire();
 
   updateSec(dt);
 
@@ -880,19 +878,19 @@ function render(dt) {
     const rng = ws(curWeapon).range;
     const inR = rayBall(camera.position, _d, rng, 0.35).ball;
     const far = !inR && rayBall(camera.position, _d, 200).ball;
-    cr.classList.toggle("on", !!inR); cr.classList.toggle("far", !!far); cr.classList.toggle("rel", reloadT > 0);
+    cr.classList.toggle("on", !!inR); cr.classList.toggle("far", !!far); cr.classList.toggle("rel", relT[curWeapon] > 0);
   }
 
   // HUD
   const m = zoneMult(), mc = coinMult();
   hud("tl").innerHTML = `<span class="lives">♥ ${run ? run.lives : 0}</span> / ${START_LIVES}<br><span class="coins">● ${run ? Math.floor(run.coins) : 0}</span>`;
   hud("tr").innerHTML = `Level ${level}/${LAST_LEVEL}<br>Balls left: ${balls.length}<br>${levelTime.toFixed(1)}s`;
-  hud("bl").innerHTML = WEAPONS.map((w, i) => `<span class="wep ${run && run.owned[i] ? "own" : ""} ${i === curWeapon ? "cur" : ""}">${i+1} ${w.name} <small>${run && run.owned[i] ? run.ammo[i] : ""}</small></span>`).join("");
+  hud("bl").innerHTML = WEAPONS.map((w, i) => !(run && run.owned[i]) ? "" : `<span class="wep own ${i === curWeapon ? "cur" : ""}">${w.name} <small>${relT[i] > 0 ? "reload " + Math.ceil(relT[i]) + "s" : run.ammo[i] + "/" + ws(i).clip}</small></span>`).join("");
   const me = hud("mult");
   me.textContent = m < 0.75 ? `CORNER ZONE: coins x${mc.toFixed(1)}` : `Coins x${mc.toFixed(1)}`;
   me.className = m < 0.75 ? "bad" : m > 1.2 ? "good" : "";
-  const sw = ws(curWeapon), frac = reloadT > 0 ? 1 - reloadT / reloadTotal : 1;
-  hud("ammo").innerHTML = `<small>${WEAPONS[curWeapon].name}${reloadT > 0 ? " · RELOADING" : run.ammo[curWeapon] < sw.clip ? " · R to reload" : ""}</small>${run.ammo[curWeapon]} / ${sw.clip}<div id="rbar"><div id="rfill" style="width:${(frac * 100).toFixed(0)}%"></div></div>`;
+  const sw = ws(curWeapon), rl = relT[curWeapon] > 0, frac = rl ? 1 - relT[curWeapon] / relTot[curWeapon] : 1;
+  hud("ammo").innerHTML = `<small>${WEAPONS[curWeapon].name}${rl ? " · RELOADING" : curWeapon === 0 ? " · backup" : ""}</small>${run.ammo[curWeapon]} / ${sw.clip}<div id="rbar"><div id="rfill" style="width:${(frac * 100).toFixed(0)}%"></div></div>`;
   const nx = secBag[0];
   hud("sec").innerHTML = secTotal() ? `${nx ? `Next: ${SEC[nx].name} in ${Math.ceil(Math.max(0, secTimer))}s` : "secondaries used up"} · ${secBag.length} left` : "";
   if (isTouch) {
@@ -901,9 +899,8 @@ function render(dt) {
     sb.innerHTML = nx ? `<b>${Math.ceil(Math.max(0, secTimer))}s</b>${SEC[nx].name} · ${secBag.length}` : `<b>0</b>empty`;
     sb.style.borderColor = nx ? hex(SEC[nx].color) : ""; sb.style.opacity = nx ? 1 : .4;
     const rb = hud("reloadBtn");
-    rb.innerHTML = `<b>${run.ammo[curWeapon]}/${sw.clip}</b>${reloadT > 0 ? "RELOADING" : "RELOAD"}`;
-    rb.style.background = reloadT > 0 ? `linear-gradient(to top, #ffb44daa ${(frac*100).toFixed(0)}%, #ffffff22 ${(frac*100).toFixed(0)}%)` : "";
-    document.getElementById("wepBtn").textContent = WEAPONS[curWeapon].name;
+    rb.innerHTML = `<b>${run.ammo[curWeapon]}/${sw.clip}</b>${WEAPONS[curWeapon].name}`;
+    rb.style.background = rl ? `linear-gradient(to top, #ffb44daa ${(frac*100).toFixed(0)}%, #ffffff22 ${(frac*100).toFixed(0)}%)` : "";
     document.getElementById("touch").style.display = state === "play" || state === "dying" ? "block" : "none";
   }
   hud("jumpfill").style.width = (100 * (1 - jumpCd / JUMP_CD)) + "%";
@@ -923,7 +920,7 @@ function loop(now) {
 }
 newRun(); setGunLook(); showMenu();
 requestAnimationFrame(loop);
-window.__game = { P, balls: () => balls, get state() { return state; }, update, fire, startLevel, run: () => run, tryJump, jumpState: () => ({ jumping, jumpCd, h:P.h }), showShop, pickStock, offerDefs, deploySec, secTimer: () => secTimer, ws, secBag: () => secBag, proj: () => proj, puddles: () => puddles, UPG, draw, upgOk, dbg: () => ({ ammo: run.ammo.slice(), reloadT, curWeapon }) };
+window.__game = { P, balls: () => balls, get state() { return state; }, update, fire, startLevel, run: () => run, relT, tryJump, jumpState: () => ({ jumping, jumpCd, h:P.h }), showShop, pickStock, offerDefs, deploySec, secTimer: () => secTimer, ws, secBag: () => secBag, proj: () => proj, puddles: () => puddles, UPG, draw, upgOk, dbg: () => ({ ammo: run.ammo.slice(), relT: relT.slice(), curWeapon }) };
 </script>
 </body>
 </html>
