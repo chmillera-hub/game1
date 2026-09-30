@@ -38,6 +38,10 @@
   #secBtn b { font-size:22px; display:block; }
   #sec { right:20px; bottom:100px; text-align:right; font-size:15px; }
   body.touch #sec { display:none; }
+  .grid { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin:10px 0; }
+  .grid .shopbtn { flex:none; min-width:0; }
+  .shopbtn small + small { margin-top:4px; opacity:1; }
+  @media (max-width:640px) { .grid { grid-template-columns:repeat(2,1fr); } }
   .hint { font-size:13px; opacity:.8; margin:4px 0 0; }
   #cross.hit { transform:scale(1.5); border-color:#fff; background:#ff4d4d55; }
   #flash { position:fixed; inset:0; background:radial-gradient(transparent 30%, #ff0000cc); opacity:0; pointer-events:none; }
@@ -555,7 +559,6 @@ const GLOBAL = {
   coin:       { title:"Prospector",   desc:"+15% coins from everything",                base:80, max:4 },
   refund:     { title:"Scavenger",    desc:"every kill refunds +1 round",               base:90, max:3 },
   dashReload: { title:"Dash reload",  desc:"dashing instantly finishes your reload",    base:120, max:1 },
-  life:       { title:"Extra lives",  desc:"+2 lives",                                  base:100, max:99 },
 };
 for (const k in GLOBAL) { const g = GLOBAL[k];
   UPG[k] = { title:g.title, desc:g.desc, color:0xffffff, base:g.base, max:g.max,
@@ -580,36 +583,44 @@ function showPick(timeBonus, cleanBonus) {
   if (!picks.length) showShop();
 }
 
-/* ---- shop: spend coins ---- */
-let stock = [], sold = {};
-function restock() { stock = draw(4); sold = {}; }
-function showShop(fresh = true) {
-  if (fresh && !showShop.keep) { restock(); run.rerolls = 0; }
-  showShop.keep = false;
-  const c = Math.floor(run.coins), rr = 30 + 20 * run.rerolls;
-  const lifeCost = 100;
-  let h = `<h2>Shop</h2><p>Coins <b class="coins">${c}</b> · Lives <b class="lives">${run.lives}</b></p><div class="row">`;
-  h += `<button class="shopbtn" data-buy="life" ${c < lifeCost ? "disabled" : ""}>+3 Lives<small>${lifeCost} coins</small></button>`;
-  WEAPONS.forEach((w, i) => { if (!run.owned[i]) h += `<button class="shopbtn" data-buy="new${i}" style="border-left:10px solid ${hex(w.color)}" ${c < w.cost ? "disabled" : ""}>New weapon: ${w.name}<small>${w.blurb} · ${w.cost} coins</small></button>`; });
-  h += `</div><h2>Secondary weapons</h2><p class="hint">Charges refill every round. They deploy on their own, one every 7-10 seconds, drawn at random from your bag and aimed at the nearest ball.</p><div class="row">`;
-  for (const k in SEC) { const n = run.sec[k], cost = secCost(k), sc = SEC[k], maxed = n >= 5;
-    h += `<button class="shopbtn" data-sec="${k}" style="border-left:10px solid ${hex(sc.color)}" ${maxed || c < cost ? "disabled" : ""}>${n ? `+1 ${sc.name} charge` : `New: ${sc.name}`}<small>${n ? `you have ${n} · ` : ""}${sc.blurb} · ${maxed ? "max" : cost + " coins"}</small></button>`; }
-  h += `</div><h2>Today's upgrades</h2><div class="row">`;
-  stock.forEach(k => { const u = UPG[k], cost = upgCost(k), gone = sold[k] || !upgOk(k);
-    h += `<button class="shopbtn ${gone ? "sold" : ""}" data-up="${k}" style="border-left:10px solid ${hex(u.color)}" ${gone || c < cost ? "disabled" : ""}>${u.title}<small>${u.desc} · ${gone ? "sold" : cost + " coins"}</small></button>`; });
-  h += `</div><div class="row"><button data-reroll ${c < rr ? "disabled" : ""}>Reroll upgrades · ${rr}</button></div>
-    <div class="row"><button class="go" id="next">Start level ${level+1}</button></div>`;
-  card(h);
-  const after = () => { sfx.coin(); showShop.keep = true; showShop(false); };
-  document.querySelectorAll("[data-buy]").forEach(b => b.onclick = () => {
-    const k = b.dataset.buy;
-    if (k === "life") { run.coins -= lifeCost; run.lives += 3; }
-    else { const i = +k.slice(3); run.coins -= WEAPONS[i].cost; run.owned[i] = true; curWeapon = i; }
-    after();
-  });
-  document.querySelectorAll("[data-sec]").forEach(b => b.onclick = () => { const k = b.dataset.sec; run.coins -= secCost(k); run.sec[k]++; after(); });
-  document.querySelectorAll("[data-up]").forEach(b => b.onclick = () => { const k = b.dataset.up; run.coins -= upgCost(k); UPG[k].apply(); sold[k] = true; after(); });
-  document.querySelector("[data-reroll]").onclick = () => { run.coins -= rr; run.rerolls++; stock = draw(4); sold = {}; after(); };
+/* ---- shop: six random offers from every group ---- */
+const LIFE_COST = 100;           // 3 lives, unlimited purchases
+function offerDefs() {
+  const d = {};
+  WEAPONS.forEach((w, i) => { if (!run.owned[i]) d["w:" + i] = { cat:"New weapon", title:w.name, desc:w.blurb, color:w.color, cost:w.cost,
+    apply:() => { run.owned[i] = true; curWeapon = i; setGunLook(); } }; });
+  for (const k in UPG) if (upgOk(k)) { const u = UPG[k];
+    d["u:" + k] = { cat:k[0] === "w" && k[1] !== "." ? "Weapon upgrade" : "Upgrade", title:u.title, desc:u.desc, color:u.color, cost:upgCost(k), apply:() => u.apply() }; }
+  for (const k in SEC) if (run.sec[k] < 5) { const sc = SEC[k], n = run.sec[k];
+    d["s:" + k] = { cat:"Secondary", title:n ? `${sc.name} +1 charge` : `New: ${sc.name}`, desc:(n ? `you have ${n} · ` : "") + sc.blurb, color:sc.color, cost:secCost(k), apply:() => { run.sec[k]++; } }; }
+  return d;
+}
+const shuffled = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+// six offers; two are always the player's affordable picks, or the two cheapest items if nothing is affordable
+function pickStock() {
+  const defs = offerDefs(), keys = shuffled(Object.keys(defs)), c = Math.floor(run.coins);
+  const aff = keys.filter(k => defs[k].cost <= c);
+  const out = aff.length >= 2 ? aff.slice(0, 2) : keys.slice().sort((a, b) => defs[a].cost - defs[b].cost).slice(0, 2);
+  for (const k of keys) { if (out.length >= 6) break; if (!out.includes(k)) out.push(k); }
+  return shuffled(out);
+}
+let stock = [], sold = {}, keepShop = false;
+function showShop() {
+  if (!keepShop) { stock = pickStock(); sold = {}; run.rerolls = 0; }
+  keepShop = false;
+  const defs = offerDefs(), c = Math.floor(run.coins), rr = 30 + 20 * run.rerolls;
+  const tile = k => { const d = defs[k]; if (!d) return `<button class="shopbtn sold" disabled>Sold out</button>`;
+    const gone = sold[k];
+    return `<button class="shopbtn ${gone ? "sold" : ""}" data-offer="${k}" style="border-left:10px solid ${hex(d.color)}" ${gone || c < d.cost ? "disabled" : ""}>${d.title}<small>${d.cat} · ${d.desc}</small><small><b>${gone ? "bought" : d.cost + " coins"}</b></small></button>`; };
+  card(`<h2>Shop</h2><p>Coins <b class="coins">${c}</b> · Lives <b class="lives">${run.lives}</b></p>
+    <div class="grid">${stock.map(tile).join("")}</div>
+    <div class="row"><button data-buy="life" ${c < LIFE_COST ? "disabled" : ""}>+3 Lives · ${LIFE_COST}</button>
+    <button data-reroll ${c < rr ? "disabled" : ""}>Reroll offers · ${rr}</button></div>
+    <div class="row"><button class="go" id="next">Start level ${level+1}</button></div>`);
+  const after = () => { sfx.coin(); keepShop = true; showShop(); };
+  document.querySelectorAll("[data-offer]").forEach(b => b.onclick = () => { const k = b.dataset.offer, d = offerDefs()[k]; if (!d || d.cost > run.coins) return; run.coins -= d.cost; d.apply(); sold[k] = true; after(); });
+  document.querySelector("[data-buy]").onclick = () => { if (run.coins < LIFE_COST) return; run.coins -= LIFE_COST; run.lives += 3; after(); };
+  document.querySelector("[data-reroll]").onclick = () => { run.coins -= rr; run.rerolls++; stock = pickStock(); sold = {}; after(); };
   document.getElementById("next").onclick = () => { level++; startLevel(); lock(); overlay(false); };
 }
 function showMenu() {
@@ -870,7 +881,7 @@ function loop(now) {
 }
 newRun(); setGunLook(); showMenu();
 requestAnimationFrame(loop);
-window.__game = { P, balls: () => balls, get state() { return state; }, update, fire, startLevel, run: () => run, deploySec, secTimer: () => secTimer, ws, secBag: () => secBag, proj: () => proj, puddles: () => puddles, UPG, draw, upgOk, dbg: () => ({ ammo: run.ammo.slice(), reloadT, curWeapon }) };
+window.__game = { P, balls: () => balls, get state() { return state; }, update, fire, startLevel, run: () => run, showShop, pickStock, offerDefs, deploySec, secTimer: () => secTimer, ws, secBag: () => secBag, proj: () => proj, puddles: () => puddles, UPG, draw, upgOk, dbg: () => ({ ammo: run.ammo.slice(), reloadT, curWeapon }) };
 </script>
 </body>
 </html>
