@@ -34,7 +34,7 @@
   body.touch #ammo { display:none; }
   .pick { border-left:10px solid var(--accent); }
   .pick.sold, .shopbtn.sold { opacity:.4; }
-  #secBtn { right:max(124px,calc(env(safe-area-inset-right) + 110px)); bottom:112px; width:70px; height:70px; font-size:11px; line-height:1.1; }
+  #secBtn { right:max(124px,calc(env(safe-area-inset-right) + 110px)); bottom:112px; width:70px; height:70px; font-size:11px; line-height:1.1; pointer-events:none; }
   #secBtn b { font-size:22px; display:block; }
   #sec { right:20px; bottom:100px; text-align:right; font-size:15px; }
   body.touch #sec { display:none; }
@@ -389,7 +389,7 @@ const SEC = {
   glue:    { name:"Glue",      color:0xcc66ff, cost:100, blurb:"leaves a sticky puddle that slows balls and damages them over time" },
   shock:   { name:"Shockwave", color:0x55ddff, cost:100, blurb:"hurts nearby balls and blasts them away from you" },
 };
-let secBag = [], secCd = 0, proj = [], puddles = [], fx = [];
+let secBag = [], secTimer = 8, proj = [], puddles = [], fx = [];
 const secTotal = () => run.sec.grenade + run.sec.glue + run.sec.shock;
 const secCost = k => run.sec[k] ? 150 * run.sec[k] : SEC[k].cost;
 function fillBag() {            // one token per charge, drawn at random like from a bag
@@ -401,19 +401,24 @@ function clearSec() {
   proj.forEach(p => { scene.remove(p.mesh); p.mesh.material.dispose(); });
   puddles.forEach(u => { scene.remove(u.mesh); u.mesh.material.dispose(); });
   fx.forEach(f => { scene.remove(f.mesh); f.mesh.material.dispose(); });
-  proj = []; puddles = []; fx = []; secCd = 0;
+  proj = []; puddles = []; fx = []; secTimer = secDelay();
 }
 function addFx(mesh, life, kind, R) { scene.add(mesh); fx.push({ mesh, t:life, max:life, kind, R }); }
-function throwSec() {
-  if (state !== "play" || P.stun > 0 || secCd > 0 || !secBag.length) return;
-  const k = secBag.shift(); secCd = .45;
+const secDelay = () => 7 + Math.random() * 3;
+// secondaries deploy automatically, aimed at the nearest ball
+function deploySec() {
+  const k = secBag.shift();
+  say(SEC[k].name.toUpperCase() + "!");
   if (k === "shock") return shockwave();
-  syncCamera(); camera.getWorldDirection(_d);
+  let tb = null, td = 1e9;
+  for (const b of balls) { const d = Math.hypot(b.x - P.x, b.z - P.z); if (d < td) { td = d; tb = b; } }
+  if (!tb) { secBag.unshift(k); return; }
+  const x0 = P.x, y0 = EYE - .3 + P.h, z0 = P.z, T = Math.max(.35, td / 22);
+  const tx = Math.max(-A, Math.min(A, tb.x + tb.dx * tb.speed * T)), tz = Math.max(-A, Math.min(A, tb.z + tb.dz * tb.speed * T));
   const c = SEC[k].color;
   const m = new THREE.Mesh(sphereGeo, new THREE.MeshStandardMaterial({ color:c, emissive:c, emissiveIntensity:.6 }));
   m.scale.setScalar(k === "glue" ? .3 : .25);
-  const o = camera.position;
-  proj.push({ k, mesh:m, x:o.x + _d.x*.8, y:o.y - .2 + _d.y*.8, z:o.z + _d.z*.8, vx:_d.x*22, vy:_d.y*22 + 4, vz:_d.z*22, t:0 });
+  proj.push({ k, mesh:m, x:x0, y:y0, z:z0, vx:(tx - x0) / T, vy:(BALL_Y - y0 + 9 * T * T) / T, vz:(tz - z0) / T, t:0 });
   scene.add(m); beep(260, .15, "triangle", .08, 200);
 }
 function explode(x, y, z) {
@@ -439,7 +444,7 @@ function shockwave() {
   shake = Math.max(shake, .25); beep(140, .4, "sine", .15, 300);
 }
 function updateSec(dt) {
-  secCd -= dt;
+  if (secBag.length && balls.length) { secTimer -= dt; if (secTimer <= 0) { deploySec(); secTimer = secDelay(); } }
   for (let i = proj.length - 1; i >= 0; i--) {
     const p = proj[i]; p.t += dt; p.vy -= 18 * dt;
     p.x += p.vx*dt; p.y += p.vy*dt; p.z += p.vz*dt; p.mesh.position.set(p.x, p.y, p.z);
@@ -586,7 +591,7 @@ function showShop(fresh = true) {
   let h = `<h2>Shop</h2><p>Coins <b class="coins">${c}</b> · Lives <b class="lives">${run.lives}</b></p><div class="row">`;
   h += `<button class="shopbtn" data-buy="life" ${c < lifeCost ? "disabled" : ""}>+3 Lives<small>${lifeCost} coins</small></button>`;
   WEAPONS.forEach((w, i) => { if (!run.owned[i]) h += `<button class="shopbtn" data-buy="new${i}" style="border-left:10px solid ${hex(w.color)}" ${c < w.cost ? "disabled" : ""}>New weapon: ${w.name}<small>${w.blurb} · ${w.cost} coins</small></button>`; });
-  h += `</div><h2>Secondary weapons</h2><p class="hint">Charges refill every round. Each press draws one at random from your bag, so you can't pick which comes out.</p><div class="row">`;
+  h += `</div><h2>Secondary weapons</h2><p class="hint">Charges refill every round. They deploy on their own, one every 7-10 seconds, drawn at random from your bag and aimed at the nearest ball.</p><div class="row">`;
   for (const k in SEC) { const n = run.sec[k], cost = secCost(k), sc = SEC[k], maxed = n >= 5;
     h += `<button class="shopbtn" data-sec="${k}" style="border-left:10px solid ${hex(sc.color)}" ${maxed || c < cost ? "disabled" : ""}>${n ? `+1 ${sc.name} charge` : `New: ${sc.name}`}<small>${n ? `you have ${n} · ` : ""}${sc.blurb} · ${maxed ? "max" : cost + " coins"}</small></button>`; }
   h += `</div><h2>Today's upgrades</h2><div class="row">`;
@@ -620,12 +625,12 @@ function showMenu() {
     <b>ammo</b>: each gun has its own magazine and reload time (the Sniper holds 3 rounds and reloads slowly, the SMG holds 30 and reloads fast).
     Reload early while nothing is near you.</p>
     <p><b>Secondary weapons</b> (buy them in the shop): Grenades, Glue puddles and Shockwaves. Each purchase gives one charge per round,
-    and charge upgrades are pricey. Every press draws a random one from your bag.</p>
+    and charge upgrades are pricey. They fire on their own: one every 7-10 seconds after a level starts, drawn at random from your bag.</p>
     <p>Glowing floor lines show where each ball is heading. Weapons have <b>limited range</b>, and the red corner zones
     pay <b>fewer coins</b>. After each level pick one of three free upgrades, then spend coins in the shop.
     You have ${START_LIVES} lives and ${LAST_LEVEL} levels to clear.</p>
-    <p class="pcOnly"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> move · mouse look · <kbd>R</kbd> reload · <kbd>E</kbd>/right-click secondary · <kbd>Shift</kbd>/<kbd>Space</kbd> dash · <kbd>1</kbd>-<kbd>4</kbd> or wheel switch weapon · <kbd>Esc</kbd> pause</p>
-    ${isTouch ? "<p>Touch: left stick moves, drag anywhere on the right to look, the big button reloads (it shows your ammo), THROW uses a secondary, DASH dodges, the weapon button cycles guns. Works in portrait or landscape.</p>" : ""}
+    <p class="pcOnly"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> move · mouse look · <kbd>R</kbd> reload · <kbd>Shift</kbd>/<kbd>Space</kbd> dash · <kbd>1</kbd>-<kbd>4</kbd> or wheel switch weapon · <kbd>Esc</kbd> pause</p>
+    ${isTouch ? "<p>Touch: left stick moves, drag anywhere on the right to look, the big button reloads (it shows your ammo), the round badge counts down to your next secondary, DASH dodges, the weapon button cycles guns. Works in portrait or landscape.</p>" : ""}
     <div class="row"><button class="go" id="start">Start</button></div>`);
   if (isTouch) document.querySelector(".pcOnly").style.display = "none";
   document.getElementById("start").onclick = () => { newRun(); level = 1; startLevel(); lock(); overlay(false); };
@@ -646,11 +651,9 @@ addEventListener("keydown", e => {
   if (e.code === "Space" || e.code === "ShiftLeft" || e.code === "ShiftRight") tryDash();
   if (e.code >= "Digit1" && e.code <= "Digit4") selectWeapon(+e.code.slice(5) - 1);
   if (e.code === "KeyR") startReload();
-  if (e.code === "KeyE" || e.code === "KeyF") throwSec();
   if (e.code === "Space") e.preventDefault();
 });
 addEventListener("keyup", e => keys[e.code] = false);
-addEventListener("mousedown", e => { if (e.button === 2 && document.pointerLockElement === canvas) throwSec(); });
 addEventListener("contextmenu", e => e.preventDefault());
 addEventListener("mousemove", e => {
   if (isTouch || document.pointerLockElement !== canvas || state !== "play" || P.stun > 0) return;
@@ -714,7 +717,6 @@ if (isTouch) {
     el.addEventListener("touchend", end, { passive:false }); el.addEventListener("touchcancel", end, { passive:false });
   };
   bind("reloadBtn", startReload);
-  bind("secBtn", throwSec);
   bind("dashBtn", () => { if (state === "play") tryDash(); });
   bind("wepBtn", () => {
     if (state !== "play") return;
@@ -840,11 +842,11 @@ function render(dt) {
   const sw = ws(curWeapon), frac = reloadT > 0 ? 1 - reloadT / reloadTotal : 1;
   hud("ammo").innerHTML = `<small>${WEAPONS[curWeapon].name}${reloadT > 0 ? " · RELOADING" : run.ammo[curWeapon] < sw.clip ? " · R to reload" : ""}</small>${run.ammo[curWeapon]} / ${sw.clip}<div id="rbar"><div id="rfill" style="width:${(frac * 100).toFixed(0)}%"></div></div>`;
   const nx = secBag[0];
-  hud("sec").innerHTML = secTotal() ? `<b>E</b> / right-click · ${nx ? SEC[nx].name : "out of secondaries"} · ${secBag.length} left` : "";
+  hud("sec").innerHTML = secTotal() ? `${nx ? `Next: ${SEC[nx].name} in ${Math.ceil(Math.max(0, secTimer))}s` : "secondaries used up"} · ${secBag.length} left` : "";
   if (isTouch) {
     const sb = hud("secBtn");
     sb.style.display = secTotal() ? "flex" : "none";
-    sb.innerHTML = `<b>${secBag.length}</b>${nx ? SEC[nx].name : "empty"}`;
+    sb.innerHTML = nx ? `<b>${Math.ceil(Math.max(0, secTimer))}s</b>${SEC[nx].name} · ${secBag.length}` : `<b>0</b>empty`;
     sb.style.borderColor = nx ? hex(SEC[nx].color) : ""; sb.style.opacity = nx ? 1 : .4;
     const rb = hud("reloadBtn");
     rb.innerHTML = `<b>${run.ammo[curWeapon]}/${sw.clip}</b>${reloadT > 0 ? "RELOADING" : "RELOAD"}`;
@@ -868,7 +870,7 @@ function loop(now) {
 }
 newRun(); setGunLook(); showMenu();
 requestAnimationFrame(loop);
-window.__game = { P, balls: () => balls, get state() { return state; }, update, fire, startLevel, run: () => run, throwSec, ws, secBag: () => secBag, proj: () => proj, puddles: () => puddles, UPG, draw, upgOk, dbg: () => ({ ammo: run.ammo.slice(), reloadT, curWeapon }) };
+window.__game = { P, balls: () => balls, get state() { return state; }, update, fire, startLevel, run: () => run, deploySec, secTimer: () => secTimer, ws, secBag: () => secBag, proj: () => proj, puddles: () => puddles, UPG, draw, upgOk, dbg: () => ({ ammo: run.ammo.slice(), reloadT, curWeapon }) };
 </script>
 </body>
 </html>
