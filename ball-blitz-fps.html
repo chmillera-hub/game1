@@ -2,13 +2,13 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>Ball Blitz FPS</title>
 <style>
   :root { --bg:#070b16; --fg:#e8eeff; --accent:#4de1ff; --warn:#ff5a5a; --gold:#ffd54a; }
   * { box-sizing:border-box; }
   html,body { margin:0; height:100%; overflow:hidden; background:var(--bg); color:var(--fg);
-    font-family:"Trebuchet MS",system-ui,sans-serif; user-select:none; }
+    font-family:"Trebuchet MS",system-ui,sans-serif; user-select:none; -webkit-user-select:none; touch-action:none; -webkit-touch-callout:none; }
   canvas { display:block; width:100%; height:100%; }
   .hud { position:fixed; pointer-events:none; text-shadow:0 2px 4px #000; font-weight:700; letter-spacing:.5px; }
   #tl { top:12px; left:16px; font-size:20px; line-height:1.5; }
@@ -46,6 +46,29 @@
   .shopbtn { flex:1 1 200px; text-align:left; } .shopbtn small { display:block; font-weight:500; opacity:.8; }
   .swatch { display:inline-block; width:12px; height:12px; border-radius:50%; margin-right:6px; vertical-align:middle; }
   kbd { background:#223; border:1px solid #446; border-radius:4px; padding:1px 6px; }
+  /* touch controls */
+  #touch { display:none; }
+  body.touch #touch { display:block; }
+  body.touch #bl { display:none; }
+  #look { position:fixed; inset:0; }
+  .tbtn { position:fixed; border-radius:50%; border:3px solid #ffffff88; background:#ffffff22; color:#fff; font-weight:900;
+    display:flex; align-items:center; justify-content:center; text-align:center; touch-action:none; text-shadow:0 2px 4px #000; }
+  .tbtn.down { background:#4de1ff88; }
+  #fireBtn { right:max(18px,env(safe-area-inset-right)); bottom:max(28px,env(safe-area-inset-bottom)); width:104px; height:104px; font-size:18px; background:#ff4d4d44; border-color:#ff8888aa; }
+  #dashBtn { right:max(138px,calc(env(safe-area-inset-right) + 120px)); bottom:max(28px,env(safe-area-inset-bottom)); width:68px; height:68px; font-size:13px; }
+  #wepBtn { right:max(30px,env(safe-area-inset-right)); bottom:170px; width:74px; height:52px; border-radius:14px; font-size:13px; }
+  #pauseBtn { left:50%; margin-left:-22px; top:8px; width:44px; height:44px; font-size:18px; }
+  #joy { position:fixed; left:max(22px,env(safe-area-inset-left)); bottom:max(30px,env(safe-area-inset-bottom)); width:140px; height:140px; border-radius:50%;
+    border:3px solid #ffffff55; background:#ffffff14; touch-action:none; }
+  #stick { position:absolute; left:50px; top:50px; width:40px; height:40px; border-radius:50%; background:#ffffffaa; }
+  body.touch #bc { bottom:auto; top:64px; width:200px; }
+  body.touch #bc div:nth-child(2) { display:none; }
+  @media (max-width:640px) {
+    #tl,#tr { font-size:15px; top:8px; } #tl { left:10px; } #tr { right:10px; }
+    #msg { font-size:34px; } .card { padding:16px 16px; } h1 { font-size:30px; }
+    button { font-size:15px; padding:10px 12px; } button.go { font-size:18px; }
+    #cross { transform:none; }
+  }
 </style>
 </head>
 <body>
@@ -57,6 +80,14 @@
 <div class="hud" id="tr"></div>
 <div class="hud" id="bl"></div>
 <div class="hud" id="bc"><div id="mult"></div><div>DASH <kbd>Shift</kbd></div><div id="dashbar"><div id="dashfill"></div></div></div>
+<div id="touch">
+  <div id="look"></div>
+  <div id="joy"><div id="stick"></div></div>
+  <div class="tbtn" id="fireBtn">FIRE</div>
+  <div class="tbtn" id="dashBtn">DASH</div>
+  <div class="tbtn" id="wepBtn">Pistol</div>
+  <div class="tbtn" id="pauseBtn">II</div>
+</div>
 <div id="overlay"><div class="card" id="card"></div></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -95,6 +126,10 @@ let dashCd = 0, dashT = 0, dashDx = 0, dashDz = 0;
 let shake = 0;
 const P = { x:0, z:0, vx:0, vz:0, kx:0, kz:0, yaw:0, pitch:0, roll:0, h:0, stun:0, inv:0 };
 const keys = {};
+const isTouch = matchMedia("(pointer:coarse)").matches || "ontouchstart" in window;
+let touchFire = false, joyX = 0, joyZ = 0;
+if (isTouch) document.body.classList.add("touch");
+const inControl = () => isTouch || document.pointerLockElement === canvas;
 
 function newRun() {
   run = { coins:0, lives:START_LIVES, owned:[true,false,false], up:{dmg:0,range:0,rate:0,speed:0}, kills:0 };
@@ -147,7 +182,11 @@ function setGunLook() {
 
 function resize() {
   renderer.setSize(innerWidth, innerHeight, false);
-  camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix();
+  camera.aspect = innerWidth / innerHeight;
+  // keep a wide horizontal view in portrait
+  camera.fov = camera.aspect < 1 ? Math.min(115, 2 * Math.atan(Math.tan(50 * Math.PI/180) / camera.aspect) * 180/Math.PI) : 78;
+  camera.updateProjectionMatrix();
+  gun.position.x = camera.aspect < 1 ? 0.17 : 0.32;
 }
 addEventListener("resize", resize); resize();
 
@@ -392,17 +431,19 @@ function showMenu() {
     <p>Glowing floor lines show where each ball is heading. Weapons have <b>limited range</b>, and the red corner zones
     pay <b>fewer coins</b> — hiding is safe but poor. Clear levels fast for time bonuses and spend coins on upgrades.
     You have ${START_LIVES} lives and ${LAST_LEVEL} levels to clear.</p>
-    <p><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> move · mouse look · click shoot · <kbd>Shift</kbd>/<kbd>Space</kbd> dash · <kbd>1</kbd>-<kbd>3</kbd> or wheel switch weapon · <kbd>Esc</kbd> pause</p>
+    <p class="pcOnly"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> move · mouse look · click shoot · <kbd>Shift</kbd>/<kbd>Space</kbd> dash · <kbd>1</kbd>-<kbd>3</kbd> or wheel switch weapon · <kbd>Esc</kbd> pause</p>
+    ${isTouch ? "<p>Touch: left stick moves, drag anywhere on the right to look, FIRE shoots, DASH dodges, the weapon button cycles guns. Works in portrait or landscape.</p>" : ""}
     <div class="row"><button class="go" id="start">Start</button></div>`);
+  if (isTouch) document.querySelector(".pcOnly").style.display = "none";
   document.getElementById("start").onclick = () => { newRun(); level = 1; startLevel(); lock(); overlay(false); };
 }
 function showPause() {
   card(`<h2>Paused</h2><div class="row"><button class="go" id="resume">Resume</button></div>`);
   document.getElementById("resume").onclick = () => { lock(); overlay(false); state = "play"; };
 }
-function lock() { try { const p = canvas.requestPointerLock(); if (p && p.catch) p.catch(() => {}); ac = ac || new (window.AudioContext || window.webkitAudioContext)(); ac.resume && ac.resume(); } catch (e) {} }
+function lock() { try { const p = isTouch ? null : canvas.requestPointerLock(); if (p && p.catch) p.catch(() => {}); ac = ac || new (window.AudioContext || window.webkitAudioContext)(); ac.resume && ac.resume(); } catch (e) {} }
 document.addEventListener("pointerlockchange", () => {
-  if (document.pointerLockElement !== canvas && state === "play") { state = "paused"; showPause(); }
+  if (!isTouch && document.pointerLockElement !== canvas && state === "play") { state = "paused"; showPause(); }
 });
 
 /* ============================ INPUT ============================ */
@@ -417,7 +458,7 @@ addEventListener("keyup", e => keys[e.code] = false);
 addEventListener("mousedown", e => { if (e.button === 0) mouseDown = true; });
 addEventListener("mouseup", e => { if (e.button === 0) mouseDown = false; });
 addEventListener("mousemove", e => {
-  if (document.pointerLockElement !== canvas || state !== "play" || P.stun > 0) return;
+  if (isTouch || document.pointerLockElement !== canvas || state !== "play" || P.stun > 0) return;
   P.yaw -= e.movementX * 0.0022;
   P.pitch = Math.max(-1.2, Math.min(1.2, P.pitch - e.movementY * 0.0022));
 });
@@ -431,11 +472,61 @@ function selectWeapon(i) { if (run.owned[i]) { curWeapon = i; setGunLook(); } }
 function tryDash() {
   if (dashCd > 0 || P.stun > 0) return;
   let fx = (keys.KeyD ? 1 : 0) - (keys.KeyA ? 1 : 0), fz = (keys.KeyS ? 1 : 0) - (keys.KeyW ? 1 : 0);
+  if (Math.hypot(joyX, joyZ) > 0.3) { fx = joyX; fz = joyZ; }
   if (!fx && !fz) fz = -1;
   const l = Math.hypot(fx, fz); fx /= l; fz /= l;
   const s = Math.sin(P.yaw), c = Math.cos(P.yaw);
   dashDx = fx*c + fz*s; dashDz = -fx*s + fz*c;
   dashT = .16; dashCd = 1.3; sfx.dash();
+}
+
+/* touch input */
+if (isTouch) {
+  const look = document.getElementById("look"), joy = document.getElementById("joy"), stick = document.getElementById("stick");
+  let lookId = null, lx = 0, ly = 0, joyId = null;
+  look.addEventListener("touchstart", e => { const t = e.changedTouches[0]; lookId = t.identifier; lx = t.clientX; ly = t.clientY; e.preventDefault(); }, { passive:false });
+  look.addEventListener("touchmove", e => {
+    for (const t of e.changedTouches) if (t.identifier === lookId) {
+      if (state === "play" && P.stun <= 0) {
+        P.yaw -= (t.clientX - lx) * 0.006;
+        P.pitch = Math.max(-1.2, Math.min(1.2, P.pitch - (t.clientY - ly) * 0.006));
+      }
+      lx = t.clientX; ly = t.clientY;
+    }
+    e.preventDefault();
+  }, { passive:false });
+  const lookEnd = e => { for (const t of e.changedTouches) if (t.identifier === lookId) lookId = null; };
+  look.addEventListener("touchend", lookEnd); look.addEventListener("touchcancel", lookEnd);
+
+  const joyMove = t => {
+    const r = joy.getBoundingClientRect(), R = r.width / 2;
+    let dx = t.clientX - (r.left + R), dy = t.clientY - (r.top + R);
+    const d = Math.hypot(dx, dy), m = Math.min(1, d / R);
+    if (d > 0) { dx /= d; dy /= d; }
+    joyX = dx * m; joyZ = dy * m;
+    stick.style.left = (R - 20 + dx * m * (R - 20)) + "px"; stick.style.top = (R - 20 + dy * m * (R - 20)) + "px";
+  };
+  joy.addEventListener("touchstart", e => { const t = e.changedTouches[0]; joyId = t.identifier; joyMove(t); e.preventDefault(); }, { passive:false });
+  joy.addEventListener("touchmove", e => { for (const t of e.changedTouches) if (t.identifier === joyId) joyMove(t); e.preventDefault(); }, { passive:false });
+  const joyEnd = e => { for (const t of e.changedTouches) if (t.identifier === joyId) { joyId = null; joyX = joyZ = 0; stick.style.left = stick.style.top = "50px"; } };
+  joy.addEventListener("touchend", joyEnd); joy.addEventListener("touchcancel", joyEnd);
+
+  const bind = (id, down, up) => {
+    const el = document.getElementById(id);
+    el.addEventListener("touchstart", e => { el.classList.add("down"); down(); e.preventDefault(); }, { passive:false });
+    const end = e => { el.classList.remove("down"); up && up(); e.preventDefault(); };
+    el.addEventListener("touchend", end, { passive:false }); el.addEventListener("touchcancel", end, { passive:false });
+  };
+  bind("fireBtn", () => { touchFire = true; }, () => { touchFire = false; });
+  bind("dashBtn", () => { if (state === "play") tryDash(); });
+  bind("wepBtn", () => {
+    if (state !== "play") return;
+    let i = curWeapon; for (let k = 0; k < WEAPONS.length; k++) { i = (i + 1) % WEAPONS.length; if (run.owned[i]) break; }
+    selectWeapon(i);
+  });
+  bind("pauseBtn", () => { if (state === "play") { state = "paused"; touchFire = false; showPause(); } });
+  document.addEventListener("visibilitychange", () => { if (document.hidden && state === "play") { state = "paused"; touchFire = false; showPause(); } });
+  document.addEventListener("contextmenu", e => e.preventDefault());
 }
 
 /* ============================ UPDATE ============================ */
@@ -451,6 +542,7 @@ function update(dt) {
     P.h = 0; P.roll = 0;
     let fx = (keys.KeyD ? 1 : 0) - (keys.KeyA ? 1 : 0), fz = (keys.KeyS ? 1 : 0) - (keys.KeyW ? 1 : 0);
     const l = Math.hypot(fx, fz) || 1; fx /= l; fz /= l;
+    if (Math.hypot(joyX, joyZ) > 0.12) { fx = joyX; fz = joyZ; }
     const s = Math.sin(P.yaw), c = Math.cos(P.yaw), sp = 10 * speedMult();
     let tx = (fx*c + fz*s) * sp, tz = (-fx*s + fz*c) * sp;
     if (dashT > 0) { dashT -= dt; tx = dashDx * 28; tz = dashDz * 28; }
@@ -468,7 +560,7 @@ function update(dt) {
 
   // --- shooting ---
   const w = WEAPONS[curWeapon];
-  if (mouseDown && fireCd <= 0 && P.stun <= 0 && document.pointerLockElement === canvas) {
+  if ((mouseDown || touchFire) && fireCd <= 0 && P.stun <= 0 && inControl()) {
     fire();
     if (!w.auto) mouseDown = false;
   }
@@ -543,6 +635,10 @@ function render(dt) {
   const me = hud("mult");
   me.textContent = m < 0.75 ? `CORNER ZONE: coins x${m.toFixed(1)}` : `Coins x${m.toFixed(1)}`;
   me.className = m < 0.75 ? "bad" : m > 1.2 ? "good" : "";
+  if (isTouch) {
+    document.getElementById("wepBtn").textContent = WEAPONS[curWeapon].name;
+    document.getElementById("touch").style.display = state === "play" || state === "dying" ? "block" : "none";
+  }
   hud("dashfill").style.width = (100 * (1 - dashCd / 1.3)) + "%";
 
   const fl = hud("flash"); fl.style.opacity = Math.max(0, parseFloat(fl.style.opacity || 0) - dt * 1.6);
