@@ -490,7 +490,8 @@ function updateSec(dt) {
 /* ============================ JUMP ============================ */
 // Leap in the direction you face. Hold to float. Damage is reduced while airborne.
 const airDmg = () => jumping ? Math.min(1, 0.5 + 0.1 * run.jump.dmg) : 1;
-const jumpVy = () => Math.sqrt(2 * 14 * 4.2 * (1 + 0.15 * run.jump.h));   // ~4.2 units apex, ~1.5s in the air (hold to float longer)
+const JUMP_G = 3.5;   // low gravity: floaty ~3s hang time
+const jumpVy = () => Math.sqrt(2 * JUMP_G * 4.2 * (1 + 0.15 * run.jump.h));   // ~4.2 units apex (hold to float longer)
 function tryJump() {
   if (state !== "play" || P.stun > 0) return;
   if (jumping) { if (jumpsLeft <= 0) return; jumpsLeft--; }          // double jump in mid-air
@@ -498,7 +499,7 @@ function tryJump() {
   jumpCd = JUMP_CD;
   jvy = jumpVy();
   jdx = -Math.sin(P.yaw); jdz = -Math.cos(P.yaw);
-  P.vx = jdx * 9; P.vz = jdz * 9;
+  P.vx = jdx * 5; P.vz = jdz * 5;
   beep(jumpsLeft < run.jump.multi ? 380 : 240, .25, "sine", .1, 400);
 }
 
@@ -765,7 +766,7 @@ function update(dt) {
   } else {
     P.roll = 0;
     if (jumping) {
-      jvy -= 14 * (jumpHeld ? .75 : 1) * dt; P.h += jvy * dt;
+      jvy -= JUMP_G * (jumpHeld ? .8 : 1) * dt; P.h += jvy * dt;
       if (P.h > 6.5) { P.h = 6.5; jvy = Math.min(jvy, 0); }   // ceiling so double jumps never leave the view too high
       if (P.h <= 0) { P.h = 0; jumping = false; jumpHeld = false; jumpCd = JUMP_CD; }
     } else P.h = 0;
