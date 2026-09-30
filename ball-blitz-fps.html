@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ball Blitz FPS</title>
+<style>
+  :root { --bg:#070b16; --fg:#e8eeff; --accent:#4de1ff; --warn:#ff5a5a; --gold:#ffd54a; }
+  * { box-sizing:border-box; }
+  html,body { margin:0; height:100%; overflow:hidden; background:var(--bg); color:var(--fg);
+    font-family:"Trebuchet MS",system-ui,sans-serif; user-select:none; }
+  canvas { display:block; width:100%; height:100%; }
+  .hud { position:fixed; pointer-events:none; text-shadow:0 2px 4px #000; font-weight:700; letter-spacing:.5px; }
+  #tl { top:12px; left:16px; font-size:20px; line-height:1.5; }
+  #tr { top:12px; right:16px; font-size:20px; text-align:right; line-height:1.5; }
+  #bl { bottom:14px; left:16px; font-size:16px; }
+  #bc { bottom:14px; left:50%; transform:translateX(-50%); width:220px; text-align:center; font-size:13px; }
+  .lives { color:#ff6b8b; } .coins { color:var(--gold); }
+  .wep { display:inline-block; padding:3px 9px; margin-right:6px; border:2px solid #345; border-radius:6px; opacity:.45; }
+  .wep.own { opacity:.85; } .wep.cur { border-color:var(--accent); color:var(--accent); opacity:1; }
+  #dashbar { height:7px; background:#123; border-radius:4px; margin-top:4px; overflow:hidden; }
+  #dashfill { height:100%; width:100%; background:var(--accent); }
+  #mult { font-size:15px; } #mult.bad { color:var(--warn); } #mult.good { color:#7dff9b; }
+  #cross { position:fixed; left:50%; top:50%; width:22px; height:22px; margin:-11px 0 0 -11px; pointer-events:none;
+    border:2px solid #fff; border-radius:50%; opacity:.75; transition:transform .06s; }
+  #cross::after { content:""; position:absolute; left:8px; top:8px; width:2px; height:2px; background:#fff; }
+  #cross.far { border-color:#ffb44d; }
+  #cross.on { border-color:#5dff8a; }
+  #cross.hit { transform:scale(1.5); border-color:#fff; background:#ff4d4d55; }
+  #flash { position:fixed; inset:0; background:radial-gradient(transparent 30%, #ff0000cc); opacity:0; pointer-events:none; }
+  #msg { position:fixed; left:50%; top:24%; transform:translateX(-50%); font-size:54px; font-weight:900; color:#fff;
+    text-shadow:0 4px 12px #f00; pointer-events:none; opacity:0; transition:opacity .25s; white-space:nowrap; }
+  #overlay { position:fixed; inset:0; display:flex; align-items:center; justify-content:center;
+    background:#050a14e6; overflow:auto; padding:16px; }
+  #overlay.hidden { display:none; }
+  .card { max-width:720px; width:100%; background:#0f1730; border:2px solid #2a3a7a; border-radius:14px;
+    padding:24px 28px; box-shadow:0 10px 40px #000a; }
+  h1 { margin:0 0 6px; font-size:40px; color:var(--accent); } h2 { margin:0 0 10px; color:var(--accent); }
+  p, li { line-height:1.5; color:#c9d4ff; } ul { padding-left:20px; }
+  .row { display:flex; gap:10px; flex-wrap:wrap; margin:10px 0; }
+  button { font:inherit; font-weight:800; font-size:16px; color:#04101c; background:var(--accent); border:0;
+    border-radius:8px; padding:10px 16px; cursor:pointer; }
+  button:hover:not(:disabled) { filter:brightness(1.15); }
+  button:disabled { background:#334; color:#778; cursor:not-allowed; }
+  button.go { background:#7dff9b; font-size:20px; padding:12px 26px; }
+  .shopbtn { flex:1 1 200px; text-align:left; } .shopbtn small { display:block; font-weight:500; opacity:.8; }
+  .swatch { display:inline-block; width:12px; height:12px; border-radius:50%; margin-right:6px; vertical-align:middle; }
+  kbd { background:#223; border:1px solid #446; border-radius:4px; padding:1px 6px; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="flash"></div>
+<div id="cross"></div>
+<div id="msg"></div>
+<div class="hud" id="tl"></div>
+<div class="hud" id="tr"></div>
+<div class="hud" id="bl"></div>
+<div class="hud" id="bc"><div id="mult"></div><div>DASH <kbd>Shift</kbd></div><div id="dashbar"><div id="dashfill"></div></div></div>
+<div id="overlay"><div class="card" id="card"></div></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+"use strict";
+/* ============================ CONFIG ============================ */
+const A = 20;                 // arena half-size
+const EYE = 1.6;              // eye height
+const BALL_Y = 1.5;           // balls fly at chest/head height
+const START_LIVES = 20;
+const LAST_LEVEL = 8;
+const STUN = 1.1;             // seconds you fly through the air after a hit
+const CORNER_R = 8;           // "camping zone" radius around each corner
+
+const WEAPONS = [
+  { name:"Pistol",  dmg:1.0,  cd:0.28, range:26, pellets:1, spread:0.004, auto:false, color:0x66ccff, cost:0,   size:[0.05,0.07,0.35] },
+  { name:"Shotgun", dmg:0.8,  cd:0.85, range:13, pellets:8, spread:0.07,  auto:false, color:0xffaa44, cost:80,  size:[0.1,0.09,0.4] },
+  { name:"SMG",     dmg:0.45, cd:0.09, range:19, pellets:1, spread:0.03,  auto:true,  color:0xff66cc, cost:120, size:[0.06,0.08,0.38] },
+];
+
+const BALL_TYPES = {
+  normal:   { name:"Bouncer",   color:0x33ccff, r:1.1, hp:3, speed:1.0 },
+  splitter: { name:"Splitter",  color:0x55ff77, r:1.7, hp:3, speed:0.9 },
+  berserk:  { name:"Berserker", color:0xffaa33, r:1.2, hp:6, speed:0.8 },
+};
+
+/* ============================ STATE ============================ */
+let state = "menu";           // menu | play | shop | over | win | paused
+let level = 1;
+let run;                      // per-run persistent data (coins, upgrades, weapons)
+let balls = [];
+let tracers = [];
+let levelTime = 0, levelHits = 0;
+let curWeapon = 0, fireCd = 0, mouseDown = false;
+let dashCd = 0, dashT = 0, dashDx = 0, dashDz = 0;
+let shake = 0;
+const P = { x:0, z:0, vx:0, vz:0, kx:0, kz:0, yaw:0, pitch:0, roll:0, h:0, stun:0, inv:0 };
+const keys = {};
+
+function newRun() {
+  run = { coins:0, lives:START_LIVES, owned:[true,false,false], up:{dmg:0,range:0,rate:0,speed:0}, kills:0 };
+}
+const dmgMult   = () => 1 + 0.2  * run.up.dmg;
+const rangeMult = () => 1 + 0.2  * run.up.range;
+const rateMult  = () => 1 + 0.15 * run.up.rate;
+const speedMult = () => 1 + 0.08 * run.up.speed;
+
+/* ============================ SCENE ============================ */
+const canvas = document.getElementById("c");
+const renderer = new THREE.WebGLRenderer({ canvas, antialias:true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x070b16);
+scene.fog = new THREE.Fog(0x070b16, 30, 90);
+const camera = new THREE.PerspectiveCamera(78, 1, 0.1, 200);
+camera.rotation.order = "YXZ";
+scene.add(camera);
+
+scene.add(new THREE.HemisphereLight(0x9bb8ff, 0x203050, 0.9));
+const sun = new THREE.PointLight(0xffffff, 0.9, 120); sun.position.set(0, 14, 0); scene.add(sun);
+
+// floor
+const floor = new THREE.Mesh(new THREE.PlaneGeometry(2*A, 2*A), new THREE.MeshStandardMaterial({ color:0x121a30, roughness:.9 }));
+floor.rotation.x = -Math.PI/2; scene.add(floor);
+const grid = new THREE.GridHelper(2*A, 20, 0x3b5bff, 0x1c2a55); grid.position.y = 0.02; scene.add(grid);
+
+// walls
+const wallMat = new THREE.MeshStandardMaterial({ color:0x18213f, roughness:.7, emissive:0x0a1230 });
+const edgeMat = new THREE.LineBasicMaterial({ color:0x4de1ff });
+[[0,-A-0.5,2*A+2,1],[0,A+0.5,2*A+2,1],[-A-0.5,0,1,2*A+2],[A+0.5,0,1,2*A+2]].forEach(([x,z,w,d]) => {
+  const m = new THREE.Mesh(new THREE.BoxGeometry(w, 7, d), wallMat); m.position.set(x, 3.5, z); scene.add(m);
+  const e = new THREE.LineSegments(new THREE.EdgesGeometry(m.geometry), edgeMat); e.position.copy(m.position); scene.add(e);
+});
+// low-coin corner zones
+const zoneMat = new THREE.MeshBasicMaterial({ color:0xff3355, transparent:true, opacity:.16, depthWrite:false });
+[[-1,-1],[-1,1],[1,-1],[1,1]].forEach(([sx,sz]) => {
+  const z = new THREE.Mesh(new THREE.CircleGeometry(CORNER_R, 40), zoneMat);
+  z.rotation.x = -Math.PI/2; z.position.set(sx*A, 0.03, sz*A); scene.add(z);
+});
+
+// viewmodel gun
+const gun = new THREE.Mesh(new THREE.BoxGeometry(1,1,1), new THREE.MeshStandardMaterial({ color:0x66ccff, metalness:.6, roughness:.3, emissive:0x112233 }));
+gun.position.set(0.32, -0.28, -0.65); camera.add(gun);
+function setGunLook() {
+  const w = WEAPONS[curWeapon];
+  gun.scale.set(...w.size); gun.material.color.setHex(w.color);
+}
+
+function resize() {
+  renderer.setSize(innerWidth, innerHeight, false);
+  camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix();
+}
+addEventListener("resize", resize); resize();
+
+/* ============================ AUDIO ============================ */
+let ac = null;
+function beep(freq, dur, type="square", vol=0.08, slide=0) {
+  if (!ac) return;
+  const o = ac.createOscillator(), g = ac.createGain();
+  o.type = type; o.frequency.setValueAtTime(freq, ac.currentTime);
+  if (slide) o.frequency.exponentialRampToValueAtTime(Math.max(30, freq+slide), ac.currentTime+dur);
+  g.gain.setValueAtTime(vol, ac.currentTime); g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime+dur);
+  o.connect(g); g.connect(ac.destination); o.start(); o.stop(ac.currentTime+dur);
+}
+const sfx = {
+  shoot: i => beep([420,180,300][i], .12, "sawtooth", .06, -200),
+  hit:   () => beep(700, .05, "square", .05),
+  kill:  () => { beep(300, .25, "triangle", .12, 500); },
+  ouch:  () => { beep(500, .6, "sawtooth", .15, -420); },
+  dash:  () => beep(200, .15, "sine", .1, 500),
+  coin:  () => { beep(900, .08, "square", .05); },
+};
+
+/* ============================ BALLS ============================ */
+const sphereGeo = new THREE.SphereGeometry(1, 28, 18);
+const circleGeo = new THREE.CircleGeometry(1, 24);
+const barBg = new THREE.SpriteMaterial({ color:0x000000, depthTest:false, transparent:true, opacity:.6 });
+
+function spawnBall(type, x, z, ang, gen=0, r=null, hp=null) {
+  const T = BALL_TYPES[type];
+  const b = { type, gen, x, z, dx:Math.cos(ang), dz:Math.sin(ang),
+    r: r ?? T.r, maxHp: hp ?? T.hp, hp: hp ?? T.hp, flash:0,
+    base: (7 + level*0.7) * T.speed * (1 + gen*0.18), speed:0 };
+  b.mat = new THREE.MeshStandardMaterial({ color:T.color, emissive:T.color, emissiveIntensity:.25, roughness:.35, metalness:.2 });
+  b.mesh = new THREE.Mesh(sphereGeo, b.mat); b.mesh.scale.setScalar(b.r);
+  b.bar = new THREE.Sprite(new THREE.SpriteMaterial({ color:0x55ff88, depthTest:false, transparent:true }));
+  b.bg = new THREE.Sprite(barBg);
+  b.bar.renderOrder = 11; b.bg.renderOrder = 10;
+  b.shadow = new THREE.Mesh(circleGeo, new THREE.MeshBasicMaterial({ color:T.color, transparent:true, opacity:.35, depthWrite:false }));
+  b.shadow.rotation.x = -Math.PI/2; b.shadow.scale.setScalar(b.r); b.shadow.position.y = 0.04;
+  const lg = new THREE.BufferGeometry(); lg.setAttribute("position", new THREE.BufferAttribute(new Float32Array(15), 3));
+  b.line = new THREE.Line(lg, new THREE.LineBasicMaterial({ color:T.color, transparent:true, opacity:.55 }));
+  b.line.frustumCulled = false;
+  scene.add(b.mesh, b.bar, b.bg, b.shadow, b.line);
+  balls.push(b);
+  return b;
+}
+function removeBall(b) {
+  scene.remove(b.mesh, b.bar, b.bg, b.shadow, b.line);
+  b.line.geometry.dispose(); b.mat.dispose(); b.bar.material.dispose(); b.shadow.material.dispose(); b.line.material.dispose();
+}
+function speedFactor(b) {
+  if (b.type === "berserk") return 1 + 1.9 * (1 - b.hp / b.maxHp);   // faster the more you hurt it
+  return 1;
+}
+function updateTrajectory(b) {
+  const p = b.line.geometry.attributes.position.array;
+  let x = b.x, z = b.z, dx = b.dx, dz = b.dz, rem = 34, lim = A - b.r, n = 0;
+  p[0] = x; p[1] = 0.06; p[2] = z;
+  for (let k = 1; k <= 4; k++) {
+    if (rem > 1e-6) {
+      const tx = dx > 0 ? (lim-x)/dx : dx < 0 ? (-lim-x)/dx : 1e9;
+      const tz = dz > 0 ? (lim-z)/dz : dz < 0 ? (-lim-z)/dz : 1e9;
+      const t = Math.max(0, Math.min(tx, tz, rem));
+      x += dx*t; z += dz*t; rem -= t;
+      if (t === tx) dx = -dx; else if (t === tz) dz = -dz;
+    }
+    p[k*3] = x; p[k*3+1] = 0.06; p[k*3+2] = z; n++;
+  }
+  b.line.geometry.attributes.position.needsUpdate = true;
+}
+function killBall(b) {
+  const idx = balls.indexOf(b); if (idx < 0) return;
+  balls.splice(idx, 1);
+  run.kills++;
+  const m = coinMult();
+  run.coins += (10 + b.r * 6) * m;
+  sfx.kill(); shake = Math.max(shake, .15);
+  const kids = [];
+  if (b.type === "splitter" && b.gen < 2) {
+    const ang = Math.atan2(b.dz, b.dx);
+    const r = b.r * 0.68, hp = Math.max(1.4, b.maxHp * 0.7);
+    for (const s of [-1, 1]) kids.push([b.x, b.z, ang + s*0.75, b.gen+1, r, hp]);
+  }
+  removeBall(b);
+  kids.forEach(k => spawnBall("splitter", ...k));
+}
+function damageBall(b, d) {
+  b.hp -= d; b.flash = .12;
+  run.coins += d * 2 * coinMult();
+  if (b.hp <= 0) killBall(b); else sfx.hit();
+}
+
+/* ============================ COINS / CAMPING ============================ */
+function coinMult() {
+  // Far from every corner -> bonus, huddled in a corner -> penalty.
+  const dc = Math.hypot(Math.abs(P.x)-A, Math.abs(P.z)-A);
+  return Math.max(0.3, Math.min(1.5, 0.3 + 1.2 * dc / (CORNER_R + 6)));
+}
+
+/* ============================ SHOOTING ============================ */
+const _d = new THREE.Vector3(), _r = new THREE.Vector3(), _u = new THREE.Vector3(), _o = new THREE.Vector3(), _m = new THREE.Vector3();
+function rayBall(o, d, range, ignore) {
+  let best = null, bt = range;
+  for (const b of balls) {
+    const ox = o.x - b.x, oy = o.y - BALL_Y, oz = o.z - b.z;
+    const bb = ox*d.x + oy*d.y + oz*d.z;
+    const c = ox*ox + oy*oy + oz*oz - b.r*b.r;
+    const disc = bb*bb - c; if (disc < 0) continue;
+    let t = -bb - Math.sqrt(disc); if (t < 0) t = -bb + Math.sqrt(disc);
+    if (t >= 0 && t <= bt) { bt = t; best = b; }
+  }
+  return { ball:best, t:bt };
+}
+function fire() {
+  const w = WEAPONS[curWeapon];
+  fireCd = w.cd / rateMult();
+  camera.getWorldDirection(_d);
+  _r.set(1,0,0).applyQuaternion(camera.quaternion);
+  _u.set(0,1,0).applyQuaternion(camera.quaternion);
+  _o.copy(camera.position);
+  _m.copy(_o).addScaledVector(_r, .3).addScaledVector(_u, -.22).addScaledVector(_d, .8);
+  const range = w.range * rangeMult();
+  const hitBalls = new Map();
+  for (let i = 0; i < w.pellets; i++) {
+    const dir = _d.clone().addScaledVector(_r, (Math.random()-.5)*2*w.spread).addScaledVector(_u, (Math.random()-.5)*2*w.spread).normalize();
+    const res = rayBall(_o, dir, range);
+    const end = _o.clone().addScaledVector(dir, res.ball ? res.t : range);
+    if (res.ball) hitBalls.set(res.ball, (hitBalls.get(res.ball) || 0) + 1);
+    const g = new THREE.BufferGeometry().setFromPoints([_m.clone(), end]);
+    const mat = new THREE.LineBasicMaterial({ color:w.color, transparent:true, opacity:.9 });
+    const line = new THREE.Line(g, mat); scene.add(line);
+    tracers.push({ line, life:.09, max:.09 });
+  }
+  let any = false;
+  for (const [b, n] of hitBalls) { damageBall(b, w.dmg * dmgMult() * n); any = true; }
+  if (any) { const c = document.getElementById("cross"); c.classList.add("hit"); setTimeout(() => c.classList.remove("hit"), 70); }
+  gun.position.z = -0.5; gun.rotation.x = .18;
+  sfx.shoot(curWeapon);
+}
+
+/* ============================ PLAYER HIT ============================ */
+function playerHit(b) {
+  run.lives--; levelHits++;
+  P.stun = STUN; P.inv = 2.2;
+  let nx = P.x - b.x, nz = P.z - b.z; const l = Math.hypot(nx, nz) || 1; nx /= l; nz /= l;
+  P.kx = nx * 34; P.kz = nz * 34; P.vx = P.vz = 0; dashT = 0;
+  shake = .6; sfx.ouch();
+  document.getElementById("flash").style.opacity = 1;
+  say(["OUCH!", "WHEEEE!", "BONK!", "YEEEET!"][Math.floor(Math.random()*4)]);
+  if (run.lives <= 0) { run.lives = 0; setTimeout(gameOver, 900); state = "dying"; }
+}
+let msgT = 0;
+function say(t) { const m = document.getElementById("msg"); m.textContent = t; m.style.opacity = 1; msgT = 1.0; }
+
+/* ============================ LEVELS ============================ */
+function levelPlan(n) {
+  const plan = [];
+  const normal = 2 + Math.floor(n/2), split = n >= 2 ? 1 + Math.floor((n-1)/2) : 0, bers = n >= 3 ? Math.floor(n/2) : 0;
+  for (let i = 0; i < normal; i++) plan.push("normal");
+  for (let i = 0; i < split; i++) plan.push("splitter");
+  for (let i = 0; i < bers; i++) plan.push("berserk");
+  return plan;
+}
+function startLevel() {
+  balls.forEach(removeBall); balls = [];
+  tracers.forEach(t => scene.remove(t.line)); tracers = [];
+  P.x = P.z = P.vx = P.vz = P.kx = P.kz = 0; P.stun = 0; P.h = 0; P.roll = 0; P.inv = 1.2;
+  P.yaw = 0; P.pitch = 0; dashT = 0; dashCd = 0;
+  levelTime = 0; levelHits = 0;
+  for (const type of levelPlan(level)) {
+    let x, z, tries = 0;
+    do { x = (Math.random()*2-1)*(A-3); z = (Math.random()*2-1)*(A-3); } while (Math.hypot(x, z) < 13 && ++tries < 50);
+    spawnBall(type, x, z, Math.random()*Math.PI*2);
+  }
+  state = "play"; setGunLook();
+  say("LEVEL " + level);
+}
+function levelClear() {
+  state = "shop";
+  document.exitPointerLock && document.exitPointerLock();
+  const timeBonus = Math.max(0, Math.floor((70 + level*8 - levelTime) * 1.5));
+  const cleanBonus = levelHits === 0 ? 60 : 0;
+  run.coins += timeBonus + cleanBonus;
+  if (level >= LAST_LEVEL) return showWin(timeBonus, cleanBonus);
+  showShop(timeBonus, cleanBonus);
+}
+function gameOver() {
+  state = "over"; document.exitPointerLock && document.exitPointerLock();
+  card(`<h1 style="color:var(--warn)">You ran out of lives</h1>
+    <p>You made it to <b>level ${level}</b>, destroyed <b>${run.kills}</b> balls and collected <b class="coins">${Math.floor(run.coins)}</b> coins.</p>
+    <div class="row"><button class="go" id="again">Try again</button></div>`);
+  document.getElementById("again").onclick = () => { newRun(); level = 1; startLevel(); lock(); overlay(false); };
+}
+function showWin(timeBonus, cleanBonus) {
+  const score = Math.floor(run.coins) + run.lives * 25;
+  card(`<h1>ARENA CONQUERED!</h1>
+    <p>Every ball is dead. You finished with <b class="lives">${run.lives}</b> lives and <b class="coins">${Math.floor(run.coins)}</b> coins.</p>
+    <p>Final score (coins + 25 per remaining life): <b class="coins">${score}</b></p>
+    <div class="row"><button class="go" id="again">Play again</button></div>`);
+  document.getElementById("again").onclick = () => { newRun(); level = 1; startLevel(); lock(); overlay(false); };
+}
+
+/* ============================ SHOP / UI ============================ */
+function overlay(show) { document.getElementById("overlay").classList.toggle("hidden", !show); }
+function card(html) { document.getElementById("card").innerHTML = html; overlay(true); }
+const up = { dmg:["Damage +20%", 40], range:["Range +20%", 35], rate:["Fire rate +15%", 35], speed:["Move speed +8%", 30] };
+function showShop(timeBonus, cleanBonus) {
+  const render = () => {
+    const c = Math.floor(run.coins);
+    let h = `<h2>Level ${level} cleared!</h2>
+      <p>Time bonus <b class="coins">+${timeBonus}</b>${cleanBonus ? ` · Untouched bonus <b class="coins">+${cleanBonus}</b>` : ""}
+      · Lives <b class="lives">${run.lives}</b> · Coins <b class="coins">${c}</b></p><h2>Shop</h2><div class="row">`;
+    const lifeCost = 50;
+    h += `<button class="shopbtn" data-buy="life" ${c < lifeCost ? "disabled" : ""}>+3 Lives<small>${lifeCost} coins</small></button>`;
+    for (const k in up) {
+      const cost = up[k][1] * (run.up[k] + 1);
+      h += `<button class="shopbtn" data-buy="${k}" ${c < cost ? "disabled" : ""}>${up[k][0]} <small>lvl ${run.up[k]} · ${cost} coins</small></button>`;
+    }
+    WEAPONS.forEach((w, i) => { if (i && !run.owned[i]) h += `<button class="shopbtn" data-buy="w${i}" ${c < w.cost ? "disabled" : ""}>${w.name}<small>range ${w.range} · ${w.pellets>1?w.pellets+" pellets":w.auto?"full auto":"semi-auto"} · ${w.cost} coins</small></button>`; });
+    h += `</div><div class="row"><button class="go" id="next">Start level ${level+1}</button></div>`;
+    card(h);
+    document.querySelectorAll("[data-buy]").forEach(btn => btn.onclick = () => {
+      const k = btn.dataset.buy;
+      if (k === "life") { run.coins -= lifeCost; run.lives += 3; }
+      else if (k[0] === "w") { const i = +k[1]; run.coins -= WEAPONS[i].cost; run.owned[i] = true; curWeapon = i; }
+      else { run.coins -= up[k][1] * (run.up[k] + 1); run.up[k]++; }
+      sfx.coin(); render();
+    });
+    document.getElementById("next").onclick = () => { level++; startLevel(); lock(); overlay(false); };
+  };
+  render();
+}
+function showMenu() {
+  card(`<h1>BALL BLITZ</h1>
+    <p>Destroy every ball in the arena. They fly in straight lines and bounce off the walls — and they <b>will</b> sneak up behind you.
+    Each hit costs a life and launches you across the arena.</p>
+    <ul>
+      <li><span class="swatch" style="background:#33ccff"></span><b>Bouncer</b> – plain and fast.</li>
+      <li><span class="swatch" style="background:#55ff77"></span><b>Splitter</b> – bursts into two smaller balls when destroyed.</li>
+      <li><span class="swatch" style="background:#ffaa33"></span><b>Berserker</b> – tough, and speeds up the more damage it takes.</li>
+    </ul>
+    <p>Glowing floor lines show where each ball is heading. Weapons have <b>limited range</b>, and the red corner zones
+    pay <b>fewer coins</b> — hiding is safe but poor. Clear levels fast for time bonuses and spend coins on upgrades.
+    You have ${START_LIVES} lives and ${LAST_LEVEL} levels to clear.</p>
+    <p><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> move · mouse look · click shoot · <kbd>Shift</kbd>/<kbd>Space</kbd> dash · <kbd>1</kbd>-<kbd>3</kbd> or wheel switch weapon · <kbd>Esc</kbd> pause</p>
+    <div class="row"><button class="go" id="start">Start</button></div>`);
+  document.getElementById("start").onclick = () => { newRun(); level = 1; startLevel(); lock(); overlay(false); };
+}
+function showPause() {
+  card(`<h2>Paused</h2><div class="row"><button class="go" id="resume">Resume</button></div>`);
+  document.getElementById("resume").onclick = () => { lock(); overlay(false); state = "play"; };
+}
+function lock() { try { const p = canvas.requestPointerLock(); if (p && p.catch) p.catch(() => {}); ac = ac || new (window.AudioContext || window.webkitAudioContext)(); ac.resume && ac.resume(); } catch (e) {} }
+document.addEventListener("pointerlockchange", () => {
+  if (document.pointerLockElement !== canvas && state === "play") { state = "paused"; showPause(); }
+});
+
+/* ============================ INPUT ============================ */
+addEventListener("keydown", e => {
+  keys[e.code] = true;
+  if (state !== "play") return;
+  if (e.code === "Space" || e.code === "ShiftLeft" || e.code === "ShiftRight") tryDash();
+  if (e.code >= "Digit1" && e.code <= "Digit3") selectWeapon(+e.code.slice(5) - 1);
+  if (e.code === "Space") e.preventDefault();
+});
+addEventListener("keyup", e => keys[e.code] = false);
+addEventListener("mousedown", e => { if (e.button === 0) mouseDown = true; });
+addEventListener("mouseup", e => { if (e.button === 0) mouseDown = false; });
+addEventListener("mousemove", e => {
+  if (document.pointerLockElement !== canvas || state !== "play" || P.stun > 0) return;
+  P.yaw -= e.movementX * 0.0022;
+  P.pitch = Math.max(-1.2, Math.min(1.2, P.pitch - e.movementY * 0.0022));
+});
+addEventListener("wheel", e => {
+  if (state !== "play") return;
+  const dir = e.deltaY > 0 ? 1 : -1; let i = curWeapon;
+  for (let k = 0; k < WEAPONS.length; k++) { i = (i + dir + WEAPONS.length) % WEAPONS.length; if (run.owned[i]) break; }
+  selectWeapon(i);
+});
+function selectWeapon(i) { if (run.owned[i]) { curWeapon = i; setGunLook(); } }
+function tryDash() {
+  if (dashCd > 0 || P.stun > 0) return;
+  let fx = (keys.KeyD ? 1 : 0) - (keys.KeyA ? 1 : 0), fz = (keys.KeyS ? 1 : 0) - (keys.KeyW ? 1 : 0);
+  if (!fx && !fz) fz = -1;
+  const l = Math.hypot(fx, fz); fx /= l; fz /= l;
+  const s = Math.sin(P.yaw), c = Math.cos(P.yaw);
+  dashDx = fx*c + fz*s; dashDz = -fx*s + fz*c;
+  dashT = .16; dashCd = 1.3; sfx.dash();
+}
+
+/* ============================ UPDATE ============================ */
+function update(dt) {
+  // --- player ---
+  P.inv = Math.max(0, P.inv - dt); fireCd -= dt; dashCd = Math.max(0, dashCd - dt);
+  if (P.stun > 0) {
+    P.stun = Math.max(0, P.stun - dt);
+    const t = 1 - P.stun / STUN;
+    P.h = Math.sin(Math.PI * Math.min(1, t)) * 4.5;
+    P.roll = P.stun > 0 ? t * Math.PI * 6 : 0;
+  } else {
+    P.h = 0; P.roll = 0;
+    let fx = (keys.KeyD ? 1 : 0) - (keys.KeyA ? 1 : 0), fz = (keys.KeyS ? 1 : 0) - (keys.KeyW ? 1 : 0);
+    const l = Math.hypot(fx, fz) || 1; fx /= l; fz /= l;
+    const s = Math.sin(P.yaw), c = Math.cos(P.yaw), sp = 10 * speedMult();
+    let tx = (fx*c + fz*s) * sp, tz = (-fx*s + fz*c) * sp;
+    if (dashT > 0) { dashT -= dt; tx = dashDx * 28; tz = dashDz * 28; }
+    const k = 1 - Math.exp(-14 * dt);
+    P.vx += (tx - P.vx) * k; P.vz += (tz - P.vz) * k;
+  }
+  const fr = Math.exp(-(P.stun > 0 ? 0.8 : 4) * dt);
+  P.kx *= fr; P.kz *= fr;
+  P.x += (P.vx + P.kx) * dt; P.z += (P.vz + P.kz) * dt;
+  const lim = A - 0.6;
+  if (P.x > lim)  { P.x = lim;  P.kx = -Math.abs(P.kx) * .75; P.vx = 0; }
+  if (P.x < -lim) { P.x = -lim; P.kx =  Math.abs(P.kx) * .75; P.vx = 0; }
+  if (P.z > lim)  { P.z = lim;  P.kz = -Math.abs(P.kz) * .75; P.vz = 0; }
+  if (P.z < -lim) { P.z = -lim; P.kz =  Math.abs(P.kz) * .75; P.vz = 0; }
+
+  // --- shooting ---
+  const w = WEAPONS[curWeapon];
+  if (mouseDown && fireCd <= 0 && P.stun <= 0 && document.pointerLockElement === canvas) {
+    fire();
+    if (!w.auto) mouseDown = false;
+  }
+
+  // --- balls ---
+  for (const b of balls) {
+    b.speed = b.base * speedFactor(b);
+    b.x += b.dx * b.speed * dt; b.z += b.dz * b.speed * dt;
+    const bl = A - b.r;
+    if (b.x > bl)  { b.x = bl;  b.dx = -Math.abs(b.dx); }
+    if (b.x < -bl) { b.x = -bl; b.dx =  Math.abs(b.dx); }
+    if (b.z > bl)  { b.z = bl;  b.dz = -Math.abs(b.dz); }
+    if (b.z < -bl) { b.z = -bl; b.dz =  Math.abs(b.dz); }
+    if (P.inv <= 0 && P.stun <= 0) {
+      const d = Math.hypot(b.x - P.x, b.z - P.z);
+      const dy = Math.abs(BALL_Y - (0.9 + P.h));
+      if (d < b.r + 0.5 && dy < b.r + 0.8) playerHit(b);
+    }
+  }
+  // --- level complete ---
+  if (state === "play") {
+    levelTime += dt;
+    if (balls.length === 0) levelClear();
+  }
+}
+
+/* ============================ RENDER ============================ */
+const hud = id => document.getElementById(id);
+function render(dt) {
+  camera.position.set(P.x, EYE + P.h, P.z);
+  const sk = shake * (Math.random() - .5) * .25;
+  camera.rotation.set(P.pitch + sk, P.yaw + sk, P.roll);
+  shake = Math.max(0, shake - dt * 1.5);
+  gun.position.z += (-0.65 - gun.position.z) * Math.min(1, dt * 18);
+  gun.rotation.x += (0 - gun.rotation.x) * Math.min(1, dt * 14);
+  gun.visible = P.stun <= 0;
+
+  const t = performance.now() / 1000;
+  for (const b of balls) {
+    b.flash = Math.max(0, b.flash - dt);
+    const frac = Math.max(0, b.hp / b.maxHp);
+    b.mesh.position.set(b.x, BALL_Y + Math.sin(t*3 + b.r*7) * .05, b.z);
+    let em = .25 + b.flash * 6;
+    if (b.type === "berserk") { em += (1 - frac) * (.6 + .4*Math.sin(t*14)); b.mat.color.setHSL(.09 * frac, 1, .5); b.mat.emissive.copy(b.mat.color); }
+    b.mat.emissiveIntensity = em;
+    b.bg.position.set(b.x, BALL_Y + b.r + .7, b.z); b.bar.position.copy(b.bg.position);
+    b.bg.scale.set(1.9, .24, 1); b.bar.scale.set(1.8 * frac, .16, 1);
+    b.bar.material.color.setHSL(.33 * frac, 1, .5);
+    b.shadow.position.set(b.x, .04, b.z);
+    updateTrajectory(b);
+  }
+  for (let i = tracers.length - 1; i >= 0; i--) {
+    const tr = tracers[i]; tr.life -= dt; tr.line.material.opacity = Math.max(0, tr.life / tr.max);
+    if (tr.life <= 0) { scene.remove(tr.line); tr.line.geometry.dispose(); tr.line.material.dispose(); tracers.splice(i, 1); }
+  }
+
+  // crosshair state: on target & in range / on target but too far
+  const cr = hud("cross");
+  if (state === "play") {
+    camera.getWorldDirection(_d);
+    const rng = WEAPONS[curWeapon].range * rangeMult();
+    const inR = rayBall(camera.position, _d, rng).ball;
+    const far = !inR && rayBall(camera.position, _d, 200).ball;
+    cr.classList.toggle("on", !!inR); cr.classList.toggle("far", !!far);
+  }
+
+  // HUD
+  const m = coinMult();
+  hud("tl").innerHTML = `<span class="lives">♥ ${run ? run.lives : 0}</span> / ${START_LIVES}<br><span class="coins">● ${run ? Math.floor(run.coins) : 0}</span>`;
+  hud("tr").innerHTML = `Level ${level}/${LAST_LEVEL}<br>Balls left: ${balls.length}<br>${levelTime.toFixed(1)}s`;
+  hud("bl").innerHTML = WEAPONS.map((w, i) => `<span class="wep ${run && run.owned[i] ? "own" : ""} ${i === curWeapon ? "cur" : ""}">${i+1} ${w.name}</span>`).join("");
+  const me = hud("mult");
+  me.textContent = m < 0.75 ? `CORNER ZONE: coins x${m.toFixed(1)}` : `Coins x${m.toFixed(1)}`;
+  me.className = m < 0.75 ? "bad" : m > 1.2 ? "good" : "";
+  hud("dashfill").style.width = (100 * (1 - dashCd / 1.3)) + "%";
+
+  const fl = hud("flash"); fl.style.opacity = Math.max(0, parseFloat(fl.style.opacity || 0) - dt * 1.6);
+  if (msgT > 0) { msgT -= dt; if (msgT <= 0) hud("msg").style.opacity = 0; }
+  renderer.render(scene, camera);
+}
+
+let last = performance.now();
+function loop(now) {
+  const dt = Math.min(0.05, (now - last) / 1000); last = now;
+  if (state === "play" || state === "dying") update(dt);
+  render(dt);
+  requestAnimationFrame(loop);
+}
+newRun(); setGunLook(); showMenu();
+requestAnimationFrame(loop);
+window.__game = { P, balls: () => balls, get state() { return state; }, update, fire, startLevel, run: () => run };
+</script>
+</body>
+</html>
