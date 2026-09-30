@@ -18,8 +18,7 @@
   .lives { color:#ff6b8b; } .coins { color:var(--gold); }
   .wep { display:inline-block; padding:3px 9px; margin-right:6px; border:2px solid #345; border-radius:6px; opacity:.45; }
   .wep.own { opacity:.85; } .wep.cur { border-color:var(--accent); color:var(--accent); opacity:1; }
-  #dashbar { height:7px; background:#123; border-radius:4px; margin-top:4px; overflow:hidden; }
-  #dashfill { height:100%; width:100%; background:var(--accent); }
+  #jumpbar { height:7px; background:#123; border-radius:4px; margin-top:4px; overflow:hidden; }
   #mult { font-size:15px; } #mult.bad { color:var(--warn); } #mult.good { color:#7dff9b; }
   #cross { position:fixed; left:50%; top:50%; width:22px; height:22px; margin:-11px 0 0 -11px; pointer-events:none;
     border:2px solid #fff; border-radius:50%; opacity:.75; transition:transform .06s; }
@@ -74,14 +73,12 @@
   .tbtn.down { background:#4de1ff88; }
   #reloadBtn { pointer-events:none; right:max(18px,env(safe-area-inset-right)); bottom:max(28px,env(safe-area-inset-bottom)); width:104px; height:104px; font-size:14px; line-height:1.2; border-color:#ffffffaa; overflow:hidden; }
   #reloadBtn b { font-size:26px; display:block; }
-  #dashBtn { right:max(138px,calc(env(safe-area-inset-right) + 120px)); bottom:max(28px,env(safe-area-inset-bottom)); width:68px; height:68px; font-size:13px; }
   #wepBtn { right:max(30px,env(safe-area-inset-right)); bottom:170px; width:74px; height:52px; border-radius:14px; font-size:13px; }
   #pauseBtn { left:50%; margin-left:-22px; top:8px; width:44px; height:44px; font-size:18px; }
   #joy { position:fixed; left:max(22px,env(safe-area-inset-left)); bottom:max(30px,env(safe-area-inset-bottom)); width:140px; height:140px; border-radius:50%;
     border:3px solid #ffffff55; background:#ffffff14; touch-action:none; }
   #stick { position:absolute; left:50px; top:50px; width:40px; height:40px; border-radius:50%; background:#ffffffaa; }
   body.touch #bc { bottom:auto; left:auto; right:10px; transform:none; top:96px; width:150px; text-align:right; }
-  body.touch #bc div:nth-child(2) { display:none; }
   body.touch #jumphint::after { content:"double-tap"; }
   body.touch .kq { display:none; }
   #jumpfill { height:100%; width:100%; background:#ffd54a; }
@@ -104,12 +101,11 @@
 <div class="hud" id="bl"></div>
 <div class="hud" id="ammo"></div>
 <div class="hud" id="sec"></div>
-<div class="hud" id="bc"><div id="mult"></div><div>DASH <kbd>Shift</kbd></div><div id="dashbar"><div id="dashfill"></div></div><div id="jumphint">JUMP <span class="kq"><kbd>Q</kbd> hold</span></div><div id="dashbar"><div id="jumpfill"></div></div></div>
+<div class="hud" id="bc"><div id="mult"></div><div id="jumphint">JUMP <span class="kq"><kbd>Q</kbd> hold</span></div><div id="jumpbar"><div id="jumpfill"></div></div></div>
 <div id="touch">
   <div id="look"></div>
   <div id="joy"><div id="stick"></div></div>
   <div class="tbtn" id="reloadBtn"><b>0</b>Pistol</div>
-  <div class="tbtn" id="dashBtn">DASH</div>
   <div class="tbtn" id="secBtn"><b>0</b>THROW</div>
     <div class="tbtn" id="pauseBtn">II</div>
 </div>
@@ -150,7 +146,6 @@ let tracers = [];
 let levelTime = 0, levelHits = 0;
 let curWeapon = 0, fireCd = 0;
 const relT = [0, 0, 0, 0], relTot = [1, 1, 1, 1];   // per-weapon reload timers (run in the background)
-let dashCd = 0, dashT = 0, dashDx = 0, dashDz = 0;
 let jumping = false, jumpHeld = false, jumpCd = 0, jvy = 0, jspeed = 0, jdx = 0, jdz = 0;
 const JUMP_CD = 3;
 let shake = 0;
@@ -164,7 +159,7 @@ const inControl = () => isTouch || document.pointerLockElement === canvas;
 function newRun() {
   run = { coins:0, lives:START_LIVES, owned:[true,false,false,false], kills:0, rerolls:0,
     wu: WEAPONS.map(() => ({ clip:0, reload:0, dmg:0, range:0, rate:0 })),
-    g: { speed:0, dashcd:0, coin:0, refund:0, dashReload:0 }, ammo:[], sec:{ grenade:0, glue:0, shock:0 }, jump:{ h:0, d:0, dmg:0 } };
+    g: { speed:0, coin:0, refund:0 }, ammo:[], sec:{ grenade:0, glue:0, shock:0 }, jump:{ h:0, d:0, dmg:0 } };
   WEAPONS.forEach((w, i) => run.ammo[i] = ws(i).clip);
   curWeapon = 0; relT.fill(0); secBag = [];
 }
@@ -175,7 +170,6 @@ function ws(i) {
            range: w.range * (1 + 0.2 * u.range), cd: w.cd / (1 + 0.15 * u.rate) };
 }
 const speedMult = () => 1 + 0.08 * run.g.speed;
-const dashMax = () => 1.3 * Math.pow(0.85, run.g.dashcd);
 
 /* ============================ SCENE ============================ */
 const canvas = document.getElementById("c");
@@ -243,7 +237,6 @@ const sfx = {
   hit:   () => beep(700, .05, "square", .05),
   kill:  () => { beep(300, .25, "triangle", .12, 500); },
   ouch:  () => { beep(500, .6, "sawtooth", .15, -420); },
-  dash:  () => beep(200, .15, "sine", .1, 500),
   coin:  () => { beep(900, .08, "square", .05); },
 };
 
@@ -499,7 +492,7 @@ const airDmg = () => jumping ? Math.min(1, 0.5 + 0.1 * run.jump.dmg) : 1;
 function tryJump() {
   if (state !== "play" || jumping || jumpCd > 0 || P.stun > 0) return;
   const u = run.jump;
-  jumping = true; jumpCd = JUMP_CD; dashT = 0;
+  jumping = true; jumpCd = JUMP_CD;
   jvy = Math.sqrt(2 * 12 * 3.0 * (1 + 0.15 * u.h));      // ~3 units apex while floating (hold), clears normal balls
   jspeed = 11 * (1 + 0.15 * u.d);
   jdx = -Math.sin(P.yaw); jdz = -Math.cos(P.yaw);
@@ -512,7 +505,7 @@ function playerHit(b) {
   run.lives--; levelHits++;
   P.stun = STUN; P.inv = 2.2; jumping = false; jumpHeld = false;
   let nx = P.x - b.x, nz = P.z - b.z; const l = Math.hypot(nx, nz) || 1; nx /= l; nz /= l;
-  P.kx = nx * 34; P.kz = nz * 34; P.vx = P.vz = 0; dashT = 0;
+  P.kx = nx * 34; P.kz = nz * 34; P.vx = P.vz = 0;
   shake = .6; sfx.ouch();
   document.getElementById("flash").style.opacity = 1;
   say(["OUCH!", "WHEEEE!", "BONK!", "YEEEET!"][Math.floor(Math.random()*4)]);
@@ -534,7 +527,7 @@ function startLevel() {
   balls.forEach(removeBall); balls = [];
   tracers.forEach(t => scene.remove(t.line)); tracers = [];
   P.x = P.z = P.vx = P.vz = P.kx = P.kz = 0; P.stun = 0; P.h = 0; P.roll = 0; P.inv = 1.2;
-  P.yaw = 0; P.pitch = 0; dashT = 0; dashCd = 0; jumping = false; jumpHeld = false; jumpCd = 0;
+  P.yaw = 0; P.pitch = 0; jumping = false; jumpHeld = false; jumpCd = 0;
   clearSec(); fillBag();
   levelTime = 0; levelHits = 0; relT.fill(0); fireCd = .5;
   WEAPONS.forEach((w, i) => run.ammo[i] = ws(i).clip);
@@ -590,10 +583,8 @@ WEAPONS.forEach((w, i) => { for (const st in WSTAT) UPG[`w${i}.${st}`] = {
   apply:() => { run.wu[i][st]++; if (st === "clip") run.ammo[i] += w.clipInc; } }; });
 const GLOBAL = {
   speed:      { title:"Fleet feet",   desc:"+8% move speed",                            base:60, max:5 },
-  dashcd:     { title:"Quick dash",   desc:"dash cooldown 15% shorter",                 base:70, max:4 },
   coin:       { title:"Prospector",   desc:"+15% coins from everything",                base:80, max:4 },
   refund:     { title:"Scavenger",    desc:"every kill refunds +1 round",               base:90, max:3 },
-  dashReload: { title:"Dash reload",  desc:"each dash takes 2s off every weapon reload",    base:120, max:1 },
 };
 for (const k in GLOBAL) { const g = GLOBAL[k];
   UPG[k] = { title:g.title, desc:g.desc, color:0xffffff, base:g.base, max:g.max,
@@ -678,8 +669,8 @@ function showMenu() {
     <p>Glowing floor lines show where each ball is heading. Weapons have <b>limited range</b>, and the red corner zones
     pay <b>fewer coins</b>. After each level pick one of three free upgrades, then spend coins in the shop.
     You have ${START_LIVES} lives and ${LAST_LEVEL} levels to clear.</p>
-    <p class="pcOnly"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> move · mouse look · <kbd>Shift</kbd>/<kbd>Space</kbd> dash · <kbd>Q</kbd> jump (hold to float) · <kbd>Esc</kbd> pause</p>
-    ${isTouch ? "<p>Touch: left stick moves, drag anywhere on the right to look, the big badge shows your current gun and ammo, the round badge counts down to your next secondary, <b>double-tap the screen and hold</b> to jump in the direction you face (your damage is halved in the air), DASH dodges. Works in portrait or landscape.</p>" : ""}
+    <p class="pcOnly"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> move · mouse look · <kbd>Q</kbd> jump (hold to float) · <kbd>Esc</kbd> pause</p>
+    ${isTouch ? "<p>Touch: left stick moves, drag anywhere on the right to look, the big badge shows your current gun and ammo, the round badge counts down to your next secondary, <b>double-tap the screen and hold</b> to jump in the direction you face (your damage is halved in the air). Works in portrait or landscape.</p>" : ""}
     <div class="row"><button class="go" id="start">Start</button></div>`);
   if (isTouch) document.querySelector(".pcOnly").style.display = "none";
   document.getElementById("start").onclick = () => { newRun(); level = 1; startLevel(); lock(); overlay(false); };
@@ -697,9 +688,7 @@ document.addEventListener("pointerlockchange", () => {
 addEventListener("keydown", e => {
   keys[e.code] = true;
   if (state !== "play") return;
-  if (e.code === "Space" || e.code === "ShiftLeft" || e.code === "ShiftRight") tryDash();
   if (e.code === "KeyQ" && !e.repeat) { tryJump(); jumpHeld = true; }
-  if (e.code === "Space") e.preventDefault();
 });
 addEventListener("keyup", e => { keys[e.code] = false; if (e.code === "KeyQ") jumpHeld = false; });
 addEventListener("contextmenu", e => e.preventDefault());
@@ -708,18 +697,6 @@ addEventListener("mousemove", e => {
   P.yaw -= e.movementX * 0.0022;
   P.pitch = Math.max(-1.2, Math.min(1.2, P.pitch - e.movementY * 0.0022));
 });
-function tryDash() {
-  if (dashCd > 0 || P.stun > 0 || jumping) return;
-  let fx = (keys.KeyD ? 1 : 0) - (keys.KeyA ? 1 : 0), fz = (keys.KeyS ? 1 : 0) - (keys.KeyW ? 1 : 0);
-  if (Math.hypot(joyX, joyZ) > 0.3) { fx = joyX; fz = joyZ; }
-  if (!fx && !fz) fz = -1;
-  const l = Math.hypot(fx, fz); fx /= l; fz /= l;
-  const s = Math.sin(P.yaw), c = Math.cos(P.yaw);
-  dashDx = fx*c + fz*s; dashDz = -fx*s + fz*c;
-  dashT = .16; dashCd = dashMax(); sfx.dash();
-  if (run.g.dashReload) for (let i = 0; i < WEAPONS.length; i++) if (relT[i] > 0) relT[i] = Math.max(.01, relT[i] - 2);
-}
-
 /* touch input */
 if (isTouch) {
   const look = document.getElementById("look"), joy = document.getElementById("joy"), stick = document.getElementById("stick");
@@ -769,7 +746,6 @@ if (isTouch) {
     const end = e => { el.classList.remove("down"); up && up(); e.preventDefault(); };
     el.addEventListener("touchend", end, { passive:false }); el.addEventListener("touchcancel", end, { passive:false });
   };
-  bind("dashBtn", () => { if (state === "play") tryDash(); });
   bind("pauseBtn", () => { if (state === "play") { state = "paused"; showPause(); } });
   document.addEventListener("visibilitychange", () => { if (document.hidden && state === "play") { state = "paused"; showPause(); } });
   document.addEventListener("contextmenu", e => e.preventDefault());
@@ -778,7 +754,7 @@ if (isTouch) {
 /* ============================ UPDATE ============================ */
 function update(dt) {
   // --- player ---
-  P.inv = Math.max(0, P.inv - dt); fireCd -= dt; dashCd = Math.max(0, dashCd - dt); jumpCd = Math.max(0, jumpCd - dt);
+  P.inv = Math.max(0, P.inv - dt); fireCd -= dt; jumpCd = Math.max(0, jumpCd - dt);
   if (P.stun > 0) {
     P.stun = Math.max(0, P.stun - dt);
     const t = 1 - P.stun / STUN;
@@ -796,7 +772,6 @@ function update(dt) {
     if (Math.hypot(joyX, joyZ) > 0.12) { fx = joyX; fz = joyZ; }
     const s = Math.sin(P.yaw), c = Math.cos(P.yaw), sp = 10 * speedMult();
     let tx = (fx*c + fz*s) * sp, tz = (-fx*s + fz*c) * sp;
-    if (dashT > 0) { dashT -= dt; tx = dashDx * 28; tz = dashDz * 28; }
     if (jumping) { tx = jdx * jspeed; tz = jdz * jspeed; }
     const k = 1 - Math.exp(-14 * dt);
     P.vx += (tx - P.vx) * k; P.vz += (tz - P.vz) * k;
@@ -904,7 +879,6 @@ function render(dt) {
     document.getElementById("touch").style.display = state === "play" || state === "dying" ? "block" : "none";
   }
   hud("jumpfill").style.width = (100 * (1 - jumpCd / JUMP_CD)) + "%";
-  hud("dashfill").style.width = (100 * (1 - dashCd / dashMax())) + "%";
 
   const fl = hud("flash"); fl.style.opacity = Math.max(0, parseFloat(fl.style.opacity || 0) - dt * 1.6);
   if (msgT > 0) { msgT -= dt; if (msgT <= 0) hud("msg").style.opacity = 0; }
