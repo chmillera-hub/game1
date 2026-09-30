@@ -81,6 +81,9 @@
   #stick { position:absolute; left:50px; top:50px; width:40px; height:40px; border-radius:50%; background:#ffffffaa; }
   body.touch #bc { bottom:auto; top:64px; width:200px; }
   body.touch #bc div:nth-child(2) { display:none; }
+  body.touch #jumphint::after { content:" (double-tap)"; }
+  #jumpfill { height:100%; width:100%; background:#ffd54a; }
+  #jumphint { margin-top:4px; }
   @media (max-width:640px) {
     #tl,#tr { font-size:15px; top:8px; } #tl { left:10px; } #tr { right:10px; }
     #msg { font-size:34px; } .card { padding:16px 16px; } h1 { font-size:30px; }
@@ -99,7 +102,7 @@
 <div class="hud" id="bl"></div>
 <div class="hud" id="ammo"></div>
 <div class="hud" id="sec"></div>
-<div class="hud" id="bc"><div id="mult"></div><div>DASH <kbd>Shift</kbd></div><div id="dashbar"><div id="dashfill"></div></div></div>
+<div class="hud" id="bc"><div id="mult"></div><div>DASH <kbd>Shift</kbd></div><div id="dashbar"><div id="dashfill"></div></div><div id="jumphint">JUMP <kbd>Q</kbd> hold</div><div id="dashbar"><div id="jumpfill"></div></div></div>
 <div id="touch">
   <div id="look"></div>
   <div id="joy"><div id="stick"></div></div>
@@ -146,6 +149,8 @@ let tracers = [];
 let levelTime = 0, levelHits = 0;
 let curWeapon = 0, fireCd = 0, reloadT = 0, reloadTotal = 1;
 let dashCd = 0, dashT = 0, dashDx = 0, dashDz = 0;
+let jumping = false, jumpHeld = false, jumpCd = 0, jvy = 0, jspeed = 0, jdx = 0, jdz = 0;
+const JUMP_CD = 3;
 let shake = 0;
 const P = { x:0, z:0, vx:0, vz:0, kx:0, kz:0, yaw:0, pitch:0, roll:0, h:0, stun:0, inv:0 };
 const keys = {};
@@ -157,7 +162,7 @@ const inControl = () => isTouch || document.pointerLockElement === canvas;
 function newRun() {
   run = { coins:0, lives:START_LIVES, owned:[true,false,false,false], kills:0, rerolls:0,
     wu: WEAPONS.map(() => ({ clip:0, reload:0, dmg:0, range:0, rate:0 })),
-    g: { speed:0, dashcd:0, coin:0, refund:0, dashReload:0 }, ammo:[], sec:{ grenade:0, glue:0, shock:0 } };
+    g: { speed:0, dashcd:0, coin:0, refund:0, dashReload:0 }, ammo:[], sec:{ grenade:0, glue:0, shock:0 }, jump:{ h:0, d:0, dmg:0 } };
   WEAPONS.forEach((w, i) => run.ammo[i] = ws(i).clip);
   curWeapon = 0; reloadT = 0; secBag = [];
 }
@@ -381,7 +386,8 @@ function fire() {
     tracers.push({ line, life:w.pierce ? .25 : .09, max:w.pierce ? .25 : .09 });
   }
   let any = false;
-  for (const [b, n] of hitBalls) { damageBall(b, s.dmg * n); any = true; }
+  const air = airDmg();
+  for (const [b, n] of hitBalls) { damageBall(b, s.dmg * air * n); any = true; }
   if (any) { const c = document.getElementById("cross"); c.classList.add("hit"); setTimeout(() => c.classList.remove("hit"), 70); }
   gun.position.z = -0.5; gun.rotation.x = .18;
   sfx.shoot(curWeapon);
@@ -472,10 +478,24 @@ function updateSec(dt) {
   }
 }
 
+/* ============================ JUMP ============================ */
+// Leap in the direction you face. Hold to float. Damage is reduced while airborne.
+const airDmg = () => jumping ? Math.min(1, 0.5 + 0.1 * run.jump.dmg) : 1;
+function tryJump() {
+  if (state !== "play" || jumping || jumpCd > 0 || P.stun > 0) return;
+  const u = run.jump;
+  jumping = true; jumpCd = JUMP_CD; dashT = 0;
+  jvy = Math.sqrt(2 * 12 * 3.0 * (1 + 0.15 * u.h));      // ~3 units apex while floating (hold), clears normal balls
+  jspeed = 11 * (1 + 0.15 * u.d);
+  jdx = -Math.sin(P.yaw); jdz = -Math.cos(P.yaw);
+  P.vx = jdx * jspeed; P.vz = jdz * jspeed; P.h = 0.01;
+  beep(240, .25, "sine", .1, 400);
+}
+
 /* ============================ PLAYER HIT ============================ */
 function playerHit(b) {
   run.lives--; levelHits++;
-  P.stun = STUN; P.inv = 2.2;
+  P.stun = STUN; P.inv = 2.2; jumping = false; jumpHeld = false;
   let nx = P.x - b.x, nz = P.z - b.z; const l = Math.hypot(nx, nz) || 1; nx /= l; nz /= l;
   P.kx = nx * 34; P.kz = nz * 34; P.vx = P.vz = 0; dashT = 0;
   shake = .6; sfx.ouch();
@@ -499,7 +519,7 @@ function startLevel() {
   balls.forEach(removeBall); balls = [];
   tracers.forEach(t => scene.remove(t.line)); tracers = [];
   P.x = P.z = P.vx = P.vz = P.kx = P.kz = 0; P.stun = 0; P.h = 0; P.roll = 0; P.inv = 1.2;
-  P.yaw = 0; P.pitch = 0; dashT = 0; dashCd = 0;
+  P.yaw = 0; P.pitch = 0; dashT = 0; dashCd = 0; jumping = false; jumpHeld = false; jumpCd = 0;
   clearSec(); fillBag();
   levelTime = 0; levelHits = 0; reloadT = 0; fireCd = .5;
   WEAPONS.forEach((w, i) => run.ammo[i] = ws(i).clip);
@@ -564,6 +584,8 @@ for (const k in GLOBAL) { const g = GLOBAL[k];
   UPG[k] = { title:g.title, desc:g.desc, color:0xffffff, base:g.base, max:g.max,
     lvl:() => k === "life" ? 0 : run.g[k], avail:() => true,
     apply:() => { if (k === "life") run.lives += 2; else run.g[k]++; } }; }
+[["h","Higher jump","+15% jump height",60],["d","Longer jump","+15% jump distance",60],["dmg","Steady aim","+10% damage while jumping (starts at 50%)",70]].forEach(([st, title, desc, base]) => {
+  UPG["jump." + st] = { title, desc, color:0xffffff, base, max:5, lvl:() => run.jump[st], avail:() => true, apply:() => { run.jump[st]++; } }; });
 const upgOk = k => UPG[k].avail() && UPG[k].lvl() < UPG[k].max;
 const upgCost = k => UPG[k].base * (UPG[k].lvl() + 1);
 function draw(n, keys) {
@@ -590,7 +612,7 @@ function offerDefs() {
   WEAPONS.forEach((w, i) => { if (!run.owned[i]) d["w:" + i] = { cat:"New weapon", title:w.name, desc:w.blurb, color:w.color, cost:w.cost,
     apply:() => { run.owned[i] = true; curWeapon = i; setGunLook(); } }; });
   for (const k in UPG) if (upgOk(k)) { const u = UPG[k];
-    d["u:" + k] = { cat:k[0] === "w" && k[1] !== "." ? "Weapon upgrade" : "Upgrade", title:u.title, desc:u.desc, color:u.color, cost:upgCost(k), apply:() => u.apply() }; }
+    d["u:" + k] = { cat:k[0] === "w" && k[1] !== "." ? "Weapon upgrade" : k.startsWith("jump") ? "Jump upgrade" : "Upgrade", title:u.title, desc:u.desc, color:u.color, cost:upgCost(k), apply:() => u.apply() }; }
   for (const k in SEC) if (run.sec[k] < 5) { const sc = SEC[k], n = run.sec[k];
     d["s:" + k] = { cat:"Secondary", title:n ? `${sc.name} +1 charge` : `New: ${sc.name}`, desc:(n ? `you have ${n} · ` : "") + sc.blurb, color:sc.color, cost:secCost(k), apply:() => { run.sec[k]++; } }; }
   return d;
@@ -640,8 +662,8 @@ function showMenu() {
     <p>Glowing floor lines show where each ball is heading. Weapons have <b>limited range</b>, and the red corner zones
     pay <b>fewer coins</b>. After each level pick one of three free upgrades, then spend coins in the shop.
     You have ${START_LIVES} lives and ${LAST_LEVEL} levels to clear.</p>
-    <p class="pcOnly"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> move · mouse look · <kbd>R</kbd> reload · <kbd>Shift</kbd>/<kbd>Space</kbd> dash · <kbd>1</kbd>-<kbd>4</kbd> or wheel switch weapon · <kbd>Esc</kbd> pause</p>
-    ${isTouch ? "<p>Touch: left stick moves, drag anywhere on the right to look, the big button reloads (it shows your ammo), the round badge counts down to your next secondary, DASH dodges, the weapon button cycles guns. Works in portrait or landscape.</p>" : ""}
+    <p class="pcOnly"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> move · mouse look · <kbd>R</kbd> reload · <kbd>Shift</kbd>/<kbd>Space</kbd> dash · <kbd>Q</kbd> jump (hold to float) · <kbd>1</kbd>-<kbd>4</kbd> or wheel switch weapon · <kbd>Esc</kbd> pause</p>
+    ${isTouch ? "<p>Touch: left stick moves, drag anywhere on the right to look, the big button reloads (it shows your ammo), the round badge counts down to your next secondary, <b>double-tap the screen and hold</b> to jump in the direction you face (your damage is halved in the air), DASH dodges, the weapon button cycles guns. Works in portrait or landscape.</p>" : ""}
     <div class="row"><button class="go" id="start">Start</button></div>`);
   if (isTouch) document.querySelector(".pcOnly").style.display = "none";
   document.getElementById("start").onclick = () => { newRun(); level = 1; startLevel(); lock(); overlay(false); };
@@ -662,9 +684,10 @@ addEventListener("keydown", e => {
   if (e.code === "Space" || e.code === "ShiftLeft" || e.code === "ShiftRight") tryDash();
   if (e.code >= "Digit1" && e.code <= "Digit4") selectWeapon(+e.code.slice(5) - 1);
   if (e.code === "KeyR") startReload();
+  if (e.code === "KeyQ" && !e.repeat) { tryJump(); jumpHeld = true; }
   if (e.code === "Space") e.preventDefault();
 });
-addEventListener("keyup", e => keys[e.code] = false);
+addEventListener("keyup", e => { keys[e.code] = false; if (e.code === "KeyQ") jumpHeld = false; });
 addEventListener("contextmenu", e => e.preventDefault());
 addEventListener("mousemove", e => {
   if (isTouch || document.pointerLockElement !== canvas || state !== "play" || P.stun > 0) return;
@@ -679,7 +702,7 @@ addEventListener("wheel", e => {
 });
 function selectWeapon(i) { if (run.owned[i] && i !== curWeapon) { curWeapon = i; reloadT = 0; fireCd = Math.max(fireCd, .3); setGunLook(); } }
 function tryDash() {
-  if (dashCd > 0 || P.stun > 0) return;
+  if (dashCd > 0 || P.stun > 0 || jumping) return;
   let fx = (keys.KeyD ? 1 : 0) - (keys.KeyA ? 1 : 0), fz = (keys.KeyS ? 1 : 0) - (keys.KeyW ? 1 : 0);
   if (Math.hypot(joyX, joyZ) > 0.3) { fx = joyX; fz = joyZ; }
   if (!fx && !fz) fz = -1;
@@ -694,18 +717,30 @@ function tryDash() {
 if (isTouch) {
   const look = document.getElementById("look"), joy = document.getElementById("joy"), stick = document.getElementById("stick");
   let lookId = null, lx = 0, ly = 0, joyId = null;
-  look.addEventListener("touchstart", e => { const t = e.changedTouches[0]; lookId = t.identifier; lx = t.clientX; ly = t.clientY; e.preventDefault(); }, { passive:false });
+  let lookT0 = 0, lookMoved = 0, lastTap = 0, lastTapX = 0, lastTapY = 0, jumpTouch = false;
+  look.addEventListener("touchstart", e => {
+    const t = e.changedTouches[0], now = performance.now();
+    lookId = t.identifier; lx = t.clientX; ly = t.clientY; lookT0 = now; lookMoved = 0; jumpTouch = false;
+    if (now - lastTap < 350 && Math.hypot(t.clientX - lastTapX, t.clientY - lastTapY) < 70) {   // double tap: jump, hold to float
+      jumpTouch = true; jumpHeld = true; tryJump(); lastTap = 0;
+    }
+    e.preventDefault();
+  }, { passive:false });
   look.addEventListener("touchmove", e => {
     for (const t of e.changedTouches) if (t.identifier === lookId) {
       if (state === "play" && P.stun <= 0) {
         P.yaw -= (t.clientX - lx) * 0.006;
         P.pitch = Math.max(-1.2, Math.min(1.2, P.pitch - (t.clientY - ly) * 0.006));
       }
+      lookMoved += Math.hypot(t.clientX - lx, t.clientY - ly);
       lx = t.clientX; ly = t.clientY;
     }
     e.preventDefault();
   }, { passive:false });
-  const lookEnd = e => { for (const t of e.changedTouches) if (t.identifier === lookId) lookId = null; };
+  const lookEnd = e => { for (const t of e.changedTouches) if (t.identifier === lookId) {
+    if (jumpTouch) { jumpHeld = false; jumpTouch = false; }
+    else if (performance.now() - lookT0 < 250 && lookMoved < 15) { lastTap = performance.now(); lastTapX = lx; lastTapY = ly; }
+    lookId = null; } };
   look.addEventListener("touchend", lookEnd); look.addEventListener("touchcancel", lookEnd);
 
   const joyMove = t => {
@@ -742,20 +777,26 @@ if (isTouch) {
 /* ============================ UPDATE ============================ */
 function update(dt) {
   // --- player ---
-  P.inv = Math.max(0, P.inv - dt); fireCd -= dt; dashCd = Math.max(0, dashCd - dt);
+  P.inv = Math.max(0, P.inv - dt); fireCd -= dt; dashCd = Math.max(0, dashCd - dt); jumpCd = Math.max(0, jumpCd - dt);
   if (P.stun > 0) {
     P.stun = Math.max(0, P.stun - dt);
     const t = 1 - P.stun / STUN;
     P.h = Math.sin(Math.PI * Math.min(1, t)) * 4.5;
     P.roll = P.stun > 0 ? t * Math.PI * 6 : 0;
   } else {
-    P.h = 0; P.roll = 0;
+    P.roll = 0;
+    if (jumping) {
+      jvy -= 16 * (jumpHeld ? .75 : 1) * dt; P.h += jvy * dt;
+      if (P.h <= 0) { P.h = 0; jumping = false; jumpHeld = false; }
+      else if (jumpHeld) { jdx = -Math.sin(P.yaw); jdz = -Math.cos(P.yaw); }   // float where you point
+    } else P.h = 0;
     let fx = (keys.KeyD ? 1 : 0) - (keys.KeyA ? 1 : 0), fz = (keys.KeyS ? 1 : 0) - (keys.KeyW ? 1 : 0);
     const l = Math.hypot(fx, fz) || 1; fx /= l; fz /= l;
     if (Math.hypot(joyX, joyZ) > 0.12) { fx = joyX; fz = joyZ; }
     const s = Math.sin(P.yaw), c = Math.cos(P.yaw), sp = 10 * speedMult();
     let tx = (fx*c + fz*s) * sp, tz = (-fx*s + fz*c) * sp;
     if (dashT > 0) { dashT -= dt; tx = dashDx * 28; tz = dashDz * 28; }
+    if (jumping) { tx = jdx * jspeed; tz = jdz * jspeed; }
     const k = 1 - Math.exp(-14 * dt);
     P.vx += (tx - P.vx) * k; P.vz += (tz - P.vz) * k;
   }
@@ -865,6 +906,7 @@ function render(dt) {
     document.getElementById("wepBtn").textContent = WEAPONS[curWeapon].name;
     document.getElementById("touch").style.display = state === "play" || state === "dying" ? "block" : "none";
   }
+  hud("jumpfill").style.width = (100 * (1 - jumpCd / JUMP_CD)) + "%";
   hud("dashfill").style.width = (100 * (1 - dashCd / dashMax())) + "%";
 
   const fl = hud("flash"); fl.style.opacity = Math.max(0, parseFloat(fl.style.opacity || 0) - dt * 1.6);
@@ -881,7 +923,7 @@ function loop(now) {
 }
 newRun(); setGunLook(); showMenu();
 requestAnimationFrame(loop);
-window.__game = { P, balls: () => balls, get state() { return state; }, update, fire, startLevel, run: () => run, showShop, pickStock, offerDefs, deploySec, secTimer: () => secTimer, ws, secBag: () => secBag, proj: () => proj, puddles: () => puddles, UPG, draw, upgOk, dbg: () => ({ ammo: run.ammo.slice(), reloadT, curWeapon }) };
+window.__game = { P, balls: () => balls, get state() { return state; }, update, fire, startLevel, run: () => run, tryJump, jumpState: () => ({ jumping, jumpCd, h:P.h }), showShop, pickStock, offerDefs, deploySec, secTimer: () => secTimer, ws, secBag: () => secBag, proj: () => proj, puddles: () => puddles, UPG, draw, upgOk, dbg: () => ({ ammo: run.ammo.slice(), reloadT, curWeapon }) };
 </script>
 </body>
 </html>
