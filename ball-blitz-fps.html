@@ -34,6 +34,10 @@
   body.touch #ammo { display:none; }
   .pick { border-left:10px solid var(--accent); }
   .pick.sold, .shopbtn.sold { opacity:.4; }
+  #secBtn { right:max(124px,calc(env(safe-area-inset-right) + 110px)); bottom:112px; width:70px; height:70px; font-size:11px; line-height:1.1; }
+  #secBtn b { font-size:22px; display:block; }
+  #sec { right:20px; bottom:100px; text-align:right; font-size:15px; }
+  body.touch #sec { display:none; }
   .hint { font-size:13px; opacity:.8; margin:4px 0 0; }
   #cross.hit { transform:scale(1.5); border-color:#fff; background:#ff4d4d55; }
   #flash { position:fixed; inset:0; background:radial-gradient(transparent 30%, #ff0000cc); opacity:0; pointer-events:none; }
@@ -61,7 +65,7 @@
   body.touch #bl { display:none; }
   #look { position:fixed; inset:0; }
   .tbtn { position:fixed; border-radius:50%; border:3px solid #ffffff88; background:#ffffff22; color:#fff; font-weight:900;
-    display:flex; align-items:center; justify-content:center; text-align:center; touch-action:none; text-shadow:0 2px 4px #000; }
+    display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; touch-action:none; text-shadow:0 2px 4px #000; }
   .tbtn.down { background:#4de1ff88; }
   #reloadBtn { right:max(18px,env(safe-area-inset-right)); bottom:max(28px,env(safe-area-inset-bottom)); width:104px; height:104px; font-size:14px; line-height:1.2; border-color:#ffffffaa; overflow:hidden; }
   #reloadBtn b { font-size:26px; display:block; }
@@ -90,12 +94,14 @@
 <div class="hud" id="tr"></div>
 <div class="hud" id="bl"></div>
 <div class="hud" id="ammo"></div>
+<div class="hud" id="sec"></div>
 <div class="hud" id="bc"><div id="mult"></div><div>DASH <kbd>Shift</kbd></div><div id="dashbar"><div id="dashfill"></div></div></div>
 <div id="touch">
   <div id="look"></div>
   <div id="joy"><div id="stick"></div></div>
   <div class="tbtn" id="reloadBtn"><b>0</b>RELOAD</div>
   <div class="tbtn" id="dashBtn">DASH</div>
+  <div class="tbtn" id="secBtn"><b>0</b>THROW</div>
   <div class="tbtn" id="wepBtn">Pistol</div>
   <div class="tbtn" id="pauseBtn">II</div>
 </div>
@@ -116,9 +122,9 @@ const CORNER_R = 8;           // "camping zone" radius around each corner
 const WEAPONS = [
   // clip/reload: tradeoffs. clipInc = rounds gained per Magazine upgrade.
   { name:"Pistol",  dmg:1.0,  cd:0.30, range:26, pellets:1, spread:0.004, clip:12, reload:1.5, clipInc:4,  color:0x66ccff, cost:0,   size:[0.05,0.07,0.35], blurb:"12 rounds · 1.5s reload · balanced" },
-  { name:"SMG",     dmg:0.45, cd:0.09, range:19, pellets:1, spread:0.03,  clip:30, reload:1.2, clipInc:10, color:0xff66cc, cost:100, size:[0.06,0.08,0.38], blurb:"30 rounds · 1.2s reload · short range, weak shots" },
-  { name:"Shotgun", dmg:0.8,  cd:0.80, range:13, pellets:8, spread:0.07,  clip:6,  reload:2.4, clipInc:2,  color:0xffaa44, cost:80,  size:[0.1,0.09,0.4],   blurb:"6 shells · 2.4s reload · 8 pellets, very short range" },
-  { name:"Sniper",  dmg:3.5,  cd:1.00, range:50, pellets:1, spread:0,     clip:3,  reload:3.2, clipInc:1,  color:0x9dff66, cost:120, size:[0.05,0.06,0.6],  blurb:"3 rounds · 3.2s reload · pierces every ball in line", pierce:true },
+  { name:"SMG",     dmg:0.45, cd:0.09, range:19, pellets:1, spread:0.03,  clip:30, reload:1.2, clipInc:10, color:0xff66cc, cost:200, size:[0.06,0.08,0.38], blurb:"30 rounds · 1.2s reload · short range, weak shots" },
+  { name:"Shotgun", dmg:0.8,  cd:0.80, range:13, pellets:8, spread:0.07,  clip:6,  reload:2.4, clipInc:2,  color:0xffaa44, cost:160,  size:[0.1,0.09,0.4],   blurb:"6 shells · 2.4s reload · 8 pellets, very short range" },
+  { name:"Sniper",  dmg:3.5,  cd:1.00, range:50, pellets:1, spread:0,     clip:3,  reload:3.2, clipInc:1,  color:0x9dff66, cost:240, size:[0.05,0.06,0.6],  blurb:"3 rounds · 3.2s reload · pierces every ball in line", pierce:true },
 ];
 
 const BALL_TYPES = {
@@ -147,9 +153,9 @@ const inControl = () => isTouch || document.pointerLockElement === canvas;
 function newRun() {
   run = { coins:0, lives:START_LIVES, owned:[true,false,false,false], kills:0, rerolls:0,
     wu: WEAPONS.map(() => ({ clip:0, reload:0, dmg:0, range:0, rate:0 })),
-    g: { speed:0, dashcd:0, coin:0, refund:0, dashReload:0 }, ammo:[] };
+    g: { speed:0, dashcd:0, coin:0, refund:0, dashReload:0 }, ammo:[], sec:{ grenade:0, glue:0, shock:0 } };
   WEAPONS.forEach((w, i) => run.ammo[i] = ws(i).clip);
-  curWeapon = 0; reloadT = 0;
+  curWeapon = 0; reloadT = 0; secBag = [];
 }
 // effective stats for weapon i, after upgrades
 function ws(i) {
@@ -295,10 +301,10 @@ function killBall(b) {
   removeBall(b);
   kids.forEach(k => spawnBall("splitter", ...k));
 }
-function damageBall(b, d) {
-  b.hp -= d; b.flash = .12;
+function damageBall(b, d, quiet) {
+  b.hp -= d; if (!quiet) b.flash = .12;
   run.coins += d * 1 * coinMult();
-  if (b.hp <= 0) killBall(b); else sfx.hit();
+  if (b.hp <= 0) killBall(b); else if (!quiet) sfx.hit();
 }
 
 /* ============================ COINS / CAMPING ============================ */
@@ -377,6 +383,86 @@ function fire() {
   sfx.shoot(curWeapon);
 }
 
+/* ============================ SECONDARY WEAPONS ============================ */
+const SEC = {
+  grenade: { name:"Grenade",   color:0x88ff55, cost:100, blurb:"lobbed; explodes on contact or landing for big area damage" },
+  glue:    { name:"Glue",      color:0xcc66ff, cost:100, blurb:"leaves a sticky puddle that slows balls and damages them over time" },
+  shock:   { name:"Shockwave", color:0x55ddff, cost:100, blurb:"hurts nearby balls and blasts them away from you" },
+};
+let secBag = [], secCd = 0, proj = [], puddles = [], fx = [];
+const secTotal = () => run.sec.grenade + run.sec.glue + run.sec.shock;
+const secCost = k => run.sec[k] ? 150 * run.sec[k] : SEC[k].cost;
+function fillBag() {            // one token per charge, drawn at random like from a bag
+  secBag = [];
+  for (const k in SEC) for (let i = 0; i < run.sec[k]; i++) secBag.push(k);
+  for (let i = secBag.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [secBag[i], secBag[j]] = [secBag[j], secBag[i]]; }
+}
+function clearSec() {
+  proj.forEach(p => { scene.remove(p.mesh); p.mesh.material.dispose(); });
+  puddles.forEach(u => { scene.remove(u.mesh); u.mesh.material.dispose(); });
+  fx.forEach(f => { scene.remove(f.mesh); f.mesh.material.dispose(); });
+  proj = []; puddles = []; fx = []; secCd = 0;
+}
+function addFx(mesh, life, kind, R) { scene.add(mesh); fx.push({ mesh, t:life, max:life, kind, R }); }
+function throwSec() {
+  if (state !== "play" || P.stun > 0 || secCd > 0 || !secBag.length) return;
+  const k = secBag.shift(); secCd = .45;
+  if (k === "shock") return shockwave();
+  syncCamera(); camera.getWorldDirection(_d);
+  const c = SEC[k].color;
+  const m = new THREE.Mesh(sphereGeo, new THREE.MeshStandardMaterial({ color:c, emissive:c, emissiveIntensity:.6 }));
+  m.scale.setScalar(k === "glue" ? .3 : .25);
+  const o = camera.position;
+  proj.push({ k, mesh:m, x:o.x + _d.x*.8, y:o.y - .2 + _d.y*.8, z:o.z + _d.z*.8, vx:_d.x*22, vy:_d.y*22 + 4, vz:_d.z*22, t:0 });
+  scene.add(m); beep(260, .15, "triangle", .08, 200);
+}
+function explode(x, y, z) {
+  const R = 5.5;
+  for (const b of balls.slice()) if (Math.hypot(b.x - x, BALL_Y - y, b.z - z) <= R + b.r) damageBall(b, 4);
+  const m = new THREE.Mesh(sphereGeo, new THREE.MeshBasicMaterial({ color:0xffaa33, transparent:true, opacity:.6, depthWrite:false }));
+  m.position.set(x, y, z); addFx(m, .35, "boom", R);
+  shake = Math.max(shake, .35); beep(90, .35, "sawtooth", .15, -40);
+}
+function makePuddle(x, z) {
+  const m = new THREE.Mesh(circleGeo, new THREE.MeshBasicMaterial({ color:0xcc66ff, transparent:true, opacity:.45, depthWrite:false }));
+  m.rotation.x = -Math.PI/2; m.scale.setScalar(3.5); m.position.set(x, .05, z); scene.add(m);
+  puddles.push({ x, z, r:3.5, t:9, mesh:m }); beep(160, .2, "sine", .1, -60);
+}
+function shockwave() {
+  const R = 9;
+  for (const b of balls.slice()) {
+    const dx = b.x - P.x, dz = b.z - P.z, d = Math.hypot(dx, dz);
+    if (d <= R + b.r) { if (d > .01) { b.dx = dx/d; b.dz = dz/d; } damageBall(b, 1.5); }
+  }
+  const m = new THREE.Mesh(new THREE.RingGeometry(.9, 1, 48), new THREE.MeshBasicMaterial({ color:0x55ddff, transparent:true, opacity:.8, side:THREE.DoubleSide, depthWrite:false }));
+  m.rotation.x = -Math.PI/2; m.position.set(P.x, .1, P.z); addFx(m, .45, "ring", R);
+  shake = Math.max(shake, .25); beep(140, .4, "sine", .15, 300);
+}
+function updateSec(dt) {
+  secCd -= dt;
+  for (let i = proj.length - 1; i >= 0; i--) {
+    const p = proj[i]; p.t += dt; p.vy -= 18 * dt;
+    p.x += p.vx*dt; p.y += p.vy*dt; p.z += p.vz*dt; p.mesh.position.set(p.x, p.y, p.z);
+    let hit = false; for (const b of balls) if (Math.hypot(b.x - p.x, BALL_Y - p.y, b.z - p.z) < b.r + .3) { hit = true; break; }
+    const wall = Math.abs(p.x) > A - .3 || Math.abs(p.z) > A - .3, floor = p.y <= .25 && p.vy < 0;
+    if (hit || wall || floor || p.t > 3) {
+      proj.splice(i, 1); scene.remove(p.mesh); p.mesh.material.dispose();
+      const x = Math.max(-A + .5, Math.min(A - .5, p.x)), z = Math.max(-A + .5, Math.min(A - .5, p.z));
+      if (p.k === "grenade") explode(x, Math.max(.25, p.y), z); else makePuddle(x, z);
+    }
+  }
+  for (let i = puddles.length - 1; i >= 0; i--) {
+    const u = puddles[i]; u.t -= dt; u.mesh.material.opacity = .45 * Math.min(1, u.t / 1.5);
+    if (u.t <= 0) { scene.remove(u.mesh); u.mesh.material.dispose(); puddles.splice(i, 1); continue; }
+    for (const b of balls.slice()) if (Math.hypot(b.x - u.x, b.z - u.z) < u.r + b.r * .5) { b.slowT = .2; damageBall(b, .9 * dt, true); }
+  }
+  for (let i = fx.length - 1; i >= 0; i--) {
+    const f = fx[i]; f.t -= dt; const q = Math.min(1, 1 - f.t / f.max);
+    f.mesh.scale.setScalar(Math.max(.01, f.R * q)); f.mesh.material.opacity = (f.kind === "boom" ? .6 : .8) * (1 - q);
+    if (f.t <= 0) { scene.remove(f.mesh); f.mesh.material.dispose(); if (f.kind === "ring") f.mesh.geometry.dispose(); fx.splice(i, 1); }
+  }
+}
+
 /* ============================ PLAYER HIT ============================ */
 function playerHit(b) {
   run.lives--; levelHits++;
@@ -405,6 +491,7 @@ function startLevel() {
   tracers.forEach(t => scene.remove(t.line)); tracers = [];
   P.x = P.z = P.vx = P.vz = P.kx = P.kz = 0; P.stun = 0; P.h = 0; P.roll = 0; P.inv = 1.2;
   P.yaw = 0; P.pitch = 0; dashT = 0; dashCd = 0;
+  clearSec(); fillBag();
   levelTime = 0; levelHits = 0; reloadT = 0; fireCd = .5;
   WEAPONS.forEach((w, i) => run.ammo[i] = ws(i).clip);
   for (const type of levelPlan(level)) {
@@ -446,11 +533,11 @@ function card(html) { document.getElementById("card").innerHTML = html; overlay(
 /* ---- upgrade catalogue ---- */
 const hex = c => "#" + c.toString(16).padStart(6, "0");
 const WSTAT = {
-  clip:   { title:"Magazine",    base:30, desc:w => `+${w.clipInc} rounds per magazine` },
-  reload: { title:"Quick hands", base:35, desc:() => "reload 15% faster" },
-  dmg:    { title:"Damage",      base:40, desc:() => "+25% damage per shot" },
-  range:  { title:"Range",       base:30, desc:() => "+20% range" },
-  rate:   { title:"Fire rate",   base:35, desc:() => "+15% fire rate" },
+  clip:   { title:"Magazine",    base:60, desc:w => `+${w.clipInc} rounds per magazine` },
+  reload: { title:"Quick hands", base:70, desc:() => "reload 15% faster" },
+  dmg:    { title:"Damage",      base:80, desc:() => "+25% damage per shot" },
+  range:  { title:"Range",       base:60, desc:() => "+20% range" },
+  rate:   { title:"Fire rate",   base:70, desc:() => "+15% fire rate" },
 };
 const UPG = {};
 WEAPONS.forEach((w, i) => { for (const st in WSTAT) UPG[`w${i}.${st}`] = {
@@ -458,12 +545,12 @@ WEAPONS.forEach((w, i) => { for (const st in WSTAT) UPG[`w${i}.${st}`] = {
   lvl:() => run.wu[i][st], avail:() => run.owned[i],
   apply:() => { run.wu[i][st]++; if (st === "clip") run.ammo[i] += w.clipInc; } }; });
 const GLOBAL = {
-  speed:      { title:"Fleet feet",   desc:"+8% move speed",                            base:30, max:5 },
-  dashcd:     { title:"Quick dash",   desc:"dash cooldown 15% shorter",                 base:35, max:4 },
-  coin:       { title:"Prospector",   desc:"+15% coins from everything",                base:40, max:4 },
-  refund:     { title:"Scavenger",    desc:"every kill refunds +1 round",               base:45, max:3 },
-  dashReload: { title:"Dash reload",  desc:"dashing instantly finishes your reload",    base:60, max:1 },
-  life:       { title:"Extra lives",  desc:"+2 lives",                                  base:50, max:99 },
+  speed:      { title:"Fleet feet",   desc:"+8% move speed",                            base:60, max:5 },
+  dashcd:     { title:"Quick dash",   desc:"dash cooldown 15% shorter",                 base:70, max:4 },
+  coin:       { title:"Prospector",   desc:"+15% coins from everything",                base:80, max:4 },
+  refund:     { title:"Scavenger",    desc:"every kill refunds +1 round",               base:90, max:3 },
+  dashReload: { title:"Dash reload",  desc:"dashing instantly finishes your reload",    base:120, max:1 },
+  life:       { title:"Extra lives",  desc:"+2 lives",                                  base:100, max:99 },
 };
 for (const k in GLOBAL) { const g = GLOBAL[k];
   UPG[k] = { title:g.title, desc:g.desc, color:0xffffff, base:g.base, max:g.max,
@@ -494,11 +581,14 @@ function restock() { stock = draw(4); sold = {}; }
 function showShop(fresh = true) {
   if (fresh && !showShop.keep) { restock(); run.rerolls = 0; }
   showShop.keep = false;
-  const c = Math.floor(run.coins), rr = 15 + 10 * run.rerolls;
-  const lifeCost = 50;
+  const c = Math.floor(run.coins), rr = 30 + 20 * run.rerolls;
+  const lifeCost = 100;
   let h = `<h2>Shop</h2><p>Coins <b class="coins">${c}</b> · Lives <b class="lives">${run.lives}</b></p><div class="row">`;
   h += `<button class="shopbtn" data-buy="life" ${c < lifeCost ? "disabled" : ""}>+3 Lives<small>${lifeCost} coins</small></button>`;
   WEAPONS.forEach((w, i) => { if (!run.owned[i]) h += `<button class="shopbtn" data-buy="new${i}" style="border-left:10px solid ${hex(w.color)}" ${c < w.cost ? "disabled" : ""}>New weapon: ${w.name}<small>${w.blurb} · ${w.cost} coins</small></button>`; });
+  h += `</div><h2>Secondary weapons</h2><p class="hint">Charges refill every round. Each press draws one at random from your bag, so you can't pick which comes out.</p><div class="row">`;
+  for (const k in SEC) { const n = run.sec[k], cost = secCost(k), sc = SEC[k], maxed = n >= 5;
+    h += `<button class="shopbtn" data-sec="${k}" style="border-left:10px solid ${hex(sc.color)}" ${maxed || c < cost ? "disabled" : ""}>${n ? `+1 ${sc.name} charge` : `New: ${sc.name}`}<small>${n ? `you have ${n} · ` : ""}${sc.blurb} · ${maxed ? "max" : cost + " coins"}</small></button>`; }
   h += `</div><h2>Today's upgrades</h2><div class="row">`;
   stock.forEach(k => { const u = UPG[k], cost = upgCost(k), gone = sold[k] || !upgOk(k);
     h += `<button class="shopbtn ${gone ? "sold" : ""}" data-up="${k}" style="border-left:10px solid ${hex(u.color)}" ${gone || c < cost ? "disabled" : ""}>${u.title}<small>${u.desc} · ${gone ? "sold" : cost + " coins"}</small></button>`; });
@@ -512,6 +602,7 @@ function showShop(fresh = true) {
     else { const i = +k.slice(3); run.coins -= WEAPONS[i].cost; run.owned[i] = true; curWeapon = i; }
     after();
   });
+  document.querySelectorAll("[data-sec]").forEach(b => b.onclick = () => { const k = b.dataset.sec; run.coins -= secCost(k); run.sec[k]++; after(); });
   document.querySelectorAll("[data-up]").forEach(b => b.onclick = () => { const k = b.dataset.up; run.coins -= upgCost(k); UPG[k].apply(); sold[k] = true; after(); });
   document.querySelector("[data-reroll]").onclick = () => { run.coins -= rr; run.rerolls++; stock = draw(4); sold = {}; after(); };
   document.getElementById("next").onclick = () => { level++; startLevel(); lock(); overlay(false); };
@@ -528,11 +619,13 @@ function showMenu() {
     <p><b>Weapons fire automatically</b> whenever a ball is in your sights and in range. Your job is to aim, move, and manage
     <b>ammo</b>: each gun has its own magazine and reload time (the Sniper holds 3 rounds and reloads slowly, the SMG holds 30 and reloads fast).
     Reload early while nothing is near you.</p>
+    <p><b>Secondary weapons</b> (buy them in the shop): Grenades, Glue puddles and Shockwaves. Each purchase gives one charge per round,
+    and charge upgrades are pricey. Every press draws a random one from your bag.</p>
     <p>Glowing floor lines show where each ball is heading. Weapons have <b>limited range</b>, and the red corner zones
     pay <b>fewer coins</b>. After each level pick one of three free upgrades, then spend coins in the shop.
     You have ${START_LIVES} lives and ${LAST_LEVEL} levels to clear.</p>
-    <p class="pcOnly"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> move · mouse look · <kbd>R</kbd> reload · <kbd>Shift</kbd>/<kbd>Space</kbd> dash · <kbd>1</kbd>-<kbd>4</kbd> or wheel switch weapon · <kbd>Esc</kbd> pause</p>
-    ${isTouch ? "<p>Touch: left stick moves, drag anywhere on the right to look, the big button reloads (it shows your ammo), DASH dodges, the weapon button cycles guns. Works in portrait or landscape.</p>" : ""}
+    <p class="pcOnly"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> move · mouse look · <kbd>R</kbd> reload · <kbd>E</kbd>/right-click secondary · <kbd>Shift</kbd>/<kbd>Space</kbd> dash · <kbd>1</kbd>-<kbd>4</kbd> or wheel switch weapon · <kbd>Esc</kbd> pause</p>
+    ${isTouch ? "<p>Touch: left stick moves, drag anywhere on the right to look, the big button reloads (it shows your ammo), THROW uses a secondary, DASH dodges, the weapon button cycles guns. Works in portrait or landscape.</p>" : ""}
     <div class="row"><button class="go" id="start">Start</button></div>`);
   if (isTouch) document.querySelector(".pcOnly").style.display = "none";
   document.getElementById("start").onclick = () => { newRun(); level = 1; startLevel(); lock(); overlay(false); };
@@ -553,9 +646,12 @@ addEventListener("keydown", e => {
   if (e.code === "Space" || e.code === "ShiftLeft" || e.code === "ShiftRight") tryDash();
   if (e.code >= "Digit1" && e.code <= "Digit4") selectWeapon(+e.code.slice(5) - 1);
   if (e.code === "KeyR") startReload();
+  if (e.code === "KeyE" || e.code === "KeyF") throwSec();
   if (e.code === "Space") e.preventDefault();
 });
 addEventListener("keyup", e => keys[e.code] = false);
+addEventListener("mousedown", e => { if (e.button === 2 && document.pointerLockElement === canvas) throwSec(); });
+addEventListener("contextmenu", e => e.preventDefault());
 addEventListener("mousemove", e => {
   if (isTouch || document.pointerLockElement !== canvas || state !== "play" || P.stun > 0) return;
   P.yaw -= e.movementX * 0.0022;
@@ -618,6 +714,7 @@ if (isTouch) {
     el.addEventListener("touchend", end, { passive:false }); el.addEventListener("touchcancel", end, { passive:false });
   };
   bind("reloadBtn", startReload);
+  bind("secBtn", throwSec);
   bind("dashBtn", () => { if (state === "play") tryDash(); });
   bind("wepBtn", () => {
     if (state !== "play") return;
@@ -667,9 +764,12 @@ function update(dt) {
   } else if (run.ammo[cw] <= 0) startReload();
   if (reloadT <= 0 && fireCd <= 0 && P.stun <= 0 && run.ammo[cw] > 0 && targetInSights(s.range)) fire();
 
+  updateSec(dt);
+
   // --- balls ---
   for (const b of balls) {
-    b.speed = b.base * speedFactor(b);
+    b.speed = b.base * speedFactor(b) * (b.slowT > 0 ? 0.35 : 1);
+    if (b.slowT > 0) b.slowT -= dt;
     b.x += b.dx * b.speed * dt; b.z += b.dz * b.speed * dt;
     const bl = A - b.r;
     if (b.x > bl)  { b.x = bl;  b.dx = -Math.abs(b.dx); }
@@ -739,7 +839,13 @@ function render(dt) {
   me.className = m < 0.75 ? "bad" : m > 1.2 ? "good" : "";
   const sw = ws(curWeapon), frac = reloadT > 0 ? 1 - reloadT / reloadTotal : 1;
   hud("ammo").innerHTML = `<small>${WEAPONS[curWeapon].name}${reloadT > 0 ? " · RELOADING" : run.ammo[curWeapon] < sw.clip ? " · R to reload" : ""}</small>${run.ammo[curWeapon]} / ${sw.clip}<div id="rbar"><div id="rfill" style="width:${(frac * 100).toFixed(0)}%"></div></div>`;
+  const nx = secBag[0];
+  hud("sec").innerHTML = secTotal() ? `<b>E</b> / right-click · ${nx ? SEC[nx].name : "out of secondaries"} · ${secBag.length} left` : "";
   if (isTouch) {
+    const sb = hud("secBtn");
+    sb.style.display = secTotal() ? "flex" : "none";
+    sb.innerHTML = `<b>${secBag.length}</b>${nx ? SEC[nx].name : "empty"}`;
+    sb.style.borderColor = nx ? hex(SEC[nx].color) : ""; sb.style.opacity = nx ? 1 : .4;
     const rb = hud("reloadBtn");
     rb.innerHTML = `<b>${run.ammo[curWeapon]}/${sw.clip}</b>${reloadT > 0 ? "RELOADING" : "RELOAD"}`;
     rb.style.background = reloadT > 0 ? `linear-gradient(to top, #ffb44daa ${(frac*100).toFixed(0)}%, #ffffff22 ${(frac*100).toFixed(0)}%)` : "";
@@ -762,7 +868,7 @@ function loop(now) {
 }
 newRun(); setGunLook(); showMenu();
 requestAnimationFrame(loop);
-window.__game = { P, balls: () => balls, get state() { return state; }, update, fire, startLevel, run: () => run, ws, UPG, draw, upgOk, dbg: () => ({ ammo: run.ammo.slice(), reloadT, curWeapon }) };
+window.__game = { P, balls: () => balls, get state() { return state; }, update, fire, startLevel, run: () => run, throwSec, ws, secBag: () => secBag, proj: () => proj, puddles: () => puddles, UPG, draw, upgOk, dbg: () => ({ ammo: run.ammo.slice(), reloadT, curWeapon }) };
 </script>
 </body>
 </html>
