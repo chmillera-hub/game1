@@ -374,10 +374,26 @@ def shadow(img, x, yb, h, sun):
     d.polygon([(x - 0.18 * h, y), (x + 0.18 * h, y), (x + 0.18 * h - L, y + 0.07 * h), (x - 0.18 * h - L, y + 0.07 * h)], fill=(50, 30, 20, 90)); img.paste(lay, (0, 0), lay)
 
 def seat(img, x, yb, h, robe, skin, rock=False, L=None, R=None, **kw):
-    d = ImageDraw.Draw(img); y = yb - OFF
-    if rock: d.polygon([(x - 0.30 * h, y + 0.02 * h), (x - 0.27 * h, y - 0.07 * h), (x - 0.12 * h, y - 0.13 * h), (x + 0.12 * h, y - 0.12 * h), (x + 0.27 * h, y - 0.06 * h), (x + 0.31 * h, y + 0.02 * h)], fill=(150, 128, 102), outline=(104, 86, 68))
-    pos = cfig(img, x, yb + 0.22 * h, h, robe, skin, cut=yb - 0.27 * h, L=L or (-0.13, -0.5), R=R or (0.13, -0.5), **kw)
-    d.ellipse([x - 0.25 * h, y - 0.25 * h, x + 0.25 * h, y - 0.07 * h], fill=tuple(int(c * 0.93) for c in robe)); d.arc([x - 0.25 * h, y - 0.25 * h, x + 0.25 * h, y - 0.07 * h], 195, 345, fill=tuple(int(c * 0.72) for c in robe), width=2)
+    """a figure sitting cross-legged: torso, a robe draped all the way to the ground, knees and feet showing; optionally on a boulder."""
+    d = ImageDraw.Draw(img)
+    base = yb - OFF                                              # ground line (screen y)
+    if rock:                                                      # a flat boulder he is sitting on
+        d.polygon([(x - 0.46 * h, base + 0.01 * h), (x - 0.43 * h, base - 0.08 * h), (x - 0.26 * h, base - 0.15 * h), (x + 0.1 * h, base - 0.16 * h), (x + 0.36 * h, base - 0.11 * h), (x + 0.47 * h, base + 0.01 * h)], fill=(150, 128, 102), outline=(100, 82, 64))
+        d.line([(x - 0.3 * h, base - 0.06 * h), (x - 0.12 * h, base - 0.1 * h)], fill=(120, 100, 80), width=2); d.line([(x + 0.14 * h, base - 0.05 * h), (x + 0.33 * h, base - 0.02 * h)], fill=(120, 100, 80), width=2)
+        yb = yb - 0.15 * h; base = base - 0.15 * h
+    else:                                                         # a soft contact shadow so he is clearly sitting on the ground
+        lay = Image.new("RGBA", (W, H), (0, 0, 0, 0)); ImageDraw.Draw(lay).ellipse([x - 0.46 * h, base - 0.03 * h, x + 0.46 * h, base + 0.07 * h], fill=(60, 40, 28, 90)); img.paste(lay, (0, 0), lay)
+    pos = cfig(img, x, yb + 0.22 * h, h, robe, skin, cut=yb - 0.27 * h, L=L or (-0.25, -0.34), R=R or (0.25, -0.34), **kw)
+    dk = tuple(int(c * 0.78) for c in robe); lt = tuple(min(255, int(c * 1.0)) for c in robe)
+    top = base - 0.33 * h
+    d.polygon([(x - 0.18 * h, top), (x + 0.18 * h, top), (x + 0.40 * h, base - 0.07 * h), (x + 0.37 * h, base), (x - 0.37 * h, base), (x - 0.40 * h, base - 0.07 * h)], fill=robe)
+    d.ellipse([x - 0.37 * h, base - 0.045 * h, x + 0.37 * h, base + 0.045 * h], fill=robe)
+    d.polygon([(x + 0.02 * h, top), (x + 0.18 * h, top), (x + 0.40 * h, base - 0.07 * h), (x + 0.37 * h, base), (x + 0.1 * h, base)], fill=tuple(int(c * 0.92) for c in robe))
+    for k in range(-3, 4): d.line([(x + k * 0.045 * h, top + 0.03 * h), (x + k * 0.1 * h, base - 0.02 * h)], fill=dk, width=2)       # folds
+    for sgn in (-1, 1):                                                                                                            # knees, each with a crease
+        kx, ky = x + sgn * 0.28 * h, base - 0.13 * h
+        d.ellipse([kx - 0.075 * h, ky - 0.06 * h, kx + 0.075 * h, ky + 0.06 * h], fill=lt, outline=dk); d.arc([kx - 0.05 * h, ky - 0.04 * h, kx + 0.05 * h, ky + 0.05 * h], 200, 340, fill=dk, width=2)
+    for sgn in (-1, 1): d.ellipse([x + sgn * 0.11 * h - 0.04 * h, base - 0.012 * h, x + sgn * 0.11 * h + 0.04 * h, base + 0.03 * h], fill=(128, 92, 60), outline=(90, 62, 40))   # sandals
     return pos
 
 JX, JY, JH = 880, 640, 300
