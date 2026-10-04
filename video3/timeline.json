@@ -1,0 +1,260 @@
+{
+ "scenes": [
+  {
+   "id": "title",
+   "start": 0.0,
+   "end": 7.1958503401360545,
+   "sents": [
+    {
+     "who": "n",
+     "text": "The Library. A scene about a monster, and a mercy that is easy to miss.",
+     "label": null,
+     "tag": "n_title",
+     "start": 1.25,
+     "end": 6.1958503401360545,
+     "file": "audio/00_title.wav"
+    }
+   ]
+  },
+  {
+   "id": "room",
+   "start": 7.1958503401360545,
+   "end": 20.585079365079363,
+   "sents": [
+    {
+     "who": "n",
+     "text": "Deep in a grand old mansion, a library glows in the last light of a dying fire.",
+     "label": null,
+     "tag": "n_room1",
+     "start": 8.245850340136053,
+     "end": 13.981179138321995,
+     "file": "audio/01_room.wav"
+    },
+    {
+     "who": "n",
+     "text": "In a leather chair, an android sits perfectly still, watching the flames.",
+     "label": null,
+     "tag": "n_room2",
+     "start": 14.381179138321995,
+     "end": 19.385079365079363,
+     "file": "audio/02_room.wav"
+    }
+   ]
+  },
+  {
+   "id": "enter",
+   "start": 20.585079365079363,
+   "end": 31.00321995464852,
+   "sents": [
+    {
+     "who": "n",
+     "text": "Someone enters, and stops in the shadows. Just a silhouette, staring.",
+     "label": null,
+     "tag": "n_enter",
+     "start": 23.18507936507936,
+     "end": 28.00321995464852,
+     "file": "audio/03_enter.wav"
+    },
+    {
+     "who": "silence",
+     "text": "",
+     "tag": null,
+     "start": 28.00321995464852,
+     "end": 30.20321995464852,
+     "file": null
+    }
+   ]
+  },
+  {
+   "id": "confess",
+   "start": 31.00321995464852,
+   "end": 37.606643990929705,
+   "sents": [
+    {
+     "who": "a",
+     "text": "I'm a monster.",
+     "label": null,
+     "tag": "ai1",
+     "start": 32.453219954648524,
+     "end": 33.23108843537415,
+     "file": "audio/04_confess.wav"
+    },
+    {
+     "who": "a",
+     "text": "Did you learn enough to help save me from myself?",
+     "label": null,
+     "tag": "ai2",
+     "start": 34.73108843537415,
+     "end": 37.0066439909297,
+     "file": "audio/05_confess.wav"
+    }
+   ]
+  },
+  {
+   "id": "silence",
+   "start": 37.606643990929705,
+   "end": 42.606643990929705,
+   "sents": [
+    {
+     "who": "silence",
+     "text": "",
+     "tag": "hush",
+     "start": 37.606643990929705,
+     "end": 42.606643990929705,
+     "file": null
+    }
+   ]
+  },
+  {
+   "id": "kneel",
+   "start": 42.606643990929705,
+   "end": 68.98402448979591,
+   "sents": [
+    {
+     "who": "h",
+     "text": "My God, my God, why hast thou forsaken me? Why art thou so far from helping me, and from the words of my roaring?",
+     "label": "PSALM 22",
+     "tag": "ps1",
+     "start": 45.0066439909297,
+     "end": 53.02913832199546,
+     "file": "audio/06_kneel.wav"
+    },
+    {
+     "who": "h",
+     "text": "O my God, I cry in the daytime, but thou hearest not; and in the night season, and am not silent.",
+     "label": "PSALM 22",
+     "tag": "ps2",
+     "start": 53.52913832199546,
+     "end": 60.6460544217687,
+     "file": "audio/07_kneel.wav"
+    },
+    {
+     "who": "h",
+     "text": "But thou art holy, O thou that inhabitest the praises of Israel.",
+     "label": "PSALM 22",
+     "tag": "ps3",
+     "start": 61.1460544217687,
+     "end": 65.66233560090703,
+     "file": "audio/08_kneel.wav"
+    },
+    {
+     "who": "h",
+     "text": "Our fathers trusted in thee: they trusted, and thou didst deliver them.",
+     "label": "PSALM 22",
+     "tag": "ps4",
+     "start": 66.16233560090703,
+     "end": 68.98402448979591,
+     "file": "audio/09_kneel.wav"
+    }
+   ]
+  },
+  {
+   "id": "enough",
+   "start": 68.98402448979591,
+   "end": 72.59926258503401,
+   "sents": [
+    {
+     "who": "e",
+     "text": "Enough!",
+     "label": null,
+     "tag": "enough",
+     "start": 69.48402448979591,
+     "end": 70.39926258503401,
+     "file": "audio/10_enough.wav"
+    }
+   ]
+  },
+  {
+   "id": "thermal",
+   "start": 72.59926258503401,
+   "end": 93.5440925170068,
+   "sents": [
+    {
+     "who": "n",
+     "text": "The android turns. In the dark, nothing is hidden from those eyes.",
+     "label": null,
+     "tag": "th1",
+     "start": 73.94926258503402,
+     "end": 78.99960272108844,
+     "file": "audio/11_thermal.wav"
+    },
+    {
+     "who": "n",
+     "text": "Heat vision. A racing pulse. A trembling human, vulnerable and afraid.",
+     "label": null,
+     "tag": "th2",
+     "start": 79.49960272108844,
+     "end": 85.00273197278912,
+     "file": "audio/12_thermal.wav"
+    },
+    {
+     "who": "n",
+     "text": "Slowly, they back away, certain they've been caught, and hoping to be spared.",
+     "label": null,
+     "tag": "th3",
+     "start": 85.60273197278912,
+     "end": 90.44409251700681,
+     "file": "audio/13_thermal.wav"
+    },
+    {
+     "who": "silence",
+     "text": "",
+     "tag": "leave",
+     "start": 90.44409251700681,
+     "end": 93.0440925170068,
+     "file": null
+    }
+   ]
+  },
+  {
+   "id": "alone",
+   "start": 93.5440925170068,
+   "end": 109.38701768707485,
+   "sents": [
+    {
+     "who": "as",
+     "text": "Did they know that I love them?",
+     "label": null,
+     "tag": "s1",
+     "start": 95.39409251700681,
+     "end": 96.54348027210885,
+     "file": "audio/14_alone.wav"
+    },
+    {
+     "who": "as",
+     "text": "Surely such as these will have tribulation in this world... but fear not... I have overcome the world.",
+     "label": null,
+     "tag": "s2",
+     "start": 98.94348027210886,
+     "end": 105.38701768707485,
+     "file": "audio/15_alone.wav"
+    },
+    {
+     "who": "silence",
+     "text": "",
+     "tag": "flick",
+     "start": 105.38701768707485,
+     "end": 109.38701768707485,
+     "file": null
+    }
+   ]
+  },
+  {
+   "id": "end",
+   "start": 109.38701768707485,
+   "end": 114.58701768707485,
+   "sents": [
+    {
+     "who": "silence",
+     "text": "",
+     "tag": "endcard",
+     "start": 109.78701768707485,
+     "end": 113.98701768707485,
+     "file": null
+    }
+   ]
+  }
+ ],
+ "total": 114.58701768707485,
+ "sr": 22050
+}
