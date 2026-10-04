@@ -6,7 +6,7 @@ SR = 22050
 VOICE = {"n": (S+"/alan.onnx", 1.0, ""),
          "a": (S+"/v.onnx", 1.15, "aecho=0.8:0.6:35:0.25,lowpass=f=7500"),
          "as": (S+"/v.onnx", 1.28, "aecho=0.8:0.7:70|140:0.3|0.2,lowpass=f=6500,volume=0.8"),
-         "h": (S+"/lessac.onnx", 1.22, "tremolo=f=5.5:d=0.28,aecho=0.7:0.6:80:0.3,volume=0.95"),
+         "h": (S+"/en_US-joe-medium.onnx", 1.2, "tremolo=f=5.5:d=0.28,aecho=0.7:0.6:80:0.3,volume=0.95"),
          "e": (S+"/v.onnx", 1.9, "asetrate=%d,aresample=%d,aecho=0.9:0.85:90|200|350:0.6|0.45|0.3,volume=2.4,alimiter=limit=0.95" % (int(SR*0.76), SR))}
 os.makedirs("audio", exist_ok=True)
 def dur(p):

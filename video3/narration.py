@@ -13,10 +13,10 @@ SCENES = [
    {"who":"a","gap":1.5,"tag":"ai2","text":"Did you learn enough to help save me from myself?"}]},
  {"id":"silence","pre":0.0,"post":0.0,"items":[{"silence":5.0,"tag":"hush"}]},
  {"id":"kneel","pre":0.4,"post":0.0,"items":[
-   {"who":"h","gap":2.0,"tag":"ps1","label":"PSALM 22","text":"My God, my God, why hast thou forsaken me? Why art thou so far from helping me, and from the words of my roaring?"},
-   {"who":"h","gap":0.5,"tag":"ps2","label":"PSALM 22","text":"O my God, I cry in the daytime, but thou hearest not; and in the night season, and am not silent."},
-   {"who":"h","gap":0.5,"tag":"ps3","label":"PSALM 22","text":"But thou art holy, O thou that inhabitest the praises of Israel."},
-   {"who":"h","gap":0.5,"tag":"ps4","label":"PSALM 22","trunc":0.62,"text":"Our fathers trusted in thee: they trusted, and thou didst deliver them."}]},
+   {"who":"h","gap":2.0,"tag":"ps1","label":"PSALM 22  \u00b7  WORLD ENGLISH BIBLE","text":"My God, my God, why have you forsaken me? Why are you so far from helping me, and from the words of my groaning?"},
+   {"who":"h","gap":0.5,"tag":"ps2","label":"PSALM 22  \u00b7  WORLD ENGLISH BIBLE","text":"My God, I cry in the daytime, but you don't answer; in the night season, and am not silent."},
+   {"who":"h","gap":0.5,"tag":"ps3","label":"PSALM 22  \u00b7  WORLD ENGLISH BIBLE","text":"But you are holy, you who inhabit the praises of Israel."},
+   {"who":"h","gap":0.5,"tag":"ps4","label":"PSALM 22  \u00b7  WORLD ENGLISH BIBLE","trunc":0.62,"text":"Our fathers trusted in you. They trusted, and you delivered them."}]},
  {"id":"enough","pre":0.05,"post":2.2,"items":[
    {"who":"e","tag":"enough","text":"Enough!"}]},
  {"id":"thermal","pre":0.9,"post":0.5,"items":[

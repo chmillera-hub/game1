@@ -255,6 +255,27 @@ def christ_flame(img, a):
     lay = lay.point(lambda v: int(v * a))
     glow(img, lay, 26, 1.7)
 
+def christ_seated(img, a):
+    """a robed, haloed figure in the same seated pose as the android, flashing over its form."""
+    if a <= 0: return
+    robe = (246, 238, 222); skin = (232, 192, 150); hair = (110, 76, 52)
+    lay = Image.new("RGBA", (W, H), (0, 0, 0, 0)); d = ImageDraw.Draw(lay)
+    d.polygon([(402, 452), (446, 452), (456, 520), (450, 556), (388, 556), (392, 500)], fill=robe + (255,))              # torso / robe
+    d.polygon([(388, 540), (486, 536), (500, 560), (498, 606), (452, 606), (446, 566), (392, 572)], fill=robe + (255,))   # lap and thighs, drape to the floor
+    d.line([(420, 462), (448, 514), (484, 540)], fill=robe + (255,), width=15)                                           # arm resting on the knee
+    d.ellipse([476, 531, 494, 548], fill=skin + (255,))                                                                  # hand
+    d.line([(404, 470), (462, 500)], fill=(196, 150, 96, 255), width=6)                                                  # sash
+    d.ellipse([410, 392, 456, 442], fill=hair + (255,)); d.ellipse([416, 398, 452, 436], fill=skin + (255,))             # hair and face
+    d.polygon([(420, 424), (448, 424), (434, 448)], fill=hair + (255,))                                                  # beard
+    d.ellipse([430, 413, 434, 417], fill=(60, 40, 30, 255)); d.ellipse([442, 413, 446, 417], fill=(60, 40, 30, 255))
+    lay.putalpha(lay.split()[3].point(lambda v: int(v * min(1.0, a * 1.15))))
+    img.paste(lay, (0, 0), lay)
+    halo = Image.new("RGB", (W, H), (0, 0, 0)); hd = ImageDraw.Draw(halo)
+    hd.ellipse([408, 364, 458, 398], outline=(255, 226, 150), width=5)                                                  # halo
+    hd.polygon([(402, 452), (446, 452), (456, 520), (450, 556), (388, 556)], fill=(150, 125, 80))                          # soft aura on the body
+    hd.polygon([(388, 540), (486, 536), (500, 560), (498, 606), (446, 606)], fill=(130, 108, 70))
+    halo = halo.point(lambda v: int(v * a)); glow(img, halo, 22, 1.6)
+
 def lightpass(img, t, level=1.0, vig=True):
     room()
     f = (0.78 + 0.22 * math.sin(t * 8.3) * math.sin(t * 3.1 + 0.5)) * (0.7 + 0.3 * level)
@@ -521,8 +542,8 @@ def s_alone(t, d, p):
     sp = 0.6 if (s1[0] <= t <= s1[1] or s2[0] <= t <= s2[1]) else 0.0
     tf = fk[0] + 1.5
     a = max(0.0, 1 - abs(t - tf) / 0.105)      # a flicker of roughly five frames
-    img, hv, bb = draw_scene("alone", t, d, 1.0 - 0.85 * a, 0.0, sp, 0.85 + 0.15 * math.sin(t * 2))
-    if a > 0: christ_flame(img, min(1.0, a * 1.3))   # a robed figure with a halo, in the place of the flames
+    img, hv, bb = draw_scene("alone", t, d, 1.0 - 0.35 * a, 0.0, sp, (0.85 + 0.15 * math.sin(t * 2)) * (1 - a))
+    if a > 0: christ_seated(img, a)               # Christ, seated, flashing over the android's form
     return img
 
 def s_end(t, d, p):
