@@ -25,15 +25,16 @@ SCENES = [
  {"id":"scream","pre":0.4,"post":0.9,"items":[
    {"who":"n","tag":"ns","text":"Imagine screaming at someone who's already in the fetal position, crying. That sounds like a way to break them."}]},
  {"id":"sad","pre":0.4,"post":0.8,"items":[
-   {"who":"n","tag":"nsa","text":"Wait, no. My sadness is not on the floor. That's my loneliness. When I imagine my sadness, she has her arm around me."},
+   {"who":"n","tag":"nsa","text":"When I imagine my sadness, she has her arm around me."},
    {"who":"s","gap":0.6,"tag":"sd1","text":"This situation is completely messed up. It really is messed up that society is not helping your loneliness."},
    {"who":"n","gap":0.6,"tag":"nq","text":"And I'm like, well, are you sad, then, sadness?"},
    {"who":"s","gap":0.5,"tag":"sd2","text":"No. Just kind of irritated."}]},
  {"id":"irritated","pre":0.4,"post":0.8,"items":[
-   {"who":"n","tag":"nir","text":"Irritated that I'm actively expressing the pain of my loneliness, and society is acting like there's nothing to see here. Let's move on to more board games, and more vacations, and more restaurants, and more pictures of people smiling and nodding."},
-   {"who":"s","gap":0.6,"tag":"sd3","text":"There is clearly something to see here. And it is your suffering. Humanity."}]},
+   {"who":"n","tag":"nir","text":"My sadness is irritated that I'm actively expressing the pain of my loneliness, and society is acting like there's nothing to see here. Let's move on to more board games, and more vacations, and more restaurants, and more pictures of people smiling and nodding."},
+   {"who":"s","gap":0.6,"tag":"sd3","text":"There is clearly something to see here."},
+   {"who":"n","gap":0.5,"tag":"mine","text":"It is my suffering, Humanity."}]},
  {"id":"meaning","pre":0.4,"post":2.2,"items":[
    {"who":"n","tag":"nm","text":"Because to me, sadness is the recognition of suffering in another human being, and thinking about how to care for them. So my sadness is irritated that an emotion of mine is clearly suffering, and people aren't using their own sadness to show any real solidarity, or support, for my explicitly stated emotional needs."},
-   {"who":"s","gap":0.6,"tag":"sd4","text":"If anything, I'm sad at the people who aren't showing any empathy, or any material support, for your suffering."},
-   {"who":"n","gap":0.8,"tag":"nend","text":"Messed up emotions, bro."}]},
+   {"who":"n","gap":0.8,"tag":"nend","text":"That's why understanding my emotions matters. It's how I can find plans, and take action, to advocate for my own spiritual and emotional growth."}]},
+
 ]

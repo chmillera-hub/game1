@@ -87,18 +87,19 @@ add(sfx, g0, np.sin(2 * np.pi * np.cumsum(300 + 700 * (tt / 3.0) ** 2) / sr) * n
 # scream: a harsh burst and the room flinching
 sm = S0("scream"); ns = tag("scream", "ns")
 add(sfx, sm + ns[0] + 1.0, whoosh(0.6, 0.3, 120, 1500)); add(sfx, sm + ns[0] + 1.1, thump(60, 0.4, 0.5))
-# sadness: a record scratch, a warm sparkle, a head shake
-sd_ = S0("sad"); nsa = tag("sad", "nsa"); sd1 = tag("sad", "sd1")
-n = int(0.5 * sr); tt = np.arange(n) / sr; add(sfx, sd_ + nsa[0] + 0.2, np.sin(2 * np.pi * np.cumsum(1800 * np.exp(-tt / 0.15)) / sr) * 0.05 * np.hanning(n) + lp(rng.standard_normal(n), 3) * 0.12 * np.hanning(n))
-add(sfx, sd_ + nsa[0] + 4.2, sparkle(2.4, 0.12)); add(sfx, sd_ + nsa[0] + 4.4, chord([262, 330, 392, 523], 3.4, 0.07))
+# sadness arrives with a warm sparkle
+sd_ = S0("sad"); nsa = tag("sad", "nsa")
+add(sfx, sd_ + nsa[0] + 1.2, sparkle(2.4, 0.12)); add(sfx, sd_ + nsa[0] + 1.4, chord([262, 330, 392, 523], 3.4, 0.07))
 # irritated: the world scrolls by, then the spotlight
 ir = S0("irritated"); nir = tag("irritated", "nir"); sd3 = tag("irritated", "sd3")
-for k in range(10): add(sfx, ir + nir[0] + 3.8 + k * 1.0, bell(rng.choice([784, 988, 1175]), 0.7, 0.04))
+add(sfx, ir + nir[0] + 1.0, thump(70, 0.25, 0.3))
+for k in range(9): add(sfx, ir + nir[0] + 6.2 + k * 1.0, bell(rng.choice([784, 988, 1175]), 0.7, 0.04))
 add(sfx, ir + sd3[0] - 0.4, whoosh(0.8, 0.25, 150, 1200)); add(sfx, ir + sd3[0] + 1.4, chord([262, 330, 392, 494], 3.4, 0.08))
 # meaning: three zeros land, then a warm close
 me = S0("meaning"); nm = tag("meaning", "nm"); nend = tag("meaning", "nend")
 for k in range(3): add(sfx, me + nm[0] + 10.6 + k * 0.5, thump(70, 0.3, 0.45))
-add(sfx, me + nend[0] - 0.5, chord([262, 330, 392, 523, 659], 4.5, 0.08)); add(sfx, me + nend[0] + 0.3, sparkle(3.0, 0.07))
+add(sfx, me + nend[0] + 0.2, chord([262, 330, 392, 523, 659], 5.0, 0.08)); add(sfx, me + nend[0] + 0.5, sparkle(3.0, 0.07))
+for i, key in enumerate(("understanding", "find plans", "advocate")): add(sfx, me + nend[0] + ("That's why understanding my emotions matters. It's how I can find plans, and take action, to advocate for my own spiritual and emotional growth.".index(key)) / 140.0 * (nend[1] - nend[0]), bell([784, 988, 1319][i], 1.2, 0.07))
 # gentle plucked score (no constant noise or drone bed): wistful minor, then warmer once sadness arrives
 F = lambda m: 440 * 2 ** ((m - 69) / 12)
 mood = {"title": [45, 52, 57], "intro": [45, 52, 57, 60], "bored": [45, 52, 57, 60], "lonely": [45, 52, 57, 60], "fear": [50, 57, 62, 65], "anger": [43, 50, 55, 58],

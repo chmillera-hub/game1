@@ -440,13 +440,20 @@ def blob(img, x, yb, r, kind, t, mood="idle", Lh=None, Rh=None, alpha=1.0, sil=0
         for q in (S, E): d.ellipse([q[0] - wd / 2, q[1] - wd / 2, q[0] + wd / 2, q[1] + wd / 2], fill=D)
         d.ellipse([E0[0] - r * 0.24, E0[1] - r * 0.24, E0[0] + r * 0.24, E0[1] + r * 0.24], fill=C, outline=D, width=2)
         if thumb and sg == 1:
-            d.rounded_rectangle([E0[0] - r * 0.09, E0[1] - r * 0.62, E0[0] + r * 0.11, E0[1] - r * 0.1], int(r * 0.1), fill=C, outline=D, width=2)
+            fx, fy = E0
+            d.rounded_rectangle([fx - r * 0.38, fy - r * 0.2, fx + r * 0.38, fy + r * 0.38], int(r * 0.2), fill=C, outline=D, width=3)                       # the fist
+            for k in range(3): d.line([(fx - r * 0.38 + 5, fy - r * 0.2 + (k + 1) * r * 0.145), (fx + r * 0.38 - 5, fy - r * 0.2 + (k + 1) * r * 0.145)], fill=D, width=3)   # stacked curled fingers
+            d.rounded_rectangle([fx - r * 0.34, fy - r * 0.66, fx - r * 0.02, fy - r * 0.06], int(r * 0.15), fill=C, outline=D, width=3)                         # a short, wide thumb pointing up
+            d.ellipse([fx - r * 0.28, fy - r * 0.6, fx - r * 0.08, fy - r * 0.42], fill=tuple(min(255, c + 46) for c in C))                                     # thumbnail
     # body
+    if kind == "sad":      # her hair sits BEHIND the face so the face stays clear; a librarian's bun on top
+        hair = (40, 46, 86)
+        d.ellipse([U(-1.14, top - 0.12)[0], U(-1.14, top - 0.12)[1], U(1.14, top + 1.5)[0], U(1.14, top + 1.5)[1]], fill=hair)
+        for sg in (-1, 1): d.polygon([U(sg * 1.08, top + 0.4), U(sg * 1.2, top + 1.2), U(sg * 1.05, top + 2.0), U(sg * 0.82, top + 1.8), U(sg * 0.92, top + 0.8)], fill=hair)
+        d.ellipse([U(-0.34, top - 0.66)[0], U(-0.34, top - 0.66)[1], U(0.34, top - 0.04)[0], U(0.34, top - 0.04)[1]], fill=hair)
     d.ellipse([U(-1, top)[0], U(-1, top)[1], U(1, -0.1)[0], U(1, -0.1)[1]], fill=C, outline=D, width=3)
     d.ellipse([U(-0.62, top + 0.2)[0], U(-0.62, top + 0.2)[1], U(0.1, top + 0.9)[0], U(0.1, top + 0.9)[1]], fill=tuple(min(255, c + 22) for c in C))
-    if kind == "sad":      # her: dark bob hair, a little bow
-        d.ellipse([U(-1.12, top - 0.1)[0], U(-1.12, top - 0.1)[1], U(1.12, top + 1.3)[0], U(1.12, top + 1.3)[1]], fill=(30, 42, 82)); d.polygon([U(-1.12, top + 0.6), U(-0.86, top + 1.9), U(-0.62, top + 0.9)], fill=(30, 42, 82)); d.polygon([U(1.12, top + 0.6), U(0.86, top + 1.9), U(0.62, top + 0.9)], fill=(30, 42, 82))
-        d.polygon([U(0.52, top + 0.05), U(0.95, top - 0.18), U(0.95, top + 0.32)], fill=(244, 150, 180)); d.polygon([U(0.52, top + 0.05), U(0.1, top - 0.18), U(0.1, top + 0.32)], fill=(244, 150, 180)); d.ellipse([U(0.46, top - 0.04)[0], U(0.46, top - 0.04)[1], U(0.62, top + 0.14)[0], U(0.62, top + 0.14)[1]], fill=(210, 90, 130))
+    if kind == "sad": d.arc([U(-1, top)[0], U(-1, top)[1], U(1, top + 1.1)[0], U(1, top + 1.1)[1]], 205, 335, fill=(40, 46, 86), width=max(4, int(r * 0.2)))      # a thin fringe at the hairline
     ex = 0.4; ey = -1.62
     def eye(sg, kind_):
         cxe, cye = U(sg * ex, ey)
@@ -460,7 +467,10 @@ def blob(img, x, yb, r, kind, t, mood="idle", Lh=None, Rh=None, alpha=1.0, sil=0
     em = {"idle": "dot", "bored": "bored", "thumb": "bored", "sob": "closed", "panic": "wide", "shrug": "side", "grr": "dot", "irritated": "side", "sad": "dot", "yell": "closed", "cower": "closed"}[mood]
     for sg in (-1, 1): eye(sg, em)
     if kind == "sad":
-        for sg in (-1, 1): cxe, cye = U(sg * ex, ey); d.line([(cxe + sg * r * 0.18, cye - r * 0.12), (cxe + sg * r * 0.32, cye - r * 0.24)], fill=(30, 24, 30), width=3)       # lashes
+        for sg in (-1, 1):
+            cxe, cye = U(sg * ex, ey); d.line([(cxe + sg * r * 0.18, cye - r * 0.12), (cxe + sg * r * 0.32, cye - r * 0.24)], fill=(30, 24, 30), width=3)       # lashes
+            d.ellipse([cxe - r * 0.3, cye - r * 0.3, cxe + r * 0.3, cye + r * 0.3], outline=(70, 60, 54), width=3)                                           # round glasses
+        d.line([U(-ex + 0.3, ey), U(ex - 0.3, ey)], fill=(70, 60, 54), width=3)
     # brows
     bw = max(3, int(r * 0.07))
     if mood in ("grr", "yell"):
@@ -666,7 +676,7 @@ def s_anger(t, d, p):
     nodv = max(0, math.sin(t * 6)) * 0.25 if t > ad[0] + 3.5 else 0.0
     blob(img, 300 + 20 * math.sin(t * 5) * (0.5 if t > ad[0] + 3.5 else 0), GY, 58, "fear", t, "cower" if t > ad[0] + 3.5 else "panic", Lh=(-1.0, -1.6), Rh=(1.0, -1.6), nod=nodv, sweat=1.0)
     ax = 470; sh_ = tseg(t, na[0] + 0.4, na[0] + 1.0)
-    blob(img, ax, GY, 62, "anger", t, "shrug" if t < ad[0] + 3.0 else "irritated", Lh=(-1.7 - 0.2 * sh_, -1.6 * sh_ - 0.55 * (1 - sh_)), Rh=(1.7 + 0.2 * sh_, -1.6 * sh_ - 0.55 * (1 - sh_)), look=1.0, sil=1.0 - rv if rv < 1 else 0.0, squash=0.15 * sh_)
+    blob(img, ax, GY, 62, "anger", t, "shrug", Lh=(-1.7 - 0.2 * sh_, -1.6 * sh_ - 0.55 * (1 - sh_)), Rh=(1.7 + 0.2 * sh_, -1.6 * sh_ - 0.55 * (1 - sh_)), look=1.0, sil=1.0 - rv if rv < 1 else 0.0, squash=0.15 * sh_)
     if rv > 0.5: tag_label(img, ax, GY - 200, "anger", tseg(t, 0.4, 1.0))
     def _counter(im):
         a = tseg(t, ad[0] + 0.3, ad[0] + 1.0) * (1 - tseg(t, ad[1] + 0.2, ad[1] + 0.9))
@@ -682,7 +692,7 @@ def s_trapped(t, d, p):
     nt, nt2, nt3, nt4 = [ev("trapped", k) for k in ("nt", "nt2", "nt3", "nt4")]; img, m = room(t, "trapped", glow=0.3)
     cell = tseg(t, nt[0] + 4.0, nt[0] + 6.0); bars(img, cell)
     blob(img, POS["boredom"], GY, 62, "boredom", t, "bored"); fetal(img, POS["lonely"], GY + 10, 54, t, 1.0, pool=1.5)
-    blob(img, 300, GY, 58, "fear", t, "cower", Lh=(-1.0, -1.6), Rh=(1.0, -1.6), sweat=1.0); blob(img, 470, GY, 62, "anger", t, "irritated", look=1.0)
+    blob(img, 300, GY, 58, "fear", t, "cower", Lh=(-1.0, -1.6), Rh=(1.0, -1.6), sweat=1.0); blob(img, 470, GY, 62, "anger", t, "shrug", look=1.0)
     img = vignette(img, 0.55 * cell)
     if t > nt[0] + 6.5 and t < nt2[0] - 0.5: hlabel(640, 74, "SOLITARY CONFINEMENT  (my apartment)", 34, (255, 220, 190), tseg(t, nt[0] + 6.5, nt[0] + 7.3) * (1 - tseg(t, nt2[0] - 1.2, nt2[0] - 0.5)))
     def _outside(im):
@@ -735,7 +745,7 @@ def s_scream(t, d, p):
     fetal(img, POS["lonely"], GY + 10, 54, t, 1.0, pool=1.6, shake=shake)
     ax = lerp(470, 900, ease(tseg(t, ns[0] + 0.6, ns[0] + 1.8))) * 1.0; ax = lerp(ax, 470, ease(tseg(t, ns[0] + 5.6, ns[0] + 6.4)))
     ax = min(ax, 880)
-    blob(img, ax, GY, 70 if yelling > 0.5 else 62, "anger", t, "yell" if yelling > 0.3 else "irritated", Lh=(-1.4, -2.2), Rh=(1.4, -2.2) if yelling > 0.3 else None, shout=yelling)
+    blob(img, ax, GY, 70 if yelling > 0.5 else 62, "anger", t, "yell" if yelling > 0.3 else "shrug", Lh=(-1.4, -2.2), Rh=(1.4, -2.2) if yelling > 0.3 else None, shout=yelling)
     if yelling > 0.4:
         for k in range(3): label(img, ax + 120 + k * 50, GY - 220 - k * 24 + math.sin(t * 20 + k) * 3, "!", 60, (255, 90, 80), yelling)
     img = vignette(img, 0.5)
@@ -744,33 +754,33 @@ def s_scream(t, d, p):
 
 def s_sad(t, d, p):
     nsa, sd1, nq, sd2 = [ev("sad", k) for k in ("nsa", "sd1", "nq", "sd2")]; img, m = room(t, "sad", glow=0.4)
-    fade = 1 - tseg(t, nsa[0] + 1.0, nsa[0] + 2.2)                         # fear and anger leave: this is not them
+    fade = 1 - tseg(t, nsa[0] + 0.6, nsa[0] + 1.8)                         # fear and anger step out of the picture
     blob(img, POS["boredom"], GY, 62, "boredom", t, "bored")
-    if fade > 0.02: blob(img, 300, GY, 58, "fear", t, "cower", Lh=(-1.0, -1.6), Rh=(1.0, -1.6), alpha=fade); blob(img, 440, GY, 62, "anger", t, "irritated", alpha=fade)
+    if fade > 0.02: blob(img, 300, GY, 58, "fear", t, "cower", Lh=(-1.0, -1.6), Rh=(1.0, -1.6), alpha=fade); blob(img, 440, GY, 62, "anger", t, "shrug", alpha=fade)
     fetal(img, POS["lonely"], GY + 10, 54, t, 1.0, pool=1.6)
-    ap = tseg(t, nsa[0] + 4.2, nsa[0] + 5.0)                               # sadness arrives and puts her arm around me
+    ap = tseg(t, nsa[0] + 1.2, nsa[0] + 2.0)                               # sadness arrives and puts her arm around me
     shake = math.sin(t * 9) * 0.5 * (tseg(t, sd2[0], sd2[0] + 0.2) * (1 - tseg(t, sd2[0] + 1.0, sd2[0] + 1.3)))
     if ap > 0:
-        sx = 700 + 8 * shake
-        blob(img, sx, GY, 64, "sad", t, "irritated" if t > sd2[0] - 0.2 else "sad", Lh=(-1.0, -1.1), Rh=(1.95, -2.45), alpha=ap, look=-1.0, tears=0.0)
-        if ap > 0.2 and ap < 1: soul_burst(img, 700, 520, ap, t) if False else None
-        tag_label(img, 700, GY - 215, "sad", tseg(t, nsa[0] + 4.8, nsa[0] + 5.6))
-    if t < nsa[0] + 4.0: hlabel(640, 80, "*record scratch*", 40, (255, 230, 190), tseg(t, nsa[0] + 0.2, nsa[0] + 0.5) * (1 - tseg(t, nsa[0] + 2.4, nsa[0] + 3.0)))
-    if nsa[0] + 2.6 < t < nsa[0] + 5.0: label(img, POS["lonely"] - 30, GY - 160, "that's LONELINESS, on the floor", 22, (170, 210, 255), tseg(t, nsa[0] + 2.6, nsa[0] + 3.2) * (1 - tseg(t, nsa[0] + 4.6, nsa[0] + 5.0)))
+        blob(img, 700 + 8 * shake, GY, 64, "sad", t, "irritated" if t > sd2[0] - 0.2 else "sad", Lh=(-1.0, -1.1), Rh=(1.95, -2.45), alpha=ap, look=1.0 if t > sd2[0] - 0.2 else 0.0)
+        tag_label(img, 700, GY - 215, "sad", tseg(t, nsa[0] + 1.8, nsa[0] + 2.6))
     if sd2[0] - 0.1 < t < sd2[1] + 0.8: bubble(img, 700, 330, "No. Just kind of irritated.", 22, 1.0, tail=(700, 420), col=(224, 238, 255))
     return img
 
 def s_irritated(t, d, p):
-    nir, sd3 = ev("irritated", "nir"), ev("irritated", "sd3"); img, m = room(t, "irritated", glow=0.4)
+    nir, sd3, mine = ev("irritated", "nir"), ev("irritated", "sd3"), ev("irritated", "mine"); img, m = room(t, "irritated", glow=0.4)
     spot = tseg(t, sd3[0] - 0.4, sd3[0] + 0.6)
     blob(img, POS["boredom"], GY, 62, "boredom", t, "bored"); fetal(img, POS["lonely"], GY + 10, 54, t, 1.0, pool=1.6)
-    blob(img, 700, GY, 64, "sad", t, "irritated", Lh=(-1.0, -1.1), Rh=(1.95, -2.45), look=-1.0)
-    T = "Irritated that I'm actively expressing the pain of my loneliness, and society is acting like there's nothing to see here. Let's move on to more board games, and more vacations, and more restaurants, and more pictures of people smiling and nodding."
+    blob(img, 700, GY, 64, "sad", t, "irritated", Lh=(-1.0, -1.1), Rh=(1.95, -2.45), look=1.0)       # only sadness is irritated
+    T = "My sadness is irritated that I'm actively expressing the pain of my loneliness, and society is acting like there's nothing to see here. Let's move on to more board games, and more vacations, and more restaurants, and more pictures of people smiling and nodding."
+    def _ignored(im):                                                  # what she sees: me expressing myself and mostly being ignored
+        a = tseg(t, nir[0] + 1.0, nir[0] + 1.8) * (1 - tseg(t, nir[0] + 4.4, nir[0] + 5.0))
+        if a > 0: post_card(im, 800, 80, "I need real emotional & spiritual support.", a, 0, True)
+    HUD(_ignored)
     def _feed(im):
-        a = tseg(t, nir[0] + 3.6, nir[0] + 4.2) * (1 - tseg(t, sd3[0] - 0.4, sd3[0] + 0.2))
+        a = tseg(t, nir[0] + 6.0, nir[0] + 6.6) * (1 - tseg(t, sd3[0] - 0.4, sd3[0] + 0.2))
         if a <= 0: return
         lay = Image.new("RGBA", (W, H), (0, 0, 0, 0)); dd = ImageDraw.Draw(lay); dd.rounded_rectangle([60, 56, 1220, 250], 22, fill=(246, 244, 240, int(235 * a)), outline=(150, 140, 130, int(255 * a)), width=3); im.paste(lay, (0, 0), lay)
-        label(im, 640, 62, "SOCIETY, scrolling by:  “nothing to see here”", 22, (110, 100, 100), a)
+        label(im, 640, 62, "SOCIETY, scrolling by:  \u201cnothing to see here\u201d", 22, (110, 100, 100), a)
         kinds = ["board", "plane", "plate", "smile"]
         for i in range(8):
             kind_ = kinds[i % 4]; x_ = ((i * 160 + t * 70) % 1300) - 40; y_ = 150
@@ -781,24 +791,21 @@ def s_irritated(t, d, p):
             else:
                 dd.ellipse([x_ - 30, y_ - 30, x_ + 30, y_ + 30], outline=c_, width=4); dd.ellipse([x_ - 14, y_ - 12, x_ - 8, y_ - 4], fill=c_); dd.ellipse([x_ + 8, y_ - 12, x_ + 14, y_ - 4], fill=c_); dd.arc([x_ - 16, y_ - 6, x_ + 16, y_ + 18], 20, 160, fill=c_, width=4)
             im.paste(lay, (0, 0), lay)
-        label(im, 640, 214, "more board games · more vacations · more restaurants · more smiling pictures", 18, (120, 110, 110), a)
+        label(im, 640, 214, "more board games \u00b7 more vacations \u00b7 more restaurants \u00b7 more smiling pictures", 18, (120, 110, 110), a)
     HUD(_feed)
     if spot > 0:                                                         # the spotlight: there IS something to see
         dim = Image.new("RGB", (W, H), (6, 6, 16)); mask = Image.new("L", (W, H), 0); md = ImageDraw.Draw(mask); md.ellipse([560, 330, 1240, 720], fill=255); mask = mask.filter(ImageFilter.GaussianBlur(60))
-        img = Image.composite(img, Image.blend(img, dim, 0.7 * spot), mask) if spot > 0 else img
-        blob(img, 700, GY, 64, "sad", t, "irritated", Lh=(-1.0, -1.1), Rh=(1.95, -2.45), look=-1.0); fetal(img, POS["lonely"], GY + 10, 54, t, 1.0, pool=1.6)
-        hlabel(640, 90, "YOUR SUFFERING.", 54, (255, 236, 200), tseg(t, sd3[0] + 1.6, sd3[0] + 2.2)); hlabel(640, 160, "HUMANITY.", 44, (255, 200, 180), tseg(t, sd3[0] + 3.0, sd3[0] + 3.6))
+        img = Image.composite(img, Image.blend(img, dim, 0.7 * spot), mask)
+        blob(img, 700, GY, 64, "sad", t, "irritated", Lh=(-1.0, -1.1), Rh=(1.95, -2.45), look=1.0); fetal(img, POS["lonely"], GY + 10, 54, t, 1.0, pool=1.6)
+        hlabel(640, 90, "MY SUFFERING", 54, (255, 236, 200), tseg(t, mine[0] + 0.1, mine[0] + 0.6)); hlabel(640, 160, "HUMANITY", 44, (255, 200, 180), tseg(t, mine[0] + 1.2, mine[0] + 1.8))
     return img
 
 def s_meaning(t, d, p):
-    nm, sd4, nend = ev("meaning", "nm"), ev("meaning", "sd4"), ev("meaning", "nend"); img, m = room(t, "meaning", glow=0.4, mood="smile" if t > nend[0] else "tired")
-    blob(img, POS["boredom"], GY, 62, "boredom", t, "thumb" if t > nend[0] else "bored", Rh=(1.35, -2.0) if t > nend[0] else None, thumb=t > nend[0])
-    sob_ = 1.0 - 0.7 * tseg(t, sd4[0], sd4[1])
-    fetal(img, POS["lonely"], GY + 10, 54, t, sob_, pool=1.6)
-    looking = tseg(t, sd4[0] - 0.4, sd4[0] + 0.6) * (1 - tseg(t, sd4[1] + 0.4, sd4[1] + 1.2))
-    blob(img, 700, GY, 64, "sad", t, "sad" if t > sd4[0] - 1.0 else "irritated", Lh=(-1.0, -1.1), Rh=(1.95, -2.45), look=-1.0 + 0.0 * looking, tears=1.0 if t > sd4[0] else 0.0)
-    # strangers walking past outside the window, not looking
-    for k in range(5):
+    nm, nend = ev("meaning", "nm"), ev("meaning", "nend"); img, m = room(t, "meaning", glow=0.4, mood="smile" if t > nend[0] + 6 else "tired")
+    blob(img, POS["boredom"], GY, 62, "boredom", t, "bored")
+    fetal(img, POS["lonely"], GY + 10, 54, t, 1.0 - 0.6 * tseg(t, nend[0] + 4, nend[0] + 8), pool=1.6)
+    blob(img, 700, GY, 64, "sad", t, "sad" if t > nm[1] - 3.0 else "irritated", Lh=(-1.0, -1.1), Rh=(1.95, -2.45), look=1.0, tears=1.0 if t > nm[1] - 3.0 else 0.0)
+    for k in range(5):                                                   # strangers walking past outside the window, not looking
         px = ((t * 55 + k * 270) % 1500) - 150
         if 520 < px < 770:
             ImageDraw.Draw(img).ellipse([px - 9, 306, px + 9, 326], fill=(12, 16, 32)); ImageDraw.Draw(img).rectangle([px - 11, 326, px + 11, 372], fill=(12, 16, 32)); ImageDraw.Draw(img).rectangle([px - 6, 338, px + 6, 350], fill=(150, 210, 255))
@@ -809,13 +816,26 @@ def s_meaning(t, d, p):
         label(im, 640, 74, "SADNESS  =", 30, (150, 200, 255), a); label(im, 640, 116, "recognizing suffering in another human being", 28, (240, 246, 255), a); label(im, 640, 154, "and thinking about how to care for them", 28, (240, 246, 255), a)
     HUD(_def)
     def _score(im):
-        a = tseg(t, nm[0] + 10.0, nm[0] + 10.8) * (1 - tseg(t, sd4[1] + 0.6, sd4[1] + 1.4))
+        a = tseg(t, nm[0] + 10.0, nm[0] + 10.8) * (1 - tseg(t, nm[1] + 0.2, nm[1] + 0.8))
         if a <= 0: return
         lay = Image.new("RGBA", (W, H), (0, 0, 0, 0)); dd = ImageDraw.Draw(lay); dd.rounded_rectangle([780, 70, 1220, 250], 18, fill=(24, 20, 34, int(230 * a)), outline=(200, 190, 220, int(255 * a)), width=3); im.paste(lay, (0, 0), lay)
         for i, (nm_, val) in enumerate([("empathy shown", "0"), ("solidarity", "0"), ("material support", "0")]):
             b = tseg(t, nm[0] + 10.6 + i * 0.5, nm[0] + 11.1 + i * 0.5) * a; label(im, 800, 88 + i * 52, nm_, 24, (230, 224, 240), b, anchor="l"); label(im, 1180, 84 + i * 52, val, 40, (255, 120, 120), b, anchor="c")
     HUD(_score)
-    if t > nend[0] - 0.3: hlabel(640, 90, "messed up emotions, bro.", 40, (255, 240, 210), tseg(t, nend[0], nend[0] + 0.6))
+    # the closing idea: understanding my emotions -> a plan -> action for my spiritual and emotional growth
+    TE = "That's why understanding my emotions matters. It's how I can find plans, and take action, to advocate for my own spiritual and emotional growth."
+    steps = [("UNDERSTAND", "my emotions", "understanding"), ("FIND A PLAN", "for what I need", "find plans"), ("TAKE ACTION", "advocate for my spiritual", "advocate")]
+    def _steps(im):
+        for i, (h1, h2, key) in enumerate(steps):
+            t0 = nend[0] + TE.index(key) / len(TE) * (nend[1] - nend[0]); a = tseg(t, t0 - 0.2, t0 + 0.5) * (1 - tseg(t, d - 2.0, d - 0.4))
+            if a <= 0: continue
+            x0 = 50 + i * 410; lay = Image.new("RGBA", (W, H), (0, 0, 0, 0)); dd = ImageDraw.Draw(lay)
+            dd.rounded_rectangle([x0, 30, x0 + 350, 160], 20, fill=(30, 44, 80, int(235 * a)), outline=(150, 200, 255, int(255 * a)), width=3); im.paste(lay, (0, 0), lay)
+            label(im, x0 + 175, 44, str(i + 1) + "  " + h1, 28, (190, 225, 255), a)
+            if i < 2: label(im, x0 + 175, 90, h2, 24, (240, 246, 255), a)
+            else: label(im, x0 + 175, 82, "advocate for my spiritual", 21, (240, 246, 255), a); label(im, x0 + 175, 110, "& emotional growth", 21, (240, 246, 255), a)
+            if i < 2: label(im, x0 + 380, 68, "\u2192", 40, (200, 220, 255), a)
+    HUD(_steps)
     fade = tseg(t, d - 2.0, d - 0.2)
     if fade > 0: img = Image.blend(img, Image.new("RGB", (W, H), (0, 0, 0)), fade)
     return img
