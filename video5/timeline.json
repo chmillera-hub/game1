@@ -1,0 +1,289 @@
+{
+ "scenes": [
+  {
+   "id": "title",
+   "start": 0.0,
+   "end": 6.615351473922902,
+   "sents": [
+    {
+     "who": "n",
+     "text": "Jesus, the Kingdom, and One Extremely Overwhelmed Disciple.",
+     "label": null,
+     "tag": "n_title",
+     "start": 1.25,
+     "end": 5.615351473922902,
+     "file": "audio/00_title.wav"
+    }
+   ]
+  },
+  {
+   "id": "setup",
+   "start": 6.615351473922902,
+   "end": 26.09378684807256,
+   "sents": [
+    {
+     "who": "n",
+     "text": "Jesus is sitting with his disciples near the edge of a dusty road, the evening light turning everything gold. He's been speaking for a while. Not in parables this time, but in that direct, piercing tone he uses when he's trying to get something through their very human skulls.",
+     "label": null,
+     "tag": "set",
+     "start": 7.565351473922902,
+     "end": 25.29378684807256,
+     "file": "audio/01_setup.wav"
+    }
+   ]
+  },
+  {
+   "id": "speech",
+   "start": 26.09378684807256,
+   "end": 49.7121768707483,
+   "sents": [
+    {
+     "who": "j",
+     "text": "I am not of this world, just as you are not of it. And just as the world abandons me, it will abandon you too.",
+     "label": null,
+     "tag": "s1",
+     "start": 26.94378684807256,
+     "end": 32.539795918367346,
+     "file": "audio/02_speech.wav"
+    },
+    {
+     "who": "j",
+     "text": "But know this: the Father is within me, and He is within you. My kingdom is coming soon, even if the world cannot see it. I see it. And you will see it.",
+     "label": null,
+     "tag": "s2",
+     "start": 33.23979591836735,
+     "end": 41.50609977324263,
+     "file": "audio/03_speech.wav"
+    },
+    {
+     "who": "j",
+     "text": "Just as the living Father sent me, and I live because of Him, so the one who believes in me will live to see the kingdom with me.",
+     "label": null,
+     "tag": "s3",
+     "start": 42.206099773242634,
+     "end": 48.8121768707483,
+     "file": "audio/04_speech.wav"
+    }
+   ]
+  },
+  {
+   "id": "stare",
+   "start": 49.7121768707483,
+   "end": 62.91038548752835,
+   "sents": [
+    {
+     "who": "n",
+     "text": "The disciples stare at him, absorbing the words like people trying to drink from a waterfall.",
+     "label": null,
+     "tag": "drink",
+     "start": 50.5621768707483,
+     "end": 56.483265306122455,
+     "file": "audio/05_stare.wav"
+    },
+    {
+     "who": "n",
+     "text": "Finally, one of them speaks up. The disciple with the Patrick Star energy.",
+     "label": null,
+     "tag": "patrick",
+     "start": 57.083265306122456,
+     "end": 62.110385487528355,
+     "file": "audio/06_stare.wav"
+    }
+   ]
+  },
+  {
+   "id": "bro",
+   "start": 62.91038548752835,
+   "end": 69.03099773242631,
+   "sents": [
+    {
+     "who": "d",
+     "text": "Bro... I don't think that's possible.",
+     "label": null,
+     "tag": "bro",
+     "start": 63.76038548752835,
+     "end": 65.78052154195012,
+     "file": "audio/07_bro.wav"
+    },
+    {
+     "who": "n",
+     "text": "Jesus raises an eyebrow.",
+     "label": null,
+     "tag": "brow",
+     "start": 66.48052154195013,
+     "end": 68.43099773242632,
+     "file": "audio/08_bro.wav"
+    }
+   ]
+  },
+  {
+   "id": "odds",
+   "start": 69.03099773242631,
+   "end": 98.79664399092971,
+   "sents": [
+    {
+     "who": "d",
+     "text": "Look, man... we're living with overwhelming odds against us. The Pharisees are super powerful. Rome probably despises me personally. I don't have money. I don't have an army. I don't have political connections. I'm literally just some guy hanging out with you. And they're probably going to kill you. So what are you even trying to say?",
+     "label": null,
+     "tag": "odds",
+     "start": 69.78099773242631,
+     "end": 89.14643990929706,
+     "file": "audio/09_odds.wav"
+    },
+    {
+     "who": "n",
+     "text": "Jesus looks at him. Not annoyed, but with that deep, ancient patience that somehow feels like both love and exasperation.",
+     "label": null,
+     "tag": "patience",
+     "start": 89.84643990929706,
+     "end": 97.99664399092971,
+     "file": "audio/10_odds.wav"
+    }
+   ]
+  },
+  {
+   "id": "drone",
+   "start": 98.79664399092971,
+   "end": 114.1052380952381,
+   "sents": [
+    {
+     "who": "j",
+     "text": "If you aren't building the kingdom with me... then what are you doing? Are you going to be an obedient drone? You think that's going to help build the kingdom? You think the kingdom will come if you contribute to the system of death and destruction and hell on earth?",
+     "label": null,
+     "tag": "drone",
+     "start": 99.54664399092971,
+     "end": 111.30755102040817,
+     "file": "audio/11_drone.wav"
+    },
+    {
+     "who": "n",
+     "text": "The disciple blinks.",
+     "label": null,
+     "tag": "blinks",
+     "start": 111.90755102040816,
+     "end": 113.40523809523809,
+     "file": "audio/12_drone.wav"
+    }
+   ]
+  },
+  {
+   "id": "force",
+   "start": 114.1052380952381,
+   "end": 137.4906575963719,
+   "sents": [
+    {
+     "who": "j",
+     "text": "The world will force you to see what I'm saying. If not today, then tomorrow. If not tomorrow, then someday in your life. You will see that there is no other way but to build the kingdom now, with me and with the Father.",
+     "label": null,
+     "tag": "force",
+     "start": 114.8552380952381,
+     "end": 125.65251700680273,
+     "file": "audio/13_force.wav"
+    },
+    {
+     "who": "n",
+     "text": "He pauses, then adds.",
+     "label": null,
+     "tag": "pause",
+     "start": 126.25251700680272,
+     "end": 128.30748299319728,
+     "file": "audio/14_force.wav"
+    },
+    {
+     "who": "j",
+     "text": "Or, you know... you can try to find a quiet village while everything burns around you. Up to you, my guy. But I know what I'm doing in this world. Now what about you?",
+     "label": null,
+     "tag": "village",
+     "start": 128.80748299319728,
+     "end": 136.6906575963719,
+     "file": "audio/15_force.wav"
+    }
+   ]
+  },
+  {
+   "id": "silence",
+   "start": 137.4906575963719,
+   "end": 166.8548526077098,
+   "sents": [
+    {
+     "who": "n",
+     "text": "Silence. The disciple stands there, staring into the middle distance. Not moving a single muscle. Not blinking. Just existing, in pure existential paralysis.",
+     "label": null,
+     "tag": "still",
+     "start": 138.4406575963719,
+     "end": 150.21317460317462,
+     "file": "audio/16_silence.wav"
+    },
+    {
+     "who": "n",
+     "text": "This goes on for an absurdly long time.",
+     "label": null,
+     "tag": "absurd",
+     "start": 151.01317460317463,
+     "end": 153.92727891156466,
+     "file": "audio/17_silence.wav"
+    },
+    {
+     "who": "silence",
+     "text": "",
+     "tag": "long",
+     "start": 153.92727891156466,
+     "end": 162.92727891156466,
+     "file": null
+    },
+    {
+     "who": "d",
+     "text": "...yeah I guess. Weren't you finishing your speech or something?",
+     "label": null,
+     "tag": "yeah",
+     "start": 163.22727891156467,
+     "end": 166.4548526077098,
+     "file": "audio/18_silence.wav"
+    }
+   ]
+  },
+  {
+   "id": "sigh",
+   "start": 166.8548526077098,
+   "end": 188.98403628117916,
+   "sents": [
+    {
+     "who": "n",
+     "text": "Jesus closes his eyes. He sighs.",
+     "label": null,
+     "tag": "closes",
+     "start": 168.1048526077098,
+     "end": 171.16988662131524,
+     "file": "audio/19_sigh.wav"
+    },
+    {
+     "who": "silence",
+     "text": "",
+     "tag": "inhale",
+     "start": 171.16988662131524,
+     "end": 172.36988662131523,
+     "file": null
+    },
+    {
+     "who": "n",
+     "text": "A long, cosmic sigh. The weight of the universe, the frustration of trying to teach eternal truth to fishermen, and the love of someone who refuses to give up on them.",
+     "label": null,
+     "tag": "cosmic",
+     "start": 172.56988662131522,
+     "end": 182.98403628117916,
+     "file": "audio/20_sigh.wav"
+    },
+    {
+     "who": "silence",
+     "text": "",
+     "tag": "exhale",
+     "start": 182.98403628117916,
+     "end": 186.48403628117916,
+     "file": null
+    }
+   ]
+  }
+ ],
+ "total": 188.98403628117916,
+ "sr": 22050
+}
