@@ -24,19 +24,23 @@ SCENES = [
  {"id":"carry","pre":0.4,"post":0.8,"items":[
    {"who":"n","tag":"c3","text":"Death takes the Son of Man down from the cross. He weighs about a hundred times more than Death is used to."},
    {"who":"d","gap":0.6,"tag":"heck","text":"What the actual heck is going on?"},
-   {"who":"n","gap":0.6,"tag":"thieves","text":"Death touches the feet of the thieves, and they vanish."},
+   {"who":"n","gap":0.6,"tag":"thieves","text":"Death touches the feet of the thieves, and their souls pop out. Red. With little horns."},
    {"who":"d","gap":0.7,"tag":"hell","text":"Okay. Well, those guys went to hell, so at least they're out of the way."},
    {"who":"f","gap":0.7,"tag":"para","text":"No. Send them up to me. The Son of Man said they will be in Paradise as well."},
    {"who":"d","gap":0.8,"tag":"devil","text":"Gosh dang it. Now I have to go talk to the devil, and tell him to send those two back up to You."}]},
- {"id":"whisper","pre":0.4,"post":0.6,"items":[
+ {"id":"whisper","pre":0.4,"post":1.8,"items":[
    {"who":"n","tag":"nwh","text":"From his perch on Death's shoulder, Jesus whispers into his ear."},
    {"who":"j","gap":0.6,"tag":"will","text":"Thy will has been done."},
-   {"who":"d","gap":1.0,"tag":"rules","text":"Oh, what the heck is going on now? This dude is breaking all the rules. I have no idea what's going on anymore. Alright. Here you go, Father."}]},
+   {"who":"n","gap":0.5,"tag":"change","text":"Behind them, the two red souls begin to glow. The horns fade away. And the devil souls turn into divine light."},
+   {"who":"d","gap":0.9,"tag":"rules","text":"Oh, what the heck is going on now? This dude is breaking all the rules. I have no idea what's going on anymore. Alright. Here you go, Father."}]},
  {"id":"arrive","pre":0.4,"post":0.8,"items":[
-   {"who":"n","tag":"thud","text":"Death vanishes in a cloud of smoke. And Jesus lands on the ground with a very loud thud."},
+   {"who":"n","tag":"pop","text":"Death pops into heaven in a cloud of smoke, and drops Jesus."},
+   {"who":"n","gap":0.3,"tag":"thud","text":"Jesus lands on the ground with a very loud thud."},
    {"who":"f","gap":0.9,"tag":"arise","text":"Arise, Son of Man! The one sent from heaven to save the world!"},
-   {"who":"n","gap":0.7,"tag":"stand","text":"Jesus casually stands up, brushing the dust off his feet."},
-   {"who":"j","gap":0.5,"tag":"ready","text":"Okay. You ready to take a walk, Death?"},
+   {"who":"n","gap":0.7,"tag":"stand","text":"Jesus casually stands up, brushing the dust off his feet. Death stands around awkwardly, looking everywhere except at anyone, waiting for someone to tell him he can leave."},
+   {"who":"d","gap":0.6,"tag":"awk","text":"Yeah. So. I should probably... get out of here..."},
+   {"who":"j","gap":0.7,"tag":"thanks2","text":"So... yeah. This is much appreciated, Father. I can now continue my work."},
+   {"who":"j","gap":0.5,"tag":"walkask","text":"Death, can we go for a walk? I have something important I want to tell you."},
    {"who":"d","gap":0.6,"tag":"getdog","text":"Sure. Let me get my dog."}]},
  {"id":"dog","pre":0.4,"post":1.5,"items":[
    {"who":"n","tag":"rush","text":"The skull dog comes rushing in from the side, tongue hanging out, barking."},

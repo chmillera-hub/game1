@@ -73,19 +73,23 @@ add(sfx, cr + dl[0] - 0.15, np.sin(2 * np.pi * np.cumsum(260 - 150 * tt / 0.25) 
 # --- carry: heavy lift, thieves vanish in fire, then rise as light
 cy = S0("carry"); c3 = tag("carry", "c3"); th = tag("carry", "thieves"); pa = tag("carry", "para")
 add(sfx, cy + c3[0] + 3.0, thump(45, 0.6, 1.0)); add(sfx, cy + c3[0] + 3.0, lp(rng.standard_normal(int(0.5 * sr)), 30) * env(int(0.5 * sr), 0.15) * 0.5)
-for off in (1.6, 2.6): add(sfx, cy + th[0] + off, whoosh(0.8, 0.4, 150, 1400))
-add(sfx, cy + pa[0] + 2.2, sparkle(2.4, 0.12)); add(sfx, cy + pa[0] + 2.2, chord([392, 494, 587, 784], 2.6, 0.06))
-# --- whisper
-wl = tag("whisper", "will"); add(sfx, S0("whisper") + wl[0], sparkle(2.0, 0.1))
-# --- arrive: smoke poof, a long fall, the loud thud
-ar = S0("arrive"); thd = tag("arrive", "thud"); arise = tag("arrive", "arise"); land = thd[0] + 3.4
-add(sfx, ar + thd[0] + 0.4, whoosh(1.1, 0.4, 150, 1800)); n = int(0.75 * sr); tt = np.arange(n) / sr
-add(sfx, ar + land - 0.75, np.sin(2 * np.pi * np.cumsum(1400 - 1000 * tt / 0.75) / sr) * np.hanning(n) * 0.07)
+for off in (2.4, 3.4): add(sfx, cy + th[0] + off, whoosh(0.8, 0.4, 150, 1400))                      # the thieves vanish in fire
+for off in (2.7, 3.7): add(sfx, cy + th[0] + off, chord([110, 131, 165, 220], 1.4, 0.10, 0.05)); add(sfx, cy + th[0] + off, thump(60, 0.3, 0.4))   # two ominous stabs: devil souls
+# --- whisper: the souls turn divine, then Death vanishes in smoke
+wh = S0("whisper"); wl = tag("whisper", "will"); rl = tag("whisper", "rules")
+add(sfx, wh + wl[1] + 0.4, sparkle(3.0, 0.13)); add(sfx, wh + wl[1] + 0.8, chord([392, 494, 587, 784], 3.0, 0.07)); add(sfx, wh + wl[1] + 0.4, whoosh(1.2, 0.2, 400, 3000))
+add(sfx, wh + rl[1] + 0.5, whoosh(1.2, 0.4, 150, 1800))
+# --- arrive: Death pops into heaven in smoke, drops Jesus (loud thud), the Father's boom, an awkward wait
+ar = S0("arrive"); pp = tag("arrive", "pop"); thd = tag("arrive", "thud"); arise = tag("arrive", "arise"); land = thd[1] - 0.45
+add(sfx, ar + pp[0] + 0.2, whoosh(1.4, 0.45, 150, 1800)); add(sfx, ar + pp[0] + 0.6, thump(70, 0.25, 0.5))
+n = int(0.55 * sr); tt = np.arange(n) / sr
+add(sfx, ar + land - 0.55, np.sin(2 * np.pi * np.cumsum(1400 - 1000 * tt / 0.55) / sr) * np.hanning(n) * 0.07)
 n = int(2.0 * sr); tt = np.arange(n) / sr
 add(sfx, ar + land, (np.sin(2 * np.pi * 52 * tt) + 0.6 * np.sin(2 * np.pi * 38 * tt) + lp(rng.standard_normal(n), 90) * 1.4) * np.exp(-tt / 0.45) * 0.95)
-add(sfx, ar + arise[0], chord([392, 494, 587, 784], 3.0, 0.07)); add(sfx, ar + arise[0] + 0.2, sparkle(2.4, 0.1))
-st = tag("arrive", "stand")
+add(sfx, ar + arise[0], chord([392, 494, 587, 784], 3.0, 0.07)); add(sfx, ar + arise[0] + 0.2, sparkle(2.4, 0.1)); add(sfx, ar + arise[0] + 1.0, sparkle(2.4, 0.07))
+st = tag("arrive", "stand"); gd = tag("arrive", "getdog")
 for k in range(4): add(sfx, ar + st[0] + 1.8 + k * 0.28, whoosh(0.2, 0.1, 800, 3000))
+for k in range(5): add(sfx, ar + gd[0] + 0.3 + k * 0.5, step(0.3))
 # --- the dog
 dgs = S0("dog"); bk = tag("dog", "bark"); jm = tag("dog", "jump"); cd = tag("dog", "cuddle")
 for k in range(int(2.6 / 0.07)): add(sfx, dgs + bk[0] - 0.4 + k * 0.07, thump(rng.uniform(300, 420), 0.03, 0.12))     # paws pattering

@@ -3,7 +3,7 @@
   {
    "id": "title",
    "start": 0.0,
-   "end": 3.70124716553288,
+   "end": 3.747687074829932,
    "sents": [
     {
      "who": "n",
@@ -11,23 +11,23 @@
      "label": null,
      "tag": "n_title",
      "start": 1.25,
-     "end": 2.70124716553288,
+     "end": 2.747687074829932,
      "file": "audio/00_title.wav"
     }
    ]
   },
   {
    "id": "ticket",
-   "start": 3.70124716553288,
-   "end": 25.35600907029479,
+   "start": 3.747687074829932,
+   "end": 25.356009070294785,
    "sents": [
     {
      "who": "n",
      "text": "Imagine Death getting a service ticket for his next pickup.",
      "label": null,
      "tag": "n1",
-     "start": 4.65124716553288,
-     "end": 8.169070294784582,
+     "start": 4.697687074829932,
+     "end": 8.099410430839002,
      "file": "audio/01_ticket.wav"
     },
     {
@@ -35,32 +35,32 @@
      "text": "Oh, I got a service ticket for the next one. Let's see... thirty-something-year-old dude, named Jesus. Former carpenter. Should be located between two thieves. Alright, I'll go pick him up and bring him to the afterlife. Let's go.",
      "label": null,
      "tag": "tk",
-     "start": 8.769070294784582,
-     "end": 24.756009070294787,
+     "start": 8.699410430839002,
+     "end": 24.756009070294784,
      "file": "audio/02_ticket.wav"
     }
    ]
   },
   {
    "id": "walk",
-   "start": 25.35600907029479,
-   "end": 46.76074829931974,
+   "start": 25.356009070294785,
+   "end": 46.609818594104304,
    "sents": [
     {
      "who": "n",
      "text": "Death walks along the path to the cross, whistling, looking side to side, bored out of his skull. He checks his watch.",
      "label": null,
      "tag": "w1",
-     "start": 26.206009070294787,
-     "end": 33.77571428571429,
+     "start": 26.206009070294783,
+     "end": 33.71766439909297,
      "file": "audio/03_walk.wav"
     },
     {
      "who": "silence",
      "text": "",
      "tag": "whistle",
-     "start": 33.77571428571429,
-     "end": 35.77571428571429,
+     "start": 33.71766439909297,
+     "end": 35.71766439909297,
      "file": null
     },
     {
@@ -68,8 +68,8 @@
      "text": "Alright. I've got time to take the skull dog for a walk after this.",
      "label": null,
      "tag": "dogw",
-     "start": 36.075714285714284,
-     "end": 40.626825396825396,
+     "start": 36.017664399092965,
+     "end": 40.499115646258495,
      "file": "audio/04_walk.wav"
     },
     {
@@ -77,40 +77,40 @@
      "text": "He kicks a stone along in front of him, staring at his feet.",
      "label": null,
      "tag": "kick",
-     "start": 41.2268253968254,
-     "end": 44.86074829931973,
+     "start": 41.0991156462585,
+     "end": 44.7098185941043,
      "file": "audio/05_walk.wav"
     },
     {
      "who": "silence",
      "text": "",
      "tag": "kicked",
-     "start": 44.86074829931973,
-     "end": 46.060748299319734,
+     "start": 44.7098185941043,
+     "end": 45.9098185941043,
      "file": null
     }
    ]
   },
   {
    "id": "cross",
-   "start": 46.76074829931974,
-   "end": 91.45478458049888,
+   "start": 46.609818594104304,
+   "end": 90.86267573696145,
    "sents": [
     {
      "who": "n",
      "text": "At the foot of the cross, Death stretches nice and wide, eyes closed. A little cough. Then he looks up at Jesus.",
      "label": null,
      "tag": "c1",
-     "start": 47.61074829931974,
-     "end": 55.36621315192745,
+     "start": 47.459818594104306,
+     "end": 55.08757369614512,
      "file": "audio/06_cross.wav"
     },
     {
      "who": "silence",
      "text": "",
      "tag": "beat",
-     "start": 55.36621315192745,
-     "end": 56.06621315192745,
+     "start": 55.08757369614512,
+     "end": 55.787573696145124,
      "file": null
     },
     {
@@ -118,8 +118,8 @@
      "text": "And his jaw drops straight to the floor. A blinding, divine light fills his face.",
      "label": null,
      "tag": "c2",
-     "start": 56.26621315192745,
-     "end": 61.54875283446714,
+     "start": 55.98757369614513,
+     "end": 60.9914739229025,
      "file": "audio/07_cross.wav"
     },
     {
@@ -127,8 +127,8 @@
      "text": "What the actual... is going on? Hey, God! What are you doing?",
      "label": null,
      "tag": "wtf",
-     "start": 62.348752834467135,
-     "end": 66.14521541950114,
+     "start": 61.7914739229025,
+     "end": 65.6575963718821,
      "file": "audio/08_cross.wav"
     },
     {
@@ -136,8 +136,8 @@
      "text": "Thank you for picking up my Son.",
      "label": null,
      "tag": "thanks",
-     "start": 66.84521541950114,
-     "end": 68.31968253968255,
+     "start": 66.3575963718821,
+     "end": 67.87850340136055,
      "file": "audio/09_cross.wav"
     },
     {
@@ -145,8 +145,8 @@
      "text": "What are you talking about? This is just some guy. Anybody could say he's the Son of God. Why this man? Can you please turn down the light?",
      "label": null,
      "tag": "why",
-     "start": 68.91968253968254,
-     "end": 77.74326530612245,
+     "start": 68.47850340136054,
+     "end": 77.31369614512471,
      "file": "audio/10_cross.wav"
     },
     {
@@ -154,8 +154,8 @@
      "text": "Ha, ha. Well... you'll see when you bring him up here. We can have a conversation.",
      "label": null,
      "tag": "see",
-     "start": 78.44326530612246,
-     "end": 82.11201814058957,
+     "start": 78.01369614512471,
+     "end": 81.58956916099773,
      "file": "audio/11_cross.wav"
     },
     {
@@ -163,8 +163,8 @@
      "text": "...It looks like I'm going to have to delay walking my skull dog.",
      "label": null,
      "tag": "delay",
-     "start": 83.01201814058957,
-     "end": 86.64594104308391,
+     "start": 82.48956916099773,
+     "end": 86.1118820861678,
      "file": "audio/12_cross.wav"
     },
     {
@@ -172,24 +172,24 @@
      "text": "Oh, don't worry. You can walk your dog with him now. Bring him up.",
      "label": null,
      "tag": "bring",
-     "start": 87.34594104308391,
-     "end": 90.65478458049888,
+     "start": 86.8118820861678,
+     "end": 90.06267573696145,
      "file": "audio/13_cross.wav"
     }
    ]
   },
   {
    "id": "carry",
-   "start": 91.45478458049888,
-   "end": 123.0684126984127,
+   "start": 90.86267573696145,
+   "end": 124.58931972789117,
    "sents": [
     {
      "who": "n",
      "text": "Death takes the Son of Man down from the cross. He weighs about a hundred times more than Death is used to.",
      "label": null,
      "tag": "c3",
-     "start": 92.30478458049889,
-     "end": 98.48129251700682,
+     "start": 91.71267573696146,
+     "end": 97.62215419501135,
      "file": "audio/14_carry.wav"
     },
     {
@@ -197,17 +197,17 @@
      "text": "What the actual heck is going on?",
      "label": null,
      "tag": "heck",
-     "start": 99.08129251700682,
-     "end": 101.06659863945579,
+     "start": 98.22215419501134,
+     "end": 100.17263038548754,
      "file": "audio/15_carry.wav"
     },
     {
      "who": "n",
-     "text": "Death touches the feet of the thieves, and they vanish.",
+     "text": "Death touches the feet of the thieves, and their souls pop out. Red. With little horns.",
      "label": null,
      "tag": "thieves",
-     "start": 101.66659863945578,
-     "end": 104.82451247165532,
+     "start": 100.77263038548753,
+     "end": 106.29897959183674,
      "file": "audio/16_carry.wav"
     },
     {
@@ -215,8 +215,8 @@
      "text": "Okay. Well, those guys went to hell, so at least they're out of the way.",
      "label": null,
      "tag": "hell",
-     "start": 105.52451247165533,
-     "end": 110.37748299319728,
+     "start": 106.99897959183674,
+     "end": 112.0377097505669,
      "file": "audio/17_carry.wav"
     },
     {
@@ -224,8 +224,8 @@
      "text": "No. Send them up to me. The Son of Man said they will be in Paradise as well.",
      "label": null,
      "tag": "para",
-     "start": 111.07748299319728,
-     "end": 115.22224489795919,
+     "start": 112.7377097505669,
+     "end": 116.7315419501134,
      "file": "audio/18_carry.wav"
     },
     {
@@ -233,24 +233,24 @@
      "text": "Gosh dang it. Now I have to go talk to the devil, and tell him to send those two back up to You.",
      "label": null,
      "tag": "devil",
-     "start": 116.02224489795918,
-     "end": 122.2684126984127,
+     "start": 117.5315419501134,
+     "end": 123.78931972789117,
      "file": "audio/19_carry.wav"
     }
    ]
   },
   {
    "id": "whisper",
-   "start": 123.0684126984127,
-   "end": 141.25782312925173,
+   "start": 124.58931972789117,
+   "end": 151.64657596371885,
    "sents": [
     {
      "who": "n",
      "text": "From his perch on Death's shoulder, Jesus whispers into his ear.",
      "label": null,
      "tag": "nwh",
-     "start": 123.91841269841271,
-     "end": 127.83097505668935,
+     "start": 125.43931972789117,
+     "end": 129.24739229024945,
      "file": "audio/20_whisper.wav"
     },
     {
@@ -258,93 +258,129 @@
      "text": "Thy will has been done.",
      "label": null,
      "tag": "will",
-     "start": 128.43097505668936,
-     "end": 129.67324263038552,
+     "start": 129.84739229024945,
+     "end": 131.0896598639456,
      "file": "audio/21_whisper.wav"
+    },
+    {
+     "who": "n",
+     "text": "Behind them, the two red souls begin to glow. The horns fade away. And the devil souls turn into divine light.",
+     "label": null,
+     "tag": "change",
+     "start": 131.5896598639456,
+     "end": 138.84589569161,
+     "file": "audio/22_whisper.wav"
     },
     {
      "who": "d",
      "text": "Oh, what the heck is going on now? This dude is breaking all the rules. I have no idea what's going on anymore. Alright. Here you go, Father.",
      "label": null,
      "tag": "rules",
-     "start": 130.67324263038552,
-     "end": 140.65782312925174,
-     "file": "audio/22_whisper.wav"
+     "start": 139.74589569161,
+     "end": 149.84657596371883,
+     "file": "audio/23_whisper.wav"
     }
    ]
   },
   {
    "id": "arrive",
-   "start": 141.25782312925173,
-   "end": 163.83548752834466,
+   "start": 151.64657596371885,
+   "end": 194.0867346938776,
    "sents": [
     {
      "who": "n",
-     "text": "Death vanishes in a cloud of smoke. And Jesus lands on the ground with a very loud thud.",
+     "text": "Death pops into heaven in a cloud of smoke, and drops Jesus.",
+     "label": null,
+     "tag": "pop",
+     "start": 152.49657596371884,
+     "end": 156.71099773242634,
+     "file": "audio/24_arrive.wav"
+    },
+    {
+     "who": "n",
+     "text": "Jesus lands on the ground with a very loud thud.",
      "label": null,
      "tag": "thud",
-     "start": 142.10782312925173,
-     "end": 147.47163265306125,
-     "file": "audio/23_arrive.wav"
+     "start": 157.01099773242635,
+     "end": 160.02959183673474,
+     "file": "audio/25_arrive.wav"
     },
     {
      "who": "f",
      "text": "Arise, Son of Man! The one sent from heaven to save the world!",
      "label": null,
      "tag": "arise",
-     "start": 148.37163265306125,
-     "end": 152.29580498866216,
-     "file": "audio/24_arrive.wav"
+     "start": 160.92959183673474,
+     "end": 164.70283446712023,
+     "file": "audio/26_arrive.wav"
     },
     {
      "who": "n",
-     "text": "Jesus casually stands up, brushing the dust off his feet.",
+     "text": "Jesus casually stands up, brushing the dust off his feet. Death stands around awkwardly, looking everywhere except at anyone, waiting for someone to tell him he can leave.",
      "label": null,
      "tag": "stand",
-     "start": 152.99580498866214,
-     "end": 157.0592970521542,
-     "file": "audio/25_arrive.wav"
+     "start": 165.40283446712021,
+     "end": 176.64129251700683,
+     "file": "audio/27_arrive.wav"
+    },
+    {
+     "who": "d",
+     "text": "Yeah. So. I should probably... get out of here...",
+     "label": null,
+     "tag": "awk",
+     "start": 177.24129251700683,
+     "end": 180.56174603174605,
+     "file": "audio/28_arrive.wav"
     },
     {
      "who": "j",
-     "text": "Okay. You ready to take a walk, Death?",
+     "text": "So... yeah. This is much appreciated, Father. I can now continue my work.",
      "label": null,
-     "tag": "ready",
-     "start": 157.5592970521542,
-     "end": 160.29925170068026,
-     "file": "audio/26_arrive.wav"
+     "tag": "thanks2",
+     "start": 181.26174603174604,
+     "end": 186.0798866213152,
+     "file": "audio/29_arrive.wav"
+    },
+    {
+     "who": "j",
+     "text": "Death, can we go for a walk? I have something important I want to tell you.",
+     "label": null,
+     "tag": "walkask",
+     "start": 186.5798866213152,
+     "end": 190.53888888888892,
+     "file": "audio/30_arrive.wav"
     },
     {
      "who": "d",
      "text": "Sure. Let me get my dog.",
      "label": null,
      "tag": "getdog",
-     "start": 160.89925170068025,
-     "end": 163.03548752834465,
-     "file": "audio/27_arrive.wav"
+     "start": 191.1388888888889,
+     "end": 193.28673469387758,
+     "file": "audio/31_arrive.wav"
     }
    ]
   },
   {
    "id": "dog",
-   "start": 163.83548752834466,
-   "end": 187.1547845804988,
+   "start": 194.0867346938776,
+   "end": 217.22027210884355,
    "sents": [
     {
      "who": "n",
      "text": "The skull dog comes rushing in from the side, tongue hanging out, barking.",
      "label": null,
      "tag": "rush",
-     "start": 164.68548752834465,
-     "end": 169.16693877551018,
-     "file": "audio/28_dog.wav"
+     "start": 194.93673469387758,
+     "end": 199.54589569161,
+     "file": "audio/32_dog.wav"
     },
     {
      "who": "silence",
      "text": "",
      "tag": "bark",
-     "start": 169.16693877551018,
-     "end": 170.16693877551018,
+     "start": 199.54589569161,
+     "end": 200.54589569161,
      "file": null
     },
     {
@@ -352,25 +388,25 @@
      "text": "Oh, come here, you precious thing.",
      "label": null,
      "tag": "precious",
-     "start": 170.36693877551016,
-     "end": 172.8050340136054,
-     "file": "audio/29_dog.wav"
+     "start": 200.74589569161,
+     "end": 203.05628117913835,
+     "file": "audio/33_dog.wav"
     },
     {
      "who": "n",
      "text": "The dog runs right past Death, without even looking at him, and jumps into the arms of Jesus.",
      "label": null,
      "tag": "jump",
-     "start": 173.50503401360538,
-     "end": 179.69315192743758,
-     "file": "audio/30_dog.wav"
+     "start": 203.75628117913834,
+     "end": 209.81668934240363,
+     "file": "audio/34_dog.wav"
     },
     {
      "who": "silence",
      "text": "",
      "tag": "cuddle",
-     "start": 179.69315192743758,
-     "end": 180.89315192743757,
+     "start": 209.81668934240363,
+     "end": 211.01668934240362,
      "file": null
     },
     {
@@ -378,22 +414,22 @@
      "text": "Okay. Can we just get this walk done?",
      "label": null,
      "tag": "walkdone",
-     "start": 181.19315192743758,
-     "end": 183.96793650793646,
-     "file": "audio/31_dog.wav"
+     "start": 211.31668934240363,
+     "end": 214.04503401360546,
+     "file": "audio/35_dog.wav"
     },
     {
      "who": "j",
      "text": "Sure, buddy.",
      "label": null,
      "tag": "sure",
-     "start": 184.66793650793645,
-     "end": 185.6547845804988,
-     "file": "audio/32_dog.wav"
+     "start": 214.74503401360545,
+     "end": 215.72027210884355,
+     "file": "audio/36_dog.wav"
     }
    ]
   }
  ],
- "total": 187.1547845804988,
+ "total": 217.22027210884355,
  "sr": 22050
 }

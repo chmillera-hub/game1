@@ -546,13 +546,51 @@ def music_notes(img, t, x, y, a=1.0):
         u = (t * 0.55 + i / 4) % 1; c = int(255 * math.sin(u * math.pi) * a)
         d.text((x + math.sin(i * 2.3 + t * 2) * 30 + u * 60, y - u * 120), "♪" if i % 2 else "♫", font=f, fill=(c, int(c * 0.9), int(c * 0.6)))
 
+def soul(img, x, y, u, t, s=1.0, a=1.0, ph=0.0):
+    """a floating soul. u=0: a red devil soul with horns and a mean grin; u=1: a divine, haloed soul with a gentle smile."""
+    if a <= 0.01: return
+    y = y + math.sin(t * 2.2 + ph) * 9; r = 34 * s
+    c = mix((206, 36, 34), (255, 236, 172), u); c2 = mix((255, 124, 40), (255, 255, 232), u)
+    gl = Image.new("RGB", (W, H), (0, 0, 0)); ImageDraw.Draw(gl).ellipse([x - r * 2.2, y - r * 2.0, x + r * 2.2, y + r * 2.4], fill=tuple(int(v * 0.55 * a) for v in c)); softglow(img, gl, 30, 1.2)
+    lay = Image.new("RGBA", (W, H), (0, 0, 0, 0)); d = ImageDraw.Draw(lay)
+    sw = math.sin(t * 5 + ph) * r * 0.35
+    d.polygon([(x - r * 0.75, y + r * 0.5), (x + r * 0.75, y + r * 0.5), (x + sw * 0.6, y + r * 1.6), (x + sw, y + r * 2.5)], fill=c + (220,))          # wispy tail
+    d.ellipse([x - r, y - r, x + r, y + r * 1.1], fill=c + (255,), outline=tuple(int(v * 0.6) for v in c) + (255,), width=3)
+    d.ellipse([x - r * 0.6, y - r * 0.75, x + r * 0.35, y + r * 0.1], fill=c2 + (120,))
+    hh = clamp(1 - u / 0.8)
+    if hh > 0.02:                                                                                                                                      # horns that melt away
+        for sg in (-1, 1):
+            d.polygon([(x + sg * r * 0.32, y - r * 0.82), (x + sg * r * (0.62 + 0.12 * hh), y - r * (0.82 + 0.95 * hh)), (x + sg * r * 0.8, y - r * 0.6)], fill=(122, 14, 18, int(255 * hh)), outline=(70, 8, 10, int(255 * hh)))
+    ey = y - r * 0.12
+    if u < 0.5:                                                                                                                                        # glaring devil eyes + jagged grin
+        for sg in (-1, 1):
+            d.ellipse([x + sg * r * 0.38 - r * 0.2, ey - r * 0.14, x + sg * r * 0.38 + r * 0.2, ey + r * 0.2], fill=(255, 236, 80, 255)); d.ellipse([x + sg * r * 0.38 - 3, ey - 2, x + sg * r * 0.38 + 3, ey + 6], fill=(20, 10, 10, 255))
+            d.line([(x + sg * r * 0.7, ey - r * 0.34), (x + sg * r * 0.12, ey - r * 0.12)], fill=(60, 8, 10, 255), width=4)
+        pts = [(x - r * 0.5, y + r * 0.34)] + [(x - r * 0.5 + k * r * 0.2, y + r * (0.55 if k % 2 else 0.3)) for k in range(1, 6)] + [(x + r * 0.5, y + r * 0.34)]
+        d.polygon(pts + [(x + r * 0.4, y + r * 0.7), (x - r * 0.4, y + r * 0.7)], fill=(30, 6, 8, 255)); d.line(pts, fill=(255, 255, 255, 255), width=2)
+    else:                                                                                                                                              # serene, happy
+        for sg in (-1, 1): d.arc([x + sg * r * 0.38 - r * 0.2, ey - r * 0.12, x + sg * r * 0.38 + r * 0.2, ey + r * 0.22], 200, 340, fill=(120, 90, 40, 255), width=4)
+        d.arc([x - r * 0.35, y + r * 0.1, x + r * 0.35, y + r * 0.55], 20, 160, fill=(150, 100, 60, 255), width=3)
+    if u > 0.25: d.ellipse([x - r * 0.75, y - r * (1.65), x + r * 0.75, y - r * 1.25], outline=(255, 226, 120, int(255 * clamp((u - 0.25) / 0.5))), width=4)         # halo
+    if a < 1: lay.putalpha(lay.split()[3].point(lambda v: int(v * a)))
+    img.paste(lay, (0, 0), lay)
+
+def soul_burst(img, x, y, u, t):
+    """sparkles when a soul transforms."""
+    if u <= 0 or u >= 1: return
+    lay = Image.new("RGB", (W, H), (0, 0, 0)); d = ImageDraw.Draw(lay); r = random.Random(int(x))
+    for k in range(18):
+        a_ = k / 18 * 6.28 + 0.3; dist = 30 + 150 * u; c = int(255 * (1 - u))
+        d.ellipse([x + math.cos(a_) * dist - 5, y + math.sin(a_) * dist - 5, x + math.cos(a_) * dist + 5, y + math.sin(a_) * dist + 5], fill=(c, int(c * 0.9), int(c * 0.55)))
+    softglow(img, lay, 10, 1.5); img.paste(ImageChops.add(img, lay))
+
 def jfig(img, x, yb, h=300, rot=0.0, mouth="smile", eyes="open", alpha=1.0, L=None, R=None):
     return cfig(img, x, yb, h, (246, 242, 232), SKIN[0], hair=(100, 68, 46), beard=True, sash=(206, 188, 150), mantle=None, tunic=True, mouth=mouth, eyes=eyes, rot=rot, alpha=alpha, L=L, R=R)
 
-def jlie(img, cx, cy, h=270, su=0.0, eyes="closed", mouth="smile"):
+def jlie(img, cx, cy, h=270, su=0.0, eyes="closed", mouth="smile", alpha=1.0):
     """Jesus lying across a surface (su=0) rising to standing (su=1). cx, cy: where his torso centre is when lying."""
     rot = 82 * (1 - su); px = cx + 0.44 * h * (1 - su); py = lerp(cy, GY + 4, su)
-    return jfig(img, px, py, h, rot=rot, eyes=eyes, mouth=mouth)
+    return jfig(img, px, py, h, rot=rot, eyes=eyes, mouth=mouth, alpha=alpha)
 
 # ---- scenes
 CX = {"L": 430, "C": 780, "R": 1110}                      # cross positions: thief, Jesus, thief
@@ -640,68 +678,95 @@ def s_cross(t, d, p):
 def s_carry(t, d, p):
     c3, hk, th, hl, pa, dv = [ev("carry", k) for k in ("c3", "heck", "thieves", "hell", "para", "devil")]
     img = golgotha()
-    lift = tseg(t, c3[0] + 1.0, c3[0] + 3.2)                              # Jesus is lifted down and over Death's shoulder
-    thieves_gone = tseg(t, th[0] + 1.6, th[0] + 2.3); second = tseg(t, th[0] + 2.6, th[0] + 3.2)
-    reappear = tseg(t, pa[0] + 2.2, pa[0] + 3.2)
-    cross(img, CX["L"], 230, 380, "thief", a=1 - thieves_gone, figure=True); cross(img, CX["R"], 230, 380, "thief", a=1 - second, figure=True)
+    lift = tseg(t, c3[0] + 1.0, c3[0] + 3.2)
+    gone1 = tseg(t, th[0] + 2.4, th[0] + 3.1); gone2 = tseg(t, th[0] + 3.4, th[0] + 4.1)
+    cross(img, CX["L"], 230, 380, "thief", a=1 - gone1, figure=True); cross(img, CX["R"], 230, 380, "thief", a=1 - gone2, figure=True)
     cross(img, CX["C"], 130, 480, "jesus", figure=(lift < 0.05))
-    # thieves: a red puff down to hell, then golden orbs rising to Paradise
-    for kx, g in ((CX["L"], thieves_gone), (CX["R"], second)):
+    for kx, g in ((CX["L"], gone1), (CX["R"], gone2)):
         if 0 < g < 1: smoke(img, kx, 600, g, (200, 50, 30))
-        if reappear > 0 and g > 0.9:
-            oy = 340 - 120 * reappear; lay = Image.new("RGB", (W, H), (0, 0, 0)); ImageDraw.Draw(lay).ellipse([kx - 26, oy - 26, kx + 26, oy + 26], fill=(255, 230, 150)); softglow(img, lay, 24, 1.6); ImageDraw.Draw(img).ellipse([kx - 16, oy - 16, kx + 16, oy + 16], fill=(255, 250, 220)); ImageDraw.Draw(img).ellipse([kx - 22, oy - 38, kx + 22, oy - 28], outline=(255, 226, 140), width=3)
-    walk_to = tseg(t, th[0] - 0.4, th[0] + 1.8) * (1 - tseg(t, th[0] + 2.8, hl[0] + 0.6)) + tseg(t, th[0] + 2.8, th[0] + 3.4) * 0.0
     dx = 560 - 130 * tseg(t, th[0] - 0.4, th[0] + 1.6) + 40 * tseg(t, th[0] + 2.6, th[0] + 4.0)
-    bend = 0.9 * lift
-    fp = tseg(t, devil[0] if False else dv[0] + 0.3, dv[0] + 0.9)
-    pos = death(img, dx, GY - 6, 330, t, L=(-0.24, -0.5), R=(0.26, -0.5) if fp < 0.1 else (0.0, -0.8), scythe=fp < 0.1, bend=bend, eyes="wide" if hk[0] < t < hk[1] + 1 else "norm", sweat=1.0 if lift > 0.5 else 0.0, look=(0.5, 0.2))
+    # the thieves' souls pop out as red devil souls and drift to hover behind Death
+    for k, (g0, gx, tx, ty) in enumerate(((th[0] + 2.7, CX["L"], dx - 170, 300), (th[0] + 3.7, CX["R"], dx + 190, 272))):
+        e = tseg(t, g0, g0 + 1.5)
+        if t >= g0: soul(img, lerp(gx, tx, e), lerp(320, ty, e), 0.0, t, 1.0, a=min(1.0, (t - g0) / 0.3), ph=k * 2)
+    bend = 0.9 * lift; fp = tseg(t, dv[0] + 0.3, dv[0] + 0.9)
+    souls_in = t > th[0] + 3.7
+    pos = death(img, dx, GY - 6, 330, t, L=(-0.24, -0.5), R=(0.26, -0.5) if fp < 0.1 else (0.0, -0.8), scythe=fp < 0.1, bend=bend, eyes="wide" if hk[0] < t < hk[1] + 1 else "norm", sweat=1.0 if lift > 0.5 else 0.0,
+                look=((1.0 if math.sin(t * 2.2) > 0 else -1.0) if souls_in else 0.5, 0.2), brow=0.8 if souls_in else 0.0)
     if lift > 0:
         sh = pos["shoulder"]; e = ease(lift)
-        cx_ = lerp(CX["C"], dx + 119, e); cy_ = lerp(524, sh[1] + 34, e); rot = lerp(0, 82, e)
+        cx_ = lerp(CX["C"], dx + 119, e); cy_ = lerp(524, sh[1] + 66, e); rot = lerp(0, 82, e)
         jfig(img, cx_, cy_, 270, rot=rot, eyes="closed", mouth="smile")
-        crack = tseg(t, c3[0] + 3.0, c3[0] + 3.5)
-        d_ = ImageDraw.Draw(img)
+        crack = tseg(t, c3[0] + 3.0, c3[0] + 3.5); d_ = ImageDraw.Draw(img)
         if crack > 0: d_.line([(dx - 90, GY + 8), (dx - 30, GY + 28), (dx + 20, GY + 14), (dx + 90, GY + 34)], fill=(40, 28, 26), width=4)
         if lift > 0.8: label(img, dx - 120, GY - 400, "\u00d7100", 52, (255, 220, 160), tseg(t, c3[0] + 3.0, c3[0] + 3.6) * (1 - tseg(t, hk[1], hk[1] + 0.6)))
     return img
 
 def s_whisper(t, d, p):
-    nw, wl, rl = ev("whisper", "nwh"), ev("whisper", "will"), ev("whisper", "rules")
+    nw, wl, ch, rl = ev("whisper", "nwh"), ev("whisper", "will"), ev("whisper", "change"), ev("whisper", "rules")
     img = golgotha(); img = Image.blend(img, Image.new("RGB", (W, H), (255, 240, 200)), 0.08 * tseg(t, wl[0], wl[1]))
     beam(img, 780, 150, 600, 0.35 + 0.3 * tseg(t, wl[0], wl[1] + 1.0), t)
-    pos = death(img, 640, GY - 6, 340, t, L=(-0.22, -0.46), R=(0.27, -0.6), scythe=False, bend=0.7, eyes="norm" if t < wl[0] else "wide", look=(0.8 * math.sin(t * 3) if t > wl[1] else 0.9, 0.0), sweat=1.0 if t > wl[1] else 0.0, brow=1.0 if t > wl[1] else 0.0)
-    sh = pos["shoulder"]; jfig(img, 640 + 119, sh[1] + 34, 270, rot=82, eyes="closed" if t < wl[0] - 0.4 else "open", mouth="smile")
+    u_soul = tseg(t, wl[1] + 0.2, wl[1] + 2.8)                                           # red -> divine
+    vanish = tseg(t, rl[1] + 0.5, rl[1] + 1.4); alpha = 1 - vanish
+    CXD = 640; sy = (GY - 6)
+    souls = ((CXD - 200, 300, 0.0), (CXD + 215, 270, 2.0))
+    for sx_, sy_, ph_ in souls:
+        soul(img, sx_, sy_, u_soul, t, 1.1, alpha, ph_); soul_burst(img, sx_, sy_ + math.sin(t * 2.2 + ph_) * 9, tseg(t, wl[1] + 1.0, wl[1] + 2.4), t)
+    # Death looks from soul to soul, getting more and more exasperated and confused
+    glance = 1.0 if math.sin(t * 2.4) > 0 else -1.0
+    after = t > wl[1]
+    pos = death(img, CXD, GY - 6, 340, t, L=(-0.22, -0.46), R=(0.27, -0.6) if t < rl[0] else (0.27, -0.46), scythe=False, bend=0.7, alpha=alpha,
+                eyes=("wide" if (after and u_soul > 0.3 and u_soul < 0.9) else ("roll" if t > rl[0] + 1.0 and t < rl[0] + 3.0 else "norm")),
+                look=(glance if t > nw[1] else 0.8, 0.0), sweat=1.0 if after else 0.0, brow=1.0 if after else 0.0)
+    sh = pos["shoulder"]
+    jfig(img, 640 + 119, sh[1] + 66, 270, rot=82, eyes="closed" if t < wl[0] - 0.4 else "open", mouth="smile", alpha=alpha)
     hx, hy = pos["head"]
     if wl[0] <= t <= wl[1] + 0.6:
         bubble6(img, hx + 120, hy - 150, "Thy will has been done.", 22, 1.0, tail=(hx - 10, hy - 40), col=(255, 250, 230))
         ImageDraw.Draw(img).ellipse([hx + 60 - 24, hy - 220 - 6, hx + 60 + 24, hy - 214 + 2], outline=(255, 226, 140), width=3)
-    if t > wl[1] + 0.4:
-        for k, kx in enumerate((-60, 40)): label(img, hx + kx, hy - 120 - (k % 2) * 30 + math.sin(t * 4 + k) * 4, "?", 56, (255, 240, 200), tseg(t, wl[1] + 0.5 + k * 0.5, wl[1] + 1.0 + k * 0.5))
+    if t > wl[1] + 3.0 and vanish < 0.1:
+        for k, kx in enumerate((-60, 40)): label(img, hx + kx, hy - 120 - (k % 2) * 30 + math.sin(t * 4 + k) * 4, "?", 56, (255, 240, 200), tseg(t, wl[1] + 3.0 + k * 0.5, wl[1] + 3.5 + k * 0.5))
+    if vanish > 0: smoke(img, 640, GY - 60, tseg(t, rl[1] + 0.4, rl[1] + 1.8))
     return img
 
 def s_arrive(t, d, p):
-    th, ar, st, rd, gd = [ev("arrive", k) for k in ("thud", "arise", "stand", "ready", "getdog")]
-    img = heaven(); land = th[0] + 3.4
-    fall = tseg(t, land - 0.7, land); on_ground = t >= land
-    sh = max(0, 1 - (t - land) * 5) * 16 if on_ground else 0
-    smoke_u = tseg(t, th[0] + 0.4, th[0] + 2.0)
-    if smoke_u < 1: smoke(img, 640, 400, smoke_u)
+    pop, th, ar, st, aw, t2, wk, gd = [ev("arrive", k) for k in ("pop", "thud", "arise", "stand", "awk", "thanks2", "walkask", "getdog")]
+    img = heaven(); land = th[1] - 0.45                                                   # Jesus hits the ground at the end of "...very loud thud"
+    appear = tseg(t, pop[0] + 0.5, pop[0] + 1.5); smoke_u = tseg(t, pop[0] + 0.2, pop[0] + 3.0)
     beam(img, 640, 100, 600, 0.9 * tseg(t, ar[0] - 0.4, ar[0] + 0.6) * (1 - tseg(t, ar[1] + 1.5, ar[1] + 3.0)) + 0.25, t)
-    su = 0.0 if not on_ground else ease(tseg(t, st[0] + 0.2, st[0] + 2.2))
-    if t > th[0] + 0.9:
-        cy_ = lerp(-150, GY - 34, ease(fall)); jlie(img, 640, cy_, 270, su, eyes="open" if t > st[0] else "closed")
+    drop = tseg(t, land - 0.55, land); on_ground = t >= land
+    leave = tseg(t, gd[0] + 0.3, gd[1] + 0.6)                                              # Death goes to fetch the dog, Jesus waits where the dog will arrive
+    dxd = 640 if t < land - 0.3 else lerp(640, 470, ease(tseg(t, land - 0.3, land + 1.4)))
+    dxd = lerp(dxd, 330, ease(leave))
+    jx = lerp(640, 820, ease(tseg(t, gd[0] + 0.5, gd[1] + 0.8)))
+    stand_u = ease(tseg(t, st[0] + 0.2, st[0] + 2.0)) if on_ground else 0.0
+    # divine souls follow Death in, hover, then float up into the light
+    up = tseg(t, ar[0] + 1.0, ar[0] + 3.8)
+    for k, (ox, oy, ph_) in enumerate(((-170, 330, 0.0), (190, 300, 2.0))):
+        if appear > 0: soul(img, dxd + ox + (60 * up if k else -60 * up), oy - 260 * up, 1.0, t, 1.1, appear * (1 - up), ph_)
+    carrying = t < land - 0.3
+    moving = on_ground and (t < land + 1.4 or leave > 0.01) and not carrying
+    awkward = on_ground and t > st[0] + 1.5 and leave < 0.01
+    look = (math.sin(t * 2.2) * 1.0, 0.5 * math.sin(t * 1.5)) if awkward else (0.6, 0.0)
+    pos = death(img, dxd, GY - 6, 330, t, L=(-0.24, -0.5) if carrying else ((-0.24, -0.42) if not awkward else (-0.2 + 0.1 * math.sin(t * 1.6), -0.38)), R=(0.26, -0.5) if carrying else (0.27, -0.46),
+                bend=(0.8 if carrying else max(0.0, 0.5 * (1 - tseg(t, land, land + 0.8)))), eyes="norm", look=look, walk=(t * 4 if moving else 0.0), sweat=1.0 if (awkward or carrying) else 0.0, alpha=appear,
+                lean=(3 * math.sin(t * 1.3) if awkward else 0.0), scythe=True, sa=-6 + (4 * math.sin(t * 1.9) if awkward else 0), watch=awkward and math.sin(t * 0.8) > 0.8)
+    if appear > 0.05:
+        sh = pos["shoulder"]
+        if t < land - 0.6: jlie(img, dxd, sh[1] + 66, 270, 0.0, "closed", alpha=appear)
+        elif not on_ground:
+            cy_ = lerp(sh[1] + 66, GY - 34, ease(drop)); jlie(img, dxd if t < land - 0.3 else lerp(dxd, 640, 1), cy_, 270, 0.0, "closed")
+        else: jlie(img, jx, GY - 34, 270, stand_u, "open" if t > st[0] else "closed")
+    if smoke_u < 1: smoke(img, 640, GY - 40, smoke_u)
+    sh_ = max(0, 1 - (t - land) * 5) * 16 if on_ground else 0
     if on_ground and t < land + 1.2:                      # the loud thud: a ring of cloud dust
         u = (t - land) / 1.2; lay = Image.new("RGBA", (W, H), (0, 0, 0, 0)); ld = ImageDraw.Draw(lay)
         for k in range(10): a_ = k / 10 * 6.28; ld.ellipse([640 + math.cos(a_) * 360 * u - 36, GY + 10 + math.sin(a_) * 40 * u - 24, 640 + math.cos(a_) * 360 * u + 36, GY + 10 + math.sin(a_) * 40 * u + 24], fill=(255, 255, 255, int(230 * (1 - u)))); img.paste(lay, (0, 0), lay)
-    # dust brushed off his feet, Death steps in from the side to say he'll get the dog
-    if st[0] + 1.6 < t < st[1] + 0.4:
+    if st[0] + 1.6 < t < st[1] + 0.4:                     # dust brushed off his feet
         for k in range(8): u = ((t - st[0]) * 1.4 + k / 8) % 1; ImageDraw.Draw(img).ellipse([600 + k * 12 - u * 20, GY - 10 - u * 40, 606 + k * 12 - u * 20, GY - 4 - u * 40], fill=(220, 214, 200))
-    dx = lerp(-100, 330, tseg(t, rd[0] + 0.3, rd[0] + 1.4)); dd = ev("arrive", "getdog")
-    if t > rd[0] + 0.3: death(img, dx, GY - 6, 320, t, flip=False, eyes="norm", look=(0.5, 0), scythe=True, walk=t * 4 if t < rd[0] + 1.5 else 0)
-    if t > dd[0] + 0.6: 
-        e = tseg(t, dd[1] + 0.2, dd[1] + 1.2)
-        pass
-    if sh > 0: img = img.transform((W, H), Image.AFFINE, (1, 0, math.sin(t * 90) * sh, 0, 1, math.cos(t * 70) * sh))
+    if awkward and t < aw[1] + 1.0:
+        hx, hy = pos["head"]; bubble6(img, hx + 30, hy - 120, "...", 34, tseg(t, st[0] + 2.0, st[0] + 2.4) * (1 - tseg(t, aw[1] + 0.4, aw[1] + 1.0)), tail=(hx, hy - 50))
+    if sh_ > 0: img = img.transform((W, H), Image.AFFINE, (1, 0, math.sin(t * 90) * sh_, 0, 1, math.cos(t * 70) * sh_))
     if on_ground and t < land + 0.2: img = Image.blend(img, Image.new("RGB", (W, H), (255, 255, 255)), 0.3 * (1 - (t - land) / 0.2))
     return img
 
