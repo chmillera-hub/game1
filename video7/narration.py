@@ -34,7 +34,9 @@ SCENES = [
    {"who":"s","gap":0.6,"tag":"sd3","text":"There is clearly something to see here."},
    {"who":"n","gap":0.5,"tag":"mine","text":"It is my suffering, Humanity."}]},
  {"id":"meaning","pre":0.4,"post":2.2,"items":[
-   {"who":"n","tag":"nm","text":"Because to me, sadness is the recognition of suffering in another human being, and thinking about how to care for them. So my sadness is irritated that an emotion of mine is clearly suffering, and people aren't using their own sadness to show any real solidarity, or support, for my explicitly stated emotional needs."},
+   {"who":"n","tag":"nm","text":"Because to me, sadness is the recognition of suffering within myself, and looking for more resonant connection, while respecting the rest of my emotional needs."},
+   {"who":"n","gap":0.5,"tag":"nm2","text":"Sadness can be expressed from my soul, or from the souls of others."},
+   {"who":"n","gap":0.5,"tag":"nm3","text":"So my sadness is irritated that an emotion of mine is clearly suffering, and people aren't using their own sadness to show any real solidarity, or support, for my explicitly stated emotional needs."},
    {"who":"n","gap":0.8,"tag":"nend","text":"That's why understanding my emotions matters. It's how I can find plans, and take action, to advocate for my own spiritual and emotional growth."}]},
 
 ]

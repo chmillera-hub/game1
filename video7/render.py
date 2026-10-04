@@ -801,26 +801,31 @@ def s_irritated(t, d, p):
     return img
 
 def s_meaning(t, d, p):
-    nm, nend = ev("meaning", "nm"), ev("meaning", "nend"); img, m = room(t, "meaning", glow=0.4, mood="smile" if t > nend[0] + 6 else "tired")
+    nm, nm2, nm3, nend = ev("meaning", "nm"), ev("meaning", "nm2"), ev("meaning", "nm3"), ev("meaning", "nend"); img, m = room(t, "meaning", glow=0.4, mood="smile" if t > nend[0] + 6 else "tired")
     blob(img, POS["boredom"], GY, 62, "boredom", t, "bored")
     fetal(img, POS["lonely"], GY + 10, 54, t, 1.0 - 0.6 * tseg(t, nend[0] + 4, nend[0] + 8), pool=1.6)
-    blob(img, 700, GY, 64, "sad", t, "sad" if t > nm[1] - 3.0 else "irritated", Lh=(-1.0, -1.1), Rh=(1.95, -2.45), look=1.0, tears=1.0 if t > nm[1] - 3.0 else 0.0)
+    blob(img, 700, GY, 64, "sad", t, "sad" if t > nm3[1] - 3.0 else "irritated", Lh=(-1.0, -1.1), Rh=(1.95, -2.45), look=1.0, tears=1.0 if t > nm3[1] - 3.0 else 0.0)
     for k in range(5):                                                   # strangers walking past outside the window, not looking
         px = ((t * 55 + k * 270) % 1500) - 150
         if 520 < px < 770:
             ImageDraw.Draw(img).ellipse([px - 9, 306, px + 9, 326], fill=(12, 16, 32)); ImageDraw.Draw(img).rectangle([px - 11, 326, px + 11, 372], fill=(12, 16, 32)); ImageDraw.Draw(img).rectangle([px - 6, 338, px + 6, 350], fill=(150, 210, 255))
+    T1 = "Because to me, sadness is the recognition of suffering within myself, and looking for more resonant connection, while respecting the rest of my emotional needs."; T3 = "So my sadness is irritated that an emotion of mine is clearly suffering, and people aren't using their own sadness to show any real solidarity, or support, for my explicitly stated emotional needs."
+    t_ppl = nm3[0] + T3.index("people aren't using") / len(T3) * (nm3[1] - nm3[0])
     def _def(im):
-        a = tseg(t, nm[0] + 0.6, nm[0] + 1.4) * (1 - tseg(t, nm[0] + 9.0, nm[0] + 9.8))
+        a = tseg(t, nm[0] + 0.6, nm[0] + 1.4) * (1 - tseg(t, nm3[0] - 0.8, nm3[0] - 0.2))
         if a <= 0: return
-        lay = Image.new("RGBA", (W, H), (0, 0, 0, 0)); dd = ImageDraw.Draw(lay); dd.rounded_rectangle([160, 60, 1120, 210], 22, fill=(22, 36, 70, int(235 * a)), outline=(120, 170, 240, int(255 * a)), width=3); im.paste(lay, (0, 0), lay)
-        label(im, 640, 74, "SADNESS  =", 30, (150, 200, 255), a); label(im, 640, 116, "recognizing suffering in another human being", 28, (240, 246, 255), a); label(im, 640, 154, "and thinking about how to care for them", 28, (240, 246, 255), a)
+        lay = Image.new("RGBA", (W, H), (0, 0, 0, 0)); dd = ImageDraw.Draw(lay); dd.rounded_rectangle([130, 40, 1150, 270], 22, fill=(22, 36, 70, int(236 * a)), outline=(120, 170, 240, int(255 * a)), width=3); im.paste(lay, (0, 0), lay)
+        label(im, 640, 52, "SADNESS  =", 30, (150, 200, 255), a)
+        for i, (ln, key) in enumerate([("recognizing suffering within yourself", "recognition of suffering"), ("& looking for more resonant connection", "resonant connection"), ("while respecting your other emotional needs", "respecting the rest")]):
+            t0 = nm[0] + T1.index(key) / len(T1) * (nm[1] - nm[0]); label(im, 640, 96 + i * 36, ln, 27, (240, 246, 255), tseg(t, t0 - 0.1, t0 + 0.5) * a)
+        label(im, 640, 214, "expressed from your soul \u2014 or from the souls of others", 25, (255, 226, 160), tseg(t, nm2[0], nm2[0] + 0.7) * a)
     HUD(_def)
     def _score(im):
-        a = tseg(t, nm[0] + 10.0, nm[0] + 10.8) * (1 - tseg(t, nm[1] + 0.2, nm[1] + 0.8))
+        a = tseg(t, t_ppl, t_ppl + 0.8) * (1 - tseg(t, nm[1] + 0.2, nm[1] + 0.8))
         if a <= 0: return
         lay = Image.new("RGBA", (W, H), (0, 0, 0, 0)); dd = ImageDraw.Draw(lay); dd.rounded_rectangle([780, 70, 1220, 250], 18, fill=(24, 20, 34, int(230 * a)), outline=(200, 190, 220, int(255 * a)), width=3); im.paste(lay, (0, 0), lay)
         for i, (nm_, val) in enumerate([("empathy shown", "0"), ("solidarity", "0"), ("material support", "0")]):
-            b = tseg(t, nm[0] + 10.6 + i * 0.5, nm[0] + 11.1 + i * 0.5) * a; label(im, 800, 88 + i * 52, nm_, 24, (230, 224, 240), b, anchor="l"); label(im, 1180, 84 + i * 52, val, 40, (255, 120, 120), b, anchor="c")
+            b = tseg(t, t_ppl + 0.6 + i * 0.5, t_ppl + 1.1 + i * 0.5) * a; label(im, 800, 88 + i * 52, nm_, 24, (230, 224, 240), b, anchor="l"); label(im, 1180, 84 + i * 52, val, 40, (255, 120, 120), b, anchor="c")
     HUD(_score)
     # the closing idea: understanding my emotions -> a plan -> action for my spiritual and emotional growth
     TE = "That's why understanding my emotions matters. It's how I can find plans, and take action, to advocate for my own spiritual and emotional growth."

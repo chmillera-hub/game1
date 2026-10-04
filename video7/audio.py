@@ -97,7 +97,9 @@ for k in range(9): add(sfx, ir + nir[0] + 6.2 + k * 1.0, bell(rng.choice([784, 9
 add(sfx, ir + sd3[0] - 0.4, whoosh(0.8, 0.25, 150, 1200)); add(sfx, ir + sd3[0] + 1.4, chord([262, 330, 392, 494], 3.4, 0.08))
 # meaning: three zeros land, then a warm close
 me = S0("meaning"); nm = tag("meaning", "nm"); nend = tag("meaning", "nend")
-for k in range(3): add(sfx, me + nm[0] + 10.6 + k * 0.5, thump(70, 0.3, 0.45))
+nm3 = tag("meaning", "nm3"); T3 = "So my sadness is irritated that an emotion of mine is clearly suffering, and people aren't using their own sadness to show any real solidarity, or support, for my explicitly stated emotional needs."
+t_ppl = me + nm3[0] + T3.index("people aren't using") / len(T3) * (nm3[1] - nm3[0])
+for k in range(3): add(sfx, t_ppl + 0.6 + k * 0.5, thump(70, 0.3, 0.45))
 add(sfx, me + nend[0] + 0.2, chord([262, 330, 392, 523, 659], 5.0, 0.08)); add(sfx, me + nend[0] + 0.5, sparkle(3.0, 0.07))
 for i, key in enumerate(("understanding", "find plans", "advocate")): add(sfx, me + nend[0] + ("That's why understanding my emotions matters. It's how I can find plans, and take action, to advocate for my own spiritual and emotional growth.".index(key)) / 140.0 * (nend[1] - nend[0]), bell([784, 988, 1319][i], 1.2, 0.07))
 # gentle plucked score (no constant noise or drone bed): wistful minor, then warmer once sadness arrives
