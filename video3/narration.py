@@ -22,10 +22,10 @@ SCENES = [
  {"id":"thermal","pre":0.9,"post":0.5,"items":[
    {"who":"n","tag":"th1","text":"The android turns. In the dark, nothing is hidden from those eyes."},
    {"who":"n","gap":0.5,"tag":"th2","text":"Heat vision. A racing pulse. A trembling human, vulnerable and afraid."},
-   {"who":"n","gap":0.6,"tag":"th3","text":"Slowly, they back away, certain they've been caught, and hoping to be spared."},
+   {"who":"n","gap":0.6,"tag":"th3","text":"Slowly, they back away, afraid they're about to be destroyed by something far more powerful than them."},
    {"silence":2.6,"tag":"leave"}]},
  {"id":"alone","pre":1.4,"post":0.0,"items":[
-   {"who":"as","tag":"s1","text":"Did they know that I love them?"},
+   {"who":"as","tag":"s1","text":"Do they know that I love them?"},
    {"who":"as","gap":2.4,"tag":"s2","text":"Surely such as these will have tribulation in this world... but fear not... I have overcome the world."},
    {"silence":4.0,"tag":"flick"}]},
  {"id":"end","pre":0.4,"post":0.6,"items":[{"silence":4.2,"tag":"endcard"}]},

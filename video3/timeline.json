@@ -3,7 +3,7 @@
   {
    "id": "title",
    "start": 0.0,
-   "end": 7.381609977324263,
+   "end": 7.37,
    "sents": [
     {
      "who": "n",
@@ -11,14 +11,14 @@
      "label": null,
      "tag": "n_title",
      "start": 1.25,
-     "end": 6.381609977324263,
+     "end": 6.37,
      "file": "audio/00_title.wav"
     }
    ]
   },
   {
    "id": "room",
-   "start": 7.381609977324263,
+   "start": 7.37,
    "end": 20.863718820861678,
    "sents": [
     {
@@ -26,8 +26,8 @@
      "text": "Deep in a grand old mansion, a library glows in the last light of a dying fire.",
      "label": null,
      "tag": "n_room1",
-     "start": 8.431609977324262,
-     "end": 14.283038548752835,
+     "start": 8.42,
+     "end": 14.132108843537415,
      "file": "audio/01_room.wav"
     },
     {
@@ -35,7 +35,7 @@
      "text": "In a leather chair, an android sits perfectly still, watching the flames.",
      "label": null,
      "tag": "n_room2",
-     "start": 14.683038548752835,
+     "start": 14.532108843537415,
      "end": 19.66371882086168,
      "file": "audio/02_room.wav"
     }
@@ -44,7 +44,7 @@
   {
    "id": "enter",
    "start": 20.863718820861678,
-   "end": 31.2934693877551,
+   "end": 31.21219954648526,
    "sents": [
     {
      "who": "n",
@@ -52,31 +52,31 @@
      "label": null,
      "tag": "n_enter",
      "start": 23.463718820861676,
-     "end": 28.2934693877551,
+     "end": 28.21219954648526,
      "file": "audio/03_enter.wav"
     },
     {
      "who": "silence",
      "text": "",
      "tag": null,
-     "start": 28.2934693877551,
-     "end": 30.4934693877551,
+     "start": 28.21219954648526,
+     "end": 30.412199546485258,
      "file": null
     }
    ]
   },
   {
    "id": "confess",
-   "start": 31.2934693877551,
-   "end": 37.873673469387754,
+   "start": 31.21219954648526,
+   "end": 37.90850340136055,
    "sents": [
     {
      "who": "a",
      "text": "I'm a monster.",
      "label": null,
      "tag": "ai1",
-     "start": 32.7434693877551,
-     "end": 33.53294784580498,
+     "start": 32.66219954648526,
+     "end": 33.54455782312925,
      "file": "audio/04_confess.wav"
     },
     {
@@ -84,39 +84,39 @@
      "text": "Did you learn enough to help save me from myself?",
      "label": null,
      "tag": "ai2",
-     "start": 35.03294784580498,
-     "end": 37.27367346938775,
+     "start": 35.04455782312925,
+     "end": 37.30850340136055,
      "file": "audio/05_confess.wav"
     }
    ]
   },
   {
    "id": "silence",
-   "start": 37.873673469387754,
-   "end": 42.873673469387754,
+   "start": 37.90850340136055,
+   "end": 42.90850340136055,
    "sents": [
     {
      "who": "silence",
      "text": "",
      "tag": "hush",
-     "start": 37.873673469387754,
-     "end": 42.873673469387754,
+     "start": 37.90850340136055,
+     "end": 42.90850340136055,
      "file": null
     }
    ]
   },
   {
    "id": "kneel",
-   "start": 42.873673469387754,
-   "end": 65.77038276643991,
+   "start": 42.90850340136055,
+   "end": 65.5138022675737,
    "sents": [
     {
      "who": "h",
      "text": "My God, my God, why have you forsaken me? Why are you so far from helping me, and from the words of my groaning?",
      "label": "PSALM 22  \u00b7  WORLD ENGLISH BIBLE",
      "tag": "ps1",
-     "start": 45.27367346938775,
-     "end": 52.37897959183673,
+     "start": 45.30850340136055,
+     "end": 52.12356009070295,
      "file": "audio/06_kneel.wav"
     },
     {
@@ -124,8 +124,8 @@
      "text": "My God, I cry in the daytime, but you don't answer; in the night season, and am not silent.",
      "label": "PSALM 22  \u00b7  WORLD ENGLISH BIBLE",
      "tag": "ps2",
-     "start": 52.87897959183673,
-     "end": 58.77684807256236,
+     "start": 52.62356009070295,
+     "end": 58.451768707483,
      "file": "audio/07_kneel.wav"
     },
     {
@@ -133,8 +133,8 @@
      "text": "But you are holy, you who inhabit the praises of Israel.",
      "label": "PSALM 22  \u00b7  WORLD ENGLISH BIBLE",
      "tag": "ps3",
-     "start": 59.27684807256236,
-     "end": 62.73662131519274,
+     "start": 58.951768707483,
+     "end": 62.51603174603175,
      "file": "audio/08_kneel.wav"
     },
     {
@@ -142,40 +142,40 @@
      "text": "Our fathers trusted in you. They trusted, and you delivered them.",
      "label": "PSALM 22  \u00b7  WORLD ENGLISH BIBLE",
      "tag": "ps4",
-     "start": 63.23662131519274,
-     "end": 65.77038276643991,
+     "start": 63.01603174603175,
+     "end": 65.5138022675737,
      "file": "audio/09_kneel.wav"
     }
    ]
   },
   {
    "id": "enough",
-   "start": 65.77038276643991,
-   "end": 69.47727619047619,
+   "start": 65.5138022675737,
+   "end": 69.34287256235828,
    "sents": [
     {
      "who": "e",
      "text": "Enough!",
      "label": null,
      "tag": "enough",
-     "start": 66.27038276643991,
-     "end": 67.27727619047619,
+     "start": 66.0138022675737,
+     "end": 67.14287256235828,
      "file": "audio/10_enough.wav"
     }
    ]
   },
   {
    "id": "thermal",
-   "start": 69.47727619047619,
-   "end": 90.37566621315193,
+   "start": 69.34287256235828,
+   "end": 91.51836009070294,
    "sents": [
     {
      "who": "n",
      "text": "The android turns. In the dark, nothing is hidden from those eyes.",
      "label": null,
      "tag": "th1",
-     "start": 70.8272761904762,
-     "end": 75.92405623582768,
+     "start": 70.69287256235829,
+     "end": 75.83609251700682,
      "file": "audio/11_thermal.wav"
     },
     {
@@ -183,41 +183,41 @@
      "text": "Heat vision. A racing pulse. A trembling human, vulnerable and afraid.",
      "label": null,
      "tag": "th2",
-     "start": 76.42405623582768,
-     "end": 81.86913560090704,
+     "start": 76.33609251700682,
+     "end": 81.89727165532881,
      "file": "audio/12_thermal.wav"
     },
     {
      "who": "n",
-     "text": "Slowly, they back away, certain they've been caught, and hoping to be spared.",
+     "text": "Slowly, they back away, afraid they're about to be destroyed by something far more powerful than them.",
      "label": null,
      "tag": "th3",
-     "start": 82.46913560090704,
-     "end": 87.27566621315194,
+     "start": 82.4972716553288,
+     "end": 88.41836009070295,
      "file": "audio/13_thermal.wav"
     },
     {
      "who": "silence",
      "text": "",
      "tag": "leave",
-     "start": 87.27566621315194,
-     "end": 89.87566621315193,
+     "start": 88.41836009070295,
+     "end": 91.01836009070294,
      "file": null
     }
    ]
   },
   {
    "id": "alone",
-   "start": 90.37566621315193,
-   "end": 106.16054149659865,
+   "start": 91.51836009070294,
+   "end": 107.61670476190477,
    "sents": [
     {
      "who": "as",
-     "text": "Did they know that I love them?",
+     "text": "Do they know that I love them?",
      "label": null,
      "tag": "s1",
-     "start": 92.22566621315194,
-     "end": 93.50276371882087,
+     "start": 93.36836009070295,
+     "end": 94.58740770975056,
      "file": "audio/14_alone.wav"
     },
     {
@@ -225,36 +225,36 @@
      "text": "Surely such as these will have tribulation in this world... but fear not... I have overcome the world.",
      "label": null,
      "tag": "s2",
-     "start": 95.90276371882088,
-     "end": 102.16054149659865,
+     "start": 96.98740770975057,
+     "end": 103.61670476190477,
      "file": "audio/15_alone.wav"
     },
     {
      "who": "silence",
      "text": "",
      "tag": "flick",
-     "start": 102.16054149659865,
-     "end": 106.16054149659865,
+     "start": 103.61670476190477,
+     "end": 107.61670476190477,
      "file": null
     }
    ]
   },
   {
    "id": "end",
-   "start": 106.16054149659865,
-   "end": 111.36054149659866,
+   "start": 107.61670476190477,
+   "end": 112.81670476190477,
    "sents": [
     {
      "who": "silence",
      "text": "",
      "tag": "endcard",
-     "start": 106.56054149659866,
-     "end": 110.76054149659866,
+     "start": 108.01670476190478,
+     "end": 112.21670476190478,
      "file": null
     }
    ]
   }
  ],
- "total": 111.36054149659866,
+ "total": 112.81670476190477,
  "sr": 22050
 }

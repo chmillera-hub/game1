@@ -555,7 +555,7 @@ def s_end(t, d, p):
 SCENE_FN = {"title": s_title, "room": s_room, "enter": s_enter, "confess": s_confess, "silence": s_silence, "kneel": s_kneel,
             "enough": s_enough, "thermal": s_thermal, "alone": s_alone, "end": s_end}
 CAM = {"title": ((640, 360, 1.0), (640, 360, 1.04)), "room": ((640, 360, 1.04), (600, 420, 1.16)), "enter": ((600, 420, 1.16), (860, 390, 1.12)),
-       "confess": ((860, 390, 1.12), (520, 440, 1.38)), "silence": ((520, 440, 1.38), (880, 400, 1.2)), "kneel": ((880, 400, 1.2), (900, 470, 1.25)),
+       "confess": ((470, 450, 2.0), (450, 440, 2.15)), "silence": ((900, 400, 1.2), (900, 400, 1.2)), "kneel": ((880, 400, 1.2), (900, 470, 1.25)),
        "enough": ((900, 470, 1.25), (860, 440, 1.3)), "alone": ((560, 470, 1.5), (640, 520, 1.85))}
 CONT_IN = {"enter", "confess", "silence", "kneel", "enough", "thermal", "alone"}
 CONT_OUT = {"room", "enter", "confess", "silence", "kneel", "enough", "thermal"}
@@ -567,11 +567,12 @@ def subtitles(img, t):
             if z["text"] and z["who"] != "e" and z["start"] - 0.05 <= t <= z["end"] + 0.25:
                 lines = textwrap.wrap(z["text"], 62)
                 lay = Image.new("RGBA", (W, H), (0, 0, 0, 0)); d = ImageDraw.Draw(lay)
-                f = F(26); lh = 36; bh = lh * len(lines) + 20 + (20 if z.get("label") else 0); y0 = H - bh - 18
+                lab = z.get("label") or ("ANDROID" if z["who"] in ("a", "as") else None)
+                f = F(26); lh = 36; bh = lh * len(lines) + 20 + (20 if lab else 0); y0 = H - bh - 18
                 d.rounded_rectangle([90, y0, W - 90, y0 + bh], 12, fill=(0, 0, 0, 160))
                 yy = y0 + 8
-                if z.get("label"):
-                    lf = F(14, bold=True); tw = d.textlength(z["label"], font=lf); d.text(((W - tw) / 2, yy), z["label"], font=lf, fill=(150, 170, 215, 255)); yy += 20
+                if lab:
+                    lf = F(14, bold=True); tw = d.textlength(lab, font=lf); d.text(((W - tw) / 2, yy), lab, font=lf, fill=(255, 190, 90, 255) if z["who"] in ("a", "as") else (150, 170, 215, 255)); yy += 20
                 col = SPK.get(z["who"], (255, 255, 255)) + (255,)
                 for i, ln in enumerate(lines):
                     tw = d.textlength(ln, font=f); d.text(((W - tw) / 2, yy + 2 + i * lh), ln, font=f, fill=col)
