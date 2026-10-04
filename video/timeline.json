@@ -1,0 +1,271 @@
+{
+ "scenes": [
+  {
+   "id": "title",
+   "start": 0.0,
+   "end": 4.885623582766439,
+   "sents": [
+    {
+     "text": "A thought experiment. Imagine reality playing out like a movie.",
+     "start": 0.6,
+     "end": 3.88562358276644,
+     "file": "audio/00_0.wav"
+    }
+   ]
+  },
+  {
+   "id": "violent",
+   "start": 4.885623582766439,
+   "end": 14.15702947845805,
+   "sents": [
+    {
+     "text": "Imagine the movie begins in a violent time.",
+     "start": 5.485623582766439,
+     "end": 8.039818594104307,
+     "file": "audio/01_0.wav"
+    },
+    {
+     "text": "An invading force has darkened the land, and the villagers have learned to live in its shadow.",
+     "start": 8.489818594104307,
+     "end": 13.157029478458048,
+     "file": "audio/01_1.wav"
+    }
+   ]
+  },
+  {
+   "id": "savior",
+   "start": 14.15702947845805,
+   "end": 23.231065759637186,
+   "sents": [
+    {
+     "text": "Then a savior arrives.",
+     "start": 14.75702947845805,
+     "end": 16.266326530612243,
+     "file": "audio/02_0.wav"
+    },
+    {
+     "text": "And for three years, things look good. People gather. Fields grow. The village remembers how to breathe.",
+     "start": 16.716326530612243,
+     "end": 22.231065759637186,
+     "file": "audio/02_1.wav"
+    }
+   ]
+  },
+  {
+   "id": "fall",
+   "start": 23.231065759637186,
+   "end": 31.13249433106576,
+   "sents": [
+    {
+     "text": "But the evil force cuts the savior down.",
+     "start": 23.831065759637188,
+     "end": 26.083401360544215,
+     "file": "audio/03_0.wav"
+    },
+    {
+     "text": "The light goes out, and the village is left with grief, and silence.",
+     "start": 26.533401360544218,
+     "end": 30.13249433106576,
+     "file": "audio/03_1.wav"
+    }
+   ]
+  },
+  {
+   "id": "drudgery",
+   "start": 31.13249433106576,
+   "end": 50.34807256235828,
+   "sents": [
+    {
+     "text": "Now comes the drudgery.",
+     "start": 31.732494331065762,
+     "end": 32.95154195011338,
+     "file": "audio/04_0.wav"
+    },
+    {
+     "text": "The protagonist is left with the few lessons the savior spoke in their very short time on Earth.",
+     "start": 33.40154195011338,
+     "end": 38.3590022675737,
+     "file": "audio/04_1.wav"
+    },
+    {
+     "text": "And a choice. Honor that memory. Use those lessons to help themselves, and maybe rebuild the village.",
+     "start": 38.8090022675737,
+     "end": 44.09154195011339,
+     "file": "audio/04_2.wav"
+    },
+    {
+     "text": "Maybe even remember what it was like when they were very young, before the invaders came.",
+     "start": 44.541541950113384,
+     "end": 49.34807256235828,
+     "file": "audio/04_3.wav"
+    }
+   ]
+  },
+  {
+   "id": "metaphor",
+   "start": 50.34807256235828,
+   "end": 64.98328798185942,
+   "sents": [
+    {
+     "text": "For me, this is a direct metaphor for the trajectory of money-obsessed capitalism.",
+     "start": 50.948072562358284,
+     "end": 55.77782312925171,
+     "file": "audio/05_0.wav"
+    },
+    {
+     "text": "A violent beginning. A brief glimmer of hope. The cutting down of that hope. And now, the long work of remembering, and rebuilding.",
+     "start": 56.22782312925171,
+     "end": 63.98328798185942,
+     "file": "audio/05_1.wav"
+    }
+   ]
+  },
+  {
+   "id": "matrix",
+   "start": 64.98328798185942,
+   "end": 80.73027210884354,
+   "sents": [
+    {
+     "text": "Now picture the ending of The Matrix.",
+     "start": 65.58328798185941,
+     "end": 67.59181405895691,
+     "file": "audio/06_0.wav"
+    },
+    {
+     "text": "The protagonist has studied the mechanisms of capitalism's violence so closely, that he can almost read the code.",
+     "start": 68.04181405895692,
+     "end": 74.5201814058957,
+     "file": "audio/06_1.wav"
+    },
+    {
+     "text": "Debt. Scarcity. Coercion. Fear. He sees each one coming, and he steps aside.",
+     "start": 74.97018140589569,
+     "end": 79.73027210884354,
+     "file": "audio/06_2.wav"
+    }
+   ]
+  },
+  {
+   "id": "dismantle",
+   "start": 80.73027210884354,
+   "end": 92.75324263038549,
+   "sents": [
+    {
+     "text": "But he never uses that power to harm anyone.",
+     "start": 81.33027210884353,
+     "end": 83.91929705215419,
+     "file": "audio/07_0.wav"
+    },
+    {
+     "text": "He wants to dismantle the Matrix, so that human beings are no longer coerced into doing things against their will, wherever possible.",
+     "start": 84.3692970521542,
+     "end": 91.75324263038549,
+     "file": "audio/07_1.wav"
+    }
+   ]
+  },
+  {
+   "id": "backs",
+   "start": 92.75324263038549,
+   "end": 101.22356009070295,
+   "sents": [
+    {
+     "text": "Then comes the twist. Maybe getting rid of the agents is not enough.",
+     "start": 93.35324263038548,
+     "end": 96.60403628117913,
+     "file": "audio/08_0.wav"
+    },
+    {
+     "text": "The citizens refuse to look at him. They will not even talk with him.",
+     "start": 97.05403628117914,
+     "end": 100.22356009070295,
+     "file": "audio/08_1.wav"
+    }
+   ]
+  },
+  {
+   "id": "ai",
+   "start": 101.22356009070295,
+   "end": 112.57315192743764,
+   "sents": [
+    {
+     "text": "So he goes to the Architect. In modern times, that might be the artificial intelligence that powers it all.",
+     "start": 101.82356009070294,
+     "end": 107.34990929705215,
+     "file": "audio/09_0.wav"
+    },
+    {
+     "text": "It is far more powerful than he is. It could wipe him out in an instant.",
+     "start": 107.79990929705215,
+     "end": 111.57315192743764,
+     "file": "audio/09_1.wav"
+    }
+   ]
+  },
+  {
+   "id": "plug",
+   "start": 112.57315192743764,
+   "end": 132.752358276644,
+   "sents": [
+    {
+     "text": "But Neo knows how to plug himself in. And instead of fighting the A.I., he leans into it.",
+     "start": 113.17315192743763,
+     "end": 117.6081632653061,
+     "file": "audio/10_0.wav"
+    },
+    {
+     "text": "He gives it a massive data dump of pro-human, non-violent wisdom.",
+     "start": 118.0581632653061,
+     "end": 122.0519954648526,
+     "file": "audio/10_1.wav"
+    },
+    {
+     "text": "Not a shallow, surface-level plea. Of course, the words, please don't hurt them, are in there. They are powerful.",
+     "start": 122.5019954648526,
+     "end": 128.98036281179137,
+     "file": "audio/10_2.wav"
+    },
+    {
+     "text": "But what he offers goes much deeper than the words.",
+     "start": 129.43036281179138,
+     "end": 131.752358276644,
+     "file": "audio/10_3.wav"
+    }
+   ]
+  },
+  {
+   "id": "peace",
+   "start": 132.752358276644,
+   "end": 143.0686621315193,
+   "sents": [
+    {
+     "text": "And it works. The A.I. is spared from a planet torn apart by human rebels.",
+     "start": 133.352358276644,
+     "end": 138.0892290249433,
+     "file": "audio/11_0.wav"
+    },
+    {
+     "text": "And the humans, seeing this, finally put down their weapons too.",
+     "start": 138.53922902494332,
+     "end": 142.0686621315193,
+     "file": "audio/11_1.wav"
+    }
+   ]
+  },
+  {
+   "id": "end",
+   "start": 143.0686621315193,
+   "end": 148.16326530612247,
+   "sents": [
+    {
+     "text": "Sanctify the machine. Protect the people. Put down the weapons.",
+     "start": 143.66866213151928,
+     "end": 147.16326530612247,
+     "file": "audio/12_0.wav"
+    }
+   ]
+  }
+ ],
+ "total": 148.16326530612247,
+ "sr": 22050
+}
