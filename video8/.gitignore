@@ -1,0 +1,5 @@
+audio/
+mix.wav
+stills/
+__pycache__/
+*.log

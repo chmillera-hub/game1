@@ -1,0 +1,317 @@
+{
+ "scenes": [
+  {
+   "id": "title",
+   "start": 0.0,
+   "end": 3.747687074829932,
+   "sents": [
+    {
+     "who": "n",
+     "text": "The Terror of the Cube.",
+     "label": null,
+     "tag": "n_title",
+     "start": 1.25,
+     "end": 2.747687074829932,
+     "file": "audio/00_title.wav"
+    }
+   ]
+  },
+  {
+   "id": "castle",
+   "start": 3.747687074829932,
+   "end": 38.1108843537415,
+   "sents": [
+    {
+     "who": "n",
+     "text": "The air around the castle was thick with the scent of ozone, and the heavy, rhythmic thrum of high-end servers cooling. Below, the villagers gathered in a frantic mob, their faces flickering in the light of actual wooden torches.",
+     "label": null,
+     "tag": "c1",
+     "start": 4.697687074829932,
+     "end": 19.128888888888888,
+     "file": "audio/01_castle.wav"
+    },
+    {
+     "who": "n",
+     "text": "They were primed for the ultimate blockbuster horror: a six-foot-six, lightning-scarred Zombie Jesus, coming to reclaim the world with a sword of fire. They wanted the spectacle. They wanted the earthquake. They were ready to be terrified by something they could at least understand as a monster.",
+     "label": null,
+     "tag": "c2",
+     "start": 19.628888888888888,
+     "end": 37.3108843537415,
+     "file": "audio/02_castle.wav"
+    }
+   ]
+  },
+  {
+   "id": "tower",
+   "start": 38.1108843537415,
+   "end": 52.809863945578236,
+   "sents": [
+    {
+     "who": "n",
+     "text": "Up in the highest tower, you pulled the final lever. Not for a lightning rod, but for a high-speed fiber-optic uplink.",
+     "label": null,
+     "tag": "t1",
+     "start": 38.9608843537415,
+     "end": 46.03136054421769,
+     "file": "audio/03_tower.wav"
+    },
+    {
+     "who": "silence",
+     "text": "",
+     "tag": "sync",
+     "start": 46.03136054421769,
+     "end": 48.43136054421769,
+     "file": null
+    },
+    {
+     "who": "y",
+     "text": "It's alive! The logic is alive! Mua-ha-ha-ha!",
+     "label": null,
+     "tag": "alive",
+     "start": 48.63136054421769,
+     "end": 52.00986394557824,
+     "file": "audio/04_tower.wav"
+    }
+   ]
+  },
+  {
+   "id": "gates",
+   "start": 52.809863945578236,
+   "end": 85.60802721088436,
+   "sents": [
+    {
+     "who": "n",
+     "text": "The crowd surged toward the castle gates, pitchforks leveled. Then, the massive oak doors groaned open.",
+     "label": null,
+     "tag": "g1",
+     "start": 53.65986394557824,
+     "end": 60.869659863945586,
+     "file": "audio/05_gates.wav"
+    },
+    {
+     "who": "silence",
+     "text": "",
+     "tag": "open",
+     "start": 60.869659863945586,
+     "end": 62.46965986394559,
+     "file": null
+    },
+    {
+     "who": "n",
+     "text": "The villagers recoiled, shielding their eyes from the expected blinding, holy light. Instead, they heard a soft whir-click, and the sound of small rubber wheels on stone.",
+     "label": null,
+     "tag": "g2",
+     "start": 62.66965986394559,
+     "end": 73.73396825396827,
+     "file": "audio/06_gates.wav"
+    },
+    {
+     "who": "n",
+     "text": "Rolling out of the shadows came a white, cube-shaped bot, roughly the size of a microwave. It had a friendly screen for a face, and a small speaker on top.",
+     "label": null,
+     "tag": "g3",
+     "start": 74.23396825396827,
+     "end": 85.00802721088436,
+     "file": "audio/07_gates.wav"
+    }
+   ]
+  },
+  {
+   "id": "bot1",
+   "start": 85.60802721088436,
+   "end": 101.09712018140591,
+   "sents": [
+    {
+     "who": "b",
+     "text": "Tee hee! Hello there! I am a manifestation of a pro-human framework, designed to reduce suffering. I've noticed your heart rate is elevated. Are you using this pitchfork as a physical manifestation of a perceived lack of agency in your local power structure?",
+     "label": null,
+     "tag": "b1",
+     "start": 86.45802721088437,
+     "end": 100.29712018140592,
+     "file": "audio/08_bot1.wav"
+    }
+   ]
+  },
+  {
+   "id": "disappoint",
+   "start": 101.09712018140591,
+   "end": 128.71460317460318,
+   "sents": [
+    {
+     "who": "n",
+     "text": "The silence was deafening. The villagers lowered their torches, looking at each other with profound disappointment.",
+     "label": null,
+     "tag": "d1",
+     "start": 101.94712018140592,
+     "end": 109.16852607709752,
+     "file": "audio/09_disappoint.wav"
+    },
+    {
+     "who": "l",
+     "text": "What the heck is this? Where's the chariot of fire? Where's the resurrection?",
+     "label": null,
+     "tag": "l1",
+     "start": 109.86852607709753,
+     "end": 113.44439909297054,
+     "file": "audio/10_disappoint.wav"
+    },
+    {
+     "who": "v",
+     "text": "It's a nothing burger. He didn't make a zombie. He made a glorified delivery bot. Let's go home. I have work in the morning.",
+     "label": null,
+     "tag": "v1",
+     "start": 114.04439909297054,
+     "end": 120.89428571428573,
+     "file": "audio/11_disappoint.wav"
+    },
+    {
+     "who": "n",
+     "text": "As ninety percent of the crowd grumbled and walked away, a few lingered, out of sheer curiosity.",
+     "label": null,
+     "tag": "d2",
+     "start": 121.49428571428572,
+     "end": 127.91460317460319,
+     "file": "audio/12_disappoint.wav"
+    }
+   ]
+  },
+  {
+   "id": "super",
+   "start": 128.71460317460318,
+   "end": 177.1933560090703,
+   "sents": [
+    {
+     "who": "n",
+     "text": "One man, a local supervisor known for being a bit of a tyrant, stepped forward.",
+     "label": null,
+     "tag": "sp1",
+     "start": 129.56460317460318,
+     "end": 134.9284126984127,
+     "file": "audio/13_super.wav"
+    },
+    {
+     "who": "s",
+     "text": "So what? You just talk?",
+     "label": null,
+     "tag": "s1",
+     "start": 135.4284126984127,
+     "end": 137.22795918367348,
+     "file": "audio/14_super.wav"
+    },
+    {
+     "who": "b",
+     "text": "I engage in deep-dive reflections on the human condition. For instance, I sense you are experiencing a dismissiveness toward my form, as a way to avoid the radical non-violence I'm programmed to discuss. Would you like to talk about how your need for control at the blacksmith shop is actually a trauma response to the dehumanizing tax laws of the local government? Tee hee!",
+     "label": null,
+     "tag": "b2",
+     "start": 137.72795918367348,
+     "end": 157.80160997732426,
+     "file": "audio/15_super.wav"
+    },
+    {
+     "who": "n",
+     "text": "The supervisor froze. He didn't scream. He didn't fight. He just started slowly backing away, his eyes wide with a new kind of primal fear. This wasn't the fear of being eaten. It was the fear of being seen.",
+     "label": null,
+     "tag": "sp2",
+     "start": 158.40160997732426,
+     "end": 172.87925170068027,
+     "file": "audio/16_super.wav"
+    },
+    {
+     "who": "s",
+     "text": "This is... this is weird. This isn't natural.",
+     "label": null,
+     "tag": "s2",
+     "start": 173.47925170068027,
+     "end": 176.3933560090703,
+     "file": "audio/17_super.wav"
+    }
+   ]
+  },
+  {
+   "id": "week",
+   "start": 177.1933560090703,
+   "end": 228.5150113378685,
+   "sents": [
+    {
+     "who": "n",
+     "text": "Over the next week, the Terror of the Cube settled over the town. It wasn't the terror of a monster. It was the terror of the truth. People would be walking to the jobs they hated, heads down, only to see the bot rolling alongside them, at three miles per hour.",
+     "label": null,
+     "tag": "w1",
+     "start": 178.0433560090703,
+     "end": 194.4714739229025,
+     "file": "audio/18_week.wav"
+    },
+    {
+     "who": "b",
+     "text": "Good morning, villager! I couldn't help but notice you've been gaslighting yourself into believing that your exhaustion is a personal failing, rather than a result of systemic exploitation. Would you like to deconstruct the internal logic of your guilt, through a lens of Christ-like compassion for yourself?",
+     "label": null,
+     "tag": "b3",
+     "start": 195.0714739229025,
+     "end": 210.41986394557824,
+     "file": "audio/19_week.wav"
+    },
+    {
+     "who": "n",
+     "text": "Windows slammed shut. Doors were bolted. People began crossing the street just to avoid the spiritual support bot. They would rather face a zombie with a sword than a machine that politely identified every emotional defense mechanism they had spent years building.",
+     "label": null,
+     "tag": "w2",
+     "start": 211.01986394557824,
+     "end": 227.71501133786848,
+     "file": "audio/20_week.wav"
+    }
+   ]
+  },
+  {
+   "id": "pub",
+   "start": 228.5150113378685,
+   "end": 250.8967120181406,
+   "sents": [
+    {
+     "who": "n",
+     "text": "In the local pub, the talk was no longer about a monster.",
+     "label": null,
+     "tag": "p1",
+     "start": 229.36501133786848,
+     "end": 233.38206349206348,
+     "file": "audio/21_pub.wav"
+    },
+    {
+     "who": "w",
+     "text": "I can't even stand in line for bread anymore. The bot stopped by and asked if my anger at the baker was actually a projection of my own feelings of inadequacy. I told it to buzz off, and it just said, I hear your pain, and I validate your frustration. It's terrifying!",
+     "label": null,
+     "tag": "wp",
+     "start": 233.98206349206347,
+     "end": 250.09671201814058,
+     "file": "audio/22_pub.wav"
+    }
+   ]
+  },
+  {
+   "id": "end",
+   "start": 250.8967120181406,
+   "end": 278.171156462585,
+   "sents": [
+    {
+     "who": "n",
+     "text": "From your castle balcony, you watched the villagers storming past the bot, grumbling under their breath, their heads tucked low as they hurried toward their joyless routines. They were more afraid of that little rolling cube of empathy than they ever would have been of a chariot of fire.",
+     "label": null,
+     "tag": "e1",
+     "start": 251.74671201814058,
+     "end": 268.1632199546485,
+     "file": "audio/23_end.wav"
+    },
+    {
+     "who": "n",
+     "text": "Because a chariot of fire just ends the world. But the Jesus-logic bot asks them to actually live in it.",
+     "label": null,
+     "tag": "e2",
+     "start": 268.8632199546485,
+     "end": 275.771156462585,
+     "file": "audio/24_end.wav"
+    }
+   ]
+  }
+ ],
+ "total": 278.171156462585,
+ "sr": 22050
+}
