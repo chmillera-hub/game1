@@ -1,0 +1,308 @@
+{
+ "scenes": [
+  {
+   "id": "title",
+   "start": 0.0,
+   "end": 3.956666666666667,
+   "sents": [
+    {
+     "who": "n",
+     "text": "A Tour of My Emotions.",
+     "label": null,
+     "tag": "n_title",
+     "start": 1.25,
+     "end": 2.956666666666667,
+     "file": "audio/00_title.wav"
+    }
+   ]
+  },
+  {
+   "id": "intro",
+   "start": 3.956666666666667,
+   "end": 10.83827664399093,
+   "sents": [
+    {
+     "who": "n",
+     "text": "I mean, if I had to personify my emotional state right now... here's what it would look like.",
+     "label": null,
+     "tag": "n1",
+     "start": 4.906666666666667,
+     "end": 10.03827664399093,
+     "file": "audio/01_intro.wav"
+    }
+   ]
+  },
+  {
+   "id": "bored",
+   "start": 10.83827664399093,
+   "end": 24.29902494331066,
+   "sents": [
+    {
+     "who": "n",
+     "text": "My boredom gives me a thumbs up, with a head nod, indicating things are good on the boredom side. Meaning, I'm posting deep dives on the internet.",
+     "label": null,
+     "tag": "nb",
+     "start": 11.68827664399093,
+     "end": 20.337709750566894,
+     "file": "audio/02_bored.wav"
+    },
+    {
+     "who": "b",
+     "text": "Yep. All good over here.",
+     "label": null,
+     "tag": "bd",
+     "start": 21.037709750566894,
+     "end": 23.49902494331066,
+     "file": "audio/03_bored.wav"
+    }
+   ]
+  },
+  {
+   "id": "lonely",
+   "start": 24.29902494331066,
+   "end": 40.70870748299319,
+   "sents": [
+    {
+     "who": "n",
+     "text": "Then my loneliness is in a pool of its own tears, in the fetal position, crying softly, almost twenty-four seven. Because there's no cute woman by my side who wants to post deep dives with me.",
+     "label": null,
+     "tag": "nl",
+     "start": 25.149024943310657,
+     "end": 36.608072562358274,
+     "file": "audio/04_lonely.wav"
+    },
+    {
+     "who": "l",
+     "text": "...sniff... no one... to post deep dives with...",
+     "label": null,
+     "tag": "ld",
+     "start": 37.30807256235828,
+     "end": 39.908707482993194,
+     "file": "audio/05_lonely.wav"
+    }
+   ]
+  },
+  {
+   "id": "fear",
+   "start": 40.70870748299319,
+   "end": 68.46659863945578,
+   "sents": [
+    {
+     "who": "n",
+     "text": "And when I think about going outside, into town, to talk to random people, or join churches, or try hobby groups in the local area... my fear starts running around with its hands in the air.",
+     "label": null,
+     "tag": "nf",
+     "start": 41.55870748299319,
+     "end": 53.110634920634915,
+     "file": "audio/06_fear.wav"
+    },
+    {
+     "who": "f",
+     "text": "High threat! High threat! High threat!",
+     "label": null,
+     "tag": "fd",
+     "start": 53.610634920634915,
+     "end": 55.746870748299315,
+     "file": "audio/07_fear.wav"
+    },
+    {
+     "who": "n",
+     "text": "Because they're completely unknown individuals. And I have no idea how they will respond when I explicitly state my suffering emotional need for deep, soul-level connection with a woman my age.",
+     "label": null,
+     "tag": "nf2",
+     "start": 56.34687074829932,
+     "end": 67.66659863945578,
+     "file": "audio/08_fear.wav"
+    }
+   ]
+  },
+  {
+   "id": "anger",
+   "start": 68.46659863945578,
+   "end": 78.90612244897959,
+   "sents": [
+    {
+     "who": "n",
+     "text": "And my anger just shrugs.",
+     "label": null,
+     "tag": "na",
+     "start": 69.31659863945579,
+     "end": 71.1974149659864,
+     "file": "audio/09_anger.wav"
+    },
+    {
+     "who": "a",
+     "text": "Well. No one's actively dehumanizing you right now. But it could happen. So listen to your fear. And maybe stay on the internet.",
+     "label": null,
+     "tag": "ad",
+     "start": 71.6974149659864,
+     "end": 78.10612244897959,
+     "file": "audio/10_anger.wav"
+    }
+   ]
+  },
+  {
+   "id": "trapped",
+   "start": 78.90612244897959,
+   "end": 121.83190476190477,
+   "sents": [
+    {
+     "who": "n",
+     "text": "And while my anger is saying all this, my loneliness is crying in the corner, on the floor. So the overall energy is feeling trapped in a solitary confinement cell, in my apartment.",
+     "label": null,
+     "tag": "nt",
+     "start": 79.7561224489796,
+     "end": 90.72755102040817,
+     "file": "audio/11_trapped.wav"
+    },
+    {
+     "who": "n",
+     "text": "Because the outside atmosphere, socially and emotionally, is high threat, unknown, and not supportive of my sense of emotional safety. They're literally strangers.",
+     "label": null,
+     "tag": "nt2",
+     "start": 91.22755102040817,
+     "end": 101.47916099773244,
+     "file": "audio/12_trapped.wav"
+    },
+    {
+     "who": "n",
+     "text": "And the vibe on the internet is, if you talk about emotions, you get trolled, or ignored.",
+     "label": null,
+     "tag": "nt3",
+     "start": 101.97916099773244,
+     "end": 107.22687074829933,
+     "file": "audio/13_trapped.wav"
+    },
+    {
+     "who": "n",
+     "text": "But right there, in close physical proximity to other people, there's no telling what could happen. I could be dehumanized, or gaslit, or ostracized, or told to get lost. And then my loneliness pain could go beyond a ten.",
+     "label": null,
+     "tag": "nt4",
+     "start": 107.72687074829933,
+     "end": 121.03190476190477,
+     "file": "audio/14_trapped.wav"
+    }
+   ]
+  },
+  {
+   "id": "scream",
+   "start": 121.83190476190477,
+   "end": 129.89773242630386,
+   "sents": [
+    {
+     "who": "n",
+     "text": "Imagine screaming at someone who's already in the fetal position, crying. That sounds like a way to break them.",
+     "label": null,
+     "tag": "ns",
+     "start": 122.68190476190478,
+     "end": 128.99773242630386,
+     "file": "audio/15_scream.wav"
+    }
+   ]
+  },
+  {
+   "id": "sad",
+   "start": 129.89773242630386,
+   "end": 153.5535827664399,
+   "sents": [
+    {
+     "who": "n",
+     "text": "Wait, no. My sadness is not on the floor. That's my loneliness. When I imagine my sadness, she has her arm around me.",
+     "label": null,
+     "tag": "nsa",
+     "start": 130.74773242630386,
+     "end": 138.50319727891156,
+     "file": "audio/16_sad.wav"
+    },
+    {
+     "who": "s",
+     "text": "This situation is completely messed up. It really is messed up that society is not helping your loneliness.",
+     "label": null,
+     "tag": "sd1",
+     "start": 139.10319727891155,
+     "end": 145.07072562358275,
+     "file": "audio/17_sad.wav"
+    },
+    {
+     "who": "n",
+     "text": "And I'm like, well, are you sad, then, sadness?",
+     "label": null,
+     "tag": "nq",
+     "start": 145.67072562358274,
+     "end": 150.00124716553285,
+     "file": "audio/18_sad.wav"
+    },
+    {
+     "who": "s",
+     "text": "No. Just kind of irritated.",
+     "label": null,
+     "tag": "sd2",
+     "start": 150.50124716553285,
+     "end": 152.75358276643988,
+     "file": "audio/19_sad.wav"
+    }
+   ]
+  },
+  {
+   "id": "irritated",
+   "start": 153.5535827664399,
+   "end": 174.32149659863944,
+   "sents": [
+    {
+     "who": "n",
+     "text": "Irritated that I'm actively expressing the pain of my loneliness, and society is acting like there's nothing to see here. Let's move on to more board games, and more vacations, and more restaurants, and more pictures of people smiling and nodding.",
+     "label": null,
+     "tag": "nir",
+     "start": 154.40358276643988,
+     "end": 168.32394557823127,
+     "file": "audio/20_irritated.wav"
+    },
+    {
+     "who": "s",
+     "text": "There is clearly something to see here. And it is your suffering. Humanity.",
+     "label": null,
+     "tag": "sd3",
+     "start": 168.92394557823127,
+     "end": 173.52149659863943,
+     "file": "audio/21_irritated.wav"
+    }
+   ]
+  },
+  {
+   "id": "meaning",
+   "start": 174.32149659863944,
+   "end": 206.54256235827663,
+   "sents": [
+    {
+     "who": "n",
+     "text": "Because to me, sadness is the recognition of suffering in another human being, and thinking about how to care for them. So my sadness is irritated that an emotion of mine is clearly suffering, and people aren't using their own sadness to show any real solidarity, or support, for my explicitly stated emotional needs.",
+     "label": null,
+     "tag": "nm",
+     "start": 175.17149659863944,
+     "end": 194.71108843537414,
+     "file": "audio/22_meaning.wav"
+    },
+    {
+     "who": "s",
+     "text": "If anything, I'm sad at the people who aren't showing any empathy, or any material support, for your suffering.",
+     "label": null,
+     "tag": "sd4",
+     "start": 195.31108843537413,
+     "end": 201.75462585034012,
+     "file": "audio/23_meaning.wav"
+    },
+    {
+     "who": "n",
+     "text": "Messed up emotions, bro.",
+     "label": null,
+     "tag": "nend",
+     "start": 202.55462585034013,
+     "end": 204.34256235827664,
+     "file": "audio/24_meaning.wav"
+    }
+   ]
+  }
+ ],
+ "total": 206.54256235827663,
+ "sr": 22050
+}
