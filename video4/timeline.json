@@ -1,0 +1,422 @@
+{
+ "scenes": [
+  {
+   "id": "title",
+   "start": 0.0,
+   "end": 5.767823129251701,
+   "sents": [
+    {
+     "who": "n",
+     "text": "Jesus, and the Gauntlet That Everyone Wanted to Use Wrong.",
+     "label": null,
+     "tag": "n_title",
+     "start": 1.25,
+     "end": 4.767823129251701,
+     "file": "audio/00_title.wav"
+    }
+   ]
+  },
+  {
+   "id": "square",
+   "start": 5.767823129251701,
+   "end": 27.731564625850343,
+   "sents": [
+    {
+     "who": "n",
+     "text": "The square is packed so tight, the air feels electric. Soldiers, zealots, townspeople, revolutionaries, all staring at Jesus, who stands calmly in the center, with the Infinity Gauntlet glowing on his hand like a small sun.",
+     "label": null,
+     "tag": "sq1",
+     "start": 6.717823129251701,
+     "end": 21.508934240362812,
+     "file": "audio/01_square.wav"
+    },
+    {
+     "who": "n",
+     "text": "Everyone expects carnage. Everyone expects judgment. Everyone expects the snap.",
+     "label": null,
+     "tag": "sq2",
+     "start": 22.008934240362812,
+     "end": 26.931564625850342,
+     "file": "audio/02_square.wav"
+    }
+   ]
+  },
+  {
+   "id": "demand",
+   "start": 27.731564625850343,
+   "end": 42.8495918367347,
+   "sents": [
+    {
+     "who": "s",
+     "text": "Finally! Justice! End the wicked! End the traitors! End the sinners! End the ones who oppose us!",
+     "label": null,
+     "tag": "dem",
+     "start": 28.481564625850343,
+     "end": 35.3430612244898,
+     "file": "audio/03_demand.wav"
+    },
+    {
+     "who": "silence",
+     "text": "",
+     "tag": "roar",
+     "start": 35.3430612244898,
+     "end": 37.3430612244898,
+     "file": null
+    },
+    {
+     "who": "n",
+     "text": "The gauntlet hums. Jesus lifts his hand. People brace for annihilation.",
+     "label": null,
+     "tag": "hum",
+     "start": 37.4430612244898,
+     "end": 42.2495918367347,
+     "file": "audio/04_demand.wav"
+    }
+   ]
+  },
+  {
+   "id": "snap",
+   "start": 42.8495918367347,
+   "end": 60.56190476190477,
+   "sents": [
+    {
+     "who": "n",
+     "text": "He snaps.",
+     "label": null,
+     "tag": "n_snap",
+     "start": 43.5995918367347,
+     "end": 44.702539682539694,
+     "file": "audio/05_snap.wav"
+    },
+    {
+     "who": "silence",
+     "text": "",
+     "tag": "pop",
+     "start": 44.702539682539694,
+     "end": 46.302539682539695,
+     "file": null
+    },
+    {
+     "who": "n",
+     "text": "And then... a mountain of warm bread. Pitchers of wine. Baskets of figs and dates. A platter of roasted fish. And somewhere in the distance, the mosquito population drops by forty percent.",
+     "label": null,
+     "tag": "feast",
+     "start": 46.4025396825397,
+     "end": 57.96607709750568,
+     "file": "audio/06_snap.wav"
+    },
+    {
+     "who": "j",
+     "text": "Dinner is served.",
+     "label": null,
+     "tag": "dinner",
+     "start": 58.56607709750568,
+     "end": 59.76190476190477,
+     "file": "audio/07_snap.wav"
+    }
+   ]
+  },
+  {
+   "id": "stunned",
+   "start": 60.56190476190477,
+   "end": 82.29947845804988,
+   "sents": [
+    {
+     "who": "n",
+     "text": "The crowd freezes.",
+     "label": null,
+     "tag": "frozen",
+     "start": 61.31190476190477,
+     "end": 62.705102040816335,
+     "file": "audio/08_stunned.wav"
+    },
+    {
+     "who": "t",
+     "text": "Wait... what?",
+     "label": null,
+     "tag": "what",
+     "start": 63.30510204081634,
+     "end": 64.14102040816327,
+     "file": "audio/09_stunned.wav"
+    },
+    {
+     "who": "j",
+     "text": "I also reduced parasitic worms. Thought that might help. Anyway, grab a plate.",
+     "label": null,
+     "tag": "worms",
+     "start": 64.74102040816327,
+     "end": 69.48950113378685,
+     "file": "audio/10_stunned.wav"
+    },
+    {
+     "who": "n",
+     "text": "He sits down at the table he conjured, pours wine, breaks bread, and starts telling a story about a fishing trip with the disciples. Laughing, gesturing, ignoring the stunned silence around him.",
+     "label": null,
+     "tag": "story",
+     "start": 70.08950113378684,
+     "end": 81.69947845804988,
+     "file": "audio/11_stunned.wav"
+    }
+   ]
+  },
+  {
+   "id": "rage",
+   "start": 82.29947845804988,
+   "end": 99.00467120181406,
+   "sents": [
+    {
+     "who": "n",
+     "text": "The lead soldier's face turns purple.",
+     "label": null,
+     "tag": "purple",
+     "start": 82.94947845804988,
+     "end": 85.43401360544217,
+     "file": "audio/12_rage.wav"
+    },
+    {
+     "who": "s",
+     "text": "This is an abomination! You wasted the gauntlet! You were supposed to destroy our enemies!",
+     "label": null,
+     "tag": "abom",
+     "start": 85.93401360544217,
+     "end": 91.82027210884354,
+     "file": "audio/13_rage.wav"
+    },
+    {
+     "who": "j",
+     "text": "My guy... I'm literally trying to feed you.",
+     "label": null,
+     "tag": "myguy",
+     "start": 92.42027210884353,
+     "end": 94.32430839002268,
+     "file": "audio/14_rage.wav"
+    },
+    {
+     "who": "s",
+     "text": "We're taking the gauntlet. You're too weak to use it properly.",
+     "label": null,
+     "tag": "taking",
+     "start": 94.82430839002268,
+     "end": 98.50467120181406,
+     "file": "audio/15_rage.wav"
+    }
+   ]
+  },
+  {
+   "id": "flip",
+   "start": 99.00467120181406,
+   "end": 123.30278911564626,
+   "sents": [
+    {
+     "who": "n",
+     "text": "The soldiers stomp to the table, flip it over, kick loaves of bread across the dirt, and scream in his face.",
+     "label": null,
+     "tag": "flipn",
+     "start": 99.65467120181407,
+     "end": 106.38845804988664,
+     "file": "audio/16_flip.wav"
+    },
+    {
+     "who": "j",
+     "text": "Bro. I have the Infinity Gauntlet. You don't think I already thought of this?",
+     "label": null,
+     "tag": "bro",
+     "start": 107.08845804988664,
+     "end": 110.76882086167802,
+     "file": "audio/17_flip.wav"
+    },
+    {
+     "who": "s",
+     "text": "Apprehend him!",
+     "label": null,
+     "tag": "appr",
+     "start": 111.26882086167802,
+     "end": 112.29049886621317,
+     "file": "audio/18_flip.wav"
+    },
+    {
+     "who": "n",
+     "text": "Guards grab Jesus by the arms. He phases straight through them, like mist. He calmly resets the table, sits back down, and keeps telling the fish story.",
+     "label": null,
+     "tag": "phase",
+     "start": 112.59049886621317,
+     "end": 122.70278911564627,
+     "file": "audio/19_flip.wav"
+    }
+   ]
+  },
+  {
+   "id": "violence",
+   "start": 123.30278911564626,
+   "end": 154.05868480725624,
+   "sents": [
+    {
+     "who": "n",
+     "text": "One soldier throws a punch. His fist goes straight through Jesus, and he tumbles into a pile of bread. Another lunges for a disciple, and his hand passes through like smoke.",
+     "label": null,
+     "tag": "punch",
+     "start": 123.95278911564627,
+     "end": 134.29727891156463,
+     "file": "audio/20_violence.wav"
+    },
+    {
+     "who": "j",
+     "text": "Are you done? I made it so you cannot make physical contact with anyone, unless you're acting in a pro-human, non-violent way. You can yell. You can complain. You can express your feelings. But you cannot touch anyone without consent.",
+     "label": null,
+     "tag": "rule",
+     "start": 134.99727891156462,
+     "end": 146.57242630385488,
+     "file": "audio/21_violence.wav"
+    },
+    {
+     "who": "s",
+     "text": "This is demonic! This is dark magic! You're making us intangible!",
+     "label": null,
+     "tag": "demonic",
+     "start": 147.07242630385488,
+     "end": 151.47260770975058,
+     "file": "audio/22_violence.wav"
+    },
+    {
+     "who": "j",
+     "text": "No. I'm making you harmless.",
+     "label": null,
+     "tag": "harmless",
+     "start": 151.97260770975058,
+     "end": 153.45868480725625,
+     "file": "audio/23_violence.wav"
+    }
+   ]
+  },
+  {
+   "id": "leave",
+   "start": 154.05868480725624,
+   "end": 184.22061224489795,
+   "sents": [
+    {
+     "who": "n",
+     "text": "The soldiers insist the gauntlet is cursed, and that preventing violence is somehow evil, and they storm out of the city. A few people panic, and follow them. Most stay.",
+     "label": null,
+     "tag": "storm",
+     "start": 154.70868480725622,
+     "end": 164.8906349206349,
+     "file": "audio/24_leave.wav"
+    },
+    {
+     "who": "jq",
+     "text": "Maybe someday they'll understand that violence isn't how you get what you want, in this kingdom.",
+     "label": null,
+     "tag": "someday",
+     "start": 165.5906349206349,
+     "end": 170.7338548752834,
+     "file": "audio/25_leave.wav"
+    },
+    {
+     "who": "n",
+     "text": "He snaps again. The tablecloth straightens. The bread reassembles. The wine refills. The disciples laugh. The feast continues.",
+     "label": null,
+     "tag": "snap2",
+     "start": 171.3338548752834,
+     "end": 180.4476870748299,
+     "file": "audio/26_leave.wav"
+    },
+    {
+     "who": "j",
+     "text": "So anyway, I was telling you about that fish...",
+     "label": null,
+     "tag": "anyway",
+     "start": 180.9476870748299,
+     "end": 183.42061224489794,
+     "file": "audio/27_leave.wav"
+    }
+   ]
+  },
+  {
+   "id": "metaphor",
+   "start": 184.22061224489795,
+   "end": 225.04575963718818,
+   "sents": [
+    {
+     "who": "n",
+     "text": "So, what's the metaphor? The gauntlet is technology: a tool that prevents non-consensual harm, without inflicting harm.",
+     "label": null,
+     "tag": "m1",
+     "start": 185.07061224489794,
+     "end": 193.17437641723353,
+     "file": "audio/28_metaphor.wav"
+    },
+    {
+     "who": "n",
+     "text": "Jesus is the pro-human, non-violent framework: a presence that dissolves violence, instead of countering it.",
+     "label": null,
+     "tag": "m2",
+     "start": 193.67437641723353,
+     "end": 201.17442176870745,
+     "file": "audio/29_metaphor.wav"
+    },
+    {
+     "who": "n",
+     "text": "The soldiers believe power only matters when it can hurt someone, and they panic when they meet a power that refuses to.",
+     "label": null,
+     "tag": "m3",
+     "start": 201.67442176870745,
+     "end": 208.5359183673469,
+     "file": "audio/30_metaphor.wav"
+    },
+    {
+     "who": "n",
+     "text": "The phasing is consent-based interaction. You can talk, express, and disagree, but you cannot touch without consent.",
+     "label": null,
+     "tag": "m4",
+     "start": 209.0359183673469,
+     "end": 216.37342403628114,
+     "file": "audio/31_metaphor.wav"
+    },
+    {
+     "who": "n",
+     "text": "And the feast is the kingdom of heaven as abundance, not domination. A world where power nourishes, instead of destroys.",
+     "label": null,
+     "tag": "m5",
+     "start": 216.87342403628114,
+     "end": 224.24575963718817,
+     "file": "audio/32_metaphor.wav"
+    }
+   ]
+  },
+  {
+   "id": "end",
+   "start": 225.04575963718818,
+   "end": 242.90977324263034,
+   "sents": [
+    {
+     "who": "n",
+     "text": "A Jesus who makes violence impossible, and uses infinite power to create infinite safety.",
+     "label": null,
+     "tag": "e1",
+     "start": 225.89575963718818,
+     "end": 231.95616780045347,
+     "file": "audio/33_end.wav"
+    },
+    {
+     "who": "n",
+     "text": "A Jesus who refuses to disappear anyone, even the violent, because the point is transformation, not erasure.",
+     "label": null,
+     "tag": "e2",
+     "start": 232.45616780045347,
+     "end": 239.90977324263034,
+     "file": "audio/34_end.wav"
+    },
+    {
+     "who": "silence",
+     "text": "",
+     "tag": "fin",
+     "start": 239.90977324263034,
+     "end": 241.90977324263034,
+     "file": null
+    }
+   ]
+  }
+ ],
+ "total": 242.90977324263034,
+ "sr": 22050
+}
