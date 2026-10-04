@@ -551,11 +551,10 @@ def soul(img, x, y, u, t, s=1.0, a=1.0, ph=0.0):
     if a <= 0.01: return
     y = y + math.sin(t * 2.2 + ph) * 9; r = 34 * s
     c = mix((206, 36, 34), (255, 236, 172), u); c2 = mix((255, 124, 40), (255, 255, 232), u)
-    gl = Image.new("RGB", (W, H), (0, 0, 0)); ImageDraw.Draw(gl).ellipse([x - r * 2.2, y - r * 2.0, x + r * 2.2, y + r * 2.4], fill=tuple(int(v * 0.55 * a) for v in c)); softglow(img, gl, 30, 1.2)
+    gl = Image.new("RGB", (W, H), (0, 0, 0)); ImageDraw.Draw(gl).ellipse([x - r * 2.1, y - r * 2.1, x + r * 2.1, y + r * 2.1], fill=tuple(int(v * 0.55 * a) for v in c)); softglow(img, gl, 30, 1.2)
     lay = Image.new("RGBA", (W, H), (0, 0, 0, 0)); d = ImageDraw.Draw(lay)
     sw = math.sin(t * 5 + ph) * r * 0.35
-    d.polygon([(x - r * 0.75, y + r * 0.5), (x + r * 0.75, y + r * 0.5), (x + sw * 0.6, y + r * 1.6), (x + sw, y + r * 2.5)], fill=c + (220,))          # wispy tail
-    d.ellipse([x - r, y - r, x + r, y + r * 1.1], fill=c + (255,), outline=tuple(int(v * 0.6) for v in c) + (255,), width=3)
+    d.ellipse([x - r, y - r, x + r, y + r], fill=c + (255,), outline=tuple(int(v * 0.6) for v in c) + (255,), width=3)
     d.ellipse([x - r * 0.6, y - r * 0.75, x + r * 0.35, y + r * 0.1], fill=c2 + (120,))
     hh = clamp(1 - u / 0.8)
     if hh > 0.02:                                                                                                                                      # horns that melt away
