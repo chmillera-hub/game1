@@ -3,8 +3,9 @@ tl = json.load(open("timeline.json")); sr = tl["sr"]; N = int(tl["total"] * sr) 
 rng = np.random.default_rng(3)
 SC = {s["id"]: s for s in tl["scenes"]}
 def tag(sc, name):
+    """(start, end) of a tagged item, in seconds RELATIVE to its scene's start."""
     for z in SC[sc]["sents"]:
-        if z["tag"] == name: return z["start"], z["end"]
+        if z["tag"] == name: return z["start"] - SC[sc]["start"], z["end"] - SC[sc]["start"]
 def lp(x, k): return np.convolve(x, np.ones(k) / k, "same")
 def bp(x, lo, hi): return lp(x, max(1, int(sr / lo))) - lp(x, max(1, int(sr / hi)))
 def add(buf, t0, x, g=1.0):

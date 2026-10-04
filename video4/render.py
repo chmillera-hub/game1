@@ -657,15 +657,16 @@ def sc_leave(t, d, p):
     return img
 
 def icon(img, kind, cx, cy, t, s=1.0):
+    """icons for the metaphor cards; cy is the card's vertical centre (figures are drawn with the stage offset compensated)."""
     d = ImageDraw.Draw(img)
-    if kind == "gauntlet": gauntlet(img, (cx, cy), t, 1.4 * s, 1.0)
-    elif kind == "jesus": cfig(img, cx, cy + 56 * s, 120 * s, mouth="smile", **JESUS)
-    elif kind == "soldier": soldier(img, cx, cy + 58 * s, 118 * s, mouth="frown", brow=0.8, spear=False)
+    if kind == "gauntlet": gauntlet(img, (cx, cy + 2), t, 1.0, 0.15)
+    elif kind == "jesus": cfig(img, cx, cy + 40 + OFF, 72, mouth="smile", **JESUS)
+    elif kind == "soldier": soldier(img, cx, cy + 40 + OFF, 70, mouth="frown", brow=0.8, spear=False)
     elif kind == "phase":
         for k in range(3): d.ellipse([cx - 28 + k * 12, cy - 28 + k * 4, cx + 28 + k * 12, cy + 28 + k * 4], outline=(130 + k * 40, 190, 255), width=3)
         d.line([(cx - 44, cy), (cx + 44, cy)], fill=(255, 255, 255), width=4); d.polygon([(cx + 44, cy), (cx + 30, cy - 9), (cx + 30, cy + 9)], fill=(255, 255, 255))
     elif kind == "feast":
-        draw_item(img, "loaf", cx - 22, cy + 12, 0.8); draw_item(img, "jug", cx + 26, cy + 4, 0.7); draw_item(img, "basket", cx, cy - 14, 0.7)
+        draw_item(img, "loaf", cx - 26, cy + 14 + OFF, 0.7); draw_item(img, "jug", cx + 26, cy + 6 + OFF, 0.6); draw_item(img, "basket", cx, cy - 14 + OFF, 0.62)
 
 def sc_metaphor(t, d, p):
     img = gradient((16, 18, 34), (40, 34, 56), "metabg"); dr = ImageDraw.Draw(img)
@@ -679,7 +680,7 @@ def sc_metaphor(t, d, p):
         if a <= 0: continue
         lay = Image.new("RGBA", (W, H), (0, 0, 0, 0)); ld = ImageDraw.Draw(lay)
         ld.rounded_rectangle([60, y - 42, W - 60, y + 50], 16, fill=(255, 255, 255, int(24 * a)), outline=(210, 180, 120, int(120 * a)), width=2); img.paste(lay, (0, 0), lay)
-        tmp = Image.new("RGB", (W, H), (0, 0, 0)); tmp.paste(img); icon(tmp, ic, 140, y + 6, t, 0.8); img = Image.blend(img, tmp, a)
+        tmp = Image.new("RGB", (W, H), (0, 0, 0)); tmp.paste(img); icon(tmp, ic, 140, y + 4, t, 0.8); img = Image.blend(img, tmp, a)
         label(img, 230, y - 40, h1, 20, (230, 190, 110), a, anchor="l"); label(img, 230, y - 12, h2, 27, (255, 250, 240), a, anchor="l"); label(img, 230, y + 24, h3, 19, (190, 200, 225), a, anchor="l")
     title(img, "THE METAPHOR", a=1.0, y=26, size=28)
     return img

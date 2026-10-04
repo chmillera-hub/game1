@@ -3,7 +3,7 @@ SCENES = [
  {"id":"title","pre":0.8,"post":1.0,"items":[
    {"who":"n","tag":"n_title","text":"Jesus, and the Gauntlet That Everyone Wanted to Use Wrong."}]},
  {"id":"square","pre":0.5,"post":0.8,"items":[
-   {"who":"n","tag":"sq1","text":"The square is packed so tight, the air feels electric. Soldiers, zealots, townspeople, revolutionaries, all staring at Jesus, who stands calmly in the center, with the Infinity Gauntlet glowing on his hand like a small sun."},
+   {"who":"n","tag":"sq1","text":"The square is packed so tight, the air feels electric. Soldiers, zealots, townspeople, revolutionaries, all staring at Jesus, who stands in the center, unarmed and radically nonviolent, with the Infinity Gauntlet glowing on his hand like a small sun."},
    {"who":"n","gap":0.5,"tag":"sq2","text":"Everyone expects carnage. Everyone expects judgment. Everyone expects the snap."}]},
  {"id":"demand","pre":0.3,"post":0.6,"items":[
    {"who":"s","tag":"dem","text":"Finally! Justice! End the wicked! End the traitors! End the sinners! End the ones who oppose us!"},
@@ -28,7 +28,7 @@ SCENES = [
    {"who":"n","tag":"flipn","text":"The soldiers stomp to the table, flip it over, kick loaves of bread across the dirt, and scream in his face."},
    {"who":"j","gap":0.7,"tag":"bro","text":"Bro. I have the Infinity Gauntlet. You don't think I already thought of this?"},
    {"who":"s","gap":0.5,"tag":"appr","text":"Apprehend him!"},
-   {"who":"n","gap":0.3,"tag":"phase","text":"Guards grab Jesus by the arms. He phases straight through them, like mist. He calmly resets the table, sits back down, and keeps telling the fish story."}]},
+   {"who":"n","gap":0.3,"tag":"phase","text":"Guards grab Jesus by the arms. He phases straight through them, like mist. He resets the table with a relaxing energy, sits back down, and keeps telling the fish story."}]},
  {"id":"violence","pre":0.2,"post":0.6,"items":[
    {"who":"n","tag":"punch","text":"One soldier throws a punch. His fist goes straight through Jesus, and he tumbles into a pile of bread. Another lunges for a disciple, and his hand passes through like smoke."},
    {"who":"j","gap":0.7,"tag":"rule","text":"Are you done? I made it so you cannot make physical contact with anyone, unless you're acting in a pro-human, non-violent way. You can yell. You can complain. You can express your feelings. But you cannot touch anyone without consent."},
