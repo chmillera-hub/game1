@@ -207,7 +207,7 @@ def square():
     return img
 
 def cfig(img, x, yb, h, robe, skin=SKIN[0], hair=None, beard=False, helmet=False, sash=None, L=None, R=None, face=None, alpha=1.0,
-         armor=False, shield=False, spear=False, mouth="flat", brow=0.0, cut=None, rot=0.0, hood=False, eyes="open", wide=1.0, hscale=1.0, brow1=0.0):
+         armor=False, shield=False, spear=False, mouth="flat", brow=0.0, cut=None, rot=0.0, hood=False, eyes="open", wide=1.0, hscale=1.0, brow1=0.0, tunic=False, mantle=None, headwrap=None):
     """frontal figure. returns world positions of hands and head."""
     yb = yb - OFF
     if cut is not None: cut = cut - OFF
@@ -216,21 +216,43 @@ def cfig(img, x, yb, h, robe, skin=SKIN[0], hair=None, beard=False, helmet=False
     U = lambda ux, uy: (cx + ux * h * wide, gy + uy * h)
     L = L or (-0.2, -0.42); R = R or (0.2, -0.42)
     shade = tuple(int(c * 0.82) for c in robe)
-    sL, sR = U(-0.13, -0.77), U(0.13, -0.77)
+    sw_ = 0.16 if tunic else 0.13
+    sL, sR = U(-sw_, -0.77), U(sw_, -0.77)
     def arm(S, Hd, col):
         S = S; E0 = U(*Hd); mid = ((S[0] + E0[0]) / 2, (S[1] + E0[1]) / 2); vx, vy = E0[0] - S[0], E0[1] - S[1]; n = math.hypot(vx, vy) or 1
         p1 = (-vy / n * 0.05 * h, vx / n * 0.05 * h); p2 = (-p1[0], -p1[1]); p = p1 if p1[1] > p2[1] else p2
         E = (mid[0] + p[0], mid[1] + p[1]); wd = int(h * 0.062)
-        d.line([S, E, E0], fill=col, width=wd, joint="curve")
-        for q in (S, E): d.ellipse([q[0] - wd / 2, q[1] - wd / 2, q[0] + wd / 2, q[1] + wd / 2], fill=col)
+        if tunic:     # short sleeve to the elbow, bare forearm
+            w1 = int(h * 0.085); w2 = int(h * 0.066)
+            d.line([S, E], fill=col, width=w1); d.ellipse([S[0] - w1 / 2, S[1] - w1 / 2, S[0] + w1 / 2, S[1] + w1 / 2], fill=col); d.ellipse([E[0] - w1 / 2, E[1] - w1 / 2, E[0] + w1 / 2, E[1] + w1 / 2], fill=col)
+            d.line([E, E0], fill=skin, width=w2); d.ellipse([E[0] - w2 / 2, E[1] - w2 / 2, E[0] + w2 / 2, E[1] + w2 / 2], fill=skin)
+        else:
+            d.line([S, E, E0], fill=col, width=wd, joint="curve")
+            for q in (S, E): d.ellipse([q[0] - wd / 2, q[1] - wd / 2, q[0] + wd / 2, q[1] + wd / 2], fill=col)
         d.ellipse([E0[0] - h * 0.032, E0[1] - h * 0.032, E0[0] + h * 0.032, E0[1] + h * 0.032], fill=skin)
     # back-most: spear
     if spear:
         hx, hy = U(*R); d.line([(hx, hy + h * 0.55), (hx - 4, hy - h * 0.6)], fill=(110, 80, 50), width=5); d.polygon([(hx - 4, hy - h * 0.72), (hx - 11, hy - h * 0.58), (hx + 3, hy - h * 0.58)], fill=(200, 205, 214))
-    # robe body
-    d.polygon([U(-0.13, -0.78), U(0.13, -0.78), U(0.17, -0.5), U(0.23, 0.0), U(-0.23, 0.0), U(-0.17, -0.5)], fill=robe)
-    d.polygon([U(-0.02, -0.78), U(0.13, -0.78), U(0.17, -0.5), U(0.23, 0.0), U(0.05, 0.0)], fill=shade)
-    if sash: d.polygon([U(-0.17, -0.5), U(0.17, -0.5), U(0.18, -0.45), U(-0.18, -0.45)], fill=sash); d.polygon([U(0.1, -0.45), U(0.15, -0.45), U(0.15, -0.2), U(0.1, -0.2)], fill=sash)
+    # body
+    if tunic:     # a straight knee-length tunic, belted at the waist, bare legs and sandals
+        for sg in (-1, 1):
+            d.line([U(sg * 0.07, -0.3), U(sg * 0.075, -0.035)], fill=skin, width=int(h * 0.068))
+            d.rounded_rectangle([cx + sg * 0.078 * h * wide - h * 0.05, gy - h * 0.03, cx + sg * 0.078 * h * wide + h * 0.05, gy + 3], 4, fill=(120, 86, 56), outline=(84, 58, 38))
+        d.polygon([U(-0.16, -0.78), U(0.16, -0.78), U(0.155, -0.5), U(0.185, -0.27), U(-0.185, -0.27), U(-0.155, -0.5)], fill=robe)
+        d.polygon([U(0.0, -0.78), U(0.16, -0.78), U(0.155, -0.5), U(0.185, -0.27), U(0.02, -0.27)], fill=shade)
+        d.line([U(0.0, -0.78), U(0.0, -0.27)], fill=tuple(int(c * 0.7) for c in robe), width=2)
+        d.line([U(-0.185, -0.275), U(0.185, -0.275)], fill=tuple(int(c * 0.7) for c in robe), width=3)
+        if mantle:    # a mantle draped diagonally from the shoulder across the body
+            md = tuple(int(c * 0.78) for c in mantle)
+            d.polygon([U(-0.18, -0.81), U(-0.03, -0.81), U(0.18, -0.5), U(0.19, -0.26), U(0.04, -0.26), U(-0.18, -0.6)], fill=mantle)
+            d.line([U(-0.03, -0.81), U(0.18, -0.5)], fill=md, width=3); d.line([U(-0.18, -0.6), U(0.04, -0.26)], fill=md, width=3)
+            for k in range(3): d.line([U(0.06 + k * 0.045, -0.3), U(0.08 + k * 0.045, -0.26)], fill=md, width=2)
+    else:
+        d.polygon([U(-0.13, -0.78), U(0.13, -0.78), U(0.17, -0.5), U(0.23, 0.0), U(-0.23, 0.0), U(-0.17, -0.5)], fill=robe)
+        d.polygon([U(-0.02, -0.78), U(0.13, -0.78), U(0.17, -0.5), U(0.23, 0.0), U(0.05, 0.0)], fill=shade)
+    if sash and tunic:
+        d.polygon([U(-0.158, -0.53), U(0.158, -0.53), U(0.156, -0.47), U(-0.156, -0.47)], fill=sash); d.ellipse([cx + 0.05 * h * wide, gy - 0.54 * h, cx + 0.1 * h * wide, gy - 0.46 * h], fill=tuple(min(255, int(c * 1.25)) for c in sash))
+    elif sash: d.polygon([U(-0.17, -0.5), U(0.17, -0.5), U(0.18, -0.45), U(-0.18, -0.45)], fill=sash); d.polygon([U(0.1, -0.45), U(0.15, -0.45), U(0.15, -0.2), U(0.1, -0.2)], fill=sash)
     if armor:
         d.polygon([U(-0.14, -0.78), U(0.14, -0.78), U(0.15, -0.55), U(-0.15, -0.55)], fill=(176, 130, 66)); d.line([U(0, -0.78), U(0, -0.55)], fill=(130, 92, 44), width=2)
         d.ellipse([cx - h * 0.03, gy - h * 0.7, cx + h * 0.03, gy - h * 0.64], outline=(130, 92, 44), width=2)
@@ -245,6 +267,11 @@ def cfig(img, x, yb, h, robe, skin=SKIN[0], hair=None, beard=False, helmet=False
     fc = face if face else skin
     d.ellipse([hx - r, hy - r * 1.1, hx + r, hy + r * 1.1], fill=fc)
     if hood: d.pieslice([hx - r * 1.35, hy - r * 1.5, hx + r * 1.35, hy + r * 1.4], 180, 360, fill=shade)
+    if headwrap:
+        hd_ = tuple(int(c * 0.75) for c in headwrap)
+        for sg in (-1, 1): d.polygon([(hx + sg * r * 1.2, hy - r * 0.4), (hx + sg * r * 1.55, hy + r * 2.4), (hx + sg * r * 0.85, hy + r * 2.2), (hx + sg * r * 0.95, hy + r * 0.1)], fill=headwrap, outline=hd_)
+        d.pieslice([hx - r * 1.28, hy - r * 1.5, hx + r * 1.28, hy + r * 0.85], 180, 360, fill=headwrap, outline=hd_)
+        d.arc([hx - r * 1.28, hy - r * 1.2, hx + r * 1.28, hy - r * 0.1], 195, 345, fill=(56, 42, 34), width=max(3, int(r * 0.22)))
     if beard: d.polygon([(hx - r * 0.95, hy + r * 0.1), (hx + r * 0.95, hy + r * 0.1), (hx + r * 0.6, hy + r * 1.6), (hx, hy + r * 1.95), (hx - r * 0.6, hy + r * 1.6)], fill=hair or (90, 60, 40))
     ey = hy - r * 0.12
     if eyes == "blank":
@@ -308,7 +335,7 @@ def bubble(img, x, y, text, size=22, a=1.0, tail=None, col=(252, 250, 244)):
     d.text((x - tw / 2, y), text, font=f, fill=(46, 36, 30, int(255 * a))); img.paste(lay, (0, 0), lay)
 
 
-JESUS = dict(robe=(244, 240, 230), skin=SKIN[0], hair=(100, 68, 46), beard=True, sash=(170, 120, 70))
+JESUS = dict(robe=(240, 235, 222), skin=SKIN[0], hair=(100, 68, 46), beard=True, sash=(120, 84, 52))
 _HUDQ = []
 def HUD(fn): _HUDQ.append(fn)
 def hlabel(*a, **k): HUD(lambda im: label(im, *a, **k))
@@ -373,33 +400,36 @@ def shadow(img, x, yb, h, sun):
     L = h * (1.1 + 1.6 * sun); lay = Image.new("RGBA", (W, H), (0, 0, 0, 0)); d = ImageDraw.Draw(lay); y = yb - OFF
     d.polygon([(x - 0.18 * h, y), (x + 0.18 * h, y), (x + 0.18 * h - L, y + 0.07 * h), (x - 0.18 * h - L, y + 0.07 * h)], fill=(50, 30, 20, 90)); img.paste(lay, (0, 0), lay)
 
-def seat(img, x, yb, h, robe, skin, rock=False, L=None, R=None, **kw):
-    """a figure sitting cross-legged: torso, a robe draped all the way to the ground, knees and feet showing; optionally on a boulder."""
+def seat(img, x, yb, h, robe, skin, rock=False, L=None, R=None, mantle=None, belt=(88, 64, 42), **kw):
+    """a man sitting cross-legged in a belted tunic: bare crossed shins, sandals, an optional mantle; optionally on a boulder."""
     d = ImageDraw.Draw(img)
-    base = yb - OFF                                              # ground line (screen y)
-    if rock:                                                      # a flat boulder he is sitting on
+    base = yb - OFF
+    if rock:
         d.polygon([(x - 0.46 * h, base + 0.01 * h), (x - 0.43 * h, base - 0.08 * h), (x - 0.26 * h, base - 0.15 * h), (x + 0.1 * h, base - 0.16 * h), (x + 0.36 * h, base - 0.11 * h), (x + 0.47 * h, base + 0.01 * h)], fill=(150, 128, 102), outline=(100, 82, 64))
         d.line([(x - 0.3 * h, base - 0.06 * h), (x - 0.12 * h, base - 0.1 * h)], fill=(120, 100, 80), width=2); d.line([(x + 0.14 * h, base - 0.05 * h), (x + 0.33 * h, base - 0.02 * h)], fill=(120, 100, 80), width=2)
         yb = yb - 0.15 * h; base = base - 0.15 * h
-    else:                                                         # a soft contact shadow so he is clearly sitting on the ground
-        lay = Image.new("RGBA", (W, H), (0, 0, 0, 0)); ImageDraw.Draw(lay).ellipse([x - 0.46 * h, base - 0.03 * h, x + 0.46 * h, base + 0.07 * h], fill=(60, 40, 28, 90)); img.paste(lay, (0, 0), lay)
-    pos = cfig(img, x, yb + 0.22 * h, h, robe, skin, cut=yb - 0.27 * h, L=L or (-0.25, -0.34), R=R or (0.25, -0.34), **kw)
-    dk = tuple(int(c * 0.78) for c in robe); lt = tuple(min(255, int(c * 1.0)) for c in robe)
-    top = base - 0.33 * h
-    d.polygon([(x - 0.18 * h, top), (x + 0.18 * h, top), (x + 0.40 * h, base - 0.07 * h), (x + 0.37 * h, base), (x - 0.37 * h, base), (x - 0.40 * h, base - 0.07 * h)], fill=robe)
-    d.ellipse([x - 0.37 * h, base - 0.045 * h, x + 0.37 * h, base + 0.045 * h], fill=robe)
-    d.polygon([(x + 0.02 * h, top), (x + 0.18 * h, top), (x + 0.40 * h, base - 0.07 * h), (x + 0.37 * h, base), (x + 0.1 * h, base)], fill=tuple(int(c * 0.92) for c in robe))
-    for k in range(-3, 4): d.line([(x + k * 0.045 * h, top + 0.03 * h), (x + k * 0.1 * h, base - 0.02 * h)], fill=dk, width=2)       # folds
-    for sgn in (-1, 1):                                                                                                            # knees, each with a crease
-        kx, ky = x + sgn * 0.28 * h, base - 0.13 * h
-        d.ellipse([kx - 0.075 * h, ky - 0.06 * h, kx + 0.075 * h, ky + 0.06 * h], fill=lt, outline=dk); d.arc([kx - 0.05 * h, ky - 0.04 * h, kx + 0.05 * h, ky + 0.05 * h], 200, 340, fill=dk, width=2)
-    for sgn in (-1, 1): d.ellipse([x + sgn * 0.11 * h - 0.04 * h, base - 0.012 * h, x + sgn * 0.11 * h + 0.04 * h, base + 0.03 * h], fill=(128, 92, 60), outline=(90, 62, 40))   # sandals
+    else:
+        lay = Image.new("RGBA", (W, H), (0, 0, 0, 0)); ImageDraw.Draw(lay).ellipse([x - 0.4 * h, base - 0.03 * h, x + 0.4 * h, base + 0.07 * h], fill=(60, 40, 28, 90)); img.paste(lay, (0, 0), lay)
+    pos = cfig(img, x, yb + 0.22 * h, h, robe, skin, cut=yb - 0.2 * h, L=L or (-0.27, -0.31), R=R or (0.27, -0.31), tunic=True, sash=belt, mantle=mantle, **kw)
+    dk = tuple(int(c * 0.72) for c in robe); top = base - 0.23 * h
+    lw_ = int(h * 0.066)
+    for (kx, fx) in ((-0.27, 0.09), (0.27, -0.09)):          # two bare shins crossing in front of him
+        d.line([(x + kx * h, base - 0.035 * h), (x + fx * h, base + 0.005 * h)], fill=skin, width=lw_)
+        d.ellipse([x + kx * h - lw_ / 2, base - 0.035 * h - lw_ / 2, x + kx * h + lw_ / 2, base - 0.035 * h + lw_ / 2], fill=skin)
+        d.rounded_rectangle([x + fx * h - 0.045 * h, base - 0.012 * h, x + fx * h + 0.05 * h, base + 0.033 * h], 4, fill=(120, 86, 56), outline=(84, 58, 38))
+    d.polygon([(x - 0.17 * h, top), (x + 0.17 * h, top), (x + 0.32 * h, base - 0.115 * h), (x + 0.30 * h, base - 0.05 * h), (x - 0.30 * h, base - 0.05 * h), (x - 0.32 * h, base - 0.115 * h)], fill=robe)
+    d.polygon([(x + 0.02 * h, top), (x + 0.17 * h, top), (x + 0.32 * h, base - 0.115 * h), (x + 0.30 * h, base - 0.05 * h), (x + 0.04 * h, base - 0.05 * h)], fill=tuple(int(c * 0.92) for c in robe))
+    d.line([(x - 0.30 * h, base - 0.05 * h), (x + 0.30 * h, base - 0.05 * h)], fill=dk, width=3)
+    for sgn in (-1, 1):
+        kx, ky = x + sgn * 0.27 * h, base - 0.105 * h
+        d.arc([kx - 0.06 * h, ky - 0.045 * h, kx + 0.06 * h, ky + 0.045 * h], 195, 345, fill=dk, width=2)
+    d.line([(x - 0.06 * h, top + 0.01 * h), (x - 0.12 * h, base - 0.06 * h)], fill=dk, width=2); d.line([(x + 0.07 * h, top + 0.01 * h), (x + 0.13 * h, base - 0.06 * h)], fill=dk, width=2)
     return pos
 
 JX, JY, JH = 880, 640, 300
 ODX, ODY, ODH = 410, 654, 300
-DISC = [dict(x=1190, y=606, h=200, robe=(160, 150, 100), skin=SKIN[3], hair=(70, 50, 36), beard=True), dict(x=570, y=618, h=210, robe=(120, 90, 110), skin=SKIN[0], hair=None, beard=True),
-        dict(x=1062, y=632, h=236, robe=(110, 130, 150), skin=SKIN[1], hair=None, beard=False), dict(x=704, y=648, h=258, robe=(150, 100, 80), skin=SKIN[2], hair=(60, 44, 32), beard=True)]
+DISC = [dict(x=1190, y=606, h=200, robe=(168, 150, 104), skin=SKIN[3], hair=(70, 50, 36), beard=True, wrap=(232, 226, 208), mantle=None), dict(x=570, y=618, h=210, robe=(150, 122, 96), skin=SKIN[0], hair=None, beard=True, wrap=(200, 188, 166), mantle=(96, 72, 56)),
+        dict(x=1062, y=632, h=236, robe=(120, 134, 150), skin=SKIN[1], hair=None, beard=False, wrap=(236, 230, 214), mantle=(150, 120, 84)), dict(x=704, y=648, h=258, robe=(176, 134, 100), skin=SKIN[2], hair=(60, 44, 32), beard=True, wrap=None, mantle=(78, 92, 110))]
 
 def drop(img, x, y, u):
     d = ImageDraw.Draw(img); y = y + u * 40; a = 1 - u
@@ -414,18 +444,18 @@ def world(t, sun=0.0, jes=None, od=None, disc=None, kingdom_a=0.0, tint=None, di
     if odvis: shadow(img, ODX, ODY, ODH, sun)
     look = disc.get("look", 0.0); dm = disc.get("mouth", "smile" if look < 0.1 else "o"); sh = disc.get("shift", 0.0)
     for i, p_ in enumerate(DISC):
-        seat(img, p_["x"], p_["y"] + (math.sin(t * 1.3 + i) * 1.2), p_["h"], p_["robe"], p_["skin"], hair=p_["hair"], beard=p_["beard"], mouth=dm if dm != "smile" else "flat", eyes="open", hood=(i == 1))
+        seat(img, p_["x"], p_["y"] + (math.sin(t * 1.3 + i) * 1.2), p_["h"], p_["robe"], p_["skin"], hair=p_["hair"], beard=p_["beard"], mouth=dm if dm != "smile" else "flat", eyes="open", headwrap=p_["wrap"], mantle=p_["mantle"])
     # Jesus
     g = jes.get("gest", 0.0); gs = math.sin(t * 3.1) * 0.07 * g; gs2 = math.sin(t * 2.3 + 1) * 0.06 * g
     Lh = jes.get("L") or (-0.2 - gs, -0.58 + abs(gs2)); Rh = jes.get("R") or (0.2 + gs2, -0.58 + abs(gs))
     lay = Image.new("RGB", (W, H), (0, 0, 0)); ld = ImageDraw.Draw(lay); hy = JY - OFF - 0.74 * JH
     ld.ellipse([JX - 90, hy - 90, JX + 90, hy + 90], fill=(110 + int(50 * jes.get("glow", 0.3)), 90 + int(40 * jes.get("glow", 0.3)), 50)); softglow(img, lay, 50, 1.0)
-    jp = seat(img, JX, JY, JH, rock=True, L=Lh, R=Rh, mouth=jes.get("mouth", "smile"), eyes=jes.get("eyes", "open"), brow1=jes.get("brow1", 0.0), **{k: v for k, v in JESUS.items() if k != "robe" and k != "skin"}, robe=JESUS["robe"], skin=JESUS["skin"])
+    jp = seat(img, JX, JY, JH, rock=True, L=Lh, R=Rh, mouth=jes.get("mouth", "smile"), eyes=jes.get("eyes", "open"), brow1=jes.get("brow1", 0.0), hair=JESUS["hair"], beard=True, belt=JESUS["sash"], mantle=(70, 92, 138), robe=JESUS["robe"], skin=JESUS["skin"])
     # the overwhelmed disciple
     if odvis:
         od_l = od.get("L") or (-0.2, -0.42); od_r = od.get("R") or (0.2, -0.42); tr = od.get("tremble", 0.0)
         ox = ODX + math.sin(t * 38) * 2.2 * tr
-        op = cfig(img, ox, ODY + math.sin(t * 1.1) * 0.8, ODH, (208, 178, 126), (226, 164, 132), hair=(120, 74, 42), sash=(108, 120, 60), L=od_l, R=od_r, mouth=od.get("mouth", "flat"), eyes=od.get("eyes", "blank"), wide=1.32, hscale=1.28)
+        op = cfig(img, ox, ODY + math.sin(t * 1.1) * 0.8, ODH, (208, 178, 126), (226, 164, 132), hair=(120, 74, 42), sash=(92, 66, 42), L=od_l, R=od_r, mouth=od.get("mouth", "flat"), eyes=od.get("eyes", "blank"), wide=1.32, hscale=1.28, tunic=True)
         if od.get("sweat", 0.0) > 0:
             for k in range(3): drop(img, op["head"][0] + 36 + k * 8, op["head"][1] - 40 + k * 14, ((t * 0.9 + k / 3) % 1.0))
     if tint is not None: img = Image.blend(img, Image.new("RGB", (W, H), tint[:3]), tint[3])
