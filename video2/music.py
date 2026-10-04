@@ -10,7 +10,7 @@ for sc in tl["scenes"]:
 F = lambda m: 440*2**((m-69)/12)
 chords = {"title":[43,50,55],"launch":[48,55,60,64],"crowd":[45,52,57,60],"dream":[48,55,59,64],"leap":[53,60,64,69],
  "fall":[41,48,53,56],"impact":[38,45,50,53],"lying":[40,47,52,55],"comfort":[43,50,55,58],"repost":[48,55,60,64],
- "rope":[50,57,62,66],"arms":[48,55,60,64,67],"end":[48,55,60,64,67,72]}
+ "path":[50,57,62,66],"arms":[48,55,60,64,67],"end":[48,55,60,64,67,72]}
 t = np.arange(N)/sr; pad = np.zeros(N, np.float32)
 for sc in tl["scenes"]:
     a,b = int((sc["start"]-1.0)*sr), int((sc["end"]+1.0)*sr); a=max(a,0); b=min(b,N)

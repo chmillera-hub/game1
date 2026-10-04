@@ -3,61 +3,61 @@
   {
    "id": "title",
    "start": 0.0,
-   "end": 6.1395011337868475,
+   "end": 6.116281179138322,
    "sents": [
     {
      "text": "The Buzz Lightyear Leap. A story about falling, and being held.",
      "start": 0.6,
-     "end": 5.1395011337868475,
+     "end": 5.116281179138322,
      "file": "audio/00_0.wav"
     }
    ]
   },
   {
    "id": "launch",
-   "start": 6.1395011337868475,
-   "end": 24.571179138321995,
+   "start": 6.116281179138322,
+   "end": 24.52473922902494,
    "sents": [
     {
      "text": "Buzz Lightyear, who is really you, stands at the top of the staircase railing, like it's the launchpad to destiny.",
-     "start": 6.739501133786847,
-     "end": 13.670657596371882,
+     "start": 6.7162811791383215,
+     "end": 13.74031746031746,
      "file": "audio/01_0.wav"
     },
     {
      "text": "The music swells. That heroic score that pretends the laws of physics don't apply to toys, or to people who believe deeply enough in their mission.",
-     "start": 14.120657596371881,
-     "end": 23.571179138321995,
+     "start": 14.190317460317459,
+     "end": 23.52473922902494,
      "file": "audio/01_1.wav"
     }
    ]
   },
   {
    "id": "crowd",
-   "start": 24.571179138321995,
+   "start": 24.52473922902494,
    "end": 53.92226757369614,
    "sents": [
     {
      "text": "Behind him is a strange little crowd.",
-     "start": 25.171179138321996,
-     "end": 27.70215419501134,
+     "start": 25.124739229024943,
+     "end": 27.725374149659864,
      "file": "audio/02_0.wav"
     },
     {
      "text": "Jesus, with an awkward, gentle half-smile, hand behind his head, trying to be supportive, even though he knows exactly how gravity works.",
-     "start": 28.152154195011338,
-     "end": 37.28920634920635,
+     "start": 28.175374149659863,
+     "end": 37.4285260770975,
      "file": "audio/02_1.wav"
     },
     {
      "text": "And your emotions. Anger, sadness, and fear. Rolling their eyes, slapping their thighs. Oh my God, he's actually going to do it.",
-     "start": 37.73920634920635,
-     "end": 47.44514739229025,
+     "start": 37.878526077097504,
+     "end": 47.45675736961451,
      "file": "audio/02_2.wav"
     },
     {
      "text": "They're not cruel. They're just painfully honest. They've seen you leap before.",
-     "start": 47.89514739229025,
+     "start": 47.90675736961451,
      "end": 52.922267573696146,
      "file": "audio/02_3.wav"
     }
@@ -66,242 +66,242 @@
   {
    "id": "dream",
    "start": 53.92226757369614,
-   "end": 80.04857142857142,
+   "end": 79.73510204081632,
    "sents": [
     {
      "text": "Buzz spreads his wings. Watch me post online. Watch me share my deep dives. Emotional suppression, capitalism, Jesus, loneliness, the human condition.",
      "start": 54.52226757369614,
-     "end": 65.54013605442177,
+     "end": 65.3427664399093,
      "file": "audio/03_0.wav"
     },
     {
      "text": "Watch me reach the window.",
-     "start": 65.99013605442177,
-     "end": 67.8012925170068,
+     "start": 65.79276643990929,
+     "end": 67.62714285714284,
      "file": "audio/03_1.wav"
     },
     {
      "text": "The window is the dream. A world with emotional literacy. Nonviolent, pro-human frameworks. A world where people actually feel, and speak, and connect.",
-     "start": 68.2512925170068,
-     "end": 79.04857142857142,
+     "start": 68.07714285714285,
+     "end": 78.73510204081632,
      "file": "audio/03_2.wav"
     }
    ]
   },
   {
    "id": "leap",
-   "start": 80.04857142857142,
-   "end": 89.3896371882086,
+   "start": 79.73510204081632,
+   "end": 88.93684807256234,
    "sents": [
     {
      "text": "Buzz leaps.",
-     "start": 80.64857142857142,
-     "end": 81.71668934240361,
+     "start": 80.33510204081631,
+     "end": 81.34517006802719,
      "file": "audio/04_0.wav"
     },
     {
      "text": "And for a moment, he really does fly. That tiny arc, where hope outruns reality.",
-     "start": 82.16668934240361,
-     "end": 88.38963718820861,
+     "start": 81.79517006802719,
+     "end": 87.93684807256234,
      "file": "audio/04_1.wav"
     }
    ]
   },
   {
    "id": "fall",
-   "start": 89.3896371882086,
-   "end": 106.82006802721085,
+   "start": 88.93684807256234,
+   "end": 106.65752834467118,
    "sents": [
     {
      "text": "Then gravity catches up.",
-     "start": 89.98963718820859,
-     "end": 91.83562358276642,
+     "start": 89.53684807256234,
+     "end": 91.52215419501131,
      "file": "audio/05_0.wav"
     },
     {
      "text": "The emotions go from laughing to, oh no, oh no, oh no.",
-     "start": 92.28562358276642,
-     "end": 96.82512471655326,
+     "start": 91.97215419501131,
+     "end": 96.56970521541948,
      "file": "audio/05_1.wav"
     },
     {
      "text": "Jesus wipes his hand across his face, peeking through his fingers, wincing, but still watching. Because he refuses to abandon you mid-fall.",
-     "start": 97.27512471655326,
-     "end": 105.82006802721087,
+     "start": 97.01970521541948,
+     "end": 105.65752834467118,
      "file": "audio/05_2.wav"
     }
    ]
   },
   {
    "id": "impact",
-   "start": 106.82006802721085,
-   "end": 124.62201814058952,
+   "start": 106.65752834467118,
+   "end": 124.36659863945576,
    "sents": [
     {
      "text": "Buzz hits the ground at the bottom of the stairs. You hit the bottom of the algorithm.",
-     "start": 107.42006802721085,
-     "end": 112.83031746031742,
+     "start": 107.25752834467117,
+     "end": 112.5284580498866,
      "file": "audio/06_0.wav"
     },
     {
      "text": "And his arm pops off.",
-     "start": 113.28031746031742,
-     "end": 115.0798639455782,
+     "start": 112.9784580498866,
+     "end": 114.78961451247163,
      "file": "audio/06_1.wav"
     },
     {
      "text": "Getting banned. Blocked. Trolled. Invalidated. Ignored. Buried by the feed. Told, nobody cares.",
-     "start": 115.52986394557819,
-     "end": 123.62201814058952,
+     "start": 115.23961451247163,
+     "end": 123.36659863945576,
      "file": "audio/06_2.wav"
     }
    ]
   },
   {
    "id": "lying",
-   "start": 124.62201814058952,
-   "end": 144.51655328798182,
+   "start": 124.36659863945576,
+   "end": 144.15664399092967,
    "sents": [
     {
      "text": "He lies there, ashamed, looking away from everyone. The music is somber now. Not triumphant. Not mocking. Just honest.",
-     "start": 125.22201814058951,
-     "end": 133.99916099773236,
+     "start": 124.96659863945575,
+     "end": 133.75535147392287,
      "file": "audio/07_0.wav"
     },
     {
      "text": "I failed you guys. I tried to talk about my heart and soul. I tried to reach the window. And it feels like nobody cares.",
-     "start": 134.44916099773238,
-     "end": 143.51655328798182,
+     "start": 134.20535147392286,
+     "end": 143.15664399092967,
      "file": "audio/07_1.wav"
     }
    ]
   },
   {
    "id": "comfort",
-   "start": 144.51655328798182,
-   "end": 168.86653061224487,
+   "start": 144.15664399092967,
+   "end": 168.5762811791383,
    "sents": [
     {
      "text": "His emotions rush down the stairs. Anger holds his head. Sadness holds his remaining arm. Fear hovers nearby, not sure whether to comfort or warn.",
-     "start": 145.11655328798182,
-     "end": 155.21723356009065,
+     "start": 144.75664399092966,
+     "end": 154.95020408163262,
      "file": "audio/08_0.wav"
     },
     {
      "text": "And Jesus kneels beside him, holding the broken arm. He doesn't lecture. He doesn't shame. He doesn't say, I told you so.",
-     "start": 155.66723356009066,
-     "end": 164.3282766439909,
+     "start": 155.4002040816326,
+     "end": 164.1309070294784,
      "file": "audio/08_1.wav"
     },
     {
      "text": "He just gently pops it back into place.",
-     "start": 164.7782766439909,
-     "end": 167.86653061224487,
+     "start": 164.58090702947842,
+     "end": 167.57628117913828,
      "file": "audio/08_2.wav"
     }
    ]
   },
   {
    "id": "repost",
-   "start": 168.86653061224487,
-   "end": 188.21260770975056,
+   "start": 168.5762811791383,
+   "end": 187.96879818594104,
    "sents": [
     {
      "text": "And that moment is a decision. I'll post again.",
-     "start": 169.46653061224487,
-     "end": 172.85664399092968,
+     "start": 169.1762811791383,
+     "end": 172.61283446712017,
      "file": "audio/09_0.wav"
     },
     {
      "text": "Maybe not here. Maybe not on this platform. But somewhere.",
-     "start": 173.30664399092967,
-     "end": 177.67199546485259,
+     "start": 173.06283446712015,
+     "end": 177.48623582766436,
      "file": "audio/09_1.wav"
     },
     {
      "text": "Because my inner landscape matters. Because my emotions matter. Because the pro-human framework matters. Because the window matters.",
-     "start": 178.12199546485257,
-     "end": 187.21260770975053,
+     "start": 177.93623582766438,
+     "end": 186.968798185941,
      "file": "audio/09_2.wav"
     }
    ]
   },
   {
-   "id": "rope",
-   "start": 188.21260770975056,
-   "end": 218.4460544217687,
+   "id": "path",
+   "start": 187.96879818594104,
+   "end": 219.0497732426304,
    "sents": [
     {
      "text": "He stands up again at the bottom of the stairs. Not triumphant. Not flying. But held.",
-     "start": 188.81260770975055,
-     "end": 195.41868480725623,
+     "start": 188.56879818594103,
+     "end": 195.07038548752834,
      "file": "audio/10_0.wav"
     },
     {
      "text": "He looks up at the window. It's still far away. Still high. Still not reachable by jumping.",
-     "start": 195.86868480725622,
-     "end": 202.5908616780045,
+     "start": 195.52038548752833,
+     "end": 202.16129251700679,
      "file": "audio/10_1.wav"
     },
     {
-     "text": "But now he's thinking differently. Maybe he doesn't need to leap. Maybe he needs rope. Community. Collaboration. Slow, steady climbing.",
-     "start": 203.04086167800452,
-     "end": 212.58426303854873,
+     "text": "But now he's thinking differently. Maybe he doesn't need to leap. Maybe he needs a path. Community. Collaboration. Slow, steady steps, built together.",
+     "start": 202.6112925170068,
+     "end": 213.31569160997734,
      "file": "audio/10_2.wav"
     },
     {
      "text": "Other people who see him fall, and think, maybe I should try too.",
-     "start": 213.03426303854874,
-     "end": 217.4460544217687,
+     "start": 213.76569160997732,
+     "end": 218.04977324263038,
      "file": "audio/10_3.wav"
     }
    ]
   },
   {
    "id": "arms",
-   "start": 218.4460544217687,
-   "end": 241.704693877551,
+   "start": 219.0497732426304,
+   "end": 242.76120181405895,
    "sents": [
     {
      "text": "And even if he falls again. Banned again. Blocked again. Ignored again.",
-     "start": 219.0460544217687,
-     "end": 224.40986394557822,
+     "start": 219.6497732426304,
+     "end": 225.12968253968256,
      "file": "audio/11_0.wav"
     },
     {
      "text": "He falls into the Everlasting Arms. Deuteronomy thirty-three.",
-     "start": 224.8598639455782,
-     "end": 229.4225850340136,
+     "start": 225.57968253968255,
+     "end": 230.07274376417234,
      "file": "audio/11_1.wav"
     },
     {
      "text": "Into the support of his emotions. Into the radical nonviolence of Jesus. And into the truth that his attempts matter, even when the algorithm pretends they don't.",
-     "start": 229.87258503401358,
-     "end": 240.704693877551,
+     "start": 230.52274376417233,
+     "end": 241.76120181405895,
      "file": "audio/11_2.wav"
     }
    ]
   },
   {
    "id": "end",
-   "start": 241.704693877551,
-   "end": 253.54190476190473,
+   "start": 242.76120181405895,
+   "end": 254.90027210884355,
    "sents": [
     {
      "text": "Maybe not by jumping. Maybe not alone. Maybe not dramatically.",
-     "start": 242.304693877551,
-     "end": 247.05317460317457,
+     "start": 243.36120181405894,
+     "end": 248.26061224489794,
      "file": "audio/12_0.wav"
     },
     {
      "text": "But through persistence, honesty, and community, you might actually get there.",
-     "start": 247.50317460317456,
-     "end": 252.5419047619047,
+     "start": 248.71061224489796,
+     "end": 253.90027210884352,
      "file": "audio/12_1.wav"
     }
    ]
   }
  ],
- "total": 253.54190476190473,
+ "total": 254.90027210884355,
  "sr": 22050
 }

@@ -503,75 +503,99 @@ def s_repost(t, d, p):
     title(img, "I'LL POST AGAIN", a=seg(p, 0.0, 0.1), y=26, size=28)
     return img
 
-def rope_x(y): return lerp(1060, 1010, clamp((y - 280) / 310)) + math.sin(y * 0.03) * 4
+STEPS = [(930, 560), (968, 520), (1006, 480), (1044, 440), (1082, 400), (1120, 360), (1130, 320)]   # glowing steps up to the window
 
-def s_rope(t, d, p):
+def hand_sprite():
+    """A cupped open hand seen palm-on: forearm, palm, four fingers and a thumb."""
+    im = Image.new("RGBA", (560, 320), (0, 0, 0, 0)); d = ImageDraw.Draw(im)
+    def cap(pts, wd, col):
+        d.line(pts, fill=col, width=wd, joint="curve")
+        for (x, y) in pts: d.ellipse([x - wd / 2, y - wd / 2, x + wd / 2, y + wd / 2], fill=col)
+    parts = []
+    parts.append(("fore", [(0, 150), (150, 150), (230, 150)], 84))
+    parts.append(("thumb", [(270, 110), (320, 70), (355, 48)], 34))
+    for ang, ln in [(-30, 118), (-10, 142), (10, 136), (30, 108)]:
+        a = math.radians(ang); x0, y0 = 300, 150 + ang * 1.4
+        mid = (x0 + math.cos(a) * ln * 0.55, y0 + math.sin(a) * ln * 0.55); tip = (x0 + math.cos(a) * ln, y0 + math.sin(a) * ln - 10)
+        parts.append(("f", [(x0, y0), mid, tip], 28))
+    for col, grow in (((196, 138, 66, 255), 7), ((252, 205, 128, 255), 0)):
+        for name, pts, wd in parts: cap(pts, wd + grow, col)
+        d.ellipse([200 - grow, 150 - 66 - grow, 340 + grow, 150 + 66 + grow], fill=col)       # palm
+    # palm lines, knuckle creases and a wrist cuff so it reads as a hand and sleeve
+    d.arc([225, 120, 330, 185], 200, 330, fill=(214, 160, 92, 255), width=3)
+    for (x, y) in [(318, 126), (322, 146), (320, 166), (312, 186)]: d.arc([x - 10, y - 8, x + 10, y + 8], 90, 270, fill=(214, 160, 92, 255), width=2)
+    d.rectangle([130, 104, 168, 196], fill=(240, 232, 214, 255), outline=(190, 175, 150, 255), width=3)
+    return im
+
+def s_path(t, d, p):
     img = stage(t, 0.75 + 0.2 * seg(p, 0.5, 1))
     d2 = ImageDraw.Draw(img)
-    pts = [(rope_x(y) + math.sin(t * 1.5 + y * 0.02) * 3, y) for y in range(286, 592, 6)]
-    d2.line(pts, fill=(190, 150, 100), width=6); d2.line(pts, fill=(130, 95, 60), width=2)
-    for k in range(0, len(pts), 3): d2.line([(pts[k][0] - 3, pts[k][1] - 3), (pts[k][0] + 3, pts[k][1] + 3)], fill=(110, 80, 50), width=2)
-    put_c(img, toy(0.0, True), 880, 590 - 52)
-    # Buzz looks up (floating small hope) + community arrives
-    people = [(940, (200, 120, 90)), (1070, (110, 160, 200)), (790, (150, 190, 120)), (1130, (190, 140, 200)), (700, (220, 180, 100))]
-    for i, (x, c) in enumerate(people):
-        ar = seg(p, 0.3 + i * 0.07, 0.42 + i * 0.07); xx = x + (1 - ar) * (150 if i % 2 else -150) * 0
-        if ar > 0:
-            put(img, person_sprite(66, c, "up" if (int(t * 2) + i) % 2 else "down"), xx, 590, alpha=ar)
-    # climbers on the rope
-    for i, c in enumerate([(120, 170, 220), (220, 170, 110), (170, 220, 140)]):
-        b = seg(p, 0.45 + i * 0.1, 0.95 + i * 0.0)
-        yy = lerp(570, 330 + i * 70, b)
-        if b > 0:
-            x = rope_x(yy) + (i - 1) * 16
-            put(img, person_sprite(44, c, "up"), x, yy + 24, alpha=min(1, b * 4))
-    cap = [("rope", 0.3), ("community", 0.4), ("collaboration", 0.5), ("slow, steady climbing", 0.62)]
-    for i, (s, th) in enumerate(cap): label(img, 560, 150 + i * 36, s, 28, (255, 240, 205), seg(p, th, th + 0.06))
-    label(img, 560, 118, "maybe he doesn't need to leap… maybe he needs:", 22, (210, 220, 245), seg(p, 0.25, 0.32))
-    title(img, "STILL HIGH — BUT NOT ALONE", a=seg(p, 0.0, 0.1), y=26, size=28)
+    # people arrive one by one, and each adds a glowing step toward the window
+    cols = [(200, 120, 90), (110, 160, 200), (150, 190, 120), (190, 140, 200), (220, 180, 100), (120, 190, 190), (200, 150, 150)]
+    for i, (sx, sy) in enumerate(STEPS):
+        th = 0.28 + i * 0.075; a = seg(p, th, th + 0.07)
+        if a <= 0: continue
+        lay = Image.new("RGB", (W, H), (0, 0, 0)); ld = ImageDraw.Draw(lay)
+        ld.rounded_rectangle([sx - 30, sy, sx + 30, sy + 14], 5, fill=(int(230 * a), int(180 * a), int(90 * a))); glow(img, lay, 14, 1.0)
+        d2 = ImageDraw.Draw(img); d2.rounded_rectangle([sx - 30, sy, sx + 30, sy + 14], 5, fill=(255, 215, 140))
+        # a person beside each new step, adding to it
+        px = sx - 62 if i % 2 == 0 else sx - 40
+        if sy > 340: put(img, person_sprite(46, cols[i % len(cols)], "up" if (int(t * 2) + i) % 2 else "down"), px if sy < 560 else px - 10, min(590, sy + 14) if False else (sy + 14), alpha=a)
+    # Buzz takes slow, steady steps up the path
+    bu = seg(p, 0.55, 0.95); k = bu * (len(STEPS) - 2); i0 = int(k); fr = k - i0
+    x0, y0 = STEPS[min(i0, len(STEPS) - 1)]; x1, y1 = STEPS[min(i0 + 1, len(STEPS) - 1)]
+    bx = lerp(x0, x1, ease(fr)); by = lerp(y0, y1, ease(fr))
+    if bu <= 0: bx, by = 860, 590
+    elif bu < 0.03: bx, by = lerp(860, STEPS[0][0], bu / 0.03), lerp(590, STEPS[0][1], bu / 0.03)
+    put_c(img, toy(0.0, True), bx, by - 52 + 0)
+    for i, (s, th) in enumerate([("a path", 0.2), ("community", 0.3), ("collaboration", 0.4), ("slow, steady steps", 0.52)]):
+        label(img, 560, 150 + i * 36, s, 28, (255, 240, 205), seg(p, th, th + 0.06))
+    label(img, 560, 118, "maybe he doesn't need to leap\u2026 maybe he needs:", 22, (210, 220, 245), seg(p, 0.15, 0.22))
+    title(img, "STILL HIGH \u2014 BUT NOT ALONE", a=seg(p, 0.0, 0.1), y=26, size=28)
     return img
 
+_hs = {}
 def s_arms(t, d, p):
-    img = gradient((8, 10, 30), mix((30, 30, 70), (110, 80, 70), seg(p, 0.5, 1)), "arms%d" % int(seg(p, 0.5, 1) * 20))
+    cool = seg(p, 0.5, 1)
+    img = gradient((8, 10, 30), mix((30, 30, 70), (110, 80, 70), cool), "arms%d" % int(cool * 20))
     d2 = ImageDraw.Draw(img)
     r = random.Random(5)
     for i in range(90): d2.point((r.random() * W, r.random() * H * 0.7), fill=(150, 150, 190))
-    # glowing arms (cradle) rise from both sides
-    rise = seg(p, 0.2, 0.7)
+    rise = ease(seg(p, 0.2, 0.7))
+    if "h" not in _hs: _hs["h"] = hand_sprite()
+    hs = _hs["h"]
+    lift = (1 - rise) * 320
     lay = Image.new("RGB", (W, H), (0, 0, 0)); ld = ImageDraw.Draw(lay)
-    for sgn in (-1, 1):
-        pts = []
-        for k in range(30):
-            u = k / 29; x = 640 + sgn * lerp(640, 70, ease(u)); y = lerp(740, 560 - 50 * rise, u) + math.sin(u * 3.14) * 20 * (1 - rise)
-            pts.append((x, y))
-        ld.line(pts, fill=(255, 205, 120), width=70)
-        for (x, y) in pts[::3]: ld.ellipse([x - 35, y - 35, x + 35, y + 35], fill=(255, 205, 120))
-        ld.ellipse([640 + sgn * 80 - 45, 590 - 50 * rise - 40, 640 + sgn * 80 + 45, 590 - 50 * rise + 40], fill=(255, 225, 150))
-    lay = lay.point(lambda v: int(v * (0.15 + 0.5 * rise))); glow(img, lay, 36, 1.5)
-    # Buzz falls from above and is caught
-    fy = lerp(-60, 500, ease(seg(p, 0.05, 0.65))); rot = lerp(180, -10, ease(seg(p, 0.05, 0.65)))
+    ld.ellipse([440, 360 + lift, 840, 580 + lift], fill=(int(120 * rise), int(85 * rise), int(40 * rise)))
+    glow(img, lay, 40, 1.4)
+    # two large open hands rise from the lower corners and cradle him
+    put_c(img, hs, 440, 500 + lift, rot=32)
+    put_c(img, hs, 840, 500 + lift, rot=-32, flip=True)
+    # Buzz falls from above and is caught in the palms
+    fy = lerp(-60, 330, ease(seg(p, 0.05, 0.65))); rot = lerp(180, -8, ease(seg(p, 0.05, 0.65)))
     put_c(img, toy(0.0, True), 640, fy, rot=rot)
     for s, th in (("banned again", 0.12), ("blocked again", 0.2), ("ignored again", 0.28)):
         u = (p - th) / 0.2
-        if 0 < u < 1: label(img, 640 + 160 * (1 if th == 0.2 else -1), lerp(80, 430, u), s, 22, (200, 120, 120), math.sin(u * math.pi))
-    # companions
+        if 0 < u < 1: label(img, 640 + 160 * (1 if th == 0.2 else -1), lerp(80, 400, u), s, 22, (200, 120, 120), math.sin(u * math.pi))
     a = seg(p, 0.6, 0.8)
-    put(img, jesus(110, "open"), 330, 650, alpha=a)
-    for x, kind, ph in [(910, "anger", 0.0), (960, "sadness", 1.3), (1010, "fear", 2.1)]: emo(img, x, 650, kind, "hold", t, 20, ph) if a > 0.5 else None
-    label(img, 640, 120, "“The eternal God is thy refuge, and underneath are the everlasting arms.”", 26, (255, 235, 180), seg(p, 0.4, 0.55))
-    label(img, 640, 158, "— Deuteronomy 33:27", 20, (220, 200, 150), seg(p, 0.45, 0.6))
+    put(img, jesus(110, "open"), 150, 575, alpha=a)
+    for x, kind, ph in [(1030, "anger", 0.0), (1085, "sadness", 1.3), (1140, "fear", 2.1)]:
+        if a > 0.5: emo(img, x, 575, kind, "hold", t, 20, ph)
+    label(img, 640, 120, "\u201cThe eternal God is thy refuge, and underneath are the everlasting arms.\u201d", 26, (255, 235, 180), seg(p, 0.4, 0.55))
+    label(img, 640, 158, "\u2014 Deuteronomy 33:27", 20, (220, 200, 150), seg(p, 0.45, 0.6))
     title(img, "THE EVERLASTING ARMS", a=seg(p, 0.0, 0.1), y=26, size=28)
     return img
 
 def s_end(t, d, p):
     img = stage(t, 0.9 + 0.1 * math.sin(t))
-    d2 = ImageDraw.Draw(img)
-    pts = [(rope_x(y), y) for y in range(286, 592, 6)]; d2.line(pts, fill=(190, 150, 100), width=6)
-    put_c(img, toy(0.0, True), 880, 590 - 52)
-    for i, (x, c) in enumerate([(780, (150, 190, 120)), (940, (200, 120, 90)), (700, (220, 180, 100)), (1000, (110, 160, 200)), (1130, (190, 140, 200))]):
+    cols = [(200, 120, 90), (110, 160, 200), (150, 190, 120), (190, 140, 200), (220, 180, 100), (120, 190, 190), (200, 150, 150)]
+    for i, (sx, sy) in enumerate(STEPS):
+        lay = Image.new("RGB", (W, H), (0, 0, 0)); ld = ImageDraw.Draw(lay); ld.rounded_rectangle([sx - 30, sy, sx + 30, sy + 14], 5, fill=(230, 180, 90)); glow(img, lay, 14, 1.0)
+        ImageDraw.Draw(img).rounded_rectangle([sx - 30, sy, sx + 30, sy + 14], 5, fill=(255, 215, 140))
+        if sy > 340: put(img, person_sprite(46, cols[i % len(cols)], "up" if (int(t * 2) + i) % 2 else "down"), sx - 52, sy + 14)
+    put_c(img, toy(0.0, True), STEPS[3][0] + 6, STEPS[3][1] - 52)
+    for i, (x, c) in enumerate([(700, (220, 180, 100)), (780, (150, 190, 120)), (860, (200, 120, 90))]):
         put(img, person_sprite(66, c, "up" if (int(t * 2) + i) % 2 else "down"), x, 590)
-    for i, yy in enumerate((420, 360, 330)):
-        put(img, person_sprite(44, [(120, 170, 220), (220, 170, 110), (170, 220, 140)][i], "up"), rope_x(yy) + (i - 1) * 16, yy + 24)
     put(img, jesus(130, "stand"), 640, 592); emo(img, 600, 590, "anger", "hold", t, 20, 0); emo(img, 560, 590, "sadness", "hold", t, 20, 1); emo(img, 520, 590, "fear", "hold", t, 20, 2)
     rays(img, WCX, WCY, t, (255, 225, 150), n=12, length=900, strength=0.22)
     for i, s in enumerate(["Not by jumping.", "Not alone.", "Through persistence, honesty & community."]):
@@ -579,7 +603,7 @@ def s_end(t, d, p):
     return img
 
 SCENE_FN = {"title": s_title, "launch": s_launch, "crowd": s_crowd, "dream": s_dream, "leap": s_leap, "fall": s_fall,
-            "impact": s_impact, "lying": s_lying, "comfort": s_comfort, "repost": s_repost, "rope": s_rope, "arms": s_arms, "end": s_end}
+            "impact": s_impact, "lying": s_lying, "comfort": s_comfort, "repost": s_repost, "path": s_path, "arms": s_arms, "end": s_end}
 CONT_IN = {"fall"}; CONT_OUT = {"leap"}
 
 def subtitles(img, t):
