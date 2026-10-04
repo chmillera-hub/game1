@@ -450,12 +450,12 @@ def world(t, sun=0.0, jes=None, od=None, disc=None, kingdom_a=0.0, tint=None, di
     Lh = jes.get("L") or (-0.2 - gs, -0.58 + abs(gs2)); Rh = jes.get("R") or (0.2 + gs2, -0.58 + abs(gs))
     lay = Image.new("RGB", (W, H), (0, 0, 0)); ld = ImageDraw.Draw(lay); hy = JY - OFF - 0.74 * JH
     ld.ellipse([JX - 90, hy - 90, JX + 90, hy + 90], fill=(110 + int(50 * jes.get("glow", 0.3)), 90 + int(40 * jes.get("glow", 0.3)), 50)); softglow(img, lay, 50, 1.0)
-    jp = seat(img, JX, JY, JH, rock=True, L=Lh, R=Rh, mouth=jes.get("mouth", "smile"), eyes=jes.get("eyes", "open"), brow1=jes.get("brow1", 0.0), hair=JESUS["hair"], beard=True, belt=JESUS["sash"], mantle=(70, 92, 138), robe=JESUS["robe"], skin=JESUS["skin"])
+    jp = seat(img, JX, JY, JH, rock=True, L=Lh, R=Rh, mouth=jes.get("mouth", "smile"), eyes=jes.get("eyes", "open"), brow1=jes.get("brow1", 0.0), hair=JESUS["hair"], beard=True, belt=(206, 188, 150), mantle=(250, 248, 240), robe=(246, 242, 232), skin=JESUS["skin"])
     # the overwhelmed disciple
     if odvis:
         od_l = od.get("L") or (-0.2, -0.42); od_r = od.get("R") or (0.2, -0.42); tr = od.get("tremble", 0.0)
         ox = ODX + math.sin(t * 38) * 2.2 * tr
-        op = cfig(img, ox, ODY + math.sin(t * 1.1) * 0.8, ODH, (208, 178, 126), (226, 164, 132), hair=(120, 74, 42), sash=(92, 66, 42), L=od_l, R=od_r, mouth=od.get("mouth", "flat"), eyes=od.get("eyes", "blank"), wide=1.32, hscale=1.28, tunic=True)
+        op = cfig(img, ox, ODY + math.sin(t * 1.1) * 0.8, ODH, (208, 178, 126), (226, 164, 132), hair=None, sash=(92, 66, 42), L=od_l, R=od_r, mouth=od.get("mouth", "flat"), eyes=od.get("eyes", "blank"), wide=1.32, hscale=1.28, tunic=True)
         if od.get("sweat", 0.0) > 0:
             for k in range(3): drop(img, op["head"][0] + 36 + k * 8, op["head"][1] - 40 + k * 14, ((t * 0.9 + k / 3) % 1.0))
     if tint is not None: img = Image.blend(img, Image.new("RGB", (W, H), tint[:3]), tint[3])
