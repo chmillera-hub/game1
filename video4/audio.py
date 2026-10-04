@@ -101,7 +101,7 @@ for sc in tl["scenes"]:
 pad /= np.abs(pad).max()
 vm = max(np.abs(voice).max(), 1e-6)
 duck = np.clip(np.convolve(np.abs(voice), np.ones(int(sr * 0.3)) / (sr * 0.3), "same") * 8, 0, 1)
-mix = 0.85 * voice / vm + 0.9 * sfx + mur * (1 - 0.4 * duck) + 0.13 * pad * (1 - 0.6 * duck) + 0.07 * arp * (1 - 0.5 * duck)
+mix = 0.85 * voice / vm + 0.9 * sfx + 0.07 * arp * (1 - 0.5 * duck)   # no murmur / pad bed: they read as static and hum
 mix = np.tanh(mix * 1.1) * 0.95
 with wave.open("mix.wav", "wb") as w:
     w.setnchannels(1); w.setsampwidth(2); w.setframerate(sr); w.writeframes((mix * 32767).astype(np.int16).tobytes())
