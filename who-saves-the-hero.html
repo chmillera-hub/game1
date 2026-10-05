@@ -1288,7 +1288,15 @@ const PARTS=[
 //  timeline
 // ============================================================
 const autoDur=s=>{if(!s)return 2;const w=s.trim().split(/\s+/).length;return Math.max(2,1+w*.275);};
-PARTS.forEach(part=>{let t=0;part.shots.forEach(sh=>{let lt=0;sh.lines.forEach(l=>{l.d=l.d??autoDur(l.t);l.st=lt;lt+=l.d;l.en=lt;});sh.dur=lt;sh.start=t;t+=lt;});part.dur=t;});
+// voice acting: one mp3 per spoken line in audio/voice/, named by a hash of speaker and text.
+// Durations (seconds) are filled in by tools/build-voices.py.
+const VOICES=/*VOICES*/{"2280840c":2.35,"635e177e":5.62,"44795735":5.98,"eaf87b47":2.59,"d1ac6d50":3.02,"f45f497a":1.82,"c8562d54":1.54,"b0108656":2.52,"d4c3c765":2.47,"faf51e09":3.96,"21e5e026":5.52,"ed9e53a6":1.78,"d0091371":3.17,"d3ccf098":3.58,"54ef843c":1.75,"0f16309f":3.0,"569d3327":2.06,"5f795c6b":2.18,"f90bb804":5.9,"76314353":1.46,"33067993":0.94,"cec47be9":2.52,"eb9b427a":1.85,"bfc29cf3":3.86,"928243ca":2.3,"11eb0986":4.1,"498a6370":1.87,"f5b10051":2.93,"22e0b570":4.18,"4ab59b72":2.14,"2ce91030":2.26,"f9639196":1.9,"15a50f2a":0.82,"d5130a28":2.28,"9facbfc8":2.14,"5771fcc5":3.67,"a7f5f258":1.37,"f91335ac":1.44,"05125d7e":3.29,"c9b7acb4":1.1,"8a4eee8c":3.34,"0d770123":1.92,"3dd17e6c":4.42,"c85b36c7":3.34,"fe835fd9":2.76,"4e8f3661":5.52,"c93dd278":2.35,"edaa9876":5.95,"506287e8":4.01,"c58a5334":1.49,"1e154604":1.92,"f7223ec1":1.44,"6b22ce74":3.98,"82d13110":3.22,"bd67f006":3.12,"a4caf55b":2.26,"ab0cfba7":1.9,"71942717":5.98,"d25a7c63":6.67,"f7fd95da":3.58,"8ad7921b":4.13,"854e0121":3.67,"c727f80d":3.62,"ef990088":1.9,"c2e0dd42":3.79,"9b1600eb":2.18,"ac48b220":5.28,"547ae811":3.94,"a11164d9":4.7,"de19a181":4.34,"1d109750":4.51,"c5012266":2.78,"a085a13e":3.05,"9189c82e":6.41,"2e1bd404":1.61,"613ea18b":2.4,"5028449c":2.83,"670c6818":3.07,"81f81213":2.45,"8789620f":1.66,"da89f7f9":2.23,"23bf85a0":0.65,"4e83b71b":2.11,"46e5c807":2.09,"4b5ea77e":5.4,"d4cb60d1":3.91,"1f74f813":3.72,"af55a3b2":1.85,"f876d595":2.86,"5eb4ef41":3.19,"41bf510a":3.62,"e2d283a1":2.16,"fba5a9f1":4.92,"7c8e533c":3.72,"983cc98f":4.66,"f151f203":7.54,"a23fc6f0":2.04,"112567c8":2.06,"2e0e7d83":1.58,"0dc1fbe7":2.16,"9af647ff":1.56,"09f3daad":1.08,"8e233a9c":0.79,"23979588":0.48,"e915dc37":4.46,"55a9fce0":0.96}/*END-VOICES*/;
+const VDELAY=.15; // a breath between a line starting and the voice starting
+function vkey(l){const b=new TextEncoder().encode(l.s+'|'+l.t);let h=0x811c9dc5;for(const x of b){h^=x;h=Math.imul(h,0x01000193)>>>0;}return h.toString(16).padStart(8,'0');}
+PARTS.forEach(part=>{let t=0;part.shots.forEach(sh=>{let lt=0;sh.lines.forEach(l=>{
+  if(l.t&&l.s){const h=vkey(l);if(VOICES[h]){l.vh=h;l.vd=VOICES[h];}}
+  l.d=l.d??(l.vd?Math.max(autoDur(l.t)*.92,l.vd+VDELAY+.55):autoDur(l.t));
+  l.st=lt;lt+=l.d;l.en=lt;});sh.dur=lt;sh.start=t;t+=lt;});part.dur=t;});
 
 let P=null; // pose accessor for the current shot
 function makeK(sh,lt){
@@ -1304,7 +1312,7 @@ function makeK(sh,lt){
       const ov=L[i][name];if(ov){if('arms'in ov){delete acc.armL;delete acc.armR;}Object.assign(acc,ov);}
     }
     acc.pL=prevL;acc.pR=prevR;acc.blend=ease(clamp((lt-cur.st)/.35));
-    acc.talk=cur.s===name&&!!cur.t&&lp<.94;
+    const e=lt-cur.st;acc.talk=cur.s===name&&!!cur.t&&(cur.vd?e>=VDELAY&&e<VDELAY+cur.vd-.05:lp<.94);
     acc.who=acc.who||name;
     return acc;
   };
@@ -1339,8 +1347,22 @@ function render(){
   updateSubs(k.L);
   updateUI();
   handleSfx(si,k);
+  updateVoice(si,k);
 }
 
+// voices during live playback: HTML audio elements also work when the page is opened from disk
+const vEls={};let vCur=null,vCurKey=null;
+function vEl(h){if(!vEls[h]){const a=new Audio();a.preload='auto';a.src='audio/voice/'+h+'.mp3';vEls[h]=a;}return vEls[h];}
+function preloadVoices(pi){PARTS[pi].shots.forEach(sh=>sh.lines.forEach(l=>{if(l.vh)vEl(l.vh);}));}
+function updateVoice(si,k){
+  const L=k.L,e=k.t-L.st;
+  const want=playing&&soundOn&&L.vh&&e>=VDELAY&&e<VDELAY+L.vd?partIdx+':'+si+':'+k.li:null;
+  if(want===vCurKey)return;
+  if(vCur){try{vCur.pause();}catch(err){}}vCur=null;vCurKey=want;
+  if(!want)return;
+  const a=vEl(L.vh);try{a.currentTime=Math.max(0,e-VDELAY);}catch(err){}a.volume=.95;
+  const pr=a.play();if(pr&&pr.catch)pr.catch(()=>{});vCur=a;
+}
 // subtitles
 const subs=document.getElementById('subs'),whoEl=document.getElementById('who'),txtEl=document.getElementById('txt');
 let lastLine=null;
@@ -1444,8 +1466,8 @@ function updateUI(){
     playBtn.innerHTML=playing?ICON_PAUSE:ICON_PLAY;playBtn.setAttribute('aria-label',playing?'Pause':'Play');
     big.hidden=playing;}
 }
-function selectPart(i){partIdx=i;time=0;lastSfxKey=null;chordKey=null;releaseVoices();dirty=true;try{localStorage.setItem('wsth-part',String(i));}catch(e){}}
-function play(){initAudio();if(AC&&AC.state==='suspended')AC.resume();if(time>=PARTS[partIdx].dur-.05)time=0;playing=true;lastTs=null;dirty=true;}
+function selectPart(i){partIdx=i;preloadVoices(i);time=0;lastSfxKey=null;chordKey=null;releaseVoices();dirty=true;try{localStorage.setItem('wsth-part',String(i));}catch(e){}}
+function play(){initAudio();preloadVoices(partIdx);if(AC&&AC.state==='suspended')AC.resume();if(time>=PARTS[partIdx].dur-.05)time=0;playing=true;lastTs=null;dirty=true;}
 function pause(){playing=false;updateMusic();dirty=true;}
 function toggle(){playing?pause():play();}
 playBtn.addEventListener('click',toggle);big.addEventListener('click',play);
@@ -1490,6 +1512,10 @@ async function renderAudio(pi){
   }
   part.shots.forEach(sh=>sh.lines.forEach(l=>{if(!l.sfx)return;AT=sh.start+l.st;const list=typeof l.sfx==='string'?[[l.sfx,0]]:l.sfx;list.forEach(([n,w])=>{try{SFX[n]&&SFX[n](w||0);}catch(e){}});}));
   AT=0;
+  const vbus=AC.createGain();vbus.gain.value=.5;vbus.connect(master);
+  for(const sh of part.shots)for(const l of sh.lines){if(!l.vh)continue;
+    const ab=await (await fetch('audio/voice/'+l.vh+'.mp3')).arrayBuffer();const vb=await AC.decodeAudioData(ab);
+    const src=AC.createBufferSource();src.buffer=vb;src.connect(vbus);src.start(sh.start+l.st+VDELAY);}
   const buf=await AC.startRendering();
   AC=live;[master,musicBus,sfxBus,noiseBuf]=liveBuses;
   const d=buf.getChannelData(0),pcm=new Int16Array(d.length);for(let i=0;i<d.length;i++)pcm[i]=Math.max(-1,Math.min(1,d[i]))*32767;
@@ -1508,7 +1534,7 @@ function paintSubs(L){
   ctx.save();ctx.shadowColor='#000';ctx.shadowBlur=6;
   lines.forEach((l,i)=>txt(l,W/2,y+i*40,font,L.s==='th'?'#cfe0ff':narr?'#f3ead6':'#ffffff'));ctx.restore();
 }
-window.__film={PARTS,seek(p,t){partIdx=p;time=t;render();},render,renderAudio,set burnSubs(v){burnSubs=v;},get canvas(){return cv;}};
+window.__film={PARTS,vkey,seek(p,t){partIdx=p;time=t;render();},render,renderAudio,set burnSubs(v){burnSubs=v;},get canvas(){return cv;}};
 
 try{const s=parseInt(localStorage.getItem('wsth-part'),10);if(s>=0&&s<3)partIdx=s;}catch(e){}
 resize();
