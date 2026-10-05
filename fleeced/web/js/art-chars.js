@@ -777,6 +777,7 @@
     ctx.restore();
   }
   A.crook = drawCrook;
+  A.remote = drawRemote;
   A.cup = drawCup;
 
   // ------------------------------------------------------------------ humans (city)

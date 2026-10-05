@@ -229,7 +229,7 @@
 
   // ================================================================ HERD (self-herding montage)
   SC.herd = (ctx, t, sc) => {
-    const tPen = s('n_pen') - 0.15, tFeed = s('n_feeders') - 0.15, tCorral = s('n_corral') - 0.15, tGave = s('n_gave') - 0.15, tShrug = s('n_someshit') - 0.1;
+    const tPen = s('n_pen') - 0.15, tFeed = s('n_feeders') - 0.15, tCorral = s('n_corral') - 0.15, tGave = s('n_gave') - 0.15;
     if (t < tPen) {
       const pal = PAL.morning;
       A.setTint(pal);
@@ -317,7 +317,7 @@
       });
       return;
     }
-    if (t < tShrug) {
+    {
       // the token "sun"
       const pal = PAL.day;
       A.setTint(pal);
@@ -341,18 +341,7 @@
         }
         seatedFarmer(ctx, t, { pose: A.POSE.sitCup, prop: { r: 'cup' }, mood: 'smile', blink: blink(t, 99) });
       });
-      return;
     }
-    // shrug
-    const pal = PAL.day;
-    A.setTint(pal);
-    const cam = { x: 1405, y: 600, z: 2.0 };
-    A.farmSet(ctx, t, cam, pal, { chair: false });
-    world(ctx, cam, () => {
-      const k = P(t, tShrug, 0.3) * (1 - P(t, e('n_someshit') + 0.4, 0.3));
-      const pose = A.mixPose(A.POSE.sit, A.POSE.sitShrug, k);
-      seatedFarmer(ctx, t, { pose, shrug: k, mood: 'smile', look: { x: 0, y: -0.5 }, rock: 0.3 });
-    });
   };
 
   // ================================================================ BRAINS (cognitive ability -> humans)
@@ -395,7 +384,7 @@
       return;
     }
     // the city: same choreography, but humans
-    const tFreeze = s('n_typeshit');
+    const tFreeze = c('cityFreeze');
     const pan = P(t, tCity, tFreeze - tCity, E.lin);
     const freezeT = Math.min(t, tFreeze);
     const leader = 9 * 135;
@@ -796,6 +785,134 @@
     }
     A.flash(ctx, flashK * 0.6, '#e8eeff');
     blackout(ctx, t > crack + 0.18 ? 1 : 0);
+  };
+
+  // ================================================================ FIX (one way to fix it)
+  SC.fix = (ctx, t, sc) => {
+    const tMend = s('e_paywall') - 0.3, tShop = c('stallIn'), tPay = c('fixPress') - 0.4;
+    const gone = c('gateGone'), freeAt = c('feederFree'), flock = c('flock');
+    if (t < tMend) {
+      // dawn: the storm clears; the turnstile and coin box are still there
+      const k = P(t, sc.start, 3.5, E.inOut);
+      const pal = F.mixPal(PAL.storm, PAL.morning, k);
+      A.setTint(pal);
+      const cam = camPath(t, [[sc.start, { x: 960, y: 560, z: 1.0 }], [tMend, { x: 900, y: 600, z: 1.07 }, E.sine]]);
+      A.farmSet(ctx, t, cam, pal, { door: 0, lock: 1, cross: 1, sunX: 1450, sunY: lerp(700, 250, P(t, sc.start, 5.5, E.out)), cloudA: 0.6 });
+      A.stormClouds(ctx, t, 1 - P(t, sc.start, 4.5, E.inOut), cam, 0);
+      world(ctx, cam, () => {
+        A.sheep(ctx, { x: 700, y: G + 120, s: 0.72, dir: 1, t, seed: 301, thin: true, wool: '#e2dccf', mood: 'tired', droop: 1, badge: 0 });
+        A.sheep(ctx, { x: 1180, y: G + 135, s: 0.72, dir: -1, t, seed: 302, thin: true, wool: '#e2dccf', mood: 'sad', droop: 1, badge: 0 });
+        A.farmer(ctx, { x: 920, y: farmerY, t, pose: A.POSE.hips, mood: 'tired', look: { x: 1, y: -0.6 }, blink: blink(t, 99) });
+      });
+      blackout(ctx, 1 - P(t, sc.start, 1.4, E.lin));
+      return;
+    }
+    if (t < tShop) {
+      // the paywall comes down
+      const pal = PAL.morning;
+      A.setTint(pal);
+      const cam = camPath(t, [[tMend, { x: 690, y: 640, z: 1.32 }], [tShop, { x: 720, y: 650, z: 1.38 }, E.sine]]);
+      const gate = 1 - P(t, gone, 0.32, E.in);
+      const free = P(t, freeAt - 0.25, 0.6, E.lin);
+      A.farmSet(ctx, t, cam, pal, {
+        door: P(t, gone + 0.2, 0.7, E.inOut), lock: 1 - P(t, gone - 0.05, 0.2, E.lin), gate, free,
+        hay: lerp(0.25, 1, E.bounce(P(t, freeAt, 0.5, E.lin))), cross: 1, sunX: 1450, sunY: 250,
+      });
+      world(ctx, cam, () => {
+        A.dust(ctx, FARM.barnX + 150, G + 12, (t - gone) / 0.7, 1.3);
+        if (within(t, gone, gone + 0.8)) A.sparkle(ctx, FARM.barnX + 150, G - 120, 1.2, 1 - P(t, gone, 0.8, E.lin), t * 3);
+        if (within(t, freeAt, freeAt + 0.8)) A.sparkle(ctx, FARM.feederX - 163, G - 200, 1.2, 1 - P(t, freeAt, 0.8, E.lin), t * 3);
+        // a mixed flock: no tokens, some tokens, rich - everyone eats, everyone sleeps inside
+        const eaters = [
+          { seed: 311, from: 1500, to: 905, y: G + 92, thin: true, wool: '#e2dccf', badge: 0, d: 0.0 },
+          { seed: 312, from: 1620, to: 1045, y: G + 100, badge: 3, d: 0.35 },
+        ];
+        eaters.forEach((h, i) => {
+          const k = P(t, flock + h.d, 2.0, E.out);
+          const x = lerp(h.from, h.to, k);
+          const eating = t > flock + h.d + 2.0;
+          A.sheep(ctx, { x, y: h.y, s: 0.74, dir: -1, t, seed: h.seed, thin: h.thin, wool: h.wool, walk: eating ? null : x * 0.05, badge: h.badge,
+            mood: eating ? 'happy' : 'neutral', talk: eating ? 0.3 + 0.3 * Math.sin(t * 17 + i) : 0, headDy: eating ? 16 : 0, headTilt: eating ? 0.3 : 0 });
+          if (eating) A.heart(ctx, x - 40, h.y - 190 - ((t * 0.6 + i * 0.5) % 1) * 60, 0.9, 1 - ((t * 0.6 + i * 0.5) % 1));
+        });
+        const sleepers = [
+          { seed: 313, from: 980, badge: 0, thin: true, wool: '#e2dccf', d: 0.6 },
+          { seed: 314, from: 1180, badge: 3, rich: true, d: 1.1 },
+          { seed: 315, from: 1380, badge: 0, punk: true, wool: '#d8d2c6', d: 1.6 },
+        ];
+        sleepers.forEach((h) => {
+          const k = P(t, flock + h.d, 2.6, E.inOut);
+          const x = lerp(h.from, FARM.barnX, k);
+          const a = 1 - P(t, flock + h.d + 2.3, 0.35, E.lin);
+          if (a <= 0) return;
+          A.sheep(ctx, Object.assign({ x, y: G + 62, s: 0.62, dir: -1, t, seed: h.seed, walk: x * 0.05, badge: h.badge, alpha: a, badgeA: a, mood: 'happy',
+            thin: h.thin, wool: h.wool, punk: h.punk }, h.rich ? { wool: '#fbefd0', chain: true, fluff: 1.12 } : {}));
+        });
+      });
+      const st = P(t, c('freeStamp') - 0.05, 0.35, E.lin);
+      if (st > 0) A.stamp(ctx, 'BASIC NEEDS: FREE', W / 2, 150, st, -0.06, '#2f9e4f');
+      return;
+    }
+    if (t < tPay) {
+      // luxuries: the farmer can charge whatever he likes
+      const pal = PAL.morning;
+      A.setTint(pal);
+      const cam = camPath(t, [[tShop, { x: 1300, y: 570, z: 1.3 }], [tPay, { x: 1290, y: 580, z: 1.36 }, E.sine]]);
+      A.farmSet(ctx, t, cam, pal, { gate: 0, free: 1, door: 1, hay: 1, cross: 1, sunX: 1450, sunY: 250 });
+      const ch = c('chaching');
+      world(ctx, cam, () => {
+        const k = pop(t, tShop, 0.45);
+        ctx.save();
+        ctx.translate(1380, G + 80);
+        ctx.scale(k, k);
+        ctx.translate(-1380, -(G + 80));
+        A.stall(ctx, 1380, G + 80, t, {});
+        A.farmer(ctx, { x: 1380, y: G + 40, s: 0.85, t, pose: t > ch ? A.POSE.hold : A.POSE.hips, prop: t > ch ? { r: 'smallToken' } : null, tokenSpin: t * 5, mood: t > ch - 0.2 ? 'grin' : 'smile', look: { x: -1, y: 0.4 }, noShadow: true });
+        A.stall(ctx, 1380, G + 80, t, { front: true });
+        ctx.restore();
+        const bought = t > ch;
+        A.sheep(ctx, Object.assign({ x: 1020, y: G + 112, s: 0.8, dir: 1, t, seed: 320, badge: bought ? 10 : 60, mood: bought ? 'smug' : 'neutral', headTilt: -0.1, blink: blink(t, 320) },
+          { wool: '#fbefd0', fluff: 1.14, chain: bought }));
+        for (let i = 0; i < 6; i++) {
+          const kk = (t - ch + 0.35 - i * 0.05) / 0.4;
+          if (kk > 0 && kk < 1) A.token(ctx, lerp(1030, 1250, kk), lerp(G - 70, G - 120, kk) - Math.sin(kk * Math.PI) * 90, 14, t * 10 + i);
+        }
+        if (within(t, ch, ch + 0.9)) A.sparkle(ctx, 1080, G - 20, 1.2, 1 - P(t, ch, 0.9, E.lin), t * 4);
+      });
+      return;
+    }
+    // the token remote no longer gets rid of anyone
+    const pal = PAL.morning;
+    A.setTint(pal);
+    const toss = c('remoteToss'), land = c('remoteLand'), press = c('fixPress'), drain = c('fixDrain'), shrug = c('fixShrug');
+    const cam = camPath(t, [[tPay, { x: 820, y: 660, z: 1.45 }], [toss - 0.2, { x: 830, y: 660, z: 1.5 }], [sc.end, { x: 900, y: 600, z: 1.15 }]]);
+    A.farmSet(ctx, t, cam, pal, { gate: 0, free: 1, door: 1, hay: 1, cross: 1, sunX: 1450, sunY: 250 });
+    world(ctx, cam, () => {
+      const n = t < drain ? 4 : Math.max(0, 4 - Math.floor(((t - drain) / 0.8) * 5));
+      const lookAtBadge = within(t, drain + 0.2, shrug + 0.4);
+      const eating = !lookAtBadge;
+      const wig = within(t, shrug, shrug + 0.6) ? Math.sin((t - shrug) * 22) * 0.12 : 0;
+      A.sheep(ctx, { x: 855, y: G + 92, s: 0.85, dir: 1, t, seed: 90, wool: '#d8d2c6', punk: true, badge: n, badgeS: t > drain && t < drain + 1.5 ? 1.2 : 1,
+        mood: eating ? 'happy' : 'neutral', look: lookAtBadge ? { x: -0.3, y: -1 } : { x: 1, y: 0.4 },
+        talk: eating ? 0.3 + 0.3 * Math.sin(t * 17) : 0, headDy: eating ? 16 : 0, headTilt: (eating ? 0.3 : -0.1) + wig });
+      if (within(t, shrug + 0.5, shrug + 2.0)) A.heart(ctx, 900, G - 150 - P(t, shrug + 0.5, 1.5, E.lin) * 60, 1, 1 - P(t, shrug + 1.4, 0.6, E.lin));
+      const pr = within(t, press - 0.08, press + 0.25) ? 1 : 0;
+      let pose = A.POSE.remote, prop = { r: 'remote' }, mood = 'frown';
+      if (t > drain + 0.9) mood = 'shock';
+      if (t > shrug + 1.0) mood = 'tired';
+      if (t > toss - 0.45) { pose = A.mixPose(A.POSE.remote, A.POSE.hold, P(t, toss - 0.45, 0.4)); }
+      if (t > toss) { prop = null; pose = A.mixPose(A.POSE.hold, A.POSE.hips, P(t, toss + 0.3, 0.5)); mood = 'smile'; }
+      A.farmer(ctx, { x: 560, y: farmerY, t, pose, prop, press: pr, mood, look: t > shrug + 0.6 && t < toss ? { x: 0.6, y: 0.8 } : { x: 1, y: 0.2 }, blink: blink(t, 99) });
+      if (t > toss && t < land + 2) {
+        const k = clamp((t - toss) / (land - toss));
+        const x = lerp(560 + 96, 1250, k), y = lerp(farmerY - 440, G + 40, k) - Math.sin(k * Math.PI) * 300;
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(t < land ? (t - toss) * 14 : 1.4);
+        A.remote(ctx, 0, 0, 0);
+        ctx.restore();
+      }
+    });
   };
 
   // ================================================================ END

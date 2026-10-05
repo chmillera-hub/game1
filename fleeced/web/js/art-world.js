@@ -327,12 +327,25 @@
     ctx.fillStyle = wood; ctx.fill(); ctx.strokeStyle = outline; ctx.lineWidth = 5; ctx.stroke();
     ctx.strokeStyle = dark; ctx.lineWidth = 3;
     ctx.beginPath(); ctx.moveTo(-112, -90); ctx.lineTo(112, -90); ctx.stroke();
-    // coin box
+    // coin box (or, once food is free, a FREE sign)
     rrect(ctx, -170, -150, 14, 150, 4); ctx.fillStyle = C('#8a949c'); ctx.fill(); ctx.strokeStyle = outline; ctx.lineWidth = 4; ctx.stroke();
-    rrect(ctx, -200, -215, 74, 76, 10); ctx.fillStyle = C('#e0473a'); ctx.fill(); ctx.strokeStyle = outline; ctx.lineWidth = 4; ctx.stroke();
-    rrect(ctx, -176, -198, 26, 7, 3); ctx.fillStyle = '#1b1210'; ctx.fill();
-    text(ctx, 'INSERT', -163, -172, { size: 15, weight: 700, fill: '#fff' });
-    text(ctx, 'TOKEN', -163, -155, { size: 15, weight: 700, fill: '#fff' });
+    const free = o.free || 0;
+    if (free < 0.5) {
+      const k = 1 - free * 2;
+      ctx.save(); ctx.translate(-163, -177); ctx.scale(k, k); ctx.translate(163, 177);
+      rrect(ctx, -200, -215, 74, 76, 10); ctx.fillStyle = C('#e0473a'); ctx.fill(); ctx.strokeStyle = outline; ctx.lineWidth = 4; ctx.stroke();
+      rrect(ctx, -176, -198, 26, 7, 3); ctx.fillStyle = '#1b1210'; ctx.fill();
+      text(ctx, 'INSERT', -163, -172, { size: 15, weight: 700, fill: '#fff' });
+      text(ctx, 'TOKEN', -163, -155, { size: 15, weight: 700, fill: '#fff' });
+      ctx.restore();
+    } else {
+      const k = F.E.back(clamp((free - 0.5) * 2));
+      ctx.save(); ctx.translate(-163, -185); ctx.scale(k, k);
+      rrect(ctx, -52, -40, 104, 74, 12); ctx.fillStyle = C('#3fae5a'); ctx.fill(); ctx.strokeStyle = outline; ctx.lineWidth = 4; ctx.stroke();
+      text(ctx, 'FREE', 0, -12, { size: 30, font: FONT_TITLE, weight: 400, fill: '#fff' });
+      text(ctx, 'FOOD', 0, 18, { size: 17, weight: 700, fill: '#eaffef' });
+      ctx.restore();
+    }
     if (o.flash > 0) {
       ctx.save(); ctx.globalAlpha *= o.flash;
       circle(ctx, -163, -228, 10); ctx.fillStyle = '#4cff7a'; ctx.shadowColor = '#4cff7a'; ctx.shadowBlur = 20; ctx.fill();
@@ -465,8 +478,26 @@
     A.fence(ctx, -320, 190, A.GROUND + 10);
     A.fence(ctx, 650, 820, A.GROUND + 10);
     A.barn(ctx, A.FARM.barnX, A.GROUND + 4, { door: o.door ?? 0.35, lock: o.lock || 0, inside: o.barnInside });
-    A.turnstile(ctx, A.FARM.barnX + 150, A.GROUND + 12, { rot: o.gateRot || 0, light: o.gateLight });
-    A.feeder(ctx, A.FARM.feederX, A.GROUND + 14, { hay: o.hay ?? 0.4, flash: o.feederFlash || 0 });
+    const gate = o.gate ?? 1;
+    if (gate > 0) {
+      ctx.save();
+      ctx.translate(A.FARM.barnX + 150, A.GROUND + 12);
+      ctx.scale(gate, gate);
+      A.turnstile(ctx, 0, 0, { rot: o.gateRot || 0, light: o.gateLight });
+      ctx.restore();
+    }
+    if (gate < 1) {
+      const k = F.E.back(clamp((1 - gate) * 1.4 - 0.25));
+      ctx.save();
+      ctx.translate(A.FARM.barnX + 150, A.GROUND + 12);
+      ctx.scale(k, k);
+      rrect(ctx, -7, -130, 14, 130, 4); ctx.fillStyle = C('#9c7243'); ctx.fill(); ctx.strokeStyle = C(OUT); ctx.lineWidth = 4; ctx.stroke();
+      rrect(ctx, -62, -196, 124, 76, 12); ctx.fillStyle = C('#3fae5a'); ctx.fill(); ctx.strokeStyle = C(OUT); ctx.lineWidth = 4; ctx.stroke();
+      text(ctx, 'FREE', 0, -168, { size: 30, font: FONT_TITLE, weight: 400, fill: '#fff' });
+      text(ctx, 'SHELTER', 0, -138, { size: 17, weight: 700, fill: '#eaffef' });
+      ctx.restore();
+    }
+    A.feeder(ctx, A.FARM.feederX, A.GROUND + 14, { hay: o.hay ?? 0.4, flash: o.feederFlash || 0, free: o.free || 0 });
     ctx.save();
     if (o.porchShake) ctx.translate(Math.sin(t * 90) * 6 * o.porchShake, Math.cos(t * 70) * 3 * o.porchShake);
     A.house(ctx, A.FARM.houseX, A.GROUND + 4, { lit: o.lit, windowContent: o.windowContent });
@@ -689,6 +720,62 @@
         circle(ctx, Math.cos(a) * r, -104 + Math.sin(a) * r * 0.9, 6);
         ctx.fill();
       }
+    }
+    ctx.restore();
+  };
+
+  /** market stall: striped awning, LUXURIES sign, priced goods. `front` draws only the counter (over a shopkeeper). */
+  A.stall = function (ctx, x, y, t, o = {}) {
+    const outline = C(OUT), wood = C('#a8743e'), dark = C('#7a5028');
+    const w = 520;
+    ctx.save();
+    ctx.translate(x, y);
+    if (!o.front) {
+      for (const px of [-w / 2 + 16, w / 2 - 16]) { rrect(ctx, px - 9, -480, 18, 480, 4); ctx.fillStyle = dark; ctx.fill(); ctx.strokeStyle = outline; ctx.lineWidth = 4; ctx.stroke(); }
+      // awning
+      const stripes = 8, sw = (w + 40) / stripes;
+      for (let i = 0; i < stripes; i++) {
+        ctx.beginPath();
+        ctx.moveTo(-w / 2 - 20 + i * sw, -480);
+        ctx.lineTo(-w / 2 - 20 + (i + 1) * sw, -480);
+        ctx.lineTo(-w / 2 - 20 + (i + 1) * sw, -440);
+        ctx.quadraticCurveTo(-w / 2 - 20 + (i + 0.5) * sw, -412, -w / 2 - 20 + i * sw, -440);
+        ctx.closePath();
+        ctx.fillStyle = C(i % 2 ? '#fff6e6' : '#d6453a');
+        ctx.fill();
+        ctx.strokeStyle = outline; ctx.lineWidth = 3.5; ctx.stroke();
+      }
+      rrect(ctx, -170, -556, 340, 70, 14); ctx.fillStyle = C('#2b1d16'); ctx.fill();
+      text(ctx, 'LUXURIES', 0, -518, { size: 46, font: FONT_TITLE, weight: 400, fill: '#ffd166', ls: 3 });
+      return ctx.restore();
+    }
+    // counter + goods
+    rrect(ctx, -w / 2, -130, w, 130, 10); ctx.fillStyle = wood; ctx.fill(); ctx.strokeStyle = outline; ctx.lineWidth = 5; ctx.stroke();
+    ctx.strokeStyle = dark; ctx.lineWidth = 3;
+    for (let yy = -100; yy < 0; yy += 30) { ctx.beginPath(); ctx.moveTo(-w / 2 + 6, yy); ctx.lineTo(w / 2 - 6, yy); ctx.stroke(); }
+    rrect(ctx, -w / 2 - 12, -146, w + 24, 22, 8); ctx.fillStyle = C('#c8955a'); ctx.fill(); ctx.strokeStyle = outline; ctx.lineWidth = 4; ctx.stroke();
+    const goods = [[-180, 'GOLD CHAIN', '50'], [0, 'WOOL SPA', '20'], [180, 'FANCY HAY', '8']];
+    for (const [gx, name, price] of goods) {
+      ctx.save();
+      ctx.translate(gx, -146);
+      if (name === 'GOLD CHAIN') {
+        ctx.strokeStyle = C('#f2b830'); ctx.lineWidth = 7; ctx.setLineDash([9, 5]);
+        ctx.beginPath(); ctx.ellipse(0, -40, 34, 30, 0, 0, Math.PI * 2); ctx.stroke(); ctx.setLineDash([]);
+        A.token(ctx, 0, -10, 16, 0.3 + Math.sin(t * 2) * 0.3);
+      } else if (name === 'WOOL SPA') {
+        rrect(ctx, -18, -76, 36, 70, 10); ctx.fillStyle = C('#9ad0f5'); ctx.fill(); ctx.strokeStyle = outline; ctx.lineWidth = 3.5; ctx.stroke();
+        rrect(ctx, -9, -92, 18, 18, 4); ctx.fillStyle = C('#e9e2d4'); ctx.fill(); ctx.stroke();
+        for (let i = 0; i < 3; i++) { F.circle(ctx, 20 + i * 8, -84 - i * 14 - ((t * 20) % 10), 5 + i); ctx.fillStyle = 'rgba(255,255,255,0.8)'; ctx.fill(); }
+      } else {
+        A.hayBale(ctx, 0, -6, 0.55);
+        ctx.strokeStyle = C('#d6453a'); ctx.lineWidth = 6;
+        ctx.beginPath(); ctx.moveTo(-20, -40); ctx.lineTo(20, -40); ctx.stroke();
+      }
+      ctx.restore();
+      rrect(ctx, gx - 66, -112, 132, 74, 10); ctx.fillStyle = '#fffdf6'; ctx.fill(); ctx.strokeStyle = outline; ctx.lineWidth = 3.5; ctx.stroke();
+      text(ctx, name, gx, -90, { size: 19, weight: 700, fill: '#2b1d16' });
+      A.token(ctx, gx - 22, -60, 12, 0);
+      text(ctx, price, gx + 12, -58, { size: 26, weight: 700, fill: '#b8412f' });
     }
     ctx.restore();
   };

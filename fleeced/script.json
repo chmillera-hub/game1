@@ -35,19 +35,18 @@
     },
 
     {
-      "id": "farm", "lead": 0.15, "hold": 1.4, "music": "farm",
+      "id": "farm", "lead": 0.45, "hold": 1.4, "music": "farm",
       "lines": [
-        { "id": "n_bruh", "who": "narrator", "text": "Bruh.", "gap": 0 },
-        { "id": "n_imagine", "who": "narrator", "text": "Imagine being a farmer,", "gap": 0.45,
-          "cues": [ { "id": "farmerPop", "sfx": "boing", "t": -0.45, "from": "end", "gain": -6 } ] },
+        { "id": "n_imagine", "who": "narrator", "text": "Imagine being a farmer,", "gap": 0,
+          "cues": [ { "id": "farmerPop", "sfx": "boing", "t": -0.45, "from": "end", "gain": -12 } ] },
         { "id": "n_sheep", "who": "narrator", "text": "and you have a bunch of sheep.", "gap": 0.35,
           "cues": [
-            { "id": "sheepPop1", "sfx": "pop", "t": -0.7, "from": "end", "gain": -8, "pan": -0.5 },
-            { "id": "sheepPop2", "sfx": "pop", "t": -0.52, "from": "end", "gain": -8, "pan": 0.4 },
-            { "id": "sheepPop3", "sfx": "pop", "t": -0.34, "from": "end", "gain": -8, "pan": -0.2 },
-            { "id": "sheepPop4", "sfx": "pop", "t": -0.16, "from": "end", "gain": -8, "pan": 0.6 },
-            { "id": "sheepPop5", "sfx": "pop", "t": 0.02, "from": "end", "gain": -8, "pan": -0.7 },
-            { "id": "sheepPop6", "sfx": "pop", "t": 0.2, "from": "end", "gain": -8, "pan": 0.2 },
+            { "id": "sheepPop1", "sfx": "pop", "t": -0.7, "from": "end", "gain": -12, "pan": -0.5 },
+            { "id": "sheepPop2", "sfx": "pop", "t": -0.52, "from": "end", "gain": -12, "pan": 0.4 },
+            { "id": "sheepPop3", "sfx": "pop", "t": -0.34, "from": "end", "gain": -12, "pan": -0.2 },
+            { "id": "sheepPop4", "sfx": "pop", "t": -0.16, "from": "end", "gain": -12, "pan": 0.6 },
+            { "id": "sheepPop5", "sfx": "pop", "t": 0.02, "from": "end", "gain": -12, "pan": -0.7 },
+            { "id": "sheepPop6", "sfx": "pop", "t": 0.2, "from": "end", "gain": -12, "pan": 0.2 },
             { "id": "sheepBaa", "sfx": "bleat_chorus", "t": 0.45, "from": "end", "gain": -9 }
           ] }
       ]
@@ -77,8 +76,8 @@
     {
       "id": "smile", "lead": 0.3, "hold": 2.4, "music": "sneaky",
       "amb": [
-        { "sfx": "rain", "from": "rainStart", "to": null, "gain": -17, "fade": 1.2 },
-        { "sfx": "wind", "from": "rainStart", "to": null, "gain": -20, "fade": 1.5 }
+        { "sfx": "rain", "from": "rainStart", "to": null, "gain": -32, "fade": 1.2 },
+        { "sfx": "wind", "from": "rainStart", "to": null, "gain": -34, "fade": 1.5 }
       ],
       "lines": [
         { "id": "n_smiles", "who": "narrator", "text": "And then the farmer smiles,", "gap": 0,
@@ -88,7 +87,7 @@
                     { "id": "lockClick", "sfx": "lock", "t": 0.62, "from": "end", "gain": -8 } ] },
         { "id": "n_pesky", "who": "narrator", "text": "and the pesky sheep without the tokens get to sit outside in the elements,", "gap": 1.15,
           "cues": [ { "id": "rainStart", "t": -0.2 },
-                    { "id": "thunder1", "sfx": "thunder", "t": 1.6, "gain": -8 } ] },
+                    { "id": "thunder1", "sfx": "thunder", "t": 1.6, "gain": -15 } ] },
         { "id": "n_starve", "who": "narrator", "text": "and starve to death.", "gap": 0.3,
           "cues": [ { "id": "keel", "sfx": "thump", "t": 0.15, "from": "end", "gain": -9 },
                     { "id": "ghost", "sfx": "ghost", "t": 0.75, "from": "end", "gain": -12 } ] }
@@ -96,7 +95,7 @@
     },
 
     {
-      "id": "herd", "lead": 0.4, "hold": 0.9, "music": "farm2",
+      "id": "herd", "lead": 0.4, "hold": 1.7, "music": "farm2",
       "lines": [
         { "id": "n_return", "who": "narrator", "text": "But in return, the sheep herd themselves.", "gap": 0 },
         { "id": "n_want", "who": "narrator", "text": "Because they want food and shelter.", "gap": 0.3 },
@@ -113,13 +112,12 @@
           "cues": [ { "id": "crookToss", "sfx": "whoosh", "t": -0.6, "from": "end", "gain": -12 },
                     { "id": "crookLand", "sfx": "clatter", "t": 0.05, "from": "end", "gain": -10 } ] },
         { "id": "n_gave", "who": "narrator", "text": "Because the farmer gave them money tokens.", "gap": 0.55,
-          "cues": [ { "id": "tokenSign", "sfx": "shine", "t": -0.5, "from": "end", "gain": -10 } ] },
-        { "id": "n_someshit", "who": "narrator", "text": "Or some shit.", "gap": 0.15 }
+          "cues": [ { "id": "tokenSign", "sfx": "shine", "t": -0.5, "from": "end", "gain": -12 } ] }
       ]
     },
 
     {
-      "id": "brains", "lead": 0.35, "hold": 1.2, "music": "brains",
+      "id": "brains", "lead": 0.35, "hold": 2.8, "music": "brains",
       "lines": [
         { "id": "n_cantuse", "who": "narrator", "text": "And of course, sheep can't use money,", "gap": 0,
           "cues": [ { "id": "bite", "sfx": "crunch", "t": -0.15, "from": "end", "gain": -9 } ] },
@@ -128,29 +126,28 @@
         { "id": "n_once", "who": "narrator", "text": "But once you have the cognitive ability to understand money,", "gap": 0.55,
           "cues": [ { "id": "meterFill", "sfx": "powerup", "t": 0.3, "gain": -13 },
                     { "id": "morph", "sfx": "flash", "t": 0.0, "from": "end", "gain": -9 } ] },
-        { "id": "n_control", "who": "narrator", "text": "then you can use that money to control the behavior of human beings.", "gap": 0.55 },
-        { "id": "n_typeshit", "who": "narrator", "text": "Type shit.", "gap": 0.45 },
-        { "id": "n_knowwhat", "who": "narrator", "text": "You know what I mean?", "gap": 0.25 }
+        { "id": "n_control", "who": "narrator", "text": "then you can use that money to control the behavior of human beings.", "gap": 0.55,
+          "cues": [ { "id": "cityFreeze", "t": 0.35, "from": "end" } ] }
       ]
     },
 
     {
       "id": "annoying", "lead": 0.45, "hold": 1.5, "music": "sneaky",
       "amb": [
-        { "sfx": "rain", "from": "deniedRain", "to": "washStart", "gain": -19, "fade": 0.6 }
+        { "sfx": "rain", "from": "deniedRain", "to": "washStart", "gain": -33, "fade": 0.6 }
       ],
       "lines": [
-        { "id": "n_itslike", "who": "narrator", "text": "And it's like, if you are the farmer,", "gap": 0 },
+        { "id": "n_itslike", "who": "narrator", "text": "And if you are the farmer,", "gap": 0 },
         { "id": "n_orsheep", "who": "narrator", "text": "or even some of the sheep,", "gap": 0.2,
           "cues": [ { "id": "richStep", "sfx": "bling", "t": 0.35, "gain": -11 } ] },
         { "id": "n_annoying", "who": "narrator", "text": "and some of the sheep are being very annoying, and you really don't like them,", "gap": 0.35,
-          "cues": [ { "id": "annoyIn", "sfx": "bleat_loud", "t": 0.5, "gain": -9 },
-                    { "id": "annoyBaa2", "sfx": "bleat_loud", "t": 2.3, "gain": -10 } ] },
+          "cues": [ { "id": "annoyIn", "sfx": "bleat_loud", "t": 0.5, "gain": -13 },
+                    { "id": "annoyBaa2", "sfx": "bleat_loud", "t": 2.3, "gain": -14 } ] },
         { "id": "n_problems", "who": "narrator", "text": "and they are causing a lot of problems, maybe even with your token supply,", "gap": 0.3,
-          "cues": [ { "id": "jarBump", "sfx": "thump", "t": -1.5, "from": "end", "gain": -8 },
-                    { "id": "jarSpill", "sfx": "coins_spill", "t": -1.2, "from": "end", "gain": -9 } ] },
+          "cues": [ { "id": "jarBump", "sfx": "thump", "t": -1.5, "from": "end", "gain": -12 },
+                    { "id": "jarSpill", "sfx": "coins_spill", "t": -1.2, "from": "end", "gain": -14 } ] },
         { "id": "n_risk", "who": "narrator", "text": "which puts your own shelter and food supply at risk.", "gap": 0.2,
-          "cues": [ { "id": "riskStamp", "sfx": "stamp", "t": -0.45, "from": "end", "gain": -7 } ] },
+          "cues": [ { "id": "riskStamp", "sfx": "stamp", "t": -0.45, "from": "end", "gain": -12 } ] },
         { "id": "n_allyou", "who": "narrator", "text": "All you need to do to get rid of those sheep,", "gap": 0.6,
           "cues": [ { "id": "remoteOut", "sfx": "pop", "t": -0.6, "from": "end", "gain": -10 } ] },
         { "id": "n_findaway", "who": "narrator", "text": "is find a way to get rid of their tokens.", "gap": 0.2,
@@ -168,12 +165,11 @@
     },
 
     {
-      "id": "jesus", "lead": 0.25, "musicCut": true, "hold": 1.8, "music": "jesus",
-      "cues": [ { "id": "scratch", "sfx": "scratch", "t": 0.0, "gain": -7 } ],
+      "id": "jesus", "lead": 1.9, "musicCut": true, "hold": 1.8, "music": "jesus",
+      "cues": [ { "id": "scratch", "sfx": "scratch", "t": 0.0, "gain": -9 },
+                { "id": "jesusGlow", "sfx": "sparkle", "t": 0.45, "gain": -13 } ],
       "lines": [
-        { "id": "n_lord", "who": "narrator", "text": "Oh Lord.", "gap": 0.35 },
-        { "id": "n_imagining", "who": "narrator", "text": "Now I'm imagining, like, the farmer being like,", "gap": 0.6,
-          "cues": [ { "id": "jesusGlow", "sfx": "sparkle", "t": -0.9, "gain": -12 } ] },
+        { "id": "n_imagining", "who": "narrator", "text": "Now imagine the farmer saying,", "gap": 0 },
         { "id": "f_goaway", "who": "farmer", "text": "Well. That Jesus sheep will eventually just go away.", "gap": 0.45 },
         { "id": "f_nothing", "who": "farmer", "text": "Let's just not do anything.", "gap": 0.35,
           "cues": [ { "id": "hatOver", "t": 0.1, "from": "end" },
@@ -186,7 +182,7 @@
       "lines": [
         { "id": "n_wealthier", "who": "narrator", "text": "But then some of the wealthier sheep, like the Pharisees,", "gap": 0,
           "cues": [ { "id": "pharIn", "sfx": "bling", "t": 0.55, "gain": -10 } ] },
-        { "id": "n_demanding", "who": "narrator", "text": "are like, demanding the farmer do something to get rid of that Jesus sheep.", "gap": 0.15,
+        { "id": "n_demanding", "who": "narrator", "text": "are demanding the farmer do something to get rid of that Jesus sheep.", "gap": 0.15,
           "cues": [ { "id": "wake", "sfx": "startle", "t": -0.2, "from": "end", "gain": -10 } ] },
         { "id": "p_dosomething", "who": "phar1", "text": "Farmer! Do something about that Jesus sheep!", "gap": 0.3 },
         { "id": "n_lessmoney", "who": "narrator", "text": "Because the sheep that have less money than the Pharisee sheep keep asking for money,", "gap": 0.4 },
@@ -210,16 +206,16 @@
       "id": "riot", "lead": 0.25, "musicEnd": "riotHit", "hold": 1.0, "music": "riot",
       "lines": [
         { "id": "n_slamming", "who": "narrator", "text": "And then the Pharisee sheep start slamming their hooves on the ground,", "gap": 0,
-          "cues": [ { "id": "stomp1", "sfx": "stomp", "t": 1.45, "gain": -5 },
-                    { "id": "stomp2", "sfx": "stomp", "t": 1.95, "gain": -5 },
-                    { "id": "stomp3", "sfx": "stomp", "t": 2.45, "gain": -5 },
-                    { "id": "stomp4", "sfx": "stomp", "t": 2.95, "gain": -5 },
-                    { "id": "stomp5", "sfx": "stomp", "t": 3.45, "gain": -5 } ] },
+          "cues": [ { "id": "stomp1", "sfx": "stomp", "t": 1.45, "gain": -9 },
+                    { "id": "stomp2", "sfx": "stomp", "t": 1.95, "gain": -9 },
+                    { "id": "stomp3", "sfx": "stomp", "t": 2.45, "gain": -9 },
+                    { "id": "stomp4", "sfx": "stomp", "t": 2.95, "gain": -9 },
+                    { "id": "stomp5", "sfx": "stomp", "t": 3.45, "gain": -9 } ] },
         { "id": "n_bleating", "who": "narrator", "text": "bleating aggressively at the farmer,", "gap": 0.15,
-          "cues": [ { "id": "angryBaas", "sfx": "bleat_angry", "t": 0.1, "gain": -10 } ] },
+          "cues": [ { "id": "angryBaas", "sfx": "bleat_angry", "t": 0.1, "gain": -15 } ] },
         { "id": "p_ourtokens", "who": "phar1", "text": "We're the ones who could lose our tokens if you don't do anything!", "gap": 0.45 },
         { "id": "p_riot", "who": "phar2", "text": "We'll riot!", "gap": 0.2,
-          "cues": [ { "id": "crowdRise", "sfx": "crowd_roar", "t": 0.0, "gain": -12 } ] },
+          "cues": [ { "id": "crowdRise", "sfx": "crowd_roar", "t": 0.0, "gain": -16 } ] },
         { "id": "p_farm", "who": "phar1", "text": "We'll get all the sheep to take down this farm, once and for all!", "gap": 0.25,
           "cues": [ { "id": "riotHit", "sfx": "hit", "t": 0.05, "from": "end", "gain": -6 } ] }
       ]
@@ -236,7 +232,7 @@
 
     {
       "id": "cross", "lead": 0.6, "hold": 6.2, "music": null,
-      "amb": [ { "sfx": "wind", "from": 0, "to": null, "gain": -19, "fade": 1.5 } ],
+      "amb": [ { "sfx": "wind", "from": 0, "to": null, "gain": -30, "fade": 1.5 } ],
       "lines": [
         { "id": "n_crucify", "who": "narrator", "text": "And then they crucify the Jesus sheep.", "gap": 0,
           "cues": [ { "id": "bell", "sfx": "bell", "t": 0.7, "from": "end", "gain": -6 } ] }
@@ -246,8 +242,8 @@
     {
       "id": "quiet", "lead": 1.0, "musicEnd": "finalCrack", "hold": 3.6, "music": "aftermath",
       "amb": [
-        { "sfx": "crickets", "from": 0, "to": "airLine", "gain": -24, "fade": 2.0 },
-        { "sfx": "wind", "from": "airLine", "to": null, "gain": -21, "fade": 3.0 }
+        { "sfx": "crickets", "from": 0, "to": "airLine", "gain": -31, "fade": 2.0 },
+        { "sfx": "wind", "from": "airLine", "to": null, "gain": -31, "fade": 3.0 }
       ],
       "lines": [
         { "id": "n_quiet", "who": "narrator", "text": "And then everything goes back to being quiet.", "gap": 0 },
@@ -256,6 +252,31 @@
                     { "id": "rumble", "sfx": "thunder_far", "t": 0.3, "from": "end", "gain": -10 } ] },
         { "id": "n_consequences", "who": "narrator", "text": "And what are going to be the consequences, later on?", "gap": 1.4,
           "cues": [ { "id": "finalCrack", "sfx": "thunder", "t": 1.3, "from": "end", "gain": -4 } ] }
+      ]
+    },
+
+    {
+      "id": "fix", "lead": 1.7, "hold": 2.4, "music": "dawn", "musicFadeIn": 2.5,
+      "amb": [ { "sfx": "birds", "from": 0.6, "to": null, "gain": -31, "fade": 2.5 } ],
+      "lines": [
+        { "id": "e_fix", "who": "narrator", "text": "So here's one way to fix it.", "gap": 0 },
+        { "id": "e_paywall", "who": "narrator", "text": "Don't put food and shelter behind a paywall.", "gap": 0.75,
+          "cues": [ { "id": "gateGone", "sfx": "poof", "t": -0.95, "from": "end", "gain": -13 },
+                    { "id": "feederFree", "sfx": "bling", "t": 0.15, "from": "end", "gain": -12 } ] },
+        { "id": "e_every", "who": "narrator", "text": "Every sheep gets fed, and every sheep gets a place to sleep, tokens or no tokens.", "gap": 0.9,
+          "cues": [ { "id": "flock", "t": -0.5 },
+                    { "id": "everyMunch", "sfx": "munch", "t": 1.8, "gain": -17 } ] },
+        { "id": "e_basic", "who": "narrator", "text": "Only the basic needs, though.", "gap": 0.6,
+          "cues": [ { "id": "freeStamp", "sfx": "stamp", "t": 0.5, "gain": -13 } ] },
+        { "id": "e_luxury", "who": "narrator", "text": "Luxuries can cost whatever the farmer wants.", "gap": 1.0,
+          "cues": [ { "id": "stallIn", "t": -0.55 },
+                    { "id": "chaching", "sfx": "chaching", "t": -0.4, "from": "end", "gain": -12 } ] },
+        { "id": "e_nobody", "who": "narrator", "text": "But if nobody's food and shelter depends on tokens, nobody can get rid of you just by taking yours.", "gap": 1.5,
+          "cues": [ { "id": "fixPress", "sfx": "click", "t": -1.0, "gain": -12 },
+                    { "id": "fixDrain", "sfx": "drain", "t": -0.9, "gain": -15 },
+                    { "id": "fixShrug", "t": 0.7 },
+                    { "id": "remoteToss", "sfx": "whoosh", "t": 0.35, "from": "end", "gain": -13 },
+                    { "id": "remoteLand", "sfx": "clatter", "t": 1.0, "from": "end", "gain": -12 } ] }
       ]
     },
 

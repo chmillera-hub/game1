@@ -185,6 +185,48 @@ def duck_curve(voice_mono, attack=0.06, release=0.45, floor_db=-45):
     return np.interp(np.arange(len(voice_mono)) / hop, np.arange(nfr), env)
 
 
+def frame_rms(x, hop):
+    n = len(x) // hop
+    return np.sqrt((x[: n * hop].reshape(n, hop) ** 2).mean(axis=1)) + 1e-9
+
+
+def dialogue_guard(voice, background, margin=14.0, max_cut=18.0, frame=0.02, hold=0.3,
+                   attack=0.03, release=0.4):
+    """Gain curve for the whole background (music + effects + ambience) that keeps it at
+    least `margin` dB under the voice whenever someone is speaking. Pauses are untouched."""
+    from scipy.ndimage import maximum_filter1d
+    hop = n_of(frame)
+    v = maximum_filter1d(frame_rms(voice, hop), size=max(1, int(hold / frame)))
+    g = frame_rms(background, hop)
+    speaking = v > db(-45)
+    need = np.where(speaking, np.minimum(0.0, 20 * np.log10(v / g) - margin), 0.0)
+    need = np.maximum(need, -max_cut)
+    # look ahead a little so the dip lands before the first syllable, then smooth
+    need = np.minimum(need, np.concatenate([need[3:], np.zeros(3)]))
+    ka, kr = np.exp(-frame / attack), np.exp(-frame / release)
+    out = np.zeros_like(need)
+    e = 0.0
+    for i, x in enumerate(need):
+        k = ka if x < e else kr
+        e = x + (e - x) * k
+        out[i] = e
+    gain = db(out)
+    return np.interp(np.arange(len(voice)) / hop, np.arange(len(gain)), gain, right=1.0)
+
+
+def voice_to_background(voice, background, lines, win=0.05):
+    """Per line: speech energy over everything-else energy (dB) on the frames where the
+    voice is actually sounding. 12+ dB keeps narration clearly on top."""
+    out = {}
+    hop = n_of(win)
+    for ln in lines:
+        a, b = n_of(ln["start"]), n_of(ln["end"])
+        vr, gr = frame_rms(voice[a:b], hop), frame_rms(background[a:b], hop)
+        act = vr > vr.max() * db(-20)
+        out[ln["id"]] = float(10 * np.log10((vr[act] ** 2).sum() / (gr[act] ** 2).sum())) if act.any() else 99.0
+    return out
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--report", action="store_true")
@@ -223,7 +265,7 @@ def main():
         else:
             segs.append({"name": name, "start": s["start"], "end": s["end"], "scene_ids": [s["id"]]})
     levels = {"farm": -28, "farm2": -28, "sneaky": -29, "brains": -30, "jesus": -27,
-              "tension": -27, "riot": -25, "aftermath": -27}
+              "tension": -27, "riot": -25, "aftermath": -27, "dawn": -28}
     bed_bus, lead_bus = np.zeros((N, 2)), np.zeros((N, 2))
     for i, sg in enumerate(segs):
         if sg["name"] is None:
@@ -244,7 +286,8 @@ def main():
         lead = stems["lead"][:n]
         mix_rms = rms_db(bed + lead)
         g = db(levels[sg["name"]] - mix_rms)
-        fin = 0.02 if by_id[sg["scene_ids"][0]].get("musicCut") else 0.4
+        first = by_id[sg["scene_ids"][0]]
+        fin = 0.02 if first.get("musicCut") else first.get("musicFadeIn", 0.4)
         add_at(bed_bus, fade(bed * g, fin, tail + (0.0 if hard else 0.3)), n_of(sg["start"]))
         add_at(lead_bus, fade(lead * g, fin, tail + (0.0 if hard else 0.3)), n_of(sg["start"]))
 
@@ -252,9 +295,10 @@ def main():
     bed_bus *= db(-8 * duck)[:, None]
     lead_bus *= db(-17 * duck)[:, None]
 
-    # sfx + ambience
+    # sfx + ambience (separate buses: ambience is a bed of noise and ducks harder)
     print("sfx ...", flush=True)
     sfx_bus = np.zeros((N, 2))
+    amb_bus = np.zeros((N, 2))
     allcues = []
     for sc in script["scenes"]:
         allcues += sc.get("cues", [])
@@ -273,9 +317,14 @@ def main():
             t1 = resolve(a["to"], s["start"], s["end"], cues)
             y = SFX[a["sfx"]](np.random.default_rng(7), dur=t1 - t0 + 0.3)
             y = y * db(a["gain"] - rms_db(y))
-            add_at(sfx_bus, fade(y, a.get("fade", 1.0), 0.35), n_of(t0))
+            add_at(amb_bus, fade(y, a.get("fade", 1.0), 0.35), n_of(t0))
+    amb_bus *= db(-8 * duck)[:, None]
+    sfx_bus *= db(-3 * duck)[:, None]
 
-    master = stereo(vbus) * np.sqrt(2) + bed_bus + lead_bus + sfx_bus
+    voice_st = stereo(vbus) * np.sqrt(2)
+    background = bed_bus + lead_bus + sfx_bus + amb_bus
+    background *= dialogue_guard(vbus, background.mean(axis=1))[:, None]
+    master = voice_st + background
     peak = np.abs(master).max()
     if peak > 0.98:
         master = np.tanh(master / peak * 1.2) * 0.98 / np.tanh(1.2)
@@ -307,11 +356,16 @@ def main():
     print("wrote", js.relative_to(ROOT), "and soundtrack")
 
     if args.report:
+        vbr = voice_to_background(vbus, background.mean(axis=1), lines)
         for s in scenes:
             print(f"\n[{s['id']}] {s['start']:7.2f} - {s['end']:7.2f}  ({s['end'] - s['start']:.2f}s)")
             for ln in lines:
                 if ln["scene"] == s["id"]:
-                    print(f"   {ln['start']:7.2f} {ln['end'] - ln['start']:5.2f}s {ln['who']:9s} {ln['text']}")
+                    v = vbr[ln["id"]]
+                    flag = "!!" if v < 12 else "  "
+                    print(f" {flag}{ln['start']:7.2f} {ln['end'] - ln['start']:5.2f}s {v:5.1f}dB {ln['who']:9s} {ln['text']}")
+        worst = sorted(vbr.items(), key=lambda kv: kv[1])[:5]
+        print("\nvoice-to-background (dB, 12+ is comfortable); lowest:", ", ".join(f"{k} {v:.1f}" for k, v in worst))
 
 
 if __name__ == "__main__":

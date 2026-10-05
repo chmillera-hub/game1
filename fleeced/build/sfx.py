@@ -583,3 +583,51 @@ def _boom(rng):
     y = sine(80 * np.exp(-t / 0.6) + 32, n) * expdec(n, 1.1, 0.01)
     y += lowpass(brown(n, rng), 120) * expdec(n, 0.8, 0.01) * 0.5
     return reverb(y, 0.4, 3.0, tone=1200)
+
+
+@sfx("birds")
+def _birds(rng, dur=12.0):
+    """Morning birdsong: a few birds, each with its own little phrase, repeating loosely."""
+    n = n_of(dur)
+    out = np.zeros((n, 2))
+    for b in range(4):
+        base = rng.uniform(2600, 4200)
+        p = rng.uniform(-0.8, 0.8)
+        phrase = []
+        for k in range(rng.integers(2, 5)):
+            d = rng.uniform(0.05, 0.14)
+            nn = n_of(d)
+            tt = t_of(nn)
+            f = base * (1 + rng.uniform(-0.25, 0.25)) + rng.uniform(-900, 900) * tt / d
+            f = f * (1 + 0.04 * np.sin(2 * np.pi * rng.uniform(25, 45) * tt))
+            phrase.append((sine(f, nn) * np.hanning(nn) * rng.uniform(0.5, 1.0), rng.uniform(0.03, 0.09)))
+        t = rng.uniform(0, 2.0)
+        while t < dur:
+            tt = t
+            for y, gap in phrase:
+                add_at(out, pan(y * 0.6, p), n_of(tt))
+                tt += len(y) / SR + gap
+            t += rng.uniform(1.4, 3.2)
+    return reverb(out, 0.25, 1.4, tone=6000)
+
+
+@sfx("poof")
+def _poof(rng):
+    n = n_of(0.7)
+    t = t_of(n)
+    y = lowpass(white(n, rng), 1800) * expdec(n, 0.12, 0.004) * 0.8
+    y += sine(260 + 500 * np.exp(-t / 0.05), n) * expdec(n, 0.06, 0.002) * 0.5
+    return reverb(y, 0.25, 0.8)
+
+
+@sfx("chaching")
+def _chaching(rng):
+    n = n_of(1.4)
+    y = np.zeros(n)
+    for i in range(3):
+        add_at(y, coin_hit(rng, rng.uniform(2200, 2600), 0.35) * 0.5, n_of(0.02 + i * 0.05))
+    drawer = bandpass(white(n_of(0.14), rng), 300, 2500) * adsr(n_of(0.14), 0.01, 0.04, 0.5, 0.06)
+    add_at(y, drawer * 0.6, n_of(0.2))
+    bell = (sine(1568, n_of(1.0)) + 0.5 * sine(3136, n_of(1.0)) + 0.25 * sine(4704, n_of(1.0))) * expdec(n_of(1.0), 0.35, 0.002)
+    add_at(y, bell * 0.55, n_of(0.32))
+    return reverb(y, 0.2, 0.9)

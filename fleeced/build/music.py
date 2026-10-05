@@ -178,6 +178,7 @@ CHORDS = {
     "Em": [40, 55, 59, 64, 67], "Am": [45, 57, 60, 64, 69], "F": [41, 57, 60, 65, 69],
     "Dm": [38, 57, 62, 65, 69], "Bb": [34, 58, 62, 65, 70], "A": [33, 57, 61, 64, 69],
     "Bm": [35, 54, 59, 62, 66], "A/C#": [37, 57, 61, 64, 69],
+    "D/F#": [42, 57, 62, 66, 69],
 }
 
 
@@ -349,6 +350,33 @@ def aftermath(dur, rng):
     return {"bed": reverb(bed.buf, 0.3, 3.0), "lead": reverb(lead.buf, 0.45, 3.5)}
 
 
+def dawn(dur, rng, bpm=84):
+    """The morning after: the farm tune slowed into something warm and hopeful."""
+    beat = 60 / bpm
+    bed, lead = Stem(dur), Stem(dur)
+    prog = ["G", "D/F#", "Em", "C", "G", "D/F#", "C", "D"]
+    roll = [1, 2, 3, 4, 3, 2]
+    melody = [(0, 71, 1.5), (1.5, 74, 0.5), (2, 79, 2), (4, 78, 1.5), (5.5, 74, 0.5), (6, 76, 2),
+              (8, 76, 1.5), (9.5, 74, 0.5), (10, 71, 2), (12, 72, 1.5), (13.5, 71, 0.5), (14, 69, 2),
+              (16, 71, 1.5), (17.5, 74, 0.5), (18, 79, 2), (20, 78, 1.5), (21.5, 76, 0.5), (22, 74, 2),
+              (24, 72, 1.5), (25.5, 76, 0.5), (26, 74, 2), (28, 79, 4)]
+    t0 = 0.0
+    bar = 0
+    while t0 < dur:
+        ch = CHORDS[prog[bar % 8]]
+        for i, idx in enumerate(roll):
+            bed.put(t0 + i * beat * 4 / 6, pluck(ch[idx], 2.2, 0.4, 0.997, var=i % 3), p=-0.2 + 0.08 * i, g=0.45)
+        root = ch[0] + 12 if ch[0] < 40 else ch[0]
+        bed.put(t0, bass(root, 1.6), g=0.7)
+        bed.put(t0, strings(ch[2], 4 * beat * 1.05, attack=0.9, cutoff=1200, var=bar % 2), p=0.25, g=0.5)
+        if bar % 8 == 0 and t0 > 0.5:
+            for b, m, d in melody:
+                lead.put(t0 + b * beat, whistle(m, d * beat * 0.95), p=0.1, g=0.75)
+        bar += 1
+        t0 += 4 * beat
+    return {"bed": reverb(bed.buf, 0.3, 2.2), "lead": reverb(lead.buf, 0.35, 2.4)}
+
+
 CUES = {
     "farm": farm,
     "farm2": lambda d, r: farm(d, r, bpm=126, claps=True),
@@ -358,4 +386,5 @@ CUES = {
     "tension": tension,
     "riot": riot,
     "aftermath": aftermath,
+    "dawn": dawn,
 }

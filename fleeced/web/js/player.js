@@ -76,9 +76,9 @@
 
   // chapters
   const CHAPTERS = [
-    ['farm', 'The farm'], ['smile', 'Locked out'], ['herd', 'Self-herding'], ['brains', 'Cognitive ability'],
+    ['farm', 'The farm'], ['tokens', 'The token deal'], ['smile', 'Locked out'], ['herd', 'Self-herding'], ['brains', 'Cognitive ability'],
     ['annoying', 'Getting rid of tokens'], ['jesus', 'The Jesus sheep'], ['pharisees', 'The Pharisees'],
-    ['riot', 'The riot'], ['cross', 'The cross'], ['quiet', 'Consequences'],
+    ['riot', 'The riot'], ['cross', 'The cross'], ['quiet', 'Consequences'], ['fix', 'One way to fix it'],
   ];
   const starts = Object.fromEntries(TL.scenes.map(s => [s.id, s.start]));
   const chapters = CHAPTERS.map(([id, name]) => ({ id, name, t: starts[id] }));
