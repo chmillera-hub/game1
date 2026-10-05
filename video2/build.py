@@ -24,11 +24,11 @@ canvas, R, P, E, glow, stars, person, finish, font = (base.canvas, base.R, base.
 
 SCENES = [
     ("party", [
-        "Marcus is thirty-one, standing in a coworker's kitchen, holding a drink he isn't drinking.",
+        "A man, thirty-one, stands in a coworker's kitchen, holding a drink he isn't drinking.",
         "Around him, the conversation drifts the way these conversations do. The weather. The game. A show everyone has already seen.",
     ]),
     ("say", [
-        "Then Marcus does something strange. He says a true thing.",
+        "Then he does something strange. He says a true thing.",
         "Honestly, he says, what I want is a family. A partner. A place to belong.",
     ]),
     ("silence", [
@@ -36,7 +36,7 @@ SCENES = [
         "Someone says, you'll find someone. Someone says, have you tried the apps. Someone remembers they need a refill.",
     ]),
     ("why", [
-        "Here is what Marcus can't see.",
+        "Here is what he can't see.",
         "Behind every polite face is the same hunger. One woman is thinking about her empty apartment. A man by the fridge hasn't had dinner with anyone in months.",
         "They aren't rejecting him. They just have nowhere to put it. Nobody ever showed them how to hold a want like that, out loud, in a room.",
     ]),
@@ -51,7 +51,7 @@ SCENES = [
         "We replaced the village with the mall, and now we wonder why nobody is home.",
     ]),
     ("walk", [
-        "Marcus walks home that night, wondering if he's the problem.",
+        "He walks home that night, wondering if he's the problem.",
         "He isn't. He's the error message. Loud, inconvenient, and pointing at something real.",
     ]),
     ("text", [
@@ -59,7 +59,7 @@ SCENES = [
         "I couldn't say it in there, she writes. But, me too.",
     ]),
     ("table", [
-        "So Marcus builds the container himself. A long table in his backyard. Sunday dinner.",
+        "So he builds the container himself. A long table in his backyard. Sunday dinner.",
         "One rule: say one true thing. The first week, three people come.",
         "By autumn, the neighbors are lending chairs.",
     ]),
@@ -212,7 +212,7 @@ def scene_text():
     R(d, 640, 60, 640, 960, (30, 32, 44), r=70)  # phone
     R(d, 664, 90, 592, 900, (240, 242, 248), r=50)
     R(d, 664, 90, 592, 110, (230, 232, 240), r=50)
-    d.text((780 * S, 118 * S), "Priya", font=font(44 * S), fill=(40, 40, 60))
+    d.text((780 * S, 118 * S), "Coworker", font=font(44 * S), fill=(40, 40, 60))
     bubble(d, 690, 300, 500, 150, "I couldn't say it\nin there.", size=36, fill=(210, 222, 250, 255), ink=(30, 30, 50))
     bubble(d, 740, 500, 480, 100, "...but me too.", size=40, fill=(40, 130, 150, 255), ink=(255, 255, 255))
     glow(img, 960, 540, 520, (150, 200, 255), 0.18)

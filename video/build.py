@@ -26,19 +26,19 @@ SCENES = [
         "It sounds like a community. It isn't.",
     ]),
     ("ruth", [
-        "At the end of the street, behind the window with the blue light, lives Ruth.",
+        "At the end of the street, behind the window with the blue light, lives a widow.",
         "Seventy-four. Her husband died two winters ago.",
         "Last week, the only person who said her name out loud was the pharmacist.",
     ]),
     ("wave", [
-        "Ruth waves at her neighbor. He waves back, one hand still on the mower.",
+        "She waves at her neighbor. He waves back, one hand still on the mower.",
         "Hot one today, he says. Supposed to rain Thursday, she says.",
         "That is the whole conversation. They have had it forty times.",
     ]),
     ("tv", [
         "Inside his house, the television is on.",
-        "A man in a suit is furious about people Dale will never meet, in a city Dale will never visit.",
-        "Dale knows the anchor's face better than he knows the name of the woman next door.",
+        "A man in a suit is furious about people he will never meet, in a city he will never visit.",
+        "He knows the anchor's face better than he knows the name of the woman next door.",
     ]),
     ("edges", [
         "Here is the strange part. Nobody chose this.",
@@ -51,13 +51,13 @@ SCENES = [
         "We file it under private, something to endure quietly, while we give our hours to things that will never know our names.",
     ]),
     ("quiet", [
-        "Then, one Saturday, Dale's mower runs out of gas.",
+        "Then, one Saturday, his mower runs out of gas.",
         "Silence. And in that silence, for the first time in eleven years, he sees the blue light.",
     ]),
     ("door", [
         "He walks over. He has nothing clever to say.",
         "I have lived next to you for eleven years, he tells her, and I don't know anything about you.",
-        "Ruth is quiet for a moment. Then she opens the door wider. Would you like some coffee?",
+        "She is quiet for a moment. Then she opens the door wider. Would you like some coffee?",
     ]),
     ("end", [
         "Suffering like this doesn't need a solution. It needs a knock on the door.",
