@@ -1,0 +1,343 @@
+{
+ "scenes": [
+  {
+   "id": "title",
+   "start": 0.0,
+   "end": 3.724467120181406,
+   "sents": [
+    {
+     "who": "n",
+     "text": "The Parasite Problem.",
+     "label": null,
+     "tag": "n_title",
+     "start": 1.25,
+     "end": 2.724467120181406,
+     "file": "audio/00_title.wav"
+    }
+   ]
+  },
+  {
+   "id": "couch",
+   "start": 3.724467120181406,
+   "end": 26.858185941043086,
+   "sents": [
+    {
+     "who": "n",
+     "text": "So I was watching some cutscenes from Baldur's Gate 3, the video game, and an idea immediately crawled into my head.",
+     "label": null,
+     "tag": "c1",
+     "start": 4.674467120181406,
+     "end": 12.534421768707483,
+     "file": "audio/01_couch.wav"
+    },
+    {
+     "who": "n",
+     "text": "Picture some creepy alien putting a parasite into a couple of people's brains. A little tadpole, meant to slowly transform them into more copies of the alien. More mind flayers, or something like that.",
+     "label": null,
+     "tag": "c2",
+     "start": 13.034421768707483,
+     "end": 26.258185941043084,
+     "file": "audio/02_couch.wav"
+    }
+   ]
+  },
+  {
+   "id": "ship",
+   "start": 26.858185941043086,
+   "end": 44.574943310657595,
+   "sents": [
+    {
+     "who": "m",
+     "text": "Hold still. Do not struggle. You are going to become... more.",
+     "label": null,
+     "tag": "m1",
+     "start": 27.808185941043085,
+     "end": 32.65925170068027,
+     "file": "audio/03_ship.wav"
+    },
+    {
+     "who": "silence",
+     "text": "",
+     "tag": "implant",
+     "start": 32.65925170068027,
+     "end": 34.259251700680274,
+     "file": null
+    },
+    {
+     "who": "n",
+     "text": "Nobody asked. Nobody consented. Their bodies, their minds, their boundaries, all violated, by something creepy as heck.",
+     "label": null,
+     "tag": "s1",
+     "start": 34.55925170068027,
+     "end": 43.97494331065759,
+     "file": "audio/04_ship.wav"
+    }
+   ]
+  },
+  {
+   "id": "wake",
+   "start": 44.574943310657595,
+   "end": 66.67714285714285,
+   "sents": [
+    {
+     "who": "n",
+     "text": "Later, two survivors wake up in the wreckage. A knight and a ranger. Total strangers. And each one knows the other is carrying a monster in their skull.",
+     "label": null,
+     "tag": "w1",
+     "start": 45.5249433106576,
+     "end": 55.904263038548756,
+     "file": "audio/05_wake.wav"
+    },
+    {
+     "who": "r",
+     "text": "You've got one of those things in your head too. Which means you'll turn into one of them.",
+     "label": null,
+     "tag": "r1",
+     "start": 56.50426303854876,
+     "end": 60.94689342403628,
+     "file": "audio/06_wake.wav"
+    },
+    {
+     "who": "k",
+     "text": "Whoa. Hold on. Let's talk about this.",
+     "label": null,
+     "tag": "k1",
+     "start": 61.34689342403628,
+     "end": 63.43424036281179,
+     "file": "audio/07_wake.wav"
+    },
+    {
+     "who": "r",
+     "text": "Sorry. Better I end this now.",
+     "label": null,
+     "tag": "r2",
+     "start": 63.73424036281179,
+     "end": 65.67714285714285,
+     "file": "audio/08_wake.wav"
+    },
+    {
+     "who": "silence",
+     "text": "",
+     "tag": "leap",
+     "start": 65.67714285714285,
+     "end": 66.47714285714285,
+     "file": null
+    }
+   ]
+  },
+  {
+   "id": "freeze",
+   "start": 66.67714285714285,
+   "end": 87.86780045351472,
+   "sents": [
+    {
+     "who": "silence",
+     "text": "",
+     "tag": "stop",
+     "start": 66.67714285714285,
+     "end": 67.67714285714285,
+     "file": null
+    },
+    {
+     "who": "p",
+     "text": "No. Not this one. This one is ours.",
+     "label": null,
+     "tag": "p1",
+     "start": 67.77714285714285,
+     "end": 70.09696145124715,
+     "file": "audio/09_freeze.wav"
+    },
+    {
+     "who": "n",
+     "text": "And the parasite stops her. Mid swing. Her arm just won't move.",
+     "label": null,
+     "tag": "f1",
+     "start": 70.69696145124715,
+     "end": 75.4222222222222,
+     "file": "audio/10_freeze.wav"
+    },
+    {
+     "who": "n",
+     "text": "So now the vibe is: this parasite prevented a death. But for a selfish-as-heck reason. It doesn't want to kill another parasite. It wants more mind flayers.",
+     "label": null,
+     "tag": "f2",
+     "start": 75.9222222222222,
+     "end": 87.06780045351472,
+     "file": "audio/11_freeze.wav"
+    }
+   ]
+  },
+  {
+   "id": "boost",
+   "start": 87.86780045351472,
+   "end": 111.940566893424,
+   "sents": [
+    {
+     "who": "n",
+     "text": "And here's the other side effect. The parasite doesn't want to die either. It wants to incubate, to hatch, to transform its host. So it makes them stronger.",
+     "label": null,
+     "tag": "b1",
+     "start": 88.81780045351472,
+     "end": 99.61507936507934,
+     "file": "audio/12_boost.wav"
+    },
+    {
+     "who": "p",
+     "text": "Faster. Stronger. Keep the host alive. We need you ripe.",
+     "label": null,
+     "tag": "p2",
+     "start": 100.11507936507934,
+     "end": 103.09408163265303,
+     "file": "audio/13_boost.wav"
+    },
+    {
+     "who": "n",
+     "text": "Suddenly the two of them are fighting side by side. They feel stronger. And they feel less violent toward each other.",
+     "label": null,
+     "tag": "b2",
+     "start": 103.59408163265303,
+     "end": 111.14056689342401,
+     "file": "audio/14_boost.wav"
+    }
+   ]
+  },
+  {
+   "id": "scales",
+   "start": 111.940566893424,
+   "end": 141.26208616780045,
+   "sents": [
+    {
+     "who": "n",
+     "text": "Without the parasite, and without the creepy act of that alien, these two might have died. In combat, or by killing each other. They survived because of something disgusting.",
+     "label": null,
+     "tag": "q1",
+     "start": 112.89056689342401,
+     "end": 124.17546485260769,
+     "file": "audio/15_scales.wav"
+    },
+    {
+     "who": "n",
+     "text": "So, was the alien's act justified, in a pro-human framework?",
+     "label": null,
+     "tag": "q2",
+     "start": 124.87546485260769,
+     "end": 129.4846258503401,
+     "file": "audio/16_scales.wav"
+    },
+    {
+     "who": "n",
+     "text": "I'd say no. Forcing a parasite into someone by violating their boundaries is still a horrible act, even if you can recognize the benefits afterward.",
+     "label": null,
+     "tag": "q3",
+     "start": 130.38462585034011,
+     "end": 140.46208616780044,
+     "file": "audio/17_scales.wav"
+    }
+   ]
+  },
+  {
+   "id": "camp",
+   "start": 141.26208616780045,
+   "end": 157.32795918367347,
+   "sents": [
+    {
+     "who": "n",
+     "text": "So from the characters' point of view, the plan becomes: get these things out of our heads, while still benefiting from them in the meantime.",
+     "label": null,
+     "tag": "a1",
+     "start": 142.21208616780044,
+     "end": 150.68736961451245,
+     "file": "audio/18_camp.wav"
+    },
+    {
+     "who": "k",
+     "text": "We find a cure. We get these things out.",
+     "label": null,
+     "tag": "k2",
+     "start": 151.28736961451244,
+     "end": 153.36238095238093,
+     "file": "audio/19_camp.wav"
+    },
+    {
+     "who": "r",
+     "text": "Agreed. But maybe not before the next fight.",
+     "label": null,
+     "tag": "r3",
+     "start": 153.86238095238093,
+     "end": 156.52795918367346,
+     "file": "audio/20_camp.wav"
+    }
+   ]
+  },
+  {
+   "id": "money",
+   "start": 157.32795918367347,
+   "end": 183.81138321995462,
+   "sents": [
+    {
+     "who": "n",
+     "text": "And that reminds me of the money system.",
+     "label": null,
+     "tag": "o1",
+     "start": 158.27795918367346,
+     "end": 160.8669841269841,
+     "file": "audio/21_money.wav"
+    },
+    {
+     "who": "n",
+     "text": "You live inside money, and capitalism. So you're benefiting from the labor of other human beings, who are forced to work under penalty of starvation, or homelessness.",
+     "label": null,
+     "tag": "o2",
+     "start": 161.4669841269841,
+     "end": 172.22943310657593,
+     "file": "audio/22_money.wav"
+    },
+    {
+     "who": "n",
+     "text": "I'm living in an apartment that was probably built on something close to slave labor. Eating food that was probably grown, or shipped, by that same forced labor.",
+     "label": null,
+     "tag": "o3",
+     "start": 172.82943310657592,
+     "end": 183.0113832199546,
+     "file": "audio/23_money.wav"
+    }
+   ]
+  },
+  {
+   "id": "end",
+   "start": 183.81138321995462,
+   "end": 213.58428571428567,
+   "sents": [
+    {
+     "who": "n",
+     "text": "So, like the knight and the ranger, I'm carrying a parasite I never agreed to. It keeps me fed. It keeps a roof over my head. And it is still a violation.",
+     "label": null,
+     "tag": "e1",
+     "start": 184.7613832199546,
+     "end": 195.67476190476185,
+     "file": "audio/24_end.wav"
+    },
+    {
+     "who": "n",
+     "text": "And I'm trying to figure out a way to detach this parasite of money and coercion, before the whole world dysregulates from all of that forced labor.",
+     "label": null,
+     "tag": "e2",
+     "start": 196.27476190476185,
+     "end": 205.6788435374149,
+     "file": "audio/25_end.wav"
+    },
+    {
+     "who": "n",
+     "text": "The parasite kept them alive. It still has to come out.",
+     "label": null,
+     "tag": "e3",
+     "start": 206.5788435374149,
+     "end": 210.58428571428567,
+     "file": "audio/26_end.wav"
+    }
+   ]
+  }
+ ],
+ "total": 213.58428571428567,
+ "sr": 22050
+}
