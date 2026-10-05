@@ -139,7 +139,7 @@
       "lines": [
         { "id": "n_itslike", "who": "narrator", "text": "And if you are the farmer,", "gap": 0 },
         { "id": "n_orsheep", "who": "narrator", "text": "or even some of the sheep,", "gap": 0.2,
-          "cues": [ { "id": "richStep", "sfx": "bling", "t": 0.35, "gain": -11 } ] },
+          "cues": [ { "id": "richStep", "t": 0.35 } ] },
         { "id": "n_annoying", "who": "narrator", "text": "and some of the sheep are being very annoying, and you really don't like them,", "gap": 0.35,
           "cues": [ { "id": "annoyIn", "sfx": "bleat_loud", "t": 0.5, "gain": -13 },
                     { "id": "annoyBaa2", "sfx": "bleat_loud", "t": 2.3, "gain": -14 } ] },
@@ -181,7 +181,7 @@
       "id": "pharisees", "lead": 0.3, "hold": 0.5, "music": "tension",
       "lines": [
         { "id": "n_wealthier", "who": "narrator", "text": "But then some of the wealthier sheep, like the Pharisees,", "gap": 0,
-          "cues": [ { "id": "pharIn", "sfx": "bling", "t": 0.55, "gain": -10 } ] },
+          "cues": [ { "id": "pharIn", "t": 0.55 } ] },
         { "id": "n_demanding", "who": "narrator", "text": "are demanding the farmer do something to get rid of that Jesus sheep.", "gap": 0.15,
           "cues": [ { "id": "wake", "sfx": "startle", "t": -0.2, "from": "end", "gain": -10 } ] },
         { "id": "p_dosomething", "who": "phar1", "text": "Farmer! Do something about that Jesus sheep!", "gap": 0.3 },

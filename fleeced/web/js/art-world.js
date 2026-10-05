@@ -754,28 +754,95 @@
     ctx.strokeStyle = dark; ctx.lineWidth = 3;
     for (let yy = -100; yy < 0; yy += 30) { ctx.beginPath(); ctx.moveTo(-w / 2 + 6, yy); ctx.lineTo(w / 2 - 6, yy); ctx.stroke(); }
     rrect(ctx, -w / 2 - 12, -146, w + 24, 22, 8); ctx.fillStyle = C('#c8955a'); ctx.fill(); ctx.strokeStyle = outline; ctx.lineWidth = 4; ctx.stroke();
-    const goods = [[-180, 'GOLD CHAIN', '50'], [0, 'WOOL SPA', '20'], [180, 'FANCY HAY', '8']];
+    const goods = [[-180, 'GAME CONSOLE', '500'], [0, 'BOARD GAME', '40'], [180, 'FANCY HAY', '8']];
+    const sold = o.sold || [];
     for (const [gx, name, price] of goods) {
       ctx.save();
       ctx.translate(gx, -146);
-      if (name === 'GOLD CHAIN') {
-        ctx.strokeStyle = C('#f2b830'); ctx.lineWidth = 7; ctx.setLineDash([9, 5]);
-        ctx.beginPath(); ctx.ellipse(0, -40, 34, 30, 0, 0, Math.PI * 2); ctx.stroke(); ctx.setLineDash([]);
-        A.token(ctx, 0, -10, 16, 0.3 + Math.sin(t * 2) * 0.3);
-      } else if (name === 'WOOL SPA') {
-        rrect(ctx, -18, -76, 36, 70, 10); ctx.fillStyle = C('#9ad0f5'); ctx.fill(); ctx.strokeStyle = outline; ctx.lineWidth = 3.5; ctx.stroke();
-        rrect(ctx, -9, -92, 18, 18, 4); ctx.fillStyle = C('#e9e2d4'); ctx.fill(); ctx.stroke();
-        for (let i = 0; i < 3; i++) { F.circle(ctx, 20 + i * 8, -84 - i * 14 - ((t * 20) % 10), 5 + i); ctx.fillStyle = 'rgba(255,255,255,0.8)'; ctx.fill(); }
+      if (sold.includes(name)) {
+        // just the empty spot on the counter
+      } else if (name === 'GAME CONSOLE') {
+        A.console(ctx, -14, -4, 1);
+      } else if (name === 'BOARD GAME') {
+        A.boardGame(ctx, 0, -4, 1);
       } else {
         A.hayBale(ctx, 0, -6, 0.55);
         ctx.strokeStyle = C('#d6453a'); ctx.lineWidth = 6;
         ctx.beginPath(); ctx.moveTo(-20, -40); ctx.lineTo(20, -40); ctx.stroke();
       }
       ctx.restore();
-      rrect(ctx, gx - 66, -112, 132, 74, 10); ctx.fillStyle = '#fffdf6'; ctx.fill(); ctx.strokeStyle = outline; ctx.lineWidth = 3.5; ctx.stroke();
-      text(ctx, name, gx, -90, { size: 19, weight: 700, fill: '#2b1d16' });
-      A.token(ctx, gx - 22, -60, 12, 0);
-      text(ctx, price, gx + 12, -58, { size: 26, weight: 700, fill: '#b8412f' });
+      rrect(ctx, gx - 76, -112, 152, 74, 10); ctx.fillStyle = '#fffdf6'; ctx.fill(); ctx.strokeStyle = outline; ctx.lineWidth = 3.5; ctx.stroke();
+      text(ctx, name, gx, -90, { size: 18, weight: 700, fill: '#2b1d16' });
+      A.token(ctx, gx - 10 - price.length * 7, -60, 12, 0);
+      text(ctx, price, gx + 8, -58, { size: 26, weight: 700, fill: '#b8412f' });
+      if (sold.includes(name)) {
+        ctx.save();
+        ctx.translate(gx, -74);
+        ctx.rotate(-0.18);
+        rrect(ctx, -56, -18, 112, 36, 6); ctx.fillStyle = '#d6453a'; ctx.fill(); ctx.strokeStyle = outline; ctx.lineWidth = 3; ctx.stroke();
+        text(ctx, 'SOLD', 0, 2, { size: 26, font: FONT_TITLE, weight: 400, fill: '#fff', ls: 2 });
+        ctx.restore();
+      }
+    }
+    ctx.restore();
+  };
+
+  /** a modern game console standing on end, with its controller in front */
+  A.console = function (ctx, x, y, s = 1) {
+    const outline = C(OUT);
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.scale(s, s);
+    // white side shells around a black core
+    ctx.beginPath();
+    ctx.moveTo(-26, 0); ctx.lineTo(-30, -96); ctx.quadraticCurveTo(-22, -104, -12, -98); ctx.lineTo(-10, 0); ctx.closePath();
+    ctx.fillStyle = C('#f4f4f6'); ctx.fill(); ctx.strokeStyle = outline; ctx.lineWidth = 3.5; ctx.stroke();
+    rrect(ctx, -12, -94, 20, 94, 4); ctx.fillStyle = C('#1c1f26'); ctx.fill(); ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(26, 0); ctx.lineTo(30, -96); ctx.quadraticCurveTo(22, -104, 10, -98); ctx.lineTo(8, 0); ctx.closePath();
+    ctx.fillStyle = C('#f4f4f6'); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#59b7ff';
+    ctx.fillRect(-3, -86, 4, 14);
+    // controller
+    ctx.save();
+    ctx.translate(36, -6);
+    ctx.beginPath();
+    ctx.moveTo(-26, -10);
+    ctx.bezierCurveTo(-30, -24, 30, -24, 26, -10);
+    ctx.bezierCurveTo(34, 6, 22, 14, 14, 4);
+    ctx.lineTo(-14, 4);
+    ctx.bezierCurveTo(-22, 14, -34, 6, -26, -10);
+    ctx.closePath();
+    ctx.fillStyle = C('#f4f4f6'); ctx.fill(); ctx.strokeStyle = outline; ctx.lineWidth = 3; ctx.stroke();
+    ctx.fillStyle = C('#1c1f26');
+    F.circle(ctx, -9, -4, 4); ctx.fill();
+    F.circle(ctx, 9, -4, 4); ctx.fill();
+    ctx.fillStyle = '#e0473a'; F.circle(ctx, 18, -13, 2.6); ctx.fill();
+    ctx.fillStyle = '#3fae5a'; F.circle(ctx, 22, -9, 2.6); ctx.fill();
+    ctx.restore();
+    ctx.restore();
+  };
+
+  /** a board game box with the board peeking out and a pair of dice */
+  A.boardGame = function (ctx, x, y, s = 1) {
+    const outline = C(OUT);
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.scale(s, s);
+    ctx.save();
+    ctx.rotate(-0.08);
+    rrect(ctx, -44, -58, 88, 58, 6); ctx.fillStyle = C('#3a6fd6'); ctx.fill(); ctx.strokeStyle = outline; ctx.lineWidth = 3.5; ctx.stroke();
+    const cols = ['#ffd166', '#e0473a', '#3fae5a', '#ffffff'];
+    for (let i = 0; i < 7; i++) { ctx.fillStyle = cols[i % 4]; ctx.fillRect(-36 + i * 10.5, -50, 9, 9); ctx.fillRect(-36 + i * 10.5, -17, 9, 9); }
+    for (let j = 0; j < 3; j++) { ctx.fillStyle = cols[(j + 1) % 4]; ctx.fillRect(-36, -39 + j * 7.5, 9, 6); ctx.fillRect(27, -39 + j * 7.5, 9, 6); }
+    ctx.restore();
+    for (const [dx, dy, r] of [[30, -10, 0.3], [46, -4, -0.2]]) {
+      ctx.save();
+      ctx.translate(dx, dy);
+      ctx.rotate(r);
+      rrect(ctx, -9, -9, 18, 18, 4); ctx.fillStyle = '#fffdf6'; ctx.fill(); ctx.strokeStyle = outline; ctx.lineWidth = 2.5; ctx.stroke();
+      ctx.fillStyle = '#2b1d16'; F.circle(ctx, -4, -4, 2); ctx.fill(); F.circle(ctx, 4, 4, 2); ctx.fill();
+      ctx.restore();
     }
     ctx.restore();
   };

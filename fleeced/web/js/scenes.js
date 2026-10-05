@@ -432,11 +432,6 @@
       ]);
       A.farmSet(ctx, t, cam, pal, { jarTip: P(t, jar + 0.05, 0.3, E.in), jarFill: 1 - P(t, spill, 0.8, E.lin) * 0.8, porchShake: within(t, jar, jar + 0.45) ? 1 - (t - jar) / 0.45 : 0 });
       world(ctx, cam, () => {
-        // rich sheep
-        if (richK > 0) {
-          A.sheep(ctx, { x: 1290, y: porchY, s: 0.74 * richK, dir: 1, t, seed: 80, wool: '#fbf0d6', chain: true, mood: t > annoyIn + 0.3 && t < tNight ? 'angry' : 'smug', fluff: 1.08, blink: blink(t, 80) });
-          A.sheep(ctx, { x: 1665, y: G + 40, s: 0.78 * richK, dir: -1, t, seed: 81, wool: '#fbf0d6', chain: true, mood: t > annoyIn + 0.3 ? 'angry' : 'smug', fluff: 1.08, blink: blink(t, 81) });
-        }
         // farmer
         const remoteK = P(t, c('remoteOut') - 0.25, 0.3);
         let pose = A.POSE.hips;
@@ -450,6 +445,11 @@
         const pr = within(t, press - 0.08, press + 0.25) ? 1 : 0;
         A.farmer(ctx, { x: 1420, y: porchY, s: 0.95, t, pose, mood, prop: remoteK > 0.5 ? { r: 'remote' } : null, press: pr, blink: blink(t, 99), look: { x: -1, y: 0.2 } });
         if (within(t, c('remoteOut'), c('remoteOut') + 0.8)) A.sparkle(ctx, 1420 + 112, porchY - 260, 1.1, 1 - P(t, c('remoteOut'), 0.8, E.lin), t * 4);
+        // rich sheep (drawn after the farmer so their balances stay readable)
+        if (richK > 0) {
+          A.sheep(ctx, { x: 1290, y: porchY, s: 0.74 * richK, dir: 1, t, seed: 80, wool: '#fbf0d6', badge: richK > 0.6 ? 488 : null, mood: t > annoyIn + 0.3 && t < tNight ? 'angry' : 'smug', fluff: 1.08, blink: blink(t, 80) });
+          A.sheep(ctx, { x: 1665, y: G + 40, s: 0.78 * richK, dir: -1, t, seed: 81, wool: '#fbf0d6', badge: richK > 0.6 ? 531 : null, mood: t > annoyIn + 0.3 ? 'angry' : 'smug', fluff: 1.08, blink: blink(t, 81) });
+        }
         // scruffy sheep
         if (t > annoyIn - 0.6) {
           let x = lerp(500, 1080, P(t, annoyIn - 0.6, 0.6, E.out));
@@ -510,7 +510,7 @@
     const cam = camPath(t, [[tWash, { x: 1460, y: 600, z: 1.75 }], [sc.end, { x: 1440, y: 590, z: 1.85 }, E.sine]]);
     A.farmSet(ctx, t, cam, pal, { jarFill: 0.2, jarTip: 0 });
     world(ctx, cam, () => {
-      A.sheep(ctx, { x: 1240, y: porchY + 10, s: 0.74, dir: 1, t, seed: 80, wool: '#fbf0d6', chain: true, mood: 'smug', fluff: 1.08, headTilt: Math.sin(t * 5) * 0.05 * (t > s('n_alldid') ? 1 : 0), blink: blink(t, 80) });
+      A.sheep(ctx, { x: 1240, y: porchY + 10, s: 0.74, dir: 1, t, seed: 80, wool: '#fbf0d6', badge: 488, mood: 'smug', fluff: 1.08, headTilt: Math.sin(t * 5) * 0.05 * (t > s('n_alldid') ? 1 : 0), blink: blink(t, 80) });
       const washing = t < s('n_alldid') - 0.1;
       let pose;
       if (washing) {
@@ -587,7 +587,9 @@
   };
 
   // ================================================================ PHARISEES
-  const PHAR = { wool: '#fbefd0', chain: true, fluff: 1.16 };
+  // Pharisee sheep: no jewelry, the wealth is all in the account (hundreds of tokens vs. the poor sheep's 0)
+  const PHAR = { wool: '#fbefd0', fluff: 1.16 };
+  const PHAR_BAL = [503, 547, 612];
   SC.pharisees = (ctx, t, sc) => {
     const tField = s('n_lessmoney') - 0.2, tClose = s('p_gone') - 0.15;
     const pin = c('pharIn'), wake = c('wake');
@@ -608,8 +610,7 @@
           const lead = i === 2;
           const tk = lead ? talk('phar1', t) : 0;
           const tap = within(t, s('n_demanding') + 0.5, wake) ? Math.max(0, Math.sin(t * 9 + i)) * 0.7 : 0;
-          A.sheep(ctx, Object.assign({ x, y: G + 105 - i * 6, s: 0.84, dir: 1, t, seed: 110 + i, walk: k < 0.98 ? x * 0.04 : null, mood: tk > 0.02 ? 'angry' : 'smug', talk: tk, headTilt: -0.12, stomp: tap, blink: blink(t, 110 + i) }, PHAR));
-          if (k > 0.2 && k < 0.9) A.sparkle(ctx, x + 60, G - 30, 0.5, Math.sin(t * 6 + i) * 0.5 + 0.5, t);
+          A.sheep(ctx, Object.assign({ x, y: G + 105 - i * 6, s: 0.84, dir: 1, t, seed: 110 + i, walk: k < 0.98 ? x * 0.04 : null, mood: tk > 0.02 ? 'angry' : 'smug', talk: tk, headTilt: -0.12, stomp: tap, blink: blink(t, 110 + i), badge: PHAR_BAL[i] }, PHAR));
         });
         A.label(ctx, 'PHARISEE SHEEP', 1060, 470, 1060, G - 110, P(t, s('n_wealthier') + 1.4, 0.45, E.lin) * (1 - P(t, s('p_dosomething') - 0.3, 0.3)));
       });
@@ -624,11 +625,9 @@
       world(ctx, cam, () => {
         // Jesus sheep in the background, glowing
         A.sheep(ctx, { x: 330, y: G + 40, s: 0.6, dir: 1, t, seed: 7, wool: '#ffffff', mood: 'kind', halo: 1 });
-        // pile of tokens
-        for (let i = 0; i < 26; i++) A.token(ctx, 880 + (hash(i) - 0.5) * 170, G + 120 - (i % 6) * 9 - hash(i * 3) * 18, 16, hash(i * 9) * 3);
         const ph = [[810, G + 105, 1], [960, G + 100, -1]];
         ph.forEach(([x, y, d], i) => {
-          A.sheep(ctx, Object.assign({ x, y, s: 0.86, dir: d, t, seed: 120 + i, mood: red > 0.2 ? 'angry' : 'smug', red: red * 0.75, headTilt: -0.12, blink: blink(t, 120 + i) }, PHAR));
+          A.sheep(ctx, Object.assign({ x, y, s: 0.86, dir: d, t, seed: 120 + i, mood: red > 0.2 ? 'angry' : 'smug', red: red * 0.75, headTilt: -0.12, blink: blink(t, 120 + i), badge: PHAR_BAL[2 - i] }, PHAR));
           if (t > c('steam') - 0.1) A.steam(ctx, x + d * 60, y - 190, t, P(t, c('steam') - 0.1, 0.3));
         });
         const poor = [[560, G + 112, 1], [660, G + 145, 1], [1170, G + 115, -1], [1270, G + 150, -1]];
@@ -650,7 +649,7 @@
     const cam = withShake({ x: 870, y: 790, z: 2.5 }, shake(t, tk * 8));
     A.farmSet(ctx, t, cam, pal, {});
     world(ctx, cam, () => {
-      A.sheep(ctx, Object.assign({ x: 810, y: G + 105, s: 0.86, dir: 1, t, seed: 120, mood: 'angry', red: 0.8, talk: tk, headTilt: -0.05 }, PHAR));
+      A.sheep(ctx, Object.assign({ x: 810, y: G + 105, s: 0.86, dir: 1, t, seed: 120, mood: 'angry', red: 0.8, talk: tk, headTilt: -0.05, badge: PHAR_BAL[2] }, PHAR));
       A.steam(ctx, 870, G - 85, t, 1);
     });
   };
@@ -718,7 +717,9 @@
         const tk = who ? talk(who, t) : 0;
         const yelling = within(t, c('angryBaas'), c('angryBaas') + 2.3) ? baa(t, c('angryBaas') + i * 0.35, 0.6) + baa(t, c('angryBaas') + 1.1 + i * 0.3, 0.6) : 0;
         const sv = stompVal(i);
-        A.sheep(ctx, Object.assign({ x, y: G + 110 - i * 5, s: 0.88, dir: 1, t, seed: 140 + i, mood: tk > 0.02 || yelling > 0.05 ? 'yell' : 'angry', talk: Math.max(tk, yelling), red: 0.5, stomp: sv, headTilt: -0.08 }, PHAR));
+        const flaunt = i === 2 ? win(t, s('p_ourtokens') + 0.9, e('p_ourtokens') + 0.4, 0.25) : 0;
+        A.sheep(ctx, Object.assign({ x, y: G + 110 - i * 5, s: 0.88, dir: 1, t, seed: 140 + i, mood: tk > 0.02 || yelling > 0.05 ? 'yell' : 'angry', talk: Math.max(tk, yelling), red: 0.5, stomp: sv, headTilt: -0.08,
+          badge: PHAR_BAL[i], badgeS: 1 + flaunt * (0.32 + 0.06 * Math.sin(t * 12)), badgeGlow: flaunt }, PHAR));
         for (const T of stomps) A.dust(ctx, x + 50, G + 110, (t - T - i * 0.04) / 0.6, 0.8);
         if (yelling > 0.3) A.bubble(ctx, x + 30, G - 150 - i * 26, 190, 120, { k: 1, burst: true, text: 'BAA!', size: 44, fill: '#ff8a5a' });
       });
@@ -837,7 +838,7 @@
         });
         const sleepers = [
           { seed: 313, from: 980, badge: 0, thin: true, wool: '#e2dccf', d: 0.6 },
-          { seed: 314, from: 1180, badge: 3, rich: true, d: 1.1 },
+          { seed: 314, from: 1180, badge: 540, rich: true, d: 1.1 },
           { seed: 315, from: 1380, badge: 0, punk: true, wool: '#d8d2c6', d: 1.6 },
         ];
         sleepers.forEach((h) => {
@@ -846,7 +847,7 @@
           const a = 1 - P(t, flock + h.d + 2.3, 0.35, E.lin);
           if (a <= 0) return;
           A.sheep(ctx, Object.assign({ x, y: G + 62, s: 0.62, dir: -1, t, seed: h.seed, walk: x * 0.05, badge: h.badge, alpha: a, badgeA: a, mood: 'happy',
-            thin: h.thin, wool: h.wool, punk: h.punk }, h.rich ? { wool: '#fbefd0', chain: true, fluff: 1.12 } : {}));
+            thin: h.thin, wool: h.wool, punk: h.punk }, h.rich ? { wool: '#fbefd0', fluff: 1.12 } : {}));
         });
       });
       const st = P(t, c('freeStamp') - 0.05, 0.35, E.lin);
@@ -868,16 +869,17 @@
         ctx.translate(-1380, -(G + 80));
         A.stall(ctx, 1380, G + 80, t, {});
         A.farmer(ctx, { x: 1380, y: G + 40, s: 0.85, t, pose: t > ch ? A.POSE.hold : A.POSE.hips, prop: t > ch ? { r: 'smallToken' } : null, tokenSpin: t * 5, mood: t > ch - 0.2 ? 'grin' : 'smile', look: { x: -1, y: 0.4 }, noShadow: true });
-        A.stall(ctx, 1380, G + 80, t, { front: true });
+        A.stall(ctx, 1380, G + 80, t, { front: true, sold: t > ch ? ['GAME CONSOLE'] : [] });
         ctx.restore();
         const bought = t > ch;
-        A.sheep(ctx, Object.assign({ x: 1020, y: G + 112, s: 0.8, dir: 1, t, seed: 320, badge: bought ? 10 : 60, mood: bought ? 'smug' : 'neutral', headTilt: -0.1, blink: blink(t, 320) },
-          { wool: '#fbefd0', fluff: 1.14, chain: bought }));
+        A.sheep(ctx, Object.assign({ x: 1020, y: G + 112, s: 0.8, dir: 1, t, seed: 320, badge: bought ? 112 : 612, mood: bought ? 'happy' : 'neutral', headTilt: -0.1, blink: blink(t, 320) },
+          { wool: '#fbefd0', fluff: 1.14 }));
+        if (bought) A.console(ctx, 990, G + 112 - 0.8 * 150, 0.8 * pop(t, ch, 0.35));
         for (let i = 0; i < 6; i++) {
           const kk = (t - ch + 0.35 - i * 0.05) / 0.4;
           if (kk > 0 && kk < 1) A.token(ctx, lerp(1030, 1250, kk), lerp(G - 70, G - 120, kk) - Math.sin(kk * Math.PI) * 90, 14, t * 10 + i);
         }
-        if (within(t, ch, ch + 0.9)) A.sparkle(ctx, 1080, G - 20, 1.2, 1 - P(t, ch, 0.9, E.lin), t * 4);
+        if (within(t, ch, ch + 0.9)) A.sparkle(ctx, 1000, G - 30, 1.2, 1 - P(t, ch, 0.9, E.lin), t * 4);
       });
       return;
     }
