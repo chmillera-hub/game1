@@ -17,6 +17,11 @@ class State(dict):
             return self[k]
         return DEFAULTS.get(k)
 
+    def get(self, k, default=None):
+        # a channel that exists but has no value yet behaves as missing
+        v = dict.get(self, k)
+        return default if v is None else v
+
 
 EASE = {
     "lin": lambda u: u,
@@ -108,6 +113,8 @@ class Keyed:
         for k, v in kv.items():
             tr = self._track(k)
             cur = tr.get(t)
+            if cur is None and isinstance(v, (int, float)) and not isinstance(v, bool):
+                cur = 0.0  # unset channels start from zero
             if isinstance(v, (int, float)) and not isinstance(v, bool) and dur > 0:
                 tr.add(t, cur, "step")
                 tr.add(t + dur, v, ease)

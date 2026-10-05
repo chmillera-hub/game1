@@ -110,6 +110,13 @@ def tts(who, text, fx=None, speed=None, pitch=None):
         x = _ff(x, SR, "highpass=f=300,lowpass=f=5000,volume=0.55")
     elif fx == "shout":
         x = np.tanh(x * 1.6) * 0.95
+    elif fx == "muffled":
+        x = _ff(x, SR, "lowpass=f=500,lowpass=f=500,volume=0.6")
+    elif fx == "far":
+        x = _ff(x, SR, "highpass=f=250,lowpass=f=2500,volume=0.5")
+        x = x + 0.5 * reverb(x, 1.6)[: len(x)]
+    elif fx == "evil":
+        x = x + 0.45 * reverb(x, 2.0)[: len(x)]
     elif fx == "radio":
         x = _ff(x, SR, "highpass=f=500,lowpass=f=3000")
     sf.write(path, x, SR)
@@ -695,7 +702,10 @@ CROWD = {"laugh", "ooh", "murmur", "aww", "groan", "cheer"}
 
 
 def get_sfx(name, d=None):
-    x = _get_sfx(name, d)
+    if name.endswith(":muffled"):
+        x = lp(_get_sfx(name[:-8], d), 450, 4) * 0.7
+    else:
+        x = _get_sfx(name, d)
     pk = np.max(np.abs(x)) if len(x) else 0
     return x * (0.95 / pk) if pk > 0.95 else x
 

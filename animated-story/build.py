@@ -4,6 +4,7 @@
     python3 build.py 1 2 3            # render all three parts to out/ (each capped at 28.5 MB)
     python3 build.py 1 --stills 5,12  # just render still frames (seconds) for a quick look
     python3 build.py 1 --info         # print the timeline (shot starts, total length)
+    python3 build.py 1 2 3 --series dnd   # the second story, DO NOT DISTURB (outputs to out/do-not-disturb/)
 """
 import argparse
 import importlib
@@ -21,13 +22,24 @@ OUT = os.path.join(HERE, "out")
 BUILD = os.path.join(HERE, "build")
 
 
-def load(n):
-    mod = importlib.import_module(f"story.part{n}")
+SERIES = {
+    # name: (package, output dir, screenplay file, title)
+    "emotional": ("story", OUT, os.path.join(HERE, "SCREENPLAY.md"), "Emotional Education"),
+    "dnd": ("dnd", os.path.join(OUT, "do-not-disturb"), os.path.join(HERE, "dnd", "SCREENPLAY.md"),
+            "Do Not Disturb"),
+}
+
+
+def load(n, series="emotional"):
+    pkg = SERIES[series][0]
+    if pkg != "story":
+        importlib.import_module(pkg).install()
+    mod = importlib.import_module(f"{pkg}.part{n}")
     return mod.build()
 
 
-def screenplay(parts, path):
-    lines = ["# Emotional Education — screenplay", "",
+def screenplay(parts, path, name="Emotional Education"):
+    lines = [f"# {name} — screenplay", "",
              "Generated from the scripts in `story/`. Timestamps are from the rendered videos.", ""]
     for p in parts:
         lines += [f"## Part {p.num}: {p.subtitle}", ""]
@@ -54,12 +66,14 @@ def main():
     ap.add_argument("--workers", type=int, default=4)
     ap.add_argument("--crf", type=int, default=20)
     ap.add_argument("--max-mb", type=float, default=28.5, help="size cap for the files in out/")
+    ap.add_argument("--series", default="emotional", choices=sorted(SERIES))
     args = ap.parse_args()
-    os.makedirs(OUT, exist_ok=True)
+    out_dir, play_path, series_name = SERIES[args.series][1:]
+    os.makedirs(out_dir, exist_ok=True)
     built = []
     for n in args.parts:
         t0 = time.time()
-        part = load(n)
+        part = load(n, args.series)
         built.append(part)
         print(f"part {n}: {part.total:.1f}s, {len(part.shots)} shots (script built in {time.time() - t0:.1f}s)")
         if args.info:
@@ -68,7 +82,7 @@ def main():
                 print(f"  [{i:02d}] {s.t0:6.1f}s +{s.dur:5.1f}  {s.set:8s} {first}")
             continue
         if args.stills:
-            d = os.path.join(BUILD, f"stills{n}")
+            d = os.path.join(BUILD, f"stills-{args.series}{n}")
             os.makedirs(d, exist_ok=True)
             for ts in args.stills.split(","):
                 t = float(ts)
@@ -76,16 +90,16 @@ def main():
             print("stills ->", d)
             continue
         base = f"part{n}-{part.slug.split('-', 1)[1]}"
-        mp4 = os.path.join(OUT, f"{base}.mp4")
-        full = os.path.join(BUILD, "full", f"{base}.mp4")
+        mp4 = os.path.join(out_dir, f"{base}.mp4")
+        full = os.path.join(BUILD, "full", args.series, f"{base}.mp4")
         os.makedirs(os.path.dirname(full), exist_ok=True)
-        render_video(part, full, os.path.join(BUILD, f"part{n}"), workers=args.workers, crf=args.crf)
+        render_video(part, full, os.path.join(BUILD, f"{args.series}-part{n}"), workers=args.workers, crf=args.crf)
         # social apps and chat uploads cap file size; two-pass encode to stay under it
         subprocess.run([os.path.join(HERE, "fit_size.sh"), full, mp4, str(args.max_mb)], check=True)
-        part.write_srt(os.path.join(OUT, f"{base}.srt"))
+        part.write_srt(os.path.join(out_dir, f"{base}.srt"))
         print(f"  -> {mp4} ({time.time() - t0:.0f}s)")
     if not args.info and not args.stills and len(built) == 3:
-        screenplay(built, os.path.join(HERE, "SCREENPLAY.md"))
+        screenplay(built, play_path, series_name)
 
 
 if __name__ == "__main__":

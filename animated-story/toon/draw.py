@@ -2,7 +2,12 @@
 import math
 import cairo
 
-OUT = (0.12, 0.10, 0.15)  # outline ink
+OUT = [0.12, 0.10, 0.15]  # outline ink (a list so a series can recolor it in place)
+
+
+def set_ink(rgb):
+    """Change the outline ink for everything drawn afterwards (default args share this list)."""
+    OUT[:] = list(rgb)
 LW = 5.0
 TAU = math.pi * 2
 

@@ -1,3 +1,10 @@
+# Animated shorts
+
+Two code-generated, three-part animated stories, each part 3:00 or shorter in vertical 1080×1920 for TikTok, Reels and Shorts:
+
+1. **Emotional Education**: Cartman, PC Principal and Emotional Chad (below). Videos in `out/`.
+2. **DO NOT DISTURB**: Tiredness, Embarrassment, Impulsivity and the creature, in a riso-print noir style. See [`dnd/README.md`](dnd/README.md); videos in `out/do-not-disturb/`.
+
 # Emotional Education: an animated short in three parts
 
 Cartman, PC Principal and Emotional Chad, in three vertical (9:16, 1080×1920) videos for TikTok, Reels and Shorts.

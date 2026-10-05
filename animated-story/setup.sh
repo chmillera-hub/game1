@@ -16,6 +16,8 @@ curl -sSL -o ~/.fonts/LuckiestGuy-Regular.ttf "$gf/apache/luckiestguy/LuckiestGu
 curl -sSL -o ~/.fonts/Fredoka.ttf "$gf/ofl/fredoka/Fredoka%5Bwdth%2Cwght%5D.ttf"
 curl -sSL -o ~/.fonts/Bangers-Regular.ttf "$gf/ofl/bangers/Bangers-Regular.ttf"
 curl -sSL -o ~/.fonts/PatrickHand-Regular.ttf "$gf/ofl/patrickhand/PatrickHand-Regular.ttf"
+curl -sSL -o ~/.fonts/Bungee-Regular.ttf "$gf/ofl/bungee/Bungee-Regular.ttf"
+curl -sSL -o ~/.fonts/SpecialElite-Regular.ttf "$gf/apache/specialelite/SpecialElite-Regular.ttf"
 fc-cache -f >/dev/null
 
-echo "Ready. Run: python3 build.py 1 2 3"
+echo "Ready. Run: python3 build.py 1 2 3   (or add --series dnd for DO NOT DISTURB)"

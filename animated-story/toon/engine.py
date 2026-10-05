@@ -125,7 +125,7 @@ class Shot:
         else:
             vkey = voice or who
         if fx is None:
-            fx = {"think": "thought", "whisper": "whisper", "shout": "shout"}.get(style)
+            fx = {"think": "thought", "whisper": "whisper", "mutter": "whisper", "shout": "shout"}.get(style)
         x = audio.tts(vkey, text, fx=fx, speed=speed, pitch=pitch)
         dur = len(x) / audio.SR
         t0 = (self.t if at is None else at) + pre
@@ -186,8 +186,18 @@ class Shot:
         return self
 
 
+DEFAULT_THEME = dict(
+    cap_box=(0.07, 0.06, 0.1, 0.72), cap_text=(1, 1, 1), shout_text="#ffe14a", whisper_text="#cfd6ff",
+    think_box=(1, 1, 1, 0.92), think_text=None, narr_box=(0.1, 0.08, 0.05, 0.72), narr_text="#ffe9a8",
+    cc_box=(0, 0, 0, 0.55), cc_text="#d8d8e0", tag_font="Luckiest Guy", tag_text=(1, 1, 1),
+    chip_box=(0, 0, 0, 0.45), chip_text="#f4c430", chip_font="Luckiest Guy", post=None, twos=False,
+    cap_border=None,
+)
+
+
 class Part:
-    def __init__(self, num, subtitle, slug):
+    def __init__(self, num, subtitle, slug, theme=None):
+        self.theme = dict(DEFAULT_THEME, **(theme or {}))
         self.num = num
         self.subtitle = subtitle
         self.slug = slug
@@ -478,7 +488,7 @@ def draw_overlay(c, ov, lt, shot, part):
              hexc(ov.get("color", "#ffffff")), OUT, ov.get("ow", 10), alpha=a)
 
 
-def draw_caption(c, cap, t):
+def draw_caption(c, cap, t, th=DEFAULT_THEME):
     style = cap["style"]
     vkey = cap["vkey"]
     name, col = SPEAKERS.get(vkey, ("", "#555555")) if vkey else ("", "#555555")
@@ -492,38 +502,47 @@ def draw_caption(c, cap, t):
     boxh = len(lines) * lh + 36
     if style == "narr":
         y0 = 250
+    elif style == "cc" and th.get("cc_high"):
+        y0 = 1370
     else:
         y0 = 1500
     x0 = (W - boxw) / 2
     c.save()
+    def col_(v):
+        return hexc(v) if isinstance(v, str) else v
+    border = th.get("cap_border")
     if style == "think":
         rrect(c, x0, y0, boxw, boxh, 36)
-        src(c, (1, 1, 1), 0.92); c.fill_preserve(); src(c, hexc(col)); c.set_line_width(6)
+        src(c, th["think_box"]); c.fill_preserve(); src(c, hexc(col)); c.set_line_width(6)
         c.set_dash([18, 12]); c.stroke(); c.set_dash([])
-        tcol, ow = OUT, 0
+        tcol, ow = col_(th["think_text"]) if th["think_text"] else OUT, 0
     elif style == "narr":
         rrect(c, x0, y0, boxw, boxh, 18)
-        src(c, (0.1, 0.08, 0.05), 0.72); c.fill()
-        tcol, ow = hexc("#ffe9a8"), 0
+        src(c, th["narr_box"]); c.fill()
+        tcol, ow = col_(th["narr_text"]), 0
     elif style == "cc":
         rrect(c, x0 + 120, y0, boxw - 240, boxh, 18)
-        src(c, (0, 0, 0), 0.55); c.fill()
-        tcol, ow = hexc("#d8d8e0"), 0
+        src(c, th["cc_box"]); c.fill()
+        tcol, ow = col_(th["cc_text"]), 0
     else:
         rrect(c, x0, y0, boxw, boxh, 22)
-        src(c, (0.07, 0.06, 0.1), 0.72); c.fill()
-        tcol, ow = (1, 1, 1), 0
+        src(c, th["cap_box"]); c.fill_preserve()
+        if border:
+            src(c, col_(border)); c.set_line_width(4); c.stroke()
+        else:
+            c.new_path()
+        tcol, ow = col_(th["cap_text"]), 0
         if style == "shout":
-            tcol = hexc("#ffe14a")
-        if style == "whisper":
-            tcol = hexc("#cfd6ff")
+            tcol = col_(th["shout_text"])
+        if style in ("whisper", "mutter"):
+            tcol = col_(th["whisper_text"])
     # name tag
     if name and style != "cc":
-        tag = name + (" (THINKING)" if style == "think" else " (WHISPERING)" if style == "whisper" else "")
+        tag = name + {"think": " (THINKING)", "whisper": " (WHISPERING)", "mutter": " (MUTTERING)"}.get(style, "")
         tw = len(tag) * 21 + 44
         rrect(c, x0 + 20, y0 - 34, tw, 52, 26)
         fs(c, hexc(col), lw=4)
-        text(c, tag, x0 + 20 + tw / 2, y0 + 3, 34, "Luckiest Guy", (1, 1, 1))
+        text(c, tag, x0 + 20 + tw / 2, y0 + 3, 34, th["tag_font"], col_(th["tag_text"]))
     y = y0 + 22 + size * 0.95
     for ln in lines:
         disp = ln
@@ -535,9 +554,11 @@ def draw_caption(c, cap, t):
 
 
 def draw_chip(c, part, t):
+    th = part.theme
     rrect(c, W - 240, 150, 200, 58, 29)
-    src(c, (0, 0, 0), 0.45); c.fill()
-    text(c, f"PART {part.num}", W - 140, 192, 36, "Luckiest Guy", hexc("#f4c430"))
+    src(c, th["chip_box"]); c.fill()
+    tc = th["chip_text"]
+    text(c, f"PART {part.num}", W - 140, 192, 36, th["chip_font"], hexc(tc) if isinstance(tc, str) else tc)
 
 
 def render_frame(c, part, t):
@@ -556,7 +577,8 @@ def render_frame(c, part, t):
         c.rotate(cam.rot)
     c.scale(cam.zoom, cam.zoom)
     c.translate(-cam.cx + sx, -cam.cy + sy)
-    SETS[shot.set](c, lt, P, lambda layer: draw_actors(c, shot, lt, layer, t))
+    alt = math.floor(lt * 15) / 15 if part.theme.get("twos") else lt
+    SETS[shot.set](c, lt, P, lambda layer: draw_actors(c, shot, alt, layer, t))
     c.restore()
     for ov in shot.overlays:
         if ov["kind"] == "bubble":
@@ -565,9 +587,11 @@ def render_frame(c, part, t):
             draw_overlay(c, ov, lt, shot, part)
     if shot.set != "card":
         draw_chip(c, part, t)
+    if part.theme.get("post"):
+        part.theme["post"](c, t, shot, lt)
     for cap in part.captions:
         if cap["t0"] <= t < cap["t1"]:
-            draw_caption(c, cap, t)
+            draw_caption(c, cap, t, part.theme)
     # global fade in/out of the part
     if t < 0.3:
         c.rectangle(0, 0, W, H); src(c, (0, 0, 0), 1 - t / 0.3); c.fill()
