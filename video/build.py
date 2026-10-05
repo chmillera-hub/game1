@@ -12,6 +12,7 @@ VOICE = os.environ.get("VOICE", os.path.join(WORK, "en_US-lessac-medium.onnx"))
 os.makedirs(WORK, exist_ok=True)
 W, H, S = 1920, 1080, 2  # output size, supersample factor
 FPS = 30
+OUT_NAME = "the_blue_light.mp4"
 GAP = 0.8  # seconds of silence between sentences
 
 # ---------------------------------------------------------------- script
@@ -407,7 +408,7 @@ def main():
                     f"aevalsrc='{expr}':s=44100:d={total:.2f}", "-af",
                     f"lowpass=f=900,afade=t=in:d=3,afade=t=out:st={total-4:.2f}:d=4,volume=0.55", pad], check=True)
 
-    out = os.path.join(HERE, "the_blue_light.mp4")
+    out = os.path.join(HERE, OUT_NAME)
     style = "FontName=DejaVu Sans,FontSize=13,PrimaryColour=&H00FFFFFF,OutlineColour=&H99000000,BorderStyle=1,Outline=1.2,Shadow=0.6,MarginV=14,Bold=1"
     subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", silent, "-i", npath, "-i", pad, "-filter_complex",
                     "[1:a]volume=1.0,aresample=44100[v];[2:a]volume=0.5[p];[v][p]amix=inputs=2:duration=longest:normalize=0,"
