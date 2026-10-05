@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
 """Build the animated story.
 
-    python3 build.py 1 2 3            # render all three parts to out/
+    python3 build.py 1 2 3            # render all three parts to out/ (each capped at 28.5 MB)
     python3 build.py 1 --stills 5,12  # just render still frames (seconds) for a quick look
     python3 build.py 1 --info         # print the timeline (shot starts, total length)
 """
 import argparse
 import importlib
 import os
+import subprocess
 import sys
 import time
 
@@ -52,6 +53,7 @@ def main():
     ap.add_argument("--info", action="store_true")
     ap.add_argument("--workers", type=int, default=4)
     ap.add_argument("--crf", type=int, default=20)
+    ap.add_argument("--max-mb", type=float, default=28.5, help="size cap for the files in out/")
     args = ap.parse_args()
     os.makedirs(OUT, exist_ok=True)
     built = []
@@ -75,7 +77,11 @@ def main():
             continue
         base = f"part{n}-{part.slug.split('-', 1)[1]}"
         mp4 = os.path.join(OUT, f"{base}.mp4")
-        render_video(part, mp4, os.path.join(BUILD, f"part{n}"), workers=args.workers, crf=args.crf)
+        full = os.path.join(BUILD, "full", f"{base}.mp4")
+        os.makedirs(os.path.dirname(full), exist_ok=True)
+        render_video(part, full, os.path.join(BUILD, f"part{n}"), workers=args.workers, crf=args.crf)
+        # social apps and chat uploads cap file size; two-pass encode to stay under it
+        subprocess.run([os.path.join(HERE, "fit_size.sh"), full, mp4, str(args.max_mb)], check=True)
         part.write_srt(os.path.join(OUT, f"{base}.srt"))
         print(f"  -> {mp4} ({time.time() - t0:.0f}s)")
     if not args.info and not args.stills and len(built) == 3:

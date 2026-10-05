@@ -30,7 +30,7 @@ Everything is generated from code, with no stock assets:
 
 ```bash
 ./setup.sh                      # once: packages, voice model, fonts
-python3 build.py 1 2 3          # render all parts (≈8 min per part on 4 cores)
+python3 build.py 1 2 3          # render all parts (≈10 min per part on 4 cores)
 python3 build.py 2 --info       # print the shot list and timings
 python3 build.py 3 --stills 30,95   # render single frames to build/stills3/
 ```
