@@ -1,0 +1,15 @@
+LINES = [
+ "In the town of Merrow Green, every shopfront said the same words. Community. Belonging. Connection. The Village.",
+ "Wren read them all, and believed them. Wren wanted a family, a home full of voices, and someone to build a life with.",
+ "So Wren knocked on the first door, and said it plainly. I want to build a life with another person.",
+ "The door opened a crack, and out came a smile. Have you tried the app? You'll find someone. Don't worry about it. Focus on yourself.",
+ "Each answer was polite. Each answer was a door closing gently.",
+ "Wren tried the next door, and the next. Good luck, said one. I can't help with that, said another. Nobody was unkind. Nobody was there.",
+ "Then Wren walked around behind the shopfronts, and saw the truth. The village was a set. Painted fronts, held up with wooden braces.",
+ "And behind every front sat one person, alone at a small table, holding the brace with one hand. Tired. Lonely. Afraid of exactly what Wren had said out loud.",
+ "That is why the town acted shocked. Shock is easier than responsibility. To really hear Wren, they would have to admit their own empty rooms.",
+ "They wanted the look of a village without the labor of one. The language of connection, without the practice.",
+ "So Wren did something simple. Wren picked up a beam, and asked the nearest neighbor to hold the other end.",
+ "It was awkward. It was heavy. Then another neighbor let go of a brace, and came over. Then another.",
+ "By morning, nobody needed the signs. A village is not what you call yourself. It is what you carry together.",
+]
