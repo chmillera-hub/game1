@@ -1,0 +1,178 @@
+{
+  "title": "EMOTIONAL CHAD",
+  "subtitle": "vs. the Super Saiyan",
+  "fps": 30,
+  "defaults": { "lead": 0.35, "gap": 0.3, "hold": 0.6 },
+  "lexicon": { "Saiyan": "sˈaɪən" },
+
+  "speakers": {
+    "narrator": { "voice": "am_michael", "speed": 1.04, "level": -19, "color": "#ffffff" },
+    "goku":     { "voice": "am_fenrir", "speed": 0.98, "level": -18, "color": "#ffb13b", "name": "Goku",
+                  "fx": { "pitch": 0.95 } },
+    "chad":     { "voice": "am_puck", "speed": 1.0, "level": -19, "color": "#9fd8ff", "name": "Emotional Chad" },
+    "villager": { "voice": "af_bella", "speed": 1.0, "level": -19, "color": "#c9f2b5", "name": "Villager" }
+  },
+
+  "scenes": [
+    {
+      "id": "title", "lead": 0, "minDur": 4.6, "music": "epic",
+      "cues": [
+        { "id": "titleDrop", "sfx": "whoosh", "t": 0.25, "gain": -9 },
+        { "id": "titleLand", "sfx": "punch", "t": 0.7, "gain": -8 },
+        { "id": "titleSub", "t": 1.5 },
+        { "id": "titlePan", "t": 3.0 }
+      ],
+      "lines": []
+    },
+
+    {
+      "id": "charge", "lead": 1.2, "hold": 0.5, "music": "epic",
+      "cues": [ { "id": "yell1", "sfx": "yell", "t": 0.1, "gain": -10 } ],
+      "amb": [ { "sfx": "aura", "from": 0, "to": "eyesOpen", "gain": -30, "fade": 1.0 } ],
+      "lines": [
+        { "id": "n_while", "who": "narrator", "text": "While Goku powers up, yelling louder and louder as his hair grows longer and changes color,", "gap": 0,
+          "cues": [ { "id": "hair1", "sfx": "flash", "t": 1.6, "gain": -15 },
+                    { "id": "hair2", "sfx": "flash", "t": -0.9, "from": "end", "gain": -15 } ] },
+        { "id": "n_chad", "who": "narrator", "text": "Emotional Chad is out there, blowing people's minds, one by one, like Jesus.", "gap": 0.5,
+          "cues": [ { "id": "villageCut", "t": -0.35 },
+                    { "id": "mind1", "sfx": "sparkle", "t": 1.6, "gain": -16 },
+                    { "id": "mind2", "sfx": "pop", "t": 2.6, "gain": -14 },
+                    { "id": "mind3", "sfx": "pop", "t": 3.4, "gain": -14 } ] },
+        { "id": "n_level5", "who": "narrator", "text": "By the time Goku hits the fifth level of Super Saiyan,", "gap": 0.5,
+          "cues": [ { "id": "gokuCut", "t": -0.35 },
+                    { "id": "yell2", "sfx": "yell", "t": -0.3, "gain": -10 },
+                    { "id": "level5", "sfx": "flash", "t": -0.3, "from": "end", "gain": -12 } ] },
+        { "id": "n_village", "who": "narrator", "text": "Emotional Chad has reached Goku's village, and he's enlightening everyone there, like God.", "gap": 0.4,
+          "cues": [ { "id": "villageCut2", "t": -0.3 },
+                    { "id": "mind4", "sfx": "sparkle", "t": 2.2, "gain": -16 } ] },
+        { "id": "n_opens", "who": "narrator", "text": "Finally, Goku opens his eyes.", "gap": 0.6,
+          "cues": [ { "id": "gokuCut2", "t": -0.3 }, { "id": "eyesOpen", "t": 0.1, "from": "end" } ] },
+        { "id": "g_where", "who": "goku", "text": "Where did you hide, Emotional Chad? I know you're around here somewhere!", "gap": 0.7,
+          "cues": [ { "id": "quake1", "sfx": "thunder_far", "t": -0.8, "from": "end", "gain": -10 } ] }
+      ]
+    },
+
+    {
+      "id": "village", "lead": 0.5, "hold": 0.9, "music": "chill", "musicFadeIn": 1.0,
+      "amb": [ { "sfx": "birds", "from": 0, "to": null, "gain": -33, "fade": 1.0 } ],
+      "lines": [
+        { "id": "n_meanwhile", "who": "narrator", "text": "Meanwhile, Emotional Chad is helping a villager with his anger.", "gap": 0,
+          "cues": [ { "id": "calm", "t": 0.6, "from": "end" },
+                    { "id": "farYell", "sfx": "thunder_far", "t": 1.2, "from": "end", "gain": -14 } ] },
+        { "id": "c_onesec_village", "who": "chad", "text": "Oh, I think that's Goku. I'll be back, you guys. One second.", "gap": 1.9 },
+        { "id": "n_jogs", "who": "narrator", "text": "And he jogs over to Goku.", "gap": 0.4,
+          "cues": [ { "id": "jogOff", "t": -0.3 } ] }
+      ]
+    },
+
+    {
+      "id": "meet", "lead": 0.4, "hold": 0.6, "music": "sneaky",
+      "amb": [ { "sfx": "wind", "from": 0, "to": null, "gain": -34, "fade": 1.0 } ],
+      "lines": [
+        { "id": "g_runaway", "who": "goku", "text": "I see you tried to run away, Emotional Chad. Don't you see my form? Aren't you impressed?", "gap": 0,
+          "cues": [ { "id": "chadArrive", "t": 0.4 } ] },
+        { "id": "n_breath", "who": "narrator", "text": "Emotional Chad is completely out of breath.", "gap": 0.4,
+          "cues": [ { "id": "pant1", "sfx": "pant", "t": 0.2, "from": "end", "gain": -14 } ] },
+        { "id": "c_onesec", "who": "chad", "text": "One second. I'm kind of tired here.", "gap": 1.2,
+          "cues": [ { "id": "handUp", "t": -0.3 } ] },
+        { "id": "c_sorry", "who": "chad", "text": "Sorry, I'm not really in shape. But yeah, man, that is so freaking impressive. What level of Super Saiyan is that?", "gap": 0.6,
+          "cues": [ { "id": "straighten", "t": -0.4 } ] },
+        { "id": "g_omega", "who": "goku", "text": "This is the Omega God level. Level sixteen Super Saiyan. I can destroy a planet in half a second.", "gap": 0.4,
+          "cues": [ { "id": "planet", "sfx": "boom", "t": -0.6, "from": "end", "gain": -16 } ] },
+        { "id": "c_holy", "who": "chad", "text": "Holy shit, bro. How does it feel to have that kind of power?", "gap": 0.4 },
+        { "id": "g_amazing", "who": "goku", "text": "It feels goddamn amazing.", "gap": 0.3 },
+        { "id": "c_whatdo", "who": "chad", "text": "What are you going to do with it?", "gap": 0.3 },
+        { "id": "g_destroy", "who": "goku", "text": "I'm going to destroy all of our enemies.", "gap": 0.3 },
+        { "id": "c_enemies", "who": "chad", "text": "Where are the enemies?", "gap": 0.35 },
+        { "id": "g_none", "who": "goku", "text": "Well, there are none right now. But I had to show you my power, so you'd know not to mess with me.", "gap": 0.6 },
+        { "id": "c_boundary", "who": "chad", "text": "Bro, I respect your boundary. Your power is amazing. I'm not going to get anywhere near it. You have my full respect.", "gap": 0.45 }
+      ]
+    },
+
+    {
+      "id": "pang", "lead": 0.5, "hold": 1.6, "music": "tender", "musicFadeIn": 1.2,
+      "amb": [ { "sfx": "wind", "from": 0, "to": null, "gain": -34, "fade": 1.0 } ],
+      "lines": [
+        { "id": "n_pause", "who": "narrator", "text": "Goku pauses. He feels a pang of sadness in his heart.", "gap": 0,
+          "cues": [ { "id": "heartPang", "sfx": "heart", "t": -0.8, "from": "end", "gain": -14 } ] },
+        { "id": "g_wait", "who": "goku", "text": "Wait, what?", "gap": 0.5 },
+        { "id": "c_sohard", "who": "chad", "text": "Yeah, bro. I respect your boundary so hard. And if I see any enemies coming, you'll be the first person I tell, because you are fucking badass.", "gap": 0.4 },
+        { "id": "n_scowl", "who": "narrator", "text": "Goku's scowl fades. His jaw almost drops. He shakes his head.", "gap": 0.5 },
+        { "id": "g_careful", "who": "goku", "text": "Yeah, well. Just be careful out there.", "gap": 0.5,
+          "cues": [ { "id": "turnAway", "t": 0.15, "from": "end" } ] },
+        { "id": "c_gotta", "who": "chad", "text": "Of course, bro. I've got to get going, though. Is that okay?", "gap": 0.6 },
+        { "id": "n_waves", "who": "narrator", "text": "Goku waves him off, and Emotional Chad jogs back to the village.", "gap": 0.4,
+          "cues": [ { "id": "waveOff", "t": 0.2 } ] },
+        { "id": "n_horizon", "who": "narrator", "text": "Goku looks out at the horizon, and wonders what that pain was.", "gap": 0.7,
+          "cues": [ { "id": "horizon", "t": -0.3 } ] }
+      ]
+    },
+
+    {
+      "id": "golf", "lead": 0.6, "hold": 0.6, "music": "chill", "musicFadeIn": 1.0,
+      "amb": [ { "sfx": "birds", "from": 0, "to": null, "gain": -33, "fade": 1.0 } ],
+      "cues": [ { "id": "putt", "sfx": "putt", "t": 0.9, "gain": -12 } ],
+      "lines": [
+        { "id": "n_nextday", "who": "narrator", "text": "The next day, Emotional Chad is playing mini-golf, when Goku's voice booms across the valley.", "gap": 0 },
+        { "id": "g_getout", "who": "goku", "text": "Emotional Chad! Get out here!", "gap": 0.35,
+          "cues": [ { "id": "boomShake", "sfx": "thunder_far", "t": 0.0, "gain": -12 } ] },
+        { "id": "c_finish", "who": "chad", "text": "Oh. Can one of you guys finish this game for me? I've got to go.", "gap": 0.7,
+          "cues": [ { "id": "handPutter", "t": -0.6, "from": "end" } ] },
+        { "id": "v_bye", "who": "villager", "text": "Bye, Chad!", "gap": 0.35,
+          "cues": [ { "id": "jogOff2", "t": -0.2 } ] }
+      ]
+    },
+
+    {
+      "id": "voicemail", "lead": 0.4, "hold": 1.4, "music": "sneaky", "musicEnd": "smash1",
+      "amb": [ { "sfx": "wind", "from": 0, "to": null, "gain": -34, "fade": 1.0 } ],
+      "lines": [
+        { "id": "n_friend", "who": "narrator", "text": "Emotional Chad had told Goku about a friend of his: a martial artist from across the universe.", "gap": 0 },
+        { "id": "g_wherehe", "who": "goku", "text": "Okay, bro. Where's this universe martial artist? I'm done waiting.", "gap": 0.4,
+          "cues": [ { "id": "tap", "t": 0.2, "from": "end" } ] },
+        { "id": "c_said", "who": "chad", "text": "He said he'd be here today. Let me call him.", "gap": 0.6,
+          "cues": [ { "id": "dial", "sfx": "dial", "t": 0.2, "from": "end", "gain": -15 } ] },
+        { "id": "n_vm", "who": "narrator", "text": "It goes straight to voicemail.", "gap": 1.1,
+          "cues": [ { "id": "beep", "sfx": "beep", "t": 0.15, "from": "end", "gain": -14 } ] },
+        { "id": "c_message", "who": "chad", "text": "Hey, bro. Me and Goku are outside the village, waiting for you.", "gap": 0.5 },
+        { "id": "n_shake", "who": "narrator", "text": "The ground starts to shake. Goku raises an eyebrow.", "gap": 0.4,
+          "cues": [ { "id": "rumble1", "sfx": "thunder_far", "t": 0.0, "gain": -12 } ] },
+        { "id": "n_instant", "who": "narrator", "text": "Then, in an instant, something hits Goku so hard he flies into a mountain, and the mountain explodes.", "gap": 0.5,
+          "cues": [ { "id": "smash1", "sfx": "punch_big", "t": 1.2, "gain": -8 },
+                    { "id": "boom1", "sfx": "explosion", "t": -0.7, "from": "end", "gain": -6 } ] },
+        { "id": "c_friend", "who": "chad", "text": "Oh. I think my friend is here.", "gap": 1.4,
+          "cues": [ { "id": "phoneDrop", "sfx": "clatter", "t": -0.9, "gain": -14 } ] }
+      ]
+    },
+
+    {
+      "id": "dinner", "lead": 0.8, "hold": 3.0, "music": "chill", "musicFadeIn": 1.5,
+      "amb": [ { "sfx": "crickets", "from": 0, "to": null, "gain": -33, "fade": 1.5 } ],
+      "cues": [ { "id": "farBlast1", "sfx": "thunder_far", "t": 0.3, "gain": -14 } ],
+      "lines": [
+        { "id": "n_evening", "who": "narrator", "text": "By evening, you can still see flashes of light in the distance, as new craters form in the earth.", "gap": 0,
+          "cues": [ { "id": "farBlast2", "sfx": "thunder_far", "t": 2.6, "gain": -15 } ] },
+        { "id": "n_watch", "who": "narrator", "text": "Emotional Chad checks his watch. It's dinner time. He yells up at the sky.", "gap": 0.5,
+          "cues": [ { "id": "watchLook", "t": 0.2 }, { "id": "skyCut", "t": -0.3, "from": "end" } ] },
+        { "id": "c_dinner", "who": "chad", "text": "Hey, you guys! It's dinner time!", "gap": 0.4 },
+        { "id": "n_freeze", "who": "narrator", "text": "Goku and the martial artist freeze, mid-punch.", "gap": 0.4,
+          "cues": [ { "id": "freeze", "sfx": "scratch", "t": -0.5, "gain": -15 } ] },
+        { "id": "g_busy", "who": "goku", "text": "Don't you see we're busy here?", "gap": 0.4 },
+        { "id": "c_casserole", "who": "chad", "text": "Okay. I guess I'll eat all of your grandmother's casserole, then.", "gap": 0.6 },
+        { "id": "g_okay", "who": "goku", "text": "Okay, okay! I'll be there in a few minutes!", "gap": 0.9,
+          "cues": [ { "id": "wideEyes", "t": -0.6 } ] },
+        { "id": "g_wherewere", "who": "goku", "text": "So, where were we?", "gap": 1.6,
+          "cues": [ { "id": "chadLeaves", "t": -1.5 } ] },
+        { "id": "n_flying", "who": "narrator", "text": "Before he can finish, he flies into another mountain, at the speed of sound.", "gap": 0.1,
+          "cues": [ { "id": "smash2", "sfx": "punch_big", "t": -0.05, "gain": -9 },
+                    { "id": "boom2", "sfx": "explosion", "t": 0.4, "from": "end", "gain": -5 } ] }
+      ]
+    },
+
+    {
+      "id": "end", "lead": 0, "minDur": 5.0, "music": null,
+      "cues": [ { "id": "endBoom", "sfx": "boom", "t": 0.3, "gain": -10 } ],
+      "lines": []
+    }
+  ]
+}
