@@ -1,0 +1,15 @@
+LINES = [
+ "On a bench in Linden Square, Ellis sat next to a man named Garrick. Close enough to touch. Close enough to hear every word.",
+ "Garrick was talking. It's going to rain, he said. Then it'll clear. Then it'll rain again. He was not talking to Ellis. He was talking to the air, with Ellis inside it.",
+ "Ellis had told him, plainly, weeks ago. I'm lonely. I'd like help meeting someone. Garrick had nodded, and gone back to the weather.",
+ "Now Garrick moved on to the news. Someone had said something outrageous. His voice rose, and the pigeons left. Ellis was sitting right there, and Garrick knew it.",
+ "So Ellis tried. Garrick, could we talk about something that matters to me? Garrick's face closed. Leave me alone, he said. Then he kept talking.",
+ "It was like talking to a speaker bolted to a brick wall. The speaker had a play button, and no ears. The louder Ellis asked, the louder it played.",
+ "Or a bird, squawking beside him. Ellis said, Bird, could we talk about something else? The bird shook its head, and squawked louder.",
+ "That was the strange part. Ellis was not asking for much. Only for someone to turn their head, and say: I see you.",
+ "Noise, Ellis realized, can be a way of leaving without moving. Garrick was sitting on the bench, and nowhere near it.",
+ "Because noise fills the air so nothing else can come in. Not a question. Not a need. Not a quiet, honest sentence.",
+ "And Ellis was out of strength to compete with it. So, one evening, he stood up, and said, thank you for the company. And walked, not away from people, but toward a different bench.",
+ "On it sat a woman named Odile, with a book closed in her lap. Is this seat taken? asked Ellis. No, said Odile. And she put the book away.",
+ "She did not mention the weather. She asked, What brought you out here tonight? And Ellis told her the truth.",
+]
