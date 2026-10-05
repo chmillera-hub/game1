@@ -1,0 +1,15 @@
+LINES = [
+ "In the village of Alder Hollow, the lanterns were always lit.",
+ "Two people lived there, on opposite banks of the river. Daniel repaired clocks. Maren kept bees.",
+ "Both wanted the same thing: a family, a home full of voices. And a village only continues when two of its people find each other.",
+ "So the village offered help. Here is the arcade, it said. Daniel played for an hour. The screen was bright. His house stayed quiet.",
+ "Here is board game night. Here is an endless stream of memes, traded between strangers who never learn each other's names.",
+ "Maren went to church. She sat in the pew, and nodded, and smiled. She nodded and smiled at the potluck. Nodded and smiled at the gym. Nodded and smiled at work.",
+ "Every evening, the same walk home. Every evening, two windows, dark on opposite banks.",
+ "Then the village grew concerned. Why won't Daniel join in? Why isn't Maren engaging? Look at everything we've given them!",
+ "But look closely at what was on offer. Screens. Games. Feeds. Potlucks. Shiny things, stacked in front of every face. Not one of them was a bridge.",
+ "The village never asked the question that mattered: who here is helping these two meet?",
+ "Daniel and Maren were never the problem. They were not refusing life. They were refusing to mistake distraction for connection.",
+ "Then one evening, someone laid a single plank across the river. And then another. Daniel stepped onto his end. Maren stepped onto hers.",
+ "Nobody needed more shiny things. They needed a bridge.",
+]
