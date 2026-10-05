@@ -1,0 +1,15 @@
+LINES = [
+ "Every morning at Halvorsen and Pike, the break room had the same conversation. It's cold today, said Pell. Freezing, said Dana.",
+ "By ten o'clock it was too hot. By noon it was lunch. What did you have? A sandwich. Any good? Not bad.",
+ "By three, someone mentioned what the man on television said. Another person said he was wrong, and the other side was worse. Everyone nodded. Nobody changed.",
+ "Four topics. Weather. Food. Headlines. The other side. They passed them back and forth like a ball nobody wanted to keep.",
+ "Juno had been tossing that ball for six years. And one Tuesday, in the middle of a sentence about the rain, Juno stopped.",
+ "I'm not being rude, said Juno. When you tell me about the weather, I learn nothing about you, and I trust you no more. If you never mentioned it again, nothing in my life would change.",
+ "The room went quiet. Pell opened his mouth for the forecast, and closed it. Dana reached for her sandwich, and put it down. Without the four topics, there was nothing left to say.",
+ "So Juno asked a different question. What do you value? Pell blinked. What do you want? Dana shrugged. What are your goals?",
+ "The answers came from a drawer that had never been opened. Values: have a good life. Character: be a good person. Desires: do fun stuff. Goals: survive the month.",
+ "None of it was wrong. It was just a label on an empty box. Nobody had ever been asked to open it.",
+ "And that was the real fear behind the weather. Not that the conversation would end, but that the silence would show what was missing.",
+ "Then Dana, slowly, said something true. I wanted to be a carpenter. I never told anyone. I think I still do.",
+ "It was the first sentence in six years that nobody could have predicted. The weather could wait. Outside it was raining, and for once, nobody mentioned it.",
+]
