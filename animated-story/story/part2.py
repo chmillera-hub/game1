@@ -35,7 +35,7 @@ def build():
     s.overlay("sparkles", at=1.1, dur=2.4, x0=180, x1=900, y0=350, y1=900, n=14)
     s.overlay("flash", at=1.1, dur=0.4, alpha=0.5)
     s.cc("[Warm, caring eyes]", dur=2.0, at=1.3)
-    s.wait(2.7)
+    s.wait(2.3)
     pc.set(s.t, sparkle=0.4)
     # Cartman peeks
     s.camera(dur=0.5, cx=520, cy=820, zoom=1.9)
@@ -138,9 +138,9 @@ def build():
     s.param(mood="cringe")
     s.music(None, fade=0.3)
     s.sfx("crickets", gain=0.9, d=2.4)
-    s.cc("[Crickets]", dur=2.0)
+    s.cc("[Crickets]", dur=1.8)
     c.to(s.t, 0.3, eyes="squint", mouth="grimace", brow=0.8)
-    s.wait(2.0)
+    s.wait(1.8)
     s.say(ch, "Because it's... souper emotional?", eyes="open", mouth="smile", brow=0.6, arms="shrug")
     s.sfx("crowd_groan", gain=0.6, d=2.0)
     pc.to(s.t, 0.3, arms="clap")
@@ -198,18 +198,24 @@ def build():
     s.say(ch, "Sir, please! The chef worked very hard on that disappointment!", eyes="teary", tears=0.5,
           mouth="wobbly", brow=1, arms="heart", hold=None)
     s.say(c, "Then get me the MANAGER! The manager of FEELINGS!", style="shout", arms="point", eyes="angry")
-    s.say(pc, "I am the manager of feelings, sir. How may I validate you?", eyes="open", mouth="smile",
-          arms="present", look=0.8)
-    s.say(c, "VALIDATE ME HARDER!", style="shout", arms="up", eyes="squeeze", mouth="scream")
-    # dramatic faint, caught by both
-    c.to(s.t, 0.5, "in", rot=1.35, y=STAGE_Y - 60, arms="out")
-    pc.to(s.t, 0.4, x=220, arms="grab")
-    ch.to(s.t, 0.4, x=430, arms="grab")
-    s.sfx("whoosh", gain=0.6)
-    s.sfx("crowd_laugh", at=s.t + 0.4, gain=1.0, d=3.4)
+    s.say(pc, "I am the manager of feelings, sir. What's the problem?", eyes="open", mouth="smile",
+          arms="hips", look=0.8)
+    # the grumpy customer: arms crossed, nose in the air
+    s.say(c, "One star! The waiter cried in my soup, and I am NOT leaving a tip!", style="shout", arms="cross", eyes="half", looky=-0.7, mouth="frown", brow=-0.6)
+    s.overlay("sfx", at=s.t - 1.6, dur=1.4, text="ONE STAR!", x=380, y=640, size=110, color="#ffe14a")
+    s.say(ch, "Not the tip!", style="shout", arms="face", eyes="wide", mouth="o", tears=0.8, brow=1)
+    # "Hmph!" and a stomp
+    c.set(s.t, facing=-1, eyes="closed", looky=-0.8)
+    for k in range(3):
+        c.to(s.t + k * 0.3, 0.15, "out", hop=24)
+        c.to(s.t + k * 0.3 + 0.15, 0.15, "in", hop=0)
+        s.sfx("thud", at=s.t + k * 0.3 + 0.3, gain=0.5)
+    s.say(c, "Hmph!", mouth="frown", advance=False)
+    s.overlay("sfx", at=s.t + 0.1, dur=1.0, text="HMPH!", x=330, y=700, size=110, color="#ffffff")
+    s.sfx("crowd_laugh", at=s.t + 0.3, gain=1.0, d=3.4)
     s.sfx("applause_big", at=s.t + 0.6, gain=0.6)
-    s.overlay("sfx", at=s.t + 0.4, dur=1.2, text="*FAINTS*", x=380, y=640, size=110, color="#ffffff")
-    s.wait(2.2)
+    pc.to(s.t + 0.4, 0.3, arms="clap", clap=1, eyes="happy", mouth="grin")
+    s.wait(1.5)
     s.end()
 
     # ------------------------------------------------------------------ having fun + the knowing glance
@@ -224,7 +230,7 @@ def build():
     s.say(c, "Hahaha! Bahaha! Hahaha!", gap=0.0, advance=False)
     s.sfx("crowd_laugh", gain=0.6, d=4.0)
     s.camera(cx=450, cy=880, zoom=1.05)
-    s.wait(0.7)
+    s.wait(0.5)
     # slow push to the two of them, warm music under
     s.camera(dur=2.5, cx=455, cy=760, zoom=1.15)
     pc.to(s.t, 0.5, look=1.0, eyes="warm", clap=0, arms="down", mouth="smile")
@@ -237,7 +243,7 @@ def build():
            "possible, on purpose, to give Cartman this moment.")
     s.narr("The audience would never know. They didn't care. All that mattered was that the two of them knew.")
     s.say(ch, "Good job, bro.", style="whisper", gap=0.1)
-    s.say(pc, "Good job, bro.", style="whisper", gap=0.4)
+    s.say(pc, "Good job, bro.", style="whisper", gap=0.3)
     s.end()
 
     # ------------------------------------------------------------------ after the assembly
@@ -260,7 +266,7 @@ def build():
           mouth="smirk", arms="cross")
     c.set(s.t, walk=1)
     c.to(s.t, 2.0, "lin", x=1300, puff=1.0)
-    s.wait(0.7)
+    s.wait(0.4)
     s.end()
 
     # ------------------------------------------------------------------ the plan behind the plan
@@ -284,12 +290,12 @@ def build():
     pc.to(s.t, 0.3, "back", aRx=1.25, aRy=-0.1)
     ch.to(s.t, 0.3, "back", aLx=1.25, aLy=-0.1)
     s.sfx("pop", at=s.t + 0.3)
-    s.overlay("glance", at=s.t + 0.3, dur=1.2, a=pc, b=ch, dy1=150, dy2=150)
-    s.wait(1.3)
+    s.overlay("glance", at=s.t + 0.3, dur=1.0, a=pc, b=ch, dy1=150, dy2=150)
+    s.wait(1.0)
     s.end()
 
     s = P.shot("card", card="tbc", next="PART 3: THE LONG GAME")
     s.sfx("badum", gain=0.9)
-    s.wait(2.6)
+    s.wait(2.4)
     s.end()
     return P.finalize()

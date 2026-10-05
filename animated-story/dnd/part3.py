@@ -1,10 +1,10 @@
-"""DO NOT DISTURB, PART 3: THE SHAFT"""
+"""DO NOT DISTURB, PART 3: THE HARVEST"""
 from .common import new_part, title, hop_loop
 
 
 def build():
-    P = new_part(3, "THE SHAFT", "dnd3-the-shaft")
-    title(P, 3, "THE SHAFT")
+    P = new_part(3, "THE HARVEST", "dnd3-the-harvest")
+    title(P, 3, "THE HARVEST")
 
     # ------------------------------------------------------------------ the lobby
     s = P.shot("d_lobby", gate=0)
@@ -291,7 +291,7 @@ def build():
         cr.to(s.t + k * 0.35 + 0.17, 0.15, x=380, point=0.2)
         s.sfx("poke", at=s.t + k * 0.35 + 0.15, gain=0.8)
     cr.set(s.t, eyes="half")
-    s.say(td, "Stop. Stop poking me.", mouth="frown", advance=False)
+    s.say(td, "Okay. Okay! I get it!", mouth="frown", advance=False)
     s.wait(1.5)
     cr.to(s.t, 0.4, x=780, eyes="half")
     s.wait(0.5)
@@ -302,8 +302,8 @@ def build():
     s.wait(1.3)
     s.end()
 
-    # ------------------------------------------------------------------ the shaft
-    s = P.shot("d_shaft")
+    # ------------------------------------------------------------------ the chamber
+    s = P.shot("d_chamber")
     s.music("reveal", gain=0.55, fade=1.5)
     td = s.actor("tired", x=440, y=1500, scale=0.9, eyes="half", mouth="flat", bandage=1, bruise=1, walk=0.6)
     cr = s.actor("creature", x=650, y=1500, scale=0.42, form=1.0, eyes="open", z=1)
@@ -314,7 +314,7 @@ def build():
     td.to(s.t, 0.3, eyes="wide", mouth="o", looky=-0.6)
     s.sfx("dun", gain=0.7)
     s.camera(dur=4.5, ease="inout", cx=540, cy=300, zoom=0.62)
-    s.cc("[A shaft as deep as a skyscraper. Pod after pod after pod.]", at=s.t + 0.6, dur=3.4)
+    s.cc("[A chamber as deep as a skyscraper is tall. Pod after pod after pod.]", at=s.t + 0.6, dur=3.4)
     s.wait(5.0)
     s.camera(dur=2.0, ease="inout", cx=540, cy=900, zoom=0.9)
     s.overlay("label", at=s.t + 1.0, dur=2.6, text=["CALM CORP", "HARVEST ARRAY"], x=540, y=500, size=50,
@@ -322,7 +322,7 @@ def build():
     s.wait(2.4)
     s.end()
 
-    s = P.shot("d_shaft")
+    s = P.shot("d_chamber")
     td = s.actor("tired", x=480, y=1500, scale=0.9, eyes="wide", mouth="o", bandage=1, bruise=1, looky=-0.4)
     cr = s.actor("creature", x=650, y=1500, scale=0.42, form=1.0, eyes="open", looky=-0.5, z=1)
     s.camera(cx=560, cy=1230, zoom=1.9)

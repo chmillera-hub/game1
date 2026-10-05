@@ -234,5 +234,5 @@ def build():
     s.say(td, "Nobody stops a guy who looks this tired.", eyes="half", gap=0.8)
     s.end()
 
-    tbc(P, "PART 3: THE SHAFT")
+    tbc(P, "PART 3: THE HARVEST")
     return P.finalize()

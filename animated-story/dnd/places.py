@@ -663,7 +663,7 @@ def set_sewer(c, t, P, actors):
             src(c, TEAL_L, sense * (1 - r / 900) * 0.7); c.set_line_width(5); c.stroke()
 
 
-def set_shaft(c, t, P, actors):
+def set_chamber(c, t, P, actors):
     c.rectangle(-1500, -3000, 4000, 7000); fill(c, NIGHT)
     # light from above
     poly(c, [(380, -3000), (700, -3000), (1000, 2600), (80, 2600)])
@@ -779,5 +779,5 @@ def set_card2(c, t, P, actors):
 SETS = {
     "d_room": set_room, "d_house": set_house, "d_side": set_side, "d_kitchen": set_kitchen,
     "d_office": set_office, "d_lobby": set_lobby, "d_lab": set_lab, "d_hall": set_hall, "d_fall": set_fall,
-    "d_sewer": set_sewer, "d_shaft": set_shaft, "d_screen": set_screen, "d_black": set_black, "d_card": set_card2,
+    "d_sewer": set_sewer, "d_chamber": set_chamber, "d_screen": set_screen, "d_black": set_black, "d_card": set_card2,
 }

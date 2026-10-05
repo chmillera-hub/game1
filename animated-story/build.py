@@ -67,6 +67,7 @@ def main():
     ap.add_argument("--crf", type=int, default=20)
     ap.add_argument("--max-mb", type=float, default=28.5, help="size cap for the files in out/")
     ap.add_argument("--series", default="emotional", choices=sorted(SERIES))
+    ap.add_argument("--screenplay", action="store_true", help="only rewrite the screenplay (no rendering)")
     args = ap.parse_args()
     out_dir, play_path, series_name = SERIES[args.series][1:]
     os.makedirs(out_dir, exist_ok=True)
@@ -76,7 +77,7 @@ def main():
         part = load(n, args.series)
         built.append(part)
         print(f"part {n}: {part.total:.1f}s, {len(part.shots)} shots (script built in {time.time() - t0:.1f}s)")
-        if args.info:
+        if args.info or args.screenplay:
             for i, s in enumerate(part.shots):
                 first = s.lines[0].text[:60] if s.lines else ""
                 print(f"  [{i:02d}] {s.t0:6.1f}s +{s.dur:5.1f}  {s.set:8s} {first}")
@@ -98,7 +99,7 @@ def main():
         subprocess.run([os.path.join(HERE, "fit_size.sh"), full, mp4, str(args.max_mb)], check=True)
         part.write_srt(os.path.join(out_dir, f"{base}.srt"))
         print(f"  -> {mp4} ({time.time() - t0:.0f}s)")
-    if not args.info and not args.stills and len(built) == 3:
+    if (args.screenplay or (not args.info and not args.stills)) and len(built) == 3:
         screenplay(built, play_path, series_name)
 
 
