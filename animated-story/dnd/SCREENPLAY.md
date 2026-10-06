@@ -93,7 +93,7 @@ Generated from the scripts in `story/`. Timestamps are from the rendered videos.
 `2:15.2` **TIREDNESS:** I'm not sneaking in. I'm walking in the front door.  
 `2:18.4` **TIREDNESS:** Nobody stops a guy who looks this tired.  
 
-## Part 3: THE SHAFT
+## Part 3: THE HARVEST
 
 `0:04.4` **RECEPTIONIST:** Welcome to Calm Corp. Do you have an appointment?  
 `0:08.4` **TIREDNESS:** I'm here about the thing.  
@@ -131,9 +131,9 @@ Generated from the scripts in `story/`. Timestamps are from the rendered videos.
 `1:34.6` **TIREDNESS:** There's no way out of here.  
 `1:36.2` *[It points left. Down. Into the dark.]*  
 `1:37.8` **TIREDNESS:** No. Up is out. That way goes down.  
-`1:40.9` **TIREDNESS:** Stop. Stop poking me.  
+`1:40.9` **TIREDNESS:** Okay. Okay! I get it!  
 `1:42.9` **TIREDNESS (yelling):** Fine. FINE.  
-`1:46.9` *[A shaft as deep as a skyscraper. Pod after pod after pod.]*  
+`1:46.9` *[A chamber as deep as a skyscraper is tall. Pod after pod after pod.]*  
 `1:54.5` *[Each pod holds a creature like this one. Asleep.]*  
 `1:57.3` **TIREDNESS:** These are your family. Aren't they?  
 `2:01.5` **TIREDNESS:** Okay. I'm awake now.  
