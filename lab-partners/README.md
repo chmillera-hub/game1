@@ -9,7 +9,7 @@ keeps getting in the way.
 | 1: The Heist | `videos/part1-the-heist.mp4` | 2:19 |
 | 2: Villain School | `videos/part2-villain-school.mp4` | 2:52 |
 | 3: Vacation | `videos/part3-vacation.mp4` | 3:34 |
-| 4: The Comedy Show | `videos/part4-the-comedy-show.mp4` | 3:39 |
+| 4: The Comedy Show | `videos/part4-the-comedy-show.mp4` | 4:00 |
 
 **Part 1:** Vex tries to rob the lab. The music cuts the moment Boredom and Doubt look at him. Lifting the
 vial brings on boss music. He fumbles it, makes a slow-motion dive and earns a golf clap. Then he finds out

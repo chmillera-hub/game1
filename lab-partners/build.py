@@ -24,11 +24,12 @@ V = {
     "goon": ("en-US-GuyNeural", "+8%", "+2Hz"),
     "council": ("en-US-ChristopherNeural", "-12%", "-16Hz"),
     "council2": ("en-US-GuyNeural", "-10%", "-14Hz"),
+    "council3": ("en-US-EricNeural", "-14%", "-20Hz"),
 }
 show.VOICES.update(V)
 show.E.SPEAKER_COL.update({"narr": "#FFFFFF", "boredom": "#C3D7E3", "doubt": "#D7C2FF", "vex": "#B8F2A8",
                            "minion": "#FFE36A", "heir": "#FFB89A", "anchor": "#FFFFFF",
-                           "goon": "#FF9C8F", "council": "#C8C8D8", "council2": "#C8C8D8"})
+                           "goon": "#FF9C8F", "council": "#C8C8D8", "council2": "#C8C8D8", "council3": "#C8C8D8"})
 
 import daudio  # noqa: E402,F401
 import raudio  # noqa: E402,F401

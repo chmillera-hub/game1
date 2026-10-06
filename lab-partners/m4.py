@@ -28,6 +28,7 @@ def init_state():
     S["elders"] = [M.new_char("council", x, s=0.8, mouth="flat", mamt=0.0, brow=-0.4) for x in (90, 210, 330)]
     S["elders"][1] = S["council"]  # the council member who speaks also sits in the middle at the show
     S["council2"] = S["elders"][0]
+    S["council3"] = S["elders"][2]
     S["goon"] = M.new_char("goon1", 300, s=0.85, face=0.5, px=1)
     S["goons"] = [M.new_char(k, x, s=0.85, face=0.5, px=1) for k, x in (("goon2", 440), ("goon3", 560))]
     S["props"] = {"@goons": draw_goons, "@elders": draw_elders, "@car": lambda ctx, S, t: M.evil_car(ctx, 520, 600, t),
@@ -195,11 +196,24 @@ def a_dentist(S, lt, b):
     S["cam"] = [520, 400, 1.35]
 
 
+def a_tired(S, lt, b):
+    v, h = S["vex"], S["heir"]
+    # the heir wanders off; Vex slumps behind the desk, fed up with hiding
+    h.update(face=0.5, px=1)
+    walk(h, 1300, lt, 0, 1.6, 0.7)
+    h["visible"] = lt < 1.6
+    v.update(wide=0.0, sweat=0.0, mouth="frown", mamt=0.6, brow=0.8, lid=0.4, py=0.4)
+    hand(v, -1, (-20, -120), lt, 1.0, 1.4)
+    S["cam"] = [tw(lt, 0, 1.6, 640, 420), 400, tw(lt, 0, 1.6, 1.0, 1.4)]
+    S["fade"] = tw(lt, b.d - 0.4, b.d, 0, 1)
+
+
 def a_screw(S, lt, b):
     S["scene"] = "dark"
     S["show"] = ["vex"]
     v = S["vex"]
-    place(v, 640, 0.0, 0, mouth="frown", mamt=0.7, brow=-1.0)
+    S["fade"] = tw(lt, 0, 0.4, 1, 0)
+    place(v, 640, 0.0, 0, mouth="frown", mamt=0.7, brow=-1.0, lid=0.15, py=0.0)
     v["mode"] = "stomp" if lt < 1.4 else None
     hand(v, 1, (80, -170), lt, 1.4, 1.8)
     S["cam"] = [640, 400, tw(lt, 0, b.d, 1.1, 1.4)]
@@ -637,10 +651,40 @@ def a_scheme(S, lt, b):
     sfx(S, T(b, 0.2), "sting", 0.5)
 
 
+def a_pitch(S, lt, b):
+    v = S["vex"]
+    v.update(face=-0.6, px=-1, lid=0.15, mouth="smile", mamt=0.8, brow=0.4)
+    hand(v, -1, (-120, -170), lt, 0, 0.4)
+    hand(v, 1, (110, -150), lt, 0.2, 0.6)
+    walk(v, 860, lt, 0, 1.2, 0.6)
+    S["cam"] = [tw(lt, 0, 1.2, 860, 520), 400, tw(lt, 0, 1.2, 1.3, 1.0)]
+
+
+def grudging(e, lt, side):
+    e.update(face=-0.5 * side, px=-side, lid=0.5, brow=-0.8, mouth="flat", mamt=0.0, sweat=0)
+    e["hl"], e["hr"] = E.pose("council", -1, "cross"), E.pose("council", 1, "cross")
+
+
+def a_only_if(S, lt, b):
+    l, c, r = S["elders"]
+    grudging(l, lt, 1)
+    r.update(px=1, face=0.3)
+    S["cam"] = [210, 440, 1.7]
+
+
+def a_try(S, lt, b):
+    l, c, r = S["elders"]
+    grudging(r, lt, -1)
+    c.update(wide=0.0, sweat=tw(lt, 0, 1.0, 1.0, 0.0), mouth="smile", mamt=tw(lt, 0.5, 1.5, 0.0, 0.5),
+             lid=0.15, brow=0.4)
+    S["cam"] = [210, 440, 1.7]
+
+
 def a_curtain(S, lt, b):
     S["fx"]["curtain"] = clamp(lt / 2.2)
     sfx(S, T(b, 0.1), "curtain", 0.7)
     a_scheme(S, lt + 3, b)
+    S["vex"]["x"] = 860
     S["cam"] = [640, 360, 1.0]
 
 
@@ -662,8 +706,10 @@ BEATS = [
     Beat(a_call_caught, min=2.4),
     Beat(a_who, "heir", "Who were you talking to?", post=0.3),
     Beat(a_dentist, "vex", "Nobody! My dentist. My evil... dentist.", post=1.0),
-    Beat(a_screw, "vex", "That's it. Screw Boredom and Doubt. I don't need them. I'll be a full villain. No "
-                         "help. No feelings.", pre=0.6, post=0.8),
+    Beat(a_tired, "vex", "Ugh. I'm so tired of hiding every time I talk to Boredom and Doubt.", rate="-4%",
+         pre=0.4, post=0.6),
+    Beat(a_screw, "vex", "You know what? I've learned enough. Screw Boredom and Doubt. I don't need them anymore. "
+                         "Time to try this evil thing on my own.", pre=0.5, post=0.6),
     Beat(a_car, "narr", "So he chased everything a villain is supposed to want. The evil car.", pre=0.4,
          post=0.6),
     Beat(a_money, "narr", "Piles of money, stolen from citizens.", post=0.6),
@@ -696,26 +742,31 @@ BEATS = [
     Beat(a_enter, min=1.8),
     Beat(a_pun, "vex", "Why did the villain bring a ladder to the heist? He heard the stakes were high!",
          post=0.2),
-    Beat(a_pun_silence, min=2.6),
+    Beat(a_pun_silence, min=2.2),
     Beat(a_banana, "vex", "Behold! I shall make this banana... disappear!", post=0.2),
-    Beat(a_eat, min=4.0),
+    Beat(a_eat, min=3.8),
     Beat(a_tough, "vex", "Tough crowd. Okay.", post=0.6),
     Beat(a_for_nothing, "narr", "Puns. Tricks. Everything he had. Not one twitch.", post=0.6),
-    Beat(a_water, min=4.4),
+    Beat(a_water, min=4.0),
     Beat(a_slip, min=1.9),
-    Beat(a_silence, min=6.0),
+    Beat(a_silence, min=5.0),
     Beat(a_tiny_chuckle, min=2.2),
     Beat(a_spread, min=3.6),
     Beat(a_realize, "vex", "Oh. Oh!", post=0.8),
-    Beat(a_ham, min=7.0),
+    Beat(a_ham, min=5.6),
     Beat(a_ovation, min=3.2),
     Beat(a_heart, "council", "That was the stupidest thing I've ever seen. But he's got heart.", post=0.4),
     Beat(a_what_hearts, "council2", "What did you just say about... hearts?", rate="-8%", pre=0.6, post=0.8),
     Beat(a_nothing, "council", "Nothing.", pitch="+10Hz", post=0.8),
     Beat(a_scheme, "vex", "Heh heh heh. The plan... is working.", rate="-10%", pre=0.3, post=1.0),
-    Beat(a_curtain, min=2.6),
+    Beat(a_pitch, "vex", "Council! Let's use this heart idea to make us even more evil. More evil bucks. More "
+                         "evil power. Right, guys?", pre=0.2, post=0.5),
+    Beat(a_only_if, "council2", "Fine. Only if this heart thing makes us lots of money. And power.", rate="-6%",
+         post=0.5),
+    Beat(a_try, "council3", "Hmph. I guess we can try.", post=1.0),
+    Beat(a_curtain, min=2.2),
     Beat(a_outro, "narr", "And that's how the most villainous villain became the least conflicted one. With a "
-                          "little help from his lab partners.", pre=0.4, post=5.0),
+                          "little help from his lab partners.", pre=0.4, post=3.6),
 ]
 
 
