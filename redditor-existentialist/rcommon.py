@@ -31,8 +31,8 @@ def chat_msgs(S, t):
 
 def sitting_redditor(c, x=720):
     c.update(x=x, y=540, face=-0.7, px=-1.0, footL=(-34, 62), footR=(-14, 64))
-    c["hl"] = (-70, -60)
-    c["hr"] = (-60, -70)
+    c["hl"] = (-92, -116)
+    c["hr"] = (-58, -112)
 
 
 def draw_chair_flipped(ctx, x):

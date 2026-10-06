@@ -70,7 +70,14 @@ def a_title(S, lt, b):
     S["card"] = 1.0
 
 
+def type_hands(r, lt):
+    r["hl"] = (-92 + math.sin(lt * 21) * 5, -116 - abs(math.sin(lt * 17)) * 7)
+    r["hr"] = (-58 - math.sin(lt * 24) * 5, -112 - abs(math.sin(lt * 19 + 1)) * 7)
+    r["px"], r["py"] = -1.0, 0.2
+
+
 def a_room(S, lt, b):
+    type_hands(S["r"], lt)
     S["card"] = tw(lt, 0, 1.0, 1.0, 0.0)
     S["scene"] = "bedroom"
     S["cam"] = [tw(lt, 0, b.d, 640, 620), 360, tw(lt, 0, b.d, 1.0, 1.15)]
@@ -81,8 +88,7 @@ def a_room(S, lt, b):
 def a_tried(S, lt, b):
     r = S["r"]
     at_desk(S, lt, b, 1.6, 640, 400)
-    r["hl"] = (-80 + math.sin(lt * 20) * 4, -62)
-    r["hr"] = (-70 - math.sin(lt * 23) * 4, -70)
+    type_hands(r, lt)
     sfx(S, T(b, 0.5), "typing", 0.4)
 
 
@@ -298,8 +304,8 @@ BEATS = [
     Beat(ai3, min=3.4),
     Beat(a_stops, "redditor", "That's the thing. When I get close, I don't want to step in. Something stops "
                               "me.", pre=2.8, post=0.6),
-    Beat(a_says, "redditor", "A barrier. Something that says: do not step into the void, unless the void "
-                             "consumes you.", post=0.8),
+    Beat(a_says, "redditor", "A barrier. Something that says: do not step into the void, lest the void "
+                             "consume you.", post=0.8),
     Beat(a_push, "redditor", "It doesn't talk. It just sits there. A solid wall. It won't let me move.",
          pre=0.8, post=1.0, min=4.4),
     Beat(a_quit, "redditor", "So I want to quit. I see the void, but when I step near it, a part of me stops "
@@ -331,6 +337,7 @@ def draw_bedroom(ctx, S, t, gray=0.0):
         ctx.restore()
     draw_chair_flipped(ctx, r["x"] + 40)
     G.draw_monitor(ctx, t, 1.0)
+    G.draw_keyboard(ctx, 645, 430)
     E.draw_char(ctx, r, t)
     if S["scene"] == "life":
         for (x, w, h), u in zip(((160, 120, 380), (1060, 140, 420), (520, 100, 300)), S["life_walls"]):

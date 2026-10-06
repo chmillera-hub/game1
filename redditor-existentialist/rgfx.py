@@ -389,6 +389,24 @@ def draw_monitor(ctx, t, glow=1.0, x=480, y=300):
         ctx.fill()
 
 
+def draw_keyboard(ctx, x, y):
+    """Keyboard and mouse sitting on the desk top (y = desk surface)."""
+    ctx.move_to(x - 62, y)
+    ctx.line_to(x + 62, y)
+    ctx.line_to(x + 54, y - 12)
+    ctx.line_to(x - 54, y - 12)
+    ctx.close_path()
+    fill_stroke(ctx, "#2A2E3A", "#0E1016", 2)
+    for row in range(2):
+        for k in range(9):
+            kx = x - 48 + k * 11 + row * 4
+            ctx.rectangle(kx, y - 10 + row * 5, 8, 3)
+    src(ctx, "#6E7A94")
+    ctx.fill()
+    ellipse(ctx, x - 82, y - 5, 9, 5)
+    fill_stroke(ctx, "#2A2E3A", "#0E1016", 2)
+
+
 def draw_chair(ctx, x):
     rrect(ctx, x - 50, 380, 30, 150, 10)
     fill_stroke(ctx, "#2A2A33", "#111", 3)

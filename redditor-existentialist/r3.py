@@ -134,12 +134,18 @@ def a_come_here(S, lt, b):
 def hold_doubt(S):
     d = S["sd"]
     d["y"], d["s"] = 520, 1.5
-    S["hands"] = [(d["x"] - 120, d["y"] - 105, 0.5, False), (d["x"] + 120, d["y"] - 105, -0.5, False)]
+    S["hands"] = []
     S["cam"] = [640, 330, 1.6]
 
 
 def a_what_if_never(S, lt, b):
     hold_doubt(S)
+    # set her down on the books, then the hands drift back out of frame
+    d = S["sd"]
+    u = ease(clamp(lt / 0.9))
+    if lt < 0.9:
+        S["hands"] = [(d["x"] - 120 - 60 * u, lerp(d["y"] - 105, H_OFF, u), 0.5, False),
+                      (d["x"] + 120 + 60 * u, lerp(d["y"] - 105, H_OFF, u), -0.5, False)]
     d = S["sd"]
     d["brow"] = 0.4
     d["px"], d["py"] = 0, -0.4
@@ -502,7 +508,29 @@ def draw_stage(ctx, S, t):
     apply_cam(ctx, S, t, SCREEN)
     G.stage_room(ctx, t)
     for c in (S["anger"], S["boredom"], S["sd"]):
+        if c is S["sd"] and c["y"] < E.GROUND - 1:
+            continue
         E.draw_char(ctx, c, t)
+    sd = S["sd"]
+    if sd["y"] < E.GROUND - 1:
+        a_ = clamp((E.GROUND - sd["y"]) / (E.GROUND - 520))
+        cols = ["#8E1F2F", "#2E5A9E", "#3E7A3E", "#C9A040", "#6B4E8E", "#8E5A3E"]
+        y = 520
+        i = 0
+        while y < 760:
+            wdt = 150 - (i % 3) * 14
+            E.rrect(ctx, 640 - wdt / 2 + (i % 2) * 8, y, wdt, 30, 4)
+            E.src(ctx, cols[i % len(cols)], a_)
+            ctx.fill_preserve()
+            E.src(ctx, "#2A1A10", a_)
+            ctx.set_line_width(2)
+            ctx.stroke()
+            ctx.rectangle(640 - wdt / 2 + 12 + (i % 2) * 8, y + 12, wdt - 24, 4)
+            E.src(ctx, "#E8D9B8", 0.6 * a_)
+            ctx.fill()
+            y += 30
+            i += 1
+        E.draw_char(ctx, sd, t)
     for x, lbl in zip(WALLS, ("WALL", "ALSO A WALL", "WALL")):
         G.draw_cardboard_wall(ctx, x, E.GROUND + 4, t, S["walls_fall"], lbl)
     if S["r_alpha"] > 0:
