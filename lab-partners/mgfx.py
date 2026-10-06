@@ -1061,3 +1061,29 @@ def shards(ctx, x, a, seed=0):
     ellipse(ctx, x, GROUND, 40, 6)
     src(ctx, "#7CFF5A", 0.35 * a)
     ctx.fill()
+
+
+def banana(ctx, x, y, ang=0.0, s=1.0):
+    """A whole, unpeeled banana centered at (x, y)."""
+    ctx.save()
+    ctx.translate(x, y)
+    ctx.rotate(ang)
+    ctx.scale(s, s)
+    ctx.move_to(-30, -6)
+    ctx.curve_to(-14, 14, 14, 14, 30, -6)
+    ctx.curve_to(16, 4, -16, 4, -30, -6)
+    ctx.close_path()
+    fill_stroke(ctx, "#F2D84A", "#8A6A14", 2.5)
+    ctx.move_to(30, -6)
+    ctx.line_to(36, -12)
+    src(ctx, "#5A4A14")
+    ctx.set_line_width(4)
+    ctx.stroke()
+    ctx.restore()
+
+
+def _banana_item(ctx, hx, hy, wang, c, t):
+    banana(ctx, hx, hy - 20, -0.6, 1.6)
+
+
+E.ITEMS["banana"] = _banana_item

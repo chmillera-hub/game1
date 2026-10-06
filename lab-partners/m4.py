@@ -26,6 +26,8 @@ def init_state():
     S["heir"] = M.new_char("heir", 1000, face=-0.5, px=-1, mouth="smile", mamt=0.7, brow=0.5, cape=True)
     S["council"] = M.new_char("council", 640, mouth="flat", mamt=0.0, brow=-0.4)
     S["elders"] = [M.new_char("council", x, s=0.8, mouth="flat", mamt=0.0, brow=-0.4) for x in (90, 210, 330)]
+    S["elders"][1] = S["council"]  # the council member who speaks also sits in the middle at the show
+    S["council2"] = S["elders"][0]
     S["goon"] = M.new_char("goon1", 300, s=0.85, face=0.5, px=1)
     S["goons"] = [M.new_char(k, x, s=0.85, face=0.5, px=1) for k, x in (("goon2", 440), ("goon3", 560))]
     S["props"] = {"@goons": draw_goons, "@elders": draw_elders, "@car": lambda ctx, S, t: M.evil_car(ctx, 520, 600, t),
@@ -66,7 +68,7 @@ def draw_desk(ctx, S, t):
 def draw_peel(ctx, S, t):
     p = S["fx"].get("peel")
     if p:
-        M.banana_peel(ctx, p[0], p[1], t)
+        M.banana(ctx, p[0], p[1] - 4, p[2] if len(p) > 2 else 0.0, 1.5)
 
 
 def draw_flying(ctx, S, t):
@@ -356,7 +358,7 @@ def a_key(S, lt, b):
 
 def setup_stage(S):
     S["scene"] = "stage"
-    S["show"] = ["@duo_back", "@elders", "@peel", "vex", "@flying"]
+    S["show"] = ["@duo_back", "@elders", "vex", "@peel", "@flying"]
     for i, e in enumerate(S["elders"]):
         place(e, 90 + i * 120, 0.5, 1, s=0.8, mouth="flat", mamt=0.0, brow=-0.5, lid=0.5)
     bo, d = S["boredom"], S["doubt"]
@@ -407,28 +409,61 @@ def a_pun_silence(S, lt, b):
     S["cam"] = [lerp(220, 820, 0.0 if lt < 1.0 else 1.0), 430 if lt < 1.0 else 380, 1.6 if lt < 1.0 else 1.3]
 
 
+REST = 1120  # where the banana ends up (and where he slips later)
+
+
 def a_banana(S, lt, b):
     v = S["vex"]
     v["itemR"] = None
-    v["itemL"] = None
-    hand(v, -1, (-90, -170), lt, 0, 0.4)
+    v["itemL"] = "banana"
+    hand(v, -1, (-120, -160), lt, 0, 0.4)
+    v["hl"] = (v["hl"][0], v["hl"][1] + math.sin(lt * 6) * 6)
+    v.update(mouth="smile", mamt=0.8, brow=0.5)
     S["cam"] = [820, 380, 1.2]
+
+
+def banana_path(lt):
+    """Thrown over his shoulder at 0.5s, then a few sad little bounces."""
+    if lt < 1.2:
+        u = clamp((lt - 0.5) / 0.7)
+        return lerp(930, 1060, u), lerp(400, GROUND - 6, u) - math.sin(u * PI) * 160, u * 8
+    hops = [(1.2, 1.6, 1060, 1090, 34), (1.6, 1.9, 1090, 1110, 14), (1.9, 2.1, 1110, REST, 5)]
+    for t0, t1, x0, x1, h in hops:
+        if lt < t1:
+            u = (lt - t0) / (t1 - t0)
+            return lerp(x0, x1, u), GROUND - 6 - math.sin(u * PI) * h, 8 + u
+    return REST, GROUND - 6, 9.0
 
 
 def a_eat(S, lt, b):
     v = S["vex"]
-    hand(v, -1, (-10, -110), lt, 0, 0.3)
-    if lt > 1.2:
-        hand(v, -1, (-90, -130), lt, 1.2, 1.4)
-        S["fx"]["peel"] = (tw(lt, 1.3, 1.9, 870, 760), tw(lt, 1.3, 1.9, 470, GROUND - 4, ease))
-    sfx(S, T(b, 0.4), "crunch", 0.5)
-    sfx(S, T(b, 1.3), "throw", 0.5)
-    sfx(S, T(b, 2.2), "cricket", 0.6)
-    v["mouth"], v["mamt"] = ("o", 0.6) if lt < 1.2 else ("smile", 0.8)
+    es = S["elders"]
+    if lt < 0.5:
+        hand(v, -1, (40, -230), lt, 0, 0.5)  # wind up over the shoulder
+    else:
+        v["itemL"] = None
+        hand(v, -1, (-110, -150), lt, 0.5, 0.7)
+        S["fx"]["peel"] = banana_path(lt)
+    v.update(mouth="smile" if lt < 2.3 else "flat", mamt=0.9 if lt < 2.3 else 0.0,
+             wide=0.5 if lt > 2.3 else 0.0, sweat=0.5 if lt > 2.3 else 0.0)
+    if 2.4 < lt < 3.6:
+        # the council side-eyes each other, then straight back to stone
+        for i, e in enumerate(es):
+            e["px"] = (1, -1, 1)[i] if lt < 3.2 else 0
+            e["face"] = (0.5, -0.5, 0.5)[i] if lt < 3.2 else 0.5
+            e["lid"] = 0.6
+    sfx(S, T(b, 0.5), "throw", 0.5)
+    for k, (tt, g) in enumerate(((1.2, 0.5), (1.6, 0.3), (1.9, 0.15))):
+        sfx(S, T(b, tt), "tap", g)
+    sfx(S, T(b, 2.6), "cricket", 0.6)
+    S["cam"] = [tw(lt, 0, 1.0, 820, 820), 400, 1.1] if lt < 2.4 else [tw(lt, 2.4, 2.8, 820, 220), 440,
+                                                                      tw(lt, 2.4, 2.8, 1.1, 1.8)]
 
 
 def a_tough(S, lt, b):
-    S["fx"]["peel"] = (760, GROUND - 4)
+    S["fx"]["peel"] = (REST, GROUND - 6, 9.0)
+    for e in S["elders"]:
+        e["px"] = 0
     v = S["vex"]
     v.update(mouth="smile", mamt=0.5, sweat=0.8, brow=0.6)
 
@@ -436,6 +471,7 @@ def a_tough(S, lt, b):
 def a_for_nothing(S, lt, b):
     S["cam"] = [lerp(220, 640, clamp(lt / b.d)), 420, tw(lt, 0, b.d, 1.6, 1.0)]
     v = S["vex"]
+    v["wide"] = 0
     v.update(mouth="frown", mamt=0.5, brow=0.9, py=0.6, sweat=0.3)
     hand(v, 1, "rest", lt, 0, 0.5)
     hand(v, -1, "rest", lt, 0, 0.5)
@@ -449,27 +485,27 @@ def a_water(S, lt, b):
         walk(v, 1340, lt, 0, 2.0, 0.6)
     else:
         v.update(face=-0.5, px=-1, itemR="bottle", py=0.4)
-        walk(v, 760, lt, 2.4, b.d, 0.6)
-    S["cam"] = [880, 380, 1.1]
+        walk(v, REST, lt, 2.4, b.d, 0.6)
+    S["cam"] = [940, 380, 1.1]
 
 
 def a_slip(S, lt, b):
     v = S["vex"]
     u = clamp(lt / 1.1)
-    v["x"] = 760 - 140 * u
+    v["x"] = REST - 140 * u
     v["walking"] = 0
     v["yoff"] = -math.sin(u * PI) * 180 if lt < 1.1 else 0
     v["tilt"] = -u * (2 * PI + PI / 2)
     v["wide"] = 1.0
     v["mouth"], v["mamt"] = "o", 1.0
-    S["fx"]["peel"] = (tw(lt, 0, 0.6, 760, 820), GROUND - 4)
+    S["fx"]["peel"] = (tw(lt, 0, 0.6, REST, REST + 70), GROUND - 6, 9.0 + lt * 4 if lt < 0.6 else 11.4)
     hand(v, -1, (-120, -200), lt, 0, 0.1)
     hand(v, 1, (120, -200), lt, 0, 0.1)
     sfx(S, T(b), "slip", 1.0)
     sfx(S, T(b, 0.15), "squeal", 1.0)
     sfx(S, T(b, 1.1), "crashland", 1.0)
     S["shake"] = tw(lt, 1.1, 1.6, 1.0, 0) if lt > 1.1 else 0
-    S["cam"] = [700, 400, 1.15]
+    S["cam"] = [1000, 400, 1.15]
 
 
 def a_silence(S, lt, b):
@@ -482,7 +518,7 @@ def a_silence(S, lt, b):
     v["brow"] = 0.9
     v["py"] = 0.6
     S["shake"] = 0
-    S["cam"] = [lerp(620, 360, ease(clamp((lt - 1) / 2))), 420, 1.2]
+    S["cam"] = [lerp(980, 360, ease(clamp((lt - 1) / 2))), 420, 1.2]
     sfx(S, T(b, 1.5), "cricket", 0.5)
 
 
@@ -514,7 +550,7 @@ def a_realize(S, lt, b):
 def a_ham(S, lt, b):
     v = S["vex"]
     u = (lt % 1.4) / 1.4
-    v["x"] = 640 + math.sin(lt * 1.6) * 160
+    v["x"] = REST - 140 - 300 * (0.5 - 0.5 * math.cos(lt * 0.9))
     v["tilt"] = math.sin(u * PI) * 1.4 * (1 if int(lt / 1.4) % 2 else -1)
     v["yoff"] = -math.sin(u * PI) * 50
     v["mouth"], v["mamt"] = "laugh", 0.9
@@ -562,10 +598,50 @@ def a_ovation(S, lt, b):
     S["cam"] = [640, 360, 1.0]
 
 
+def a_heart(S, lt, b):
+    # the middle council member, still clapping, lets it slip
+    a_ovation(S, lt + 3, b)
+    c = S["council"]
+    c.update(eyes="open", mouth="smile", mamt=0.5, brow=0.6, lid=0.2)
+    S["cam"] = [210, 440, 1.7]
+
+
+def a_what_hearts(S, lt, b):
+    es = S["elders"]
+    for i, e in enumerate(es):
+        e.update(eyes="open", yoff=0, mode=None)
+        e["hl"], e["hr"] = E.pose("council", -1, "rest"), E.pose("council", 1, "rest")
+    l, c, r = es
+    l.update(px=1, face=0.4, brow=-1.0, mouth="frown", mamt=0.6, lid=0.35)
+    r.update(px=-1, face=-0.4, brow=-1.0, mouth="frown", mamt=0.6, lid=0.35)
+    c.update(px=0, wide=1.0, sweat=1.0, mouth="o", mamt=0.5, brow=0.8, lid=0.0)
+    for n in ("boredom", "doubt"):
+        S[n].update(mode=None, yoff=0, mouth="o", mamt=0.4)
+    sfx(S, T(b, 0.0), "scratch", 0.5)
+    S["cam"] = [210, 440, tw(lt, 0, 0.4, 1.7, 1.9)]
+
+
+def a_nothing(S, lt, b):
+    S["cam"] = [210, 440, 1.9]
+
+
+def a_scheme(S, lt, b):
+    v = S["vex"]
+    v.update(x=860, face=0.0, px=-1, tilt=0, itemR=None, itemL=None, yoff=0, eyes="open", mouth="smirk", mamt=1.0, brow=-1.0, lid=0.35,
+             blush=0.0)
+    rub = math.sin(lt * 14) * 10
+    v["hl"] = (-14 + rub, -120)
+    v["hr"] = (14 - rub, -116)
+    S["fx"]["spot"] = tw(lt, 0, 0.5, 1.0, 0.5)
+    S["cam"] = [860, 380, tw(lt, 0, b.d, 1.3, 1.6)]
+    sfx(S, T(b, 0.2), "sting", 0.5)
+
+
 def a_curtain(S, lt, b):
     S["fx"]["curtain"] = clamp(lt / 2.2)
     sfx(S, T(b, 0.1), "curtain", 0.7)
-    a_ovation(S, lt + 3, b)
+    a_scheme(S, lt + 3, b)
+    S["cam"] = [640, 360, 1.0]
 
 
 def a_outro(S, lt, b):
@@ -622,7 +698,7 @@ BEATS = [
          post=0.2),
     Beat(a_pun_silence, min=2.6),
     Beat(a_banana, "vex", "Behold! I shall make this banana... disappear!", post=0.2),
-    Beat(a_eat, min=3.4),
+    Beat(a_eat, min=4.0),
     Beat(a_tough, "vex", "Tough crowd. Okay.", post=0.6),
     Beat(a_for_nothing, "narr", "Puns. Tricks. Everything he had. Not one twitch.", post=0.6),
     Beat(a_water, min=4.4),
@@ -633,6 +709,10 @@ BEATS = [
     Beat(a_realize, "vex", "Oh. Oh!", post=0.8),
     Beat(a_ham, min=7.0),
     Beat(a_ovation, min=3.2),
+    Beat(a_heart, "council", "That was the stupidest thing I've ever seen. But he's got heart.", post=0.4),
+    Beat(a_what_hearts, "council2", "What did you just say about... hearts?", rate="-8%", pre=0.6, post=0.8),
+    Beat(a_nothing, "council", "Nothing.", pitch="+10Hz", post=0.8),
+    Beat(a_scheme, "vex", "Heh heh heh. The plan... is working.", rate="-10%", pre=0.3, post=1.0),
     Beat(a_curtain, min=2.6),
     Beat(a_outro, "narr", "And that's how the most villainous villain became the least conflicted one. With a "
                           "little help from his lab partners.", pre=0.4, post=5.0),
