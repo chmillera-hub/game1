@@ -41,7 +41,7 @@ def init_state():
 def draw_ped(ctx, S, t):
     M.pedestal(ctx, PED)
     v = S["vial"]
-    if v["mode"] in ("ped", "air"):
+    if v["mode"] == "ped":
         M.draw_vial(ctx, v["x"], v["y"], v["ang"], t)
 
 
@@ -58,6 +58,9 @@ def draw_stand(ctx, S, t):
 
 
 def draw_flasks(ctx, S, t):
+    vi = S["vial"]
+    if vi["mode"] == "air":  # juggled / flying vial goes in front of everyone
+        M.draw_vial(ctx, vi["x"], vi["y"], vi["ang"], t)
     if S["fx"].get("lean"):
         ctx.save()
         ctx.translate(DX - 75, GROUND)
@@ -330,25 +333,65 @@ def a_sidle(S, lt, b):
     S["cam"] = [740, 400, tw(lt, 0, 2.0, 1.0, 1.4)]
 
 
+JUG_H = [100, 150, 80, 170, 110, 140, 90, 160]
+
+
+def juggle(v, lt):
+    """Clumsy juggling: the flask bounces hand to hand. Returns the flask's world position and angle."""
+    hands = {1: (55, -125), -1: (-55, -125)}
+    if lt < 0.4:
+        # grabs it off the pedestal
+        u = ease(clamp(lt / 0.4))
+        v["hr"] = (lerp(70, 55, u), lerp(-185, -125, u))
+        return v["x"] + v["hr"][0], GROUND + v["yoff"] + v["hr"][1] - 30, 0.0
+    P = 0.42
+    k = int((lt - 0.4) / P)
+    u = (lt - 0.4) / P - k
+    src_side = 1 if k % 2 == 0 else -1
+    a, c = hands[src_side], hands[-src_side]
+    # tossing hand pops up, catching hand scrambles underneath
+    v["hr" if src_side > 0 else "hl"] = (a[0], a[1] - 30 * max(0.0, 1 - u * 4))
+    v["hl" if src_side > 0 else "hr"] = (c[0] + math.sin(lt * 23) * 12, c[1] + math.cos(lt * 19) * 8)
+    x = v["x"] + lerp(a[0], c[0], u)
+    y = GROUND + v["yoff"] + lerp(a[1], c[1], u) - 30 - math.sin(u * math.pi) * JUG_H[k % len(JUG_H)]
+    return x, y, (k + u) * 2.6 * src_side
+
+
 def a_fumble(S, lt, b):
     frozen(S, lt)
     v, vi = S["vex"], S["vial"]
-    v["shake"] = 1.2
-    hand(v, 1, (70, -170), lt, 0, 0.3)
-    up = 0.4
-    f0 = IDX["fum"].start
-    span = IDX["dive"].start - f0
-    lta = S["t"] - f0
-    if lta > up:
-        vi["mode"] = "air"
-        u = clamp((lta - up) / (span - up))
-        vi["x"] = lerp(PED, 980, u)
-        vi["y"] = GROUND - 180 - math.sin(u * math.pi) * 220 + u * 120
-        vi["ang"] = u * 7
-        v["mouth"], v["mamt"] = "o", 1.0
-        v["wide"] = 1.4
-    sfx(S, T(b, up), "whoosh", 0.6)
-    S["cam"] = [880, 360, 1.2]
+    bo, d = S["boredom"], S["doubt"]
+    # side-eye: heads stay put, eyes slide over to him (and briefly to each other)
+    for c in (bo, d):
+        c.update(lid=0.55, brow=-0.5, px=1, py=0.1, mouth="flat", mamt=0.0)
+    v["shake"] = 0.6
+    v["mouth"], v["mamt"] = "o", 1.0
+    v["wide"] = 1.2
+    vi["mode"] = "air"
+    if b.id == "fum":
+        x, y, ang = juggle(v, min(lt, b.d))
+        vi.update(x=x, y=y, ang=ang)
+        S["fx"]["jug_end"] = (x, y, ang)
+        v["px"] = clamp((x - v["x"]) / 50, -1, 1)
+        v["py"] = -0.7
+        if 1.4 < lt < 2.2:
+            bo["px"], d["px"] = 1, -1  # quick look at each other
+        for k in range(int(max(0, lt - 0.4) / 0.42) + 1):
+            if 0.4 + k * 0.42 < b.d:
+                sfx(S, T(b, 0.4 + k * 0.42), "tink", 0.35)
+        S["cam"] = [740, 400, 1.35]
+    else:
+        # one toss too many: it sails off in slow motion
+        x0, y0, a0 = S["fx"].get("jug_end", (v["x"] + 55, GROUND - 155, 0.0))
+        u = clamp(lt / b.d)
+        vi["x"] = lerp(x0, 980, u)
+        vi["y"] = lerp(y0, GROUND - 60, u) - math.sin(u * math.pi) * 170
+        vi["ang"] = a0 + u * 7
+        v["hr"] = (lerp(55, 120, u), -150)
+        v["hl"] = (lerp(-55, 20, u), -140)
+        v["px"], v["py"] = 1, -0.3
+        sfx(S, T(b, 0.0), "whoosh", 0.6)
+        S["cam"] = [lerp(740, 880, u), lerp(400, 360, u), lerp(1.35, 1.2, u)]
 
 
 def a_dive(S, lt, b):
@@ -535,8 +578,9 @@ BEATS = [
     Beat(a_boss, "vex", "Oh. Oh no. Oh, fudge.", pre=0.8, post=0.1),
     Beat(a_oh_no, "vex", "Oh, snap. Oh, snap, snap, snap!", rate="+8%", post=0.2),
     Beat(a_sidle, "narr", "He lifts it one centimeter.", pre=2.4, post=1.8, min=5.0),
-    Beat(a_fumble, "vex", "Oh, fiddlesticks!", rate="-30%", pre=0.2, post=0.0, min=1.2, id="fum"),
-    Beat(a_fumble, "vex", "If this breaks, I'm toast!", rate="-20%", post=0.0),
+    Beat(a_fumble, "vex", "Oh no. Oh no, oh no, oh no! Oh, fiddlesticks!", rate="+6%", pre=0.2, post=0.6,
+         min=4.0, id="fum"),
+    Beat(a_fumble, "vex", "If this breaks, I'm toast!", rate="-20%", post=0.0, id="fly"),
     Beat(a_dive, min=2.4, id="dive"),
     Beat(a_golfclap, min=2.6),
     Beat(a_thanks, "vex", "Thank you! ...Wait. What the heck? I'm the villain here!", post=0.8),

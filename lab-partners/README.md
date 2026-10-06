@@ -6,7 +6,7 @@ keeps getting in the way.
 
 | Part | File | Length |
 |------|------|--------|
-| 1: The Heist | `videos/part1-the-heist.mp4` | 2:19 |
+| 1: The Heist | `videos/part1-the-heist.mp4` | 2:23 |
 | 2: Villain School | `videos/part2-villain-school.mp4` | 2:52 |
 | 3: Vacation | `videos/part3-vacation.mp4` | 3:34 |
 | 4: The Comedy Show | `videos/part4-the-comedy-show.mp4` | 4:00 |
