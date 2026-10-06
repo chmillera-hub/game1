@@ -97,6 +97,9 @@ def a_eyebrow(S, lt, b):
     d["mouth"], d["mamt"] = "smirk", 0.6
     bo["mode"] = "holdin"
     bo["shake"] = 2.0
+    if lt < b.d:
+        S["subtitle"] = ("(Boredom is trying very hard not to laugh)", "boredom")
+    sfx(S, T(b, 0.9), "snort", 0.35)
     S["cam"] = [470, 400, 1.4]
 
 
@@ -238,8 +241,34 @@ def a_recover(S, lt, b):
     r["x"] = 700
     S["shake"] = 0
     p = S["pilot"]
-    p["wide"] = 0.6
-    S["cam"] = [640, 360, tw(lt, 0, 0.6, 1.4, 1.0)]
+    p.update(wide=0.0, lid=0.45, brow=-0.3, mouth="flat", mamt=0.0, px=1)
+    r["arm"] = max(0, math.sin(lt * 1.2)) * 0.6
+    S["cam"] = [tw(lt, 0, 0.6, 760, 700), 320, tw(lt, 0, 0.6, 1.4, 1.3)]
+
+
+def a_duo_sarcastic(S, lt, b):
+    bo, d = S["boredom"], S["doubt"]
+    for c in (bo, d):
+        c.update(lid=0.45, mouth="smirk", mamt=0.7, brow=0.5)
+    hand(d, 1, (70, -170), lt, 0, 0.4)
+    S["cam"] = [1060, 420, 1.5]
+
+
+def a_duo_insured(S, lt, b):
+    hand(S["doubt"], 1, "rest", lt, 0, 0.4)
+    hand(S["boredom"], -1, (-70, -150), lt, 0, 0.4)
+    S["cam"] = [1060, 420, 1.5]
+
+
+def a_nobody_hurt(S, lt, b):
+    hand(S["boredom"], -1, "rest", lt, 0, 0.4)
+    r = S["fx"]["robot"]
+    r["step"] = lt * 4
+    r["arm"] = max(0, math.sin(lt * 2.4))
+    S["shake"] = 0.3 * abs(math.sin(lt * 4))
+    for k in range(int(b.d / 0.8)):
+        sfx(S, T(b, 0.3 + k * 0.8), "mechstep", 0.5)
+    S["cam"] = [640, 360, tw(lt, 0, 0.8, 1.5, 1.0)]
     S["fade"] = tw(lt, b.d - 0.5, b.d, 0, 1)
 
 
@@ -284,6 +313,20 @@ def a_suffering(S, lt, b):
 
 def a_afraid(S, lt, b):
     hand(S["doubt"], -1, "rest", lt, 0, 0.4)
+
+
+def a_wonder(S, lt, b):
+    bo = S["boredom"]
+    bo.update(brow=0.6, mouth="flat", mamt=0.1)
+    hand(S["doubt"], -1, "rest", lt, 0, 0.4)
+
+
+def a_part_of_it(S, lt, b):
+    v = S["vex"]
+    v.update(py=tw(lt, 0, 1.2, 0.8, 0.0), tears=0.6, shake=0.0)
+    hand(v, -1, "rest", lt, 0, 0.6)
+    hand(v, 1, "rest", lt, 0, 0.6)
+    S["cam"] = [700, 400, tw(lt, 0, b.d, 1.35, 1.5)]
 
 
 def a_think(S, lt, b):
@@ -342,17 +385,27 @@ BEATS = [
          pre=0.6, post=0.6),
     Beat(a_goon_cheer, "goon", "Yeah! Smash it, Vex! You're the worst!", post=0.6),
     Beat(a_glance, min=3.0),
-    Beat(a_recover, "vex", "Whoa! Whoa, whoa, whoa! Totally meant to do that!", pre=0.0, post=1.0),
+    Beat(a_recover, "vex", "Wow. Look at me. Destroying buildings. How fun.", rate="-10%", pitch="-4Hz",
+         pre=0.2, post=0.5),
+    Beat(a_duo_sarcastic, "doubt", "Oh, yes. Destroying buildings looks so fun for you, my guy.", rate="-4%",
+         post=0.3),
+    Beat(a_duo_insured, "boredom", "So fun. And so insured.", post=0.6),
+    Beat(a_nobody_hurt, "narr", "Every building was empty, insured, and scheduled for demolition anyway. "
+                                "Nobody got hurt. Not even a pigeon.", post=1.0),
     Beat(a_night, "narr", "But one night, it all came crashing down.", pre=1.0, post=1.0),
     Beat(a_lie, "vex", "My whole life is a lie. I'm lying to my friends about being villainous. I'm hiding "
                        "you two behind their backs. I don't know how long I can keep doing this.", rate="-6%",
          post=1.2),
     Beat(a_serious, min=2.6),
-    Beat(a_suffering, "doubt", "Hey. Look at us. When we think about you, we can see that your embarrassment is "
-                               "suffering.", post=0.4),
-    Beat(a_afraid, "boredom", "It's afraid your friends will find out you've been getting help.", post=0.4),
-    Beat(a_afraid, "doubt", "And it's afraid that if you cut ties with us, you won't have any help impressing "
-                            "them at all.", post=0.5),
+    Beat(a_suffering, "doubt", "Hey. Look at us. When we think about you, we wonder if maybe your embarrassment "
+                               "might be suffering.", post=0.4),
+    Beat(a_afraid, "boredom", "Maybe it's afraid your friends might find out you've been getting help.",
+         post=0.4),
+    Beat(a_afraid, "doubt", "And maybe it's also afraid that if you cut ties with us, you might not have any "
+                            "help impressing them at all.", post=0.5),
+    Beat(a_wonder, "boredom", "We might be wrong, though. What do you think it's trying to tell you?", post=0.8),
+    Beat(a_part_of_it, "vex", "I... think that might be part of it. Yeah. And maybe... I don't want to lose "
+                              "you guys either.", rate="-8%", post=0.8),
     Beat(a_think, "boredom", "So. Let's think really hard about this.", post=0.8),
     Beat(a_plan, "narr", "He expected them to shame him. Or to tell him not to worry about it. Instead, they "
                          "were already writing a master plan.", pre=0.6, post=1.0),
