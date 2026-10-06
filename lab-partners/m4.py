@@ -424,6 +424,7 @@ def a_pun_silence(S, lt, b):
 
 
 REST = 1120  # where the banana ends up (and where he slips later)
+CENTER = 860  # where his tumble ends
 
 
 def a_banana(S, lt, b):
@@ -498,18 +499,21 @@ def a_water(S, lt, b):
         v.update(face=0.5, px=1)
         walk(v, 1340, lt, 0, 2.0, 0.6)
     else:
-        v.update(face=-0.5, px=-1, itemR="bottle", py=0.4)
-        walk(v, REST, lt, 2.4, b.d, 0.6)
+        # walks back on from the wings, straight toward the banana
+        v.update(face=-0.5, px=-1, itemR="bottle", py=0.4, x=1340)
+        walk(v, REST + 10, lt, 2.2, b.d, 0.6)
     S["cam"] = [940, 380, 1.1]
 
 
 def a_slip(S, lt, b):
     v = S["vex"]
+    # feet fly out, a full flip in the air, then a tumble roll back to center stage
     u = clamp(lt / 1.1)
-    v["x"] = REST - 140 * u
+    r = clamp((lt - 1.1) / 0.6)
+    v["x"] = lerp(REST + 10, 960, u) if lt < 1.1 else lerp(960, CENTER, ease(r))
     v["walking"] = 0
-    v["yoff"] = -math.sin(u * PI) * 180 if lt < 1.1 else 0
-    v["tilt"] = -u * (2 * PI + PI / 2)
+    v["yoff"] = -math.sin(u * PI) * 180 if lt < 1.1 else -abs(math.sin(r * PI)) * 14
+    v["tilt"] = -u * (2 * PI + PI / 2) - ease(r) * 2 * PI
     v["wide"] = 1.0
     v["mouth"], v["mamt"] = "o", 1.0
     S["fx"]["peel"] = (tw(lt, 0, 0.6, REST, REST + 70), GROUND - 6, 9.0 + lt * 4 if lt < 0.6 else 11.4)
@@ -518,8 +522,9 @@ def a_slip(S, lt, b):
     sfx(S, T(b), "slip", 1.0)
     sfx(S, T(b, 0.15), "squeal", 1.0)
     sfx(S, T(b, 1.1), "crashland", 1.0)
+    sfx(S, T(b, 1.7), "thud", 0.7)
     S["shake"] = tw(lt, 1.1, 1.6, 1.0, 0) if lt > 1.1 else 0
-    S["cam"] = [1000, 400, 1.15]
+    S["cam"] = [lerp(1000, 900, clamp((lt - 1.1) / 0.6)), 400, 1.15]
 
 
 def a_silence(S, lt, b):
@@ -532,7 +537,8 @@ def a_silence(S, lt, b):
     v["brow"] = 0.9
     v["py"] = 0.6
     S["shake"] = 0
-    S["cam"] = [lerp(980, 360, ease(clamp((lt - 1) / 2))), 420, 1.2]
+    v["x"] = CENTER
+    S["cam"] = [lerp(CENTER, 360, ease(clamp((lt - 1) / 2))), 420, 1.2]
     sfx(S, T(b, 1.5), "cricket", 0.5)
 
 
@@ -564,7 +570,7 @@ def a_realize(S, lt, b):
 def a_ham(S, lt, b):
     v = S["vex"]
     u = (lt % 1.4) / 1.4
-    v["x"] = REST - 140 - 300 * (0.5 - 0.5 * math.cos(lt * 0.9))
+    v["x"] = CENTER - 240 * (0.5 - 0.5 * math.cos(lt * 0.9))
     v["tilt"] = math.sin(u * PI) * 1.4 * (1 if int(lt / 1.4) % 2 else -1)
     v["yoff"] = -math.sin(u * PI) * 50
     v["mouth"], v["mamt"] = "laugh", 0.9
@@ -748,7 +754,7 @@ BEATS = [
     Beat(a_tough, "vex", "Tough crowd. Okay.", post=0.6),
     Beat(a_for_nothing, "narr", "Puns. Tricks. Everything he had. Not one twitch.", post=0.6),
     Beat(a_water, min=4.0),
-    Beat(a_slip, min=1.9),
+    Beat(a_slip, min=2.0),
     Beat(a_silence, min=5.0),
     Beat(a_tiny_chuckle, min=2.2),
     Beat(a_spread, min=3.6),
