@@ -58,60 +58,60 @@ Generated from the scripts in `story/`. Timestamps are from the rendered videos.
 
 `0:02.2` **NARRATOR:** Previously: Cartman called the whole school losers. Now he's on the stool, waiting to die.  
 `0:09.4` *[Warm, caring eyes]*  
-`0:10.8` **CARTMAN:** What the hell?  
-`0:11.9` **PC PRINCIPAL:** Hey. We got you, dude. Don't worry. We're not going to do anything weird, okay? You'll see.  
-`0:17.0` **CARTMAN (thinking):** What is going on? This is a trick. It has to be a trick.  
-`0:20.1` **CARTMAN (thinking):** There's no way PC Principal is being nice to me. I literally just called everybody a loser!  
-`0:25.9` **CARTMAN (thinking):** How are they going to trick me?  
-`0:27.7` **EMOTIONAL CHAD:** Welcome to the Feelings Restaurant!  
-`0:29.8` **PC PRINCIPAL:** Waiter! I ordered Anger, medium rare. This is clearly Sadness!  
-`0:33.4` **EMOTIONAL CHAD:** I'm so sorry, sir. The chef is going through a lot right now.  
-`0:38.1` **CARTMAN:** Heh.  
-`0:39.0` **CARTMAN (thinking):** Wait. They're not here to destroy me. This is the bit.  
-`0:42.0` **CARTMAN (thinking):** I'm supposed to be part of the bit.  
-`0:44.1` **EMOTIONAL CHAD:** Hey. There's one more seat at the restaurant, if you want it. Totally up to you, bro. No pressure.  
-`0:50.0` **PC PRINCIPAL:** Zero pressure. We're having fun either way.  
-`0:52.6` **CARTMAN (thinking):** Wait. This might actually be fun.  
-`0:54.6` **CARTMAN (thinking):** No. No! It's a trap. The second I play along, they'll turn on me.  
-`0:58.3` **CARTMAN (thinking):** But it does look kind of fun... Ugh!  
-`1:01.3` **CARTMAN:** Check, please.  
-`1:02.8` **PC PRINCIPAL:** Table two wants the check!  
-`1:04.2` **EMOTIONAL CHAD:** Excellent choice, sir!  
-`1:06.0` **CARTMAN (thinking):** Huh. They're not attacking me. They actually want me in this.  
-`1:09.1` **EMOTIONAL CHAD:** And today's special is... Feelings Soup! Because... soup... has feelings?  
-`1:13.6` **PC PRINCIPAL:** Ha. Soup.  
-`1:14.5` *[Crickets]*  
-`1:16.3` **EMOTIONAL CHAD:** Because it's... souper emotional?  
-`1:18.3` *[PC Principal slow-claps alone]*  
-`1:19.4` **CARTMAN (thinking):** Oh my God. This is painful. They're dying up here.  
-`1:22.4` **CARTMAN (thinking):** Incredibly dumb. Incredibly cringe. I can't watch this.  
-`1:25.9` **CARTMAN (thinking):** I have to save these dweebs. They need me. They need my comedy.  
-`1:30.3` **CARTMAN:** Alright, alright. Step aside, amateurs.  
-`1:32.9` **CARTMAN (yelling):** WAITER! I ordered Happiness with extra cheese, and you brought me DISAPPOINTMENT!  
-`1:37.2` **CARTMAN:** I know what disappointment tastes like! I see it on my mom's face every time she reads my report card!  
-`1:43.3` **EMOTIONAL CHAD:** Sir, please! The chef worked very hard on that disappointment!  
-`1:47.4` **CARTMAN (yelling):** Then get me the MANAGER! The manager of FEELINGS!  
-`1:50.1` **PC PRINCIPAL:** I am the manager of feelings, sir. What's the problem?  
-`1:53.0` **CARTMAN (yelling):** One star! The waiter cried in my soup, and I am NOT leaving a tip!  
-`1:56.4` **EMOTIONAL CHAD (yelling):** Not the tip!  
-`1:57.5` **CARTMAN:** Hmph!  
-`1:59.0` **CARTMAN:** Hahaha! Bahaha! Hahaha!  
-`2:00.1` **NARRATOR:** They knew what was going on the whole time. They had made themselves as cringe as humanly possible, on purpose, to give Cartman this moment.  
-`2:08.9` **NARRATOR:** The audience would never know. They didn't care. All that mattered was that the two of them knew.  
-`2:14.3` **EMOTIONAL CHAD (whispering):** Good job, bro.  
-`2:15.6` **PC PRINCIPAL (whispering):** Good job, bro.  
-`2:17.2` **CARTMAN:** You're welcome. I just showed you two dweebs how to be funny. Write that down.  
-`2:21.0` **EMOTIONAL CHAD:** Bro, you were amazing. Would you help us at the next emotional assembly?  
-`2:25.6` **PC PRINCIPAL:** Seriously, dude. We couldn't do this without you.  
-`2:28.8` **CARTMAN:** Ugh. Fine. I guess I'll help you idiots try to be funny. I guess.  
-`2:32.5` **PC PRINCIPAL:** He thinks he carried us.  
-`2:33.8` **EMOTIONAL CHAD:** Let him. For now.  
-`2:35.0` **PC PRINCIPAL:** Boredom is what's really eating him. He picks fights because he's bored out of his mind.  
-`2:39.7` **EMOTIONAL CHAD:** It's the most painful feeling he's got. So we give him something better to do with it, and show him how to carry himself.  
-`2:47.0` **PC PRINCIPAL:** We let him feel superior for now.  
-`2:49.0` **EMOTIONAL CHAD:** But eventually, we bring him back down.  
-`2:51.5` **PC PRINCIPAL:** Gently. At the right time. If we push, he gets defensive.  
-`2:54.7` **EMOTIONAL CHAD:** Then we wait for the right time.  
+`0:10.5` **CARTMAN:** What the hell?  
+`0:11.6` **PC PRINCIPAL:** Hey. We got you, dude. Don't worry. We're not going to do anything weird, okay? You'll see.  
+`0:16.7` **CARTMAN (thinking):** What is going on? This is a trick. It has to be a trick.  
+`0:19.8` **CARTMAN (thinking):** There's no way PC Principal is being nice to me. I literally just called everybody a loser!  
+`0:25.6` **CARTMAN (thinking):** How are they going to trick me?  
+`0:27.4` **EMOTIONAL CHAD:** Welcome to the Feelings Restaurant!  
+`0:29.5` **PC PRINCIPAL:** Waiter! I ordered Anger, medium rare. This is clearly Sadness!  
+`0:33.1` **EMOTIONAL CHAD:** I'm so sorry, sir. The chef is going through a lot right now.  
+`0:37.6` **CARTMAN:** Heh.  
+`0:38.5` **CARTMAN (thinking):** Wait. They're not here to destroy me. This is the bit.  
+`0:41.5` **CARTMAN (thinking):** I'm supposed to be part of the bit.  
+`0:43.6` **EMOTIONAL CHAD:** Hey. There's one more seat at the restaurant, if you want it. Totally up to you, bro. No pressure.  
+`0:49.5` **PC PRINCIPAL:** Zero pressure. We're having fun either way.  
+`0:52.1` **CARTMAN (thinking):** Wait. This might actually be fun.  
+`0:54.1` **CARTMAN (thinking):** No. No! It's a trap. The second I play along, they'll turn on me.  
+`0:57.8` **CARTMAN (thinking):** But it does look kind of fun... Ugh!  
+`1:00.6` **CARTMAN:** Check, please.  
+`1:02.1` **PC PRINCIPAL:** Table two wants the check!  
+`1:03.5` **EMOTIONAL CHAD:** Excellent choice, sir!  
+`1:05.3` **CARTMAN (thinking):** Huh. They're not attacking me. They actually want me in this.  
+`1:08.4` **EMOTIONAL CHAD:** And today's special is... Feelings Soup! Because... soup... has feelings?  
+`1:12.9` **PC PRINCIPAL:** Ha. Soup.  
+`1:13.8` *[Crickets]*  
+`1:15.6` **EMOTIONAL CHAD:** Because it's... souper emotional?  
+`1:17.6` *[PC Principal slow-claps alone]*  
+`1:18.7` **CARTMAN (thinking):** Oh my God. This is painful. They're dying up here.  
+`1:21.7` **CARTMAN (thinking):** Incredibly dumb. Incredibly cringe. I can't watch this.  
+`1:25.2` **CARTMAN (thinking):** I have to save these dweebs. They need me. They need my comedy.  
+`1:29.6` **CARTMAN:** Alright, alright. Step aside, amateurs.  
+`1:32.2` **CARTMAN (yelling):** WAITER! I ordered Happiness with extra cheese, and you brought me DISAPPOINTMENT!  
+`1:36.5` **CARTMAN:** I know what disappointment tastes like! I see it on my mom's face every time she reads my report card!  
+`1:42.6` **EMOTIONAL CHAD:** Sir, please! The chef worked very hard on that disappointment!  
+`1:46.7` **CARTMAN (yelling):** Then get me the MANAGER! The manager of FEELINGS!  
+`1:49.4` **PC PRINCIPAL:** I am the manager of feelings, sir. What's the problem?  
+`1:52.3` **CARTMAN (yelling):** One star! The waiter cried in my soup, and I am NOT leaving a tip!  
+`1:55.7` **EMOTIONAL CHAD (yelling):** But sir! I have a family of feelings to feed!  
+`1:58.5` **CARTMAN:** Hmph!  
+`1:59.7` **CARTMAN:** Hahaha! Bahaha! Hahaha!  
+`2:00.6` **NARRATOR:** They knew what was going on the whole time. They had made themselves as cringe as humanly possible, on purpose, to give Cartman this moment.  
+`2:09.4` **NARRATOR:** The audience would never know. They didn't care. All that mattered was that the two of them knew.  
+`2:14.8` **EMOTIONAL CHAD (whispering):** Good job, bro.  
+`2:16.1` **PC PRINCIPAL (whispering):** Good job, bro.  
+`2:17.5` **CARTMAN:** You're welcome. I just showed you two dweebs how to be funny. Write that down.  
+`2:21.3` **EMOTIONAL CHAD:** Bro, you were amazing. Would you help us at the next emotional assembly?  
+`2:25.9` **PC PRINCIPAL:** Seriously, dude. We couldn't do this without you.  
+`2:29.1` **CARTMAN:** Ugh. Fine. I guess I'll help you idiots try to be funny. I guess.  
+`2:32.8` **PC PRINCIPAL:** He thinks he carried us.  
+`2:34.1` **EMOTIONAL CHAD:** Let him. For now.  
+`2:35.3` **PC PRINCIPAL:** Boredom is what's really eating him. He picks fights because he's bored out of his mind.  
+`2:40.0` **EMOTIONAL CHAD:** It's the most painful feeling he's got. So we give him something better to do with it, and show him how to carry himself.  
+`2:47.4` **PC PRINCIPAL:** We let him feel superior for now.  
+`2:49.3` **EMOTIONAL CHAD:** But eventually, we bring him back down.  
+`2:51.8` **PC PRINCIPAL:** Gently. At the right time. If we push, he gets defensive.  
+`2:55.0` **EMOTIONAL CHAD:** Then we wait for the right time.  
 
 ## Part 3: THE LONG GAME
 

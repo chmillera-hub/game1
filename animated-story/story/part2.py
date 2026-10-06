@@ -34,8 +34,8 @@ def build():
     s.sfx("sparkle", at=1.1, gain=0.8)
     s.overlay("sparkles", at=1.1, dur=2.4, x0=180, x1=900, y0=350, y1=900, n=14)
     s.overlay("flash", at=1.1, dur=0.4, alpha=0.5)
-    s.cc("[Warm, caring eyes]", dur=2.0, at=1.3)
-    s.wait(2.3)
+    s.cc("[Warm, caring eyes]", dur=1.8, at=1.3)
+    s.wait(2.0)
     pc.set(s.t, sparkle=0.4)
     # Cartman peeks
     s.camera(dur=0.5, cx=520, cy=820, zoom=1.9)
@@ -72,7 +72,7 @@ def build():
     # Cartman lowers his arm and chuckles
     c.to(s.t, 0.8, arms="down", eyes="open", brow=0, look=-0.7)
     s.camera(dur=0.8, cx=540, cy=820, zoom=1.8)
-    s.wait(0.6)
+    s.wait(0.4)
     s.say(c, "Heh.", mouth="smirk", gap=0.4)
     s.think(c, "Wait. They're not here to destroy me. This is the bit.", icon="!", eyes="open")
     s.think(c, "I'm supposed to be part of the bit.", icon="oh")
@@ -106,8 +106,8 @@ def build():
     c = s.actor("cartman", x=540, y=STOOL_SEAT_Y, scale=0.95, sit=1, eyes="half", mouth="flat", z=1, look=-0.6,
                 brow=0.6)
     s.camera(cx=540, cy=840, zoom=1.5)
-    c.to(0.2, 0.5, aRx=0.35, aRy=-0.6)
-    s.wait(0.6)
+    c.to(0.2, 0.4, aRx=0.35, aRy=-0.6)
+    s.wait(0.4)
     s.say(c, "Check, please.", speed=0.9, pitch=0.98, mouth="flat", gap=0.1)
     # flinch, expecting the attack
     c.to(s.t, 0.15, arms="shield", eyes="squeeze", mouth="grimace", shiver=0.6)
@@ -203,7 +203,8 @@ def build():
     # the grumpy customer: arms crossed, nose in the air
     s.say(c, "One star! The waiter cried in my soup, and I am NOT leaving a tip!", style="shout", arms="cross", eyes="half", looky=-0.7, mouth="frown", brow=-0.6)
     s.overlay("sfx", at=s.t - 1.6, dur=1.4, text="ONE STAR!", x=380, y=640, size=110, color="#ffe14a")
-    s.say(ch, "Not the tip!", style="shout", arms="face", eyes="wide", mouth="o", tears=0.8, brow=1)
+    s.say(ch, "But sir! I have a family of feelings to feed!", style="shout", arms="face", eyes="wide",
+          mouth="o", tears=0.8, brow=1)
     # "Hmph!" and a stomp
     c.set(s.t, facing=-1, eyes="closed", looky=-0.8)
     for k in range(3):
@@ -215,7 +216,7 @@ def build():
     s.sfx("crowd_laugh", at=s.t + 0.3, gain=1.0, d=3.4)
     s.sfx("applause_big", at=s.t + 0.6, gain=0.6)
     pc.to(s.t + 0.4, 0.3, arms="clap", clap=1, eyes="happy", mouth="grin")
-    s.wait(1.5)
+    s.wait(1.2)
     s.end()
 
     # ------------------------------------------------------------------ having fun + the knowing glance
@@ -230,7 +231,7 @@ def build():
     s.say(c, "Hahaha! Bahaha! Hahaha!", gap=0.0, advance=False)
     s.sfx("crowd_laugh", gain=0.6, d=4.0)
     s.camera(cx=450, cy=880, zoom=1.05)
-    s.wait(0.5)
+    s.wait(0.3)
     # slow push to the two of them, warm music under
     s.camera(dur=2.5, cx=455, cy=760, zoom=1.15)
     pc.to(s.t, 0.5, look=1.0, eyes="warm", clap=0, arms="down", mouth="smile")
@@ -255,7 +256,7 @@ def build():
     c = s.actor("cartman", x=540, y=STAGE_Y, scale=1.0, eyes="half", mouth="smirk", arms="hips", puff=1.0,
                 sparkle=1, z=1)
     s.camera(cx=540, cy=900, zoom=1.2)
-    s.wait(0.4)
+    s.wait(0.2)
     s.say(c, "You're welcome. I just showed you two dweebs how to be funny. Write that down.", look=-0.5)
     s.say(ch, "Bro, you were amazing. Would you help us at the next emotional assembly?", arms="heart")
     s.say(pc, "Seriously, dude. We couldn't do this without you.", arms="present")
@@ -290,12 +291,12 @@ def build():
     pc.to(s.t, 0.3, "back", aRx=1.25, aRy=-0.1)
     ch.to(s.t, 0.3, "back", aLx=1.25, aLy=-0.1)
     s.sfx("pop", at=s.t + 0.3)
-    s.overlay("glance", at=s.t + 0.3, dur=1.0, a=pc, b=ch, dy1=150, dy2=150)
-    s.wait(1.0)
+    s.overlay("glance", at=s.t + 0.3, dur=0.8, a=pc, b=ch, dy1=150, dy2=150)
+    s.wait(0.8)
     s.end()
 
     s = P.shot("card", card="tbc", next="PART 3: THE LONG GAME")
     s.sfx("badum", gain=0.9)
-    s.wait(2.4)
+    s.wait(2.1)
     s.end()
     return P.finalize()
