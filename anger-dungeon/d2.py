@@ -494,7 +494,7 @@ BEATS = [
     Beat(a_drag, min=3.4),
     Beat(a_crunch, min=5.0),
     Beat(a_no_idea, "narr", "Anger has no idea how to react to this.", post=1.4),
-    Beat(a_scoot, "anger", "Nngh.", tts="Nnngh.", rate="-10%", gain=0.7, pre=0.6, post=2.8, min=4.4),
+    Beat(a_scoot, "anger", "Ugh. Oof.", tts="Ugh... oof.", rate="-10%", gain=0.7, pre=0.6, post=2.8, min=4.4),
     Beat(a_who, "anger", "Who are you? How did you get here?", post=0.6),
     Beat(a_silence, min=3.2),
     Beat(a_nap, "stranger", "The food was good. But now, a nap sounds even better.", post=0.4),

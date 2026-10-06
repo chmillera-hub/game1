@@ -616,8 +616,8 @@ def draw_beast(ctx, x, y, s, t, b=None):
         elif mouth == "tongue":
             tl = b.get("tongue_len", 1.0)
             sw = math.sin(t * 2) * 4
-            ctx.move_to(-20, my + 10)
-            ctx.curve_to(-24, my + 60 * tl, 24 + sw, my + 60 * tl, 20, my + 10)
+            ctx.move_to(-24, my + 10)
+            ctx.curve_to(-30, my + 62 * tl, 30 + sw, my + 62 * tl, 24, my + 10)
             ctx.close_path()
             fill_stroke(ctx, "#E2577E", "#8E2546", 3)
             ctx.move_to(0, my + 16)

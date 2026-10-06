@@ -41,12 +41,12 @@ def init_state():
     a["hl"] = (-120, -30)
     a["hr"] = (60, -40)
     S["anger"] = a
-    S["beast"] = dict(x=790, y=E.GROUND, s=0.9, tilt=0.2, mouth="tongue", tdx=150, tdy=58, eyes="beady",
+    S["beast"] = dict(x=860, y=E.GROUND, s=0.9, tilt=0.4, mouth="tongue", tongue_len=0.75, tdy=45, eyes="beady",
                       arms="down", visible=False)
     S["drips"] = []
     S["card"] = 1.0
     S["amb"] = 0.78
-    S["zzz"] = 1.0
+    S["zzz"] = 0.0
     S["wet"] = 0.0
     S["pebbles"] = []
     return S
@@ -63,8 +63,6 @@ def a_title(S, lt, b):
     sfx(S, T(b, 0.4), "hit", 0.6)
     music(S, T(b), "drone", 0.5)
     S["cam"] = [900, 430, 1.5]
-    for k in range(5):
-        sfx(S, T(b, 1.0 + k * 3.6), "snore", 0.45)
 
 
 def a_morning(S, lt, b):
@@ -79,7 +77,6 @@ def drip(S, t_abs, b):
 
 
 def a_drip1(S, lt, b):
-    S["zzz"] = 0.4
     a = S["anger"]
     cam_to(S, lt, 0, 1.0, 975, 455, 2.4)
     td = b.vs + b.vd + 0.2
@@ -117,6 +114,7 @@ def a_drip2(S, lt, b):
 
 def a_tongue(S, lt, b):
     a = S["anger"]
+    S["beast"]["visible"] = True
     a["lidL"] = 1.0
     a["lidR"] = tw(lt, 0.4, 1.0, 0.45, 0.0)
     a["px"], a["py"] = -0.5, -1.0
@@ -206,12 +204,12 @@ def a_sass(S, lt, b):
     t_cross = 0.8
     if lt > t_cross:
         bb["arms"] = "crossed"
-    bb["tilt"] = tw(lt, 0, 0.6, 0.2, 0.0)
+    bb["tilt"] = tw(lt, 0, 0.6, 0.4, 0.0)
     steps = [1.6, 2.4, 3.2]
-    x = 790
+    x = 860
     for k, ts in enumerate(steps):
         if lt > ts - 0.4:
-            x = tw(lt, ts - 0.4, ts, 790 - k * 90, 790 - (k + 1) * 90)
+            x = tw(lt, ts - 0.4, ts, 860 - k * 110, 860 - (k + 1) * 110)
             if lt < ts:
                 bb["tilt"] = 0.12 * (1 if k % 2 else -1) * math.sin((lt - ts + 0.4) / 0.4 * math.pi)
         if ts <= lt < ts + 0.25:
@@ -225,7 +223,7 @@ def a_sass(S, lt, b):
 
 def a_respect(S, lt, b):
     bb = S["beast"]
-    bb["x"] = 520
+    bb["x"] = 530
     bb["eyes"] = "side"
     bb["px"] = 1.0
     bb["arms"] = "crossed"
@@ -453,19 +451,6 @@ def draw(ctx, S, t):
     G.draw_mushrooms(ctx, t)
     if bb["visible"]:
         G.draw_beast(ctx, bb["x"], bb["y"], bb["s"], t, bb)
-    elif bb.get("mouth") == "tongue":
-        # before the reveal only the tongue dangles into frame
-        tipx, tipy = G.beast_tongue_tip(bb["x"], bb["y"], bb["s"], bb)
-        sw = math.sin(t * 1.5) * 4
-        for wdt, col in ((27, "#8E2546"), (21, "#E2577E")):
-            ctx.move_to(tipx - 140, tipy - 150)
-            ctx.curve_to(tipx - 90, tipy - 40, tipx - 30 + sw, tipy - 10, tipx, tipy)
-            E.src(ctx, col)
-            ctx.set_line_width(wdt)
-            ctx.stroke()
-        E.ellipse(ctx, tipx, tipy, 12, 10)
-        E.src(ctx, "#E2577E")
-        ctx.fill()
     for pt in S["pebbles"]:
         G.debris(ctx, 700, E.GROUND - 5, pt, t, n=6, seed=int(pt * 10), vx=(-200, 200), vy=(-260, -120),
                  floor=E.GROUND + 4, size=(3, 7), g=1400)
@@ -475,6 +460,8 @@ def draw(ctx, S, t):
     for d in S["drips"]:
         if d["t0"] <= t < d["t1"]:
             u = (t - d["t0"]) / (d["t1"] - d["t0"])
+            if not bb["visible"]:
+                tipx, tipy = FACE[0] - 30, FACE[1] - 230
             x = lerp(tipx, FACE[0] - 16, u)
             y = lerp(tipy + 8, FACE[1] + 6, u * u)
             E.ellipse(ctx, x, y, 5, 7)
