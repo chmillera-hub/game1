@@ -587,8 +587,8 @@ def office_desk(ctx, x=420):
     ctx.fill()
 
 
-def laptop_call(ctx, x, y, t, scale=1.0):
-    """A laptop showing Boredom and Doubt on a video call."""
+def laptop_call(ctx, x, y, t, scale=1.0, look=0.0, worry=0.0):
+    """A laptop showing Boredom and Doubt on a video call. look: eyes toward screen-right; worry: 0..1."""
     ctx.save()
     ctx.translate(x, y)
     ctx.scale(scale, scale)
@@ -599,8 +599,11 @@ def laptop_call(ctx, x, y, t, scale=1.0):
     ctx.clip()
     src(ctx, "#2E5058")
     ctx.paint()
-    b = new_boredom(-50, y=60, s=0.6)
-    d = new_doubt(55, y=60, s=0.55)
+    kw = dict(px=look, py=-0.1 * look)
+    if worry > 0:
+        kw.update(brow=0.9 * worry, mouth="frown", mamt=0.5 * worry, wide=0.5 * worry, sweat=worry)
+    b = new_boredom(-50, y=-12, s=0.6, **kw)
+    d = new_doubt(55, y=-12, s=0.55, **kw)
     E.draw_char(ctx, b, t)
     E.draw_char(ctx, d, t)
     ctx.restore()
@@ -610,6 +613,48 @@ def laptop_call(ctx, x, y, t, scale=1.0):
     ctx.set_line_width(10)
     ctx.stroke()
     ctx.restore()
+
+
+def thought_bubble(ctx, x, y, t, a=1.0):
+    """A cloud above someone's head showing Boredom and Doubt relaxing in the Bahamas."""
+    if a <= 0:
+        return
+    ctx.push_group()
+    for i, (dx, dy, r) in enumerate(((-150, 150, 9), (-120, 118, 14))):
+        ellipse(ctx, x + dx, y + dy, r, r)
+        fill_stroke(ctx, "#FFFFFF", "#8A8A9A", 3)
+    w, h = 170, 105
+    ctx.new_path()
+    for i in range(12):
+        ang = i / 12 * 2 * PI
+        ctx.arc(x + math.cos(ang) * w, y + math.sin(ang) * h, 42, 0, 2 * PI)
+        ctx.new_sub_path()
+    src(ctx, "#8A8A9A")
+    ctx.fill()
+    for i in range(12):
+        ang = i / 12 * 2 * PI
+        ellipse(ctx, x + math.cos(ang) * w, y + math.sin(ang) * h, 38, 38)
+        src(ctx, "#FFFFFF")
+        ctx.fill()
+    ellipse(ctx, x, y, w + 4, h + 4)
+    src(ctx, "#FFFFFF")
+    ctx.fill()
+    ctx.save()
+    ellipse(ctx, x, y, w - 8, h - 6)
+    ctx.clip()
+    ctx.translate(x - 640 * 0.28, y - 400 * 0.28)
+    ctx.scale(0.28, 0.28)
+    beach(ctx, t)
+    for cx, flip in ((470, 1), (810, -1)):
+        c = (new_boredom if flip > 0 else new_doubt)(cx, s=1.1, shades=True, mouth="smile", mamt=0.8,
+                                                    face=0.3 * flip, itemR=None,
+                                                    tilt=-0.12 * flip + math.sin(t * 2) * 0.03)
+        c["itemR" if flip > 0 else "itemL"] = "cocktail"
+        c["hr" if flip > 0 else "hl"] = (60 * flip, -150 + math.sin(t * 3) * 8)
+        E.draw_char(ctx, c, t)
+    ctx.restore()
+    ctx.pop_group_to_source()
+    ctx.paint_with_alpha(a)
 
 
 def comedy_stage(ctx, t, spot=1.0):

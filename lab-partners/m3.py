@@ -4,7 +4,7 @@ import math
 import engine as E
 from engine import tw, ease, clamp, lerp
 import mgfx as M
-from mcommon import (sfx, hand, walk, mus, base_state, T, bleep, place, stare, draw_world, overlays, GROUND)
+from mcommon import (sfx, hand, walk, mus, base_state, T, place, stare, draw_world, overlays, GROUND)
 from show import Beat
 
 TOTAL = 0.0
@@ -28,7 +28,8 @@ def init_state():
     S["goons"] = [M.new_char(k, x, s=0.85, face=0.5, px=1) for k, x in (("goon2", 440), ("goon3", 560))]
     S["minion"] = M.new_char("minion", 900, s=0.75, face=-0.5, px=-1, mouth="flat", mamt=0.0, brow=0.2)
     S["props"] = {"@goons": draw_goons, "@sign": lambda ctx, S, t: M.lab_wrecked_sign(ctx, t),
-                  "@loungers": draw_loungers, "@desk": draw_desk, "@door": draw_door}
+                  "@loungers": draw_loungers, "@desk": draw_desk, "@door": draw_door,
+                  "@thought": draw_thought}
     S["show"] = ["boredom", "doubt", "vex"]
     S["card"] = 1.0
     return S
@@ -46,7 +47,14 @@ def draw_loungers(ctx, S, t):
 
 def draw_desk(ctx, S, t):
     M.office_desk(ctx, 420)
-    M.laptop_call(ctx, 560, 472, t, 0.85)
+    M.laptop_call(ctx, 575, 472, t, 0.95, S["fx"].get("look", 0.0), S["fx"].get("worry", 0.0))
+
+
+def draw_thought(ctx, S, t):
+    a = S["fx"].get("thought", 0.0)
+    if a > 0:
+        v = S["vex"]
+        M.thought_bubble(ctx, v["x"] + 230, 210, t, a)
 
 
 def draw_door(ctx, S, t):
@@ -228,13 +236,19 @@ def a_nothing_left(S, lt, b):
 
 def a_empty_victory(S, lt, b):
     v = S["vex"]
-    hand(v, 1, (90, -200), lt, 0, 0.4)
-    v["brow"] = -0.8
-    v["mouth"], v["mamt"] = "smirk", 0.9
+    S["show"] = ["@sign", "goon", "@goons", "vex", "@thought"]
+    # turns to the camera, totally agreeing, while picturing the duo on the beach
+    v.update(face=0.0, px=0.0, py=0.0, brow=0.5, mouth="smile", mamt=0.6, lid=0.3, blush=0.4)
+    hand(v, 1, "rest", lt, 0, 0.4)
+    hand(v, -1, (-40, -130), lt, 0.2, 0.6)
+    S["fx"]["thought"] = tw(lt, 0.8, 1.4, 0, 1)
     for o in [S["goon"]] + S["goons"]:
         o["mouth"], o["mamt"] = "laugh", 0.9
         o["hr"] = (60, -170)
-    S["cam"] = [tw(lt, 0, b.d, 700, 900), 340, tw(lt, 0, b.d, 1.0, 1.5)]
+        o["yoff"] = -abs(math.sin(lt * 7 + o["x"])) * 10
+    sfx(S, T(b, 0.8), "sparkle", 0.4)
+    sfx(S, T(b, 1.0), "water", 0.15)
+    S["cam"] = [tw(lt, 0, 0.8, 700, 900), 330, tw(lt, 0, 0.8, 1.0, 1.25)]
     S["fade"] = tw(lt, b.d - 0.4, b.d, 0, 1)
 
 
@@ -335,9 +349,11 @@ def a_office(S, lt, b):
     S["fade"] = tw(lt, 0, 0.4, 1, 0)
     v, m = S["vex"], S["minion"]
     place(v, 340, 0.5, 1, crown=True, mouth="frown", mamt=0.8, brow=0.9, sweat=0.0, y=GROUND - 120)
-    place(m, 900, -0.5, -1, s=0.75, mouth="flat", mamt=0.0, brow=0.2, lid=0.4)
+    v.update(face=-0.6, px=-1)  # ranting at the wall, away from the door
+    place(m, 1135, -0.5, -1, s=0.75, mouth="flat", mamt=0.0, brow=0.2, lid=0.4)
+    m["visible"] = False
     flail(v, lt)
-    S["cam"] = [520, 400, 1.2]
+    S["cam"] = [480, 400, 1.25]
     mus(S, T(b), "quirky", 0.4)
 
 
@@ -351,24 +367,42 @@ def flail(v, lt, amt=1.0):
 def a_whine(S, lt, b):
     v, m = S["vex"], S["minion"]
     flail(v, lt)
-    if b.id == "whine2":
-        S["cam"] = [tw(lt, 0, b.d, 520, 640), 400, tw(lt, 0, b.d, 1.2, 1.0)]
-
-
-def a_whine_bleep(S, lt, b):
-    flail(S["vex"], lt)
+    if b.id == "enter":
+        # the minion slips in quietly; the duo on the laptop notice, Vex does not
+        S["fx"]["door"] = tw(lt, 0.3, 0.7, 0, 1) if lt < 2.6 else tw(lt, 3.6, 4.0, 1, 0)
+        m["visible"] = lt > 0.6
+        m["x"] = tw(lt, 0.8, 4.0, 1135, 900)
+        m["walking"] = 0.35 if 0.8 < lt < 4.0 else 0
+        m["face"], m["px"] = -0.5, -1
+        sfx(S, T(b, 0.3), "door", 0.25)
+        S["fx"]["look"] = tw(lt, 1.0, 1.6, 0, 1)
+        S["fx"]["worry"] = tw(lt, 1.4, 2.4, 0, 1)
+        S["cam"] = [tw(lt, 0, 1.2, 480, 640), 400, tw(lt, 0, 1.2, 1.25, 1.0)]
+    elif b.id in ("rule", "madeup"):
+        m.update(x=900, walking=0)
+        S["fx"]["look"] = 1.0
+        S["fx"]["worry"] = 1.0
+        S["cam"] = [740, 440, 1.45] if b.id == "rule" else [640, 400, 1.0]
 
 
 def a_sir(S, lt, b):
     v, m = S["vex"], S["minion"]
     m.update(x=900, walking=0, visible=True)
     flail(v, lt, tw(lt, 0, 0.3, 1, 0))
+    if lt > b.vs + b.vd:
+        # slowly turns around and sees him
+        v.update(face=tw(lt, b.vs + b.vd, b.vs + b.vd + 0.6, -0.6, 0.6), px=1, wide=1.0, mouth="o",
+                 mamt=0.6, blush=0.9, brow=0.6)
+    S["fx"]["worry"] = 1.0
     S["cam"] = [640, 400, 1.0]
 
 
 def a_cough(S, lt, b):
     v = S["vex"]
-    v.update(tilt=0, yoff=0, mouth="smirk", mamt=0.4, brow=-0.9, face=0.6, px=1)
+    v.update(tilt=0, yoff=0, mouth="smirk", mamt=0.4, brow=-0.9, face=0.6, px=1, wide=0.0,
+             blush=tw(lt, 0, 2.0, 0.9, 0.3))
+    S["fx"]["look"] = tw(lt, 0, 0.6, 1, 0)
+    S["fx"]["worry"] = tw(lt, 0, 0.6, 1, 0)
     hand(v, -1, (-10, -120), lt, 0, 0.2)
     hand(v, 1, (90, -100), lt, 0, 0.2)
     if lt > 1.2:
@@ -433,7 +467,7 @@ def VEND_(b):
 
 def a_back_to_whine(S, lt, b):
     v = S["vex"]
-    v.update(face=0.5, px=1, mouth="frown", mamt=0.8, brow=0.9)
+    v.update(face=-0.6, px=-1, mouth="frown", mamt=0.8, brow=0.9, blush=0.0)
     flail(v, lt)
     S["cam"] = [tw(lt, 0, 0.5, 1000, 520), 400, tw(lt, 0, 0.5, 1.3, 1.2)]
 
@@ -467,8 +501,8 @@ BEATS = [
     Beat(a_look_good, "boredom", "Make it look good, buddy.", post=1.4),
     Beat(a_wreck, "narr", "That night, the villains tore the lab apart. Nobody noticed the sign.", pre=0.8,
          post=0.6),
-    Beat(a_nothing_left, "goon", "Ha! There's nothing left!", post=0.3),
-    Beat(a_empty_victory, "vex", "Yes! Behold my... very empty victory!", post=1.0),
+    Beat(a_nothing_left, "goon", "Ha ha! We destroyed all their important stuff!", post=0.3),
+    Beat(a_empty_victory, "vex", "Oh, yes. You guys totally destroyed everything.", rate="-6%", post=2.4),
     Beat(a_beach, "narr", "Meanwhile, Boredom and Doubt had already taken everything they wanted. And they "
                           "were relaxing in the Bahamas.", pre=0.8, post=0.6),
     Beat(a_check_news, "doubt", "Ooh. We made the news.", post=0.4),
@@ -483,11 +517,18 @@ BEATS = [
                            "He wanted them safe from themselves.", pre=0.6, post=0.3),
     Beat(a_cant_say, "narr", "Chaos hurt them too. But a villain can't say that out loud.", post=0.8),
     Beat(a_office, "vex", "Why does everyone want to burn everything down? Do you know what burning "
-                          "everything costs? The insurance alone!", pre=0.6, post=0.1, **HI),
-    bleep(0.6),
-    Beat(a_whine, "vex", "And Gary wants to release the bees. The bees, you guys!", id="whine2", post=0.1, **HI),
-    bleep(0.5),
-    Beat(a_sir, "minion", "Uhh... sir?", pre=0.3, post=0.6),
+                          "everything costs? The insurance alone!", pre=0.6, post=0.2, **HI),
+    Beat(a_whine, "vex", "And now Gary wants to release the bees on the city. The bees, you guys! Do you know "
+                         "how many villain permits that takes?", id="whine2", post=0.2, **HI),
+    Beat(a_whine, "vex", "And Carl wants to flood the subway! I told him, if the subway's flooded, how are "
+                         "people supposed to ride it to come and fear us? Where's the domination in that?",
+         id="enter", post=0.2, **HI),
+    Beat(a_whine, "vex", "And I can't just say, please don't hurt anybody. They'd take my crown! So instead I have to "
+                         "say, it's bad for the evil budget. It breaks rule forty-seven of the "
+                         "villain code.", id="rule", post=0.2, **HI),
+    Beat(a_whine, "vex", "Rule forty-seven isn't even real! I made it up! I've made up thirty rules this week!",
+         id="madeup", post=0.3, **HI),
+    Beat(a_sir, "minion", "Uhh... sir?", pre=0.3, post=1.0),
     Beat(a_cough, "vex", "Ahem. Ahem. Yes, minion. What do you want?", rate="-8%", pitch="-8Hz", post=0.4),
     Beat(a_late, "minion", "Well, we're late for the evil plan today, sir.", post=0.4),
     Beat(a_right_there, "vex", "Oh. Yes, yes. I'll be right there.", rate="-6%", post=0.2),

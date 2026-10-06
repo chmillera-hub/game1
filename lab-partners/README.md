@@ -8,7 +8,7 @@ keeps getting in the way.
 |------|------|--------|
 | 1: The Heist | `videos/part1-the-heist.mp4` | 2:19 |
 | 2: Villain School | `videos/part2-villain-school.mp4` | 2:52 |
-| 3: Vacation | `videos/part3-vacation.mp4` | 3:03 |
+| 3: Vacation | `videos/part3-vacation.mp4` | 3:34 |
 | 4: The Comedy Show | `videos/part4-the-comedy-show.mp4` | 3:23 |
 
 **Part 1:** Vex tries to rob the lab. The music cuts the moment Boredom and Doubt look at him. Lifting the
@@ -28,7 +28,7 @@ money, the sitcom and the medals, while his smile shrinks. One phone call later,
 the answer. At the Villain Comedy Night, the stone-faced council doesn't laugh until a banana peel
 changes everything.
 
-Part 1 is family friendly: the villain says "Oh, fudge!" and "I'm toast!" instead of swearing. Parts 3 and 4 still bleep a few words, with `[BLEEP]` in the subtitles.
+Part 1 is family friendly: the villain says "Oh, fudge!" and "I'm toast!" instead of swearing. Part 4 still bleeps a few words, with `[BLEEP]` in the subtitles.
 
 ## Rebuilding
 
