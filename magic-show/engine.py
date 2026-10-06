@@ -56,6 +56,8 @@ def tw(lt, t0, t1, a, b, fn=ease):
 
 
 def rgb(h):
+    if not isinstance(h, str):
+        return tuple(h)
     h = h.lstrip("#")
     if len(h) == 3:
         h = "".join(ch * 2 for ch in h)
@@ -636,11 +638,11 @@ def draw_face(ctx, c, k, fx, t):
         ang = math.radians(base - c["brow"] * 18)
         bcx = ex
         bcy = ey - ry - 9 - raise_ - c["brow"] * 6 - wide * 6
-        L = 30 if c["kind"] != "doubt" else 22
+        L = k.get("browlen", 30 if c["kind"] != "doubt" else 22)
         ctx.move_to(bcx - side * L / 2 * math.cos(ang), bcy + L / 2 * math.sin(ang))
         ctx.line_to(bcx + side * L / 2 * math.cos(ang), bcy - L / 2 * math.sin(ang))
         src(ctx, "#1d1420")
-        ctx.set_line_width(7 if c["kind"] != "doubt" else 4.5)
+        ctx.set_line_width(k.get("browlw", 7 if c["kind"] != "doubt" else 4.5))
         ctx.stroke()
 
     if c.get("covered"):
