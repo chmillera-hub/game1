@@ -57,6 +57,8 @@ def tw(lt, t0, t1, a, b, fn=ease):
 
 def rgb(h):
     h = h.lstrip("#")
+    if len(h) == 3:
+        h = "".join(ch * 2 for ch in h)
     return tuple(int(h[i:i + 2], 16) / 255 for i in (0, 2, 4))
 
 
@@ -188,6 +190,11 @@ POSES = {
 }
 
 
+HOOKS = {}
+ITEMS = {}
+FRONT_ITEMS = {}
+
+
 def pose(kind, side, name):
     """side: -1 left hand, +1 right hand."""
     return POSES[name](KIND[kind], side)
@@ -230,7 +237,7 @@ def resolve(c, t):
     d = dict(c)
     k = KIND[c["kind"]]
     m = c["mode"]
-    ph = {"anger": 0.0, "doubt": 1.3, "boredom": 2.1}[c["kind"]]
+    ph = {"anger": 0.0, "doubt": 1.3, "boredom": 2.1}.get(c["kind"], 0.5)
     if c["walking"] > 0:
         sp = 9.0 * c["walking"]
         lift = 9 * c["walking"]
@@ -348,22 +355,27 @@ def draw_char(ctx, c0, t, mirror_world=False):
     ctx.set_line_cap(cairo.LINE_CAP_ROUND)
     ctx.set_line_join(cairo.LINE_JOIN_ROUND)
 
+    hook = HOOKS.get(c["kind"])
+    if hook:
+        hook("pre", ctx, c, k, t, cy)
     # legs
+    lw_o, lw_i = k.get("legw", (15, 8))
     for side, foot in ((-1, c["footL"]), (1, c["footR"])):
         hx = side * k["hip"]
         fx, fy = hx + foot[0] + side * 4, foot[1]
         ctx.move_to(hx, -k["legh"] - 6)
         ctx.line_to(fx, fy - 6)
-        src(ctx, dark)
-        ctx.set_line_width(15)
+        src(ctx, k.get("legdark", dark))
+        ctx.set_line_width(lw_o)
         ctx.stroke()
         ctx.move_to(hx, -k["legh"] - 6)
         ctx.line_to(fx, fy - 6)
-        src(ctx, col)
-        ctx.set_line_width(8)
+        src(ctx, k.get("legcol", col))
+        ctx.set_line_width(lw_i)
         ctx.stroke()
-        ellipse(ctx, fx + side * 6 + c["face"] * 5, fy - 4, 17, 9)
-        fill_stroke(ctx, "#2B2233", "#140f18", 3)
+        frx, fry = k.get("footr", (17, 9))
+        ellipse(ctx, fx + side * 6 + c["face"] * 5, fy - 4, frx, fry)
+        fill_stroke(ctx, k.get("foot", "#2B2233"), "#140f18", 3)
 
     # body
     ctx.move_to(*pts[0])
@@ -383,6 +395,8 @@ def draw_char(ctx, c0, t, mirror_world=False):
 
     top = min(p[1] for p in pts)
     fx = c["face"] * k["w"] * 0.1
+    if hook:
+        hook("body", ctx, c, k, t, top)
 
     # kind specific accessories
     if c["kind"] == "anger":
@@ -454,15 +468,16 @@ def draw_char(ctx, c0, t, mirror_world=False):
         if dd > 2 * k["L"]:
             u = 2 * k["L"] / dd
             hx, hy = shx + (hand[0] - shx) * u, sy + (hand[1] - sy) * u
+        aw_o, aw_i = k.get("armw", (14, 8))
         ctx.move_to(shx, sy)
         ctx.curve_to(ex, ey, ex, ey, hx, hy)
         src(ctx, dark)
-        ctx.set_line_width(14)
+        ctx.set_line_width(aw_o)
         ctx.stroke()
         ctx.move_to(shx, sy)
         ctx.curve_to(ex, ey, ex, ey, hx, hy)
         src(ctx, col)
-        ctx.set_line_width(8)
+        ctx.set_line_width(aw_i)
         ctx.stroke()
         if item == "wand":
             a = math.radians(wang)
@@ -492,8 +507,15 @@ def draw_char(ctx, c0, t, mirror_world=False):
             ctx.restore()
         elif item == "turtle":
             draw_turtle(ctx, hx, hy - 4, 0.75, 1, t, held=True)
-        ellipse(ctx, hx, hy, 11, 11)
-        fill_stroke(ctx, col, dark, 3.5)
+        elif item in ITEMS:
+            ITEMS[item](ctx, hx, hy, wang, c, t)
+        hr_ = k.get("handr", 11)
+        ellipse(ctx, hx, hy, hr_, hr_)
+        fill_stroke(ctx, k.get("handcol", col), k.get("handdark", dark), 3.5)
+        if item in FRONT_ITEMS:
+            FRONT_ITEMS[item](ctx, hx, hy, wang, c, t)
+    if hook:
+        hook("post", ctx, c, k, t, top)
 
     # steam puffs
     if c["steam"] > 0:
@@ -557,6 +579,13 @@ def draw_face(ctx, c, k, fx, t):
             src(ctx, "#1d1420")
             ctx.set_line_width(4.5)
             ctx.stroke()
+        elif clamp(c["lid"] if c.get("lidL" if side < 0 else "lidR") is None
+                   else max(c.get("lidL" if side < 0 else "lidR"), c["lid"] if c["lid"] >= 1 else 0)) >= 0.97:
+            ctx.move_to(ex - rx, ey + 1)
+            ctx.curve_to(ex - rx * 0.5, ey + ry * 0.55, ex + rx * 0.5, ey + ry * 0.55, ex + rx, ey + 1)
+            src(ctx, "#1d1420")
+            ctx.set_line_width(4)
+            ctx.stroke()
         else:
             ellipse(ctx, ex, ey, rx, ry)
             fill_stroke(ctx, "#FFFFFF", "#1d1420", 3)
@@ -572,7 +601,8 @@ def draw_face(ctx, c, k, fx, t):
             ellipse(ctx, ppx - 2, ppy - 2.5, 2, 2)
             src(ctx, "#FFFFFF")
             ctx.fill()
-            lid = clamp(c["lid"])
+            pl = c.get("lidL" if side < 0 else "lidR")
+            lid = clamp(c["lid"] if pl is None else max(pl, c["lid"] if c["lid"] >= 1 else 0))
             if lid > 0:
                 ctx.rectangle(ex - rx - 2, ey - ry - 2, rx * 2 + 4, (ry * 2 + 4) * lid)
                 src(ctx, mix(k["col"], "#000000", 0.08))
