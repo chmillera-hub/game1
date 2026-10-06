@@ -11,9 +11,9 @@ from show import Beat
 TOTAL = 0.0
 IDX = {}
 PED = 820
-STAND = 455
+STAND = 215
 SLOTS = [(-30, "#7CFF5A"), (0, "#FF5AA0"), (30, "#5EC8E8")]
-DX = 595  # where Doubt sweeps
+DX = 490  # where Doubt sweeps
 
 
 def index():
@@ -25,7 +25,7 @@ def index():
 
 def init_state():
     S = base_state()
-    S["boredom"] = M.new_boredom(300)
+    S["boredom"] = M.new_boredom(330)
     S["doubt"] = M.new_doubt(1060, mouth="smile", mamt=0.3, itemR="book")
     S["doubt"]["hr"] = (48, -96)
     S["doubt"]["broomdir"] = -1
@@ -97,8 +97,10 @@ def knock(S, b, lt, i, off, kind, land):
     """Boredom bumps flask i off the stand at beat offset `off`."""
     f = S["flasks"][i]
     f.update(ts=T(b, off), kind=kind, land=land)
-    if off - 0.25 < lt < off + 0.2:
-        S["boredom"]["hr"] = (120, -100)
+    if off - 0.3 < lt < off + 0.15:
+        # an accidental backhand while working the machine: the flask flies off past him
+        u = clamp((lt - off + 0.3) / 0.35)
+        S["boredom"]["hl"] = (lerp(-130, -30, u), -104 - math.sin(u * math.pi) * 10)
     sfx(S, T(b, off), "tink", 0.6)
     if kind == "shatter":
         sfx(S, T(b, off + 0.55), "shatter", 0.9)
@@ -152,9 +154,9 @@ def a_meet_boredom(S, lt, b):
 
 def a_mutter(S, lt, b):
     frantic(S["boredom"], lt)
-    knock(S, b, lt, 0, 1.6, "shatter", 530)
+    knock(S, b, lt, 0, 1.6, "shatter", 420)
     S["fx"]["dial"] = 1.0
-    S["cam"] = [380, 360, 1.5]
+    S["cam"] = [330, 360, 1.5]
 
 
 def a_dweeb(S, lt, b):
@@ -192,7 +194,7 @@ def a_works(S, lt, b):
     d, bo = S["doubt"], S["boredom"]
     frantic(bo, lt)
     sweeping(d, lt)
-    f = knock(S, b, lt, 1, 0.8, "bounce", 540)
+    f = knock(S, b, lt, 1, 0.8, "bounce", 430)
     f["catch"] = (d["x"] - 50, GROUND - 130)
     f["back"] = T(b, 2.6)
     if 1.0 < lt < 2.75:
@@ -218,10 +220,10 @@ def a_hello(S, lt, b):
     S["show"] = ["@stand", "@ped", "boredom", "doubt", "vex", "@flasks"]
     frantic(bo, lt)
     sweeping(d, lt)
-    f = knock(S, b, lt, 2, 0.6, "shatter", 520)
+    f = knock(S, b, lt, 2, 0.6, "shatter", 410)
     f["sweep"] = (T(b, 1.4), 9.0)
     sweep_sfx(S, b, 1.4, b.d)
-    place(v, tw(lt, 0, 1.4, 1400, 745), -0.4, -1, mouth="smile", mamt=0.8, brow=-0.6)
+    place(v, tw(lt, 0, 1.4, 1400, 720), -0.4, -1, mouth="smile", mamt=0.8, brow=-0.6)
     v["walking"] = 1.2 if lt < 1.4 else 0
     if lt > 1.4:
         hand(v, -1, "wave", lt, 1.4, 1.7)
@@ -496,7 +498,7 @@ def a_zoomout(S, lt, b):
     v, bo, d = S["vex"], S["boredom"], S["doubt"]
     v.update(x=tw(lt, 0, 1.5, 1160, 760), walking=0.5 if lt < 1.5 else 0, face=-0.3, px=-1, blush=0.6,
              mouth="smile", mamt=0.6)
-    bo.update(x=tw(lt, 0, 1.5, 300, 560), face=0.3, px=1, mouth="smile", mamt=0.7)
+    bo.update(x=tw(lt, 0, 1.5, 330, 560), face=0.3, px=1, mouth="smile", mamt=0.7)
     d.update(x=tw(lt, 0, 1.5, DX, 960), face=-0.4, px=-1, mouth="smile", mamt=0.6, itemR="book")
     if lt > 1.6:
         v["hr"] = (70 + math.sin(lt * 5) * 30, -150 + math.cos(lt * 4) * 20)
