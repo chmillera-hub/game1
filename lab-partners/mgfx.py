@@ -940,3 +940,79 @@ def _bottle_item(ctx, hx, hy, wang, c, t):
 
 
 E.ITEMS["bottle"] = _bottle_item
+
+
+# ---------------------------------------------------------------- episode 1: Doubt's broom and Boredom's flasks
+def _broom_item(ctx, hx, hy, wang, c, t):
+    dirn = c.get("broomdir") or (-1 if c["face"] < 0 else 1)
+    bx, by = hx + dirn * 46, -6
+    ctx.move_to(hx - dirn * 14, hy - 46)
+    ctx.line_to(bx, by - 26)
+    src(ctx, "#8A5A3A")
+    ctx.set_line_width(7)
+    ctx.stroke()
+    ctx.move_to(bx - 10, by - 30)
+    ctx.line_to(bx + 10, by - 30)
+    ctx.line_to(bx + 22, by + 4)
+    ctx.line_to(bx - 22, by + 4)
+    ctx.close_path()
+    fill_stroke(ctx, "#E8C86A", "#8A6A2A", 3)
+
+
+def _flask_item(ctx, hx, hy, wang, c, t):
+    flask(ctx, hx, hy - 6, 0.0, "#7CFF5A")
+
+
+E.ITEMS["broom"] = _broom_item
+E.ITEMS["flask"] = _flask_item
+
+
+def flask(ctx, x, y, ang, col, a=1.0):
+    """Small round-bottom flask, centered on its bulb."""
+    ctx.save()
+    ctx.translate(x, y)
+    ctx.rotate(ang)
+    ctx.rectangle(-5, -26, 10, 16)
+    src(ctx, "#DDEEFF", 0.9 * a)
+    ctx.fill()
+    ellipse(ctx, 0, 0, 14, 14)
+    src(ctx, col, 0.85 * a)
+    ctx.fill()
+    ellipse(ctx, 0, 0, 14, 14)
+    src(ctx, "#2A3A44", a)
+    ctx.set_line_width(2.5)
+    ctx.stroke()
+    ellipse(ctx, -5, -4, 3, 4)
+    src(ctx, "#FFFFFF", 0.7 * a)
+    ctx.fill()
+    ctx.restore()
+
+
+def flask_stand(ctx, x):
+    rrect(ctx, x - 50, GROUND - 106, 100, 12, 3)
+    fill_stroke(ctx, "#6A6A74", "#2A2A33", 3)
+    for sx in (-38, 38):
+        ctx.move_to(x + sx, GROUND - 94)
+        ctx.line_to(x + sx, GROUND - 2)
+        src(ctx, "#4A4A54")
+        ctx.set_line_width(6)
+        ctx.stroke()
+
+
+def shards(ctx, x, a, seed=0):
+    if a <= 0:
+        return
+    rnd = random.Random(seed)
+    for i in range(14):
+        sx = x + rnd.uniform(-46, 46)
+        sy = GROUND - 2 + rnd.uniform(-6, 4)
+        r = rnd.uniform(3, 7)
+        ctx.move_to(sx, sy - r)
+        ctx.line_to(sx + r, sy + r * 0.4)
+        ctx.line_to(sx - r * 0.6, sy + r * 0.6)
+        ctx.close_path()
+        src(ctx, "#DDEEFF", 0.9 * a)
+        ctx.fill()
+    ellipse(ctx, x, GROUND, 40, 6)
+    src(ctx, "#7CFF5A", 0.35 * a)
+    ctx.fill()

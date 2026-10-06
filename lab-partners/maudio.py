@@ -108,7 +108,25 @@ def mech_step():
     return norm(x, 0.9)
 
 
-for name, fn in dict(bleep=bleep, scratch=scratch, golfclap=golfclap, crowdlaugh=crowd_laugh, chuckle=chuckle,
+def shatter():
+    d = 1.0
+    out = hp(noise(d), 2500) * np.exp(-t_(d) * 9) * 0.6
+    for i in range(18):
+        k = int(rng.uniform(0, 0.5) * SR)
+        dd = 0.12
+        f = rng.uniform(2500, 7000)
+        ping = np.sin(2 * np.pi * f * t_(dd)) * np.exp(-t_(dd) * 40) * rng.uniform(0.3, 1.0)
+        out[k:k + len(ping)] += ping[:len(out) - k]
+    return norm(out, 0.6)
+
+
+def sweep():
+    d = 0.45
+    t = t_(d)
+    return norm(bp(noise(d), 1500, 6000) * np.sin(np.pi * t / d) ** 2, 0.3)
+
+
+for name, fn in dict(shatter=shatter, sweep=sweep, bleep=bleep, scratch=scratch, golfclap=golfclap, crowdlaugh=crowd_laugh, chuckle=chuckle,
                      ovation=ovation, slip=slip, crashland=crash_land, clink=clink, heartgrow=heartgrow,
                      mechstep=mech_step).items():
     A.SFX[name] = fn

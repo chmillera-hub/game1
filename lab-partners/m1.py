@@ -4,13 +4,16 @@ import math
 import engine as E
 from engine import tw, ease, clamp, lerp, ease_out, ease_in, back_out, linear
 import mgfx as M
-from mcommon import (sfx, hand, walk, cam_to, mus, base_state, T, VEND, bleep, place, stare, draw_world,
+from mcommon import (sfx, hand, walk, cam_to, mus, base_state, T, VEND, place, stare, draw_world,
                      overlays, GROUND)
 from show import Beat
 
 TOTAL = 0.0
 IDX = {}
 PED = 820
+STAND = 455
+SLOTS = [(-30, "#7CFF5A"), (0, "#FF5AA0"), (30, "#5EC8E8")]
+DX = 595  # where Doubt sweeps
 
 
 def index():
@@ -25,9 +28,11 @@ def init_state():
     S["boredom"] = M.new_boredom(300)
     S["doubt"] = M.new_doubt(1060, mouth="smile", mamt=0.3, itemR="book")
     S["doubt"]["hr"] = (48, -96)
+    S["doubt"]["broomdir"] = -1
     S["vex"] = M.new_char("vex", -200)
-    S["props"] = {"@ped": draw_ped}
-    S["show"] = ["@ped", "boredom", "doubt"]
+    S["props"] = {"@ped": draw_ped, "@stand": draw_stand, "@flasks": draw_flasks}
+    S["show"] = ["@stand", "@ped", "boredom", "doubt", "@flasks"]
+    S["flasks"] = [dict(), dict(), dict()]
     S["card"] = 1.0
     S["vial"] = dict(mode="ped", x=PED, y=GROUND - 180, ang=0.0)
     return S
@@ -38,6 +43,86 @@ def draw_ped(ctx, S, t):
     v = S["vial"]
     if v["mode"] in ("ped", "air"):
         M.draw_vial(ctx, v["x"], v["y"], v["ang"], t)
+
+
+def slot_pos(i):
+    return STAND + SLOTS[i][0], GROUND - 120
+
+
+def draw_stand(ctx, S, t):
+    M.flask_stand(ctx, STAND)
+    for i, f in enumerate(S["flasks"]):
+        x, y = slot_pos(i)
+        if f.get("ts") is None or t < f["ts"] or (f.get("back") is not None and t >= f["back"] + 0.6):
+            M.flask(ctx, x, y, 0.0, SLOTS[i][1])
+
+
+def draw_flasks(ctx, S, t):
+    if S["fx"].get("lean"):
+        ctx.save()
+        ctx.translate(DX - 75, GROUND)
+        ctx.rotate(0.25)
+        M._broom_item(ctx, 0, -110, 0, dict(face=0.0, broomdir=1), t)
+        ctx.restore()
+    for i, f in enumerate(S["flasks"]):
+        ts = f.get("ts")
+        if ts is None or t < ts:
+            continue
+        sx, sy = slot_pos(i)
+        col = SLOTS[i][1]
+        lx = f["land"]
+        if t < ts + 0.55:
+            u = (t - ts) / 0.55
+            M.flask(ctx, lerp(sx, lx, u), lerp(sy, GROUND - 14, u * u) - math.sin(u * math.pi) * 60, u * 6, col)
+            continue
+        if f["kind"] == "shatter":
+            sw0, swd = f.get("sweep", (1e9, 1.0))
+            tt = min(t, f.get("freeze", 1e9))
+            M.shards(ctx, lx, 1 - clamp((tt - sw0) / swd), seed=i)
+            continue
+        # bounce -> Doubt catches it without looking -> tosses it back onto the stand
+        cx, cy = f["catch"]
+        if t < ts + 0.95:
+            u = (t - ts - 0.55) / 0.4
+            M.flask(ctx, lerp(lx, cx, u), lerp(GROUND - 14, cy, u) - math.sin(u * math.pi) * 50, 6 + u * 3, col)
+        elif t < f["back"]:
+            d = S["doubt"]
+            M.flask(ctx, d["x"] + d["hl"][0] * d["s"], d["y"] + d["yoff"] + d["hl"][1] * d["s"] - 10, 0.0, col)
+        elif t < f["back"] + 0.6:
+            u = (t - f["back"]) / 0.6
+            M.flask(ctx, lerp(cx, sx, u), lerp(cy, sy, u) - math.sin(u * math.pi) * 120, u * 6.28, col)
+
+
+def knock(S, b, lt, i, off, kind, land):
+    """Boredom bumps flask i off the stand at beat offset `off`."""
+    f = S["flasks"][i]
+    f.update(ts=T(b, off), kind=kind, land=land)
+    if off - 0.25 < lt < off + 0.2:
+        S["boredom"]["hr"] = (120, -100)
+    sfx(S, T(b, off), "tink", 0.6)
+    if kind == "shatter":
+        sfx(S, T(b, off + 0.55), "shatter", 0.9)
+    else:
+        sfx(S, T(b, off + 0.55), "boing", 0.7)
+        sfx(S, T(b, off + 0.95), "tap", 0.6)
+    return f
+
+
+def sweeping(d, lt, on=True):
+    d["itemR"] = "broom"
+    if on:
+        d["hr"] = (-12 + math.sin(lt * 7) * 18, -92)
+        d["hl"] = (-2 + math.sin(lt * 7) * 14, -128)
+    d["face"], d["px"] = -0.6, -1
+    d["lid"] = 0.35
+    d["mouth"], d["mamt"] = "flat", 0.0
+
+
+def sweep_sfx(S, b, t0, t1):
+    k = t0
+    while k < t1:
+        sfx(S, T(b, k), "sweep", 0.35)
+        k += 0.9
 
 
 def frantic(b_, lt):
@@ -67,8 +152,9 @@ def a_meet_boredom(S, lt, b):
 
 def a_mutter(S, lt, b):
     frantic(S["boredom"], lt)
+    knock(S, b, lt, 0, 1.6, "shatter", 530)
     S["fx"]["dial"] = 1.0
-    S["cam"] = [360, 360, 1.5]
+    S["cam"] = [380, 360, 1.5]
 
 
 def a_dweeb(S, lt, b):
@@ -92,19 +178,30 @@ def a_meet_doubt(S, lt, b):
     hand(d, -1, "rest", lt, 0, 0.3)
     d["lid"] = 0.2
     d["face"], d["px"] = -0.6, -1
-    walk(d, 470, lt, 0.4, 3.0, 0.7)
-    if lt > 3.0:
-        d["itemR"] = None
-        d["hr"] = (90 + math.sin(lt * 14) * 10, -120)
-        S["fx"]["dial"] = tw(lt, 3.0, 4.0, 1.0, 0.6)
-        sfx(S, T(b, 3.2), "tink", 0.5)
-    S["cam"] = [tw(lt, 0, 2.5, 1060, 420), 380, tw(lt, 0, 2.5, 1.6, 1.1)]
+    d["itemR"] = "broom"
+    d["hr"], d["hl"] = (-12, -92), (-2, -128)
+    walk(d, DX, lt, 0.4, 2.6, 0.7)
+    if lt > 2.6:
+        sweeping(d, lt)
+        S["flasks"][0]["sweep"] = (T(b, 2.8), 1.8)
+        sweep_sfx(S, b, 2.8, 4.6)
+    S["cam"] = [tw(lt, 0, 2.5, 1060, 520), 380, tw(lt, 0, 2.5, 1.6, 1.1)]
 
 
 def a_works(S, lt, b):
     d, bo = S["doubt"], S["boredom"]
     frantic(bo, lt)
-    d["hr"] = (90 + math.sin(lt * 14) * 10, -120)
+    sweeping(d, lt)
+    f = knock(S, b, lt, 1, 0.8, "bounce", 540)
+    f["catch"] = (d["x"] - 50, GROUND - 130)
+    f["back"] = T(b, 2.6)
+    if 1.0 < lt < 2.75:
+        # catches the flask with her free hand, still looking bored
+        hand(d, -1, (-50, -130), lt, 1.0, 1.35)
+        if lt > 2.3:
+            hand(d, -1, (-60, -170), lt, 2.3, 2.6)
+    sfx(S, T(b, 2.6), "whoosh", 0.4)
+    sfx(S, T(b, 3.2), "tink", 0.6)
     tb = b.vs + b.vd * 0.7
     if lt > tb:
         bo.update(yoff=0, wide=1.0, mouth="laugh", mamt=0.8)
@@ -113,27 +210,31 @@ def a_works(S, lt, b):
         S["fx"]["burst"] = T(b, tb)
     sfx(S, T(b, tb), "tada", 0.6)
     sfx(S, T(b, tb), "sparkle", 0.6)
-    S["cam"] = [520, 360, 1.0]
+    S["cam"] = [560, 360, 1.0]
 
 
 def a_hello(S, lt, b):
     v, bo, d = S["vex"], S["boredom"], S["doubt"]
-    S["show"] = ["@ped", "boredom", "doubt", "vex"]
+    S["show"] = ["@stand", "@ped", "boredom", "doubt", "vex", "@flasks"]
     frantic(bo, lt)
-    d["hr"] = (90 + math.sin(lt * 14) * 10, -120)
-    place(v, tw(lt, 0, 1.4, -150, 640), 0.4, 1, mouth="smile", mamt=0.8, brow=-0.6)
+    sweeping(d, lt)
+    f = knock(S, b, lt, 2, 0.6, "shatter", 520)
+    f["sweep"] = (T(b, 1.4), 9.0)
+    sweep_sfx(S, b, 1.4, b.d)
+    place(v, tw(lt, 0, 1.4, 1400, 745), -0.4, -1, mouth="smile", mamt=0.8, brow=-0.6)
     v["walking"] = 1.2 if lt < 1.4 else 0
     if lt > 1.4:
-        hand(v, 1, "wave", lt, 1.4, 1.7)
-        v["hr"] = (v["hr"][0] + math.sin(lt * 12) * 14, v["hr"][1])
+        hand(v, -1, "wave", lt, 1.4, 1.7)
+        v["hl"] = (v["hl"][0] - math.sin(lt * 12) * 14, v["hl"][1])
     sfx(S, T(b, 0.1), "door", 0.9)
-    S["cam"] = [640, 380, 1.0]
+    S["cam"] = [600, 380, 1.0]
 
 
 def a_guys(S, lt, b):
     v, bo, d = S["vex"], S["boredom"], S["doubt"]
     frantic(bo, lt)
-    d["hr"] = (90 + math.sin(lt * 14) * 10, -120)
+    sweeping(d, lt)
+    sweep_sfx(S, b, 0.0, b.d)
     v["hl"] = (-80 + math.sin(lt * 10) * 20, -200)
     v["hr"] = (80 - math.sin(lt * 10) * 20, -200)
     v["yoff"] = -abs(math.sin(lt * 6)) * 14
@@ -144,8 +245,8 @@ def a_stare(S, lt, b):
     stare(bo)
     stare(d)
     bo["hl"], bo["hr"] = E.pose("boredom", -1, "rest"), E.pose("boredom", 1, "rest")
-    d["hr"] = (48, -96)
-    d["itemR"] = "book"
+    d["hr"], d["hl"] = (-12, -92), (-2, -128)  # frozen mid-sweep
+    S["flasks"][2]["freeze"] = T(b)
     mus(S, T(b, 0.0), None, 0)
     sfx(S, T(b, 0.0), "scratch", 0.6)
     v["hl"], v["hr"] = (-80, -200), (80, -200)
@@ -154,7 +255,7 @@ def a_stare(S, lt, b):
     v["mouth"], v["mamt"] = "o", 0.6
     if lt > 1.2:
         v["px"] = math.sin((lt - 1.2) * 4) * 1.0
-    S["cam"] = [640, 380, tw(lt, 0, b.d, 1.0, 1.2)]
+    S["cam"] = [620, 380, tw(lt, 0, b.d, 1.0, 1.2)]
 
 
 def frozen(S, lt):
@@ -179,12 +280,12 @@ def a_here_to(S, lt, b):
     v["px"] = 0
     hand(v, 1, (30, -150), lt, 0, 0.4)
     v["mouth"], v["mamt"] = "wavy", 1.0
-    S["cam"] = [640, 360, tw(lt, 0, b.d, 1.2, 1.5)]
+    S["cam"] = [700, 360, tw(lt, 0, b.d, 1.2, 1.5)]
 
 
 def a_silence(S, lt, b):
     frozen(S, lt)
-    S["cam"] = [640, 360, 1.5]
+    S["cam"] = [700, 360, 1.5]
 
 
 def a_steal(S, lt, b):
@@ -279,9 +380,10 @@ def a_golfclap(S, lt, b):
         c["mouth"], c["mamt"] = "smile", 0.5
         c["brow"] = 0.4
     d["itemR"] = None
+    S["fx"]["lean"] = True
     clap = math.sin(lt * 24) * 8
-    bo["hl"], bo["hr"] = (-14 - clap, -100), (14 + clap, -100)
-    d["hl"], d["hr"] = (-12 - clap, -100), (12 + clap, -100)
+    bo["hl"], bo["hr"] = (-14 - clap, -36), (14 + clap, -36)
+    d["hl"], d["hr"] = (-12 - clap, -92), (12 + clap, -92)
     if lt > 1.6:
         bo["face"], bo["px"] = 0.6, 1
         d["face"], d["px"] = -0.6, -1
@@ -395,10 +497,11 @@ def a_zoomout(S, lt, b):
     v.update(x=tw(lt, 0, 1.5, 1160, 760), walking=0.5 if lt < 1.5 else 0, face=-0.3, px=-1, blush=0.6,
              mouth="smile", mamt=0.6)
     bo.update(x=tw(lt, 0, 1.5, 300, 560), face=0.3, px=1, mouth="smile", mamt=0.7)
-    d.update(x=tw(lt, 0, 1.5, 470, 960), face=-0.4, px=-1, mouth="smile", mamt=0.6, itemR="book")
+    d.update(x=tw(lt, 0, 1.5, DX, 960), face=-0.4, px=-1, mouth="smile", mamt=0.6, itemR="book")
     if lt > 1.6:
         v["hr"] = (70 + math.sin(lt * 5) * 30, -150 + math.cos(lt * 4) * 20)
         bo["hl"] = (-60 + math.sin(lt * 6) * 20, -150)
+    S["fx"]["lean"] = False
     S["cam"] = [640, 360, tw(lt, 0, b.d, 1.4, 1.0)]
     mus(S, T(b, 0.0), "lab", 0.7)
 
@@ -414,7 +517,7 @@ BEATS = [
          post=0.6),
     Beat(a_mutter, "boredom", "If the emotional wave function collapses at the speed of sarcasm, then carry "
                               "the feelings, square the vibes... yes. Yes!", rate="+12%", post=0.4),
-    Beat(a_dweeb, "doubt", "You see this dweeb over here? I'd better keep an eye on his hyperactive butt.",
+    Beat(a_dweeb, "doubt", "You see this dweeb over here? I'd better keep an eye on this hyperactive genius.",
          post=0.6),
     Beat(a_meet_doubt, "narr", "And meet Doubt, the librarian. She walks two steps behind him, quietly fixing "
                                "everything.", post=1.0, min=4.6),
@@ -426,22 +529,17 @@ BEATS = [
     Beat(a_why, "vex", "Why did the music stop?", rate="-10%", gain=0.7, post=1.0),
     Beat(a_here_to, "vex", "Umm. Hey. I'm here to... uhh...", rate="-10%", post=0.2),
     Beat(a_silence, min=2.4),
-    Beat(a_steal, "vex", "...steal", rate="-10%", post=0.0),
-    bleep(0.55),
-    Beat(a_boss, "vex", "Oh. Oh no.", pre=0.8, post=0.0),
-    bleep(0.5),
-    Beat(a_oh_no, "vex", "Oh", post=0.0),
-    bleep(0.6),
+    Beat(a_steal, "vex", "...steal stuff?", rate="-10%", post=0.2),
+    Beat(a_boss, "vex", "Oh. Oh no. Oh, fudge.", pre=0.8, post=0.1),
+    Beat(a_oh_no, "vex", "Oh, snap. Oh, snap, snap, snap!", rate="+8%", post=0.2),
     Beat(a_sidle, "narr", "He lifts it one centimeter.", pre=2.4, post=1.8, min=5.0),
-    Beat(a_fumble, "vex", "Oh", rate="-30%", pre=0.2, post=0.0, min=1.2, id="fum"),
-    bleep(0.5),
-    Beat(a_fumble, "vex", "If this breaks, I'm", rate="-20%", post=0.0),
-    bleep(0.6),
+    Beat(a_fumble, "vex", "Oh, fiddlesticks!", rate="-30%", pre=0.2, post=0.0, min=1.2, id="fum"),
+    Beat(a_fumble, "vex", "If this breaks, I'm toast!", rate="-20%", post=0.0),
     Beat(a_dive, min=2.4, id="dive"),
     Beat(a_golfclap, min=2.6),
-    Beat(a_thanks, "vex", "Thank you! ...Wait. What the hell? I'm the villain here!", post=0.8),
+    Beat(a_thanks, "vex", "Thank you! ...Wait. What the heck? I'm the villain here!", post=0.8),
     Beat(a_put_back, "vex", "Well then. See you guys later.", pre=1.2, post=0.6),
-    Beat(a_failed, "vex", "Damn it. Why am I acting like this? Sorry, guys. I failed at being a villain "
+    Beat(a_failed, "vex", "Darn it. Why am I acting like this? Sorry, guys. I failed at being a villain "
                           "today.", post=0.6),
     Beat(a_second, "boredom", "Well, dude. Actually, do you have a second?", pre=0.4, post=0.3),
     Beat(a_forums, "doubt", "We were impressed by your evil lair. We saw your post on the Evil Lair Forums.",
