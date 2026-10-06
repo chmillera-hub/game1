@@ -170,7 +170,9 @@ def build_audio(part, total, out_wav):
     sched = sorted(S["music"], key=lambda m: m[0])
     mus = np.zeros(n, np.float32)
     tracks = {}
-    for k, (ts, mood, vol) in enumerate(sched):
+    for k, entry in enumerate(sched):
+        ts, mood, vol = entry[:3]
+        fin, fout = entry[3] if len(entry) > 3 else (0.6, 0.6)
         te = sched[k + 1][0] if k + 1 < len(sched) else total + 0.5
         if mood is None or vol <= 0:
             continue
@@ -178,10 +180,11 @@ def build_audio(part, total, out_wav):
             tracks[mood] = audio.MOODS[mood](total + 1)
         i0, i1 = int(ts * SR), min(n, int(te * SR))
         seg = tracks[mood][i0:i1].copy() * vol
-        f = min(len(seg), int(0.6 * SR))
-        if f > 0:
-            seg[:f] *= np.linspace(0, 1, f)
-            seg[-f:] *= np.linspace(1, 0, f)
+        f1 = min(len(seg), max(1, int(fin * SR)))
+        f2 = min(len(seg), max(1, int(fout * SR)))
+        if len(seg) > 0:
+            seg[:f1] *= np.linspace(0, 1, f1)
+            seg[-f2:] *= np.linspace(1, 0, f2)
         mus[i0:i0 + len(seg)] += seg
     # duck music under speech
     ve = np.abs(voice)
