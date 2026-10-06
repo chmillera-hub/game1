@@ -89,6 +89,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--voices', required=True)
     ap.add_argument('--lines', default=os.path.join(ROOT, 'tools', 'lines.json'))
+    ap.add_argument('--force', action='store_true', help='re-voice every line, not just new ones')
     args = ap.parse_args()
     lines = json.load(open(args.lines))
     os.makedirs(OUT, exist_ok=True)
@@ -98,7 +99,8 @@ def main():
             if ln['key'] in seen:
                 continue
             seen.add(ln['key'])
-            table[ln['key']] = build_line(ln, args.voices, tmp)
+            cached = os.path.join(OUT, ln['key'] + '.mp3')
+            table[ln['key']] = round(duration(cached), 2) if os.path.exists(cached) and not args.force else build_line(ln, args.voices, tmp)
             print(f"{ln['part']}  {ln['speaker']:5} {table[ln['key']]:5.2f}s  {ln['text'][:60]}")
     for f in os.listdir(OUT):  # drop clips for lines that no longer exist
         if f.endswith('.mp3') and f[:-4] not in table:
