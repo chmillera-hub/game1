@@ -348,24 +348,22 @@ def parchment(ctx, t, kind, a=1.0):
         src(ctx, ink)
         ctx.set_line_width(2)
         ctx.stroke()
-        # both arms lifted high in prayer and praise
-        for side in (-1, 1):
-            ctx.move_to(tx + side * 24, base - 62)
-            ctx.curve_to(tx + side * 44, base - 100, tx + side * 52, base - 140, tx + side * 46, base - 170)
+        # both arms reaching out, relaxed and open, toward the crowd
+        for (sx, c1x, c1y, c2x, c2y, hx, hy) in ((-22, -8, 30, 30, 40, 58, 30),
+                                                  (22, 50, 10, 78, 24, 104, 22)):
+            ctx.move_to(tx + sx, base - 62)
+            ctx.curve_to(tx + c1x, base - 62 + c1y, tx + c2x, base - 62 + c2y, tx + hx, base - 62 + hy)
             src(ctx, ink)
             ctx.set_line_width(5)
             ctx.stroke()
-            ellipse(ctx, tx + side * 46, base - 176, 6, 7)
+            # open palm, turned up
+            ctx.save()
+            ctx.translate(tx + hx + 5, base - 62 + hy - 2)
+            ctx.rotate(-0.35)
+            ellipse(ctx, 0, 0, 11, 6)
             src(ctx, ink)
             ctx.fill()
-        # soft light from above
-        for k in range(7):
-            ang = -PI / 2 + (k - 3) * 0.22
-            ctx.move_to(tx + math.cos(ang) * 120, base - 150 + math.sin(ang) * 120)
-            ctx.line_to(tx + math.cos(ang) * 175, base - 150 + math.sin(ang) * 175)
-        src(ctx, ink, 0.35)
-        ctx.set_line_width(3)
-        ctx.stroke()
+            ctx.restore()
         rnd = random.Random(4)
         for i in range(26):
             px = rnd.uniform(580, 1080)
