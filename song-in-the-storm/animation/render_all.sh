@@ -9,6 +9,6 @@ for i in $(seq 0 $((K-1))); do
   pids+=($!)
 done
 wait "${pids[@]}"
-ls segs/${part}_*.mp4 | sort -V | sed "s/^/file '/; s/$/'/" > segs/${part}_list.txt
+(cd segs && ls ${part}_*.mp4) | sort -V | sed "s/^/file '/; s/$/'/" > segs/${part}_list.txt
 ffmpeg -y -loglevel error -f concat -safe 0 -i segs/${part}_list.txt -i ../${part}.wav -c:v copy -c:a aac -b:a 192k -shortest ../${part}_final.mp4
 echo FINISHED $part
