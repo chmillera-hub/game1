@@ -940,7 +940,7 @@ function litFill(col, cx, cy, r, k = 1) {
   g.addColorStop(1, rgb(mixc(mulc(col, 0.95 * k), [255, 236, 205], 0.3 * LAMT)));
   ctx.fillStyle = g; ctx.fill();
 }
-const ROBE = [142, 120, 94], ROBE2 = [112, 96, 78], WRAP = [88, 76, 64], SKIN = [200, 150, 112], HAIR = [72, 48, 34];
+const ROBE = [182, 176, 163], ROBE2 = [150, 145, 134], WRAP = [138, 133, 123], SKIN = [200, 150, 112], HAIR = [72, 48, 34];
 
 function haloLevel(t) {
   let f = 0.62 + 0.28 * fbm1(t * 2.6, 31);
@@ -992,8 +992,8 @@ function drawJesus(t, P) {
   ctx.translate(c.x, 0); ctx.scale(1, 0.12); ctx.translate(-c.x, 0); ctx.fillStyle = sg; ctx.fillRect(c.x - 46, -46, 92, 92); ctx.restore();
 
   // far side
-  drawLimb(P.lF, ROBE2, WRAP, 5.8, 4.2, 2.7, far); footAt(P.lF, far);
-  drawLimb(P.aF, ROBE, SKIN, 4.4, 3.5, 2.1, far * 1.1);
+  drawLimb(P.lF, ROBE2, WRAP, 6.0, 4.6, 3.3, far); footAt(P.lF, far);
+  drawLimb(P.aF, ROBE, ROBE, 4.6, 3.9, 3.0, far * 1.1);
   drawHand(P.aF, far * 1.15, t);
 
   // torso / tunic
@@ -1025,7 +1025,7 @@ function drawJesus(t, P) {
   const pw = vadd(vlerp(hip, S, 0.35), n, -5); ctx.beginPath(); ctx.ellipse(pw.x, pw.y, 3.2, 2, sa, 0, TAU); ctx.fill();
 
   // near leg
-  drawLimb(P.lN, ROBE, WRAP, 6.4, 4.6, 2.8, 1); footAt(P.lN, 1);
+  drawLimb(P.lN, ROBE, WRAP, 6.6, 5.0, 3.4, 1); footAt(P.lN, 1);
   // head
   drawHead(t, P);
   // the ache he holds: an ember under the hand
@@ -1040,7 +1040,7 @@ function drawJesus(t, P) {
     ctx.fillStyle = eg; ctx.fillRect(P.chest.x - R, P.chest.y - R, 2 * R, 2 * R); ctx.restore();
   }
   // near arm (clutching the chest)
-  drawLimb(P.aN, ROBE, SKIN, 4.6, 3.7, 2.2, 1);
+  drawLimb(P.aN, ROBE, ROBE, 4.8, 4.0, 3.1, 1);
   drawHand(P.aN, 1, t);
 }
 function drawJesusGlow(t, P) {
