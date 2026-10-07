@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>The Spark in the Storm</title>
+<style>
+  html, body { margin: 0; background: #000; color: #ddd; font-family: sans-serif; }
+  canvas { display: block; width: 100%; max-width: 1280px; margin: 0 auto; }
+  #ui { text-align: center; padding: 8px; }
+  #ui[hidden] { display: none; }
+</style>
+</head>
+<body>
+<canvas id="c" width="1280" height="720"></canvas>
+<div id="ui" hidden>
+  <button id="play">Play</button> <input id="seek" type="range" min="0" max="1" step="0.001" style="width:60%">
+  <span id="clock"></span>
+</div>
+<script src="scene.js"></script>
+<script src="env.js"></script>
+<script src="shots.js"></script>
+<script>
+// Live preview: open scene.html?part=1 (served over http, after `python3 audio.py`).
+(async () => {
+  const part = new URLSearchParams(location.search).get('part');
+  if (!part) return;
+  const tl = await (await fetch(`build/timeline_part${part}.json`)).json();
+  setup(tl);
+  const ui = document.getElementById('ui'); ui.hidden = false;
+  const audio = new Audio(`build/part${part}.wav`);
+  const seek = document.getElementById('seek'), clock = document.getElementById('clock');
+  document.getElementById('play').onclick = () => audio.paused ? audio.play() : audio.pause();
+  seek.oninput = () => { audio.currentTime = seek.value * tl.duration; };
+  const loop = () => {
+    const t = audio.currentTime;
+    renderFrame(Math.min(t, tl.duration - 0.01));
+    seek.value = t / tl.duration; clock.textContent = t.toFixed(1) + 's';
+    requestAnimationFrame(loop);
+  };
+  loop();
+})();
+</script>
+</body>
+</html>
