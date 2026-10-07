@@ -348,10 +348,23 @@ def parchment(ctx, t, kind, a=1.0):
         src(ctx, ink)
         ctx.set_line_width(2)
         ctx.stroke()
-        ctx.move_to(tx + 26, base - 60)
-        ctx.line_to(tx + 70, base - 110)
-        src(ctx, ink)
-        ctx.set_line_width(5)
+        # both arms lifted high in prayer and praise
+        for side in (-1, 1):
+            ctx.move_to(tx + side * 24, base - 62)
+            ctx.curve_to(tx + side * 44, base - 100, tx + side * 52, base - 140, tx + side * 46, base - 170)
+            src(ctx, ink)
+            ctx.set_line_width(5)
+            ctx.stroke()
+            ellipse(ctx, tx + side * 46, base - 176, 6, 7)
+            src(ctx, ink)
+            ctx.fill()
+        # soft light from above
+        for k in range(7):
+            ang = -PI / 2 + (k - 3) * 0.22
+            ctx.move_to(tx + math.cos(ang) * 120, base - 150 + math.sin(ang) * 120)
+            ctx.line_to(tx + math.cos(ang) * 175, base - 150 + math.sin(ang) * 175)
+        src(ctx, ink, 0.35)
+        ctx.set_line_width(3)
         ctx.stroke()
         rnd = random.Random(4)
         for i in range(26):
