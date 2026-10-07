@@ -222,7 +222,7 @@ function jesusPose(t) {
   P.ha = ha + 0.015 * noise1(t * 2, 5);
 
   // --- chest point: where the hands hold the ache
-  P.chest = vadd(vadd(hip, d, 24 - 3 * wu), n, 9 - 2 * wu);
+  P.chest = vadd(vadd(hip, d, 30 - 4 * wu), n, 10 - 2 * wu);   // over the heart
 
   // --- arm targets
   const gN = gaitTarget(LIMBS.aN, s.p), gF = gaitTarget(LIMBS.aF, s.p);
@@ -233,10 +233,20 @@ function jesusPose(t) {
   const reachT = vadd(S, dir(reachDir), 36.8 - 1.2 * (1 - s.open));
   let tF = vlerp(vlerp(gF, hangF, wk), reachT, s.reach);
   tF = vlerp(tF, vadd(P.chest, d, -2), s.clutchF);
-  const poleArm = vlerp(vadd(S, V(-10, 30)), vadd(S, V(-14, 22)), Math.max(s.clutchN, wu));
-  const poleReach = vlerp(vadd(S, V(-10, 30)), vadd(S, V(4, 40)), s.reach);
+  // Pulling the hand back: the elbow drops to his side first (hand at the waist), then the hand rises to the chest.
+  const wd = clamp((t - M.withdraw - 0.15) / 2.25);
+  if (wd > 0 && wd < 1) {
+    const waist = vadd(vadd(S, d, -17), n, 19), u = eio(wd);
+    tF = u < 0.55 ? vlerp(reachT, waist, eio(u / 0.55)) : vlerp(waist, vadd(P.chest, d, -2), eio((u - 0.55) / 0.45));
+  }
+  // Holding the chest, the elbow stays tucked at his side: back along the torso toward the hip.
+  const poleSide = vadd(vadd(S, d, -20), n, 4);
+  const poleCrawl = vadd(S, V(-10, 30));
+  const poleArm = vlerp(poleCrawl, poleSide, Math.max(s.clutchN, wu));
+  const poleReach = vlerp(poleCrawl, vadd(S, V(4, 40)), s.reach);
   P.aN = ik2(vadd(S, n, 1.5), tN, UA, FA, poleArm);
-  P.aF = ik2(vadd(S, n, -1), tF, UA, FA, s.reach > s.clutchF ? poleReach : poleArm);
+  // the elbow drops to his side as soon as he starts pulling the hand back
+  P.aF = ik2(vadd(S, n, -1), tF, UA, FA, vlerp(poleReach, poleSide, Math.max(s.clutchF, wu, ramp(t, M.withdraw + 0.05, M.withdraw + 0.5))));
   P.aF.open = s.open; P.aN.open = 0;
   P.aN.fist = s.clutchN; P.aF.fist = s.clutchF;
 
