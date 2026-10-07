@@ -9,14 +9,16 @@ import { fileURLToPath } from "url";
 const here = dirname(fileURLToPath(import.meta.url));
 const out = resolve(here, "build/stills");
 mkdirSync(out, { recursive: true });
+const portrait = process.argv.includes("--portrait");
+const times = process.argv.slice(2).filter(a => !a.startsWith("--"));
 const browser = await chromium.launch();
-const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
+const page = await browser.newPage({ viewport: portrait ? { width: 1080, height: 1920 } : { width: 1280, height: 720 } });
 const errors = [];
 page.on("pageerror", e => errors.push(String(e)));
 page.on("console", m => { if (m.type() === "error") errors.push(m.text()); });
-await page.goto("file://" + resolve(here, "film.html"));
+await page.goto("file://" + resolve(here, "film.html") + (portrait ? "?portrait" : ""));
 await page.evaluate(() => document.fonts.ready);
-for (const a of process.argv.slice(2)) {
+for (const a of times) {
   const t = parseFloat(a);
   const url = await page.evaluate(t => { render(t); return document.getElementById("c").toDataURL("image/jpeg", 0.9); }, t);
   writeFileSync(`${out}/t${t.toFixed(1).padStart(6, "0")}.jpg`, Buffer.from(url.split(",")[1], "base64"));

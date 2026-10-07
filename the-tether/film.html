@@ -19,7 +19,11 @@
 // ============================================================================
 const C = document.getElementById("c");
 let ctx = C.getContext("2d");          // swapped to an offscreen layer while drawing Jesus
-const W = C.width, H = C.height, BAR = 92;              // 2.39:1 letterbox
+// ?portrait renders a 9:16 phone version (1080x1920) with its own framing.
+const PORTRAIT = new URLSearchParams(location.search).has("portrait");
+if (PORTRAIT) { C.width = 1080; C.height = 1920; }
+const W = C.width, H = C.height, BAR = PORTRAIT ? 0 : 92;  // landscape: 2.39:1 letterbox
+const U = Math.min(W, H) / 720;                            // screen-space scale for text and effects
 const TL = window.TIMELINE, M = TL.marks, CUES = TL.cues;
 
 // ---------------------------------------------------------------- math ----
@@ -356,6 +360,7 @@ function camera(t, P) {
       c = { x: lerp(head.x + 6, FX - 40, k), y: lerp(-26, -1150, k), z: Math.exp(lerp(Math.log(3.3), Math.log(0.085), k)) };
     }
   }
+  if (PORTRAIT) c = portraitize(t, c, P);
   // Thunder shake (only on the Father's lightning)
   const sh = flash(t, "father") * 0.9;
   if (sh > 0.02) {
@@ -366,6 +371,51 @@ function camera(t, P) {
   c.x += fbm1(t * 0.13, 11) * 6 / Math.sqrt(c.z);
   c.y += fbm1(t * 0.11, 12) * 4 / Math.sqrt(c.z);
   return c;
+}
+// Portrait reframing. Each landscape shot is tightened by a factor m (relative
+// to keeping the same width in view); two-shots are recomposed vertically with
+// the son small at the bottom and the Father towering above.
+function portraitize(t, c, P) {
+  const PZ = W / 1280, f = M.father, hip = P.hip;
+  const m = k => ({ x: c.x, y: c.y, z: c.z * PZ * k });
+  const floorAt = (frac, z) => -(frac * H - H / 2) / z;     // camera y putting the floor at frac of the height
+  const span = (a, b) => clamp((t - a) / (b - a));
+  if (t < M.jesus) return m(1.4);
+  if (t < 36.0) return m(2.2);
+  if (t < 44.6) return m(1.8);
+  const bodyX = (hip.x + P.Hc.x) / 2;
+  if (t < f) { const r = m(3.0); r.x = bodyX + 10; r.y = -70; return r; }
+  if (t < f + 7.6) {
+    const u = ecub((t - f - 1.6) / 5.8), r = m(lerp(3.0, 3.1, u));
+    r.z = Math.exp(lerp(Math.log(c.z * PZ * 3.0), Math.log(0.44 * PZ * 3.1), u));
+    r.x = lerp(bodyX + 10, FX, u); r.y = lerp(-70, -600, u); return r;
+  }
+  if (t < 66.6) { const r = m(1.7); r.x = FX + 5; return r; }
+  if (t < 72.9) {
+    // frame from his feet to the Father's face
+    const l = bodyX - 75, r = FX + 125, z = W / (r - l + 70) * lerp(1, 1.03, span(66.6, 72.9));
+    return { x: (l + r) / 2, y: floorAt(0.76, z), z };
+  }
+  if (t < M.plea + 0.5) return m(1.5);
+  if (t < 92.4) return m(1.9);
+  if (t < 101.5) { const z = lerp(5.6, 6.2, span(92.4, 101.5)); return { x: hip.x + 42, y: floorAt(0.8, z), z }; }
+  if (t < M.ghost) return m(1.9);
+  if (t < 115.0) { const z = lerp(1.32, 1.26, span(M.ghost, 115)); return { x: 280, y: floorAt(0.76, z), z }; }
+  if (t < 121.0) return m(1.6);
+  if (t < M.hover) { const z = lerp(1.22, 1.3, span(121, M.hover)); return { x: 295, y: floorAt(0.76, z), z }; }
+  if (t < M.curl) return m(1.6);
+  if (t < M.inner) return m(2.5);
+  if (t < M.thread) return m(1.6);
+  if (t < M.tether) return m(1.5);
+  if (t < M.grief) { const z = lerp(0.6, 0.65, span(M.tether, M.grief)); return { x: 780, y: floorAt(0.76, z), z }; }
+  const tp = tearPath(t);
+  if (t < tp.t0 + 1.4) return m(1.5);
+  if (t < M.pullback + 2.0) return m(2.2);
+  const t0 = M.pullback + 2.0, u = clamp((t - t0) / (M.fade + 1 - t0)), k = ecub(u) * 0.75 + u * 0.25;
+  const r = m(lerp(2.2, 1.3, k)), head = P.Hc;
+  r.x = lerp(head.x + 6, FX - 40, Math.pow(k, 2.5));     // stay on him until the frame is wide
+  r.y = lerp(-26, -1150, Math.pow(k, 1.6));
+  return r;
 }
 let CAM = { x: 0, y: 0, z: 1 };
 const JL = document.createElement("canvas"), RL = document.createElement("canvas");
@@ -507,7 +557,7 @@ function drawFarBolt(t) {
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   let x = W * (0.2 + 0.6 * hash(fi.t)), y = H * (0.22 + 0.2 * hash(fi.t + 3)) - 60;
   const pts = [V(x, y)];
-  for (let k = 0; k < 9; k++) { x += lerp(-26, 26, r()); y += lerp(10, 26, r()); pts.push(V(x, y)); }
+  for (let k = 0; k < 9; k++) { x += lerp(-26, 26, r()) * U; y += lerp(10, 26, r()) * U; pts.push(V(x, y)); }
   ctx.save(); ctx.globalCompositeOperation = "lighter"; ctx.lineJoin = "round";
   for (const [lw, al] of [[6, 0.12], [2, 0.5], [0.8, 1]]) {
     ctx.strokeStyle = `rgba(205,215,255,${clamp(a * al)})`; ctx.lineWidth = lw;
@@ -554,9 +604,9 @@ function drawFloor(t, P) {
   // a hair-thin horizon of light: the floor exists only where light touches it
   const sy = (0 - CAM.y) * CAM.z + H / 2;
   ctx.setTransform(1, 0, 0, 1, 0, 0);
-  const hg = ctx.createLinearGradient(0, sy - 3, 0, sy + 3);
+  const hg = ctx.createLinearGradient(0, sy - 3 * U, 0, sy + 3 * U);
   hg.addColorStop(0, "rgba(180,170,220,0)"); hg.addColorStop(0.5, "rgba(180,170,220,0.10)"); hg.addColorStop(1, "rgba(180,170,220,0)");
-  ctx.fillStyle = hg; ctx.fillRect(0, sy - 3, W, 6);
+  ctx.fillStyle = hg; ctx.fillRect(0, sy - 3 * U, W, 6 * U);
   applyCam();
   // Jesus' halo reflection and hand ripples
   const hr = P.Hc;
@@ -603,7 +653,7 @@ function drawMotes(t) {
     const py = ((m.y * H * 1.3 - CAM.y * CAM.z * m.d * 0.25 - t * 4 * m.d) % (H * 1.3) + H * 1.3) % (H * 1.3) - H * 0.15;
     const a = 0.25 * (0.5 + 0.5 * Math.sin(t * 0.8 + m.ph * 3)) * Math.min(1, m.d);
     ctx.fillStyle = `rgba(255,236,210,${a})`;
-    ctx.beginPath(); ctx.arc(px, py, m.s * m.d, 0, TAU); ctx.fill();
+    ctx.beginPath(); ctx.arc(px, py, m.s * m.d * U, 0, TAU); ctx.fill();
   }
   ctx.globalCompositeOperation = "source-over";
 }
@@ -1057,7 +1107,7 @@ function drawJesus(t, P) {
 function drawJesusGlow(t, P) {
   const s = P.s, ember = clamp(s.clutchN + s.curl);
   if (CAM.z < 0.8) {                         // from far away he is a single warm point
-    const R = 16 / CAM.z, a = 0.55 * (1 - CAM.z / 0.8) * (0.7 + 0.3 * haloLevel(t));
+    const R = 16 * U / CAM.z, a = 0.55 * (1 - CAM.z / 0.8) * (0.7 + 0.3 * haloLevel(t));
     ctx.save(); ctx.globalCompositeOperation = "lighter";
     const g = ctx.createRadialGradient(P.Hc.x, P.Hc.y, 0, P.Hc.x, P.Hc.y, R);
     g.addColorStop(0, `rgba(255,220,170,${a})`); g.addColorStop(0.25, `rgba(255,190,130,${a * 0.35})`); g.addColorStop(1, "rgba(255,170,110,0)");
@@ -1270,7 +1320,7 @@ function drawThread(t, P) {
   if (t < M.thread) return;
   const G = threadGeom(t, P);
   ctx.save(); ctx.globalCompositeOperation = "lighter"; ctx.lineCap = "round"; ctx.lineJoin = "round";
-  const px = 1 / CAM.z;
+  const px = U / CAM.z;
   for (const [lw, al] of [[7 * px, 0.08], [2.6 * px, 0.25], [1.0 * px, 0.95]]) {
     ctx.strokeStyle = `rgba(255,214,140,${al})`; ctx.lineWidth = lw;
     ctx.beginPath(); G.pts.forEach((p, i) => i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y)); ctx.stroke();
@@ -1305,7 +1355,7 @@ function drawSouls(t) {
   const lv = Math.max(soulsLevel(t), 0.18 * ramp(t, 76, 80) * (1 - ramp(t, 82, 83)));
   if (lv <= 0) return;
   ctx.save(); ctx.globalCompositeOperation = "lighter";
-  const px = 1 / CAM.z;
+  const px = U / CAM.z;
   const fl = ramp(t, M.thread + 8.8, M.tether + 1.5);
   SOULS.forEach((s, i) => {
     const a = clamp(lv * 1.4 - s.delay * 0.5) * (0.55 + 0.45 * Math.sin(t * 1.3 * s.s + s.ph));
@@ -1325,7 +1375,7 @@ function drawTear(t) {
   const tp = tearPath(t);
   if (t < tp.t0 || t > tp.t1 + 0.05) return;
   ctx.save(); ctx.globalCompositeOperation = "lighter";
-  const px = 1 / CAM.z;
+  const px = U / CAM.z;
   for (let k = 12; k >= 0; k--) {          // trail
     const q = tearPath(t - k * 0.05);
     if (t - k * 0.05 < tp.t0) continue;
@@ -1350,10 +1400,10 @@ function drawGhost(t) {
     if (a <= 0) return;
     const [fx, fy] = GHOST_POS[i];
     const drift = (t - p.start) * 9;
-    ctx.font = `italic ${30 + i * 2}px Caladea`; ctx.textAlign = "center"; ctx.letterSpacing = "4px";
+    ctx.font = `italic ${(30 + i * 2) * U}px Caladea`; ctx.textAlign = "center"; ctx.letterSpacing = `${4 * U}px`;
     for (let k = 0; k < 4; k++) {
       ctx.fillStyle = `rgba(225,215,255,${a * (k ? 0.12 : 0.55)})`;
-      ctx.fillText(p.who === "G1" && i === 3 ? "give it to God…" : "Give it to God.", fx * W + drift + (k ? noise1(t * 3 + k, k) * 6 : 0), fy * H - drift * 0.3 + (k ? noise1(t * 3 + k, k + 9) * 4 : 0));
+      ctx.fillText(p.who === "G1" && i === 3 ? "give it to God…" : "Give it to God.", fx * W + drift * U + (k ? noise1(t * 3 + k, k) * 6 * U : 0), fy * H - drift * 0.3 * U + (k ? noise1(t * 3 + k, k + 9) * 4 * U : 0));
     }
   });
   ctx.letterSpacing = "0px";
@@ -1365,17 +1415,30 @@ function wrapLines(text, maxw) {
 }
 function drawCaptions(t) {
   ctx.setTransform(1, 0, 0, 1, 0, 0);
+  if (PORTRAIT) {                    // a soft dark band so captions read over the picture
+    const g = ctx.createLinearGradient(0, H * 0.7, 0, H);
+    g.addColorStop(0, "rgba(0,0,0,0)"); g.addColorStop(0.5, "rgba(0,0,0,0.45)"); g.addColorStop(1, "rgba(0,0,0,0.7)");
+    ctx.fillStyle = g; ctx.fillRect(0, H * 0.7, W, H * 0.3);
+  }
   CUES.forEach((c, i) => {
     if (c.who === "G") return;
     const next = CUES[i + 1] ? CUES[i + 1].start : 1e9;
     const end = Math.min(c.start + c.dur + 0.6, next - 0.05);
     const a = ramp(t, c.start - 0.15, c.start + 0.2) * (1 - ramp(t, end - 0.3, end));
     if (a <= 0) return;
-    const style = { N: ["21px Caladea", "232,226,214"], J: ["italic 22px Caladea", "255,214,170"], I: ["italic 21px Caladea", "214,200,255"] }[c.who];
-    ctx.font = style[0]; ctx.textAlign = "center"; ctx.fillStyle = `rgba(${style[1]},${a * 0.92})`;
+    const fs = (c.who === "J" ? 22 : 21) * (PORTRAIT ? 1.9 : 1);
+    const style = { N: ["", "232,226,214"], J: ["italic ", "255,214,170"], I: ["italic ", "214,200,255"] }[c.who];
+    ctx.font = `${style[0]}${fs}px Caladea`; ctx.textAlign = "center";
     const txt = c.who === "N" ? c.text : `“${c.text}”`;
-    const lines = wrapLines(txt, W * 0.78);
-    lines.forEach((l, k) => ctx.fillText(l, W / 2, H - BAR + 36 + k * 26 - (lines.length - 1) * 8));
+    const lines = wrapLines(txt, W * (PORTRAIT ? 0.86 : 0.78));
+    const lh = PORTRAIT ? fs * 1.3 : 26;
+    const y0 = PORTRAIT ? H * 0.855 - (lines.length - 1) * lh / 2 : H - BAR + 36 - (lines.length - 1) * 8;
+    if (PORTRAIT) {
+      ctx.shadowColor = "rgba(0,0,0,0.9)"; ctx.shadowBlur = 12 * U;
+    }
+    ctx.fillStyle = `rgba(${style[1]},${a * 0.95})`;
+    lines.forEach((l, k) => ctx.fillText(l, W / 2, y0 + k * lh));
+    ctx.shadowBlur = 0; ctx.shadowColor = "rgba(0,0,0,0)";
   });
 }
 function drawTitle(t) {
@@ -1383,15 +1446,16 @@ function drawTitle(t) {
   if (a <= 0) return;
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.textAlign = "center";
-  ctx.font = "44px Caladea"; ctx.letterSpacing = "18px"; ctx.fillStyle = `rgba(240,228,205,${a})`;
-  ctx.fillText("THE TETHER", W / 2 + 9, H / 2 - 4);
-  ctx.font = "italic 19px Caladea"; ctx.letterSpacing = "3px"; ctx.fillStyle = `rgba(200,190,220,${a * 0.8})`;
-  ctx.fillText("a prayer without words", W / 2, H / 2 + 38);
+  const s = PORTRAIT ? U * 1.1 : 1;
+  ctx.font = `${44 * s}px Caladea`; ctx.letterSpacing = `${18 * s}px`; ctx.fillStyle = `rgba(240,228,205,${a})`;
+  ctx.fillText("THE TETHER", W / 2 + 9 * s, H / 2 - 4 * s);
+  ctx.font = `italic ${19 * s}px Caladea`; ctx.letterSpacing = `${3 * s}px`; ctx.fillStyle = `rgba(200,190,220,${a * 0.8})`;
+  ctx.fillText("a prayer without words", W / 2, H / 2 + 38 * s);
   ctx.letterSpacing = "0px";
   // thin gold thread under the title
-  const w = 220 * ramp(t, M.title + 0.8, M.title + 3.5);
-  ctx.strokeStyle = `rgba(255,210,140,${a * 0.8})`; ctx.lineWidth = 1;
-  ctx.beginPath(); ctx.moveTo(W / 2 - w / 2, H / 2 + 14); ctx.lineTo(W / 2 + w / 2, H / 2 + 14); ctx.stroke();
+  const w = 220 * s * ramp(t, M.title + 0.8, M.title + 3.5);
+  ctx.strokeStyle = `rgba(255,210,140,${a * 0.8})`; ctx.lineWidth = s;
+  ctx.beginPath(); ctx.moveTo(W / 2 - w / 2, H / 2 + 14 * s); ctx.lineTo(W / 2 + w / 2, H / 2 + 14 * s); ctx.stroke();
 }
 
 // ============================================================== RENDER ====
@@ -1418,7 +1482,7 @@ function render(t) {
     ctx = main;
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.drawImage(JL, 0, 0);
-    const px = clamp(0.32 * CAM.z, 0.8, 3.2);
+    const px = clamp(0.32 * CAM.z, 0.8, 3.2 * U);
     rim(LDIR, px, `rgb(255,226,180)`, clamp(0.75 * LAMT));
     rim(V(-LDIR.x * 0.6 - LDIR.y * 0.5, -LDIR.y * 0.6 + LDIR.x * 0.5), px * 0.8, "rgb(120,140,230)", 0.35);
     applyCam(); drawJesusGlow(t, P);
@@ -1430,7 +1494,8 @@ function render(t) {
   const fw = flash(t, "father") * 0.22 + flash(t, "far") * 0.05;
   if (fw > 0.003) { ctx.fillStyle = `rgba(215,225,255,${clamp(fw)})`; ctx.fillRect(0, 0, W, H); }
   // vignette
-  const vg = ctx.createRadialGradient(W / 2, H / 2, H * 0.35, W / 2, H / 2, W * 0.72);
+  const hd = Math.hypot(W, H) / 2;
+  const vg = ctx.createRadialGradient(W / 2, H / 2, hd * 0.34, W / 2, H / 2, hd * 1.25);
   vg.addColorStop(0, "rgba(0,0,0,0)"); vg.addColorStop(1, "rgba(0,0,0,0.72)");
   ctx.fillStyle = vg; ctx.fillRect(0, 0, W, H);
   drawGhost(t);
@@ -1441,7 +1506,7 @@ function render(t) {
   // fades (cuts are hard; open and close are soft)
   const black = 1 - ramp(t, 0.3, 4.5) + ramp(t, M.fade, M.title - 0.2);
   if (black > 0) { ctx.fillStyle = `rgba(0,0,0,${clamp(black)})`; ctx.fillRect(0, 0, W, H); }
-  ctx.fillStyle = "#000"; ctx.fillRect(0, 0, W, BAR); ctx.fillRect(0, H - BAR, W, BAR);
+  if (BAR) { ctx.fillStyle = "#000"; ctx.fillRect(0, 0, W, BAR); ctx.fillRect(0, H - BAR, W, BAR); }
   drawCaptions(t);
   drawTitle(t);
 }
