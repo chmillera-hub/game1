@@ -10,7 +10,7 @@ from synth import *
 
 def chord(root, kind):
     iv = {"maj7": (0, 4, 7, 11), "min7": (0, 3, 7, 10), "dom7": (0, 4, 7, 10), "maj9": (0, 4, 7, 14),
-          "min9": (0, 3, 7, 14), "6": (0, 4, 7, 9), "maj": (0, 4, 7), "sus4": (0, 5, 7)}[kind]
+          "min9": (0, 3, 7, 14), "6": (0, 4, 7, 9), "maj": (0, 4, 7), "min": (0, 3, 7), "sus4": (0, 5, 7)}[kind]
     return [root + i for i in iv]
 
 
@@ -144,7 +144,8 @@ def main():
     fx.add(T("g2"), sfx_pop(), 0.5)
     # the blue glitch
     for tb in (T("c5") + 1.5, T("c7") - 0.3):
-        fx.add(tb, sfx_scratch() * 0.5 + snare(0.2, 0.3, 300, 6000), 0.7)
+        fx.add(tb, sfx_scratch() * 0.5, 0.7)
+        fx.add(tb, snare(0.2, 0.3, 300, 6000), 0.7)
     fx.add(T("think") + 0.2, sfx_tick(), 0.3)
     fx.add(E("d9") - 0.1, sfx_whoosh(0.8, True), 0.7)
     fx.add(room.chaos0 + 0.62, sfx_thump(65, 0.4, 0.9), 0.8)
