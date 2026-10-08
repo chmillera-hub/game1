@@ -2,7 +2,7 @@
 # Final encode: H.264 High (plays everywhere: TikTok, Reels, Shorts, X) + AAC.
 # usage: BUILD=... ./encode.sh [crf] [out.mp4]
 set -euo pipefail
-CRF="${1:-24}"
+CRF="${1:-26}"
 OUT="${2:-$BUILD/kingdom_of_heaven_inc.mp4}"
 ffmpeg -y -hide_banner -loglevel error -stats \
   -f concat -safe 0 -i "$BUILD/chunks.txt" -i "$BUILD/mix.wav" \

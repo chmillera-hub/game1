@@ -41,7 +41,7 @@ export BUILD=/path/to/build
 python3 tts.py        # voices + timeline
 python3 audio.py      # music + mix
 python3 render.py 4   # frames (4 workers)
-./encode.sh 24        # final mp4
+./encode.sh 26        # final mp4
 ```
 
 To change a line, edit `script.py` and rerun everything from `tts.py`. Only
