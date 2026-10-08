@@ -16,7 +16,7 @@ class Film:
         self.board = Board(self.tl)
         self.opening = Opening(self.tl)
         self.epi = Epilogue(self.tl, self.board, self.opening)
-        self.title0 = self.tl.e("n9") + 0.3
+        self.title0 = self.tl.e("n11") + 0.3
         self.title1 = self.tl.e("title")
         self.chunks = {L["id"]: self._chunk(L) for L in self.tl.spoken}
 
@@ -94,14 +94,14 @@ class Film:
         a1 = smooth(prog(t, t0 + 0.4, t0 + 0.9))
         a2 = smooth(prog(t, t0 + 0.9, t0 + 1.4))
         a3 = smooth(prog(t, t0 + 1.6, t0 + 2.2))
-        text(cv, "MAMMON CAPITAL", W / 2, 900, font("black", 92), paint("#ffffff", a1), "center")
-        text(cv, "QUARTERLY GROWTH REVIEW", W / 2, 975, font("bold", 40), paint("#c9a227", a2), "center")
+        text(cv, "MAMMON MEDIA", W / 2, 900, font("black", 100), paint("#ffffff", a1), "center")
+        text(cv, "CREATOR ACCOUNT REVIEW", W / 2, 975, font("bold", 40), paint("#c9a227", a2), "center")
         line(cv, W / 2 - 220 * a3, 1060, W / 2 + 220 * a3, 1060, paint("#c9a227", a3, stroke=3))
-        text(cv, "Agenda item 7:", W / 2, 1150, font("semi", 44), paint("#aab6cc", a3), "center")
-        text(cv, "THE KINGDOM", W / 2, 1250, font("black", 96), paint("#ffe9a8", a3), "center")
-        text(cv, "OF HEAVEN", W / 2, 1350, font("black", 96), paint("#ffe9a8", a3), "center")
+        text(cv, "Account under review:", W / 2, 1150, font("semi", 44), paint("#aab6cc", a3), "center")
+        text(cv, "@JESUS", W / 2, 1280, font("black", 120), paint("#ffe9a8", a3), "center")
         a4 = smooth(prog(t, t0 + 2.4, t0 + 2.9))
-        text(cv, "Q3  ·  30 A.D.", W / 2, 1460, font("semi", 40), paint("#7f8db5", a4), "center")
+        text(cv, "A reflection: what if someone like him", W / 2, 1440, font("serif_i", 44), paint("#c9d2e6", a4), "center")
+        text(cv, "posted online today?", W / 2, 1500, font("serif_i", 44), paint("#c9d2e6", a4), "center")
 
     # ------------------------------------------------------------ captions
     def _chunk(self, L):

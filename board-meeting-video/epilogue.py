@@ -192,7 +192,7 @@ class Epilogue:
             draw_bird(cv, bx, by, 3.0, b["col"], flap, t, b["face"], b["blink"](t))
 
     def draw_overlay(self, cv, t):
-        a = pulse(t, self.tl0 + 0.4, 0.5, 2.6, 0.7)
+        a = 0.0
         if a > 0:
             text_outlined(cv, "2,000 years later...", W / 2, 300, font("serif_bi", 70), "#fff4d6", "#2a1a10", 8, a)
 

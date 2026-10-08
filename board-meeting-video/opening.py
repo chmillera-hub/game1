@@ -61,7 +61,8 @@ class Opening:
             (Wd("n3", "Sure"), expr("annoyed", twitch=1.0)), (Wd("n3", "smartest"), "skeptical"),
             (Wd("n3", "confused", 1), "angry"), (T("n4"), "furious", 0.15),
             (T("n5"), expr("tired", sweat=1)), (Wd("n5", "Round"), expr("nervous", sweat=1)),
-            (T("n9"), expr("tired", lid=0.35)), (Wd("n9", "Jesus"), "smile"), (Wd("n9", "fired"), "grin"),
+            (T("n9"), expr("sad", lid=0.3)), (Wd("n9", "Jesus"), "hopeful"), (T("n10"), "compassion"),
+            (Wd("n10", "bury"), expr("sad", glisten=0.6)), (T("n11"), expr("kind", glisten=0.4)),
         ])
         self.shots = [
             (0, (540, 1060, 1080), 0), (T("n1"), (560, 1110, 760), 3.6),
@@ -90,7 +91,7 @@ class Opening:
         elif t < self.bed_back:
             self.draw_wheel_world(cv, t, world)
         else:
-            k = prog(t, self.bed_back, self.E("n9") + 0.3)
+            k = prog(t, self.bed_back, self.E("n11") + 0.3)
             world(cv, 560, lerp(1080, 1060, k), lerp(900, 980, k), lambda c: self.draw_bedroom(c, t, night=1.0))
             self.draw_thought(cv, t)
 
@@ -187,7 +188,7 @@ class Opening:
         else:
             f["gy"] = 0.65 if phone else -0.2
             f["gx"] = 0.0
-        if self.T("n9") < t < self.E("n9") + 1:
+        if self.T("n9") < t < self.E("n11") + 1:
             f["gy"] = -0.8
             f["gx"] = -0.3
         sp = self.tl.mouth("NARR", t) * 0.0
@@ -577,14 +578,14 @@ class Opening:
         f["blink"] = self.blink(t + 1)
         draw_head(cv, JESUS, f, t)
         cv.restore()
-        fk = prog(t, self.Wd("n9", "fired") - 0.05, self.Wd("n9", "fired") + 0.15)
+        fk = prog(t, self.Wd("n10", "bury") - 0.05, self.Wd("n10", "bury") + 0.15)
         if fk > 0:
             cv.save()
             cv.rotate(-14)
             s = lerp(2.2, 1, ease_in(fk))
             cv.scale(s, s)
             a = clamp(fk * 2)
-            rrect(cv, -190, -70, 380, 130, 16, paint("#e74c3c", a, stroke=12))
-            text(cv, "FIRED", 0, 34, font("black", 100), paint("#e74c3c", a), "center")
+            rrect(cv, -250, -60, 500, 110, 16, paint("#e74c3c", a, stroke=12))
+            text(cv, "SUPPRESSED", 0, 24, font("black", 70), paint("#e74c3c", a), "center")
             cv.restore()
         cv.restore()

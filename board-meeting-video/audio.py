@@ -474,7 +474,7 @@ def main():
     ep = Epilogue(tl, board, op)
     total = tl.total
     T, E, Wd = tl.s, tl.e, tl.wfind
-    title0 = E("n9") + 0.3
+    title0 = E("n11") + 0.3
 
     # ---- dialogue
     dia = Track(total)
@@ -515,10 +515,11 @@ def main():
     cue_title(m2, title0)
     muz = Track(total)
     m_start = E("title") - 0.2
-    cue_muzak(muz, m_start, T("b26"))
-    gate(muz, [(m_start, E("b12") + 0.15), (T("b13") + 0.1, T("b21")), (E("b21") + 0.8, T("b26") - 0.3)], total, 0.12)
-    cue_drone(m2, T("b21"), E("b21") + 1.0)
-    cue_exit(m2, T("b30") - 0.2, board.j_walk[1] + 0.6)
+    cue_muzak(muz, m_start, T("b27"))
+    gate(muz, [(m_start, E("b11") + 0.15), (T("b12") + 0.1, T("b20")), (E("b20") + 0.8, T("b22") - 0.2), (E("b24") + 0.3, T("b27") - 0.3)], total, 0.12)
+    cue_drone(m2, T("b20"), E("b20") + 1.0)
+    cue_exit(m2, T("b22") - 0.2, E("b22") + 0.8)
+    cue_exit(m2, T("rise") + 0.4, board.j_walk[1] + 0.8)
     fin = Track(total)
     cue_finale(fin, ep, tl, board.lights_off + 0.6, total)
     music = mus.buf * 0.55 + m2.buf * 0.6 + muz.buf * 0.33 + fin.buf * 0.62
@@ -557,10 +558,10 @@ def main():
     while tt < op.bed_back:
         fx.add(tt, sfx_tick(), 0.25)
         tt += 0.07
-    for i in range(4):
+    for i in range(12):
         fx.add(T("n9") + i * 0.9, sfx_cricket(), 0.5, pan=0.5)
     fx.add(Wd("n9", "Jesus") - 0.2, sfx_pop(), 0.5)
-    fx.add(Wd("n9", "fired") + 0.12, sfx_thump(80, 0.3, 0.8), 0.9)
+    fx.add(Wd("n10", "bury") + 0.12, sfx_thump(80, 0.3, 0.8), 0.9)
     fx.add(title0 - 0.12, sfx_scratch(), 1.0)
     fx.add(title0 + 0.05, sfx_whoosh(0.6, True), 0.6)
     # boardroom
@@ -576,8 +577,10 @@ def main():
     fx.add(T("silence1") + 0.9, sfx_cricket(), 1.0, pan=0.3)
     fx.add(T("silence1") + 1.4, sfx_cricket(), 1.0, pan=0.3)
     fx.add(T("spit"), sfx_spit(), 1.0)
-    fx.add(T("b26") - 0.08, sfx_thump(60, 0.45, 1.0), 1.0)
-    fx.add(Wd("b32", "doomed") + 0.12, sfx_thump(80, 0.35, 0.9), 0.9)
+    fx.add(T("b27") - 0.08, sfx_thump(60, 0.45, 1.0), 1.0)
+    fx.add(board.stamp_t - 0.02, sfx_thump(65, 0.45, 1.0), 1.0)
+    for i in range(10):
+        fx.add(board.pat[0] + i * (board.pat[1] - board.pat[0]) / 10, snare(0.08, 0.12, 300, 2500), 0.8, pan=0.3)
     fx.add(board.j_rise[0], sfx_creak(), 0.6, pan=0.3)
     st = board.j_step[0]
     while st < board.j_step[1]:

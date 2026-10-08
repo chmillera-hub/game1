@@ -1,8 +1,11 @@
 # Kingdom of Heaven, Inc.
 
-A 4-minute portrait (1080×1920, 30 fps) animated short: a creator stuck on the
-"just make a new account" hamster wheel, and Jesus getting fired at a
-quarterly growth review at Mammon Capital.
+A 4:39 portrait (1080×1920, 30 fps) animated short. A creator stuck on the
+"just make a new account" hamster wheel wonders how someone with a heart like
+Jesus would fare under the same system. That reflection plays out as a
+creator account review at Mammon Media. The executives use 2026 platform-speak
+(engagement, monetization funnels, brand safety, rage bait). Jesus answers from
+his own teachings, gets his account suppressed, and leaves a seed behind.
 
 Final video: [`kingdom_of_heaven_inc.mp4`](kingdom_of_heaven_inc.mp4)
 
@@ -21,8 +24,8 @@ whole thing is yours to use and change.
 | `characters.py` | Faces (eyes, lids, brows, lip-sync mouths, expressions), bodies, arms |
 | `cast.py` | Character looks |
 | `opening.py` | Act 1: bedroom, phone, hamster wheel, growth engine, money bag |
-| `boardroom.py` | Act 2: the board meeting (camera shots, slides, expressions, gaze) |
-| `epilogue.py` | Act 3: seed, 2,000-year time-lapse tree, birds, dawn, end card |
+| `boardroom.py` | Act 2: the account review (camera shots, slides, expressions, gaze, exit) |
+| `epilogue.py` | Act 3: seed, time-lapse tree, birds, dawn, end card |
 | `film.py` | Scene switching, title card, captions |
 | `audio.py` | Score, SFX, dialogue mix, two-pass loudness normalization (−14 LUFS) |
 | `render.py` | Parallel frame rendering |
