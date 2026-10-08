@@ -91,6 +91,8 @@ def hexc(h):
     if isinstance(h, tuple):
         return h
     h = h.lstrip("#")
+    if len(h) == 3:
+        h = "".join(ch * 2 for ch in h)
     return tuple(int(h[i:i + 2], 16) for i in (0, 2, 4))
 
 
