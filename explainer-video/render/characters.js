@@ -260,7 +260,7 @@ function drawPhoneInHands(ctx, o) {
  * drawPerson(ctx, name, o)
  *   o.x, o.y: head center; o.s: scale (head radius = 100*s); o.t: time
  *   face:  lids, gx, gy, brow, browTilt, smile, open, width, mouthO, squint, blush, tear, shine
- *   body:  tilt, arms (pose name or {a,b,k}), typing, phoneScreen, noBody, bob
+ *   body:  tilt, arms (pose name, {a,b,k}, or 'none'), typing, phoneScreen, noBody, noHead, bob
  */
 function drawPerson(ctx, name, o) {
   const P = PEOPLE[name];
@@ -278,6 +278,7 @@ function drawPerson(ctx, name, o) {
     ctx.restore();
   }
   // head (tilts around the neck)
+  if (!o.noHead) {
   ctx.save(); ctx.translate(0, bob + 90); ctx.rotate(o.tilt || 0); ctx.translate(0, -90);
   backHair(ctx, P);
   for (const s of [-1, 1]) { circle(ctx, s * 96, 10, 19, P.skin); ctx.beginPath(); ctx.arc(s * 96, 10, 9, s > 0 ? -1.2 : 1.9, s > 0 ? 1.2 : 4.3); ctx.strokeStyle = P.shade; ctx.lineWidth = 4; ctx.stroke(); }
@@ -316,8 +317,9 @@ function drawPerson(ctx, name, o) {
   frontHair(ctx, P);
   if (P.glasses) glasses(ctx);
   ctx.restore();
+  }
 
-  if (!o.noBody) {
+  if (!o.noBody && o.arms !== 'none') {
     ctx.save(); ctx.translate(0, bob * 0.6);
     const a = o.arms;
     const hasPhone = a === 'phone' || (a && typeof a === 'object' && ((a.a === 'phone' && a.k < 0.5) || (a.b === 'phone' && a.k >= 0.5)));

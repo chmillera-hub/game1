@@ -183,6 +183,54 @@ module.exports = function makeScenes(X) {
     ctx.restore();
     ctx.beginPath(); ctx.moveTo(300, 330); ctx.quadraticCurveTo(500, 280, 740, 350); ctx.lineTo(740, 560); ctx.lineTo(320, 560); ctx.closePath(); ctx.fillStyle = '#b8645a'; ctx.fill();
   }
+  // Riley's arms at the desk. k=0: sitting, hands resting on the desk. k=1: arms folded on the
+  // desk with the face resting on them (shoulders hunch up, elbows out, forearms cross under the chin).
+  function deskArms(ctx, hy, k, slump, layer) {
+    const P = C.PEOPLE.riley;
+    const J = (a, b) => [lerp(a[0], b[0], k), lerp(a[1], b[1], k)];
+    // [shoulder, elbow, hand] in world coordinates for the sitting pose and the folded pose
+    const arms = [
+      { sit: [[400, hy + 180], [360, hy + 340], [470, hy + 380]], fold: [[372, hy + 14], [262, hy + 100], [652, hy + 72]], front: true },
+      { sit: [[680, hy + 180], [720, hy + 340], [610, hy + 380]], fold: [[708, hy + 14], [818, hy + 98], [432, hy + 58]], front: false },
+    ].map((a) => ({ sh: J(a.sit[0], a.fold[0]), el: J(a.sit[1], a.fold[1]), hd: J(a.sit[2], a.fold[2]), front: a.front }));
+    ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    const stroke = (pts, w, col) => { ctx.beginPath(); ctx.moveTo(...pts[0]); for (const p of pts.slice(1)) ctx.lineTo(...p); ctx.strokeStyle = col; ctx.lineWidth = w; ctx.stroke(); };
+    if (layer === 'back') {
+      // shoulders hunching up around the head as Riley slumps forward
+      ellipse(ctx, 540, lerp(hy + 200, hy + 78, slump), lerp(170, 236, slump), lerp(70, 128, slump), P.shirt);
+      if (slump > 0.3) withAlpha(ctx, prog(slump, 0.3, 1), () => {
+        for (const s of [-1, 1]) { ctx.beginPath(); ctx.arc(540 + s * 150, hy + 92, 64, s > 0 ? -2.4 : -1.4, s > 0 ? -1.7 : -0.7); ctx.strokeStyle = P.shirtShade; ctx.lineWidth = 5; ctx.stroke(); }
+      });
+      // upper arms: shoulder -> elbow
+      for (const a of arms) { stroke([a.sh, a.el], 64, P.shirtShade); stroke([a.sh, a.el], 54, P.shirt); }
+      return;
+    }
+    // forearms, rear one first so the front arm overlaps it
+    for (const a of [arms[1], arms[0]]) {
+      const dx = a.hd[0] - a.el[0], dy = a.hd[1] - a.el[1], len = Math.hypot(dx, dy) || 1;
+      const ux = dx / len, uy = dy / len, px = -uy, py = ux;
+      const sleeve = a.front ? P.shirt : '#367f8a';
+      const wrist = [a.hd[0] - ux * 26, a.hd[1] - uy * 26];
+      stroke([a.el, wrist], 64, P.shirtShade); stroke([a.el, wrist], 54, sleeve);
+      circle(ctx, a.el[0], a.el[1], 31, sleeve);
+      // elbow crease + sleeve folds
+      ctx.beginPath(); ctx.arc(a.el[0] + ux * 30, a.el[1] + uy * 30, 18, Math.atan2(uy, ux) + 2.2, Math.atan2(uy, ux) + 3.6); ctx.strokeStyle = P.shirtShade; ctx.lineWidth = 4; ctx.stroke();
+      for (const f of [0.38, 0.55]) { const cx = lerp(a.el[0], wrist[0], f), cy = lerp(a.el[1], wrist[1], f); line(ctx, cx + px * 14, cy + py * 14, cx + px * 4 + ux * 10, cy + py * 4 + uy * 10, P.shirtShade, 4); }
+      // ribbed cuff
+      stroke([[wrist[0] - ux * 4, wrist[1] - uy * 4], [wrist[0] + ux * 8, wrist[1] + uy * 8]], 58, P.shirtShade);
+      // hand: palm, four fingers curling over the other arm, and a thumb
+      ctx.save(); ctx.translate(a.hd[0], a.hd[1]); ctx.rotate(Math.atan2(uy, ux));
+      ellipse(ctx, 0, 0, 29, 25, P.shade); ellipse(ctx, 0, -1, 27, 23, P.skin);
+      for (let i = 0; i < 4; i++) {
+        const yy = -15 + i * 10, l = [18, 22, 21, 16][i];
+        ctx.beginPath(); ctx.moveTo(18, yy); ctx.quadraticCurveTo(18 + l * 0.7, yy, 18 + l, yy + 6 * k);
+        ctx.strokeStyle = P.shade; ctx.lineWidth = 12; ctx.stroke(); ctx.strokeStyle = P.skin; ctx.lineWidth = 9; ctx.stroke();
+      }
+      ctx.beginPath(); ctx.moveTo(-4, -20); ctx.quadraticCurveTo(10, -30, 22, -24);
+      ctx.strokeStyle = P.shade; ctx.lineWidth = 13; ctx.stroke(); ctx.strokeStyle = P.skin; ctx.lineWidth = 10; ctx.stroke();
+      ctx.restore();
+    }
+  }
   function deskShot(ctx, t) {
     const sc = S('weight'), rd = L('r_draw'), rc = L('r_cant');
     const tCant = wt('r_cant', "can't");
@@ -202,7 +250,13 @@ module.exports = function makeScenes(X) {
       [tCant - 0.2, { lids: 0.35, browTilt: 0.8, smile: -0.25 }],
       [tCant + 0.6, { lids: 0.0 }, 0.6],
     ]);
-    riley(ctx, t, 540, 930 + down * 150, 1, f, { arms: 'desk' });
+    // Riley: torso, hunched shoulders, upper arms, head, then forearms crossed in front of the chin
+    const hy = 930 + down * 280;
+    const armsK = ease.inOut(prog(t, tCant + 0.2, tCant + 1.0));
+    riley(ctx, t, 540, hy, 1, f, { arms: 'none', noHead: true });
+    deskArms(ctx, hy, armsK, down, 'back');
+    riley(ctx, t, 540, hy, 1, Object.assign({}, f, { tilt: (f.tilt || 0) + 0.1 * down }), { noBody: true });
+    deskArms(ctx, hy, armsK, down, 'front');
     // desk + lamp + sketchbook
     ctx.beginPath(); ctx.moveTo(-100, 1330); ctx.lineTo(W + 100, 1330); ctx.lineTo(W + 100, 2000); ctx.lineTo(-100, 2000); ctx.closePath(); ctx.fillStyle = '#7d5a44'; ctx.fill();
     ctx.fillStyle = '#946b51'; ctx.fillRect(-100, 1330, W + 200, 16);
@@ -213,11 +267,6 @@ module.exports = function makeScenes(X) {
     ctx.beginPath(); ctx.moveTo(330, 1360); ctx.lineTo(750, 1360); ctx.lineTo(820, 1560); ctx.lineTo(260, 1560); ctx.closePath(); ctx.fillStyle = '#fbf8f2'; ctx.fill();
     line(ctx, 540, 1360, 540, 1560, '#e2dccf', 4);
     for (let i = 0; i < 9; i++) circle(ctx, 352 + i * 50, 1364, 6, '#7a7488');
-    if (down > 0) { // arms folded on the desk, face buried
-      const ay = lerp(1260, 1112, down);
-      fillRR(ctx, 300, ay, 300, 116, 58, '#2f6f79'); circle(ctx, 590, ay + 58, 40, '#93603f');
-      fillRR(ctx, 480, ay + 16, 300, 116, 58, '#3e8c98'); circle(ctx, 490, ay + 74, 40, '#b07650');
-    }
     // pencil: lifts, hovers, then drops and rolls
     const tDrop = tCant + 0.05, drop = ease.in(prog(t, tDrop, tDrop + 0.35));
     const hover = prog(t, rd.start, rd.start + 0.6);

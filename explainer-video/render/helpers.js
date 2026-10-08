@@ -78,10 +78,16 @@ module.exports = function makeHelpers(TL) {
     const chunks = []; let cur = [];
     const len = (a) => a.join(' ').length;
     for (const w of words) {
+      // too long with this word? break at the last comma/period in the chunk if there is one
+      if (cur.length && len([...cur, w]) > 44) {
+        let j = -1;
+        cur.forEach((x, i) => { if (/[,.;:?!]["”]?$/.test(x) && len(cur.slice(0, i + 1)) >= 12) j = i; });
+        if (j >= 0 && j < cur.length - 1) { chunks.push(cur.slice(0, j + 1).join(' ')); cur = cur.slice(j + 1); } else { chunks.push(cur.join(' ')); cur = []; }
+      }
       cur.push(w);
       const endSentence = /[.?!]["”]?$/.test(w) || /\.\.\.$/.test(w);
       const soft = /[,:;]$/.test(w);
-      if ((endSentence && len(cur) > 14) || (soft && len(cur) > 30) || len(cur) > 40) { chunks.push(cur.join(' ')); cur = []; }
+      if ((endSentence && len(cur) > 14) || (soft && len(cur) > 30)) { chunks.push(cur.join(' ')); cur = []; }
     }
     if (cur.length) { if (chunks.length && len(cur) < 10) chunks[chunks.length - 1] += ' ' + cur.join(' '); else chunks.push(cur.join(' ')); }
     const wts = chunks.map((c) => c.length + 8);
