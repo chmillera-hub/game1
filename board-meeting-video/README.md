@@ -1,6 +1,6 @@
 # Kingdom of Heaven, Inc.
 
-A 4:39 portrait (1080×1920, 30 fps) animated short. A creator stuck on the
+A 4:52 portrait (1080×1920, 30 fps) animated short. A creator stuck on the
 "just make a new account" hamster wheel wonders how someone with a heart like
 Jesus would fare under the same system. That reflection plays out as a
 creator account review at Mammon Media. The executives use 2026 platform-speak

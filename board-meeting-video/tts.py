@@ -9,7 +9,7 @@ import numpy as np
 from scipy.signal import resample_poly
 
 sys.path.insert(0, os.path.dirname(__file__))
-from script import VOICES, LINES, CAPTIONS, SPEAKERS
+from script import VOICES, LINES, CAPTIONS, SPEAKERS, RATE
 
 VOICE_DIR = os.environ.get("VOICE_DIR", "/tmp/claude-0/voices")
 BUILD = os.environ["BUILD"]
@@ -20,9 +20,10 @@ os.makedirs(f"{BUILD}/voice", exist_ok=True)
 _models = {}
 
 
-def synth(who, text):
+def synth(who, text, rate=None):
     from piper import PiperVoice, SynthesisConfig
     model, spk, ls, ns, nw = VOICES[who]
+    ls = rate or ls
     if model not in _models:
         _models[model] = PiperVoice.load(f"{VOICE_DIR}/{model}.onnx")
     v = _models[model]
@@ -182,7 +183,7 @@ def main():
         cache = f"{BUILD}/voice/{lid}.npy"
         meta = f"{BUILD}/voice/{lid}.json"
         if os.path.exists(cache) and os.path.exists(meta) and json.load(open(meta))["text"] == text \
-                and json.load(open(meta)).get("voice") == list(VOICES[who]):
+                and json.load(open(meta)).get("voice") == list(VOICES[who]) + [RATE.get(lid)]:
             a = np.load(cache)
         else:
             import difflib
@@ -190,11 +191,11 @@ def main():
             for take in range(5):
                 if "[BLEEP]" in text:
                     pa, pb = [s.strip() for s in text.split("[BLEEP]")]
-                    A, B = synth(who, pa), synth(who, pb)
+                    A, B = synth(who, pa, RATE.get(lid)), synth(who, pb, RATE.get(lid))
                     gap = np.zeros(int(0.05 * SR), np.float32)
                     a = np.concatenate([A, gap, bleep(), gap, B])
                 else:
-                    a = synth(who, text)
+                    a = synth(who, text, RATE.get(lid))
                 heard = asr_words(a)
                 want = [norm(w) for w in text.replace("[BLEEP]", "").split()]
                 got = [norm(h[0]) for h in heard]
@@ -205,7 +206,7 @@ def main():
                     break
             score, a, heard = best
             np.save(cache, a)
-            json.dump(dict(text=text, voice=list(VOICES[who]), heard=heard, score=score), open(meta, "w"))
+            json.dump(dict(text=text, voice=list(VOICES[who]) + [RATE.get(lid)], heard=heard, score=score), open(meta, "w"))
         dur = len(a) / SR
         cap = CAPTIONS.get(lid, text)
         env = envelope(a)

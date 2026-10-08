@@ -109,11 +109,17 @@ class Epilogue:
         self.end0 = E("e4") + 1.4
         self.end_fade = tl.total - 1.4
         r = random.Random(21)
-        cands = [p for p in self.tree.tips if p[1] < 900]
+        cands = [p for p in self.tree.tips if p[1] < 1000]
         r.shuffle(cands)
+        spots = []
+        for (x, y, _) in cands:
+            if all(math.hypot(x - a, y - b) > 300 for a, b in spots):
+                spots.append((x, y))
+            if len(spots) == 7:
+                break
         self.birds = []
-        for i in range(7):
-            x, y, _ = cands[i % len(cands)]
+        for i in range(len(spots)):
+            x, y = spots[i]
             side = r.choice([-1, 1])
             arrive = self.tl0 + 3.6 + i * 0.45
             start = (x + side * r.uniform(1300, 1800), y - r.uniform(500, 1100))

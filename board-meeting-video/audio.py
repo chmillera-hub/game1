@@ -609,6 +609,9 @@ def main():
     fx.add(ep.dawn0 + 0.35, sfx_ding(1568), 0.5)
     fx.add(ep.dawn0 + 0.47, sfx_ding(2093), 0.4)
     fx.add(T("e4") + 0.1, sfx_shimmer(1.4), 0.5)
+    fx.add(Wd("b22", "Father") - 0.15, sfx_shimmer(1.6), 0.45)
+    fx.add(Wd("n2b", "Millions") - 0.2, sfx_pop(), 0.5)
+    fx.add(Wd("n2b", "chose") - 0.1, sfx_thump(90, 0.3, 0.6), 0.7)
     for i in range(6):
         fx.add(ep.dawn0 + 0.8 + i * 0.9, sfx_chirp(), 0.25, pan=-0.6)
 

@@ -289,7 +289,24 @@ class Opening:
         rrect(cv, 780, 920, 52, 42, 10, paint("#111", stroke=5))
         text(cv, str(nc), 850, 962, font("black", 48), paint("#111"))
         line(cv, 130, 1010, 950, 1010, paint("#ddd", stroke=3))
-        text(cv, "Comments", 130, 1075, font("black", 44), paint("#111"))
+        # "millions scrolling vs shown to 12" card during the setup line
+        m0 = self.Wd("n2b", "Millions") - 0.2
+        mk = ease_back(prog(t, m0, m0 + 0.35)) * (1 - prog(t, self.T("c1") - 0.4, self.T("c1") - 0.15))
+        if mk > 0:
+            cv.save()
+            cv.translate(540, 1205)
+            cv.scale(mk, mk)
+            rrect(cv, -420, -185, 840, 370, 36, paint("#1b2238"))
+            text(cv, "PEOPLE SCROLLING RIGHT NOW", 0, -122, font("bold", 32), paint("#9fb0d8"), "center")
+            n = 3_284_511 + int(max(0, t - m0) * 48_211)
+            text(cv, f"{n:,}", 0, -40, font("mono", 78), paint("#7dffb0"), "center")
+            line(cv, -340, 0, 340, 0, paint("#33405f", stroke=3))
+            sk = ease_out(prog(t, self.Wd("n2b", "chose") - 0.1, self.Wd("n2b", "chose") + 0.3))
+            text(cv, "YOUR VIDEO SHOWN TO", 0, 54, font("bold", 32), paint("#9fb0d8", sk), "center")
+            text(cv, "12", 0, 150, font("black", 90), paint("#ff6b6b", sk), "center")
+            cv.restore()
+        if mk <= 0:
+            text(cv, "Comments", 130, 1075, font("black", 44), paint("#111"))
         for i, (cid, user, msg, col) in enumerate(COMMENTS):
             t0 = self.T(cid) - 0.15
             if t < t0:
