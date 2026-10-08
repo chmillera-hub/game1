@@ -1,0 +1,295 @@
+{
+  "title": "How I make animated videos with words + a chatbot",
+  "fps": 24,
+  "voices": {
+    "riley": {
+      "voice": "af_heart",
+      "speed": 0.94
+    },
+    "alex": {
+      "voice": "am_michael",
+      "speed": 1.0
+    },
+    "grandma": {
+      "voice": "bf_emma",
+      "speed": 0.9,
+      "rate": 0.92
+    }
+  },
+  "scenes": [
+    {
+      "id": "scroll",
+      "lead": 4.0,
+      "tail": 2.0,
+      "lines": [
+        {
+          "id": "r_scroll",
+          "spk": "riley",
+          "speed": 0.88,
+          "text": "Scroll. Scroll. Scroll... Same stuff, every night. I don't even know what I'm looking for anymore."
+        },
+        {
+          "id": "r_comment",
+          "spk": "riley",
+          "pre": 1.4,
+          "speed": 0.92,
+          "text": "Social media is getting so drab. I've always wanted to make something that actually means something to me... but I'm just so tired."
+        }
+      ]
+    },
+    {
+      "id": "weight",
+      "lead": 1.2,
+      "tail": 1.4,
+      "lines": [
+        {
+          "id": "r_draw",
+          "spk": "riley",
+          "speed": 0.92,
+          "text": "I could draw, I guess."
+        },
+        {
+          "id": "r_roof",
+          "spk": "riley",
+          "pre": 0.9,
+          "speed": 0.9,
+          "text": "But after working enough hours just to keep a roof over my head... and food in the fridge... there's nothing left."
+        },
+        {
+          "id": "r_cant",
+          "spk": "riley",
+          "pre": 1.0,
+          "speed": 0.86,
+          "text": "Drawing every single frame by hand? I just... can't. Not right now."
+        }
+      ]
+    },
+    {
+      "id": "reply",
+      "lead": 4.2,
+      "tail": 0.9,
+      "lines": [
+        {
+          "id": "a_hey",
+          "spk": "alex",
+          "text": "Hey. I saw your comment. And honestly? I've been there."
+        },
+        {
+          "id": "a_show",
+          "spk": "alex",
+          "pre": 0.5,
+          "text": "Can I show you something that's been working for me? It takes way less energy than you'd think."
+        },
+        {
+          "id": "r_ok",
+          "spk": "riley",
+          "pre": 0.8,
+          "speed": 0.92,
+          "text": "Okay... show me."
+        }
+      ]
+    },
+    {
+      "id": "step1",
+      "lead": 1.3,
+      "tail": 0.8,
+      "lines": [
+        {
+          "id": "a_s1a",
+          "spk": "alex",
+          "text": "Step one. Find a spark. Something you write yourself: a feeling, a memory, a \"what if.\"",
+          "tts": "Step one. Find a spark. Something you write yourself. A feeling... a memory... a what if."
+        },
+        {
+          "id": "a_s1b",
+          "spk": "alex",
+          "pre": 0.5,
+          "text": "Or let someone else's post inspire you. A comment, a story, one sentence that sticks with you."
+        },
+        {
+          "id": "r_s1",
+          "spk": "riley",
+          "pre": 0.7,
+          "text": "Like... my grandma teaching me to fold dumplings? I think about that a lot."
+        },
+        {
+          "id": "a_s1c",
+          "spk": "alex",
+          "pre": 0.35,
+          "text": "That's perfect. That's exactly the kind of thing."
+        }
+      ]
+    },
+    {
+      "id": "step2",
+      "lead": 1.3,
+      "tail": 0.9,
+      "lines": [
+        {
+          "id": "a_s2a",
+          "spk": "alex",
+          "text": "Step two. You don't have to be a writer. Just ramble to a chatbot, like you're texting a friend."
+        },
+        {
+          "id": "a_s2b",
+          "spk": "alex",
+          "pre": 2.4,
+          "text": "Then ask it to shape your words into a short script. Scenes, characters, and what everyone says."
+        },
+        {
+          "id": "r_s2",
+          "spk": "riley",
+          "pre": 1.6,
+          "text": "Wait... it turned my mess into an actual story?"
+        }
+      ]
+    },
+    {
+      "id": "step3",
+      "lead": 1.3,
+      "tail": 0.9,
+      "lines": [
+        {
+          "id": "a_s3a",
+          "spk": "alex",
+          "text": "Step three. Paste that script into an AI coding assistant. I use Claude Code. And ask it for an animated video."
+        },
+        {
+          "id": "a_s3b",
+          "spk": "alex",
+          "pre": 0.6,
+          "text": "It writes the code, draws the characters, gives them voices, adds music, and puts it all together."
+        },
+        {
+          "id": "a_s3c",
+          "spk": "alex",
+          "pre": 0.6,
+          "text": "No editing software to learn. It runs all the tools for you."
+        },
+        {
+          "id": "r_s3",
+          "spk": "riley",
+          "pre": 0.6,
+          "text": "Hold on. It does all of that?"
+        },
+        {
+          "id": "r_s3b",
+          "spk": "riley",
+          "pre": 0.7,
+          "text": "But... I don't know how to code."
+        },
+        {
+          "id": "a_s3d",
+          "spk": "alex",
+          "pre": 0.4,
+          "text": "You don't have to. You just talk to it in plain words, and it handles the code."
+        }
+      ]
+    },
+    {
+      "id": "step4",
+      "lead": 1.6,
+      "tail": 1.0,
+      "lines": [
+        {
+          "id": "r_s4a",
+          "spk": "riley",
+          "text": "Okay... her arm is floating. And the music is way too loud."
+        },
+        {
+          "id": "a_s4a",
+          "spk": "alex",
+          "pre": 3.0,
+          "text": "Just say what you'd change. Since it's all made of code, it can fix a glitch, rewrite a line, or swap a whole scene, fast."
+        },
+        {
+          "id": "a_s4b",
+          "spk": "alex",
+          "pre": 0.6,
+          "text": "Watch. Tweak. Repeat. As many times as you want."
+        },
+        {
+          "id": "r_s4b",
+          "spk": "riley",
+          "pre": 0.7,
+          "text": "And if I end up hating it?"
+        },
+        {
+          "id": "a_s4c",
+          "spk": "alex",
+          "pre": 0.4,
+          "text": "Then just say so. Nothing's wasted. It's just the next version."
+        }
+      ]
+    },
+    {
+      "id": "payoff",
+      "lead": 2.4,
+      "tail": 1.6,
+      "lines": [
+        {
+          "id": "g_tuck",
+          "spk": "grandma",
+          "text": "Gently... like you're tucking it into bed."
+        },
+        {
+          "id": "r_her",
+          "spk": "riley",
+          "pre": 3.6,
+          "speed": 0.84,
+          "text": "That's her. That's really her."
+        }
+      ]
+    },
+    {
+      "id": "styles",
+      "lead": 1.2,
+      "tail": 2.6,
+      "lines": [
+        {
+          "id": "a_st1",
+          "spk": "alex",
+          "text": "And it's not just this style. Pixel art. Paper cut-outs. Maybe even 3D. Honestly, I'm still finding out what's possible.",
+          "tts": "And it's not just this style. Pixel art. Paper cut-outs. Maybe even three D. Honestly, I'm still finding out what's possible."
+        },
+        {
+          "id": "a_st2",
+          "spk": "alex",
+          "pre": 0.9,
+          "text": "Oh, and this video you're watching right now? Made exactly the same way."
+        }
+      ]
+    },
+    {
+      "id": "close",
+      "lead": 1.6,
+      "tail": 7.5,
+      "lines": [
+        {
+          "id": "a_c1",
+          "spk": "alex",
+          "text": "You don't need energy you don't have. Just a spark, and a few honest words."
+        },
+        {
+          "id": "a_c1b",
+          "spk": "alex",
+          "pre": 0.7,
+          "text": "Some nights I only have twenty minutes in me. That's enough to move one scene forward."
+        },
+        {
+          "id": "a_c2",
+          "spk": "alex",
+          "pre": 0.6,
+          "text": "Go make something that means something to you."
+        },
+        {
+          "id": "r_c",
+          "spk": "riley",
+          "pre": 0.9,
+          "speed": 0.95,
+          "text": "Okay. Let's make something."
+        }
+      ]
+    }
+  ]
+}
