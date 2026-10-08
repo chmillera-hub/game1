@@ -12,7 +12,7 @@ def render_chunk(i, f0, f1):
     import film
     f = film.Film()
     out = f"{BUILD}/chunk_{i:02d}.mkv"
-    p = subprocess.Popen(["ffmpeg", "-y", "-loglevel", "error", "-f", "rawvideo", "-pix_fmt", "rgba",
+    p = subprocess.Popen(["ffmpeg", "-y", "-loglevel", "error", "-f", "rawvideo", "-pix_fmt", "bgra",
                           "-s", f"{W}x{H}", "-r", str(FPS), "-i", "-", "-c:v", "libx264", "-preset", "ultrafast",
                           "-qp", "0", "-pix_fmt", "yuv444p", out], stdin=subprocess.PIPE)
     surf = skia.Surface(W, H)
