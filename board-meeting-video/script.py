@@ -41,7 +41,7 @@ LINES = [
     ("open", None, "", 0, 1.6),
     ("n1", "NARR", "You ever pour your whole heart into a video... hit upload... and then just... wait?", 0, 1.0),
     ("n2", "NARR", "Twelve views.", 0, 1.0),
-    ("n2b", "NARR", "The app could show it to anyone. Millions of people scroll past every hour. But it chose to show it to twelve. And the advice I get?", 0, 0.8),
+    ("n2b", "NARR", "The app could show it to anyone. Millions of people scroll past every hour. But the app chose to show it to twelve. And the advice I get?", 0, 0.8),
     ("c1", "C1", "Bro, just make a new account.", 0, 0.25),
     ("c2", "C2", "The algorithm's just confused, lol.", 0, 0.25),
     ("c3", "C3", "Delete it and upload it again on a clean account!", 0, 0.25),
