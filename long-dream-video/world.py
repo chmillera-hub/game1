@@ -621,6 +621,12 @@ def letterhead(cv, t, tl):
         if t >= s[0]:
             cur = s
     t0, kind, title = cur
+    if t < stages[0][0]:
+        lk = smooth(prog(t, tl.s("w3") - 0.3, stages[0][0]))
+        glow(cv, 380, 900, 360, "#7fe8ff", 0.4 * lk)
+        glow(cv, 700, 900, 360, "#ffd86a", 0.4 * lk)
+        text(cv, "Who are we?", 540, 960, font("serif_i", 70), paint("#fff7e0", lk), "center")
+        return
     k = ease_back(prog(t, t0, t0 + 0.3))
     if kind == "light":
         lk = prog(t, t0, t0 + 1.0)
