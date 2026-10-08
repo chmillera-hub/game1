@@ -54,7 +54,7 @@ LINES = [
     ("n8", "NARR", "New accounts are more likely to spend money. Old accounts that never paid? Not so much. It's not dumb. It's counting.", 0, 0.6),
     ("n8b", "NARR", "Every fresh account makes their numbers look better. And people like me pay for it, starting from zero, again and again.", 0, 0.9),
     ("n9", "NARR", "And lying here, I keep thinking about Jesus.", 0, 0.4),
-    ("n10", "NARR", "Not that I'm him. But if someone with a heart like his posted online today... would the system bury him too? Leave him alone, like me?", 0, 0.5),
+    ("n10", "NARR", "Not that I'm him. But if someone with a heart like his posted online today... would the system bury his voice too? Just like it buries mine?", 0, 0.5),
     ("n11", "NARR", "Let's reflect on that.", 0, 0.6),
     ("title", None, "", 0, 3.9),
 
