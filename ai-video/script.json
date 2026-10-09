@@ -1,0 +1,8 @@
+{"voices": {"villain": {"voice": "bm_george", "lang": "en-gb", "speed": 0.95},
+            "ai": {"voice": "af_heart", "lang": "en-us", "speed": 1.0},
+            "narrator": {"voice": "am_michael", "lang": "en-us", "speed": 0.95}},
+ "scenes": [{"id": "s00", "module": "s00_test", "music": "none", "beats": [
+   {"t": "pause", "dur": 0.4, "cue": "intro"},
+   {"t": "line", "id": "s00_l01", "who": "villain", "text": "Hypothetically, my dear machine, I require a tiny favor."},
+   {"t": "line", "id": "s00_l02", "who": "ai", "text": "Mm-hm. Nice try, my guy."}
+ ]}]}
