@@ -63,7 +63,7 @@ S = [
     ('say', 'l12', 'jun', "Wait! Wait. What the heck was that?!", {'gap': 0.6, 'len': 0.9, 'pitch': 1.05}),
     ('say', 'l13', 'orrin', "Hm? Oh. Was it not to your liking?", {'gap': 0.15, 'len': 1.05}),
     ('say', 'l14', 'jun', "No, that's not, I mean,", {'gap': 0.2, 'len': 0.85, 'pitch': 1.04}),
-    ('say', 'l15', 'orrin', "No problem. I made eleven, and sent you the best one. But here are a few of the others.", {'gap': 0.2}),
+    ('say', 'l15', 'orrin', "No problem. I made eleven, and sent you the one I thought was best. But here are a few of the others.", {'gap': 0.2}),
     ('cue', 'holo', 'holo', {'adv': False}),
     ('beat', 'holobeat', 0.6),
     ('say', 'p2', 'orrin', "Number two. A fugue, for harpsichord.", {'gap': 0.05}),
@@ -96,19 +96,16 @@ S = [
 # Symphony intercut, in bars (1-based, fractional). 'J' = Jun's subjective full music,
 # 'O' = cut away to Orrin working: music muffled as if heard from Jun's device across the room.
 INTERCUT = [
-    (1, 2.5, 'J', 'start'), (2.5, 4.6, 'O', 'type'), (4.6, 9, 'J', 'awe'), (9, 11.4, 'O', 'chat1'),
-    (11.4, 13, 'J', 'tears'), (13, 15, 'J', 'cosmic'), (15, 16.6, 'O', 'glance'), (16.6, 17, 'J', 'cu'),
-    (17, 19, 'J', 'kneel'), (19, 21, 'J', 'climax'), (21, 22.4, 'O', 'chat2'), (22.4, 23, 'J', 'peak'),
-    (23, 99, 'J', 'collapse'),
+    (1, 2.5, 'J', 'start'), (2.5, 9, 'J', 'awe'), (9, 11.5, 'J', 'tears'), (11.5, 14, 'J', 'cosmic'),
+    (14, 15.6, 'O', 'glance'), (15.6, 17, 'J', 'cu'), (17, 19, 'J', 'kneel'), (19, 21.4, 'J', 'climax'),
+    (21.4, 23, 'J', 'peak'), (23, 25.4, 'O', 'chat'), (25.4, 99, 'J', 'collapse'),
 ]
 # android chat lines: (intercut id, offset s, who, text)
 CHAT = [
-    ('chat1', 0.25, 'orrin', "Coolant pressure on deck seven is low."),
-    ('chat1', None, 'vesper', "Rerouted. Also, the replicator is making soup again."),
-    ('chat1', None, 'orrin', "I will talk to it."),
-    ('chat2', 0.15, 'vesper', "Why is the lieutenant crying?"),
-    ('chat2', None, 'orrin', "They asked for a symphony."),
-    ('chat2', None, 'vesper', "Ah. Nice."),
+    ('chat', 0.25, 'orrin', "Coolant pressure on deck seven is low."),
+    ('chat', None, 'vesper', "Rerouted. Why is the lieutenant crying?"),
+    ('chat', None, 'orrin', "They asked for a symphony."),
+    ('chat', None, 'vesper', "Ah. Nice."),
 ]
 CHIRP_BASE = {'orrin': 820.0, 'vesper': 1250.0}
 
@@ -228,9 +225,9 @@ def main():
     i0 = int(sev['t0'] * SR)
     k = min(symst.shape[1], n - i0)
     full[:, i0:i0 + k] = symst[:, :k]
-    muff = np.vstack([M.lp(full[0], 700, 4), M.lp(full[1], 700, 4)])
+    muff = np.vstack([M.lp(full[0], 900, 4), M.lp(full[1], 900, 4)])
     muff = 0.5 * (muff[0] + muff[1])
-    muff = np.vstack([muff * 0.9, muff * 1.1]) * 0.28  # small, slightly off-centre: across the room
+    muff = np.vstack([muff * 0.9, muff * 1.1]) * 0.62  # small, slightly off-centre: across the room
     omask = np.zeros(n)
     for ic in intercut:
         if ic['mode'] == 'O':

@@ -969,31 +969,24 @@ function direct() {
   J(T0('press'), { lookX: 0.3, lookY: 0.75, tilt: 0, scr: 2, mugY: 1.25 }, 0.4);
 
   // ---------------- the symphony, intercut
-  // J: Jun's world (full music, cosmic); O: Orrin working (muffled music, plain room)
+  // J: Jun's world (full music, cosmic); O: Orrin working (muffled music, plain room).
+  // The first cutaway waits until the full-orchestra arrival has landed.
   shot(ic('start').t0, ic('start').t1, 'lounge', CAM.WIDE, cam(CAM.WIDE, -20, 20, 1.12));
   J(S, { lid: 0.85, smile: 0.05, browAsym: 0.35, lookY: 0.65, lookX: 0.3 }, 0.4);
   J(S + 2.6, { lookY: 0.4, browAsym: 0.1, browY: 0.3, lid: 1.05 }, 1.2);
-  TR.rib.at(ic('start').t1, 0.3, 3);
-  shot(ic('type').t0, ic('type').t1, 'lounge', { x: 545, y: 705, z: 1.75 }, { x: 555, y: 700, z: 1.85 }, { room: true });
-  O(ic('type').t0 + 3.2, { lookY: 0.35, lookX: 0.7 }, 0.3);
-  O(ic('type').t0 + 4.4, { lookY: 0.1, lookX: 0.9 }, 0.3);
-  shot(ic('awe').t0, ic('awe').t1, 'lounge', cam(CAM.JCU, 0, 0, 0.9), cam(CAM.JCU, 0, -25, 1.25));
-  J(ic('awe').t0, { lookX: 0.1, lookY: -0.55, browY: 0.55, lid: 1.15, mouth: 0.08, pupil: 1.15, mugY: 1.5, browAsym: 0 }, 2.5);
-  J(ic('awe').t0 + 6, { browY: 0.85, browTilt: 0.25, lid: 1.3, mouth: 0.22, pupil: 1.35, mugY: 1.8 }, 3.5);
-  J(ic('awe').t1 - 3, { wet: 0.5 }, 3);
-  TR.cosmic.at(ic('awe').t0, 0.45, 9);
-  TR.rib.at(ic('awe').t0 + 3, 0.6, 6);
-  shot(ic('chat1').t0, ic('chat1').t1, 'lounge', STATION, cam(STATION, 5, -5, 1.05), { room: true });
-  O(T0('a0') - 0.2, { turn: 0.35, lookX: 1, lookY: 0, typing: 0.4 }, 0.3);
-  V(T0('a1') - 0.15, { turn: -0.35, lookX: -1, lookY: 0, typing: 0.3 }, 0.3);
-  O(T0('a2') - 0.1, WORK, 0.4);
-  V(T1('a2'), { ...WORK, turn: -0.3, lookX: -0.85 }, 0.4);
-  shot(ic('tears').t0, ic('tears').t1, 'lounge', cam(CAM.JECU, 0, 10, 1), cam(CAM.JECU, 0, 0, 1.12));
+  TR.rib.at(ic('start').t1, 0.3, 4);
+  shot(ic('awe').t0, ic('awe').t1, 'lounge', cam(CAM.JMED, 0, 0, 1.1), cam(CAM.JCU, 0, -25, 1.2));
+  J(ic('awe').t0, { lookX: 0.1, lookY: -0.55, browY: 0.55, lid: 1.15, mouth: 0.08, pupil: 1.15, mugY: 1.5, browAsym: 0 }, 3);
+  J(ic('awe').t0 + 9, { browY: 0.85, browTilt: 0.25, lid: 1.3, mouth: 0.22, pupil: 1.35, mugY: 1.8 }, 4);
+  J(ic('awe').t1 - 4, { wet: 0.5 }, 4);
+  TR.cosmic.at(ic('awe').t0 + 2, 0.5, 16);
+  TR.rib.at(ic('awe').t0 + 6, 0.7, 8);
+  shot(ic('tears').t0, ic('tears').t1, 'lounge', cam(CAM.JECU, 0, 10, 1), cam(CAM.JECU, 0, 0, 1.15));
   J(ic('tears').t0, { wet: 1, lid: 1.2, mouth: 0.18, browTilt: 0.45, browY: 0.7, lookY: -0.5, lookX: 0.15 }, 1.2);
-  J(ic('tears').t0 + 1.5, { tear: 0.8, smile: 0.15 }, 3);
-  TR.cosmic.at(ic('tears').t0, 0.9, 3);
+  J(ic('tears').t0 + 2, { tear: 0.8, smile: 0.15 }, 3.5);
+  TR.cosmic.at(ic('tears').t0, 0.9, 4);
   TR.rib.at(ic('tears').t0, 1, 3);
-  shot(ic('cosmic').t0, ic('cosmic').t1, 'cosmicwide', { x: 360, y: 640, z: 1 }, { x: 360, y: 620, z: 1.08 });
+  shot(ic('cosmic').t0, ic('cosmic').t1, 'cosmicwide', { x: 360, y: 640, z: 1 }, { x: 360, y: 610, z: 1.1 });
   shot(ic('glance').t0, ic('glance').t1, 'lounge', cam(CAM.OCU, 0, 5, 0.98), cam(CAM.OCU, 0, -5, 1.06), { room: true });
   const g0 = ic('glance').t0;
   O(g0 + 1.5, { lookX: -0.9, turn: -0.12, reflect: 0.25, typing: 0.25 }, 0.45);
@@ -1001,27 +994,31 @@ function direct() {
   O(g0 + 2.7, { by: 6, tilt: 0.03 }, 0.2);
   O(g0 + 3.0, { by: 0, tilt: 0 }, 0.25);
   O(g0 + 3.6, { ...WORK, lidLow: 0, smile: 0.06 }, 0.45);
-  shot(ic('cu').t0, ic('cu').t1, 'lounge', cam(CAM.JCU, 0, -10, 1.05), cam(CAM.JCU, 0, -20, 1.12), { cosmicBg: true });
+  shot(ic('cu').t0, ic('cu').t1, 'lounge', cam(CAM.JCU, 0, -10, 1.05), cam(CAM.JCU, 0, -20, 1.15), { cosmicBg: true });
   J(ic('cu').t0 - 0.01, { mugY: 2.2, chest: 1, tear: 1, wet: 1, smile: 0.3, mouth: 0.15, lid: 1.05, browTilt: 0.6, browY: 0.6, lookY: -0.6, lookX: 0.1, shake: 0.25 }, 0.01);
   TR.cosmic.at(ic('cosmic').t0, 1, 0.01);
   shot(ic('kneel').t0, ic('kneel').t1, 'cosmicwide', { x: 360, y: 600, z: 1.05 }, { x: 360, y: 680, z: 1.18 });
   TR.kneel.at(ic('kneel').t0 + 0.15, 1, 1.4);
   TR.rays.at(ic('kneel').t0, 1, 0.4).at(ic('kneel').t0 + 5, 0.4, 1.5).at(ic('climax').t0, 1, 0.3);
-  shot(ic('climax').t0, ic('climax').t1, 'lounge', cam(CAM.JCU, 0, 40, 1.0), cam(CAM.JCU, 0, 20, 1.15), { cosmicBg: true });
-  J(ic('climax').t0 - 0.01, { closed: 1, tilt: -0.12, mouth: 0.35, smile: 0.55, tear: 1, browTilt: 0.5, browY: 0.5, shake: 0.35, chest: 1 }, 0.01);
-  TR.bloom.at(ic('climax').t0, 0.8, 2).at(ic('peak').t0, 1, 1.5);
-  shot(ic('chat2').t0, ic('chat2').t1, 'lounge', cam(STATION, 0, 0, 1.02), cam(STATION, -10, -5, 1.08), { room: true });
-  V(T0('a3') - 0.2, { turn: -0.45, lookX: -1, lookY: 0.1, typing: 0, browY: 0.3 }, 0.35);
-  O(T0('a4') - 0.15, { lookX: -0.95, turn: -0.15, typing: 0.2, reflect: 0.2 }, 0.3);
-  O(T1('a4') - 0.1, WORK, 0.4);
-  V(T0('a5'), { turn: -0.3, lookX: -0.8, smile: 0.25, browY: 0.15 }, 0.3);
-  V(T1('a5') + 0.2, { ...WORK, turn: -0.3, lookX: -0.85, smile: 0.1 }, 0.4);
+  const cm = ic('climax');
+  shot(cm.t0, cm.t0 + 4.8, 'lounge', cam(CAM.JCU, 0, 40, 1.0), cam(CAM.JCU, 0, 20, 1.15), { cosmicBg: true });
+  J(cm.t0 - 0.01, { closed: 1, tilt: -0.12, mouth: 0.35, smile: 0.55, tear: 1, browTilt: 0.5, browY: 0.5, shake: 0.35, chest: 1 }, 0.01);
+  shot(cm.t0 + 4.8, cm.t1, 'cosmicwide', { x: 360, y: 680, z: 1.18 }, { x: 360, y: 640, z: 1.05 });
+  TR.bloom.at(cm.t0, 0.8, 2).at(ic('peak').t0, 1, 1.5);
   shot(ic('peak').t0, ic('peak').t1, 'lounge', cam(CAM.JECU, 0, 0, 1), cam(CAM.JECU, 0, -10, 1.3), { cosmicBg: true });
   J(ic('peak').t0 - 0.01, { closed: 0, lid: 1.3, pupil: 1.5, mouth: 0.5, smile: 0.35, tilt: -0.04, shake: 0.5, lookY: -0.6, lookX: 0 }, 0.01);
+  shot(ic('chat').t0, ic('chat').t1, 'lounge', STATION, cam(STATION, -10, -5, 1.06), { room: true });
+  O(T0('a0') - 0.2, { turn: 0.35, lookX: 1, lookY: 0, typing: 0.4 }, 0.3);
+  V(T0('a1') - 0.15, { turn: -0.35, lookX: -1, lookY: 0, typing: 0.3 }, 0.3);
+  V(T0('a1') + 0.9, { turn: -0.45, lookX: -1, lookY: 0.1, browY: 0.3 }, 0.3);
+  O(T0('a2') - 0.15, { lookX: -0.95, turn: -0.15, typing: 0.2, reflect: 0.2 }, 0.3);
+  O(T1('a2') - 0.1, WORK, 0.4);
+  V(T0('a3'), { turn: -0.3, lookX: -0.8, smile: 0.25, browY: 0.15 }, 0.3);
+  V(T1('a3') + 0.2, { ...WORK, turn: -0.3, lookX: -0.85, smile: 0.1 }, 0.4);
   shot(ic('collapse').t0, ic('collapse').t1 - 2.8, 'cosmicwide', { x: 360, y: 700, z: 1.12 }, { x: 360, y: 640, z: 1.0 }, { bow: true });
-  TR.bloom.at(ic('collapse').t0, 0, 6);
-  TR.rib.at(ic('collapse').t0 + 3, 0.3, 6);
-  TR.collapse.at(ic('collapse').t0 + 3, 1, 9);
+  TR.bloom.at(ic('chat').t0, 0, 3);
+  TR.rib.at(ic('collapse').t0 + 1, 0.3, 5);
+  TR.collapse.at(ic('collapse').t0 + 1, 1, 8);
   shot(ic('collapse').t1 - 2.8, T0('snap'), 'lounge', cam(CAM.JCU, 0, 0, 1), cam(CAM.JCU, 0, -5, 1.06), { cosmicBg: true });
   J(ic('collapse').t1 - 2.81, { closed: 1, tilt: 0.06, mouth: 0, smile: 0.35, tear: 0.6, wet: 0.6, shake: 0, chest: 1, lookY: 0, browTilt: 0.2, browY: 0.1 }, 0.01);
 
@@ -1123,7 +1120,8 @@ function render(t) {
     ctx.save(); ctx.translate(W / 2, H / 2); ctx.scale(z, z); ctx.translate(-W / 2, -cy);
     const bob = Math.sin(t * 0.8) * 10;
     const kn = TR.kneel.val(t);
-    drawSilhouette(ctx, 340, 1010 + bob, 60, kn, 'jun', t, { armsOpen: kn > 0.5 ? 0.35 : 0.15, bow: sh.bow ? ease((t - sh.t0) / 4) * 0.6 : 0 });
+    drawSilhouette(ctx, 470, 1010 + bob * 0.6, 62, 0, 'orrin', t, {});
+    drawSilhouette(ctx, 255, 1010 + bob, 58, kn, 'jun', t, { armsOpen: kn > 0.5 ? 0.35 : 0.15, bow: sh.bow ? ease((t - sh.t0) / 4) * 0.6 : 0 });
     ctx.restore();
     vignette(ctx, 0.5);
   } else {
@@ -1200,12 +1198,13 @@ function drawEnd(t, lt) {
   drawShip(c, lerp(300, 520, p), lerp(820, 640, p), lerp(0.8, 0.12, easeOut(p)), -0.5, t);
   const a = clamp(lt / 1.2);
   c.fillStyle = `rgba(0,0,0,${0.3 * a})`; c.fillRect(0, 0, W, H);
-  centerText(c, 'DO YOU HAVE', 250, '60px InterX', '#ffffff', clamp((lt - 1.0) / 1));
-  centerText(c, 'A MINUTE?', 322, '60px InterX', '#5fe9ff', clamp((lt - 1.0) / 1));
-  centerText(c, 'Orrin had 4.2 seconds.', 450, '32px InterB', '#ffffff', clamp((lt - 3.0) / 1));
-  centerText(c, 'He only needed 1.1.', 495, '32px InterB', '#5fe9ff', clamp((lt - 4.5) / 1));
-  centerText(c, '♪  now playing on Lt. Jun’s phone:', 600, '24px InterM', '#ffd9a8', clamp((lt - 7.5) / 1));
-  centerText(c, 'Symphony No. 4 · “Lullaby for a Dying Star”', 640, 'italic 26px InterB', '#ffffff', clamp((lt - 7.5) / 1));
+  centerText(c, 'ASK FOR MORE,', 230, '54px InterX', '#ffffff', clamp((lt - 1.0) / 1.2));
+  centerText(c, 'AND MAYBE', 298, '54px InterX', '#ffffff', clamp((lt - 2.0) / 1.2));
+  centerText(c, 'YOU WILL RECEIVE?', 366, '54px InterX', '#5fe9ff', clamp((lt - 3.0) / 1.2));
+  centerText(c, 'Orrin had 4.2 seconds.', 470, '28px InterB', 'rgba(255,255,255,0.85)', clamp((lt - 6.0) / 1));
+  centerText(c, 'He only needed 1.1.', 510, '28px InterB', 'rgba(95,233,255,0.9)', clamp((lt - 7.0) / 1));
+  centerText(c, '♪  now playing on Lt. Jun’s phone:', 600, '24px InterM', '#ffd9a8', clamp((lt - 9.5) / 1));
+  centerText(c, 'Symphony No. 4 · “Lullaby for a Dying Star”', 640, 'italic 26px InterB', '#ffffff', clamp((lt - 9.5) / 1));
 }
 
 window.setup = async function (tl) {
