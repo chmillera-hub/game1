@@ -9,7 +9,6 @@ export const meta = {
 }
 
 const ROOT = '/home/user/game1/if-you-have-time'
-const REPORTS = (args && args.reports) || ''
 
 const COMMON = `
 You are a director-animator on a small team making a 3m52s portrait (720x1280, 24 fps) animated short, "IF YOU HAVE TIME",
@@ -17,10 +16,7 @@ generated entirely with code in ${ROOT}. All assets are finished; your job is DI
 FIRST read in full: ${ROOT}/BIBLE.md (especially section 4 shot list and section 9 continuity handoffs), ${ROOT}/anim/core.py,
 ${ROOT}/anim/rig.py, ${ROOT}/script_data.py, ${ROOT}/build/timeline.json (all beat/line times), and the public APIs of
 ${ROOT}/anim/char_quill.py, ${ROOT}/anim/char_rae.py, ${ROOT}/anim/env.py, ${ROOT}/anim/fx.py (read their docstrings and
-function signatures; read implementation where needed to use them correctly). Asset owners' reports:
-=== ASSET REPORTS ===
-${REPORTS}
-=== END ===
+function signatures; read implementation where needed to use them correctly). Also read the asset owners' reports (APIs, usage notes, limitations): ${ROOT}/build/asset_reports.md
 How scenes work: anim/scenes/<sid>.py exposes render(canvas, t) for absolute time t inside the scene span (anim/scenes/__init__.py,
 anim/frame.py). The canvas arrives cleared to black with identity matrix; you apply Camera(...).apply(canvas, t) for stage drawing
 (env.draw_lounge -> characters -> env.draw_lounge_front -> stage fx), then canvas.resetMatrix() for screen-space fx/titles/flash.
@@ -29,6 +25,9 @@ Always reference times by name: beat('...'), line_start('q04'), line_end(...), s
 Use Track for keyframed animation with easing. Module-level caches are fine; render(canvas, t) must be a pure function of t
 (frames are rendered out of order in parallel processes).
 Rules:
+- anim/char_quill.py and anim/char_rae.py are receiving a final visual-polish pass by their owners right now (public API is stable: Pose fields,
+  ARMS preset names, draw/head_center/hand_pos). If an import or draw momentarily fails or a frame looks mid-edit, wait ~1 minute and retry;
+  do not build workarounds for transient breakage. Likewise build/music/*.wav and envelopes.json may be regenerated (landmark timings are fixed).
 - Edit ONLY the scene files assigned to you. Do not edit assets (char_*.py, env.py, fx.py), core.py, rig.py, script_data.py, BIBLE.md.
   If an asset has a bug or missing feature that blocks you, work around it inside your scene file and clearly report it.
 - Test renders under ${ROOT}/build/tests/<your-scene>/ (gitignored): python3 -m anim.preview sheet OUT.png t1 t2 ... --cols 6 --scale 0.3
