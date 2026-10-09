@@ -145,7 +145,7 @@ SEQ = [
     ("sfx", "lights_down", {"offset": 0.4, "gain_db": -16.0}),
     ("wait", 1.6),
     ("beat", "sym_music_start"),
-    ("music", "symphony", {"gain_db": -1.0}),
+    ("music", "symphony", {"gain_db": 1.0}),
     # musical landmarks inside the 74 s cue (see BIBLE.md "The Symphony")
     ("beat", "sym_theme1", 7.5),
     ("beat", "sym_rae_mug_lower", 11.0),
