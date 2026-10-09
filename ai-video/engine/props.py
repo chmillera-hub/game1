@@ -1938,6 +1938,7 @@ def brick_wall(ctx, x, y, w, h, t, t0, rows=6, window=None, label=None, speed=1.
             c.set_fill_rule(cairo.FILL_RULE_WINDING)
 
     ctx.save()
+    ctx.save()
     win_cut(ctx)
     # mortar behind finished rows
     for r in range(rows):
@@ -1950,7 +1951,8 @@ def brick_wall(ctx, x, y, w, h, t, t0, rows=6, window=None, label=None, speed=1.
         a = seg(t, t_done, t_done + 0.2)
         ctx.rectangle(x, y, w, h)
         _s(ctx, INK, LW, a)
-    # bricks
+    ctx.restore()
+    # bricks (each landed / window-adjacent brick gets the window cut itself)
     tints = [PAL["brick"], "#c05d44", "#a94a35"]
     puffs = []
     for (r, i, bx, by, bw_, bh_) in bricks:
@@ -1961,11 +1963,28 @@ def brick_wall(ctx, x, y, w, h, t, t0, rows=6, window=None, label=None, speed=1.
             X, Y, WW, WH = win["world"]
             if bx >= X and bx + bw_ <= X + WW and by >= Y and by + bh_ <= Y + WH:
                 continue
+            # a brick mostly eaten by the hole reads as a floating sliver until
+            # the window frame is there to explain it: hold it back until then
+            ox = max(0.0, min(bx + bw_, X + WW) - max(bx, X))
+            oy = max(0.0, min(by + bh_, Y + WH) - max(by, Y))
+            if ox * oy > 0.6 * bw_ * bh_:
+                rb_ = int((y + h - (Y + WH)) // bh)
+                tw_ = row_done[rb_ - 1] if rb_ >= 1 else t0 + 0.1 / sp
+                if pop(t, tw_ - 0.02, 0.35) < 0.6:
+                    continue
         u = seg(t, st, st + fall)
         dy, sq = _drop(u, drop)
         a = clamp((t - st) / 0.05)
         tint = tints[int(hash01(r * 31 + i, seed + 5) * 3) % 3]
+        # A falling brick whose final spot doesn't touch the window must not be
+        # cut by the window hole while it drops past it (was a 1-2 frame sliver).
+        free = False
+        if win and u < 1:
+            X, Y, WW, WH = win["world"]
+            free = bx + bw_ <= X or bx >= X + WW or by + bh_ <= Y or by >= Y + WH
         ctx.save()
+        if not free:
+            win_cut(ctx)
         cx_, base = bx + bw_ / 2, by + bh_
         ctx.translate(cx_, base + dy)
         ctx.scale(1 + sq * 0.7, 1 - sq)

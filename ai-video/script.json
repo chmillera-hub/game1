@@ -23,7 +23,7 @@
    "module": "s01_cold_open",
    "music": "doom",
    "head": 0.0,
-   "tail": 0.15,
+   "tail": 0.35,
    "min_dur": 0,
    "title": "Cold open: the movie everyone is afraid of",
    "beats": [
@@ -193,7 +193,7 @@
    "module": "s03_code_words",
    "music": "sneaky",
    "head": 0.0,
-   "tail": 0.3,
+   "tail": 0.6,
    "min_dur": 0,
    "title": "Trick 1: code words (euphemisms)",
    "card": "TRICK #1: CODE WORDS",
@@ -630,7 +630,7 @@
     },
     {
      "t": "pause",
-     "dur": 0.2,
+     "dur": 0.5,
      "cue": "disguise1"
     },
     {
@@ -785,7 +785,7 @@
     },
     {
      "t": "pause",
-     "dur": 0.6,
+     "dur": 0.85,
      "cue": "lift"
     },
     {
