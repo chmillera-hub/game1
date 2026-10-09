@@ -59,7 +59,7 @@ CFG = dict(
     lift_db=4.0,                 # extra music level in dialogue-free stretches
     xfade=0.6, end_fade=1.6,
     sfx_db=0.0,
-    target_lufs=-14.0, ceiling_dbtp=-1.5,
+    target_lufs=-14.0, ceiling_dbtp=-2.0,
 )
 
 
@@ -350,6 +350,10 @@ def duck_curve(mask):
 # =============================================================================
 # sfx
 # =============================================================================
+SFX_SPILL = 0.6        # max seconds an SFX tail may ring into the next scene
+SFX_SPILL_FADE = 0.4
+
+
 def collect_sfx(tl, vstart, n, sr, override=None):
     """override: optional {scene_id: callable(info) | list} used instead of the
     scene module's SFX (for tests)."""
@@ -391,6 +395,13 @@ def collect_sfx(tl, vstart, n, sr, override=None):
             if p:
                 y = y * np.array([min(1.0, 1 - p), min(1.0, 1 + p)], np.float32)
             i0 = int(round((vstart[k] + t) * sr))
+            # Tails may spill past the cut (sounds natural) but not ring on into
+            # the next scene: cap at scene end + SFX_SPILL with a short fade.
+            cap = int(round((vstart[k] + round(s.dur * FPS) / FPS + SFX_SPILL) * sr)) - i0
+            if 0 < cap < len(y):
+                y = y[:cap].copy()
+                f = min(cap, int(SFX_SPILL_FADE * sr))
+                y[-f:] *= np.linspace(1.0, 0.0, f, dtype=np.float32)[:, None]
             if i0 < 0:
                 y = y[-i0:]
                 i0 = 0
