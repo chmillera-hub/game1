@@ -54,9 +54,9 @@ MIX = os.path.join(OUT, "mix.wav")
 
 CFG = dict(
     voice_rms_db=-20.0,          # per-line active-speech RMS before compression
-    music_under_dialog_db=13.0,  # music bed loudness below dialogue loudness
-    duck_db=6.0, duck_attack=0.08, duck_release=0.40, duck_lookahead=0.12, duck_hold=0.25,
-    lift_db=3.0,                 # extra music level in dialogue-free stretches
+    music_under_dialog_db=10.0,  # music bed loudness below dialogue loudness
+    duck_db=7.0, duck_attack=0.08, duck_release=0.40, duck_lookahead=0.12, duck_hold=0.25,
+    lift_db=4.0,                 # extra music level in dialogue-free stretches
     xfade=0.6, end_fade=1.6,
     sfx_db=0.0,
     target_lufs=-14.0, ceiling_dbtp=-1.5,
