@@ -15,14 +15,17 @@ tracks, gaze, blinks, cameras).
 
 Shot list (absolute times are only for orientation):
   0  s3 start -> snap          S2's last shot held for the silent beat (rendered by anim.scenes.s2)
-  1  snap -> r10 "WHAT"        MEDIUM CLOSE Rae on her knees (S2's framing, light 1, camera jolt):
-                               rapid blinks, gasp, sleeve wipe, looks around, "Wait. What--"
-  2  -> q06                    TWO-SHOT (cut on the point): "WHAT the heck was THAT?!"
+  1  snap -> r10 "WHAT"        hard cut to a slightly tighter MEDIUM CLOSE of Rae on her knees (light 1, two
+                               frames of overexposure, damped camera jolt; Quill's hanging hand kept out right):
+                               rapid blinks, gasp, sleeve wipe, looks around, "Wait. What--", finger cocks
+  2  -> q06                    TWO-SHOT (cut on the pointing thrust): "WHAT the heck was THAT?!" - she points up
+                               at him, forearm clear of her face
   3  -> r11                    MEDIUM Quill (her finger still in frame): "Ah. You did not care for it."
-  4  -> palm raise             MEDIUM-WIDE: she scrambles up, drops onto the bench, grabs her mug;
+  4  -> palm raise             MEDIUM-WIDE: she lifts her hand off her thigh, scrambles up (eased, leaning
+                               toward him, hands waving), drops back onto the bench, grabs her mug;
                                "That is quite all right."
-  5  -> "...the others"        PRESENTATION 3-shot: "I composed eight." palm up, the cards fan out,
-                               No. 1 glows
+  5  -> "...the others"        (same shot) tilts up into the PRESENTATION 3-shot: "I composed eight." palm up,
+                               the cards fan out, No. 1 glows
   6  -> card2 (in S4)          CLOSE-UP Rae: dawning dread, slow push-in
 """
 from __future__ import annotations
@@ -30,10 +33,12 @@ from __future__ import annotations
 import math
 from functools import lru_cache
 
+import skia
+
 from anim import char_quill as Q
 from anim import char_rae as R
 from anim import env, fx
-from anim.core import (Camera, Track, auto_blink, beat, breathe, clamp, ease_in_out, ease_out, glow, lerp,
+from anim.core import (Camera, Layer, Track, auto_blink, beat, breathe, clamp, ease_in_out, ease_out, glow, lerp,
                        line_end, line_start, mouth, noise1, scene_span, smoothstep, timeline)
 from anim.rig import ArmPose, Pose
 from config import H, W
@@ -185,8 +190,8 @@ def smoothed(fn, t, n=6, step=0.07):
 
 
 # =========================================================================== holo-card fan (shared with S4)
-FOCUS_POS = (382.0, 494.0)                  # where a selected card comes to rest (between them, upper third)
-FOCUS_SCALE = 0.9
+FOCUS_POS = (366.0, 488.0)                  # where a selected card comes to rest (between them, upper third)
+FOCUS_SCALE = 0.84
 # fx.card_fan_layout geometry: the default arc raised 60 units and closed 2-4 degrees at the ends, so the
 # lowest card clears the top of Rae's hair puff (seated) - and stays above Rae close-ups - while No. 8
 # clears Quill's forehead.
@@ -256,14 +261,17 @@ def palm_burst(c, t, t0, x, y):
 
 # =========================================================================== Rae: S3 performance
 CHEST = arm(A["hand_on_chest"], wrist=10.0)                       # S2's last arm pose
-THIGH_L = ArmPose(shoulder=12.0, elbow=26.0, wrist=4.0, hand="relaxed")
+THIGH_L_S2 = ArmPose(shoulder=12.0, elbow=26.0, wrist=4.0, hand="relaxed")
+# far hand resting on her thigh while kneeling: this shoulder / elbow range keeps the rig's knee magnet fully
+# engaged through the gasp (no jump between thigh and shin, no draw-order flip)
+THIGH_L = ArmPose(shoulder=8.0, elbow=26.0, wrist=6.0, hand="relaxed")
 LAP_L = ArmPose(shoulder=3.0, elbow=46.0, wrist=8.0, hand="relaxed")
 LAP_R = ArmPose(shoulder=6.0, elbow=58.0, wrist=4.0, hand="relaxed", across=0.15)
 HOLD = A["hold_mug"]
 CLUTCH = arm(HOLD, shoulder=14.0, elbow=104.0, across=0.32)        # mug pulled in close (wary)
 WIPE = A["wipe_eye"]
-POINT_UP = ArmPose(shoulder=103.0, elbow=4.0, wrist=-4.0, hand="point")     # at him (clear of her chin)
-POINT_COCK = ArmPose(shoulder=78.0, elbow=96.0, wrist=6.0, hand="point")
+POINT_UP = ArmPose(shoulder=98.0, elbow=40.0, wrist=-6.0, hand="point")     # up at him, forearm clear of her face
+POINT_COCK = ArmPose(shoulder=72.0, elbow=92.0, wrist=8.0, hand="point")    # finger cocked beside her cheek
 HANDS_UP = A["hands_up"]
 WAVE_R = arm(HANDS_UP, shoulder=36.0, elbow=96.0)
 WAVE_L = arm(HANDS_UP, shoulder=40.0, elbow=80.0)
@@ -276,25 +284,25 @@ def _rae_tracks():
     SN, GS = SNAP, GASP
     d = {}
     # ---------------- body: kneeling -> scramble up -> drop onto the bench edge
-    d["kneel"] = Track([(T0, 1.0), (R11 - 0.25, 1.0), (R11 + 0.28, 0.0, "out")])
-    d["sit"] = Track([(T0, 1.0), (R11 - 0.2, 1.0), (R11 + 0.32, 0.42, "out"), (R11 + 0.82, 0.38),
-                      (R11 + 1.25, 1.0, "in")])
-    d["x"] = Track([(T0, KNEEL_X), (R11 - 0.25, KNEEL_X), (R11 + 0.3, KNEEL_X + 10.0, "out"), (R11 + 0.8, KNEEL_X + 4.0),
-                    (R11 + 1.25, SEAT_X, "in")])
+    d["kneel"] = Track([(T0, 1.0), (R11 - 0.2, 1.0), (R11 + 0.34, 0.0, "io")])
+    d["sit"] = Track([(T0, 1.0), (R11 - 0.2, 1.0), (R11 + 0.34, 0.1, "io"), (R11 + 0.8, 0.07),
+                      (R11 + 1.22, 1.0, "in")])
+    d["x"] = Track([(T0, KNEEL_X), (R11 - 0.2, KNEEL_X), (R11 + 0.34, KNEEL_X + 16.0, "io"), (R11 + 0.8, KNEEL_X + 12.0),
+                    (R11 + 1.22, SEAT_X, "io")])
     d["turn"] = Track([(T0, 0.3), (SN + 1.3, 0.3), (SN + 1.5, 0.24), (SN + 1.75, 0.34), (R10, 0.3),
                        (R11 + 0.3, 0.3), (R11 + 0.6, 0.22), (R11 + 1.25, 0.35), (CUT_C2 + 1, 0.35)])
     d["lean"] = Track([(T0, 0.5), (SN, 0.5), (SN + 0.06, -5.0, "out"), (SN + 0.3, -2.0), (GS, -2.0),
                        (GS + 0.1, -6.5, "out"), (GS + 0.5, -2.0), (SN + 0.9, 3.0), (SN + 1.25, 7.0),
                        (SN + 1.45, 2.0), (SN + 1.8, 0.0), (PT - 0.25, 2.5), (PT, -3.5, "out"), (THAT, -3.0),
                        (THAT + 0.08, -1.0, "out"), (THAT + 0.3, -2.5), (Q06 + 0.4, -2.0), (Q06 + 1.0, 2.0),
-                       (R11 - 0.25, 3.0), (R11 - 0.05, 13.0), (R11 + 0.3, 2.0), (R11 + 0.8, -2.0),
-                       (R11 + 1.25, 4.0), (R11 + 1.5, 1.0), (REACH_T, 1.5), (GRAB_T - 0.2, 5.0), (GRAB_T, 1.0),
+                       (R11 - 0.3, 3.0), (R11 - 0.04, 12.0), (R11 + 0.36, 7.0), (R11 + 0.8, 2.0),
+                       (R11 + 1.05, -3.0), (R11 + 1.3, 4.0), (R11 + 1.55, 1.0), (REACH_T, 1.5), (GRAB_T - 0.2, 5.0), (GRAB_T, 1.0),
                        (GRAB_T + 0.45, 2.0),
                        (EIGHT + 0.6, 3.0), (CARDS, 3.0), (CARDS + 0.15, -3.5, "out"), (CARDS + 0.9, -1.0),
                        (OTHERS, 0.0), (OTHERS + 1.5, 2.5), (CUT_C2 + 1, 2.5)])
     d["bounce"] = Track([(T0, 0.0), (SN, 0.0), (SN + 0.05, -4.0, "out"), (SN + 0.3, 0.5), (SN + 0.5, 0.0),
                          (GS, 0.0), (GS + 0.1, -3.0, "out"), (GS + 0.45, 0.0),
-                         (R11 + 1.22, 0.0), (R11 + 1.3, 9.0, "out"), (R11 + 1.5, -2.0), (R11 + 1.75, 0.0),
+                         (R11 + 1.2, 0.0), (R11 + 1.28, 9.0, "out"), (R11 + 1.48, -2.0), (R11 + 1.72, 0.0),
                          (CARDS, 0.0), (CARDS + 0.1, -2.5, "out"), (CARDS + 0.5, 0.0)])
     d["shoulders"] = Track([(T0, 0.02), (SN, 0.02), (SN + 0.05, 0.35, "out"), (GS, 0.3), (GS + 0.1, 0.55, "out"),
                             (GS + 0.6, 0.18), (SN + 1.6, 0.08), (PT - 0.2, 0.1), (PT, 0.3, "out"), (THAT + 0.4, 0.22),
@@ -400,26 +408,29 @@ def _rae_tracks():
         (GS + 0.1, arm(CHEST, shoulder=16.0, wrist=18.0, elbow=124.0), "out"), (SN + 0.62, CHEST),
         (SN + 0.88, arm(WIPE, across=0.22, wrist=8.0), "io"),                         # sleeve to the eyes
         (SN + 1.22, arm(WIPE, across=0.55, wrist=30.0, elbow=126.0), "io"),             # drag across
-        (SN + 1.5, ArmPose(shoulder=22.0, elbow=64.0, wrist=0.0, hand="open", across=0.1), "io"),
-        (PT - 0.42, ArmPose(shoulder=26.0, elbow=58.0, wrist=0.0, hand="open", across=0.1)),
+        (SN + 1.64, ArmPose(shoulder=22.0, elbow=64.0, wrist=0.0, hand="open", across=0.1), "io"),
+        (PT - 0.6, ArmPose(shoulder=26.0, elbow=58.0, wrist=0.0, hand="open", across=0.1)),
         (PT - 0.16, POINT_COCK, "io"), (PT, POINT_UP, "out"),                          # cock ... THRUST
         (THAT - 0.05, POINT_UP), (THAT + 0.07, arm_add(POINT_UP, 4.0, -2.0), "out"),    # jab on "THAT"
         (THAT + 0.3, POINT_UP, "io"), (R10E + 0.05, arm_add(POINT_UP, -3.0, 3.0)),
         (R10E + 0.6, ArmPose(shoulder=44.0, elbow=52.0, wrist=-6.0, hand="open"), "io"),   # the finger drops
         (R11 - 0.25, ArmPose(shoulder=30.0, elbow=60.0, wrist=-4.0, hand="open")),
-        (R11 + 0.15, WAVE_R, "out"),
+        (R11 + 0.15, WAVE_R, "io"),
         (R11 + 0.35, arm_add(WAVE_R, 10.0, -16.0, -10.0)), (R11 + 0.55, arm_add(WAVE_R, -6.0, 8.0, 8.0)),
         (R11 + 0.75, arm_add(WAVE_R, 9.0, -14.0, -8.0)), (R11 + 0.95, arm_add(WAVE_R, -4.0, 6.0, 6.0)),
         (R11 + 1.3, LAP_R, "io"),
         (REACH_T, LAP_R),
     ])
     d["arm_l"] = ArmSeq([
-        (T0, THIGH_L), (SN, THIGH_L), (GS + 0.1, arm(THIGH_L, shoulder=6.0, elbow=38.0, wrist=8.0), "out"),
-        (SN + 0.9, arm(THIGH_L, shoulder=4.0, elbow=30.0, wrist=8.0)), (PT - 0.2, THIGH_L), (PT + 0.1, arm(THIGH_L, shoulder=4.0, elbow=18.0), "out"),
-        (R11 - 0.2, arm(THIGH_L, shoulder=2.0, elbow=14.0, hand="open")),
-        (R11 + 0.2, WAVE_L, "out"), (R11 + 0.4, arm_add(WAVE_L, -8.0, 14.0, 8.0)),
+        (T0, THIGH_L_S2), (SN, THIGH_L_S2), (SN + 0.12, THIGH_L, "out"),
+        (GS + 0.12, arm(THIGH_L, shoulder=6.0, elbow=30.0, wrist=8.0), "io"),
+        (SN + 0.9, arm(THIGH_L, shoulder=7.0, elbow=27.0, wrist=8.0)), (PT - 0.2, THIGH_L),
+        (PT + 0.1, arm(THIGH_L, shoulder=6.0, elbow=22.0), "out"),
+        (R11 - 0.5, arm(THIGH_L, shoulder=6.0, elbow=24.0, hand="open")),
+        (R11 - 0.06, ArmPose(shoulder=8.0, elbow=86.0, wrist=6.0, hand="open"), "io"),  # elbow first: hand clears the leg
+        (R11 + 0.36, WAVE_L, "io"), (R11 + 0.5, arm_add(WAVE_L, -8.0, 14.0, 8.0)),
         (R11 + 0.6, arm_add(WAVE_L, 8.0, -12.0, -8.0)), (R11 + 0.8, arm_add(WAVE_L, -6.0, 10.0, 6.0)),
-        (R11 + 1.0, WAVE_L), (R11 + 1.35, LAP_L, "io"),
+        (R11 + 1.0, WAVE_L), (R11 + 1.3, arm(LAP_L, shoulder=8.0, elbow=80.0)), (R11 + 1.62, LAP_L, "io"),
     ])
     return d
 
@@ -628,6 +639,8 @@ def _seat_face():
 
 
 QFACE = Q.head_center(Pose(x=QX, y=FLOOR, facing=-1.0, turn=0.35))
+SNAP_ZOOM = 2.25
+Q_HAND_X0 = Q.hand_pos(Pose(x=QX, y=FLOOR, facing=-1.0, turn=0.35, arm_l=QA["rest"]), "l")[0] - 18.0
 
 
 def _face_cam(fx_, fy_, z, sx, sy):
@@ -645,33 +658,39 @@ def _snap_head():
 
 
 def camera(t: float) -> Camera:
-    if t < CUT_TWO:                                        # 1 MCU Rae on her knees (S2's framing) + jolt
+    if t < CUT_TWO:                                        # 1 MCU Rae on her knees + jolt
+        # the snap is a hard cut: a slightly tighter reframe of S2's closing shot, with Quill's hanging hand
+        # (stage x ~ 433..463) kept just outside the right edge even when the soft follow drifts right
         fk = _kneel_face()
-        base = _face_cam(fk[0], fk[1], 2.0, 330.0, 520.0)         # = S2's closing framing
+        z = SNAP_ZOOM
+        base = _face_cam(fk[0], fk[1], z, 372.0, 505.0)
         hx, hy = smoothed(_rae_head, t, 6, 0.08)
         h0 = _snap_head()
-        follow = 0.55
-        cam = Camera(base.cx + follow * (hx - h0[0]), base.cy + follow * (hy - h0[1]), base.zoom)
+        follow = 0.5
+        cx = base.cx + follow * (hx - h0[0])
+        cx_max = Q_HAND_X0 - W / 2 / (z * 1.07)
+        cx = min(cx, cx_max - 6.0 * (1.0 - math.exp(-max(0.0, cx - cx_max + 6.0) / 6.0)))   # soft clamp
+        cam = Camera(cx, base.cy + follow * (hy - h0[1]), z)
         push = smoothstep((t - (R10 - 0.1)) / (CUT_TWO - R10 + 0.1))
         cam.zoom *= 1.0 + 0.07 * push
-        jx, jy, jz = jolt(t, SNAP, 1.0, 0.5)
+        jx, jy, jz = jolt(t, SNAP, 0.8, 0.5)
         return Camera(cam.cx + jx, cam.cy + jy, cam.zoom * jz)
     if t < CUT_QMED:                                       # 2 TWO-SHOT: the point
-        a = Camera(402.0, 656.0, 1.2)
-        b = Camera(405.0, 650.0, 1.25)
+        a = Camera(400.0, 724.0, 1.22)
+        b = Camera(403.0, 718.0, 1.26)
         jx, jy, jz = jolt(t, CUT_TWO + 0.1, 0.35, 0.35)
         cam = drift(a, b, t, CUT_TWO, CUT_QMED)
         return Camera(cam.cx + jx, cam.cy + jy, cam.zoom * jz)
     if t < CUT_WIDE:                                       # 3 MEDIUM Quill
-        a = _face_cam(QFACE[0], QFACE[1], 2.0, 412.0, 470.0)          # her puff just out of frame left
+        a = _face_cam(QFACE[0], QFACE[1], 2.0, 386.0, 470.0)          # her puff out of frame left (even leaning in)
         return drift(a, nudge(a, -2.0, -2.0, 1.03), t, CUT_QMED, CUT_WIDE)
     if t < CUT_DREAD:                                      # 4 MEDIUM-WIDE: scramble, sit, mug ...
         if t < CUT_FAN:
             return drift(Camera(362.0, 770.0, 1.16), Camera(366.0, 760.0, 1.2), t, CUT_WIDE, CUT_FAN)
-        b = Camera(390.0, 604.0, 1.33)                     # ... 5 tilts up with the cards into the 3-shot
-        if t < CARDS + 0.9:
+        b = Camera(360.0, 646.0, 1.25)                     # ... 5 tilts up with the cards into the 3-shot
+        if t < CARDS + 0.9:                                # (same framing family as S4's presentation shots)
             return drift(Camera(366.0, 760.0, 1.2), b, t, CUT_FAN, CARDS + 0.9)
-        return drift(b, Camera(388.0, 596.0, 1.37), t, CARDS + 0.9, CUT_DREAD)
+        return drift(b, Camera(358.0, 640.0, 1.29), t, CARDS + 0.9, CUT_DREAD)
     # 6 CLOSE-UP Rae: dawning dread (slow push; runs into S4 until card2). Tight enough that Quill's
     #   presenting hand (x > ~400) stays out of frame and only the glow of the lowest card grazes the top.
     fs = _seat_face()
@@ -717,8 +736,15 @@ def render(canvas, t):
         s2.render(canvas, t)
         return
     cam = camera(t)
-    draw_stage(canvas, t, cam, rae_pose(t), quill_pose(t), rae_mug_on_bench(t), _fan_fx)
-    # the snap: the lights slam on - a two-frame overexposure that falls away fast
-    fl = 0.32 * (1.0 - smoothstep((t - SNAP) / 0.16)) if t < SNAP + 0.16 else 0.0
-    if fl > 0:
-        fx.draw_flash(canvas, fl, "#FFF8EC")
+    # the snap: the lights slam on - two frames of overexposure (gain, not a milky wash) falling away fast
+    dt = t - SNAP
+    k = 1.0 - dt / 0.11 if dt < 0.11 else 0.0
+    if k > 0:
+        g = 1.0 + 0.5 * k * k
+        cf = skia.ColorFilters.Matrix([g, 0, 0, 0, 0.04 * k * k, 0, g, 0, 0, 0.03 * k * k,
+                                       0, 0, g, 0, 0.015 * k * k, 0, 0, 0, 1, 0])
+        with Layer(canvas, cf=cf):
+            draw_stage(canvas, t, cam, rae_pose(t), quill_pose(t), rae_mug_on_bench(t), _fan_fx)
+        glow(canvas, W * 0.5, H * 0.32, 760, "#FFEBCF", 0.26 * k * k)
+    else:
+        draw_stage(canvas, t, cam, rae_pose(t), quill_pose(t), rae_mug_on_bench(t), _fan_fx)

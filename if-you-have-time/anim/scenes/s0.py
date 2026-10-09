@@ -79,8 +79,8 @@ def dive_zoom(t):
 # (and past the little figure standing in the window) as the frame flashes.
 CENTER = (W / 2, H / 2)
 _center_ease = Track([(DIVE, 0.0), (FILL - 0.3, 1.0, "io")])
-_FOCUS_GLOW = (0.5, -2.0)              # hero-window-local offset: the warm upper glass, just right of the figure
-_focus_ease = Track([(FILL - 0.55, 0.0), (FILL + 0.2, 1.0, "io")])
+_FOCUS_GLOW = (0.5, -3.0)              # hero-window-local offset: the warm glass under the arch, above/right of the figure
+_focus_ease = Track([(FILL - 0.9, 0.0), (FILL + 0.15, 1.0, "io")])
 
 
 def _rot(vx, vy, ang):
@@ -117,31 +117,85 @@ title_dy = Track([(TITLE_IN, 8.0), (TITLE_IN + 1.9, 0.0, "out"), (TITLE_OUT, -5.
 
 # =========================================================================== light
 space_bright = Track([(T0, 0.0), (T0 + 2.6, 1.0, "io")])
-flash = Track([(FILL - 0.28, 0.0), (FILL + 0.15, 1.0, "in")])
+# warm-white flash: starts as the glass passes ~half the frame width, full at the whoosh peak (~FILL)
+flash = Track([(FILL - 0.45, 0.0), (FILL + 0.02, 1.0, "io")])
+# the light inside the glass swells first, so the little figure standing in the window dissolves into
+# warm light while it is still small (it never reads as a big cut-out shape)
+glass_wash = Track([(FILL - 0.42, 0.0), (FILL - 0.16, 1.0, "io")])
 
 
 def _warm_bloom(canvas, wx, wy, z, t):
-    """Soft warm light from the window that blooms toward the camera as we approach."""
-    k = smoothstep(remap(math.log(max(z, 1.0)), math.log(2.5), math.log(70.0)))
+    """Soft warm light from the window that blooms toward the camera as we approach (screen blend, so the
+    pearl hull around the window keeps its colour and the window reads as a warm jewel)."""
+    k = smoothstep(remap(math.log(max(z, 1.0)), math.log(2.5), math.log(40.0)))
     if k <= 0.003:
         return
-    r = 60.0 + 900.0 * k
-    sh = skia.GradientShader.MakeRadial((wx, wy), r, [skia.Color(255, 226, 170, int(150 * k)),
-                                                      skia.Color(255, 200, 130, int(55 * k)),
-                                                      skia.Color(255, 190, 120, 0)], [0.0, 0.45, 1.0])
+    r = 50.0 + 360.0 * k
+    sh = skia.GradientShader.MakeRadial((wx, wy), r, [skia.Color(255, 200, 128, int(105 * k)),
+                                                      skia.Color(255, 184, 104, int(40 * k)),
+                                                      skia.Color(255, 190, 120, 0)], [0.0, 0.42, 1.0])
     p = skia.Paint(AntiAlias=False)
     p.setShader(sh)
+    p.setBlendMode(skia.BlendMode.kScreen)
     canvas.drawRect(skia.Rect(max(0.0, wx - r), max(0.0, wy - r), min(W, wx + r), min(H, wy + r)), p)
+
+
+_ARCH = None
+
+
+def _hero_arch():
+    """The hero window's glass (arched) in ship-local units (same numbers env draws it with)."""
+    global _ARCH
+    if _ARCH is None:
+        hx, hy, hwd, hht = getattr(env, "_HERO_WIN", (-2.0, -152.0, 6.4, 8.6))
+        rr = hwd / 2
+        top = hy - hht / 2
+        p = skia.Path()
+        p.moveTo(hx - rr, hy + hht / 2)
+        p.lineTo(hx - rr, top + rr)
+        p.arcTo(skia.Rect(hx - rr, top, hx + rr, top + 2 * rr), 180, 180, False)
+        p.lineTo(hx + rr, hy + hht / 2)
+        p.close()
+        _ARCH = (p, (hx, hy, hwd, hht))
+    return _ARCH
+
+
+def _glass_light(canvas, x, y, S, ang, amt):
+    """Warm light swelling inside the hero window's glass (drawn in the ship's local frame)."""
+    if amt <= 0.003:
+        return
+    path, (hx, hy, hwd, hht) = _hero_arch()
+    canvas.save()
+    canvas.translate(x, y)
+    if ang:
+        canvas.rotate(ang)
+    canvas.scale(S, S)
+    canvas.clipPath(path, skia.ClipOp.kIntersect, True)
+    top = hy - hht / 2
+    # glowing from the upper glass (where the push is heading) down over the figure
+    sh = skia.GradientShader.MakeRadial((hx + 0.4, top + 2.4), hht * 0.95,
+                                        [skia.Color(255, 250, 236), skia.Color(255, 238, 205), skia.Color(255, 214, 160)],
+                                        [0.0, 0.55, 1.0])
+    p = skia.Paint(AntiAlias=True)
+    p.setShader(sh)
+    p.setAlphaf(clamp(amt))
+    canvas.drawRect(skia.Rect(hx - hwd, top - 1, hx + hwd, hy + hht), p)
+    canvas.restore()
 
 
 # =========================================================================== render
 _ONSETS = None
+GLINT_LIFE = 2.1
+# left flank of the hull -> just right of the nose -> where the title hung (screen px; the ship is settling
+# around x 340, nose y ~460 -> 400 while these play)
+GLINT_POS = ((206.0, 600.0), (478.0, 452.0), (356.0, 284.0))
+GLINT_COLS = ("amber_soft", "teal_glow", "#E6DAFF")
 
 
 def _onsets():
     global _ONSETS
     if _ONSETS is None:
-        _ONSETS = [o for o in music_onsets("opening") if T0 <= o < DIVE + 1.0]
+        _ONSETS = [o for o in music_onsets("opening") if T0 <= o < DIVE][:3]
     return _ONSETS
 
 
@@ -154,25 +208,32 @@ def render(canvas, t):
     # ---- space: stars drift down (camera travelling up with the ship); the dive pushes the layers out
     sz = z ** 0.32
     env.draw_space(canvas, t, drift=1.0, brightness=space_bright(t), zoom=sz)
-    # ---- celesta notes of the opening cue: a few soft glints in the sky above the ship
-    a_sp = space_bright(t) * (1.0 - smoothstep(remap(t, DIVE, DIVE + 0.8)))
-    if a_sp > 0.01:
-        fx.draw_note_sparkles(canvas, t, _onsets(), area=(70, 150, 650, 640), seed=3, life=1.9,
-                              colors=("teal_glow", "amber_soft", "#D9C8FF"), alpha=0.55 * a_sp, size=0.75)
     # ---- the Meridian
     if t >= GLIDE_IN - 0.05:
-        # up close the pearl hull would read as a white glare: hold it down a touch (cool tint) while
-        # it fills the frame, so the warm window stays the brightest thing; back to full by the flash
+        # up close the pearl hull would read as a flat white glare: hold it down a hair while it fills the
+        # frame (no tint - it stays pearl), so the warm window stays the brightest thing
         lz = math.log(max(z, 1.0))
         k = smoothstep(remap(lz, math.log(4.0), math.log(14.0))) * (1.0 - smoothstep(remap(lz, math.log(30.0), math.log(90.0))))
         if k > 0.01:
-            with Layer(canvas, cf=light_filter(1.0 - 0.15 * k, (60, 70, 110), 0.10 * k)):
+            with Layer(canvas, cf=light_filter(1.0 - 0.07 * k)):
                 env.draw_ship(canvas, t, x, y, S, ang, glow=1.0)
         else:
             env.draw_ship(canvas, t, x, y, S, ang, glow=1.0)
+        if t > DIVE:
+            _glass_light(canvas, x, y, S, ang, glass_wash(t))
     # ---- warm light pouring out of the window as we close in
     if t > DIVE:
         _warm_bloom(canvas, wx, wy, z, t)
+    # ---- the celesta's first three notes (A-D-F#, rising): three glints climbing the sky past the ship's
+    # nose to where the title was
+    a_sp = space_bright(t) * (1.0 - smoothstep(remap(t, DIVE, DIVE + 0.8)))
+    if a_sp > 0.01:
+        for i, o in enumerate(_onsets()):
+            if o - 0.05 <= t < o + GLINT_LIFE:
+                gx, gy = GLINT_POS[i % len(GLINT_POS)]
+                fx.draw_note_sparkles(canvas, t, [o], area=(gx - 4, gy - 4, gx + 4, gy + 4), seed=3 + i,
+                                      life=GLINT_LIFE, colors=(GLINT_COLS[i % len(GLINT_COLS)],),
+                                      alpha=0.8 * a_sp, size=1.3)
     # ---- soft vignette for depth while we are out in space (lifts as the hull fills the frame)
     vg = 0.38 * (1.0 - smoothstep(remap(t, DIVE + 1.0, DIVE + 2.2)))
     if vg > 0.003:

@@ -8,22 +8,23 @@ smile; the cathedral pull-back; sparks fall like snow and a last mote goes out i
 Every time is derived from named beats (core.beat / line_start / scene_span) or from the symphony's own
 music data (envelopes.json downbeats / beats / onsets). render(canvas, t) is a pure function of t.
 
-Shot list (absolute times are only for orientation -- see _shots()):
-  two       sym_quill_raise -> 1st note       TWO-SHOT: Quill lifts his hand, lights dim
-  rae_med   1st note -> sym_theme1           MEDIUM Rae: note motes, smirk melts, eyes lift
-  wide_rib  sym_theme1 -> bar 5               WIDE push: ribbons wake up, the mug lowers
-  rae_cu1   bar 5 -> bar 6                    CLOSE Rae: brows lift, lips part, pupils wide
-  mem_med   bar 6 -> bar 9                    MEDIUM-WIDE: memory bubbles rise around her, "...oh", eyes glisten
-  quill_cu  bar 9 (+2.2 s)                    CLOSE Quill: watching, ribbon light across his face, head tilt
-  rae_cu2   -> sym_build                      CLOSE Rae: tears welled, memories drift past
-  window    sym_build -> bar 13               WIDE: the stars swirl into a galaxy, ribbons intensify
-  kneel     bar 13 -> sym_grand_pause         MEDIUM-WIDE: mug onto the bench, slides to her knees
-  pause     sym_grand_pause -> sym_climax     CLOSE Rae: eyes wide and wet, ribbons frozen
-  burst     sym_climax -> sym_tear_roll       WIDE: the BURST (blown back), galaxy blazing, all memories glow
-  tear      sym_tear_roll -> sym_final_chord  CLOSE Rae: one tear, trembling smile; from sym_peak a slow pull
-                                              back to a cathedral of light
-  coda      sym_final_chord -> end            DISSOLVE to a medium two-shot: sparks fall like snow, Quill lowers
-                                              his hand; slow push to Rae: the last mote goes out
+Shot list (absolute times only for orientation -- see _shots()); hard cuts only, all on beats:
+  two       sym_quill_raise -> 1st note        TWO-SHOT: Quill lifts his hand, the lights dim
+  rae_med   1st note -> sym_theme1             MEDIUM Rae: each intro note sends a mote from his palm to her
+  wide_rib  sym_theme1 -> bar 5                WIDE push: the ribbons wake; the mug lowers to her lap
+  rae_cu1   bar 5 -> bar 6                     MEDIUM CLOSE Rae: brows lift, lips part, pupils wide
+  mem_med   bar 6 -> beat before bar 9         MEDIUM-WIDE two-shot: six memories rise around her; "...oh"; tears well
+  quill_cu  -> bar 9                           CLOSE Quill watching her, ribbon light across his face
+  rae_cu2   bar 9 -> sym_build                 MEDIUM CLOSE Rae: welled tears; the sunset memory beside her; a smile
+  build     sym_build -> sym_grand_pause       ONE TAKE: wide on the galaxy forming, a slow push-in while she sets the
+                                               mug on the bench and slides to her knees
+  pause     sym_grand_pause -> sym_climax      CLOSE Rae: eyes wide and wet, everything holds its breath
+  burst     sym_climax -> sym_tear_roll        WIDE: the BURST, the galaxy blazing, the memories glow in an arch
+  tear      sym_tear_roll -> sym_celesta_echo  CLOSE Rae: one tear, a trembling smile; from sym_peak one pull-back to
+                                               the cathedral wide; on the final chord a drift in to the two-shot while
+                                               the ribbons fall as sparks and Quill lowers his hand
+  last      sym_celesta_echo -> end            MEDIUM CLOSE Rae: the last mote drifts down in front of her face and
+                                               goes out (ends exactly on the framing S3 opens with)
 """
 from __future__ import annotations
 
@@ -38,8 +39,8 @@ import skia
 from anim import char_quill as Q
 from anim import char_rae as R
 from anim import env, fx
-from anim.core import (Camera, Layer, Track, beat, breathe, clamp, ease_out, glow, lerp, light_filter, line_end,
-                       line_start, mouth, music_env, music_onsets, noise1, scene_span, smoothstep)
+from anim.core import (Camera, Layer, Track, beat, breathe, clamp, ease_in_out, ease_out, glow, lerp, light_filter,
+                       line_end, line_start, mouth, music_env, music_onsets, noise1, scene_span, smoothstep)
 from anim.rig import ArmPose, Pose
 from config import MUSIC_ENV, H, W
 
@@ -83,6 +84,14 @@ def _db(local, tol=0.75):
     return best if abs(best - guess) <= tol else guess
 
 
+def _bt(local, tol=0.4):
+    """Music beat nearest to sym_music_start + local seconds (falls back to that time)."""
+    T = _T()
+    guess = T.music + local
+    best = min(T.beats, key=lambda d: abs(d - guess), default=guess)
+    return best if abs(best - guess) <= tol else guess
+
+
 # =========================================================================== small helpers
 
 
@@ -96,22 +105,31 @@ def _rms(t, key="rms"):
     return sum(music_env("symphony", t - k * 0.05, key) for k in range(8)) / 8.0
 
 
-def _gaze(keys):
-    """Gaze track from [(t, (lx, ly)[, dur[, ease]])]: quick saccades (0.09 s) by default, longer
-    eased pursuits when a duration is given. Holds between keys."""
-    ks = []
-    prev = None
-    for k in keys:
-        tt, v = k[0], k[1]
-        dur = k[2] if len(k) > 2 else 0.09
-        ease = k[3] if len(k) > 3 else ("out" if dur <= 0.12 else "io")
-        if prev is None:
-            ks.append((tt, v))
+def _gaze_eval(t, sched, target_fn):
+    """Gaze from a schedule [(t0, target[, dur])]: a target is (lx, ly) or a name that target_fn(name, t)
+    resolves to (lx, ly) -- moving targets (a mote, a memory bubble) are followed continuously. Each entry
+    blends in from the previous one over `dur` (default 0.1 s: a saccade, eased out; longer: an eased
+    pursuit). Entries are spaced further apart than their blend times."""
+    i = 0
+    for k in range(len(sched)):
+        if sched[k][0] <= t:
+            i = k
         else:
-            ks.append((tt, prev, "lin"))
-            ks.append((tt + dur, v, ease))
-        prev = v
-    return Track(ks)
+            break
+
+    def val(tg):
+        return tg if isinstance(tg, tuple) else target_fn(tg, t)
+
+    cur = val(sched[i][1])
+    if i == 0 or t < sched[0][0]:
+        return cur
+    dur = sched[i][2] if len(sched[i]) > 2 else 0.1
+    x = (t - sched[i][0]) / dur
+    if x >= 1.0:
+        return cur
+    prev = val(sched[i - 1][1])
+    e = ease_out(x) if dur <= 0.13 else ease_in_out(x)
+    return (lerp(prev[0], cur[0], e), lerp(prev[1], cur[1], e))
 
 
 def _blinks(t, times, base=0.17):
@@ -187,49 +205,52 @@ def _ribbon_col(t, period=9.0, phase=0.0):
 def _light_tracks():
     T = _T()
     D, F1 = T.dim, T.first_note
+    CL = T.climax
     d = {}
-    d["room"] = Track([(D, 1.0), (D + 1.5, 0.25, "io")])
+    # the room: dims for the symphony; at the BURST it briefly lifts (the room floods with light)
+    d["room"] = Track([(D, 1.0), (D + 1.5, 0.25, "io"), (CL - 0.02, 0.25), (CL + 0.4, 0.4, "out"),
+                       (CL + 2.8, 0.25, "io")])
     d["dark"] = Track([(D, 0.0), (D + 1.5, 1.0, "io")])
-    # window: brightens a touch with the dim, breathes, blazes at the climax, settles on the final chord
-    d["wb"] = Track([(D, 1.0), (D + 1.5, 1.12), (T.build, 1.15), (T.gp - 0.4, 1.32), (T.gp + 0.2, 1.0),
-                     (T.climax - 0.05, 1.02), (T.climax + 0.35, 2.05, "out"), (T.tear, 1.65), (T.peak, 1.6),
-                     (T.peak + 1.6, 1.85), (T.final, 1.6), (T.final + 3.2, 1.05), (T.end, 1.0)])
-    d["swirl"] = Track([(T.build, 0.0), (T.kneel + 3.5, 0.82, "io"), (T.climax - 0.2, 0.93), (T.climax + 1.2, 1.0),
+    # window: brightens a touch with the dim, breathes, blazes at the climax (kept below clipping), settles
+    d["wb"] = Track([(D, 1.0), (D + 1.5, 1.12), (T.build, 1.15), (T.gp - 0.4, 1.3), (T.gp + 0.2, 1.0),
+                     (CL - 0.05, 1.02), (CL + 0.35, 1.62, "out"), (T.tear, 1.26), (T.peak, 1.24),
+                     (T.peak + 1.6, 1.36), (T.final, 1.28), (T.final + 3.2, 1.05), (T.end, 1.0)])
+    d["swirl"] = Track([(T.build, 0.0), (T.kneel + 3.5, 0.82, "io"), (CL - 0.2, 0.93), (CL + 1.2, 1.0),
                         (T.final + 3.0, 1.0), (T.end, 0.4, "io")])
     d["rib"] = Track([(T.theme - 0.3, 0.0), (T.theme + 2.8, 0.5, "io"), (T.mug + 2, 0.58), (T.mem, 0.62),
-                      (T.build, 0.7), (T.gp - 0.3, 0.92), (T.climax, 0.95), (T.climax + 0.3, 1.0),
+                      (T.build, 0.7), (T.gp - 0.3, 0.92), (CL, 0.95), (CL + 0.3, 1.0),
                       (T.final, 1.0), (T.final + 2.8, 0.0, "io")])
-    d["burst"] = Track([(T.climax - 0.02, 0.0), (T.climax + 0.55, 1.0, "out"), (T.tear, 0.35),
-                        (T.peak, 0.3), (T.peak + 1.5, 0.55), (T.peak + 4.5, 0.35), (T.final, 0.3),
+    d["burst"] = Track([(CL - 0.02, 0.0), (CL + 0.6, 0.72, "out"), (T.tear, 0.3),
+                        (T.peak, 0.26), (T.peak + 1.5, 0.45), (T.peak + 4.5, 0.3), (T.final, 0.26),
                         (T.final + 2.0, 0.0)])
-    d["freeze"] = Track([(T.gp - 0.45, 0.0), (T.gp + 0.1, 1.0, "out"), (T.climax - 0.18, 1.0),
-                         (T.climax + 0.02, 0.0, "in")])
-    d["lburst"] = Track([(T.climax - 0.02, 0.0), (T.climax + 0.3, 0.78, "out"), (T.climax + 3.2, 0.42),
-                         (T.peak, 0.38), (T.peak + 1.6, 0.52), (T.final, 0.36), (T.final + 3.0, 0.0)])
-    d["flash"] = Track([(T.climax - 0.01, 0.0), (T.climax + 0.04, 0.07, "out"), (T.climax + 0.45, 0.0, "io")])
-    d["vign"] = Track([(D, 0.22), (D + 1.5, 0.45), (T.climax, 0.5), (T.climax + 0.4, 0.22), (T.peak, 0.3),
+    d["freeze"] = Track([(T.gp - 0.45, 0.0), (T.gp + 0.1, 1.0, "out"), (CL - 0.18, 1.0),
+                         (CL + 0.02, 0.0, "in")])
+    d["lburst"] = Track([(CL - 0.02, 0.0), (CL + 0.3, 0.64, "out"), (CL + 3.2, 0.34), (T.peak, 0.3),
+                         (T.peak + 1.6, 0.4), (T.final, 0.3), (T.final + 3.0, 0.0)])
+    d["flash"] = Track([(CL - 0.01, 0.0), (CL + 0.04, 0.06, "out"), (CL + 0.45, 0.0, "io")])
+    d["vign"] = Track([(D, 0.22), (D + 1.5, 0.45), (CL, 0.5), (CL + 0.4, 0.22), (T.peak, 0.3),
                        (T.final + 2, 0.45), (T.end, 0.55)])
     d["sparks"] = Track([(T.final + 0.3, 0.0), (T.final + 3.0, 1.0, "io"), (T.celesta + 1.0, 0.75),
                          (T.end, 0.45)])
-    d["motes"] = Track([(T.theme, 0.55), (T.build, 0.7), (T.gp, 0.95), (T.climax, 0.95), (T.climax + 0.6, 1.5),
+    d["motes"] = Track([(T.theme, 0.55), (T.build, 0.7), (T.gp, 0.95), (CL, 0.95), (CL + 0.6, 1.5),
                         (T.final, 1.2), (T.final + 3, 0.6), (T.end, 0.35)])
-    d["sparkle_a"] = Track([(F1 - 1, 1.0), (T.climax - 0.5, 1.0), (T.climax + 0.5, 0.55), (T.final, 0.6),
+    d["sparkle_a"] = Track([(F1 - 1, 1.0), (CL - 0.5, 1.0), (CL + 0.5, 0.55), (T.final, 0.6),
                             (T.final + 2, 0.9)])
     # characters: low light, deep-blue tint, rim lit by the nearest light
-    d["c_light"] = Track([(D, 1.0), (D + 1.5, 0.33, "io"), (T.climax - 0.05, 0.33), (T.climax + 0.3, 0.52, "out"),
+    d["c_light"] = Track([(D, 1.0), (D + 1.5, 0.33, "io"), (CL - 0.05, 0.33), (CL + 0.3, 0.52, "out"),
                           (T.tear, 0.4), (T.peak + 1.5, 0.44), (T.final, 0.4), (T.final + 3, 0.3)])
-    d["c_tint"] = Track([(D, 0.0), (D + 1.5, 0.36, "io"), (T.climax, 0.36), (T.climax + 0.3, 0.2), (T.final, 0.22),
+    d["c_tint"] = Track([(D, 0.0), (D + 1.5, 0.36, "io"), (CL, 0.36), (CL + 0.3, 0.2), (T.final, 0.22),
                          (T.final + 3, 0.36)])
-    d["c_rim"] = Track([(D + 0.3, 0.06), (D + 1.6, 0.38, "io"), (T.build, 0.4), (T.gp, 0.55), (T.climax, 0.55),
-                        (T.climax + 0.3, 1.0, "out"), (T.tear, 0.75), (T.final, 0.75), (T.final + 3, 0.42)])
-    d["c_warm"] = Track([(T.build, 0.0), (T.gp, 0.25), (T.climax, 0.3), (T.climax + 0.3, 1.0), (T.final, 0.85),
+    d["c_rim"] = Track([(D + 0.3, 0.06), (D + 1.6, 0.38, "io"), (T.build, 0.4), (T.gp, 0.55), (CL, 0.55),
+                        (CL + 0.3, 1.0, "out"), (T.tear, 0.75), (T.final, 0.75), (T.final + 3, 0.42)])
+    d["c_warm"] = Track([(T.build, 0.0), (T.gp, 0.25), (CL, 0.3), (CL + 0.3, 1.0), (T.final, 0.85),
                          (T.final + 3.5, 0.15)])
     return d
 
 
 def _freeze_clock(t):
-    """Time with the grand-pause freeze taken out (t minus the integral of `freeze`), so drifting dust
-    slows to a hold and resumes without jumping."""
+    """Time with the grand-pause freeze taken out (t minus the integral of `freeze`): everything that runs on
+    it (dust, ribbons, the window) eases to a hold and resumes without a jump."""
     T = _T()
     t0 = T.gp - 0.5
     if t <= t0:
@@ -242,6 +263,15 @@ def _freeze_clock(t):
     return t - held
 
 
+def _rib_clock(t, burst):
+    """Ribbon time. fx.draw_ribbons adds 2.6 * smoothstep(burst) to its clock; that is cancelled here and
+    replaced by a gentle surge after the climax, so the ribbons never run faster than ~1.8x (and the
+    music-driven jitter of `burst` does not jiggle them)."""
+    T = _T()
+    surge = 0.9 * smoothstep((t - T.climax) / 1.8)
+    return _freeze_clock(t) + surge - 2.6 * smoothstep(burst)
+
+
 def _levels(t):
     L = _light_tracks()
     T = _T()
@@ -252,7 +282,7 @@ def _levels(t):
     lv.room = L["room"](t)
     lv.dark = L["dark"](t)
     lv.swirl = L["swirl"](t)
-    breath = 0.10 * rms if t < T.climax else 0.22 * rms
+    breath = 0.10 * rms if t < T.climax else 0.18 * rms
     lv.wb = L["wb"](t) + breath * (1.0 - L["freeze"](t))
     lv.rib = L["rib"](t)
     lv.burst = L["burst"](t) * (0.85 + 0.3 * rms)
@@ -271,7 +301,8 @@ def _levels(t):
     rib_c = _ribbon_col(t, 9.0)
     base_rim_r = _mix(C_WIN, rib_c, 0.35 * smoothstep((t - T.theme) / 3.0))
     base_rim_r = _mix(base_rim_r, C_VIOLET, 0.35 * smoothstep((t - T.build) / 6.0))
-    base_rim_q = _mix(C_TEAL, rib_c, 0.3 * smoothstep((t - T.theme) / 3.0))
+    base_rim_q = _mix(C_WIN, C_TEAL, smoothstep((t - T.dim) / 1.5))
+    base_rim_q = _mix(base_rim_q, rib_c, 0.3 * smoothstep((t - T.theme) / 3.0))
     lv.rae = dict(light=cl + 0.04 * lv.dark, tint=TINT, tint_amt=L["c_tint"](t), rim=L["c_rim"](t) * (0.92 + 0.15 * rms),
                   rim_color=_mix(base_rim_r, C_WARM, warm))
     lv.quill = dict(light=cl, tint=TINT, tint_amt=L["c_tint"](t), rim=L["c_rim"](t) * (0.95 + 0.1 * rms),
@@ -286,10 +317,16 @@ SEAT_X = 230.0
 KNEEL_X = 255.0
 MUG_SPOT = (330.0, float(env.BENCH_SEAT_Y))     # BIBLE section 9: the mug rests on the bench here
 
-LAP_L = ArmPose(shoulder=3.0, elbow=46.0, wrist=8.0, hand="relaxed")
-BRACE_L = ArmPose(shoulder=-24.0, elbow=10.0, wrist=-14.0, hand="open")
-THIGH_L = ArmPose(shoulder=12.0, elbow=26.0, wrist=4.0, hand="relaxed")
-OPEN_L = ArmPose(shoulder=36.0, elbow=24.0, wrist=-10.0, hand="open", across=-0.3)
+# Far (left) arm. The rig's far-arm targeting is discontinuous for `across` between ~0.15 and ~0.27 (and its
+# draw layer flips at 0.25), so `across` is never animated through that band: it changes only on cuts
+# (two -> rae_med, tear -> last) and otherwise stays >= 0.35 (hand placed on her body, drawn over it).
+LAP_S1 = ArmPose(shoulder=15.0, elbow=55.0, wrist=0.0, hand="relaxed")             # S1's last far-arm pose
+LAP_L = ArmPose(shoulder=8.0, elbow=40.0, wrist=6.0, hand="relaxed", across=0.35)   # far hand on top of her knee
+HOLD_L = ArmPose(shoulder=20.0, elbow=80.0, wrist=6.0, hand="relaxed", across=0.45)  # holding her middle (the slide)
+HEART_L = ArmPose(shoulder=12.0, elbow=118.0, wrist=10.0, hand="open", across=0.58)  # crossed over the other: both
+#                                                                                      hands on her heart
+THIGH_L = ArmPose(shoulder=14.0, elbow=30.0, wrist=4.0, hand="relaxed", across=0.35)  # back down on her thigh
+THIGH_S3 = ArmPose(shoulder=12.0, elbow=26.0, wrist=4.0, hand="relaxed")              # = S3's first far-arm pose
 
 
 @lru_cache(maxsize=1)
@@ -300,71 +337,104 @@ def _rae_tracks():
                                                       T.tear, T.peak, T.final, T.celesta, T.end)
     d = {}
     # ---- the slide from the bench to her knees (KN .. KD)
-    d["place_t"] = KN + 2.1           # mug touches the bench
-    # rig limitation: both legs share one kneel value, so "one knee, then the other" is a two-stage drop
-    # (to the first knee, a weight shift, then down onto both) rather than truly separate legs
-    d["kneel"] = Track([(KN + 4.3, 0.0), (KN + 5.6, 0.74, "io"), (KN + 6.3, 0.77), (KN + 7.3, 0.93, "io"),
-                        (CL, 0.94), (KD, 1.0, "io")])
-    d["x"] = Track([(KN + 4.2, SEAT_X), (KN + 5.6, SEAT_X + 17.0, "io"), (KN + 6.3, SEAT_X + 18.0),
-                    (KN + 7.3, SEAT_X + 23.0, "io"), (CL, SEAT_X + 23.5), (KD, KNEEL_X, "io")])
+    d["place_t"] = KN + 2.1           # the mug touches the bench
+    d["mug_back_t"] = KN + 5.65       # the bench mug goes behind her: mid-slide, where nothing of her overlaps it
+    # rig limitation: both legs share one kneel value, so "one knee, then the other" is staged as a weight
+    # shift forward, a slow 2 s descent onto the first knee (a lean + tilt to that side), then a second
+    # small drop and a tilt back as the other knee comes down
+    d["kneel"] = Track([(KN + 4.4, 0.0), (KN + 6.4, 0.62, "io"), (KN + 6.62, 0.66, "out"), (KN + 7.25, 0.8, "io"),
+                        (CL + 0.15, 0.81), (KD, 1.0, "io")])
+    d["x"] = Track([(KN + 3.3, SEAT_X), (KN + 4.5, SEAT_X + 7.0, "io"), (KN + 6.4, SEAT_X + 18.0, "io"),
+                    (KN + 7.25, SEAT_X + 22.0, "io"), (CL, SEAT_X + 22.5), (KD, KNEEL_X, "io")])
     d["turn"] = Track([(KN + 4.0, 0.35), (KD, 0.3)])
-    d["lean"] = Track([(S, 2.0), (S + 1.2, 1.0), (F1 + 2.0, 0.5), (TH - 0.5, 2.0), (MG + 1.5, 3.0), (ME, 2.0), (OH - 0.3, 4.0),
-                       (BU, 2.0), (KN, 2.0), (KN + 0.6, 3.5), (KN + 2.1, 4.0), (KN + 2.8, 3.0),
-                       (KN + 4.1, 12.0), (KN + 5.2, 6.0, "io"), (KN + 6.2, 7.0), (KN + 7.2, 2.0),
-                       (GP, 1.0), (CL, 1.0), (CL + 0.5, -3.5, "out"), (KD + 0.6, 0.0), (E, 0.5)])
-    d["bounce"] = Track([(KN + 5.35, 0.0), (KN + 5.6, 4.5, "out"), (KN + 6.2, 0.0), (KN + 7.2, 0.0),
-                         (KN + 7.45, 3.0, "out"), (KN + 8.0, 0.0), (CL, 0.0), (CL + 0.3, 2.5, "out"),
+    d["lean"] = Track([(S, 2.0), (S + 1.2, 1.0), (F1 + 2.0, 0.5), (TH - 0.5, 2.0), (MG + 1.5, 3.0), (ME, 2.0),
+                       (OH - 0.3, 4.0), (BU, 2.0), (KN, 2.0), (KN + 0.6, 4.5), (KN + 2.1, 6.0), (KN + 2.8, 3.0),
+                       (KN + 3.4, 3.0), (KN + 4.5, 11.0, "io"), (KN + 5.6, 9.0), (KN + 6.4, 5.5),
+                       (KN + 6.58, 7.5, "out"), (KN + 7.3, 2.0), (GP, 1.0), (CL, 1.0), (CL + 0.5, -3.5, "out"),
+                       (KD + 0.6, 0.0), (E, 0.5)])
+    d["bounce"] = Track([(KN + 6.3, 0.0), (KN + 6.46, 3.2, "out"), (KN + 6.8, 0.6), (KN + 7.02, 0.6),
+                         (KN + 7.2, 2.6, "out"), (KN + 7.75, 0.0), (CL, 0.0), (CL + 0.3, 2.5, "out"),
                          (CL + 1.2, 0.0), (KD - 0.2, 0.0), (KD + 0.2, 1.5, "out"), (KD + 0.9, 0.0)])
-    d["shoulders"] = Track([(KN + 3.3, 0.0), (KN + 4.0, 0.22), (KN + 5.4, 0.05), (GP - 0.1, 0.0),
-                            (GP + 0.35, 0.22), (CL, 0.24), (CL + 0.7, 0.0, "out"), (E, 0.0)])
+    d["shoulders"] = Track([(KN + 3.2, 0.0), (KN + 4.3, 0.2), (KN + 6.3, 0.1), (KN + 6.5, 0.2, "out"),
+                            (KN + 7.5, 0.04), (GP - 0.1, 0.0), (GP + 0.35, 0.22), (CL, 0.24), (CL + 0.7, 0.0, "out"),
+                            (E, 0.0)])
     # small catches of breath while she cries through the smile (tear roll .. final chord)
     d["hitches"] = [TR + 0.95, TR + 2.55, PK + 0.4, PK + 2.9, PK + 5.6, FC + 1.6]
-    # ---- head
-    d["nod"] = Track([(S, 0.07), (S + 0.7, 0.08), (D + 0.3, 0.14), (F1, 0.1), (F1 + 2.5, 0.05), (TH - 0.6, 0.18),
-                      (MG, 0.12), (MG + 4.5, 0.2), (ME + 1.0, 0.1), (OH - 1.5, 0.18), (OH, 0.14), (GL, 0.08),
-                      (GL + 4.5, 0.12), (BU - 1.0, 0.24), (BU + 1.5, 0.36), (KN, 0.36), (KN + 0.35, -0.12),
-                      (KN + 2.2, -0.22), (KN + 2.7, 0.28), (KN + 4.5, 0.34), (KN + 6.0, 0.4), (GP, 0.44),
-                      (CL, 0.46), (CL + 0.7, 0.58, "out"), (TR, 0.56), (PK, 0.55), (PK + 5.0, 0.5), (FC, 0.42), (CE, 0.34)])
-    d["tilt"] = Track([(S, -3.0), (F1 + 2.3, -3.0), (TH - 0.6, 0.0), (MG, 2.0), (MG + 4.5, 4.0), (ME, 0.5),
+    # ---- head (looking up is carried by the nod; the gaze adds to it)
+    d["nod"] = Track([(S, 0.115), (S + 0.7, 0.1), (D + 0.3, 0.16), (F1, 0.12), (F1 + 2.5, 0.08), (TH - 0.6, 0.24),
+                      (MG, 0.18), (MG + 3.2, 0.3), (MG + 5.5, 0.32), (ME + 1.0, 0.12), (OH - 1.5, 0.16), (OH, 0.12),
+                      (GL, 0.06), (GL + 4.5, 0.08), (BU - 1.5, 0.22), (BU + 1.5, 0.36), (KN, 0.36),
+                      (KN + 0.35, -0.12), (KN + 2.2, -0.22), (KN + 2.7, 0.28), (KN + 4.5, 0.3), (KN + 6.0, 0.36),
+                      (GP, 0.42), (CL, 0.44), (CL + 0.7, 0.56, "out"), (TR, 0.54), (PK, 0.53), (PK + 5.0, 0.48),
+                      (FC, 0.42), (CE, 0.36)])
+    d["tilt"] = Track([(S, -3.8), (F1 + 2.3, -3.0), (TH - 0.6, 0.0), (MG, 2.0), (MG + 4.5, 4.0), (ME, 0.5),
                        (ME + 3.5, -3.0), (OH, 4.0), (GL, 6.0), (GL + 4.0, 3.0), (BU, 0.0), (KN + 4.0, 0.0),
-                       (KN + 5.7, 3.0), (KN + 6.4, -5.0), (KN + 7.4, -3.0), (GP, -3.0), (CL, 0.0), (TR, 4.0), (PK, 7.0), (FC, 4.0), (E, 3.0)])
-    # ---- gaze (screen space; Quill is up and to her right)
-    d["gaze"] = _gaze([
-        (S, (0.62, -0.35)), (S + 0.35, (0.55, -0.16), 0.5), (S + 0.9, (0.62, -0.38), 0.8),   # his hand rises
-        (D + 0.15, (-0.25, -0.45)), (D + 0.65, (0.3, -0.55)), (D + 1.15, (0.55, -0.24)),   # the room goes dark
-        (F1 + 0.12, (0.05, -0.42)), (F1 + 1.0, (0.25, -0.32), 0.5), (F1 + 2.2, (0.5, -0.16)),  # the sound -> him
-        (F1 + 3.6, (0.22, -0.34), 1.4), (F1 + 5.0, (0.06, -0.45), 1.2), (TH - 0.7, (0.14, -0.5), 0.8),
-        (TH + 0.5, (-0.32, -0.42)), (TH + 1.6, (0.08, -0.55), 1.0), (TH + 2.8, (0.35, -0.36), 0.8),
-        (MG + 0.3, (0.15, -0.3), 0.6), (MG + 2.0, (-0.1, -0.4), 1.4), (MG + 3.6, (0.05, -0.36)),
-        (MG + 4.7, (0.22, -0.44)), (MG + 5.8, (0.02, -0.38), 0.6),
-        (ME + 0.7, (-0.62, 0.22)), (ME + 1.6, (-0.6, -0.08), 1.2), (ME + 2.9, (-0.52, -0.36), 1.2),
-        (ME + 3.6, (0.55, 0.12)), (ME + 4.6, (0.5, -0.18), 1.2), (OH - 0.2, (0.45, -0.3), 0.8),
-        (OH + 1.0, (-0.55, -0.02)), (OH + 2.2, (-0.5, -0.3), 1.2),
-        (GL + 0.3, (0.45, 0.02)), (GL + 1.4, (0.42, -0.12), 1.0),
-        (GL + 3.4, (-0.4, -0.1)), (GL + 4.7, (0.4, -0.05)), (GL + 5.9, (0.42, -0.25), 1.0),
-        (BU - 1.0, (0.1, -0.5), 0.8),
-        (BU + 0.4, (0.05, -0.66), 1.0), (BU + 2.2, (-0.1, -0.7), 1.6), (BU + 4.2, (0.1, -0.68), 1.6),
-        (KN - 0.6, (0.0, -0.72), 1.0),
-        (KN + 0.25, (0.32, 0.62)), (KN + 1.5, (0.48, 0.78), 0.6),             # the mug, the bench
-        (KN + 2.6, (0.12, -0.55)), (KN + 3.6, (0.0, -0.7), 1.0),
-        (GP - 0.4, (0.0, -0.62), 0.3),
-        (CL + 0.9, (-0.12, -0.62), 0.4), (CL + 2.4, (0.1, -0.66), 0.8),
-        (TR, (0.05, -0.72), 0.4), (TR + 2.2, (0.0, -0.66), 1.4), (TR + 3.6, (0.15, -0.7), 1.0),
-        (PK + 1.0, (-0.1, -0.6), 1.6), (PK + 3.0, (0.2, -0.6), 1.8), (PK + 5.0, (0.0, -0.66), 1.6),
-        (FC - 1.6, (0.6, -0.3)), (FC - 0.4, (0.25, -0.5), 0.8),              # a glance to Quill, back up
-        (FC + 0.4, (0.1, -0.22), 2.0), (FC + 2.8, (0.15, -0.38), 1.2),
-    ])
-    d["blinks"] = [(D + 0.08, 0.2), (F1 + 0.15, 0.18), F1 + 1.9, F1 + 4.4, TH + 0.35, TH + 2.5,
-                   (MG + 0.5, 0.3), MG + 2.6, MG + 5.4, ME + 0.6, ME + 3.5, (OH - 0.45, 0.32), OH + 1.85,
-                   (GL + 0.5, 0.42), GL + 4.0, GL + 6.3, BU + 0.9, BU + 3.7, BU + 6.0, (KN + 0.22, 0.2),
-                   KN + 2.55, (KN + 4.4, 0.24), KN + 6.1, CL + 2.5, (TR + 0.15, 0.36), TR + 3.0,
-                   PK + 2.1, PK + 4.8, PK + 7.0, (FC + 1.3, 0.3), (CE - 0.3, 0.3)]
+                       (KN + 6.3, 2.0), (KN + 6.5, 5.0, "out"), (KN + 7.0, 1.0), (KN + 7.25, -4.0, "out"),
+                       (KN + 7.6, -3.0), (GP, -3.0), (CL, 0.0), (TR, 4.0), (PK, 7.0), (FC, 4.0), (E, 3.0)])
+    # ---- gaze (screen space; Quill is up and to her right). |look_x| stays >= 0.3 on every hold so she
+    #      never stares into the lens; geometric targets are followed (motes, memory bubbles, his hand)
+    d["gaze"] = [
+        (S, (0.62, -0.35)),                        # S1 handoff: on Quill
+        (S + 0.3, (0.58, -0.22), 0.4),             # his hand comes out from behind his back
+        (S + 0.75, (-0.5, -0.5)),                  # the lights go down: a dart up-left
+        (S + 1.25, (0.34, -0.64)),                 # ... up at the room
+        (S + 1.7, (0.6, -0.42), 0.3),              # back to his raised hand
+        (F1 + 0.1, "mote0", 0.12),                 # the first note: a mote leaves his palm; she follows it in
+        (F1 + 3.1, (0.6, -0.3), 0.3),              # glance at him: is that you?
+        (F1 + 3.9, (-0.52, -0.3)),                 # a mote on her left
+        (F1 + 4.8, (0.4, -0.55), 0.5),
+        (TH - 0.8, (0.36, -0.7), 0.8),             # eyes lift toward the sound
+        (TH + 0.5, (-0.46, -0.48)),                # a ribbon wakes on her left
+        (TH + 1.6, (0.4, -0.62), 0.9),
+        (TH + 2.8, (0.52, -0.4), 0.8),
+        (MG + 0.3, (0.42, -0.36), 0.6),
+        (MG + 2.0, (-0.44, -0.5)),
+        (MG + 3.2, (0.36, -0.68), 0.6),
+        (MG + 4.6, (0.48, -0.52), 1.0),            # wonder: the eyes wander up
+        (MG + 5.7, (0.34, -0.74), 1.2),
+        (ME + 0.35, "car_window"),                 # the memories: she follows each one
+        (ME + 3.0, (0.62, -0.42)),                 # a glance at Quill
+        (ME + 3.65, "hands"),                      # ... "oh"
+        (OH + 1.1, "dog_door"),
+        (OH + 2.5, "kitchen_dawn"),
+        (GL + 1.3, "friends_table"),
+        (GL + 3.75, "sea_sunset"),
+        (GL + 6.8, (0.36, -0.68), 0.7),            # looks up as the build approaches
+        (BU + 1.0, (0.4, -0.72), 1.0),
+        (BU + 2.4, (-0.4, -0.62)),
+        (BU + 3.3, (0.38, -0.7), 0.5),
+        (BU + 5.0, (0.46, -0.6), 1.2),
+        (KN - 0.6, (0.34, -0.72), 0.6),
+        (KN + 0.25, (0.36, 0.62)),                 # the mug ...
+        (KN + 1.5, (0.5, 0.8), 0.6),               # ... the bench
+        (KN + 2.6, (0.38, -0.6)),
+        (KN + 3.6, (0.34, -0.72), 1.0),
+        (GP - 0.4, (0.33, -0.66), 0.3),
+        (CL + 0.9, (-0.42, -0.6)),
+        (CL + 2.4, (0.38, -0.66), 0.5),
+        (TR, (0.34, -0.72), 0.4),
+        (TR + 2.2, (0.38, -0.64), 1.3),
+        (TR + 3.6, (0.44, -0.7), 1.0),
+        (PK + 1.0, (-0.4, -0.6)),
+        (PK + 3.0, (0.42, -0.6)),
+        (PK + 5.0, (0.36, -0.66), 1.0),
+        (FC - 1.6, (0.6, -0.3)),                   # a glance at Quill ...
+        (FC - 0.4, (0.4, -0.5), 0.8),
+        (FC + 0.6, "qhand", 0.3),                  # ... she watches his hand come down
+        (FC + 3.4, (0.42, -0.34), 0.5),
+        (CE + 0.15, "final", 0.25),                # the last mote
+    ]
+    d["blinks"] = [(D + 0.37, 0.2), (F1 + 0.15, 0.18), F1 + 1.9, F1 + 3.85, TH + 0.42, TH + 2.5, (MG + 0.5, 0.3),
+                   MG + 1.95, MG + 5.4, ME + 0.3, ME + 3.6, (OH - 0.45, 0.32), OH + 1.05, (GL + 0.5, 0.42),
+                   GL + 2.6, GL + 3.7, GL + 5.0, GL + 6.75, BU + 0.9, BU + 2.35, BU + 4.6, BU + 6.3,
+                   (KN + 0.22, 0.2), KN + 2.55, (KN + 4.4, 0.24), KN + 6.1, CL + 2.5, (TR + 0.15, 0.36), TR + 3.0,
+                   PK + 0.95, PK + 2.95, PK + 4.8, PK + 7.0, (FC + 1.3, 0.3), (CE - 0.3, 0.3), (E - 0.55, 0.34)]
     # ---- eyelids / brows
     d["lid"] = Track([(S, 0.72), (D, 0.74), (D + 0.12, 0.88, "out"), (F1 - 0.3, 0.8), (F1 + 2.4, 0.78),
                       (TH - 0.6, 0.93), (MG, 0.95), (MG + 1.0, 0.97), (GL, 0.94), (GL + 2.2, 0.86), (BU, 0.9),
                       (KN, 0.9), (KN + 0.3, 0.8), (KN + 2.4, 0.8), (KN + 2.8, 0.93), (GP - 0.3, 0.95),
-                      (GP + 0.12, 1.0, "out"), (CL + 1.2, 1.0), (CL + 2.5, 0.94), (TR, 0.92), (TR + 2.0, 0.88), (PK, 0.88),
-                      (FC, 0.82), (CE, 0.82), (E, 0.8)])
+                      (GP + 0.12, 1.0, "out"), (CL + 1.2, 1.0), (CL + 2.5, 0.94), (TR, 0.92), (TR + 2.0, 0.88),
+                      (PK, 0.88), (FC, 0.82), (CE, 0.84), (E, 0.8)])
     d["wide"] = Track([(D, 0.0), (D + 0.12, 0.18, "out"), (D + 0.9, 0.0), (GP - 0.1, 0.0), (GP + 0.16, 0.48, "out"),
                        (CL, 0.5), (CL + 0.12, 0.62, "out"), (CL + 1.4, 0.15), (TR, 0.0)])
     d["brow_raise"] = Track([(S, 0.1), (S + 0.6, 0.22), (D, 0.24), (D + 0.15, 0.48, "out"), (D + 1.2, 0.15),
@@ -376,19 +446,21 @@ def _rae_tracks():
     d["worry"] = Track([(S, 0.0), (F1 + 4.0, 0.1), (MG, 0.25), (ME, 0.35), (OH - 0.3, 0.6), (GL, 0.72),
                         (GL + 3.0, 0.78), (BU, 0.6), (KN + 2.6, 0.7), (KN + 5.0, 0.85), (GP, 0.72), (CL, 0.55),
                         (TR, 0.8), (PK, 0.72), (FC, 0.62), (E, 0.6)])
-    d["furrow"] = Track([(S, 0.22), (F1 + 2.4, 0.2), (F1 + 4.8, 0.0)])
+    d["furrow"] = Track([(S, 0.2), (F1 + 2.4, 0.2), (F1 + 4.8, 0.0)])
     # ---- mouth
     d["smirk"] = Track([(S, 0.7), (S + 0.5, 0.74), (D, 0.72), (D + 0.3, 0.55), (F1, 0.62), (F1 + 2.2, 0.62),
                         (TH - 0.6, 0.05), (MG, 0.0)])
     d["smile"] = Track([(S, 0.1), (F1 + 2.4, 0.08), (TH - 0.5, 0.0), (ME + 0.9, 0.0), (ME + 1.8, 0.14),
                         (ME + 3.6, 0.1), (OH - 0.6, 0.0), (OH + 0.6, -0.05), (GL, -0.08), (GL + 2.5, -0.16),
-                        (GL + 4.6, -0.12), (GL + 5.6, 0.12), (GL + 7.0, 0.08), (BU, -0.02), (GP, 0.0), (CL + 0.8, 0.08), (TR + 0.5, 0.12), (TR + 2.0, 0.42),
-                        (PK, 0.4), (PK + 5.0, 0.34), (FC, 0.26), (E, 0.16)])
+                        (GL + 4.9, -0.12), (GL + 5.9, 0.16), (GL + 7.2, 0.1), (BU, -0.02), (GP, 0.0), (CL + 0.8, 0.08),
+                        (TR + 0.5, 0.12), (TR + 2.0, 0.42), (PK, 0.4), (PK + 5.0, 0.34), (FC, 0.26), (E, 0.16)])
+    d["squint"] = Track([(S, 0.072), (S + 0.8, 0.04), (F1 + 2.4, 0.02), (TH, 0.0), (GL + 5.6, 0.0), (GL + 6.2, 0.08),
+                         (GL + 7.4, 0.02), (TR + 1.0, 0.0), (TR + 2.2, 0.2), (FC, 0.12), (E, 0.1)])
     d["open"] = Track([(S, 0.0), (F1 + 4.0, 0.02), (MG + 0.2, 0.0), (MG + 1.2, 0.12), (ME, 0.1), (OH - 0.9, 0.08),
                        (OH - 0.35, 0.16), (OH - 0.05, 0.05), (T.oh_e + 0.1, 0.05), (T.oh_e + 0.6, 0.12),
                        (GL, 0.06), (BU, 0.12), (KN + 3.4, 0.1), (KN + 4.0, 0.2), (KN + 5.6, 0.12), (GP - 0.2, 0.1),
                        (GP + 0.2, 0.2), (CL, 0.2), (CL + 0.12, 0.42, "out"), (CL + 0.9, 0.22), (TR, 0.08),
-                       (TR + 2.0, 0.06), (PK, 0.1), (FC, 0.08), (E, 0.1)])
+                       (TR + 2.0, 0.06), (PK, 0.1), (FC, 0.08), (CE + 0.5, 0.1), (CE + 1.6, 0.16), (E, 0.1)])
     d["round"] = Track([(S, 0.0), (MG, 0.0), (MG + 1.2, 0.2), (ME, 0.25), (GL, 0.1), (GP, 0.3), (CL, 0.35),
                         (CL + 1.5, 0.2), (TR, 0.0)])
     d["tremble"] = Track([(GL + 0.5, 0.0), (GL + 2.5, 0.22), (BU, 0.12), (KN + 3.0, 0.15), (KN + 5.0, 0.3),
@@ -403,7 +475,6 @@ def _rae_tracks():
                         (CL, 1.0), (FC, 0.85), (E, 0.75)])
     d["pupil"] = Track([(D, 1.0), (D + 1.5, 1.12), (MG + 0.3, 1.14), (MG + 2.0, 1.32), (CL, 1.32),
                         (CL + 0.3, 1.18, "out"), (TR, 1.28), (FC, 1.32)])
-    d["squint"] = Track([(TR + 1.0, 0.0), (TR + 2.2, 0.2), (FC, 0.12), (E, 0.1)])
     d["sniffle"] = Track([(GL, 0.0), (BU, 0.1), (TR, 0.2), (E, 0.26)])
     d["blush"] = Track([(ME, 0.0), (GL + 2, 0.14), (E, 0.2)])
     # ---- arms
@@ -416,9 +487,11 @@ def _rae_tracks():
     d["arm_r_post"] = ArmTrack([(KN + 2.45, None), (KN + 3.1, _arm(chest, shoulder=30.0, elbow=96.0, across=0.3)),
                                 (KN + 3.8, chest), (CL, chest), (CL + 0.4, _arm(chest, wrist=18.0, elbow=122.0)),
                                 (TR, _arm(chest, wrist=14.0)), (E, chest)])
-    d["arm_l"] = ArmTrack([(S, R.ARMS["rest"]), (F1 + 2.5, R.ARMS["rest"]), (F1 + 5.0, LAP_L), (KN + 3.0, LAP_L), (KN + 3.9, BRACE_L), (KN + 5.2, THIGH_L),
-                           (CL, THIGH_L), (CL + 0.8, OPEN_L, "out"), (CL + 3.0, OPEN_L),
-                           (TR + 0.5, ArmPose.blend(THIGH_L, OPEN_L, 0.25)), (FC + 1.0, THIGH_L)])
+    d["arm_l"] = ArmTrack([(S, LAP_S1), (F1 - 0.001, LAP_S1), (F1, LAP_L, "step"),       # (switch on the cut)
+                           (KN + 3.0, LAP_L), (KN + 4.1, HOLD_L), (KN + 6.5, HOLD_L), (KN + 7.3, HEART_L),
+                           (CL, HEART_L), (CL + 0.4, _arm(HEART_L, elbow=124.0, wrist=16.0), "out"), (TR, HEART_L),
+                           (FC + 0.6, HEART_L), (FC + 2.6, THIGH_L), (CE - 0.001, THIGH_L),
+                           (CE, THIGH_S3, "step")])                                   # (switch on the cut)
     return d
 
 
@@ -499,37 +572,53 @@ def _rae_arm_r(t):
         if u < 0.55:
             return ArmPose.blend(hold, lift, smoothstep(u / 0.55))
         return ArmPose.blend(lift, place, smoothstep((u - 0.55) / 0.45))
-    if t < KN + 2.45:
-        # set down; the hand lingers on the mug for a beat, fingers opening
-        return _arm(place, hand="open") if t > tp + 0.18 else place
+    # let go: the hand rests on the handle a beat, then lifts away and rises to her chest. The grip opens
+    # in stages while it moves (hold -> relaxed -> open) so the fist never snaps into a flat hand in place.
     post = d["arm_r_post"]
-    keys = post.keys
-    if t < keys[1][0]:
-        u = smoothstep((t - keys[0][0]) / (keys[1][0] - keys[0][0]))
-        return ArmPose.blend(_arm(place, hand="open"), keys[1][1], u)
+    k1 = post.keys[1]
+    # (without the mug the rig's "hold" hand is an open C, so the grip that stays on the handle is a "fist")
+    t_go = tp + 0.2
+    if t < t_go:
+        return _arm(place, hand="fist")
+    if t < k1[0]:
+        u = (t - t_go) / (k1[0] - t_go)
+        a = ArmPose.blend(place, k1[1], smoothstep(u))
+        return _arm(a, hand="fist" if u < 0.16 else ("relaxed" if u < 0.5 else k1[1].hand))
     return post(t)
 
 
-def _rae_look(t):
-    """Rae's gaze (look_x, look_y): keyed saccades/pursuits, plus geometric tracking of the first note
-    mote (from Quill's hand to her) and of the last mote (going out in front of her face)."""
+
+def _rae_target(name, t):
+    """Gaze (look_x, look_y) toward a moving thing (stage geometry relative to her face)."""
     T = _T()
-    d = _rae_tracks()
-    lx, ly = d["gaze"](t)
-    k0 = smoothstep((t - (T.first_note + 0.25)) / 0.35) * (1.0 - smoothstep((t - (T.first_note + 3.0)) / 0.4))
-    if k0 > 0.0:
-        m = _note_mote(0, t)
+    pos = None
+    ref = "seat"
+    sx, sy = 170.0, 150.0
+    if name == "mote0":
+        m = _note_mote(0, max(t, T.first_note + 0.02))
         if m is not None:
-            hx, hy = _rae_face_ref("seat")
-            lx = lerp(lx, clamp((m[0] - hx) / 170.0, -1, 1), k0)
-            ly = lerp(ly, clamp((m[1] - hy) / 150.0 - 0.05, -1, 1), k0)
-    mote = _final_mote(t)
-    if mote is not None:
-        hx, hy = _rae_face_ref("kneel")
-        k = smoothstep((t - T.celesta) / 0.6)
-        lx = lerp(lx, clamp((mote[0] - hx) / 150.0, -1, 1), k)
-        ly = lerp(ly, clamp((mote[1] - hy) / 120.0 - 0.1, -1, 1), k)
-    return lx, ly
+            pos = (m[0], m[1])
+    elif name == "qhand":
+        ref = "kneel"
+        qa = _quill_tracks()["arm_r"](t)
+        pos = Q.hand_pos(Pose(x=545.0, y=float(env.FLOOR_Y), facing=-1.0, turn=0.35, arm_r=qa), "r")
+    elif name == "final":
+        ref = "kneel"
+        m = _final_mote(min(t, T.end - 1.0))
+        if m is not None:
+            pos = (m[0], m[1])
+        sx, sy = 120.0, 110.0
+    else:
+        st = _mem1(_MEM_INDEX[name], t, clamp_age=True)
+        pos = (st[2], st[3])
+    if pos is None:
+        return (0.4, -0.6)
+    hx, hy = _rae_face_ref(ref)
+    return (clamp((pos[0] - hx) / sx, -1.0, 1.0), clamp((pos[1] - hy) / sy - 0.05, -1.0, 1.0))
+
+
+def _rae_look(t):
+    return _gaze_eval(t, _rae_tracks()["gaze"], _rae_target)
 
 
 def _rae_pose(t, lv) -> Pose:
@@ -545,15 +634,15 @@ def _rae_pose(t, lv) -> Pose:
     blink = _blinks(t, d["blinks"])
     lid = d["lid"](t) * blink
     mo, mr = mouth("rae", t)
-    nod = d["nod"](t) - 0.12 * gly + 0.025 * noise1(t * 0.5, 5)
-    if mote is not None:
-        nod -= 0.28 * smoothstep((t - T.celesta - 0.6) / 2.6)
+    gk = smoothstep((t - T.start) / 1.5)          # S2's own head/gaze dynamics fade in from the S1 handoff
+    nod = d["nod"](t) + gk * (-0.12 * gly + 0.025 * noise1(t * 0.5, 5))
+    if mote is not None or t > T.celesta:
+        nod -= 0.22 * smoothstep((t - T.celesta - 0.6) / 2.6)
     tilt = d["tilt"](t) + 1.2 * noise1(t * 0.35, 8)
     hturn = 0.16 * glx * smoothstep((t - T.start) / 1.5) + 0.02 * noise1(t * 0.4, 9)
     gp_hold = 1.0 - smoothstep((t - T.gp) / 0.25) * (1.0 - smoothstep((t - T.climax) / 0.2))
     tilt = lerp(d["tilt"](T.gp), tilt, gp_hold) if T.gp < t < T.climax + 0.2 else tilt
     # the rig's gaze travel is small: exaggerate a little once we're past the S1 handoff
-    gk = smoothstep((t - T.start) / 1.5)
     lx, ly = clamp(lx * (1.0 + 0.3 * gk), -1.15, 1.15), clamp(ly * (1.0 + 0.35 * gk), -1.0, 1.0)
     face = dict(
         lid_l=lid, lid_r=lid * (0.985 + 0.015 * noise1(t * 0.7, 3)), look_x=lx + 0.02 * noise1(t * 2.3, 1) * gp_hold,
@@ -586,6 +675,16 @@ def _place_mug_pose():
     return R.mug_pose(p)
 
 
+def _draw_bench_mug(c, bm, rp):
+    """The mug on the bench, lit like Rae, with a soft contact shadow on the cushion."""
+    with Layer(c, cf=light_filter(rp.light ** 0.65, rp.tint, rp.tint_amt),
+               bounds=skia.Rect(bm[0] - 46, bm[1] - 56, bm[0] + 46, bm[1] + 14)):
+        sh = skia.Paint(AntiAlias=True, Color=skia.Color(6, 8, 20, 120))
+        sh.setMaskFilter(skia.MaskFilter.MakeBlur(skia.kNormal_BlurStyle, 3.0))
+        c.drawOval(skia.Rect(bm[0] - 24, bm[1] - 4, bm[0] + 26, bm[1] + 5), sh)
+        R.draw_mug(c, *bm)
+
+
 # =========================================================================== Quill
 
 
@@ -601,7 +700,9 @@ def _quill_tracks():
                            (S + 1.6, cond), (FC + 0.45, cond),
                            (FC + 1.9, ArmPose(shoulder=30.0, elbow=46.0, wrist=-12.0, hand="relaxed")),
                            (FC + 3.4, rest)])
-    d["arm_l"] = ArmTrack([(S + 0.35, bb), (S + 1.3, rest)])
+    # the other hand stays clasped behind his back the whole time: a conductor's poise (and nothing
+    # dangling at the frame edge of Rae's singles)
+    d["arm_l"] = ArmTrack([(S, bb)])
     # conducting envelope (0 before the first note / during the grand pause / after the final chord)
     d["cond"] = Track([(F1 - 0.3, 0.0), (F1, 1.0), (T.gp - 0.5, 1.0), (T.gp, 0.0), (T.climax, 0.0),
                        (T.climax + 0.4, 1.0), (FC, 1.0), (FC + 0.5, 0.0)])
@@ -610,17 +711,19 @@ def _quill_tracks():
     d["shoulders"] = Track([(S, 0.0), (S + 0.25, 0.1), (S + 0.9, 0.0)])
     d["nod"] = Track([(S, 0.0), (S + 0.3, 0.06), (S + 1.4, 0.02), (T.kneel + 4.0, 0.02), (T.kneel + 7.5, -0.1),
                       (T.climax, -0.08), (T.climax + 0.5, 0.0), (FC + 2.0, -0.06)])
-    d["tilt"] = Track([(S, 2.75), (S + 1.6, 1.0), (T.glis + 1.0, 0.0), (T.glis + 1.6, 1.5), (T.glis + 2.8, 10.0), (T.build, 7.0),
-                       (T.build + 3.0, 3.0), (T.climax, 2.0), (FC, 3.0), (FC + 3.0, 7.0)])
+    d["tilt"] = Track([(S, 2.75), (S + 1.6, 1.0), (T.glis + 1.0, 0.0), (T.glis + 1.6, 1.5), (T.glis + 2.8, 6.0),
+                       (T.glis + 4.2, 10.0), (T.build, 7.0), (T.build + 3.0, 3.0), (T.climax, 2.0), (FC, 3.0),
+                       (FC + 3.0, 7.0)])
     d["brow"] = Track([(S, 0.05), (T.glis + 1.4, 0.05), (T.glis + 2.6, 0.32), (T.build, 0.15), (T.climax, 0.15),
                        (T.climax + 0.3, 0.3), (T.tear, 0.18), (FC, 0.12)])
     d["smile"] = Track([(S, 0.06), (S + 1.2, 0.0), (FC + 2.0, 0.0), (FC + 4.0, 0.1)])
-    d["glow"] = Track([(S, 0.12), (D, 0.12), (D + 1.5, 0.5), (T.climax, 0.6), (T.climax + 0.3, 1.0), (T.tear, 0.8), (FC, 0.75),
-                       (FC + 3.0, 0.35)])
-    d["gaze"] = _gaze([(S, (-0.45, 0.22)), (S + 0.5, (-0.3, -0.02)), (S + 1.4, (-0.46, 0.26), 0.3),
-                       (T.mem + 1.2, (-0.6, 0.0), 0.6), (T.mem + 3.0, (-0.48, 0.28), 0.6),
-                       (T.kneel + 4.5, (-0.5, 0.44), 2.5), (T.climax + 1.0, (-0.52, 0.36), 1.0),
-                       (FC + 1.2, (-0.48, 0.42), 1.0)])
+    d["glow"] = Track([(S, 0.1), (D, 0.12), (D + 1.5, 0.5), (T.climax, 0.6), (T.climax + 0.3, 1.0), (T.tear, 0.8),
+                       (FC, 0.75), (FC + 3.0, 0.35)])
+    d["gaze"] = Track([(S, (-0.45, 0.22)), (S + 0.5, (-0.3, -0.02), "out"), (S + 1.4, (-0.46, 0.26)),
+                       (T.mem + 1.2, (-0.46, 0.26)), (T.mem + 1.8, (-0.6, 0.0)), (T.mem + 3.0, (-0.6, 0.0)),
+                       (T.mem + 3.6, (-0.48, 0.28)), (T.kneel + 4.5, (-0.48, 0.3)), (T.kneel + 7.0, (-0.5, 0.44)),
+                       (T.climax + 0.8, (-0.5, 0.44)), (T.climax + 1.8, (-0.52, 0.36)), (FC + 1.2, (-0.52, 0.36)),
+                       (FC + 2.2, (-0.48, 0.42))])
     return d
 
 
@@ -663,56 +766,93 @@ def _beat_phase(t, beats):
     return (t - beats[lo]) / max(1e-3, beats[hi] - beats[lo])
 
 
+def _draw_palm_light(c, t, qp, lv):
+    """The music made visible at its source: a soft light in Quill's conducting palm that swells on each
+    note of the intro and breathes with the music after (additive, small)."""
+    T = _T()
+    k = clamp((t - (T.first_note - 0.4)) / 0.4) * (1.0 - smoothstep((t - (T.final + 0.2)) / 1.2))
+    if k <= 0.003:
+        return
+    hx, hy = Q.hand_pos(qp, "r")
+    pulse = 0.0
+    for o in T.onsets:
+        if o > t:
+            break
+        if t - o < 1.2:
+            pulse = max(pulse, math.exp(-(t - o) / 0.35) * (1.0 if o < T.theme else 0.45))
+    a = k * (0.16 + 0.14 * lv.rms + 0.35 * pulse) * (1.0 - 0.6 * lv.freeze)
+    glow(c, hx, hy, 46.0 + 10.0 * pulse, (170, 255, 240), 0.35 * a)
+    glow(c, hx, hy, 15.0 + 4.0 * pulse, (225, 255, 250), 0.8 * a)
+
+
 # =========================================================================== memories
 
 
-# kind, start offset from sym_memories_start, life, radius, layer, rising path (stage coords)
+# kind, birth (s after sym_memories_start), life, radius, layer, ease exponent, rising path (stage coords).
+# Left column x ~100-150 (clear of the frame edge and of her face), right column x ~390-440 (between her and
+# Quill, behind his raised arm). Front/back alternate so they float around her, never across her face.
 _MEM1 = (
-    ("car_window", 0.0, 5.8, 96.0, "front", ((104, 1090), (74, 880), (98, 660), (128, 462))),
-    ("hands", 2.4, 5.8, 90.0, "back", ((446, 1110), (462, 890), (432, 672), (448, 478))),
-    ("dog_door", 4.9, 5.8, 98.0, "front", ((58, 1140), (30, 910), (70, 700), (52, 510))),
-    ("kitchen_dawn", 7.3, 5.6, 92.0, "back", ((398, 1160), (416, 930), (392, 720), (412, 494))),
-    ("friends_table", 9.7, 5.6, 100.0, "front", ((112, 1170), (70, 925), (88, 712), (74, 500))),
-    ("sea_sunset", 12.0, 5.8, 100.0, "back", ((436, 1180), (418, 952), (448, 732), (426, 512))),
+    ("car_window", 0.0, 5.6, 92.0, "back", 1.5, ((150, 1190), (116, 990), (122, 800), (140, 600))),
+    ("hands", 2.1, 5.7, 90.0, "back", 1.7, ((436, 1210), (446, 990), (420, 800), (416, 650))),
+    ("dog_door", 4.2, 5.6, 90.0, "front", 1.5, ((96, 1240), (120, 1020), (100, 830), (100, 640))),
+    ("kitchen_dawn", 6.3, 5.6, 88.0, "back", 1.7, ((404, 1230), (424, 1000), (436, 830), (424, 680))),
+    ("friends_table", 8.2, 5.6, 90.0, "front", 1.5, ((132, 1250), (108, 1030), (116, 840), (124, 660))),
+    ("sea_sunset", 10.9, 6.0, 86.0, "back", 2.3, ((424, 1260), (404, 990), (392, 822), (386, 772))),
 )
-# the climax halo: kind, angle around the galaxy core (deg, 0 = screen right, 90 = down), radius
-_MEM2 = (
-    ("sea_sunset", 152.0, 92.0), ("car_window", 197.0, 96.0), ("hands", 240.0, 90.0),
-    ("kitchen_dawn", 287.0, 90.0), ("dog_door", 330.0, 94.0), ("friends_table", 28.0, 92.0),
-)
+_MEM_INDEX = {m[0]: i for i, m in enumerate(_MEM1)}
+# the climax: all six glow in an arch over the blazing galaxy (angles: 270 = straight up)
+_HALO_C = (352.0, 470.0)
+_HALO_R = (290.0, 330.0)
+_HALO_BR = 68.0
+_MEM2 = (("sea_sunset", 205.0), ("car_window", 231.0), ("hands", 257.0), ("kitchen_dawn", 283.0),
+         ("dog_door", 309.0), ("friends_table", 335.0))
+
+
+def _mem1(i, t, clamp_age=False):
+    """(layer, kind, x, y, r, alpha, age, glow) of rising memory i at t, or None when not alive."""
+    T = _T()
+    kind, off, life, r, layer, ex, path = _MEM1[i]
+    age = t - (T.mem + off)
+    if clamp_age:
+        age = clamp(age, 0.0, life)
+    elif not 0.0 <= age <= life:
+        return None
+    u = age / life
+    x, y = _catmull(path, 1.0 - (1.0 - u) ** ex)
+    x += 8.0 * math.sin(age * 0.8 + i * 1.7)
+    y += 5.0 * math.sin(age * 0.65 + i * 2.3)
+    a = smoothstep(age / 0.9) * smoothstep((life - age) / 1.3)
+    rr = r * (0.8 + 0.2 * ease_out(age / 1.4))
+    return (layer, kind, x, y, rr, a, age, 0.0)
 
 
 def _memories(t):
     """[(layer, kind, x, y, r, alpha, age, glow)]"""
     T = _T()
     out = []
-    for i, (kind, off, life, r, layer, path) in enumerate(_MEM1):
-        t0 = T.mem + off
-        age = t - t0
-        if not 0.0 <= age <= life:
-            continue
-        u = age / life
-        x, y = _catmull(path, 0.08 + 0.92 * (1 - (1 - u) ** 1.35))
-        x += 9.0 * math.sin(age * 0.8 + i * 1.7)
-        a = smoothstep(age / 0.9) * smoothstep((life - age) / 1.3)
-        rr = r * (0.8 + 0.2 * ease_out(age / 1.4))
-        out.append((layer, kind, x, y, rr, a, age, 0.0))
+    for i in range(len(_MEM1)):
+        m = _mem1(i, t)
+        if m is not None:
+            out.append(m)
     if t >= T.climax - 0.05:
         age0 = t - T.climax
-        appear = ease_out(clamp(age0 / 0.6))
         fade = 1.0 - smoothstep((t - T.final - 0.2) / 2.4)
         if fade > 0.002:
-            gx, gy = env.GALAXY_CENTER
-            spin = age0 * 1.6
+            gx, gy = _HALO_C
+            rx, ry = _HALO_R
             g = 1.0 - 0.55 * smoothstep(age0 / 3.0) + 0.25 * smoothstep((t - T.peak) / 1.5) * (
                 1 - smoothstep((t - T.peak - 3.0) / 3.0))
-            for i, (kind, ang, r) in enumerate(_MEM2):
-                a = math.radians(ang + spin + 2.0 * math.sin(age0 * 0.4 + i))
-                rad = (360.0 + 40.0 * (1 - appear)) * (1.0 + 0.04 * math.sin(age0 * 0.5 + i * 2.1))
-                x = gx + math.cos(a) * rad * 1.02
-                y = gy + math.sin(a) * rad * 1.1 - 30.0 * (1 - fade)
-                rr = r * (0.55 + 0.45 * appear) * (0.85 + 0.15 * fade)
-                out.append(("back", kind, x, y, rr, clamp(age0 / 0.25) * fade, age0 + 6.0 + i, g))
+            for i, (kind, ang) in enumerate(_MEM2):
+                ai = age0 - 0.07 * abs(i - 2.5)            # they blossom out of the core, middle ones first
+                if ai <= 0.0:
+                    continue
+                appear = ease_out(clamp(ai / 0.75))
+                a_ = math.radians(ang + 3.0 * math.sin(age0 * 0.35 + i * 1.3))
+                k = (0.5 + 0.5 * appear) * (1.0 + 0.03 * math.sin(age0 * 0.5 + i * 2.1))
+                x = gx + math.cos(a_) * rx * k
+                y = gy + math.sin(a_) * ry * k - 24.0 * (1 - fade)
+                rr = _HALO_BR * (0.5 + 0.5 * appear) * (0.85 + 0.15 * fade)
+                out.append(("back", kind, x, y, rr, smoothstep(ai / 0.3) * fade, age0 + 6.0 + i, g))
     return out
 
 
@@ -737,10 +877,10 @@ def _bubble_light(rp, mems):
                    tint=_mix(rp.tint, (70, 42, 24), 0.5 * w))
 
 
-def _draw_memories(c, t, layer, mems):
+def _draw_memories(c, t, layer, mems, k=1.0):
     for (lay, kind, x, y, r, a, age, g) in mems:
-        if lay == layer and a > 0.003:
-            fx.draw_memory(c, t, kind, x, y, r, alpha=a, age=age, glow=g, develop=g <= 0.0)
+        if lay == layer and a * k > 0.003:
+            fx.draw_memory(c, t, kind, x, y, r, alpha=a * k, age=age, glow=g, develop=g <= 0.0)
 
 
 # =========================================================================== note motes (intro)
@@ -813,38 +953,56 @@ def _draw_note_motes(c, t, rms):
 # =========================================================================== the last mote
 
 
+# path relative to her (kneeling) face: from above-right, down across in front of her chin, to her chest
+_FM_PATH = ((84.0, -132.0), (66.0, -62.0), (30.0, 18.0), (6.0, 60.0), (-14.0, 112.0))
+
+
 def _final_mote(t):
-    """(x, y, brightness) of the last mote drifting down in front of Rae's face, or None."""
+    """(x, y, brightness, glint) of the last mote drifting down in front of Rae's face, or None."""
     T = _T()
     t0 = T.celesta
-    if t < t0 - 0.05 or t > T.end:
+    out_t = T.end - 0.95
+    if t < t0 - 0.05 or t > out_t + 0.4:
         return None
     hx, hy = _rae_face_ref("kneel")
-    u = (t - t0) / max(0.5, (T.end - 0.9) - t0)
-    x = hx + 52.0 + 10.0 * math.sin((t - t0) * 1.1) - 8.0 * u
-    y = hy - 175.0 + 270.0 * smoothstep(clamp(u) * 0.85 + 0.15 * clamp(u))
+    u = clamp((t - t0) / (out_t - t0))
+    px, py = _catmull(_FM_PATH, 0.55 * smoothstep(u) + 0.45 * u)
+    x = hx + px + 6.0 * math.sin((t - t0) * 1.4)
+    y = hy + py
     b = smoothstep((t - t0) / 0.5)
-    # a little brighter on each celesta note, then it fades and goes out
+    # a little brighter on each celesta note ...
     for o in T.onsets:
         if t0 - 0.2 <= o <= t:
-            b += 0.35 * math.exp(-(t - o) / 0.35)
-    out_t = T.end - 0.95
-    b *= 1.0 - smoothstep((t - (out_t - 0.7)) / 0.7)
+            b += 0.4 * math.exp(-(t - o) / 0.4)
+    # ... a last glint, and it goes out
+    gl = math.exp(-((t - (out_t - 0.3)) / 0.11) ** 2)
+    b += 0.8 * gl
+    b *= 1.0 - smoothstep((t - (out_t - 0.2)) / 0.45)
     if b <= 0.003:
         return None
-    return (x, y, b)
+    return (x, y, b, gl)
 
 
 def _draw_final_mote(c, t):
     m = _final_mote(t)
     if m is None:
         return
-    x, y, b = m
-    tw = 0.9 + 0.1 * math.sin(t * 5.3)
-    glow(c, x, y, 58.0, (255, 226, 180), 0.16 * b * tw)
-    glow(c, x, y, 22.0, (255, 240, 214), 0.5 * b * tw)
-    glow(c, x, y, 8.0, (255, 250, 236), 0.85 * b)
-    glow(c, x, y, 3.6, (255, 255, 255), min(1.0, 1.1 * b))
+    x, y, b, gl = m
+    tw = 0.92 + 0.08 * math.sin(t * 5.3)
+    glow(c, x, y, 100.0, (255, 226, 180), 0.15 * b * tw)
+    glow(c, x, y, 38.0, (255, 240, 214), 0.48 * b * tw)
+    glow(c, x, y, 15.0, (255, 250, 236), 0.85 * b)
+    glow(c, x, y, 6.5, (255, 255, 255), min(1.0, 1.1 * b))
+    if gl > 0.02:                       # the last glint: a soft four-point star
+        p = skia.Paint(AntiAlias=True, Color=skia.Color(255, 246, 228, int(255 * min(1.0, 0.75 * gl))))
+        p.setStyle(skia.Paint.kStroke_Style)
+        p.setStrokeWidth(2.2)
+        p.setStrokeCap(skia.Paint.kRound_Cap)
+        p.setMaskFilter(skia.MaskFilter.MakeBlur(skia.kNormal_BlurStyle, 1.4))
+        p.setBlendMode(skia.BlendMode.kPlus)
+        L = 34.0 * gl
+        c.drawLine(x - L, y, x + L, y, p)
+        c.drawLine(x, y - L * 0.8, x, y + L * 0.8, p)
 
 
 # =========================================================================== cameras
@@ -854,7 +1012,7 @@ def _draw_final_mote(c, t):
 def _rae_face_ref(kind="seat"):
     if kind == "seat":
         p = Pose(x=SEAT_X, y=float(env.FLOOR_Y), facing=1.0, turn=0.35, sit=1.0, seat_y=float(env.BENCH_SEAT_Y))
-    else:
+    else:       # identical to S3's _kneel_face(): S2 ends on the framing S3 opens with
         p = Pose(x=KNEEL_X, y=float(env.FLOOR_Y), facing=1.0, turn=0.3, sit=1.0, kneel=1.0,
                  seat_y=float(env.BENCH_SEAT_Y), head_nod=0.42)
     return R.head_center(p)
@@ -870,28 +1028,23 @@ def _face_cam(fx_, fy_, z, sx, sy):
     return Camera(fx_ + (W / 2 - sx) / z, fy_ + (H / 2 - sy) / z, z)
 
 
-def _cam_between(c0, c1, u):
-    return Camera.lerp(c0, c1, u)
-
-
 @lru_cache(maxsize=1)
 def _shots():
     T = _T()
-    q_end = _db(27.9) + 2.2
+    q0, q1 = _bt(29.61), _db(31.5)
     return (
         ("two", T.start, T.first_note),
         ("rae_med", T.first_note, T.theme),
         ("wide_rib", T.theme, _db(14.22)),
         ("rae_cu1", _db(14.22), _db(17.61)),
-        ("mem_med", _db(17.61), _db(27.9)),
-        ("quill_cu", _db(27.9), q_end),
-        ("rae_cu2", q_end, T.build),
-        ("window", T.build, _db(41.76)),
-        ("kneel", _db(41.76), T.gp),
+        ("mem_med", _db(17.61), q0),
+        ("quill_cu", q0, q1),
+        ("rae_cu2", q1, T.build),
+        ("build", T.build, T.gp),
         ("pause", T.gp, T.climax),
         ("burst", T.climax, T.tear),
-        ("tear", T.tear, T.final),
-        ("coda", T.final, T.end + 1.0),
+        ("tear", T.tear, T.celesta),
+        ("last", T.celesta, T.end + 1.0),
     )
 
 
@@ -903,6 +1056,39 @@ def _shot_at(t):
     return (s[0] if t < s[0][1] else s[-1])
 
 
+# the cathedral: the wide the tear close-up pulls back to, and the two-shot it drifts into on the final chord
+_CATHEDRAL = Camera(352.0, 790.0, 0.84)
+_CATHEDRAL2 = Camera(353.0, 787.0, 0.83)
+_CODA_TWO = Camera(366.0, 774.0, 1.0)
+_PULL = 5.2         # seconds of the pull-back from sym_peak
+_BUMP = (140.0, 0.62)   # lateral swing toward Quill during the pull-back (screen px, end of the swing in v)
+
+
+def _tear_cam(t, a):
+    T = _T()
+    fk = _shot_face(a)
+    z0, z1 = 3.2, 3.36
+    if t < T.peak:
+        return _face_cam(fk[0], fk[1], lerp(z0, z1, smoothstep((t - a) / (T.peak - a))), 352.0, 560.0)
+    pe = T.peak + _PULL
+    if t < pe:
+        # one continuous pull-back from the close-up to the cathedral wide. Parametrised by her face's screen
+        # position + zoom; the lateral term swings toward Quill as he is revealed, so his head crosses the
+        # frame edge quickly instead of sitting half in frame.
+        u = (t - T.peak) / _PULL
+        v = smoothstep(smoothstep(u))
+        cw = _CATHEDRAL
+        z = z1 * (cw.zoom / z1) ** v
+        s_end = (W / 2 + (fk[0] - cw.cx) * cw.zoom, H / 2 + (fk[1] - cw.cy) * cw.zoom)
+        bump = _BUMP[0] * math.sin(math.pi * clamp(v / _BUMP[1])) if v < _BUMP[1] else 0.0
+        sx = lerp(352.0, s_end[0], v) + bump
+        sy = lerp(560.0, s_end[1], v)
+        return _face_cam(fk[0], fk[1], z, sx, sy)
+    if t < T.final:
+        return Camera.lerp(_CATHEDRAL, _CATHEDRAL2, smoothstep((t - pe) / (T.final - pe)))
+    return Camera.lerp(_CATHEDRAL2, _CODA_TWO, ease_in_out((t - T.final) / (T.celesta - T.final)))
+
+
 def _camera(name, t, a, b):
     T = _T()
     u = clamp((t - a) / max(1e-3, b - a))
@@ -912,49 +1098,31 @@ def _camera(name, t, a, b):
     if name == "rae_med":
         return _face_cam(fs[0], fs[1], lerp(1.72, 1.9, smoothstep(u)), 332.0, 496.0)
     if name == "wide_rib":
-        return Camera.lerp(Camera(350.0, 742.0, 0.88), Camera(316.0, 768.0, 1.1), smoothstep(u))
+        return Camera.lerp(Camera(350.0, 752.0, 0.9), Camera(318.0, 768.0, 1.1), smoothstep(u))
     if name == "rae_cu1":
-        return _face_cam(fs[0], fs[1], lerp(2.05, 2.2, u), 334.0, 520.0)
+        return _face_cam(fs[0], fs[1], lerp(2.14, 2.26, smoothstep(u)), lerp(298.0, 304.0, u), 590.0)
     if name == "mem_med":
-        return _face_cam(fs[0], fs[1], lerp(1.12, 1.36, smoothstep(u)), lerp(318.0, 330.0, u), 486.0)
+        return _face_cam(fs[0], fs[1], lerp(1.06, 1.13, smoothstep(u)), lerp(284.0, 290.0, u),
+                         lerp(590.0, 572.0, smoothstep(u)))
     if name == "quill_cu":
         qx, qy = _quill_face_ref()
-        return _face_cam(qx, qy, lerp(2.35, 2.5, u), 420.0, 520.0)
+        return _face_cam(qx, qy, lerp(2.35, 2.48, u), 420.0, 520.0)
     if name == "rae_cu2":
-        return _face_cam(fs[0], fs[1], lerp(2.6, 2.82, smoothstep(u)), 338.0, 540.0)
-    if name == "window":
-        return Camera.lerp(Camera(350.0, 650.0, 0.8), Camera(340.0, 690.0, 0.87), smoothstep(u))
-    if name == "kneel":
-        hx, hy = _smoothed_head(t)
-        z = lerp(1.12, 1.28, smoothstep(u))
-        return _face_cam(hx, hy, z, 326.0, 500.0)
+        return _face_cam(fs[0], fs[1], lerp(1.98, 2.06, smoothstep(u)), 288.0, 522.0)
+    if name == "build":
+        return Camera.lerp(Camera(356.0, 802.0, 0.9), Camera(358.0, 770.0, 1.3), ease_in_out(u))
     if name == "pause":
         fk = _shot_face(a)
         return _face_cam(fk[0], fk[1], lerp(3.25, 3.4, u), 350.0, 600.0)
     if name == "burst":
-        z = lerp(0.8, 0.705, ease_out(clamp((t - a) / 1.6)))
-        return Camera(348.0, 668.0 - 10.0 * ease_out(clamp((t - a) / 1.6)), z)
+        e = ease_out(clamp((t - a) / 1.6))
+        return Camera(352.0, 790.0 - 6.0 * e, lerp(0.86, 0.78, e))
     if name == "tear":
-        fk = _shot_face(a)
-        z0, z1 = 3.2, 3.36
-        if t < T.peak:
-            return _face_cam(fk[0], fk[1], lerp(z0, z1, smoothstep((t - a) / (T.peak - a))), 352.0, 560.0)
-        v = smoothstep((t - T.peak) / (b - T.peak))
-        z = z1 * (0.74 / z1) ** v
-        sx = lerp(352.0, 360.0 + (fk[0] - 345.0) * 0.74, v)
-        sy = lerp(560.0, 640.0 + (fk[1] - 655.0) * 0.74, v)
-        return _face_cam(fk[0], fk[1], z, sx, sy)
-    if name == "coda":
+        return _tear_cam(t, a)
+    if name == "last":
         fk = _rae_face_ref("kneel")
-        c0 = Camera(398.0, 760.0, 1.04)
-        v = smoothstep((t - (T.celesta - 1.2)) / 3.4)
-        z = 1.04 * (1.95 / 1.04) ** v
-        c1 = _face_cam(fk[0], fk[1], z, 330.0, 520.0)
-        cam = Camera.lerp(c0, c1, v) if v > 0 else c0
-        cam.zoom = z
-        if t > T.celesta + 2.2:
-            cam.zoom = z * (1.0 + 0.03 * smoothstep((t - T.celesta - 2.2) / 2.0))
-        return cam
+        v = ease_in_out(clamp((t - a) / (T.end - 0.6 - a)))
+        return _face_cam(fk[0], fk[1], 1.9 * (2.0 / 1.9) ** v, lerp(345.0, 330.0, v), lerp(532.0, 520.0, v))
     return Camera()
 
 
@@ -963,17 +1131,6 @@ def _shot_face(t):
     """Rae's actual face position at time t (used to frame a close-up from its first frame)."""
     lv = _levels(t)
     return R.head_center(_rae_pose(t, lv))
-
-
-def _smoothed_head(t):
-    xs = ys = 0.0
-    n = 6
-    for i in range(n):
-        p = _rae_body(t - 0.12 * i)
-        hx, hy = R.head_center(p.copy(arm_r=R.ARMS["hold_mug"]))
-        xs += hx
-        ys += hy
-    return xs / n, ys / n
 
 
 # =========================================================================== drawing
@@ -985,45 +1142,76 @@ _AIR = (20.0, 230.0, 700.0, 980.0)
 
 def _draw_world(c, t, cam, shot, lv, rp, qp, mems):
     T = _T()
+    d = _rae_tracks()
+    tw = _freeze_clock(t)
     c.save()
     cam.apply(c, t)
-    env.draw_lounge(c, t, light=lv.room, swirl=lv.swirl, window_bright=lv.wb)
+    env.draw_lounge(c, tw, light=lv.room, swirl=lv.swirl, window_bright=lv.wb)
     gx, gy = env.GALAXY_CENTER
-    lb = lv.lburst * clamp(1.25 - 0.3 * cam.zoom, 0.4, 1.0)
+    lb = lv.lburst * clamp(1.08 - 0.4 * cam.zoom, 0.2, 0.78)      # the core never blows out in the closer shots
     if lb > 0.003:
         fx.draw_light_burst(c, t, gx, gy + 20.0, lb, radius=1050.0)
     _draw_shockwave(c, t)
     if lv.rib > 0.003:
-        fx.draw_ribbons(c, t, intensity=lv.rib, env=lv.rms, area=_RIB_AREA, seed=3, freeze=lv.freeze,
-                        burst=lv.burst, alpha=1.0, width=1.25)
+        fx.draw_ribbons(c, _rib_clock(t, lv.burst), intensity=lv.rib, env=lv.rms, area=_RIB_AREA, seed=3,
+                        freeze=0.0, burst=lv.burst, alpha=1.0 - 0.18 * smoothstep(lv.freeze), width=1.25)
     if lv.sparkle_a > 0.01 and t >= T.first_note - 0.1:
         fx.draw_note_sparkles(c, t, T.onsets, area=_AIR, seed=2, life=1.9, alpha=0.85 * lv.sparkle_a,
                               colors=("teal_glow", "amber_soft", "#D9C8FF"), size=0.85)
-    if lv.motes > 0.003:
-        fx.draw_motes(c, _freeze_clock(t), area=_RIB_AREA, density=lv.motes * 0.6, env=lv.rms, color="teal_glow",
-                      seed=5, rise=14.0, alpha=0.8)
-    _draw_memories(c, t, "back", mems)
+    last = shot == "last"
+    # the last shot belongs to the one last mote: the dust clears and the falling sparks stay behind her
+    dust = 1.0 - smoothstep((t - (T.celesta - 1.5)) / 1.5)
+    if lv.motes > 0.003 and dust > 0.003:
+        fx.draw_motes(c, tw, area=_RIB_AREA, density=lv.motes * 0.6, env=lv.rms, color="teal_glow",
+                      seed=5, rise=14.0, alpha=0.8 * dust)
+    if last and lv.sparks > 0.003:
+        _draw_sparks(c, t, lv.sparks * 0.75)
+    mk = 0.45 if shot == "quill_cu" else 1.0          # memories near Rae sit out of focus behind Quill's close-up
+    _draw_memories(c, t, "back", mems, mk)
     bm = _bench_mug(t)
-    if bm is not None:
-        with Layer(c, cf=light_filter(rp.light ** 0.65, rp.tint, rp.tint_amt),
-                   bounds=skia.Rect(bm[0] - 40, bm[1] - 50, bm[0] + 40, bm[1] + 10)):
-            R.draw_mug(c, *bm)
+    mug_front = bm is not None and t < d["mug_back_t"]
+    if bm is not None and not mug_front:
+        _draw_bench_mug(c, bm, rp)
     if shot == "quill_cu":
         with Layer(c):
             Q.draw(c, qp, t)
             _quill_light_band(c, t, qp)
     else:
         Q.draw(c, qp, t)
+    _draw_palm_light(c, t, qp, lv)
     R.draw(c, rp, t)
-    env.draw_lounge_front(c, t, light=lv.room)
+    if mug_front:
+        # she has just let go: the mug stands on the front of the seat, in front of her thigh (exactly where
+        # the in-hand mug was drawn) until her legs have left the seat
+        _draw_bench_mug(c, bm, rp)
+    # foreground: only the floor-edge shadow (nobody uses the door here, so no lintel / jamb overdraw that
+    # would cut the climax light)
+    c.save()
+    c.clipRect(skia.Rect(-2000.0, 1450.0, 3000.0, 4000.0))
+    env.draw_lounge_front(c, t, light=lv.room, lintel=False)
+    c.restore()
     _draw_note_motes(c, t, lv.rms)
-    _draw_memories(c, t, "front", mems)
-    if lv.motes > 0.003:
-        fx.draw_motes(c, _freeze_clock(t), area=_RIB_AREA, density=lv.motes * 0.45, env=lv.rms, color="amber_soft",
-                      seed=9, rise=10.0, alpha=0.75, size=0.9)
-    if lv.sparks > 0.003:
-        fx.draw_falling_sparks(c, t, area=_RIB_AREA, amount=lv.sparks, seed=4, fall=24.0, density=1.6)
+    _draw_memories(c, t, "front", mems, mk)
+    if lv.motes > 0.003 and dust > 0.003:
+        fx.draw_motes(c, tw, area=_RIB_AREA, density=lv.motes * 0.45, env=lv.rms, color="amber_soft",
+                      seed=9, rise=10.0, alpha=0.75 * dust, size=0.9)
+    if lv.sparks > 0.003 and not last:
+        _draw_sparks(c, t, lv.sparks)
     _draw_final_mote(c, t)
+    c.restore()
+
+
+def _draw_sparks(c, t, amount, k=1.6):
+    """fx.draw_falling_sparks drawn k times larger (the canvas is scaled about the area centre; area, fall
+    speed and density are compensated so they still cover the same region at the same speed)."""
+    x0, y0, x1, y1 = _RIB_AREA
+    ax, ay = (x0 + x1) / 2, (y0 + y1) / 2
+    c.save()
+    c.translate(ax, ay)
+    c.scale(k, k)
+    c.translate(-ax, -ay)
+    area = (ax + (x0 - ax) / k, ay + (y0 - ay) / k, ax + (x1 - ax) / k, ay + (y1 - ay) / k)
+    fx.draw_falling_sparks(c, t, area=area, amount=amount, seed=4, fall=24.0 / k, density=1.6 * k * k * 0.55)
     c.restore()
 
 
@@ -1031,13 +1219,13 @@ def _draw_shockwave(c, t):
     """The burst: a soft ring of light racing out of the galaxy core (additive, no full-frame wash)."""
     T = _T()
     age = t - T.climax
-    if not 0.0 <= age < 1.3:
+    if not 0.0 <= age < 1.4:
         return
     gx, gy = env.GALAXY_CENTER
-    u = age / 1.3
+    u = age / 1.4
     r = 40.0 + 1100.0 * ease_out(u)
-    w = 70.0 + 160.0 * u
-    a = 0.55 * (1.0 - u) ** 1.5 * smoothstep(age / 0.06)
+    w = 90.0 + 180.0 * u
+    a = 0.36 * (1.0 - u) ** 1.5 * smoothstep(age / 0.08)
     cols = [skia.Color(255, 236, 214, 0), skia.Color(255, 236, 214, int(255 * a)), skia.Color(220, 200, 255, 0)]
     r0 = max(0.0, r - w)
     sh = skia.GradientShader.MakeRadial((gx, gy), r + w, cols, [r0 / (r + w), r / (r + w), 1.0])
@@ -1068,7 +1256,6 @@ def _quill_light_band(c, t, qp):
 
 
 def render(canvas, t):
-    T = _T()
     name, a, b = _shot_at(t)
     lv = _levels(t)
     mems = _memories(t)
@@ -1080,19 +1267,10 @@ def render(canvas, t):
         rp = rp.copy(light=rp.light + 0.06 * k, rim_color=_mix(rp.rim_color, (255, 226, 186), 0.6 * k))
     qp = _quill_pose(t, lv)
     if name == "quill_cu":
-        k = smoothstep((t - a) / 0.3)
-        qp = qp.copy(light=qp.light + 0.1 * k, rim=qp.rim + 0.15 * k)
+        # the close-up's own light is there from its first frame (no auto-exposure ramp)
+        qp = qp.copy(light=qp.light + 0.1, rim=qp.rim + 0.15)
     cam = _camera(name, t, a, b)
-    diss = 1.0
-    if name == "coda":
-        diss = smoothstep((t - T.final) / 1.1)
-    if diss < 0.999:
-        prev = [s for s in _shots() if s[0] == "tear"][0]
-        _draw_world(canvas, t, _camera("tear", t, prev[1], prev[2]), "tear", lv, rp, qp, mems)
-        with Layer(canvas, alpha=diss):
-            _draw_world(canvas, t, cam, name, lv, rp, qp, mems)
-    else:
-        _draw_world(canvas, t, cam, name, lv, rp, qp, mems)
+    _draw_world(canvas, t, cam, name, lv, rp, qp, mems)
     canvas.resetMatrix()
     fx.draw_vignette(canvas, lv.vign)
     if lv.flash > 0.003:
