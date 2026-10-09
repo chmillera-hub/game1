@@ -120,6 +120,14 @@ V.VILLAIN_EXPR.setdefault("s11_smile", dict(_HAPPY, mc=1.05, mw=1.1, mo=0.26, mt
                                             by2=-20, ba1=-0.26, ba2=-0.26, bc1=0.45,
                                             bc2=0.45, ul1=0.12, ul2=0.1, ll1=0.3,
                                             ll2=0.28, tilt=-0.06, hy=-2))
+V.VILLAIN_EXPR.setdefault("s11_delight", dict(_HAPPY, es=1.14, ps=1.42, shine=1.0, by1=-36,
+                                              by2=-38, ba1=-0.2, ba2=-0.2, bc1=0.5, bc2=0.5,
+                                              ul1=0.0, ul2=0.0, ll1=0.08, ll2=0.08, mc=1.1,
+                                              mw=1.15, mo=0.34, mt=0.6, blush=0.8, hy=-10,
+                                              hair=0.3, tilt=-0.03))
+V.VILLAIN_EXPR.setdefault("s11_delight_up", dict(V.VILLAIN_EXPR["s11_delight"], es=1.2, ps=1.5,
+                                                 by1=-46, by2=-48, mo=0.5, mc=0.7, mw=0.75,
+                                                 hair=0.6, hy=-4))
 
 from engine import snake as SN
 SN.SNAKE_EXPR.setdefault("s11_soft", dict(ul=0.08, ll=0.04, ps=1.12, mc=0.45, mw=0.9,
@@ -183,7 +191,7 @@ def _T(info):
     c = info.cue
     T = dict(slump=c("slump"), beat=c("beat"), photo=c("photo"), wall=c("wall"),
              pile=c("pile"), smile=c("smile"), end=info.dur)
-    for i in range(1, 8):
+    for i in range(1, 9):
         L = info.line(f"s11_l0{i}")
         T[f"l{i}"], T[f"l{i}e"] = L.start, L.end
     W = lambda lid, k: _ws(info, lid, k)                       # noqa: E731
@@ -197,6 +205,11 @@ def _T(info):
         w_hurts=W("s11_l06", 2), w_people=W("s11_l06", 3), w_brick=W("s11_l06", 4),
         w_every=W("s11_l06", 6),
         w_else=W("s11_l07", 1), w_door=W("s11_l07", 3), w_wide=W("s11_l07", 4),
+        # l08 "And keep the spooky stuff! Bats, goblins, dragons... spooky is
+        # fine. Hurting people isn't."
+        w_spooky=W("s11_l08", 3), w_bats=W("s11_l08", 5), w_goblins=W("s11_l08", 6),
+        w_dragons=W("s11_l08", 7), w_spooky2=W("s11_l08", 8), w_fine=W("s11_l08", 10),
+        w_hurting=W("s11_l08", 11), w_people2=W("s11_l08", 12), w_isnt=W("s11_l08", 13),
     )
     # back from the photo in the micro-pause after "I noticed." (photo holds
     # through "I noticed"), never earlier than l03.start + 0.45
@@ -220,6 +233,12 @@ def _T(info):
     # the gift pile
     T["gift_t"] = [T["pile"] + 0.2 * i for i in range(6)]
     T["fly"] = 0.5
+    T["pile_end"] = T["gift_t"][-1] + T["fly"]
+    # the spooky gifts pop out of the door ON their words, land ~0.4 s later
+    T["sp_fly"] = 0.42
+    T["sp_t"] = {k: T[w] - 0.06 for k, w in (("pumpkin", "w_spooky"), ("bat", "w_bats"),
+                                             ("mask", "w_goblins"), ("dragon", "w_dragons"))}
+    T["sp_land"] = {k: v + T["sp_fly"] for k, v in T["sp_t"].items()}
     _TCACHE.clear()
     _TCACHE[key] = T
     return T
@@ -637,6 +656,332 @@ def _hug_hands(ctx, bx, by, bs, rot, k=1.0):
                 c.move_to(ex - sx * 6 * hs, fy * bs - 6 * bs)
                 c.line_to(ex - sx * 20 * hs, fy * bs - 4 * bs)
             _s(c, "#c9c8da", 3)
+
+
+# ---------------------------------------------------------------------------
+# SPOOKY GIFTS (s11 l08 "Bats, goblins, dragons..." and the s12 monster party;
+# the same drawing code lives in s11_heart.py and s12_party.py)
+# ---------------------------------------------------------------------------
+BAT_C, BAT_DK, BAT_BELLY = "#5b4688", "#3e2f66", "#8f7abf"
+BAT_WING, BAT_WING_LN = "#3a2c5c", "#7a66ae"
+GOB, GOB_DK, GOB_LT, GOB_MOUTH = "#7ccf4e", "#4f9a32", "#b6ec88", "#5a1530"
+DRG, DRG_DK, DRG_BELLY, DRG_SNOUT = "#5a3f92", "#3b2866", "#c9b3ea", "#7258b0"
+DRG_WING, DRG_WING_LN, DRG_HORN = "#2c2050", "#6a54a0", "#f3e6c0"
+PUMP, PUMP_DK, PUMP_GLOW = "#ff8a1f", "#d9640c", "#ffd84a"
+SPOOK_EYE, HOLE = "#ffe066", "#1d1426"
+
+
+def _scallop_wing(c, top, pts, fill, line, bones=True, dip=15.0, lw=4.5):
+    """Bat-style wing: `top` = (c1, c2, tip) curve from the shoulder (0, -10),
+    then scallops through `pts` back to the shoulder."""
+    c.move_to(0, -10)
+    c.curve_to(*top[0], *top[1], *top[2])
+    allp = [top[2]] + list(pts)
+    for (x0, y0), (x1, y1) in zip(allp, allp[1:]):
+        mx, my = (x0 + x1) / 2, (y0 + y1) / 2 - dip
+        c.curve_to(lerp(x0, mx, 0.6), lerp(y0, my, 0.6), lerp(x1, mx, 0.6),
+                   lerp(y1, my, 0.6), x1, y1)
+    c.close_path()
+    _fs(c, fill, INK, lw)
+    if bones:
+        for (bx, by) in allp[:3]:
+            c.move_to(8, -5)
+            c.line_to(bx * 0.9, by * 0.9 - 2)
+        _s(c, line, 3)
+
+
+def _bat_wing(c, sx, ang, sy=1.0, fill=BAT_WING, line=BAT_WING_LN):
+    c.save()
+    c.scale(sx, 1.0)
+    c.rotate(ang)
+    c.scale(1.0, sy)
+    _scallop_wing(c, ((36, -46), (80, -54), (114, -40)), [(98, 6), (64, 16), (28, 18), (0, 10)],
+                  fill, line)
+    c.restore()
+
+
+def draw_bat(c, x, y, s, t, flap=0.0, rot=0.0, sq=0.0, look=(0.0, 0.0)):
+    """Plush bat with little fangs. (x, y) = body centre, ~280 wide at s=1.
+    flap: -1 wings down .. 0 rest (slightly raised) .. 1 wings up."""
+    with saved(c, x, y, (s * (1 + sq * 0.5), s * (1 - sq)), rot) as cc:
+        ang = -0.62 * flap - 0.08
+        wy = 1.0 - 0.22 * abs(flap)
+        for sx in (-1, 1):
+            cc.save()
+            cc.translate(sx * 26, -6)
+            _bat_wing(cc, sx, ang, wy)
+            cc.restore()
+        for sx in (-1, 1):                                     # feet
+            ellipse(cc, sx * 12, 34, 9, 6)
+            _fs(cc, BAT_DK, INK, 3.5)
+        for sx in (-1, 1):                                     # big ears
+            poly(cc, [(sx * 6, -28), (sx * 34, -64), (sx * 33, -16)])
+            _fs(cc, BAT_C, INK, 4.5)
+            poly(cc, [(sx * 15, -27), (sx * 30, -52), (sx * 29, -22)])
+            _f(cc, "#ff9ec4", 0.85)
+        ellipse(cc, 0, 0, 36, 36)                              # round plush body
+        _fs(cc, BAT_C, INK, 5)
+        cc.save()
+        ellipse(cc, 0, 0, 36, 36)
+        cc.clip()
+        ellipse(cc, 18, 12, 30, 34)
+        _f(cc, BAT_DK, 0.55)
+        cc.restore()
+        ellipse(cc, 0, 17, 19, 14)                             # belly patch + stitch
+        _f(cc, BAT_BELLY, 0.75)
+        for k in range(3):
+            cc.move_to(-9 + k * 9, 24)
+            cc.line_to(-5 + k * 9, 28)
+        _s(cc, BAT_DK, 2)
+        lx, ly = look[0] * 4, look[1] * 3
+        for sx in (-1, 1):                                     # big friendly eyes
+            ellipse(cc, sx * 13, -8, 10, 11)
+            _fs(cc, "white", INK, 3)
+            circle(cc, sx * 13 + lx, -7 + ly, 5.5)
+            _f(cc, INK)
+            circle(cc, sx * 13 + lx - 2, -9.5 + ly, 2)
+            _f(cc, "white")
+            ellipse(cc, sx * 24, 7, 6, 3.5)
+            _f(cc, "#ff8fb0", 0.75)
+        for sx in (-1, 1):                                     # two little fangs
+            poly(cc, [(sx * 2.5, 11.5), (sx * 9, 10.5), (sx * 6, 19.5)])
+            _fs(cc, "white", INK, 2)
+        cc.move_to(-11, 8)                                     # smile
+        cc.curve_to(-5, 14, 5, 14, 11, 8)
+        _s(cc, INK, 3)
+
+
+def draw_goblin_mask(c, x, y, s, rot=0.0, sq=0.0):
+    """Green goblin mask: pointy ears, warty nose, toothy grin (cute, not scary).
+    (x, y) = face centre; ~340 wide (ears) x 180 tall at s=1."""
+    with saved(c, x, y, (s * (1 + sq * 0.5), s * (1 - sq)), rot) as cc:
+        for sx in (-1, 1):                                     # pointy ears
+            poly(cc, [(sx * 76, -36), (sx * 172, -82), (sx * 140, -44), (sx * 118, -8),
+                      (sx * 84, 24)])
+            _fs(cc, GOB, INK, 5)
+            poly(cc, [(sx * 92, -22), (sx * 150, -66), (sx * 112, -12), (sx * 92, 8)])
+            _f(cc, GOB_DK, 0.8)
+        face = [(0, -84), (56, -80), (92, -50), (100, -4), (86, 46), (52, 82), (0, 94),
+                (-52, 82), (-86, 46), (-100, -4), (-92, -50), (-56, -80)]
+        smooth_path(cc, face, closed=True)
+        _fs(cc, GOB, INK, 5.5)
+        cc.save()
+        smooth_path(cc, face, closed=True)
+        cc.clip()
+        ellipse(cc, 70, 24, 56, 96)
+        _f(cc, GOB_DK, 0.42)
+        cc.restore()
+        ellipse(cc, -42, -60, 24, 10, -0.25)                   # forehead shine
+        _f(cc, GOB_LT, 0.8)
+        for sx in (-1, 1):                                     # heavy brows
+            poly(cc, [(sx * 12, -38), (sx * 72, -60), (sx * 80, -44), (sx * 18, -26)])
+            _fs(cc, GOB_DK, INK, 4)
+            ellipse(cc, sx * 40, -12, 22, 14, sx * 0.18)       # eye holes
+            _fs(cc, HOLE, INK, 4)
+        ellipse(cc, 0, 16, 21, 17)                             # big warty nose
+        _fs(cc, GOB_DK, INK, 4.5)
+        circle(cc, -7, 10, 5)
+        _f(cc, GOB_LT, 0.85)
+        for (wx, wy, wr) in ((12, 24, 3.5), (-72, 22, 4.5), (66, -28, 3.5)):
+            circle(cc, wx, wy, wr)
+            _fs(cc, GOB_DK, INK, 2)
+
+        def mouth():
+            cc.move_to(-60, 38)
+            cc.curve_to(-30, 52, 30, 52, 60, 38)
+            cc.curve_to(40, 84, -40, 84, -60, 38)
+            cc.close_path()
+        mouth()
+        _f(cc, GOB_MOUTH)
+        cc.save()
+        mouth()
+        cc.clip()
+        for k in range(6):                                     # top teeth
+            tx = -45 + k * 18
+            ty = 38 + 10.5 * (1 - (tx / 60.0) ** 2)
+            poly(cc, [(tx - 8, 30), (tx + 8, 30), (tx, ty + 11)])
+        for sx in (-1, 1):                                     # two bottom tusks
+            poly(cc, [(sx * 30 - 7, 80), (sx * 30 + 7, 80), (sx * 31, 55)])
+        _fs(cc, "#fff6dc", INK, 2.5)
+        cc.restore()
+        mouth()
+        _fs(cc, None, INK, 4.5)
+
+
+def draw_dragon_fig(c, x, y, s, t, puff=-1.0, sq=0.0, look=(0.0, 0.0)):
+    """Purple-black spooky DRAGON figurine: curly horns, little bat wings,
+    yellow slit eyes, one tiny fang, spade tail, on a stone plinth.
+    (x, y) = bottom-centre of the plinth; ~200 wide x 236 tall at s=1.
+    puff 0..1 = progress of a smoke puff from the nostrils (< 0: none)."""
+    with saved(c, x, y, (s * (1 + sq * 0.5), s * (1 - sq))) as cc:
+        rrect(cc, -74, -30, 148, 30, 8)                        # plinth
+        _fs(cc, "#4a4458", INK, 4.5)
+        ellipse(cc, 0, -30, 74, 11)
+        _fs(cc, "#6a6280", INK, 4)
+        for (col, w) in ((INK, 21), (DRG, 12)):                # spade tail (behind)
+            cc.move_to(20, -46)
+            cc.curve_to(84, -44, 98, -70, 82, -96)
+            _s(cc, col, w)
+        poly(cc, [(82, -92), (66, -106), (84, -126), (98, -104)])
+        _fs(cc, DRG_DK, INK, 4)
+        for sx in (-1, 1):                                     # little bat wings
+            cc.save()
+            cc.translate(sx * 24, -112)
+            cc.scale(sx * 0.85, 0.85)
+            cc.rotate(-0.55)
+            _scallop_wing(cc, ((26, -40), (62, -50), (92, -42)), [(80, 2), (54, 12), (24, 14),
+                                                                  (0, 8)],
+                          DRG_WING, DRG_WING_LN, lw=5)
+            cc.restore()
+        body = [(0, -130), (30, -124), (48, -96), (52, -62), (42, -36), (0, -30), (-42, -36),
+                (-52, -62), (-48, -96), (-30, -124)]
+        smooth_path(cc, body, closed=True)
+        _fs(cc, DRG, INK, 5)
+        cc.save()
+        smooth_path(cc, body, closed=True)
+        cc.clip()
+        ellipse(cc, 34, -72, 30, 56)
+        _f(cc, DRG_DK, 0.55)
+        cc.restore()
+        ellipse(cc, 0, -68, 24, 32)                            # belly plates
+        _fs(cc, DRG_BELLY, INK, 3.5)
+        for yy in (-86, -74, -62, -50):
+            cc.move_to(-20, yy)
+            cc.line_to(20, yy)
+        _s(cc, "#9a82c4", 2.5)
+        for sx in (-1, 1):                                     # feet + claws
+            ellipse(cc, sx * 30, -34, 17, 9)
+            _fs(cc, DRG, INK, 4)
+            for k in range(3):
+                circle(cc, sx * 30 + (k - 1) * 8, -27, 2.6)
+            _f(cc, DRG_HORN)
+            cc.move_to(sx * 40, -100)                          # stubby arms
+            cc.curve_to(sx * 36, -86, sx * 28, -82, sx * 18, -84)
+            _s(cc, INK, 13)
+            cc.move_to(sx * 40, -100)
+            cc.curve_to(sx * 36, -86, sx * 28, -82, sx * 18, -84)
+            _s(cc, DRG, 6)
+        hx, hy = 0, -162
+        for sx in (-1, 1):                                     # ear frills
+            poly(cc, [(hx + sx * 36, hy - 12), (hx + sx * 66, hy - 26), (hx + sx * 44, hy + 10)])
+            _fs(cc, DRG_WING, INK, 4)
+        for sx in (-1, 1):                                     # curly horns
+            cc.move_to(hx + sx * 12, hy - 30)
+            cc.curve_to(hx + sx * 18, hy - 58, hx + sx * 40, hy - 70, hx + sx * 50, hy - 58)
+            cc.curve_to(hx + sx * 38, hy - 56, hx + sx * 32, hy - 44, hx + sx * 30, hy - 28)
+            cc.close_path()
+            _fs(cc, DRG_HORN, INK, 4)
+        poly(cc, [(hx - 7, hy - 34), (hx, hy - 52), (hx + 7, hy - 34)])   # head spike
+        _fs(cc, DRG_DK, INK, 3)
+        ellipse(cc, hx, hy, 44, 38)                            # head
+        _fs(cc, DRG, INK, 5)
+        cc.save()
+        ellipse(cc, hx, hy, 44, 38)
+        cc.clip()
+        ellipse(cc, hx + 30, hy + 6, 24, 40)
+        _f(cc, DRG_DK, 0.45)
+        cc.restore()
+        ellipse(cc, hx, hy + 18, 28, 16)                       # snout
+        _fs(cc, DRG_SNOUT, INK, 3.5)
+        for sx in (-1, 1):
+            ellipse(cc, hx + sx * 9, hy + 13, 3.5, 2.5)        # nostrils
+            _f(cc, INK)
+            ellipse(cc, hx + sx * 31, hy + 10, 6, 3.5)
+            _f(cc, "#ff8fb0", 0.55)
+        lx, ly = look[0] * 3.5, look[1] * 2.5
+        for sx in (-1, 1):                                     # yellow slit eyes
+            ellipse(cc, hx + sx * 17, hy - 8, 11, 12)
+            _fs(cc, SPOOK_EYE, INK, 3.5)
+            ellipse(cc, hx + sx * 17 + lx, hy - 7 + ly, 2.8, 8)
+            _f(cc, INK)
+            circle(cc, hx + sx * 17 - 4, hy - 12, 2.2)
+            _f(cc, "white")
+            cc.move_to(hx + sx * 5, hy - 21)                   # cheeky lid line
+            cc.line_to(hx + sx * 29, hy - 17)
+            _s(cc, INK, 4.5)
+        cc.move_to(hx - 15, hy + 24)                           # grin + one tiny fang
+        cc.curve_to(hx - 6, hy + 32, hx + 6, hy + 32, hx + 15, hy + 24)
+        _s(cc, INK, 3.5)
+        poly(cc, [(hx + 4, hy + 29), (hx + 11, hy + 27.5), (hx + 8.5, hy + 36)])
+        _fs(cc, "white", INK, 2)
+        if 0.0 <= puff <= 1.0:                                 # smoke puff
+            for j in range(3):
+                u = clamp(puff * 1.35 - j * 0.17)
+                if u <= 0.0 or u >= 1.0:
+                    continue
+                a = 1.0 - u ** 1.6
+                px = hx + 18 + 54 * u + j * 8
+                py = hy + 10 - 74 * u - j * 10
+                r = 9 + 16 * u
+                circle(cc, px, py, r)
+                cc.set_source_rgba(0.86, 0.83, 0.93, 0.95 * a)
+                cc.fill_preserve()
+                cc.set_source_rgba(*hexc(INK, 0.9 * a))
+                cc.set_line_width(3.5)
+                cc.stroke()
+
+
+def draw_pumpkin(c, x, y, s, t, lit=1.0, sq=0.0):
+    """Cute jack-o'-lantern. (x, y) = bottom-centre; ~140 x 130 at s=1."""
+    with saved(c, x, y, (s * (1 + sq * 0.5), s * (1 - sq))) as cc:
+        with saved(cc, 4, -100, 1.0, 0.28) as c2:              # stem + curl
+            rrect(c2, -8, -18, 16, 28, 5)
+            _fs(c2, "#6b7a2a", INK, 4)
+        cc.move_to(8, -100)
+        cc.curve_to(30, -112, 40, -96, 28, -92)
+        _s(cc, INK, 7)
+        cc.move_to(8, -100)
+        cc.curve_to(30, -112, 40, -96, 28, -92)
+        _s(cc, "#8fae3a", 3)
+        for sx in (-1, 1):                                     # side lobes
+            ellipse(cc, sx * 34, -48, 36, 46)
+            _fs(cc, PUMP_DK, INK, 5)
+        ellipse(cc, 0, -50, 44, 50)
+        _fs(cc, PUMP, INK, 5)
+        for sx in (-1, 1):
+            cc.move_to(sx * 16, -96)
+            cc.curve_to(sx * 26, -70, sx * 26, -30, sx * 16, -4)
+        _s(cc, PUMP_DK, 3.5)
+        fl = lit * (0.85 + 0.15 * math.sin(t * 13) * noise1(t * 3, 9))
+        glow = core.mixc("#7a2a10", PUMP_GLOW, clamp(fl))
+
+        def face():
+            for sx in (-1, 1):
+                poly(cc, [(sx * 8, -58), (sx * 32, -58), (sx * 20, -80)])
+            poly(cc, [(-6, -44), (6, -44), (0, -54)])
+            poly(cc, [(-34, -34), (-24, -27), (-16, -33), (-8, -25), (0, -31), (8, -25),
+                      (16, -33), (24, -27), (34, -34), (26, -16), (14, -10), (0, -8),
+                      (-14, -10), (-26, -16)])
+        face()
+        _fs(cc, glow, INK, 3)
+        cc.save()
+        face()
+        cc.clip()
+        ellipse(cc, 0, -42, 26, 22)
+        _f(cc, "#fff3b0", 0.65 * clamp(fl))
+        cc.restore()
+        ellipse(cc, -20, -78, 9, 5, -0.5)
+        _f(cc, "white", 0.45)
+
+
+def draw_paper_bat(c, x, y, s, rot=0.0, col="#2a1a3a"):
+    """Flat paper-cut bat for the party garlands (static). (x, y) = body."""
+    with saved(c, x, y, s, rot) as cc:
+        for sx in (-1, 1):
+            cc.save()
+            cc.translate(sx * 10, -2)
+            cc.scale(sx * 0.42, 0.42)
+            _scallop_wing(cc, ((36, -46), (80, -54), (114, -40)),
+                          [(98, 6), (64, 16), (28, 18), (0, 10)], col, None, bones=False, lw=7)
+            cc.restore()
+        for sx in (-1, 1):
+            poly(cc, [(sx * 3, -10), (sx * 11, -24), (sx * 12, -6)])
+            _fs(cc, col, INK, 2.5)
+        ellipse(cc, 0, 0, 13, 14)
+        _fs(cc, col, INK, 3)
+        for sx in (-1, 1):
+            circle(cc, sx * 5, -3, 2.6)
+            _f(cc, "#ffe066")
 
 
 # ---------------------------------------------------------------------------
@@ -1200,6 +1545,12 @@ def _hologram(ctx, t, T):
         _s(ctx, "ai_rim", 4, ga)
         ctx.set_dash([], 0)
     P.brick_wall(ctx, wx, wy, ww, wh, t, T["wall0"], rows=WALL_ROWS, drop=WALL_DROP)
+    if T["w_hurting"] <= t < T["w_hurting"] + 0.7:      # "Hurting people isn't.": wall glints
+        pk_ = math.sin(math.pi * seg(t, T["w_hurting"], T["w_hurting"] + 0.7))
+        ctx.rectangle(wx, wy, ww, wh)
+        _f(ctx, "white", 0.16 * pk_)
+        ctx.rectangle(wx - 4, wy - 4, ww + 8, wh + 8)
+        _s(ctx, "ai_rim", 8, 0.9 * pk_)
     k_in = ease_out_back(seg(t, T["door_in"], T["door_in"] + 0.35), 1.8)
     _door_frame(ctx, k_in)
     # cyan hologram tint + static scanlines (only on drawn pixels)
@@ -1304,7 +1655,7 @@ BOOK_S = 1.0
 BOOK_DEST = (MX + 6, MY - 228 * MS)
 # (kind, target x, target y, final scale, final rot)
 GIFTS = [
-    ("popper", MX - 200, 1240.0, 0.88, -0.3),
+    ("popper", MX - 172, 1240.0, 0.88, -0.24),
     ("phones", MX + 128, 1206.0, 1.12, 0.12),
     ("scroll", MX - 120, 1212.0, 0.95, -0.12),
     ("book", BOOK_DEST[0], BOOK_DEST[1], BOOK_S, 0.05),
@@ -1395,6 +1746,104 @@ def _newest_gift(t, T):
 
 
 # ---------------------------------------------------------------------------
+# the spooky gifts (l08): the jack-o'-lantern + dragon onto the desk, the bat
+# onto Hissy's head, the goblin mask onto Malvo's dome (pushed up; s12 keeps
+# every one of them exactly here)
+# ---------------------------------------------------------------------------
+SP_ORDER = ("pumpkin", "bat", "mask", "dragon")
+PUMPKIN_AT = (112.0, 1240.0, 0.85)        # bottom-centre on the desk (left end)
+DRAGON_AT = (774.0, 1240.0, 0.84)         # bottom-centre on the desk (right end)
+BAT_LOCAL = (4.0, -96.0, 0.72)            # perched on Hissy's head (snake-head local)
+MASK_LOCAL = (0.0, -184.0, 0.8, -0.1)     # pushed up on his dome (face local)
+SP_CTRL = {"pumpkin": (600.0, 1130.0), "bat": (300.0, 400.0), "mask": (560.0, 330.0),
+           "dragon": (470.0, 900.0)}
+SP_SPIN = {"pumpkin": -0.6, "bat": 0.3, "mask": 0.8, "dragon": 0.45}
+
+
+def _snake_head_xf(ctx, x, y, s, t, expr, seed=5):
+    """Apply Hissy's head transform (exactly as draw_snake_head does)."""
+    p = SN.resolve_expr(expr)
+    nod = p["nod"]
+    nod_phase = math.sin(t * 2 * math.pi * 1.6)
+    nod_dy = nod * (max(0.0, nod_phase) * 16 - 3)
+    nod_rot = nod * 0.09 * max(0.0, nod_phase)
+    bob = math.sin(t * 2 * math.pi * 0.45 + seed) * 2.5
+    sway = noise1(t * 0.6, seed + 3) * 0.035
+    wob = p["wob"] * math.sin(t * 2 * math.pi * 7) * 0.02
+    ctx.translate(x, y)
+    ctx.scale(s, s)
+    ctx.translate(0, p["hy"] + bob + nod_dy)
+    ctx.rotate(p["tilt"] + sway + nod_rot + wob)
+    sq = p["sq"]
+    if sq != 1.0:
+        ctx.scale(1 / math.sqrt(sq), sq)
+    return p
+
+
+def _xf_villain(c, dy, lean):
+    c.translate(MX, MY + dy)
+    c.scale(MS, MS)
+    if lean:
+        c.rotate(lean)
+
+
+def _xf_face(c, st, dy, lean):
+    _xf_villain(c, dy, lean)
+    c.translate(V.NECK[0], V.NECK[1] + st["head_dy"])
+    c.rotate(st["head_rot"])
+    c.translate(0, V.FACE_OFF)
+
+
+def _xf_hissy(c, t, st, dy, lean, sexpr):
+    _xf_villain(c, dy, lean)
+    _snake_head_xf(c, V.SNAKE_HEAD[0], V.SNAKE_HEAD[1] + st["shy"] * 0.6 - st["breath"] * 1.5,
+                   V.SNAKE_SCALE, t, sexpr, seed=5)
+
+
+def _local_to_user(ctx, xf, px, py):
+    """User-space point of (px, py) drawn under the transform `xf(ctx)`."""
+    ctx.save()
+    xf(ctx)
+    dx, dy = ctx.user_to_device(px, py)
+    ctx.restore()
+    return ctx.device_to_user(dx, dy)
+
+
+def _land_sq(t, t_land, amp=0.22):
+    d = t - t_land
+    if d < 0 or d > 0.8:
+        return 0.0
+    return amp * math.exp(-d * 9) * math.cos(d * 26)
+
+
+def _sp_world_scale(kind):
+    return {"pumpkin": PUMPKIN_AT[2], "dragon": DRAGON_AT[2],
+            "bat": BAT_LOCAL[2] * V.SNAKE_SCALE * MS, "mask": MASK_LOCAL[2] * MS}[kind]
+
+
+def _sp_flight(t, T, kind, target):
+    """(x, y, scale, rot) of a spooky gift in flight, or None (not launched /
+    landed). `target` = where its anchor lands (user space, this frame)."""
+    t0, t1 = T["sp_t"][kind], T["sp_land"][kind]
+    if t < t0 or t >= t1:
+        return None
+    u = seg(t, t0 + 0.03, t1)
+    e = math.sin(u * math.pi / 2) ** 1.15
+    pop_k = ease_out_back(seg(t, t0, t0 + 0.12), 2.6)
+    sx0, sy0 = SRC
+    if kind in ("pumpkin", "dragon"):                 # bottom-centre anchors
+        sy0 += 40
+    cx_, cy_ = SP_CTRL[kind]
+    tx, ty = target
+    x = (1 - e) ** 2 * sx0 + 2 * (1 - e) * e * cx_ + e * e * tx
+    y = (1 - e) ** 2 * sy0 + 2 * (1 - e) * e * cy_ + e * e * ty
+    y -= 40 * math.sin(math.pi * min(1.0, u * 2.5)) * (1 - u)    # little hop out
+    sc = lerp(0.6, 1.0, ease_out(u)) * _sp_world_scale(kind) * (0.3 + 0.7 * pop_k)
+    rot = SP_SPIN[kind] * math.sin(math.pi * e)
+    return (x, y, sc, rot)
+
+
+# ---------------------------------------------------------------------------
 # acting
 # ---------------------------------------------------------------------------
 def _dir(ox, oy, tx, ty, mag=0.95):
@@ -1419,6 +1868,10 @@ def _malvo(t, T):
         (T["wall"] + 0.1, "s11_listen", 0.4),
         (T["open"], "s11_wonder", 0.3),                  # golden light!
         (T["gift_t"][2], "s11_wonder2", 0.6),            # ...eyes getting wider
+        (T["sp_t"]["pumpkin"] + 0.12, "s11_delight", 0.25),   # SPOOKY stuff? for me?!
+        (T["sp_land"]["mask"] - 0.02, "s11_delight_up", 0.1),  # plop! (goblin mask)
+        (T["sp_land"]["mask"] + 0.45, "s11_delight", 0.25),
+        (T["w_hurting"] + 0.05, "s11_listen", 0.35),     # ...hurting people isn't.
         (T["smile"], "s11_smile", 0.9),                  # REAL SMILE spreads
     ])
     arms = _state(t, [
@@ -1448,14 +1901,17 @@ def _malvo(t, T):
         (T["wall0"] + 0.2, (-0.15, -1.0), 0.25),        # bricks stacking
         (T["w_every"], gaze_ai, 0.2),
         (T["w_else"] + 0.15, (0.55, -0.85), 0.25),      # the door
+        (T["pile_end"] + 0.25, gaze_ai, 0.3),           # "And keep the spooky stuff!"
+        (T["w_hurting"], gaze_ai, 0.2),
     ], 0.2)
-    # eyes follow each gift
+    # eyes follow each gift of the pile (the spooky ones: see _sp_focus)
     gi = _newest_gift(t, T)
-    if gi is not None and t < T["smile"]:
+    if gi is not None and t < T["pile_end"] + 0.3:
         pose = _gift_pose(max(T["gift_t"][gi], t - 0.05), T, gi)
         if pose is not None:
             gl = _dir(FACE[0], FACE[1], pose[0], pose[1], 0.98)
-            k = smoothstep(seg(t, T["gift_t"][0], T["gift_t"][0] + 0.1))
+            k = smoothstep(seg(t, T["gift_t"][0], T["gift_t"][0] + 0.1)) * \
+                (1 - smoothstep(seg(t, T["pile_end"] + 0.1, T["pile_end"] + 0.3)))
             look = (lerp(look[0], gl[0], k), lerp(look[1], gl[1], k))
     if t >= T["smile"]:                                  # down at the pile... then the AI
         look = _keyv(t, [(T["smile"], look), (T["smile"], (0.1, 0.8), 0.45),
@@ -1463,7 +1919,9 @@ def _malvo(t, T):
     blink = _first(_slow_blink(t, T["photo"] - 0.6),
                    _slow_blink(t, T["mono_in"] + 0.05, 0.08, 0.04, 0.08),
                    _slow_blink(t, T["mono_in"] + 0.33, 0.08, 0.04, 0.08),
-                   _slow_blink(t, T["open"] + 0.75, 0.1, 0.05, 0.12))
+                   _slow_blink(t, T["open"] + 0.75, 0.1, 0.05, 0.12),
+                   _slow_blink(t, T["sp_land"]["mask"] - 0.03, 0.05, 0.04, 0.09),
+                   _slow_blink(t, T["w_hurting"] + 0.3, 0.1, 0.06, 0.12))
     if blink is None and (T["l5"] - 0.15 <= t < T["mono_in"] + 0.02
                           or T["back"] - 0.02 <= t < T["back"] + 0.4
                           or T["w_noticed"] - 0.1 <= t < T["w_noticed"] + 0.5):
@@ -1476,6 +1934,7 @@ def _malvo(t, T):
         - 0.02 * smoothstep(seg(t, T["open"], T["open"] + 0.6))
     # slump sink + rise
     dy = 10 * (1 - smoothstep(seg(t, beat, beat + 0.6)))
+    dy += 9 * math.sin(math.pi * seg(t, T["sp_land"]["mask"], T["sp_land"]["mask"] + 0.26))
     return expr, arms, look, blink, lean, dy
 
 
@@ -1489,6 +1948,9 @@ def _hissy(t, T):
         (T["w_every"] - 0.05, "nod", 0.12),
         (T["l6e"] + 0.15, "s11_soft", 0.3),
         (T["open"] + 0.1, "s11_wonder", 0.25),
+        (T["sp_land"]["bat"] + 0.3, "happy", 0.3),       # a bat friend on his head!
+        (T["w_hurting"] + 0.1, "nod", 0.15),             # agrees with the AI
+        (T["l8e"] + 0.05, "happy", 0.3),
         (T["smile"] + 0.25, "happy", 0.35),
     ])
     look = _keyv(t, [
@@ -1505,10 +1967,12 @@ def _hissy(t, T):
         (T["open"] + 0.1, (0.8, -0.65), 0.2),
     ], 0.25)
     gi = _newest_gift(t, T)
-    if gi is not None and t < T["smile"]:
+    if gi is not None and t < T["pile_end"] + 0.3:
         pose = _gift_pose(max(T["gift_t"][gi], t - 0.08), T, gi)
         if pose is not None:
-            look = _dir(HISSY[0], HISSY[1], pose[0], pose[1], 0.98)
+            gl = _dir(HISSY[0], HISSY[1], pose[0], pose[1], 0.98)
+            k = 1 - smoothstep(seg(t, T["pile_end"] + 0.1, T["pile_end"] + 0.3))
+            look = (lerp(look[0], gl[0], k), lerp(look[1], gl[1], k))
     if t >= T["smile"]:
         look = (0.85, -0.3)
     blink = _first(_slow_blink(t, T["slump"] + 1.7, 0.15, 0.1, 0.18),
@@ -1531,6 +1995,10 @@ def _ai(t, T):
         (T["w_hurts"], "determined", 0.3),
         (T["l6e"] + 0.05, "warm", 0.35),
         (T["open"], "happy", 0.3),
+        (T["l8"], "amused", 0.3),                        # "And keep the spooky stuff!"
+        (T["w_spooky"], "happy", 0.25),
+        (T["w_hurting"] - 0.04, "determined", 0.15),     # ...Hurting people isn't.
+        (T["l8e"] + 0.05, "warm", 0.35),
         (T["smile"], "warm_soft", 0.5),
     ])
     look = _keyv(t, [
@@ -1548,10 +2016,12 @@ def _ai(t, T):
         (T["open"] + 0.45, at_malvo, 0.3),
     ], 0.2)
     gi = _newest_gift(t, T)
-    if gi is not None and t < T["smile"]:
+    if gi is not None and t < T["pile_end"] + 0.3:
         pose = _gift_pose(max(T["gift_t"][gi], t - 0.1), T, gi)
         if pose is not None:
-            look = _dir(AX, AY1, pose[0], pose[1], 0.9)
+            gl = _dir(AX, AY1, pose[0], pose[1], 0.9)
+            k = 1 - smoothstep(seg(t, T["pile_end"] + 0.1, T["pile_end"] + 0.3))
+            look = (lerp(look[0], gl[0], k), lerp(look[1], gl[1], k))
     if t >= T["smile"]:
         look = at_malvo
     hands = _state(t, [
@@ -1564,17 +2034,23 @@ def _ai(t, T):
         (T["wall"] - 0.05, "present_l", 0.3),            # projecting
         (T["l6e"] + 0.1, "idle", 0.35),
         (T["w_wide"] - 0.15, "present_both", 0.3),        # wide open
-        (T["smile"] - 0.2, "idle", 0.5),
+        (T["l8"] + 0.05, "present_l", 0.4),              # "keep the spooky stuff!"
+        (T["w_fine"] - 0.1, "thumbs_up", 0.22),          # spooky is fine
+        (T["w_hurting"] - 0.02, "idle", 0.25),
     ])
     blink = _first(_slow_blink(t, T["beat"] + 0.15),
                    _slow_blink(t, T["back"] + 0.12),
                    _slow_blink(t, T["l7"] - 0.3),
+                   _slow_blink(t, T["l8e"] + 0.2),
                    _slow_blink(t, T["smile"] + 0.85, 0.14, 0.1, 0.16))
     nod = 0.0
     if T["w_every"] <= t < T["w_every"] + 0.5:          # one firm nod
         nod = 0.6 * math.sin(math.pi * seg(t, T["w_every"], T["w_every"] + 0.5))
     if T["l5e"] <= t < T["l5e"] + 0.55:                  # "yes. hero stats."
         nod = max(nod, 0.35 * math.sin(math.pi * seg(t, T["l5e"], T["l5e"] + 0.55)))
+    n0 = T["w_people2"] + 0.08                           # one firm nod: "...isn't."
+    if n0 <= t < n0 + 0.5:
+        nod = max(nod, 0.6 * math.sin(math.pi * seg(t, n0, n0 + 0.5)))
     u = ease_in_out(seg(t, T["l1"], T["l1e"]))
     ay, s = lerp(AY0, AY1, u), lerp(AS0, AS1, u)
     return _ai_ex(expr), look, hands, blink, nod, ay, s
@@ -1583,6 +2059,90 @@ def _ai(t, T):
 # ---------------------------------------------------------------------------
 # shots
 # ---------------------------------------------------------------------------
+def _sp_targets(ctx, t, T, st, dy, lean, sexpr):
+    """User-space landing anchors of the four spooky gifts (this frame)."""
+    return {
+        "pumpkin": PUMPKIN_AT[:2],
+        "dragon": DRAGON_AT[:2],
+        "bat": _local_to_user(ctx, lambda c: _xf_hissy(c, t, st, dy, lean, sexpr),
+                              BAT_LOCAL[0], BAT_LOCAL[1]),
+        "mask": _local_to_user(ctx, lambda c: _xf_face(c, st, dy, lean),
+                               MASK_LOCAL[0], MASK_LOCAL[1]),
+    }
+
+
+def _sp_centre(kind, x, y, sc):
+    """Visual centre of a spooky gift from its anchor."""
+    if kind == "pumpkin":
+        return (x, y - 55 * sc)
+    if kind == "dragon":
+        return (x, y - 120 * sc)
+    return (x, y)
+
+
+def _sp_focus(t, T, targets):
+    """(point, weight): the spooky gift everyone's eyes follow right now."""
+    first = T["sp_t"]["pumpkin"]
+    end = T["sp_land"]["dragon"] + 0.55
+    if t < first - 0.02 or t > end:
+        return None, 0.0
+    kind = SP_ORDER[0]
+    for k in SP_ORDER:
+        if t >= T["sp_t"][k] - 0.02:
+            kind = k
+    fl = _sp_flight(t, T, kind, targets[kind])
+    if fl is not None:
+        pt = _sp_centre(kind, fl[0], fl[1], fl[2])
+    else:
+        pt = _sp_centre(kind, targets[kind][0], targets[kind][1], _sp_world_scale(kind))
+    w = smoothstep(seg(t, first - 0.02, first + 0.1)) * (1 - smoothstep(seg(t, end - 0.25, end)))
+    return pt, w
+
+
+def _blend_look(look, d, w):
+    return (lerp(look[0], d[0], w), lerp(look[1], d[1], w))
+
+
+def _bat_flap(t, T):
+    """Wing pose: flapping in flight, ONE big flap on landing, then perched."""
+    t0, t1 = T["sp_t"]["bat"], T["sp_land"]["bat"]
+    if t < t1:
+        return 0.25 + 0.75 * math.sin((t - t0) * 2 * math.pi * 5.5)
+    d = t - t1
+    if d < 0.2:
+        return lerp(-0.3, 1.0, math.sin(math.pi / 2 * d / 0.2))
+    if d < 0.45:
+        return lerp(1.0, -0.75, smoothstep((d - 0.2) / 0.25))
+    return lerp(-0.75, -0.3, smoothstep(seg(d, 0.45, 0.75)))
+
+
+def _draw_sp(c, t, T, kind, x, y, sc, rot, sq=0.0, landed=False):
+    if kind == "pumpkin":
+        lit = 0.4 + 0.6 * smoothstep(seg(t, T["sp_land"]["pumpkin"], T["sp_land"]["pumpkin"] + 0.2))
+        with saved(c, x, y, 1.0, rot):
+            draw_pumpkin(c, 0, 0, sc, t, lit=lit, sq=sq)
+    elif kind == "dragon":
+        d0 = T["sp_land"]["dragon"] + 0.12
+        puff = seg(t, d0, d0 + 1.0) if t >= d0 else -1.0
+        with saved(c, x, y, 1.0, rot):
+            draw_dragon_fig(c, 0, 0, sc, t, puff=puff if puff < 1.0 else -1.0, sq=sq,
+                            look=(-0.6, -0.2) if landed else (0.0, 0.0))
+    elif kind == "bat":
+        draw_bat(c, x, y, sc, t, flap=_bat_flap(t, T), rot=rot, sq=sq, look=(0.4, 0.2))
+    elif kind == "mask":
+        draw_goblin_mask(c, x, y, sc, rot, sq)
+
+
+def _mask_strap(c):
+    """Black elastic from the pushed-up mask round his dome (face-local)."""
+    my = MASK_LOCAL[1]
+    for col, w in ((INK, 10), ("#3b2d4a", 5)):
+        for sx in (-1, 1):
+            c.move_to(sx * 60, my + 10)
+            c.curve_to(sx * 104, my + 20, sx * 136, -150, sx * 150, -112)
+        _s(c, col, w)
+
+
 def _shot_two(ctx, t, info, T):
     k = _cam(t, info)
     with saved(ctx, CAM_C[0], CAM_C[1], k) as c:
@@ -1596,16 +2156,40 @@ def _shot_two(ctx, t, info, T):
         gc = core.mixc("ai_glow", "ai_accent", open_k)
         radial_glow(c, FACE[0] + 120, FACE[1] + 10, 380, gc, 0.12 + 0.06 * open_k)
 
-        # --- AI first (its projection beam sits behind Malvo's head) -----------
+        # --- acting state ---------------------------------------------------------
         aexpr, alook, ahands, ablink, anod, ay, a_s = _ai(t, T)
+        expr, arms, look, blink, lean, dy = _malvo(t, T)
+        mouth = info.mouth("villain", t)
+        st = _vstate(t, expr, arms, mouth)
+        hs = _hissy(t, T)
+        targets = _sp_targets(c, t, T, st, dy, lean, hs["expr"])
+        fpt, fw = _sp_focus(t, T, targets)
+        if fpt is not None and fw > 0.0:                 # everyone follows the spooky gifts
+            look = _blend_look(look, _dir(FACE[0], FACE[1], fpt[0], fpt[1], 0.98), fw)
+            hs["look"] = _blend_look(hs["look"], _dir(HISSY[0], HISSY[1], fpt[0], fpt[1], 0.98),
+                                     fw)
+            alook = _blend_look(alook, _dir(AX, ay, fpt[0], fpt[1], 0.9), fw)
+        bl = T["sp_land"]["bat"]
+        if bl <= t < bl + 0.75:                          # Hissy peeks up at his new friend
+            hs["look"] = _blend_look(hs["look"], (0.12, -1.0),
+                                     smoothstep(seg(t, bl, bl + 0.12)) *
+                                     (1 - smoothstep(seg(t, bl + 0.55, bl + 0.75))))
+        sp_fl = {kd: _sp_flight(t, T, kd, targets[kd]) for kd in SP_ORDER}
+        sp_on = {kd: t >= T["sp_land"][kd] for kd in SP_ORDER}
+
+        # --- AI projection beam (sits behind Malvo's head) -----------------------
         hand = (AX - 272 * a_s, ay + 150 * a_s)          # ~ the AI's projecting hand
         _holo_beam(c, t, T, hand)
         # --- Malvo + Hissy ----------------------------------------------------
-        expr, arms, look, blink, lean, dy = _malvo(t, T)
-        mouth = info.mouth("villain", t)
         draw_villain(c, MX, MY + dy, MS, t, expr=expr, look=look, mouth=mouth, arms=arms,
-                     lean=lean, blink=blink, snake=_hissy(t, T))
-        st = _vstate(t, expr, arms, mouth)
+                     lean=lean, blink=blink, snake=hs)
+        # the bat, perched on Hissy's head
+        if sp_on["bat"]:
+            c.save()
+            _xf_hissy(c, t, st, dy, lean, hs["expr"])
+            draw_bat(c, BAT_LOCAL[0], BAT_LOCAL[1], BAT_LOCAL[2], t, flap=_bat_flap(t, T),
+                     sq=_land_sq(t, bl, 0.18), look=(0.5, 0.25))
+            c.restore()
         # the book in his arms (gift 4) sits on his chest, under the desk edge
         bpose = _gift_pose(t, T, 3)
         landed_book = bpose is not None and t >= T["gift_t"][3] + T["fly"]
@@ -1633,8 +2217,19 @@ def _shot_two(ctx, t, info, T):
             pose = _gift_pose(t, T, i)
             if pose is not None and t >= T["gift_t"][i] + T["fly"]:
                 _draw_gift(c, t, i, pose)
+        for kd, (gx, gy, gs) in (("pumpkin", PUMPKIN_AT), ("dragon", DRAGON_AT)):
+            if sp_on[kd]:
+                _draw_sp(c, t, T, kd, gx, gy, gs, 0.0, _land_sq(t, T["sp_land"][kd]), True)
         # --- the projection: wall + door, then the warm light -------------------
         _hologram(c, t, T)
+        # the goblin mask, pushed up on his dome (in front of the hologram glass)
+        if sp_on["mask"]:
+            c.save()
+            _xf_face(c, st, dy, lean)
+            _mask_strap(c)
+            draw_goblin_mask(c, MASK_LOCAL[0], MASK_LOCAL[1], MASK_LOCAL[2], MASK_LOCAL[3],
+                             _land_sq(t, T["sp_land"]["mask"], 0.26))
+            c.restore()
         _door_light(c, t, T)
         # balloon (landed) floats in front
         if bal is not None and t >= T["gift_t"][4] + T["fly"]:
@@ -1648,6 +2243,20 @@ def _shot_two(ctx, t, info, T):
         # --- the AI hologram (on top) -------------------------------------------
         draw_ai(c, AX, ay, a_s, t, expr=aexpr, look=alook, mouth=info.mouth("ai", t),
                 hands=ahands, blink=ablink, aura=AURA, nod=anod)
+        # spooky gifts in flight: in front of everything (they're the stars here)
+        for kd in SP_ORDER:
+            fl = sp_fl[kd]
+            if fl is not None:
+                tr = _sp_flight(t - 0.07, T, kd, targets[kd])
+                if tr is not None:                       # one trailing sparkle
+                    cx_, cy_ = _sp_centre(kd, tr[0], tr[1], tr[2])
+                    P._star4(c, cx_, cy_, 12, t * 4)
+                    P._f(c, "ai_accent", 0.85)
+                _draw_sp(c, t, T, kd, fl[0], fl[1], fl[2], fl[3])
+        # his eyes light up at the dragon
+        if t >= T["sp_land"]["dragon"]:
+            P.emote(c, "sparkle", FACE[0] - 190, FACE[1] - 95, 0.7, t,
+                    T["sp_land"]["dragon"] + 0.05, t_out=T["w_hurting"])
         # --- the character sheet ----------------------------------------------
         _sheet(c, t, T)
         # warm little sparkles over the pile once he smiles
@@ -1687,4 +2296,11 @@ def SFX(info):
     out.append((T["open"] + 0.05, "magic_chime", -6))
     for i, tg in enumerate(T["gift_t"]):
         out.append((tg, "pop", -10, 0.25 - 0.08 * i))
+    # the spooky gifts: a pop out of the door on each word
+    for kd, pan in (("pumpkin", -0.3), ("bat", -0.2), ("mask", 0.0), ("dragon", 0.3)):
+        out.append((T["sp_t"][kd], "pop", -9, pan))
+    out.append((T["sp_land"]["pumpkin"], "sparkle", -16, -0.4))           # it lights up
+    out.append((T["sp_land"]["bat"] + 0.02, "whoosh", -17, -0.5))         # one flap
+    out.append((T["sp_land"]["mask"], "boing", -12))                      # plop on the dome
+    out.append((T["sp_land"]["dragon"] + 0.12, "swoosh_up", -18, 0.3))    # smoke puff
     return out
