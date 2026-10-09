@@ -557,3 +557,53 @@ def sfx_clink():
     t = t_arr(0.6)
     s = sum(np.sin(2 * np.pi * f * t) * np.exp(-t * d) for f, d in ((2100, 9), (3350, 12), (5100, 15))) * 0.08
     return np.vstack([s, s])
+
+
+def sfx_typing(dur, density=11.0, seed=1):
+    """Soft keyboard clatter."""
+    r = np.random.default_rng(seed)
+    tr = Track(dur)
+    tt = 0.0
+    while tt < dur - 0.05:
+        n = int(0.03 * SR)
+        click = bp(r.standard_normal(n), 1800, 7000) * np.exp(-t_arr(0.03) * 160)
+        click += np.sin(2 * np.pi * (300 + 200 * r.random()) * t_arr(0.03)) * np.exp(-t_arr(0.03) * 120) * 0.4
+        tr.add(click * (0.08 + 0.06 * r.random()), tt, pan=r.uniform(-0.3, 0.3))
+        tt += r.exponential(1.0 / density) + 0.02
+        if r.random() < 0.05:
+            tt += 0.35
+    return trim(tr.st(), dur, 0.02)
+
+
+def android_chirp(text, base=900.0, seed=0):
+    """Fast melodic chirps with a speech-like rhythm. Returns (stereo, envelope mono)."""
+    r = np.random.default_rng(seed)
+    words = text.split()
+    tr = Track(0.06 * len(text) + 1)
+    tt = 0.0
+    for w in words:
+        for s in range(max(1, (len(w) + 1) // 2)):
+            d = 0.055 + 0.05 * r.random()
+            t = t_arr(d)
+            f0 = base * 2 ** (r.uniform(-0.5, 0.6))
+            f1 = f0 * 2 ** r.uniform(-0.4, 0.4)
+            f = np.linspace(f0, f1, len(t))
+            ph = np.cumsum(f) / SR
+            tone = np.sin(2 * np.pi * ph) + 0.3 * np.sign(np.sin(2 * np.pi * ph * 2)) * 0.3
+            tone *= np.sin(np.pi * np.clip(t / d, 0, 1)) ** 0.6
+            tr.add(tone * 0.18, tt, pan=0)
+            tt += d + 0.012
+        tt += 0.06
+    st = trim(tr.st(), tt + 0.1, 0.02)
+    st = reverb(st, 0.12, 0.6)
+    return st
+
+
+def sfx_tap():
+    """Fingertip-to-device data transfer: rising sparkle + confirm chime."""
+    tr = Track(1.2)
+    for i in range(10):
+        tr.add(np.sin(2 * np.pi * (900 + 160 * i) * t_arr(0.05)) * np.exp(-t_arr(0.05) * 40) * 0.12, i * 0.035, pan=-0.3 + 0.06 * i)
+    for k, f in enumerate((1319, 1760)):
+        tr.add(np.sin(2 * np.pi * f * t_arr(0.6)) * np.exp(-t_arr(0.6) * 6) * 0.16, 0.38 + k * 0.09, pan=0)
+    return trim(reverb(tr.st(), 0.25, 1.2), 1.2)
