@@ -662,8 +662,8 @@ def _hug_hands(ctx, bx, by, bs, rot, k=1.0):
 # SPOOKY GIFTS (s11 l08 "Bats, goblins, dragons..." and the s12 monster party;
 # the same drawing code lives in s11_heart.py and s12_party.py)
 # ---------------------------------------------------------------------------
-BAT_C, BAT_DK, BAT_BELLY = "#5b4688", "#3e2f66", "#8f7abf"
-BAT_WING, BAT_WING_LN = "#3a2c5c", "#7a66ae"
+BAT_C, BAT_DK, BAT_BELLY = "#7d64b8", "#5a4590", "#b4a2e0"
+BAT_WING, BAT_WING_LN = "#4b3a7c", "#9a86cc"
 GOB, GOB_DK, GOB_LT, GOB_MOUTH = "#7ccf4e", "#4f9a32", "#b6ec88", "#5a1530"
 DRG, DRG_DK, DRG_BELLY, DRG_SNOUT = "#5a3f92", "#3b2866", "#c9b3ea", "#7258b0"
 DRG_WING, DRG_WING_LN, DRG_HORN = "#2c2050", "#6a54a0", "#f3e6c0"
@@ -1751,10 +1751,10 @@ def _newest_gift(t, T):
 # every one of them exactly here)
 # ---------------------------------------------------------------------------
 SP_ORDER = ("pumpkin", "bat", "mask", "dragon")
-PUMPKIN_AT = (112.0, 1240.0, 0.85)        # bottom-centre on the desk (left end)
-DRAGON_AT = (774.0, 1240.0, 0.84)         # bottom-centre on the desk (right end)
-BAT_LOCAL = (4.0, -96.0, 0.72)            # perched on Hissy's head (snake-head local)
-MASK_LOCAL = (0.0, -184.0, 0.8, -0.1)     # pushed up on his dome (face local)
+PUMPKIN_AT = (126.0, 1240.0, 0.95)        # bottom-centre on the desk (left end)
+DRAGON_AT = (786.0, 1240.0, 1.02)         # bottom-centre on the desk (right end)
+BAT_LOCAL = (22.0, -104.0, 0.95)            # perched on Hissy's head (snake-head local)
+MASK_LOCAL = (0.0, -186.0, 0.86, -0.1)     # pushed up on his dome (face local)
 SP_CTRL = {"pumpkin": (600.0, 1130.0), "bat": (300.0, 400.0), "mask": (560.0, 330.0),
            "dragon": (470.0, 900.0)}
 SP_SPIN = {"pumpkin": -0.6, "bat": 0.3, "mask": 0.8, "dragon": 0.45}
@@ -1838,7 +1838,8 @@ def _sp_flight(t, T, kind, target):
     x = (1 - e) ** 2 * sx0 + 2 * (1 - e) * e * cx_ + e * e * tx
     y = (1 - e) ** 2 * sy0 + 2 * (1 - e) * e * cy_ + e * e * ty
     y -= 40 * math.sin(math.pi * min(1.0, u * 2.5)) * (1 - u)    # little hop out
-    sc = lerp(0.6, 1.0, ease_out(u)) * _sp_world_scale(kind) * (0.3 + 0.7 * pop_k)
+    sc = (lerp(0.7, 1.0, ease_out(u)) + 0.45 * math.sin(math.pi * u)) * \
+        _sp_world_scale(kind) * (0.3 + 0.7 * pop_k)
     rot = SP_SPIN[kind] * math.sin(math.pi * e)
     return (x, y, sc, rot)
 
@@ -1922,7 +1923,8 @@ def _malvo(t, T):
                    _slow_blink(t, T["open"] + 0.75, 0.1, 0.05, 0.12),
                    _slow_blink(t, T["sp_land"]["mask"] - 0.03, 0.05, 0.04, 0.09),
                    _slow_blink(t, T["w_hurting"] + 0.3, 0.1, 0.06, 0.12))
-    if blink is None and (T["l5"] - 0.15 <= t < T["mono_in"] + 0.02
+    if blink is None and (T["sp_t"]["bat"] - 0.1 <= t < T["sp_land"]["dragon"] + 0.4
+                          or T["l5"] - 0.15 <= t < T["mono_in"] + 0.02
                           or T["back"] - 0.02 <= t < T["back"] + 0.4
                           or T["w_noticed"] - 0.1 <= t < T["w_noticed"] + 0.5):
         blink = 0.0                                     # keep the glance readable
@@ -2113,7 +2115,7 @@ def _bat_flap(t, T):
         return lerp(-0.3, 1.0, math.sin(math.pi / 2 * d / 0.2))
     if d < 0.45:
         return lerp(1.0, -0.75, smoothstep((d - 0.2) / 0.25))
-    return lerp(-0.75, -0.3, smoothstep(seg(d, 0.45, 0.75)))
+    return lerp(-0.75, -0.45, smoothstep(seg(d, 0.45, 0.75)))
 
 
 def _draw_sp(c, t, T, kind, x, y, sc, rot, sq=0.0, landed=False):
