@@ -6,8 +6,9 @@
     python3 audio/music.py --no-cache ...      # force fluidsynth re-renders
 
 Outputs (build/music/):
-    <cue>.wav          48 kHz stereo float32, EXACTLY MUSIC_CUES[cue] seconds, peak <= -1 dBFS
-    <cue>.mid          the composed score (one track per part, absolute-time, 1 tick = 1 ms)
+    <cue>.wav          48 kHz stereo float32, EXACTLY MUSIC_CUES[cue] seconds, peak <= -1.5 dBFS
+    <cue>.mid          the composed score for EVERY cue (one named track per part incl. the numpy
+                       synth parts with GM stand-in programs, absolute time, 1 tick = 1 ms)
     score_<cue>.txt    bar-by-bar score dump: chord, every part's notes (beat, pitch, length,
                        velocity), dynamics, melody-vs-chord analysis, range + parallel checks
     envelopes.json     {cue: {"rms":  [per-frame 0..1 at 24 fps],
@@ -17,18 +18,23 @@ Outputs (build/music/):
                               "downbeats": [local s] every bar line}}
     build/tests/music/<cue>.png  spectrogram + envelope + short-term loudness, with landmarks
 
-Envelope mapping: rms/low/high are frame RMS in dB relative to the cue's loudest frame
-(per band), mapped linearly from -42 dB -> 0 to 0 dB -> 1, lightly smoothed
-(fast attack, ~120 ms release) so visuals can "breathe" with the music without flicker.
+Envelope mapping: rms/low/high are frame RMS in dB relative to the cue's 99.5th-percentile frame
+(per band, so a single transient cannot squash the rest), mapped linearly from -42 dB -> 0 to
+0 dB -> 1 (clipped), lightly smoothed (fast attack, ~120 ms release) so visuals can "breathe" with
+the music without flicker.
 
 How it works
     * Every cue is a `Cue`: a tempo map (beat -> seconds with rubato, anchored so the symphony's
-      landmarks land exactly on 7.5 / 35 / 49.4 / 50.5 / 66 s), bar lines, a chord timeline and
+      landmarks land exactly on 7.5 / 35 / 49.4 / 50.5 / 58 / 66 / 70 s), bar lines, a chord timeline and
       a list of `Part`s holding `Note`s (beats) + dynamics keyframes.
     * SoundFont parts are written to MIDI (absolute ms timing, humanized +-8 ms, legato overlaps,
       CC2 dynamics for MuseScore "Expr." presets / CC11 for the rest, CC64 pedal) and rendered one
       stem at a time with the fluidsynth CLI (<= 2 processes).
-    * Synth parts (kazoo, chiptune, theremin, lo-fi drums/bass, suspended cymbal) are numpy.
+    * Synth parts (kazoo, chiptune, theremin, lo-fi drums/bass, suspended cymbal, glass shimmer,
+      sine tine-ring) are numpy.
+    * Accompaniment is voiced by a small voice-leading search (voice_chords) that also stays a 2nd
+      away from accented melody non-chord tones (mel_avoid); harp arpeggios are damped at chord
+      changes unless the string belongs to the next chord.
     * Stems are panned, summed, sent to a synthesized stereo convolution hall, bus-compressed,
       loudness-normalized (pyloudnorm-compatible BS.1770 K-weighting), peak-limited and faded.
 """
@@ -91,7 +97,8 @@ def pc_of(name: str) -> int:
 QUAL = {"": (0, 4, 7), "m": (0, 3, 7), "7": (0, 4, 7, 10), "m7": (0, 3, 7, 10), "maj7": (0, 4, 7, 11),
         "sus4": (0, 5, 7), "7sus4": (0, 5, 7, 10), "sus2": (0, 2, 7), "add9": (0, 2, 4, 7),
         "6": (0, 4, 7, 9), "m6": (0, 3, 7, 9), "maj9": (0, 2, 4, 7, 11), "m9": (0, 2, 3, 7, 10),
-        "9": (0, 2, 4, 7, 10), "dim": (0, 3, 6), "5": (0, 7), "(no5)": (0, 4)}
+        "9": (0, 2, 4, 7, 10), "dim": (0, 3, 6), "5": (0, 7), "(no5)": (0, 4),
+        "6add9": (0, 2, 4, 7, 9), "m11": (0, 3, 5, 7, 10)}
 
 
 @dataclass(frozen=True)
@@ -201,7 +208,8 @@ INST = {
     "warm_pad":  Inst(0, 89, 36, 96, False, "Warm pad"),
     "halo_pad":  Inst(0, 94, 36, 96, False, "Halo pad"),
 }
-SYNTH_RANGES = {"shimmer": (60, 100), "kazoo": (55, 84), "chip_lead": (57, 96), "chip_echo": (57, 96), "chip_arp": (48, 84),
+SYNTH_RANGES = {"shimmer": (60, 100), "bell": (60, 108), "kazoo": (55, 84), "chip_lead": (57, 96),
+                "chip_echo": (57, 96), "chip_arp": (48, 84),
                 "chip_tri": (28, 60), "theremin": (48, 84), "sub_bass": (28, 52)}
 
 
@@ -290,7 +298,7 @@ class Cue:
     st_target: float | None = None    # if set: normalize so max short-term loudness == this
     fade_in: float = 0.004
     fade_out: float = 0.25
-    gates: list = field(default_factory=list)   # [(t0, t1, {part names kept open})]
+    gates: list = field(default_factory=list)   # [(t0, t1, {part names kept open}[, release s])]
     wet_duck: list = field(default_factory=list)  # [(t0, t1, gain, ramp_s)] extra decay on the reverb return
     master_vol: list = field(default_factory=list)  # [(beat, dB)] whole-cue fader (pre-reverb)
     post: object = None               # callable(stereo, cue) -> stereo, after reverb
@@ -378,10 +386,11 @@ def transpose(notes, semis: int, tag=None) -> list:
     return [Note(n.beat, n.dur, n.pitch + semis, n.vel, n.tag if tag is None else tag) for n in notes]
 
 
-
-
-
-
+def shape_vels(notes, vels):
+    """Phrase-shaped velocities: assign `vels` to `notes` in time order (returns notes)."""
+    for nt, v in zip(sorted(notes, key=lambda x: (x.beat, x.pitch)), vels):
+        nt.vel = int(v)
+    return notes
 
 
 def smoothstep(x):
@@ -425,40 +434,80 @@ def roll(pitch, b0, b1, tmap, rate=11.0, v0=50, v1=100, tag=""):
     return out
 
 
-def gliss(pcs, p0, p1, b0, beats, v0, v1):
-    """Harp glissando over the scale pcs from pitch p0 up to p1 in `beats` beats."""
+def gliss(pcs, p0, p1, b0, beats, v0, v1, ring=None):
+    """Harp glissando over the pitch classes `pcs` from p0 up to p1 in `beats` beats (pedals set
+    to a chord -> a pure chord sweep). Every string rings until b0 + `ring` beats."""
     ps = [p for p in range(p0, p1 + 1) if p % 12 in pcs]
     n = len(ps)
-    return [Note(b0 + beats * i / n, max(0.25, beats * 1.5), p, int(v0 + (v1 - v0) * i / max(1, n - 1)))
-            for i, p in enumerate(ps)]
+    ring = beats * 2.5 if ring is None else ring
+    return [Note(b0 + beats * i / n, max(0.25, b0 + ring - (b0 + beats * i / n)), p,
+                 int(v0 + (v1 - v0) * i / max(1, n - 1))) for i, p in enumerate(ps)]
 
 
-def harp_arp(chords_, base_pitch_lo=50, step=0.5, pattern=None, v=(46, 60), low=True, low_vel=None):
+HARP_FIGS = {
+    "rise": [0, 1, 2, 3, 4, 5, 6, 7],          # bass, then open chord tones climbing
+    "wave": [0, 1, 2, 3, 4, 3, 2, 1],          # up and back down
+    "turn": [0, 1, 2, 3, 5, 4, 3, 2],          # climb, a little turn at the top
+    "thirds": [0, 2, 1, 3, 2, 4, 3, 5],        # broken, rocking
+    "lift": [0, 1, 2, 3, 4, 5, None, None],    # climb, then leave space for the melody
+    "high": [4, 5, 6, 7],                      # second half of a split bar continues upward
+}
+
+
+def harp_arp(chords_, base_pitch_lo=50, step=0.5, pattern=None, v=(46, 60), low=True, low_vel=None,
+             figures=None, ring=3.0, seed=0, avoid=None):
     """Rolling harp arpeggios: per chord, bass note then open chord tones rising (1-5-8-10-12-15...).
-    base_pitch_lo: lowest allowed pitch for the bass of the figure."""
+
+    base_pitch_lo: lowest allowed pitch for the bass of the figure.
+    pattern: one index list for every chord; figures: per-chord list of HARP_FIGS names / index
+    lists (cycled) for variety (None in a list = rest). Each note rings `ring` steps but is
+    damped at the chord change unless its pitch class belongs to the next chord too, so no
+    string rings through a harmony it does not belong to. Velocities follow the figure's contour
+    (higher = a little louder) with a light accent on the first note and +-3 humanized variation.
+    avoid: per-chord pitch sets (see mel_avoid); such a step becomes a rest."""
+    rng = np.random.default_rng(seed)
+    hi_lim = INST["harp"].hi
     out = []
-    for (b0, b1, sym) in chords_:
+    for ci, (b0, b1, sym) in enumerate(chords_):
         ch = chord(sym)
         if ch is None:
             continue
+        nxt = None
+        if ci + 1 < len(chords_) and abs(chords_[ci + 1][0] - b1) < 1e-6:
+            nxt = chord(chords_[ci + 1][2])
         bass = ch.bass
         bp = base_pitch_lo + ((bass - base_pitch_lo) % 12)
-        tones = sorted({(ch.root + i) % 12 for i in ch.ivs if i != 2})
+        tones = sorted({(ch.root + i) % 12 for i in ch.ivs if i != 2} | {bass})
         stack = [bp]
         fifth_above = [p for p in range(bp + 5, bp + 12) if p % 12 in tones]
         if fifth_above:
             stack.append(fifth_above[-1] if len(fifth_above) > 1 else fifth_above[0])
         p = bp + 12
-        while len(stack) < 12:
+        while len(stack) < 12 and p <= hi_lim:
             if p % 12 in tones:
                 stack.append(p)
             p += 1
         nsteps = int(round((b1 - b0) / step))
-        pat = pattern or list(range(nsteps))
+        if figures is not None:
+            fig = figures[ci % len(figures)]
+            pat = HARP_FIGS[fig] if isinstance(fig, str) else fig
+        else:
+            pat = pattern or list(range(nsteps))
+        top = max(i for i in pat if i is not None)
         for i in range(nsteps):
             idx = pat[i % len(pat)]
-            vel = v[0] + (v[1] - v[0]) * (idx / max(1, max(pat)))
-            out.append(Note(b0 + i * step, step * 3.0, stack[idx], int(vel)))
+            if idx is None:
+                continue
+            idx = min(idx, len(stack) - 1)
+            onset = b0 + i * step
+            pitch = stack[idx]
+            if avoid and pitch in avoid[ci]:
+                continue                      # leave the string silent rather than rub the tune
+            dur = step * ring
+            if onset + dur > b1 + 1e-6 and not (nxt is not None and pitch % 12 in nxt.pcs):
+                dur = max(step * 0.9, b1 - onset)
+            vel = v[0] + (v[1] - v[0]) * (idx / max(1, top)) + (4 if i == 0 else 0) + rng.integers(-3, 4)
+            out.append(Note(onset, dur, pitch, int(np.clip(vel, 1, 127))))
         if low and bp - 12 >= INST["harp"].lo:
             out.append(Note(b0, (b1 - b0), bp - 12, int(low_vel or v[1])))
     return out
@@ -485,13 +534,38 @@ def _parallels(prev, cur, bass_prev=None, bass_cur=None):
     return cnt
 
 
+def mel_avoid(chords_, mel_notes, width=2, bars=None):
+    """Per chord: the set of pitches lying 1..`width` semitones (same octave) from an accented
+    melody non-chord tone sounding during that chord - an NCT on beat 1/3 or lasting >= 2 beats
+    (e.g. Theme A's E over Bm). Feed to voice_chords(avoid=...) so the sustained accompaniment
+    never sits a 2nd away from an appoggiatura (a pad F#4 under the cello's E4). Weak passing
+    tones are ignored - they are supposed to rub briefly. `bars` (bar-line beats) locates beats 1/3
+    when bars do not start on even beats (the symphony's 1-beat grand-pause bar shifts the climax)."""
+    bl = sorted(bars) if bars else [0.0]
+    res = []
+    for (b0, b1, sym) in chords_:
+        ch = chord(sym)
+        s = set()
+        for m in mel_notes:
+            if ch is None or not (m.beat < b1 - 1e-6 and m.beat + m.dur > b0 + 1e-6):
+                continue
+            b0_ = max([b for b in bl if b <= m.beat + 1e-6] or [0.0])
+            accented = abs((m.beat - b0_) % 2) < 1e-6 or m.dur >= 2
+            if m.pitch % 12 not in ch.pcs and accented:
+                for d in range(1, width + 1):
+                    s.update((m.pitch - d, m.pitch + d))
+        res.append(s)
+    return res
+
+
 def voice_chords(chords_, n, lo, hi, bass=None, prev=None, top_max=None, top_min=None, force_top=None,
-                 spacing=12):
+                 spacing=12, avoid=None, min_gap=0):
     """Smooth voice-leading for a chord timeline: for each chord pick the n-note voicing in [lo, hi]
     that contains the required tones, avoids doubled leading tones/7ths, avoids parallel 5ths/8ves
     (among the voices and against `bass`), and moves least from the previous voicing.
     bass: list of bass MIDI pitches per chord (or None). top_max/top_min/force_top: per-chord
-    values (list) or scalars."""
+    values (list) or scalars. avoid: per-chord sets of pitches to stay off (strong cost, see
+    mel_avoid). min_gap: adjacent voices closer than this (semitones) cost extra (open voicings)."""
     def per(v, i):
         return v[i] if isinstance(v, (list, tuple)) else v
 
@@ -503,6 +577,7 @@ def voice_chords(chords_, n, lo, hi, bass=None, prev=None, top_max=None, top_min
             out.append(None)
             continue
         bc = bass[ci] if bass else None
+        av = avoid[ci] if avoid else set()
         tmax, tmin, ftop = per(top_max, ci), per(top_min, ci), per(force_top, ci)
         cands = [p for p in range(lo, hi + 1) if p % 12 in ch.pcs]
         req = ch.required(n)
@@ -538,6 +613,9 @@ def voice_chords(chords_, n, lo, hi, bass=None, prev=None, top_max=None, top_min
                         cost += 6.0           # muddy close interval in the low register
                 if bc is not None and combo[0] - bc < 3:
                     cost += 4.0
+                cost += 30.0 * sum(1 for p in combo if p in av)
+                if min_gap:
+                    cost += 4.0 * sum(1 for k in range(n - 1) if combo[k + 1] - combo[k] < min_gap)
                 if prev is not None and len(prev) == n:
                     cost += sum(abs(a - b) for a, b in zip(combo, prev))
                     cost += 40.0 * _parallels(prev, combo, bass_prev, bc)
@@ -703,8 +781,11 @@ def compressor(x, thresh_db, ratio, att_ms=25.0, rel_ms=300.0, knee=6.0):
     """Feed-forward RMS bus compressor (1 ms blocks, soft knee). thresh_db is absolute dBFS."""
     block = 48
     pw, nb = _block_env(x, block)
-    # RMS detector smoothing (~30 ms)
-    pw = signal.lfilter([1 - math.exp(-1 / 30)], [1, -math.exp(-1 / 30)], pw)
+    # RMS detector smoothing (~30 ms). The detector starts from the level of the first 30 ms
+    # (not from silence) so a cue that opens on a chord is compressed from its first sample.
+    k = math.exp(-1 / 30)
+    zi = signal.lfilter_zi([1 - k], [1, -k]) * float(np.mean(pw[:30]))
+    pw, _ = signal.lfilter([1 - k], [1, -k], pw, zi=zi)
     lvl = 10 * np.log10(pw + 1e-12)
     over = lvl - thresh_db
     gr = np.where(over <= -knee / 2, 0.0,
@@ -713,7 +794,7 @@ def compressor(x, thresh_db, ratio, att_ms=25.0, rel_ms=300.0, knee=6.0):
     a = math.exp(-1 / att_ms)
     r = math.exp(-1 / rel_ms)
     g = np.empty(nb)
-    cur = 0.0
+    cur = float(gr[0])
     for i in range(nb):
         target = gr[i]
         cur = target + (cur - target) * (a if target > cur else r)
@@ -1049,7 +1130,8 @@ def synth_drums_lofi(part, cue, n):
         elif nt.pitch in (42, 46):
             L = int((0.25 if nt.pitch == 46 else 0.07) * SR)
             tt = np.arange(L) / SR
-            hit = hp(rng.standard_normal(L), 6500) * np.exp(-tt / (0.09 if nt.pitch == 46 else 0.022)) * 0.5
+            # dusty hat: noise band 2.8-9 kHz (the lo-fi bus low-pass leaves a soft 'tss', not a hiss)
+            hit = bp(rng.standard_normal(L), 2800, 9000) * np.exp(-tt / (0.09 if nt.pitch == 46 else 0.022)) * 0.6
         else:
             L = int(0.08 * SR)
             tt = np.arange(L) / SR
@@ -1089,10 +1171,13 @@ def _metal(L, rng, fmin=320, fmax=13500, k=90):
 def synth_cymbal(part, cue, n):
     """Suspended cymbal: soft-mallet roll swells (crescendo with mallet flutter) into a crash
     with a bright fast decay over a darker long wash. part.opts['events'] =
-    [(t_swell_start, t_hit, swell_gain, hit_gain, decay_s)] in seconds."""
+    [(t_swell_start, t_hit, swell_gain, hit_gain, decay_s[, curve])] in seconds; a larger
+    `curve` (default 3.2) keeps the roll quiet longer and rushes up at the end (an inhale)."""
     rng = np.random.default_rng(23)
     out = np.zeros((n, 2))
-    for (ts, th, gs, gh, dec) in part.opts["events"]:
+    for ev in part.opts["events"]:
+        ts, th, gs, gh, dec = ev[:5]
+        curve = ev[5] if len(ev) > 5 else 3.2
         i0 = int(ts * SR)
         ih = int(th * SR)
         L = min(n, ih + int(dec * 1.6 * SR)) - i0
@@ -1105,7 +1190,7 @@ def synth_cymbal(part, cue, n):
             hs = ih - i0
             if hs > 0 and gs > 0:
                 u = np.clip(t / (hs / SR), 0, 1)
-                sw = gs * (np.exp(3.2 * u) - 1) / (math.exp(3.2) - 1)
+                sw = gs * (np.exp(curve * u) - 1) / (math.exp(curve) - 1)
                 flutter = 1 + 0.22 * np.abs(lp_noise(L, 22, SR, rng))
                 sw = np.where(t <= hs / SR, sw * flutter, 0.0)
                 x += base * sw * 0.6
@@ -1138,6 +1223,28 @@ def synth_shimmer(part, cue, n):
             y[:, c] += env * (np.sin(2 * np.pi * fd * t + ph) + 0.18 * np.sin(4 * np.pi * fd * t + ph)
                               + 0.5 * np.sin(2 * np.pi * f * 2 ** (-det / 1200) * t + 1.1))
     return y * g[:, None] * 0.12
+
+
+def synth_bell(part, cue, n):
+    """Soft sine 'tine ring' (tuning-fork-like): fundamental + faint 2nd/3rd partials, 4 ms attack,
+    exponential decay part.opts['ring'] seconds (time constant), a cent of L/R detune for gentle
+    beating. Used under a music box, whose sampled tine dies within ~0.6 s, so a last note can
+    actually ring out."""
+    t = np.arange(n) / SR
+    y = np.zeros((n, 2))
+    tau = part.opts.get("ring", 1.2)
+    for nt in part.notes:
+        t0 = cue.tmap.sec(nt.beat)
+        i0 = max(0, int(t0 * SR))
+        tt = t[i0:] - t0
+        env = np.clip(tt / 0.004, 0, 1) * (nt.vel / 127.0) ** 1.5
+        f = 440.0 * 2 ** ((nt.pitch - 69) / 12)
+        for c, det in enumerate((-1.0, 1.0)):
+            fd = f * 2 ** (det / 1200)
+            y[i0:, c] += env * (np.exp(-tt / tau) * np.sin(2 * np.pi * fd * tt)
+                                + 0.22 * np.exp(-tt / (tau * 0.45)) * np.sin(2 * np.pi * 2.0 * fd * tt + 0.7)
+                                + 0.06 * np.exp(-tt / (tau * 0.25)) * np.sin(2 * np.pi * 3.01 * fd * tt + 1.9))
+    return y * 0.4
 
 
 def synth_vinyl(n, rng, density=11.0, hiss_db=-50.0):
@@ -1257,6 +1364,42 @@ def midi_file(tracks):
     return mf
 
 
+# GM stand-ins used only in the inspection MIDI (<cue>.mid) for parts that are synthesized in numpy
+SYNTH_GM = {"kazoo": 22, "chip_lead": 80, "chip_echo": 80, "chip_arp": 80, "chip_tri": 38,
+            "theremin": 79, "sub_bass": 38, "shimmer": 92, "bell": 10}
+DRUM_KINDS = {"chip_noise", "drums_lofi", "cymbal"}
+
+
+def score_midi(cue: Cue) -> mido.MidiFile:
+    """Whole-score MIDI for inspection: one named track per part (SoundFont AND numpy parts),
+    absolute time (1 tick = 1 ms). Each distinct instrument gets its own channel (drum-like parts
+    on channel 10); a score with more than 15 distinct instruments reuses channels round-robin."""
+    rng = np.random.default_rng(0)
+    chans = {}
+    free = [c for c in range(16) if c != 9]
+    tracks = []
+    for p in cue.parts:
+        if p.inst in DRUM_KINDS:
+            ch = 9
+        else:
+            key = (INST[p.inst].bank, INST[p.inst].prog) if p.inst in INST else (0, SYNTH_GM.get(p.inst, 0))
+            if key not in chans:
+                chans[key] = free[len(chans) % len(free)]
+            ch = chans[key]
+        if p.synth is None:
+            ev = part_events(p, cue, rng)
+        else:
+            ev = [] if ch == 9 else [(0.0, 0, dict(type="program_change", program=SYNTH_GM.get(p.inst, 0)))]
+            off = p.lazy + p.opts.get("delay", 0.0)
+            for nt in p.notes:
+                s = cue.tmap.sec(nt.beat) + off
+                e = cue.tmap.sec(nt.beat + nt.dur) + off
+                ev.append((max(0.0, s), 2, dict(type="note_on", note=int(nt.pitch), velocity=int(nt.vel))))
+                ev.append((max(s + 0.01, e), 1, dict(type="note_off", note=int(nt.pitch), velocity=0)))
+        tracks.append(events_to_track(ev, ch, p.name))
+    return midi_file(tracks)
+
+
 def fluid_render(mid_path: Path, wav_path: Path):
     cmd = ["fluidsynth", "-ni", "-q", "-F", str(wav_path), "-T", "wav", "-O", "float", "-r", str(SR),
            "-g", str(FS_GAIN), "-o", "synth.dynamic-sample-loading=1", "-o", "synth.reverb.active=0",
@@ -1318,38 +1461,55 @@ def theme(start=0.0, semis=0, vel=80, tag="mel"):
 
 def compose_symphony() -> Cue:
     # ---------------------------------------------------------------- form & tempo
-    # beats: intro 0-8 | theme 8-40 | build 40-56 | GP 56-57 | climax (E major) 57-73 | coda 73-84
+    # beats: intro 0-8 | theme 8-40 | build 40-56 | GP 56-57 | climax (E major) 57-73 | coda 73-82.5
     def w(b):
-        x = 1.0
+        x = 1.0 + 0.02 * math.sin(1.7 * b + 0.4) * math.sin(0.61 * b + 1.3)    # never quite metronomic
         x += 0.07 * bump(b, 2.0, 0.6) + 0.14 * rit(b, 5.5, 8.0)                 # intro: breathe, settle
-        x += 0.07 * bump(b, 20.0, 0.7) + 0.12 * bump(b, 28.0, 1.0)              # appoggiatura, high point
-        x += 0.16 * bump(b, 35.0, 1.6)                                          # minor iv -> cadence
+        if 8 <= b < 40:
+            ph = ((b - 8) % 16) / 16.0                                          # two 4-bar phrases
+            x += 0.05 * (1.0 - math.sin(math.pi * ph))                          # flow mid-phrase, broaden at seams
+            x += 0.07 * bump(b, 20.0, 0.7) + 0.12 * bump(b, 28.0, 0.9)           # lean on appoggiatura, high point
+            x -= 0.06 * (smoothstep(b - 24.0) - smoothstep((b - 27.2) / 0.8))   # push through the rising bar
+            x += 0.08 * bump(b, 32.3, 0.6) + 0.16 * bump(b, 35.0, 1.6)         # the ache (iv), cadence
         if 40 <= b < 56:
             x += -0.05 + 0.05 * smoothstep((b - 46) / 4) + 0.32 * rit(b, 52.0, 56.0)  # push, then broaden
+            x += 0.08 * bump(b, 47.8, 0.3)                                      # a breath before the subito p
         if 57 <= b < 73:
-            x += 0.16 * bump(b, 57.0, 0.7) + 0.06 * bump(b, 61.0, 0.6)           # arrival weight
-            x += 0.14 * bump(b, 65.0, 0.9) + 0.38 * rit(b, 69.0, 73.0)          # high point, ache, rit
-        if 76 <= b < 82:
-            x += 0.18 * rit(b, 79.5, 82.0)
+            x += 0.16 * bump(b, 57.0, 0.7) + 0.05 * bump(b, 62.4, 0.5)          # arrival, lean on the suspension
+            x += 0.14 * bump(b, 65.0, 0.9) + 0.38 * rit(b, 69.0, 73.0)          # high point, ache, rit into home
         return x
 
-    tm = TempoMap([(0, 0.55), (8, 7.5), (40, 35.0), (56, 49.4), (57, 50.5), (73, 66.0), (76, 68.4),
-                   (82, 72.8)], w)
+    # anchors pin the BIBLE landmarks, sym_peak (58.0) and the celesta echo: its top note G#6 lands
+    # exactly on sym_celesta_echo (70.0) and is held a little longer (~59 bpm) than the pickup notes
+    tm = TempoMap([(0, 0.55), (8, 7.5), (40, 35.0), (56, 49.4), (57, 50.5), (65, 58.0), (73, 66.0),
+                   (76, 68.3), (78, 70.0), (80, 72.04)], w)
     bars = [0, 4, 8, 12, 16, 20, 24, 28, 32, 36, 40, 44, 48, 52, 56, 57, 61, 65, 69, 73, 76, 80, 84]
     intro_c = ctl("D:4 Bm:4", 0)
     theme_c = ctl(THEME_A_CHORDS, 8)
-    build_c = ctl("Bm:4 G:4 D/F#:2 Em7:2 A7sus4:2 A7:2", 40)
-    clim_c = ctl("E:4 B:4 A:4 Am:2 B7:2", 57)
-    coda_c = ctl("E:3 E:4 E6:4", 73)
-    chords_ = intro_c + theme_c + build_c + [(56, 57, "N.C.")] + clim_c + coda_c
+    # in theme bar 4 the 5th (E) waits until the celli resolve F#->E (keeps the appoggiatura clean)
+    pad_c = theme_c[:3] + [(20, 22, "A(no5)"), (22, 24, "A")] + theme_c[4:]
+    # B-section; G(no5) under the leapt-to E so nothing sits a 2nd under it
+    build_c = ctl("Bm:4 G(no5):2 G:2 D/F#:2 Em7:2 A7sus4:2 A7:2", 40)
+    # climax: E/B -> B is the cadential 6/4: the melody's G# (prepared on beat 59) becomes a 6-5
+    # suspension over the B bass (inner E -> D# 4-3 with it) and resolves late, with the F#
+    clim_c = ctl("E:4 E/B:2 B:2 A:4 Am:2 B7:2", 57)
+    coda_c = ctl("E:3 E:4 Eadd9:4", 73)
+    chords_ = intro_c + pad_c + build_c + [(56, 57, "N.C.")] + clim_c + coda_c
 
     # shared dynamic shapes (CC2 for the Expr presets)
-    # climax arc: arrival -> tender 6-5 (dip) -> swell to the high point -> the ache (iv) -> B7 -> home
-    CLIMAX = [(57, 124), (58.5, 116), (60.8, 112), (61.2, 106), (63.0, 108), (64.6, 124), (65, 127),
-              (67.5, 120), (69, 114), (70.2, 118), (71, 122), (72.8, 126)]
-    CODA_STR = [(73.2, 116), (74.5, 84), (76, 58), (78, 36), (80, 20), (82, 0)]
-    CODA_VOL = [(72.9, 0.0), (74.5, -5.0), (76, -11.0), (78, -18.0), (80, -26.0), (82, -40.0)]
-    CODA_FAST = [(72.9, 0.0), (74, -6.0), (75, -14.0), (76, -30.0)]
+    # climax arc: arrival -> lean into the suspension, relax on its resolution -> swell to the high
+    # point -> the ache (iv) -> B7 -> home (the arrival is as big as anything before it)
+    CLIMAX = [(57, 124), (58.4, 114), (59, 117), (60.8, 112), (61.0, 110), (62.6, 120), (63.0, 110),
+              (63.8, 112), (64.7, 124), (65, 127), (67.6, 118), (69, 116), (70, 121), (71, 117), (72.8, 124)]
+    # final chord: hold it ff ~0.7 s, then a long diminuendo under the celesta, niente by ~74 s
+    CODA_STR = [(73.8, 120), (75.0, 100), (76.5, 80), (78.0, 62), (80.0, 44), (82.0, 28), (84.0, 12)]
+    CODA_VOL = [(73.8, 0.0), (75.0, -2.5), (76.5, -5.5), (78.0, -9.0), (80.0, -14.0), (82.0, -21.0),
+                (84.0, -32.0)]
+    CODA_FAST = [(73.8, 0.0), (74.8, -6.0), (75.8, -14.0), (76.6, -30.0)]
+    # phrase-shaped melody velocities (attack weight; the CC2 curves carry the dynamics)
+    THEME_VELS = [66, 70, 76, 74, 68, 64, 68, 72, 80, 86, 70, 70, 74, 78, 82, 90, 76, 84, 76, 72, 72]
+    BSEC_VELS = [82, 86, 92, 84, 90, 94, 74, 80, 104, 94]
+    CLIM_VELS = [104, 110, 118, 118, 106, 122, 108, 118, 106, 112]
 
     parts = {}
 
@@ -1365,57 +1525,70 @@ def compose_symphony() -> Cue:
     cb.add(seq("E1:w | B1:w | A1:w | A1:h B1:h", 57, bar=4))
     cb.add(seq("E1:10", 73))
     cb.dyn = [(-0.6, 0), (0.3, 22), (6, 26), (8, 36), (20, 42), (24, 48), (36, 50), (40, 64), (47.6, 76),
-              (48, 54), (52, 88), (55.8, 114), (57, 120), (65, 124), (69, 116), (72.8, 122)] + CODA_STR
+              (48, 50), (50, 52), (52, 80), (54, 100), (55.8, 114), (57, 120), (65, 124), (69, 116),
+              (72.8, 122)] + CODA_STR
     cb.vol = [(-1, -4.0), (7.5, -4.0), (8.5, 0.0)] + CODA_VOL
 
     vc2 = part("vc2", "vc_slow", pan=0.3, send=0.25, legato=0.08)
     vc2.add(seq("B2:w | G2:w | F#2:h E2:h | A2:w", 40, bar=4))
     vc2.add(seq("E2:w | B2:w | A2:w | A2:h B2:h", 57, bar=4))
     vc2.add(seq("(E2,B2):10", 73))
-    vc2.dyn = [(39.5, 0), (40, 60), (47.6, 72), (48, 52), (52, 88), (55.8, 114), (57, 118), (65, 122),
-               (69, 112), (72.8, 120)] + CODA_STR
+    vc2.dyn = [(39.5, 0), (40, 60), (47.6, 72), (48, 48), (50, 50), (52, 80), (54, 100), (55.8, 114), (57, 118),
+               (65, 122), (69, 112), (72.8, 120)] + CODA_STR
     vc2.vol = [(72, 0.0)] + CODA_VOL
 
     # ---------------------------------------------------------------- melody carriers
     vc = part("vc", "vc", pan=0.26, send=0.3, legato=0.075, gain_db=2.0)
-    vc.add(theme(8, -12, 76, "mel"))                                     # Theme A, cellos, 8vb
+    vc.add(shape_vels(theme(8, -12, 76, "mel"), THEME_VELS))                # Theme A, cellos, 8vb
     assert [(n.beat - 8, n.dur, n.pitch + 12) for n in vc.notes] == \
         [(n.beat, n.dur, n.pitch) for n in seq(THEME_A, bar=4)], "Theme A must be exact"
-    vc.add(seq("B3:q D4:q F#4:h | B3:q E4:q G4:h | A4:h B4:h | D5:h C#5:h", 40, 84, bar=4))
-    vc.add(seq("B3:q E4:q G#4:h~ | G#4:h F#4:h | C#5:h. B4:q | A4:h F#4:q D#4:q", 57, 100, bar=4))
+    vc.add(seq("B3:q D4:q F#4:h | B3:q E4:q G4:h | A4:h B4:h | D5:h C#5:h", 40, 84, bar=4, vels=BSEC_VELS))
+    vc.add(seq("B3:q E4:q G#4:h~ | G#4:h F#4:h | C#5:h. B4:q | A4:h F#4:q D#4:q", 57, 100, bar=4,
+               vels=[v - 8 for v in CLIM_VELS]))
     vc.add(seq("E4:9", 73, 96))
     vc.dyn = [(7.4, 0), (7.9, 52), (8.6, 60), (11, 66), (12.2, 63), (15, 62), (17, 70), (19, 78), (20.2, 83),
               (22, 72), (23.6, 66), (24.5, 70), (27, 82), (28.3, 94), (30.5, 86), (32.2, 92), (34, 86),
-              (35.2, 82), (36.4, 78), (39.2, 80), (40, 84), (43.6, 92), (44.2, 88), (47.6, 96), (48, 72),
-              (52, 100), (55.8, 120)] + CLIMAX + CODA_STR
+              (35.2, 82), (36.4, 78), (39.2, 80), (40, 84), (43.6, 92), (44.2, 88), (47.6, 96), (48, 68),
+              (50, 70), (52, 92), (54, 108), (55.8, 120)] + CLIMAX + CODA_STR
     vc.vol = [(72, 0.0)] + CODA_VOL
 
     vln1 = part("vln1", "vln1", pan=-0.34, send=0.3, legato=0.07, gain_db=4.0)
-    # soaring countermelody over theme bars 4-8 (enters ~19.5 s), kept a touch under the celli
-    vln1.add(seq("r:h A4:q C#5:q | D5:h A5:h | G5:h. A5:q | Bb5:h A5:q G5:q | F#5:h E5:q C#5:q", 20, 70, bar=4))
+    # countermelody over theme bars 4-8 (enters ~19.3 s), always UNDER the celli: it moves while
+    # they hold and rests on the downbeats of the high point and of the minor iv so those sound alone
+    vln1.add(seq("r:h A4:q C#5:q | D5:h E5:h | r:q D5:q G5:h | r:q Bb5:q A5:h | F#5:h E5:q C#5:q", 20, 66,
+                 bar=4, vels=[58, 62, 66, 68, 62, 70, 74, 66, 64, 60, 56]))
     # B-section melody (develops the head motive, rising F#5 G5 A5 B5 D6 C#6)
-    vln1.add(seq("B4:q D5:q F#5:h | B4:q E5:q G5:h | A5:h B5:h | D6:h C#6:h", 40, 92, "mel", bar=4))
+    vln1.add(seq("B4:q D5:q F#5:h | B4:q E5:q G5:h | A5:h B5:h | D6:h C#6:h", 40, 92, "mel", bar=4,
+                 vels=[v + 4 for v in BSEC_VELS]))
     # climax: Theme A in E major, violins I an octave above violins II, horns + celli an octave below
-    vln1.add(seq("B5:q E6:q G#6:h~ | G#6:h F#6:h | C#7:h. B6:q | A6:h F#6:q D#6:q", 57, 110, "mel", bar=4))
-    vln1.add(seq("E6:7", 73, 104, "mel"))
-    vln1.dyn = [(21.6, 0), (21.9, 46), (23, 54), (24.3, 60), (26.5, 70), (28.3, 74), (31, 70), (32.3, 84),
-                (34, 76), (36.3, 70), (39, 66), (40, 82), (43.5, 88), (44.2, 86), (47.6, 94), (48, 76),
-                (52, 102), (54, 114), (55.8, 124)] + CLIMAX + CODA_STR
-    vln1.vol = [(19, -5.0), (39, -5.0), (40.5, 0.0), (72, 0.0)] + CODA_VOL
+    vln1.add(seq("B5:q E6:q G#6:h~ | G#6:h F#6:h | C#7:h. B6:q | A6:h F#6:q D#6:q", 57, 110, "mel", bar=4,
+                 vels=CLIM_VELS))
+    vln1.add(seq("E6:5", 73, 104, "mel"))
+    vln1.dyn = [(21.6, 0), (21.9, 44), (23, 50), (24.3, 54), (26.5, 60), (28.3, 64), (31, 60), (32.3, 70),
+                (34, 62), (36.3, 58), (39, 62), (40, 82), (43.5, 88), (44.2, 86), (47.6, 94), (48, 64), (50, 66),
+                (52, 92), (54, 110), (55.8, 124)] + CLIMAX + \
+        [(73.0, 124), (73.8, 118), (75.0, 90), (76.3, 52), (77.4, 0)]   # top violins thin out first
+    vln1.vol = [(19, -5.0), (21.5, -7.5), (39, -7.5), (40.5, 0.0), (72, 0.0)] + CODA_VOL
 
     vln2m = part("vln2_mel", "vln2_fast", pan=-0.16, send=0.3, legato=0.07, gain_db=3.0)
-    vln2m.add(seq("B4:q E5:q G#5:h~ | G#5:h F#5:h | C#6:h. B5:q | A5:h F#5:q D#5:q", 57, 110, bar=4))
+    vln2m.add(seq("B4:q E5:q G#5:h~ | G#5:h F#5:h | C#6:h. B5:q | A5:h F#5:q D#5:q", 57, 110, bar=4,
+                  vels=CLIM_VELS))
     vln2m.add(seq("E5:9", 73, 100))
     vln2m.dyn = [(56.6, 0), (56.95, 120)] + CLIMAX + CODA_STR
-    vln2m.vol = [(72, 0.0)] + CODA_VOL
+    # the C#6 octave carries the high point (the C#7 above is mostly air)
+    vln2m.vol = [(64.0, 0.0), (64.6, 3.0), (68.5, 3.0), (69.3, 0.0), (72, 0.0)] + CODA_VOL
 
     horns = part("horns", "horns", pan=-0.18, send=0.42, gain_db=-1.5)
-    horns.add(seq("B3:q E4:q G#4:h | G#4:h F#4:h | C#5:h. B4:q | A4:h F#4:q D#4:q", 57, 108, bar=4))
+    horns.add(seq("B3:q E4:q G#4:h | G#4:h F#4:h | C#5:h. B4:q | A4:h F#4:q D#4:q", 57, 108, bar=4,
+                  vels=[100, 106, 114, 112, 102, 118, 104, 114, 104, 108]))
 
-    # ---------------------------------------------------------------- intro: piano + celesta
+    # ---------------------------------------------------------------- intro / coda: piano + celesta
     cel = part("celesta", "celesta", pan=0.2, send=0.55, humanize=0.006, gain_db=7.0)
     cel.add(seq("A5:q D6:q F#6:h | E6:q D6:q B5:h", 0, 56, "mel", bar=4, vels=[58, 56, 64, 56, 52, 50]))
-    cel.add(seq("B5:q E6:q G#6:h | F#6:q E6:q C#6:h", 76, 54, "mel", bar=4, vels=[56, 54, 60, 54, 50, 54]))
+    # the echo: the head of the theme at the theme's own tempo; G#6 lands on sym_celesta_echo (70.0),
+    # the last note (F#6, the open 9th over E) rings out for 2 s while everything else goes to silence
+    cel.add(seq("B5:q E6:q G#6:h | F#6:2.5", 76, 54, "mel", vels=[50, 53, 60, 56]))
+    cel.vol = [(72, 0.0), (75.5, 3.0)]
     pno = part("piano", "mellow", pan=0.0, send=0.4, humanize=0.006, gain_db=6.0)
     pno.add(seq("A4:q D5:q F#5:h | E5:q D5:q B4:h", 0, 46, "mel", bar=4, vels=[46, 45, 52, 46, 42, 40]))
     pno.add(seq("(D2,A2):w | (B1,F#2):w", 0, 32))
@@ -1425,22 +1598,22 @@ def compose_symphony() -> Cue:
     vla = part("vla", "vla", pan=0.12, send=0.3)
     vln2 = part("vln2", "vln2", pan=-0.14, send=0.3)
     iv = voice_chords(intro_c, 3, 54, 66)
-    for k, v in pad_notes(intro_c, iv, {"vla": [0, 1, 2]}, vel=50, tail=0.3).items():
+    for k, v in pad_notes(intro_c, iv, {"vla": [0, 1, 2]}, vel=50).items():
         parts[k].add(v)
-    # pad harmony; in theme bar 4 the 5th (E) waits until the celli resolve F#->E (keeps the appoggiatura clean)
-    pad_c = theme_c[:3] + [(20, 22, "A(no5)"), (22, 24, "A")] + theme_c[4:]
     tb = bass_of(pad_c, cb.notes)
-    tv1 = voice_chords(pad_c[:5], 3, 61, 78, bass=tb[:5], top_max=76)
-    tv2 = voice_chords(pad_c[5:], 3, 59, 74, bass=tb[5:], prev=tv1[-1], top_max=73)
+    t_av = mel_avoid(pad_c, [n for n in vc.notes + vln1.notes if 8 <= n.beat < 40], bars=bars)
+    tv1 = voice_chords(pad_c[:5], 3, 61, 78, bass=tb[:5], top_max=[76, 78, 76, 76, 76], avoid=t_av[:5])
+    tv2 = voice_chords(pad_c[5:], 3, 59, 74, bass=tb[5:], prev=tv1[-1], top_max=73, avoid=t_av[5:])
     for k, v in pad_notes(pad_c, tv1 + tv2, {"vla": [0, 1], "vln2": [2]}, vel=56).items():
         parts[k].add(v)
     bb = bass_of(build_c, cb.notes)
-    bv1 = voice_chords(build_c[:2], 4, 52, 72, bass=bb[:2], prev=None, top_max=[69, 71])
-    for k, v in pad_notes(build_c[:2], bv1, {"vla": [0, 1], "vln2": [2, 3]}, vel=70).items():
+    b_av = mel_avoid(build_c, [n for n in vc.notes + vln1.notes if 40 <= n.beat < 56], bars=bars)
+    bv1 = voice_chords(build_c[:3], 4, 52, 72, bass=bb[:3], top_max=[69, 71, 71], avoid=b_av[:3])
+    for k, v in pad_notes(build_c[:3], bv1, {"vla": [0, 1], "vln2": [2, 3]}, vel=70).items():
         parts[k].add(v)
     vla.add(seq("(G#3,B3,E4):10", 73, 90))
     vla.dyn = [(-0.6, 0), (0.4, 24), (4, 28), (7.4, 30), (8.3, 30), (16, 36), (20, 40), (24, 42), (28, 50),
-               (32, 48), (36, 44), (40, 58), (47.5, 72), (47.95, 56), (48.1, 0), (72.9, 0), (73.05, 106)] + CODA_STR
+               (32, 48), (36, 44), (40, 58), (47.5, 72), (47.95, 56), (48.1, 0), (72.9, 0), (73.05, 112)] + CODA_STR
     vla.vol = [(-1, -6.0), (7.0, -6.0), (8.5, -2.0), (20, -2.0), (24, 0.0)] + CODA_VOL
     vln2.dyn = [(7.4, 0), (8.3, 28), (16, 36), (20, 40), (24, 42), (28, 50), (32, 48), (36, 44), (40, 58),
                 (47.5, 72), (47.95, 56), (48.1, 0)]
@@ -1448,61 +1621,71 @@ def compose_symphony() -> Cue:
 
     vln2t = part("vln2_trem", "vln2_trem", pan=-0.14, send=0.3)
     vlat = part("vla_trem", "vla_trem", pan=0.12, send=0.3, gain_db=-3.0)
-    bv2 = voice_chords(build_c[2:], 4, 55, 79, bass=bb[2:], prev=bv1[-1], top_max=[78, 79, 80, 79])
-    for k, v in pad_notes(build_c[2:], bv2, {"vla_trem": [0, 1], "vln2_trem": [2, 3]}, vel=80).items():
+    bv2 = voice_chords(build_c[3:], 4, 55, 79, bass=bb[3:], prev=bv1[-1], top_max=[78, 79, 80, 79],
+                       avoid=b_av[3:])
+    for k, v in pad_notes(build_c[3:], bv2, {"vla_trem": [0, 1], "vln2_trem": [2, 3]}, vel=80).items():
         parts[k].add(v)
-    vln2t.dyn = [(47.9, 0), (48.05, 34), (50, 50), (52, 74), (55.8, 116), (56.3, 0)]
+    vln2t.dyn = [(47.9, 0), (48.05, 30), (50, 32), (52, 64), (54, 96), (55.8, 116), (56.3, 0)]
     cbass = bass_of(clim_c, cb.notes)
-    cv = voice_chords(clim_c, 3, 55, 72, bass=cbass)
+    c_av = mel_avoid(clim_c, [n for n in vln1.notes + vln2m.notes + vc.notes if 57 <= n.beat < 73], bars=bars)
+    cv = voice_chords(clim_c, 3, 55, 72, bass=cbass, avoid=c_av)
     for k, v in pad_notes(clim_c, cv, {"vla_trem": [0, 1, 2]}, vel=100).items():
         parts[k].add(v)
-    vlat.dyn = [(47.9, 0), (48.05, 34), (50, 50), (52, 74), (55.8, 116)] + CLIMAX[:-1] + [(72.9, 118), (73.1, 0)]
+    vlat.dyn = [(47.9, 0), (48.05, 30), (50, 32), (52, 64), (54, 96), (55.8, 116)] + CLIMAX[:-1] + \
+        [(72.9, 118), (73.1, 0)]
 
     # ---------------------------------------------------------------- horns, brass, choir, trombones
-    hv = voice_chords(build_c, 3, 52, 71, bass=bb, top_max=[66, 67, 69, 69, 69, 69])
+    hv = voice_chords(build_c, 3, 52, 71, bass=bb, top_max=[66, 67, 67, 69, 69, 69, 69], avoid=b_av)
     for k, v in pad_notes(build_c, hv, {"horns": [0, 1, 2]}, vel=80).items():
         parts[k].add(v)
     horns.add(seq("(E3,B3,E4,G#4):9", 73, 100))
-    horns.dyn = [(39.6, 0), (40.2, 40), (44, 50), (47.6, 62), (48, 40), (52, 78), (55.8, 116)] + CLIMAX + \
-        [(73.2, 108), (76, 40)]
+    horns.dyn = [(39.6, 0), (40.2, 40), (44, 50), (47.6, 62), (48, 36), (50, 38), (52, 70), (54, 96),
+                 (55.8, 116)] + CLIMAX + [(73.0, 118), (73.8, 112), (75, 70), (76.2, 30), (76.8, 0)]
     horns.vol = [(41, -3.0), (52, -1.0), (56, 0.0)] + CODA_FAST
 
     choir = part("choir", "choir", pan=0.0, send=0.5, legato=0.1, gain_db=-3.5)
-    cb_choir = bass_of(build_c[1:], cb.notes)
-    chv = voice_chords(build_c[1:], 4, 52, 79, bass=cb_choir, top_max=[74, 76, 76, 77, 76])
+    chv = voice_chords(build_c[1:], 4, 52, 79, bass=bb[1:], top_max=[74, 74, 76, 76, 77, 76], avoid=b_av[1:])
     for k, v in pad_notes(build_c[1:], chv, {"choir": [0, 1, 2, 3]}, vel=80).items():
         parts[k].add(v)
-    clv = voice_chords(clim_c, 4, 52, 79, bass=cbass, prev=chv[-1], force_top=[None, None, None, 72, 71])
+    clv = voice_chords(clim_c, 4, 52, 79, bass=cbass, prev=chv[-1], force_top=[None] * 4 + [72, 71],
+                       avoid=c_av)
     for k, v in pad_notes(clim_c, clv, {"choir": [0, 1, 2, 3]}, vel=100).items():
         parts[k].add(v)
     choir.add(seq("(E3,B3,G#4,E5):5", 73, 96))
-    choir.dyn = [(43.8, 0), (44.6, 18), (47.6, 34), (48, 28), (52, 64), (55.8, 110)] + CLIMAX + \
-        [(73.2, 104), (76, 20), (76.6, 0)]
+    choir.dyn = [(43.8, 0), (44.6, 18), (47.6, 34), (48, 24), (50, 26), (52, 58), (54, 88), (55.8, 110)] + \
+        CLIMAX + [(73.0, 116), (73.8, 110), (75, 60), (76.4, 16), (76.8, 0)]
     choir.vol = [(56, 0.0)] + CODA_FAST
 
     brass = part("brass", "brass", pan=0.08, send=0.38, gain_db=-6.5)
-    brv = voice_chords(build_c[4:], 4, 50, 72, bass=bb[4:], top_max=69)
-    for k, v in pad_notes(build_c[4:], brv, {"brass": [0, 1, 2, 3]}, vel=96).items():
+    brv = voice_chords(build_c[5:], 4, 50, 72, bass=bb[5:], top_max=69, avoid=b_av[5:])
+    for k, v in pad_notes(build_c[5:], brv, {"brass": [0, 1, 2, 3]}, vel=96).items():
         parts[k].add(v)
-    clb = voice_chords(clim_c, 4, 52, 72, bass=cbass, prev=brv[-1], top_max=[68, 71, 69, 69, 69])
+    clb = voice_chords(clim_c, 4, 52, 72, bass=cbass, prev=brv[-1], top_max=[68, 68, 71, 69, 69, 69],
+                       avoid=c_av)
     for k, v in pad_notes(clim_c, clb, {"brass": [0, 1, 2, 3]}, vel=104).items():
         parts[k].add(v)
     brass.add(seq("(E3,G#3,B3,E4):4", 73, 100))
-    brass.dyn = [(51.8, 0), (52.2, 66), (55.8, 114)] + CLIMAX + [(73.2, 100), (75.6, 0)]
+    brass.dyn = [(51.8, 0), (52.2, 60), (54, 90), (55.8, 114)] + CLIMAX + [(73.0, 112), (73.8, 104), (75.2, 30),
+                                                                          (75.8, 0)]
     brass.vol = [(56, 0.0)] + CODA_FAST
 
     trb = part("trombone", "trombone", pan=0.24, send=0.35, gain_db=-5.0)
     trb.add(seq("E2:w | B2:w | A2:w | A2:h B2:h | E2:4", 57, 100))
-    trb.dyn = [(56.6, 0), (56.95, 108)] + CLIMAX + [(73.2, 100), (75, 30), (76, 0)]
+    trb.dyn = [(56.6, 0), (56.95, 108)] + CLIMAX + [(73.0, 110), (73.8, 104), (75, 30), (76, 0)]
 
     # ---------------------------------------------------------------- harp, timpani, glock, cymbal
     harp = part("harp", "harp", pan=-0.45, send=0.38, humanize=0.006)
-    harp.add(harp_arp(theme_c, base_pitch_lo=48, v=(44, 58), low_vel=50))
-    harp.add(harp_arp(build_c[:2], base_pitch_lo=50, v=(54, 68)))
-    harp.add(harp_arp(build_c[2:4], base_pitch_lo=50, v=(40, 54)))                       # subito p
-    harp.add(harp_arp(build_c[4:], base_pitch_lo=52, step=0.25, v=(56, 84), low=True))
-    harp.add(gliss({4, 6, 8, 9, 11, 1, 3}, P("E3"), P("E6"), 57.0, 0.62, 58, 100))
-    harp.add(harp_arp(clim_c, base_pitch_lo=64, v=(72, 90), low=False))
+    harp.add(harp_arp(pad_c, base_pitch_lo=48, v=(42, 56), low_vel=48, seed=1, avoid=t_av,
+                      figures=["rise", "wave", "rise", [0, 1, 2, 3], "high", "thirds", "turn", [0, 1, 2, 3],
+                               [4, 3, 2, 1], "lift"]))
+    harp.add(harp_arp(build_c[:3], base_pitch_lo=50, v=(52, 66), seed=2, avoid=b_av[:3],
+                      figures=["rise", [0, 1, 2, 3], "high"]))
+    harp.add(harp_arp(build_c[3:5], base_pitch_lo=50, v=(34, 44), seed=3, avoid=b_av[3:5],  # subito p: sparse
+                      figures=[[0, 1, 2, None], [0, 1, 2, None]]))
+    harp.add(harp_arp(build_c[5:], base_pitch_lo=52, step=0.25, v=(56, 84), low=True, seed=4, avoid=b_av[5:]))
+    harp.add(gliss({4, 8, 11}, P("E3"), P("E6"), 57.0, 0.62, 58, 100, ring=1.6))     # pedals set to E major
+    harp.add(harp_arp(clim_c, base_pitch_lo=60, v=(70, 88), low=False, seed=5, avoid=c_av,
+                      figures=["rise", [0, 1, 2, 3], "high", "wave", [0, 1, 2, 3], "high"]))
     harp.add([Note(73 + i * 0.09, 6.0, p, 74 - i * 2) for i, p in
               enumerate([P(x) for x in ("E2", "B2", "E3", "G#3", "B3", "E4", "G#4", "B4", "E5")])])
     harp.vol = [(70, 0.0), (76, -8.0), (80, -20.0)]
@@ -1513,35 +1696,40 @@ def compose_symphony() -> Cue:
     timp.add(roll(P("B2"), 63.0, 64.96, tm, 12, 50, 112))
     timp.add([Note(65, 2, P("A2"), 122), Note(69, 2, P("A2"), 108)])
     timp.add(roll(P("B2"), 71.0, 72.96, tm, 12, 58, 118))
-    timp.add([Note(73, 2, P("E2"), 120)])
-    timp.add(roll(P("E2"), 73.4, 75.6, tm, 11, 60, 24))
+    timp.add([Note(73, 2, P("E2"), 124)])
+    timp.add(roll(P("E2"), 73.4, 76.0, tm, 11, 58, 20))
 
-    glock = part("glock", "glock", pan=-0.24, send=0.4, gain_db=-5.0, humanize=0.004)
+    glock = part("glock", "glock", pan=-0.24, send=0.4, gain_db=5.0, humanize=0.004)
     glock.add(seq("B5:q E6:q G#6:h | r:h F#6:h | C#7:h. B6:q | A6:h r:h | E6:q", 57, 60))
 
     vgp = part("vln_gp", "vln_slow", pan=-0.25, send=0.45, gain_db=6.0)
-    vgp.add([Note(56.05, 1.0, P("E6"), 52)])
+    vgp.add([Note(56.05, 1.0, P("E6"), 52)])                  # the one soft high string note in the pause
     vgp.dyn = [(55.9, 0), (56.1, 28), (56.6, 34), (56.98, 28), (57.1, 0)]
 
     cym = part("cymbal", "cymbal", pan=0.1, send=0.45, synth=synth_cymbal, gain_db=-8.0)
-    cym.opts["events"] = [(tm.sec(56.6), tm.sec(57.0), 0.8, 1.0, 3.2),
+    # GP: the swell only starts ~0.33 s before the downbeat and rushes up (an inhale), leaving the
+    # first ~0.7 s of the pause to the hall tail and the one high E
+    cym.opts["events"] = [(tm.sec(56.7), tm.sec(57.0), 0.85, 1.0, 3.2, 4.0),
                           (tm.sec(63.6), tm.sec(65.0), 0.45, 0.5, 3.0),
-                          (tm.sec(71.6), tm.sec(73.0), 0.35, 0.45, 3.5)]
-    cym.notes = [Note(57, 1, 49, 110), Note(65, 1, 49, 80), Note(73, 1, 49, 70)]
+                          (tm.sec(71.6), tm.sec(73.0), 0.4, 0.55, 2.6)]
+    cym.notes = [Note(57, 1, 49, 110), Note(65, 1, 49, 80), Note(73, 1, 49, 74)]
 
     order = ["celesta", "piano", "glock", "harp", "vln_gp", "vln1", "vln2_mel", "vln2", "vln2_trem", "vla",
              "vla_trem", "vc", "vc2", "cb", "horns", "brass", "trombone", "choir", "timpani", "cymbal"]
     cue = Cue("symphony", tm, bars, chords_, [parts[k] for k in order], rt60=2.6, wet=0.42, predelay=0.024,
-              target_lufs=-18.0, st_target=-12.5, fade_out=1.3,
-              gates=[(49.40, 50.47, {"vln_gp", "cymbal"})],
-              wet_duck=[(49.42, 50.48, 0.1, 0.45)],
-              comp=(-6.0, 1.3, 30.0, 400.0),
-              master_vol=[(0, 0.0), (7, 0.0), (9, -2.5), (39, -2.5), (41, -3.5), (48, -3.5), (55.5, -1.0),
-                          (57.2, 0.0), (59.5, -1.5), (61.5, -3.0), (63.2, -2.5), (64.8, 0.0), (68.5, 0.0),
-                          (69.5, -0.8), (71.5, 0.0)],
-              landmarks=[(0.0, "intro"), (7.5, "theme"), (19.5, "vln I"), (35.0, "build"), (42.0, "sub p"),
-                         (49.4, "GP"), (50.5, "CLIMAX (E)"), (54.2, "6-5"), (58.0, "high pt"), (61.7, "iv"),
-                         (66.0, "coda"), (68.4, "celesta"), (74.0, "end")],
+              target_lufs=-15.5, st_target=-12.5, fade_out=0.4,
+              gates=[(49.40, 50.47, {"vln_gp", "cymbal"}, 0.15)],
+              wet_duck=[(49.42, 50.48, 0.3, 0.6)],
+              comp=(-8.0, 1.4, 30.0, 400.0),
+              # whole-cue fader: lifts the intro/theme to an audible level (the arc is ~14 dB, not
+              # ~21), a held subito p at 41.8 s, and the final tonic at least as big as the B7
+              master_vol=[(0, 5.0), (7, 5.0), (9, 3.0), (24, 2.0), (39, 1.0), (41, 0.0), (47.6, 0.0),
+                          (48.0, -5.0), (50, -5.0), (52, -2.5), (55.5, -1.0), (57.2, 0.0), (59.5, -1.5),
+                          (61.5, -2.5), (63.2, -2.0), (64.8, 0.0), (68.5, 0.0), (69.5, -0.8), (71.0, -1.2),
+                          (72.7, 0.0), (73.0, 0.6), (74.0, 0.6)],
+              landmarks=[(0.0, "intro"), (7.5, "theme"), (19.3, "vln I"), (35.0, "build"), (41.8, "sub p"),
+                         (49.4, "GP"), (50.5, "CLIMAX (E)"), (54.2, "6-5 susp"), (58.0, "high pt"), (61.7, "iv"),
+                         (66.0, "coda"), (68.3, "celesta"), (70.0, "G#"), (72.04, "F#"), (74.0, "end")],
               top_parts=("vc", "vln1"), bass_parts=("cb",))
     cue.notes_txt = ("Top line for the outer-voice check: Theme A in the celli (beats 8-40), violins I "
                      "(countermelody, B-section, climax 8va). Bass: contrabasses.")
@@ -1559,19 +1747,21 @@ def compose_opening() -> Cue:
     cb = Part("cb", "cb", pan=0.3, send=0.3).add(seq("D2:15", 1)).add(seq("B1:5", 16))
     cb.dyn = [(0.9, 0), (3, 26), (12, 32), (16, 30), (18.5, 20), (20.8, 0)]
     parts.append(cb)
-    sv = voice_chords(c, 4, 43, 66, bass=[P("D2")] * 3 + [P("B1")])
+    sv = voice_chords(c, 4, 47, 68, bass=[P("D2")] * 3 + [P("B1")], min_gap=3)      # open, no low clusters
     st = pad_notes(c, sv, {"vc": [0, 1], "vla": [2, 3]}, vel=50, tail=0.2)
     vc = Part("vc_pad", "vc_slow", pan=0.2, send=0.4).add(st["vc"])
     vla = Part("vla_pad", "vla", pan=-0.1, send=0.4).add(st["vla"])
     for p_ in (vc, vla):
         p_.dyn = [(0.9, 0), (2.5, 30), (6, 42), (9, 38), (11.5, 33), (14, 38), (17.6, 54), (18.6, 34), (20.8, 0)]
     parts += [vc, vla]
-    pv = voice_chords(c, 3, 57, 74)
+    pv = voice_chords(c, 3, 57, 76, min_gap=3)
     pad = Part("pad", "halo_pad", pan=0.0, send=0.5, gain_db=-7.0).add(pad_notes(c, pv, {"p": [0, 1, 2]}, 60)["p"])
     pad.dyn = [(1, 30), (5, 90), (11, 70), (14, 84), (17.6, 112), (18.6, 70), (20.8, 25)]
     parts.append(pad)
     glass = Part("shimmer", "shimmer", synth=synth_shimmer, pan=0.0, send=0.7, gain_db=-21.0)
-    glass.add(seq("(A5,E6):10", 2, 60)).add(seq("(F#5,C#6):8", 13, 60))
+    # the first dyad's 1.5 s release clears before the celesta enters at 10.0 s; the second sits
+    # an octave below the celesta's line on tones it never rubs (D/F# under A D F# E D B)
+    glass.add(seq("(A5,E6):8.3", 2, 60)).add(seq("(D5,F#5):8", 13, 60))
     glass.dyn = [(2, 0), (6, 80), (10, 64), (12, 40), (14, 60), (17.6, 90), (19.5, 30), (21, 0)]
     parts.append(glass)
     cel = Part("celesta", "celesta", pan=0.15, send=0.85, humanize=0.005, gain_db=10.0)
@@ -1580,8 +1770,10 @@ def compose_opening() -> Cue:
     gl = Part("glock", "glock", pan=-0.2, send=0.85, gain_db=-6.0, humanize=0.005)
     gl.add(seq("A6:q D7:q F#7:h | E7:q D7:q B6:h", 12, 34, bar=4))
     parts.append(gl)
+    # the timeline already fades this cue over its last 2.5 s (SEQ fade_out); the cue's own fade is
+    # only a short safety tail so the two do not stack into a premature drop under the dive flash
     return Cue("opening", tm, bars, c, parts, rt60=4.2, wet=0.55, predelay=0.03, target_lufs=-17.0,
-               fade_out=2.5, comp=(-24.0, 1.4, 40.0, 500.0),
+               fade_out=1.2, comp=(-24.0, 1.4, 40.0, 500.0),
                landmarks=[(3.0, "title in"), (10.0, "celesta"), (11.0, "title out"), (12.5, "dive"),
                           (15.5, "fade")],
                top_parts=("celesta", "pad"), bass_parts=("cb",))
@@ -1599,7 +1791,7 @@ def compose_lounge() -> Cue:
     cb.add(seq("D2:w | B1:w | G1:w | A1:w | F#1:w | B1:w | G1:w | A1:w", 0, bar=4))
     cb.dyn = [(0, 24)] + [(b + d, v) for b in range(0, 32, 4) for d, v in ((0.2, 26), (2.0, 32), (3.8, 25))]
     parts.append(cb)
-    sv = voice_chords(c, 4, 45, 67, bass=bass_of(c, cb.notes))
+    sv = voice_chords(c, 4, 50, 69, bass=bass_of(c, cb.notes))
     st = pad_notes(c, sv, {"vc": [0, 1], "vla": [2, 3]}, vel=48, tail=0.15)
     vc = Part("vc_pad", "vc_slow", pan=0.18, send=0.35).add(st["vc"])
     vla = Part("vla_pad", "vla", pan=-0.12, send=0.35).add(st["vla"])
@@ -1619,9 +1811,9 @@ def compose_lounge() -> Cue:
     pno.pedal = [(b + 0.05, b + 3.95) for b in range(0, 32, 4)]
     parts.append(pno)
     harp = Part("harp", "harp", pan=-0.35, send=0.4, humanize=0.006, gain_db=7.0)
-    harp.add(seq("(D3,A3):w r:w (G2,D3):w r:w (F#2,D3):w r:w (G2,B2):w r:w", 0, 38))
+    harp.add(seq("(D3,A3):w r:w (G2,D3):w r:w (F#2,D3):w r:w (G2,D3):w r:w", 0, 38))
     parts.append(harp)
-    return Cue("lounge", tm, bars, c, parts, rt60=2.2, wet=0.38, target_lufs=-18.0, fade_out=2.0,
+    return Cue("lounge", tm, bars, c, parts, rt60=2.2, wet=0.38, target_lufs=-18.0, fade_in=0.5, fade_out=2.0,
                comp=(-26.0, 1.4, 40.0, 500.0), top_parts=("vla_pad",), bass_parts=("cb",),
                landmarks=[(4.6, "r01"), (26.95, "q02"), (42.0, "end in film")])
 
@@ -1638,13 +1830,14 @@ def compose_alt_kazoo() -> Cue:
     kz = Part("kazoo", "kazoo", synth=synth_kazoo, pan=0.0, send=0.18, gain_db=-9.0)
     kz.add(seq("A4:e D5:e F#5:q | E5:e D5:e B4:q | B4:e D5:e G5:q | F#5:q E5:q | D5:q. r:e", 0, 100, "mel",
                bar=2, vels=[96, 100, 112, 100, 98, 104, 98, 102, 114, 112, 100, 108]))
-    lh = Part("piano_lh", "piano", pan=-0.1, send=0.15, humanize=0.006, gain_db=7.0)
+    lh = Part("piano_lh", "piano", pan=-0.1, send=0.15, humanize=0.006, gain_db=9.0)
     rh = Part("piano_rh", "piano", pan=0.15, send=0.15, humanize=0.006, gain_db=4.0)
     uke = Part("ukulele", "ukulele", pan=0.35, send=0.18, humanize=0.003, gain_db=2.0)
-    shapes = {"D": ("D2", "A2", "(F#3,A3,D4)", ("D4", "F#4", "A4")),
-              "Bm": ("B1", "F#2", "(F#3,B3,D4)", ("D4", "F#4", "B4")),
-              "G": ("G2", "D2", "(G3,B3,D4)", ("D4", "G4", "B4")),
-              "A": ("A2", "C#2", "(A3,C#4,E4)", ("C#4", "E4", "A4"))}
+    # oom = root/5th doubled in octaves so the bass still reads on a phone speaker; pah = RH chords
+    shapes = {"D": ("(D2,D3)", "(A2,A3)", "(F#3,A3,D4)", ("D4", "F#4", "A4")),
+              "Bm": ("(B1,B2)", "(F#2,F#3)", "(F#3,B3,D4)", ("D4", "F#4", "B4")),
+              "G": ("(G2,G3)", "(D2,D3)", "(G3,B3,D4)", ("D4", "G4", "B4")),
+              "A": ("(A2,A3)", "C#3", "(A3,C#4,E4)", ("C#4", "E4", "A4"))}   # C#3 walks up to the final D
     for (b0, b1, sym) in c[:4]:
         bass1, bass2, ch_, uk = shapes[sym]
         lh.add(seq(f"{bass1}:e r:e {bass2}:e r:e", b0, 74))
@@ -1652,14 +1845,14 @@ def compose_alt_kazoo() -> Cue:
         for k, beat in enumerate((b0 + 0.5, b0 + 1.5)):
             order = uk if k % 2 == 0 else uk[::-1]
             uke.add([Note(beat + j * 0.022, 0.4, P(p_), 62 + 6 * (j == 0)) for j, p_ in enumerate(order)])
-    lh.add(seq("(D2,D3):q.", 8, 80))
+    lh.add(seq("(D2,D3):q.", 8, 82))
     rh.add(seq("(F#3,A3,D4):q.", 8, 66))
     uke.add([Note(8 + j * 0.03, 1.5, P(p_), 66) for j, p_ in enumerate(("D4", "F#4", "A4"))])
-    gl = Part("glock", "glock", pan=0.0, send=0.35, gain_db=5.0).add(seq("D6:q. A6:e", 8, 60))
+    gl = Part("glock", "glock", pan=0.0, send=0.35, gain_db=5.0).add(seq("D6:q A6:q", 8, 60))   # the "button"
     return Cue("alt_kazoo", tm, bars, c, [kz, lh, rh, uke, gl], rt60=0.9, wet=0.22, predelay=0.012,
                target_lufs=-16.0, fade_out=0.35, comp=(-16.0, 2.0, 15.0, 200.0),
                top_parts=("kazoo",), bass_parts=("piano_lh",),
-               landmarks=[(0.08, "kazoo"), (4.6, "button")])
+               landmarks=[(0.08, "kazoo"), (4.6, "final D"), (5.22, "button")])
 
 
 # =========================================================================== cue: alt_chip
@@ -1688,10 +1881,11 @@ def compose_alt_chip() -> Cue:
         tones = sorted({(ch.root + i) % 12 for i in ch.ivs})
         ps = sorted([57 + ((tn - 57) % 12) for tn in tones])
         b = b0
-        k = 0
+        k = j = 0
         while b < b1 - 1e-6:
             if k % 3 != 2:                     # gated: 2 steps on, 1 off per 8th
-                arp.notes.append(Note(b, step * 0.95, ps[k % len(ps)], 90))
+                arp.notes.append(Note(b, step * 0.95, ps[j % len(ps)], 90))
+                j += 1                         # pitch cycle only advances on sounding steps (1-3-5-1-3-5)
             b += step
             k += 1
     tri = Part("tri", "chip_tri", synth=synth_chip, pan=0.0, send=0.04, gain_db=-4.5, opts={"kind": "tri"})
@@ -1727,20 +1921,31 @@ def compose_alt_chip() -> Cue:
 def compose_alt_lofi() -> Cue:
     tm = TempoMap.const(80, start=0.15)
     bars = [0, 4, 8, 8.4]
-    c = ctl("Dmaj9:3.5 Bm9:2.5 Gmaj9:1.5 Gm6:0.9", 0)
-    rh = Part("rhodes", "rhodes", pan=-0.05, send=0.3, humanize=0.01, lazy=0.012)
-    rh.add(seq("(D3,F#3,A3,C#4,E4):3.4", 0, 58))
-    rh.add(seq("(B2,A3,C#4,D4,F#4):2.4", 3.5, 54))
-    rh.add(seq("(G2,F#3,A3,B3,D4):1.45", 6, 52))
-    rh.add(seq("(G2,E3,Bb3,D4):1.4", 7.5, 46))
-    for i, nt in enumerate(rh.notes):
-        nt.beat += 0.03 * (i % 5) / 4        # soft hand-rolled spread
-    fl = Part("flute", "flute", pan=0.12, send=0.35, humanize=0.01, lazy=0.035, gain_db=9.0)
-    fl.add(seq("A4:q D5:q F#5:h | E5:q D5:q B4:q. r:e", 0, 62, "mel", bar=4, vels=[60, 62, 68, 62, 58, 56]))
+    # D6/9 and Bm11 keep every chord tone clear of the flute (no C# a minor 9th under its D5)
+    c = ctl("D6add9:3.5 Bm11:2.5 Gmaj9:1.5 Gm6:0.9", 0)
+
+    def suitcase(phase):
+        """Rhodes 'suitcase' tremolo: the two halves of the keyboard sway against each other."""
+        def eq(x):
+            t = np.arange(len(x)) / SR
+            return x * (1.0 + 0.16 * np.sin(2 * np.pi * (80 / 60 * 2) * t + phase))[:, None]
+        return eq
+    # chord tones alternate between two Rhodes stems panned apart (mono-safe width, no Haas comb)
+    rl = Part("rhodes_l", "rhodes", pan=-0.45, send=0.3, humanize=0.01, lazy=0.012, eq=suitcase(0.0))
+    rr = Part("rhodes_r", "rhodes", pan=0.42, send=0.3, humanize=0.01, lazy=0.016, eq=suitcase(math.pi))
+    for spec, b, d, v in (("(D3,A3,B3,E4,F#4)", 0, 3.4, 58), ("(B2,A3,D4,E4)", 3.5, 2.4, 54),
+                          ("(G2,F#3,A3,B3,D4)", 6, 1.45, 52), ("(G2,E3,Bb3,D4)", 7.5, 1.4, 46)):
+        for i, nt in enumerate(sorted(seq(f"{spec}:{d}", b, v), key=lambda n: n.pitch)):
+            nt.beat += 0.03 * i / 4          # soft hand-rolled spread, bottom up
+            (rl if i % 2 == 0 else rr).notes.append(nt)
+    fl = Part("flute", "flute", pan=0.1, send=0.35, humanize=0.01, lazy=0.035, gain_db=9.0)
+    # the B4 lets go before the Gm6 (Bb) arrives - no B/Bb overlap
+    fl.add(seq("A4:q D5:q F#5:h | E5:q D5:q B4:1.3 r:0.7", 0, 62, "mel", bar=4, vels=[60, 62, 68, 62, 58, 56]))
     fl.dyn = [(0, 92), (2, 104), (3.6, 88), (4, 96), (6.5, 84), (7.6, 70)]
     bass = Part("sub", "sub_bass", synth=synth_sub, pan=0.0, send=0.05, gain_db=-26.0, lazy=0.01)
     bass.add(seq("D2:3.4", 0, 100)).add(seq("B1:2.4", 3.5, 96)).add(seq("G1:2.3", 6, 96))
     dr = Part("drums", "drums_lofi", synth=synth_drums_lofi, pan=0.0, send=0.1, gain_db=-21.0, lazy=0.006)
+    hats = Part("hats", "drums_lofi", synth=synth_drums_lofi, pan=0.32, send=0.12, gain_db=-14.0, lazy=0.009)
     swing = 0.07
     for bar0 in (0, 4):
         for b, v in ((0, 118), (1.75, 92), (2.5, 106)):
@@ -1749,7 +1954,7 @@ def compose_alt_lofi() -> Cue:
             dr.notes.append(Note(bar0 + b, 0.3, 38, 104))
         for k in range(8):
             b = k * 0.5 + (swing if k % 2 else 0)
-            dr.notes.append(Note(bar0 + b, 0.1, 46 if (bar0 == 4 and k == 7) else 42, 70 if k % 2 == 0 else 50))
+            hats.notes.append(Note(bar0 + b, 0.1, 46 if (bar0 == 4 and k == 7) else 42, 70 if k % 2 == 0 else 50))
         dr.notes.append(Note(bar0 + 3.75 + swing, 0.1, 37, 40))
     dr.notes.append(Note(8, 0.3, 36, 96))
 
@@ -1760,13 +1965,13 @@ def compose_alt_lofi() -> Cue:
         x = hp(x, 45)
         x = wow_flutter(x, 8.0, 0.55, 2.2, 6.4)
         mid = (x[:, 0] + x[:, 1]) / 2
-        side = (x[:, 0] - x[:, 1]) / 2 * 0.65
+        side = (x[:, 0] - x[:, 1]) / 2 * 0.95
         x = np.stack([mid + side, mid - side], axis=1)
         vin = lp(synth_vinyl(len(x), rng, density=10.0, hiss_db=-40.0), 7000)
         rm = np.sqrt(np.mean(x ** 2)) + 1e-9
         return x + vin * (rm * db(-24.0) / (np.sqrt(np.mean(vin ** 2)) + 1e-12))
 
-    return Cue("alt_lofi", tm, bars, c, [rh, fl, bass, dr], rt60=1.1, wet=0.25, predelay=0.015,
+    return Cue("alt_lofi", tm, bars, c, [rl, rr, fl, bass, dr, hats], rt60=1.1, wet=0.25, predelay=0.015,
                target_lufs=-16.0, fade_in=0.06, fade_out=0.45, post=post, comp=(-16.0, 2.2, 8.0, 160.0),
                top_parts=("flute",), bass_parts=("sub",), landmarks=[(0.15, "bar 1"), (3.15, "bar 2")])
 
@@ -1780,11 +1985,12 @@ def compose_alt_theremin() -> Cue:
     c = ctl("D5:1.8", 0)
     th = Part("theremin", "theremin", synth=synth_theremin, pan=0.0, send=0.45, gain_db=-16.0)
     th.opts["path"] = [(0.0, 52.0), (0.15, 69.6), (0.24, 68.9), (0.38, 69.0), (0.5, 74.7), (0.58, 73.9),
-                       (0.72, 74.0), (0.84, 78.8), (0.94, 77.9), (1.3, 78.0), (1.72, 63.0), (1.8, 62.0)]
+                       (0.72, 74.0), (0.84, 78.8), (0.94, 77.9), (1.3, 78.0), (1.56, 61.6), (1.62, 62.0),
+                       (1.8, 62.0)]     # the dive lands (wobbling) on the tonic D4 by 1.6 s
     th.opts["amp_t"] = [0.0, 0.07, 0.4, 1.0, 1.3, 1.55, 1.78, 1.8]
     th.opts["amp_v"] = [0.0, 0.75, 0.85, 1.0, 1.0, 0.75, 0.0, 0.0]
     th.notes = [Note(0.0, 0.42, P("A4"), 100, "mel"), Note(0.42, 0.4, P("D5"), 100, "mel"),
-                Note(0.82, 0.48, P("F#5"), 110, "mel"), Note(1.3, 0.45, P("D#4"), 80)]
+                Note(0.82, 0.48, P("F#5"), 110, "mel"), Note(1.3, 0.45, P("D4"), 80)]
     trem = Part("low_trem", "vc_trem", pan=0.15, send=0.4, humanize=0.003)
     trem.add(seq("(D2,A2,D3):1.75", 0, 110))
     trem.dyn = [(0, 112), (0.12, 52), (1.0, 92), (1.45, 70), (1.72, 0)]
@@ -1802,26 +2008,32 @@ def compose_alt_theremin() -> Cue:
 
 def compose_alt_lullaby() -> Cue:
     def w(b):
-        return 1.0 + 0.06 * bump(b, 3.0, 0.5) + 0.06 * bump(b, 11.0, 0.5) + 0.3 * rit(b, 12.0, 16.0)
-    tm = TempoMap([(0, 0.12), (12, 8.12), (16, 11.25)], w)
+        return 1.0 + 0.06 * bump(b, 3.0, 0.5) + 0.06 * bump(b, 11.0, 0.5) + 0.3 * rit(b, 12.0, 15.0)
+    # bars 1-3 flow (~93 bpm), bar 4 broadens: F#6 7.75 s, E6 ~9.1 s, the D chord under it at 9.85 s,
+    # so the last note really rings for ~1.9 s and its resolution is heard before the 0.4 s fade
+    tm = TempoMap([(0, 0.05), (12, 7.75), (15, 9.85)], w)
     bars = [0, 4, 8, 12, 16]
-    c = ctl("D:4 Bm:4 G:4 A:3.2 D:0.8", 0)
+    c = ctl("D:4 Bm:4 G:4 A:3 D:2", 0)
     mb = Part("musicbox", "musicbox", pan=0.05, send=0.45, humanize=0.004)
     mb.add(transpose(seq(THEME_BARS_1_4, 0, 74, "mel", bar=4, vels=[70, 72, 80, 72, 70, 68, 70, 74, 84, 82, 74]), 12))
+    mb.notes[-1].dur = 3.0                    # the final E6 is never damped
     cel = Part("celesta", "celesta", pan=-0.12, send=0.45, humanize=0.008, gain_db=-4.0)
-    # soft broken chords above a held tonic pedal (celesta stays >= C4): D | Bm/D | G/D | A/C# -> D
-    cel.add(seq("D4:w | D4:w | D4:w | C#4:3.2 r:0.8", 0, 34, bar=4))
+    # soft broken chords above a held tonic pedal (celesta stays >= C4): D | Bm/D | G/D | A/C# -> D(add9)
+    cel.add(seq("D4:w | D4:w | D4:w | C#4:3 r:1", 0, 34, bar=4))
     cel.add(seq("r:q A4:q D5:q A4:q | r:q F#4:q B4:q F#4:q | r:q G4:q B4:q G4:q | r:q E4:q A4:q r:q", 0, 30,
                 bar=4, vels=[32, 34, 29, 31, 33, 28, 31, 33, 28, 30, 32]))
-    cel.add(seq("(D4,A4):2", 15.2, 34))
+    cel.add(seq("(D4,A4):2", 15, 36))        # the E6 above becomes the 9th of D: settled, still open
     pad = Part("pad", "warm_pad", pan=0.0, send=0.4, gain_db=-15.0)
     pv = voice_chords(c, 3, 55, 71)
     pad.add(pad_notes(c, pv, {"p": [0, 1, 2]}, 50, tail=0.5)["p"])
-    pad.dyn = [(0, 40), (3, 64), (12, 60), (16, 40), (17, 0)]
-    return Cue("alt_lullaby", tm, bars, c, [mb, cel, pad], rt60=1.7, wet=0.36, predelay=0.015,
-               target_lufs=-16.0, fade_out=1.1, comp=(-18.0, 1.6, 20.0, 300.0),
+    pad.dyn = [(0, 40), (3, 64), (12, 60), (15, 50), (16.5, 42), (18, 0)]
+    # a music-box tine dies in ~0.6 s; a soft sine 'tine ring' under the last note is what lets it ring out
+    star = Part("ring", "bell", synth=synth_bell, pan=-0.04, send=0.5, gain_db=-35.0, opts={"ring": 1.2})
+    star.add([Note(14.0, 3.0, P("E6"), 80)])
+    return Cue("alt_lullaby", tm, bars, c, [mb, star, cel, pad], rt60=1.7, wet=0.36, predelay=0.015,
+               target_lufs=-16.0, fade_out=0.4, comp=(-18.0, 1.6, 20.0, 300.0),
                top_parts=("musicbox",), bass_parts=("celesta",),
-               landmarks=[(5.0, "rae stands"), (8.12, "F#->E"), (9.6, "E rings")])
+               landmarks=[(5.0, "rae stands"), (7.75, "F#->E"), (9.1, "E rings"), (9.85, "D")])
 
 
 # =========================================================================== cue: coda
@@ -1831,7 +2043,8 @@ def compose_coda() -> Cue:
     def w(b):
         return (1.0 + 0.1 * bump(b, 0.0, 0.5) + 0.08 * bump(b, 3.5, 0.6) + 0.08 * bump(b, 7.5, 0.6)
                 + 0.1 * bump(b, 11.5, 0.7) + 0.28 * rit(b, 13.0, 16.0))
-    tm = TempoMap([(0, 0.35), (16, 12.72)], w)               # final D chord lands on end_card
+    # ~72 bpm (slow, like the symphony statement); the final D chord lands 0.9 s into the end card
+    tm = TempoMap([(0, 0.35), (16, 13.6)], w)
     bars = [0, 4, 8, 12, 16, 20, 24]
     c = ctl("D:4 Bm:4 G:4 A:4 D:9", 0)
     rh = Part("piano_rh", "piano", pan=0.06, send=0.42, humanize=0.006)
@@ -1855,12 +2068,13 @@ def compose_coda() -> Cue:
     rh.eq = lh.eq = felt
     pad = Part("strings", "vla", pan=0.0, send=0.5, gain_db=-8.0).add(seq("(A3,D4,F#4):8", 16, 60))
     padc = Part("strings_lo", "vc_slow", pan=0.2, send=0.5, gain_db=-9.0).add(seq("D3:8", 16, 60))
-    pad.dyn = padc.dyn = [(15.6, 0), (17, 30), (20, 27), (23, 0)]
+    pad.dyn = padc.dyn = [(15.6, 0), (17, 30), (21, 30), (24, 0)]      # carry the chord under the end card
     pad.eq = padc.eq = lambda x: lp(x, 4500)
     return Cue("coda", tm, bars, c, [rh, lh, pad, padc], rt60=2.3, wet=0.36, predelay=0.02,
-               target_lufs=-18.0, fade_out=4.0, comp=(-22.0, 1.5, 30.0, 400.0),
+               target_lufs=-18.0, fade_out=0.3, comp=(-22.0, 1.5, 30.0, 400.0),
                top_parts=("piano_rh",), bass_parts=("piano_lh",),
-               landmarks=[(2.2, "q13"), (12.72, "end card"), (15.8, "fade")])
+               landmarks=[(2.2, "q13"), (12.72, "end card"), (13.6, "D chord"), (15.8, "mix fade"),
+                          (18.22, "pic fade")])
 
 
 COMPOSERS = {"opening": compose_opening, "lounge": compose_lounge, "symphony": compose_symphony,
@@ -1892,7 +2106,7 @@ def render_stems(cue: Cue, n: int) -> dict:
     return stems
 
 
-def _gate_env(n, t0, t1, fade_out=0.04, fade_in=0.025):
+def _gate_env(n, t0, t1, fade_out=0.15, fade_in=0.025):
     g = np.ones(n)
     a, b = int(t0 * SR), int(t1 * SR)
     fo, fi = int(fade_out * SR), int(fade_in * SR)
@@ -1912,9 +2126,10 @@ def process_stem(p: Part, cue: Cue, x: np.ndarray) -> np.ndarray:
         tt = np.array([cue.tmap.sec(b) for b, _ in p.vol])
         vv = np.array([v for _, v in p.vol], float)
         x = x * db(np.interp(np.arange(n) / SR, tt, vv))[:, None]
-    for (t0, t1, keep) in cue.gates:
+    for g in cue.gates:                       # (t0, t1, keep[, release_s])
+        t0, t1, keep = g[:3]
         if p.name not in keep:
-            x = x * _gate_env(n, t0, t1)[:, None]
+            x = x * _gate_env(n, t0, t1, *(g[3:4] or ()))[:, None]
     return pan_st(x, p.pan) * db(p.gain_db)
 
 
@@ -1967,7 +2182,7 @@ def master(cue: Cue, x: np.ndarray):
             err = cue.st_target - np.max(st)
         else:
             err = cue.target_lufs - integrated_lufs(x)
-        x = limiter(x * db(err), -1.2)
+        x = limiter(x * db(err), -1.5)                                # margin for inter-sample peaks
         if abs(err) < 0.15:
             break
     # fades + exact length
@@ -1999,7 +2214,7 @@ def envelopes(x: np.ndarray, cue: Cue) -> dict:
             b = int(min(n, (i + 0.5) * SR / FPS + win))
             vals.append((c[b] - c[a]) / max(1, b - a))
         d = 10 * np.log10(np.array(vals) + 1e-14)
-        d -= np.max(d)
+        d -= np.percentile(d, 99.5)          # robust reference: one stray transient can't own 1.0
         e = np.clip((d + 42.0) / 42.0, 0, 1)
         out = np.empty_like(e)
         cur = 0.0
@@ -2251,11 +2466,8 @@ def render_cue(name: str) -> dict:
     lufs = integrated_lufs(chk.astype(np.float64))
     _, st = short_term(chk.astype(np.float64))
     env = envelopes(chk.astype(np.float64), cue)
-    # MIDI of the whole score (for inspection)
-    rng = np.random.default_rng(0)
-    tracks = [events_to_track(part_events(p, cue, rng), 0, p.name) for p in cue.parts if p.synth is None]
-    if tracks:
-        midi_file(tracks).save(MUSIC_DIR / f"{name}.mid")
+    # MIDI of the whole score (for inspection), every cue incl. the numpy-synthesized parts
+    score_midi(cue).save(MUSIC_DIR / f"{name}.mid")
     stats = {"duration_s": f"{len(chk) / SR:.6f} (target {MUSIC_CUES[name]})",
              "peak_dBFS": f"{peak:.2f}", "integrated_LUFS": f"{lufs:.2f}", "max_short_term_LUFS": f"{np.max(st):.2f}",
              "stem_levels_dBFS(pre-master)": ", ".join(f"{k} {v:.1f}" for k, v in levels.items()),

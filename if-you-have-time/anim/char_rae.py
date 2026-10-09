@@ -2,34 +2,50 @@
 
 Rig contract (anim/rig.py):
     draw(canvas, pose, t)            draw Rae; canvas already carries the camera (stage units)
-    head_center(pose) -> (x, y)      stage point between the eyes
-    hand_pos(pose, side) -> (x, y)   stage point at the palm centre of Rae's 'l' / 'r' hand
+    head_center(pose, t=None)        stage point between the eyes
+    hand_pos(pose, side, t=None)     stage point at the palm centre of Rae's 'l' / 'r' hand (at the mug handle when held)
     ARMS                             ArmPose presets (rest, hold_mug, sip, mug_raise, point, hand_on_chest,
                                      wipe_eye, cover_mouth, hands_up, grip_knee, reach_back, shrug,
                                      hug_self, knee_rest)
-    HEIGHT                           floor -> top of the hair puff at scale 1
+    HEIGHT                           floor -> top of the hair puff, standing, scale 1 (700)
+    (pass the draw time t to the anchor functions to include the automatic breathing; ~1 unit)
 Extras:
     draw_mug(canvas, x, y, scale=1.0, angle=0.0, flip=False)   the mug standing on its base at (x, y)
-    mug_pose(pose) -> (x, y, scale, angle, flip) or None        where the held mug is (feed to draw_mug)
-    EXPR                             face presets: name -> dict of Pose overrides
-    expr(pose, name, amount=1.0)     pose with a face preset blended in
-    mouth_pos(pose) -> (x, y)        stage point at the centre of the mouth
+    mug_pose(pose, t=None) -> (x, y, scale, angle, flip) | None  the held mug; draw_mug(c, *mug_pose(p, t)) matches
+    mouth_pos(pose, t=None), eye_pos(pose, side, t=None)        stage points of the mouth centre / an eye centre
+    blink(t)                         Rae's natural blink (1 open .. 0 shut) - exactly what lid_*=None uses
+    EXPR, expr(pose, name, amount=1.0, t=None)   face presets; pass t so the preset's lids keep blinking
+    WALK_ADVANCE, walk_advance(pose) stage units the pelvis must move per walk cycle (126.1 at turn >= 0.3)
+    STRIDE                           half stride (side-plane units)
+    RIM_LIGHT_POS                    stage point the rim light comes from (default: the window); reassignable
+    RIM_MIN                          pose.rim at or below this is skipped (env.char_light(1.0) returns 0.06)
 
 Conventions specific to Rae (on top of rig.py):
-    * pose.x is the body axis (pelvis centre). Standing, the feet are under it; seated they rest ~95
-      units forward of it (toward `facing`); kneeling, the shins point backward.
+    * pose.x is the body axis (pelvis centre). Standing, the feet are under it; seated they rest ~148 units
+      forward of it (shins ~vertical); kneeling, the shins point backward with the toes tucked under.
+    * kneel 0..1 is the whole slide: the knees travel down to the floor (touching at kneel ~0.62) while the
+      feet pivot onto their toes (heel lift <= 56 deg) and slide back; at 1 she sits back a little (hip 150).
     * bounce is a vertical body offset in stage y (+ = down, like Quill's rig); legs bend to absorb it.
     * smirk > 0 lifts the mouth corner on the `facing` side (and cocks the opposite brow).
-    * ArmPose.across 0..1 pulls the hand toward the opposite shoulder (0.5 ~ body midline);
-      across < 0 (Rae extension) spreads the arm outward instead of forward (shrug).
-    * Arm angles swing toward `facing` once turn >= ~0.25; in a pure front view (turn 0) they come
-      forward toward the camera (slightly inward, foreshortened).
+    * ArmPose.across 0..1 pulls the hand toward the opposite shoulder (0.5 ~ face / chest midline; on the face
+      0.25 lands on the same-side eye); across < 0 (Rae extension) spreads the arm outward (shrug, hands_up).
+      The far arm (arm_l when turned) mirrors this: its across targets are the matching features on its own
+      side, and a far hand resting near the knee / thigh lands on the far leg - presets work on either arm.
+    * Arms swing toward `facing` once turn >= ~0.25; near the front view hanging segments swing slightly
+      outward and raised ones come toward the camera; across < 0 spreads in the picture plane.
     * facing=-1 is a pure mirror image (as in Quill's rig): arm_r / lid_r / tear_r always belong to the
-      side nearer the camera once Rae is turned (screen-left of the body for facing +1, screen-right
-      for facing -1).
+      side nearer the camera once Rae is turned (screen-left of the body for facing +1).
+    * Mug: held by its handle (the hand on the outer side, logo toward the camera). When the hand comes near
+      the mouth ('sip'), the rig places the rim on the lower lip and tilts the mug - for either arm.
+    * Lids given explicitly (lid_l / lid_r not None) are used as-is (scene-controlled blinks); use
+      lid = level * blink(t) or expr(..., t=t) for long holds so she keeps blinking.
+    * walk: pose.walk is the phase in cycles; advance pose.x by walk_advance(pose) per cycle (toward facing) so
+      the planted foot does not skate. Walking backward = decreasing phase while x moves the other way.
     * light: pose.light/tint/tint_amt go through core.light_filter applied to every paint (equivalent
       to a filtered layer, without the offscreen cost), with a perceptual curve light**0.65 so Rae's
       dark-brown skin still reads at light 0.25; eye catch-lights are re-drawn un-darkened in low light.
+    * rim: a soft glow behind the silhouette (strongest toward the light, cut at the floor) plus a ~2.5 device
+      px bright edge on the side facing RIM_LIGHT_POS, fixed in screen space (does not flip with facing).
 
 Local drawing frame: facing=+1 orientation, origin = floor point under the pelvis, y down.
 "Near" side = -x (Rae's right), "far" side = +x.
@@ -38,21 +54,26 @@ from __future__ import annotations
 
 import math
 
+import numpy as np
 import skia
+from scipy.ndimage import gaussian_filter
 
 from anim.core import auto_blink, breathe, clamp, col, lerp, light_filter, mix_col, noise1, smooth_path, smoothstep
 from anim.core import paint as _core_paint
 from anim.rig import ArmPose, Pose
 
 # --------------------------------------------------------------------------- proportions
+D2R = math.pi / 180.0
 HIP_H = 326.0           # standing hip-joint height
 HIP_LAT = 25.0          # half distance between hip joints
 THIGH, SHIN = 158.0, 148.0
 ANKLE_H = 22.0
-SEAT_OFF = 20.0         # hip joint above the seat surface
-KNEEL_HIP = 168.0
-SIT_FOOT = 82.0         # seated: ankles this far forward of the hips
-KNEEL_FOOT = -128.0     # kneeling: ankles this far behind
+SEAT_OFF = 13.0         # hip joint above the seat surface (sunk into the cushion)
+KNEEL_HIP = 150.0       # kneeling: hip height (sitting back a little toward the heels)
+KNEE_R = 16.5           # knee centre height when the knee rests on the floor
+SIT_FOOT = 148.0        # seated: ankles this far forward of the hips (shins ~vertical, relaxed flop)
+KNEEL_TOUCH = 0.62      # kneel blend value at which the knees touch the floor
+KNEEL_HEEL = 56.0       # heel lift (deg) with the toes tucked under while kneeling
 STRIDE, LIFT = 34.0, 8.0
 SH_Y = -136.0           # shoulder joints (relative to pelvis)
 SH_A = 52.0
@@ -63,7 +84,16 @@ HEAD_S = 0.92           # head-local units -> body units
 HAND_S = 1.3            # hand-local units -> body units
 TURN_DEG = 82.0
 
-HEIGHT = 725.0         # floor -> top of the hair puff (head top without the puff ~ 640)
+MUG_S = 1.4             # mug scale (base design is 26 x 32): ~45 units tall, ~0.31 of the head height
+MUG_W, MUG_H = 13.0, 32.0
+MUG_GX, MUG_GY = 22.0, -17.5    # where the hand grips the handle (mug-local, base units)
+MUG_TILT = 40.0         # mug tilt (deg) when drinking
+
+RIM_LIGHT_POS = (360.0, 380.0)   # stage point the rim light comes from (the window); scenes may reassign.
+RIM_MIN = 0.08          # pose.rim at or below this is invisible and skipped (env.char_light(1) gives 0.06)
+
+HEIGHT = 700.0         # floor -> top of the hair puff, standing (head top without the puff ~ 640, eyes ~ 552)
+WALK_ADVANCE = 4.0 * STRIDE * math.sin(68.0 * D2R)   # 126.1: pelvis travel per walk cycle (turn >= 0.3, scale 1)
 
 # --------------------------------------------------------------------------- palette
 C_SKIN = col("r_skin")
@@ -104,9 +134,10 @@ C_PANTS_LINE = col("#151826")
 C_SHOE = col("#3C3444")
 C_SHOE_SH = col("#2A2430")
 C_SHOE_LINE = col("#1A161E")
-C_SOLE = col("#E7E1D5")
-C_TIE = col("#D98A3A")
-C_TIE_SH = col("#A3602A")
+C_SOLE = col("#DED7CA")
+C_TIE = col("#C99B50")
+C_TIE_SH = col("#8F6A36")
+C_TIE_HI = col("#EACB8E")
 C_TEAR = col("tear")
 C_BLUSH = col("blush")
 C_STUD = col("#F2C86E")
@@ -118,8 +149,6 @@ C_LOGO = col("mug_text")
 C_COFFEE = col("#4B2A19")
 WHITE = col("#FFFFFF")
 
-D2R = math.pi / 180.0
-
 # Colour filter applied to every paint while the body is drawn (lighting). Filtering each paint is
 # equivalent to filtering the composite for this affine colour matrix, and avoids an offscreen layer.
 _CF = None
@@ -128,7 +157,23 @@ _CF = None
 _CF_KEY = None
 
 
+_PAINT_CACHE = {}
+
+
 def paint(color, alpha=1.0, **kw):
+    """core.paint plus the current lighting colour filter. Plain (shader-less) paints are cached: they are
+    never mutated after creation, and building skia Paints / blur mask filters is a measurable cost."""
+    if kw.get("shader") is None and kw.get("blend") is None:
+        key = (color, round(alpha, 3), kw.get("stroke", 0.0), kw.get("blur", 0.0), kw.get("cap", "round"), _CF_KEY)
+        p = _PAINT_CACHE.get(key)
+        if p is None:
+            p = _core_paint(color, alpha, **kw)
+            if _CF is not None:
+                p.setColorFilter(_CF)
+            if len(_PAINT_CACHE) > 6000:
+                _PAINT_CACHE.clear()
+            _PAINT_CACHE[key] = p
+        return p
     p = _core_paint(color, alpha, **kw)
     if _CF is not None:
         p.setColorFilter(_CF)
@@ -136,18 +181,26 @@ def paint(color, alpha=1.0, **kw):
 
 
 _PIC_CACHE = {}
+_PIC_SEEN = set()
 
 
 def _cached(c, key, bounds, fn):
-    """Record fn(canvas) into a skia.Picture cached under key (+ current lighting) and replay it.
-    Used for parts that depend only on a few quantised parameters (hair puff, hair cap)."""
+    """Draw fn(canvas) through a skia.Picture cache keyed on key (+ current lighting). A picture is recorded
+    only the second time a key is seen, so animated parameters (head turns, light fades) that produce a new
+    key every frame just draw directly with no recording overhead; static holds replay the picture."""
     k = (key, _CF_KEY)
     pic = _PIC_CACHE.get(k)
     if pic is None:
+        if k not in _PIC_SEEN:
+            if len(_PIC_SEEN) > 4000:
+                _PIC_SEEN.clear()
+            _PIC_SEEN.add(k)
+            fn(c)
+            return
         rec = skia.PictureRecorder()
         fn(rec.beginRecording(bounds))
         pic = rec.finishRecordingAsPicture()
-        if len(_PIC_CACHE) > 400:
+        if len(_PIC_CACHE) > 200:
             _PIC_CACHE.clear()
         _PIC_CACHE[k] = pic
     c.drawPicture(pic)
@@ -363,19 +416,40 @@ def _profile_bump(y):
     return 0.0
 
 
-def _head_outline(H, grow=0.0):
+_LIP_YS = (35.0, 39.0, 42.5, 46.5, 51.5, 57.5, 62.0)
+_LIP_TAB = [(30.0, 0.0), (35.0, 0.5), (39.0, 2.3), (42.5, 1.0), (46.5, 2.1), (51.5, -0.7), (57.5, 1.9), (62.0, 0.9), (67.0, 0.0)]
+
+
+def _lip_profile(y, H):
+    """Leading-edge offset for the lips / chin in near-profile (head-local, y before the jaw drop)."""
+    y -= _jaw_dy(H, y) * 0.5
+    tab = _LIP_TAB
+    if y <= tab[0][0] or y >= tab[-1][0]:
+        return 0.0
+    for i in range(1, len(tab)):
+        if y < tab[i][0]:
+            y0, v0 = tab[i - 1]
+            y1, v1 = tab[i]
+            u = (y - y0) / (y1 - y0)
+            return v0 + (v1 - v0) * smoothstep(u)
+    return 0.0
+
+
+def _head_outline(H, grow=0.0, gy=(18.0, 18.0), mext=None):
+    """Head silhouette (head-local). grow > 0 inflates the upper head (hair volume); the inflation tapers to 0
+    at y = gy[0] on the -x edge and gy[1] on the +x edge (where the hairline meets the silhouette)."""
     s, c = H.s, H.c
     R, L = [], []
     for y in _OUT_YS:
         a, zf, zb = _prof(y)
-        g = grow * clamp((18.0 - y) / 30.0)
-        a, zf, zb = a + g, zf + g, zb + g
+        gl = grow * smoothstep((gy[0] - y) / 26.0)
+        gr = grow * smoothstep((gy[1] - y) / 26.0)
         if s >= 0:
-            r = math.sqrt(a * a * c * c + zf * zf * s * s)
-            l = -math.sqrt(a * a * c * c + zb * zb * s * s)
+            r = math.sqrt((a + gr) ** 2 * c * c + (zf + gr) ** 2 * s * s)
+            l = -math.sqrt((a + gl) ** 2 * c * c + (zb + gl) ** 2 * s * s)
         else:
-            r = math.sqrt(a * a * c * c + zb * zb * s * s)
-            l = -math.sqrt(a * a * c * c + zf * zf * s * s)
+            r = math.sqrt((a + gr) ** 2 * c * c + (zb + gr) ** 2 * s * s)
+            l = -math.sqrt((a + gl) ** 2 * c * c + (zf + gl) ** 2 * s * s)
         yy = y + _jaw_dy(H, y)
         if y > 40:
             yy += H.nod_dy * 0.55 * (y - 40) / 28.0
@@ -389,21 +463,39 @@ def _head_outline(H, grow=0.0):
     top = (0.0, -90.0 - grow)
     chin = (40.0 * s * 0.98, 67.0 + _jaw_dy(H, 67.0) + H.nod_dy * 0.6)
     nose_k = smoothstep((abs(s) - 0.45) / 0.3)
-    if nose_k > 0:
-        # nose breaks the silhouette in near-profile views
+    lip_k = smoothstep((abs(s) - 0.42) / 0.28) if grow == 0.0 else 0.0
+    if nose_k > 0 or lip_k > 0 or mext is not None:
         edge = R if s >= 0 else L
         sg = 1.0 if s >= 0 else -1.0
-        nd = H.nod_dy * 0.95
-        nose = [(5.0, 0.0), (15.0, 4.0), (22.0, 9.5), (26.0, 6.0), (28.5, 0.0)]
-        new = []
-        for (x, y) in edge:
-            new.append((x, y))
-        for ny, dz in nose:
-            a_, zf_, _ = _prof(ny)
-            ex = sg * math.sqrt(a_ * a_ * c * c + zf_ * zf_ * s * s)
-            nx = sg * (zf_ + dz) * abs(s)
-            px = ex + (nx - ex) * nose_k if sg * (nx - ex) > 0 else ex
-            new.append((px, ny + nd))
+        new = list(edge)
+        if nose_k > 0:
+            # nose breaks the silhouette in near-profile views
+            nd = H.nod_dy * 0.95
+            for ny, dz in ((5.0, 0.0), (15.0, 4.0), (22.0, 9.5), (26.0, 6.0), (28.5, 0.0)):
+                a_, zf_, _ = _prof(ny)
+                ex = sg * math.sqrt(a_ * a_ * c * c + zf_ * zf_ * s * s)
+                nx = sg * (zf_ + dz) * abs(s)
+                px = ex + (nx - ex) * nose_k if sg * (nx - ex) > 0 else ex
+                new.append((px, ny + nd))
+        if lip_k > 0:
+            # lips and chin shape the lower silhouette (upper lip, lower lip, chin dimple, chin)
+            for ly in _LIP_YS:
+                a_, zf_, _ = _prof(ly)
+                ex = sg * (math.sqrt(a_ * a_ * c * c + zf_ * zf_ * s * s) + _profile_bump(ly) * _bump_k(s))
+                yy = ly + _jaw_dy(H, ly) + (H.nod_dy * 0.55 * (ly - 40) / 28.0 if ly > 40 else 0.0)
+                new.append((ex, yy))
+            new = [(x + sg * lip_k * _lip_profile(y, H), y) if 30.0 < y < 70.0 else (x, y) for x, y in new]
+        if mext is not None:
+            # never clip the mouth: the silhouette bulges just enough to hold the lips
+            mx, my0, my1 = mext
+            out = []
+            for x, y in new:
+                w = smoothstep((y - (my0 - 6.0)) / 6.0) * smoothstep(((my1 + 6.0) - y) / 6.0)
+                need = sg * mx + 1.8
+                if w > 0 and sg * x < need:
+                    x = sg * lerp(sg * x, need, w)
+                out.append((x, y))
+            new = out
         new.sort(key=lambda q: q[1])
         if s >= 0:
             R = new
@@ -483,6 +575,44 @@ def _hair_region(H):
     return path, pts
 
 
+def _toe_lift_h(phi):
+    """Ankle height that keeps the shoe's lowest point on the floor with the heel lifted by phi degrees."""
+    a = -phi * D2R
+    ca_, sa_ = math.cos(a), math.sin(a)
+    return -min(f_ * sa_ + v_ * ca_ for f_, v_ in _SHOE)
+
+
+def _kneel_leg(hv_b, fa0, va0, ang0, k):
+    """Leg on its way from its base pose (ankle fa0/va0, foot angle ang0, hip height hv_b) down onto the knee.
+    The knee follows an eased path to the floor (touching at KNEEL_TOUCH) while the foot pivots onto its toes
+    (heel lifting <= KNEEL_HEEL) and slides back; the hip height follows from the rigid thigh.
+    Returns (ankle f, ankle v, foot angle, hip height)."""
+    fwd = (lambda j1, j2: j1 if j1[0] >= j2[0] else j2)
+    k0 = _ik((0.0, hv_b), (fa0, va0), THIGH, SHIN, fwd)
+    k1f = math.sqrt(THIGH * THIGH - (KNEEL_HIP - KNEE_R) ** 2)
+    ktf = k1f + 6.0
+    if k < KNEEL_TOUCH:
+        u = k / KNEEL_TOUCH
+        e = smoothstep(u)
+        kf = lerp(k0[0], ktf, e) + 16.0 * math.sin(math.pi * u) * (1.0 - min(1.0, k0[0] / 100.0))
+        kv = lerp(k0[1], KNEE_R, u * u * (1.6 - 0.6 * u))        # slow start, settles onto the floor
+        phi = lerp(-ang0, KNEEL_HEEL, smoothstep(u / 0.75))
+    else:
+        u = (k - KNEEL_TOUCH) / (1.0 - KNEEL_TOUCH)
+        kf = lerp(ktf, k1f, smoothstep(u))
+        kv = KNEE_R
+        phi = KNEEL_HEEL
+    kf = min(kf, THIGH - 0.5)
+    hv = kv + math.sqrt(THIGH * THIGH - kf * kf)
+    av = _toe_lift_h(phi)
+    dv = kv - av
+    af = kf - math.sqrt(max(0.0, SHIN * SHIN - dv * dv))
+    if dv > SHIN:            # (only possible right at the start) the toe cannot reach: keep the shin vertical
+        av = kv - SHIN
+    w = smoothstep(k / 0.14)     # leave the base pose smoothly
+    return lerp(fa0, af, w), lerp(va0, av, w), lerp(ang0, -phi, w), hv
+
+
 # --------------------------------------------------------------------------- pose solving
 def _solve(p: Pose, t):
     R = _NS()
@@ -508,17 +638,9 @@ def _solve(p: Pose, t):
     R.walking, R.ph = walking, ph
     bob = 2.6 * (0.5 - 0.5 * math.cos(4 * math.pi * ph)) if walking else 0.0
     hv_st = HIP_H - (6.0 if walking else 0.0) + bob
-    hv = stw * hv_st + sw * (seat_h + SEAT_OFF) + k * KNEEL_HIP - p.bounce
-    R.hv = hv
-    lean = p.lean + (3.0 if walking else 0.0) * stw
-    R.lean = lean
-    MU = skia.Matrix()
-    MU.preTranslate(0.0, -hv)
-    MU.preRotate(lean)
-    R.MU = MU
-    su = clamp(p.shoulders_up)
-    R.su = su
-    s, c = R.s, R.c
+    sb = clamp(p.sit)
+    hv_b = (1.0 - sb) * hv_st + sb * (seat_h + SEAT_OFF)       # hip height before kneeling
+    s = R.s
 
     # ---------------- legs (side plane f = forward, v = up; projected with the body turn)
     th_leg = th
@@ -530,9 +652,9 @@ def _solve(p: Pose, t):
     tap = 0.0
     if p.foot_tap > 0 and t is not None:
         tap = p.foot_tap * 21.0 * max(0.0, math.sin(2 * math.pi * 2.5 * t)) ** 0.7
-    legs = {}
+    fwd = (lambda j1, j2: j1 if j1[0] >= j2[0] else j2)
+    sol = {}
     for o in (-1, 1):
-        L = _NS()
         if walking:
             lp = (ph + (0.0 if o < 0 else 0.5)) % 1.0
             if lp < 0.5:
@@ -544,31 +666,46 @@ def _solve(p: Pose, t):
                 toe = -14.0 * math.sin(math.pi * min(1.0, q * 1.6))
         else:
             f_w, lift, toe = 0.0, 0.0, 0.0
-        fa = stw * f_w + sw * SIT_FOOT + k * KNEEL_FOOT
-        va = stw * (ANKLE_H + lift) + sw * ANKLE_H + k * 16.0
-        fwd = (lambda j1, j2: j1 if j1[0] >= j2[0] else j2)
-        kn = _ik((0.0, hv), (fa, va), THIGH, SHIN, fwd)
-        foot_ang = 0.0
+        fa = (1.0 - sb) * f_w + sb * SIT_FOOT
+        va = (1.0 - sb) * (ANKLE_H + lift) + sb * ANKLE_H
+        ang = (1.0 - sb) * toe
         if k > 0:
-            shin0 = math.atan2(fa - kn[0], -(va - kn[1])) / D2R
-            foot_ang = smoothstep(k) * (shin0 - 72.0)
-            # floor constraint: lift the ankle so the rotated shoe never sinks into the floor
-            ca_, sa_ = math.cos(foot_ang * D2R), math.sin(foot_ang * D2R)
-            low = min(f_ * sa_ + v_ * ca_ for f_, v_ in _SHOE)
-            if va + low < 0:
-                va = -low
-                kn = _ik((0.0, hv), (fa, va), THIGH, SHIN, fwd)
+            fa, va, ang, hvk = _kneel_leg(hv_b, fa, va, ang, k)
+        else:
+            hvk = hv_b
+        sol[o] = [fa, va, ang, hvk]
+    hv = 0.5 * (sol[-1][3] + sol[1][3]) - p.bounce
+    R.hv = hv
+    legs = {}
+    for o in (-1, 1):
+        L = _NS()
+        fa, va, ang, _ = sol[o]
+        kn = _ik((0.0, hv), (fa, va), THIGH, SHIN, fwd)
+        if k > 0 and kn[1] < KNEE_R:
+            # knee on the floor (e.g. a sob bounce while kneeling): keep it there, the shin slides back
+            dv = hv - KNEE_R
+            kn = (math.sqrt(max(0.0, THIGH * THIGH - dv * dv)), KNEE_R)
+            ux, uy = _norm(fa - kn[0], va - kn[1])
+            fa, va = kn[0] + ux * SHIN, max(va, kn[1] + uy * SHIN)
         lat_h = o * HIP_LAT
         lat_k = o * (stw * 24.0 + sw * 31.0 + k * 27.0)
         lat_a = o * (stw * 21.0 + sw * 28.0 + k * 26.0)
         L.hip = (lat_h * cl_, -hv)
         L.knee = (lat_k * cl_ + kn[0] * sl_, -kn[1])
         L.ankle = (lat_a * cl_ + fa * sl_, -va)
-        L.foot_ang = foot_ang + stw * toe
+        L.foot_ang = ang
         L.tap = tap if o < 0 else 0.0
         L.o = o
         legs[o] = L
     R.legs = legs
+    lean = p.lean + (3.0 if walking else 0.0) * stw
+    R.lean = lean
+    MU = skia.Matrix()
+    MU.preTranslate(0.0, -hv)
+    MU.preRotate(lean)
+    R.MU = MU
+    su = clamp(p.shoulders_up)
+    R.su = su
 
     # ---------------- head
     H = _NS()
@@ -592,83 +729,66 @@ def _solve(p: Pose, t):
     R.MH = skia.Matrix.Concat(MU, MHr)
     R.H = H
     face_x = MHr.mapXY(_hx(H, 0.0, 30.0)[0], 30.0).fX
+    R.face_x = face_x
+    R.turn_k = smoothstep((turn - 0.02) / 0.23)
 
     # ---------------- arms (upper-body frame)
+    R.sw_amp = 8.0 * stw if walking else 0.0
     arms = {}
-    sw_amp = 8.0 * stw if walking else 0.0
     for o in (-1, 1):
         A = _NS()
+        A.on_leg = 0.0
         side = "r" if o < 0 else "l"       # facing=-1 is a pure mirror (same as Quill's rig)
         A.side = side
         ap = p.arm_r if side == "r" else p.arm_l
         A.ap = ap
-        S = (o * SH_A * c - 3.0 * s, SH_Y - su * 12.0 - br * 1.1)
-        A.S = S
-        d = lerp(-o * 0.3, 1.0, smoothstep((turn - 0.02) / 0.23))
-        if ap.across < 0:
-            d = lerp(d, float(o), min(1.0, -ap.across))
-        swing = -o * sw_amp * math.cos(2 * math.pi * ph) * (1.0 - clamp(ap.across * 2.0))
-        a1 = (ap.shoulder + swing) * D2R
-        a2 = a1 + ap.elbow * D2R
-        v1 = (math.sin(a1) * d, math.cos(a1))
-        v2 = (math.sin(a2) * d, math.cos(a2))
-        fl1, fl2 = math.hypot(*v1), math.hypot(*v2)
-        if fl1 < 0.5:
-            v1 = _norm(v1[0] - 1e-4 * o, v1[1])
-            v1, fl1 = (v1[0] * 0.5, v1[1] * 0.5), 0.5
-        if fl2 < 0.5:
-            v2 = _norm(v2[0] - 1e-4 * o, v2[1])
-            v2, fl2 = (v2[0] * 0.5, v2[1] * 0.5), 0.5
-        l1, l2 = UPPER * fl1, FORE * fl2
-        E = (S[0] + v1[0] * UPPER, S[1] + v1[1] * UPPER)
-        W = (E[0] + v2[0] * FORE, E[1] + v2[1] * FORE)
-        flex = _norm(math.cos(a2) * d, -math.sin(a2))
-        if flex == (0.0, 0.0):
-            flex = (1.0, 0.0)
-        v2n = _norm(*v2)
-        rot_sense = 1.0 if _cross(v2n, flex) >= 0 else -1.0
-        tx, ty = W
-        if ap.across > 0:
-            opp_x = -o * SH_A * c * 0.92 + 30.0 * s
-            mid_x = lerp(30.0 * s, face_x, smoothstep((SH_Y + 10.0 - W[1]) / 45.0))
-            if ap.across <= 0.5:
-                tx = lerp(W[0], mid_x, ap.across * 2.0)
-            else:
-                tx = lerp(mid_x, opp_x, (ap.across - 0.5) * 2.0)
-        if ap.behind > 0:
-            tx = lerp(tx, -24.0 * s - 6.0 * o * c, ap.behind)
-            ty = lerp(ty, -40.0, ap.behind * 0.6)
-        if ap.across > 0 or ap.behind > 0:
-            Efk = E
-
-            def pref(j1, j2, Efk=Efk):
-                d1 = (j1[0] - Efk[0]) ** 2 + (j1[1] - Efk[1]) ** 2
-                d2 = (j2[0] - Efk[0]) ** 2 + (j2[1] - Efk[1]) ** 2
-                return j1 if d1 <= d2 else j2
-            E = _ik(S, (tx, ty), l1, l2, pref)
-            dx, dy = tx - E[0], ty - E[1]
-            dd = math.hypot(dx, dy)
-            v2n = _norm(dx, dy)
-            W = (E[0] + v2n[0] * min(dd, l2), E[1] + v2n[1] * min(dd, l2))
-            flex = (-v2n[1] * rot_sense, v2n[0] * rot_sense)
-        A.E, A.W = E, W
-        wa = ap.wrist * D2R
-        hd = _norm(v2n[0] * math.cos(wa) + flex[0] * math.sin(wa), v2n[1] * math.cos(wa) + flex[1] * math.sin(wa))
-        fx = (-hd[1], hd[0])
-        if fx[0] * flex[0] + fx[1] * flex[1] < 0:
-            fx = (hd[1], -hd[0])
-        A.hd, A.fx = hd, fx
-        A.palm = (W[0] + hd[0] * 15.0 * HAND_S, W[1] + hd[1] * 15.0 * HAND_S)
+        A.o = o
+        fk = _arm_fk(R, o, ap)
+        tgt, moved = _arm_target(R, o, ap, fk)
+        if o > 0 and not back:
+            # the far arm reaches the same body feature on its own side as the near arm would on the near side:
+            # face / chest touches (across) are mirrored across the midline, knee / thigh rests follow the legs
+            fk_n = _arm_fk(R, -1, ap)
+            tgt_n, mv_n = _arm_target(R, -1, ap, fk_n)
+            wm = smoothstep((ap.across - 0.18) / 0.17) * (1.0 - clamp(ap.behind * 2.0))
+            if wm > 0:
+                # palm of the near-arm equivalent -> same height, mirrored lateral position on the face / chest
+                An = _NS()
+                An.ap = ap
+                _arm_finish(R, An, fk_n, tgt_n if mv_n else None)
+                lat = (1.0 - 2.0 * ap.across)
+                sp = _surface_point(R, lat, An.palm[1])
+                _arm_finish(R, A, fk, tgt if moved else None)
+                goal = (lerp(A.palm[0], sp[0], wm), lerp(A.palm[1], sp[1], wm))
+                for _ in range(2):
+                    hd = A.hd
+                    _arm_finish(R, A, fk, (goal[0] - hd[0] * 15.0 * HAND_S, goal[1] - hd[1] * 15.0 * HAND_S))
+                tgt = A.W
+                moved = True
+            wk = (1.0 - wm) * (1.0 - clamp(ap.behind * 2.0))
+            if wk > 0 and (R.sw + R.k) > 0.05:
+                km = _knee_magnet(R, tgt_n)
+                if km is not None:
+                    wkm, delta = km
+                    wkm *= wk
+                    A.on_leg = wkm
+                    if wkm > 0.001:
+                        tgt = (lerp(tgt[0], tgt_n[0] + delta[0], wkm), lerp(tgt[1], tgt_n[1] + delta[1], wkm))
+                        moved = True
+        _arm_finish(R, A, fk, tgt if moved else None)
+        A.front_w = 0.0
         if ap.behind > 0.5:
             A.layer = "behind"
         elif o < 0:
             A.layer = "front"
-        elif ap.across > 0.3:
+        elif ap.across >= 0.25:
             A.layer = "over"
         else:
             A.layer = "back"
+            if not back:
+                # near the front view the far arm hangs beside the body like the near one: cross-fade it to the front
+                A.front_w = 1.0 - smoothstep((abs(turn) - 0.06) / 0.08)
         A.hand = ap.hand
-        A.o = o
         arms[o] = A
     R.arms = arms
 
@@ -677,60 +797,230 @@ def _solve(p: Pose, t):
     MS.preScale(fac * p.scale, p.scale)
     R.MS = MS
 
-    # ---------------- mug (upper-body frame)
+    # ---------------- mug (upper-body frame): held by its handle, the hand on the outer (+x) side
     R.mug = None
     if p.mug in ("l", "r"):
         A = arms[-1] if arms[-1].side == p.mug else arms[1]
-        mx = A.W[0] + A.hd[0] * 19.0
-        my = A.W[1] + A.hd[1] * 19.0
+        hs = 1.0
+        G = (hs * MUG_GX * MUG_S, MUG_GY * MUG_S)                   # grip point in mug-local coords
         mouth = MHr.mapXY(_hx(H, 0.0, MOUTH_Y)[0], MOUTH_Y)
-        dist = math.hypot(mx - mouth.fX, (my - 14.0) - mouth.fY)
-        tilt = 1.0 - smoothstep((dist - 16.0) / 46.0)
-        ang = -40.0 * tilt
+        dist = math.hypot(A.palm[0] - (mouth.fX + 30.0), A.palm[1] - mouth.fY)
+        w = 1.0 - smoothstep((dist - 26.0) / 52.0)                  # how much this is a sip
+        ang = -MUG_TILT * smoothstep(w)
         a = ang * D2R
+        ca_, sa_ = math.cos(a), math.sin(a)
+
+        def rot(v):
+            return (v[0] * ca_ - v[1] * sa_, v[0] * sa_ + v[1] * ca_)
+        if w > 0.001:
+            # sip: put the rim's face-side edge on the lower lip
+            cx_, _, _, _ = _hx(H, -4.0, MOUTH_Y + 3.0)
+            C = MHr.mapXY(cx_, MOUTH_Y + 3.0)
+            Kc = (-(MUG_W - 1.0) * MUG_S, -MUG_H * MUG_S)
+            off = rot((G[0] - Kc[0], G[1] - Kc[1]))
+            goal = (lerp(A.palm[0], C.fX + off[0], w), lerp(A.palm[1], C.fY + off[1], w))
+            for _ in range(2):
+                hd = A.hd
+                _arm_finish(R, A, A.fk, (goal[0] - hd[0] * 15.0 * HAND_S, goal[1] - hd[1] * 15.0 * HAND_S))
+        g = rot(G)
         M = _NS()
-        M.x = mx - math.sin(a) * 16.0     # body centre -> bottom centre (mug is 32 tall)
-        M.y = my + math.cos(a) * 16.0
+        M.x = A.palm[0] - g[0]
+        M.y = A.palm[1] - g[1]
         M.ang = ang
-        M.hand_side = -1.0 if A.W[0] < mx else 1.0
-        M.flip = M.hand_side > 0
+        M.hs = hs
+        M.flip = hs < 0
         M.arm = A
-        M.tilt = tilt
+        M.tilt = w
         R.mug = M
     return R
 
 
+# --------------------------------------------------------------------------- arm solving helpers
+def _arm_fk(R, o, ap):
+    """Forward kinematics of arm `o` (-1 near / +1 far) in the upper-body frame."""
+    F = _NS()
+    s, c = R.s, R.c
+    S = (o * SH_A * c - 3.0 * s, SH_Y - R.su * 12.0 - R.br * 1.1)
+    tk = R.turn_k
+    # front view: hanging segments swing slightly outward, segments raised forward come toward the camera
+    # (foreshortened, slightly inward); upper arm and forearm each by their own elevation
+    d1 = lerp(o * lerp(0.15, -0.3, smoothstep((ap.shoulder - 15.0) / 45.0)), 1.0, tk)
+    d2 = lerp(o * lerp(0.15, -0.3, smoothstep((ap.shoulder + ap.elbow - 25.0) / 45.0)), 1.0, tk)
+    if ap.across < 0:
+        sp = min(1.0, -ap.across * (1.0 + 3.0 * (1.0 - tk)))
+        d1, d2 = lerp(d1, float(o), sp), lerp(d2, float(o), sp)
+    d = d2
+    swing = -o * R.sw_amp * math.cos(2 * math.pi * R.ph) * (1.0 - clamp(ap.across * 2.0))
+    a1 = (ap.shoulder + swing) * D2R
+    a2 = a1 + ap.elbow * D2R
+    v1 = (math.sin(a1) * d1, math.cos(a1))
+    v2 = (math.sin(a2) * d2, math.cos(a2))
+    fl1, fl2 = math.hypot(*v1), math.hypot(*v2)
+    if fl1 < 0.5:
+        v1 = _norm(v1[0] - 1e-4 * o, v1[1])
+        v1, fl1 = (v1[0] * 0.5, v1[1] * 0.5), 0.5
+    if fl2 < 0.5:
+        v2 = _norm(v2[0] - 1e-4 * o, v2[1])
+        v2, fl2 = (v2[0] * 0.5, v2[1] * 0.5), 0.5
+    F.S = S
+    F.l1, F.l2 = UPPER * fl1, FORE * fl2
+    F.E = (S[0] + v1[0] * UPPER, S[1] + v1[1] * UPPER)
+    F.W = (F.E[0] + v2[0] * FORE, F.E[1] + v2[1] * FORE)
+    flex = _norm(math.cos(a2) * d, -math.sin(a2))
+    if flex == (0.0, 0.0):
+        flex = (1.0, 0.0)
+    F.flex = flex
+    F.v2n = _norm(*v2)
+    F.rot_sense = 1.0 if _cross(F.v2n, flex) >= 0 else -1.0
+    return F
+
+
+def _mid_x(R, y):
+    """Projected body midline (front surface) at upper-body-frame height y: chest -> face."""
+    return lerp(30.0 * R.s, R.face_x, smoothstep((SH_Y + 10.0 - y) / 45.0))
+
+
+def _arm_target(R, o, ap, F):
+    """Hand (wrist) target for across / behind; returns ((x, y), moved)."""
+    tx, ty = F.W
+    moved = False
+    if ap.across > 0:
+        opp_x = -o * SH_A * R.c * 0.92 + 30.0 * R.s
+        mid_x = _mid_x(R, F.W[1])
+        if ap.across <= 0.5:
+            tx = lerp(F.W[0], mid_x, ap.across * 2.0)
+        else:
+            tx = lerp(mid_x, opp_x, (ap.across - 0.5) * 2.0)
+        moved = True
+    if ap.behind > 0:
+        tx = lerp(tx, -24.0 * R.s - 6.0 * o * R.c, ap.behind)
+        ty = lerp(ty, -40.0, ap.behind * 0.6)
+        moved = True
+    return (tx, ty), moved
+
+
+def _surface_point(R, lat, y):
+    """Upper-body-frame point on the front of the chest / face at height y, at lateral position
+    lat (-1 near edge .. 0 midline .. +1 far side; on the face +-0.5 are the eyes), a hand's thickness out."""
+    s, c = R.s, R.c
+    lc = clamp(lat, -1.0, 1.0) * 50.0
+    xc = lc * c + (32.0 * math.sqrt(max(0.0, 1.0 - (lc / 54.0) ** 2)) + 6.0) * s
+    wf = smoothstep((SH_Y + 10.0 - y) / 45.0)
+    if wf <= 0:
+        return (xc, y)
+    inv = skia.Matrix()
+    if not R.MHr.invert(inv):
+        return (xc, y)
+    q = inv.mapXY(R.face_x, y)
+    hy = clamp(q.fY, -60.0, 64.0)
+    hx, hyy, _, _ = _hx(R.H, clamp(lat, -1.0, 1.0) * 2.0 * EX, hy, 5.0)
+    m = R.MHr.mapXY(hx, hyy)
+    return (lerp(xc, m.fX, wf), y)
+
+
+def _knee_magnet(R, T):
+    """If the (near-arm-equivalent) hand target T rests on the near leg, return (weight, delta) mapping it to
+    the same spot on the far leg. Coordinates: upper-body frame."""
+    inv = skia.Matrix()
+    if not R.MU.invert(inv):
+        return None
+    Ln, Lf = R.legs[-1], R.legs[1]
+    segs_n = [(Ln.hip, Ln.knee), (Ln.knee, Ln.ankle)]
+    segs_f = [(Lf.hip, Lf.knee), (Lf.knee, Lf.ankle)]
+    best = None
+    for (a, b), (af, bf) in zip(segs_n, segs_f):
+        pa, pb = inv.mapXY(*a), inv.mapXY(*b)
+        pa, pb = (pa.fX, pa.fY), (pb.fX, pb.fY)
+        dx, dy = pb[0] - pa[0], pb[1] - pa[1]
+        L2 = dx * dx + dy * dy
+        u = clamp(((T[0] - pa[0]) * dx + (T[1] - pa[1]) * dy) / max(L2, 1e-6))
+        px, py = pa[0] + dx * u, pa[1] + dy * u
+        dist = math.hypot(T[0] - px, T[1] - py)
+        if best is None or dist < best[0]:
+            qa, qb = inv.mapXY(*af), inv.mapXY(*bf)
+            fx_, fy_ = qa.fX + (qb.fX - qa.fX) * u, qa.fY + (qb.fY - qa.fY) * u
+            best = (dist, (fx_ - px, fy_ - py))
+    dist, delta = best
+    w = 1.0 - smoothstep((dist - 22.0) / 40.0)
+    return w, delta
+
+
+def _arm_finish(R, A, F, target):
+    """Solve the elbow for a wrist target (or keep the FK pose) and set the hand frame on A."""
+    S, E, W = F.S, F.E, F.W
+    v2n, flex = F.v2n, F.flex
+    if target is not None:
+        Efk = F.E
+
+        def pref(j1, j2, Efk=Efk):
+            d1 = (j1[0] - Efk[0]) ** 2 + (j1[1] - Efk[1]) ** 2
+            d2 = (j2[0] - Efk[0]) ** 2 + (j2[1] - Efk[1]) ** 2
+            return j1 if d1 <= d2 else j2
+        E = _ik(S, target, F.l1, F.l2, pref)
+        dx, dy = target[0] - E[0], target[1] - E[1]
+        dd = math.hypot(dx, dy)
+        v2n = _norm(dx, dy)
+        W = (E[0] + v2n[0] * min(dd, F.l2), E[1] + v2n[1] * min(dd, F.l2))
+        flex = (-v2n[1] * F.rot_sense, v2n[0] * F.rot_sense)
+    A.fk = F
+    A.S, A.E, A.W = S, E, W
+    wa = A.ap.wrist * D2R
+    hd = _norm(v2n[0] * math.cos(wa) + flex[0] * math.sin(wa), v2n[1] * math.cos(wa) + flex[1] * math.sin(wa))
+    fx = (-hd[1], hd[0])
+    if fx[0] * flex[0] + fx[1] * flex[1] < 0:
+        fx = (hd[1], -hd[0])
+    A.hd, A.fx = hd, fx
+    A.palm = (W[0] + hd[0] * 15.0 * HAND_S, W[1] + hd[1] * 15.0 * HAND_S)
+
+
+
 # --------------------------------------------------------------------------- public queries
+def blink(t, seed=11):
+    """Rae's natural blink at time t (1 open .. 0 closed; irregular ~3.7 s rhythm). This is exactly what
+    draw() uses when lid_l / lid_r is None. Scenes that hold an explicit lid level for a long time should
+    write  lid = level * R.blink(t)  so she keeps blinking (or use expr(..., t=t))."""
+    return auto_blink(t, seed=seed, rate=3.7) if t is not None else 1.0
+
+
 def _to_stage(R, pt):
     q = R.MS.mapXY(pt.fX, pt.fY) if isinstance(pt, skia.Point) else R.MS.mapXY(pt[0], pt[1])
     return (q.fX, q.fY)
 
 
-def head_center(pose: Pose):
-    """Stage coords of the point between the eyes."""
-    R = _solve(pose, None)
+def head_center(pose: Pose, t=None):
+    """Stage coords of the point between the eyes. Pass the same `t` as draw() to include the automatic
+    breathing motion (only matters when pose.breath is None; ~1 unit)."""
+    R = _solve(pose, t)
     x, y, _, _ = _hx(R.H, 0.0, 0.0)
     return _to_stage(R, R.MH.mapXY(x, y))
 
 
-def mouth_pos(pose: Pose):
+def mouth_pos(pose: Pose, t=None):
     """Stage coords of the centre of the mouth."""
-    R = _solve(pose, None)
+    R = _solve(pose, t)
     x, y, _, _ = _hx(R.H, 0.0, MOUTH_Y)
     return _to_stage(R, R.MH.mapXY(x, y))
 
 
-def hand_pos(pose: Pose, side: str):
+def eye_pos(pose: Pose, side: str, t=None):
+    """Stage coords of the centre of Rae's 'l' or 'r' eye."""
+    R = _solve(pose, t)
+    slot = -1 if side == "r" else 1
+    x, y, _, _ = _hx(R.H, slot * EX, 0.0)
+    return _to_stage(R, R.MH.mapXY(x, y))
+
+
+def hand_pos(pose: Pose, side: str, t=None):
     """Stage coords of the palm centre of Rae's 'l' or 'r' hand."""
-    R = _solve(pose, None)
+    R = _solve(pose, t)
     A = R.arms[-1] if R.arms[-1].side == side else R.arms[1]
     return _to_stage(R, R.MU.mapXY(*A.palm))
 
 
-def mug_pose(pose: Pose):
+def mug_pose(pose: Pose, t=None):
     """(x, y, scale, angle, flip) of the held mug in stage coords (bottom centre), or None.
-    draw_mug(canvas, *mug_pose(pose)) reproduces the in-hand mug exactly."""
-    R = _solve(pose, None)
+    draw_mug(canvas, *mug_pose(pose, t)) reproduces the in-hand mug exactly."""
+    R = _solve(pose, t)
     if R.mug is None:
         return None
     x, y = _to_stage(R, R.MU.mapXY(R.mug.x, R.mug.y))
@@ -739,40 +1029,61 @@ def mug_pose(pose: Pose):
     return (x, y, pose.scale, ang, flip)
 
 
+def walk_advance(pose: Pose) -> float:
+    """Stage units the pelvis must travel (toward `facing`) per walk cycle so the planted foot does not
+    skate: 4 * STRIDE * sin(leg yaw) * scale. = WALK_ADVANCE at turn >= 0.3, scale 1. Walking backward
+    works by decreasing pose.walk while moving pose.x the other way."""
+    R = _solve(pose.copy(walk=0.0, sit=0.0, kneel=0.0), None)
+    return 4.0 * STRIDE * R.sl * pose.scale
+
+
 # --------------------------------------------------------------------------- mug
-def _mug_local(c, flip=False):
-    """Mug in its own frame: bottom centre at origin, 32 tall, handle on +x (or -x if flip)."""
-    if flip:
-        c.scale(-1, 1)
-    w, h = 13.0, 32.0
+def _mug_handle_path():
+    w = MUG_W
     hp = skia.Path()
-    _cr(hp, [(w - 1, -26.0), (w + 8.5, -25.5), (w + 10.5, -17.0), (w + 7.0, -9.5), (w - 1, -8.5)])
-    _stroke(c, hp, C_MUG_LINE, 6.6)
-    _stroke(c, hp, C_MUG, 4.4)
+    _cr(hp, [(w - 1, -26.5), (w + 8.0, -26.0), (w + 10.8, -17.0), (w + 7.4, -9.0), (w - 1, -8.0)])
+    return hp
+
+
+def _mug_body_path():
+    w, h = MUG_W, MUG_H
     body = skia.Path()
     _cr(body, [(-w, -h), (-w, -12.0), (-w + 0.6, -3.0), (-w + 4.0, 0.0)])
     _cr(body, [(w - 4.0, 0.0), (w - 0.6, -3.0), (w, -12.0), (w, -h)], move=False)
     body.close()
+    return body
+
+
+def _mug_local(c, flip=False, handle=True):
+    """Mug in its own frame: bottom centre at origin, MUG_H*MUG_S tall, handle on +x (or -x if flip)."""
+    c.scale(-MUG_S if flip else MUG_S, MUG_S)
+    w, h = MUG_W, MUG_H
+    if handle:
+        hp = _mug_handle_path()
+        _stroke(c, hp, C_MUG_LINE, 6.4)
+        _stroke(c, hp, C_MUG, 4.3)
+        _stroke(c, _curve([(w + 4.0, -25.0), (w + 8.6, -22.0), (w + 9.2, -16.0)]), WHITE, 1.1, 0.6)
+    body = _mug_body_path()
     _fill(c, body, C_MUG_SH)
     c.save()
     c.clipPath(body, doAntiAlias=True)
     c.translate(-4.5, 0)
     _fill(c, body, C_MUG)
     c.restore()
-    lx, ly = -1.5, -15.5
-    c.drawCircle(lx, ly, 6.2, paint(C_LOGO, stroke=1.4))
+    lx, ly = -2.0, -15.5        # logo sits a little away from the handle (flip is a pure mirror)
+    c.drawCircle(lx, ly, 6.4, paint(C_LOGO, stroke=1.35))
     hp2 = skia.Path()
-    hp2.moveTo(lx, ly + 3.6)
-    hp2.cubicTo(lx - 5.2, ly - 0.4, lx - 3.0, ly - 4.6, lx, ly - 2.0)
-    hp2.cubicTo(lx + 3.0, ly - 4.6, lx + 5.2, ly - 0.4, lx, ly + 3.6)
+    hp2.moveTo(lx, ly + 3.7)
+    hp2.cubicTo(lx - 5.3, ly - 0.4, lx - 3.0, ly - 4.7, lx, ly - 2.0)
+    hp2.cubicTo(lx + 3.0, ly - 4.7, lx + 5.3, ly - 0.4, lx, ly + 3.7)
     hp2.close()
     _fill(c, hp2, C_LOGO)
-    _stroke(c, body, C_MUG_LINE, 1.3, 0.9)
+    _stroke(c, body, C_MUG_LINE, 1.2, 0.9)
     rim = skia.Rect(-w, -h - 3.6, w, -h + 3.6)
     c.drawOval(rim, paint(C_MUG))
-    c.drawOval(skia.Rect(-w + 2.2, -h - 2.2, w - 2.2, -h + 2.2), paint(C_COFFEE))
+    c.drawOval(skia.Rect(-w + 2.0, -h - 2.2, w - 2.0, -h + 2.2), paint(C_COFFEE))
     c.drawOval(skia.Rect(-w + 4.0, -h - 1.2, -1.0, -h + 0.6), paint(WHITE, 0.18))
-    c.drawOval(rim, paint(C_MUG_LINE, 0.9, stroke=1.2))
+    c.drawOval(rim, paint(C_MUG_LINE, 0.9, stroke=1.1))
     c.drawRoundRect(skia.Rect(-w + 3.0, -h + 6.0, -w + 5.6, -6.0), 1.3, 1.3, paint(WHITE, 0.55))
 
 
@@ -834,11 +1145,24 @@ def _hand_paths(shape):
             for x in (-4.6, -0.1, 4.3):
                 out.append((_curve([(x, 9.0), (x + 0.3, 14.0)]), "crease"))
     elif shape == "palm_up":
-        main = smooth_path([(-4.6, -1.0), (-5.6, 10.0), (-5.6, 22.0), (-4.6, 31.0), (-2.0, 35.6), (1.6, 35.0),
-                            (3.0, 30.0), (4.0, 22.0), (6.0, 13.0), (6.2, 4.0), (3.6, -1.6)])
-        out.append((main, "skin"))
-        out.append((_curve([(2.6, 14.0), (2.4, 24.0), (1.2, 32.0)]), "palmline"))
-        out.append((skia.Simplify(_capsule(skia.Path(), (4.6, 5.0), (10.0, 14.0), 3.4, 2.9)), "skin"))
+        # open palm turned up toward the viewer: cupped, fingers together with a slight curl, thumb out
+        path = smooth_path([(-6.6, -1.0), (-8.2, 8.0), (-8.4, 15.6), (-3.6, 18.4), (3.4, 18.6), (7.6, 15.6),
+                            (7.6, 5.0), (4.8, -1.6)])
+        for fxp, ln, ang in ((-5.7, 11.8, -7.0), (-2.0, 14.6, -2.5), (1.8, 15.2, 2.0), (5.3, 12.8, 7.0)):
+            a = ang * D2R
+            b0 = (fxp, 14.5)
+            m = (fxp + math.sin(a) * ln * 0.6, 14.5 + math.cos(a) * ln * 0.6)
+            e = (m[0] + math.sin(a + 0.35) * ln * 0.42, m[1] + math.cos(a + 0.35) * ln * 0.42)
+            _capsule(path, b0, m, 2.75, 2.5)
+            _capsule(path, m, e, 2.5, 2.15)
+        out.append((skia.Simplify(path), "palm"))
+        out.append((skia.Simplify(_capsule(skia.Path(), (6.8, 4.0), (6.8 + math.sin(56 * D2R) * 12.5, 4.0 + math.cos(56 * D2R) * 12.5),
+                                           3.6, 2.9)), "skin"))
+        out.append((_curve([(-6.2, 10.6), (-0.5, 8.4), (5.6, 10.4)]), "crease"))
+        out.append((_curve([(3.4, 1.8), (1.2, 7.2), (1.9, 12.6)]), "crease"))
+        out.append((_curve([(-6.8, 14.4), (-1.0, 13.0), (5.0, 14.2)]), "crease"))
+        for fxp in (-5.4, -1.9, 1.9, 5.4):
+            out.append((_curve([(fxp - 1.3, 22.6), (fxp, 23.1), (fxp + 1.3, 22.7)]), "crease"))
     else:
         return _hand_paths("relaxed")
     _HAND_CACHE[shape] = out
@@ -863,30 +1187,41 @@ def _draw_hand(c, A):
 
 
 def _draw_held_mug(c, R):
-    """Mug plus the gripping hand (fingers wrapped over the mug body)."""
+    """Mug held by its handle: palm behind the mug, fingers curled through the handle, thumb on top."""
     M = R.mug
     A = M.arm
     c.save()
     c.translate(M.x, M.y)
     c.rotate(M.ang)
-    hs = M.hand_side
     a = -M.ang * D2R
     wx, wy = A.W[0] - M.x, A.W[1] - M.y
-    wl = (wx * math.cos(a) - wy * math.sin(a), wx * math.sin(a) + wy * math.cos(a))
+    wl = ((wx * math.cos(a) - wy * math.sin(a)) / MUG_S, (wx * math.sin(a) + wy * math.cos(a)) / MUG_S)
+    hs = M.hs
     c.save()
-    _mug_local(c, flip=M.flip)
+    c.scale(hs * MUG_S, MUG_S)
+    if hs < 0:
+        wl = (-wl[0], wl[1])
+    w = MUG_W
+    # palm / back of the hand from the wrist to the handle (drawn under the mug body)
+    palm = skia.Path()
+    _capsule(palm, wl, (w + 10.0, -17.5), 6.4, 8.6)
+    _cel(c, palm, C_SKIN, C_SKIN_SH, -1.6, -1.2, line=C_SKIN_LINE, line_w=1.0, line_a=0.8)
     c.restore()
-    side_x = hs * 12.0
-    hand = skia.Path()
-    _capsule(hand, wl, (side_x + hs * 2.0, -16.0), 8.6, 11.0)
-    _cel(c, hand, C_SKIN, C_SKIN_SH, -2.0, -1.5, line=C_SKIN_LINE, line_w=1.2, line_a=0.8)
+    c.save()
+    _mug_local(c, flip=hs < 0)
+    c.restore()
+    c.scale(hs * MUG_S, MUG_S)
+    # fingers curled around the handle bar (knuckles outside, tips toward the mug)
     fingers = skia.Path()
-    for fy, ln in ((-24.5, 14.0), (-17.5, 17.0), (-10.5, 16.5), (-4.0, 13.0)):
-        x0 = side_x - hs * 1.0
-        _capsule(fingers, (x0, fy), (x0 - hs * ln, fy + 0.6), 3.7, 3.3)
-    _cel(c, fingers, C_SKIN, C_SKIN_SH, -1.6, -1.6, line=C_SKIN_LINE, line_w=1.15, line_a=0.85)
-    th = _capsule(skia.Path(), (side_x + hs * 1.0, -25.5), (side_x - hs * 7.0, -31.0), 4.1, 3.5)
-    _cel(c, th, C_SKIN, C_SKIN_SH, -1.5, -1.5, line=C_SKIN_LINE, line_w=1.15, line_a=0.85)
+    for fy, x0, x1, r in ((-23.2, w + 2.4, w + 12.6, 3.1), (-18.0, w + 2.0, w + 13.2, 3.2), (-12.9, w + 2.4, w + 12.6, 3.1),
+                          (-8.4, w + 3.6, w + 11.2, 2.7)):
+        _capsule(fingers, (x0, fy), (x1, fy + 0.4), r * 0.85, r)
+    _cel(c, fingers, C_SKIN, C_SKIN_SH, -1.3, -1.2, line=C_SKIN_LINE, line_w=1.0, line_a=0.85)
+    for fy in (-20.6, -15.5, -10.7):
+        _stroke(c, _curve([(w + 4.0, fy), (w + 8.0, fy - 0.2), (w + 11.6, fy + 0.2)]), C_SKIN_SH, 0.8, 0.5)
+    th = _capsule(skia.Path(), (w + 11.5, -26.0), (w + 2.6, -28.6), 3.4, 2.8)
+    _cel(c, th, C_SKIN, C_SKIN_SH, -1.2, -1.2, line=C_SKIN_LINE, line_w=1.0, line_a=0.85)
+    c.drawOval(skia.Rect(w + 2.0, -29.8, w + 4.6, -27.6), paint("#D9A98A", 0.7))
     c.restore()
 
 
@@ -918,6 +1253,7 @@ def _draw_leg(c, L, R):
 _SHOE = [(-13.0, 7.0), (-1.0, 9.5), (8.0, 8.0), (18.0, 3.0), (31.0, -4.0), (40.0, -10.0), (43.5, -16.0),
          (41.0, -21.5), (32.0, -23.0), (-12.0, -23.0), (-16.5, -19.0), (-16.5, -8.0), (-15.0, 2.0)]
 _SOLE = [(-16.8, -17.0), (42.6, -17.0), (43.2, -18.5), (41.0, -21.5), (32.0, -23.0), (-12.0, -23.0), (-16.5, -19.0)]
+_SOLE_C = [(-13.5, -19.6), (-6.0, -20.1), (10.0, -20.1), (30.0, -19.9), (37.5, -18.6), (40.6, -17.0)]   # sole band centre
 # cross-section slices (f, half-width, v_bottom, v_top) -> give the shoe its width in front views
 _SLICES = [(-9.0, 11.5, -23.0, 8.0), (6.0, 12.5, -23.0, 8.0), (20.0, 12.5, -23.0, 1.0), (32.0, 11.0, -23.0, -6.0),
            (39.0, 8.5, -22.0, -11.0)]
@@ -925,7 +1261,8 @@ _SLICES = [(-9.0, 11.5, -23.0, 8.0), (6.0, 12.5, -23.0, 8.0), (20.0, 12.5, -23.0
 
 def _draw_shoe(c, L, R):
     """Sneaker-boot: side profile in the side plane (f forward, v up) relative to the ankle, rotated by the
-    foot angle (and the toe tap about the heel), projected with the body turn; slices add width."""
+    foot angle (and the toe tap about the heel), projected with the body turn. Width comes from lateral copies
+    of the profile plus cross-section slices, all through the same transform (no shape switching)."""
     s, cc = R.sl, R.cl
     ang = L.foot_ang * D2R
     tap = L.tap * D2R
@@ -941,43 +1278,44 @@ def _draw_shoe(c, L, R):
 
     ax, ay = L.ankle
     prof = [tf(f, v) for f, v in _SHOE]
-    sole = [tf(f, v) for f, v in _SOLE]
-    rotated = abs(L.foot_ang) > 12.0 or abs(L.tap) > 6.0
-    lats = (-11.0, 0.0, 11.0) if (abs(s) > 0.15 and not rotated) else (0.0,)
+    sole = [tf(f, v) for f, v in _SOLE_C]
+    hw = 11.0 * abs(cc)
+    lats = (-hw, -0.5 * hw, 0.0, 0.5 * hw, hw) if hw > 8.5 else ((-hw, 0.0, hw) if hw > 0.6 else (0.0,))
     pieces, soles = [], []
     for lat in lats:
-        pieces.append(smooth_path([(ax + lat * cc + f * s, ay - v) for f, v in prof], closed=True))
-        soles.append(smooth_path([(ax + lat * cc + f * s, ay - v) for f, v in sole], closed=True, tension=0.3))
-    if abs(cc) > 0.3 and not rotated:
-        # cross-section slices swept sideways give the shoe width in front views
+        pieces.append(smooth_path([(ax + lat + f * s, ay - v) for f, v in prof], closed=True))
+        soles.append(_curve([(ax + lat + f * s, ay - v) for f, v in sole]))
+    if abs(cc) > 0.2 and abs(s) < 0.72:
+        # cross-section slices swept sideways give the shoe its width where the profile is seen end-on
         for f, w, vb, vt in _SLICES:
-            hw = w * abs(cc)
+            sw_ = w * abs(cc)
             fb, vb2 = tf(f, vb + 2.0)
             ft, vt2 = tf(f, vt - 2.0)
-            x0, y0, x1, y1 = ax + fb * s, ay - vb2, ax + ft * s, ay - vt2
+            xb, yb, xt, yt = ax + fb * s, ay - vb2, ax + ft * s, ay - vt2
+            pieces.append(smooth_path([(xb - sw_, yb), (xt - sw_ + 1.0, yt), (xt, yt - 1.5), (xt + sw_ - 1.0, yt),
+                                       (xb + sw_, yb), (xb, yb + 1.5)], closed=True, tension=0.35))
+            fs0, vs0 = tf(f, vb + 3.0)
+            xs0, ys0 = ax + fs0 * s, ay - vs0
             q = skia.Path()
-            q.addRRect(skia.RRect.MakeRectXY(skia.Rect(min(x0, x1) - hw, min(y0, y1) - 2.0, max(x0, x1) + hw,
-                                                       max(y0, y1) + 2.0), min(hw, 7.0), 6.0))
-            pieces.append(q)
-            q2 = skia.Path()
-            q2.addRRect(skia.RRect.MakeRectXY(skia.Rect(min(x0, x1) - hw + 0.5, y0 - 3.5, max(x0, x1) + hw - 0.5,
-                                                        y0 + 2.0), 3.0, 3.0))
-            soles.append(q2)
+            q.moveTo(xs0 - sw_ + 3.0, ys0)
+            q.lineTo(xs0 + sw_ - 3.0, ys0)
+            soles.append(q)
     pl = paint(C_SHOE_LINE, stroke=2.6)
     for q in pieces:
         c.drawPath(q, pl)
     pf = paint(C_SHOE)
     for q in pieces:
         c.drawPath(q, pf)
-    ps = paint(C_SOLE)
+    # rubber sole: thick round-capped strokes along the bottom of every copy -> one smooth swept band
+    ps = paint(C_SOLE, stroke=6.0)
     for q in soles:
         c.drawPath(q, ps)
     tfx, tfv = tf(28.0, -8.0)
     c.drawOval(skia.Rect(ax + tfx * s - 6, ay - tfv - 3.5, ax + tfx * s + 4, ay - tfv + 1.5), paint(WHITE, 0.10))
-    if abs(s) > 0.25 and not rotated:
+    if abs(s) > 0.25:
         f1, v1 = tf(9.0, 5.5)
         f2, v2 = tf(23.0, -0.5)
-        lat = 11.0 * cc
+        lat = -hw
         for kk in (0.0, 0.5, 1.0):
             fx_ = lerp(f1, f2, kk)
             fv_ = lerp(v1, v2, kk)
@@ -1152,7 +1490,8 @@ def _arm_occluder(A, R):
         m = skia.Matrix()
         m.setRotate(R.mug.ang, R.mug.x, R.mug.y)
         mp = skia.Path()
-        mp.addRect(skia.Rect(R.mug.x - 24, R.mug.y - 37, R.mug.x + 24, R.mug.y + 1))
+        mp.addRect(skia.Rect(R.mug.x - (MUG_W + 2) * MUG_S, R.mug.y - (MUG_H + 5) * MUG_S,
+                             R.mug.x + (MUG_W + 14) * MUG_S, R.mug.y + 1))
         mp.transform(m)
         occ.addPath(mp)
     return occ
@@ -1242,6 +1581,7 @@ def _draw_eye(c, H, P, slot, t):
         lim = sd * _sil_x(H, -2.0, slot) - 5.0
         fso = clamp((lim - sd * ex) / (EW + 2.0), 0.12, fs)
     P.gsc = fso / max(fs, 1e-3) if far else 1.0
+    P.evis = 0.5 * (fs + fso)          # visible width of the eye opening relative to the front view
 
     def m(u, v):
         return (ex + sd * u * (fso if u > 0 else fs), ey + v)
@@ -1367,20 +1707,25 @@ def _draw_eye(c, H, P, slot, t):
 
 def _eye_glints(c, ix, iy, fsi, P):
     """Catch-lights / wet glints (also replayed un-darkened in low light)."""
-    big = 1.0 + 0.45 * P.tears + 0.25 * P.shine
-    g = getattr(P, "gsc", 1.0)      # < 1 on the squashed far eye: keep the glint off the outer corner
+    g = getattr(P, "gsc", 1.0)      # < 1 on the far eye squashed against the cheek silhouette
+    ev = getattr(P, "evis", 1.0)
+    va = smoothstep((ev - 0.17) / 0.13)  # a near-profile far eye: glints shrink and fade instead of floating
+    if va <= 0.0:
+        return
+    gs = 0.55 + 0.45 * clamp(ev / 0.45)
+    big = (1.0 + 0.45 * P.tears + 0.25 * P.shine) * gs
     hx, hy = ix + 3.4 * fsi * g - (1.0 - g) * 1.5, iy - 4.0
-    c.drawOval(skia.Rect(hx - 3.3 * big * fsi, hy - 2.8 * big, hx + 3.3 * big * fsi, hy + 2.8 * big), paint(WHITE, 0.97))
-    sm = 1.0 + 0.35 * P.tears
-    c.drawCircle(ix - 3.6 * fsi, iy + 3.8, 1.4 * sm, paint(WHITE, 0.9))
+    c.drawOval(skia.Rect(hx - 3.3 * big * fsi, hy - 2.8 * big, hx + 3.3 * big * fsi, hy + 2.8 * big), paint(WHITE, 0.97 * va))
+    sm = (1.0 + 0.35 * P.tears) * gs
+    c.drawCircle(ix - 3.6 * fsi * g, iy + 3.8, 1.4 * sm, paint(WHITE, 0.9 * va))
     if P.tears > 0:
         arc = skia.Path()
         arc.addArc(skia.Rect(ix - (RI - 2.4) * fsi, iy - RI + 2.4, ix + (RI - 2.4) * fsi, iy + RI - 2.4), 25, 130)
-        _stroke(c, arc, WHITE, 1.4, 0.55 * P.tears)
-        c.drawCircle(ix + 5.0 * fsi, iy + 2.4, 0.9 * P.tears + 0.25, paint(WHITE, 0.85 * P.tears))
-    if P.shine > 0:
+        _stroke(c, arc, WHITE, 1.4, 0.55 * P.tears * va)
+        c.drawCircle(ix + 5.0 * fsi * g, iy + 2.4, (0.9 * P.tears + 0.25) * gs, paint(WHITE, 0.85 * P.tears * va))
+    if P.shine > 0 and ev > 0.3:
         sx, sy = ix - 5.0 * fsi, iy - 5.4
-        r = 3.0 * P.shine
+        r = 3.0 * P.shine * gs
         star = skia.Path()
         star.moveTo(sx, sy - r)
         star.quadTo(sx, sy, sx + r * 0.75, sy)
@@ -1391,10 +1736,13 @@ def _eye_glints(c, ix, iy, fsi, P):
 
 
 def _draw_tear(c, H, slot, prog):
-    """A droplet rolling from the lower lid down the cheek, leaving a shiny trail."""
+    """A droplet rolling from the lower lid down the cheek, leaving a shiny trail that dries to a faint streak.
+    On the far side of the face the tear runs inward (toward the nose) instead of along the silhouette."""
+    kf = smoothstep((slot * H.s - 0.08) / 0.25)
     pts = []
-    for x0, y in ((slot * (EX + 4.0), 11.5), (slot * (EX + 6.5), 21.0), (slot * (EX + 7.5), 32.0),
-                  (slot * (EX + 5.0), 44.0), (slot * (EX + 0.5), 55.0)):
+    for (xo_n, xo_f), y in (((4.0, 1.0), 11.5), ((6.5, -1.5), 21.0), ((7.5, -3.5), 32.0), ((5.0, -5.0), 44.0),
+                            ((0.5, -7.0), 55.0)):
+        x0 = slot * (EX + lerp(xo_n, xo_f, kf))
         x, yy, _, _ = _hx(H, x0, y, 1.0)
         pts.append((x, yy))
     path = _curve(pts)
@@ -1404,11 +1752,21 @@ def _draw_tear(c, H, slot, prog):
     d = total * min(1.0, p * 1.08)
     if d < 1:
         return
+    fade = 1.0 - smoothstep((p - 0.88) / 0.12)
+    # wet trail: bright just behind the drop, drying to ~30 % further up (one stroke, alpha gradient)
     seg = skia.Path()
     meas.getSegment(0, d, seg, True)
-    fade = 1.0 - smoothstep((p - 0.88) / 0.12)
-    _stroke(c, seg, C_TEAR, 3.2, 0.45)
-    _stroke(c, seg, WHITE, 1.1, 0.7)
+    p0, _ = meas.getPosTan(0.0)
+    p1, _ = meas.getPosTan(d)
+    bright = 0.35 + 0.65 * fade
+    u = clamp(1.0 - 0.32 * total / max(d, 1e-3), 0.0, 0.999)
+    for colr, a, wd in ((C_TEAR, 0.45, 3.2), (WHITE, 0.7, 1.1)):
+        sh = skia.GradientShader.MakeLinear([(p0.fX, p0.fY), (p1.fX, p1.fY)],
+                                            [col(colr, a * 0.3), col(colr, a * 0.3), col(colr, a * bright)], [0.0, u, 1.0])
+        tp = paint(None, stroke=wd, shader=sh, cap="butt")
+        if _CF is not None:
+            tp.setColorFilter(_CF)
+        c.drawPath(seg, tp)
     pos, _ = meas.getPosTan(d)
     x, y = pos.fX, pos.fY
     r = 3.0 + 0.7 * min(1.0, p * 3)
@@ -1495,7 +1853,7 @@ def _draw_nose(c, H, P):
         c.drawCircle(tx + 0.5, ty + 1.5, 8.5, paint(C_BLUSH, 0.6 * P.sniffle, blur=4.0))
 
 
-def _draw_mouth(c, H, p, t):
+def _mouth_geom(H, p, t):
     y0 = MOUTH_Y
     op = clamp(p.mouth_open)
     rd = clamp(p.mouth_round)
@@ -1540,6 +1898,19 @@ def _draw_mouth(c, H, p, t):
         return (_hx(H, pt[0], y0)[0], pt[1] + nd)
     pU = [pj(q) for q in U]
     pL = [pj(q) for q in Lw]
+    return pU, pL, op, rd, sm, sk
+
+
+def _mouth_extent(H, geom):
+    """(x, y_top, y_bottom) of the mouth's outermost point on the leading (far) side, lips included."""
+    pU, pL = geom[0], geom[1]
+    sg = 1.0 if H.s >= 0 else -1.0
+    x = max(sg * q[0] for q in pU + pL) * sg
+    return x, min(q[1] for q in pU) - 3.0, max(q[1] for q in pL) + 6.0
+
+
+def _draw_mouth(c, H, p, t, geom=None):
+    pU, pL, op, rd, sm, sk = geom if geom is not None else _mouth_geom(H, p, t)
     lo_y = pL[2][1]
     _stroke(c, _curve([(pL[2][0] - 6.0, lo_y + 8.5), (pL[2][0], lo_y + 10.0), (pL[2][0] + 6.0, lo_y + 8.5)]),
             C_SKIN_SH, 2.0, 0.4, blur=0.8)
@@ -1604,51 +1975,59 @@ def _draw_ear(c, H, slot):
 
 
 # --------------------------------------------------------------------------- hair
+PUFF_CY, PUFF_RX, PUFF_RY = -113.5, 50.0, 29.0      # curly puff (head-local); lobes ring the oval
+PUFF_LOBE_R = 16.0
+
+
 def _puff_geom(H):
     s = H.s
     cx = -10.0 * s - H.nod * 10.0 * s
-    cy = -128.0 - H.nod_dy * 0.45
+    cy = PUFF_CY - H.nod_dy * 0.45
     ph = H.th * 0.9
     lobes = []
     n = 12
     for i in range(n):
         a = 2 * math.pi * i / n + ph
-        r = 19.0 + 3.0 * math.sin(i * 2.3 + 1.0)
-        lobes.append((cx + 48 * math.cos(a), cy + 38 * math.sin(a), r, a))
+        r = PUFF_LOBE_R + 2.5 * math.sin(i * 2.3 + 1.0)
+        lobes.append((cx + (PUFF_RX - 4.0) * math.cos(a), cy + PUFF_RY * math.sin(a), r, a))
     return cx, cy, lobes
 
 
 def _draw_puff(c, H):
     cx, cy, lobes = _puff_geom(H)
     path = skia.Path()
-    path.addOval(skia.Rect(cx - 54, cy - 43, cx + 54, cy + 43), skia.PathDirection.kCCW)
+    path.addOval(skia.Rect(cx - PUFF_RX, cy - PUFF_RY - 5.0, cx + PUFF_RX, cy + PUFF_RY + 5.0), skia.PathDirection.kCCW)
     for bx, by, r, a in lobes:
         path.addCircle(bx, by, r, skia.PathDirection.kCCW)
     c.drawPath(path, paint(C_HAIR_SH, 0.85, stroke=2.6))
-    sh = skia.GradientShader.MakeLinear([(cx, cy - 40), (cx, cy + 60)], [C_HAIR, C_HAIR, C_HAIR_SH], [0.0, 0.45, 1.0])
+    sh = skia.GradientShader.MakeLinear([(cx, cy - 36), (cx, cy + 46)], [C_HAIR, C_HAIR, C_HAIR_SH], [0.0, 0.45, 1.0])
     c.drawPath(path, paint(None, shader=sh))
-    hl = skia.GradientShader.MakeRadial((cx - 16, cy - 20), 32, [col(C_HAIR_HI, 0.55), col(C_HAIR_HI, 0.0)])
-    c.drawCircle(cx - 16, cy - 20, 32, paint(None, shader=hl))
+    hl = skia.GradientShader.MakeRadial((cx - 16, cy - 16), 30, [col(C_HAIR_HI, 0.55), col(C_HAIR_HI, 0.0)])
+    c.drawCircle(cx - 16, cy - 16, 30, paint(None, shader=hl))
+    # curl arcs, batched into a few paths (one draw each)
+    hi_strong, hi_soft, shade = skia.Path(), skia.Path(), skia.Path()
     for bx, by, r, a in lobes:
         lit = -math.sin(a) * 0.75 - math.cos(a) * 0.55
-        arc = skia.Path()
         rr = r * 0.6
-        arc.addArc(skia.Rect(bx - rr, by - rr, bx + rr, by + rr), 160, 140)
-        if lit > 0.0:
-            _stroke(c, arc, C_HAIR_HI, 2.3, 0.85 * min(1.0, lit + 0.2))
-        else:
-            _stroke(c, arc, C_HAIR_SH, 2.0, 0.5)
-    for (ix, iy, rr, a0) in ((-22, -16, 9, 150), (8, -24, 10, 170), (26, -2, 9, 190), (-6, 4, 10, 160),
-                             (-34, 8, 8, 150), (16, 18, 8, 200)):
-        arc = skia.Path()
-        arc.addArc(skia.Rect(cx + ix - rr, cy + iy - rr, cx + ix + rr, cy + iy + rr), a0, 130)
-        _stroke(c, arc, C_HAIR_HI if iy < 0 else C_HAIR_SH, 2.0, 0.55)
+        tgt = shade if lit <= 0.0 else (hi_strong if lit > 0.45 else hi_soft)
+        tgt.addArc(skia.Rect(bx - rr, by - rr, bx + rr, by + rr), 160, 140)
+    inner_hi, inner_sh = skia.Path(), skia.Path()
+    for (ix, iy, rr, a0) in ((-22, -12, 9, 150), (8, -18, 10, 170), (26, -1, 9, 190), (-6, 4, 10, 160),
+                             (-34, 6, 8, 150), (16, 14, 8, 200)):
+        (inner_hi if iy < 0 else inner_sh).addArc(skia.Rect(cx + ix - rr, cy + iy - rr, cx + ix + rr, cy + iy + rr), a0, 130)
+    _stroke(c, hi_strong, C_HAIR_HI, 2.3, 0.85)
+    _stroke(c, hi_soft, C_HAIR_HI, 2.3, 0.55)
+    _stroke(c, shade, C_HAIR_SH, 2.0, 0.5)
+    _stroke(c, inner_hi, C_HAIR_HI, 2.0, 0.55)
+    _stroke(c, inner_sh, C_HAIR_SH, 2.0, 0.55)
 
 
-def _draw_hair_cap(c, H, head_out, head_grow):
+def _draw_hair_cap(c, H, head_out, head_grow=None):
     region, hl_pts = _hair_region(H)
     if region is None:
         return None
+    # hair volume tapers to nothing where the hairline meets the silhouette (no wedge at the temple)
+    head_grow = _head_outline(H, grow=4.0, gy=(hl_pts[0][1] - 4.0, hl_pts[-1][1] - 4.0))
     hair = skia.Op(head_grow, region, skia.PathOp.kIntersect_PathOp)
     sh_reg = skia.Path(region)
     sh_reg.offset(-0.8, 3.6)
@@ -1659,13 +2038,14 @@ def _draw_hair_cap(c, H, head_out, head_grow):
     c.drawPath(hair, paint(None, shader=sh))
     s = H.s
     tie = (-4.0 * s, -90.0 - H.nod_dy * 0.4)
+    strands = skia.Path()
     for ph in (-60, -44, -28, -12, 4, 20, 36, 52, 66):
         x, y, vis = _surf_az(H, ph, _hairline_y(ph) - 2.0)
         if vis <= 0.15:
             continue
         mx, my, _ = _surf_az(H, ph * 0.8, -72.0)
-        _stroke(c, _curve([(x, y - 3.0), (mx, my), (tie[0] + ph * 0.16, tie[1] + 6)]), C_HAIR_HI, 1.1,
-                0.28 + 0.12 * math.sin(ph * 0.7))
+        _cr(strands, [(x, y - 3.0), (mx, my), (tie[0] + ph * 0.16, tie[1] + 6)])
+    _stroke(c, strands, C_HAIR_HI, 1.1, 0.3)
     # curved sheen band following the skull contour (light from the upper left)
     lx0 = -_sil_x(H, -20.0, -1)
     rx0 = _sil_x(H, -20.0, 1)
@@ -1712,16 +2092,16 @@ def _lock(c, x, y, out, length, width, phase, sway, waves=1.15, amp=4.6):
     rib = _ribbon(pts, wid)
     c.drawPath(rib, paint(C_HAIR_SH, 0.9, stroke=1.6))
     _fill(c, rib, C_HAIR)
-    # highlight on the lit side of each bulge (where the curl turns toward the light)
+    # highlight on the lit side of each bulge (where the curl turns toward the light), one batched stroke
+    hl = skia.Path()
     for i in range(2, n):
         a = phase + ((i - 1) / n) * 2.0 * math.pi * waves
         lit = -math.cos(a) * out
         if lit > 0.3:
             q0, q1 = pts[i - 1], pts[i + 1]
             w = wid[i] * 0.2
-            _stroke(c, _curve([(q0[0] - w, q0[1] - 0.4), (pts[i][0] - w, pts[i][1] - 0.4),
-                               (q1[0] - w, q1[1] - 0.4)]), C_HAIR_SHEEN, max(0.9, wid[i] * 0.28),
-                    0.6 * min(1.0, lit + 0.2))
+            _cr(hl, [(q0[0] - w, q0[1] - 0.4), (pts[i][0] - w, pts[i][1] - 0.4), (q1[0] - w, q1[1] - 0.4)])
+    _stroke(c, hl, C_HAIR_SHEEN, max(0.9, width * 0.22), 0.5)
 
 
 def _draw_ringlet(c, H, slot, t, far=False):
@@ -1756,32 +2136,39 @@ def _draw_bang(c, H, t):
     _stroke(c, _curve(pts[1:7]), C_HAIR_HI, 0.9, 0.6)
 
 
-def _draw_cap_and_tie(c, H, head_out, head_grow):
-    _draw_hair_cap(c, H, head_out, head_grow)
+def _draw_cap_and_tie(c, H, head_out):
+    _draw_hair_cap(c, H, head_out)
+    _draw_scrunchie(c, H)
+
+
+def _draw_scrunchie(c, H):
+    """Fabric scrunchie around the base of the puff: a thick gathered band along the near (lower) half of a
+    ring above eye level; overlapping soft puffs share one outline so it reads as one ruffled tube whose ends
+    turn away behind the hair."""
     s = H.s
-    tx, ty = -4.0 * s, -91.0 - H.nod_dy * 0.4
-    # fabric scrunchie: a ruffled band with a few soft gathers (wraps around the base of the puff)
-    ph0 = H.th * 1.6
-    hw, hh = 25.0, 7.6
-    top, bot = [], []
-    for i in range(9):
-        u = i / 8.0
-        x = tx - hw + 2 * hw * u
-        e = math.sqrt(max(0.0, 1.0 - (2 * u - 1) ** 2))
-        ruf = 1.3 * math.sin(u * math.pi * 4.0 + ph0)
-        top.append((x, ty - hh * (0.35 + 0.65 * e) - ruf * e))
-        bot.append((x, ty + hh * (0.3 + 0.6 * e) + ruf * 0.6 * e))
-    band = _closed2(top, bot[::-1])
-    c.drawPath(band, paint(C_HAIR_SH, 0.85, stroke=1.8))
-    sh = skia.GradientShader.MakeLinear([(tx, ty - hh), (tx, ty + hh)], [C_TIE, C_TIE, C_TIE_SH], [0.0, 0.45, 1.0])
+    tx, ty = -4.0 * s - 8.0 * s * max(0.0, H.nod), -90.5 - H.nod_dy * 0.4
+    rx, ry = 26.0, 4.5 + 2.0 * H.nod
+    ph0 = H.th * 0.8
+    n = 9
+    band = skia.Path()
+    pts = []
+    for i in range(n):
+        u = i / (n - 1)
+        th_ = (4.0 + 172.0 * u) * D2R + 0.05 * math.sin(ph0)
+        e = math.sin(th_)
+        x, y = tx + rx * math.cos(th_), ty + ry * e
+        w, h = 6.8 * (0.55 + 0.45 * e), (5.6 + 0.6 * math.sin(i * 2.1 + ph0)) * (0.78 + 0.22 * e)
+        band.addOval(skia.Rect(x - w, y - h, x + w, y + h))
+        pts.append((x, y, w, h, e))
+    c.drawPath(band, paint(C_HAIR_SH, 0.85, stroke=3.0))
+    sh = skia.GradientShader.MakeLinear([(tx, ty - 6.0), (tx, ty + ry + 6.0)], [C_TIE_HI, C_TIE, C_TIE_SH], [0.0, 0.38, 1.0])
     c.drawPath(band, paint(None, shader=sh))
-    for k in range(4):
-        u = (k + 0.5 + 0.15 * math.sin(ph0 + k)) / 4.0
-        x = tx - hw + 2 * hw * u
-        e = math.sqrt(max(0.0, 1.0 - (2 * u - 1) ** 2))
-        _stroke(c, _curve([(x - 1.5, ty - hh * 0.75 * e), (x + 1.2, ty - 0.5), (x - 0.5, ty + hh * 0.7 * e)]),
-                C_TIE_SH, 1.2, 0.7)
-    c.drawOval(skia.Rect(tx - hw * 0.75, ty - hh * 0.8, tx + hw * 0.1, ty - hh * 0.25), paint(WHITE, 0.2, blur=1.6))
+    # soft gathers between the puffs and a sheen along the top
+    for i in range(1, n - 1, 1):
+        x, y, w, h, e = pts[i]
+        xg = x + w * 0.62
+        _stroke(c, _curve([(xg - 0.6, y - h * 0.7), (xg + 0.7, y + 0.2), (xg - 0.2, y + h * 0.75)]), C_TIE_SH, 1.0, 0.45 * e)
+    _stroke(c, _curve([(x, y - h * 0.55) for x, y, w, h, e in pts[2:-2]]), WHITE, 1.3, 0.22)
 
 
 # --------------------------------------------------------------------------- head assembly
@@ -1797,10 +2184,10 @@ def _draw_head(c, R, p, t):
     P.tears = clamp(p.tears)
     P.shine = clamp(p.eye_shine)
     P.sniffle = clamp(p.sniffle)
-    blink = auto_blink(t, seed=11, rate=3.7) if t is not None else 1.0
-    lids = {s_: (clamp(v) if v is not None else blink) for s_, v in (("l", p.lid_l), ("r", p.lid_r))}
-    head_out = _head_outline(H)
-    head_grow = _head_outline(H, grow=4.0)
+    bl = blink(t)
+    lids = {s_: (clamp(v) if v is not None else bl) for s_, v in (("l", p.lid_l), ("r", p.lid_r))}
+    mgeom = _mouth_geom(H, p, t) if not R.back else None
+    head_out = _head_outline(H, mext=_mouth_extent(H, mgeom) if (mgeom is not None and abs(H.s) > 0.3) else None)
     hkey = (round(H.th, 3), round(H.nod_dy, 2))
     _cached(c, ("puff",) + hkey, skia.Rect(-140, -230, 140, -40), lambda cv: _draw_puff(cv, H))
     far_slots = [sl for sl in (-1, 1) if sl * H.s > 0.08] if not R.back else []
@@ -1846,7 +2233,7 @@ def _draw_head(c, R, p, t):
         c.drawOval(skia.Rect(cx_ - 6, cy_ - 2.5, cx_ + 4, cy_ + 2), paint(C_SKIN_HI, 0.3, blur=2.5))
     c.restore()
     _stroke(c, head_out, C_SKIN_LINE, 1.6, 0.8)
-    _cached(c, ("cap",) + hkey, skia.Rect(-120, -140, 120, 60), lambda cv: _draw_cap_and_tie(cv, H, head_out, head_grow))
+    _cached(c, ("cap",) + hkey, skia.Rect(-120, -140, 120, 60), lambda cv: _draw_cap_and_tie(cv, H, head_out))
     for slot in (-1, 1):
         if H.s * slot < -0.12:
             _draw_ear(c, H, slot)
@@ -1870,7 +2257,7 @@ def _draw_head(c, R, p, t):
         _draw_eye(c, H, E, slot, t)
         _draw_brow(c, H, E, slot)
     _draw_nose(c, H, P)
-    _draw_mouth(c, H, p, t)
+    _draw_mouth(c, H, p, t, mgeom)
     c.restore()
     for lash in lashes:          # upper lash lines are not clipped: the far flick may poke past the cheek
         lash(c)
@@ -1884,26 +2271,42 @@ def _draw_head(c, R, p, t):
 def _draw_body(c, R, p, t):
     near, far = R.arms[-1], R.arms[1]
     legs = R.legs
-    seated_front = R.sw > 0.5 and abs(R.turn) < 0.15     # knees toward camera: legs over the jacket hem
+    # seated near the front view both thighs come toward the camera: the far leg also goes over the hips
+    # (cross-faded over turn 0.05..0.12 so there is no pop)
+    front_k = 0.0 if R.back else (R.sw + R.k) * (1.0 - smoothstep((abs(R.turn) - 0.05) / 0.07))
+    far_late = far.layer == "back" and far.on_leg > 0.5      # far hand resting on the far knee / thigh
     c.save()
     c.concat(R.MU)
     for A in (far, near):
         if A.layer == "behind":
             _draw_arm(c, A, R)
-    if far.layer == "back":
+    if far.layer == "back" and not far_late and far.front_w < 0.995:
         _draw_arm(c, far, R)
     c.restore()
-    _draw_leg(c, legs[1], R)
+    if front_k < 0.995:
+        _draw_leg(c, legs[1], R)
+    if far_late:
+        c.save()
+        c.concat(R.MU)
+        _draw_arm(c, far, R)
+        c.restore()
     _draw_hips(c, R)
-    if not seated_front:
-        _draw_leg(c, legs[-1], R)
+    if front_k > 0.005:
+        if front_k < 0.995:
+            L = legs[1]
+            xs = [L.hip[0], L.knee[0], L.ankle[0]]
+            ys = [L.hip[1], L.knee[1], L.ankle[1]]
+            c.saveLayerAlpha(skia.Rect(min(xs) - 60, min(ys) - 40, max(xs) + 60, max(ys) + 40), int(255 * front_k))
+            _draw_leg(c, L, R)
+            c.restore()
+        else:
+            _draw_leg(c, legs[1], R)
+    _draw_leg(c, legs[-1], R)
     c.save()
     c.concat(R.MU)
     _draw_neck(c, R)
     _draw_torso(c, R)
     c.restore()
-    if seated_front:
-        _draw_leg(c, legs[-1], R)
     c.save()
     c.concat(R.MH)
     _draw_head(c, R, p, t)
@@ -1911,6 +2314,16 @@ def _draw_body(c, R, p, t):
     c.save()
     c.concat(R.MU)
     R.occluders = []
+    if far.layer == "back" and far.front_w > 0.005 and not far_late:
+        # front view: the far arm hangs beside the body in front of it, like the near arm (cross-faded)
+        if far.front_w < 0.995:
+            xs = [far.S[0], far.E[0], far.W[0], far.palm[0]]
+            ys = [far.S[1], far.E[1], far.W[1], far.palm[1]]
+            c.saveLayerAlpha(skia.Rect(min(xs) - 40, min(ys) - 40, max(xs) + 40, max(ys) + 40), int(255 * far.front_w))
+            _draw_arm(c, far, R)
+            c.restore()
+        else:
+            _draw_arm(c, far, R)
     for A in (far, near):
         if (A is far and A.layer == "over") or (A is near and A.layer == "front"):
             _draw_arm(c, A, R)
@@ -1935,7 +2348,7 @@ def _bounds(R):
             q = R.MU.mapXY(x, y)
             pts.append((q.fX, q.fY))
     if R.mug is not None:
-        q = R.MU.mapXY(R.mug.x, R.mug.y - 16.0)
+        q = R.MU.mapXY(R.mug.x, R.mug.y - MUG_H * MUG_S * 0.5)
         pts.append((q.fX, q.fY))
     for L in R.legs.values():
         pts += [L.hip, L.knee, L.ankle]
@@ -1945,13 +2358,32 @@ def _bounds(R):
     return skia.Rect(min(xs) - pad, min(ys) - pad, max(xs) + pad, max(ys) + pad)
 
 
-def _draw_rimlit(c, R, pose, t, lit):
-    """Rim-lit render. The character is drawn once into an offscreen image (device pixels, tight
-    bounds); a soft glow is blurred at 1/8 resolution, the light-filtered image is composited and a
-    thin bright rim edge (silhouette minus a shifted silhouette, half resolution) goes on top."""
+_NATIVE_CT = skia.Surface(1, 1).imageInfo().colorType()
+
+
+def _premul_image(a, color):
+    """skia.Image (native pixel order, premultiplied) of `color` with per-pixel alpha array a (float 0..1)."""
+    h, w = a.shape
+    r, g, b = skia.ColorGetR(color), skia.ColorGetG(color), skia.ColorGetB(color)
+    out = np.empty((h, w, 4), np.uint8)
+    if _NATIVE_CT == skia.kBGRA_8888_ColorType:
+        chans = (b, g, r)
+    else:
+        chans = (r, g, b)
+    for i, cv in enumerate(chans):
+        out[:, :, i] = a * cv
+    out[:, :, 3] = a * 255.0
+    return skia.Image.fromarray(out, colorType=_NATIVE_CT, alphaType=skia.kPremul_AlphaType)
+
+
+def _draw_rimlit(c, R, pose, t, rim):
+    """Rim-lit render. The character is drawn once into an offscreen image (device pixels, tight bounds).
+    Behind it goes a soft glow (silhouette tinted with rim_color, blurred at 1/4 resolution, nudged toward the
+    light, cut at the floor line); on top goes a thin bright edge on the side facing the light: the silhouette
+    minus itself shifted toward the light by a fixed ~2.5 device px (so it stays a hairline at any zoom).
+    The light direction is fixed in screen space: from the head toward RIM_LIGHT_POS (the window)."""
     M = c.getTotalMatrix()
     dscale = math.sqrt(abs(M.getScaleX() * M.getScaleY() - M.getSkewX() * M.getSkewY()))
-    rim = clamp(pose.rim)
     rc = col(pose.rim_color)
     dev = M.mapRect(_bounds(R))
     clipb = c.getDeviceClipBounds()
@@ -1961,6 +2393,23 @@ def _draw_rimlit(c, R, pose, t, lit):
     by1 = min(math.ceil(dev.bottom()), clipb.bottom())
     if bx1 <= bx0 or by1 <= by0:
         return
+    # light direction in device space
+    hx, hy, _, _ = _hx(R.H, 0.0, 0.0)
+    hq = R.MH.mapXY(hx, hy)
+    hs_ = R.MS.mapXY(hq.fX, hq.fY)
+    if RIM_LIGHT_POS is not None:
+        lx, ly = _norm(RIM_LIGHT_POS[0] - hs_.fX, RIM_LIGHT_POS[1] - hs_.fY)
+    else:
+        lx, ly = 0.0, -1.0
+    inv_ms = skia.Matrix()
+    Mstage = M
+    if R.MS.invert(inv_ms):
+        Mstage = skia.Matrix.Concat(M, inv_ms)
+    dv = Mstage.mapVector(lx, ly)
+    lx, ly = _norm(dv.fX, dv.fY)
+    if lx == 0.0 and ly == 0.0:
+        lx, ly = 0.0, -1.0
+    floor_dev = M.mapXY(0.0, 0.0).fY
     w, h = int(bx1 - bx0), int(by1 - by0)
     surf = skia.Surface(w, h)
     oc = surf.getCanvas()
@@ -1968,47 +2417,64 @@ def _draw_rimlit(c, R, pose, t, lit):
     oc.concat(M)
     _draw_body(oc, R, pose, t)
     img = surf.makeImageSnapshot()
-    lin = skia.SamplingOptions(skia.FilterMode.kLinear)
-    tint = skia.Paint()
-    tint.setColorFilter(skia.ColorFilters.Blend(rc, skia.BlendMode.kSrcIn))
-    # glow (1/8 resolution, two blur radii)
-    q = 4.0
-    padg = 40.0 * dscale
+    # ---- soft glow (low resolution: ~4 stage units per sample at any zoom), behind the character, cut at the
+    # floor. Blurred with scipy on the tiny alpha mask (skia's CPU blur filter is several times slower here).
+    q = clamp(4.0 * dscale, 4.0, 12.0)
+    padg = 36.0 * dscale
     gx0, gy0 = bx0 - padg, by0 - padg
     gw, gh = int((w + 2 * padg) / q) + 2, int((h + 2 * padg) / q) + 2
     small = skia.Surface(gw, gh)
     sc = small.getCanvas()
     sc.scale(1.0 / q, 1.0 / q)
-    sc.drawImage(img, padg, padg, lin, tint)
-    sil = small.makeImageSnapshot()
-    glow = skia.Surface(gw, gh)
-    gc = glow.getCanvas()
-    for sig, a in ((20.0 * dscale, 0.55 * rim), (7.0 * dscale, min(1.0, 0.9 * rim))):
-        gp = skia.Paint()
-        gp.setImageFilter(skia.ImageFilters.Blur(sig / q, sig / q))
-        gp.setAlphaf(a)
-        gc.drawImage(sil, 0, 0, skia.SamplingOptions(), gp)
+    sc.drawImage(img, padg, padg)
+    msk = np.empty((gh, gw), np.uint8)
+    small.makeImageSnapshot().readPixels(skia.ImageInfo.MakeA8(gw, gh), msk, gw)
+    af = msk.astype(np.float32) * (1.0 / 255.0)
+    g = (0.5 * rim) * gaussian_filter(af, 16.0 * dscale / q) + (0.7 * rim) * gaussian_filter(af, 5.5 * dscale / q)
+    # back-light bloom: strong on the side facing the light, fading off toward the far side
+    ext = 0.5 * (abs(gw * lx) + abs(gh * ly))
+    tt = ((np.arange(gw, dtype=np.float32)[None, :] - gw * 0.5) * lx +
+          (np.arange(gh, dtype=np.float32)[:, None] - gh * 0.5) * ly) / max(ext, 1.0)
+    g *= np.interp(tt, (-1.0, -0.1, 0.7), (0.12, 0.55, 1.0)).astype(np.float32)
+    np.clip(g, 0.0, 1.0, out=g)
+    glow_img = _premul_image(g, rc)
     c.save()
     c.resetMatrix()
-    # nearest is visually fine for the soft glow at normal sizes; bilinear for close-ups
-    gs = lin if dscale > 1.6 else skia.SamplingOptions()
-    c.drawImageRect(glow.makeImageSnapshot(), skia.Rect(gx0, gy0, gx0 + gw * q, gy0 + gh * q), gs)
-    # the character itself (already light-filtered while drawing)
+    c.save()
+    c.clipRect(skia.Rect(-1e5, -1e5, 1e5, floor_dev - 1.5 * dscale))
+    off = 5.0 * dscale
+    c.drawImageRect(glow_img, skia.Rect(gx0 + lx * off, gy0 + ly * off, gx0 + lx * off + gw * q, gy0 + ly * off + gh * q),
+                    skia.SamplingOptions(skia.FilterMode.kLinear))
+    c.restore()
+    # ---- the character (already light-filtered while drawing)
     c.drawImage(img, bx0, by0, skia.SamplingOptions())
-    # thin rim edge on the top / back side: tinted silhouette minus a shifted silhouette
-    off = M.mapVector(3.0, 3.2)
-    ox, oy = max(1, round(off.fX)) if off.fX >= 0 else min(-1, round(off.fX)), max(1, round(off.fY))
-    eh = skia.Surface(w, h)
+    # ---- thin rim edge on the light side: silhouette minus the silhouette shifted toward the light. With the
+    # light above (the usual case) only the upper body catches it: the edge pass stops below the hips, fading.
+    dpx = 2.6
+    ox, oy = round(lx * dpx), round(ly * dpx)
+    if ox == 0 and oy == 0:
+        oy = -2
+    he = h
+    if ly < -0.3:
+        hip_dev = M.mapXY(0.0, -R.hv).fY
+        he = int(clamp(hip_dev - by0 + 30.0 * dscale, 8.0, float(h)))
+    eh = skia.Surface(w, he)
     ec = eh.getCanvas()
-    ec.drawImage(img, 0, 0, skia.SamplingOptions(), tint)
+    ec.drawImage(img, 0, 0)
     dp = skia.Paint()
     dp.setBlendMode(skia.BlendMode.kDstOut)
-    ec.drawImage(img, ox, oy, skia.SamplingOptions(), dp)
+    ec.drawImage(img, -ox, -oy, skia.SamplingOptions(), dp)
+    if he < h:
+        fp = skia.Paint()
+        fp.setBlendMode(skia.BlendMode.kDstIn)
+        y0f = max(0.0, he - 70.0 * dscale)
+        fp.setShader(skia.GradientShader.MakeLinear([(0, y0f), (0, he)], [col("#FFFFFF"), col("#FFFFFF", 0.0)]))
+        ec.drawRect(skia.Rect(0, y0f, w, he), fp)
     ep = skia.Paint()
-    ep.setAlphaf(min(1.0, 1.1 * rim))
+    ep.setColorFilter(skia.ColorFilters.Blend(rc, skia.BlendMode.kSrcIn))
+    ep.setAlphaf(min(1.0, 1.15 * rim))
     c.drawImage(eh.makeImageSnapshot(), bx0, by0, skia.SamplingOptions(), ep)
     c.restore()
-
 
 def draw(canvas, pose: Pose, t: float):
     """Draw Rae. The canvas must already carry the camera transform (stage coordinates)."""
@@ -2022,8 +2488,9 @@ def draw(canvas, pose: Pose, t: float):
     _CF = _light_cf(pose) if lit else None
     _CF_KEY = (round(pose.light, 3), tuple(pose.tint), round(pose.tint_amt, 3)) if lit else None
     try:
-        if pose.rim > 0.001:
-            _draw_rimlit(c, R, pose, t, lit)
+        rim = clamp((pose.rim - RIM_MIN) / (1.0 - RIM_MIN))
+        if rim > 0.004:
+            _draw_rimlit(c, R, pose, t, rim)
         else:
             _draw_body(c, R, pose, t)
     finally:
@@ -2063,11 +2530,11 @@ ARMS = {
     "wipe_eye": ArmPose(shoulder=88.0, elbow=130.0, wrist=16.0, hand="fist", across=0.3),
     "cover_mouth": ArmPose(shoulder=60.0, elbow=100.0, wrist=4.0, hand="open", across=0.48),
     "hands_up": ArmPose(shoulder=28.0, elbow=104.0, wrist=-14.0, hand="palm_out", across=-0.25),
-    "grip_knee": ArmPose(shoulder=26.0, elbow=30.0, wrist=10.0, hand="fist"),
+    "grip_knee": ArmPose(shoulder=42.0, elbow=4.0, wrist=12.0, hand="fist"),
     "reach_back": ArmPose(shoulder=-42.0, elbow=14.0, wrist=-10.0, hand="open"),
     "shrug": ArmPose(shoulder=14.0, elbow=96.0, wrist=-12.0, hand="palm_up", across=-0.8),
-    "hug_self": ArmPose(shoulder=8.0, elbow=100.0, wrist=6.0, hand="relaxed", across=0.95),
-    "knee_rest": ArmPose(shoulder=36.0, elbow=14.0, wrist=24.0, hand="relaxed"),
+    "hug_self": ArmPose(shoulder=22.0, elbow=128.0, wrist=8.0, hand="relaxed", across=1.0),
+    "knee_rest": ArmPose(shoulder=40.0, elbow=8.0, wrist=34.0, hand="relaxed"),
 }
 
 # Face presets: Pose field overrides (scenes: pose.copy(**EXPR["awe"]) or expr(pose, "awe", 0.5)).
@@ -2097,12 +2564,20 @@ EXPR = {
 }
 
 
-def expr(pose: Pose, name: str, amount: float = 1.0) -> Pose:
-    """Blend face preset `name` into pose by `amount` (lid None counts as 1 when blending)."""
+def expr(pose: Pose, name: str, amount: float = 1.0, t=None) -> Pose:
+    """Blend face preset `name` into pose by `amount` (a lid of None counts as fully open when blending).
+    Pass t (the draw time) to keep the natural blink running on the preset's lid levels during holds;
+    without t the lids are static values (the preset as a still)."""
+    if amount <= 0.0:
+        return pose
     kw = {}
     for k, v in EXPR[name].items():
         cur = getattr(pose, k)
-        if cur is None:
-            cur = 1.0
+        if k in ("lid_l", "lid_r"):
+            val = lerp(1.0 if cur is None else cur, v, amount)
+            if t is not None:
+                val *= blink(t)
+            kw[k] = val
+            continue
         kw[k] = lerp(cur, v, amount)
     return pose.copy(**kw)
