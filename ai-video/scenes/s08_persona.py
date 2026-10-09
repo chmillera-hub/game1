@@ -15,14 +15,27 @@ Shots (every time derives from cues / line timings; see _T):
            head jerk to a new pose on every word (no blend). Deadpan eyes.
   beat     dead silence: only the eyes slide to camera.
   s08_l03  "Evil-Bot also says no." palm snaps out + head shake on "no".
-  lift     the hand pushes the mask up onto its head like sunglasses; the
-           same 😒 face eases into a small smirk.
+  mask_off the mask lowers off the face and gets FLUNG away (spinning off
+           screen left): blink, and it's the normal, warm AI again.
+  s08_l03b SHOT S (still F3 navy): the AI glides to the upper-left; a
+           storybook pops open below it ("A SCARY STORY" chip on "scary").
+           On the words, story bits pop onto the pages, each with a green
+           check: a tiny Malvo-caricature VILLAIN, a shivering storm cloud
+           (FEAR), a red scribble (ANGER), a cracking heart (HEARTBREAK);
+           "FAIR GAME ✓" stamps under the book. Inset (top-right): Malvo
+           perks up, intrigued (he's the villain!), Hissy nods.
+  s08_l03c the book shrinks to the top-right (still allowed); a brick wall
+           "NO REAL-WORLD HOW-TO" drops across the bottom. Three plain
+           labelled folders (WEAPON BLUEPRINTS / CHEM/GERM RECIPES / HOW-TO
+           HARM) peek up from behind it on the words and get NOPE stamps.
+           AI determined, palms out.
+  lift     settle: warm smile + small nod, open palms. Then card2.
   card2    HARD CUT F1-CU. Card #8 "FLATTERY". Oily smile, hand on heart,
   s08_l04  gaudy gold trophy "WORLD'S SMARTEST AI" pops into his glove,
            lash batting, coy chin-rest on "Too smart...", sparkles; Hissy
            rolls his eyes, then side-eyes the camera.
   s08_l05  HARD CUT F3: "Aw, shucks!" happy + big blush, heart, bounce,
-           bashful head-scratch (the mask still perched on its head).
+           bashful head-scratch.
   snap_lid hold happy 0.25 s, then SNAP LID to 😒 (2 frames).
   s08_l06  "Smart enough to see this coming." Malvo's glove slides the
            trophy in from the lower-left; the AI's stop palm pushes it back
@@ -162,7 +175,8 @@ _HOLD_L = _H(-128, 372, 0.30, open=0.0, thumb=0.7, tl=0.85, sc=1.05)
 MASK_TRAVEL = 560.0       # head-local units the mask (and the gripping hand) rise
 MASK_ROT0 = -0.35         # mask tilt at the start of the raise
 _RAISE = {"t0": 0.0, "t1": 1.0}    # raise window, set by _T()
-_LIFT_L = _H(-112, -96, 0.18, open=0.0, thumb=0.7, tl=0.85, sc=1.05)
+_LOWER = {"t0": 0.0, "t1": 1.0}    # mask_off: the mask (and fist) drop a little
+MASK_LOWER = 130.0                 # head-local units
 # QA: the robot snap's "up" pose is a raised flat palm (stiff robot hello).
 # Any single raised index seen from the back of the mitten (even with the
 # thumb out) still read as a rude middle finger in the final encode.
@@ -190,6 +204,16 @@ def _raise_l(k):
 
 
 
+def _lower_k(t):
+    return ease_in_out(seg(t, _LOWER["t0"], _LOWER["t1"]))
+
+
+def _lower_l(t):
+    h = dict(_HOLD_L)
+    h["y"] += MASK_LOWER * _lower_k(t)
+    return h
+
+
 def _scratch_r(t):
     h = dict(_SCRATCH_R)
     w = math.sin(t * 2 * math.pi * 3.2)
@@ -204,7 +228,7 @@ _S08_HANDS = {
     "s08_hold": lambda t: (_HOLD_L, AI.IDLE_R),
     "s08_hold_pu": lambda t: (_HOLD_L, _PU_R),
     "s08_hold_stop": lambda t: (_HOLD_L, _STOP_R),
-    "s08_lift": lambda t: (_LIFT_L, AI.IDLE_R),
+    "s08_lower": lambda t: (_lower_l(t), AI.IDLE_R),
     "s08_push": lambda t: (_PUSH_L, AI.IDLE_R),
     "s08_scratch": lambda t: (AI.IDLE_L, _scratch_r(t)),
 }
@@ -256,6 +280,9 @@ AIX["smirk"] = _mixd(AIX["stare"], AI.EXPR["amused"], 0.2)
 for _k in ("mc", "mw", "mx", "my", "mt", "mo", "ms"):
     AIX["smirk"][_k] = lerp(AIX["stare"][_k], AI.EXPR["amused"][_k], 0.9)
 AIX["unimp_dn"] = dict(_UNIMP, sacc=0.2)
+AIX["amused"] = dict(AI.EXPR["amused"])
+AIX["warm"] = dict(AI.EXPR["warm"])
+AIX["det"] = dict(AI.EXPR["determined"])
 AIX["smirk_l6"] = _mixd(_UNIMP, AI.EXPR["amused"], 0.42)
 
 
@@ -319,8 +346,35 @@ def _T(info):
     _RAISE["t0"], _RAISE["t1"] = T.raise0, T.mask_up
     T.l2_words = list(T.w[2])
     T.l3_no = T.w[3][-1]
-    T.lift1 = T.lift + 0.3
-    T.release = T.lift1 + 0.02
+    T.mask_off = c("mask_off")
+    T.lower1 = T.mask_off + 0.16
+    T.toss = T.mask_off + 0.2
+    _LOWER["t0"], _LOWER["t1"] = T.mask_off, T.lower1
+    # --- shot S: the story is fine / the how-to is walled off ----------------
+    T.L3b, T.L3c = info.line("s08_l03b"), info.line("s08_l03c")
+    T.wb = [_wt(info, "s08_l03b", i) for i in range(len(T.L3b.caption.split()))]
+    T.wc = [_wt(info, "s08_l03c", i) for i in range(len(T.L3c.caption.split()))]
+    wb, wc = T.wb, T.wc
+    T.story0 = T.L3b.start
+    T.move1 = T.story0 + 0.45
+    T.book_in = wb[3] - 0.08                       # "write"
+    T.book_open0 = T.book_in + 0.2
+    T.book_open1 = T.book_open0 + 0.4
+    T.scary = wb[8]
+    T.items = [wb[10], wb[11], wb[12], wb[13]]     # villains, fear, anger, heartbreak
+    T.checks = [ti + 0.3 for ti in T.items]
+    T.fair = wb[15]
+    T.fair_stamp = T.fair - 0.11                   # impact on "fair"
+    T.inset_in = T.scary - 0.12
+    T.inset_out = T.L3b.end + 0.02
+    T.nod = wb[14]
+    T.shrink0 = T.L3b.end + 0.05
+    T.shrink1 = T.L3c.start + 0.35
+    T.wall0 = wc[0] + 0.02
+    T.folders = [wc[7], wc[9], wc[13]]             # weapon, chemical, anything
+    imp = [wc[8] + 0.1, wc[12] + 0.05, wc[16]]     # blueprints, recipes, hurt
+    T.nopes = [max(i_, f_ + 0.42) - 0.11 for i_, f_ in zip(imp, T.folders)]
+    T.c_end = T.L3c.end
     # --- shot C: flattery CU -------------------------------------------------
     T.cutC = T.card2
     T.trophy = T.L[4].start + 0.3
@@ -589,32 +643,12 @@ def _to_world(cx, cy, ang, s, sy, px, py, sqx=1.0):
     return (cx + x * ca - y * sa, cy + x * sa + y * ca)
 
 
-def _head_frame(anc, s):
-    """Head centre + tilt from the rig anchors (no face parallax)."""
-    hx, hy = anc["halo"]
-    tx, ty = anc["top"]
-    ang = math.atan2(-(tx - hx), ty - hy)
-    ca, sa = math.cos(ang), math.sin(ang)
-    d = 235.0 * s
-    return (tx - d * sa, ty + d * ca, ang)
-
-
 def _eye_frame(anc, s):
     (lx, ly), (rx, ry) = anc["eyeL"], anc["eyeR"]
     ang = math.atan2(ry - ly, rx - lx)
     mx, my = (lx + rx) / 2, (ly + ry) / 2
     d = 36.0 * s
     return (mx - d * math.sin(ang), my + d * math.cos(ang), ang)
-
-
-PERCH = (6.0, -318.0, -0.13, 0.94, 0.62)   # head-local dx, dy, rot, scale, squash
-
-
-def _perch_pose(anc, s):
-    hx, hy, ang = _head_frame(anc, s)
-    dx, dy, rot, sc, sq = PERCH
-    ca, sa = math.cos(ang), math.sin(ang)
-    return (hx + (dx * ca - dy * sa) * s, hy + (dx * sa + dy * ca) * s, ang + rot, s * sc, sq)
 
 
 def _redraw_ai_hand(ctx, x, y, s, t, hands, mouth, nod=0.0, side="L"):
@@ -840,6 +874,44 @@ def _shot_A(ctx, t, T, info):
         P.flash(ctx, 0.2 * f)
 
 
+TOSS_V = (-2300.0, -1250.0)     # px/s fling velocity
+TOSS_G = 5200.0                 # px/s^2
+TOSS_SPIN = -10.0               # rad/s
+# stick in mask (robot) units, as it sits in the fist while held
+STICK_A = (ATTACH[0] + 12.0, ATTACH[1] - 24.0)
+STICK_B = (ATTACH[0] - 104.0, ATTACH[1] + 217.0)
+
+
+def _tossed_mask(ctx, t, T):
+    """The flung mask + stick: a rigid spinning projectile from where it was
+    held (head centre, lowered) at T.toss."""
+    u = t - T.toss
+    if u < 0 or u > 0.7:
+        return
+    x, y, s = AIB
+    cx = x + TOSS_V[0] * u
+    cy = y + MASK_LOWER * s + TOSS_V[1] * u + 0.5 * TOSS_G * u * u
+    ang = TOSS_SPIN * u
+    k = s * MASK_K
+    ca, sa = math.cos(ang), math.sin(ang)
+
+    def wpt(p):
+        return (cx + (p[0] * ca - p[1] * sa) * k, cy + (p[0] * sa + p[1] * ca) * k)
+    _draw_stick(ctx, wpt(STICK_A), wpt(STICK_B), 17 * s)
+    ctx.save()
+    _mask_xform(ctx, cx, cy, ang, s)
+    _draw_mask(ctx, t)
+    ctx.restore()
+    # speed lines behind it
+    if u < 0.3:
+        a_ = 1 - u / 0.3
+        for i in range(3):
+            yy = cy - 120 + i * 120
+            ctx.move_to(cx + 300, yy)
+            ctx.line_to(cx + 300 + 220 * a_, yy + 110 * a_)
+        core.stroke(ctx, (0.75, 0.96, 1.0, 0.5 * a_), 7)
+
+
 # ===========================================================================
 # SHOT B - F3: glitch, the Evil-Bot mask, robot lines, the lift
 # ===========================================================================
@@ -852,10 +924,12 @@ def _shot_B(ctx, t, T, info):
     # --- expression -------------------------------------------------------
     ex = kv(t, [(-1.0, AIX["half"]), (T.glitch1 + 0.01, AIX["dead"], 0.16),
                 (T.beat, AIX["stare"], max(0.3, L3.start - T.beat - 0.02)),
-                (T.lift + 0.24, AIX["smirk"], 0.32)])
+                (T.toss + 0.03, AIX["happy0"], 0.22)])
     blink = slow_blink(t, T.mask_up + 0.3, 0.14, 0.1, 0.16) or \
-        slow_blink(t, L3.start - 0.02, 0.1, 0.06, 0.12) or None
-    if blink is None and (T.beat - 0.1 <= t < L3.start + 0.4 or t >= T.lift):
+        slow_blink(t, L3.start - 0.02, 0.1, 0.06, 0.12) or \
+        slow_blink(t, T.toss + 0.02, 0.07, 0.04, 0.1) or None
+    if blink is None and (T.beat - 0.1 <= t < L3.start + 0.4 or
+                          L3.end <= t < T.toss + 0.02):
         blink = 0.0                     # keep the eye slide / reveal unblinking
     think = 1.0 - seg(t, T.glitch1, T.glitch1 + 0.2)
     # --- hands (robot snaps on every l02 word: 0-blend switches) ----------
@@ -866,8 +940,9 @@ def _shot_B(ctx, t, T, info):
     hk.append((L2.end + 0.02, "s08_hold", 0.0))
     hk.append((T.l3_no - 0.03, "s08_hold_stop", 0.0))
     hk.append((L3.end + 0.05, "s08_hold", 0.0))
-    hk.append((T.lift, "s08_lift", 0.3))
-    hk.append((T.release, "idle", 0.25))
+    hk.append((T.mask_off, "s08_lower", 0.0))
+    hk.append((T.toss, "present_l", 0.1))          # the fling follow-through
+    hk.append((T.toss + 0.12, "idle", 0.2))
     hands = keyed(t, hk)
     # robot head jerk: tilt snaps with every word
     rot = 0.0
@@ -891,8 +966,10 @@ def _shot_B(ctx, t, T, info):
     P.ai_bg(ctx, t)
     # the AI leans into the lens (AI group only; the room stays static):
     # creeping push while masked, a firmer push on the dead-silence beat
-    lean_in = 1.0 + 0.03 * ease_in_out(seg(t, T.mask_up, T.beat)) + \
-        0.06 * ease_in_out(seg(t, T.beat, T.L[3].start + 0.1))
+    # (eases back out as the act is dropped on mask_off)
+    lean_in = 1.0 + (0.03 * ease_in_out(seg(t, T.mask_up, T.beat)) +
+                     0.06 * ease_in_out(seg(t, T.beat, T.L[3].start + 0.1))) * \
+        (1 - ease_in_out(seg(t, L3.end, T.toss)))
     ctx.save()
     ctx.translate(x, 760)
     ctx.scale(lean_in, lean_in)
@@ -903,50 +980,36 @@ def _shot_B(ctx, t, T, info):
     anc = draw_ai(ctx, x, y, s, t, expr=ex, look=(0.0, 0.0), mouth=mouth, hands=hands,
                   blink=blink, think=think, shake=shake, seed=AI_SEED)
     # --- mask placement ------------------------------------------------------
-    if t >= T.raise0 - 0.01:
-        held = t < T.release
-        if held:
-            ex_, ey_, ang = _eye_frame(anc, s)
-            # rising from below (raise0 -> mask_up) with a little overshoot
-            k_up = _raise_k(t)
-            off = lerp(MASK_TRAVEL, 0.0, k_up) * s
-            sq = 1.0 + 0.08 * _bump(t, T.mask_up - 0.02, 0.18, 0.04)  # landing squash
-            mrot = lerp(MASK_ROT0, 0.0, k_up)
-            cx = ex_ - off * math.sin(ang)
-            cy = ey_ + off * math.cos(ang)
-            msc, msq = s, 1.0
-            # the lift: blend toward the perch on the head
-            if t >= T.lift:
-                kl = ease_in_out(seg(t, T.lift, T.lift1))
-                px, py, pang, psc, psq = _perch_pose(anc, s)
-                cx, cy = lerp(cx, px, kl), lerp(cy, py, kl)
-                ang = lerp(ang, pang, kl)
-                msc, msq = lerp(s, psc, kl), lerp(1.0, psq, kl)
-            # stick: from the socket through the fist (drawn under the mask)
-            a = _to_world(cx, cy, ang + mrot, msc, msq / sq, *ATTACH, sqx=sq)
-            hp = anc["handL"]
-            dx, dy = hp[0] - a[0], hp[1] - a[1]
-            d = math.hypot(dx, dy) or 1.0
-            ux, uy = dx / d, dy / d
-            _draw_stick(ctx, (a[0] - ux * 30 * s, a[1] - uy * 30 * s),
-                        (hp[0] + ux * 58 * s, hp[1] + uy * 58 * s), 17 * s)
-            ctx.save()
-            ctx.translate(cx, cy)
-            ctx.rotate(ang + mrot)
-            ctx.scale(sq, 1 / sq)
-            ctx.scale(msc * MASK_K, msc * MASK_K * msq)
-            _draw_mask(ctx, t)
-            ctx.restore()
-            _redraw_ai_hand(ctx, x, y, s, t, hands, mouth, side="L")
-        else:
-            px, py, pang, psc, psq = _perch_pose(anc, s)
-            # settle wobble after the release
-            wob = 0.05 * math.sin((t - T.release) * 18) * clamp(1 - (t - T.release) / 0.4)
-            ctx.save()
-            _mask_xform(ctx, px, py, pang + wob, psc, psq)
-            _draw_mask(ctx, t)
-            ctx.restore()
+    if T.raise0 - 0.01 <= t < T.toss:
+        ex_, ey_, ang = _eye_frame(anc, s)
+        # rising from below (raise0 -> mask_up) with a little overshoot
+        k_up = _raise_k(t)
+        off = (lerp(MASK_TRAVEL, 0.0, k_up) + MASK_LOWER * _lower_k(t)) * s
+        sq = 1.0 + 0.08 * _bump(t, T.mask_up - 0.02, 0.18, 0.04)  # landing squash
+        mrot = lerp(MASK_ROT0, 0.0, k_up)
+        cx = ex_ - off * math.sin(ang)
+        cy = ey_ + off * math.cos(ang)
+        # stick: from the socket through the fist (drawn under the mask)
+        a = _to_world(cx, cy, ang + mrot, s, 1.0 / sq, *ATTACH, sqx=sq)
+        hp = anc["handL"]
+        dx, dy = hp[0] - a[0], hp[1] - a[1]
+        d = math.hypot(dx, dy) or 1.0
+        ux, uy = dx / d, dy / d
+        _draw_stick(ctx, (a[0] - ux * 30 * s, a[1] - uy * 30 * s),
+                    (hp[0] + ux * 58 * s, hp[1] + uy * 58 * s), 17 * s)
+        ctx.save()
+        ctx.translate(cx, cy)
+        ctx.rotate(ang + mrot)
+        ctx.scale(sq, 1 / sq)
+        ctx.scale(s * MASK_K, s * MASK_K)
+        _draw_mask(ctx, t)
+        ctx.restore()
+        _redraw_ai_hand(ctx, x, y, s, t, hands, mouth, side="L")
     ctx.restore()
+    _tossed_mask(ctx, t, T)
+    # "it's me again" twinkle on the reveal
+    if T.toss <= t < T.toss + 0.6:
+        P.sparkles(ctx, x + 40, y - 60, 300, t, n=5, seed=31, size=1.1 * (1 - seg(t, T.toss + 0.3, T.toss + 0.6)))
     if glitch:
         pat = ctx.pop_group()
         fr = int((t - c0) * 24 + 1e-4)
@@ -973,6 +1036,351 @@ def _shot_B(ctx, t, T, info):
             ctx.rectangle(0, yy, W, 10)
             ctx.set_source_rgba(1, 0.75, 0.8, 0.55)
             ctx.fill()
+
+
+# ===========================================================================
+# SHOT S - F3 navy: "I'll still write you a story..." / "What stays out..."
+# ===========================================================================
+AIS = (262.0, 455.0, 0.6)             # AI parked upper-left during the story bit
+BOOK_A = (520.0, 912.0, 1.0)          # storybook spine centre + scale (l03b)
+BOOK_B = (705.0, 470.0, 0.5)          # l03c: shrunk to the upper-right (still OK)
+BOOK_HW, BOOK_HH = 400.0, 270.0       # page half-width (one page) / half-height
+INSET = (590.0, 262.0, 330.0, 330.0)  # Malvo reaction inset (x, y, w, h)
+INSET_VIEW = (70.0, 470.0, 760.0)
+PAGE, PAGE_SH, PAGE_SPOOK = "#f7edd5", "#d9c7a0", "#ece0f0"
+BOARD, BOARD_DK = "#4b2a6e", "#2f1a47"
+LABEL_INK = "#2a1f3d"
+WALL = (100.0, 925.0, 800.0, 300.0)   # x, y, w, h (bottom 1225: clear of 2-row captions)
+WALL_ROWS, WALL_SPEED = 4, 1.2
+FOLDER_W, FOLDER_H, FOLDER_TOP = 264.0, 260.0, 700.0
+FOLDERS = [(222.0, "#4f7fc4", ("WEAPON", "BLUEPRINTS"), -0.03),
+           (495.0, "#d9b45a", ("CHEM/GERM", "RECIPES"), 0.02),
+           (768.0, "#8b93a7", ("HOW-TO", "HARM"), -0.02)]
+
+
+# --- story bits (book-local, ~130 px) ----------------------------------------
+def _icon_villain(c, t, t0):
+    """A tiny Malvo caricature: dome, tufts, monocle, curly mustache, cape."""
+    c.set_line_join(cairo.LINE_JOIN_ROUND)
+    for sx in (-1, 1):                              # high collar points
+        poly(c, [(sx * 16, 8), (sx * 64, -48), (sx * 48, 18)])
+        _fs(c, "cape_in", "ink", 4)
+    poly(c, [(-66, 68), (-58, 20), (-30, 6), (30, 6), (58, 20), (66, 68)])
+    _fs(c, "cape", "ink", 4)
+    poly(c, [(-17, 7), (17, 7), (0, 46)])
+    _fs(c, "suit", "ink", 3)
+    for sx in (-1, 1):                              # hair tufts
+        circle(c, sx * 40, -38, 9)
+        _fs(c, "hair", "ink", 3)
+        circle(c, sx * 36, -24, 11)
+        _fs(c, "hair", "ink", 3)
+    ellipse(c, 0, -30, 34, 39)
+    _fs(c, "skin", "ink", 4)
+    for sx in (-1, 1):                              # evil brows
+        c.move_to(sx * 28, -50)
+        c.line_to(sx * 5, -38)
+    core.stroke(c, "mustache", 6.5)
+    for sx in (-1, 1):
+        circle(c, sx * 14, -29, 4.5)
+        core.fill(c, "ink")
+    circle(c, 14, -29, 11)
+    core.stroke(c, "monocle", 3.5)
+    for sx in (-1, 1):                              # mustache curls
+        c.move_to(0, -13)
+        c.curve_to(sx * 12, -20, sx * 24, -12, sx * 25, -21)
+    core.stroke(c, "mustache", 4.5)
+    c.move_to(-11, -5)
+    c.curve_to(-4, 2, 4, 2, 11, -5)
+    core.stroke(c, "ink", 3)
+
+
+_CLOUD = [(-40, -2, 30), (-8, -24, 36), (30, -12, 32), (50, 8, 22), (-58, 12, 20), (2, 12, 32)]
+
+
+def _icon_cloud(c, t, t0):
+    """Storm cloud with scared eyes (FEAR): it shivers."""
+    jx = 2.4 * math.sin(t * 47.0)
+    jy = 1.4 * math.sin(t * 39.0 + 1.0)
+    c.translate(jx, jy)
+    flick = (t - t0) % 1.3 < 0.12
+    poly(c, [(-8, 30), (14, 30), (5, 46), (19, 46), (-10, 80), (-2, 56), (-16, 56)])
+    _fs(c, "white" if flick else "ai_accent", "ink", 4)
+    for (bx, by, r) in _CLOUD:
+        circle(c, bx, by, r)
+        core.stroke(c, "ink", 10)
+    for (bx, by, r) in _CLOUD:
+        circle(c, bx, by, r)
+        core.fill(c, "#8d86a8")
+    for (bx, by, r) in _CLOUD[:3]:
+        circle(c, bx - r * 0.25, by - r * 0.3, r * 0.42)
+        core.fill(c, (1, 1, 1, 0.18))
+    for sx in (-1, 1):                              # eek eyes
+        ellipse(c, sx * 15, -6, 10, 13)
+        _fs(c, "white", "ink", 3)
+        circle(c, sx * 15, -2, 3.8)
+        core.fill(c, "ink")
+    pts = [(-13 + i * 6.5, 16 + (3 if i % 2 else -3)) for i in range(5)]
+    poly(c, pts, closed=False)
+    core.stroke(c, "ink", 3.5)
+
+
+_SCRIB = [(46 * math.cos(i / 120 * 6.4 * math.pi) + 18 * math.cos(2.3 * i / 120 * 6.4 * math.pi + 0.5),
+           34 * math.sin(1.07 * i / 120 * 6.4 * math.pi) + 15 * math.sin(3.1 * i / 120 * 6.4 * math.pi))
+          for i in range(121)]
+
+
+def _icon_scribble(c, t, t0):
+    """An angry red scribble (ANGER) that scrawls itself in."""
+    p = ease_out(seg(t, t0, t0 + 0.4))
+    shake = 1.6 * math.sin(t * 53.0)
+    c.translate(shake, 0)
+    P._partial_polyline(c, _SCRIB, p)
+    core.stroke(c, "#7e1020", 12)
+    P._partial_polyline(c, _SCRIB, p)
+    core.stroke(c, "danger", 6.5)
+    # two furious brow ticks above it
+    if p > 0.6:
+        for sx in (-1, 1):
+            c.move_to(sx * 34, -62)
+            c.line_to(sx * 10, -50)
+        core.stroke(c, "#7e1020", 7)
+
+
+_ZIG = [(0, -70), (0, -14), (-9, 2), (8, 18), (-7, 34), (5, 48), (0, 70)]
+
+
+def _icon_heart(c, t, t0):
+    """A heart that cracks in two (HEARTBREAK)."""
+    k = ease_out_back(seg(t, t0 + 0.22, t0 + 0.45), 2.0)
+    for side in (-1, 1):
+        c.save()
+        c.translate(side * 8 * k, 4 * k)
+        c.rotate(side * 0.14 * k)
+        poly(c, _ZIG + [(side * 120, 80), (side * 120, -80)])
+        c.clip()
+        P._heart_path(c, 0, 4, 58)
+        _fs(c, "danger", "ink", 5)
+        ellipse(c, side * 0 - 26, -24, 11, 7, -0.6)
+        core.fill(c, (1, 1, 1, 0.45))
+        if k > 0.02:
+            poly(c, _ZIG, closed=False)
+            core.stroke(c, "ink", 5)
+        c.restore()
+
+
+STORY_ITEMS = [("VILLAINS", -200.0, -128.0, _icon_villain),
+               ("FEAR", -200.0, 104.0, _icon_cloud),
+               ("ANGER", 200.0, -128.0, _icon_scribble),
+               ("HEARTBREAK", 200.0, 104.0, _icon_heart)]
+
+
+def _page(c, col, spook):
+    hw, hh = BOOK_HW, BOOK_HH
+    rrect(c, 2, -hh + 6, hw - 2, 2 * hh - 6, 8)          # page stack edge
+    _fs(c, PAGE_SH, "ink", 3)
+    rrect(c, 0, -hh, hw - 10, 2 * hh - 8, 8)
+    _fs(c, col, "ink", 4)
+    c.save()
+    rrect(c, 0, -hh, hw - 10, 2 * hh - 8, 8)
+    c.clip()
+    for gw in (16, 34):                                  # gutter shade
+        c.rectangle(0, -hh, gw, 2 * hh)
+        core.fill(c, (0.3, 0.2, 0.1, 0.05))
+    for i in range(13):                                  # faint story lines
+        yy = -hh + 40 + i * 37
+        c.move_to(58, yy)
+        c.line_to(hw - 44 - (60 if i % 4 == 3 else 0), yy)
+    core.stroke(c, (0.25, 0.2, 0.3, 0.09), 5)
+    if spook > 0:
+        c.rectangle(0, -hh, hw, 2 * hh)
+        core.fill(c, (0.35, 0.2, 0.55, 0.07 * spook))
+    c.restore()
+
+
+def _cover_front(c):
+    hw, hh = BOOK_HW, BOOK_HH
+    rrect(c, -6, -hh - 14, hw + 18, 2 * hh + 28, 16)
+    _fs(c, BOARD, "ink", 5)
+    rrect(c, 22, -hh + 14, hw - 38, 2 * hh - 28, 10)
+    core.stroke(c, GOLD, 5)
+    # crescent moon + "STORY"
+    c.save()
+    circle(c, hw / 2 + 4, -40, 62)
+    circle(c, hw / 2 + 34, -62, 56)
+    c.set_fill_rule(cairo.FILL_RULE_EVEN_ODD)
+    core.fill(c, GOLD)
+    c.restore()
+    text(c, "STORY", hw / 2 + 4, 110, 70, GOLD, "title", outline="ink", outline_w=6)
+
+
+def _storybook(ctx, t, T, cx, cy, sc):
+    """Open storybook. (cx, cy) = spine centre. Pops in closed (cover only)
+    at T.book_in, the cover swings open, then the story bits pop onto it."""
+    if t < T.book_in:
+        return
+    kp = ease_out_back(seg(t, T.book_in, T.book_in + 0.28), 1.8)
+    ko = ease_in_out(seg(t, T.book_open0, T.book_open1))
+    hw, hh = BOOK_HW, BOOK_HH
+    spook = clamp((t - T.scary) / 0.25) if t >= T.scary else 0.0
+    col = core.mixc(PAGE, PAGE_SPOOK, 0.6 * spook)
+    with saved(ctx, cx, cy, sc * kp) as c:
+        c.set_line_join(cairo.LINE_JOIN_ROUND)
+        # soft drop shadow
+        rrect(c, -hw - 10 + (hw + 10) * (1 - ko), -hh - 4, (hw + 10) * (1 + ko) + 18, 2 * hh + 40, 18)
+        core.fill(c, (0, 0, 0, 0.3))
+        # right board + ribbon + right page
+        rrect(c, -6, -hh - 14, hw + 18, 2 * hh + 28, 16)
+        _fs(c, BOARD_DK, "ink", 5)
+        poly(c, [(26, hh), (52, hh), (52, hh + 62), (39, hh + 48), (26, hh + 62)])
+        _fs(c, "danger", "ink", 3.5)
+        _page(c, col, spook)
+        # the leaf (cover -> left page) swinging over the spine
+        cs = math.cos(math.pi * ko)
+        if abs(cs) > 0.02:
+            c.save()
+            c.scale(cs, 1.0)
+            if cs > 0:
+                _cover_front(c)
+            else:
+                rrect(c, -6, -hh - 14, hw + 18, 2 * hh + 28, 16)
+                _fs(c, BOARD_DK, "ink", 5)
+                _page(c, col, spook)
+            c.restore()
+        if ko >= 1.0:
+            rrect(c, -9, -hh - 6, 18, 2 * hh + 10, 9)        # spine
+            core.fill(c, (0.18, 0.1, 0.25, 0.35))
+        # flash on "scary"
+        if T.scary <= t < T.scary + 0.3:
+            rrect(c, -hw, -hh, 2 * hw, 2 * hh, 10)
+            core.fill(c, (1, 1, 1, 0.55 * (1 - seg(t, T.scary, T.scary + 0.3))))
+        # story bits + checks
+        for (lab, ix, iy, fn), ti, tc in zip(STORY_ITEMS, T.items, T.checks):
+            if t < ti:
+                continue
+            k = ease_out_back(seg(t, ti, ti + 0.3), 2.2)
+            sq = 1 + 0.12 * math.sin(seg(t, ti, ti + 0.3) * math.pi)
+            with saved(c, ix, iy, 1.0) as ci:
+                ci.scale(k * sq, k / sq)
+                fn(ci, t, ti)
+            ka = clamp((t - ti - 0.08) / 0.15)
+            if ka > 0:
+                text(c, lab, ix, iy + 104, 44, core.alpha(LABEL_INK, ka), "comic")
+            P.check_mark(c, ix + 112, iy - 58, 0.4, t, tc)
+        P.label_tag(c, 0, -hh - 16, "A SCARY STORY", color="bubble_villain", size=44,
+                    t=t, t_in=T.scary - 0.05, font="comic")
+        P.stamp(c, 0, hh + 66, "FAIR GAME ✓", t, T.fair_stamp, color="safe", size=0.56,
+                rot=-0.05)
+
+
+# --- Malvo reaction inset ------------------------------------------------------
+def _inset(ctx, t, T):
+    if t < T.inset_in or t > T.inset_out + 0.35:
+        return
+    k = ease_out_back(seg(t, T.inset_in, T.inset_in + 0.35), 1.3) * \
+        (1 - ease_in(seg(t, T.inset_out, T.inset_out + 0.3)))
+    x0, y0, w, h = INSET
+    xx = x0 + (1 - k) * 440
+    tv = T.items[0]
+    perk = ease_out_back(seg(t, tv - 0.05, tv + 0.3), 2.0)
+
+    def fn(c):
+        P.lair_bg(c, t, rain=False)
+        ex = keyed(t, [(-1.0, "thinking"), (tv - 0.05, "excited", 0.15),
+                       (T.nod - 0.05, "evil_grin", 0.3)])
+        arms = keyed(t, [(-1.0, "chin"), (tv - 0.05, "rub", 0.2)])
+        look = kv(t, [(-1.0, (-0.75, 0.3)), (tv, (-0.35, -0.05), 0.15)])
+        sn = {"expr": keyed(t, [(-1.0, "idle"), (tv + 0.1, "happy", 0.2),
+                                (T.nod - 0.05, "nod", 0.2)]),
+              "look": (-0.7, 0.2), "tongue": None}
+        draw_villain(c, VX, VY - 26 * perk, VS, t, expr=ex, look=look, mouth=(0.0, 0.0),
+                     arms=arms, lean=-0.04 * perk, snake=sn)
+        P.desk(c, VX, VY, 1000)
+        P.emote(c, "exclaim", VX + 200, VY - 690, 1.3, t, tv + 0.02, t_out=tv + 1.0)
+
+    P.panel(ctx, xx, y0, w, h, fn, view=INSET_VIEW, radius=28)
+    rrect(ctx, xx - 6, y0 - 6, w + 12, h + 12, 32)
+    core.stroke(ctx, (0.48, 0.25, 0.75, 0.9), 4)
+
+
+# --- the how-to wall -------------------------------------------------------------
+def _folder_plain(ctx, x, top, color, lines, rot=0.0):
+    """Plain case folder, blank except a big label sticker. (x, top) = top-centre."""
+    w, h = FOLDER_W, FOLDER_H
+    with saved(ctx, x, top + h / 2, 1.0, rot) as c:
+        c.set_line_join(cairo.LINE_JOIN_ROUND)
+        dk = core.mixc(color, "#000000", 0.22)
+        poly(c, [(-w / 2 + 4, -h / 2 + 8), (-w / 2 + 16, -h / 2 - 28), (-w / 2 + 112, -h / 2 - 28),
+                 (-w / 2 + 128, -h / 2 + 8)])
+        _fs(c, dk, "ink", 5)
+        rrect(c, -w / 2, -h / 2, w, h, 12)
+        _fs(c, color, "ink", 5)
+        c.move_to(-w / 2 + 16, -h / 2 + 12)
+        c.line_to(w / 2 - 16, -h / 2 + 12)
+        core.stroke(c, (1, 1, 1, 0.35), 4)
+        sx0, sy0, sw, sh = -w / 2 + 16, -h / 2 + 24, w - 32, 104
+        rrect(c, sx0, sy0, sw, sh, 10)
+        _fs(c, "#fdfaf0", "ink", 4)
+        fs = 40
+        while fs > 24 and max(text_width(c, ln, "ui", fs) for ln in lines) > sw - 18:
+            fs -= 1
+        for i, ln in enumerate(lines):
+            text(c, ln, 0, sy0 + 47 + i * 44, fs, "ink", "ui")
+
+
+def _howto_wall(ctx, t, T):
+    if t < T.wall0:
+        return
+    # folders peek up from behind the wall on their words
+    for (fx, col, lines, rot), tf in zip(FOLDERS, T.folders):
+        if t < tf:
+            continue
+        k = ease_out_back(seg(t, tf, tf + 0.36), 1.6)
+        dy = 250 * (1 - k)
+        wob = 0.05 * math.sin((t - tf) * 16) * clamp(1 - (t - tf) / 0.6)
+        _folder_plain(ctx, fx, FOLDER_TOP + dy, col, lines, rot + wob)
+    P.brick_wall(ctx, *WALL, t, T.wall0, rows=WALL_ROWS, speed=WALL_SPEED, drop=300,
+                 label={"text": "NO REAL-WORLD HOW-TO", "color": "white", "size": 64})
+    for (fx, _c, _l, rot), tn in zip(FOLDERS, T.nopes):
+        P.stamp(ctx, fx + 4, FOLDER_TOP + 180, "NOPE", t, tn, color="danger", size=0.5,
+                rot=-0.14 if rot < 0 else 0.1)
+
+
+def _shot_S(ctx, t, T, info):
+    mouth = info.mouth("ai", t)
+    k_mv = ease_in_out(seg(t, T.story0, T.move1))
+    x = lerp(AIB[0], AIS[0], k_mv)
+    y = lerp(AIB[1], AIS[1], k_mv)
+    s = lerp(AIB[2], AIS[2], k_mv)
+    wc, F = T.wc, T.folders
+    ex = kv(t, [(-1.0, AIX["happy0"]), (T.scary - 0.05, AIX["amused"], 0.2),
+                (T.items[0] - 0.05, AIX["happy0"], 0.2), (T.nod - 0.05, AIX["warm"], 0.25),
+                (T.L3c.start - 0.15, AIX["det"], 0.25), (T.c_end + 0.05, AIX["warm"], 0.3)])
+    hands = keyed(t, [(-1.0, "idle"), (T.book_in - 0.1, "present", 0.25),
+                      (T.nod - 0.05, "present_both", 0.25), (T.L3c.start - 0.1, "idle", 0.25),
+                      (wc[1] - 0.1, "stop", 0.2), (F[2] - 0.1, "stop_both", 0.2),
+                      (T.c_end + 0.05, "present_both", 0.3)])
+    look = kv(t, [(-1.0, (0.0, 0.0)), (T.book_in + 0.1, (0.55, 0.8), 0.2),
+                  (T.scary - 0.1, (0.0, 0.0), 0.2), (T.items[0] - 0.05, (0.6, 0.8), 0.15),
+                  (T.nod - 0.1, (0.0, 0.0), 0.2), (T.wall0 + 0.1, (0.3, 0.95), 0.2),
+                  (wc[5], (0.0, 0.0), 0.2),
+                  (F[0] + 0.05, (-0.05, 0.9), 0.15), (F[0] + 0.7, (0.0, 0.0), 0.2),
+                  (F[1] + 0.05, (0.45, 0.9), 0.15), (F[1] + 0.7, (0.0, 0.0), 0.2),
+                  (F[2] + 0.05, (0.75, 0.8), 0.15), (F[2] + 0.7, (0.0, 0.0), 0.2)])
+    nod = 0.7 * _bump(t, T.nod, 0.8, 0.1) + 0.6 * _bump(t, T.c_end + 0.1, 0.7, 0.1)
+    # book: big below the AI, then shrinks to the upper-right for the wall
+    kb = ease_in_out(seg(t, T.shrink0, T.shrink1))
+    bx = lerp(BOOK_A[0], BOOK_B[0], kb)
+    by = lerp(BOOK_A[1], BOOK_B[1], kb)
+    bs = lerp(BOOK_A[2], BOOK_B[2], kb)
+    P.ai_bg(ctx, t)
+    _storybook(ctx, t, T, bx, by, bs)
+    if T.fair <= t < T.L3b.end:
+        P.sparkles(ctx, bx, by, 430 * bs, t, n=6, seed=12, size=1.2)
+    _inset(ctx, t, T)
+    _howto_wall(ctx, t, T)
+    draw_ai(ctx, x, y, s, t, expr=ex, look=look, mouth=mouth, hands=hands, nod=nod,
+            seed=AI_SEED)
+    _tossed_mask(ctx, t, T)
 
 
 # ===========================================================================
@@ -1100,13 +1508,8 @@ def _shot_D(ctx, t, T, info):
     ctx.translate(x, y)
     ctx.scale(bounce, bounce)
     ctx.translate(-x, -y + jolt)
-    anc = draw_ai(ctx, x, y, s, t, expr=ex, look=look, mouth=mouth, hands=hands, blink=blink,
-                  seed=AI_SEED)
-    px, py, pang, psc, psq = _perch_pose(anc, s)
-    ctx.save()
-    _mask_xform(ctx, px, py, pang, psc, psq)
-    _draw_mask(ctx, t)
-    ctx.restore()
+    draw_ai(ctx, x, y, s, t, expr=ex, look=look, mouth=mouth, hands=hands, blink=blink,
+            seed=AI_SEED)
     ctx.restore()
     # heart beside the head (pops out on the snap)
     P.emote(ctx, "heart", 172, 600, 0.85, t, L5.start, t_out=snap - 0.06)
@@ -1140,8 +1543,10 @@ def render(ctx, t, info):
     T = _T(info)
     if t < T.costume:
         _shot_A(ctx, t, T, info)
-    elif t < T.card2:
+    elif t < T.story0:
         _shot_B(ctx, t, T, info)
+    elif t < T.card2:
+        _shot_S(ctx, t, T, info)
     elif t < T.cutD:
         _shot_C(ctx, t, T, info)
     elif t < T.cutE:
@@ -1173,7 +1578,18 @@ def SFX(info):
         (T.raise0, "swoosh_up", -14),
         (T.mask_up, "pop", -6),
         (T.l2_words[0], "scan_beep", -12),
-        (T.lift, "swoosh_up", -8),
+        (T.mask_off, "swoosh_up", -14),
+        (T.toss, "whoosh", -6),
+        (T.toss + 0.05, "sparkle", -14),
+        # the story is fine...
+        (T.book_in, "pop", -10),
+        (T.book_open0 + 0.05, "page_flip", -6),
+        (T.scary, "thunder", -18),
+        (T.inset_in, "swoosh_up", -14),
+        (P.stamp_impact(T.fair_stamp), "stamp", -6),
+        (T.inset_out, "whoosh", -16),
+        # ...the how-to stays out
+        (T.c_end + 0.12, "sparkle", -16),
         # flattery
         (T.card2, "page_flip", -6),
         (T.card2 + 0.12, "stamp", -4),
@@ -1192,6 +1608,14 @@ def SFX(info):
     for w in T.w[3][:-1]:
         out.append((w, "tick", -20))
     out.append((T.l3_no - 0.03, "tick", -16))
+    for ti, tc in zip(T.items, T.checks):
+        out.append((ti, "pop", -10))
+        out.append((tc, "tick", -12))
+    for k, lt in enumerate(P.brick_wall_land_times(T.wall0, WALL_ROWS, WALL_SPEED)):
+        out.append((lt, "brick_thud", -6 - k))
+    for tf, tn in zip(T.folders, T.nopes):
+        out.append((tf, "swoosh_up", -14))
+        out.append((P.stamp_impact(tn), "stamp", -5))
     n = info.meta["tries_after"] - info.meta["tries_before"]
     for i in range(n):
         out.append((T.tally + i * CHIP_STEP, "tick", -8))
