@@ -16,6 +16,7 @@ node test/core.test.js
 - **Cuts:** ½, ⅓, ¼, ⅕, or any fraction you type in (for example `2/5`, `0.3` or `30%`). A strip can have more than one cut. On a one-sided strip, a ⅓ cut goes around twice and comes back along ⅔, the same as with real scissors.
 - **Tape:** each strip is taped to the next one, either **orthogonal** (crossed at right angles and taped where they overlap in a square) or **parallel** (laid on top of each other going the same way and taped along the overlap).
 - **Spread cuts** opens the cut lines so you can see the pieces apart. **Hide** and the piece cards let you pull out one piece at a time.
+- **Pull apart** tugs the cut pieces away from each other and lets you watch. Pieces can't pass through each other, so separate shapes slide free, and linked ones end up hooked together like chain links. If a loose pair gets snagged, the pieces are wiggled until they slip apart. Knots and twists are kept the whole time. A note under the result says which pieces stayed hooked and which came free.
 
 ## Results it reproduces (all covered by the tests)
 
@@ -46,12 +47,16 @@ All the maths is in `src/core.js`. It doesn't draw anything, so you can run it i
    - **Interlocked:** the linking number between pieces.
    - **Knotted:** the knot determinant, |Δ(−1)| from a Fox colouring matrix. 1 means no knot was found, 3 means a trefoil.
 
+6. **Pulling apart:** each loop-shaped piece becomes a flexible rope along its middle. Every step the pieces are pulled away from each other, the ropes are smoothed and puffed out into round loops, and their length is held fixed. Strands are kept a minimum distance apart, and no point moves more than a fraction of that distance per step, so nothing can tunnel through anything else. The ribbon is drawn along the rope with the piece's real twist, using Lk = Tw + Wr (linking = twist + writhe). Flat sheets and taped bundles move as stiff bodies. The tests check that links, knots and twists come out of the pull exactly as they went in.
+
+The pieces also get a second check beyond the linking number: the link determinant. Two loops can be tangled even with a linking number of 0 (the Whitehead link is one example). A non-zero determinant proves they can't be pulled apart, and those pieces are labelled "tangled".
+
 `src/app.js` handles the controls and the 3D view (Three.js r128).
 
 ### Limits
 
 - A knot determinant of 1 means no knot was detected. A few rare knots also have determinant 1. Determinant 5 can't tell a cinquefoil from a figure-eight knot.
-- Two pieces can be tangled with a linking number of 0 (for example the Whitehead link). That case would show as "come apart freely".
+- When the linking number is 0 and the link determinant is 0, the pieces are reported as free. That's right for every experiment here, but a few exotic tangles pass both tests. Pull apart would show those staying snagged.
 - On a knotted loop, the half-twist count is the linking number of its two edges, which also includes how the knot itself curls.
 - With parallel taping, the layers stay stuck together where they're taped, and the pieces branch apart at the ends of the tape. These show up as a "Taped bundle".
 
@@ -60,5 +65,4 @@ All the maths is in `src/core.js`. It doesn't draw anything, so you can run it i
 - Tape strips side by side, edge to edge, instead of overlapping.
 - More than one tape joint per strip, so you can build rings and chains (an Olympic-rings layout).
 - Cuts that run at an angle, or that stop partway around.
-- A physics relaxation step so long loops spread out the way real paper does.
 - A full Alexander polynomial to name knots exactly.

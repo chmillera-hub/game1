@@ -108,4 +108,68 @@ check('fractions parse', () => {
   assert.strictEqual(C.parseFraction('abc'), null);
 });
 
+// Pull apart: the physics may never let one piece pass through another.
+function pulled(strips, joints) {
+  const r = run(strips, joints);
+  const sim = C.createPullSim(r);
+  const cores = () => sim.bodies.map((b) => b.X);
+  const before = { links: JSON.stringify(pairLinks(cores())), knots: cores().map((X) => C.knotDeterminant(X)).join() };
+  sim.step(9000);
+  return { r, sim, before, after: { links: JSON.stringify(pairLinks(cores())), knots: cores().map((X) => C.knotDeterminant(X)).join() } };
+}
+function pairLinks(curves) {
+  const out = [];
+  for (let i = 0; i < curves.length; i++) for (let j = i + 1; j < curves.length; j++) out.push(Math.abs(C.linkingNumber(curves[i], curves[j])));
+  return out;
+}
+const pairOf = (sim, a, b) => sim.pairs.find((p) => p.a === a && p.b === b);
+
+check('pull apart: Möbius cut at 1/3 stays hooked, nothing passes through', () => {
+  const { sim, before, after } = pulled([{ halfTwists: 1, cuts: [1 / 3] }]);
+  assert.ok(sim.done);
+  assert.strictEqual(after.links, before.links);
+  assert.ok(pairOf(sim, 0, 1).touching);
+});
+
+check('pull apart: plain loop halves slide free', () => {
+  const { sim, before, after } = pulled([{ halfTwists: 0, cuts: [1 / 2] }]);
+  assert.strictEqual(after.links, before.links);
+  assert.ok(!pairOf(sim, 0, 1).touching);
+});
+
+check('pull apart: Möbius hearts stay interlocked', () => {
+  const { sim, before, after } = pulled([{ halfTwists: 1, cuts: [1 / 2] }, { halfTwists: -1, cuts: [1 / 2] }], ['orthogonal']);
+  assert.strictEqual(after.links, before.links);
+  assert.ok(pairOf(sim, 0, 1).touching);
+});
+
+check('pull apart: same-twist crossed Möbius halves come apart', () => {
+  const { sim, before, after } = pulled([{ halfTwists: 1, cuts: [1 / 2] }, { halfTwists: 1, cuts: [1 / 2] }], ['orthogonal']);
+  assert.strictEqual(after.links, before.links);
+  assert.ok(!pairOf(sim, 0, 1).touching);
+});
+
+check('pull apart: the trefoil stays knotted and keeps its twist', () => {
+  const { r, sim, before, after } = pulled([{ halfTwists: 3, cuts: [1 / 2] }]);
+  assert.strictEqual(after.knots, before.knots);
+  assert.strictEqual(after.knots, '3');
+  // the drawn ribbon carries the same twist as the paper piece
+  const X = sim.bodies[0].X;
+  const { W } = C.ribbonFrame(X, r.pieces[0].halfTwists);
+  const off = (k) => X.map((x, i) => [x[0] + k * W[i][0], x[1] + k * W[i][1], x[2] + k * W[i][2]]);
+  assert.strictEqual(2 * C.linkingNumber(off(0.1), off(0.06)), r.pieces[0].halfTwists);
+});
+
+check('link determinant tells a Hopf link from two separate rings', () => {
+  const A = [], B = [], U = [];
+  for (let i = 0; i < 120; i++) {
+    const t = (2 * Math.PI * i) / 120;
+    A.push([Math.cos(t), Math.sin(t), 0.01 * Math.sin(3 * t)]);
+    B.push([1 + Math.cos(t), 0.02 * Math.sin(t), Math.sin(t)]);
+    U.push([5 + Math.cos(t), Math.sin(t), 0.3 * Math.cos(2 * t)]);
+  }
+  assert.strictEqual(C.linkDeterminant([A, B]), 2);
+  assert.strictEqual(C.linkDeterminant([A, U]), 0);
+});
+
 console.log(`\n${passed} checks passed`);

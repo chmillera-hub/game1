@@ -373,6 +373,9 @@
       for (let j = i + 1; j < pieces.length; j++) {
         const lk = pieceLinking(pieces[i], pieces[j]);
         if (lk !== 0) links.push({ a: i, b: j, lk });
+        else if (pieces[i].repLoop !== null && pieces[j].repLoop !== null && linkDeterminant([pieceCore(pieces[i]), pieceCore(pieces[j])]) !== 0) {
+          links.push({ a: i, b: j, lk: 0, tangled: true });
+        }
       }
     }
     const offsets = gapField(newFaces, basePos, split, inward, nNew);
@@ -384,6 +387,7 @@
       faceStrip: model.faceStrip,
       facePiece,
       offsets,
+      measurePos,
       pieces,
       links,
     };
@@ -588,6 +592,10 @@
   // between it and the nearest point of the opposite edge. A Mobius band has
   // one edge that runs around twice, so its opposite side is the other lap.
   function middleLength(A, B) {
+    return polyLength(middleCurve(A, B));
+  }
+
+  function middleCurve(A, B) {
     const n = A.length;
     const mids = [];
     const laps = B ? 1 : 2;
@@ -607,7 +615,11 @@
       }
       mids.push([(p[0] + q[0]) / 2, (p[1] + q[1]) / 2, (p[2] + q[2]) / 2]);
     }
-    return polyLength(mids);
+    return mids;
+  }
+
+  function pieceCore(p) {
+    return middleCurve(p.loopPoints[0], p.type === 'band' ? p.loopPoints[1] : null);
   }
 
   // How many times two pieces wind around each other.
@@ -685,41 +697,72 @@
   // Knot determinant |Alexander polynomial at -1| from Fox colouring matrix.
   // 1 for the unknot, 3 for a trefoil, 5 for a figure-eight or cinquefoil.
   function knotDeterminant(points) {
-    const p = project(points);
-    const n = p.length;
-    const box = segBoxes(p);
+    return diagramDeterminant([points], 1);
+  }
+
+  // Determinant of a link made of several closed curves. 0 for curves that
+  // lie apart; anything else proves they can't be pulled apart, even when
+  // their linking number is 0 (the Whitehead link has determinant 16).
+  function linkDeterminant(curves) {
+    return diagramDeterminant(curves, 0);
+  }
+
+  function diagramDeterminant(curves, empty) {
+    const comps = curves.map(project);
+    const segs = [];
+    comps.forEach((p, c) => {
+      const box = segBoxes(p);
+      for (let i = 0; i < p.length; i++) segs.push({ c, i, p, box });
+    });
     const crossings = [];
-    for (let i = 0; i < n; i++) {
-      for (let j = i + 2; j < n; j++) {
-        if (i === 0 && j === n - 1) continue;
-        if (box[4 * i + 1] < box[4 * j] || box[4 * j + 1] < box[4 * i] || box[4 * i + 3] < box[4 * j + 2] || box[4 * j + 3] < box[4 * i + 2]) continue;
-        const h = crossSegments(p[i], p[(i + 1) % n], p[j], p[(j + 1) % n]);
+    for (let x = 0; x < segs.length; x++) {
+      const A = segs[x];
+      for (let y = x + 1; y < segs.length; y++) {
+        const B = segs[y];
+        if (A.c === B.c) {
+          const n = A.p.length, d = Math.abs(A.i - B.i);
+          if (d < 2 || d === n - 1) continue;
+        }
+        const a = A.box, b = B.box, i = A.i, j = B.i;
+        if (a[4 * i + 1] < b[4 * j] || b[4 * j + 1] < a[4 * i] || a[4 * i + 3] < b[4 * j + 2] || b[4 * j + 3] < a[4 * i + 2]) continue;
+        const h = crossSegments(A.p[i], A.p[(i + 1) % A.p.length], B.p[j], B.p[(j + 1) % B.p.length]);
         if (!h) continue;
-        const pi = i + h.t, pj = j + h.u;
-        crossings.push(h.za > h.zb ? { over: pi, under: pj } : { over: pj, under: pi });
+        const pa = { c: A.c, pos: i + h.t }, pb = { c: B.c, pos: j + h.u };
+        crossings.push(h.za > h.zb ? { over: pa, under: pb } : { over: pb, under: pa });
       }
     }
     const m = crossings.length;
-    if (m < 3) return 1;
-    const order = crossings.map((c, idx) => idx).sort((x, y) => crossings[x].under - crossings[y].under);
-    const rank = new Int32Array(m);
-    order.forEach((idx, r) => (rank[idx] = r));
-    const sorted = order.map((idx) => crossings[idx].under);
-    const arcAt = (pos) => {
-      let lo = 0, hi = m - 1, ans = -1;
+    if (m === 0) return comps.length === 1 ? 1 : empty;
+    // Arcs run between undercrossings on each curve.
+    const arcBase = [];
+    const unders = comps.map(() => []);
+    crossings.forEach((cr, idx) => unders[cr.under.c].push({ pos: cr.under.pos, idx }));
+    let arcs = 0;
+    for (let c = 0; c < comps.length; c++) {
+      unders[c].sort((x, y) => x.pos - y.pos);
+      arcBase.push(arcs);
+      arcs += Math.max(1, unders[c].length);
+    }
+    // A curve that never passes under anything sits on top and lifts away.
+    if (arcs !== m) return comps.length === 1 ? 1 : 0;
+    const arcAt = (c, pos) => {
+      const list = unders[c];
+      let lo = 0, hi = list.length - 1, ans = -1;
       while (lo <= hi) {
         const mid = (lo + hi) >> 1;
-        if (sorted[mid] < pos) { ans = mid; lo = mid + 1; } else hi = mid - 1;
+        if (list[mid].pos < pos) { ans = mid; lo = mid + 1; } else hi = mid - 1;
       }
-      return ans < 0 ? m - 1 : ans;
+      return arcBase[c] + (ans < 0 ? list.length - 1 : ans);
     };
     const M = Array.from({ length: m }, () => new Float64Array(m));
-    crossings.forEach((c, idx) => {
-      const r = rank[idx];
-      M[r][arcAt(c.over)] += 2;
-      M[r][(r - 1 + m) % m] -= 1;
-      M[r][r] -= 1;
+    crossings.forEach((cr, row) => {
+      const c = cr.under.c, list = unders[c];
+      const r = list.findIndex((u) => u.idx === row);
+      M[row][arcAt(cr.over.c, cr.over.pos)] += 2;
+      M[row][arcBase[c] + ((r - 1 + list.length) % list.length)] -= 1;
+      M[row][arcBase[c] + r] -= 1;
     });
+    if (m < 2) return comps.length === 1 ? 1 : empty;
     return Math.round(Math.abs(determinant(M, m - 1)));
   }
 
@@ -750,6 +793,409 @@
     else if (det % 2 === 1) name = 'knot (determinant ' + det + ')';
     else name = 'tangle that could not be identified';
     return { det, knotted: det !== 1, name };
+  }
+
+
+  // ----------------------------------------------------------- pull apart --
+  //
+  // Turns each loop-shaped piece into a flexible ribbon (a chain of points
+  // along its middle) and pulls the pieces away from each other. Strands are
+  // kept a minimum distance apart and move in small steps, so they can never
+  // pass through each other: loose pieces slide free, linked pieces catch,
+  // and knots stay knotted. Other pieces (flat sheets, taped bundles) move
+  // as stiff bodies without rotating.
+
+  const PULL_THICKNESS = 0.28;
+
+  function resampleClosed(pts, N) {
+    const n = pts.length;
+    const cum = [0];
+    for (let i = 0; i < n; i++) {
+      const a = pts[i], b = pts[(i + 1) % n];
+      cum.push(cum[i] + Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]));
+    }
+    const L = cum[n];
+    const out = [];
+    let seg = 0;
+    for (let k = 0; k < N; k++) {
+      const t = (k * L) / N;
+      while (seg < n - 1 && cum[seg + 1] < t) seg++;
+      const a = pts[seg], b = pts[(seg + 1) % n];
+      const len = cum[seg + 1] - cum[seg] || 1;
+      const f = (t - cum[seg]) / len;
+      out.push([a[0] + f * (b[0] - a[0]), a[1] + f * (b[1] - a[1]), a[2] + f * (b[2] - a[2])]);
+    }
+    return out;
+  }
+
+  // Closest points between segments p1-q1 and p2-q2 (Ericson, Real-Time Collision Detection).
+  function closestSegSeg(p1, q1, p2, q2) {
+    const d1 = [q1[0] - p1[0], q1[1] - p1[1], q1[2] - p1[2]];
+    const d2 = [q2[0] - p2[0], q2[1] - p2[1], q2[2] - p2[2]];
+    const r = [p1[0] - p2[0], p1[1] - p2[1], p1[2] - p2[2]];
+    const a = d1[0] * d1[0] + d1[1] * d1[1] + d1[2] * d1[2];
+    const e = d2[0] * d2[0] + d2[1] * d2[1] + d2[2] * d2[2];
+    const f = d2[0] * r[0] + d2[1] * r[1] + d2[2] * r[2];
+    let s, t;
+    const clamp = (x) => (x < 0 ? 0 : x > 1 ? 1 : x);
+    if (a <= 1e-12 && e <= 1e-12) { s = 0; t = 0; }
+    else if (a <= 1e-12) { s = 0; t = clamp(f / e); }
+    else {
+      const c = d1[0] * r[0] + d1[1] * r[1] + d1[2] * r[2];
+      if (e <= 1e-12) { t = 0; s = clamp(-c / a); }
+      else {
+        const b = d1[0] * d2[0] + d1[1] * d2[1] + d1[2] * d2[2];
+        const den = a * e - b * b;
+        s = den > 1e-12 ? clamp((b * f - c * e) / den) : 0;
+        t = (b * s + f) / e;
+        if (t < 0) { t = 0; s = clamp(-c / a); }
+        else if (t > 1) { t = 1; s = clamp((b - c) / a); }
+      }
+    }
+    const c1 = [p1[0] + d1[0] * s, p1[1] + d1[1] * s, p1[2] + d1[2] * s];
+    const c2 = [p2[0] + d2[0] * t, p2[1] + d2[1] * t, p2[2] + d2[2] * t];
+    return { s, t, c1, c2 };
+  }
+
+  function createPullSim(result) {
+    const bodies = result.pieces.map((p, i) => {
+      if (p.type === 'band' || p.type === 'mobius') {
+        const core = middleCurve(p.loopPoints[0], p.type === 'band' ? p.loopPoints[1] : null);
+        const L = polyLength(core);
+        const N = Math.max(36, Math.min(220, Math.round(L / 0.13)));
+        return { kind: 'rope', piece: i, X: resampleClosed(core, N), N, rest: L / N, halfTwists: p.halfTwists };
+      }
+      // one point per 0.08-wide box is plenty to collide with
+      const seen = new Set();
+      const pts = [];
+      for (const fi of p.faceIds) for (const v of result.faces[fi]) {
+        const q = result.measurePos[v];
+        const key = Math.floor(q[0] / 0.08) + ',' + Math.floor(q[1] / 0.08) + ',' + Math.floor(q[2] / 0.08);
+        if (seen.has(key)) continue;
+        seen.add(key);
+        pts.push(q);
+      }
+      return { kind: 'rigid', piece: i, P0: pts, offset: [0, 0, 0], N: pts.length };
+    });
+
+    // Elements that collide: rope segments, and points of stiff pieces.
+    const elems = [];
+    bodies.forEach((b, bi) => {
+      for (let k = 0; k < b.N; k++) elems.push({ body: bi, k });
+    });
+    const ends = (el) => {
+      const b = bodies[el.body];
+      if (b.kind === 'rope') return [b.X[el.k], b.X[(el.k + 1) % b.N]];
+      const p = b.P0[el.k], o = b.offset;
+      const q = [p[0] + o[0], p[1] + o[1], p[2] + o[2]];
+      return [q, q];
+    };
+    const skipPair = (A, B) => {
+      if (A.body !== B.body) return false;
+      const b = bodies[A.body];
+      if (b.kind === 'rigid') return true;
+      const d = Math.abs(A.k - B.k);
+      return Math.min(d, b.N - d) < 4;
+    };
+
+    // Calls fn for every pair of elements whose closest points could be
+    // within `reach`. The grid cell also covers the longest segment, so a
+    // stretched rope can't slip a pair past the check.
+    function forEachClosePair(reach, fn) {
+      let longest = 0;
+      for (const b of bodies) {
+        if (b.kind !== 'rope') continue;
+        for (let i = 0; i < b.N; i++) {
+          const p = b.X[i], q = b.X[(i + 1) % b.N];
+          longest = Math.max(longest, Math.hypot(q[0] - p[0], q[1] - p[1], q[2] - p[2]));
+        }
+      }
+      const cell = reach + longest;
+      const grid = new Map();
+      const geo = new Array(elems.length);
+      const K = 2048, H = K / 2;
+      for (let i = 0; i < elems.length; i++) {
+        const [a, b] = ends(elems[i]);
+        const ix = Math.floor((a[0] + b[0]) / 2 / cell) + H;
+        const iy = Math.floor((a[1] + b[1]) / 2 / cell) + H;
+        const iz = Math.floor((a[2] + b[2]) / 2 / cell) + H;
+        geo[i] = { a, b, ix, iy, iz };
+        const key = (ix * K + iy) * K + iz;
+        const list = grid.get(key);
+        if (list) list.push(i); else grid.set(key, [i]);
+      }
+      for (let i = 0; i < elems.length; i++) {
+        const g = geo[i];
+        for (let dx = -1; dx <= 1; dx++) for (let dy = -1; dy <= 1; dy++) for (let dz = -1; dz <= 1; dz++) {
+          const list = grid.get(((g.ix + dx) * K + g.iy + dy) * K + g.iz + dz);
+          if (!list) continue;
+          for (const j of list) {
+            if (j <= i || skipPair(elems[i], elems[j])) continue;
+            fn(i, j, g, geo[j]);
+          }
+        }
+      }
+    }
+
+    let seed = 12345;
+    const rand = () => ((seed = (seed * 1103515245 + 12345) >>> 0) / 4294967296);
+
+    // Start thin enough that nothing overlaps, then thicken.
+    let minDist = Infinity;
+    forEachClosePair(0.3, (i, j, g, h) => {
+      const r = closestSegSeg(g.a, g.b, h.a, h.b);
+      minDist = Math.min(minDist, Math.hypot(r.c1[0] - r.c2[0], r.c1[1] - r.c2[1], r.c1[2] - r.c2[2]));
+    });
+    const linked = new Set(result.links.map((l) => l.a + '-' + l.b));
+    const sim = {
+      bodies,
+      iteration: 0,
+      done: false,
+      shaking: bodies.length > 1,
+      quiet: 0,
+      pairs: [],
+      thickness: Math.max(0.004, Math.min(PULL_THICKNESS, 0.8 * minDist)),
+      step,
+      centroid,
+      separation,
+    };
+
+    function centroid(b) {
+      const c = [0, 0, 0];
+      if (b.kind === 'rope') {
+        for (const x of b.X) for (let i = 0; i < 3; i++) c[i] += x[i];
+        return c.map((v) => v / b.N);
+      }
+      for (const x of b.P0) for (let i = 0; i < 3; i++) c[i] += x[i];
+      return c.map((v, i) => v / b.N + b.offset[i]);
+    }
+    function radius(b, c) {
+      let r = 0;
+      const pts = b.kind === 'rope' ? b.X : b.P0;
+      const o = b.kind === 'rope' ? [0, 0, 0] : b.offset;
+      for (const x of pts) r = Math.max(r, Math.hypot(x[0] + o[0] - c[0], x[1] + o[1] - c[1], x[2] + o[2] - c[2]));
+      return r;
+    }
+    // Smallest gap between two pieces.
+    function separation(ai, bi) {
+      let best = Infinity;
+      const A = bodies[ai], B = bodies[bi];
+      const pa = A.kind === 'rope' ? A.X : A.P0.map((p) => [p[0] + A.offset[0], p[1] + A.offset[1], p[2] + A.offset[2]]);
+      const pb = B.kind === 'rope' ? B.X : B.P0.map((p) => [p[0] + B.offset[0], p[1] + B.offset[1], p[2] + B.offset[2]]);
+      for (const p of pa) for (const q of pb) best = Math.min(best, (p[0] - q[0]) ** 2 + (p[1] - q[1]) ** 2 + (p[2] - q[2]) ** 2);
+      return Math.sqrt(best);
+    }
+
+    const moveBody = (b, d) => {
+      if (b.kind === 'rope') for (const x of b.X) { x[0] += d[0]; x[1] += d[1]; x[2] += d[2]; }
+      else { b.offset[0] += d[0]; b.offset[1] += d[1]; b.offset[2] += d[2]; }
+    };
+
+    function step(iterations) {
+      for (let it = 0; it < iterations && !sim.done; it++) oneStep();
+      return sim;
+    }
+
+    function oneStep() {
+      const d0 = sim.thickness;
+      const maxStep = Math.min(0.03, 0.3 * d0);
+      const before = bodies.map((b) => (b.kind === 'rope' ? b.X.map((x) => x.slice()) : b.offset.slice()));
+
+      // 1. Pull overlapping pieces away from each other.
+      if (bodies.length > 1) {
+        const cs = bodies.map(centroid);
+        const rs = bodies.map((b, i) => radius(b, cs[i]));
+        for (let a = 0; a < bodies.length; a++) {
+          for (let b = a + 1; b < bodies.length; b++) {
+            let d = [cs[a][0] - cs[b][0], cs[a][1] - cs[b][1], cs[a][2] - cs[b][2]];
+            let len = Math.hypot(d[0], d[1], d[2]);
+            if (len < 1e-6) { d = [0.3, 1, 0.2]; len = Math.hypot(0.3, 1, 0.2); }
+            if (len > rs[a] + rs[b] + 0.6) continue;
+            const k = 0.006 / len;
+            moveBody(bodies[a], [d[0] * k, d[1] * k, d[2] * k]);
+            moveBody(bodies[b], [-d[0] * k, -d[1] * k, -d[2] * k]);
+          }
+        }
+        // A little shaking helps pieces that are loose but snagged slide free.
+        if (sim.shaking) for (const b of bodies) {
+          moveBody(b, [(rand() - 0.5) * 0.02, (rand() - 0.5) * 0.02, (rand() - 0.5) * 0.02]);
+        }
+      }
+
+      // 2. Ropes: open up into round loops, smooth out kinks, keep their length.
+      for (const b of bodies) {
+        if (b.kind !== 'rope') continue;
+        const X = b.X, N = b.N;
+        const c = centroid(b);
+        for (const x of X) {
+          const dx = x[0] - c[0], dy = x[1] - c[1], dz = x[2] - c[2];
+          const len = Math.hypot(dx, dy, dz) || 1;
+          x[0] += (0.004 * dx) / len; x[1] += (0.004 * dy) / len; x[2] += (0.004 * dz) / len;
+        }
+        const sm = X.map((x, i) => {
+          const p = X[(i - 1 + N) % N], q = X[(i + 1) % N];
+          return [x[0] + 0.08 * ((p[0] + q[0]) / 2 - x[0]), x[1] + 0.08 * ((p[1] + q[1]) / 2 - x[1]), x[2] + 0.08 * ((p[2] + q[2]) / 2 - x[2])];
+        });
+        for (let i = 0; i < N; i++) X[i] = sm[i];
+        for (let pass = 0; pass < 6; pass++) {
+          for (let i = 0; i < N; i++) {
+            const p = X[i], q = X[(i + 1) % N];
+            const dx = q[0] - p[0], dy = q[1] - p[1], dz = q[2] - p[2];
+            const len = Math.hypot(dx, dy, dz) || 1e-9;
+            const c = (0.5 * (len - b.rest)) / len;
+            p[0] += dx * c; p[1] += dy * c; p[2] += dz * c;
+            q[0] -= dx * c; q[1] -= dy * c; q[2] -= dz * c;
+          }
+        }
+      }
+
+      // 3. Keep strands apart.
+      clampMoves(before, maxStep);
+      const rigidPush = bodies.map(() => ({ d: [0, 0, 0], n: 0 }));
+      forEachClosePair(d0, (i, j, g, h) => {
+        const r = closestSegSeg(g.a, g.b, h.a, h.b);
+        let n = [r.c1[0] - r.c2[0], r.c1[1] - r.c2[1], r.c1[2] - r.c2[2]];
+        const dist = Math.hypot(n[0], n[1], n[2]);
+        if (dist >= d0) return;
+        if (dist < 1e-9) n = [0, 0, 1];
+        else n = [n[0] / dist, n[1] / dist, n[2] / dist];
+        const corr = d0 - dist;
+        push(elems[i], r.s, n, corr * 0.5, rigidPush);
+        push(elems[j], r.t, n, -corr * 0.5, rigidPush);
+      });
+      bodies.forEach((b, i) => {
+        const rp = rigidPush[i];
+        if (rp.n) moveBody(b, [rp.d[0] / rp.n, rp.d[1] / rp.n, rp.d[2] / rp.n]);
+      });
+      const moved = clampMoves(before, maxStep);
+
+      sim.iteration++;
+      if (sim.thickness < PULL_THICKNESS) sim.thickness = Math.min(PULL_THICKNESS, sim.thickness + 0.0015);
+      if (sim.iteration % 100 === 0) checkPairs();
+      if (!sim.shaking && sim.thickness >= PULL_THICKNESS) {
+        sim.quiet++;
+        if ((sim.quiet > 200 && moved < 4e-4) || sim.quiet > 1500) { checkPairs(); sim.done = true; }
+      }
+    }
+
+    // Which pieces still touch. Keep shaking while a pair that the maths says
+    // is free is still caught; give up after a while.
+    function checkPairs() {
+      sim.pairs = [];
+      let stuck = false;
+      for (let a = 0; a < bodies.length; a++) {
+        for (let b = a + 1; b < bodies.length; b++) {
+          const gap = separation(a, b);
+          const isLinked = linked.has(a + '-' + b);
+          const touching = gap < 1.6 * PULL_THICKNESS;
+          sim.pairs.push({ a, b, linked: isLinked, touching, gap });
+          if (!isLinked && touching) stuck = true;
+        }
+      }
+      sim.shaking = stuck && sim.iteration < 7000 && sim.thickness >= PULL_THICKNESS ? true : sim.thickness < PULL_THICKNESS && bodies.length > 1;
+    }
+
+    function push(el, s, n, amount, rigidPush) {
+      const b = bodies[el.body];
+      if (b.kind === 'rigid') {
+        const rp = rigidPush[el.body];
+        rp.d[0] += n[0] * amount; rp.d[1] += n[1] * amount; rp.d[2] += n[2] * amount;
+        rp.n++;
+        return;
+      }
+      const w = (1 - s) * (1 - s) + s * s;
+      const p = b.X[el.k], q = b.X[(el.k + 1) % b.N];
+      const fp = ((1 - s) * amount) / w, fq = (s * amount) / w;
+      p[0] += n[0] * fp; p[1] += n[1] * fp; p[2] += n[2] * fp;
+      q[0] += n[0] * fq; q[1] += n[1] * fq; q[2] += n[2] * fq;
+    }
+
+    // No point may move further than maxStep in one step, so nothing tunnels.
+    function clampMoves(before, maxStep) {
+      let most = 0;
+      bodies.forEach((b, bi) => {
+        const pairs = b.kind === 'rope' ? b.X.map((x, i) => [x, before[bi][i]]) : [[b.offset, before[bi]]];
+        for (const [x, o] of pairs) {
+          const dx = x[0] - o[0], dy = x[1] - o[1], dz = x[2] - o[2];
+          const len = Math.hypot(dx, dy, dz);
+          if (len > maxStep) {
+            const k = maxStep / len;
+            x[0] = o[0] + dx * k; x[1] = o[1] + dy * k; x[2] = o[2] + dz * k;
+          }
+          most = Math.max(most, Math.min(len, maxStep));
+        }
+      });
+      return most;
+    }
+
+    return sim;
+  }
+
+  function writhe(X) {
+    const N = X.length;
+    const mid = [], tan = [];
+    for (let i = 0; i < N; i++) {
+      const a = X[i], b = X[(i + 1) % N];
+      mid.push([(a[0] + b[0]) / 2, (a[1] + b[1]) / 2, (a[2] + b[2]) / 2]);
+      tan.push([b[0] - a[0], b[1] - a[1], b[2] - a[2]]);
+    }
+    let s = 0;
+    for (let i = 0; i < N; i++) for (let j = 0; j < N; j++) {
+      if (i === j) continue;
+      const r = [mid[i][0] - mid[j][0], mid[i][1] - mid[j][1], mid[i][2] - mid[j][2]];
+      const t = tan[i], u = tan[j];
+      const cx = t[1] * u[2] - t[2] * u[1], cy = t[2] * u[0] - t[0] * u[2], cz = t[0] * u[1] - t[1] * u[0];
+      const d = Math.hypot(r[0], r[1], r[2]);
+      s += (r[0] * cx + r[1] * cy + r[2] * cz) / (d * d * d);
+    }
+    return s / (4 * Math.PI);
+  }
+
+  const rotateAbout = (v, axis, ang) => {
+    const c = Math.cos(ang), s = Math.sin(ang);
+    const d = axis[0] * v[0] + axis[1] * v[1] + axis[2] * v[2];
+    const cx = axis[1] * v[2] - axis[2] * v[1], cy = axis[2] * v[0] - axis[0] * v[2], cz = axis[0] * v[1] - axis[1] * v[0];
+    return [v[0] * c + cx * s + axis[0] * d * (1 - c), v[1] * c + cy * s + axis[1] * d * (1 - c), v[2] * c + cz * s + axis[2] * d * (1 - c)];
+  };
+  const norm = (v) => { const l = Math.hypot(v[0], v[1], v[2]) || 1; return [v[0] / l, v[1] / l, v[2] / l]; };
+  const crossV = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+  const dotV = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+
+  // Directions across a ribbon laid along closed curve X with the given
+  // number of half-twists. Uses Lk = Tw + Wr so the ribbon carries the same
+  // twist as the paper piece, whatever shape the curve has taken.
+  function ribbonFrame(X, halfTwists) {
+    const N = X.length;
+    const T = X.map((x, i) => {
+      const p = X[(i - 1 + N) % N], q = X[(i + 1) % N];
+      return norm([q[0] - p[0], q[1] - p[1], q[2] - p[2]]);
+    });
+    const transport = (u, t0, t1) => {
+      const ax = crossV(t0, t1);
+      const s = Math.hypot(ax[0], ax[1], ax[2]);
+      if (s < 1e-12) return u;
+      return rotateAbout(u, [ax[0] / s, ax[1] / s, ax[2] / s], Math.atan2(s, dotV(t0, t1)));
+    };
+    let seed = Math.abs(T[0][0]) < 0.9 ? [1, 0, 0] : [0, 1, 0];
+    seed = norm(crossV(T[0], seed));
+    const U = [seed];
+    for (let i = 1; i <= N; i++) {
+      let u = transport(U[i - 1], T[i - 1], T[i % N]);
+      const t = T[i % N];
+      const d = dotV(u, t);
+      u = norm([u[0] - d * t[0], u[1] - d * t[1], u[2] - d * t[2]]);
+      U.push(u);
+    }
+    // angle that turns the transported frame back onto the start
+    const back = Math.atan2(dotV(crossV(U[N], U[0]), T[0]), dotV(U[N], U[0]));
+    const odd = Math.abs(halfTwists) % 2 === 1;
+    const want = Math.PI * (halfTwists - 2 * writhe(X));
+    const base = back + (odd ? Math.PI : 0);
+    const phi = base + 2 * Math.PI * Math.round((want - base) / (2 * Math.PI));
+    const cum = [0];
+    for (let i = 1; i < N; i++) cum.push(cum[i - 1] + Math.hypot(X[i][0] - X[i - 1][0], X[i][1] - X[i - 1][1], X[i][2] - X[i - 1][2]));
+    const total = cum[N - 1] + Math.hypot(X[0][0] - X[N - 1][0], X[0][1] - X[N - 1][1], X[0][2] - X[N - 1][2]);
+    return { W: X.map((x, i) => rotateAbout(U[i], T[i], (phi * cum[i]) / total)), flipped: odd };
   }
 
   // ------------------------------------------------------------ describing --
@@ -807,7 +1253,7 @@
     pieces.forEach((p, i) => {
       p.title = names[i];
       p.facts = pieceFacts(p);
-      p.linkedWith = links.filter((l) => l.a === i || l.b === i).map((l) => ({ piece: l.a === i ? l.b : l.a, lk: l.lk }));
+      p.linkedWith = links.filter((l) => l.a === i || l.b === i).map((l) => ({ piece: l.a === i ? l.b : l.a, lk: l.lk, tangled: !!l.tangled }));
     });
     let headline;
     const n = pieces.length;
@@ -851,6 +1297,7 @@
     WIDTH, RADIUS, LOOP_LENGTH, MAX_STRIPS, MAX_TWISTS,
     parseFraction, isValidCut, normalizeConfig,
     buildModel, cutModel,
-    linkingNumber, knotDeterminant,
+    linkingNumber, knotDeterminant, linkDeterminant,
+    createPullSim, ribbonFrame, PULL_THICKNESS,
   };
 });

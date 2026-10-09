@@ -38,6 +38,8 @@
     result: null,
     before: null,
     phase: 'setup', // 'setup' | 'cutting' | 'cut'
+    view: 'cut', // 'cut' | 'pull'
+    sim: null,
     gap: 0.5,
     shownGap: 0,
     edges: true,
@@ -192,6 +194,11 @@
       o.geometry.dispose();
       o.material.dispose();
     }
+    for (const { group } of rigidMeshes) {
+      world.remove(group);
+      group.traverse((o) => { if (o.geometry) o.geometry.dispose(); if (o.material) o.material.dispose(); });
+    }
+    rigidMeshes = [];
     layers = [];
     cutLines = [];
   }
@@ -221,7 +228,7 @@
     const mesh = new THREE.Mesh(geo, paperMaterial(1));
     world.add(mesh);
     layers.push(mesh);
-    if (state.edges) {
+    if (state.edges && state.before) {
       const r = state.before;
       for (const piece of r.pieces) for (const L of piece.loops) {
         const obj = lineObject(L.map((v) => r.basePos[v]), inkColor(), { loop: true, opacity: 0.55 });
@@ -271,8 +278,117 @@
     state.shownGap = gap;
   }
 
+  // Pulled-apart view: loops are drawn as ribbons along the physics ropes,
+  // other pieces move as they are.
+  let rigidMeshes = [];
+  function drawPulled(rebuildAll) {
+    const sim = state.sim, r = state.result;
+    if (rebuildAll) {
+      clearWorld();
+      rigidMeshes = [];
+      sim.bodies.forEach((b, bi) => {
+        if (b.kind !== 'rigid' || state.hidden.has(bi)) return;
+        const piece = r.pieces[bi];
+        const P = r.basePos.map(toThree);
+        const color = PIECE_COLORS[bi % PIECE_COLORS.length];
+        const group = new THREE.Group();
+        const dim = state.focus >= 0 && state.focus !== bi;
+        group.add(new THREE.Mesh(paperGeometry((v) => P[v], piece.faceIds.map((fi) => r.faces[fi]), () => color), paperMaterial(dim ? 0.12 : 1)));
+        if (state.edges && !dim) for (const L of piece.loops) group.add(lineObject(L.map((v) => r.basePos[v]), inkColor(), { loop: true, opacity: 0.6 }));
+        world.add(group);
+        rigidMeshes.push({ group, body: b });
+      });
+    }
+    for (const o of layers) { world.remove(o); o.geometry.dispose(); o.material.dispose(); }
+    layers = [];
+    for (const { group, body } of rigidMeshes) group.position.set(...toThree(body.offset));
+    const half = 0.45 * sim.thickness;
+    sim.bodies.forEach((b, bi) => {
+      if (b.kind !== 'rope' || state.hidden.has(bi)) return;
+      const { W, flipped } = C.ribbonFrame(b.X, b.halfTwists);
+      const N = b.N;
+      const V = [];
+      for (let i = 0; i < N; i++) {
+        const x = b.X[i], w = W[i];
+        V.push(toThree([x[0] + half * w[0], x[1] + half * w[1], x[2] + half * w[2]]));
+        V.push(toThree([x[0] - half * w[0], x[1] - half * w[1], x[2] - half * w[2]]));
+      }
+      const faces = [];
+      for (let i = 0; i < N; i++) {
+        const j = (i + 1) % N;
+        const swap = j === 0 && flipped;
+        faces.push([2 * i, swap ? 2 * j + 1 : 2 * j, swap ? 2 * j : 2 * j + 1, 2 * i + 1]);
+      }
+      const dim = state.focus >= 0 && state.focus !== bi;
+      const color = PIECE_COLORS[bi % PIECE_COLORS.length];
+      const mesh = new THREE.Mesh(paperGeometry((v) => V[v], faces, () => color), paperMaterial(dim ? 0.12 : 1));
+      world.add(mesh);
+      layers.push(mesh);
+      if (state.edges && !dim) {
+        const sides = flipped
+          ? [V.filter((_, k) => k % 2 === 0).concat(V.filter((_, k) => k % 2 === 1))]
+          : [V.filter((_, k) => k % 2 === 0), V.filter((_, k) => k % 2 === 1)];
+        for (const pts of sides) {
+          const arr = new Float32Array(pts.length * 3);
+          pts.forEach((q, k) => arr.set(q, k * 3));
+          const g = new THREE.BufferGeometry();
+          g.setAttribute('position', new THREE.BufferAttribute(arr, 3));
+          const obj = new THREE.LineLoop(g, new THREE.LineBasicMaterial({ color: inkColor(), transparent: true, opacity: 0.6 }));
+          world.add(obj);
+          layers.push(obj);
+        }
+      }
+    });
+  }
+
+  // Keep the moving pieces in view without taking the camera away from the user.
+  function followPulled() {
+    const sim = state.sim;
+    const min = [Infinity, Infinity, Infinity], max = [-Infinity, -Infinity, -Infinity];
+    sim.bodies.forEach((b) => {
+      const pts = b.kind === 'rope' ? b.X : b.P0;
+      const o = b.kind === 'rope' ? [0, 0, 0] : b.offset;
+      for (let i = 0; i < pts.length; i += 3) for (let k = 0; k < 3; k++) {
+        const v = pts[i][k] + o[k];
+        if (v < min[k]) min[k] = v;
+        if (v > max[k]) max[k] = v;
+      }
+    });
+    const c = toThree([(min[0] + max[0]) / 2, (min[1] + max[1]) / 2, (min[2] + max[2]) / 2]);
+    const radius = Math.hypot(max[0] - min[0], max[1] - min[1], max[2] - min[2]) / 2;
+    const t = controls.target;
+    const d = [(c[0] - t.x) * 0.04, (c[1] - t.y) * 0.04, (c[2] - t.z) * 0.04];
+    t.x += d[0]; t.y += d[1]; t.z += d[2];
+    camera.position.x += d[0]; camera.position.y += d[1]; camera.position.z += d[2];
+    const want = radius * 2.9 + 2;
+    const off = camera.position.clone().sub(t);
+    const dist = off.length();
+    if (dist < want) camera.position.copy(t).add(off.multiplyScalar(1 + Math.min(0.02, (want - dist) / dist)));
+    if (camera.far < want * 6) { camera.far = want * 6; camera.updateProjectionMatrix(); }
+    if (mat) mat.position.y += (min[2] - 0.45 - mat.position.y) * 0.05;
+  }
+
+  function startPull() {
+    state.view = 'pull';
+    state.sim = C.createPullSim(state.result);
+    drawPulled(true);
+    renderSetup();
+    renderResults();
+  }
+
+  function stopPull() {
+    state.view = 'cut';
+    state.sim = null;
+    rigidMeshes = [];
+    placeMat();
+    if (state.phase === 'cut') { drawPieces(state.gap); frameView(); }
+    renderSetup();
+    renderResults();
+  }
+
   function redraw() {
-    if (state.phase === 'cut') drawPieces(state.gap);
+    if (state.view === 'pull' && state.sim) drawPulled(true);
+    else if (state.phase === 'cut') drawPieces(state.gap);
     else drawUncut();
   }
 
@@ -301,6 +417,17 @@
   let anim = null;
   function loop(t) {
     if (anim) anim(t);
+    if (state.view === 'pull' && state.sim && !state.sim.done) {
+      const sim = state.sim;
+      const t0 = performance.now();
+      do sim.step(1); while (!sim.done && performance.now() - t0 < 9);
+      drawPulled(false);
+      followPulled();
+      if (sim.done || sim.iteration % 60 < 3) renderResults();
+      if (sim.done) renderSetup();
+    } else if (state.view === 'pull' && state.sim) {
+      followPulled();
+    }
     controls.update();
     renderer.render(scene, camera);
     requestAnimationFrame(loop);
@@ -315,6 +442,8 @@
     state.before = C.cutModel(C.buildModel(uncut));
     state.result = null;
     state.phase = 'setup';
+    state.view = 'cut';
+    state.sim = null;
     state.hidden.clear();
     state.focus = -1;
     anim = null;
@@ -482,10 +611,16 @@
     const hasCuts = state.model.cutPaths.length > 0;
     $('cut-btn').disabled = !hasCuts || state.phase !== 'setup';
     $('reset-btn').disabled = state.phase === 'setup';
-    $('gap').disabled = state.phase !== 'cut';
+    $('gap').disabled = state.phase !== 'cut' || state.view === 'pull';
+    const pullBtn = $('pull-btn');
+    pullBtn.disabled = state.phase !== 'cut';
+    pullBtn.setAttribute('aria-pressed', String(state.view === 'pull'));
+    pullBtn.textContent = state.view === 'pull' ? 'Back to the cut' : 'Pull apart';
     $('status').textContent = state.phase === 'setup'
       ? (hasCuts ? 'Ready to cut · red lines show where' : 'Pick where to cut')
-      : state.phase === 'cutting' ? 'Cutting…' : 'Cut · ' + state.result.pieces.length + (state.result.pieces.length === 1 ? ' piece' : ' pieces');
+      : state.phase === 'cutting' ? 'Cutting…'
+      : state.view === 'pull' ? (state.sim.done ? 'Pulled apart' : state.sim.shaking ? 'Pulling and wiggling…' : 'Pulling apart…')
+      : 'Cut · ' + state.result.pieces.length + (state.result.pieces.length === 1 ? ' piece' : ' pieces');
   }
 
   // ----------------------------------------------------------- results UI --
@@ -514,31 +649,57 @@
     }
     const r = state.result;
     box.append(el('p', { class: 'headline' }, r.summary));
+    if (state.view === 'pull') box.append(pullVerdict());
+    else if (r.pieces.length > 1) box.append(el('p', { class: 'before' }, 'Not sure if they’re hooked together? Press Pull apart to tug the pieces away from each other and watch.'));
     const list = el('div', { class: 'pieces' });
     r.pieces.forEach((p, i) => {
       const facts = p.facts.map((f, k) => el('li', { class: k === 0 ? 'side' : '' }, f));
       for (const l of p.linkedWith) {
-        facts.push(el('li', { class: 'linked' }, 'interlocked with #' + (l.piece + 1) + (l.lk > 1 ? ' (wraps ' + l.lk + '×)' : '')));
+        facts.push(el('li', { class: 'linked' }, (l.tangled ? 'tangled with #' : 'interlocked with #') + (l.piece + 1) + (l.lk > 1 ? ' (wraps ' + l.lk + '×)' : '')));
       }
       const hidden = state.hidden.has(i);
       const card = el('div', {
         class: 'piece' + (hidden ? ' hidden-piece' : ''), role: 'button', tabindex: '0', id: 'piece-' + i,
         'aria-pressed': String(state.focus === i),
         'aria-label': 'Piece ' + (i + 1) + ', ' + p.title + '. Select to highlight it.',
-        onclick: () => { state.focus = state.focus === i ? -1 : i; state.hidden.delete(i); drawPieces(state.gap); renderResults(); },
+        onclick: () => { state.focus = state.focus === i ? -1 : i; state.hidden.delete(i); redraw(); renderResults(); },
         onkeydown: (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.currentTarget.click(); } },
       },
       el('span', { class: 'swatch', style: 'background:' + PIECE_COLORS[i % PIECE_COLORS.length] }),
       el('h3', null, p.title, el('small', null, '#' + (i + 1))),
       el('button', {
         type: 'button', class: 'eye', id: 'eye-' + i,
-        onclick: (e) => { e.stopPropagation(); if (hidden) state.hidden.delete(i); else { state.hidden.add(i); if (state.focus === i) state.focus = -1; } drawPieces(state.gap); renderResults(); },
+        onclick: (e) => { e.stopPropagation(); if (hidden) state.hidden.delete(i); else { state.hidden.add(i); if (state.focus === i) state.focus = -1; } redraw(); renderResults(); },
       }, hidden ? 'Show' : 'Hide'),
       el('ul', { class: 'facts' }, facts));
       list.append(card);
     });
     box.append(list);
     if (before) box.append(el('p', { class: 'before' }, before));
+  }
+
+  function pullVerdict() {
+    const sim = state.sim, r = state.result;
+    const name = (i) => '#' + (i + 1);
+    const lines = [];
+    if (r.pieces.length === 1) {
+      lines.push(sim.done
+        ? 'There’s only one piece, so nothing comes apart. Pulled loose, it shows its real shape' + (r.pieces[0].knot && r.pieces[0].knot.knotted ? ', knot and all.' : '.')
+        : 'Loosening the piece to show its real shape…');
+    } else if (!sim.done) {
+      lines.push(sim.shaking
+        ? 'Some pieces are snagged. Wiggling them to see if they slide free…'
+        : 'Pulling the pieces away from each other. They can’t pass through each other, just like paper.');
+    } else {
+      const hooked = sim.pairs.filter((p) => p.linked && p.touching);
+      const free = sim.pairs.filter((p) => !p.linked && !p.touching);
+      const caught = sim.pairs.filter((p) => !p.linked && p.touching);
+      for (const p of hooked) lines.push(name(p.a) + ' and ' + name(p.b) + ' stay hooked together like chain links. They can’t be separated without cutting.');
+      if (free.length && !hooked.length && !caught.length) lines.push('All the pieces slid free of each other. They are separate shapes.');
+      else for (const p of free) lines.push(name(p.a) + ' and ' + name(p.b) + ' slid free of each other.');
+      for (const p of caught) lines.push(name(p.a) + ' and ' + name(p.b) + ' are still snagged, but they aren’t linked. With more wiggling they would come apart.');
+    }
+    return el('p', { class: 'verdict' }, el('strong', null, sim.done ? 'Pulled apart' : 'Pulling…'), lines.map((t) => el('span', null, t)));
   }
 
   // --------------------------------------------------------------- wiring --
@@ -573,6 +734,7 @@
     if (state.phase !== 'cutting') redraw();
   });
   $('view-btn').addEventListener('click', frameView);
+  $('pull-btn').addEventListener('click', () => (state.view === 'pull' ? stopPull() : startPull()));
 
   const onTheme = () => { buildMat(); if (state.phase !== 'cutting') redraw(); };
   window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', onTheme);
