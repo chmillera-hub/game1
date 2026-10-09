@@ -50,15 +50,23 @@ def _layout(ctx, words, idxs, font, size):
             cur.append(i)
     if cur:
         rows.append(cur)
+    # no orphan word alone on the second row: move one word down if it fits
+    if len(rows) == 2 and len(rows[1]) == 1 and len(rows[0]) >= 3:
+        cand = [rows[0][-1]] + rows[1]
+        w2 = sum(text_width(ctx, words[i], font, size) for i in cand) + sp * (len(cand) - 1)
+        if w2 <= MAX_W:
+            rows = [rows[0][:-1], cand]
     return rows
 
 
 def draw_captions(ctx, info, t, scene_mod=None):
-    line = info.active_line(t)
+    # during an interruption (overlapping lines) show the newest speaker
+    active = [l for l in info.lines if l.start <= t < l.end]
+    line = max(active, key=lambda l: l.start) if active else None
     if line is None:
         # hold the last caption briefly after the line ends (reading time)
         last = info.last_line(t)
-        if last is None or t - last.end > 0.35:
+        if last is None or t - last.end > 0.2:
             return
         line = last
     if line.nocap or not line.caption:

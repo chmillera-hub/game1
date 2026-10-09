@@ -21,7 +21,30 @@ from engine import props as P
 from engine import villain as V
 from engine import snake as SN
 from engine.villain import draw_villain
-from engine.ai_char import draw_ai, EXPR as AI_EXPR
+from engine import ai_char as _AIC
+from engine.ai_char import EXPR as AI_EXPR
+
+# QA fix: the rig's stock "point_up" (back of the hand, thumb tucked behind the
+# finger) reads as a rude middle finger at 720p. For this scene's draw_ai calls
+# only, swap in a tilted (up-left, toward the coat) index point with the thumb out (the rig's
+# pose lookup is restored right after each call).
+_SAFE_POINT_UP_R = _AIC._H(330, 10, -0.45, open=0.0, index=1.0, thumb=1.1, tl=1.0)
+
+
+def draw_ai(*args, **kw):
+    prev = _AIC._pose
+
+    def _pose(name, t, seed):
+        out = prev(name, t, seed)
+        if name == "point_up":
+            out["R"] = dict(_SAFE_POINT_UP_R)
+        return out
+
+    _AIC._pose = _pose
+    try:
+        return _AIC.draw_ai(*args, **kw)
+    finally:
+        _AIC._pose = prev
 
 # ===========================================================================
 # Shared overlay code (DIRECTION.md 4.4, verbatim)

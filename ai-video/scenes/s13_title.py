@@ -1381,11 +1381,21 @@ def _malvo_state(t, tb, T):
         arms = ("rest", "s13_wave", smoothstep(seg(t, unwink, unwink + 0.35)))
     bl = None
     if t >= my + 0.05:                                   # REAL SMILE: relaxed lids
-        bl = max(0.3 * smoothstep(seg(t, my + 0.05, my + 0.35)),
-                 blink_amount(t, 1, rate=0.24))
+        # QA: 0.3 on top of "happy"'s own lids read as a sly half-lidded smirk
+        # at this size; a lighter relax keeps the final smile genuine.
+        bl = max(0.12 * smoothstep(seg(t, my + 0.05, my + 0.35)),
+                 _tail_blink(t, 1, 0.24, T["end"]))
     elif t >= T["fz0"]:
-        bl = blink_amount(t, 1, rate=0.24)
+        bl = _tail_blink(t, 1, 0.24, T["end"])
     return expr, look, arms, bl
+
+
+def _tail_blink(t, seed, rate, end, guard=0.3):
+    """blink_amount, but no blink may START in the last `guard` s, so the
+    film's final (thumbnail) frame never lands mid-blink."""
+    if t >= end - guard and blink_amount(end - guard, seed, rate=rate) < 0.01:
+        return 0.0
+    return blink_amount(t, seed, rate=rate)
 
 
 def _draw_malvo(ctx, t, tb, T):

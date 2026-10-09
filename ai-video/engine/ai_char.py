@@ -285,7 +285,9 @@ def _pose(name, t, seed):
     elif name == "point_l":
         L = _mir(_POINT_R)
     elif name == "point_up":
-        R = _H(330, 10, 0.1, open=0.0, index=1.0, thumb=0.22, tl=0.6)
+        # tilted index with the thumb out: an upright single finger seen from
+        # the back of the mitten reads as a rude gesture at phone size
+        R = _H(330, 10, -0.45, open=0.0, index=1.0, thumb=1.1, tl=1.0)
     elif name == "shrug":
         b = 0.5 + 0.5 * math.sin(t * 2 * math.pi * 0.8)
         L = _H(-288, 70 - 10 * b, -1.16, open=1.0, thumb=0.8, palm=0.8, sc=1.02)

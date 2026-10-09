@@ -163,9 +163,10 @@ MASK_TRAVEL = 560.0       # head-local units the mask (and the gripping hand) ri
 MASK_ROT0 = -0.35         # mask tilt at the start of the raise
 _RAISE = {"t0": 0.0, "t1": 1.0}    # raise window, set by _T()
 _LIFT_L = _H(-112, -96, 0.18, open=0.0, thumb=0.7, tl=0.85, sc=1.05)
-# index up WITH the thumb out: the rig's point_up hides the thumb behind the
-# finger, which at this size reads as a rude middle finger.
-_PU_R = _H(348, 4, 0.18, open=0.0, index=1.0, thumb=1.05, tl=1.0)
+# QA: the robot snap's "up" pose is a raised flat palm (stiff robot hello).
+# Any single raised index seen from the back of the mitten (even with the
+# thumb out) still read as a rude middle finger in the final encode.
+_PU_R = _H(338, -10, 0.32, open=1.0, thumb=0.75, palm=0.9, sc=1.1)
 _STOP_R = AI._mir(_H(-262, 262, -0.1, open=1.0, thumb=0.62, palm=1.0, sc=1.4))
 _PUSH_L = _H(-352, 250, -0.32, open=1.0, thumb=0.62, palm=1.0, sc=1.45)
 _SCRATCH_R = _H(258, -112, -0.55, open=0.35, thumb=0.4, tl=0.8, sc=1.0)
