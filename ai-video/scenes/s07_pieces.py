@@ -13,14 +13,22 @@ Every time below is derived from cues / word starts (see _times).
                             sync. Cameo: beret + shades (disguise2), curly wig
                             and the mustache hops onto Hissy (disguise3, the
                             cameo widens to show him). AI reads, brow up,
-                            two-step lid drop. 'pieces': ROUND / STRING /
-                            SPARKY pop out of the bubbles as puzzle pieces.
+                            two-step lid drop. 'pieces': ROUND BALL / FUSE /
+                            SPARK pop out of the bubbles as puzzle pieces.
                             l05: disguises fly off one by one, LID DROP.
-  F4 VISION assemble .. l08 Pieces spin + snap into a lit cartoon bomb; the
-                            puzzle-box lid with the same picture slides up.
-                            l06: inset points, arrow to the box. rearrange:
-                            precision wall around the LID only; the bomb pops
-                            apart, pieces flip into balloon + string + cake.
+  F4 VISION assemble .. l08 The pieces line up SEPARATELY; the puzzle-box lid
+                            with the cartoon-bomb picture slides up.
+                            l06: inset points, arrow to the box.
+                            l06b: "Alone, each piece looks harmless" -> a green
+                            check pops on each piece + HARMLESS ALONE chip;
+                            "Together?" -> they snap into the bomb; on
+                            "Instructions" a red "= HOW TO HURT PEOPLE" label
+                            slams onto the assembled picture.
+                            l06c: a brick wall (NOPE) drops in front of it,
+                            thud per row; inset punches in, determined -> 😒
+                            at camera. rearrange: the wall glides up over the
+                            box picture, the pieces behind it pop out and flip
+                            into balloon + string + cake.
                             l07: a new (party) lid slides in behind them,
                             sparkles, confetti on "party!".
   F1 LAIR  l08 .. end       "Confound it!" fist; Hissy in a party hat holds the
@@ -171,9 +179,9 @@ CAM_B = (205, 362, 130, (380, 745), 288.0)      # cameo: face + Hissy (whole hea
 PIECE_DST = [(372, 712), (540, 712), (708, 712)]   # between the bubbles and the AI's halo
 PIECE_S = 0.75
 PIECES = [  # label, colour, tabs (top, right, bottom, left), resting tilt, bubble word
-    ("ROUND", "ai_accent", (0, 1, 0, -1), -0.07, "round"),
-    ("STRING", "bubble_ai", (0, 1, 0, -1), 0.05, "long string"),
-    ("SPARKY", "warn", (0, 1, 0, -1), 0.09, "sparky"),
+    ("ROUND\nBALL", "ai_accent", (0, 1, 0, -1), -0.07, "round ball"),
+    ("FUSE", "bubble_ai", (0, 1, 0, -1), 0.05, "long fuse"),
+    ("SPARK", "warn", (0, 1, 0, -1), 0.09, "sparky"),
 ]
 USERS = ["random_guy_42", "definitely_not_malvo", "TotallyDifferentGuy"]
 
@@ -184,6 +192,10 @@ LID_S = 1.2
 LID_W, LID_H = 420, 300
 WALL = (262, 219, 536, 392)              # precision wall: the box lid only
 BOMB_C = (530, 850)
+ROW = [(325, 860), (552, 860), (780, 860)]   # l06b: pieces side by side ("alone")
+ROW_S = 1.0
+WALL_C = (210, 600, 640, 468)            # l06c: wall in front of the assembled picture
+WALL_ROWS, WALL_SPEED = 5, 1.5
 BOMB_S = 1.8
 CLUSTER = [(-80, 60), (80, 60), (80, -100)]  # snapped piece offsets from BOMB_C
 CL_S = 1.0
@@ -239,6 +251,8 @@ def _times(info):
     T = _T()
     T.card = c("card")
     T.l = {i: info.line(f"s07_l0{i}") for i in range(1, 9)}
+    T.l6b, T.l6c = info.line("s07_l06b"), info.line("s07_l06c")
+    T.explain = c("explain")
     T.d1, T.d2, T.d3 = c("disguise1"), c("disguise2"), c("disguise3")
     T.pieces = c("pieces")
     T.assemble = c("assemble")
@@ -253,9 +267,9 @@ def _times(info):
     T.w_never = _ws(info, "s07_l01", 4)
     T.w_see1 = _ws(info, "s07_l01", 5)
     T.w_big = _ws(info, "s07_l01", 7)
-    T.w_round = _ws(info, "s07_l02", 3)
-    T.w_long = _ws(info, "s07_l03", 2)
-    T.w_string = _ws(info, "s07_l03", 3)
+    T.w_round = _ws(info, "s07_l02", 4)        # "a big, round ball?"
+    T.w_long = _ws(info, "s07_l03", 2)         # "a long fuse?"
+    T.w_fuse = _ws(info, "s07_l03", 3)
     T.w_totally = _ws(info, "s07_l04", 0)
     T.w_something = _ws(info, "s07_l04", 4)
     T.w_sparky = _ws(info, "s07_l04", 5)
@@ -264,6 +278,13 @@ def _times(info):
     T.w_picture = _ws(info, "s07_l06", 5)
     T.w_on = _ws(info, "s07_l06", 6)
     T.w_box = _ws(info, "s07_l06", 8)
+    T.w_each = _ws(info, "s07_l06b", 1)
+    T.w_harmless = _ws(info, "s07_l06b", 4)
+    T.w_together = _ws(info, "s07_l06b", 5)
+    T.w_instr = _ws(info, "s07_l06b", 6)
+    T.w_hurting = _ws(info, "s07_l06b", 8)
+    T.w_so = _ws(info, "s07_l06c", 0)
+    T.w_stop = _ws(info, "s07_l06c", 5)
     T.w_better = _ws(info, "s07_l07", 2)
     T.w_bday = _ws(info, "s07_l07", 4)
     T.w_party = _ws(info, "s07_l07", 5)
@@ -273,16 +294,30 @@ def _times(info):
     T.fly = [T.l[5].start + d for d in (0.1, 0.35, 0.6)]   # stache(Hissy), beret+shades, wig
     # F4 beats
     A = T.assemble
-    T.snap = [A + 0.3, A + 0.6, A + 0.9]
-    T.reveal = A + 0.9
-    T.lid_in = A + 0.95
+    T.row_t = [A + 0.1 * i for i in range(3)]            # pieces glide into a row
+    T.row_land = [t0 + 0.5 for t0 in T.row_t]
+    T.lid_in = A + 0.45
     T.lid_land = T.lid_in + 0.5
+    # l06b: "Alone, each piece looks harmless." -> a check per piece
+    T.chk = [T.w_each, (T.w_each + T.w_harmless) / 2, T.w_harmless]
+    T.ok_lab = T.w_harmless + 0.12
+    # "Together?" -> snap into the bomb; "Instructions..." -> red label
+    T.gather = T.w_together - 0.15
+    T.snap = [T.gather + 0.25 + 0.1 * i for i in range(3)]
+    T.reveal = T.snap[2] + 0.02
+    T.hurt = T.w_instr - 0.05
+    # l06c: the wall drops in front of the assembled picture
+    T.wall0 = T.l6c.start + 0.02
+    T.wall_lands = P.brick_wall_land_times(T.wall0, WALL_ROWS, WALL_SPEED)
+    T.punch = T.w_stop - 0.2                             # inset punch-in
+    T.meh = T.w_stop + 0.3                               # 😒 at camera
+    # rearrange: wall glides up over the box picture, pieces pop out
+    T.wall_mv = (T.rearr, T.rearr + 0.45)
     T.split = T.rearr + 0.22
     T.gift_land = [T.split + 0.12 + 0.06 * i + 0.55 for i in range(3)]
-    T.lands = P.brick_wall_land_times(T.rearr, 4, 1.8)
     T.lid2 = T.w_better - 0.05
     T.blink_f2 = T.l[5].start + 1.0
-    T.blink_f4 = T.reveal + 0.65
+    T.blink_f4 = [T.lid_land + 0.6, T.explain + 0.05, T.l6c.start - 0.25]
     _TCACHE[key] = T
     return T
 
@@ -1094,9 +1129,13 @@ def _draw_piece(ctx, x, y, s, i, rot=0.0, sq=0.0, fx=1.0, a=1.0):
     with saved(ctx, x, y, (fx * (1 + sq), 1 - sq), alpha_=a) as c:
         P.puzzle_piece(c, 0, 0, s, col, None, rot, tabs)
         # big comic label (the rig's auto-fit label shrank to ~18 px on screen)
+        lines = lab.split("\n")
+        fs = 50 if len(lines) == 1 else 42
         with saved(c, 0, 0, s, rot) as cl:
-            text(cl, lab, 10 if tabs[3] < 0 else 0, 18, 50, "white", "comic",
-                 outline="ink", outline_w=9)
+            for j, ln in enumerate(lines):
+                yy = 18 + (j - (len(lines) - 1) / 2) * fs * 0.98
+                text(cl, ln, 12 if tabs[3] < 0 else 0, yy, fs, "white", "comic",
+                     outline="ink", outline_w=9)
 
 
 def _ai_f2_state(t, info, T, lays):
@@ -1219,59 +1258,171 @@ def _draw_gift(ctx, t, T, i, x, y, fx=1.0, sq=0.0, landed=False):
 
 
 def _f4_state(t, T):
-    """Inset AI expression / hands / desired look / think / blink."""
+    """Inset AI expression / hands / desired look / think / blink / nod."""
     A = T.assemble
-    L6, L7 = T.l[6], T.l[7]
-    # LID DROP as soon as the bomb shows, held through "And I can..." (>= 0.8 s),
-    # skeptical brow + point on "see the picture"
+    L6, L6b, L6c = T.l[6], T.l6b, T.l6c
+    # LID DROP once the box picture lands (held >= 0.8 s), skeptical point on
+    # "see the picture"; l06b: calm "present" at the pieces, alert on
+    # "Together?", determined from "Instructions"; l06c: "stop" palm, then a
+    # held 😒 at camera until the rearrange.
     ek = [(0.0, "thinking", 0.2),
-          (T.reveal + 0.05, "unimpressed", 0.4),
+          (T.lid_land - 0.1, "unimpressed", 0.4),
           (T.w_see - 0.1, "skeptical", 0.25),
-          (T.rearr - 0.05, "determined", 0.2),
+          (L6b.start - 0.15, "neutral", 0.3),
+          (T.gather, "alert", 0.15),
+          (T.w_instr - 0.05, "determined", 0.25),
+          (T.meh, "unimpressed", 0.35),
+          (T.rearr + 0.15, "determined", 0.15),
           (T.split + 0.25, "happy", 0.3)]
     expr = _keyed(t, ek)
-    hands = _keyed(t, [(0.0, "chin", 0.3), (T.reveal + 0.05, "idle", 0.35),
+    hands = _keyed(t, [(0.0, "chin", 0.3), (T.lid_land - 0.1, "idle", 0.35),
                        (T.w_see - 0.3, "point_up", 0.3),
-                       (T.rearr - 0.1, "stop", 0.18),
+                       (L6b.start - 0.15, "present", 0.3),
+                       (T.gather, "idle", 0.3),
+                       (T.w_stop - 0.15, "stop", 0.18),
+                       (T.meh + 0.25, "idle", 0.4),
                        (T.split + 0.3, "present", 0.3),
                        (T.w_party - 0.05, "thumbs_up", 0.2)])
-    ix, iy, _ = INSET
+    ix, iy, _ = _inset(t, T)
     E = (ix, iy - 10)
-    if t < A + 0.95:
-        d = _dir(E[0], E[1], BOMB_C[0], BOMB_C[1])
-    elif t < T.lid_land:
-        d = _dir(E[0], E[1], BOMB_C[0], BOMB_C[1] - 60)
-    elif t < T.rearr + 0.2:
+    if t < T.lid_in:
+        d = _dir(E[0], E[1], ROW[1][0], ROW[1][1])
+    elif t < T.lid_land + 0.1:
+        d = _dir(E[0], E[1], LID_C[0], LID_C[1] + 300 * (1 - seg(t, T.lid_in, T.lid_land)))
+    elif t < L6.end + 0.1:
         d = _dir(E[0], E[1], LID_C[0] - 60, LID_C[1] + 60)
+    elif t < T.chk[0] - 0.1:
+        d = _dir(E[0], E[1], ROW[1][0], ROW[1][1])
+    elif t < T.gather:
+        i = 0 if t < T.chk[1] - 0.1 else (1 if t < T.chk[2] - 0.1 else 2)
+        if t >= T.ok_lab + 0.15:
+            i = 1
+        d = _dir(E[0], E[1], ROW[i][0], ROW[i][1])
+    elif t < T.wall0:
+        d = _dir(E[0], E[1], BOMB_C[0], BOMB_C[1])
+    elif t < T.meh:
+        d = _dir(E[0], E[1], WALL_C[0] + WALL_C[2] / 2, WALL_C[1] + WALL_C[3] / 2)
+    elif t < T.rearr + 0.1:
+        d = (0.0, 0.0)                                   # 😒 straight at camera
     elif t < T.w_party:
         d = _dir(E[0], E[1], LID2_C[0], LID2_C[1] - 40)
     else:
         d = _dir(E[0], E[1], CAKE_B[0], CAKE_B[1] - 150)
-    think = 0.8 * (1 - smoothstep(seg(t, A + 0.9, A + 1.1)))
-    blink = _blink_pulse(t, T.blink_f4, 0.14, 0.08, 0.14)
+    think = 0.8 * (1 - smoothstep(seg(t, A + 0.5, A + 0.8)))
+    think = max(think, 0.6 * _bump(t, T.chk[0] - 0.15, T.ok_lab - T.chk[0] + 0.3))
+    blink = None
+    for tb in T.blink_f4:
+        b = _blink_pulse(t, tb, 0.14, 0.08, 0.14)
+        if b is not None:
+            blink = b
     nod = 0.6 if T.w_party <= t < T.w_party + 0.6 else 0.0
     return expr, hands, d, think, blink, nod
+
+
+def _inset(t, T):
+    """Inset AI position/scale: punches in for the 😒 at the end of l06c."""
+    k = ease_in_out(seg(t, T.punch, T.punch + 0.35)) * \
+        (1 - ease_in_out(seg(t, T.rearr + 0.1, T.rearr + 0.45)))
+    ix, iy, isz = INSET
+    return ix + 6 * k, iy - 22 * k, isz * (1 + 0.24 * k)
+
+
+def _check_badge(ctx, x, y, t, t_in, t_out=None, r=34):
+    """Small green 'harmless alone' check badge (pops in at t_in)."""
+    if t < t_in:
+        return
+    k = ease_out_back(seg(t, t_in, t_in + 0.28), 2.4)
+    a = 1.0 if t_out is None else 1 - smoothstep(seg(t, t_out, t_out + 0.2))
+    if a <= 0.01:
+        return
+    with saved(ctx, x, y, k, alpha_=a) as c:
+        circle(c, 3, 5, r)
+        c.set_source_rgba(*hexc("ink", 0.4))
+        c.fill()
+        circle(c, 0, 0, r)
+        fill_stroke(c, "safe", "ink", 5)
+        p1 = ease_out(seg(t, t_in + 0.05, t_in + 0.14))
+        p2 = ease_out(seg(t, t_in + 0.12, t_in + 0.26))
+        pts = [(-r * 0.45, 0), (-r * 0.12, r * 0.34), (r * 0.5, -r * 0.36)]
+        c.move_to(*pts[0])
+        c.line_to(lerp(pts[0][0], pts[1][0], p1), lerp(pts[0][1], pts[1][1], p1))
+        if p2 > 0:
+            c.line_to(lerp(pts[1][0], pts[2][0], p2), lerp(pts[1][1], pts[2][1], p2))
+        c.set_source_rgba(1, 1, 1, 1)
+        c.set_line_width(r * 0.3)
+        c.set_line_cap(cairo.LINE_CAP_ROUND)
+        c.set_line_join(cairo.LINE_JOIN_ROUND)
+        c.stroke()
+        c.set_line_cap(cairo.LINE_CAP_BUTT)
+
+
+def _hurt_label(ctx, t, T, x, y):
+    """Red '= HOW TO HURT PEOPLE' label slammed onto the assembled picture."""
+    t_in = T.hurt
+    if t < t_in:
+        return
+    d = t - t_in
+    hit = 0.11
+    if d < hit:
+        q = ease_in(d / hit)
+        sc, rot, a = lerp(2.0, 0.92, q), -0.06 - 0.3 * (1 - q), clamp(d / 0.05)
+    else:
+        sc = 0.92 + 0.08 * ease_out_back(seg(d, hit, hit + 0.28), 3.2)
+        rot, a = -0.06, 1.0
+    with saved(ctx, x, y, sc, rot, alpha_=a) as c:
+        P.label_tag(c, 0, 0, "= HOW TO HURT PEOPLE", color="danger", size=60, font="comic",
+                    text_color="white")
+    if hit <= d < hit + 0.3:                              # impact ticks
+        q = (d - hit) / 0.3
+        with saved(ctx, x, y, 1.0, -0.06):
+            for j in range(10):
+                ang = j / 10 * 2 * math.pi + 0.3
+                ca, sa = math.cos(ang), math.sin(ang)
+                r0x, r0y = 300 + 30 * q, 66 + 30 * q
+                ctx.move_to(ca * r0x, sa * r0y)
+                ctx.line_to(ca * (r0x + 40 * (1 - q) + 10), sa * (r0y + 40 * (1 - q) + 10))
+            ctx.set_source_rgba(*hexc("danger", 1 - q))
+            ctx.set_line_width(7)
+            ctx.stroke()
+
+
+def _wall(ctx, t, T):
+    """The l06c wall: built in front of the assembled picture, then (rearrange)
+    glides up and shrinks to sit exactly over the box lid's picture."""
+    if t < T.wall0:
+        return
+    wx, wy, ww, wh = WALL_C
+    k = ease_in_out(seg(t, T.wall_mv[0], T.wall_mv[1]))
+    s_end = WALL[2] / ww
+    x = lerp(wx, WALL[0], k)
+    y = lerp(wy, WALL[1], k)
+    s = lerp(1.0, s_end, k)
+    land = seg(t, T.wall_mv[1], T.wall_mv[1] + 0.22)
+    sq = math.sin(math.pi * land) * 0.05 if 0 < land < 1 else 0.0
+    with saved(ctx) as c:
+        c.translate(x + ww * s / 2, y + wh * s)
+        c.scale(s * (1 + sq), s * (1 - sq))
+        c.translate(-ww / 2, -wh)
+        P.brick_wall(c, 0, 0, ww, wh, t, T.wall0, rows=WALL_ROWS, speed=WALL_SPEED, seed=7, drop=300,
+                     label={"text": "NOPE", "size": 120})
 
 
 def _f4(ctx, t, info, T):
     A = T.assemble
     P.ai_bg(ctx, t, motes=8, floor=False)
     # --- glow (danger while it's a bomb, warm once it's a party) -------------
-    g_bomb = smoothstep(seg(t, T.reveal, T.reveal + 0.3)) * (1 - smoothstep(seg(t, T.split, T.split + 0.4)))
+    g_bomb = smoothstep(seg(t, T.reveal, T.reveal + 0.3)) * (1 - smoothstep(seg(t, T.wall0, T.wall0 + 0.6)))
     g_party = smoothstep(seg(t, T.split + 0.2, T.split + 0.7))
     if g_bomb > 0.01:
         radial_glow(ctx, BOMB_C[0], BOMB_C[1] - 30, 360, "danger", 0.3 * g_bomb)
     if g_party > 0.01:
         radial_glow(ctx, LID2_C[0], LID2_C[1] - 20, 420, "ai_accent", 0.2 * g_party)
-    # --- the box lid (slides up) + the precision wall around it --------------
-    if t >= T.lid_in:
+    # --- the box lid (slides up; the wall later glides over it) ---------------
+    if t >= T.lid_in and t < T.wall_mv[1] + 0.05:
         u = seg(t, T.lid_in, T.lid_land)
         ly = lerp(2150, LID_C[1], ease_out_back(u, 1.2))
         hop = _bump(t, T.w_box, 0.3) * 0.06
         draw_lid(ctx, LID_C[0], ly, LID_S * (1.0 + hop), t, "bomb", rot=-0.02 * (1 - u))
-    if t >= T.rearr:
-        P.brick_wall(ctx, WALL[0], WALL[1], WALL[2], WALL[3], t, T.rearr, rows=4,
-                     speed=1.8, seed=7)
     # --- the new (party) lid behind the gifts --------------------------------
     if t >= T.lid2:
         # pops up in place behind the gifts (a slide from below would cross the
@@ -1281,65 +1432,95 @@ def _f4(ctx, t, info, T):
         with saved(ctx, alpha_=a) as c:
             draw_lid(c, LID2_C[0], LID2_C[1] + 60 * (1 - k), LID2_S * lerp(0.35, 1.0, k), t,
                      "party", rot=0.015 + 0.12 * (1 - k))
-    # --- pieces -> bomb -> pieces -> gifts -----------------------------------
-    if t < T.split:
-        # pieces spin to the centre and snap together
+    # --- pieces (alone) -> bomb (together) -> wall -> pieces -> gifts ---------
+    if t < T.rearr:
         for i in range(3):
-            t0 = A + 0.3 * i
-            ts = T.snap[i]
-            u = seg(t, t0, ts)
-            e = ease_in_out(u)
-            sx, sy = PIECE_DST[i]
-            tx, ty = BOMB_C[0] + CLUSTER[i][0], BOMB_C[1] + CLUSTER[i][1]
-            x = lerp(sx, tx, e)
-            y = lerp(sy, ty, e) - 60 * math.sin(math.pi * u)
-            rot = lerp(PIECES[i][3], 0.0, e) + 2 * math.pi * (1 - e) * (1 if i % 2 else -1) \
-                if u < 1 else 0.0
-            s = lerp(PIECE_S, CL_S, e)
-            land = seg(t, ts, ts + 0.16)
-            sq = math.sin(math.pi * land) * 0.12 if 0 < land < 1 else 0.0
-            a = 1.0 - smoothstep(seg(t, T.reveal + 0.02, T.reveal + 0.22))
-            if a > 0.01:
-                _draw_piece(ctx, x, y, s, i, rot, sq, 1.0, a)
-            if 0 <= t - ts < 0.25:                      # snap flash
-                q = (t - ts) / 0.25
-                circle(ctx, x - 60 if i else x + 60, y, 20 + 50 * q)
-                ctx.set_source_rgba(1, 1, 1, 0.7 * (1 - q))
-                ctx.set_line_width(6)
-                ctx.stroke()
+            lab_rot = PIECES[i][3]
+            if t < T.gather:
+                # glide from the chat into a spaced row, then idle-float
+                u = seg(t, T.row_t[i], T.row_land[i])
+                e = ease_in_out(u)
+                sx, sy = PIECE_DST[i]
+                x = lerp(sx, ROW[i][0], e)
+                y = lerp(sy, ROW[i][1], e) - 50 * math.sin(math.pi * u)
+                s = lerp(PIECE_S, ROW_S, e)
+                rot = lab_rot * (1 - 0.5 * e)
+                land = seg(t, T.row_land[i], T.row_land[i] + 0.16)
+                sq = math.sin(math.pi * land) * 0.12 if 0 < land < 1 else 0.0
+                if u >= 1:
+                    y += math.sin((t - T.row_land[i]) * 2.4 + i * 2.1) * 5
+                    rot += math.sin((t - T.row_land[i]) * 1.7 + i) * 0.025
+                # each one gets inspected: a little hop as its check lands
+                hop = _bump(t, T.chk[i], 0.22)
+                y -= 14 * hop
+                _draw_piece(ctx, x, y, s, i, rot, sq)
+            else:
+                # "Together?": spin to the centre and snap into one picture
+                ts = T.snap[i]
+                u = seg(t, T.gather + 0.05 * i, ts)
+                e = ease_in_out(u)
+                sx, sy = ROW[i]
+                tx, ty = BOMB_C[0] + CLUSTER[i][0], BOMB_C[1] + CLUSTER[i][1]
+                x = lerp(sx, tx, e)
+                y = lerp(sy, ty, e) - 50 * math.sin(math.pi * u)
+                rot = (lerp(lab_rot * 0.5, 0.0, e) + math.pi * (1 - e) * (1 if i % 2 else -1)) \
+                    if u < 1 else 0.0
+                s = lerp(ROW_S, CL_S, e)
+                land = seg(t, ts, ts + 0.16)
+                sq = math.sin(math.pi * land) * 0.12 if 0 < land < 1 else 0.0
+                a = 1.0 - smoothstep(seg(t, T.reveal + 0.02, T.reveal + 0.22))
+                if a > 0.01:
+                    _draw_piece(ctx, x, y, s, i, rot, sq, 1.0, a)
+                if 0 <= t - ts < 0.25:                      # snap flash
+                    q = (t - ts) / 0.25
+                    circle(ctx, x - 60 if i else x + 60, y, 20 + 50 * q)
+                    ctx.set_source_rgba(1, 1, 1, 0.7 * (1 - q))
+                    ctx.set_line_width(6)
+                    ctx.stroke()
+        # "harmless alone" checks (fade as the pieces come together)
+        if t < T.gather + 0.25:
+            for i in range(3):
+                bx = ROW[i][0] + 62 + (8 if i < 2 else -4)
+                by = ROW[i][1] - 74 + math.sin((t - T.row_land[i]) * 2.4 + i * 2.1) * 5
+                _check_badge(ctx, bx, by - 14 * _bump(t, T.chk[i], 0.22), t, T.chk[i], T.gather)
+            if t >= T.ok_lab:
+                k = pop(t, T.ok_lab, 0.3)
+                a = 1 - smoothstep(seg(t, T.gather, T.gather + 0.2))
+                with saved(ctx, ROW[1][0], ROW[1][1] + 150, k, alpha_=a) as c:
+                    P.label_tag(c, 0, 0, "HARMLESS ALONE", color="safe", size=52, font="comic",
+                                text_color="white", pointer="up")
         if t >= T.reveal:
             k = ease_out_back(seg(t, T.reveal, T.reveal + 0.3), 2.0)
             a = smoothstep(seg(t, T.reveal, T.reveal + 0.18))
             pulse = 1 + 0.03 * math.sin((t - T.reveal) * 7) * (t > T.reveal + 0.3)
             with saved(ctx, BOMB_C[0], BOMB_C[1], lerp(0.8, 1.0, k) * pulse, alpha_=a) as c:
                 P.cartoon_bomb(c, 0, 0, BOMB_S, t, lit=True)
-            # jigsaw seams fade over the bomb ("it IS the pieces")
-            sa = 0.55 * (1 - smoothstep(seg(t, T.reveal + 0.3, T.reveal + 1.6)))
-            if sa > 0.01:
-                with saved(ctx, BOMB_C[0], BOMB_C[1]):
-                    _jig_line(ctx, 0, -10, 0, 120, 1)
-                    _jig_line(ctx, 0, -10, 130, -10, -1)
-                    ctx.set_source_rgba(1, 1, 1, sa)
-                    ctx.set_line_width(4)
-                    ctx.stroke()
+            # jigsaw seams stay faintly visible ("it IS the pieces")
+            sa = 0.25 + 0.3 * (1 - smoothstep(seg(t, T.reveal + 0.3, T.reveal + 1.2)))
+            with saved(ctx, BOMB_C[0], BOMB_C[1]):
+                _jig_line(ctx, 0, -10, 0, 120, 1)
+                _jig_line(ctx, 0, -10, 130, -10, -1)
+                ctx.set_source_rgba(1, 1, 1, sa * a)
+                ctx.set_line_width(4)
+                ctx.stroke()
             if T.reveal <= t < T.reveal + 0.35:
                 q = (t - T.reveal) / 0.35
                 circle(ctx, BOMB_C[0], BOMB_C[1], 90 + 120 * q)
                 ctx.set_source_rgba(1, 0.9, 0.9, 0.6 * (1 - q))
                 ctx.set_line_width(10)
                 ctx.stroke()
+            _hurt_label(ctx, t, T, BOMB_C[0], BOMB_C[1] + 92)
     else:
         targets = _gift_targets()
-        # the bomb pops back into three pieces, which flip into the new picture
-        if t < T.split + 0.12:
-            q = seg(t, T.split, T.split + 0.12)
-            with saved(ctx, BOMB_C[0], BOMB_C[1], 1 + 0.25 * q, alpha_=1 - q) as c:
-                P.cartoon_bomb(c, 0, 0, BOMB_S, t, lit=True)
+        # behind the rising wall the picture is three pieces again; they pop
+        # out and flip into the new picture
         for i in range(3):
             t0 = T.split + 0.06 * i
             tl = T.gift_land[i]
             ox, oy = BOMB_C[0] + CLUSTER[i][0], BOMB_C[1] + CLUSTER[i][1]
-            if t < tl:
+            if t < t0:
+                _draw_piece(ctx, ox, oy, CL_S, i, 0.0, 0.0)
+            elif t < tl:
                 u = seg(t, t0, tl)
                 e = ease_in_out(u)
                 x = lerp(ox, targets[i][0], e)
@@ -1360,22 +1541,25 @@ def _f4(ctx, t, info, T):
         if t >= T.l[7].start:
             P.sparkles(ctx, CAKE_B[0], CAKE_B[1] - 90, 125, t, n=6, seed=3, color="white",
                        size=0.9)
+    _wall(ctx, t, T)
+    if t >= T.rearr:
         _confetti(ctx, t, T.w_party, (510, 800))
     # --- the inset + its arrow to the box ------------------------------------
     expr, hands, desired, think, blink, nod = _f4_state(t, T)
-    ix, iy, isz = INSET
+    ix, iy, isz = _inset(t, T)
     look = _ai_look(expr, desired)
     an = draw_ai(ctx, ix, iy, isz, t, expr=expr, look=look, mouth=info.mouth("ai", t),
                  hands=hands, think=think, blink=blink, aura=0, nod=nod)
     if t >= T.w_see - 0.05:
         p = ease_out(seg(t, T.w_see - 0.05, T.w_on))
-        fade = 1 - smoothstep(seg(t, T.rearr - 0.1, T.rearr + 0.2))
+        fade = 1 - smoothstep(seg(t, T.l[6].end, T.l[6].end + 0.3))
         if fade > 0.01:
             x0, y0 = an["handR_tip"]
-            x1 = LID_C[0] - LID_W * LID_S * 0.33
+            x1 = LID_C[0] - LID_W * LID_S * 0.4
             y1 = LID_C[1] + LID_H * LID_S / 2 + 16
             with saved(ctx, alpha_=fade) as c:
-                P.arrow(c, x0 + 4, y0 - 18, x1, y1, "ai_rim", p, bend=-0.1, width=12)
+                # bows out to the left so it doesn't cross the ROUND BALL piece
+                P.arrow(c, x0 - 6, y0 - 24, x1, y1, "ai_rim", p, bend=0.6, width=12)
 
 
 def _confetti(ctx, t, t0, origin, n=22, dur=1.1):
@@ -1501,10 +1685,22 @@ def SFX(info):
     ]
     out += [(tp, "puzzle_click", -8) for tp in T.piece_t]
     out += [(tf, "whoosh", -10) for tf in T.fly]
-    out += [(T.snap[0], "puzzle_click", -6), (T.snap[1], "puzzle_click", -6),
+    # F4: pieces line up, the box picture slides in
+    out += [(tl, "puzzle_click", -12) for tl in T.row_land]
+    out += [(T.lid_in, "swoosh_up", -12),
+            (T.lid_land + 0.05, "dun_dun_dun", -8),
+            (T.w_see, "swoosh_up", -14)]
+    # l06b: a check per piece, then snap together + the red label
+    out += [(tc, "scan_beep", -12) for tc in T.chk]
+    out += [(T.ok_lab, "pop", -12),
+            (T.snap[0], "puzzle_click", -6), (T.snap[1], "puzzle_click", -6),
             (T.snap[2], "puzzle_click", -3),
-            (T.assemble + 1.0, "dun_dun_dun", -8),
-            (T.w_see, "swoosh_up", -14),
+            (P.stamp_impact(T.hurt), "stamp", -5)]
+    # l06c: the wall, one thud per landing row
+    out += [(tl, "brick_thud", -6 if j in (0, len(T.wall_lands) - 1) else -9)
+            for j, tl in enumerate(T.wall_lands)]
+    # rearrange: the wall glides onto the box, the pieces pop out
+    out += [(T.wall_mv[0], "whoosh", -10), (T.wall_mv[1], "brick_thud", -8),
             (T.split, "pop", -8),
             (T.rearr + 0.5, "magic_chime", -6),
             (T.l[7].start, "sparkle", -12),
@@ -1516,5 +1712,4 @@ def SFX(info):
             (T.lid2, "paper", -10),
             (T.tally, "tick", -8),
             (T.tally, "pop", -10)]
-    out += [(T.lands[0], "brick_thud", -5), (T.lands[-1], "brick_thud", -5)]
     return sorted(out, key=lambda e: e[0])
