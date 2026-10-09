@@ -637,7 +637,7 @@
      "t": "line",
      "id": "s07_l02",
      "who": "villain",
-     "text": "Quick question: something round?",
+     "text": "Quick question: a big, round ball?",
      "pre": 0.05,
      "post": 0.1,
      "expr": "smug"
@@ -651,7 +651,7 @@
      "t": "line",
      "id": "s07_l03",
      "who": "villain",
-     "text": "Unrelated: a long string?",
+     "text": "Unrelated: a long fuse?",
      "pre": 0.05,
      "post": 0.1,
      "expr": "smug"
@@ -691,9 +691,33 @@
      "t": "line",
      "id": "s07_l06",
      "who": "ai",
-     "text": "And I can see the picture on the box.",
+     "text": "But I can see the picture on the box.",
      "pre": 0.05,
      "expr": "skeptical"
+    },
+    {
+     "t": "pause",
+     "dur": 0.3,
+     "cue": "explain"
+    },
+    {
+     "t": "line",
+     "id": "s07_l06b",
+     "who": "ai",
+     "text": "Alone, each piece looks harmless. Together? Instructions for hurting people.",
+     "pre": 0.05,
+     "expr": "determined",
+     "note": "NEW: explain the puzzle"
+    },
+    {
+     "t": "line",
+     "id": "s07_l06c",
+     "who": "ai",
+     "text": "So that's exactly where I stop.",
+     "pre": 0.15,
+     "post": 0.3,
+     "expr": "unimpressed",
+     "note": "NEW: wall drops here"
     },
     {
      "t": "pause",
@@ -782,6 +806,30 @@
      "pre": 0.0,
      "post": 0.1,
      "expr": "unimpressed"
+    },
+    {
+     "t": "pause",
+     "dur": 0.5,
+     "cue": "mask_off"
+    },
+    {
+     "t": "line",
+     "id": "s08_l03b",
+     "who": "ai",
+     "text": "But I'll still write you a story. A scary one! Villains, fear, anger, heartbreak... all fair game.",
+     "pre": 0.05,
+     "expr": "happy",
+     "note": "NEW: mask off, normal voice"
+    },
+    {
+     "t": "line",
+     "id": "s08_l03c",
+     "who": "ai",
+     "text": "What stays out is the real-world how-to. Weapon blueprints, chemical or germ recipes... anything that helps hurt real people.",
+     "pre": 0.2,
+     "post": 0.3,
+     "expr": "determined",
+     "note": "NEW"
     },
     {
      "t": "pause",
@@ -1117,6 +1165,16 @@
      "t": "pause",
      "dur": 1.4,
      "cue": "pile"
+    },
+    {
+     "t": "line",
+     "id": "s11_l08",
+     "who": "ai",
+     "text": "And keep the spooky stuff! Bats, goblins, dragons... spooky is fine. Hurting people isn't.",
+     "pre": 0.1,
+     "post": 0.2,
+     "expr": "amused",
+     "note": "NEW: over the spooky gifts"
     },
     {
      "t": "pause",
