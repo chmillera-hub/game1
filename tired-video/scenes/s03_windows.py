@@ -1163,7 +1163,7 @@ def SFX(info):
             d += half
     steps(X0, XW1 + 46, 0.0, T["r1e"], -4, -0.2)
     steps(XW1, XW2 - 28, T["r2s"], T["r2e"], -6, 0.0)
-    steps(XW2, XW2 + 300, T["r3s"] + 0.05, T["whip"] + 0.16, -6, 0.3)
+    steps(XW2, XW2 + 300, T["r3s"] + 0.03, T["r3s"] + 0.03 + 300 / 1150, -6, 0.3)
     for th in T["hv1"]:
         ev.append((th + 0.03, "door_bang", -12, -0.1))
     for th in T["hv2"]:

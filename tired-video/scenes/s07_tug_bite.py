@@ -894,7 +894,7 @@ def shot_runout(ctx, t, info, c):
             _room(ctx, t, door=door)
         _draw_tug(ctx, t, c, info, rig, rattle=0.0, cage_door=0.78, latch="open", inside="empty",
                   emb_expr="terrified", emb_look=e_look, wig=0.0, imp_look=(imp_l, None))
-        creatures.draw_thing(ctx, 840, TIR_PEER[1] - 10, THING_S, t, state="sit",
+        creatures.draw_thing(ctx, THING_FLOOR[0], THING_FLOOR[1], THING_S, t, state="sit",
                              look=(-0.7, -0.2) if u > 0.2 else (0.3, -0.5))
         if not in_door:
             tired(tx, ty)
@@ -1072,7 +1072,7 @@ def SFX(info):
     ev += [(tb, "body_thud", -9.0, -0.35), (tb + 0.09, "latch_click", 4.0, -0.4)]
     # E the door, the dog, the burst
     ev += [(o + 0.06, "latch_click", -2.0, -0.4)]
-    ev += sfx.loop_events("dog_pant", o + 0.42, b, -9.0, -0.4)
+    ev += sfx.loop_events("dog_pant", o + 0.42, c["creak"] - 0.6, -10.0, -0.4)
     ev += [(b + 0.08, "dog_woof", -1.0, -0.4), (b + 0.12, "whoosh", -1.0, -0.2),
            (b + 0.2, "door_bang", -3.0, -0.6), (b + 0.3, "cage_rattle", 0.0, 0.0),
            (b + 0.34, "body_thud", -7.0, 0.1)]
@@ -1080,7 +1080,6 @@ def SFX(info):
     for i, dt in enumerate((0.05, 0.5, 0.98, 1.42, 1.86)):
         ev.append((tg + dt, "cage_rattle", -3.0 - 2.0 * (i % 2), -0.1))
     ev += [(tg + 0.12, "footstep", -10.0, 0.4), (tg + 0.6, "footstep", -11.0, 0.35)]
-    ev += sfx.loop_events("dog_pant", tg, c["creak"], -12.0, -0.3)
     # G/I squat, creak, the leap, CHOMP
     ev += [(c["squint"] + 0.1, "cloth_rustle", -8.0, 0.1), (c["G1"] + 0.06, "cage_rattle", -12.0, 0.0)]
     ev += [(c["creak"] + 0.02, "latch_click", -1.0, -0.1), (c["creak"] + 0.06, "cage_creak", 1.0, -0.1)]
@@ -1098,5 +1097,5 @@ def SFX(info):
            (m + 0.38, "critter_squeak", -2.0, 0.1), (m + 0.62, "cloth_rustle", -7.0, 0.1),
            (m + 0.84, "cage_rattle", -2.0, -0.05), (m + 1.02, "latch_click", 5.0, -0.05)]
     # N the stare: just the dog panting
-    ev += sfx.loop_events("dog_pant", c["stare"] - 0.3, info.dur, -8.0, -0.35)
+    ev += sfx.loop_events("dog_pant", c["catch"] + 1.2, info.dur - 1.5, -8.0, -0.35)
     return sorted(ev, key=lambda e: e[0])
