@@ -424,11 +424,11 @@ def _rae_tracks():
         (F1 + 3.9, (-0.52, -0.3)),                 # a mote on her left
         (F1 + 4.8, (0.4, -0.55), 0.5),
         (TH - 0.8, (0.36, -0.7), 0.8),             # eyes lift toward the sound
-        (TH + 0.5, (-0.46, -0.48)),                # a ribbon wakes on her left
+        (TH + 0.5, (0.32, -0.66), 0.6),            # a ribbon wakes above her: eyes lift (interest, not a glance away)
         (TH + 1.6, (0.4, -0.62), 0.9),
         (TH + 2.8, (0.52, -0.4), 0.8),
         (MG + 0.3, (0.42, -0.36), 0.6),
-        (MG + 2.0, (-0.44, -0.5)),
+        (MG + 2.0, (0.3, -0.8), 0.9),              # ~1:13 - from ahead to UP toward the memories rising (no look left)
         (MG + 3.2, (0.36, -0.68), 0.6),
         (MG + 4.6, (0.48, -0.52), 1.0),            # wonder: the eyes wander up
         (MG + 5.7, (0.34, -0.74), 1.2),
@@ -441,16 +441,16 @@ def _rae_tracks():
         (GL + 3.75, "sea_sunset"),
         (GL + 6.8, (0.36, -0.68), 0.7),            # looks up as the build approaches
         (BU + 1.0, (0.4, -0.72), 1.0),             # the ribbons drifting overhead (she never sees the cadet
-        (BU + 2.4, (-0.4, -0.62)),                 # gawking at her)
+        (BU + 2.4, (0.32, -0.78), 0.8),            # gawking at her)
         (BU + 3.3, (0.38, -0.7), 0.5),
         (BU + 5.0, (0.46, -0.6), 1.2),
-        (BU + 6.9, (-0.36, -0.66)),
+        (BU + 6.9, (0.34, -0.8), 0.9),
         (BU + 7.8, (0.36, -0.72), 0.7),
         (CW + 0.25, "cadet", 0.14),                # ... until he says her name: she finds him
         (HE + 0.08, (0.38, -0.8), 0.22),           # ... and after "I'm good, thanks." her eyes go straight back up
         (HE + 1.1, (0.34, -0.74), 0.8),            #     to the music
         (GP - 0.4, (0.33, -0.66), 0.3),
-        (CL + 0.9, (-0.42, -0.6)),
+        (CL + 0.9, (0.3, -0.82), 0.7),
         (CL + 2.4, (0.38, -0.66), 0.5),
         # the tear close-up and the pull-back (BIBLE section 11): her eyes stay UP on the music -- the ribbons
         # drifting above her and Quill's raised hand -- never on the lens or off to screen-left; slow pursuits

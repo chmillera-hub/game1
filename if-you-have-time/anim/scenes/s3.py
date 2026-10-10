@@ -441,10 +441,12 @@ SMILE_T = R10E + 0.12                       # the small involuntary smile after 
 # char_rae: a tear value in 1..2 fades the dried streak away (2 = gone), so both fades are continuous.
 WIPE0, WIPE1 = DAB1 - 0.06, DAB2 + 0.12     # the near streak is smeared away under her knuckle (the two presses)
 try:
-    DRY0 = music_cue("alt_kazoo")["start"]  # the far streak: held while she is lost in thought, then it dries
-    DRY1 = music_cue("alt_chip")["end"] - 0.25  # ... through the kazoo - gone by the end of the arcade piece
+    # the far streak: held through "...pretty good" while she is lost in thought, then it dries during
+    # "Thank you. Here are the other ones I made." - fully gone BEFORE the kazoo, so the comedy lands clean
+    DRY0 = beat("cards_appear") - 1.0
+    DRY1 = music_cue("alt_kazoo")["start"] - 0.4
 except KeyError:                            # pragma: no cover
-    DRY0, DRY1 = CARD2 + 3.0, CARD2 + 13.8
+    DRY0, DRY1 = CARD2 - 3.0, CARD2 + 2.5
 
 
 def _dry(v0, t, t0, t1):
@@ -524,7 +526,7 @@ def _rae_tracks():
     d["tremble"] = Track([(T0, 0.14), (LUP + 1.5, 0.1), (SNIFF, 0.16), (R10E + 0.4, 0.12), (SMILE_T + 0.6, 0.2),
                           (THANKS + 0.6, 0.1), (CARDS + 0.5, 0.06), (T1 + 1, 0.06)])
     d["tears"] = Track([(T0, 0.66), (LUP + 1.2, 0.62), (DAB2, 0.6), (DAB2 + 0.05, 0.5), (R10E, 0.58),
-                        (SMILE_T + 0.6, 0.66), (CARDS + 1.0, 0.56), (T1 + 1, 0.5)])
+                        (SMILE_T + 0.6, 0.66), (CARDS + 1.0, 0.5), (T1, 0.42), (T1 + 1, 0.42)])
     d["shine"] = Track([(T0, 0.6), (LUP + 1.2, 0.45), (SMILE_T + 0.6, 0.6), (CARDS, 0.5), (CARDS + 0.5, 0.75),
                         (T1 + 1, 0.6)])
     d["blush"] = Track([(T0, 0.18), (R10, 0.2), (R10E + 0.5, 0.26), (CARDS + 1.0, 0.2), (T1 + 1, 0.2)])

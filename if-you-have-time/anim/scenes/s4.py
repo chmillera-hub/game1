@@ -347,7 +347,7 @@ def _rae_tracks():
     d["tremble"] = Track([(T0, 0.06), (LF0 + 1.5, 0.08), (CUT_LR + 0.3, 0.16), (LOOK0 + 1.0, 0.1), (LF1, 0.1),
                           (WH0, 0.08), (SURPRISE + 0.3, 0.02), (WH1, 0.04), (R11, 0.1), (T1 + 1, 0.1)])
     # (the welling ebbs a little through the kazoo and the arcade piece, with the far streak drying - s3.far_tear)
-    d["tears"] = Track([(T0, 0.5), (KZ1, 0.44), (CH1, 0.36), (LF0 + 1.5, 0.48), (LOOK0 + 0.6, 0.58), (LF1, 0.52),
+    d["tears"] = Track([(T0, 0.42), (KZ0, 0.22), (KZ1, 0.2), (CH1, 0.24), (LF0 + 1.5, 0.48), (LOOK0 + 0.6, 0.58), (LF1, 0.52),
                         (WH0, 0.44), (DELIGHT + 0.6, 0.38), (WH1, 0.38), (R11, 0.42), (T1 + 1, 0.42)])
     d["shine"] = Track([(T0, 0.6), (TOAST1, 0.72), (CH0, 0.5), (LF0 + 1.5, 0.65), (LOOK0 + 0.5, 0.78),
                         (WH0, 0.6), (SURPRISE + 0.3, 0.9), (WH1, 0.72), (R11, 0.55), (T1 + 1, 0.5)])
