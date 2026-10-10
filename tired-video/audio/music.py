@@ -1,13 +1,19 @@
-"""Procedural music for "Nice Try, My Guy".
+"""Procedural music for "TIREDNESS" (engine inherited from "Nice Try, My Guy").
 
     render_cue(name, dur, sr=48000, fade_in=0.02, fade_out=1.0, seed=0)
         -> np.ndarray float32, shape (n, 2), n = round(dur * sr), values in [-1, 1]
 
-Cues (see CUES): none, doom, sneaky, ai_calm, tension, beg, heart, resolve.
-Each cue is an 8-bar (or 8-chord) composition that loops for any duration with
-small per-pass variations; the last `fade_out` seconds fade out so a cue can
-end anywhere. Every render is loudness-normalized to TARGET_LUFS (-18 LUFS,
-RMS around -20 dBFS) so the mixer only has to balance, not guess.
+Cues (see CUES and API_audio.md): chill, panic, sneaky, awkward, chaos, tension,
+corporate, ominous (+ ominous_dark / ominous_warm), bond, reveal, and the older
+doom, ai_calm, beg, heart, resolve. A name may carry options after a colon,
+e.g. "ominous:turn=0.7" or "reveal:awe=0.58,sad=0.7,sting=3".
+Looping cues are 4/8-bar compositions re-generated for the requested duration
+(no audio splicing, so every "loop point" is just the next bar) with small
+per-pass variations; arc cues (ominous's warm turn, reveal) place their
+sections at fractions of the render. The last `fade_out` seconds fade out so a
+cue can end anywhere. Every render is loudness-normalized to TARGET_LUFS
+(-18 LUFS) plus the cue's own `level_db` (awkward -2, corporate -1.5) so the
+mixer only has to balance, not guess.
 
 The first half of this file is a small DSP toolkit (oscillators, filters,
 envelopes, reverb, loudness) that audio/sfx.py and audio/mix.py reuse.
@@ -23,7 +29,10 @@ from scipy import signal as sps
 
 SR = 48000
 TARGET_LUFS = -18.0
-CUES = ["none", "doom", "sneaky", "ai_calm", "tension", "beg", "heart", "resolve"]
+CUES = ["none", "chill", "panic", "sneaky", "awkward", "chaos", "tension", "corporate", "ominous",
+        "ominous_dark", "ominous_warm", "bond", "reveal",
+        # inherited from the previous film (still available)
+        "doom", "ai_calm", "beg", "heart", "resolve"]
 SQ2 = math.sqrt(2.0)
 TAU = 2.0 * math.pi
 
@@ -349,7 +358,11 @@ QUAL = {"": (0, 4, 7), "m": (0, 3, 7), "7": (0, 4, 7, 10), "maj7": (0, 4, 7, 11)
         "sus2": (0, 2, 7), "7sus4": (0, 5, 7, 10), "add9": (0, 4, 7, 14),
         "madd9": (0, 3, 7, 14), "maj9": (0, 4, 7, 11, 14), "m9": (0, 3, 7, 10, 14),
         "9": (0, 4, 7, 10, 14), "dim": (0, 3, 6), "m7b5": (0, 3, 6, 10), "dim7": (0, 3, 6, 9),
-        "aug": (0, 4, 8)}
+        "aug": (0, 4, 8),
+        # extended colours (TIREDNESS cues). NB "69" not "6/9" (the slash means a bass note)
+        "9sus4": (0, 5, 7, 10, 14), "7b9": (0, 4, 7, 10, 13), "maj7#11": (0, 4, 7, 11, 18),
+        "m11": (0, 3, 7, 10, 14, 17), "69": (0, 4, 7, 9, 14), "sus2b6": (0, 2, 7, 8),
+        "mb6": (0, 3, 7, 8), "mM7": (0, 3, 7, 11), "maj7sus2": (0, 2, 7, 11), "7sus2": (0, 2, 7, 10)}
 
 
 def note(s):
@@ -402,8 +415,9 @@ def voicing(chord, prev=None, n=4, lo=52, hi=74):
     the smallest total movement from `prev` (simple voice leading)."""
     cands = chord.tones(lo, hi)
     ess = chord.essentials()
-    if len(ess) > n:
-        ess = set(list(ess)[:n])
+    if len(ess) > n:   # keep the most characteristic tones (3rd, 7th, colours, then root)
+        iv = {(chord.root + i) % 12: i for i in chord.ivs}
+        ess = set(sorted(ess, key=lambda pc: (2.5 if pc == chord.root else _prio(iv[pc]), pc))[:n])
     best, best_cost = None, 1e9
     third_pc = (chord.root + chord.third) % 12
     for combo in itertools.combinations(cands, n):
@@ -422,6 +436,61 @@ def voicing(chord, prev=None, n=4, lo=52, hi=74):
         if cost < best_cost:
             best, best_cost = list(combo), cost
     return best or cands[:n]
+
+
+def _prio(i):
+    """Importance of a chord interval for a rootless voicing (lower = keep first)."""
+    i12 = i % 12
+    if i12 in (3, 4) and i < 12:
+        return 0                     # the third
+    if i12 in (10, 11) or (i12 in (2, 5) and i < 12):
+        return 1                     # seventh / sus tone
+    if i >= 12 or i12 == 9 or i12 in (6, 8):
+        return 2                     # 9 / 11 / 13 / 6 / b5 / b6 colours
+    return 3                         # the fifth
+
+
+def rootless(chord):
+    """Chord pitch classes without the root, most characteristic first (3rd,
+    7th, colours, 5th): jazz-style voicings that leave the root to the bass."""
+    ivs = sorted((i for i in chord.ivs if i % 12 != 0), key=lambda i: (_prio(i), i))
+    out = []
+    for i in ivs:
+        pc = (chord.root + i) % 12
+        if pc not in out:
+            out.append(pc)
+    return out or [chord.root]
+
+
+def voicing_pcs(pcs, prev=None, n=4, lo=52, hi=74):
+    """Like voicing() for an explicit pitch-class list (first n are required)."""
+    pcs = [p % 12 for p in pcs]
+    need = set(pcs[:n])
+    cands = [m for m in range(lo, hi + 1) if m % 12 in set(pcs)]
+    best, best_cost = None, 1e9
+    for combo in itertools.combinations(cands, n):
+        got = [c % 12 for c in combo]
+        if not need <= set(got):
+            continue
+        cost = 2.5 * (len(got) - len(set(got)))
+        if prev:
+            cost += sum(abs(a - b) for a, b in zip(combo, sorted(prev)))
+        else:
+            cost += abs(np.mean(combo) - (lo + hi) / 2) * 1.5
+        gaps = np.diff(combo)
+        cost += 3.0 * sum(1 for g in gaps if g > 9)
+        cost += 4.0 * sum(1 for g, c in zip(gaps, combo) if g < 3 and c < 55)
+        if cost < best_cost:
+            best, best_cost = list(combo), cost
+    return best or cands[:n]
+
+
+def _sw(beat, s=0.5):
+    """Beat position -> swung beat position (8th-note swing ratio s; 0.5 = straight).
+    Works for 16ths too (piecewise-linear inside each beat)."""
+    b = math.floor(beat + 1e-9)
+    f = beat - b
+    return b + (f * 2 * s if f < 0.5 else s + (f - 0.5) * 2 * (1 - s))
 
 
 # =============================================================================
@@ -451,19 +520,23 @@ def inst_pad(midis, dur, sr, rng, cutoff=1400.0, attack=0.6, release=1.4, detune
     return x * env_adsr(n, sr, attack, 1.0, sustain, release, dur)[:, None]
 
 
-def inst_brass(midis, dur, sr, rng, peak_fc=1900.0, base_fc=260.0, attack=0.09, release=0.9):
-    """'BRAAAM' brass cluster: detuned saws + pulse, filter swell, gentle drive."""
+def inst_brass(midis, dur, sr, rng, peak_fc=1900.0, base_fc=260.0, attack=0.09, release=0.9,
+               fc_attack=0.18, bend=None):
+    """'BRAAAM' brass cluster: detuned saws + pulse, filter swell, gentle drive.
+    fc_attack: filter opening time (0.03 = punchy stab). bend: optional
+    callable t -> semitone offset (falls, rips, doits)."""
     n = secs(sr, dur + release + 0.05)
     t = tvec(n, sr)
     x = np.zeros(n)
+    bmul = 1.0 if bend is None else 2.0 ** (np.asarray(bend(t), dtype=float) / 12.0)
     for m in midis:
-        f0 = hz(m)
+        f0 = hz(m) * bmul
         for c in (-7, 0, 6):
             x += saw(f0 * 2 ** ((c + rng.normal(0, 1)) / 1200), n, sr, rng.random())
         x += 0.5 * pulse(f0 * 1.001, n, sr, 0.35, rng.random())
     x /= len(midis) * 3.5
-    fc = base_fc + (peak_fc - base_fc) * (1 - np.exp(-t / 0.18)) * np.exp(-np.maximum(t - 0.35, 0) / 1.2)
-    fc = np.maximum(fc, base_fc * 1.6 * np.minimum(1, t / 0.2) + 1)
+    fc = base_fc + (peak_fc - base_fc) * (1 - np.exp(-t / fc_attack)) * np.exp(-np.maximum(t - 0.35, 0) / 1.2)
+    fc = np.maximum(fc, base_fc * 1.6 * np.minimum(1, t / max(0.02, fc_attack * 1.1)) + 1)
     x = tv_filter(x, fc, sr, q=1.1, block=128)
     x = np.tanh(2.2 * x) / np.tanh(2.2)
     return x * env_adsr(n, sr, attack, 1.5, 0.7, release, dur)
@@ -816,6 +889,248 @@ def dr_swell(sr, rng, length=2.0, lo=2500.0, hi=9000.0):
 
 
 # =============================================================================
+# More instruments (added for TIREDNESS)
+# =============================================================================
+_MALLETS = {
+    # (ratio, amp, decay s at ~700 Hz, amp scales with velocity?)  bars tuned 1:3 (xylo), 1:4 (marimba)
+    "xylo": ((1.0, 1.0, 0.34, 0), (3.0, 0.34, 0.075, 1), (6.04, 0.09, 0.03, 1), (9.9, 0.03, 0.014, 1)),
+    "marimba": ((1.0, 1.0, 0.85, 0), (4.0, 0.20, 0.14, 1), (9.9, 0.04, 0.035, 1)),
+    "celesta": ((1.0, 1.0, 1.35, 0), (2.0, 0.05, 0.6, 0), (2.76, 0.10, 0.20, 1), (5.40, 0.025, 0.06, 1)),
+}
+
+
+@lru_cache(maxsize=1024)
+def _mallet(m, nsamp, kind, velq, sr):
+    vel = velq / 8.0
+    f = hz(m)
+    t = tvec(nsamp, sr)
+    k = float(np.clip((700.0 / f) ** 0.55, 0.45, 2.0))      # high bars ring shorter
+    y = np.zeros(nsamp)
+    for i, (r, a, d, vs) in enumerate(_MALLETS[kind]):
+        if f * r < 0.45 * sr:
+            y += a * (vel if vs else 1.0) * np.exp(-t / (d * k)) * np.sin(TAU * f * r * t + 0.7 * i)
+    rng = np.random.default_rng(m * 13 + velq)
+    hard = {"xylo": 1.0, "marimba": 0.35, "celesta": 0.25}[kind]
+    y += hard * 0.22 * vel * bp(rng.standard_normal(nsamp), min(1500 + 2 * f, 6000), 9000, sr) \
+        * np.exp(-t / 0.0012)
+    y *= np.clip(t / 0.0007, 0, 1)
+    q = int(0.004 * sr)
+    y[-q:] *= np.linspace(1, 0, q)
+    y.flags.writeable = False
+    return y
+
+
+def inst_mallet(m, vel, sr, kind="xylo", length=None):
+    """Xylophone / marimba / celesta (modal bars + mallet click). Mono."""
+    L = length or {"xylo": 0.9, "marimba": 1.6, "celesta": 2.4}[kind]
+    velq = int(np.clip(round(vel * 8), 1, 10))
+    return np.array(_mallet(int(m), secs(sr, L), kind, velq, sr)) * (0.5 + 0.5 * vel)
+
+
+def inst_vibe(m, dur, vel, sr, trem=5.0, depth=0.28):
+    """Soft vibraphone: sine bar (1:4:10) with motor tremolo; damped after `dur`."""
+    f = hz(m)
+    n = secs(sr, max(dur, 0.2) + 0.5)
+    t = tvec(n, sr)
+    d = 1.9 * float(np.clip((523.0 / f) ** 0.4, 0.6, 1.6))
+    y = np.sin(TAU * f * t) * np.exp(-t / d)
+    y += 0.10 * vel * np.sin(TAU * 4 * f * t + 0.5) * np.exp(-t / (d * 0.12))
+    y += 0.025 * vel * np.sin(TAU * 10 * f * t + 1.0) * np.exp(-t / 0.04)
+    y *= 1 - depth * (0.5 + 0.5 * np.sin(TAU * trem * t))
+    g = secs(sr, dur)
+    if g < n:
+        y[g:] *= np.exp(-(t[g:] - t[g]) / 0.12)
+    y *= np.clip(t / 0.003, 0, 1)
+    q = int(0.004 * sr)
+    y[-q:] *= np.linspace(1, 0, q)
+    return y * vel
+
+
+def inst_bassoon(m, dur, sr, rng, vel=0.8):
+    """Nasal staccato bassoon: narrow pulse through two reed formants."""
+    n = secs(sr, dur + 0.12)
+    t = tvec(n, sr)
+    f = hz(m) * (1 - 0.018 * np.exp(-t / 0.025))
+    src = pulse(f, n, sr, 0.22, rng.random()) + 0.25 * saw(f, n, sr, rng.random())
+    y = 0.9 * biquad(src, "bandpass", 480, sr, 2.2) + 0.5 * biquad(src, "bandpass", 1150, sr, 3.0) \
+        + 0.3 * lp(src, 320, sr)
+    y = lp(y, 2600, sr, 2)
+    y += 0.05 * bp(rng.standard_normal(n), 900, 3000, sr) * np.exp(-t / 0.03)
+    return y * env_adsr(n, sr, 0.016, 0.12, 0.55, 0.06, dur) * vel * 1.6
+
+
+def inst_tuba(m, dur, sr, rng, vel=0.8):
+    """Round 'oompah' tuba: sine+saw with a lip scoop and a brightness bloom."""
+    n = secs(sr, dur + 0.15)
+    t = tvec(n, sr)
+    f0 = hz(m)
+    f = f0 * (1 - 0.035 * np.exp(-t / 0.03))
+    src = 0.5 * saw(f, n, sr, rng.random()) + 0.45 * sine(f, n, sr) + 0.3 * sine(2 * f, n, sr)
+    fc = 220 + 2.5 * f0 + 900 * vel * np.exp(-t / 0.07)
+    y = tv_filter(src, fc, sr, q=0.9, block=256, stages=1)
+    return y * env_adsr(n, sr, 0.022, 0.15, 0.6, 0.08, dur) * vel
+
+
+def inst_glass(midis, dur, sr, rng, attack=1.2, release=1.8, bright=0.35, drift=0.0015):
+    """Icy glass pad: chorused sine pairs with a little 2nd/3rd partial."""
+    n = secs(sr, dur + release + 0.05)
+    t = tvec(n, sr)
+    L, R = np.zeros(n), np.zeros(n)
+    for m in midis:
+        f0 = hz(m)
+        for k, c in enumerate((-4.5, 4.5)):
+            ff = f0 * 2 ** (c / 1200) * (1 + drift * np.sin(TAU * rng.uniform(0.15, 0.4) * t + rng.uniform(0, TAU)))
+            ph = TAU * np.cumsum(ff) / sr + rng.uniform(0, TAU)
+            o = np.sin(ph) + bright * (0.3 * np.sin(2 * ph) + 0.12 * np.sin(3 * ph))
+            if k == 0:
+                L += o
+                R += 0.35 * o
+            else:
+                R += o
+                L += 0.35 * o
+    x = np.stack([L, R], 1) / (len(midis) * 1.35)
+    sh = 1 + 0.12 * np.sin(TAU * 0.45 * t + rng.uniform(0, TAU))
+    return x * (env_adsr(n, sr, attack, 1.0, 1.0, release, dur) * sh)[:, None]
+
+
+def inst_drop(m, sr, vel=1.0):
+    """Musical water drip: an upward 'plink' chirp settling on pitch m."""
+    f = hz(m)
+    n = secs(sr, 0.4)
+    t = tvec(n, sr)
+    fc = f * (0.6 + 0.4 * (1 - np.exp(-t / 0.01))) * (1 + 0.03 * t)
+    ph = TAU * np.cumsum(fc) / sr
+    y = (np.sin(ph) + 0.08 * np.sin(2 * ph)) * np.exp(-t / 0.085) * np.clip(t / 0.001, 0, 1)
+    rng = np.random.default_rng(m)
+    y += 0.12 * bp(rng.standard_normal(n), 2000, 7000, sr) * np.exp(-t / 0.0015)
+    return fade_edges(y * vel, sr, 0.0005, 0.03)
+
+
+def inst_metal(f0, length, sr, rng, bowed=False, bright=1.0):
+    """Distant metal pipe / tank resonance. bowed=True: slow swell, no strike."""
+    n = secs(sr, length)
+    t = tvec(n, sr)
+    y = np.zeros(n)
+    for r, a, d in ((1.0, 1.0, 0.55), (2.32, 0.55, 0.35), (4.25, 0.32 * bright, 0.22),
+                    (6.63, 0.16 * bright, 0.14), (9.38, 0.07 * bright, 0.09)):
+        fr = f0 * r * (1 + rng.normal(0, 0.004))
+        if fr < 0.45 * sr:
+            dec = np.exp(-t / (d * length)) if not bowed else 1.0 + 0.3 * np.sin(TAU * rng.uniform(0.3, 0.9) * t)
+            y += a * np.sin(TAU * fr * t + rng.uniform(0, TAU)) * dec
+    if bowed:
+        y *= np.sin(np.pi * np.clip(t / length, 0, 1)) ** 2 * 0.5
+    else:
+        y += 0.5 * bp(rng.standard_normal(n), f0 * 2, f0 * 9, sr) * np.exp(-t / 0.006)
+        y *= np.clip(t / 0.002, 0, 1)
+    return fade_edges(y, sr, 0.002, min(0.3, length / 3))
+
+
+def dr_brush(sr, rng, vel=1.0, kind="tap"):
+    """Brush on snare. kind: 'tap' (short slap + wires) or 'sweep' (swish)."""
+    if kind == "sweep":
+        n = secs(sr, 0.36)
+        t = tvec(n, sr)
+        nz = bp(rng.standard_normal(n), 1400, 5200, sr)
+        e = np.clip(t / 0.07, 0, 1) ** 1.5 * np.exp(-np.maximum(t - 0.07, 0) / 0.09)
+        return fade_edges(nz * e * vel * 0.55, sr, 0.002, 0.02)
+    n = secs(sr, 0.28)
+    t = tvec(n, sr)
+    nz = bp(rng.standard_normal(n), 1100, 5500, sr)
+    y = nz * (0.7 * np.exp(-t / 0.012) + 0.45 * np.exp(-t / 0.07)) * np.clip(t / 0.0015, 0, 1)
+    y += 0.3 * np.sin(TAU * 190 * t) * np.exp(-t / 0.035)
+    return fade_edges(lp(y, 6500, sr) * vel, sr, 0.0005, 0.02)
+
+
+def dr_crash(sr, rng, vel=1.0, length=1.8):
+    n = secs(sr, length)
+    t = tvec(n, sr)
+    nz = rng.standard_normal(n)
+    y = hp(nz, 2500, sr) * (0.6 * np.exp(-t / (0.3 * length)) + 0.4 * np.exp(-t / 0.05))
+    for k in range(7):
+        f = rng.uniform(2600, 7500)
+        y += 0.08 * np.sin(TAU * f * t + k) * np.exp(-t / (0.2 * length))
+    y = lp(y, 8500, sr)
+    y *= np.clip(t / 0.001, 0, 1)
+    return fade_edges(y * vel * 0.5, sr, 0.0005, 0.2)
+
+
+def dr_heart(sr, rng, vel=1.0):
+    """Soft low 'lub-dub' (music-bed heartbeat)."""
+    n = secs(sr, 0.75)
+    t = tvec(n, sr)
+    y = np.zeros(n)
+    for t0, f0, a in ((0.0, 50.0, 1.0), (0.24, 58.0, 0.7)):
+        tt = np.maximum(t - t0, 0)
+        f = f0 * (1 + 0.35 * np.exp(-tt / 0.025))
+        ph = TAU * np.cumsum(f * (t >= t0)) / sr
+        y += a * (t >= t0) * (np.sin(ph) + 0.5 * np.sin(2 * ph) + 0.2 * np.sin(3 * ph)) \
+            * np.exp(-tt / 0.075) * np.clip(tt / 0.008, 0, 1)
+    y += 0.2 * lp(rng.standard_normal(n), 300, sr) * np.exp(-t / 0.03)
+    return fade_edges(y * vel, sr, 0.001, 0.05)
+
+
+def inst_blip(m, sr, vel=1.0, decay=0.09, harm=0.12):
+    """Clean sine 'data' blip (corporate arpeggio)."""
+    f = hz(m)
+    n = secs(sr, decay * 5 + 0.02)
+    t = tvec(n, sr)
+    y = (np.sin(TAU * f * t) + harm * np.sin(TAU * 2 * f * t)) * np.exp(-t / decay) * np.clip(t / 0.002, 0, 1)
+    return fade_edges(y * vel, sr, 0.0005, 0.01)
+
+
+def inst_pulsebass(m, dur, sr, rng, vel=1.0, width=0.32, fc=320.0):
+    """Clean filtered pulse bass note (cold synth pulse)."""
+    n = secs(sr, dur + 0.06)
+    t = tvec(n, sr)
+    x = pulse(hz(m), n, sr, width, rng.random()) + 0.6 * sine(hz(m), n, sr)
+    x = lp(x, fc * (1 + 1.6 * vel), sr, 2)
+    return x * env_adsr(n, sr, 0.004, 0.08, 0.55, 0.04, dur, smooth=False) * vel
+
+
+def wow(x, sr, depth_ms=1.1, rate=0.55, flutter=0.12, seed=3):
+    """Tape wow/flutter: slow time-varying delay (lo-fi pitch drift)."""
+    x = stereoize(np.asarray(x, dtype=float))
+    n = len(x)
+    t = tvec(n, sr)
+    rng = np.random.default_rng(seed)
+    d = depth_ms * 1e-3 * sr * (1 + 0.6 * np.sin(TAU * rate * t) + flutter * smooth_noise(n, sr, 7, rng))
+    idx = np.arange(n) - d
+    out = np.empty_like(x)
+    for ch in range(2):
+        out[:, ch] = np.interp(idx, np.arange(n), x[:, ch], left=0.0)
+    return out
+
+
+def pingpong(x, sr, delay, fb=0.38, taps=4, fc=3500.0):
+    """Stereo ping-pong echo (returns only the echoes)."""
+    x = stereoize(np.asarray(x, dtype=float))
+    mono = lp(x.mean(axis=1), fc, sr, 1)
+    out = np.zeros_like(x)
+    d = int(round(delay * sr))
+    for k in range(1, taps + 1):
+        s = k * d
+        if s >= len(x):
+            break
+        out[s:, (k + 1) % 2] += mono[: len(x) - s] * fb ** k
+    return out
+
+
+def _put(buf, sig, t, sr, gain=1.0, p=0.0):
+    """Add mono/stereo `sig` into stereo buffer `buf` at time t (seconds)."""
+    if gain == 0:
+        return
+    sig = np.asarray(sig, dtype=float)
+    sig = pan(sig, p) if sig.ndim == 1 else sig
+    i0 = int(round(t * sr))
+    if i0 < 0:
+        sig = sig[-i0:]
+        i0 = 0
+    e = min(len(buf), i0 + len(sig))
+    if e > i0:
+        buf[i0:e] += sig[: e - i0] * gain
+
+
+# =============================================================================
 # Score: event placement + reverb bus + normalization
 # =============================================================================
 class Score:
@@ -833,6 +1148,9 @@ class Score:
         self.events = []    # (t, instrument, midi)
         self.rev = dict(rt60=2.0, predelay=0.02, damp=0.5)
         self.wet_gain = 0.35
+        self.level_db = 0.0   # cue loudness offset vs TARGET_LUFS ("very light" cues < 0)
+        self.opts = {}        # cue options parsed from "name:key=val,..."
+        self.ceiling_db = None  # optional transparent peak limiter after normalization
         self.set_tempo(100)
 
     def set_tempo(self, bpm, beats_per_bar=4):
@@ -885,8 +1203,10 @@ class Score:
         out = biquad(out, "highshelf", 9000, sr, 0.7, -3.0)   # keep the top end polite
         if normalize and np.abs(out).max() > 1e-6:
             L = lufs(out, sr)
-            g = float(np.clip(TARGET_LUFS - L, -24, 24))
+            g = float(np.clip(TARGET_LUFS + self.level_db - L, -24, 24))
             out = out * 10 ** (g / 20)
+        if self.ceiling_db is not None:
+            out = _peak_limit(out, sr, self.ceiling_db)
         out = soft_clip(out, 0.89, 0.62)
         n = len(out)
         fi = min(n, secs(sr, fade_in)) if fade_in > 0 else 0
@@ -896,6 +1216,21 @@ class Score:
         if fo > 1:
             out[n - fo:] *= np.cos(np.linspace(0, np.pi / 2, fo))[:, None]
         return out.astype(np.float32)
+
+
+def _peak_limit(x, sr, ceiling_db=-3.5, look=0.004, release=0.03):
+    """Cheap lookahead peak limiter. gain = moving average (width H) of the
+    running minimum (width 2H) of min(1, ceiling/|x|), so gain <= the need at
+    every sample and changes smoothly over ~2H. Only rare tutti peaks are touched."""
+    from scipy.ndimage import minimum_filter1d, uniform_filter1d
+    c = 10 ** (ceiling_db / 20)
+    a = np.abs(x).max(axis=1) if x.ndim == 2 else np.abs(x)
+    req = np.minimum(1.0, c / np.maximum(a, 1e-9))
+    if req.min() >= 1.0:
+        return x
+    H = max(2, int((look + release) * sr))
+    g = uniform_filter1d(minimum_filter1d(req, 2 * H + 1, mode="nearest"), H + 1, mode="nearest")
+    return x * (g[:, None] if x.ndim == 2 else g)
 
 
 def _bars(S, prog):
@@ -1381,22 +1716,736 @@ def _cue_resolve(S):
             S.add(dr_swell(sr, rng, 2 * S.beat), b3 * S.bar - 2 * S.beat, 0.12, 0, 0.3)
 
 
+# =============================================================================
+# TIREDNESS cues
+# =============================================================================
+def _halves(S, tb, sym):
+    """Split 'A|B' bar symbols -> [(t, span, Chord, sym)]."""
+    hs = sym.split("|")
+    span = S.bar / len(hs)
+    return [(tb + i * span, span, Chord(h), h) for i, h in enumerate(hs)]
+
+
+def _approach(cur, tgt, lo, hi):
+    """A chromatic approach note to `tgt` near `cur` (from below unless that leaves the range)."""
+    t = tgt
+    while t - cur > 6:
+        t -= 12
+    while cur - t > 6:
+        t += 12
+    a = t - 1 if t - 1 >= lo else t + 1
+    return min(max(a, lo), hi)
+
+
+# --- chill --------------------------------------------------------------------
+CHILL_MOTIF = [   # vibraphone hook over the 4-bar loop (F major colour)
+    _mel("0:F5:.5:.7 .5:A5:.5:.62 1:C6:1.5:.8 3:A5:1:.6"),
+    _mel(".5:G5:.5:.6 1:E5:1.25:.66 2.5:F#5:1.5:.6"),
+    _mel("0:F5:.5:.65 .5:A5:.5:.6 1:Bb5:1.5:.75 3:A5:1:.6"),
+    _mel("0:G5:1.5:.7 1.5:F5:.5:.55 2:E5:2:.62"),
+]
+CHILL_ANSWER = [  # softer call-and-response in the B half
+    _mel("2:D6:.5:.45 2.5:C6:1.5:.5"),
+    _mel("2.5:A5:.5:.42 3:F#5:1:.45"),
+    _mel("2:A5:.5:.45 2.5:Bb5:.5:.45 3:D6:1:.5"),
+    _mel("2:Bb5:.5:.45 2.5:G5:1.5:.5"),
+]
+
+
+def _cue_chill(S):
+    """Lo-fi gaming bedroom: lazy swung e-piano 9ths, vibraphone hook, warm sub,
+    soft brushes, tape wow. F major colour (IV-iii/V/ii-ii-V), 78 BPM."""
+    S.set_tempo(78)
+    S.rev = dict(rt60=1.7, predelay=0.02, damp=0.6)
+    S.wet_gain = 0.3
+    lo, sr, rng = S.lo, S.sr, S.rng
+    prog = ["Bbmaj9", "Am7|D7b9", "Gm9", "C9sus4|C7b9"]
+    SW = 0.6
+    keys = np.zeros_like(S.dry)          # e-piano + vibe + pad -> lo-fi bus (wow, warm)
+    prev = None
+    bass_seq = []
+    for b in range(S.nbars):
+        tb = b * S.bar
+        for th, span, ch, hs in _halves(S, tb, prog[b % 4]):
+            bass_seq.append((th, span, ch))
+    for i, (th, span, ch) in enumerate(bass_seq):
+        b = int(th // S.bar + 1e-6)
+        cyc, sec = b // 8, (b % 8) // 4           # 8-bar cycle: A (hook) / B (answer)
+        v = voicing_pcs(rootless(ch), prev, 4, 53, 72)
+        prev = v
+        bn = ch.bass_note(36, 47)
+        S.chord(th, ch.sym, [bn] + v)
+        whole = span > S.bar * 0.75
+        # e-piano comp: rolled hit, then a lighter push on the swung 'and of 3'
+        hits = [(0.0, 0.62, 1.7)] + ([(2.5, 0.42, 0.9)] if whole else [(1.5, 0.34, 0.45)])
+        for pos, vel, ln in hits:
+            t0 = th + _sw(pos, SW) * S.beat
+            for j, m in enumerate(v):
+                tt = S.ht(t0 + 0.018 * j, 0.004)
+                _put(keys, inst_epiano(m, ln * S.beat, S.hv(vel * (0.9 if j else 1.0)), sr), tt, sr, 0.30)
+                S.ev(tt, "ep", m)
+        _put(keys, S.up(inst_pad(v, span + 0.1, lo, rng, cutoff=900, attack=0.8, release=1.0, detune=7)),
+             th, sr, 0.07)
+        # warm sub: root, swung pick-up, approach note into the next chord
+        nxt = bass_seq[(i + 1) % len(bass_seq)][2].bass_note(36, 47)
+        pat = [(0.0, bn, 1.3, 0.75)]
+        if whole:
+            pat += [(1.5, bn + 12 if bn < 41 else bn - 5, 0.4, 0.45), (2.5, bn, 0.8, 0.6)]
+            if nxt != bn:
+                pat.append((3.5, _approach(bn, nxt, 34, 50), 0.4, 0.5))
+        else:
+            pat.append((1.5, _approach(bn, nxt, 34, 50) if nxt != bn else bn + 7, 0.4, 0.45))
+        for pos, m, ln, vel in pat:
+            tt = S.ht(th + _sw(pos, SW) * S.beat, 0.004)
+            S.add(S.up(inst_sub(m, ln * S.beat, lo, 0.012, 0.12, 0.45)), tt, 0.30 * S.hv(vel), 0, 0)
+            S.ev(tt, "bass", m)
+    # hook / answer (vibraphone), whole bars
+    for b in range(S.nbars):
+        tb = b * S.bar
+        cyc, sec = b // 8, (b % 8) // 4
+        if sec == 0:
+            phrase, g = CHILL_MOTIF[b % 4], 0.24
+            if cyc % 2 == 1 and b % 4 == 3:       # second time round: resolve to the root
+                phrase = _mel("0:G5:1:.7 1:F5:.5:.55 1.5:D5:.5:.55 2:E5:1:.6 3:C5:1:.55")
+        else:
+            phrase, g = CHILL_ANSWER[b % 4], 0.17
+        for beat, m, ln, vel in phrase:
+            tt = S.ht(tb + _sw(beat, SW) * S.beat, 0.005)
+            _put(keys, inst_vibe(m, ln * S.beat, S.hv(vel), sr), tt, sr, g, 0.12)
+            S.ev(tt, "vibe", m)
+    # brushes (from bar 2 so the cue opens on keys + bass)
+    d0 = 1 if S.nbars > 2 else 0
+    for b in range(d0, S.nbars):
+        tb = b * S.bar
+        kicks = [0.0, 2.5] + ([1.75] if b % 4 == 3 else [])
+        for pos in kicks:
+            S.add(dr_kick(sr, rng, S.hv(0.8 if pos == 0 else 0.6), soft=1.0, decay=0.2),
+                  S.ht(tb + _sw(pos, SW) * S.beat, 0.004), 0.28)
+        for pos in (1, 3):
+            S.add(dr_brush(sr, rng, S.hv(0.85)), S.ht(tb + pos * S.beat + 0.018, 0.004), 0.30, 0.1, 0.25)
+        if b % 2 == 1:
+            S.add(dr_brush(sr, rng, 0.35), S.ht(tb + _sw(3.75, SW) * S.beat), 0.2, 0.15, 0.2)
+        for q in range(4):
+            S.add(dr_brush(sr, rng, S.hv(0.5), "sweep"), tb + (q + 0.05) * S.beat, 0.14, -0.35 if q % 2 else 0.35, 0.2)
+        for k in range(8):
+            S.add(dr_hat(sr, rng, S.hv(0.55 if k % 2 else 0.35)), S.ht(tb + _sw(k * 0.5, SW) * S.beat, 0.004),
+                  0.035, -0.3, 0.05)
+    keys = wow(keys, sr, 1.1, 0.55)
+    keys = np.tanh(1.3 * lp(keys, 3800, sr, 2)) / 1.3
+    S.add(keys, 0.0, 1.0, 0, 0.35)
+
+
+# --- panic --------------------------------------------------------------------
+PANIC_A = [   # xylophone hook, bars 1-4 of every 8 (chromatic descents)
+    _mel("0:B4:.5:.8 .5:E5:.5:.7 1:G5:.5:.8 1.5:E5:.5:.7 2:B5:.5:.9 2.5:A#5:.5:.7 3:A5:.5:.8 3.5:G5:.5:.7"),
+    _mel("0:F#5:.5:.85 .5:G5:.5:.7 1:F#5:.5:.75 1.5:E5:.5:.7 2:D#5:.5:.8 2.5:E5:.75:.85"),
+    _mel("0:E5:.5:.8 .5:G5:.5:.7 1:C6:.5:.85 1.5:G5:.5:.7 2:E6:.5:.9 2.5:D#6:.5:.7 3:D6:.5:.75 3.5:C6:.5:.7"),
+    _mel("0:B5:.5:.85 .5:A5:.5:.7 1:F#5:.5:.75 1.5:D#5:.5:.7 2:B4:.5:.8 2.5:C5:.5:.65 3:C#5:.5:.7 3.5:D#5:.5:.8"),
+]
+PANIC_B = [   # pizzicato-violin answer, bars 5-7
+    _mel("0:E5:.5:.8 .5:G5:.5:.7 1:B5:.5:.8 1.5:G5:.5:.7 2:E5:.5:.75 2.5:D#5:.5:.65 3:E5:.75:.8"),
+    _mel("0:A5:.5:.8 .5:C6:.5:.7 1:E6:.5:.8 1.5:C6:.5:.7 2:A5:.5:.75 2.5:G#5:.5:.65 3:A5:.75:.8"),
+    _mel("0:F#5:.5:.8 .5:A5:.5:.7 1:C6:.5:.8 1.5:A5:.5:.7 2:B5:.5:.8 2.5:A5:.5:.65 3:F#5:.5:.7 3.5:D#5:.5:.7"),
+]
+PANIC_RUN = _mel("0:E5:1:.85 2:B4:.25:.6 2.25:C5:.25:.62 2.5:C#5:.25:.65 2.75:D5:.25:.68 3:D#5:.25:.72 "
+                 "3.25:E5:.25:.76 3.5:F5:.25:.8 3.75:F#5:.25:.85")
+
+
+def _cue_panic(S):
+    """Frantic comedic chase: galloping pizz bass, xylophone hook with chromatic
+    runs, woodblock tick-tock + snare. E minor, 160 BPM."""
+    S.set_tempo(160)
+    S.rev = dict(rt60=1.0, predelay=0.01, damp=0.55)
+    S.wet_gain = 0.28
+    lo, sr, rng = S.lo, S.sr, S.rng
+    prog = ["Em", "Em", "C", "B7", "Em", "Am", "F#m7b5|B7", "Em|B7"]
+    e8 = S.beat / 2
+    prev = None
+    segs = []
+    for b in range(S.nbars):
+        segs += [(b, th, span, ch) for th, span, ch, _ in _halves(S, b * S.bar, prog[b % 8])]
+    for i, (b, th, span, ch) in enumerate(segs):
+        r = ch.bass_note(40, 51)
+        nxt = segs[(i + 1) % len(segs)][3].bass_note(40, 51)
+        v = voicing(ch, prev, 3, 55, 69)
+        prev = v
+        S.chord(th, ch.sym, [r] + v)
+        steps = int(round(span / e8))
+        line = [r, r + 12, r + 7, r + 12] * (steps // 4)
+        if nxt != r:
+            tgt = nxt if abs(nxt - r) <= 6 else nxt + (12 if nxt < r else -12)
+            line[-2:] = [tgt - 2 if tgt > r else tgt + 2, tgt - 1 if tgt > r else tgt + 1]
+        for k, m in enumerate(line):
+            vel = S.hv(1.0 if k == 0 else 0.8 if k % 2 == 0 else 0.62)
+            tt = S.ht(th + k * e8, 0.004)
+            S.add(lp(inst_pluck(m, e8 * 0.55, sr, vel, 0.3, 1.1, 0.05, i * 8 + k, body=0.45), 2200, sr),
+                  tt, 0.50, -0.05, 0.1)
+            S.ev(tt, "pizz", m)
+        for k in range(1, steps, 2):          # off-beat pizz chord chops
+            if (b + k) % 7 == 3 and S.dur > 0:
+                continue
+            for j, m in enumerate(v):
+                S.add(inst_pluck(m, 0.07, sr, S.hv(0.6), 0.4, 0.6, 0.04, j + k), S.ht(th + k * e8 + 0.006 * j, 0.003),
+                      0.055, 0.25 - 0.25 * j, 0.15)
+    for b in range(S.nbars):
+        tb = b * S.bar
+        bb, cyc = b % 8, b // 8
+        if bb < 4:
+            phrase, inst = PANIC_A[bb], "xylo"
+            if cyc % 2 == 1 and bb == 1:
+                phrase = _mel("0:F#5:.5:.85 .5:G5:.5:.7 1:A5:.5:.75 1.5:G5:.5:.7 2:F#5:.5:.8 2.5:E5:.75:.85")
+        elif bb < 6 or (bb == 6 and cyc % 2 == 1):
+            phrase, inst = PANIC_B[bb - 4], "pizz"
+        elif bb == 6:
+            phrase, inst = [], "pizz"         # one bar of air before the run
+        else:
+            phrase, inst = PANIC_RUN, "xylo"
+        for beat, m, ln, vel in phrase:
+            tt = S.ht(tb + beat * S.beat, 0.003)
+            if inst == "xylo":
+                S.add(inst_mallet(m, S.hv(vel), sr, "xylo"), tt, 0.20, 0.2, 0.22)
+            else:
+                S.add(lp(inst_pluck(m, ln * S.beat * 0.4, sr, S.hv(vel), 0.5, 0.7, 0.04, int(beat * 2) + bb),
+                         4500, sr), tt, 0.15, 0.3, 0.2)
+            S.ev(tt, inst, m)
+        # percussion: woodblock tick-tock every beat, kick 1 & 3, snare 2 & 4, shaker 8ths
+        for q in range(4):
+            S.add(dr_wood(sr, rng, S.hv(0.85), 1700 if q % 2 == 0 else 1300), S.ht(tb + q * S.beat, 0.003),
+                  0.075, 0.35 if q % 2 else -0.35, 0.12)
+            if q % 2 == 0:
+                S.add(dr_kick(sr, rng, S.hv(0.75), soft=0.6, decay=0.16), S.ht(tb + q * S.beat, 0.003), 0.24)
+            else:
+                S.add(dr_snare(sr, rng, S.hv(0.7), soft=0.4), S.ht(tb + q * S.beat, 0.003), 0.10, 0.05, 0.15)
+        for k in range(8):
+            S.add(dr_shaker(sr, rng, S.hv(0.7 if k % 2 else 0.4)), S.ht(tb + k * e8, 0.003), 0.06, -0.25, 0.05)
+        if bb == 7:                           # snare roll under the chromatic run
+            for k in range(8):
+                S.add(dr_snare(sr, rng, 0.35 + 0.08 * k, soft=0.5), tb + (2 + k * 0.25) * S.beat, 0.10, 0, 0.2)
+
+
+# --- awkward ------------------------------------------------------------------
+AWK_MEL = {   # 8-bar bassoon phrase; bars 3, 4 and 8 are (mostly) silence
+    0: "0:E3:.4:.75 .5:F3:.4:.65 1:G3:.7:.8 2.5:G3:.35:.6 3:A3:.35:.65 3.5:Bb3:.35:.7",
+    1: "0:A3:.9:.8 1.5:Ab3:.45:.7 2:G3:1.2:.65",
+    4: "0:E3:.4:.75 .5:F3:.4:.65 1:G3:.7:.8 2.5:G3:.35:.6 3:A3:.35:.65 3.5:Bb3:.35:.7",
+    5: "0:C4:.4:.75 .5:A3:.4:.65 1:F3:.6:.7 2:Ab3:.9:.8 3:G3:.6:.6",
+    6: "0:F3:.4:.7 .5:E3:.3:.55 1:D3:.6:.7 2:B2:.4:.7 2.5:D3:.35:.6 3:F3:.6:.65",
+    7: "0:E3:.35:.7",
+}
+
+
+def _cue_awkward(S):
+    """Cringe comedy: staccato bassoon + tuba + pizz with long uncomfortable rests
+    (a faint clock ticks in the silences). Cheesy-sad: C major with the minor iv. 90 BPM."""
+    S.set_tempo(90)
+    S.level_db = -2.0
+    S.rev = dict(rt60=0.9, predelay=0.012, damp=0.6)
+    S.wet_gain = 0.25
+    lo, sr, rng = S.lo, S.sr, S.rng
+    prog = ["C", "F|Fm", "C", "G7", "C", "F|Fm", "Dm7|G7", "C"]
+    tuba_bars = {0: (0, 2), 1: (0, 2), 2: (0,), 4: (0, 2), 5: (0, 2), 6: (0, 2), 7: (0,)}
+    pizz_bars = {0: (1,), 1: (1, 3), 4: (1, 3), 5: (1,), 6: (1, 3)}
+    rest_ticks = {2: (1, 2, 3), 3: (0, 1, 2, 3), 7: (1, 2, 3)}
+    prev = None
+    for b, tb, sym, pass_ in _bars(S, prog):
+        bb = b % 8
+        hs = _halves(S, tb, sym)
+        for th, span, ch, h in hs:
+            v = voicing(ch, prev, 3, 55, 67)
+            prev = v
+            S.chord(th, h, [ch.bass_note(36, 47)] + v)
+
+        def chord_at(beat):
+            return hs[min(len(hs) - 1, int(beat / (4 / len(hs))))][2]
+
+        for q in tuba_bars.get(bb, ()):
+            ch = chord_at(q)
+            r = ch.bass_note(41, 52)
+            m = r if q == 0 or len(hs) > 1 else (r + 7 if r + 7 <= 52 else r - 5)
+            tt = S.ht(tb + q * S.beat, 0.006)
+            S.add(S.up(inst_tuba(m, 0.32, lo, rng, S.hv(0.8 if q == 0 else 0.6))), tt, 0.36, -0.1, 0.15)
+            S.ev(tt, "tuba", m)
+        pz = pizz_bars.get(bb, ())
+        if pass_ % 2 == 1 and bb == 4:
+            pz = (1,)                           # second time: one 'pah' goes missing
+        for q in pz:
+            ch = chord_at(q)
+            v = voicing(ch, None, 3, 55, 67)
+            for j, m in enumerate(v):
+                S.add(inst_pluck(m, 0.08, sr, S.hv(0.55), 0.4, 0.7, 0.05, j + q), S.ht(tb + q * S.beat + 0.01 * j, 0.004),
+                      0.13, 0.2 - 0.2 * j, 0.2)
+        if bb == 2:                             # the lone afterthought plink
+            S.add(inst_pluck(72, 0.1, sr, 0.5, 0.5, 0.9, 0.05, 3), tb + 3.5 * S.beat, 0.12, 0.35, 0.3)
+        spec = AWK_MEL.get(bb)
+        if spec:
+            late = 0.5 if (pass_ % 2 == 1 and bb == 4) else 0.0   # an awkward late entry
+            for beat, m, ln, vel in _mel(spec):
+                tt = S.ht(tb + (beat + late) * S.beat, 0.008)
+                S.add(S.up(inst_bassoon(m, ln * S.beat, lo, rng, S.hv(vel))), tt, 0.40, 0.05, 0.2)
+                S.ev(tt, "bassoon", m)
+        if bb in (1, 5):                        # sad little glock echo of the Ab-G sigh
+            for beat, m in ((3.0, 80), (3.5, 79)):
+                S.add(inst_bell(m, 0.6, 0.45, sr), S.ht(tb + beat * S.beat), 0.07, 0.4, 0.4)
+        for q in rest_ticks.get(bb, ()):        # the clock in the awkward silence
+            S.add(dr_wood(sr, rng, 0.5, 3300 if q % 2 == 0 else 2800), tb + q * S.beat, 0.035,
+                  0.5 if q % 2 else 0.3, 0.3)
+
+
+# --- chaos --------------------------------------------------------------------
+def _cue_chaos(S):
+    """Slapstick action: galloping 16th low-string ostinato, 3+3+2 brass stabs with
+    a rip into each cycle, rock drums with tom fills. D minor, 150 BPM."""
+    S.set_tempo(150)
+    S.rev = dict(rt60=1.3, predelay=0.012, damp=0.5)
+    S.wet_gain = 0.3
+    S.ceiling_db = -3.5
+    lo, sr, rng = S.lo, S.sr, S.rng
+    prog = ["Dm", "Bb", "Gm", "A7", "Dm", "Bb", "Eb|Gm", "A7"]
+    s16 = S.beat / 4
+    prev = None
+    for b, tb, sym, pass_ in _bars(S, prog):
+        bb = b % 8
+        hs = _halves(S, tb, sym)
+        for hi_, (th, span, ch, h) in enumerate(hs):
+            r = ch.root_note(38, 49)
+            v = voicing(ch, prev, 3, 58, 72)
+            prev = v
+            S.chord(th, h, [r] + v)
+            n16 = int(round(span / s16))
+            pat = ([0, 12, 0, 7] * 4)[:n16]
+            if bb in (3, 7) and hi_ == len(hs) - 1:
+                pat[-4:] = [0, 2, 3, 4] if bb == 7 else [0, 12, 10, 7]
+            for k, d in enumerate(pat):
+                tt = S.ht(th + k * s16, 0.003)
+                acc = 1.0 if k % 4 == 0 else 0.7
+                S.add(S.up(inst_stacc(r + d, s16 * 0.55, lo, rng, fc=900)), tt, 0.26 * S.hv(acc), -0.1, 0.12)
+            # brass stabs, 3+3+2 (in 8ths)
+            stab8 = [p for p in (0, 3, 6) if p * S.beat / 2 < span - 1e-6] if len(hs) == 1 else ([0, 3] if hi_ == 0 else [0, 2, 3])
+            if bb in (3, 7) and len(hs) == 1:
+                stab8 = [0, 3, 6]
+            for p in stab8:
+                tt = S.ht(th + p * S.beat / 2, 0.003)
+                mids = v + [r + 12]
+                S.add(S.up(inst_brass(mids, 0.16, lo, rng, peak_fc=3000, base_fc=650, attack=0.008,
+                                      release=0.14, fc_attack=0.03)), tt, 0.30 * S.hv(1.0 if p == 0 else 0.85),
+                      0, 0.25)
+                S.ev(tt, "stab", v[-1])
+        if bb == 7:      # brass rip into the next downbeat
+            nv = voicing(Chord(prog[0]), prev, 3, 58, 72)
+            t0 = tb + S.bar - 0.32
+            S.add(S.up(inst_brass(nv, 0.30, lo, rng, peak_fc=3200, base_fc=500, attack=0.05, release=0.12,
+                                  fc_attack=0.12, bend=lambda t: -5.0 * (1 - np.clip(t / 0.3, 0, 1)) ** 1.5)),
+                  t0, 0.17, 0, 0.3)
+        # drums
+        for pos in (0, 1.5, 2) + ((2.75,) if bb % 2 else ()):
+            if pos == 0 and bb in (0, 4):
+                continue                       # the timpani takes this downbeat
+            S.add(dr_kick(sr, rng, S.hv(0.9), soft=0.3, decay=0.15), S.ht(tb + pos * S.beat, 0.002), 0.21)
+        for pos in (1, 3):
+            if bb in (3, 7) and pos == 3:
+                continue
+            S.add(dr_snare(sr, rng, S.hv(0.9)), S.ht(tb + pos * S.beat, 0.002), 0.16, 0.05, 0.18)
+        for k in range(8):
+            S.add(dr_hat(sr, rng, S.hv(0.7 if k % 2 else 0.45), open_=(k == 7)), S.ht(tb + k * S.beat / 2, 0.002),
+                  0.05, 0.3, 0.05)
+        if bb in (3, 7):     # tom fill
+            for j, f in enumerate((210, 180, 150, 120)):
+                S.add(dr_tom(sr, rng, S.hv(0.8 - 0.08 * j), f), tb + (3 + 0.25 * j) * S.beat, 0.19, 0.4 - 0.27 * j, 0.2)
+        if bb in (0, 4):
+            S.add(dr_timpani(sr, rng, 50 if bb == 0 else 45, 0.9, 1.2), S.ht(tb, 0.002), 0.15, 0, 0.25)
+        if (bb == 0 and b > 0) or bb == 4:
+            S.add(dr_crash(sr, rng, 0.8, 1.4), tb, 0.10, -0.3, 0.2)
+
+
+# --- corporate ----------------------------------------------------------------
+def _cue_corporate(S):
+    """Cold minimal: filtered pulse bass in 8ths, clean sine arpeggio with ping-pong
+    echoes, clinical 16th ticks, icy glass pad. Sus chords with a b6 rub. A, 100 BPM."""
+    S.set_tempo(100)
+    S.level_db = -1.5
+    S.rev = dict(rt60=2.6, predelay=0.03, damp=0.35)
+    S.wet_gain = 0.32
+    lo, sr, rng = S.lo, S.sr, S.rng
+    prog = ["Asus2", "Asus2b6", "Fmaj7", "Fmaj7#11", "Dm9", "Esus4", "Asus2", "E7sus4"]
+    arp = np.zeros_like(S.dry)
+    order = [0, 1, 2, 3, 2, 1, 3, 2]
+    prev, pprev = None, None
+    for b, tb, sym, pass_ in _bars(S, prog):
+        ch = Chord(sym)
+        r = ch.root_note(40, 51)
+        pv = voicing_pcs(rootless(ch) + [ch.root], pprev, 4, 64, 83)
+        pprev = pv
+        S.chord(tb, sym, [r] + pv)
+        if b % 2 == 0 or sym in ("Asus2b6", "Fmaj7#11", "Esus4", "E7sus4"):
+            S.add(inst_glass(pv, (2 if b % 2 == 0 else 1) * S.bar - 0.1, sr, rng, attack=1.0, release=1.6,
+                             bright=0.3), tb, 0.13, 0, 0.6)
+        S.add(S.up(inst_sub(r - 12, S.bar * 0.97, lo, 0.05, 0.3, 0.6)), tb, 0.045)
+        for k in range(8):                     # cold pulse bass, accent on the beat
+            m = r + (12 if k == 7 and b % 2 else 0)
+            tt = S.ht(tb + k * S.beat / 2, 0.002)
+            S.add(S.up(inst_pulsebass(m, S.beat * 0.28, lo, rng, 0.9 if k % 2 == 0 else 0.6, fc=420)), tt, 0.17, 0, 0.05)
+        # sine arpeggio over upper chord tones, 8ths, octave lift on later passes
+        tones = sorted(set(m for m in range(74, 90) if m % 12 in set(ch.pcs)))[:4]
+        if pass_ % 2 == 1:
+            tones = [m + 12 if m < 79 else m for m in tones]
+        for k in range(8):
+            if b % 4 == 3 and k >= 6:
+                continue                       # breath at the phrase end
+            m = tones[order[k] % len(tones)]
+            tt = S.ht(tb + k * S.beat / 2, 0.002)
+            _put(arp, inst_blip(m, sr, S.hv(0.8 if k % 4 == 0 else 0.6), 0.075), tt, sr, 0.16,
+                 0.25 if k % 2 else -0.25)
+            S.ev(tt, "arp", m)
+        if b >= 1 or S.nbars < 3:
+            for k in range(16):
+                S.add(dr_hat(sr, rng, S.hv([0.7, 0.3, 0.45, 0.3][k % 4])), S.ht(tb + k * S.beat / 4, 0.002),
+                      0.04, 0.35 if k % 2 else -0.15, 0.08)
+            S.add(dr_rim(sr, rng, 0.5), tb + 3 * S.beat, 0.035, 0.3, 0.4)
+        if b % 4 == 3:                         # a high glass swell: the unease
+            S.add(inst_glass([88 if b % 8 == 3 else 89], S.bar * 0.9, sr, rng, attack=S.bar * 0.7, release=0.6,
+                             bright=0.0), tb, 0.05, 0.4, 0.8)
+    arp = arp + pingpong(arp, sr, 0.75 * S.beat, 0.42, 4, 3200)
+    S.add(arp, 0.0, 1.0, 0, 0.25)
+
+
+# --- ominous / bond -------------------------------------------------------------
+BOND_MEL = [   # the creature's lullaby (D major), one entry per bar
+    _mel("0:F#5:1:.65 1:A5:.5:.6 1.5:D6:1.5:.7 3:C#6:1:.6"),
+    _mel("0:E6:1.5:.65 1.5:C#6:.5:.55 2:A5:2:.6"),
+    _mel("0:D6:1:.65 1:B5:.5:.55 1.5:F#5:1.5:.6 3:A5:1:.55"),
+    _mel("0:B5:1.5:.62 1.5:A5:.5:.52 2:F#5:2:.6"),
+    _mel("0:A5:1:.62 1:D6:1:.6 2:F#6:1.5:.68 3.5:E6:.5:.52"),
+    _mel("0:E6:1.5:.65 1.5:D6:.5:.55 2:B5:2:.6"),
+    _mel("0:D6:1:.62 1:B5:1:.58 2:A5:1:.56 3:G5:1:.55"),
+    _mel("0:E6:1:.6 1:D6:1:.55 2:C#6:2:.6"),
+]
+
+
+def _cue_ominous(S, turn=0.66):
+    """Sewer: low D drone, slow string swells over a D pedal (i - bVI - iv - bII),
+    distant pipe resonances, pitched drips, a heartbeat. From `turn` (fraction of
+    the render, opt "turn=0.7"; 1 = never) it warms: bVI - bVII - I (D major),
+    the heartbeat slows and fades, choir + strings + celesta lullaby enter."""
+    S.set_tempo(56)
+    S.rev = dict(rt60=3.6, predelay=0.04, damp=0.55)
+    S.wet_gain = 0.5
+    lo, sr, rng = S.lo, S.sr, S.rng
+    D = S.dur
+    turn = float(S.opts.get("turn", turn))
+    t_turn = round(D * turn / S.beat) * S.beat if turn < 0.98 else D + 30.0
+    t_turn = max(t_turn, min(D, 2 * S.beat))
+    W = max(0.0, D - t_turn)
+    # ---- drone over the whole render (filter opens a little at the turn) ----
+    n_lo = secs(lo, D + 2.0)
+    tl = tvec(n_lo, lo)
+    warm = np.clip((tl - t_turn) / 3.0, 0, 1)
+    dr = saw(hz(38), n_lo, lo, 0.1) + saw(hz(38) * 1.003, n_lo, lo, 0.6) + 0.6 * saw(hz(45) * 0.999, n_lo, lo, 0.3) \
+        + 0.35 * saw(hz(50) * 1.002, n_lo, lo, 0.8)
+    fc = (260 + 160 * warm) * (1 + 0.35 * np.sin(TAU * 0.09 * tl))
+    dr = tv_filter(dr, fc, lo, q=1.3, block=512)
+    dr = hp(dr, 60, lo, 2)
+    dr += 0.25 * sine(hz(38), n_lo, lo) * (1 - 0.5 * warm)
+    dr *= np.clip(tl / 2.5, 0, 1) * np.clip((D + 1.5 - tl) / 1.5, 0, 1)
+    S.add(S.up(dr), 0.0, 0.16, 0, 0.15)
+    # ---- dark harmony: one chord per bar until the turn ----
+    dark = ["Dmadd9", "Bb/D", "Gm/D", "Eb/D"]
+    prev = None
+    b = 0
+    while b * S.bar < min(D, t_turn):
+        tb = b * S.bar
+        sym = dark[b % 4]
+        ch = Chord(sym)
+        v = voicing(ch, prev, 3, 50, 65)
+        prev = v
+        S.chord(tb, sym, [38] + v)
+        ln = min(S.bar, t_turn - tb) + 0.6
+        S.add(S.up(inst_strings_sect(v, ln, lo, rng, cutoff=750, attack=min(1.8, ln * 0.4), release=1.8)),
+              tb, 0.30, 0, 0.5)
+        S.add(S.up(inst_pad([m - 12 for m in v[:2]], ln, lo, rng, cutoff=420, attack=1.5, release=1.5, detune=7)),
+              tb, 0.12, 0, 0.3)
+        # distant pipe resonance and (every other bar) a bowed-metal whine
+        S.add(inst_metal(hz(int(rng.choice([50, 57, 62]))), 3.0, sr, rng), tb + rng.uniform(0.6, S.bar - 0.6),
+              0.07, float(rng.uniform(-0.7, 0.7)), 0.9)
+        if b % 2 == 1:
+            S.add(inst_metal(rng.uniform(1100, 1500), 3.5, sr, rng, bowed=True, bright=0.4),
+                  tb + rng.uniform(0.0, 1.0), 0.022, float(rng.uniform(-0.8, 0.8)), 1.0)
+        b += 1
+    # ---- warm turn: Bbmaj7 - C/D - Dadd9 (- Gmaj7/D - Dadd9 ...) ----
+    if W > 0.5:
+        c = min(S.bar, max(1.2, 0.24 * W))
+        plan = [(t_turn, "Bbmaj7", c), (t_turn + c, "C/D", c)]
+        t = t_turn + 2 * c
+        k = 0
+        while t < D:
+            ln = min(S.bar, D - t) if D - t > 1.5 * S.bar else D - t
+            plan.append((t, "Dadd9" if k % 2 == 0 else "Gmaj7/D", max(ln, 0.5)))
+            t += max(ln, 0.5)
+            k += 1
+        wprev = None
+        for i, (t0, sym, ln) in enumerate(plan):
+            ch = Chord(sym)
+            v = voicing(ch, wprev, 4, 54, 72)
+            wprev = v
+            S.chord(t0, sym, [38] + v)
+            S.add(S.up(inst_strings_sect(v, ln + 0.3, lo, rng, cutoff=2200, attack=1.0 if i == 0 else 0.6,
+                                         release=1.6)), t0, 0.26, 0, 0.55)
+            S.add(S.up(inst_choir(v[1:], ln + 0.3, lo, rng, "oo", attack=1.2 if i == 0 else 0.7, release=1.6)),
+                  t0, 0.16, 0, 0.6)
+            S.add(S.up(inst_sub(ch.bass_note(38, 49), ln, lo, 0.4, 0.8, 0.3)), t0, 0.10)
+        # celesta: two 'questions' over Bb and C, then the lullaby from the D chord
+        for t0, notes in ((plan[0][0] + 0.3, [(0, 86), (0.6, 81)]), (plan[1][0] + 0.3, [(0, 88), (0.6, 79)])):
+            for dt, m in notes:
+                S.add(inst_mallet(m, 0.55, sr, "celesta"), t0 + dt * S.beat, 0.15, 0.2, 0.6)
+                S.ev(t0 + dt * S.beat, "celesta", m)
+        tD = plan[2][0] if len(plan) > 2 else D
+        k = 0
+        while tD + k * S.bar < D - 0.3:
+            for beat, m, ln, vel in BOND_MEL[[0, 3, 4, 5, 2, 3, 6, 7][k % 8]]:
+                tt = tD + k * S.bar + beat * S.beat
+                S.add(inst_mallet(m, S.hv(vel), sr, "celesta"), S.ht(tt, 0.008), 0.18, 0.15, 0.55)
+                S.ev(tt, "celesta", m)
+            k += 1
+    # ---- drips (pitched, pentatonic: minor while dark, major once warm) ----
+    t = 0.6
+    while t < D - 0.2:
+        scale = [81, 84, 86, 89, 91, 93] if t < t_turn else [81, 83, 86, 88, 90, 93]
+        m = int(rng.choice(scale))
+        S.add(inst_drop(m, sr, S.hv(0.8)), t, 0.09 if t < t_turn else 0.06, float(rng.uniform(-0.8, 0.8)), 0.9)
+        S.ev(t, "drip", m)
+        t += 0.5 + rng.exponential(1.5)
+    # ---- heartbeat: steady while dark, slows and fades after the turn ----
+    t, iv, amp = 0.3, S.beat, 1.0
+    while t < D - 0.3 and amp > 0.12:
+        if t > t_turn:
+            iv = min(iv * 1.07, 1.7)
+            amp *= 0.86
+        S.add(dr_heart(sr, rng, S.hv(0.9)), t, 0.22 * amp, 0, 0.12)
+        S.ev(t, "heart", 0)
+        t += iv
+
+
+def _cue_ominous_dark(S):
+    S.opts.setdefault("turn", 1.0)
+    _cue_ominous(S)
+
+
+def _cue_ominous_warm(S):
+    """Same scene, warm from the middle (turn 0.5)."""
+    S.opts.setdefault("turn", 0.5)
+    _cue_ominous(S)
+
+
+def _cue_bond(S):
+    """Tender lullaby: celesta melody, warm strings, soft harp arpeggio, sub.
+    D major, 66 BPM (the creature's theme, also heard at the end of 'ominous')."""
+    S.set_tempo(66)
+    S.rev = dict(rt60=2.6, predelay=0.03, damp=0.5)
+    S.wet_gain = 0.45
+    lo, sr, rng = S.lo, S.sr, S.rng
+    prog = ["Dadd9", "A/C#", "Bm7", "Gmaj7", "D/F#", "Em7", "Gmaj7", "Asus4|A"]
+    prev = None
+    lead = []
+    for b, tb, sym, pass_ in _bars(S, prog):
+        for th, span, ch, h in _halves(S, tb, sym):
+            v = voicing(ch, prev, 4, 54, 71)
+            prev = v
+            bn = ch.bass_note(38, 49)
+            S.chord(th, h, [bn] + v)
+            S.add(S.up(inst_strings_sect(v, span + 0.2, lo, rng, cutoff=2000, attack=0.7, release=1.4)),
+                  th, 0.24, 0, 0.5)
+            S.add(S.up(inst_sub(bn, span * 0.95, lo, 0.15, 0.4, 0.4)), th, 0.16)
+            arp = [bn + 12, v[0], v[1], v[2]]
+            for k in range(int(round(span / (S.beat / 2)))):
+                if b == 0 and k < 2:
+                    continue
+                m = arp[[0, 1, 2, 3, 2, 1][k % 6]]
+                tt = S.ht(th + k * S.beat / 2, 0.006)
+                S.add(inst_pluck(m, 0.5, sr, S.hv(0.42 if k % 2 else 0.55), 0.65, 2.2, 0.6, k), tt, 0.13,
+                      -0.3 + 0.12 * (k % 6), 0.5)
+        oct_ = 12 if pass_ % 2 == 1 else 0
+        for beat, m, ln, vel in BOND_MEL[b % 8]:
+            tt = S.ht(tb + beat * S.beat, 0.006)
+            S.add(inst_mallet(m + oct_, S.hv(vel), sr, "celesta"), tt, 0.20 if not oct_ else 0.15, 0.1, 0.5)
+            S.ev(tt, "celesta", m + oct_)
+            if pass_ >= 1:
+                lead.append((tt, m, ln * S.beat, vel * 0.8))
+    if lead:
+        line = legato_line(lead, S.dur, lo, rng, glide=0.08, vib_depth=0.005, vib_rate=5.4, vib_delay=0.3,
+                           attack=0.25, release=0.6, cutoff=2600, voices=3, detune=6)
+        S.add(S.up(line), 0.0, 0.16, 0.05, 0.5)
+
+
+# --- reveal -------------------------------------------------------------------
+_REVEAL_LINE = {   # solo violin over the sorrow chords: (fraction of chord, midi)
+    "Gm9": [(0.0, 86), (0.55, 84)], "Dm/F": [(0.0, 82), (0.45, 81)], "Ebmaj7": [(0.0, 79), (0.6, 82)],
+    "Bbmaj7/D": [(0.0, 81), (0.5, 77)], "A7sus4": [(0.0, 79), (0.5, 76)],
+}
+
+
+def _cue_reveal(S):
+    """s13 arc, scaled to the render length: curious pizz walk (D minor line
+    cliche, tempo fitted so the walk ends on the dominant exactly at `awe`),
+    awe swell (deceptive V -> Bb lydian: choir + full strings + harp), sorrow
+    (slow strings, solo violin), soft 'to be continued' sting (Bbmaj7#11) in
+    the last `sting` seconds. Options: awe=0.575, sad=0.695, sting=3.0 (defaults
+    match s13 as the mixer renders it: 0.3 s crossfade lead-in, 24.6 s)."""
+    D = S.dur
+    awe_f = float(S.opts.get("awe", 0.575))
+    sad_f = float(S.opts.get("sad", 0.695))
+    sting_len = min(float(S.opts.get("sting", 3.0)), 0.25 * D)
+    t_awe = max(2.0, awe_f * D)
+    t_sad = min(D - sting_len - 0.8, max(t_awe + 1.2, sad_f * D))
+    t_sting = max(t_sad + 0.8, D - sting_len)
+    nbw = max(1, min(range(1, 40), key=lambda k: abs(240.0 * k / t_awe - 92.0)))
+    S.set_tempo(240.0 * nbw / t_awe)
+    S.rev = dict(rt60=2.6, predelay=0.03, damp=0.45)
+    S.wet_gain = 0.45
+    S.ceiling_db = -3.5
+    lo, sr, rng = S.lo, S.sr, S.rng
+    # ---------------- walk ----------------
+    cyc = ["Dm", "Dm/C#", "Dm/C", "Bm7b5", "Bbmaj7", "Gm6"]
+    walk = [cyc[i % len(cyc)] for i in range(nbw - 1)] + ["A7sus4|A7"]
+    prev = None
+    segs = []
+    for b, sym in enumerate(walk):
+        segs += [(b, th, span, ch, h) for th, span, ch, h in _halves(S, b * S.bar, sym)]
+    for i, (b, th, span, ch, h) in enumerate(segs):
+        bn = ch.bass_note(38, 50)
+        v = voicing(ch, prev, 3, 52, 66)
+        prev = v
+        S.chord(th, h, [bn] + v)
+        last = b == nbw - 1
+        S.add(S.up(inst_strings_sect([bn, v[0]] if not last else [bn] + v, span + 0.3, lo, rng, cutoff=900 if not last else 1600,
+                                     attack=0.5 if not last else span * 0.8, release=0.8)),
+              th, 0.19 if not last else 0.26, 0, 0.4)
+        # walking pizz bass (quarters), chromatic approach into the next segment
+        nxt = segs[i + 1][3].bass_note(38, 50) if i + 1 < len(segs) else 46
+        nq = int(round(span / S.beat))
+        tones = [bn, ch.root_note(bn, bn + 11) + 7, ch.root_note(bn, bn + 11) + 12]
+        line = ([bn] + tones[1:] + [bn])[:nq]
+        if nq >= 2:
+            line[-1] = _approach(line[-2], nxt, 36, 55)
+        for k, m in enumerate(line):
+            tt = S.ht(th + k * S.beat, 0.006)
+            S.add(lp(inst_pluck(m, S.beat * 0.5, sr, S.hv(0.9 if k == 0 else 0.7), 0.3, 1.4, 0.08, i + k, body=0.4),
+                     2200, sr), tt, 0.46, -0.1, 0.15)
+            S.ev(tt, "pizzB", m)
+        # light pizz chords on the off-beat of 2, and a curious upward plink-plink-plink
+        if not last:
+            for j, m in enumerate(v):
+                S.add(inst_pluck(m, 0.08, sr, S.hv(0.45), 0.4, 0.7, 0.05, j), S.ht(th + 1.5 * S.beat + 0.01 * j),
+                      0.09, 0.2, 0.25)
+            up = sorted(set(ch.tones(67, 81)))[:3]
+            if b % 2 == 1:
+                up = up[::-1]
+            for k, m in enumerate(up):
+                tt = S.ht(th + (2.5 + 0.5 * k) * S.beat, 0.005)
+                S.add(inst_pluck(m, 0.1, sr, S.hv(0.5 + 0.08 * k), 0.5, 0.8, 0.05, k + b), tt, 0.15, 0.35, 0.3)
+                S.ev(tt, "pizzV", m)
+    # build into the awe: timpani roll + cymbal swell
+    bl = min(2.5, max(1.0, S.bar))
+    t = t_awe - bl
+    while t < t_awe - 0.03:
+        fr = (t - (t_awe - bl)) / bl
+        S.add(dr_timpani(sr, rng, 45, 0.2 + 0.6 * fr, 0.8), t, 0.26, 0, 0.3)
+        t += 0.06 + 0.008 * rng.random()
+    S.add(dr_swell(sr, rng, bl, 1500, 7000), t_awe - bl, 0.10, 0, 0.4)
+    # ---------------- awe ----------------
+    awe_len = t_sad - t_awe
+    awe_ch = ["Bbmaj7#11"] if awe_len < 4.5 else ["Bbmaj7#11", "F/A"]
+    for i, sym in enumerate(awe_ch):
+        t0 = t_awe + i * awe_len / len(awe_ch)
+        ln = awe_len / len(awe_ch) + 0.6
+        ch = Chord(sym)
+        v = voicing(ch, None, 5, 58, 79)
+        bn = ch.bass_note(34, 45)
+        S.chord(t0, sym, [bn, bn + 12] + v)
+        S.add(S.up(inst_strings_sect([bn + 12, bn + 19] + v, ln, lo, rng, cutoff=3200, attack=0.35, release=2.0)),
+              t0, 0.32, 0, 0.55)
+        S.add(S.up(inst_choir(v, ln, lo, rng, "ah", attack=0.45, release=2.0)), t0, 0.28, 0, 0.65)
+        S.add(S.up(inst_sub(bn, ln, lo, 0.1, 1.0, 0.4)), t0, 0.16)
+        if i == 0:
+            S.add(dr_boom(sr, rng, 0.8, 2.4), t0, 0.22, 0, 0.3)
+            S.add(dr_timpani(sr, rng, bn + 12, 1.0, 2.2), t0, 0.20, 0, 0.3)
+            for k, m in enumerate(sorted(set(ch.tones(58, 91)))):       # harp gliss up
+                S.add(inst_pluck(m, 0.6, sr, 0.45 + 0.02 * k, 0.75, 1.8, 0.5, k), t0 - 0.02 + k * 0.04, 0.13,
+                      -0.6 + 0.08 * k, 0.6)
+    # ---------------- sorrow ----------------
+    sor_len = t_sting - t_sad
+    pool = ["Gm9", "Dm/F", "Ebmaj7", "Bbmaj7/D", "Gm9"]
+    nch = int(np.clip(round(sor_len / 1.8), 1, 6))
+    sorrow = pool[: nch - 1] + ["A7sus4"]
+    span = sor_len / len(sorrow)
+    notes = []
+    sprev = None
+    for i, sym in enumerate(sorrow):
+        t0 = t_sad + i * span
+        ch = Chord(sym)
+        v = voicing(ch, sprev, 4, 52, 72)
+        sprev = v
+        bn = ch.bass_note(38, 49)
+        S.chord(t0, sym, [bn] + v)
+        S.add(S.up(inst_strings_sect(v, span + 0.4, lo, rng, cutoff=2400, attack=0.8 if i else 1.0, release=1.5)),
+              t0, 0.30, 0, 0.55)
+        S.add(S.up(inst_strings_sect([bn, bn + 12], span + 0.4, lo, rng, cutoff=1000, attack=0.7)), t0, 0.20, 0, 0.4)
+        for fr, m in _REVEAL_LINE.get(sym, [(0.0, v[-1] + 12)]):
+            notes.append((t0 + fr * span + 0.15, m, span * (0.55 if fr == 0 else 0.45), 0.72 if fr == 0 else 0.62))
+    # ---------------- sting ----------------
+    ch = Chord("Bbmaj7#11")
+    v = voicing(ch, None, 5, 58, 79)
+    S.chord(t_sting, "Bbmaj7#11", [34, 46] + v)
+    sl = D - t_sting + 1.0
+    S.add(S.up(inst_strings_sect([46, 53] + v, sl, lo, rng, cutoff=2800, attack=0.12, release=2.0)), t_sting, 0.30, 0, 0.6)
+    S.add(S.up(inst_choir(v[1:], sl, lo, rng, "oo", attack=0.3, release=2.0)), t_sting, 0.22, 0, 0.7)
+    S.add(S.up(inst_sub(34, sl, lo, 0.05, 1.0, 0.4)), t_sting, 0.18)
+    S.add(dr_boom(sr, rng, 0.6, 2.4), t_sting, 0.24, 0, 0.35)
+    for k, m in enumerate((82, 86, 89, 93, 100)):          # celesta: Bb D F A E (the question)
+        S.add(inst_mallet(m, 0.6 - 0.04 * k, sr, "celesta"), t_sting + 0.05 + 0.11 * k, 0.16, -0.4 + 0.2 * k, 0.6)
+    notes.append((t_sting + 0.1, 88, sl, 0.55))             # violin holds the #11 (E6)
+    for (t, m, d, vv) in notes:
+        S.ev(t, "violin", m)
+    line = legato_line(notes, D, lo, rng, glide=0.12, vib_depth=0.009, vib_rate=5.8, vib_delay=0.25,
+                       attack=0.3, release=0.8, cutoff=3400, voices=2, detune=5)
+    S.add(S.up(line), 0.0, 0.30, 0.1, 0.5)
+
+
 _CUE_FN = {"doom": _cue_doom, "sneaky": _cue_sneaky, "ai_calm": _cue_ai_calm,
-           "tension": _cue_tension, "beg": _cue_beg, "heart": _cue_heart, "resolve": _cue_resolve}
+           "tension": _cue_tension, "beg": _cue_beg, "heart": _cue_heart, "resolve": _cue_resolve,
+           "chill": _cue_chill, "panic": _cue_panic, "awkward": _cue_awkward, "chaos": _cue_chaos,
+           "corporate": _cue_corporate, "ominous": _cue_ominous, "ominous_dark": _cue_ominous_dark,
+           "ominous_warm": _cue_ominous_warm, "bond": _cue_bond, "reveal": _cue_reveal}
+
+
+def parse_cue(name):
+    """'ominous:turn=0.7,x=1' -> ('ominous', {'turn': 0.7, 'x': 1.0})."""
+    base, _, rest = (name or "").strip().partition(":")
+    opts = {}
+    for kv in rest.split(","):
+        if "=" in kv:
+            k, v = kv.split("=", 1)
+            try:
+                opts[k.strip()] = float(v)
+            except ValueError:
+                opts[k.strip()] = v.strip()
+    return base.strip(), opts
 
 
 def compose(name, dur, sr=SR, seed=0):
-    """Build (but do not finish) a Score — exposes chords/events for inspection."""
-    S = Score(name, dur, sr, seed)
-    _CUE_FN[name](S)
+    """Build (but do not finish) a Score — exposes chords/events for inspection.
+    `name` may carry options: "reveal:awe=0.58,sad=0.7" (see API_audio.md)."""
+    base, opts = parse_cue(name)
+    S = Score(base, dur, sr, seed)
+    S.opts = opts
+    _CUE_FN[base](S)
     return S
 
 
 def render_cue(name, dur, sr=SR, fade_in=0.02, fade_out=1.0, seed=0):
     """Render cue `name` for `dur` seconds -> float32 (round(dur*sr), 2)."""
     n = secs(sr, dur)
-    if not name or name == "none" or name not in _CUE_FN or dur <= 0:
-        if name and name != "none" and name not in _CUE_FN:
+    base = parse_cue(name)[0]
+    if not base or base == "none" or base not in _CUE_FN or dur <= 0:
+        if base and base != "none" and base not in _CUE_FN:
             print(f"[music] unknown cue '{name}', rendering silence")
         return np.zeros((n, 2), np.float32)
     S = compose(name, dur, sr, seed)
