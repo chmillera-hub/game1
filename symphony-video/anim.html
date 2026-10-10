@@ -45,21 +45,21 @@ const DEF = { lookX: 0, lookY: 0, lid: 1, lidLow: 0, lidTilt: 0, browY: 0, browT
   handRaise: 0, shake: 0, glow: 0.25, closed: 0, chest: 0, hide: 0,
   prop: 0, scr: 0, handMouth: 0, typing: 0, reflect: 0, reach: 0, walk: 0, rx: 0, ry: 0 };
 const CH = {
-  jun: { x: 215, y: 640, size: 150, skin: '#b98262', shade: '#9a6649', hair: '#26170f', hairHi: '#4a2e20', uni: '#2f62a8', uniD: '#1c3a66', trim: '#0f1b30',
-    iris: '#4b2c1a', lip: '#7d3f35', brow: '#26170f', kind: 'jun' },
-  orrin: { x: 520, y: 622, size: 158, skin: '#dfe4e6', shade: '#b8c2c8', hair: '#1a1d22', hairHi: '#4b5560', uni: '#1f6f6b', uniD: '#124341', trim: '#c9d3d8',
-    iris: '#33e6ff', lip: '#9aa3a8', brow: '#1a1d22', kind: 'orrin',
+  cadet: { x: 215, y: 640, size: 150, skin: '#b98262', shade: '#9a6649', hair: '#26170f', hairHi: '#4a2e20', uni: '#2f62a8', uniD: '#1c3a66', trim: '#0f1b30',
+    iris: '#4b2c1a', lip: '#7d3f35', brow: '#26170f', kind: 'cadet' },
+  android: { x: 520, y: 622, size: 158, skin: '#dfe4e6', shade: '#b8c2c8', hair: '#1a1d22', hairHi: '#4b5560', uni: '#1f6f6b', uniD: '#124341', trim: '#c9d3d8',
+    iris: '#33e6ff', lip: '#9aa3a8', brow: '#1a1d22', kind: 'android',
     ig: ['#e8ffff', g => `rgba(${80 + 120 * g | 0},${220 + 35 * g | 0},255,1)`, '#0a7a99'], pupilC: '#04313d', light: '51,230,255' },
-  vesper: { x: 885, y: 628, size: 150, skin: '#e7e0f0', shade: '#c3b8d6', hair: '#cdd2dd', hairHi: '#ffffff', uni: '#6b3f8f', uniD: '#40245a', trim: '#e2d9ee',
-    iris: '#ffb84d', lip: '#a39aad', brow: '#9aa0ad', kind: 'orrin', bob: true,
+  android2: { x: 885, y: 628, size: 150, skin: '#e7e0f0', shade: '#c3b8d6', hair: '#cdd2dd', hairHi: '#ffffff', uni: '#6b3f8f', uniD: '#40245a', trim: '#e2d9ee',
+    iris: '#ffb84d', lip: '#a39aad', brow: '#9aa0ad', kind: 'android', bob: true,
     ig: ['#fff6e0', g => `rgba(255,${170 + 40 * g | 0},${70 + 40 * g | 0},1)`, '#9a4f08'], pupilC: '#3a1a02', light: '255,180,80' },
 };
-CH.orrin.ig = CH.orrin.ig;
-const EXP = { jun: [], orrin: [], vesper: [] };
+CH.android.ig = CH.android.ig;
+const EXP = { cadet: [], android: [], android2: [] };
 function K(who, t, o, d = 0.35) { EXP[who].push([t, o, d]); }
 function stateAt(who, t) {
   const L = EXP[who];
-  const base = Object.assign({}, DEF, who === 'jun' ? { mug: 1 } : {});
+  const base = Object.assign({}, DEF, who === 'cadet' ? { mug: 1 } : {});
   // build cumulative full states (each keyframe inherits the previous target)
   let prev = base, cur = base, idx = -1;
   if (!L._full) {
@@ -75,17 +75,17 @@ function stateAt(who, t) {
   return s;
 }
 // deterministic blinks
-const BLINKS = { jun: [], orrin: [], vesper: [] };
+const BLINKS = { cadet: [], android: [], android2: [] };
 (function () {
   let r = mulberry(11), t = 1;
-  while (t < 260) { BLINKS.jun.push(t); t += 2.2 + r() * 3.2; if (r() < 0.15) { BLINKS.jun.push(t); t += 0.35; } }
+  while (t < 260) { BLINKS.cadet.push(t); t += 2.2 + r() * 3.2; if (r() < 0.15) { BLINKS.cadet.push(t); t += 0.35; } }
   r = mulberry(5); t = 2;
-  while (t < 260) { BLINKS.orrin.push(t); t += 4.5 + r() * 4; }
+  while (t < 260) { BLINKS.android.push(t); t += 4.5 + r() * 4; }
   r = mulberry(17); t = 3;
-  while (t < 260) { BLINKS.vesper.push(t); t += 3.5 + r() * 4; }
+  while (t < 260) { BLINKS.android2.push(t); t += 3.5 + r() * 4; }
 })();
 function blinkAmt(who, t) {
-  const d = who === 'jun' ? 0.17 : 0.11;
+  const d = who === 'cadet' ? 0.17 : 0.11;
   let b = 0;
   for (const bt of BLINKS[who]) { if (bt > t + 1) break; const x = (t - bt) / d; if (x >= 0 && x <= 1) b = Math.max(b, Math.sin(Math.PI * x)); }
   return b;
@@ -105,7 +105,7 @@ function drawEye(c, side, st, P, t) {
   c.save();
   c.translate(side * 0.19 + st.turn * 0.07, 0.02);
   c.scale(-side, 1);
-  const ew = 0.088, eh = 0.075 * (P.kind === 'orrin' ? 0.9 : 1), ebh = 0.045;
+  const ew = 0.088, eh = 0.075 * (P.kind === 'android' ? 0.9 : 1), ebh = 0.045;
   const open = clamp(st.lid, 0, 1.5);
   const lx = st.lookX * -side, ly = st.lookY;
   if (st.closed > 0.5 || open < 0.1) {
@@ -128,12 +128,12 @@ function drawEye(c, side, st, P, t) {
     c.closePath();
   };
   path();
-  c.fillStyle = P.kind === 'orrin' ? '#f4fbff' : '#fbf7f2'; c.fill();
+  c.fillStyle = P.kind === 'android' ? '#f4fbff' : '#fbf7f2'; c.fill();
   c.save(); path(); c.clip();
   // iris
   const ix = lx * 0.042, iy = ly * 0.028 + 0.004;
   const ir = 0.056;
-  if (P.kind === 'orrin') {
+  if (P.kind === 'android') {
     const g = c.createRadialGradient(ix, iy, 0, ix, iy, ir);
     const glow = clamp(st.glow);
     g.addColorStop(0, P.ig[0]); g.addColorStop(0.35, P.ig[1](glow)); g.addColorStop(1, P.ig[2]);
@@ -144,15 +144,15 @@ function drawEye(c, side, st, P, t) {
   }
   c.beginPath(); c.arc(ix, iy, ir, 0, Math.PI * 2); c.fill();
   c.lineWidth = 0.008; c.strokeStyle = 'rgba(0,0,0,0.5)'; c.stroke();
-  if (P.kind === 'orrin' && st.glow > 0.6) { // scan lines while computing
+  if (P.kind === 'android' && st.glow > 0.6) { // scan lines while computing
     c.strokeStyle = 'rgba(255,255,255,0.7)'; c.lineWidth = 0.005;
     for (let k = 0; k < 5; k++) { const yy = iy - ir + ((t * 3 + k * 0.2) % 1) * ir * 2; c.beginPath(); c.moveTo(ix - ir, yy); c.lineTo(ix + ir, yy); c.stroke(); }
   }
-  if (P.kind === 'orrin' && st.reflect > 0.05) { // code scrolling reflected in the eyes
+  if (P.kind === 'android' && st.reflect > 0.05) { // code scrolling reflected in the eyes
     c.fillStyle = `rgba(120,255,170,${0.55 * st.reflect})`;
     for (let k = 0; k < 6; k++) { const yy = iy - ir + (((t * 1.3 + k / 6) % 1)) * ir * 2; const w = ir * (0.4 + ((k * 37) % 5) / 6); c.fillRect(ix - ir * 0.8, yy, w, 0.006); }
   }
-  c.fillStyle = P.kind === 'orrin' ? P.pupilC : '#120804';
+  c.fillStyle = P.kind === 'android' ? P.pupilC : '#120804';
   c.beginPath(); c.arc(ix, iy, 0.025 * st.pupil, 0, Math.PI * 2); c.fill();
   c.fillStyle = 'rgba(255,255,255,0.95)';
   c.beginPath(); c.arc(ix + 0.02 * -side * -1, iy - 0.02, 0.015 + st.wet * 0.006, 0, Math.PI * 2); c.fill();
@@ -170,8 +170,8 @@ function drawEye(c, side, st, P, t) {
   // lash line
   c.beginPath(); c.moveTo(-ew - 0.008, 0.008);
   c.bezierCurveTo(-ew * 0.45, topY * (1 - tilt * 0.35), ew * 0.45, topY * (1 + tilt * 0.35), ew, 0.0 - tilt * 0.012);
-  c.lineWidth = P.kind === 'jun' ? 0.024 : 0.018; c.strokeStyle = '#140b07'; c.lineCap = 'round'; c.stroke();
-  if (P.kind === 'jun') { c.beginPath(); c.moveTo(-ew - 0.005, 0.0); c.lineTo(-ew - 0.035, -0.022); c.lineWidth = 0.014; c.stroke(); }
+  c.lineWidth = P.kind === 'cadet' ? 0.024 : 0.018; c.strokeStyle = '#140b07'; c.lineCap = 'round'; c.stroke();
+  if (P.kind === 'cadet') { c.beginPath(); c.moveTo(-ew - 0.005, 0.0); c.lineTo(-ew - 0.035, -0.022); c.lineWidth = 0.014; c.stroke(); }
   // lower lid hint
   c.beginPath(); c.moveTo(-ew * 0.7, lowY * 0.8); c.quadraticCurveTo(0, lowY * 1.25, ew * 0.7, lowY * 0.8);
   c.lineWidth = 0.008; c.strokeStyle = 'rgba(80,40,30,0.35)'; c.stroke();
@@ -203,7 +203,7 @@ function drawBrow(c, side, st, P) {
   const oy = -0.15 - r * 0.05 + st.browTilt * 0.018;
   const iy = -0.145 - r * 0.05 - st.browTilt * 0.05;
   c.beginPath(); c.moveTo(ox, oy); c.quadraticCurveTo(0, Math.min(oy, iy) - 0.035, ix, iy);
-  c.lineWidth = P.kind === 'jun' ? 0.038 : 0.032; c.lineCap = 'round'; c.strokeStyle = P.brow; c.stroke();
+  c.lineWidth = P.kind === 'cadet' ? 0.038 : 0.032; c.lineCap = 'round'; c.strokeStyle = P.brow; c.stroke();
   c.restore();
 }
 function drawMouth(c, st, P, t, env) {
@@ -214,7 +214,7 @@ function drawMouth(c, st, P, t, env) {
   const cy = -sm * 0.032;
   if (open < 0.07) {
     c.beginPath(); c.moveTo(-w, cy); c.quadraticCurveTo(0, sm * 0.05, w, cy);
-    c.lineWidth = 0.02; c.lineCap = 'round'; c.strokeStyle = P.kind === 'jun' ? '#5a2620' : '#59636a'; c.stroke();
+    c.lineWidth = 0.02; c.lineCap = 'round'; c.strokeStyle = P.kind === 'cadet' ? '#5a2620' : '#59636a'; c.stroke();
     if (sm > 0.25) { // dimples
       c.lineWidth = 0.012; c.beginPath(); c.arc(-w - 0.012, cy - 0.005, 0.02, -0.5, 1.2); c.stroke(); c.beginPath(); c.arc(w + 0.012, cy - 0.005, 0.02, Math.PI - 1.2, Math.PI + 0.5); c.stroke();
     }
@@ -228,20 +228,20 @@ function drawMouth(c, st, P, t, env) {
   if (open > 0.22) { c.fillStyle = '#f7f3ea'; c.fillRect(-w, top - 0.02, w * 2, 0.032 + open * 0.01); }
   c.fillStyle = '#c4545c'; c.beginPath(); c.ellipse(0, bot + 0.01, w * 0.6, 0.04 + open * 0.02, 0, 0, Math.PI * 2); c.fill();
   c.restore();
-  c.lineWidth = 0.016; c.strokeStyle = P.kind === 'jun' ? '#5a2620' : '#59636a'; path(); c.stroke();
+  c.lineWidth = 0.016; c.strokeStyle = P.kind === 'cadet' ? '#5a2620' : '#59636a'; path(); c.stroke();
   c.restore();
 }
 function headPath(c, kind) {
   c.beginPath();
   c.moveTo(0, -0.6);
   c.bezierCurveTo(0.33, -0.6, 0.5, -0.4, 0.5, -0.05);
-  if (kind === 'orrin') { c.bezierCurveTo(0.5, 0.3, 0.3, 0.6, 0, 0.63); c.bezierCurveTo(-0.3, 0.6, -0.5, 0.3, -0.5, -0.05); }
+  if (kind === 'android') { c.bezierCurveTo(0.5, 0.3, 0.3, 0.6, 0, 0.63); c.bezierCurveTo(-0.3, 0.6, -0.5, 0.3, -0.5, -0.05); }
   else { c.bezierCurveTo(0.5, 0.3, 0.32, 0.58, 0, 0.61); c.bezierCurveTo(-0.32, 0.58, -0.5, 0.3, -0.5, -0.05); }
   c.bezierCurveTo(-0.5, -0.4, -0.33, -0.6, 0, -0.6);
   c.closePath();
 }
 function drawMug(c, x, y, rot, t, steam = true) {
-  c.save(); c.translate(x, y); c.rotate(rot);
+  c.save(); c.translate(x, y); c.rotate(rot); c.scale(1.55, 1.55);
   c.fillStyle = '#efe7d6'; c.strokeStyle = '#2a2420'; c.lineWidth = 0.014;
   c.beginPath(); c.arc(0.15, 0.02, 0.07, -1.3, 1.3); c.lineWidth = 0.035; c.strokeStyle = '#d8ccb6'; c.stroke();
   c.lineWidth = 0.014; c.strokeStyle = '#2a2420';
@@ -271,7 +271,7 @@ function drawBust(c, who, st, t) {
   if (st.hide > 0.99) return;
   const env = mouthEnv(who, t);
   const sx = st.shake * (Math.sin(t * 43) * 0.012 + Math.sin(t * 61) * 0.008);
-  const breathe = Math.sin(t * 1.6 + (who === 'jun' ? 0 : 2)) * 0.004;
+  const breathe = Math.sin(t * 1.6 + (who === 'cadet' ? 0 : 2)) * 0.004;
   c.save();
   c.translate(P.x + st.bx, P.y + st.by + walkY);
   c.scale(P.size, P.size);
@@ -302,10 +302,10 @@ function drawBust(c, who, st, t) {
   c.fillStyle = P.trim; c.beginPath(); c.moveTo(-0.24, 0.62); c.quadraticCurveTo(0, 0.78, 0.24, 0.62); c.lineTo(0.2, 0.58); c.quadraticCurveTo(0, 0.7, -0.2, 0.58); c.fill();
   // ---- head (rotated around neck)
   c.save();
-  c.translate(0, 0.5); c.rotate(st.tilt + noise1(t * 0.6, who === 'jun' ? 1 : 7) * 0.025); c.translate(0, -0.5);
+  c.translate(0, 0.5); c.rotate(st.tilt + noise1(t * 0.6, who === 'cadet' ? 1 : 7) * 0.025); c.translate(0, -0.5);
   c.translate(0, noise1(t * 0.5, 3) * 0.006);
   // back hair
-  if (who === 'jun') {
+  if (who === 'cadet') {
     c.fillStyle = P.hair;
     c.beginPath(); c.arc(0.05 - st.turn * 0.05, -0.66, 0.24, 0, Math.PI * 2); c.fill();
     c.fillStyle = P.hairHi; for (let k = 0; k < 5; k++) { c.beginPath(); c.arc(-0.05 + k * 0.05 - st.turn * 0.05, -0.74 + (k % 2) * 0.06, 0.04, 0, Math.PI); c.fill(); }
@@ -332,8 +332,8 @@ function drawBust(c, who, st, t) {
     c.fillStyle = rg; c.fillRect(-0.6, -0.7, 1.2, 1.4);
     c.restore();
   }
-  // orrin seams + temple light
-  if (P.kind === 'orrin') {
+  // android seams + temple light
+  if (P.kind === 'android') {
     c.strokeStyle = 'rgba(120,135,145,0.45)'; c.lineWidth = 0.006;
     c.beginPath(); c.moveTo(0.36, -0.3); c.lineTo(0.42, 0.0); c.stroke();
     c.strokeStyle = 'rgba(120,135,150,0.25)'; c.lineWidth = 0.012;
@@ -341,18 +341,30 @@ function drawBust(c, who, st, t) {
     const ch = chirpEnv(who, t);
     const blink = ch > 0.05 ? ch : 0.5 + 0.5 * Math.sin(t * (st.glow > 0.6 ? 30 : 2.5));
     void blink;
-    // cybernetic chip: dark housing, outline, circuit traces, LED segments chasing
-    const cxp = 0.385 - st.turn * 0.04;
-    c.strokeStyle = 'rgba(40,52,62,0.55)'; c.lineWidth = 0.007;
-    c.beginPath(); c.moveTo(cxp, -0.12); c.lineTo(cxp - 0.07, -0.12); c.lineTo(cxp - 0.1, -0.08); c.moveTo(cxp + 0.035, -0.235); c.lineTo(cxp + 0.035, -0.29); c.lineTo(cxp - 0.02, -0.33); c.stroke();
-    c.fillStyle = '#28313a'; c.strokeStyle = '#0b0f13'; c.lineWidth = 0.012;
-    c.beginPath(); c.roundRect(cxp, -0.235, 0.075, 0.16, 0.012); c.fill(); c.stroke();
-    const speed = st.glow > 0.6 ? 22 : 3.5;
-    for (let k = 0; k < 4; k++) {
-      const on = ch > 0.05 ? ch : 0.25 + 0.75 * Math.max(0, Math.sin(t * speed - k * 1.2));
-      c.fillStyle = `rgba(${P.light},${0.25 + 0.75 * on})`;
-      c.fillRect(cxp + 0.016, -0.218 + k * 0.035, 0.043, 0.02);
+    // cybernetic implant: angular faceted plate, soft glow, pulsing core, circuit traces into the skin
+    const cxp = 0.405 - st.turn * 0.04, cyp = -0.15;
+    const pulse = ch > 0.05 ? ch : 0.55 + 0.45 * Math.sin(t * (st.glow > 0.6 ? 18 : 2.2));
+    c.save(); c.translate(cxp, cyp);
+    const halo = c.createRadialGradient(0, 0, 0.01, 0, 0, 0.16);
+    halo.addColorStop(0, `rgba(${P.light},${0.35 * pulse})`); halo.addColorStop(1, `rgba(${P.light},0)`);
+    c.fillStyle = halo; c.beginPath(); c.arc(0, 0, 0.16, 0, Math.PI * 2); c.fill();
+    const traces = [[[-0.035, -0.035], [-0.08, -0.065], [-0.135, -0.065]], [[-0.025, 0.06], [-0.06, 0.1], [-0.06, 0.15]], [[0.0, -0.085], [-0.03, -0.135], [-0.085, -0.135]]];
+    c.strokeStyle = `rgba(${P.light},${0.25 + 0.35 * pulse})`; c.lineWidth = 0.006;
+    for (const tr of traces) {
+      c.beginPath(); c.moveTo(tr[0][0], tr[0][1]); c.lineTo(tr[1][0], tr[1][1]); c.lineTo(tr[2][0], tr[2][1]); c.stroke();
+      c.fillStyle = `rgba(${P.light},${0.5 + 0.5 * pulse})`; c.beginPath(); c.arc(tr[2][0], tr[2][1], 0.009, 0, Math.PI * 2); c.fill();
     }
+    const plate = [[0.0, -0.09], [0.045, -0.06], [0.055, 0.02], [0.03, 0.08], [-0.02, 0.07], [-0.04, -0.035]];
+    c.beginPath(); plate.forEach((q, i) => i ? c.lineTo(q[0], q[1]) : c.moveTo(q[0], q[1])); c.closePath();
+    const pg = c.createLinearGradient(-0.04, -0.09, 0.05, 0.08);
+    pg.addColorStop(0, '#5d6b78'); pg.addColorStop(0.5, '#2a333c'); pg.addColorStop(1, '#141a20');
+    c.shadowColor = `rgba(${P.light},0.8)`; c.shadowBlur = 8; c.fillStyle = pg; c.fill(); c.shadowBlur = 0;
+    c.strokeStyle = `rgba(${P.light},0.55)`; c.lineWidth = 0.006; c.stroke();
+    c.strokeStyle = 'rgba(255,255,255,0.18)'; c.beginPath(); c.moveTo(0.0, -0.09); c.lineTo(0.008, 0.0); c.lineTo(0.03, 0.08); c.moveTo(0.008, 0.0); c.lineTo(-0.04, -0.035); c.moveTo(0.008, 0.0); c.lineTo(0.055, 0.02); c.stroke();
+    const cg = c.createRadialGradient(0.008, 0.0, 0, 0.008, 0.0, 0.03);
+    cg.addColorStop(0, `rgba(255,255,255,${0.6 + 0.4 * pulse})`); cg.addColorStop(0.4, `rgba(${P.light},${0.9 * pulse})`); cg.addColorStop(1, `rgba(${P.light},0)`);
+    c.fillStyle = cg; c.beginPath(); c.moveTo(0.008, -0.03); c.lineTo(0.03, 0.0); c.lineTo(0.008, 0.03); c.lineTo(-0.014, 0.0); c.closePath(); c.fill();
+    c.restore();
   }
   // blush
   if (st.blush > 0.02) {
@@ -373,7 +385,7 @@ function drawBust(c, who, st, t) {
   drawMouth(c, st, P, t, env);
   // front hair
   c.fillStyle = P.hair;
-  if (who === 'jun') {
+  if (who === 'cadet') {
     c.beginPath(); c.moveTo(-0.53, 0.05);
     c.bezierCurveTo(-0.62, -0.55, -0.3, -0.74, 0, -0.72); c.bezierCurveTo(0.3, -0.74, 0.62, -0.55, 0.53, 0.05);
     c.bezierCurveTo(0.5, -0.22, 0.42, -0.36, 0.22, -0.4);
@@ -415,9 +427,9 @@ function drawBust(c, who, st, t) {
   // mug
   if (st.mug > 0.5) {
     if (st.prop > 0.5) { drawPadd(c, st.mugX, st.mugY, -0.12, t, st.scr); drawHand(c, st.mugX - 0.1, st.mugY + 0.2, P); }
-    else { drawMug(c, st.mugX, st.mugY, (st.mugY < 0.7 ? 0.25 : 0) + (st.mugX - 0.62) * 0.4, t, st.mugY > 0.7); drawHand(c, st.mugX - 0.02, st.mugY + 0.14, P); }
+    else { drawMug(c, st.mugX, st.mugY, (st.mugY < 0.7 ? 0.25 : 0) + (st.mugX - 0.62) * 0.4, t, st.mugY > 0.7); drawHand(c, st.mugX - 0.03, st.mugY + 0.22, P, 0.09); }
   }
-  // raised hand (orrin)
+  // raised hand (android)
   if (st.handRaise > 0.03) {
     const hx = 0.82, hy = 1.6 - 0.95 * st.handRaise;
     c.fillStyle = P.uni; c.beginPath(); c.moveTo(0.7, 3.2); c.lineTo(hx - 0.1, hy + 0.12); c.lineTo(hx + 0.14, hy + 0.12); c.lineTo(1.1, 3.2); c.fill();
@@ -443,14 +455,24 @@ function drawReach(c, who, st) {
     c.strokeStyle = P.uni; c.lineCap = 'round'; c.lineWidth = 0.24;
     c.beginPath(); c.moveTo(sx0, sy0 + 0.6); c.quadraticCurveTo(sx0 - 0.1, sy0, tx + 0.18, ty + 0.02); c.stroke();
     c.save(); c.translate(tx + 0.12, ty);
-    c.fillStyle = P.skin; c.strokeStyle = 'rgba(40,50,60,0.5)'; c.lineWidth = 0.012;
-    c.beginPath(); c.ellipse(0, 0, 0.1, 0.075, 0, 0, Math.PI * 2); c.fill(); c.stroke();
-    c.lineWidth = 0.045; c.strokeStyle = P.skin; c.beginPath(); c.moveTo(-0.06, -0.01); c.lineTo(-0.17, -0.02); c.stroke();
+    // pointing hand (index finger extended to the left, other fingers curled, thumb on top)
+    const sk = P.skin, ol = 'rgba(40,50,60,0.55)';
+    c.lineWidth = 0.011; c.strokeStyle = ol; c.fillStyle = sk;
+    c.beginPath(); c.roundRect(-0.07, -0.065, 0.15, 0.125, 0.035); c.fill(); c.stroke();
+    for (const [fx, fy] of [[-0.075, -0.0], [-0.07, 0.035], [-0.06, 0.065]]) { c.beginPath(); c.ellipse(fx, fy, 0.032, 0.022, 0.2, 0, Math.PI * 2); c.fill(); c.stroke(); }
+    c.lineCap = 'round';
+    c.strokeStyle = ol; c.lineWidth = 0.056; c.beginPath(); c.moveTo(-0.06, -0.035); c.lineTo(-0.215, -0.04); c.stroke();
+    c.strokeStyle = sk; c.lineWidth = 0.038; c.beginPath(); c.moveTo(-0.06, -0.035); c.lineTo(-0.215, -0.04); c.stroke();
+    c.strokeStyle = 'rgba(120,130,140,0.5)'; c.lineWidth = 0.006; c.beginPath(); c.moveTo(-0.15, -0.05); c.lineTo(-0.15, -0.028); c.stroke();
+    c.strokeStyle = ol; c.lineWidth = 0.05; c.beginPath(); c.moveTo(0.01, -0.06); c.lineTo(-0.075, -0.085); c.stroke();
+    c.strokeStyle = sk; c.lineWidth = 0.033; c.beginPath(); c.moveTo(0.01, -0.06); c.lineTo(-0.075, -0.085); c.stroke();
+    c.fillStyle = P.uniD; c.fillRect(0.075, -0.075, 0.06, 0.15); c.fillStyle = P.trim; c.fillRect(0.075, -0.075, 0.012, 0.15);
+    const fxp = -0.225, fyp = -0.04;
     if (st.reach > 0.85) {
       const gl = (st.reach - 0.85) / 0.15;
-      const gg = c.createRadialGradient(-0.18, -0.02, 0, -0.18, -0.02, 0.16);
+      const gg = c.createRadialGradient(fxp, fyp, 0, fxp, fyp, 0.16);
       gg.addColorStop(0, `rgba(220,255,255,${gl})`); gg.addColorStop(0.3, `rgba(51,230,255,${0.7 * gl})`); gg.addColorStop(1, 'rgba(51,230,255,0)');
-      c.fillStyle = gg; c.beginPath(); c.arc(-0.18, -0.02, 0.16, 0, Math.PI * 2); c.fill();
+      c.fillStyle = gg; c.beginPath(); c.arc(fxp, fyp, 0.16, 0, Math.PI * 2); c.fill();
     }
     c.restore();
   }
@@ -493,20 +515,32 @@ function drawTyping(c, who, st, t) {
   }
   c.restore();
 }
-const CODE = (() => { const r = mulberry(77), ch = '01アイウエオカキクケコ{}[]<>=+*#λΣΔ', out = []; for (let i = 0; i < 80; i++) { let l = ''; const n = 4 + Math.floor(r() * 14); for (let k = 0; k < n; k++) l += ch[Math.floor(r() * ch.length)]; out.push(l); } return out; })();
+let CODE = [];
+function loadCode() {
+  const src = document.scripts[0].text.split('\n').map(l => l.replace(/\s+$/, '')).filter(l => l.trim().length > 3);
+  const start = Math.max(0, src.findIndex(l => l.startsWith('const CH = {')));
+  const out = [];
+  for (const line of src.slice(start).concat(src.slice(0, start))) {
+    let l = line.replace(/^ {2,}/, m => ' '.repeat(Math.min(4, m.length / 2)));
+    while (l.length > 34) { out.push(l.slice(0, 34)); l = '    ' + l.slice(34).trimStart(); }
+    out.push(l);
+  }
+  CODE = out;
+}
 function drawTerminal(c, t, a) {
   if (a < 0.02) return;
   c.save(); c.globalAlpha = a;
-  c.translate(615, 470); c.transform(1, -0.08, 0, 1, 0, 0);
-  c.fillStyle = 'rgba(10,40,30,0.55)'; c.strokeStyle = 'rgba(120,255,190,0.8)'; c.lineWidth = 2;
-  c.beginPath(); c.roundRect(0, 0, 135, 255, 8); c.fill(); c.stroke();
-  c.save(); c.beginPath(); c.rect(4, 4, 127, 247); c.clip();
-  c.font = '11px "DejaVu Sans Mono"'; c.textAlign = 'left';
-  const off = t * 38;
-  for (let i = 0; i < 26; i++) {
-    const li = Math.floor(off / 11) + i; const y = i * 11 - (off % 11) + 12;
-    c.fillStyle = i > 22 ? '#eaffef' : `rgba(110,255,170,${0.45 + 0.5 * ((li * 13) % 7) / 7})`;
-    c.fillText(CODE[li % CODE.length], 7 + (li % 3) * 6, y);
+  c.translate(612, 440); c.transform(1, -0.06, 0, 1, 0, 0);
+  c.fillStyle = 'rgba(6,30,24,0.72)'; c.strokeStyle = 'rgba(120,255,190,0.8)'; c.lineWidth = 2;
+  c.beginPath(); c.roundRect(0, 0, 178, 300, 8); c.fill(); c.stroke();
+  c.save(); c.beginPath(); c.rect(4, 4, 170, 292); c.clip();
+  c.font = '8px "DejaVu Sans Mono"'; c.textAlign = 'left';
+  const lh = 10, off = t * 9;
+  for (let i = 0; i < 31; i++) {
+    const li = Math.floor(off / lh) + i, y = i * lh - (off % lh) + 11;
+    const line = CODE.length ? CODE[li % CODE.length] : '';
+    c.fillStyle = i > 26 ? '#eaffef' : 'rgba(130,255,185,0.9)';
+    c.fillText(line, 6, y);
   }
   c.restore(); c.restore();
 }
@@ -707,63 +741,119 @@ function drawCosmic(c, t, st) {
   c.restore();
 }
 
-function drawSilhouette(c, x, y, s, kneel, kind, t, opts = {}) {
-  // full-body figure in units of head height (h); feet at (x,y)
+function drawSilhouette(c, x, y, s, kneel, kind, t, o = {}) {
+  // full-body figure in units of head height; feet at (x,y). Poses blend: stand, kneel, dance,
+  // praise (armsUp), rise, run, sit, pick, hold hands, wave.
+  const mix = (p, q, k) => [lerp(p[0], q[0], k), lerp(p[1], q[1], k)];
+  const k = clamp(kneel), dance = clamp(o.dance || 0), bp = o.beatPh || 0;
+  const run = clamp(o.run || 0), rph = o.runPh || 0, dir = o.dir || 1, sit = clamp(o.sit || 0);
+  const up = clamp(o.armsUp || 0), ri = clamp(o.rise || 0), aura = clamp(o.aura || 0), bow = o.bow || 0;
   c.save(); c.translate(x, y); c.scale(s, s);
-  const dance = clamp(opts.dance || 0), bp = opts.beatPh || 0;
-  if (dance > 0) c.rotate(Math.sin(bp / 2) * 0.07 * dance);
-  const k = clamp(kneel);
-  const drop = 1.55 * k;
-  const bow = opts.bow || 0;
+  c.rotate(Math.sin(bp / 2) * (o.hold ? 0.025 : 0.07) * dance + dir * 0.12 * run);
+  c.translate(0, -Math.abs(Math.sin(rph)) * 0.3 * run);
+  const drop = 1.55 * k + 2.85 * sit;
+  const hipY = -3.4 + drop, sh = -5.75 + drop;
+  const lean = -0.32 * sit;
+  const U = p => { const dx = p[0], dy = p[1] - hipY, cs = Math.cos(lean), sn = Math.sin(lean); return [dx * cs - dy * sn, hipY + dx * sn + dy * cs]; };
+  const legs = [], arms = [];
+  for (const sd of [-1, 1]) {
+    const tap = Math.max(0, Math.sin(bp / 2 + (sd > 0 ? Math.PI : 0))) * dance * (1 - k);
+    let K = [sd * 0.35 + 0.55 * k * (sd > 0 ? 1 : 0.6) + sd * tap * 0.25, lerp(-1.7, -0.25, k) - tap * 0.35];
+    let F = [lerp(sd * 0.38, -1.1 * k + sd * 0.25, k) + sd * tap * 0.15, lerp(0, -0.1, k) - tap * 0.45];
+    if (run > 0) {
+      const ph = rph + (sd > 0 ? Math.PI : 0);
+      const Kr = [sd * 0.25 + dir * Math.sin(ph) * 0.9, -1.75 + Math.max(0, Math.sin(ph)) * 0.5];
+      const Fr = [Kr[0] - dir * 0.7 * Math.max(0, -Math.cos(ph)) + dir * 0.2 * Math.sin(ph), -Math.max(0, Math.cos(ph)) * 0.9];
+      K = mix(K, Kr, run); F = mix(F, Fr, run);
+    }
+    if (sit > 0) { K = mix(K, [1.3, -0.8 + sd * 0.05], sit); F = mix(F, [2.6, -0.15 + sd * 0.08], sit); }
+    legs.push([[sd * 0.3, hipY], K, F]);
+    const open = o.armsOpen || 0;
+    let E = [sd * lerp(0.95, 1.6, open), sh + lerp(1.5, 0.9, open)];
+    let H = [sd * lerp(0.9, 2.3, open), sh + lerp(3.0, 0.2, open)];
+    const sw = Math.sin(bp / 2 + (sd > 0 ? 0 : Math.PI)) * dance;
+    E = [E[0] + sd * Math.abs(sw) * 0.35, E[1] - sw * 0.4]; H = [H[0] + sd * Math.abs(sw) * 0.9, H[1] - sw * 1.4];
+    const sway = Math.sin(t * 1.6 + sd) * 0.12 * up;
+    E = mix(E, [sd * 1.15 + sway, sh - 1.35], up); H = mix(H, [sd * 1.7 + sway * 1.6, sh - 2.9], up);
+    E = mix(E, [sd * 1.4, sh + 0.05], ri); H = mix(H, [sd * 2.6, sh - 0.55], ri);
+    if (run > 0) { const ph = rph + (sd > 0 ? 0 : Math.PI); E = mix(E, [sd * 0.9 + dir * Math.sin(ph) * 0.5, sh + 1.2], run); H = mix(H, [sd * 0.8 + dir * (Math.sin(ph) * 0.5 + 0.5), sh + 0.5], run); }
+    if (sit > 0) { E = mix(E, [sd * 0.9 + 0.2, sh + 1.4], sit); H = mix(H, [0.7 + sd * 0.2, sh + 2.3], sit); }
+    if (o.reach && sd === (o.reachSide || 1)) { E = mix(E, [sd * 1.0, sh - 1.3], o.reach); H = mix(H, [sd * 1.3 + dir * 0.4, sh - 2.9], o.reach); }
+    if (o.pick && sd === 1) { E = mix(E, [1.0, sh + 1.5], o.pick); H = mix(H, [1.35, sh + 3.0], o.pick); }
+    if (o.hold && sd === o.hold.side) {
+      const lx = (o.hold.x - x) / s, ly = (o.hold.y - y) / s;
+      H = mix(H, [lx, ly], o.hold.k); E = mix(E, [(sd * 0.75 + lx) / 2 + sd * 0.35, (sh + ly) / 2 + 0.1], o.hold.k);
+    }
+    if (o.hold && sd === -o.hold.side) {
+      E = mix(E, [sd * 1.5, sh - 1.1], o.hold.k); H = mix(H, [sd * 2.3 + Math.sin(t * 7 + sd) * 0.5, sh - 2.5], o.hold.k);
+    }
+    arms.push([U([sd * 0.75, sh]), sit ? U(E) : E, sit ? U(H) : H]);
+  }
+  const nap = clamp(o.nap || 0);
+  const head = U([bow * 0.8 + ri * 0.08 - nap * 0.15, -6.5 + drop + bow * 0.25 - up * 0.08 - Math.abs(Math.sin(bp)) * 0.12 * dance - ri * 0.1 + nap * 0.12]);
+  const neck = U([bow * 0.4, sh + 0.05]);
   const body = '#0b0716';
-  const rim = kind === 'jun' ? 'rgba(255,200,150,0.95)' : 'rgba(120,240,255,0.95)';
+  const rimRGB = kind === 'cadet' ? '255,200,150' : '120,240,255';
+  if (aura > 0.01) {
+    const cy = (hipY + sh) / 2 - 0.5, R = 4 + 3.5 * aura;
+    const g = c.createRadialGradient(0, cy, 0.5, 0, cy, R);
+    g.addColorStop(0, `rgba(${rimRGB},${0.45 * aura})`); g.addColorStop(0.5, `rgba(${rimRGB},${0.18 * aura})`); g.addColorStop(1, `rgba(${rimRGB},0)`);
+    c.fillStyle = g; c.beginPath(); c.arc(0, cy, R, 0, Math.PI * 2); c.fill();
+  }
   c.lineCap = 'round'; c.lineJoin = 'round';
   const limbs = (col, w) => {
     c.strokeStyle = col;
-    // legs
     c.lineWidth = 0.62 + w;
-    const hipY = -3.4 + drop;
-    for (const sd of [-1, 1]) {
-      const tap = Math.max(0, Math.sin(bp / 2 + (sd > 0 ? Math.PI : 0))) * dance * (1 - k);
-      const kx = sd * 0.35 + (k ? 0.55 * k * (sd > 0 ? 1 : 0.6) : 0) + sd * tap * 0.25, ky = lerp(-1.7, -0.25, k) - tap * 0.35;
-      const fx = lerp(sd * 0.38, -1.1 * k + sd * 0.25, k) + sd * tap * 0.15, fy = lerp(0, -0.1, k) - tap * 0.45;
-      c.beginPath(); c.moveTo(sd * 0.3, hipY); c.lineTo(kx, ky); c.lineTo(fx, fy); c.stroke();
-    }
-    // torso
+    for (const [P0, P1, P2] of legs) { c.beginPath(); c.moveTo(P0[0], P0[1]); c.lineTo(P1[0], P1[1]); c.lineTo(P2[0], P2[1]); c.stroke(); }
     c.lineWidth = 1.5 + w;
-    c.beginPath(); c.moveTo(0, -3.6 + drop); c.lineTo(bow * 0.4, -5.7 + drop); c.stroke();
-    // arms
+    c.beginPath(); c.moveTo(0, hipY - 0.2); c.lineTo(neck[0], neck[1]); c.stroke();
     c.lineWidth = 0.42 + w;
-    const sh = -5.75 + drop;
-    const open = opts.armsOpen || 0;
-    for (const sd of [-1, 1]) {
-      const up = clamp(opts.armsUp || 0), sway = Math.sin(t * 1.6 + sd) * 0.12 * up;
-      // arms raised overhead in a V: praising the skies
-      const ex = lerp(sd * lerp(0.95, 1.6, open), sd * 1.15 + sway, up), ey = lerp(sh + lerp(1.5, 0.9, open), sh - 1.35, up);
-      let hx = lerp(sd * lerp(0.9, 2.3, open), sd * 1.7 + sway * 1.6, up), hy = lerp(sh + lerp(3.0, 0.2, open), sh - 2.9, up);
-      let ex2 = ex, ey2 = ey;
-      // arm swing on the beat
-      const sw = Math.sin(bp / 2 + (sd > 0 ? 0 : Math.PI)) * dance;
-      ex2 += sd * Math.abs(sw) * 0.35; ey2 -= sw * 0.4; hx += sd * Math.abs(sw) * 0.9; hy -= sw * 1.4;
-      // arms opening outward and slightly up (rising pose)
-      const ri = clamp(opts.rise || 0);
-      ex2 = lerp(ex2, sd * 1.4, ri); ey2 = lerp(ey2, sh + 0.05, ri); hx = lerp(hx, sd * 2.6, ri); hy = lerp(hy, sh - 0.55, ri);
-      c.beginPath(); c.moveTo(sd * 0.75 + bow * 0.4, sh);
-      if (opts.chest && sd < 0) { c.lineTo(-0.9, sh + 1.3); c.lineTo(-0.1, sh + 0.9); }
-      else { c.lineTo(ex2, ey2); c.lineTo(hx, hy); }
-      c.stroke();
-      if ((opts.armsUp || 0) > 0.3) { c.fillStyle = col; c.beginPath(); c.arc(hx, hy, 0.3 + w / 2, 0, Math.PI * 2); c.fill(); }
+    for (const [P0, P1, P2] of arms) {
+      c.beginPath(); c.moveTo(P0[0], P0[1]); c.lineTo(P1[0], P1[1]); c.lineTo(P2[0], P2[1]); c.stroke();
+      if (up > 0.3 || o.hold) { c.fillStyle = col; c.beginPath(); c.arc(P2[0], P2[1], 0.3 + w / 2, 0, Math.PI * 2); c.fill(); }
     }
-    // head
-    const hx = bow * 0.8 + (opts.rise || 0) * 0.08, hy = -6.5 + drop + bow * 0.25 - clamp(opts.armsUp || 0) * 0.08 - Math.abs(Math.sin(bp)) * 0.12 * dance - (opts.rise || 0) * 0.1;
-    c.fillStyle = col; c.beginPath(); c.arc(hx, hy, 0.5 + w / 2, 0, Math.PI * 2); c.fill();
-    if (kind === 'jun') { c.beginPath(); c.arc(hx + 0.05, hy - 0.55, 0.26 + w / 2, 0, Math.PI * 2); c.fill(); }
+    c.fillStyle = col; c.beginPath(); c.arc(head[0], head[1], 0.5 + w / 2, 0, Math.PI * 2); c.fill();
+    if (kind === 'cadet') { c.beginPath(); c.arc(head[0] + 0.05, head[1] - 0.55, 0.26 + w / 2, 0, Math.PI * 2); c.fill(); }
   };
-  c.save(); c.shadowColor = rim; c.shadowBlur = 25 + 30 * (opts.rise || 0); limbs(rim, 0.12 + 0.08 * (opts.rise || 0)); c.restore();
+  c.save(); c.shadowColor = `rgba(${rimRGB},0.95)`; c.shadowBlur = 25 + 30 * ri + 40 * aura;
+  limbs(`rgba(${rimRGB},0.95)`, 0.12 + 0.08 * ri + 0.14 * aura); c.restore();
   limbs(body, 0);
+  if (o.flower > 0.01) { // a picked flower held up
+    const H = arms[1][2];
+    c.globalAlpha = o.flower; c.strokeStyle = '#2f7a2c'; c.lineWidth = 0.08;
+    c.beginPath(); c.moveTo(H[0], H[1]); c.lineTo(H[0] + 0.1, H[1] - 0.8); c.stroke();
+    c.fillStyle = '#ff7aa8';
+    for (let q = 0; q < 5; q++) { const an = q * 1.2566; c.beginPath(); c.arc(H[0] + 0.1 + Math.cos(an) * 0.17, H[1] - 0.8 + Math.sin(an) * 0.17, 0.13, 0, Math.PI * 2); c.fill(); }
+    c.fillStyle = '#ffcc33'; c.beginPath(); c.arc(H[0] + 0.1, H[1] - 0.8, 0.09, 0, Math.PI * 2); c.fill();
+    c.globalAlpha = 1;
+  }
+  if (o.zzz > 0.01) {
+    c.font = 'bold 0.9px InterX'; c.textAlign = 'center';
+    for (let q = 0; q < 3; q++) {
+      const ph = (t * 0.45 + q / 3) % 1;
+      c.fillStyle = `rgba(255,255,255,${o.zzz * Math.sin(Math.PI * ph)})`;
+      c.save(); c.translate(head[0] + 0.6 + ph * 1.2, head[1] - 0.7 - ph * 1.8); c.scale(0.6 + ph * 0.6, 0.6 + ph * 0.6); c.fillText('z', 0, 0); c.restore();
+    }
+  }
   c.restore();
 }
-
+function meadowPose(lt, t) {
+  // what the two figures get up to in the mind's-eye meadow
+  const seg = (a, b) => ease((lt - a) / (b - a));
+  const stand = seg(0.4, 1.3);
+  const chase = clamp((lt - 1.5) / 3.3);
+  const runAmt = clamp((lt - 1.5) / 0.3) * clamp((4.8 - lt) / 0.3);
+  const cx = 255 + 300 * Math.sin(chase * Math.PI * 0.85);
+  const dir = Math.cos(chase * Math.PI * 0.85) >= 0 ? 1 : -1;
+  const pick = seg(4.9, 5.25) * (1 - seg(5.45, 5.8));
+  const cadet = { x: cx, kneel: Math.max(1 - stand, 0.55 * pick), run: runAmt, runPh: lt * 11, dir: lt < 4.8 ? dir : 1,
+    reach: lt < 4.8 ? runAmt * 0.85 : seg(5.6, 6.0), reachSide: lt < 4.8 ? dir : 1, pick, flower: seg(5.4, 5.6) };
+  const bird = lt < 4.8 ? { x: cx + dir * 105 + Math.sin(lt * 3) * 15, y: 1010 - 9.6 * 46 + Math.sin(lt * 5) * 22, flap: lt * 16 }
+    : { x: cx + 115 + (lt - 4.8) * 260, y: 1010 - 9.2 * 48 - (lt - 4.8) * 220, flap: lt * 16 };
+  const walk = clamp((lt - 1.6) / 0.3) * clamp((4.0 - lt) / 0.3);
+  const android = { x: lerp(470, 200, seg(1.6, 4.0)), run: walk * 0.5, runPh: lt * 7, dir: -1, sit: seg(4.0, 4.8), nap: seg(4.8, 5.5), zzz: seg(5.3, 5.8) };
+  return { cadet, android, bird };
+}
 function drawSpot(c, x, yFeet, a, t) {
   if (a < 0.01) return;
   c.save(); c.globalCompositeOperation = 'lighter';
@@ -870,35 +960,16 @@ function drawSubtitle(c, t) {
   for (const id in EV) { const e = EV[id]; if (e.text && t >= e.t0 - 0.05 && t <= e.t1 + 0.35) cur = e; }
   for (const id in EV) { const e = EV[id]; if (e.android && t >= e.t0 - 0.05 && t <= e.t1 + 0.9) { let nxt = 1e9; for (const j in EV) { const f = EV[j]; if (f.text && f.t0 > e.t0 && f.t0 < nxt) nxt = f.t0; } if (t < nxt) cur = e; } }
   if (!cur) return;
-  if (cur.android) return drawAndroidSub(c, t, cur);
   const a = clamp((t - cur.t0 + 0.05) / 0.12) * clamp((cur.t1 + 0.35 - t) / 0.15);
   c.save(); c.globalAlpha = a;
   c.font = '34px InterB'; c.textAlign = 'center'; c.textBaseline = 'middle';
   const lines = wrap(c, cur.text, 600);
   const lh = 44, h = lines.length * lh + 56, y0 = 1110 - h / 2;
   c.fillStyle = 'rgba(5,8,18,0.72)'; c.beginPath(); c.roundRect(40, y0, 640, h, 22); c.fill();
-  c.font = '22px InterX'; c.fillStyle = { jun: '#ffb27a', orrin: '#5fe9ff', vesper: '#ffb84d' }[cur.who];
-  c.fillText({ jun: 'CADET', orrin: 'ANDROID', vesper: 'OTHER ANDROID' }[cur.who], W / 2, y0 + 22);
+  c.font = '22px InterX'; c.fillStyle = { cadet: '#ffb27a', android: '#5fe9ff', android2: '#ffb84d' }[cur.who];
+  c.fillText({ cadet: 'CADET', android: 'ANDROID', android2: 'OTHER ANDROID' }[cur.who], W / 2, y0 + 22);
   c.font = '34px InterB'; c.fillStyle = '#fff';
   lines.forEach((l, i) => c.fillText(l, W / 2, y0 + 50 + i * lh + lh / 2 - 6));
-  c.restore();
-}
-function drawAndroidSub(c, t, cur) {
-  const G = '◇◆○●△▽□■◁▷⬡⬢';
-  let gl = ''; for (const ch of cur.text) gl += ch === ' ' ? ' ' : G[(ch.charCodeAt(0) * 7) % G.length];
-  const shown = Math.ceil(gl.length * clamp((t - cur.t0) / Math.max(0.2, cur.t1 - cur.t0)));
-  const a = clamp((t - cur.t0 + 0.05) / 0.12);
-  c.save(); c.globalAlpha = a; c.textAlign = 'center'; c.textBaseline = 'middle';
-  c.font = '31px InterB'; const lines = wrap(c, cur.text, 590);
-  const lh = 40, h = lines.length * lh + 100, y0 = 1105 - h / 2;
-  const col = cur.who === 'vesper' ? '#ffb84d' : '#5fe9ff';
-  c.fillStyle = 'rgba(5,8,18,0.78)'; c.strokeStyle = col; c.lineWidth = 1.5;
-  c.beginPath(); c.roundRect(40, y0, 640, h, 22); c.fill(); c.stroke();
-  c.font = '20px InterX'; c.fillStyle = col;
-  c.fillText((cur.who === 'vesper' ? 'VESPER' : 'ORRIN') + '  ·  ANDROID  →  TRANSLATED', W / 2, y0 + 22);
-  c.font = '22px "DejaVu Sans"'; c.fillText(gl.slice(0, Math.min(shown, 34)), W / 2, y0 + 52);
-  c.font = 'italic 31px InterB'; c.fillStyle = '#fff';
-  lines.forEach((l, i) => c.fillText(l, W / 2, y0 + 84 + i * lh));
   c.restore();
 }
 const PANELS = [
@@ -1024,15 +1095,15 @@ function shot(t0, t1, scene, a, b = null, extra = {}) { SHOTS.push(Object.assign
 const cam = (o, dx = 0, dy = 0, dz = 1) => ({ x: o.x + dx, y: o.y + dy, z: o.z * dz });
 
 function direct() {
-  const J = (t, o, d) => K('jun', t, o, d), O = (t, o, d) => K('orrin', t, o, d), V = (t, o, d) => K('vesper', t, o, d);
-  const rest = { mugX: 0.62, mugY: 1.3 }, sip = { mugX: 0.14, mugY: 0.45 }, gest = { mugX: 0.78, mugY: 0.95 };
+  const J = (t, o, d) => K('cadet', t, o, d), O = (t, o, d) => K('android', t, o, d), V = (t, o, d) => K('android2', t, o, d);
+  const rest = { mugX: 0.62, mugY: 1.3 }, sip = { mugX: 0.2, mugY: 0.6 }, gest = { mugX: 0.78, mugY: 0.95 };
   const hold = { mugX: 0.5, mugY: 1.12 };
   const S = T0('sym'), BAR = i => S + (i - 1) * 4 * E('sym').beat;
   const end = TL.duration;
   const WORK = { turn: 0.3, lookX: 0.85, lookY: 0.15, typing: 1, reflect: 0.8, lid: 0.92, smile: 0, handRaise: 0, reach: 0 };
   const STATION = { x: 705, y: 668, z: 1.42 };
   TR = { cosmic: new Track(0), rib: new Track(0), bloom: new Track(0), rays: new Track(0), collapse: new Track(0),
-    flash: new Track(0), fade: new Track(1), kneel: new Track(0), armsUp: new Track(0), dance: new Track(0), rise: new Track(0), nature: new Track(0), panels: new Track(0), fly: new Track(0), mugConsole: new Track(0) };
+    flash: new Track(0), fade: new Track(1), kneel: new Track(0), armsUp: new Track(0), dance: new Track(0), rise: new Track(0), nature: new Track(0), aura: new Track(0), close: new Track(0), panels: new Track(0), fly: new Track(0), mugConsole: new Track(0) };
   const ic = n => E('ic_' + n);
 
   // ---------------- opening
@@ -1068,7 +1139,7 @@ function direct() {
   J(T0('l6') + 1.5, { lid: 1.2, browY: 0.5, pupil: 0.85 }, 0.2);
   J(T0('l7') - 0.15, { ...rest, mugX: 0.66, mugY: 1.1, browAsym: 0.7, browY: 0.3, lid: 1.15, smile: -0.1 }, 0.3);
   J(T0('l8'), { browAsym: 0.2, browY: 0.5, browTilt: -0.2, lid: 1.1, tilt: -0.06, by: -6, lookX: 0.8, ...gest }, 0.35);
-  // Orrin explains (time HUD); meanwhile Jun swaps mug for a handheld
+  // the android explains (time HUD); meanwhile the cadet swaps mug for a handheld
   shot(T0('l9'), T0('reach'), 'lounge', cam(CAM.OCU, 0, 25, 0.92), cam(CAM.OCU, 0, 15, 1.02));
   O(T0('l9'), { browY: 0.2, smile: 0.08, lookX: -0.45, tilt: 0 }, 0.3);
   O(T0('l9') + 2.5, { lookX: -0.2, lookY: -0.3 }, 0.3);
@@ -1089,7 +1160,7 @@ function direct() {
   J(T0('press'), { lookX: 0.3, lookY: 0.75, tilt: 0, scr: 2, mugY: 1.25 }, 0.4);
 
   // ---------------- the symphony, intercut
-  // J: Jun's world (full music, cosmic); O: Orrin working (muffled music, plain room).
+  // J: the cadet's world (full music, cosmic); O: the android working (muffled music, plain room).
   // The first cutaway waits until the full-orchestra arrival has landed.
   shot(ic('start').t0, ic('start').t1, 'lounge', CAM.WIDE, cam(CAM.WIDE, -20, 20, 1.12));
   J(S, { lid: 0.85, smile: 0.05, browAsym: 0.35, lookY: 0.65, lookX: 0.3 }, 0.4);
@@ -1108,7 +1179,8 @@ function direct() {
   TR.rib.at(ic('tears').t0, 1, 3);
   shot(ic('cosmic').t0, ic('cosmic').t1, 'cosmicwide', { x: 360, y: 640, z: 1 }, { x: 360, y: 610, z: 1.1 });
   TR.dance.at(ic('cosmic').t0 + 0.3, 1, 1.0).at(ic('cosmic').t1, 0, 0.01);
-  shot(ic('glance').t0, ic('glance').t1, 'lounge', cam(CAM.OCU, 0, 5, 0.98), cam(CAM.OCU, 0, -5, 1.06), { room: true });
+  TR.close.at(ic('cosmic').t0, 1, 1.2).at(ic('cosmic').t1, 0, 0.01);
+  shot(ic('glance').t0, ic('glance').t1, 'lounge', { x: 590, y: 660, z: 1.95 }, { x: 590, y: 650, z: 2.05 }, { room: true });
   const g0 = ic('glance').t0;
   O(g0 + 1.5, { lookX: -0.9, turn: -0.12, reflect: 0.25, typing: 0.25 }, 0.45);
   O(g0 + 2.1, { smile: 0.3, lid: 0.88, lidLow: 0.35 }, 0.45);
@@ -1120,8 +1192,9 @@ function direct() {
   TR.cosmic.at(ic('cosmic').t0, 1, 0.01);
   shot(ic('kneel').t0, ic('kneel').t1, 'cosmicwide', { x: 360, y: 600, z: 1.05 }, { x: 360, y: 680, z: 1.18 });
   TR.kneel.at(ic('kneel').t0 + 0.15, 1, 1.4);
-  TR.armsUp.at(ic('kneel').t0 + 2.6, 1, 1.6).at(ic('collapse').t0 + 1, 0, 3);
-  TR.rise.at(ic('kneel').t0 + 0.6, 1, 7).at(ic('collapse').t0 + 1.5, 0, 3.5);
+  TR.armsUp.at(ic('kneel').t0 + 2.6, 1, 1.6).at(ic('collapse').t0 + 0.8, 0, 1.2);
+  TR.rise.at(ic('kneel').t0 + 0.6, 1, 7).at(ic('collapse').t0 + 0.8, 0, 1.6);
+  TR.aura.at(ic('kneel').t0, 1, 6).at(ic('collapse').t0, 0, 1.5);
   TR.nature.at(ic('collapse').t0 + 1.0, 1, 2.2);
   TR.rays.at(ic('kneel').t0, 1, 0.4).at(ic('kneel').t0 + 5, 0.4, 1.5).at(ic('climax').t0, 1, 0.3);
   const cm = ic('climax');
@@ -1139,14 +1212,14 @@ function direct() {
   O(T1('a2') - 0.1, WORK, 0.4);
   V(T0('a3'), { turn: -0.3, lookX: -0.8, smile: 0.25, browY: 0.15 }, 0.3);
   V(T1('a3') + 0.2, { ...WORK, turn: -0.3, lookX: -0.85, smile: 0.1 }, 0.4);
-  shot(ic('collapse').t0, ic('collapse').t1 - 2.8, 'cosmicwide', { x: 360, y: 700, z: 1.12 }, { x: 360, y: 640, z: 1.0 }, { bow: true, nature: true });
+  shot(ic('collapse').t0, ic('collapse').t1 - 2.8, 'cosmicwide', { x: 360, y: 640, z: 1.0 }, { x: 360, y: 640, z: 1.0 }, { bow: true, nature: true });
   TR.bloom.at(ic('chat').t0, 0, 3);
   TR.rib.at(ic('collapse').t0 + 1, 0.3, 5);
   TR.collapse.at(ic('collapse').t0 + 1, 1, 8);
   shot(ic('collapse').t1 - 2.8, T0('snap'), 'lounge', cam(CAM.JCU, 0, 0, 1), cam(CAM.JCU, 0, -5, 1.06), { cosmicBg: true, natureBg: true });
   J(ic('collapse').t1 - 2.81, { closed: 1, tilt: 0.06, mouth: 0, smile: 0.35, tear: 0.6, wet: 0.6, shake: 0, chest: 1, lookY: 0, browTilt: 0.2, browY: 0.1 }, 0.01);
 
-  // ---------------- SNAP back: Orrin never stopped working
+  // ---------------- SNAP back: the android never stopped working
   const SN = T0('snap');
   TR.flash.at(SN, 1, 0.05).at(SN + 0.08, 0, 0.35);
   TR.cosmic.at(SN, 0, 0.01); TR.rib.at(SN, 0, 0.01); TR.collapse.at(SN, 0, 0.01); TR.kneel.at(SN, 0, 0.01);
@@ -1222,7 +1295,7 @@ function direct() {
   J(T0('leave'), { walk: 0.6, bx: -560, lookX: -0.6, turn: -0.2, smile: 0.1, sweat: 0, blush: 0.2 }, 3.0);
   J(T0('leave') + 1.0, { lookX: 0.8, turn: 0.2 }, 0.3);
   J(T0('leave') + 1.6, { lookX: -0.6, turn: -0.2 }, 0.3);
-  shot(T0('alone'), T0('endcard') + 0.3, 'lounge', cam(CAM.OECU, 0, 10, 0.9), cam(CAM.OECU, 0, 0, 1.1));
+  shot(T0('alone'), T0('endcard') + 0.3, 'lounge', { x: 590, y: 665, z: 1.95 }, { x: 585, y: 650, z: 2.25 });
   O(T0('alone'), { ...WORK, reflect: 1, lid: 0.95 }, 0.3);
   O(T0('alone') + 1.3, { lookX: -0.95, lookY: 0.05, turn: -0.12, typing: 0.25, reflect: 0.35 }, 0.7);
   O(T0('alone') + 2.1, { smile: 0.32, lid: 0.86, lidLow: 0.4, browY: 0.08, tilt: 0.03 }, 1.1);
@@ -1240,10 +1313,10 @@ function render(t) {
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
   ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, H);
-  const J = stateAt('jun', t), O = stateAt('orrin', t), Vs = stateAt('vesper', t);
-  // where Orrin's fingertip should land: Jun's handheld
-  O.rx = (CH.jun.x + J.bx + J.mugX * CH.jun.size - (CH.orrin.x + O.bx)) / CH.orrin.size + 0.1;
-  O.ry = (CH.jun.y + J.by + J.mugY * CH.jun.size - (CH.orrin.y + O.by)) / CH.orrin.size;
+  const J = stateAt('cadet', t), O = stateAt('android', t), Vs = stateAt('android2', t);
+  // where the android's fingertip should land: the cadet's handheld
+  O.rx = (CH.cadet.x + J.bx + J.mugX * CH.cadet.size - (CH.android.x + O.bx)) / CH.android.size + 0.1;
+  O.ry = (CH.cadet.y + J.by + J.mugY * CH.cadet.size - (CH.android.y + O.by)) / CH.android.size;
   const sym = E('sym');
   const ic = n => E('ic_' + n);
   const pulses = [];
@@ -1258,13 +1331,38 @@ function render(t) {
     drawCosmic(ctx, t, cosSt);
     if (sh.nature) drawNature(ctx, t, t - (ic('collapse').t0 + 1.0), TR.nature.val(t));
     ctx.save(); ctx.translate(W / 2, H / 2); ctx.scale(z, z); ctx.translate(-W / 2, -cy);
-    const bob = Math.sin(t * 0.8) * 10 * (1 - TR.nature.val(t));
+    const nat = TR.nature.val(t);
+    const bob = Math.sin(t * 0.8) * 10 * (1 - nat);
     const kn = TR.kneel.val(t);
-    const dance = TR.dance.val(t), rise = TR.rise.val(t), beatPh = 2 * Math.PI * (t - sym.t0) / sym.beat;
+    const dance = TR.dance.val(t), rise = TR.rise.val(t), aura = TR.aura.val(t), close = ease(TR.close.val(t));
+    const beatPh = 2 * Math.PI * (t - sym.t0) / sym.beat;
+    const sA = lerp(62, 50, nat), sC = lerp(58, 46, nat);
+    let ax = lerp(470, 452, close), cxp = lerp(255, 268, close);
+    let aOpt = { dance, beatPh: dance > 0 ? beatPh : beatPh + 0.6, rise, aura };
+    let cOpt = { armsOpen: kn > 0.5 ? 0.35 : 0.15, armsUp: TR.armsUp.val(t), dance, beatPh, aura, bow: sh.bow ? ease((t - sh.t0) / 4) * 0.6 * (1 - nat) : 0 };
+    let ckn = kn, bird = null;
+    if (close > 0.01) { // holding hands, joined hands pumped into the air, free hands waving
+      const hx = (ax + cxp) / 2, hy = 1010 - 8.4 * 60 + Math.sin(beatPh) * 14;
+      aOpt.hold = { side: -1, x: hx, y: hy, k: close }; cOpt.hold = { side: 1, x: hx, y: hy, k: close };
+    }
+    if (sh.nature && nat > 0.01) {
+      const mp = meadowPose(t - (ic('collapse').t0 + 1.0), t);
+      cxp = lerp(cxp, mp.cadet.x, nat); ckn = Math.min(kn, mp.cadet.kneel);
+      Object.assign(cOpt, mp.cadet, { kneel: undefined, armsUp: Math.min(cOpt.armsUp, 1 - nat), armsOpen: 0.15 });
+      ax = lerp(ax, mp.android.x, nat);
+      Object.assign(aOpt, mp.android);
+      bird = mp.bird;
+    }
     const oy = 1010 + bob * 0.6 - ease(rise) * 150;
-    drawSpot(ctx, 470, oy, ease(rise), t);
-    drawSilhouette(ctx, 470, oy, 62, 0, 'orrin', t, { dance, beatPh: beatPh + 0.6, rise });
-    drawSilhouette(ctx, 255, 1010 + bob, 58, kn, 'jun', t, { armsOpen: kn > 0.5 ? 0.35 : 0.15, armsUp: TR.armsUp.val(t), dance, beatPh, bow: sh.bow ? ease((t - sh.t0) / 4) * 0.6 : 0 });
+    drawSpot(ctx, ax, oy, ease(rise), t);
+    drawSilhouette(ctx, ax, oy, sA, 0, 'android', t, aOpt);
+    drawSilhouette(ctx, cxp, 1010 + bob, sC, ckn, 'cadet', t, cOpt);
+    if (close > 0.3 && aOpt.hold) { // glow where the hands clasp
+      const g = ctx.createRadialGradient(aOpt.hold.x, aOpt.hold.y, 0, aOpt.hold.x, aOpt.hold.y, 40);
+      g.addColorStop(0, `rgba(255,255,240,${0.9 * close})`); g.addColorStop(1, 'rgba(255,240,200,0)');
+      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(aOpt.hold.x, aOpt.hold.y, 40, 0, Math.PI * 2); ctx.fill();
+    }
+    if (bird && nat > 0.5) drawBird(ctx, bird.x, bird.y, 1.7, bird.flap, '#3a2f4a');
     ctx.restore();
     vignette(ctx, 0.5);
   } else {
@@ -1281,15 +1379,15 @@ function render(t) {
     if (sh.natureBg) drawNature(ctx, t, t - (ic('collapse').t0 + 1.0), 1);
     ctx.save(); world();
     if (sh.panels) {
-      const fx = CH.jun.x + J.bx + J.mugX * CH.jun.size, fy = CH.jun.y + J.by + J.mugY * CH.jun.size;
+      const fx = CH.cadet.x + J.bx + J.mugX * CH.cadet.size, fy = CH.cadet.y + J.by + J.mugY * CH.cadet.size;
       drawPanels(ctx, t, TR.panels.val(t), 0, TR.fly.val(t), fx, fy);
     }
-    if (cosmic < 0.6) { ctx.globalAlpha = 1 - cosmic / 0.6; drawBust(ctx, 'vesper', Vs, t); drawBust(ctx, 'orrin', O, t); drawTerminal(ctx, t, 1); ctx.globalAlpha = 1; }
-    drawBust(ctx, 'jun', J, t);
-    if (cosmic < 0.6) drawReach(ctx, 'orrin', O);
+    if (cosmic < 0.6) { ctx.globalAlpha = 1 - cosmic / 0.6; drawBust(ctx, 'android2', Vs, t); drawBust(ctx, 'android', O, t); drawTerminal(ctx, t, 1); ctx.globalAlpha = 1; }
+    drawBust(ctx, 'cadet', J, t);
+    if (cosmic < 0.6) drawReach(ctx, 'android', O);
     if (cosmic < 0.99) {
       ctx.globalAlpha = 1 - cosmic; drawConsole(ctx, t, TR.mugConsole.val(t) > 0.5);
-      drawTyping(ctx, 'orrin', O, t); drawTyping(ctx, 'vesper', Vs, t); ctx.globalAlpha = 1;
+      drawTyping(ctx, 'android', O, t); drawTyping(ctx, 'android2', Vs, t); ctx.globalAlpha = 1;
     }
     ctx.restore();
     if (cosmic > 0.2) {
@@ -1310,7 +1408,7 @@ function render(t) {
   const fl = TR.flash.val(t);
   if (fl > 0.01) { ctx.fillStyle = `rgba(255,255,255,${fl})`; ctx.fillRect(0, 0, W, H); }
   drawSubtitle(ctx, t);
-  const fd = TR.fade.val(t) * clamp(t / 0.8);
+  const fd = TR.fade.val(t);
   if (fd < 1) { ctx.fillStyle = `rgba(0,0,0,${1 - fd})`; ctx.fillRect(0, 0, W, H); }
 }
 
@@ -1324,13 +1422,30 @@ function drawSpaceOpen(t) {
   drawStars(c, -t * 10, 0, 0, 0, W, H, 0.3, t);
   drawPlanet(c, 590, 1120, 420, t);
   const p = easeOut(t / 6.5);
-  drawShip(c, lerp(880, 360, p), lerp(1050, 600, p), lerp(0.5, 1.15, p), -0.55 + p * 0.25, t);
+  drawShip(c, lerp(660, 360, p), lerp(940, 600, p), lerp(0.7, 1.15, p), -0.55 + p * 0.25, t);
   c.restore();
-  const ta = clamp((t - 1.2) / 0.8) * clamp((6.4 - t) / 0.5);
+  const ta = clamp((6.4 - t) / 0.5);
   centerText(c, 'DO YOU HAVE', 230, '64px InterX', '#ffffff', ta);
   centerText(c, 'A MINUTE?', 305, '64px InterX', '#5fe9ff', ta);
-  centerText(c, 'a very short symphony', 360, '26px InterM', 'rgba(255,255,255,0.8)', ta * clamp((t - 2.2) / 0.8));
+  centerText(c, 'a very short symphony', 360, '26px InterM', 'rgba(255,255,255,0.8)', ta);
   if (t > 7.1) { c.fillStyle = `rgba(255,255,255,${clamp((t - 7.1) / 0.4)})`; c.fillRect(0, 0, W, H); }
+}
+function drawWhale(c, x, y, s, t) {
+  // a humpback gliding through space
+  c.save(); c.translate(x, y); c.scale(s, s); c.rotate(Math.sin(t * 0.5) * 0.06);
+  const tail = Math.sin(t * 1.4) * 0.25;
+  c.fillStyle = '#2b4a6e'; c.strokeStyle = 'rgba(150,210,255,0.6)'; c.lineWidth = 2;
+  c.beginPath(); c.moveTo(150, 0); c.bezierCurveTo(140, -55, 20, -62, -90, -28); c.quadraticCurveTo(-140, -12, -165, 0);
+  c.quadraticCurveTo(-140, 14, -90, 24); c.bezierCurveTo(20, 60, 135, 45, 150, 0); c.fill(); c.stroke();
+  c.save(); c.translate(-160, 0); c.rotate(tail);
+  c.beginPath(); c.moveTo(0, 0); c.quadraticCurveTo(-30, -50, -70, -55); c.quadraticCurveTo(-45, -10, -50, 0); c.quadraticCurveTo(-45, 10, -70, 55); c.quadraticCurveTo(-30, 50, 0, 0); c.fill(); c.stroke();
+  c.restore();
+  c.fillStyle = '#9ec3df'; c.beginPath(); c.moveTo(140, 15); c.bezierCurveTo(90, 48, 0, 50, -60, 26); c.quadraticCurveTo(20, 30, 140, 15); c.fill();
+  c.strokeStyle = 'rgba(40,70,100,0.7)'; c.lineWidth = 1.5;
+  for (let i = 0; i < 6; i++) { c.beginPath(); c.moveTo(120 - i * 22, 22 + i * 2); c.lineTo(100 - i * 22, 38 + i * 1.5); c.stroke(); }
+  c.fillStyle = '#2b4a6e'; c.beginPath(); c.moveTo(40, 30); c.quadraticCurveTo(10, 80, -30, 95); c.quadraticCurveTo(0, 60, 0, 30); c.fill();
+  c.fillStyle = '#fff'; c.beginPath(); c.arc(105, 2, 4, 0, Math.PI * 2); c.fill();
+  c.restore();
 }
 function drawEnd(t, lt) {
   const c = ctx;
@@ -1340,19 +1455,20 @@ function drawEnd(t, lt) {
   drawPlanet(c, 140, 1180, 380, t);
   const p = clamp(lt / 18);
   drawShip(c, lerp(300, 520, p), lerp(820, 640, p), lerp(0.8, 0.12, easeOut(p)), -0.5, t);
+  drawWhale(c, lerp(-260, 980, clamp((lt - 1.5) / 17)), 860 + Math.sin(lt * 0.5) * 30, 1.0, lt);
   const a = clamp(lt / 1.2);
   c.fillStyle = `rgba(0,0,0,${0.3 * a})`; c.fillRect(0, 0, W, H);
   centerText(c, 'ASK FOR MORE,', 230, '54px InterX', '#ffffff', clamp((lt - 1.0) / 1.2));
   centerText(c, 'AND MAYBE', 298, '54px InterX', '#ffffff', clamp((lt - 2.0) / 1.2));
   centerText(c, 'YOU WILL RECEIVE?', 366, '54px InterX', '#5fe9ff', clamp((lt - 3.0) / 1.2));
   centerText(c, '♪  now playing on the cadet’s phone:', 560, '24px InterM', '#ffd9a8', clamp((lt - 6.0) / 1));
-  centerText(c, 'Symphony No. 4 · “Lullaby for a Dying Star”', 600, 'italic 26px InterB', '#ffffff', clamp((lt - 6.0) / 1));
+  centerText(c, 'Symphony No. 5 · “Duet with a Humpback Whale”', 600, 'italic 26px InterB', '#ffffff', clamp((lt - 6.0) / 1));
 }
 
 window.setup = async function (tl) {
   TL = tl; EV = tl.events;
   await document.fonts.load('34px InterB'); await document.fonts.load('22px InterX'); await document.fonts.load('20px InterM');
-  makeNebula(); direct();
+  makeNebula(); loadCode(); direct();
   return true;
 };
 window.renderAt = function (t) { render(t); return true; };

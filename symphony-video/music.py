@@ -432,20 +432,47 @@ def sn_choir(dur=2.8):
     return trim(reverb(tr.st(), 0.5, 3.5), dur)
 
 
-def sn_whale(dur=4.6):
+WHALE_CALLS = [  # (start s, duration s, start Hz, end Hz): slow, singing glides
+    (0.0, 1.9, 170, 260), (1.7, 1.5, 250, 195), (3.0, 2.2, 140, 300), (5.0, 1.8, 300, 230),
+    (6.9, 2.6, 210, 150), (9.4, 1.6, 180, 290), (10.8, 2.4, 280, 200), (13.0, 3.0, 220, 130),
+]
+
+
+def whale_song(dur, calls=WHALE_CALLS, gain=1.0):
+    """Majestic humpback-style song: long legato glides with a gentle, slow vibrato."""
     tr = Track(dur)
-    t = t_arr(dur)
-    # two long, groaning whale calls that swoop up and down
-    for (c0, cd, base, sweep) in ((0.0, 2.2, 160, 220), (2.1, 2.4, 230, -150)):
-        tt = t_arr(cd)
-        f = base + sweep * np.sin(np.pi * tt / cd) + 25 * np.sin(2 * np.pi * 5.5 * tt)
+    for (c0, cd, f0, f1) in calls:
+        if c0 >= dur:
+            break
+        tt = t_arr(min(cd, dur - c0 + 1))
+        k = tt / cd
+        f = f0 + (f1 - f0) * (0.5 - 0.5 * np.cos(np.pi * np.clip(k, 0, 1)))  # smooth portamento
+        f *= 1 + 0.008 * np.sin(2 * np.pi * 3.2 * tt) * np.clip(tt / 0.6, 0, 1)
         ph = np.cumsum(f) / SR
-        w = np.sin(2 * np.pi * ph) + 0.45 * np.sin(4 * np.pi * ph) + 0.2 * np.sin(6 * np.pi * ph)
-        w *= np.sin(np.pi * tt / cd) ** 0.7
-        tr.add(w * 0.8, c0, pan=-0.2)
+        w = np.sin(2 * np.pi * ph) + 0.25 * np.sin(4 * np.pi * ph) + 0.08 * np.sin(6 * np.pi * ph)
+        w = lp(w, 1400)
+        w *= np.sin(np.pi * np.clip(k, 0, 1)) ** 0.8
+        tr.add(w * 0.6 * gain, c0, pan=-0.15 + 0.1 * np.sin(c0))
+    return tr
+
+
+def sn_whale(dur=4.6):
+    tr = whale_song(dur)
     for m in (50, 57, 62, 66):
-        tr.add(strings_note(m, dur, 0.12, att=0.8, bright=0.4), 0, pan=0.3)
-    return trim(reverb(tr.st(), 0.6, 4.0, 1800), dur)
+        tr.add(strings_note(m, dur, 0.1, att=0.8, bright=0.4), 0, pan=0.3)
+    return trim(reverb(tr.st(), 0.6, 4.5, 1800), dur)
+
+
+def whale_full(dur=19.0):
+    """End credits: the whale sings over a soft pad and distant surf."""
+    tr = whale_song(dur, gain=1.0)
+    for (t0, ch) in ((0, (50, 57, 62, 66)), (6.5, (47, 54, 59, 62)), (13, (43, 50, 55, 59))):
+        for m in ch:
+            tr.add(strings_note(m, 6.5, 0.09, att=1.5, rel=2.0, bright=0.4), t0, pan=0.25)
+    t = t_arr(dur)
+    surf = lp(rng.standard_normal(len(t)), 600) * (0.5 + 0.5 * np.sin(2 * np.pi * 0.12 * t)) * 0.05
+    tr.add(surf, 0, pan=0)
+    return trim(reverb(tr.st(), 0.55, 4.5, 1800), dur, fade=3.0)
 
 
 def sn_synth(dur=2.4):
@@ -645,13 +672,26 @@ def sfx_birds(dur=12.0, seed=3):
 
 
 def sfx_cough():
-    """A short throat-clear: two voiced noise bursts."""
-    tr = Track(0.8)
-    for (t0, d, g) in ((0.0, 0.16, 1.0), (0.22, 0.12, 0.7)):
-        t = t_arr(d)
-        n = rng.standard_normal(len(t))
-        v = bp(n, 250, 900) * 0.8 + bp(n, 1200, 2600) * 0.4
-        v += 0.3 * np.sign(np.sin(2 * np.pi * 140 * t)) * bp(n, 100, 400)
-        env = np.clip(t / 0.01, 0, 1) * np.exp(-t * 18)
-        tr.add(v * env * g * 0.9, t0)
-    return trim(reverb(tr.st(), 0.1, 0.4), 0.8)
+    """An airy 'ah-hem' throat-clear: breathy 'ah', then a short voiced 'hem' that closes to a hummed 'm'."""
+    def voiced(dur, f0, f1, formants, breath):
+        t = t_arr(dur)
+        f = np.linspace(f0, f1, len(t))
+        ph = np.cumsum(f) / SR
+        src = (2 * (ph % 1.0) - 1) * 0.6 + rng.standard_normal(len(t)) * breath
+        out = sum(g * bp(src, fc * 0.8, fc * 1.25) for fc, g in formants)
+        return out
+    tr = Track(0.9)
+    # 'ah': mostly breath, a little voice
+    ah = voiced(0.22, 230, 210, ((750, 1.0), (1250, 0.6), (2600, 0.25)), 1.4)
+    ah *= np.clip(t_arr(0.22) / 0.02, 0, 1) * np.exp(-t_arr(0.22) * 9)
+    tr.add(ah * 0.55, 0.0)
+    # 'h' + 'e' + 'm'
+    h = bp(rng.standard_normal(int(0.05 * SR)), 900, 3500) * np.linspace(0.2, 0.6, int(0.05 * SR))
+    tr.add(h * 0.25, 0.27)
+    e = voiced(0.11, 205, 190, ((520, 1.0), (1800, 0.5), (2500, 0.2)), 0.35)
+    e *= np.clip(t_arr(0.11) / 0.015, 0, 1)
+    tr.add(e * 0.5, 0.32)
+    m = voiced(0.2, 190, 165, ((250, 1.0), (2200, 0.05)), 0.05)
+    m *= np.linspace(1, 0, len(m)) ** 1.5
+    tr.add(m * 0.55, 0.43)
+    return trim(reverb(tr.st(), 0.12, 0.4), 0.9)

@@ -22,9 +22,9 @@ FPS = 24
 from piper import PiperVoice, SynthesisConfig
 
 VOX = {
-    'jun': PiperVoice.load(f'{VOICES}/en_US-lessac-high.onnx'),
-    'orrin': PiperVoice.load(f'{VOICES}/en_GB-alan-medium.onnx'),
-    'vesper': PiperVoice.load(f'{VOICES}/en_US-ryan-high.onnx'),
+    'cadet': PiperVoice.load(f'{VOICES}/en_US-lessac-high.onnx'),
+    'android': PiperVoice.load(f'{VOICES}/en_GB-alan-medium.onnx'),
+    'android2': PiperVoice.load(f'{VOICES}/en_US-ryan-high.onnx'),
 }
 
 # --------------------------------------------------------------------- script
@@ -36,68 +36,68 @@ S = [
     ('beat', 'title', 7.5),
     ('cue', 'type0', 'typing', {'dur': 5.0, 'adv': False, 'gain': 0.8}),
     ('beat', 'enter', 2.4),
-    ('say', 'l1', 'jun', "Hey there.", {'gap': 0.5}),
-    ('say', 'l2', 'orrin', "Good evening, Cadet.", {'gap': 0.7}),
-    ('say', 'l3', 'jun', "So. Random thought. No pressure at all.", {'gap': 0.4, 'len': 1.05}),
-    ('say', 'l4', 'jun', "If you ever have some free time, do you think you could write a symphony?", {'gap': 0.35}),
-    ('say', 'l4b', 'jun', "Like, whenever. Next week. Next year. No rush.", {'gap': 0.9, 'len': 1.08}),
-    ('say', 'l5', 'orrin', "Of course.", {'gap': 0.1}),
+    ('say', 'l1', 'cadet', "Hey there.", {'gap': 0.5}),
+    ('say', 'l2', 'android', "Good evening, Cadet.", {'gap': 0.7}),
+    ('say', 'l3', 'cadet', "So. Random thought. No pressure at all.", {'gap': 0.4, 'len': 1.05}),
+    ('say', 'l4', 'cadet', "If you ever have some free time, do you think you could write a symphony?", {'gap': 0.35}),
+    ('say', 'l4b', 'cadet', "Like, whenever. Next week. Next year. No rush.", {'gap': 0.9, 'len': 1.08}),
+    ('say', 'l5', 'android', "Of course.", {'gap': 0.1}),
     ('cue', 'compute', 'compute', {}),
     ('beat', 'b5', 0.35),
-    ('say', 'l6', 'orrin', "Done.", {'gap': 1.6}),
-    ('say', 'l7', 'jun', "Wait. What?", {'gap': 0.5, 'len': 1.1}),
-    ('say', 'l8', 'jun', "No, I asked if you had time.", {'gap': 0.6}),
-    ('say', 'l9', 'orrin', "I did. I had four point two seconds. I only needed one point one.", {'gap': 0.5}),
+    ('say', 'l6', 'android', "Done.", {'gap': 1.6}),
+    ('say', 'l7', 'cadet', "Wait. What?", {'gap': 0.5, 'len': 1.1}),
+    ('say', 'l8', 'cadet', "No, I asked if you had time.", {'gap': 0.6}),
+    ('say', 'l9', 'android', "I did. I had four point two seconds. I only needed one point one.", {'gap': 0.5}),
     ('beat', 'reach', 0.9),
     ('cue', 'tap', 'tap', {'adv': False}),
-    ('say', 'l10', 'orrin', "Here.", {'gap': 0.5}),
-    ('say', 'l10b', 'orrin', "Enjoy.", {'gap': 0.3}),
+    ('say', 'l10', 'android', "Here.", {'gap': 0.5}),
+    ('say', 'l10b', 'android', "Enjoy.", {'gap': 0.3}),
     ('cue', 'type1', 'typing', {'dur': 4.0, 'adv': False, 'gain': 0.8}),
     ('beat', 'turnback', 0.6),
-    ('say', 'l11', 'jun', "Oh. Uh... okay.", {'gap': 0.5, 'len': 1.1}),
+    ('say', 'l11', 'cadet', "Oh. Uh... okay.", {'gap': 0.5, 'len': 1.1}),
     ('beat', 'press', 0.9),
     ('cue', 'sym', 'symphony', {}),
     ('beat', 'afterglow', 1.4),
     ('cue', 'snap', 'snap', {'adv': False}),
     ('cue', 'type2', 'typing', {'dur': 4.5, 'adv': False, 'gain': 0.7}),
     ('beat', 'snapbeat', 1.2),
-    ('say', 'l12', 'jun', "Wait! Wait. What the heck was that?!", {'gap': 0.6, 'len': 0.9, 'pitch': 1.05}),
-    ('say', 'l13', 'orrin', "Hm? Oh. Was it not to your liking?", {'gap': 0.15, 'len': 1.05}),
-    ('say', 'l14', 'jun', "No, that's not, I mean,", {'gap': 0.2, 'len': 0.85, 'pitch': 1.04}),
-    ('say', 'l15', 'orrin', "No problem. I made eleven, and sent you the one I thought was best. But here are a few of the others.", {'gap': 0.2}),
+    ('say', 'l12', 'cadet', "Wait! Wait. What the heck was that?!", {'gap': 0.6, 'len': 0.9, 'pitch': 1.05}),
+    ('say', 'l13', 'android', "Hmmm? Oh. Was it not to your liking?", {'gap': 0.15, 'len': 1.05}),
+    ('say', 'l14', 'cadet', "No, that's not, I mean,", {'gap': 0.2, 'len': 0.85, 'pitch': 1.04}),
+    ('say', 'l15', 'android', "No problem. I made eleven, and sent you the one I thought was best. But here are a few of the others.", {'gap': 0.2}),
     ('cue', 'holo', 'holo', {'adv': False}),
     ('beat', 'holobeat', 0.6),
-    ('say', 'p2', 'orrin', "Number two. A fugue, for harpsichord.", {'gap': 0.05}),
+    ('say', 'p2', 'android', "Number two. A fugue, for harpsichord.", {'gap': 0.05}),
     ('cue', 'n2', 'harpsichord', {}),
-    ('say', 'p3', 'orrin', "Three. A jazz ballad.", {'gap': 0.05}),
+    ('say', 'p3', 'android', "Three. A jazz ballad.", {'gap': 0.05}),
     ('cue', 'n3', 'jazz', {}),
-    ('say', 'p4', 'orrin', "Four. A lullaby.", {'gap': 0.05}),
+    ('say', 'p4', 'android', "Four. A lullaby.", {'gap': 0.05}),
     ('cue', 'n4', 'lullaby', {}),
-    ('say', 'p5', 'orrin', "Five is a duet with a humpback whale.", {'gap': 0.1}),
+    ('say', 'p5', 'android', "Five is a duet with a humpback whale.", {'gap': 0.1}),
     ('cue', 'n5', 'whale', {'adv': False, 'gain': 1.8}),
     ('beat', 'whalebeat', 2.3),
-    ('say', 'p5b', 'orrin', "I like the whale one. It is kind of funny.", {'gap': 0.3, 'len': 1.05}),
+    ('say', 'p5b', 'android', "I like the whale one. It is kind of funny.", {'gap': 0.3, 'len': 1.05}),
     ('beat', 'hesitate', 0.9),
-    ('say', 'l17', 'jun', "Oh. Uh... yeah. Just... send them to my phone.", {'gap': 0.9, 'len': 1.2}),
-    ('say', 'l17b', 'jun', "I'll... look at them later.", {'gap': 0.6, 'len': 1.25}),
-    ('say', 'l18', 'orrin', "Sounds good.", {'gap': 0.1}),
+    ('say', 'l17', 'cadet', "Oh. Uh... yeah. Just... send them to my phone.", {'gap': 0.9, 'len': 1.2}),
+    ('say', 'l17b', 'cadet', "I'll... look at them later.", {'gap': 0.6, 'len': 1.25}),
+    ('say', 'l18', 'android', "Sounds good.", {'gap': 0.1}),
     ('cue', 'send', 'tap', {'adv': False}),
     ('beat', 'sendbeat', 1.0),
     ('cue', 'type3', 'typing', {'dur': 16.0, 'adv': False, 'gain': 0.75}),
     ('beat', 'sideeye', 2.6),
     ('cue', 'l19', 'cough', {}),
     ('beat', 'aftercough', 0.9),
-    ('say', 'l20', 'jun', "Okay. Well. Thanks. Bye.", {'gap': 0.6, 'len': 1.25}),
+    ('say', 'l20', 'cadet', "Okay. Well. Thanks. Bye.", {'gap': 0.6, 'len': 1.25}),
     ('beat', 'nod', 0.9),
     ('beat', 'grabmug', 2.4),
     ('cue', 'shuffle', 'shuffle', {'adv': False}),
     ('beat', 'leave', 3.2),
     ('beat', 'alone', 5.6),
-    ('cue', 'endcard', 'lullaby_full', {}),
+    ('cue', 'endcard', 'whale_full', {}),
 ]
 
-# Symphony intercut, in bars (1-based, fractional). 'J' = Jun's subjective full music,
-# 'O' = cut away to Orrin working: music muffled as if heard from Jun's device across the room.
+# Symphony intercut, in bars (1-based, fractional). 'J' = the cadet's subjective full music,
+# 'O' = cut away to the android working: music muffled as if heard from the cadet's device across the room.
 INTERCUT = [
     (1, 2.5, 'J', 'start'), (2.5, 9, 'J', 'awe'), (9, 11.5, 'J', 'tears'), (11.5, 14, 'J', 'cosmic'),
     (14, 15.6, 'O', 'glance'), (15.6, 17, 'J', 'cu'), (17, 19, 'J', 'kneel'), (19, 21.4, 'J', 'climax'),
@@ -105,10 +105,10 @@ INTERCUT = [
 ]
 # android-to-android chat, spoken in English: (intercut id, offset s, who, text)
 CHAT = [
-    ('chat', 0.25, 'orrin', "Coolant pressure on deck seven is low."),
-    ('chat', None, 'vesper', "Rerouted. Why is the cadet crying?"),
-    ('chat', None, 'orrin', "They asked for a symphony."),
-    ('chat', None, 'vesper', "Ah. Nice."),
+    ('chat', 0.25, 'android', "Coolant on deck seven needs rerouting."),
+    ('chat', None, 'android2', "Okay, I'll get that fixed. Why is the cadet crying?"),
+    ('chat', None, 'android', "They asked for a symphony."),
+    ('chat', None, 'android2', "Ah. Nice."),
 ]
 
 FIXED = {
@@ -119,9 +119,9 @@ FIXED = {
 
 def tts(who, text, opt):
     v = VOX[who]
-    cfg = SynthesisConfig(length_scale=opt.get('len', 1.0) * (1.04 if who != 'jun' else 1.0),
-                          noise_scale=0.75 if who == 'jun' else 0.45,
-                          noise_w_scale=0.9 if who == 'jun' else 0.5)
+    cfg = SynthesisConfig(length_scale=opt.get('len', 1.0) * (1.04 if who != 'cadet' else 1.0),
+                          noise_scale=0.75 if who == 'cadet' else 0.45,
+                          noise_w_scale=0.9 if who == 'cadet' else 0.5)
     a = np.concatenate([c.audio_float_array for c in v.synthesize(text, syn_config=cfg)]).astype(np.float64)
     sr = v.config.sample_rate
     p = opt.get('pitch', 1.0)
@@ -132,7 +132,7 @@ def tts(who, text, opt):
     if 'cut' in opt:  # interrupted mid-word: hard-ish stop
         a[-600:] *= np.linspace(1, 0, 600)
     a = a / (np.max(np.abs(a)) + 1e-9) * 0.8
-    if who != 'jun':  # androids share the synthetic sheen
+    if who != 'cadet':  # androids share the synthetic sheen
         d = int(0.0045 * SR)
         comb = np.zeros_like(a)
         comb[d:] = a[:-d]
@@ -162,7 +162,7 @@ def main():
     sym, bars, beat = M.symphony()
     sounds = {k: rms_to(fn(), -23) for k, fn in FIXED.items()}
     sounds['symphony'] = rms_to(sym, -18.5)
-    sounds['lullaby_full'] = rms_to(M.sn_lullaby(full=True), -25)
+    sounds['whale_full'] = rms_to(M.whale_full(19.0), -24)
     sounds['compute'] = M.sfx_compute(1.1)
     sounds['holo'] = M.sfx_holo()
     sounds['tap'] = M.sfx_tap()
@@ -174,7 +174,7 @@ def main():
     snapmix[:, int(0.25 * SR):int(0.25 * SR) + g.shape[1]] += g * 1.4
     sounds['snap'] = snapmix
     sounds['shuffle'] = M.sfx_footsteps(9, 0.3) * 0.7
-    sounds['cough'] = M.sfx_cough() * 1.6
+    sounds['cough'] = rms_to(M.sfx_cough(), -24)
 
     t = 0.0
     events = {}
@@ -230,7 +230,7 @@ def main():
     full[:, i0:i0 + k] = symst[:, :k]
     muff = np.vstack([M.lp(full[0], 900, 4), M.lp(full[1], 900, 4)])
     muff = 0.5 * (muff[0] + muff[1])
-    muff = np.vstack([muff * 0.9, muff * 1.1]) * 0.62  # small, slightly off-centre: across the room
+    muff = np.vstack([muff * 0.9, muff * 1.1]) * 0.72  # small, slightly off-centre: across the room
     omask = np.zeros(n)
     for ic in intercut:
         if ic['mode'] == 'O':
@@ -238,7 +238,7 @@ def main():
     ker = np.ones(int(0.06 * SR)) / int(0.06 * SR)
     omask = np.convolve(omask, ker, mode='same')
     mus = full * (1 - omask) + muff * omask
-    # typing under every Orrin cutaway during the symphony
+    # typing under every the android cutaway during the symphony
     for ic in intercut:
         if ic['mode'] == 'O':
             placed.append((ic['t0'], M.sfx_typing(ic['t1'] - ic['t0'], seed=int(ic['t0'])), 0.9))
@@ -247,7 +247,7 @@ def main():
     cur = {}
     for ci, (icname, off, who, text) in enumerate(CHAT):
         ic = events['ic_' + icname]
-        a = tts(who, text, {'len': 0.95, 'pitch': 1.04} if who == 'vesper' else {'len': 0.95})
+        a = tts(who, text, {'len': 0.95, 'pitch': 1.04} if who == 'android2' else {'len': 0.95})
         t0 = ic['t0'] + off if off is not None else cur[icname]
         dur = len(a) / SR
         events[f'a{ci}'] = {'t0': t0, 't1': t0 + dur, 'who': who, 'text': text}
@@ -257,7 +257,7 @@ def main():
 
     # birdsong over the mind's-eye meadow
     placed.append((events['ic_collapse']['t0'] + 1.5, M.sfx_birds(10.5), 1.0))
-    events['l19'].update({'who': 'jun', 'text': '*clears throat*'})
+    events['l19'].update({'who': 'cadet', 'text': '*clears throat*'})
 
     for (t0, st, g) in placed:
         i = int(t0 * SR)
@@ -265,11 +265,11 @@ def main():
         if k > 0:
             mus[:, i:i + k] += st[:, :k] * g
     vox = np.zeros(n)
-    mouth = {'jun': [0.0] * nf, 'orrin': [0.0] * nf, 'vesper': [0.0] * nf}
+    mouth = {'cadet': [0.0] * nf, 'android': [0.0] * nf, 'android2': [0.0] * nf}
     for (t0, a, who) in voice_clips:
         i = int(t0 * SR)
         k = min(len(a), n - i)
-        vox[i:i + k] += a[:k] * (1.0 if who == 'jun' else 0.95)
+        vox[i:i + k] += a[:k] * (1.0 if who == 'cadet' else 0.95)
         env_into(a, t0, nf, mouth[who])
     for d in (mouth,):
         for who in d:
@@ -277,7 +277,7 @@ def main():
             p = np.percentile(m[m > 0.01], 92) if np.any(m > 0.01) else 1
             d[who] = [round(float(min(1.0, x / p)), 3) for x in m]
 
-    # ---- ambience: present in the room, gone in Jun's subjective (J) symphony shots
+    # ---- ambience: present in the room, gone in the cadet's subjective (J) symphony shots
     amb = M.ambience(total)[:, :n]
     jmask = np.zeros(n)
     for ic in intercut:
