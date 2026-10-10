@@ -804,7 +804,7 @@ def camera(name, t, a, b):
     if name == "W":                     # whale song: the wide two-shot - the whale rises between them
         return drift(Camera(380.0, 676.0, 1.08), Camera(382.0, 668.0, 1.13), t, a, b)
     if name == "WR":                    # Rae medium (frame left); his palm, the whale and his face frame right
-        return _follow_cam(t, 1.62 * (1.0 + 0.04 * ease_in_out(u)), 200.0, 600.0, 0.5)
+        return _follow_cam(t, 1.62 * (1.0 + 0.04 * ease_in_out(u)), 186.0, 600.0, 0.5)
     if name == "WQ":                    # Quill + the whale: the last call and the dive (Rae just out left)
         return drift(Camera(510.0, 566.0, 2.0), Camera(510.0, 560.0, 2.08), t, a, b)
     if name == "R11":                   # Rae medium: "You can just..." - follows her up as she stands
