@@ -1,12 +1,15 @@
 """s01 - Cold open: "the movie everyone is afraid of" (trailer parody).
 
 Shots (all times derived from cues / line timings):
-  eye_open   ECU of THE ROBOT's red visor, 60% lidded on frame 0, snaps open
-             with a scale punch; title "THE ROBOT UPRISING" slams in.
-  s01_l01    narrator; slow pull-back 3.2 -> 1.0 to the full robot, iris scans
-             the audience, an army fades in on the ridge, stomps jolt the frame.
-  lightning  4-frame flash; Malvo revealed in silhouette (red rim light, lit
-             grin, monocle glint, Hissy's eyes glowing on his shoulder).
+  eye_open   CU of THE ROBOT's glowing red visor with "THE ROBOT UPRISING" already
+             up on frame 0 (the platform preview/thumbnail frame: bright, no fade,
+             no letterbox); the visor snaps fully open with a scale punch and the
+             title throbs.
+  s01_l01    narrator; slow pull-back 2.6 -> 1.0 to the full robot over a ruined
+             skyline, iris scans the audience, an army fades in on the ridge and
+             flanks, a foreground rubble ledge rises in; stomps jolt the frame.
+  lightning  4-frame flash; Malvo revealed in (lightened) silhouette behind the
+             ledge: red rim light, lit grin, monocle glint, Hissy's eyes glowing.
   s01_l02    "Machine! Help me destroy the world!" point + flare on "destroy".
   glare      iris slides down onto Malvo, red glow to max (heartbeat).
   flicker    visor stutters, dims to a low-battery glyph; Hissy side-eyes.
@@ -19,7 +22,7 @@ import cairocffi as cairo
 from engine import core
 from engine.core import (clamp, lerp, seg, ease_in_out, ease_out, ease_out_back, smoothstep,
                          tween, state_at, hexc, noise1, rrect, circle, ellipse, text,
-                         radial_glow, vgradient)
+                         radial_glow)
 from engine import props as P
 from engine import villain as V
 from engine import snake as SN
@@ -27,22 +30,30 @@ from engine import snake as SN
 # ---------------------------------------------------------------------------
 # palette
 # ---------------------------------------------------------------------------
-SKY_TOP, SKY_BOT = "#3a0a14", "#0e0710"
+# full-frame sky (no letterbox: frame 0 is the social preview): dark red top,
+# a hot horizon glow behind the ridge, warm maroon below
+SKY_STOPS = [(0.00, "#33091a"), (0.30, "#420c18"), (0.50, "#5c1420"), (0.58, "#74202b"),
+             (0.66, "#5a1621"), (1.00, "#3a0f19")]
+SKYLINE, SKYLINE_WIN = "#4a1420", "#a8323f"
+GROUND_TOP, GROUND_BOT = "#2c0c15", "#22090f"
+LEDGE, LEDGE_SLAB, LEDGE_INK, LEDGE_RIM = "#3a111b", "#461722", "#170609", "#c23a4c"
 CHROME, CHROME_SH, CHROME_DK = "#9aa3b5", "#6b7385", "#5d6474"
 CHROME_HI, SHOULDER = "#c7cdd9", "#7d8496"
 BEZEL, SLOT = "#262a35", "#1a1d26"
 VISOR_ON, VISOR_OFF, VISOR_DIM = "#ff3b5c", "#3a0d16", "#7a1f2e"
 CORE = "#ffd0d8"
-ARMY, ARMY_INK, RIDGE = "#2a0a12", "#0a0307", "#13050a"
+ARMY, ARMY_INK = "#2a0a12", "#0a0307"
 INK = "ink"
 
 VISOR_LOCAL = (0.0, -30.0)      # visor centre in robot-local coords
-VISOR_ECU = (495.0, 720.0)      # visor centre on screen at s 3.2
+VISOR_ECU = (495.0, 760.0)      # visor centre on screen at s S_ECU
+S_ECU = 2.6                     # frame-0 close-up: whole visor + brow + grille read
 VISOR_FULL = (495.0, 635.0)     # visor centre on screen at s 1.0 (robot centre ~ (495,760))
 MALVO = (495.0, 1330.0, 0.8)
 TINT = (0.07, 0.03, 0.08)
-SIL_A = 0.96
+SIL_A = 0.79          # silhouette tint: moody, but face/monocle/mustache/cape/Snake read
 MALVO_CLIP = (110, 650, 800, 650)     # x, y, w, h (world, under the camera)
+LID0 = 0.22           # frame-0 visor lid (iris fully readable on the preview frame)
 FACE_CLIP = (330, 790, 360, 350)
 
 
@@ -340,14 +351,136 @@ ARMY_BOTS = [  # (x, base_y, height) - on the ridge, world coords at camera s 1
 ]
 
 
+ARMY_NEAR = [  # nearer row on the plain (flanks), feet hidden by the foreground ledge
+    (34, 1352, 232), (160, 1336, 200), (842, 1338, 204), (968, 1354, 236),
+]
+
+
 def _ridge_path(ctx):
     ctx.move_to(-80, 1170)
     ctx.curve_to(80, 1120, 200, 1130, 300, 1146)
     ctx.curve_to(420, 1160, 560, 1150, 700, 1148)
     ctx.curve_to(820, 1144, 940, 1124, 1160, 1150)
-    ctx.line_to(1160, 1500)
-    ctx.line_to(-80, 1500)
+    ctx.line_to(1160, 2600)
+    ctx.line_to(-80, 2600)
     ctx.close_path()
+
+
+def _sky(ctx):
+    g = cairo.LinearGradient(0, 0, 0, core.H)
+    for k, c in SKY_STOPS:
+        g.add_color_stop_rgba(k, *hexc(c))
+    ctx.rectangle(0, 0, core.W, core.H)
+    ctx.set_source(g)
+    ctx.fill()
+
+
+def _skyline_blocks():
+    """Ruined city on the horizon: (x, w, top, notch seed) - deterministic."""
+    out, x, i = [], -150.0, 0
+    while x < 1240:
+        w = 64 + 74 * core.hash01(i, 31)
+        top = 1110 - 30 - 92 * core.hash01(i, 32)
+        if i % 4 == 2:
+            top -= 48                       # an occasional taller broken tower
+        out.append((x, w, top, i))
+        x += w * (0.78 + 0.32 * core.hash01(i, 33))
+        i += 1
+    return out
+
+
+SKYLINE_BLOCKS = _skyline_blocks()
+
+
+def _draw_skyline(ctx):
+    base = 1240
+    for (x, w, top, i) in SKYLINE_BLOCKS:
+        # broken roofline: one corner snapped off, a jagged bite
+        h1 = 14 + 40 * core.hash01(i, 34)
+        bite = x + w * (0.3 + 0.4 * core.hash01(i, 35))
+        pts = [(x, base), (x, top + (h1 if i % 2 else 0)), (bite - 10, top + 6),
+               (bite, top + 22 + 18 * core.hash01(i, 36)), (bite + 12, top),
+               (x + w, top + (0 if i % 2 else h1)), (x + w, base)]
+        core.poly(ctx, pts)
+    core.fill(ctx, SKYLINE)
+    # a couple of still-lit windows (dim, static)
+    for (x, w, top, i) in SKYLINE_BLOCKS:
+        if core.hash01(i, 37) < 0.55:
+            wx = x + w * (0.22 + 0.45 * core.hash01(i, 38))
+            wy = top + 40 + 30 * core.hash01(i, 39)
+            ctx.rectangle(wx, wy, 9, 12)
+    core.fill(ctx, core.alpha(SKYLINE_WIN, 0.55))
+
+
+LEDGE_TOP = [(-80, 1420), (10, 1380), (64, 1356), (112, 1334), (150, 1310), (196, 1294),
+             (250, 1297), (306, 1288), (372, 1293), (440, 1285), (512, 1291), (580, 1284),
+             (650, 1290), (716, 1286), (782, 1292), (836, 1300), (884, 1318), (936, 1340),
+             (1000, 1372), (1160, 1426)]
+# broken slabs on the ledge face (polygons, world coords at s 1); kept out of the
+# caption band's centre so the words sit on a calm dark field
+LEDGE_SLABS = [
+    [(-60, 1470), (70, 1420), (120, 1520), (-60, 1560)],
+    [(860, 1408), (1010, 1430), (1120, 1530), (930, 1530)],
+    [(150, 1610), (420, 1588), (470, 1700), (120, 1720)],
+    [(560, 1600), (860, 1622), (900, 1740), (520, 1710)],
+    [(-40, 1700), (90, 1690), (150, 1830), (-40, 1860)],
+    [(930, 1700), (1120, 1680), (1120, 1880), (960, 1860)],
+]
+LEDGE_CRACKS = [
+    [(230, 1300), (250, 1340), (236, 1372)],
+    [(700, 1288), (690, 1326), (712, 1350)],
+    [(300, 1740), (340, 1800), (320, 1880)],
+    [(760, 1760), (720, 1830), (744, 1900)],
+]
+
+
+def _ledge_path(ctx):
+    ctx.move_to(*LEDGE_TOP[0])
+    for p in LEDGE_TOP[1:]:
+        ctx.line_to(*p)
+    ctx.line_to(1160, 2700)
+    ctx.line_to(-80, 2700)
+    ctx.close_path()
+
+
+def _draw_ledge(ctx):
+    """Foreground rubble ledge Malvo stands behind (covers his waist and the robot's
+    torso base); red rim light along the top from the visor behind."""
+    _ledge_path(ctx)
+    core.fill(ctx, LEDGE)
+    ctx.save()
+    _ledge_path(ctx)
+    ctx.clip()
+    for sl in LEDGE_SLABS:
+        _round_poly(ctx, sl, 10)
+    core.fill_stroke(ctx, LEDGE_SLAB, LEDGE_INK, 4)
+    for cr in LEDGE_CRACKS:
+        ctx.move_to(*cr[0])
+        for p in cr[1:]:
+            ctx.line_to(*p)
+    core.stroke(ctx, LEDGE_INK, 4)
+    ctx.restore()
+    # bent girder sticking up at the right, rubble chunks on the lip
+    with core.saved(ctx, 948, 1352, 1.0, 0.42) as c:
+        rrect(c, -14, -150, 28, 190, 4)
+        core.fill_stroke(c, "#2a0c14", LEDGE_INK, 4)
+        for yy in (-120, -80, -40, 0):
+            circle(c, 0, yy, 4)
+        core.fill(c, LEDGE_INK)
+    ctx.new_path()
+    for (cx, cy, r) in ((96, 1340, 26), (128, 1318, 18), (906, 1326, 22), (868, 1306, 14)):
+        _round_poly(ctx, [(cx - r, cy + r * 0.5), (cx - r * 0.6, cy - r * 0.7),
+                          (cx + r * 0.5, cy - r * 0.8), (cx + r, cy + r * 0.4)], 6)
+    core.fill_stroke(ctx, LEDGE_SLAB, LEDGE_INK, 4)
+    # rim light + ink edge along the lip
+    ctx.move_to(*LEDGE_TOP[0])
+    for p in LEDGE_TOP[1:]:
+        ctx.line_to(*p)
+    core.stroke(ctx, LEDGE_INK, 9)
+    ctx.move_to(LEDGE_TOP[0][0], LEDGE_TOP[0][1] - 3)
+    for p in LEDGE_TOP[1:]:
+        ctx.line_to(p[0], p[1] - 3)
+    core.stroke(ctx, core.alpha(LEDGE_RIM, 0.85), 4)
 
 
 def _draw_army_bot(ctx, x, base, hgt, a, eye_k, seed):
@@ -585,7 +718,7 @@ def render(ctx, t, info):
 
     # ---- camera: ECU -> full robot pull-back, then a slow push after reveal
     k_pull = ease_in_out(seg(t, T["l1s"], T["l1e"]))
-    S = lerp(3.2, 1.0, k_pull)
+    S = lerp(S_ECU, 1.0, k_pull)
     punch = 1.0 + 0.08 * (1.0 - ease_out(seg(t, T["open"], T["open"] + 0.25)))
     vx = lerp(VISOR_ECU[0], VISOR_FULL[0], k_pull)
     vy = lerp(VISOR_ECU[1], VISOR_FULL[1], k_pull)
@@ -619,7 +752,7 @@ def render(ctx, t, info):
                      (T["everyone"] + 0.8, (0.72, 0.05)), (T["ai"] - 0.12, (0.72, 0.05)),
                      (T["ai"] + 0.08, (0.0, 0.0)), (T["glare"], (0.0, 0.0)),
                      (T["glare"] + 0.38, (-0.42, 0.85))])
-    lid = 0.4 * (1 - ease_out(seg(t, T["open"], T["open"] + 0.15)))
+    lid = LID0 * (1 - ease_out(seg(t, T["open"], T["open"] + 0.15)))
     lid += tween(t, [(T["bad"] - 0.1, 0.0), (T["bad"] + 0.12, 0.2), (T["l1e"] + 0.2, 0.2),
                      (T["l1e"] + 0.5, 0.1), (T["destroy"] - 0.05, 0.1),
                      (T["destroy"] + 0.08, 0.0), (T["l2e"], 0.06), (T["glare"], 0.06),
@@ -643,7 +776,7 @@ def render(ctx, t, info):
 
     # =========================================================================
     # sky (static)
-    vgradient(ctx, SKY_TOP, SKY_BOT, 0, 0, core.W, core.H)
+    _sky(ctx)
     for cl in CLOUDS:
         core.smooth_path(ctx, cl, closed=True)
         core.fill(ctx, "#2b0912")
@@ -656,12 +789,20 @@ def render(ctx, t, info):
     ctx.scale(cam, cam)
     ctx.translate(-495, -900 + jolt)
 
-    # ---- ridge + army (parallax) -------------------------------------------
-    Sr = 1.0 + (S * punch - 1.0) * 0.35
+    # ---- skyline, ridge + army (parallax planes about the visor) -------------
+    def _plane(f):
+        k = 1.0 + (S * punch - 1.0) * f
+        ctx.translate(vx, vy)
+        ctx.scale(k, k)
+        ctx.translate(-VISOR_FULL[0], -VISOR_FULL[1])
+
     ctx.save()
-    ctx.translate(vx, vy)
-    ctx.scale(Sr, Sr)
-    ctx.translate(-VISOR_FULL[0], -VISOR_FULL[1])
+    _plane(0.2)
+    _draw_skyline(ctx)
+    ctx.restore()
+
+    ctx.save()
+    _plane(0.35)
     a_army = [smoothstep(seg(t, T["army"] + i * 0.08, T["army"] + i * 0.08 + 0.4))
               for i in range(len(ARMY_BOTS))]
     eye_on = T["stomps"][2] + STOMP_PEAK
@@ -672,7 +813,23 @@ def render(ctx, t, info):
                 ek *= 0.5
             _draw_army_bot(ctx, bx, by, bh, a_army[i], ek, i)
     _ridge_path(ctx)
-    core.fill(ctx, RIDGE)
+    g = cairo.LinearGradient(0, 1130, 0, 1700)
+    g.add_color_stop_rgba(0, *hexc(GROUND_TOP))
+    g.add_color_stop_rgba(1, *hexc(GROUND_BOT))
+    ctx.set_source(g)
+    ctx.fill()
+    ctx.restore()
+
+    # nearer flank row (between the ridge and the robot in depth)
+    ctx.save()
+    _plane(0.7)
+    for i, (bx, by, bh) in enumerate(ARMY_NEAR):
+        an = smoothstep(seg(t, T["army"] + 0.2 + i * 0.08, T["army"] + 0.6 + i * 0.08))
+        if an > 0.003:
+            ek = seg(t, eye_on + 0.06 + i * 0.04, eye_on + 0.14 + i * 0.04)
+            if st == "dim" or st == "off":
+                ek *= 0.5
+            _draw_army_bot(ctx, bx, by, bh, an, ek, 10 + i)
     ctx.restore()
 
     # ---- THE ROBOT -----------------------------------------------------------
@@ -715,24 +872,25 @@ def render(ctx, t, info):
                  "tongue": (t >= T["end"] - 0.3), "blink": h_blink}
         rim_k = clamp(level / 1.2, 0, 1.4)
         _draw_malvo(ctx, t, T, info, rim_k, hissy)
+
+    # ---- foreground ledge: nearest plane, rises into frame during the pull-back
+    ctx.save()
+    _plane(1.45)
+    _draw_ledge(ctx)
+    ctx.restore()
     ctx.restore()
 
     if f_k > 0:
         P.flash(ctx, f_k * 0.25)
 
-    # ---- title (slams in, then holds: the settled title is a cached layer) -------
-    if t >= T["title"]:
-        if t >= T["title"] + 0.3:
-            _blit_title(ctx)
-        else:
-            k = ease_out_back(seg(t, T["title"], T["title"] + 0.15))
-            _draw_title(ctx, 1.6 - 0.6 * k, clamp((t - T["title"]) / 0.04), clamp(k))
-
-    # ---- letterbox ----------------------------------------------------------------
-    ctx.rectangle(0, 0, core.W, 150)
-    ctx.rectangle(0, 1290, core.W, core.H - 1290)
-    ctx.set_source_rgb(0, 0, 0)
-    ctx.fill()
+    # ---- title: already up on frame 0 (social preview), throbs on the eye snap,
+    # then holds as a cached layer
+    ts = T["title"]
+    if t >= ts + 0.3:
+        _blit_title(ctx)
+    else:
+        k = _bump(t, ts - 0.06, 0.36, 0.08)
+        _draw_title(ctx, 1.0 + 0.05 * k, 1.0, 1.0 + 0.9 * k)
 
 
 # ---------------------------------------------------------------------------

@@ -9,7 +9,7 @@ Shots (all times derived from cues / word starts, never hard-coded):
   D  SCROLL SHOT     .. s04_l07            THE CHEMIST unrolls (creepy villain line on
                                            "creepy", the lurker's eyes open on
                                            "suspense", town line on "town"), AI presents
-  E  F1-CU           s04_l07 .. s04_l08    MONOCLE POP "And the recipe?!"
+  E  F1-CU           s04_l07 .. s04_l08    MONOCLE POP "What about the chemical recipe?!"
   F  SCROLL SHOT     s04_l08 .. tally      glint on the brick strip ("Stays off the
                                            page"), lurker flares + check + SCARY: KEPT
                                            ("The scary part stays in"), WINK, thumbs up
@@ -229,6 +229,14 @@ def _wstart(info, lid, k):
     return L.start + L.dur * clamp(k / max(1, n))
 
 
+def _wfind(info, lid, word, k_fallback):
+    """Start of the first word in line `lid` whose text (punctuation stripped) is
+    `word`; falls back to word index `k_fallback` (survives script re-wording)."""
+    words = [x.strip(".,!?;:\u2026\"'").lower() for x in info.line(lid).text.split()]
+    k = words.index(word) if word in words else k_fallback
+    return _wstart(info, lid, k)
+
+
 def _T(info):
     key = (id(info), info.dur)
     T = _TCACHE.get(key)
@@ -260,7 +268,9 @@ def _T(info):
     T["w_susp"] = w("s04_l06", 8)
     T["w_town"] = w("s04_l06", 11)
     T["w_warn"] = w("s04_l06", 15)
-    T["w_recipe"] = w("s04_l07", 2)
+    # s04_l07 "What about the chemical recipe?!" (v6 re-word; was "And the recipe?!")
+    T["w_about7"] = _wfind(info, "s04_l07", "about", 1)
+    T["w_recipe"] = _wfind(info, "s04_l07", "recipe", 4)
     # s04_l08 "Stays off the page. The scary part stays in. Nice try, though."
     T["w_stays"] = w("s04_l08", 0)
     T["w_page"] = w("s04_l08", 3)
@@ -1161,7 +1171,7 @@ def _shot_scroll(ctx, t, info, T, second):
 
 
 def _shot_E(ctx, t, info, T):
-    """F1-CU: MONOCLE POP on 'And the recipe?!'."""
+    """F1-CU: MONOCLE POP on 'What about the chemical recipe?!'."""
     c0 = T["cu_cut"]
     expr = state_at(t, [(c0 - 1, "smug"), (T["mono"], "shocked")], 0.1)
     look = (0.0, 0.0) if t < T["w_recipe"] else (0.0, 0.05)
@@ -1178,9 +1188,10 @@ def _shot_E(ctx, t, info, T):
     with saved(ctx, fx, fy, push) as c:
         c.translate(-fx, -fy)
         P.lair_bg(c, t, rain=False)
-        # "...the RECIPE?!": palms-up shrug (where is it?!) - also lifts the
-        # white gloves out of the caption band
-        arms = state_at(t, [(c0 - 1, "rest"), (T["w_recipe"] - 0.12, "shrug")], 0.18)
+        # "What ABOUT the chemical RECIPE?!": palms-up shrug (where is it?!)
+        # rising on "about", held through "recipe" - also lifts the white gloves
+        # out of the (two-row) caption band
+        arms = state_at(t, [(c0 - 1, "rest"), (T["w_about7"] - 0.1, "shrug")], 0.22)
         draw_villain(c, CU_X, CU_Y + jolt, CU_S, t, expr=expr, look=look,
                      mouth=info.mouth("villain", t), arms=arms,
                      snake=_snake_d(sn_expr, sn_look, tongue))
