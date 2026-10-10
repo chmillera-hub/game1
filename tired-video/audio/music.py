@@ -536,7 +536,7 @@ def inst_brass(midis, dur, sr, rng, peak_fc=1900.0, base_fc=260.0, attack=0.09, 
         x += 0.5 * pulse(f0 * 1.001, n, sr, 0.35, rng.random())
     x /= len(midis) * 3.5
     fc = base_fc + (peak_fc - base_fc) * (1 - np.exp(-t / fc_attack)) * np.exp(-np.maximum(t - 0.35, 0) / 1.2)
-    fc = np.maximum(fc, base_fc * 1.6 * np.minimum(1, t / max(0.02, fc_attack * 1.1)) + 1)
+    fc = np.maximum(fc, base_fc * 1.6 * np.minimum(1, t / max(0.02, fc_attack * (0.2 / 0.18))) + 1)
     x = tv_filter(x, fc, sr, q=1.1, block=128)
     x = np.tanh(2.2 * x) / np.tanh(2.2)
     return x * env_adsr(n, sr, attack, 1.5, 0.7, release, dur)
@@ -1081,7 +1081,6 @@ def inst_blip(m, sr, vel=1.0, decay=0.09, harm=0.12):
 def inst_pulsebass(m, dur, sr, rng, vel=1.0, width=0.32, fc=320.0):
     """Clean filtered pulse bass note (cold synth pulse)."""
     n = secs(sr, dur + 0.06)
-    t = tvec(n, sr)
     x = pulse(hz(m), n, sr, width, rng.random()) + 0.6 * sine(hz(m), n, sr)
     x = lp(x, fc * (1 + 1.6 * vel), sr, 2)
     return x * env_adsr(n, sr, 0.004, 0.08, 0.55, 0.04, dur, smooth=False) * vel
@@ -1857,7 +1856,7 @@ def _cue_panic(S):
     S.set_tempo(160)
     S.rev = dict(rt60=1.0, predelay=0.01, damp=0.55)
     S.wet_gain = 0.28
-    lo, sr, rng = S.lo, S.sr, S.rng
+    sr, rng = S.sr, S.rng
     prog = ["Em", "Em", "C", "B7", "Em", "Am", "F#m7b5|B7", "Em|B7"]
     e8 = S.beat / 2
     prev = None
@@ -2071,7 +2070,7 @@ def _cue_corporate(S):
     prog = ["Asus2", "Asus2b6", "Fmaj7", "Fmaj7#11", "Dm9", "Esus4", "Asus2", "E7sus4"]
     arp = np.zeros_like(S.dry)
     order = [0, 1, 2, 3, 2, 1, 3, 2]
-    prev, pprev = None, None
+    pprev = None
     for b, tb, sym, pass_ in _bars(S, prog):
         ch = Chord(sym)
         r = ch.root_note(40, 51)

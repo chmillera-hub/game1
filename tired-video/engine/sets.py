@@ -2288,15 +2288,18 @@ def _hl_static(c):
         y = FLOOR + k * _HL_RISE - _HL_RISE
         pts += [(x1, y + 18), (x1 - _HL_RUN, y + 18)]
     pts += [(-e[0], H + e[3]), (tx + 30, H + e[3])]
-    polyf(c, pts, C["trim"], 5)
+    polyf(c, pts, mixc(C["lv_wain"], C["lv_wain_sh"], 0.25), 5)
+    for k in range(4):
+        px0 = tx - 150 - k * 260
+        py0 = FLOOR + 150 + k * 165
+        polyf(c, [(px0, py0), (px0 + 190, py0 - 120), (px0 + 190, py0 + 160), (px0, py0 + 280)], None, 3.5,
+              sc=C["lv_wain_sh"])
+    line(c, pts[:-2], C["trim"], 9)
     for k in range(1, _HL_N + 2):
         x1 = tx - (k - 1) * _HL_RUN
         y = FLOOR + k * _HL_RISE - _HL_RISE
         rect(c, x1 - _HL_RUN - 8, y, _HL_RUN + 14, 20, C["wood_hi"], 4, r=5)
         rect(c, x1 - _HL_RUN + 10, y - 6, _HL_RUN - 18, 9, "#8a4a63", 3, r=3)
-    for k in range(1, 5):
-        line(c, [(tx - 40 - k * 220, FLOOR + 160 + k * 140), (tx - 40 - k * 220 + 130, FLOOR + 160 + k * 140 - 82)],
-             C["trim_sh"], 4)
     # landing floor edge + nosing
     rect(c, tx - 8, FLOOR - 4, 40, 22, C["wood_hi"], 4, r=4)
     dx, dt, dw, dh = _HL_DOOR
@@ -2475,3 +2478,743 @@ def hallway_upstairs(ctx, t=0.0, layer="bg", door_open=0.0, burst=0.0, parts=Non
                 _hl_door_panel(ctx, door_open, burst, t)
         if "railing" in parts:
             core.cached(ctx, "hall_rail", -560, 600, 1400, 1330, _hl_railing)
+
+
+# ============================================================================
+# HushCorp shared bits
+# ============================================================================
+def _city_skyline(c, x0, y0, w, h, seed=0, lw=3.5, sky=("#bfdcf0", "#eef7ff"), dusk=False):
+    """Cool daytime (or dusk) skyline filling (x0, y0, w, h). Static."""
+    core.vgradient(c, sky[0], sky[1], x0, y0, w, h)
+    far = "#b4c6d8" if not dusk else "#5a4a8a"
+    mid = "#93a9c0" if not dusk else "#433a74"
+    near = "#7088a3" if not dusk else "#2f2a5a"
+    base = y0 + h
+    for layer, (col, hmin, hmax, wmin) in enumerate(((far, 0.25, 0.55, 60), (mid, 0.18, 0.45, 80),
+                                                     (near, 0.10, 0.32, 110))):
+        xx = x0 - 40
+        i = 0
+        while xx < x0 + w + 40:
+            bw = wmin + 80 * hash01(i, seed + layer * 7)
+            bh = h * (hmin + (hmax - hmin) * hash01(i, seed + layer * 7 + 1))
+            rect(c, xx, base - bh, bw, bh + 4, col, lw if layer == 2 else 0)
+            if hash01(i, seed + layer * 7 + 2) > 0.6:
+                rect(c, xx + bw * 0.4, base - bh - 40, bw * 0.2, 44, col, lw if layer == 2 else 0)
+            # window grid
+            wc = mixc(col, "#ffffff", 0.25) if not dusk else "#ffd27a"
+            for yy in range(int(base - bh + 20), int(base), 34):
+                for xw in range(int(xx + 10), int(xx + bw - 10), 22):
+                    if hash01(xw * 7 + yy, seed + layer) > (0.35 if not dusk else 0.72):
+                        c.rectangle(xw, yy, 10, 14)
+            core.fill(c, core.alpha(wc, 0.55 if not dusk else 0.9))
+            xx += bw + 6
+            i += 1
+
+
+def _corp_panels(c, x0, y0, w, h, step=180, base=None, seam=None):
+    base, seam = base or C["hc_wall"], seam or C["hc_wall_sh"]
+    c.rectangle(x0, y0 - 2, w, h + 6)
+    core.fill(c, base)
+    xx = x0 + step
+    while xx < x0 + w:
+        line(c, [(xx, y0), (xx, y0 + h)], seam, 3)
+        xx += step
+
+
+# ============================================================================
+# 6. HUSHCORP OFFICE (s09)
+# ============================================================================
+OFFICE_W, OFFICE_H = 1400, 1920
+_OF_CEIL, _OF_FLOOR = 250, 1300
+_OF_EXT = (500, 700, 500, 700)
+OFFICE_MARKS = {
+    "size": (OFFICE_W, OFFICE_H),
+    "char_scale": 0.75,
+    "floor_y": _OF_FLOOR,          # base of the glass wall
+    "stand_y": 1500,
+    "desk": (500, 1140, 760, 360),  # x, top y, w, h (to the floor)
+    "desk_top_y": 1140,            # slide devices along this line
+    "desk_slide": ((1110, 1140), (600, 1140)),   # Boss -> Emb
+    "boss_seat": (1175, 1225),     # hips, she faces LEFT
+    "boss_chair": (1190, 1500),
+    "guest_seat": (330, 1452),     # hips of Emb in the low chair, faces RIGHT
+    "guest_chair": (330, 1500),
+    "sweat_floor": (372, 1508),    # where the drop lands ("plip")
+    "glass_rect": (110, 420, 560, 470),   # free glass area for the photo / hologram
+    "logo": (1200, 455),
+    "cam": {
+        "wide": (700, 1060, 0.95),
+        "two_shot": (760, 1180, 1.25),
+        "emb_low": (420, 1230, 1.9),
+        "boss": (1130, 1000, 1.9),
+        "desk_slide": (850, 1150, 1.6),
+    },
+}
+
+
+def _of_static(c):
+    W, H = OFFICE_W, OFFICE_H
+    CEIL, FLOOR = _OF_CEIL, _OF_FLOOR
+    e = _OF_EXT
+    x0, y0, x1, y1 = -e[0], -e[1], W + e[2], H + e[3]
+    # ceiling
+    c.rectangle(x0, y0, x1 - x0, CEIL - y0 + 4)
+    core.fill(c, "#f2f5f8")
+    for k in range(-2, 6):
+        rect(c, k * 380 + 80, CEIL - 70, 220, 18, "#ffffff", 3, sc=C["hc_wall_sh"], r=6)
+    # floor-to-ceiling glass with the skyline (we are high up)
+    _city_skyline(c, x0, CEIL, x1 - x0, FLOOR - CEIL, seed=4)
+    c.rectangle(x0, CEIL, x1 - x0, FLOOR - CEIL)
+    core.fill(c, (0.75, 0.86, 0.93, 0.25))
+    for k in range(-2, 6):
+        mx = k * 350
+        rect(c, mx - 8, CEIL, 16, FLOOR - CEIL, C["hc_slate"], 3)
+        polyf(c, [(mx + 40, CEIL), (mx + 110, CEIL), (mx + 30, FLOOR), (mx - 40, FLOOR)], (1, 1, 1, 0.10), 0)
+    rect(c, x0, 410, x1 - x0, 12, C["hc_slate"], 3)
+    # solid wall with the logo behind the Boss
+    rect(c, 1000, CEIL, 400 + e[2], FLOOR - CEIL, C["hc_white"], 5)
+    line(c, [(1000, CEIL), (1000, FLOOR)], C["hc_wall_sh"], 10)
+    lx, ly = OFFICE_MARKS["logo"]
+    _glow(c, lx, ly, 260, "#ffffff", 0.6)
+    hush_logo(c, lx, ly, 112, lw=7)
+    spaced_text(c, "HUSHCORP", lx, ly + 172, 40, PAL["hush_dk"], "ui", 0.55)
+    line(c, [(lx - 110, ly + 196), (lx + 110, ly + 196)], PAL["hush"], 4)
+    # floor: grey carpet + glass-wall base
+    c.rectangle(x0, FLOOR, x1 - x0, y1 - FLOOR)
+    core.fill(c, "#b9c3cd")
+    for k in range(-6, 14):
+        line(c, [(k * 160, FLOOR), (700 + (k * 160 - 700) * 2.6, y1)], "#aeb8c3", 3)
+    rect(c, x0, FLOOR - 14, x1 - x0, 20, C["hc_slate"], 4)
+    c.rectangle(x0, FLOOR + 6, x1 - x0, 40)
+    core.fill(c, core.alpha("#7f8b98", 0.35))
+    # big cold rug under the desk area
+    polyf(c, [(150, 1420), (1400, 1420), (1500, 1640), (60, 1640)], "#d6dde4", 4)
+
+
+def _of_boss_chair(c):
+    x, fy = OFFICE_MARKS["boss_chair"]
+    # very tall white leather back (she faces left: back on the right)
+    rect(c, x - 10, 700, 120, 560, "#f7f9fb", 6, r=50)
+    rect(c, x + 6, 736, 88, 490, "#e6ebf0", 0, r=40)
+    for k in range(4):
+        line(c, [(x + 20, 790 + k * 110), (x + 80, 790 + k * 110)], "#d3dae2", 4)
+    rect(c, x - 130, 1230, 230, 40, "#f7f9fb", 5, r=18)
+    rect(c, x - 16, 1270, 32, 170, C["hc_steel"], 4)
+    line(c, [(x - 140, fy - 20), (x + 140, fy - 20)], INK, 16)
+    line(c, [(x - 140, fy - 20), (x + 140, fy - 20)], C["hc_steel"], 8)
+    for wx in (x - 140, x + 140):
+        core.circle(c, wx, fy - 10, 11); fs(c, C["hc_slate"], 3)
+
+
+def _of_guest_chair(c):
+    x, fy = OFFICE_MARKS["guest_chair"]
+    # comically low: seat 50 px off the floor, a stubby back
+    rect(c, x - 110, fy - 64, 220, 26, "#9aa8b6", 5, r=12)
+    rect(c, x - 130, fy - 150, 26, 110, "#9aa8b6", 4.5, r=10)
+    for lx in (x - 100, x + 90):
+        rect(c, lx, fy - 40, 12, 40, C["hc_slate"], 3)
+
+
+def _of_desk(c):
+    x, ty, w, h = OFFICE_MARKS["desk"]
+    floor = ty + h
+    # slab top
+    rect(c, x, ty, w, 30, "#fbfdff", 6, r=6)
+    line(c, [(x + 8, ty + 26), (x + w - 8, ty + 26)], C["hc_wall_sh"], 4)
+    # pedestal (right) + thin steel leg (left)
+    rect(c, x + w - 220, ty + 30, 210, h - 30, "#f1f5f8", 6, r=4)
+    line(c, [(x + w - 200, ty + 60), (x + w - 200, floor - 20)], "#dfe6ec", 6)
+    rect(c, x + w - 120, ty + 90, 80, 8, PAL["hush"], 0, r=4)
+    rect(c, x + 26, ty + 30, 18, h - 30, C["hc_steel"], 4)
+    ell(c, x + 35, floor, 50, 10, C["hc_steel"], 4)
+
+
+def office(ctx, t=0.0, layer="bg", parts=None):
+    """Cold glass HushCorp office (world 1400 x 1920, people at s=0.75).
+
+    Side-on staging: Emb in the comically low chair on the LEFT (faces
+    right), the Boss in her tall chair on the RIGHT behind the huge desk
+    (faces left). layer "bg" | "fg" (parts: "desk" = the whole desk, in
+    front of the Boss's legs; draw devices sliding on the desk AFTER it).
+    OFFICE_MARKS["glass_rect"] is free glass for the photo/hologram.
+    """
+    W, H = OFFICE_W, OFFICE_H
+    e = _OF_EXT
+    if layer == "bg":
+        _overscan(ctx, -e[0], -e[1], W + e[2], H + e[3], "#f2f5f8", "#b9c3cd", "#bfdcf0", C["hc_white"])
+        static_layer(ctx, "office", -e[0], -e[1], W + e[0] + e[2], H + e[1] + e[3], _of_static)
+        core.cached(ctx, "office_chairs", 150, 540, 1300, 980,
+                    lambda c: (_of_boss_chair(c), _of_guest_chair(c)))
+        core.cached(ctx, "office_desk", 440, 1110, 860, 410, _of_desk)
+    elif layer == "fg":
+        parts = parts or ("desk",)
+        if "desk" in parts:
+            core.cached(ctx, "office_desk", 440, 1110, 860, 410, _of_desk)
+
+
+# ============================================================================
+# 7. HUSHCORP LOBBY (s11)
+# ============================================================================
+LOBBY_W, LOBBY_H = 1800, 1920
+_LB_CEIL, _LB_FLOOR = 250, 1300
+_LB_EXT = (500, 700, 500, 700)
+_LB_COUNTER = (330, 1070, 650, 430)   # x, top, w, h (to floor 1500)
+_LB_GATES = [1090, 1270, 1450]       # turnstile post x centres
+LOBBY_MARKS = {
+    "size": (LOBBY_W, LOBBY_H),
+    "char_scale": 0.75,
+    "floor_y": _LB_FLOOR,
+    "stand_y": 1500,
+    "counter": _LB_COUNTER,
+    "counter_top_y": 1070,
+    "recep_seat": (760, 1260),       # hips of the receptionist (hidden behind the counter), faces LEFT
+    "visitor_feet": (250, 1500),     # Tiredness at the counter's left end, faces RIGHT
+    "turnstiles": [(x, 1500) for x in _LB_GATES],
+    "lanes": [((_LB_GATES[i] + _LB_GATES[i + 1]) / 2, 1500) for i in range(2)],
+    "guard_feet": (1640, 1500),
+    "plant": (1010, 1500),
+    "logo": (650, 560),
+    "cam": {
+        "wide": (900, 1060, 0.85),
+        "counter_two": (520, 1080, 1.35),
+        "recep_close": (720, 1000, 2.0),
+        "turnstiles": (1330, 1150, 1.2),
+    },
+}
+
+
+def _lb_static(c):
+    W, H = LOBBY_W, LOBBY_H
+    CEIL, FLOOR = _LB_CEIL, _LB_FLOOR
+    e = _LB_EXT
+    x0, y0, x1, y1 = -e[0], -e[1], W + e[2], H + e[3]
+    c.rectangle(x0, y0, x1 - x0, CEIL - y0 + 4)
+    core.fill(c, "#f2f5f8")
+    for k in range(-1, 7):
+        rect(c, k * 300 + 40, CEIL - 60, 200, 16, "#ffffff", 3, sc=C["hc_wall_sh"], r=6)
+    _corp_panels(c, x0, CEIL, x1 - x0, FLOOR - CEIL, 200)
+    rect(c, x0, 300, x1 - x0, 10, C["hc_wall_sh"], 0)
+    rect(c, x0, 1000, x1 - x0, 14, PAL["hush"], 0)          # teal accent line
+    # entrance glass doors at the left with daylight
+    rect(c, -e[0], CEIL, 260 + e[0], FLOOR - CEIL, "#d8ecf7", 5)
+    core.vgradient(c, "#cfe8f7", "#f4fbff", -e[0], CEIL, 260 + e[0], FLOOR - CEIL)
+    for mx in (-120, 120, 250):
+        rect(c, mx - 7, CEIL, 14, FLOOR - CEIL, C["hc_slate"], 3)
+    _house_far(c, -200, FLOOR, 260, 200, "#dfe6ee", "#b9c6d2", 3, 3, door=False)
+    polyf(c, [(0, CEIL), (60, CEIL), (-60, FLOOR), (-120, FLOOR)], (1, 1, 1, 0.3), 0)
+    # logo wall behind the counter (backlit, cool white halo - NOT the power teal)
+    lx, ly = LOBBY_MARKS["logo"]
+    rect(c, 330, 330, 640, 640, "#f7fafc", 6, r=10)
+    _glow(c, lx, ly, 340, "#ffffff", 0.9)
+    _glow(c, lx, ly, 240, "#dff6f4", 0.6)
+    hush_logo(c, lx, ly, 170, lw=8)
+    spaced_text(c, "HUSHCORP", lx, ly + 290, 56, PAL["hush_dk"], "ui", 0.55)
+    core.text(c, "We keep secrets so you don't have to.", lx, ly + 340, 24, "#7f8b98", "ui")
+    # guard post backdrop: a door + security monitors
+    rect(c, 1500, 540, 260, 760, "#dfe6ee", 5, r=6)
+    rect(c, 1530, 600, 200, 120, C["hc_slate"], 4, r=6)
+    core.text(c, "SECURITY", 1630, 676, 30, "#ffffff", "ui")
+    # floor: polished, with reflections (static)
+    c.rectangle(x0, FLOOR, x1 - x0, y1 - FLOOR)
+    core.fill(c, "#dfe6ed")
+    for k in range(-8, 18):
+        line(c, [(k * 150, FLOOR), (900 + (k * 150 - 900) * 2.4, y1)], "#cfd8e1", 3)
+    for yy in (1370, 1470, 1610, 1790):
+        line(c, [(x0, yy), (x1, yy)], "#cfd8e1", 3)
+    rect(c, x0, FLOOR - 12, x1 - x0, 16, C["hc_wall_sh"], 3)
+    # reflections: faint mirrored ghosts of the counter, logo wall and posts
+    c.save()
+    c.rectangle(x0, FLOOR + 4, x1 - x0, y1 - FLOOR)
+    c.clip()
+    rect(c, 330, 1500, 650, 300, (0.75, 0.82, 0.88, 0.45), 0)
+    rect(c, 330, 1500, 650, 24, (0.18, 0.82, 0.77, 0.25), 0)
+    for gx in _LB_GATES:
+        rect(c, gx - 40, 1500, 80, 260, (0.62, 0.7, 0.78, 0.40), 0)
+    for k in range(5):
+        polyf(c, [(k * 380 + 50, FLOOR), (k * 380 + 120, FLOOR), (k * 380 + 40, y1), (k * 380 - 30, y1)],
+              (1, 1, 1, 0.22), 0)
+    c.restore()
+
+
+def _lb_counter(c):
+    x, ty, w, h = _LB_COUNTER
+    floor = ty + h
+    # counter top + curved white front with a teal stripe and logo
+    rect(c, x - 20, ty - 10, w + 40, 30, "#c9d3dc", 5, r=10)
+    core.rrect(c, x, ty + 20, w, h - 20, 30)
+    fs(c, "#f7fafc", 6)
+    rect(c, x + 6, ty + 120, w - 12, 18, PAL["hush"], 0)
+    rect(c, x + 6, floor - 30, w - 12, 24, "#d8e0e8", 0)
+    hush_logo(c, x + w / 2, ty + 250, 54, lw=4)
+    spaced_text(c, "RECEPTION", x + w / 2, ty + 350, 28, "#8a96a4", "ui", 0.5)
+    # sign-in tablet + bell on top
+    with core.saved(c, x + 120, ty - 14, 1.0, -0.05):
+        rect(c, -50, -12, 100, 16, C["hc_slate"], 3.5, r=4)
+    ell(c, x + w - 120, ty - 16, 26, 8, "#c9a227", 3)
+    ctx = c
+    ctx.move_to(x + w - 140, ty - 16)
+    ctx.curve_to(x + w - 140, ty - 50, x + w - 100, ty - 50, x + w - 100, ty - 16)
+    fs(ctx, "#f2c14e", 3.5)
+
+
+def _lb_turnstile(ctx, x, open_, light):
+    floor = 1500
+    rect(ctx, x - 40, floor - 410, 80, 410, "#c9d3dc", 5, r=14)
+    rect(ctx, x - 40, floor - 410, 80, 40, C["hc_slate"], 4, r=12)
+    rect(ctx, x - 26, floor - 300, 52, 60, "#24323b", 3.5, r=8)     # card reader
+    col = {"green": PAL["safe"], "red": PAL["danger"]}.get(light, "#7f8b98")
+    ell(ctx, x, floor - 392, 22, 9, col, 3)
+    if light in ("green", "red"):
+        _glow(ctx, x, floor - 392, 70, col, 0.55)
+
+
+def _lb_flaps(ctx, open_):
+    # glass flaps between posts; they fold back into the posts as open_ -> 1
+    o = clamp(open_)
+    for i in range(2):
+        xa, xb = _LB_GATES[i] + 40, _LB_GATES[i + 1] - 40
+        half = (xb - xa) / 2 - 4
+        w = half * (1 - 0.88 * o)
+        for (xx, sgn) in ((xa, 1), (xb, -1)):
+            x0 = xx if sgn > 0 else xx - w
+            rect(ctx, x0, 1222, w, 120, (0.80, 0.92, 0.98, 0.6), 4, r=12)
+            line(ctx, [(x0 + 10, 1236), (x0 + min(w - 10, 30), 1236)], (1, 1, 1, 0.8), 3)
+
+
+def _lb_guard_post(c):
+    rect(c, 1520, 1130, 230, 370, "#c9d3dc", 5, r=8)
+    rect(c, 1520, 1130, 230, 30, C["hc_slate"], 4, r=8)
+    with core.saved(c, 1600, 1110, 1.0, -0.1):
+        rect(c, -50, -70, 100, 70, "#24323b", 4, r=6)
+        rect(c, -42, -62, 84, 54, "#3b5a6a", 0, r=4)
+    ell(c, 1700, 1124, 22, 8, "#7f8b98", 3)      # coffee cup
+    rect(c, 1688, 1090, 24, 34, "#ffffff", 3, r=4)
+
+
+def lobby(ctx, t=0.0, layer="bg", turnstile_open=0.0, turnstile_light="red", parts=None):
+    """HushCorp lobby (world 1800 x 1920, people at s=0.75).
+
+    Reception counter (receptionist sits behind it: draw her between bg and
+    fg), backlit logo wall, two turnstile lanes (turnstile_open 0..1,
+    turnstile_light "red"|"green"|None), guard post, potted plant and a
+    polished floor with static reflections. layer "fg" parts: "counter",
+    "turnstiles", "guard".
+    """
+    W, H = LOBBY_W, LOBBY_H
+    e = _LB_EXT
+    if layer == "bg":
+        _overscan(ctx, -e[0], -e[1], W + e[2], H + e[3], "#f2f5f8", "#dfe6ed", "#d8ecf7", C["hc_wall"])
+        static_layer(ctx, "lobby", -e[0], -e[1], W + e[0] + e[2], H + e[1] + e[3], _lb_static)
+        core.cached(ctx, "lobby_counter", 290, 1030, 730, 480, _lb_counter)
+        _plant(ctx, LOBBY_MARKS["plant"][0], 1500, 2.6, pot="#e9eff4", leafc="#5aa86a", seed=8)
+        for gx in _LB_GATES:
+            _lb_turnstile(ctx, gx, turnstile_open, turnstile_light)
+        _lb_flaps(ctx, turnstile_open)
+        core.cached(ctx, "lobby_guard", 1500, 1030, 280, 480, _lb_guard_post)
+    elif layer == "fg":
+        parts = parts or ("counter",)
+        if "counter" in parts:
+            core.cached(ctx, "lobby_counter", 290, 1030, 730, 480, _lb_counter)
+        if "turnstiles" in parts:
+            for gx in _LB_GATES:
+                _lb_turnstile(ctx, gx, turnstile_open, turnstile_light)
+            _lb_flaps(ctx, turnstile_open)
+        if "guard" in parts:
+            core.cached(ctx, "lobby_guard", 1500, 1030, 280, 480, _lb_guard_post)
+
+
+# ============================================================================
+# 8. HUSHCORP LAB (s11)
+# ============================================================================
+LAB_W, LAB_H = 2400, 1920
+_LA_CEIL, _LA_FLOOR = 250, 1300
+_LA_EXT = (500, 700, 500, 700)
+_LA_TANKS = [(220, 560), (480, 560), (740, 560)]   # centre x, top y
+_LA_TERR = (930, 840, 380, 250)                    # terrarium glass x, y, w, h
+_LA_SCREEN = (1380, 360, 640, 440)
+_LA_CONSOLE = (1700, 1500)
+_LA_DOOR = (2090, 520, 280, 780)
+LAB_MARKS = {
+    "size": (LAB_W, LAB_H),
+    "char_scale": 0.75,
+    "floor_y": _LA_FLOOR,
+    "stand_y": 1500,
+    "tanks": [(x, y, 200, 700) for (x, y) in _LA_TANKS],
+    "terrarium": _LA_TERR,          # critters_fn(ctx, x, y, w, h, t) draws inside this rect
+    "label": (1120, 1146),          # centre of the CARRIER placard
+    "terrarium_feet": (1000, 1500),
+    "screen": _LA_SCREEN,           # fx draws the wall-screen UI into this rect
+    "console": _LA_CONSOLE,         # props.red_button_console anchor (s=0.75)
+    "button": (_LA_CONSOLE[0] + props.BUTTON_OFFSET[0] * 0.75, _LA_CONSOLE[1] + props.BUTTON_OFFSET[1] * 0.75),
+    "console_lean_feet": (1560, 1500),
+    "door": _LA_DOOR,
+    "door_feet": (2230, 1500),
+    "beacons": [(560, 300), (1300, 300), (2230, 470)],
+    "cam": {
+        "wide": (1200, 1060, 0.62),
+        "tanks": (480, 1000, 1.1),
+        "terrarium": (1110, 1000, 1.6),
+        "label_close": (1120, 1080, 2.6),
+        "screen": (1700, 800, 1.0),
+        "console": (1700, 1180, 1.5),
+        "door": (2100, 1050, 1.1),
+    },
+}
+
+
+def _la_static(c):
+    W, H = LAB_W, LAB_H
+    CEIL, FLOOR = _LA_CEIL, _LA_FLOOR
+    e = _LA_EXT
+    x0, y0, x1, y1 = -e[0], -e[1], W + e[2], H + e[3]
+    c.rectangle(x0, y0, x1 - x0, CEIL - y0 + 4)
+    core.fill(c, "#e9eef3")
+    for k in range(-1, 9):
+        rect(c, k * 320 + 60, CEIL - 60, 210, 16, "#ffffff", 3, sc=C["hc_wall_sh"], r=6)
+    _corp_panels(c, x0, CEIL, x1 - x0, FLOOR - CEIL, 240, "#e3eaf0", "#cbd5de")
+    rect(c, x0, 980, x1 - x0, 12, PAL["hush_dk"], 0)
+    # cable trays / pipes along the top
+    rect(c, x0, 300, x1 - x0, 26, C["hc_steel"], 4)
+    for k in range(12):
+        line(c, [(k * 220, 326), (k * 220, 360)], C["hc_steel_dk"], 5)
+    # floor
+    c.rectangle(x0, FLOOR, x1 - x0, y1 - FLOOR)
+    core.fill(c, "#cfd8e0")
+    for k in range(-8, 24):
+        line(c, [(k * 160, FLOOR), (1200 + (k * 160 - 1200) * 2.4, y1)], "#c0cad4", 3)
+    for yy in (1380, 1490, 1640, 1840):
+        line(c, [(x0, yy), (x1, yy)], "#c0cad4", 3)
+    rect(c, x0, FLOOR - 12, x1 - x0, 16, C["hc_wall_sh"], 3)
+    # specimen tanks
+    for i, (tx, ty) in enumerate(_LA_TANKS):
+        _la_tank(c, tx, ty, i)
+    # lab bench under the terrarium
+    gx, gy, gw, gh = _LA_TERR
+    rect(c, gx - 60, gy + gh, gw + 120, 30, "#c9d3dc", 5, r=6)
+    rect(c, gx - 40, gy + gh + 30, 30, 1500 - gy - gh - 30, C["hc_steel"], 4)
+    rect(c, gx + gw + 10, gy + gh + 30, 30, 1500 - gy - gh - 30, C["hc_steel"], 4)
+    rect(c, gx - 20, gy + gh + 220, gw + 40, 18, C["hc_steel"], 4)
+    # terrarium box (glass drawn live over the critters)
+    rect(c, gx, gy, gw, gh, "#e8f2e0", 5, r=6)
+    c.rectangle(gx + 4, gy + gh - 60, gw - 8, 56)
+    core.fill(c, "#c9a87a")
+    for k in range(10):
+        line(c, [(gx + 20 + k * 36, gy + gh - 30), (gx + 34 + k * 36, gy + gh - 44)], "#e2c58e", 4)
+    core.circle(c, gx + gw - 70, gy + gh - 110, 50)
+    core.stroke(c, C["hc_steel"], 6)
+    line(c, [(gx + gw - 70, gy + gh - 110), (gx + gw - 70, gy + gh - 56)], C["hc_steel"], 6)
+    ell(c, gx + 70, gy + gh - 52, 34, 9, "#7fb2e8", 3)
+    # the CARRIER placard
+    lx, ly = LAB_MARKS["label"]
+    rect(c, lx - 190, ly - 30, 380, 70, "#fff3c4", 4, r=8)
+    core.text(c, "CARRIER", lx, ly + 4, 30, "#c2184b", "ui")
+    core.text(c, "BITE TRANSFERS TRAITS", lx, ly + 32, 22, INK, "ui")
+    # beakers shelf
+    rect(c, 880, 600, 420, 16, C["hc_steel"], 4)
+    for k in range(5):
+        bx = 910 + k * 80
+        col = ["#9fe0a0", "#ff9aac", "#7fb2e8", "#ffd27a", "#d0a8ff"][k]
+        polyf(c, [(bx, 540), (bx + 30, 540), (bx + 44, 598), (bx - 14, 598)], "#ffffff", 3)
+        polyf(c, [(bx - 6, 575), (bx + 36, 575), (bx + 44, 598), (bx - 14, 598)], col, 0)
+        polyf(c, [(bx, 540), (bx + 30, 540), (bx + 44, 598), (bx - 14, 598)], None, 3)
+    # wall screen frame (content: screen_fn or default)
+    sx, sy, sw, sh = _LA_SCREEN
+    rect(c, sx - 24, sy - 24, sw + 48, sh + 48, C["hc_slate"], 6, r=14)
+    rect(c, sx + sw / 2 - 40, sy + sh + 24, 80, 30, C["hc_slate"], 4)
+    # door frame (panels live)
+    dx, dt, dw, dh = _LA_DOOR
+    rect(c, dx - 30, dt - 30, dw + 60, dh + 30, C["hc_steel"], 5)
+    rect(c, dx, dt, dw, dh, "#2a3640", 4)
+    rect(c, dx + dw / 2 - 70, dt - 90, 140, 44, PAL["hush_dk"], 4, r=8)
+    core.text(c, "LAB 7", dx + dw / 2, dt - 58, 28, "#ffffff", "ui")
+    # biohazard-free warning sign: "AUTHORIZED STAFF ONLY"
+    rect(c, 1080, 700, 200, 70, "#ffb020", 4, r=6)
+    core.text(c, "AUTHORIZED", 1180, 730, 22, INK, "ui")
+    core.text(c, "STAFF ONLY", 1180, 758, 22, INK, "ui")
+
+
+def _la_tank(c, x, ty, i):
+    w, h = 200, 700
+    # base + cap
+    rect(c, x - w / 2 - 20, ty + h, w + 40, 100, C["hc_steel"], 5, r=12)
+    rect(c, x - w / 2 - 20, ty - 60, w + 40, 70, C["hc_steel"], 5, r=12)
+    line(c, [(x, ty - 60), (x, 330)], C["hc_steel_dk"], 14)
+    # liquid
+    core.rrect(c, x - w / 2, ty, w, h, 30)
+    fs(c, "#8fd3a0", 0)
+    _glow(c, x, ty + h * 0.5, 260, "#d8ffd0", 0.35)
+    # vague contents (a dim floating shape)
+    with core.saved(c, x, ty + h * 0.45, 1.0, 0.2 * (i - 1)):
+        blob(c, [(-50, -80), (20, -110), (60, -40), (40, 60), (-10, 110), (-60, 40)],
+             (0.18, 0.36, 0.30, 0.45), 0)
+        curve(c, [(10, 100), (30, 180), (0, 240)], (0.18, 0.36, 0.30, 0.4), 12)
+    # glass sheen + outline
+    polyf(c, [(x - 70, ty + 20), (x - 40, ty + 20), (x - 40, ty + h - 20), (x - 70, ty + h - 20)], (1, 1, 1, 0.22), 0)
+    core.rrect(c, x - w / 2, ty, w, h, 30)
+    core.stroke(c, INK, 6)
+    for yy in (ty + 120, ty + h - 120):
+        line(c, [(x - w / 2, yy), (x + w / 2, yy)], (1, 1, 1, 0.35), 4)
+    rect(c, x - 60, ty + h + 30, 120, 40, "#ffffff", 3, r=6)
+    core.text(c, f"SPEC-{i + 3:02d}", x, ty + h + 58, 22, INK, "mono")
+
+
+def _la_default_screen(c, x, y, w, h, t):
+    c.rectangle(x, y, w, h)
+    core.fill(c, "#10242c")
+    for k in range(1, 8):
+        line(c, [(x, y + k * h / 8), (x + w, y + k * h / 8)], (0.2, 0.5, 0.55, 0.25), 2)
+    for k in range(1, 12):
+        line(c, [(x + k * w / 12, y), (x + k * w / 12, y + h)], (0.2, 0.5, 0.55, 0.25), 2)
+    hush_logo(c, x + w / 2, y + h / 2 - 20, 70, lw=0, color=PAL["hush_dk"], hole="#10242c")
+    spaced_text(c, "HUSHCORP", x + w / 2, y + h / 2 + 100, 32, PAL["hush_dk"], "ui", 0.55)
+
+
+def _la_bubbles(ctx, t):
+    n = 0
+    for i, (tx, ty) in enumerate(_LA_TANKS):
+        for k in range(3 if i == 1 else 2):
+            if n >= 8:
+                return
+            n += 1
+            ph = (t * 0.18 + hash01(n, 5)) % 1.0
+            bx = tx - 60 + 120 * hash01(n, 6) + 10 * math.sin(t * 1.5 + n)
+            by = ty + 660 - ph * 620
+            core.circle(ctx, bx, by, 7 + 6 * hash01(n, 7))
+            core.stroke(ctx, (1, 1, 1, 0.7), 3)
+
+
+def _la_default_critters(ctx, x, y, w, h, t):
+    for k in range(3):
+        cx = x + 70 + k * 110
+        cy = y + h - 64
+        bob = 3 * math.sin(t * 3 + k * 2)
+        ell(ctx, cx, cy + bob, 34, 22, PAL["thing_fur"], 3.5)
+        core.circle(ctx, cx + 22, cy - 12 + bob, 16); fs(ctx, PAL["thing_fur"], 3.5)
+        core.circle(ctx, cx + 28, cy - 14 + bob, 6); core.fill(ctx, INK)
+        core.circle(ctx, cx + 30, cy - 16 + bob, 2); core.fill(ctx, "#ffffff")
+        curve(ctx, [(cx - 32, cy + bob), (cx - 60, cy - 10), (cx - 70, cy + 10)], PAL["thing_dk"], 4)
+
+
+def _la_door(ctx, opening):
+    dx, dt, dw, dh = _LA_DOOR
+    o = clamp(opening) * (dw / 2 - 6)
+    for side in (-1, 1):
+        px = dx + (0 if side < 0 else dw / 2) + side * o
+        ctx.save()
+        ctx.rectangle(dx, dt, dw, dh)
+        ctx.clip()
+        rect(ctx, px, dt, dw / 2, dh, "#dfe6ee", 5)
+        rect(ctx, px + 30, dt + 120, dw / 2 - 60, 160, "#a9c7d8", 4, r=8)
+        rect(ctx, px + (dw / 2 - 30 if side < 0 else 14), dt + 380, 16, 120, C["hc_steel"], 3, r=6)
+        ctx.restore()
+
+
+def lab(ctx, t=0.0, layer="bg", alarm=0.0, button_pressed=0.0, critters_fn=None, screen_fn=None,
+        door_open=0.0, parts=None):
+    """HushCorp lab (world 2400 x 1920, people at s=0.75).
+
+    Specimen tanks (<= 8 slow bubbles), the critter terrarium + "CARRIER -
+    BITE TRANSFERS TRAITS" placard (critters_fn(ctx, x, y, w, h, t) draws
+    the critters inside LAB_MARKS["terrarium"]), a big wall screen
+    (screen_fn(ctx, x, y, w, h, t) for fx UI in LAB_MARKS["screen"]), the
+    big red button console (button_pressed 0..1), sliding lab door
+    (door_open 0..1) and alarm 0..1 (red wash + rotating beacons).
+    layer "fg" parts: "console", "bench".
+    """
+    W, H = LAB_W, LAB_H
+    e = _LA_EXT
+    if layer == "bg":
+        _overscan(ctx, -e[0], -e[1], W + e[2], H + e[3], "#e9eef3", "#cfd8e0", "#e3eaf0", "#e3eaf0")
+        static_layer(ctx, "lab", -e[0], -e[1], W + e[0] + e[2], H + e[1] + e[3], _la_static)
+        _la_bubbles(ctx, t)
+        gx, gy, gw, gh = _LA_TERR
+        ctx.save()
+        ctx.rectangle(gx, gy, gw, gh)
+        ctx.clip()
+        (critters_fn or _la_default_critters)(ctx, gx, gy, gw, gh, t)
+        ctx.restore()
+        # terrarium glass: tint + glints + lid
+        rect(ctx, gx, gy, gw, gh, (0.85, 0.95, 1.0, 0.18), 5)
+        polyf(ctx, [(gx + 30, gy), (gx + 80, gy), (gx + 20, gy + gh), (gx - 20, gy + gh)], (1, 1, 1, 0.18), 0)
+        rect(ctx, gx - 14, gy - 22, gw + 28, 26, C["hc_steel"], 4, r=6)
+        sx, sy, sw, sh = _LA_SCREEN
+        ctx.save()
+        ctx.rectangle(sx, sy, sw, sh)
+        ctx.clip()
+        (screen_fn or _la_default_screen)(ctx, sx, sy, sw, sh, t)
+        ctx.restore()
+        _la_door(ctx, door_open)
+        cx, cy = _LA_CONSOLE
+        props.red_button_console(ctx, cx, cy, 0.75, pressed=button_pressed, t=t, alarm=alarm)
+        _alarm(ctx, t, alarm, LAB_MARKS["beacons"])
+    elif layer == "fg":
+        parts = parts or ()
+        if "console" in parts:
+            cx, cy = _LA_CONSOLE
+            props.red_button_console(ctx, cx, cy, 0.75, pressed=button_pressed, t=t, alarm=alarm)
+        if alarm > 0:
+            # keep characters inside the red wash too (subtle, no beacons)
+            p = 0.5 + 0.5 * math.sin(t * TAU * 0.8)
+            vx0, vy0, vx1, vy1 = ctx.clip_extents()
+            ctx.rectangle(vx0, vy0, vx1 - vx0, vy1 - vy0)
+            core.fill(ctx, core.alpha("#ff2a3c", alarm * (0.06 + 0.06 * p)))
+
+
+# ============================================================================
+# 9. HUSHCORP CORRIDOR (s11 chase): one-point perspective
+# ============================================================================
+CORRIDOR_W, CORRIDOR_H = 1080, 1920
+_CR_VP = (540, 820)
+_CR_FAR = (380, 560, 320, 520)      # end-wall rect at the window
+_CR_WIN = (420, 590, 240, 470)
+_CR_K0, _CR_KF = 940.0, 260.0       # floor offset below VP at z=0 and at the end wall
+_CR_D = _CR_K0 / _CR_KF
+_CR_HALF = 0.615                    # corridor half-width / eye height
+
+
+def corridor_scale(z, lane=0.0):
+    """Perspective placement in the corridor. z = 0 near camera .. 1 at the
+    end window; lane -1 (left wall) .. +1 (right wall), runners use ~+-0.4.
+    Returns (x, y_feet, s): screen-world point for the feet and character scale."""
+    k = 1 + clamp(z, -0.2, 1.0) * (_CR_D - 1)
+    y = _CR_VP[1] + _CR_K0 / k
+    x = _CR_VP[0] + lane * _CR_K0 * _CR_HALF / k
+    s = 1.028 / k
+    return (x, y, s)
+
+
+CORRIDOR_MARKS = {
+    "size": (CORRIDOR_W, CORRIDOR_H),
+    "vp": _CR_VP,
+    "window": _CR_WIN,
+    "window_sill_y": 1060,
+    "end_wall": _CR_FAR,
+    "beacons": [(540, 380), (300, 230)],
+    "note": "use corridor_scale(z, lane) for characters: z=0 feet y=1760 s=1.03, z=1 feet y=1080 s=0.28",
+    "cam": {"default": (540, 960, 1.0)},
+}
+
+
+def _cr_pt(u, v, z):
+    """Point on the corridor box at depth z: u -1..1 across, v 0 (floor) .. 1 (ceiling)."""
+    k = 1 + z * (_CR_D - 1)
+    x = _CR_VP[0] + u * _CR_K0 * _CR_HALF / k
+    y = _CR_VP[1] + (_CR_K0 - v * 2 * _CR_K0) / k
+    return (x, y)
+
+
+def _cr_static(c, broken_level):
+    zn = -0.25
+    # walls / floor / ceiling quads
+    def quad(a, b, col, lw=0):
+        polyf(c, [_cr_pt(*a, zn), _cr_pt(*b, zn), _cr_pt(*b, 1.0), _cr_pt(*a, 1.0)], col, lw)
+    quad((-1, 0), (1, 0), "#cdd6de")         # floor
+    quad((-1, 1), (1, 1), "#eef2f6")         # ceiling
+    quad((-1, 0), (-1, 1), "#dfe6ec")        # left wall
+    quad((1, 0), (1, 1), "#d6dee6")          # right wall
+    # floor tiles: lines to the VP + depth lines
+    for u in (-0.6, -0.2, 0.2, 0.6):
+        line(c, [_cr_pt(u, 0, zn), _cr_pt(u, 0, 1.0)], "#bfc9d2", 4)
+    for k in range(12):
+        z = (k / 12) ** 1.6
+        line(c, [_cr_pt(-1, 0, z), _cr_pt(1, 0, z)], "#bfc9d2", 3)
+    # ceiling light panels
+    for k in range(7):
+        za, zb = (k / 7) ** 1.5, (k / 7) ** 1.5 + 0.03 + 0.02 * (1 - k / 7)
+        polyf(c, [_cr_pt(-0.35, 1, za), _cr_pt(0.35, 1, za), _cr_pt(0.35, 1, zb), _cr_pt(-0.35, 1, zb)],
+              "#ffffff", 3)
+    # teal accent stripe + doors along the walls
+    for side in (-1, 1):
+        for vv in (0.42, 0.44):
+            line(c, [_cr_pt(side, vv, zn), _cr_pt(side, vv, 1.0)], PAL["hush_dk"] if vv < 0.43 else PAL["hush"], 5)
+        for k, z0 in enumerate((0.05, 0.32, 0.58)):
+            z1 = z0 + 0.12
+            polyf(c, [_cr_pt(side, 0, z0), _cr_pt(side, 0.62, z0), _cr_pt(side, 0.62, z1), _cr_pt(side, 0, z1)],
+                  "#c3ced8", 4)
+            polyf(c, [_cr_pt(side, 0.40, z0 + 0.02), _cr_pt(side, 0.55, z0 + 0.02), _cr_pt(side, 0.55, z1 - 0.03),
+                      _cr_pt(side, 0.40, z1 - 0.03)], "#a9c7d8", 3)
+    # corner lines
+    for (u, v) in ((-1, 0), (1, 0), (-1, 1), (1, 1)):
+        line(c, [_cr_pt(u, v, zn), _cr_pt(u, v, 1.0)], INK, 5)
+    # warm dusk light spilling from the window along the floor
+    polyf(c, [_cr_pt(-0.25, 0, 1.0), _cr_pt(0.25, 0, 1.0), _cr_pt(0.5, 0, 0.55), _cr_pt(-0.5, 0, 0.55)],
+          (1.0, 0.72, 0.50, 0.22), 0)
+    polyf(c, [_cr_pt(-0.25, 0, 1.0), _cr_pt(0.25, 0, 1.0), _cr_pt(0.36, 0, 0.8), _cr_pt(-0.36, 0, 0.8)],
+          (1.0, 0.72, 0.50, 0.20), 0)
+    # wall seams receding
+    for side in (-1, 1):
+        for z in (0.12, 0.25, 0.45, 0.72, 0.88):
+            line(c, [_cr_pt(side, 0, z), _cr_pt(side, 1, z)], "#c9d3dc", 3)
+    # end wall + tall window
+    fx, fy, fw, fh = _CR_FAR
+    rect(c, fx, fy, fw, fh, "#e3eaf0", 4)
+    wx, wy, ww, wh = _CR_WIN
+    c.save()
+    c.rectangle(wx, wy, ww, wh)
+    c.clip()
+    core.vgradient(c, C["dusk_top"], C["dusk_low"], wx, wy, ww, wh)
+    core.vgradient(c, C["dusk_top"], C["dusk_mid"], wx, wy, ww, wh * 0.6)
+    for k in range(5):
+        core.circle(c, wx + 30 + hash01(k, 3) * (ww - 60), wy + 30 + hash01(k, 4) * 150, 2.5)
+    core.fill(c, "#ffffff")
+    for k in range(6):
+        bx = wx + k * 44 - 10
+        bh = 60 + 70 * hash01(k, 8)
+        rect(c, bx, wy + wh - bh, 40, bh, C["city"], 0)
+    c.restore()
+    rect(c, wx, wy, ww, wh, None, 6)
+    line(c, [(wx + ww / 2, wy), (wx + ww / 2, wy + wh)], C["hc_slate"], 6)
+    if broken_level < 0.5:
+        polyf(c, [(wx + 20, wy), (wx + 60, wy), (wx + 10, wy + 120), (wx - 10, wy + 120)], (1, 1, 1, 0.25), 0)
+    rect(c, wx - 12, wy + wh, ww + 24, 14, C["hc_steel"], 3)
+
+
+def _cr_window_damage(ctx, b):
+    wx, wy, ww, wh = _CR_WIN
+    if b <= 0:
+        return
+    cx, cy = wx + ww * 0.5, wy + wh * 0.55
+    if b < 1:
+        for k in range(9):
+            a = k / 9 * TAU + 0.3
+            L = (60 + 140 * hash01(k, 2)) * clamp(b * 1.6)
+            pts = [(cx, cy)]
+            for j in range(1, 4):
+                pts.append((cx + math.cos(a + 0.1 * (j % 2)) * L * j / 3, cy + math.sin(a) * L * j / 3))
+            line(ctx, pts, "#ffffff", 3)
+        for r in (30, 70):
+            core.circle(ctx, cx, cy, r * clamp(b * 1.6))
+            core.stroke(ctx, (1, 1, 1, 0.6), 2.5)
+    else:
+        # shattered: only jagged teeth remain on the frame edges (sky shows through)
+        teeth = [[(wx, wy), (wx + 70, wy), (wx + 20, wy + 80)],
+                 [(wx + ww, wy), (wx + ww, wy + 110), (wx + ww - 50, wy + 40)],
+                 [(wx, wy + wh), (wx, wy + wh - 90), (wx + 60, wy + wh)],
+                 [(wx + ww, wy + wh), (wx + ww - 80, wy + wh), (wx + ww, wy + wh - 60)],
+                 [(wx + ww / 2 - 6, wy + wh), (wx + ww / 2 + 30, wy + wh), (wx + ww / 2, wy + wh - 70)]]
+        for tpts in teeth:
+            polyf(ctx, tpts, (0.88, 0.96, 1.0, 0.75), 3)
+
+
+def corridor(ctx, t=0.0, layer="bg", alarm=0.0, window_broken=0.0):
+    """Long HushCorp corridor in one-point perspective (world 1080 x 1920,
+    fixed camera). Tall dusk window at the end (window_broken 0..1:
+    cracks -> shattered). alarm 0..1 as in the lab. Place runners with
+    corridor_scale(z, lane); sort them far-to-near."""
+    if layer != "bg":
+        return
+    W, H = CORRIDOR_W, CORRIDOR_H
+    b = clamp(window_broken)
+    _overscan(ctx, -300, -400, W + 300, H + 400, "#eef2f6", "#cdd6de", "#dfe6ec", "#d6dee6")
+    static_layer(ctx, ("corridor", b >= 1), -300, -400, W + 600, H + 800, lambda c: _cr_static(c, b))
+    if b >= 1:
+        wx, wy, ww, wh = _CR_WIN
+        ctx.save()
+        ctx.rectangle(wx, wy, ww, wh)
+        ctx.clip()
+        # mullion gone: redraw the clean sky over it
+        core.vgradient(ctx, C["dusk_top"], C["dusk_mid"], wx + ww / 2 - 8, wy, 16, wh * 0.6)
+        core.vgradient(ctx, C["dusk_mid"], C["dusk_low"], wx + ww / 2 - 8, wy + wh * 0.6, 16, wh * 0.4)
+        ctx.restore()
+    _cr_window_damage(ctx, b)
+    _alarm(ctx, t, alarm, CORRIDOR_MARKS["beacons"], wash=0.28)

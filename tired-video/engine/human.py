@@ -1091,3 +1091,644 @@ def _cup_positions(C, J, hp):
         bulge = math.sin(k * math.pi) * 34
         out[s_] = (mid[0] + sgn * bulge, mid[1])
     return out
+
+
+# ============================================================================
+# 7a. DRAWING: hands, feet, legs, arms
+# ============================================================================
+_FBASE = ((0.95, 0.33, 0.27), (1.0, 0.11, 0.28), (0.97, -0.11, 0.265), (0.9, -0.31, 0.235))
+_PALM = ((0.0, -0.29), (0.42, -0.42), (0.86, -0.43), (1.0, -0.24), (1.02, 0.12), (0.92, 0.42),
+         (0.45, 0.44), (0.02, 0.3))
+
+
+def _draw_hand(ctx, skin, ink, W, ang, hv, ysign, hs, inkw, phase=0.0, fing=0.0, thumb=0.0,
+               palm_view=False):
+    """Draw one cartoon hand. W = wrist (2D), ang = pointing angle. Returns hold point."""
+    ca, sa = math.cos(ang), math.sin(ang)
+    px, py = -sa * ysign, ca * ysign            # +y (thumb side) in screen
+
+    def M(x, y):
+        return (W[0] + (ca * x + px * y) * hs, W[1] + (sa * x + py * y) * hs)
+
+    palm = hv[0]
+    cup = hv[1]
+    # palm shape
+    pts = [M(x * palm, y * (1 - 0.12 * cup)) for x, y in _PALM]
+    ink_w2 = inkw * 2
+    _set(ctx, ink)
+    _smooth(ctx, pts, True, 0.6)
+    ctx.set_line_width(ink_w2)
+    ctx.stroke_preserve()
+    _set(ctx, skin)
+    ctx.fill()
+    # fingers: pinky -> index (each overlaps the previous => separation lines)
+    for i in (3, 2, 1, 0):
+        sp, ln, b1, b2 = hv[4 + i * 4: 8 + i * 4]
+        if fing:
+            w = math.sin(TAU * (phase * 2.0 + i * 0.27))
+            b1 += fing * 0.32 * max(0.0, w)
+            b2 += fing * 0.2 * max(0.0, w)
+        bx, by, fw = _FBASE[i]
+        bx *= palm
+        a1 = sp
+        j1 = (bx + math.cos(a1) * ln * 0.55, by + math.sin(a1) * ln * 0.55)
+        a2 = a1 + b1
+        j2 = (j1[0] + math.cos(a2) * ln * 0.3, j1[1] + math.sin(a2) * ln * 0.3)
+        a3 = a2 + b2
+        tip = (j2[0] + math.cos(a3) * ln * 0.2, j2[1] + math.sin(a3) * ln * 0.2)
+        seq = [M(bx - 0.12, by * 0.95), M(*j1), M(*j2), M(*tip)]
+        ctx.move_to(*seq[0])
+        for q in seq[1:]:
+            ctx.line_to(*q)
+        _set(ctx, ink)
+        ctx.set_line_width(fw * hs + ink_w2)
+        ctx.stroke_preserve()
+        _set(ctx, skin)
+        ctx.set_line_width(fw * hs)
+        ctx.stroke()
+    # palm patch hides finger roots inside the palm
+    pts2 = [M(0.1 + x * palm * 0.78, y * 0.74 * (1 - 0.12 * cup)) for x, y in _PALM]
+    _set(ctx, skin)
+    _smooth(ctx, pts2, True, 0.6)
+    ctx.fill()
+    # palm creases when the palm faces camera
+    if palm_view:
+        ctx.move_to(*M(0.25 * palm, 0.28))
+        _qcurve(ctx, M(0.25 * palm, 0.28), M(0.5 * palm, 0.02), M(0.82 * palm, -0.12))
+        _set(ctx, alpha_ink(ink, 0.55))
+        ctx.set_line_width(inkw * 0.55)
+        ctx.stroke()
+    # thumb on top
+    ta, tl, tb = hv[20] + thumb, hv[21], hv[22]
+    b0 = (0.2 * palm, 0.3)
+    t1 = (b0[0] + math.cos(ta) * tl * 0.5, b0[1] + math.sin(ta) * tl * 0.5)
+    tb_a = ta - tb if ta > 0.9 else ta + tb * 0.6
+    if ta > 0.9:   # wrapped thumbs curl forward across the fingers
+        tb_a = ta - tb
+    t2 = (t1[0] + math.cos(tb_a) * tl * 0.5, t1[1] + math.sin(tb_a) * tl * 0.5)
+    seq = [M(*b0), M(*t1), M(*t2)]
+    ctx.move_to(*seq[0])
+    ctx.line_to(*seq[1])
+    ctx.line_to(*seq[2])
+    _set(ctx, ink)
+    ctx.set_line_width(0.3 * hs + ink_w2)
+    ctx.stroke_preserve()
+    _set(ctx, skin)
+    ctx.set_line_width(0.3 * hs)
+    ctx.stroke()
+    return M(hv[2] * palm, hv[3])
+
+
+def alpha_ink(c, a):
+    c = hexc(c)
+    return (c[0], c[1], c[2], c[3] * a)
+
+
+def _draw_shoe(ctx, C, col, g, inkw):
+    style = C["_shoe"]
+    r = C["foot_r"]
+    an, so, toe, heel = g["ankle"], g["sole"], g["toe"], g["heel"]
+    ux, uy = _norm(an[0] - so[0], an[1] - so[1])
+    hc = (heel[0] + ux * r * 0.95, heel[1] + uy * r * 0.95)
+    tc = (toe[0] + ux * r * 0.8, toe[1] + uy * r * 0.8)
+    ln = math.hypot(tc[0] - hc[0], tc[1] - hc[1])
+    front = 1.0 - min(1.0, ln / (C["foot_len"] * 0.75))
+    rt = r * (0.62 if style == "heel" else 0.9)
+    ctx.new_path()
+    _capsule(ctx, hc[0], hc[1], r, tc[0], tc[1], rt)
+    if front > 0.05:
+        ellipse(ctx, tc[0], tc[1] + r * 0.05, r * (1.0 + 0.32 * front), r * 0.92)
+    if style == "slipper":
+        for i in range(5):
+            k = i / 4.0
+            q = _lerp2(hc, tc, k)
+            circle(ctx, q[0] - ux * r * 0.55 + uy * 0.0, q[1] - uy * r * 0.55, r * 0.5)
+    if style == "boot":
+        _capsule(ctx, an[0], an[1] - 4, r * 0.95, hc[0], hc[1], r)
+    _set(ctx, PAL["ink"])
+    ctx.set_line_width(inkw * 2)
+    ctx.stroke_preserve()
+    _set(ctx, col["shoe"])
+    ctx.fill()
+    # sole strip / details
+    sole_c = {"sneaker": "#f2efe8", "flat": col["shoe_dk"], "slipper": _lt(col["shoe"], 0.35)}.get(
+        style, col["shoe_dk"])
+    a0 = (heel[0] + ux * 3, heel[1] + uy * 3)
+    a1 = (toe[0] + ux * 3, toe[1] + uy * 3)
+    ctx.move_to(*a0)
+    ctx.line_to(*a1)
+    _set(ctx, sole_c)
+    ctx.set_line_width(r * (0.42 if style in ("boot", "sneaker") else 0.3))
+    ctx.stroke()
+    if style == "heel":
+        # little heel block under the heel
+        hb = (heel[0] + ux * 2, heel[1])
+        ctx.move_to(hb[0] - 4, hb[1] - r * 0.6)
+        ctx.line_to(hb[0] - 3, hb[1] + 2)
+        ctx.line_to(hb[0] + 5, hb[1] + 2)
+        ctx.line_to(hb[0] + 6, hb[1] - r * 0.6)
+        _fs(ctx, col["shoe_dk"], inkw * 0.8)
+
+
+def _leg_path(ctx, C, g, rr):
+    _capsule(ctx, g["hip"][0], g["hip"][1], rr[0], g["knee"][0], g["knee"][1], rr[1])
+    _capsule(ctx, g["knee"][0], g["knee"][1], rr[1], g["ankle"][0], g["ankle"][1] - 4, rr[2])
+
+
+def _draw_leg(ctx, C, col, g, inkw, other=None):
+    _draw_shoe(ctx, C, col, g, inkw)
+    rr = C["leg_r"]
+    ctx.new_path()
+    _leg_path(ctx, C, g, rr)
+    if other is not None:    # pelvis piece joins this (near) leg with the hips
+        h0, h1 = g["hip"], other["hip"]
+        _capsule(ctx, h0[0], h0[1] - 6, rr[0] * 1.05, h1[0], h1[1] - 6, rr[0] * 1.05)
+    _set(ctx, PAL["ink"])
+    ctx.set_line_width(inkw * 2)
+    ctx.stroke_preserve()
+    _set(ctx, col["pants"])
+    ctx.fill()
+    # cuff band at the ankle (sweatpants elastic / trousers hem)
+    kn, an = g["knee"], g["ankle"]
+    dx, dy = _norm(an[0] - kn[0], an[1] - kn[1])
+    st = C["_pants"]
+    if st in ("sweat",):
+        c0 = (an[0] - dx * 18, an[1] - dy * 18 - 4)
+        ctx.new_path()
+        _capsule(ctx, c0[0], c0[1], rr[2] * 1.02, an[0] - dx * 2, an[1] - dy * 2 - 4, rr[2] * 0.95)
+        _fs(ctx, col["pants_dk"], inkw * 0.8)
+    # knee fold line on bent knees
+    bend = abs(math.atan2(an[1] - kn[1], an[0] - kn[0]) - math.atan2(kn[1] - g["hip"][1], kn[0] - g["hip"][0]))
+    bend = min(bend, TAU - bend)
+    if bend > 0.35:
+        nx, ny = -dy, dx
+        ctx.move_to(kn[0] + nx * rr[1] * 0.2 - dx * 6, kn[1] + ny * rr[1] * 0.2 - dy * 6)
+        ctx.line_to(kn[0] - nx * rr[1] * 0.5 + dx * 4, kn[1] - ny * rr[1] * 0.5 + dy * 4)
+        _set(ctx, alpha_ink(PAL["ink"], 0.5))
+        ctx.set_line_width(inkw * 0.6)
+        ctx.stroke()
+
+
+def _draw_arm(ctx, C, col, a, side, J, inkw, t, phase):
+    Q = J["Q"]
+    S, E, Wr, ang = a["S"], a["E2"], a["W2"], a["ang"]
+    rr = C["arm_r"]
+    hide = Q[f"a{side}_hide"] > 0.5
+    hand_pt = Wr
+    ysign = (-1.0 if side == "l" else 1.0) * (1.0 if Q[f"a{side}_tf"] >= 0 else -1.0)
+    tfk = abs(Q[f"a{side}_tf"])
+    persp = clamp(1.0 + a["zW"] * 0.0011, 0.88, 1.22)
+    hs = C["hand"] * persp
+    skin = col["skin"]
+    sleeve = C["_sleeve"]
+    if not hide:
+        hy = ysign * max(0.35, tfk)
+        hand_pt = _draw_hand(ctx, skin, PAL["ink"], Wr, ang, Q[f"a{side}_h"], hy, hs, inkw, phase,
+                             Q[f"a{side}_fing"], Q[f"a{side}_thumb"], palm_view=Q[f"a{side}_tf"] < 0)
+    a["hold_pt"] = hand_pt
+    if sleeve == "short":
+        ctx.new_path()
+        _capsule(ctx, S[0], S[1], rr[0] * 0.8, E[0], E[1], rr[1] * 0.78)
+        _capsule(ctx, E[0], E[1], rr[1] * 0.78, Wr[0], Wr[1], rr[2] * 0.75)
+        _set(ctx, PAL["ink"])
+        ctx.set_line_width(inkw * 2)
+        ctx.stroke_preserve()
+        _set(ctx, skin)
+        ctx.fill()
+        m = _lerp2(S, E, 0.62)
+        ctx.new_path()
+        circle(ctx, S[0], S[1], rr[0] * 1.08)
+        _capsule(ctx, S[0], S[1], rr[0] * 1.08, m[0], m[1], rr[0] * 0.98)
+        _set(ctx, PAL["ink"])
+        ctx.set_line_width(inkw * 2)
+        ctx.stroke_preserve()
+        _set(ctx, col["top"])
+        ctx.fill()
+        return
+    ctx.new_path()
+    circle(ctx, S[0], S[1], rr[0] * 1.04)
+    _capsule(ctx, S[0], S[1], rr[0], E[0], E[1], rr[1])
+    _capsule(ctx, E[0], E[1], rr[1], Wr[0], Wr[1], rr[2])
+    _set(ctx, PAL["ink"])
+    ctx.set_line_width(inkw * 2)
+    ctx.stroke_preserve()
+    _set(ctx, col["top"] if C["_top"] != "labcoat" else col["top"])
+    ctx.fill()
+    # cuff
+    dx, dy = _norm(Wr[0] - E[0], Wr[1] - E[1])
+    cuff = {"hoodie": col["top_dk"], "labcoat": col["top_dk"], "suit": "#e9ecf2",
+            "uniform": col["top_dk"], "cardigan": col["top_dk"]}.get(C["_top"], col["top_dk"])
+    clen = 20 if C["_top"] in ("hoodie", "cardigan") else 12
+    ctx.new_path()
+    _capsule(ctx, Wr[0] - dx * clen, Wr[1] - dy * clen, rr[2] * 1.05, Wr[0] + dx * 2, Wr[1] + dy * 2,
+             rr[2] * 1.02)
+    _fs(ctx, cuff, inkw * 0.85)
+    # elbow fold
+    ex, ey = _norm(E[0] - S[0], E[1] - S[1])
+    cr = ex * dy - ey * dx
+    if abs(cr) > 0.3:
+        nx, ny = -ey * (1 if cr > 0 else -1), ex * (1 if cr > 0 else -1)
+        ctx.move_to(E[0] + nx * rr[1] * 0.75 - ex * 8, E[1] + ny * rr[1] * 0.75 - ey * 8)
+        ctx.line_to(E[0] + nx * rr[1] * 0.1 + dx * 3, E[1] + ny * rr[1] * 0.1 + dy * 3)
+        _set(ctx, alpha_ink(PAL["ink"], 0.45))
+        ctx.set_line_width(inkw * 0.55)
+        ctx.stroke()
+
+
+# ============================================================================
+# 7b. DRAWING: torso + outfits
+# ============================================================================
+def _torso_geom(C, J):
+    """Torso outline points + per-level frames (centre, normal, wL, wR, front offset)."""
+    nd = J["nodes"]
+    phi = J["phi"]
+    c, s = math.cos(phi), math.sin(phi)
+    tw = C["tw"]
+    keys = (("hem", "hem"), ("pel", "hip"), ("wst", "waist"), ("chs", "chest"), ("shl", "shoulder"))
+    lv = {}
+    for i, (nk, wk) in enumerate(keys):
+        p = nd[nk]
+        up_from = nd[keys[max(0, i - 1)][0]] if i > 0 else nd["hem"]
+        up_to = nd[keys[min(len(keys) - 1, i + 1)][0]]
+        if i == 0:
+            up_from, up_to = nd["hem"], nd["pel"]
+        tx, ty = _norm(up_to[0] - up_from[0], up_to[1] - up_from[1])
+        nx, ny = -ty, tx
+        if ny > 0.9 or (abs(nx) < 1e-6 and abs(ny) < 1e-6):
+            nx, ny = 1.0, 0.0
+        a, f, b = tw[wk]
+        if wk == "chest":
+            a += J["Q"]["breath"] * 1.2 * math.sin(TAU * J["t"] / 3.7 + C["seed"])
+        fr = f if s >= 0 else b
+        bk = b if s >= 0 else f
+        wR = math.sqrt((a * c) ** 2 + (fr * s) ** 2)
+        wL = math.sqrt((a * c) ** 2 + (bk * s) ** 2)
+        lv[wk] = dict(p=p, n=(nx, ny), t=(tx, ty), wL=wL, wR=wR, front=f * s, a=a)
+    return lv
+
+
+def _pt(lv, key, u, du=0.0):
+    """Point on level `key` at u (-1 = left edge, 0 = centre, +1 = right edge), du along spine."""
+    L = lv[key]
+    w = L["wR"] if u >= 0 else L["wL"]
+    p, n, t = L["p"], L["n"], L["t"]
+    return (p[0] + n[0] * w * u + t[0] * du, p[1] + n[1] * w * u + t[1] * du)
+
+
+def _front(lv, key, off=0.0, du=0.0):
+    """Point on the front centre line of level `key` (off = sideways px, du along spine)."""
+    L = lv[key]
+    p, n, t = L["p"], L["n"], L["t"]
+    k = math.cos(abs(math.asin(clamp(L["front"] / max(1.0, L["a"] + 30), -1, 1))))
+    x = L["front"] + off * k
+    return (p[0] + n[0] * x + t[0] * du, p[1] + n[1] * x + t[1] * du)
+
+
+def _torso_pts(C, J, lv):
+    sh = J["shj"]
+    nk = J["nodes"]["nck"]
+    Ls, Lc = lv["shoulder"], lv["chest"]
+    t = Ls["t"]
+    n = Ls["n"]
+    ar = C["arm_r"][0]
+    pts = [_pt(lv, "hem", -1.0), _pt(lv, "hip", -1.0), _pt(lv, "waist", -1.0), _pt(lv, "chest", -1.0)]
+    sl, sr = sh["l"], sh["r"]
+    # outer shoulder tops: whichever is further out than the chest edge
+    pts.append((sl[0] - n[0] * ar * 0.25 + t[0] * ar * 0.8, sl[1] - n[1] * ar * 0.25 + t[1] * ar * 0.8))
+    nr = C["neck_r"] * 1.35
+    pts.append((nk[0] - n[0] * nr + t[0] * 4, nk[1] - n[1] * nr + t[1] * 4))
+    pts.append((nk[0] + n[0] * nr + t[0] * 4, nk[1] + n[1] * nr + t[1] * 4))
+    pts.append((sr[0] + n[0] * ar * 0.25 + t[0] * ar * 0.8, sr[1] + n[1] * ar * 0.25 + t[1] * ar * 0.8))
+    pts += [_pt(lv, "chest", 1.0), _pt(lv, "waist", 1.0), _pt(lv, "hip", 1.0), _pt(lv, "hem", 1.0)]
+    hc = lv["hem"]["p"]
+    ht = lv["hem"]["t"]
+    pts.append((hc[0] - ht[0] * 5, hc[1] - ht[1] * 5))
+    return pts
+
+
+def _draw_hood(ctx, C, col, J, inkw):
+    """Tiredness's hood lump behind the neck (drawn before the torso)."""
+    nk = J["nodes"]["nck"]
+    lv = J["_lv"]
+    n, t = lv["shoulder"]["n"], lv["shoulder"]["t"]
+    s = math.sin(J["phi"])
+    cx = nk[0] - n[0] * s * 22
+    cy = nk[1] - n[1] * s * 22
+    w = C["neck_r"] * 2.5
+    pts = [(cx - n[0] * w + t[0] * -14, cy - n[1] * w - t[1] * 14),
+           (cx - n[0] * w * 0.8 + t[0] * 26, cy - n[1] * w * 0.8 + t[1] * 26),
+           (cx + t[0] * 36, cy + t[1] * 36),
+           (cx + n[0] * w * 0.8 + t[0] * 26, cy + n[1] * w * 0.8 + t[1] * 26),
+           (cx + n[0] * w + t[0] * -14, cy + n[1] * w - t[1] * 14),
+           (cx, cy - t[1] * 10)]
+    _smooth(ctx, pts, True, 0.55)
+    _fs(ctx, col["top_dk"], inkw * 2 * 0.5 * 2)
+
+
+def _draw_neck(ctx, C, col, J, inkw, blush_k=0.0):
+    a, b = J["nodes"]["nck"], J["head"]["pivot"]
+    r = C["neck_r"]
+    ctx.new_path()
+    _capsule(ctx, a[0], a[1] + 8, r * 1.05, b[0], b[1], r)
+    _set(ctx, PAL["ink"])
+    ctx.set_line_width(inkw * 2)
+    ctx.stroke_preserve()
+    skin = col["skin"]
+    if blush_k > 0:
+        skin = mixc(skin, PAL["blush"], 0.35 * blush_k)
+    _set(ctx, skin)
+    ctx.fill()
+    # chin shadow
+    ctx.save()
+    ctx.new_path()
+    _capsule(ctx, a[0], a[1] + 8, r * 1.05, b[0], b[1], r)
+    ctx.clip()
+    ellipse(ctx, b[0], b[1] + 6, r * 1.3, r * 0.8, J["head"]["tilt"])
+    _set(ctx, col["skin_sh"])
+    ctx.fill()
+    ctx.restore()
+
+
+def _coat_tails(ctx, C, col, J, inkw, part):
+    """Lab-coat skirt below the torso hem. part = 'back' (between legs) or 'front'."""
+    lv = J["_lv"]
+    Q = J["Q"]
+    lagQ = J["lag"] or Q
+    fd = J["fdir"]
+    trail = Q["coat_trail"]
+    ln = C["thigh"] * 0.5
+    out = {}
+    for s_, sgn, u in (("l", -1, -1.0), ("r", 1, 1.0)):
+        lp = lagQ[f"l{s_}_p"]
+        lo = lagQ[f"l{s_}_o"]
+        d3 = _dir(lp * 0.65, lo, sgn)
+        dx = d3[0] * math.cos(J["phi"]) + d3[2] * math.sin(J["phi"])
+        dy = d3[1]
+        dx = dx * 0.8 - fd * trail * 0.55
+        dx, dy = _norm(dx, max(0.35, dy))
+        top_o = _pt(lv, "hem", u, 2)
+        top_i = _front(lv, "hem", sgn * C["tw"]["hem"][0] * 0.16, 2)
+        out[s_] = (top_o, top_i, (dx, dy))
+    if part == "back":
+        (lo_, li_, dl), (ro_, ri_, dr) = out["l"], out["r"]
+        pts = [lo_, ro_, (ro_[0] + dr[0] * ln, ro_[1] + dr[1] * ln),
+               (lo_[0] + dl[0] * ln, lo_[1] + dl[1] * ln)]
+        _poly(ctx, pts)
+        _fs(ctx, col["top_dk"], inkw)
+        return
+    for s_, sgn in (("l", -1), ("r", 1)):
+        top_o, top_i, (dx, dy) = out[s_]
+        flare = sgn * 10 + (-J["fdir"]) * trail * 22
+        bo = (top_o[0] + dx * ln * 1.02 + flare, top_o[1] + dy * ln * 1.02)
+        bi = (top_i[0] + dx * ln * 0.96, top_i[1] + dy * ln * 0.96)
+        pts = [top_o, bo, bi, top_i]
+        _poly(ctx, pts)
+        _fs(ctx, col["top"], inkw)
+        # hem shading line
+        ctx.move_to(*_lerp2(bo, bi, 0.0))
+        ctx.line_to(*bi)
+        _set(ctx, alpha_ink(col["top_dk"], 1.0))
+        ctx.set_line_width(5)
+        ctx.stroke()
+
+
+def _draw_torso(ctx, C, col, J, inkw, t):
+    lv = J["_lv"]
+    pts = _torso_pts(C, J, lv)
+    top = C["_top"]
+    base = col["top"]
+    ctx.save()
+    _smooth(ctx, pts, True, 0.5)
+    ctx.clip_preserve()
+    _set(ctx, col["top_dk"])
+    ctx.fill()
+    ctx.translate(-13, -6)
+    _smooth(ctx, pts, True, 0.5)
+    _set(ctx, base)
+    ctx.fill()
+    ctx.translate(13, 6)
+    anchors = _torso_details(ctx, C, col, J, lv, top, inkw, t)
+    ctx.restore()
+    _smooth(ctx, pts, True, 0.5)
+    _stroke(ctx, PAL["ink"], inkw)
+    _torso_overlay(ctx, C, col, J, lv, top, inkw, t)
+    return anchors
+
+
+def _shape(ctx, pts, fc, inkw, tension=0.0):
+    if tension:
+        _smooth(ctx, pts, True, tension)
+    else:
+        _poly(ctx, pts)
+    _fs(ctx, fc, inkw)
+
+
+def _torso_details(ctx, C, col, J, lv, top, inkw, t):
+    """Garment details inside the torso clip. Returns {'pocket': (x, y)}."""
+    ink = PAL["ink"]
+    thin = inkw * 0.7
+    aw = C["tw"]["waist"][0]
+    pocket = _front(lv, "chest", C["tw"]["chest"][0] * 0.5, 22)
+    if top == "hoodie":
+        # hem band
+        _shape(ctx, [_pt(lv, "hem", -1.2, -4), _pt(lv, "hem", 1.2, -4), _pt(lv, "hem", 1.2, 20),
+                     _pt(lv, "hem", -1.2, 20)], col["top_dk"], thin)
+        # kangaroo pocket
+        y0, y1 = 20, 62
+        p = [_front(lv, "hem", -aw * 0.62, y0), _front(lv, "hem", aw * 0.62, y0),
+             _front(lv, "hem", aw * 0.44, y1 + 26), _front(lv, "hem", -aw * 0.44, y1 + 26)]
+        _shape(ctx, p, _dk(col["top"], 0.08), thin, 0.0)
+        for sgn in (-1, 1):
+            a0 = _front(lv, "hem", sgn * aw * 0.44, y1 + 24)
+            a1 = _front(lv, "hem", sgn * aw * 0.6, y0 + 2)
+            c0 = _front(lv, "hem", sgn * aw * 0.66, y1 + 16)
+            ctx.move_to(*a0)
+            _qcurve(ctx, a0, c0, a1)
+            _stroke(ctx, ink, thin)
+        pocket = _front(lv, "chest", C["tw"]["chest"][0] * 0.45, 26)
+    elif top == "polo":
+        # placket + buttons
+        a0, a1 = _front(lv, "shoulder", -9, 8), _front(lv, "chest", -9, -8)
+        b0, b1 = _front(lv, "shoulder", 9, 8), _front(lv, "chest", 9, -8)
+        _shape(ctx, [a0, b0, b1, a1], _dk(col["top"], 0.06), thin)
+        for k in (0.35, 0.75):
+            q = _lerp2(_front(lv, "shoulder", 0, 8), _front(lv, "chest", 0, -8), k)
+            circle(ctx, q[0], q[1], 3.2)
+            _fs(ctx, "#f4efe2", 2)
+        _shape(ctx, [_pt(lv, "hem", -1.2, -4), _pt(lv, "hem", 1.2, -4), _pt(lv, "hem", 1.2, 10),
+                     _pt(lv, "hem", -1.2, 10)], col["top_dk"], thin)
+    elif top == "labcoat":
+        # open front: vest + shirt + slacks visible
+        g_top = C["neck_r"] * 1.1
+        g_bot = aw * 0.36
+        L0, R0 = _front(lv, "shoulder", -g_top, 16), _front(lv, "shoulder", g_top, 16)
+        L1, R1 = _front(lv, "hem", -g_bot, -4), _front(lv, "hem", g_bot, -4)
+        _shape(ctx, [L0, R0, R1, L1], col["vest"], thin)
+        # slacks showing below the vest
+        W0, W1 = _front(lv, "waist", -g_bot * 0.9, -8), _front(lv, "waist", g_bot * 0.9, -8)
+        _shape(ctx, [W0, W1, R1, L1], col["pants"], thin)
+        # shirt collar V
+        n0 = _front(lv, "shoulder", 0, -10)
+        v = _front(lv, "chest", 0, 10)
+        _shape(ctx, [_front(lv, "shoulder", -g_top * 0.9, 18), _front(lv, "shoulder", g_top * 0.9, 18), v],
+               "#ffffff", thin)
+        _shape(ctx, [_front(lv, "shoulder", -g_top * 0.95, 22), n0, _front(lv, "shoulder", -2, 0),
+                     _front(lv, "shoulder", -g_top * 0.2, -8)], "#ffffff", thin)
+        # lapels
+        for sgn in (-1, 1):
+            a = _front(lv, "shoulder", sgn * g_top * 1.0, 18)
+            b = _front(lv, "chest", sgn * (g_top * 1.0 + 26), 10)
+            c = _front(lv, "chest", sgn * g_top * 0.95, -16)
+            _shape(ctx, [a, b, c], col["top_dk"] if sgn > 0 else col["top"], thin)
+        # breast pocket (wearer's left = screen right) with pens
+        pc = _front(lv, "chest", aw * 0.66, 4)
+        pw, ph = 22, 24
+        n, tt = lv["chest"]["n"], lv["chest"]["t"]
+
+        def Pp(x, y):
+            return (pc[0] + n[0] * x - tt[0] * y, pc[1] + n[1] * x - tt[1] * y)
+        for i, pcol in enumerate(("#2b6cd8", "#e2463f")):
+            x = -8 + i * 11
+            _shape(ctx, [Pp(x - 3, -10), Pp(x + 3, -10), Pp(x + 3, 12), Pp(x - 3, 12)], pcol, 2.5)
+        _shape(ctx, [Pp(-pw, 0), Pp(pw, 0), Pp(pw * 0.9, ph), Pp(-pw * 0.9, ph)], col["top"], thin)
+        pocket = Pp(0, 6)
+        # hip pockets
+        for sgn in (-1, 1):
+            q = _front(lv, "hem", sgn * aw * 0.85, 30)
+            ctx.move_to(q[0] - 18, q[1])
+            ctx.line_to(q[0] + 18, q[1])
+            _stroke(ctx, ink, thin)
+    elif top == "suit":
+        g = C["neck_r"] * 1.0
+        v = _front(lv, "waist", 0, 20)
+        _shape(ctx, [_front(lv, "shoulder", -g, 20), _front(lv, "shoulder", g, 20), v],
+               col["top_dk"], thin)
+        for sgn in (-1, 1):
+            a = _front(lv, "shoulder", sgn * g * 1.05, 18)
+            b = _front(lv, "chest", sgn * (g + 30), 16)
+            c = _front(lv, "chest", sgn * (g + 14), -6)
+            _shape(ctx, [a, b, c, v], _dk(col["top"], 0.18), thin)
+        btn = _front(lv, "waist", 0, 14)
+        circle(ctx, btn[0], btn[1], 4.5)
+        _fs(ctx, "#111218", 2)
+        # jacket front parting below the button
+        h0 = _front(lv, "hem", 0, 0)
+        ctx.move_to(*btn)
+        ctx.line_to(h0[0] - 6, h0[1] + 6)
+        _stroke(ctx, ink, thin)
+        pocket = _front(lv, "chest", C["tw"]["chest"][0] * 0.5, 14)
+    elif top == "uniform":
+        # placket
+        a0, a1 = _front(lv, "shoulder", 0, 10), _front(lv, "hem", 0, 0)
+        ctx.move_to(*a0)
+        ctx.line_to(*a1)
+        _stroke(ctx, ink, thin)
+        for k in (0.2, 0.42, 0.64):
+            q = _lerp2(a0, a1, k)
+            circle(ctx, q[0] + 6, q[1], 3.5)
+            _fs(ctx, "#c9ced8", 2)
+        # chest pocket flaps
+        for sgn in (-1, 1):
+            c0 = _front(lv, "chest", sgn * 46, 14)
+            _shape(ctx, [(c0[0] - 22, c0[1] - 8), (c0[0] + 22, c0[1] - 8), (c0[0] + 20, c0[1] + 6),
+                         (c0[0], c0[1] + 12), (c0[0] - 20, c0[1] + 6)], col["top_dk"], thin)
+        # belt
+        _shape(ctx, [_pt(lv, "hem", -1.2, 14), _pt(lv, "hem", 1.2, 14), _pt(lv, "hem", 1.2, 34),
+                     _pt(lv, "hem", -1.2, 34)], "#1a1b22", thin)
+        bk = _front(lv, "hem", 0, 24)
+        ctx.rectangle(bk[0] - 11, bk[1] - 8, 22, 16)
+        _fs(ctx, "#c9ced8", 2.5)
+        pocket = _front(lv, "chest", 46, 22)
+    elif top == "cardigan":
+        g_top = C["neck_r"] * 1.0
+        L0, R0 = _front(lv, "shoulder", -g_top, 14), _front(lv, "shoulder", g_top, 14)
+        v = _front(lv, "waist", 0, 6)
+        _shape(ctx, [L0, R0, (v[0] + 4, v[1]), (v[0] - 4, v[1])], col["blouse"], thin)
+        for k in (0.25, 0.55, 0.85):
+            q = _lerp2(L0, _front(lv, "hem", -6, 0), 0.25 + k * 0.7)
+            circle(ctx, q[0] - 8, q[1], 3.5)
+            _fs(ctx, "#f2e9f7", 2)
+        _shape(ctx, [_pt(lv, "hem", -1.2, -4), _pt(lv, "hem", 1.2, -4), _pt(lv, "hem", 1.2, 16),
+                     _pt(lv, "hem", -1.2, 16)], col["top_dk"], thin)
+        # name badge
+        bc = _front(lv, "chest", 44, 18)
+        ctx.rectangle(bc[0] - 15, bc[1] - 7, 30, 14)
+        _fs(ctx, "#ffffff", 2.5)
+        pocket = bc
+    return {"pocket": pocket}
+
+
+def _torso_overlay(ctx, C, col, J, lv, top, inkw, t):
+    """Details that sit on top of the torso outline (collars, strings, badges)."""
+    thin = inkw * 0.7
+    nk = J["nodes"]["nck"]
+    n, tt = lv["shoulder"]["n"], lv["shoulder"]["t"]
+    if top == "hoodie":
+        # collar ribbing around the neck front
+        fx = lv["shoulder"]["front"] * 0.35
+        cx, cy = nk[0] + n[0] * fx, nk[1] + n[1] * fx
+        r = C["neck_r"] * 1.4
+        ctx.move_to(cx - n[0] * r, cy - n[1] * r)
+        _qcurve(ctx, (cx - n[0] * r, cy - n[1] * r), (cx - tt[0] * 30, cy - tt[1] * 30 + 0),
+                (cx + n[0] * r, cy + n[1] * r))
+        _stroke(ctx, PAL["ink"], inkw * 0.9)
+        # drawstrings
+        sw_ = math.sin(t * 1.3 + C["seed"]) * 2
+        for sgn in (-1, 1):
+            a = (cx + n[0] * sgn * 13 - tt[0] * 20, cy + n[1] * sgn * 13 - tt[1] * 20)
+            ln = 70 + sgn * 8
+            b = (a[0] - tt[0] * ln + sw_ + sgn * 3, a[1] - tt[1] * ln)
+            ctx.move_to(*a)
+            _qcurve(ctx, a, ((a[0] + b[0]) / 2 + sgn * 4, (a[1] + b[1]) / 2), b)
+            _stroke(ctx, PAL["ink"], 7.5)
+            ctx.move_to(*a)
+            _qcurve(ctx, a, ((a[0] + b[0]) / 2 + sgn * 4, (a[1] + b[1]) / 2), b)
+            _stroke(ctx, "#e9e6f2", 3.2)
+            ctx.new_path()
+            _capsule(ctx, b[0], b[1] - 2, 3.6, b[0], b[1] + 9, 3.6)
+            _fs(ctx, "#d8d4e2", 2.5)
+    elif top == "polo":
+        fx = lv["shoulder"]["front"] * 0.35
+        cx, cy = nk[0] + n[0] * fx, nk[1] + n[1] * fx
+        r = C["neck_r"] * 1.35
+        for sgn in (-1, 1):
+            p = [(cx + n[0] * sgn * r * 0.15 + tt[0] * 2, cy + tt[1] * 2),
+                 (cx + n[0] * sgn * r * 1.15, cy + n[1] * sgn * r * 1.15 - tt[1] * 6),
+                 (cx + n[0] * sgn * r * 0.75 - tt[0] * 28, cy - tt[1] * 28)]
+            _shape(ctx, p, _lt(col["top"], 0.25), thin)
+        # lanyard + badge
+        b = _front(lv, "chest", -6, -6)
+        for sgn in (-1, 1):
+            ctx.move_to(cx + n[0] * sgn * r, cy + n[1] * sgn * r)
+            ctx.line_to(b[0] + sgn * 5, b[1] - 18)
+            _stroke(ctx, PAL["ink"], 8)
+            ctx.move_to(cx + n[0] * sgn * r, cy + n[1] * sgn * r)
+            ctx.line_to(b[0] + sgn * 5, b[1] - 18)
+            _stroke(ctx, PAL["hush"], 4)
+        ctx.new_path()
+        ctx.rectangle(b[0] - 18, b[1] - 16, 36, 46)
+        _fs(ctx, "#ffffff", 3)
+        ctx.rectangle(b[0] - 18, b[1] - 16, 36, 9)
+        _fs(ctx, PAL["hush"], 2)
+        ctx.rectangle(b[0] - 10, b[1] - 2, 20, 18)
+        _fs(ctx, "#c9d2da", 2)
+    elif top == "suit":
+        pin = _front(lv, "chest", 34, 26)
+        circle(ctx, pin[0], pin[1], 5.5)
+        _fs(ctx, PAL["hush"], 2.5)
+    elif top == "uniform":
+        # badge (wearer's left) + shoulder radio
+        bd = _front(lv, "chest", 48, 34)
+        p = [(bd[0], bd[1] - 14), (bd[0] + 12, bd[1] - 8), (bd[0] + 10, bd[1] + 8), (bd[0], bd[1] + 14),
+             (bd[0] - 10, bd[1] + 8), (bd[0] - 12, bd[1] - 8)]
+        _shape(ctx, p, "#e8c25a", 3)
+        sl = J["shj"]["l"]
+        rx, ry = sl[0] + n[0] * 26 - tt[0] * 0, sl[1] + 24
+        ctx.new_path()
+        ctx.rectangle(rx - 12, ry - 16, 24, 32)
+        _fs(ctx, "#1a1b22", 3)
+        ctx.move_to(rx - 6, ry - 16)
+        ctx.line_to(rx - 6, ry - 38)
+        _stroke(ctx, PAL["ink"], 5)
+        circle(ctx, rx + 3, ry - 6, 3)
+        _fs(ctx, PAL["danger"], 1.5)

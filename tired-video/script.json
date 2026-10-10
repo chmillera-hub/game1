@@ -198,7 +198,8 @@
      "post": 0.2
     }
    ],
-   "music_xfade": 0.05
+   "music_xfade": 0.05,
+   "music_gain": -1.5
   },
   {
    "id": "s03",
@@ -301,7 +302,8 @@
      "dur": 1.0,
      "cue": "heap"
     }
-   ]
+   ],
+   "music_gain": -1.5
   },
   {
    "id": "s04",
