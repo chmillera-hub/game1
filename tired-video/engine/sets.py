@@ -90,24 +90,24 @@ def _visible(ctx, x0, y0, w, h):
     return not (vx1 <= x0 or vx0 >= x0 + w or vy1 <= y0 or vy0 >= y0 + h)
 
 
-MAX_LAYER_MP = 16.0  # above this many megapixels a static layer is tiled
+MAX_LAYER_MP = 12.0  # above this many megapixels a static layer is tiled
 
 
-def static_layer(ctx, key, x0, y0, w, h, draw_fn):
+def static_layer(ctx, key, x0, y0, w, h, draw_fn, max_mp=None, tile_px=2040):
     """core.cached() wrapper: one bitmap when small, visible tiles when big.
 
-    Tiles are ~2048 px bitmaps; they overlap by core's pad, so use this
-    for OPAQUE layers (small translucent layers go straight to core.cached).
+    Tiles are ~tile_px bitmaps; they overlap by core's pad, so use this
+    for OPAQUE layers (small translucent layers go through cached_or_live).
     """
     if not _visible(ctx, x0, y0, w, h):
         return
     q = _qscale(ctx)
     if q <= 0:
         return
-    if w * h * q * q <= MAX_LAYER_MP * 1e6:
+    if w * h * q * q <= (MAX_LAYER_MP if max_mp is None else max_mp) * 1e6:
         core.cached(ctx, key, x0, y0, w, h, draw_fn)
         return
-    T = max(160, int(2040 / q) // 32 * 32)
+    T = max(160, int(tile_px / q) // 32 * 32)
     vx0, vy0, vx1, vy1 = ctx.clip_extents()
     nx, ny = int(math.ceil(w / T)), int(math.ceil(h / T))
     for j in range(ny):
@@ -121,6 +121,18 @@ def static_layer(ctx, key, x0, y0, w, h, draw_fn):
             if tx + tw <= vx0 or tx >= vx1:
                 continue
             core.cached(ctx, (key, "tile", i, j, T), tx, ty, tw, th, draw_fn)
+
+
+def cached_or_live(ctx, key, x0, y0, w, h, draw_fn):
+    """core.cached() for translucent overlays; draws live instead when the
+    bitmap would exceed MAX_LAYER_MP (extreme close-ups), so memory stays bounded."""
+    if not _visible(ctx, x0, y0, w, h):
+        return
+    q = _qscale(ctx)
+    if w * h * q * q > MAX_LAYER_MP * 1e6:
+        draw_fn(ctx)
+    else:
+        core.cached(ctx, key, x0, y0, w, h, draw_fn)
 
 
 def _overscan(ctx, x0, y0, x1, y1, top, bottom, left=None, right=None):
@@ -433,7 +445,7 @@ def _room_shell(c, W, H, CEIL, FLOOR, vp, wall, wall_sh, ceil, ceil_sh, floor, f
 _BD_EXT = (500, 800, 500, 800)
 
 
-def _bd_static(c):
+def _bd_static(c, light_on=True):
     W, H = BEDROOM_W, BEDROOM_H
     CEIL, FLOOR = _BD_CEIL, _BD_FLOOR
     _room_shell(c, W, H, CEIL, FLOOR, _BD_VP, C["bd_wall"], C["bd_wall_sh"], C["bd_ceil"],
@@ -603,12 +615,32 @@ def _bd_static(c):
     ell(c, 920, 1700, 380, 72, None, 4, sc=C["rug_rim"])
     ell(c, 920, 1700, 250, 44, C["rug_sh"], 0)
 
+    # hanging lamp glow (static; the lamp itself is live so it can swing)
+    if light_on:
+        core.radial_glow(c, 1440, 300, 230, "#ffe7a0", 0.30)
+
     # clear the doorway so the hallway (layer 'back') shows through
     c.save()
     c.set_operator(cairo.OPERATOR_CLEAR)
     c.rectangle(dx, dt, dw, dh)
     c.fill()
     c.restore()
+
+
+def _bd_rest(c, frame_state, with_laundry, light_on):
+    """Cached overlay of the props that only move on shake: right sun patch,
+    posters, picture frame, figurine, hanging lamp, laundry heap at rest."""
+    _sun_patch(c, [(1560, 520), (1810, 492), (1850, 1060), (1590, 1100)], 0.5)
+    _sun_patch(c, [(1580, 560), (1676, 549), (1692, 770), (1596, 784)], 0.22, "#ffffff")
+    _bd_posters(c, 0.0, 0.0)
+    _bd_frame(c, 0.0, frame_state)
+    _bd_figurine(c, 0.0, 0.0)
+    _bd_light(c, 0.0, 0.0, light_on)
+    if with_laundry:
+        _bd_laundry(c, 0.0, 0.0, with_laundry == "scattered")
+
+
+_BD_REST_RECT = (600, -10, 1740, 1780)
 
 
 def _bd_desk_back(c):
@@ -738,13 +770,6 @@ def _star_field(c, x, y, w, h, n, seed=5):
     core.fill(c, "#ffffff")
 
 
-_BD_POSTERS = [  # (kind, pin x, pin y)
-    (1, 795, 330),
-    (0, 1595, 360) if False else (0, 2195, 380),
-    (2, 1650, 330) if False else (2, 1750, 860 - 520),
-]
-
-
 def _bd_posters(ctx, t, shake):
     for i, (kind, px, py) in enumerate(((1, 795, 334), (0, 2205, 360), (2, 1760, 360))):
         rot = 0.0
@@ -752,8 +777,6 @@ def _bd_posters(ctx, t, shake):
             rot = shake * (0.10 * math.sin(t * 21 + i * 2.1) + 0.05 * math.sin(t * 34 + i))
         rot += (-0.02, 0.025, -0.015)[i]
         with core.saved(ctx, px, py, 0.92 if kind == 2 else 1.0, rot):
-            if kind == 2:
-                pass
             _bd_poster(ctx, kind)
         core.circle(ctx, px, py + 6, 6)
         fs(ctx, "#ff6f61", 2.5)
@@ -961,8 +984,6 @@ def _bd_light(ctx, t, shake, on=True):
     ang = shake * 0.22 * math.sin(t * 8.5)
     with core.saved(ctx, x, y, 1.0, ang):
         line(ctx, [(0, 0), (0, 190)], "#4a4458", 5)
-        if on:
-            core.radial_glow(ctx, 0, 300, 230, "#ffe7a0", 0.30)
         polyf(ctx, [(-34, 190), (34, 190), (90, 268), (-90, 268)], "#f2c14e", 5)
         ell(ctx, 0, 270, 90, 14, "#fff3c4" if on else "#e8e2c8", 4)
         line(ctx, [(-50, 230), (50, 230)], "#d9973b", 4)
@@ -1036,26 +1057,38 @@ def bedroom(ctx, t=0.0, layer="bg", door_open=0.0, closet_open=0.0, laundry=0.0,
     W, H = BEDROOM_W, BEDROOM_H
     if layer in ("bg", "back"):
         dx, dt, dw, dh = _BD_DOOR
-        core.cached(ctx, "bedroom_hall", dx - 12, dt - 12, dw + 24, dh + 24, _bd_hall)
+        cached_or_live(ctx, "bedroom_hall", dx - 12, dt - 12, dw + 24, dh + 24, _bd_hall)
         if layer == "back":
             return
     if layer in ("bg", "room"):
         e = _BD_EXT
         _overscan(ctx, -e[0], -e[1], W + e[2], H + e[3], C["bd_ceil"], C["wood"], C["bd_wall_sh"],
                   C["bd_wall_sh"])
-        static_layer(ctx, "bedroom_room", -e[0], -e[1], W + e[0] + e[2], H + e[1] + e[3], _bd_static)
+        static_layer(ctx, ("bedroom_room", bool(light_on)), -e[0], -e[1], W + e[0] + e[2], H + e[1] + e[3],
+                     lambda c: _bd_static(c, light_on))
         _bd_door_casing(ctx)
         _bd_door_panel(ctx, door_open)
         _bd_closet_panel(ctx, closet_open)
-        # sun patch from the (off-screen) side window, over closet + wall
-        _sun_patch(ctx, [(1560, 520), (1810, 492), (1850, 1060), (1590, 1100)], 0.5)
-        _sun_patch(ctx, [(1580, 560), (1676, 549), (1692, 770), (1596, 784)], 0.22, "#ffffff")
+        # sun patch from the (off-screen) side window over the closet (live: panel moves)
         _sun_patch(ctx, [(600, 640), (860, 610), (930, 1060), (660, 1110)], 0.22)
-        _bd_posters(ctx, t, shake)
-        _bd_frame(ctx, t, frame_fallen)
-        _bd_figurine(ctx, t, shake)
-        _bd_light(ctx, t, shake, light_on)
-        _bd_laundry(ctx, t, laundry, laundry_scattered)
+        fs_ = frame_fallen
+        frame_rest = fs_ in (True, False, None) or float(fs_) in (0.0, 1.0)
+        frame_state = bool(fs_) if frame_rest else None
+        laundry_rest = laundry_scattered or laundry <= 0.0
+        if shake <= 0.0 and frame_rest:
+            lk = ("scattered" if laundry_scattered else "heap") if laundry_rest else None
+            cached_or_live(ctx, ("bedroom_rest", frame_state, lk, bool(light_on)), *_BD_REST_RECT,
+                           lambda c: _bd_rest(c, frame_state, lk, light_on))
+            if not laundry_rest:
+                _bd_laundry(ctx, t, laundry, laundry_scattered)
+        else:
+            _sun_patch(ctx, [(1560, 520), (1810, 492), (1850, 1060), (1590, 1100)], 0.5)
+            _sun_patch(ctx, [(1580, 560), (1676, 549), (1692, 770), (1596, 784)], 0.22, "#ffffff")
+            _bd_posters(ctx, t, shake)
+            _bd_frame(ctx, t, frame_fallen)
+            _bd_figurine(ctx, t, shake)
+            _bd_light(ctx, t, shake, light_on)
+            _bd_laundry(ctx, t, laundry, laundry_scattered)
         if screen_on:
             with bedroom_monitor_space(ctx) as c:
                 if screen_fn is not None:
@@ -1091,8 +1124,8 @@ WINDOW_EXT_MARKS = {
     "size": (WINDOW_EXT_W, WINDOW_EXT_H),
     "char_scale": 1.45,          # medium shot: head + shoulders fill the glass
     "glass": _WX,
-    "lean_face": (540, 760),     # face position of someone leaning to the glass
-    "lean_hips": (540, 1500),    # hips (below the sill, hidden) for s~1.45
+    "lean_face": (540, 800),     # face position of someone leaning to the glass
+    "lean_feet": (540, 2100),    # feet (off-screen, hidden by the wall) for s=1.45 -> face at ~800
     "sill_y": 1180,
     "meeting_rail_y": 1020,
     "cam": {"default": (540, 960, 1.0), "close": (540, 800, 1.35)},
@@ -1210,7 +1243,7 @@ def bedroom_window_exterior(ctx, t=0.0, layer="bg", light=1.0):
     gx, gy, gw, gh = _WX
     if layer == "bg":
         _overscan(ctx, -200, -40, W + 200, H, C["house_trim"], C["siding"], C["siding"], C["siding"])
-        core.cached(ctx, "window_ext_in", gx - 4, gy - 4, gw + 8, gh + 8, _wext_interior)
+        cached_or_live(ctx, "window_ext_in", gx - 4, gy - 4, gw + 8, gh + 8, _wext_interior)
         if light < 1:
             ctx.rectangle(gx, gy, gw, gh)
             core.fill(ctx, (0.08, 0.06, 0.14, 0.5 * (1 - light)))
@@ -1795,7 +1828,7 @@ def house_exterior(ctx, t=0.0, layer="bg", broken=None, door_open=0.0, damage=0.
     W, H = HOUSE_W, HOUSE_H
     if layer in ("bg", "back"):
         dx, dt, dw, dh = _H_DOOR
-        core.cached(ctx, "house_back", dx - 12, dt - 12, dw + 24, dh + 24, _h_back)
+        cached_or_live(ctx, "house_back", dx - 12, dt - 12, dw + 24, dh + 24, _h_back)
         if layer == "back":
             return
     if layer in ("bg", "house"):
@@ -1825,10 +1858,10 @@ def house_exterior(ctx, t=0.0, layer="bg", broken=None, door_open=0.0, damage=0.
             if door_open > 0.02:
                 _h_door_panel(ctx, door_open)
         if "hedge" in parts:
-            core.cached(ctx, "house_hedges", 660, 1360, 1580, 150,
+            cached_or_live(ctx, "house_hedges", 660, 1360, 1580, 150,
                         lambda c: [_h_bush(c, x - 50, _HG + 4, w + 100, 120, seed=int(x)) for (x, y, w, h) in _H_WIN])
         if "fence" in parts:
-            core.cached(ctx, "house_fence_fg", -560, 1580, 2800, 240, _h_fence)
+            cached_or_live(ctx, "house_fence_fg", -560, 1580, 2800, 240, _h_fence)
 
 
 # ============================================================================
@@ -2200,17 +2233,17 @@ def living_room(ctx, t=0.0, layer="bg", drawer_open=0.0, broken=True, plates=Tru
         if plates:
             px, py = LIVING_MARKS["plates"]
             props.plates_stack(ctx, px, py, 0.62, lift=plates_lift, t=t)
-        core.cached(ctx, "living_table", 1900, 1050, 520, 560, lambda c: _lv_table(c, "all"))
-        core.cached(ctx, "living_rail", 2180, _LV_LANDING_Y - 340, 1300, 1340 - _LV_LANDING_Y + 340,
+        cached_or_live(ctx, "living_table", 1900, 1050, 520, 560, lambda c: _lv_table(c, "all"))
+        cached_or_live(ctx, "living_rail", 2180, _LV_LANDING_Y - 340, 1300, 1340 - _LV_LANDING_Y + 340,
                     _lv_railing)
         # dim afternoon: soft darkening toward the far right/left ends (static)
         return
     if layer == "fg":
         parts = parts or ("table", "stairs")
         if "table" in parts:
-            core.cached(ctx, "living_table_fg", 1900, 1050, 520, 560, lambda c: _lv_table(c, "fg"))
+            cached_or_live(ctx, "living_table_fg", 1900, 1050, 520, 560, lambda c: _lv_table(c, "fg"))
         if "stairs" in parts:
-            core.cached(ctx, "living_rail", 2180, _LV_LANDING_Y - 340, 1300, 1340 - _LV_LANDING_Y + 340,
+            cached_or_live(ctx, "living_rail", 2180, _LV_LANDING_Y - 340, 1300, 1340 - _LV_LANDING_Y + 340,
                         _lv_railing)
 
 
@@ -2443,7 +2476,7 @@ def hallway_upstairs(ctx, t=0.0, layer="bg", door_open=0.0, burst=0.0, parts=Non
     e = _HL_EXT
     if layer in ("bg", "back"):
         dx, dt, dw, dh = _HL_DOOR
-        core.cached(ctx, "hall_back", dx - 12, dt - 12, dw + 24, dh + 24, _hl_back)
+        cached_or_live(ctx, "hall_back", dx - 12, dt - 12, dw + 24, dh + 24, _hl_back)
         if layer == "back":
             return
     if layer in ("bg", "hall"):
@@ -2468,7 +2501,7 @@ def hallway_upstairs(ctx, t=0.0, layer="bg", door_open=0.0, burst=0.0, parts=Non
                 core.circle(ctx, dx + dw - 20 + (k - 3) * 40 * burst, dt + dh - 30 - 50 * burst * hash01(k, 4), pr)
                 core.fill(ctx, core.alpha("#f3ead6", 0.6 * a))
         if layer == "bg":
-            core.cached(ctx, "hall_rail", -560, 600, 1400, 1330, _hl_railing)
+            cached_or_live(ctx, "hall_rail", -560, 600, 1400, 1330, _hl_railing)
         return
     if layer == "fg":
         parts = parts or ("railing",)
@@ -2477,7 +2510,7 @@ def hallway_upstairs(ctx, t=0.0, layer="bg", door_open=0.0, burst=0.0, parts=Non
             if door_open > 0.02:
                 _hl_door_panel(ctx, door_open, burst, t)
         if "railing" in parts:
-            core.cached(ctx, "hall_rail", -560, 600, 1400, 1330, _hl_railing)
+            cached_or_live(ctx, "hall_rail", -560, 600, 1400, 1330, _hl_railing)
 
 
 # ============================================================================
@@ -2544,7 +2577,7 @@ OFFICE_MARKS = {
     "logo": (1200, 455),
     "cam": {
         "wide": (700, 1060, 0.95),
-        "two_shot": (760, 1180, 1.25),
+        "two_shot": (740, 1120, 1.0),
         "emb_low": (420, 1230, 1.9),
         "boss": (1130, 1000, 1.9),
         "desk_slide": (850, 1150, 1.6),
@@ -2643,13 +2676,13 @@ def office(ctx, t=0.0, layer="bg", parts=None):
     if layer == "bg":
         _overscan(ctx, -e[0], -e[1], W + e[2], H + e[3], "#f2f5f8", "#b9c3cd", "#bfdcf0", C["hc_white"])
         static_layer(ctx, "office", -e[0], -e[1], W + e[0] + e[2], H + e[1] + e[3], _of_static)
-        core.cached(ctx, "office_chairs", 150, 540, 1300, 980,
+        cached_or_live(ctx, "office_chairs", 150, 540, 1300, 980,
                     lambda c: (_of_boss_chair(c), _of_guest_chair(c)))
-        core.cached(ctx, "office_desk", 440, 1110, 860, 410, _of_desk)
+        cached_or_live(ctx, "office_desk", 440, 1110, 860, 410, _of_desk)
     elif layer == "fg":
         parts = parts or ("desk",)
         if "desk" in parts:
-            core.cached(ctx, "office_desk", 440, 1110, 860, 410, _of_desk)
+            cached_or_live(ctx, "office_desk", 440, 1110, 860, 410, _of_desk)
 
 
 # ============================================================================
@@ -2673,7 +2706,7 @@ LOBBY_MARKS = {
     "lanes": [((_LB_GATES[i] + _LB_GATES[i + 1]) / 2, 1500) for i in range(2)],
     "guard_feet": (1640, 1500),
     "plant": (1010, 1500),
-    "logo": (650, 560),
+    "logo": (650, 470),
     "cam": {
         "wide": (900, 1060, 0.85),
         "counter_two": (520, 1080, 1.35),
@@ -2704,12 +2737,12 @@ def _lb_static(c):
     polyf(c, [(0, CEIL), (60, CEIL), (-60, FLOOR), (-120, FLOOR)], (1, 1, 1, 0.3), 0)
     # logo wall behind the counter (backlit, cool white halo - NOT the power teal)
     lx, ly = LOBBY_MARKS["logo"]
-    rect(c, 330, 330, 640, 640, "#f7fafc", 6, r=10)
+    rect(c, 330, 300, 640, 670, "#f7fafc", 6, r=10)
     _glow(c, lx, ly, 340, "#ffffff", 0.9)
-    _glow(c, lx, ly, 240, "#dff6f4", 0.6)
-    hush_logo(c, lx, ly, 170, lw=8)
-    spaced_text(c, "HUSHCORP", lx, ly + 290, 56, PAL["hush_dk"], "ui", 0.55)
-    core.text(c, "We keep secrets so you don't have to.", lx, ly + 340, 24, "#7f8b98", "ui")
+    _glow(c, lx, ly, 220, "#dff6f4", 0.6)
+    hush_logo(c, lx, ly, 140, lw=8)
+    spaced_text(c, "HUSHCORP", lx, ly + 205, 50, PAL["hush_dk"], "ui", 0.55)
+    core.text(c, "We keep secrets so you don't have to.", lx, ly + 246, 22, "#7f8b98", "ui")
     # guard post backdrop: a door + security monitors
     rect(c, 1500, 540, 260, 760, "#dfe6ee", 5, r=6)
     rect(c, 1530, 600, 200, 120, C["hc_slate"], 4, r=6)
@@ -2805,22 +2838,22 @@ def lobby(ctx, t=0.0, layer="bg", turnstile_open=0.0, turnstile_light="red", par
     if layer == "bg":
         _overscan(ctx, -e[0], -e[1], W + e[2], H + e[3], "#f2f5f8", "#dfe6ed", "#d8ecf7", C["hc_wall"])
         static_layer(ctx, "lobby", -e[0], -e[1], W + e[0] + e[2], H + e[1] + e[3], _lb_static)
-        core.cached(ctx, "lobby_counter", 290, 1030, 730, 480, _lb_counter)
+        cached_or_live(ctx, "lobby_counter", 290, 1030, 730, 480, _lb_counter)
         _plant(ctx, LOBBY_MARKS["plant"][0], 1500, 2.6, pot="#e9eff4", leafc="#5aa86a", seed=8)
         for gx in _LB_GATES:
             _lb_turnstile(ctx, gx, turnstile_open, turnstile_light)
         _lb_flaps(ctx, turnstile_open)
-        core.cached(ctx, "lobby_guard", 1500, 1030, 280, 480, _lb_guard_post)
+        cached_or_live(ctx, "lobby_guard", 1500, 1030, 280, 480, _lb_guard_post)
     elif layer == "fg":
         parts = parts or ("counter",)
         if "counter" in parts:
-            core.cached(ctx, "lobby_counter", 290, 1030, 730, 480, _lb_counter)
+            cached_or_live(ctx, "lobby_counter", 290, 1030, 730, 480, _lb_counter)
         if "turnstiles" in parts:
             for gx in _LB_GATES:
                 _lb_turnstile(ctx, gx, turnstile_open, turnstile_light)
             _lb_flaps(ctx, turnstile_open)
         if "guard" in parts:
-            core.cached(ctx, "lobby_guard", 1500, 1030, 280, 480, _lb_guard_post)
+            cached_or_live(ctx, "lobby_guard", 1500, 1030, 280, 480, _lb_guard_post)
 
 
 # ============================================================================
@@ -3218,3 +3251,918 @@ def corridor(ctx, t=0.0, layer="bg", alarm=0.0, window_broken=0.0):
         ctx.restore()
     _cr_window_damage(ctx, b)
     _alarm(ctx, t, alarm, CORRIDOR_MARKS["beacons"], wash=0.28)
+
+
+# ============================================================================
+# 10. TOWER EXTERIOR (dusk) + CITY FALL
+# ============================================================================
+TOWER_W, TOWER_H = 1080, 1920
+_TW_HOLE = (600, 560, 260, 360)          # the broken window panel
+TOWER_MARKS = {
+    "size": (TOWER_W, TOWER_H),
+    "char_scale": 0.45,
+    "hole": _TW_HOLE,
+    "hole_center": (730, 740),
+    "facade_x": 560,                    # tower face starts here; open sky to the left
+    "fall_from": (700, 760),            # where a body leaves the hole
+    "fall_path": [(700, 760), (480, 900), (360, 1150)],
+    "shard_origin": (720, 760),
+    "cam": {"default": (540, 960, 1.0), "hole": (700, 780, 1.6)},
+}
+
+
+def _dusk_sky(c, x, y, w, h, stars=True):
+    g = cairo.LinearGradient(0, y, 0, y + h)
+    for (u, col) in ((0.0, "#241a52"), (0.30, "#4b2f7e"), (0.55, "#a2508a"), (0.75, "#e47a6a"),
+                     (0.88, "#f2a65a"), (1.0, "#ffd08a")):
+        g.add_color_stop_rgba(u, *hexc(col))
+    c.rectangle(x, y, w, h)
+    c.set_source(g)
+    c.fill()
+    if stars:
+        for i in range(11):
+            sx = x + hash01(i, 13) * w
+            sy = y + hash01(i, 14) * h * 0.32
+            r = 2.0 + 2.5 * hash01(i, 15)
+            core.circle(c, sx, sy, r)
+        core.fill(c, "#ffffff")
+        props._star(c, x + w * 0.22, y + h * 0.12, 9)
+        core.fill(c, "#fff6d0")
+
+
+def _tw_static(c):
+    W, H = TOWER_W, TOWER_H
+    _dusk_sky(c, -300, -300, W + 600, H + 600)
+    # pink-orange cloud streaks
+    for (cx, cy, s) in ((220, 1160, 1.4), (640, 1290, 1.0), (120, 1380, 0.9)):
+        with core.saved(c, cx, cy, (s * 1.6, s * 0.45)):
+            _cloud(c, 0, 0, 1.0, (1.0, 0.72, 0.62, 0.55))
+    # city far below with lit windows
+    base = H + 200
+    for layer, (col, top) in enumerate((("#5a3f86", 1540), ("#3f2d6e", 1610), ("#2a2052", 1700))):
+        xx = -300
+        i = 0
+        while xx < W + 300:
+            bw = 40 + 50 * hash01(i, 30 + layer)
+            bt = top + 140 * hash01(i, 33 + layer)
+            rect(c, xx, bt, bw, base - bt, col, 0)
+            for yy in range(int(bt + 10), int(base), 26):
+                for xw in range(int(xx + 6), int(xx + bw - 6), 14):
+                    if hash01(xw * 13 + yy, 40 + layer) > 0.7:
+                        c.rectangle(xw, yy, 6, 9)
+            core.fill(c, "#ffd27a")
+            xx += bw + 4
+            i += 1
+    c.rectangle(-300, 1500, W + 600, 90)
+    core.fill(c, (1.0, 0.75, 0.55, 0.25))
+    # the tower facade (glass curtain wall, mullions converge downward)
+    fx = TOWER_MARKS["facade_x"]
+    vpx, vpy = 860, 7000
+    polyf(c, [(fx, -300), (W + 400, -300), (W + 400, H + 300), (fx + 120, H + 300)], "#3a3f7a", 6)
+    # sky reflection gradient on the glass
+    g = cairo.LinearGradient(0, -300, 0, H + 300)
+    g.add_color_stop_rgba(0, *hexc("#2e2a66"))
+    g.add_color_stop_rgba(0.6, *hexc("#7a4a8e"))
+    g.add_color_stop_rgba(1, *hexc("#c46a7a"))
+    c.move_to(fx + 6, -300); c.line_to(W + 400, -300); c.line_to(W + 400, H + 300); c.line_to(fx + 126, H + 300)
+    c.close_path()
+    c.set_source(g)
+    c.fill()
+    c.save()
+    c.move_to(fx, -300); c.line_to(W + 400, -300); c.line_to(W + 400, H + 300); c.line_to(fx + 120, H + 300)
+    c.close_path()
+    c.clip()
+    for k in range(0, 8):
+        x_top = fx + k * 140
+        x_bot = vpx + (x_top - vpx) * (vpy - (H + 300)) / (vpy + 300)
+        line(c, [(x_top, -300), (x_bot, H + 300)], "#1d1a40", 9)
+    for yy in range(-200, H + 300, 220):
+        line(c, [(fx - 10, yy), (W + 400, yy)], "#1d1a40", 11)
+    for k in range(4):
+        x0 = fx + 60 + k * 230
+        polyf(c, [(x0, -300), (x0 + 60, -300), (x0 + 260, H + 300), (x0 + 200, H + 300)], (1, 1, 1, 0.08), 0)
+    # cloud reflections on the glass
+    for (cx, cy) in ((780, 1180), (960, 1320)):
+        with core.saved(c, cx, cy, (1.2, 0.35)):
+            _cloud(c, 0, 0, 1.0, (1.0, 0.75, 0.7, 0.25))
+    c.restore()
+    line(c, [(fx, -300), (fx + 120, H + 300)], "#e8b0c8", 6)    # lit corner edge
+    # the broken window: red-lit corridor inside
+    hx, hy, hw, hh = _TW_HOLE
+    c.save()
+    c.rectangle(hx, hy, hw, hh)
+    c.clip()
+    c.rectangle(hx, hy, hw, hh)
+    core.fill(c, "#5a1a2e")
+    _glow(c, hx + hw / 2, hy + hh / 2, 220, "#ff3b5c", 0.6)
+    # the corridor inside, in one-point perspective toward the camera
+    polyf(c, [(hx + 80, hy + 120), (hx + hw - 80, hy + 120), (hx + hw, hy + hh), (hx, hy + hh)], "#7a2a3e", 0)
+    polyf(c, [(hx, hy), (hx + hw, hy), (hx + hw - 80, hy + 90), (hx + 80, hy + 90)], "#6a2236", 0)
+    rect(c, hx + 80, hy + 90, hw - 160, 30, "#4a1426", 0)
+    for k in range(3):
+        rect(c, hx + 110 + k * 4, hy + 18 + k * 26, hw - 220 - k * 8, 10, (1.0, 0.8, 0.8, 0.5), 0)
+    c.restore()
+    _glow(c, hx + hw / 2, hy + hh / 2, 300, "#ff3b5c", 0.22)
+
+
+def _tw_teeth(c):
+    hx, hy, hw, hh = _TW_HOLE
+    teeth = [[(hx, hy), (hx + 90, hy), (hx + 30, hy + 70), (hx, hy + 40)],
+             [(hx + 140, hy), (hx + hw, hy), (hx + hw, hy + 130), (hx + hw - 40, hy + 50)],
+             [(hx, hy + hh), (hx, hy + hh - 140), (hx + 50, hy + hh - 60), (hx + 110, hy + hh)],
+             [(hx + hw, hy + hh), (hx + hw - 90, hy + hh), (hx + hw - 30, hy + hh - 90), (hx + hw, hy + hh - 160)],
+             [(hx, hy + 150), (hx + 40, hy + 190), (hx, hy + 230)]]
+    for tp in teeth:
+        polyf(c, tp, (0.72, 0.74, 0.95, 0.75), 4)
+        line(c, [tp[0], tp[1]], (1, 1, 1, 0.8), 3)
+    rect(c, hx - 8, hy - 8, hw + 16, hh + 16, None, 10, sc="#1d1a40")
+
+
+def tower_exterior(ctx, t=0.0, layer="bg"):
+    """Outside the glass tower at dusk, by the broken window (world 1080 x
+    1920). Static warm-to-violet sky with a few stars, city far below.
+    layer "fg" = the jagged glass teeth + frame of the hole (a body leaving
+    the hole is drawn between bg and fg)."""
+    W, H = TOWER_W, TOWER_H
+    if layer == "bg":
+        _overscan(ctx, -300, -300, W + 400, H + 300, "#241a52", "#2a2052", "#4b2f7e", "#3a3f7a")
+        static_layer(ctx, "tower", -300, -300, W + 700, H + 600, _tw_static)
+    elif layer == "fg":
+        hx, hy, hw, hh = _TW_HOLE
+        cached_or_live(ctx, "tower_teeth", hx - 20, hy - 20, hw + 40, hh + 40, _tw_teeth)
+
+
+CITY_FALL_MARKS = {
+    "size": (1080, 1920),
+    "centre": (540, 1000),        # the landing street point (screen-world)
+    "note": "approach 0..1: ground scale 0.35 -> ~4.2 (exponential), rooftops grow faster (pseudo-3D)",
+    "cam": {"default": (540, 960, 1.0)},
+}
+_CF_BLOCK, _CF_STREET = 360, 90
+
+
+def _cf_blocks():
+    """Static city plan (list of buildings) around the landing point (0, 0)."""
+    out = []
+    step = _CF_BLOCK + _CF_STREET
+    for bi in range(-5, 6):
+        for bj in range(-6, 7):
+            bx0 = bi * step + _CF_STREET / 2
+            by0 = bj * step + _CF_STREET / 2
+            k = bi * 31 + bj * 17
+            if (bi, bj) in ((1, -2), (-2, 1)):
+                out.append(("park", bx0, by0, _CF_BLOCK, _CF_BLOCK, 0.0, k))
+                continue
+            n = 2 if hash01(k, 3) > 0.5 else 3
+            for m in range(n):
+                if n == 2:
+                    rx, ry, rw, rh = (bx0 + 14, by0 + 14 + m * 176, _CF_BLOCK - 28, 160)
+                else:
+                    rx, ry, rw, rh = (bx0 + 14 + (m % 2) * 172, by0 + 14 + (m // 2) * 176,
+                                      158 if m < 2 else _CF_BLOCK - 28, 160)
+                h = 0.08 + 0.42 * hash01(k * 5 + m, 9)
+                out.append(("bld", rx, ry, rw, rh, h, k * 5 + m))
+    return out
+
+
+_CF_PLAN = None
+_CF_COLS = ["#5a4a8a", "#6b5aa0", "#4a5a8a", "#8a5a7a", "#a46a6a", "#5a6a9a"]
+
+
+def city_fall(ctx, t=0.0, layer="bg", approach=0.0):
+    """Looking DOWN at the city (world 1080 x 1920). approach 0..1 = the
+    ground rushing up: a fixed (static) city plan scaled about the landing
+    street at CITY_FALL_MARKS["centre"]; taller rooftops grow faster for a
+    pseudo-3D rush. Drawn live with culling (~3-6 ms), no per-frame noise."""
+    global _CF_PLAN
+    if layer != "bg":
+        return
+    if _CF_PLAN is None:
+        _CF_PLAN = _cf_blocks()
+    a = clamp(approach)
+    S = 0.35 * (12.0 ** a)
+    cx, cy = CITY_FALL_MARKS["centre"]
+    vx0, vy0, vx1, vy1 = ctx.clip_extents()
+    # streets (ground)
+    ctx.rectangle(vx0, vy0, vx1 - vx0, vy1 - vy0)
+    core.fill(ctx, "#2c2650")
+    lw = max(1.5, 3.0 * S)
+    step = _CF_BLOCK + _CF_STREET
+
+    def P(x, y, k=1.0):
+        return (cx + x * S * k, cy + y * S * k)
+
+    # block bases (one path)
+    for bi in range(-5, 6):
+        for bj in range(-6, 7):
+            bx0 = bi * step + _CF_STREET / 2
+            by0 = bj * step + _CF_STREET / 2
+            p0 = P(bx0, by0)
+            p1 = P(bx0 + _CF_BLOCK, by0 + _CF_BLOCK)
+            if p1[0] < vx0 or p0[0] > vx1 or p1[1] < vy0 or p0[1] > vy1:
+                continue
+            ctx.rectangle(p0[0], p0[1], p1[0] - p0[0], p1[1] - p0[1])
+    core.fill(ctx, "#4a4270")
+    # street lights + car lights (static dots, one path per colour)
+    rad = max(1.5, 5 * S)
+    for (ox, oy, col) in ((0, 80, "#ffd27a"), (80, 0, "#ffd27a"), (22, 190, "#ff6070"), (190, -20, "#fff3c4")):
+        for i in range(-5, 6):
+            for j in range(-6, 7):
+                px, py = P(i * step + ox, j * step + oy)
+                if vx0 - 10 < px < vx1 + 10 and vy0 - 10 < py < vy1 + 10:
+                    ctx.new_sub_path()
+                    ctx.arc(px, py, rad, 0, TAU)
+        core.fill(ctx, col)
+    # buildings: side faces first (two shades), then roofs grouped by colour
+    sides = ([], [])
+    roofs = {}
+    parks = []
+    details = []
+    for (kind, x, y, w, h, hh, seed) in _CF_PLAN:
+        k = 1.0 + hh * (0.25 + 1.6 * a)
+        b0, b1 = P(x, y), P(x + w, y + h)
+        r0, r1 = P(x, y, k), P(x + w, y + h, k)
+        if max(b1[0], r1[0]) < vx0 or min(b0[0], r0[0]) > vx1 or max(b1[1], r1[1]) < vy0 or min(b0[1], r0[1]) > vy1:
+            continue
+        if kind == "park":
+            parks.append((b0, b1, x, y, seed))
+            continue
+        if cx < b0[0]:
+            sides[0].append([b0, (b0[0], b1[1]), (r0[0], r1[1]), r0])
+        elif cx > b1[0]:
+            sides[0].append([(b1[0], b0[1]), b1, r1, (r1[0], r0[1])])
+        if cy < b0[1]:
+            sides[1].append([b0, (b1[0], b0[1]), (r1[0], r0[1]), r0])
+        elif cy > b1[1]:
+            sides[1].append([(b0[0], b1[1]), b1, r1, (r0[0], r1[1])])
+        roofs.setdefault(seed % len(_CF_COLS), []).append((r0, r1))
+        details.append((r0, r1, seed))
+    for (b0, b1, x, y, seed) in parks:
+        ctx.rectangle(b0[0], b0[1], b1[0] - b0[0], b1[1] - b0[1])
+        fs(ctx, "#3f7a5a", lw)
+        for m in range(6):
+            tx, ty = P(x + 50 + 260 * hash01(m, seed), y + 50 + 260 * hash01(m, seed + 1), 1.04)
+            ctx.new_sub_path()
+            ctx.arc(tx, ty, 34 * S, 0, TAU)
+        fs(ctx, "#4f9a6a", lw)
+    for shade, quads in zip(("#2a2450", "#231e44"), sides):
+        for q in quads:
+            core.poly(ctx, q)
+        fs(ctx, shade, lw if S > 0.55 else 0)
+    for ci, rs in roofs.items():
+        for (r0, r1) in rs:
+            ctx.rectangle(r0[0], r0[1], r1[0] - r0[0], r1[1] - r0[1])
+        fs(ctx, _CF_COLS[ci], lw if S > 0.55 else 1.2)
+    # rooftop details only once they are big enough to read
+    if S > 0.6:
+        for (r0, r1, seed) in details:
+            rw, rh = r1[0] - r0[0], r1[1] - r0[1]
+            ctx.rectangle(r0[0], r0[1], rw, max(1.0, rh * 0.08))
+        core.fill(ctx, (1.0, 0.7, 0.5, 0.5))
+        for (r0, r1, seed) in details:
+            rw, rh = r1[0] - r0[0], r1[1] - r0[1]
+            if hash01(seed, 4) > 0.5:
+                ctx.new_sub_path()
+                ctx.arc(r0[0] + rw * 0.3, r0[1] + rh * 0.55, min(rw, rh) * 0.16, 0, TAU)
+        fs(ctx, "#8a6a5a", lw * 0.8)
+        for (r0, r1, seed) in details:
+            rw, rh = r1[0] - r0[0], r1[1] - r0[1]
+            if hash01(seed, 4) <= 0.5:
+                ctx.rectangle(r0[0] + rw * 0.55, r0[1] + rh * 0.3, rw * 0.25, rh * 0.3)
+        fs(ctx, "#9aa0b8", lw * 0.8)
+    # the landing manhole at the centre of the street
+    mx, my = P(0, 0)
+    core.circle(ctx, mx, my, 30 * S)
+    fs(ctx, "#5a5468", lw)
+    core.circle(ctx, mx, my, 18 * S)
+    core.stroke(ctx, "#3a3450", lw)
+
+
+# ============================================================================
+# 11. SEWER (s12, s13 tunnels)
+# ============================================================================
+SEWER_W, SEWER_H = 2600, 1920
+_SW_VAULT, _SW_WALK, _SW_EDGE = 210, 1250, 1300   # vault bottom, walkway top, walkway front edge
+_SW_WATER = 1385
+_SW_EXT = (500, 600, 500, 700)
+_SW_HOLE_X = 1300
+_SW_SIDE = {0: (2150, 690, 300), 1: (1700, 690, 300), 2: (900, 690, 300), 3: (2050, 690, 300)}
+SEWER_MARKS = {
+    "size": (SEWER_W, SEWER_H),
+    "char_scale": 0.75,
+    "walk_feet_y": 1282,           # feet line on the walkway
+    "walk_x": (80, 2520),
+    "wall_lean_x": 640,            # good spot to slump against the wall (s13)
+    "hole": (_SW_HOLE_X, 90),      # centre of the broken hole in the vault (variant 0, hole=True)
+    "crater": (_SW_HOLE_X, 1276),  # centre of the shallow crater on the walkway
+    "lie_hips": (_SW_HOLE_X, 1262),  # someone lying in the crater
+    "water_y": _SW_WATER,
+    "side_tunnel": {v: (x, top, w, _SW_WALK - top) for v, (x, top, w) in _SW_SIDE.items()},
+    "dark_ends": (600, 2000),      # darkness ramps in left of / right of these x
+    "eyes_in_dark": (300, 980),    # good spot for teal slits watching from the dark
+    "cam": {
+        "wide": (1300, 1000, 0.75),
+        "crater": (1300, 1050, 1.5),
+        "walk": (900, 1000, 1.0),
+        "side_tunnel": (2250, 1000, 1.0),
+    },
+}
+
+
+def _sw_bricks(c, x0, y0, w, h, seed, bh=46, bw=110):
+    c.rectangle(x0, y0, w, h)
+    core.fill(c, C["sw_mortar"])
+    row = 0
+    yy = y0
+    while yy < y0 + h:
+        off = (bw / 2) if row % 2 else 0
+        xx = x0 - off
+        i = 0
+        while xx < x0 + w:
+            v = hash01(i * 7 + row * 131, seed)
+            col = C["sw_brick"] if v > 0.22 else (C["sw_brick_sh"] if v > 0.08 else "#4d7d73")
+            c.rectangle(xx + 4, yy + 4, bw - 8, bh - 8)
+            core.fill(c, col)
+            xx += bw
+            i += 1
+        yy += bh
+        row += 1
+
+
+def _sw_static(c, variant, hole):
+    W, H = SEWER_W, SEWER_H
+    e = _SW_EXT
+    x0, y0, x1, y1 = -e[0], -e[1], W + e[2], H + e[3]
+    seed = 11 + variant * 7
+    # vault + back wall bricks
+    _sw_bricks(c, x0, y0, x1 - x0, _SW_WALK - y0 + 10, seed)
+    c.rectangle(x0, y0, x1 - x0, _SW_VAULT - y0)
+    core.fill(c, (0.05, 0.14, 0.13, 0.45))
+    line(c, [(x0, _SW_VAULT), (x1, _SW_VAULT)], INK, 6)
+    # arch ribs (pilasters curving into the vault)
+    for k in range(-1, 6):
+        px = 300 + k * 650 + (variant * 120) % 300
+        rect(c, px - 50, _SW_VAULT, 100, _SW_WALK - _SW_VAULT, C["sw_brick_sh"], 5)
+        for yy in range(_SW_VAULT + 40, _SW_WALK, 92):
+            line(c, [(px - 50, yy), (px + 50, yy)], C["sw_mortar"], 4)
+        c.move_to(px - 50, _SW_VAULT)
+        c.curve_to(px - 50, 120, px - 20, 40, px + 10, y0)
+        c.line_to(px + 110, y0)
+        c.curve_to(px + 80, 40, px + 50, 120, px + 50, _SW_VAULT)
+        c.close_path()
+        fs(c, C["sw_brick_sh"], 5)
+    # moss + water stains
+    for k in range(9):
+        mx = hash01(k, seed + 1) * W
+        polyf(c, [(mx - 20, 500 + 300 * hash01(k, seed + 2)), (mx + 20, 500 + 300 * hash01(k, seed + 2)),
+                  (mx + 30, _SW_WALK), (mx - 30, _SW_WALK)], (0.10, 0.25, 0.22, 0.35), 0)
+    for k in range(7):
+        mx = hash01(k, seed + 3) * W
+        blob(c, [(mx - 90, _SW_WALK), (mx - 60, _SW_WALK - 70), (mx, _SW_WALK - 100), (mx + 70, _SW_WALK - 60),
+                 (mx + 100, _SW_WALK)], C["sw_moss"], 0)
+    # pipes
+    py = 360 + 60 * (variant % 2)
+    rect(c, x0, py, x1 - x0, 64, C["sw_pipe"], 5)
+    line(c, [(x0, py + 16), (x1, py + 16)], "#8aa89b", 5)
+    for k in range(-1, 10):
+        fx = 150 + k * 320 + variant * 60
+        rect(c, fx - 14, py - 10, 28, 84, C["sw_pipe_sh"], 4, r=4)
+    rect(c, x0, py + 110, x1 - x0, 34, C["sw_pipe_sh"], 4)
+    vx = 1850 - variant * 330
+    rect(c, vx - 30, py + 60, 60, _SW_WATER - py - 40, C["sw_pipe"], 5)
+    core.circle(c, vx, py + 300, 46)
+    core.stroke(c, INK, 14)
+    core.circle(c, vx, py + 300, 46)
+    core.stroke(c, "#b5544a", 8)
+    line(c, [(vx - 46, py + 300), (vx + 46, py + 300)], "#b5544a", 6)
+    line(c, [(vx, py + 254), (vx, py + 346)], "#b5544a", 6)
+    # outflow pipes (drips come from these)
+    for ox in SEWER_DRIPS[variant]:
+        rect(c, ox - 40, 1040, 80, 70, C["sw_pipe_sh"], 5, r=10)
+        ell(c, ox, 1110, 32, 12, "#122a26", 3)
+        polyf(c, [(ox - 30, 1110), (ox + 30, 1110), (ox + 40, _SW_WALK), (ox - 40, _SW_WALK)], (0.12, 0.3, 0.26, 0.4), 0)
+    # chalk mark (every junction looks the same...)
+    mxk = 1000 + variant * 410
+    line(c, [(mxk - 30, 820), (mxk + 30, 880)], (0.9, 0.95, 0.9, 0.55), 6)
+    line(c, [(mxk + 30, 820), (mxk - 30, 880)], (0.9, 0.95, 0.9, 0.55), 6)
+    # side tunnel mouth (dark arch)
+    sx, stop, sw = _SW_SIDE[variant]
+    c.move_to(sx, _SW_WALK)
+    c.line_to(sx, stop + sw / 2)
+    c.arc(sx + sw / 2, stop + sw / 2, sw / 2, math.pi, 0)
+    c.line_to(sx + sw, _SW_WALK)
+    c.close_path()
+    fs(c, "#0f2624", 7)
+    c.move_to(sx + 30, _SW_WALK)
+    c.line_to(sx + 30, stop + sw / 2)
+    c.arc(sx + sw / 2, stop + sw / 2, sw / 2 - 30, math.pi, 0)
+    c.line_to(sx + sw - 30, _SW_WALK)
+    c.close_path()
+    fs(c, "#0a1c1a", 0)
+    for k in range(9):
+        a = math.pi + k * math.pi / 8
+        line(c, [(sx + sw / 2 + math.cos(a) * sw / 2, stop + sw / 2 + math.sin(a) * sw / 2),
+                 (sx + sw / 2 + math.cos(a) * (sw / 2 + 40), stop + sw / 2 + math.sin(a) * (sw / 2 + 40))],
+             C["sw_mortar"], 5)
+    # walkway
+    c.rectangle(x0, _SW_WALK, x1 - x0, _SW_EDGE - _SW_WALK)
+    fs(c, C["sw_walk"], 5)
+    c.rectangle(x0, _SW_EDGE, x1 - x0, _SW_WATER - _SW_EDGE)
+    fs(c, C["sw_walk_sh"], 5)
+    line(c, [(x0, _SW_EDGE + 8), (x1, _SW_EDGE + 8)], "#7f9f93", 4)
+    for k in range(14):
+        cx = hash01(k, seed + 5) * W
+        line(c, [(cx, _SW_WALK + 6), (cx + 30, _SW_WALK + 26), (cx + 20, _SW_EDGE)], "#466a5f", 3)
+    for k in range(4):
+        px = 200 + hash01(k, seed + 6) * 2200
+        ell(c, px, _SW_WALK + 24, 70, 10, "#3f6f68", 0)
+    # water channel
+    c.rectangle(x0, _SW_WATER, x1 - x0, y1 - _SW_WATER)
+    core.fill(c, C["sw_water"])
+    c.rectangle(x0, _SW_WATER, x1 - x0, 40)
+    core.fill(c, "#1b4648")
+    for k in range(8):
+        wx = hash01(k, seed + 8) * W
+        wy = _SW_WATER + 80 + hash01(k, seed + 9) * 380
+        line(c, [(wx, wy), (wx + 120, wy)], (0.45, 0.75, 0.68, 0.35), 4)
+    # the hole + daylight shaft + crater + rubble (variant 0)
+    if hole:
+        hx = _SW_HOLE_X
+        pts = []
+        for i in range(14):
+            a = i / 14 * TAU
+            r = 1 + 0.25 * (hash01(i, 5) - 0.5)
+            pts.append((hx + math.cos(a) * 120 * r, 80 + math.sin(a) * 70 * r))
+        polyf(c, pts, "#cfeeff", 6)
+        c.save()
+        core.poly(c, pts)
+        c.clip()
+        core.vgradient(c, "#9fd8f7", "#f4fbff", hx - 130, 0, 260, 160)
+        _cloud(c, hx - 30, 60, 0.35)
+        rect(c, hx + 40, 20, 14, 140, "#5d6380", 0)        # a streetlight pole up there
+        c.restore()
+        polyf(c, pts, None, 7)
+        for i in range(0, 14, 2):
+            with core.saved(c, pts[i][0], pts[i][1], 1.0, hash01(i, 6)):
+                rect(c, -26, -14, 52, 28, C["sw_brick"], 4, r=4)
+        # light beam (static, soft)
+        g = cairo.LinearGradient(0, 100, 0, _SW_EDGE)
+        g.add_color_stop_rgba(0, 1.0, 0.97, 0.85, 0.55)
+        g.add_color_stop_rgba(1, 1.0, 0.97, 0.85, 0.18)
+        c.move_to(hx - 105, 110); c.line_to(hx + 105, 110)
+        c.line_to(hx + 260, _SW_EDGE); c.line_to(hx - 260, _SW_EDGE); c.close_path()
+        c.set_source(g)
+        c.fill()
+        ell(c, hx, _SW_WALK + 20, 300, 40, (1.0, 0.97, 0.85, 0.35), 0)
+        # crater
+        ell(c, hx, _SW_WALK + 26, 210, 30, "#2f544b", 5)
+        ell(c, hx, _SW_WALK + 30, 160, 18, "#3a6f74", 0)
+        for k in range(6):
+            a = math.pi + k * math.pi / 5
+            line(c, [(hx + math.cos(a) * 210, _SW_WALK + 26 + math.sin(a) * 30),
+                     (hx + math.cos(a) * 270, _SW_WALK + 20 + math.sin(a) * 40)], INK, 4)
+        for k in range(9):
+            rx = hx - 330 + 660 * hash01(k, 21)
+            if abs(rx - hx) < 200:
+                rx += 260 if rx > hx else -260
+            with core.saved(c, rx, _SW_WALK + 12 + 16 * hash01(k, 22), 0.8 + 0.4 * hash01(k, 23),
+                            hash01(k, 24) * 3):
+                rect(c, -30, -16, 60, 32, C["sw_brick"] if k % 2 else "#7a9a8a", 4, r=5)
+        # light on the water below
+        polyf(c, [(hx - 200, _SW_WATER + 20), (hx + 200, _SW_WATER + 20), (hx + 260, _SW_WATER + 220),
+                  (hx - 260, _SW_WATER + 220)], (1.0, 0.97, 0.85, 0.12), 0)
+    # darkness at the far ends (static vignette, never pitch black)
+    for (xa, xb) in ((x0, 600), (x1, 2000)):
+        g = cairo.LinearGradient(xa, 0, xb, 0)
+        g.add_color_stop_rgba(0, 0.03, 0.10, 0.09, 0.80)
+        g.add_color_stop_rgba(1, 0.03, 0.10, 0.09, 0.0)
+        c.rectangle(min(xa, xb), y0, abs(xb - xa), y1 - y0)
+        c.set_source(g)
+        c.fill()
+    # top/bottom falloff
+    g = cairo.LinearGradient(0, y0, 0, 500)
+    g.add_color_stop_rgba(0, 0.03, 0.10, 0.09, 0.6)
+    g.add_color_stop_rgba(1, 0.03, 0.10, 0.09, 0.0)
+    c.rectangle(x0, y0, x1 - x0, 500 - y0)
+    c.set_source(g)
+    c.fill()
+
+
+SEWER_DRIPS = {0: (520, 2300), 1: (420, 1500), 2: (1500, 2350), 3: (700, 1400)}
+
+
+def _sw_teal(c, variant):
+    sx, stop, sw = _SW_SIDE[variant]
+    c.save()
+    c.move_to(sx + 30, _SW_WALK)
+    c.line_to(sx + 30, stop + sw / 2)
+    c.arc(sx + sw / 2, stop + sw / 2, sw / 2 - 30, math.pi, 0)
+    c.line_to(sx + sw - 30, _SW_WALK)
+    c.close_path()
+    c.clip()
+    _glow(c, sx + sw / 2, _SW_WALK - 120, 360, PAL["power"], 0.85)
+    c.restore()
+    _glow(c, sx + sw / 2, _SW_WALK + 10, 420, PAL["power"], 0.30)
+    ell(c, sx + sw / 2, _SW_WALK + 22, 200, 18, core.alpha(PAL["power"], 0.25), 0)
+
+
+def sewer(ctx, t=0.0, layer="bg", hole=None, light=1.0, teal_glow_end=0.0, variant=0, drips=True,
+          motes=True):
+    """Brick sewer tunnel, side view (world 2600 x 1920, people at s=0.75).
+
+    Walkway (feet at SEWER_MARKS["walk_feet_y"]) over a water channel with a
+    slow shimmer (<= 10 lines), pipes, a few animated drips, static dark ends.
+    hole (default True for variant 0, else False): broken hole in the vault,
+    daylight shaft with dust motes, rubble and the shallow crater.
+    light 0..1 overall light level; teal_glow_end 0..1 lights the side
+    tunnel mouth (SEWER_MARKS["side_tunnel"][variant]) teal.
+    variant 0..3: montage junctions (pipes, chalk mark, tunnel mouth move).
+    layer "fg" (optional) applies the same light level over the characters.
+    """
+    if layer == "fg":
+        # optional: darken the characters too (same overall light level)
+        if light < 1:
+            vx0, vy0, vx1, vy1 = ctx.clip_extents()
+            ctx.rectangle(vx0, vy0, vx1 - vx0, vy1 - vy0)
+            core.fill(ctx, (0.02, 0.08, 0.07, 0.6 * (1 - clamp(light))))
+        return
+    if layer != "bg":
+        return
+    W, H = SEWER_W, SEWER_H
+    e = _SW_EXT
+    variant = int(variant) % 4
+    if hole is None:
+        hole = (variant == 0)
+    _overscan(ctx, -e[0], -e[1], W + e[2], H + e[3], "#0b1f1d", C["sw_water"], "#0b1f1d", "#0b1f1d")
+    static_layer(ctx, ("sewer", variant, bool(hole)), -e[0], -e[1], W + e[0] + e[2], H + e[1] + e[3],
+                 lambda c: _sw_static(c, variant, hole))
+    # water shimmer (<= 10 short lines drifting)
+    for k in range(9):
+        ph = (t * 0.12 + hash01(k, 40)) % 1.0
+        wx = 100 + hash01(k, 41) * 2400 + ph * 160
+        wy = _SW_WATER + 60 + hash01(k, 42) * 420
+        a = math.sin(ph * math.pi)
+        line(ctx, [(wx, wy), (wx + 70 + 40 * hash01(k, 43), wy)], core.alpha("#9fd8c8", 0.55 * a), 4)
+    if drips:
+        for i, ox in enumerate(SEWER_DRIPS[variant]):
+            ph = ((t + i * 0.77) % 1.9) / 1.9
+            if ph < 0.75:
+                yy = 1112 + (_SW_WATER - 1112) * (ph / 0.75) ** 2
+                ell(ctx, ox, yy, 6, 9, "#bfe8dc", 2.5)
+            else:
+                k = (ph - 0.75) / 0.25
+                ell(ctx, ox, _SW_WATER + 30, 20 + 50 * k, 5 + 6 * k, None, 3, sc=core.alpha("#bfe8dc", 1 - k))
+    if hole and motes:
+        hx = _SW_HOLE_X
+        for k in range(10):
+            ph = (t * 0.05 + hash01(k, 50)) % 1.0
+            mx = hx - 150 + 300 * hash01(k, 51) + 30 * math.sin(t * 0.6 + k)
+            my = 180 + ph * 1000
+            spread = (my - 110) / (_SW_EDGE - 110)
+            mx = hx + (mx - hx) * (0.6 + spread)
+            core.circle(ctx, mx, my, 3 + 2 * hash01(k, 52))
+            core.fill(ctx, core.alpha("#fff6d8", 0.7 * math.sin(ph * math.pi)))
+    if teal_glow_end > 0:
+        sx, stop, sw = _SW_SIDE[variant]
+        g = clamp(teal_glow_end)
+        rx, ry, rw, rh = sx + sw / 2 - 430, _SW_WALK - 420, 860, 860
+        ctx.save()
+        ctx.rectangle(rx, ry, rw, rh)
+        ctx.clip()
+        ctx.push_group()
+        cached_or_live(ctx, ("sewer_teal", variant), rx, ry, rw, rh, lambda c: _sw_teal(c, variant))
+        ctx.pop_group_to_source()
+        ctx.paint_with_alpha(g)
+        ctx.restore()
+    if light < 1:
+        vx0, vy0, vx1, vy1 = ctx.clip_extents()
+        ctx.rectangle(vx0, vy0, vx1 - vx0, vy1 - vy0)
+        core.fill(ctx, (0.02, 0.08, 0.07, 0.6 * (1 - clamp(light))))
+
+
+SEWER_POV_MARKS = {"size": (1080, 1920), "hole": (540, 760), "cam": {"default": (540, 960, 1.0)}}
+
+
+def _swpov_static(c):
+    W, H = 1080, 1920
+    hx, hy = SEWER_POV_MARKS["hole"]
+    c.rectangle(-300, -300, W + 600, H + 600)
+    core.fill(c, C["sw_mortar"])
+    # bricks in rings around the hole (looking straight up the vault)
+    for ring in range(1, 16):
+        r = 180 + ring * 90
+        n = int(r * TAU / 120)
+        for i in range(n):
+            a0 = (i + (ring % 2) * 0.5) / n * TAU
+            a1 = a0 + TAU / n * 0.86
+            c.new_sub_path()
+            c.arc(hx, hy, r + 40, a0, a1)
+            c.arc_negative(hx, hy, r - 40, a1, a0)
+            c.close_path()
+            v = hash01(i * 13 + ring, 7)
+            core.fill(c, C["sw_brick"] if v > 0.25 else C["sw_brick_sh"])
+    pts = []
+    for i in range(16):
+        a = i / 16 * TAU
+        rr = 1 + 0.28 * (hash01(i, 9) - 0.5)
+        pts.append((hx + math.cos(a) * 200 * rr, hy + math.sin(a) * 230 * rr))
+    core.poly(c, pts)
+    c.save()
+    c.clip()
+    core.vgradient(c, "#9fd8f7", "#f4fbff", hx - 260, hy - 260, 520, 520)
+    _cloud(c, hx - 60, hy - 90, 0.6)
+    c.restore()
+    _glow(c, hx, hy, 520, "#fff6d8", 0.55)
+    polyf(c, pts, None, 8)
+    for i in range(0, 16, 2):
+        with core.saved(c, pts[i][0], pts[i][1], 1.2, hash01(i, 10) * 3):
+            rect(c, -30, -16, 60, 32, C["sw_brick"], 4, r=4)
+    g = cairo.RadialGradient(hx, hy, 300, hx, hy, 1200)
+    g.add_color_stop_rgba(0, 0.03, 0.10, 0.09, 0.0)
+    g.add_color_stop_rgba(1, 0.03, 0.10, 0.09, 0.7)
+    c.rectangle(-300, -300, W + 600, H + 600)
+    c.set_source(g)
+    c.fill()
+
+
+def sewer_hole_pov(ctx, t=0.0, layer="bg", drip_t0=0.4):
+    """His POV lying in the crater: looking straight UP at the broken hole
+    (world 1080 x 1920). A drip falls toward the camera from drip_t0
+    (repeats every 2.2 s). fx does the eyelid wipe on top."""
+    if layer != "bg":
+        return
+    static_layer(ctx, "sewer_pov", -300, -300, 1680, 2520, _swpov_static)
+    if t >= drip_t0:
+        ph = ((t - drip_t0) % 2.2) / 2.2
+        hx, hy = SEWER_POV_MARKS["hole"]
+        if ph < 0.6:
+            k = ph / 0.6
+            r = 8 + 140 * k ** 3
+            ell(ctx, hx + 150 + 40 * k, hy - 160 + 500 * k ** 2, r * 0.8, r, (0.75, 0.92, 0.88, 0.8), 3 + 3 * k)
+
+
+# ============================================================================
+# 12. THE SHAFT (s13): vertical cylindrical containment chamber
+# ============================================================================
+SHAFT_W, SHAFT_H = 1080, 3600
+_SH_X0, _SH_X1 = -700, 1780        # drawable width (zoom-outs to ~0.5)
+_SH_HZ = 2350                      # eye level (horizon)
+_SH_F = 520.0
+_SH_CAM = 0.85                     # camera distance from the axis (in radii)
+_SH_TIER = 0.32                    # tier spacing (radii)
+_SH_POD = 0.12                     # pod width (radii)
+_SH_CAT_Y = 2400                   # catwalk deck (feet)
+SHAFT_MARKS = {
+    "size": (SHAFT_W, SHAFT_H),
+    "drawable_x": (_SH_X0, _SH_X1),
+    "char_scale": 0.22,            # tiny figures on the catwalk for the epic wide
+    "horizon_y": _SH_HZ,
+    "catwalk_feet_y": _SH_CAT_Y,
+    "catwalk_x": (-520, 640),      # walkable span of the near catwalk
+    "tunnel_mouth": (-380, 2400),  # where they come out (left)
+    "tired_feet": (300, _SH_CAT_Y),
+    "creature_feet": (390, _SH_CAT_Y),
+    "logo": (540, 1560),
+    "cam": {
+        "arrive": (60, 2250, 2.2),
+        "two_close": (340, 2300, 3.2),
+        "reveal_wide": (540, 1900, 0.56),
+        "title_wide": (420, 2150, 0.75),
+        "look_up": (540, 1300, 0.9),
+    },
+    "note": "pull-outs: zoom 3.2 -> 0.56; close-ups: frame the shaft at 1.2-2 and draw people in screen space",
+}
+
+
+def _sh_proj(phi, yw):
+    z = math.cos(phi) + _SH_CAM
+    return (540 + _SH_F * math.sin(phi) / z, _SH_HZ + _SH_F * yw / z, _SH_F / z, z)
+
+
+def _sleeper_path(c, x, y, s):
+    """Curled sleeper silhouette as sub-paths (no fill), for batching."""
+    pts = [(-110, 40), (-120, -20), (-70, -80), (10, -90), (90, -60), (120, 0), (100, 60), (20, 90), (-60, 84)]
+    core.smooth_path(c, [(x + px * s, y + py * s) for px, py in pts], closed=True)
+    for ear in ([(70, -70), (20, -120), (-60, -140), (-20, -104), (40, -66)],
+                [(90, -60), (50, -104), (-10, -112), (30, -82), (70, -50)]):
+        core.smooth_path(c, [(x + px * s, y + py * s) for px, py in ear], closed=True)
+
+
+def _sh_pods():
+    """Static list of pods: (x, y, w, h, foreshortening, seed, group)."""
+    out = []
+    n_phi = 26
+    for k in range(-30, 8):
+        yw = k * _SH_TIER + _SH_TIER * 0.5
+        for i in range(n_phi):
+            phi = (i + (0.5 if k % 2 else 0)) / n_phi * TAU - math.pi
+            if abs(phi) > math.radians(128):
+                continue
+            x, y, sc, z = _sh_proj(phi, yw)
+            # leave room for the giant logo on the far wall
+            if abs(phi) < math.radians(54) and -3.95 < yw < -1.2:
+                continue
+            if y < -200 or y > SHAFT_H + 200 or x < _SH_X0 - 100 or x > _SH_X1 + 100:
+                continue
+            fore = (1 + _SH_CAM * math.cos(phi)) / math.hypot(math.sin(phi), math.cos(phi) + _SH_CAM)
+            w = _SH_POD * sc * fore
+            h = _SH_POD * 1.7 * sc
+            seed = (k * 37 + i * 11) & 1023
+            out.append((x, y, w, h, z, seed, seed % 3))
+    out.sort(key=lambda p: -p[4])   # far first
+    return out
+
+
+_SH_PODS = None
+
+
+def _sh_static(c, sleeper_fn):
+    W, H = SHAFT_W, SHAFT_H
+    x0, x1 = _SH_X0, _SH_X1
+    g = cairo.LinearGradient(0, -200, 0, H + 200)
+    g.add_color_stop_rgba(0, *hexc("#06121a"))
+    g.add_color_stop_rgba(0.45, *hexc("#0f2d38"))
+    g.add_color_stop_rgba(0.8, *hexc("#123844"))
+    g.add_color_stop_rgba(1, *hexc("#0f3a40"))
+    c.rectangle(x0, -200, x1 - x0, H + 400)
+    c.set_source(g)
+    c.fill()
+    # meridian ribs (vertical in this projection)
+    for i in range(-14, 15):
+        phi = i / 26 * TAU
+        if abs(phi) > math.radians(128):
+            continue
+        x, _, sc, z = _sh_proj(phi, 0)
+        wpx = max(3, 0.02 * sc)
+        c.rectangle(x - wpx / 2, -200, wpx, H + 400)
+        core.fill(c, (0.20, 0.42, 0.50, 0.5))
+    # tier ledges (projected circles)
+    for k in range(-30, 9):
+        yw = k * _SH_TIER + _SH_TIER * 0.05
+        pts = []
+        for j in range(0, 61):
+            phi = (j / 60 - 0.5) * math.radians(256)
+            x, y, sc, z = _sh_proj(phi, yw)
+            pts.append((x, y))
+        line(c, pts, (0.30, 0.55, 0.60, 0.55), 5)
+    # giant HushCorp logo on the far wall
+    lx, ly = SHAFT_MARKS["logo"]
+    _glow(c, lx, ly, 420, PAL["hush"], 0.18)
+    hush_logo(c, lx, ly, 200, color="#1d6f6c", hole="#0b2026", lw=8, ring=True)
+    spaced_text(c, "HUSHCORP", lx, ly + 280, 56, "#2a8a86", "ui", 0.6)
+    # pods (culled to this cache tile), batched per depth bin: one path per material
+    pods = _SH_PODS
+    pw = PAL["power"]
+    cx0, cy0, cx1, cy1 = c.clip_extents()
+    vis = [p for p in pods if p[2] >= 2 and not (p[0] + p[2] * 2 < cx0 or p[0] - p[2] * 2 > cx1 or
+                                                 p[1] + p[3] * 1.4 < cy0 or p[1] - p[3] * 1.4 > cy1)]
+    bins = [[], [], [], []]
+    for p in vis:
+        w = p[2]
+        bins[0 if w < 14 else 1 if w < 32 else 2 if w < 70 else 3].append(p)
+    body_col = mixc("#0b3a40", pw, 0.55)
+    sil_col = "#123a44"
+    for bi, grp in enumerate(bins):
+        if not grp:
+            continue
+        lw = (1.2, 2.2, 3.5, 5.0)[bi]
+        for (x, y, w, h, z, seed, g) in grp:
+            core.rrect(c, x - w * 1.05, y - h * 0.78, w * 2.1, h * 1.56, w)
+        core.fill(c, core.alpha(pw, 0.07))
+        for (x, y, w, h, z, seed, g) in grp:
+            core.rrect(c, x - w * 0.78, y - h * 0.64, w * 1.56, h * 1.28, w * 0.75)
+        core.fill(c, core.alpha(pw, 0.10))
+        for (x, y, w, h, z, seed, g) in grp:
+            core.rrect(c, x - w / 2, y - h / 2, w, h, w / 2)
+        fs(c, body_col, lw)
+        big = [p for p in grp if p[2] > 10]
+        if sleeper_fn is not None:
+            for (x, y, w, h, z, seed, g) in big:
+                c.save()
+                core.rrect(c, x - w / 2, y - h / 2, w, h, w / 2)
+                c.clip()
+                sleeper_fn(c, x, y + h * 0.08, w / 300.0, 0.0, seed)
+                c.restore()
+        elif big:
+            for (x, y, w, h, z, seed, g) in big:
+                _sleeper_path(c, x, y + h * 0.08, w / 300.0)
+            core.fill(c, sil_col)
+            for (x, y, w, h, z, seed, g) in big:
+                sc_ = w / 300.0
+                c.move_to(x - 100 * sc_, y + h * 0.08 + 50 * sc_)
+                c.curve_to(x - 160 * sc_, y + h * 0.08 + 100 * sc_, x - 120 * sc_, y + h * 0.08 + 140 * sc_,
+                           x - 60 * sc_, y + h * 0.08 + 110 * sc_)
+            core.stroke(c, sil_col, max(1.5, 22 * big[0][2] / 300.0))
+        for (x, y, w, h, z, seed, g) in big:
+            core.rrect(c, x - w * 0.32, y - h * 0.42, w * 0.18, h * 0.8, w * 0.09)
+        core.fill(c, (1, 1, 1, 0.16))
+        for (x, y, w, h, z, seed, g) in grp:
+            core.rrect(c, x - w * 0.62, y - h / 2 - h * 0.1, w * 1.24, h * 0.14, w * 0.1)
+            core.rrect(c, x - w * 0.62, y + h / 2 - h * 0.04, w * 1.24, h * 0.14, w * 0.1)
+        fs(c, "#2a4654", lw)
+    # light beams from far above + haze bands
+    for (bx, bw, ang) in ((300, 160, 0.10), (720, 220, -0.06), (520, 90, 0.02)):
+        gb = cairo.LinearGradient(0, -200, 0, 2600)
+        gb.add_color_stop_rgba(0, 0.85, 1.0, 0.98, 0.22)
+        gb.add_color_stop_rgba(1, 0.85, 1.0, 0.98, 0.0)
+        c.move_to(bx, -200); c.line_to(bx + bw, -200)
+        c.line_to(bx + bw * 2.2 + ang * 2600, 2600); c.line_to(bx - bw * 0.6 + ang * 2600, 2600)
+        c.close_path()
+        c.set_source(gb)
+        c.fill()
+    for (hy, hh, a) in ((900, 260, 0.10), (1700, 300, 0.10), (2650, 420, 0.16), (3300, 500, 0.22)):
+        gh = cairo.LinearGradient(0, hy - hh / 2, 0, hy + hh / 2)
+        gh.add_color_stop_rgba(0, 0.25, 0.95, 0.88, 0)
+        gh.add_color_stop_rgba(0.5, 0.25, 0.95, 0.88, a)
+        gh.add_color_stop_rgba(1, 0.25, 0.95, 0.88, 0)
+        c.rectangle(x0, hy - hh / 2, x1 - x0, hh)
+        c.set_source(gh)
+        c.fill()
+    # darkness far above
+    gt = cairo.LinearGradient(0, -200, 0, 700)
+    gt.add_color_stop_rgba(0, 0.02, 0.05, 0.08, 0.85)
+    gt.add_color_stop_rgba(1, 0.02, 0.05, 0.08, 0.0)
+    c.rectangle(x0, -200, x1 - x0, 900)
+    c.set_source(gt)
+    c.fill()
+    # a bridge across the shaft below the catwalk
+    by = _SH_HZ + _SH_F * 1.25 / _SH_CAM
+    rect(c, x0, by, x1 - x0, 40, "#24404c", 5)
+    for k in range(int((x1 - x0) / 60)):
+        line(c, [(x0 + k * 60, by), (x0 + k * 60 + 30, by - 70)], "#3b6070", 4)
+    line(c, [(x0, by - 70), (x1, by - 70)], "#3b6070", 6)
+    # the near catwalk + the side tunnel mouth they come out of (left)
+    _sh_catwalk(c, deck=True)
+
+
+def _sh_catwalk(c, deck=True):
+    y = _SH_CAT_Y
+    x0, x1 = _SH_X0, 660
+    if deck:
+        tx, ty = SHAFT_MARKS["tunnel_mouth"]
+        c.move_to(tx - 120, ty); c.line_to(tx - 120, ty - 170)
+        c.arc(tx, ty - 170, 120, math.pi, 0)
+        c.line_to(tx + 120, ty); c.close_path()
+        fs(c, "#081a1e", 5)
+        _glow(c, tx, ty - 120, 220, PAL["power"], 0.25)
+        rect(c, x0, y, x1 - x0, 26, "#3b5a66", 5)
+        rect(c, x0, y + 26, x1 - x0, 30, "#24404c", 4)
+        for k in range(int((x1 - x0) / 40)):
+            line(c, [(x0 + k * 40, y + 30), (x0 + k * 40 + 20, y + 52)], "#33505c", 3)
+        # support struts
+        for sx in (-300, 200, 600):
+            line(c, [(sx, y + 56), (sx - 120, y + 260)], "#24404c", 10)
+    # railing (front)
+    rail_h = 120
+    for k in range(int((x1 - x0) / 46) + 1):
+        px = x0 + k * 46
+        line(c, [(px, y + 4), (px, y - rail_h)], "#5d7f8c", 4)
+    line(c, [(x0, y - rail_h), (x1, y - rail_h)], INK, 12)
+    line(c, [(x0, y - rail_h), (x1, y - rail_h)], "#7fa0ac", 7)
+    line(c, [(x0, y - rail_h * 0.5), (x1, y - rail_h * 0.5)], "#5d7f8c", 4)
+    line(c, [(x1, y + 4), (x1, y - rail_h)], INK, 10)
+
+
+def shaft(ctx, t=0.0, layer="bg", sleeper_fn=None, sleeper_key=None, pulse=True, glow=1.0):
+    """The containment shaft (world 1080 x 3600; drawable x -700..1780 so
+    the camera can pull out to zoom ~0.56). Tiers of teal pods ring the
+    curved wall (near pods big, far pods small), tier ledges, a bridge,
+    the near catwalk (feet at SHAFT_MARKS["catwalk_feet_y"], s~0.22),
+    a giant logo, static beams and haze.
+
+    sleeper_fn(ctx, x, y, s, t, seed) draws each sleeper; pods are CACHED
+    with the sleepers drawn once at t=0 (pass sleeper_key, e.g. "spec", so
+    the cache knows the drawing). Per frame only a cheap shared glow pulse
+    (3 phase groups, ~0.25 Hz) is drawn over visible pods.
+    layer "fg" = the catwalk front railing (draw over the characters).
+    """
+    global _SH_PODS
+    if _SH_PODS is None:
+        _SH_PODS = _sh_pods()
+    if layer == "bg":
+        key = ("shaft", sleeper_key or (getattr(sleeper_fn, "__qualname__", None) if sleeper_fn else None))
+        _overscan(ctx, _SH_X0, -200, _SH_X1, SHAFT_H + 200, "#06121a", "#0f3a40", "#0f2d38", "#0f2d38")
+        static_layer(ctx, key, _SH_X0, -200, _SH_X1 - _SH_X0, SHAFT_H + 400,
+                     lambda c: _sh_static(c, sleeper_fn), max_mp=2.5, tile_px=1100)
+        if pulse and glow > 0:
+            vx0, vy0, vx1, vy1 = ctx.clip_extents()
+            amps = [0.5 + 0.5 * math.sin(t * TAU * 0.25 + g * 2.1) for g in range(3)]
+            pw = hexc(PAL["power"])
+            for gi in range(3):
+                a = 0.16 * glow * amps[gi]
+                if a < 0.01:
+                    continue
+                ctx.set_source_rgba(pw[0], pw[1], pw[2], a)
+                n = 0
+                for (x, y, w, h, z, seed, grp) in _SH_PODS:
+                    if grp != gi or w < 3:
+                        continue
+                    if x + w < vx0 or x - w > vx1 or y + h < vy0 or y - h > vy1:
+                        continue
+                    core.rrect(ctx, x - w * 0.55, y - h * 0.55, w * 1.1, h * 1.1, w * 0.55)
+                    n += 1
+                if n:
+                    ctx.fill()
+    elif layer == "fg":
+        cached_or_live(ctx, "shaft_rail", _SH_X0, _SH_CAT_Y - 140, 660 - _SH_X0 + 20, 160,
+                    lambda c: _sh_catwalk(c, deck=False))

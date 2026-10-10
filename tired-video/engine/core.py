@@ -481,7 +481,8 @@ class camera:
 from collections import OrderedDict as _OD
 
 _LAYERS = _OD()
-_LAYERS_MAX = 16
+_LAYERS_MAX = 24
+_Q_STEPS = [8]   # cache resolution steps per octave (see cache_steps)
 
 
 def cached(ctx, key, x0, y0, w, h, draw_fn, pad=4):
@@ -496,7 +497,8 @@ def cached(ctx, key, x0, y0, w, h, draw_fn, pad=4):
     sc = math.hypot(m.xx, m.yx)
     if sc <= 0:
         return
-    q = 2 ** (math.ceil(math.log2(sc) * 8 - 1e-6) / 8)
+    n = _Q_STEPS[-1]
+    q = 2 ** (math.ceil(math.log2(sc) * n - 1e-6) / n)
     k = (key, round(q, 5), w, h)
     surf = _LAYERS.get(k)
     if surf is None:
@@ -520,3 +522,17 @@ def cached(ctx, key, x0, y0, w, h, draw_fn, pad=4):
     ctx.rectangle(0, 0, surf.get_width(), surf.get_height())
     ctx.fill()
     ctx.restore()
+
+
+class cache_steps:
+    """with cache_steps(1): ... -> coarser cache resolution steps (per octave)
+    for big camera zoom moves, so cached sets re-render only once per octave
+    (rendered at the step above, i.e. never blurry, at most 2x oversampled)."""
+    def __init__(self, n=1):
+        self.n = max(1, int(n))
+
+    def __enter__(self):
+        _Q_STEPS.append(self.n)
+
+    def __exit__(self, *a):
+        _Q_STEPS.pop()

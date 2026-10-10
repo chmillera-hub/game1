@@ -426,15 +426,15 @@ def recorder(ctx, x, y, s=1.0, t=0.0, led=None, glow=0.0, rot=0.0, only_led=Fals
 
 
 def pink_slip(ctx, x, y, s=1.0, rot=0.0, curl=0.0):
-    """Pink 'TERMINATION NOTICE' slip (~170 x 220 at s=1). ANCHOR = centre.
+    """Pink 'TERMINATION NOTICE' slip (~190 x 220 at s=1). ANCHOR = centre.
 
     The title is bold and large so it reads at s >= 1.2 on a phone.
     """
     with core.saved(ctx, x, y, s, rot):
-        pts = [(-85, -110), (85, -110), (85, 110 - 20 * curl), (-85, 110)]
+        pts = [(-95, -110), (95, -110), (95, 110 - 20 * curl), (-95, 110)]
         polyf(ctx, pts, "#ffb3c7", 4)
-        line(ctx, [(-70, -94), (70, -94)], "#ff7aa0", 3)
-        core.text(ctx, "TERMINATION", 0, -62, 25, "#c2184b", "ui")
+        line(ctx, [(-78, -94), (78, -94)], "#ff7aa0", 3)
+        core.text(ctx, "TERMINATION", 0, -62, 23, "#c2184b", "ui")
         core.text(ctx, "NOTICE", 0, -32, 30, "#c2184b", "ui")
         for k in range(5):
             w = 120 if k % 3 else 90
@@ -1064,9 +1064,9 @@ def sleeper_silhouette(ctx, x, y, s=1.0, t=0.0, seed=0, color="#123a44"):
     with core.saved(ctx, x, y, (s * br, s)):
         blob(ctx, [(-110, 40), (-120, -20), (-70, -80), (10, -90), (90, -60), (120, 0),
                    (100, 60), (20, 90), (-60, 84)], color, 0)
-        # ear fins
-        blob(ctx, [(40, -78), (80, -150), (100, -140), (84, -70)], color, 0)
-        blob(ctx, [(0, -84), (10, -160), (34, -150), (34, -80)], color, 0)
+        # long fin ears swept back over the body
+        blob(ctx, [(70, -70), (20, -120), (-60, -140), (-20, -104), (40, -66)], color, 0)
+        blob(ctx, [(90, -60), (50, -104), (-10, -112), (30, -82), (70, -50)], color, 0)
         # tail curl
         curve(ctx, [(-100, 50), (-150, 90), (-120, 130), (-60, 110)], color, 22)
         # closed eye line
