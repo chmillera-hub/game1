@@ -10,10 +10,8 @@ All timing comes from info cues / line word starts (never hard-coded).
 """
 import math
 
-from engine import core, sets, props, fx, human
-from engine.core import (clamp, lerp, seg, tween, state_at, ease_out_back, ease_in_out, ease_out,
-                         ease_in, smoothstep, hash01, noise1)
-from audio import sfx
+from engine import core, fx, human, props, sets
+from engine.core import clamp, ease_in, ease_in_out, ease_out, ease_out_back, lerp, seg, smoothstep, state_at, tween
 
 HM = sets.HOUSE_MARKS
 BM = sets.BEDROOM_MARKS
@@ -62,7 +60,7 @@ def keys(info):
     if kid in _KCACHE:
         return _KCACHE[kid]
     c = info.cue
-    L = {i: info.line("s10_l0%d" % i) for i in range(1, 7)}
+    L = {i: info.line(f"s10_l0{i}") for i in range(1, 7)}
     k = {}
     k["open0"] = c("knock") + 0.30
     k["open1"] = k["open0"] + 0.42
@@ -483,7 +481,7 @@ def _draw_porch(ctx, t, k, info):
         rs = SH * 1.7                      # only_led draws at the device's LED spot (+30, -12)*s: re-centre
         props.recorder(ctx, px - 30 * rs, py + 12 * rs, rs, t, led=_led(t), glow=1.0, only_led=True)
     elif flags["rec"] == "hand":
-        hx, hy, ang = ea["hand_r"]
+        hx, hy, _ang = ea["hand_r"]
         props.recorder(ctx, hx + 4, hy - 14, SH * 1.0, t, led=_led(t, k["land"]), glow=0.6, rot=-0.08)
     else:
         rx, ry, rr = _rec_air(t, k)
