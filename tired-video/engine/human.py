@@ -25,6 +25,7 @@ Conventions
       abduct o : 0 = along the body, + = out to that limb's own side
 """
 import math
+import cairocffi as cairo
 from engine.core import (PAL, hexc, mixc, clamp, lerp, smoothstep, blink_amount, noise1,
                          hash01, smooth_path, circle, ellipse, radial_glow)
 
@@ -37,10 +38,6 @@ HEAD_TURN_RAD = 0.92   # head yaw per unit head turn
 # ============================================================================
 # 1. helpers
 # ============================================================================
-def _col(c):
-    return hexc(c)
-
-
 def _dk(c, k=0.25):
     """Darker shade of a colour (mixed toward ink)."""
     return mixc(c, PAL["ink"], k)
@@ -134,12 +131,6 @@ def _ink_fill(ctx, build, color, inkw):
     ctx.fill()
 
 
-def _tube(ctx, pts, radii):
-    """Union of capsules along a polyline (adds sub-paths, same winding)."""
-    for i in range(len(pts) - 1):
-        _capsule(ctx, pts[i][0], pts[i][1], radii[i], pts[i + 1][0], pts[i + 1][1], radii[i + 1])
-
-
 def _poly(ctx, pts, close=True):
     ctx.move_to(*pts[0])
     for p in pts[1:]:
@@ -187,7 +178,7 @@ CHARS = {
     "tired": _C(
         seed=11, height=960, sex="m",
         foot_h=30, foot_len=74, foot_r=25, shoe="slipper",
-        thigh=192, shin=184, hip_w=42, leg_r=(42, 35, 30), pants="sweat",
+        thigh=187, shin=179, hip_w=42, leg_r=(42, 35, 30), pants="sweat",
         spine=dict(hem=-34, waist=92, chest=190, shoulder=262, neck=280),
         tw=dict(hem=(96, 54, 56), hip=(96, 54, 56), waist=(97, 56, 56), chest=(102, 58, 58),
                 shoulder=(98, 48, 48)),
@@ -222,7 +213,7 @@ CHARS = {
                           (108, 18, 60, 8)],
                   chin=113, pivot=0.70, ex=40, ew=27, eh=27, eye="round", brow_y=-50,
                   brow_len=0.95, brow_th=9.0, nose_y=40, nose="point", mouth_y=74, mw=24,
-                  ear_y=(-6, 42), ear_w=19, hair="part", glasses=True),
+                  ear_y=(-6, 42), ear_w=19, hair="part", glasses=True, cheek_y=50, cheek_dx=16),
         col=dict(skin=PAL["e_skin"], skin_sh=PAL["e_skin_sh"], hair=PAL["e_hair"],
                  brow=_dk(PAL["e_hair"], 0.34), iris=PAL["e_iris"], top=PAL["e_coat"],
                  top_dk=PAL["e_coat_sh"], vest=PAL["e_vest"], pants=PAL["e_pants"],
@@ -234,7 +225,7 @@ CHARS = {
     "boss": _C(
         seed=37, height=1040, sex="f",
         foot_h=34, foot_len=66, foot_r=15, shoe="heel",
-        thigh=220, shin=214, hip_w=36, leg_r=(28, 21, 15), pants="trousers",
+        thigh=228, shin=222, hip_w=36, leg_r=(28, 21, 15), pants="trousers",
         spine=dict(hem=-34, waist=96, chest=192, shoulder=262, neck=276),
         tw=dict(hem=(86, 46, 52), hip=(84, 46, 52), waist=(70, 40, 40), chest=(82, 48, 46),
                 shoulder=(90, 40, 40)),
@@ -248,6 +239,7 @@ CHARS = {
                   ear_y=(-4, 36), ear_w=15, hair="bob"),
         col=dict(skin=PAL["b_skin"], skin_sh=mixc(PAL["b_skin"], "#b98a7c", 0.5), hair=PAL["b_hair"],
                  brow="#8f94a2", iris=PAL["b_iris"], top=PAL["b_suit"], top_dk=PAL["b_suit_dk"],
+                 sleeve=mixc(PAL["b_suit"], "#a3abc4", 0.14),
                  pants=PAL["b_suit"], pants_dk=PAL["b_suit_dk"], shoe="#14151b", shoe_dk="#0b0b10",
                  lip=PAL["b_lip"]),
         posture=dict(lean=-0.03, hunch=-0.25, neck=-0.04, nod=-0.06),
@@ -257,8 +249,8 @@ CHARS = {
     "guard": _C(
         seed=41, height=1000, sex="m",
         foot_h=34, foot_len=78, foot_r=26, shoe="boot",
-        thigh=192, shin=184, hip_w=48, leg_r=(46, 39, 33), pants="uniform",
-        spine=dict(hem=-30, waist=96, chest=196, shoulder=272, neck=290),
+        thigh=200, shin=192, hip_w=48, leg_r=(46, 39, 33), pants="uniform",
+        spine=dict(hem=-30, waist=98, chest=200, shoulder=278, neck=296),
         tw=dict(hem=(112, 64, 64), hip=(112, 64, 64), waist=(116, 70, 62), chest=(122, 70, 64),
                 shoulder=(118, 56, 52)),
         sw=110, neck_len=38, neck_r=36, arm=(140, 130), arm_r=(36, 32, 27), hand=52,
@@ -317,8 +309,8 @@ OUTFITS = {
 #   SEAT_H : chair seat surface (sit_chair / sit_game / sit_desk)
 #   DESK_H : desk / counter top (sit_desk, type, cover_sweater, slide)
 #   SILL_H : window sill line (look_window)
-SEAT_H = {k: int(c["shin"] + c["foot_h"] + 8) for k, c in CHARS.items()}
-DESK_H = {k: int(c["height"] * 0.47) for k, c in CHARS.items()}
+SEAT_H = {k: int(c["shin"] + c["foot_h"] - c["leg_r"][0] * 0.8) for k, c in CHARS.items()}
+DESK_H = {k: int(c["height"] * 0.41) for k, c in CHARS.items()}
 SILL_H = {k: int(c["height"] * 0.56) for k, c in CHARS.items()}
 
 
@@ -546,7 +538,7 @@ def P(*parts, **kw):
 
 
 POSE_DEFAULTS = dict(
-    turn=0.0, dx=0.0, dy=0.0, rot=0.0, plant=1.0, hip_h=0.0, lift=0.0, plant_hands=0.0, plant_all=0.0,
+    turn=0.0, dx=0.0, dy=0.0, rot=0.0, plant=1.0, hip_h=0.0, lift=0.0, plant_hands=0.0, plant_all=0.0, plant_butt=0.0,
     lean=0.0, chest=0.0, side=0.0, twist=0.0, hip_roll=0.0, hunch=0.0, neck=0.0, nod=0.0,
     tilt=0.0, head_yaw=0.0, breath=1.0, sway=1.0, posture=1.0, coat_trail=0.0,
     hold=0.0, hold_order=0.0, controller=0.0, counter=0.0,
@@ -561,7 +553,7 @@ for _s in "lr":
     POSE_DEFAULTS.update({f"l{_s}_p": 0.0, f"l{_s}_o": 0.05, f"l{_s}_k": 0.03, f"l{_s}_ko": 0.0,
                           f"l{_s}_a": 0.0})
 
-_SEAT = dict(plant=0.0, hip_h="seat", **L("l", 1.42, 0.1, 1.42, 0.0), **L("r", 1.42, 0.1, 1.42, 0.0))
+_SEAT = dict(plant=1.0, **L("l", 1.45, 0.1, 1.45, 0.0), **L("r", 1.45, 0.1, 1.45, 0.0))
 _HANDS_BACK = P(A("l", -0.3, 0.16, 0.5, -0.75, h="relaxed", layer="back"),
                 A("r", -0.3, 0.16, 0.5, -0.75, h="relaxed", layer="back"))
 _CROSSED = P(A("l", 0.3, 0.16, 1.3, -1.32, 0.1, h="relaxed", layer="front", tf=1.0),
@@ -605,8 +597,8 @@ POSES = {
                   hunch=0.55, nod=0.08),
     "lean_in": P(_HANDS_BACK, L("l", -0.12, k=0.12), L("r", 0.12, k=0.05), lean=0.48, chest=0.12,
                  neck=0.28, nod=-0.18, hunch=0.25),
-    "look_window": P(IK("l", 0.12, 0.56, 0.26, "flat", wa=0.1, wabs=0.9),
-                     IK("r", 0.12, 0.56, 0.26, "flat", wa=0.1, wabs=0.9),
+    "look_window": P(IK("l", 0.12, "sill", 0.26, "flat", wa=0.1, wabs=0.9),
+                     IK("r", 0.12, "sill", 0.26, "flat", wa=0.1, wabs=0.9),
                      lean=0.32, neck=0.12, nod=-0.08, **L("l", k=0.06), **L("r", k=0.06)),
     # ------------------------------------------------------------ seated / floor
     "sit_chair": P(_SEAT, A("l", 0.32, 0.12, 0.85, -0.1, 0.3), A("r", 0.32, 0.12, 0.85, -0.1, 0.3)),
@@ -616,7 +608,7 @@ POSES = {
     "sit_desk": P(_SEAT, IK("l", 0.1, "desk", 0.3, "relaxed", wa=0.25, wabs=0.85, layer="front"),
                   IK("r", 0.1, "desk", 0.3, "relaxed", wa=0.25, wabs=0.85, layer="front"),
                   lean=0.18, hunch=0.3, neck=0.15),
-    "sit_floor": P(plant=0.0, hip_h=0.11, lean=-0.22, chest=0.14, neck=0.2, tilt=0.12, hunch=0.3,
+    "sit_floor": P(plant=1.0, plant_butt=1.0, lean=-0.22, chest=0.14, neck=0.2, tilt=0.12, hunch=0.3,
                    **IK("l", 0.17, 0.02, -0.06, "flat", layer="back"), **IK("r", 0.17, 0.02, -0.06, "flat",
                                                                             layer="back"),
                    **L("l", 1.32, 0.42, 0.28, 0.25), **L("r", 1.3, 0.38, 0.36, 0.2), sway=0.0),
@@ -627,7 +619,7 @@ POSES = {
     "lie_back": P(plant=1.0, plant_all=1.0, rot=-math.pi / 2, **A("l", 0.0, 0.38, 0.25, h="open"),
                   **A("r", 0.0, 0.42, 0.35, h="relaxed"), **L("l", 0.0, 0.12, 0.1, 0.0),
                   **L("r", 0.18, 0.06, 0.5, 0.0), sway=0.0, breath=0.6),
-    "sit_up": P(plant=0.0, hip_h=0.11, lean=-0.5, chest=0.25, neck=0.42, tilt=0.18, hunch=0.5,
+    "sit_up": P(plant=1.0, plant_butt=1.0, lean=-0.5, chest=0.25, neck=0.42, tilt=0.18, hunch=0.5,
                 **IK("r", 0.15, 0.02, -0.2, "flat", layer="back", bend=-1.0),
                 **A("l", 0.6, 0.2, 0.8, -0.2, h="relaxed"),
                 **L("l", 1.42, 0.12, 0.1, 0.3), **L("r", 1.25, 0.2, 0.7, 0.2), sway=0.0),
@@ -828,8 +820,6 @@ def _pose_raw(spec, who, pt):
         if name not in POSES:
             raise KeyError(f"human: unknown pose {name!r}")
         d = dict(POSE_DEFAULTS)
-        if name != "stand" and ("boss", "stand") in POSE_WHO and who == "boss":
-            pass
         tab = POSES[name]
         _overlay(d, tab, (pt / tab.get("period", STATIC_PERIOD)) % 1.0)
     tw = POSE_WHO.get((who, name))
@@ -851,7 +841,7 @@ def _numeric(d, C, who):
         if isinstance(v, str):
             base, _, add = v.partition("+")
             if base == "seat":
-                val = SEAT_H[who] + C["leg_r"][0] * 0.75
+                val = SEAT_H[who] + C["leg_r"][0] * 0.8
             elif base == "desk":
                 val = DESK_H[who]
             elif base == "sill":
@@ -915,25 +905,6 @@ class _Proj:
         Z = -p[0] * self.s + p[2] * self.c
         Y = p[1]
         return (X * self.rc - Y * self.rs + self.tx, X * self.rs + Y * self.rc + self.ty, Z)
-
-
-def _ik2(S, T, L1, L2, pref, bend):
-    dx, dy = T[0] - S[0], T[1] - S[1]
-    d = math.hypot(dx, dy)
-    d = clamp(d, abs(L1 - L2) + 1.0, L1 + L2 - 0.5)
-    ux, uy = _norm(dx, dy)
-    ca = clamp((L1 * L1 + d * d - L2 * L2) / (2 * L1 * d), -1.0, 1.0)
-    a = math.acos(ca)
-    best = None
-    for sgn in (1, -1):
-        ex, ey = _rot(ux, uy, sgn * a)
-        E = (S[0] + ex * L1, S[1] + ey * L1)
-        sc = (ex * pref[0] + ey * pref[1]) * bend
-        if best is None or sc > best[0]:
-            best = (sc, E)
-    E = best[1]
-    W = (S[0] + ux * d, S[1] + uy * d)
-    return E, W
 
 
 def _lerp3(a, b, k):
@@ -1038,6 +1009,8 @@ def _solve(C, Q, who, turn, t, fx, headphones, lag_Q=None):
         if Q["plant_all"] > 0:
             for q in ("S", "E", "W"):
                 lowest = max(lowest, arms[s_][q][1] + C["arm_r"][1])
+    if Q["plant_butt"] > 0:
+        lowest = max(lowest, nodes["pel"][1] + C["leg_r"][0] * 0.95)
     if Q["plant_all"] > 0:
         hc = _rot(0.0, -C["head"]["chin"] * C["head"]["pivot"], rot)
         hp2 = nodes["hpv"]
@@ -1442,7 +1415,7 @@ def _draw_arm(ctx, C, col, a, side, J, inkw, t, phase):
         _capsule(ctx, S[0], S[1], rr[0] + d, E[0], E[1], rr[1] + d)
         circle(ctx, E[0], E[1], rr[1] + d)
         _quad(ctx, E, rr[1] + d, (We[0] + dx * d, We[1] + dy * d), rr[2] * 1.04 + d)
-    _ink_fill(ctx, b4, col["top"], inkw)
+    _ink_fill(ctx, b4, col.get("sleeve", col["top"]), inkw)
     # cuff
     cuff = {"hoodie": col["top_dk"], "labcoat": col["top_dk"], "suit": "#e9ecf2",
             "uniform": col["top_dk"], "cardigan": col["top_dk"]}.get(C["_top"], col["top_dk"])
@@ -1877,7 +1850,7 @@ HAIR = {
                (80, -121), (102, -89), (109, -52), (103, -16), (95, -30), (90, -54), (79, -42), (70, -68),
                (54, -40), (44, -66), (24, -34), (14, -64), (-2, -46), (-16, -72), (-40, -34), (-50, -62),
                (-66, -46), (-78, -68), (-92, -36)],
-        tuft=[(-16, -144), (-15, -166), (-2, -184), (16, -188), (9, -175), (2, -162), (6, -144)],
+        tuft=[(-16, -144), (-15, -162), (-3, -176), (14, -179), (8, -169), (2, -158), (6, -144)],
         strands=[[(-60, -112), (-46, -92), (-38, -80)], [(20, -128), (30, -104), (32, -86)],
                  [(60, -112), (72, -92), (74, -76)], [(-20, -126), (-14, -100)]],
         tension=0.55),
@@ -1888,21 +1861,21 @@ HAIR = {
         front=[(-96, -10), (-102, -50), (-96, -86), (-77, -116), (-46, -136), (-28, -141), (6, -153),
                (48, -147), (84, -123), (104, -88), (109, -50), (101, -12), (93, -40), (79, -70),
                (52, -91), (16, -101), (-14, -101), (-30, -105), (-50, -93), (-72, -77), (-88, -50)],
-        tuft=[(4, -150), (0, -170), (12, -190), (28, -192), (20, -178), (18, -164), (20, -150)],
+        tuft=[(4, -150), (0, -166), (12, -180), (27, -182), (20, -172), (18, -162), (20, -150)],
         strands=[[(-30, -106), (-36, -138)], [(0, -136), (40, -128), (74, -104)], [(20, -116), (56, -106)]],
         tension=0.5),
     "bob": dict(
-        back=[(-104, 76), (-114, 30), (-114, -30), (-106, -76), (-84, -116), (-46, -138), (0, -144),
-              (46, -138), (84, -116), (106, -76), (114, -30), (114, 30), (104, 76), (84, 80), (64, 30),
-              (0, -40), (-64, 30), (-84, 80)],
-        front=[(-100, -24), (-106, -64), (-90, -104), (-56, -132), (-10, -145), (34, -141), (74, -121),
-               (100, -88), (107, -48), (101, -22), (90, -44), (70, -70), (40, -84), (10, -90), (-20, -86),
-               (-50, -70), (-76, -46), (-94, -16)],
-        sides=[[(-98, -46), (-110, -4), (-110, 44), (-100, 80), (-66, 94), (-74, 56), (-84, 14), (-88, -30)],
-               [(98, -46), (110, -4), (110, 44), (100, 80), (66, 94), (74, 56), (84, 14), (88, -30)]],
-        strands=[[(-40, -120), (-62, -88), (-80, -56)], [(30, -126), (58, -100)], [(-100, 0), (-96, 56)],
-                 [(100, 0), (96, 56)]],
-        tension=0.32),
+        back=[(-104, 70), (-114, 20), (-114, -36), (-104, -80), (-80, -118), (-44, -140), (0, -146),
+              (44, -140), (80, -118), (104, -80), (114, -36), (114, 20), (104, 70), (84, 74), (64, 26),
+              (0, -40), (-64, 26), (-84, 74)],
+        front=[(-104, -10), (-109, -56), (-95, -100), (-62, -131), (-14, -147), (36, -143), (76, -123),
+               (100, -91), (108, -50), (104, -14), (95, -40), (80, -72), (56, -98), (42, -103), (16, -88),
+               (-18, -70), (-54, -54), (-84, -38), (-100, -16)],
+        sides=[[(-100, -40), (-112, 0), (-112, 46), (-104, 84), (-72, 101), (-80, 60), (-86, 16), (-90, -24)],
+               [(100, -50), (112, -6), (112, 42), (102, 80), (68, 99), (78, 58), (84, 14), (88, -30)]],
+        strands=[[(-16, -128), (-50, -102), (-80, -64)], [(30, -132), (2, -112), (-30, -88)],
+                 [(-104, -6), (-104, 40), (-94, 78)], [(104, -10), (104, 38), (94, 76)], [(62, -126), (82, -98)]],
+        tension=0.36),
     "cap": dict(
         back=[(-102, -60), (-104, -20), (-100, 6), (-92, 10), (-90, -40), (90, -40), (92, 10), (100, 6),
               (104, -20), (102, -60), (90, -96), (-90, -96)],
@@ -2055,13 +2028,12 @@ def _draw_front_hair(ctx, C, col, hg, F, inkw, t, wet):
         # drips hanging from the fringe
         for i, (x, y) in enumerate(((-40, -70), (30, -66), (78, -52))):
             ph = (t * 0.7 + i * 0.37) % 1.0
-            X, Y = hg.warp(x, y + dy + 8 + ph * 26, "front")
+            X, Y = hg.warp(x, y + dy + 10 + ph * 24, "front")
             ctx.new_path()
-            circle(ctx, X, Y, 4.2 * (1 - ph * 0.4))
-            _fs(ctx, "#a9dff0", inkw * 0.45)
+            _drop(ctx, X, Y, 4.0 * (1 - ph * 0.3), "#a9dff0", inkw * 0.8)
 
 
-NAPE_Y = {"mop": 48, "part": 30, "cap": 22, "bun": 34, "bob": None}
+NAPE_Y = {"mop": 48, "part": 30, "cap": 22, "bun": 34, "bob": 74}
 
 
 def _draw_nape(ctx, C, col, hg, inkw):
@@ -2079,9 +2051,8 @@ def _draw_nape(ctx, C, col, hg, inkw):
         el, er = hg.ext(a, f, b)
         ext = el if sb < 0 else er
         outer.append((ext + sb * 3, y))
-        bk = b if sb * s < 0 else f
-        inner.append((a * sb * cd * c - bk * sd * abs(s) * (1 if sb < 0 else -1) * 0 + (-sb) * 0.0
-                      + (-bk * sd * s), y))
+        # just behind the ear line, on the back half of the skull
+        inner.append((a * sb * cd * c - b * sd * s, y))
     mess = C["head"]["hair"] == "mop"
     bot = [(lerp(outer[-1][0], inner[-1][0], 0.5) + sb * (4 if mess else 0), ny + (12 if mess else 6))]
     pts = outer + bot + inner[::-1]
@@ -2217,7 +2188,7 @@ def _draw_eye(ctx, C, col, cx, cy, ew, eh, ew0, sgn, E, inkw, power, hs, lashes)
     ri = r0 * E["iris"]
     kx = clamp(ew / max(1.0, ew0), 0.3, 1.0)
     ix = cx + E["lx"] * ew * 0.52 + E["yaw"] * ew0 * 0.12
-    iy = cy + E["ly"] * eh * 0.58
+    iy = cy + E["ly"] * eh * (0.58 if E["ly"] > 0 else 0.42)
     icol = col["iris"]
     if power > 0:
         icol = mixc(icol, PAL["power"], clamp(power * 1.3))
@@ -2416,8 +2387,8 @@ def _draw_mouth(ctx, C, col, hg, F, inkw, t, opn, wide):
                 ctx.set_line_width(inkw * 0.6)
                 ctx.stroke()
             elif press > 0.3:   # pressed-lip tension marks
-                ctx.move_to(cx_ + sgn * 3, cy_ - 4)
-                ctx.line_to(cx_ + sgn * 3.5, cy_ + 4)
+                ctx.move_to(cx_ + sgn * 1.5, cy_ - 3.5)
+                _qcurve(ctx, (cx_ + sgn * 1.5, cy_ - 3.5), (cx_ + sgn * 4.5, cy_), (cx_ + sgn * 2.5, cy_ + 3.5))
                 _set(ctx, alpha_ink(ink, 0.8))
                 ctx.set_line_width(inkw * 0.55)
                 ctx.stroke()
@@ -2516,7 +2487,12 @@ def _expr_dict(expr, who):
         out = {}
         for key in set(a) | set(b):
             va, vb = a.get(key, 0.0), b.get(key, 0.0)
-            out[key] = va + (vb - va) * k
+            if isinstance(va, tuple) or isinstance(vb, tuple):
+                va = va if isinstance(va, tuple) else (0.0, 0.0)
+                vb = vb if isinstance(vb, tuple) else (0.0, 0.0)
+                out[key] = (va[0] + (vb[0] - va[0]) * k, va[1] + (vb[1] - va[1]) * k)
+            else:
+                out[key] = va + (vb - va) * k
         return out
     if isinstance(expr, dict):
         src, name = expr, None
@@ -2527,6 +2503,9 @@ def _expr_dict(expr, who):
     gain = EXPR_GAIN.get(who, {})
     out = {}
     for k, v in src.items():
+        if isinstance(v, (tuple, list)):
+            out[k] = tuple(v)
+            continue
         k0 = _key0(k)
         d = v - 1.0 if k0 in _MULT_KEYS and k == k0 else v
         g = gain.get(k0 + "-", None) if d < 0 else None
@@ -2543,14 +2522,11 @@ def resolve_face(who, expr="neutral", face=None):
     """Final additive face params (before blink/look/lip-sync)."""
     C = CHARS[who]
     F = dict(FACE_DEFAULTS)
-    for src in (C["face"], _expr_dict(expr, who)):
+    for src in (C["face"], _expr_dict(expr, who), face or {}):
         for k, v in src.items():
-            F[k] = F.get(k, 0.0) + v
-    if face:
-        for k, v in face.items():
             if isinstance(v, (tuple, list)):
-                F[k] = (F.get(k, (0.0, 0.0))[0] + v[0], F.get(k, (0.0, 0.0))[1] + v[1]) \
-                    if isinstance(F.get(k), tuple) else tuple(v)
+                old = F.get(k)
+                F[k] = (old[0] + v[0], old[1] + v[1]) if isinstance(old, tuple) else (float(v[0]), float(v[1]))
             else:
                 F[k] = F.get(k, 0.0) + v
     return F
@@ -2565,7 +2541,7 @@ def _eye_params(F, side, blink, look, drift):
         lx += lk[0]
         ly += lk[1]
     lx, ly = clamp(lx, -1.25, 1.25), clamp(ly, -1.25, 1.25)
-    lid = g("lid") + 0.22 * max(0.0, ly) - 0.16 * max(0.0, -ly)
+    lid = g("lid") + 0.22 * max(0.0, ly) - 0.3 * max(0.0, -ly)
     wide = max(0.0, -lid)
     lid = clamp(lid)
     lid = lid + (1 - lid) * blink
@@ -2641,9 +2617,10 @@ def _draw_head(ctx, C, col, J, F, inkw, t, st):
             ctx.fill()
         a_ch = clamp(blush / 0.3) * 0.5 + clamp((blush - 0.3) / 0.7) * 0.25
         for sgn in (-1, 1):
-            X, Z, k = hg.proj(sgn * (hd["ex"] + 8), 30 + hg.nod * 8)
+            cyb = hd.get("cheek_y", 30) + hg.nod * 8
+            X, Z, k = hg.proj(sgn * (hd["ex"] + hd.get("cheek_dx", 8)), cyb)
             if k > 0.2:
-                ellipse(ctx, X, 30 + hg.nod * 8, 24 * k, 13)
+                ellipse(ctx, X, cyb, 24 * k, 13)
                 _set(ctx, alpha_ink(PAL["blush"], a_ch * min(1.0, k * 1.4)))
                 ctx.fill()
     ctx.restore()
@@ -2688,6 +2665,14 @@ def _draw_head(ctx, C, col, J, F, inkw, t, st):
             pts.append((X, my + yy))
         _smooth(ctx, pts, True, 0.5)
         _fs(ctx, col["hair"], inkw * 0.7)
+    if hd["nose"] == "sharp":      # cheekbone shading lines
+        for sgn in (-1, 1):
+            X0, _, k0 = hg.proj(sgn * 62, 30 + hg.nod * 8)
+            X1, _, k1 = hg.proj(sgn * 76, 46 + hg.nod * 8)
+            if min(k0, k1) > 0.3:
+                ctx.move_to(X0, 30 + hg.nod * 8)
+                ctx.line_to(X1, 46 + hg.nod * 8)
+                _stroke(ctx, alpha_ink(col["skin_sh"], 0.9), inkw * 0.55)
     # ---- outfit marks (sewer)
     if st.get("wet"):
         for (xf_, yy, ang) in ((-50, 44, 0.5), ):
@@ -2852,14 +2837,15 @@ def _draw_headset(ctx, C, hg, inkw, out):
         ellipse(ctx, ex - 4, 14, 15, 22)
         _fs(ctx, "#3a3d4a", inkw)
         mx, my = out["mouth"]
+        tip = (mx - C["head"]["mw"] - 14, my + 14)
         ctx.move_to(ex + 4, 26)
-        _qcurve(ctx, (ex + 4, 26), (ex + 10, my + 10), (mx - 22, my + 6))
+        _qcurve(ctx, (ex + 4, 26), (ex + 8, tip[1] + 6), tip)
         _stroke(ctx, PAL["ink"], 7)
         ctx.move_to(ex + 4, 26)
-        _qcurve(ctx, (ex + 4, 26), (ex + 10, my + 10), (mx - 22, my + 6))
+        _qcurve(ctx, (ex + 4, 26), (ex + 8, tip[1] + 6), tip)
         _stroke(ctx, "#5b5f6e", 3)
         ctx.new_path()
-        _capsule(ctx, mx - 30, my + 6, 5, mx - 18, my + 5, 5)
+        _capsule(ctx, tip[0] - 4, tip[1], 5, tip[0] + 8, tip[1] - 1, 5)
         _fs(ctx, "#2b2d36", inkw * 0.6)
 
 
@@ -2924,7 +2910,7 @@ def _hp_state(headphones):
 
 def _draw_hp_band(ctx, C, J, xf, hg, hp, inkw):
     cups = _cup_positions(C, J, hp)
-    k = smoothstep(hp)
+    k = smoothstep(clamp(hp * 1.5))
     top = _hmap(xf, *hg.warp(0, -166 if C["head"]["hair"] == "mop" else -150))
     nk = J["nodes"]["nck"]
     back = (nk[0], nk[1] - 8)
@@ -2970,29 +2956,43 @@ def _draw_bandage(ctx, C, a, inkw):
     _stroke(ctx, "#cfc8bf", inkw * 0.5)
 
 
-def _draw_controller(ctx, hl, hr, inkw):
-    cx, cy = (hl[0] + hr[0]) / 2, (hl[1] + hr[1]) / 2 + 4
+def _draw_controller(ctx, hl, hr, inkw, thumbs=(0.0, 0.0), skin=None):
+    """Game pad held in both hands (drawn over the palms, thumbs on top)."""
+    cx, cy = (hl[0] + hr[0]) / 2, (hl[1] + hr[1]) / 2 - 6
     ang = math.atan2(hr[1] - hl[1], hr[0] - hl[0])
     if abs(ang) > math.pi / 2:
         ang -= math.copysign(math.pi, ang)
-    w = max(70.0, min(130.0, math.hypot(hr[0] - hl[0], hr[1] - hl[1]) + 30))
+    ang *= 0.5
+    w = max(118.0, min(150.0, math.hypot(hr[0] - hl[0], hr[1] - hl[1]) + 50))
     with _Saved(ctx, cx, cy, ang):
-        ctx.new_path()
-        _capsule(ctx, -w * 0.5, 4, 22, -w * 0.25, -2, 20)
-        _capsule(ctx, w * 0.25, -2, 20, w * 0.5, 4, 22)
-        ctx.rectangle(-w * 0.3, -20, w * 0.6, 34)
-        _set(ctx, PAL["ink"])
-        ctx.set_line_width(inkw * 2)
-        ctx.stroke_preserve()
-        _set(ctx, "#3a3d4c")
-        ctx.fill()
+        def body(d):
+            _capsule(ctx, -w * 0.5, 4, 22 + d, -w * 0.25, -2, 20 + d)
+            _capsule(ctx, w * 0.25, -2, 20 + d, w * 0.5, 4, 22 + d)
+            rrect_(ctx, -w * 0.3 - d, -20 - d, w * 0.6 + 2 * d, 34 + 2 * d)
+        _ink_fill(ctx, body, "#3a3d4c", inkw)
         for (bx, by, c) in ((w * 0.3, -6, "#ff5a6e"), (w * 0.38, 2, "#3ddc84"), (w * 0.22, 2, "#4fa3ff"),
                             (w * 0.3, 10, "#ffcc33")):
             circle(ctx, bx, by, 4.2)
-            _fs(ctx, c, 2)
+            _fill(ctx, c)
         ctx.rectangle(-w * 0.36, -2, 18, 6)
         ctx.rectangle(-w * 0.36 + 6, -8, 6, 18)
         _fill(ctx, "#1d1f28")
+        if skin is not None:      # thumbs on the sticks / buttons
+            def thb(d):
+                for sgn, th in ((-1, thumbs[0]), (1, thumbs[1])):
+                    bx = sgn * w * 0.3 + th * 10 * sgn
+                    by = -2 + th * 6
+                    _capsule(ctx, sgn * w * 0.52, 14, 9.5 + d, bx, by, 9.0 + d)
+            _ink_fill(ctx, thb, skin, inkw)
+
+
+def rrect_(ctx, x, y, w, h):
+    """Axis-aligned rectangle sub-path, clockwise (matches _capsule winding)."""
+    ctx.move_to(x, y)
+    ctx.line_to(x + w, y)
+    ctx.line_to(x + w, y + h)
+    ctx.line_to(x, y + h)
+    ctx.close_path()
 
 
 def _draw_counter(ctx, who, inkw):
@@ -3055,6 +3055,58 @@ def _drift(t, seed):
     x0, x1 = hash01(i - 1, seed) - 0.5, hash01(i, seed) - 0.5
     y0, y1 = hash01(i - 1, seed + 9) - 0.5, hash01(i, seed + 9) - 0.5
     return ((x0 + (x1 - x0) * k) * 0.14, (y0 + (y1 - y0) * k) * 0.08)
+
+
+_SPEED_CACHE = {}
+
+
+def cycle_speed(who, pose, turn=1.0, outfit="default"):
+    """Ground speed (px/s at s=1, screen x) that keeps the planted foot from sliding.
+
+    Move the character by  speed * s * dt  per frame toward its facing side
+    (+x for turn > 0, flip=False).  0.0 for non-locomotion poses."""
+    key = (who, pose if isinstance(pose, str) else repr(pose), outfit)
+    tq = clamp(turn, -1.6, 1.6) * TURN_RAD
+    if key in _SPEED_CACHE:
+        return _SPEED_CACHE[key] * math.sin(tq)
+    C = _char(who, outfit)
+    period = CYCLES[pose][0] if isinstance(pose, str) and pose in CYCLES else None
+    if period is None:
+        _SPEED_CACHE[key] = 0.0
+        return 0.0
+    n = 48
+    fx = {"head_turn": 0.0, "head_tilt": 0.0, "head_nod": 0.0}
+    samples = []
+    for i in range(n + 1):
+        pt = period * i / n
+        Q = resolve_pose(pose, who, pt)
+        for k, v in C["posture"].items():
+            Q[k] = Q[k] + v * Q["posture"]
+        Q["sway"] = 0.0
+        Q["dx"] = 0.0
+        J = _solve(C, Q, who, 1.0, 0.0, fx, 0.0)
+        samples.append({q: (J["legs"][q]["sole"][0], J["legs"][q]["sole"][1]) for q in "lr"})
+    vs = []
+    dt = period / n
+    for i in range(n):
+        a, b = samples[i], samples[i + 1]
+        low = max("lr", key=lambda q: a[q][1])
+        if abs(a[low][1] - b[low][1]) < 1.5:
+            vs.append(-(b[low][0] - a[low][0]) / dt)
+    vs.sort()
+    v = vs[len(vs) // 2] if vs else 0.0
+    v /= math.sin(TURN_RAD)          # forward speed (sampled at turn = 1)
+    _SPEED_CACHE[key] = v
+    return v * math.sin(tq)
+
+
+def _pose_speed(who, pose, turn, outfit):
+    if isinstance(pose, str):
+        return cycle_speed(who, pose, turn, outfit)
+    if isinstance(pose, (tuple, list)) and len(pose) == 3:
+        k = clamp(float(pose[2]))
+        return lerp(_pose_speed(who, pose[0], turn, outfit), _pose_speed(who, pose[1], turn, outfit), k)
+    return 0.0
 
 
 def draw_person(ctx, who, x, y, s, t, pose="stand", expr="neutral", look=(0, 0), mouth=(0, 0),
@@ -3144,13 +3196,9 @@ def draw_person(ctx, who, x, y, s, t, pose="stand", expr="neutral", look=(0, 0),
 
     def draw_arm(s_):
         a = arms[s_]
-        if not ("hold_pt" in a and a.get("_drawn")):
-            # provisional hold point (if the prop is drawn before the hand)
-            pass
         _draw_arm(ctx, C, col, a, s_, J, inkw, t, phase)
         if bside == s_:
             _draw_bandage(ctx, C, a, inkw)
-        a["_drawn"] = True
 
     # provisional hold points (hand anchor before drawing) = wrist + along hand
     for s_ in "lr":
@@ -3176,7 +3224,7 @@ def draw_person(ctx, who, x, y, s, t, pose="stand", expr="neutral", look=(0, 0),
     _enter_head(ctx, xf)
     _draw_back_hair(ctx, C, col, hg, F, inkw, st["wet"])
     ctx.restore()
-    if hp is not None and hp < 0.5:
+    if hp is not None and hp < 0.62:
         _draw_hp_band(ctx, C, J, xf, hg, hp, inkw)
     if C["_top"] == "hoodie":
         _draw_hood(ctx, C, col, J, inkw)
@@ -3205,25 +3253,25 @@ def draw_person(ctx, who, x, y, s, t, pose="stand", expr="neutral", look=(0, 0),
     # ---- head
     st["hg"] = hg
     ha = _draw_head(ctx, C, col, J, F, inkw, t, st)
-    if hp is not None and hp >= 0.5:
+    if hp is not None and hp >= 0.62:
         _draw_hp_band(ctx, C, J, xf, hg, hp, inkw)
     if hp is not None and hp >= 0.3:
         _draw_hp_cups(ctx, C, J, hp, inkw)
     if st["power"] > 0.01:
+        ctx.save()
+        ctx.set_operator(cairo.OPERATOR_SCREEN)
         for side in ("l", "r"):
             X, Y, ew, eh, k, E = st["E_" + side]
             if k > 0.12 and E["lid"] < 0.97:
                 px_, py_ = _hmap(xf, X, Y)
-                radial_glow(ctx, px_, py_, C["head"]["ew"] * 2.6, PAL["power"], 0.42 * st["power"])
-                radial_glow(ctx, px_, py_, C["head"]["ew"] * 1.2, "#bffff8", 0.3 * st["power"])
-    if Q["controller"] > 0.5:
-        cp = []
-        for s_ in "lr":
-            a = arms[s_]
-            cp.append((a["W2"][0] + math.cos(a["ang"]) * C["hand"] * 0.5,
-                       a["W2"][1] + math.sin(a["ang"]) * C["hand"] * 0.5))
-        _draw_controller(ctx, cp[0], cp[1], inkw)
+                op = 1 - E["lid"] * 0.6
+                radial_glow(ctx, px_, py_, C["head"]["ew"] * 2.4, PAL["power"], 0.62 * st["power"] * op)
+                radial_glow(ctx, px_, py_, C["head"]["ew"] * 1.05, "#d9fffb", 0.35 * st["power"] * op)
+        ctx.restore()
     layer_pass("front")
+    if Q["controller"] > 0.5:
+        _draw_controller(ctx, arms["l"]["hold_pt"], arms["r"]["hold_pt"], inkw,
+                         (Q["al_thumb"], Q["ar_thumb"]), col["skin"])
     if counter is None:
         counter = (who == "recep")
     if counter:
@@ -3249,5 +3297,35 @@ def draw_person(ctx, who, x, y, s, t, pose="stand", expr="neutral", look=(0, 0),
         "foot_l": S(J["legs"]["l"]["sole"]), "foot_r": S(J["legs"]["r"]["sole"]),
         "ground": (x, y), "seat": (x, y - s * SEAT_H[who]), "desk": (x, y - s * DESK_H[who]),
         "sill": (x, y - s * SILL_H[who]), "blink": bl, "cycle": Q.get("_cycle"),
+        "speed": _pose_speed(who, pose, turn, outfit) * s * sgnf,
     }
     return out
+
+
+# ----------------------------------------------------------------------------
+# convenience
+# ----------------------------------------------------------------------------
+def ground_from_seat(who, seat_y, s):
+    """Seated poses anchor on the floor: convert a set's seat-surface y to the ground y."""
+    return seat_y + SEAT_H[who] * s
+
+
+def metrics(who):
+    """Reference sizes at s=1: height, seat/desk/sill heights, head size."""
+    C = CHARS[who]
+    return dict(height=C["height"], seat=SEAT_H[who], desk=DESK_H[who], sill=SILL_H[who],
+                head=C["head"]["chin"] + 150, leg=C["thigh"] + C["shin"] + C["foot_h"])
+
+
+def _alias(who):
+    def f(ctx, x, y, s=1.0, t=0.0, **kw):
+        return draw_person(ctx, who, x, y, s, t, **kw)
+    f.__name__ = f"draw_{who}"
+    f.__doc__ = f"draw_person(ctx, {who!r}, x, y, s, t, **kw)"
+    return f
+
+
+draw_tired, draw_embar, draw_boss, draw_guard, draw_recep = (_alias(w) for w in
+                                                             ("tired", "embar", "boss", "guard", "recep"))
+POSE_NAMES = tuple(POSES) + tuple(CYCLES)
+EXPR_NAMES = tuple(EXPR)
