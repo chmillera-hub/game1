@@ -425,7 +425,7 @@ def _tired_door(t, k, info):
             # watches Emb walk off; eyes narrow as the door closes
             look = tween(t, [(k["L5e"], (-0.74, -0.1)), (k["sh10"] + 0.2, (-1.0, 0.05)), (k["dc1"], (-1.0, 0.12))])
             nk = smoothstep(seg(t, k["dc0"] - 0.3, k["dc1"] + 0.15))
-            face = {"lid": 0.07 - 0.03 * nk, "lower": 0.32 * nk, "brow": -0.22 * nk, "brow_ang": -0.25 * nk,
+            face = {"lid": 0.07 - 0.09 * nk, "lower": 0.24 * nk, "brow": -0.25 * nk, "brow_ang": -0.28 * nk,
                     "press": 0.35, "head_turn": 0.3 * nk}
             if t >= k["dc1"] + 0.2:
                 face["look_x"] = -0.1
@@ -725,7 +725,7 @@ def _porch_cam(name, t, t0, t1, k):
         return (1528, 1322, 2.0)
     if name == "s8":
         zk = ease_in_out(seg(t, t0, k["L4"]))
-        z = lerp(2.0, 2.28, zk)
+        z = lerp(2.0, 2.18, zk)
         z = lerp(z, 2.12, ease_in_out(seg(t, k["L4"], k["up"] + 0.3)))
         cy = 1478 - 330 / z
         return (lerp(1530, 1508, zk), cy, z)

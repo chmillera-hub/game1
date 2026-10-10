@@ -380,11 +380,13 @@ def shot_back(ctx, t, info, c):
     t_head = clamp(rel * 0.35, -0.4, 0.1)
     # camera follows Emb, then pushes in on the freeze
     px = clamp(ex + 150, 600, 1250)
-    zoom = 0.95 + 0.33 * ease_in_out(seg(t, tb + 0.1, c["C1"]))
-    cx = lerp(px, ex + 60, seg(t, tb, c["C1"]) ** 0.7)
-    cy = 1040 - 70 * seg(t, tb, c["C1"])
+    # snap push-in onto the frozen face after the bump, then a slow creep during the laugh
+    kz = ease_out(seg(t, tb + 0.1, tb + 0.42))
+    zoom = 0.95 + 0.8 * kz + 0.12 * seg(t, c["l02"], c["C1"])
+    cx = lerp(px, ex + 40, kz)
+    cy = lerp(1040, 930, kz)
     sh = _shake(t, tb, 0.18, 5)
-    with core.camera(ctx, cx + sh[0], cy + sh[1], zoom):
+    with core.cache_steps(1), core.camera(ctx, cx + sh[0], cy + sh[1], zoom):
         _room(ctx, t, door=_door_c(t, c))
         if tx - 300 < cx + 540 / zoom + 300:
             # head follows the pupils ~0.15 s later: sample the eye target slightly earlier
@@ -413,9 +415,9 @@ def shot_tired(ctx, t, info, c):
     u = t - c["C1"]
     tx, ty = 1450.0, FLOOR
     z = 2.05 + 0.12 * seg(u, 0, 0.8)
-    bl = _blinkdip(t, c["C1"] + 0.12, 0.3, 0.14, 0.3)
-    face = _fk(u, [(-1, {"head_turn": -0.35}), (0.62, {"head_turn": -0.35, "lid": 0.07, "brow_r": 0.12})],
-               0.25)
+    bl = _blinkdip(t, c["C1"] + 0.06, 0.22, 0.1, 0.26)
+    face = _fk(u, [(-1, {"head_turn": -0.35, "lid": -0.12}),
+                   (0.6, {"head_turn": -0.35, "lid": -0.06, "brow_r": 0.16, "press": 0.25})], 0.2)
     with core.camera(ctx, 1395, 965, z):
         _room(ctx, t, door=0.0)
         draw_person(ctx, "tired", tx, ty, S, t, pose=T_CROSS, expr="unamused", turn=-0.55,

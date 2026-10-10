@@ -40,8 +40,8 @@ DOOR_FLOOR = VAN_A[1] - 200 * VAN_S
 BOSS = (600.0, 1446.0)
 BOSS_S = 0.40
 BOSS_HEAD = 892                               # eye line above the ground at s=1
-AG_L = (428.0, 1404.0)
-AG_R = (792.0, 1400.0)
+AG_L = (398.0, 1404.0)
+AG_R = (826.0, 1400.0)
 AG_S = 0.355
 GATE = (150.0, 300.0)      # open section of his picket fence (street world x range)
 

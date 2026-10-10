@@ -84,7 +84,7 @@ def _T(info):
     T["r3s"] = T["l2e"] + 0.02
     T["whip"] = T["w3"] - 0.16           # whip pan, cut at w3
     # --- shot B
-    T["drop"] = T["l3e"] - 0.02          # cage slips off his wrist as he slides down
+    T["drop"] = T["w3"] + 0.06           # drops the cage to slam both palms on window 3
     # --- C/D/E
     T["ins0"] = T["rock"] + 0.34         # rock insert
     T["ins1"] = T["rock"] + 0.76
@@ -248,8 +248,8 @@ def heave_pose(k=0.0, sq=0.0, fist=False):
     """Palms flat on the lower pane (face height, fingers up) shoving the sash UP;
     sq = knees bend before the shove, k = the shove (up on his toes, head back)."""
     h = "fist" if fist else "splay"
-    return P(IK("l", 0.0, 0.80 + 0.03 * k, 0.29, h, wa=-1.5, wabs=0.8, tf=-1.0),
-             IK("r", 0.05, 0.78 + 0.03 * k, 0.27, h, wa=-1.5, wabs=0.8, tf=-1.0), hold=1.0,
+    return P(IK("l", 0.0, 0.80 + 0.035 * k, 0.30, h, wa=-1.5, wabs=0.8, tf=-1.0),
+             CAGE_ARM, hold=1.0,
              lean=0.2 + 0.1 * sq - 0.06 * k, hunch=0.55 + 0.3 * k, lift=10 * k, neck=0.05, nod=-0.1 * k,
              **L("l", 0.3 + 0.25 * sq, k=0.15 + 0.6 * sq), **L("r", -0.12 + 0.2 * sq, k=0.08 + 0.6 * sq))
 
@@ -264,11 +264,12 @@ def heave_at(t, times, up=0.12, down=0.14):
 
 
 RUN = "run_panic"
-RUNC = {"base": "run_panic", "hold": 1.0}
-SKID = P(A("l", 0.9, 0.7, 0.9, 0.2, h="splay"), A("r", 0.7, 0.5, 0.8, 0.2, h="splay"),
+CAGE_ARM = A("r", -0.08, 0.16, 0.3, h="grip", tf=1.0)        # near hand, cage at his hip
+RUNC = {"base": "run_panic", **A("r", -0.3, 0.22, 0.45, h="grip", tf=1.0), "hold": 1.0}
+SKID = P(A("l", 0.9, 0.7, 0.9, 0.2, h="splay"), A("r", 0.2, 0.3, 0.5, 0.1, h="grip"),
          L("l", -0.45, 0.1, 0.08, 0.3), L("r", 0.5, 0.1, 0.35, 0.0), hold=1.0, lean=-0.22, hunch=0.6,
          coat_trail=0.7, sway=0.0)
-DEFLATE = P(A("l", 0.15, 0.1, 0.35, h="relaxed"), A("r", 0.12, 0.12, 0.3, h="relaxed"),
+DEFLATE = P(A("l", 0.15, 0.1, 0.35, h="relaxed"), CAGE_ARM,
             hold=1.0, hunch=0.15, lean=0.12, neck=0.25, nod=0.08, **L("l", 0.1, k=0.08))
 WAIL = P(HK("l", 72, -6, "claw", layer="front", wa=-1.6, wabs=0.7),
          HK("r", 72, -6, "claw", layer="front", wa=-1.6, wabs=0.7),
@@ -398,7 +399,7 @@ def _fence(ctx, t):
 def _emb_A(ctx, info, t, T):
     w1, l1, l1e, w2, l2, l2e = T["w1"], T["l1"], T["l1e"], T["w2"], T["l2"], T["l2e"]
     face = {}
-    blush, sweat, flip = 0.3, 0.35, True
+    blush, sweat, flip = 0.3, 0.35, False
     turn, pt = -1.0, t
     if t < T["r1e"]:                       # dash left to window 1
         x = lerp(X0, XW1 + 46, t / T["r1e"])
@@ -430,7 +431,7 @@ def _emb_A(ctx, info, t, T):
         expr = state_at(t, [(0, "panic"), (l1 - 0.05, "sad")], 0.2)
         rot_c = 0.18 * k - 0.1 * sq + 0.12 * let_go * math.sin((t - l1) * 14) * math.exp(-(t - l1 - 0.3) * 4)
     elif t < T["k2e"]:                     # snap turn, lunge to window 2, skid
-        flip = False
+        flip = True
         u = seg(t, T["r2s"], T["r2e"])
         turn = 1.0
         if t < T["r2e"]:
@@ -445,7 +446,7 @@ def _emb_A(ctx, info, t, T):
         blush = lerp(0.3, 0.42, u)
         rot_c = -0.35 * math.sin(u * math.pi)
     elif t < T["r3s"]:                     # yank x2, then rattles it yelling "Locked!"
-        flip, turn = False, 1.0
+        flip, turn = True, 1.0
         x = XW2
         k, sq = heave_at(t, T["hv2"], 0.08, 0.08)
         yell = smoothstep(seg(t, l2 - 0.02, l2 + 0.1))
@@ -453,7 +454,7 @@ def _emb_A(ctx, info, t, T):
         jig = 0.5 + 0.5 * math.sin((t - l2) * TAU * 7.5)
         k = max(k, rat * jig)
         sq = max(sq, rat * (1 - jig) * 0.6)
-        pose = (SKID, heave_pose(k, sq), smoothstep(seg(t, T["k2e"] - 0.03, T["k2e"] + 0.05)))
+        pose = (SKID, heave_pose(k, sq, fist=t > l2 - 0.04), smoothstep(seg(t, T["k2e"] - 0.03, T["k2e"] + 0.05)))
         look = tween(t, [(T["k2e"], (0.85, -0.3)), (l2 - 0.06, (0.85, -0.3)), (l2 + 0.02, (-0.35, -0.05)),
                          (l2e - 0.1, (-0.35, -0.05)), (l2e - 0.03, (0.95, -0.1))])
         ht = tween(t, [(l2 + 0.05, 0.0), (l2 + 0.2, -0.55), (l2e - 0.05, -0.55), (l2e + 0.04, -0.15)])
@@ -464,7 +465,7 @@ def _emb_A(ctx, info, t, T):
         blush, sweat = 0.45, 0.45
         rot_c = 0.22 * (k - 0.5) * rat + 0.15 * k * (1 - rat)
     else:                                  # dash off to window 3 (whip)
-        flip, turn = False, 1.0
+        flip, turn = True, 1.0
         tt = t - T["r3s"]
         x = XW2 + 1150 * tt - 280 * max(0.0, 0.12 - tt)
         pose = (heave_pose(0.0), RUNC, smoothstep(seg(t, T["r3s"], T["r3s"] + 0.06)))
@@ -473,7 +474,7 @@ def _emb_A(ctx, info, t, T):
         blush, sweat = 0.45, 0.45
         rot_c = -0.35 * math.sin(pt / 0.44 * TAU)
     a = _emb(ctx, info, t, x, Y, pose, expr, look, face, turn, flip=flip, pose_t=pt, blush=blush,
-             sweat=sweat, hold=_cage_hold(rot_c, wrist=True))
+             sweat=sweat, hold=_cage_hold(rot_c))
     return a, x
 
 
@@ -1078,7 +1079,7 @@ def SFX(info):
     ev.append((slam, "door_bang", -5, 0.0))
     for th in hv3:
         ev.append((th + 0.02, "door_bang", -12, 0.0))
-    ev.append((T["drop"] + 0.26, "cage_rattle", -6, -0.1))
+    ev.append((T["drop"], "cage_rattle", -9, -0.1))
     ev.append((T["panic"] + 0.72, "cloth_rustle", -6, 0.0))
     ev.append((T["ins0"] + 0.06, "sparkle", -9, -0.2))
     ev.append((T["ins1"] + 0.1, "cloth_rustle", -8, 0.0))

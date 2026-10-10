@@ -365,7 +365,9 @@ def make_hold(t, k, store):
         if t < k["catch"]:
             return
         ik = 1 - ease_out(seg(t, k["catch"], k["catch"] + 0.25))
-        dx = (-60 - 30 * calm_k) * S + ik * 20
+        rub = 4 * math.sin(math.tau * (t - k["nuzzle"]) / 1.2) * seg(t, k["nuzzle"], k["nuzzle"] + 0.4) \
+            * (1 - seg(t, k["hi"] - 0.2, k["hi"]))
+        dx = (-60 - 18 * calm_k + rub) * S + ik * 20
         dy = (48 + 10 * calm_k + sag) * S
         a = creatures.draw_specimen(ctx, hx + dx, hy + dy, SC, t, pose="held", flip=True, face=1.0, **kw)
         store["spec"] = a
@@ -517,8 +519,8 @@ def shot_B(ctx, t, info, k):
 
 def shot_C(ctx, t, info, k):
     st = tired_state(t, k)
-    z = 2.35 + 0.15 * ease_in_out(seg(t, k["cutC"], k["stumble"]))
-    with core.camera(ctx, 1345, 1030, z):
+    z = 2.7 + 0.15 * ease_in_out(seg(t, k["cutC"], k["stumble"]))
+    with core.camera(ctx, 1370, 1045, z):
         sewer_bg(ctx, t, k)
         a = draw_tired(ctx, t, info, k, st)
         sleeve_drips(ctx, t, k, a)
@@ -621,10 +623,12 @@ def _two_shot(ctx, t, info, k, cam, hearts=False, glow_pool=0.0):
 
 
 def shot_H(ctx, t, info, k):
+    """writhe + form: one shot with a slow push-in as the shadow settles into its true shape."""
     xs, v = _xstop(k)
-    z = 1.95 + 0.12 * ease_in_out(seg(t, k["writhe"], k["form"]))
+    p = ease_in_out(seg(t, k["writhe"] + 0.6, k["wide"]))
+    z = lerp(1.85, 2.3, p)
     dx, dy = core.shake(t, k["writhe"] + 0.95, 0.3, 7)
-    cam = (xs - 105 + dx, 905 + dy, z)
+    cam = (xs - lerp(105, 140, p) + dx, lerp(905, 860, p) + dy, z)
     _two_shot(ctx, t, info, k, cam)
     # the feet skid back under the thrashing (wet walkway): small puffs + flicks
     st = tired_state(t, k)
@@ -635,15 +639,9 @@ def shot_H(ctx, t, info, k):
             splash(ctx, st["x"] - 40 * S, FY - 8, S * 0.8, t, ts + 0.02, n=5, seed=31 + i, dur=0.45)
 
 
-def shot_I(ctx, t, info, k):
-    xs, v = _xstop(k)
-    z = 2.35 + 0.15 * ease_in_out(seg(t, k["form"], k["wide"]))
-    _two_shot(ctx, t, info, k, (xs - 140, 860, z))
-
-
 def shot_J(ctx, t, info, k):
     xs, v = _xstop(k)
-    z = 2.9 + 0.12 * ease_in_out(seg(t, k["wide"], k["calm"]))
+    z = 3.15 + 0.12 * ease_in_out(seg(t, k["wide"], k["calm"]))
     _two_shot(ctx, t, info, k, (xs - 80, 790, z))
 
 
@@ -654,24 +652,19 @@ def shot_K(ctx, t, info, k):
 
 
 def shot_L(ctx, t, info, k):
+    """'...Okay. Hi.' close, then (bond) a slow pull-back into the warm shaft -- no cut."""
     xs, v = _xstop(k)
     z = 2.95 + 0.1 * ease_in_out(seg(t, k["l3"], k["bond"]))
-    _two_shot(ctx, t, info, k, (xs - 100, 835, z), hearts=True, glow_pool=warm_k(t, k))
-
-
-def shot_M(ctx, t, info, k):
-    xs, v = _xstop(k)
-    p = ease_in_out(seg(t, k["bond"], k["dur"]))
-    z = lerp(2.4, 1.55, p)
-    _two_shot(ctx, t, info, k, (xs - 120 + 70 * p, lerp(820, 880, p), z), hearts=True,
+    p = ease_in_out(seg(t, k["bond"] - 0.1, k["dur"] + 0.3))
+    z = lerp(z, 1.45, p)
+    _two_shot(ctx, t, info, k, (xs - 100 + 60 * p, lerp(835, 890, p), z), hearts=True,
               glow_pool=warm_k(t, k))
 
 
 def shots(k):
     return [(0.0, shot_A), (k["cutB"], shot_B), (k["cutC"], shot_C), (k["stumble"], shot_D),
             (k["watched"], shot_E1), (k["cutE2"], shot_E2), (k["sense"], shot_F), (k["writhe"], shot_H),
-            (k["form"], shot_I), (k["wide"], shot_J), (k["calm"], shot_K), (k["l3"], shot_L),
-            (k["bond"], shot_M)]
+            (k["wide"], shot_J), (k["calm"], shot_K), (k["l3"], shot_L)]
 
 
 _K = {}

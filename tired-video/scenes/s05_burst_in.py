@@ -45,7 +45,7 @@ E_DOOR = (360, 1452)          # Emb one step into the room
 E_BED = (1170, 1548)          # kneeling at the bed
 E_LAUNDRY = (1105, 1540)
 E_CLOSET = (780, 1536)
-T_BEHIND = (1112, 1538)        # Tiredness right behind him
+T_BEHIND = (1050, 1538)        # Tiredness right behind him
 E_FLOOR = (745, 1552)         # Emb's landing spot (butt)
 CAGE_FLOOR = (520, 1548)      # where the cage sits once he puts it down
 CHAIR_DX = -300               # he rolled the chair back when he got up
@@ -453,11 +453,10 @@ def shot_door(ctx, t, info, c):
 # shots 7/8: the search
 # ---------------------------------------------------------------------------
 CLOTHES = [  # (launch dt from srch_b, kind, colour, landing x, rot)
-    (0.32, "shirt", "#ff8a4f", 890, 0.4),
-    (0.55, "sock", "#ffffff", 975, 1.2),
-    (0.74, "shirt", "#7cc96a", 1240, -0.5),
-    (0.95, "sock", "#f2c14e", 1015, -0.9),
-    (1.12, "shirt", "#9fd8f7", 1295, 0.2),
+    (0.32, "shirt", "#ff8a4f", 885, 0.4),
+    (0.58, "sock", "#ffffff", 950, 1.2),
+    (0.82, "shirt", "#7cc96a", 1195, -0.5),
+    (1.05, "sock", "#f2c14e", 1270, -0.9),
 ]
 
 
@@ -520,7 +519,9 @@ def emb_search_pose(t, c):
 
 def laundry_lift(t, c):
     ts = c.search
-    return tween(t, [(ts + 1.04, 0.0), (ts + 1.24, 1.0), (ts + 1.48, 1.0), (ts + 1.58, 0.0)])
+    if t >= c.srch_b:
+        return 0.0
+    return tween(t, [(ts + 1.04, 0.0), (ts + 1.24, 1.0), (ts + 1.5, 1.0), (ts + 1.62, 0.55)])
 
 
 def under_bed_shadow(ctx):
@@ -548,13 +549,13 @@ def shot_search(ctx, t, info, c):
         cam = (lerp(1375, 1045, k), lerp(1215, 1190, k), 1.25)
     else:
         k = ease_in_out(seg(t, tb, c.reveal))
-        cam = (lerp(725, 660, k), lerp(1010, 975, k), lerp(1.5, 1.85, k))
+        cam = (lerp(720, 640, k), lerp(1010, 975, k), lerp(1.5, 1.9, k))
     x, y, pose, pose_t, turn, expr, look, face, what = emb_search_pose(t, c)
     closet = ease_out_back(seg(t, tb, tb + 0.22)) if t >= tb else 0.0
     empty, spin, cdx = chair_state(t, c)
     with core.camera(ctx, *cam):
         sets.bedroom(ctx, t, layer="bg", laundry=laundry_lift(t, c), closet_open=clamp(closet),
-                     chair_empty=empty, chair_spin=spin, chair_dx=cdx)
+                     chair_empty=empty, chair_spin=spin, chair_dx=cdx, laundry_scattered=t >= tb)
         if not empty:
             draw_gamer(ctx, t, notes=0.7)
         draw_clothes(ctx, t, c)
@@ -725,6 +726,7 @@ def tired_late(t, c, info, emb_shoulder):
 def draw_late(ctx, t, info, c):
     """Everything in the bedroom from the reveal on (world space)."""
     sets.bedroom(ctx, t, layer="bg", closet_open=1.0, chair_empty=True, chair_spin=chair_spin(t, c),
+                 laundry_scattered=True,
                  chair_dx=CHAIR_DX)
     draw_clothes(ctx, t, c)
     cage(ctx, CAGE_FLOOR[0], CAGE_FLOOR[1] - CAGE_S * 300, t, swing=0.0)
@@ -785,15 +787,15 @@ def draw_late(ctx, t, info, c):
 def shot_late(ctx, t, info, c):
     if t < c.tap:
         k = ease_in_out(seg(t, c.reveal + 0.1, c.reveal + 1.2))
-        cam = (lerp(660, 1030, k), lerp(975, 1020, k), lerp(1.85, 0.9, k))
+        cam = (lerp(640, 1010, k), lerp(975, 1020, k), lerp(1.9, 0.9, k))
     elif t < c.launch:
         k = ease_out(seg(t, c.tap, c.launch))
-        cam = (lerp(915, 925, k), lerp(1000, 990, k), lerp(1.2, 1.24, k))
+        cam = (lerp(895, 905, k), lerp(1000, 990, k), lerp(1.2, 1.24, k))
     elif t < c.hi0:
-        cam = (935, 930, 0.96)
+        cam = (915, 930, 0.96)
     else:
         k = ease_in_out(seg(t, c.l3.end, c.end))
-        cam = (lerp(925, 965, k), lerp(1070, 1010, k), lerp(1.38, 1.58, k))
+        cam = (lerp(900, 940, k), lerp(1070, 1010, k), lerp(1.38, 1.58, k))
     with core.cache_steps(2):
         with core.camera(ctx, *cam):
             draw_late(ctx, t, info, c)

@@ -63,7 +63,8 @@ def _arms(name):
 HEAP_P = lambda tilt: dict(base="heap", tilt=tilt)                     # noqa: E731
 SIT_RECOIL = dict(base="sit_floor", lean=-0.34, hunch=0.75, chest=0.2)
 SIT_COVER = dict(base="sit_floor", **_arms("cover_eyes"), hunch=0.9, nod=0.16, lean=-0.2)
-SIT_PEEK = dict(base="sit_floor", **_arms("peek"), hunch=0.75, nod=0.04, lean=-0.22)
+SIT_PEEK = dict(base="sit_floor", **dict(_arms("peek"), ar_hx=20, ar_hy=40),   # far hand slides down:
+                hunch=0.75, nod=0.04, lean=-0.22)                         # one eye peeks through
 SIT_DOWN = dict(base="sit_floor", hunch=0.55, lean=-0.1)
 CROUCH_GRAB = dict(base="crouch", al_ik=1.0, al_tx=0.25, al_ty=0.14, al_tz=0.24, al_h="grip",
                    al_wa=1.4, al_wabs=0.5, neck=-0.05, nod=-0.1)
@@ -333,7 +334,7 @@ def shot_pov(ctx, t, T):
 # S2: reaction two-shot (l01, l02 cover, peek)
 # ---------------------------------------------------------------------------
 def shot_react(ctx, t, T, info):
-    cam = tween(t, [(T.c2, (505, 1235, 1.6)), (T.derp, (455, 1220, 1.92))])
+    cam = tween(t, [(T.c2, (430, 1290, 2.05)), (T.derp, (415, 1272, 2.36))])
     pose = state_at(t, [(T.c2, "sit_floor"), (T.l1 + 0.12, SIT_RECOIL), (T.l2 - 0.1, SIT_COVER),
                         (T.peek, SIT_PEEK)], 0.2)
     expr = state_at(t, [(T.c2, "alarmed"), (T.l1 + 0.2, "terrified")], 0.25)
@@ -427,7 +428,9 @@ TIP_X0, TIP_Y, TIP_TURN = 130, 1430, 0.9
 
 def shot_tiptoe(ctx, t, T):
     u = t - T.tip
-    cam = tween(t, [(T.tip, (520, 1060, 1.1)), (T.plates, (640, 1060, 1.12))])
+    base = tween(t, [(T.tip, (520, 1060, 1.1)), (T.plates, (640, 1060, 1.12))])
+    push = ease_out(seg(u, T.f0 - 0.02, T.f0 + 0.28))
+    cam = tuple(lerp(a, b, push) for a, b in zip(base, (615, 925, 1.6)))
     v = human.cycle_speed(WHO, "tiptoe", TIP_TURN) * ES * TIP_K
     wclk = _tip_walk(u, T)
     x = TIP_X0 + v * wclk
@@ -449,9 +452,11 @@ def shot_tiptoe(ctx, t, T):
     blink = 0.0 if T.f0 - 0.1 < u < T.f1 + 0.2 else None
     with core.camera(ctx, *cam):
         living(ctx, t)
-        emb(ctx, x, TIP_Y, t, pose=TIPTOE, pose_t=wclk * TIP_K, turn=TIP_TURN, expr=expr, look=look,
-            face=face, blink=blink, blush=0.1, sweat=0.5 + 0.4 * noticed, hold=cage_hold_cb(t))
+        ea = emb(ctx, x, TIP_Y, t, pose=TIPTOE, pose_t=wclk * TIP_K, turn=TIP_TURN, expr=expr, look=look,
+                 face=face, blink=blink, blush=0.1, sweat=0.5 + 0.4 * noticed, hold=cage_hold_cb(t))
         draw_imp(ctx, t, T, look_l=look_l)
+        tx_, ty_ = ea["top"]
+        fx.sweat_fly(ctx, tx_ - 10, ty_ + 40, 0.6, t, T.tip + T.f0 + 0.06, seed=4, n=3, side=0)
         sets.living_room(ctx, t, layer="fg")
 
 
@@ -591,7 +596,7 @@ def shot_table(ctx, t, T):
 def shot_cu(ctx, t, T, info):
     pa = _probe_emb("cu", TABLE_FEET[0], TABLE_FEET[1], CRAWL_UP, 0.9)
     fxx, fyy = pa["face"]
-    cam = tween(t, [(T.c10, (fxx - 10, fyy + 35, 3.2)), (T.end, (fxx - 5, fyy + 30, 3.38))])
+    cam = tween(t, [(T.c10, (fxx - 50, fyy + 35, 3.15)), (T.end, (fxx - 45, fyy + 30, 3.32))])
     g = T.gulp
     gk = tween(t, [(g, 0.0), (g + 0.1, 1.0), (g + 0.3, 0.0)])
     look, hf = _gaze(t, [(T.c10, (0.55, -1.0)), (T.l4 + 0.5, (0.55, -1.0)), (T.l4e, (0.5, -0.85)),
