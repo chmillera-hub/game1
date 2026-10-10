@@ -43,7 +43,8 @@ PL_X, PL_Y = M["plates"]
 PL_S = 0.62
 PLATE_REST = (PL_X, PL_Y + (-10 - 3 * 13) * PL_S)   # top plate centre
 PLATE_GRIP = 50                 # hand grips the near rim, this far left of centre
-TABLE_FEET = (1690, 1600)
+TABLE_FEET = (1760, 1680)       # kneeling in front of the dining table
+TABLE_CAGE = (1625, 1688)
 PLATE_FEET = (1180, 1452)       # behind the coffee table, facing us
 STAIRS_CAM = (2660, 640, 1.2)
 FLY_S = 1.7
@@ -69,14 +70,14 @@ CROUCH_GRAB = dict(base="crouch", al_ik=1.0, al_tx=0.25, al_ty=0.14, al_tz=0.24,
 NOBODY = dict(base="back_away", **A("l", 0.02, 0.1, 0.1, h="grip", tf=1.0), al_ik=0.0,
               lean=-0.1, hunch=0.8)
 TIPTOE = dict(base="tiptoe", **_CAGE_R)
-TIP_K = 1.35                    # tiptoe cycle speed-up (speed scales with it)
+TIP_K = 1.6                    # tiptoe cycle speed-up (speed scales with it)
 
 
 # hand on the plate rim (bent over the coffee table) / plate raised to the chest
 PLATE_DOWN = dict(base="stand", **_CR_LEGS, al_ik=1.0, al_tx=0.1, al_ty=0.12, al_tz=0.2, al_h="pinch",
                   al_wa=0.3, al_wabs=0.5, **_CAGE_R, lean=0.7, nod=0.15, hunch=0.3)
-PLATE_UP = dict(base="stand", al_ik=1.0, al_tx=0.1, al_ty=0.6, al_tz=0.3, al_h="pinch",
-                al_wa=0.3, al_wabs=0.5, **_CAGE_R, lean=0.1, nod=0.05, hunch=0.45)
+PLATE_UP = dict(base="stand", al_ik=1.0, al_tx=0.25, al_ty=0.58, al_tz=0.5, al_h="pinch",
+                al_wa=0.3, al_wabs=0.5, **_CAGE_R, lean=0.05, nod=0.05, hunch=0.45)
 
 
 def DRAWER(o, peek):
@@ -85,8 +86,8 @@ def DRAWER(o, peek):
                 nod=0.08 + 0.12 * peek, hunch=0.35)
 
 
-CROUCH_PEER = dict(base="crouch", **_CAGE_R, lean=0.85, neck=-0.1, nod=-0.2)
-CROUCH_UP = dict(base="crouch", **_CAGE_R, lean=0.62, neck=0.15, nod=-0.35, hunch=0.7)
+CRAWL_PEER = dict(base="crawl", rot=0.35, neck=-0.3, nod=-0.2, sway=0.0)       # butt up, head low
+CRAWL_UP = dict(base="crawl", rot=0.0, neck=0.25, nod=-0.4, sway=0.0, lean=1.0)  # head snapped up
 
 
 # ---------------------------------------------------------------------------
@@ -231,11 +232,17 @@ def cage_hold_cb(t, floor_y=None, swing=0.0):
     return cb
 
 
-def draw_top_plate(ctx, x, y, rot):
+def draw_top_plate(ctx, x, y, rot, face=0.0):
+    """Top plate; face 0 = edge-on like the stack, 1 = tilted up to look at its underside."""
+    ry = lerp(15, 78, face)
     with core.saved(ctx, x, y, PL_S, rot):
-        props.ell(ctx, 0, 0, 95, 15, "#f7f4ec", 4)
-        props.ell(ctx, 0, -3, 58, 7, "#e3ddcf", 0)
-        props.curve(ctx, [(-80, 4), (0, 10), (80, 4)], "#5b7fd1", 3)
+        props.ell(ctx, 0, 0, 95, ry, "#f7f4ec", 4)
+        if face < 0.3:
+            props.ell(ctx, 0, -3, 58, 7, "#e3ddcf", 0)
+            props.curve(ctx, [(-80, 4), (0, 10), (80, 4)], "#5b7fd1", 3)
+        else:
+            props.ell(ctx, 0, 0, 84, ry * 0.86, None, 5, sc="#5b7fd1")
+            props.ell(ctx, 0, 0, 46, ry * 0.46, "#e3ddcf", 3, sc="#c9c2b2")
 
 
 def living(ctx, t, top_plate=True, **kw):
@@ -415,12 +422,12 @@ def _tip_walk(u, T):
     return T.f0 + (u - T.f1) * 1.25
 
 
-TIP_X0, TIP_Y, TIP_TURN = 300, 1490, 0.9
+TIP_X0, TIP_Y, TIP_TURN = 130, 1430, 0.9
 
 
 def shot_tiptoe(ctx, t, T):
     u = t - T.tip
-    cam = tween(t, [(T.tip, (600, 1090, 1.08)), (T.plates, (700, 1090, 1.1))])
+    cam = tween(t, [(T.tip, (520, 1060, 1.1)), (T.plates, (640, 1060, 1.12))])
     v = human.cycle_speed(WHO, "tiptoe", TIP_TURN) * ES * TIP_K
     wclk = _tip_walk(u, T)
     x = TIP_X0 + v * wclk
@@ -464,13 +471,15 @@ def coffee_table_front(ctx):
 
 def shot_plates(ctx, t, T):
     P = T.plates
-    cam = tween(t, [(P, (1205, 1200, 1.6)), (T.drawer, (1205, 1190, 1.66))])
-    lift = tween(t, [(P + 0.1, 0.0), (P + 0.36, 1.0), (P + 0.66, 1.0), (P + 0.9, 0.0)])
+    cam = tween(t, [(P, (1190, 1190, 1.6)), (T.drawer, (1190, 1180, 1.66))])
+    lift = tween(t, [(P + 0.08, 0.0), (P + 0.34, 1.0), (P + 0.66, 1.0), (P + 0.9, 0.0)])
     pose = (PLATE_DOWN, PLATE_UP, lift)
-    look, hf = _gaze(t, [(P, (0.1, 0.8)), (P + 0.3, (0.1, 0.75)), (P + 0.4, (0.2, 0.95)),
-                         (P + 0.5, (0.2, 0.95)), (P + 0.56, (-0.1, 0.3)), (P + 0.66, (-0.1, 0.3)),
-                         (P + 0.78, (0.1, 0.8))], lag=0.12, gx=0.12, gy=0.18)
-    face = _F(hf, {"brow_ang": 0.4, "brow_r": 0.25 * lift, "press": 0.45, "pupil": -0.1})
+    look, hf = _gaze(t, [(P, (0.1, 0.8)), (P + 0.25, (0.1, 0.75)), (P + 0.36, (0.15, 1.0)),
+                         (P + 0.47, (0.15, 1.0)), (P + 0.53, (-0.55, -0.35)), (P + 0.66, (-0.55, -0.35)),
+                         (P + 0.8, (0.1, 0.8))], lag=0.12, gx=0.14, gy=0.18)
+    under = seg(t, P + 0.5, P + 0.56) * (1 - seg(t, P + 0.66, P + 0.72))
+    face = _F(hf, {"brow_ang": 0.4, "brow_r": 0.3 * under, "press": 0.45 * (1 - under),
+                   "pupil": -0.1, "lower": 0.25 * under})
     with core.camera(ctx, *cam):
         living(ctx, t, top_plate=False)
         a = emb(ctx, PLATE_FEET[0], PLATE_FEET[1], t, pose=pose, turn=0.15, expr="whisper", look=look,
@@ -478,10 +487,12 @@ def shot_plates(ctx, t, T):
         coffee_table_front(ctx)
         props.plates_stack(ctx, PL_X, PL_Y, PL_S, n=3, t=t)
         hx, hy, _ = a["hand_l"]
-        k = smoothstep(seg(lift, 0.0, 0.08))
-        px = lerp(PLATE_REST[0], hx + PLATE_GRIP, k)
-        py = lerp(PLATE_REST[1], hy, k)
-        draw_top_plate(ctx, px, py, -0.12 * math.sin(lift * math.pi) * k + 0.05 * lift)
+        k = smoothstep(seg(lift, 0.0, 0.1))
+        ff = smoothstep(seg(lift, 0.35, 1.0))
+        off = (lerp(PLATE_GRIP, -18, ff), lerp(0.0, -38, ff))
+        px = lerp(PLATE_REST[0], hx + off[0], k)
+        py = lerp(PLATE_REST[1], hy + off[1], k)
+        draw_top_plate(ctx, px, py, -0.1 * math.sin(lift * math.pi) * k - 0.25 * ff, face=ff)
         sets.living_room(ctx, t, layer="fg")
 
 
@@ -493,7 +504,7 @@ DRAWER_FEET = (1650, 1540)
 
 def shot_drawer(ctx, t, T):
     D = T.drawer
-    cam = tween(t, [(D, (1730, 1160, 1.52)), (T.table, (1740, 1150, 1.58))])
+    cam = tween(t, [(D, (1715, 1000, 1.95)), (T.table, (1722, 990, 2.02))])
     o = tween(t, [(D + 0.12, 0.0), (D + 0.34, 1.0), (D + 0.66, 1.0), (D + 0.86, 0.0)], ease_out)
     pk = tween(t, [(D + 0.3, 0.0), (D + 0.42, 1.0), (D + 0.62, 1.0), (D + 0.74, 0.0)])
     look, hf = _gaze(t, [(D, (0.7, 0.55)), (D + 0.3, (0.7, 0.55)), (D + 0.42, (0.4, 0.95)),
@@ -515,10 +526,10 @@ def _shadow(ctx, t, T):
     if not (T.shadow0 <= t <= T.shadow1 + 0.05):
         return
     u = seg(t, T.shadow0, T.shadow1)
-    x = lerp(2520, 3120, ease_in_out(u))
-    y = 590 - 6 * abs(math.sin(t * math.pi / 0.22))        # scurry bob
+    x = lerp(2480, 3140, ease_in_out(u))
+    y = 296 - 6 * abs(math.sin(t * math.pi / 0.22))        # scurry bob (above the railing)
     a = 0.5 * smoothstep(seg(t, T.shadow0, T.shadow0 + 0.12))
-    S = 1.6                                                 # stretched big by the low light
+    S = 2.0                                                 # stretched big by the low light
     ctx.save()
     ctx.push_group()
     ctx.translate(x, y)
@@ -546,18 +557,18 @@ def _shadow(ctx, t, T):
 
 def shot_table(ctx, t, T):
     Tb = T.table
-    table_cam = tween(t, [(Tb, (1985, 1300, 1.35)), (T.stairs, (2000, 1285, 1.4))])
+    table_cam = tween(t, [(Tb, (1895, 1345, 1.5)), (T.stairs, (1905, 1335, 1.55))])
     k = ease_in_out(seg(t, T.stairs, T.stairs + 0.7))
     cam = tuple(lerp(a, b, k) for a, b in zip(table_cam, STAIRS_CAM))
-    pose = state_at(t, [(Tb - 1.0, "stand"), (Tb - 0.12, CROUCH_PEER), (T.snap, CROUCH_UP)], 0.35)
-    if T.snap <= t < T.snap + 0.1:
-        pose = (CROUCH_PEER, CROUCH_UP, ease_out_back(seg(t, T.snap, T.snap + 0.1), 2.0))
+    pose = state_at(t, [(Tb - 1.0, CRAWL_UP), (Tb - 0.1, CRAWL_PEER), (T.snap, CRAWL_UP)], 0.35)
+    if T.snap <= t < T.snap + 0.12:
+        pose = (CRAWL_PEER, CRAWL_UP, ease_out_back(seg(t, T.snap, T.snap + 0.12), 2.0))
     snap = ease_out_back(seg(t, T.snap, T.snap + 0.1), 2.2)
     look_peer = tween(t, [(Tb, (0.85, 0.35)), (Tb + 0.35, (0.95, 0.3)), (Tb + 0.65, (0.7, 0.45)),
                           (Tb + 0.95, (1.0, 0.25))])
     look = (lerp(look_peer[0], 0.55, snap), lerp(look_peer[1], -1.0, snap))
     face = {"brow_ang": 0.35 * (1 - snap), "press": 0.4 * (1 - snap), "pupil": -0.1 - 0.35 * snap,
-            "eye_size": 0.14 * snap, "head_nod": 0.1 * (1 - snap) - 0.18 * snap, "head_turn": 0.1,
+            "eye_size": 0.14 * snap, "head_turn": 0.1, "head_tilt": -0.12 * (1 - snap),
             "brow": 0.35 * snap, "squash": -0.08 * tween(t, [(T.snap, 0.0), (T.snap + 0.08, 1.0),
                                                              (T.snap + 0.3, 0.0)])}
     expr = state_at(t, [(Tb, "whisper"), (T.snap, "alarmed")], 0.1)
@@ -566,19 +577,21 @@ def shot_table(ctx, t, T):
     with core.cache_steps(2):
         with core.camera(ctx, *cam):
             living(ctx, t)
-            emb(ctx, TABLE_FEET[0], TABLE_FEET[1], t, pose=pose, turn=0.9, expr=expr, look=look, face=face,
-                blush=0.1, sweat=0.5, glint=glint, blink=blink, hold=cage_hold_cb(t, floor_y=TABLE_FEET[1] + 6))
+            props.cage(ctx, TABLE_CAGE[0], TABLE_CAGE[1] - CAGE_H, CAGE_S, t, door=0.8, latch="open",
+                       empty=True)
+            emb(ctx, TABLE_FEET[0], TABLE_FEET[1], t, pose=pose, pose_t=0.0, turn=0.9, expr=expr, look=look,
+                face=face, blush=0.1, sweat=0.5, glint=glint, blink=blink)
             _shadow(ctx, t, T)
-            sets.living_room(ctx, t, layer="fg")
+            sets.living_room(ctx, t, layer="fg", parts=("stairs",))
 
 
 # ---------------------------------------------------------------------------
 # S10: "Upstairs." CU + gulp
 # ---------------------------------------------------------------------------
 def shot_cu(ctx, t, T, info):
-    pa = _probe_emb("cu", TABLE_FEET[0], TABLE_FEET[1], CROUCH_UP, 0.9)
+    pa = _probe_emb("cu", TABLE_FEET[0], TABLE_FEET[1], CRAWL_UP, 0.9)
     fxx, fyy = pa["face"]
-    cam = tween(t, [(T.c10, (fxx - 10, fyy + 70, 2.7)), (T.end, (fxx - 5, fyy + 60, 2.85))])
+    cam = tween(t, [(T.c10, (fxx - 10, fyy + 35, 3.2)), (T.end, (fxx - 5, fyy + 30, 3.38))])
     g = T.gulp
     gk = tween(t, [(g, 0.0), (g + 0.1, 1.0), (g + 0.3, 0.0)])
     look, hf = _gaze(t, [(T.c10, (0.55, -1.0)), (T.l4 + 0.5, (0.55, -1.0)), (T.l4e, (0.5, -0.85)),
@@ -590,11 +603,9 @@ def shot_cu(ctx, t, T, info):
     glint = tween(t, [(T.l4 + 0.3, 0.0), (T.l4 + 0.4, 0.55), (T.l4 + 0.6, 0.0)])
     with core.camera(ctx, *cam):
         living(ctx, t)
-        a = emb(ctx, TABLE_FEET[0], TABLE_FEET[1], t, pose=CROUCH_UP, turn=0.9, expr=expr, look=look,
-                face=face, blush=0.15, sweat=0.7, glint=glint, mouth=info.mouth(WHO, t),
-                hold=cage_hold_cb(t, floor_y=TABLE_FEET[1] + 6))
-        nx, ny = a["neck"]
-        fx.emote(ctx, "gulp", fxx + 175, fyy + 105, 0.45, t, g, dur=0.75)
+        emb(ctx, TABLE_FEET[0], TABLE_FEET[1], t, pose=CRAWL_UP, pose_t=0.0, turn=0.9, expr=expr, look=look,
+            face=face, blush=0.15, sweat=0.7, glint=glint, mouth=info.mouth(WHO, t))
+        fx.emote(ctx, "gulp", fxx - 120, fyy + 105, 0.4, t, g, dur=0.75)
 
 
 # ---------------------------------------------------------------------------

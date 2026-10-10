@@ -183,8 +183,8 @@ def _emb(t, k, info):
                "lean": 0.05 + knock_bob * 0.05, "hunch": 0.4, "turn": 0.15}
     P_STIFF = {"base": "awkward", "hunch": 0.75}
     wv = math.sin(max(0.0, t - w1[0]) * 2 * math.pi * 2.6) * 0.22
-    P_WAVE = {"base": "awkward", "ar_ik": 0.0, "ar_p": 0.25, "ar_o": 0.25, "ar_e": 2.45, "ar_eo": -0.5 + wv,
-              "ar_h": "open", "ar_tf": -1.0, "hunch": 0.65, "lift": 6 * abs(wv) / 0.22}
+    P_WAVE = {"base": "awkward", "al_ik": 0.0, "al_p": 0.3, "al_o": 0.75, "al_e": 2.2, "al_eo": -0.2 + wv * 0.7,
+              "al_h": "open", "al_tf": -1.0, "hunch": 0.65, "lift": 5 * abs(wv) / 0.22}
     P_POCKET = {"base": "awkward", "nod": 0.2, "neck": 0.18, "tilt": 0.1, "lean": 0.07, "hunch": 0.95,
                 "chest": 0.06}
     P_POINT = {"base": "stand", "hunch": 0.5, "lean": 0.08,
@@ -244,8 +244,10 @@ def _emb(t, k, info):
             pre = {"base": "stand", "lift": 8, "hunch": 0.9, "sway": 0.0}  # tiny anticipation rise
             if t < g0 + 0.06:
                 pose = (P_FROZEN, pre, seg(t, g0, g0 + 0.06))
+                flags["rec"] = "floor"
             elif t < k["grab"]:
                 pose = (pre, P_DIVE, ease_in(seg(t, g0 + 0.06, k["grab"])))
+                flags["rec"] = "floor"
             elif t < k["stuff0"]:
                 pose = (P_DIVE, P_UP, ease_out_back(seg(t, k["grab"] + 0.04, k["up"])))
                 flags["rec"] = "hand"
@@ -391,7 +393,7 @@ def _tired_door(t, k, info):
     face["brow_r"] = 0.28 * seg(t, k["w1"][9], k["w1"][9] + 0.3) * (1 - seg(t, k["w2"][7], k["w2"][7] + 0.35))
     face["lid"] = 0.06 * seg(t, k["w2"][3], k["w2"][3] + 0.3) * (1 - seg(t, k["look"], k["look"] + 0.2))
     face["press"] = 0.25 * seg(t, k["L3e"], k["L3e"] + 0.2)
-    blink = None
+    blink = 0.0 if t < k["open1"] + 0.5 else None
     if k["w1"][2] - 0.05 <= t < k["w1"][2] + 0.95:
         blink = _slow_blink(t, k["w1"][2] + 0.05)       # slow judgement blink at "Just checking in!"
     expr = "bored"
@@ -726,7 +728,7 @@ def _porch_cam(name, t, t0, t1, k):
         z = lerp(2.0, 2.28, zk)
         z = lerp(z, 2.12, ease_in_out(seg(t, k["L4"], k["up"] + 0.3)))
         cy = 1478 - 330 / z
-        return (1530, cy, z)
+        return (lerp(1530, 1508, zk), cy, z)
     if name == "s9":
         return (1624, 1150, lerp(3.6, 3.75, u))
     if name == "s10":

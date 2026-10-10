@@ -159,7 +159,7 @@ def tired_state(t, k):
             wob = math.sin((t - k["lift1"]) * 16.0) * (1 - seg(t, k["lift1"], k["lift1"] + 0.45)) \
                 * seg(t, k["lift1"] - 0.05, k["lift1"])
             # forearm held out, limp wrist hanging (the soggy sleeve dripping)
-            sleeve = dict(SITP, al_ik=1.0, al_th=1.0, al_hx=-225.0, al_hy=115.0 - 14 * wob, al_hz=120.0,
+            sleeve = dict(SITP, al_ik=1.0, al_th=1.0, al_hx=-200.0, al_hy=40.0 - 14 * wob, al_hz=170.0,
                           al_h="relaxed", al_w=1.2 + 0.35 * wob, al_layer="front", neck=0.32, nod=0.06,
                           lean=-0.42)
             if lk > 0.001:
@@ -274,6 +274,8 @@ def tired_state(t, k):
                     (k["wide"] + 0.25, -0.3), (k["calm"] + 0.1, -0.26), (k["calm"] + 0.9, -0.17),
                     (k["l3"], -0.16), (k["bond"] + 0.6, -0.13)],
             "pupil": [(k["form"] + 0.6, -0.1), (k["wide"] + 0.25, 0.25), (k["calm"] + 0.5, 0.15)],
+            "open": [(k["wide"] + 0.1, 0.0), (k["wide"] + 0.35, 0.07), (k["calm"] + 0.2, 0.07),
+                     (k["calm"] + 0.5, 0.0)],
             "head_tilt": [(k["catch"], 0.0), (k["catch"] + 0.2, -0.1), (k["form"], -0.08),
                           (k["form"] + 1.0, 0.0), (k["calm"] + 0.9, 0.07)],
             "head_nod": [(k["catch"], 0.0), (k["catch"] + 0.2, -0.12), (k["form"] + 0.8, -0.04),
@@ -343,8 +345,7 @@ def spec_kw(t, k):
         expr, look = "calm", (0.55, -0.85)
         tilt = 0.08 * (1 - ease_out(seg(t, k["hi"], k["hi"] + 0.3))) - 0.04 * ease_out(seg(t, k["hi"], k["hi"] + 0.3))
         bt = t - (k["hi"] - 0.05)
-        if bt < 0.25:
-            blink = 1.0 - bt / 0.25        # eyes ease open and look up at him
+        blink = clamp(1.0 - bt / 0.25) if bt < 1.3 else None   # eyes ease open, look up at him, no blink
     if t >= k["bond"] + 0.45:
         expr = "content"
         tilt = 0.06 + 0.05 * math.sin(math.tau * (t - k["bond"]) / 1.6)
@@ -494,7 +495,7 @@ def shot_A(ctx, t, info, k):
 def shot_B(ctx, t, info, k):
     st = tired_state(t, k)
     up = ease_in_out(seg(t, k["sit0"] + 0.1, k["sit1"] + 0.25))
-    cx = lerp(1110, 1290, up)
+    cx = lerp(1060, 1290, up)
     cy = lerp(1080, 1040, up)
     z = lerp(2.15, 2.05, up) + 0.12 * ease_in_out(seg(t, k["sit1"], k["cutC"]))
     with core.camera(ctx, cx, cy, z):
@@ -623,7 +624,15 @@ def shot_H(ctx, t, info, k):
     xs, v = _xstop(k)
     z = 1.95 + 0.12 * ease_in_out(seg(t, k["writhe"], k["form"]))
     dx, dy = core.shake(t, k["writhe"] + 0.95, 0.3, 7)
-    _two_shot(ctx, t, info, k, (xs - 105 + dx, 905 + dy, z))
+    cam = (xs - 105 + dx, 905 + dy, z)
+    _two_shot(ctx, t, info, k, cam)
+    # the feet skid back under the thrashing (wet walkway): small puffs + flicks
+    st = tired_state(t, k)
+    with core.camera(ctx, *cam):
+        for i, ts in enumerate((k["writhe"] + 0.45, k["writhe"] + 1.35)):
+            fx.dust_puff(ctx, st["x"] + 20 * S, FY, S * 0.8, t, ts, seed=5 + i, dur=0.6, color="#9fc9bd",
+                         spread=0.6)
+            splash(ctx, st["x"] - 40 * S, FY - 8, S * 0.8, t, ts + 0.02, n=5, seed=31 + i, dur=0.45)
 
 
 def shot_I(ctx, t, info, k):
@@ -634,8 +643,8 @@ def shot_I(ctx, t, info, k):
 
 def shot_J(ctx, t, info, k):
     xs, v = _xstop(k)
-    z = 3.1 + 0.12 * ease_in_out(seg(t, k["wide"], k["calm"]))
-    _two_shot(ctx, t, info, k, (xs - 165, 800, z))
+    z = 2.9 + 0.12 * ease_in_out(seg(t, k["wide"], k["calm"]))
+    _two_shot(ctx, t, info, k, (xs - 80, 790, z))
 
 
 def shot_K(ctx, t, info, k):
@@ -646,8 +655,8 @@ def shot_K(ctx, t, info, k):
 
 def shot_L(ctx, t, info, k):
     xs, v = _xstop(k)
-    z = 3.0 + 0.1 * ease_in_out(seg(t, k["l3"], k["bond"]))
-    _two_shot(ctx, t, info, k, (xs - 125, 760, z), hearts=True, glow_pool=warm_k(t, k))
+    z = 2.95 + 0.1 * ease_in_out(seg(t, k["l3"], k["bond"]))
+    _two_shot(ctx, t, info, k, (xs - 100, 835, z), hearts=True, glow_pool=warm_k(t, k))
 
 
 def shot_M(ctx, t, info, k):
@@ -707,9 +716,15 @@ def SFX(info):
     # getting up + squishy stumble steps (one per contact)
     ev.append((k["rise0"] + 0.15, "water_splash", -13, 0.0))
     ev.append((k["rise0"] + 0.45, "squish", -4, 0.0))
-    n = int(round((k["walk1"] - k["walk0"]) / 0.8))
-    for i in range(n + 1):
-        ev.append((k["walk0"] + 0.04 + 0.8 * i, "squish", -2 - (i % 2), -0.1 * i))
+    # stumble foot contacts land at ~0.47 s and ~1.15 s of each 1.6 s cycle; the stop plants at walk1
+    i = 0
+    for c0 in range(4):
+        for ph in (0.47, 1.15):
+            tc = k["walk0"] + 1.6 * c0 + ph
+            if tc < k["walk1"] - 0.05:
+                ev.append((tc, "squish", -2 - (i % 2), -0.1 * i))
+                i += 1
+    ev.append((k["walk1"] + 0.05, "squish", -6, -0.2))
     # watched: a low growl from the dark (behind him, screen-right), his heart thumps
     ev.append((k["watched"] + 0.1, "creature_snarl", -13, 0.6))
     ev.append((k["hunch0"], "heartbeat", -5, 0.0))

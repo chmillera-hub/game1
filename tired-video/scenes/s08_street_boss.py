@@ -247,9 +247,9 @@ def _agents(ctx, t):
                 look=(-0.1, 0.0), turn=-0.3, seed=2, face={"lid": 0.1})
 
 
-def _boss(ctx, t, look=(0.12, 0.0), face=None, mouth=(0.0, 0.0)):
+def _boss(ctx, t, look=(0.12, 0.0), face=None, mouth=(0.0, 0.0), blink=None):
     return draw_person(ctx, "boss", BOSS[0], BOSS[1], BOSS_S, t, pose="stand", expr="cold",
-                       look=look, face=face, mouth=mouth, turn=0.12)
+                       look=look, face=face, mouth=mouth, turn=0.12, blink=blink)
 
 
 def _boss_cam(dy_frac, zoom, dx=10.0):
@@ -303,8 +303,10 @@ def _emb_ots_face(t, T):
     d = ease_out_back(seg(t, jd, jd + 0.17), 2.2)   # the drop (overshoot + settle)
     close = ease_out(seg(t, T["l02"] - 0.06, T["l02"] + 0.08))
     k = d * (1 - close)
+    p2 = ease_out(seg(t, T["c2"] + 0.3, T["c2"] + 0.4))
     return {"open": 1.0 * k, "lip_low": 0.8 * k, "squash": 0.07 * math.sin(math.pi * a) - 0.3 * k,
-            "pupil": -0.5 * d, "iris": -0.35 * d, "eye_size": 0.16 * d, "brow": 0.85 * d,
+            "pupil": -0.25 * p2 - 0.25 * d, "iris": -0.35 * d, "eye_size": 0.16 * d,
+            "brow": 0.3 * (1 - p2) + 0.85 * d,
             "brow_ang": 0.3 * d, "press": 0.55 * close, "wobble": 0.5 * close, "lid": -0.12 * d,
             "head_nod": -0.06 * d}
 
@@ -323,8 +325,10 @@ def shot_ots(ctx, t, info, T):
     sh = core.shake(t, T["jd"], 0.3, 7, seed=5)
     face = _emb_ots_face(t, T)
     blush = lerp(0.3, 0.1, seg(t, T["jd"], T["jd"] + 0.35)) + 0.25 * seg(t, T["l02"], T["c3"])
-    a = _emb(ctx, 850 + sh[0], 2290 + sh[1], 1.16, t, CARRY_LOW, 1.0, expr="surprised",
-             look=(-0.3, -0.04), face=face, mouth=info.mouth("embar", t), turn=-1.2,
+    # dun - dun - DUNNN: the cut, then his pupils shrink, then the jaw drops
+    expr = state_at(t, [(0, "neutral"), (T["c2"] + 0.3, "surprised")], 0.1)
+    a = _emb(ctx, 838 + sh[0], 2290 + sh[1], 1.16, t, CARRY_LOW, 1.0, expr=expr,
+             look=(-0.3, -0.04), face=face, mouth=info.mouth("embar", t), turn=-0.85,
              blush=blush, sweat=0.35)
     if t >= T["jd"]:
         fx.sweat_fly(ctx, a["top"][0] - 30, a["top"][1] + 110, 1.2, t, T["jd"] + 0.02, seed=3, n=4)
@@ -373,10 +377,10 @@ def shot_damage(ctx, t, info, T):
         with core.camera(ctx, *cam):
             _house_bg(ctx, t)
             # Tiredness, far back on the lawn, still running laps holding his arm (silent)
-            s = 0.36
+            s = 0.32
             v = cycle_speed("tired", "run", 1.0) * s
-            tx = 1760 + v * (t - T["c4"])
-            draw_person(ctx, "tired", tx, 1572, s, t, pose=RUN_HOLD, pose_t=t - T["c4"], expr="pain",
+            tx = 1800 + v * (t - T["c4"])
+            draw_person(ctx, "tired", tx, 1556, s, t, pose=RUN_HOLD, pose_t=t - T["c4"], expr="pain",
                         face={"open": 0.25, "teeth": 1.0}, turn=1.0, **TIRED_KW)
             _house_fg(ctx, t)
 
@@ -385,14 +389,17 @@ def shot_damage(ctx, t, info, T):
 def shot_boss(ctx, t, info, T, kind):
     face, mouth = None, (0.0, 0.0)
     door = 0.0
+    blink = None
     if kind == "ecu":                 # eyes meet (SH6)
         u = seg(t, T["c6"], T["c7"])
         cam = _boss_cam(-20, lerp(8.6, 9.0, u), dx=2)
         look, face = (0.0, 0.0), {"lid": 0.02}
-    elif kind == "mcu":               # "How you doing?" — nothing (SH8)
+    elif kind == "mcu":               # "How you doing?" — nothing but one slow blink (SH8)
         u = seg(t, T["c8"], T["c9"])
         cam = _boss_cam(-260, lerp(3.6, 3.68, u))
         look = (0.18, 0.0)
+        b0 = T["c8"] + 0.12
+        blink = tween(t, [(b0, 0.0), (b0 + 0.22, 1.0), (b0 + 0.36, 1.0), (b0 + 0.6, 0.0)])
     elif kind == "slide":             # eyes slide to Tiredness (SH12)
         u = seg(t, T["c12"], T["c13"])
         cam = _boss_cam(-250, lerp(3.9, 3.97, u), dx=16)
@@ -406,12 +413,12 @@ def shot_boss(ctx, t, info, T, kind):
         look = (lerp(-0.9, 0.16, k), lerp(0.06, 0.0, k))
         nl = ease_in_out(seg(t, T["c15"] + 0.22, T["c15"] + 0.44))
         face = {"head_turn": -0.035 * (1 - k), "lid": 0.08 * nl, "lower": 0.1 * nl, "press": 0.15 * nl}
-        mouth = info.mouth("boss", t)
-        door = ease_in_out(seg(t, T["l05"] + 0.3, T["l05"] + 0.8))
+        mo, mw = info.mouth("boss", t)
+        mouth = (mo * 0.62, mw)          # crisp, minimal: she barely moves her face
     with core.camera(ctx, *cam):
         _street_bg(ctx, t, van_door=door)
         _agents(ctx, t)
-        _boss(ctx, t, look=look, face=face, mouth=mouth)
+        _boss(ctx, t, look=look, face=face, mouth=mouth, blink=blink)
 
 
 # ============================================================================ SH7 / SH9 / SH10 Emb medium
@@ -491,7 +498,7 @@ def _finger(ctx, x0, y0, ang, ln, w=26):
         core.fill(ctx, core.mixc(SKIN, "#ffffff", 0.45))
 
 
-def _hand_over_edge(ctx, x, y, ang, s, lens=(60, 68, 62, 48), spread=27, gap=None):
+def _hand_over_edge(ctx, x, y, ang, s, lens=(74, 82, 76, 60), spread=26, gap=None):
     """Back of a hand whose fingers curl over an edge: palm at (x, y), fingers along ang."""
     with core.saved(ctx, x, y, s, ang):
         for i, ln in enumerate(lens):
@@ -585,7 +592,7 @@ def _back_insert(ctx, t, info, T, part):
     _hand_over_edge(ctx, 226, 1012, 0.05, 1.18)
     # right hand on the top-right corner, fingers draped over the top edge
     tw_ = 0.05 * math.sin(math.pi * seg(t, T["tuck"] - 0.04, T["tuck"] + 0.26)) if part != "slip" else 0.0
-    _hand_over_edge(ctx, 800, 752, 2.05 + tw_, 1.18, lens=(40, 46, 44, 34), gap=2)
+    _hand_over_edge(ctx, 800, 752, 2.05 + tw_, 1.18, lens=(52, 60, 56, 44), gap=2)
     ctx.restore()
 
 
@@ -683,7 +690,8 @@ def _van_times(T):
 def shot_van(ctx, t, info, T):
     t_go, t_arr, t_in, t_slam = _van_times(T)
     x, y, s, _ = _run_state(t, t_go)
-    cam = (500, 1225, 1.3)
+    u = ease_in_out(seg(t, T["c16"], T["end"]))
+    cam = (lerp(470, 440, u), lerp(1262, 1250, u), lerp(1.45, 1.6, u))
     door = 1.0 - ease_in(seg(t, t_slam - 0.32, t_slam))
     bounce = 0.0
     if t >= t_slam:
@@ -692,8 +700,8 @@ def shot_van(ctx, t, info, T):
     expr = "nervous_smile" if t < T["l06"] else "alarmed"
     kw = dict(expr=expr, look=(-0.45, 0.0), face={"wobble": 0.35}, mouth=info.mouth("embar", t),
               blush=0.72, sweat=0.7, turn=-1.1)
-    with core.camera(ctx, *cam):
-        sets.street_view(ctx, t, "bg", frame=False, leaf=True, bird=False)
+    with core.cache_steps(2), core.camera(ctx, *cam):
+        sets.street_view(ctx, t, "bg", frame=False, leaf=False, bird=False)
         _gate(ctx)
         props.black_van(ctx, VAN_B[0], VAN_B[1], VAN_S, t=t)
         if t >= t_arr:
@@ -708,7 +716,7 @@ def shot_van(ctx, t, info, T):
                     pose_t=(t - t_go) * SCURRY_RATE, **kw))
             _van_a(ctx, t, door, bounce, layer="body")
         else:
-            _van_a(ctx, t, 1.0)
+            _van_a(ctx, t, ease_out(seg(t, T["c16"], T["c16"] + 0.3)))
         # people, far to near (feet y): the agents, Emb (while outside), the Boss
         k1 = ease_in_out(seg(t, t_go + 0.2, t_go + 0.5))
         k2 = ease_in_out(seg(t, t_slam + 0.15, t_slam + 0.4))
@@ -782,7 +790,7 @@ def SFX(info):
     ev.append((1.52, "latch_click", -2.0, -0.05))
     # SH2: the reveal sting; the jaw drop lands on its third hit
     ev.append((T["c2"] - 0.02, "dun_dun_dun", -5.0))
-    ev.append((T["jd"], "boing", -13.0, 0.25))
+    ev.append((T["jd"], "boing", -16.0, 0.25))
     # SH3: fake-cool glasses glint on "control"
     ev.append((_wt(info, "s08_l02", 5) - 0.3, "sparkle", -17.0, 0.2))
     # SH4: a quick pan
@@ -809,8 +817,8 @@ def SFX(info):
     ev.append((T["t_on"], "scan_beep", -6.0))
     ev.append((T["t_check"] + 0.05, "puzzle_click", -6.0))
     ev.append((T["tuck"] - 0.45, "paper", -11.0))
-    # SH15: the van door slides open behind her as she says it
-    ev.append((T["l05"] + 0.3, "whoosh", -18.0, -0.3))
+    # SH16: the van door rolls open by itself
+    ev.append((T["c16"] - 0.18, "whoosh", -13.0, -0.4))
     # SH16: he scurries across the lawn and dives in; the door slams, the van rocks
     t_go, t_arr, t_in, t_slam = _van_times(T)
     ev.append((t_go, "footsteps_run", -7.0, 0.1))

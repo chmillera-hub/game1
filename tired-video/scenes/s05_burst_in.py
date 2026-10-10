@@ -44,9 +44,9 @@ T_GAME = (T_SEAT[0], human.ground_from_seat("tired", T_SEAT[1], S))
 E_DOOR = (360, 1452)          # Emb one step into the room
 E_BED = (1170, 1548)          # kneeling at the bed
 E_LAUNDRY = (1105, 1540)
-E_CLOSET = (745, 1536)
-T_BEHIND = (1010, 1538)        # Tiredness right behind him
-E_FLOOR = (705, 1552)         # Emb's landing spot (butt)
+E_CLOSET = (780, 1536)
+T_BEHIND = (1112, 1538)        # Tiredness right behind him
+E_FLOOR = (745, 1552)         # Emb's landing spot (butt)
 CAGE_FLOOR = (520, 1548)      # where the cage sits once he puts it down
 CHAIR_DX = -300               # he rolled the chair back when he got up
 
@@ -173,7 +173,7 @@ def draw_gamer(ctx, t, notes=0.9):
     bob = math.sin(2 * math.pi * t / BEAT)
     face = {"head_nod": 0.03 * bob, "head_tilt": 0.015 * bob, "curve": 0.12, "lower": 0.12}
     a = human.draw_person(ctx, "tired", T_GAME[0], T_GAME[1], S, t, pose="game", expr="bored",
-                          turn=1.0, headphones="on", face=face, look=(0.62, -0.02))
+                          turn=0.45, headphones="on", face=face, look=(0.7, -0.05))
     sets.bedroom(ctx, t, layer="fg", parts=("desk", "chair"))
     hx, hy = a["head"]
     cup = (hx - 112 * S, hy + 10 * S)
@@ -268,27 +268,31 @@ def shot_hall(ctx, t, info, c):
     t0 = c.crawl
     tl = t - t0
     D = c.burst - c.crawl
-    t_land = 0.95            # reaches the landing
+    t_land = 0.95            # reaches the landing (shadow on)
     t_tail = 0.92            # tail slips (absolute: t0 + t_tail)
     t_see = 1.06             # his head snaps to it
     t_go = 1.36              # scramble up and dash
-    rate = 2.0               # scurry: crawl cycle at double speed
-    sp = human.cycle_speed("embar", "crawl", 0.95) * S * rate
-    # path: along the stairs (rotated), then the landing
-    x0 = 330.0
-    if tl < t_land:
-        x = x0 + sp * math.cos(SLOPE) * tl
+    rate = 2.3               # scurry: crawl cycle at ~double speed (travel matched to it)
+    dec = 0.18               # he freezes when he sees the tail
+    if tl < t_see:
+        phase = rate * tl
     else:
-        x = x0 + sp * math.cos(SLOPE) * t_land + sp * 0.55 * (min(tl, t_go) - t_land)
+        tau = min(tl - t_see, dec)
+        phase = rate * t_see + rate * (tau - tau * tau / (2 * dec))
+    v = human.cycle_speed("embar", "crawl", 0.8) * S * math.cos(0.2)
+    x = 440.0 + v * phase
     rot = -0.2 * (1 - smoothstep_((x - 640) / 120.0))
     gy = stair_y(x - 70)
-    # scramble to the door
+    # scramble to the door: accelerate; the run cycle is driven by distance (no sliding)
     kgo = seg(tl, t_go, D)
+    v_run = human.cycle_speed("embar", "run_panic", 0.8) * S
+    dist = 0.0
     if tl > t_go:
-        x += 420 * ease_in(kgo) * kgo + 120 * kgo
+        dist = 480 * kgo * kgo + 60 * kgo
+        x += dist
     # camera tracks
-    cx = lerp(520, 845, ease_in_out(seg(tl, 0.0, 1.05)))
-    cy = lerp(1390, 1170, ease_in_out(seg(tl, 0.0, 1.05)))
+    cx = lerp(600, 850, ease_in_out(seg(tl, 0.0, 1.1)))
+    cy = lerp(1330, 1170, ease_in_out(seg(tl, 0.0, 1.1)))
     with core.camera(ctx, cx, cy, 1.15):
         sets.hallway_upstairs(ctx, t, layer="back")
         sets.hallway_upstairs(ctx, t, layer="hall")
@@ -297,7 +301,7 @@ def shot_hall(ctx, t, info, c):
         see = seg(tl, t_see, t_see + 0.12)
         if tl < t_go:
             pose = {"base": "crawl", "rot": rot, "lean": 1.5, "neck": -0.85 + 0.55 * see, "nod": -0.25 - 0.15 * see}
-            pose_t = rate * tl
+            pose_t = phase
             expr = state_at(tl, [(0, "whisper"), (t_see, "alarmed")], 0.12)
             look = tween(tl, [(0, (0.4, -0.25)), (t_tail + 0.02, (0.4, -0.25)),
                               (t_tail + 0.1, (0.9, 0.15))])
@@ -307,7 +311,7 @@ def shot_hall(ctx, t, info, c):
         else:
             pose = ({"base": "crawl", "rot": 0.0, "neck": -0.3, "nod": -0.4}, "run_panic",
                     smoothstep_(seg(tl, t_go, t_go + 0.22)))
-            pose_t = tl - t_go
+            pose_t = dist / v_run
             expr = "panic"
             look = (0.85, 0.0)
             face = {"teeth": 1.0, "open": 0.06, "lip_up": 0.25, "width": 0.25, "pupil": -0.3}
@@ -388,7 +392,7 @@ def emb_doorway(ctx, t, c, info):
                 face.update({"smirk": 0.3, "brow_l": 0.15})
         blush = tween(t, [(tf, 1.0), (rel0, 1.0), (rel0 + 0.7, 0.5)])
     frozen = tf <= t < c.pov1 - 0.1
-    blink = 0.0 if frozen else None
+    blink = 0.0 if (frozen or t < tf) else None
     spike = 0.0
     if t >= tf:
         spike = ease_out_back(seg(t, tf, tf + 0.12)) * (1 - ease_in(seg(t, c.pov1 - 0.05, c.pov1 + 0.3)))
@@ -449,11 +453,11 @@ def shot_door(ctx, t, info, c):
 # shots 7/8: the search
 # ---------------------------------------------------------------------------
 CLOTHES = [  # (launch dt from srch_b, kind, colour, landing x, rot)
-    (0.32, "shirt", "#ff8a4f", 905, 0.4),
-    (0.55, "sock", "#ffffff", 1010, 1.2),
-    (0.74, "shirt", "#7cc96a", 1095, -0.5),
-    (0.95, "sock", "#f2c14e", 850, -0.9),
-    (1.12, "shirt", "#9fd8f7", 1180, 0.2),
+    (0.32, "shirt", "#ff8a4f", 890, 0.4),
+    (0.55, "sock", "#ffffff", 975, 1.2),
+    (0.74, "shirt", "#7cc96a", 1240, -0.5),
+    (0.95, "sock", "#f2c14e", 1015, -0.9),
+    (1.12, "shirt", "#9fd8f7", 1295, 0.2),
 ]
 
 
@@ -463,7 +467,7 @@ def draw_clothes(ctx, t, c):
         if t < t0:
             continue
         u = seg(t, t0, t0 + 0.62)
-        sx, sy = 650, 1010
+        sx, sy = 680, 1010
         x = lerp(sx, lx, u)
         y = lerp(sy, 1548, u) - 420 * math.sin(math.pi * u) * (1 - 0.25 * u)
         rot = rr + (1 - u) * 6.0 * (1 if i % 2 else -1)
@@ -544,7 +548,7 @@ def shot_search(ctx, t, info, c):
         cam = (lerp(1375, 1045, k), lerp(1215, 1190, k), 1.25)
     else:
         k = ease_in_out(seg(t, tb, c.reveal))
-        cam = (lerp(705, 625, k), lerp(1010, 975, k), lerp(1.5, 1.95, k))
+        cam = (lerp(725, 660, k), lerp(1010, 975, k), lerp(1.5, 1.85, k))
     x, y, pose, pose_t, turn, expr, look, face, what = emb_search_pose(t, c)
     closet = ease_out_back(seg(t, tb, tb + 0.22)) if t >= tb else 0.0
     empty, spin, cdx = chair_state(t, c)
@@ -650,6 +654,11 @@ def emb_late(t, c, info):
                 face=face, blush=blush, mode="floor", squash_body=sq)
 
 
+def flat_mouth(m):
+    """Deadpan: Tiredness barely opens his mouth."""
+    return (m[0] * 0.65, m[1] * 0.5)
+
+
 def emb_anchor_at(tq, c, info):
     """Emb's anchors at time tq (drawn into a dummy surface; cached, deterministic)."""
     key = ("anch", round(tq, 4))
@@ -667,10 +676,10 @@ def tired_late(t, c, info, emb_shoulder):
     """Tiredness from the reveal to the end."""
     x, y = T_BEHIND
     turn = -0.62
-    expr = "squint"
-    face = {"lid": 0.04, "press": 0.15}
-    look = (-0.55, 0.12)
-    blink = slow_blink(t, c.reveal + 0.8)
+    expr = ("unamused", "squint", 0.55)
+    face = {"lid": -0.07, "press": 0.15}
+    look = (-0.6, 0.04)
+    blink = slow_blink(t, c.reveal + 1.0, 0.22, 0.1, 0.3)
     pose = "arms_crossed"
     pose_t = None
     # --- tap
@@ -686,7 +695,7 @@ def tired_late(t, c, info, emb_shoulder):
         k = ease_in_out(seg(t, reach0, reach1)) * (1 - ease_in_out(seg(t, c.l2.start, c.l2.start + 0.22)))
         pose = ("arms_crossed", reach, k)
         look = (-0.6, 0.05)
-        expr = state_at(t, [(c.tap, "squint"), (c.tap + 0.2, "unamused")], 0.3)
+        expr = state_at(t, [(c.tap, ("unamused", "squint", 0.55)), (c.tap + 0.2, "unamused")], 0.3)
     if t >= c.l2.start:
         expr = "unamused"
     # --- pupils track the leap (head does not move)
@@ -760,7 +769,7 @@ def draw_late(ctx, t, info, c):
     ta = tired_late(t, c, info, tgt)
     human.draw_person(ctx, "tired", ta["x"], ta["y"], S, t, pose=ta["pose"], pose_t=ta["pose_t"],
                       expr=ta["expr"], look=ta["look"], face=ta["face"], turn=ta["turn"], headphones="neck",
-                      blink=ta["blink"], mouth=info.mouth("tired", t))
+                      blink=ta["blink"], mouth=flat_mouth(info.mouth("tired", t)))
     # fx in world space
     fx.tap_marks(ctx, tgt[0] + 6, tgt[1] - 10, 0.8, t, c.tap1, taps=2, gap=0.14, angle=-math.pi * 0.62,
                  label="tap")
@@ -776,15 +785,15 @@ def draw_late(ctx, t, info, c):
 def shot_late(ctx, t, info, c):
     if t < c.tap:
         k = ease_in_out(seg(t, c.reveal + 0.1, c.reveal + 1.2))
-        cam = (lerp(625, 1000, k), lerp(975, 1020, k), lerp(1.95, 0.9, k))
+        cam = (lerp(660, 1030, k), lerp(975, 1020, k), lerp(1.85, 0.9, k))
     elif t < c.launch:
         k = ease_out(seg(t, c.tap, c.launch))
-        cam = (lerp(840, 850, k), lerp(1000, 990, k), lerp(1.22, 1.26, k))
+        cam = (lerp(915, 925, k), lerp(1000, 990, k), lerp(1.2, 1.24, k))
     elif t < c.hi0:
-        cam = (870, 930, 0.96)
+        cam = (935, 930, 0.96)
     else:
         k = ease_in_out(seg(t, c.l3.end, c.end))
-        cam = (lerp(860, 900, k), lerp(1070, 1010, k), lerp(1.38, 1.58, k))
+        cam = (lerp(925, 965, k), lerp(1070, 1010, k), lerp(1.38, 1.58, k))
     with core.cache_steps(2):
         with core.camera(ctx, *cam):
             draw_late(ctx, t, info, c)
@@ -817,7 +826,7 @@ def SFX(info):
     ev = []
     # headphone leak while his headphones are on (bedroom shots only)
     ev += sfx.loop_events("game_music_leak", 0.0, c.crawl, -1)
-    ev += sfx.loop_events("game_music_leak", c.burst, c.search + 0.6, -5)
+    ev += sfx.loop_events("game_music_leak", c.burst, c.srch_b, -5)
     ev.append((0.35, "game_blips", -9, 0.4))
     # hallway
     ev.append((c.crawl + 0.05, "cloth_rustle", -6, -0.3))
@@ -841,6 +850,8 @@ def SFX(info):
     ev.append((c.ceil, "ceiling_thud", 0, -0.1))
     ev.append((c.land, "body_thud", 0, -0.1))
     # impatient foot
-    for k in range(3):
-        ev.append((c.foot + 0.06 + k * 0.5, "foot_tap", 2, 0.15))
+    for k in range(3):   # tap_foot: the toe comes down at phase 0.5 of each 0.5 s cycle
+        tk = c.foot + 0.25 + k * 0.5
+        if tk < c.end - 0.05:
+            ev.append((tk, "foot_tap", 2, 0.15))
     return ev

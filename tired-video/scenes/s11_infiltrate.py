@@ -12,9 +12,11 @@ Shot list (all times derived from cues / line ids; see _T):
   F  lab         LAB 7 door slides open, he steps in; the wall screen blinks on,
                  his pupils go up to it, head follows
   G  screen      insert: SPECIMEN ZERO / ESCAPED / LAST SEEN: SEWER LINE 7
-  H  terrarium   insert: critters exactly like the thing press on the glass,
+  H  terrarium   insert: from a specimen tank, push in on critters exactly like
+                 the thing (one hops up onto the glass, one turns late),
                  "CARRIER / BITE TRANSFERS TRAITS"
-  I  realize     close-up: eyes label -> bandage -> label, lids lift +15%
+  I  realize     close-up: eyes label -> bandage -> label, lids lift +15%; the
+                 clipboard slips from his hand (it stays on the lab floor after)
   J  lean/alarm  he steadies himself on the console; hand lands on the button.
                  Alarm: red wash + beacons. His pupils slide to his hand.
   K  l05         close-up in the red light: "Oh no." (flat)
@@ -32,7 +34,7 @@ Shot list (all times derived from cues / line ids; see _T):
 import math
 
 from engine import core, sets, props, fx
-from engine.core import tween, seg, clamp, lerp, ease_out_back, ease_in_out, ease_out, ease_in, state_at
+from engine.core import tween, seg, clamp, lerp, ease_out_back, ease_in_out, ease_out, ease_in
 from engine.human import draw_person, cycle_speed
 from engine.creatures import draw_thing
 from audio import sfx as _sfx
@@ -80,6 +82,7 @@ def _T(info):
     T["cutH"] = T["terr"]
     T["cutI"] = T["realize"]
     T["cutJ"] = T["lean"]
+    T["drop"] = T["realize"] + 0.26
     T["press"] = T["lean"] + 0.42
     T["cutK"] = T["l05"]
     T["cutL"] = T["l06"] - 0.06
@@ -165,7 +168,7 @@ def _tired_lobby_kw(t, T):
     if t >= ta + 0.28:
         pose = ("hold_side", {"base": "hold_side", "ar_p": 0.45, "ar_e": 1.25, "ar_o": 0.05}, up)
     # eyes: forward, then to her; small nods on beats
-    look = tween(t, [(0.0, (0.6, 0.05)), (T["l01"], (0.55, 0.12))])
+    look = tween(t, [(0.0, (0.6, 0.05)), (T["l01"], (0.62, -0.38))])
     nod = tween(t, [(T["l03"] - 0.05, 0.0), (T["l03"] + 0.12, 0.07), (T["l03"] + 0.4, 0.0),
                     (T["l04e"] + 0.05, 0.0), (T["l04e"] + 0.22, 0.09), (T["l04e"] + 0.55, 0.02)])
     lid = tween(t, [(T["l03e"] - 0.25, 0.0), (T["l03e"] + 0.05, 0.08)])
@@ -181,8 +184,8 @@ def _tired_lobby_kw(t, T):
 def _recep_kw(t, T, info):
     ta = T["lobby"] + 0.95
     # typing on her (hidden) screen, then pupils up to him, head follows
-    look, head = _lead(t, [(0.0, (-0.2, 0.75)), (ta - 0.1, (-0.2, 0.75)), (ta + 0.12, (-0.6, 0.05))], 0.15)
-    nod = 0.12 * clamp(head[1])
+    look, head = _lead(t, [(0.0, (-0.2, 0.75)), (ta - 0.1, (-0.2, 0.75)), (ta + 0.12, (-0.62, -0.4))], 0.15)
+    nod = 0.14 * clamp(head[1] + 0.4) - 0.05
     brow_r = tween(t, [(T["l02"] - 0.05, 0.0), (T["l02"] + 0.15, 0.22), (T["l02e"] + 0.3, 0.22),
                        (T["l02e"] + 0.6, 0.05)])
     gnod = tween(t, [(T["l04"] + 0.25, 0.0), (T["l04"] + 0.45, 0.08), (T["l04"] + 0.8, 0.0)])
@@ -334,12 +337,34 @@ def shot_realize(ctx, t, T, info):
     wide = ease_out(seg(t, R + 1.08, R + 1.35))
     face = {"head_nod": 0.13 * clamp(head[1]) - 0.03 * wide, "head_turn": -0.12 * clamp(-head[0]),
             "lid": -0.16 * wide, "pupil": -0.28 * wide, "brow": 0.28 * wide, "press": 0.25 * wide}
-    pose = ("stand", {"ar_ik": 1.0, "ar_tx": 0.02, "ar_ty": 0.70, "ar_tz": 0.32, "ar_h": "relaxed",
-                      "ar_layer": "front", "nod": 0.05}, arm)
+    pose = ("hold_side", {"ar_ik": 1.0, "ar_tx": 0.02, "ar_ty": 0.70, "ar_tz": 0.32, "ar_h": "relaxed",
+                          "ar_layer": "front", "nod": 0.05, "hold": 1}, arm)
+    drop = T["drop"]
+    held = _clip_hold(0.75) if t < drop else None
+    # no auto-blink on this beat: the eyes do the acting
     with core.camera(ctx, *cam):
         _lab_bg(ctx, t, T)
         draw_person(ctx, "tired", REAL_X, 1500, 0.75, t, pose=pose, turn=-0.55, expr="bored", look=look,
-                    face=face, outfit=OUT, bandage=True)
+                    face=face, outfit=OUT, bandage=True, hold=held, blink=0.0)
+        _dropped_clip(ctx, t, T)
+
+
+CLIP_FLOOR = (1462, 1503)
+
+
+def _dropped_clip(ctx, t, T):
+    """The clipboard slips out of his hand on the realisation and lands on the floor."""
+    drop = T["drop"]
+    if t < drop:
+        return
+    dt = t - drop
+    x0, y0 = REAL_X + 54, 1231 + 71
+    y = y0 + 0.5 * 3600 * dt * dt
+    if y < CLIP_FLOOR[1] - 30:
+        props.clipboard(ctx, x0 + 60 * dt, y, 0.64, 0.05 + 2.2 * dt)
+    else:
+        with core.saved(ctx, CLIP_FLOOR[0], CLIP_FLOOR[1], (1.0, 0.3)):
+            props.clipboard(ctx, 0, -40, 0.64, 0.12)
 
 
 CON_X = 1592
@@ -374,7 +399,6 @@ def _console_tired(t, T):
 
 
 def shot_console(ctx, t, T, info):
-    L = T["lean"]
     al = _alarm_amt(t, T)
     pressed = ease_out(seg(t, T["press"] - 0.03, T["press"] + 0.06))
     k = ease_in_out(seg(t, T["alarm"], T["cutK"]))
@@ -382,6 +406,7 @@ def shot_console(ctx, t, T, info):
     x, pose, look, face = _console_tired(t, T)
     with core.camera(ctx, *cam):
         _lab_bg(ctx, t, T, alarm=al, pressed=pressed)
+        _dropped_clip(ctx, t, T)
         draw_person(ctx, "tired", x, 1500, 0.75, t, pose=pose, turn=-0.5, expr="bored", look=look,
                     face=face, outfit=OUT, bandage=True)
         sets.lab(ctx, t, "fg", alarm=al)
@@ -444,6 +469,7 @@ def shot_bolt(ctx, t, T, info):
     face = {"squash": 0.12 * ant * (1 - go), "lid": -0.1 * ant}
     with core.camera(ctx, *cam):
         _lab_bg(ctx, t, T, alarm=1.0, pressed=1.0 - go)
+        _dropped_clip(ctx, t, T)
         if t >= t0 + 0.16:
             fx.motion_lines(ctx, x + 120, 1080, math.pi, 420, t, 1.0, seed=4)
             fx.dust_puff(ctx, CON_X, 1500, 0.8, t, t0 + 0.16, seed=5)
@@ -523,7 +549,6 @@ def shot_chase(ctx, t, T, info):
     x, y, s = sets.corridor_scale(z, 0.08)
     gz1 = lerp(1.0, 0.22, seg(t, t0 + 0.25, T["hit"]) ** 0.9)
     gz2 = lerp(1.05, 0.34, seg(t, t0 + 0.45, T["hit"]) ** 0.9)
-    hit = T["hit"]
     with core.camera(ctx, 540, 960, 1.0):
         sets.corridor(ctx, t, "bg", alarm=1.0, window_broken=0.0)
         gs = []
@@ -622,17 +647,6 @@ def _fall_rot(t, T):
 _PROBE = None
 
 
-def _draw_hip_at(ctx, who, hx, hy, s, t, **kw):
-    """Draw a person so that the HIP anchor lands on (hx, hy) (airborne poses)."""
-    global _PROBE
-    if _PROBE is None:
-        import cairocffi as cairo
-        _PROBE = cairo.Context(cairo.ImageSurface(cairo.FORMAT_RGB24, 2, 2))
-    a0 = draw_person(_PROBE, who, 0.0, 0.0, s, t, **kw)
-    hx0, hy0 = a0["hip"]
-    return draw_person(ctx, who, hx - hx0, hy - hy0, s, t, **kw)
-
-
 def _probe_hip(hx, hy, s, t, kw):
     """Anchors for a person drawn so the HIP lands on (hx, hy); '_x', '_y' = where to draw."""
     global _PROBE
@@ -677,8 +691,8 @@ def shot_fall_close(ctx, t, T, info):
     else:
         pose = (flipp, landp, ease_out_back(land))
     # screen placement: hips around (470, 980), gentle drift; pull back a bit for the twist
-    sc = tween(t, [(L7, 1.5), (P, 1.58), (P + 0.25, 1.58), (P + 1.0, 1.32)])
-    hx = 490 + 26 * math.sin(tm * 0.9)
+    sc = tween(t, [(L7, 1.45), (P, 1.5), (P + 0.3, 1.38), (P + 1.0, 1.28)])
+    hx = 525 + 22 * math.sin(tm * 0.9) - 30 * seg(t, P + 0.6, P + 1.0)
     hy = tween(t, [(L7, 1010), (P, 990), (P + 1.0, 940)]) + 16 * math.sin(tm * 1.3)
     # eyes: down at the city -> to the viewer for the punchline; on powers: forward, then down
     look = tween(t, [(L7, (0.1, 0.9)), (L7 + 0.45, (0.1, 0.9)), (L7 + 0.7, (0.0, 0.0))])
@@ -697,11 +711,6 @@ def shot_fall_close(ctx, t, T, info):
     for side, sd in ((-1, 6), (1, 7)):
         fx.motion_lines(ctx, hx + side * 300, hy - 480, math.pi / 2, 560, tm, intensity,
                         color="#fff1f0", seed=sd, spread=200, n=3)
-    # clipboard drifting away up and out (it falls slower than him)
-    kc = seg(t, L7 - 0.1, L7 + 1.7)
-    if kc < 1:
-        props.clipboard(ctx, lerp(hx + 260, hx + 420, kc), lerp(hy - 380, hy - 1500, kc ** 1.25), 1.0,
-                        0.4 + 1.6 * (tm - L7))
     kw = dict(pose=pose, pose_t=tm - L7, expr=expr, look=look, mouth=info.mouth("tired", t), face=face,
               power=pw, outfit=OUT, bandage=True, shadow=False)
     a = _probe_hip(hx, hy, sc, t, kw)
@@ -806,6 +815,8 @@ def SFX(info):
     ev += [(T["lab"] + 0.52, "footstep", -7, 0.3), (T["lab"] + 1.0, "footstep", -9, 0.2)]
     ev.append((T["terr"] + 0.14, "critter_squeak", -5, -0.15))
     ev.append((T["terr"] + 0.7, "critter_squeak", -10, 0.2))
+    ev.append((T["drop"] + 0.3, "stamp", -7, -0.1))                # clipboard hits the floor
+    ev.append((T["drop"] + 0.32, "page_flip", -12, -0.1))
     ev.append((T["realize"] + 1.08, "heartbeat", -2, 0.0))
     ev.append((T["realize"] + 1.62, "heartbeat", -6, 0.0))
     ev.append((T["lean"] + 0.24, "footstep", -5, 0.1))

@@ -47,7 +47,7 @@ H_TIR = human.metrics("tired")["height"]
 BR = dict(laundry_scattered=True, closet_open=1.0, chair_empty=True, chair_spin=1.1)
 HP = "neck"              # Tiredness's headphones (round his neck since the s05 reveal)
 
-CAGE_DESK = (2170.0, DESK_Y - 278 * CAGE_S)   # cage anchor (handle top) on the desk
+CAGE_DESK = (2160.0, DESK_Y - 278 * CAGE_S)   # cage anchor (handle top) on the desk
 IMP_X = 470.0
 EMB_TUG_X = 935.0
 TIR_UP_X = 800.0
@@ -101,24 +101,32 @@ def _room(ctx, t, layer="bg", door=0.0, **kw):
     sets.bedroom(ctx, t, layer=layer, door_open=door, **st)
 
 
-def _inside(kind, t, wig=0.3, look=(0.3, -0.3), blink=None):
+def _inside(kind, t, wig=0.3, look=(0.3, -0.3), blink=None, glint_t0=None):
     """inside_fn for the cage (cage units, origin = interior floor centre)."""
     def fn(c):
         if kind in ("bundle", "peek", "empty"):
             creatures.draw_sweater_lump(c, -6, 0, 0.56, t, wiggle=wig, color=KNIT)
         if kind == "peek":
-            creatures.draw_thing(c, 46, -34, 0.95, t, state="peek", look=look, blink=blink)
+            ta = creatures.draw_thing(c, PEEK[0], PEEK[1], 0.95, t, state="peek", look=look, blink=blink)
             # a fold of knit over its chin so it peeks OUT of the sweater
-            c.move_to(-10, -6)
-            c.curve_to(20, -40, 70, -34, 96, -4)
-            c.line_to(96, 4)
-            c.line_to(-10, 4)
+            c.move_to(PEEK[0] - 62, -4)
+            c.curve_to(PEEK[0] - 30, PEEK[1] - 4, PEEK[0] + 30, PEEK[1] - 2, PEEK[0] + 64, -2)
+            c.line_to(PEEK[0] + 64, 6)
+            c.line_to(PEEK[0] - 62, 6)
             c.close_path()
             core.fill_stroke(c, KNIT, core.PAL["ink"], 5)
+            if glint_t0 is not None:
+                for k, e in enumerate(("eye_l", "eye_r")):
+                    if e in ta:
+                        fx.eye_glint(c, ta[e][0] + 6, ta[e][1] - 7, 0.42, t, glint_t0 + 0.05 * k, dur=0.36,
+                                     halo=None)
         if kind == "thing":
             creatures.draw_sweater_lump(c, -40, 0, 0.42, t, wiggle=0.0, color=KNIT)
             creatures.draw_thing(c, 40, 0, 0.9, t, state="cage_inside", look=look, blink=blink)
     return fn
+
+
+PEEK = (8.0, -36.0)
 
 
 def _cage(ctx, x, y, t, door=0.0, latch="half", rattle=0.0, inside=None, rot=0.0, s=CAGE_S):
@@ -257,8 +265,8 @@ T_WALK = "walk"
 # ----------------------------------------------------------------------------
 def shot_scoop(ctx, t, info, c):
     u = t - c["scoop"]
-    ex, ey = M["desk_lean_feet"]
-    cam = (1985 - 10 * seg(u, 0, 0.9), 1040, 1.28 + 0.04 * seg(u, 0, 0.9))
+    ex, ey = M["desk_lean_feet"][0] - 65, M["desk_lean_feet"][1]
+    cam = (2030 - 12 * seg(u, 0, 0.9), 1075, 1.72 + 0.06 * seg(u, 0, 0.9))
     pose = state_at(u, [(-1, P_PRESS), (0.14, P_LIFT), (0.31, P_SHOVE), (0.45, P_SLAP),
                         (0.6, P_RECOIL)], 0.12)
     turn = tween(u, [(0.55, 0.8), (0.8, 0.45)])
@@ -287,22 +295,25 @@ def shot_scoop(ctx, t, info, c):
             creatures.draw_sweater_lump(ctx, 0, 0, sc, t, wiggle=wig, color=KNIT)
 
     def hold_fn(cx_, side, x, y, ang):
-        if 0.14 <= u < 0.38:
-            bundle(x, y + 26, 0.44, 0.6, -0.15 * seg(u, 0.14, 0.38))
+        st["h"] = (x, y)
 
     sh = _shake(t, c["scoop"] + 0.55, 0.22, 6)
+    st = {}
     with core.camera(ctx, cam[0] + sh[0], cam[1] + sh[1], cam[2]):
         _room(ctx, t, door=0.45)
         if u < 0.14:
-            bundle(lump_x, DESK_Y, 0.44, 0.55)
+            bundle(lump_x, DESK_Y + 2, 0.5, 0.7)
         _cage(ctx, ax, ay, t, door=door, latch="half" if u > 0.5 else "open", rattle=rattle,
               inside=inside)
         a = draw_person(ctx, "embar", ex, ey, S, t, pose=pose, expr=expr, look=look, turn=turn,
                         face=face, pose_t=u, hold=hold_fn, mouth=info.mouth("embar", t),
                         blush=0.5, sweat=0.6)
+        if 0.14 <= u < 0.38 and "h" in st:
+            # the squirming bundle, scooped up in both hands (drawn over the fingers)
+            bundle(st["h"][0], st["h"][1] + 30, 0.5, 0.85, -0.12 * seg(u, 0.14, 0.38))
         if 0.38 <= u < 0.47:
             k = ease_in(seg(u, 0.38, 0.47))
-            bundle(lerp(hx, in_x, k), lerp(hy + 26, in_y, k), lerp(0.44, 0.3, k), 0.9)
+            bundle(lerp(hx, in_x, k), lerp(hy + 30, in_y, k), lerp(0.5, 0.32, k), 0.9)
             fx.motion_lines(ctx, lerp(hx, in_x, k) - 40, lerp(hy, in_y, k) - 10, 0.0, 120, t, 0.8)
         if u >= 0.55:
             lx, ly = _cage_pt(ax, ay, 0.0, 150, 160)
@@ -316,8 +327,8 @@ def shot_latch(ctx, t, info, c):
     u = t - c["A1"]
     ax, ay = CAGE_DESK
     lx, ly = _cage_pt(ax, ay, 0.0, 118, 158)
-    z = 3.0 + 0.3 * ease_in_out(seg(u, 0, 0.8))
-    with core.camera(ctx, lx - 70, ly + 10, z):
+    z = 5.2 + 0.4 * ease_in_out(seg(u, 0, 0.8))
+    with core.camera(ctx, lx - 22, ly + 30, z):
         _room(ctx, t, door=0.45)
         _cage(ctx, ax, ay, t, door=0.0, latch="half", rattle=0.12 * (1 - seg(u, 0, 0.35)),
               inside=_inside("bundle", t, wig=0.45))
@@ -521,14 +532,15 @@ def _tug_rig(t, c, freeze_t=None):
 def _draw_tug(ctx, t, c, info, rig, tired_fn=None, cage_door=0.0, latch="half", inside="bundle",
               rattle=0.4, emb_expr=None, emb_look=(-0.8, 0.25), emb_face=None, imp_expr="derp",
               imp_look=(None, None), wig=0.6, ins_look=(0.4, -0.3), ins_blink=None, emb_t=None,
-              upstage_fn=None):
+              upstage_fn=None, glint_t0=None):
     """bg must be drawn. upstage_fn before the tuggers, tired_fn (downstage) after."""
     it = rig["imp_t"]
 
     def cage_cb(cx_, a):
         mx, my = a["mouth"]
         _cage(cx_, mx, my, t, door=cage_door, latch=latch, rattle=rattle, rot=rig["rot"],
-              inside=_inside(inside, t, wig=wig, look=ins_look, blink=ins_blink) if inside else None)
+              inside=_inside(inside, t, wig=wig, look=ins_look, blink=ins_blink, glint_t0=glint_t0)
+              if inside else None)
 
     if upstage_fn:
         upstage_fn()
@@ -625,13 +637,13 @@ def shot_eyes(ctx, t, info, c):
     u = t - c["G1"]
     rig = _tug_rig(t, c)
     ax, ay = rig["mouth"]
-    ix, iy = _cage_pt(ax, ay, rig["rot"], 34, 168)
+    ix, iy = _cage_pt(ax, ay, rig["rot"], PEEK[0], 234 + PEEK[1] - 12)
     bl = tween(u, [(0.0, 1.0), (0.1, 1.0), (0.18, 0.0), (0.34, 0.0), (0.38, 1.0), (0.42, 0.0)])
     z = 6.2 + 0.5 * seg(u, 0, 0.42)
     with core.camera(ctx, ix, iy, z, rot=-rig["rot"]):
         _room(ctx, t, door=1.0)
         _draw_tug(ctx, t, c, info, rig, rattle=0.1, inside="peek", wig=0.05, ins_look=(0.55, -0.25),
-                  ins_blink=bl, emb_look=(-0.6, 0.5))
+                  ins_blink=bl, emb_look=(-0.6, 0.5), glint_t0=c["G1"] + 0.2)
 
 
 def _bite_point(a):
@@ -778,11 +790,14 @@ def shot_scream(ctx, t, info, c):
 # ----------------------------------------------------------------------------
 # K — run out, door slams
 # ----------------------------------------------------------------------------
+_RUN_RATE = 1.3
+
+
 def _run_path(c):
     p0 = TIR_PEER
     p1 = (430.0, 1585.0)
     p2 = (M["doorway_feet"][0] + 30, M["doorway_feet"][1] + 10)
-    v = abs(cycle_speed("tired", "scream_run", -1.0)) * S
+    v = abs(cycle_speed("tired", "scream_run", -1.0)) * S * _RUN_RATE
     d1 = math.hypot(p1[0] - p0[0], p1[1] - p0[1])
     d2 = math.hypot(p2[0] - p1[0], p2[1] - p1[1])
     return p0, p1, p2, v, d1 / v, d2 / v
@@ -809,7 +824,7 @@ def shot_runout(ctx, t, info, c):
     imp_l = (-0.9, -0.1) if u > 0.25 else None
 
     def tired(tx_, ty_):
-        return draw_person(ctx, "tired", tx_, ty_, S, t, pose="scream_run", pose_t=u, turn=-1.1,
+        return draw_person(ctx, "tired", tx_, ty_, S, t, pose="scream_run", pose_t=u * _RUN_RATE, turn=-1.1,
                            expr=SCREAM_SHUT, mouth=info.mouth("tired", t), headphones=HP)
 
     with core.camera(ctx, 690 + sh[0], 1050 + sh[1], 0.86):
@@ -842,7 +857,7 @@ def shot_window(ctx, t, info, c):
     v = abs(cycle_speed("tired", "scream_run", 1.0)) * s2
     x = 150 + v * u
     y = 1452
-    with core.camera(ctx, 540 + 40 * seg(u, 0, 1.4), 1180, 1.12):
+    with core.camera(ctx, 470 + 90 * seg(u, 0, 1.4), 1235, 1.38):
         sets.street_view(ctx, t, bird=False)
         ctx.save()
         ctx.rectangle(198, 0, 905 - 198, 1528)
@@ -858,50 +873,65 @@ def shot_window(ctx, t, info, c):
 CAGE_FLOOR = (690.0, TUG_Y - 278 * CAGE_S + 4)
 
 
+P_DIVE2 = {"base": "catch", "rot": -0.75, "lift": 120.0, "lean": 0.3, "plant": 0.0, "hip_h": 0.9,
+           "ll_p": -0.5, "ll_k": 0.5, "lr_p": -0.2, "lr_k": 0.9}
+THING_FLOOR = (835.0, TUG_Y + 6)
+CATCH_CAM = (725.0, 1270.0)
+EMB_KNEEL_X = 905.0
+
+
 def shot_catch(ctx, t, info, c):
     m = c["catch"]
     u = t - m
-    ex = tween(u, [(0.1, 960.0), (0.4, 880.0)], ease_out)
-    pose = state_at(u, [(-1, P_CROUCH_READY), (0.1, P_DIVE), (0.36, P_GRAB), (0.62, P_STUFF),
-                        (0.88, P_SHUT), (1.15, P_KNEEL)], 0.12)
-    lift = 60 * math.sin(math.pi * seg(u, 0.1, 0.4))
-    expr = state_at(u, [(-1, "determined"), (0.36, "panic"), (0.88, "determined"),
+    # anticipation crouch -> airborne dive -> slam down on it -> stuff -> shut -> latch
+    ex = tween(u, [(0.12, 1015.0), (0.36, EMB_KNEEL_X)], ease_out)
+    pose = state_at(u, [(-1, P_CROUCH_READY), (0.12, P_DIVE2), (0.34, P_GRAB), (0.62, P_STUFF),
+                        (0.86, P_SHUT), (1.15, P_KNEEL)], 0.1)
+    expr = state_at(u, [(-1, "determined"), (0.36, "panic"), (0.86, "determined"),
                         (1.15, "relieved")], 0.12)
-    look = tween(u, [(0.0, (-0.6, 0.6)), (0.36, (-0.4, 0.8)), (0.62, (-0.8, 0.6)), (1.2, (-0.8, 0.5))])
-    door = tween(u, [(0.82, 0.72), (0.92, 0.0)], ease_in)
+    look = tween(u, [(0.0, (-0.8, 0.6)), (0.36, (-0.5, 0.9)), (0.62, (-0.9, 0.7)), (1.2, (-0.8, 0.6))])
+    face = {"squash": 0.12 * seg(u, 0.34, 0.38) * (1 - seg(u, 0.38, 0.5))}
+    door = tween(u, [(0.82, 0.78), (0.92, 0.0)], ease_in)
     latch = "open" if u < 1.02 else "closed"
     ax, ay = CAGE_FLOOR
     st = {}
-    thing_x = tween(u, [(0.0, 830.0), (0.2, 790.0)])
 
     def hold_fn(cx_, side, x, y, ang):
-        if 0.36 <= u < 0.74:
-            creatures.draw_thing(cx_, x, y + 10, THING_S, t, state="struggle")
         st["h"] = (x, y)
 
-    inside = "bundle" if u < 0.74 else "thing"
-    sh = _shake(t, m + 0.92, 0.2, 6)
-    with core.camera(ctx, 690 + sh[0], 1100 + sh[1], 1.05):
+    inside = "empty" if u < 0.8 else "thing"
+    sh = _shake(t, m + 0.36, 0.2, 7)
+    sh2 = _shake(t, m + 0.92, 0.18, 5)
+    z = 1.42 + 0.06 * seg(u, 0, 1.5)
+    with core.camera(ctx, CATCH_CAM[0] + sh[0] + sh2[0], CATCH_CAM[1] + sh[1] + sh2[1], z):
         _room(ctx, t, door=0.0)
         creatures.draw_impulsivity(ctx, IMP_X - 30, TUG_Y, IMP_S, t, pose="sit", pant=1.0)
-        _cage(ctx, ax, ay, t, door=door, latch=latch, rattle=0.4 * seg(u, 0.74, 0.8) * (1 - seg(u, 1.0, 1.3)),
-              inside=_inside(inside, t, wig=0.2, look=(0.6, -0.2)))
-        if u < 0.36:
-            creatures.draw_thing(ctx, thing_x, TUG_Y + 4, THING_S, t,
-                                 state="sit" if u < 0.12 else "hiss", look=(0.8, -0.3))
+        _cage(ctx, ax, ay, t, door=door, latch=latch,
+              rattle=0.45 * seg(u, 0.8, 0.84) * (1 - seg(u, 1.0, 1.3)),
+              inside=_inside(inside, t, wig=0.05, look=(0.6, -0.2)))
+        if u < 0.34:
+            creatures.draw_thing(ctx, THING_FLOOR[0], THING_FLOOR[1], THING_S, t,
+                                 state="sit" if u < 0.1 else "hiss", look=(0.8, -0.4))
         a = draw_person(ctx, "embar", ex, TUG_Y, S, t, pose=pose, turn=-0.8, expr=expr, look=look,
-                        blush=0.55, sweat=0.8,
-                        mouth=info.mouth("embar", t), hold=hold_fn, pose_t=u)
-        if 0.74 <= u < 0.82 and "h" in st:
-            k = seg(u, 0.74, 0.82)
-            ix, iy = _cage_pt(ax, ay, 0.0, 0, 200)
-            creatures.draw_thing(ctx, lerp(st["h"][0], ix, k), lerp(st["h"][1], iy, k), THING_S * (1 - 0.3 * k),
-                                 t, state="struggle")
+                        face=face, blush=0.55, sweat=0.8, mouth=info.mouth("embar", t),
+                        hold=hold_fn, pose_t=u)
+        if 0.34 <= u < 0.8 and "h" in st:
+            hx, hy = st["h"]
+            if u < 0.62:
+                creatures.draw_thing(ctx, hx, hy + 6, THING_S, t, state="struggle")
+            else:
+                k = ease_in(seg(u, 0.62, 0.8))
+                ix, iy = _cage_pt(ax, ay, 0.0, 0, 200)
+                creatures.draw_thing(ctx, lerp(hx, ix, k), lerp(hy, iy, k), THING_S * (1 - 0.25 * k),
+                                     t, state="struggle")
+        if 0.34 <= u < 1.0:
+            fx.dust_puff(ctx, THING_FLOOR[0], TUG_Y + 8, 0.7, t, m + 0.36, dur=0.6)
         if u >= 1.02:
-            lx, ly = _cage_pt(ax, ay, 0.0, 130, 158)
-            fx.tap_marks(ctx, lx + 10, ly, 0.6, t, m + 1.02, taps=1, angle=0.0, label="click")
-        if 0.1 <= u < 0.45:
-            fx.motion_lines(ctx, ex + 120, TUG_Y - 300, math.pi, 200, t, 1.0)
+            lx, ly = _cage_pt(ax, ay, 0.0, 132, 158)
+            fx.tap_marks(ctx, lx + 6, ly, 0.75, t, m + 1.02, taps=1, angle=0.0, label="click")
+        if 0.12 <= u < 0.4:
+            fx.motion_lines(ctx, ex + 140, TUG_Y - 330, 0.0 + math.pi * 0 + 0.0, 240, t,
+                            1.0 - seg(u, 0.3, 0.4))
 
 
 def shot_stare(ctx, t, info, c):
@@ -909,7 +939,7 @@ def shot_stare(ctx, t, info, c):
     u = t - s0
     t4 = c["l04"]
     ax, ay = CAGE_FLOOR
-    ex = 880.0
+    ex = EMB_KNEEL_X
     pose = state_at(t, [(-1, P_KNEEL), (t4 - 0.12, P_FACEPALM)], 0.28)
     # his face slowly falls: relieved -> blank -> dread
     face = _fk(u, [(-1, {"curve": 0.25}), (0.35, {"curve": 0.05, "lid": -0.05}),
@@ -922,9 +952,9 @@ def shot_stare(ctx, t, info, c):
     blush = tween(u, [(0, 0.45), (1.6, 0.15)])
     # Impulsivity: frozen grin; one eye slowly slides onto Emb
     ll = tween(u, [(0.3, creatures.IMP_DERP_L), (1.9, (0.85, 0.1))])
-    z = 1.08 + 0.42 * ease_in_out(seg(u, 0, info.dur - s0))
-    cx = 690 - 10 * seg(u, 0, 3)
-    with core.camera(ctx, cx, 1150, z):
+    k = ease_in_out(seg(u, 0.2, info.dur - s0))
+    z = lerp(1.48, 1.66, k)
+    with core.camera(ctx, lerp(CATCH_CAM[0], 715, k), lerp(CATCH_CAM[1], 1210, k), z):
         _room(ctx, t, door=0.0)
         creatures.draw_impulsivity(ctx, IMP_X - 30, TUG_Y, IMP_S, t, pose="sit", pant=1.0, look_l=ll)
         _cage(ctx, ax, ay, t, door=0.0, latch="closed", inside=_inside("thing", t, look=(0.7, -0.3)))
@@ -950,4 +980,47 @@ def render(ctx, t, info):
 
 def SFX(info):
     c = _cues(info)
-    return []
+    sc, tb, o, b, tg = c["scoop"], c["bump"], c["open"], c["burst"], c["tug"]
+    ev = []
+    # A scoop: knit rustle, bundle shoved in, door slapped (latch only half-catches)
+    ev += [(sc + 0.1, "cloth_rustle", 1.0, 0.25), (sc + 0.42, "cage_rattle", -5.0, 0.35),
+           (sc + 0.55, "latch_click", 2.0, 0.35)]
+    # B latch insert: the bolt jiggles
+    ev += [(c["A1"] + 0.12, "latch_click", -7.0, 0.2)]
+    # C backing away: footsteps on each contact of the (reversed, hurried) walk
+    step = 0.5 / _BACK_RATE
+    k = 1
+    while tb - k * step > c["B1"]:
+        ev.append((tb - k * step, "footstep", -7.0, -0.1))
+        k += 1
+    ev += [(tb, "body_thud", -9.0, -0.35), (tb + 0.09, "latch_click", 4.0, -0.4)]
+    # E the door, the dog, the burst
+    ev += [(o + 0.06, "latch_click", -2.0, -0.4)]
+    ev += sfx.loop_events("dog_pant", o + 0.42, b, -9.0, -0.4)
+    ev += [(b + 0.08, "dog_woof", -1.0, -0.4), (b + 0.12, "whoosh", -1.0, -0.2),
+           (b + 0.2, "door_bang", -3.0, -0.6), (b + 0.3, "cage_rattle", 0.0, 0.0),
+           (b + 0.34, "body_thud", -7.0, 0.1)]
+    # F tug: rattles in the yank rhythm, Tiredness's slippers padding in
+    for i, dt in enumerate((0.05, 0.5, 0.98, 1.42, 1.86)):
+        ev.append((tg + dt, "cage_rattle", -3.0 - 2.0 * (i % 2), -0.1))
+    ev += [(tg + 0.12, "footstep", -10.0, 0.4), (tg + 0.6, "footstep", -11.0, 0.35)]
+    ev += sfx.loop_events("dog_pant", tg, c["creak"], -12.0, -0.3)
+    # G/I squat, creak, the leap, CHOMP
+    ev += [(c["squint"] + 0.1, "cloth_rustle", -8.0, 0.1), (c["G1"] + 0.06, "cage_rattle", -12.0, 0.0)]
+    ev += [(c["creak"] + 0.02, "latch_click", -1.0, -0.1), (c["creak"] + 0.06, "cage_creak", 1.0, -0.1)]
+    ev += [(c["bite"] - 0.02, "critter_hiss", -5.0, 0.0), (c["bite"] + 0.02, "whoosh", -11.0, 0.1),
+           (c["bite"] + 0.12, "chomp", 1.0, 0.1)]
+    # K run out, SLAM
+    p0, p1, p2, v, s1, s2 = _run_path(c)
+    slam = c["J1"] + s1 + s2 + 0.12
+    ev += [(c["J1"] + 0.02, "footsteps_run", -3.0, -0.3), (slam, "door_bang", 1.0, -0.6)]
+    # L outside: faint running across the lawn
+    ev += [(c["K1"] + 0.1, "footsteps_run", -17.0, 0.0)]
+    # M catch: hiss, dive landing, squeak, stuffed in, door, latch FIRMLY
+    m = c["catch"]
+    ev += [(m + 0.12, "critter_hiss", -5.0, 0.15), (m + 0.36, "body_thud", -4.0, 0.15),
+           (m + 0.38, "critter_squeak", -2.0, 0.1), (m + 0.62, "cloth_rustle", -7.0, 0.1),
+           (m + 0.84, "cage_rattle", -2.0, -0.05), (m + 1.02, "latch_click", 5.0, -0.05)]
+    # N the stare: just the dog panting
+    ev += sfx.loop_events("dog_pant", c["stare"] - 0.3, info.dur, -8.0, -0.35)
+    return sorted(ev, key=lambda e: e[0])

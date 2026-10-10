@@ -26,7 +26,7 @@ from engine import core, sets, fx
 from engine import creatures as CR
 from engine.core import (tween, seg, state_at, clamp, lerp, smoothstep, ease_out_back,
                          ease_in_out, ease_out, ease_in)
-from engine.human import draw_person, cycle_speed
+from engine.human import draw_person, cycle_speed, resolve_face
 from audio import sfx as _sfx
 
 TAU = 2 * math.pi
@@ -191,11 +191,31 @@ def lit_group(ctx, draw_fn, sil=0.0, rim=None, rim_dx=6.0, rim_dy=0.0, cast=None
 # ----------------------------------------------------------------------------
 # characters
 # ----------------------------------------------------------------------------
-def tired(ctx, x, y, s, t, info, **kw):
+def tired(ctx, x, y, s, t, info, lidcap=0.64, **kw):
+    """Tiredness with lip-sync and sewer outfit.  lidcap limits how far looking DOWN
+    drags his (already heavy) lids shut, so he stays visibly watching."""
     kw.setdefault("mouth", info.mouth("tired", t))
     for k, v in TK.items():
         kw.setdefault(k, v)
+    if lidcap is not None:
+        look = kw.get("look", (0, 0))
+        face = dict(kw.get("face") or {})
+        F = resolve_face("tired", kw.get("expr", "neutral"), face)
+        ly = look[1] + F.get("look_y", 0.0)
+        if ly > 0:
+            eff = F["lid"] + 0.22 * ly
+            if eff > lidcap:
+                face["lid"] = face.get("lid", 0.0) - min(0.22 * ly, eff - lidcap)
+                kw["face"] = face
     return draw_person(ctx, "tired", x, y, s, t, **kw)
+
+
+_PROBE = cairo.Context(cairo.ImageSurface(cairo.FORMAT_ARGB32, 2, 2))
+
+
+def spec_offsets(s, t, **kw):
+    """Anchors of the creature drawn at ground (0, 0) (for placing it by an anchor)."""
+    return CR.draw_specimen(_PROBE, 0.0, 0.0, s, t, **kw)
 
 
 def creature(ctx, x, y, s, t, sq=(1.0, 1.0), **kw):
@@ -344,9 +364,11 @@ def sh3(ctx, t, T, info):
             CR.draw_specimen(ctx, CX_SEW, FEET + 8, SC, t, pose="sit", expr="curious",
                              look=(-0.5, -0.7) if face_c < 0 else (0.7, 0.0), face=face_c)
         else:
-            CR.draw_specimen(ctx, CX_SEW, FEET + 8, SC, t, pose="point", expr="curious",
-                             look=(-0.55, -0.6) if face_c < 0 else (0.8, 0.1), face=face_c,
-                             point_angle=pa)
+            ca = CR.draw_specimen(ctx, CX_SEW, FEET + 8, SC, t, pose="point", expr="curious",
+                                  look=(-0.55, -0.6) if face_c < 0 else (0.8, 0.1), face=face_c,
+                                  point_angle=pa)
+            hx, hy = ca["head"]
+            fx.emote(ctx, "exclaim", hx + 10, hy - 120 * SC, 0.42, t, tp + 0.2, dur=0.55)
 
 
 # ============================================================================
@@ -356,7 +378,7 @@ def sh4(ctx, t, T, info):
     v = 2
     l3, l3e = T["l3"], T["l3e"]
     z = 2.7
-    camx, camy = WALL_X + 40, FEET - 380
+    camx, camy = WALL_X + 40, FEET - 335
     w_not = wt(info, "s13_l03", 1)
     w_out = wt(info, "s13_l03", 4)
     look, ht, hn = gaze(t, [(l3 - 0.1, (0.6, 0.5)), (w_not - 0.05, (0.6, 0.5)),
@@ -421,11 +443,15 @@ def sh6(ctx, t, T, info):
         jolt = math.exp(-u * 8) * math.cos(u * 22)
     crumble = smoothstep(seg(t, c4 + 0.15, l4 + 0.05))
     pose = dict(SIT)
-    pose["dx"] = 16 * pull - 8 * jolt
-    pose["side"] = 0.07 * pull
+    pose["dx"] = 10 * pull - 8 * jolt
+    pose["side"] = 0.08 * pull
     pose["rot"] = -0.025 * jolt
     pose["hunch"] = SIT["hunch"] + 0.15 * crumble
     pose["lean"] = SIT["lean"] - 0.06 * crumble
+    arm_k = smoothstep(seg(t, c1 + 0.06, c1 + 0.2)) * (1 - smoothstep(seg(t, c2 - 0.05, c2 + 0.1)))
+    if arm_k > 0:
+        pose.update({"ar_ik": arm_k, "ar_tx": 0.3 + 0.05 * pull, "ar_ty": 0.11, "ar_tz": 0.18,
+                     "ar_h": "relaxed", "ar_wa": 0.2, "ar_wabs": 0.5 * arm_k})
     k_up = seg(t, push, push + 0.5)
     if k_up > 0:
         ant = math.sin(clamp(k_up / 0.5) * math.pi) * 0.25
@@ -464,39 +490,41 @@ def sh6(ctx, t, T, info):
         hip = a["hip"]
         foot = a["foot_r"]
         hem = (hip[0] + 64 * SP, hip[1] - 30 * SP)
-        cx = CX_SEW + 20
+        cx = CX_SEW + 70
         if t < c1:
             # chitter: stands facing him, head bobbing, little vocal ticks
             tl_ = 0.07 * math.sin(TAU * 7.0 * (t - c0)) * (1 - seg(t, c1 - 0.08, c1))
             ca = creature(ctx, cx, FEET + 8, SC, t, sq=squash_at(t, c0, 0.1, 0.2), pose="stand",
-                          flip=True, expr="annoyed", look=(-0.7, -0.6), tilt=tl_ - 0.1)
+                          flip=True, expr="annoyed", look=(-0.75, -0.6), tilt=tl_ - 0.22)
             mx, my = ca["mouth"]
             fx.tap_marks(ctx, mx - 16, my - 18, 0.75, t, c0 + 0.03, taps=3, gap=0.11,
                          angle=-math.pi * 0.72, label=None, color="#e8fffb")
         elif t < c2:
-            # bites the hoodie hem and tugs it toward the tunnel
+            # bites his hoodie cuff and tugs him toward the tunnel
             lunge = ease_out_back(seg(t, c1, c1 + 0.12))
-            bite_x = hem[0] + 118 * SC
+            wx, wy = a["wrist_r"]
+            off = spec_offsets(SC, t, pose="tug", flip=True)["mouth"]
+            bite_x = wx + 8 * SP - off[0]
             gx = lerp(cx, bite_x, lunge)
 
-            def hemfn(c, aa, hem=hem):
+            def cuff(c, aa, wrist=(wx, wy)):
                 mx_, my_ = aa["mouth"]
                 k = SP
-                c.move_to(hem[0] - 40 * k, hem[1] - 4 * k)
-                c.curve_to(hem[0] - 4 * k, hem[1] + 26 * k, mx_ - 40 * k, my_ - 16 * k,
-                           mx_ - 2 * k, my_ - 9 * k)
-                c.line_to(mx_ + 2 * k, my_ + 9 * k)
-                c.curve_to(mx_ - 36 * k, my_ + 8 * k, hem[0] + 26 * k, hem[1] + 46 * k,
-                           hem[0] + 26 * k, hem[1] + 10 * k)
+                # the stretched sleeve from his wrist into the jaws
+                c.move_to(wrist[0] - 10 * k, wrist[1] - 22 * k)
+                c.curve_to(wrist[0] + 20 * k, wrist[1] - 24 * k, mx_ - 16 * k, my_ - 16 * k,
+                           mx_ + 6 * k, my_ - 10 * k)
+                c.line_to(mx_ + 6 * k, my_ + 10 * k)
+                c.curve_to(mx_ - 16 * k, my_ + 16 * k, wrist[0] + 20 * k, wrist[1] + 24 * k,
+                           wrist[0] - 10 * k, wrist[1] + 22 * k)
                 c.close_path()
                 core.fill_stroke(c, core.PAL["t_hoodie"], core.PAL["ink"], 4.5 * k)
                 for j in (-1, 1):
-                    c.move_to(hem[0] - 8 * k, hem[1] + (16 + 8 * j) * k)
-                    c.curve_to(hem[0] + 20 * k, hem[1] + 40 * k, mx_ - 40 * k, my_,
-                               mx_ - 6 * k, my_ + 2 * j * k)
+                    c.move_to(wrist[0] + 2 * k, wrist[1] + 9 * j * k)
+                    c.line_to(mx_ - 4 * k, my_ + 5 * j * k)
                 core.stroke(c, core.PAL["t_hoodie_dk"], 3.0 * k)
             creature(ctx, gx, FEET + 8, SC, t, pose="tug", flip=True, expr="annoyed",
-                     look=(-0.4, -0.6), hold=hemfn if lunge > 0.55 else None)
+                     look=(-0.4, -0.6), hold=cuff if lunge > 0.55 else None)
         elif t < c3:
             # headbutts his shin
             k = seg(t, c2, c3)
@@ -854,11 +882,12 @@ def sh10(ctx, t, T, info):
     look, ht, hn = gaze(t, [(ts, (0.3, -0.6)), (ts + 0.3, (0.3, -0.6)), (ts + 0.5, (0.8, 0.7))],
                         lag=0.18, hx=0.25, hy=0.22)
     sad_k = smoothstep(seg(t, ts + 0.4, ts + 0.9))
-    face = {"head_turn": ht, "head_nod": hn, "lid": -0.06 * (1 - sad_k), "brow_in": 0.18 * sad_k,
-            "pupil": 0.15, "hl": 0.25 * sad_k}
+    face = {"head_turn": ht, "head_nod": hn, "lid": -0.06 * (1 - sad_k), "brow_in": 0.22 * sad_k,
+            "brow_ang": 0.3 * sad_k, "brow": 0.1 * sad_k, "frown": 0.2 * sad_k,
+            "pupil": 0.15, "hl": 0.3 * sad_k}
     expr = ("awe", "sad", sad_k)
     tkw = dict(pose="stand", turn=0.45, expr=expr, look=look, face=face,
-               power=0.14 * (1 - sad_k))
+               power=0.14 * (1 - sad_k), lidcap=0.56)
     # it gazes up at the pods; ears sink
     ckw = dict(pose="sit", expr="sad", look=(0.3, -1.3), face=1.0,
                tilt=lerp(-0.2, -0.12, smoothstep(seg(t, ts + 0.3, l5))))
@@ -868,15 +897,15 @@ def sh10(ctx, t, T, info):
 def sh11(ctx, t, T, info):
     l5, l5e, tn = T["l5"], T["l5e"], T["nod"]
     k = seg(t, l5, tn)
-    with core.camera(ctx, 760, 2060, 1.75):
+    with core.camera(ctx, 840, 2490 - 30 * k, 1.75):
         shaft_bg(ctx, t)
     fx.vignette(ctx, 0.36)
     w_fam = wt(info, "s13_l05", 3)
     look, ht, hn = gaze(t, [(l5, (0.75, 0.8)), (w_fam - 0.2, (0.75, 0.8)),
                             (w_fam + 0.05, (0.55, 0.62)), (l5e + 0.4, (0.55, 0.62))],
                         hx=0.15, hy=0.12)
-    face = {"head_turn": ht + 0.1, "head_nod": hn + 0.12, "brow_in": 0.22, "brow_ang": 0.18,
-            "lid": -0.02, "hl": 0.3, "pupil": 0.14}
+    face = {"head_turn": ht + 0.1, "head_nod": hn + 0.12, "brow_in": 0.25, "brow_ang": 0.38,
+            "brow": 0.12, "frown": 0.18, "lid": -0.02, "hl": 0.35, "pupil": 0.14}
     blink = None
     if t > l5e - 0.1:
         blink = slow_blink(t, l5e, 0.35, 0.15, 0.4)
@@ -886,7 +915,7 @@ def sh11(ctx, t, T, info):
         with core.saved(c, 540, 960, 1.0 + 0.03 * k):
             c.translate(-540, -960)
             tired(c, 470, 680 + 800 * s, s, t, info, pose="stand", turn=0.5, expr="sad",
-                  look=look, face=face, blink=blink, shadow=False)
+                  look=look, face=face, blink=blink, shadow=False, lidcap=0.56)
     lit_group(ctx, fig, cast=(_cast_grad(840, 380, 800, 0.55), 0.34))
 
 
@@ -918,9 +947,10 @@ def sh12(ctx, t, T, info):
     ckw = dict(pose="sit", expr="content" if content else "sad", look=look_c, face=face_c,
                tilt=nod - 0.08 * lean)
     look, ht, hn = gaze(t, [(tn, (0.8, 0.7)), (tn + 1.4, (0.75, 0.8))], hx=0.25, hy=0.2)
-    face = {"head_turn": ht, "head_nod": hn + 0.05, "brow_in": 0.18, "pupil": 0.12,
-            "curve": 0.1 * hand, "lid": 0.06 * hand}
-    tkw = dict(pose=_hand_on_head(hand), turn=0.45, expr="sad", look=look, face=face)
+    face = {"head_turn": ht, "head_nod": hn + 0.05, "brow_in": 0.22, "brow_ang": 0.3 - 0.1 * hand,
+            "brow": 0.1, "pupil": 0.12, "curve": 0.12 * hand, "frown": 0.15 * (1 - hand)}
+    tkw = dict(pose=_hand_on_head(hand), turn=0.45, expr="sad", look=look, face=face,
+               lidcap=0.56 + 0.06 * hand)
     two_shot(ctx, t, T, info, (420, 2120, 1.22), tkw, ckw, push=1.025 + 0.03 * k, lean=lean)
 
 
@@ -932,7 +962,7 @@ def sh13(ctx, t, T, info):
     cam0 = (SH_TX + 60, SH_FEET - 120, 2.7)
     cam1 = (SH_TX + 30, SH_FEET - 240, 1.55)
     cx, cy, z = _pull_cam(t, tt, tt + 2.3, cam0, cam1)
-    sil = lerp(0.5, 0.88, smoothstep(seg(t, tt + 0.1, tt + 1.8)))
+    sil = lerp(0.82, 0.9, smoothstep(seg(t, tt + 0.1, tt + 1.4)))
     tkw = dict(pose=_hand_on_head(1.0), turn=0.45, expr="sad", look=(0.75, 0.8),
                face={"brow_in": 0.18, "head_nod": 0.1, "head_turn": 0.15, "curve": 0.1})
     ckw = dict(pose="sit", expr="content", look=(-0.5, -0.8), face=-1.0, tilt=-0.08)

@@ -84,10 +84,7 @@ def _T(info):
     T["r3s"] = T["l2e"] + 0.02
     T["whip"] = T["w3"] - 0.16           # whip pan, cut at w3
     # --- shot B
-    T["r4e"] = T["w3"] + 0.17
-    T["k4e"] = T["w3"] + 0.27
-    T["hv3"] = T["k4e"] + 0.0
-    T["drop"] = T["l3"] + 0.09           # cage slides off his wrist
+    T["drop"] = T["l3e"] - 0.02          # cage slips off his wrist as he slides down
     # --- C/D/E
     T["ins0"] = T["rock"] + 0.34         # rock insert
     T["ins1"] = T["rock"] + 0.76
@@ -248,12 +245,12 @@ def _hole_path(ctx):
 # poses
 # ---------------------------------------------------------------------------
 def heave_pose(k=0.0, sq=0.0, fist=False):
-    """Both hands on the lower sash rail (sill height, in front of him); sq = knees
-    bend for the yank, k = the heave (rises onto his toes, leans back)."""
-    h = "fist" if fist else "grip"
-    return P(IK("l", 0.0, 0.69, 0.27, h, wa=-0.5, wabs=0.6),
-             IK("r", 0.03, 0.69, 0.25, h, wa=-0.5, wabs=0.6), hold=1.0,
-             lean=0.22 + 0.12 * sq - 0.16 * k, hunch=0.5 + 0.35 * k, lift=7 * k, neck=0.08,
+    """Palms flat on the lower pane (face height, fingers up) shoving the sash UP;
+    sq = knees bend before the shove, k = the shove (up on his toes, head back)."""
+    h = "fist" if fist else "splay"
+    return P(IK("l", 0.0, 0.80 + 0.03 * k, 0.29, h, wa=-1.5, wabs=0.8, tf=-1.0),
+             IK("r", 0.05, 0.78 + 0.03 * k, 0.27, h, wa=-1.5, wabs=0.8, tf=-1.0), hold=1.0,
+             lean=0.2 + 0.1 * sq - 0.06 * k, hunch=0.55 + 0.3 * k, lift=10 * k, neck=0.05, nod=-0.1 * k,
              **L("l", 0.3 + 0.25 * sq, k=0.15 + 0.6 * sq), **L("r", -0.12 + 0.2 * sq, k=0.08 + 0.6 * sq))
 
 
@@ -299,7 +296,7 @@ TIPTOE = "tiptoe"
 TIP_CAGE = {"base": "tiptoe", "hold": 1.0}
 SCOOP = P({"base": "pick_up"}, hold=1.0)
 CAGE_LIFT = P(IK("r", 0.04, 0.9, 0.34, "grip", wa=-0.6, wabs=0.6, layer="front"),
-              IK("l", 0.08, 0.84, 0.3, "flat", wa=-0.6, wabs=0.6),
+              IK("l", 0.08, 0.84, 0.3, "flat", wa=-0.6, wabs=0.6), hold=1.0,
               lean=0.16, hunch=0.3, lift=10, **L("l", 0.15, k=0.05), **L("r", -0.2, k=0.0))
 SILL = P(IK("l", 0.1, 0.7, 0.3, "flat", wa=0.1, wabs=0.9),
          IK("r", 0.1, 0.7, 0.3, "flat", wa=0.1, wabs=0.9),
@@ -364,26 +361,11 @@ def _lawn_props(ctx, t, T, draw_rock=True, draw_cage=True):
         _cage_drop(ctx, t, T)
 
 
-_DROP_PT = {}
-
-
 def _cage_drop(ctx, t, T):
-    """Cage sliding off his wrist at the wail, then lying on the lawn until the scoop."""
-    t0 = T["drop"]
-    hx, hy = _DROP_PT.get("p", (XW3 - 60, Y - 300))
-    land = t0 + 0.26
-    rest_y = CAGE_REST[1] - 268 * CAGE_S
-    if t < land:
-        u = seg(t, t0, land)
-        x = lerp(hx, CAGE_REST[0], u)
-        y = lerp(hy, rest_y, u * u)
-        rot = 0.6 * u
-    else:
-        tau = t - land
-        b = math.exp(-tau * 9) * abs(math.sin(tau * 20)) * 22
-        x, y = CAGE_REST[0], rest_y - b
-        rot = 0.45 * math.exp(-tau * 6) * math.cos(tau * 16) + 0.1
-    _cage(ctx, x, y, t, rot)
+    """The cage he lost at window 3, lying on the lawn until he scoops it up."""
+    tau = t - T["panic"]
+    rot = 0.1 + 0.05 * math.exp(-max(0.0, tau) * 4) * math.cos(tau * 14)
+    _cage(ctx, CAGE_REST[0], CAGE_REST[1] - 268 * CAGE_S, t, rot)
 
 
 def _shards(ctx, t, T):
@@ -526,82 +508,119 @@ def _shot_A(ctx, info, t, T, dx=0.0):
 # ---------------------------------------------------------------------------
 # shot B — window 3: heave + wail
 # ---------------------------------------------------------------------------
+LV = sets.LIVING_MARKS
+LVX, LVY, LVW, LVH = LV["window"]                 # living-room window = window 3 seen from inside
+LV_CX = LVX + LVW / 2
+ES_IN = 0.8                                       # him right behind the glass
+FEET_IN = 1405                                    # feet (below frame) so his face sits mid-pane
+PRESS = P(HK("l", 118, 6, "splay", tf=-1.0, layer="front", wa=-1.65, wabs=0.85, bend=1.0),
+          HK("r", 118, 6, "splay", tf=-1.0, layer="front", wa=-1.65, wabs=0.85, bend=1.0),
+          hunch=0.45, lean=0.06, neck=0.1, nod=-0.06)
+PRESS_UP = P(HK("l", 118, -26, "splay", tf=-1.0, layer="front", wa=-1.6, wabs=0.85, bend=1.0),
+             HK("r", 118, -26, "splay", tf=-1.0, layer="front", wa=-1.6, wabs=0.85, bend=1.0),
+             hunch=0.75, lean=0.0, neck=-0.05, nod=-0.12)
+PRESS_WAIL = P(HK("l", 128, 30, "splay", tf=-1.0, layer="front", wa=-1.7, wabs=0.85, bend=1.0),
+               HK("r", 128, 30, "splay", tf=-1.0, layer="front", wa=-1.7, wabs=0.85, bend=1.0),
+               hunch=0.6, lean=0.1, neck=0.15, nod=-0.2)
+
+
+def _B_times(T):
+    slam = T["w3"] + 0.1
+    return slam, [slam + 0.14, slam + 0.26], T["l3e"] - 0.22
+
+
 def _emb_B(ctx, info, t, T):
-    w3, l3, l3e = T["w3"], T["l3"], T["l3e"]
-    blush, sweat = 0.5, 0.55
-    face, cage_rot, pt = {}, None, t
-    if t < T["r4e"]:
-        x = lerp(1690, XW3 - 34, seg(t, w3, T["r4e"]))
-        pose, pt = RUNC, _travel_pt(x, 1690, RUN, 1.0)
-        turn, look, expr = 1.0, (0.9, -0.2), "panic"
-        cage_rot = -0.35 * math.sin(pt / 0.44 * TAU)
-    elif t < l3:
-        u = seg(t, T["r4e"], T["k4e"])
-        x = lerp(XW3 - 34, XW3, ease_out(u))
-        k, sq = heave_at(t, [T["hv3"]], 0.1, 0.12)
-        pose = (SKID, heave_pose(max(k, 0.2), sq), smoothstep(seg(t, T["r4e"] + 0.02, T["k4e"])))
-        turn, look, expr = 1.0, (0.85, -0.3), "panic"
-        face = {"teeth": 0.85, "press": 0.3, "lower": 0.45, "brow_ang": 0.55, "cheek": 0.3,
-                "squash": 0.05 * sq}
-        cage_rot = 0.3 * (1 - u) + 0.2 * k
-    else:
-        x = XW3
-        u = smoothstep(seg(t, l3, l3 + 0.2))
-        turn = lerp(1.0, 0.22, u)
-        slump = smoothstep(seg(t, l3e - 0.12, l3e + 0.18))
-        pose = state_at(t, [(0, heave_pose(0.3)), (l3 + 0.01, WAIL), (l3e - 0.12, WAIL_SLUMP)], 0.17)
-        expr = "scream"
-        sob = math.sin((t - l3) * TAU * 1.9)
-        squeeze = smoothstep(seg(t, l3 + 0.05, l3 + 0.2))
-        face = {"lid": 0.75 * squeeze, "lower": 0.55 * squeeze, "brow_ang": 0.9 * squeeze,
-                "brow": 0.25 * squeeze, "head_nod": -0.22 * u * (1 - slump) + 0.12 * slump,
-                "head_tilt": 0.07 * sob * (1 - slump), "squash": -0.07 * u * (1 - slump),
-                "frown": 0.45 * slump}
-        look = (0.0, 0.25 * slump)
-        if t < T["drop"]:
-            cage_rot = 0.2
-        blush, sweat = 0.55, 0.65
-    hold = _cage_hold(cage_rot, wrist=True, rec=_DROP_PT) if cage_rot is not None else None
-    if hold is not None and isinstance(pose, tuple) and len(pose) == 3:
-        pose = (_with_hold(pose[0]), _with_hold(pose[1]), pose[2])
-    elif hold is not None:
-        pose = _with_hold(pose)
-    a = _emb(ctx, info, t, x, Y, pose, expr, look, face, turn, flip=False, pose_t=pt, blush=blush,
-             sweat=sweat, hold=hold)
-    return a, x
+    """Inside view: he slams onto the glass, shoves it up twice, wails, slides down."""
+    l3, l3e = T["l3"], T["l3e"]
+    slam, hv, slide = _B_times(T)
+    pop = ease_out_back(seg(t, slam - 0.06, slam + 0.04), 1.6)
+    sink = ease_in(seg(t, slide, T["panic"] - 0.06))
+    k = max(_bump(t, hv[0], 0.05, 0.08), _bump(t, hv[1], 0.05, 0.08))
+    y = FEET_IN + 520 * (1 - pop) - 18 * k + 640 * sink
+    hold_open = smoothstep(seg(t, l3 - 0.04, l3 + 0.16))
+    pose = ((PRESS, PRESS_UP, k), PRESS_WAIL, hold_open)
+    squeeze = smoothstep(seg(t, l3 + 0.05, l3 + 0.2))
+    sob = math.sin((t - l3) * TAU * 1.9)
+    impact = 1 - seg(t, slam, slam + 0.18)
+    face = {"squash": 0.16 * impact * (t >= slam) + 0.06 * k, "teeth": 0.8 * k * (1 - hold_open),
+            "press": 0.4 * (1 - hold_open), "cheek": 0.3 * k,
+            "lid": 0.72 * squeeze, "lower": 0.5 * squeeze, "brow_ang": 0.5 + 0.4 * squeeze,
+            "brow": 0.15 + 0.15 * squeeze, "head_tilt": 0.06 * sob * hold_open * (1 - sink),
+            "head_nod": -0.12 * hold_open}
+    look = tween(t, [(slam, (0.0, -0.1)), (hv[1] + 0.1, (0.15, 0.55)), (l3 - 0.06, (0.15, 0.55)),
+                     (l3 + 0.04, (0.0, -0.1))])
+    expr = state_at(t, [(0, "panic"), (l3, "scream")], 0.15)
+    a = _emb(ctx, info, t, LV_CX - 6, y, pose, expr, look, face, 0.0, pose_t=t, blush=0.55,
+             sweat=0.65, s=ES_IN)
+    return a, k
 
 
-def _with_hold(p):
-    if isinstance(p, tuple):
-        return (_with_hold(p[0]), _with_hold(p[1]), p[2])
-    if isinstance(p, str):
-        return {"base": p, "hold": 1.0}
-    d = dict(p)
-    d["hold"] = 1.0
-    return d
+_STREAK = {}
 
 
 def _shot_B(ctx, info, t, T, dx=0.0):
     l3, l3e = T["l3"], T["l3e"]
-    cx = tween(t, [(T["w3"], 1920), (l3, 1915), (l3e, 1895)])
-    cy = tween(t, [(T["w3"], 1292), (l3, 1285), (l3e, 1245)])
-    z = tween(t, [(T["w3"], 2.3), (l3, 2.35), (l3e, 2.85)])
-    with core.camera(ctx, cx - dx / z, cy, z):
-        _house(ctx, t, T)
-        _lawn_props(ctx, t, T, draw_rock=False, draw_cage=False)
-        if t < T["drop"]:
-            _DROP_PT.pop("p", None)
-        a, x = _emb_B(ctx, info, t, T)
-        _lawn_props(ctx, t, T, draw_rock=False)
-        if t < T["r4e"]:
-            fx.motion_lines(ctx, x - 70, Y - 250, 0.0, 230, t, 0.9, width=9, seed=3)
-        fx.dust_puff(ctx, x + 30, Y, 0.45, t, T["r4e"], seed=4, dur=0.55)
-        _rattle_marks(ctx, t, T["hv3"] + 0.02, *WIN[2], seed=7, big=1.3)
+    slam, hv, slide = _B_times(T)
+    z = tween(t, [(T["w3"], 1.95), (l3, 2.0), (l3e, 2.2)])
+    cy = tween(t, [(T["w3"], 770), (l3e, 735)])
+    sx, sy = core.shake(t, slam, 0.18, 10, seed=21)
+    for th in hv:
+        ax, ay = core.shake(t, th, 0.12, 5, seed=22)
+        sx, sy = sx + ax, sy + ay
+    with core.camera(ctx, LV_CX - dx / z + sx / z, cy + sy / z, z):
+        sets.living_room(ctx, t, "bg", broken=False)
+        ctx.save()
+        ctx.rectangle(LVX, LVY, LVW, LVH)
+        ctx.clip()
+        a, k = _emb_B(ctx, info, t, T)
+        on_glass = slam <= t < T["panic"]
+        # palms flattened on the glass (pale contact patches) + streaks as he slides down
+        if on_glass:
+            if t < slide:
+                _STREAK["p"] = (a["hand_l"][:2], a["hand_r"][:2])
+            p0 = _STREAK.get("p", (a["hand_l"][:2], a["hand_r"][:2]))
+            for (hx, hy), (cx_, cy_) in zip(p0, (a["hand_l"][:2], a["hand_r"][:2])):
+                if t >= slide and cy_ > hy:
+                    ctx.rectangle(hx - 22, hy, 44, cy_ - hy)
+                    core.fill(ctx, (1, 1, 1, 0.22))
+                core.ellipse(ctx, cx_, cy_ - 6, 40, 44)
+                core.fill(ctx, (1, 1, 1, 0.16))
+            # breath fog while wailing
+            fog = smoothstep(seg(t, l3 + 0.1, l3 + 0.5)) * (1 - seg(t, slide, slide + 0.3))
+            if fog > 0.01:
+                mx, my = a["mouth"]
+                core.ellipse(ctx, mx, my + 6, 70 + 14 * math.sin((t - l3) * 7), 46)
+                core.fill(ctx, (1, 1, 1, 0.3 * fog))
+        # glass reflections
+        for (x0, w0, al) in ((LVX + 40, 46, 0.18), (LVX + 110, 20, 0.14), (LVX + LVW - 120, 30, 0.12)):
+            core.poly(ctx, [(x0, LVY), (x0 + w0, LVY), (x0 + w0 - 160, LVY + LVH), (x0 - 160, LVY + LVH)])
+            core.fill(ctx, (1, 1, 1, al))
+        ctx.restore()
         # tears flung from the squeezed eyes
         for i, ts in enumerate((l3 + 0.28, l3 + 0.6, l3 + 0.9)):
-            fx.sweat_fly(ctx, a["eye_l"][0] - 8, a["eye_l"][1] + 4, 0.42, t, ts, seed=20 + i, n=2, side=-1)
-            fx.sweat_fly(ctx, a["eye_r"][0] + 8, a["eye_r"][1] + 4, 0.42, t, ts + 0.05, seed=30 + i, n=2, side=1)
-        _fence(ctx, t)
+            fx.sweat_fly(ctx, a["eye_l"][0] - 10, a["eye_l"][1] + 4, 0.7, t, ts, seed=20 + i, n=2, side=-1)
+            fx.sweat_fly(ctx, a["eye_r"][0] + 10, a["eye_r"][1] + 4, 0.7, t, ts + 0.05, seed=30 + i, n=2, side=1)
+        _sash_lock(ctx, t, k + (1 - seg(t, slam, slam + 0.15)) * (t >= slam))
+        _rattle_marks(ctx, t, slam, LVX, LVY, LVW, LVH, seed=31, big=1.2)
+        for i, th in enumerate(hv):
+            _rattle_marks(ctx, t, th + 0.02, LVX, LVY, LVW, LVH, seed=32 + i, big=1.2)
+
+
+def _sash_lock(ctx, t, jig=0.0):
+    """Brass sash lock on the inside bottom rail: it jiggles, it holds."""
+    x, y = LV_CX, LVY + LVH - 4
+    with core.saved(ctx, x, y, 1.0, 0.0):
+        core.rrect(ctx, -46, -14, 92, 26, 8)
+        core.fill_stroke(ctx, "#c9a24a", INK, 4)
+        with core.saved(ctx, -10, -14, 1.0, -0.25 + 0.18 * math.sin(t * 60) * clamp(jig)):
+            ctx.move_to(0, 0)
+            ctx.arc(0, 0, 30, math.pi, 2 * math.pi)
+            ctx.close_path()
+            core.fill_stroke(ctx, "#e2bd5c", INK, 4)
+            core.rrect(ctx, 22, -10, 44, 12, 6)
+            core.fill_stroke(ctx, "#e2bd5c", INK, 4)
+        core.circle(ctx, -10, -14, 5)
+        core.fill(ctx, INK)
 
 
 # ---------------------------------------------------------------------------
@@ -731,12 +750,8 @@ def _emb_EF(ctx, info, t, T):
 
 
 def _tip_x(t, T):
-    """Tiptoe: XT -> scoop spot, dip for the cage, -> under window 3."""
-    if t < T["scoop"]:
-        return lerp(XT, XSC, seg(t, T["tip0"], T["scoop"]))
-    if t < T["scoop1"]:
-        return XSC
-    return lerp(XSC, XTE, seg(t, T["scoop1"], T["tip1"]))
+    """Tiptoe from the throw spot to under window 3 (foot-locked)."""
+    return lerp(XT, XTE, seg(t, T["tip0"], T["tip1"]))
 
 
 def _tip_pt(t, T):
@@ -805,27 +820,27 @@ def _emb_G(ctx, info, t, T):
     tp0, l5, l5e, sc, sc1 = T["tip0"], T["l5"], T["l5e"], T["scoop"], T["scoop1"]
     x = _tip_x(t, T)
     pt = _tip_pt(t, T)
-    has_cage = t >= sc + 0.16
-    if sc <= t < sc1:
-        u = seg(t, sc, sc1)
-        dip = math.sin(math.pi * u)
-        pose = ((TIPTOE, TIP_CAGE, 0.0 if not has_cage else 1.0), SCOOP, dip * 0.85)
-        look = (0.2, 0.9)
-        face = {"brow_ang": 0.6, "press": 0.5}
-        expr = "guilty"
-    else:
-        pose = TIP_CAGE if has_cage else TIPTOE
-        # eyes on the glass, glance at the hole, guilty slide to us on "pay", back down
-        look = tween(t, [(T["G"], (0.4, 0.85)), (sc - 0.15, (0.2, 0.9)), (sc1, (0.4, 0.85)),
-                         (l5 - 0.1, (0.85, -0.35)), (l5 + 0.35, (0.85, -0.35)), (l5 + 0.45, (-0.2, 0.0)),
-                         (l5e - 0.1, (-0.2, 0.0)), (l5e + 0.05, (0.5, 0.8))])
-        ht = tween(t, [(l5 + 0.42, 0.0), (l5 + 0.6, -0.4), (l5e - 0.12, -0.4), (l5e + 0.05, 0.0)])
-        expr = state_at(t, [(0, "guilty"), (l5 - 0.06, "whisper"), (l5e + 0.02, "guilty")], 0.15)
-        mo = info.mouth("embar", t)[0]
+    has_cage = t >= sc + 0.15
+    mo = info.mouth("embar", t)[0]
+    ht = tween(t, [(l5 + 0.42, 0.0), (l5 + 0.6, -0.4), (l5e - 0.14, -0.4), (l5e + 0.02, 0.0)])
+    if t < sc:
+        pose = TIPTOE
+        # eyes on the glass, a glance at the hole, guilty slide to us on "pay", back down
+        look = tween(t, [(T["G"], (0.4, 0.85)), (l5 - 0.25, (0.45, 0.85)), (l5 - 0.1, (0.85, -0.35)),
+                         (l5 + 0.35, (0.85, -0.35)), (l5 + 0.45, (-0.2, 0.0)), (l5e - 0.16, (-0.2, 0.0)),
+                         (l5e - 0.06, (0.45, 0.85))])
+        expr = state_at(t, [(0, "guilty"), (l5 - 0.06, "whisper")], 0.15)
         face = {"brow_ang": 0.75, "head_nod": 0.1, "head_turn": ht, "press": 0.55 * (1 - mo),
                 "brow_in": 0.2}
-    cage_rot = 0.15 * math.sin((t - sc) * 8) * math.exp(-max(0.0, t - sc) * 2) - 0.05
-    a = _emb(ctx, info, t, x, Y, pose, expr, look, face, 0.95, flip=True, pose_t=pt, blush=0.6,
+    else:
+        u = seg(t, sc, sc1)
+        dip = math.sin(math.pi * min(1.0, u * 1.15))
+        pose = ((TIPTOE if not has_cage else TIP_CAGE), SCOOP, dip * 0.9)
+        look = (0.45, 0.85)
+        expr = state_at(t, [(0, "whisper"), (l5e + 0.02, "guilty")], 0.15)
+        face = {"brow_ang": 0.65, "press": 0.5 * (1 - mo), "head_turn": ht}
+    cage_rot = 0.18 * math.sin((t - sc) * 9) * math.exp(-max(0.0, t - sc - 0.15) * 3)
+    a = _emb(ctx, info, t, x, Y, pose, expr, look, face, 0.95, flip=False, pose_t=pt, blush=0.6,
              sweat=0.6, hold=_cage_hold(cage_rot) if has_cage else None)
     return a, x
 
@@ -850,9 +865,9 @@ def _emb_H(ctx, info, t, T):
     x = XTE
     hold = None
     if t < sl:
-        u = smoothstep(seg(t, cl, ci + 0.22))
+        u = smoothstep(seg(t, cl, ci + 0.2))
         pose = (TIP_CAGE, CAGE_LIFT, u)
-        hold = _cage_hold(-0.25 * u) if t < ci + 0.24 else None
+        hold = _cage_hold(-0.25 * u) if t < ci + 0.22 else None
         pt = _travel_pt(XTE, XT, TIPTOE, 0.95)
         expr, look = "guilty", (0.8, -0.6)
         face = {"brow_ang": 0.6, "press": 0.4}
@@ -861,14 +876,13 @@ def _emb_H(ctx, info, t, T):
         expr, look = "determined", (0.8, -0.35)
         face = {"brow_ang": 0.4, "press": 0.6}
     else:
-        k = smoothstep(seg(t, cr, cr + 0.1))
+        k = smoothstep(seg(t, cr, cr + 0.08))
         pose, pt = (SILL, SILL_CROUCH, k), t
         expr, look = "determined", (0.8, -0.4)
         face = {"press": 0.7, "squash": 0.06 * k}
     up = ease_in(seg(t, hop, hop + 0.07))
-    a = _emb(ctx, info, t, x + 60 * up, Y - 120 * up, pose, expr, look, face, 0.95, flip=True, pose_t=pt,
-             blush=0.5, sweat=0.5, hold=hold)
-    return a
+    return _emb(ctx, info, t, x + 60 * up, Y - 120 * up, pose, expr, look, face, 0.95, flip=False,
+                pose_t=pt, blush=0.5, sweat=0.5, hold=hold)
 
 
 def _cage_into_hole(ctx, t, T):
@@ -1052,7 +1066,6 @@ def SFX(info):
     steps(X0, XW1 + 46, 0.0, T["r1e"], -4, -0.2)
     steps(XW1, XW2 - 28, T["r2s"], T["r2e"], -6, 0.0)
     steps(XW2, XW2 + 300, T["r3s"] + 0.05, T["whip"] + 0.16, -6, 0.3)
-    steps(1690, XW3 - 34, T["w3"], T["r4e"], -5, -0.1)
     for th in T["hv1"]:
         ev.append((th + 0.03, "door_bang", -12, -0.1))
     for th in T["hv2"]:
@@ -1061,7 +1074,10 @@ def SFX(info):
     for i in range(n_r):
         ev.append((T["l2"] + 0.2 * i + 0.03, "door_bang", -12, 0.0))
     ev.append((T["whip"], "whoosh", -8, 0.3))
-    ev.append((T["hv3"] + 0.03, "door_bang", -9, 0.1))
+    slam, hv3, slide = _B_times(T)
+    ev.append((slam, "door_bang", -5, 0.0))
+    for th in hv3:
+        ev.append((th + 0.02, "door_bang", -12, 0.0))
     ev.append((T["drop"] + 0.26, "cage_rattle", -6, -0.1))
     ev.append((T["panic"] + 0.72, "cloth_rustle", -6, 0.0))
     ev.append((T["ins0"] + 0.06, "sparkle", -9, -0.2))
