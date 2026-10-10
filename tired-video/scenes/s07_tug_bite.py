@@ -224,7 +224,7 @@ P_REACH = dict({"base": "stand"}, **HIK("l", 0.1, 0.52, 0.42, "grip", wa=0.2, wa
                lean=0.12, **_CAGE_R)
 P_PULL = dict({"base": "stand"}, **HIK("l", 0.08, 0.54, 0.3, "grip", wa=0.2, wabs=0.6),
               lean=-0.14, **_CAGE_R)
-P_GAWK = dict({"base": "stand"}, **HIK("l", 0.12, 0.6, 0.2, "open", tf=-1.0, wa=-1.3, wabs=0.85),
+P_GAWK = dict({"base": "stand"}, **HIK("l", 0.1, 0.62, 0.04, "claw", tf=-1.0, wa=-1.5, wabs=0.8),
               hunch=0.9, lean=-0.1, breath=0.2, sway=0.0, **_CAGE_R)
 P_KNOCKED = {"base": "tug", "hold": 0.0, "lean": -0.5}
 

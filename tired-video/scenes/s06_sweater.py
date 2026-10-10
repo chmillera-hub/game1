@@ -279,16 +279,35 @@ def _lerp2(a, b, k):
 # =============================================================================
 # character performances (shot-independent: continuity across cuts is free)
 # =============================================================================
+WALK_CYCLES = 1.5                        # contact -> contact: he stops on a planted stride
+
+
+def _walk_turn():
+    """Body yaw at which the walk cycle's planted-foot speed covers the trudge in
+    exactly WALK_CYCLES cycles (no foot sliding)."""
+    need = (TIRED1[0] - TIRED0[0]) / WALK_CYCLES / CS          # px/s at s=1, period 1 s
+    lo, hi = 0.3, 1.4
+    for _ in range(40):
+        mid = (lo + hi) / 2
+        if human.cycle_speed("tired", "walk", mid) < need:
+            lo = mid
+        else:
+            hi = mid
+    return (lo + hi) / 2
+
+
+WALK_TURN = _walk_turn()
+
+
 def _tired_walk(t, T):
-    """(x, y, walking?, pose_t, end) for his trudge from s05's spot to s07's."""
+    """(x, y, walk weight, pose_t, end) for his trudge from s05's spot to s07's."""
     x0, y0 = TIRED0
     x1, y1 = TIRED1
-    v = human.cycle_speed("tired", "walk", 1.0) * CS        # feet planted at this speed
-    dur = (x1 - x0) / v
+    dur = WALK_CYCLES * 1.0                                   # walk period 1.0 s
     w0 = T["walk0"]
     u = clamp((t - w0) / dur)
-    on = 0.0 < (t - w0) < dur
-    return lerp(x0, x1, u), lerp(y0, y1, u), (1.0 if on else 0.0), max(0.0, t - w0), w0 + dur
+    wgt = smoothstep(seg(t, w0 - 0.18, w0)) * (1.0 - smoothstep(seg(t, w0 + dur, w0 + dur + 0.28)))
+    return lerp(x0, x1, u), lerp(y0, y1, u), wgt, clamp(t - w0, 0.0, dur), w0 + dur
 
 
 def _tired(t, T, info):
@@ -303,10 +322,11 @@ def _tired(t, T, info):
         pose_t = t - T["roll_hand_on"] + 0.15
     if walking > 0:
         # a slow trudge, arms still folded (the legs carry the cycle)
-        pose = {"base": "walk", "al_p": 0.3, "al_o": 0.16, "al_e": 1.3, "al_eo": -1.32, "al_w": 0.1,
-                "al_h": "relaxed", "al_layer": "front", "ar_p": 0.32, "ar_o": 0.16, "ar_e": 1.22,
-                "ar_eo": -1.25, "ar_w": 0.25, "ar_h": "fist", "ar_layer": "mid", "hunch": 0.2,
-                "lean": 0.08}
+        trudge = {"base": "walk", "al_p": 0.3, "al_o": 0.16, "al_e": 1.3, "al_eo": -1.32, "al_w": 0.1,
+                  "al_h": "relaxed", "al_layer": "front", "ar_p": 0.32, "ar_o": 0.16, "ar_e": 1.22,
+                  "ar_eo": -1.25, "ar_w": 0.25, "ar_h": "fist", "ar_layer": "mid", "hunch": 0.2,
+                  "lean": 0.08}
+        pose = ("arms_crossed", trudge, walking)
         pose_t = wt
     # the stare: a tiny breath in, then the exhale (shoulders sink)
     ex = _bump(t, T["exhale"], 0.16, 0.1, 0.55)
@@ -319,20 +339,21 @@ def _tired(t, T, info):
     if T["cut_k"] - 0.45 <= t < T["cut_l"] + 0.05:
         pose = {"base": "arms_crossed", "breath": 0.0, "sway": 0.0}
     # ---------------- body turn: faces Emb on the floor (left), then the desk (right)
-    turn = tween(t, [(T["t_body"], -0.62), (T["t_body"] + 0.45, 1.0)], ease_in_out)
-    if t > w_end - 0.15:
-        turn = tween(t, [(w_end - 0.15, 1.0), (w_end + 0.35, TIRED_TURN)], ease_in_out)
+    turn = tween(t, [(T["t_body"], -0.62), (T["t_body"] + 0.4, WALK_TURN)], ease_in_out)
+    if t > w_end + 0.1:
+        turn = tween(t, [(w_end + 0.1, WALK_TURN), (w_end + 0.55, TIRED_TURN)], ease_in_out)
     # head turn leads the body (late and slow); the body catches up and takes it over
     ht = tween(t, [(T["t_head"], 0.0), (T["t_head"] + 0.62, 1.15)], ease_in_out)
-    ht -= (turn + 0.62) / 1.62 * 1.15
+    ht -= (turn + 0.62) / (WALK_TURN + 0.62) * 1.15
     ht = max(ht, -0.4) if t > T["t_head"] else 0.0
-    if t > w_end - 0.15:
+    if t > w_end + 0.1:
         ht = 0.0
     # ---------------- gaze
     look = T_LOOK_EMB_FLOOR
     look = _lerp2(look, T_LOOK_EMB_DESK, ease_in_out(seg(t, T["t_look"], T["t_look"] + 0.24)))
-    if walking > 0 or (w_end - 0.4 < t < w_end + 0.3):
-        look = _lerp2(look, (0.8, 0.05), 0.6)                  # watching where he's going / at Emb
+    if T["walk0"] - 0.2 < t < w_end + 0.5:
+        k = _bump(t, T["walk0"] - 0.2, 0.2, w_end - T["walk0"] + 0.1, 0.4)
+        look = _lerp2(look, (0.8, 0.05), 0.6 * k)              # watching where he's going / at Emb
     # eye roll: up-right, over the top, up-left, lids sinking, back to Emb
     r0 = T["rollEyes"]
     if r0 - 0.05 <= t < r0 + 1.15:
@@ -549,8 +570,8 @@ def _jerk_pose(t, T):
     if t < s0 - 0.02 or t > T["l6"] + 0.6:       # (the plea blend covers the hand-off)
         return None
     hold = dict(COVER, lean=0.6, hunch=0.8)
-    up = dict(COVER, lean=0.58, hunch=0.95, al_ty=COVER_TY + 0.09, ar_ty=COVER_TY + 0.09, al_tx=0.14,
-              ar_tx=0.1, al_h="splay", ar_h="splay", rot=-0.05)
+    up = dict(COVER, lean=0.55, hunch=1.0, al_ty=COVER_TY + 0.1, ar_ty=COVER_TY + 0.1, al_tz=0.4, ar_tz=0.42,
+              al_tx=0.08, ar_tx=0.06, al_h="splay", ar_h="splay", rot=-0.05)
     down = dict(COVER, lean=0.74, hunch=1.0, al_tz=0.42, ar_tz=0.44, al_h="splay", ar_h="splay",
                 tilt=0.1, rot=0.04)
     if t < j0:

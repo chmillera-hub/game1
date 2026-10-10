@@ -501,11 +501,12 @@ def _emb_A(ctx, info, t, T):
 
 def _shot_A(ctx, info, t, T, dx=0.0):
     l1, l1e, l2, l2e = T["l1"], T["l1e"], T["l2"], T["l2e"]
-    cx = tween(t, [(0.0, 1330), (T["k1e"] + 0.05, 948), (l1e, 952), (T["k2e"] + 0.05, 1175), (l2e, 1180),
-                   (l2e + 0.3, 1430)])
-    cy = tween(t, [(0.0, 1300), (T["k1e"], 1292), (l1e, 1270), (T["k2e"], 1290), (l2e, 1268)])
-    z = tween(t, [(0.0, 1.95), (T["k1e"], 2.15), (l1 + 0.05, 2.35), (l1e, 2.45), (T["k2e"], 2.2),
-                  (l2e - 0.1, 2.5)])
+    cx = tween(t, [(0.0, 1330), (T["k1e"] + 0.05, 950), (l1, 958), (l1e, 968), (T["k2e"] + 0.05, 1168),
+                   (l2, 1160), (l2e, 1150), (l2e + 0.3, 1430)])
+    cy = tween(t, [(0.0, 1300), (T["k1e"], 1290), (l1, 1270), (l1e, 1262), (T["k2e"], 1285), (l2, 1268),
+                   (l2e, 1260)])
+    z = tween(t, [(0.0, 1.95), (T["k1e"], 2.2), (l1, 2.45), (l1e, 2.85), (T["k2e"], 2.3), (l2, 2.5),
+                  (l2e - 0.05, 2.9), (l2e + 0.2, 2.6)])
     with core.camera(ctx, cx - dx / z, cy, z):
         _house(ctx, t, T)
         a, x = _emb_A(ctx, info, t, T)
@@ -898,8 +899,11 @@ def _emb_G(ctx, info, t, T):
 def _shot_G(ctx, info, t, T):
     x_now = _tip_x(t, T)
     cx = x_now + 85
-    z = tween(t, [(T["G"], 2.05), (T["climb"], 2.2)])
-    with core.camera(ctx, cx, tween(t, [(T["G"], 1300), (T["climb"], 1285)]), z):
+    z = tween(t, [(T["G"], 2.05), (T["l5"] - 0.2, 2.1), (T["l5"] + 0.5, 2.65), (T["scoop"], 2.65),
+                  (T["climb"], 2.3)])
+    cy = tween(t, [(T["G"], 1300), (T["l5"] - 0.2, 1295), (T["l5"] + 0.5, 1245), (T["scoop"], 1250),
+                   (T["climb"], 1285)])
+    with core.camera(ctx, cx, cy, z):
         _house(ctx, t, T)
         _lawn_props(ctx, t, T)
         _shards(ctx, t, T)
@@ -967,7 +971,8 @@ def _cage_into_hole(ctx, info, t, T):
 
 
 def _butt_legs(ctx, t, T):
-    """Custom: from outside, his butt stuck in the hole, legs kicking, coat tails flapping."""
+    """Custom (the rig has no back view): from outside, his back half stuck in the hole —
+    coat back going in, butt up on the sill, coat tails flapping, legs kicking."""
     hop, sl, gone = T["hop"] + 0.07, T["slip"], T["gone"]
     if not (hop <= t < gone):
         return
@@ -975,53 +980,58 @@ def _butt_legs(ctx, t, T):
     k_up = ease_out_back(seg(t, hop, hop + 0.16), 1.8)
     tau = t - hop
     wig = math.sin(tau * TAU * 2.6)
-    hx = W3X - 2 + 7 * wig * (1 - k_in)
-    hy = W3Y + 36 + lerp(50, 0, k_up) - 30 * k_in
-    tilt = 0.09 * wig * (1 - k_in)
+    hx = W3X - 2 + 8 * wig * (1 - k_in)
+    hy = W3Y + 34 + lerp(50, 0, k_up) - 34 * k_in
+    tilt = 0.1 * wig * (1 - k_in)
     ctx.save()
+    _hole_path(ctx)                       # nothing of him shows above/behind the rim
+    ctx.rectangle(W3X - 400, HOLE_BOTTOM - 40, 800, 600)
+    ctx.clip()
     ctx.translate(hx, hy)
     ctx.rotate(tilt)
     ctx.scale(ES, ES)
-    sq = 1 - 0.9 * k_in          # legs fold up into the hole at the end
-    # coat back going into the dark (receding, dimmed)
-    core.smooth_path(ctx, [(-92, 10), (-104, -60), (-70, -150), (0, -178), (70, -150), (104, -60), (92, 10)],
+    sq = 1 - 0.92 * k_in                  # legs fold up into the hole at the end
+    # coat back, receding into the room (lit at the waist, dimmer as it goes in)
+    core.smooth_path(ctx, [(-104, -30), (-96, -120), (-60, -200), (0, -222), (60, -200), (96, -120), (104, -30)],
                      closed=True)
-    core.fill_stroke(ctx, core.mixc(E_COAT, HOLE_DARK, 0.5), INK, 9)
-    core.smooth_path(ctx, [(-46, -120), (0, -150), (46, -120)])
-    core.stroke(ctx, core.alpha(INK, 0.45), 6)
-    # legs: thighs hang from the hips over the sill; shins kick (soles to us)
+    core.fill_stroke(ctx, E_COAT, INK, 9)
+    core.smooth_path(ctx, [(-90, -150), (-50, -205), (0, -222), (50, -205), (90, -150), (0, -165)], closed=True)
+    core.fill(ctx, core.mixc(E_COAT, HOLE_DARK, 0.45))
+    core.poly(ctx, [(0, -40), (0, -150)], closed=False)          # centre back seam
+    core.stroke(ctx, E_COAT_SH, 6)
+    # legs: thighs hang from the hips over the sill; shins kick, soles to us
     for side, ph in ((-1, 0.0), (1, 0.5)):
         kick = 0.5 + 0.5 * math.sin(tau * TAU * 3.0 + ph * TAU)
-        th_a = math.pi / 2 + side * (0.22 + 0.1 * kick)
-        hip = (side * 40, 40)
-        thl = 215 * sq
+        th_a = math.pi / 2 - side * (0.16 + 0.12 * kick)
+        hip = (side * 44, 46)
+        thl = 214 * sq
         knee = (hip[0] + math.cos(th_a) * thl, hip[1] + math.sin(th_a) * thl)
-        sh_a = th_a + side * (0.2 + 0.85 * kick) - (math.pi * 0.85 * k_in * side)
-        shl = 205 * (1 - 0.5 * kick) * sq
+        sh_a = th_a - side * (0.15 + 0.95 * kick) + side * math.pi * 0.85 * k_in
+        shl = 205 * (1 - 0.45 * kick) * sq
         ank = (knee[0] + math.cos(sh_a) * shl, knee[1] + math.sin(sh_a) * shl)
-        _limb(ctx, hip, knee, 31, 26, E_PANTS)
-        _limb(ctx, knee, ank, 26, 20, E_PANTS)
+        _limb(ctx, hip, knee, 33, 27, E_PANTS)
+        _limb(ctx, knee, ank, 27, 21, E_PANTS)
         _shoe_back(ctx, ank, sh_a, kick)
-    # coat tails: split vent, flapping out to the sides
+    # the butt: two round cheeks of slacks, up on the sill
+    for side in (-1, 1):
+        core.ellipse(ctx, side * 50, 10, 66, 60)
+        core.fill_stroke(ctx, E_PANTS, INK, 9)
+        core.ellipse(ctx, side * 64, -14, 22, 13)
+        core.fill(ctx, core.mixc(E_PANTS, "#ffffff", 0.2))
+    core.smooth_path(ctx, [(0, -44), (2, 10), (0, 62)])
+    core.stroke(ctx, INK, 7)
+    # coat tails: split vent, flapping out over the sides of the butt
     fl = math.sin(tau * TAU * 4.3)
     for side in (-1, 1):
         f = fl * side
-        core.smooth_path(ctx, [(side * 18, -46), (side * 102, -40), (side * (128 + 14 * f), 20 + 10 * f),
-                               (side * (140 + 22 * f), 92 + 16 * f), (side * (92 + 10 * f), 84 + 8 * f),
-                               (side * 70, 30)], closed=True)
+        core.smooth_path(ctx, [(side * 62, -46), (side * 110, -40), (side * (150 + 18 * f), 30 + 12 * f),
+                               (side * (170 + 26 * f), 120 + 20 * f), (side * (118 + 14 * f), 112 + 12 * f),
+                               (side * (96 + 6 * f), 50), (side * 84, -6)], closed=True)
         core.fill_stroke(ctx, E_COAT, INK, 9)
-        core.smooth_path(ctx, [(side * 92, -10), (side * (116 + 12 * f), 66 + 12 * f)])
+        core.smooth_path(ctx, [(side * 108, -10), (side * (140 + 16 * f), 84 + 14 * f)])
         core.stroke(ctx, E_COAT_SH, 7)
-    # the butt: two round cheeks of slacks, up on the sill
-    for side in (-1, 1):
-        core.ellipse(ctx, side * 44, 6, 58, 54)
-        core.fill_stroke(ctx, E_PANTS, INK, 9)
-        core.ellipse(ctx, side * 56, -12, 18, 12)
-        core.fill(ctx, core.mixc(E_PANTS, "#ffffff", 0.18))
-    core.poly(ctx, [(0, -40), (0, 48)], closed=False)
-    core.stroke(ctx, INK, 7)
-    # coat hem across the waist
-    core.smooth_path(ctx, [(-104, -46), (0, -60), (104, -46), (98, -30), (0, -40), (-98, -30)], closed=True)
+    # coat hem / belt line across the waist
+    core.smooth_path(ctx, [(-110, -52), (0, -64), (110, -52), (104, -34), (0, -44), (-104, -34)], closed=True)
     core.fill_stroke(ctx, E_COAT, INK, 8)
     ctx.restore()
 
@@ -1040,11 +1050,13 @@ def _limb(ctx, a, b, ra, rb, col):
 def _shoe_back(ctx, p, ang, kick):
     """Loafer from behind: heel cup, and the sole showing more as the knee bends."""
     with core.saved(ctx, p[0], p[1], 1.0, ang - math.pi / 2):
-        core.rrect(ctx, -30, -8, 60, 62, 26)
+        core.rrect(ctx, -36, -10, 72, 74, 30)
         core.fill_stroke(ctx, SHOE, INK, 8)
         so = 0.35 + 0.65 * kick
-        core.rrect(ctx, -25, 52 - 46 * so, 50, 46 * so + 8, 14)
+        core.rrect(ctx, -30, 62 - 54 * so, 60, 54 * so + 8, 16)
         core.fill_stroke(ctx, SHOE_DK, INK, 6)
+        core.rrect(ctx, -18, 62 - 40 * so, 36, 10, 5)
+        core.fill(ctx, core.mixc(SHOE_DK, "#ffffff", 0.15))
 
 
 def _oof(ctx, t, t0):

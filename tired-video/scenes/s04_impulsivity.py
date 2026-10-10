@@ -82,8 +82,8 @@ PLATE_UP = dict(base="stand", al_ik=1.0, al_tx=0.25, al_ty=0.58, al_tz=0.5, al_h
 
 
 def DRAWER(o, peek):
-    return dict(base="stand", al_ik=1.0, al_tx=0.0, al_ty=lerp(0.34, 0.38, o), al_tz=lerp(0.6, 0.4, o),
-                al_h="grip", al_wa=0.0, al_wabs=0.5, **_CAGE_R, lean=0.22 + 0.3 * peek,
+    return dict(base="stand", al_ik=1.0, al_tx=-0.1, al_ty=0.41, al_tz=lerp(0.5, 0.35, o),
+                al_h="grip", al_wa=0.0, al_wabs=0.5, **_CAGE_R, lean=0.3 + 0.32 * peek,
                 nod=0.08 + 0.12 * peek, hunch=0.35)
 
 
@@ -505,12 +505,12 @@ def shot_plates(ctx, t, T):
 # ---------------------------------------------------------------------------
 # S7: drawer
 # ---------------------------------------------------------------------------
-DRAWER_FEET = (1650, 1540)
+DRAWER_FEET = (1600, 1540)
 
 
 def shot_drawer(ctx, t, T):
     D = T.drawer
-    cam = tween(t, [(D, (1715, 1000, 1.95)), (T.table, (1722, 990, 2.02))])
+    cam = tween(t, [(D, (1690, 1005, 1.95)), (T.table, (1697, 995, 2.02))])
     o = tween(t, [(D + 0.12, 0.0), (D + 0.34, 1.0), (D + 0.66, 1.0), (D + 0.86, 0.0)], ease_out)
     pk = tween(t, [(D + 0.3, 0.0), (D + 0.42, 1.0), (D + 0.62, 1.0), (D + 0.74, 0.0)])
     look, hf = _gaze(t, [(D, (0.7, 0.55)), (D + 0.3, (0.7, 0.55)), (D + 0.42, (0.4, 0.95)),
@@ -520,8 +520,9 @@ def shot_drawer(ctx, t, T):
     expr = state_at(t, [(D, "whisper"), (D + 0.8, "alarmed")], 0.12)
     with core.camera(ctx, *cam):
         living(ctx, t, drawer_open=o)
+        blink = 0.0 if D + 0.3 < t < D + 0.72 else None      # eyes stay open while he peeks in
         emb(ctx, DRAWER_FEET[0], DRAWER_FEET[1], t, pose=DRAWER(o, pk), turn=0.55, expr=expr, look=look,
-            face=face, blush=0.1, sweat=0.45, hold=cage_hold_cb(t, floor_y=DRAWER_FEET[1] + 10))
+            face=face, blink=blink, blush=0.1, sweat=0.45, hold=cage_hold_cb(t, floor_y=DRAWER_FEET[1] + 10))
         sets.living_room(ctx, t, layer="fg")
 
 
