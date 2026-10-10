@@ -927,8 +927,8 @@ def shot_M(c, t):
 def impact_dust(c, t):
     """The impact dust cloud (shared with s4 so it keeps settling across the cut)."""
     a = t - IMPACT
-    if 0 <= a <= 4.6:
-        fx.dust_cloud(c, t, LIE_X + 120, LIE_Y + 10, a, size=2.0, seed=531, n=18, life=4.6, alpha=0.7)
+    if 0 <= a <= 4.1:
+        fx.dust_cloud(c, t, LIE_X + 120, LIE_Y + 10, a, size=2.0, seed=531, n=18, life=4.1, alpha=0.7)
         fx.debris(c, t, a, (LIE_X + 120, LIE_Y - 30), seed=532, kind="stone", n=10, speed=520, direction=-90,
                   spread=150, floor_y=LIE_Y + 20, size=0.7, life=3.0)
 

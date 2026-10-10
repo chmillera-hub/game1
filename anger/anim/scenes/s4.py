@@ -605,7 +605,8 @@ def draw_world(c, t, cam, *, anger=True, crawler=True, glove=True, rock=True, du
         cam.apply(c, t)
         s3.draw_flat(c, lambda cc: env.draw_depths(cc, t, dust=dd), cam.zoom)
     s3.draw_stuck_sword(c, t)
-    s3.impact_dust(c, t)
+    if abs(cam.rot) < 0.5:          # (big soft sprites: far too slow to blit rolled; it has settled by then)
+        s3.impact_dust(c, t)
     if cp is not None and layer == "back":
         draw_crawler(c, t, cp, amb, L)
     if anger:
