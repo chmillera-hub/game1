@@ -26,6 +26,12 @@ Useful tools (run from ${ROOT}):
 Put all your outputs under ${ROOT}/build/tests/qa_<your-lens>/. LOOK at every image you make with the Read tool.
 4 shared CPU cores: at most 2 heavy processes. Do not git commit.`
 
+const IMG_BUDGET = `
+HARD MEMORY LIMIT (the machine has crashed twice from agents viewing too many large images): view at most ~25 images in total with
+the Read tool. Every image you view must be <= 1400 px on its longest side and saved as JPEG quality ~80 (PIL .save(..., quality=80) or
+ffmpeg -q:v 4), so each is a few hundred KB. Put many frames into ONE downscaled contact sheet instead of viewing frames one by one, and
+prefer numeric checks (frame-difference scans, pixel probes, ffprobe/ffmpeg measurements, PSNR/SSIM, whisper transcripts) over looking.`
+
 const FINDINGS = {
   type: 'object',
   properties: {
@@ -96,7 +102,7 @@ const GROUP_FILES = {
 
 phase('Review')
 const reviews = (await parallel(LENSES.map(l => () =>
-  agent(`${COMMON}\n${l.prompt}\n${GROUP_NOTE}`, { label: `review:${l.key}`, phase: 'Review', schema: FINDINGS })
+  agent(l.key === 'acting' ? `${COMMON}\n${l.prompt}\n${GROUP_NOTE}` : `${COMMON}\n${l.prompt}\n${GROUP_NOTE}\n${IMG_BUDGET}`, { label: `review:${l.key}`, phase: 'Review', schema: FINDINGS })
     .then(r => r && ({ lens: l.key, ...r }))))).filter(Boolean)
 
 const all = reviews.flatMap(r => r.findings.map(f => ({ ...f, lens: r.lens })))
@@ -116,6 +122,7 @@ by rendering the exact frames (python3 -m anim.preview sheet ...) before and aft
 continuity (BIBLE section 9) intact; other fixers are editing other files concurrently (scene owners may be adjusting for rig fixes and vice
 versa), so keep changes local and minimal-risk. Do NOT re-render the whole film. For audio changes, re-run the affected audio step
 (e.g. python3 audio/mix.py) and verify with measurements. For encode changes, prove them with a test encode into build/tests/qa_encode/.
+${IMG_BUDGET}
 Final answer: per finding - fixed (how, evidence path) / not fixed (why).`, { label: `fix:${g}`, phase: 'Fix' }).then(r => ({ group: g, report: r }))
 }))
 
