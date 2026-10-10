@@ -1,6 +1,6 @@
 # Nice Try, My Guy — AI vs. the Evil Genius
 
-Portrait (9:16) animated short, ~4:54, 720x1280 @ 24 fps, H.264 + AAC,
+Portrait (9:16) animated short, ~4:59, 720x1280 @ 24 fps, H.264 + AAC,
 **14.4 MB** → `AI_vs_Evil_Genius_portrait.mp4`.
 
 The Evil Genius (and his snake) tries nine sneaky prompting tricks

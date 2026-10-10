@@ -635,7 +635,7 @@ def draw_party_hat(c, x, y, k=1.0, rot=-0.25):
         _fs(c, "#ffd166", INK, 4)
 
 
-BAL_RED, BAL_RED_DK, BAL_RED_RIM = "#e8384f", "#b31f38", "#ff9aa8"   # (6.4, as s07)
+BAL_RED, BAL_RED_DK, BAL_RED_RIM = "#2a2433", "#120e18", "#8c7fa8"   # glossy BLACK balloon (client request)
 
 
 def draw_balloon(c, x, y, s=1.0, rot=0.0, col=BAL_RED, dk=BAL_RED_DK, rim=BAL_RED_RIM):
@@ -4232,6 +4232,7 @@ def SFX(info):
         (T.chip_in, "tick", -10),
         (T.goon - 0.02, "pop", -18),                  # the AI's brow pops up
         (T.see + 0.05, "snake_hiss", -16),            # Hissy's smirk + tongue flick
-        (T.lol + 0.02, "crowd_laugh", -12),           # everybody laughs
+        (T.see + 0.08, "crowd_laugh", -13),           # everybody laughs (tail stays short
+                                                      # of s13's first line)
         (T.chip_out, "pop", -14),
     ]

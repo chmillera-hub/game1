@@ -817,11 +817,11 @@ def _open_ai_state(t, T):
     lid drop, a slow blink back when he glances over, then the slow eye-roll
     on "never notice" that settles into 😒."""
     L1 = T.L1
-    half = {k: lerp(AI_EXPR["neutral"][k], AI_EXPR["unimpressed"][k], 0.5)
-            for k in AI_EXPR["neutral"]}
     # 😒 already glancing screen-left (at him): no look-driven mirroring needed,
-    # so the blend into / out of the eye-roll stays smooth
+    # so the two-step lid drop and the blend into / out of the eye-roll stay smooth
     unimp_l = dict(AI_MIRROR(AI_EXPR["unimpressed"]), nomir=1.0)
+    half = {k: lerp(AI_EXPR["neutral"][k], unimp_l[k], 0.5) for k in AI_EXPR["neutral"]}
+    half["nomir"] = 1.0
     r_in = T.roll0 + 0.1                       # blend in once the roll's dart-left has begun
     ek = [(0.0, "neutral", 0.2),
           (T.w_evil - 0.02, "skeptical", 0.25),
