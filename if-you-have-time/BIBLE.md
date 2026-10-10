@@ -317,3 +317,39 @@ so nobody is ever a frozen statue (except the one deliberate "frozen mid-sip" ho
 from core.mouth(char, t) layered over the expression. A non-speaking character still reacts (listening, blinking).
 Cuts: use hard cuts between shots (no dissolves) except where the BIBLE says otherwise; vary shot sizes; keep the
 speaker's face in the upper-middle third of the frame.
+
+## 10. REVISION 3 — director's notes (supersede earlier sections where they conflict)
+Guiding principle: keep it grounded and realistic. Emotion and meaning happen in ordinary light, in an
+ordinary room, while ordinary things happen. Imaginative elements (ribbons, motes, memory bubbles) stay in
+the "imagination" layer: they never physically touch or enter anyone, and they dissolve in the air.
+- **Hands on cups (both Rae and the cadet):** for the NEAR hand (the hand closer to the camera — Rae's right
+  hand when she faces +1), the hand is IN FRONT of the cup: palm/side of the hand toward the camera, the cup
+  behind it (closer to the window), fingers wrapping around the far side of the cup (hidden or just peeking at
+  the far edge). Never show fingertips curling toward the camera over the cup for a near hand — that reads as
+  fingers bent backwards. For a FAR hand the cup may be in front with fingertips over its front.
+- **S1:** q01 is now "Good evening, Rae. You were on shift for fourteen hours and nine minutes." and r02
+  "Don't count my hours, Quill. It makes them real."
+- **S2 lighting:** NO dimming. The lounge stays at normal light (light 1) for the whole symphony, characters
+  normally lit (no blue tint, at most a faint warm/teal rim from nearby ribbons). The window stays a normal
+  starfield (no galaxy swirl) and there is no room-flooding light burst. The music is shown only through the
+  ribbons, motes and memory bubbles floating in the normally lit room; the climax is the ribbons sweeping and
+  the memories glowing, plus Rae's face. Beat `sym_lights_dim` is just a time marker now.
+- **Memory bubble 'car_window':** the child at the car window is YOUNG RAE (brown skin, curly dark hair puff,
+  big eyes) — the symphony reminding her of her own childhood.
+- **The cough** (`sym_cadet_cough`) is now loud — a comic interruption of the profound moment.
+- **"Oh, hi."** (line r13 at `sym_rae_wave_back`): when the cadet waves, Rae waves back and says a casual
+  "Oh, hi." — a tiny, normal break in the vibe — then her eyes go straight back to the music.
+- **Final mote** (`sym_celesta_echo`): it drifts AWAY from her (forward/upward in the air in front of her) and
+  dissolves into nothing; it must not touch or enter her hand.
+- **S3:** no lights change (they were never dimmed). `lights_up` is just the moment after the music ends.
+  r10 "...pretty good." is now plain soft speech (no whisper effect).
+- **S4 reactions (small, natural):** kazoo — she raises her mug slightly and gives a small head nod in time
+  (a little toast/acknowledgement); arcade — a clearer head bob on the beat plus the foot tap; lo-fi — her eyes
+  move up to Quill in quiet recognition of the comfort; lullaby — a subtle sad half-smile, another glance to
+  Quill and a small nod. r11 is now "You can just send them to my device. I gotta get going."
+- **S5:** after r12 "Um... thanks." Quill answers q12 "Anytime." with the subtle nod and slight smile
+  (`quill_nod_smile`). The door shuts. Then at `quill_memories` he holds out his palm and a few of Rae's memory
+  bubbles (small, from S2 — e.g. young Rae at the car window, the hands, the kitchen at dawn) gather and float
+  above it; he studies them with quiet curiosity (an android learning what makes music resonate). At
+  `quill_walk_off` he walks off screen (exiting right), still carrying them. No send-lights to the door.
+  Then the end card as before.

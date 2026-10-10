@@ -28,8 +28,8 @@ VOICES = {
 LINES = {
     # ---- S1: the ask
     "r01": ("rae", "Ugh. Long shift.", "Ugh... Long shift.", 0.95),
-    "q01": ("quill", "Good evening, Rae. Fourteen hours and nine minutes, by my count.", None, None),
-    "r02": ("rae", "Don't count my shifts, Quill. It makes them real.", None, None),
+    "q01": ("quill", "Good evening, Rae. You were on shift for fourteen hours and nine minutes.", None, None),
+    "r02": ("rae", "Don't count my hours, Quill. It makes them real.", None, None),
     "r03": ("rae", "Hey... random thought.", None, 0.95),
     "r04": ("rae", "If you ever have time — no rush, seriously, whenever — could you write me a symphony?",
             "If you ever have time... no rush, seriously, whenever... could you write me a symphony?", 1.0),
@@ -44,22 +44,24 @@ LINES = {
     # ---- S2: the symphony (no words, one tiny breath of a word)
     "r09": ("rae", "...oh.", "Oh...", 0.8),
     "c01": ("cadet", "Cool music, Quill.", None, 1.0),
+    "r13": ("rae", "Oh, hi.", "Oh hi!", 0.95),
     # ---- S3: lights up
     "q06": ("quill", "So. How did you like it?", None, None),
-    "r10": ("rae", "...pretty good.", "Pretty good.", 0.85),
+    "r10": ("rae", "...pretty good.", "Pretty good.", 0.9),
     "q07": ("quill", "Thank you. Here are the other ones I made.", None, None),
     # ---- S4: the others, played quickly
     "q08": ("quill", "Number two. Same symphony. Solo kazoo.", None, None),
     "q09": ("quill", "Three. For an arcade cabinet.", None, None),
     "q10": ("quill", "Four. Lo-fi beats... to quietly fall apart to.", "Four. Low-fi beats... to quietly fall apart to.", None),
     "q11": ("quill", "And five. A lullaby. It is eleven seconds long.", None, None),
-    "r11": ("rae", "Can you just... send them to my device? Later?", None, 1.02),
+    "r11": ("rae", "You can just send them to my device. I gotta get going.", None, 1.05),
     # ---- S5: coda
     "r12": ("rae", "Um... thanks.", "Umm... thanks.", 0.9),
+    "q12": ("quill", "Anytime.", None, 0.95),
 }
 
 # Lines processed into a whisper: id -> amount (0 dry .. 1 pure whisper)
-WHISPER = {"c01": 0.7, "r10": 0.7}
+WHISPER = {"c01": 0.5}
 
 # Fixed music cue lengths in seconds. audio/music.py must render each cue to exactly this length.
 MUSIC_CUES = {
@@ -87,7 +89,7 @@ SEQ = [
 
     # ---------------- S1: the ask
     ("scene", "s1"),
-    ("sfx", "ship_hum_loop", {"gain_db": -20.0, "end_beat": "sym_lights_dim"}),
+    ("sfx", "ship_hum_loop", {"gain_db": -20.0, "end_beat": "end_card"}),
     ("music", "lounge", {"gain_db": -9.0, "fade_in": 3.0, "fade_out": 3.0, "end_beat": "sym_lights_dim"}),
     ("beat", "rae_door_open", 0.4),
     ("sfx", "door_open", {"offset": 0.4, "gain_db": -8.0}),
@@ -142,7 +144,6 @@ SEQ = [
     ("scene", "s2"),
     ("beat", "sym_quill_raise"),
     ("beat", "sym_lights_dim", 0.4),
-    ("sfx", "lights_down", {"offset": 0.4, "gain_db": -16.0}),
     ("wait", 1.6),
     ("beat", "sym_music_start"),
     ("music", "symphony", {"gain_db": 1.0}),
@@ -162,7 +163,7 @@ SEQ = [
     ("sfx", "door_close", {"offset": 36.4, "gain_db": -20.0}),
     ("beat", "sym_cadet_notice", 37.6),
     ("beat", "sym_cadet_cough", 41.95),
-    ("sfx", "cough_awkward", {"offset": 41.95, "gain_db": -13.0}),
+    ("sfx", "cough_awkward", {"offset": 41.95, "gain_db": -3.0}),
     # the cadet's footfalls (heel strikes from s2's walk; the last two are off screen, fading)
     ("sfx", "step_soft", {"offset": 34.872, "gain_db": -25.0}),
     ("sfx", "step_soft", {"offset": 35.903, "gain_db": -22.0}),
@@ -185,6 +186,7 @@ SEQ = [
     ("beat", "sym_quill_nod", 44.35),
     ("beat", "sym_cadet_wave", 45.3),
     ("beat", "sym_rae_wave_back", 45.9),
+    ("line_at", "r13", 46.0),   # "Oh, hi." - a casual hello in the middle of it all
     ("beat", "sym_cadet_exit", 48.8),
     ("beat", "sym_grand_pause", 49.4),
     ("beat", "sym_climax", 50.5),
@@ -199,8 +201,6 @@ SEQ = [
     ("scene", "s3"),
     ("wait", 0.5),
     ("beat", "lights_up"),
-    ("sfx", "lights_up", {"gain_db": -18.0}),
-    ("sfx", "ship_hum_loop", {"gain_db": -20.0, "end_beat": "end_card"}),
     ("wait", 1.9),
     ("line", "q06"),
     ("wait", 1.5),
@@ -278,15 +278,19 @@ SEQ = [
     ("line", "r12"),
     ("wait", 0.35),
     ("beat", "quill_nod_smile"),
-    ("wait", 1.3),
+    ("line", "q12"),            # "Anytime."
+    ("wait", 0.7),
     ("beat", "rae_return_close"),
     ("sfx", "door_close", {"gain_db": -8.0}),
     ("beat", "door_shut2", 0.67),
-    ("wait", 1.6),
-    ("beat", "quill_send"),
-    ("sfx", "send_chime", {"offset": 0.2, "gain_db": -14.0}),
-    ("wait", 2.4),
+    ("wait", 1.5),
+    # he holds out his palm: the memories from the symphony gather above it, and he studies them
+    ("beat", "quill_memories"),
+    ("sfx", "holo_open", {"offset": 0.1, "gain_db": -22.0}),
+    ("wait", 3.2),
+    ("beat", "quill_walk_off"),  # walks off screen, still holding them
+    ("wait", 2.8),
     ("beat", "end_card"),
-    ("wait", 6.5),
+    ("wait", 6.0),
     ("beat", "end"),
 ]
