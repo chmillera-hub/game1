@@ -329,12 +329,13 @@ def _palm(cv, cam, x, z, h, t, night=0.0):
                     paint(leaf, stroke=max(1.2, 0.35 * s)))
 
 
-def village3d(cv, cam, t, night=0.0, lights=0.0, crowd=True, glow_seed=0.0):
+def village3d(cv, cam, t, night=0.0, lights=0.0, crowd=True, glow_seed=0.0, ground=True):
     dim = lambda c: mixc(c, (24, 28, 56), night * 0.82)
     # sand to the horizon, then the paved village floor with its straight lines
-    cv.drawPath(_quad(cam, [(-3000, 0, cam.C[2] + 2), (3000, 0, cam.C[2] + 2), (3000, 0, 6000), (-3000, 0, 6000)]),
-                paint(dim(SAND)))
-    for k in range(18):
+    if ground:
+        cv.drawPath(_quad(cam, [(-3000, 0, cam.C[2] + 2), (3000, 0, cam.C[2] + 2), (3000, 0, 6000),
+                                (-3000, 0, 6000)]), paint(dim(SAND)))
+    for k in range(18 if ground else 0):
         zz = 140 + k * 26
         cv.drawPath(path([cam.p(-900, 0, zz), cam.p(0, 0, zz + 6), cam.p(900, 0, zz)], closed=False),
                     paint(dim(shade(SAND, 0.92)), 0.6, stroke=1.2))

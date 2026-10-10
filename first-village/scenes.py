@@ -441,14 +441,14 @@ def elder_pose(t, **kw):
     return p
 
 
-def chop(t, beats, side="r"):
-    """Arm 'hammer' gesture hitting at each beat time."""
-    v = 0.0
-    for b in beats:
-        d = t - b
-        if -0.35 < d < 0.5:
-            v = max(v, ease_out(clamp((d + 0.35) / 0.3)) * (1 - clamp(d / 0.5)) if d > 0 else ease_out(clamp((d + 0.35) / 0.35)) * 0.6)
-    return v
+def talk_hand(t, seed=0, talk=0.5):
+    """An ordinary speaker's hand: open, held out to the side of the body, drifting up and down with the
+    rhythm of speech (never a fist, never a hammer)."""
+    drift = 0.5 + 0.5 * math.sin(t * 1.9 + seed) * math.cos(t * 0.7 + 2 * seed)
+    beat = 0.35 * talk
+    a = 32 + 6 * math.sin(t * 0.8 + seed)
+    e = 42 + 34 * clamp(drift + beat - 0.15)
+    return (a, e, 1.0, 0.9), -10 + 25 * math.sin(t * 1.3 + seed)
 
 
 def village(cv, t):
@@ -487,8 +487,8 @@ def village(cv, t):
         S.grade(cv, (150, 160, 180), 0.18)
 
     def medium(cv, t, lt):
-        beats = [TL.cap("n3b", 2) + 0.4 + k * 0.8 for k in range(6)]
-        c = chop(t, beats)
+        talk = fake_talk(t, 4, 0.55)
+        arm, rot = talk_hand(t, 1.0, talk)
         with Cam(cv, 360, 640, 1.0 + 0.01 * lt, t=t):
             with Blur(cv, 4):
                 cv.save()
@@ -497,9 +497,8 @@ def village(cv, t):
                 cv.translate(-360, -560)
                 plaza(cv, t)
                 cv.restore()
-            p = elder_pose(t, open=fake_talk(t, 4, 0.55), anger=0.2, lid=0.2, hand_r="fist",
-                           arm_r=(lerp(20, 60, c), lerp(-150, -60, c), 1, 1))
-            p["brow"] += -0.2 * c
+            p = elder_pose(t, open=talk, anger=0.2, lid=0.2, hand_r="open", arm_r=arm, hand_rot_r=rot)
+            p["brow"] += 0.15 * talk
             at_head(cv, ELDER, p, 360, 470, 1.5, t)
         S.grade(cv, (150, 160, 180), 0.18)
 
@@ -535,8 +534,7 @@ def village(cv, t):
         S.grade(cv, (150, 160, 180), 0.22)
 
     def mcu_e1c(cv, t, lt):
-        beats = [TL.cap("e1c", 1) + 0.35, TL.cap("e1c", 2) + 0.35]
-        c = chop(t, beats)
+        arm, rot = talk_hand(t, 2.0, TL.lip_slow(("elder",), t))
         smug = ramp(t, e1c - 0.5, e1c + 1.0)
         with Cam(cv, 360, 640, 1.04 + 0.02 * lt, t=t):
             with Blur(cv, 6):
@@ -546,8 +544,8 @@ def village(cv, t):
                 cv.translate(-390, -540)
                 plaza(cv, t)
                 cv.restore()
-            p = elder_pose(t, lid=0.2 + 0.25 * smug, sneer=0.3 * smug, smile=0.15 * smug, hand_r="fist",
-                           arm_r=(lerp(20, 60, c), lerp(-150, -60, c), 1, 1))
+            p = elder_pose(t, lid=0.2 + 0.25 * smug, sneer=0.3 * smug, smile=0.15 * smug, hand_r="open",
+                           arm_r=arm, hand_rot_r=rot)
             p["pitch"] -= 0.15 * smug
             speak(p, ("elder",), t)
             at_head(cv, ELDER, p, 360, 520, 2.3, t)
@@ -1296,7 +1294,7 @@ def village2(cv, t):
             return 330 + 90 * (1 - 1 / z) + 12 * math.sin(z * 0.9)
 
         zm = lerp(4.2, 9.5, walk_u)
-        with Cam(cv, lerp(360, spot[0], 0.5 * push), lerp(640, 820, push), 1.0 + 0.22 * push, t=t):
+        with Cam(cv, lerp(360, spot[0], 0.35 * push), lerp(640, 760, push), 1.0 + 0.12 * push, t=t):
             S.sky(cv, [(36, 44, 98), (150, 104, 132), (250, 170, 120), (255, 214, 160)], [0, 0.5, 0.85, 1], 0,
                   hz + 4)
             S.stars(cv, t, 0.35, n=80, y1=200)
@@ -1314,9 +1312,16 @@ def village2(cv, t):
                 x = (hashf(k, 62) - 0.5) * 2200 / z + 360
                 r = 10 / z
                 cv.drawOval(oval(x, gy(z), r, r * 0.55), paint(shade(ground, 0.75), 0.7))
-            # the long morning shadow of the wall behind us
-            cv.drawRect(skia.Rect.MakeLTRB(-400, 1000, W + 400, H + 600),
-                        paint(shader=lin((0, 1000), (0, 1200), [((40, 30, 40), 0.0), ((40, 30, 40), 0.35)])))
+            # the village he was thrown out of, off to one side: walled, straight-lined, grey in the dawn shade
+            cv.save()
+            cv.clipRect(skia.Rect.MakeLTRB(-400, hz + 1, W + 400, H + 600))
+            S.village3d(cv, S.Cam3((96, 46, -190), 0.0, 900, cy=hz), t, night=0.5, lights=0.25, crowd=False,
+                        ground=False)
+            cv.restore()
+            cv.drawRect(skia.Rect.MakeLTRB(-400, hz - 30, W + 400, hz + 200),   # morning haze softens it
+                        paint(shader=lin((0, hz - 30), (0, hz + 200), [((230, 180, 150), 0.0),
+                                                                        ((230, 180, 150), 0.22),
+                                                                        ((230, 180, 150), 0.0)])))
             # where he knelt: knee prints, hand prints, and dark spots where tears fell
             for dx in (-38, 38):
                 cv.drawOval(oval(spot[0] + dx, spot[1] + 30, 34, 13), paint(shade(ground, 0.68), 0.85))
