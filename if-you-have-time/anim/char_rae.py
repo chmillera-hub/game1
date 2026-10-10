@@ -36,7 +36,11 @@ Conventions specific to Rae (on top of rig.py):
     * facing=-1 is a pure mirror image (as in Quill's rig): arm_r / lid_r / tear_r always belong to the
       side nearer the camera once Rae is turned (screen-left of the body for facing +1).
     * Mug: held by its handle (the hand on the outer side, logo toward the camera). When the hand comes near
-      the mouth ('sip'), the rig places the rim on the lower lip and tilts the mug - for either arm.
+      the mouth ('sip'), the rig places the rim on the lower lip and tilts the mug - for either arm. The lip
+      lock blends in while the palm is ~78 -> 26 units from the mouth (scenes hold the mug at the chin / chest
+      inside that band on purpose, so it is not widened). From hold_mug that band is blend(hold_mug, sip,
+      ~0.47 -> 0.8): ease the lift onto blend(hold_mug, sip, 0.8) and lower from it, or the lock snaps on in
+      a frame or two at the fastest point of the move.
     * Lids given explicitly (lid_l / lid_r not None) are used as-is (scene-controlled blinks); use
       lid = level * blink(t) or expr(..., t=t) for long holds so she keeps blinking.
     * walk: pose.walk is the phase in cycles; advance pose.x by walk_advance(pose) per cycle (toward facing) so
@@ -831,6 +835,7 @@ def _solve(p: Pose, t):
         M.flip = hs < 0
         M.arm = A
         M.tilt = w
+        M.dist = dist                  # raw palm -> mouth distance (QA probes)
         R.mug = M
     return R
 

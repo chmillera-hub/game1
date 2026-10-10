@@ -356,6 +356,10 @@ def _rib_params(seed):
 
 # =========================================================================== ribbons
 _RIB_SLOTS = np.array((0.30, 0.64, 0.12, 0.86, 0.47, 0.75))      # vertical placement per ribbon
+# glowing edge filaments: (offset across the ribbon in half-widths, alpha, width multiplier). Leading edge
+# only, a little wider and softer than a hairline: the old faint trailing-edge filament and the 2-px-crisp
+# moving edges were S2's main bit hog (QA encode: ~7 % + ~5 % of the bits) for almost no visible light.
+_RIB_FILAMENTS = ((-0.62, 0.62 * 0.6, 1.8),)
 
 
 def draw_ribbons(canvas, t, intensity=1.0, env=0.0, area=(0, 0, W, H), seed=0,
@@ -437,14 +441,14 @@ def draw_ribbons(canvas, t, intensity=1.0, env=0.0, area=(0, 0, W, H), seed=0,
     profs = np.where((twist >= 0)[:, :, None], prof[None, None, :], prof[::-1][None, None, :])
     offs = (-1.8, -1.0, -0.62, 0, 0.62, 1.0, 1.8)
     _layer_mesh(mesh, px, py, nx, ny, offs, w_u, body_rgb, ab[:, :, None] * profs)
-    # crisp glowing filaments along both edges (bright on the leading edge)
+    # glowing filament along the leading edge
     fw = np.full((R, n), 2.1 + 1.3 * env + 1.4 * bs)
     tri = np.array((0, 1, 0))[None, None, :]
     pinch = 0.35 + 0.65 * np.sqrt(np.abs(twist))        # soften the X where the edges cross
-    for off, fa in ((-0.62, 0.62), (0.62, 0.22)):
+    for off, fa, fwk in _RIB_FILAMENTS:
         fx_ = px + nx * hw * off
         fy_ = py + ny * hw * off
-        _layer_mesh(mesh, fx_, fy_, nx, ny, (-1, 0, 1), fw, fil_rgb, (a * fa * pinch)[:, :, None] * tri)
+        _layer_mesh(mesh, fx_, fy_, nx, ny, (-1, 0, 1), fw * fwk, fil_rgb, (a * fa * pinch)[:, :, None] * tri)
     mesh.draw(canvas)
     if glints:
         for r_ in range(R):

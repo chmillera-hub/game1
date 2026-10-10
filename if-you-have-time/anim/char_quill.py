@@ -1736,26 +1736,22 @@ def _iris_shape(c, E, g, emissive=True, alpha=1.0, warm=0.0, flick=1.0):
                                                          col(dk, alpha)], [p_in, 0.52, 0.8, 1.0])
     c.drawCircle(0, 0, r, paint(None, shader=sh))
     c.drawCircle(0, 0, r - 0.45, paint(lim, alpha * 0.9, stroke=0.9))
-    # static fine "lens" ring
-    c.drawCircle(0, 0, r * 0.64, paint(ring, alpha * 0.28, stroke=0.45))
+    # static fine "lens" ring; while processing it lights up (glow colour) between the two
+    # spinning rings - the spin-up reads through brightness, not through speed
+    c.drawCircle(0, 0, r * 0.64, paint(ring, alpha * 0.28 * (1.0 - (proc if emissive else 0.0)), stroke=0.45))
     if emissive and proc > 0.01:
-        # thin dark rotating rings inside the bright iris (contrast survives any glow level)
+        c.drawCircle(0, 0, r * 0.64, paint(gl, alpha * 0.7 * proc, stroke=0.45 + 0.35 * proc))
+        # two bold, soft-edged dark rings turning slowly at constant speed inside the bright iris
+        # (contrast survives any glow level). Few, wide, slow segments keep every frame predictable
+        # for the encoder - thin fast rings (and speed tied to `process`) turned into mush at ~380 kbps.
         t = g.t
-        for i, (rr, spd, segs, frac) in enumerate(((0.44, 250.0, 3, 0.55), (0.62, -165.0, 4, 0.5),
-                                                   (0.82, 115.0, 6, 0.45))):
-            rot = (t * spd * (0.6 + 0.4 * proc)) % 360.0
+        for rr, spd, segs, frac, sw in ((0.5, 60.0, 3, 0.55, 1.6), (0.79, -45.0, 4, 0.45, 1.7)):
+            rot = (t * spd) % 360.0
             rect = skia.Rect(-r * rr, -r * rr, r * rr, r * rr)
             pth = skia.Path()
             for s_ in range(segs):
                 pth.addArc(rect, rot + s_ * 360.0 / segs, 360.0 / segs * frac)
-            c.drawPath(pth, paint(ring, alpha * proc * 0.78, stroke=0.85 + 0.15 * proc, cap="butt"))
-        # one bright tick ring between them: reads as "lens elements" spinning
-        rot = (-t * 320.0) % 360.0
-        rect = skia.Rect(-r * 0.72, -r * 0.72, r * 0.72, r * 0.72)
-        pth = skia.Path()
-        for s_ in range(8):
-            pth.addArc(rect, rot + s_ * 45.0, 14.0)
-        c.drawPath(pth, paint(gl, alpha * proc * 0.55, stroke=0.6, cap="butt"))
+            c.drawPath(pth, paint(ring, alpha * proc * 0.72, stroke=sw, cap="butt", blur=0.35))
     # pupil last (+ thin aperture ring) so gaze always reads
     pr = E.pupil
     c.drawCircle(0, 0.2, pr + 0.6, paint(ring, alpha * 0.55, stroke=0.6))
@@ -1836,7 +1832,14 @@ def _draw_mouth(c, g):
     def mp(x, y, dz=1.5):
         return P.p(x, my + y, _face_z(x, my + y) + dz)
 
-    w = 14.0 * (1.0 - 0.5 * r * min(1.0, o * 3.0 + 0.3)) * (1.0 - 0.22 * o) + 1.0 * max(sm, 0.0)
+    # Effective roundness. The lip-sync "round" channel comes from the spectral centroid, which
+    # sits low for his whole baritone (round > 0.6 on most open frames), so taken at face value
+    # every vowel became a small, tall, dark "O" - a surprised "ooh" that fights his deadpan.
+    # Only a modest share of it shapes the mouth; a rounder (still calm) O is kept for clear
+    # "oo"/"or" values (r > 0.9, ~5 % of his open frames, and the "oo" expression preset).
+    oo = smoothstep(clamp((r - 0.9) / 0.1))
+    r_eff = min(0.35, 0.4 * r) + 0.25 * oo
+    w = 14.0 * (1.0 - 0.5 * r_eff * min(1.0, o * 3.0 + 0.3)) * (1.0 - 0.22 * o) + 1.0 * max(sm, 0.0)
     # smirk lifts ONE corner only (+ = Quill's left / local +x)
     dyl = -(sm * 4.2 + max(sk, 0.0) * 3.2)
     dyr = -(sm * 4.2 + max(-sk, 0.0) * 3.2)
@@ -1854,39 +1857,46 @@ def _draw_mouth(c, g):
                 cc = [mp(sx * (w + 0.8), dy - 1.6), mp(sx * (w + 1.8), dy + 0.2), mp(sx * (w + 1.2), dy + 1.8)]
                 c.drawPath(_spl(skia.Path(), cc), _pt(SKIN_SH2, a_, stroke=0.9))
         return
-    h_top = -o * (3.4 + r * 1.4)
-    h_bot = o * (8.6 + r * 2.2)
+    h_top = -o * (3.4 + r_eff * 1.4)
+    # the lower lip drops with the opening but eases into a cap (soft knee), so even his loudest
+    # vowels read as a calm, flat oval rather than a gaping hole
+    h_bot = o * (8.6 + r_eff * 2.2)
+    cap = 6.5 + 1.5 * r_eff + 1.2 * oo
+    knee = 1.6
+    if h_bot > cap - knee:
+        h_bot = cap - knee + knee * (1.0 - math.exp(-(h_bot - (cap - knee)) / knee))
     # corners sit half-way down the opening and the top lip arches over it: an "ah" reads as an
     # oval opening (a calm, deadpan vowel), never as a "D"-shaped grin
     fr = 0.5
     cy0 = h_top + (h_bot - h_top) * fr
     cyr = cy0 + dyr * 0.8
     cyl = cy0 + dyl * 0.8
-    sx = 0.62 + 0.2 * r
+    sx = 0.62 + 0.2 * r_eff
     # top lip: a soft arch, highest at the centre, curving DOWN into the corners
-    tq = lerp(0.55, 0.85, r)
+    tq = lerp(0.55, 0.85, r_eff)
     cr = 0.7 * o + 0.3                      # corners are small rounded ends, not points
     wc = w + 0.6
     top = [mp(-w, cyr - cr), mp(-w * sx, lerp(cyr, h_top, tq) + dyr * 0.2), mp(-w * 0.22, h_top + 0.3),
-           mp(0, h_top + 0.12 * (1 - r)), mp(w * 0.22, h_top + 0.3),
+           mp(0, h_top + 0.12 * (1 - r_eff)), mp(w * 0.22, h_top + 0.3),
            mp(w * sx, lerp(cyl, h_top, tq) + dyl * 0.2), mp(w, cyl - cr)]
-    bq = lerp(0.72, 0.9, r)
+    bq = lerp(0.72, 0.9, r_eff)
     bot = [mp(wc, cyl), mp(w, cyl + cr), mp(w * sx, lerp(cyl, h_bot, bq) + dyl * 0.2), mp(0, h_bot),
            mp(-w * sx, lerp(cyr, h_bot, bq) + dyr * 0.2), mp(-w, cyr + cr), mp(-wc, cyr)]
     top = [mp(-wc, cyr)] + top + [mp(wc, cyl)]
     shape = _two_curve_path(top, bot)
-    if r > 0.05:
-        # pursed lips: a soft rim around the opening
-        c.drawPath(shape, _pt(SKIN_SH, 0.45 * r, stroke=4.2))
+    purse = clamp((r_eff - 0.2) / 0.55)
+    if purse > 0.02:
+        # pursed lips: a soft rim around the opening (only toward a real "oo")
+        c.drawPath(shape, _pt(SKIN_SH, 0.45 * purse, stroke=4.2))
     c.drawPath(shape, _pt(MOUTH_IN))
     c.save()
     c.clipPath(shape, skia.ClipOp.kIntersect, True)
     if o > 0.12:
         # a narrow strip of upper teeth (<= 2 units)
-        th = min(2.0, 0.9 + o * 1.2) * (1.0 - 0.6 * r)
+        th = min(2.0, 0.9 + o * 1.2) * (1.0 - 0.6 * r_eff)
         teeth = [(x, y + th) for (x, y) in top]
         tp = _two_curve_path(top, teeth[::-1])
-        c.drawPath(tp, _pt(TEETH, 0.9 * (1.0 - 0.7 * r)))
+        c.drawPath(tp, _pt(TEETH, 0.9 * (1.0 - 0.7 * r_eff)))
     if o > 0.3:
         tc = mp(0, h_bot - 1.0)
         c.drawOval(skia.Rect(tc[0] - w * 0.55, tc[1] - 3.8 * o, tc[0] + w * 0.55, tc[1] + 4.0), _pt(TONGUE, 0.8))
@@ -2316,7 +2326,10 @@ def _draw_emissive(c, g, t, warm):
         return
     pose = g.pose
     proc = clamp(pose.process)
-    flick = 1.0 + proc * (0.07 * noise1(t * 23.0, 5) + 0.03 * math.sin(t * 41.0))
+    # a tiny flicker only while the lens engages / disengages (process < 0.3); frozen while it
+    # spins, so the processing close-up is not new noise on every frame
+    eng = clamp(proc / 0.3)
+    flick = 1.0 + 0.12 * math.sin(math.pi * eng) * (0.7 * noise1(t * 23.0, 5) + 0.3 * math.sin(t * 41.0))
     glw = clamp(pose.glow)
     dk = _darkness(g)
     emis = clamp(0.4 + 0.6 * glw + 0.6 * dk + 0.4 * proc)

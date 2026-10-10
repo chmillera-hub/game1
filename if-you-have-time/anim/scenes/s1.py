@@ -249,6 +249,7 @@ def walk_x(t):
 HOLD = A["hold_mug"]
 SIP = A["sip"]
 RAISE = A["mug_raise"]
+SIP_NEAR = ArmPose.blend(HOLD, SIP, 0.8)     # on the way to SIP: rim reaching the lower lip (rig lip lock ~0.99)
 MUGPOINT = ArmPose(shoulder=38.0, elbow=60.0, wrist=-8.0, hand="hold", across=0.0)    # lazy "you" with the mug
 REST = A["rest"]
 SHRUG_L = ArmPose(shoulder=16.0, elbow=64.0, wrist=-14.0, hand="palm_up", across=0.0)    # lazy "meh": palm flips up on her thigh
@@ -482,9 +483,13 @@ r_arm_r = ArmSeq([
     (S("r02") + 0.95, arm_add(_mp, 3, -6)), (S("r02") + 1.12, arm_add(_mp, -2, 4), "io"),       # waggle on "Quill"
     (S("r02") + 1.3, arm_add(_mp, 1, -3), "io"), (S("r02") + 1.5, _mp, "io"),
     (S("r02") + 1.7, _mp), (S("r02") + 2.35, HOLD, "io"),
-    (SIP1, HOLD), (SIP1 + 0.42, SIP, "io"), (SIP_SND + 0.62, SIP), (SIP_SND + 1.15, HOLD, "io"),
-    (SIP2, HOLD), (SIP2 + 0.42, SIP, "io"),
-    (FRZ_END, SIP), (FRZ_END + 0.42, HOLD, "io"),
+    # sips: the visible lift eases out on SIP_NEAR (rim just on the lower lip) so the rig's lip lock blends in
+    # over ~5 frames instead of snapping at the fastest point of the move; NEAR -> SIP happens while the lock
+    # holds the mug still, and each lowering starts from NEAR with a slow ease off the lips
+    (SIP1 - 0.12, HOLD), (SIP1 + 0.52, SIP_NEAR, "io"), (SIP1 + 0.72, SIP, "io"),
+    (SIP_SND + 0.5, SIP), (SIP_SND + 0.62, SIP_NEAR, "io"), (SIP_SND + 1.26, HOLD, "io"),
+    (SIP2 - 0.08, HOLD), (SIP2 + 0.56, SIP_NEAR, "io"), (SIP2 + 0.86, SIP, "io"),
+    (FRZ_END - 0.18, SIP), (FRZ_END - 0.06, SIP_NEAR, "io"), (FRZ_END + 0.64, HOLD, "io"),
     (S("r08") + 0.72, HOLD), (S("r08") + 1.2, RAISE, "out"),
 ])
 r_arm_l = ArmSeq([          # far arm: swings on the walk, then rests on her far thigh; comes up for the shrug on "Sure."
