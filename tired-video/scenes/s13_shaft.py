@@ -340,7 +340,6 @@ def sh2b(ctx, t, T, info):
     pose = (pose_walk, SIT, ks)
     turn = lerp(TURN_W, SIT_TURN, smoothstep(seg(t, l2 - 0.05, l2 + 0.25)))
     # face: head knocks back on the wall, eyes to the ceiling; then rolls forward to the creature
-    w_get = wt(info, "s13_l02", 2)
     w_here = wt(info, "s13_l02", 5)
     look, ht, hn = gaze(t, [(0, (0.3, 0.12)), (l2 + 0.05, (0.3, 0.12)), (l2 + 0.22, (0.05, -0.8)),
                             (w_here - 0.2, (0.05, -0.8)), (w_here + 0.1, (0.65, 0.45)),
@@ -463,8 +462,8 @@ def _annoy_beats(T):
 
 def sh6(ctx, t, T, info):
     v = 2
-    c0, c1, c2, c3, c4, b = _annoy_beats(T)
-    l4, l4e = T["l4"], T["l4e"]
+    c0, c1, c2, c3, c4, _ = _annoy_beats(T)
+    l4 = T["l4"]
     push = _push_t(T)                    # he gets up off the floor
     z = lerp(1.6, 1.72, ease_in_out(seg(t, c0, l4)))
     camx, camy = WALL_X + 140, sewer_cam_y(z, 1420)
@@ -521,9 +520,7 @@ def sh6(ctx, t, T, info):
         sets.sewer(ctx, t, variant=v)
         a = tired(ctx, xt, FEET, SP, t, info, pose=pose, turn=turn, expr=expr, look=look,
                   face=face, blink=blink, pose_t=xt / STRIDE_T)
-        hip = a["hip"]
         foot = a["foot_r"]
-        hem = (hip[0] + 64 * SP, hip[1] - 30 * SP)
         cx = CX_SEW + 70
         if t < c1:
             # chitter: stands facing him, head bobbing, little vocal ticks
@@ -1060,7 +1057,7 @@ def _steps(xfn, T, stride, t0, t1, name, gain, pan=0.0, dt=1 / 96):
 def SFX(info):
     T = _times(info)
     ev = []
-    c0, c1, c2, c3, c4, b = _annoy_beats(T)
+    c0, c1, c2, c3, c4, _ = _annoy_beats(T)
     push = _push_t(T)
     # sewer room tone until we leave the main tunnel; the pods hum from the catwalk on
     ev += _sfx.loop_events("sewer_ambience", 0.0, T["enter"] + 0.6, -5)

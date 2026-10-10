@@ -71,7 +71,7 @@ CROUCH_GRAB = dict(base="crouch", al_ik=1.0, al_tx=0.25, al_ty=0.14, al_tz=0.24,
 NOBODY = dict(base="back_away", **A("l", 0.02, 0.1, 0.1, h="grip", tf=1.0), al_ik=0.0,
               lean=-0.1, hunch=0.8)
 TIPTOE = dict(base="tiptoe", **_CAGE_R)
-TIP_K = 1.6                    # tiptoe cycle speed-up (speed scales with it)
+TIP_K = 1.75                   # tiptoe cycle speed-up (speed scales with it)
 
 
 # hand on the plate rim (bent over the coffee table) / plate raised to the chest
@@ -121,8 +121,8 @@ class _T:
         self.tag_out = self.l2 + 0.3
         self.gulp = self.l4e + 0.08
         # tiptoe: walk, freeze mid-step when he notices the eye, walk on
-        self.f0 = 1.18
-        self.f1 = min(1.75, (self.plates - self.tip) - 0.22)
+        self.f0 = (self.plates - self.tip) - 0.6     # freeze mid-step, held to the cut
+        self.f1 = 99.0
         self.shadow0 = self.stairs + 0.45
         self.shadow1 = self.stairs + 1.15
 
@@ -423,14 +423,14 @@ def _tip_walk(u, T):
     return T.f0 + (u - T.f1) * 1.25
 
 
-TIP_X0, TIP_Y, TIP_TURN = 130, 1385, 0.9
+TIP_X0, TIP_Y, TIP_TURN = 200, 1385, 0.9
 
 
 def shot_tiptoe(ctx, t, T):
     u = t - T.tip
-    base = tween(t, [(T.tip, (520, 1060, 1.1)), (T.plates, (640, 1060, 1.12))])
+    base = tween(t, [(T.tip, (540, 1060, 1.1)), (T.tip + T.f0, (680, 1060, 1.12))])
     push = ease_out(seg(u, T.f0 - 0.02, T.f0 + 0.28))
-    cam = tuple(lerp(a, b, push) for a, b in zip(base, (615, 925, 1.6)))
+    cam = tuple(lerp(a, b, push) for a, b in zip(base, (775, 900, 1.6)))
     v = human.cycle_speed(WHO, "tiptoe", TIP_TURN) * ES * TIP_K
     wclk = _tip_walk(u, T)
     x = TIP_X0 + v * wclk

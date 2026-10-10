@@ -794,7 +794,7 @@ def draw_late(ctx, t, info, c):
                  label="tap")
     if c.ceil - 0.01 <= t:
         fx.plaster_dust(ctx, E_CLOSET[0] - 10, BM["ceiling_y"] + 12, 0.85, t, c.ceil, seed=5, width=240, fall=900)
-        fx.impact_star(ctx, E_CLOSET[0] - 10, BM["ceiling_y"] + 40, 0.75, t, c.ceil, word="BONK!", seed=3)
+        fx.impact_star(ctx, E_CLOSET[0] + 120, BM["ceiling_y"] + 34, 0.62, t, c.ceil, word="BONK!", seed=3)
     if c.land - 0.02 <= t:
         fx.dust_puff(ctx, E_FLOOR[0], E_FLOOR[1] + 4, 0.9, t, c.land, seed=6)
     if mode == "up":

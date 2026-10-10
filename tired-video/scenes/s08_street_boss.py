@@ -397,8 +397,8 @@ def shot_boss(ctx, t, info, T, kind):
         u = seg(t, T["c8"], T["c9"])
         cam = _boss_cam(-260, lerp(3.6, 3.68, u))
         look = (0.18, 0.0)
-        b0 = T["c8"] + 0.12
-        blink = tween(t, [(b0, 0.0), (b0 + 0.22, 1.0), (b0 + 0.36, 1.0), (b0 + 0.6, 0.0)])
+        b0 = T["c8"] + 0.08
+        blink = tween(t, [(b0, 0.0), (b0 + 0.2, 1.0), (b0 + 0.32, 1.0), (b0 + 0.52, 0.0)])
     elif kind == "slide":             # eyes slide to Tiredness (SH12)
         u = seg(t, T["c12"], T["c13"])
         cam = _boss_cam(-250, lerp(3.9, 3.97, u), dx=16)
