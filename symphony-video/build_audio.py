@@ -36,8 +36,8 @@ S = [
     ('beat', 'title', 7.5),
     ('cue', 'type0', 'typing', {'dur': 5.0, 'adv': False, 'gain': 0.8}),
     ('beat', 'enter', 2.4),
-    ('say', 'l1', 'jun', "Hey, Orrin.", {'gap': 0.5}),
-    ('say', 'l2', 'orrin', "Good evening, Lieutenant.", {'gap': 0.7}),
+    ('say', 'l1', 'jun', "Hey there.", {'gap': 0.5}),
+    ('say', 'l2', 'orrin', "Good evening, Cadet.", {'gap': 0.7}),
     ('say', 'l3', 'jun', "So. Random thought. No pressure at all.", {'gap': 0.4, 'len': 1.05}),
     ('say', 'l4', 'jun', "If you ever have some free time, do you think you could write a symphony?", {'gap': 0.35}),
     ('say', 'l4b', 'jun', "Like, whenever. Next week. Next year. No rush.", {'gap': 0.9, 'len': 1.08}),
@@ -74,20 +74,22 @@ S = [
     ('say', 'p4', 'orrin', "Four. A lullaby.", {'gap': 0.05}),
     ('cue', 'n4', 'lullaby', {}),
     ('say', 'p5', 'orrin', "Five is a duet with a humpback whale.", {'gap': 0.1}),
-    ('cue', 'n5', 'whale', {'adv': False, 'gain': 0.9}),
-    ('beat', 'whalebeat', 1.5),
+    ('cue', 'n5', 'whale', {'adv': False, 'gain': 1.8}),
+    ('beat', 'whalebeat', 2.3),
     ('say', 'p5b', 'orrin', "I like the whale one. It is kind of funny.", {'gap': 0.3, 'len': 1.05}),
-    ('cue', 'n6', 'march', {'adv': False, 'gain': 0.6}),
-    ('say', 'p6', 'orrin', "Number six is a victory march, for no particular", {'gap': 0.0, 'cut': 0.0}),
-    ('say', 'l17', 'jun', "Just, send them to my phone. I'll look at them later.", {'gap': 0.4, 'len': 1.02}),
+    ('beat', 'hesitate', 0.9),
+    ('say', 'l17', 'jun', "Oh. Uh... yeah. Just... send them to my phone.", {'gap': 0.9, 'len': 1.2}),
+    ('say', 'l17b', 'jun', "I'll... look at them later.", {'gap': 0.6, 'len': 1.25}),
     ('say', 'l18', 'orrin', "Sounds good.", {'gap': 0.1}),
     ('cue', 'send', 'tap', {'adv': False}),
     ('beat', 'sendbeat', 1.0),
     ('cue', 'type3', 'typing', {'dur': 16.0, 'adv': False, 'gain': 0.75}),
     ('beat', 'sideeye', 2.6),
-    ('say', 'l19', 'jun', "Ahem.", {'gap': 1.1, 'len': 1.2}),
+    ('cue', 'l19', 'cough', {}),
+    ('beat', 'aftercough', 0.9),
     ('say', 'l20', 'jun', "Okay. Well. Thanks. Bye.", {'gap': 0.6, 'len': 1.25}),
     ('beat', 'nod', 0.9),
+    ('beat', 'grabmug', 2.4),
     ('cue', 'shuffle', 'shuffle', {'adv': False}),
     ('beat', 'leave', 3.2),
     ('beat', 'alone', 5.6),
@@ -104,7 +106,7 @@ INTERCUT = [
 # android-to-android chat, spoken in English: (intercut id, offset s, who, text)
 CHAT = [
     ('chat', 0.25, 'orrin', "Coolant pressure on deck seven is low."),
-    ('chat', None, 'vesper', "Rerouted. Why is the lieutenant crying?"),
+    ('chat', None, 'vesper', "Rerouted. Why is the cadet crying?"),
     ('chat', None, 'orrin', "They asked for a symphony."),
     ('chat', None, 'vesper', "Ah. Nice."),
 ]
@@ -172,6 +174,7 @@ def main():
     snapmix[:, int(0.25 * SR):int(0.25 * SR) + g.shape[1]] += g * 1.4
     sounds['snap'] = snapmix
     sounds['shuffle'] = M.sfx_footsteps(9, 0.3) * 0.7
+    sounds['cough'] = M.sfx_cough() * 1.6
 
     t = 0.0
     events = {}
@@ -251,6 +254,10 @@ def main():
         voice_clips.append((t0, a, who))
         cur[icname] = t0 + dur + 0.25
         assert t0 + dur <= ic['t1'] + 0.05, f'chat line {ci} overruns {icname} by {t0 + dur - ic["t1"]:.2f}s'
+
+    # birdsong over the mind's-eye meadow
+    placed.append((events['ic_collapse']['t0'] + 1.5, M.sfx_birds(10.5), 1.0))
+    events['l19'].update({'who': 'jun', 'text': '*clears throat*'})
 
     for (t0, st, g) in placed:
         i = int(t0 * SR)

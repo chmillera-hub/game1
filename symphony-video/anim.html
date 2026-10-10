@@ -43,7 +43,7 @@ function sortTracks(o) { for (const k in o) o[k].k.sort((a, b) => a[0] - b[0]); 
 const DEF = { lookX: 0, lookY: 0, lid: 1, lidLow: 0, lidTilt: 0, browY: 0, browTilt: 0, browAsym: 0, smile: 0, mouth: 0, mouthW: 1,
   tilt: 0, turn: 0, pupil: 1, tear: 0, wet: 0, blush: 0, sweat: 0, bx: 0, by: 0, mugX: 0.62, mugY: 1.3, mug: 0,
   handRaise: 0, shake: 0, glow: 0.25, closed: 0, chest: 0, hide: 0,
-  prop: 0, scr: 0, typing: 0, reflect: 0, reach: 0, walk: 0, rx: 0, ry: 0 };
+  prop: 0, scr: 0, handMouth: 0, typing: 0, reflect: 0, reach: 0, walk: 0, rx: 0, ry: 0 };
 const CH = {
   jun: { x: 215, y: 640, size: 150, skin: '#b98262', shade: '#9a6649', hair: '#26170f', hairHi: '#4a2e20', uni: '#2f62a8', uniD: '#1c3a66', trim: '#0f1b30',
     iris: '#4b2c1a', lip: '#7d3f35', brow: '#26170f', kind: 'jun' },
@@ -340,8 +340,19 @@ function drawBust(c, who, st, t) {
     for (const sd of [-1, 1]) { c.beginPath(); c.moveTo(sd * 0.33 + st.turn * 0.05, 0.12); c.quadraticCurveTo(sd * 0.26 + st.turn * 0.05, 0.3, sd * 0.16 + st.turn * 0.05, 0.42); c.stroke(); }
     const ch = chirpEnv(who, t);
     const blink = ch > 0.05 ? ch : 0.5 + 0.5 * Math.sin(t * (st.glow > 0.6 ? 30 : 2.5));
-    c.fillStyle = `rgba(${P.light},${ch > 0.05 ? 0.3 + 0.7 * ch : 0.35 + 0.6 * blink * clamp(st.glow * 1.5)})`;
-    c.beginPath(); c.roundRect(0.4 - st.turn * 0.04, -0.2, 0.05, 0.12, 0.02); c.fill();
+    void blink;
+    // cybernetic chip: dark housing, outline, circuit traces, LED segments chasing
+    const cxp = 0.385 - st.turn * 0.04;
+    c.strokeStyle = 'rgba(40,52,62,0.55)'; c.lineWidth = 0.007;
+    c.beginPath(); c.moveTo(cxp, -0.12); c.lineTo(cxp - 0.07, -0.12); c.lineTo(cxp - 0.1, -0.08); c.moveTo(cxp + 0.035, -0.235); c.lineTo(cxp + 0.035, -0.29); c.lineTo(cxp - 0.02, -0.33); c.stroke();
+    c.fillStyle = '#28313a'; c.strokeStyle = '#0b0f13'; c.lineWidth = 0.012;
+    c.beginPath(); c.roundRect(cxp, -0.235, 0.075, 0.16, 0.012); c.fill(); c.stroke();
+    const speed = st.glow > 0.6 ? 22 : 3.5;
+    for (let k = 0; k < 4; k++) {
+      const on = ch > 0.05 ? ch : 0.25 + 0.75 * Math.max(0, Math.sin(t * speed - k * 1.2));
+      c.fillStyle = `rgba(${P.light},${0.25 + 0.75 * on})`;
+      c.fillRect(cxp + 0.016, -0.218 + k * 0.035, 0.043, 0.02);
+    }
   }
   // blush
   if (st.blush > 0.02) {
@@ -398,6 +409,7 @@ function drawBust(c, who, st, t) {
     c.restore();
   }
   c.restore(); // head
+  if (st.handMouth > 0.05) { c.globalAlpha = clamp(st.handMouth * 2); drawHand(c, 0.06, 0.42 + (1 - st.handMouth) * 0.5, P, 0.12); c.globalAlpha = 1; }
   // hand on chest
   if (st.chest > 0.05) { c.globalAlpha = clamp(st.chest * 2); drawHand(c, -0.2, 1.1 - 0.1 * st.chest, P, 0.1); c.globalAlpha = 1; }
   // mug
@@ -698,6 +710,8 @@ function drawCosmic(c, t, st) {
 function drawSilhouette(c, x, y, s, kneel, kind, t, opts = {}) {
   // full-body figure in units of head height (h); feet at (x,y)
   c.save(); c.translate(x, y); c.scale(s, s);
+  const dance = clamp(opts.dance || 0), bp = opts.beatPh || 0;
+  if (dance > 0) c.rotate(Math.sin(bp / 2) * 0.07 * dance);
   const k = clamp(kneel);
   const drop = 1.55 * k;
   const bow = opts.bow || 0;
@@ -710,8 +724,9 @@ function drawSilhouette(c, x, y, s, kneel, kind, t, opts = {}) {
     c.lineWidth = 0.62 + w;
     const hipY = -3.4 + drop;
     for (const sd of [-1, 1]) {
-      const kx = sd * 0.35 + (k ? 0.55 * k * (sd > 0 ? 1 : 0.6) : 0), ky = lerp(-1.7, -0.25, k);
-      const fx = lerp(sd * 0.38, -1.1 * k + sd * 0.25, k), fy = lerp(0, -0.1, k);
+      const tap = Math.max(0, Math.sin(bp / 2 + (sd > 0 ? Math.PI : 0))) * dance * (1 - k);
+      const kx = sd * 0.35 + (k ? 0.55 * k * (sd > 0 ? 1 : 0.6) : 0) + sd * tap * 0.25, ky = lerp(-1.7, -0.25, k) - tap * 0.35;
+      const fx = lerp(sd * 0.38, -1.1 * k + sd * 0.25, k) + sd * tap * 0.15, fy = lerp(0, -0.1, k) - tap * 0.45;
       c.beginPath(); c.moveTo(sd * 0.3, hipY); c.lineTo(kx, ky); c.lineTo(fx, fy); c.stroke();
     }
     // torso
@@ -725,20 +740,122 @@ function drawSilhouette(c, x, y, s, kneel, kind, t, opts = {}) {
       const up = clamp(opts.armsUp || 0), sway = Math.sin(t * 1.6 + sd) * 0.12 * up;
       // arms raised overhead in a V: praising the skies
       const ex = lerp(sd * lerp(0.95, 1.6, open), sd * 1.15 + sway, up), ey = lerp(sh + lerp(1.5, 0.9, open), sh - 1.35, up);
-      const hx = lerp(sd * lerp(0.9, 2.3, open), sd * 1.7 + sway * 1.6, up), hy = lerp(sh + lerp(3.0, 0.2, open), sh - 2.9, up);
+      let hx = lerp(sd * lerp(0.9, 2.3, open), sd * 1.7 + sway * 1.6, up), hy = lerp(sh + lerp(3.0, 0.2, open), sh - 2.9, up);
+      let ex2 = ex, ey2 = ey;
+      // arm swing on the beat
+      const sw = Math.sin(bp / 2 + (sd > 0 ? 0 : Math.PI)) * dance;
+      ex2 += sd * Math.abs(sw) * 0.35; ey2 -= sw * 0.4; hx += sd * Math.abs(sw) * 0.9; hy -= sw * 1.4;
+      // arms opening outward and slightly up (rising pose)
+      const ri = clamp(opts.rise || 0);
+      ex2 = lerp(ex2, sd * 1.4, ri); ey2 = lerp(ey2, sh + 0.05, ri); hx = lerp(hx, sd * 2.6, ri); hy = lerp(hy, sh - 0.55, ri);
       c.beginPath(); c.moveTo(sd * 0.75 + bow * 0.4, sh);
       if (opts.chest && sd < 0) { c.lineTo(-0.9, sh + 1.3); c.lineTo(-0.1, sh + 0.9); }
-      else { c.lineTo(ex, ey); c.lineTo(hx, hy); }
+      else { c.lineTo(ex2, ey2); c.lineTo(hx, hy); }
       c.stroke();
       if ((opts.armsUp || 0) > 0.3) { c.fillStyle = col; c.beginPath(); c.arc(hx, hy, 0.3 + w / 2, 0, Math.PI * 2); c.fill(); }
     }
     // head
-    const hx = bow * 0.8, hy = -6.5 + drop + bow * 0.25 - clamp(opts.armsUp || 0) * 0.08;
+    const hx = bow * 0.8 + (opts.rise || 0) * 0.08, hy = -6.5 + drop + bow * 0.25 - clamp(opts.armsUp || 0) * 0.08 - Math.abs(Math.sin(bp)) * 0.12 * dance - (opts.rise || 0) * 0.1;
     c.fillStyle = col; c.beginPath(); c.arc(hx, hy, 0.5 + w / 2, 0, Math.PI * 2); c.fill();
     if (kind === 'jun') { c.beginPath(); c.arc(hx + 0.05, hy - 0.55, 0.26 + w / 2, 0, Math.PI * 2); c.fill(); }
   };
-  c.save(); c.shadowColor = rim; c.shadowBlur = 25; limbs(rim, 0.12); c.restore();
+  c.save(); c.shadowColor = rim; c.shadowBlur = 25 + 30 * (opts.rise || 0); limbs(rim, 0.12 + 0.08 * (opts.rise || 0)); c.restore();
   limbs(body, 0);
+  c.restore();
+}
+
+function drawSpot(c, x, yFeet, a, t) {
+  if (a < 0.01) return;
+  c.save(); c.globalCompositeOperation = 'lighter';
+  const g = c.createLinearGradient(0, -100, 0, yFeet + 40);
+  g.addColorStop(0, `rgba(190,245,255,${0.42 * a})`); g.addColorStop(1, `rgba(140,230,255,${0.1 * a})`);
+  c.fillStyle = g; c.beginPath(); c.moveTo(x - 40, -100); c.lineTo(x + 40, -100); c.lineTo(x + 170, yFeet + 40); c.lineTo(x - 170, yFeet + 40); c.fill();
+  const r = c.createRadialGradient(x, yFeet, 0, x, yFeet, 190);
+  r.addColorStop(0, `rgba(200,250,255,${0.45 * a})`); r.addColorStop(1, 'rgba(200,250,255,0)');
+  c.fillStyle = r; c.beginPath(); c.ellipse(x, yFeet, 190, 40, 0, 0, Math.PI * 2); c.fill();
+  for (let i = 0; i < 14; i++) { // rising sparkles
+    const ph = (t * 0.35 + i / 14) % 1, sx = x + Math.sin(i * 7.1) * 120 * (1 - ph * 0.5), sy = yFeet - ph * 700;
+    c.fillStyle = `rgba(220,255,255,${a * (1 - ph) * 0.8})`; c.beginPath(); c.arc(sx, sy, 3, 0, Math.PI * 2); c.fill();
+  }
+  c.restore();
+}
+const NAT = (() => {
+  const r = mulberry(123);
+  const flowers = Array.from({ length: 22 }, (_, i) => ({ x: 20 + r() * 680, y: 960 + r() * 240, d: r() * 4, h: 30 + r() * 50, col: ['#ff7aa8', '#ffd447', '#ffffff', '#b28dff', '#ff9f43'][i % 5] }));
+  const clouds = Array.from({ length: 5 }, (_, i) => ({ x: r() * 900, y: 120 + r() * 380, s: 0.6 + r() * 0.8, v: 6 + r() * 10 }));
+  // tree branches (recursive, precomputed)
+  const br = [];
+  (function grow(x, y, ang, len, depth, t0) {
+    const x2 = x + Math.cos(ang) * len, y2 = y + Math.sin(ang) * len;
+    br.push({ x, y, x2, y2, w: depth * 4 + 2, t0, depth });
+    if (depth <= 0) return;
+    const n = depth > 3 ? 2 : 3;
+    for (let i = 0; i < n; i++) grow(x2, y2, ang + (i - (n - 1) / 2) * 0.55 + (r() - 0.5) * 0.25, len * (0.68 + r() * 0.12), depth - 1, t0 + 0.5);
+  })(150, 975, -Math.PI / 2 - 0.05, 150, 5, 0);
+  const tips = br.filter(b => b.depth <= 1);
+  const birds = Array.from({ length: 6 }, (_, i) => ({ t0: 2.0 + i * 0.9, y0: 150 + r() * 300, perch: i < 4 ? tips[Math.floor(r() * tips.length)] : null, v: 160 + r() * 80, p: r() * 6 }));
+  return { flowers, clouds, br, tips, birds };
+})();
+function drawBird(c, x, y, s, flap, col = '#2d2a3a') {
+  c.save(); c.translate(x, y); c.scale(s, s);
+  const w = Math.sin(flap) * 0.9;
+  c.strokeStyle = col; c.lineWidth = 3; c.lineCap = 'round';
+  c.beginPath(); c.moveTo(-16, -8 * w - 4); c.quadraticCurveTo(-7, -2, 0, 0); c.quadraticCurveTo(7, -2, 16, -8 * w - 4); c.stroke();
+  c.fillStyle = col; c.beginPath(); c.ellipse(0, 1, 5, 3.5, 0, 0, Math.PI * 2); c.fill();
+  c.restore();
+}
+function drawNature(c, t, lt, a) {
+  if (a < 0.01) return;
+  c.save(); c.globalAlpha = a;
+  const sky = c.createLinearGradient(0, 0, 0, 960);
+  sky.addColorStop(0, '#6fb6ee'); sky.addColorStop(0.65, '#bfe3f5'); sky.addColorStop(1, '#ffe2b8');
+  c.fillStyle = sky; c.fillRect(0, 0, W, H);
+  const sun = c.createRadialGradient(540, 420, 0, 540, 420, 260);
+  sun.addColorStop(0, 'rgba(255,250,220,1)'); sun.addColorStop(0.18, 'rgba(255,240,190,0.9)'); sun.addColorStop(1, 'rgba(255,240,190,0)');
+  c.fillStyle = sun; c.fillRect(0, 0, W, H);
+  for (const cl of NAT.clouds) {
+    const x = ((cl.x + t * cl.v) % 1100) - 200;
+    c.fillStyle = 'rgba(255,255,255,0.92)';
+    for (const [dx, dy, rr] of [[0, 0, 40], [38, -14, 46], [80, 0, 38], [40, 12, 36], [-34, 8, 28]]) { c.beginPath(); c.arc(x + dx * cl.s, cl.y + dy * cl.s, rr * cl.s, 0, Math.PI * 2); c.fill(); }
+  }
+  // hills
+  c.fillStyle = '#9fd18a'; c.beginPath(); c.moveTo(0, 900); c.quadraticCurveTo(200, 800, 420, 880); c.quadraticCurveTo(600, 820, 720, 870); c.lineTo(720, 1280); c.lineTo(0, 1280); c.fill();
+  const gr = c.createLinearGradient(0, 940, 0, 1280); gr.addColorStop(0, '#6cbf55'); gr.addColorStop(1, '#3d8a35');
+  c.fillStyle = gr; c.beginPath(); c.moveTo(0, 960); c.quadraticCurveTo(360, 920, 720, 965); c.lineTo(720, 1280); c.lineTo(0, 1280); c.fill();
+  // tree grows
+  const g = clamp(lt / 3.5);
+  c.strokeStyle = '#5b3b26'; c.lineCap = 'round';
+  for (const b of NAT.br) {
+    const k = clamp((g * 3.2 - b.t0 / 1.0));
+    if (k <= 0) continue;
+    c.lineWidth = b.w; c.beginPath(); c.moveTo(b.x, b.y); c.lineTo(lerp(b.x, b.x2, k), lerp(b.y, b.y2, k)); c.stroke();
+  }
+  const lv = easeOut((lt - 2.2) / 1.8);
+  if (lv > 0) for (const tp of NAT.tips) {
+    c.fillStyle = `rgba(80,170,70,${0.85 * lv})`; c.beginPath(); c.arc(tp.x2, tp.y2, 30 * lv, 0, Math.PI * 2); c.fill();
+    c.fillStyle = `rgba(255,170,200,${0.95 * lv})`; c.beginPath(); c.arc(tp.x2 + 8, tp.y2 - 6, 6 * lv, 0, Math.PI * 2); c.fill();
+  }
+  // flowers sprout
+  for (const f of NAT.flowers) {
+    const k = easeOut((lt - 0.8 - f.d) / 1.0);
+    if (k <= 0) continue;
+    const top = f.y - f.h * k;
+    c.strokeStyle = '#2f7a2c'; c.lineWidth = 3; c.beginPath(); c.moveTo(f.x, f.y); c.lineTo(f.x + Math.sin(t * 1.5 + f.x) * 3, top); c.stroke();
+    const pk = easeOut((lt - 1.4 - f.d) / 0.5) * (1 + 0.15 * Math.sin(Math.PI * clamp((lt - 1.4 - f.d) / 0.5)));
+    if (pk > 0) {
+      c.fillStyle = f.col;
+      for (let q = 0; q < 5; q++) { const an = q * 1.2566 + t * 0.2; c.beginPath(); c.arc(f.x + Math.cos(an) * 8 * pk, top + Math.sin(an) * 8 * pk, 6 * pk, 0, Math.PI * 2); c.fill(); }
+      c.fillStyle = '#ffcc33'; c.beginPath(); c.arc(f.x, top, 4 * pk, 0, Math.PI * 2); c.fill();
+    }
+  }
+  // birds fly in; some land on the branches
+  for (const b of NAT.birds) {
+    const bt = lt - b.t0; if (bt < 0) continue;
+    if (b.perch) {
+      const fl = clamp(bt / 2.6), x = lerp(780, b.perch.x2, easeOut(fl)), y = lerp(b.y0, b.perch.y2 - 26, easeOut(fl)) - Math.sin(Math.PI * fl) * 60;
+      drawBird(c, x, y, 0.9, fl < 1 ? bt * 18 + b.p : 0.4 + Math.sin(t * 3 + b.p) * 0.1);
+    } else drawBird(c, 780 - bt * b.v, b.y0 + Math.sin(bt * 2) * 15, 0.8, bt * 16 + b.p);
+  }
   c.restore();
 }
 
@@ -761,7 +878,7 @@ function drawSubtitle(c, t) {
   const lh = 44, h = lines.length * lh + 56, y0 = 1110 - h / 2;
   c.fillStyle = 'rgba(5,8,18,0.72)'; c.beginPath(); c.roundRect(40, y0, 640, h, 22); c.fill();
   c.font = '22px InterX'; c.fillStyle = { jun: '#ffb27a', orrin: '#5fe9ff', vesper: '#ffb84d' }[cur.who];
-  c.fillText({ jun: 'LT. JUN', orrin: 'ORRIN', vesper: 'VESPER' }[cur.who], W / 2, y0 + 22);
+  c.fillText({ jun: 'CADET', orrin: 'ANDROID', vesper: 'OTHER ANDROID' }[cur.who], W / 2, y0 + 22);
   c.font = '34px InterB'; c.fillStyle = '#fff';
   lines.forEach((l, i) => c.fillText(l, W / 2, y0 + 50 + i * lh + lh / 2 - 6));
   c.restore();
@@ -790,8 +907,8 @@ const PANELS = [
   [10, 'Concerto for Kazoo & Thunder'], [11, 'Four Minutes of Silence'],
 ];
 function activePanel(t) {
-  const R = [[2, 'p2', 'n2'], [3, 'p3', 'n3'], [4, 'p4', 'n4'], [5, 'p5', 'p5b'], [6, 'p6', 'p6']];
-  for (const [n, a, b] of R) if (t >= T0(a) && t < T1(b) + (n === 6 ? 0.3 : 0)) return n;
+  const R = [[2, 'p2', 'n2'], [3, 'p3', 'n3'], [4, 'p4', 'n4'], [5, 'p5', 'p5b']];
+  for (const [n, a, b] of R) if (t >= T0(a) && t < T1(b)) return n;
   return 0;
 }
 function drawPanels(c, t, appear, off, fly = 0, fx = 0, fy = 0) {
@@ -915,7 +1032,7 @@ function direct() {
   const WORK = { turn: 0.3, lookX: 0.85, lookY: 0.15, typing: 1, reflect: 0.8, lid: 0.92, smile: 0, handRaise: 0, reach: 0 };
   const STATION = { x: 705, y: 668, z: 1.42 };
   TR = { cosmic: new Track(0), rib: new Track(0), bloom: new Track(0), rays: new Track(0), collapse: new Track(0),
-    flash: new Track(0), fade: new Track(1), kneel: new Track(0), armsUp: new Track(0), panels: new Track(0), fly: new Track(0), mugConsole: new Track(0) };
+    flash: new Track(0), fade: new Track(1), kneel: new Track(0), armsUp: new Track(0), dance: new Track(0), rise: new Track(0), nature: new Track(0), panels: new Track(0), fly: new Track(0), mugConsole: new Track(0) };
   const ic = n => E('ic_' + n);
 
   // ---------------- opening
@@ -990,6 +1107,7 @@ function direct() {
   TR.cosmic.at(ic('tears').t0, 0.9, 4);
   TR.rib.at(ic('tears').t0, 1, 3);
   shot(ic('cosmic').t0, ic('cosmic').t1, 'cosmicwide', { x: 360, y: 640, z: 1 }, { x: 360, y: 610, z: 1.1 });
+  TR.dance.at(ic('cosmic').t0 + 0.3, 1, 1.0).at(ic('cosmic').t1, 0, 0.01);
   shot(ic('glance').t0, ic('glance').t1, 'lounge', cam(CAM.OCU, 0, 5, 0.98), cam(CAM.OCU, 0, -5, 1.06), { room: true });
   const g0 = ic('glance').t0;
   O(g0 + 1.5, { lookX: -0.9, turn: -0.12, reflect: 0.25, typing: 0.25 }, 0.45);
@@ -1003,6 +1121,8 @@ function direct() {
   shot(ic('kneel').t0, ic('kneel').t1, 'cosmicwide', { x: 360, y: 600, z: 1.05 }, { x: 360, y: 680, z: 1.18 });
   TR.kneel.at(ic('kneel').t0 + 0.15, 1, 1.4);
   TR.armsUp.at(ic('kneel').t0 + 2.6, 1, 1.6).at(ic('collapse').t0 + 1, 0, 3);
+  TR.rise.at(ic('kneel').t0 + 0.6, 1, 7).at(ic('collapse').t0 + 1.5, 0, 3.5);
+  TR.nature.at(ic('collapse').t0 + 1.0, 1, 2.2);
   TR.rays.at(ic('kneel').t0, 1, 0.4).at(ic('kneel').t0 + 5, 0.4, 1.5).at(ic('climax').t0, 1, 0.3);
   const cm = ic('climax');
   shot(cm.t0, cm.t0 + 4.8, 'lounge', cam(CAM.JCU, 0, 40, 1.0), cam(CAM.JCU, 0, 20, 1.15), { cosmicBg: true });
@@ -1019,11 +1139,11 @@ function direct() {
   O(T1('a2') - 0.1, WORK, 0.4);
   V(T0('a3'), { turn: -0.3, lookX: -0.8, smile: 0.25, browY: 0.15 }, 0.3);
   V(T1('a3') + 0.2, { ...WORK, turn: -0.3, lookX: -0.85, smile: 0.1 }, 0.4);
-  shot(ic('collapse').t0, ic('collapse').t1 - 2.8, 'cosmicwide', { x: 360, y: 700, z: 1.12 }, { x: 360, y: 640, z: 1.0 }, { bow: true });
+  shot(ic('collapse').t0, ic('collapse').t1 - 2.8, 'cosmicwide', { x: 360, y: 700, z: 1.12 }, { x: 360, y: 640, z: 1.0 }, { bow: true, nature: true });
   TR.bloom.at(ic('chat').t0, 0, 3);
   TR.rib.at(ic('collapse').t0 + 1, 0.3, 5);
   TR.collapse.at(ic('collapse').t0 + 1, 1, 8);
-  shot(ic('collapse').t1 - 2.8, T0('snap'), 'lounge', cam(CAM.JCU, 0, 0, 1), cam(CAM.JCU, 0, -5, 1.06), { cosmicBg: true });
+  shot(ic('collapse').t1 - 2.8, T0('snap'), 'lounge', cam(CAM.JCU, 0, 0, 1), cam(CAM.JCU, 0, -5, 1.06), { cosmicBg: true, natureBg: true });
   J(ic('collapse').t1 - 2.81, { closed: 1, tilt: 0.06, mouth: 0, smile: 0.35, tear: 0.6, wet: 0.6, shake: 0, chest: 1, lookY: 0, browTilt: 0.2, browY: 0.1 }, 0.01);
 
   // ---------------- SNAP back: Orrin never stopped working
@@ -1031,7 +1151,7 @@ function direct() {
   TR.flash.at(SN, 1, 0.05).at(SN + 0.08, 0, 0.35);
   TR.cosmic.at(SN, 0, 0.01); TR.rib.at(SN, 0, 0.01); TR.collapse.at(SN, 0, 0.01); TR.kneel.at(SN, 0, 0.01);
   shot(SN, T0('l12'), 'lounge', CAM.WIDE, cam(CAM.WIDE, 0, 10, 1.03));
-  J(SN, { closed: 0, chest: 0, by: 265, ...hold, lid: 1.35, pupil: 0.6, lookX: 0.2, lookY: 0, tear: 0.4, wet: 0.5, smile: 0, mouth: 0.2, shake: 0, tilt: 0, browY: 0.9, browTilt: 0 }, 0.01);
+  J(SN, { closed: 0, chest: 0, by: 0, ...hold, lid: 1.35, pupil: 0.6, lookX: 0.2, lookY: 0, tear: 0.4, wet: 0.5, smile: 0, mouth: 0.2, shake: 0, tilt: 0, browY: 0.9, browTilt: 0 }, 0.01);
   shot(T0('l12'), T0('l13'), 'lounge', cam(CAM.JCU, 0, 5, 0.95), cam(CAM.JCU, 0, 0, 1.08), { shake: 0.8 });
   J(T0('l12'), { by: 0, mouth: 0.25, mouthW: 1.2, lid: 1.35, pupil: 0.55, browY: 1, browTilt: 0.15, shake: 0.6, lookX: 0.6, turn: 0.25, sweat: 0.3, tear: 0, wet: 0.2 }, 0.3);
   shot(T0('l13'), T0('l14'), 'lounge', CAM.OCU, cam(CAM.OCU, 0, 5, 1.05));
@@ -1059,14 +1179,15 @@ function direct() {
   shot(T0('p5'), T0('p5b'), 'lounge', CAM.WIDE, cam(CAM.WIDE, 0, 0, 1.04), { panels: true });
   J(T0('p5'), { ...look(5), tilt: 0, smile: 0.05, lid: 1.15, browY: 0.5, browTilt: 0 }, 0.3);
   O(T0('p5'), { lookX: -0.5, lookY: -0.5 }, 0.3);
-  shot(T0('p5b'), T0('p6'), 'lounge', CAM.OCU, cam(CAM.OCU, 0, 0, 1.06), { panels: true });
+  shot(T0('p5b'), T0('hesitate'), 'lounge', CAM.OCU, cam(CAM.OCU, 0, 0, 1.06), { panels: true });
   O(T0('p5b'), { lookX: -0.6, lookY: 0, turn: -0.2, smile: 0.22, tilt: 0.05, lid: 0.95 }, 0.4);
   O(T1('p5b') - 0.4, { smile: 0.05, tilt: 0 }, 0.4);
-  shot(T0('p6'), T0('l17'), 'lounge', CAM.WIDE, CAM.WIDE, { panels: true });
-  J(T0('p6'), { ...look(6), lid: 0.85, smile: 0 }, 0.3);
-  J(T1('p6') - 0.5, { lookX: 0.75, lookY: 0, mugX: 0.45, mugY: 0.9 }, 0.35);
-  shot(T0('l17'), T0('l18'), 'lounge', cam(CAM.JCU, 0, 0, 1), cam(CAM.JCU, 0, 0, 1.04), { panels: true });
-  J(T0('l17'), { lid: 0.75, smile: 0.12, browY: 0.1, browTilt: 0, lookX: 0.75, tilt: 0.04 }, 0.3);
+  shot(T0('hesitate'), T0('l18'), 'lounge', cam(CAM.JCU, 0, 0, 1), cam(CAM.JCU, 0, -5, 1.1), { panels: true });
+  J(T0('hesitate'), { lookX: -0.15, lookY: 0.7, lid: 0.8, browTilt: 0.35, browY: 0.15, smile: 0, mouth: 0, tilt: 0.04, sweat: 0, mugX: 0.48, mugY: 1.3 }, 0.5);
+  J(T0('l17') + 0.9, { lookX: 0.7, lookY: 0.05, lid: 0.9, smile: 0.12, blush: 0.3 }, 0.3);
+  J(T0('l17') + 1.9, { lookX: -0.2, lookY: 0.65, lid: 0.78, smile: 0.0, tilt: 0.07 }, 0.45);
+  J(T0('l17b'), { lookX: -0.45, lookY: 0.55, browTilt: 0.45, smile: -0.06, lid: 0.75 }, 0.5);
+  J(T1('l17b') + 0.1, { lookX: 0.6, lookY: 0.2, lid: 0.85, smile: 0.08 }, 0.3);
   shot(T0('l18'), T0('send'), 'lounge', CAM.OCU, CAM.OCU, { panels: true });
   O(T0('l18'), { smile: 0.08, handRaise: 0.6, lookX: -0.7, by: 5 }, 0.2);
   O(T1('l18'), { by: 0 }, 0.2);
@@ -1075,18 +1196,28 @@ function direct() {
   J(T0('send') + 0.7, { scr: 3 }, 0.01);
   O(T0('send') + 0.5, WORK, 0.5);
   // ---------------- side-eye, cough, awkward exit
-  shot(T0('sideeye'), T1('l19'), 'lounge', cam(CAM.JCU, 0, 0, 1), cam(CAM.JCU, 0, -5, 1.08));
+  shot(T0('sideeye'), T1('l19') + 0.4, 'lounge', cam(CAM.JCU, 0, 0, 1), cam(CAM.JCU, 0, -5, 1.08));
   J(T0('sideeye'), { lookX: 0, lookY: 0.6, lid: 0.9, smile: 0, mugY: 1.15 }, 0.3);
   J(T0('sideeye') + 0.8, { lookX: 0.98, lookY: 0.05, turn: -0.08, lid: 0.82, browAsym: 0.25 }, 0.5);
-  J(T0('l19') - 0.05, { closed: 1, tilt: 0.08, browY: -0.1, browAsym: 0 }, 0.15);
-  J(T1('l19') + 0.1, { closed: 0, tilt: 0, lookX: 0.95 }, 0.15);
-  shot(T1('l19'), T0('l20'), 'lounge', CAM.OCU, cam(CAM.OCU, 0, 0, 1.04));
+  J(T0('l19') - 0.3, { handMouth: 1 }, 0.25);
+  J(T0('l19') - 0.05, { closed: 1, tilt: 0.08, by: 4, browY: -0.1, browAsym: 0 }, 0.12);
+  J(T0('l19') + 0.25, { by: 0 }, 0.1);
+  J(T1('l19') + 0.1, { closed: 0, tilt: 0, lookX: 0.95, handMouth: 0 }, 0.3);
+  shot(T1('l19') + 0.4, T0('l20'), 'lounge', CAM.OCU, cam(CAM.OCU, 0, 0, 1.04));
   shot(T0('l20'), T0('nod'), 'lounge', CAM.WIDE, cam(CAM.WIDE, 0, 0, 1.03));
   J(T0('l20'), { lookX: 0.75, lookY: 0, smile: 0.25, browTilt: 0.4, browY: 0.3, lid: 1.0, sweat: 0.3, blush: 0.3 }, 0.3);
   J(T0('l20') + 1.6, { bx: -25, tilt: -0.04 }, 0.6);
-  shot(T0('nod'), T0('leave'), 'lounge', cam(CAM.OCU, 0, 0, 1.02), cam(CAM.OCU, 0, 0, 1.05));
+  shot(T0('nod'), T0('grabmug'), 'lounge', cam(CAM.OCU, 0, 0, 1.02), cam(CAM.OCU, 0, 0, 1.05));
   O(T0('nod') + 0.1, { by: 6, smile: 0 }, 0.2);
   O(T0('nod') + 0.35, { by: 0 }, 0.25);
+  const gm = T0('grabmug');
+  shot(gm, T0('leave'), 'lounge', { x: 190, y: 720, z: 1.7 }, { x: 200, y: 715, z: 1.8 });
+  J(gm, { bx: -35, tilt: -0.07, lookX: -0.7, lookY: 0.75, turn: -0.2, smile: 0, blush: 0.15, sweat: 0 }, 0.4);
+  TR.mugConsole.at(gm + 0.55, 0, 0.01);
+  J(gm + 0.55, { prop: 0, mugX: 0.2, mugY: 1.35, scr: 0 }, 0.01);
+  J(gm + 0.7, { bx: 0, tilt: 0, turn: 0, lookX: 0.2, lookY: 0 }, 0.35);
+  J(gm + 0.95, { ...sip, lid: 0.7, lookX: 0.5, browY: 0 }, 0.4);
+  J(gm + 1.9, { ...rest, lid: 0.9, lookX: -0.4 }, 0.4);
   shot(T0('leave'), T0('alone'), 'lounge', CAM.WIDE, cam(CAM.WIDE, 0, 0, 1.02));
   J(T0('leave'), { walk: 0.6, bx: -560, lookX: -0.6, turn: -0.2, smile: 0.1, sweat: 0, blush: 0.2 }, 3.0);
   J(T0('leave') + 1.0, { lookX: 0.8, turn: 0.2 }, 0.3);
@@ -1114,6 +1245,7 @@ function render(t) {
   O.rx = (CH.jun.x + J.bx + J.mugX * CH.jun.size - (CH.orrin.x + O.bx)) / CH.orrin.size + 0.1;
   O.ry = (CH.jun.y + J.by + J.mugY * CH.jun.size - (CH.orrin.y + O.by)) / CH.orrin.size;
   const sym = E('sym');
+  const ic = n => E('ic_' + n);
   const pulses = [];
   for (let b = 13; b <= 22; b++) { const ph = (t - sym.bars[b - 1]) / 2.2; if (ph >= 0 && ph < 1) pulses.push(ph); }
   const cosSt = { a: 1, rib: TR.rib.val(t), bloom: TR.bloom.val(t), rays: TR.rays.val(t), collapse: TR.collapse.val(t), pulse: pulses.length, pulses, s: t - sym.t0 };
@@ -1124,11 +1256,15 @@ function render(t) {
     const e = ease(k);
     const z = lerp(sh.a.z, sh.b.z, e), cy = lerp(sh.a.y, sh.b.y, e);
     drawCosmic(ctx, t, cosSt);
+    if (sh.nature) drawNature(ctx, t, t - (ic('collapse').t0 + 1.0), TR.nature.val(t));
     ctx.save(); ctx.translate(W / 2, H / 2); ctx.scale(z, z); ctx.translate(-W / 2, -cy);
-    const bob = Math.sin(t * 0.8) * 10;
+    const bob = Math.sin(t * 0.8) * 10 * (1 - TR.nature.val(t));
     const kn = TR.kneel.val(t);
-    drawSilhouette(ctx, 470, 1010 + bob * 0.6, 62, 0, 'orrin', t, {});
-    drawSilhouette(ctx, 255, 1010 + bob, 58, kn, 'jun', t, { armsOpen: kn > 0.5 ? 0.35 : 0.15, armsUp: TR.armsUp.val(t), bow: sh.bow ? ease((t - sh.t0) / 4) * 0.6 : 0 });
+    const dance = TR.dance.val(t), rise = TR.rise.val(t), beatPh = 2 * Math.PI * (t - sym.t0) / sym.beat;
+    const oy = 1010 + bob * 0.6 - ease(rise) * 150;
+    drawSpot(ctx, 470, oy, ease(rise), t);
+    drawSilhouette(ctx, 470, oy, 62, 0, 'orrin', t, { dance, beatPh: beatPh + 0.6, rise });
+    drawSilhouette(ctx, 255, 1010 + bob, 58, kn, 'jun', t, { armsOpen: kn > 0.5 ? 0.35 : 0.15, armsUp: TR.armsUp.val(t), dance, beatPh, bow: sh.bow ? ease((t - sh.t0) / 4) * 0.6 : 0 });
     ctx.restore();
     vignette(ctx, 0.5);
   } else {
@@ -1142,6 +1278,7 @@ function render(t) {
     if (cosmic < 0.999) drawLounge(ctx, t);
     ctx.restore();
     if (cosmic > 0.001) drawCosmic(ctx, t, Object.assign({}, cosSt, { a: cosmic }));
+    if (sh.natureBg) drawNature(ctx, t, t - (ic('collapse').t0 + 1.0), 1);
     ctx.save(); world();
     if (sh.panels) {
       const fx = CH.jun.x + J.bx + J.mugX * CH.jun.size, fy = CH.jun.y + J.by + J.mugY * CH.jun.size;
@@ -1208,10 +1345,8 @@ function drawEnd(t, lt) {
   centerText(c, 'ASK FOR MORE,', 230, '54px InterX', '#ffffff', clamp((lt - 1.0) / 1.2));
   centerText(c, 'AND MAYBE', 298, '54px InterX', '#ffffff', clamp((lt - 2.0) / 1.2));
   centerText(c, 'YOU WILL RECEIVE?', 366, '54px InterX', '#5fe9ff', clamp((lt - 3.0) / 1.2));
-  centerText(c, 'Orrin had 4.2 seconds.', 470, '28px InterB', 'rgba(255,255,255,0.85)', clamp((lt - 6.0) / 1));
-  centerText(c, 'He only needed 1.1.', 510, '28px InterB', 'rgba(95,233,255,0.9)', clamp((lt - 7.0) / 1));
-  centerText(c, '♪  now playing on Lt. Jun’s phone:', 600, '24px InterM', '#ffd9a8', clamp((lt - 9.5) / 1));
-  centerText(c, 'Symphony No. 4 · “Lullaby for a Dying Star”', 640, 'italic 26px InterB', '#ffffff', clamp((lt - 9.5) / 1));
+  centerText(c, '♪  now playing on the cadet’s phone:', 560, '24px InterM', '#ffd9a8', clamp((lt - 6.0) / 1));
+  centerText(c, 'Symphony No. 4 · “Lullaby for a Dying Star”', 600, 'italic 26px InterB', '#ffffff', clamp((lt - 6.0) / 1));
 }
 
 window.setup = async function (tl) {

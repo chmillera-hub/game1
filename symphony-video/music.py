@@ -252,6 +252,10 @@ CH = {  # chord tones (midi, mid register) and bass root
 }
 PROG = ['D', 'Bm', 'G', 'A', 'D', 'F#m', 'G', 'A', 'Bm', 'G', 'D/F#', 'A',
         'G', 'A', 'F#m', 'Bm', 'Bb', 'C', 'E', 'C#m', 'A', 'B', 'E', 'E', 'E']
+WALK = {  # bar: descending quarter-note bassline (midi)
+    9: [47, 45, 43, 42], 10: [43, 42, 40, 38], 11: [42, 40, 38, 37], 12: [45, 43, 42, 40],
+    13: [43, 42, 40, 38], 14: [45, 43, 42, 40], 15: [42, 40, 38, 37], 16: [35, 37, 38, 40],
+}
 MEL = {  # bar: [(beat, dur, midi)]
     5: [(0, 1.5, 69), (1.5, .5, 74), (2, 2, 78)],
     6: [(0, 1, 76), (1, .5, 78), (1.5, .5, 76), (2, 2, 73)],
@@ -332,6 +336,15 @@ def symphony(bpm=70):
         if b >= 17:
             for k, m in enumerate(tones + [tones[0] + 12]):
                 choir.add(choir_note(m, hold, 0.22 * dyn), t0, pan=-0.6 + 0.4 * k)
+        # walking bassline stepping down (cellos + basses, low drum on every beat)
+        if b in WALK:
+            for i, m in enumerate(WALK[b]):
+                tb = t0 + i * B
+                acc = 1.0 if i == 0 else 0.8
+                strings.add(strings_note(m, B * 0.92, 0.55 * acc, att=0.03, rel=0.25, bright=0.9), tb, pan=0.25)
+                strings.add(strings_note(m - 12, B * 0.92, 0.45 * acc, att=0.04, rel=0.25, bright=0.5), tb, pan=0.1)
+                perc.add(timpani(m + 12 if m < 40 else m, 0.55 * acc, 1.0), tb, pan=0.05)
+                perc.add(kick(0.5 * acc), tb)
         # melody
         for (bt, d, m) in MEL.get(b, []):
             start = t0 + bt * B
@@ -419,14 +432,17 @@ def sn_choir(dur=2.8):
     return trim(reverb(tr.st(), 0.5, 3.5), dur)
 
 
-def sn_whale(dur=3.4):
+def sn_whale(dur=4.6):
     tr = Track(dur)
     t = t_arr(dur)
-    f = 180 + 140 * np.sin(2 * np.pi * 0.45 * t) + 60 * np.sin(2 * np.pi * 1.3 * t)
-    ph = np.cumsum(f) / SR
-    w = np.sin(2 * np.pi * ph) + 0.3 * np.sin(4 * np.pi * ph)
-    w *= adsr(len(t), 0.4, 0.2, 0.8, 0.8) * (0.6 + 0.4 * np.sin(2 * np.pi * 0.9 * t))
-    tr.add(w * 0.35, 0, pan=-0.3)
+    # two long, groaning whale calls that swoop up and down
+    for (c0, cd, base, sweep) in ((0.0, 2.2, 160, 220), (2.1, 2.4, 230, -150)):
+        tt = t_arr(cd)
+        f = base + sweep * np.sin(np.pi * tt / cd) + 25 * np.sin(2 * np.pi * 5.5 * tt)
+        ph = np.cumsum(f) / SR
+        w = np.sin(2 * np.pi * ph) + 0.45 * np.sin(4 * np.pi * ph) + 0.2 * np.sin(6 * np.pi * ph)
+        w *= np.sin(np.pi * tt / cd) ** 0.7
+        tr.add(w * 0.8, c0, pan=-0.2)
     for m in (50, 57, 62, 66):
         tr.add(strings_note(m, dur, 0.12, att=0.8, bright=0.4), 0, pan=0.3)
     return trim(reverb(tr.st(), 0.6, 4.0, 1800), dur)
@@ -607,3 +623,35 @@ def sfx_tap():
     for k, f in enumerate((1319, 1760)):
         tr.add(np.sin(2 * np.pi * f * t_arr(0.6)) * np.exp(-t_arr(0.6) * 6) * 0.16, 0.38 + k * 0.09, pan=0)
     return trim(reverb(tr.st(), 0.25, 1.2), 1.2)
+
+
+def sfx_birds(dur=12.0, seed=3):
+    """Songbirds: quick chirps and trills scattered over time."""
+    r = np.random.default_rng(seed)
+    tr = Track(dur)
+    tt = 0.3
+    while tt < dur - 0.5:
+        n = int(r.integers(2, 6))
+        f0 = r.uniform(2800, 4800)
+        pan = r.uniform(-0.8, 0.8)
+        for k in range(n):
+            d = r.uniform(0.04, 0.09)
+            t = t_arr(d)
+            f = f0 * (1 + r.uniform(-0.25, 0.35) * t / d) + 300 * np.sin(2 * np.pi * 60 * t)
+            ch = np.sin(2 * np.pi * np.cumsum(f) / SR) * np.sin(np.pi * t / d) ** 2
+            tr.add(ch * 0.12, tt + k * (d + 0.03), pan=pan)
+        tt += r.uniform(0.35, 1.3)
+    return reverb(tr.st(), 0.25, 1.6)[:, :int(dur * SR)]
+
+
+def sfx_cough():
+    """A short throat-clear: two voiced noise bursts."""
+    tr = Track(0.8)
+    for (t0, d, g) in ((0.0, 0.16, 1.0), (0.22, 0.12, 0.7)):
+        t = t_arr(d)
+        n = rng.standard_normal(len(t))
+        v = bp(n, 250, 900) * 0.8 + bp(n, 1200, 2600) * 0.4
+        v += 0.3 * np.sign(np.sin(2 * np.pi * 140 * t)) * bp(n, 100, 400)
+        env = np.clip(t / 0.01, 0, 1) * np.exp(-t * 18)
+        tr.add(v * env * g * 0.9, t0)
+    return trim(reverb(tr.st(), 0.1, 0.4), 0.8)
