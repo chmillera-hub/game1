@@ -4,8 +4,8 @@ Shots (every time is derived from cues / word starts, see _T):
 
   A  rise..party  F5 lair, morning (rain off, dawn-tinted window). Frame 0
                   picks up s11's REAL SMILE and its gift pile (notebook +
-                  quill, scroll, headphones, BOMBSHELL TWIST script, THE
-                  SPOOKY GHOST book, pumpkin, dragon figurine); Malvo springs
+                  quill, scroll, headphones, BOMBSHELL TWIST script, SPACE
+                  LASERS FOR DUMMIES, pumpkin, dragon figurine); Malvo springs
                   up (dip, rise with overshoot, cape swish). "Snake!" -> looks
                   at Hissy, who perks up. "New plan." -> winds up and flings a
                   yellow 'PARTY' sticky that slaps over the EVIL of EVIL PLANS
@@ -14,29 +14,34 @@ Shots (every time is derived from cues / word starts, see _T):
                   hop on "party!"; Hissy nods. l02: the AI goes happy,
                   thumbs-up, a nod on "THAT", 5 sparkles; Malvo clasps his
                   hands, delighted.
-  B  party..end   THE TOWN SQUARE at dusk (wide, cached static layer):
-                  banner, string lights, cardboard robot in a party hat with
-                  a black balloon, Hissy in shawl + glasses 'reading' THE
-                  SPOOKY GHOST (its cover ghost waves) to 3 kids, Malvo behind
-                  the table (spooky orange cloth printed with little ghosts,
-                  pumpkins and skulls; black + orange Halloween cake with a
-                  candle; a black balloon; scroll, popper), every chair in
-                  front full and clapping, THE NEIGHBOR (a grown man: bathrobe,
-                  striped pajama pants, slippers, mustache) dancing at the
-                  front right and tooting his little trumpet, the AI lantern
-                  above. Popper fires (confetti <= 28, 1.2 s).
+  B  party..end   THE TOWN SQUARE at dusk (wide, cached static layer), an
+                  evil-genius themed block party: banner "THE EVIL GENIUS'S
+                  BLOCK PARTY", string lights with paper lightning bolts, mini
+                  volcano lanterns on the doorsteps, the cardboard robot in a
+                  party hat with a red balloon, townsfolk in lab coats, lab
+                  goggles and antenna boppers (a bench kid in a cardboard-box
+                  robot costume), Hissy in shawl + glasses 'reading' SPACE
+                  LASERS FOR DUMMIES (its satellite goes PEW) to 3 kids, a toy
+                  robot on the bench, Malvo behind the table (deep teal cloth
+                  printed with little robots, volcanoes and lightning bolts,
+                  plain dark border below; a chocolate VOLCANO cake with lava
+                  frosting, a lair door and a mini MECH SUIT on the crater; the
+                  dragon figurine; a red balloon; scroll, popper), every chair
+                  in front full and clapping, THE NEIGHBOR (bathrobe, trumpet)
+                  dancing front right, the AI lantern above, and the little girl
+                  (lab goggles, party dress) already standing at the front of
+                  the table close to camera. Popper fires (confetti <= 28,
+                  1.2 s); she cheers, then watches him.
                   l03: push-in 1 -> 1.6 on Malvo (hand on heart, glistening
                   eyes, monocle fogs, one happy tear on "ME?"); the neighbor
                   dances out of frame during the push.
                   l04 "Told you. Impressive villain stats.": he preens on
                   "Impressive" (chest out, chin up, lapel tugs); the AI lantern
                   (screen space) WINKs on "stats.".
-                  zombie_mask: the camera eases out a touch and lifts; a little
-                  witch (a child: big head, pigtails) runs up to the FRONT of
-                  the table, right by him and closer to camera, and stops,
-                  facing him, looking up; both hands pull the zombie mask
-                  (pushed up on his dome all party) down over his face while
-                  she watches, eyes WIDE, mouth "O".
+                  zombie_mask: the camera eases out a touch and lifts; he looks
+                  down at the girl; both hands pull the zombie mask (pushed up
+                  on his dome all party) down over his face while she watches,
+                  eyes WIDE, mouth "O".
                   l04z "Brains... brains!": zombie arms, shamble along the
                   table toward her (no contact, ever); on "Brains..." she is
                   wide-eyed and delighted, hands on cheeks; on "brains!" she
@@ -48,10 +53,17 @@ Shots (every time is derived from cues / word starts, see _T):
                   "Nobody."; camera settles back while he pushes the mask up.
                   lean: paranoid glances, lean toward the AI, SNEAKY SQUINT +
                   steeple; 'NICE TRIES: 10?' chip blinks in.
-                  l05 whisper. l06 "My guy.": instant 😒 (no blend), red strike
-                  through "10?", Hissy facepalms (tail over his glasses).
-                  l07 "Kidding! Kidding!" shrug, sheepish -> happy; then they
-                  both laugh, the chip pops out, ~12 confetti bits drift down.
+                  l05 "...Hypothetically-" whisper (brow waggle). The AI waits
+                  for him to finish, then folds its hand orbs across in front
+                  of it like crossed arms, one eyebrow up, a small curious
+                  smile. l06 "Go on... I'm listening.": its brow pops on "Go
+                  on", a little nod on "listening"; Malvo is pleasantly
+                  surprised, then the scheme takes shape; Hissy does a double
+                  take. l07 "Oh... you'll see.": he straightens up rubbing his
+                  hands with a sly, delighted evil grin (a look to us on
+                  "see."), Hissy smirks + tongue flick, the AI looks even more
+                  intrigued. laugh: Malvo cackles, the AI laughs, the crowd
+                  laughs, the chip pops out, ~12 confetti bits drift down.
 """
 import math
 
@@ -675,7 +687,7 @@ def draw_string(c, x0, y0, x1, y1, t, curls=3.0, amp=10.0, phase=0.0, w=1.0):
 VC_CHOC, VC_CHOC_DK, VC_CHOC_LT = "#6e3f26", "#4b2817", "#93603c"
 LAVA, LAVA_DK, LAVA_LT, LAVA_HOT = "#ff5a1f", "#d23a12", "#ffa62b", "#ffe066"
 ROCK, ROCK_DK = "#7a5c6e", "#5a4052"                    # mini volcano (non-cake)
-MECH, MECH_DK, MECH_LT = "#c3cad8", "#868fa3", "#eef1f7"
+MECH, MECH_DK = "#c3cad8", "#868fa3"
 MECH_TRIM, DOME_GL = "#7b3fbf", "#9fe8ff"
 SPRINK = ("#ff8fb8", "#5ee7ff", "#ffd166", "#a7e8a0", "#ffffff")
 VC_DRIPS = ((-62, 20), (-40, 40), (-17, 15), (5, 50), (27, 24), (49, 36), (70, 18))

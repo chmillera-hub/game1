@@ -68,6 +68,7 @@ from engine import captions as CAP
 from engine.villain import draw_villain
 from engine.ai_char import draw_ai
 from engine.ai_char import EXPR as AI_EXPR
+from engine.ai_char import _mirror_expr as AI_MIRROR
 
 
 # ===========================================================================
@@ -818,12 +819,16 @@ def _open_ai_state(t, T):
     L1 = T.L1
     half = {k: lerp(AI_EXPR["neutral"][k], AI_EXPR["unimpressed"][k], 0.5)
             for k in AI_EXPR["neutral"]}
+    # 😒 already glancing screen-left (at him): no look-driven mirroring needed,
+    # so the blend into / out of the eye-roll stays smooth
+    unimp_l = dict(AI_MIRROR(AI_EXPR["unimpressed"]), nomir=1.0)
+    r_in = T.roll0 + 0.1                       # blend in once the roll's dart-left has begun
     ek = [(0.0, "neutral", 0.2),
           (T.w_evil - 0.02, "skeptical", 0.25),
           (T.w_innocent, half, 0.4),
-          (T.w_words1, "unimpressed", 0.4),
-          (T.roll0, "eyeroll", 0.12),
-          (T.d1 + 0.05, "unimpressed", 0.3)]
+          (T.w_words1, unimp_l, 0.4),
+          (r_in, "eyeroll", 0.14),
+          (T.d1 + 0.05, unimp_l, 0.3)]
     expr = _keyed(t, ek)
     ax, ay, s = OAI
     # drifts a little closer while it listens, eases back on the eye-roll
@@ -831,13 +836,13 @@ def _open_ai_state(t, T):
         (1 - smoothstep(seg(t, T.roll0, T.roll0 + 0.8)))
     ax -= 8 * k
     ay += 4 * k
-    if T.roll0 <= t < T.d1 + 0.05:
-        look = (0.0, 0.0)                                          # the roll drives the pupils
-    else:
-        HIM = (-0.95, 0.28) if t < T.d1 else (-0.92, 0.05)         # his face / the halo
-        if t < L1.start:
-            HIM = (-0.9, 0.35)
-        look = _ai_look(expr, HIM)
+    HIM = (-0.95, 0.28) if t < T.d1 else (-0.92, 0.05)             # his face / the halo
+    if t < L1.start:
+        HIM = (-0.9, 0.35)
+    look = _ai_look(expr, HIM)
+    # the roll drives the pupils itself (look eases out as it blends in / back)
+    k_roll = smoothstep(seg(t, r_in, r_in + 0.14)) * (1 - smoothstep(seg(t, T.d1 + 0.05, T.d1 + 0.35)))
+    look = (look[0] * (1 - k_roll), look[1] * (1 - k_roll))
     blink = _blink_pulse(t, T.w_this1 + 0.08, 0.16, 0.1, 0.16)     # slow blink: "yes, I'm here"
     return (ax, ay, s), expr, look, blink
 
