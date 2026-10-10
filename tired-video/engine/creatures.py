@@ -974,6 +974,9 @@ def draw_thing(ctx, x, y, s, t, state="sit", look=(0, 0), flip=False, blink=None
     fn(ctx, A, t, lk, bl, motion, (tw1, tw2))
     ctx.restore()
     _lr(A, "eA", "eB")
+    pl, pr_ = A.d.get("paw_l"), A.d.get("paw_r")
+    if pl and pr_ and pl[0] > pr_[0]:
+        A.d["paw_l"], A.d["paw_r"] = pr_, pl
     return A.d
 
 
@@ -2148,6 +2151,8 @@ def draw_specimen(ctx, x, y, s, t, form=1.0, pose="crouch", expr="calm", look=(0
     if R["head_scale"] != 1.0:
         ctx.scale(R["head_scale"], R["head_scale"])
     _spec_head(ctx, A, t, R, M, E, lk, bl, yaw, face < 0, lw, R.get("mouth_mode"), hold)
+    if pose == "nuzzle":
+        A.put("rub", 30, -62)       # top-front of the head: where it presses
     ctx.restore()
     if R["tail_front"]:
         _spec_tail(ctx, A, R, M, t, lw)
