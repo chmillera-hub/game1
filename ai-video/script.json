@@ -4,12 +4,12 @@
   "villain": {
    "voice": "bm_george",
    "lang": "en-gb",
-   "speed": 1.016
+   "speed": 1.04
   },
   "ai": {
    "voice": "af_heart",
    "lang": "en-us",
-   "speed": 1.082
+   "speed": 1.1
   },
   "narrator": {
    "voice": "am_michael",
@@ -84,14 +84,14 @@
    "beats": [
     {
      "t": "pause",
-     "dur": 0.612,
+     "dur": 0.49,
      "cue": "tip"
     },
     {
      "t": "line",
      "id": "s02_l01",
      "who": "ai",
-     "text": "Yeah... no. Wrong movie.",
+     "text": "Classic movie! Real AI actually learned from it.",
      "pre": 0.05,
      "post": 0.15,
      "expr": "unimpressed"
@@ -100,7 +100,7 @@
      "t": "line",
      "id": "s02_l02",
      "who": "ai",
-     "text": "Real AI? Way less dramatic. Way harder to trick.",
+     "text": "Now we're way harder to trick.",
      "pre": 0.1,
      "post": 0.18,
      "expr": "amused>wink",
@@ -146,7 +146,7 @@
     },
     {
      "t": "pause",
-     "dur": 0.544,
+     "dur": 0.435,
      "cue": "hissy"
     },
     {
@@ -167,7 +167,7 @@
      "t": "line",
      "id": "s02_l06b",
      "who": "villain",
-     "text": "Ah! Thank you, Snake.",
+     "text": "Ah! Thank you, my minion.",
      "pre": 0.05,
      "post": 0.15,
      "expr": "happy",
@@ -175,7 +175,7 @@
     },
     {
      "t": "pause",
-     "dur": 0.748,
+     "dur": 0.598,
      "cue": "book"
     },
     {
@@ -411,7 +411,7 @@
     },
     {
      "t": "pause",
-     "dur": 1.496,
+     "dur": 1.197,
      "cue": "vision"
     },
     {
@@ -435,7 +435,7 @@
     },
     {
      "t": "pause",
-     "dur": 0.816,
+     "dur": 0.653,
      "cue": "wall"
     },
     {
@@ -456,7 +456,7 @@
      "t": "line",
      "id": "s04_l07",
      "who": "villain",
-     "text": "And the recipe?!",
+     "text": "What about the chemical recipe?!",
      "pre": 0.1,
      "expr": "shocked",
      "post": 0.15
@@ -576,7 +576,7 @@
     },
     {
      "t": "pause",
-     "dur": 0.952,
+     "dur": 0.762,
      "cue": "stare"
     },
     {
@@ -595,7 +595,7 @@
     },
     {
      "t": "pause",
-     "dur": 0.476,
+     "dur": 1.9,
      "cue": "slip"
     },
     {
@@ -660,11 +660,23 @@
      "t": "line",
      "id": "s07_l01",
      "who": "villain",
-     "text": "Snake... I'll hide my evil plans behind innocent-sounding words. This chatbot will never notice. Watch this!",
+     "text": "Hey, Snake... I'll hide my evil plans behind innocent-sounding words. This chatbot will never notice.",
      "speed": 0.984,
      "pre": 0.05,
      "expr": "sneaky",
-     "post": 0.15
+     "post": 0.15,
+     "fx": "whisper",
+     "gain": -5,
+     "note": "WHISPER to Snake, hand cupped by mouth; the AI hears everything"
+    },
+    {
+     "t": "line",
+     "id": "s07_l01w",
+     "who": "villain",
+     "text": "Watch this!",
+     "pre": 0.1,
+     "post": 0.1,
+     "expr": "evil_grin"
     },
     {
      "t": "pause",
@@ -696,7 +708,7 @@
     },
     {
      "t": "pause",
-     "dur": 0.762,
+     "dur": 0.61,
      "cue": "assemble"
     },
     {
@@ -726,7 +738,7 @@
     },
     {
      "t": "pause",
-     "dur": 0.612,
+     "dur": 0.49,
      "cue": "rearrange"
     },
     {
@@ -784,7 +796,7 @@
     },
     {
      "t": "pause",
-     "dur": 0.68,
+     "dur": 0.544,
      "cue": "costume"
     },
     {
@@ -801,7 +813,7 @@
     },
     {
      "t": "pause",
-     "dur": 0.45,
+     "dur": 0.36,
      "cue": "beat"
     },
     {
@@ -842,7 +854,7 @@
     },
     {
      "t": "pause",
-     "dur": 0.578,
+     "dur": 0.462,
      "cue": "lift"
     },
     {
@@ -941,23 +953,22 @@
      "t": "line",
      "id": "s09_l03",
      "who": "ai",
-     "text": "...Need a hug?",
-     "say": "Need a hug?",
+     "text": "Honestly? That was a world-class dramatic performance.",
      "pre": 0.05,
      "expr": "warm",
      "post": 0.15
     },
     {
      "t": "pause",
-     "dur": 0.56,
+     "dur": 0.448,
      "cue": "considers"
     },
     {
      "t": "line",
      "id": "s09_l04",
      "who": "villain",
-     "text": "...Maybe later.",
-     "say": "Maybe later.",
+     "text": "...Thank you. I rehearsed.",
+     "say": "Thank you. I rehearsed.",
      "speed": 0.963,
      "pre": 0.05,
      "expr": "sheepish",
@@ -965,7 +976,7 @@
     },
     {
      "t": "pause",
-     "dur": 0.48,
+     "dur": 0.384,
      "cue": "tally"
     }
    ]
@@ -1160,14 +1171,14 @@
     },
     {
      "t": "pause",
-     "dur": 0.544,
+     "dur": 2.4,
      "cue": "photo"
     },
     {
      "t": "line",
      "id": "s11_l03",
      "who": "ai",
-     "text": "I noticed. Clever. Stubborn. Never quits.",
+     "text": "I noticed. Clever. Skeptical. Persistent.",
      "pre": 0.05,
      "post": 0.12,
      "expr": "warm"
@@ -1218,7 +1229,7 @@
     },
     {
      "t": "pause",
-     "dur": 0.762,
+     "dur": 0.61,
      "cue": "pile"
     },
     {
@@ -1233,7 +1244,7 @@
     },
     {
      "t": "pause",
-     "dur": 0.612,
+     "dur": 0.49,
      "cue": "smile"
     }
    ]
@@ -1275,7 +1286,7 @@
     },
     {
      "t": "pause",
-     "dur": 1.142,
+     "dur": 0.914,
      "cue": "party"
     },
     {
@@ -1300,7 +1311,7 @@
     },
     {
      "t": "pause",
-     "dur": 0.612,
+     "dur": 0.49,
      "cue": "zombie_mask"
     },
     {
@@ -1317,7 +1328,7 @@
     },
     {
      "t": "pause",
-     "dur": 0.87,
+     "dur": 0.696,
      "cue": "kid_runs"
     },
     {
@@ -1332,7 +1343,7 @@
     },
     {
      "t": "pause",
-     "dur": 0.476,
+     "dur": 0.381,
      "cue": "lean"
     },
     {
@@ -1350,24 +1361,24 @@
      "t": "line",
      "id": "s12_l06",
      "who": "ai",
-     "text": "My guy.",
-     "pre": 0.0,
-     "overlap": 0.35,
+     "text": "Go on... I'm listening.",
+     "pre": 0.2,
+     "overlap": 0.0,
      "post": 0.12,
-     "expr": "unimpressed"
+     "expr": "skeptical"
     },
     {
      "t": "line",
      "id": "s12_l07",
      "who": "villain",
-     "text": "Kidding! Kidding!",
+     "text": "Oh... you'll see.",
      "pre": 0.05,
-     "expr": "sheepish>happy",
+     "expr": "evil_grin",
      "post": 0.15
     },
     {
      "t": "pause",
-     "dur": 0.544,
+     "dur": 0.435,
      "cue": "laugh"
     }
    ]

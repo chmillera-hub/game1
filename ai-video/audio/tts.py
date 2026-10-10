@@ -59,10 +59,41 @@ def resample(a, sr_in, sr_out):
     return resample_poly(a, sr_out // g, sr_in // g).astype(np.float32)
 
 
+def whisper(x, sr=SR, bands=20, seed=7):
+    """Turn a voiced line into a breathy stage whisper.
+
+    Channel noise-vocoder: each band's speech envelope modulates band-limited
+    noise (no pitch = whisper), plus a little of the original's top end so
+    consonants stay crisp. RMS matched to the input.
+    """
+    from scipy.signal import butter, sosfiltfilt, sosfilt
+    rng = np.random.default_rng(seed)
+    noise = rng.standard_normal(len(x))
+    edges = np.geomspace(180, 9000, bands + 1)
+    env_lp = butter(2, 45, "low", fs=sr, output="sos")
+    out = np.zeros_like(x)
+    for lo, hi in zip(edges[:-1], edges[1:]):
+        bp = butter(2, [lo, hi], "band", fs=sr, output="sos")
+        env = sosfiltfilt(env_lp, np.abs(sosfilt(bp, x)))
+        out += sosfilt(bp, noise) * np.maximum(env, 0)
+    air = sosfilt(butter(2, 2500, "high", fs=sr, output="sos"), x)
+    out = out / (np.sqrt(np.mean(out ** 2)) + 1e-9)
+    air = air / (np.sqrt(np.mean(air ** 2)) + 1e-9)
+    y = 0.85 * out + 0.25 * air
+    y *= np.sqrt(np.mean(x ** 2)) / (np.sqrt(np.mean(y ** 2)) + 1e-9)
+    return y.astype(np.float32)
+
+
 def post_fx(wav_path, pitch=1.0, fx=None):
     """Optional pitch shift (rubberband, tempo preserved) via ffmpeg."""
     if pitch == 1.0 and not fx:
         return
+    if fx == "whisper":
+        a, sr = sf.read(wav_path, dtype="float32")
+        sf.write(wav_path, whisper(a, sr), sr, subtype="FLOAT")
+        if pitch == 1.0:
+            return
+        fx = None
     filters = []
     if pitch != 1.0:
         filters.append(f"rubberband=pitch={pitch}:formant=preserved")

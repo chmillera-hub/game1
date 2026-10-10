@@ -744,6 +744,40 @@ def _trumpet_muffled(sr, rng):
     return _room(pan(y, 0.25), sr, 0.35, 0.6)
 
 
+@fx("whistle")
+def _whistle(sr, rng):
+    """Innocent 'who, me?' whistle: pure gliding tone + a breath of air.
+
+    A real whistle is almost a sine (fundamental ~1-2.4 kHz) with smooth
+    portamento between notes, light vibrato and a little breath noise.
+    """
+    # (start, midi, dur): slide up, then a sing-song little tune
+    notes = [(0.00, 81, 0.20), (0.22, 86, 0.28), (0.56, 84, 0.16), (0.76, 83, 0.16),
+             (0.96, 81, 0.16), (1.16, 83, 0.46)]
+    total = 1.85
+    n = secs(sr, total)
+    t = tvec(n, sr)
+    # pitch track with ~60 ms glides between targets (the whistler's slide)
+    knots_t, knots_m = [0.0], [notes[0][1] - 3]
+    for s, m, d in notes:
+        knots_t += [s + 0.06, s + d]
+        knots_m += [m, m]
+    midi = np.interp(t, knots_t, knots_m)
+    vib = 0.18 * np.sin(TAU * 5.6 * t) * np.clip((t - 0.3) / 0.4, 0, 1)
+    f = hz(0) * 2 ** ((midi + vib) / 12)
+    phase = TAU * np.cumsum(f) / sr
+    tone = np.sin(phase) + 0.06 * np.sin(2 * phase)
+    amp = np.zeros(n)
+    for s, m, d in notes:
+        tt = t - s
+        a = np.clip(tt / 0.025, 0, 1) * np.clip((s + d + 0.03 - t) / 0.04, 0, 1)
+        amp = np.maximum(amp, np.where(tt >= 0, a, 0))
+    amp = lp(amp, 35, sr, 1)
+    breath = bp(rng.standard_normal(n), 1500, 3200, sr) * 0.05
+    y = (tone + breath) * amp
+    return _room(pan(fade_edges(y, sr, 0.005, 0.05), 0.1), sr, 0.18, 0.7)
+
+
 NAMES = sorted(_FX)
 ALIASES = {
     "thud": "brick_thud", "brick": "brick_thud", "bricks": "brick_thud", "click": "puzzle_click",
