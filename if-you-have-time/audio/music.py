@@ -1161,6 +1161,37 @@ def synth_sub(part, cue, n):
     return stereo(y * 0.6)
 
 
+def fundamental_lift(notes, tm, gain_db, lo_pitch=0, width=1.12, fade=0.08, base=None):
+    """Coherent low-end reinforcement for a sampled bass stem (a Part.eq): for every note at or above
+    `lo_pitch`, the stem's OWN fundamental (zero-phase band-pass f0/width..f0*width, so it is exactly in
+    phase with what it lifts) is added back under a raised-cosine window over the note -> +gain_db on
+    the fundamental. A zero-phase band-pass has a real, non-negative response, so unlike a layered
+    sine it can never cancel the sample's fundamental (no notes that mysteriously go thin).
+    tm: the cue's TempoMap; base: optional eq applied first (e.g. a high-pass)."""
+    k = 10 ** (gain_db / 20) - 1
+
+    def eq(x):
+        x = base(x) if base is not None else x
+        n = len(x)
+        add = np.zeros_like(x)
+        for nt in notes:
+            if nt.pitch < lo_pitch:
+                continue
+            f0 = 440.0 * 2 ** ((nt.pitch - 69) / 12)
+            t0, t1 = tm.sec(nt.beat), tm.sec(nt.beat + nt.dur)
+            i0, i1 = max(0, int((t0 - 0.15) * SR)), min(n, int((t1 + 0.35) * SR))
+            if i1 - i0 < int(0.2 * SR):
+                continue
+            seg = signal.sosfiltfilt(signal.butter(2, [f0 / width, f0 * width], "band", fs=SR, output="sos"),
+                                     x[i0:i1], axis=0)
+            tt = np.arange(i0, i1) / SR
+            w = (0.5 - 0.5 * np.cos(np.pi * np.clip((tt - t0 + fade / 2) / fade, 0, 1))) * \
+                (0.5 + 0.5 * np.cos(np.pi * np.clip((tt - t1 - 0.05) / fade, 0, 1)))
+            add[i0:i1] += seg * w[:, None] * k
+        return x + add
+    return eq
+
+
 def _dyn_gain(part, cue, n, power=1.6):
     """Per-sample linear gain from a part's dyn keyframes (0..127 -> (v/127)**power)."""
     if not part.dyn:
@@ -1709,12 +1740,17 @@ def compose_symphony() -> Cue:
     pz.add(seq("B1:h. r:q | G1:h G1:h", 40, bar=4, vels=[80, 82, 70]))
     pz.dyn = [(7.0, 0), (7.5, 96), (24, 104), (40, 112), (48.2, 112), (48.6, 0)]
 
-    sub = part("sub", "sub_pedal", synth=synth_sub_pedal, pan=0.0, send=0.0, gain_db=-17.0)
+    # the sine sub only sounds the fundamentals the sampled basses barely have (G1 and below: the
+    # sample's own fundamental is ~16-25 dB under its harmonics there, so a pure sine cannot cancel
+    # it); from A1 up the basses' own fundamental is lifted coherently instead (fundamental_lift)
+    sub = part("sub", "sub_pedal", synth=synth_sub_pedal, pan=0.0, send=0.0, gain_db=-17.0,
+               opts={"attack": 0.08, "release": 0.08, "release_end": 0.12, "h2": 0.12, "h3": 0.04})
     sub.add(seq(BASS_INTRO, 0, 100)).add(seq(BASS_THEME, 8, 100, bar=4)).add(seq(BASS_BUILD, 40, 100, bar=4))
     sub.add(seq(BASS_CLIM, 57, 110, bar=4)).add(seq("E1:10", 73, 110))
+    sub.notes = [nt for nt in sub.notes if nt.pitch <= P("G1")]
     for nt in sub.notes:                    # passing tones lighter than the roots
         if nt.dur <= 1.0:
-            nt.vel -= 20
+            nt.vel -= 12
     sub.dyn = [(-0.6, 0), (0.3, 28), (6, 30), (8, 35), (20, 40), (24, 47), (28, 52), (32, 48), (36, 50),
                (40, 61), (47.6, 73), (48, 44), (51.6, 44), (52, 50), (54, 74), (55.8, 100), (57, 127), (61, 114),
                (65, 124), (69, 114), (72.8, 124)] + CODA_STR
@@ -1945,6 +1981,8 @@ def compose_symphony() -> Cue:
                   ("vc", 90), ("horns", 75), ("brass", 75), ("choir", 90), ("trombone", 45), ("vc2", 30),
                   ("cb", 25), ("cb_pizz", 25), ("tuba", 25), ("timpani", 28), ("bass_drum", 25)):
         parts[nm].eq = hpf(f)
+    cb.eq = fundamental_lift(cb.notes, tm, 6.0, lo_pitch=P("A1"), base=hpf(25))
+    tuba.eq = fundamental_lift(tuba.notes, tm, 6.0, lo_pitch=P("A1"), base=hpf(25))
 
     order = ["celesta", "piano", "glock", "harp", "vln_gp", "vln1", "vln2_mel", "vln2", "vln2_trem", "vla",
              "vla_trem", "vc", "vc2", "cb", "cb_pizz", "sub", "horns", "brass", "trombone", "tuba", "choir",
