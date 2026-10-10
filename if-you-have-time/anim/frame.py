@@ -1,7 +1,7 @@
 """Render one frame of the film at absolute time t -> skia Image / numpy RGBA."""
 import skia
 
-from anim import scenes
+from anim import scenes, subtitles
 from anim.core import timeline
 
 
@@ -21,4 +21,6 @@ def render_frame(surface: skia.Surface, t: float):
     c.save()
     scenes.get(sid).render(c, t)
     c.restore()
+    c.resetMatrix()
+    subtitles.draw(c, t)
     return surface

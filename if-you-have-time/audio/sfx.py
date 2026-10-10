@@ -402,12 +402,39 @@ def step_soft():
     return fade(room(st_, 0.4, 0.15), 0.002, 0.05)
 
 
+def cough_awkward():
+    """A small, self-conscious throat-clear: two dry coughs and a voiced 'hm'."""
+    d = 1.0
+    t = t_axis(d)
+    out = np.zeros_like(t)
+    for st, ln, g in ((0.0, 0.17, 1.0), (0.27, 0.12, 0.65)):
+        n = int(ln * SR)
+        tt = np.arange(n) / SR
+        burst = formant(bp(noise(ln, "pink"), 250, 3200), "ah", 0.8)
+        env = np.clip(tt / 0.006, 0, 1) * np.exp(-tt / (ln * 0.35))
+        # glottal "catch": a short low thump at the onset
+        thump = np.sin(2 * np.pi * (180 - 60 * tt / ln) * tt) * np.exp(-tt / 0.02) * 0.6
+        i = int(st * SR)
+        out[i:i + n] += (burst * env + thump) * g
+    # voiced 'hm' (closed mouth): low buzzy tone through a nasal low-pass
+    st, ln = 0.47, 0.24
+    n = int(ln * SR)
+    tt = np.arange(n) / SR
+    f0 = 118 - 10 * tt / ln
+    ph = 2 * np.pi * np.cumsum(f0) / SR
+    buzz = sum(np.sin(k * ph) / k for k in range(1, 9))
+    hm = lp(buzz, 900) * np.sin(np.pi * np.clip(tt / ln, 0, 1)) ** 1.5 * 0.35
+    i = int(st * SR)
+    out[i:i + n] += hm
+    return fade(room(stereo(out, 0.05, 0.3), 0.45, 0.18), 0.002, 0.05)
+
+
 # new effects go at the END of this list: the shared RNG is consumed in this order, so appending keeps every
 # earlier effect bit-identical on a full rebuild
 EFFECTS = {f.__name__: f for f in [
     space_rumble, whoosh_dive, ship_hum_loop, door_open, door_close, footsteps_4, bench_sit, sigh_breath, sip,
     process_chitter, compose_done, lights_down, snap_back, lights_up, gasp_breath, holo_open, holo_select,
-    sniff, send_chime, sip_cut, step_soft]}
+    sniff, send_chime, sip_cut, step_soft, cough_awkward]}
 
 
 def main(only=None):

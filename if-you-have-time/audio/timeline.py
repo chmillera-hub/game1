@@ -26,6 +26,7 @@ def build():
     scenes, lines, music, sfx = [], [], [], []
     beats = {}
     pending_end = []  # (list_entry, beat_name)
+    cue_dur = {}      # cue -> played duration of its latest start
 
     for ev in SEQ:
         kind = ev[0]
@@ -52,14 +53,16 @@ def build():
         elif kind == "music":
             kw = ev[2] if len(ev) > 2 else {}
             cue = ev[1]
-            entry = {"cue": cue, "start": round(now, 3), "end": round(now + MUSIC_CUES[cue], 3),
+            dur = kw.get("dur", MUSIC_CUES[cue])   # dur < cue length plays only the head (mix.py fades it)
+            cue_dur[cue] = dur
+            entry = {"cue": cue, "start": round(now, 3), "end": round(now + dur, 3),
                      "gain_db": kw.get("gain_db", 0.0), "fade_in": kw.get("fade_in", 0.0),
                      "fade_out": kw.get("fade_out", 0.0)}
             music.append(entry)
             if "end_beat" in kw:
                 pending_end.append((entry, kw["end_beat"]))
         elif kind == "music_hold":
-            now += MUSIC_CUES[ev[1]]
+            now += cue_dur.get(ev[1], MUSIC_CUES[ev[1]])
         elif kind == "sfx":
             kw = ev[2] if len(ev) > 2 else {}
             entry = {"name": ev[1], "start": round(now + kw.get("offset", 0.0), 3),

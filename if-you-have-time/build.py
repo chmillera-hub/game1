@@ -91,6 +91,8 @@ def encode(target=TARGET_BYTES):
         "-passlogfile", log, "-c:a", "aac", "-b:a", f"{AUDIO_KBPS}k", "-ar", "48000", "-ac", "2",
         "-map", "0:v:0", "-map", "1:a:0", "-shortest", "-movflags", "+faststart",
         "-metadata", "title=If You Have Time", str(OUT_FILE))
+    from anim.subtitles import write_srt  # captions are burned in; the .srt is for platforms that take uploads
+    print("wrote", write_srt())
     size = OUT_FILE.stat().st_size
     print(f"wrote {OUT_FILE} : {size/1e6:.2f} MB ({size/2**20:.2f} MiB)")
     return size

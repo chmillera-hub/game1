@@ -22,16 +22,16 @@ from config import BUILD, MUSIC_DIR, SFX_DIR, SR, TIMELINE, VO_DIR  # noqa: E402
 
 TARGET_LUFS = -15.0
 CEILING_DB = -2.0           # dBTP (true peak): 96 kbps AAC overshoots the source by ~0.7-0.9 dB
-PAN = {"rae": -0.18, "quill": 0.18}
-VO_GAIN_DB = {"rae": 0.0, "quill": -0.5}
+PAN = {"rae": -0.18, "quill": 0.18, "cadet": 0.05}
+VO_GAIN_DB = {"rae": 0.0, "quill": -0.5, "cadet": -1.0}
 # How much each music cue ducks (dB) while somebody is talking.
 DUCK_DB = {"opening": 0, "lounge": 7, "symphony": 4, "alt_kazoo": 8, "alt_chip": 8, "alt_lofi": 8,
            "alt_theremin": 8, "alt_lullaby": 8, "coda": 6}
 # Extra per-line gain tweaks (dB) for performance.
-LINE_GAIN = {"r09": -4.0, "r15": -2.0, "q13": -1.0, "q14": -1.5, "r14": -1.0}
+LINE_GAIN = {"r09": -4.0, "c01": -3.0, "r10": -4.0, "r12": -1.5}
 # Lines that dip the music by a fixed amount (dB) instead of the cue's full DUCK_DB (r09: the breathed "...oh."
 # inside the symphony should surface without the music audibly pumping).
-LINE_DUCK = {"r09": 3.0}
+LINE_DUCK = {"r09": 3.0, "c01": 7.0}
 
 
 def db(x):

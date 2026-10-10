@@ -20,7 +20,7 @@ from scipy import signal
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from config import FPS, KOKORO_MODEL, KOKORO_VOICES, LIPSYNC, SR, VO_DIR  # noqa: E402
-from script_data import LINES, VOICES  # noqa: E402
+from script_data import LINES, VOICES, WHISPER  # noqa: E402
 
 
 def trim_silence(x, sr, thresh_db=-45.0, pad=0.03):
@@ -51,6 +51,37 @@ def android_fx(x, sr):
     b, a = signal.butter(2, [95 / (sr / 2), 9000 / (sr / 2)], btype="band")
     y = signal.lfilter(b, a, y)
     return y
+
+
+def whisperize(x, sr, amount=0.8, order=44, frame_ms=25.0, hop_ms=10.0, seed=5):
+    """Turn speech into a whisper: per-frame LPC envelope driven by white noise
+    instead of the voiced residual, blended with `1 - amount` of the dry voice
+    (a little voicing keeps it intelligible)."""
+    from scipy.linalg import solve_toeplitz
+    rng = np.random.default_rng(seed)
+    n, hop = int(sr * frame_ms / 1000), int(sr * hop_ms / 1000)
+    win = np.hanning(n)
+    pre = signal.lfilter([1, -0.92], [1], x)
+    out = np.zeros(len(x) + n)
+    norm = np.zeros(len(x) + n)
+    for i in range(0, len(x) - n, hop):
+        seg = pre[i:i + n] * win
+        r = np.correlate(seg, seg, "full")[n - 1:n + order]
+        if r[0] < 1e-9:
+            continue
+        r[0] *= 1.0001
+        a = solve_toeplitz(r[:order], -r[1:order + 1])
+        A = np.concatenate([[1.0], a])
+        res = signal.lfilter(A, [1.0], seg)
+        g = np.sqrt(np.mean(res ** 2))
+        y = signal.lfilter([1.0], A, rng.standard_normal(n) * g) * win
+        out[i:i + n] += y
+        norm[i:i + n] += win ** 2
+    out = out[: len(x)] / np.maximum(norm[: len(x)], 1e-3)
+    out = signal.lfilter([1], [1, -0.92], out)
+    out = signal.sosfilt(signal.butter(2, 300, btype="high", fs=sr, output="sos"), out)
+    out *= np.sqrt(np.mean(x ** 2)) / (np.sqrt(np.mean(out ** 2)) + 1e-12)
+    return amount * out + (1 - amount) * x
 
 
 def lipsync_env(x, sr, closures=()):
@@ -212,6 +243,8 @@ def main(only=None):
         x = trim_silence(x, SR)
         if char == "quill":
             x = android_fx(x, SR)
+        if lid in WHISPER:
+            x = whisperize(x, SR, WHISPER[lid])
         x = x / (np.max(np.abs(x)) + 1e-9) * 0.89
         sf.write(VO_DIR / f"{lid}.wav", x.astype(np.float32), SR, subtype="FLOAT")
         lips[lid] = _lips_for(lid, x)

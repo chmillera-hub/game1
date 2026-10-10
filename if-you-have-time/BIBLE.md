@@ -10,20 +10,29 @@ Our ship, crew, android and insignia are original.
 
 ---
 
-## 1. Story in one breath
+## 1. Story in one breath  (REVISION 2 — supersedes the first cut)
 
 Rae, an exhausted crew member, flops onto the observation-lounge bench at the end of a long shift
 and casually asks Quill, the ship's android, if he could write her a symphony "if you ever have
-time." Quill: "Certainly." … "Done." He plays it. It is so beautiful she sinks to her knees in tears
-while memories she didn't know she still carried float around her. The music ends; she snaps back:
-"WHAT the heck was THAT?!" Quill, misreading her, apologizes — he wrote eight, maybe she'd prefer
-another — and plays the solo-kazoo version, the arcade version, the lo-fi version… and they're
-ALL devastatingly good. The 11-second lullaby finishes her off: "Nope. I'm getting out of here."
-Alone, Quill wonders: "…Was that a yes?" The door slides open; Rae, red-eyed: "Send me all eight."
-Quill's rare, tiny smile. "Sending."
+time." Quill: "Certainly." … "Done." He plays it. Rae stays seated — genuinely moved, eyes wet,
+memories she didn't know she still carried floating past her. Meanwhile ordinary ship life carries
+on: a random cadet wanders through with a coffee, does a double-take at the light show, coughs
+awkwardly, mutters "Cool music, Quill." as he passes; Quill gives a casual nod; the cadet gives Rae a
+small friendly wave and leaves. The music ends, the lights come back up normally. Quill, casually:
+"So. How did you like it?" Rae, teary, in a tiny whisper: "...pretty good." "Thank you. Here are the
+other ones I made." He breezes through four more versions (solo kazoo, arcade, lo-fi, an 11-second
+lullaby) while Rae just quietly absorbs them (a foot tap, a small thumbs up, closed eyes). Then:
+"Can you just... send them to my device? Later?" — she gets up and leaves abruptly. The door shuts.
+Quill stands alone, looking into the middle distance. The door slides open again; Rae, awkward:
+"Um... thanks." Quill: a subtle nod and a slight smile. She's gone. He sends the files.
 
-Tone: dry comedy wrapped around a genuinely moving middle. The symphony section must play
-*sincerely* — the joke only lands if the music and visuals really are beautiful.
+**Theme (the director's intent):** reintegrate emotional/spiritual experience into ordinary, casual,
+even corporate life. Music is a pattern of sound that can help you understand yourself or others and
+remember what matters — and it can move you deeply while everyone around you carries on casually.
+That is normal and fine on both sides: the passer-by's casual "cool music" and Rae's quiet tears
+coexist without judgement. NOTHING is melodramatic: no kneeling, no shouting, no finger-wagging, no
+quippy improv from Rae. Rae's comedy is understatement. Quill is allowed to be dry and quippy — he's
+a hyper-intelligent being gently helping a human process an experience.
 
 ## 2. Characters
 
@@ -64,6 +73,14 @@ Tone: dry comedy wrapped around a genuinely moving middle. The symphony section 
   (forearm resting on knee while seated).
 - Must support: standing, `walk` cycle, `sit` on the bench, `kneel`, `foot_tap`, `bounce`,
   lip quiver (`mouth_tremble`), welling tears (`tears`), rolling tears (`tear_l`/`tear_r`), `sniffle`.
+
+### THE CADET — a passer-by (male voice, am_liam, muttered/whispered)
+- Young, lanky, a bit gangly; light skin with freckles, short tousled ginger hair; sage-green crew shirt
+  under the same style of slate jacket as Rae (clearly the same organization, different department).
+- Carries a takeaway coffee cup (lidded) in one hand. Mild, friendly, slightly awkward energy.
+- Rig: anim/char_cadet.py (same rig contract as Rae: draw/head_center/hand_pos/ARMS/HEIGHT, walk cycle).
+  Arm presets at least: `rest`, `hold_cup` (coffee at chest/waist height), `sip_cup`, `wave` (small
+  friendly wave, hand at shoulder height), `hand_to_mouth` (covering a cough).
 
 ### Expression craft (both)
 Faces carry this film. Required nuance:
@@ -137,75 +154,68 @@ current values for orientation only.
 10. q04 — MEDIUM Quill: deadpan, perfectly sincere. q05 "Would you like to hear it?" — head tilt, tiny eyebrow lift.
 11. r08 — MEDIUM Rae: skeptical smirk, shrug, raises mug like a toast: "Sure. Okay. Hit me."
 
-### S2 — The Symphony (58.98 – 134.58)  ← the heart of the film; must be beautiful
+### S2 — The Symphony (58.98 – 134.58)  ← the heart of the film; beautiful but grounded
+Rae stays SEATED on the bench for the entire scene (no kneeling).
 - `sym_quill_raise`: TWO-SHOT. Quill lifts his right hand (`raise_conduct`), the lounge lights dim
   (`sym_lights_dim`, light 1 → 0.25 over 1.5 s). The window brightens slightly.
-- `sym_music_start` → `sym_theme1` (intro, 7.5 s): MEDIUM Rae, still smirking, mug up. A few tiny
-  light motes appear with each celesta/piano note (use `music_onsets("symphony")`). Her smirk
-  slowly melts; her eyes lift toward the sound.
-- `sym_theme1` → `sym_memories_start`: slow push-in. Soft glowing light ribbons (teal, amber,
-  violet) begin flowing through the room, breathing with `music_env("symphony", t)`.
-  `sym_rae_mug_lower`: the mug lowers to her lap. Brows lift, lips part, pupils dilate.
-- `sym_memories_start` → `sym_build`: memory bubbles drift up from below and float around her, each
-  a soft-edged round vignette (~4–6 s each, overlapping): a child's face at a car window at night
-  with passing city lights; an old hand holding a small hand; a dog waiting at a front door, tail
-  going; a sunlit kitchen at dawn with someone making two cups of tea; friends laughing around a
-  table; a sunset over the sea. These are universal, warm, wordless.
-  `sym_rae_oh` — she breathes "…oh." `sym_eyes_glisten` — tears well (tears 0 → 0.7), eye_shine up.
-  Intercut ~2 s: Quill watching her, ribbon light sliding across his face, a curious head tilt.
-- `sym_build` → `sym_grand_pause`: the window stars begin to swirl into a spiral galaxy; ribbons
-  intensify. `sym_kneel_start`: Rae sets the mug on the bench and slowly slides down onto her
-  knees on the floor (finishes at `sym_kneel_done`), one hand to her chest, face lifted to the light.
-- `sym_grand_pause` (≈1 s): everything holds its breath — CLOSE-UP Rae, eyes wide and wet, ribbons hang still.
-- `sym_climax`: BURST. WIDE shot: the room floods with light, the galaxy in the window blazes,
-  ribbons sweep outward, all memory bubbles glow at once. Rae on her knees, small against it all.
-  Quill stands calmly, hand still raised, rim-lit.
+- `sym_music_start` → `sym_theme1`: MEDIUM Rae, still smirking, mug up. Light motes with the notes;
+  her smirk slowly melts; eyes lift toward the sound.
+- `sym_theme1` → `sym_memories_start`: slow push-in; ribbons begin flowing, breathing with the music.
+  `sym_rae_mug_lower`: mug lowers to her lap. Brows lift, lips part.
+- `sym_memories_start` → `sym_build`: memory bubbles drift up and float around her (car window, hands,
+  dog at the door, kitchen at dawn, friends at a table, sunset sea). `sym_rae_oh` "…oh."
+  `sym_eyes_glisten` tears well. Short intercut of Quill watching her.
+- `sym_cadet_door` → `sym_cadet_exit` (the passer-by, ~15 s, during the build): the door slides open
+  (`sym_cadet_door`); the cadet strolls in (`sym_cadet_enter`) with his coffee, heading across the room
+  to exit off screen right (beyond x ≈ 900), walking along the front of the room (floor y ≈ 1185,
+  slightly closer to camera than the bench, so he passes in front of Rae's knees and in front of Quill).
+  `sym_cadet_notice`: he slows, eyes shifting from the swirling lights to Rae and back, eyebrows up
+  ("what the heck is going on over there"), sips his coffee. `sym_cadet_cough`: covers an awkward little
+  cough. `sym_cadet_mutter` (line c01, muttered): "Cool music, Quill." as he passes Quill.
+  `sym_quill_nod`: Quill gives him a small, casual nod (hand still raised, unbothered).
+  `sym_cadet_wave`: walking on, the cadet glances back and gives Rae a small friendly wave;
+  `sym_rae_wave_back`: Rae, teary, gives a tiny wave / soft nod back — no embarrassment.
+  `sym_cadet_exit`: he's gone off screen right just before the grand pause. Keep it gentle and
+  warm — both reactions are normal; the joke is the contrast, not mockery.
+- `sym_grand_pause` (≈1 s): everything holds its breath — CLOSE-UP Rae, eyes wide and wet.
+- `sym_climax`: BURST. WIDE: room floods with light, galaxy blazes, ribbons sweep out, memories glow.
+  Rae seated, upright, small against it all; Quill calm, hand raised, rim-lit.
+- `sym_hand_chest`: she lays a hand on her chest (still seated).
 - `sym_tear_roll`: CLOSE-UP Rae: a single tear rolls down her cheek; a trembling smile through it.
-- `sym_peak`: slow pull-back, the room a cathedral of light.
-- `sym_final_chord`: light settles, ribbons dissolve into slow falling sparks like snow.
-- `sym_celesta_echo`: one last mote drifts down in front of Rae's face; she watches it go out. Silence.
+- `sym_peak`: slow pull-back. `sym_final_chord`: light settles, ribbons dissolve into falling sparks.
+- `sym_celesta_echo`: one last mote drifts down in front of Rae's face; she watches it go out.
 
-### S3 — Snap back (134.58 – 148.52)
-- `snap`: hard cut — lights back to 1.0 instantly, tiny camera jolt. Rae on her knees blinks
-  rapidly (3–4 fast blinks), a sharp gasp, wipes her eyes with her sleeve, looks around.
-- r10 "Wait. What— WHAT the heck was THAT?!" — pointing at Quill, eyes huge (eye_wide), brows high.
-- q06 "Ah. You did not care for it." — MEDIUM Quill: faint brow_worry 0.3, gaze lowers. Polite.
-- r11 "No, I— that's not—" — Rae scrambles up, hands waving, and sits back on the bench edge.
-- q07 (interrupting): "That is quite all right." At `cards_appear` ("I composed eight") he raises
-  his palm (`present`) and eight translucent holo-cards fan out in an arc above it (No. 1 glows
-  softly as "the one you heard"). "...but perhaps you will prefer one of the others." Rae's face: dawning dread.
+### S3 — Lights up (134.58 – 144.65)  — quiet, understated
+- `lights_up`: the lounge lights come back up to normal over ~1 s (no flash, no jolt, no gasp).
+  Rae sits there, eyes wet, very still, a slow blink, maybe dabs one eye with a knuckle.
+  Quill lowers his hand.
+- q06 Quill, casual and pleasant: "So. How did you like it?"
+- Long beat. Rae stares ahead, sniffs. r10 (tiny whisper, utterly understated): "...pretty good."
+  — the comedy is the huge gap between her face and her words. No pointing, no shouting.
+- q07 "Thank you. Here are the other ones I made." At `cards_appear` he raises his palm (`present`)
+  and eight translucent holo-cards fan out above it. Rae's reaction: a slow blink, picks her mug back up.
 
-### S4 — The others (148.52 – 211.83)
-Holo-cards hang in the upper third of the frame. On each `cardN` beat the matching card slides to
-the center and enlarges (title + small animated icon), the rest dim. Rae seated on the bench.
-- `card2` q08 "Number two. The same symphony, for solo kazoo." — card "No. 2 · SOLO KAZOO".
-  Kazoo plays (6 s): Rae snorts a laugh (bounce, big grin)... the grin slowly crumples as her eyes
-  well up. r12 "Why is the kazoo one ALSO good?!" — laugh-crying, hands up.
-- `card3` q09 "Number three. For an arcade cabinet." — card "No. 3 · ARCADE" (pixel icon).
-  Chiptune (5.5 s): little pixel sparkles; Rae's head bobs and her foot taps involuntarily
-  (`foot_tap`) — show it in a medium-wide. r13 "Stop. My foot is tapping. Against my will." — grips her knee.
-- `card4` q10 "Number four. Lo-fi beats... to quietly fall apart to." — card "No. 4 · LO-FI"
-  (icon: steaming mug + rainy window + headphones). Lo-fi (6.5 s): soft rain streaks run down the
-  lounge window (yes, in space), warm dim light, Rae hugs herself, slow head-nod, lip trembling.
-  r14 "That is not fair." — voice cracking, mouth_tremble.
-- `card5_7` q11 "Five, six and seven are for theremin. I will spare you." — cards 5–7 wobble like
-  sine waves and fold away; the 1.8 s theremin wail plays as they fold. r15 "...Thank you." — genuinely grateful, sniffling.
-- `card8` q12 "And number eight. A lullaby. It is eleven seconds long." — card "No. 8 · LULLABY"
-  (crescent moon + star). Lullaby (music box, 11 s): lights soften warm, a tiny holographic music
-  box turns above Quill's palm, slow motes. Rae completely undone — eyes squeezed, tears, hand on
-  chest. `rae_stand_start`: she rises slowly, backs away.
-- r16 "Nope. Nope nope nope. I'm getting out of here." — `rae_backs_out`: grabs mug, walks
-  backward toward the door pointing at him, `rae_exit_door`: door opens, she's gone, door closes.
+### S4 — The others, played quickly (144.65 – 190.84)
+Rae stays seated and mostly silent — she's still absorbing. Reactions are small and natural,
+not improv: e.g. a small smile and a slow nod (kazoo), a foot tap (arcade), a quiet thumbs up or a
+wipe of the eye (lo-fi), eyes closed, holding the mug (lullaby). Quill does the talking, briskly.
+- `card2` q08 "Number two. Same symphony. Solo kazoo." → kazoo (4.6 s).
+- `card3` q09 "Three. For an arcade cabinet." → chiptune (4.2 s); her foot taps.
+- `card4` q10 "Four. Lo-fi beats... to quietly fall apart to." → lo-fi (5.2 s); soft rain on the window.
+- `card5` q11 "And five. A lullaby. It is eleven seconds long." → music box (11 s), warm dim light,
+  little holographic music box above his palm.
+- r11 "Can you just... send them to my device? Later?" — then `rae_up` she stands a little abruptly
+  (mug in hand), `rae_walk` walks briskly to the door, `rae_exit_door` she's through, door shuts at `door_shut`.
 
-### S5 — Coda (211.83 – 231.55)
-- `quill_alone`: MEDIUM-WIDE Quill alone, cards fading, he lowers his hand. Stillness. Coda piano.
-- q13 "...Was that a yes?" — CLOSE-UP, small head tilt, one robotic blink.
-- `rae_return_door`: door whooshes open; Rae leans in from the edge (upper body only), red-eyed,
-  sniffly (`sniffle` 0.8), points at him: r17 "Send me all eight." `rae_return_close`: door shuts.
-- `quill_smile`: CLOSE-UP Quill: a tiny, rare smile (smile 0.3), iris glow warms toward amber.
-- q14 "Sending." — eight little lights lift from his palm and stream toward the door.
-- `end_card`: dissolve to stars; "IF YOU HAVE TIME" title returns; tiny line under it fading in:
-  "8 symphonies sent ✓". Fade to black over the last 1.5 s.
+### S5 — Coda (190.84 – 208.05)
+- `quill_alone`: Quill alone, cards fading; he lowers his hand and looks into the middle distance.
+  Stillness, a robotic blink. Coda piano.
+- `rae_return_door`: the door slides open; Rae leans back in (upper body), a little awkward,
+  eyes still a bit red: r12 "Um... thanks." 
+- `quill_nod_smile`: CLOSE-UP Quill: a subtle nod and a slight smile (smile ≈ 0.3, warm glow).
+- `rae_return_close`: she withdraws, the door shuts (`door_shut2`).
+- `quill_send`: eight little lights lift from his palm and drift toward the door (files sent).
+- `end_card`: dissolve to stars; "IF YOU HAVE TIME" + small line "8 symphonies sent ✓". Fade to black.
 
 ## 5. Music
 
@@ -293,9 +303,9 @@ Stage coordinates. "seated" = sit 1 on the bench (seat_y 960). Rae faces +1 (tow
 |---|---|---|---|
 | S0→S1 (16.0) | (off-screen, outside the door) | x 560, back=1 at the console/window, behind_back | light 1; S0 ends on a warm-white flash, S1 opens from that flash (fade from #FFF4E0 over ~0.5 s) |
 | S1→S2 (58.98) | seated x 230, mug in right hand, `mug_raise` (toast), skeptical smirk | x 545, facing -1, turn ~0.35, `behind_back` | light 1 |
-| S2→S3 (134.58) | kneeling (kneel 1) on the floor at x 255, `hand_on_chest`, tears on cheeks, mug resting on the bench at (330, 960) via draw_mug | x 545, arm lowered back to `rest` by the end of the final chord | light 0.25, window swirl fading back toward 0 at the very end; S3 opens with a hard cut to light 1 |
-| S3→S4 (148.52) | seated x 230 again, holding the mug (`hold_mug`), wary | x 545, `present`, eight holo cards fanned above hand_pos(pose,'r') (card fan fully open) | light 1 |
-| S4→S5 (211.83) | gone through the door (door closed) | x 545 `present`, cards still up but beginning to fade | light 1 (lullaby warmth already returned to 0 by 209) |
+| S2→S3 (134.58) | seated x 230 on the bench, mug SET DOWN on the bench at (330, 960) via draw_mug (she puts it down around `sym_hand_chest`), right hand on chest or lap, tear tracks, facing +1, turn ~0.3 | x 545, arm lowered to `rest` by the end of the final chord | light 0.25 → S3 brings the lights up smoothly |
+| S3→S4 (144.65) | seated x 230, holding the mug (`hold_mug`) | x 545, `present`, eight holo cards fanned above hand_pos(pose,'r') | light 1 |
+| S4→S5 (190.84) | gone through the door (door closed) | x 545 `present` → lowering, cards beginning to fade | light 1 (lullaby warmth back to 0) |
 | S5 end | — | x 545 | fade to the starfield end card |
 
 Holo-card fan placement shared by S3/S4/S5: anchor = hand_pos(quill_pose, 'r') of Quill in `present` at x 545; cards arc

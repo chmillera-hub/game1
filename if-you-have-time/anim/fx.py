@@ -1458,10 +1458,10 @@ def draw_memory(canvas, t, kind, cx, cy, r, alpha=1.0, age=0.0, glow=0.0, rim_co
 
 # =========================================================================== holo cards
 CARD_W, CARD_H = 170.0, 230.0
-CARD_TITLES = {1: "SYMPHONY", 2: "SOLO KAZOO", 3: "ARCADE", 4: "LO-FI", 5: "THEREMIN I", 6: "THEREMIN II",
-               7: "THEREMIN III", 8: "LULLABY"}
-CARD_ICONS = {1: "symphony", 2: "kazoo", 3: "arcade", 4: "lofi", 5: "theremin", 6: "theremin", 7: "theremin",
-              8: "lullaby"}
+CARD_TITLES = {1: "SYMPHONY", 2: "SOLO KAZOO", 3: "ARCADE", 4: "LO-FI", 5: "LULLABY", 6: "BAROQUE",
+               7: "SEA SHANTY", 8: "WHALE SONG"}
+CARD_ICONS = {1: "symphony", 2: "kazoo", 3: "arcade", 4: "lofi", 5: "lullaby", 6: "symphony", 7: "symphony",
+              8: "symphony"}
 _HOLO = "#7FFFE9"
 _HOLO_MID = "#2EC4B6"
 _HOLO_DARK = "#0A2E36"
