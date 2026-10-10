@@ -28,10 +28,10 @@ VO_GAIN_DB = {"rae": 0.0, "quill": -0.5, "cadet": -1.0}
 DUCK_DB = {"opening": 0, "lounge": 7, "symphony": 4, "alt_kazoo": 8, "alt_chip": 8, "alt_lofi": 8,
            "alt_theremin": 8, "alt_lullaby": 8, "coda": 6}
 # Extra per-line gain tweaks (dB) for performance.
-LINE_GAIN = {"r09": -4.0, "c01": -3.0, "r10": -3.0, "r12": -1.5, "r13": -1.0}
+LINE_GAIN = {"r09": -4.0, "c01": -1.0, "c02": -1.0, "r10": -3.0, "r12": -1.5, "r13": -1.0}
 # Lines that dip the music by a fixed amount (dB) instead of the cue's full DUCK_DB (r09: the breathed "...oh."
 # inside the symphony should surface without the music audibly pumping).
-LINE_DUCK = {"r09": 3.0, "c01": 7.0, "r13": 8.0}
+LINE_DUCK = {"r09": 3.0, "c01": 8.0, "c02": 9.0, "r13": 9.0}
 
 
 def db(x):

@@ -21,7 +21,7 @@ Event forms:
 VOICES = {
     "quill": {"voice": "am_michael", "speed": 0.93, "lang": "en-us"},
     "rae": {"voice": "af_heart", "speed": 1.0, "lang": "en-us"},
-    "cadet": {"voice": "am_liam", "speed": 1.0, "lang": "en-us"},   # passer-by in S2
+    "cadet": {"voice": "am_puck", "speed": 1.05, "lang": "en-us"},  # passer-by in S2: casual, a bit awkward
 }
 
 # id: (character, display text, tts text or None to reuse display, speed override or None)
@@ -43,8 +43,9 @@ LINES = {
     "r08": ("rae", "...Sure. Okay. Hit me.", "Sure. Okay. Hit me.", 1.0),
     # ---- S2: the symphony (no words, one tiny breath of a word)
     "r09": ("rae", "...oh.", "Oh...", 0.8),
-    "c01": ("cadet", "Cool music, Quill.", None, 1.0),
-    "r13": ("rae", "Oh, hi.", "Oh hi!", 0.95),
+    "c01": ("cadet", "Oh, hey Quill. Cool song.", None, None),
+    "c02": ("cadet", "Oh, hey Rae! How are you doing?", None, None),
+    "r13": ("rae", "I'm good, thanks.", None, 1.0),
     # ---- S3: lights up
     "q06": ("quill", "So. How did you like it?", None, None),
     "r10": ("rae", "...pretty good.", "Pretty good.", 0.9),
@@ -53,7 +54,7 @@ LINES = {
     "q08": ("quill", "Number two. Same symphony. Solo kazoo.", None, None),
     "q09": ("quill", "Three. For an arcade cabinet.", None, None),
     "q10": ("quill", "Four. Lo-fi beats... to quietly fall apart to.", "Four. Low-fi beats... to quietly fall apart to.", None),
-    "q11": ("quill", "And five. A lullaby. It is eleven seconds long.", None, None),
+    "q11": ("quill", "And five. A whale song. With drums.", None, None),
     "r11": ("rae", "You can just send them to my device. I gotta get going.", None, 1.05),
     # ---- S5: coda
     "r12": ("rae", "Um... thanks.", "Umm... thanks.", 0.9),
@@ -61,7 +62,9 @@ LINES = {
 }
 
 # Lines processed into a whisper: id -> amount (0 dry .. 1 pure whisper)
-WHISPER = {"c01": 0.5}
+WHISPER = {}
+# Lines given a light breath layer (natural voice + aspiration): id -> amount 0..1
+BREATHY = {"c01": 0.5, "c02": 0.5}
 
 # Fixed music cue lengths in seconds. audio/music.py must render each cue to exactly this length.
 MUSIC_CUES = {
@@ -72,7 +75,9 @@ MUSIC_CUES = {
     "alt_chip": 5.5,
     "alt_lofi": 6.5,
     "alt_theremin": 1.8,  # no longer used in the film
-    "alt_lullaby": 11.0,
+    "alt_lullaby": 11.0,  # no longer used in the film
+    "alt_whale": 5.0,     # S4 card 5: majestic whale song over epic drums and bass
+    "whale_end": 6.0,     # the whale returns over the end card
     "coda": 19.8,         # S5 solo piano theme, warm, ends under the end card
 }
 
@@ -182,11 +187,12 @@ SEQ = [
     ("sfx", "step_soft", {"offset": 48.047, "gain_db": -26.0}),
     ("sfx", "step_soft", {"offset": 48.644, "gain_db": -29.0}),
     ("beat", "sym_cadet_mutter", 42.95),
-    ("line_at", "c01", 42.95),
-    ("beat", "sym_quill_nod", 44.35),
-    ("beat", "sym_cadet_wave", 45.3),
-    ("beat", "sym_rae_wave_back", 45.9),
-    ("line_at", "r13", 46.0),   # "Oh, hi." - a casual hello in the middle of it all
+    ("line_at", "c01", 42.95),   # "Oh, hey Quill. Cool song." - scripted small talk
+    ("beat", "sym_quill_nod", 44.45),
+    ("beat", "sym_cadet_wave", 44.9),
+    ("line_at", "c02", 45.0),    # "Oh, hey Rae! How are you doing?"
+    ("beat", "sym_rae_wave_back", 46.35),
+    ("line_at", "r13", 46.55),   # "I'm good, thanks." - then straight back into the music
     ("beat", "sym_cadet_exit", 48.8),
     ("beat", "sym_grand_pause", 49.4),
     ("beat", "sym_climax", 50.5),
@@ -240,9 +246,9 @@ SEQ = [
     ("sfx", "holo_select", {"gain_db": -14.0}),
     ("line", "q11"),
     ("wait", 0.4),
-    ("music", "alt_lullaby", {"gain_db": -5.0}),
-    ("beat", "lullaby_start"),
-    ("music_hold", "alt_lullaby"),
+    ("music", "alt_whale", {"gain_db": -4.0}),
+    ("beat", "whale_start"),
+    ("music_hold", "alt_whale"),
     ("wait", 0.8),
     ("line", "r11"),
     ("wait", 0.25),
@@ -270,7 +276,7 @@ SEQ = [
     # ---------------- S5: coda
     ("scene", "s5"),
     ("beat", "quill_alone"),
-    ("music", "coda", {"gain_db": -7.0, "fade_out": 3.0, "end_beat": "end"}),
+    ("music", "coda", {"gain_db": -7.0, "fade_out": 2.5, "end_beat": "end_card"}),
     ("wait", 3.0),
     ("beat", "rae_return_door"),
     ("sfx", "door_open", {"gain_db": -8.0}),
@@ -298,6 +304,7 @@ SEQ = [
     ("sfx", "step_soft", {"offset": 2.830, "gain_db": -29.0}),
     ("wait", 2.8),
     ("beat", "end_card"),
+    ("music", "whale_end", {"gain_db": -4.0, "fade_out": 0.8}),
     ("wait", 6.0),
     ("beat", "end"),
 ]

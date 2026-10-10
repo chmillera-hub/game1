@@ -20,7 +20,7 @@ from scipy import signal
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from config import FPS, KOKORO_MODEL, KOKORO_VOICES, LIPSYNC, SR, VO_DIR  # noqa: E402
-from script_data import LINES, VOICES, WHISPER  # noqa: E402
+from script_data import BREATHY, LINES, VOICES, WHISPER  # noqa: E402
 
 
 def trim_silence(x, sr, thresh_db=-45.0, pad=0.03):
@@ -82,6 +82,19 @@ def whisperize(x, sr, amount=0.8, order=44, frame_ms=25.0, hop_ms=10.0, seed=5):
     out = signal.sosfilt(signal.butter(2, 300, btype="high", fs=sr, output="sos"), out)
     out *= np.sqrt(np.mean(x ** 2)) / (np.sqrt(np.mean(out ** 2)) + 1e-12)
     return amount * out + (1 - amount) * x
+
+
+def breathy(x, sr, amount=0.5, seed=9):
+    """Add an airy aspiration layer that follows the speech envelope: high-band noise
+    shaped by the voice's own 2-7 kHz energy. Keeps the natural voice intact."""
+    rng = np.random.default_rng(seed)
+    band = signal.sosfilt(signal.butter(2, [1800, 7000], btype="band", fs=sr, output="sos"), x)
+    env = np.abs(signal.hilbert(band))
+    env = signal.sosfilt(signal.butter(2, 30, btype="low", fs=sr, output="sos"), env)
+    air = signal.sosfilt(signal.butter(2, [1500, 9000], btype="band", fs=sr, output="sos"),
+                         rng.standard_normal(len(x)))
+    air = air / (np.sqrt(np.mean(air ** 2)) + 1e-12) * env
+    return x + amount * 0.9 * air
 
 
 def lipsync_env(x, sr, closures=()):
@@ -245,6 +258,8 @@ def main(only=None):
             x = android_fx(x, SR)
         if lid in WHISPER:
             x = whisperize(x, SR, WHISPER[lid])
+        if lid in BREATHY:
+            x = breathy(x, SR, BREATHY[lid])
         x = x / (np.max(np.abs(x)) + 1e-9) * 0.89
         sf.write(VO_DIR / f"{lid}.wav", x.astype(np.float32), SR, subtype="FLOAT")
         lips[lid] = _lips_for(lid, x)

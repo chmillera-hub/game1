@@ -353,3 +353,31 @@ the "imagination" layer: they never physically touch or enter anyone, and they d
   above it; he studies them with quiet curiosity (an android learning what makes music resonate). At
   `quill_walk_off` he walks off screen (exiting right), still carrying them. No send-lights to the door.
   Then the end card as before.
+
+## 11. REVISION 4 — director's notes (supersede earlier sections where they conflict)
+- **Rae's mug grip:** she holds the mug BY THE HANDLE like a real person: fingers threaded through the
+  handle, the handle's outer bar drawn OVER her fingers (fingers visibly inside the loop), thumb resting on
+  top of the handle, the mug body hanging/standing beside the hand with the heart logo visible. It must read as
+  physically gripped — never hovering beside the hand.
+- **Memory bubbles:** 'car_window' — young Rae must be a properly formed seated child (head, neck, shoulders,
+  torso in a car seat, an arm/hand on the window), not a round blob. 'hands' — Rae holding her father's hand:
+  both hands in Rae's family skin tones (child's hand = Rae's warm brown `r_skin`, father's hand a deeper brown
+  with knuckle creases and a shirt cuff).
+- **Symphony bass:** add a real low end (contrabasses/cellos on the chord roots, low brass at the build and
+  climax, timpani) so the soaring lines have weight ("oomph") under the memories.
+- **The passing cadet** is a casual, slightly awkward "bro" doing scripted small talk. New lines:
+  c01 (`sym_cadet_mutter`) "Oh, hey Quill. Cool song." → Quill's casual nod (`sym_quill_nod`) → he turns to Rae
+  with a little wave (`sym_cadet_wave`) and c02 "Oh, hey Rae! How are you doing?" → Rae (`sym_rae_wave_back`)
+  waves and answers r13 "I'm good, thanks." casually → he strolls off (`sym_cadet_exit`) and her eyes go
+  straight back to the music. His voice is natural and breathy (no robotic processing); his cough is airy.
+- **~2:01 (the tear close-up / pull-back, ~114.7-130.7):** Rae's gaze is UP toward the music/ribbons above her,
+  not toward camera or screen-left.
+- **Tears:** in S3 she wipes only ONE eye; the other tear track stays (she's lost in thought) and then dries
+  naturally — fading gradually through the kazoo and gone by the end of the arcade song.
+- **Card 5 is now a WHALE SONG** (replaces the lullaby): Quill q11 "And five. A whale song. With drums." →
+  `whale_start` the music cue alt_whale (5 s): a majestic, slightly ridiculous whale vocal soaring over epic
+  drums and deep bass (the energy of a cosmic whale's call — original, not copied from anything). A small
+  holographic whale (fx.draw_whale_holo) swims above Quill's palm while it plays; the card icon is 'whale'.
+  Rae's reaction: eyebrows up, a surprised, delighted little smile, a glance to Quill, a small nod. Normal lighting.
+- **End card:** the whale returns — cue whale_end (6 s) plays over the closing title, for a final drop of
+  comedy (a faint whale silhouette may glide across the stars behind the title).

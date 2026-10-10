@@ -403,30 +403,29 @@ def step_soft():
 
 
 def cough_awkward():
-    """A small, self-conscious throat-clear: two dry coughs and a voiced 'hm'."""
-    d = 1.0
+    """A small, self-conscious, airy cough: three breathy "hkh" bursts (onsets +0, +0.26, +0.53 s -
+    s2.py syncs the cadet's body jolts to them) with soft attacks and open, aspirated tails.
+    No glottal thump or voiced hum, so it reads as air rather than a bark."""
+    d = 1.15
     t = t_axis(d)
     out = np.zeros_like(t)
-    for st, ln, g in ((0.0, 0.17, 1.0), (0.27, 0.12, 0.65)):
+    for st, ln, g in ((0.0, 0.24, 1.0), (0.26, 0.2, 0.75), (0.53, 0.3, 0.55)):
         n = int(ln * SR)
         tt = np.arange(n) / SR
-        burst = formant(bp(noise(ln, "pink"), 250, 3200), "ah", 0.8)
-        env = np.clip(tt / 0.006, 0, 1) * np.exp(-tt / (ln * 0.35))
-        # glottal "catch": a short low thump at the onset
-        thump = np.sin(2 * np.pi * (180 - 60 * tt / ln) * tt) * np.exp(-tt / 0.02) * 0.6
+        air = bp(noise(ln, "white"), 900, 7500)
+        body = formant(bp(noise(ln, "pink"), 350, 3500), "ah", 0.7)
+        env = np.clip(tt / 0.012, 0, 1) ** 1.5 * np.exp(-tt / (ln * 0.42))
+        burst = (0.65 * air + 0.55 * body) * env
         i = int(st * SR)
-        out[i:i + n] += (burst * env + thump) * g
-    # voiced 'hm' (closed mouth): low buzzy tone through a nasal low-pass
-    st, ln = 0.47, 0.24
+        out[i:i + n] += burst[: len(out) - i] * g
+    # a soft breath out after the last cough
+    st, ln = 0.8, 0.32
     n = int(ln * SR)
     tt = np.arange(n) / SR
-    f0 = 118 - 10 * tt / ln
-    ph = 2 * np.pi * np.cumsum(f0) / SR
-    buzz = sum(np.sin(k * ph) / k for k in range(1, 9))
-    hm = lp(buzz, 900) * np.sin(np.pi * np.clip(tt / ln, 0, 1)) ** 1.5 * 0.35
+    exhale = formant(bp(noise(ln, "pink"), 500, 6000), "hh", 0.85) * np.sin(np.pi * tt / ln) ** 2 * 0.25
     i = int(st * SR)
-    out[i:i + n] += hm
-    return fade(room(stereo(out, 0.05, 0.3), 0.45, 0.18), 0.002, 0.05)
+    out[i:i + n] += exhale[: len(out) - i]
+    return fade(room(stereo(out, 0.05, 0.3), 0.4, 0.14), 0.002, 0.05)
 
 
 # new effects go at the END of this list: the shared RNG is consumed in this order, so appending keeps every
