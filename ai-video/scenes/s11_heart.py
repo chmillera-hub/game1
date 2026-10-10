@@ -44,14 +44,22 @@ Beats (every time from cues / word starts):
           monocle slipping a little, arms dropping limp; one slow blink; a
           small mouth (no villain teeth). Hissy melts ("aww"). The AI holds a
           warm, steady gaze on him, slow blink, a soft nod after "you".
-  snap_back (0.45 s pause) he SNAPS back into villain mode: AHEM (fist to
-          mouth, eyes squeezed shut, sits up straight), then a CAPE FLOURISH
-          (the right glove sweeps the cape up across his chest, crimson
-          lining showing) and the smug evil grin is back (monocle glint).
-          Hissy does a double take (glances out at us, whips back, shocked).
-          The AI is amused. He releases the cape as the hologram opens.
-  wall    sheet fades; the AI projects a cyan hologram: the door pops in, the
-          wall builds so its last row thuds on "Brick"; firm nod "Every time".
+  l05b    "Ahem." (the gruff throat-clear is a voice line): fist to mouth,
+          eyes squeezed shut, mouth hidden behind the fist, a cough jolt of
+          the head + shoulders on the "HEM", then he sits up straight, chin
+          up. Hissy's "aww" turns into a knowing look; the AI is amused.
+  cape_pat (0.95 s pause) the CAPE FLOURISH UP: the right glove sweeps the
+          cape up across his chest to his chin (crimson lining showing), the
+          smug evil grin peeking over it, monocle glint. The AI's eyes go to
+          him and narrow in a gentle, affectionate CRINGE (lids half down,
+          awkward little smile, a tiny sweat drop); the sheet fades as it
+          reaches one hand-orb over and PATS his bald dome 3x (his head dips
+          on each pat, little impact ticks; his eyes roll up to the hand),
+          then withdraws it to idle before l06. Hissy gives us an amused
+          side-eye, then a stifled snicker.
+  wall    the AI projects a cyan hologram: the door pops in, the wall builds
+          so its last row thuds on "Brick"; firm nod "Every time". He
+          releases the cape as the hologram opens.
   l07     light leaks round the door, it cracks ajar; three glowing chips
           (SCARY STORIES / CREATIVE PLANS / SOUND THE ALARM) squeeze out, on
           "Scary", "creative" (he rubs his hands) and "sounding"; on "wide
@@ -225,11 +233,16 @@ V.VILLAIN_EXPR.setdefault("s11_touched", dict(by1=-8, by2=-10, ba1=-0.62, ba2=-0
 V.VILLAIN_EXPR.setdefault("s11_touched2", dict(V.VILLAIN_EXPR["s11_touched"], mc=0.55, mw=0.68,
                                                msk=0.2, blush=0.82, ul1=0.46, ul2=0.44,
                                                mono=0.5, tilt=-0.13, hy=12))
-# 'snap_back': AHEM. (eyes squeezed shut, brows down, mouth pursed, sits up)
+# l05b "Ahem.": the throat-clear (eyes squeezed shut, brows down, mouth pursed)
 V.VILLAIN_EXPR.setdefault("s11_ahem", dict(by1=14, by2=12, ba1=0.4, ba2=0.36, bc1=0.15,
                                            bc2=0.15, ul1=0.5, ul2=0.5, ll1=0.2, ll2=0.2,
                                            mc=-0.35, mw=0.5, mo=0.0, msk=0.35, mt=0.2,
-                                           tilt=0.04, hy=-12, shy=-12, blush=0.3, mono=0.0))
+                                           tilt=0.04, hy=-6, shy=-8, blush=0.3, mono=0.0))
+# ...then he sits up straight, composed: chin up, eyes still shut, prim smirk
+V.VILLAIN_EXPR.setdefault("s11_poise", dict(V.VILLAIN_EXPR["s11_ahem"], by1=-2, by2=-14,
+                                            ba1=0.16, ba2=0.06, bc2=0.55, mc=0.4, mw=0.74,
+                                            msk=0.5, mt=0.0, tilt=-0.07, hy=-16, shy=-12,
+                                            blush=0.15, sneer=0.3))
 # ...and the smug evil grin, restored (monocle firmly back in)
 V.VILLAIN_EXPR.setdefault("s11_grin", dict(V.VILLAIN_EXPR["evil_grin"], mono=0.0, ul1=0.3,
                                            ul2=0.24, ll1=0.3, ll2=0.28, lt1=0.3, lt2=0.28,
@@ -237,6 +250,13 @@ V.VILLAIN_EXPR.setdefault("s11_grin", dict(V.VILLAIN_EXPR["evil_grin"], mono=0.0
                                            mo=0.28, by1=-4, by2=-24, ba1=0.38, ba2=0.26,
                                            bc1=0.3, bc2=0.65, blush=0.15, hy=-14, shy=-14,
                                            tilt=-0.04, sneer=0.85))
+# ...held over the raised cape while the AI pats his dome (eyes rolled up at
+# the hand, brows lifting, a blush creeping in; the grin hangs on)
+V.VILLAIN_EXPR.setdefault("s11_grin_pat", dict(V.VILLAIN_EXPR["s11_grin"], by1=-16, by2=-30,
+                                               ba1=0.08, ba2=0.02, bc1=0.45, bc2=0.6,
+                                               ul1=0.2, ul2=0.16, ll1=0.22, ll2=0.2,
+                                               mc=1.0, mw=1.24, mo=0.2, blush=0.5,
+                                               sneer=0.5, hy=-10))
 
 # "creative plans": scheming, delighted (rubs his hands)
 V.VILLAIN_EXPR.setdefault("s11_scheme", dict(V.VILLAIN_EXPR["sneaky"], ex=0.3, mc=0.95, mw=1.12,
@@ -257,6 +277,16 @@ SN.SNAKE_EXPR.setdefault("s11_hmph", dict(ul=0.62, ll=0.14, lt=0.1, ps=0.9, mc=-
                                           msk=0.4, tilt=0.24, hy=-10, tng=0.0))
 SN.SNAKE_EXPR.setdefault("s11_speek", dict(ul=0.3, ll=0.12, lt=0.06, ps=0.85, mc=-0.15, mw=0.7,
                                            msk=0.4, tilt=0.18, hy=-8, tng=0.0))
+# "Ahem.": the aww turns knowing ("...here we go")
+SN.SNAKE_EXPR.setdefault("s11_knowing", dict(ul=0.46, ll=0.14, lt=0.06, ps=0.95, mc=0.22,
+                                             mw=0.72, msk=0.45, tilt=0.06, tng=0.0))
+# the pats: an amused side-eye out at us ...
+SN.SNAKE_EXPR.setdefault("s11_smirk", dict(ul=0.42, ll=0.22, lt=0.16, ps=0.92, mc=0.8, msk=0.62,
+                                           mw=0.8, tilt=-0.08, hy=-2, blush=0.25, tng=0.0))
+# ... then a stifled snicker (eyes squeezed into happy arcs, lips pressed,
+# shaking)
+SN.SNAKE_EXPR.setdefault("s11_snicker", dict(hap=1.0, mc=0.85, mw=0.6, msk=0.5, mo=0.0, wob=2.2,
+                                             tilt=-0.12, hy=5, blush=0.55, sq=0.95, tng=0.0))
 
 _REST_A = V._arm(-262, -140, -152, -52, 0.06, cu=0.3, th=0.2, sp=0.45)
 # CROSSED ARMS: both forearms folded over the chest, the screen-right one on
@@ -269,14 +299,18 @@ V.ARM_POSES.setdefault("s11_cross", V._pose(_CROSS_A, _CROSS_B, shy=-8, hdy=-2))
 # l05: the arms DROP (hands go limp onto the desk)
 _DROP_A = V._arm(-258, -98, -178, -8, 0.95, cu=0.14, th=0.1, sp=0.25)
 V.ARM_POSES.setdefault("s11_drop", V._pose(_DROP_A, shy=8, hdy=6))
-# 'snap_back': AHEM: the screen-left fist up to his mouth (other hand at rest)
+# l05b "Ahem.": the screen-left fist up to his mouth (other hand at rest)
 _AHEM_A = V._arm(-214, -196, -76, -318, -0.95, cu=1.0, th=0.0, sp=0.2)
 V.ARM_POSES.setdefault("s11_ahem", V._pose(_AHEM_A, V._mirror(_REST_A), shy=-12, hdy=-4))
-# ...then the CAPE FLOURISH: the screen-right hand sweeps the cape's edge up
-# across his chest to the opposite shoulder (the classic villain pose; the
-# cape wing itself is _cape_wing, drawn over the arm)
-_CAPE_B = V._arm(132, -238, -150, -326, math.pi - 0.42, cu=1.0, th=0.0, sp=0.2, tf=-1)
+# 'cape_pat': the CAPE FLOURISH UP: the screen-right hand sweeps the cape's
+# edge up across his chest to his chin, glove at the opposite cheek (the
+# classic villain pose, grin peeking over the edge; the cape wing itself is
+# _cape_wing, drawn over the arm)
+_CAPE_B = V._arm(176, -284, -118, -392, math.pi - 0.3, cu=1.0, th=0.0, sp=0.2, tf=-1)
 V.ARM_POSES.setdefault("s11_cape", V._pose(_REST_A, _CAPE_B, shy=-14, hdy=-4))
+# per-frame copy of the current arm blend with the cough jolt / pat dips
+# layered on (filled in by _jolt_arms)
+V.ARM_POSES.setdefault("s11_dyn", V._pose(_REST_A))
 # hug: wrists at the book's side edges (fingers drawn over the cover)
 _HUG_A = V._arm(-246, -112, -118, -214 + 60.0 / MS, -0.12, cu=0.6, th=0.2, sp=0.2, hs=1.0)
 V.ARM_POSES.setdefault("s11_hug", V._pose(_HUG_A, shy=-12, hdy=8))
@@ -304,7 +338,52 @@ AI_X = {
     # a little teasing: one brow way up, lopsided smirk
     "tease": dict(AI.EXPR["amused"], bLy=-2, bRy=28, arch=0.6, mc=0.6, ms=0.85, blush=0.35),
     "wink": dict(AI.EXPR["wink"], mc=0.9, ms=0.55),
+    # 'cape_pat': the cape flourish -> a gentle, affectionate CRINGE (lids
+    # about half down, one a touch lower, inner brows up a little, a wide
+    # awkward little smile, head tilted). Fond, not disapproving.
+    "cringe": dict(AI.EXPR["neutral"], bLy=4, bRy=-2, bLa=0.34, bRa=0.24, arch=0.3,
+                   tL=0.52, tR=0.46, ttL=-0.12, ttR=-0.1, tc=0.06, lL=0.2, lR=0.2, lc=0.16,
+                   ps=1.0, mc=0.14, mw=1.06, ms=0.5, mt=0.1, mo=0.0, blush=0.45,
+                   tilt=0.08, sacc=0.3),
+    # ...softening into a fond "there, there" while it pats his dome
+    "cringe_pat": dict(AI.EXPR["neutral"], bLy=6, bRy=2, bLa=0.22, bRa=0.16, arch=0.35,
+                       tL=0.44, tR=0.4, ttL=-0.1, ttR=-0.08, tc=0.08, lL=0.18, lR=0.18,
+                       lc=0.24, ps=1.06, mc=0.5, mw=0.9, ms=0.3, mt=0.05, blush=0.65,
+                       tilt=0.1, sacc=0.3),
 }
+
+# ---------------------------------------------------------------------------
+# s11-only AI hand pose: 's11_pat' (the screen-left hand-orb patting his dome).
+# Its wrist is placed per frame (_set_pat_hand) so the mitten lands ON his
+# head through the villain rig's head transform. Chained into the rig's pose
+# hook like s08 / s12 do (handles 's11_*' names only, delegates the rest).
+# ---------------------------------------------------------------------------
+PAT_SC = 1.6                          # mitten scale (reads as a hand at phone size)
+PAT_ROT = -math.pi / 2 - 0.16         # fingers point left, a little down the dome
+PAT_LIFT = 58.0                       # AI-local units the hand bounces up between pats
+_S11_HANDS = {"s11_pat": dict(AI.IDLE_L)}
+
+
+def _install_ai_poses():
+    if getattr(AI, "_s11_hooked", False):
+        return
+    prev = AI._pose
+
+    def _pose_s11(name, t, seed):
+        if isinstance(name, str) and name.startswith("s11_"):
+            d = prev("idle", t, seed)
+            d["L"] = dict(_S11_HANDS.get(name, AI.IDLE_L))
+            return d
+        return prev(name, t, seed)
+
+    AI._pose = _pose_s11
+    AI._s11_hooked = True
+    for _nm in _S11_HANDS:
+        if _nm not in AI.HAND_POSES:
+            AI.HAND_POSES.append(_nm)
+
+
+_install_ai_poses()
 
 
 def _steady(d, w):
@@ -361,7 +440,7 @@ def _T(info):
              pile=c("pile"), smile=c("smile"), end=info.dur)
     for key_, lid in (("1", "s11_l01"), ("1b", "s11_l01b"), ("1c", "s11_l01c"),
                       ("1d", "s11_l01d"), ("2", "s11_l02"), ("3", "s11_l03"),
-                      ("4", "s11_l04"), ("5", "s11_l05"), ("6", "s11_l06"),
+                      ("4", "s11_l04"), ("5", "s11_l05"), ("5b", "s11_l05b"), ("6", "s11_l06"),
                       ("7", "s11_l07"), ("8", "s11_l08")):
         L = info.line(lid)
         T[f"l{key_}"], T[f"l{key_}e"] = L.start, L.end
@@ -431,16 +510,34 @@ def _T(info):
     # and away, small sincere smile, blush, monocle slipping, arms dropping)
     T["drop"] = T["w_oh"] - 0.06
     T["thank"] = T["w_thank"]
-    # 'snap_back' (0.45 s pause): AHEM (fist to mouth, eyes shut, sits up
-    # straight) -> cape flourish across his chest + smug evil grin restored;
-    # Hissy does a double take. Released into "listening" as the hologram opens.
-    T["snap"] = c("snap_back")
-    T["cape"] = T["snap"] + 0.17
-    T["grin"] = T["snap"] + 0.2
-    T["uncape"] = T["wall"] + 0.4
-    # hologram: door pops in, wall's LAST row lands on "Brick"
-    T["holo"] = T["wall"]
-    T["door_in"] = T["wall"] + 0.3
+    # l05b "Ahem." (the throat-clear is the voice line itself): the fist comes
+    # up just ahead of the sound, eyes squeeze shut; a cough jolt on the
+    # stressed "HEM" (the pitch peak, ~1/3 into the take); then he sits up
+    # straight, chin up, eyes still shut
+    T["ahem"] = T["l5b"] - 0.12
+    T["uh"] = T["l5b"] + 0.03
+    T["hem"] = T["l5b"] + 0.32 * (T["l5be"] - T["l5b"])
+    T["situp"] = T["hem"] + 0.2
+    # 'cape_pat' (pause): the cape flourish UP + smug evil grin (monocle
+    # glint); the AI's eyes go to him and it cringes (fondly); the sheet fades
+    # as one hand-orb reaches over and pats his dome 3x (~0.5 s), then it
+    # withdraws to idle just before l06. Times scale with the pause.
+    T["cape"] = c("cape_pat")
+    win = T["wall"] - T["cape"]                          # 0.95 s
+    T["grin"] = T["cape"] + 0.03
+    T["cringe"] = T["cape"] + 0.06
+    T["reach"] = T["cape"] + 0.1 * win
+    T["pats"] = [T["cape"] + win * f for f in (0.37, 0.545, 0.72)]
+    T["pat_arrive"] = T["pats"][0] - 0.06              # hovering over the dome
+    T["withdraw"] = T["pats"][-1] + 0.06
+    T["pat_back"] = T["withdraw"] + 0.26                # back at idle
+    T["sheet_out"] = T["cape"]                         # clears the air above his head
+    # 'wall' (pause): the hand turns palm-up to project; the hologram opens,
+    # door pops in, wall's LAST row lands on "Brick"; he lets the cape go
+    T["proj"] = max(T["wall"] + 0.06, T["pat_back"])
+    T["holo"] = T["proj"] + 0.05
+    T["door_in"] = T["holo"] + 0.3
+    T["uncape"] = T["holo"] + 0.4
     land0 = P.brick_wall_land_times(0.0, WALL_ROWS, 1.0)
     T["wall0"] = T["w_brick"] - land0[-1]
     T["lands"] = P.brick_wall_land_times(T["wall0"], WALL_ROWS, 1.0)
@@ -1937,8 +2034,8 @@ def _sheet(ctx, t, T):
         return
     k_in = ease_out_back(seg(t, t_in, t_in + 0.3), 2.0)
     k_out = 1.0
-    if t >= T["wall"]:
-        k_out = 1 - ease_in(seg(t, T["wall"], T["wall"] + 0.3))
+    if t >= T["sheet_out"]:                              # clears the air for the pat
+        k_out = 1 - smoothstep(seg(t, T["sheet_out"], T["sheet_out"] + 0.2))
     if k_out <= 0.01:
         return
     a = clamp((t - t_in) / 0.08) * k_out
@@ -2008,7 +2105,7 @@ def _sheet(ctx, t, T):
             _f(c, "white", 0.22)
             c.restore()
         _impressive_badge(c, t, T, w / 2 - 104, -h / 2 - 16)
-    if T["flip"] <= t <= T["wall"]:
+    if T["flip"] <= t <= T["sheet_out"]:
         k = smoothstep(seg(t, T["flip"], T["flip"] + 0.2)) * \
             (1 - smoothstep(seg(t, T["flip"] + 1.0, T["flip"] + 1.6)))
         if k > 0.01:
@@ -2725,13 +2822,101 @@ def _dir(ox, oy, tx, ty, mag=0.95):
 
 
 def _ahem_blink(t, T):
-    """Eyes squeezed shut for the AHEM (snap -> grin), popping open on the grin."""
-    t0, t1 = T["snap"], T["grin"] + 0.02
+    """Eyes squeezed shut for the AHEM (fist up -> grin), popping open on the
+    cape flourish's grin."""
+    t0, t1 = T["ahem"] + 0.04, T["grin"] + 0.02
     if t < t0 or t > t1 + 0.06:
         return None
     if t < t1:
-        return smoothstep(seg(t, t0, t0 + 0.05))
+        return smoothstep(seg(t, t0, t0 + 0.06))
     return 1.0 - smoothstep(seg(t, t1, t1 + 0.06))
+
+
+def _pat_blink(t, T):
+    """A little squeeze of the eyes on each pat (None outside the pats)."""
+    if not (T["pats"][0] - 0.01 <= t < T["withdraw"] + 0.1):
+        return None
+    return 0.55 * max(_pulse(t, p, 0.03, 16.0) for p in T["pats"])
+
+
+def _pulse(t, t0, rise=0.04, decay=11.0):
+    """0 -> 1 -> 0 kick: fast rise at t0, exponential fall-off."""
+    if t < t0:
+        return 0.0
+    return smoothstep(seg(t, t0, t0 + rise)) * math.exp(-max(0.0, t - t0 - rise) * decay)
+
+
+def _pat_dip(t, T):
+    """His head pushed down a little by each pat (0..1)."""
+    return max(_pulse(t, p + 0.005, 0.035, 14.0) for p in T["pats"])
+
+
+def _pat_lift(t, T):
+    """Height (AI-local units) of the patting hand above his dome: hovers,
+    drops onto the dome, three quick soft bounces, then rises off."""
+    p = T["pats"]
+    tau, dw = p[1] - p[0], 0.025                       # bounce period, contact dwell
+    if t < p[0]:
+        return PAT_LIFT * math.sin(math.pi / 2 * clamp((p[0] - t) / (0.55 * tau)))
+    for a, b in zip(p, p[1:]):
+        if t < b:
+            return PAT_LIFT * 0.85 * max(0.0, math.sin(math.pi * clamp((t - a - dw) / (b - a - dw))))
+    return PAT_LIFT * math.sin(math.pi / 2 * clamp((t - p[-1] - dw) / (0.5 * tau)))
+
+
+def _pat_squash(t, T):
+    """Mitten squash on each contact (0..~0.17)."""
+    last = None
+    for p in T["pats"]:
+        if t >= p:
+            last = p
+    return 0.0 if last is None else 0.17 * math.exp(-(t - last) * 28.0)
+
+
+def _malvo_jolt(t, T):
+    """(head dy, shoulder dy, head tilt, fist dy) kicks, villain-local px /
+    rad: the small "uh" and the big cough jolt on "HEM" (head + shoulders
+    pitch forward, the fist at his mouth rides along), and a dip of the head
+    on each pat."""
+    j = 0.35 * _pulse(t, T["uh"], 0.04, 12.0) + _pulse(t, T["hem"], 0.045, 9.0)
+    d = _pat_dip(t, T)
+    return 20.0 * j + 9.0 * d, 10.0 * j, 0.05 * j + 0.012 * d, 25.0 * j
+
+
+def _squeeze_k(t, T):
+    """Eyes SQUEEZED shut for the throat-clear (crease ticks at the corners),
+    relaxing into calm closed lids as he sits up."""
+    k = smoothstep(seg(t, T["ahem"] + 0.04, T["ahem"] + 0.12)) * \
+        (1 - smoothstep(seg(t, T["situp"], T["situp"] + 0.12)))
+    return k
+
+
+def _squeeze_lines(c, k, st, dy, lean):
+    """Little crease ticks at the outer corners of his shut eyes (face-local)."""
+    c.save()
+    _xf_face(c, st, dy, lean)
+    for sx, r in ((-1, V.EYE_RX + 8), (1, V.EYE_RX * 1.07 + 22)):   # (monocle ring)
+        cx = sx * (V.EYE_DX + r)
+        for a in (-0.5, 0.0, 0.5):
+            ca, sa = math.cos(a), math.sin(a)
+            c.move_to(cx + sx * 2 * ca, V.EYE_DY + 2 * sa)
+            c.line_to(cx + sx * 18 * ca, V.EYE_DY + 18 * sa)
+    _s(c, INK, 4.5, k)
+    c.restore()
+
+
+def _jolt_arms(arms, t, T):
+    """The current arm blend, re-registered as 's11_dyn' with the jolt layered
+    on (the fist at his mouth rides along with the head). Returns the name
+    to draw with (the original outside the ahem / pat window)."""
+    if not (T["l5b"] - 0.05 <= t < T["withdraw"] + 0.3):
+        return arms
+    hdy, shy, tilt, fist = _malvo_jolt(t, T)
+    A, B, a_shy, a_hdy, a_tilt = V.resolve_arms(arms, t)
+    A = dict(A, wy=A["wy"] + fist, ey=A["ey"] + 0.5 * fist)
+    V.ARM_POSES["s11_dyn"] = dict(a=A, b=B, shy=a_shy + shy, hdy=a_hdy + hdy,
+                                  tilt=a_tilt + tilt)
+    return "s11_dyn"
 
 
 def _malvo(t, T):
@@ -2757,8 +2942,11 @@ def _malvo(t, T):
         (T["preen"], "s11_preen", 0.3),                  # "...VILLAIN stats": the persona
         (T["drop"], "s11_touched", 0.55),                # "...Oh." the act drops
         (T["thank"] - 0.05, "s11_touched2", 0.45),       # "Thank you." (sincere smile)
-        (T["snap"], "s11_ahem", 0.08),                   # 'snap_back': AHEM.
-        (T["grin"], "s11_grin", 0.12),                   # smug evil grin restored
+        (T["ahem"], "s11_ahem", 0.12),                   # "Ahem." (fist, eyes shut)
+        (T["situp"], "s11_poise", 0.15),                 # ...sits up straight, chin up
+        (T["grin"], "s11_grin", 0.12),                   # cape UP: smug evil grin
+        (T["pats"][0] - 0.02, "s11_grin_pat", 0.12),     # pat, pat, pat (eyes up)
+        (T["withdraw"] + 0.08, "s11_grin", 0.25),        # ...the grin, regathered
         (T["uncape"], "s11_listen", 0.45),
         (T["chips"][0] + 0.1, "s11_hope", 0.4),          # ...scary stories? for me?
         (T["chips"][1] + 0.04, "s11_scheme", 0.25),      # creative plans! (hand rub)
@@ -2778,8 +2966,8 @@ def _malvo(t, T):
         (T["uncross"], "rest", 0.55),                    # ...relaxing
         (T["preen"] + 0.04, "steeple", 0.35),            # villain stats: steepled fingers
         (T["drop"] + 0.08, "s11_drop", 0.6),             # "...Oh." the arms drop
-        (T["snap"], "s11_ahem", 0.08),                   # AHEM (fist to mouth)
-        (T["cape"], "s11_cape", 0.2),                    # cape flourish
+        (T["ahem"], "s11_ahem", 0.16),                   # "Ahem." (fist to mouth)
+        (T["cape"], "s11_cape", 0.2),                    # cape flourish UP
         (T["uncape"], "rest", 0.45),
         (T["chips"][1] - 0.02, "rub", 0.25),             # creative plans: hand rub
         (T["chips"][2] + 0.1, "rest", 0.35),
@@ -2807,9 +2995,11 @@ def _malvo(t, T):
         (T["flip"] + 0.05, (0.25, -1.0), 0.12),         # IMPRESSIVE!
         (T["preen"] + 0.08, gaze_ai, 0.2),              # ...smug, at the AI
         (T["drop"] + 0.04, (-0.42, 0.92), 0.6),         # "...Oh." down and away
-        (T["snap"], (0.1, -0.05), 0.08),                # AHEM (eyes shut)
+        (T["ahem"], (0.1, -0.05), 0.12),                # "Ahem." (eyes shut)
         (T["grin"], gaze_ai, 0.1),                      # the evil grin, at the AI
-        (T["wall"] + 0.3, (0.4, -0.9), 0.3),            # the hologram (door)
+        (T["pats"][0] - 0.06, (0.3, -1.0), 0.1),        # eyes roll up at the hand
+        (T["withdraw"] + 0.06, gaze_ai, 0.2),           # ...back at the AI
+        (T["holo"] + 0.25, (0.4, -0.9), 0.3),           # the hologram (door)
         (T["wall0"] + 0.2, (-0.15, -1.0), 0.25),        # bricks stacking
         (T["w_every"], gaze_ai, 0.2),
         (T["w_else"] + 0.15, (0.55, -0.85), 0.25),      # the door
@@ -2835,12 +3025,13 @@ def _malvo(t, T):
     blink = _first(_slow_blink(t, T["photo"] - 0.6),
                    _slow_blink(t, T["thank"] - 0.22, 0.16, 0.12, 0.2),   # taking it in
                    _ahem_blink(t, T),
+                   _pat_blink(t, T),
                    _slow_blink(t, T["open"] + 0.75, 0.1, 0.05, 0.12),
                    _slow_blink(t, T["sp_land"]["mask"] - 0.03, 0.05, 0.04, 0.09),
                    _slow_blink(t, T["w_hurting"] + 0.3, 0.1, 0.06, 0.12))
     if blink is None and (T["sp_t"]["bat"] - 0.1 <= t < T["sp_land"]["dragon"] + 0.4
-                          or T["grin"] <= t < T["grin"] + 0.6
-                          or T["preen"] <= t < T["snap"]
+                          or T["grin"] <= t < T["withdraw"] + 0.4
+                          or T["preen"] <= t < T["ahem"]
                           or T["peek"] - 0.05 <= t < T["unpeek"] + 0.1
                           or T["turn_back"] <= t < T["nod_v"] - 0.05
                           or T["w_heroic"] - 0.05 <= t < T["cross"]
@@ -2855,18 +3046,18 @@ def _malvo(t, T):
     sulk = smoothstep(seg(t, T["cross"], T["cross"] + 0.3)) * \
         (1 - smoothstep(seg(t, T["turn_back"], T["turn_back"] + 0.4)))
     # (shrinks a touch away from the AI while he's touched; sits up straight
-    # and leans in, villain-proud, from the snap back on)
+    # and leans in, villain-proud, after the "Ahem.")
     shy_k = smoothstep(seg(t, T["drop"], T["drop"] + 0.6)) * \
-        (1 - smoothstep(seg(t, T["snap"], T["snap"] + 0.1)))
-    lean = -0.035 * sulk - 0.02 * shy_k + 0.025 * smoothstep(seg(t, T["snap"], T["snap"] + 0.2)) \
+        (1 - smoothstep(seg(t, T["ahem"], T["ahem"] + 0.16)))
+    lean = -0.035 * sulk - 0.02 * shy_k + 0.025 * smoothstep(seg(t, T["situp"], T["situp"] + 0.2)) \
         - 0.02 * smoothstep(seg(t, T["open"], T["open"] + 0.6))
     # slump sink + rise; a small deflate in the beat (unseen rise during the photo)
     dy = 10 * (1 - smoothstep(seg(t, T["lift"], T["lift"] + 0.6)))
     dy += 8 * smoothstep(seg(t, beat, beat + 0.5)) * (1 - smoothstep(seg(t, T["photo"], T["back"])))
     dy += 9 * math.sin(math.pi * seg(t, T["sp_land"]["mask"], T["sp_land"]["mask"] + 0.26))
-    # touched: he sinks a little; the snap back: he SITS UP straight
+    # touched: he sinks a little; after the "Ahem." he SITS UP straight
     dy += 7 * shy_k
-    dy -= 9 * ease_out_back(seg(t, T["snap"], T["snap"] + 0.12), 2.0) * \
+    dy -= 9 * ease_out_back(seg(t, T["situp"], T["situp"] + 0.14), 2.0) * \
         (1 - smoothstep(seg(t, T["uncape"], T["uncape"] + 0.45)))
     return expr, arms, look, blink, lean, dy
 
@@ -2889,8 +3080,10 @@ def _hissy(t, T):
         (T["l4"] + 0.2, "s11_soft", 0.3),
         (T["preen"] + 0.12, "smug", 0.25),               # copies the villain preen
         (T["drop"] + 0.22, "s11_aww", 0.4),              # "...Oh. Thank you." aww
-        (T["snap"] + 0.3, "shocked", 0.06),              # ...DOUBLE TAKE at the snap back
-        (T["wall"] + 0.3, "s11_soft", 0.3),
+        (T["ahem"] + 0.16, "s11_knowing", 0.22),         # "Ahem." (...here we go)
+        (T["cape"] + 0.12, "s11_smirk", 0.15),           # the cape: amused side-eye at us
+        (T["pats"][0] + 0.03, "s11_snicker", 0.1),       # pat, pat: a stifled snicker
+        (T["holo"] + 0.25, "s11_soft", 0.3),
         (T["w_every"] - 0.05, "nod", 0.12),
         (T["l6e"] + 0.15, "s11_soft", 0.3),
         (T["chips"][1] + 0.12, "smug", 0.3),             # creative plans: in on it
@@ -2915,9 +3108,9 @@ def _hissy(t, T):
         (T["back"], (0.62, -0.8), 0.01),                 # the sheet
         (T["l4"] + 0.25, (1.0, -0.15), 0.25),            # the AI
         (T["drop"] + 0.15, (0.9, -0.12), 0.35),          # ...at him, softly
-        (T["snap"] + 0.06, (0.05, 0.12), 0.1),           # glances out at us ("aww")...
-        (T["snap"] + 0.3, (0.98, -0.32), 0.06),          # ...whips back: DOUBLE TAKE
-        (T["wall"] + 0.25, (0.75, -0.75), 0.3),          # the hologram
+        (T["ahem"] + 0.16, face_dir, 0.2),               # at him: "Ahem."
+        (T["cape"] + 0.12, (0.1, 0.14), 0.15),           # side-eye out at us
+        (T["holo"] + 0.2, (0.75, -0.75), 0.3),           # the hologram
         (T["w_every"] - 0.1, (1.0, -0.15), 0.15),
         (T["chips"][0] + 0.15, _dir(*HISSY, *CHIPS[0][2:4], 0.98), 0.25),
         (T["chips"][1] + 0.15, _dir(*HISSY, *CHIPS[1][2:4], 0.98), 0.2),
@@ -2961,8 +3154,10 @@ def _ai(t, T):
         (T["back"] + 0.2, "warm", 0.3),                  # SLOW BLINK -> warm
         (T["l4"], "happy", 0.25),
         (T["l4e"] + 0.2, "warm_soft", 0.35),             # "...Oh. Thank you." (touched)
-        (T["grin"], "amused", 0.3),                      # ...and the villain is back
-        (T["wall"], "warm", 0.3),
+        (T["ahem"] + 0.1, "amused", 0.3),                # "Ahem." ...here he comes
+        (T["cringe"], "cringe", 0.22),                   # the cape: a fond CRINGE
+        (T["pats"][0] - 0.06, "cringe_pat", 0.2),        # pat, pat, pat: "there, there"
+        (T["proj"] - 0.05, "warm", 0.3),
         (T["w_hurts"], "determined", 0.3),
         (T["l6e"] + 0.05, "warm", 0.35),
         (T["chips"][0], "happy", 0.3),                   # scary stories
@@ -2982,7 +3177,10 @@ def _ai(t, T):
         # away or up, which read as an eye-roll)
         (T["w_my"], (0.0, 0.05), 0.12),                  # to camera on "my guy"
         (T["l4e"] + 0.25, at_malvo, 0.25),
-        (T["wall"] + 0.1, (-0.6, -0.8), 0.25),           # its hologram
+        (T["cape"] + 0.02, (-0.94, 0.22), 0.12),         # eyes to him: the raised cape
+        (T["reach"] + 0.05, (-0.92, -0.12), 0.18),       # ...his dome (the pat)
+        (T["withdraw"] + 0.05, at_malvo, 0.2),
+        (T["holo"] + 0.05, (-0.6, -0.8), 0.25),          # its hologram
         (T["w_brick"] + 0.1, at_malvo, 0.2),
         (T["w_else"] + 0.1, (-0.35, -0.9), 0.25),        # the door
         (T["chips"][0] + 0.1, _dir(AX, AY1, *CHIPS[0][2:4], 0.9), 0.2),   # the first chip
@@ -3010,7 +3208,9 @@ def _ai(t, T):
         (T["back"], "present_l", 0.01),
         (T["flip"] - 0.05, "thumbs_up", 0.25),
         (T["l4e"] + 0.3, "idle", 0.4),
-        (T["wall"] - 0.05, "present_l", 0.3),            # projecting
+        (T["reach"], "s11_pat", 0.01),                   # reaches over to his dome (the
+        (T["pat_back"], "idle", 0.01),                   # pose itself arcs there and back)
+        (T["proj"], "present_l", 0.3),                   # projecting
         (T["l6e"] + 0.1, "idle", 0.35),
         (T["chips"][0] - 0.1, "present_l", 0.3),         # offering the options
         (T["w_wide"] - 0.15, "present_both", 0.3),        # wide open
@@ -3045,7 +3245,7 @@ def _ai(t, T):
     steady = max(smoothstep(seg(t, T["beat"] - 0.2, T["beat"] + 0.1)) *
                  (1 - smoothstep(seg(t, T["l4"], T["l4"] + 0.2))),
                  smoothstep(seg(t, T["l5"] - 0.3, T["l5"])) *
-                 (1 - smoothstep(seg(t, T["snap"] + 0.1, T["snap"] + 0.3))))
+                 (1 - smoothstep(seg(t, T["ahem"] + 0.1, T["ahem"] + 0.3))))
     return _ai_ex(expr, steady), look, hands, blink, nod, ay, s
 
 
@@ -3183,12 +3383,14 @@ def _cape_weight(arms):
     return 1.0 if arms == "s11_cape" else 0.0
 
 
-def _cape_wing(c, t, T, arms, st, dy, lean):
-    """'snap_back' CAPE FLOURISH: the screen-right glove sweeps the cape's edge
-    up across his chest (villain-local; the wing hangs from the right shoulder
-    to the glove, crimson lining showing along the folded top edge, and drapes
-    down behind the desk). The glove is redrawn on top, holding the edge."""
-    k = _cape_weight(arms)
+def _cape_wing(c, t, T, arms, st, dy, lean, k=None):
+    """'cape_pat' CAPE FLOURISH UP: the screen-right glove sweeps the cape's
+    edge up across his chest to his chin (villain-local; the wing hangs from
+    the right shoulder to the glove, crimson lining showing along the folded
+    top edge, and drapes down behind the desk). The glove is redrawn on top,
+    holding the edge. `k` = cape weight (when `arms` is the 's11_dyn' copy)."""
+    if k is None:
+        k = _cape_weight(arms)
     if k <= 0.02:
         return
     _A, B, _sh, _hd, _tl = V.resolve_arms(arms, t)
@@ -3276,6 +3478,91 @@ def _cape_wing(c, t, T, arms, st, dy, lean):
     c.restore()
 
 
+DOME_TOP = (4.0, -214.0)                  # top of his bald dome, face-local (s=1)
+
+
+def _dome_top(ctx, st, dy, lean):
+    """User-space top of his dome this frame (through the rig's head transform)."""
+    return _local_to_user(ctx, lambda cc: _xf_face(cc, st, dy, lean), *DOME_TOP)
+
+
+def _pat_contact(t, T, dome, ay, a_s, ai_mouth, nod, lift):
+    """The 's11_pat' screen-left mitten with its underside resting ON his dome
+    (raised by `lift`), in AI-local units, undoing the rig's own float
+    jitter on that hand so the contact is exact."""
+    sq = _pat_squash(t, T)
+    h = AI._H(0, 0, PAT_ROT, open=0.9, thumb=0.55, tl=0.8, palm=0.0, sc=PAT_SC,
+              sx=1.0 - sq, sy=1.0 + 0.4 * sq)
+    _u, W_, H_ = AI._hand_geom(h)
+    # contact point on the mitten: middle of its underside (post-scale,
+    # pre-rotation; the -x side faces down onto the dome at PAT_ROT, the
+    # thumb stays on top) + the ink line
+    ox = -(W_ / 2 * PAT_SC * (1.0 - sq) + 5.0)
+    oy = -H_ * 0.55 * PAT_SC * (1.0 + 0.4 * sq)
+    cr, sr = math.cos(PAT_ROT), math.sin(PAT_ROT)
+    offx, offy = ox * cr - oy * sr, ox * sr + oy * cr
+    lx, ly = (dome[0] - AX) / a_s, (dome[1] - ay) / a_s
+    ph = t * 2 * math.pi * 0.47 + 2 * 1.7              # draw_ai's float (seed 2)
+    ndd = math.sin(t * 2 * math.pi * 2.2) * clamp(nod)
+    bob = math.sin(ph) * 9 - clamp(ai_mouth[0]) * 3 + ndd * 9
+    jx = math.sin(ph * 0.5) * 3
+    jy = math.sin(ph - 0.7) * 7 + bob * 0.3
+    h["x"] = lx - offx - jx
+    h["y"] = ly - offy - jy - lift
+    return h
+
+
+def _pat_travel(a, b, u):
+    """Hand pose from `a` (idle) to `b` (hovering over his dome) at u 0..1, on
+    a high arc: up the gap between them first, then over the top of his head
+    (a straight line crossed his face / monocle). Turns over on the way."""
+    cx, cy = a["x"] - 20.0, b["y"] - 270.0
+    w0, w1, w2 = (1 - u) ** 2, 2 * (1 - u) * u, u * u
+    h = {k: lerp(a[k], b[k], u) for k in a}
+    h["x"] = w0 * a["x"] + w1 * cx + w2 * b["x"]
+    h["y"] = w0 * a["y"] + w1 * cy + w2 * b["y"]
+    h["rot"] = lerp(a["rot"], b["rot"], smoothstep(clamp(u * 1.5)))
+    return h
+
+
+def _set_pat_hand(t, T, dome, ay, a_s, ai_mouth, nod):
+    """Fill the 's11_pat' pose for this frame: reach over (arc), three pats
+    riding his head, withdraw (arc) back to the idle pose."""
+    if t < T["reach"] or t >= T["pat_back"]:
+        _S11_HANDS["s11_pat"] = dict(AI.IDLE_L)
+        return
+    if t < T["pat_arrive"]:
+        end = _pat_contact(t, T, dome, ay, a_s, ai_mouth, nod, _pat_lift(T["pat_arrive"], T))
+        h = _pat_travel(AI.IDLE_L, end, ease_in_out(seg(t, T["reach"], T["pat_arrive"])))
+    elif t < T["withdraw"]:
+        h = _pat_contact(t, T, dome, ay, a_s, ai_mouth, nod, _pat_lift(t, T))
+    else:
+        st_ = _pat_contact(t, T, dome, ay, a_s, ai_mouth, nod, _pat_lift(T["withdraw"], T))
+        h = _pat_travel(AI.IDLE_L, st_, 1.0 - ease_in_out(seg(t, T["withdraw"], T["pat_back"])))
+    _S11_HANDS["s11_pat"] = h
+
+
+def _pat_ticks(c, t, T, dome):
+    """Little impact ticks either side of the hand on each pat."""
+    for p in T["pats"]:
+        k = seg(t, p, p + 0.17)
+        if not 0.0 < k < 1.0:
+            continue
+        e = ease_out(k)
+        for ang in (-2.75, -2.35, -0.8, -0.4):
+            ca, sa = math.cos(ang), math.sin(ang)
+            r0, r1 = 46 + 26 * e, 60 + 40 * e
+            c.move_to(dome[0] + ca * r0 * 1.25, dome[1] + 6 + sa * r0)
+            c.line_to(dome[0] + ca * r1 * 1.25, dome[1] + 6 + sa * r1)
+        _s(c, INK, 8.5, 0.8 * (1 - k))
+        for ang in (-2.75, -2.35, -0.8, -0.4):
+            ca, sa = math.cos(ang), math.sin(ang)
+            r0, r1 = 46 + 26 * e, 60 + 40 * e
+            c.move_to(dome[0] + ca * r0 * 1.25, dome[1] + 6 + sa * r0)
+            c.line_to(dome[0] + ca * r1 * 1.25, dome[1] + 6 + sa * r1)
+        _s(c, "white", 4.5, 1 - k)
+
+
 def _shot_two(ctx, t, info, T):
     k = _cam(t, info)
     with saved(ctx, CAM_C[0], CAM_C[1], k) as c:
@@ -3295,6 +3582,10 @@ def _shot_two(ctx, t, info, T):
         mouth = info.mouth("villain", t)
         if T["l5"] - 0.05 <= t < T["l5e"] + 0.1:         # "...Oh. Thank you." (quiet: a
             mouth = (mouth[0] * 0.3, mouth[1] * 0.4)     # small mouth, no villain teeth)
+        elif T["l5b"] - 0.05 <= t < T["l5be"] + 0.05:    # "Ahem.": mostly hidden behind
+            mouth = (mouth[0] * 0.2, mouth[1] * 0.3)     # the fist (a small opening only)
+        cape_k = _cape_weight(arms)
+        arms = _jolt_arms(arms, t, T)                    # cough jolt / pat dips
         st = _vstate(t, expr, arms, mouth)
         hs = _hissy(t, T)
         targets = _sp_targets(c, t, T, st, dy, lean, hs["expr"])
@@ -3320,6 +3611,9 @@ def _shot_two(ctx, t, info, T):
         draw_villain(c, MX, MY + dy, MS, t, expr=expr, look=look, mouth=mouth, arms=arms,
                      lean=lean, blink=blink, snake=hs)
         _cross_overlay(c, t, arms, st, dy, lean)         # tucks the top glove away
+        sqz = _squeeze_k(t, T)
+        if sqz > 0.01:                                   # "Ahem.": eyes squeezed shut
+            _squeeze_lines(c, sqz, st, dy, lean)
         # the bat, perched on Hissy's head
         if sp_on["bat"]:
             c.save()
@@ -3336,10 +3630,10 @@ def _shot_two(ctx, t, info, T):
         if not landed_book:
             with saved(c, MX, MY + dy, 1.0, lean):
                 _gift_star(c, LAPEL[0] * MS, (LAPEL[1] + st["shy"] * 0.5) * MS, LAPEL_S * MS)
-        # 'snap_back': the cape flourish (a cape wing over the screen-right arm)
-        _cape_wing(c, t, T, arms, st, dy, lean)
+        # 'cape_pat': the cape flourish (a cape wing over the screen-right arm)
+        _cape_wing(c, t, T, arms, st, dy, lean, cape_k)
         c.restore()
-        # the monocle back in place: a glint (villain persona on; the snap back)
+        # the monocle back in place: a glint (villain persona on; the cape flourish)
         for g0 in (T["preen"] + 0.26, T["grin"] + 0.02):
             if g0 <= t < g0 + 0.4:
                 gk = math.sin(math.pi * seg(t, g0, g0 + 0.4))
@@ -3382,8 +3676,16 @@ def _shot_two(ctx, t, info, T):
             if pose is not None and t < T["gift_t"][i] + T["fly"]:
                 _draw_gift(c, t, i, pose)
         # --- the AI hologram (on top) -------------------------------------------
-        anc = draw_ai(c, AX, ay, a_s, t, expr=aexpr, look=alook, mouth=info.mouth("ai", t),
+        ai_mouth = info.mouth("ai", t)
+        dome = _dome_top(c, st, dy, lean)
+        _set_pat_hand(t, T, dome, ay, a_s, ai_mouth, anod)   # 's11_pat' lands on his dome
+        anc = draw_ai(c, AX, ay, a_s, t, expr=aexpr, look=alook, mouth=ai_mouth,
                       hands=ahands, blink=ablink, aura=AURA, nod=anod)
+        _pat_ticks(c, t, T, dome)
+        if T["cringe"] + 0.1 <= t < T["withdraw"] + 0.35:   # the fond cringe: a tiny sweat drop
+            ex_, ey_ = anc["eyeR"]
+            P.emote(c, "sweat", ex_ + 76, ey_ - 64, 0.42, t, T["cringe"] + 0.12,
+                    t_out=T["withdraw"] + 0.15)
         if T["w_huh"] <= t < T["l1e"] + 0.6:            # the teasing WINK
             ex_, ey_ = anc["eyeL"]
             P.emote(c, "sparkle", ex_ - 36, ey_ - 58, 0.5, t, T["w_huh"] + 0.04,
@@ -3436,10 +3738,12 @@ def SFX(info):
     out.append((T["flip"] + 0.14, "sparkle", -10))
     out.append((T["preen"] + 0.26, "pop", -18, -0.2))                  # monocle back in
     # (the "...Oh. Thank you." itself plays on music alone)
-    out.append((T["snap"] + 0.01, "gulp", -14, -0.2))                  # AHEM.
-    out.append((T["cape"] + 0.02, "whoosh", -10, -0.15))               # cape flourish
+    # ("Ahem." is a voice line now: no gulp under it)
+    out.append((T["cape"] + 0.02, "whoosh", -10, -0.15))               # cape flourish UP
     out.append((T["grin"] + 0.04, "sparkle", -15, -0.2))               # monocle glint, grin
-    out.append((T["wall"], "swoosh_up", -14))                          # hologram on
+    for tp in T["pats"]:                                               # pat, pat, pat
+        out.append((tp, "pop", -18, -0.15))
+    out.append((T["holo"], "swoosh_up", -14))                          # hologram on
     lands = T["lands"]
     out.append((lands[0], "brick_thud", -10, -0.3))
     out.append((lands[2], "brick_thud", -10, -0.3))
