@@ -9,7 +9,8 @@ globals and a few drawing-function overrides (hair, ears, nose + freckles, neck,
 cup and grip).
 
 Rig contract (anim/rig.py):
-    draw(canvas, pose, t)            draw the cadet; canvas already carries the camera (stage units)
+    draw(canvas, pose, t, before_near_arm=None)   draw the cadet; canvas already carries the camera (stage
+                                     units); before_near_arm(canvas) is drawn between his body and his near arm
     head_center(pose, t=None)        stage point between the eyes
     hand_pos(pose, side, t=None)     palm centre of his 'l' / 'r' hand (holding the cup: in front of it for the
                                      near hand, behind it for the far hand)
@@ -746,10 +747,11 @@ def _prep(pose: Pose, t):
     return pose.copy(**kw) if kw else pose
 
 
-def draw(canvas, pose: Pose, t: float):
-    """Draw the cadet. The canvas must already carry the camera transform (stage coordinates)."""
+def draw(canvas, pose: Pose, t: float, before_near_arm=None):
+    """Draw the cadet. The canvas must already carry the camera transform (stage coordinates).
+    before_near_arm: optional callable(canvas), drawn between his body and his near arm (as in Rae's rig)."""
     B.RIM_LIGHT_POS = RIM_LIGHT_POS
-    B.draw(canvas, _prep(pose, t), t)
+    B.draw(canvas, _prep(pose, t), t, before_near_arm=before_near_arm)
 
 
 def head_center(pose: Pose, t=None):

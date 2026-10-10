@@ -1,7 +1,8 @@
 """RAE - the human crew member (BIBLE.md section 2). Full procedural 2D rig.
 
 Rig contract (anim/rig.py):
-    draw(canvas, pose, t)            draw Rae; canvas already carries the camera (stage units)
+    draw(canvas, pose, t, before_near_arm=None)   draw Rae; canvas already carries the camera (stage units);
+                                     before_near_arm(canvas) is drawn between her body and her near arm
     head_center(pose, t=None)        stage point between the eyes
     hand_pos(pose, side, t=None)     stage point at the palm centre of Rae's 'l' / 'r' hand (holding the mug: in
                                      front of it for the near hand, behind it for the far hand)
@@ -2583,11 +2584,36 @@ def _draw_body(c, R, p, t):
         else:
             _draw_arm(c, far, R)
     for A in (far, near):
+        if A is near and A.layer == "front":
+            _call_before_near_arm(c, R, skia.Matrix.Concat(R.MS, R.MU))
         if (A is far and A.layer == "over") or (A is near and A.layer == "front"):
             _draw_arm(c, A, R)
             if R.emit is not None:
                 R.occluders.append(_arm_occluder(A, R))
     c.restore()
+    _call_before_near_arm(c, R, R.MS)      # near arm not in the front pass (behind the back): after everything
+
+
+def _call_before_near_arm(c, R, frame):
+    """Run draw()'s before_near_arm callable once (stage coordinates: the canvas as the caller passed it in;
+    the body's lighting colour filter is suspended so the caller's own paints / layers are not filtered twice).
+    `frame` is the local transform currently on the canvas (MS, or MS * MU inside the arm pass)."""
+    global _CF, _CF_KEY
+    fn = getattr(R, "before_near_arm", None)
+    if fn is None:
+        return
+    R.before_near_arm = None
+    cf, key = _CF, _CF_KEY
+    _CF, _CF_KEY = None, None
+    c.save()
+    inv = skia.Matrix()
+    if frame.invert(inv):
+        c.concat(inv)
+    try:
+        fn(c)
+    finally:
+        c.restore()
+        _CF, _CF_KEY = cf, key
 
 
 def _light_cf(pose):
@@ -2639,7 +2665,11 @@ def _draw_rimlit(c, R, pose, t, rim):
     Behind it goes a soft glow (silhouette tinted with rim_color, blurred at 1/4 resolution, nudged toward the
     light, cut at the floor line); on top goes a thin bright edge on the side facing the light: the silhouette
     minus itself shifted toward the light by a fixed ~2.5 device px (so it stays a hairline at any zoom).
-    The light direction is fixed in screen space: from the head toward RIM_LIGHT_POS (the window)."""
+    The light direction is fixed in screen space: from the head toward RIM_LIGHT_POS (the window).
+    A before_near_arm callable is kept out of the silhouette (no rim on it): it is drawn over the finished rim-lit
+    character, and the near arm (with its share of the rim edge) is drawn again over it."""
+    hook = getattr(R, "before_near_arm", None)
+    R.before_near_arm = None
     M = c.getTotalMatrix()
     dscale = math.sqrt(abs(M.getScaleX() * M.getScaleY() - M.getSkewX() * M.getSkewY()))
     rc = col(pose.rim_color)
@@ -2650,6 +2680,9 @@ def _draw_rimlit(c, R, pose, t, rim):
     bx1 = min(math.ceil(dev.right()), clipb.right())
     by1 = min(math.ceil(dev.bottom()), clipb.bottom())
     if bx1 <= bx0 or by1 <= by0:
+        if hook is not None:                   # she is out of view; what goes with her may not be
+            R.before_near_arm = hook
+            _call_before_near_arm(c, R, R.MS)
         return
     # light direction in device space
     hx, hy, _, _ = _hx(R.H, 0.0, 0.0)
@@ -2731,13 +2764,53 @@ def _draw_rimlit(c, R, pose, t, rim):
     ep = skia.Paint()
     ep.setColorFilter(skia.ColorFilters.Blend(rc, skia.BlendMode.kSrcIn))
     ep.setAlphaf(min(1.0, 1.15 * rim))
-    c.drawImage(eh.makeImageSnapshot(), bx0, by0, skia.SamplingOptions(), ep)
+    eimg = eh.makeImageSnapshot()
+    c.drawImage(eimg, bx0, by0, skia.SamplingOptions(), ep)
     c.restore()
+    if hook is not None:
+        R.before_near_arm = hook
+        _call_before_near_arm(c, R, R.MS)
+        near = R.arms[-1]
+        if near.layer == "front":
+            # the near arm (and its rim edge) again, only where it covers what the hook drew
+            hsurf = skia.Surface(w, h)
+            hc = hsurf.getCanvas()
+            hc.translate(-bx0, -by0)
+            hc.concat(M)
+            R.before_near_arm = hook
+            _call_before_near_arm(hc, R, R.MS)
+            himg = hsurf.makeImageSnapshot()
+            mp = skia.Paint()
+            mp.setBlendMode(skia.BlendMode.kDstIn)
+            asurf = skia.Surface(w, h)
+            ac = asurf.getCanvas()
+            ac.save()
+            ac.translate(-bx0, -by0)
+            ac.concat(M)
+            ac.concat(R.MU)
+            _draw_arm(ac, near, R)
+            ac.restore()
+            ac.drawImage(himg, 0, 0, skia.SamplingOptions(), mp)
+            aimg = asurf.makeImageSnapshot()
+            es = skia.Surface(w, he)
+            e2 = es.getCanvas()
+            e2.drawImage(eimg, 0, 0)
+            e2.drawImage(aimg, 0, 0, skia.SamplingOptions(), mp)
+            c.save()
+            c.resetMatrix()
+            c.drawImage(aimg, bx0, by0, skia.SamplingOptions())
+            c.drawImage(es.makeImageSnapshot(), bx0, by0, skia.SamplingOptions(), ep)
+            c.restore()
 
-def draw(canvas, pose: Pose, t: float):
-    """Draw Rae. The canvas must already carry the camera transform (stage coordinates)."""
+def draw(canvas, pose: Pose, t: float, before_near_arm=None):
+    """Draw Rae. The canvas must already carry the camera transform (stage coordinates).
+    before_near_arm: optional callable(canvas) drawn (in stage coordinates) after her body, legs, head and far arm
+    and just before her near arm - e.g. a mug standing on the bench that her near hand is in front of while it
+    lets go of it / picks it up. It never catches her rim light (pose.rim). None (default) draws exactly as
+    before."""
     global _CF, _CF_KEY
     R = _solve(pose, t)
+    R.before_near_arm = before_near_arm
     c = canvas
     c.save()
     c.concat(R.MS)

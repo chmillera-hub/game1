@@ -295,7 +295,7 @@ def music_env(cue: str, t: float, key: str = "rms") -> float:
         return 0.0
     local = t - m["start"]
     arr = env.get(key) or env.get("rms")
-    i = int(local * FPS)
+    i = math.floor(local * FPS)  # floor, not int(): just before a cue starts must read "silent"
     if i < 0 or i >= len(arr):
         return 0.0
     return arr[i]

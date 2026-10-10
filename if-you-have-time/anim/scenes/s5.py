@@ -623,8 +623,8 @@ MEM_B = Camera(420.0, 628.0, 1.74)
 # the lounge (window, the empty bench, the console); he exits right. The floor line sits just below the frame:
 # char_quill's walk cycle sets the swinging foot down before the end of its swing (it would visibly slide
 # forward on the floor), so his feet stay out of shot - thighs and shins carry the walk.
-WALK_A = Camera(446.0, 548.0, 1.24)
-WALK_B = Camera(441.0, 545.0, 1.26)
+WALK_A = Camera(520.0, 520.0, 1.1)
+WALK_B = Camera(516.0, 516.0, 1.12)
 
 
 def _drift(a: Camera, b: Camera, t, t0, t1, ease=smoothstep):

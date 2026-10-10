@@ -411,8 +411,8 @@ def rae_pose(t: float) -> Pose:
     kn = d["kz_nod"](t)
     if kn > 0:
         pk = _kazoo_nods(t)
-        nod -= 0.13 * kn * pk
-        bounce += 1.4 * kn * pk
+        nod -= 0.2 * kn * pk
+        bounce += 2.4 * kn * pk
     # arcade: a clear head bob on every beat (chin dips, the body gives a little), with the foot tap
     bb = d["bob"](t)
     if bb > 0:
@@ -556,7 +556,9 @@ def _playing(t):
         cue = {2: "alt_kazoo", 3: "alt_chip", 4: "alt_lofi", 5: "alt_lullaby"}[num]
         m = music_cue(cue)
         if m["start"] - 0.1 <= t <= m["end"] + 0.3:
-            return num, music_env(cue, t)
+            # (core.music_env reads frame 0 for the last frame before the cue - int() truncates toward zero - so
+            # the pulse is gated to the cue itself; otherwise the card jumps a frame early)
+            return num, (music_env(cue, t) * smoothstep((t - m["start"]) / 0.16) if t >= m["start"] else 0.0)
     return None, 0.0
 
 

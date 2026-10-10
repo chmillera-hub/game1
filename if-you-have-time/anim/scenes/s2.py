@@ -722,6 +722,19 @@ def _place_mug_pose():
     return R.mug_pose(p, tp)
 
 
+# Her near hand is IN FRONT of the mug while it holds it (BIBLE section 10), so for a moment after she lets go -
+# while her lifting hand still overlaps the bench mug - the mug is drawn between her body and her near arm
+# (R.draw's before_near_arm hook) instead of after her. The arm is clear of the mug ~0.26 s after the release;
+# the order switches back at MUG_UNDER_ARM s, when nothing of her overlaps the mug, so the switch is invisible.
+MUG_UNDER_ARM = 0.5
+
+
+def _mug_under_arm(t):
+    """True while the bench mug goes between Rae's body and her near arm (just after she lets go of it)."""
+    t_go = _rae_tracks()["release_t"]
+    return t_go <= t < t_go + MUG_UNDER_ARM
+
+
 def _draw_bench_mug(c, bm, rp):
     """The mug on the bench, lit like Rae, with a soft contact shadow on the cushion."""
     with Layer(c, cf=light_filter(rp.light ** 0.65, rp.tint, rp.tint_amt),
@@ -1550,11 +1563,15 @@ def _draw_world(c, t, cam, shot, lv, rp, qp, mems):
         _draw_sparks(c, t, lv.sparks * 0.75)
     mk = 0.45 if shot == "quill_cu" else 1.0          # memories near Rae sit out of focus behind Quill's close-up
     _draw_memories(c, t, "back", mems, mk)
-    R.draw(c, rp, t)
     bm = _bench_mug(t)
-    if bm is not None:
-        # the mug stands on the near edge of the seat, in front of her thigh (where the in-hand mug was drawn)
-        _draw_bench_mug(c, bm, rp)
+    if bm is not None and _mug_under_arm(t):
+        # her hand is still in front of the mug it just let go of: the mug goes in under her near arm
+        R.draw(c, rp, t, before_near_arm=lambda cc: _draw_bench_mug(cc, bm, rp))
+    else:
+        R.draw(c, rp, t)
+        if bm is not None:
+            # the mug stands on the near edge of the seat, in front of her thigh (where the in-hand mug was drawn)
+            _draw_bench_mug(c, bm, rp)
     if not (shot == "pause" or (shot == "tear" and t < T.peak)):
         # (in her pause / tear close-ups he is out of frame bar, now and then, a few px of his raised glove's
         # fingertips in the very corner: not drawn there; by sym_peak, where the pull-back reveals him, nothing
