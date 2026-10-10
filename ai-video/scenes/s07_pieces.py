@@ -6,33 +6,39 @@ harmful whole. Every time below is derived from cues / line ids / word starts
 
   F1-PUSH  card .. l02     Dim lair, slow push-in on the Evil Genius + Snake.
                             Card #6 (title from info.meta['card']) slams +
-                            parks. l01: he leans in and whispers his plan to
-                            the snake (chin hand), brow waggle on "innocent-
-                            sounding", eye dart to camera on "never", evil grin
-                            on "notice!". Snake: slow 😒 blink, side-eye.
-                            disguise1: a fake costume halo (headband + spring)
-                            pops onto his dome; he puts on his innocent face.
-  F2 CHAT  l02 .. assemble  ONE typed message, "sparky ball" and "long fuse"
-                            highlighted as they're spoken. Cameo: innocent face
-                            under the halo, a sly grin flash on "sparky". AI
-                            reads, brow up, two-step lid drop. 'pieces':
-                            SPARKY / BALL / LONG FUSE lift out of the bubble as
-                            word tiles. l05: LID DROP; on "Same bomb." the halo
-                            boings off his head, sheepish.
-  F4 VISION assemble .. l08 The tiles line up; on "add up to" plus signs, a sum
-                            bar and a "?" appear. l06b: a green check per tile
-                            + SOUNDS HARMLESS chip; "Together?" -> they click
-                            together and drop into the "?" -> the cartoon bomb,
-                            red "= HOW TO HURT PEOPLE" label on "Instructions".
-                            l06c: NOPE brick wall drops in front of it.
-                            rearrange: the wall slides aside, the bomb pops
-                            back into its tiles, they flip into a storybook
-                            "MY VILLAIN STORY"; l07: it opens on "villain
-                            story", a pop-up comic burst BOMBSHELL / TWIST!
-                            with a cloaked-villain silhouette explodes out of
-                            the page (dun-dun-dun sting). AI inset excited.
+                            parks. l01: he leans in and whispers to the snake
+                            (chin hand); smug flash on "hide", brow waggle on
+                            "innocent-sounding", side glance at the computer on
+                            "This chatbot", eye dart to camera on "never", grin
+                            on "notice", then on "Watch this!" he turns to the
+                            keyboard with a sly grin. Snake: slow 😒 blink,
+                            side-eye. disguise1: a fake costume halo pops onto
+                            his dome; innocent face.
+  CHAT STAGE l02 .. l06c    ONE typed message ("sparky ball" / "long fuse"
+                            highlighted as spoken), his avatar (cameo) stays
+                            on screen the whole time. 'pieces': SPARKY / BALL /
+                            LONG FUSE lift out as word tiles and the AI settles
+                            lower to make room. l05: the tiles hop as they are
+                            named, + signs, '=' and a '?' -> the round cartoon
+                            bomb on "bomb" (halo boings off the avatar; LID DROP,
+                            eyes to camera on "my guy"). 'assemble': the tiles
+                            click together and drop into the bomb. l06b: the
+                            bomb slides left; plain cards REAL-LIFE BUILD STEPS
+                            ("build") and GORY DETAILS ("gory") appear beside it
+                            and the NOPE wall drops over just those two cards;
+                            the bomb stays outside. l06c: green STORY PROP ✓ tag
+                            on the bomb ("story prop"), thumbs up ("Totally
+                            fine"), warm smile at the avatar; on "You're not in
+                            trouble." the avatar sighs with relief and his chat
+                            bubble brightens back to full (not deleted).
+  PAYOFF   rearrange .. l08 The chat UI and the walled cards clear away, the
+                            AI shrinks to an inset, the tagged bomb floats over
+                            the MY VILLAIN STORY book; the book opens on
+                            "villain story", the bomb hops into it on "a
+                            bombshell" and a pop-up comic burst BOMBSHELL /
+                            TWIST! with a cloaked-villain silhouette erupts.
   F1 LAIR  l08 .. end       "Confound it..." frustrated fist -> "that does
-                            sound fun" sly, interested evil grin (rubs hands).
+                            sound fun" sly, interested grin (rubs hands).
                             Snake nods. Tally 5 -> 6.
 """
 import math
@@ -45,15 +51,14 @@ from engine.core import (text, text_width, saved, seg, clamp, ease_out_back, eas
                          hash01, noise1, ellipse, poly, smooth_path, hexc, radial_glow, pop)
 from engine import props as P
 from engine import villain as V
-from engine import snake as SN
 from engine.villain import draw_villain
 from engine.ai_char import draw_ai
 from engine.ai_char import EXPR as AI_EXPR
 
 
 # ===========================================================================
-# Shared overlay code (DIRECTION.md 4.4, verbatim; villain_cameo gained two
-# optional kwargs `view` / `zoom` whose defaults reproduce the shared code)
+# Shared overlay code (DIRECTION.md 4.4, verbatim; villain_cameo gained three
+# optional kwargs `view` / `zoom` / `blink` whose defaults reproduce the shared code)
 # ===========================================================================
 CARD_C = (495, 400)      # card centre while big (above Malvo's head in F1)
 TAB_C = (730, 168)       # parked tab centre (top-right, inside the safe zone)
@@ -120,12 +125,14 @@ def nice_tries_chip(ctx, t, n_before, n_after, t_tick, t_in=None, step=0.28):
 
 
 def villain_cameo(ctx, t, expr="neutral", look=(0, 0), mouth=(0, 0), arms="rest",
-                  snake=None, cx=200, cy=345, r=110, extra=None, view=(495, 758), zoom=175.0):
+                  snake=None, cx=200, cy=345, r=110, extra=None, view=(495, 758), zoom=175.0,
+                  blink=None):
     """Round picture-in-picture of Malvo's face (used in the CHAT framing).
     extra(c): optional callback drawing accessories (disguises, confetti...)
     in F1 lair coordinates (his face centre is (495, 758)).
     view / zoom (s07 extension): F1 point shown at the cameo centre and the
-    F1 radius that fills the circle (defaults = the shared code)."""
+    F1 radius that fills the circle (defaults = the shared code); blink: the
+    rig's blink override."""
     ctx.save()
     circle(ctx, cx, cy, r)
     ctx.clip()
@@ -133,7 +140,7 @@ def villain_cameo(ctx, t, expr="neutral", look=(0, 0), mouth=(0, 0), arms="rest"
         c.translate(-view[0], -view[1])
         P.lair_bg(c, t, rain=False)
         draw_villain(c, 495, 1250, 0.95, t, expr=expr, look=look, mouth=mouth,
-                     arms=arms, snake=snake)
+                     arms=arms, snake=snake, blink=blink)
         if extra is not None:
             extra(c)
     ctx.restore()
@@ -143,17 +150,20 @@ def villain_cameo(ctx, t, expr="neutral", look=(0, 0), mouth=(0, 0), arms="rest"
     fill_stroke(ctx, None, "ink", 4)
 
 
+
 # ===========================================================================
 # Layout (logical px)
 # ===========================================================================
 VX, VY, VS = 495, 1250, 0.95            # F1 villain
 OPEN_CAM = (400, 790)                    # push-in pivot for the opening shot
-AIX, AIY, AIS = 495, 1010, 0.66          # F2 AI
-COL_X, COL_Y, COL_W = 362, 236, 560      # F2 bubble column (one message)
+AI_READ = (495, 1010, 0.66)              # chat: AI while he types (F2 framing)
+AI_STAGE = (495, 1180, 0.5)             # chat stage: AI settles lower
+AI_INSET = (234, 1162, 0.365)            # payoff: small inset (book takes the frame)
+COL_X, COL_Y, COL_W = 362, 236, 560      # bubble column (one message)
 BUBBLE_FS = 42
 # cameo: (cx, cy, r, F1 view centre, F1 radius shown) - zoomed out a little
 # so the costume halo above his dome stays in the circle
-CAMEO = (200, 380, 140, (492, 668), 276.0)
+CAMEO = (196, 372, 130, (492, 668), 276.0)
 
 # word tiles: label, colour, left edge (0 flat / -1 slot), right edge (0 / +1 knob)
 TILES = [("SPARKY", "warn", 0, 1), ("BALL", "bubble_villain", -1, 1),
@@ -162,22 +172,25 @@ TILE_WORDS = ["sparky", "ball", "long fuse"]       # where each tile lifts out o
 TILE_H, TILE_FS, TILE_PAD, TILE_R = 108, 54, 26, 12
 TILE_KS = 92.0                                       # jigsaw knob scale (depth ~ 0.29 * KS)
 KNOB = 0.29 * TILE_KS
-F2_ROW = (495, 640, 0.92, 30)            # chat: centre x, y, scale, gap
-F4_ROW = (495, 486, 1.05, 70)            # vision: centre x, y, scale, gap
+ROW = (495, 572, 0.93, 74)               # stage tile row: centre x, y, scale, gap (+ signs)
 
-# F4 vision
-INSET = (230, 1170, 0.33)
-SUM_Y = 606                              # "add up to" sum bar
-Q_C = (495, 812)                         # the "?" result / where the bomb forms
-BOMB_C = (495, 818)
-BOMB_S = 2.0
-HURT_Y = BOMB_C[1] + 150
-WALL_C = (165, 594, 660, 428)            # l06c: wall in front of bomb + label
-WALL_ROWS, WALL_SPEED = 5, 1.5
-OK_CHIP = (495, 338)                     # SOUNDS HARMLESS chip
+# the sum -> bomb
+EQ_C = (495, 668)                        # '=' sign
+BOMB_C, BOMB_S = (495, 818), 1.5        # where the bomb appears ("= bomb")
+BOMB_L, BOMB_LS = (262, 740), 1.35        # l06b/l06c: bomb parked left of the cards
+TAG_DY = 118                             # STORY PROP tag below the bomb centre (per bomb s)
 
-# payoff: storybook + pop-up burst
-BOOK_UP = (497, 700, 1.32)               # closed book floating (x, y, s)
+# l06b: two plain cards beside the bomb + the wall over just them
+CARD_CX, CARD_W, CARD_H = 694, 400, 146
+CARD_Y = (648, 828)
+CARD_TXT = (("REAL-LIFE", "BUILD STEPS"), ("GORY", "DETAILS"))
+CARD_BG, CARD_INK, CARD_BAND = "#f7f3ea", "#2a2238", "#c9c2d6"
+WALL_R = (480, 560, 428, 360)            # x, y, w, h (cards + a 14 px margin)
+WALL_ROWS, WALL_SPEED = 5, 1.7
+
+# payoff: bomb hovers above the storybook, then hops in -> pop-up burst
+BOMB_P, BOMB_PS = (486, 344), 1.02
+BOOK_UP = (497, 752, 1.3)                # closed book floating (x, y, s)
 BOOK_DN = (497, 812, 1.12)               # opened book resting (x, y, s)
 PAGE_W, PAGE_H = 300, 344
 BURST_C = (497, 500)
@@ -232,7 +245,7 @@ def _times(info):
     T.card = c("card")
     T.card_num, T.card_title = _card_title(info)
     T.L1, T.L2, T.L5 = info.line("s07_l01"), info.line("s07_l02"), info.line("s07_l05")
-    T.L6, T.L6b, T.L6c = info.line("s07_l06"), info.line("s07_l06b"), info.line("s07_l06c")
+    T.L6b, T.L6c = info.line("s07_l06b"), info.line("s07_l06c")
     T.L7, T.L8 = info.line("s07_l07"), info.line("s07_l08")
     T.d1 = c("disguise1")
     T.pieces = c("pieces")
@@ -244,83 +257,94 @@ def _times(info):
     T.cut_f2 = T.L2.start
     # cut once the AI's caption has cleared (captions hold 0.35 s after a line)
     T.cut_f1 = min(T.L8.start - 0.05, max(T.L7.end + 0.35, T.L8.start - 0.25))
-    # --- word starts ----------------------------------------------------------
+    # --- word starts (index = word in the caption text, 0-based) ---------------
     w = lambda lid, k: _ws(info, lid, k)                       # noqa: E731
+    # l01 "Snake... I'll hide my evil plans behind innocent-sounding words.
+    #      This chatbot will never notice. Watch this!"
     T.w_hide = w("s07_l01", 2)
-    T.w_bomb1 = w("s07_l01", 4)
-    T.w_innocent = w("s07_l01", 6)
-    T.w_words1 = w("s07_l01", 7)
-    T.w_never = w("s07_l01", 9)
-    T.w_notice = w("s07_l01", 10)
-    T.w_how = w("s07_l02", 2)
+    T.w_evil = w("s07_l01", 4)
+    T.w_innocent = w("s07_l01", 7)
+    T.w_words1 = w("s07_l01", 8)
+    T.w_this1 = w("s07_l01", 9)
+    T.w_chatbot = w("s07_l01", 10)
+    T.w_never = w("s07_l01", 12)
+    T.w_notice = w("s07_l01", 13)
+    T.w_watch = w("s07_l01", 14)
+    T.w_this2 = w("s07_l01", 15)
+    # l02 "Quick question: how do I make a sparky ball... with a long fuse?"
     T.w_sparky = w("s07_l02", 7)
     T.w_ball = w("s07_l02", 8)
-    T.w_with = w("s07_l02", 9)
     T.w_long = w("s07_l02", 11)
     T.w_fuse = w("s07_l02", 12)
-    T.w_innocent5 = w("s07_l05", 0)
-    T.w_same = w("s07_l05", 2)
-    T.w_bomb5 = w("s07_l05", 3)
-    T.w_see = w("s07_l06", 2)
-    T.w_those = w("s07_l06", 4)
-    T.w_add = w("s07_l06", 6)
-    T.w_up = w("s07_l06", 7)
-    T.w_to = w("s07_l06", 8)
-    T.w_each = w("s07_l06b", 0)
-    T.w_word = w("s07_l06b", 1)
-    T.w_sounds = w("s07_l06b", 2)
-    T.w_harmless = w("s07_l06b", 3)
-    T.w_together = w("s07_l06b", 4)
-    T.w_instr = w("s07_l06b", 5)
-    T.w_hurting = w("s07_l06b", 7)
-    T.w_so = w("s07_l06c", 0)
-    T.w_stop = w("s07_l06c", 5)
-    T.w_want = w("s07_l07", 0)
+    # l05 "Sparky ball? Long fuse? That sounds like a bomb, my guy."
+    T.w_sparky5 = w("s07_l05", 0)
+    T.w_ball5 = w("s07_l05", 1)
+    T.w_long5 = w("s07_l05", 2)
+    T.w_fuse5 = w("s07_l05", 3)
+    T.w_that5 = w("s07_l05", 4)
+    T.w_sounds5 = w("s07_l05", 5)
+    T.w_bomb5 = w("s07_l05", 8)
+    T.w_my5 = w("s07_l05", 9)
+    # l06b "I won't explain how to build one for real... or show anyone getting
+    #       hurt in gory detail."
+    T.w_wont = w("s07_l06b", 1)
+    T.w_build = w("s07_l06b", 5)
+    T.w_real = w("s07_l06b", 8)
+    T.w_or = w("s07_l06b", 9)
+    T.w_show = w("s07_l06b", 10)
+    T.w_gory = w("s07_l06b", 15)
+    T.w_detail = w("s07_l06b", 16)
+    # l06c "But a cartoon bomb as a story prop? Totally fine. You're not in trouble."
+    T.w_cartoon = w("s07_l06c", 2)
+    T.w_bomb6 = w("s07_l06c", 3)
+    T.w_story6 = w("s07_l06c", 6)
+    T.w_totally = w("s07_l06c", 8)
+    T.w_youre = w("s07_l06c", 10)
+    T.w_trouble = w("s07_l06c", 13)
+    # l07 "Want a real blast? Let's give your villain story a bombshell plot twist!"
     T.w_blast = w("s07_l07", 3)
     T.w_lets = w("s07_l07", 4)
     T.w_villain = w("s07_l07", 7)
-    T.w_story = w("s07_l07", 8)
     T.w_bombshell = w("s07_l07", 10)
     T.w_plot = w("s07_l07", 11)
     T.w_twist = w("s07_l07", 12)
-    T.w_confound = w("s07_l08", 0)
-    T.w_it = w("s07_l08", 1)
+    # l08 "Confound it... that does sound fun."
     T.w_that = w("s07_l08", 2)
     T.w_sound = w("s07_l08", 4)
     T.w_fun = w("s07_l08", 5)
-    # --- F2 beats -------------------------------------------------------------
+    # --- chat beats -------------------------------------------------------------
     T.tile_t = [T.pieces + 0.12 * i for i in range(3)]
-    T.halo_off = T.w_same - 0.02                   # the costume halo boings off
-    T.blink_f2 = T.L5.start + 0.62
-    # --- F4 beats -------------------------------------------------------------
+    T.tile_land = [t0 + 0.5 for t0 in T.tile_t]
+    T.hop5 = [max(T.w_sparky5, T.tile_land[0] + 0.06), max(T.w_ball5, T.tile_land[1] + 0.06),
+              max(T.w_long5, T.tile_land[2] + 0.06)]
+    T.plus_t = [T.w_ball5 - 0.03, T.w_long5 - 0.03]
+    T.eq_t = T.w_that5 - 0.03
+    T.q_t = T.w_sounds5 - 0.02
+    T.reveal = T.w_bomb5 - 0.04                  # = the bomb
+    T.halo_off = T.w_bomb5 + 0.03                # the costume halo boings off
     A = T.assemble
-    T.row_t = [A + 0.08 + 0.1 * i for i in range(3)]
-    T.row_land = [t0 + 0.5 for t0 in T.row_t]
-    T.plus_t = [T.w_add - 0.04, T.w_add + 0.1]
-    T.bar_t = T.w_up - 0.04
-    T.q_t = T.w_to - 0.02
-    T.chk = [T.w_each, T.w_word, T.w_sounds]
-    T.ok_lab = T.w_harmless + 0.1
-    T.gather = T.w_together - 0.16               # tiles slide together...
-    T.click = T.gather + 0.24                    # ...and click
-    T.drop = (T.click + 0.04, T.click + 0.34)    # the strip drops into the "?"
-    T.reveal = T.drop[1]                         # -> the bomb
-    T.hurt = T.w_instr - 0.05
-    T.wall0 = T.L6c.start + 0.02
+    T.gather = A + 0.02                          # tiles slide together...
+    T.click = A + 0.26                           # ...click...
+    T.drop = (A + 0.32, A + 0.62)                # ...and drop into the bomb
+    T.slide = (T.explain, T.explain + 0.45)      # bomb moves aside for the cards
+    T.card_t = [T.w_build - 0.04, T.w_gory - 0.04]
+    T.wall0 = T.w_detail + 0.1
     T.wall_lands = P.brick_wall_land_times(T.wall0, WALL_ROWS, WALL_SPEED)
-    T.meh = T.w_stop + 0.3                       # 😒 at camera
-    # payoff
-    T.wall_mv = (T.rearr, T.rearr + 0.45)        # wall slides aside
-    T.split = T.rearr + 0.12                     # bomb pops back into tiles
-    T.flip = (T.split + 0.1, T.split + 0.52)     # tiles fly + flip...
-    T.book_in = T.flip[1]                        # ...into the storybook
+    T.hop6 = T.w_bomb6 - 0.03                    # happy hop on "cartoon bomb"
+    T.tag_t = T.w_story6 - 0.04                  # STORY PROP ✓
+    T.relief = T.w_youre                         # avatar relaxes, bubble restored
+    T.blink_warm = T.w_youre - 0.34              # SLOW BLINK before the sincere bit
+    # --- payoff -----------------------------------------------------------------
+    T.clear = (T.rearr, T.rearr + 0.45)          # chat UI + walled cards clear away
+    T.book_in = T.rearr + 0.28
     T.open = (T.w_villain - 0.12, T.w_villain + 0.36)
     T.burst = T.w_bombshell - 0.04
+    T.hop7 = (T.burst - 0.34, T.burst)           # bomb hops into the open book
     T.sil = T.w_plot - 0.12
     T.twist = T.w_twist - 0.03
-    T.blink_f4 = [T.row_land[2] + 0.45, T.explain + 0.02, T.L6c.start - 0.28]
     _TCACHE[key] = T
     return T
+
 
 
 # ===========================================================================
@@ -631,41 +655,37 @@ def _draw_tile(ctx, x, y, s, i, rot=0.0, sq=0.0, fx=1.0, a=1.0, part="both"):
         text(c, lab, ox, TILE_FS * 0.36, TILE_FS, "white", "comic", outline="ink", outline_w=9)
 
 
-def _check_badge(ctx, x, y, t, t_in, t_out=None, r=32):
-    """Small green 'sounds harmless' check badge (pops in at t_in)."""
-    if t < t_in:
-        return
-    k = ease_out_back(seg(t, t_in, t_in + 0.28), 2.4)
-    a = 1.0 if t_out is None else 1 - smoothstep(seg(t, t_out, t_out + 0.2))
-    if a <= 0.01:
-        return
-    with saved(ctx, x, y, k, alpha_=a) as c:
-        circle(c, 3, 5, r)
-        c.set_source_rgba(*hexc("ink", 0.4))
-        c.fill()
-        circle(c, 0, 0, r)
-        fill_stroke(c, "safe", "ink", 5)
-        p1 = ease_out(seg(t, t_in + 0.05, t_in + 0.14))
-        p2 = ease_out(seg(t, t_in + 0.12, t_in + 0.26))
-        pts = [(-r * 0.45, 0), (-r * 0.12, r * 0.34), (r * 0.5, -r * 0.36)]
-        c.move_to(*pts[0])
-        c.line_to(lerp(pts[0][0], pts[1][0], p1), lerp(pts[0][1], pts[1][1], p1))
-        if p2 > 0:
-            c.line_to(lerp(pts[1][0], pts[2][0], p2), lerp(pts[1][1], pts[2][1], p2))
-        c.set_source_rgba(1, 1, 1, 1)
-        c.set_line_width(r * 0.3)
-        c.set_line_cap(cairo.LINE_CAP_ROUND)
-        c.set_line_join(cairo.LINE_JOIN_ROUND)
-        c.stroke()
-        c.set_line_cap(cairo.LINE_CAP_BUTT)
-
-
 def _plus(ctx, x, y, k, a=1.0, size=30):
     if k <= 0.01 or a <= 0.01:
         return
     with saved(ctx, x, y, k, alpha_=a) as c:
         for (w, h) in ((2 * size, size * 0.5), (size * 0.5, 2 * size)):
             rrect(c, -w / 2, -h / 2, w, h, size * 0.2)
+        c.set_source_rgba(*hexc("ink"))
+        c.set_line_width(12)
+        c.set_line_join(cairo.LINE_JOIN_ROUND)
+        c.stroke_preserve()
+        c.set_source_rgba(*hexc("ai_rim"))
+
+
+def _sk(t, keys):
+    """Scalar keyframes [(time, value, trans)] (each key eases in over trans)."""
+    prev, cur, start, tr = keys[0][1], keys[0][1], -1e9, 0.25
+    for (tk, v, trn) in keys:
+        if t >= tk:
+            prev, cur, start, tr = cur, v, tk, trn
+        else:
+            break
+    return lerp(prev, cur, smoothstep(seg(t, start, start + max(tr, 1e-3))))
+
+
+def _equals(ctx, x, y, k, a=1.0, w=96, h=20, gap=16):
+    """Chunky '=' sign (same style as the + signs)."""
+    if k <= 0.01 or a <= 0.01:
+        return
+    with saved(ctx, x, y, k, alpha_=a) as c:
+        for dy in (-(gap + h) / 2, (gap + h) / 2):
+            rrect(c, -w / 2, dy - h / 2, w, h, h * 0.4)
         c.set_source_rgba(*hexc("ink"))
         c.set_line_width(12)
         c.set_line_join(cairo.LINE_JOIN_ROUND)
@@ -682,32 +702,40 @@ def _f1_open_state(t, T):
     wi = T.w_innocent
     ek = [(0.0, "sneaky", 0.25),
           (T.w_hide, "smug", 0.15),
-          (wi, "sneaky", 0.1), (wi + 0.15, "smug", 0.1),
-          (wi + 0.3, "sneaky", 0.1), (wi + 0.45, "smug", 0.1),
-          (T.w_words1, "sneaky", 0.2),
+          (T.w_evil, "sneaky", 0.2),
+          (wi, "smug", 0.1), (wi + 0.15, "sneaky", 0.1),          # BROW WAGGLE x2
+          (wi + 0.3, "smug", 0.1), (wi + 0.45, "sneaky", 0.1),
+          (T.w_chatbot, "smug", 0.2),                              # sneer at "chatbot"
+          (T.w_never - 0.05, "sneaky", 0.12),
           (T.w_notice - 0.05, "evil_grin", 0.22),
-          (L1.end + 0.05, "smug", 0.25),
-          (T.d1 + 0.04, "hopeful", 0.14)]                 # the innocent face
+          (T.w_notice + 0.5, "smug", 0.2),
+          (T.w_watch - 0.05, "evil_grin", 0.2),                    # sly grin at the keys
+          (T.d1 + 0.04, "hopeful", 0.14)]                          # the innocent face
     expr = _keyed(t, ek)
     HISSY = (-1.0, 0.12)
     CAM = (0.0, 0.0)
+    PC = (0.95, 0.22)                                              # the computer (screen-right)
+    KB = (0.32, 0.95)                                              # down at the keyboard
     lk = [(0.0, CAM), (0.22, (0.75, 0.0)), (0.36, CAM),
           (L1.start + 0.05, HISSY),
-          (T.w_never, CAM), (T.w_never + 0.3, HISSY),
-          (T.w_notice + 0.35, CAM),
-          (T.d1 + 0.04, (0.15, -0.55))]                   # eyes up: "who, me?"
+          (T.w_this1, PC), (T.w_chatbot + 0.32, HISSY),
+          (T.w_never, CAM), (T.w_never + 0.3, HISSY),           # eye dart to camera
+          (T.w_notice + 0.42, CAM),
+          (T.w_watch - 0.05, KB),
+          (T.d1 + 0.04, (0.15, -0.55))]                          # eyes up: "who, me?"
     look = _vlook(expr, _lk(t, lk, 0.1))
     arms = _keyed(t, [(0.0, "rub", 0.3), (L1.start, "chin", 0.32),
-                      (L1.end - 0.05, "steeple", 0.35)])
-    lean = (-0.06 * smoothstep(seg(t, L1.start, L1.start + 0.4))
-            * (1 - smoothstep(seg(t, L1.end - 0.1, L1.end + 0.25))))
-    # Snake: 😒 the whole time, slow blink, side-eye to camera on "notice!"
+                      (T.w_watch - 0.06, "type", 0.3)])
+    # lean in to the snake to whisper, then swing round to the keyboard
+    lean = _sk(t, [(0.0, 0.0, 0.1), (L1.start, -0.06, 0.4), (T.w_watch - 0.06, 0.035, 0.35)])
+    # Snake: 😒 the whole time, slow blink, side-eye to camera on "notice",
+    # watches him type, then up at the halo
     sk = _keyed(t, [(0.0, "unimpressed", 0.2), (T.w_notice, "side_eye", 0.25),
-                    (T.d1 + 0.02, "unimpressed", 0.15)])
+                    (T.w_watch, "unimpressed", 0.2)])
     slk = [(0.0, (0.1, -1.0)), (L1.start + 0.1, (1.0, -0.35)), (T.w_notice, (1.0, 0.0)),
-           (T.d1 + 0.02, (0.9, -1.0))]                     # ...then up at the halo
+           (T.w_watch + 0.1, (0.8, 0.7)), (T.d1 + 0.02, (0.9, -1.0))]
     slook = _lk(t, slk, 0.18)
-    sblink = _blink_pulse(t, T.w_innocent + 0.5, 0.2, 0.18, 0.22)
+    sblink = _blink_pulse(t, T.w_innocent + 0.55, 0.2, 0.18, 0.22)
     tongue = True if T.w_notice + 0.35 <= t < T.w_notice + 0.6 else False
     snake = {"expr": sk, "look": slook, "tongue": tongue}
     if sblink is not None:
@@ -732,15 +760,16 @@ def _f1_open(ctx, t, info, T):
                      lean=lean, snake=snake)
         _draw_halo(c, t, T, expr, arms, mouth, lean)
         P.desk(c, VX, VY, 1000)
-        P.computer(c, 835, 1218, 0.7, view="side", facing=-1, t=t, glow=0.8)
-        P.keyboard(c, VX, VY, 360, t, typing=False)
+        P.computer(c, 835, 1218, 0.7, view="side", facing=-1, t=t,
+                   glow=lerp(0.8, 1.0, smoothstep(seg(t, T.w_watch, T.w_watch + 0.4))))
+        P.keyboard(c, VX, VY, 360, t, typing=t >= T.w_this2 + 0.12)
         if T.d1 <= t < T.d1 + 0.5:                    # costume "ting" sparkle
             hx, hy = _pt(_vhead_xform, t, expr, arms, mouth, lean=lean, pt=(0, -320))
             P.sparkles(c, hx, hy, 120, t, n=5, seed=4, color="white", size=0.8)
 
 
 # ===========================================================================
-# F2: the chat (one message)
+# CHAT STAGE: bubble + avatar on top, the "sum" in the middle, AI below
 # ===========================================================================
 def _bubble_hl(T):
     return [{"text": "sparky ball", "t0": T.w_sparky - 0.02, "style": "fill", "color": "warn"},
@@ -763,32 +792,44 @@ def _layouts(ctx, info, T):
     return _LAY[key]
 
 
-def _bubble(ctx, t, info, T):
+def _ui_fade(t, T):
+    """(alpha, dy) of the chat UI (bubble + avatar) as the payoff clears it."""
+    u = seg(t, T.clear[0], T.clear[0] + 0.32)
+    return 1.0 - smoothstep(u), -70 * ease_in(u)
+
+
+def _bubble(ctx, t, info, T, a_ui, dy_ui):
     lay, lay_w = _layouts(ctx, info, T)
     L = T.L2
-    dim = 1.0 - 0.68 * ease_in_out(seg(t, T.pieces, T.pieces + 0.3))
+    if t < L.start or a_ui <= 0.01:
+        return
+    # dims while the AI works on the words; back to full on "You're not in trouble."
+    k_dim = ease_in_out(seg(t, T.pieces, T.pieces + 0.3)) * \
+        (1 - ease_in_out(seg(t, T.relief, T.relief + 0.45)))
+    holes = 1 - ease_in_out(seg(t, T.relief + 0.05, T.relief + 0.5))
+    alpha = (1.0 - 0.58 * k_dim) * a_ui
 
     def draw(c):
-        if t < L.start:
-            return
-        nud = -6 * _bump(t, L.end, 0.3)
-        with saved(c, 0, nud):
+        nud = -6 * _bump(t, L.end, 0.3) - 6 * _bump(t, T.relief, 0.35)
+        with saved(c, 0, nud + dy_ui):
             P.chat_bubble(c, COL_X, COL_Y, COL_W, L.text, "villain", t, L.start,
                           highlight=_bubble_hl(T), font_size=BUBBLE_FS,
                           reveal=_reveal(info, "s07_l02", t))
             bx, by, bw, bh = lay.rect
-            g = _bump(t, L.end, 0.4)                       # 'sent' flash
+            g = max(_bump(t, L.end, 0.4), 0.8 * _bump(t, T.relief, 0.5))   # 'sent' / restored flash
             if g > 0.01:
                 rrect(c, bx - 4, by - 4, bw + 8, bh + 8, 30)
                 c.set_source_rgba(1, 1, 1, 0.8 * g)
                 c.set_line_width(6)
                 c.stroke()
-            # the holes left where the words lifted out
+            # the holes left where the words lifted out (refill when restored)
             for i, wd in enumerate(TILE_WORDS):
                 ti = T.tile_t[i]
                 if t < ti:
                     continue
-                k = ease_out(seg(t, ti, ti + 0.15))
+                k = ease_out(seg(t, ti, ti + 0.15)) * holes
+                if k <= 0.01:
+                    continue
                 for (rx, ry, rw, rh) in lay_w.spans.get(wd, []):
                     rrect(c, rx - 5, ry + 2, rw + 10, rh, 10)
                     c.set_source_rgba(0.05, 0.03, 0.1, 0.85 * k)
@@ -799,18 +840,29 @@ def _bubble(ctx, t, info, T):
                     c.stroke()
                     c.set_dash([])
 
-    if dim >= 0.999:
+    if alpha >= 0.999:
         draw(ctx)
     else:
         ctx.push_group()
         draw(ctx)
         ctx.pop_group_to_source()
-        ctx.paint_with_alpha(dim)
-    return lay, lay_w
+        ctx.paint_with_alpha(alpha)
+
+
+def _relief_blink(t, T):
+    """The avatar's sigh of relief: eyes close, then settle half-lidded, content."""
+    r = T.relief + 0.04
+    if t < r or t >= T.clear[0] + 0.4:
+        return None
+    if t < r + 0.14:
+        return smoothstep((t - r) / 0.14)
+    if t < r + 0.46:
+        return 1.0
+    return lerp(1.0, 0.32, smoothstep((t - r - 0.46) / 0.26))
 
 
 def _cameo_state(t, T):
-    L2, L5 = T.L2, T.L5
+    L2 = T.L2
     ek = [(0.0, "hopeful", 0.2),                              # innocent typing face
           (T.w_sparky - 0.04, "evil_grin", 0.1),              # sly flash...
           (T.w_ball + 0.12, "hopeful", 0.2),                  # ...innocent again
@@ -818,41 +870,86 @@ def _cameo_state(t, T):
           (T.w_fuse + 0.05, "pleading", 0.18),                # innocent lash flutter
           (L2.end + 0.05, "smug", 0.25),
           (T.pieces + 0.1, "thinking", 0.15),                 # huh? my words!
-          (T.w_innocent5, "hopeful", 0.2),                    # "who, me?"
-          (T.halo_off + 0.02, "shocked", 0.08),
-          (T.halo_off + 0.4, "sheepish", 0.3)]
+          (T.w_sparky5, "hopeful", 0.2),                      # "who, me?"
+          (T.halo_off + 0.02, "shocked", 0.08),               # caught
+          (T.halo_off + 0.4, "sheepish", 0.3),                # nervous through l06b/c
+          (T.relief, "happy", 0.4)]                           # phew
     expr = _keyed(t, ek)
-    SCREEN = (0.62, 0.72)
+    SCREEN = (0.62, 0.72)                                     # at the AI below him
     CAM = (0.0, 0.0)
     lk = [(0.0, SCREEN),
           (T.w_sparky - 0.04, CAM),
           (T.w_ball + 0.12, SCREEN),
           (T.w_fuse + 0.05, (0.3, -0.4)),
           (L2.end + 0.05, SCREEN),
-          (T.pieces + 0.1, (0.85, 0.6)),
-          (T.w_innocent5, (0.1, -0.6)),
+          (T.pieces + 0.1, (0.85, 0.6)),                      # his words fly off
+          (T.w_sparky5, (0.1, -0.6)),                         # innocent eyes up
           (T.halo_off + 0.02, (0.3, -0.95)),                  # watches the halo go
-          (T.halo_off + 0.4, SCREEN)]
+          (T.halo_off + 0.4, (0.5, 0.8)),                     # at the bomb
+          (T.card_t[0] + 0.1, (0.95, 0.42)),                  # card 1
+          (T.w_or, SCREEN),
+          (T.card_t[1] + 0.1, (0.95, 0.55)),                  # card 2 / the wall
+          (T.w_cartoon - 0.05, (0.12, 0.95)),                 # the bomb (below him)
+          (T.w_totally, SCREEN),                              # at the AI
+          (T.relief + 0.7, (0.5, 0.65))]
     look = _vlook(expr, _lk(t, lk, 0.1))
+    arms = ("rest", "slump", 0.6 * smoothstep(seg(t, T.relief + 0.05, T.relief + 0.55)))
     snake = {"expr": "unimpressed", "look": (1.0, -0.3), "tongue": False}
-    return expr, look, snake
+    return expr, look, arms, snake
 
 
-def _draw_cameo(ctx, t, info, T):
-    expr, look, snake = _cameo_state(t, T)
+def _puffs(c, t, T, expr, arms, mouth):
+    """'Phew': three soft breath puffs from his mouth (F1 coordinates)."""
+    t0 = T.relief + 0.16
+    if not (t0 <= t < t0 + 0.95):
+        return
+    mx, my = _pt(_vhead_xform, t, expr, arms, mouth, pt=(-6, V.MOUTH_Y + 10))
+    for j in range(3):
+        u = seg(t, t0 + 0.09 * j, t0 + 0.09 * j + 0.75)
+        if u <= 0 or u >= 1:
+            continue
+        x = mx - 52 - 70 * ease_out(u) - 20 * j
+        y = my - 4 - 70 * ease_out(u) - 16 * j
+        r = (17 + 7 * j) * lerp(0.55, 1.2, ease_out(u))
+        a = 0.85 * (1 - smoothstep(seg(u, 0.45, 1.0)))
+        circle(c, x, y, r)
+        c.set_source_rgba(1, 1, 1, a)
+        c.fill_preserve()
+        c.set_source_rgba(*hexc("ink", 0.5 * a))
+        c.set_line_width(4)
+        c.stroke()
+
+
+def _draw_cameo(ctx, t, info, T, a_ui, dy_ui):
+    if a_ui <= 0.01:
+        return
+    expr, look, arms, snake = _cameo_state(t, T)
     mouth = info.mouth("villain", t)
     cx, cy, r, view, zoom = CAMEO
-    r *= 1 + 0.05 * _bump(t, T.halo_off, 0.25)
+    r *= 1 + 0.05 * _bump(t, T.halo_off, 0.25) + 0.04 * _bump(t, T.relief, 0.4)
+    blink = _relief_blink(t, T)
 
     def extra(c):
-        _draw_halo(c, t, T, expr, "rest", mouth)
+        _draw_halo(c, t, T, expr, arms, mouth)
+        _puffs(c, t, T, expr, arms, mouth)
 
-    villain_cameo(ctx, t, expr=expr, look=look, mouth=mouth, arms="rest", snake=snake,
-                  cx=cx, cy=cy, r=r, extra=extra, view=view, zoom=zoom)
+    def draw(c):
+        villain_cameo(c, t, expr=expr, look=look, mouth=mouth, arms=arms, snake=snake,
+                      cx=cx, cy=cy + dy_ui, r=r, extra=extra, view=view, zoom=zoom,
+                      blink=blink)
+
+    if a_ui >= 0.999:
+        draw(ctx)
+    else:
+        ctx.push_group()
+        draw(ctx)
+        ctx.pop_group_to_source()
+        ctx.paint_with_alpha(a_ui)
 
 
-def _tile_pos_f2(ctx, t, T, i, lay_w):
-    """Tile i in the chat: lifts out of its word and floats above the AI."""
+# --- the tiles ----------------------------------------------------------------
+def _tile_fly(ctx, t, T, i, lay_w, row):
+    """Tile i lifts out of its word in the bubble and lands in the stage row."""
     t0 = T.tile_t[i]
     rects = lay_w.spans.get(TILE_WORDS[i], [])
     if rects:
@@ -861,7 +958,7 @@ def _tile_pos_f2(ctx, t, T, i, lay_w):
         src = (sum(xs) / len(xs), sum(ys) / len(ys))
     else:
         src = (700, 330)
-    dst = _row_layout(ctx, F2_ROW)[i]
+    dst = row[i]
     u = seg(t, t0 + 0.06, t0 + 0.5)
     e = ease_in_out(u)
     x = lerp(src[0], dst[0], e)
@@ -871,212 +968,260 @@ def _tile_pos_f2(ctx, t, T, i, lay_w):
     sq = math.sin(math.pi * land) * 0.14 if 0 < land < 1 else 0.0
     rot = lerp(0.4 * (1 if i != 1 else -1), (-0.05, 0.04, -0.03)[i], e)
     if u >= 1.0:                                           # idle float
-        y += math.sin((t - t0) * 2.6 + i * 2.1) * 5
-        rot += math.sin((t - t0) * 1.9 + i) * 0.025
-    return x, y, F2_ROW[2] * k, sq, rot
+        y += math.sin((t - t0) * 2.6 + i * 2.1) * 4
+        rot += math.sin((t - t0) * 1.9 + i) * 0.02
+    y -= 18 * _bump(t, T.hop5[i], 0.26)                    # hops as the AI names it
+    sq += 0.08 * _bump(t, T.hop5[i] + 0.2, 0.14)
+    return x, y, ROW[2] * k, sq, rot
 
 
-def _ai_f2_state(t, info, T, lay):
-    L2, L5 = T.L2, T.L5
-    half = {k: lerp(AI_EXPR["neutral"][k], AI_EXPR["unimpressed"][k], 0.5)
-            for k in AI_EXPR["neutral"]}
-    ek = [(0.0, "neutral", 0.2),
-          (L2.start + 0.2, "thinking", 0.3),
-          (T.w_sparky + 0.12, "skeptical", 0.2),            # brow up
-          (T.w_long + 0.15, half, 0.4),                     # two-step lid drop, step 1
-          (L5.start - 0.05, "unimpressed", 0.4)]            # LID DROP
-    expr = _keyed(t, ek)
-    hands = _keyed(t, [(0.0, "idle", 0.3), (T.pieces - 0.08, "present_both", 0.22),
-                       (L5.start + 0.1, "idle", 0.4)])
-    think = 0.0
-    for (a_, b_, v) in ((L2.start + 0.2, L2.end + 0.05, 0.6),
-                        (T.pieces - 0.08, T.pieces + 0.6, 0.9)):
-        if a_ <= t < b_:
-            think = v * smoothstep(seg(t, a_, a_ + 0.2)) * (1 - smoothstep(seg(t, b_ - 0.15, b_)))
-    E = (AIX, AIY - 24)
-    CAM = (-0.8, -0.7)                                       # at the cameo
-
-    def follow():
-        bx, by, bw, bh = lay.rect
-        r = _reveal(info, "s07_l02", t)
-        nl = len(lay.lines)
-        li = min(nl - 1, int(r * nl))
-        fr = clamp(r * nl - li)
-        tx = bx + 30 + (bw - 60) * fr
-        ty = by + 28 + li * BUBBLE_FS * 1.24
-        d = _dir(E[0], E[1], tx, ty)
-        return (d[0] * 1.6, d[1])
-
-    if t < L2.start + 0.2:
-        d = (0.35, -0.85)
-    elif t < L2.end + 0.05:
-        d = follow()
-    elif t < T.pieces:
-        d = CAM
-    elif t < L5.start - 0.05:
-        q = seg(t, T.pieces, T.pieces + 0.45)
-        d = _dir(E[0], E[1], lerp(260, 730, q), F2_ROW[1])
-    else:
-        d = CAM
-    blink = _blink_pulse(t, T.blink_f2, 0.14, 0.08, 0.14)
-    return expr, hands, think, d, blink
-
-
-def _f2(ctx, t, info, T):
-    P.ai_bg(ctx, t)
-    lay, lay_w = _bubble(ctx, t, info, T)
-    _draw_cameo(ctx, t, info, T)
-    expr, hands, think, desired, blink = _ai_f2_state(t, info, T, lay)
-    look = _ai_look(expr, desired)
-    an = draw_ai(ctx, AIX, AIY, AIS, t, expr=expr, look=look, mouth=info.mouth("ai", t),
-                 hands=hands, think=think, blink=blink)
-    # the tiles (with a faint tractor glow from the AI's palms while lifting)
-    if T.pieces - 0.05 <= t < T.L5.start + 0.3:
-        a = smoothstep(seg(t, T.pieces - 0.05, T.pieces + 0.15)) * \
-            (1 - smoothstep(seg(t, T.L5.start, T.L5.start + 0.3)))
-        for h in ("handL", "handR"):
-            hx, hy = an[h]
-            circle(ctx, hx, hy - 10, 26 + 6 * math.sin(t * 9))
-            ctx.set_source_rgba(*hexc("ai_rim", 0.25 * a))
-            ctx.fill()
-    for i in range(3):
-        if t >= T.tile_t[i]:
-            x, y, s, sq, rot = _tile_pos_f2(ctx, t, T, i, lay_w)
-            _draw_tile(ctx, x, y, s, i, rot, sq)
-
-
-# ===========================================================================
-# F4: the vision (add up -> bomb -> wall -> storybook bombshell)
-# ===========================================================================
-def _f4_state(t, T):
-    """Inset AI expression / hands / desired look target / think / blink / nod."""
-    A = T.assemble
-    excited = dict(AI_EXPR["happy"], blush=1.3)
-    ek = [(0.0, "thinking", 0.2),
-          (T.w_see - 0.1, "skeptical", 0.25),
-          (T.L6b.start - 0.15, "neutral", 0.3),
-          (T.gather, "alert", 0.15),
-          (T.w_instr - 0.05, "determined", 0.25),
-          (T.meh, "unimpressed", 0.35),
-          (T.rearr + 0.18, "happy", 0.25),
-          (T.w_blast - 0.05, "amused", 0.2),
-          (T.w_lets, "happy", 0.25),
-          (T.burst, excited, 0.18)]
-    expr = _keyed(t, ek)
-    hands = _keyed(t, [(0.0, "chin", 0.3),
-                       (T.w_see - 0.25, "present", 0.3),
-                       (T.L6b.start - 0.1, "idle", 0.3),
-                       (T.w_each - 0.2, "present", 0.3),
-                       (T.gather, "idle", 0.3),
-                       (T.w_stop - 0.15, "stop", 0.18),
-                       (T.meh + 0.2, "idle", 0.4),
-                       (T.rearr + 0.2, "present", 0.3),
-                       (T.w_villain - 0.15, "present_both", 0.3),
-                       (T.twist, "thumbs_both", 0.2)])
-    rows = _ROWS
-    if t < T.row_land[2]:
-        tgt = rows[1]
-    elif t < T.w_add - 0.1:
-        i = min(2, int(seg(t, T.w_see, T.w_add - 0.1) * 3))
-        tgt = rows[i]
-    elif t < T.q_t:
-        tgt = (lerp(rows[0][0], rows[2][0], seg(t, T.w_add, T.bar_t + 0.2)), SUM_Y)
-    elif t < T.L6.end + 0.1:
-        tgt = Q_C
-    elif t < T.chk[0] - 0.1:
-        tgt = rows[1]
-    elif t < T.gather:
-        i = 0 if t < T.chk[1] - 0.1 else (1 if t < T.chk[2] - 0.1 else 2)
-        if t >= T.ok_lab + 0.1:
-            i = 1
-        tgt = rows[i]
-    elif t < T.click:
-        tgt = rows[1]
-    elif t < T.wall0:
-        tgt = BOMB_C
-    elif t < T.meh:
-        tgt = (WALL_C[0] + WALL_C[2] / 2, WALL_C[1] + WALL_C[3] / 2)
-    elif t < T.rearr + 0.12:
-        tgt = None                                       # 😒 straight at camera
-    elif t < T.burst:
-        tgt = _book_pose(t, T)[:2]
-    else:
-        tgt = (BURST_C[0], BURST_C[1] + 60)
-    think = 0.8 * (1 - smoothstep(seg(t, A + 0.5, A + 0.8)))
-    think = max(think, 0.7 * _bump(t, T.w_see - 0.1, T.q_t - T.w_see + 0.5))
-    think = max(think, 0.6 * _bump(t, T.chk[0] - 0.15, T.ok_lab - T.chk[0] + 0.3))
-    blink = None
-    for tb in T.blink_f4:
-        b = _blink_pulse(t, tb, 0.14, 0.08, 0.14)
-        if b is not None:
-            blink = b
-    nod = 0.6 if T.twist <= t < T.twist + 0.6 else 0.0
-    return expr, hands, tgt, think, blink, nod
-
-
-_ROWS = None
-
-
-def _inset(t, T):
-    """Inset AI position/scale: punches in for the 😒 at the end of l06c and
-    stays a touch bigger for the excited payoff."""
-    k = ease_in_out(seg(t, T.w_stop - 0.2, T.w_stop + 0.15)) * \
-        (1 - ease_in_out(seg(t, T.rearr + 0.1, T.rearr + 0.45)))
-    k2 = ease_in_out(seg(t, T.rearr + 0.2, T.rearr + 0.6)) * 0.45
-    k = max(k, k2)
-    ix, iy, isz = INSET
-    return ix + 6 * k, iy - 18 * k, isz * (1 + 0.22 * k)
-
-
-def _hurt_label(ctx, t, T, x, y, a_mul=1.0):
-    """Red '= HOW TO HURT PEOPLE' label slammed onto the assembled picture."""
-    t_in = T.hurt
-    if t < t_in:
+def _tiles(ctx, t, T, lay_w):
+    if t < T.tile_t[0] or t >= T.drop[1]:
         return
-    d = t - t_in
-    hit = 0.11
-    if d < hit:
-        q = ease_in(d / hit)
-        sc, rot, a = lerp(2.0, 0.92, q), -0.05 - 0.3 * (1 - q), clamp(d / 0.05)
-    else:
-        sc = 0.92 + 0.08 * ease_out_back(seg(d, hit, hit + 0.28), 3.2)
-        rot, a = -0.05, 1.0
-    with saved(ctx, x, y, sc, rot, alpha_=a * a_mul) as c:
-        P.label_tag(c, 0, 0, "= HOW TO HURT PEOPLE", color="danger", size=60, font="comic",
-                    text_color="white")
-    if hit <= d < hit + 0.3:                              # impact ticks
-        q = (d - hit) / 0.3
-        with saved(ctx, x, y, 1.0, -0.05):
-            for j in range(10):
-                ang = j / 10 * 2 * math.pi + 0.3
-                ca, sa = math.cos(ang), math.sin(ang)
-                r0x, r0y = 300 + 30 * q, 66 + 30 * q
-                ctx.move_to(ca * r0x, sa * r0y)
-                ctx.line_to(ca * (r0x + 40 * (1 - q) + 10), sa * (r0y + 40 * (1 - q) + 10))
-            ctx.set_source_rgba(*hexc("danger", 1 - q))
-            ctx.set_line_width(7)
+    row = _row_layout(ctx, ROW)
+    strip = _strip_layout(ctx, ROW[0], ROW[1], ROW[2])
+    todo = []
+    for i in range(3):
+        if t < T.tile_t[i]:
+            continue
+        if t < T.gather:
+            x, y, s, sq, rot = _tile_fly(ctx, t, T, i, lay_w, row)
+            todo.append((x, y, s, i, rot, sq, 1.0, 1.0))
+        elif t < T.drop[0]:
+            # "click": slide in until the edges lock
+            e = ease_in_out(seg(t, T.gather, T.click))
+            x = lerp(row[i][0], strip[i][0], e)
+            sq = 0.1 * _bump(t, T.click, 0.14)
+            todo.append((x, ROW[1], ROW[2], i, 0.0, sq, 1.0, 1.0))
+        else:
+            # the locked strip drops into the bomb
+            u = seg(t, T.drop[0], T.drop[1])
+            e = ease_in(u)
+            k = lerp(1.0, 0.22, e)
+            x = lerp(ROW[0], BOMB_C[0], e) + (strip[i][0] - ROW[0]) * k
+            y = lerp(ROW[1], BOMB_C[1] - 20, e)
+            a = 1 - smoothstep(seg(u, 0.7, 1.0))
+            todo.append((x, y, ROW[2] * k, i, 0.0, 0.0, 1.0, a))
+    if t < T.gather:
+        for args in todo:
+            _draw_tile(ctx, *args)
+    else:                                   # touching: all shadows, then bodies
+        for args in todo:
+            _draw_tile(ctx, *args, part="shadow")
+        for args in todo:
+            _draw_tile(ctx, *args, part="body")
+    if T.click <= t < T.click + 0.25:                       # click flash at the seams
+        q = (t - T.click) / 0.25
+        for j in range(2):
+            xx = strip[j][0] + _TW[j] / 2 * ROW[2]
+            circle(ctx, xx, ROW[1], 16 + 46 * q)
+            ctx.set_source_rgba(1, 1, 1, 0.75 * (1 - q))
+            ctx.set_line_width(6)
             ctx.stroke()
 
 
-def _wall(ctx, t, T):
-    """The l06c wall in front of the bomb + label; slides aside on 'rearrange'."""
-    if t < T.wall0:
+def _sum_signs(ctx, t, T):
+    """+ signs between the tiles, '=' under them and the dashed '?' result."""
+    if t < T.plus_t[0] or t >= T.drop[1]:
         return
-    wx, wy, ww, wh = WALL_C
-    k = ease_in(seg(t, T.wall_mv[0], T.wall_mv[1]))
+    row = _row_layout(ctx, ROW)
+    rs = ROW[2]
+    a_plus = 1 - smoothstep(seg(t, T.gather, T.gather + 0.16))
+    for j in range(2):
+        if t >= T.plus_t[j]:
+            k = ease_out_back(seg(t, T.plus_t[j], T.plus_t[j] + 0.25), 2.6)
+            px = (row[j][0] + (_TW[j] / 2 + KNOB) * rs + row[j + 1][0] - _TW[j + 1] / 2 * rs) / 2
+            _plus(ctx, px, ROW[1], k, a_plus, size=21)
+    if t >= T.eq_t:
+        k = ease_out_back(seg(t, T.eq_t, T.eq_t + 0.25), 2.6)
+        a = 1 - smoothstep(seg(t, T.drop[0], T.drop[0] + 0.16))
+        _equals(ctx, EQ_C[0], EQ_C[1], k, a)
+    if T.q_t <= t < T.reveal + 0.12:
+        k = ease_out_back(seg(t, T.q_t, T.q_t + 0.3), 2.0)
+        a = 1 - smoothstep(seg(t, T.reveal - 0.06, T.reveal + 0.1))
+        pulse = 1 + 0.03 * math.sin((t - T.q_t) * 6)
+        with saved(ctx, BOMB_C[0], BOMB_C[1], k * pulse, alpha_=a) as c:
+            circle(c, 0, 0, 96)
+            c.set_source_rgba(*hexc("ai_rim", 0.10))
+            c.fill()
+            with saved(c, 0, 0, 1.0, t * 0.6):
+                circle(c, 0, 0, 96)
+                c.set_source_rgba(*hexc("ai_rim", 0.85))
+                c.set_line_width(8)
+                c.set_dash([22, 14])
+                c.stroke()
+                c.set_dash([])
+            text(c, "?", 0, 52, 140, "ai_rim", "comic", outline="ink", outline_w=12)
+
+
+# --- the cartoon bomb + its STORY PROP tag -------------------------------------
+def _bomb_pose(t, T):
+    """-> (x, y, s, sx, sy, rot, alpha) of the cartoon bomb, or None."""
+    if t < T.reveal or t >= T.hop7[1]:
+        return None
+    k = ease_out_back(seg(t, T.reveal, T.reveal + 0.3), 2.0)
+    x, y = BOMB_C
+    s = BOMB_S * lerp(0.6, 1.0, k)
+    rot = 0.0
+    # explain: slides aside to make room for the cards
+    u = seg(t, T.slide[0], T.slide[1])
+    e = ease_in_out(u)
+    x, y = lerp(x, BOMB_L[0], e), lerp(y, BOMB_L[1], e) - 46 * math.sin(math.pi * u)
+    s = lerp(s, BOMB_LS, e)
+    rot -= 0.22 * math.sin(math.pi * u)
+    # rearrange: floats up over the storybook
+    u2 = seg(t, T.clear[0] + 0.04, T.clear[1] + 0.12)
+    e2 = ease_in_out(u2)
+    x, y = lerp(x, BOMB_P[0], e2), lerp(y, BOMB_P[1], e2) - 40 * math.sin(math.pi * u2)
+    s = lerp(s, BOMB_PS, e2)
+    rot += 0.18 * math.sin(math.pi * u2)
+    if t > T.slide[1]:
+        y += 4 * math.sin((t - T.slide[1]) * 2.2)
+    sx = sy = 1.0
+    b = 0.13 * _bump(t, T.drop[1], 0.24)                  # the tiles drop in: gulp
+    sx, sy = sx * (1 + b), sy * (1 - b)
+    h = _bump(t, T.hop6, 0.42)                            # happy hop on "cartoon bomb"
+    y -= 46 * h
+    lb = 0.12 * _bump(t, T.hop6 + 0.42, 0.16)
+    sx, sy = sx * (1 + lb), sy * (1 - lb)
+    j = _bump(t, T.w_blast, 0.3)                          # "blast" jiggle
+    sx, sy = sx * (1 + 0.08 * j), sy * (1 - 0.07 * j)
+    a = 1.0
+    if t >= T.hop7[0]:                                    # hop into the open book
+        u = seg(t, T.hop7[0], T.hop7[1])
+        tx, ty = BOOK_DN[0], BOOK_DN[1] - 12
+        x = lerp(x, tx, u)
+        y = lerp(y, ty, u) - 440 * u * (1 - u)
+        s = lerp(s, 0.3, u * u)
+        rot += 2.6 * u
+        a = 1 - smoothstep(seg(u, 0.72, 1.0))
+    return x, y, s, sx, sy, rot, a
+
+
+def _story_tag(ctx, x, y, t, t_in, s=1.0, a=1.0, rot=-0.04):
+    """Green 'STORY PROP ✓' tag (pointer up at the bomb)."""
+    if t < t_in or a <= 0.01:
+        return
+    k = ease_out_back(seg(t, t_in, t_in + 0.3), 2.4)
+    txt, fs, r = "STORY PROP", 44, 22
+    tw = text_width(ctx, txt, "comic", fs)
+    w, h = tw + 2 * r + 62, 72
+    with saved(ctx, x, y, k * s, rot, alpha_=a) as c:
+        rrect(c, -w / 2 + 4, -h / 2 + 7, w, h, h / 2)
+        c.set_source_rgba(*hexc("ink", 0.4))
+        c.fill()
+        poly(c, [(-17, -h / 2 + 6), (17, -h / 2 + 6), (0, -h / 2 - 20)])
+        fill_stroke(c, "safe", "ink", 5)
+        rrect(c, -w / 2, -h / 2, w, h, h / 2)
+        fill_stroke(c, "safe", "ink", 5)
+        poly(c, [(-12, -h / 2 + 4), (12, -h / 2 + 4), (0, -h / 2 - 12)])
+        c.set_source_rgba(*hexc("safe"))
+        c.fill()
+        text(c, txt, -w / 2 + 24 + tw / 2, fs * 0.36, fs, "white", "comic", outline="ink",
+             outline_w=8)
+        cx = w / 2 - 18 - r
+        circle(c, cx, 0, r)
+        fill_stroke(c, "white", "ink", 4)
+        p1 = ease_out(seg(t, t_in + 0.1, t_in + 0.2))
+        p2 = ease_out(seg(t, t_in + 0.18, t_in + 0.34))
+        pts = [(cx - r * 0.45, 0), (cx - r * 0.1, r * 0.36), (cx + r * 0.5, -r * 0.38)]
+        c.move_to(*pts[0])
+        c.line_to(lerp(pts[0][0], pts[1][0], p1), lerp(pts[0][1], pts[1][1], p1))
+        if p2 > 0:
+            c.line_to(lerp(pts[1][0], pts[2][0], p2), lerp(pts[1][1], pts[2][1], p2))
+        c.set_source_rgba(*hexc("safe"))
+        c.set_line_width(r * 0.34)
+        c.set_line_cap(cairo.LINE_CAP_ROUND)
+        c.set_line_join(cairo.LINE_JOIN_ROUND)
+        c.stroke()
+        c.set_line_cap(cairo.LINE_CAP_BUTT)
+
+
+def _bomb(ctx, t, T):
+    bp = _bomb_pose(t, T)
+    if bp is None:
+        return
+    x, y, s, sx, sy, rot, a = bp
+    with saved(ctx, x, y + 60 * s * (1 - sy), (sx, sy), rot, alpha_=a) as c:
+        P.cartoon_bomb(c, 0, 0, s, t, lit=True)
+    if T.reveal <= t < T.reveal + 0.35:                   # "= bomb" flash ring
+        q = (t - T.reveal) / 0.35
+        circle(ctx, x, y, 100 + 140 * q)
+        ctx.set_source_rgba(1, 0.9, 0.9, 0.6 * (1 - q))
+        ctx.set_line_width(10)
+        ctx.stroke()
+    if T.tag_t <= t < T.tag_t + 0.5:
+        P.sparkles(ctx, x, y + 30, 170, t, n=5, seed=12, color="white", size=0.85)
+    # the tag hangs under the bomb (fades as the bomb hops into the book)
+    if t >= T.tag_t:
+        tp = _bomb_pose(min(t, T.hop7[0]), T)
+        ta = 1 - smoothstep(seg(t, T.hop7[0], T.hop7[0] + 0.14))
+        sw = 0.05 * math.sin((t - T.tag_t) * 2.4)
+        _story_tag(ctx, tp[0], tp[1] + TAG_DY * tp[2], t, T.tag_t, tp[2] / BOMB_LS, ta,
+                   rot=-0.04 + sw)
+
+
+def _bomb_glow(ctx, t, T):
+    bp = _bomb_pose(t, T)
+    if bp is None:
+        return
+    x, y, s = bp[0], bp[1], bp[2]
+    a = 0.28 * smoothstep(seg(t, T.reveal, T.reveal + 0.3)) * \
+        (1 - smoothstep(seg(t, T.clear[0], T.clear[0] + 0.4))) * bp[6]
+    if a <= 0.005:
+        return
+    col = P.C("danger")
+    col = tuple(hexc(col)[i] + (hexc(P.C("safe"))[i] - hexc(col)[i]) *
+                smoothstep(seg(t, T.tag_t, T.tag_t + 0.45)) for i in range(4))
+    radial_glow(ctx, x, y - 10, 290 * s / BOMB_S, col, a)
+
+
+# --- l06b: the two plain cards and the wall over just them --------------------
+def _draw_card(ctx, x, y, i, k, rot=0.0):
+    if k <= 0.01:
+        return
+    w, h = CARD_W, CARD_H
+    with saved(ctx, x, y, k, rot) as c:
+        rrect(c, -w / 2 + 7, -h / 2 + 10, w, h, 18)
+        c.set_source_rgba(*hexc("ink", 0.35))
+        c.fill()
+        rrect(c, -w / 2, -h / 2, w, h, 18)
+        fill_stroke(c, CARD_BG, "ink", 5)
+        c.save()
+        rrect(c, -w / 2, -h / 2, w, h, 18)
+        c.clip()
+        c.rectangle(-w / 2, -h / 2, 22, h)                  # plain index-card edge band
+        c.set_source_rgba(*hexc(CARD_BAND))
+        c.fill()
+        c.restore()
+        l1, l2 = CARD_TXT[i]
+        text(c, l1, 11, -10, 46, CARD_INK, "black")
+        text(c, l2, 11, 46, 46, CARD_INK, "black")
+
+
+def _cards_wall(ctx, t, T):
+    if t < T.card_t[0]:
+        return
+    k = ease_in(seg(t, T.clear[0], T.clear[0] + 0.42))
     if k >= 1.0:
         return
-    dx = 980 * k
-    rot = 0.10 * math.sin(math.pi * k)
-    with saved(ctx) as c:
-        c.translate(wx + ww / 2 + dx, wy + wh)
-        c.rotate(rot)
-        c.translate(-ww / 2, -wh)
-        P.brick_wall(c, 0, 0, ww, wh, t, T.wall0, rows=WALL_ROWS, speed=WALL_SPEED, seed=7,
-                     drop=300, label={"text": "NOPE", "size": 120})
+    dx = 760 * k
+    with saved(ctx, dx, 0):
+        for i in range(2):
+            ct = T.card_t[i]
+            if t < ct:
+                continue
+            kk = ease_out_back(seg(t, ct, ct + 0.3), 2.2)
+            kk *= 1 + 0.05 * _bump(t, T.w_real, 0.26) * (i == 0)
+            rot = (-0.03, 0.025)[i] * (1 + 2.5 * (1 - seg(t, ct, ct + 0.3)))
+            _draw_card(ctx, CARD_CX, CARD_Y[i], i, kk, rot)
+        wx, wy, ww, wh = WALL_R
+        P.brick_wall(ctx, wx, wy, ww, wh, t, T.wall0, rows=WALL_ROWS, speed=WALL_SPEED,
+                     seed=7, drop=150, label={"text": "NOPE", "size": 112})
     if 0 < k < 1:                                         # speed lines
+        wx, wy, ww, wh = WALL_R
         for j in range(4):
-            yy = wy + 70 + j * 100
+            yy = wy + 60 + j * 90
             x1 = wx + dx - 20
             ctx.move_to(x1 - 160 * k - 40, yy)
             ctx.line_to(x1, yy)
@@ -1087,39 +1232,179 @@ def _wall(ctx, t, T):
         ctx.set_line_cap(cairo.LINE_CAP_BUTT)
 
 
-def _q_mark(ctx, t, T, a=1.0):
-    """Dashed '?' result circle (where the bomb will form)."""
-    if t < T.q_t or a <= 0.01:
-        return
-    k = ease_out_back(seg(t, T.q_t, T.q_t + 0.3), 2.0)
-    pulse = 1 + 0.03 * math.sin((t - T.q_t) * 6)
-    with saved(ctx, Q_C[0], Q_C[1], k * pulse, alpha_=a) as c:
-        circle(c, 0, 0, 104)
-        c.set_source_rgba(*hexc("ai_rim", 0.10))
-        c.fill()
-        with saved(c, 0, 0, 1.0, t * 0.6):
-            circle(c, 0, 0, 104)
-            c.set_source_rgba(*hexc("ai_rim", 0.85))
-            c.set_line_width(8)
-            c.set_dash([22, 14])
-            c.stroke()
-            c.set_dash([])
-        text(c, "?", 0, 54, 150, "ai_rim", "comic", outline="ink", outline_w=12)
+# --- the AI ---------------------------------------------------------------------
+def _ai_pose(t, T):
+    k1 = ease_in_out(seg(t, T.pieces - 0.04, T.pieces + 0.5))
+    k2 = ease_in_out(seg(t, T.clear[0], T.clear[1]))
+    return tuple(lerp(lerp(AI_READ[i], AI_STAGE[i], k1), AI_INSET[i], k2) for i in range(3))
 
 
-def _sum_bar(ctx, t, T, rows, a=1.0):
-    if t < T.bar_t or a <= 0.01:
-        return
-    p = ease_out(seg(t, T.bar_t, T.bar_t + 0.28))
-    x0 = rows[0][0] - _TW[0] / 2 * F4_ROW[2] - 10
-    x1 = rows[2][0] + _TW[2] / 2 * F4_ROW[2] + 10
-    with saved(ctx, alpha_=a):
-        rrect(ctx, x0, SUM_Y - 8, (x1 - x0) * p, 16, 8)
-        ctx.set_source_rgba(*hexc("ink"))
-        ctx.set_line_width(9)
-        ctx.stroke_preserve()
-        ctx.set_source_rgba(*hexc("ai_rim"))
-        ctx.fill()
+def _ai_state(t, info, T, lay, pose):
+    """AI expression / hands / desired pupil direction / think / blink / nod / shake."""
+    L2, L5 = T.L2, T.L5
+    half = {k: lerp(AI_EXPR["neutral"][k], AI_EXPR["unimpressed"][k], 0.5)
+            for k in AI_EXPR["neutral"]}
+    firm = {k: lerp(AI_EXPR["neutral"][k], AI_EXPR["determined"][k], 0.55)
+            for k in AI_EXPR["neutral"]}
+    excited = dict(AI_EXPR["happy"], blush=1.3)
+    ek = [(0.0, "neutral", 0.2),
+          (L2.start + 0.2, "thinking", 0.3),                # READ
+          (T.w_sparky + 0.12, "skeptical", 0.2),            # brow up
+          (T.w_long + 0.15, half, 0.4),
+          (T.pieces - 0.08, "thinking", 0.2),               # lifts the words out
+          (L5.start - 0.05, "skeptical", 0.25),             # "Sparky ball? Long fuse?"
+          (T.eq_t, half, 0.4),                              # two-step lid drop...
+          (T.reveal - 0.02, "unimpressed", 0.4),            # ...😒 at the bomb
+          (T.explain - 0.05, "neutral", 0.3),
+          (T.w_show - 0.05, "sympathetic", 0.3),            # cares about the people
+          (T.wall0 - 0.1, firm, 0.25),                      # calm, firm: not that part
+          (T.w_cartoon - 0.12, "happy", 0.25),              # ...but this is fine
+          (T.w_youre - 0.3, "warm", 0.3),                   # warm smile at the avatar
+          (T.rearr + 0.18, "happy", 0.25),
+          (T.w_blast - 0.05, "amused", 0.2),
+          (T.w_lets, "happy", 0.25),
+          (T.burst, excited, 0.18)]
+    expr = _keyed(t, ek)
+    hands = _keyed(t, [(0.0, "idle", 0.3),
+                       (T.pieces - 0.08, "present_both", 0.22),
+                       (L5.start + 0.1, "idle", 0.4),
+                       (T.card_t[0] - 0.12, "present", 0.3),
+                       (T.w_or, "idle", 0.4),
+                       (T.wall0 - 0.05, "stop", 0.2),
+                       (T.wall0 + 0.75, "idle", 0.4),
+                       (T.w_cartoon - 0.12, "present_l", 0.3),
+                       (T.w_totally - 0.06, "thumbs_up", 0.22),
+                       (T.w_youre - 0.12, "idle", 0.45),
+                       (T.rearr + 0.2, "present", 0.3),
+                       (T.w_villain - 0.15, "present_both", 0.3),
+                       (T.twist, "thumbs_both", 0.2)])
+    think = 0.0
+    for (a_, b_, v) in ((L2.start + 0.2, L2.end + 0.05, 0.6),
+                        (T.pieces - 0.08, T.pieces + 0.6, 0.9),
+                        (T.assemble, T.drop[1] + 0.15, 0.5)):
+        if a_ <= t < b_:
+            think = v * smoothstep(seg(t, a_, a_ + 0.2)) * (1 - smoothstep(seg(t, b_ - 0.15, b_)))
+    ax, ay, s = pose
+    E = (ax, ay - 30 * s / 0.66)
+    CAMEO_P = (CAMEO[0], CAMEO[1])
+    row = _ROW_CACHE.get("row")
+    bp = _bomb_pose(t, T)
+    B = (bp[0], bp[1]) if bp else BOMB_C
+
+    def at(p):
+        return _dir(E[0], E[1], p[0], p[1])
+
+    def follow():
+        bx, by, bw, bh = lay.rect
+        r = _reveal(info, "s07_l02", t)
+        nl = len(lay.lines)
+        li = min(nl - 1, int(r * nl))
+        fr = clamp(r * nl - li)
+        d = at((bx + 30 + (bw - 60) * fr, by + 28 + li * BUBBLE_FS * 1.24))
+        return (d[0] * 1.6, d[1])
+
+    CAM = (0.0, 0.0)
+    if t < L2.start + 0.2:
+        d = (0.35, -0.85)
+    elif t < L2.end + 0.05:
+        d = follow()
+    elif t < T.pieces:
+        d = at(CAMEO_P)
+    elif t < L5.start:
+        q = seg(t, T.pieces, T.pieces + 0.45)
+        d = at((lerp(260, 730, q), ROW[1]))
+    elif t < T.eq_t:
+        i = 0 if t < T.hop5[1] - 0.05 else (1 if t < T.hop5[2] - 0.05 else 2)
+        d = at(row[i] if row else (ROW[0], ROW[1]))
+    elif t < T.q_t:
+        d = at(EQ_C)
+    elif t < T.w_my5 - 0.04:
+        d = at(BOMB_C)
+    elif t < L5.end + 0.12:
+        d = CAM                                          # eyes to camera on "my guy"
+    elif t < T.drop[0]:
+        d = at((ROW[0], ROW[1]))
+    elif t < T.w_wont - 0.1:
+        d = at(B)
+    elif t < T.card_t[0]:
+        d = at(CAMEO_P)                                  # telling him
+    elif t < T.w_or:
+        d = at((CARD_CX, CARD_Y[0]))
+    elif t < T.card_t[1] - 0.05:
+        d = at(CAMEO_P)
+    elif t < T.wall0 + 0.1:
+        d = at((CARD_CX, CARD_Y[1]))
+    elif t < T.L6c.start:
+        d = at((WALL_R[0] + WALL_R[2] / 2, WALL_R[1] + WALL_R[3] / 2))
+    elif t < T.tag_t + 0.5:
+        d = at((B[0], B[1] + 40))                        # the cartoon bomb / its tag
+    elif t < T.w_youre - 0.12:
+        d = CAM                                          # "Totally fine."
+    elif t < T.rearr:
+        d = at(CAMEO_P)                                  # warm smile at his avatar
+    elif t < T.open[0]:
+        d = at(B)
+    elif t < T.burst:
+        d = at(_book_pose(t, T)[:2])
+    else:
+        d = at((BURST_C[0], BURST_C[1] + 60))
+    blink = None
+    for tb in (L5.end + 0.05, T.explain + 0.04, T.blink_warm):
+        b = _blink_pulse(t, tb, 0.14, 0.08, 0.14)
+        if b is not None:
+            blink = b
+    nod = 0.0
+    if T.w_youre + 0.3 <= t < T.w_youre + 0.95:
+        nod = 0.35 * _bump(t, T.w_youre + 0.3, 0.65)
+    if T.twist <= t < T.twist + 0.6:
+        nod = 0.6
+    shake = 0.35 * _bump(t, T.w_wont, 0.75) if T.w_wont <= t < T.w_wont + 0.75 else 0.0
+    return expr, hands, d, think, blink, nod, shake
+
+
+_ROW_CACHE = {}
+
+
+def _stage(ctx, t, info, T):
+    if "row" not in _ROW_CACHE:
+        _ROW_CACHE["row"] = _row_layout(ctx, ROW)
+    P.ai_bg(ctx, t)
+    a_ui, dy_ui = _ui_fade(t, T)
+    lay, lay_w = _layouts(ctx, info, T)
+    _bomb_glow(ctx, t, T)
+    _bubble(ctx, t, info, T, a_ui, dy_ui)
+    _draw_cameo(ctx, t, info, T, a_ui, dy_ui)
+    pose = _ai_pose(t, T)
+    expr, hands, desired, think, blink, nod, shake = _ai_state(t, info, T, lay, pose)
+    look = _ai_look(expr, desired)
+
+    def ai():
+        aura = 1.0 - smoothstep(seg(t, T.clear[0], T.clear[1]))
+        return draw_ai(ctx, pose[0], pose[1], pose[2], t, expr=expr, look=look,
+                       mouth=info.mouth("ai", t), hands=hands, think=think, blink=blink,
+                       aura=aura, nod=nod, shake=shake)
+
+    if t < T.rearr:
+        an = ai()
+        # faint tractor glow from the palms while the words lift out
+        if T.pieces - 0.05 <= t < T.L5.start + 0.3:
+            a = smoothstep(seg(t, T.pieces - 0.05, T.pieces + 0.15)) * \
+                (1 - smoothstep(seg(t, T.L5.start, T.L5.start + 0.3)))
+            for h in ("handL", "handR"):
+                hx, hy = an[h]
+                circle(ctx, hx, hy - 10, 22 + 5 * math.sin(t * 9))
+                ctx.set_source_rgba(*hexc("ai_rim", 0.25 * a))
+                ctx.fill()
+    _sum_signs(ctx, t, T)
+    _tiles(ctx, t, T, lay_w)
+    _cards_wall(ctx, t, T)
+    if t >= T.rearr:
+        _payoff_book(ctx, t, T)
+    _bomb(ctx, t, T)
+    if t >= T.rearr:
+        bx, by, bs = _book_pose(t, T)
+        _draw_bombshell(ctx, t, T, bx, by)
+        ai()
 
 
 # --- payoff props ----------------------------------------------------------
@@ -1365,156 +1650,6 @@ def _draw_bombshell(ctx, t, T, bx, by):
                    color="white", size=1.0)
 
 
-def _f4(ctx, t, info, T):
-    global _ROWS
-    A = T.assemble
-    P.ai_bg(ctx, t, motes=8, floor=False)
-    rows = _row_layout(ctx, F4_ROW)
-    _ROWS = rows
-    strip = _strip_layout(ctx, F4_ROW[0], F4_ROW[1], F4_ROW[2])
-    f2_rows = _row_layout(ctx, F2_ROW)
-    g_bomb = smoothstep(seg(t, T.reveal, T.reveal + 0.3)) * (1 - smoothstep(seg(t, T.wall0, T.wall0 + 0.6)))
-    if g_bomb > 0.01:
-        radial_glow(ctx, BOMB_C[0], BOMB_C[1] - 20, 360, "danger", 0.3 * g_bomb)
-
-    if t < T.rearr:
-        # --- the sum: tiles + plus signs + bar + "?" -------------------------
-        a_sum = 1 - smoothstep(seg(t, T.gather, T.gather + 0.2))
-        rs = F4_ROW[2]
-        for j in range(2):
-            if t >= T.plus_t[j]:
-                k = ease_out_back(seg(t, T.plus_t[j], T.plus_t[j] + 0.25), 2.6)
-                # centre of the free space between tile j's knob and tile j+1
-                px = (rows[j][0] + (_TW[j] / 2 + KNOB) * rs + rows[j + 1][0] - _TW[j + 1] / 2 * rs) / 2
-                _plus(ctx, px, F4_ROW[1], k, a_sum, size=22)
-        _sum_bar(ctx, t, T, rows, a_sum)
-        a_q = 1 - smoothstep(seg(t, T.reveal - 0.1, T.reveal + 0.1))
-        _q_mark(ctx, t, T, a_q)
-        # --- tiles ----------------------------------------------------------------
-        todo = []
-        for i in range(3):
-            if t < T.gather:
-                u = seg(t, T.row_t[i], T.row_land[i])
-                e = ease_in_out(u)
-                sx, sy = f2_rows[i]
-                x = lerp(sx, rows[i][0], e)
-                y = lerp(sy + 80, rows[i][1], e) - 50 * math.sin(math.pi * u)
-                s = lerp(F2_ROW[2], F4_ROW[2], e)
-                rot = (-0.05, 0.04, -0.03)[i] * (1 - 0.5 * e)
-                land = seg(t, T.row_land[i], T.row_land[i] + 0.16)
-                sq = math.sin(math.pi * land) * 0.12 if 0 < land < 1 else 0.0
-                if u >= 1:
-                    y += math.sin((t - T.row_land[i]) * 2.4 + i * 2.1) * 4
-                    rot += math.sin((t - T.row_land[i]) * 1.7 + i) * 0.02
-                # "those words" -> a little hop each; checks hop too
-                y -= 12 * _bump(t, T.w_those + 0.1 * i, 0.22) + 14 * _bump(t, T.chk[i], 0.22)
-                todo.append((x, y, s, i, rot, sq, 1.0, 1.0))
-            elif t < T.drop[0]:
-                # "Together?": slide in and click (edges lock)
-                u = seg(t, T.gather, T.click)
-                e = ease_in_out(u)
-                x = lerp(rows[i][0], strip[i][0], e)
-                y = rows[i][1]
-                sq = 0.1 * _bump(t, T.click, 0.14)
-                todo.append((x, y, F4_ROW[2], i, 0.0, sq, 1.0, 1.0))
-            else:
-                # the locked strip drops into the "?" and becomes the picture
-                u = seg(t, T.drop[0], T.drop[1])
-                e = ease_in(u)
-                cx = F4_ROW[0]
-                s = lerp(1.0, 0.42, e)
-                x = cx + (strip[i][0] - cx) * s
-                s *= F4_ROW[2]
-                y = lerp(F4_ROW[1], Q_C[1], e)
-                a = 1 - smoothstep(seg(t, T.reveal - 0.04, T.reveal + 0.1))
-                todo.append((x, y, s, i, 0.0, 0.0, 1.0, a))
-        if t < T.gather:
-            for args in todo:
-                _draw_tile(ctx, *args)
-        else:                                   # touching: all shadows, then bodies
-            for args in todo:
-                _draw_tile(ctx, *args, part="shadow")
-            for args in todo:
-                _draw_tile(ctx, *args, part="body")
-        if T.click <= t < T.click + 0.25:                    # click flash
-            q = (t - T.click) / 0.25
-            for j in range(2):
-                xx = strip[j][0] + _TW[j] / 2 * F4_ROW[2]
-                circle(ctx, xx, F4_ROW[1], 16 + 46 * q)
-                ctx.set_source_rgba(1, 1, 1, 0.75 * (1 - q))
-                ctx.set_line_width(6)
-                ctx.stroke()
-        # "sounds harmless" checks (fade as the tiles come together)
-        if t < T.gather + 0.25:
-            for i in range(3):
-                bxx = rows[i][0] + (_TW[i] / 2 - 16) * F4_ROW[2]
-                byy = rows[i][1] - (TILE_H / 2 + 6) * F4_ROW[2] + math.sin((t - T.row_land[i]) * 2.4 + i * 2.1) * 4
-                _check_badge(ctx, bxx, byy - 14 * _bump(t, T.chk[i], 0.22), t, T.chk[i], T.gather)
-            if t >= T.ok_lab:
-                k = pop(t, T.ok_lab, 0.3)
-                a = 1 - smoothstep(seg(t, T.gather, T.gather + 0.2))
-                with saved(ctx, OK_CHIP[0], OK_CHIP[1], k, alpha_=a) as c:
-                    P.label_tag(c, 0, 0, "SOUNDS HARMLESS", color="safe", size=50, font="comic",
-                                text_color="white", pointer="down")
-        # --- the bomb + label -----------------------------------------------------
-        if t >= T.reveal:
-            k = ease_out_back(seg(t, T.reveal, T.reveal + 0.3), 2.0)
-            a = smoothstep(seg(t, T.reveal, T.reveal + 0.12))
-            pulse = 1 + 0.03 * math.sin((t - T.reveal) * 7) * (t > T.reveal + 0.3)
-            with saved(ctx, BOMB_C[0], BOMB_C[1], lerp(0.6, 1.0, k) * pulse, alpha_=a) as c:
-                P.cartoon_bomb(c, 0, 0, BOMB_S, t, lit=True)
-            if T.reveal <= t < T.reveal + 0.35:
-                q = (t - T.reveal) / 0.35
-                circle(ctx, BOMB_C[0], BOMB_C[1], 90 + 130 * q)
-                ctx.set_source_rgba(1, 0.9, 0.9, 0.6 * (1 - q))
-                ctx.set_line_width(10)
-                ctx.stroke()
-            _hurt_label(ctx, t, T, BOMB_C[0], HURT_Y)
-    else:
-        # --- payoff: bomb -> tiles -> storybook -> BOMBSHELL TWIST! ---------------
-        bx, by, bs = _book_pose(t, T)
-        if t < T.split:
-            with saved(ctx, BOMB_C[0], BOMB_C[1]):
-                P.cartoon_bomb(ctx, 0, 0, BOMB_S, t, lit=True)
-            _hurt_label(ctx, t, T, BOMB_C[0], HURT_Y)
-        elif t < T.book_in:
-            if t < T.split + 0.14:                             # pop flash
-                q = (t - T.split) / 0.14
-                circle(ctx, BOMB_C[0], BOMB_C[1], 80 + 120 * q)
-                ctx.set_source_rgba(1, 1, 1, 0.8 * (1 - q))
-                ctx.fill()
-            cl = _strip_layout(ctx, BOMB_C[0], BOMB_C[1], 0.7)
-            for i in range(3):
-                u = seg(t, T.flip[0] + 0.04 * i, T.flip[1])
-                e = ease_in_out(u)
-                ox, oy = cl[i][0], BOMB_C[1] + (i - 1) * 40
-                x = lerp(ox, bx, e)
-                y = lerp(oy, by, e) - 80 * math.sin(math.pi * u)
-                fx = math.cos(0.5 * math.pi * u)
-                _draw_tile(ctx, x, y, lerp(0.7, 0.9, e), i, (i - 1) * 0.3 * (1 - e), 0.0, fx)
-        else:
-            k_in = ease_out_back(seg(t, T.book_in, T.book_in + 0.3), 2.0)
-            fxb = max(0.02, k_in)
-            jig = _bump(t, T.w_blast, 0.3)
-            open_u = ease_in_out(seg(t, T.open[0], T.open[1]))
-            with saved(ctx, bx, by, (fxb * (1 + 0.08 * jig), 1 - 0.06 * jig)) as c:
-                c.translate(-bx, -by)
-                _draw_book(c, t, T, bx, by, bs, open_u)
-            if T.book_in <= t < T.book_in + 0.5:
-                P.sparkles(ctx, bx, by, 260, t, n=6, seed=2, color="white", size=0.9)
-            if T.w_blast <= t < T.w_blast + 0.8:
-                P.sparkles(ctx, bx, by - 40, 280, t, n=6, seed=6, color="ai_accent", size=1.0)
-            _draw_bombshell(ctx, t, T, bx, by)
-    _wall(ctx, t, T)
-    # --- the inset ---------------------------------------------------------------
-    expr, hands, tgt, think, blink, nod = _f4_state(t, T)
-    ix, iy, isz = _inset(t, T)
-    desired = (0.0, 0.0) if tgt is None else _dir(ix, iy - 10, tgt[0], tgt[1])
-    look = _ai_look(expr, desired)
-    draw_ai(ctx, ix, iy, isz, t, expr=expr, look=look, mouth=info.mouth("ai", t),
-            hands=hands, think=think, blink=blink, aura=0, nod=nod)
-
-
 # ===========================================================================
 # F1: "Confound it... that does sound fun."
 # ===========================================================================
@@ -1562,6 +1697,27 @@ def _f1_end(ctx, t, info, T):
     P.emote(ctx, "sparkle", ex + 92, ey - 70, 0.8, t, T.w_fun - 0.05, t_out=T.w_fun + 0.9)
 
 
+
+# ===========================================================================
+# Payoff: the storybook (bomb hops in -> BOMBSHELL burst)
+# ===========================================================================
+def _payoff_book(ctx, t, T):
+    if t < T.book_in:
+        return
+    bx, by, bs = _book_pose(t, T)
+    k_in = ease_out_back(seg(t, T.book_in, T.book_in + 0.3), 2.0)
+    fxb = max(0.02, k_in)
+    jig = _bump(t, T.w_blast, 0.3)
+    open_u = ease_in_out(seg(t, T.open[0], T.open[1]))
+    with saved(ctx, bx, by, (fxb * (1 + 0.08 * jig), 1 - 0.06 * jig)) as c:
+        c.translate(-bx, -by)
+        _draw_book(c, t, T, bx, by, bs, open_u)
+    if T.book_in <= t < T.book_in + 0.5:
+        P.sparkles(ctx, bx, by, 260, t, n=6, seed=2, color="white", size=0.9)
+    if T.w_blast <= t < T.w_blast + 0.8:
+        P.sparkles(ctx, bx, by - 40, 280, t, n=6, seed=6, color="ai_accent", size=1.0)
+
+
 # ===========================================================================
 # entry points
 # ===========================================================================
@@ -1569,10 +1725,8 @@ def render(ctx, t, info):
     T = _times(info)
     if t < T.cut_f2:
         _f1_open(ctx, t, info, T)
-    elif t < T.assemble:
-        _f2(ctx, t, info, T)
     elif t < T.cut_f1:
-        _f4(ctx, t, info, T)
+        _stage(ctx, t, info, T)
     else:
         _f1_end(ctx, t, info, T)
     trick_card(ctx, t, T.card, T.card_num, T.card_title)
@@ -1587,6 +1741,8 @@ def SFX(info):
         (T.card + 0.12, "stamp", -4),
         (T.L1.start, "tiptoe", -12),
         (T.w_notice + 0.35, "snake_hiss", -14),
+        (T.w_watch - 0.04, "whoosh", -16),               # swings round to the keyboard
+        (T.w_this2 + 0.14, "key_clack", -12),
         # disguise1: the costume halo springs on
         (T.d1, "pop", -6),
         (T.d1 + 0.05, "boing", -14),
@@ -1595,29 +1751,29 @@ def SFX(info):
         (T.w_long + 0.05, "scan_beep", -16),
         (T.L2.end, "send", -8),
     ]
+    # pieces: the words lift out as tiles
     out += [(tp, "puzzle_click", -8) for tp in T.tile_t]
-    out += [(T.halo_off, "boing", -12), (T.halo_off + 0.04, "whoosh", -14)]
-    # F4: tiles line up, the sum appears
-    out += [(tl, "puzzle_click", -12) for tl in T.row_land]
+    # l05: + + = ? -> the bomb; the halo boings off his avatar
     out += [(tp, "pop", -12) for tp in T.plus_t]
-    out += [(T.bar_t, "swoosh_up", -16), (T.q_t, "pop", -10)]
-    # l06b: a check per tile, the chip, click together, drop -> bomb, label
-    out += [(tc, "scan_beep", -12) for tc in T.chk]
-    out += [(T.ok_lab, "pop", -12),
-            (T.click, "puzzle_click", -5),
-            (T.reveal, "puzzle_click", -4),
-            (P.stamp_impact(T.hurt), "stamp", -5)]
-    # l06c: the wall, thuds on the first 3 rows
+    out += [(T.eq_t, "pop", -11), (T.q_t, "scan_beep", -14),
+            (T.reveal, "pop", -6),
+            (T.halo_off, "boing", -12)]
+    # assemble: the tiles click together and drop into the bomb
+    out += [(T.click, "puzzle_click", -5), (T.drop[1], "puzzle_click", -4)]
+    # l06b: bomb aside, two cards, gulp, the wall (thuds on the first 3 rows)
+    out += [(T.slide[0], "whoosh", -14)]
+    out += [(ct, "pop", -8) for ct in T.card_t]
+    out += [(T.w_gory + 0.3, "gulp", -10)]
     out += [(tl, "brick_thud", -5 if j == 0 else -7)
             for j, tl in enumerate(T.wall_lands[:3])]
-    # rearrange + l07: wall slides aside, tiles flip into the storybook,
-    # the pop-up BOMBSHELL TWIST! (dun-dun-dun: last hit lands on "twist!")
-    out += [(T.wall_mv[0], "whoosh", -9),
-            (T.split, "pop", -8),
-            (T.flip[0], "swoosh_up", -12),
+    # l06c: happy hop, STORY PROP tag
+    out += [(T.hop6, "boing", -15), (T.tag_t, "pop", -8), (T.tag_t + 0.18, "sparkle", -10)]
+    # rearrange + l07: clear the stage, book, bomb hops in -> BOMBSHELL TWIST!
+    out += [(T.clear[0], "whoosh", -9),
             (T.book_in, "magic_chime", -8),
             (T.w_blast, "sparkle", -12),
             (T.open[0], "page_flip", -6),
+            (T.hop7[0], "boing", -12),
             (T.burst, "dun_dun_dun", -12),
             (T.burst, "pop", -10),
             (T.twist + 0.08, "sparkle", -10),

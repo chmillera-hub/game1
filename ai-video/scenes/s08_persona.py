@@ -170,8 +170,18 @@ _A_HEART = V._arm(-236, -112, -78, -222, -0.42, cu=0.08, th=0.35, sp=0.25)
 _A_COY = V._arm(-178, -130, -36, -262, -1.36, cu=0.12, th=0.1, sp=0.0, hs=1.1)
 for _nm, _pz in (("s08_tro_low", V._pose(V.ARM_POSES["rest"]["a"], _B_TRO_LOW)),
                  ("s08_tro_heart", V._pose(_A_HEART, _B_TROPHY, shy=-6)),
-                 ("s08_tro_coy", V._pose(_A_COY, _B_TROPHY, shy=-10, hdy=4, tilt=0.05))):
+                 ("s08_tro_coy", V._pose(_A_COY, _B_TROPHY, shy=-10, hdy=4, tilt=0.05)),
+                 # "Express yourself!": flattered glove on the heart ("moi?")
+                 ("s08_flatter", V._pose(_A_HEART, V.ARM_POSES["rest"]["b"], shy=-8,
+                                         tilt=-0.04))):
     V.ARM_POSES.setdefault(_nm, _pz)
+# flattered evil grin (inset, "Express yourself!") and the proud author's
+# delight when readers show up ("teach people")
+V.VILLAIN_EXPR.setdefault("s08_flattered", dict(
+    V._params("evil_grin"), by1=-8, by2=-14, ul1=0.3, ul2=0.26, blush=0.8, tilt=-0.07,
+    shine=0.6))
+V.VILLAIN_EXPR.setdefault("s08_proud", dict(
+    V._params("hopeful"), mc=0.95, mw=1.12, mo=0.3, mt=0.4, blush=0.6, shine=1.0, ps=1.3))
 
 # oily smile = half sneaky / half happy (DIRECTION: expr=("sneaky","happy",0.5))
 V.VILLAIN_EXPR.setdefault("s08_oily", {
@@ -350,6 +360,7 @@ AIX["unimp_dn"] = dict(_UNIMP, sacc=0.2)
 AIX["amused"] = dict(AI.EXPR["amused"])
 AIX["warm"] = dict(AI.EXPR["warm"])
 AIX["det"] = dict(AI.EXPR["determined"])
+AIX["cheer"] = dict(AI.EXPR["happy"], es=1.06, ps=1.12, blush=0.9, mo=0.6)   # "Express yourself!"
 AIX["smirk_l6"] = _mixd(_UNIMP, AI.EXPR["amused"], 0.42)
 
 
@@ -446,23 +457,26 @@ def _T(info):
     T.fair = wb[15]
     T.fair_stamp = T.fair - 0.11                   # impact on "fair"
     T.inset_in = T.scary - 0.12
-    T.inset_out = T.L3b.end + 0.02
     T.nod = wb[14]
-    T.shrink0 = T.L3b.end + 0.05
-    T.shrink1 = T.L3c.start + 0.35
-    # s08_l03c "Want(0) to expose(2) how scammers(4) and manipulators(6)
-    #   trick(7) people,(8) so others(10) can spot(12) them? Love(14) it.
-    #   Just(16) no(17) real-world blueprints(19) for hurting(21) anyone.(22)"
-    T.board_in = wc[2] - 0.08                       # "expose": SCAM ALERT board
-    T.cam_in = wc[2] + 0.05                         # villain cameo: intrigued
-    T.cam_perk = wc[4] - 0.05                       # "scammers": his kind of scheme
-    T.flags = [wc[4], wc[6], wc[8] - 0.05, wc[10]]  # red-flag cards
-    T.spot = wc[12]                                 # "spot": magnifier sweep
-    T.marks = [T.spot + 0.13 * k for k in range(4)]
-    T.love = wc[14]
-    T.love_stamp = T.love - 0.11                    # impact on "Love"
+    # s08_l03c "Express(0) yourself!(1) Your(2) scary(3) stories(4) of(5)
+    #   scams(6) and(7) danger(8) could(9) teach(10) people(11) how(12) to(13)
+    #   stay(14) safe.(15) Just(16) no(17) real-world(18) blueprints(19)
+    #   for(20) hurting(21) anyone.(22)"
+    T.express = wc[0]                               # AI cheers, book glows
+    T.lit = wc[0] + 0.04                            # villain inset lights up
+    T.board_in = wc[2] - 0.08                       # "Your": the tale page pops out
+    T.tale_scary = wc[3]                            # lightning across the page
+    T.flags = [wc[4], wc[6] + 0.03, wc[8] + 0.03]   # stories / scams / danger
+    T.w_scams, T.w_danger = wc[6], wc[8]            # title words pulse when spoken
+    T.lift0 = wc[9] - 0.06                          # "could": page lifts for the readers
+    T.lift1 = wc[10] - 0.02
+    T.readers = [wc[10] - 0.04 + 0.09 * k for k in range(4)]   # "teach people"
+    T.bulbs = [wc[12] - 0.02, wc[12] + 0.1]         # "how": lightbulbs (readers 0, 2)
+    T.safe = wc[15]
+    T.shields = [wc[15] - 0.06, wc[15] + 0.06]      # "safe": shields (readers 1, 3)
     T.just = wc[16]
-    T.board0 = T.just - 0.05                        # board + book tuck away
+    T.inset_out = T.just - 0.08                     # inset leaves for the wall beat
+    T.board0 = T.just - 0.05                        # page + readers tuck away
     T.board1 = T.just + 0.3
     T.wall0 = wc[17] - 0.05                         # "no": the wall slams up
     T.folders = [wc[19] - 0.12, wc[21] - 0.12, wc[22] - 0.12]   # blueprints/hurting/anyone
@@ -1139,14 +1153,24 @@ def _shot_B(ctx, t, T, info):
 # ===========================================================================
 AIS = (262.0, 455.0, 0.6)             # AI parked upper-left during the story bit
 BOOK_A = (520.0, 912.0, 1.0)          # storybook spine centre + scale (l03b)
-BOOK_B = (705.0, 440.0, 0.5)          # l03c: shrunk to the upper-right (still OK)
-BOOK_C = (705.0, 333.0, 0.36)         # l03c "Just no...": tucked higher (board below it)
-BOARD_A = (500.0, 978.0, 1.0)         # SCAM ALERT board centre + scale (big, lower half)
-BOARD_C = (705.0, 590.0, 0.34)        # ...tucked under the book for the wall beat
-BOARD_W, BOARD_H = 820.0, 610.0
-CAMEO = (316.0, -250.0, 92.0)         # villain cameo on the board's top-right (board-local)
-FLAGS = ["TOO GOOD TO BE TRUE", "PAY IN GIFT CARDS?", "ACT NOW!!", "SECRET, TELL NO ONE"]
-FLAG_Y = [-128.0, -8.0, 112.0, 232.0]
+BOOK_G = (505.0, 926.0, 1.03)        # l03c "Express yourself!": the book grows + glows
+# l03c: HIS tale. A dark story page ("A TALE OF SCAMS & DANGER") pops out of
+# the storybook, red-flag story panels pop on the words; it lifts a little for
+# tiny readers on "teach people how to stay safe", then tucks top-right (with
+# its readers) for the wall beat.
+BOARD_A = (495.0, 958.0, 1.0)         # tale page centre + scale (big, lower half)
+BOARD_B = (495.0, 836.0, 0.72)        # ...lifted: the readers stand below it
+BOARD_C = (705.0, 392.0, 0.35)        # ...tucked top-right for the wall beat
+BOARD_W, BOARD_H = 840.0, 640.0
+FLAGS = ["TOO GOOD TO BE TRUE", "PAY IN GIFT CARDS?", "ACT NOW!!"]
+FLAG_Y = [-26.0, 98.0, 222.0]
+TALE_BG, TALE_BG2 = "#2b1742", "#1b0f2a"
+TALE_RED, PARCH, PARCH_SH = "#ff3b5c", "#f6e7c6", "#dcc79c"
+# tiny readers (prop bible 6.3 townsfolk, mini), tale-page-local; feet at READER_Y
+READERS = [(-354.0, "#f1c7a0", "#ffb3c7"), (-118.0, "#8d5a3b", "#a9d8c9"),
+           (118.0, "#c68a5e", "#f6d38a"), (354.0, "#f1c7a0", "#b6b4e8")]
+READER_Y = 664.0                      # feet (world y ~1314 at BOARD_B)
+READER_S = 1.26                       # reader scale (page-local)
 BOOK_HW, BOOK_HH = 400.0, 270.0       # page half-width (one page) / half-height
 INSET = (590.0, 262.0, 330.0, 330.0)  # Malvo reaction inset (x, y, w, h)
 INSET_VIEW = (70.0, 470.0, 760.0)
@@ -1317,10 +1341,11 @@ def _cover_front(c):
     text(c, "STORY", hw / 2 + 4, 110, 70, GOLD, "title", outline="ink", outline_w=6)
 
 
-def _storybook(ctx, t, T, cx, cy, sc):
+def _storybook(ctx, t, T, cx, cy, sc, glow=0.0):
     """Open storybook. (cx, cy) = spine centre. Pops in closed (cover only)
-    at T.book_in, the cover swings open, then the story bits pop onto it."""
-    if t < T.book_in:
+    at T.book_in, the cover swings open, then the story bits pop onto it.
+    glow 0..1: warm golden 'this is great' light on the pages (l03c)."""
+    if t < T.book_in or sc <= 0.01:
         return
     kp = ease_out_back(seg(t, T.book_in, T.book_in + 0.28), 1.8)
     ko = ease_in_out(seg(t, T.book_open0, T.book_open1))
@@ -1357,6 +1382,11 @@ def _storybook(ctx, t, T, cx, cy, sc):
         if T.scary <= t < T.scary + 0.3:
             rrect(c, -hw, -hh, 2 * hw, 2 * hh, 10)
             core.fill(c, (1, 1, 1, 0.55 * (1 - seg(t, T.scary, T.scary + 0.3))))
+        if glow > 0.01:                                      # golden page light
+            rrect(c, -hw, -hh, 2 * hw, 2 * hh, 10)
+            core.fill(c, (1.0, 0.86, 0.45, 0.16 * glow))
+            rrect(c, -hw - 14, -hh - 22, 2 * hw + 28, 2 * hh + 44, 22)
+            core.stroke(c, (1.0, 0.84, 0.4, 0.85 * glow), 7)
         # story bits + checks
         for (lab, ix, iy, fn), ti, tc in zip(STORY_ITEMS, T.items, T.checks):
             if t < ti:
@@ -1378,6 +1408,11 @@ def _storybook(ctx, t, T, cx, cy, sc):
 
 # --- Malvo reaction inset ------------------------------------------------------
 def _inset(ctx, t, T):
+    """Malvo's live reaction (top-right) from "A scary one!" to "...stay safe."
+    l03b: intrigued -> his kind of story. l03c "Express yourself!": the inset
+    LIGHTS UP (gold frame, flash, sparkles), flattered evil grin, glove on the
+    heart. The tale: proud scheming hand-rub. The readers: an audience! (shiny
+    eyes, hand on heart). Hissy nods along with the AI."""
     if t < T.inset_in or t > T.inset_out + 0.35:
         return
     k = ease_out_back(seg(t, T.inset_in, T.inset_in + 0.35), 1.3) * \
@@ -1386,24 +1421,51 @@ def _inset(ctx, t, T):
     xx = x0 + (1 - k) * 440
     tv = T.items[0]
     perk = ease_out_back(seg(t, tv - 0.05, tv + 0.3), 2.0)
+    lk = clamp((t - T.lit) / 0.14) if t >= T.lit else 0.0          # lit (stays gold)
+    lu = seg(t, T.lit, T.lit + 0.32)
+    bump = 1.0 + 0.07 * math.sin(math.pi * lu) if 0 < lu < 1 else 1.0
+    rise = 14 * ease_out_back(seg(t, T.lit, T.lit + 0.3), 2.0)       # sits up, flattered
+    tr0, ts0 = T.readers[1], T.shields[0]
 
     def fn(c):
         P.lair_bg(c, t, rain=False)
         ex = keyed(t, [(-1.0, "thinking"), (tv - 0.05, "excited", 0.15),
-                       (T.nod - 0.05, "evil_grin", 0.3)])
-        arms = keyed(t, [(-1.0, "chin"), (tv - 0.05, "rub", 0.2)])
-        look = kv(t, [(-1.0, (-0.75, 0.3)), (tv, (-0.35, -0.05), 0.15)])
+                       (T.nod - 0.05, "evil_grin", 0.3), (T.lit - 0.02, "s08_flattered", 0.14),
+                       (T.board_in + 0.1, "evil_grin", 0.25), (T.flags[1] - 0.04, "excited", 0.14),
+                       (T.flags[2] + 0.12, "evil_grin", 0.25), (tr0, "s08_proud", 0.22),
+                       (ts0 + 0.05, "happy", 0.25)])
+        arms = keyed(t, [(-1.0, "chin"), (tv - 0.05, "rub", 0.2), (T.lit - 0.04, "s08_flatter", 0.16),
+                         (T.board_in + 0.1, "rub", 0.25), (tr0, "s08_flatter", 0.25)])
+        look = kv(t, [(-1.0, (-0.75, 0.3)), (tv, (-0.35, -0.05), 0.15),
+                      (T.lit, (-0.7, 0.05), 0.12),                 # at the AI: "moi?"
+                      (T.board_in + 0.12, (-0.55, 0.75), 0.15),    # down at HIS tale
+                      (tr0 - 0.02, (-0.35, 0.95), 0.15),           # ...it has readers!
+                      (ts0 + 0.1, (-0.6, 0.1), 0.2)])
         sn = {"expr": keyed(t, [(-1.0, "idle"), (tv + 0.1, "happy", 0.2),
-                                (T.nod - 0.05, "nod", 0.2)]),
-              "look": (-0.7, 0.2), "tongue": None}
-        draw_villain(c, VX, VY - 26 * perk, VS, t, expr=ex, look=look, mouth=(0.0, 0.0),
+                                (T.nod - 0.05, "nod", 0.2), (T.lit + 0.1, "smug", 0.2),
+                                (T.readers[0], "nod", 0.2), (ts0 + 0.1, "happy", 0.2)]),
+              "look": kv(t, [(-1.0, (-0.7, 0.2)), (T.lit + 0.1, (0.9, 0.0), 0.15),
+                             (T.board_in + 0.2, (-0.6, 0.6), 0.2)]), "tongue": None}
+        draw_villain(c, VX, VY - 26 * perk - rise, VS, t, expr=ex, look=look, mouth=(0.0, 0.0),
                      arms=arms, lean=-0.04 * perk, snake=sn)
         P.desk(c, VX, VY, 1000)
         P.emote(c, "exclaim", VX + 200, VY - 690, 1.3, t, tv + 0.02, t_out=tv + 1.0)
+        P.emote(c, "sparkle", VX + 215, VY - 700, 1.25, t, T.lit + 0.04, t_out=T.board_in)
+        P.emote(c, "heart", VX + 215, VY - 700, 1.2, t, tr0 + 0.12, t_out=T.inset_out)
+        if lk > 0 and lu < 1:                       # the "light up" flash
+            c.rectangle(-200, 0, 1500, 1920)
+            core.fill(c, (1.0, 0.95, 0.75, 0.42 * (1 - lu)))
 
-    P.panel(ctx, xx, y0, w, h, fn, view=INSET_VIEW, radius=28)
-    rrect(ctx, xx - 6, y0 - 6, w + 12, h + 12, 32)
-    core.stroke(ctx, (0.48, 0.25, 0.75, 0.9), 4)
+    cx, cy = xx + w / 2, y0 + h / 2
+    with saved(ctx, cx, cy, bump) as c:
+        c.translate(-cx, -cy)
+        P.panel(c, xx, y0, w, h, fn, view=INSET_VIEW, radius=28)
+        rrect(c, xx - 6, y0 - 6, w + 12, h + 12, 32)
+        col = core.mixc("#7a40bf", "#ffd36b", lk)
+        core.stroke(c, core.alpha(col, 0.95), 4 + 4 * lk)
+    if lk > 0 and t < T.board_in + 0.4:
+        P.sparkles(ctx, cx, cy, w * 0.62, t, n=5, seed=23, color="#ffe9a8",
+                   size=1.1 * (1 - seg(t, T.board_in, T.board_in + 0.4)))
 
 
 # --- the how-to wall -------------------------------------------------------------
@@ -1449,40 +1511,7 @@ def _howto_wall(ctx, t, T):
                 rot=-0.14 if rot < 0 else 0.1)
 
 
-# --- the SCAM ALERT expose board (l03c, part 1) ----------------------------------
-def _cameo(ctx, t, T, cx, cy, r):
-    """Round villain cameo: intrigued by the expose, then delighted (his kind
-    of scheme). Same lair framing as the scene's F1 (face ~ (495, 758))."""
-    perk = ease_out_back(seg(t, T.cam_perk, T.cam_perk + 0.3), 2.0)
-    ex = keyed(t, [(-1.0, "thinking"), (T.cam_perk, "excited", 0.15),
-                   (T.flags[2], "evil_grin", 0.3), (T.love - 0.05, "happy", 0.2),
-                   (T.love + 0.45, "evil_grin", 0.3)])
-    arms = keyed(t, [(-1.0, "chin"), (T.cam_perk, "rub", 0.2)])
-    look = kv(t, [(-1.0, (-0.7, 0.5)), (T.cam_perk, (-0.5, 0.35), 0.15),
-                  (T.love - 0.05, (0.0, 0.0), 0.15)])
-    sn = {"expr": keyed(t, [(-1.0, "idle"), (T.cam_perk + 0.1, "smug", 0.2),
-                            (T.love, "happy", 0.2)]),
-          "look": (-0.7, 0.3), "tongue": None}
-    ctx.save()
-    circle(ctx, cx, cy, r)
-    ctx.clip()
-    with saved(ctx, cx, cy, r / 205.0) as c:
-        c.translate(-495, -800)
-        P.lair_bg(c, t, rain=False)
-        draw_villain(c, VX, VY - 22 * perk, VS, t, expr=ex, look=look, mouth=(0.0, 0.0),
-                     arms=arms, lean=-0.03 * perk, snake=sn)
-    ctx.restore()
-    circle(ctx, cx, cy, r)
-    _fs(ctx, None, (0.48, 0.25, 0.75, 1.0), 10)
-    circle(ctx, cx, cy, r + 5)
-    _fs(ctx, None, "ink", 4)
-    P.emote(ctx, "exclaim", cx - r * 0.95, cy - r * 0.55, 0.6, t, T.cam_perk + 0.02,
-            t_out=T.cam_perk + 0.9)
-    if t >= T.love:
-        P.emote(ctx, "heart", cx + r * 0.9, cy - r * 0.6, 0.55, t, T.love + 0.05,
-                t_out=T.just - 0.1)
-
-
+# --- HIS tale: the dark story page (l03c) --------------------------------------
 def _red_flag(c, x, y, s=1.0, wave=0.0):
     with saved(c, x, y, s) as cc:
         cc.move_to(0, 34)
@@ -1499,95 +1528,285 @@ def _red_flag(c, x, y, s=1.0, wave=0.0):
         _fs(cc, "danger", "ink", 4)
 
 
-def _scam_board(ctx, t, T, cx, cy, sc, cameo=True):
-    """'SCAM ALERT!' expose poster: red-flag cards pop in on the words, a
-    magnifier hovers / sweeps on 'spot them', LOVE IT ✓ stamps on 'Love'."""
+def _tale_edge(c, hw, hh, dx=0.0, dy=0.0):
+    """Rough, deckled story-page outline (deterministic wobble)."""
+    pts = []
+    n = 12
+    for e, (x0, y0, x1, y1, ax) in enumerate(((-hw, -hh, hw, -hh, 1), (hw, -hh, hw, hh, 0),
+                                              (hw, hh, -hw, hh, 1), (-hw, hh, -hw, -hh, 0))):
+        for i in range(n):
+            u = i / n
+            j = (hash01(i + 17 * e, 301) - 0.5) * 10 if i else 0.0
+            px, py = lerp(x0, x1, u), lerp(y0, y1, u)
+            if ax:
+                py += j
+            else:
+                px += j
+            pts.append((px + dx, py + dy))
+    _round_poly(c, pts, 7)
+
+
+_BOLT = [(-12, -66), (24, -66), (6, -16), (28, -16), (-18, 68), (-4, 6), (-26, 6)]
+
+
+def _ill_gift(c, t):
+    """TOO GOOD TO BE TRUE: a glittering prize box."""
+    rrect(c, -34, -8, 68, 48, 6)
+    _fs(c, "#ff6f9a", "ink", 4)
+    rrect(c, -40, -22, 80, 18, 5)
+    _fs(c, "#ff94b4", "ink", 4)
+    c.rectangle(-7, -21, 14, 60)
+    _fs(c, GOLD, "ink", 3)
+    for sx in (-1, 1):
+        ellipse(c, sx * 15, -31, 15, 9, -sx * 0.45)
+        _fs(c, GOLD, "ink", 3.5)
+    circle(c, 0, -26, 6)
+    _fs(c, GOLD_DK, "ink", 3)
+    for i, (sx, sy, r) in enumerate(((44, -40, 13), (-46, -30, 10), (40, 30, 9))):
+        k = 0.55 + 0.45 * math.sin(t * 7.0 + i * 2.1)
+        P._star4(c, sx, sy, r * k + 0.5, 0.3)
+        core.fill(c, (1, 0.92, 0.55, 1.0))
+
+
+def _ill_card(c, t):
+    """PAY IN GIFT CARDS?: a gift card with a bow and a big '?'."""
+    with saved(c, 0, 4, 1.0, -0.14) as cc:
+        rrect(cc, -46, -30, 92, 60, 10)
+        _fs(cc, "#36c2b4", "ink", 4)
+        cc.rectangle(-28, -29, 11, 58)
+        core.fill(cc, "danger")
+        for sx in (-1, 1):
+            ellipse(cc, -22 + sx * 11, -33, 11, 7, -sx * 0.5)
+            _fs(cc, "danger", "ink", 3)
+        text(cc, "?", 14, 20, 52, "white", "comic", outline="ink", outline_w=6)
+
+
+def _ill_clock(c, t):
+    """ACT NOW!!: a ringing alarm clock (it jitters)."""
+    c.translate(2.6 * math.sin(t * 41.0), 0)
+    for sx in (-1, 1):
+        c.move_to(sx * 18, 24)
+        c.line_to(sx * 28, 38)
+        core.stroke(c, "ink", 6, cap="round")
+        circle(c, sx * 22, -28, 12)
+        _fs(c, GOLD, "ink", 3.5)
+    circle(c, 0, 2, 32)
+    _fs(c, "danger", "ink", 4)
+    circle(c, 0, 2, 23)
+    _fs(c, "white", "ink", 3)
+    c.move_to(0, 2)
+    c.line_to(0, -13)
+    c.move_to(0, 2)
+    c.line_to(11, 7)
+    core.stroke(c, "ink", 4, cap="round")
+    for sx in (-1, 1):                              # ring lines
+        for r in (42, 52):
+            c.new_sub_path()
+            c.arc(0, 2, r, -0.5 if sx > 0 else math.pi - 0.1, 0.1 if sx > 0 else math.pi + 0.5)
+        core.stroke(c, "ink", 3.5, cap="round")
+
+
+_ILLS = (_ill_gift, _ill_card, _ill_clock)
+
+
+def _tale_card(c, i, txt, t, tf):
+    """One red-flag story panel: flag pin, label, little illustration."""
+    k = ease_out_back(seg(t, tf, tf + 0.3), 2.2)
+    rot = (-0.02, 0.016, -0.013)[i]
+    cw, ch = 720.0, 100.0
+    with saved(c, 0, FLAG_Y[i], k, rot) as ci:
+        rrect(ci, -cw / 2 + 7, -ch / 2 + 8, cw, ch, 14)
+        core.fill(ci, (0, 0, 0, 0.4))
+        rrect(ci, -cw / 2, -ch / 2, cw, ch, 14)
+        _fs(ci, PARCH, "ink", 5)
+        rrect(ci, -cw / 2 + 8, ch / 2 - 17, cw - 16, 10, 5)
+        core.fill(ci, PARCH_SH)
+        _red_flag(ci, -318, 4, 1.0, math.sin((t - tf) * 7.0 + i))
+        fs = 46
+        while text_width(ci, txt, "ui", fs) > 492 and fs > 30:
+            fs -= 1
+        text(ci, txt, -270, 16, fs, "ink", "ui", align="left")
+        with saved(ci, 296, 0, 1.0) as cc:
+            _ILLS[i](cc, t)
+
+
+def _shield(c, x, y, s, t, tin):
+    """Little 'safe' shield with a check (the readers are protected)."""
+    if t < tin:
+        return
+    k = ease_out_back(seg(t, tin, tin + 0.3), 2.4)
+    with saved(c, x, y, s * k) as cc:
+        def path(sc=1.0):
+            cc.move_to(0, -38 * sc)
+            cc.curve_to(14 * sc, -30 * sc, 24 * sc, -30 * sc, 32 * sc, -32 * sc)
+            cc.curve_to(34 * sc, 2 * sc, 22 * sc, 26 * sc, 0, 40 * sc)
+            cc.curve_to(-22 * sc, 26 * sc, -34 * sc, 2 * sc, -32 * sc, -32 * sc)
+            cc.curve_to(-24 * sc, -30 * sc, -14 * sc, -30 * sc, 0, -38 * sc)
+            cc.close_path()
+        path()
+        _fs(cc, "safe", "ink", 5)
+        path(0.7)
+        core.stroke(cc, (1, 1, 1, 0.45), 3)
+        cc.move_to(-13, 0)
+        cc.line_to(-3, 11)
+        cc.line_to(15, -12)
+        core.stroke(cc, "ink", 11, cap="round")
+        cc.move_to(-13, 0)
+        cc.line_to(-3, 11)
+        cc.line_to(15, -12)
+        core.stroke(cc, "white", 6, cap="round")
+
+
+def _reader(c, x, y, t, tin, i, skin, body, happy):
+    """Tiny townsfolk reader (prop bible 6.3, mini) holding a little dark copy
+    of the tale. (x, y) = feet. 2-frame bounce, dot eyes reading down; closed
+    happy arcs once they're safe."""
+    if t < tin:
+        return
+    k = ease_out_back(seg(t, tin, tin + 0.3), 2.0)
+    ph = hash01(i, 331)
+    bob = 6.0 if int((t + ph) * 4.0) % 2 else 0.0
+    with saved(c, x, y - bob * k, k * READER_S) as cc:
+        cc.set_line_join(cairo.LINE_JOIN_ROUND)
+        ellipse(cc, 0, 6, 46, 9)                         # ground shadow
+        core.fill(cc, (0, 0, 0, 0.25))
+        ellipse(cc, 0, -50, 38, 52)                      # pear body
+        _fs(cc, body, "ink", 4.5)
+        circle(cc, 0, -138, 33)                          # head
+        _fs(cc, skin, "ink", 4.5)
+        if happy:
+            for sx in (-1, 1):
+                cc.new_sub_path()
+                cc.arc(sx * 12, -138, 7, math.pi + 0.35, 2 * math.pi - 0.35)
+            core.stroke(cc, "ink", 3.5, cap="round")
+            cc.new_sub_path()
+            cc.arc(0, -128, 11, 0.3, math.pi - 0.3)
+            core.stroke(cc, "ink", 3.5, cap="round")
+        else:
+            for sx in (-1, 1):
+                circle(cc, sx * 11, -131, 4.2)
+                core.fill(cc, "ink")
+            cc.new_sub_path()
+            cc.arc(0, -121, 7, 0.4, math.pi - 0.4)
+            core.stroke(cc, "ink", 3, cap="round")
+        # the little dark copy of the tale, held open
+        with saved(cc, 0, -62, 1.0, 0.0) as cb:
+            for sx in (-1, 1):
+                poly(cb, [(0, -4), (sx * 34, -12), (sx * 34, 22), (0, 28)])
+                _fs(cb, TALE_BG, "ink", 3.5)
+                cb.move_to(sx * 8, 2)
+                cb.line_to(sx * 26, -2)
+                cb.move_to(sx * 8, 12)
+                cb.line_to(sx * 26, 8)
+                core.stroke(cb, core.alpha(GOLD, 0.8), 2.5)
+            for sx in (-1, 1):                           # mitten hands
+                circle(cb, sx * 36, 10, 10)
+                _fs(cb, skin, "ink", 3.5)
+
+
+def _tale_page(ctx, t, T, cx, cy, sc):
+    """'A TALE OF SCAMS & DANGER': the villain's own dark story page (it pops
+    out of the storybook on "Your"). Lightning across it on "scary"; red-flag
+    story panels on "stories" / "scams" / "danger" (the title words pulse when
+    spoken); tiny readers below it on "teach people", lightbulbs on "how",
+    shields on "safe"."""
     if t < T.board_in:
         return
-    kp = ease_out_back(seg(t, T.board_in, T.board_in + 0.32), 1.7)
+    kp = ease_out_back(seg(t, T.board_in, T.board_in + 0.36), 1.6)
+    s_pop = lerp(0.24, 1.0, kp)
+    rot = lerp(-0.3, -0.012, kp)
     hw, hh = BOARD_W / 2, BOARD_H / 2
-    with saved(ctx, cx, cy, sc * kp, -0.012) as c:
+    with saved(ctx, cx, cy, sc * s_pop, rot) as c:
         c.set_line_join(cairo.LINE_JOIN_ROUND)
-        rrect(c, -hw + 10, -hh + 14, BOARD_W, BOARD_H, 26)
-        core.fill(c, (0, 0, 0, 0.35))
-        rrect(c, -hw, -hh, BOARD_W, BOARD_H, 26)
-        _fs(c, "#241a33", "ink", 6)
-        rrect(c, -hw + 12, -hh + 12, BOARD_W - 24, BOARD_H - 24, 18)
-        core.stroke(c, "danger", 6)
-        # header band
+        _tale_edge(c, hw, hh, 10, 14)
+        core.fill(c, (0, 0, 0, 0.4))
+        _tale_edge(c, hw, hh)
+        _fs(c, TALE_BG, "ink", 6)
         c.save()
-        rrect(c, -hw, -hh, BOARD_W, BOARD_H, 26)
+        _tale_edge(c, hw, hh)
         c.clip()
-        c.rectangle(-hw, -hh, BOARD_W, 112)
-        core.fill(c, "danger")
-        for i in range(9):                                  # hazard stripes
-            x0 = -hw + i * 46 - 20
-            poly(c, [(x0, -hh + 112), (x0 + 22, -hh + 112), (x0 + 6, -hh + 126),
-                     (x0 - 16, -hh + 126)])
-            core.fill(c, "#ffd34d")
+        rrect(c, -hw + 4, -hh + 4, 2 * hw - 8, 2 * hh - 8, 20)       # dark vignette rim
+        core.stroke(c, TALE_BG2, 44)
+        # lightning crack behind the title (faint; blazes on "scary")
+        fl = (1 - seg(t, T.tale_scary, T.tale_scary + 0.45)) if t >= T.tale_scary else 0.0
+        for bx, by, bs, br in ((-150, -196, 1.25, 0.25), (190, -170, 1.0, -0.3)):
+            with saved(c, bx, by, bs, br) as cb:
+                poly(cb, _BOLT)
+                core.fill(cb, core.alpha(core.mixc("#5b3a86", "#ffe9a8", fl), 0.45 + 0.55 * fl))
+        if fl > 0:
+            c.rectangle(-hw, -hh, 2 * hw, 2 * hh)
+            core.fill(c, (0.85, 0.8, 1.0, 0.3 * fl))
         c.restore()
-        c.move_to(-hw, -hh + 112)
-        c.line_to(hw, -hh + 112)
-        core.stroke(c, "ink", 5)
-        # warning triangle + title (siren pulse on the triangle)
-        pul = 0.5 + 0.5 * math.sin((t - T.board_in) * 9.0)
-        poly(c, [(-352, -hh + 92), (-316, -hh + 26), (-280, -hh + 92)])
-        _fs(c, core.mixc("#ffd34d", "#ffffff", 0.5 * pul), "ink", 5)
-        text(c, "!", -316, -hh + 86, 46, "ink", "black")
-        text(c, "SCAM ALERT!", -40, -hh + 86, 84, "white", "comic", outline="ink",
-             outline_w=10)
-        # red-flag cards
-        for i, (txt, fy, tf) in enumerate(zip(FLAGS, FLAG_Y, T.flags)):
-            if t < tf:
+        # crimson + gold double frame, gold corner curls
+        rrect(c, -hw + 24, -hh + 24, 2 * hw - 48, 2 * hh - 48, 16)
+        core.stroke(c, TALE_RED, 5)
+        rrect(c, -hw + 36, -hh + 36, 2 * hw - 72, 2 * hh - 72, 12)
+        core.stroke(c, core.alpha(GOLD, 0.8), 2.5)
+        for sx in (-1, 1):
+            for sy in (-1, 1):
+                c.new_sub_path()
+                c.arc(sx * (hw - 52), sy * (hh - 52), 13, 0, 2 * math.pi)
+                core.stroke(c, GOLD, 4)
+                circle(c, sx * (hw - 52), sy * (hh - 52), 4.5)
+                core.fill(c, GOLD)
+        # the author (tiny evil-genius caricature) + a crescent moon
+        with saved(c, -322, -hh + 116, 0.74) as cc:
+            _icon_villain(cc, t, 0.0)
+        c.save()
+        circle(c, 326, -hh + 110, 40)
+        circle(c, 346, -hh + 96, 36)
+        c.set_fill_rule(cairo.FILL_RULE_EVEN_ODD)
+        core.fill(c, GOLD)
+        c.restore()
+        # title
+        text(c, "A TALE OF", 0, -hh + 96, 46, GOLD, "title", outline="ink", outline_w=8)
+        fs = 96
+        parts = ("SCAMS", "  &  ", "DANGER")
+        while sum(text_width(c, p_, "comic", fs) for p_ in parts) > 560 and fs > 60:
+            fs -= 2
+        ws_ = [text_width(c, p_, "comic", fs) for p_ in parts]
+        xx = -sum(ws_) / 2
+        base = -hh + 200
+        for p_, w_, tw_, col in zip(parts, ws_, (T.w_scams, None, T.w_danger),
+                                    (TALE_RED, GOLD, TALE_RED)):
+            pu = 1.0
+            if tw_ is not None and tw_ - 0.02 <= t < tw_ + 0.3:
+                pu = 1 + 0.1 * math.sin(math.pi * seg(t, tw_ - 0.02, tw_ + 0.3))
+            with saved(c, xx + w_ / 2, base - fs * 0.35, pu) as cw_:
+                text(cw_, p_.strip(), 0, fs * 0.35, fs, col, "comic", outline="ink",
+                     outline_w=12)
+            xx += w_
+        for dx_, L_ in ((-200, 18), (-118, 11), (40, 22), (176, 14), (238, 9)):   # drips
+            dl = L_ * smoothstep(seg(t, T.board_in + 0.25, T.board_in + 1.2))
+            if dl > 1:
+                c.move_to(dx_, base - 4)
+                c.line_to(dx_, base + dl)
+                core.stroke(c, "ink", 10, cap="round")
+                circle(c, dx_, base + dl + 2, 7.5)
+                core.fill(c, "ink")
+                c.move_to(dx_, base - 6)
+                c.line_to(dx_, base + dl)
+                core.stroke(c, TALE_RED, 5, cap="round")
+                circle(c, dx_, base + dl + 2, 5)
+                core.fill(c, TALE_RED)
+        # red-flag story panels
+        for i, (txt, tf) in enumerate(zip(FLAGS, T.flags)):
+            if t >= tf:
+                _tale_card(c, i, txt, t, tf)
+        # tiny readers below the page (they tuck away with it)
+        happy = t >= T.shields[0] + 0.05
+        for i, ((rx, skin, body), tr) in enumerate(zip(READERS, T.readers)):
+            _reader(c, rx, READER_Y, t, tr, i, skin, body, happy)
+        for i, (rx, _s, _b) in enumerate(READERS):
+            if t < T.readers[i]:
                 continue
-            k = ease_out_back(seg(t, tf, tf + 0.3), 2.2)
-            rot = (-0.018, 0.014, -0.012, 0.02)[i]
-            with saved(c, -80, fy, k, rot) as ci:
-                rrect(ci, -300 + 6, -46 + 7, 600, 92, 14)
-                core.fill(ci, (0, 0, 0, 0.3))
-                rrect(ci, -300, -46, 600, 92, 14)
-                _fs(ci, "#fdfaf0", "ink", 5)
-                _red_flag(ci, -258, 4, 0.95, math.sin((t - tf) * 7.0 + i))
-                fs = 46
-                while text_width(ci, txt, "ui", fs) > 490 and fs > 30:
-                    fs -= 1
-                text(ci, txt, -204, 16, fs, "ink", "ui", align="left")
-                # "spot them": red marker loop drawn round the card's text
-                tm = T.marks[i]
-                if t >= tm:
-                    p = ease_out(seg(t, tm, tm + 0.24))
-                    tw = text_width(ci, txt, "ui", fs)
-                    ex_, rx_ = -204 + tw / 2, tw / 2 + 22
-                    ci.save()
-                    ci.translate(ex_, 2)
-                    ci.scale(rx_, 40)
-                    ci.new_path()
-                    ci.arc(0, 0, 1.0, -2.6, -2.6 + p * 2 * math.pi * 1.04)
-                    ci.restore()
-                    core.stroke(ci, (0.85, 0.12, 0.2, 0.9), 6, cap="round")
-        # magnifier: hovers on the newest card, sweeps down on "spot them"
-        if t >= T.flags[0]:
-            k = -1
-            for i, tf in enumerate(T.flags):
-                if t >= tf:
-                    k = i
-            my = FLAG_Y[k]
-            mx = 318.0                      # just right of the cards (never on the text)
-            if t >= T.spot:
-                q = seg(t, T.spot, T.marks[-1] + 0.25)
-                my = lerp(FLAG_Y[0], FLAG_Y[-1], ease_in_out(q))
+            ix, iy = rx, READER_Y - 272
+            if i % 2 == 0:
+                P.emote(c, "lightbulb", ix, iy, 0.88, t, T.bulbs[i // 2])
             else:
-                my = lerp(FLAG_Y[max(0, k - 1)], FLAG_Y[k],
-                          ease_out_back(seg(t, T.flags[k], T.flags[k] + 0.3), 1.5))
-            bob = 6 * math.sin(t * 5.0)
-            P.magnifier(c, mx, my - 6 + bob, 0.74, rot=1.75)
-        P.stamp(c, 30, 150, "LOVE IT ✓", t, T.love_stamp, color="safe", size=0.86, rot=-0.1)
-        if cameo and t >= T.cam_in:
-            kc = ease_out_back(seg(t, T.cam_in, T.cam_in + 0.3), 1.8) * \
-                (1 - ease_in(seg(t, T.board0, T.board0 + 0.18)))
-            if kc > 0.01:
-                with saved(c, CAMEO[0], CAMEO[1], kc) as cc:
-                    _cameo(cc, t, T, 0, 0, CAMEO[2])
+                _shield(c, ix, iy + 4, 1.25, t, T.shields[i // 2])
+        if T.shields[0] <= t < T.just + 0.2:
+            P.sparkles(c, 0, READER_Y - 110, 270, t, n=5, seed=19, color="#ffe9a8", size=1.3)
 
 
 def _shot_S(ctx, t, T, info):
@@ -1596,55 +1815,72 @@ def _shot_S(ctx, t, T, info):
     x = lerp(AIB[0], AIS[0], k_mv)
     y = lerp(AIB[1], AIS[1], k_mv)
     s = lerp(AIB[2], AIS[2], k_mv)
-    wc, F = T.wc, T.folders
-    L3c = T.L3c
+    wc, F, fl = T.wc, T.folders, T.flags
+    L3b = T.L3b
     ex = kv(t, [(-1.0, AIX["happy0"]), (T.scary - 0.05, AIX["amused"], 0.2),
                 (T.items[0] - 0.05, AIX["happy0"], 0.2), (T.nod - 0.05, AIX["warm"], 0.25),
-                (L3c.start - 0.15, AIX["amused"], 0.25), (T.love - 0.05, AIX["happy0"], 0.2),
+                (T.express - 0.1, AIX["cheer"], 0.16), (T.board_in + 0.05, AIX["amused"], 0.25),
+                (fl[2] + 0.25, AIX["happy0"], 0.25), (T.readers[0] - 0.05, AIX["warm"], 0.25),
                 (T.just - 0.1, AIX["det"], 0.25), (T.c_end + 0.05, AIX["warm"], 0.3)])
+    # "Express yourself!": little excited fists -> arms flung wide (present_both)
     hands = keyed(t, [(-1.0, "idle"), (T.book_in - 0.1, "present", 0.25),
-                      (T.nod - 0.05, "present_both", 0.25), (L3c.start - 0.05, "idle", 0.25),
-                      (T.board_in - 0.1, "present", 0.25), (T.love - 0.12, "thumbs_up", 0.2),
+                      (T.nod - 0.05, "present_both", 0.25), (L3b.end - 0.04, "fists", 0.14),
+                      (T.express - 0.05, "present_both", 0.16),
+                      (T.board_in - 0.06, "present", 0.25),
+                      (T.readers[0] - 0.08, "present_both", 0.25),
                       (T.just - 0.05, "stop", 0.2), (F[1] - 0.1, "stop_both", 0.2),
                       (T.c_end + 0.05, "present_both", 0.3)])
-    fl = T.flags
     look = kv(t, [(-1.0, (0.0, 0.0)), (T.book_in + 0.1, (0.55, 0.8), 0.2),
                   (T.scary - 0.1, (0.0, 0.0), 0.2), (T.items[0] - 0.05, (0.6, 0.8), 0.15),
                   (T.nod - 0.1, (0.0, 0.0), 0.2),
-                  (T.board_in + 0.05, (0.35, 0.9), 0.2),
-                  (fl[0], (0.45, 0.85), 0.12), (fl[1], (0.3, 0.92), 0.12),
-                  (fl[2], (0.25, 0.95), 0.12), (fl[3], (0.2, 0.97), 0.12),
-                  (T.cam_perk + 0.25, (0.95, 0.45), 0.15), (fl[1] - 0.05, (0.3, 0.92), 0.15),
-                  (T.spot, (0.4, 0.8), 0.15), (T.marks[-1] + 0.1, (0.35, 0.98), 0.25),
-                  (T.love - 0.05, (0.0, 0.0), 0.15),
+                  (T.express - 0.1, (0.95, -0.15), 0.15),          # to Malvo (inset)
+                  (T.board_in + 0.05, (0.45, 0.9), 0.2),           # HIS tale
+                  (fl[0], (0.3, 0.86), 0.12), (fl[1], (0.3, 0.92), 0.12),
+                  (fl[2], (0.25, 0.98), 0.12),
+                  (T.lift0, (0.9, -0.1), 0.15),                    # "could" -> to Malvo
+                  (T.readers[0], (0.35, 1.0), 0.15),               # the readers
+                  (T.safe - 0.05, (0.0, 0.0), 0.15),               # "safe": to camera
                   (T.wall0 + 0.1, (0.3, 0.95), 0.2),
                   (F[0] + 0.05, (-0.05, 0.9), 0.15), (F[0] + 0.55, (0.0, 0.0), 0.2),
                   (F[1] + 0.05, (0.45, 0.9), 0.15), (F[2] + 0.02, (0.75, 0.8), 0.12),
                   (F[2] + 0.6, (0.0, 0.0), 0.2)])
-    nod = 0.7 * _bump(t, T.nod, 0.8, 0.1) + 0.6 * _bump(t, T.love, 0.5, 0.08) + \
-        0.6 * _bump(t, T.c_end + 0.1, 0.7, 0.1)
+    nod = 0.7 * _bump(t, T.nod, 0.8, 0.1) + 0.6 * _bump(t, T.express + 0.05, 0.5, 0.08) + \
+        0.5 * _bump(t, T.safe, 0.5, 0.08) + 0.6 * _bump(t, T.c_end + 0.1, 0.7, 0.1)
     shake = 0.45 * _bump(t, wc[17], 0.5, 0.06)           # little head shake on "no"
-    # book: big below the AI, shrinks to the upper-right, then tucks higher
-    kb = ease_in_out(seg(t, T.shrink0, T.shrink1))
-    kc = ease_in_out(seg(t, T.board0, T.board1))
-    bx = lerp(lerp(BOOK_A[0], BOOK_B[0], kb), BOOK_C[0], kc)
-    by = lerp(lerp(BOOK_A[1], BOOK_B[1], kb), BOOK_C[1], kc)
-    bs = lerp(lerp(BOOK_A[2], BOOK_B[2], kb), BOOK_C[2], kc)
+    eu = seg(t, T.express - 0.04, T.express + 0.3)
+    bounce = 1 + 0.06 * math.sin(math.pi * eu) if 0 < eu < 1 else 1.0
+    # the book: grows + glows on "Express yourself!", folds away behind the
+    # tale page as it pops out on "Your"
+    kg = ease_out_back(seg(t, T.express - 0.06, T.express + 0.3), 1.6)
+    ko = ease_in(seg(t, T.board_in, T.board_in + 0.26))
+    bx = lerp(BOOK_A[0], BOOK_G[0], kg)
+    by = lerp(BOOK_A[1], BOOK_G[1], kg)
+    bs = lerp(BOOK_A[2], BOOK_G[2], kg) * (1 - ko)
+    glow = 0.0
+    if t >= T.express - 0.06:
+        glow = clamp((t - T.express + 0.06) / 0.2) * (0.85 + 0.15 * math.sin((t - T.express) * 6))
+        glow *= 1 - ko
     P.ai_bg(ctx, t)
-    _storybook(ctx, t, T, bx, by, bs)
-    if T.fair <= t < T.L3b.end:
+    if glow > 0.01:
+        core.radial_glow(ctx, bx, by, 600 * bs, "#ffd36b", 0.26 * glow)
+    _storybook(ctx, t, T, bx, by, bs, glow)
+    if T.fair <= t < L3b.end:
         P.sparkles(ctx, bx, by, 430 * bs, t, n=6, seed=12, size=1.2)
+    if T.express - 0.05 <= t < T.board_in + 0.1:
+        P.sparkles(ctx, bx, by - 20, 470 * bs, t, n=6, seed=14, color="#ffe9a8", size=1.25)
     _inset(ctx, t, T)
     _howto_wall(ctx, t, T)
-    # SCAM ALERT board: big in the lower half, then tucked under the book
-    ox = lerp(BOARD_A[0], BOARD_C[0], kc)
-    oy = lerp(BOARD_A[1], BOARD_C[1], kc) - 60 * math.sin(math.pi * kc)
-    osc = lerp(BOARD_A[2], BOARD_C[2], kc)
-    _scam_board(ctx, t, T, ox, oy, osc)
-    if T.love <= t < T.just:
-        P.sparkles(ctx, BOARD_A[0] + 30, BOARD_A[1] + 150, 260, t, n=4, seed=17, size=1.0)
-    draw_ai(ctx, x, y, s, t, expr=ex, look=look, mouth=mouth, hands=hands, nod=nod,
-            shake=shake, seed=AI_SEED)
+    # the tale page: big in the lower half, lifts for its readers, then tucks
+    kl = ease_in_out(seg(t, T.lift0, T.lift1))
+    kc = ease_in_out(seg(t, T.board0, T.board1))
+    ox = lerp(lerp(BOARD_A[0], BOARD_B[0], kl), BOARD_C[0], kc)
+    oy = lerp(lerp(BOARD_A[1], BOARD_B[1], kl), BOARD_C[1], kc) - 60 * math.sin(math.pi * kc)
+    osc = lerp(lerp(BOARD_A[2], BOARD_B[2], kl), BOARD_C[2], kc)
+    _tale_page(ctx, t, T, ox, oy, osc)
+    with saved(ctx, x, y, bounce) as c:
+        c.translate(-x, -y)
+        draw_ai(c, x, y, s, t, expr=ex, look=look, mouth=mouth, hands=hands, nod=nod,
+                shake=shake, seed=AI_SEED)
     _tossed_mask(ctx, t, T)
 
 
@@ -1852,14 +2088,15 @@ def SFX(info):
         (T.scary, "thunder", -18),
         (T.inset_in, "swoosh_up", -14),
         (P.stamp_impact(T.fair_stamp), "stamp", -6),
-        (T.inset_out, "whoosh", -16),
-        # ...expose the scammers: love it...
-        (T.board_in, "pop", -8),
-        (T.cam_in, "swoosh_up", -16),
-        (T.cam_perk + 0.02, "boing", -16),
-        (T.spot, "scan_beep", -14),
-        (P.stamp_impact(T.love_stamp), "stamp", -6),
-        (P.stamp_impact(T.love_stamp) + 0.04, "sparkle", -12),
+        # "Express yourself!": the book glows, the inset lights up; HIS tale
+        (T.express, "magic_chime", -12),
+        (T.lit + 0.02, "sparkle", -12),
+        (T.board_in, "page_flip", -7),
+        (T.board_in + 0.04, "whoosh", -14),
+        (T.tale_scary, "thunder", -17),
+        (T.bulbs[0], "idea_ding", -12),
+        (T.shields[0], "sparkle", -10),
+        (T.shields[0] + 0.05, "magic_chime", -16),
         # ...the how-to stays out
         (T.board0, "whoosh", -14),
         (T.c_end + 0.12, "sparkle", -16),
@@ -1887,9 +2124,9 @@ def SFX(info):
         out.append((ti, "pop", -10))
         out.append((tc, "tick", -12))
     for tf in T.flags:
-        out.append((tf, "pop", -12))
-    for tm in T.marks:
-        out.append((tm, "tick", -16))
+        out.append((tf, "pop", -11))
+    for tr in T.readers:
+        out.append((tr, "pop", -16))
     for k, lt in enumerate(P.brick_wall_land_times(T.wall0, WALL_ROWS, WALL_SPEED)):
         out.append((lt, "brick_thud", -6 - k))
     for tf, tn in zip(T.folders, T.nopes):

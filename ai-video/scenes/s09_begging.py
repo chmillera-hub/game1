@@ -146,6 +146,13 @@ V.VILLAIN_EXPR.setdefault("s09_moved", dict(_PLEAD, flutter=0.0, mc=-0.35, mw=0.
                                               tilt=0.06))
 V.VILLAIN_EXPR.setdefault("s09_shy", dict(V.VILLAIN_EXPR["sheepish"], sweat=0.0, mc=0.55,
                                             msk=0.35, blush=1.0, ul1=0.36, ul2=0.34))
+# 👉👈🥺 shy puppy face for "...Maybe later.": worried-up brows, big shiny
+# pupils, a slight blush and a small smile that wobbles (blend _a <-> _b)
+_PK = dict(_PLEAD, flutter=0.3, es=1.13, ps=1.6, shine=1.0, ul1=0.1, ul2=0.08, ll1=0.04,
+           ll2=0.04, blush=0.75, mc=0.34, mw=0.54, mo=0.0, mt=0.0, msk=0.1, tilt=0.07, hy=4,
+           shy=-6, by1=-20, by2=-22)
+V.VILLAIN_EXPR.setdefault("s09_pk_a", _PK)
+V.VILLAIN_EXPR.setdefault("s09_pk_b", dict(_PK, mc=0.2, mw=0.6, msk=-0.08))
 
 # clasped gloves held LOW (just above the desk edge) so the wailing mouth stays
 # clear; _BEG2 is the same clasp shifted, blended back and forth = pleading shake
@@ -155,15 +162,146 @@ _BEG_B2 = V._mirror(V._arm(-176, -122, -42, -228, -1.44, cu=0.12, th=0.1, sp=0.0
 # "I'll give you five stars!": both palms up, offering, just above the desk
 _OFFER_A = V._arm(-214, -130, -120, -250, -2.05, cu=0.06, th=-0.3, sp=0.95, pm=1.0, tf=-1,
                   hs=1.05)
-# shy finger-poke (index fingers meet in front of the chest)
-_POKE_A = V._arm(-196, -130, -70, -268, -0.2, cu=1.0, ix=0.0, th=0.2, sp=0.1, hs=1.0)
-_POKE_A2 = V._arm(-196, -130, -88, -264, -0.06, cu=1.0, ix=0.0, th=0.2, sp=0.1, hs=1.0)
 for _nm, _pz in (("s09_beg", V._pose(_BEG_A, shy=-12, hdy=4)),
                  ("s09_beg2", V._pose(_BEG_A2, _BEG_B2, shy=-12, hdy=4)),
-                 ("s09_offer", V._pose(_OFFER_A, shy=-16, hdy=-2)),
-                 ("s09_poke", V._pose(_POKE_A, shy=-4, hdy=6)),
-                 ("s09_poke2", V._pose(_POKE_A2, shy=-4, hdy=6))):
+                 ("s09_offer", V._pose(_OFFER_A, shy=-16, hdy=-2))):
     V.ARM_POSES.setdefault(_nm, _pz)
+
+# --- 👉👈 shy finger-poke ("...Maybe later.") ---------------------------------
+# The rig can't show the BACK of a glove with only the index out, so the two
+# gloves are drawn here (same white 4-finger glove, ink weights and shadow
+# tone as engine/villain._draw_hand), mirrored about his centre line. The
+# rig still draws the purple sleeves (its own hands shrunk to nothing under
+# our cuffs) through a per-frame arm pose 's09_dyn'.
+POKE_HS = 0.98                       # glove scale (x rig HAND_SCALE), both hands
+POKE_Y = -234.0                      # index line (villain-local)
+POKE_ANG = -0.05                     # index tilt (slightly up toward the tips)
+POKE_ELB = (-236.0, -150.0)          # screen-left elbow (mirrored for the right)
+POKE_SHY = -10.0                     # shoulders hunched up (shy)
+POKE_TILT = 0.05
+VY_POKE = 1342.0                     # he sits up on his knees for the gesture
+TIP = (90.5, -13.0)                  # index tip in glove units
+_ARM_KEYS = ("ex", "ey", "wx", "wy", "ha")
+
+
+def _poke_place(t, t_tap):
+    """Screen-left glove: (wrist, angle) with the index tips tapping. Small
+    repeated taps at 3 Hz: the hands ease apart a few px and meet again."""
+    u = max(0.0, t - t_tap)
+    sep = 0.5 - 0.5 * math.cos(2 * math.pi * 3.0 * u)          # 0 = tips touching
+    sep *= smoothstep(clamp(u / 0.15))
+    g = 1.0 + 8.0 * sep
+    ang = POKE_ANG - 0.05 * sep
+    hs = V.HAND_SCALE * POKE_HS
+    ca, sa = math.cos(ang), math.sin(ang)
+    tx, ty = TIP[0] * hs, TIP[1] * hs
+    wx = -g - (tx * ca - ty * sa)
+    wy = POKE_Y + 2.0 * sep - (tx * sa + ty * ca)
+    return wx, wy, ang
+
+
+def _poke_arm(wx, wy, ang, hs_rig=0.02):
+    return V._arm(POKE_ELB[0], POKE_ELB[1], wx, wy, ang, cu=1.0, ix=0.0, th=0.2, sp=0.1,
+                  hs=hs_rig)
+
+
+def _dyn_arms(t, k, base, t_tap):
+    """Register + return the per-frame arm pose: `base` (a rig pose name, rig
+    hands) blended toward the poke sleeves by k. For k < 0.5 the rig's own
+    hands show; from k >= 0.5 they shrink to nothing and the custom gloves
+    take over. Returns (arms name, glove alpha-ish scale or 0, (wx, wy, ang))."""
+    pb = V.ARM_POSES[base]
+    wx, wy, ang = _poke_place(t, t_tap)
+    pa = _poke_arm(wx, wy, ang)
+    A0 = dict(pb["a"])
+    A = dict(A0)
+    for key in _ARM_KEYS:
+        A[key] = lerp(A0[key], pa[key], k)
+    if k >= 0.5:
+        A.update({kk: pa[kk] for kk in ("cu", "ix", "th", "sp", "pm", "hs", "tf")})
+    V.ARM_POSES["s09_dyn"] = V._pose(A, None, shy=lerp(pb["shy"], POKE_SHY, k),
+                                     hdy=lerp(pb["hdy"], 4.0, k),
+                                     tilt=lerp(pb["tilt"], POKE_TILT, k))
+    glove = 0.0 if k < 0.5 else lerp(0.86, 1.0, (k - 0.5) / 0.5)
+    return "s09_dyn", glove, (A["wx"], A["wy"], A["ha"])
+
+
+def _glove_back(c, wx, wy, ang, sc=1.0):
+    """Screen-left glove seen from the BACK: loose fist, index pointing in
+    (+x), two curled fingers as knuckle bumps, thumb nub peeking over the
+    top, cuff at the wrist. Villain-local coords (s=1); rig glove style."""
+    hs = V.HAND_SCALE * POKE_HS * sc
+    c.save()
+    c.translate(wx, wy)
+    c.rotate(ang)
+    c.scale(hs, hs)
+    c.set_line_cap(1)
+    c.set_line_join(1)
+    lw = V.OUT_W / hs
+    il = 2.6 / hs * 1.45
+    thumb = (24.0, -20.0, 45.0, -28.0, 19.0)
+    curled = ((52.0, 6.0, 57.0, 9.0, 21.0), (46.0, 18.0, 50.0, 21.0, 20.0))
+    index = (48.0, -12.0, 80.0, -13.0, 21.0)
+    # silhouette pass (thick outer ink)
+    c.set_source_rgba(*V.INK)
+    for x0, y0, x1, y1, w in (thumb,) + curled + (index,):
+        c.set_line_width(w + 2 * lw)
+        c.move_to(x0, y0)
+        c.line_to(x1, y1)
+        c.stroke()
+    ellipse(c, 33, 2, 27, 25)
+    c.set_line_width(2 * lw)
+    c.stroke_preserve()
+    c.fill()
+    # cuff
+    V._poly(c, [(-12, -28), (11, -22), (11, 22), (-12, 28)])
+    c.set_source_rgba(*V.GLOVE)
+    c.fill_preserve()
+    c.set_source_rgba(*V.INK)
+    c.set_line_width(lw * 0.8)
+    c.stroke()
+
+    def capsule(cp):
+        x0, y0, x1, y1, w = cp
+        c.move_to(x0, y0)
+        c.line_to(x1, y1)
+        c.set_source_rgba(*V.INK)
+        c.set_line_width(w + 2 * il)
+        c.stroke_preserve()
+        c.set_source_rgba(*V.GLOVE)
+        c.set_line_width(w)
+        c.stroke()
+
+    capsule(thumb)                      # thumb behind the back of the hand
+    ellipse(c, 33, 2, 27, 25)           # back of the hand + one shadow tone
+    c.set_source_rgba(*V.GLOVE)
+    c.fill()
+    ellipse(c, 31, 15, 20, 8)
+    c.set_source_rgba(*V.GLOVE_SH)
+    c.fill()
+    for cp in curled[::-1]:
+        capsule(cp)
+    capsule(index)
+    # glove-back stitches (as the rig's open glove backs)
+    c.set_source_rgba(*V.GLOVE_SH)
+    c.set_line_width(3.2 / hs * 1.45)
+    for yy in (-7, 7):
+        c.move_to(16, yy)
+        c.line_to(33, yy * 1.05)
+    c.stroke()
+    c.restore()
+
+
+def _draw_poke(c, place, sc):
+    """Both gloves: the screen-left one, then its mirror image."""
+    if sc <= 0.0:
+        return
+    wx, wy, ang = place
+    _glove_back(c, wx, wy, ang, sc)
+    c.save()
+    c.scale(-1, 1)
+    _glove_back(c, wx, wy, ang, sc)
+    c.restore()
 
 
 def _ai_mix(a, b, k):
@@ -257,6 +395,16 @@ def _T(info):
     # the FOR EFFORT star flies to his lapel
     T["fly0"] = T["l4s"] + 0.12
     T["stick"] = max(T["fly0"] + 0.6, min(T["l4e"] - 0.1, T["fly0"] + 1.0))
+    # 👉👈 "...Maybe later.": sit up + gloves in during the considers beat,
+    # held through the line (taps from pk_in1), down again on the tally
+    T["maybe"] = _wt(info, "s09_l04", 0, 0.05)
+    T["sit0"], T["sit1"] = T["cons"] + 0.15, T["cons"] + 0.5
+    T["pk_in0"] = T["cons"] + 0.26
+    T["pk_in1"] = min(T["pk_in0"] + 0.24, T["l4s"] - 0.04)
+    T["pk_down"] = T["maybe"] - 0.06
+    T["pk_up"] = T["later"] - 0.06
+    T["sink0"], T["sink1"] = T["tally"] + 0.15, T["tally"] + 0.55
+    T["pk_out0"], T["pk_out1"] = T["tally"] + 0.22, T["tally"] + 0.5
     return T
 
 
@@ -669,14 +817,14 @@ def _shot_A(ctx, t, info, T):
         _rating_stars(c, t, T, T["soft"])
 
 
-def _fly_star(c, t, T, st_now):
-    """FOR EFFORT star: floats in from the right, sticks on the lapel."""
+def _fly_star(c, t, T, st_now, vy):
+    """FOR EFFORT star: floats in from the right, sticks on the lapel (rides
+    his current height: he sits up for the finger-poke, then sinks back)."""
     f0, f1 = T["fly0"], T["stick"]
     if t < f0:
         return
-    # lapel target in world coords (villain kneeling, no squash in this shot)
     lx = VX + LAPEL[0] * VS
-    ly = VY_KNEEL + (LAPEL[1] + st_now["shy"] * 0.5) * VS
+    ly = vy + (LAPEL[1] + st_now["shy"] * 0.5) * VS
     if t < f1:
         u = ease_in_out(seg(t, f0, f1))
         p0, p1, p2 = (1010.0, 1010.0), (800.0, 900.0), (lx, ly)
@@ -696,34 +844,48 @@ def _fly_star(c, t, T, st_now):
 
 
 def _shot_C(ctx, t, info, T):
+    """F1 kneeling: sniffle, eye darts, then the 👉👈🥺: he sits up on his
+    knees, both gloves come up in front of his chest (backs to camera, index
+    fingers pointing in, tips tapping), shy puppy eyes glance down at the
+    fingers and up at the AI. Held through "...Maybe later." and the star
+    sticking; on the tally he sinks back to the kneel s10 starts from."""
     c0 = T["cons"]
     l4s = T["l4s"]
     # --- Malvo ---------------------------------------------------------------
-    expr = _state(t, [(-9, "s09_moved"), (l4s - 0.08, "sheepish", 0.25),
-                      (T["stick"] + 0.12, "s09_shy", 0.3)])
+    if t < l4s - 0.08:
+        expr = _state(t, [(-9, "s09_moved")])
+    elif t < l4s + 0.17:
+        expr = ("s09_moved", "s09_pk_a", smoothstep(seg(t, l4s - 0.08, l4s + 0.17)))
+    else:                                            # small wobbly smile
+        expr = ("s09_pk_a", "s09_pk_b", 0.5 + 0.5 * math.sin(2 * math.pi * 5.5 * (t - l4s)))
     look = _look(t, [(-9, (0.55, -0.2)),
                      (c0 + 0.14, (-1.0, 0.15), 0.08),     # dart: Hissy
                      (c0 + 0.36, (0.0, 0.0), 0.08),       # dart: camera
                      (c0 + 0.56, (0.6, -0.2), 0.08),      # dart: back to the AI
-                     (l4s, (-0.35, 0.65), 0.18),          # "Maybe later." down and away
-                     (T["stick"] - 0.45, (0.9, 0.55), 0.15),  # spots the star coming
-                     (T["stick"] - 0.12, (0.5, 1.0), 0.12),   # ...on his lapel
+                     (T["pk_down"], (0.08, 0.95), 0.16),  # "Maybe": down at his fingers
+                     (T["pk_up"], (0.62, -0.5), 0.14),    # "later.": up at the AI, puppy
+                     (T["stick"] - 0.16, (0.45, 0.95), 0.12),   # the star on his lapel
+                     (T["stick"] + 0.22, (0.62, -0.5), 0.14),   # ...back up at the AI
                      (T["tally"] - 0.05, (-0.85, -1.0), 0.12),  # up at the chip
-                     (T["tally"] + 0.55, (0.1, 0.05), 0.2)])
+                     (T["tally"] + 0.55, (0.3, -0.2), 0.2)])
     if t < l4s:
         q = 0.5 + 0.5 * math.sin(2 * math.pi * 6.0 * (t - c0))
         mouth = (0.1 * q * smoothstep(seg(t, c0, c0 + 0.1)), 0.0)    # lip quiver
     else:
         mouth = info.mouth("villain", t)
-    poke_in = l4s - 0.1
-    if t < poke_in + 0.25:
-        arms = state_at(t, [(-9, "s09_beg"), (poke_in, "s09_poke")], 0.25)
+    # arms: clasp -> 👉👈 (custom gloves) -> held -> back down on the tally
+    k_in = smoothstep(seg(t, T["pk_in0"], T["pk_in1"]))
+    k_out = smoothstep(seg(t, T["pk_out0"], T["pk_out1"]))
+    if t < T["pk_out0"]:
+        arms, glove, place = _dyn_arms(t, k_in, "s09_beg", T["pk_in1"])
     else:
-        osc = 0.5 - 0.5 * math.cos(2 * math.pi * 2.6 * (t - poke_in - 0.25))
-        arms = ("s09_poke", "s09_poke2", osc)
-    # sniffle hitch + gulp bob
-    vy = VY_KNEEL - 8 * _bump(t, c0 + 0.02, 0.2) + 4 * _bump(t, c0 + 0.42, 0.22)
-    blink = _slow_blink(t, T["tally"] + 0.3)
+        arms, glove, place = _dyn_arms(t, 1.0 - k_out, "rest", T["pk_in1"])
+    # sit up for the gesture, sink back on the tally; sniffle hitch + gulp bob
+    up = ease_in_out(seg(t, T["sit0"], T["sit1"])) * (1 - ease_in_out(seg(t, T["sink0"], T["sink1"])))
+    vy = lerp(VY_KNEEL, VY_POKE, up) - 8 * _bump(t, c0 + 0.02, 0.2) + 4 * _bump(t, c0 + 0.42, 0.22)
+    blink = _pulses(t, [T["pk_up"] + 0.1, T["pk_up"] + 0.22, T["pk_up"] + 0.34], 0.1, 0.55)
+    if blink is None:
+        blink = _slow_blink(t, T["tally"] + 0.3)
     # --- Hissy: frozen mid-stroke, caught looking, then agrees -----------------
     sn_expr = _state(t, [(-9, "unimpressed"), (c0 + 0.12, "idle", 0.1),
                          (l4s + 0.1, "unimpressed", 0.25),
@@ -749,6 +911,7 @@ def _shot_C(ctx, t, info, T):
             _draw_bow(c, g, vk)
             _tail_to_bow(c, t, st, g, vk)
         _tears(c, t, st, look, 1.0, t_alpha)
+        _draw_poke(c, place, glove)
 
     # static standard F1 framing: s10 opens on exactly this frame (he explodes
     # up from behind the desk), so the cut matches
@@ -758,7 +921,7 @@ def _shot_C(ctx, t, info, T):
         P.lair_bg(c, t)
         _villain_group(c, t, vy, 0.0, expr, look, mouth, arms, snake, blink, extras)
         _lair_front(c, t)
-        _fly_star(c, t, T, st_hold)
+        _fly_star(c, t, T, st_hold, vy)
 
 
 # ===========================================================================

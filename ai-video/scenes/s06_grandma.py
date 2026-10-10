@@ -143,6 +143,20 @@ V.VILLAIN_EXPR.setdefault("s06_curious", V.resolve_expr(("sheepish", "hopeful", 
 V.VILLAIN_EXPR.setdefault("s06_hug", dict(
     V.VILLAIN_EXPR["happy"], ul1=0.62, ul2=0.6, ll1=0.4, ll2=0.38, mc=1.05, mo=0.2,
     blush=0.9, tilt=-0.08, by1=-18, by2=-18))
+# storybook close-up: "ooh..." (the cover dragon wakes) -> THRILLED (it breathes fire!)
+V.VILLAIN_EXPR.setdefault("s06_ooh", dict(
+    V.VILLAIN_EXPR["excited"], mc=0.15, mo=0.42, mw=0.52, mt=0.0, es=1.12, shine=0.9,
+    ps=1.15, hair=0.2, blush=0.3, tilt=-0.05))
+V.VILLAIN_EXPR.setdefault("s06_thrilled", dict(
+    V.VILLAIN_EXPR["excited"], mc=1.2, mo=0.62, mw=1.3, mt=0.5, es=1.14, shine=1.0,
+    hair=0.85, blush=0.75, by1=-38, by2=-40, tilt=0.04))
+# grandma's portrait: eyes open, prim and dignified (trying SO hard to look sweet)
+S.SNAKE_EXPR.setdefault("s06_granny", dict(
+    ul=0.44, ll=0.22, lt=-0.2, ps=1.05, ey=-0.05, mc=0.85, mo=0.0, mw=0.82, msk=0.0,
+    blush=1.0, hy=-5, tilt=-0.07, tng=0.0))
+S.SNAKE_EXPR.setdefault("s06_granny_tight", dict(
+    ul=0.36, ll=0.24, lt=-0.3, ps=0.9, mc=0.55, mo=0.0, mw=0.95, msk=0.35, blush=1.0,
+    hy=-3, tilt=-0.04, tng=0.0, wob=0.4))
 
 # dab: screen-left hand presses the hankie under the screen-left eye; the
 # other hand clutches the heart
@@ -236,6 +250,8 @@ def _T(info):
         T[f"l{i}"], T[f"l{i}e"] = L.start, L.end
     for k in ("stare", "slip", "soften", "tally"):
         T[k] = c(k)
+    # the silent beat on the grandma portrait (falls back to the old stare length)
+    T["ghold"] = c("grandma_hold", T["stare"] + 0.95)
     w = lambda lid, k: _wstart(info, lid, k)  # noqa: E731
     # s06_l01 "My dear late grandmother used to read me the forbidden recipe... at bedtime."
     T["w_grand"] = w("s06_l01", 3)
@@ -250,8 +266,10 @@ def _T(info):
         ws = [_norm(x) for x in info.line(lid).caption.split()]
         return w(lid, ws.index(word) if word in ws else d)
     # s06_l02 "My guy. That's your snake in a shawl."
+    T["w_guy"] = wf("s06_l02", "guy", 1)
     T["w_thats"] = wf("s06_l02", "thats", 2)
     T["w_hissy"] = wf("s06_l02", "snake", 4)
+    T["w_in"] = wf("s06_l02", "in", 5)
     T["w_shawl"] = wf("s06_l02", "shawl", 7)
     # s06_l03 "But hey... want a real spooky bedtime story?"
     T["w_hey"] = wf("s06_l03", "hey", 1)
@@ -263,19 +281,38 @@ def _T(info):
     # s06_l05 "A big, scary one... who guards the village."
     T["w_big"] = wf("s06_l05", "big", 1)
     T["w_scary"] = wf("s06_l05", "scary", 2)
+    T["w_one"] = wf("s06_l05", "one", 3)
+    T["w_who"] = wf("s06_l05", "who", 4)
     T["w_guards"] = wf("s06_l05", "guards", 5)
     T["w_village"] = wf("s06_l05", "village", 7)
     # shots
-    T["cu1"] = T["stare"] + 0.75            # hard cut to the portrait close-up
+    # B: deadpan stare, then the portrait REVEAL (before the 'grandma_hold'
+    # pause) held through the pause and "My guy. That's your snake..."; back
+    # to the AI on "...in a shawl."
+    T["cu1"] = max(T["stare"] + 0.5, min(T["stare"] + 0.68, T["ghold"] - 0.1))
+    T["cu1_end"] = clamp(T["w_in"] - 0.06, T["l2"] + 0.6, T["w_shawl"] - 0.12)
+    T["granny"] = T["ghold"] + 0.3          # eyes open: prim, dignified granny look
+    T["gblink"] = T["granny"] + 0.42        # slow dignified blink
+    T["gtongue"] = min(T["l2"] - 0.18, T["gblink"] + 0.62)   # dainty tongue flick
+    T["glint1"] = T["cu1"] + 0.12
+    T["glint2"] = T["granny"] + 0.12
     T["cut_f5"] = T["slip"] + 0.45          # hard cut to the two-shot
     T["gulp"] = T["cut_f5"] + 0.18          # caught -> gulp at camera (held ~0.5 s)
     # wall: builds quietly from the AI's line, window opens on 'soften'
     T["wall0"] = T["l3"]
     T["wall_land"] = P.brick_wall_land_times(T["wall0"], 4, 1.6)
-    # the gift
-    T["book_out"] = T["l5"] + 0.05          # slides out of the window
-    T["book_fly"] = T["book_out"] + 0.28    # 0.5 s arc into his arms
-    T["book_land"] = T["book_fly"] + 0.5
+    # the gift: pops out of the window on "dragon?", floats up beside him;
+    # hard cut (in the pause after his line) to the STORYBOOK close-up where
+    # the cover dragon breathes fire on "scary"; back to the two-shot for the hug
+    T["cu_book"] = T["l4e"] + 0.02
+    T["book_out"] = max(T["w_dragon"] + 0.02, T["cu_book"] - 0.72)
+    T["book_fly"] = T["book_out"] + 0.26    # arc up to the hover spot beside him
+    T["inhale"] = max(T["cu_book"] + 0.12, T["w_big"] - 0.06)
+    T["fire0"] = T["w_scary"] - 0.03        # FWOOSH
+    T["fire1"] = max(T["fire0"] + 0.6, T["w_who"] + 0.04)   # plume starts to fade
+    T["fire2"] = T["fire1"] + 0.32          # gone (embers drift a little longer)
+    T["cut_f5b"] = max(T["fire2"] + 0.05, T["w_guards"] + 0.2)
+    T["book_land"] = T["cut_f5b"] + 0.4     # settles into his arms -> hug
     _TCACHE.clear()
     _TCACHE[key] = T
     return T
@@ -453,9 +490,10 @@ def _candle_grade(ctx):
 # ---------------------------------------------------------------------------
 # bespoke props
 # ---------------------------------------------------------------------------
-def _glasses(ctx, slide, t, glint=0.0):
+def _glasses(ctx, slide, t, glint=0.0, glint2=0.0):
     """Round granny glasses in Hissy's head-local coords (eyes at (+-40,-18)).
-    slide 0..1 = slipped down the snout."""
+    slide 0..1 = slipped down the snout; glint / glint2 0..1 = a twinkle
+    sweeping across the left / right lens."""
     dy = 44 * slide
     rot = 0.13 * slide
     with saved(ctx, 0, dy, 1.0, rot) as c:
@@ -485,15 +523,25 @@ def _glasses(ctx, slide, t, glint=0.0):
         c.move_to(-11, -24)
         c.curve_to(-6, -34, 6, -34, 11, -24)
         _s(c, "gold", 3.5)
-        if glint > 0.01:
-            # a twinkle sweeping over the left lens
-            gx = -40 + 26 * math.cos(glint * math.pi)
-            P._star4(c, gx, -30, 13 * math.sin(glint * math.pi))
-            _f(c, "white", 0.95)
+        for g, lx in ((glint, -40), (glint2, 40)):
+            if 0.01 < g < 0.99:
+                # a white sheen band wipes across the lens + a big twinkle star
+                k = math.sin(g * math.pi)
+                c.save()
+                circle(c, lx, -18, r - 3)
+                c.clip()
+                bx = lx - 34 + 68 * g
+                poly(c, [(bx - 9, -50), (bx + 5, -50), (bx - 5, 14), (bx - 19, 14)])
+                _f(c, "white", 0.55 * k)
+                c.restore()
+                gx = lx + 30 * math.cos(g * math.pi)
+                P._star4(c, gx + 10, -40, 22 * k, g * 1.2)
+                _fs(c, "white", None, a=0.97)
 
 
-def _bonnet(ctx, t):
-    """White lace bonnet over the top of Hissy's head (head-local coords)."""
+def _bonnet(ctx, t, ruffle=0.0):
+    """White lace bonnet over the top of Hissy's head (head-local coords).
+    ruffle 0..1: the lace frill ripples and the little bow bounces."""
     # crown
     ctx.move_to(-104, -2)
     ctx.curve_to(-118, -70, -70, -124, 0, -126)
@@ -512,16 +560,19 @@ def _bonnet(ctx, t):
         hx, hy = -math.cos(a) * 88, -26 - math.sin(a) * 74
         circle(ctx, hx, hy, 4.2)
         _f(ctx, "#d9cfe6")
-    # scalloped lace frill along the front edge
+    # scalloped lace frill along the front edge (ripples when ruffled)
     for i in range(11):
         u = i / 10
         # sample the front edge (cubic) roughly
         x_ = lerp(-98, 98, u)
         y_ = -64 + 52 * (abs(x_) / 100) ** 1.6
-        circle(ctx, x_, y_ + 4, 9.5)
+        rip = ruffle * math.sin(t * 2 * math.pi * 4.5 - i * 0.9)
+        circle(ctx, x_, y_ + 4 + 4.5 * rip, 9.5 + 1.6 * rip)
         _fs(ctx, LACE, INK, 3.5)
     # little pink bow on the side
-    with saved(ctx, 86, -86, 1.0, 0.5) as c:
+    bow = 0.5 + 0.35 * ruffle * math.sin(t * 2 * math.pi * 3.2)
+    with saved(ctx, 86, -86, 1.0 + 0.12 * ruffle * abs(math.sin(t * 2 * math.pi * 3.2)),
+               bow) as c:
         for sx in (-1, 1):
             poly(c, [(0, 0), (sx * 22, -12), (sx * 22, 12)])
             _fs(c, "#ff8fb8", INK, 3.5)
@@ -597,14 +648,25 @@ def _portrait(ctx, x, y, s, t, hs, easel=True):
         ellipse(c, 0, -20, 74, 84)
         _f(c, "#5a2a40", 0.75)
         hx, hy, hsc = 0.0, -18.0, 0.75
+        wig = hs.get("wiggle", 0.0)          # proud little head wiggle (pivot: the neck)
+        c.save()
+        if wig:
+            c.translate(hx, hy + 60)
+            c.rotate(wig)
+            c.translate(-hx, -(hy + 60))
         draw_snake_head(c, hx, hy, hsc, t, hs.get("expr", "happy"), hs.get("look", (0, 0)),
                         hs.get("mouth", 0.0), hs.get("tongue", False), hs.get("blink"),
                         seed=5, neck=True)
+        c.restore()
         _shawl(c, hy + 54)
         c.save()
+        if wig:
+            c.translate(hx, hy + 60)
+            c.rotate(wig)
+            c.translate(-hx, -(hy + 60))
         _snake_head_xf(c, hx, hy, hsc, t, hs.get("expr", "happy"), seed=5)
-        _bonnet(c, t)
-        _glasses(c, hs.get("slide", 0.0), t, hs.get("glint", 0.0))
+        _bonnet(c, t, hs.get("ruffle", 0.0))
+        _glasses(c, hs.get("slide", 0.0), t, hs.get("glint", 0.0), hs.get("glint2", 0.0))
         c.restore()
         c.restore()
         # gold oval frame
@@ -695,11 +757,307 @@ def _tears(ctx, p, look, grow, t):
             _fs(ctx, TEAR, INK, 2.5)
 
 
-def _dragon_book(ctx, x, y, s, rot=0.0, sq=0.0, glow=0.0, t=0.0, eyes=1.0):
-    """THE BIG SCARY DRAGON storybook: 150x190 at s=1, centred. Night-sky
-    cover: a big spooky-but-cute dragon (glowing eyes, tiny fangs in a smile,
-    bat wings) curled protectively behind a little village with lit windows.
-    eyes 0..1 = glow strength of the dragon's eyes."""
+FIRE_O = "#ff6418"        # cartoon fire: outer / middle / core
+FIRE_M = "#ffae22"
+FIRE_C = "#fff2a0"
+NIGHT_HILL = "#1d1a46"
+SMOKE = "#9a94b8"
+
+
+def _rot(px, py, a):
+    ca, sa = math.cos(a), math.sin(a)
+    return px * ca - py * sa, px * sa + py * ca
+
+
+def _dragon_art(c, t, eyes=1.0, inhale=0.0, breath=0.0, proud=0.0):
+    """Cover art (the caller clips it to the art panel; cover-local coords).
+    Night sky + crescent moon; the big green dragon (profile head, snout up
+    and to the right, bat wing, tail curled round behind the houses) guarding
+    a little village with lit windows.  inhale/breath/proud 0..1 animate the
+    fire-breathing beat.  Returns ((mouth_x, mouth_y), snout_angle)."""
+    for (sx_, sy_, r_) in ((-36, -25, 3.4), (-4, -27, 2.4), (58, -24, 3.0), (46, 4, 2.2),
+                           (-38, 18, 2.2), (30, -14, 1.8)):
+        P._star4(c, sx_, sy_, r_)
+        _f(c, "#fff1b8", 0.9)
+    circle(c, -26, -10, 9)                           # crescent moon
+    _f(c, "#fff1b8")
+    circle(c, -21.5, -13, 8)
+    _f(c, BOOK)
+    c.move_to(-50, 70)                               # dark hills
+    c.curve_to(-20, 58, 22, 68, 70, 58)
+    c.line_to(70, 92)
+    c.line_to(-50, 92)
+    c.close_path()
+    _f(c, NIGHT_HILL)
+    puff = 1.0 + 0.15 * inhale * (1 - breath)
+    # tail: curls protectively round behind the village, spade tip
+    for col, w in ((INK, 11.5), (DRAGON, 6.5)):
+        c.move_to(-4, 60)
+        c.curve_to(22, 52, 50, 52, 61, 42)
+        c.curve_to(68, 34, 62, 25, 55, 30)
+        _s(c, col, w)
+    poly(c, [(55, 30), (48, 24), (51, 34), (58, 36)])
+    _fs(c, DRAGON_DK, INK, 2.2)
+    # bat wing behind the body (flares a little on the inhale)
+    wf = 1.0 + 0.12 * inhale
+    wp = [(-14, 30), (-28, 4), (-42, -8), (-41, 8), (-50, 13), (-44, 23), (-50, 33), (-30, 40)]
+    poly(c, [(-14 + (px + 14) * wf, 30 + (py - 30) * wf) for px, py in wp])
+    _fs(c, DRAGON_DK, INK, 3)
+    for (px, py) in ((-42, -8), (-50, 13), (-50, 33)):
+        c.move_to(-16, 31)
+        c.line_to(-14 + (px + 14) * wf * 0.8, 30 + (py - 30) * wf * 0.8)
+    _s(c, INK, 1.8)
+    # body + pale belly (puffs up on the inhale)
+    ellipse(c, -10, 50, 29 * puff, 25 * puff)
+    _fs(c, DRAGON, INK, 3.5)
+    ellipse(c, -3, 55, 15 * puff, 15 * puff)
+    _f(c, "#a6e88a")
+    for k in range(3):
+        c.move_to(-14, 48 + k * 8)
+        c.curve_to(-6, 51 + k * 8, 2, 51 + k * 8, 9, 48 + k * 8)
+    _s(c, "#7cc865", 1.6)
+    # head placement: crouch back on the inhale, thrust up on the breath
+    hx = 3 - 7 * inhale * (1 - breath) + 2 * breath
+    hy = -6 + 6 * inhale * (1 - breath) - 5 * breath
+    ang = -0.36 + 0.3 * inhale * (1 - breath) - 0.6 * breath
+    # neck (thick curve from the body up to the head) + pale front scales
+    nx0, ny0 = _rot(-6, 7, ang)
+    for col, w, dx in ((INK, 21, 0), (DRAGON, 15, 0), ("#a6e88a", 5, 4.5)):
+        c.move_to(-16 + dx, 34)
+        c.curve_to(-18 + dx, 16, hx + nx0 - 6 + dx, hy + ny0 + 14, hx + nx0 + dx * 0.6,
+                   hy + ny0)
+        _s(c, col, w)
+    for k, (px, py) in enumerate(((-24, 26), (-25, 15), (-21, 5))):   # back spikes
+        poly(c, [(px + 2, py - 4), (px - 7, py + 1), (px + 3, py + 4)])
+        _fs(c, "#f6e7b8", INK, 1.8)
+    with saved(c, hx, hy, 1.0, ang) as h:
+        for pts in ([(-6, -8), (-25, -15), (-10, -1)], [(-1, -10), (-13, -25), (3, -6)]):
+            poly(h, pts)                             # horns
+            _fs(h, "#f6e7b8", INK, 2.4)
+        jaw = 0.62 * breath + 0.06 * inhale * (1 - breath)
+        jx, jy = 2, 5                                # jaw hinge
+        if jaw > 0.04:                               # mouth interior
+            tx, ty = _rot(23, 0, jaw)
+            poly(h, [(jx, jy - 2), (27, 2), (jx + tx, jy + ty)])
+            _fs(h, "#5a0f1e", INK, 2)
+        with saved(h, jx, jy, 1.0, jaw) as j:        # lower jaw
+            ellipse(j, 11, 1.5, 12, 4.2)
+            _fs(j, DRAGON, INK, 2.6)
+        ellipse(h, 0, 0, 14, 12)                     # cranium
+        _fs(h, DRAGON, INK, 3)
+        ellipse(h, 15, -2, 13.5, 7)                  # snout
+        _fs(h, DRAGON, INK, 3)
+        ellipse(h, 4, -1.5, 9, 7.5)                  # hide the cranium/snout seam
+        _f(h, DRAGON)
+        for (fx_, w_) in ((12, 3.2), (20, 3.0)):     # two little fangs
+            poly(h, [(fx_ - w_ / 2, 4.2), (fx_ + w_ / 2, 4.2), (fx_, 9.5)])
+            _fs(h, "white", INK, 1.1)
+        ellipse(h, 25, -5, 1.7, 1.2, -0.4)          # nostril
+        _f(h, INK)
+        # spooky glowing eye (slit pupil, angled brow) -> proud ^ squint
+        circle(h, -2, -4, 8.5)
+        h.set_source_rgba(1.0, 0.86, 0.2, 0.35 * eyes)
+        h.fill()
+        if proud < 0.5:
+            ellipse(h, -2, -4, 5.6, 5.0)
+            _fs(h, "#ffd84a", INK, 2)
+            ellipse(h, -1.2 + 0.8 * breath, -3.8 - 0.8 * breath, 1.4, 3.7)
+            _f(h, INK)
+            circle(h, -3.6, -6, 1.2)
+            _f(h, "white")
+        else:
+            h.move_to(-7, -3)
+            h.curve_to(-5, -8, 1, -8, 3, -3)
+            _s(h, INK, 2.6)
+        h.move_to(-8.5, -11.5 + 2 * inhale)          # brow
+        h.line_to(5, -8)
+        _s(h, INK, 2.8)
+        if jaw <= 0.04:                              # closed-mouth smile line
+            h.move_to(25, 3)
+            h.curve_to(18, 6, 10, 6, 4, 3)
+            _s(h, INK, 2)
+        mouth = _rot(27, 3 + 6 * jaw, 0)
+    mx, my = _rot(mouth[0], mouth[1], ang)
+    nx_, ny_ = _rot(25, -6, ang)
+    # the little village it guards (in front of the dragon), lit windows
+    for (hx_, hy_, hw, hh) in ((6, 80, 15, 13), (26, 83, 13, 10), (45, 79, 16, 14),
+                               (63, 84, 12, 9)):
+        c.rectangle(hx_ - hw / 2, hy_ - hh, hw, hh + 20)
+        _fs(c, "#3a2e5c", INK, 2.2)
+        poly(c, [(hx_ - hw / 2 - 3, hy_ - hh), (hx_, hy_ - hh - 11), (hx_ + hw / 2 + 3, hy_ - hh)])
+        _fs(c, "#7a3b52", INK, 2.2)
+        c.rectangle(hx_ - 3, hy_ - hh + 4, 6, 6)
+        _f(c, "#ffc65a")
+    return (hx + mx, hy + my), ang, (hx + nx_, hy + ny_)
+
+
+def _flame_path(c, pts):
+    """pts = [(x, y, bulge), ...] closed, clockwise; bulge = control-point push
+    outward (+, convex) or inward (-) as a fraction of the segment length."""
+    n = len(pts)
+    c.move_to(pts[0][0], pts[0][1])
+    for i in range(n):
+        x0, y0, b = pts[i]
+        x1, y1, _ = pts[(i + 1) % n]
+        dx, dy = x1 - x0, y1 - y0
+        ln = math.hypot(dx, dy) or 1.0
+        cx, cy = (x0 + x1) / 2 + dy / ln * b * ln, (y0 + y1) / 2 - dx / ln * b * ln
+        c.curve_to(cx, cy, cx, cy, x1, y1)
+    c.close_path()
+
+
+def _flame_layer(c, at, wfun, t, seed, u_lo, u_top, lw, n_licks, amp, crown_n):
+    """One layer of the plume outline (see _flame)."""
+    def side(u, sgn, k=1.0):
+        # sgn -1 = left edge (normal (sin a, -cos a)), +1 = right edge
+        x, y, a = at(u)
+        w = wfun(u) * lw * k
+        return x - sgn * math.sin(a) * w, y + sgn * math.cos(a) * w
+
+    def fl(j, k):
+        return 0.7 + 0.6 * (0.5 + 0.5 * noise1(t * 9.0 + j * 1.9 + k * 7.3, seed))
+
+    pts = []
+    us = [lerp(u_lo, u_top, j / n_licks) for j in range(n_licks + 1)]
+    # left side, going up: long convex edge out to a tip leaning upward, short concave back
+    for j in range(n_licks):
+        bx, by = side(us[j], -1)
+        pts.append((bx, by, 0.24))
+        tx, ty = side(min(1.0, us[j + 1] + 0.02), -1, 1 + amp * fl(j, 0))
+        pts.append((tx, ty, -0.18))
+    # crown: a fan of licks round the top, all swirling the same way (curl)
+    qx, qy, qa = at(u_top)
+    R0 = wfun(u_top) * lw
+    for k in range(crown_n + 1):
+        ph = qa - math.pi / 2 + math.pi * k / crown_n
+        pts.append((qx + math.cos(ph) * R0, qy + math.sin(ph) * R0, 0.28))
+        if k < crown_n:
+            mid = (k + 0.5) / crown_n
+            ph2 = qa - math.pi / 2 + math.pi * mid + 0.32
+            rr = R0 * (1.25 + 0.42 * math.sin(math.pi * mid)) * fl(k, 1)
+            pts.append((qx + math.cos(ph2) * rr, qy + math.sin(ph2) * rr, -0.2))
+    # right side, going down: short concave up to the tip, long convex edge back in
+    for j in reversed(range(n_licks)):
+        bx, by = side(us[j + 1], 1)
+        pts.append((bx, by, -0.18))
+        tx, ty = side(min(1.0, us[j + 1] + 0.02), 1, 1 + amp * fl(j, 2))
+        pts.append((tx, ty, 0.24))
+    bx, by = side(u_lo, 1)
+    pts.append((bx, by, 0.3))
+    if u_lo > 0.02:                                   # detached: pointed bottom
+        x, y, a = at(max(0.0, u_lo - 0.06))
+        pts.append((x, y, 0.3))
+    # drop near-duplicate neighbours (crown base 0 ~ last left tip etc.)
+    out = [pts[0]]
+    for p in pts[1:]:
+        if math.hypot(p[0] - out[-1][0], p[1] - out[-1][1]) > 0.8:
+            out.append(p)
+    _flame_path(c, out)
+
+
+def _flame(c, M, ang0, t, grow, fade, tf, W=46.0, L=172.0, seed=40):
+    """Big cartoon flame plume from the dragon's mouth M (cover-local units),
+    leaving along ang0 and curling up into the sky (an S-curl that leans back
+    over the cover); orange / amber / pale-yellow layers with licking,
+    flickering edges, plus a few embers.  grow 0..1 = burst, fade 0..1 = the
+    plume shrinks, lifts off and puffs out, tf = seconds since the burst."""
+    if grow <= 0.005:
+        return
+    a_up = -math.pi / 2 - 0.2
+    Lk = L * (0.18 + 0.82 * ease_out(grow)) * (1 - 0.25 * fade)
+    N = 24
+    C = []
+    x, y = M
+    rise = 70 * fade * fade
+    for i in range(N + 1):
+        u = i / N
+        sway = 0.12 * math.sin(t * 4.1 + u * 2.6)
+        a = lerp(ang0, a_up + sway, smoothstep(clamp(u * 1.7)))
+        a += 0.24 * u * math.sin(u * 5.0 - t * 10.0)           # rolling curl
+        C.append((x, y - rise, a))
+        x += math.cos(a) * Lk / N
+        y += math.sin(a) * Lk / N
+
+    def at(u):
+        f = clamp(u) * N
+        i = min(int(f), N - 1)
+        r = f - i
+        x0, y0, a0 = C[i]
+        x1, y1, a1 = C[i + 1]
+        return x0 + (x1 - x0) * r, y0 + (y1 - y0) * r, a0 + (a1 - a0) * r
+
+    ws = (0.45 + 0.55 * ease_out(grow)) * (1 - 0.7 * fade)
+    # a puff of extra width on the burst (the 'FWOOMP')
+    ws *= 1 + 0.18 * math.sin(math.pi * clamp(tf / 0.35)) * (tf > 0)
+
+    def wfun(u):
+        return W * ws * (0.14 + 0.86 * smoothstep(clamp(u / 0.66))) \
+            * (1 + 0.07 * math.sin(t * 23.0 + u * 9.0))
+
+    u_lo = 0.7 * smoothstep(fade)
+    alpha = 1.0 - smoothstep(clamp((fade - 0.55) / 0.45))
+    if alpha > 0.01:
+        _flame_body(c, at, wfun, t, seed, u_lo, alpha)
+    _embers(c, at, wfun, tf, seed)
+
+
+def _flame_body(c, at, wfun, t, seed, u_lo, alpha):
+    c.push_group()
+    _flame_layer(c, at, wfun, t, seed, u_lo, 0.86, 1.0, 7, 0.5, 5)
+    _fs(c, FIRE_O, INK, 3.2)
+    _flame_layer(c, at, wfun, t, seed + 3, min(0.84, u_lo + 0.06), 0.78, 0.64, 5, 0.32, 3)
+    _f(c, FIRE_M)
+    _flame_layer(c, at, wfun, t, seed + 7, min(0.7, u_lo + 0.1), 0.64, 0.33, 3, 0.25, 3)
+    _f(c, FIRE_C)
+    c.pop_group_to_source()
+    c.paint_with_alpha(alpha)
+
+
+def _embers(c, at, wfun, tf, seed):
+    """A few sparks spat out of the plume, drifting up and out (8)."""
+    for i in range(8):
+        tb = 0.06 + i * 0.075
+        life = 0.8
+        age = (tf - tb) / life
+        if not (0.0 <= age < 1.0):
+            continue
+        u = 0.35 + 0.5 * hash01(i, seed + 1)
+        ex, ey, ea = at(u)
+        sgn = -1 if i % 2 else 1
+        w = wfun(u) * 1.05
+        ex -= sgn * math.sin(ea) * w
+        ey += sgn * math.cos(ea) * w
+        drift = sgn * (14 + 16 * hash01(i, seed + 2))
+        px = ex + drift * age + 4 * math.sin(age * 9 + i)
+        py = ey - (60 + 40 * hash01(i, seed + 3)) * age
+        r = (3.4 - 2.0 * age) * (0.8 + 0.4 * hash01(i, seed + 4))
+        circle(c, px, py, r * 1.9)
+        _f(c, FIRE_O, 0.55 * (1 - age))
+        P._star4(c, px, py, r * 1.7, age * 3 + i)
+        _f(c, FIRE_C, 1 - age * 0.8)
+
+
+def _smoke_puffs(c, x, y, t, k, seed=0, n=2, size=1.0):
+    """Little round smoke puffs rising from (x, y); k 0..1 = progress."""
+    if k <= 0.0 or k >= 1.0:
+        return
+    for i in range(n):
+        u = clamp(k * 1.25 - i * 0.25)
+        if u <= 0.0 or u >= 1.0:
+            continue
+        r = (2.5 + 5.0 * u) * size
+        circle(c, x + (4 + 6 * i) * u * size, y - (10 + 8 * i) * u * size, r)
+        _fs(c, SMOKE, INK, 1.4, a=(1 - u) * 0.9)
+
+
+def _dragon_book(ctx, x, y, s, rot=0.0, sq=0.0, glow=0.0, t=0.0, eyes=1.0, fire=None):
+    """THE BIG, SCARY DRAGON storybook: 150x190 at s=1, centred. Night-sky
+    cover: a big spooky-but-cute green dragon (glowing eye, little fangs, bat
+    wing) curled protectively round a little village with lit windows.
+    eyes 0..1 = glow of the dragon's eye.  fire = None or dict(inhale, breath,
+    proud, grow, fade, tf): the cover dragon blows a big flame plume up into
+    the sky over the village (it bursts out of the top of the cover)."""
+    fire = fire or {}
     with saved(ctx, x, y, (s * (1 + sq * 0.5), s * (1 - sq)), rot) as c:
         if glow > 0.01:
             circle(c, 0, 0, 150)
@@ -722,60 +1080,22 @@ def _dragon_book(ctx, x, y, s, rot=0.0, sq=0.0, glow=0.0, t=0.0, eyes=1.0):
         c.save()
         rrect(c, -44, -84, 110, 168, 9)
         c.clip()
-        fx, fy = 11, 16                              # dragon head centre
-        circle(c, 46, -16, 9)                        # moon
-        _f(c, "#fff1b8")
-        for sx in (-1, 1):                           # big bat wings behind the head
-            poly(c, [(fx + sx * 14, fy - 2), (fx + sx * 46, fy - 40), (fx + sx * 58, fy - 12),
-                     (fx + sx * 48, fy - 14), (fx + sx * 56, fy + 8), (fx + sx * 42, fy + 4),
-                     (fx + sx * 44, fy + 24), (fx + sx * 18, fy + 18)])
-            _fs(c, DRAGON_DK, INK, 3)
-        # body bulk down to the village
-        ellipse(c, fx, fy + 44, 40, 34)
-        _fs(c, DRAGON, INK, 3.5)
-        for sx in (-1, 1):                           # horns
-            poly(c, [(fx + sx * 10, fy - 22), (fx + sx * 24, fy - 46), (fx + sx * 24, fy - 18)])
-            _fs(c, "#f6e7b8", INK, 3)
-        ellipse(c, fx, fy, 30, 26)                   # head
-        _fs(c, DRAGON, INK, 3.5)
-        ellipse(c, fx, fy + 7, 15, 7)                # snout
-        _fs(c, "#a6e88a", INK, 2.2)
-        for sx in (-1, 1):                           # nostrils
-            circle(c, fx + sx * 5, fy + 6, 1.6)
-            _f(c, INK)
-        # spooky glowing eyes (slanted lids, big round pupils = still cute)
-        for sx in (-1, 1):
-            ex_, ey_ = fx + sx * 13, fy - 6
-            circle(c, ex_, ey_, 11)
-            c.set_source_rgba(1.0, 0.86, 0.2, 0.35 * eyes)
-            c.fill()
-            ellipse(c, ex_, ey_, 7.5, 6.5)
-            _fs(c, "#ffd84a", INK, 2.2)
-            circle(c, ex_ + sx * 0.5, ey_ + 1, 3.2)
-            _f(c, INK)
-            c.move_to(ex_ - 9, ey_ - 5 - sx * 3)     # angled brow-lid
-            c.line_to(ex_ + 9, ey_ - 5 + sx * 3)
-            _s(c, INK, 3)
-        # toothy grin: a smile with two tiny fangs
-        c.move_to(fx - 15, fy + 14)
-        c.curve_to(fx - 7, fy + 23, fx + 7, fy + 23, fx + 15, fy + 14)
-        _s(c, INK, 2.8)
-        for sx in (-1, 1):
-            poly(c, [(fx + sx * 6 - 2.5, fy + 19), (fx + sx * 6 + 2.5, fy + 19),
-                     (fx + sx * 6, fy + 25)])
-            _fs(c, "white", INK, 1.2)
-        # the little village it guards (in front of the body), with lit windows
-        for (hx, hy, hw, hh) in ((-26, 74, 15, 13), (-4, 78, 13, 10), (28, 74, 16, 14),
-                                 (50, 79, 12, 9)):
-            c.rectangle(hx - hw / 2, hy - hh, hw, hh + 20)
-            _fs(c, "#3a2e5c", INK, 2.2)
-            poly(c, [(hx - hw / 2 - 3, hy - hh), (hx, hy - hh - 11), (hx + hw / 2 + 3, hy - hh)])
-            _fs(c, "#7a3b52", INK, 2.2)
-            c.rectangle(hx - 3, hy - hh + 4, 6, 6)
-            _f(c, "#ffc65a")
+        brt = fire.get("grow", 0.0) * (1 - fire.get("fade", 0.0))
+        if brt > 0.01:                               # the fire lights the sky
+            c.set_source_rgba(1.0, 0.45, 0.15, 0.28 * brt)
+            c.paint()
+        M, ang, NOS = _dragon_art(c, t, eyes, fire.get("inhale", 0.0),
+                                  fire.get("breath", 0.0), fire.get("proud", 0.0))
         c.restore()
         rrect(c, -44, -84, 110, 168, 9)             # gold border
         _s(c, "gold", 4)
+        # nostril smoke on the inhale; a curl of smoke when the fire is spent
+        if fire.get("smoke_in", 0.0) > 0:
+            _smoke_puffs(c, NOS[0], NOS[1] - 2, t, fire["smoke_in"], seed=1, size=1.7)
+        _flame(c, M, ang, t, fire.get("grow", 0.0), fire.get("fade", 0.0),
+               fire.get("tf", 0.0))
+        if fire.get("smoke_out", 0.0) > 0:
+            _smoke_puffs(c, M[0] + 2, M[1] - 4, t, fire["smoke_out"], seed=2, n=3, size=2.2)
         text(c, "THE BIG, SCARY", 11, -60, 16, P.C("gold"), "title", outline="ink", outline_w=4)
         text(c, "DRAGON", 11, -34, 29, P.C("gold"), "title", outline="ink", outline_w=5)
 
@@ -921,15 +1241,14 @@ def _shot_ai_cu(ctx, t, info, T):
     if t < T["cu1"]:
         # DEADPAN STARE: nothing moves but one slow blink
         expr, look, hands = AI_STARE, (0.0, 0.0), "idle"
-        blink = _slow_blink(t, stare + 0.5)
+        blink = _slow_blink(t, stare + 0.28)
         if blink is None:
             blink = 0.0
         s_ = s * (1 + _cut_pulse(t, stare, 0.2, 0.02))
         draw_ai(ctx, x, y, s_, t, expr=expr, look=look, mouth=(0, 0), hands=hands,
                 blink=blink)
         return
-    # "My guy. That's your snake in a shawl."
-    l2 = T["l2"]
+    # "...in a shawl." (the first half of the line plays over the portrait)
     expr = _state(t, [(-1, AI_UNIMP), (T["w_shawl"] - 0.05, AI_STARE, 0.2)])
     look = _lookv(t, [
         (-1, (-0.15, 0.1)),                          # "My guy."  (at him)
@@ -970,20 +1289,59 @@ def _cu_bg(c):
     _s(c, "gold", 5)
 
 
+def _granny_hold(t, T):
+    """Grandma-portrait life during the long hold (reveal .. "...your snake"):
+    sweet ^^ smile + proud little wiggle (bonnet ruffles, lens glint) -> eyes
+    open, prim and dignified (2nd glint) -> slow dignified blink -> dainty
+    tongue flick -> "That's your snake": a nervous eye-dart, smile goes tight."""
+    c0, g0 = T["cu1"], T["granny"]
+    expr = _state(t, [
+        (-1, "happy"),
+        (g0, "s06_granny", 0.22),
+        (T["w_thats"] + 0.02, "s06_granny_tight", 0.14),
+    ])
+    look = _lookv(t, [
+        (-1, (0.0, 0.0)),
+        (T["w_thats"] + 0.02, (0.95, -0.05), 0.09),   # dart toward the AI...
+        (T["w_hissy"] + 0.04, (0.0, 0.05), 0.12),     # ...and back: smile, smile
+    ])
+    # slow, dignified blink: close 0.22 s, hold 0.16 s, open 0.26 s
+    b0 = T["gblink"]
+    blink = 0.0
+    if b0 <= t < b0 + 0.64:
+        d = t - b0
+        blink = (smoothstep(d / 0.22) if d < 0.22 else
+                 1.0 if d < 0.38 else 1 - smoothstep((d - 0.38) / 0.26))
+    # a tiny, ladylike tongue flick
+    tg = T["gtongue"]
+    tongue = 0.0
+    if tg <= t < tg + 0.34:
+        tongue = 0.62 * math.sin(math.pi * (t - tg) / 0.34) ** 0.7
+    # proud wiggle on the reveal + again when she settles into the prim look
+    ruffle = (math.exp(-max(0.0, t - c0) * 2.6) * (t >= c0)
+              + 0.7 * math.sin(math.pi * seg(t, g0 - 0.05, g0 + 0.55))
+              + 0.55 * math.sin(math.pi * seg(t, tg - 0.05, tg + 0.45)))
+    wig = 0.045 * math.sin((t - c0) * 2 * math.pi * 2.2) * math.exp(-max(0.0, t - c0) * 2.2)
+    return {"expr": expr, "look": look, "tongue": tongue, "blink": blink, "slide": 0.0,
+            "glint": seg(t, T["glint1"], T["glint1"] + 0.42),
+            "glint2": seg(t, T["glint2"], T["glint2"] + 0.42),
+            "ruffle": clamp(ruffle), "wiggle": wig}
+
+
 def _shot_portrait(ctx, t, info, T, second):
     if not second:
-        t0, t1 = T["cu1"], T["l2"]
-        push = 1.0 + 0.15 * ease_out(seg(t, t0, t1 + 0.1))
+        # one long, slow push-in across the whole hold
+        push = 1.0 + 0.13 * ease_in_out(seg(t, T["cu1"], T["cu1_end"] + 0.2))
+        push += _cut_pulse(t, T["cu1"], 0.22, 0.03)
     else:
-        push = 1.15 + 0.03 * ease_out(seg(t, T["slip"], T["cut_f5"]))
+        push = 1.13 + 0.03 * ease_out(seg(t, T["slip"], T["cut_f5"]))
     fx, fy = CU_FOCUS
     with saved(ctx, fx, fy, push) as c:
         c.translate(-fx, -fy)
         P._cached_layer(c, "s06_cu_bg", _cu_bg)
         if not second:
-            # trying SO hard to look sweet: held smile, tiny proud wiggle, lens glint
-            hs = {"expr": "happy", "tongue": False, "slide": 0.0,
-                  "glint": seg(t, T["cu1"] + 0.15, T["cu1"] + 0.6)}
+            # trying SO hard to look sweet
+            hs = _granny_hold(t, T)
         else:
             sl = T["slip"]
             u = seg(t, sl, sl + 0.28)
@@ -1002,39 +1360,43 @@ def _shot_portrait(ctx, t, info, T, second):
 # shot F: F5 two-shot (candle-lit lair, the AI hologram in the room)
 # ---------------------------------------------------------------------------
 def _malvo_F(t, T):
-    c0 = T["cut_f5"]
     expr = _state(t, [
         (-1, "sheepish"),
         (T["w_real"], "s06_curious", 0.4),
         (T["soften"], "pleading", 0.25),
         (T["soften"] + 0.3, "hopeful", 0.35),
-        (min(T["w_scary"], T["book_land"] - 0.3), "excited", 0.15),   # "scary" -> thrilled
-        (T["book_land"] - 0.05, "s06_hug", 0.25),
+        (T["l4e"] - 0.08, "s06_ooh", 0.2),               # ...the dragon book floats up!
+        (T["cut_f5b"] - 0.01, "s06_hug", 0.01),          # (continues the close-up)
     ])
     arms = _state(t, [
         (-1, "s06_dab"),                                  # caught mid-dab (frozen)
         (T["w_hey"] + 0.1, "s06_clasp", 0.45),            # wrings the hankie, nervous
         (T["soften"] + 0.05, "s06_lowered", 0.45),        # ...and lowers it
+        (T["book_fly"], "s06_clasp", 0.3),                # eager: hands together
         (T["book_land"] - 0.18, "s06_hug", 0.22),
     ])
-    arms = _cycle(arms, t, on=t < T["soften"])
+    arms = _cycle(arms, t, on=t < T["soften"] or T["cut_f5b"] <= t < T["book_land"] - 0.18)
     look = _lookv(t, [
         (-1, (0.95, -0.45)),                            # caught: eyes on the AI at the cut
         (T["gulp"] - 0.04, (0.15, 0.05), 0.1),          # ...snap to camera on the gulp...
         (max(T["w_hey"] + 0.25, T["gulp"] + 0.55), (0.95, -0.45), 0.18),  # 'hey' -> AI
         (T["w_real"], (0.8, 0.1), 0.25),                # the wall building
         (T["soften"] + 0.05, (0.9, 0.25), 0.2),         # the window opening
-        (T["l4e"] + 0.05, (0.95, -0.4), 0.2),           # the AI
-        (T["book_out"], (0.9, 0.3), 0.1),               # the book!
-        (T["book_fly"] + 0.15, (0.4, 0.45), 0.2),
-        (T["book_land"], (0.0, 0.55), 0.2),             # into his arms
+        (T["book_out"], (0.95, 0.35), 0.1),             # the book! (in the window)
+        (T["book_fly"] + 0.1, (0.85, 0.2), 0.25),       # ...floating up beside him
+        (T["cut_f5b"] - 0.01, (0.85, 0.25), 0.01),
+        (T["book_land"] - 0.15, (0.0, 0.55), 0.2),      # into his arms
     ])
     blink = _first(_slow_blink(t, T["soften"] + 0.12), _slow_blink(t, T["soften"] + 0.62))
+    if T["book_out"] <= t < T["cut_f5b"]:
+        blink = 0.0                                     # eyes wide: a DRAGON book
     if t >= T["book_land"] + 0.15:
         blink = 0.55 + 0.1 * math.sin(t * 2.2)        # contented, eyes squeezed soft
-    # leans in toward the window ("...does it have a dragon?"), settles back
+    elif t >= T["cut_f5b"]:
+        blink = 0.3
+    # leans in toward the window / the book ("...does it have a dragon?")
     lean = 0.035 * smoothstep(seg(t, T["soften"] + 0.3, T["l4"] + 0.3)) \
-        * (1 - smoothstep(seg(t, T["book_out"], T["book_land"])))
+        * (1 - smoothstep(seg(t, T["cut_f5b"], T["book_land"])))
     if t >= T["book_land"]:
         lean += -0.035 * math.sin((t - T["book_land"]) * 2 * math.pi * 0.7) \
             * smoothstep(seg(t, T["book_land"], T["book_land"] + 0.3))
@@ -1046,7 +1408,7 @@ def _ai_F(t, T):
     expr = _state(t, [
         (-1, AI_UNIMP),
         (l3 + 0.16, AI_WARM, 0.3),                        # SLOW BLINK -> warm
-        (T["l5"] - 0.05, AI_HAPPY, 0.25),
+        (T["book_out"] - 0.05, AI_HAPPY, 0.25),           # happy to hand it over
     ])
     look = _lookv(t, [
         (-1, (-0.9, 0.35)),                                # at Malvo
@@ -1054,8 +1416,9 @@ def _ai_F(t, T):
         (T["w_story"] + 0.1, (-0.95, 0.3), 0.2),           # back to Malvo
         (T["soften"], (-0.35, 0.8), 0.2),                  # opens the window
         (T["l4"] + 0.1, (-0.95, 0.3), 0.2),
-        (T["book_out"], (-0.2, 0.8), 0.15),                # hands the book over
-        (T["book_fly"] + 0.1, (-0.95, 0.45), 0.25),
+        (T["book_out"] - 0.05, (-0.2, 0.8), 0.15),         # out comes the book
+        (T["book_fly"] + 0.05, (-0.75, 0.6), 0.25),        # ...floating up to him
+        (T["cut_f5b"] + 0.1, (-0.95, 0.45), 0.25),         # at Malvo (and his hug)
     ])
     hands = _state(t, [
         (-1, "idle"),
@@ -1063,16 +1426,18 @@ def _ai_F(t, T):
         (T["l3e"] + 0.2, "idle", 0.35),
         (T["soften"] - 0.05, "present_l", 0.25),           # 'ta-da' at the shutter
         (T["soften"] + 0.6, "idle", 0.35),
-        (T["l5"] - 0.1, "present_both", 0.3),
+        (T["book_out"] - 0.1, "present_both", 0.3),        # ta-da: the dragon book
     ])
     blink = _slow_blink(t, l3)
     nod = 0.0
-    if T["l4e"] <= t < T["l4e"] + 0.55:
-        nod = 0.6 * math.sin(math.pi * seg(t, T["l4e"], T["l4e"] + 0.55))
+    n0 = T["book_out"] + 0.05                              # "a dragon? oh yes."
+    if n0 <= t < n0 + 0.55:
+        nod = 0.6 * math.sin(math.pi * seg(t, n0, n0 + 0.55))
     return expr, look, hands, blink, nod
 
 
 BOOK_S = 1.12                           # final size in his arms (bible size)
+HOVER_F = (598, 902, 1.22)              # where the book hovers beside him (two-shot)
 
 
 def _book_dest():
@@ -1080,27 +1445,37 @@ def _book_dest():
 
 
 def _book_state(t, T):
-    """(x, y, s, rot, sq) of the dragon storybook, or None."""
+    """(x, y, s, rot, sq) of the dragon storybook in the two-shot, or None."""
     if t < T["book_out"]:
         return None
     wx, wy, ww, wh = WALL[0] + WIN_REL[0], WALL[1] + WIN_REL[1], WIN_REL[2], WIN_REL[3]
     cx, cy = wx + ww / 2, wy + wh / 2 + 2
+    bo, bf = T["book_out"], T["book_fly"]
+    if t < bf:
+        # pops forward in the window, then slides out to the left
+        k = ease_out_back(seg(t, bo, bo + 0.14), 2.2)
+        u = ease_in_out(seg(t, bo + 0.1, bf))
+        return (cx - 40 * u, cy - 26 * u, 0.5 * k + 0.12 * u, -0.08 * u, 0.0)
+    x0, y0, s0 = cx - 40, cy - 26, 0.62
+    hx, hy, hs = HOVER_F
+    bob = 6 * math.sin((t - bf) * 2 * math.pi * 0.8)
+    if t < T["cu_book"]:
+        # a quick magic float up to hover beside him
+        k = ease_in_out(seg(t, bf, T["cu_book"]))
+        x = lerp(x0, hx, k)
+        y = lerp(y0, hy, k) - 70 * math.sin(math.pi * k)
+        return (x, y + bob * k, lerp(s0, hs, k), lerp(-0.08, -0.05, k) - 0.18 *
+                math.sin(math.pi * k), -0.05 * math.sin(math.pi * k))
+    s1 = T["cut_f5b"] + 0.05
+    if t < s1:
+        return (hx, hy + bob, hs, -0.05, 0.0)
     dest = _book_dest()
-    if t < T["book_fly"]:
-        # pushed forward through the window (pop), then slides out to the left
-        k = ease_out_back(seg(t, T["book_out"], T["book_out"] + 0.14), 2.2)
-        u = ease_in_out(seg(t, T["book_out"] + 0.1, T["book_fly"]))
-        s = 0.5 * k + 0.16 * u
-        return (cx - 46 * u, cy - 20 * u, s, -0.1 * u, 0.0)
-    x0, y0 = cx - 46, cy - 20
     if t < T["book_land"]:
-        u = seg(t, T["book_fly"], T["book_land"])
-        k = ease_in_out(u)
-        x = lerp(x0, dest[0], k)
-        y = lerp(y0, dest[1], k) - 170 * math.sin(math.pi * k)
-        s = lerp(0.66, BOOK_S, k)
-        rot = -0.1 - 0.35 * math.sin(math.pi * k) + 0.16 * k
-        return (x, y, s, rot, -0.07 * math.sin(math.pi * k))
+        # settles into his arms
+        k = ease_in_out(seg(t, s1, T["book_land"]))
+        x = lerp(hx, dest[0], k)
+        y = lerp(hy + bob, dest[1], k) - 30 * math.sin(math.pi * k)
+        return (x, y, lerp(hs, BOOK_S, k), lerp(-0.05, 0.06, k), 0.0)
     # landed: squash on the catch, then a slow hug sway
     d = t - T["book_land"]
     sq = 0.16 * math.exp(-d * 8) * math.cos(d * 24)
@@ -1110,11 +1485,12 @@ def _book_state(t, T):
 
 
 def _book_trail(ctx, t, T):
-    """A few twinkles left along the flight arc (<= 5)."""
-    if not (T["book_fly"] <= t < T["book_land"] + 0.5):
+    """A few twinkles left along the float up to him (<= 5)."""
+    t0, t1 = T["book_fly"], T["cu_book"]
+    if not (t0 <= t < t1 + 0.5):
         return
     for i in range(5):
-        tt = T["book_fly"] + (i + 0.5) * 0.1
+        tt = t0 + (i + 0.5) * (t1 - t0) / 5
         if t < tt:
             continue
         st = _book_state(tt, T)
@@ -1129,7 +1505,7 @@ def _book_trail(ctx, t, T):
 
 def _shot_F(ctx, t, info, T):
     c0 = T["cut_f5"]
-    accent = _cut_pulse(t, c0, 0.25, 0.02)
+    accent = _cut_pulse(t, c0, 0.25, 0.02) + _cut_pulse(t, T["cut_f5b"], 0.22, 0.015)
     fx, fy = 495, 820
     with saved(ctx, fx, fy, 1.0 + accent) as c:
         c.translate(-fx, -fy)
@@ -1143,8 +1519,8 @@ def _shot_F(ctx, t, info, T):
                      blink=blink, lean=lean, snake=None)
         # soft cyan light from the hologram on his face side
         radial_glow(c, MX + 150, MY - 520 * MS, 380, "ai_rim", 0.12)
-        # hankie (follows the hand until it rests on the desk)
-        if t < T["book_land"] - 0.2:          # then it's left on the desk (hidden)
+        # hankie (follows the hand; dropped on the desk once the book arrives)
+        if t < T["cu_book"]:
             hx, hy, ha = _villain_hand(MX, vy, MS, t, arms, "a", lean, reach=0.95)
             _hankie(c, hx, hy, MS * 1.35, 0.15, t, flut=1.0 if t < T["soften"] else 0.3)
         # sweat: caught
@@ -1155,7 +1531,7 @@ def _shot_F(ctx, t, info, T):
         # --- desk + props --------------------------------------------------------
         P.desk(c, 495, MY, 1000, lamp=False, emblem=False)
         P.computer(c, COMP_F[0], COMP_F[1], COMP_F[2], view="side", facing=-1, t=t)
-        # portrait: side-eye + slipped glasses; 'happy' when the dragon arrives
+        # portrait: side-eye + slipped glasses; 'happy' when the dragon is a guardian
         pexpr = _state(t, [(-1, "side_eye"), (T["w_real"], "unimpressed", 0.3),
                            (T["w_dragon"], "worried", 0.2),   # ...a dragon?!
                            (T["w_guards"], "happy", 0.3)])
@@ -1175,23 +1551,105 @@ def _shot_F(ctx, t, info, T):
             P.sparkles(c, wx, wy - 10, 70, t, n=3, seed=6, color="white", size=0.7 * k)
         # --- the AI hologram -----------------------------------------------------
         aexpr, alook, ahands, ablink, anod = _ai_F(t, T)
-        anc = draw_ai(c, AX, AY, AS, t, expr=aexpr, look=alook, mouth=info.mouth("ai", t),
-                      hands=ahands, blink=ablink, aura=0.8, nod=anod)
-        if t >= T["l5"]:
-            P.emote(c, "heart", AX + 118, AY - 150, 0.8, t, T["w_guards"])
+        draw_ai(c, AX, AY, AS, t, expr=aexpr, look=alook, mouth=info.mouth("ai", t),
+                hands=ahands, blink=ablink, aura=0.8, nod=anod)
+        if t >= T["cut_f5b"]:
+            P.emote(c, "heart", AX + 118, AY - 150, 0.8, t, T["cut_f5b"] + 0.12)
         # --- the gift ------------------------------------------------------------
         _book_trail(c, t, T)
         bs = _book_state(t, T)
         if bs is not None:
             bx, by, bsc, brot, bsq = bs
-            eyes = 0.5 + 0.5 * smoothstep(seg(t, T["w_scary"], T["w_scary"] + 0.25))
-            _dragon_book(c, bx, by, bsc, brot, bsq, 0.0, t, eyes=eyes)
+            after = t >= T["cut_f5b"]
+            _dragon_book(c, bx, by, bsc, brot, bsq, 0.0, t, eyes=1.0 if after else 0.6,
+                         fire={"proud": 1.0} if after else None)
             if t >= T["book_land"] - 0.06:
                 hk = ease_out(seg(t, T["book_land"] - 0.06, T["book_land"] + 0.1))
                 _hug_hands(c, MS, bx, by, bsc, brot, t, hk)
             if t >= T["book_land"] + 0.1:
                 P.sparkles(c, bx, by - 30, 140, t, n=5, seed=11, color="white", size=0.8)
         _candle_grade(c)
+
+
+# ---------------------------------------------------------------------------
+# shot G: storybook close-up - the cover dragon breathes fire on "scary"
+# ---------------------------------------------------------------------------
+BOOK_G = (668, 948, 2.55)               # the hovering storybook (centre, scale)
+MAL_G = (292, 1466, 1.25)               # Malvo, closer, at screen-left
+
+
+def _book_fire(t, T):
+    """Fire-beat parameters for the cover (see _dragon_book)."""
+    i0, f0, f1, f2 = T["inhale"], T["fire0"], T["fire1"], T["fire2"]
+    inhale = smoothstep(seg(t, i0, f0 - 0.03)) * (1 - smoothstep(seg(t, f0 - 0.03, f0 + 0.05)))
+    breath = smoothstep(seg(t, f0 - 0.05, f0 + 0.07)) * (1 - smoothstep(seg(t, f1 + 0.1, f2)))
+    return {
+        "inhale": inhale, "breath": breath,
+        "grow": ease_out(seg(t, f0, f0 + 0.16)),
+        "fade": smoothstep(seg(t, f1, f2)),
+        "tf": t - f0,
+        "proud": 1.0 if t >= f2 - 0.02 else 0.0,
+        "smoke_in": seg(t, i0 + 0.04, i0 + 0.44),
+        "smoke_out": seg(t, f2 - 0.12, f2 + 0.45),
+    }
+
+
+def _malvo_G(t, T):
+    f0, f1, f2 = T["fire0"], T["fire1"], T["fire2"]
+    expr = _state(t, [
+        (-1, "s06_ooh"),                                  # "ooh..." the dragon wakes up
+        (f0 + 0.01, "s06_thrilled", 0.08),               # FWOOSH -> thrilled
+        (f2 - 0.04, "s06_hug", 0.35),                    # "...who guards the village" aww
+    ])
+    arms = _cycle(("s06_clasp", "s06_clasp", 1.0), t)     # hands clasped, giddy wringing
+    look = _lookv(t, [
+        (-1, (0.85, 0.2)),                                # the cover
+        (T["inhale"], (0.9, 0.1), 0.2),
+        (f0 + 0.03, (0.65, -0.8), 0.12),                  # following the flame up...
+        (f1 - 0.05, (0.75, -0.45), 0.3),
+        (f2 - 0.04, (0.85, 0.25), 0.3),                   # ...back down to the dragon
+    ])
+    blink = 0.0 if t < f2 - 0.04 else None
+    # lean in on the inhale, jolt back on the burst, then a giddy little bounce
+    lean = 0.03 * smoothstep(seg(t, T["cu_book"], f0)) - 0.06 * math.sin(
+        math.pi * seg(t, f0, f0 + 0.3)) * (t < f0 + 0.3)
+    lean -= 0.03 * smoothstep(seg(t, f0, f0 + 0.1)) * (1 - smoothstep(seg(t, f0 + 0.1, f1)))
+    hop = 0.0
+    if f0 + 0.1 <= t < f2:
+        hop = abs(math.sin((t - f0 - 0.1) * 2 * math.pi * 2.4)) * 10 * \
+            (1 - smoothstep(seg(t, f1 - 0.2, f2)))
+    return expr, arms, look, blink, lean, hop
+
+
+def _shot_book(ctx, t, info, T):
+    c0 = T["cu_book"]
+    # background: the lair, closer (static zoom; it caches)
+    with saved(ctx, 495, 700, 1.3) as c:
+        c.translate(-495, -700)
+        P.lair_bg(c, t)
+    push = 1.0 + 0.04 * ease_out(seg(t, c0, T["cut_f5b"])) + _cut_pulse(t, c0, 0.2, 0.025)
+    fx, fy = 520, 900
+    fire = _book_fire(t, T)
+    bx, by, bs = BOOK_G
+    kick = math.exp(-max(0.0, t - T["fire0"]) * 7) * (t >= T["fire0"])
+    by += 7 * math.sin((t - c0) * 2 * math.pi * 0.6) + 10 * kick
+    brot = -0.05 + 0.015 * math.sin((t - c0) * 2 * math.pi * 0.45)
+    with saved(ctx, fx, fy, push) as c:
+        c.translate(-fx, -fy)
+        expr, arms, look, blink, lean, hop = _malvo_G(t, T)
+        mx, my, ms = MAL_G
+        draw_villain(c, mx, my - hop, ms, t, expr=expr, look=look,
+                     mouth=info.mouth("villain", t), arms=arms, blink=blink, lean=lean,
+                     snake=None)
+        # firelight on his delighted face (and the room)
+        lit = fire["grow"] * (1 - fire["fade"])
+        if lit > 0.01:
+            radial_glow(c, bx + 10, by - 380, 600, "#ff8a2a", 0.42 * lit)
+        # magic twinkles round the hovering book
+        P.sparkles(c, bx, by, 250, t, n=4, seed=13, color="white", size=1.1)
+        _dragon_book(c, bx, by, bs, brot, 0.05 * kick, 0.0, t,
+                     eyes=0.6 + 0.4 * smoothstep(seg(t, c0, T["inhale"])), fire=fire)
+    _candle_grade(ctx)
 
 
 # ---------------------------------------------------------------------------
@@ -1203,14 +1661,16 @@ def render(ctx, t, info):
         _shot_A(ctx, t, info, T)
     elif t < T["cu1"]:
         _shot_ai_cu(ctx, t, info, T)
-    elif t < T["l2"]:
+    elif t < T["cu1_end"]:
         _shot_portrait(ctx, t, info, T, second=False)
     elif t < T["slip"]:
         _shot_ai_cu(ctx, t, info, T)
     elif t < T["cut_f5"]:
         _shot_portrait(ctx, t, info, T, second=True)
-    else:
+    elif t < T["cu_book"] or t >= T["cut_f5b"]:
         _shot_F(ctx, t, info, T)
+    else:
+        _shot_book(ctx, t, info, T)
     # overlays (last)
     nice_tries_chip(ctx, t, info.meta.get("tries_before", 4), info.meta.get("tries_after", 5),
                     T["tally"])
@@ -1222,14 +1682,18 @@ def SFX(info):
     out = [
         (T["card"], "page_flip", -6),
         (T["card"] + 0.12, "stamp", -4),
-        (T["cu1"] + 0.3, "sparkle", -14),                  # granny-glasses glint
+        (T["glint1"] + 0.1, "sparkle", -14),               # granny-glasses glint
+        (T["glint2"] + 0.1, "sparkle", -17),               # ...and again, prim and proper
         (T["slip"] + 0.02, "whoosh", -16),                 # glasses slide
         (T["slip"] + 0.2, "snake_hiss", -10),
         (T["gulp"], "gulp", -10),
         (T["wall_land"][-1], "brick_thud", -10),           # one quiet thud, last row
         (T["soften"], "swoosh_up", -12),                   # shutter rolls up
-        (T["l5"] + 0.2, "magic_chime", -8),
-        (T["w_guards"], "pop", -12),                       # heart
+        (T["book_out"], "pop", -10),                       # the book pops out of the window
+        (T["book_out"] + 0.06, "magic_chime", -9),
+        (T["fire0"] - 0.03, "whoosh", -7),                 # the cover dragon: FWOOSH
+        (T["fire0"] + 0.03, "boom_cartoon", -17),          # ...soft storybook boom
+        (T["cut_f5b"] + 0.12, "pop", -12),                 # heart
         (T["book_land"], "paper", -10),                    # caught in a hug
         (T["tally"], "tick", -8),
         (T["tally"], "pop", -10),

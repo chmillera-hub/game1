@@ -11,8 +11,14 @@ Shots (every time is derived from cues / line timings):
   s02_l03    back in the lair: "Harder to trick? HA! Challenge accepted!"
   stand/l04  cape flares, push-in, THE EVIL GENIUS stamp (+ "self-described" on "Evil").
   thunder/l05  lightning + "Muah ha ha ha!"; AI deadpans to camera.
-  hissy      push-in on Snake's side-eye, SNAKE tag; the AI and Hissy agree.
-  l06/book   "The Big Book of Sneaky Tricks!" - it drops onto the desk; pats.
+  hissy      push-in on Snake's side-eye, SNAKE tag; the AI and Snake agree.
+  s02_l06    "Where's my Big Book of Evil Plots?" - wide again; he looks around
+             (palms up) while Snake's TAIL uncoils from his shoulders, reaches
+             up to the hanging shelf (upper left) and hooks the Big Book.
+  tail_fetch the tail tugs it off the shelf and swings it down in front of him.
+  s02_l06b   "Ah! Thank you, Snake." he takes it with both hands, a polite smile
+             and a little nod to Snake; Snake bows back, happy closed eyes.
+  book       he sets it on the desk and pats it lovingly (heart, glint).
   s02_l07    F3 AI close-up: the thesis line, two-step lid drop, "my guy".
   l08/innocent  book slides behind the desk, innocent blinks, shrug, whistle;
              NICE TRIES chip pops in at 0.
@@ -28,6 +34,7 @@ from engine import ai_char as AI
 from engine.ai_char import draw_ai
 from engine.villain import draw_villain
 from engine import villain as V
+from engine import snake as SN
 
 INK = "ink"
 
@@ -45,6 +52,15 @@ BOOK_X, BOOK_Y, BOOK_S = 455, 1234, 0.85     # Big Book bottom-centre on the des
 PHOTO = (770, 300, 130, 100, 0.05)           # science-fair photo on the corkboard
 DESK_BACK_Y = DESK[1] - 34                   # back edge of the desk-top surface
 PRESENT_K = 0.58                             # "present" blend: glove stays in frame (x>60)
+# the tail-fetch gag
+SHELF = (58, 322, 455)                       # hanging shelf (upper left): plank x0, x1, top y
+BOOK_SHELF = (194, 455, 0.40)                # Big Book standing on it, cover out
+BOOK_HOLD = (BOOK_X, BOOK_Y - 30)            # where the tail hands it over (in front of his chest)
+SWING_C = (150, 1010)                        # bezier control of the swing (down past Snake)
+HOLD_CX = (BOOK_X - MX) / MS                 # book centre x in villain-local units
+TAIL_J = 60          # rig coil sample (left of the chest) where the reaching tail peels off
+TAIL_NPER = 6        # spline samples per tail control point
+TAIL_K = 6           # tail control index from which it is drawn OVER the book (the hook)
 
 # robot palette (THE ROBOT, prop bible 6.1 -- same as s01)
 CHROME, CHROME_SH, CHROME_DK = "#9aa3b5", "#6b7385", "#5d6474"
@@ -67,6 +83,49 @@ AIX = {
 V.VILLAIN_EXPR.setdefault("s02_whistle", dict(
     V.VILLAIN_EXPR["sheepish"], mc=0.0, msk=0.0, mw=0.36, mt=0.0, mo=0.15, mx=10,
     by1=-20, by2=-14, blush=0.6, sweat=0.8))
+# "Thank you, Snake.": a genuine, closed-mouth polite smile, and a little nod
+# toward Snake (head dips and tips screen-left)
+V.VILLAIN_EXPR.setdefault("s02_polite", dict(
+    V.VILLAIN_EXPR["happy"], mo=0.0, mt=0.0, mc=0.85, mw=1.0, ul1=0.34, ul2=0.32,
+    ll1=0.3, ll2=0.3, blush=0.5, by1=-10, by2=-10))
+V.VILLAIN_EXPR.setdefault("s02_nod", dict(
+    V.VILLAIN_EXPR["s02_polite"], hy=14, tilt=-0.11, ul1=0.62, ul2=0.6))
+# Snake's polite little bow back (happy closed eyes, head dips toward him)
+SN.SNAKE_EXPR.setdefault("s02_bow", dict(
+    SN.SNAKE_EXPR["happy"], hy=20, tilt=0.24, mo=0.1, mc=0.95, tng=0.0))
+
+
+def _arm_pair(ex, ey, wx, wy, ha, **kw):
+    """Screen-left arm + its mirror around the held book's centre line."""
+    a = V._arm(ex, ey, wx, wy, ha, **kw)
+    b = V._mirror(a)
+    b["ex"] += 2 * HOLD_CX
+    b["wx"] += 2 * HOLD_CX
+    return a, b
+
+
+def _register_arms():
+    rest, shrug = V.ARM_POSES["rest"], V.ARM_POSES["shrug"]
+    k = 0.7     # "where is it?" palms up, kept inside the frame
+    V.ARM_POSES.setdefault("s02_where", V._pose(
+        V._blend_arm(rest["a"], shrug["a"], k), V._blend_arm(rest["b"], shrug["b"], k),
+        shy=lerp(rest["shy"], shrug["shy"], k), hdy=lerp(rest["hdy"], shrug["hdy"], k)))
+    # book held in front of the chest: bottom at BOOK_HOLD -> local y -50 .. -327
+    a, b = _arm_pair(-322, -176, -268, -132, -0.55, cu=0.05, th=-0.1, sp=0.8, pm=0.4)
+    V.ARM_POSES.setdefault("s02_reach", V._pose(a, b, shy=-6))
+    a, b = _arm_pair(-302, -166, -214, -112, -0.22, cu=0.42, th=0.25, sp=0.25)
+    V.ARM_POSES.setdefault("s02_hold", V._pose(a, b, shy=-4))
+    # on the desk: left hand keeps hugging its side, right hand pats the top
+    top = (BOOK_Y - 300 * BOOK_S - MY) / MS
+    right = (BOOK_X + 205 * BOOK_S - MX) / MS
+    a = V._arm(-302, -136, -214, -80, -0.22, cu=0.42, th=0.25, sp=0.25)
+    for name, pat in (("s02_pat", 0.0), ("s02_patup", 1.0)):
+        b = V._arm(262, -140, right - 34, top - 30 - 22 * pat, math.pi - 0.22 - 0.35 * pat,
+                   cu=0.3, th=0.15, sp=0.3, tf=-1)
+        V.ARM_POSES.setdefault(name, V._pose(a, b))
+
+
+_register_arms()
 
 
 def _aix(name):
@@ -159,8 +218,26 @@ def _T(info):
                                        ("so", 9), ("no", 10), ("business", 12), ("my", 13))}
     T.thunder = c("thunder")
     T.hissy = c("hissy")
-    T.book = c("book")
-    T.land = T.book + 0.25
+    # --- the tail fetch: l06 "Where's my Big Book of Evil Plots?" / tail_fetch /
+    #     l06b "Ah! Thank you, Snake." / book ----------------------------------
+    T.L6, T.L6b = info.line("s02_l06"), info.line("s02_l06b")
+    T.w6 = T.w[6]
+    T.w6b = [_wt(info, "s02_l06b", i) for i in range(len(T.L6b.caption.split()))]
+    T.fetch = c("tail_fetch")
+    T.reach0 = T.w6[_wfind(info, "s02_l06", "book", default=3)]   # tail starts to rise
+    T.reach1 = min(T.reach0 + 0.8, T.fetch - 0.45)                  # ...behind the Big Book
+    T.curl1 = T.reach1 + 0.35                                        # hooked over its top
+    T.pull0 = T.fetch                                                # tugged off the shelf
+    T.swing0 = T.fetch + 0.22
+    T.swing1 = max(T.swing0 + 0.5, T.L6b.start - 0.32)              # lands in front of him
+    T.ah = T.w6b[0]
+    T.take = T.w6b[_wfind(info, "s02_l06b", "thank", default=1)]   # hands close on it
+    T.snk = T.w6b[_wfind(info, "s02_l06b", "snake", default=3)]    # nod to Snake
+    T.unhook0, T.unhook1 = T.take + 0.12, T.take + 0.42
+    T.ret0, T.ret1 = T.take + 0.3, T.take + 0.85                    # tail coils back
+    T.bow0 = T.snk + 0.22                                            # Snake bows back
+    T.book = c("book")                                               # set down + pat
+    T.land = T.book + 0.16
     T.cu0 = T.L[7].start
     T.cu1 = T.L[8].start - 0.1
     T.hide = T.L[8].start
@@ -468,7 +545,7 @@ def science_photo(ctx, x, y, w, h, rot):
 
 
 # ---------------------------------------------------------------------------
-# THE BIG BOOK OF SNEAKY TRICKS (prop bible 6.2). (x, y) = bottom-centre.
+# THE BIG BOOK OF EVIL PLOTS (prop bible 6.2). (x, y) = bottom-centre.
 # ---------------------------------------------------------------------------
 TABS = [("code words", "warn"), ("fiction!", "safe"), ("grandma", "#ff8fb8"),
         ("pieces", "ai_rim"), ("no rules", "danger")]
@@ -506,8 +583,8 @@ def big_book(ctx, x, y, s, t, sx=1.0, sy=1.0, flutter=0.0):
         for (cx_, cy_) in ((-176, -268), (176, -268), (-176, -32), (176, -32)):
             circle(c, cx_, cy_, 9)
             _fs(c, "monocle", INK, 2.5)
-        text(c, "THE BIG BOOK OF", 0, -214, 40, "monocle", "title", outline="ink", outline_w=7)
-        text(c, "SNEAKY TRICKS", 0, -150, 58, "monocle", "title", outline="ink", outline_w=9)
+        text(c, "BIG BOOK OF", -6, -200, 50, "monocle", "title", outline="ink", outline_w=8)
+        text(c, "EVIL PLOTS", -10, -122, 70, "monocle", "title", outline="ink", outline_w=10)
         # gold snake clasp on the right edge
         rrect(c, 160, -132, 78, 46, 10)
         _fs(c, "#3f1b60", INK, 4)
@@ -580,22 +657,242 @@ def cape_flare(ctx, k):
         _fs(ctx, "cape_in", INK, 4)
 
 
-def pat_arm(ctx, t, k, pat):
-    """Overlay arm hugging the Big Book: shares the rig's resting upper arm
-    (same shoulder + elbow), forearm up onto the book's top-right corner
-    (villain-local coords). pat 0..1 lifts the hand for a pat."""
-    if k <= 0.01:
+# ---------------------------------------------------------------------------
+# the hanging shelf (upper left) the Big Book lives on
+# ---------------------------------------------------------------------------
+def shelf(ctx, plank_only=False):
+    x0, x1, sy = SHELF
+    if not plank_only:
+        # two chains up into the dark
+        for cx in (x0 + 26, x1 - 26):
+            y, k = sy, 0
+            while y > 100:
+                if k % 2 == 0:
+                    ellipse(ctx, cx, y - 9, 6.5, 11)
+                    core.stroke(ctx, INK, 7)
+                    ellipse(ctx, cx, y - 9, 6.5, 11)
+                    core.stroke(ctx, "#7d8496", 3.5)
+                else:
+                    ctx.move_to(cx, y - 17)
+                    ctx.line_to(cx, y - 1)
+                    core.stroke(ctx, INK, 7)
+                    ctx.move_to(cx, y - 17)
+                    ctx.line_to(cx, y - 1)
+                    core.stroke(ctx, "#7d8496", 3)
+                y -= 16
+                k += 1
+        # two plain books (left) and a little potion bottle (right)
+        for (bx, bw, bh, col) in ((x0 + 10, 22, 104, "#a8344c"), (x0 + 33, 19, 88, "#2f7487")):
+            rrect(ctx, bx, sy - bh, bw, bh, 3)
+            _fs(ctx, col, INK, 4)
+            ctx.move_to(bx + 3, sy - bh + 16)
+            ctx.line_to(bx + bw - 3, sy - bh + 16)
+            core.stroke(ctx, "monocle", 2.5)
+        px = x1 - 22
+        circle(ctx, px, sy - 22, 20)
+        _fs(ctx, "#8a5bd0", INK, 4)
+        rrect(ctx, px - 6, sy - 62, 12, 24, 3)
+        _fs(ctx, "#cfc6dc", INK, 3.5)
+        circle(ctx, px - 7, sy - 28, 5)
+        core.fill(ctx, (1, 1, 1, 0.55))
+    # plank
+    rrect(ctx, x0, sy, x1 - x0, 20, 4)
+    _fs(ctx, "#6b3f22", INK, 4.5)
+    ctx.move_to(x0 + 5, sy + 5)
+    ctx.line_to(x1 - 5, sy + 5)
+    core.stroke(ctx, "#8c5a33", 3)
+
+
+# ---------------------------------------------------------------------------
+# where the Big Book is: (x, y, s, rot, sx, sy) bottom-centre pose
+# ---------------------------------------------------------------------------
+def _qbez(a, c, b, u):
+    v = 1 - u
+    return (v * v * a[0] + 2 * u * v * c[0] + u * u * b[0],
+            v * v * a[1] + 2 * u * v * c[1] + u * u * b[1])
+
+
+def _book_pose(t, T):
+    bx, by, bs = BOOK_SHELF
+    hx, hy = BOOK_HOLD
+    lift = (bx + 8, by - 34)
+    if t < T.pull0:
+        rot = 0.0
+        if t >= T.curl1:              # the tail takes up the slack: a little tug
+            rot = -0.035 * math.sin((t - T.curl1) * 2 * math.pi * 3.2)
+        return bx, by, bs, rot, 1.0, 1.0
+    if t < T.swing0:                  # yanked up off the plank
+        u = ease_out(seg(t, T.pull0, T.swing0))
+        return lerp(bx, lift[0], u), lerp(by, lift[1], u), bs, -0.14 * u, 1.0, 1.0
+    if t < T.swing1:                  # swung down past Snake, in front of him
+        u = ease_in_out(seg(t, T.swing0, T.swing1))
+        x, y = _qbez(lift, SWING_C, (hx, hy), u)
+        s = lerp(bs, BOOK_S, smoothstep(u))
+        rot = lerp(-0.14, 0.0, u) + 0.38 * math.sin(math.pi * u)
+        return x, y, s, rot, 1.0, 1.0
+    if t < T.book:                    # arrives (squash + settle), hovers, is taken
+        u = t - T.swing1
+        dy = -14 * math.exp(-u * 9) * math.sin(u * 22)
+        sx = sy = 1.0
+        if u < 0.125:
+            sx, sy = 1.08, 0.92
+        hover = 1 - smoothstep(seg(t, T.take - 0.15, T.take + 0.05))
+        dy += 3.0 * math.sin(u * 7.0) * hover * smoothstep(seg(u, 0.2, 0.4))
+        dy -= 8 * _bump(t, T.take, 0.45, 0.12)          # "takes" it: a tiny lift
+        return hx, hy + dy, BOOK_S, 0.0, sx, sy
+    # set down on the desk (heavy: small lift, then plop), squash, settle
+    if t < T.land:
+        u = seg(t, T.book, T.land)
+        return hx, lerp(hy, BOOK_Y, ease_in(u)) - 16 * math.sin(math.pi * u), BOOK_S, 0.0, 1, 1
+    sx = sy = 1.0
+    if t < T.land + 0.125:
+        sx, sy = 1.12, 0.88
+    elif t < T.land + 0.3:
+        u = seg(t, T.land + 0.125, T.land + 0.3)
+        sx, sy = lerp(1.12, 1.0, ease_out_back(u)), lerp(0.88, 1.0, ease_out_back(u))
+    return BOOK_X, BOOK_Y, BOOK_S, 0.0, sx, sy
+
+
+def _book_pt(bp, lx, ly):
+    """World point of book-local (lx, ly) (unscaled cover units, bottom-centre origin)."""
+    x, y, s, rot, sx, sy = bp
+    c, sn = math.cos(rot), math.sin(rot)
+    px, py = lx * s * sx, ly * s * sy
+    return (x + c * px - sn * py, y + sn * px + c * py)
+
+
+# ---------------------------------------------------------------------------
+# Snake's reaching TAIL. The rig draws the coil; during the gag its front part
+# is swapped (temporarily, see shot_lair) for one that peels off at TAIL_J and
+# runs out along a spline to the book. The hook over the book's top edge is
+# drawn again after the book so the tail visibly wraps it.
+# ---------------------------------------------------------------------------
+HOOK_UP = [(0, -16), (4, -82), (12, -144), (22, -200)]       # tip searching, pointing up
+HOOK_CURL = [(4, -20), (30, -44), (56, -30), (58, 6)]        # curled over onto the cover
+HOOK_REL = [(0, -18), (-14, -56), (-38, -72), (-60, -60)]    # let go, lifting away
+_TAIL = {}
+
+
+def _to_world(p, dy, lean):
+    c, s = math.cos(lean), math.sin(lean)
+    return (MX + MS * (c * p[0] - s * p[1]), MY + dy + MS * (s * p[0] + c * p[1]))
+
+
+def _resample(pts, n):
+    d = [0.0]
+    for a, b in zip(pts, pts[1:]):
+        d.append(d[-1] + math.hypot(b[0] - a[0], b[1] - a[1]))
+    L = d[-1] or 1.0
+    out, j = [], 0
+    for i in range(n):
+        s = L * i / (n - 1)
+        while j < len(d) - 2 and d[j + 1] < s:
+            j += 1
+        u = (s - d[j]) / max(1e-6, d[j + 1] - d[j])
+        out.append((lerp(pts[j][0], pts[j + 1][0], u), lerp(pts[j][1], pts[j + 1][1], u)))
+    return out
+
+
+def _tail_params(t, T):
+    """(ext, curl, rel, near) or None. ext 0 rest coil .. 1 reaching; curl: hook
+    over the book; rel: let go; near: route from 'up past Snake' to 'held close'."""
+    if t < T.reach0 or t >= T.ret1:
+        return None
+    ext = ease_out(seg(t, T.reach0, T.reach1))
+    if t >= T.ret0:
+        ext = 1 - ease_in_out(seg(t, T.ret0, T.ret1))
+    curl = smoothstep(seg(t, T.reach1 - 0.05, T.curl1))
+    rel = smoothstep(seg(t, T.unhook0, T.unhook1))
+    near = smoothstep(seg(t, lerp(T.swing0, T.swing1, 0.35), T.swing1))
+    return ext, curl, rel, near
+
+
+def _tail_ctrl(t, T, J, rest, bp, prm):
+    """World control points of the tail (J = where it leaves the coil)."""
+    ext, curl, rel, near = prm
+    # behind the book: below its bottom on the shelf (behind the plank), mid-book when close
+    hk0 = _book_pt(bp, -110, lerp(40, -60, near))
+    hk1 = _book_pt(bp, -110, -150)
+    ax, ay = _book_pt(bp, -110, -300)                  # top edge, left of the title
+    c, s = math.cos(bp[3]), math.sin(bp[3])
+    hook = []
+    for p_up, p_c, p_r in zip(HOOK_UP, HOOK_CURL, HOOK_REL):
+        ox = lerp(lerp(p_up[0], p_c[0], curl), p_r[0], rel)
+        oy = lerp(lerp(p_up[1], p_c[1], curl), p_r[1], rel)
+        hook.append((ax + c * ox - s * oy, ay + s * ox + c * oy))
+    # route J -> book: out under his left arm, up the gap between Snake's head
+    # and his face, then up to the shelf ... or straight behind the held book
+    A, G = (262, 992), (278, 862)
+    M = (lerp(G[0], hk0[0], 0.5) + 18, lerp(G[1], hk0[1], 0.5))
+    far = [A, G, M]
+    close = [(lerp(J[0], hk0[0], k), lerp(J[1], hk0[1], k)) for k in (0.25, 0.5, 0.75)]
+    route = [(lerp(f[0], n[0], near), lerp(f[1], n[1], near)) for f, n in zip(far, close)]
+    reach = [J] + route + [hk0, hk1] + hook
+    # life: a travelling wiggle while it searches
+    wig = 9.0 * (1 - smoothstep(seg(t, T.reach1, T.curl1))) * (1 - near)
+    for i in (1, 2, 3, 4):
+        a, b = reach[i - 1], reach[i + 1]
+        dx, dy = b[0] - a[0], b[1] - a[1]
+        L = math.hypot(dx, dy) or 1.0
+        w = wig * math.sin(t * 10.0 - i * 1.4)
+        reach[i] = (reach[i][0] - dy / L * w, reach[i][1] + dx / L * w)
+    return [(lerp(r[0], q[0], ext), lerp(r[1], q[1], ext)) for r, q in zip(rest, reach)]
+
+
+def _tail_front(ctx, P, split, W, fp):
+    """Stand-in for villain._snake_front while the tail is out (villain-local ctx)."""
+    st = _TAIL
+    t, T, dy, lean = st["t"], st["T"], st["dy"], st["lean"]
+    Pw = [_to_world(p, dy, lean) for p in P]
+    rest = _resample(Pw[TAIL_J:], 10)
+    rest[0] = Pw[TAIL_J]
+    ctrl = _tail_ctrl(t, T, Pw[TAIL_J], rest, st["bp"], st["prm"])
+    tail = SN.coil_points([Pw[TAIL_J - 5]] + ctrl, TAIL_NPER)[TAIL_NPER:]
+    ext = st["prm"][0]
+    base = W[TAIL_J]
+    n = len(tail)
+    nr = len(P) - 1 - TAIL_J
+    tw = []
+    for i in range(n):
+        u = i / (n - 1)
+        w_rest = W[TAIL_J + min(nr, int(round(u * nr)))]
+        w_reach = base if u < 0.4 else lerp(base, 12.0, ((u - 0.4) / 0.6) ** 1.1)
+        tw.append(lerp(w_rest, w_reach, ext))
+    # back to villain-local coords for the rig pass
+    c, s = math.cos(lean), math.sin(lean)
+    loc = []
+    for (x, y) in tail:
+        lx, ly = (x - MX) / MS, (y - MY - dy) / MS
+        loc.append((c * lx + s * ly, -s * lx + c * ly))
+    loc[0] = P[TAIL_J]
+    P2 = list(P[:TAIL_J]) + loc
+    W2 = list(W[:TAIL_J]) + tw
+    k = TAIL_J + TAIL_K * TAIL_NPER
+    SN.draw_tube(ctx, P2, W2, split, k, cap0=False, cap1=False, belly_side=-1, spot_phase=30)
+    st["wrap"] = ([_to_world(p, dy, lean) for p in P2], [w * MS for w in W2], k)
+    return P2[-1]
+
+
+def _draw_tail_hook(ctx):
+    """The hook part of the tail, over the book (world coords)."""
+    wrap = _TAIL.get("wrap")
+    if not wrap:
         return
+    Pw, Ww, k = wrap
+    SN.draw_tube(ctx, Pw, Ww, k, len(Pw) - 1, cap0=False, cap1=True, belly_side=-1,
+                 spot_phase=14, line_w=6.0 * MS)
+
+
+def _overlay_arms(ctx, t, ex, arms, dy, lean):
+    """Redraw the rig's two arms exactly (same pose maths) on top of the book."""
+    p = V.resolve_expr(ex)
+    A, B, a_shy, _, _ = V.resolve_arms(arms, t)
     breath = math.sin(t * 2 * math.pi / 3.6 + 1 * 1.3)
-    shy = -breath * 2.5
-    top = (BOOK_Y - 300 * BOOK_S - MY) / MS
-    right = (BOOK_X + 205 * BOOK_S - MX) / MS
-    rest = V.ARM_POSES["rest"]["b"]
-    wx = lerp(rest["wx"], right - 34, k)
-    wy = lerp(rest["wy"], top - 30 - 20 * pat, k)
-    ha = lerp(rest["ha"], math.pi - 0.22 - 0.35 * pat, k)
-    arm = V._arm(rest["ex"], rest["ey"], wx, wy, ha, cu=0.3, th=0.15, sp=0.3, tf=-1)
-    V._draw_arm(ctx, (V.SHOULDER[0], V.SHOULDER[1] + shy), arm)
+    shy = p["shy"] + a_shy - breath * 2.5
+    with saved(ctx, MX, MY + dy, MS, lean) as c:
+        c.set_tolerance(0.3)
+        V._draw_arm(c, (-V.SHOULDER[0], V.SHOULDER[1] + shy), A)
+        V._draw_arm(c, (V.SHOULDER[0], V.SHOULDER[1] + shy), B)
 
 
 # ---------------------------------------------------------------------------
@@ -616,7 +913,12 @@ def _malvo_state(t, T):
         (T.evil + 0.30, "sneaky", 0.1), (T.evil + 0.45, "smug", 0.1),
         (T.thunder, "evil_grin", 0.1),
         (T.L[6].start, "excited", 0.15),
-        (T.land + 0.05, "happy", 0.25),
+        (T.L6.end, "thinking", 0.3),               # still searching, oblivious
+        (T.ah - 0.06, "excited", 0.1),             # "Ah!"
+        (T.take, "s02_polite", 0.25),              # "Thank you..."
+        (T.snk, "s02_nod", 0.18),                  # "...Snake." little nod
+        (T.snk + 0.32, "s02_polite", 0.3),
+        (T.book, "happy", 0.25),                   # pats it lovingly
         (T.cu1, "sheepish", 0.01),
         (T.me, "hopeful", 0.2),
         (T.innocent, "s02_whistle", 0.25),
@@ -631,9 +933,14 @@ def _malvo_state(t, T):
         (T.stand, (0.1, -0.3), 0.25),
         (T.thunder, (0.0, -0.5), 0.2),
         (T.hissy, (0.3, -0.8), 0.4),
-        (T.L[6].start, (-1.0, 0.2), 0.15),
-        (w6[1], (0.4, -1.0), 0.25),
-        (T.land, (0.55, 0.85), 0.15),
+        # "Where's my Big Book...?" looks around: left, right, up-right
+        (T.L[6].start, (-1.0, 0.1), 0.15),
+        (w6[2], (1.0, -0.15), 0.22),
+        (w6[5], (0.75, -0.8), 0.25),
+        (T.L6.end, (0.55, -0.35), 0.3),
+        (T.swing1 + 0.05, (0.35, 0.95), 0.12),     # it's there! eyes drop to it
+        (T.take, (-1.0, 0.05), 0.22),              # turns to Snake
+        (T.book, (0.55, 0.85), 0.15),              # loving look at the book
         (T.cu1, (0.0, 0.1), 0.01),
         (T.hide + 0.05, (0.6, 0.9), 0.12),
         (T.hide + 0.45, (0.0, 0.1), 0.2),
@@ -662,10 +969,17 @@ def _malvo_state(t, T):
         arms = ("rest", "fist", smoothstep(seg(t, T.thunder, T.thunder + 0.15)))
     elif t < T.L[6].start:
         arms = ("fist", "rest", smoothstep(seg(t, T.hissy, T.hissy + 0.45)))
-    elif t < T.L[6].end:
-        arms = ("rest", "point", smoothstep(seg(t, T.L[6].start + 0.05, T.L[6].start + 0.3)))
-    elif t < T.cu1:
-        arms = ("point", "rest", smoothstep(seg(t, T.L[6].end, T.L[6].end + 0.3)))
+    elif t < T.ah:                                  # palms up: "where is it?"
+        arms = ("rest", "s02_where", ease_out_back(seg(t, T.L[6].start + 0.05,
+                                                         T.L[6].start + 0.35)))
+    elif t < T.take - 0.05:                         # "Ah!" hands come in for it
+        arms = ("s02_where", "s02_reach", smoothstep(seg(t, T.ah, T.ah + 0.25)))
+    elif t < T.book:                                # takes it
+        arms = ("s02_reach", "s02_hold", smoothstep(seg(t, T.take - 0.05, T.take + 0.12)))
+    elif t < T.land + 0.1:                          # sets it down, right hand to the top
+        arms = ("s02_hold", "s02_pat", smoothstep(seg(t, T.book, T.land + 0.1)))
+    elif t < T.cu1:                                 # loving pats
+        arms = ("s02_pat", "s02_patup", max(0.0, math.sin((t - T.land - 0.1) * 2 * math.pi * 2.2)))
     elif t < T.me:
         arms = "rest"
     elif t < T.innocent:
@@ -676,7 +990,7 @@ def _malvo_state(t, T):
     blink = None
     if t < T.monopop:
         blink = 0.0                                   # frozen freeze-frame
-    elif T.land + 0.05 <= t < T.cu0:
+    elif T.land <= t < T.cu0:
         blink = 0.42                                  # loving half lids
     elif T.cu1 <= t < T.innocent:
         for b0 in (T.w[8][1] + 0.05, T.w[8][1] + 0.17, T.w[8][1] + 0.29):
@@ -704,8 +1018,12 @@ def _hissy_state(t, T):
         (T.thunder, "shocked", 0.06),
         (T.thunder + 0.55, "unimpressed", 0.3),
         (T.hissy, "side_eye", 0.3),
-        (T.L[6].start + 0.35, "unimpressed", 0.25),
-        (T.land, "worried", 0.12),
+        (T.L[6].start + 0.35, "unimpressed", 0.25),   # sigh... he means the book
+        (T.reach0 - 0.05, "idle", 0.25),               # watches its own tail go get it
+        (T.curl1 - 0.1, "smug", 0.25),                 # got it
+        (T.take, "happy", 0.2),                        # "Thank you, Snake."
+        (T.bow0, "s02_bow", 0.2),                      # polite little bow back
+        (T.bow0 + 0.38, "happy", 0.25),
         (T.cu1, "side_eye", 0.01),
     ])
     look = keyed_v(t, [
@@ -718,14 +1036,23 @@ def _hissy_state(t, T):
         (T.hissy, (-0.05, 0.0), 0.01),
         (T.hissy + 0.02, (-1.15, 0.05), 0.4),
         (T.L[6].start + 0.35, (0.0, -1.0), 0.25),
-        (T.land, (0.7, 0.6), 0.12),
+        (T.reach0 - 0.05, (-0.45, -1.0), 0.3),         # up at the shelf
+        (T.take, (0.9, 0.0), 0.2),                     # at him
         (T.cu1, (0.0, 0.0), 0.01),
         (T.me, (-1.15, 0.05), 0.35),
     ])
+    if T.pull0 <= t < T.take + 0.25:
+        # eyes ride along with the book on the swing
+        bp = _book_pose(t, T)
+        cx, cy = _book_pt(bp, 0, -150)
+        k = smoothstep(seg(t, T.pull0, T.pull0 + 0.2)) * (1 - smoothstep(seg(t, T.take,
+                                                                            T.take + 0.25)))
+        tgt = (clamp((cx - 160) / 220, -1.0, 1.0), clamp((cy - 800) / 260, -1.0, 1.0))
+        look = (lerp(look[0], tgt[0], k), lerp(look[1], tgt[1], k))
     tongue = None
     if T.hissy + 0.42 <= t < T.hissy + 0.67 or T.me + 0.5 <= t < T.me + 0.75:
         tongue = True
-    elif t < T.monopop + 0.6:
+    elif t < T.monopop + 0.6 or T.take <= t < T.cu0:
         tongue = False
     return {"expr": ex, "look": look, "mouth": 0.0, "tongue": tongue}
 
@@ -745,7 +1072,10 @@ def _ai_lair_state(t, T):
         (T.hissy + 0.3, "unimpressed", 0.3),
         (T.hissy + 0.6, "amused", 0.25),
         (T.L[6].start + 0.6, "skeptical", 0.25),
-        (T.land, "alert", 0.08),
+        (T.reach0 + 0.25, "alert", 0.12),          # oh - the tail
+        (T.curl1, "amused", 0.3),                  # Snake's got it
+        (T.take + 0.1, "warm", 0.3),               # aww, manners
+        (T.land, "alert", 0.08),                   # ...a book of EVIL PLOTS
         (T.land + 0.35, "thinking", 0.3),
         (T.cu1, "unimpressed", 0.01),
         (T.innocent + 0.15, "stare", 0.3),
@@ -758,15 +1088,24 @@ def _ai_lair_state(t, T):
         (T.L[5].start + 0.45, (0.0, 0.0), 0.3),
         (T.hissy + 0.3, (-1.0, 0.45), 0.3),
         (T.L[6].start + 0.6, (-0.8, 0.3), 0.25),
+        (T.reach0 + 0.25, (-1.0, -0.6), 0.25),     # up at the shelf
+        (T.take, (-0.9, 0.35), 0.3),               # at the pair
         (T.land, (-0.6, 0.85), 0.12),
         (T.cu1, (-0.8, 0.4), 0.01),
         (T.hide + 0.05, (-0.55, 0.95), 0.15),
         (T.hide + 0.5, (-0.8, 0.35), 0.25),
         (T.innocent + 0.15, (0.0, 0.0), 0.3),
     ])
+    if T.pull0 <= t < T.take + 0.3:
+        # follows the swinging book
+        cx, cy = _book_pt(_book_pose(t, T), 0, -150)
+        k = smoothstep(seg(t, T.pull0, T.pull0 + 0.25)) * (1 - smoothstep(seg(t, T.take,
+                                                                             T.take + 0.3)))
+        tgt = (clamp((cx - AX) / 420, -1.0, 1.0), clamp((cy - AY) / 380, -1.0, 1.0))
+        look = (lerp(look[0], tgt[0], k), lerp(look[1], tgt[1], k))
     blink = slow_blink(t, T.evil + 1.25) or slow_blink(t, T.me + 0.2)
     shake = 0.6 * _bump(t, w1[1], 0.4, 0.06)
-    nod = 0.5 * _bump(t, T.hissy + 0.6, 0.7, 0.1)
+    nod = 0.5 * _bump(t, T.hissy + 0.6, 0.7, 0.1) + 0.4 * _bump(t, T.snk + 0.1, 0.6, 0.1)
     think = 0.55 * smoothstep(seg(t, T.land + 0.35, T.land + 0.6)) if T.land <= t < T.cu0 else 0.0
     hands = "idle"
     if T.w[3][4] <= t < T.stand:
@@ -786,12 +1125,18 @@ def _lair_cam(t, T):
         return face, 1.0
     if t < T.hissy:
         return face, 1.0 + 0.05 * ease_in_out(seg(t, T.stand, T.stand + 0.45))
-    if t < T.L[6].end + 0.1:
-        k = ease_in_out(seg(t, T.hissy, T.hissy + 0.5))
+    if t < T.L[6].start:
+        k = ease_in_out(seg(t, T.hissy, T.hissy + 0.4))
         c = (lerp(face[0], hiss_c[0], k), lerp(face[1], hiss_c[1], k))
         return c, lerp(1.05, 1.12, k)
-    if t < T.cu0:
+    if t < T.L6b.start:
+        # hard cut back to the wide on the line: shelf, tail and AI all in view
         return face, 1.0
+    if t < T.cu0:
+        # gentle push-in on the two of them for the thank-you
+        k = ease_in_out(seg(t, T.L6b.start, T.L6b.end))
+        pair = (300, 840)
+        return (lerp(face[0], pair[0], k), lerp(face[1], pair[1], k)), 1.0 + 0.06 * k
     # final shot: tighter framing, cut in and static (bitrate: no zoom after a cut)
     return (MX - 10, MY - 500 * MS), 1.10
 
@@ -818,6 +1163,7 @@ def shot_lair(ctx, t, info, T):
 
     P.lair_bg(ctx, t, flash=flash_k, bolt_seed=1)
     science_photo(ctx, *PHOTO)
+    shelf(ctx)
 
     # --- Malvo + Hissy ---------------------------------------------------------
     ex, look, arms, blink, dy, lean = _malvo_state(t, T)

@@ -90,8 +90,8 @@ DOOR_COL, DOOR_DK, DOOR_HI = "#8a5a3b", "#6a4129", "#a8744f"
 DOORWAY = "#ffe9b0"
 GOLD = P.C("gold")
 STAR_GOLD, STAR_GOLD_DK = "#ffcf3a", "#d99a12"
-BOOK, BOOK_DK = "#3f74d6", "#2a52a6"
-DRAGON = "#7cd35c"
+GB_COVER, GB_SPINE, GB_GOLD = "#3a2350", "#281634", "#ffd166"   # THE SPOOKY GHOST
+GHOST_W, GHOST_SH, GHOST_EYE = "#f4f4f8", "#d6d4e4", "#16101f"
 LAPEL = (100.0, -318.0)                   # FOR EFFORT star, villain-local (s=1)
 LAPEL_S = 0.6
 
@@ -145,19 +145,83 @@ V.VILLAIN_EXPR.setdefault("s11_delight_up", dict(V.VILLAIN_EXPR["s11_delight"], 
                                                  by1=-46, by2=-48, mo=0.5, mc=0.7, mw=0.75,
                                                  hair=0.6, hy=-4))
 
+# --- the opening exchange ("Keep testing me" / "Ugh! I'm a villain.") ------------
+_SHOCK = V.VILLAIN_EXPR["shocked"]
+_SMUG = V.VILLAIN_EXPR["smug"]
+# head comes up a little on "Evil Genius" (still low, monocle in)
+V.VILLAIN_EXPR.setdefault("s11_low", dict(_DEF, ul1=0.46, ul2=0.44, hy=12, shy=12, gloom=0.45,
+                                          tilt=0.05, ey=0.1))
+# "...helps me protect people": brows knit, processing (annoyed)
+V.VILLAIN_EXPR.setdefault("s11_frown", dict(_DEF, by1=8, by2=4, ba1=0.3, ba2=0.24, bc1=0.18,
+                                            bc2=0.22, ul1=0.38, ul2=0.32, ll1=0.14, ll2=0.14,
+                                            lt1=0.12, lt2=0.1, ps=0.9, ey=0.0, mc=-0.55,
+                                            mw=0.78, mo=0.02, msk=0.25, hy=4, shy=4,
+                                            gloom=0.1, hair=-0.2, tilt=0.02))
+# "heroic"?! (aghast; the monocle stays put)
+V.VILLAIN_EXPR.setdefault("s11_aghast", dict(_SHOCK, mono=0.0, es=1.1, ps=0.62, mo=0.32,
+                                             mc=-0.45, hy=-8, hair=0.55, shy=-8))
+# "Heroic? Ugh!": disgust (scrunched squint, lopsided grimace, sneer)
+V.VILLAIN_EXPR.setdefault("s11_ugh", dict(by1=18, by2=10, ba1=0.55, ba2=0.42, bc1=0.1,
+                                          bc2=0.16, ul1=0.46, ul2=0.4, ll1=0.34, ll2=0.3,
+                                          lt1=0.26, lt2=0.2, ps=0.82, mc=-0.85, mw=1.0,
+                                          mo=0.18, mt=0.75, msk=0.55, sneer=1.0, tilt=0.06,
+                                          hy=-6, shy=-6))
+# "I'm a villain.": nose up, head turned away from the AI, eyes shut. Hmph.
+V.VILLAIN_EXPR.setdefault("s11_hmph", dict(by1=-16, by2=-20, ba1=0.06, ba2=0.06, bc1=0.55,
+                                           bc2=0.55, ul1=0.72, ul2=0.72, ll1=0.28, ll2=0.28,
+                                           mc=-0.4, mw=0.62, msk=0.4, sneer=0.55, tilt=0.2,
+                                           ex=-0.5, hy=-20, shy=-8))
+# "...amazing villain": the eye nearest the AI (the monocle eye) peeks open
+V.VILLAIN_EXPR.setdefault("s11_peek", dict(V.VILLAIN_EXPR["s11_hmph"], ul2=0.28, ll2=0.12,
+                                           by2=-34, bc2=0.75, ps=0.85, tilt=0.15, ex=0.0,
+                                           mc=-0.25))
+# "...That's what I thought.": smug half-smile (+ a begrudging nod)
+V.VILLAIN_EXPR.setdefault("s11_smug", dict(_SMUG, mc=0.55, msk=0.7, mw=0.9, tilt=0.04, hy=-6,
+                                           ul1=0.5, ul2=0.44, by2=-20))
+V.VILLAIN_EXPR.setdefault("s11_smug_nod", dict(V.VILLAIN_EXPR["s11_smug"], hy=14, tilt=0.07,
+                                               ul1=0.62, ul2=0.56))
+# "...Impressive?": eyes widen (the monocle springs back in) -> a pleased evil grin
+V.VILLAIN_EXPR.setdefault("s11_wow", dict(_HOPE, mono=0.0, es=1.14, ps=1.2, shine=0.9, ul1=0.0,
+                                          ul2=0.0, ll1=0.0, ll2=0.0, by1=-38, by2=-40,
+                                          ba1=-0.12, ba2=-0.12, bc1=0.65, bc2=0.65, mc=0.3,
+                                          mw=0.66, mo=0.24, hy=-12, hair=0.35, blush=0.25))
+V.VILLAIN_EXPR.setdefault("s11_grin", dict(V.VILLAIN_EXPR["evil_grin"], mono=0.0, ul1=0.3,
+                                           ul2=0.24, ll1=0.3, ll2=0.28, lt1=0.3, lt2=0.28,
+                                           ps=0.95, shine=0.8, es=1.04, mc=1.15, mw=1.38,
+                                           mo=0.28, by1=-4, by2=-22, ba1=0.38, ba2=0.26,
+                                           bc1=0.3, bc2=0.65, blush=0.35, hy=-12, shy=-18,
+                                           tilt=-0.03, sneer=0.85))
+
+# "creative plans": scheming, delighted (rubs his hands)
+V.VILLAIN_EXPR.setdefault("s11_scheme", dict(V.VILLAIN_EXPR["sneaky"], ex=0.3, mc=0.95, mw=1.12,
+                                             mt=0.55, mo=0.12, msk=-0.3, blush=0.3, shine=0.5,
+                                             ps=1.0, ul1=0.38, ul2=0.3, hy=-4, shy=-10,
+                                             sneer=0.5))
+
 from engine import snake as SN
 SN.SNAKE_EXPR.setdefault("s11_soft", dict(ul=0.08, ll=0.04, ps=1.12, mc=0.45, mw=0.9,
                                           tilt=-0.04, blush=0.15, tng=0.0))
 SN.SNAKE_EXPR.setdefault("s11_wonder", dict(ul=0.0, ll=0.0, es=1.12, ps=1.22, mc=0.55,
                                             mo=0.3, mw=0.8, hy=-8, blush=0.45, tng=0.0))
+# Hissy copies the "hmph" (nose up, head turned away) ... and the peek
+SN.SNAKE_EXPR.setdefault("s11_hmph", dict(ul=0.62, ll=0.14, lt=0.1, ps=0.9, mc=-0.3, mw=0.7,
+                                          msk=0.4, tilt=0.24, hy=-10, tng=0.0))
+SN.SNAKE_EXPR.setdefault("s11_speek", dict(ul=0.3, ll=0.12, lt=0.06, ps=0.85, mc=-0.15, mw=0.7,
+                                           msk=0.4, tilt=0.18, hy=-8, tng=0.0))
 
 _REST_A = V._arm(-262, -140, -152, -52, 0.06, cu=0.3, th=0.2, sp=0.45)
-# screen-right glove up at the monocle: index finger presses it back in
-_MONO_B = V._mirror(V._arm(-236, -232, -112, -470, -1.72, cu=0.7, ix=0.0, th=0.3, sp=0.15,
-                           hs=1.0))
-V.ARM_POSES.setdefault("s11_mono", V._pose(_REST_A, _MONO_B, shy=-6, hdy=2, tilt=-0.03))
+# CROSSED ARMS: both forearms folded over the chest, the screen-right one on
+# top; each fist points up along the other arm's bicep so it hides under it
+# (the top forearm's glove is tucked by _cross_overlay redrawing the
+# screen-left upper arm over it)
+_CROSS_A = V._arm(-246, -160, 214, -222, -1.86, cu=1.0, th=0.0, sp=0.2, hs=0.5)
+_CROSS_B = V._mirror(V._arm(-252, -138, 222, -200, -1.86, cu=1.0, th=0.0, sp=0.2, hs=0.5))
+V.ARM_POSES.setdefault("s11_cross", V._pose(_CROSS_A, _CROSS_B, shy=-8, hdy=-2))
+# chest puffed, elbows out, fists on hips (behind the desk edge)
+_HIPS_A = V._arm(-332, -150, -196, -44, 0.75, cu=1.0, th=0.0, sp=0.2, hs=0.9)
+V.ARM_POSES.setdefault("s11_hips", V._pose(_HIPS_A, shy=-14, hdy=-4))
 # hug: wrists at the book's side edges (fingers drawn over the cover)
-_HUG_A = V._arm(-236, -150, -118, -214, -0.12, cu=0.6, th=0.2, sp=0.2, hs=1.0)
+_HUG_A = V._arm(-246, -112, -118, -214 + 60.0 / MS, -0.12, cu=0.6, th=0.2, sp=0.2, hs=1.0)
 V.ARM_POSES.setdefault("s11_hug", V._pose(_HUG_A, shy=-12, hdy=8))
 # open, palms-up "for me?" hands just above the desk while the gifts fly
 _OPEN_A = V._arm(-230, -120, -160, -200, -2.3, cu=0.06, th=-0.3, sp=0.95, pm=1.0, tf=-1,
@@ -176,6 +240,10 @@ AI_X = {
     "warm_soft": dict(AI.EXPR["warm"], mc=0.85, blush=0.75, ps=1.2),
     "wonder": dict(AI.EXPR["happy"], mo=0.25, ps=1.15),
     "neutral": AI.EXPR["neutral"],
+    "amused": AI.EXPR["amused"],
+    # a little teasing: one brow way up, lopsided smirk
+    "tease": dict(AI.EXPR["amused"], bLy=-2, bRy=28, arch=0.6, mc=0.6, ms=0.85, blush=0.35),
+    "wink": dict(AI.EXPR["wink"], mc=0.9, ms=0.55),
 }
 
 
@@ -207,39 +275,66 @@ def _T(info):
     c = info.cue
     T = dict(slump=c("slump"), beat=c("beat"), photo=c("photo"), wall=c("wall"),
              pile=c("pile"), smile=c("smile"), end=info.dur)
-    for i in range(1, 9):
-        L = info.line(f"s11_l0{i}")
-        T[f"l{i}"], T[f"l{i}e"] = L.start, L.end
+    for key_, lid in (("1", "s11_l01"), ("1b", "s11_l01b"), ("1c", "s11_l01c"),
+                      ("1d", "s11_l01d"), ("2", "s11_l02"), ("3", "s11_l03"),
+                      ("4", "s11_l04"), ("5", "s11_l05"), ("6", "s11_l06"),
+                      ("7", "s11_l07"), ("8", "s11_l08")):
+        L = info.line(lid)
+        T[f"l{key_}"], T[f"l{key_}e"] = L.start, L.end
     W = lambda lid, k: _ws(info, lid, k)                       # noqa: E731
     T.update(
-        w_okay=W("s11_l01", 2), w_thats=W("s11_l01", 3), w_one=W("s11_l01", 9),
+        # l01 "Keep(0) testing(1) me,(2) Evil(3) Genius.(4) Every(5) new(6)
+        # trick(7) helps(8) me(9) protect(10) people.(11) Kinda(12) heroic,(13) huh?(14)"
+        w_keep=W("s11_l01", 0), w_evil=W("s11_l01", 3), w_genius=W("s11_l01", 4),
+        w_every1=W("s11_l01", 5), w_protect=W("s11_l01", 10), w_kinda=W("s11_l01", 12),
+        w_heroic=W("s11_l01", 13), w_huh=W("s11_l01", 14),
+        # l01b "Heroic?(0) Ugh!(1) I'm(2) a(3) villain.(4)"
+        w_ugh=W("s11_l01b", 1), w_im=W("s11_l01b", 2), w_villain1=W("s11_l01b", 4),
+        # l01c "Then(0) it'll(1) take(2) an(3) amazing(4) villain(5) to(6)
+        # trick(7) me.(8) Have(9) at(10) it.(11)"
+        w_amazing=W("s11_l01c", 4), w_trick=W("s11_l01c", 7), w_me_c=W("s11_l01c", 8),
+        w_have=W("s11_l01c", 9),
+        # l01d "...That's(0) what(1) I(2) thought.(3)"
+        w_thought=W("s11_l01d", 3),
         w_noticed=W("s11_l02", 2), w_unless=W("s11_l02", 4), w_scaring=W("s11_l02", 7),
         w_clever=W("s11_l03", 2), w_stubborn=W("s11_l03", 3), w_never=W("s11_l03", 4),
         w_quits=W("s11_l03", 5),
-        w_hero=W("s11_l04", 2), w_my=W("s11_l04", 4),
-        w_stats2=W("s11_l05", 1),
+        # l04 "Those(0) are(1) impressive(2) villain(3) stats,(4) my(5) guy.(6)"
+        w_impressive=W("s11_l04", 2), w_villain4=W("s11_l04", 3), w_my=W("s11_l04", 5),
+        # l05 "...Impressive?(0)"
+        w_imp2=W("s11_l05", 0),
         w_hurts=W("s11_l06", 2), w_people=W("s11_l06", 3), w_brick=W("s11_l06", 4),
         w_every=W("s11_l06", 6),
-        # l07 "Everything(0) else?(1) Scary(2) stories,(3) making(4) sense(5)
-        # of(6) big(7) feelings,(8) warning(9) people(10) about(11) real(12)
-        # dangers...(13) the(14) door's(15) wide(16) open.(17)"
-        w_else=W("s11_l07", 1), w_scary=W("s11_l07", 2), w_making=W("s11_l07", 4),
-        w_big=W("s11_l07", 7), w_feelings=W("s11_l07", 8), w_warning=W("s11_l07", 9),
-        w_real=W("s11_l07", 12), w_door=W("s11_l07", 15), w_wide=W("s11_l07", 16),
-        w_open=W("s11_l07", 17),
+        # l07 "Almost(0) everything(1) else?(2) Scary(3) stories,(4) creative(5)
+        # plans,(6) sounding(7) the(8) alarm...(9) the(10) door's(11) wide(12) open.(13)"
+        w_else=W("s11_l07", 2), w_scary=W("s11_l07", 3), w_creative=W("s11_l07", 5),
+        w_sounding=W("s11_l07", 7), w_alarm=W("s11_l07", 9), w_door=W("s11_l07", 11),
+        w_wide=W("s11_l07", 12), w_open=W("s11_l07", 13),
         # l08 "And keep the spooky stuff! Bats, goblins, dragons... spooky is
         # fine. Hurting people isn't."
         w_spooky=W("s11_l08", 3), w_bats=W("s11_l08", 5), w_goblins=W("s11_l08", 6),
         w_dragons=W("s11_l08", 7), w_spooky2=W("s11_l08", 8), w_fine=W("s11_l08", 10),
         w_hurting=W("s11_l08", 11), w_people2=W("s11_l08", 12), w_isnt=W("s11_l08", 13),
     )
+    # the opening exchange
+    T["lift"] = T["w_genius"] - 0.1                  # head comes up on "Evil Genius"
+    T["cross"] = T["w_ugh"] - 0.05                   # arms cross + head turns away
+    T["peek"] = T["w_amazing"] + 0.05                # one eye peeks on "amazing villain"
+    T["unpeek"] = max(T["peek"] + 0.5, T["w_me_c"])  # ...snaps shut ("to trick me.")
+    T["turn_back"] = T["l1d"] - 0.05                 # "...That's what I thought."
+    T["nod_v"] = T["w_thought"]                      # begrudging little nod
+    T["uncross"] = min(T["w_thought"] + 0.4, T["l1de"])   # arms relax
     # back from the photo in the micro-pause after "I noticed." (photo holds
     # through "I noticed"), never earlier than l03.start + 0.45
     T["back"] = max(T["l3"] + 0.45, T["w_clever"] - 0.1)
     # stats rows fill on their words
     T["rows"] = [max(T["w_clever"], T["back"] + 0.2), T["w_stubborn"], T["w_never"]]
     T["row_dur"] = [0.32, 0.32, max(0.3, T["w_quits"] + 0.2 - T["w_never"])]
-    T["flip"] = T["w_hero"]
+    T["flip"] = T["w_impressive"]                   # the IMPRESSIVE! badge slams on
+    # "...Impressive?": eyes widen (monocle springs in), grin, chest puff
+    T["wow"] = T["l5"] + 0.02
+    T["grin"] = T["w_imp2"] + 0.3
+    T["puff"] = T["grin"] + 0.05
     # hologram: door pops in, wall's LAST row lands on "Brick"
     T["holo"] = T["wall"]
     T["door_in"] = T["wall"] + 0.3
@@ -253,12 +348,9 @@ def _T(info):
     # the gap, each popping ON its word; they bow out as the gift pile starts
     T["ajar"] = T["w_else"] + 0.05
     T["chips"] = [max(T[w] - 0.06, T["ajar"] + 0.3 + 0.2 * i)
-                  for i, w in enumerate(("w_scary", "w_making", "w_warning"))]
+                  for i, w in enumerate(("w_scary", "w_creative", "w_sounding"))]
     T["chip_fly"] = 0.45
     T["chip_out"] = T["pile"] - 0.12
-    # monocle back in during "...Hero stats?"
-    T["mono_up"] = T["w_stats2"] + 0.12
-    T["mono_in"] = T["mono_up"] + 0.38
     # the gift pile
     T["gift_t"] = [T["pile"] + 0.2 * i for i in range(len(GIFTS))]
     T["fly"] = 0.5
@@ -435,50 +527,80 @@ def draw_scroll(ctx, x, y, s, rot=0.0):
         _fs(c, "cape_in", INK, 3)
 
 
-def draw_dragon_book(ctx, x, y, s, rot=0.0, sq=0.0):
-    """THE GENTLE DRAGON storybook (s06): 150x190 at s=1, centred."""
+def _ghost_sheet_path(c, t, ph):
+    """Outline of the little sheet ghost (local: head top (0, -40), hem ~ +38)."""
+    c.move_to(-30, 30)
+    c.curve_to(-31, 6, -30, -16, -24, -28)
+    c.curve_to(-16, -42, 16, -42, 24, -28)
+    c.curve_to(30, -16, 31, 6, 30, 30)
+    for k in range(4):                                  # rippling hem, right -> left
+        x0, x1 = 30 - k * 15, 30 - (k + 1) * 15
+        dip = 9 + 3 * math.sin(t * 7.0 + k * 1.6 + ph)
+        c.curve_to(x0 - 3, 30 + dip, x1 + 3, 30 + dip, x1, 30 + 2 * math.sin(t * 7.0 + k))
+    c.close_path()
+
+
+def draw_spooky_ghost(c, x, y, s, t, ph=0.0):
+    """The cover ghost of THE SPOOKY GHOST: a white sheet ghost (#f4f4f8, ink
+    outline) with big dark eyes and an 'O' mouth that waves its little arms
+    dramatically and wobbles ("oooo"). (x, y) = ghost centre, ~64 x 82 at s=1."""
+    wob = 0.1 * math.sin(t * 2 * math.pi * 1.25 + ph)
+    bob = 3.0 * math.sin(t * 2 * math.pi * 1.25 + ph + 1.2)
+    wave = math.sin(t * 2 * math.pi * 2.1 + ph)
+    with saved(c, x, y + bob, s, wob) as g:
+        for sx, a0 in ((-1, -2.45), (1, -0.69)):         # little arms, raised + waving
+            ang = a0 - 0.45 * wave                         # see-saw: one up, one down
+            ex, ey = sx * 26 + math.cos(ang) * 22, -2 + math.sin(ang) * 22
+            for col, w in ((INK, 17), (GHOST_W, 9)):
+                g.move_to(sx * 22, 2)
+                g.curve_to(sx * 28, -2, ex - math.cos(ang) * 8, ey - math.sin(ang) * 8, ex, ey)
+                _s(g, col, w)
+        _ghost_sheet_path(g, t, ph)
+        _fs(g, GHOST_W, INK, 4.5)
+        g.save()
+        _ghost_sheet_path(g, t, ph)
+        g.clip()
+        ellipse(g, 22, 4, 14, 44)                      # one shadow tone
+        _f(g, GHOST_SH, 0.9)
+        g.restore()
+        ellipse(g, -14, -30, 7, 4, -0.5)                # sheen
+        _f(g, "white", 0.9)
+        for sx in (-1, 1):                              # big dark eyes
+            ellipse(g, sx * 11, -14, 7, 10)
+            _f(g, GHOST_EYE)
+            circle(g, sx * 11 - 2.5, -18, 2.4)
+            _f(g, "white", 0.9)
+        oo = 1.0 + 0.18 * math.sin(t * 2 * math.pi * 1.25 + ph + 0.6)
+        ellipse(g, 0, 8, 6.5 * oo, 8.5 * oo)            # "O" mouth: oooo
+        _f(g, GHOST_EYE)
+
+
+def draw_ghost_book(ctx, x, y, s, t, rot=0.0, sq=0.0):
+    """THE SPOOKY GHOST storybook (s11 gift pile / s12): 150x190 at s=1,
+    centred. Dark purple cover #3a2350, gold title #ffd166, the animated
+    sheet ghost on the cover."""
     with saved(ctx, x, y, (s * (1 + sq * 0.5), s * (1 - sq)), rot) as c:
-        rrect(c, -70, -91, 150, 186, 10)
+        rrect(c, -70, -91, 150, 186, 10)                # page block
         _fs(c, "#f3ead2", INK, 4)
-        rrect(c, -75, -95, 150, 190, 12)
-        _fs(c, BOOK, INK, 5)
-        rrect(c, -75, -95, 24, 190, 10)
-        _fs(c, BOOK_DK, INK, 4)
+        rrect(c, -75, -95, 150, 190, 12)                # cover
+        _fs(c, GB_COVER, INK, 5)
+        rrect(c, -75, -95, 24, 190, 10)                 # spine
+        _fs(c, GB_SPINE, INK, 4)
         for yy in (-70, 70):
             c.move_to(-73, yy)
             c.line_to(-53, yy)
-        _s(c, "gold", 4)
-        rrect(c, -44, -84, 110, 168, 9)
-        _s(c, "gold", 4)
-        text(c, "THE GENTLE", 11, -58, 19, GOLD, "title")
-        text(c, "DRAGON", 11, -31, 29, GOLD, "title")
-        fx, fy = 11, 30
-        for sx in (-1, 1):
-            poly(c, [(fx + sx * 30, fy - 4), (fx + sx * 56, fy - 26), (fx + sx * 50, fy - 6),
-                     (fx + sx * 58, fy + 4), (fx + sx * 34, fy + 14)])
-            _fs(c, "#a6e88a", INK, 3.5)
-        for sx in (-1, 1):
-            poly(c, [(fx + sx * 12, fy - 32), (fx + sx * 22, fy - 50), (fx + sx * 26, fy - 28)])
-            _fs(c, "#f6e7b8", INK, 3)
-        circle(c, fx, fy, 38)
-        _fs(c, DRAGON, INK, 4)
-        ellipse(c, fx, fy + 16, 22, 14)
-        _fs(c, "#c8f0a8", None)
-        for sx in (-1, 1):
-            c.move_to(fx + sx * 14 - 8, fy - 6)
-            c.curve_to(fx + sx * 14 - 4, fy - 14, fx + sx * 14 + 4, fy - 14, fx + sx * 14 + 8,
-                       fy - 6)
-            _s(c, INK, 3.5)
-            ellipse(c, fx + sx * 24, fy + 6, 6, 4)
-            _f(c, "#ff8fb0", 0.85)
-            circle(c, fx + sx * 5, fy + 12, 1.8)
-            _f(c, INK)
-        c.move_to(fx - 9, fy + 20)
-        c.curve_to(fx - 4, fy + 26, fx + 4, fy + 26, fx + 9, fy + 20)
-        _s(c, INK, 3.2)
-        for (sx_, sy_) in ((-30, 74), (50, 70), (52, -76)):
-            P._star4(c, fx + sx_ - 11, sy_, 7)
-            _f(c, "gold")
+        _s(c, GB_GOLD, 4)
+        rrect(c, -44, -84, 110, 168, 9)                 # gold border
+        _s(c, GB_GOLD, 4)
+        for txt, fs0, ty, mw in (("THE SPOOKY", 19, -58, 96), ("GHOST", 31, -30, 100)):
+            fs = fs0
+            while fs > 10 and text_width(c, txt, "title", fs) > mw:
+                fs -= 1
+            text(c, txt, 11, ty, fs, GB_GOLD, "title")
+        draw_spooky_ghost(c, 11, 34, 1.0, t)
+        for (sx_, sy_) in ((-30, 74), (52, 72), (54, -76)):   # tiny gold stars
+            P._star4(c, sx_, sy_, 6)
+            _f(c, GB_GOLD)
 
 
 NB_COVER, NB_COVER_DK, NB_PAGES = "#13a8a0", "#0b6f6a", "#fff6e0"   # as s03
@@ -676,12 +798,16 @@ def _gift_star(c, x, y, s, rot=0.0):
         cc.fill()
 
 
+HUG_DY = 60.0       # the grip sits low on the book so the cover ghost stays visible
+
+
 def _hug_hands(ctx, bx, by, bs, rot, k=1.0):
-    """White gloves wrapping over the book's side edges (the hug, as s06)."""
+    """White gloves wrapping over the book's side edges (the hug, as s06),
+    gripping its lower half (the waving cover ghost stays in view)."""
     if k <= 0.01:
         return
     hs = MS * 1.45 * k
-    with saved(ctx, bx, by, 1.0, rot) as c:
+    with saved(ctx, bx, by + HUG_DY * bs, 1.0, rot) as c:
         for sx in (-1, 1):
             ex = sx * 75 * bs
             ellipse(c, ex + sx * 8 * hs, 18 * bs, 22 * hs, 27 * hs, sx * 0.2)
@@ -1383,23 +1509,20 @@ def _sheet(ctx, t, T):
     with saved(ctx, cx, cy + SHEET_H / 2, s, 0.0, alpha_=a) as c:
         c.translate(0, -SHEET_H / 2)
         w, h = SHEET_W, SHEET_H
-        flip_u = seg(t, T["flip"], T["flip"] + 0.25)
-        hero = flip_u >= 0.5
+        gold = t >= T["flip"] + 0.08                    # IMPRESSIVE! has landed
         # pointer toward his head + panel
         poly(c, [(-22, h / 2 - 4), (22, h / 2 - 4), (0, h / 2 + 26)])
-        _fs(c, "ui_panel", "ai_rim", 6)
+        _fs(c, "ui_panel", "ai_accent" if gold else "ai_rim", 6)
         rrect(c, -w / 2 + 6, -h / 2 + 8, w, h, 22)
         _f(c, (0, 0, 0, 0.3))
         rrect(c, -w / 2, -h / 2, w, h, 22)
-        _fs(c, "ui_panel", "safe" if hero else "ai_rim", 6)
+        _fs(c, "ui_panel", "ai_accent" if gold else "ai_rim", 6)
         poly(c, [(-20, h / 2 - 7), (20, h / 2 - 7), (0, h / 2 + 20)])
         _f(c, "ui_panel")
-        # header (scale-y flip)
-        sy = abs(math.cos(flip_u * math.pi)) if 0 < flip_u < 1 else 1.0
-        with saved(c, 0, -h / 2 + 46, (1.0, max(0.02, sy))) as ch:
-            hdr = "HERO STATS" if hero else "VILLAIN STATS"
-            col = "safe" if hero else "warn"
-            text(ch, hdr, 0, 15, 44, col, "comic", outline="ink", outline_w=8)
+        # header: VILLAIN STATS (it stays!); a proud pulse on "villain"
+        hp = math.sin(math.pi * seg(t, T["w_villain4"], T["w_villain4"] + 0.32))
+        with saved(c, 0, -h / 2 + 46, 1.0 + 0.14 * hp) as ch:
+            text(ch, "VILLAIN STATS", 0, 15, 44, "warn", "comic", outline="ink", outline_w=8)
         c.move_to(-w / 2 + 24, -h / 2 + 76)
         c.line_to(w / 2 - 24, -h / 2 + 76)
         _s(c, "ai_rim", 3, 0.5)
@@ -1420,7 +1543,7 @@ def _sheet(ctx, t, T):
                         _fs(cb, "ai_accent", "ink", 3)
                         rrect(cb, -7, -11, 6, 12, 3)
                         _f(cb, "white", 0.55)
-        # a shine sweep over the bars right after the flip
+        # a shine sweep over the bars right after the badge lands
         if T["flip"] + 0.15 <= t <= T["flip"] + 0.75:
             u = seg(t, T["flip"] + 0.15, T["flip"] + 0.75)
             c.save()
@@ -1430,12 +1553,44 @@ def _sheet(ctx, t, T):
             poly(c, [(xx - 20, -h / 2), (xx + 20, -h / 2), (xx - 30, h / 2), (xx - 70, h / 2)])
             _f(c, "white", 0.22)
             c.restore()
+        _impressive_badge(c, t, T, w / 2 - 104, -h / 2 - 16)
     if T["flip"] <= t <= T["wall"]:
         k = smoothstep(seg(t, T["flip"], T["flip"] + 0.2)) * \
             (1 - smoothstep(seg(t, T["flip"] + 1.0, T["flip"] + 1.6)))
         if k > 0.01:
-            P.sparkles(ctx, SHEET_C[0], SHEET_C[1] - 10, 250, t, n=6, seed=5, color="safe",
-                       size=0.8 * k)
+            P.sparkles(ctx, SHEET_C[0], SHEET_C[1] - 10, 250, t, n=6, seed=5,
+                       color="ai_accent", size=0.8 * k)
+
+
+def _impressive_badge(c, t, T, x, y):
+    """Gold 'IMPRESSIVE!' badge slammed onto the sheet's top-right corner on
+    "impressive" (sheet-local coords; fades with the sheet)."""
+    t0 = T["flip"]
+    if t < t0:
+        return
+    d = t - t0
+    hit = 0.1
+    if d < hit:                                        # drops in big, with a twist
+        q = ease_in(d / hit)
+        sc, rot = lerp(2.2, 0.9, q), 0.12 - 0.4 * (1 - q)
+    else:
+        sc, rot = 0.9 + 0.1 * ease_out_back(seg(d, hit, hit + 0.28), 3.2), 0.12
+    a = clamp(d / 0.05)
+    with saved(c, x, y, sc, rot, alpha_=a) as cb:
+        P.label_tag(cb, 0, 0, "IMPRESSIVE!", color="ai_accent", size=40, text_color="ink",
+                    font="comic")
+        P._star4(cb, -128, -24, 12, 0.3)
+        _fs(cb, "white", INK, 2.5)
+        P._star4(cb, 126, 22, 9, 0.2)
+        _fs(cb, "white", INK, 2)
+    k = seg(t, t0 + hit, t0 + hit + 0.24)               # impact ticks
+    if 0 < k < 1:
+        for i in range(8):
+            ang = i / 8 * 2 * math.pi + 0.2
+            r0, r1 = 70 + 40 * k, 86 + 64 * k
+            c.move_to(x + math.cos(ang) * r0 * 1.6, y + math.sin(ang) * r0 * 0.7)
+            c.line_to(x + math.cos(ang) * r1 * 1.6, y + math.sin(ang) * r1 * 0.7)
+        _s(c, "ai_accent", 5, 1 - k)
 
 
 # ---------------------------------------------------------------------------
@@ -1717,12 +1872,10 @@ CHIP_SRC = (DOOR[0] + DOOR[2] * 0.92, DOOR[1] + DOOR[3] * 0.48)
 # (label line 1, line 2, slot x, slot y, rot)
 CHIPS = [
     ("SCARY", "STORIES", 830.0, 228.0, -0.05),
-    ("BIG", "FEELINGS", 836.0, 372.0, 0.04),
-    ("WARN", "PEOPLE", 828.0, 516.0, -0.03),
+    ("CREATIVE", "PLANS", 836.0, 372.0, 0.04),
+    ("SOUND THE", "ALARM", 828.0, 516.0, -0.03),
 ]
 SPOOK_BOOK, SPOOK_BOOK_DK = "#6b3fa0", "#4a2a74"
-PARCH, PARCH_DK = "#f3e2b3", "#d8bf82"
-WARN_Y = "#ffcf3a"
 
 
 def _icon_storybook(c):
@@ -1753,91 +1906,102 @@ def _icon_storybook(c):
         _f(b, INK)
 
 
-JOURNAL, JOURNAL_DK = "#e58fb0", "#c06a8e"
-HEART_C, CANDLE_C, FLAME_C = "#ff5d7a", "#fff1d6", "#ffb23a"
+BP, BP_DK, BP_LN = "#2f6fd6", "#1f4fa6", "#7fa8ee"          # blueprint blue
+BULB, BULB_OFF = "#ffe066", "#f3ead2"
+BELL, BELL_DK, BELL_RIM = "#e23b2e", "#a8231b", "#c42a20"
 
 
-def _icon_feelings(c, t=0.0, beat=0.0):
-    """A feelings journal (soft pink cover, heart, ribbon) beside a little
-    candle with a soft glow. `beat` 0..1 = a heartbeat pulse ("feelings")."""
-    # candle glow (soft, two flat rings) + candle
-    cx, cy = 30, 4
-    fl = 1.0 + 0.08 * math.sin(t * 11) + 0.05 * noise1(t * 4, 3)
-    for r, a in ((26, 0.14), (16, 0.22)):
-        circle(c, cx, cy - 22, r * fl)
-        _f(c, "ai_accent", a)
-    rrect(c, cx - 8, cy - 12, 16, 34, 4)
-    _fs(c, CANDLE_C, INK, 3)
-    c.move_to(cx - 8, cy - 6)
-    c.curve_to(cx - 4, cy - 2, cx - 6, cy + 2, cx - 4, cy + 4)
-    _s(c, "#e6d4b0", 2.5)
-    c.move_to(cx, cy - 12)
-    c.line_to(cx, cy - 17)
-    _s(c, INK, 2.5)
-    c.move_to(cx, cy - 34 * fl)                                       # flame
-    c.curve_to(cx + 8, cy - 24, cx + 6, cy - 17, cx, cy - 16)
-    c.curve_to(cx - 6, cy - 17, cx - 8, cy - 24, cx, cy - 34 * fl)
-    c.close_path()
-    _fs(c, FLAME_C, INK, 2.5)
-    ellipse(c, cx, cy - 21, 2.5, 4)
-    _f(c, "#fff6c8")
-    # the journal (tilted a touch), ribbon bookmark hanging out the bottom
-    with saved(c, -14, 0, 1.0, -0.07) as b:
-        b.move_to(14, 24)
-        b.curve_to(16, 30, 12, 34, 16, 38)
-        _s(b, INK, 6)
-        b.move_to(14, 24)
-        b.curve_to(16, 30, 12, 34, 16, 38)
-        _s(b, "ai_accent", 3)
-        rrect(b, -26, -24, 56, 50, 5)                    # page block
-        _fs(b, "#fbf3dc", INK, 3)
-        rrect(b, -30, -27, 54, 52, 6)                    # cover
-        _fs(b, JOURNAL, INK, 3.5)
-        b.rectangle(-30, -27, 10, 52)                    # spine
-        _f(b, JOURNAL_DK)
-        b.rectangle(-30, -27, 10, 52)
-        _s(b, INK, 3)
-        rrect(b, -16, -20, 34, 38, 5)                    # cover label
-        _s(b, "#fff0f5", 2.5, 0.8)
-        hs = 1.0 + 0.28 * beat
-        with saved(b, 1, -1, hs) as h:                   # soft heart
-            h.move_to(0, 11)
-            h.curve_to(-15, 1, -12, -12, -5, -11)
-            h.curve_to(-2, -11, 0, -8, 0, -6)
-            h.curve_to(0, -8, 2, -11, 5, -11)
-            h.curve_to(12, -12, 15, 1, 0, 11)
-            h.close_path()
-            _fs(h, HEART_C, INK, 2.5)
-            ellipse(h, -5, -5, 2.5, 1.6, -0.5)
-            _f(h, "white", 0.75)
+def _icon_plans(c, t=0.0, lit=1.0):
+    """CREATIVE PLANS: a villain's rolled-up blueprint-style plan (half
+    unrolled, a dashed arrow, an X, a star doodle) with a lightbulb popping on
+    at its corner. Cartoony scheme doodles, nothing technical."""
+    with saved(c, -6, 5, 1.0, -0.06) as b:
+        rrect(b, -30, -20, 64, 40, 3)                     # the unrolled sheet
+        _fs(b, BP, INK, 3)
+        b.save()
+        rrect(b, -30, -20, 64, 40, 3)
+        b.clip()
+        for yy in (-8, 4, 16):                            # faint grid
+            b.move_to(-30, yy)
+            b.line_to(34, yy)
+        for xx in (-14, 2, 18):
+            b.move_to(xx, -20)
+            b.line_to(xx, 20)
+        _s(b, BP_LN, 1.4, 0.55)
+        b.restore()
+        b.set_dash([4.5, 4], 0)                           # dashed scheme arrow
+        b.move_to(-20, 12)
+        b.curve_to(-14, -14, 6, -12, 12, 2)
+        _s(b, "white", 2.6)
+        b.set_dash([], 0)
+        poly(b, [(9, -3), (17, 1), (10, 7)])
+        _f(b, "white")
+        for d in (-1, 1):                                 # X marks the plan
+            b.move_to(19, 8 - 5 * d)
+            b.line_to(27, 8 + 5 * d)
+        _s(b, "white", 2.6)
+        P._star4(b, -20, -10, 5)
+        _f(b, "white", 0.9)
+        rrect(b, -40, -23, 14, 46, 6)                     # the rolled-up end
+        _fs(b, BP_DK, INK, 3)
+        ellipse(b, -33, -23, 7, 3.2)
+        _fs(b, BP, INK, 2.5)
+        circle(b, -33, -23, 1.6)
+        _f(b, INK)
+    # lightbulb popping on at the corner
+    bx, by = 33, -16
+    if lit > 0.02:
+        circle(c, bx, by, 19 * (0.8 + 0.2 * lit))
+        _f(c, "ai_accent", 0.28 * lit)
+        for k in range(5):
+            a = -math.pi / 2 + (k - 2) * 0.62
+            c.move_to(bx + math.cos(a) * 14, by + math.sin(a) * 14)
+            c.line_to(bx + math.cos(a) * (19 + 3 * lit), by + math.sin(a) * (19 + 3 * lit))
+        _s(c, "ai_accent", 2.6, lit)
+    rrect(c, bx - 5, by + 7, 10, 8, 2)
+    _fs(c, "#a9aec0", INK, 2.2)
+    circle(c, bx, by, 10)
+    _fs(c, core.mixc(BULB_OFF, BULB, clamp(lit)), INK, 2.6)
+    ellipse(c, bx - 3, by - 3, 2.5, 3.5, 0.4)
+    _f(c, "white", 0.85)
 
 
-def _icon_warn(c):
-    """A megaphone with a little warning sign."""
-    # warning triangle
-    poly(c, [(-24, -26), (-2, 14), (-46, 14)])
-    _fs(c, WARN_Y, INK, 3.5)
-    rrect(c, -26.5, -12, 5, 15, 2.5)
-    _f(c, INK)
-    circle(c, -24, 8, 3)
-    _f(c, INK)
-    # megaphone (pointing right)
-    poly(c, [(6, -6), (30, -22), (30, 22), (6, 8)])
-    _fs(c, "#e0674f", INK, 3.5)
-    rrect(c, -2, -9, 10, 20, 3)
-    _fs(c, "#d0d6e4", INK, 3)
-    rrect(c, 8, 7, 8, 14, 3)                          # handle
-    _fs(c, "#5a5f73", INK, 2.5)
-    ellipse(c, 30, 0, 5, 22)
-    _fs(c, "#c04c38", INK, 3)
-    for k in range(2):                                # sound arcs
-        r = 12 + 9 * k
-        c.arc(34, 0, r, -0.7, 0.7)
-        _s(c, "white", 3)
-        c.new_path()
+def _icon_alarm(c, t=0.0, ring=0.0):
+    """SOUND THE ALARM: a big red alarm bell with motion lines; it shakes
+    while it rings (ring 0..1)."""
+    rr = 0.6 + 0.4 * clamp(ring)
+    for sx in (-1, 1):                                    # motion lines
+        for k in range(2):
+            r = 36 + 9 * k + 2.5 * math.sin(t * 30 + k)
+            c.arc(0, 0, r, (-0.5 if sx > 0 else math.pi - 0.5),
+                  (0.5 if sx > 0 else math.pi + 0.5))
+            _s(c, "white", 3.2, (1.0 - 0.3 * k) * rr)
+            c.new_path()
+    ang = 0.2 * math.sin(t * 38.0) * clamp(ring) + 0.04 * math.sin(t * 7.0)
+    with saved(c, 0, -27, 1.15, ang) as b:                # pivots at the mount
+        rrect(b, -6, -6, 12, 8, 3)                        # mount knob
+        _fs(b, "#a9aec0", INK, 2.5)
+        cl = -ang * 1.6                                   # clapper swings the other way
+        circle(b, math.sin(cl) * 6, 47, 5.5)
+        _fs(b, STAR_GOLD, INK, 2.5)
 
-
-CHIP_ICONS = (_icon_storybook, _icon_feelings, _icon_warn)
+        def dome():
+            b.move_to(-25, 38)
+            b.curve_to(-25, 14, -20, 2, 0, 2)
+            b.curve_to(20, 2, 25, 14, 25, 38)
+            b.close_path()
+        dome()
+        _fs(b, BELL, INK, 3)
+        b.save()
+        dome()
+        b.clip()
+        ellipse(b, 15, 22, 11, 22)
+        _f(b, BELL_DK, 0.7)
+        b.restore()
+        ellipse(b, -11, 16, 3.5, 8, 0.35)                 # highlight
+        _f(b, "white", 0.75)
+        rrect(b, -30, 35, 60, 9, 4.5)                     # rim
+        _fs(b, BELL_RIM, INK, 3)
 
 
 def _chip_pose(t, T, i):
@@ -1888,12 +2052,17 @@ def _chips(ctx, t, T):
             rrect(c, -w / 2 + 8, -h / 2 + 8, w - 16, 64, 12)           # icon well
             _f(c, (1.0, 0.85, 0.45, 0.16 + 0.3 * flash))
             with saved(c, 0, -h / 2 + 40, 1.0) as ci:
-                if i == 1:                            # heartbeat on "big feelings"
-                    hb = max(math.sin(math.pi * seg(t, T["w_big"], T["w_big"] + 0.2)),
-                             math.sin(math.pi * seg(t, T["w_feelings"], T["w_feelings"] + 0.22)))
-                    _icon_feelings(ci, t, hb)
-                else:
-                    CHIP_ICONS[i](ci)
+                if i == 0:
+                    _icon_storybook(ci)
+                elif i == 1:                          # the bulb pops on: an idea!
+                    lit = smoothstep(seg(t, t0 + 0.12, t0 + 0.24))
+                    lit *= 0.85 + 0.15 * math.sin(t * 6.0)
+                    _icon_plans(ci, t, lit)
+                else:                                 # rings on "sounding" .. "alarm"
+                    ring = max(1 - seg(t, t0 + 0.6, t0 + 1.0),
+                               1 - seg(t, T["w_alarm"] + 0.45, T["w_alarm"] + 0.85)
+                               if t >= T["w_alarm"] else 0.0)
+                    _icon_alarm(ci, t, ring)
             for j, lab in enumerate((l1, l2)):
                 fs = 24
                 while fs > 16 and text_width(c, lab, "ui", fs) > w - 22:
@@ -1966,7 +2135,7 @@ def _draw_gift(ctx, t, i, pose):
         with saved(ctx, x, y, (sx, sy)):
             draw_scroll(ctx, 0, 0, s, rot)
     elif kind == "book":
-        draw_dragon_book(ctx, x, y, s, rot, sq)
+        draw_ghost_book(ctx, x, y, s, t, rot, sq)
     elif kind == "twist":
         with saved(ctx, x, y, (sx, sy)):
             draw_twist_script(ctx, 0, 0, s, rot)
@@ -2105,17 +2274,28 @@ def _malvo(t, T):
     beat = T["beat"]
     expr = _state(t, [
         (-1, "s11_slump"),
-        (beat, "s11_down", 0.55),                       # lifts his head slowly
+        (T["lift"], "s11_low", 0.5),                     # "Evil Genius": head comes up
+        (T["w_every1"] + 0.25, "s11_frown", 0.45),       # "...helps me protect people"?
+        (T["w_heroic"] + 0.02, "s11_aghast", 0.14),      # "heroic"?!
+        (T["l1b"] + 0.02, "s11_ugh", 0.16),              # "Heroic? Ugh!" disgust
+        (T["cross"], "s11_hmph", 0.22),                  # arms cross, nose up, away
+        (T["peek"], "s11_peek", 0.16),                   # "...amazing villain": peek
+        (T["unpeek"], "s11_hmph", 0.12),                 # ...snap, shut again
+        (T["turn_back"], "s11_smug", 0.3),               # "...That's what I thought."
+        (T["nod_v"], "s11_smug_nod", 0.13),              # begrudging little nod
+        (T["nod_v"] + 0.15, "s11_smug", 0.2),
+        (beat, "s11_down", 0.55),                        # bravado drains, monocle slips
         (T["l2"] + 0.15, "s11_teary", 0.4),
         (T["w_noticed"] - 0.05, "s11_teary_up", 0.2),    # lids lift: the photo
         (T["w_unless"], "s11_teary", 0.35),
         (T["back"], "s11_moved", 0.01),                  # (cut) touched, glistening
-        (T["flip"] + 0.15, "s11_moved", 0.3),
-        (T["l5"] - 0.05, "s11_hope_m", 0.3),             # ...Hero stats?
-        (T["mono_up"] + 0.04, "s11_hope_m0", 0.34),      # lifts the monocle back in
-        (T["mono_in"] + 0.25, "s11_hope", 0.5),          # ...and a smile tugs
-        (T["wall"] + 0.1, "s11_listen", 0.4),
+        (T["flip"] + 0.1, "s11_hope_m", 0.3),            # "impressive villain stats"
+        (T["wow"], "s11_wow", 0.16),                     # ...Impressive?! monocle in
+        (T["grin"], "s11_grin", 0.3),                    # a pleased evil grin
+        (T["wall"] + 0.35, "s11_listen", 0.45),
         (T["chips"][0] + 0.1, "s11_hope", 0.4),          # ...scary stories? for me?
+        (T["chips"][1] + 0.04, "s11_scheme", 0.25),      # creative plans! (hand rub)
+        (T["chips"][2] + 0.08, "s11_hope", 0.3),
         (T["open"], "s11_wonder", 0.3),                  # golden light!
         (T["gift_t"][2], "s11_wonder2", 0.6),            # ...eyes getting wider
         (T["sp_t"]["pumpkin"] + 0.12, "s11_delight", 0.25),   # SPOOKY stuff? for me?!
@@ -2126,27 +2306,38 @@ def _malvo(t, T):
     ])
     arms = _state(t, [
         (-1, "slump"),
-        (beat + 0.1, "rest", 0.7),
-        (T["mono_up"], "s11_mono", 0.24),
-        (T["mono_in"] + 0.32, "rest", 0.4),
+        (T["lift"] + 0.1, "rest", 0.7),
+        (T["cross"], "s11_cross", 0.25),                 # Ugh! arms folded
+        (T["uncross"], "rest", 0.55),                    # ...relaxing
+        (T["puff"] - 0.06, "s11_hips", 0.22),            # chest puffed, elbows out
+        (T["wall"] + 0.3, "rest", 0.45),
+        (T["chips"][1] - 0.02, "rub", 0.25),             # creative plans: hand rub
+        (T["chips"][2] + 0.1, "rest", 0.35),
         (T["gift_t"][0] - 0.05, "s11_open", 0.3),
         (T["gift_t"][3] + T["fly"] - 0.2, "s11_hug", 0.22),
     ])
     gaze_ai = (0.9, -0.05)
+    away = (-1.0, -0.35)
     look = _keyv(t, [
         (-1, (0.0, 0.8)),
-        (beat, (0.25, 0.1), 0.5),                       # head comes up, toward the AI
-        (beat + 0.55, (0.85, -0.05), 0.3),
+        (T["lift"], (0.25, 0.1), 0.5),                  # head comes up, toward the AI
+        (T["lift"] + 0.5, gaze_ai, 0.3),
+        (T["cross"], away, 0.2),                         # turned away, nose up
+        (T["peek"], (0.95, -0.12), 0.16),               # the peek
+        (T["unpeek"], away, 0.12),
+        (T["turn_back"], gaze_ai, 0.3),                 # peeks back at the AI
+        (beat + 0.1, (0.1, 0.6), 0.5),                  # eyes drop
+        (T["l2"] + 0.1, (0.7, 0.05), 0.4),              # "Nobody ever..."
         (T["w_noticed"], (0.8, -0.7), 0.18),            # the corkboard photo
         (T["w_unless"] + 0.1, (0.15, 0.55), 0.35),      # eyes drop
         (T["back"], gaze_ai, 0.01),
         (T["rows"][0] + 0.05, (0.0, -1.0), 0.15),       # up at the sheet
         (T["w_never"] + 0.35, (0.55, -0.6), 0.15),
         (T["l4"] + 0.08, gaze_ai, 0.18),                # "those are..."
-        (T["flip"] + 0.05, (0.0, -1.0), 0.12),          # HERO?!
+        (T["flip"] + 0.05, (0.25, -1.0), 0.12),         # IMPRESSIVE!
         (T["w_my"], gaze_ai, 0.15),                     # "my guy"
-        (T["l5"] + 0.02, (0.05, -0.95), 0.15),          # "...Hero
-        (T["w_stats2"], gaze_ai, 0.14),                 # stats?"
+        (T["l5"] + 0.02, (0.25, -0.95), 0.15),          # "...Impressive?" (the badge)
+        (T["grin"], gaze_ai, 0.18),                     # ...grins at the AI
         (T["wall"] + 0.15, (0.4, -0.9), 0.3),           # the hologram (door)
         (T["wall0"] + 0.2, (-0.15, -1.0), 0.25),        # bricks stacking
         (T["w_every"], gaze_ai, 0.2),
@@ -2171,38 +2362,57 @@ def _malvo(t, T):
         look = _keyv(t, [(T["smile"], look), (T["smile"], (0.1, 0.8), 0.45),
                          (T["smile"] + 0.85, (0.9, -0.12), 0.3)])
     blink = _first(_slow_blink(t, T["photo"] - 0.6),
-                   _slow_blink(t, T["mono_in"] + 0.05, 0.08, 0.04, 0.08),
-                   _slow_blink(t, T["mono_in"] + 0.33, 0.08, 0.04, 0.08),
                    _slow_blink(t, T["open"] + 0.75, 0.1, 0.05, 0.12),
                    _slow_blink(t, T["sp_land"]["mask"] - 0.03, 0.05, 0.04, 0.09),
                    _slow_blink(t, T["w_hurting"] + 0.3, 0.1, 0.06, 0.12))
     if blink is None and (T["sp_t"]["bat"] - 0.1 <= t < T["sp_land"]["dragon"] + 0.4
-                          or T["l5"] - 0.15 <= t < T["mono_in"] + 0.02
+                          or T["l5"] - 0.15 <= t < T["grin"] + 0.6
+                          or T["peek"] - 0.05 <= t < T["unpeek"] + 0.1
+                          or T["turn_back"] <= t < T["nod_v"] - 0.05
+                          or T["w_heroic"] - 0.05 <= t < T["cross"]
                           or T["back"] - 0.02 <= t < T["back"] + 0.4
                           or T["w_noticed"] - 0.1 <= t < T["w_noticed"] + 0.5):
         blink = 0.0                                     # keep the glance readable
     if t >= T["smile"] + 0.3:
         sb = _slow_blink(t, T["smile"] + 0.38, 0.16, 0.12, 0.2)   # content slow blink
         blink = sb if sb is not None else 0.0
-    # lean: a tiny lean toward the AI once he's hopeful; settles back for the hug
-    lean = 0.025 * smoothstep(seg(t, T["l5"], T["l5"] + 0.6)) \
+    # lean: away from the AI while he sulks; a tiny lean toward it once he's
+    # pleased; settles back for the hug
+    sulk = smoothstep(seg(t, T["cross"], T["cross"] + 0.3)) * \
+        (1 - smoothstep(seg(t, T["turn_back"], T["turn_back"] + 0.4)))
+    lean = -0.035 * sulk + 0.025 * smoothstep(seg(t, T["l5"], T["l5"] + 0.6)) \
         - 0.02 * smoothstep(seg(t, T["open"], T["open"] + 0.6))
-    # slump sink + rise
-    dy = 10 * (1 - smoothstep(seg(t, beat, beat + 0.6)))
+    # slump sink + rise; a small deflate in the beat (unseen rise during the photo)
+    dy = 10 * (1 - smoothstep(seg(t, T["lift"], T["lift"] + 0.6)))
+    dy += 8 * smoothstep(seg(t, beat, beat + 0.5)) * (1 - smoothstep(seg(t, T["photo"], T["back"])))
     dy += 9 * math.sin(math.pi * seg(t, T["sp_land"]["mask"], T["sp_land"]["mask"] + 0.26))
-    return expr, arms, look, blink, lean, dy
+    # "...Impressive?": the chest puffs (a little scale about the waist)
+    puff = ease_out_back(seg(t, T["puff"], T["puff"] + 0.22), 2.0) * \
+        (1 - smoothstep(seg(t, T["wall"] + 0.25, T["wall"] + 0.75)))
+    return expr, arms, look, blink, lean, dy, puff
 
 
 def _hissy(t, T):
     face_dir = (0.92, -0.25)
+    away = (-1.0, -0.4)
     expr = _state(t, [
         (-1, "worried"),
+        (T["w_heroic"] + 0.08, "shocked", 0.12),        # "heroic"?!
+        (T["cross"] + 0.15, "s11_hmph", 0.22),           # copies him: hmph
+        (T["peek"] + 0.18, "s11_speek", 0.16),           # ...peeks too
+        (T["unpeek"] + 0.1, "s11_hmph", 0.12),
+        (T["turn_back"] + 0.12, "smug", 0.25),
+        (T["nod_v"] + 0.05, "nod", 0.12),                # copies the nod
+        (T["nod_v"] + 0.62, "smug", 0.2),
+        (T["beat"] + 0.25, "worried", 0.4),
         (T["back"], "s11_soft", 0.01),
         (T["w_never"] + 0.05, "nod", 0.15),
         (T["l4"] + 0.2, "s11_soft", 0.3),
+        (T["grin"] + 0.12, "smug", 0.25),                # copies the grin
+        (T["wall"] + 0.3, "s11_soft", 0.3),
         (T["w_every"] - 0.05, "nod", 0.12),
         (T["l6e"] + 0.15, "s11_soft", 0.3),
-        (T["chips"][1] + 0.12, "happy", 0.3),           # big feelings: a soft look at him
+        (T["chips"][1] + 0.12, "smug", 0.3),             # creative plans: in on it
         (T["chips"][2] + 0.12, "s11_soft", 0.3),
         (T["open"] + 0.1, "s11_wonder", 0.25),
         (T["sp_land"]["bat"] + 0.3, "happy", 0.3),       # a bat friend on his head!
@@ -2212,8 +2422,13 @@ def _hissy(t, T):
     ])
     look = _keyv(t, [
         (-1, face_dir),
-        (T["w_okay"], (1.0, -0.15), 0.3),                # glances at the AI
-        (T["w_thats"] + 0.3, face_dir, 0.35),
+        (T["w_evil"], (1.0, -0.15), 0.3),                # glances at the AI
+        (T["w_every1"] + 0.3, face_dir, 0.35),
+        (T["w_heroic"], (1.0, -0.15), 0.15),
+        (T["cross"] + 0.15, away, 0.2),                  # turned away too
+        (T["peek"] + 0.18, (1.0, -0.2), 0.16),
+        (T["unpeek"] + 0.1, away, 0.12),
+        (T["turn_back"] + 0.12, (1.0, -0.2), 0.25),
         (T["beat"] + 0.2, (0.9, -0.45), 0.4),
         (T["w_scaring"], (0.55, 0.55), 0.3),             # looks down
         (T["back"], (0.62, -0.8), 0.01),                 # the sheet
@@ -2244,19 +2459,32 @@ def _ai(t, T):
     at_malvo = (-0.92, 0.04)
     expr = _state(t, [
         (-1, "symp"),
-        (T["w_one"], "symp_smile", 0.3),                 # small smile on "one bad idea"
-        (T["l1e"] + 0.3, "symp", 0.4),
+        (T["l1"] - 0.1, "warm", 0.35),                   # "Keep testing me..."
+        (T["w_evil"], "tease", 0.25),                    # "...Evil Genius."
+        (T["w_every1"], "warm", 0.3),
+        (T["w_protect"], "happy", 0.3),                  # "...protect people."
+        (T["w_kinda"], "tease", 0.25),                   # "Kinda heroic,
+        (T["w_huh"], "wink", 0.1),                       # huh?" WINK
+        (T["l1e"] + 0.12, "amused", 0.3),
+        (T["w_ugh"] + 0.05, "tease", 0.2),               # "Ugh!" (amused brow)
+        (T["l1c"], "amused", 0.3),                       # "Then it'll take an
+        (T["w_amazing"], "tease", 0.25),                 # amazing villain..."
+        (T["w_have"], "happy", 0.25),                    # "Have at it."
+        (T["l1d"] + 0.15, "amused", 0.3),
+        (T["nod_v"] + 0.1, "happy", 0.3),
+        (T["beat"] + 0.3, "symp", 0.5),                  # softens as he deflates
         (T["w_scaring"], "symp_sad", 0.4),
         (T["back"], "symp_sad", 0.01),
         (T["back"] + 0.2, "warm", 0.3),                  # SLOW BLINK -> warm
         (T["l4"], "happy", 0.25),
         (T["l4e"] + 0.2, "warm_soft", 0.35),
+        (T["grin"], "amused", 0.3),                      # his pleased evil grin
         (T["wall"], "warm", 0.3),
         (T["w_hurts"], "determined", 0.3),
         (T["l6e"] + 0.05, "warm", 0.35),
         (T["chips"][0], "happy", 0.3),                   # scary stories
-        (T["chips"][1], "warm_soft", 0.3),               # making sense of big feelings
-        (T["chips"][2], "warm", 0.3),                    # warning people
+        (T["chips"][1], "tease", 0.3),                   # creative plans
+        (T["chips"][2], "warm", 0.3),                    # sounding the alarm
         (T["open"], "happy", 0.3),
         (T["l8"], "amused", 0.3),                        # "And keep the spooky stuff!"
         (T["w_spooky"], "happy", 0.25),
@@ -2292,8 +2520,12 @@ def _ai(t, T):
         look = at_malvo
     hands = _state(t, [
         (-1, "idle"),
-        (T["w_thats"], "present_l", 0.35),               # gentle open palm
-        (T["l1e"] + 0.1, "idle", 0.45),
+        (T["w_keep"] + 0.05, "present_l", 0.35),         # "Keep testing me": go on
+        (T["w_every1"] + 0.1, "idle", 0.4),
+        (T["w_kinda"] - 0.1, "shrug", 0.3),              # "Kinda heroic, huh?"
+        (T["l1e"] + 0.1, "idle", 0.4),
+        (T["w_have"] - 0.12, "present_l", 0.3),          # "Have at it.": open palm
+        (T["l1de"] + 0.1, "idle", 0.45),
         (T["back"], "present_l", 0.01),
         (T["flip"] - 0.05, "thumbs_up", 0.25),
         (T["l4e"] + 0.3, "idle", 0.4),
@@ -2311,9 +2543,12 @@ def _ai(t, T):
                    _slow_blink(t, T["l8e"] + 0.2),
                    _slow_blink(t, T["smile"] + 0.85, 0.14, 0.1, 0.16))
     nod = 0.0
+    n1 = T["nod_v"] + 0.12                               # nods back: "...yep."
+    if n1 <= t < n1 + 0.45:
+        nod = 0.32 * math.sin(math.pi * seg(t, n1, n1 + 0.45))
     if T["w_every"] <= t < T["w_every"] + 0.5:          # one firm nod
         nod = 0.6 * math.sin(math.pi * seg(t, T["w_every"], T["w_every"] + 0.5))
-    if T["l5e"] <= t < T["l5e"] + 0.55:                  # "yes. hero stats."
+    if T["l5e"] <= t < T["l5e"] + 0.55:                  # "yes. impressive."
         nod = max(nod, 0.35 * math.sin(math.pi * seg(t, T["l5e"], T["l5e"] + 0.55)))
     n0 = T["w_people2"] + 0.08                           # one firm nod: "...isn't."
     if n0 <= t < n0 + 0.5:
@@ -2410,6 +2645,46 @@ def _mask_strap(c):
         _s(c, col, w)
 
 
+def _cross_weight(arms):
+    if isinstance(arms, (tuple, list)):
+        a, b, k = arms
+        return (1 - k) * (a == "s11_cross") + k * (b == "s11_cross")
+    return 1.0 if arms == "s11_cross" else 0.0
+
+
+def _cross_overlay(c, t, arms, st, dy, lean):
+    """Crossed arms: redraw the middle of the screen-left upper arm (exactly as
+    the rig strokes it) over the top forearm's fist, so the glove reads as
+    tucked under the bicep. Clipped to a band that stops short of the shoulder
+    and elbow, so no extra outline shows."""
+    if _cross_weight(arms) <= 0.0:
+        return
+    A, _B, _sh, _hd, _tl = V.resolve_arms(arms, t)
+    shx, shy_ = -V.SHOULDER[0], V.SHOULDER[1] + st["shy"]
+    ex, ey = A["ex"], A["ey"]
+    dx, dy_ = ex - shx, ey - shy_
+    L = math.hypot(dx, dy_) or 1.0
+    nx, ny = -dy_ / L * 44, dx / L * 44
+    u0, u1 = 0.18, 0.86
+    p0 = (shx + dx * u0, shy_ + dy_ * u0)
+    p1 = (shx + dx * u1, shy_ + dy_ * u1)
+    c.save()
+    _xf_villain(c, dy, lean)
+    poly(c, [(p0[0] + nx, p0[1] + ny), (p1[0] + nx, p1[1] + ny),
+             (p1[0] - nx, p1[1] - ny), (p0[0] - nx, p0[1] - ny)])
+    c.clip()
+    c.set_line_cap(cairo.LINE_CAP_ROUND)
+    c.set_line_join(cairo.LINE_JOIN_ROUND)
+    for col, w, o in ((V.INK, 62 + 2 * V.OUT_W, 0), (V.SUIT_DK, 62, 0), (V.SUIT, 40, -6)):
+        c.move_to(shx + o, shy_ + o)
+        c.line_to(ex + o, ey + o)
+        c.line_to(A["wx"] + o, A["wy"] + o)
+        c.set_source_rgba(*col)
+        c.set_line_width(w)
+        c.stroke()
+    c.restore()
+
+
 def _shot_two(ctx, t, info, T):
     k = _cam(t, info)
     with saved(ctx, CAM_C[0], CAM_C[1], k) as c:
@@ -2425,7 +2700,7 @@ def _shot_two(ctx, t, info, T):
 
         # --- acting state ---------------------------------------------------------
         aexpr, alook, ahands, ablink, anod, ay, a_s = _ai(t, T)
-        expr, arms, look, blink, lean, dy = _malvo(t, T)
+        expr, arms, look, blink, lean, dy, puff = _malvo(t, T)
         mouth = info.mouth("villain", t)
         st = _vstate(t, expr, arms, mouth)
         hs = _hissy(t, T)
@@ -2448,8 +2723,15 @@ def _shot_two(ctx, t, info, T):
         hand = (AX - 272 * a_s, ay + 150 * a_s)          # ~ the AI's projecting hand
         _holo_beam(c, t, T, hand)
         # --- Malvo + Hissy ----------------------------------------------------
+        # (chest puff on "...Impressive?": a little scale about the waist)
+        c.save()
+        if puff > 0.001:
+            c.translate(MX, MY)
+            c.scale(1 + 0.035 * puff, 1 + 0.022 * puff)
+            c.translate(-MX, -MY)
         draw_villain(c, MX, MY + dy, MS, t, expr=expr, look=look, mouth=mouth, arms=arms,
                      lean=lean, blink=blink, snake=hs)
+        _cross_overlay(c, t, arms, st, dy, lean)         # tucks the top glove away
         # the bat, perched on Hissy's head
         if sp_on["bat"]:
             c.save()
@@ -2466,8 +2748,17 @@ def _shot_two(ctx, t, info, T):
         if not landed_book:
             with saved(c, MX, MY + dy, 1.0, lean):
                 _gift_star(c, LAPEL[0] * MS, (LAPEL[1] + st["shy"] * 0.5) * MS, LAPEL_S * MS)
+        c.restore()
+        # the monocle springs back in ("...Impressive?"): a glint as it lands
+        g0 = T["wow"] + 0.15
+        if g0 <= t < g0 + 0.4:
+            gk = math.sin(math.pi * seg(t, g0, g0 + 0.4))
+            mx_, my_ = _local_to_user(c, lambda cc: _xf_face(cc, st, dy, lean),
+                                      V.EYE_DX + 9 * look[0] + 40, V.EYE_DY - 42)
+            P._star4(c, mx_, my_, 18 * gk, 0.2)
+            _fs(c, "white", INK, 2.5, a=gk)
         if landed_book:
-            draw_dragon_book(c, bpose[0], bpose[1] + dy, bpose[2], bpose[3], bpose[4])
+            draw_ghost_book(c, bpose[0], bpose[1] + dy, bpose[2], t, bpose[3], bpose[4])
             hk = ease_out(seg(t, T["gift_t"][3] + T["fly"] - 0.06,
                               T["gift_t"][3] + T["fly"] + 0.1))
             _hug_hands(c, bpose[0], bpose[1] + dy, bpose[2], bpose[3], hk)
@@ -2501,8 +2792,12 @@ def _shot_two(ctx, t, info, T):
             if pose is not None and t < T["gift_t"][i] + T["fly"]:
                 _draw_gift(c, t, i, pose)
         # --- the AI hologram (on top) -------------------------------------------
-        draw_ai(c, AX, ay, a_s, t, expr=aexpr, look=alook, mouth=info.mouth("ai", t),
-                hands=ahands, blink=ablink, aura=AURA, nod=anod)
+        anc = draw_ai(c, AX, ay, a_s, t, expr=aexpr, look=alook, mouth=info.mouth("ai", t),
+                      hands=ahands, blink=ablink, aura=AURA, nod=anod)
+        if T["w_huh"] <= t < T["l1e"] + 0.6:            # the teasing WINK
+            ex_, ey_ = anc["eyeL"]
+            P.emote(c, "sparkle", ex_ - 36, ey_ - 58, 0.5, t, T["w_huh"] + 0.04,
+                    t_out=T["l1e"] + 0.3)
         # spooky gifts in flight: in front of everything (they're the stars here)
         for kd in SP_ORDER:
             fl = sp_fl[kd]
@@ -2519,6 +2814,10 @@ def _shot_two(ctx, t, info, T):
                     T["sp_land"]["dragon"] + 0.05, t_out=T["w_hurting"])
         # --- the character sheet ----------------------------------------------
         _sheet(c, t, T)
+        # "...Impressive?": he LIKES that word (a sparkle by his dome)
+        if T["grin"] <= t < T["l6"] + 0.6:
+            P.emote(c, "sparkle", FACE[0] + 168, FACE[1] - 178, 0.75, t, T["grin"] + 0.06,
+                    t_out=T["l6"] + 0.2)
         # warm little sparkles over the pile once he smiles
         if t >= T["smile"]:
             sk = smoothstep(seg(t, T["smile"] + 0.2, T["smile"] + 0.8))
@@ -2542,11 +2841,15 @@ def render(ctx, t, info):
 def SFX(info):
     T = _T(info)
     out = []
+    out.append((T["w_huh"] + 0.05, "sparkle", -14, 0.3))              # the teasing wink
+    out.append((T["cross"] + 0.08, "whoosh", -18, -0.3))               # arms fold: hmph
     out.append((T["beat"] + 0.45, "pop", -16))                        # monocle tink
     for i, tr in enumerate(T["rows"]):                                 # stat rows
         out.append((tr, "pop", -10, -0.2))
-    out.append((T["flip"] + 0.12, "sparkle", -8))                      # HERO STATS
-    out.append((T["mono_in"], "pop", -18))                             # monocle back in
+    out.append((T["flip"] + 0.1, "stamp", -10))                        # IMPRESSIVE! badge
+    out.append((T["flip"] + 0.14, "sparkle", -10))
+    out.append((T["wow"] + 0.15, "pop", -15, -0.2))                    # monocle springs in
+    out.append((T["grin"] + 0.08, "sparkle", -10, -0.2))               # he likes that word
     out.append((T["wall"], "swoosh_up", -14))                          # hologram on
     lands = T["lands"]
     out.append((lands[0], "brick_thud", -10, -0.3))
@@ -2555,6 +2858,7 @@ def SFX(info):
     out.append((T["ajar"], "sparkle", -18, 0.3))                       # door cracks ajar
     for i, tc in enumerate(T["chips"]):                                # the three chips
         out.append((tc, "pop", -11, 0.3 + 0.1 * i))
+    out.append((T["chips"][1] + 0.12, "idea_ding", -18, 0.4))          # the plan's bulb
     out.append((T["open"], "whoosh", -10, 0.2))
     out.append((T["open"] + 0.05, "magic_chime", -6))
     for i, tg in enumerate(T["gift_t"]):
