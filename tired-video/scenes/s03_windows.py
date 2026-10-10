@@ -42,8 +42,8 @@ W3X, W3Y = WIN[2][0] + WIN[2][2] / 2, WIN[2][1] + WIN[2][3] / 2     # (1985, 114
 X0 = 1478                    # just off the porch steps (end of s02)
 XW1, XW2, XW3 = 998, 1110, 1880   # feet spots: w1 facing left, w2/w3 facing right
 XP = 1712                    # panic spot (backed off the window, in front of the door)
-XT = 1730                    # pick-up / throw spot
-ROCK_XY = (1643, 1606)
+XT = 1703                    # pick-up / throw spot
+ROCK_XY = (1790, 1590)       # on the lawn, down to his right
 CAGE_REST = (1952, 1606)     # where the dropped cage lands (his right)
 XTE = 1864                   # tiptoe end: scoops the cage, under window 3
 
@@ -401,7 +401,7 @@ def _rattle_marks(ctx, t, t0, x, y, w, h, seed=0, dur=0.2, big=1.0):
 def _lawn_cheat(ctx):
     """Insert only: the camera sits inside the fence line, so the lawn runs on."""
     g = sets.C["grass"]
-    ctx.rectangle(ROCK_XY[0] - 400, ROCK_XY[1] + 26, 800, 500)
+    ctx.rectangle(ROCK_XY[0] - 190, ROCK_XY[1] + 20, 600, 500)
     core.fill(ctx, g)
     for i in range(14):
         gx = ROCK_XY[0] - 300 + 600 * hash01(i, 81)
@@ -667,12 +667,12 @@ def _emb_C(ctx, info, t, T):
     if t < rk + 0.03:
         look = _dart(t, p0, _DART, hold=0.17)
     else:
-        look = tween(t, [(rk + 0.03, _dart(rk + 0.03, p0, _DART, hold=0.17)), (rk + 0.11, (-0.72, 0.85))])
+        look = tween(t, [(rk + 0.03, _dart(rk + 0.03, p0, _DART, hold=0.17)), (rk + 0.11, (0.72, 0.85))])
     wid = smoothstep(seg(t, rk + 0.1, rk + 0.25))
     hf = smoothstep(seg(t, rk + 0.17, rk + 0.37))
     expr = state_at(t, [(0, "panic"), (tw, "terrified"), (rk + 0.08, "surprised")], 0.12)
     face = {"wobble": 0.6 * (1 - wid), "teeth": 0.4 * (1 - wid), "pupil": -0.15 * (1 - wid) + 0.4 * wid,
-            "hl": 0.6 * wid, "head_nod": 0.2 * hf, "head_turn": -0.28 * hf, "open": 0.1 * wid}
+            "hl": 0.6 * wid, "head_nod": 0.2 * hf, "head_turn": 0.28 * hf, "open": 0.1 * wid}
     return _emb(ctx, info, t, XP, Y, pose, expr, look, face, 0.12, pose_t=pt, blush=0.6,
                 sweat=0.9, glint=_glint(t, rk + 0.12))
 
@@ -698,7 +698,7 @@ def _shot_C(ctx, info, t, T):
 def _shot_D(ctx, info, t, T):
     i0 = T["ins0"]
     z = tween(t, [(i0, 3.4), (T["ins1"], 3.65)])
-    with core.camera(ctx, ROCK_XY[0] + 40, ROCK_XY[1] - 70, z):     # inside the fence line
+    with core.camera(ctx, ROCK_XY[0], ROCK_XY[1] - 60, z):     # inside the fence line
         _house(ctx, t, T)
         _lawn_cheat(ctx)
         _lawn_props(ctx, t, T)
@@ -719,14 +719,14 @@ def _emb_EF(ctx, info, t, T):
         rise = ease_out_back(seg(t, i1 + 0.08, i1 + 0.36), 1.4)
         pose = (PICK, HOLD_ROCK, clamp(rise, 0, 1.08))
         hp = smoothstep(seg(t, i1 + 0.25, i1 + 0.45))
-        look = tween(t, [(i1, (-0.4, 0.8)), (i1 + 0.3, (0.0, 0.15)), (lL - 0.02, (0.0, 0.15)),
+        look = tween(t, [(i1, (0.4, 0.8)), (i1 + 0.3, (0.0, 0.15)), (lL - 0.02, (0.0, 0.15)),
                          (lL + 0.06, (-0.92, 0.05)), (lR - 0.02, (-0.92, 0.05)), (lR + 0.06, (0.92, 0.05)),
                          (l4 - 0.12, (0.92, 0.05)), (l4, (0.6, -0.3))])
         ht = tween(t, [(lL + 0.12, 0.0), (lL + 0.3, -0.4), (lR + 0.12, -0.4), (lR + 0.32, 0.4), (l4, 0.3)])
         face = {"head_turn": ht, "press": 0.55 * hp, "brow_ang": 0.6 * hp, "brow_in": 0.2 * hp,
                 "lid": 0.06 * hp}
         expr = state_at(t, [(0, "surprised"), (i1 + 0.2, "guilty")], 0.2)
-        turn = lerp(-0.6, 0.15, smoothstep(seg(t, i1 + 0.08, i1 + 0.36)))
+        turn = lerp(0.6, 0.15, smoothstep(seg(t, i1 + 0.08, i1 + 0.36)))
         sweat = 0.75
     elif t < rel:
         wu = smoothstep(seg(t, l4, l4 + 0.22))

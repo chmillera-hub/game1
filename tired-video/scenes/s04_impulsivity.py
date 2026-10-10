@@ -322,7 +322,7 @@ def shot_lift(ctx, t, T):
 # S1b: reveal — his POV: paws, then the camera tilts up to the derp grin
 # ---------------------------------------------------------------------------
 def shot_pov(ctx, t, T):
-    k = ease_in_out(seg(t, T.reveal + 0.05, T.reveal + 0.8))
+    k = ease_in_out(seg(t, T.reveal + 0.04, T.reveal + 0.74))
     cam = (IMP_X, lerp(1640, 1150, k), lerp(2.5, 1.62, k))
     with core.cache_steps(2):
         with core.camera(ctx, *cam):
@@ -653,8 +653,9 @@ def SFX(info):
     ev.append((T.l2 - 0.1, "cloth_rustle", -9, -0.2))
     ev.append((T.l3 + 0.3, "cloth_rustle", -9, -0.2))
     ev.append((T.grab, "latch_click", -6, -0.3))
-    ev.append((T.tip + 0.05, "tiptoe", -6, 0.0))
-    ev.append((T.tip + T.f1, "tiptoe", -10, 0.1))
+    ev.append((T.tip + 0.05, "tiptoe", -6, -0.1))
+    ev.append((T.tip + 1.0, "tiptoe", -9, 0.1))
+    ev.append((T.tip + T.f0 + 0.04, "gulp", -12, 0.1))      # tiny dry swallow at the stare-off
     ev.append((T.plates + 0.02, "plate_clink", -10, 0.1))
     ev.append((T.plates + 0.97, "plate_clink", -13, 0.1))
     ev.append((T.drawer + 0.12, "drawer_open", -4, 0.2))

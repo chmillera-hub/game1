@@ -300,9 +300,12 @@ def _emb(t, k, info):
     face["lid"] = -0.16 * pk                 # eyes wide on the "microphone"
     face["brow"] = face["brow"] + 0.35 * pk
     face["open"] = 0.12 * pk                 # bellowing
+    vb = math.sin(math.pi * seg(t, w1[11] - 0.02, w1[11] + 0.3))     # stiff nod on "visit!"
+    face["head_nod"] += 0.1 * vb
+    face["squash"] += 0.04 * vb
     blush = tween(t, [(0.0, 0.3), (k["L2"], 0.4), (w2[3], 0.62), (k["L2e"], 0.6), (k["okay_end"], 0.38)])
     sweat = tween(t, [(0.0, 0.25), (w2[3], 0.7), (k["okay_end"], 0.5)])
-    glint = 0.0
+    glint = math.sin(math.pi * seg(t, w1[11] + 0.2, w1[11] + 0.45))    # fake-friendly lens glint
     # trip / both / snatch acting
     if t >= k["turn0"]:
         look = (-0.95, 0.15)

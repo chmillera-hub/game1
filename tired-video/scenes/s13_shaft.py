@@ -1,22 +1,25 @@
-"""s13 -- the shaft ("What they were hiding").  Music: reveal.
+"""s13 -- the shaft ("What they were hiding").  Music: reveal (awe/sad/sting aligned to cues).
 
-Shot list (all times derived from cues / line timings):
-  SH1  walk + l01      sewer junction A (variant 1): Tiredness trudges right, the
-                       creature trots at his heels gazing up at him.  "Oh God. Why me."
+Shot list (every time derives from cues / line timings):
+  SH1  walk + l01      junction A (variant 1): Tiredness trudges right, the creature trots at
+                       his heels gazing up; it beams when he looks at it.  "Oh God. Why me."
   SH2a tunnels         junction B (variant 3): same framing, same stride (deja vu).
-  SH2b tunnels + l02   junction C (variant 2): he stops and slumps against the wall.
-  SH3  point           low medium on the creature: it points a paw down the dark side tunnel.
-  SH4  l03             MCU Tiredness, deadpan: eyes slide to the tunnel and back.
-  SH5  roll            CU creature: slow sassy eyeroll, flat stare.
-  SH6  annoy + l04     two-shot: chitter -> tug the hoodie hem -> headbutt -> poke ->
-                       puppy eyes; his resistance crumbles.  "Fine."  He pushes off.
-  SH7  enter           inside the side tunnel: silhouettes walk toward a growing teal light.
-  SH8  enter/reveal    the shaft: they step out of the tunnel mouth; huge pull-out to the wide.
-  SH9  wide            CU: his lids open FULLY (the payoff), teal reflections.
-  SH10 sad             two-shot: he looks down at it, sad; it looks up at the pods, ears droop.
-  SH11 l05             MCU: "...Is this your family?"
-  SH12 nod             two-shot: small nod + sad chirp, it leans on his leg, his hand on its head.
-  SH13 title           pull back to the wide silhouette + end card (captions hidden).
+  SH2b tunnels + l02   junction C (variant 2): he stops, turns his back to the wall and slides
+                       down it to the floor, head knocking back.  "We're never getting out..."
+  SH3  point           low medium on the creature: it points a paw down the dark side tunnel, "!".
+  SH4  l03             MCU, deadpan: eyes slide to the tunnel and back, one brow up a hair.
+  SH5  roll            CU creature: slow sassy eyeroll into a flat stare.
+  SH6  annoy + l04     two-shot escalation: chitter -> bites his cuff and tugs his arm out ->
+                       headbutts his shin -> poke poke -> puppy eyes; he crumbles (sigh).
+                       "Fine."  It hops for joy; he gets up and follows.
+  SH7  enter           inside the side tunnel: rim-lit silhouettes walk toward a growing teal light.
+  SH8  enter/reveal    the shaft: they step out of the tunnel mouth, he looks up; huge pull-out.
+  SH9  wide            CU: pupils widen, then his lids open FULLY (the payoff), teal glints. Hold.
+  SH10 sad             two-shot: he lowers his gaze to it, sad; it gazes up at the pods, ears down.
+  SH11 l05             MCU over pods of sleeping creatures: "...Is this your family?"
+  SH12 nod             two-shot: it turns to him, small nod + sad chirp, leans on his leg; his
+                       hand comes to rest on its head (faint smile).
+  SH13 title           pull back to the wide rim-lit silhouette + end card (captions hidden).
 """
 import math
 
