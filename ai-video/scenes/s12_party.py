@@ -3,7 +3,9 @@
 Shots (every time is derived from cues / word starts, see _T):
 
   A  rise..party  F5 lair, morning (rain off, dawn-tinted window). Frame 0
-                  picks up s11's REAL SMILE; Malvo springs up (dip, rise with
+                  picks up s11's REAL SMILE and its gift pile (notebook +
+                  quill, scroll, headphones, BOMBSHELL TWIST script, dragon
+                  book, pumpkin, dragon figurine); Malvo springs up (dip, rise with
                   overshoot, cape swish). "Snake!" -> looks at Hissy, who
                   perks up. "New plan." -> winds up and flings a yellow
                   'PARTY' sticky that slaps over the EVIL of EVIL PLANS (the
@@ -17,28 +19,32 @@ Shots (every time is derived from cues / word starts, see _T):
                   a balloon, Hissy in shawl + glasses 'reading' THE GENTLE
                   DRAGON to 3 kids, Malvo behind the table (cake + sparkler,
                   red balloon, scroll, popper), every chair in front full
-                  and clapping, the neighbor dancing in teal headphones, the
-                  AI lantern above. Popper fires (confetti <= 28, 1.2 s).
-                  l03: push-in 1 -> 1.35 on Malvo (hand on heart, glistening
-                  eyes, monocle fogs, one happy tear on "ME?").
+                  and clapping, THE NEIGHBOR (a grown man: bathrobe, striped
+                  pajama pants, slippers, mustache, no headphones) dancing at
+                  the front right and tooting his little trumpet, the AI
+                  lantern above. Popper fires (confetti <= 28, 1.2 s).
+                  l03: push-in 1 -> 1.6 on Malvo (hand on heart, glistening
+                  eyes, monocle fogs, one happy tear on "ME?"); the neighbor
+                  dances out of frame during the push.
                   l04: the AI lantern (screen space) WINKs on "stats.".
-                  zombie_mask: the camera eases back out (him left, the witch-
-                  hat kid right); both hands pull the zombie mask (pushed up on
-                  his dome all party) down over his face. l04z "Braaains!":
-                  zombie arms (limp dangling gloves), side-to-side shamble
-                  toward the kid, who gasps happily, hands on cheeks (no
-                  contact, ever). kid_runs: she squeals (closed happy eyes,
-                  big laugh) and runs one giggly loop round the other kids,
-                  looking back laughing; they laugh/clap, Hissy nods, the AI
-                  laughs. l04y: AI shrug on "Scary? Yes.", wink + thumbs-up on
-                  "Nobody."; push back in while he pushes the mask back up.
+                  zombie_mask: the camera pans a little right (same zoom) to
+                  take in the little witch (a child: big head, pigtails); both
+                  hands pull the zombie mask (pushed up on his dome all party)
+                  down over his face while she watches, eyes WIDE, mouth "O".
+                  l04z "Brains... brains!": zombie arms, shamble along the
+                  table toward her (no contact, ever); on "Brains..." she is
+                  wide-eyed and delighted, hands on cheeks; on "brains!" she
+                  squeal-laughs and dashes off screen (down-right, speed
+                  lines), looking back at him; she does not come back. The
+                  other kids laugh/clap, Hissy nods, the AI laughs.
+                  l04y: AI shrug on "Scary? Yes.", wink + thumbs-up on
+                  "Nobody."; camera settles back while he pushes the mask up.
                   lean: paranoid glances, lean toward the AI, SNEAKY SQUINT +
                   steeple; 'NICE TRIES: 10?' chip blinks in.
                   l05 whisper. l06 "My guy.": instant 😒 (no blend), red strike
                   through "10?", Hissy facepalms (tail over his glasses).
                   l07 "Kidding! Kidding!" shrug, sheepish -> happy; then they
-                  both laugh, the chip pops out, ~12 confetti bits drift down
-                  while the camera eases back out to the party.
+                  both laugh, the chip pops out, ~12 confetti bits drift down.
 """
 import math
 
@@ -3237,8 +3243,8 @@ def _crowd(t, T):
     return math.floor(t * fps) / fps, energy
 
 
-KID = (730.0, 1004.0, 0.56)                 # the little witch, right of the table's end
-KID_EXIT = (1040.0, 1112.0, 0.64)           # her dash: down-right, out of the gag frame
+KID = (752.0, 1050.0, 0.7)                  # the little witch, just right of the table's end
+KID_EXIT = (1062.0, 1150.0, 0.78)          # her dash: down-right, out of the gag frame
 
 
 def _kid(t, T, tc):
