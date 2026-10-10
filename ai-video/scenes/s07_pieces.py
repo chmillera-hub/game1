@@ -858,7 +858,7 @@ def _relief_blink(t, T):
         return smoothstep((t - r) / 0.14)
     if t < r + 0.46:
         return 1.0
-    return lerp(1.0, 0.32, smoothstep((t - r - 0.46) / 0.26))
+    return lerp(1.0, 0.16, smoothstep((t - r - 0.46) / 0.26))
 
 
 def _cameo_state(t, T):
