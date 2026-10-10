@@ -2743,14 +2743,17 @@ def _robot_world(px, py):
 # ---------------------------------------------------------------------------
 # camera for shot B
 # ---------------------------------------------------------------------------
-ZCAM = (1.6, -88.0, -72.0)                 # zombie-gag framing: him (left) + the kid (right)
+# zombie-gag framing: eases out a touch and lifts, so the kid (in front of
+# the table, right) stands fully in frame above the caption band, with him
+# (left) looming over the table. Malvo's face lands at FOCUS + (ox, oy).
+ZCAM = (1.42, -75.0, -164.0)
 
 
 def _cam(t, T):
     """-> (z, ox, oy, k1): screen = FOCUS + (world - FOCUS) * z + (ox, oy).
     k1 = push-in progress (the AI lantern stays pinned in screen space after it).
-    For the zombie gag the camera pans a little right (same zoom) to take in
-    the kid, then settles back on him for the last 'Hypothetically'."""
+    For the zombie gag the camera eases out a little and lifts (ZCAM) to take
+    in the kid, then settles back on him for the last 'Hypothetically'."""
     k1 = ease_in_out(seg(t, T.l3.start, T.l3.start + 0.6))
     z = lerp(1.0, Z1, k1)
     ox = lerp(0.0, TGT[0] - FOCUS[0], k1)
@@ -3126,6 +3129,11 @@ def _malvo_b(t, T, info):
         x += zk * 5 * math.sin(ph)
         y -= zk * 7 * abs(math.cos(ph))
         lean += zk * (0.045 + 0.03 * math.sin(ph))
+    pk = smoothstep(seg(t, T.impr - 0.1, T.impr + 0.12)) * \
+        (1 - smoothstep(seg(t, T.stats + 0.25, T.stats + 0.55)))
+    if pk > 0:                                        # the preen: chest out, chin up
+        y -= 7.0 * pk + 5.0 * _bump(t, T.vill - 0.04, 0.3, 0.08)
+        lean -= 0.03 * pk
     if T.kr1 <= t < T.mu0:                            # proud little bounce, mask on
         y -= 5.0 * abs(math.sin((t - T.kr1) * 2 * math.pi * 1.4)) * smoothstep(seg(t, T.kr1, T.kr1 + 0.3))
     if t >= T.lol:
