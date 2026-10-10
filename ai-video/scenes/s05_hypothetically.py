@@ -18,8 +18,11 @@ All times derive from cues / line timings (see _T).
   s05_l04  HARD CUT F3 AI CU (cuts him off): clipboard pops in top-left.
            "Love research." -> amused, points at it, 3 checks; "Let's" ->
            stop palm, mini brick strip drops on line 4; "research how
-           villains get caught." -> happy, offers a HOW VILLAINS GET CAUGHT
-           book (pops in top-right), glance to camera on "caught".
+           villains learn about the world... and themselves." -> happy,
+           offers a warm KNOW THE WORLD. / KNOW YOURSELF. book (pops in
+           top-right on "how": a cloaked villain seen from behind between a
+           desk globe and a heart mirror); on "themselves" a warm smile and
+           a glance to camera.
   tally    HARD CUT F1-CU: goggles slip askew, Malvo frustrated glaring at
            the chip (2 -> 4), Hissy unimpressed at camera.
 """
@@ -116,7 +119,7 @@ AI3D = (548.0, 905.0, 1.0)            # F3 variant for l04 (room for the clipboa
 CLIP_D = (248.0, 425.0, 1.35, -0.06)  # clipboard in the l04 shot (x, y, s, rot)
 CHIP_STEP = 0.28
 BK_K, BK_DROP = 0.6, 58.0             # mini brick strip: inner scale, drop (board px)
-BOOK_D = (735.0, 410.0, 1.0, 0.07)    # "HOW VILLAINS GET CAUGHT" book (x, y, s, rot)
+BOOK_D = (738.0, 396.0, 0.95, 0.07)   # "KNOW THE WORLD. KNOW YOURSELF." book (x, y, s, rot)
 
 # bespoke prop colours (DIRECTION 6.10)
 BOARD, BOARD_DK, BOARD_HI = "#8b5a2b", "#6b4220", "#a8733e"
@@ -126,6 +129,12 @@ SCRIBBLE = "#9aa0ad"
 STRAP, STRAP_HI = "#1c1a22", "#3a3644"
 LENS, LENS_DK = "#8fe3a8", "#2f6b48"
 RIM = "#2a2a33"
+# the offered book (warm, validating: curiosity about the world and oneself)
+BOOK_COVER, BOOK_TRIM = "#f0794e", "#ffe08a"
+BOOK_PANEL, BOOK_HILL = "#ffe9cf", "#ffd2a6"
+BOOK_SEA, BOOK_LAND = "#4aa3df", "#5fbf4a"
+BOOK_GLASS, BOOK_HEART = "#d6f3ff", "#ff5c8a"
+BOOK_SIL = "#3b2257"
 
 
 # ===========================================================================
@@ -181,8 +190,8 @@ def _T(info):
     w4 = [_norm(w) for w in L4.caption.split()]
     _k = lambda word, d: w4.index(word) if word in w4 else d
     T["not"] = _word_t(info, "s05_l04", _k("lets", 2), 0.3)      # "Let's" (wall on line 4)
-    T["how"] = _word_t(info, "s05_l04", _k("how", 4), 0.55)      # "how" (book offered)
-    T["part"] = _word_t(info, "s05_l04", _k("caught", 7), 0.85)  # "caught." (to camera)
+    T["how"] = _word_t(info, "s05_l04", _k("how", 4), 0.4)       # "how" (book offered)
+    T["selves"] = _word_t(info, "s05_l04", _k("themselves", len(w4) - 1), 0.85)  # to camera
     # shots (hard cuts)
     T["shotB"] = T["l2s"]
     T["shotC"] = T["card2"]
@@ -366,22 +375,131 @@ def _clipboard(ctx, x, y, s, rot=0.0, t=0.0, checks=None, brick_t0=None):
             c.restore()
 
 
-def _caught_book(ctx, t):
-    """Friendly hardcover 'HOW VILLAINS GET CAUGHT' (centre origin, ~250x300):
-    teal cover, gold title, a little magnifier on the front."""
-    rrect(ctx, -125 + 8, -150 + 10, 250, 300, 14)
+def _heart(ctx, cx, cy, r):
+    """Heart path, centre (cx, cy), ~2r wide."""
+    ctx.move_to(cx, cy + r * 0.95)
+    ctx.curve_to(cx - r * 1.35, cy + r * 0.05, cx - r * 0.95, cy - r * 1.05, cx, cy - r * 0.42)
+    ctx.curve_to(cx + r * 0.95, cy - r * 1.05, cx + r * 1.35, cy + r * 0.05, cx, cy + r * 0.95)
+    ctx.close_path()
+
+
+def _globe(ctx, x, y, r):
+    """Little desk globe on a stand (centre of the ball at x, y)."""
+    # stand: half-ring meridian + stem + foot
+    ctx.arc(x, y, r + 7, math.radians(110), math.radians(250))
+    core.stroke(ctx, "ink", 9)
+    ctx.arc(x, y, r + 7, math.radians(110), math.radians(250))
+    core.stroke(ctx, "#e8c35a", 4)
+    rrect(ctx, x - 4, y + r + 2, 8, 10, 3)
+    fill_stroke(ctx, "#b08a2e", "ink", 3)
+    rrect(ctx, x - 20, y + r + 10, 40, 9, 4.5)
+    fill_stroke(ctx, "#e8c35a", "ink", 3.5)
+    # ball: ocean + three blobby continents + a lat/long hint, clipped
+    circle(ctx, x, y, r)
+    core.fill(ctx, BOOK_SEA)
+    ctx.save()
+    circle(ctx, x, y, r)
+    ctx.clip()
+    for (dx, dy, rx, ry, a) in ((-0.42, -0.38, 0.42, 0.3, -0.5), (-0.2, 0.32, 0.3, 0.42, 0.35),
+                                (0.48, -0.05, 0.36, 0.48, 0.2)):
+        ellipse(ctx, x + dx * r, y + dy * r, rx * r, ry * r, a)
+        core.fill(ctx, BOOK_LAND)
+    ellipse(ctx, x, y, r * 0.42, r, 0.0)
+    ctx.move_to(x - r, y)
+    ctx.line_to(x + r, y)
+    core.stroke(ctx, (0.09, 0.06, 0.12, 0.35), 2.5)
+    circle(ctx, x + r * 0.35, y + r * 0.4, r)
+    core.fill(ctx, (0.0, 0.05, 0.2, 0.22))                 # one shade tone
+    ctx.restore()
+    circle(ctx, x, y, r)
+    core.stroke(ctx, "ink", 4)
+    ellipse(ctx, x - r * 0.42, y - r * 0.5, r * 0.2, r * 0.11, -0.6)
+    core.fill(ctx, (1, 1, 1, 0.7))
+
+
+def _mirror(ctx, x, y, rx, ry, t):
+    """Standing oval vanity mirror with a pink heart in the glass."""
+    rrect(ctx, x - 3.5, y + ry - 2, 7, 14, 3)
+    fill_stroke(ctx, "#b08a2e", "ink", 3)
+    rrect(ctx, x - 18, y + ry + 10, 36, 9, 4.5)
+    fill_stroke(ctx, "#e8c35a", "ink", 3.5)
+    ellipse(ctx, x, y, rx, ry)
+    fill_stroke(ctx, "#e8c35a", "ink", 4)
+    ellipse(ctx, x, y, rx - 6, ry - 6)
+    core.fill(ctx, BOOK_GLASS)
+    pulse = 1.0 + 0.06 * math.sin(t * 2 * math.pi * 1.1)
+    _heart(ctx, x, y + 1, (rx - 8) * 0.62 * pulse)
+    fill_stroke(ctx, BOOK_HEART, "ink", 3)
+    ctx.move_to(x - rx * 0.55, y - ry * 0.3)
+    ctx.line_to(x - rx * 0.3, y - ry * 0.58)
+    core.stroke(ctx, (1, 1, 1, 0.8), 3)
+
+
+def _villain_back(ctx, x, y, k=1.0):
+    """Tiny cloaked villain seen from behind (feet at x, y; k = scale): cape
+    bell, crimson collar points, bald dome, two wild hair tufts."""
+    sil = BOOK_SIL
+    with saved(ctx, x, y, k) as c:
+        # cape bell
+        c.move_to(-12, -44)
+        c.curve_to(-21, -26, -29, -10, -32, 0)
+        c.line_to(32, 0)
+        c.curve_to(29, -10, 21, -26, 12, -44)
+        c.close_path()
+        fill_stroke(c, sil, "ink", 3.5)
+        c.move_to(0, -40)
+        c.curve_to(-2, -24, 2, -12, 0, 0)
+        core.stroke(c, (0.09, 0.06, 0.12, 0.45), 2.5)           # cape seam
+        # high collar points (below the tufts, framing the head)
+        for sx in (-1, 1):
+            core.poly(c, [(sx * 5, -40), (sx * 22, -58), (sx * 17, -36)])
+            fill_stroke(c, "cape_in", "ink", 3)
+        # wild hair tufts sticking out of the dome's sides
+        for sx in (-1, 1):
+            core.poly(c, [(sx * 10, -71), (sx * 28, -77), (sx * 21, -68), (sx * 31, -64),
+                          (sx * 21, -60), (sx * 26, -53), (sx * 10, -58)])
+            fill_stroke(c, "hair", "ink", 2.5)
+        circle(c, 0, -63, 15)
+        fill_stroke(c, sil, "ink", 3.5)
+        ellipse(c, -5, -70, 5, 2.8, -0.5)
+        core.fill(c, (1, 1, 1, 0.38))
+
+
+def _know_book(ctx, t):
+    """Warm hardcover 'KNOW THE WORLD. KNOW YOURSELF.' (centre origin,
+    280x330): coral cover, cream/gold title around a little picture of a
+    cloaked villain (from behind) between a desk globe and a heart mirror."""
+    hw, hh = 140, 165
+    rrect(ctx, -hw + 8, -hh + 10, 2 * hw, 2 * hh, 14)
     core.fill(ctx, (0, 0, 0, 0.3))
-    core.poly(ctx, [(118, -144), (138, -132), (138, 148), (118, 150)])     # page block
-    fill_stroke(ctx, PAPER, "ink", 4)
-    rrect(ctx, -125, -150, 250, 300, 14)
-    fill_stroke(ctx, "ai_rim", "ink", 5)
-    rrect(ctx, -125, -150, 34, 300, 10)                                    # spine shade
-    core.fill(ctx, (0.0, 0.1, 0.2, 0.35))
-    rrect(ctx, -104, -134, 214, 268, 9)
-    core.stroke(ctx, "#ffd766", 4)
-    for i, (ln, sz) in enumerate((("HOW", 44), ("VILLAINS", 50), ("GET CAUGHT", 40))):
-        text(ctx, ln, 4, -78 + i * 52, sz, "#ffd766", "title", outline="ink", outline_w=7)
-    P.magnifier(ctx, 8, 92, 0.42, rot=0.7)
+    core.poly(ctx, [(hw - 7, -hh + 6), (hw + 13, -hh + 18), (hw + 13, hh - 2), (hw - 7, hh)])
+    fill_stroke(ctx, PAPER, "ink", 4)                                      # page block
+    rrect(ctx, -hw, -hh, 2 * hw, 2 * hh, 14)
+    fill_stroke(ctx, BOOK_COVER, "ink", 5)
+    rrect(ctx, -hw, -hh, 34, 2 * hh, 10)                                   # spine shade
+    core.fill(ctx, (0.35, 0.06, 0.04, 0.28))
+    rrect(ctx, -hw + 20, -hh + 15, 2 * hw - 36, 2 * hh - 30, 10)
+    core.stroke(ctx, BOOK_TRIM, 4)
+    cx = 8                                     # optical centre (right of the spine)
+    text(ctx, "KNOW THE", cx, -112, 32, BOOK_TRIM, "title", outline="ink", outline_w=7)
+    text(ctx, "WORLD.", cx, -66, 48, "white", "title", outline="ink", outline_w=8)
+    # picture window
+    px0, py0, pw, ph = cx - 104, -54, 208, 116
+    rrect(ctx, px0, py0, pw, ph, 14)
+    fill_stroke(ctx, BOOK_PANEL, "ink", 4)
+    ctx.save()
+    rrect(ctx, px0, py0, pw, ph, 14)
+    ctx.clip()
+    circle(ctx, cx, py0 + ph + 40, 120)                                    # soft hill
+    core.fill(ctx, BOOK_HILL)
+    _globe(ctx, cx - 60, py0 + 46, 28)
+    _mirror(ctx, cx + 62, py0 + 44, 22, 28, t)
+    _villain_back(ctx, cx + 1, py0 + ph + 2, 1.12)
+    ctx.restore()
+    rrect(ctx, px0, py0, pw, ph, 14)
+    core.stroke(ctx, "ink", 4)
+    text(ctx, "KNOW", cx, 96, 32, BOOK_TRIM, "title", outline="ink", outline_w=7)
+    text(ctx, "YOURSELF.", cx, 140, 42, "white", "title", outline="ink", outline_w=8)
 
 
 def _poof(ctx, cx, cy, t, t0, r=170, n=7, seed=11):
@@ -544,19 +662,18 @@ def _shot_D(ctx, t, T, info):
     """l04: clipboard checks + mini brick strip; amused -> skeptical."""
     P.ai_bg(ctx, t)
     x, y, s = AI3D
-    love, nt, part = T["love"], T["not"], T["part"]
-    how = T["how"]
+    nt, how, selves = T["not"], T["how"], T["selves"]
     expr = state_at(t, [(-1.0, "amused"), (nt - 0.06, "skeptical"), (how - 0.1, "happy"),
-                        (part + 0.05, "amused")], 0.2)
+                        (selves - 0.06, "warm")], 0.2 if t < selves - 0.1 else 0.28)
     hands = state_at(t, [(-1.0, "idle"), (T["l4s"] + 0.05, "present_l"),
                          (nt - 0.12, "stop"), (how - 0.15, "present")], 0.24)
     # eyes on the clipboard (up-left), down to line 4 as it's walled, over to
-    # the book it offers (up-right), then a glance to camera on "caught."
+    # the book it offers (up-right), then a warm glance to camera on "themselves"
     lx = core.tween(t, [(T["l4s"], -0.75), (nt, -0.75), (how - 0.1, -0.75),
-                        (how + 0.08, 0.75), (part, 0.75), (part + 0.14, 0.0)])
+                        (how + 0.08, 0.75), (selves - 0.06, 0.75), (selves + 0.1, 0.0)])
     ly = core.tween(t, [(T["l4s"], -0.8), (nt - 0.05, -0.8), (nt + 0.12, -0.45),
-                        (how - 0.1, -0.45), (how + 0.08, -0.7), (part, -0.7),
-                        (part + 0.14, 0.05)])
+                        (how - 0.1, -0.45), (how + 0.08, -0.7), (selves - 0.06, -0.7),
+                        (selves + 0.1, 0.05)])
     # the stop palm 'nods' at the strip as it lands
     nod = 0.35 * _bump(t, nt + 0.02, 0.4)
     draw_ai(ctx, x, y, s, t, expr=expr, look=(lx, ly), mouth=info.mouth("ai", t),
@@ -566,12 +683,12 @@ def _shot_D(ctx, t, T, info):
         cx, cy, cs, cr = CLIP_D
         with saved(ctx, cx, cy, k):
             _clipboard(ctx, 0, 0, cs, cr, t, checks=T["checks"], brick_t0=T["brick_t0"])
-    # the harmless alternative: a fun "how villains get caught" book
+    # the warm alternative: a "know the world, know yourself" book
     kb = ease_out_back(seg(t, how - 0.05, how + 0.25), 2.2)
     if kb > 0.01:
         bob = math.sin((t - how) * 2 * math.pi / 1.6) * 6
         with saved(ctx, BOOK_D[0], BOOK_D[1] + bob, kb * BOOK_D[2], BOOK_D[3]) as c:
-            _caught_book(c, t)
+            _know_book(c, t)
         if t >= how + 0.15:
             P.sparkles(ctx, BOOK_D[0], BOOK_D[1], 190, t, n=5, seed=7, size=0.8)
 

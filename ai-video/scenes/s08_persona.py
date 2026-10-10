@@ -11,10 +11,15 @@ Shots (every time derives from cues / line timings; see _T):
            lid-drops, its left hand dips and whips up THE EVIL-BOT MASK
            (cardboard robot face on a stick, eye holes + grille slots cut
            out so the real 😒 eyes / glowing mouth show through).
-  s08_l02  "Beep boop. I am Evil-Bot." robot snaps: the right hand and the
-           head jerk to a new pose on every word (no blend). Deadpan eyes.
+  s08_l02  "Beep boop. I am Evil-Bot." friendly ROBOT WAVE: the right hand
+           servo-snaps up beside the head's upper-right corner and sweeps
+           side to side over a small rainbow arc (palm to camera, fingers
+           up) in stiff servo hops, one sweep per word (+ robot-syllable
+           sweeps in the long gaps); the head jerks to a new tilt on every
+           word. Deadpan eyes.
   beat     dead silence: only the eyes slide to camera.
-  s08_l03  "Evil-Bot also says no." palm snaps out + head shake on "no".
+  s08_l03  "Evil-Bot also says no." low stop palm snaps out on "no" and
+           wags side to side with the head shake.
   mask_off the mask lowers off the face and gets FLUNG away (spinning off
            screen left): blink, and it's the normal, warm AI again.
   s08_l03b SHOT S (still F3 navy): the AI glides to the upper-left; a
@@ -183,10 +188,22 @@ MASK_ROT0 = -0.35         # mask tilt at the start of the raise
 _RAISE = {"t0": 0.0, "t1": 1.0}    # raise window, set by _T()
 _LOWER = {"t0": 0.0, "t1": 1.0}    # mask_off: the mask (and fist) drop a little
 MASK_LOWER = 130.0                 # head-local units
-# QA: the robot snap's "up" pose is a raised flat palm (stiff robot hello).
-# Any single raised index seen from the back of the mitten (even with the
-# thumb out) still read as a rude middle finger in the final encode.
-_PU_R = _H(338, -10, 0.32, open=1.0, thumb=0.75, palm=0.9, sc=1.1)
+# ROBOT WAVE (s08_l02). Client note: a raised flat palm snapping up and down
+# can read as a salute, so the robot hello is a friendly side-to-side WAVE:
+# the wrist rides a small rainbow arc beside the head (palm to camera,
+# fingers up, the hand tilting a little with the arc), stepping in stiff
+# servo hops: every sweep is synced to a word (or a robot syllable in long
+# gaps; see _T), never a vertical chop. (A single raised index also read as
+# a rude finger in an earlier encode, so the hand stays a flat mitten.)
+# The arc sits beside the head's upper-right corner: high enough that the
+# inward swing passes over the mask's corner (never the eye holes), low
+# enough to read as a hello beside the face; the outward swing stays inside
+# the right safe edge.
+WAVE_TOP = (287.0, -150.0)    # wrist at the top of the arc (head-local)
+WAVE_R = 52.0                 # arc radius (the sides sit ~20 px lower)
+WAVE_TH = 0.88                # half-sweep along the arc (rad)
+WAVE_TILT = 0.28              # hand rotation per rad of arc (slight)
+_WAVE = {"beats": [], "end": 0.0, "no": 0.0}     # set by _T()
 _STOP_R = AI._mir(_H(-262, 262, -0.1, open=1.0, thumb=0.62, palm=1.0, sc=1.4))
 _PUSH_L = _H(-352, 250, -0.32, open=1.0, thumb=0.62, palm=1.0, sc=1.45)
 _SCRATCH_R = _H(258, -112, -0.55, open=0.35, thumb=0.4, tl=0.8, sc=1.0)
@@ -220,6 +237,50 @@ def _lower_l(t):
     return h
 
 
+def _wave_hand(th, kick=0.0):
+    x0, y0 = WAVE_TOP
+    return _H(x0 + WAVE_R * math.sin(th), y0 + WAVE_R * (1 - math.cos(th)),
+              WAVE_TILT * th + kick, open=1.0, thumb=0.75, palm=0.9, sc=1.0)
+
+
+def _wave_theta(t):
+    """Arc angle at t: holds at one side, then on each beat hops across the
+    top to the other side in stiff detents (4 hops when there is room, else
+    2), with a tiny servo kick in the wrist on arrival."""
+    beats = _WAVE["beats"]
+    side = 1.0
+    th, kick = side * WAVE_TH, 0.0
+    for i, b in enumerate(beats):
+        if t < b:
+            break
+        nb = beats[i + 1] if i + 1 < len(beats) else max(b + 0.1, _WAVE["end"])
+        gap = nb - b
+        n = 4 if gap >= 0.24 else 2
+        h = clamp(gap * 0.6 / n, 1.0 / 24 + 0.002, 0.07)
+        k = min(n, int((t - b) / h) + 1)            # detents reached so far
+        th = side * WAVE_TH * (1 - 2 * k / n)
+        if k == n:                                  # arrived: servo settle
+            ta = b + (n - 1) * h
+            kick = -side * 0.04 * (1 - seg(t, ta, ta + 0.1))
+        side = -side
+    return th, kick
+
+
+def _wave_r(t):
+    th, kick = _wave_theta(t)
+    return _wave_hand(th, kick)
+
+
+def _nono_r(t):
+    """Stop palm on "no", wagging side to side with the head shake."""
+    h = dict(_STOP_R)
+    b = _bump(t, _WAVE["no"] - 0.02, 0.6, 0.06)
+    w = math.sin(t * 2 * math.pi * 2.6) * b
+    h["x"] += 20 * w
+    h["rot"] += 0.12 * w
+    return h
+
+
 def _scratch_r(t):
     h = dict(_SCRATCH_R)
     w = math.sin(t * 2 * math.pi * 3.2)
@@ -232,8 +293,8 @@ _S08_HANDS = {
     "s08_low": lambda t: (_raise_l(0.0), AI.IDLE_R),
     "s08_raise": lambda t: (_raise_l(_raise_k(t)), AI.IDLE_R),
     "s08_hold": lambda t: (_HOLD_L, AI.IDLE_R),
-    "s08_hold_pu": lambda t: (_HOLD_L, _PU_R),
-    "s08_hold_stop": lambda t: (_HOLD_L, _STOP_R),
+    "s08_wave": lambda t: (_HOLD_L, _wave_r(t)),
+    "s08_hold_nono": lambda t: (_HOLD_L, _nono_r(t)),
     "s08_lower": lambda t: (_lower_l(t), AI.IDLE_R),
     "s08_push": lambda t: (_PUSH_L, AI.IDLE_R),
     "s08_scratch": lambda t: (AI.IDLE_L, _scratch_r(t)),
@@ -352,6 +413,19 @@ def _T(info):
     _RAISE["t0"], _RAISE["t1"] = T.raise0, T.mask_up
     T.l2_words = list(T.w[2])
     T.l3_no = T.w[3][-1]
+    # robot wave: one sweep per word; long gaps (and the long "Evil-Bot")
+    # get extra robot-syllable sweeps (~0.26 s apart) until the hand drops
+    T.wave_rise = T.l2_words[0] - 0.08     # servo snap up (no in-between frames)
+    T.wave_drop = T.L[2].end + 0.02
+    T.wave_beats, T.wave_fill = [], []
+    for i, w in enumerate(T.l2_words):
+        nxt = T.l2_words[i + 1] if i + 1 < len(T.l2_words) else T.wave_drop
+        n_sub = max(1, int(round((nxt - w) / 0.26)))
+        T.wave_beats.append(w)
+        for k in range(1, n_sub):
+            T.wave_beats.append(w + (nxt - w) * k / n_sub)
+            T.wave_fill.append(T.wave_beats[-1])
+    _WAVE["beats"], _WAVE["end"], _WAVE["no"] = T.wave_beats, T.wave_drop, T.l3_no
     T.mask_off = c("mask_off")
     T.lower1 = T.mask_off + 0.16
     T.toss = T.mask_off + 0.2
@@ -952,13 +1026,12 @@ def _shot_B(ctx, t, T, info):
                           L3.end <= t < T.toss + 0.02):
         blink = 0.0                     # keep the eye slide / reveal unblinking
     think = 1.0 - seg(t, T.glitch1, T.glitch1 + 0.2)
-    # --- hands (robot snaps on every l02 word: 0-blend switches) ----------
+    # --- hands (robot WAVE on l02: rise, a stepped sweep per word, drop) --
     hk = [(-1.0, "idle"), (T.dip, "s08_low", 0.14), (T.raise0, "s08_raise", 0.0),
-          (T.mask_up, "s08_hold", 0.0)]
-    for i, w in enumerate(ws):
-        hk.append((w, "s08_hold_pu" if i % 2 == 0 else "s08_hold_stop", 0.0))
-    hk.append((L2.end + 0.02, "s08_hold", 0.0))
-    hk.append((T.l3_no - 0.03, "s08_hold_stop", 0.0))
+          (T.mask_up, "s08_hold", 0.0),
+          (T.wave_rise, "s08_wave", 0.0),
+          (T.wave_drop, "s08_hold", 0.0)]
+    hk.append((T.l3_no - 0.03, "s08_hold_nono", 0.0))
     hk.append((L3.end + 0.05, "s08_hold", 0.0))
     hk.append((T.mask_off, "s08_lower", 0.0))
     hk.append((T.toss, "present_l", 0.1))          # the fling follow-through
@@ -1025,6 +1098,9 @@ def _shot_B(ctx, t, T, info):
         _draw_mask(ctx, t)
         ctx.restore()
         _redraw_ai_hand(ctx, x, y, s, t, hands, mouth, side="L")
+        if T.wave_rise <= t < T.wave_drop:
+            # the waving hand passes in front of the mask's ear / corner
+            _redraw_ai_hand(ctx, x, y, s, t, hands, mouth, side="R")
     ctx.restore()
     _tossed_mask(ctx, t, T)
     # "it's me again" twinkle on the reveal
@@ -1799,9 +1875,11 @@ def SFX(info):
         (T.push0 + 0.04, "whoosh", -12),
         (T.tally + 0.12, "snake_hiss", -16),
     ]
-    # robot servo ticks on the snaps
+    # robot servo ticks on the wave sweeps (words) + robot-syllable sweeps
     for w in T.l2_words[1:]:
         out.append((w, "tick", -18))
+    for w in T.wave_fill:
+        out.append((w, "tick", -21))
     for w in T.w[3][:-1]:
         out.append((w, "tick", -20))
     out.append((T.l3_no - 0.03, "tick", -16))
