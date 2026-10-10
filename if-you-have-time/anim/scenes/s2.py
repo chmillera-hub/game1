@@ -377,6 +377,7 @@ def _rae_tracks():
     # ---- the mug goes down on the bench on sym_hand_chest, then her right hand goes to her heart
     d["reach_t"] = HC - 0.62          # the mug lifts off her lap
     d["place_t"] = HC + 0.14          # ... and touches the bench
+    d["release_t"] = d["place_t"] + 0.2   # she lets go (in-hand mug -> bench mug)
     d["turn"] = Track([(S, 0.35), (PK + 0.4, 0.35), (PK + 4.6, 0.3, "io")])   # (inside the pull-back)
     d["lean"] = Track([(S, 2.0), (S + 1.2, 1.0), (F1 + 2.0, 0.5), (TH - 0.5, 2.0), (MG + 1.5, 3.0), (ME, 2.0),
                        (OH - 0.3, 4.0), (BU, 2.0), (BU + 4.0, 1.5), (RW - 0.3, 1.5), (RW + 0.35, 3.0),
@@ -516,7 +517,7 @@ def _rae_tracks():
                                (MG + 0.15, ArmPose.blend(raise_, hold, 0.32)), (MG + 2.1, hold),
                                (d["reach_t"], hold)])
     tp = d["place_t"]
-    d["arm_r_post"] = ArmTrack([(tp + 0.2, None), (tp + 0.72, _arm(chest, shoulder=26.0, elbow=98.0, across=0.34)),
+    d["arm_r_post"] = ArmTrack([(d["release_t"], None), (tp + 0.72, _arm(chest, shoulder=26.0, elbow=98.0, across=0.34)),
                                 (tp + 1.25, chest), (TR - 0.4, chest), (TR + 0.6, _arm(chest, wrist=16.0, elbow=122.0)),
                                 (PK + 1.0, _arm(chest, wrist=12.0)), (FC, chest)])
     # far hand: on her knee; the tiny wave back; on her knee again
@@ -549,7 +550,7 @@ def _rae_body(t) -> Pose:
     for h0 in d["hitches"]:
         x = (t - h0) / 0.55
         if 0.0 <= x < 1.0:
-            hitch = max(hitch, math.sin(math.pi * min(1.0, x * 2.2)) * (1.0 - x) ** 0.5)
+            hitch = max(hitch, math.sin(math.pi * min(1.0, x * 1.6)) * (1.0 - x) ** 0.5)
     br = _rae_breath(t)
     emo = smoothstep((t - T.glis) / 3.0)          # deeper, more visible breathing once she is moved
     arm_l = d["arm_l"](t)
@@ -558,8 +559,8 @@ def _rae_body(t) -> Pose:
         ph = math.sin(2 * math.pi * (t - T.rwave - 0.1) / 0.46)
         arm_l = _arm(arm_l, wrist=arm_l.wrist + wv * 14.0 * ph, elbow=arm_l.elbow - wv * 5.0 * ph)
     p = Pose(x=SEAT_X, y=float(env.FLOOR_Y), facing=1.0, turn=d["turn"](t), sit=1.0, seat_y=float(env.BENCH_SEAT_Y),
-             lean=d["lean"](t) - 0.8 * hitch, bounce=d["bounce"](t) - 1.6 * hitch,
-             shoulders_up=d["shoulders"](t) + 0.14 * hitch + 0.07 * emo * max(0.0, br),
+             lean=d["lean"](t) - 0.6 * hitch, bounce=d["bounce"](t) - 1.2 * hitch,
+             shoulders_up=d["shoulders"](t) + 0.12 * hitch + 0.07 * emo * max(0.0, br),
              arm_l=arm_l, breath=br)
     return p
 
@@ -615,18 +616,18 @@ def _rae_arm_r(t):
         if u < 0.45:
             return ArmPose.blend(hold, lift, smoothstep(u / 0.45))
         return ArmPose.blend(lift, place, smoothstep((u - 0.45) / 0.55))
-    # let go: the hand rests on the handle a beat, then lifts away and rises to her chest. The grip opens
-    # in stages while it moves (hold -> relaxed -> open) so the fist never snaps into a flat hand in place.
+    # let go: the hand stays on the handle a beat (the mug still held, pose.mug='r': it sits exactly on the bench
+    # spot), then the bench mug takes over and the hand lifts away, opening in stages (relaxed -> open) on its way
+    # up to her chest so the grip never snaps into a flat hand in place.
     post = d["arm_r_post"]
     k1 = post.keys[1]
-    # (without the mug the rig's "hold" hand is an open C, so the grip that stays on the handle is a "fist")
-    t_go = tp + 0.2
+    t_go = d["release_t"]
     if t < t_go:
-        return _arm(place, hand="fist")
+        return place
     if t < k1[0]:
         u = (t - t_go) / (k1[0] - t_go)
         a = ArmPose.blend(place, k1[1], smoothstep(u))
-        return _arm(a, hand="fist" if u < 0.16 else ("relaxed" if u < 0.5 else k1[1].hand))
+        return _arm(a, hand="relaxed" if u < 0.5 else k1[1].hand)
     return post(t)
 
 
@@ -695,19 +696,20 @@ def _rae_pose(t, lv) -> Pose:
         smile=d["smile"](t), smirk=d["smirk"](t), mouth_tremble=d["tremble"](t), tears=d["tears"](t),
         tear_r=d["tear_r"](t), tear_l=d["tear_l"](t), eye_shine=d["shine"](t), blush=d["blush"](t),
         sniffle=d["sniffle"](t), head_nod=nod, head_tilt=tilt, head_turn=hturn)
-    mug = "r" if t < d["place_t"] else None
+    mug = "r" if t < d["release_t"] else None
     return p.copy(arm_r=_rae_arm_r(t), mug=mug, **face, **lv.rae)
 
 
 def _bench_mug(t):
-    """(x, y, scale, angle, flip) of the mug resting on the bench once she lets go of it, else None."""
+    """(x, y, scale, angle, flip) of the mug standing on the bench once she has let go of it, else None. It takes
+    over exactly where the held mug was (mug_pose at the placement) and settles upright."""
     d = _rae_tracks()
-    tp = d["place_t"]
-    if t < tp:
+    t_go = d["release_t"]
+    if t < t_go:
         return None
     mp0 = _place_mug_pose()
-    ang = mp0[3] * (1.0 - smoothstep((t - tp) / 0.22))
-    return (MUG_SPOT[0], MUG_SPOT[1], mp0[2], ang, mp0[4])
+    k = smoothstep((t - t_go) / 0.25)
+    return (lerp(mp0[0], MUG_SPOT[0], k), lerp(mp0[1], MUG_SPOT[1], k), mp0[2], mp0[3] * (1.0 - k), mp0[4])
 
 
 @lru_cache(maxsize=1)
