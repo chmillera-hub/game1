@@ -200,7 +200,6 @@ def _oval2(c, rect, base, shade, dx, dy, line_w=1.8, line_a=0.85):
     """Clip-free two-tone oval (contour, shade, lit oval shrunk toward the light) for small convex parts."""
     c.drawOval(rect, paint(C_LINE, line_a, stroke=line_w * 2.0))
     c.drawOval(rect, paint(shade))
-    w, h = rect.width(), rect.height()
     ax, ay = abs(dx), abs(dy)
     lit = skia.Rect(rect.left() + (0.0 if dx < 0 else ax), rect.top() + (0.0 if dy < 0 else ay),
                     rect.right() - (ax if dx < 0 else 0.0), rect.bottom() - (ay if dy < 0 else 0.0))
@@ -296,7 +295,7 @@ def _base():
         nx, ny = ty, -tx
         if p[0] * nx + (p[1] + 760.0) * ny < 0:
             nx, ny = -nx, -ny
-        u += w * 0.6
+        u += w * 0.68
         y = p[1]
         if y > -205.0 and abs(p[0]) < 470:
             continue            # between / above the legs: handled by the bottom fringe below
@@ -934,7 +933,13 @@ def _draw_body(c, R):
     bel = [_deform(R, _turn_x(R, x, 700.0), y) for (x, y) in B["belly"]]
     bp = smooth_path(bel, closed=True, tension=0.42)
     R.belly_path = bp
-    _cel(c, bp, C_BELLY, C_BELLY_SH, -40.0 * R.fac, -40.0, line=C_FUR_SH, line_w=1.6, line_a=0.6)
+    c.drawPath(bp, paint(C_FUR_SH, 0.6, stroke=3.2))
+    _fill(c, bp, C_BELLY_SH)
+    sbp = skia.Path(bp)
+    sbp.offset(-40.0 * R.fac, -40.0)
+    lit = skia.Op(bp, sbp, skia.PathOp.kIntersect_PathOp)
+    if lit is not None:
+        _fill(c, lit, C_BELLY)
     c.save()
     c.clipPath(bp, doAntiAlias=True)
     bh = _deform(R, -120.0 * R.fac + 600.0 * math.sin(th), -760.0)
