@@ -1190,9 +1190,25 @@ def shot_lair(ctx, t, info, T):
         # innocent whistle: small round lips, a little pulse
         wk = smoothstep(seg(t, T.innocent + 0.05, T.innocent + 0.25))
         mouth = (wk * (0.07 + 0.03 * math.sin(t * 11)), -1.0 * wk)   # stays < teeth threshold
-    draw_villain(ctx, MX, MY + dy, MS, t, expr=ex, look=look,
-                 mouth=mouth, arms=arms, lean=lean, blink=blink,
-                 snake=snake)
+    bp = _book_pose(t, T)
+    prm = _tail_params(t, T)
+    _TAIL.clear()
+    if prm is not None:
+        # Snake's tail is out: swap the rig's front-coil drawer for ours for
+        # this one call only (restored straight after, nothing else is touched)
+        _TAIL.update(t=t, T=T, dy=dy, lean=lean, bp=bp, prm=prm)
+        orig = V._snake_front
+        V._snake_front = _tail_front
+        try:
+            draw_villain(ctx, MX, MY + dy, MS, t, expr=ex, look=look,
+                         mouth=mouth, arms=arms, lean=lean, blink=blink,
+                         snake=snake)
+        finally:
+            V._snake_front = orig
+    else:
+        draw_villain(ctx, MX, MY + dy, MS, t, expr=ex, look=look,
+                     mouth=mouth, arms=arms, lean=lean, blink=blink,
+                     snake=snake)
 
     # cool light from the AI on Malvo's face side
     ai_on = t >= T.rise0 + 0.1
@@ -1206,17 +1222,15 @@ def shot_lair(ctx, t, info, T):
     P.skull_lamp(ctx, 104, DESK[1] - 12, 0.8)
     P.computer(ctx, *COMP, view="side", facing=-1, t=t, glow=comp_glow)
 
-    if t >= T.book and (t < T.cu0 or t < T.hide + 0.35):
-        _draw_book(ctx, t, T)
-    if T.land <= t < T.cu0:
-        k = smoothstep(seg(t, T.land + 0.12, T.land + 0.38))
-        pat = 0.0
-        if t > T.land + 0.38:
-            pat = max(0.0, math.sin((t - T.land - 0.38) * 2 * math.pi * 2.2))
-        with saved(ctx, MX, MY + dy, MS, lean) as c:
-            pat_arm(c, t, k, pat)
-        if t >= T.land + 0.2:
-            P.emote(ctx, "heart", MX + 150, MY - 690 * MS, 1.0, t, T.land + 0.25)
+    if prm is not None and t < T.swing0 + 0.12:
+        shelf(ctx, plank_only=True)               # the tail goes up behind the plank
+    if t < T.hide + 0.35:
+        _draw_book(ctx, t, T, bp)
+    _draw_tail_hook(ctx)
+    if T.swing1 <= t < T.cu0:
+        _overlay_arms(ctx, t, ex, arms, dy, lean)  # his hands are in front of the book
+    if T.land <= t < T.cu0 and t >= T.land + 0.1:
+        P.emote(ctx, "heart", MX + 150, MY - 690 * MS, 1.0, t, T.land + 0.15)
 
     # --- the cardboard robot (frame 0 .. slap) --------------------------------------
     _draw_cutout(ctx, t, T)
@@ -1272,21 +1286,20 @@ def _draw_cutout(ctx, t, T):
                 core.stroke(c, CARD_DK, 4)
 
 
-def _draw_book(ctx, t, T):
-    # 0.25 s ease_in fall, 3-frame squash, then it sits; slides away on l08
-    y = BOOK_Y
-    sx = sy = 1.0
-    if t < T.land:
-        u = seg(t, T.book, T.land)
-        y = BOOK_Y - 1000 * (1 - u * u)
-        sx, sy = 0.9, 1.12
-    elif t < T.land + 0.125:
-        sx, sy = 1.15, 0.85
-    elif t < T.land + 0.3:
-        u = seg(t, T.land + 0.125, T.land + 0.3)
-        sx = lerp(1.15, 1.0, ease_out_back(u))
-        sy = lerp(0.85, 1.0, ease_out_back(u))
-    flutter = _bump(t, T.land, 0.5, 0.02) + _bump(t, T.book + 0.6, 0.35, 0.03)
+def _draw_book(ctx, t, T, bp):
+    """Shelf -> tail -> his hands -> desk (pose from _book_pose); slides away on l08."""
+    x, y, s, rot, sx, sy = bp
+    flutter = (_bump(t, T.pull0, 0.45, 0.03) + 0.6 * _bump(t, T.swing1, 0.4, 0.03)
+               + _bump(t, T.land, 0.5, 0.02))
+    if t < T.book:
+        if t < T.pull0 + 0.45 and t >= T.pull0:
+            dust_puff(ctx, BOOK_SHELF[0], SHELF[2], 150, t, T.pull0, n=6, seed=11, big=0.6)
+        with saved(ctx, x, y, 1.0, rot) as c:
+            big_book(c, 0, 0, s, t, sx, sy, flutter)
+        if T.take <= t < T.take + 0.6:
+            P.sparkles(ctx, x - 20, y - 150 * s, 130, t, n=4, seed=6, color="white", size=0.9)
+        return
+    y = BOOK_Y if t >= T.land else y
     if t >= T.hide:
         # slide down behind the desk edge
         k = ease_in(seg(t, T.hide, T.hide + 0.3))
@@ -1505,10 +1518,15 @@ def SFX(info):
         (T.hissy + 0.25, "pop", -10),
         (T.hissy + 0.35, "snake_hiss", -8),
         (T.me + 0.45, "snake_hiss", -14),
-        (T.book + 0.02, "whoosh", -12),
-        (T.land, "brick_thud", -3),
-        (T.land + 0.12, "sparkle", -12),
-        (T.book + 0.6, "page_flip", -8),
+        # the tail fetch
+        (T.reach0, "swoosh_up", -8),           # tail reaches up
+        (T.curl1 - 0.12, "paper", -8),         # hooks the book
+        (T.pull0, "page_flip", -7),            # tugged off the shelf, pages riffle
+        (T.swing0 + 0.05, "whoosh", -11),      # swung over
+        (T.take, "pop", -7),                   # handed over
+        (T.bow0, "sparkle", -12),              # Snake's polite bow
+        (T.land, "brick_thud", -6),            # heavy book on the desk
+        (T.land + 0.12, "sparkle", -14),
         (T.hide, "whoosh", -12),
         (T.innocent, "pop", -8),
     ]

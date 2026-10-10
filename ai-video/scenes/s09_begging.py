@@ -173,14 +173,14 @@ for _nm, _pz in (("s09_beg", V._pose(_BEG_A, shy=-12, hdy=4)),
 # tone as engine/villain._draw_hand), mirrored about his centre line. The
 # rig still draws the purple sleeves (its own hands shrunk to nothing under
 # our cuffs) through a per-frame arm pose 's09_dyn'.
-POKE_HS = 0.98                       # glove scale (x rig HAND_SCALE), both hands
-POKE_Y = -234.0                      # index line (villain-local)
+POKE_HS = 1.1                        # glove scale (x rig HAND_SCALE), both hands
+POKE_Y = -230.0                      # index line (villain-local)
 POKE_ANG = -0.05                     # index tilt (slightly up toward the tips)
 POKE_ELB = (-236.0, -150.0)          # screen-left elbow (mirrored for the right)
 POKE_SHY = -10.0                     # shoulders hunched up (shy)
 POKE_TILT = 0.05
-VY_POKE = 1342.0                     # he sits up on his knees for the gesture
-TIP = (90.5, -13.0)                  # index tip in glove units
+VY_POKE = 1330.0                     # he sits up on his knees for the gesture
+TIP = (101.5, -13.0)                 # index tip in glove units
 _ARM_KEYS = ("ex", "ey", "wx", "wy", "ha")
 
 
@@ -190,7 +190,7 @@ def _poke_place(t, t_tap):
     u = max(0.0, t - t_tap)
     sep = 0.5 - 0.5 * math.cos(2 * math.pi * 3.0 * u)          # 0 = tips touching
     sep *= smoothstep(clamp(u / 0.15))
-    g = 1.0 + 8.0 * sep
+    g = 1.6 + 7.0 * sep
     ang = POKE_ANG - 0.05 * sep
     hs = V.HAND_SCALE * POKE_HS
     ca, sa = math.cos(ang), math.sin(ang)
@@ -240,8 +240,8 @@ def _glove_back(c, wx, wy, ang, sc=1.0):
     lw = V.OUT_W / hs
     il = 2.6 / hs * 1.45
     thumb = (24.0, -20.0, 45.0, -28.0, 19.0)
-    curled = ((52.0, 6.0, 57.0, 9.0, 21.0), (46.0, 18.0, 50.0, 21.0, 20.0))
-    index = (48.0, -12.0, 80.0, -13.0, 21.0)
+    curled = ((51.0, 5.0, 59.0, 8.0, 20.0), (45.0, 17.0, 51.0, 20.0, 19.0))
+    index = (48.0, -12.0, 92.0, -13.0, 19.0)
     # silhouette pass (thick outer ink)
     c.set_source_rgba(*V.INK)
     for x0, y0, x1, y1, w in (thumb,) + curled + (index,):
@@ -292,8 +292,9 @@ def _glove_back(c, wx, wy, ang, sc=1.0):
     c.restore()
 
 
-def _draw_poke(c, place, sc):
-    """Both gloves: the screen-left one, then its mirror image."""
+def _draw_poke(c, place, sc, t=0.0, t_tap=None):
+    """Both gloves: the screen-left one, then its mirror image; tiny comic
+    'tap' ticks flash above the fingertips each time they touch."""
     if sc <= 0.0:
         return
     wx, wy, ang = place
@@ -302,6 +303,15 @@ def _draw_poke(c, place, sc):
     c.scale(-1, 1)
     _glove_back(c, wx, wy, ang, sc)
     c.restore()
+    if t_tap is not None and t >= t_tap and sc >= 0.999:
+        ph = ((t - t_tap) * 3.0) % 1.0               # 0 = contact (see _poke_place)
+        a = 1.0 - clamp(min(ph, 1.0 - ph) / 0.1)
+        if a > 0.02:
+            ty = POKE_Y - 13.0 * V.HAND_SCALE * POKE_HS * 0.25 - 26
+            for dx, dy, ex_, ey_ in ((-9, 0, -20, -16), (0, -4, 0, -22), (9, 0, 20, -16)):
+                c.move_to(dx, ty + dy)
+                c.line_to(ex_, ty + ey_)
+            core.stroke(c, (0.09, 0.06, 0.12, 0.85 * a), 4.5, cap="round")
 
 
 def _ai_mix(a, b, k):
@@ -911,7 +921,7 @@ def _shot_C(ctx, t, info, T):
             _draw_bow(c, g, vk)
             _tail_to_bow(c, t, st, g, vk)
         _tears(c, t, st, look, 1.0, t_alpha)
-        _draw_poke(c, place, glove)
+        _draw_poke(c, place, glove, t, T["pk_in1"])
 
     # static standard F1 framing: s10 opens on exactly this frame (he explodes
     # up from behind the desk), so the cut matches

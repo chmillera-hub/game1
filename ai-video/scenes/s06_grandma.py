@@ -106,7 +106,7 @@ PORT_A = (250, 1080, 1.0)              # grandma's portrait on its easel (oval c
 # B/D: F3 AI CU
 AI3 = (495, 800, 1.1)
 # C/E: portrait close-up (own set; the portrait fills the frame)
-CU_P = (495, 770, 3.0)                 # portrait oval centre + scale in the close-up
+CU_P = (495, 770, 3.15)                 # portrait oval centre + scale in the close-up
 CU_FOCUS = (495, 720)                  # push-in centre (Hissy's face)
 # F: F5 two-shot
 MX, MY, MS = 400, 1250, 0.92
@@ -152,7 +152,7 @@ V.VILLAIN_EXPR.setdefault("s06_thrilled", dict(
     hair=0.85, blush=0.75, by1=-38, by2=-40, tilt=0.04))
 # grandma's portrait: eyes open, prim and dignified (trying SO hard to look sweet)
 S.SNAKE_EXPR.setdefault("s06_granny", dict(
-    ul=0.44, ll=0.22, lt=-0.2, ps=1.05, ey=-0.05, mc=0.85, mo=0.0, mw=0.82, msk=0.0,
+    ul=0.3, ll=0.16, lt=-0.2, ps=1.1, ey=-0.05, mc=0.85, mo=0.0, mw=0.82, msk=0.0,
     blush=1.0, hy=-5, tilt=-0.07, tng=0.0))
 S.SNAKE_EXPR.setdefault("s06_granny_tight", dict(
     ul=0.36, ll=0.24, lt=-0.3, ps=0.9, mc=0.55, mo=0.0, mw=0.95, msk=0.35, blush=1.0,
@@ -291,9 +291,9 @@ def _T(info):
     # to the AI on "...in a shawl."
     T["cu1"] = max(T["stare"] + 0.5, min(T["stare"] + 0.68, T["ghold"] - 0.1))
     T["cu1_end"] = clamp(T["w_in"] - 0.06, T["l2"] + 0.6, T["w_shawl"] - 0.12)
-    T["granny"] = T["ghold"] + 0.3          # eyes open: prim, dignified granny look
-    T["gblink"] = T["granny"] + 0.42        # slow dignified blink
-    T["gtongue"] = min(T["l2"] - 0.18, T["gblink"] + 0.62)   # dainty tongue flick
+    T["granny"] = T["ghold"] + 0.25         # eyes open: prim, dignified granny look
+    T["gtongue"] = T["granny"] + 0.45       # dainty tongue flick
+    T["gblink"] = min(T["gtongue"] + 0.4, T["w_thats"] - 0.68)  # slow dignified blink
     T["glint1"] = T["cu1"] + 0.12
     T["glint2"] = T["granny"] + 0.12
     T["cut_f5"] = T["slip"] + 0.45          # hard cut to the two-shot
@@ -530,13 +530,17 @@ def _glasses(ctx, slide, t, glint=0.0, glint2=0.0):
                 c.save()
                 circle(c, lx, -18, r - 3)
                 c.clip()
-                bx = lx - 34 + 68 * g
-                poly(c, [(bx - 9, -50), (bx + 5, -50), (bx - 5, 14), (bx - 19, 14)])
-                _f(c, "white", 0.55 * k)
+                bx = lx - 40 + 80 * ease_in_out(g)
+                poly(c, [(bx - 6, -52), (bx + 12, -52), (bx - 2, 16), (bx - 20, 16)])
+                _f(c, "white", 0.85)
+                poly(c, [(bx + 16, -52), (bx + 22, -52), (bx + 8, 16), (bx + 2, 16)])
+                _f(c, "white", 0.6)
                 c.restore()
-                gx = lx + 30 * math.cos(g * math.pi)
-                P._star4(c, gx + 10, -40, 22 * k, g * 1.2)
-                _fs(c, "white", None, a=0.97)
+                sx_ = lx + (20 if lx > 0 else -20)
+                circle(c, sx_, 4, 26 * k)
+                _f(c, "white", 0.22 * k)
+                P._star4(c, sx_, 4, 30 * k, 0.25 + g * 0.8, 0.22)
+                _fs(c, "white", INK, 2.0, a=0.97)
 
 
 def _bonnet(ctx, t, ruffle=0.0):
@@ -578,6 +582,29 @@ def _bonnet(ctx, t, ruffle=0.0):
             _fs(c, "#ff8fb8", INK, 3.5)
         circle(c, 0, 0, 6)
         _fs(c, "#ff6fa0", INK, 3)
+
+
+def _dainty_tongue(ctx, ta, t, ym):
+    """A small forked tongue flicked out of Hissy's mouth (head-local coords,
+    drawn over the shawl so the fork reads)."""
+    L = 12 + 40 * ta
+    wig = math.sin(t * 38) * 5 * ta
+    tip = (wig, ym + L)
+    mid = (-wig * 0.4, ym + L * 0.55)
+    ctx.move_to(0, ym)
+    ctx.curve_to(mid[0], mid[1], mid[0], mid[1], tip[0], tip[1])
+    ctx.move_to(*tip)
+    ctx.line_to(tip[0] - 9, tip[1] + 12)
+    ctx.move_to(*tip)
+    ctx.line_to(tip[0] + 9, tip[1] + 12)
+    _src(ctx, INK)
+    ctx.set_line_width(12)
+    ctx.set_line_cap(1)
+    ctx.set_line_join(1)
+    ctx.stroke_preserve()
+    _src(ctx, "#e8314f")
+    ctx.set_line_width(6)
+    ctx.stroke()
 
 
 def _shawl(ctx, top_y):
@@ -664,7 +691,9 @@ def _portrait(ctx, x, y, s, t, hs, easel=True):
             c.translate(hx, hy + 60)
             c.rotate(wig)
             c.translate(-hx, -(hy + 60))
-        _snake_head_xf(c, hx, hy, hsc, t, hs.get("expr", "happy"), seed=5)
+        p_ = _snake_head_xf(c, hx, hy, hsc, t, hs.get("expr", "happy"), seed=5)
+        if hs.get("tongue_over", 0.0) > 0.02:
+            _dainty_tongue(c, hs["tongue_over"], t, 30.0 + p_["mc"] * 12)
         _bonnet(c, t, hs.get("ruffle", 0.0))
         _glasses(c, hs.get("slide", 0.0), t, hs.get("glint", 0.0), hs.get("glint2", 0.0))
         c.restore()
@@ -808,26 +837,26 @@ def _dragon_art(c, t, eyes=1.0, inhale=0.0, breath=0.0, proud=0.0):
         c.line_to(-14 + (px + 14) * wf * 0.8, 30 + (py - 30) * wf * 0.8)
     _s(c, INK, 1.8)
     # body + pale belly (puffs up on the inhale)
-    ellipse(c, -10, 50, 29 * puff, 25 * puff)
+    ellipse(c, -10, 54, 29 * puff, 23 * puff)
     _fs(c, DRAGON, INK, 3.5)
-    ellipse(c, -3, 55, 15 * puff, 15 * puff)
+    ellipse(c, -3, 58, 15 * puff, 14 * puff)
     _f(c, "#a6e88a")
     for k in range(3):
-        c.move_to(-14, 48 + k * 8)
-        c.curve_to(-6, 51 + k * 8, 2, 51 + k * 8, 9, 48 + k * 8)
+        c.move_to(-14, 52 + k * 7)
+        c.curve_to(-6, 55 + k * 7, 2, 55 + k * 7, 9, 52 + k * 7)
     _s(c, "#7cc865", 1.6)
     # head placement: crouch back on the inhale, thrust up on the breath
     hx = 3 - 7 * inhale * (1 - breath) + 2 * breath
-    hy = -6 + 6 * inhale * (1 - breath) - 5 * breath
+    hy = 6 + 6 * inhale * (1 - breath) - 4 * breath
     ang = -0.36 + 0.3 * inhale * (1 - breath) - 0.6 * breath
     # neck (thick curve from the body up to the head) + pale front scales
     nx0, ny0 = _rot(-6, 7, ang)
     for col, w, dx in ((INK, 21, 0), (DRAGON, 15, 0), ("#a6e88a", 5, 4.5)):
-        c.move_to(-16 + dx, 34)
-        c.curve_to(-18 + dx, 16, hx + nx0 - 6 + dx, hy + ny0 + 14, hx + nx0 + dx * 0.6,
+        c.move_to(-16 + dx, 40)
+        c.curve_to(-18 + dx, 26, hx + nx0 - 6 + dx, hy + ny0 + 12, hx + nx0 + dx * 0.6,
                    hy + ny0)
         _s(c, col, w)
-    for k, (px, py) in enumerate(((-24, 26), (-25, 15), (-21, 5))):   # back spikes
+    for k, (px, py) in enumerate(((-24, 32), (-24, 22), (-19, 13))):  # back spikes
         poly(c, [(px + 2, py - 4), (px - 7, py + 1), (px + 3, py + 4)])
         _fs(c, "#f6e7b8", INK, 1.8)
     with saved(c, hx, hy, 1.0, ang) as h:
@@ -964,19 +993,31 @@ def _flame(c, M, ang0, t, grow, fade, tf, W=46.0, L=172.0, seed=40):
     if grow <= 0.005:
         return
     a_up = -math.pi / 2 - 0.2
-    Lk = L * (0.18 + 0.82 * ease_out(grow)) * (1 - 0.25 * fade)
     N = 24
-    C = []
-    x, y = M
-    rise = 70 * fade * fade
-    for i in range(N + 1):
-        u = i / N
-        sway = 0.12 * math.sin(t * 4.1 + u * 2.6)
-        a = lerp(ang0, a_up + sway, smoothstep(clamp(u * 1.7)))
-        a += 0.24 * u * math.sin(u * 5.0 - t * 10.0)           # rolling curl
-        C.append((x, y - rise, a))
-        x += math.cos(a) * Lk / N
-        y += math.sin(a) * Lk / N
+
+    def centre(Lk):
+        pts, x, y = [], M[0], M[1]
+        for i in range(N + 1):
+            u = i / N
+            sway = 0.12 * math.sin(t * 4.1 + u * 2.6)
+            a = lerp(ang0, a_up + sway, smoothstep(clamp(u * 1.7)))
+            a += 0.24 * u * math.sin(u * 5.0 - t * 10.0)       # rolling curl
+            pts.append((x, y, a))
+            x += math.cos(a) * Lk / N
+            y += math.sin(a) * Lk / N
+        return pts
+
+    # the stream pulls back into the mouth as it fades; smoke where the crown was
+    Lk = L * (0.18 + 0.82 * ease_out(grow)) * (1 - 0.85 * smoothstep(fade))
+    C = centre(Lk)
+    if fade > 0.0:
+        top = centre(L)[-3]
+        for i in range(3):
+            u = clamp(fade * 1.3 - i * 0.15)
+            if 0.0 < u < 1.0:
+                r = (10 + 14 * u) * (1.0 - 0.15 * i)
+                circle(c, top[0] + (i - 1) * 26 + 8 * u * (i - 1), top[1] - 40 * u + i * 14, r)
+                _fs(c, SMOKE, INK, 2.2, a=0.85 * (1 - u))
 
     def at(u):
         f = clamp(u) * N
@@ -986,7 +1027,7 @@ def _flame(c, M, ang0, t, grow, fade, tf, W=46.0, L=172.0, seed=40):
         x1, y1, a1 = C[i + 1]
         return x0 + (x1 - x0) * r, y0 + (y1 - y0) * r, a0 + (a1 - a0) * r
 
-    ws = (0.45 + 0.55 * ease_out(grow)) * (1 - 0.7 * fade)
+    ws = (0.45 + 0.55 * ease_out(grow)) * (1 - 0.6 * fade)
     # a puff of extra width on the burst (the 'FWOOMP')
     ws *= 1 + 0.18 * math.sin(math.pi * clamp(tf / 0.35)) * (tf > 0)
 
@@ -994,8 +1035,8 @@ def _flame(c, M, ang0, t, grow, fade, tf, W=46.0, L=172.0, seed=40):
         return W * ws * (0.14 + 0.86 * smoothstep(clamp(u / 0.66))) \
             * (1 + 0.07 * math.sin(t * 23.0 + u * 9.0))
 
-    u_lo = 0.7 * smoothstep(fade)
-    alpha = 1.0 - smoothstep(clamp((fade - 0.55) / 0.45))
+    u_lo = 0.0
+    alpha = 1.0 - smoothstep(clamp((fade - 0.62) / 0.38))
     if alpha > 0.01:
         _flame_body(c, at, wfun, t, seed, u_lo, alpha)
     _embers(c, at, wfun, tf, seed)
@@ -1322,7 +1363,8 @@ def _granny_hold(t, T):
               + 0.7 * math.sin(math.pi * seg(t, g0 - 0.05, g0 + 0.55))
               + 0.55 * math.sin(math.pi * seg(t, tg - 0.05, tg + 0.45)))
     wig = 0.045 * math.sin((t - c0) * 2 * math.pi * 2.2) * math.exp(-max(0.0, t - c0) * 2.2)
-    return {"expr": expr, "look": look, "tongue": tongue, "blink": blink, "slide": 0.0,
+    return {"expr": expr, "look": look, "tongue": False, "tongue_over": tongue,
+            "blink": blink, "slide": 0.0,
             "glint": seg(t, T["glint1"], T["glint1"] + 0.42),
             "glint2": seg(t, T["glint2"], T["glint2"] + 0.42),
             "ruffle": clamp(ruffle), "wiggle": wig}
@@ -1331,10 +1373,10 @@ def _granny_hold(t, T):
 def _shot_portrait(ctx, t, info, T, second):
     if not second:
         # one long, slow push-in across the whole hold
-        push = 1.0 + 0.13 * ease_in_out(seg(t, T["cu1"], T["cu1_end"] + 0.2))
+        push = 1.0 + 0.16 * ease_in_out(seg(t, T["cu1"], T["cu1_end"] + 0.2))
         push += _cut_pulse(t, T["cu1"], 0.22, 0.03)
     else:
-        push = 1.13 + 0.03 * ease_out(seg(t, T["slip"], T["cut_f5"]))
+        push = 1.15 + 0.03 * ease_out(seg(t, T["slip"], T["cut_f5"]))
     fx, fy = CU_FOCUS
     with saved(ctx, fx, fy, push) as c:
         c.translate(-fx, -fy)
@@ -1599,7 +1641,7 @@ def _malvo_G(t, T):
     expr = _state(t, [
         (-1, "s06_ooh"),                                  # "ooh..." the dragon wakes up
         (f0 + 0.01, "s06_thrilled", 0.08),               # FWOOSH -> thrilled
-        (f2 - 0.04, "s06_hug", 0.35),                    # "...who guards the village" aww
+        (f2 - 0.04, "happy", 0.35),                      # "...who guards the village" aww
     ])
     arms = _cycle(("s06_clasp", "s06_clasp", 1.0), t)     # hands clasped, giddy wringing
     look = _lookv(t, [
