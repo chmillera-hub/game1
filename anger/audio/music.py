@@ -140,15 +140,18 @@ def compose_descent() -> Cue:
                (45, 49, "A7"), (49, 52, "Dm"), (52, 55, "Bb/D"), (55, 59, "Dsus2")]
 
     # ---------------------------------------------------------------- the theme (horns, trombones)
-    hn = S("horns", "horns", pan=-0.22, send=0.34, legato=0.07, lazy=-0.03, opts={"level": -17.5})
+    # first statement (the walk): low trombones carry the theme at D3, the horns double it an octave up
+    hn = S("horns", "horns", pan=-0.22, send=0.34, legato=0.07, lazy=-0.03, opts={"level": -18.0})
     m1 = seq(THEME + " | " + THEME_ANSWER, 0, 86, "mel", bar=4)
     shape_vels(m1, [92, 98, 88, 82, 80, 84, 92, 88, 82, 80, 84])
-    hn.add(m1)
-    hn.add([Note(16, 2.6, P("D3"), 84, "mel")])                         # home as he reaches the vines
+    hn.add(transpose(m1, 12))
+    hn.add([Note(16, 2.6, P("D4"), 84, "mel")])                         # home as he reaches the vines
     m2 = seq("F4:q. C5:e~ C5:h | Bb4:q. A4:e G4:q F4:q | E4:q. F4:e G4:q A4:q", 23, 100, "mel", bar=4)
     shape_vels(m2, [118, 108, 100, 92, 96, 100, 96, 100, 106, 112])
     hn.add(m2)
     hn.add([Note(35, 1.2, P("A4"), 96, "mel")])                          # arrives on the dominant, lets go
+    hn.dyn = [(-0.3, 70), (8, 76), (15.5, 84), (17.5, 66), (18.9, 50), (22.9, 104), (31, 108), (34.8, 112),
+              (35.6, 60), (36.3, 0)]
     # chop stabs (the third one IS the phrase's first note) and the door build / burst chords
     hst = S("horns_hits", "horns", pan=-0.1, send=0.36, humanize=0.0, lazy=-0.04, opts={"level": -19.0})
     hst.add([Note(19, 0.7, P(p_), 112) for p_ in ("A3", "D4", "F4")])
@@ -161,11 +164,14 @@ def compose_descent() -> Cue:
     hst.dyn = [(18.8, 100), (23.8, 100), (24.2, 70), (42.8, 30), (45, 60), (48.9, 120), (49, 127),
                (50.2, 76), (52, 64), (53.5, 72), (55, 40), (56.5, 0)]
 
-    trb = S("trombones", "trombone", pan=0.18, send=0.3, legato=0.06, lazy=-0.04, opts={"level": -19.5})
-    trb.add(transpose(seq("F3:q. C4:e~ C4:h | Bb3:q. A3:e G3:q F3:q | E3:q. F3:e G3:q A3:q", 23, 100, bar=4), 0))
-    shape_vels(trb.notes, [118, 108, 100, 92, 96, 100, 96, 100, 106, 112])
+    trb = S("trombones", "trombone", pan=0.18, send=0.3, legato=0.06, lazy=-0.04, opts={"level": -18.5})
+    trb.add([Note(n.beat, n.dur, n.pitch, n.vel) for n in m1] + [Note(16, 2.6, P("D3"), 84)])
+    p2 = seq("F3:q. C4:e~ C4:h | Bb3:q. A3:e G3:q F3:q | E3:q. F3:e G3:q A3:q", 23, 100, bar=4)
+    shape_vels(p2, [118, 108, 100, 92, 96, 100, 96, 100, 106, 112])
+    trb.add(p2)
     trb.add([Note(35, 1.2, P("A3"), 92)])
-    trb.dyn = [(22.9, 100), (24, 92), (27, 98), (31, 104), (34.5, 112), (35.6, 60), (36.3, 0)]
+    trb.dyn = [(-0.3, 76), (4, 80), (8, 84), (12, 88), (15.5, 92), (17.5, 70), (18.6, 30), (18.95, 0),
+               (22.9, 100), (24, 92), (27, 98), (31, 104), (34.5, 112), (35.6, 60), (36.3, 0)]
     trh = S("trombones_hits", "trombone", pan=0.12, send=0.3, humanize=0.0, lazy=-0.05, opts={"level": -18.0})
     trh.add([Note(-6, 3.0, P(p_), 124) for p_ in ("A2", "D3", "F3")])     # TITLE
     trh.add([Note(19, 0.7, P(p_), 118) for p_ in ("A2", "D3", "F3")])
@@ -195,7 +201,7 @@ def compose_descent() -> Cue:
     g_p2 = gallop(23, 27, P("F2")) + gallop(27, 31, P("G2")) + gallop(31, 35, P("A2"))
     g_build = gallop(41, 45, P("A2"), va=96, vn=60)
     vc.add(g_walk + g_p2 + g_build)
-    vc.dyn = [(-0.2, 62), (8, 74), (15.5, 84), (17.6, 40), (18, 0), (22.8, 0), (23, 100), (34.8, 108),
+    vc.dyn = [(-0.2, 70), (8, 80), (15.5, 88), (17.6, 40), (18, 0), (22.8, 0), (23, 100), (34.8, 108),
               (35.2, 0), (40.8, 0), (41, 44), (44.9, 104), (45.1, 0)]
     cbf = S("basses_ost", "cb_fast", pan=0.28, send=0.2, humanize=0.006, lazy=-0.04, opts={"level": -21.5})
     cbf.add(accents_of(g_walk, P("D2")) + accents_of(g_p2, P("F2")) + accents_of(g_p2, P("G2")) +
@@ -412,7 +418,7 @@ def compose_cavern() -> Cue:
     gl.add(pad_notes(gc, gv, {"g": [0, 1, 2]}, 70)["g"])
     gl.dyn = [(0, 0), (2.5, 40), (6, 64), (11.5, 60), (12, 84), (14, 56), (19, 64), (19.5, 0)]
     oo = S("far_choir", "oohs", pan=-0.15, send=0.75, legato=0.2, lazy=-0.25, opts={"level": -27.5})
-    oo.add(seq("A4:4.5 Bb4:4.5 A4:4 G#4:3.5", 3.0, 70, "mel"))
+    oo.add(seq("A4:4.5 Bb4:4.5 A4:7.5", 3.0, 70, "mel"))
     oo.dyn = [(3, 0), (4.5, 50), (7.5, 58), (9.5, 64), (11.8, 56), (12, 72), (13.5, 50), (19.3, 58), (19.5, 0)]
 
     harp = S("harp", "harp", pan=-0.42, send=0.6, humanize=0.006, opts={"level": -24.0})
@@ -492,7 +498,7 @@ def compose_cavern() -> Cue:
                   ("trombones", 60), ("choir", 100), ("taiko", 40)):
         p_ = S.parts[nm]
         p_.eq = chain(p_.eq, hpf(f)) if p_.eq is not None else hpf(f)
-    arc = [(0.0, -6.0), (2.5, -3.0), (11.99, -2.0), (12.0, 2.0), (13.5, -2.0), (15.0, -3.0), (19.4, -1.5), (19.9, -1.5), (21.2, 0.5)]
+    arc = [(0.0, -6.0), (2.5, -3.0), (11.99, -2.0), (12.0, 0.0), (13.5, -2.0), (15.0, -3.0), (19.4, -1.5), (19.9, -1.5), (21.2, 0.5)]
     hits = [(0.0, "reveal"), (3.0, "look_around"), (7.5, "search_start"), (12.0, "eyes_glow"),
             (13.3, "eyes_scurry"), (19.5, "stone_shift"), (19.9, "torch_fly"), (21.2, "torch_splash (cut)")]
     cue = Cue("cavern", tm, bars, chords_, S.list(), rt60=4.2, wet=0.42, predelay=0.04, target_lufs=-17.5,
@@ -525,7 +531,7 @@ def compose_tension() -> Cue:
     chords_ = [(0, nb - 1, "Dm"), (nb - 1, nb, "Bb/D")]
     hb = S("heartbeat", "heartbeat", synth=synth_heartbeat, opts={"gap": 0.2, "dub": 0.6, "decay": 0.1,
                                                                   "level": -18.0})
-    hb.add([Note(k, 0.5, P("A1"), int(88 + 30 * k / max(1, nb - 1))) for k in range(nb)])
+    hb.add([Note(k, 0.5, P("A1"), int(88 + 30 * k / max(1, nb - 1)), "mel") for k in range(nb)])
     B = tm.beat
     cbt = S("basses_trem", "cb_trem", pan=0.25, send=0.35, humanize=0.0, opts={"level": -23.0})
     cbt.add([Note(B(0.0), B(8.6) - B(0.0), P("D2"), 100)])
@@ -728,7 +734,7 @@ def compose_fall() -> Cue:
     hits = [(0.0, "collapse"), (1.0, "grab_ledge"), (2.7, "slipping"), (6.8, "let_go"), (7.0, "falling"),
             (10.8, "sword_thrust"), (15.6, "impact")]
     cue = Cue("fall", tm, bars, chords_, S.list(), rt60=3.0, wet=0.34, predelay=0.03, target_lufs=-16.0,
-              fade_in=0.0, fade_out=0.5, send_hp=80.0, comp=(-8.0, 1.3, 20.0, 250.0),
+              fade_in=0.0015, fade_out=0.5, send_hp=80.0, comp=(-8.0, 1.3, 20.0, 250.0),
               master_vol=[(B(t_), v_) for t_, v_ in arc], hits=hits, wet_duck=[(6.85, 7.4, 0.5, 0.4), (15.47, 15.6, 0.4, 0.08), (16.1, 17.6, 0.3, 0.6)],
               top_parts=("horns",), bass_parts=("tuba", "basses_ost", "basses_trem"))
     cue.notes_txt = compose_fall.__doc__
@@ -754,9 +760,9 @@ def compose_depths() -> Cue:
                (15.4, 17.4, "Dm"), (17.4, 19, "A/D")]
     dr = S("drone", "drone", synth=synth_drone, pan=0.0, send=0.3,
            opts={"attack": 2.5, "release": 2.0, "tilt": 1.1, "kmax": 16, "move": 0.55, "lp": 1800, "level": -21.0})
-    dr.add([Note(0, 12.5, P("D1"), 110), Note(0.5, 12.0, P("A1"), 80), Note(14.6, 4.4, P("D1"), 110),
+    dr.add([Note(0, 13.0, P("D1"), 110), Note(0.5, 12.0, P("A1"), 80), Note(12.6, 6.4, P("D1"), 100),
             Note(15.4, 3.6, P("A1"), 76)])
-    dr.dyn = [(0, 90), (11.5, 100), (12.5, 60), (15.4, 70), (19, 100)]
+    dr.dyn = [(0, 90), (11.5, 100), (12.5, 70), (14.5, 64), (15.4, 76), (19, 100)]
     cb = S("basses", "cb", pan=0.28, send=0.4, legato=0.1, lazy=-0.15, opts={"level": -25.0})
     cb.add([Note(0.6, 11.8, P("D2"), 90), Note(15.4, 3.6, P("D2"), 90)])
     cb.dyn = [(0.5, 0), (2.5, 50), (8, 60), (11.4, 54), (12.5, 0), (15.3, 0), (16.5, 46), (19, 60)]
@@ -775,7 +781,7 @@ def compose_depths() -> Cue:
     hb = S("heartbeat", "heartbeat", synth=synth_heartbeat, opts={"gap": 0.24, "dub": 0.5, "decay": 0.12, "seed": 3,
                                                                   "level": -22.0})
     beats_ = [0.8, 2.0, 3.25, 4.4, 5.6, 6.9, 8.1, 9.3, 10.5, 11.8, 13.4, 15.0, 15.9, 16.85, 17.75, 18.6]
-    hb.add([S.N(t_, 0.3, "G1", (54 if 12 < t_ < 15.3 else 80) + (8 if t_ > 15.3 else 0)) for t_ in beats_])
+    hb.add([S.N(t_, 0.3, "G1", (54 if 12 < t_ < 15.3 else 80) + (8 if t_ > 15.3 else 0), "mel") for t_ in beats_])
     vt = S("violins_trem", "vln_trem", pan=-0.3, send=0.6, humanize=0.0, eq=sul_pont, opts={"level": -30.0})
     vt.add([Note(9.0, 2.6, P("Eb6"), 70)])
     vt.dyn = [(8.95, 0), (9.4, 40), (10.8, 30), (11.6, 0)]
@@ -796,7 +802,7 @@ def compose_depths() -> Cue:
     hits = [(0.4, "dazed"), (3.0, "assess"), (9.0, "eyes_again"), (12.0, "pass_out"), (15.4, "wake_noise"),
             (17.4, "one_arm")]
     cue = Cue("depths", tm, bars, chords_, S.list(), rt60=3.8, wet=0.4, predelay=0.04, target_lufs=-19.0,
-              fade_in=0.5, fade_out=0.15, send_hp=70.0, comp=(-10.0, 1.3, 30.0, 400.0),
+              fade_in=0.5, end_cut=True, send_hp=70.0, comp=(-10.0, 1.3, 30.0, 400.0),
               master_vol=[(0, 0.0), (11.6, 0.0), (12.8, -4.0), (15.0, -4.0), (16.0, -1.0), (19, 0.0)], hits=hits,
               top_parts=("celli_sighs",), bass_parts=("basses",))
     cue.notes_txt = compose_depths.__doc__
@@ -821,13 +827,13 @@ def compose_menace() -> Cue:
     crawl = ["D2", "D2", "Eb2", "D2", "E2", "Eb2", "F2", "E2", "F#2", "F2", "G2", "F#2", "Ab2", "G2", "A2", "Ab2",
              "Bb2", "A2", "B2", "Bb2", "C3", "B2", "C#3", "C3", "D3", "C#3", "Eb3", "D3"]
     vcp = S("celli_pizz", "vc_pizz", pan=0.2, send=0.35, humanize=0.0, opts={"level": -21.0})
-    vcp.add([Note(0.5 * k, 0.4, P(p_), int(56 + 60 * k / 27)) for k, p_ in enumerate(crawl)])
+    vcp.add([Note(0.5 * k, 0.4, P(p_), int(56 + 60 * k / 27), "mel") for k, p_ in enumerate(crawl)])
     cbp = S("basses_pizz", "cb_pizz", pan=0.3, send=0.3, humanize=0.0, opts={"level": -22.0})
     cbp.add([Note(0.5 * k, 0.4, P(p_) - 12 if P(p_) - 12 >= 28 else P(p_), int(60 + 56 * k / 27))
              for k, p_ in enumerate(crawl) if k % 2 == 0])
     cbt = S("basses_trem", "cb_trem", pan=0.3, send=0.35, humanize=0.0, opts={"level": -23.0})
     cbt.add([Note(0, 15.2, P("D2"), 100)])
-    cbt.dyn = [(0, 24), (4, 40), (7, 70), (14, 112), (15, 127)]
+    cbt.dyn = [(0, 44), (4, 52), (7, 72), (14, 112), (15, 127)]
     vlt = S("violas_trem", "vla_trem", pan=0.1, send=0.4, humanize=0.0, opts={"level": -23.0})
     vlt.add([Note(0, 7, P("A3"), 90), Note(0, 7, P("Bb3"), 90), Note(7, 4, P("B3"), 96), Note(7, 4, P("C4"), 96),
              Note(11, 4.2, P("C#4"), 100), Note(11, 4.2, P("D4"), 100)])
@@ -869,7 +875,7 @@ def compose_menace() -> Cue:
     cym.notes = [cym_note(tm, 6.4, 90)]
     sub = S("sub", "sub_pedal", synth=synth_sub_pedal, opts={"attack": 0.6, "h2": 0.25, "level": -24.0})
     sub.add([Note(0, 15.2, P("D1"), 100)])
-    sub.dyn = [(0, 40), (7, 80), (15, 127)]
+    sub.dyn = [(0, 60), (7, 84), (15, 127)]
     for nm, f in (("celli_pizz", 50), ("basses_pizz", 30), ("basses_trem", 30), ("violas_trem", 120),
                   ("trombones", 60), ("tuba", 25), ("choir", 90), ("taiko", 35), ("timpani", 32), ("piano_low", 28)):
         p_ = S.parts[nm]
@@ -877,8 +883,8 @@ def compose_menace() -> Cue:
     hits = [(0.0, "monster_approach"), (2.6, "arm_up"), (4.2, "monster_reveal"), (7.6, "monster_lunge"),
             (8.1, "rock_hit (cut)")]
     cue = Cue("menace", tm, bars, chords_, S.list(), rt60=3.0, wet=0.34, predelay=0.03, target_lufs=-17.0,
-              fade_in=0.15, end_cut=True, send_hp=80.0, comp=(-10.0, 1.3, 20.0, 250.0),
-              master_vol=[(0, -9.0), (4, -7.0), (6.98, -6.0), (7, -2.0), (8, -4.0), (14, -1.0), (15, 0.0)], hits=hits,
+              fade_in=0.01, end_cut=True, send_hp=80.0, comp=(-10.0, 1.3, 20.0, 250.0),
+              master_vol=[(0, 0.0), (4, -2.0), (6.98, -3.0), (7, 0.0), (8, -2.5), (14, -0.5), (15, 0.0)], hits=hits,
               top_parts=("violins_trem",), bass_parts=("basses_trem",))
     cue.notes_txt = compose_menace.__doc__
     return cue
@@ -896,24 +902,24 @@ def compose_hermit() -> Cue:
     tm = TempoMap([(0, 0.0), (5, 2.49), (9, 4.49), (17, 8.49)])
     S = Score(tm)
     bars = [0, 1, 5, 9, 13, 17]
-    chords_ = [(0, 5, "Dm"), (5, 9, "Dm"), (9, 11, "Dm"), (11, 13, "A7"), (13, 15, "Dm"), (15, 17, "A7")]
+    chords_ = [(0, 5, "Dm"), (5, 9, "Dm"), (9, 11, "Dm"), (11, 13, "A"), (13, 14, "Dm"), (14, 15, "Gm"), (15, 17, "A")]
     cbp = S("basses_pizz", "cb_pizz", pan=0.25, send=0.22, humanize=0.006, opts={"level": -21.0})
     cbp.add(seq("D2:q A1:q D2:q A1:q D2:q", 0, 70, vels=[74, 64, 70, 62, 72]))
-    cbp.add(seq("D2:q r:q A1:q r:q | D2:q r:q A1:q r:q | D2:q r:q A1:q r:q | D2:q r:q A1:q r:q", 9, 84, bar=4))
+    cbp.add(seq("D2:q r:q A1:q r:q | D2:q G1:q A1:q r:q", 9, 84, bar=4))
     cbp.add([Note(5, 1, P("D2"), 110)])
     vcp = S("celli_pizz", "vc_pizz", pan=0.15, send=0.22, humanize=0.006, opts={"level": -23.0})
     vcp.add([Note(5, 1, P(p_), 112) for p_ in ("D3", "A3")])
     vlp = S("violas_pizz", "vla_pizz", pan=-0.15, send=0.24, humanize=0.006, opts={"level": -24.0})
     vlp.add([Note(5, 1, P("F4"), 108)])
-    for b0, sym in ((9, "Dm"), (11, "A7"), (13, "Dm"), (15, "A7")):
-        ch_ = ("F3", "A3") if sym == "Dm" else ("E3", "G3")
-        for off in (0.5, 1.5):
-            vlp.add([Note(b0 + off, 0.4, P(p_), 74) for p_ in ch_])
+    for b_, sym in ((9.5, "Dm"), (10.5, "Dm"), (11.5, "A"), (12.5, "A"), (13.5, "Dm"), (14.5, "Gm"), (15.5, "A"),
+                    (16.5, "A")):
+        ch_ = {"Dm": ("F3", "A3"), "A": ("E3", "C#4"), "Gm": ("G3", "Bb3")}[sym]
+        vlp.add([Note(b_, 0.4, P(p_), 74) for p_ in ch_])
     bsn = S("bassoon", "bassoon", pan=0.05, send=0.24, legato=0.03, humanize=0.008, opts={"level": -17.5})
     drag = seq("D4:e C#4:e C4:e B3:e Bb3:e A3:e Ab3:e G3:e", 5, 92, "mel")
     shape_vels(drag, [104, 84, 90, 80, 86, 78, 84, 88])
     bsn.add(drag)
-    march = seq("A2:e D3:e F3:e A3:e G#3:q A3:e r:e | F3:e D3:e Bb2:e G2:e A2:q r:q | "
+    march = seq("A2:e D3:e F3:e A3:e G#3:q A3:e r:e | F3:e D3:e Bb2:e G2:e C#3:q r:q | "
                 "A2:e D3:e F3:e A3:e D4:q C#4:e r:e | Bb3:e G3:e E3:e C#3:e D3:q r:q", 9, 96, "mel", bar=4)
     for k, nt in enumerate(march):
         nt.dur = min(nt.dur, 0.32) if nt.dur <= 0.5 else 0.7          # staccato, the quarters a bit longer
@@ -964,6 +970,9 @@ def compose_lull() -> Cue:
         if b0 >= 28:
             continue
         lo_, mid, top = rock[sym]
+        if b1 - b0 < 3:                                   # the 1-beat F/A: just the bass, damped
+            harp.add([Note(b0, b1 - b0, P(lo_), 60)])
+            continue
         dialog = 6 <= b0 < 12
         harp.add([Note(b0, 2.8, P(lo_), 62)])
         harp.add([Note(b0 + 1, 1.8, P(mid), 50)])
@@ -972,7 +981,7 @@ def compose_lull() -> Cue:
     harp.add([Note(28, 4, P("F2"), 50), Note(28.5, 3.5, P("Db3"), 44)])
     mel = seq("C5:h A4:q | Bb4:h G4:q | A4:q F4:q A4:q | C5:h. | D5:h Bb4:q | A4:h.", 12, 60, "mel", bar=3)
     shape_vels(mel, [62, 54, 58, 50, 56, 52, 58, 66, 64, 56, 60])
-    mel[-1].dur = 3.5
+    mel[-1].dur = 1.0                                     # stops dead on side_eye_open (beat 28)
     cel = S("celesta", "celesta", pan=0.15, send=0.5, humanize=0.008, opts={"level": -20.0})
     cel.add(mel)
     cel.add([Note(23, 1.5, P("F6"), 64), Note(25, 1.5, P("C7"), 60)])          # the drips
@@ -1029,7 +1038,8 @@ def compose_friend() -> Cue:
     S = Score(tm)
     bars = [-0.2] + [4 * k for k in range(0, 21)]
     chords_ = [(-0.2, 2.5, "Bb"), (5, 28.5, "Bb"), (28.5, 29.5, "Bb"), (B(38.35), B(46.2), "Dm"),
-               (B(49.07), B(49.7), "Dm"), (B(49.87), B(52.47), "Bb"), (B(53.27), B(55.77), "Dm")]
+               (B(49.07), B(49.7), "Dm"), (B(49.87), B(50.57), "Bb"), (B(50.57), B(51.27), "F7"), (B(51.27), B(51.97), "Bb"),
+               (B(51.97), B(52.47), "F7"), (B(53.27), B(55.77), "Dm")]
     # ---------------------------------------------------------------- 0.0 the reveal: BWAAMP
     trb = S("trombones", "trombone", pan=0.15, send=0.3, humanize=0.0, lazy=-0.05, opts={"level": -18.0})
     trb.add([S.N(0.0, 1.4, p_, 124) for p_ in ("Bb2", "D3", "F3")])
@@ -1062,21 +1072,23 @@ def compose_friend() -> Cue:
         b = b0
         for k, (p_, d_) in enumerate(cells):
             strong = (b % 2 == 0) and k == 0
-            tst.add([Note(b, 0.42 if d_ >= 1 else 0.3, P(p_), 70 if strong else 62)])
+            tst.add([Note(b, 0.42 if d_ >= 1 else 0.3, P(p_), 70 if strong else 62, "mel")])
             if k == 0 and d_ >= 1 or b % 1 == 0:
                 cbp.add([Note(b, 0.7, P(p_) + 12, 62 if strong else 52)])
             b += d_
 
     bsn = S("bassoon", "bassoon_st", pan=0.08, send=0.24, humanize=0.006, opts={"level": -18.0})
-    bsn.add([S.N(2.98, 0.14, "Bb2", 92), S.N(3.16, 0.14, "D3", 96), S.N(3.34, 0.2, "F3", 104)])   # "hi!"
-    bsn.add([Note(10.5, 0.3, P("F3"), 96), Note(11.0, 0.3, P("D3"), 90), Note(11.5, 0.35, P("Bb2"), 100)])  # waddle
+    bsn.add([S.N(2.98, 0.14, "Bb2", 92, "mel"), S.N(3.16, 0.14, "D3", 96, "mel"), S.N(3.34, 0.2, "F3", 104, "mel")])
+    bsn.add([Note(10.5, 0.3, P("F3"), 96, "mel"), Note(11.0, 0.3, P("D3"), 90, "mel"),
+             Note(11.5, 0.35, P("Bb2"), 100, "mel")])                    # the waddle lick
     # the giggle (snort 49.87 -> notices_smirk 52.47): staccato 8th-note triplets at 0.7 s per beat
-    gig = ["F3", "F3", "F3", "G3", "F3", "D3", "F3", "F3", "F3", "Bb3", "A3", "F3", "Eb3", "Eb3", "Eb3", "F3", "D3", "Bb2"]
+    # one triplet group per beat, over the tuba's Bb / F7 oom: hee-hee-hee rising D - Eb - F, then a squeal
+    gig = ["D3", "D3", "D3", "Eb3", "Eb3", "Eb3", "F3", "F3", "F3", "A3", "C4", "F3"]
     for k, p_ in enumerate(gig):
         t_ = 49.87 + k * 0.7 / 3
         if t_ > 52.35:
             break
-        bsn.add([S.N(t_, 0.12, p_, 104 if k % 3 == 0 else 88)])
+        bsn.add([S.N(t_, 0.12, p_, (104 if k % 3 == 0 else 88) + (10 if k >= 9 else 0), "mel")])
     bfx = S("bassoon_fx", "bassoon", pan=0.1, send=0.26, humanize=0.0, opts={"level": -19.0})
     bfx.add([S.N(11.84, 0.5, "F2", 104)])                               # sass: the huff, scooping up
     bfx.add([S.N(20.07, 0.55, "Ab2", 96)])                              # wipe_saliva: 'bleh'
@@ -1090,7 +1102,7 @@ def compose_friend() -> Cue:
 
     # ---------------------------------------------------------------- sass (11.84) and the stomps
     cbp.add([S.N(12.39, 0.3, "F2", 92), S.N(12.565, 0.3, "A2", 96)])     # pickup "ba-dum"
-    tst.add([S.N(t_, 0.45, "Bb1", 124) for t_ in (12.74, 13.44, 14.14)])
+    tst.add([S.N(t_, 0.45, "Bb1", 124, "mel") for t_ in (12.74, 13.44, 14.14)])
     bdr.add([S.N(t_, 1.0, "A1", 112 + 6 * k) for k, t_ in enumerate((12.74, 13.44, 14.14))])
     timp.add([S.N(t_, 0.6, "F2" if k < 2 else "Bb2", 104 + 8 * k) for k, t_ in enumerate((12.74, 13.44, 14.14))])
     ts = S("trombone_sass", "trombone", pan=-0.1, send=0.28, humanize=0.0, lazy=-0.02, opts={"level": -18.5})
@@ -1116,10 +1128,10 @@ def compose_friend() -> Cue:
         t_ = 49.87 + 0.7 * k + 0.35
         if t_ > 52.35:
             break
-        vlp.add([S.N(t_, 0.3, p_, 90) for p_ in ("D4", "F4")])
-    xy.add([S.N(49.87 + k * 0.7, 0.2, p_, 90) for k, p_ in enumerate(("F6", "Bb6", "D6")) if 49.87 + k * 0.7 < 52.3])
+        vlp.add([S.N(t_, 0.3, p_, 90) for p_ in (("D4", "F4") if k % 2 == 0 else ("C4", "Eb4"))])
+    xy.add([S.N(49.87 + k * 0.7, 0.2, p_, 90) for k, p_ in enumerate(("F6", "Eb6", "F6")) if 49.87 + k * 0.7 < 52.3])
     cel = S("celesta", "celesta", pan=0.25, send=0.45, humanize=0.0, opts={"level": -24.0})
-    cel.add([S.N(51.27, 1.0, "D6", 80), S.N(51.27, 1.0, "A6", 70)])     # anger_smirk: 'ting'
+    cel.add([S.N(51.27, 1.0, "D6", 80), S.N(51.27, 1.0, "F6", 70)])     # anger_smirk: 'ting'
 
     # ---------------------------------------------------------------- the laugh: tick-tock; m07: sinking
     cbp.add([S.N(t_, 0.6, "D2", 64) for t_ in (33.6, 35.0, 36.4, 37.8)])
@@ -1243,7 +1255,7 @@ def compose_endcard() -> Cue:
     t_button = tm.sec(8)
     hits = [(0.0, "end_card"), (t_button, "button")]
     cue = Cue("endcard", tm, bars, chords_, S.list(), rt60=2.6, wet=0.3, predelay=0.025, target_lufs=-16.0,
-              fade_in=0.0, fade_out=0.2, send_hp=80.0, comp=(-8.0, 1.3, 20.0, 250.0),
+              fade_in=0.0015, fade_out=0.2, send_hp=80.0, comp=(-8.0, 1.3, 20.0, 250.0),
               wet_duck=[(t_button + 0.22, 5.0, 0.06, 0.25)], gates=[(t_button + 0.3, 6.0, set(), 0.22)],
               master_vol=[(0, 0.0), (7.9, 0.5), (8, 2.0), (8.5, 2.0)], hits=hits,
               top_parts=("horns",), bass_parts=("tuba",))

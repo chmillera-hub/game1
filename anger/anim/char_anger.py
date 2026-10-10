@@ -131,17 +131,24 @@ def paint(color, alpha=1.0, **kw):
     return p
 
 
+_LV_CACHE = [None, None, (0.0, -1.0)]
+
+
 def _lv(c, k=1.0):
     """The key-light direction expressed in the canvas' current local coordinates, length k."""
     M = c.getTotalMatrix()
+    key = (M.getScaleX(), M.getSkewX(), M.getSkewY(), M.getScaleY())
+    if key == _LV_CACHE[0] and _LIGHT == _LV_CACHE[1]:
+        ux, uy = _LV_CACHE[2]
+        return ux * k, uy * k
     inv = skia.Matrix()
     if not M.invert(inv):
         return 0.0, -k
     v = inv.mapVector(_LIGHT[0], _LIGHT[1])
     n = math.hypot(v.fX, v.fY)
-    if n < 1e-9:
-        return 0.0, -k
-    return v.fX / n * k, v.fY / n * k
+    u = (0.0, -1.0) if n < 1e-9 else (v.fX / n, v.fY / n)
+    _LV_CACHE[0], _LV_CACHE[1], _LV_CACHE[2] = key, _LIGHT, u
+    return u[0] * k, u[1] * k
 
 
 # =========================================================================== geometry helpers
@@ -291,55 +298,95 @@ def _stroke(c, path, color, width, alpha=1.0, blur=0.0, cap="round"):
     c.drawPath(path, paint(color, alpha, stroke=width, blur=blur, cap=cap))
 
 
+def _axis_scale(c, cx, cy, ux, uy, r, f, frac=1.0):
+    """Concat a matrix that scales by f along the unit axis u about the point centre + u * r * frac."""
+    px, py = cx + ux * r * frac, cy + uy * r * frac
+    ang = math.degrees(math.atan2(uy, ux))
+    c.translate(px, py)
+    c.rotate(ang)
+    c.scale(f, 1.0)
+    c.rotate(-ang)
+    c.translate(-px, -py)
+
+
 def _cel(c, path, base, shade, k=6.0, blur=0.0, line=None, line_w=1.4, line_a=0.85, hi=None, hi_k=None, hi_a=0.5):
-    """Soft cel shading: contour underlay, the shade colour, then the base colour shifted toward the key light
-    (clipped), so the shade remains as a crescent on the side away from the light. Optional highlight crescent."""
+    """Cel shading with solid fills only (fast on the CPU rasteriser): the shade colour, then copies of the shape
+    squeezed toward the key light along the light axis - a shade band ~k*1.6 wide stays on the far side; blur > 0
+    adds an intermediate tone (soft terminator); hi adds a small highlight band on the lit side."""
     if line is not None:
         c.drawPath(path, paint(line, line_a, stroke=line_w * 2.0))
     c.drawPath(path, paint(shade))
-    dx, dy = _lv(c, k)
+    b = path.getBounds()
+    cx, cy = 0.5 * (b.fLeft + b.fRight), 0.5 * (b.fTop + b.fBottom)
+    lx, ly = _lv(c, 1.0)
+    r = 0.5 * (abs(lx) * (b.fRight - b.fLeft) + abs(ly) * (b.fBottom - b.fTop)) + 0.5
+    f = clamp(1.0 - 1.6 * k / (2.0 * r), 0.3, 0.97)
+    if blur > 0:
+        c.save()
+        _axis_scale(c, cx, cy, lx, ly, r, min(0.99, f + 0.35 * (1 - f)))
+        c.drawPath(path, paint(mix_col(_rgb_of(base), _rgb_of(shade), 0.5)))
+        c.restore()
     c.save()
-    c.clipPath(path, doAntiAlias=True)
-    c.translate(dx, dy)
-    c.drawPath(path, paint(base, blur=blur))
-    if hi is not None:
-        hk = hi_k if hi_k is not None else k * 1.6
-        c.translate(dx / k * hk, dy / k * hk)
-        c.drawPath(path, paint(hi, hi_a, blur=max(blur, 1.5)))
+    _axis_scale(c, cx, cy, lx, ly, r, f)
+    c.drawPath(path, paint(base))
     c.restore()
+    if hi is not None:
+        c.save()
+        _axis_scale(c, cx, cy, lx, ly, r, 0.22, 0.92)
+        c.drawPath(path, paint(hi, hi_a))
+        c.restore()
+
+
+def _rgb_of(cc):
+    if not isinstance(cc, int):
+        cc = col(cc)
+    return (skia.ColorGetR(cc), skia.ColorGetG(cc), skia.ColorGetB(cc))
 
 
 def _metal(c, path, p0, p1, line=True, base=None, shade=None, hi=None, lw=1.5, dark=None, gloss=1.0):
-    """Steel plate: a linear gradient across the plate (p0 -> p1, the plate's width) with a specular band
-    placed toward the key light, plus a dark contour."""
+    """Steel plate with solid fills: dark far edge, shade, base, and a bright specular band toward the key light,
+    all squeezed copies of the plate along its width axis p0 -> p1 (so a vambrace keeps its length)."""
     base = C_STEEL if base is None else base
     shade = C_STEEL_SH if shade is None else shade
     hi = C_STEEL_HI if hi is None else hi
     dark = C_STEEL_DK if dark is None else dark
-    lx, ly = _lv(c, 1.0)
-    ax, ay = p1[0] - p0[0], p1[1] - p0[1]
-    n = math.hypot(ax, ay) or 1.0
-    d = (lx * ax + ly * ay) / n             # -1 .. 1: light toward p0 .. p1
-    hp = clamp(0.5 + 0.32 * d, 0.14, 0.86)
-    hw = 0.07 * gloss
-    cols = [dark, shade, base, hi, base, shade, dark]
-    pos = [0.0, max(0.02, hp - 0.42), max(0.04, hp - hw - 0.12), hp, min(0.96, hp + hw + 0.12),
-           min(0.98, hp + 0.4), 1.0]
-    for i in range(1, len(pos)):
-        if pos[i] <= pos[i - 1]:
-            pos[i] = min(1.0, pos[i - 1] + 0.005)
-    sh = skia.GradientShader.MakeLinear([p0, p1], cols, pos)
     if line:
         c.drawPath(path, paint(C_STEEL_LINE, 0.9, stroke=lw * 2.0))
-    c.drawPath(path, paint(None, shader=sh))
+    ax, ay = p1[0] - p0[0], p1[1] - p0[1]
+    r = 0.5 * math.hypot(ax, ay)
+    if r < 1e-3:
+        c.drawPath(path, paint(base))
+        return
+    ux, uy = ax / (2 * r), ay / (2 * r)
+    cx, cy = 0.5 * (p0[0] + p1[0]), 0.5 * (p0[1] + p1[1])
+    lx, ly = _lv(c, 1.0)
+    d = lx * ux + ly * uy
+    if d < 0:
+        ux, uy, d = -ux, -uy, -d
+    c.drawPath(path, paint(shade))
+    c.save()
+    _axis_scale(c, cx, cy, ux, uy, r, 0.7, 1.0)
+    c.drawPath(path, paint(base))
+    c.restore()
+    c.save()
+    _axis_scale(c, cx, cy, ux, uy, r, 0.16 * gloss, 0.5 + 0.25 * d)
+    c.drawPath(path, paint(hi, 0.9))
+    c.restore()
 
 
 def _rivet(c, x, y, r=2.6, color=None):
     color = C_GOLD if color is None else color
     c.drawCircle(x, y, r + 0.9, paint(C_STEEL_LINE, 0.7))
     c.drawCircle(x, y, r, paint(color))
-    lx, ly = _lv(c, r * 0.4)
-    c.drawCircle(x + lx, y + ly, r * 0.45, paint(C_GOLD_HI, 0.9))
+    if r >= 2.4:
+        lx, ly = _lv(c, r * 0.4)
+        c.drawCircle(x + lx, y + ly, r * 0.42, paint(C_GOLD_HI, 0.85))
+
+
+def _soft_oval(c, x, y, rx, ry, color, alpha):
+    """Soft blob without a blur filter: two nested translucent ovals."""
+    c.drawOval(skia.Rect(x - rx, y - ry, x + rx, y + ry), paint(color, alpha * 0.45))
+    c.drawOval(skia.Rect(x - rx * 0.6, y - ry * 0.6, x + rx * 0.6, y + ry * 0.6), paint(color, alpha * 0.55))
 
 
 def _rot(p, ang_deg, o=(0.0, 0.0)):
@@ -379,19 +426,19 @@ def blink(t, seed=3):
 # Head-local frame: origin on the head's vertical axis at eye level, y down, x = front-view across (-x = the
 # side nearer the camera once turned toward +x). A cross-section at height y is two half-ellipses:
 # half-width a, front depth zf, back depth zb. Above y = -12 the skull is an ellipsoid dome.
-_HCAP = (-14.0, 44.0, 47.0, 49.0, 56.0)
+_HCAP = (-14.0, 41.0, 47.0, 49.0, 56.0)
 _HTAB = [(-14.0, 47.0, 49.0, 56.0), (-6.0, 46.5, 50.0, 54.0), (2.0, 46.0, 50.0, 49.0), (10.0, 47.5, 49.0, 43.0),
          (18.0, 47.5, 48.0, 37.0), (26.0, 46.5, 47.0, 31.0), (34.0, 45.0, 45.0, 25.0), (42.0, 42.0, 43.0, 19.0),
          (50.0, 37.0, 40.0, 13.0), (56.0, 30.0, 37.0, 8.0), (60.5, 21.0, 34.0, 4.0), (63.5, 10.0, 31.0, 1.0)]
-_HOUT_YS = [-58.0, -57.0, -54.5, -50.0, -43.0, -35.0, -27.0, -19.0, -12.0, -5.0, 2.0, 9.0, 16.0, 23.0, 30.0,
+_HOUT_YS = [-55.0, -54.0, -51.5, -47.0, -41.0, -34.0, -26.0, -19.0, -12.0, -5.0, 2.0, 9.0, 16.0, 23.0, 30.0,
             38.0, 46.0, 53.0, 58.5, 62.0, 63.5]
 # leading-edge (profile) offsets: brow ridge, eye-socket notch, cheekbone
 _HBUMP = [(-26.0, 0.0), (-17.0, 2.4), (-11.0, 5.0), (-6.0, 3.6), (-1.0, -1.6), (5.0, -1.2), (11.0, 1.8),
           (18.0, 1.2), (26.0, 0.0)]
 EX = 20.5            # eye centre offset
-EW = 10.2            # eye half width
+EW = 9.8             # eye half width
 HU0, HL0 = 4.7, 3.7  # open upper / lower lid heights (heavy, deep-set)
-RI = 5.6             # iris radius
+RI = 5.9             # iris radius
 MOUTH_Y = 38.0
 
 
@@ -671,7 +718,7 @@ def _draw_eye(c, H, F, slot, emit):
         fs = clamp(abs(xb - xa) / 6.0, 0.25, 1.1)
         gxk = 5.2
         ix0 = cx + E.gx * gxk * (1.0 if E.gx * sd >= 0 else 0.85)
-        iy0 = 0.6 + E.gy * (3.0 if E.gy > 0 else 5.2)
+        iy0 = 0.6 + E.gy * (3.0 if E.gy > 0 else 6.4)
         ix, iy, _ = _hp(H, ix0, iy0, -1.0)
         fsi = lerp(1.0, fs, 0.7)
         rx, ry = RI * fsi, RI
@@ -688,9 +735,9 @@ def _draw_eye(c, H, F, slot, emit):
         _fill(c, sh, C_SOCKET, 0.55, blur=1.6)
         lx, ly = _lv(c, 1.0)
         gl = (ix + (lx * 2.2 - 0.6) * fsi, iy + ly * 2.2 - 0.8)
-        glint = (gl[0], gl[1], 1.25 + 0.25 * F.pupil)
-        c.drawCircle(gl[0], gl[1], glint[2], paint(WHITE, 0.9))
-        c.drawCircle(ix - lx * 2.6 * fsi, iy - ly * 2.4, 0.7, paint(WHITE, 0.45))
+        glint = (gl[0], gl[1], 0.95 + 0.15 * F.pupil)
+        c.drawCircle(gl[0], gl[1], glint[2], paint(WHITE, 0.8))
+        c.drawCircle(ix - lx * 2.6 * fsi, iy - ly * 2.4, 0.55, paint(WHITE, 0.35))
         c.restore()
         info = (opening, glint)
         _stroke(c, _curve(pL[2:-1]), C_SKIN_DEEP, 1.1, 0.55)
@@ -721,8 +768,8 @@ def _draw_eye(c, H, F, slot, emit):
 def _brow_pts(H, E, slot):
     sd = float(slot)
     r, w, f = E.braise, E.bworry, E.bfurrow
-    base = [(6.0, -8.2), (13.0, -10.4), (20.0, -11.8), (26.5, -11.6), (32.0, -9.0)]
-    ws = [8.6, 9.0, 8.0, 6.0, 3.0]
+    base = [(6.0, -7.4), (12.5, -9.9), (19.5, -11.8), (26.0, -12.6), (32.0, -11.4)]
+    ws = [9.0, 9.2, 8.2, 6.2, 3.0]
     pts = []
     for i, (x, y) in enumerate(base):
         u = i / 4.0
@@ -756,10 +803,11 @@ def _draw_scar(c, H, F, slot, brow_pts):
     a1 = (sd * (bx / sd + 1.0), by + 0.5)
     a2 = (sd * (bx / sd + 3.0), -3.6)
     p0, p1, p2 = _hpp(H, *a0, 6.0), _hpp(H, *a1, 6.0), _hpp(H, *a2, 2.0)
-    _stroke(c, _curve([p0, p1, p2]), C_LID, 3.2)               # the gap in the brow
-    _stroke(c, _curve([p0, p1, p2]), C_SCAR, 1.9)
-    q = [(x + 0.7, y - 0.3) for x, y in (p0, p1, p2)]
-    _stroke(c, _curve(q[:2]), C_SCAR_HI, 0.9, 0.85)
+    pb0 = _hpp(H, sd * (bx / sd - 1.2), by - 4.0, 6.0)
+    pb1 = _hpp(H, sd * (bx / sd + 0.4), by + 4.0, 6.0)
+    _stroke(c, _curve([pb0, pb1]), C_LID, 3.6)                 # the notch cut through the brow
+    _stroke(c, _curve([p0, p1, p2]), C_SCAR, 2.2, 0.85)
+    _stroke(c, _curve([p0, p1, p2]), C_SCAR_HI, 1.1, 0.95)
 
 
 def _draw_forehead(c, H, F):
@@ -1045,28 +1093,23 @@ def _draw_head(c, R, F, emit):
         if slot * H.s > -0.25:
             _draw_ear(c, H, slot)
     # skin: shade colour, the lit colour shifted toward the light (soft terminator)
-    c.drawPath(out, paint(C_SKIN_LINE, 0.9, stroke=3.2))
-    _fill(c, out, C_SKIN_SH)
-    dx, dy = _lv(c, 9.0)
+    _cel(c, out, C_SKIN, C_SKIN_SH, k=9.0, blur=1.0, line=C_SKIN_LINE, line_w=1.6, line_a=0.9)
     c.save()
     c.clipPath(out, doAntiAlias=True)
-    c.translate(dx, dy)
-    _fill(c, out, C_SKIN, blur=4.0)
-    c.translate(-dx, -dy)
     # stubble on the shaved scalp
     hr = _hairline_region(H)
     if hr is not None:
-        _fill(c, hr, C_HAIR, 0.30, blur=1.6)
+        _fill(c, hr, C_HAIR, 0.28)
     # crown sheen + cheekbone / brow highlights toward the light
     lx, ly = _lv(c, 1.0)
     sx, sy, _ = _hp(H, lx * 18.0, -44.0 + ly * 6.0, 2.0)
-    c.drawOval(skia.Rect(sx - 15, sy - 7, sx + 15, sy + 7), paint(C_SKIN_HI, 0.55, blur=5.0))
+    _soft_oval(c, sx, sy, 15.0, 7.0, C_SKIN_HI, 0.6)
     for slot in (-1, 1):
         q = _hp(H, slot * 33.0, 12.0, 0.0)
         if q[2] > 5:
-            c.drawOval(skia.Rect(q[0] - 7, q[1] - 3, q[0] + 7, q[1] + 3), paint(C_SKIN_HI, 0.25 + 0.2 * (lx * slot > 0), blur=3.0))
+            _soft_oval(c, q[0], q[1], 7.0, 3.0, C_SKIN_HI, 0.3 + 0.2 * (lx * slot > 0))
         q = _hp(H, slot * 18.0, -20.0, 3.0)
-        c.drawOval(skia.Rect(q[0] - 9, q[1] - 2.5, q[0] + 9, q[1] + 2.5), paint(C_SKIN_HI, 0.3, blur=2.5))
+        _soft_oval(c, q[0], q[1], 9.0, 2.5, C_SKIN_HI, 0.3)
     # nasolabial folds (above the beard line)
     for slot in (-1, 1):
         q = [_hpp(H, slot * 14.5, 21.0, 2.0), _hpp(H, slot * 19.5, 25.5, 1.0), _hpp(H, slot * 23.0, 28.0, 0.5)]
@@ -1102,9 +1145,9 @@ ARMS = {
     "swipe_gather": ArmPose(shoulder=58.0, elbow=118.0, wrist=24.0, hand="fist", across=0.85),
     "swipe_back": ArmPose(shoulder=104.0, elbow=12.0, wrist=-18.0, hand="open"),
     "door_grip": ArmPose(shoulder=70.0, elbow=28.0, wrist=-8.0, hand="grip"),
-    "run_pump": ArmPose(shoulder=18.0, elbow=92.0, wrist=0.0, hand="fist"),
+    "run_pump": ArmPose(shoulder=10.0, elbow=78.0, wrist=0.0, hand="fist"),
     "hang_reach": ArmPose(shoulder=174.0, elbow=6.0, wrist=6.0, hand="grip"),
-    "sword_both_hands_thrust": ArmPose(shoulder=118.0, elbow=30.0, wrist=-58.0, hand="hold", across=0.2),
+    "sword_both_hands_thrust": ArmPose(shoulder=84.0, elbow=10.0, wrist=-56.0, hand="hold", across=0.15),
     "weak_raise": ArmPose(shoulder=98.0, elbow=38.0, wrist=14.0, hand="claw"),
     "wipe_face": ArmPose(shoulder=96.0, elbow=128.0, wrist=6.0, hand="open", across=0.5),
     "cross_arms": ArmPose(shoulder=22.0, elbow=116.0, wrist=6.0, hand="fist", across=1.0),
@@ -1252,7 +1295,7 @@ def _st_run(p, t, ph, ex):
     _plant(P, _cycle_feet(q, RUN_S, RUN_STANCE, 92.0, roll=46.0))
     P["spine"] = 9.0
     P["rot"] = 4.0
-    P["swing"] = 32.0
+    P["swing"] = 42.0
     P["swing_ph"] = q
     P["arm_r"], P["arm_r_w"] = ARMS["run_pump"], 1.0
     P["arm_l"], P["arm_l_w"] = ARMS["run_pump"], 1.0
@@ -2151,7 +2194,7 @@ def _draw_shield_local(c, r=120.0, back_side=False, dent=True):
         boss = skia.Path()
         boss.addCircle(0.0, 0.0, 27.0)
         _metal(c, boss, (-27.0, -27.0), (27.0, 27.0))
-        c.drawCircle(lx * 9.0, ly * 9.0, 8.0, paint(C_STEEL_HI, 0.6, blur=4.0))
+        _soft_oval(c, lx * 9.0, ly * 9.0, 8.0, 8.0, C_STEEL_HI, 0.6)
         if dent:
             for (x, y, l_) in ((-50.0, 30.0, 16.0), (40.0, -60.0, 12.0), (64.0, 40.0, 10.0)):
                 _stroke(c, _curve([(x, y), (x + l_, y + l_ * 0.3)]), col("#2A1A10"), 1.6, 0.7)
@@ -2173,10 +2216,10 @@ def _draw_cape(c, R, t):
     tt = R.t
     wind = (P["wind_x"], P["wind_y"])
     flut = P["flut"]
-    length = 470.0 * (1.0 - 0.8 * lie)
+    length = 440.0 * (1.0 - 0.8 * lie)
     zb = _tprof(24.0)[2] + 8.0
-    tl = _mp(R.MC, (-96.0 * R.cb - zb * R.sb, NECK_Y + 24.0))
-    tr = _mp(R.MC, (96.0 * R.cb - zb * R.sb, NECK_Y + 24.0))
+    tl = _mp(R.MC, (-84.0 * R.cb - zb * R.sb, NECK_Y + 30.0))
+    tr = _mp(R.MC, (84.0 * R.cb - zb * R.sb, NECK_Y + 30.0))
     top = (0.5 * (tl[0] + tr[0]), 0.5 * (tl[1] + tr[1]))
     axv = _norm(tr[0] - tl[0], tr[1] - tl[1])
     hw0 = 0.5 * math.hypot(tr[0] - tl[0], tr[1] - tl[1])
@@ -2185,8 +2228,8 @@ def _draw_cape(c, R, t):
     n = 6
     for i in range(n + 1):
         u = i / n
-        w = lerp(hw0, 136.0 * max(R.cb, 0.32), u)
-        wave = flut * 14.0 * u * math.sin(tt * 7.0 + u * 5.0)
+        w = lerp(hw0, 118.0 * max(R.cb, 0.32), u ** 0.8) + 14.0 * math.sin(math.pi * u) * (0.4 + 0.6 * R.sb)
+        wave = (flut * 14.0 + abs(wind[1]) * 0.03) * u * math.sin(tt * 7.0 + u * 5.0)
         cx = top[0] + d[0] * length * u + wave * 0.5 - d[1] * wave * 0.4
         cy = top[1] + d[1] * length * u
         nx, ny = (axv if u == 0 else _norm(-d[1], d[0]))
@@ -2230,7 +2273,17 @@ def _draw_shield_back(c, R):
     cy = NECK_Y + 96.0
     c.translate(cx, cy)
     c.scale(max(R.cb, 0.16) * 1.0, 1.0)
-    _draw_shield_local(c, 120.0, back_side=True)
+    r = 120.0
+    disc = skia.Path()
+    disc.addCircle(0.0, 0.0, r)
+    _cel(c, disc, C_WOOD, C_WOOD_DK, k=10.0, line=C_IRON_DK, line_w=1.5)
+    rim = skia.Path()
+    rim.addCircle(0.0, 0.0, r - 6.0)
+    c.drawPath(rim, paint(C_STEEL_LINE, 0.9, stroke=15.0))
+    c.drawPath(rim, paint(C_IRON, stroke=11.0))
+    tr = -1.0 if R.sb >= 0 else 1.0
+    for a in (150.0, 180.0, 210.0) if tr < 0 else (-30.0, 0.0, 30.0):
+        _rivet(c, math.cos(a * D2R) * (r - 6.0), math.sin(a * D2R) * (r - 6.0), 2.8, C_IRON)
     c.restore()
 
 
@@ -2248,6 +2301,9 @@ def _draw_sword_back(c, R):
     c.restore()
 
 
+_BOOT_LAMES = _loop([(21.0, -3.0), (46.0, 2.0), (62.0, 8.0), (76.0, 15.0), (78.0, 26.0), (20.0, 26.0)], 0.3)
+
+
 def _draw_boot(c, R, L):
     c.save()
     c.translate(*L.ankle)
@@ -2260,10 +2316,10 @@ def _draw_boot(c, R, L):
     _cel(c, boot, C_LEATHER, C_LEATHER_SH, k=5.0, line=C_LEATHER_LINE, line_w=1.4)
     sole = _poly([(-21.0, 27.0), (72.0, 26.5), (71.0, 31.5), (-20.0, 32.0)])
     _fill(c, sole, col("#1E140E"))
-    for i, (x0, x1, y0) in enumerate(((22.0, 46.0, -2.0), (40.0, 62.0, 4.0), (56.0, 76.0, 11.0))):
-        lame = _loop([(x0, y0 - 1.0), (x1, y0 + 4.0), (x1 + 2.0, 26.0), (x0 - 2.0, 26.0)], 0.3)
-        _metal(c, lame, (x0, y0), (x0, 26.0), lw=1.2)
-    _rivet(c, 30.0, 12.0, 2.2)
+    lames = _BOOT_LAMES
+    _metal(c, lames, (40.0, -4.0), (40.0, 27.0), lw=1.2)
+    for (x0, x1, y0) in ((40.0, 62.0, 4.0), (56.0, 76.0, 11.0)):
+        _stroke(c, _curve([(x0, y0), (x0 - 1.0, 25.0)]), C_STEEL_LINE, 1.3, 0.8)
     c.restore()
 
 
@@ -2296,7 +2352,7 @@ def _draw_leg(c, R, L):
     _metal(c, pol, (kc[0] - 27, kc[1] - 24), (kc[0] + 27, kc[1] + 24))
     _rivet(c, kc[0], kc[1], 2.6)
     lx, ly = _lv(c, 1.0)
-    c.drawCircle(kc[0] + lx * 8.0, kc[1] + ly * 8.0, 5.0, paint(C_STEEL_HI, 0.5, blur=3.0))
+    _soft_oval(c, kc[0] + lx * 8.0, kc[1] + ly * 8.0, 6.0, 5.0, C_STEEL_HI, 0.55)
 
 
 _PTAB = [(-482.0, 84.0, 56.0, 48.0), (-452.0, 88.0, 57.0, 52.0), (-424.0, 92.0, 58.0, 58.0), (-400.0, 90.0, 54.0, 60.0),
@@ -2528,7 +2584,7 @@ def _draw_torso(c, R, emit_far_pauldron):
     for (x0, y0, r_) in ((-30.0, 60.0, 9.0), (40.0, 134.0, 7.0)):
         x, y, dep = _tp(R, x0, y0, 0.0)
         if dep > 0:
-            c.drawOval(skia.Rect(x - r_, y - r_ * 0.7, x + r_, y + r_ * 0.7), paint(C_STEEL_DK, 0.3, blur=3.0))
+            _soft_oval(c, x, y, r_, r_ * 0.7, C_STEEL_DK, 0.3)
     for (x0, y0, x1, y1) in ((-56.0, 120.0, -38.0, 128.0), (20.0, 40.0, 38.0, 46.0), (52.0, 140.0, 64.0, 150.0)):
         q0, q1 = _tp(R, x0, y0, 0.5), _tp(R, x1, y1, 0.5)
         if q0[2] > 0:
@@ -2536,7 +2592,7 @@ def _draw_torso(c, R, emit_far_pauldron):
     if R.F.bruised > 0.01:
         for (x0, y0, r_) in ((-20.0, 110.0, 30.0), (36.0, 60.0, 24.0)):
             x, y, dep = _tp(R, x0, y0, 0.0)
-            c.drawOval(skia.Rect(x - r_, y - r_ * 0.6, x + r_, y + r_ * 0.6), paint(C_DUST, 0.35 * R.F.bruised, blur=8.0))
+            _soft_oval(c, x, y, r_, r_ * 0.6, C_DUST, 0.4 * R.F.bruised)
     c.restore()
     _draw_emblem(c, R)
     c.restore()
@@ -2632,8 +2688,7 @@ def _draw_pauldron(c, R, A):
     dome = _loop(_PAUL_DOME, 0.5)
     _metal(c, dome, (-36.0, -20.0), (62.0, 20.0), lw=1.6, gloss=1.3)
     lx, ly = _lv(c, 1.0)
-    c.drawOval(skia.Rect(8.0 + lx * 14 - 14, -30.0 + ly * 10 - 8, 8.0 + lx * 14 + 14, -30.0 + ly * 10 + 8),
-               paint(C_STEEL_HI, 0.45, blur=5.0))
+    _soft_oval(c, 8.0 + lx * 14, -30.0 + ly * 10, 14.0, 8.0, C_STEEL_HI, 0.5)
     flange = [(-30.0, -28.0), (-14.0, -44.0), (8.0, -50.0), (30.0, -46.0), (50.0, -32.0)]
     _stroke(c, _curve(flange), C_STEEL_HI, 2.2, 0.55)
     _stroke(c, _curve([(x, y + 4.0) for x, y in flange]), C_STEEL_DK, 1.4, 0.5)
@@ -2738,8 +2793,9 @@ def _draw_hand(c, R, A, mirror=1.0):
     shape = A.shape if A.shape else "relaxed"
     geo = _HAND_CACHE.get(shape)
     if geo is None:
-        cuff = _loop([(-23.0, -22.0), (23.0, -22.0), (19.5, 5.0), (-19.5, 5.0)], 0.3)
-        back = _loop([(-17.5, 1.0), (17.5, 1.0), (19.0, 18.0), (18.5, 29.0), (-18.5, 29.0), (-19.0, 18.0)], 0.4)
+        cuff = None
+        back = _loop([(-23.0, -22.0), (23.0, -22.0), (19.5, 5.0), (19.0, 18.0), (18.5, 29.0), (-18.5, 29.0),
+                      (-19.0, 18.0), (-19.5, 5.0)], 0.3)
         fp, th, lines = _finger_set(shape)
         geo = (cuff, back, fp, th, lines)
         _HAND_CACHE[shape] = geo
@@ -2747,9 +2803,9 @@ def _draw_hand(c, R, A, mirror=1.0):
     _metal(c, fp, (-20.0, 0.0), (20.0, 0.0), lw=1.3)
     for ln in lines:
         _stroke(c, ln, C_STEEL_LINE, 1.1, 0.7)
-    _metal(c, back, (-19.0, 0.0), (19.0, 0.0), lw=1.4)
+    _metal(c, back, (-23.0, 0.0), (23.0, 0.0), lw=1.4)
     _stroke(c, _curve([(-18.0, 27.0), (0.0, 29.5), (18.0, 27.0)]), C_STEEL_DK, 1.6, 0.8)
-    _metal(c, cuff, (-23.0, 0.0), (23.0, 0.0), lw=1.4)
+    _stroke(c, _curve([(-20.0, 4.0), (0.0, 6.0), (20.0, 4.0)]), C_STEEL_LINE, 1.4, 0.85)
     _rivet(c, -12.0, -8.0, 2.2)
     _rivet(c, 12.0, -8.0, 2.2)
     _metal(c, th, (10.0, 0.0), (28.0, 0.0), lw=1.2)
@@ -3157,7 +3213,7 @@ EXPR = {
     "dazed": dict(lid_l=0.7, lid_r=0.62, mouth_open=0.12, brow_worry=0.25),
     "strain": dict(squint=0.5, brow_furrow=0.5, smile=-0.25, mouth_open=0.05),
     "flat": dict(lid_l=0.68, lid_r=0.68, brow_raise=-0.1, smile=-0.1),
-    "eye_roll": dict(look_y=-1.0, look_x=0.35, lid_l=0.9, lid_r=0.9, brow_raise=0.35, head_nod=0.18, head_tilt=-3.0),
+    "eye_roll": dict(look_y=-1.0, look_x=0.3, lid_l=1.0, lid_r=1.0, brow_raise=0.4, head_nod=0.2, head_tilt=-3.0),
     "squint": dict(squint=0.6, lid_l=0.8, lid_r=0.8, brow_furrow=0.45),
     "smirk": dict(smirk=0.55, smile=0.06, lid_l=0.85, lid_r=0.85),
     "deadpan": dict(lid_l=0.62, lid_r=0.62, brow_raise=0.05, smile=-0.05, look_x=0.0),
