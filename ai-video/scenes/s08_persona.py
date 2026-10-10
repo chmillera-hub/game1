@@ -29,17 +29,23 @@ Shots (every time derives from cues / line timings; see _T):
            (FEAR), a red scribble (ANGER), a cracking heart (HEARTBREAK);
            "FAIR GAME ✓" stamps under the book. Inset (top-right): Malvo
            perks up, intrigued (he's the villain!), Hissy nods.
-  s08_l03c the book shrinks to the upper-right (still allowed). On "expose"
-           a SCAM ALERT! board pops in below: red-flag cards (TOO GOOD TO BE
-           TRUE / PAY IN GIFT CARDS? / ACT NOW!! / SECRET, TELL NO ONE) pop on
-           the words, a magnifier hovers, then sweeps + circles them on "spot
-           them"; a round villain cameo on the board perks up, rubbing his
-           hands (his kind of scheme). "LOVE IT ✓" stamps on "Love" (AI thumbs
-           up). On "Just" board + book tuck into the upper-right; on "no" a
-           brick wall "NO REAL-WORLD HOW-TO" slams up; three plain labelled
-           folders (WEAPON BLUEPRINTS / CHEM/GERM RECIPES / HOW-TO HARM) peek
-           up on "blueprints" / "hurting" / "anyone" and get NOPE stamps.
-           AI determined, palms out.
+  s08_l03c "Express yourself!": AI cheers (fists -> present_both, bounce,
+           nod at Malvo); the storybook grows + glows gold; the inset LIGHTS
+           UP (gold frame, flash, sparkles): flattered evil grin, glove on
+           the heart. "Your scary stories of scams and danger": HIS tale page
+           ("A TALE OF SCAMS & DANGER", dark deckled page, author caricature,
+           crescent moon) pops out of the book; lightning on "scary"; red-flag
+           story panels TOO GOOD TO BE TRUE / PAY IN GIFT CARDS? / ACT NOW!!
+           pop on "stories" / "scams" / "danger" (title words pulse); inset:
+           proud hand-rub. "could teach people how to stay safe": the page
+           lifts, 4 tiny readers pop up below it holding little copies,
+           lightbulbs on "how", shields on "safe" (readers go happy); inset:
+           an audience! (shiny eyes, heart), Hissy nods. "Just": the inset
+           leaves, page + readers tuck top-right; on "no" a brick wall
+           "NO REAL-WORLD HOW-TO" slams up; three plain labelled folders
+           (WEAPON BLUEPRINTS / CHEM/GERM RECIPES / HOW-TO HARM) peek up on
+           "blueprints" / "hurting" / "anyone" and get NOPE stamps. AI
+           determined, palms out.
   lift     settle: warm smile + small nod, open palms. Then card2.
   card2    HARD CUT F1-CU. Card #8 "FLATTERY". Oily smile, hand on heart,
   s08_l04  gaudy gold trophy "WORLD'S SMARTEST AI" pops into his glove,
@@ -1806,7 +1812,9 @@ def _tale_page(ctx, t, T, cx, cy, sc):
             else:
                 _shield(c, ix, iy + 4, 1.25, t, T.shields[i // 2])
         if T.shields[0] <= t < T.just + 0.2:
-            P.sparkles(c, 0, READER_Y - 110, 270, t, n=5, seed=19, color="#ffe9a8", size=1.3)
+            for k_, sx_ in enumerate((-236.0, 236.0)):      # (kept above the caption band)
+                P.sparkles(c, sx_, READER_Y - 150, 150, t, n=3, seed=19 + k_, color="#ffe9a8",
+                           size=1.3)
 
 
 def _shot_S(ctx, t, T, info):
