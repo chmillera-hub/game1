@@ -767,10 +767,10 @@ def draw_rolled_scroll(ctx, x, y, s, rot=0.0):
 
 
 # the s03 / s07 gifts (same drawing code as s11_heart.py's gift pile)
-NB_COVER, NB_COVER_DK, NB_PAGES = "#c8344c", "#932238", "#fff4d6"
+NB_COVER, NB_COVER_DK, NB_PAGES = "#13a8a0", "#0b6f6a", "#fff6e0"   # as s03
 QUILL_C, QUILL_SH, QUILL_NIB = "#fbf8f0", "#d9d2e6", "#d99a12"
-SCRIPT_PAGE, SCRIPT_PAGE_DK, SCRIPT_BAND = "#fbf5e4", "#e6dcc2", "#5b2a86"
-BURST_C, BURST_DK, BURST_TXT = "#ffd23a", "#ff9a1f", "#d6283c"
+VB_COVER, VB_COVER_DK, VB_RIBBON = "#5b2a86", "#3f1b60", "#d4153f"    # as s07
+BURST_C, BURST_DK = "#ffd84a", "#ff5a36"                              # as s07
 
 
 def _quill(c, x, y, rot, ln=150.0):
@@ -804,8 +804,8 @@ def _quill(c, x, y, rot, ln=150.0):
 
 
 def draw_notebook(c, x, y, s, rot=0.0, t=0.0, glow=1.0):
-    """The s03 gift ("writing that blows people away"): a glowing crimson
-    notebook with a quill tucked behind it. (x, y) = centre of the cover,
+    """The s03 gift ("writing that blows people away"): the glowing teal
+    notebook (label, gold line, gold star, as s03) with a quill tucked behind it. (x, y) = centre of the cover,
     ~106 x 136 at s=1 (the quill pokes out top-right to about (+84, -138))."""
     with saved(c, x, y, s, rot) as cc:
         if glow > 0.01:                                    # soft golden glow
@@ -844,14 +844,12 @@ def draw_notebook(c, x, y, s, rot=0.0, t=0.0, glow=1.0):
         cc.move_to(-38, -70)
         cc.line_to(-38, 66)
         _s(cc, INK, 3.5)
-        for (px, py, sx, sy) in ((50, -70, -1, 1), (50, 66, -1, -1)):   # gold corners
-            poly(cc, [(px, py), (px + sx * 22, py), (px, py + sy * 22)])
-            _fs(cc, "gold", INK, 3)
-        rrect(cc, -26, -50, 62, 92, 7)                     # gold frame
-        _s(cc, "gold", 3.5)
-        P._star4(cc, 5, -6, 20, 0.0)                       # gold sparkle emblem
-        _fs(cc, "gold", INK, 3)
-        P._star4(cc, 22, -30, 7, 0.0)
+        rrect(cc, -26, -48, 64, 30, 6)                     # label (as s03)
+        _fs(cc, NB_PAGES, INK, 3)
+        cc.move_to(-22, 4)                                 # gold line
+        cc.line_to(34, 4)
+        _s(cc, "gold", 5)
+        P._star4(cc, 6, 36, 17, 0.2)                       # gold star
         _f(cc, "gold")
         ellipse(cc, -24, -54, 9, 4, -0.4)
         _f(cc, "white", 0.4)
@@ -878,47 +876,53 @@ def _burst_path(c, r_out, r_in, n=14, rot=0.0):
 
 
 def draw_twist_script(c, x, y, s, rot=0.0):
-    """The s07 gift (a bombshell plot twist for his villain story): a bound
-    script with a 'BOMBSHELL TWIST!' starburst on its top-left corner.
-    (x, y) = centre of the cover, ~124 x 160 at s=1; the burst spans about
-    x -88..+44, y -142..-10."""
+    """The s07 gift (a bombshell plot twist for his villain story): the purple
+    storybook MY VILLAIN STORY (gold border + title, gold snake 'S' emblem, red
+    ribbon bookmark) with its 'BOMBSHELL TWIST!' comic starburst bursting out
+    of the top of the pages. (x, y) = centre of the cover, ~132 x 172 at s=1;
+    the burst spans about x -68..+60, y -192..-64."""
     with saved(c, x, y, s, rot) as cc:
-        for (dx, dy, r) in ((11, 7, 0.06), (5, 3, 0.025)):          # pages fanned behind
-            with saved(cc, dx, dy, 1.0, r) as cp:
-                rrect(cp, -60, -78, 120, 156, 5)
-                _fs(cp, SCRIPT_PAGE_DK, INK, 3.5)
-        rrect(cc, -62, -80, 124, 160, 6)                             # cover page
-        _fs(cc, SCRIPT_PAGE, INK, 5)
+        poly(cc, [(26, 80), (26, 106), (32, 100), (38, 106), (38, 80)])   # ribbon (as s07)
+        _fs(cc, VB_RIBBON, INK, 3)
+        rrect(cc, -58, -80, 128, 166, 7)                             # page block
+        _fs(cc, "#f6ecd2", INK, 4)
+        for k in range(3):
+            cc.move_to(66 - k * 0.5, -70 + k * 2)
+            cc.line_to(66 - k * 0.5, 80)
+        _s(cc, "#e0d2ae", 2)
+        rrect(cc, -66, -86, 128, 172, 9)                             # purple cover
+        _fs(cc, VB_COVER, INK, 5)
         cc.save()
-        rrect(cc, -62, -80, 124, 160, 6)
+        rrect(cc, -66, -86, 128, 172, 9)
         cc.clip()
-        cc.rectangle(-64, -82, 128, 40)                              # title band
-        _f(cc, SCRIPT_BAND)
-        cc.rectangle(34, -42, 30, 124)                               # one shadow tone
-        _f(cc, SCRIPT_PAGE_DK, 0.55)
+        cc.rectangle(34, -88, 30, 176)                               # one shadow tone
+        _f(cc, VB_COVER_DK, 0.5)
+        cc.rectangle(-68, -88, 22, 176)                              # spine
+        _f(cc, VB_COVER_DK)
         cc.restore()
-        cc.move_to(-62, -42)
-        cc.line_to(62, -42)
+        cc.move_to(-46, -86)
+        cc.line_to(-46, 86)
         _s(cc, INK, 3.5)
-        for k, (x0, x1) in enumerate(((-30, 26), (-44, 40), (-44, 30), (-26, 22), (-44, 40),
-                                      (-44, 18))):                   # screenplay lines
-            yy = -24 + k * 17
-            cc.move_to(x0, yy)
-            cc.line_to(x1, yy)
-        _s(cc, "#a59a86", 4)
-        for by in (-58, 58):                                         # brass brads
-            circle(cc, -48, by, 6)
-            _fs(cc, "gold", INK, 2.5)
-        with saved(cc, -22, -76, 1.0, -0.14) as cb:                  # the starburst
-            _burst_path(cb, 66, 50, 14, 0.1)
+        rrect(cc, -38, -74, 90, 148, 7)                              # gold border
+        _s(cc, "gold", 4)
+        for txt, fs0, ty in (("MY VILLAIN", 21, -40), ("STORY", 27, -12)):
+            fs = fs0
+            while fs > 10 and text_width(cc, txt, "title", fs) > 80:
+                fs -= 1
+            text(cc, txt, 7, ty, fs, P.C("gold"), "title", outline=INK, outline_w=4)
+        P._snake_emblem(cc, 7, 28, 0.3)                              # gold snake 'S'
+        P._star4(cc, 7, 60, 9, 0.3)                                  # ka-boom doodle
+        P._fs(cc, P.C("gold"), INK, 2)
+        with saved(cc, -4, -128, 1.0, -0.1) as cb:                   # the starburst
+            _burst_path(cb, 64, 49, 14, 0.1)
             _fs(cb, BURST_DK, INK, 4.5)
-            _burst_path(cb, 60, 46, 14, 0.1)
+            _burst_path(cb, 58, 45, 14, 0.1)
             _f(cb, BURST_C)
-            for txt, fs0, ty in (("BOMBSHELL", 22, -1), ("TWIST!", 32, 27)):
+            for txt, fs0, ty, col in (("BOMBSHELL", 22, -1, "white"), ("TWIST!", 32, 27, "danger")):
                 fs = fs0
                 while fs > 12 and text_width(cb, txt, "comic", fs) > 84:
                     fs -= 1
-                text(cb, txt, 0, ty, fs, BURST_TXT, "comic", outline=INK, outline_w=5)
+                text(cb, txt, 0, ty, fs, col, "comic", outline=INK, outline_w=5)
 
 
 def _star5_path(c, x, y, r, rot=0.0, inner=0.47):
@@ -3244,7 +3248,7 @@ def _crowd(t, T):
 
 
 KID = (752.0, 1050.0, 0.7)                  # the little witch, just right of the table's end
-KID_EXIT = (1062.0, 1150.0, 0.78)          # her dash: down-right, out of the gag frame
+KID_EXIT = (1062.0, 1128.0, 0.78)          # her dash: down-right, out of the gag frame
 
 
 def _kid(t, T, tc):
