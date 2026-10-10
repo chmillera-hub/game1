@@ -6,7 +6,6 @@ from __future__ import annotations
 
 import math
 
-import numpy as np
 import skia
 
 from anim.core import breathe, clamp, col, hash01, lerp, light_filter, mix_col, noise1, smoothstep
@@ -555,7 +554,10 @@ def _bside(H, side, y):
 
 def _beard_outline(H):
     top = []
+    sm_s, sm_k = getattr(H, "sm", (0, 0.0))
     for phi, y in _BTOP_FULL:
+        if sm_k > 0 and phi * sm_s > 0:
+            y -= 3.5 * sm_k * math.exp(-((abs(phi) - 42.0) / 22.0) ** 2)
         x, yy, vis = _haz(H, phi, y, 0.0, _bprof(y, H))
         if vis > 0.5:
             top.append((x, yy, y))
@@ -692,7 +694,6 @@ def _draw_eye(c, H, F, slot, emit):
     def P(x0, v, dz=-3.0):
         return _hpp(H, x0, v, dz)
 
-    pU = [P(x, v) for x, v in zip(xs, U)]
     pL = [P(x, v) for x, v in zip(xs, L)]
     pUL = [P(x, v) for x, v in zip(xs, UL)]
     # deep socket: soft shadow under the brow ridge and around the eye
@@ -773,7 +774,7 @@ def _brow_pts(H, E, slot):
     pts = []
     for i, (x, y) in enumerate(base):
         u = i / 4.0
-        dy = -6.2 * r * (0.75 + 0.5 * math.sin(u * math.pi)) if r > 0 else -3.2 * r * (1.0 - 0.3 * u)
+        dy = -7.4 * r * (0.7 + 0.6 * math.sin(u * math.pi)) if r > 0 else -3.2 * r * (1.0 - 0.3 * u)
         dy += (3.6 * f) * (1.0 - u) ** 1.4 - 1.0 * f * u
         dy += -5.5 * w * (1.0 - u) ** 1.3 + 1.6 * w * u
         dx = -2.2 * f * (1.0 - u)
@@ -1099,7 +1100,11 @@ def _draw_head(c, R, F, emit):
     # stubble on the shaved scalp
     hr = _hairline_region(H)
     if hr is not None:
-        _fill(c, hr, C_HAIR, 0.28)
+        _fill(c, hr, C_HAIR, 0.13)
+        c.save()
+        c.translate(0.0, -3.0)
+        _fill(c, hr, C_HAIR, 0.12)
+        c.restore()
     # crown sheen + cheekbone / brow highlights toward the light
     lx, ly = _lv(c, 1.0)
     sx, sy, _ = _hp(H, lx * 18.0, -44.0 + ly * 6.0, 2.0)
@@ -1110,10 +1115,17 @@ def _draw_head(c, R, F, emit):
             _soft_oval(c, q[0], q[1], 7.0, 3.0, C_SKIN_HI, 0.3 + 0.2 * (lx * slot > 0))
         q = _hp(H, slot * 18.0, -20.0, 3.0)
         _soft_oval(c, q[0], q[1], 9.0, 2.5, C_SKIN_HI, 0.3)
-    # nasolabial folds (above the beard line)
+    # nasolabial folds (above the beard line); the smirk side bunches up into a deeper crease + cheek highlight
     for slot in (-1, 1):
-        q = [_hpp(H, slot * 14.5, 21.0, 2.0), _hpp(H, slot * 19.5, 25.5, 1.0), _hpp(H, slot * 23.0, 28.0, 0.5)]
-        _stroke(c, _curve(q), C_SKIN_DEEP, 1.3, 0.5)
+        k = (F.smirk + 0.5 * F.sup) if slot == F.smirk_slot else 0.0
+        k += 0.5 * max(0.0, F.smile)
+        q = [_hpp(H, slot * (14.5 + 1.0 * k), 21.0 - 2.0 * k, 2.0), _hpp(H, slot * (19.5 + 2.0 * k), 25.0 - 2.5 * k, 1.0),
+             _hpp(H, slot * (23.5 + 2.5 * k), 27.5 - 2.0 * k, 0.5)]
+        _stroke(c, _curve(q), C_SKIN_DEEP, 1.3 + 0.9 * k, clamp(0.5 + 0.45 * k))
+        if k > 0.05:
+            ch = _hp(H, slot * 30.0, 14.0 - 2.0 * k, 0.0)
+            if ch[2] > 0:
+                _soft_oval(c, ch[0], ch[1], 8.0, 4.0, C_SKIN_HI, 0.5 * clamp(k))
     _draw_forehead(c, H, F)
     infos = []
     for slot in (-1, 1):
@@ -1147,7 +1159,7 @@ ARMS = {
     "door_grip": ArmPose(shoulder=70.0, elbow=28.0, wrist=-8.0, hand="grip"),
     "run_pump": ArmPose(shoulder=10.0, elbow=78.0, wrist=0.0, hand="fist"),
     "hang_reach": ArmPose(shoulder=174.0, elbow=6.0, wrist=6.0, hand="grip"),
-    "sword_both_hands_thrust": ArmPose(shoulder=84.0, elbow=10.0, wrist=-56.0, hand="hold", across=0.15),
+    "sword_both_hands_thrust": ArmPose(shoulder=84.0, elbow=10.0, wrist=-56.0, hand="hold"),
     "weak_raise": ArmPose(shoulder=98.0, elbow=38.0, wrist=14.0, hand="claw"),
     "wipe_face": ArmPose(shoulder=96.0, elbow=128.0, wrist=6.0, hand="open", across=0.5),
     "cross_arms": ArmPose(shoulder=22.0, elbow=116.0, wrist=6.0, hand="fist", across=1.0),
@@ -1558,7 +1570,7 @@ def _phase(p, key="phase"):
 
 def _params(p, t):
     ex = p.extra
-    st = ex.get("state", "stand")
+    st = ex.get("state", "walk" if p.walk is not None else "stand")
     if st not in _STATE_FN:
         st = "walk" if p.walk is not None else "stand"
     P = _STATE_FN[st](p, t, _phase(p), ex)
@@ -1591,10 +1603,6 @@ def _params(p, t):
 def _blade_reach(embed=0.0):
     """Distance from the grip centre to the blade point (embed 0) / to where an embedded blade enters the rock."""
     return SWORD_GRIP * 0.5 + 10.0 + SWORD_BLADE * (1.0 - embed)
-
-
-def _mcopy(m):
-    return skia.Matrix.Concat(m, skia.Matrix())
 
 
 # torso profile (y relative to NECK_Y): half width, front depth, back depth
@@ -1651,7 +1659,7 @@ def _arm_solve(R, side, ap, P, swing):
         k = clamp(1.0 - abs(sh_ang) / 110.0)
         sh_ang += swing * k
         el += max(0.0, swing) * 0.45 * k
-    S = (slot * SH_X * R.cb, NECK_Y + SH_DY - 10.0 * P["sh_up"] - 1.8 * R.br)
+    S = (slot * SH_X * R.cb, NECK_Y + SH_DY - 10.0 * (P["sh_up"] + R.sh_up_pose) - 1.8 * R.br)
     abd = (1.0 - 0.55 * R.wf)
     a1 = sh_ang
     a2 = a1 + el
@@ -1741,6 +1749,7 @@ def _solve(p: Pose, t):
     R.sleep = clamp(P["sleep"])
     R.mouth_add = P["mouth_add"] * (1.0 + 0.6 * max(0.0, br)) if P["sleep"] > 0 else P["mouth_add"]
     R.lying, R.sitting = P["lying"], P["sitting"]
+    R.sh_up_pose = clamp(p.shoulders_up, -1.0, 1.0)
     # ---- matrices
     MS = skia.Matrix()
     MS.setTranslate(p.x, p.y)
@@ -1759,7 +1768,7 @@ def _solve(p: Pose, t):
         MC = skia.Matrix.Concat(MB, skia.Matrix())
         MC.preTranslate(px, dpy)
         MC.preRotate(spine, 0.0, WAIST_Y)
-        MC.preScale(1.0 + 0.012 * br, 1.0 + 0.004 * br, 0.0, WAIST_Y)
+        MC.preScale(1.0 + 0.016 * br, 1.0 + 0.006 * br, 0.0, WAIST_Y)
         return MC
 
     R.MB, R.MC = MB0, chest_m(MB0)
@@ -1923,6 +1932,7 @@ def _solve(p: Pose, t):
     R.H = H
     R.F = _face_params(p, R, tt)
     H.jaw = R.F.open
+    H.sm = (R.F.smirk_slot, R.F.smirk + 0.4 * R.F.sup)
     rot2d = p.head_tilt + P["tilt"] + pitch * H.s * 0.85
     MH = skia.Matrix.Concat(R.MC, skia.Matrix())
     pv = (NECK_PIVOT[0] * R.sb, NECK_PIVOT[1] - 1.2 * br)
@@ -1939,6 +1949,10 @@ def _arm_layer(R, A):
     if A.behind > 0.5:
         return "back"
     if A.near:
+        # raised high beside the head (hang, sword_drag, torch_up, swat ...): drawn under the head so the face
+        # stays readable (the hand / forearm are above the head anyway)
+        if A.W[1] < NECK_Y - 120.0 and A.E[1] < A.S[1] - 50.0 and A.across < 0.3:
+            return "under"
         return "near"
     # far arm: behind the torso unless it comes forward / across
     fwd = A.W[0] - _tsil(R, clamp(A.W[1] - NECK_Y, 0.0, 224.0), 1 if R.sb >= 0 else -1)
@@ -2228,21 +2242,25 @@ def _draw_cape(c, R, t):
     n = 6
     for i in range(n + 1):
         u = i / n
-        w = lerp(hw0, 118.0 * max(R.cb, 0.32), u ** 0.8) + 14.0 * math.sin(math.pi * u) * (0.4 + 0.6 * R.sb)
+        wmax = lerp(78.0, 128.0, clamp(flut + abs(wind[0]) / 300.0 + abs(wind[1]) / 600.0))
+        w = lerp(hw0, wmax * max(R.cb, 0.32), u ** 0.8) + 10.0 * math.sin(math.pi * u) * (0.4 + 0.6 * R.sb)
         wave = (flut * 14.0 + abs(wind[1]) * 0.03) * u * math.sin(tt * 7.0 + u * 5.0)
         cx = top[0] + d[0] * length * u + wave * 0.5 - d[1] * wave * 0.4
         cy = top[1] + d[1] * length * u
         nx, ny = (axv if u == 0 else _norm(-d[1], d[0]))
         if u > 0:
             nx, ny = _norm(lerp(axv[0], -d[1], u), lerp(axv[1], d[0], u))
-        pts_l.append((cx - nx * w, cy - ny * w + wave * 0.3))
-        pts_r.append((cx + nx * w, cy + ny * w - wave * 0.3))
+        amp = (3.0 + 14.0 * clamp(math.hypot(*wind) / 600.0) + 6.0 * flut) * u
+        el = amp * math.sin(tt * 8.1 + u * 6.0)
+        er = amp * math.sin(tt * 7.3 + u * 6.0 + 1.7)
+        pts_l.append((cx - nx * (w + el), cy - ny * (w + el) + wave * 0.3))
+        pts_r.append((cx + nx * (w + er), cy + ny * (w + er) - wave * 0.3))
     pts_l, pts_r = _cloth_floor(R, pts_l), _cloth_floor(R, pts_r)
     a, b = pts_l[-1], pts_r[-1]
     hem = []
     for j in range(1, 8):
         u = j / 8.0
-        dd = (14.0 if j % 2 else -4.0) * (0.6 + 0.4 * hash01(j, 5)) + flut * 6.0 * math.sin(tt * 9.0 + j)
+        dd = (18.0 if j % 2 else -6.0) * (0.6 + 0.5 * hash01(j, 5)) + flut * 9.0 * math.sin(tt * 9.0 + j * 1.3)
         hem.append((lerp(a[0], b[0], u) + d[0] * dd, lerp(a[1], b[1], u) + d[1] * dd))
     hem = _cloth_floor(R, hem)
     path = skia.Path()
@@ -2256,11 +2274,6 @@ def _draw_cape(c, R, t):
         f0 = (lerp(pts_l[1][0], pts_r[1][0], k), lerp(pts_l[1][1], pts_r[1][1], k))
         f1 = (lerp(pts_l[-1][0], pts_r[-1][0], k + 0.04), lerp(pts_l[-1][1], pts_r[-1][1], k))
         _stroke(c, _curve([f0, f1]), col("#240A08"), 2.0, 0.5)
-
-
-def _chest_local(R):
-    """Matrix chest coords -> L coords (R.MC is that already)."""
-    return R.MC
 
 
 def _draw_shield_back(c, R):
@@ -2334,7 +2347,6 @@ def _draw_leg(c, R, L):
     gp = _capsule(g0, g1, 30.0, 22.0, bulge=4.0, at=0.3)
     nx, ny = -kv[1], kv[0]
     _metal(c, gp, (g0[0] - nx * 30, g0[1] - ny * 30), (g0[0] + nx * 30, g0[1] + ny * 30))
-    fwd = 1.0 if (nx * 1.0 + 0.0) >= 0 else -1.0
     rid = [(lerp(g0[0], g1[0], u) + nx * 6.0, lerp(g0[1], g1[1], u) + ny * 6.0) for u in (0.08, 0.5, 0.92)]
     _stroke(c, _curve(rid), C_STEEL_HI, 1.3, 0.55)
     # greave straps
@@ -2439,7 +2451,6 @@ def _tabard_geom(R, t, front=True):
     tt = R.t
     flut = P["flut"]
     a, zf, zb = _tab(_PTAB, -458.0)
-    sgn = 1.0 if front else -1.0
     att = _mp(R.MB, (R.px + ((zf + 6.0) if front else -(zb + 4.0)) * R.sb, R.py + HIP_H - 458.0))
     fwd = _norm(*(lambda q0, q1: (q1[0] - q0[0], q1[1] - q0[1]))(_mp(R.MB, (0.0, 0.0)), _mp(R.MB, (1.0, 0.0))))
     wind = (P["wind_x"] / 700.0, P["wind_y"] / 700.0)
@@ -2645,7 +2656,6 @@ def _draw_neck(c, R):
     c.save()
     c.concat(R.MC)
     # gorget: steel collar
-    gt = [(-18.0 + 3.0 * math.cos(ph * D2R)) for ph in (0,)]
     top = _pband(R, lambda ph: NECK_Y - 20.0 + 5.0 * math.cos(ph * D2R), 0.0, tab=_GTAB)
     bot = _pband(R, lambda ph: NECK_Y + 12.0 + 4.0 * math.cos(ph * D2R), 0.0, tab=_GTAB)
     if len(top) >= 2 and len(bot) >= 2:
@@ -2829,12 +2839,6 @@ def _draw_arm_shield(c, R, A):
 
 
 # =========================================================================== main draw
-def _layers(R):
-    near = [A for A in R.arms.values() if A.near and A.layer != "back"]
-    far = [A for A in R.arms.values() if not (A.near and A.layer != "back")]
-    return near, far
-
-
 def _draw_body(c, R, pose, t, emit):
     c.save()
     c.concat(R.MS)
@@ -2881,6 +2885,9 @@ def _draw_body(c, R, pose, t, emit):
         if A.layer == "front":
             _draw_arm_full(c, R, A, emit, pauldron=True)
     _draw_neck(c, R)
+    for A in nearA:
+        if A.layer == "under":
+            _draw_arm_full(c, R, A, emit, pauldron=True)
     c.save()
     c.concat(R.MH)
     _draw_head(c, R, R.F, R.eye_emit)
@@ -2958,21 +2965,40 @@ def _dir_from(v, default):
     return (v[0] / n, v[1] / n) if n > 1e-9 else default
 
 
+_SURF_CACHE = {}
+
+
+def _scratch(w, h, slot):
+    """Reusable offscreen raster surface (at least w x h), cleared."""
+    key = (slot, (w + 63) // 64 * 64, (h + 63) // 64 * 64)
+    sf = _SURF_CACHE.get(key)
+    if sf is None:
+        if len(_SURF_CACHE) > 9:
+            _SURF_CACHE.clear()
+        sf = skia.Surface(key[1], key[2])
+        _SURF_CACHE[key] = sf
+    sf.getCanvas().clear(skia.ColorTRANSPARENT)
+    return sf
+
+
 def _draw_rimlit(c, R, pose, t, rim, emit):
-    """The character rendered offscreen, a soft tinted glow behind it, the character, then a thin bright edge on
-    the side facing the rim light (the silhouette minus itself shifted away from the light)."""
+    """Rim light: the character rendered offscreen; behind it a soft glow of its silhouette tinted with rim_color
+    (blurred at 1/4 resolution, pushed toward the light, cut at the floor); then the character; then a thin bright
+    edge on the side facing the light (the silhouette minus itself shifted away from the light).
+    Light direction: extra rim_pos (stage point, e.g. torch_pos()) or rim_dir (screen angle in degrees, 0 = from
+    screen-right, -90 = from above, or an (x, y) vector toward the light); default from behind-above."""
     M = c.getTotalMatrix()
     MM = skia.Matrix.Concat(M, R.MS)
     dscale = math.sqrt(abs(MM.getScaleX() * MM.getScaleY() - MM.getSkewX() * MM.getSkewY())) / max(pose.scale, 1e-3)
     dev = MM.mapRect(_bounds_L(R))
     clipb = c.getDeviceClipBounds()
-    bx0 = max(math.floor(dev.left()), clipb.left())
-    by0 = max(math.floor(dev.top()), clipb.top())
-    bx1 = min(math.ceil(dev.right()), clipb.right())
-    by1 = min(math.ceil(dev.bottom()), clipb.bottom())
+    bx0 = int(max(math.floor(dev.left()), clipb.left()))
+    by0 = int(max(math.floor(dev.top()), clipb.top()))
+    bx1 = int(min(math.ceil(dev.right()), clipb.right()))
+    by1 = int(min(math.ceil(dev.bottom()), clipb.bottom()))
     if bx1 - bx0 < 2 or by1 - by0 < 2:
         return
-    w, h = int(bx1 - bx0), int(by1 - by0)
+    w, h = bx1 - bx0, by1 - by0
     ex = pose.extra
     rp = ex.get("rim_pos")
     if rp is not None:
@@ -2982,69 +3008,84 @@ def _draw_rimlit(c, R, pose, t, rim, emit):
     else:
         lx, ly = _dir_from(ex.get("rim_dir"), _dir_from((-R.fac * 0.55, -0.83), (0.0, -1.0)))
     rc = col(pose.rim_color)
-    surf = skia.Surface(w, h)
-    oc = surf.getCanvas()
+    tint = skia.ColorFilters.Blend(rc, skia.BlendMode.kSrcIn)
+    samp = skia.SamplingOptions(skia.FilterMode.kLinear)
+    sa = _scratch(w, h, "body")
+    oc = sa.getCanvas()
+    oc.save()
     oc.translate(-bx0, -by0)
     oc.concat(M)
     _draw_body(oc, R, pose, t, emit)
-    img = surf.makeImageSnapshot()
-    samp = skia.SamplingOptions(skia.FilterMode.kLinear)
-    tint = skia.ColorFilters.Blend(rc, skia.BlendMode.kSrcIn)
+    oc.restore()
+    img = sa.makeImageSnapshot(skia.IRect.MakeWH(w, h))
     c.save()
     c.resetMatrix()
+    # ---- soft glow behind (blurred in a 1/4-size surface, then drawn scaled up)
+    q = 4.0
+    pad = 6
+    sw_, sh_ = int(w / q) + 2 * pad, int(h / q) + 2 * pad
+    sb = _scratch(sw_, sh_, "glow")
+    sc = sb.getCanvas()
+    gp = skia.Paint()
+    gp.setColorFilter(tint)
+    sig = clamp(7.0 * dscale / q, 0.8, 6.0)
+    gp.setImageFilter(skia.ImageFilters.Blur(sig, sig))
+    sc.save()
+    sc.translate(pad, pad)
+    sc.scale(1.0 / q, 1.0 / q)
+    sc.drawImage(img, 0.0, 0.0, samp, gp)
+    sc.restore()
+    simg = sb.makeImageSnapshot(skia.IRect.MakeWH(sw_, sh_))
     floor_cut = R.state not in ("hang", "fall", "sword_drag")
     if floor_cut:
         fy = MM.mapXY(0.0, 0.0).fY
         c.save()
         c.clipRect(skia.Rect(-1e5, -1e5, 1e5, fy - 1.0))
-    # soft glow behind (1/4 resolution blur)
-    q = 4.0
-    sw_, sh_ = max(2, int(w / q) + 8), max(2, int(h / q) + 8)
-    small = skia.Surface(sw_, sh_)
-    sc = small.getCanvas()
-    sc.translate(4.0, 4.0)
-    sc.scale(1.0 / q, 1.0 / q)
-    sc.drawImage(img, 0.0, 0.0, samp)
-    simg = small.makeImageSnapshot()
-    gp = skia.Paint()
-    gp.setColorFilter(tint)
-    sig = clamp(9.0 * dscale / q, 1.0, 12.0)
-    gp.setImageFilter(skia.ImageFilters.Blur(sig, sig))
-    gp.setAlphaf(clamp(0.6 * rim))
-    off = 5.0 * dscale
-    c.save()
-    c.translate(bx0 - 4.0 * q + lx * off, by0 - 4.0 * q + ly * off)
-    c.scale(q, q)
-    c.drawImage(simg, 0.0, 0.0, samp, gp)
-    c.restore()
+    off = 6.0 * dscale
+    ap = skia.Paint()
+    ap.setAlphaf(clamp(0.75 * rim))
+    dst = skia.Rect.MakeXYWH(bx0 - pad * q + lx * off, by0 - pad * q + ly * off, sw_ * q, sh_ * q)
+    c.drawImageRect(simg, skia.Rect.MakeWH(sw_, sh_), dst, samp, ap)
     if floor_cut:
         c.restore()
+    # ---- the character
     c.drawImage(img, bx0, by0)
-    # edge
-    dpx = clamp(2.6 * dscale ** 0.5, 2.0, 4.5)
-    ox, oy = lx * dpx, ly * dpx
-    es = skia.Surface(w, h)
-    ec = es.getCanvas()
+    # ---- the edge on the light side
+    dpx = clamp(2.4 * dscale ** 0.5, 1.8, 4.0)
+    sc2 = _scratch(w, h, "edge")
+    ec = sc2.getCanvas()
     ec.drawImage(img, 0, 0)
     dp = skia.Paint()
     dp.setBlendMode(skia.BlendMode.kDstOut)
-    ec.drawImage(img, -ox, -oy, samp, dp)
-    if ly < -0.3:
-        fp = skia.Paint()
-        fp.setBlendMode(skia.BlendMode.kDstIn)
-        fp.setShader(skia.GradientShader.MakeLinear([(0, 0), (0, h)], [col("#FFFFFF"), col("#FFFFFF", 0.35)]))
-        ec.drawRect(skia.Rect(0, 0, w, h), fp)
-    eimg = es.makeImageSnapshot()
+    ox, oy = int(round(lx * dpx)), int(round(ly * dpx))
+    if ox == 0 and oy == 0:
+        oy = -2
+    near = skia.SamplingOptions()
+    ec.drawImage(img, -ox, -oy, near, dp)          # integer offsets: the sub-pixel path is ~10x slower
+    eimg = sc2.makeImageSnapshot(skia.IRect.MakeWH(w, h))
     ep = skia.Paint()
     ep.setColorFilter(tint)
-    ep.setAlphaf(clamp(0.55 * rim))
-    ep.setImageFilter(skia.ImageFilters.Blur(1.6 * dscale ** 0.5, 1.6 * dscale ** 0.5))
-    c.drawImage(eimg, bx0, by0, samp, ep)
-    ep2 = skia.Paint()
-    ep2.setColorFilter(tint)
-    ep2.setAlphaf(clamp(1.0 * rim))
-    c.drawImage(eimg, bx0, by0, samp, ep2)
+    ep.setAlphaf(clamp(1.0 * rim))
+    if ly < -0.3 and R.lying < 0.5:
+        # light from above: the legs catch less of it (cheap two-band fade instead of a gradient mask)
+        hy = int(MM.mapXY(R.px, R.py - 40.0).fY)
+        c.save()
+        c.clipRect(skia.Rect(-1e5, -1e5, 1e5, hy))
+        c.drawImage(eimg, bx0, by0, near, ep)
+        c.restore()
+        c.save()
+        c.clipRect(skia.Rect(-1e5, hy, 1e5, 1e5))
+        ep.setAlphaf(clamp(0.45 * rim))
+        c.drawImage(eimg, bx0, by0, near, ep)
+        c.restore()
+        ep.setAlphaf(clamp(1.0 * rim))
+    else:
+        c.drawImage(eimg, bx0, by0, near, ep)
+    if dscale > 1.6:
+        ep.setAlphaf(clamp(0.35 * rim))
+        c.drawImage(eimg, bx0 - int(round(lx)), by0 - int(round(ly)), near, ep)
     c.restore()
+    del img, simg, eimg
 
 
 def _key_light(R, pose, canvas):
@@ -3227,7 +3268,7 @@ EXPR_EXTRA = {
     "pain": {"grimace": 0.8},
     "dazed": {"dazed": 1.0},
     "strain": {"strain": 1.0, "grimace": 0.45},
-    "raised_brow": {"brow_l": 0.95, "brow_r": -0.15},
+    "raised_brow": {"brow_l": 1.0, "brow_r": -0.3},
     "smirk_suppressed": {"smirk_suppress": 1.0},
     "one_eye": {"one_eye": 1.0},
 }
