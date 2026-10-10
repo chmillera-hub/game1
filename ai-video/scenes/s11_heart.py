@@ -19,10 +19,12 @@ Beats (every time from cues / word starts):
   wall    sheet fades; the AI projects a cyan hologram: the door pops in, the
           wall builds so its last row thuds on "Brick"; firm nod "Every time".
   l07     light leaks round the door, it cracks ajar; three glowing chips
-          (SCARY STORIES / SNEAKY SCHEMES / WARN PEOPLE) squeeze out, each on
-          its word; on "wide open" it swings open and warm gold light spills
-          across his face.
-  pile    six gifts pop out of the door and arc into his arms / onto the desk;
+          (SCARY STORIES / BIG FEELINGS / WARN PEOPLE) squeeze out, on "Scary",
+          "making" and "warning"; on "wide open" it swings open and warm gold
+          light spills across his face.
+  pile    five gifts pop out of the door and arc into his arms / onto the desk
+          (notebook + quill, headphones, THE CHEMIST scroll, THE GENTLE
+          DRAGON, the BOMBSHELL TWIST script);
           his eyes follow each one, getting wider.
   smile   he looks down at the pile; a slow REAL SMILE. Hissy happy. Hold.
 """
@@ -76,8 +78,6 @@ GOLD = P.C("gold")
 STAR_GOLD, STAR_GOLD_DK = "#ffcf3a", "#d99a12"
 BOOK, BOOK_DK = "#3f74d6", "#2a52a6"
 DRAGON = "#7cd35c"
-BALLOON, BALLOON_DK = "#ef3346", "#b81f30"
-CAKE, CAKE_DK, CAKE_TOP = "#ff8fb8", "#e0679a", "#ffb7d2"
 LAPEL = (100.0, -318.0)                   # FOR EFFORT star, villain-local (s=1)
 LAPEL_S = 0.6
 
@@ -206,10 +206,13 @@ def _T(info):
         w_stats2=W("s11_l05", 1),
         w_hurts=W("s11_l06", 2), w_people=W("s11_l06", 3), w_brick=W("s11_l06", 4),
         w_every=W("s11_l06", 6),
-        # l07 "Everything else? Scary stories, sneaky schemes, warning people
-        # about real dangers... the door's wide open."
-        w_else=W("s11_l07", 1), w_scary=W("s11_l07", 2), w_sneaky=W("s11_l07", 4),
-        w_warning=W("s11_l07", 6), w_door=W("s11_l07", 12), w_wide=W("s11_l07", 13),
+        # l07 "Everything(0) else?(1) Scary(2) stories,(3) making(4) sense(5)
+        # of(6) big(7) feelings,(8) warning(9) people(10) about(11) real(12)
+        # dangers...(13) the(14) door's(15) wide(16) open.(17)"
+        w_else=W("s11_l07", 1), w_scary=W("s11_l07", 2), w_making=W("s11_l07", 4),
+        w_big=W("s11_l07", 7), w_feelings=W("s11_l07", 8), w_warning=W("s11_l07", 9),
+        w_real=W("s11_l07", 12), w_door=W("s11_l07", 15), w_wide=W("s11_l07", 16),
+        w_open=W("s11_l07", 17),
         # l08 "And keep the spooky stuff! Bats, goblins, dragons... spooky is
         # fine. Hurting people isn't."
         w_spooky=W("s11_l08", 3), w_bats=W("s11_l08", 5), w_goblins=W("s11_l08", 6),
@@ -236,14 +239,14 @@ def _T(info):
     # the gap, each popping ON its word; they bow out as the gift pile starts
     T["ajar"] = T["w_else"] + 0.05
     T["chips"] = [max(T[w] - 0.06, T["ajar"] + 0.3 + 0.2 * i)
-                  for i, w in enumerate(("w_scary", "w_sneaky", "w_warning"))]
+                  for i, w in enumerate(("w_scary", "w_making", "w_warning"))]
     T["chip_fly"] = 0.45
     T["chip_out"] = T["pile"] - 0.12
     # monocle back in during "...Hero stats?"
     T["mono_up"] = T["w_stats2"] + 0.12
     T["mono_in"] = T["mono_up"] + 0.38
     # the gift pile
-    T["gift_t"] = [T["pile"] + 0.2 * i for i in range(6)]
+    T["gift_t"] = [T["pile"] + 0.2 * i for i in range(len(GIFTS))]
     T["fly"] = 0.5
     T["pile_end"] = T["gift_t"][-1] + T["fly"]
     # the spooky gifts pop out of the door ON their words, land ~0.4 s later
@@ -393,50 +396,6 @@ def draw_headphones(c, x, y, s, rot=0.0):
             fill_stroke(c, "#0b6f6a", None, 0)
 
 
-def draw_popper(c, x, y, s, rot=0.0):
-    """Confetti popper (s03 gift, unfired). (x, y) = bottom tip."""
-    with saved(c, x, y, s, rot):
-        c.move_to(0, -2)
-        c.curve_to(12, 10, -10, 18, 6, 30)
-        fill_stroke(c, None, "ink", 4)
-        circle(c, 8, 38, 8)
-        fill_stroke(c, None, "ink", 4)
-        cone = [(-31, -110), (31, -110), (5, -2), (-5, -2)]
-        poly(c, cone)
-        c.set_source_rgba(*hexc("#ff7ab8"))
-        c.fill()
-        c.save()
-        poly(c, cone)
-        c.clip()
-        for k in range(-4, 6):
-            poly(c, [(-40, -20 - k * 24), (40, -60 - k * 24), (40, -46 - k * 24),
-                     (-40, -6 - k * 24)])
-        c.set_source_rgba(*hexc("#ffd84a"))
-        c.fill()
-        c.rectangle(10, -120, 30, 130)
-        c.set_source_rgba(*hexc("ink", 0.12))
-        c.fill()
-        c.restore()
-        poly(c, cone)
-        fill_stroke(c, None, "ink", 5)
-        c.move_to(-4, -116)
-        c.curve_to(-8, -136, 10, -140, 6, -152)
-        fill_stroke(c, None, "ink", 9)
-        c.move_to(-4, -116)
-        c.curve_to(-8, -136, 10, -140, 6, -152)
-        fill_stroke(c, None, "ai_rim", 5)
-        pts = []
-        for j in range(24):
-            a = j / 24 * 2 * math.pi
-            rr = 1.0 if j % 2 == 0 else 0.86
-            pts.append((math.cos(a) * 36 * rr, -112 + math.sin(a) * 11 * rr))
-        poly(c, pts)
-        fill_stroke(c, GOLD, "ink", 4)
-        ellipse(c, -10, -114, 10, 3)
-        c.set_source_rgba(1, 1, 1, 0.6)
-        c.fill()
-
-
 def draw_scroll(ctx, x, y, s, rot=0.0):
     """Rolled-up THE CHEMIST story scroll (s04), red ribbon. (x, y) = centre."""
     with saved(ctx, x, y, s, rot) as c:
@@ -508,106 +467,158 @@ def draw_dragon_book(ctx, x, y, s, rot=0.0, sq=0.0):
             _f(c, "gold")
 
 
-def draw_balloon(c, x, y, s=1.0, rot=0.0, sq=(1.0, 1.0)):
-    """Red party balloon (s07). (x, y) = balloon centre; knot at (0, 58)*s."""
-    with saved(c, x, y, (s * sq[0], s * sq[1]), rot):
-        poly(c, [(0, 52), (-11, 68), (11, 68)])
-        fill_stroke(c, BALLOON_DK, "ink", 4)
-        ellipse(c, 0, 0, 45, 55)
-        fill_stroke(c, BALLOON, "ink", 5)
-        c.save()
-        ellipse(c, 0, 0, 45, 55)
-        c.clip()
-        ellipse(c, 16, 18, 40, 48)
-        c.set_source_rgba(*hexc(BALLOON_DK, 0.55))
-        c.fill()
-        c.restore()
-        ellipse(c, -16, -22, 11, 17, 0.45)
-        c.set_source_rgba(1, 1, 1, 0.6)
-        c.fill()
-        circle(c, -8, -38, 4)
-        c.fill()
+NB_COVER, NB_COVER_DK, NB_PAGES = "#c8344c", "#932238", "#fff4d6"
+QUILL_C, QUILL_SH, QUILL_NIB = "#fbf8f0", "#d9d2e6", "#d99a12"
+SCRIPT_PAGE, SCRIPT_PAGE_DK, SCRIPT_BAND = "#fbf5e4", "#e6dcc2", "#5b2a86"
+BURST_C, BURST_DK, BURST_TXT = "#ffd23a", "#ff9a1f", "#d6283c"
 
 
-def draw_string(c, x0, y0, x1, y1, t, curls=3.0, amp=10.0, phase=0.0):
-    """Curly balloon string (s07) from the knot (x0, y0) to (x1, y1)."""
-    n = 30
-    pts = []
-    dx, dy = x1 - x0, y1 - y0
-    L = math.hypot(dx, dy) or 1.0
-    nx, ny = -dy / L, dx / L
-    for i in range(n + 1):
-        u = i / n
-        w = math.sin(u * curls * 2 * math.pi + phase + t * 2.2) * amp * \
-            math.sin(math.pi * min(1, u * 1.4))
-        pts.append((x0 + dx * u + nx * w, y0 + dy * u + ny * w))
-    for col, w in (("ink", 7), ("#f6f2ff", 3)):
-        smooth_path(c, pts)
-        c.set_source_rgba(*hexc(col))
-        c.set_line_width(w)
-        c.stroke()
+def _quill(c, x, y, rot, ln=150.0):
+    """White feather quill, shaft along local -y from (x, y)."""
+    with saved(c, x, y, 1.0, rot) as q:
+        q.move_to(0, 20)                                   # gold nib
+        q.line_to(0, 44)
+        _s(q, INK, 9)
+        q.move_to(0, 22)
+        q.line_to(0, 42)
+        _s(q, QUILL_NIB, 4)
+        vane = [(0, -ln), (14, -ln * 0.82), (19, -ln * 0.55), (15, -ln * 0.25), (5, 2),
+                (-4, 2), (-12, -ln * 0.22), (-6, -ln * 0.4), (-15, -ln * 0.5),
+                (-13, -ln * 0.78)]
+        smooth_path(q, vane, closed=True)
+        _fs(q, QUILL_C, INK, 4)
+        q.save()
+        smooth_path(q, vane, closed=True)
+        q.clip()
+        ellipse(q, 12, -ln * 0.5, 9, ln * 0.45)
+        _f(q, QUILL_SH, 0.8)
+        q.restore()
+        q.move_to(0, 18)                                   # shaft + barbs
+        q.line_to(0, -ln + 6)
+        _s(q, "#b9b0c8", 3)
+        for k in range(4):
+            yy = -ln * (0.3 + 0.15 * k)
+            q.move_to(0, yy)
+            q.line_to(11, yy - 12)
+        _s(q, "#c9c1d8", 2)
 
 
-def draw_cake(c, x, y, s, t, fizz=True):
-    """Two-tier pink birthday cake with one sparkler candle (s07).
-    (x, y) = bottom-centre (plate)."""
-    with saved(c, x, y, s) as cc:
-        ellipse(cc, 0, -4, 98, 13)
-        fill_stroke(cc, "#f4f1fb", "ink", 4)
-        rrect(cc, -80, -64, 160, 60, 12)
-        fill_stroke(cc, CAKE, "ink", 5)
-        cc.save()
-        rrect(cc, -80, -64, 160, 60, 12)
-        cc.clip()
-        cc.rectangle(-90, -20, 180, 30)
-        cc.set_source_rgba(*hexc(CAKE_DK, 0.7))
-        cc.fill()
-        cc.restore()
-        cc.move_to(-80, -52)
-        for j in range(8):
-            xa = -80 + j * 20
-            dl = 14 + 10 * ((j * 7) % 3)
-            cc.line_to(xa + 4, -52)
-            cc.curve_to(xa + 4, -52 + dl, xa + 16, -52 + dl, xa + 16, -52)
-        cc.line_to(80, -52)
-        cc.line_to(80, -64)
-        cc.line_to(-80, -64)
-        cc.close_path()
-        fill_stroke(cc, "#ffffff", "ink", 3.5)
-        rrect(cc, -54, -108, 108, 46, 10)
-        fill_stroke(cc, CAKE_TOP, "ink", 5)
-        cc.move_to(-54, -98)
-        for j in range(5):
-            xa = -54 + j * 21.6
-            dl = 10 + 8 * ((j * 5) % 3)
-            cc.line_to(xa + 4, -98)
-            cc.curve_to(xa + 4, -98 + dl, xa + 17, -98 + dl, xa + 17, -98)
-        cc.line_to(54, -98)
-        cc.line_to(54, -108)
-        cc.line_to(-54, -108)
-        cc.close_path()
-        fill_stroke(cc, "#ffffff", "ink", 3.5)
-        for j, (sx, sy) in enumerate(((-30, -36), (10, -30), (44, -40), (-12, -84), (24, -88))):
-            circle(cc, sx, sy, 4)
-            cc.set_source_rgba(*hexc(("#5ee7ff", "#ffd166", "#3ddc84", "#7b3fbf", "#5ee7ff")[j]))
+def draw_notebook(c, x, y, s, rot=0.0, t=0.0, glow=1.0):
+    """The s03 gift ("writing that blows people away"): a glowing crimson
+    notebook with a quill tucked behind it. (x, y) = centre of the cover,
+    ~106 x 136 at s=1 (the quill pokes out top-right to about (+84, -138))."""
+    with saved(c, x, y, s, rot) as cc:
+        if glow > 0.01:                                    # soft golden glow
+            g = cairo.RadialGradient(8, -16, 12, 8, -16, 118)
+            g.add_color_stop_rgba(0, 1.0, 0.86, 0.45, 0.62 * glow)
+            g.add_color_stop_rgba(1, 1.0, 0.86, 0.45, 0.0)
+            circle(cc, 8, -16, 118)
+            cc.set_source(g)
             cc.fill()
-        cc.move_to(0, -108)
-        cc.line_to(0, -164)
-        cc.set_source_rgba(*hexc("ink"))
-        cc.set_line_width(10)
-        cc.stroke()
-        cc.move_to(0, -110)
-        cc.line_to(0, -162)
-        cc.set_source_rgba(*hexc("#b9c0d0"))
-        cc.set_line_width(4.5)
-        cc.stroke()
-        if fizz:
-            f = 1 + 0.25 * math.sin(t * 37) + 0.15 * noise1(t * 18, 4)
-            P._star4(cc, 0, -170, 20 * f, t * 5)
-            P._fs(cc, "ai_accent", "ink", 3)
-            P._star4(cc, 0, -170, 9 * f, -t * 5)
-            P._f(cc, "#fff3c4")
-            P.sparkles(cc, 0, -172, 40, t, n=4, seed=17, color="ai_accent", size=0.45)
+        _quill(cc, 30, -40, 0.5)
+        rrect(cc, -48, -64, 106, 132, 7)                   # page block
+        _fs(cc, NB_PAGES, INK, 4)
+        for k in range(3):
+            cc.move_to(52 - k * 0.5, -54 + k * 2)
+            cc.line_to(52 - k * 0.5, 58)
+        cc.move_to(-40, 62)
+        cc.line_to(50, 62)
+        _s(cc, "#e8d8a8", 2)
+        gl = 0.75 + 0.25 * math.sin(t * 4.0)               # light leaking from the pages
+        cc.move_to(55, -56)
+        cc.line_to(55, 62)
+        _s(cc, "ai_accent", 11, 0.45 * glow * gl)
+        cc.move_to(55, -56)
+        cc.line_to(55, 62)
+        _s(cc, "#fff6c8", 4, 0.95 * glow)
+        rrect(cc, -56, -70, 106, 136, 9)                   # cover
+        _fs(cc, NB_COVER, INK, 5)
+        cc.save()
+        rrect(cc, -56, -70, 106, 136, 9)
+        cc.clip()
+        cc.rectangle(28, -72, 30, 140)                     # one shadow tone
+        _f(cc, NB_COVER_DK, 0.45)
+        cc.rectangle(-58, -72, 20, 140)                    # spine
+        _f(cc, NB_COVER_DK)
+        cc.restore()
+        cc.move_to(-38, -70)
+        cc.line_to(-38, 66)
+        _s(cc, INK, 3.5)
+        for (px, py, sx, sy) in ((50, -70, -1, 1), (50, 66, -1, -1)):   # gold corners
+            poly(cc, [(px, py), (px + sx * 22, py), (px, py + sy * 22)])
+            _fs(cc, "gold", INK, 3)
+        rrect(cc, -26, -50, 62, 92, 7)                     # gold frame
+        _s(cc, "gold", 3.5)
+        P._star4(cc, 5, -6, 20, 0.0)                       # gold sparkle emblem
+        _fs(cc, "gold", INK, 3)
+        P._star4(cc, 22, -30, 7, 0.0)
+        _f(cc, "gold")
+        ellipse(cc, -24, -54, 9, 4, -0.4)
+        _f(cc, "white", 0.4)
+        cc.move_to(-46, 66)                                # ribbon bookmark
+        cc.curve_to(-44, 78, -50, 84, -46, 94)
+        _s(cc, INK, 8)
+        cc.move_to(-46, 66)
+        cc.curve_to(-44, 78, -50, 84, -46, 94)
+        _s(cc, "ai_accent", 4)
+        if glow > 0.01:
+            P.sparkles(cc, 6, -20, 96, t, n=3, seed=41, color="ai_accent", size=0.55 * glow)
+
+
+def _burst_path(c, r_out, r_in, n=14, rot=0.0):
+    c.new_sub_path()
+    for i in range(2 * n):
+        a = rot + i * math.pi / n
+        rr = r_out if i % 2 == 0 else r_in
+        if i == 0:
+            c.move_to(math.cos(a) * rr, math.sin(a) * rr)
+        else:
+            c.line_to(math.cos(a) * rr, math.sin(a) * rr)
+    c.close_path()
+
+
+def draw_twist_script(c, x, y, s, rot=0.0):
+    """The s07 gift (a bombshell plot twist for his villain story): a bound
+    script with a 'BOMBSHELL TWIST!' starburst on its top-left corner.
+    (x, y) = centre of the cover, ~124 x 160 at s=1; the burst spans about
+    x -88..+44, y -142..-10."""
+    with saved(c, x, y, s, rot) as cc:
+        for (dx, dy, r) in ((11, 7, 0.06), (5, 3, 0.025)):          # pages fanned behind
+            with saved(cc, dx, dy, 1.0, r) as cp:
+                rrect(cp, -60, -78, 120, 156, 5)
+                _fs(cp, SCRIPT_PAGE_DK, INK, 3.5)
+        rrect(cc, -62, -80, 124, 160, 6)                             # cover page
+        _fs(cc, SCRIPT_PAGE, INK, 5)
+        cc.save()
+        rrect(cc, -62, -80, 124, 160, 6)
+        cc.clip()
+        cc.rectangle(-64, -82, 128, 40)                              # title band
+        _f(cc, SCRIPT_BAND)
+        cc.rectangle(34, -42, 30, 124)                               # one shadow tone
+        _f(cc, SCRIPT_PAGE_DK, 0.55)
+        cc.restore()
+        cc.move_to(-62, -42)
+        cc.line_to(62, -42)
+        _s(cc, INK, 3.5)
+        for k, (x0, x1) in enumerate(((-30, 26), (-44, 40), (-44, 30), (-26, 22), (-44, 40),
+                                      (-44, 18))):                   # screenplay lines
+            yy = -24 + k * 17
+            cc.move_to(x0, yy)
+            cc.line_to(x1, yy)
+        _s(cc, "#a59a86", 4)
+        for by in (-58, 58):                                         # brass brads
+            circle(cc, -48, by, 6)
+            _fs(cc, "gold", INK, 2.5)
+        with saved(cc, -22, -76, 1.0, -0.14) as cb:                  # the starburst
+            _burst_path(cb, 66, 50, 14, 0.1)
+            _fs(cb, BURST_DK, INK, 4.5)
+            _burst_path(cb, 60, 46, 14, 0.1)
+            _f(cb, BURST_C)
+            for txt, fs0, ty in (("BOMBSHELL", 22, -1), ("TWIST!", 32, 27)):
+                fs = fs0
+                while fs > 12 and text_width(cb, txt, "comic", fs) > 84:
+                    fs -= 1
+                text(cb, txt, 0, ty, fs, BURST_TXT, "comic", outline=INK, outline_w=5)
 
 
 def _star5_path(c, x, y, r, rot=0.0, inner=0.47):
@@ -1688,7 +1699,7 @@ CHIP_SRC = (DOOR[0] + DOOR[2] * 0.92, DOOR[1] + DOOR[3] * 0.48)
 # (label line 1, line 2, slot x, slot y, rot)
 CHIPS = [
     ("SCARY", "STORIES", 830.0, 228.0, -0.05),
-    ("SNEAKY", "SCHEMES", 836.0, 372.0, 0.04),
+    ("BIG", "FEELINGS", 836.0, 372.0, 0.04),
     ("WARN", "PEOPLE", 828.0, 516.0, -0.03),
 ]
 SPOOK_BOOK, SPOOK_BOOK_DK = "#6b3fa0", "#4a2a74"
@@ -1724,31 +1735,63 @@ def _icon_storybook(c):
         _f(b, INK)
 
 
-def _icon_scheme(c):
-    """A cartoon plan on a scroll: dotted route, arrows, a big red X."""
-    rrect(c, -40, -24, 80, 48, 3)
-    _fs(c, PARCH, INK, 3)
-    for sx in (-1, 1):                                # rolled ends
-        rrect(c, sx * 44 - 6, -28, 12, 56, 6)
-        _fs(c, PARCH_DK, INK, 3)
-    circle(c, -26, 12, 5)                             # start
-    _fs(c, None, "#3f74d6", 3)
-    c.set_dash([5, 5], 0)
-    c.move_to(-20, 9)
-    c.curve_to(-6, -18, 6, 18, 20, -6)
-    _s(c, "#3f74d6", 3.5)
-    c.set_dash([], 0)
-    poly(c, [(18, -12), (27, -9), (19, -1)])          # arrowhead
-    _f(c, "#3f74d6")
-    for d in (-1, 1):                                 # the X
-        c.move_to(22 - 6, -18 - 6 * d)
-        c.line_to(22 + 6, -18 + 6 * d)
-    _s(c, "danger", 4)
-    c.move_to(-30, -12)                               # a little sketch arrow
-    c.line_to(-14, -12)
-    _s(c, "#8b5a3b", 3)
-    poly(c, [(-14, -16), (-8, -12), (-14, -8)])
-    _f(c, "#8b5a3b")
+JOURNAL, JOURNAL_DK = "#e58fb0", "#c06a8e"
+HEART_C, CANDLE_C, FLAME_C = "#ff5d7a", "#fff1d6", "#ffb23a"
+
+
+def _icon_feelings(c, t=0.0, beat=0.0):
+    """A feelings journal (soft pink cover, heart, ribbon) beside a little
+    candle with a soft glow. `beat` 0..1 = a heartbeat pulse ("feelings")."""
+    # candle glow (soft, two flat rings) + candle
+    cx, cy = 30, 4
+    fl = 1.0 + 0.08 * math.sin(t * 11) + 0.05 * noise1(t * 4, 3)
+    for r, a in ((26, 0.14), (16, 0.22)):
+        circle(c, cx, cy - 22, r * fl)
+        _f(c, "ai_accent", a)
+    rrect(c, cx - 8, cy - 12, 16, 34, 4)
+    _fs(c, CANDLE_C, INK, 3)
+    c.move_to(cx - 8, cy - 6)
+    c.curve_to(cx - 4, cy - 2, cx - 6, cy + 2, cx - 4, cy + 4)
+    _s(c, "#e6d4b0", 2.5)
+    c.move_to(cx, cy - 12)
+    c.line_to(cx, cy - 17)
+    _s(c, INK, 2.5)
+    c.move_to(cx, cy - 34 * fl)                                       # flame
+    c.curve_to(cx + 8, cy - 24, cx + 6, cy - 17, cx, cy - 16)
+    c.curve_to(cx - 6, cy - 17, cx - 8, cy - 24, cx, cy - 34 * fl)
+    c.close_path()
+    _fs(c, FLAME_C, INK, 2.5)
+    ellipse(c, cx, cy - 21, 2.5, 4)
+    _f(c, "#fff6c8")
+    # the journal (tilted a touch), ribbon bookmark hanging out the bottom
+    with saved(c, -14, 0, 1.0, -0.07) as b:
+        b.move_to(14, 24)
+        b.curve_to(16, 30, 12, 34, 16, 38)
+        _s(b, INK, 6)
+        b.move_to(14, 24)
+        b.curve_to(16, 30, 12, 34, 16, 38)
+        _s(b, "ai_accent", 3)
+        rrect(b, -26, -24, 56, 50, 5)                    # page block
+        _fs(b, "#fbf3dc", INK, 3)
+        rrect(b, -30, -27, 54, 52, 6)                    # cover
+        _fs(b, JOURNAL, INK, 3.5)
+        b.rectangle(-30, -27, 10, 52)                    # spine
+        _f(b, JOURNAL_DK)
+        b.rectangle(-30, -27, 10, 52)
+        _s(b, INK, 3)
+        rrect(b, -16, -20, 34, 38, 5)                    # cover label
+        _s(b, "#fff0f5", 2.5, 0.8)
+        hs = 1.0 + 0.28 * beat
+        with saved(b, 1, -1, hs) as h:                   # soft heart
+            h.move_to(0, 11)
+            h.curve_to(-15, 1, -12, -12, -5, -11)
+            h.curve_to(-2, -11, 0, -8, 0, -6)
+            h.curve_to(0, -8, 2, -11, 5, -11)
+            h.curve_to(12, -12, 15, 1, 0, 11)
+            h.close_path()
+            _fs(h, HEART_C, INK, 2.5)
+            ellipse(h, -5, -5, 2.5, 1.6, -0.5)
+            _f(h, "white", 0.75)
 
 
 def _icon_warn(c):
@@ -1776,7 +1819,7 @@ def _icon_warn(c):
         c.new_path()
 
 
-CHIP_ICONS = (_icon_storybook, _icon_scheme, _icon_warn)
+CHIP_ICONS = (_icon_storybook, _icon_feelings, _icon_warn)
 
 
 def _chip_pose(t, T, i):
@@ -1827,7 +1870,12 @@ def _chips(ctx, t, T):
             rrect(c, -w / 2 + 8, -h / 2 + 8, w - 16, 64, 12)           # icon well
             _f(c, (1.0, 0.85, 0.45, 0.16 + 0.3 * flash))
             with saved(c, 0, -h / 2 + 40, 1.0) as ci:
-                CHIP_ICONS[i](ci)
+                if i == 1:                            # heartbeat on "big feelings"
+                    hb = max(math.sin(math.pi * seg(t, T["w_big"], T["w_big"] + 0.2)),
+                             math.sin(math.pi * seg(t, T["w_feelings"], T["w_feelings"] + 0.22)))
+                    _icon_feelings(ci, t, hb)
+                else:
+                    CHIP_ICONS[i](ci)
             for j, lab in enumerate((l1, l2)):
                 fs = 24
                 while fs > 16 and text_width(c, lab, "ui", fs) > w - 22:
@@ -1844,13 +1892,13 @@ def _chips(ctx, t, T):
 BOOK_S = 1.0
 BOOK_DEST = (MX + 6, MY - 228 * MS)
 # (kind, target x, target y, final scale, final rot)
+# (s12's opening lair shot draws this exact pile; keep the numbers in sync)
 GIFTS = [
-    ("popper", MX - 172, 1240.0, 0.88, -0.24),
+    ("notebook", MX - 166, 1156.0, 0.95, -0.1),
     ("phones", MX + 128, 1206.0, 1.12, 0.12),
     ("scroll", MX - 120, 1212.0, 0.95, -0.12),
     ("book", BOOK_DEST[0], BOOK_DEST[1], BOOK_S, 0.05),
-    ("balloon", MX + 222, 985.0, 0.9, 0.12),
-    ("cake", MX + 228, 1242.0, 0.85, 0.0),
+    ("twist", MX + 240, 1160.0, 0.95, 0.09),
 ]
 SRC = (DOORWAY_C[0] + 8, DOORWAY_C[1] + 20)
 CTRL = (585.0, 1010.0)          # flights drop down the gap between Malvo and the AI
@@ -1870,8 +1918,6 @@ def _gift_pose(t, T, i):
     if t < t0 + fly:
         u = seg(t, t0 + 0.04, t0 + fly)
         e = math.sin(u * math.pi / 2) ** 1.15            # quick out of the door, settles in
-        if kind == "balloon":
-            e = math.sin(u * math.pi / 2) ** 0.8
         cx_, cy_ = CTRL_LO if tx < MX - 60 else CTRL
         x = (1 - e) ** 2 * SRC[0] + 2 * (1 - e) * e * cx_ + e * e * tx
         y = (1 - e) ** 2 * SRC[1] + 2 * (1 - e) * e * cy_ + e * e * ty
@@ -1882,10 +1928,6 @@ def _gift_pose(t, T, i):
         return (x, y, s, rot, sq)
     d = t - (t0 + fly)
     sq = 0.2 * math.exp(-d * 9) * math.cos(d * 26)               # landing squash
-    if kind == "balloon":
-        bob = math.sin(d * 2 * math.pi * 0.55) * 7
-        return (tx + math.sin(d * 1.7) * 4, ty + bob, ts, tr + math.sin(d * 1.3) * 0.06,
-                sq * 0.4)
     if kind == "book":
         squeeze = 0.015 * math.sin(d * 2 * math.pi * 0.7)
         return (tx, ty, ts * (1 + squeeze), tr, sq)
@@ -1896,9 +1938,9 @@ def _draw_gift(ctx, t, i, pose):
     kind = GIFTS[i][0]
     x, y, s, rot, sq = pose
     sx, sy = 1 + sq * 0.6, 1 - sq
-    if kind == "popper":
+    if kind == "notebook":
         with saved(ctx, x, y, (sx, sy)):
-            draw_popper(ctx, 0, 0, s, rot)
+            draw_notebook(ctx, 0, 0, s, rot, t)
     elif kind == "phones":
         with saved(ctx, x, y, (sx, sy)):
             draw_headphones(ctx, 0, 0, s, rot)
@@ -1907,16 +1949,14 @@ def _draw_gift(ctx, t, i, pose):
             draw_scroll(ctx, 0, 0, s, rot)
     elif kind == "book":
         draw_dragon_book(ctx, x, y, s, rot, sq)
-    elif kind == "balloon":
-        draw_balloon(ctx, x, y, s, rot, (sx, sy))
-    elif kind == "cake":
+    elif kind == "twist":
         with saved(ctx, x, y, (sx, sy)):
-            draw_cake(ctx, 0, 0, s, t)
+            draw_twist_script(ctx, 0, 0, s, rot)
 
 
 def _gift_trails(ctx, t, T):
     """A few sparkles following gifts in flight (<= 6 small particles)."""
-    for i in range(6):
+    for i in range(len(GIFTS)):
         t0 = T["gift_t"][i]
         if t0 + 0.05 <= t <= t0 + T["fly"] + 0.15:
             pose = _gift_pose(t - 0.07, T, i)
@@ -2144,7 +2184,7 @@ def _hissy(t, T):
         (T["l4"] + 0.2, "s11_soft", 0.3),
         (T["w_every"] - 0.05, "nod", 0.12),
         (T["l6e"] + 0.15, "s11_soft", 0.3),
-        (T["chips"][1] + 0.12, "smug", 0.2),            # sneaky schemes? ooh
+        (T["chips"][1] + 0.12, "happy", 0.3),           # big feelings: a soft look at him
         (T["chips"][2] + 0.12, "s11_soft", 0.3),
         (T["open"] + 0.1, "s11_wonder", 0.25),
         (T["sp_land"]["bat"] + 0.3, "happy", 0.3),       # a bat friend on his head!
@@ -2197,7 +2237,7 @@ def _ai(t, T):
         (T["w_hurts"], "determined", 0.3),
         (T["l6e"] + 0.05, "warm", 0.35),
         (T["chips"][0], "happy", 0.3),                   # scary stories
-        (T["chips"][1], "amused", 0.25),                 # sneaky schemes
+        (T["chips"][1], "warm_soft", 0.3),               # making sense of big feelings
         (T["chips"][2], "warm", 0.3),                    # warning people
         (T["open"], "happy", 0.3),
         (T["l8"], "amused", 0.3),                        # "And keep the spooky stuff!"
@@ -2416,13 +2456,8 @@ def _shot_two(ctx, t, info, T):
         # --- desk + computer --------------------------------------------------
         P.desk(c, 495, MY, DESK_W, lamp=False, emblem=False)
         P.computer(c, COMP[0], COMP[1], COMP[2], view="side", facing=-1, t=t, glow=0.7)
-        # landed gifts on the desk (balloon string first)
-        bal = _gift_pose(t, T, 4)
-        cake_t = T["gift_t"][5] + T["fly"]
-        if bal is not None and t >= T["gift_t"][4] + T["fly"] - 0.1:
-            ex = GIFTS[5][1] - 52 if t >= cake_t else MX + 160
-            draw_string(c, bal[0], bal[1] + 58 * bal[2], ex, 1226, t, amp=8)
-        for i in (0, 2, 1, 5):
+        # landed gifts on the desk
+        for i in (0, 2, 1, 4):
             pose = _gift_pose(t, T, i)
             if pose is not None and t >= T["gift_t"][i] + T["fly"]:
                 _draw_gift(c, t, i, pose)
@@ -2441,12 +2476,9 @@ def _shot_two(ctx, t, info, T):
             c.restore()
         _door_light(c, t, T)
         _chips(c, t, T)                                  # l07: what the door is open for
-        # balloon (landed) floats in front
-        if bal is not None and t >= T["gift_t"][4] + T["fly"]:
-            _draw_gift(c, t, 4, bal)
         # gifts in flight (behind the AI: they drop down the gap beside it)
         _gift_trails(c, t, T)
-        for i in range(6):
+        for i in range(len(GIFTS)):
             pose = _gift_pose(t, T, i)
             if pose is not None and t < T["gift_t"][i] + T["fly"]:
                 _draw_gift(c, t, i, pose)
