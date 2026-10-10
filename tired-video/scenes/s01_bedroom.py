@@ -348,7 +348,7 @@ def tired_room(t, T, info):
 # room drawing
 # ----------------------------------------------------------------------------
 def _room_state(t, T):
-    st = {}
+    st = {"frame_fallen": False}
     if T["shake"] <= t < T["win"]:
         e = _bump(t, T["shake"], T["shake"] + 0.5) ** 0.5
         e = max(e, 0.7 * _bump(t, T["thud"], T["thud"] + 0.3) ** 0.5)

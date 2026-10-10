@@ -309,14 +309,17 @@ WAIL_SLUMP = P(HK("l", 76, 14, "claw", layer="front", wa=-1.6, wabs=0.7),
                **L("l", 0.22, 0.12, k=0.42), **L("r", 0.0, 0.12, k=0.4))
 WRING = "wring_hands"
 SHAKE = "shake_arms"
-PICK = "pick_up"
+PICK = {"base": "pick_up", "hold": 1.0}
 HOLD_ROCK = P(IK("r", 0.0, 0.58, 0.2, "grip", wa=1.2, wabs=0.6, layer="front"),
               IK("l", 0.03, 0.555, 0.2, "flat", wa=1.7, wabs=0.6, layer="front"),
-              hunch=1.0, neck=-0.15, nod=0.12, lean=0.04, **L("l", k=0.12), **L("r", k=0.1))
-THROW = P({"base": "throw"}, hunch=0.5, hold=0.0)
+              hold=1.0, hunch=1.0, neck=-0.15, nod=0.12, lean=0.04, **L("l", k=0.12), **L("r", k=0.1))
+THROW = P({"base": "throw"}, hunch=0.5, hold=1.0)
 THROW_PUMP = P(HK("r", 118, -112, "grip", hz=-30, layer="mid", wa=-1.6, wabs=0.5),
-               A("l", 1.2, 0.35, 0.3, h="open"), twist=-0.05, lean=0.02, side=0.04, hunch=0.5,
+               A("l", 1.2, 0.35, 0.3, h="open"), hold=1.0, twist=-0.05, lean=0.02, side=0.04, hunch=0.5,
                **L("l", 0.45, 0.1, 0.2), **L("r", -0.2, 0.1, 0.25))
+WIND_SIDE = P(HK("r", 175, 40, "grip", hz=-60, layer="back", wa=-2.6, wabs=0.5),
+              A("l", 0.9, 0.3, 0.3, h="open"), twist=-0.2, lean=-0.06, hunch=0.6, hold=1.0,
+              **L("l", 0.3, 0.1, 0.15), **L("r", -0.15, 0.1, 0.2))
 FOLLOW = P(A("r", 1.35, 0.25, 0.2, h="open"), A("l", 0.15, 0.3, 0.4, h="open"),
            lean=0.32, twist=0.25, hunch=0.4, **L("l", -0.3, k=0.12), **L("r", 0.5, k=0.3))
 FLINCH = P({"base": "hands_up_small"}, hunch=1.0, lean=-0.14, neck=-0.1, nod=0.12,
@@ -783,7 +786,9 @@ def _emb_EF(ctx, info, t, T):
         pumps = 0.0
         for w in T["words4"][:-1]:
             pumps = max(pumps, _bump(t, w + 0.02, 0.1, 0.16))
-        pose = (HOLD_ROCK, (THROW, THROW_PUMP, pumps * 0.85), wu)
+        # wind-up: the rock swings out to the side and back (never across his face)
+        arm = state_at(t, [(0, HOLD_ROCK), (l4, WIND_SIDE), (l4 + 0.1, THROW)], 0.1)
+        pose = (arm, (THROW, THROW_PUMP, pumps * 0.85), smoothstep(seg(t, l4 + 0.18, l4 + 0.24)))
         turn = lerp(0.15, 0.95, wu)
         expr = "pain"
         face = {"head_turn": -0.25 * wu, "head_tilt": -0.08 * wu, "brow_ang": 0.7, "teeth": 0.3,
@@ -825,8 +830,13 @@ def _emb_EF(ctx, info, t, T):
              sweat=sweat, glint=_glint(t, sm, 0.25) * 0.8)
     if T["ins1"] <= t < rel:
         hx, hy, _ = a["hand_r"]
-        props.rock(ctx, hx, hy - 6, ROCK_S * 0.9, rot=0.2)
+        _rock_hold(ctx, "r", hx, hy, 0.0)
     return a, x
+
+
+def _rock_hold(ctx, side, hx, hy, ang):
+    """The rock in his grip, drawn in the rig's hold slot (behind his head on the wind-up)."""
+    props.rock(ctx, hx, hy - 6, ROCK_S * 0.9, rot=0.2)
 
 
 def _tip_sp():

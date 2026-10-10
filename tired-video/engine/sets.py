@@ -469,10 +469,14 @@ def _bd_static(c, light_on=True):
     props.sock(c, 1750, 2050, 1.2, 0.5, "#ffffff")
     rect(c, 300, 2080, 300, 60, "#e8b25a", 5, r=8)          # pizza box
     core.text(c, "PIZZA", 450, 2124, 40, "#c0453f", "comic")
-    blob(c, [(1240, 2150), (1300, 2110), (1380, 2120), (1400, 2170), (1330, 2200), (1260, 2190)],
-         "#2f2b3d", 5)                                       # game controller
-    core.circle(c, 1290, 2155, 10); core.circle(c, 1360, 2150, 10)
-    core.fill(c, "#ff6f61")
+    # spare game controller (clearly a gamepad: grips, d-pad, coloured buttons)
+    blob(c, [(1222, 2190), (1236, 2128), (1290, 2112), (1350, 2112), (1404, 2128),
+             (1418, 2190), (1392, 2206), (1360, 2176), (1280, 2176), (1248, 2206)],
+         "#8a8fa8", 5)
+    rect(c, 1262, 2142, 30, 10, "#3a3a4a", 0); rect(c, 1272, 2132, 10, 30, "#3a3a4a", 0)
+    for (bx_, by_, bc_) in ((1372, 2134, "#ff6f61"), (1388, 2148, "#5ec2ff"),
+                            (1356, 2148, "#ffd166"), (1372, 2162, "#7bd88f")):
+        core.circle(c, bx_, by_, 6.5); core.fill(c, bc_)
 
     # ---- string lights along the top of the wall (cosy)
     pts = []
@@ -1040,7 +1044,7 @@ def _bd_dust(ctx, t, shake):
 
 def bedroom(ctx, t=0.0, layer="bg", door_open=0.0, closet_open=0.0, laundry=0.0,
             laundry_scattered=False, chair_spin=0.0, chair_empty=False, chair_dx=0.0,
-            shake=0.0, frame_fallen=False, screen_fn=None, screen_on=True, game_speed=1.0,
+            shake=0.0, frame_fallen=True, screen_fn=None, screen_on=True, game_speed=1.0,
             light_on=True, parts=None):
     """Tiredness's bedroom. World 2400 x 1920, people at s=0.75. See BEDROOM_MARKS.
 

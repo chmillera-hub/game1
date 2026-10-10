@@ -68,7 +68,7 @@ CAGE_S = 0.36
 CHAIR_DX0 = -300.0                       # s05: he rolled the chair back when he got up
 CHAIR_SPIN0 = -7.556                     # s05's chair angle at its end (almost stopped)
 CHAIR_SPIN1 = 1.1 - 2 * math.pi          # s07's chair angle (1.1), reached by the wake
-FRAME_FALLEN = False                     # s05 and s07 both draw the frame on the wall
+FRAME_FALLEN = True                      # knocked down by the thud in s01
 ROOM = dict(closet_open=1.0, chair_empty=True, frame_fallen=FRAME_FALLEN, door_open=0.45)
 # s05's clothes from the closet rummage, where they landed: (kind, colour, x, rot)
 CLOTHES = [("shirt", "#ff8a4f", 905, 0.4), ("sock", "#ffffff", 1010, 1.2), ("shirt", "#7cc96a", 1095, -0.5),
