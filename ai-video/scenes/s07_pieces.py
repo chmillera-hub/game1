@@ -4,16 +4,28 @@ Covers *hiding where the harm is*: harmless-sounding words that add up to a
 harmful whole. Every time below is derived from cues / line ids / word starts
 (see _times); nothing is hard-coded.
 
-  F1-PUSH  card .. l02     Dim lair, slow push-in on the Evil Genius + Snake.
-                            Card #6 (title from info.meta['card']) slams +
-                            parks. l01: he leans in and whispers to the snake
-                            (chin hand); smug flash on "hide", brow waggle on
-                            "innocent-sounding", side glance at the computer on
-                            "This chatbot", eye dart to camera on "never", grin
-                            on "notice", then on "Watch this!" he turns to the
-                            keyboard with a sly grin. Snake: slow 😒 blink,
-                            side-eye. disguise1: a fake costume halo pops onto
-                            his dome; innocent face.
+  F1 TWO-SHOT card .. l02  Dim lair, gentle push-in. The AI floats right
+                            there above his monitor (screen-right) the whole
+                            time, overhearing. Card #6 (title from
+                            info.meta['card']) slams + parks. l01 is a WHISPERED
+                            aside: he leans toward the Snake, one glove raised
+                            flat beside his mouth as a privacy shield between
+                            him and the AI (scene pose 's07_whisper'), eyes on
+                            the Snake; 'psst' squiggles drift from his mouth to
+                            the Snake, who leans in to listen ('s07_listen' +
+                            head nudge). Smug flash on "hide", brow waggle on
+                            "innocent-sounding", shifty side-glances at the AI
+                            on "This chatbot" (the Snake follows his glance and
+                            recoils: it's RIGHT THERE), grin on "notice". The
+                            AI: eyes on him, brow up on "evil plans", two-step
+                            lid drop, slow blink back at his glance, then a slow
+                            one-shot eye-roll (roll0) on "never notice" that
+                            settles into 😒. The l01 caption is drawn here as a
+                            whisper (italic, softer, "(whispering)" tag; the
+                            engine caption is hidden for it via caption_y).
+                            l01w "Watch this!" (normal voice): he turns to the
+                            keyboard with a sly grin and types. disguise1: a
+                            fake costume halo pops onto his dome; innocent face.
   CHAT STAGE l02 .. l06c    ONE typed message ("sparky ball" / "long fuse"
                             highlighted as spoken), his avatar (cameo) stays
                             on screen the whole time. 'pieces': SPARKY / BALL /
@@ -875,8 +887,8 @@ def _whisper_lines(c, t, T, info, mpt, spt):
         u = seg(t, t0, T.w_snake + 0.75)
         a = smoothstep(seg(u, 0.0, 0.15)) * (1 - smoothstep(seg(u, 0.7, 1.0)))
         k = ease_out_back(seg(t, t0, t0 + 0.25), 2.2)
-        px = mpt[0] + dx * 0.45 + nx * 0 - 6
-        py = mpt[1] + dy * 0.45 - 70 - 22 * u
+        px = spt[0] - 26                                    # above the snake's ear
+        py = spt[1] - 112 - 22 * u
         with saved(c, px, py, k, -0.1, alpha_=a) as cc:
             text(cc, "psst...", 0, 0, 44, "#efe8ff", "comic", outline="ink", outline_w=8)
 

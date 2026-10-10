@@ -35,8 +35,11 @@ Shots (every time derives from cues / line timings; see _T):
            the heart. "Your scary stories of scams and danger": HIS tale page
            ("A TALE OF SCAMS & DANGER", dark deckled page, author caricature,
            crescent moon) pops out of the book; lightning on "scary"; red-flag
-           story panels TOO GOOD TO BE TRUE / PAY IN GIFT CARDS? / ACT NOW!!
-           pop on "stories" / "scams" / "danger" (title words pulse); inset:
+           story panels of FANTASY cons a villain would put in his tales,
+           each with a little drawing: MAGIC BEANS: ONLY ONE COW! (bean
+           pouch) / THE HYPNO-SPIRAL OFFER (spinning swirl) / SIGN HERE, SAYS
+           THE SHADOW WIZARD (scroll + quill held out by a shadowy clawed
+           hand) pop on "stories" / "scams" / "danger" (title words pulse); inset:
            proud hand-rub. "could teach people how to stay safe": the page
            lifts, 4 tiny readers pop up below it holding little copies,
            lightbulbs on "how", shields on "safe" (readers go happy); inset:
@@ -1168,7 +1171,9 @@ BOARD_A = (495.0, 958.0, 1.0)         # tale page centre + scale (big, lower hal
 BOARD_B = (495.0, 836.0, 0.72)        # ...lifted: the readers stand below it
 BOARD_C = (705.0, 392.0, 0.35)        # ...tucked top-right for the wall beat
 BOARD_W, BOARD_H = 840.0, 640.0
-FLAGS = ["TOO GOOD TO BE TRUE", "PAY IN GIFT CARDS?", "ACT NOW!!"]
+# fantasy cons a villain would put in his stories (not real-world scams)
+FLAGS = ["MAGIC BEANS: ONLY ONE COW!", "THE HYPNO-SPIRAL OFFER",
+         "SIGN HERE, SAYS THE SHADOW WIZARD"]
 FLAG_Y = [-26.0, 98.0, 222.0]
 TALE_BG, TALE_BG2 = "#2b1742", "#1b0f2a"
 TALE_RED, PARCH, PARCH_SH = "#ff3b5c", "#f6e7c6", "#dcc79c"
@@ -1555,64 +1560,202 @@ def _tale_edge(c, hw, hh, dx=0.0, dy=0.0):
 _BOLT = [(-12, -66), (24, -66), (6, -16), (28, -16), (-18, 68), (-4, 6), (-26, 6)]
 
 
-def _ill_gift(c, t):
-    """TOO GOOD TO BE TRUE: a glittering prize box."""
-    rrect(c, -34, -8, 68, 48, 6)
-    _fs(c, "#ff6f9a", "ink", 4)
-    rrect(c, -40, -22, 80, 18, 5)
-    _fs(c, "#ff94b4", "ink", 4)
-    c.rectangle(-7, -21, 14, 60)
-    _fs(c, GOLD, "ink", 3)
-    for sx in (-1, 1):
-        ellipse(c, sx * 15, -31, 15, 9, -sx * 0.45)
-        _fs(c, GOLD, "ink", 3.5)
-    circle(c, 0, -26, 6)
-    _fs(c, GOLD_DK, "ink", 3)
-    for i, (sx, sy, r) in enumerate(((44, -40, 13), (-46, -30, 10), (40, 30, 9))):
-        k = 0.55 + 0.45 * math.sin(t * 7.0 + i * 2.1)
+_BEAN, _BEAN_DK = "#7ee35c", "#3f9a2e"
+_SACK, _SACK_DK, _SACK_HI = "#c99a5b", "#946a37", "#e8c88e"
+_HYPNO, _HYPNO_BG = "#8a3fd1", "#fbefff"
+_SHADOW, _SHADOW_RIM = "#170c26", "#a46cff"
+
+
+def _bean(c, x, y, rot, s=1.0):
+    """One glowing magic bean (kidney shape + shine)."""
+    with saved(c, x, y, s, rot) as cb:
+        cb.move_to(-13, 2)
+        cb.curve_to(-14, -9, -2, -11, 2, -6)
+        cb.curve_to(5, -10, 15, -8, 13, 2)
+        cb.curve_to(12, 10, -12, 11, -13, 2)
+        cb.close_path()
+        _fs(cb, _BEAN, "ink", 3)
+        ellipse(cb, -5, -3, 4.5, 2.0, -0.3)
+        core.fill(cb, (1, 1, 1, 0.75))
+
+
+def _ill_beans(c, t):
+    """MAGIC BEANS: ONLY ONE COW!: a drawstring bean pouch, magic beans
+    spilling out of it (twinkling)."""
+    c.set_line_join(cairo.LINE_JOIN_ROUND)
+
+    def sack(cc):
+        cc.move_to(-21, -14)
+        cc.curve_to(-46, -2, -46, 36, -22, 41)
+        cc.line_to(20, 41)
+        cc.curve_to(44, 36, 44, -2, 19, -14)
+        cc.close_path()
+    with saved(c, -16, -2) as cc:
+        sack(cc)
+        _fs(cc, _SACK, "ink", 4)
+        cc.save()
+        sack(cc)
+        cc.clip()
+        ellipse(cc, 30, 26, 22, 30)
+        core.fill(cc, core.alpha(_SACK_DK, 0.55))
+        cc.restore()
+        for sx, sy in ((-14, 18), (4, 28), (10, 6)):                  # burlap stitches
+            cc.move_to(sx - 4, sy - 3)
+            cc.line_to(sx + 4, sy + 3)
+        core.stroke(cc, core.alpha(_SACK_DK, 0.9), 2.5, cap="round")
+        cc.move_to(-21, -14)                                           # ruffled neck
+        cc.curve_to(-36, -24, -30, -38, -17, -31)
+        cc.curve_to(-12, -40, -1, -37, -1, -27)
+        cc.curve_to(4, -36, 17, -38, 15, -26)
+        cc.curve_to(28, -32, 34, -20, 19, -14)
+        cc.close_path()
+        _fs(cc, _SACK, "ink", 4)
+        cc.move_to(-22, -14)                                           # drawstring
+        cc.line_to(20, -14)
+        core.stroke(cc, "ink", 8, cap="round")
+        cc.move_to(-22, -14)
+        cc.line_to(20, -14)
+        core.stroke(cc, _SACK_HI, 3.5, cap="round")
+        for sx in (-1, 1):                                             # little bow
+            ellipse(cc, 2 + sx * 7, -10, 7, 4.5, sx * 0.6)
+            _fs(cc, _SACK_HI, "ink", 2.5)
+        _bean(cc, 4, -38, -0.35, 0.95)                                 # one pops out the top
+    for bx, by, br in ((26, 38, 0.15), (46, 30, -0.6), (52, 47, 0.5)):  # spilled beans
+        _bean(c, bx, by, br, 0.92)
+    for i, (sx, sy, r) in enumerate(((44, 4, 12), (16, -40, 8), (58, 16, 7))):
+        k = 0.5 + 0.5 * math.sin(t * 7.0 + i * 2.2)
         P._star4(c, sx, sy, r * k + 0.5, 0.3)
-        core.fill(c, (1, 0.92, 0.55, 1.0))
+        core.fill(c, (0.75, 1.0, 0.45, 1.0))
+        P._star4(c, sx, sy, r * k + 0.5, 0.3)
+        core.stroke(c, core.alpha("ink", 0.5), 1.5)
 
 
-def _ill_card(c, t):
-    """PAY IN GIFT CARDS?: a gift card with a bow and a big '?'."""
-    with saved(c, 0, 4, 1.0, -0.14) as cc:
-        rrect(cc, -46, -30, 92, 60, 10)
-        _fs(cc, "#36c2b4", "ink", 4)
-        cc.rectangle(-28, -29, 11, 58)
-        core.fill(cc, "danger")
-        for sx in (-1, 1):
-            ellipse(cc, -22 + sx * 11, -33, 11, 7, -sx * 0.5)
-            _fs(cc, "danger", "ink", 3)
-        text(cc, "?", 14, 20, 52, "white", "comic", outline="ink", outline_w=6)
-
-
-def _ill_clock(c, t):
-    """ACT NOW!!: a ringing alarm clock (it jitters)."""
-    c.translate(2.6 * math.sin(t * 41.0), 0)
-    for sx in (-1, 1):
-        c.move_to(sx * 18, 24)
-        c.line_to(sx * 28, 38)
-        core.stroke(c, "ink", 6, cap="round")
-        circle(c, sx * 22, -28, 12)
-        _fs(c, GOLD, "ink", 3.5)
-    circle(c, 0, 2, 32)
-    _fs(c, "danger", "ink", 4)
-    circle(c, 0, 2, 23)
-    _fs(c, "white", "ink", 3)
-    c.move_to(0, 2)
-    c.line_to(0, -13)
-    c.move_to(0, 2)
-    c.line_to(11, 7)
-    core.stroke(c, "ink", 4, cap="round")
-    for sx in (-1, 1):                              # ring lines
-        for r in (42, 52):
+def _ill_spiral(c, t):
+    """THE HYPNO-SPIRAL OFFER: a spinning hypno-spiral disc with pulsing
+    'look deeper' rings."""
+    R = 40.0
+    for j, rr in enumerate((R + 8, R + 15)):                  # hypnotic rings (pulse out)
+        k = 0.5 + 0.5 * math.sin(t * 6.0 - j * 1.4)
+        for a0 in (-0.75, math.pi - 0.75):
             c.new_sub_path()
-            c.arc(0, 2, r, -0.5 if sx > 0 else math.pi - 0.1, 0.1 if sx > 0 else math.pi + 0.5)
-        core.stroke(c, "ink", 3.5, cap="round")
+            c.arc(0, 0, rr, a0, a0 + 0.9)
+        core.stroke(c, (0.79, 0.64, 1.0, 0.35 + 0.65 * k), 3.5, cap="round")
+    circle(c, 0, 0, R)
+    _fs(c, _HYPNO_BG, "ink", 4.5)
+    c.save()
+    circle(c, 0, 0, R - 2)
+    c.clip()
+    turns = 3.2 * math.pi
+    with saved(c, 0, 0, 1.0, t * 3.4) as cs:
+        for arm in (0.0, math.pi):
+            for i in range(41):
+                a = i / 40 * turns
+                r = 2 + a * (R - 2) / turns
+                x, y = math.cos(a + arm) * r, math.sin(a + arm) * r
+                if i == 0:
+                    cs.move_to(x, y)
+                else:
+                    cs.line_to(x, y)
+            core.stroke(cs, _HYPNO, 7.5, cap="round")
+    c.restore()
+    circle(c, 0, 0, R)
+    core.stroke(c, "ink", 4.5)
+    circle(c, 0, 0, 5)
+    core.fill(c, "ink")
 
 
-_ILLS = (_ill_gift, _ill_card, _ill_clock)
+def _ill_contract(c, t):
+    """SIGN HERE, SAYS THE SHADOW WIZARD: a contract scroll with a red X on
+    the signature line; a shadowy clawed hand in a tattered sleeve holds out
+    a quill to sign."""
+    c.set_line_join(cairo.LINE_JOIN_ROUND)
+    # the scroll (left)
+    with saved(c, -22, 4, 1.0, -0.08) as cs:
+        rrect(cs, -26, -32, 50, 64, 3)
+        _fs(cs, PARCH, "ink", 3.5)
+        for yy in (-34, 34):                                  # rolled ends
+            rrect(cs, -32, yy - 7, 62, 14, 7)
+            _fs(cs, PARCH_SH, "ink", 3.5)
+        for j, yy in enumerate((-19, -10, -1)):              # fine print
+            cs.move_to(-18, yy)
+            cs.line_to(14 - 10 * (j == 2), yy)
+        core.stroke(cs, core.alpha("ink", 0.45), 3, cap="round")
+        cs.move_to(-6, 18)                                    # signature line
+        cs.line_to(18, 18)
+        core.stroke(cs, "ink", 3, cap="round")
+        for (ax, ay, bx, by) in ((-19, 10, -10, 19), (-19, 19, -10, 10)):   # red X
+            cs.move_to(ax, ay)
+            cs.line_to(bx, by)
+        core.stroke(cs, "danger", 4.5, cap="round")
+    hb = 1.5 * math.sin(t * 3.0)                              # the offer hovers...
+
+    def rimmed(cc, paths):
+        """Shadow silhouette: rim strokes first, then one dark fill on top
+        (so overlapping parts read as one clean shape)."""
+        for pth in paths:
+            pth(cc)
+            core.stroke(cc, _SHADOW_RIM, 6)
+        for pth in paths:
+            pth(cc)
+            core.fill(cc, _SHADOW)
+
+    def sleeve(cc):
+        poly(cc, [(20, 12), (34, -2), (62, 20), (61, 44), (53, 37), (46, 46), (38, 37), (29, 43)])
+
+    def palm(cc):
+        ellipse(cc, 26, 6, 14, 11, -0.5)
+
+    def claw(x0, y0, x1, y1, w0):
+        def f(cc):
+            dx_, dy_ = x1 - x0, y1 - y0
+            d_ = math.hypot(dx_, dy_) or 1.0
+            nx_, ny_ = -dy_ / d_ * w0 / 2, dx_ / d_ * w0 / 2
+            cc.move_to(x0 + nx_, y0 + ny_)
+            cc.curve_to(lerp(x0, x1, 0.5) + nx_ * 0.9, lerp(y0, y1, 0.5) + ny_ * 0.9 - 3,
+                        x1 + nx_ * 0.3, y1 + ny_ * 0.3 - 2, x1, y1)
+            cc.curve_to(x1 - nx_ * 0.3, y1 - ny_ * 0.3, lerp(x0, x1, 0.5) - nx_ * 0.9,
+                        lerp(y0, y1, 0.5) - ny_ * 0.9, x0 - nx_, y0 - ny_)
+            cc.close_path()
+        return f
+    with saved(c, 0, hb) as ch:
+        rimmed(ch, [sleeve, palm])
+        # the quill: nib on the signature line, feather up to the right
+        nib, top = (-6.0, 19.0), (52.0, -28.0)
+        ang = math.atan2(top[1] - nib[1], top[0] - nib[0])
+        L = math.hypot(top[0] - nib[0], top[1] - nib[1])
+        with saved(ch, nib[0], nib[1], 1.0, ang) as cq:
+            poly(cq, [(0, 0), (12, -3.5), (12, 3.5)])         # nib
+            _fs(cq, "ink", "ink", 1.5)
+            cq.move_to(10, 0)
+            cq.line_to(L, 0)
+            core.stroke(cq, "ink", 3, cap="round")
+            cq.move_to(L - 46, 0)                             # feather vane
+            cq.curve_to(L - 34, -14, L - 8, -12, L + 4, -2)
+            cq.curve_to(L - 8, 10, L - 34, 12, L - 46, 0)
+            cq.close_path()
+            _fs(cq, "#efe6ff", "ink", 3)
+            for u in (L - 36, L - 24, L - 12):
+                cq.move_to(u, 0)
+                cq.line_to(u + 6, -7)
+            core.stroke(cq, core.alpha("#9a86c8", 0.9), 2, cap="round")
+        # long pointy claws wrapped over the shaft
+        rimmed(ch, [claw(22, -1, 2, 1, 8.0), claw(26, 7, 5, 12, 8.0), claw(31, 12, 13, 21, 7.0)])
+
+
+_ILLS = (_ill_beans, _ill_spiral, _ill_contract)
+
+
+_FLAG_FS = []
+
+
+def _flag_fs(c, max_w=506.0):
+    """One shared panel font size: the largest that fits every label."""
+    if not _FLAG_FS:
+        fs = 48
+        while fs > 30 and max(text_width(c, f_, "comic", fs) for f_ in FLAGS) > max_w:
+            fs -= 1
+        _FLAG_FS.append(fs)
+    return _FLAG_FS[0]
 
 
 def _tale_card(c, i, txt, t, tf):
@@ -1627,12 +1770,10 @@ def _tale_card(c, i, txt, t, tf):
         _fs(ci, PARCH, "ink", 5)
         rrect(ci, -cw / 2 + 8, ch / 2 - 17, cw - 16, 10, 5)
         core.fill(ci, PARCH_SH)
-        _red_flag(ci, -318, 4, 1.0, math.sin((t - tf) * 7.0 + i))
-        fs = 46
-        while text_width(ci, txt, "ui", fs) > 492 and fs > 30:
-            fs -= 1
-        text(ci, txt, -270, 16, fs, "ink", "ui", align="left")
-        with saved(ci, 296, 0, 1.0) as cc:
+        _red_flag(ci, -324, 4, 1.0, math.sin((t - tf) * 7.0 + i))
+        fs = _flag_fs(ci)
+        text(ci, txt, -270, fs * 0.36 + 2, fs, "ink", "comic", align="left")
+        with saved(ci, 302, -2, 1.0) as cc:
             _ILLS[i](cc, t)
 
 

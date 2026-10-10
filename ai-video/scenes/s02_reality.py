@@ -7,8 +7,8 @@ Shots (every time is derived from cues / line timings):
              slaps flat; the real AI rises out of his monitor, already 😒.
   s02_l01    "Classic movie! Real AI actually learned from it." The AI beams
              fondly down at the toppled cutout (respectful nod + thumbs up on
-             "movie!", a gold CLASSIC tag with a tiny heart points at it), then
-             to camera, crediting it with a low palm-up hand on "learned from it".
+             "movie!", a gold CLASSIC tag with a tiny heart points down at it),
+             to camera for "Real AI...", back to it with a small nod on "from it".
              Malvo lowers his finger, flattered, then sheepish.
   s02_l02    "Now we're way harder to trick." EXPECTATION vs REALITY meme
              (trailer robot / confident AI with a HELPFUL mug, wink on "harder").
@@ -1168,17 +1168,18 @@ def _ai_lair_state(t, T):
     blink = (slow_blink(t, T.movie + 0.12, 0.1, 0.14, 0.12) or slow_blink(t, T.evil + 1.25)
              or slow_blink(t, T.me + 0.2))
     shake = 0.0
-    nod = (0.5 * _bump(t, T.movie, 0.6, 0.1) + 0.5 * _bump(t, T.hissy + 0.6, 0.7, 0.1)
+    nod = (0.5 * _bump(t, T.movie, 0.6, 0.1) + 0.3 * _bump(t, T.from_ + 0.1, 0.5, 0.1)
+           + 0.5 * _bump(t, T.hissy + 0.6, 0.7, 0.1)
            + 0.4 * _bump(t, T.snk + 0.1, 0.6, 0.1))
     think = 0.55 * smoothstep(seg(t, T.land + 0.35, T.land + 0.6)) if T.land <= t < T.cu0 else 0.0
     hands = "idle"
     if T.movie <= t < T.meme0:
-        # thumbs up for the classic, then an open palm-up "credit where due"
-        # toward it on "learned from it" (low offering hand, never a raised palm)
-        if t < T.learned:
+        # a thumbs up for the classic, held through "...learned", lowered as
+        # its eyes go back to the cutout on "from it" (with a small nod)
+        if t < T.from_ + 0.1:
             hands = ("idle", "thumbs_up", smoothstep(seg(t, T.movie, T.movie + 0.25)))
         else:
-            hands = ("thumbs_up", "present_l", smoothstep(seg(t, T.learned, T.learned + 0.3)))
+            hands = ("thumbs_up", "idle", smoothstep(seg(t, T.from_ + 0.1, T.from_ + 0.45)))
     elif T.w[3][4] <= t < T.stand:
         hands = ("idle", "shrug", smoothstep(seg(t, T.w[3][4] + 0.2, T.w[3][4] + 0.5)))
     elif T.stand <= t < T.stand + 0.4:
@@ -1307,7 +1308,7 @@ def shot_lair(ctx, t, info, T):
     if T.land <= t < T.cu0 and t >= T.land + 0.1:
         P.emote(ctx, "heart", MX + 150, MY - 690 * MS, 1.0, t, T.land + 0.15)
 
-    # --- the cardboard robot (frame 0 .. slap) --------------------------------------
+    # --- the cardboard robot (standing until the slap, then lying flat) --------------
     _draw_cutout(ctx, t, T)
 
     # --- the AI hologram ------------------------------------------------------------
@@ -1326,40 +1327,52 @@ def shot_lair(ctx, t, info, T):
     ctx.restore()
 
 
+CUT_FLAT = 0.13      # lying flat on its face: a thin slab of brown back on the floor
+
+
 def _draw_cutout(ctx, t, T):
     """Wobble, then it tips FORWARD (toward camera): the face squashes to the
-    base line and the brown cardboard back sweeps down out of the frame."""
-    if t >= T.slap + 0.5:
-        return
+    base line and the brown cardboard back sweeps down toward us; on the slap
+    it lies flat on its face - a thin slab of cardboard back on the floor at
+    the very bottom of the frame (below the caption band) for the l01 beat."""
+    if t >= T.meme0:
+        return                          # (it stays down there, out of shot from here on)
     base_y = CUT_BASE
     rot, sy = 0.0, 1.0
     if t < T.wob1:
         u = seg(t, T.tip, T.wob1)
         rot = 0.06 * math.sin(u * 2 * math.pi * 1.5) * (0.5 + 0.5 * u)
-    else:
+    elif t < T.slap:
         u = seg(t, T.wob1, T.slap)
         sy = 1.0 - 2.6 * ease_in(u)
         rot = 0.04 * (1 - u)
-    if t < T.slap:
-        with saved(ctx, CUT_X, base_y, 1.0, rot) as c:
-            if sy >= 0.0:
-                c.scale(CUT_S, CUT_S * max(sy, 0.02))
-                c.translate(0, -970)
-                draw_robot(c, t, glow=1.0, look=(0.0, 0.0), ring_rot=1.1, cutout=True,
-                           lights=(0, 0))
-            else:
-                # back side (seen as it falls toward us): plain cardboard
-                c.scale(CUT_S * (1 - 0.25 * sy), CUT_S * -sy)
-                c.translate(0, 970)
-                c.scale(1, -1)
-                _robot_silhouette(c)
-                core.fill_stroke(c, CARD, INK, 6)
+    else:
+        # flattens onto the floor, a little cardboard flap, then still
+        u = t - T.slap
+        k = ease_out(seg(u, 0.0, 0.1))
+        sy = lerp(-1.6, -CUT_FLAT, k) * (1 + 0.3 * math.exp(-u * 14) * math.sin(u * 40) * k)
+    with saved(ctx, CUT_X, base_y, 1.0, rot) as c:
+        if sy >= 0.0:
+            c.scale(CUT_S, CUT_S * max(sy, 0.02))
+            c.translate(0, -970)
+            draw_robot(c, t, glow=1.0, look=(0.0, 0.0), ring_rot=1.1, cutout=True,
+                       lights=(0, 0))
+        else:
+            # back side (seen as it falls toward us): plain cardboard
+            c.scale(CUT_S * (1 - 0.25 * sy), CUT_S * -sy)
+            c.translate(0, 970)
+            c.scale(1, -1)
+            _robot_silhouette(c)
+            core.fill_stroke(c, CARD, INK, 6)
+            if t < T.slap:              # the kickstand folds flat when it lands
                 core.poly(c, [(150, 520), (330, 970), (150, 970)])
                 _fs(c, CARD_DK, INK, 5)
                 for yy in (420, 640, 860):
                     c.move_to(-200, yy)
                     c.line_to(200, yy + 6)
                 core.stroke(c, CARD_DK, 4)
+    if t >= T.slap:
+        dust_puff(ctx, CUT_X, base_y + 60, 600, t, T.slap, n=6, seed=3)
 
 
 def _draw_book(ctx, t, T, bp):
@@ -1433,7 +1446,7 @@ def _tag_scale(t, t_in, t_out):
     return k
 
 
-CLASSIC_XY = (470, 1286)      # just above the caption band, over the fallen cutout
+CLASSIC_XY = (485, 1242)      # above even a 2-line caption, over the fallen cutout
 
 
 def _draw_classic(ctx, t, T):
@@ -1450,7 +1463,8 @@ def _draw_classic(ctx, t, T):
                            pointer="down")
     P.emote(ctx, "heart", x + w / 2 + 6, y - h / 2 - 8, 0.5, t, T.movie)
     if t < T.movie + 0.9:
-        P.sparkles(ctx, x - 20, y - 6, 150, t, n=4, seed=9, color="white", size=0.7)
+        # glints kept above the caption band (centre y - 40, r 100 -> y <= ~1300)
+        P.sparkles(ctx, x - 20, y - 40, 100, t, n=4, seed=9, color="white", size=0.7)
 
 
 def _draw_tags(ctx, t, T):

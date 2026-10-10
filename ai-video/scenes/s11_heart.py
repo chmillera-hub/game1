@@ -20,9 +20,17 @@ Beats (every time from cues / word starts):
   beat    the bravado drains: eyes drop, the monocle slips and dangles (tink).
   l02     glistening eyes; on "noticed me" his eyes go to the corkboard photo
           (the AI's eyes follow); eyes drop on "scaring them".
-  photo   hard cut: the science-fair photo close-up (empty chairs), slow push.
-  l03     cut back on "Clever": SLOW BLINK -> warm; the VILLAIN STATS sheet pops
-          over his head, each row fills on its word.
+  photo   hard cut: the science-fair photo close-up, held through the whole
+          pause and "I noticed." (~3 s): slow gentle push-in 1.00 -> 1.07, the
+          rainy window's light across the board with raindrop shadows
+          trickling down, the rows of EMPTY chairs reading clearly. Once it has
+          sat alone, Malvo's live face fades in as a round PiP (bottom-left)
+          looking up at it: glistening eyes, ONE sad slow blink, heavy lids;
+          on "I noticed." his eyes lift toward the AI's voice.
+  l03     "I noticed. Clever. Skeptical. Persistent." cut back on "Clever":
+          SLOW BLINK -> warm; the VILLAIN STATS sheet pops over his head and
+          each row's label (CLEVER / SKEPTICAL / PERSISTENT) pops in ON its
+          word, its five bars filling right after.
   l04     on "impressive" a gold IMPRESSIVE! badge slams onto the sheet, the
           header pulses on "villain"; AI happy + thumbs up, eyes to camera on
           "my guy". Hissy nods.
@@ -35,9 +43,10 @@ Beats (every time from cues / word starts):
           "Scary", "creative" (he rubs his hands) and "sounding"; on "wide
           open" it swings open and warm gold light spills across his face.
   pile    five gifts pop out of the door and arc into his arms / onto the desk
-          (notebook + quill, headphones, THE CHEMIST scroll, THE SPOOKY GHOST
-          book (its ghost waves its arms, "oooo"), the BOMBSHELL TWIST
-          script); his eyes follow each one, getting wider.
+          (notebook + quill, headphones, THE CHEMIST scroll, the SPACE LASERS
+          FOR DUMMIES book (its cover satellite fires pink bolts, "PEW PEW
+          PEW", at a startled little moon), the BOMBSHELL TWIST script); his
+          eyes follow each one, getting wider. He hugs the book.
   l08     the spooky gifts pop out on their words (pumpkin, bat, goblin mask,
           dragon figurine).
   smile   he looks down at the pile; a slow REAL SMILE. Hissy happy. Hold.
@@ -85,7 +94,7 @@ PHOTO_W, PHOTO_H = 640.0, 500.0
 PHOTO_S = 1.25                            # drawn 800x625: reads on a phone
 PHOTO_CAM = (495.0, 730.0)                # photo-hold push-in centre ...
 PHOTO_PUSH = 0.07                         # ... 1.00 -> 1.07 over the hold
-CAMEO = (246.0, 1192.0, 140.0)            # Malvo PiP during the hold (x, y, r)
+CAMEO = (244.0, 1182.0, 136.0)            # Malvo PiP during the hold (x, y, r)
 CAMEO_VIEW = 236.0                        # lair px from the PiP centre to its rim
 CAMEO_LOOK_AT = (384.0, 736.0)            # lair point at the PiP centre (window
                                           # + rain behind him on the left)
@@ -96,8 +105,6 @@ DOOR_COL, DOOR_DK, DOOR_HI = "#8a5a3b", "#6a4129", "#a8744f"
 DOORWAY = "#ffe9b0"
 GOLD = P.C("gold")
 STAR_GOLD, STAR_GOLD_DK = "#ffcf3a", "#d99a12"
-GB_COVER, GB_SPINE, GB_GOLD = "#3a2350", "#281634", "#ffd166"   # THE SPOOKY GHOST
-GHOST_W, GHOST_SH, GHOST_EYE = "#f4f4f8", "#d6d4e4", "#16101f"
 LAPEL = (100.0, -318.0)                   # FOR EFFORT star, villain-local (s=1)
 LAPEL_S = 0.6
 
@@ -556,80 +563,231 @@ def draw_scroll(ctx, x, y, s, rot=0.0):
         _fs(c, "cape_in", INK, 3)
 
 
-def _ghost_sheet_path(c, t, ph):
-    """Outline of the little sheet ghost (local: head top (0, -40), hem ~ +38)."""
-    c.move_to(-30, 30)
-    c.curve_to(-31, 6, -30, -16, -24, -28)
-    c.curve_to(-16, -42, 16, -42, 24, -28)
-    c.curve_to(30, -16, 31, 6, 30, 30)
-    for k in range(4):                                  # rippling hem, right -> left
-        x0, x1 = 30 - k * 15, 30 - (k + 1) * 15
-        dip = 9 + 3 * math.sin(t * 7.0 + k * 1.6 + ph)
-        c.curve_to(x0 - 3, 30 + dip, x1 + 3, 30 + dip, x1, 30 + 2 * math.sin(t * 7.0 + k))
-    c.close_path()
+# ---------------------------------------------------------------------------
+# SPACE LASERS FOR DUMMIES (the gift-pile book; s12 draws the same design)
+# ---------------------------------------------------------------------------
+# A 150 x 190 hardcover (s=1, centred): deep-space navy cover #1b2550 with
+# little twinkling stars and a faint nebula; gold title #ffd166 (ink outline)
+# in two lines "SPACE LASERS" / "FOR DUMMIES" across the top; below it a cute
+# cartoon orbital laser satellite (silver body with a little face, blue solar
+# panels, pink emitter) at the left fires pink/magenta bolts #ff4fa3 (white
+# core) across the cover to the right in bursts of three, each shot popping a
+# tiny "PEW"; a startled little moon at the right ducks under every burst
+# (sweat drop) and bobs back up. Loops every 1.5 s. Original design: NOT the
+# real yellow/black "For Dummies" trade dress.
+SL_COVER, SL_COVER_DK, SL_SPINE = "#1b2550", "#141c42", "#11173a"
+SL_NEBULA, SL_NEBULA2 = "#25336c", "#2e3f82"
+SL_GOLD, SL_LASER, SL_LASER_CORE = "#ffd166", "#ff4fa3", "#fff0f7"
+SL_PEW = "#ffe1f0"
+SAT_BODY, SAT_BODY_DK, SAT_STRUT = "#d7dde9", "#a7b0c6", "#8e98b0"
+SAT_PANEL, SAT_PANEL_LN, SAT_BARREL = "#3f7fe0", "#a8c8ff", "#5b6480"
+MOON_C, MOON_DK, MOON_CRATER = "#f6eabf", "#e0cf95", "#d8c584"
+SL_PERIOD = 1.5                       # one burst of three every 1.5 s
+SL_SHOTS = (0.1, 0.3, 0.5)            # shot times inside the cycle
+SL_V = 210.0                          # bolt speed (cover px / s)
+SL_SAT = (-26.0, 1.0, 0.7)            # satellite centre + scale (cover-local)
+SL_MOON = (47.0, 18.0, 15.0)          # moon rest centre + radius
+SL_STARS = [(-40, -80, 1.6), (-14, -86, 1.2), (58, -84, 1.8), (66, -50, 1.3), (-44, -22, 1.4),
+            (2, -14, 1.1), (30, -8, 1.6), (64, 2, 1.2), (-40, 40, 1.5), (-18, 58, 1.2),
+            (14, 48, 1.7), (40, 64, 1.3), (66, 82, 1.6), (-30, 84, 1.3), (24, 84, 1.1),
+            (-2, 72, 1.4)]
+SL_BIG_STARS = [(-38, -6, 4.6), (62, -26, 4.0), (8, 66, 4.4)]
 
 
-def draw_spooky_ghost(c, x, y, s, t, ph=0.0):
-    """The cover ghost of THE SPOOKY GHOST: a white sheet ghost (#f4f4f8, ink
-    outline) with big dark eyes and an 'O' mouth that waves its little arms
-    dramatically and wobbles ("oooo"). (x, y) = ghost centre, ~64 x 82 at s=1."""
-    wob = 0.1 * math.sin(t * 2 * math.pi * 1.25 + ph)
-    bob = 3.0 * math.sin(t * 2 * math.pi * 1.25 + ph + 1.2)
-    wave = math.sin(t * 2 * math.pi * 2.1 + ph)
-    with saved(c, x, y + bob, s, wob) as g:
-        for sx, a0 in ((-1, -2.45), (1, -0.69)):         # little arms, raised + waving
-            ang = a0 - 0.45 * wave                         # see-saw: one up, one down
-            ex, ey = sx * 26 + math.cos(ang) * 22, -2 + math.sin(ang) * 22
-            for col, w in ((INK, 17), (GHOST_W, 9)):
-                g.move_to(sx * 22, 2)
-                g.curve_to(sx * 28, -2, ex - math.cos(ang) * 8, ey - math.sin(ang) * 8, ex, ey)
-                _s(g, col, w)
-        _ghost_sheet_path(g, t, ph)
-        _fs(g, GHOST_W, INK, 4.5)
-        g.save()
-        _ghost_sheet_path(g, t, ph)
-        g.clip()
-        ellipse(g, 22, 4, 14, 44)                      # one shadow tone
-        _f(g, GHOST_SH, 0.9)
-        g.restore()
-        ellipse(g, -14, -30, 7, 4, -0.5)                # sheen
-        _f(g, "white", 0.9)
-        for sx in (-1, 1):                              # big dark eyes
-            ellipse(g, sx * 11, -14, 7, 10)
-            _f(g, GHOST_EYE)
-            circle(g, sx * 11 - 2.5, -18, 2.4)
-            _f(g, "white", 0.9)
-        oo = 1.0 + 0.18 * math.sin(t * 2 * math.pi * 1.25 + ph + 0.6)
-        ellipse(g, 0, 8, 6.5 * oo, 8.5 * oo)            # "O" mouth: oooo
-        _f(g, GHOST_EYE)
+def _sl_geom():
+    """Muzzle point, unit aim vector (at the moon's rest centre), aim angle."""
+    sx, sy, ss = SL_SAT
+    mx, my, _ = SL_MOON
+    ang = math.atan2(my - sy, mx - sx)
+    mz = (sx + math.cos(ang) * 38 * ss, sy + math.sin(ang) * 38 * ss)
+    d = math.hypot(mx - mz[0], my - mz[1]) or 1.0
+    return mz, ((mx - mz[0]) / d, (my - mz[1]) / d), ang
 
 
-def draw_ghost_book(ctx, x, y, s, t, rot=0.0, sq=0.0):
-    """THE SPOOKY GHOST storybook (s11 gift pile / s12): 150x190 at s=1,
-    centred. Dark purple cover #3a2350, gold title #ffd166, the animated
-    sheet ghost on the cover."""
+def _sl_moon_dodge(ph):
+    """0 up .. 1 ducked, for cycle phase ph (s): ducks just before the first
+    bolt arrives, stays down while the burst passes, bobs back up."""
+    mz, _u, _a = _sl_geom()
+    arrive = SL_SHOTS[0] + math.hypot(SL_MOON[0] - mz[0], SL_MOON[1] - mz[1]) / SL_V
+    gone = SL_SHOTS[-1] + (math.hypot(SL_MOON[0] - mz[0], SL_MOON[1] - mz[1]) + 26) / SL_V
+    down = ease_out(seg(ph, arrive - 0.16, arrive - 0.04))
+    up = ease_out_back(seg(ph, gone, gone + 0.3), 2.2)
+    return down * (1 - up) if ph < gone + 0.3 else 0.0
+
+
+def _sl_satellite(c, t, last_shot):
+    """Cute orbital laser satellite, barrel along +x (cover-local, pre-rotated)."""
+    rec = 3.5 * math.exp(-max(0.0, t - last_shot) * 22) if last_shot is not None else 0.0
+    c.translate(-rec, 0)
+    for col, w in ((INK, 7), (SAT_STRUT, 3.5)):          # panel strut
+        c.move_to(-3, -36)
+        c.line_to(-3, 36)
+        _s(c, col, w)
+    for py in (-52, 28):                                  # two solar panels
+        rrect(c, -15, py, 24, 24, 3)
+        _fs(c, SAT_PANEL, INK, 3.2)
+        c.move_to(-3, py + 2)
+        c.line_to(-3, py + 22)
+        c.move_to(-13, py + 12)
+        c.line_to(7, py + 12)
+        _s(c, SAT_PANEL_LN, 1.8)
+    c.move_to(-10, -12)                                   # little dish antenna
+    c.line_to(-17, -24)
+    _s(c, INK, 3)
+    c.arc(-19, -27, 6, math.pi * 0.85, math.pi * 1.95)
+    _fs(c, SAT_BODY, INK, 2.5)
+    rrect(c, 12, -5.5, 22, 11, 3)                         # the laser barrel
+    _fs(c, SAT_BARREL, INK, 3)
+    rrect(c, 31, -7.5, 7, 15, 2.5)                        # pink emitter
+    _fs(c, SL_LASER, INK, 2.5)
+    rrect(c, -17, -14, 34, 28, 8)                         # silver body
+    _fs(c, SAT_BODY, INK, 3.5)
+    c.save()
+    rrect(c, -17, -14, 34, 28, 8)
+    c.clip()
+    c.rectangle(6, -16, 14, 32)
+    _f(c, SAT_BODY_DK, 0.75)
+    c.restore()
+    for ex in (-7, 4):                                    # determined little face
+        circle(c, ex + 1, -2, 3.2)
+        _f(c, INK)
+        circle(c, ex + 0.2, -3.2, 1.1)
+        _f(c, "white")
+        c.move_to(ex - 3, -8.5 + (1 if ex > 0 else 0))
+        c.line_to(ex + 4, -7.5 - (1 if ex > 0 else 0))
+    _s(c, INK, 2)
+    c.move_to(-5, 6)
+    c.curve_to(-2, 9, 3, 9, 6, 5.5)
+    _s(c, INK, 2)
+
+
+def _sl_moon(c, t, dodge):
+    """Startled little moon (cover-local, at its centre)."""
+    r = SL_MOON[2]
+    with saved(c, 0, 0, (1 + 0.1 * dodge, 1 - 0.1 * dodge), 0.25 * dodge) as m:
+        circle(m, 0, 0, r)
+        _fs(m, MOON_C, INK, 3)
+        m.save()
+        circle(m, 0, 0, r)
+        m.clip()
+        circle(m, 7, 6, r)
+        m.rectangle(-30, -30, 60, 60)
+        m.set_fill_rule(cairo.FILL_RULE_EVEN_ODD)
+        _f(m, MOON_DK, 0.6)
+        m.set_fill_rule(cairo.FILL_RULE_WINDING)
+        m.restore()
+        for (cx_, cy_, cr) in ((-8, -8, 3.0), (8, -9, 2.2), (9, 7, 2.6)):
+            circle(m, cx_, cy_, cr)
+            _f(m, MOON_CRATER)
+        eo = 1 + 0.25 * dodge                             # wide, startled eyes
+        for ex in (-5.0, 5.0):
+            ellipse(m, ex, -1, 3.6 * eo, 4.4 * eo)
+            _fs(m, "white", INK, 1.6)
+            circle(m, ex - 1.3, -2.2, 1.6)                # looking at the satellite
+            _f(m, INK)
+            m.move_to(ex - 3, -8 - 2 * dodge)             # brows up
+            m.line_to(ex + 3, -8.6 - 2 * dodge)
+        _s(m, INK, 1.8)
+        ellipse(m, 0, 7, 2.2 + 0.8 * dodge, 2.6 + 1.2 * dodge)   # "o!"
+        _f(m, INK)
+        for ex in (-10, 10):
+            ellipse(m, ex, 4, 2.6, 1.6)
+            _f(m, "#ff9eb5", 0.7)
+    if dodge > 0.3:                                       # sweat drop
+        a = smoothstep((dodge - 0.3) / 0.4)
+        with saved(c, r * 0.95, -r * 0.8, 1.0, 0.4) as d:
+            d.move_to(0, -5)
+            d.curve_to(3.5, 0, 3.5, 3.5, 0, 3.5)
+            d.curve_to(-3.5, 3.5, -3.5, 0, 0, -5)
+            _fs(d, "#9fdcff", INK, 1.4, a=a)
+
+
+def draw_space_lasers_book(ctx, x, y, s, t, rot=0.0, sq=0.0):
+    """SPACE LASERS FOR DUMMIES (the s11 gift-pile book; s12 draws the same
+    design). 150 x 190 at s=1, centred on (x, y); `sq` = squash (landing),
+    `rot` radians. Animated with `t` (see the design note above)."""
+    mz, u, ang = _sl_geom()
+    nx, ny = u[1], -u[0]                                   # path normal (upward)
+    cyc = math.floor(t / SL_PERIOD)
+    ph = t - cyc * SL_PERIOD
+    shots = [cyc * SL_PERIOD + k for k in SL_SHOTS]        # this cycle's shot times
+    shots_prev = [(cyc - 1) * SL_PERIOD + k for k in SL_SHOTS]
+    last = None
+    for ts in shots_prev + shots:
+        if ts <= t:
+            last = ts
     with saved(ctx, x, y, (s * (1 + sq * 0.5), s * (1 - sq)), rot) as c:
-        rrect(c, -70, -91, 150, 186, 10)                # page block
+        rrect(c, -70, -91, 150, 186, 10)                   # page block
         _fs(c, "#f3ead2", INK, 4)
-        rrect(c, -75, -95, 150, 190, 12)                # cover
-        _fs(c, GB_COVER, INK, 5)
-        rrect(c, -75, -95, 24, 190, 10)                 # spine
-        _fs(c, GB_SPINE, INK, 4)
-        for yy in (-70, 70):
+        rrect(c, -75, -95, 150, 190, 12)                   # navy cover
+        _fs(c, SL_COVER, INK, 5)
+        c.save()
+        rrect(c, -75, -95, 150, 190, 12)
+        c.clip()
+        with saved(c, 26, 26, 1.0, -0.42) as cn:           # faint nebula band
+            ellipse(cn, 0, 0, 80, 30)
+            _f(cn, SL_NEBULA, 0.9)
+            ellipse(cn, 10, 2, 46, 15)
+            _f(cn, SL_NEBULA2, 0.7)
+        c.rectangle(38, -97, 40, 194)                      # one shadow tone
+        _f(c, SL_COVER_DK, 0.55)
+        for i, (sx_, sy_, sr) in enumerate(SL_STARS):      # little stars (twinkle)
+            tw = 0.65 + 0.35 * math.sin(t * (2.2 + 0.4 * (i % 4)) + i * 1.7)
+            circle(c, sx_, sy_, sr * tw)
+            _f(c, "white" if i % 3 else SL_GOLD, 0.95)
+        for i, (sx_, sy_, sr) in enumerate(SL_BIG_STARS):
+            tw = 0.75 + 0.25 * math.sin(t * 3.1 + i * 2.3)
+            P._star4(c, sx_, sy_, sr * tw, 0.2 * i)
+            _f(c, SL_GOLD if i != 1 else "white")
+        # the moon (ducks under each burst)
+        dodge = _sl_moon_dodge(ph)
+        with saved(c, SL_MOON[0] + 3 * dodge, SL_MOON[1] + 17 * dodge) as cm:
+            _sl_moon(cm, t, dodge)
+        # laser bolts (this cycle + the tail of the last one)
+        for ts in shots_prev + shots:
+            d = (t - ts) * SL_V
+            if d < 0 or d > 140:
+                continue
+            ln = min(18.0, 4 + d)
+            hx, hy = mz[0] + u[0] * d, mz[1] + u[1] * d
+            tx, ty = hx - u[0] * ln, hy - u[1] * ln
+            for col, w, a in ((SL_LASER, 13, 0.3), (INK, 8.5, 1.0), (SL_LASER, 6, 1.0),
+                              (SL_LASER_CORE, 2.2, 1.0)):
+                c.move_to(tx, ty)
+                c.line_to(hx, hy)
+                _s(c, col, w, a)
+        c.restore()
+        # the satellite (in front of the bolts' tails at the muzzle)
+        with saved(c, SL_SAT[0], SL_SAT[1], SL_SAT[2], ang) as cs:
+            _sl_satellite(cs, t, last)
+        if last is not None and t - last < 0.08:           # muzzle flash
+            fk = 1 - (t - last) / 0.08
+            P._star4(c, mz[0] + u[0] * 3, mz[1] + u[1] * 3, 10 * fk + 3, t * 9)
+            _fs(c, SL_LASER_CORE, SL_LASER, 2, a=fk)
+        # "PEW" pops, one per shot, stepping along the path
+        for j, ts in enumerate(shots_prev + shots):
+            age = t - ts
+            if not 0 <= age < 0.45:
+                continue
+            k = j % len(SL_SHOTS)
+            along, up = (4, 28, 54)[k], (15, 27, 13)[k]
+            px = mz[0] + u[0] * along + nx * up
+            py = mz[1] + u[1] * along + ny * up - 6 * age
+            ps = ease_out_back(seg(age, 0.0, 0.1), 3.0)
+            pa = 1 - seg(age, 0.3, 0.45)
+            with saved(c, px, py, max(0.01, ps), (-0.18, 0.06, -0.08)[k], alpha_=pa) as cp:
+                text(cp, "PEW", 0, 5, 15, SL_PEW, "comic", outline=INK, outline_w=4)
+        rrect(c, -75, -95, 24, 190, 10)                    # spine
+        _fs(c, SL_SPINE, INK, 4)
+        for yy in (-72, 72):
             c.move_to(-73, yy)
             c.line_to(-53, yy)
-        _s(c, GB_GOLD, 4)
-        rrect(c, -44, -84, 110, 168, 9)                 # gold border
-        _s(c, GB_GOLD, 4)
-        for txt, fs0, ty, mw in (("THE SPOOKY", 19, -58, 96), ("GHOST", 31, -30, 100)):
-            fs = fs0
+        _s(c, SL_GOLD, 4)
+        for txt, ty, mw in (("SPACE LASERS", -64, 114), ("FOR DUMMIES", -39, 108)):
+            fs = 26
             while fs > 10 and text_width(c, txt, "title", fs) > mw:
-                fs -= 1
-            text(c, txt, 11, ty, fs, GB_GOLD, "title")
-        draw_spooky_ghost(c, 11, 34, 1.0, t)
-        for (sx_, sy_) in ((-30, 74), (52, 72), (54, -76)):   # tiny gold stars
-            P._star4(c, sx_, sy_, 6)
-            _f(c, GB_GOLD)
+                fs -= 0.5
+            text(c, txt, 12, ty, fs, SL_GOLD, "title", outline=INK, outline_w=4)
 
 
 NB_COVER, NB_COVER_DK, NB_PAGES = "#13a8a0", "#0b6f6a", "#fff6e0"   # as s03
@@ -827,12 +985,12 @@ def _gift_star(c, x, y, s, rot=0.0):
         cc.fill()
 
 
-HUG_DY = 60.0       # the grip sits low on the book so the cover ghost stays visible
+HUG_DY = 66.0       # the grip sits low on the book so its cover art stays visible
 
 
 def _hug_hands(ctx, bx, by, bs, rot, k=1.0):
     """White gloves wrapping over the book's side edges (the hug, as s06),
-    gripping its lower half (the waving cover ghost stays in view)."""
+    gripping its lower half (the title + the laser satellite stay in view)."""
     if k <= 0.01:
         return
     hs = MS * 1.45 * k
@@ -1739,7 +1897,7 @@ def _sheet(ctx, t, T):
                 fl = 1 - seg(t, t0 + 0.04, t0 + 0.3)     # pop flash
                 if fl > 0.01:
                     rrect(c, lab_x0 - 8, ry - 20, lab_x1 - lab_x0 + 14, 40, 10)
-                    _f(c, "ai_accent", 0.32 * fl)
+                    _f(c, "ai_accent", 0.24 * fl)
             t0 += 0.08                                   # bars fill right after the label
             for j in range(5):
                 bx = w / 2 - 26 - (5 - j) * 32 + 4
@@ -2286,8 +2444,8 @@ def _chips(ctx, t, T):
 # ---------------------------------------------------------------------------
 # the gift pile
 # ---------------------------------------------------------------------------
-BOOK_S = 1.0
-BOOK_DEST = (MX + 6, MY - 228 * MS)
+BOOK_S = 1.3                    # big enough that its title reads in his arms
+BOOK_DEST = (MX + 6, MY - 228 * MS + 18)
 # (kind, target x, target y, final scale, final rot)
 # (s12's opening lair shot draws this exact pile; keep the numbers in sync)
 GIFTS = [
@@ -2345,7 +2503,7 @@ def _draw_gift(ctx, t, i, pose):
         with saved(ctx, x, y, (sx, sy)):
             draw_scroll(ctx, 0, 0, s, rot)
     elif kind == "book":
-        draw_ghost_book(ctx, x, y, s, t, rot, sq)
+        draw_space_lasers_book(ctx, x, y, s, t, rot, sq)
     elif kind == "twist":
         with saved(ctx, x, y, (sx, sy)):
             draw_twist_script(ctx, 0, 0, s, rot)
@@ -2968,7 +3126,7 @@ def _shot_two(ctx, t, info, T):
             P._star4(c, mx_, my_, 18 * gk, 0.2)
             _fs(c, "white", INK, 2.5, a=gk)
         if landed_book:
-            draw_ghost_book(c, bpose[0], bpose[1] + dy, bpose[2], t, bpose[3], bpose[4])
+            draw_space_lasers_book(c, bpose[0], bpose[1] + dy, bpose[2], t, bpose[3], bpose[4])
             hk = ease_out(seg(t, T["gift_t"][3] + T["fly"] - 0.06,
                               T["gift_t"][3] + T["fly"] + 0.1))
             _hug_hands(c, bpose[0], bpose[1] + dy, bpose[2], bpose[3], hk)

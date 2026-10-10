@@ -138,15 +138,20 @@ V.VILLAIN_EXPR.setdefault("s12_me", dict(
 V.VILLAIN_EXPR.setdefault("s12_eager", dict(
     V.VILLAIN_EXPR["excited"], ba1=0.14, ba2=0.1, by1=-12, by2=-18, mc=1.05, mw=1.25, mo=0.32,
     es=1.04, ul1=0.1, ul2=0.06))
-V.VILLAIN_EXPR.setdefault("s12_caught", dict(
-    V.VILLAIN_EXPR["shocked"], mono=0.0, hair=0.35, es=1.12, ps=0.6, mo=0.2, mc=-0.2, mw=0.6,
-    sweat=0.9, hy=-8, shy=-8, blush=0.3))
 V.VILLAIN_EXPR.setdefault("s12_startle", dict(
     V.VILLAIN_EXPR["excited"], es=1.14, ps=0.7, hair=0.8, by1=-40, by2=-42, mo=0.5, mc=0.5,
     mw=0.95, hy=-14))
-V.VILLAIN_EXPR.setdefault("s12_laugh", dict(
-    _HAPPY, ul1=0.64, ul2=0.62, ll1=0.52, ll2=0.5, mc=1.15, mw=1.25, mo=0.4, mt=0.65,
-    blush=0.8, hy=-10, tilt=-0.06, by1=-20, by2=-20, shine=0.2))
+# l06 "Go on... I'm listening.": pleasantly surprised (it's listening?!), then
+# the scheme takes shape; l07 "Oh... you'll see.": the sly, delighted grin,
+# then a gleeful (harmless) evil-genius cackle
+V.VILLAIN_EXPR.setdefault("s12_ohh", dict(
+    V.VILLAIN_EXPR["hopeful"], by1=-32, by2=-36, ba1=-0.18, ba2=-0.18, es=1.07, ps=1.05,
+    mc=0.75, mw=0.95, mo=0.2, shine=0.45, blush=0.25, hy=-10))
+V.VILLAIN_EXPR.setdefault("s12_scheme", dict(
+    V.VILLAIN_EXPR["sneaky"], mc=0.95, msk=-0.3, mw=1.15, ul1=0.4, ul2=0.32, blush=0.15))
+V.VILLAIN_EXPR.setdefault("s12_cackle", dict(
+    V.VILLAIN_EXPR["evil_grin"], ul1=0.62, ul2=0.6, ll1=0.42, ll2=0.4, lt1=0.2, lt2=0.2,
+    mo=0.5, mw=1.5, hy=-14, tilt=-0.09, blush=0.35, shine=0.2))
 
 _REST_A = V.ARM_POSES["rest"]["a"]
 _HEART_B = V._arm(214, -128, 118, -196, -2.75, cu=0.12, th=0.25, sp=0.45, hs=1.0, tf=-1)
@@ -193,7 +198,43 @@ AIX = {
                  blush=1.0, tilt=-0.05),
     "listen": _ax("neutral", bLy=10, bRy=16, ps=1.1, mc=0.4, tilt=-0.06),
     "lantern": _ax("happy", mo=0.3, ps=1.1),
+    # "Go on... I'm listening.": intrigued + open: one eyebrow way up, eyes
+    # bright and open, a small curious smile (no heavy lid: not dismissive)
+    "intrigued": _ax("neutral", bLy=-8, bRy=36, bLa=0.0, bRa=-0.18, arch=0.65, tL=0.08,
+                     tR=0.0, lL=0.14, lR=0.08, lc=0.2, px=-0.25, py=0.12, ps=1.14,
+                     mc=0.55, mw=0.66, ms=0.42, mx=6, tilt=-0.07, blush=0.18, sacc=0.6),
+    "intrigued2": _ax("neutral", bLy=-4, bRy=40, bLa=0.0, bRa=-0.18, arch=0.65, tL=0.06,
+                      tR=0.0, lL=0.22, lR=0.16, lc=0.28, px=-0.25, py=0.12, ps=1.16,
+                      mc=0.8, mw=0.78, ms=0.5, mx=6, tilt=-0.08, blush=0.35, sacc=0.6),
 }
+
+
+# AI hand pose for this scene: the hand orbs folded across in front of its
+# "body" like crossed arms (I'm listening). The rig only knows its built-in
+# names, so wrap its pose lookup: s12_* names are handled here, everything
+# else falls straight through (other scenes are unaffected).
+_AI_POSE0 = AI._pose
+_FOLD_L = AI._H(-132, 220, math.pi / 2 - 0.14 - 2 * math.pi, open=0.72, thumb=0.22, tl=0.55,
+                sx=1.0, sc=1.1)
+_FOLD_R = dict(AI._mir(_FOLD_L), y=268.0)
+
+
+def _s12_ai_pose(name, t, seed):
+    if isinstance(name, str) and name.startswith("s12_"):
+        d = _AI_POSE0("idle", t, seed)
+        if name == "s12_fold":
+            b = 3.0 * math.sin(t * 2 * math.pi * 0.5)       # breathing
+            d["L"] = dict(_FOLD_L, y=_FOLD_L["y"] + b)
+            d["R"] = dict(_FOLD_R, y=_FOLD_R["y"] + b)
+        return d
+    return _AI_POSE0(name, t, seed)
+
+
+if not getattr(AI._pose, "_s12", False):
+    _s12_ai_pose._s12 = True
+    AI._pose = _s12_ai_pose
+    if "s12_fold" not in AI.HAND_POSES:
+        AI.HAND_POSES.append("s12_fold")
 
 
 # ---------------------------------------------------------------------------
@@ -260,16 +301,14 @@ def _T(info):
     T.br1, T.br2 = T.wz[0], T.wz[-1]             # "Brains..." / "brains!"
     T.zm = c("zombie_mask")
     T.kr = c("kid_runs")
-    # the kid: runs up to the front of the table (from off frame right) once
-    # the camera has eased out (so she never crosses the caption band), looks
-    # up at him; wide-eyed "O" as the mask comes down and through "Brains...",
-    # squeal-laughs on "brains!", looks back over her shoulder and dashes off
-    # screen right (never comes back)
-    T.arr1 = T.zm + 0.28                         # stops in front of the table
-    T.arr0 = T.arr1 - 0.45                       # (starts off frame right)
-    T.zout1 = min(T.arr0 + 0.1, T.l4.end + 0.1)  # camera eases out/up: settled
-    T.zout0 = T.zout1 - 0.5                      # before she comes into frame
-    T.pull0 = max(T.zm + 0.24, T.arr1 + 0.06)    # hands up, then the mask comes down
+    # the kid: already standing at the front of the table (close to camera)
+    # from the first frame of the party; she watches him wide-eyed as the
+    # mask comes down and through "Brains...", squeal-laughs on "brains!",
+    # looks back over her shoulder and dashes off screen right (never comes
+    # back). The camera eases out a touch for the gag so she is fully in frame.
+    T.zout1 = min(T.zm - 0.07, T.l4.end + 0.1)   # camera eased out/up: settled
+    T.zout0 = T.zout1 - 0.5
+    T.pull0 = T.zm + 0.27                        # hands up, then the mask comes down
     T.pull1 = T.pull0 + clamp(T.l4z.start - 0.04 - T.pull0, 0.18, 0.26)
     T.sq0 = T.br2 + 0.04                         # squeal
     T.run0 = T.sq0 + 0.3                         # takes off
@@ -286,13 +325,15 @@ def _T(info):
     T.glance = T.mu1                             # paranoid glances start once it is up
     T.chip_in = T.lean + 0.15
     T.l5 = T.L[5]
-    T.l6 = T.L[6]
-    T.malvo = T.w[6][0]
-    T.l7 = T.L[7]
-    T.kid2 = T.w[7][1]
+    T.l6 = T.L[6]                                # "Go on... I'm listening."
+    T.goon = T.w[6][0]
+    T.listen = T.w[6][-1]
+    T.l7 = T.L[7]                                # "Oh... you'll see."
+    T.oh = T.w[7][0]
+    T.see = T.w[7][-1]
     T.laugh = c("laugh")
-    T.lol = T.l7.end                         # both start laughing
-    T.chip_out = T.kid2 + 0.08
+    T.lol = T.l7.end                         # they all laugh
+    T.chip_out = T.lol + 0.12
     T.end = info.dur
     _TCACHE.clear()
     _TCACHE[key] = T
@@ -870,109 +911,232 @@ def draw_mini_volcano(c, x, y, s, t=None):
             _steam(cc, t, 2, -138, 0.9, n=1, period=2.2, rise=80, seed=2)
 
 
-# THE SPACE LASERS FOR DUMMIES storybook (s11 gift pile / s12): the same
-# design as s11_heart.py's book
-SL_COVER, SL_SPINE, SL_GOLD, SL_PEW = "#1b2550", "#111836", "#ffd166", "#ff4fa3"
-SL_STARS = ((-34, -18, 3.0), (58, -16, 3.4), (-32, 54, 2.6), (60, 36, 2.4), (30, 78, 3.2),
-            (-14, 80, 2.4))
+# ---------------------------------------------------------------------------
+# SPACE LASERS FOR DUMMIES (the s11 gift-pile book: an exact copy of
+# s11_heart.py's drawing code, so the two scenes match)
+# ---------------------------------------------------------------------------
+# A 150 x 190 hardcover (s=1, centred): deep-space navy cover #1b2550 with
+# little twinkling stars and a faint nebula; gold title #ffd166 (ink outline)
+# in two lines "SPACE LASERS" / "FOR DUMMIES" across the top; below it a cute
+# cartoon orbital laser satellite (silver body with a little face, blue solar
+# panels, pink emitter) at the left fires pink/magenta bolts #ff4fa3 (white
+# core) across the cover to the right in bursts of three, each shot popping a
+# tiny "PEW"; a startled little moon at the right ducks under every burst
+# (sweat drop) and bobs back up. Loops every 1.5 s. Original design: NOT the
+# real yellow/black "For Dummies" trade dress.
+SL_COVER, SL_COVER_DK, SL_SPINE = "#1b2550", "#141c42", "#11173a"
+SL_NEBULA, SL_NEBULA2 = "#25336c", "#2e3f82"
+SL_GOLD, SL_LASER, SL_LASER_CORE = "#ffd166", "#ff4fa3", "#fff0f7"
+SL_PEW = "#ffe1f0"
+SAT_BODY, SAT_BODY_DK, SAT_STRUT = "#d7dde9", "#a7b0c6", "#8e98b0"
+SAT_PANEL, SAT_PANEL_LN, SAT_BARREL = "#3f7fe0", "#a8c8ff", "#5b6480"
+MOON_C, MOON_DK, MOON_CRATER = "#f6eabf", "#e0cf95", "#d8c584"
+SL_PERIOD = 1.5                       # one burst of three every 1.5 s
+SL_SHOTS = (0.1, 0.3, 0.5)            # shot times inside the cycle
+SL_V = 210.0                          # bolt speed (cover px / s)
+SL_SAT = (-26.0, 1.0, 0.7)            # satellite centre + scale (cover-local)
+SL_MOON = (47.0, 18.0, 15.0)          # moon rest centre + radius
+SL_STARS = [(-40, -80, 1.6), (-14, -86, 1.2), (58, -84, 1.8), (66, -50, 1.3), (-44, -22, 1.4),
+            (2, -14, 1.1), (30, -8, 1.6), (64, 2, 1.2), (-40, 40, 1.5), (-18, 58, 1.2),
+            (14, 48, 1.7), (40, 64, 1.3), (66, 82, 1.6), (-30, 84, 1.3), (24, 84, 1.1),
+            (-2, 72, 1.4)]
+SL_BIG_STARS = [(-38, -6, 4.6), (62, -26, 4.0), (8, 66, 4.4)]
 
 
-def _satellite(c, x, y, k, t):
-    """Cute orbital laser satellite (book cover): gold body with a happy face,
-    two blue solar panels, a laser nozzle pointing down-left. (x, y) = body."""
-    with saved(c, x, y, k, -0.18) as q:
-        for sx in (-1, 1):                                 # struts + solar panels
-            q.move_to(sx * 12, 0)
-            q.line_to(sx * 20, 0)
-            _s(q, INK, 3)
-            q.rectangle(sx * 20 - (24 if sx < 0 else 0), -8, 24, 16)
-            _fs(q, "#3f7fe0", INK, 2.5)
-            for j in (1, 2):
-                xx = sx * 20 + (-24 + 8 * j if sx < 0 else 8 * j)
-                q.move_to(xx, -8)
-                q.line_to(xx, 8)
-            q.move_to(sx * 20 + (-24 if sx < 0 else 0), 0)
-            q.line_to(sx * 20 + (0 if sx < 0 else 24), 0)
-            _s(q, "#9cc6ff", 1.4)
-        with saved(q, -6, 11, 1.0, 0.75):                  # laser nozzle
-            rrect(q, -4, -2, 8, 12, 2.5)
-            _fs(q, "#c3cad8", INK, 2.2)
-        rrect(q, -12, -11, 24, 22, 6)                      # body
-        _fs(q, "#ffcf3a", INK, 2.8)
-        q.move_to(0, -11)                                  # little dish antenna
-        q.line_to(3, -18)
-        _s(q, INK, 2)
-        circle(q, 3, -19, 2.4)
-        _f(q, SL_PEW)
-        for sx in (-1, 1):                                 # happy face
-            circle(q, sx * 4.5, -2, 1.7)
-            _f(q, INK)
-        q.move_to(-4, 3)
-        q.curve_to(-2, 6.5, 2, 6.5, 4, 3)
-        _s(q, INK, 1.6)
+def _sl_geom():
+    """Muzzle point, unit aim vector (at the moon's rest centre), aim angle."""
+    sx, sy, ss = SL_SAT
+    mx, my, _ = SL_MOON
+    ang = math.atan2(my - sy, mx - sx)
+    mz = (sx + math.cos(ang) * 38 * ss, sy + math.sin(ang) * 38 * ss)
+    d = math.hypot(mx - mz[0], my - mz[1]) or 1.0
+    return mz, ((mx - mz[0]) / d, (my - mz[1]) / d), ang
 
 
-def _laser_fx(c, t, ox, oy, period=0.8):
-    """Pink/magenta bolts from the nozzle (ox, oy) down-left, with a tiny
-    'PEW' pop at every shot (two shots per period, alternating sides)."""
-    dx, dy = -0.62, 0.78
-    for j in range(2):
-        ph = ((t / period) + j * 0.5) % 1.0
-        if ph < 0.45:                                      # bolt in flight
-            u = ph / 0.45
-            d0, d1 = 2 + 74 * u, 2 + 74 * u + 16
-            a = 1.0 - smoothstep(seg(u, 0.75, 1.0))
-            for col, w in ((INK, 7.5), (SL_PEW, 5), ("#ffd6ea", 1.8)):
-                c.move_to(ox + dx * d0, oy + dy * d0)
-                c.line_to(ox + dx * d1, oy + dy * d1)
-                _s(c, col, w, a)
-        if ph < 0.32:                                      # PEW pop
-            u = ph / 0.32
-            k = ease_out_back(min(1.0, u * 2.2)) * (1 - smoothstep(seg(u, 0.7, 1.0)))
-            if k > 0.02:
-                px, py = (ox + 24, oy + 14) if j == 0 else (ox - 34, oy + 18)
-                with saved(c, px, py, k, -0.12 if j == 0 else 0.12) as p:
-                    P._star4(p, 0, 0, 13, 0.3, 0.45)
-                    _fs(p, "#ffe0f0", INK, 1.6)
-                    text(p, "PEW", 0, 4, 11, SL_PEW, "comic", outline=INK, outline_w=3)
+def _sl_moon_dodge(ph):
+    """0 up .. 1 ducked, for cycle phase ph (s): ducks just before the first
+    bolt arrives, stays down while the burst passes, bobs back up."""
+    mz, _u, _a = _sl_geom()
+    arrive = SL_SHOTS[0] + math.hypot(SL_MOON[0] - mz[0], SL_MOON[1] - mz[1]) / SL_V
+    gone = SL_SHOTS[-1] + (math.hypot(SL_MOON[0] - mz[0], SL_MOON[1] - mz[1]) + 26) / SL_V
+    down = ease_out(seg(ph, arrive - 0.16, arrive - 0.04))
+    up = ease_out_back(seg(ph, gone, gone + 0.3), 2.2)
+    return down * (1 - up) if ph < gone + 0.3 else 0.0
 
 
-def draw_laser_book(ctx, x, y, s, t, rot=0.0, sq=0.0):
-    """SPACE LASERS FOR DUMMIES storybook: 150x190 at s=1, centred. Deep-space
-    navy cover #1b2550 with little stars, gold title #ffd166 in two lines, a
-    cute orbital laser satellite firing animated pink bolts #ff4fa3 with tiny
-    'PEW' pops."""
+def _sl_satellite(c, t, last_shot):
+    """Cute orbital laser satellite, barrel along +x (cover-local, pre-rotated)."""
+    rec = 3.5 * math.exp(-max(0.0, t - last_shot) * 22) if last_shot is not None else 0.0
+    c.translate(-rec, 0)
+    for col, w in ((INK, 7), (SAT_STRUT, 3.5)):          # panel strut
+        c.move_to(-3, -36)
+        c.line_to(-3, 36)
+        _s(c, col, w)
+    for py in (-52, 28):                                  # two solar panels
+        rrect(c, -15, py, 24, 24, 3)
+        _fs(c, SAT_PANEL, INK, 3.2)
+        c.move_to(-3, py + 2)
+        c.line_to(-3, py + 22)
+        c.move_to(-13, py + 12)
+        c.line_to(7, py + 12)
+        _s(c, SAT_PANEL_LN, 1.8)
+    c.move_to(-10, -12)                                   # little dish antenna
+    c.line_to(-17, -24)
+    _s(c, INK, 3)
+    c.arc(-19, -27, 6, math.pi * 0.85, math.pi * 1.95)
+    _fs(c, SAT_BODY, INK, 2.5)
+    rrect(c, 12, -5.5, 22, 11, 3)                         # the laser barrel
+    _fs(c, SAT_BARREL, INK, 3)
+    rrect(c, 31, -7.5, 7, 15, 2.5)                        # pink emitter
+    _fs(c, SL_LASER, INK, 2.5)
+    rrect(c, -17, -14, 34, 28, 8)                         # silver body
+    _fs(c, SAT_BODY, INK, 3.5)
+    c.save()
+    rrect(c, -17, -14, 34, 28, 8)
+    c.clip()
+    c.rectangle(6, -16, 14, 32)
+    _f(c, SAT_BODY_DK, 0.75)
+    c.restore()
+    for ex in (-7, 4):                                    # determined little face
+        circle(c, ex + 1, -2, 3.2)
+        _f(c, INK)
+        circle(c, ex + 0.2, -3.2, 1.1)
+        _f(c, "white")
+        c.move_to(ex - 3, -8.5 + (1 if ex > 0 else 0))
+        c.line_to(ex + 4, -7.5 - (1 if ex > 0 else 0))
+    _s(c, INK, 2)
+    c.move_to(-5, 6)
+    c.curve_to(-2, 9, 3, 9, 6, 5.5)
+    _s(c, INK, 2)
+
+
+def _sl_moon(c, t, dodge):
+    """Startled little moon (cover-local, at its centre)."""
+    r = SL_MOON[2]
+    with saved(c, 0, 0, (1 + 0.1 * dodge, 1 - 0.1 * dodge), 0.25 * dodge) as m:
+        circle(m, 0, 0, r)
+        _fs(m, MOON_C, INK, 3)
+        m.save()
+        circle(m, 0, 0, r)
+        m.clip()
+        circle(m, 7, 6, r)
+        m.rectangle(-30, -30, 60, 60)
+        m.set_fill_rule(cairo.FILL_RULE_EVEN_ODD)
+        _f(m, MOON_DK, 0.6)
+        m.set_fill_rule(cairo.FILL_RULE_WINDING)
+        m.restore()
+        for (cx_, cy_, cr) in ((-8, -8, 3.0), (8, -9, 2.2), (9, 7, 2.6)):
+            circle(m, cx_, cy_, cr)
+            _f(m, MOON_CRATER)
+        eo = 1 + 0.25 * dodge                             # wide, startled eyes
+        for ex in (-5.0, 5.0):
+            ellipse(m, ex, -1, 3.6 * eo, 4.4 * eo)
+            _fs(m, "white", INK, 1.6)
+            circle(m, ex - 1.3, -2.2, 1.6)                # looking at the satellite
+            _f(m, INK)
+            m.move_to(ex - 3, -8 - 2 * dodge)             # brows up
+            m.line_to(ex + 3, -8.6 - 2 * dodge)
+        _s(m, INK, 1.8)
+        ellipse(m, 0, 7, 2.2 + 0.8 * dodge, 2.6 + 1.2 * dodge)   # "o!"
+        _f(m, INK)
+        for ex in (-10, 10):
+            ellipse(m, ex, 4, 2.6, 1.6)
+            _f(m, "#ff9eb5", 0.7)
+    if dodge > 0.3:                                       # sweat drop
+        a = smoothstep((dodge - 0.3) / 0.4)
+        with saved(c, r * 0.95, -r * 0.8, 1.0, 0.4) as d:
+            d.move_to(0, -5)
+            d.curve_to(3.5, 0, 3.5, 3.5, 0, 3.5)
+            d.curve_to(-3.5, 3.5, -3.5, 0, 0, -5)
+            _fs(d, "#9fdcff", INK, 1.4, a=a)
+
+
+def draw_space_lasers_book(ctx, x, y, s, t, rot=0.0, sq=0.0):
+    """SPACE LASERS FOR DUMMIES (the s11 gift-pile book; s12 draws the same
+    design). 150 x 190 at s=1, centred on (x, y); `sq` = squash (landing),
+    `rot` radians. Animated with `t` (see the design note above)."""
+    mz, u, ang = _sl_geom()
+    nx, ny = u[1], -u[0]                                   # path normal (upward)
+    cyc = math.floor(t / SL_PERIOD)
+    ph = t - cyc * SL_PERIOD
+    shots = [cyc * SL_PERIOD + k for k in SL_SHOTS]        # this cycle's shot times
+    shots_prev = [(cyc - 1) * SL_PERIOD + k for k in SL_SHOTS]
+    last = None
+    for ts in shots_prev + shots:
+        if ts <= t:
+            last = ts
     with saved(ctx, x, y, (s * (1 + sq * 0.5), s * (1 - sq)), rot) as c:
-        rrect(c, -70, -91, 150, 186, 10)                # page block
+        rrect(c, -70, -91, 150, 186, 10)                   # page block
         _fs(c, "#f3ead2", INK, 4)
-        rrect(c, -75, -95, 150, 190, 12)                # cover
+        rrect(c, -75, -95, 150, 190, 12)                   # navy cover
         _fs(c, SL_COVER, INK, 5)
-        rrect(c, -75, -95, 24, 190, 10)                 # spine
+        c.save()
+        rrect(c, -75, -95, 150, 190, 12)
+        c.clip()
+        with saved(c, 26, 26, 1.0, -0.42) as cn:           # faint nebula band
+            ellipse(cn, 0, 0, 80, 30)
+            _f(cn, SL_NEBULA, 0.9)
+            ellipse(cn, 10, 2, 46, 15)
+            _f(cn, SL_NEBULA2, 0.7)
+        c.rectangle(38, -97, 40, 194)                      # one shadow tone
+        _f(c, SL_COVER_DK, 0.55)
+        for i, (sx_, sy_, sr) in enumerate(SL_STARS):      # little stars (twinkle)
+            tw = 0.65 + 0.35 * math.sin(t * (2.2 + 0.4 * (i % 4)) + i * 1.7)
+            circle(c, sx_, sy_, sr * tw)
+            _f(c, "white" if i % 3 else SL_GOLD, 0.95)
+        for i, (sx_, sy_, sr) in enumerate(SL_BIG_STARS):
+            tw = 0.75 + 0.25 * math.sin(t * 3.1 + i * 2.3)
+            P._star4(c, sx_, sy_, sr * tw, 0.2 * i)
+            _f(c, SL_GOLD if i != 1 else "white")
+        # the moon (ducks under each burst)
+        dodge = _sl_moon_dodge(ph)
+        with saved(c, SL_MOON[0] + 3 * dodge, SL_MOON[1] + 17 * dodge) as cm:
+            _sl_moon(cm, t, dodge)
+        # laser bolts (this cycle + the tail of the last one)
+        for ts in shots_prev + shots:
+            d = (t - ts) * SL_V
+            if d < 0 or d > 140:
+                continue
+            ln = min(18.0, 4 + d)
+            hx, hy = mz[0] + u[0] * d, mz[1] + u[1] * d
+            tx, ty = hx - u[0] * ln, hy - u[1] * ln
+            for col, w, a in ((SL_LASER, 13, 0.3), (INK, 8.5, 1.0), (SL_LASER, 6, 1.0),
+                              (SL_LASER_CORE, 2.2, 1.0)):
+                c.move_to(tx, ty)
+                c.line_to(hx, hy)
+                _s(c, col, w, a)
+        c.restore()
+        # the satellite (in front of the bolts' tails at the muzzle)
+        with saved(c, SL_SAT[0], SL_SAT[1], SL_SAT[2], ang) as cs:
+            _sl_satellite(cs, t, last)
+        if last is not None and t - last < 0.08:           # muzzle flash
+            fk = 1 - (t - last) / 0.08
+            P._star4(c, mz[0] + u[0] * 3, mz[1] + u[1] * 3, 10 * fk + 3, t * 9)
+            _fs(c, SL_LASER_CORE, SL_LASER, 2, a=fk)
+        # "PEW" pops, one per shot, stepping along the path
+        for j, ts in enumerate(shots_prev + shots):
+            age = t - ts
+            if not 0 <= age < 0.45:
+                continue
+            k = j % len(SL_SHOTS)
+            along, up = (4, 28, 54)[k], (15, 27, 13)[k]
+            px = mz[0] + u[0] * along + nx * up
+            py = mz[1] + u[1] * along + ny * up - 6 * age
+            ps = ease_out_back(seg(age, 0.0, 0.1), 3.0)
+            pa = 1 - seg(age, 0.3, 0.45)
+            with saved(c, px, py, max(0.01, ps), (-0.18, 0.06, -0.08)[k], alpha_=pa) as cp:
+                text(cp, "PEW", 0, 5, 15, SL_PEW, "comic", outline=INK, outline_w=4)
+        rrect(c, -75, -95, 24, 190, 10)                    # spine
         _fs(c, SL_SPINE, INK, 4)
-        for yy in (-70, 70):
+        for yy in (-72, 72):
             c.move_to(-73, yy)
             c.line_to(-53, yy)
         _s(c, SL_GOLD, 4)
-        for (sx_, sy_, r) in SL_STARS:                  # little stars
-            P._star4(c, sx_, sy_, r * 1.3, 0.0, 0.35)
-            _f(c, "#fff4d8", 0.9)
-        rrect(c, -44, -84, 110, 168, 9)                 # gold border
-        _s(c, SL_GOLD, 4)
-        for txt, fs0, ty, mw in (("SPACE LASERS", 19, -60, 98), ("FOR DUMMIES", 19, -38, 98)):
-            fs = fs0
+        for txt, ty, mw in (("SPACE LASERS", -64, 114), ("FOR DUMMIES", -39, 108)):
+            fs = 26
             while fs > 10 and text_width(c, txt, "title", fs) > mw:
-                fs -= 1
-            text(c, txt, 11, ty, fs, SL_GOLD, "title")
-        c.save()
-        rrect(c, -42, -26, 106, 108, 8)                 # art window (bolts stay inside)
-        c.clip()
-        _laser_fx(c, t, 11, 26)                          # bolts fly off into empty space
-        c.restore()
-        circle(c, 50, 70, 8)                            # a little ringed planet (decor)
-        _fs(c, "#c9a7ff", INK, 2.5)
-        ellipse(c, 50, 70, 15, 4, -0.3)
-        _s(c, "#ffd166", 2.2)
-        _satellite(c, 20, 6, 1.0, t)
+                fs -= 0.5
+            text(c, txt, 12, ty, fs, SL_GOLD, "title", outline=INK, outline_w=4)
 
 
 def draw_popper(c, x, y, s, t, fired=False, squash=0.0, rot=0.0):
@@ -3286,7 +3450,7 @@ def shot_lair(ctx, t, info, T):
     draw_rolled_scroll(ctx, 280, 1212, 0.95, -0.12)
     draw_headphones(ctx, 528, 1206, 1.12, 0.12)
     draw_twist_script(ctx, *PILE_TWIST)
-    draw_laser_book(ctx, 404, 1192, 0.62, t, 0.05)
+    draw_space_lasers_book(ctx, 404, 1192, 0.62, t, 0.05)
     draw_pumpkin(ctx, *PUMPKIN_AT, t)
     draw_dragon_fig(ctx, *DRAGON_AT, t, look=(-0.6, -0.2))
 
@@ -3351,10 +3515,10 @@ def _malvo_b(t, T, info):
         (T.l5.start + 0.23, "sneaky", 0.1),
         (T.l5.start + 0.38, "smug", 0.1),
         (T.l5.start + 0.53, "sneaky", 0.1),
-        (T.malvo + 0.28, "s12_caught", 0.08),         # caught
-        (T.l7.start - 0.06, "sheepish", 0.2),
-        (T.kid2 - 0.05, "happy", 0.25),
-        (T.lol, "s12_laugh", 0.2),
+        (T.goon + 0.04, "s12_ohh", 0.12),             # "Go on...": oh? really?!
+        (T.listen + 0.08, "s12_scheme", 0.3),         # ... the scheme takes shape
+        (T.oh - 0.1, "evil_grin", 0.22),              # "Oh... you'll see."
+        (T.lol, "s12_cackle", 0.2),                   # a delighted (harmless) cackle
     ])
     look = keyed_v(t, [
         (0.0, (-0.75, 0.15)),
@@ -3373,9 +3537,10 @@ def _malvo_b(t, T, info):
         (T.glance, (-0.95, 0.05)),                    # paranoid glance left
         (T.glance + 0.2, (0.95, 0.05)),               # ... right
         (T.glance + 0.38, (0.9, -0.7)),               # at the AI
-        (T.malvo + 0.05, (0.8, -0.65)),
-        (T.l7.start, (0.7, -0.6)),
-        (T.lol, (0.3, -0.2)),
+        (T.goon + 0.02, (0.85, -0.75)),
+        (T.oh, (0.75, -0.6)),
+        (T.see - 0.06, (0.15, -0.05)),                # sly look to us: "you'll see."
+        (T.lol + 0.2, (0.4, -0.35)),
     ], 0.1)
     arms = keyed(t, [
         (0.0, "shrug"),
@@ -3392,18 +3557,16 @@ def _malvo_b(t, T, info):
         (T.mu0, "s12_grab_up", T.mu1 - T.mu0),        # pushes it back up
         (T.mu1, "s12_grab_out", 0.12),
         (T.mu1 + 0.12, "steeple", 0.2),
-        (T.l7.start - 0.08, "shrug", 0.15),
-        (T.lol + 0.15, "s12_heart", 0.35),
+        (T.oh - 0.14, "rub", 0.2),                    # rubs his hands with glee
     ])
     lean = 0.08 * ease_in_out(seg(t, T.lean + 0.35, T.lean + 0.7))
-    lean *= 1 - ease_in_out(seg(t, T.malvo + 0.4, T.malvo + 0.8))
+    k_back = ease_in_out(seg(t, T.oh - 0.16, T.oh + 0.3))      # straightens, chin up
+    lean = lean * (1 - k_back) - 0.03 * k_back
     blink = _first(_pulses(t, [P0 + 0.3, L3.end + 0.12, L3.end + 0.3, T.mu1 - 0.02,
-                               T.zm - 0.12], 0.06, 0.9),
+                               T.zm - 0.12, T.goon + 0.02], 0.06, 0.9),
                    slow_blink(t, T.l4.start + 0.2))
     if T.impr - 0.06 <= t < T.stats + 0.3 and blink is None:
         blink = 0.28                                  # self-satisfied lowered lids
-    if T.malvo + 0.28 <= t < T.l7.start - 0.06:      # caught: frozen, wide-eyed
-        blink = 0.0
     mouth = info.mouth("villain", t)
     y = VY
     x = VX
@@ -3461,20 +3624,26 @@ def _hissy_b(t, T):
         (T.sq0 + 0.1, "nod", 0.2),                    # happy nod: harmless fun
         (T.l4y.start + 0.6, "happy", 0.3),
         (T.glance + 0.1, "side_eye", 0.2),            # he knows that face
-        (T.malvo + 0.08, "facepalm", 0.2),
-        (T.kid2 + 0.05, "happy", 0.3),
+        (T.goon + 0.1, "shocked", 0.1),               # ... the AI is listening?!
+        (T.goon + 0.6, "idle", 0.25),
+        (T.oh + 0.1, "smug", 0.25),                   # smirks along with him
+        (T.lol + 0.05, "happy", 0.3),
     ])
     look = keyed_v(t, [
         (0.0, (-0.3, 0.9)),                           # reading the book
         (T.l3.start + 0.3, (1.0, -0.2)),              # at Malvo
         (T.sq0, (1.0, 0.1)),                          # the kid's getaway
         (T.lean + 0.2, (1.0, 0.0)),
-        (T.kid2 + 0.05, (0.8, -0.2)),
+        (T.goon + 0.1, (1.0, -0.6)),                  # at the AI
+        (T.oh + 0.1, (1.0, 0.0)),                     # at him
+        (T.see, (0.35, 0.25)),                        # smirk to us
+        (T.lol + 0.1, (0.8, -0.2)),
     ], 0.15)
     mouth = 0.0
     if t < T.l3.start - 0.1:                          # 'reading' aloud (no dialogue here)
         mouth = 0.2 * max(0.0, math.sin((t - T.party) * 2 * math.pi * 2.6))
-    tongue = True if T.lean + 0.62 <= t < T.lean + 0.9 else (False if t < T.l3.start else None)
+    tongue = True if (T.lean + 0.62 <= t < T.lean + 0.9 or T.see + 0.05 <= t < T.see + 0.35) \
+        else (False if t < T.l3.start else None)
     flap = _flap_once(t, T.party + 0.75) if t < T.lol else _flap_once(t, T.lol + 0.1)
     return dict(expr=ex, look=look, mouth=mouth, tongue=tongue, flap=flap)
 
@@ -3493,9 +3662,9 @@ def _ai_b(t, T, info, kid_look=None):
         (T.nobody - 0.02, "wink", 0.08),              # "Hurt? Nobody." + wink
         (T.nobody + 0.6, "happy", 0.25),
         (T.lean + 0.4, AIX["listen"], 0.3),
-        (T.l6.start, "unimpressed", 0.0),             # instantly 😒
-        (T.kid2 + 0.08, "amused", 0.3),
-        (T.lol - 0.25, AIX["laugh"], 0.25),
+        (T.l5.end - 0.04, AIX["intrigued"], 0.3),     # one brow up, curious smile
+        (T.see + 0.04, AIX["intrigued2"], 0.25),      # ooh... can't wait
+        (T.lol - 0.08, AIX["laugh"], 0.25),
     ])
     look = keyed_v(t, [
         (0.0, (-0.6, 0.7)),
@@ -3505,11 +3674,9 @@ def _ai_b(t, T, info, kid_look=None):
         (T.l4y.start - 0.1, (-0.35, 0.35)),           # to us: "Scary? Yes..."
         (T.nobody, (0.0, 0.1)),
         (T.l4y.end + 0.1, (-0.9, 0.6)),
-        (T.l6.start, (-1.0, 0.4)),                    # locked on Malvo
-        (T.lol - 0.25, (-0.4, 0.2)),
+        (T.l5.end - 0.04, (-1.0, 0.45)),              # on him: go on...
+        (T.lol - 0.08, (-0.5, 0.25)),
     ], 0.12)
-    if T.l6.start <= t < T.kid2 + 0.08:
-        look = (-1.0, 0.4)
     hands = keyed(t, [
         (0.0, "present_both"),
         (T.party + 1.3, "idle", 0.4),
@@ -3519,23 +3686,26 @@ def _ai_b(t, T, info, kid_look=None):
         (T.hurt - 0.05, "idle", 0.2),
         (T.nobody - 0.12, "thumbs_up", 0.18),         # "Nobody." thumbs-up
         (T.l4y.end + 0.25, "idle", 0.35),
-        (T.lol - 0.2, "idle"),
+        (T.l5.end - 0.1, "s12_fold", 0.35),           # folds its arms: I'm listening
     ])
-    blink = _first(slow_blink(t, T.l3.end + 0.05), slow_blink(t, T.l6.start + 0.62))
-    if T.l6.start <= t < T.l6.start + 0.6 or (T.l6.start + 0.94 < t < T.kid2):
-        blink = 0.0 if blink is None else blink       # deadpan: no stray auto-blinks
+    blink = _first(slow_blink(t, T.l3.end + 0.05), slow_blink(t, T.l6.end + 0.06))
     mouth = info.mouth("ai", t)
     nod = 0.0
-    if t >= T.lol - 0.25:
-        k = smoothstep(seg(t, T.lol - 0.25, T.lol))
+    if t >= T.lol - 0.08:
+        k = smoothstep(seg(t, T.lol - 0.08, T.lol + 0.15))
         ph = (t - T.lol) * 2 * math.pi * 4.0
         mouth = (k * 0.35 * (0.5 + 0.5 * math.sin(ph + 1.0)), 0.3)
         nod = 0.35 * k
     nod = max(nod, 0.45 * _bump(t, L4.start + 0.05, 0.5, 0.1))
     nod = max(nod, 0.4 * _bump(t, T.wy[1] - 0.02, 0.4, 0.08))     # "Yes."
+    nod = max(nod, 0.3 * _bump(t, T.listen - 0.02, 0.45, 0.1))     # "... I'm listening."
     if kid_look is not None and T.zm <= t < T.l4y.start - 0.1:   # watches the kid
         kk = smoothstep(seg(t, T.zm, T.zm + 0.3)) * (1 - smoothstep(seg(t, T.l4y.start - 0.3, T.l4y.start - 0.1)))
         look = tuple(lerp(a_, b_, kk) for a_, b_ in zip(look, kid_look))
+    brow = _bump(t, T.goon - 0.04, 0.5, 0.1)                       # brow pops on "Go on..."
+    if brow > 0.0:
+        ex = dict(AI._expr_params(ex, t, None))
+        ex["bRy"] += 12 * brow
     return dict(expr=ex, look=look, hands=hands, blink=blink, mouth=mouth, nod=nod)
 
 
@@ -3769,45 +3939,37 @@ def _crowd(t, T):
     return math.floor(t * fps) / fps, energy
 
 
-KID = (716.0, 1252.0, 1.2)     # the little witch: in front of the table's right end,
+KID = (680.0, 1252.0, 1.2)     # the little girl: in front of the table's right end,
                                # closer to camera than him (feet below the cloth hem)
-KID_IN_X = 1200.0              # she runs in from off frame right ...
-KID_OUT_X = 1170.0             # ... and dashes back out past it
+KID_OUT_X = 1170.0             # she dashes out past the right edge
 
 
 def _kid(t, T, tc):
-    """The little girl Malvo 'zombies' at. She runs up to the front of the
-    table as the camera eases out, stops and looks up at him; eyes go WIDE
-    with an "O" as he pulls the mask down, hands on cheeks through
-    "Brains..."; on "brains!" she squeal-laughs, then dashes off screen right
-    looking back at him over her shoulder. No contact, ever."""
+    """The little girl Malvo 'zombies' at. She is already standing at the
+    front of the table, close to camera, from the first frame of the party:
+    cheers at the popper, claps, then watches him. Eyes go WIDE with an "O"
+    as he pulls the mask down, hands on cheeks through "Brains..."; on
+    "brains!" she squeal-laughs, then dashes off screen right looking back at
+    him over her shoulder. No contact, ever."""
     x, y, s = KID
     up = (-0.62, -0.95)                               # looking up at his face
     d = dict(x=x, y=y, s=s, look=up, eyes="open", mouth="smile", arms="side", lean=0.0,
              run=None, turn=-1.0, squeal=0.0, hop=0.0, stream=0.0, speed=0.0, dir=1.0,
-             show=True, tt=t)
-    if t < T.arr0:
-        d.update(show=False, x=KID_IN_X)
-        return d
+             show=True, tt=t, blink=0.0)
     if t >= T.run1:
         d.update(show=False, x=KID_OUT_X)
         return d
-    if t < T.arr1:                                    # runs in, eyes on him
-        u = seg(t, T.arr0, T.arr1)
-        e = 1 - (1 - u) ** 1.8                        # decelerates into the stop
-        dur = T.arr1 - T.arr0
-        spd = 1.8 * (1 - u) ** 0.8 * (KID_IN_X - x) / dur
-        d.update(x=lerp(KID_IN_X, x, e), run=(t - T.arr0) * 2 * math.pi * 3.2, arms="run",
-                 mouth="grin", look=(-0.9, -0.5), lean=-0.16 * (1 - smoothstep(seg(u, 0.6, 1.0))),
-                 stream=-smoothstep(min(1.0, u * 3)) * (1 - smoothstep(seg(u, 0.7, 1.0))),
-                 speed=spd, dir=-1.0)
-        d["hop"] = 10.0 * abs(math.sin((t - T.arr0) * 2 * math.pi * 3.2)) * (1 - u)
-        if u > 0.82:                                  # the stop: plants her feet
-            d["run"] = None
-        return d
-    st = t - T.arr1
-    d["lean"] = 0.07 * math.exp(-st * 7) * math.sin(st * 16)    # settles from the stop
-    if t < T.pull0:                                   # looks up at him, curious
+    if t < T.pull0:
+        d["lean"] = 0.015 * math.sin(t * 2 * math.pi * 0.6)
+        d["blink"] = core.blink_amount(t, 7)
+        if T.pop <= t < T.pop + 0.9:                  # the popper! a happy little hop
+            u = seg(t, T.pop, T.pop + 0.9)
+            d.update(arms="cheer", eyes="laugh", mouth="grin", look=(-0.8, -0.55), blink=0.0,
+                     hop=9.0 * abs(math.sin(u * 2 * math.pi * 1.4)) * (1 - u))
+        elif T.pop + 0.9 <= t < T.party + 2.1:        # claps along with the crowd
+            d.update(arms="clap", mouth="grin")
+        elif t >= T.zm - 0.14:                        # he looks down at her: curious
+            d.update(eyes="open", mouth="o" if t >= T.zm + 0.12 else "smile")
         return d
     if t < T.l4z.start:                               # the mask comes down: eyes go WIDE
         d.update(arms="side" if t < T.pull1 else "cheeks", eyes="wide", mouth="o")
@@ -3849,8 +4011,8 @@ def _draw_kid(ctx, t, T, kd):
                 ctx.move_to(x0, yy)
                 ctx.line_to(x0 - dr * L * k * s * 1.7, yy)
             _s(ctx, col, w, 0.85 if col == INK else 1.0)
-    for (t0, px, sgn) in ((T.run0, KID[0] - 6, -1.0), (T.arr1 - 0.12, KID[0] + 30, 1.0)):
-        if t0 <= t < t0 + 0.35:                       # take-off / skid dust puff
+    for (t0, px, sgn) in ((T.run0, KID[0] - 6, -1.0),):
+        if t0 <= t < t0 + 0.35:                       # take-off dust puff
             u = seg(t, t0, t0 + 0.35)
             for j in range(3):
                 circle(ctx, px + sgn * ((10 + j * 18) * s + 34 * u * s), KID[1] - 8 - j * 7 * s,
@@ -3859,7 +4021,7 @@ def _draw_kid(ctx, t, T, kd):
     draw_zkid(ctx, kd["x"], kd["y"], s, kd["tt"], look=kd["look"], eyes=kd["eyes"],
               mouth=kd["mouth"], arms=kd["arms"], lean=kd["lean"], run=kd["run"],
               turn=kd["turn"], squeal=kd["squeal"], hop=kd["hop"], stream=kd["stream"],
-              dir=dr)
+              dir=dr, blink=kd["blink"])
 
 
 def _neigh_toot(t, T):
@@ -3929,7 +4091,7 @@ def shot_party(ctx, t, info, T):
     _kids(ctx, tc, T)
     draw_toy_robot(ctx, *TOYBOT_B, t, look=(0.6, -0.4))
     draw_hissy_reader(ctx, t, _hissy_b(t, T))
-    draw_laser_book(ctx, BOOK_B[0], BOOK_B[1], BOOK_B[2], t, -0.06)
+    draw_space_lasers_book(ctx, BOOK_B[0], BOOK_B[1], BOOK_B[2], t, -0.06)
 
     # audience: back row then front row (each person, then the chair in front)
     rowA = [(338.0, 0, "antenna"), (436.0, 1, None), (534.0, 2, "labcoat"), (632.0, 3, "goggles")]
@@ -3948,7 +4110,7 @@ def shot_party(ctx, t, info, T):
     # the neighbor (a grown-up, in his bathrobe) dancing at the front right and
     # tooting his little trumpet: notes float out of the bell
     nx, ny, ns = NEIGH
-    nx += 170.0 * smoothstep(seg(t, T.l3.start, T.l3.start + 0.6))   # off frame in the push-in
+    nx += 240.0 * smoothstep(seg(t, T.l3.start, T.l3.start + 0.6))   # off frame in the push-in
     beat = tc * 2 * math.pi * 1.6
     tk = _neigh_toot(t, T)
     bob = 6 * en * abs(math.sin(beat)) * (1 - 0.6 * tk)
@@ -3973,7 +4135,7 @@ def shot_party(ctx, t, info, T):
     a = _ai_b(t, T, info, kid_look=(clamp((kx_ - AI_S[0]) / 260.0, -1, 1), 1.0))
     wx, wy = _to_screen(cam, AI_W[0], AI_W[1])
     ws = AI_W[2] * z
-    lean_k = ease_in_out(seg(t, T.glance + 0.25, T.glance + 0.7)) * (1 - ease_in_out(seg(t, T.malvo + 0.5, T.malvo + 0.9)))
+    lean_k = ease_in_out(seg(t, T.glance + 0.25, T.glance + 0.7)) * (1 - ease_in_out(seg(t, T.oh - 0.1, T.oh + 0.3)))
     fx_, fy_, fs_ = AI_S[0], AI_S[1] - 6 * lean_k, AI_S[2]
     ax = lerp(wx, fx_, k1)
     ay = lerp(wy, fy_, k1)
@@ -4011,20 +4173,6 @@ def _chip(ctx, t, T):
     size = 32
     with saved(ctx, 205, 168, k, rot) as c:
         P.label_tag(c, 0, 0, txt, color="warn", size=size, font="round")
-        if t >= T.malvo:
-            tw = text_width(c, txt, "round", size)
-            pre = text_width(c, "NICE TRIES: ", "round", size)
-            xa = -tw / 2 + pre - 6
-            xb = tw / 2 + 8
-            u = ease_out(seg(t, T.malvo, T.malvo + 0.14))
-            ya, yb = 12, -16
-            xe, ye = lerp(xa, xb, u), lerp(ya, yb, u)
-            c.move_to(xa, ya)
-            c.line_to(xe, ye)
-            _s(c, INK, 13)
-            c.move_to(xa, ya)
-            c.line_to(xe, ye)
-            _s(c, "danger", 7)
 
 
 # ---------------------------------------------------------------------------
@@ -4056,7 +4204,6 @@ def SFX(info):
         (T.party + 0.4, "ta_da", -6),
         (T.party + 0.7, "crowd_laugh", -12),
         (T.stats + 0.04, "sparkle", -10),             # the wink
-        (T.arr0 + 0.12, "tiptoe", -14),               # the kid's patter of feet
         (T.pull0, "swoosh_up", -10),                  # zombie mask pulled down
         (T.pull1, "boing", -16),                      # rubber mask settles
         (T.l4z.start + 0.05, "tiptoe", -12),          # shamble steps
@@ -4068,8 +4215,8 @@ def SFX(info):
         (T.mu0, "swoosh_up", -12),                    # mask pushed back up
         (T.glance, "tiptoe", -12),
         (T.chip_in, "tick", -10),
-        (T.malvo, "whoosh", -14),                     # strike through '10?'
-        (T.malvo + 0.1, "snake_hiss", -14),           # Hissy's facepalm sigh
-        (T.l7.start + 0.5, "crowd_laugh", -12),
+        (T.goon - 0.02, "pop", -18),                  # the AI's brow pops up
+        (T.see + 0.05, "snake_hiss", -16),            # Hissy's smirk + tongue flick
+        (T.lol + 0.02, "crowd_laugh", -12),           # everybody laughs
         (T.chip_out, "pop", -14),
     ]
