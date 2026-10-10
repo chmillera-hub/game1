@@ -1540,7 +1540,6 @@ def shot_meme(ctx, t, info, T):
     P.ai_bg(ctx, t, motes=6)
     ctx.restore()
     ax, ay, s = 495, 1105, 0.72
-    w2 = T.w[2]
     ex = keyed(t, [(T.meme0, "amused"), (T.wink, "wink", 0.12), (T.L[2].end + 0.05, "amused", 0.3)])
     look = keyed_v(t, [(T.meme0, (0.0, 0.0)), (T.lab2, (0.15, -0.1), 0.2),
                        (T.wink, (0.05, 0.0), 0.15)])

@@ -834,9 +834,9 @@ def draw_mech(c, x, y, s, t, wave=0.0):
         _fs(m, "#ff4f6a" if on else "#8a2a3a", INK, 2.5)
 
 
-def _steam(c, t, x, y, k=1.0, n=2, period=1.8, rise=120.0, seed=0):
+def _steam(c, t, x, y, k=1.0, n=2, period=1.8, rise=120.0, seed=0, spread=6.0):
     """Gentle looping steam wisp: n soft white curls rising, drifting and
-    fading (no outline)."""
+    fading (no outline). `spread`: how far apart (and outward) the curls rise."""
     for j in range(n):
         u = ((t / period) + j / n + 0.13 * seed) % 1.0
         a = math.sin(math.pi * u) * 0.8
@@ -846,7 +846,9 @@ def _steam(c, t, x, y, k=1.0, n=2, period=1.8, rise=120.0, seed=0):
         for i in range(9):
             v = i / 8
             yy = y - rise * (0.25 + 0.75 * u) * v - 18 * u
-            xx = x + (j * 2 - 1) * 6 + 12 * v * u + 9 * math.sin(v * 5.0 - u * 6.0 + j * 2.4 + seed)
+            side = j * 2 - 1 if n > 1 else 1
+            xx = (x + side * spread + side * 12 * v * u * (spread / 6.0) ** 0.5
+                  + 9 * math.sin(v * 5.0 - u * 6.0 + j * 2.4 + seed))
             pts.append((xx, yy))
         for w, al in ((11 * k, 0.35), (6 * k, 0.9)):
             smooth_path(c, pts)
@@ -894,7 +896,7 @@ def draw_cake(c, x, y, s, t):
         circle(cc, 33.5, -48.5, 2.2)
         _f(cc, "white", 0.9)
         # steam behind the mech, then the mech standing astride the crater
-        _steam(cc, t, 18, -140, 1.0)
+        _steam(cc, t, 0, -136, 1.0, spread=34.0, rise=110.0)
         draw_mech(cc, 0, -126, 0.86, t, wave=1.0)
 
 
@@ -3962,12 +3964,13 @@ def _kid(t, T, tc):
     if t < T.pull0:
         d["lean"] = 0.015 * math.sin(t * 2 * math.pi * 0.6)
         d["blink"] = core.blink_amount(t, 7)
-        if T.pop <= t < T.pop + 0.9:                  # the popper! a happy little hop
-            u = seg(t, T.pop, T.pop + 0.9)
+        p1 = min(T.pop + 0.7, T.l3.start)             # (calm before the push-in brings
+        if T.pop <= t < p1:                           # her down into the caption band)
+            u = seg(t, T.pop, p1)                     # the popper! a happy little hop
             d.update(arms="cheer", eyes="laugh", mouth="grin", look=(-0.8, -0.55), blink=0.0,
                      hop=9.0 * abs(math.sin(u * 2 * math.pi * 1.4)) * (1 - u))
-        elif T.pop + 0.9 <= t < T.party + 2.1:        # claps along with the crowd
-            d.update(arms="clap", mouth="grin")
+        elif p1 <= t < T.l3.start + 0.6:              # still beaming at him
+            d.update(mouth="grin")
         elif t >= T.zm - 0.14:                        # he looks down at her: curious
             d.update(eyes="open", mouth="o" if t >= T.zm + 0.12 else "smile")
         return d
