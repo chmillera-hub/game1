@@ -618,12 +618,15 @@ def _shot_E(ctx, t, T, info):
     expr = state_at(t, [(-1.0, "frustrated")], 0.2)
     arms = state_at(t, [(-1.0, "s05_clip_chin"), (te, "s05_sag")], 0.25)
     askew = ease_out_back(seg(t, te + 0.04, te + 0.26), 2.0)
-    # glares up at the counter as it ticks, then back to the lens
-    lx = core.tween(t, [(te, -0.2), (te + 0.12, -0.9), (te + 0.62, -0.9), (te + 0.76, 0.0)])
-    ly = core.tween(t, [(te, 0.0), (te + 0.12, -0.9), (te + 0.62, -0.9), (te + 0.76, 0.1)])
+    # glares up at the counter as it ticks, then back to the lens (the return
+    # and Hissy's slow blink both finish before the cut, however short the hold)
+    g1 = max(te + 0.3, min(te + 0.62, T["end"] - 0.2))
+    lx = core.tween(t, [(te, -0.2), (te + 0.12, -0.9), (g1, -0.9), (g1 + 0.14, 0.0)])
+    ly = core.tween(t, [(te, 0.0), (te + 0.12, -0.9), (g1, -0.9), (g1 + 0.14, 0.1)])
     sexpr = "unimpressed"
+    sb = max(te + 0.2, min(te + 0.45, T["end"] - 0.4))
     snake = {"expr": sexpr, "look": (0.95, 0.05), "tongue": False,
-             "blink": _slow_blink(t, te + 0.45, 0.12, 0.08, 0.14)}
+             "blink": _slow_blink(t, sb, 0.12, 0.08, 0.14)}
     _lair(ctx, t)
     # a frustrated full-body 'grr' shiver as the goggles slip (decays fast)
     u = t - (te + 0.04)

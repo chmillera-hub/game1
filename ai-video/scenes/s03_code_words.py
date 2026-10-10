@@ -1243,6 +1243,8 @@ def _cameo_state(t, info, T):
             (T.clamp, "shocked", 0.1),                   # clamp!
             (T.clamp + 0.32, "neutral", 0.3),            # ...oh. silence.
             (T.peace - 0.04, "happy", 0.35)]             # bliss
+    if T.peace - 0.04 < T.clamp + 0.32 + 0.3:            # no room for the 'silence' beat:
+        del keys[-2]                                     # go shocked -> bliss (no pop)
     expr = _keyed(t, keys)
     ax, ay, _ = CAM2
     # looks: at the camera on the brow waggle, else toward what he is judging
@@ -1839,7 +1841,7 @@ def _ai_state(t, info, T):
           (T.l4.start - 0.05, "skeptical", 0.25),
           (T.unmask - 0.05, "thinking", 0.2),
           (T.reveal + 0.1, "unimpressed", 0.3),             # called it
-          (T.l5.start, "skeptical", 0.25),
+          (min(T.dont, max(T.l5.start, T.reveal + 0.85)), "skeptical", 0.25),  # hold the lid drop
           (T.point - 0.05, "determined", 0.25),
           (T.wall_done, "happy", 0.3),
           (T.l7.start - 0.08, deadpan, 0.18),               # "Boom..." (deadpan)
@@ -1852,9 +1854,10 @@ def _ai_state(t, info, T):
     hk = [(0.0, "idle", 0.3),
           (T.l4.start + 0.15, "present", 0.3),              # exhibit A: the coat
           (T.reveal + 0.35, "idle", 0.35),
-          (T.wall - 0.12, "stop", 0.2),
-          (T.wall_done, "idle", 0.3),
-          (T.l6.start + 0.05, "present_l", 0.3),            # the window / notebook
+          (T.wall - 0.12, "stop", 0.2)]
+    if T.wall_done + 0.35 < T.l6.start + 0.05:            # room to drop the palm first
+        hk.append((T.wall_done, "idle", 0.3))
+    hk += [(max(T.l6.start + 0.05, T.wall_done), "present_l", 0.3),   # the window / notebook
           (T.blows - 0.08, "present_both", 0.22),           # ta-da
           (T.l7.start - 0.05, "idle", 0.3),
           (T.neighbor - 0.1, "present", 0.3),               # the noisy neighbor

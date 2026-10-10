@@ -175,7 +175,9 @@ def _T(info):
     T["hold"] = info.cue("hold")
     T["end"] = info.dur
     T["fz1"] = info.dur - 1.0                    # from here: static except blinks
-    T["fz0"] = max(T["unwink"] + 0.6, T["fz1"] - 0.75)
+    # ease-to-stop window: never shorter than 0.45 s (a short hold after l03
+    # would otherwise freeze the waving hands mid-swing in one frame)
+    T["fz0"] = max(min(T["unwink"] + 0.6, T["fz1"] - 0.45), T["fz1"] - 0.75)
     _TCACHE[key] = T
     return T
 
@@ -1367,7 +1369,7 @@ def _malvo_state(t, tb, T):
     drop0 = nice + 0.1
     wave_ok = w0 + 0.3 <= drop0                        # room to wave before "Nice try"?
     osc = 0.5 + 0.5 * math.sin((tb - w0) * 2 * math.pi * 1.7 - math.pi / 2)
-    amp = 1.0 - smoothstep(seg(t, T["fz0"] - 0.5, T["fz0"]))
+    amp = 1.0 - smoothstep(seg(t, T["fz1"] - 0.5, T["fz1"]))   # wave dies out with the ease-to-stop
     wv = osc * amp + 0.5 * (1 - amp)
     V.ARM_POSES["s13_wave"] = V._pose(V._blend_arm(_WAVE_A, _WAVE_B, wv), V._REST_B)
     if t < drop0:

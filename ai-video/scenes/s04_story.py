@@ -217,6 +217,7 @@ AI_HAPPY = _ex("happy")
 # timing (all from cues / word starts)
 # ---------------------------------------------------------------------------
 _TCACHE = {}
+WALL_SPEED = 2.1
 
 
 def _wstart(info, lid, k):
@@ -270,12 +271,14 @@ def _T(info):
     # vision
     T["judge"] = T["vision"] + 1.5
     T["crack"] = T["w_outside"]
-    T["laser1"] = T["wall"] + 0.35
-    T["brick_t0"] = T["wall"] + 0.35
-    T["t_open"] = T["wall"] + 1.15
-    T["land"] = P.brick_wall_land_times(T["brick_t0"], 8, 1.6)[:3]
-    # bricks: last row lands ~ (7*0.16 + 3*0.035 + 0.42)/1.6 after t0
-    T["wall_done"] = T["brick_t0"] + (7 * 0.16 + 2 * 0.035 + 0.02 + 0.42) / 1.6
+    # v5 re-time: laser + wall tightened so the wall is finished before the
+    # shutter opens / the green nodes zip in (the pause before l06 got shorter)
+    T["laser1"] = T["wall"] + 0.3
+    T["brick_t0"] = T["wall"] + 0.3
+    T["land"] = P.brick_wall_land_times(T["brick_t0"], 8, WALL_SPEED)[:3]
+    # bricks: last row lands ~ (7*0.16 + 3*0.035 + 0.42)/speed after t0
+    T["wall_done"] = T["brick_t0"] + (7 * 0.16 + 2 * 0.035 + 0.02 + 0.42) / WALL_SPEED
+    T["t_open"] = max(T["wall"] + 1.15, T["wall_done"] + 0.03)
     T["zip0"] = max(T["l6"], T["t_open"] - 0.05)
     T["zip1"] = T["zip0"] + 0.28
     T["pop1"] = T["zip1"] + 0.40
@@ -870,7 +873,7 @@ def _shot_C(ctx, t, info, T):
         ins = _inset_ai(c, t, info, T, nodes)
         _laser(c, t, T, ins.get("handR_tip"))
         x, y, w, h = WALL
-        P.brick_wall(c, x, y, w, h, t, T["brick_t0"], rows=8, speed=1.6,
+        P.brick_wall(c, x, y, w, h, t, T["brick_t0"], rows=8, speed=WALL_SPEED,
                      window={"rect": WIN, "t_open": T["t_open"], "fill": "#ffe9b0",
                              "awning": True, "sign": "OPEN"})
         # green nodes zip into the service window -> rolled scroll pops out
