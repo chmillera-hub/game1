@@ -1,6 +1,6 @@
 # If You Have Time
 
-A 3:25 portrait (720×1280, 24 fps) animated short: a tired crew member casually asks the ship's
+A 3:26 portrait (720×1280, 24 fps) animated short: a tired crew member casually asks the ship's
 android to write her a symphony "if you ever have time"… and he does, instantly. She's quietly moved
 in a normally lit lounge while ship life carries on: a passing cadet makes awkward small talk ("Oh, hey Quill. Cool song."), and nobody makes a big
 deal of it. Then Quill casually plays her four more versions.
