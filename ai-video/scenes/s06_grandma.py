@@ -1408,7 +1408,8 @@ def _malvo_F(t, T):
         (T["soften"], "pleading", 0.25),
         (T["soften"] + 0.3, "hopeful", 0.35),
         (T["l4e"] - 0.08, "s06_ooh", 0.2),               # ...the dragon book floats up!
-        (T["cut_f5b"] - 0.01, "s06_hug", 0.01),          # (continues the close-up)
+        (T["cut_f5b"] - 0.01, "happy", 0.01),            # (continues the close-up)
+        (T["book_land"] - 0.08, "s06_hug", 0.25),
     ])
     arms = _state(t, [
         (-1, "s06_dab"),                                  # caught mid-dab (frozen)
@@ -1434,8 +1435,6 @@ def _malvo_F(t, T):
         blink = 0.0                                     # eyes wide: a DRAGON book
     if t >= T["book_land"] + 0.15:
         blink = 0.55 + 0.1 * math.sin(t * 2.2)        # contented, eyes squeezed soft
-    elif t >= T["cut_f5b"]:
-        blink = 0.3
     # leans in toward the window / the book ("...does it have a dragon?")
     lean = 0.035 * smoothstep(seg(t, T["soften"] + 0.3, T["l4"] + 0.3)) \
         * (1 - smoothstep(seg(t, T["cut_f5b"], T["book_land"])))

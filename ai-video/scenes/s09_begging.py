@@ -174,8 +174,8 @@ for _nm, _pz in (("s09_beg", V._pose(_BEG_A, shy=-12, hdy=4)),
 # rig still draws the purple sleeves (its own hands shrunk to nothing under
 # our cuffs) through a per-frame arm pose 's09_dyn'.
 POKE_HS = 1.1                        # glove scale (x rig HAND_SCALE), both hands
-POKE_Y = -230.0                      # index line (villain-local)
-POKE_ANG = -0.05                     # index tilt (slightly up toward the tips)
+POKE_Y = -238.0                      # index tips (villain-local)
+POKE_ANG = -0.12                     # index tilt (up toward the tips)
 POKE_ELB = (-236.0, -150.0)          # screen-left elbow (mirrored for the right)
 POKE_SHY = -10.0                     # shoulders hunched up (shy)
 POKE_TILT = 0.05
@@ -190,8 +190,8 @@ def _poke_place(t, t_tap):
     u = max(0.0, t - t_tap)
     sep = 0.5 - 0.5 * math.cos(2 * math.pi * 3.0 * u)          # 0 = tips touching
     sep *= smoothstep(clamp(u / 0.15))
-    g = 1.6 + 7.0 * sep
-    ang = POKE_ANG - 0.05 * sep
+    g = 2.0 + 10.0 * sep
+    ang = POKE_ANG - 0.06 * sep
     hs = V.HAND_SCALE * POKE_HS
     ca, sa = math.cos(ang), math.sin(ang)
     tx, ty = TIP[0] * hs, TIP[1] * hs
@@ -285,8 +285,8 @@ def _glove_back(c, wx, wy, ang, sc=1.0):
     # glove-back stitches (as the rig's open glove backs)
     c.set_source_rgba(*V.GLOVE_SH)
     c.set_line_width(3.2 / hs * 1.45)
-    for yy in (-7, 7):
-        c.move_to(16, yy)
+    for yy in (-9, 0, 9):
+        c.move_to(15, yy)
         c.line_to(33, yy * 1.05)
     c.stroke()
     c.restore()
