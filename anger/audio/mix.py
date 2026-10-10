@@ -22,7 +22,7 @@ from config import BUILD, MUSIC_DIR, SFX_DIR, SR, TIMELINE, VO_DIR  # noqa: E402
 
 TARGET_LUFS = -15.0
 CEILING_DB = -2.0           # dBTP (true peak): 96 kbps AAC overshoots the source by ~0.7-0.9 dB
-PAN = {"anger": -0.1, "voice": 0.35}
+PAN = {"anger": -0.05, "voice": -0.4}   # the hermit is in the dark at screen-left
 VO_GAIN_DB = {"anger": 0.0, "voice": -0.5}
 # How much each music cue ducks (dB) while somebody is talking.
 DUCK_DB = {"descent": 6, "cavern": 6, "tension": 6, "fall": 6, "depths": 7, "menace": 6, "hermit": 8,
