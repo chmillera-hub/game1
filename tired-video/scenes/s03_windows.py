@@ -251,14 +251,35 @@ def _hole_path(ctx):
 # ---------------------------------------------------------------------------
 # poses
 # ---------------------------------------------------------------------------
-def heave_pose(k=0.0, sq=0.0, fist=False):
+def heave_pose(k=0.0, sq=0.0, fist=False, pull=0.0):
     """Palms flat on the lower pane (face height, fingers up) shoving the sash UP;
-    sq = knees bend before the shove, k = the shove (up on his toes, head back)."""
+    sq = knees bend before the shove, k = the shove (up on his toes, head back);
+    pull = fist drawn back off the glass (for pounding)."""
     h = "fist" if fist else "splay"
-    return P(IK("l", 0.0, 0.80 + 0.035 * k, 0.30, h, wa=-1.5, wabs=0.8, tf=-1.0),
+    return P(IK("l", 0.0, 0.80 + 0.035 * k + 0.1 * pull, 0.31 - 0.05 * pull, h, wa=-1.5 - 0.4 * pull, wabs=0.8,
+                tf=-1.0),
              CAGE_ARM, hold=1.0,
              lean=0.2 + 0.1 * sq - 0.06 * k, hunch=0.55 + 0.3 * k, lift=10 * k, neck=0.05, nod=-0.1 * k,
              **L("l", 0.3 + 0.25 * sq, k=0.15 + 0.6 * sq), **L("r", -0.12 + 0.2 * sq, k=0.08 + 0.6 * sq))
+
+
+def _pound_times(T):
+    out, tt = [], T["l2"] + 0.08
+    while tt < T["l2e"] - 0.1:
+        out.append(tt)
+        tt += 0.19
+    return out
+
+
+def _pound(t, T):
+    """1 = fist drawn back off the glass, 0 = on it: fast strike, slower draw-back."""
+    v = 1.0
+    for th in _pound_times(T):
+        if th - 0.07 <= t < th:
+            v = min(v, 1 - ease_in(seg(t, th - 0.07, th)))
+        elif th <= t < th + 0.12:
+            v = min(v, smoothstep(seg(t, th + 0.02, th + 0.12)))
+    return v
 
 
 def heave_at(t, times, up=0.12, down=0.14):
@@ -472,10 +493,9 @@ def _emb_A(ctx, info, t, T):
         k, sq = heave_at(t, T["hv2"], 0.08, 0.08)
         yell = smoothstep(seg(t, l2 - 0.02, l2 + 0.1))
         rat = yell * (1 - smoothstep(seg(t, l2e - 0.12, l2e)))
-        jig = 0.5 + 0.5 * math.sin((t - l2) * TAU * 7.5)
-        k = max(k, rat * jig)
-        sq = max(sq, rat * (1 - jig) * 0.6)
-        pose = (SKID, heave_pose(k, sq, fist=t > l2 - 0.04), smoothstep(seg(t, T["k2e"] - 0.03, T["k2e"] + 0.05)))
+        pull = rat * _pound(t, T)
+        pose = (SKID, heave_pose(k, sq, fist=t > l2 - 0.04, pull=pull),
+                smoothstep(seg(t, T["k2e"] - 0.03, T["k2e"] + 0.05)))
         look = tween(t, [(T["k2e"], (0.85, -0.3)), (l2 - 0.06, (0.85, -0.3)), (l2 + 0.02, (-0.35, -0.05)),
                          (l2e - 0.1, (-0.35, -0.05)), (l2e - 0.03, (0.95, -0.1))])
         ht = tween(t, [(l2 + 0.05, 0.0), (l2 + 0.2, -0.55), (l2e - 0.05, -0.55), (l2e + 0.04, -0.15)])
@@ -522,9 +542,11 @@ def _shot_A(ctx, info, t, T, dx=0.0):
             _rattle_marks(ctx, t, th + 0.02, *WIN[0], seed=i)
         for i, th in enumerate(T["hv2"]):
             _rattle_marks(ctx, t, th + 0.02, *WIN[1], seed=4 + i)
-        if l2 < t < l2e - 0.05:
-            _rattle_marks(ctx, t, l2 + 0.2 * int((t - l2) / 0.2), *WIN[1], seed=9 + int((t - l2) / 0.2),
-                          dur=0.18, big=1.3)
+        for i, th in enumerate(_pound_times(T)):
+            _rattle_marks(ctx, t, th, *WIN[1], seed=9 + i, dur=0.16, big=1.3)
+            if th <= t < th + 0.12:
+                hx, hy, _ = a["hand_l"]
+                fx.tap_marks(ctx, hx + 14, hy, 0.5, t, th, taps=1, angle=-0.4, label=None)
         _fence(ctx, t)
 
 
@@ -548,8 +570,8 @@ PRESS_WAIL = P(HK("l", 128, 30, "splay", tf=-1.0, layer="front", wa=-1.7, wabs=0
 
 
 def _B_times(T):
-    slam = T["w3"] + 0.1
-    return slam, [slam + 0.14, slam + 0.26], T["l3e"] - 0.22
+    slam = T["w3"] + 0.24                 # after the whip clears: a beat of quiet room, then SLAM
+    return slam, [slam + 0.16, slam + 0.3], T["l3e"] - 0.22
 
 
 def _emb_B(ctx, info, t, T):
@@ -699,7 +721,7 @@ def _shot_C(ctx, info, t, T):
 def _shot_D(ctx, info, t, T):
     i0 = T["ins0"]
     z = tween(t, [(i0, 3.4), (T["ins1"], 3.65)])
-    with core.camera(ctx, ROCK_XY[0], ROCK_XY[1] - 60, z):     # inside the fence line
+    with core.camera(ctx, ROCK_XY[0] + 40, ROCK_XY[1] - 60, z):     # inside the fence line
         _house(ctx, t, T)
         _lawn_cheat(ctx)
         _lawn_props(ctx, t, T)
@@ -1146,9 +1168,8 @@ def SFX(info):
         ev.append((th + 0.03, "door_bang", -12, -0.1))
     for th in T["hv2"]:
         ev.append((th + 0.02, "door_bang", -13, 0.0))
-    n_r = int((T["l2e"] - 0.05 - T["l2"]) / 0.2)
-    for i in range(n_r):
-        ev.append((T["l2"] + 0.2 * i + 0.03, "door_bang", -12, 0.0))
+    for th in _pound_times(T):
+        ev.append((th, "knock", -6, 0.0))
     ev.append((T["whip"], "whoosh", -8, 0.3))
     slam, hv3, slide = _B_times(T)
     ev.append((slam, "door_bang", -5, 0.0))

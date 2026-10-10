@@ -107,12 +107,12 @@ def _inside(kind, t, wig=0.3, look=(0.3, -0.3), blink=None, glint_t0=None):
         if kind in ("bundle", "peek", "empty"):
             creatures.draw_sweater_lump(c, -6, 0, 0.56, t, wiggle=wig, color=KNIT)
         if kind == "peek":
-            ta = creatures.draw_thing(c, PEEK[0], PEEK[1], 0.95, t, state="peek", look=look, blink=blink)
+            ta = creatures.draw_thing(c, PEEK[0], PEEK[1], 1.15, t, state="peek", look=look, blink=blink)
             # a fold of knit over its chin so it peeks OUT of the sweater
-            c.move_to(PEEK[0] - 62, -4)
-            c.curve_to(PEEK[0] - 30, PEEK[1] - 4, PEEK[0] + 30, PEEK[1] - 2, PEEK[0] + 64, -2)
-            c.line_to(PEEK[0] + 64, 6)
-            c.line_to(PEEK[0] - 62, 6)
+            c.move_to(PEEK[0] - 70, 2)
+            c.curve_to(PEEK[0] - 34, PEEK[1] + 2, PEEK[0] + 34, PEEK[1] + 4, PEEK[0] + 72, 2)
+            c.line_to(PEEK[0] + 72, 8)
+            c.line_to(PEEK[0] - 70, 8)
             c.close_path()
             core.fill_stroke(c, KNIT, core.PAL["ink"], 5)
             if glint_t0 is not None:
@@ -126,7 +126,7 @@ def _inside(kind, t, wig=0.3, look=(0.3, -0.3), blink=None, glint_t0=None):
     return fn
 
 
-PEEK = (8.0, -36.0)
+PEEK = (8.0, -12.0)
 
 
 def _cage(ctx, x, y, t, door=0.0, latch="half", rattle=0.0, inside=None, rot=0.0, s=CAGE_S):
@@ -161,6 +161,49 @@ def _blinkdip(t, t0, close=0.3, hold=0.15, open_=0.32):
     """slow judgement blink 0..1."""
     return tween(t, [(t0, 0.0), (t0 + close, 1.0), (t0 + close + hold, 1.0),
                      (t0 + close + hold + open_, 0.0)])
+
+
+def _darts(t, seed=0, ax=0.28, ay=0.12, rate=2.2):
+    """Embarrassment's nervous eye darts: quick hops between nearby gaze offsets."""
+    u = t * rate + core.hash01(seed, 3)
+    i = math.floor(u)
+    k = core.smoothstep((u - i) / 0.12)
+    x0, x1 = core.hash01(i - 1, seed) - 0.5, core.hash01(i, seed) - 0.5
+    y0, y1 = core.hash01(i - 1, seed + 5) - 0.5, core.hash01(i, seed + 5) - 0.5
+    return (lerp(x0, x1, k) * 2 * ax, lerp(y0, y1, k) * 2 * ay)
+
+
+def _add2(a, b):
+    return (a[0] + b[0], a[1] + b[1])
+
+
+class _askew:
+    """Scoped workaround: the rig has no 'glasses askew' control, so while this
+    is active Embarrassment's glasses are drawn rotated about the bridge."""
+    def __init__(self, ang=0.0, dy=0.0):
+        self.ang, self.dy = ang, dy
+
+    def __enter__(self):
+        self.orig = human._draw_glasses
+        if abs(self.ang) < 1e-3:
+            return self
+        orig, ang, dy = self.orig, self.ang, self.dy
+
+        def wrapped(ctx, C, hg, st, inkw, t):
+            xl, yl = st["E_l"][0], st["E_l"][1]
+            xr, yr = st["E_r"][0], st["E_r"][1]
+            bx, by = (xl + xr) * 0.5, (yl + yr) * 0.5
+            ctx.save()
+            ctx.translate(bx, by + dy)
+            ctx.rotate(ang)
+            ctx.translate(-bx, -by)
+            orig(ctx, C, hg, st, inkw, t)
+            ctx.restore()
+        human._draw_glasses = wrapped
+        return self
+
+    def __exit__(self, *a):
+        human._draw_glasses = self.orig
 
 
 def _sum_face(*ds):
@@ -272,6 +315,7 @@ def shot_scoop(ctx, t, info, c):
     turn = tween(u, [(0.55, 0.8), (0.8, 0.45)])
     look = tween(u, [(0.0, (0.5, 0.55)), (0.14, (0.8, 0.2)), (0.5, (0.8, 0.25)),
                      (0.6, (-0.85, 0.0))], ease_out)
+    look = _add2(look, _darts(t, 2, 0.18 * seg(u, 0.7, 0.8), 0.08))
     face = _sum_face({"head_turn": -0.3 * ease_in_out(seg(u, 0.68, 0.85))},
                      {"press": 0.3 * seg(u, 0.6, 0.7)})
     expr = state_at(u, [(-1, "nervous_smile"), (0.14, "panic"), (0.6, "nervous_smile")], 0.12)
@@ -394,6 +438,8 @@ def shot_back(ctx, t, info, c):
             draw_person(ctx, "tired", tx, ty, S, t, pose=T_CROSS, expr="unamused", turn=-0.55,
                         look=t_look, face={"head_turn": clamp(rel_l * 0.35, -0.4, 0.1)},
                         headphones=HP, mouth=info.mouth("tired", t))
+        if t < tb or t >= c["l02"]:
+            look = _add2(look, _darts(t, 3, 0.25, 0.1))
         draw_person(ctx, "embar", ex_draw, FLOOR, S, t, pose=pose, pose_t=pt, expr=expr, look=look,
                     face=face, turn=-0.7, flip=True, blush=blush, sweat=0.5,
                     mouth=info.mouth("embar", t), hold=_hold_cage(t, door=0.0, latch="half"))
@@ -475,9 +521,12 @@ def shot_door(ctx, t, info, c):
         imp_hall()
         _room(ctx, t, layer="room", door=door)
         cage_hold = None if clamp_on else _hold_cage(t, latch="half", rattle=0.3 * seg(t, b, b + 0.3))
-        a = draw_person(ctx, "embar", ex, FLOOR, S, t, pose=pose, expr=expr, look=look, turn=-0.7,
-                        face=face, blush=blush, sweat=0.7, mouth=info.mouth("embar", t),
-                        hold=cage_hold, glint=seg(t, o + 0.42, o + 0.5) * (1 - seg(t, o + 0.5, o + 0.62)))
+        if t < o + 0.42:
+            look = _add2(look, _darts(t, 4, 0.2, 0.08))
+        with _askew(0.2 * ease_out_back(seg(t, b + 0.3, b + 0.42)), 5.0 * seg(t, b + 0.3, b + 0.42)):
+            a = draw_person(ctx, "embar", ex, FLOOR, S, t, pose=pose, expr=expr, look=look, turn=-0.7,
+                            face=face, blush=blush, sweat=0.7, mouth=info.mouth("embar", t), hold=cage_hold,
+                            glint=seg(t, o + 0.42, o + 0.5) * (1 - seg(t, o + 0.5, o + 0.62)))
         if imp_lunge:
             ctx.save()
             ctx.rectangle(M["door"][0], -2000, 6000, 6000)
@@ -564,9 +613,10 @@ def _draw_tug(ctx, t, c, info, rig, tired_fn=None, cage_door=0.0, latch="half", 
     cage_cb(ctx, ia)
     ctx.restore()
     et = t if emb_t is None else emb_t
-    a = draw_person(ctx, "embar", rig["emb_x"], TUG_Y, S, et, pose=P_TUG, pose_t=rig["emb_pt"],
-                    turn=-0.85, expr=emb_expr or STRAIN, look=emb_look, face=emb_face,
-                    blush=0.6, sweat=0.9, mouth=info.mouth("embar", t))
+    with _askew(0.2 + 0.03 * math.sin(et * 2.2 * math.tau), 5.0):
+        a = draw_person(ctx, "embar", rig["emb_x"], TUG_Y, S, et, pose=P_TUG, pose_t=rig["emb_pt"],
+                        turn=-0.85, expr=emb_expr or STRAIN, look=_add2(emb_look, _darts(et, 7, 0.2, 0.1)),
+                        face=emb_face, blush=0.6, sweat=0.9, mouth=info.mouth("embar", t))
     ta = tired_fn() if tired_fn else None
     return a, ta
 
@@ -644,7 +694,7 @@ def shot_eyes(ctx, t, info, c):
     u = t - c["G1"]
     rig = _tug_rig(t, c)
     ax, ay = rig["mouth"]
-    ix, iy = _cage_pt(ax, ay, rig["rot"], PEEK[0], 234 + PEEK[1] - 12)
+    ix, iy = _cage_pt(ax, ay, rig["rot"], PEEK[0], 234 + PEEK[1] - 32)
     bl = tween(u, [(0.0, 1.0), (0.1, 1.0), (0.18, 0.0), (0.34, 0.0), (0.38, 1.0), (0.42, 0.0)])
     z = 6.2 + 0.5 * seg(u, 0, 0.42)
     with core.camera(ctx, ix, iy, z, rot=-rig["rot"]):
@@ -688,7 +738,7 @@ def shot_creak(ctx, t, info, c):
 
     inside = "peek" if te < bi else "empty"
     z = CLOSE_CAM[2] + 0.1 + 0.08 * seg(te, cr, bi)
-    sh = _shake(t, tf, 0.2, 5)
+    sh = _shake(t, tf + 2.0 / 24, 0.22, 6)
     with core.camera(ctx, CLOSE_CAM[0] + sh[0], CLOSE_CAM[1] + sh[1], z):
         _room(ctx, te, door=1.0)
         _draw_tug(ctx, te, c, info, rig, tired_fn=tired_fn, rattle=0.2, cage_door=door, latch=latch,

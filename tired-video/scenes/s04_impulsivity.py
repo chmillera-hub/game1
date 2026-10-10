@@ -60,7 +60,10 @@ def _arms(name):
     return {k: v for k, v in POSES[name].items() if k.startswith(("al_", "ar_"))}
 
 
-HEAP_P = lambda tilt: dict(base="heap", tilt=tilt)                     # noqa: E731
+def HEAP_P(tilt):
+    return {"base": "heap", "tilt": tilt}
+
+
 SIT_RECOIL = dict(base="sit_floor", lean=-0.34, hunch=0.75, chest=0.2)
 SIT_COVER = dict(base="sit_floor", **_arms("cover_eyes"), hunch=0.9, nod=0.16, lean=-0.2)
 SIT_PEEK = dict(base="sit_floor", **dict(_arms("peek"), ar_hx=20, ar_hy=40),   # far hand slides down:
@@ -478,7 +481,7 @@ def shot_plates(ctx, t, T):
     P = T.plates
     cam = tween(t, [(P, (1190, 1190, 1.6)), (T.drawer, (1190, 1180, 1.66))])
     # cut in as the plate leaves the stack; cut out as it goes back down (delicate)
-    lift = tween(t, [(P - 0.08, 0.0), (P + 0.3, 1.0), (P + 0.66, 1.0), (P + 1.06, 0.0)])
+    lift = tween(t, [(P - 0.08, 0.0), (P + 0.3, 1.0), (P + 0.64, 1.0), (P + 1.2, 0.0)])
     pose = (PLATE_DOWN, PLATE_UP, math.sqrt(lift))
     look, hf = _gaze(t, [(P, (0.1, 0.8)), (P + 0.25, (0.1, 0.75)), (P + 0.36, (0.15, 1.0)),
                          (P + 0.47, (0.15, 1.0)), (P + 0.53, (-0.55, -0.35)), (P + 0.66, (-0.55, -0.35)),
