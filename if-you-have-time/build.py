@@ -5,7 +5,8 @@
     python3 build.py encode       # only the final encode (needs build/video_master.mkv + build/mix.wav)
     python3 build.py audio        # tts/timeline/music/sfx/mix only
 
-Final file: out/if_you_have_time.mp4 - H.264 High + AAC-LC, 720x1280 @ 24 fps, sized to TARGET_BYTES.
+Final file: out/if_you_have_time.mp4 - H.264 High + AAC-LC, 720x1280 @ 24 fps, BT.709 (converted + tagged),
+sized to TARGET_BYTES.
 """
 import json
 import subprocess
@@ -45,6 +46,29 @@ def duration(path):
     return float(json.loads(out)["format"]["duration"])
 
 
+# The master is BT.601 limited range (anim/render.py pipes rgb24 into yuv444p with swscale's default matrix).
+# Convert the matrix to BT.709 and tag it: untagged HD video is decoded as BT.709 by browsers/players, which shifts
+# the teals by ~dE 10.  colormatrix is an exact integer matrix in YUV (no dither, no bias); the swscale
+# scale=in_color_matrix=...:out_color_matrix=... route to yuv420p darkens Y/U/V by ~0.5 code and adds dither texture.
+COLOR_VF = "colormatrix=bt601:bt709,format=yuv420p"
+COLOR_TAGS = ["-colorspace", "bt709", "-color_primaries", "bt709", "-color_trc", "bt709", "-color_range", "tv"]
+# Beats whose frame must start a new IDR.  The snap is a flash cut (overexposed frame between a dark and a normal
+# shot); x264's flash handling codes it as P and puts the I-frame one frame late.  Ordinary hard cuts get IDRs from
+# scenecut, and scene starts are NOT all cuts (S0->S1 fades from white, S3 opens on S2's held shot, S3->S4 is
+# continuous), so they are deliberately not forced.
+KEY_BEATS = ("snap",)
+
+
+def forced_key_times():
+    """'t1,t2,...' for -force_key_frames: ffmpeg keys the first frame with pts >= t, the same rule the scenes use
+    (frame f shows time f/FPS, the new shot starts once t >= beat)."""
+    try:
+        beats = json.loads((BUILD / "timeline.json").read_text())["beats"]
+    except (OSError, ValueError, KeyError):
+        return ""
+    return ",".join(f"{beats[b]:.4f}" for b in KEY_BEATS if b in beats)
+
+
 def encode(target=TARGET_BYTES):
     OUT.mkdir(exist_ok=True)
     master, mix = BUILD / "video_master.mkv", BUILD / "mix.wav"
@@ -52,10 +76,13 @@ def encode(target=TARGET_BYTES):
     # 1.5 % container overhead allowance
     video_kbps = int((target * 8 * 0.985 / dur - AUDIO_KBPS * 1000) / 1000)
     print(f"duration {dur:.2f}s -> video {video_kbps} kbps + audio {AUDIO_KBPS} kbps")
+    keys = forced_key_times()
+    # no VBV cap (a downloadable file; level 4.0 allows far more) and a 30 s keyint, so IDRs land on cuts (scenecut)
+    # instead of pulsing mid-shot; aq/psy kept moderate so thin high-contrast detail (card text, faces) keeps its bits
     common = ["-c:v", "libx264", "-preset", "veryslow", "-tune", "animation", "-profile:v", "high",
-              "-level", "4.0", "-pix_fmt", "yuv420p", "-b:v", f"{video_kbps}k",
-              "-maxrate", f"{int(video_kbps * 2.2)}k", "-bufsize", f"{int(video_kbps * 4)}k",
-              "-g", "240", "-keyint_min", "24", "-x264-params", "aq-mode=3:aq-strength=0.9:psy-rd=0.8,0.0",
+              "-level", "4.0", "-vf", COLOR_VF, *COLOR_TAGS, "-b:v", f"{video_kbps}k",
+              "-g", "720", "-keyint_min", "24", *(["-force_key_frames", keys] if keys else []),
+              "-x264-params", "aq-mode=3:aq-strength=0.7:psy-rd=0.6,0.0",
               "-r", "24"]
     log = str(BUILD / "x264pass")
     run("ffmpeg", "-y", "-loglevel", "error", "-i", master, *common, "-pass", "1", "-passlogfile", log,

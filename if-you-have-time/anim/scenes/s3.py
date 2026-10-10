@@ -206,15 +206,25 @@ def draw_fan(c, t, progress, alpha=1.0, focus=None, states=None, wobble=None, fo
     wobble / fold: {number: amount}. pops: {number: extra scale} (select overshoot). alphas: per-card alpha."""
     if alpha <= 0.003 or progress <= 0:
         return
-    focus = {k: v for k, v in (focus or {}).items() if v > 0.0005}
-    states = states or {}
     wobble = wobble or {}
     fold = fold or {}
+    for (num, x, y, rot, scl, a, st) in fan_cards(progress, alpha, focus, states, pops, dim, hidden, focus_pos,
+                                                  focus_scale, alphas):
+        fx.draw_holo_card(c, t, x, y, scl, num, fx.CARD_TITLES.get(num, ""), fx.CARD_ICONS.get(num, "symphony"),
+                          st, a, wobble=wobble.get(num, 0.0), fold=fold.get(num, 0.0), rot=rot)
+
+
+def fan_cards(progress, alpha=1.0, focus=None, states=None, pops=None, dim=0.4, hidden=(), focus_pos=FOCUS_POS,
+              focus_scale=FOCUS_SCALE, alphas=None):
+    """Where draw_fan puts each card (same arguments): [(num, x, y, rot, scale, alpha, state)], back to front."""
+    focus = {k: v for k, v in (focus or {}).items() if v > 0.0005}
+    states = states or {}
     pops = pops or {}
     alphas = alphas or {}
     lay = fx.card_fan_layout(FAN[0], FAN[1], progress, **FAN_GEOM)
     fmax = max(focus.values()) if focus else 0.0
     order = sorted(lay, key=lambda L: focus.get(L[0], 0.0))
+    out = []
     for (num, x, y, rot, scl, vis) in order:
         if num in hidden:
             continue
@@ -228,8 +238,17 @@ def draw_fan(c, t, progress, alpha=1.0, focus=None, states=None, wobble=None, fo
         scl *= 1.0 + pops.get(num, 0.0)
         a = alpha * vis * alphas.get(num, 1.0) * lerp(1.0, dim, fo)
         st = max(states.get(num, 0.0) * (1.0 - fo), f)
-        fx.draw_holo_card(c, t, x, y, scl, num, fx.CARD_TITLES.get(num, ""), fx.CARD_ICONS.get(num, "symphony"),
-                          st, a, wobble=wobble.get(num, 0.0), fold=fold.get(num, 0.0), rot=rot)
+        out.append((num, x, y, rot, scl, a, st))
+    return out
+
+
+def card_corners(x, y, rot, scl, st=0.0):
+    """Stage-space corners of the body of a card placed by fan_cards (fx.draw_holo_card: CARD_W x CARD_H at
+    scale 1, +6 % when selected)."""
+    sc = scl * (1 + 0.06 * ease_in_out(clamp(st)))
+    hw, hh = fx.CARD_W / 2 * sc, fx.CARD_H / 2 * sc
+    cs, sn = math.cos(math.radians(rot)), math.sin(math.radians(rot))
+    return [(x + px * cs - py * sn, y + px * sn + py * cs) for px, py in ((-hw, -hh), (hw, -hh), (hw, hh), (-hw, hh))]
 
 
 def card_xy(num, progress=1.0):
@@ -709,7 +728,7 @@ def shot_name(t):
 
 
 # =========================================================================== render
-def draw_stage(c, t, cam, rp, qp, mug_on_bench, fan_fn):
+def draw_stage(c, t, cam, rp, qp, mug_on_bench, fan_fn, rae=True):
     """Lounge -> mug on bench -> Quill -> Rae -> lounge front -> holo-cards (stage space)."""
     c.save()
     cam.apply(c, t)
@@ -717,7 +736,8 @@ def draw_stage(c, t, cam, rp, qp, mug_on_bench, fan_fn):
     if mug_on_bench:
         R.draw_mug(c, MUG_SPOT[0], MUG_SPOT[1], 1.0, 0.0, False)
     Q.draw(c, qp, t)
-    R.draw(c, rp, t)
+    if rae:
+        R.draw(c, rp, t)
     env.draw_lounge_front(c, t, light=1.0)
     if fan_fn is not None:
         fan_fn(c, t)
@@ -747,4 +767,7 @@ def render(canvas, t):
             draw_stage(canvas, t, cam, rae_pose(t), quill_pose(t), rae_mug_on_bench(t), _fan_fx)
         glow(canvas, W * 0.5, H * 0.32, 760, "#FFEBCF", 0.26 * k * k)
     else:
-        draw_stage(canvas, t, cam, rae_pose(t), quill_pose(t), rae_mug_on_bench(t), _fan_fx)
+        # 3 (Quill medium) is his single: Rae stays out of it - her pointing hand, still on its way down from
+        #   "...THAT?!", would otherwise flash through the bottom-left corner for the first frames
+        draw_stage(canvas, t, cam, rae_pose(t), quill_pose(t), rae_mug_on_bench(t), _fan_fx,
+                   rae=not (CUT_QMED <= t < CUT_WIDE))

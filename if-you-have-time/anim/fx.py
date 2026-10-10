@@ -34,6 +34,7 @@ from __future__ import annotations
 import bisect
 import colorsys
 import math
+import re
 from functools import lru_cache
 
 import numpy as np
@@ -658,8 +659,11 @@ def draw_pixel_sparkles(canvas, t, area=(0, 0, W, H), amount=1.0, seed=0, px=7.0
         a = clamp(amount) * wgt
         _blob(canvas, x + px / 2, y + px / 2, px * 5, cc, 0.25 * a, kind="soft")
         p.setColor(_c(cc, a))
+        g = _even_grid(canvas, x, y, px)            # whole even device-px cells (crisp, chroma-safe)
+        sx_, sy_, cl = g if g else (x, y, px)
+        p.setAntiAlias(g is None)
         for (gx, gy) in frame:
-            canvas.drawRect(skia.Rect.MakeXYWH(x + gx * px, y + gy * px, px, px), p)
+            canvas.drawRect(skia.Rect.MakeXYWH(sx_ + gx * cl, sy_ + gy * cl, cl, cl), p)
 
 
 # =========================================================================== rain streaks
@@ -1550,32 +1554,93 @@ def _icon_kazoo(c, t, a):
 
 
 _HEART = ("01100110", "11111111", "11111111", "11111111", "01111110", "00111100", "00011000")
+# the heart as horizontal runs (col, row, length) -> one gap-free path when drawn solid
+_HEART_RUNS = tuple((m.start(), j, len(m.group())) for j, row in enumerate(_HEART) for m in re.finditer("1+", row))
+_PLUS = ((-1, 0, 3, 1), (0, -1, 1, 3))       # 8-bit plus sparkle as two bars (col, row, w, h) in cells
+
+
+def _axis_aligned(c) -> bool:
+    m = c.getTotalMatrix()
+    return abs(m.getSkewX()) < 1e-6 and abs(m.getSkewY()) < 1e-6 and not m.hasPerspective()
+
+
+def _even_grid(c, x, y, cell):
+    """Pixel-art snapping for small sprites. Under an axis-aligned uniform-scale matrix returns local
+    (x, y, cell) moved so the sprite origin lands on an EVEN device pixel and the cell is a whole, even number
+    of device px (>= 2): crisp edges whose colour survives 4:2:0 chroma subsampling. None when the matrix
+    rotates or skews (draw anti-aliased instead: aliased rotated cells crawl)."""
+    if not _axis_aligned(c):
+        return None
+    m = c.getTotalMatrix()
+    sx, sy = m.getScaleX(), m.getScaleY()
+    if abs(sx) < 1e-6 or abs(abs(sy) - abs(sx)) > 1e-3 * abs(sx):
+        return None
+    tx, ty = m.getTranslateX(), m.getTranslateY()
+    X = 2.0 * round((sx * x + tx) / 2.0)
+    Y = 2.0 * round((sy * y + ty) / 2.0)
+    cd = max(2.0, 2.0 * round(abs(cell * sx) / 2.0))
+    return (X - tx) / sx, (Y - ty) / sy, cd / abs(sx)
 
 
 def _icon_arcade(c, t, a):
-    beat = 1.0 + (0.12 if (t * 2.4) % 1.0 < 0.18 else 0.0)
-    px = 8.5 * beat
+    # 8-bit heart beating by one whole local unit per cell (8.5 -> 9.5, ~12 %). Close and upright (the card-3
+    # focus) its cells keep an exact 1-device-px grid, every edge snapped to a device pixel. Small and tilted
+    # (in the fan) it is one solid anti-aliased path: a sub-pixel gap grid there aliased into crawling dots
+    # that the encoder smeared into a blob. The two cross-fade over 0.5..3 deg of tilt (the card swooping
+    # between focus and fan), so the change never pops on a still card.
+    beat = (t * 2.4) % 1.0 < 0.18
+    px = 8.5 + (1.0 if beat else 0.0)
     ox, oy = -4 * px, -3.5 * px - 10
-    p = _hp("#FF77A8", 0.9 * a)
-    p.setAntiAlias(False)
-    pg = _hp("#FF77A8", 0.35 * a, blur=5)
-    for j, row in enumerate(_HEART):
-        for i, ch in enumerate(row):
-            if ch == "1":
-                r = skia.Rect.MakeXYWH(ox + i * px, oy + j * px, px - 0.8, px - 0.8)
-                c.drawRect(r, pg)
-                c.drawRect(r, p)
-    c.drawRect(skia.Rect.MakeXYWH(ox + 1 * px, oy + 1 * px, px - 0.8, px - 0.8), _hp("#FFFFFF", 0.8 * a))
+    heart = skia.Path()
+    for (i, j, n) in _HEART_RUNS:
+        heart.addRect(skia.Rect.MakeXYWH(ox + i * px, oy + j * px, n * px, px))
+    c.drawPath(heart, _hp("#FF77A8", 0.35 * a, blur=5))
+    m = c.getTotalMatrix()
+    s = _mscale(c)
+    uniform = (not m.hasPerspective() and m.getScaleX() > 0 and m.getScaleY() > 0
+               and abs(m.getScaleX() - m.getScaleY()) < 0.01 * s)
+    wg = 0.0                                             # weight of the snapped-grid look
+    if uniform:
+        ang = abs(math.degrees(math.atan2(m.getSkewY(), m.getScaleX())))
+        wg = (1.0 - smoothstep((ang - 0.5) / 2.5)) * smoothstep((px * s - 5.0) / 2.0)
+    if wg < 0.999:                                       # solid, anti-aliased
+        c.drawPath(heart, _hp("#FF77A8", 0.9 * a * (1 - wg)))
+        c.drawRect(skia.Rect.MakeXYWH(ox + 1 * px, oy + 1 * px, px, px), _hp("#FFFFFF", 0.8 * a * (1 - wg)))
+    if wg > 0.001:                                       # device-px grid (cells snapped, 1-px gaps)
+        hc = m.mapXY(0.0, -10.0)                         # heart center in device px
+        cd = px * s
+        ex = lambda i: round(hc.x() + (i - 4) * cd)  # noqa: E731
+        ey = lambda j: round(hc.y() + (j - 3.5) * cd)  # noqa: E731
+        p = _hp("#FF77A8", 0.9 * a * wg)
+        p.setAntiAlias(False)
+        c.save()
+        c.resetMatrix()
+        for (i0, j, n) in _HEART_RUNS:
+            for i in range(i0, i0 + n):
+                c.drawRect(skia.Rect(ex(i), ey(j), ex(i + 1) - 1, ey(j + 1) - 1), p)
+        p.setColor(_c("#FFFFFF", 0.8 * a * wg))
+        c.drawRect(skia.Rect(ex(1), ey(1), ex(2) - 1, ey(2) - 1), p)
+        c.restore()
     # tiny joystick
     c.drawRRect(skia.RRect.MakeRectXY(skia.Rect(-20, 36, 20, 46), 3, 3), _hp(_HOLO, 0.9 * a, 2))
     tilt = 7 * math.sin(t * 5)
     c.drawLine(0, 36, tilt, 24, _hp(_HOLO, 0.9 * a, 2.4))
     c.drawCircle(tilt, 21, 5, _hp(_HOLO, 0.95 * a))
+    # blinking pixel pluses: solid (no sub-pixel gaps), snapped to even device pixels when axis-aligned
+    py_ = _hp("#FFEC27", 0.85 * a)
     for k, (sx, sy) in enumerate(((36, -34), (-40, 22), (40, 18))):
         on = ((t * 3 + k * 0.33) % 1.0) < 0.5
         if on:
-            for (dx, dy) in ((0, 0), (1, 0), (-1, 0), (0, 1), (0, -1)):
-                c.drawRect(skia.Rect.MakeXYWH(sx + dx * 3.5, sy + dy * 3.5, 3.2, 3.2), _hp("#FFEC27", 0.85 * a))
+            cell = 3.5
+            x0, y0 = sx - cell / 2, sy - cell / 2          # top-left of the center cell
+            g = _even_grid(c, x0, y0, cell)
+            if g:
+                x0, y0, cell = g
+            py_.setAntiAlias(g is None)
+            plus = skia.Path()
+            for (i, j, w_, h_) in _PLUS:
+                plus.addRect(skia.Rect.MakeXYWH(x0 + i * cell, y0 + j * cell, w_ * cell, h_ * cell))
+            c.drawPath(plus, py_)
 
 
 def _icon_lofi(c, t, a):

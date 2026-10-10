@@ -13,7 +13,8 @@ Event forms:
     ("line_at", id, offset)       place a VO line at now + offset without advancing time
     ("music", cue, kw)            start a music cue now (kw: gain_db, fade_in, fade_out, end)
     ("music_hold", cue)           advance time by the cue's full duration
-    ("sfx", name, kw)             sound effect now (kw: gain_db, offset)
+    ("sfx", name, kw)             sound effect now (kw: gain_db, offset, end_beat, skip = seconds trimmed
+                                  off the head of the file; the start time stays now + offset)
 """
 
 # Voices: Kokoro-82M voice ids. speed < 1 is slower.
@@ -90,7 +91,7 @@ SEQ = [
     # ---------------- S1: the ask
     ("scene", "s1"),
     ("sfx", "ship_hum_loop", {"gain_db": -20.0, "end_beat": "sym_lights_dim"}),
-    ("music", "lounge", {"gain_db": -15.0, "fade_in": 3.0, "fade_out": 3.0, "end_beat": "sym_lights_dim"}),
+    ("music", "lounge", {"gain_db": -9.0, "fade_in": 3.0, "fade_out": 3.0, "end_beat": "sym_lights_dim"}),
     ("beat", "rae_door_open", 0.4),
     ("sfx", "door_open", {"offset": 0.4, "gain_db": -8.0}),
     ("beat", "rae_enters", 0.8),
@@ -120,6 +121,8 @@ SEQ = [
     ("line", "q02"),
     ("wait", 0.25),
     ("beat", "rae_sip2"),
+    # second sip: slurp starts as the rim meets her lip (+0.56) and is cut dead by the chime ("Done.")
+    ("sfx", "sip_cut", {"offset": 0.34, "gain_db": -20.0}),
     ("wait", 0.9),
     ("beat", "quill_done_chime"),
     ("sfx", "compose_done", {"gain_db": -12.0}),
@@ -199,7 +202,7 @@ SEQ = [
     ("sfx", "holo_select", {"gain_db": -14.0}),
     ("line", "q09"),
     ("wait", 0.25),
-    ("music", "alt_chip", {"gain_db": -9.0}),
+    ("music", "alt_chip", {"gain_db": -5.0}),
     ("music_hold", "alt_chip"),
     ("wait", 0.1),
     ("line", "r13"),
@@ -208,7 +211,7 @@ SEQ = [
     ("sfx", "holo_select", {"gain_db": -14.0}),
     ("line", "q10"),
     ("wait", 0.3),
-    ("music", "alt_lofi", {"gain_db": -6.0}),
+    ("music", "alt_lofi", {"gain_db": -4.0}),
     ("music_hold", "alt_lofi"),
     ("wait", 0.2),
     ("line", "r14"),
@@ -216,7 +219,7 @@ SEQ = [
     ("beat", "card5_7"),
     ("sfx", "holo_select", {"gain_db": -14.0}),
     ("line", "q11"),
-    ("music", "alt_theremin", {"gain_db": -10.0}),
+    ("music", "alt_theremin", {"gain_db": -5.0}),
     ("music_hold", "alt_theremin"),
     ("wait", 0.2),
     ("line", "r15"),
@@ -234,9 +237,17 @@ SEQ = [
     ("beat", "rae_backs_out", -1.6),
     ("wait", 0.5),
     ("beat", "rae_exit_door"),
+    # backing walk to the door: one soft step per foot plant (s4.walk_phase crossing k*0.5, from s4.WALK_KEYS)
+    ("sfx", "step_soft", {"offset": -2.30, "gain_db": -21.0}),
+    ("sfx", "step_soft", {"offset": -1.82, "gain_db": -18.0}),
+    ("sfx", "step_soft", {"offset": -0.935, "gain_db": -18.0}),
+    ("sfx", "step_soft", {"offset": -0.57, "gain_db": -19.0}),
+    ("sfx", "step_soft", {"offset": -0.12, "gain_db": -18.0}),
     ("sfx", "door_open", {"gain_db": -8.0}),
     ("wait", 1.0),
-    ("sfx", "door_close", {"gain_db": -8.0}),
+    # s4 shuts the panel in 0.33 s (it must be closed by the S5 cut): skip the first 0.34 s of the slide so
+    # the thunk (+0.67 in the file) lands on the visible slam; start (= s4.DOOR_SHUT) is unchanged
+    ("sfx", "door_close", {"gain_db": -8.0, "skip": 0.34}),
     ("wait", 0.4),
 
     # ---------------- S5: coda

@@ -7,7 +7,8 @@ timeline.json schema
   "lines":  [{"id": "q01", "char": "quill", "text": "..", "start": .., "end": ..}, ...],
   "beats":  {"rae_enters": 16.8, ...},
   "music":  [{"cue": "symphony", "start": .., "end": .., "gain_db": .., "fade_in": .., "fade_out": ..}],
-  "sfx":    [{"name": "door_open", "start": .., "gain_db": .., "end": <optional, for loops>}]
+  "sfx":    [{"name": "door_open", "start": .., "gain_db": .., "end": <optional, for loops>,
+              "skip": <optional, seconds trimmed off the head of the file>}]
 }
 """
 import json
@@ -63,6 +64,8 @@ def build():
             kw = ev[2] if len(ev) > 2 else {}
             entry = {"name": ev[1], "start": round(now + kw.get("offset", 0.0), 3),
                      "gain_db": kw.get("gain_db", 0.0)}
+            if kw.get("skip"):          # play the file from `skip` s in (start time unchanged)
+                entry["skip"] = kw["skip"]
             sfx.append(entry)
             if "end_beat" in kw:
                 pending_end.append((entry, kw["end_beat"]))

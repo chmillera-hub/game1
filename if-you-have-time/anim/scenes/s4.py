@@ -34,8 +34,9 @@ Shot list (orientation only):
                                    slow push into a CLOSE-UP as the grin crumples
   R12      r12                     Rae MEDIUM, a little wider: "Why is the kazoo one ALSO good?!"
   P3       card3 -> chip           THREE-SHOT: "Number three..." - she sets her mug down beside her, braces
-  C        chip (+ r13)            Rae MEDIUM-WIDE (feet in frame): head bob, foot tap, grips her knee
+  C        chip                    WIDE (cut on the chip downbeat): the whole room, head bob, the foot starts
      QI    (1.1 s insert)          the traitorous foot (insert)
+  C        chip end + r13          MEDIUM-WIDE two-shot (feet in frame): head bob, foot tap, grips her knee
   P4       card4                   Quill MEDIUM + card 4: "Number four. Lo-fi beats..." (deadpan)
   R4       "...fall apart to."     Rae MEDIUM: she eyes her mug on the bench and takes it back for comfort
   L        lo-fi                   WIDE "album cover": rain, warm dim, she curls around the mug (cut on action)
@@ -71,7 +72,7 @@ from anim.rig import ArmPose, Pose
 from anim.scenes import s3
 from anim.scenes.s3 import (FAN, FLOOR, SEAT_X, SEAT_Y, ArmSeq, _face_cam, arm, arm_add, blink_amt, card_xy,
                             drift, draw_fan, gaze, pulse, select_flash, sfx_time, smoothed)
-from config import MUSIC_ENV
+from config import FPS, MUSIC_ENV, H, W
 
 # =========================================================================== timing (all derived from names)
 T0, T1 = scene_span("s4")
@@ -212,8 +213,11 @@ CHEST_L = ArmPose(shoulder=22.0, elbow=116.0, wrist=10.0, hand="open", across=0.
 CHEST_R = A["hand_on_chest"]
 REST = A["rest"]
 NOPE_R = ArmPose(shoulder=62.0, elbow=84.0, wrist=-34.0, hand="palm_out", across=0.0)      # palm out at him
-BAL_L = ArmPose(shoulder=26.0, elbow=40.0, wrist=0.0, hand="open", across=0.0)             # out for balance (dip)
+BAL_L = ArmPose(shoulder=20.0, elbow=30.0, wrist=0.0, hand="open", across=0.0)             # out for balance (dip)
 POINT_L = ArmPose(shoulder=84.0, elbow=6.0, wrist=0.0, hand="point")
+# backing away (still close to him): aimed up at his chest / face, so the fingertip passes well above his
+# offered palm instead of landing on it
+POINT_AT_L = ArmPose(shoulder=110.0, elbow=4.0, wrist=0.0, hand="point")
 CARRY_R = arm(HOLD, shoulder=20.0, elbow=96.0, across=0.3)
 
 # ---------------------------------------------------------------- the mug: bench <-> near hand only
@@ -432,7 +436,8 @@ def _rae_tracks():
     d["furrow"] = Track([
         (T0, 0.12), (P2s, 0.12), (Q08 + 2.4, 0.15), (Q08 + 2.9, 0.55, "out"), (KZ0 + 0.3, 0.55),
         (KZ0 + 0.46, 0.65), (KZ0 + 0.58, 0.0, "out"), (KZ1, 0.0), (R12 + 0.4, 0.2), (R12E, 0.1),
-        (PLACE1_T + 0.4, 0.15), (CH0 - 0.3, 0.45), (CH0 + 0.3, 0.55),
+        (PLACE1_T + 0.4, 0.15), (CH0 - 0.3, 0.45), (CH0 + 0.3, 0.55), (CH0 + 1.45, 0.5),
+        (CH0 + 1.75, 0.75, "out"), (CH0 + 2.4, 0.45),                       # (catches the head bob ... briefly)
         (CH0 + 3.0, 0.35), (CH1 - 1.2, 0.1), (CH1 - 0.3, 0.0), (R13, 0.45), (R13E, 0.4), (C4, 0.3),
         (Q10 + 1.2, 0.05), (LF0, 0.0), (R14, 0.35), (R14E, 0.3), (C57, 0.15), (TH0, 0.1),
         (TH0 + 0.08, 0.6, "out"), (TH1, 0.2), (R15, 0.0), (ELEVEN, 0.1), (SIP0, 0.3), (SIP1 + 0.4, 0.1),
@@ -487,8 +492,10 @@ def _rae_tracks():
     # ---------------- feet / head bob (the arcade gag)
     d["tap"] = Track([(CH0 + 1.9, 0.0), (CH0 + 2.8, 0.55, "io"), (CH0 + 4.0, 0.8), (CH1, 1.0), (R13 + 0.08, 1.0),
                       (R13 + 0.22, 0.0, "out"), (R13 + 1.85, 0.0), (R13 + 1.95, 0.5, "out"), (R13 + 2.3, 0.0, "io")])
-    d["bob"] = Track([(CH0 + 0.9, 0.0), (CH0 + 1.3, 0.35), (CH0 + 1.7, 0.0, "out"), (CH0 + 2.4, 0.15),
-                      (CH0 + 3.6, 0.7), (CH1 - 0.4, 1.0), (CH1 - 0.3, 0.0, "out")])
+    # it creeps in within the first bar, she catches it (furrow) ... it wins anyway; it stops dead when she
+    # notices the foot
+    d["bob"] = Track([(CH0 + 0.3, 0.0), (CH0 + 0.85, 0.9, "io"), (CH0 + 1.45, 0.95), (CH0 + 1.8, 0.2, "io"),
+                      (CH0 + 2.15, 0.2), (CH0 + 2.6, 1.0, "io"), (CH1 - 0.4, 1.0), (CH1 - 0.28, 0.0, "out")])
     d["lofi_nod"] = Track([(LF0 + 0.6, 0.0), (LF0 + 2.0, 1.0), (LF1 - 0.3, 1.0), (LF1 + 0.4, 0.0)])
     d["laugh"] = Track([(KZ0 + 0.52, 0.0), (KZ0 + 0.62, 1.0, "out"), (KZ0 + 2.4, 0.8), (KZ0 + 3.6, 0.25),
                         (KZ0 + 4.6, 0.0), (R12 - 0.1, 0.0), (R12 + 0.1, 0.4), (R12E, 0.3), (R12E + 0.5, 0.0)])
@@ -508,10 +515,12 @@ def _rae_tracks():
         (SIP0 - 0.1, CUP_CHEST_L), (SIP0 + 0.42, SIP_L, "io"), (SIP1, SIP_L), (SIP1 + 0.5, CUP_CHEST_L, "io"),
         (CUT_LC + 0.15, CUP_CHEST_L), (CUT_LC + 0.85, CUP_HEART_L, "io"),
         (PLACE_T - 0.75, CUP_HEART_L), (PLACE_T - 0.35, CHEST_L, "io"),            # lets go: hand to her heart
-        # exit: the hand leaves her heart in the dip for the mug (wide, fast), then points at him
+        # exit: the hand leaves her heart in the dip for the mug (wide, fast), pulls in (well clear of his offered
+        # palm), cocks the finger and jabs it at him - aimed at his chest / face while she backs away
         (GRAB_T - 0.42, CHEST_L), (GRAB_T - 0.12, BAL_L, "io"),
-        (GRAB_T + 0.1, arm(POINT_L, shoulder=60.0, elbow=40.0)), (GRAB_T + 0.32, POINT_L, "out"),
-        (BACK1 - 0.3, arm_add(POINT_L, 4, -2)), (BACK1, POINT_L),
+        (GRAB_T + 0.02, ArmPose(shoulder=8.0, elbow=106.0, wrist=0.0, hand="open")),
+        (GRAB_T + 0.14, arm(POINT_AT_L, shoulder=66.0, elbow=100.0)), (GRAB_T + 0.34, POINT_AT_L, "out"),
+        (BACK1 - 0.3, arm_add(POINT_AT_L, -4, -2)), (BACK1, POINT_AT_L),
         # waiting for the door: the arm drops while she glances back at it (so nothing reaches past the right
         # jamb when she steps behind the door plane) ...
         (BACK1 + 0.32, ArmPose(shoulder=0.0, elbow=6.0, wrist=0.0, hand="relaxed"), "io"),   # (hangs: the walk
@@ -623,13 +632,19 @@ def bench_mug(t):
     return None
 
 
-def _bob(t, beats, width=0.16):
-    """Head-bob pulse train: 0..1 dip right after each beat."""
+def _bob(t, beats, width=0.16, alt=False):
+    """Head-bob pulse train: 0..1 dip peaking 0.06 s after each beat (quick drop, slower recovery; smooth, so
+    no pulse starts with a jump). alt: successive beats alternate sign (+1, -1, ...) - a side-to-side sway."""
     v = 0.0
-    for b in beats:
-        dt = t - b
-        if -0.05 <= dt < 0.4:
-            v = max(v, math.exp(-((dt - 0.06) / width) ** 2))
+    for k, b in enumerate(beats):
+        dt = t - b - 0.06
+        w = width * 0.55 if dt < 0 else width
+        if -2.4 * w < dt < 2.4 * w:
+            p = math.exp(-(dt / w) ** 2)
+            if alt:
+                v += p if k % 2 == 0 else -p
+            else:
+                v = max(v, p)
     return v
 
 
@@ -659,13 +674,15 @@ def _raw_pose(t: float, mug="auto") -> Pose:
         nod += 0.05 * lg * ph
         shoulders += 0.1 * lg * abs(ph)
         hturn += 0.05 * lg * math.sin(2 * math.pi * 1.1 * (t - KZ0))          # shaking her head: "no way"
-    # arcade: head bob on the chip beats (she resists, it wins)
+    # arcade: head bob on the chip beats (she resists, it wins): chin drops on every beat and the body dips into
+    # the cushion with it, the head sways side to side on alternate beats, the shoulders pump
     bb = d["bob"](t)
     if bb > 0:
         pb = _bob(t, CHIP_BEATS)
-        nod -= 0.16 * bb * pb
-        bounce += 2.5 * bb * pb
-        tilt += 3.0 * bb * pb * (1 if int((t - CH0) / 0.8) % 2 else -1)
+        nod -= 0.5 * bb * pb
+        bounce += 5.5 * bb * pb
+        shoulders += 0.08 * bb * pb
+        tilt += 5.5 * bb * _bob(t, CHIP_BEATS, alt=True)
     # lo-fi: slow, heavy nod on the beat
     ln = d["lofi_nod"](t)
     if ln > 0:
@@ -899,11 +916,68 @@ def fan_state(t):
     return st
 
 
-def draw_cards(c, t):
+def _fan_args(t, st=None):
+    st = st or fan_state(t)
+    return dict(alpha=st["alpha"], focus=st["focus"], states=st["states"], pops=st["pops"], hidden=st["hidden"],
+                alphas=st["alphas"], focus_pos=FOCUS8 if t >= C4 else s3.FOCUS_POS)
+
+
+# Rae's singles frame her face, not the menu: a card that never gets at least FRAG_MIN of its body inside the
+# frame during such a shot would only be a stray corner / half a label at the edge, so it is left out of that
+# shot altogether (decided once per shot, so nothing pops in or out while the camera moves). Quill's mediums
+# present a card, so there the fan stays - only slivers at the frame edge go.
+RAE_SINGLES = ("K", "R12", "R4", "L2", "R15", "R8", "LC")
+FRAG_MIN = 0.8
+QUILL_SINGLES = ("P4", "P8")
+SLIVER_MAX = 0.4
+
+
+def _inside(pts, n=10):
+    """Fraction of the screen-space quad pts (4 corners) that lies inside the frame (n x n samples)."""
+    (x0, y0), (x1, y1), (x2, y2), (x3, y3) = pts
+    k = 0
+    for i in range(n):
+        u = (i + 0.5) / n
+        ax, ay = x0 + (x1 - x0) * u, y0 + (y1 - y0) * u
+        bx, by = x3 + (x2 - x3) * u, y3 + (y2 - y3) * u
+        for j in range(n):
+            v = (j + 0.5) / n
+            x, y = ax + (bx - ax) * v, ay + (by - ay) * v
+            k += (0.0 <= x < W and 0.0 <= y < H)
+    return k / (n * n)
+
+
+@lru_cache(maxsize=None)
+def _stray_cards(name, a, b):
+    """Cards to leave out of the single (name, a, b): best in-frame fraction over the shot < FRAG_MIN (Rae's) /
+    < SLIVER_MAX (Quill's)."""
+    if name not in RAE_SINGLES and name not in QUILL_SINGLES:
+        return frozenset()
+    need = FRAG_MIN if name in RAE_SINGLES else SLIVER_MAX
+    f0, f1 = math.ceil(a * FPS - 1e-6), math.ceil(b * FPS - 1e-6) - 1
+    frames = sorted({round(f0 + (f1 - f0) * i / 7) for i in range(8)})
+    best = {}
+    for f in frames:
+        t = f / FPS
+        cam = camera(name, t, a, b)
+        for (num, x, y, rot, scl, al, stt) in s3.fan_cards(1.0, **_fan_args(t)):
+            if al <= 0.02:
+                continue
+            fr = _inside([cam.to_screen(px, py) for px, py in s3.card_corners(x, y, rot, scl, stt)])
+            best[num] = max(best.get(num, 0.0), fr)
+    return frozenset(n for n in range(1, 9) if best.get(n, 0.0) < need)
+
+
+def draw_cards(c, t, shot=None):
+    """The fan (+ note sparkles, select flashes, the music box). shot = (name, start, end) of the current shot:
+    in the singles the cards that would only show as a fragment at the frame edge are left out (_stray_cards)."""
     st = fan_state(t)
+    stray = _stray_cards(*shot) if shot is not None else frozenset()
+    if stray:
+        st["alphas"] = {n: (0.0 if n in stray else st["alphas"].get(n, 1.0)) for n in range(1, 9)}
     # note sparkles from the playing card
     for num, (c0, c1) in ((2, (KZ0, KZ1)), (3, (CH0, CH1)), (4, (LF0, LF1))):
-        if c0 - 0.1 <= t <= c1 + 1.5:
+        if c0 - 0.1 <= t <= c1 + 1.5 and num not in stray:
             cue = {2: "alt_kazoo", 3: "alt_chip", 4: "alt_lofi"}[num]
             cx_, cy_ = card_xy(num)
             fx.draw_note_sparkles(c, t, music_onsets(cue), area=(cx_ - 70, cy_ - 130, cx_ + 70, cy_ - 40),
@@ -986,7 +1060,11 @@ def camera(name, t, a, b):
         return _follow_cam(t, z, lerp(330.0, 352.0, v), lerp(500.0, 540.0, v), lerp(0.45, 0.6, v))
     if name == "R12":                   # wider Rae medium for the outburst (both hands up)
         return _follow_cam(t, 2.0 * (1.0 + 0.03 * ease_in_out(u)), 300.0, 462.0, 0.5)
-    if name == "C":                     # arcade medium-wide two-shot: her feet in frame, Quill watching, card 3 up top
+    if name == "C":
+        if a < CUT_QI:                  # the chip kicks in: cut WIDE on the downbeat (the whole room, full figures +
+            #                             floor, sparkles everywhere; Rae keeps her screen x from P3 for the eye)
+            return drift(Camera(380.0, 792.0, 1.0), Camera(378.0, 786.0, 1.03), t, CUT_C, CUT_QI)
+        # after the foot insert: medium-wide two-shot - her feet in frame, Quill watching, card 3 up top
         return drift(Camera(350.0, 772.0, 1.3), Camera(351.0, 768.0, 1.34), t, CUT_C, CUT_P4)
     if name == "P4":                    # Quill medium + card 4 (deadpan)
         return drift(_face_cam(QFACE[0], QFACE[1], 1.85, 412.0, 420.0),
@@ -1043,7 +1121,7 @@ def render(canvas, t):
     # cut before she rises (no visible pop: seated, nothing overlaps)
     cards_behind = t >= CUT_LS
     if cards_behind:
-        draw_cards(c, t)
+        draw_cards(c, t, (name, a, b))
     if t >= IN_DOOR and rp.x < 200:
         c.save()
         c.clipRect(_door_clip_rect(dr), skia.ClipOp.kDifference, True)
@@ -1060,5 +1138,5 @@ def render(canvas, t):
     env.draw_lounge_front(c, t, light=light, door=dr, warm=warm, lintel=not (BACK1 - 0.6 < t < IN_DOOR))
     draw_world_fx(c, t, name)
     if not cards_behind:
-        draw_cards(c, t)
+        draw_cards(c, t, (name, a, b))
     c.restore()

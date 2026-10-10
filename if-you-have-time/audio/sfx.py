@@ -185,7 +185,11 @@ def ship_hum_loop():
     ramp = np.linspace(0, 1, xf)
     a[:xf] = air[n1:n1 + xf] * (1 - ramp) + air[:xf] * ramp
     x = x + a
-    return stereo(x, 0, width=0.5, delay_ms=11)
+    # stereo width with a CIRCULAR 11 ms delay so the right channel wraps too (a zero-padded delay left a
+    # 0.088 step at the loop point, ticking every 8 s in the mix)
+    g = np.cos(np.pi / 4)                                   # centre pan, as stereo(x, 0, ...)
+    r = x * g
+    return np.stack([x * g, r * 0.5 + np.roll(r, int(11 * SR / 1000)) * 0.5], axis=1)
 
 
 def _pneumatic(d, rev=False):
@@ -374,10 +378,36 @@ def send_chime():
     return fade(room(stereo(out, -0.2, 0.6), 1.3, 0.35), 0.002, 0.3)
 
 
+def sip_cut():
+    """S1 second sip, interrupted: the slurp starts like `sip` (+0.1, full by +0.25) but never reaches the
+    gulp. It is cut dead at +0.56 (the compose_done chime lands there in the mix) and the freeze follows."""
+    d = 0.62
+    t = t_axis(d)
+    x = bp(noise(d), 900, 3800) * (0.5 + 0.5 * np.sin(2 * np.pi * 31 * t) ** 2)
+    e = np.exp(-((np.minimum(t, 0.25) - 0.25) / 0.12) ** 2) * (1.0 - 0.25 * np.clip((t - 0.25) / 0.3, 0, 1))
+    e *= 1.0 - np.clip((t - 0.545) / 0.015, 0, 1)            # cut off in 15 ms
+    return fade(stereo(x * e * 0.6, -0.2), 0.005, 0.01)
+
+
+def step_soft():
+    """One soft, slightly scuffed footstep (backing toward the door in S4); attack at +0.00 like footsteps_4."""
+    d = 0.3
+    n = int(d * SR)
+    tt = np.arange(n) / SR
+    thump = np.sin(2 * np.pi * (100 - 45 * tt / 0.22) * tt) * np.exp(-tt / 0.028)
+    scuff = bp(noise(d), 1000, 4200) * np.exp(-tt / 0.045) * 0.3
+    out = thump + scuff
+    pan = -0.3
+    st_ = np.stack([out * np.cos((pan + 1) * np.pi / 4), out * np.sin((pan + 1) * np.pi / 4)], 1)
+    return fade(room(st_, 0.4, 0.15), 0.002, 0.05)
+
+
+# new effects go at the END of this list: the shared RNG is consumed in this order, so appending keeps every
+# earlier effect bit-identical on a full rebuild
 EFFECTS = {f.__name__: f for f in [
     space_rumble, whoosh_dive, ship_hum_loop, door_open, door_close, footsteps_4, bench_sit, sigh_breath, sip,
     process_chitter, compose_done, lights_down, snap_back, lights_up, gasp_breath, holo_open, holo_select,
-    sniff, send_chime]}
+    sniff, send_chime, sip_cut, step_soft]}
 
 
 def main(only=None):

@@ -3,7 +3,9 @@
 Outputs
     build/vo/<id>.wav        48 kHz mono float WAV, edges trimmed
     build/vo/manifest.json   {id: {"char", "text", "dur"}}
-    build/lipsync.json       {id: {"open": [...], "round": [...]}} one value per video frame (FPS)
+    build/lipsync.json       {id: {"open": [...], "round": [...]}} one value per video frame (FPS);
+                             RMS envelope + forced lip closures on m/b/p (faster-whisper words + espeak-ng)
+    build/vo/bilabials.json  the closure times used, per line (QA)
 
 Quill gets a light "android" treatment: a short static comb filter for a faint
 metallic sheen plus a gentle band-limit, kept subtle so every word stays clear.
@@ -51,8 +53,9 @@ def android_fx(x, sr):
     return y
 
 
-def lipsync_env(x, sr):
-    """Per-frame mouth openness (0..1) and roundness (0..1) from the waveform."""
+def lipsync_env(x, sr, closures=()):
+    """Per-frame mouth openness (0..1) and roundness (0..1) from the waveform.
+    `closures`: line-relative times (s) where the lips must shut (m/b/p, see bilabial_times)."""
     hop = sr // FPS
     n = int(np.ceil(len(x) / hop))
     pad = np.pad(x, (0, n * hop - len(x) + hop))
@@ -80,7 +83,114 @@ def lipsync_env(x, sr):
     k = np.array([0.25, 0.5, 0.25])
     opens = np.convolve(opens, k, mode="same")
     rounds = np.convolve(rounds, k, mode="same")
+    # m / b / p: nasals and voiced stops carry plenty of energy, so the RMS envelope never closes on them.
+    # Force a lip closure at each one: the two frames around it shut (frame i is shown at line time i / FPS),
+    # one eased frame either side.
+    for tc in closures:
+        i0 = int(np.floor(tc * FPS))
+        for i, w in ((i0 - 1, 0.45), (i0, 0.0), (i0 + 1, 0.0), (i0 + 2, 0.45)):
+            if 0 <= i < len(opens):
+                opens[i] *= w
+                rounds[i] *= 0.3 if w == 0.0 else 0.7
     return [round(float(v), 3) for v in opens], [round(float(v), 3) for v in rounds]
+
+
+# ----------------------------------------------------------------------------- bilabial closures
+BILABIAL = {"m", "b", "p"}
+_WHISPER = None
+
+
+def _g2p(word):
+    """espeak-ng phonemes (Kirshenbaum ASCII, stress marks stripped) for one word."""
+    import subprocess
+    out = subprocess.run(["espeak-ng", "-q", "-x", "--sep=_", "-v", "en-us", word],
+                         capture_output=True, text=True, check=True).stdout
+    return [p.strip("',") for p in out.strip().replace(" ", "_").split("_") if p.strip("',")]
+
+
+def _is_vowel(p):
+    return any(c in "aeiouAEIOUV@3" for c in p)
+
+
+def bilabial_times(x, sr):
+    """Line-relative times (s) of lip closures for every m/b/p.
+
+    Words and their timings come from faster-whisper (word_timestamps) on the trimmed VO; each word is
+    phonemized with espeak-ng (so silent letters like the b in 'lamb' are skipped). A bilabial's position is
+    first estimated from the phoneme order (vowels weighted x2), then snapped to the deepest dip of the
+    1.2-5 kHz band energy within +-90 ms of that estimate: the lips are shut where the formants vanish
+    (nasal murmur for m, the closure for b/p). Adjacent bilabials (the 'mb' in 'number') make one closure."""
+    global _WHISPER
+    from faster_whisper import WhisperModel
+    if _WHISPER is None:
+        _WHISPER = WhisperModel("small.en", device="cpu", compute_type="int8",
+                                download_root="/home/user/models/whisper")
+    y16 = signal.resample_poly(x, 1, sr // 16000).astype(np.float32)
+    segs, _ = _WHISPER.transcribe(y16, word_timestamps=True, language="en", beam_size=5)
+    words = [w for s in segs for w in s.words]
+    # band energy in 20 ms windows, 5 ms hop
+    sos = signal.butter(4, [1200, 5000], btype="band", fs=sr, output="sos")
+    hf = signal.sosfilt(sos, x) ** 2
+    hop, win = int(0.005 * sr), int(0.02 * sr)
+    c = np.cumsum(np.concatenate([[0.0], hf]))
+    starts = np.arange(0, max(1, len(x) - win), hop)
+    e_hf = 10 * np.log10((c[starts + win] - c[starts]) / win + 1e-12)
+    t_hf = (starts + win / 2) / sr
+    out = []
+    for w in words:
+        word = "".join(ch for ch in w.word if ch.isalpha() or ch in "'-")
+        if not word:
+            continue
+        ph = _g2p(word)
+        if not any(p in BILABIAL for p in ph):
+            continue
+        wt = np.array([2.0 if _is_vowel(p) else 1.0 for p in ph])
+        edges = np.concatenate([[0.0], np.cumsum(wt)]) / wt.sum()
+        k = 0
+        while k < len(ph):
+            if ph[k] not in BILABIAL:
+                k += 1
+                continue
+            j = k
+            while j + 1 < len(ph) and ph[j + 1] in BILABIAL:
+                j += 1
+            frac = 0.5 * (edges[k] + edges[j + 1])
+            est = w.start + frac * (w.end - w.start)
+            lo, hi = max(est - 0.09, w.start - 0.06), min(est + 0.09, w.end + 0.03)
+            m = (t_hf >= lo) & (t_hf <= hi)
+            tc = float(t_hf[m][np.argmin(e_hf[m])]) if m.any() else est
+            out.append({"word": word, "ph": "_".join(ph[k:j + 1]), "est": round(est, 3), "t": round(tc, 3)})
+            k = j + 1
+    return out
+
+
+def _lips_for(lid, x, log=None):
+    try:
+        bl = bilabial_times(x, SR)
+    except Exception as e:  # no faster-whisper / espeak-ng: fall back to the plain envelope
+        print(f"  {lid}: bilabial closures skipped ({e})")
+        bl = []
+    if log is not None:
+        log[lid] = bl
+    o, r = lipsync_env(x, SR, [b["t"] for b in bl])
+    return {"open": o, "round": r}
+
+
+def lips_only(only=None):
+    """Rebuild build/lipsync.json from the existing build/vo/<id>.wav (no TTS; audio unchanged).
+    Also writes build/vo/bilabials.json (word, phonemes, estimated and snapped closure time) for QA."""
+    lips = json.loads(LIPSYNC.read_text()) if LIPSYNC.exists() else {}
+    log_path = VO_DIR / "bilabials.json"
+    log = json.loads(log_path.read_text()) if log_path.exists() else {}
+    for lid in LINES:
+        if only and lid not in only:
+            continue
+        x, sr = sf.read(VO_DIR / f"{lid}.wav")
+        assert sr == SR
+        lips[lid] = _lips_for(lid, np.asarray(x, dtype=np.float64), log)
+        print(f"{lid:4s} closures: " + ", ".join(f"{b['word']}[{b['ph']}]@{b['t']:.2f}" for b in log[lid]))
+    LIPSYNC.write_text(json.dumps(lips))
+    log_path.write_text(json.dumps(log, indent=1))
 
 
 def main(only=None):
@@ -104,8 +214,7 @@ def main(only=None):
             x = android_fx(x, SR)
         x = x / (np.max(np.abs(x)) + 1e-9) * 0.89
         sf.write(VO_DIR / f"{lid}.wav", x.astype(np.float32), SR, subtype="FLOAT")
-        o, r = lipsync_env(x, SR)
-        lips[lid] = {"open": o, "round": r}
+        lips[lid] = _lips_for(lid, x)
         manifest[lid] = {"char": char, "text": display, "dur": round(len(x) / SR, 3)}
         print(f"{lid:4s} {char:5s} {len(x)/SR:5.2f}s  {display}")
     manifest_path.write_text(json.dumps(manifest, indent=1))
@@ -113,4 +222,9 @@ def main(only=None):
 
 
 if __name__ == "__main__":
-    main(set(sys.argv[1:]) or None)
+    # python3 audio/tts.py [ids]          synthesize VO + lip-sync
+    # python3 audio/tts.py --lips [ids]   lip-sync only, from the existing VO files
+    if "--lips" in sys.argv:
+        lips_only(set(a for a in sys.argv[1:] if a != "--lips") or None)
+    else:
+        main(set(sys.argv[1:]) or None)
