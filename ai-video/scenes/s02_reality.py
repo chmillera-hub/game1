@@ -56,7 +56,7 @@ PRESENT_K = 0.58                             # "present" blend: glove stays in f
 SHELF = (58, 322, 455)                       # hanging shelf (upper left): plank x0, x1, top y
 BOOK_SHELF = (194, 455, 0.40)                # Big Book standing on it, cover out
 BOOK_HOLD = (BOOK_X, BOOK_Y - 10)            # where the tail hands it over (in front of his chest)
-SWING_C = (40, 1300)                         # bezier control: a low U-swoop past Snake, up into his hands
+SWING_C = (40, 1300)                         # swing control: low U-swoop past Snake, up to him
 HOLD_CX = (BOOK_X - MX) / MS                 # book centre x in villain-local units
 TAIL_J = 60          # rig coil sample (left of the chest) where the reaching tail peels off
 TAIL_NPER = 6        # spline samples per tail control point
@@ -86,11 +86,11 @@ V.VILLAIN_EXPR.setdefault("s02_whistle", dict(
 # "Thank you, Snake.": a genuine, closed-mouth polite smile, and a little nod
 # toward Snake (head dips and tips screen-left)
 V.VILLAIN_EXPR.setdefault("s02_polite", dict(
-    V.VILLAIN_EXPR["happy"], mo=0.0, mt=0.0, mc=0.85, mw=1.0, ul1=0.34, ul2=0.32,
-    ll1=0.3, ll2=0.3, blush=0.5, by1=-10, by2=-10))
+    V.VILLAIN_EXPR["happy"], mo=0.0, mt=0.0, mc=0.85, mw=1.0, ul1=0.12, ul2=0.1,
+    ll1=0.24, ll2=0.24, lt1=0.0, lt2=0.0, ba1=-0.14, ba2=-0.14, by1=-20, by2=-20,
+    blush=0.55, shine=0.5))
 V.VILLAIN_EXPR.setdefault("s02_nod", dict(
-    V.VILLAIN_EXPR["s02_polite"], hy=16, tilt=-0.12, ul1=0.46, ul2=0.46, ll1=0.3,
-    ll2=0.3))
+    V.VILLAIN_EXPR["s02_polite"], hy=16, tilt=-0.12))
 # Snake's polite little bow back (happy closed eyes, head dips toward him)
 SN.SNAKE_EXPR.setdefault("s02_bow", dict(
     SN.SNAKE_EXPR["happy"], hy=30, tilt=0.36, mo=0.1, mc=0.95, tng=0.0))
@@ -112,14 +112,14 @@ def _register_arms():
         V._blend_arm(rest["a"], shrug["a"], k), V._blend_arm(rest["b"], shrug["b"], k),
         shy=lerp(rest["shy"], shrug["shy"], k), hdy=lerp(rest["hdy"], shrug["hdy"], k)))
     # book held in front of the chest: bottom at BOOK_HOLD -> local y -28 .. -305
-    a, b = _arm_pair(-322, -160, -268, -112, -0.55, cu=0.05, th=-0.1, sp=0.8, pm=0.4)
+    a, b = _arm_pair(-322, -140, -268, -92, -0.45, cu=0.05, th=-0.1, sp=0.8, pm=0.4)
     V.ARM_POSES.setdefault("s02_reach", V._pose(a, b, shy=-6))
-    a, b = _arm_pair(-302, -150, -214, -94, -0.22, cu=0.42, th=0.25, sp=0.25)
+    a, b = _arm_pair(-302, -128, -214, -72, -0.1, cu=0.42, th=0.25, sp=0.25)
     V.ARM_POSES.setdefault("s02_hold", V._pose(a, b, shy=-4))
     # on the desk: left hand keeps hugging its side, right hand pats the top
     top = (BOOK_Y - 300 * BOOK_S - MY) / MS
     right = (BOOK_X + 205 * BOOK_S - MX) / MS
-    a = V._arm(-302, -136, -214, -80, -0.22, cu=0.42, th=0.25, sp=0.25)
+    a = V._arm(-302, -104, -214, -46, -0.1, cu=0.42, th=0.25, sp=0.25)
     for name, pat in (("s02_pat", 0.0), ("s02_patup", 1.0)):
         b = V._arm(262, -140, right - 34, top - 30 - 22 * pat, math.pi - 0.22 - 0.35 * pat,
                    cu=0.3, th=0.15, sp=0.3, tf=-1)
@@ -951,7 +951,7 @@ def _malvo_state(t, T):
         (w6[5], (0.75, -0.8), 0.25),
         (T.L6.end, (0.55, -0.35), 0.3),
         (T.swing1 + 0.05, (0.35, 0.95), 0.12),     # it's there! eyes drop to it
-        (T.take, (-1.0, 0.05), 0.22),              # turns to Snake
+        (T.take, (-0.72, 0.12), 0.22),             # turns to Snake
         (T.book, (0.55, 0.85), 0.15),              # loving look at the book
         (T.cu1, (0.0, 0.1), 0.01),
         (T.hide + 0.05, (0.6, 0.9), 0.12),
@@ -991,7 +991,8 @@ def _malvo_state(t, T):
     elif t < T.land + 0.1:                          # sets it down, right hand to the top
         arms = ("s02_hold", "s02_pat", smoothstep(seg(t, T.book, T.land + 0.1)))
     elif t < T.cu1:                                 # loving pats
-        arms = ("s02_pat", "s02_patup", max(0.0, math.sin((t - T.land - 0.1) * 2 * math.pi * 2.2)))
+        pat = max(0.0, math.sin((t - T.land - 0.1) * 2 * math.pi * 2.2))
+        arms = ("s02_pat", "s02_patup", pat)
     elif t < T.me:
         arms = "rest"
     elif t < T.innocent:
@@ -1002,6 +1003,10 @@ def _malvo_state(t, T):
     blink = None
     if t < T.monopop:
         blink = 0.0                                   # frozen freeze-frame
+    elif T.swing1 <= t < T.book:
+        # wide-eyed "Ah!" and a warm look at Snake (no stray auto-blink that
+        # would read as a wink), then eyes gently closed for the little nod
+        blink = slow_blink(t, T.snk, close=0.1, hold=0.26, open_=0.14) or 0.0
     elif T.land <= t < T.cu0:
         blink = 0.42                                  # loving half lids
     elif T.cu1 <= t < T.innocent:
@@ -1324,7 +1329,7 @@ def _draw_book(ctx, t, T, bp):
         ctx.restore()
         return
     big_book(ctx, BOOK_X, y, BOOK_S, t, sx, sy, flutter)
-    dust_puff(ctx, BOOK_X, BOOK_Y, 300, t, T.land, n=6, seed=8)
+    dust_puff(ctx, BOOK_X, BOOK_Y + 8, 320, t, T.land, n=6, seed=8, big=0.7)
     if T.land + 0.1 <= t < T.cu0:
         P.sparkles(ctx, BOOK_X - 40, BOOK_Y - 200 * BOOK_S, 110, t, n=4, seed=4, color="white",
                    size=0.9)
