@@ -431,9 +431,9 @@ DAB2 = DAB1 + 0.34                          # (two small presses)
 DAB3 = DAB2 + 0.5                           # ... back down in her lap
 GRAB_T = CARDS + 1.02                       # fingers close on the mug (bench -> hand)
 REACH_T = GRAB_T - 0.5
-# from here until GRAB_T the bench mug is drawn under her near arm (draw_stage). Chosen where her resting hand does
-# not overlap the mug at all (frames 142.875-143.0 s), so the order switch changes no pixel.
-MUG_UNDER_ARM_T = GRAB_T - 1.0
+# REVISION 4: she picks the mug up by the handle (BIBLE section 11): her reaching fingers go in behind the
+# handle's bar, so the bench mug stays drawn in front of her hand until GRAB_T (no window under her near arm).
+MUG_UNDER_ARM_T = GRAB_T
 SMILE_T = R10E + 0.12                       # the small involuntary smile after "...pretty good."
 
 # ---------------------------------------------------------------- tears (REVISION 4)

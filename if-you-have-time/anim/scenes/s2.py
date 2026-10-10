@@ -744,11 +744,10 @@ def _place_mug_pose():
     return R.mug_pose(p, tp)
 
 
-# Her near hand is IN FRONT of the mug while it holds it (BIBLE section 10), so for a moment after she lets go -
-# while her lifting hand still overlaps the bench mug - the mug is drawn between her body and her near arm
-# (R.draw's before_near_arm hook) instead of after her. The arm is clear of the mug ~0.26 s after the release;
-# the order switches back at MUG_UNDER_ARM s, when nothing of her overlaps the mug, so the switch is invisible.
-MUG_UNDER_ARM = 0.5
+# REVISION 4: she holds the mug by the handle (BIBLE section 11) - her fingers are threaded through it, behind
+# its bar - so as she lets go the bench mug stays drawn in front of her hand (the fingers slide out from behind
+# the handle). 0 = never between her body and her near arm (the before_near_arm hook is unused).
+MUG_UNDER_ARM = 0.0
 
 
 def _mug_under_arm(t):
