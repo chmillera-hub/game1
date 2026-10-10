@@ -446,17 +446,18 @@ def track_remix(voice_r1, voice_r2, honk_sfx, wheeze_sfx, dur=16.0):
     bar = 4 * b
     out = np.zeros(int((dur + 2) * SR))
     prog = [("Dm", 38), ("Bb", 34), ("F", 41), ("C", 36)]
-    v1 = autotune_voice(voice_r1, [69, 69, 72, 69, 65, 62])
-    v2 = autotune_voice(voice_r2, [65, 67, 69, 67, 62, 62])
+    v1 = autotune_voice(voice_r1, [57, 57, 60, 57, 53, 50])
+    v2 = autotune_voice(voice_r2, [53, 55, 57, 55, 50, 50])
     nbars = int(dur / bar)
+    vox_bus = np.zeros_like(out)
     hook = [(0, 74, .5), (.75, 74, .25), (1, 72, .5), (1.5, 69, .5), (2.5, 67, .5), (3, 69, 1)]
     for i in range(nbars):
         t0 = i * bar
         name, bass = prog[i % 4]
         c = CH[name]
         full = i >= 2
-        # vocals
-        place(out, v1 if i % 2 == 0 else v2, t0 + 0.05, 0.55)
+        # vocals (placed on a separate bus, see below)
+        place(vox_bus, v1 if i % 2 == 0 else v2, t0 + 0.05, 1.0)
         if i == 1:
             place(out, honk_sfx, t0 + 3 * b, 0.35)
         if full:
@@ -479,10 +480,105 @@ def track_remix(voice_r1, voice_r2, honk_sfx, wheeze_sfx, dur=16.0):
             # stutter wheeze chops
             for k in range(4):
                 place(out, wheeze_sfx[: int(0.12 * SR)], t0 + 2 * b + k * b / 4, 0.4)
-    return out
+    venv = lp(np.abs(vox_bus), 6)
+    venv = venv / (venv.max() + 1e-9)
+    duck = lp(1 - 0.55 * np.clip(venv * 4, 0, 1), 8)
+    out = out / (np.sqrt(np.mean(out ** 2)) + 1e-9) * 0.12
+    vox_bus = vox_bus / (np.sqrt(np.mean(vox_bus[vox_bus != 0] ** 2)) + 1e-9) * 0.16
+    return out * duck + hp(vox_bus, 150)
 
 
 TRACKS = {
     "creator": track_creator, "lord": track_lord, "tension": track_tension, "muzak": track_muzak,
     "sad_clown": track_sad_clown, "outro": track_outro,
 }
+
+
+# ------------------------------------------------------------ v2: TD-PSOLA hard autotune (keeps words intelligible)
+
+def f0_track(x, hop=240, win=1440, fmin=70, fmax=420):
+    n = len(x)
+    frames = range(0, max(1, n - win), hop)
+    f0 = []
+    lag_min, lag_max = int(SR / fmax), int(SR / fmin)
+    for i in frames:
+        seg = x[i:i + win] * np.hanning(win)
+        e = np.sum(seg ** 2)
+        if e < 1e-4 * win * (np.max(np.abs(x)) ** 2 + 1e-12):
+            f0.append(0.0)
+            continue
+        ac = np.correlate(seg, seg, "full")[win - 1:]
+        ac = ac / (ac[0] + 1e-12)
+        k = lag_min + int(np.argmax(ac[lag_min:lag_max]))
+        f0.append(SR / k if ac[k] > 0.45 else 0.0)
+    f0 = np.array(f0)
+    # median-smooth
+    sm = f0.copy()
+    for i in range(1, len(f0) - 1):
+        trio = f0[i - 1:i + 2]
+        if np.all(trio > 0):
+            sm[i] = np.median(trio)
+    return sm, hop
+
+
+def psola_retune(x, notes):
+    """Hard-snap each syllable of x to the next note in `notes` (midi) using TD-PSOLA."""
+    f0, hop = f0_track(x)
+    times = np.arange(len(f0)) * hop + 720
+    voiced = np.interp(np.arange(len(x)), times, (f0 > 0).astype(float)) > 0.5
+    f0s = np.interp(np.arange(len(x)), times[f0 > 0], f0[f0 > 0]) if np.any(f0 > 0) else np.full(len(x), 120.0)
+    # analysis pitch marks (periodic through voiced regions)
+    marks = []
+    i = 0
+    while i < len(x):
+        if voiced[i]:
+            p = int(SR / f0s[i])
+            seg = x[i:i + p]
+            if len(seg) == 0:
+                break
+            marks.append(i + int(np.argmax(seg)))
+            i = marks[-1] + max(20, int(SR / f0s[marks[-1]] * 0.9))
+        else:
+            i += 48
+    marks = np.array(marks)
+    ons = syllable_onsets(x) or [0.0]
+    tgt = np.full(len(x), float(mtof(notes[0])))
+    for k, o in enumerate(ons):
+        tgt[int(o * SR):] = float(mtof(notes[k % len(notes)]))
+    out = np.zeros(len(x) + 4000)
+    wsum = np.zeros(len(x) + 4000)
+    if len(marks) > 2:
+        t = marks[0]
+        while t < len(x) - 1:
+            if not voiced[min(t, len(x) - 1)]:
+                t += 48
+                continue
+            j = int(np.argmin(np.abs(marks - t)))
+            m = marks[j]
+            P = int(SR / f0s[m])
+            a, b = max(0, m - P), min(len(x), m + P)
+            g = x[a:b] * np.hanning(b - a)
+            o0 = t - (m - a)
+            if o0 >= 0:
+                out[o0:o0 + len(g)] += g
+                wsum[o0:o0 + len(g)] += np.hanning(b - a)
+            t += int(SR / tgt[t])
+    vm = lp(voiced.astype(float), 30)
+    y = out[: len(x)] * vm + x * (1 - vm)
+    return y
+
+
+def autotune_voice(x, notes):
+    """Intelligible 'autotuned' vocal: pitch-snapped dry voice + quiet vocoder harmony."""
+    x = x / (np.max(np.abs(x)) + 1e-9)
+    sung = psola_retune(x, notes)
+    ons = syllable_onsets(x) or [0.0]
+    f = np.full(len(x), float(mtof(notes[0])))
+    for i, o in enumerate(ons):
+        f[int(o * SR):] = float(mtof(notes[i % len(notes)]))
+    f = lp(f, 40)
+    car = additive(f, 60, lambda k: 1 / k) + 0.5 * additive(f * 1.5, 30, lambda k: 1 / k)
+    harm = channel_vocoder(x, car)
+    y = norm(sung) + 0.22 * norm(harm)
+    y = y + 0.18 * np.concatenate([np.zeros(int(0.012 * SR)), y[:-int(0.012 * SR)]])
+    return norm(reverb(y, 0.6, 0.12)[: len(x) + int(0.3 * SR)], 0.9)

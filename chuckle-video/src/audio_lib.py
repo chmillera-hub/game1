@@ -713,3 +713,63 @@ SFX = {
     "clown_honk": sfx_clown_honk, "honk_happy": lambda: sfx_clown_honk(False), "tiny_squeak": sfx_tiny_squeak,
     "heh": sfx_heh, "rumble": sfx_rumble, "gasp": sfx_gasp, "riser": sfx_riser,
 }
+
+
+# ----------------------------------------------------------------- v2 additions
+def sfx_maniacal_laugh(seed=80):
+    out = np.zeros(int(3.4 * SR))
+    f1 = [260, 250, 245, 238, 232, 225, 218, 210, 200]
+    f2 = [300, 285, 270, 262, 250, 240, 228, 215, 200, 185]
+    place(out, laugh_syllables(len(f1), f1, rate=7.5, vowel=VOW_AH, breath=0.35, dec=0.1, seed=seed), 0.0)
+    place(out, laugh_syllables(len(f2), f2, rate=8.0, vowel=VOW_AH, breath=0.35, dec=0.09, seed=seed + 1), 1.55)
+    return norm(reverb(norm(out), 1.2, 0.3)[: len(out)], 0.8)
+
+
+def sfx_breath_in(dur=1.6, seed=81):
+    t = tt(dur)
+    n = len(t)
+    x = rng(seed).standard_normal(n)
+    y = peak(x, 1300, 1.2) + 0.5 * peak(x, 2600, 2)
+    env = np.sin(np.pi * np.clip(t / dur, 0, 1)) ** 1.2
+    return norm(lp(y, 6000) * env, 0.45)
+
+
+def sfx_breath_out(dur=1.8, seed=82):
+    t = tt(dur)
+    n = len(t)
+    x = rng(seed).standard_normal(n)
+    y = peak(x, 700, 1.0) + 0.4 * peak(x, 1500, 2)
+    env = np.minimum(t / 0.15, 1) * np.exp(-t / (dur * 0.5))
+    return norm(lp(y, 4000) * env, 0.45)
+
+
+def sfx_fart_bomb(seed=83):
+    t = tt(3.5)
+    n = len(t)
+    boom = np.zeros(n)
+    vb = sfx_vine_boom()
+    boom[: len(vb)] += vb[:n]
+    blast = lp(rng(seed).standard_normal(n), 900) * np.exp(-t / 0.35) * np.minimum(t / 0.004, 1)
+    rumble = lp(rng(seed + 1).standard_normal(n), 120) * np.exp(-t / 1.2)
+    f = fart(2.4, 40, 140, seed, 1.0, 0.25)
+    out = boom * 0.8 + norm(blast) * 0.7 + norm(rumble) * 0.6
+    place(out, f, 0.05, 0.9)
+    return norm(out, 0.95)
+
+
+def sfx_jet_fart(seed=84):
+    out = np.zeros(int(1.8 * SR))
+    place(out, fart(1.1, 90, 260, seed, 1.0, 0.0), 0.0)
+    place(out, sfx_whoosh(1.2, 400, 4000, seed), 0.2, 0.6)
+    return norm(out, 0.85)
+
+
+def sfx_splort(seed=85):
+    out = np.zeros(int(1.0 * SR))
+    place(out, fart(0.45, 60, 110, seed, 0.4, 0.8), 0.0, 0.7)
+    place(out, sfx_squelch(seed), 0.25, 1.0)
+    return norm(out, 0.85)
+
+
+SFX.update({"maniacal_laugh": sfx_maniacal_laugh, "breath_in": sfx_breath_in, "breath_out": sfx_breath_out,
+            "fart_bomb": sfx_fart_bomb, "jet_fart": sfx_jet_fart, "splort": sfx_splort})

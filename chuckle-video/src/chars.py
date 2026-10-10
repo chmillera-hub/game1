@@ -28,9 +28,16 @@ def head_path(hw, hh, jowl=0.1, puff=0.0, top_flat=0.95, chin=0.0):
         a = 2 * math.pi * i / n
         x, y = math.cos(a) * hw, math.sin(a) * hh
         b = math.exp(-((a - math.pi / 4) / 0.5) ** 2) + math.exp(-((a - 3 * math.pi / 4) / 0.5) ** 2)
-        k = 1 + (jowl + puff * 0.32) * b
+        k = 1 + jowl * b
+        # puffed cheeks bulge out sideways, just below eye level (held breath), not down past the jaw
+        def g(a0):
+            d = math.atan2(math.sin(a - a0), math.cos(a - a0))
+            return math.exp(-(d / 0.42) ** 2)
+        side = g(0.3) + g(math.pi - 0.3)
+        kx = k + 0.27 * puff * side
         ch = chin * math.exp(-((a - math.pi / 2) / 0.35) ** 2)
-        pts.append((x * k, y * (k if y > 0 else top_flat) + ch * hh))
+        yy = y * (k if y > 0 else top_flat) + ch * hh - 0.05 * puff * hh * side
+        pts.append((x * kx, yy))
     return smooth_path(pts)
 
 
@@ -218,6 +225,17 @@ def lord_head(c, P, fedora=True, fedora_tilt=0.0, fedora_dy=0.0, glasses=True, g
         a = math.pi * (0.12 + 0.76 * i / 21)
         x0, y0 = math.cos(a) * hw * 0.92, math.sin(a) * hh * 0.98
         c.drawPath(poly([(x0, y0), (x0 * 0.97, y0 + 10)], False), stroke("#3b2618", 2.5))
+    # puffed cheeks: round, high, inflated from held breath
+    if P["puff"] > 0.12:
+        pf = clamp(P["puff"])
+        for s_ in (-1, 1):
+            cx_, cy_ = s_ * hw * 0.74, 26
+            r_ = 22 + 16 * pf
+            c.drawPath(oval(cx_, cy_, r_, r_ * 0.9), fill(hexs(mix(skin, "#ffffff", 0.12)), 0.9 * pf))
+            arc = skia.Path()
+            arc.arcTo(skia.Rect.MakeLTRB(cx_ - r_, cy_ - r_ * 0.9, cx_ + r_, cy_ + r_ * 0.9), 20 if s_ > 0 else 100, 60, True)
+            c.drawPath(arc, stroke(OUT, 3, 0.55 * pf))
+            c.drawPath(oval(cx_ - s_ * r_ * 0.3, cy_ - r_ * 0.35, r_ * 0.28, r_ * 0.18), fill("#ffffff", 0.45 * pf))
     # cheeks blush / red
     if P["blush"] > 0 or P["red"] > 0.3:
         a = max(P["blush"], (P["red"] - 0.3))
@@ -765,3 +783,87 @@ def ghost(c, x, y, t, s=1.0, a=0.85):
     text(c, "WELL,", 145, -114, "bangers", 34, "#333333", a=a)
     text(c, "ACTUALLY", 145, -76, "bangers", 34, "#333333", a=a)
     c.restore()
+
+
+# ---------------------------------------------------------------------- v2 additions
+
+def lord_lying(c, t, flag=1.0):
+    """Imagined: the Lord flat on the floor, a white flag planted on top of him. Floor at y=0."""
+    kh = "#d2bd8f"
+    fs(c, rrect(90, -62, 210, 30, 14), kh, 4)
+    fs(c, rrect(90, -32, 210, 30, 14), kh, 4)
+    for yy in (-62, -32):
+        fs(c, rrect(292, yy - 8, 46, 40, 14), "#f2f2f2", 4)
+    torso = rrect(-110, -78, 220, 78, 34)
+    fs(c, torso, SHIRT_LORD, 5)
+    for s in (-1, 1):
+        c.drawPath(poly([(-60, -6), (-20, 4 + 2 * s)], False), stroke(OUT, 26))
+        c.drawPath(poly([(-60, -6), (-20, 4 + 2 * s)], False), stroke(SKIN_LORD, 19))
+    P = P_(t=t, lid=0.0, smile=-0.6, tears=0.9, brow_ang=1.0, brow_y=0.3)
+    c.save()
+    c.translate(-175, -48)
+    c.rotate(-80)
+    c.scale(0.55, 0.55)
+    lord_head(c, P, fedora=False)
+    c.restore()
+    fs(c, oval(-260, -6, 70, 12), "#2f2d36", 3)
+    if flag > 0:
+        h = 230 * flag
+        c.drawPath(poly([(10, -60), (10, -60 - h)], False), stroke("#7b5a3a", 7))
+        wv = math.sin(t * 7)
+        fl = smooth_path([(10, -60 - h), (70, -66 - h + wv * 8), (130, -58 - h - wv * 6), (130, -2 - h - wv * 6), (70, -8 - h + wv * 8), (10, -60 - h + 58)])
+        fs(c, fl, "#ffffff", 4)
+
+
+def astronaut(c, t, P, wave=0.0, jet=0.0):
+    """The Lord in a spacesuit, full body, centre of torso at (0,0)."""
+    suit, trim = "#f2f2f7", "#c9cbd6"
+    # jetpack
+    fs(c, rrect(-95, -60, 190, 170, 30), "#9aa0b0", 5)
+    # legs
+    for s in (-1, 1):
+        fs(c, rrect(s * 48 - 34, 90, 68, 150, 28), suit, 5)
+        fs(c, rrect(s * 48 - 40, 222, 80, 46, 18), "#6b7280", 5)
+        c.drawPath(poly([(s * 48 - 32, 170), (s * 48 + 32, 170)], False), stroke(trim, 6))
+    # torso
+    fs(c, rrect(-110, -70, 220, 190, 60), suit, 6)
+    fs(c, rrect(-55, -10, 110, 70, 12), "#e5e7ef", 4)
+    for i, cc in enumerate(("#ff4d4d", "#3dff6e", "#4cc9ff")):
+        c.drawCircle(-30 + i * 30, 25, 9, fill(cc))
+    # arms
+    for s in (-1, 1):
+        if s > 0 and wave > 0:
+            ang = -2.2 + 0.35 * math.sin(t * 10) * wave
+            ex, ey = 150, -40
+            hx, hy = ex + math.cos(ang) * 95, ey + math.sin(ang) * 95
+        else:
+            ex, ey = s * 150, 30
+            hx, hy = s * 175, 110
+        for (a_, b_) in (((s * 100, -40), (ex, ey)), ((ex, ey), (hx, hy))):
+            c.drawPath(poly([a_, b_], False), stroke(OUT, 62))
+            c.drawPath(poly([a_, b_], False), stroke(suit, 52))
+        c.drawCircle(hx, hy, 30, fill("#6b7280"))
+        c.drawCircle(hx, hy, 30, stroke(OUT, 5))
+    # helmet + head
+    c.save()
+    c.translate(0, -175)
+    c.drawCircle(0, 0, 150, fill("#bfe6ff", 0.25))
+    c.save()
+    c.scale(0.95, 0.95)
+    lord_head(c, P, fedora=False)
+    c.restore()
+    c.drawCircle(0, 0, 150, stroke("#ffffff", 10))
+    c.drawCircle(0, 0, 150, stroke(OUT, 4))
+    c.drawPath(smooth_path([(-95, -80), (-60, -115), (-10, -128)], False), stroke("#ffffff", 12, 0.7))
+    fs(c, rrect(-80, 120, 160, 40, 18), trim, 5)
+    c.restore()
+    # fart jet
+    if jet > 0:
+        for i in range(7):
+            ph = (t * 2.2 + i / 7) % 1.0
+            x = -120 - 260 * ph
+            y = 120 + 40 * math.sin(i * 1.7 + t * 4) * ph
+            r = 22 + 55 * ph
+            p = blob(x, y, r, 8, 0.15, t, i)
+            c.drawPath(p, fill("#9ccf55", 0.75 * jet * (1 - ph)))
+            c.drawPath(p, stroke("#4e6d2a", 3.5, 0.8 * jet * (1 - ph)))
