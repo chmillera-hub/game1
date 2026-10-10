@@ -8,18 +8,18 @@ Portrait (720x1280) animated short, about 4.5 minutes, H.264 + AAC mono, under 1
 1. A humble dweeb explains what he's doing: asking a chatbot to help write a funny story about moderators who delete people's posts about their feelings and spirituality, "because everyone deserves to express themselves." He posts it.
 2. Title card: a story about laughter and the ban button
 3. The Logical Lord, a social media moderator, at his desk: Cheeto-dusted keyboard, three energy drinks, a schedule that says "moderator duty" every night. Someone posts "My cat meditates with me every morning... It healed something in me. I may have even shed a tear." He removes it: "Well, actually, this humor is kind of spam. I don't like it... so let's get rid of it."
-4. Back to the queue. Moderator of epic seriousness, scanning post after post, cursor over BAN... until he stumbles on the dweeb's post. He mocks it ("Oh-ho. What's this?"), then actually reads it: "Wait. Wait... what?" His eyes and mouth start to want to laugh. BAM.
+4. Back to the queue. Moderator of epic seriousness, scanning post after post, cursor over BAN... until he stumbles on the dweeb's post. He mocks it ("Oh-ho. What's this?"), then actually reads it: "Wait. Wait... what?" His eyes and mouth start to want to laugh. BAM: rapid blinks, his hat pops up and lands crooked, steam puffs from his ears.
 5. X-ray: the forbidden chuckle wakes up in his gut
-6. Inner panic: "If I laugh... I lose."
+6. Inner panic: "I'm a Logical Lord of social media. If I laugh... I lose."
 7. Suppression: clamped mouth, puffed cheeks, tears, Chuckle Pressure gauge, then a very real honk of surrender
 8. His mind's eye: SURRENDERED under a white flag. "I hope my roommates didn't hear that." Then he imagines laughing maniacally, a giant fart, and his roommates in the doorway, shocked and then cracking up. "Oh no. I can't let that happen. I need to think unfunny thoughts!"
 9. Fortress of Unfunny: his therapist (an airy "hmm"), slow nods, a deep breath... but not even the therapist can calm this one down
 10. Collapse (short): a laugh isn't something a moderator can remove; it's part of being human. The Anti-Fun ghost leaves; clown nose; sad trombone; honk
 11. The webcam he forgot to turn off: still on
 12. The clip goes viral
-13. "Logical Lord's Lament (Remix)": a full fast-paced autotuned song (swooping pitch, scoops, vibrato, stutter-chops) with arps, synth stabs, airhorns and a snare build, while the Lord clown-dances in pixel shades, until he strains and a fart cloud fills the screen
+13. "Logical Lord's Lament (Remix)": a full fast-paced autotuned song (swooping pitch, scoops, vibrato, stutter-chops) with an 808 sub, brass stabs, a high lead, sparkle bells, arps, airhorns, trap hat rolls and a snare build, while the Lord clown-dances in pixel shades, until he strains and a fart cloud fills the screen
 14. Moral, aimed at the humble dweeb: Post the damn meme. Even if a mod bans and deletes it, you shared a piece of your heart, and maybe sparked some chaos and comedy you'll never get to see.
-15. Keep posting, keep laughing. Everybody deserves a good laugh, even the Logical Lord (who waves from his spacesuit and fart-propels away)
+15. Keep posting, keep laughing. Everybody deserves a good laugh, even the Logical Lord (shown in blue; he waves from his spacesuit and fart-propels away)
 
 ## How it was made
 Everything is procedural, with no stock assets:

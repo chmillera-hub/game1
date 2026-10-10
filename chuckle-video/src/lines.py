@@ -32,7 +32,7 @@ LINES = {
  "C4": ("NARR", "He senses it. The forbidden chuckle.", None, 0.92),
  "C5": ("NARR", "Bubbling up from deep in the gut, like some ancient, primordial force.", None, 0.95),
  "C6": ("WHISP", "No. No, no, no! I can't laugh at this dweeb's post!", None, 1.0),
- "C7": ("WHISP", "I'm the Logical Lord of social media. If I laugh... I lose.", None, 1.05),
+ "C7": ("WHISP", "I'm a Logical Lord of social media. If I laugh... I lose.", None, 1.05),
  "D1": ("NARR", "He clamps his mouth shut. Eyes watering. Face going full tomato.", None, 0.97),
  "D2": ("NARR", "And then... his body betrays him.", None, 0.92),
  "D3": ("NARR", "A long, glorious honk of surrender.", None, 0.92),
@@ -58,7 +58,7 @@ LINES = {
  "R4": ("LORD", "Then a funny little story made my poker face fall!", None, 1.2),
  "R5": ("LORD", "If I laugh, I lose! If I laugh, I lose!", None, 1.1),
  "R6": ("LORD", "Holding in the giggles, now I'm shaking in my shoes!", None, 1.15),
- "R7": ("LORD", "Hee hee! Ha ha! It's leaking out of me!", None, 1.1),
+ "R7": ("LORD", "Hee hee! Ha ha! I'm as giddy as can be!", None, 1.1),
  "R8": ("LORD", "I'm the Logical Lord, and I'm finally free!", None, 1.1),
  "I1": ("NARR", "So, to the humble dweeb at the laptop. The moral of the story?", None, 0.95),
  "I2": ("NARR", "Post the damn meme.", None, 0.9),
@@ -68,6 +68,6 @@ LINES = {
 }
 
 # phoneme fixes: make "moderator" end with a clear "-tor" (not "moderate")
-PHONEME_FIX = {"en-gb": [(r"mˈɒdəɹˌeɪtə(?:ɹ)?", "mˈɒdəɹˌeɪtɚ")], "en-us": [(r"ˌeɪɾɚ", "ˌeɪtɚ")]}  # regex: clear r-coloured "-ter" ending
+PHONEME_FIX = {"en-gb": [(r"mˈɒdəɹˌeɪtə(?:ɹ)?", "mˈɒdəɹˌeɪtɚ"), (r"hˈɒŋk", "hˈɔːŋk")], "en-us": [(r"ˌeɪɾɚ", "ˌeɪtɚ")]}  # clear "moderator" (r-coloured ending) and "honk" (not "hunk")
 # lines that start with a soft, airy synthesized "hmm"
 PREFIX_HMM = {"E4"}

@@ -804,3 +804,27 @@ def sfx_roommate_laugh(seed=95):
 
 
 SFX.update({"roommate_laugh": sfx_roommate_laugh})
+
+
+# ----------------------------------------------------------------- v5 additions
+def sfx_hat_boing():
+    """hat pops up off his head and wobbles back down"""
+    t = tt(1.0)
+    pop = np.sin(2 * np.pi * phase_of(300 + 900 * np.exp(-t / 0.015))) * np.exp(-t / 0.04)
+    vib = 1 + 0.15 * np.exp(-t / 0.4) * np.sin(2 * np.pi * 10 * t)
+    boing = np.sin(2 * np.pi * phase_of(320 * vib)) * np.exp(-t / 0.35) * np.minimum(t / 0.01, 1)
+    boing += 0.35 * np.sin(2 * np.pi * phase_of(640 * vib)) * np.exp(-t / 0.2)
+    return norm(0.6 * pop + boing, 0.85)
+
+
+def sfx_steam(dur=1.6, seed=97):
+    """kettle-ish steam hiss from the ears, in little puffs"""
+    t = tt(dur)
+    x = bp(rng(seed).standard_normal(len(t)), 2500, 9000)
+    puffs = 0.55 + 0.45 * np.sign(np.sin(2 * np.pi * 4.5 * t))
+    env = np.minimum(t / 0.05, 1) * np.clip((dur - t) / 0.4, 0, 1)
+    whistle = 0.15 * np.sin(2 * np.pi * phase_of(2400 + 300 * np.sin(2 * np.pi * 0.8 * t)))
+    return norm((x * lp(puffs, 30) + whistle) * env, 0.6)
+
+
+SFX.update({"hat_boing": sfx_hat_boing, "steam": sfx_steam})

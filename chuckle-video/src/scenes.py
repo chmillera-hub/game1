@@ -316,7 +316,7 @@ def lord_desk_shot(c, t, P, zoom=1.0, focus=(360, 640), shake=0.0, body=None, it
 
 
 def lord_face_shot(c, t, P, x=360, y=600, s=2.0, bg="room", shake=0.0, zoom=1.0, headkw=None, light="#6fc3ff", light_a=0.2,
-                   rot=0.0):
+                   rot=0.0, steam=0.0):
     c.save()
     cam(c, zoom, 360, 640, shake=shake, t=t)
     if bg == "room":
@@ -337,6 +337,12 @@ def lord_face_shot(c, t, P, x=360, y=600, s=2.0, bg="room", shake=0.0, zoom=1.0,
     fs(c, smooth_path([(-180, 150), (-220, 300), (-220, 420), (220, 420), (220, 300), (180, 150), (0, 125)]), SHIRT_LORD, 5)
     fs(c, rrect(-55, 80, 110, 80, 30), hexs(mix(SKIN_LORD, "#b8cf95", P["pale"] * 0.5)), 5)
     lord_head(c, P, **(headkw or {}))
+    if steam > 0:
+        for side in (-1, 1):
+            for k in range(4):
+                ph = (t * 1.6 + k / 4 + (0.12 if side > 0 else 0)) % 1.0
+                px_, py_ = side * (122 + 95 * ph), 6 - 85 * ph
+                c.drawPath(blob(px_, py_, 9 + 24 * ph, 7, 0.2, t, k + (5 if side > 0 else 0)), fill("#ffffff", 0.75 * steam * (1 - ph)))
     c.restore()
     c.restore()
 
@@ -959,17 +965,22 @@ def sc_post(c, t):
         P.update(lid=lerp(0.68, 0.85, glow) * bl, lower=0.4, smile=0.8 + 0.12 * tw, wobble=0.5, asym=0.25 * tw, puff=0.3,
                  brow_ang=0.3, brow_y=0.5, px=0.0, py=0.45, mouth_open=0.0)
     shake = 0.0
-    dart = 0.0
+    hat_dy, hat_tilt, steam = 0.0, 0.0, 0.0
     if t >= hit:
         u = t - hit
-        P.update(lid=1.25, pr=0.35, px=0, py=-0.1, smile=-0.1, mouth_open=0.0, brow_y=1.0, brow_ang=0.4)
+        rapid = (u * 11) % 1.0 < 0.45 if u < 0.75 else False   # rapid-fire blinks
+        P.update(lid=0.0 if rapid else 1.25, happy=0.0, pr=0.35, px=0, py=-0.1, smile=-0.1, mouth_open=0.0, brow_y=1.0, brow_ang=0.4,
+                 lower=0.0, puff=0.0, wobble=0.0)
         shake = max(0, 1 - u * 2.5) * 2
-        dart = 1.0
+        hop = math.sin(math.pi * clamp(u / 0.45)) if u < 0.45 else 0.0
+        hat_dy = -70 * hop + 8 * clamp(u / 0.45)
+        hat_tilt = 14 * clamp(u / 0.45) + 4 * math.sin(u * 18) * max(0.0, 1 - u * 1.5)
+        steam = ramp(u, 0.1, 0.3)
     light = hexs(mix("#6fc3ff", "#ffcf4d", glow))
-    zoom = 1.0 + 0.08 * ramp(t, M["C2"], M["C2b_end"]) + 0.12 * pulse(t, M["stumble"], 0.6) + (0.25 * ease_out_back(clamp((t - hit) / 0.2)) if t > hit else 0)
+    zoom = 1.0 + 0.08 * ramp(t, M["C2"], M["C2b_end"]) + 0.12 * pulse(t, M["stumble"], 0.6) + (0.06 * ease_out_back(clamp((t - hit) / 0.2)) if t > hit else 0)
     lord_face_shot(c, t, P, 360, 600, 2.0, "gold" if glow > 0 else "room", shake, zoom,
-                   headkw=dict(dart=dart, dart_wob=max(0, 1 - (t - hit) * 0.8) if t > hit else 0, glass_glow="#ffd84d", glow_a=glow * (1 if t < hit else 0.6)),
-                   light=light, light_a=0.18 + 0.4 * glow)
+                   headkw=dict(fedora_dy=hat_dy, fedora_tilt=hat_tilt, glass_glow="#ffd84d", glow_a=glow * (1 if t < hit else 0.6)),
+                   light=light, light_a=0.18 + 0.4 * glow, steam=steam)
     if glow > 0:
         for i in range(9):
             a = math.radians(-90 + (i - 4) * 12 + 3 * math.sin(t * 2 + i))
@@ -988,14 +999,6 @@ def sc_post(c, t):
         queue_scroll(c, t, ba)
     mod_tools(c, t, ramp(t, M["C2"] + 1.0, M["C2"] + 1.4) * (1 - ramp(t, hit - 0.1, hit)),
               ramp(t, M["C2b"], M["C2b"] + 1.5))
-    if M["dart_fire"] <= t < hit:
-        u = (t - M["dart_fire"]) / (hit - M["dart_fire"])
-        y = lerp(1450, 600 - 2.0 * 52, u)
-        s_ = lerp(3.5, 2.0, u)
-        at(c, 360, y, s_)
-        fs(c, oval(0, 0, 20, 12), "#2a7de1", 4)
-        fs(c, rrect(-11, 4, 22, 90, 9), "#ff8c2a", 4)
-        c.restore()
     if t >= hit:
         comic_text(c, "BAM!", 540, 300, 130, "#ffffff", t, hit, 10, True, "#e63946")
         flash(c, t, hit, 0.3)
@@ -1039,7 +1042,7 @@ def sc_xray(c, t):
         for i in range(12):
             a = t * 1.5 + 2 * math.pi * i / 12
             x, y = gx + math.cos(a) * (r + 50), gy + math.sin(a) * (r + 50)
-            text(c, "HAHEHIHO"[i % 8], x, y + 10, "bangers", 30, "#ffd23f", a=glow * 0.85)
+            text(c, "HA"[i % 2], x, y + 10, "bangers", 30, "#ffd23f", a=glow * 0.85)
     gremlin(c, gx, gy, r, t, wake, glow)
     # bubbles
     for i in range(10):
@@ -1067,7 +1070,8 @@ def sc_panic(c, t):
     P = P_(t=t, lid=1.18 * bl, pr=0.4, px=jit, py=0.0 + 0.1 * vnoise(t * 20, 5), wobble=1.0, smile=-0.15, brow_ang=0.9, brow_y=0.7,
            sweat=0.6 + 0.4 * ramp(t, M["C7"], M["C7_end"]), puff=0.15, red=0.2)
     lord_face_shot(c, t, P, 360, 640, 2.05, "red", 0.4, 1.0 + 0.05 * (t - M["panic"]) / 6,
-                   headkw=dict(dart=1.0), light="#ffffff", light_a=0.0)
+                   headkw=dict(fedora_tilt=14, fedora_dy=8), light="#ffffff", light_a=0.0,
+                   steam=1.0 - ramp(t, M["panic"] + 1.2, M["panic"] + 2.2))
     # paper crown that cracks on "I lose"
     lose = M["C7_end"] - 0.6
     if t > M["C7"] + 0.2:
@@ -1537,7 +1541,7 @@ def sc_viral(c, t):
 REMIX_LYRICS = ["I'M THE LOGICAL LORD, AND I'M NEVER EVER BORED,", "GOT MY MOD TOOLS READY, AND MY BAN HAMMER STORED!",
                 "WELL, ACTUALLY! WELL, ACTUALLY! I DON'T LAUGH AT ALL!", "THEN A FUNNY LITTLE STORY MADE MY POKER FACE FALL!",
                 "IF I LAUGH, I LOSE! IF I LAUGH, I LOSE!", "HOLDING IN THE GIGGLES, NOW I'M SHAKING IN MY SHOES!",
-                "HEE HEE! HA HA! IT'S LEAKING OUT OF ME!", "I'M THE LOGICAL LORD, AND I'M FINALLY FREE!",
+                "HEE HEE! HA HA! I'M AS GIDDY AS CAN BE!", "I'M THE LOGICAL LORD, AND I'M FINALLY FREE!",
                 "IF I- IF I- IF I LAUGH, I LOSE!", "..."]
 
 
@@ -1809,7 +1813,7 @@ def sc_end(c, t):
     c.restore()
     sa = ramp(t, M["I5"] + 2.6, M["I5"] + 3.0)
     text(c, "everybody deserves a good laugh", 360, 345, "fredoka", 34, "#ffffff", outline=OUT, ow=6, a=sa)
-    text(c, "(even the Logical Lord)", 360, 390, "fredoka", 34, "#ff9ad5", outline=OUT, ow=6, a=sa)
+    text(c, "(even the Logical Lord)", 360, 390, "fredoka", 34, "#7ec8ff", outline=OUT, ow=6, a=sa)
     # astronaut Lord: drifts in, looks at us, waves, then fart-propels across the screen
     din = smooth(clamp(lt / 3.5))
     x = lerp(-220, 330, din) + 12 * math.sin(lt * 0.9)

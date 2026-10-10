@@ -90,7 +90,7 @@ for m in tl["music"]:
         rv = [load_voice(f"R{i}") for i in range(1, 9)]
         x = MU.track_remix([v / np.abs(v).max() for v in rv], A.sfx_clown_honk(False),
                            A.norm(A.inhale_wheeze(0.6)), dur=MU.REMIX_BARS * MU.REMIX_BAR)
-        level = -17
+        level = -15
     else:
         x = MU.TRACKS[name](dur=L)
         level = -27 if name != "sad_clown" else -29

@@ -767,6 +767,13 @@ def stutter(v, b):
     return out
 
 
+def brass_stab(f, dur):
+    t = tt(dur + 0.1)
+    x = additive(np.full(len(t), f), 24, lambda k: 1 / k) + 0.6 * additive(np.full(len(t), f * 1.004), 24, lambda k: 1 / k)
+    env = np.minimum(t / 0.01, 1) * np.exp(-t / (dur * 0.7))
+    return tv_lowpass(x * env, 600 + 3200 * np.exp(-t / 0.12))
+
+
 def track_remix(voices, honk_sfx, wheeze_sfx, dur=None):
     """Full song: 8 sung lines (fast, swooping autotune), a stutter-chop hook bar, then the strain + tape stop."""
     b = 60 / REMIX_BPM
@@ -779,6 +786,8 @@ def track_remix(voices, honk_sfx, wheeze_sfx, dur=None):
     hook = [(0, 74, .5), (.75, 74, .25), (1, 72, .5), (1.5, 69, .5), (2.5, 67, .5), (3, 69, 1)]
     hook2 = [(0, 77, .5), (.5, 76, .5), (1, 74, 1), (2.5, 72, .5), (3, 74, 1)]
     counter = [(0.5, 81, .4), (1.5, 84, .4), (2.5, 81, .4), (3.25, 79, .4), (3.75, 77, .4)]
+    lead_hi = [[(0, 86, .5), (.5, 84, .25), (.75, 81, .25), (1, 84, .75), (2, 86, .5), (2.5, 89, .5), (3, 88, 1)],
+               [(0, 89, .5), (.5, 88, .5), (1, 86, .5), (1.5, 84, .5), (2, 81, 1), (3, 84, .5), (3.5, 86, .5)]]
     for i in range(REMIX_BARS):
         t0 = i * bar
         name, bass = prog[i % 4]
@@ -800,6 +809,7 @@ def track_remix(voices, honk_sfx, wheeze_sfx, dur=None):
             rz = tv_bandpass(rng(5).standard_normal(n_r), np.geomspace(500, 7000, n_r), q=2) * np.linspace(0, 1, n_r) ** 2
             place(out, rz, t0 + 2 * b, 0.25)
         if intro:
+            seq(out, sub808, [(0, bass - 12, 1.8), (2, bass - 12, 1.8)], t0, b, 0.4)
             place(out, kick(), t0, 0.6)
             place(out, kick(), t0 + 2 * b, 0.45)
             seq(out, fart_bass, [(0, bass, 1.5), (2, bass, 1.5)], t0, b, 0.3)
@@ -830,6 +840,18 @@ def track_remix(voices, honk_sfx, wheeze_sfx, dur=None):
         if i >= 4 and not strain:
             seq(out, glock, counter, t0, b, 0.08)
         place(out, sum_inst(strings, [m + 12 for m in c], bar), t0, 0.03)
+        # --- extra energy: bass, mids, highs
+        sub = [(0, bass - 12, 1.4), (1.5, bass - 12, .45), (2, bass - 5, 1.4), (3.5, bass - 12, .45)]
+        seq(out, sub808, sub[:2] if strain else sub, t0, b, 0.55)
+        for st in ((0, 2.5) if not strain else (0,)):
+            place(out, sum_inst(brass_stab, [m for m in c] + [c[0] + 12], b * 0.45), t0 + st * b, 0.05)
+        if not strain:
+            seq(out, square_lead, lead_hi[i % 2], t0, b, 0.045)
+            bells = [(k * 0.25, c[k % 3] + 24, 0.2, 0.8 if k % 2 == 0 else 0.5) for k in range(16)]
+            seq(out, glock, bells, t0, b, 0.05)
+            # trap hi-hat roll on the last beat
+            for k in range(8):
+                place(out, hat(False, 40 + k), t0 + 3 * b + k * b / 8, 0.05 + 0.01 * k)
         if i in (3, 5, 7):
             place(out, honk_sfx, t0 + 3.5 * b, 0.28)
         if strain:
@@ -837,8 +859,8 @@ def track_remix(voices, honk_sfx, wheeze_sfx, dur=None):
                 place(out, wheeze_sfx[: int(0.12 * SR)], t0 + 0.5 * b + k * b / 4, 0.35)
     venv = lp(np.abs(vox_bus), 6)
     venv = venv / (venv.max() + 1e-9)
-    duck = lp(1 - 0.55 * np.clip(venv * 4, 0, 1), 8)
-    out = out / (np.sqrt(np.mean(out[: int(dur * SR)] ** 2)) + 1e-9) * 0.12
-    vox_bus = vox_bus / (np.sqrt(np.mean(vox_bus[vox_bus != 0] ** 2)) + 1e-9) * 0.17
+    duck = lp(1 - 0.42 * np.clip(venv * 4, 0, 1), 8)
+    out = out / (np.sqrt(np.mean(out[: int(dur * SR)] ** 2)) + 1e-9) * 0.155
+    vox_bus = vox_bus / (np.sqrt(np.mean(vox_bus[vox_bus != 0] ** 2)) + 1e-9) * 0.18
     mixd = out * duck + hp(vox_bus, 150)
     return tape_stop(mixd, dur - 1.4, 0.75)
