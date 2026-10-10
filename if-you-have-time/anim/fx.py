@@ -13,6 +13,7 @@ Public API
     draw_card_fan(canvas, t, cx, cy, progress, alpha, numbers, titles, icons, wobble_set, fold_set,
                   fold, wobble, focus, focus_amt)
     draw_music_box(canvas, t, cx, cy, scale, alpha)
+    draw_whale_holo(canvas, t, cx, cy, scale, alpha)                               hologram whale over a palm
     draw_title(canvas, t, text, cy, alpha, size, sub, sub_alpha)                   SCREEN space
     draw_flash(canvas, amount, color)                                              SCREEN space
     draw_vignette(canvas, amount)                                                  SCREEN space
@@ -842,6 +843,130 @@ def _yr_hair_cap():
                 (-112, 34), (-100, 20), (-98, -2), (-90, -24), (-74, -38), (-54, -46), (-36, -52), (-22, -50)])
 
 
+_CW_SEAT = ("#3A3352", "#4E4670", "#2A2540", "#6B6192")   # booster seat fabric: base, light, dark, piping
+_CW_BELT = ("#59617A", "#8790AE", "#3E4458")               # seatbelt webbing: base, edge light, shade
+_CW_SHOULDER = (-70.0, 78.0)      # her near shoulder joint
+_CW_ELBOW = (-8.0, 104.0)
+_CW_WRIST = (46.0, 56.0)          # the hand rests flat on the glass just above the sill (y 62)
+
+
+def _cw_seat(c):
+    """Her high-back booster seat, behind her (the backrest and the headrest pad behind her head)."""
+    base, light, dark, pipe = _CW_SEAT
+    back = _sp([(-206, 214), (-210, 120), (-204, 46), (-182, 20), (-150, 14), (-122, 28), (-106, 64), (-108, 140),
+                (-104, 214)])
+    c.drawPath(back, _P(base))
+    c.save()
+    c.clipPath(back, True)
+    c.drawPath(_sp([(-150, 14), (-122, 28), (-106, 64), (-108, 140), (-104, 214), (-130, 214), (-134, 120),
+                    (-136, 50)]), _P(light, 0.55))                    # the padded front edge catching window light
+    c.drawPath(_sp([(-206, 214), (-210, 120), (-204, 46), (-180, 60), (-182, 214)]), _P(dark, 0.6))
+    c.restore()
+    c.drawPath(_sp([(-196, 52), (-176, 30), (-150, 24), (-126, 36), (-114, 64)], closed=False), _S(pipe, 2.0, 0.8))
+    head = _sp([(-190, -112), (-160, -128), (-128, -120), (-110, -92), (-108, -30), (-118, 4), (-150, 12),
+                (-184, -4), (-196, -56)])
+    c.drawPath(head, _P(base))
+    c.save()
+    c.clipPath(head, True)
+    c.drawPath(_sp([(-160, -128), (-128, -120), (-110, -92), (-108, -30), (-118, 4), (-134, 4), (-132, -80),
+                    (-146, -116)]), _P(light, 0.5))
+    c.restore()
+    c.drawPath(head, _S(pipe, 1.8, 0.7))
+    # the shoulder-belt guide (a little red clip on the backrest) the belt comes out of
+    c.drawRRect(skia.RRect.MakeRectXY(skia.Rect(-124, 30, -102, 46), 5, 5), _P("#A84A46"))
+    c.drawRRect(skia.RRect.MakeRectXY(skia.Rect(-124, 30, -102, 46), 5, 5), _S("#6E2B2A", 1.2, 0.8))
+
+
+def _cw_body(c):
+    """Young Rae seated in profile (facing the window): neck, small shoulders and torso in her mustard jacket,
+    the seatbelt over her shoulder and across her chest, the seat's side bolster at her hip."""
+    coat, coat_hi, coat_dk = _YR_COAT
+    # neck (in the shadow under her jaw)
+    c.drawPath(_sp([(-86, 22), (-52, 26), (-48, 56), (-88, 58)]), _P(_YR_SHADE))
+    c.drawPath(_sp([(-58, 30), (-50, 34), (-48, 54), (-56, 54)]), _P(_YR_SKIN, 0.55))    # throat edge in the light
+    # torso: a small rounded back against the seat, chest and tummy toward the window
+    torso = _sp([(-94, 48), (-72, 52), (-52, 50), (-38, 62), (-30, 92), (-24, 132), (-26, 176), (-30, 216),
+                 (-110, 216), (-112, 160), (-112, 100), (-108, 68)])
+    c.drawPath(torso, _P(coat))
+    c.save()
+    c.clipPath(torso, True)
+    c.drawPath(_sp([(-112, 60), (-92, 62), (-90, 120), (-94, 216), (-116, 216)]), _P(coat_dk, 0.75))   # back
+    c.drawPath(_sp([(-46, 66), (-32, 90), (-26, 132), (-28, 180), (-44, 180), (-46, 120), (-52, 80)]),
+               _P(coat_hi, 0.75))                                                          # front, window-lit
+    c.restore()
+    c.drawPath(_sp([(-40, 66), (-33, 120), (-34, 214)], closed=False), _S(coat_dk, 1.6, 0.8))           # zip
+    c.drawPath(_sp([(-36, 70), (-28, 100), (-24, 140), (-26, 178)], closed=False), _S("#9FB0E6", 2.0, 0.35))
+    # collar
+    c.drawPath(_sp([(-98, 48), (-74, 42), (-50, 44), (-38, 56), (-58, 62), (-94, 62)]), _P(coat_dk))
+    # seatbelt: from the guide behind her shoulder, over the shoulder, diagonally across the chest
+    base, edge, shade = _CW_BELT
+    belt = _sp([(-112, 38), (-86, 50), (-64, 78), (-48, 118), (-36, 170), (-30, 214)], closed=False)
+    c.drawPath(belt, _S(shade, 16.0, 1.0, cap="butt"))
+    c.drawPath(belt, _S(base, 13.0, 1.0, cap="butt"))
+    c.drawPath(_sp([(-110, 32), (-82, 44), (-58, 74), (-42, 114), (-30, 166), (-24, 214)], closed=False),
+               _S(edge, 1.8, 0.8))
+    for k in range(5):                                    # woven texture: a few faint cross-ticks
+        u = 0.18 + 0.15 * k
+        x, y = _bez((-86, 50), (-64, 78), (-48, 118), (-36, 170), u)
+        c.drawLine(x - 4, y - 1, x + 4, y + 1, _S(shade, 1.0, 0.45))
+    # the seat's side bolster at her hip (she is sitting IN the seat)
+    sb, sl, sd, sp_ = _CW_SEAT
+    bol = _sp([(-136, 150), (-100, 138), (-60, 144), (-40, 170), (-40, 214), (-136, 214)])
+    c.drawPath(bol, _P(sb))
+    c.drawPath(_sp([(-132, 152), (-100, 141), (-62, 147), (-44, 170)], closed=False), _S(sl, 3.0, 0.8))
+    c.drawPath(_sp([(-128, 162), (-100, 152), (-66, 157), (-52, 176)], closed=False), _S(sp_, 1.4, 0.6))
+
+
+def _cw_arm(c):
+    """Her near arm reaching forward and up, the small hand resting flat on the glass (back of the hand to us)."""
+    coat, coat_hi, coat_dk = _YR_COAT
+    sx, sy = _CW_SHOULDER
+    ex, ey = _CW_ELBOW
+    wx, wy = _CW_WRIST
+    # sleeve: a soft, slightly puffy jacket arm (upper arm, forearm), darker on the underside
+    c.drawLine(sx, sy, ex, ey, _S(coat_dk, 31.0))
+    c.drawLine(ex, ey, wx - 6, wy + 5, _S(coat_dk, 26.0))
+    c.drawLine(sx, sy - 2, ex, ey - 3, _S(coat, 27.0))
+    c.drawLine(ex, ey - 3, wx - 7, wy + 2, _S(coat, 22.0))
+    c.drawPath(_sp([(sx - 4, sy - 13), (ex - 2, ey - 16), (wx - 10, wy - 8)], closed=False), _S(coat_hi, 4.0, 0.8))
+    c.drawPath(_sp([(ex - 8, ey + 6), (ex + 4, ey + 2), (ex + 10, ey - 6)], closed=False), _S(coat_dk, 1.6, 0.8))
+    c.drawCircle(sx, sy - 4, 17.0, _P(coat))                                    # round little shoulder
+    c.drawPath(_sp([(sx - 14, sy - 12), (sx, sy - 21), (sx + 14, sy - 14)], closed=False), _S(coat_hi, 3.0, 0.7))
+    # cuff
+    ang = math.degrees(math.atan2(wy - ey, wx - ex))
+    c.save()
+    c.translate(wx - 9, wy + 3)
+    c.rotate(ang)
+    c.drawRRect(skia.RRect.MakeRectXY(skia.Rect(-7, -13, 6, 13), 4, 4), _P(coat_dk))
+    c.restore()
+    # the hand: back of a small chubby hand, fingers up and a little spread, thumb out toward the window
+    sk, sh, hi = _YR_SKIN, _YR_SHADE, _YR_HI
+    c.save()
+    c.translate(wx - 4, wy - 2)
+    c.scale(0.84, 0.84)                     # (a child's hand: small next to her face)
+    c.translate(-(wx - 4), -(wy - 2))
+    fingers = (((44, 22), (38, 4)), ((52, 18), (50, -4)), ((60, 18), (61, -6)), ((67, 22), (71, 2)))
+    widths = (8.8, 9.6, 9.6, 8.6)
+    for ((bx, by), (tx, ty)), w in zip(fingers, widths):
+        c.drawLine(bx, by, tx, ty, _S(_YR_LINE, w + 2.0, 0.55))
+    c.drawLine(68, 40, 82, 24, _S(_YR_LINE, 11.2, 0.55))                      # thumb
+    palm = _sp([(40, 58), (36, 38), (40, 20), (54, 13), (68, 16), (76, 30), (74, 50), (60, 62)])
+    c.drawPath(palm, _P(sh))
+    for ((bx, by), (tx, ty)), w in zip(fingers, widths):
+        c.drawLine(bx, by, tx, ty, _S(sk, w))
+        c.drawCircle(tx + (bx - tx) * 0.12, ty + (by - ty) * 0.12, w * 0.24, _P("#C99273", 0.35))   # nail
+    c.drawLine(68, 40, 82, 24, _S(sk, 9.2))
+    c.drawPath(_xf(palm, sc=0.94, px=56, py=38), _P(sk))
+    c.drawPath(_sp([(40, 26), (54, 20), (68, 22)], closed=False), _S(hi, 2.2, 0.6))       # knuckle row light
+    for (x, y) in ((45, 24), (53, 20), (61, 20), (68, 24)):                              # knuckle dimples
+        c.drawCircle(x, y, 1.5, _P(sh, 0.8))
+    c.drawPath(_sp([(40, 52), (46, 60), (58, 63)], closed=False), _S(sh, 2.0, 0.7))
+    c.restore()
+    # a little breath fog on the glass in front of her mouth and a faint print round her fingertips
+    _blob(c, 22, 4, 26, "#DCE6FF", 0.12, kind="soft", add=False)
+    _blob(c, 56, -6, 30, "#DCE6FF", 0.07, kind="soft", add=False)
+
+
 def _cw_front(c):
     # glass sheen
     c.save()
@@ -858,6 +983,7 @@ def _cw_front(c):
     c.drawRRect(_CW_WIN, _S("#120F1C", 13))
     c.drawRRect(skia.RRect.MakeRectXY(skia.Rect(-143, -151, 233, 55), 40, 40), _S("#4C4470", 1.6, 0.6))
     coat, coat_hi, coat_dk = _YR_COAT
+    _cw_seat(c)
     # the hair puff, tied up on top of her head (behind the head; curly edge, a cool edge light from the window)
     puff_c, puff_r = (-76.0, -116.0), 36.0
     hp = _P(_YR_HAIR)
@@ -874,19 +1000,7 @@ def _cw_front(c):
         arc = skia.Path()
         arc.addArc(skia.Rect(x - 6, y - 6, x + 6, y + 6), a0, 220)
         c.drawPath(arc, _S(_YR_HAIR_HI, 2.0, 0.9))
-    # jacket / shoulders
-    c.drawPath(_sp([(-210, 210), (-210, 70), (-160, 48), (-110, 44), (-62, 52), (-20, 80), (10, 130), (20, 210)]),
-               _P(coat))
-    c.drawPath(_sp([(-120, 60), (-80, 64), (-40, 84), (-15, 120), (-60, 120), (-110, 90)]), _P(coat_hi, 0.8))
-    c.drawPath(_sp([(-104, 44), (-60, 46), (-40, 62), (-70, 70), (-104, 62)]), _P(coat_dk))    # collar
-    c.drawPath(_sp([(-86, 30), (-52, 30), (-50, 56), (-88, 58)]), _P(_YR_SHADE))                # neck
-    # arm up to the glass + small hand pressed on it
-    c.drawPath(_sp([(-30, 130), (14, 84), (52, 50), (72, 40), (86, 56), (62, 80), (24, 118), (-2, 150)]), _P(coat))
-    c.drawPath(_sp([(58, 48), (74, 39), (86, 54), (68, 66)]), _P(coat_dk))   # cuff
-    hand = _sp([(70, 48), (68, 26), (70, 4), (75, 2), (78, 20), (80, -4), (85, -6), (87, 18), (90, -2),
-                (95, -2), (95, 20), (99, 8), (104, 10), (100, 32), (96, 48), (84, 58)])
-    c.drawPath(hand, _P(_YR_SKIN))
-    c.drawPath(hand, _S(_YR_LINE, 1.2, 0.6))
+    _cw_body(c)
     # head
     head = _child_head_path()
     c.drawPath(head, _P(_YR_SKIN))
@@ -936,6 +1050,7 @@ def _cw_front(c):
     c.drawPath(_sp([(-24, -17), (-12, -16.5)], closed=False), _S(_YR_LINE, 1.1, 0.6))    # lower lid
     c.drawOval(skia.Rect(-9, 7, -2, 15), _P("#4E201A"))
     c.drawPath(_sp([(4, -11), (1, -5)], closed=False), _S(_YR_LINE, 1.3, 0.8))
+    _cw_arm(c)
 
 
 _CW_LIGHTS = ("#FFC46B", "#FFE9C2", "#6FD6D0", "#F08FA0", "#FFB45A", "#9FC2FF")
@@ -988,12 +1103,16 @@ def _cw_light(c, age, t):
     c.restore()
     c.drawPath(_sp([(-14, -58), (-4, -36), (0, -20), (8, -11), (2, -5), (-3, 3), (-1, 9), (-6, 14), (-4, 19),
                     (-12, 30)], closed=False), _S("#FFE6C4", 2.2, 0.3 + 0.6 * lit))
-    _blob(c, 90, 16, 40, "#FFD9A8", 0.35 * lit, kind="soft", add=True)
+    _blob(c, 58, 18, 40, "#FFD9A8", 0.35 * lit, kind="soft", add=True)
 
 
 # ---------------------------------------------------------------- hands
-_OLD = ("#E3B39A", "#C99079", "#93604C")        # skin, shade, line
-_KID = ("#EDB58A", "#D49670", "#A66B4C")
+# Rae (a little girl) holding her father's hand (BIBLE section 11): her hand in Rae's warm brown, his a deeper brown
+# with knuckle creases and a shirt cuff; his big palm cradles her small hand and his thumb closes gently over it.
+_DAD = ("#6A4027", "#4C2B18", "#2B160B", "#7C4D31", "#59341F")   # skin (back), shade, line, palm, thumb back
+_KID = ("r_skin", "r_skin_shade", "#5A361D", "r_skin_hi")         # skin, shade, line, highlight
+_DAD_SHIRT = ("#8EA6CB", "#B3C6E3", "#6F87AE")                    # shirt sleeve, cuff, fold shadow
+_KID_SLEEVE = ("#CB8B3F", "#B5762F")                              # her mustard jacket (as at the car window)
 
 
 def _hands_back(c):
@@ -1017,75 +1136,103 @@ def _finger(c, x, base, tip, w, skin, line, curl=0.0, nail=None):
         c.drawOval(skia.Rect(x - hw * 0.5 + curl, tip + 2, x + hw * 0.5 + curl, tip + hw * 1.3), _P(nail, 0.8))
 
 
-def _old_hand_palm_up(c):
-    """Big wrinkled hand, palm toward us, fingers up (local frame, wrist at y=120)."""
-    skin, shade, line = _OLD
-    # cardigan sleeve
-    c.drawPath(_sp([(-70, 230), (-64, 150), (-58, 118), (58, 118), (66, 150), (70, 230)]), _P("#6F7D61"))
-    c.drawRRect(skia.RRect.MakeRectXY(skia.Rect(-62, 106, 62, 136), 10, 10), _P("#5D6A51"))
-    for xx in range(-50, 60, 14):
-        c.drawLine(xx, 110, xx + 1, 132, _S("#4B5641", 1.6, 0.7))
+def _dad_hand_palm_up(c):
+    """Her father's big hand, palm up, fingers up (local frame, wrist at y=120): deep brown, the palm a little
+    lighter, creases across every finger joint; a pale-blue shirt cuff with a button."""
+    skin, shade, line, palm_c, _ = _DAD
+    sleeve, cuff, fold = _DAD_SHIRT
+    c.drawPath(_sp([(-72, 230), (-66, 150), (-60, 120), (60, 120), (68, 150), (72, 230)]), _P(sleeve))
+    c.drawPath(_sp([(-20, 230), (-14, 160), (6, 140), (10, 230)]), _P(fold, 0.5))
+    c.drawPath(_sp([(38, 230), (44, 160), (58, 140), (66, 230)]), _P(fold, 0.35))
+    cuff_r = skia.RRect.MakeRectXY(skia.Rect(-64, 104, 64, 140), 9, 9)
+    c.drawRRect(cuff_r, _P(cuff))
+    c.drawLine(-60, 132, 60, 132, _S(fold, 1.4, 0.6))                     # cuff seam
+    c.drawLine(-54, 109, 54, 109, _S("#FFFFFF", 1.6, 0.5))                # starched edge catching the sun
+    c.drawCircle(42, 121, 4.6, _P("#F6F3EC"))                              # button
+    c.drawCircle(42, 121, 4.6, _S(fold, 1.0, 0.8))
+    c.drawCircle(41, 120, 1.0, _P(fold, 0.8))
+    c.drawCircle(43, 122, 1.0, _P(fold, 0.8))
     # fingers (palm side) - little, ring, middle, index
     for (x, tip, w) in ((-40, -62, 22), (-14, -86, 25), (13, -94, 26), (39, -80, 25)):
         _finger(c, x, 0, tip, w, skin, line)
-        for k in (0.33, 0.62):                                   # finger creases
+        _finger(c, x, 2, tip + 6, w * 0.6, palm_c, palm_c)                 # the lighter palm side of the finger
+        for k in (0.3, 0.6):                                               # knuckle creases (two lines a joint)
             yy = lerp(0, tip, k)
-            c.drawLine(x - w * 0.32, yy, x + w * 0.32, yy + 1, _S(line, 1.2, 0.45))
+            for dy in (-1.8, 1.8):
+                c.drawPath(_sp([(x - w * 0.34, yy + dy + 1), (x, yy + dy - 0.6), (x + w * 0.34, yy + dy + 1)],
+                               closed=False), _S(line, 1.25, 0.6))
     # palm
     palm = _sp([(-54, 4), (-30, -8), (0, -12), (30, -10), (54, 0), (60, 50), (50, 104), (0, 114), (-48, 104), (-60, 50)])
     c.drawPath(palm, _P(skin))
-    c.drawPath(_sp([(-50, 60), (-20, 96), (20, 100), (46, 80), (40, 108), (0, 114), (-46, 102)]), _P(shade, 0.5))
+    c.drawPath(_xf(palm, sc=0.84, px=0, py=50), _P(palm_c))
+    c.drawPath(_sp([(-50, 60), (-20, 96), (20, 100), (46, 80), (40, 108), (0, 114), (-46, 102)]), _P(shade, 0.45))
     # palm lines
-    c.drawPath(_sp([(-50, 26), (-10, 22), (30, 12), (52, 14)], closed=False), _S(line, 1.6, 0.55))
-    c.drawPath(_sp([(-52, 44), (-16, 44), (16, 36)], closed=False), _S(line, 1.5, 0.5))
-    c.drawPath(_sp([(40, 30), (20, 60), (14, 96)], closed=False), _S(line, 1.6, 0.5))
-    c.drawPath(_sp([(-30, 62), (-12, 74)], closed=False), _S(line, 1.1, 0.35))
-    c.drawPath(palm, _S(line, 1.3, 0.4))
-    # age spots on the wrist
-    for (x, y, r) in ((-30, 100, 3.5), (22, 104, 2.8), (-6, 92, 2.2)):
-        c.drawCircle(x, y, r, _P("#B97C5E", 0.45))
+    c.drawPath(_sp([(-50, 26), (-10, 22), (30, 12), (52, 14)], closed=False), _S(line, 1.6, 0.6))
+    c.drawPath(_sp([(-52, 44), (-16, 44), (16, 36)], closed=False), _S(line, 1.5, 0.55))
+    c.drawPath(_sp([(40, 30), (20, 60), (14, 96)], closed=False), _S(line, 1.6, 0.55))
+    c.drawPath(_sp([(-30, 62), (-12, 74)], closed=False), _S(line, 1.1, 0.4))
+    c.drawPath(palm, _S(line, 1.3, 0.45))
+    # creases where the fingers meet the palm
+    for (x, w) in ((-40, 22), (-14, 25), (13, 26), (39, 25)):
+        c.drawPath(_sp([(x - w * 0.36, 2), (x, -1), (x + w * 0.36, 2)], closed=False), _S(line, 1.2, 0.55))
 
 
-def _old_thumb(c, sq):
-    skin, shade, line = _OLD
+def _dad_thumb(c, sq):
+    """His thumb (we see its back: the deepest brown, knuckle wrinkles, a pale nail) closing over her hand."""
+    _, shade, line, _, back = _DAD
     th = _sp([(46, 70), (70, 40), (78, 6), (70, -26 - 4 * sq), (54, -40 - 4 * sq), (36, -34), (40, -8), (40, 30)])
-    c.drawPath(th, _P(skin))
-    c.drawPath(th, _S(line, 1.3, 0.5))
-    c.drawOval(skia.Rect(46, -40 - 4 * sq, 64, -26 - 4 * sq), _P("#F4D9C8", 0.9))      # nail (back of thumb)
-    c.drawLine(52, -6, 70, -2, _S(line, 1.2, 0.5))
+    c.drawPath(th, _P(back))
+    c.drawPath(_sp([(46, 70), (70, 40), (76, 10), (62, 20), (52, 50)]), _P(shade, 0.5))
+    c.drawPath(th, _S(line, 1.3, 0.55))
+    c.drawOval(skia.Rect(46, -40 - 4 * sq, 64, -26 - 4 * sq), _P("#B88A6E", 0.95))     # nail
+    c.drawOval(skia.Rect(49, -38 - 4 * sq, 58, -33 - 4 * sq), _P("#E2C3AE", 0.5))      # its shine
+    for k, (y0, w) in enumerate(((-4, 12), (1, 15), (6, 11))):                       # knuckle wrinkles
+        c.drawPath(_sp([(56 - w * 0.5 + k, y0 + 2), (57 + k, y0 - 1), (56 + w * 0.5 + k, y0 + 2)], closed=False),
+                   _S(line, 1.15, 0.65))
+    c.drawPath(_sp([(66, -20 - 4 * sq), (74, 0), (72, 30)], closed=False), _S("#8A5A3C", 2.0, 0.5))   # sun on its edge
 
 
 def _kid_hand_palm_down(c, sq):
-    """Small chubby hand, back toward us, fingers down (local frame, wrist at y=-80)."""
-    skin, shade, line = _KID
-    c.drawPath(_sp([(-34, -210), (-34, -110), (-28, -84), (28, -84), (34, -110), (34, -210)]), _P("#E3A94B"))
-    c.drawRRect(skia.RRect.MakeRectXY(skia.Rect(-32, -98, 32, -76), 8, 8), _P("#C98C34"))
-    for (x, tip, w) in ((-21, 28, 13), (-7, 38, 14), (7, 40, 14), (20, 32, 13)):
-        _finger(c, x, -10, tip, -w, skin, line, nail="#F6D2B6")
+    """Small chubby hand, back toward us, fingers down (local frame, wrist at y=-80): little Rae's warm brown."""
+    skin, shade, line, hi = _KID
+    sleeve, cuff = _KID_SLEEVE
     hand = _sp([(-30, -80), (30, -80), (34, -40), (30, -6), (0, 0), (-30, -6), (-34, -40)])
+    # her little hand's soft shadow on his palm
+    shp = _P("#1E0D05", 0.38)
+    shp.setMaskFilter(skia.MaskFilter.MakeBlur(skia.kNormal_BlurStyle, 5.0))
+    c.drawPath(_xf(hand, dx=7, dy=8), shp)
+    for (x, tip) in ((-21, 28), (-7, 38), (7, 40), (20, 32)):
+        c.drawLine(x + 7, 0, x + 7, tip + 6, _S("#1E0D05", 12, 0.3))
+    c.drawPath(_sp([(-34, -210), (-34, -110), (-28, -84), (28, -84), (34, -110), (34, -210)]), _P(sleeve))
+    c.drawRRect(skia.RRect.MakeRectXY(skia.Rect(-32, -98, 32, -76), 8, 8), _P(cuff))
+    for (x, tip, w) in ((-21, 28, 13), (-7, 38, 14), (7, 40, 14), (20, 32, 13)):
+        _finger(c, x, -10, tip, -w, skin, line, nail="#C99273")
+        c.drawLine(x - w * 0.22, -6, x - w * 0.22, tip - 4, _S(hi, 2.0, 0.45))    # sun along each little finger
     c.drawPath(hand, _P(skin))
+    c.drawPath(_sp([(-24, -74), (20, -74), (24, -44), (0, -36), (-26, -44)]), _P(hi, 0.4))
     c.drawPath(hand, _S(line, 1.2, 0.5))
+    c.drawPath(_sp([(-34, -40), (-30, -6), (0, 0), (30, -6)], closed=False), _S("#E9B98E", 1.8, 0.55))  # warm rim
     for x in (-15, 0, 14):                                      # knuckle dimples
-        c.drawCircle(x, -12, 2.0, _P(shade, 0.8))
+        c.drawCircle(x, -12, 2.0, _P(shade, 0.85))
     c.drawPath(_sp([(-34, -60), (-48, -36), (-50, -16), (-42, -12), (-34, -30)]), _P(shade))   # thumb (tucked)
-    c.drawCircle(10, -44, 10, _P("#F2A08A", 0.22))
+    c.drawCircle(10, -44, 10, _P("#E0907A", 0.16))
 
 
 def _hands_anim(c, age, t):
-    """Old palm cradling a small hand; the thumb closes gently over it; sun flecks drift."""
+    """Her father's palm cradling her small hand; his thumb closes gently over it; sun flecks drift."""
     sq = 0.5 + 0.5 * math.sin(age * 1.4)
     sway = 1.8 * math.sin(age * 0.9)
     c.save()
     c.translate(-12, 30)
     c.rotate(36 + sway)
     c.scale(1.12, 1.12)
-    _old_hand_palm_up(c)
+    _dad_hand_palm_up(c)
     c.save()
     c.translate(2, 30 - 3 * sq)
     c.rotate(-10)
     _kid_hand_palm_down(c, sq)
     c.restore()
-    _old_thumb(c, sq)
+    _dad_thumb(c, sq)
     c.restore()
     for i in range(4):
         x = -150 + ((age * 9 + i * 97) % 300)
@@ -1790,8 +1937,75 @@ def _icon_lullaby(c, t, a):
         c.drawCircle(x, y, 1.6 + on, _hp(_HOLO, 0.4 + 0.5 * on))
 
 
+def _whale_icon_body():
+    """Cute side-view whale facing left (icon units): big round head, tapering to the tail stalk at (36, -8)."""
+    return _sp([(-46, 4), (-43, -11), (-30, -21), (-10, -22), (10, -16), (26, -8), (37, -11), (41, -4),
+                (30, 6), (12, 14), (-10, 18), (-30, 17), (-42, 12)])
+
+
+def _icon_whale(c, t, a):
+    """A cute stylised whale with a spout, bobbing on a little swell; flukes sway, the spout puffs."""
+    bob = 2.2 * math.sin(t * 1.6)
+    rock = 3.0 * math.sin(t * 1.6 - 0.8)
+    c.save()
+    c.translate(0, 6 + bob)
+    c.rotate(rock)
+    body = _whale_icon_body()
+    c.drawPath(body, _hp(_HOLO, 0.32 * a, 7, blur=3))
+    c.drawPath(body, _hp(_HOLO_DARK, 0.5 * a, add=False))
+    c.drawPath(body, _hp(_HOLO_MID, 0.32 * a))
+    belly = _sp([(-44, 8), (-30, 15), (-10, 17), (10, 13), (24, 6)], closed=False)
+    c.drawPath(belly, _hp(_HOLO, 0.45 * a, 1.2))
+    for k in range(3):                                   # throat grooves
+        y = 9.5 + 2.6 * k
+        c.drawLine(-36 + 2 * k, y, -18 + 2 * k, y + 1.2, _hp(_HOLO, 0.4 * a, 1.0))
+    c.drawPath(body, _hp(_HOLO, 0.95 * a, 2.4))
+    # flukes: a raised V at the end of the stalk, swaying
+    c.save()
+    c.translate(38, -8)
+    c.rotate(-18 + 10 * math.sin(t * 2.4))
+    fl = _sp([(0, 0), (4, -12), (12, -20), (16, -17), (11, -9), (20, -6), (18, -1), (8, -1)])
+    c.drawPath(fl, _hp(_HOLO_DARK, 0.5 * a, add=False))
+    c.drawPath(fl, _hp(_HOLO_MID, 0.3 * a))
+    c.drawPath(fl, _hp(_HOLO, 0.95 * a, 2.2))
+    c.restore()
+    # flipper
+    c.drawPath(_sp([(-18, 10), (-10, 22), (-4, 22), (-8, 10)]), _hp(_HOLO, 0.8 * a, 1.8))
+    # eye (with a glint) + smile
+    c.drawCircle(-31, -5, 3.0, _hp(_HOLO, a))
+    c.drawCircle(-30.2, -6.0, 1.0, _hp("#FFFFFF", 0.9 * a))
+    c.drawPath(_sp([(-45, 5), (-38, 8.5), (-30, 7.5)], closed=False), _hp(_HOLO, 0.9 * a, 1.6))
+    c.drawCircle(-36, 1, 3.2, _hp("#BFFFF4", 0.18 * a))                      # cheek
+    # spout from the blowhole: a stem that puffs up and opens into two curls + droplets
+    ph = (t * 0.7) % 1.0
+    grow = smoothstep(ph / 0.35)
+    fade = 1.0 - smoothstep((ph - 0.6) / 0.4)
+    bx, by = -22, -22
+    if grow * fade > 0.01:
+        h = 16 * grow
+        sa = 0.9 * a * fade
+        c.drawLine(bx, by, bx, by - h, _hp(_HOLO, sa, 2.2))
+        for sd in (-1, 1):
+            curl = _sp([(bx, by - h), (bx + sd * 6 * grow, by - h - 6 * grow), (bx + sd * 11 * grow, by - h - 2 * grow),
+                        (bx + sd * 12 * grow, by - h + 4 * grow)], closed=False)
+            c.drawPath(curl, _hp(_HOLO, sa, 2.0))
+        for k in range(4):
+            u = clamp((ph - 0.3) / 0.6)
+            ang = math.radians(-150 + k * 40)
+            rr = 6 + 12 * u
+            c.drawCircle(bx + math.cos(ang) * rr, by - h + math.sin(ang) * rr * 0.6 + 10 * u * u, 1.6,
+                         _hp(_HOLO, sa * (1 - u)))
+    c.restore()
+    # the swell under it
+    pts = [(-48 + k * 8, 34 + 2.5 * math.sin(k * 0.9 - t * 2.2)) for k in range(13)]
+    c.drawPath(_sp(pts, closed=False), _hp(_HOLO, 0.55 * a, 1.6))
+    for k, (x, y) in enumerate(((30, 24), (36, 14), (-40, 26))):          # a few bubbles
+        u = (t * 0.5 + k * 0.37) % 1.0
+        c.drawCircle(x + 2 * math.sin(t * 3 + k), y - 14 * u, 1.4 + 1.2 * u, _hp(_HOLO, 0.7 * a * math.sin(u * math.pi), 1.0))
+
+
 _ICONS = {"symphony": _icon_symphony, "kazoo": _icon_kazoo, "arcade": _icon_arcade, "lofi": _icon_lofi,
-          "theremin": _icon_theremin, "lullaby": _icon_lullaby}
+          "theremin": _icon_theremin, "lullaby": _icon_lullaby, "whale": _icon_whale}
 
 
 def _card_glow(c, b, a):
@@ -1854,7 +2068,7 @@ def draw_holo_card(canvas, t, cx, cy, scale=1.0, number=1, title="", icon="symph
     """Translucent teal hologram card (~170 x 230 at scale 1) centered at (cx, cy).
 
     number -> "No. N" header; title (caps; default from CARD_TITLES); icon in
-    {'symphony','kazoo','arcade','lofi','theremin','lullaby'}. state 0 idle/dim .. 1 selected (brighter, glow,
+    {'symphony','kazoo','arcade','lofi','theremin','lullaby','whale'}. state 0 idle/dim .. 1 selected (brighter, glow,
     +6 % scale). wobble 0..1: sine-wave ripple through the card (theremin gag). fold 0..1: folds into a
     glowing line and vanishes. rot: degrees."""
     if alpha <= 0.003 or scale <= 0.001 or fold >= 1.0:
@@ -2052,6 +2266,222 @@ def draw_music_box(canvas, t, cx, cy, scale=1.0, alpha=1.0):
 
 
 # =========================================================================== title
+# ---------------------------------------------------------------- the whale hologram (S4 whale song, end card)
+_WH_LB = 96.0           # body length nose -> tail stalk at scale 1 (+ nose cap and flukes: ~120 overall)
+_WH_R0 = 20.0           # body radius at its fullest (just behind the big round head)
+_WH_N = 30              # spine samples (spheres)
+_WH_PITCH = math.radians(22.0)      # we look slightly down on it (its swim orbit reads as an ellipse)
+_WH_ORBIT = (34.0, 13.0, 6.2)       # orbit half-width, half-depth, period (s)
+_WH_BEAT = 0.85                     # fluke beats per second
+
+
+def _wh_radius(s):
+    if s < 0.24:
+        return _WH_R0 * (0.44 + 0.56 * math.sin(s / 0.24 * math.pi / 2))
+    return _WH_R0 * (1.0 - 0.86 * smoothstep((s - 0.3) / 0.62))
+
+
+@lru_cache(maxsize=1)
+def _wh_samples():
+    ss = [(i / (_WH_N - 1)) ** 0.9 for i in range(_WH_N)]
+    return tuple((s_, _wh_radius(s_)) for s_ in ss)
+
+
+def _wh_frame(t):
+    """Whale placement at t (local units, before scale): position P (X, Y, Z), heading h, lateral l, swim phase."""
+    rx, rz, per = _WH_ORBIT
+    th = TAU * t / per
+    P = (rx * math.sin(th), 4.5 * math.sin(2 * th + 0.6) - 2.0, rz * math.cos(th))
+    hx, hz = rx * math.cos(th), -rz * math.sin(th)
+    n = math.hypot(hx, hz) or 1.0
+    h = (hx / n, hz / n)
+    # gentle pitch from the up/down drift (radians, + = nose up)
+    vy = 9.0 * math.cos(2 * th + 0.6) * TAU / per
+    pitch = clamp(-vy / 60.0, -0.2, 0.2)
+    return P, h, (-h[1], h[0]), pitch
+
+
+def _wh_point(F, xl, yl, zl):
+    """Local whale coords (x forward, y down, z lateral) -> world (X, Y, Z)."""
+    P, h, l, pitch = F
+    cp, sp_ = math.cos(pitch), math.sin(pitch)
+    x2, y2 = xl * cp + yl * sp_, -xl * sp_ + yl * cp          # pitch about the lateral axis (nose up for + pitch)
+    return (P[0] + x2 * h[0] + zl * l[0], P[1] + y2, P[2] + x2 * h[1] + zl * l[1])
+
+
+def _wh_proj(X, Y, Z):
+    """World -> screen offset (x, y) and depth (bigger = nearer the viewer)."""
+    cf, sf = math.cos(_WH_PITCH), math.sin(_WH_PITCH)
+    return X, Y * cf + Z * sf, Z * cf - Y * sf
+
+
+def _wh_spine(t, s):
+    """Local spine point (x, y) at s (0 nose .. 1 tail stalk): the tail beats up and down."""
+    w = smoothstep((s - 0.28) / 0.72) ** 1.2
+    ph = TAU * _WH_BEAT * t
+    y = 7.5 * w * math.sin(ph - 3.0 * s) - 1.5 * math.sin(ph) * (1 - w) * 0.3
+    return (0.5 - s) * _WH_LB, y
+
+
+def draw_whale_holo(canvas, t, cx, cy, scale=1.0, alpha=1.0):
+    """A small translucent teal hologram whale (~120 px nose to flukes at scale 1) swimming a gentle slow orbit
+    above an open palm: seen a little from above, it arcs across (side-on), turns away round the far side and comes
+    back, flukes beating, a little spout puffing from its blowhole now and then and a few bubbles rising.
+
+    (cx, cy): the centre of its swim (the orbit spans about +-95 x +-45 px at scale 1); the projector glow it
+    rises from is drawn ~70*scale below, at (cx, cy + 70*scale) -- put that on the palm. Pure in t."""
+    if alpha <= 0.003 or scale <= 0.001:
+        return
+    a = clamp(alpha) * (0.94 + 0.06 * math.sin(t * 5.1) * math.sin(t * 1.7))   # a slow holographic shimmer
+    c = canvas
+    c.save()
+    c.translate(cx, cy)
+    c.scale(scale, scale)
+    # ---- the projector: a faint cone of light from the palm
+    base_y = 70.0
+    cone = _poly([(-10, base_y), (10, base_y), (58, 8), (-58, 8)])
+    c.drawPath(cone, _G(_lin(0, base_y, 0, 0, [_c(_HOLO, 0.16 * a), _c(_HOLO, 0.0)])))
+    _blob(c, 0, base_y, 34, _HOLO, 0.35 * a, kind="soft")
+    c.drawOval(skia.Rect(-18, base_y - 4, 18, base_y + 4), _hp(_HOLO, 0.5 * a, 1.4))
+    # ---- whale geometry
+    F = _wh_frame(t)
+    P, h, l, pitch = F
+    samples = _wh_samples()
+    sph = []
+    for s_, r in samples:
+        xl, yl = _wh_spine(t, s_)
+        X, Y, Z = _wh_point(F, xl, yl, 0.0)
+        sx, sy, d = _wh_proj(X, Y, Z)
+        sph.append((sx, sy, r, d, s_))
+    body = skia.Path()
+    for (sx, sy, r, _, _) in sph:
+        body.addCircle(sx, sy, r)
+    body.setFillType(skia.PathFillType.kWinding)
+    body = skia.Op(body, skia.Path(), skia.PathOp.kUnion_PathOp) or body
+    # facing: which side of it is toward us (the eye / smile / near flipper side)
+    view = (0.0, -math.sin(_WH_PITCH), math.cos(_WH_PITCH))
+    near = 1.0 if l[1] * view[2] >= 0 else -1.0
+    side_vis = abs(l[1]) * view[2]                     # 0 head-on / tail-on .. 1 broadside
+    tail_x, tail_y = _wh_spine(t, 1.0)
+    # beat angle at the tail (from the spine slope) pitches the flukes
+    tx2, ty2 = _wh_spine(t, 0.96)
+    beat = math.atan2(tail_y - ty2, (tail_x - tx2) or -1e-3)
+
+    def proj(xl, yl, zl):
+        return _wh_proj(*_wh_point(F, xl, yl, zl))[:2]
+
+    def flipper(sd):
+        s0 = 0.34
+        xl, yl = _wh_spine(t, s0)
+        r = _wh_radius(s0)
+        fl = 0.35 * math.sin(TAU * _WH_BEAT * t + 1.2)
+        root_a = proj(xl + 4, yl + 0.45 * r, sd * 0.75 * r)
+        root_b = proj(xl - 7, yl + 0.5 * r, sd * 0.7 * r)
+        tip = proj(xl - 12, yl + r * (0.9 + fl * 0.4), sd * (r + 13))
+        return _sp([root_a, tip, root_b])
+
+    def flukes():
+        xl, yl = tail_x, tail_y
+        cb, sb = math.cos(beat), math.sin(beat)
+        pts = []
+        for (bx, bz, by) in ((0, 0, 0), (-6, 9, -2), (-15, 22, -9), (-21, 23, -11), (-17, 12, -4), (-14, 0, 0),
+                             (-17, -12, -4), (-21, -23, -11), (-15, -22, -9), (-6, -9, -2)):
+            # (bx back along the body, bz lateral, by up: a slight raised V) pitched with the beat
+            px_, py_ = bx * cb - by * sb, bx * sb + by * cb
+            pts.append(proj(xl + px_, yl + py_, bz))
+        return _sp(pts, tension=0.35)
+
+    far_flip = flipper(-near)
+    near_flip = flipper(near)
+    fl_path = flukes()
+    # ---- draw: far flipper, body (dark translucent panel + teal light), rings, outline, near flipper, flukes
+    def holo_fill(path, k=1.0):
+        c.drawPath(path, _hp(_HOLO_DARK, 0.42 * a * k, add=False))
+        c.drawPath(path, _hp(_HOLO_MID, 0.30 * a * k))
+
+    tail_far = sph[-1][3] < sph[0][3]          # tail further from us than the head: flukes go behind the body
+    holo_fill(far_flip, 0.7)
+    c.drawPath(far_flip, _hp(_HOLO, 0.5 * a, 1.4))
+    if tail_far:
+        holo_fill(fl_path)
+        c.drawPath(fl_path, _hp(_HOLO, 0.85 * a, 1.8))
+    c.drawPath(body, _hp(_HOLO, 0.28 * a, 9, blur=4))
+    holo_fill(body)
+    c.save()
+    c.clipPath(body, True)
+    # top light / belly shade (the form), a few drifting scanlines
+    top = min(y for (_, y, r, _, _) in sph) - _WH_R0
+    bot = max(y for (_, y, r, _, _) in sph) + _WH_R0
+    c.drawRect(skia.Rect(-120, top, 120, bot), _G(_lin(0, top, 0, bot, [_c(_HOLO, 0.32 * a), _c(_HOLO, 0.04 * a)])))
+    for j in range(4):
+        yy = top + ((t * 14.0 + j * (bot - top) / 4) % (bot - top))
+        c.drawRect(skia.Rect(-120, yy, 120, yy + 1.4), _hp(_HOLO, 0.16 * a))
+    # rib rings (cross-sections): edge-on lines when broadside, ellipses as it turns
+    for (sx, sy, r, d, s_) in sph[4:-6:5]:
+        xl, yl = _wh_spine(t, s_)
+        pts = [proj(xl, yl + r * math.cos(q), r * math.sin(q)) for q in (TAU * k / 14 for k in range(14))]
+        c.drawPath(_sp(pts), _hp(_HOLO, 0.24 * a, 1.0))
+    # throat grooves on the near side
+    if side_vis > 0.2:
+        for k in range(3):
+            g = [proj(_wh_spine(t, s_)[0], _wh_spine(t, s_)[1] + _wh_radius(s_) * (0.62 + 0.11 * k),
+                      near * _wh_radius(s_) * (0.55 - 0.12 * k)) for s_ in (0.06, 0.16, 0.26, 0.36)]
+            c.drawPath(_sp(g, closed=False), _hp(_HOLO, 0.35 * a * side_vis, 1.0))
+    c.restore()
+    c.drawPath(body, _hp(_HOLO, 0.95 * a, 1.8))
+    holo_fill(near_flip, 0.9)
+    c.drawPath(near_flip, _hp(_HOLO, 0.9 * a, 1.6))
+    if not tail_far:
+        holo_fill(fl_path)
+        c.drawPath(fl_path, _hp(_HOLO, 0.85 * a, 1.8))
+    # eye with a glint + smile, on the side toward us (fading out as it turns head-on / away)
+    ev = smoothstep((side_vis - 0.08) / 0.3)
+    if ev > 0.01:
+        xl, yl = _wh_spine(t, 0.13)
+        r = _wh_radius(0.13)
+        ex, ey = proj(xl, yl - 0.05 * r, near * 0.78 * r)
+        c.drawCircle(ex, ey, 2.6, _hp(_HOLO, a * ev))
+        c.drawCircle(ex + 0.8 * h[0], ey - 0.9, 0.9, _hp("#FFFFFF", 0.9 * a * ev))
+        sm = [proj(_wh_spine(t, s_)[0], _wh_spine(t, s_)[1] + 0.42 * _wh_radius(s_), near * 0.72 * _wh_radius(s_))
+              for s_ in (0.0, 0.07, 0.15)]
+        c.drawPath(_sp(sm, closed=False), _hp(_HOLO, 0.85 * a * ev, 1.4))
+    # ---- spout: every ~2.3 s a little fountain puffs from the blowhole
+    xl, yl = _wh_spine(t, 0.2)
+    bx, by = proj(xl, yl - _wh_radius(0.2) * 0.95, 0.0)
+    per = 2.3
+    ph = (t % per) / per
+    grow, fade = smoothstep(ph / 0.22), 1.0 - smoothstep((ph - 0.42) / 0.3)
+    if grow * fade > 0.01:
+        sa = a * fade
+        hgt = 15.0 * grow
+        c.drawLine(bx, by, bx, by - hgt, _hp(_HOLO, 0.85 * sa, 2.0))
+        _blob(c, bx, by - hgt, 9, _HOLO, 0.45 * sa, kind="soft")
+        for k in range(5):
+            u = clamp((ph - 0.12) / 0.5)
+            ang = math.radians(-160 + k * 35)
+            rr = 3 + 13 * u
+            c.drawCircle(bx + math.cos(ang) * rr, by - hgt + math.sin(ang) * rr * 0.7 + 12 * u * u, 1.5,
+                         _hp(_HOLO, 0.9 * sa * (1 - 0.6 * u)))
+    # ---- bubbles: a few little rings released from its mouth, rising and wobbling up out of the light
+    bper = 0.75
+    k0 = math.floor(t / bper)
+    for k in range(k0 - 3, k0 + 1):
+        te = k * bper + 0.3 * hash01(k, 77)
+        age = t - te
+        if not 0.0 <= age < 2.2:
+            continue
+        Fe = _wh_frame(te)
+        xl, yl = _wh_spine(te, 0.0)
+        ox, oy, _ = _wh_proj(*_wh_point(Fe, xl + 6, yl + 4, 0.0))
+        x = ox + 6 * math.sin(age * 4.0 + k) + 8 * (hash01(k, 78) - 0.5) * age
+        y = oy - 26 * age - 4 * age * age
+        r = 1.6 + 1.6 * min(1.0, age / 0.8) * (0.7 + 0.6 * hash01(k, 79))
+        ba = a * smoothstep(age / 0.15) * (1 - smoothstep((age - 1.4) / 0.8))
+        c.drawCircle(x, y, r, _hp(_HOLO, 0.75 * ba, 1.0))
+        c.drawCircle(x - r * 0.35, y - r * 0.35, 0.6, _hp("#FFFFFF", 0.7 * ba))
+    c.restore()
+
+
 def draw_title(canvas, t, text, cy, alpha=1.0, size=44, sub=None, sub_alpha=0.0, color="#EFFFFC", glow_color="teal_glow",
                tracking=None, cx=W / 2, sub_size=None, rise=0.0):
     """SCREEN space title: thin, widely tracked caps (Inter Display ExtraLight) with a soft, slowly breathing

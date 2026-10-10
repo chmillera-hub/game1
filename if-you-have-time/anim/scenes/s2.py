@@ -4,12 +4,15 @@ Quill raises his hand and the music fills the room -- in ordinary light. NO dimm
 light (1.0) the whole time, the window is the normal starfield, the characters are normally lit (at most a
 faint ribbon-coloured rim). The music is shown only by the imagination layer floating in the lit room: note
 motes, breathing ribbons, memory bubbles (young Rae at the car window, ...). Rae stays SEATED on the bench --
-moved, eyes wet -- while ordinary ship life carries on: a cadet strolls through with his coffee, does a
-double-take, coughs (loudly), mutters "Cool music, Quill.", gets a casual nod and waves to Rae, who waves back
-with a casual "Oh, hi." (r13) and goes straight back to the music. Grand pause; the climax is the ribbons
-sweeping and the memories glowing (no light burst); she sets her mug down on the bench and lays her hand on
-her chest; one tear and a trembling smile; the pull-back; sparks fall like snow; a last mote drifts away from
-her, up into the air in front of her face, and dissolves into nothing while she watches it go.
+moved, eyes wet -- while ordinary ship life carries on (REVISION 4, BIBLE section 11): a cadet strolls through
+with his coffee, does a double-take, gives an airy little cough, says "Oh, hey Quill. Cool song." (c01) as he
+passes him and gets a casual nod; then he turns back to Rae with a little wave -- "Oh, hey Rae! How are you
+doing?" (c02) -- slowing to a stop for the scripted small talk; Rae waves and answers a casual "I'm good,
+thanks." (r13), her eyes go straight back up to the music and he strolls off. Grand pause; the climax is the
+ribbons sweeping and the memories glowing (no light burst); she sets her mug down on the bench and lays her hand
+on her chest; one tear and a trembling smile, her eyes up on the music above her; the pull-back; sparks fall like
+snow; a last mote drifts away from her, up into the air in front of her face, and dissolves into nothing while
+she watches it go.
 
 Every time is derived from named beats (core.beat / line_start / scene_span) or from the symphony's own
 music data (envelopes.json downbeats / beats / onsets). render(canvas, t) is a pure function of t.
@@ -26,18 +29,23 @@ Shot list (absolute times only for orientation -- see _shots()); hard cuts only,
                                                 door shuts behind him; the ribbons drift through the room
   cad_notice -> beat 40.9                       MEDIUM two-shot cadet + Rae: double-take, brows up, eyes flick between
                                                 the lights and her, a sip; he walks on (cut on his wipe across her)
-  cad_cross  -> beat 42.65                      TWO-SHOT wide: he passes in front of her knees, an awkward little cough
-  cad_mutter -> (action) 0.55 s into his wave   MEDIUM Quill + cadet: "Cool music, Quill." as he passes in front of
-                                                Quill; Quill's casual nod (hand still raised); the cadet glances back
-                                                and waves to Rae
-  rae_wave   -> beat 47.2                       MEDIUM Rae: a wave back and a casual "Oh, hi." (friendly face, brows
-                                                up, small smile), then her eyes go straight back to the music
-  exit_wide  -> sym_grand_pause                 WIDE push: the ribbons swell in the crescendo; the cadet walks off right
+  cad_cross  -> beat 42.65                      TWO-SHOT wide: he passes in front of her knees, an airy little cough
+  cad_mutter -> sym_cadet_wave (his head turn)  MEDIUM Quill + cadet: "Oh, hey Quill. Cool song." (c01) as he comes up
+                                                to Quill and passes in front of him (a little cup salute on "Cool
+                                                song"); Quill's casual nod (sym_quill_nod, hand still raised)
+  cad_c02    -> beat before sym_rae_wave_back   TWO-SHOT: he turns back to Rae with a little wave, "Oh, hey Rae! How
+                                                are you doing?" (c02), slowing to a stop just past Quill; her eyes
+                                                find him, the moved face eases into a casual one
+  rae_wave   -> r13 end + 0.4                   MEDIUM Rae: a small wave and a casual "I'm good, thanks." (r13, friendly
+                                                face), then her eyes go straight back up to the music
+  exit_wide  -> sym_grand_pause                 WIDE push in on Rae: the ribbons swell in the crescendo; the cadet
+                                                strolls off right (out of frame by sym_cadet_exit)
   pause      sym_grand_pause -> sym_climax      CLOSE Rae: eyes wide and wet, everything holds its breath
   burst      sym_climax -> sym_tear_roll        WIDE: the ribbons sweep out, the memories glow in an arch; seated,
                                                 small against it all (the room light never changes); she sets the mug on the
                                                 bench and lays her right hand on her chest (sym_hand_chest)
-  tear       sym_tear_roll -> sym_celesta_echo  CLOSE Rae: one tear, a trembling smile; from sym_peak one pull-back to
+  tear       sym_tear_roll -> sym_celesta_echo  CLOSE Rae: one tear, a trembling smile, her eyes UP on the music
+                                                (ribbons above her, BIBLE section 11); from sym_peak one pull-back to
                                                 the cathedral wide; on the final chord a drift in to the two-shot while
                                                 the ribbons fall as sparks and Quill lowers his hand
   last       sym_celesta_echo -> end            MEDIUM CLOSE Rae: the last mote drifts away from her (forward and up in
@@ -94,8 +102,9 @@ def _T():
                        ("celesta", "sym_celesta_echo")):
         setattr(n, attr, beat(name))
     n.oh_s, n.oh_e = line_start("r09"), line_end("r09")
-    n.c01_s, n.c01_e = line_start("c01"), line_end("c01")
-    n.hi_s, n.hi_e = line_start("r13"), line_end("r13")          # "Oh, hi." (Rae, at sym_rae_wave_back)
+    n.c01_s, n.c01_e = line_start("c01"), line_end("c01")       # "Oh, hey Quill. Cool song."
+    n.c02_s, n.c02_e = line_start("c02"), line_end("c02")       # "Oh, hey Rae! How are you doing?"
+    n.hi_s, n.hi_e = line_start("r13"), line_end("r13")          # "I'm good, thanks." (Rae, at sym_rae_wave_back)
     e = _menv().get("symphony", {})
     n.beats = sorted(n.music + b for b in e.get("beats", []))
     n.downbeats = sorted(n.music + b for b in e.get("downbeats", []))
@@ -353,8 +362,9 @@ MUG_SPOT = (330.0, float(env.BENCH_SEAT_Y))     # BIBLE section 9: the mug rests
 
 # Far (left) arm. The rig's far-arm targeting is discontinuous for `across` between ~0.15 and ~0.27 (and its
 # draw layer flips at 0.25), so `across` is never animated through that band: it changes only on cuts
-# (two -> rae_med: LAP_S1 -> LAP_L; cad_mutter -> rae_wave, where she is off screen before the cut: LAP_L ->
-# THIGH_L) and the wave back is animated entirely at across ~0 (the hand lifts out to the side).
+# (two -> rae_med: LAP_S1 -> LAP_L; cad_cross -> cad_mutter, where at most her knee is at the frame edge, behind
+# the passing cadet: LAP_L -> THIGH_L) and the wave back is animated entirely at across ~0 (the hand lifts out
+# to the side).
 LAP_S1 = ArmPose(shoulder=15.0, elbow=55.0, wrist=0.0, hand="relaxed")             # S1's last far-arm pose
 LAP_L = ArmPose(shoulder=8.0, elbow=40.0, wrist=6.0, hand="relaxed", across=0.35)   # far hand on top of her knee
 THIGH_L = ArmPose(shoulder=12.0, elbow=26.0, wrist=4.0, hand="relaxed")               # far hand on her far thigh
@@ -369,7 +379,8 @@ def _rae_tracks():
     OH, GL, BU, GP, CL, HC, TR, PK, FC, CE, E = (T.oh, T.glis, T.build, T.gp, T.climax, T.hchest, T.tear, T.peak,
                                                  T.final, T.celesta, T.end)
     NO, CW, RW = T.notice, T.cwave, T.rwave
-    HS, HE = T.hi_s, T.hi_e           # "Oh, hi.": a tiny, normal, friendly break -- then straight back to the music
+    HS, HE = T.hi_s, T.hi_e           # "I'm good, thanks.": a tiny, normal, friendly break -- then straight back
+    #                                   to the music
     d = {}
     # ---- the mug goes down on the bench on sym_hand_chest, then her right hand goes to her heart
     d["reach_t"] = HC - 0.62          # the mug lifts off her lap
@@ -390,10 +401,12 @@ def _rae_tracks():
     d["nod"] = Track([(S, 0.115), (S + 0.7, 0.1), (D + 0.3, 0.16), (F1, 0.12), (F1 + 2.5, 0.08), (TH - 0.6, 0.24),
                       (MG, 0.18), (MG + 3.2, 0.3), (MG + 5.5, 0.32), (ME + 1.0, 0.12), (OH - 1.5, 0.16), (OH, 0.12),
                       (GL, 0.06), (GL + 4.5, 0.08), (BU - 1.5, 0.22), (BU + 1.5, 0.3), (NO + 2.0, 0.32),
-                      (CW, 0.32), (CW + 0.4, 0.2), (RW, 0.17), (HS + 0.3, 0.06, "out"), (HS + 0.62, 0.15),
-                      (HE + 0.3, 0.24), (HE + 1.0, 0.33), (GP, 0.4), (CL, 0.42), (CL + 0.7, 0.5, "out"),
-                      (HC - 0.5, 0.46), (HC + 0.1, 0.3), (HC + 0.8, 0.32), (HC + 1.6, 0.46), (TR, 0.48),
-                      (PK, 0.47), (PK + 5.0, 0.43), (FC, 0.4), (CE, 0.34)])
+                      (CW + 0.2, 0.32), (CW + 0.75, 0.19), (RW, 0.17), (HS + 0.22, 0.07, "out"), (HS + 0.55, 0.15),
+                      (HE + 0.1, 0.17), (HE + 0.5, 0.3), (HE + 1.2, 0.36), (GP, 0.4), (CL, 0.42),
+                      (CL + 0.7, 0.5, "out"), (HC - 0.5, 0.46), (HC + 0.1, 0.3), (HC + 0.8, 0.32), (HC + 1.6, 0.46),
+                      # the tear close-up / pull-back: her face tilted gently up toward the music above her
+                      (TR, 0.54), (TR + 1.2, 0.62), (PK, 0.63), (PK + 5.0, 0.6), (FC, 0.55), (FC + 3.0, 0.47),
+                      (CE, 0.38)])
     d["tilt"] = Track([(S, -3.8), (F1 + 2.3, -3.0), (TH - 0.6, 0.0), (MG, 2.0), (MG + 4.5, 4.0), (ME, 0.5),
                        (ME + 3.5, -3.0), (OH, 4.0), (GL, 6.0), (GL + 4.0, 3.0), (BU, 0.0), (BU + 3.0, 1.5),
                        (CW, 1.0), (RW + 0.3, 4.5), (RW + 1.4, 1.5), (GP, -2.0), (CL, 0.0), (HC, 2.0), (TR, 4.0),
@@ -433,63 +446,71 @@ def _rae_tracks():
         (BU + 5.0, (0.46, -0.6), 1.2),
         (BU + 6.9, (-0.36, -0.66)),
         (BU + 7.8, (0.36, -0.72), 0.7),
-        (CW + 0.1, "cadet", 0.14),                 # ... until he waves: she finds him ("Oh, hi.")
-        (HE + 0.08, (0.4, -0.64), 0.22),           # ... and her eyes go straight back to the music
-        (HE + 1.1, (0.34, -0.72), 0.8),
+        (CW + 0.25, "cadet", 0.14),                # ... until he says her name: she finds him
+        (HE + 0.08, (0.38, -0.8), 0.22),           # ... and after "I'm good, thanks." her eyes go straight back up
+        (HE + 1.1, (0.34, -0.74), 0.8),            #     to the music
         (GP - 0.4, (0.33, -0.66), 0.3),
         (CL + 0.9, (-0.42, -0.6)),
         (CL + 2.4, (0.38, -0.66), 0.5),
-        (TR, (0.34, -0.72), 0.4),
-        (TR + 2.2, (0.38, -0.64), 1.3),
-        (TR + 3.6, (0.44, -0.7), 1.0),
-        (PK + 1.0, (-0.4, -0.6)),
-        (PK + 3.0, (0.42, -0.6)),
-        (PK + 5.0, (0.36, -0.66), 1.0),
-        (FC - 1.6, (0.6, -0.3)),                   # a glance at Quill ...
-        (FC - 0.4, (0.4, -0.5), 0.8),
-        (FC + 0.6, "qhand", 0.3),                  # ... she watches his hand come down
-        (FC + 3.4, (0.42, -0.34), 0.5),
+        # the tear close-up and the pull-back (BIBLE section 11): her eyes stay UP on the music -- the ribbons
+        # drifting above her and Quill's raised hand -- never on the lens or off to screen-left; slow pursuits
+        (TR, (0.5, -0.92), 0.5),
+        (TR + 2.2, (0.58, -0.84), 1.3),
+        (TR + 3.6, (0.46, -1.0), 1.0),
+        (PK + 1.0, (0.38, -0.9), 1.2),
+        (PK + 3.0, (0.54, -0.86), 1.2),
+        (PK + 5.0, (0.44, -0.96), 1.0),
+        (FC - 1.6, (0.62, -0.74), 0.6),            # up at Quill's raised hand as the last phrase resolves ...
+        (FC + 0.6, (0.5, -0.88), 0.8),             # ... and on the final chord the ribbons fall as sparks: she
+        (FC + 2.0, (0.44, -0.72), 1.4),            #     follows them gently down (still above her eye line)
+        (FC + 3.4, (0.42, -0.56), 1.0),
         (CE + 0.15, "final", 0.25),                # the last mote: she watches it go ...
         (CE + 3.42, (0.62, -0.5), 0.6),            # ... and when it is gone, her eyes rest on the empty air
     ]
     d["blinks"] = [(D + 0.37, 0.2), (F1 + 0.15, 0.18), F1 + 1.9, F1 + 3.85, TH + 0.42, TH + 2.5, (MG + 0.5, 0.3),
                    MG + 1.95, MG + 5.4, ME + 0.3, ME + 3.6, (OH - 0.45, 0.32), OH + 1.05, (GL + 0.5, 0.42),
                    GL + 2.6, GL + 3.7, GL + 5.0, GL + 6.75, BU + 0.9, BU + 2.35, BU + 4.6, (BU + 6.85, 0.2),
-                   BU + 9.1, (CW + 0.08, 0.18), (HE + 0.03, 0.2), (RW + 2.6, 0.24), CL + 2.5, (HC + 0.05, 0.2),
+                   BU + 9.1, (CW + 0.24, 0.18), (HE + 0.05, 0.2), (RW + 2.6, 0.24), CL + 2.5, (HC + 0.05, 0.2),
                    (TR + 0.15, 0.36), TR + 3.0, PK + 0.95, PK + 2.95, PK + 4.8, PK + 7.0, (FC + 1.3, 0.3),
                    (CE - 0.3, 0.3), (E - 0.75, 0.34)]
     # ---- eyelids / brows
     d["lid"] = Track([(S, 0.72), (D, 0.74), (D + 0.12, 0.88, "out"), (F1 - 0.3, 0.8), (F1 + 2.4, 0.78),
                       (TH - 0.6, 0.93), (MG, 0.95), (MG + 1.0, 0.97), (GL, 0.94), (GL + 2.2, 0.86), (BU, 0.9),
-                      (RW - 0.2, 0.9), (HS + 0.1, 0.95), (HE, 0.93), (HE + 0.5, 0.92), (GP - 0.3, 0.95),
-                      (GP + 0.12, 1.0, "out"), (CL + 1.2, 1.0), (CL + 2.5, 0.94), (TR, 0.92), (TR + 2.0, 0.88),
-                      (PK, 0.88), (FC, 0.82), (CE, 0.84), (E, 0.8)])
+                      (RW - 0.2, 0.9), (HS + 0.1, 0.95), (HE, 0.93), (HE + 0.4, 0.96), (GP - 0.3, 0.95),
+                      (GP + 0.12, 1.0, "out"), (CL + 1.2, 1.0), (CL + 2.5, 0.96),
+                      # looking up: the upper lids lift clear of the irises (a lid over the top of an iris reads
+                      # as a look down / into the lens)
+                      (TR, 0.98), (TR + 2.0, 0.97), (PK, 0.97), (FC, 0.94), (CE, 0.86), (E, 0.8)])
     d["wide"] = Track([(D, 0.0), (D + 0.12, 0.18, "out"), (D + 0.9, 0.0), (GP - 0.1, 0.0), (GP + 0.16, 0.48, "out"),
-                       (CL, 0.5), (CL + 0.12, 0.6, "out"), (CL + 1.4, 0.15), (TR, 0.0)])
+                       (CL, 0.5), (CL + 0.12, 0.6, "out"), (CL + 1.4, 0.15), (TR, 0.2), (PK, 0.22),
+                       (FC, 0.16), (CE, 0.0)])
     d["brow_raise"] = Track([(S, 0.1), (S + 0.6, 0.22), (D, 0.24), (D + 0.15, 0.48, "out"), (D + 1.2, 0.15),
                              (F1, 0.15), (F1 + 0.25, 0.32, "out"), (F1 + 2.4, 0.18), (TH - 0.5, 0.36),
                              (MG + 0.4, 0.52), (MG + 5.0, 0.4), (ME + 0.8, 0.5), (OH, 0.55), (GL, 0.38),
-                             (BU, 0.46), (CW + 0.1, 0.46), (CW + 0.3, 0.56, "out"), (HS + 0.05, 0.66, "out"), (HE, 0.6),
+                             (BU, 0.46), (CW + 0.2, 0.46), (CW + 0.45, 0.58, "out"), (HS + 0.05, 0.66, "out"), (HE, 0.6),
                              (HE + 0.6, 0.5), (GP, 0.55),
                              (GP + 0.15, 0.72, "out"), (CL, 0.75), (CL + 0.15, 0.85, "out"), (CL + 2.0, 0.5),
-                             (TR, 0.38), (FC, 0.3), (E, 0.26)])
+                             (TR, 0.46), (PK, 0.46), (FC, 0.36), (E, 0.26)])
     d["worry"] = Track([(S, 0.0), (F1 + 4.0, 0.1), (MG, 0.25), (ME, 0.35), (OH - 0.3, 0.6), (GL, 0.72),
-                        (GL + 3.0, 0.78), (BU, 0.6), (BU + 5.0, 0.7), (CW + 0.2, 0.68), (RW, 0.32), (HS + 0.1, 0.12),
+                        (GL + 3.0, 0.78), (BU, 0.6), (BU + 5.0, 0.7), (CW + 0.3, 0.68), (RW, 0.3), (HS + 0.1, 0.12),
                         (HE, 0.14), (HE + 0.3, 0.4), (HE + 0.9, 0.7), (GP, 0.72), (CL, 0.55),
-                        (TR, 0.8), (PK, 0.72), (FC, 0.62), (E, 0.6)])
+                        (TR, 0.74), (PK, 0.64), (FC, 0.58), (E, 0.6)])
     d["furrow"] = Track([(S, 0.2), (F1 + 2.4, 0.2), (F1 + 4.8, 0.0)])
     # ---- mouth
     d["smirk"] = Track([(S, 0.7), (S + 0.5, 0.74), (D, 0.72), (D + 0.3, 0.55), (F1, 0.62), (F1 + 2.2, 0.62),
                         (TH - 0.6, 0.05), (MG, 0.0)])
     d["smile"] = Track([(S, 0.1), (F1 + 2.4, 0.08), (TH - 0.5, 0.0), (ME + 0.9, 0.0), (ME + 1.8, 0.14),
                         (ME + 3.6, 0.1), (OH - 0.6, 0.0), (OH + 0.6, -0.05), (GL, -0.08), (GL + 2.5, -0.16),
-                        (GL + 4.9, -0.12), (GL + 5.9, 0.16), (GL + 7.2, 0.1), (BU, -0.02), (CW + 0.2, 0.0),
-                        (RW + 0.05, 0.2), (HS + 0.15, 0.3), (HE, 0.28), (HE + 0.3, 0.18), (HE + 0.9, 0.04),
+                        (GL + 4.9, -0.12), (GL + 5.9, 0.16), (GL + 7.2, 0.1), (BU, -0.02), (CW + 0.3, 0.0),
+                        (CW + 1.0, 0.1), (RW + 0.05, 0.2), (HS + 0.15, 0.3), (HE, 0.28), (HE + 0.3, 0.18), (HE + 0.9, 0.04),
                         (GP, 0.0), (CL + 0.8, 0.08), (TR + 0.5, 0.12),
                         (TR + 2.0, 0.38), (PK, 0.36), (PK + 5.0, 0.32), (FC, 0.26), (E, 0.16)])
     d["squint"] = Track([(S, 0.072), (S + 0.8, 0.04), (F1 + 2.4, 0.02), (TH, 0.0), (GL + 5.6, 0.0), (GL + 6.2, 0.08),
                          (GL + 7.4, 0.02), (RW - 0.2, 0.02), (HS + 0.1, 0.14), (HE, 0.12), (HE + 0.7, 0.02), (TR + 1.0, 0.0),
-                         (TR + 2.2, 0.18), (FC, 0.12), (E, 0.1)])
+                         (TR + 2.2, 0.03), (FC, 0.04), (CE, 0.08), (E, 0.1)])
+    # while her eyes are up on the music (tear close-up .. last mote) the smile's automatic lower-lid lift is taken
+    # back out: lower lids pushed up under up-turned irises read as a look down / into the lens
+    d["squint_comp"] = Track([(TR - 0.6, 0.0), (TR, 1.0), (CE, 1.0), (CE + 1.0, 0.0)])
     d["open"] = Track([(S, 0.0), (F1 + 4.0, 0.02), (MG + 0.2, 0.0), (MG + 1.2, 0.12), (ME, 0.1), (OH - 0.9, 0.08),
                        (OH - 0.35, 0.16), (OH - 0.05, 0.05), (T.oh_e + 0.1, 0.05), (T.oh_e + 0.6, 0.12),
                        (GL, 0.06), (BU, 0.12), (BU + 4.0, 0.1), (RW - 0.2, 0.06), (HS - 0.05, 0.02),
@@ -498,7 +519,7 @@ def _rae_tracks():
                        (CE + 1.6, 0.16), (E, 0.1)])
     d["round"] = Track([(S, 0.0), (MG, 0.0), (MG + 1.2, 0.2), (ME, 0.25), (GL, 0.1), (RW - 0.3, 0.26), (HS, 0.05), (HE, 0.05), (HE + 0.8, 0.25), (GP, 0.3), (CL, 0.35),
                         (CL + 1.5, 0.2), (TR, 0.0)])
-    d["tremble"] = Track([(GL + 0.5, 0.0), (GL + 2.5, 0.22), (BU, 0.12), (BU + 5.0, 0.18), (CW + 0.2, 0.16), (RW, 0.02),
+    d["tremble"] = Track([(GL + 0.5, 0.0), (GL + 2.5, 0.22), (BU, 0.12), (BU + 5.0, 0.18), (CW + 0.3, 0.16), (RW, 0.02),
                           (HE, 0.0), (HE + 0.4, 0.1), (HE + 1.0, 0.2), (GP, 0.12),
                           (CL + 1.0, 0.2), (TR, 0.4), (TR + 1.6, 0.62), (PK + 2.0, 0.46), (FC, 0.32), (E, 0.25)])
     # ---- tears, eyes
@@ -524,10 +545,10 @@ def _rae_tracks():
                                 (tp + 1.25, chest), (TR - 0.4, chest), (TR + 0.6, _arm(chest, wrist=16.0, elbow=122.0)),
                                 (PK + 1.0, _arm(chest, wrist=12.0)), (FC, chest)])
     # far hand: on her knee; the tiny wave back; on her knee again
-    c_rae = _cut("rae_wave")
+    c_sw = _cut("cad_mutter")
     d["arm_l"] = ArmTrack([(S, LAP_S1), (F1 - 0.001, LAP_S1), (F1, LAP_L, "step"),       # (switch on the cut)
-                           (c_rae - 0.001, LAP_L), (c_rae, THIGH_L, "step"),             # (switch on the cut)
-                           (max(c_rae + 0.02, RW - 0.16), THIGH_L),
+                           (c_sw - 0.001, LAP_L), (c_sw, THIGH_L, "step"),               # (switch on the cut)
+                           (max(c_sw + 0.02, RW - 0.16), THIGH_L),
                            (RW + 0.04, _arm(THIGH_L, shoulder=14.0, elbow=92.0, wrist=-6.0,
                                                                    hand="open", across=-0.03), "in"),
                            (RW + 0.22, WAVE_L, "out"), (RW + 0.92, WAVE_L),
@@ -692,7 +713,8 @@ def _rae_pose(t, lv) -> Pose:
     lx, ly = clamp(lx * (1.0 + 0.3 * gk), -1.15, 1.15), clamp(ly * (1.0 + 0.35 * gk), -1.0, 1.0)
     face = dict(
         lid_l=lid, lid_r=lid * (0.985 + 0.015 * noise1(t * 0.7, 3)), look_x=lx + 0.02 * noise1(t * 2.3, 1) * gp_hold,
-        look_y=ly + 0.02 * noise1(t * 2.1, 2) * gp_hold, pupil=d["pupil"](t), squint=d["squint"](t),
+        look_y=ly + 0.02 * noise1(t * 2.1, 2) * gp_hold, pupil=d["pupil"](t),
+        squint=d["squint"](t) - 0.22 * max(0.0, d["smile"](t)) * d["squint_comp"](t),
         eye_wide=d["wide"](t), brow_raise=d["brow_raise"](t), brow_worry=d["worry"](t),
         brow_furrow=d["furrow"](t), mouth_open=d["open"](t) + 0.8 * mo, mouth_round=clamp(d["round"](t) + mr),
         smile=d["smile"](t), smirk=d["smirk"](t), mouth_tremble=d["tremble"](t), tears=d["tears"](t),
@@ -770,7 +792,7 @@ def _quill_tracks():
     d["lift"] = Track([(T.gp - 0.5, 0.0), (T.gp, 5.0, "out"), (T.climax, 5.0), (T.climax + 0.6, 14.0, "out"),
                        (T.climax + 2.6, 7.0), (T.peak, 6.0), (T.peak + 1.6, 10.0), (FC, 6.0), (FC + 0.5, 0.0)])
     d["shoulders"] = Track([(S, 0.0), (S + 0.25, 0.1), (S + 0.9, 0.0)])
-    # the cadet's "Cool music, Quill.": the eyes go to him, a small casual nod (the hand keeps conducting)
+    # the cadet's "Oh, hey Quill. Cool song.": the eyes go to him, a small casual nod (the hand keeps conducting)
     d["nod"] = Track([(S, 0.0), (S + 0.3, 0.06), (S + 1.4, 0.02), (QN - 0.06, 0.02), (QN + 0.2, -0.22, "out"),
                       (QN + 0.62, -0.01, "io"), (T.gp - 0.4, 0.0), (T.gp + 0.1, -0.08), (T.climax, -0.07),
                       (T.climax + 0.5, 0.0), (FC + 2.0, -0.06)])
@@ -788,8 +810,10 @@ def _quill_tracks():
                        (T.tear, 0.42), (FC, 0.4), (FC + 3.0, 0.25)])
     d["gaze"] = Track([(S, (-0.45, 0.22)), (S + 0.5, (-0.3, -0.02), "out"), (S + 1.4, (-0.46, 0.26)),
                        (T.mem + 1.2, (-0.46, 0.26)), (T.mem + 1.8, (-0.6, 0.0)), (T.mem + 3.0, (-0.6, 0.0)),
-                       (T.mem + 3.6, (-0.48, 0.28)), (MU + 0.2, (-0.48, 0.28)), (MU + 0.34, (0.12, 0.4), "out"),
-                       (QN - 0.2, (0.3, 0.34)), (QN + 0.75, (0.42, 0.3)), (QN + 0.9, (-0.46, 0.27), "out"),
+                       (T.mem + 3.6, (-0.48, 0.28)), (MU + 0.2, (-0.48, 0.28)),
+                       (MU + 0.36, (-0.2, 0.42), "out"),        # "Oh, hey Quill." -- the cadet, down to his right
+                       (QN - 0.2, (0.26, 0.36)),                # ... following him as he passes in front
+                       (QN + 0.55, (0.4, 0.32)), (QN + 0.72, (-0.46, 0.27), "out"),   # nod given: back to Rae
                        (T.climax + 0.8, (-0.48, 0.3)), (FC + 1.2, (-0.48, 0.3)), (FC + 2.2, (-0.46, 0.34))])
     return d
 
@@ -864,7 +888,9 @@ def _C():
 
 CAD_SCALE = 1.0
 CAD_FLOOR_IN = float(env.FLOOR_Y)          # in the doorway he walks on the wall line ...
-CAD_FLOOR = 1185.0                         # ... and along the front of the room, nearer the camera than the bench
+CAD_FLOOR = 1185.0                         # ... and along the front of the room, nearer the camera than the bench;
+CAD_FLOOR_FWD = 1238.0                     # past Rae he drifts a little further forward on his way to the far side,
+CAD_FWD_X = (320.0, 580.0)                 # so passing Quill his head stays below Quill's eyes (the nod reads)
 CAD_DOORWAY_X = (-140.0, -30.0)            # x range over which his floor line comes forward
 CAD_STOP_X = -18.0                         # he stops just inside the door (the sip's swing stays clear of Rae)
 
@@ -872,9 +898,13 @@ CAD_STOP_X = -18.0                         # he stops just inside the door (the 
 @lru_cache(maxsize=1)
 def _cad_keys():
     """(t, x, dx/dt) keys of the cadet's pelvis: a casual stroll in, a slow-down and stop to gawk (sip), a
-    slightly brisker walk past Rae (cough) and in front of Quill (mutter, nod), slower while he glances back
-    and waves, then off screen right. Hermite-interpolated (C1), so his speed changes are smooth."""
+    slightly brisker walk past Rae (cough), up to Quill ("Oh, hey Quill. Cool song.") and past him (the nod),
+    turning back to Rae with a wave ("Oh, hey Rae! How are you doing?") as he slows to a stop just past Quill for
+    the small talk; as she says "thanks" he walks on and strolls off screen right. Hermite-interpolated (C1), so
+    his speed changes are smooth. Both stops are at a contact pose (walk phase a multiple of 0.5: feet planted)."""
     T = _T()
+    stop2 = CAD_STOP_X + 4.5 * _cad_advance()           # 649.4: walk phase 4.5 (contact, far foot forward)
+    go = _cad_go()
     return (
         (T.cdoor - 0.25, -262.0, 80.0),        # a sleepy stroll in
         (T.cdoor + 2.5, -60.0, 62.0),          # door_close sfx: the panel slides shut behind him
@@ -882,14 +912,21 @@ def _cad_keys():
         (T.notice + 0.42, CAD_STOP_X, 0.0),    # ... and stops in his tracks (heel strike: contact pose)
         (T.notice + 1.12, CAD_STOP_X, 0.0),    # (sips) ... walks on, a little briskly
         (T.notice + 2.47, 115.0, 128.0),
-        (T.cough, 360.0, 118.0),               # just past Rae's face, in front of her knees: the cough
-        (T.c01_s, 462.0, 110.0),               # "Cool music, Quill." as he passes in front of him
-        (T.qnod, 597.0, 100.0),                # past Quill (his head clear of Quill's face): the nod
-        (T.cwave, 660.0, 50.0),                # glances back, waves
-        (T.cwave + 1.02, 706.0, 46.0),
-        (T.cexit, 965.0, 118.0),               # gone off screen right
-        (T.cexit + 2.0, 1201.0, 118.0),
+        (T.cough, 340.0, 104.0),               # just past Rae's face, in front of her knees: the cough
+        (T.c01_s, 425.0, 92.0),                # "Oh, hey Quill." -- coming up to him (his head still clear of
+        (T.qnod, 568.0, 88.0),                 #   Quill's face); past him on "Cool song." -> the nod
+        (T.qnod + 1.35, stop2, 0.0),           # turned back to Rae, waving, he slows to a stop ...
+        (go, stop2, 0.0),                      # ... small talk ... and walks on as she says "thanks"
+        (go + 0.7, stop2 + 58.0, 118.0),
+        (T.cexit, 834.0, 136.0),               # out of frame (the exit shot pushes in on Rae)
+        (T.cexit + 2.0, 1106.0, 136.0),
     )
+
+
+def _cad_go():
+    """When the cadet walks on after the small talk (as Rae says "thanks")."""
+    T = _T()
+    return T.hi_e - 0.4
 
 
 def _herm(t, k0, k1):
@@ -914,7 +951,8 @@ def _cad_x(t):
 
 
 def _cad_floor(x):
-    return lerp(CAD_FLOOR_IN, CAD_FLOOR, smoothstep((x - CAD_DOORWAY_X[0]) / (CAD_DOORWAY_X[1] - CAD_DOORWAY_X[0])))
+    y = lerp(CAD_FLOOR_IN, CAD_FLOOR, smoothstep((x - CAD_DOORWAY_X[0]) / (CAD_DOORWAY_X[1] - CAD_DOORWAY_X[0])))
+    return y + (CAD_FLOOR_FWD - CAD_FLOOR) * smoothstep((x - CAD_FWD_X[0]) / (CAD_FWD_X[1] - CAD_FWD_X[0]))
 
 
 @lru_cache(maxsize=1)
@@ -985,6 +1023,7 @@ def _cad_tracks():
     C = _C()
     T = _T()
     NO, CO, MU, ME_, QN, CW, CX = T.notice, T.cough, T.c01_s, T.c01_e, T.qnod, T.cwave, T.cexit
+    C2E, RS, RE = T.c02_e, T.hi_s, T.hi_e
     sip0 = NO + 0.2                       # the sip (as he stops; eyes on Rae over the cup)
     d = {"sip0": sip0}
     low = CAD_CUP_LOW
@@ -992,30 +1031,40 @@ def _cad_tracks():
     rest = ArmPose(shoulder=4.0, elbow=10.0, wrist=0.0, hand="relaxed")
     mouth_ = C.ARMS["hand_to_mouth"]
     salute = ArmPose(shoulder=26.0, elbow=92.0, wrist=0.0, hand="hold")
+    # "Cool song." starts ~0.66 s into c01: the little cup salute lands on it
     d["arm_cup"] = ArmTrack([(T.cdoor, low), (sip0, low), (sip0 + 0.32, CAD_SIP_MID, "in"), (sip0 + 0.55, sip, "out"),
                              (sip0 + 0.8, sip), (sip0 + 1.0, CAD_SIP_MID, "in"), (sip0 + 1.32, low, "out"),
-                             (MU + 0.95, low), (MU + 1.25, salute, "io"),               # a little cup salute
+                             (MU + 0.5, low), (MU + 0.82, salute, "io"),                # a little cup salute
                              (QN + 0.2, salute), (QN + 0.6, low, "io")])               # back at Quill
-    d["arm_free"] = ArmTrack([(T.cdoor, rest), (CO - 0.55, rest), (CO - 0.05, mouth_, "io"), (CO + 0.72, mouth_),
-                              (CO + 1.25, rest, "io")])
-    d["wave"] = Track([(CW - 0.1, 0.0), (CW + 0.3, 0.88, "io"), (CW + 1.0, 0.88), (CW + 1.45, 0.0, "io")])
+    # the airy cough (bursts at +0, +0.26, +0.53 s): the hand is down again before he speaks
+    d["arm_free"] = ArmTrack([(T.cdoor, rest), (CO - 0.55, rest), (CO - 0.05, mouth_, "io"), (CO + 0.66, mouth_),
+                              (CO + 0.98, rest, "io")])
+    # the little wave to Rae on "Oh, hey Rae!", down again during "How are you doing?"
+    d["wave"] = Track([(CW - 0.1, 0.0), (CW + 0.3, 0.88, "io"), (CW + 0.85, 0.88), (CW + 1.3, 0.0, "io")])
     d["turn"] = Track([(T.cdoor, 0.36)])
     d["hturn"] = Track([(NO - 0.05, 0.0), (NO + 0.3, -0.06), (NO + 1.6, -0.02), (NO + 2.4, -0.12), (NO + 3.0, 0.02),
-                        (MU - 0.2, 0.02), (MU + 0.6, -0.16), (ME_, -0.3), (QN + 0.15, -0.34), (QN + 0.6, 0.0),
-                        (CW - 0.12, 0.0), (CW + 0.2, -0.72, "out"), (CW + 1.15, -0.68), (CW + 1.6, 0.0, "io")])
+                        (MU - 0.2, 0.02), (MU + 0.5, -0.06), (ME_ - 0.2, -0.62), (QN + 0.15, -0.66),  # up at Quill
+                        (CW - 0.12, -0.66), (CW + 0.22, -0.76, "out"),                         # back to Rae
+                        (RE - 0.1, -0.66), (RE + 0.4, 0.0, "io")])                             # walks on
     d["nod"] = Track([(T.cdoor, -0.1), (NO - 0.05, -0.1), (NO + 0.3, 0.12, "out"), (NO + 0.55, 0.06),
                       (NO + 0.8, -0.04), (NO + 1.2, 0.1), (sip0 + 0.3, 0.06), (sip0 + 1.0, 0.04), (CO - 1.2, -0.06),
-                      (CO - 0.3, -0.12), (CO + 1.0, -0.12), (MU - 0.1, 0.1), (MU + 0.4, 0.22), (ME_, 0.16),
-                      (QN + 0.1, 0.1), (QN + 0.3, -0.06, "out"), (QN + 0.55, 0.0), (CW, -0.02), (CW + 0.3, 0.04),
-                      (CW + 1.4, 0.02), (CX, -0.06)])
+                      (CO - 0.3, -0.12), (CO + 1.0, -0.12), (MU - 0.1, 0.16), (MU + 0.4, 0.3), (ME_, 0.32),
+                      (QN + 0.1, 0.28), (QN + 0.3, 0.12, "out"), (QN + 0.45, 0.16),    # (nods back at Quill's nod)
+                      (CW + 0.3, -0.02), (C2E - 0.5, 0.04), (C2E - 0.1, 0.08),        # (the question: chin up a bit)
+                      (RE - 0.3, 0.04), (RE - 0.05, -0.12, "out"), (RE + 0.25, 0.0),  # "cool, cool"
+                      (CX, -0.06)])
     d["brow"] = Track([(T.cdoor, 0.05), (NO - 0.05, 0.05), (NO + 0.22, 0.9, "out"), (NO + 2.6, 0.75),
-                       (CO - 0.6, 0.45), (CO + 1.0, 0.3), (MU, 0.4), (ME_, 0.35), (CW, 0.3), (CW + 0.3, 0.45),
-                       (CW + 1.5, 0.25), (CX, 0.2)])
+                       (CO - 0.6, 0.45), (CO + 1.0, 0.3), (MU, 0.42), (MU + 0.3, 0.5), (ME_, 0.36), (CW, 0.32),
+                       (CW + 0.3, 0.58, "out"), (C2E - 0.6, 0.5), (C2E - 0.2, 0.62), (RS + 0.2, 0.42),
+                       (RE + 0.3, 0.3), (CX, 0.2)])
+    # small-talk face: friendly, a touch awkward (inner brows up a little, a lopsided smile)
+    d["worry"] = Track([(CW, 0.0), (CW + 0.4, 0.16), (C2E, 0.2), (RE, 0.1), (RE + 0.6, 0.0)])
+    d["smirk"] = Track([(CW, 0.0), (CW + 0.4, -0.12), (C2E, -0.14), (RE, 0.08), (RE + 0.6, 0.0)])
     d["wide"] = Track([(NO, 0.0), (NO + 0.18, 0.35, "out"), (NO + 1.4, 0.2), (CO - 0.5, 0.0)])
-    d["lid"] = Track([(T.cdoor, 0.84), (NO, 0.86), (NO + 0.18, 1.0, "out"), (CO - 0.6, 0.95), (MU, 0.88),
-                      (CW, 0.92), (CX, 0.88)])
-    d["smile"] = Track([(T.cdoor, 0.0), (NO, 0.0), (MU + 0.7, 0.04), (ME_ - 0.1, 0.22), (QN + 0.6, 0.26),
-                        (CW + 0.3, 0.3), (CW + 1.4, 0.18), (CX, 0.1)])
+    d["lid"] = Track([(T.cdoor, 0.84), (NO, 0.86), (NO + 0.18, 1.0, "out"), (CO - 0.6, 0.95), (MU, 0.9),
+                      (CW, 0.92), (C2E, 0.94), (RE + 0.4, 0.88), (CX, 0.88)])
+    d["smile"] = Track([(T.cdoor, 0.0), (NO, 0.0), (MU, 0.06), (MU + 0.6, 0.16), (ME_ - 0.1, 0.24), (QN + 0.6, 0.26),
+                        (CW + 0.3, 0.32), (C2E, 0.26), (RE - 0.2, 0.3), (RE + 0.2, 0.34), (CX, 0.12)])
     d["open"] = Track([(NO, 0.0), (NO + 0.25, 0.14), (NO + 1.0, 0.1), (sip0 - 0.1, 0.0), (CO - 0.5, 0.0)])
     d["cough"] = Track([(CO - 0.12, 0.0), (CO + 0.02, 0.85, "out"), (CO + 0.62, 0.7), (CO + 0.9, 0.0, "io")])
     d["gaze"] = [
@@ -1030,22 +1079,22 @@ def _cad_tracks():
         (NO + 3.85, (0.46, 0.28), 0.25),           # ... eyes front, don't stare
         (CO - 0.15, (0.2, 0.5)),                   # the cough: eyes down
         (CO + 0.95, (0.4, 0.15), 0.25),
-        (MU - 0.15, (0.12, -0.78), 0.2),           # up at Quill: "Cool music, Quill."
-        (ME_ - 0.3, (-0.42, -0.7), 0.4),
-        (QN + 0.5, (0.5, 0.05), 0.3),              # nodded at; walks on
-        (CW + 0.06, (-0.95, 0.42), 0.18),          # glance back to Rae: the wave
-        (CW + 1.25, (0.45, 0.08), 0.3),
+        (MU - 0.15, (0.4, -0.76), 0.2),            # up at Quill (up to his right): "Oh, hey Quill."
+        (MU + 0.75, (0.0, -0.85), 0.45),           # ... "Cool song." as he passes in front of him
+        (ME_ - 0.15, (-0.55, -0.8), 0.4),          # ... looking back up at him for the nod
+        (CW + 0.06, (-0.95, 0.42), 0.18),          # back to Rae: "Oh, hey Rae! How are you doing?"
+        (RE + 0.05, (0.45, 0.08), 0.3),            # "cool" -- eyes front, walks on
     ]
     d["blinks"] = [(NO + 0.05, 0.12), NO + 1.95, (CO - 0.2, 0.22), (MU - 0.25, 0.16), (QN + 0.32, 0.18),
-                   (CW + 0.02, 0.16), CW + 1.5, CX - 1.0]
+                   (CW + 0.02, 0.16), (RE + 0.02, 0.16), CX - 0.6]
     return d
 
 
 def _cad_bounce(t):
-    """Body jolts on cough_awkward.wav: two dry coughs (+0.00, +0.27 s) and the closed-mouth "hm" (+0.47 s)."""
+    """Body jolts on cough_awkward.wav: three airy "hkh" bursts at +0.00, +0.26, +0.53 s (fading)."""
     T = _T()
     v = 0.0
-    for off, a in ((0.0, 4.0), (0.27, 2.6), (0.5, 1.8)):      # (the cough is loud now: bigger jolts)
+    for off, a in ((0.0, 3.4), (0.26, 2.5), (0.53, 1.8)):
         x = (t - T.cough - off) / 0.22
         if 0.0 <= x < 1.0:
             v = max(v, a * math.sin(math.pi * min(1.0, x * 3.0)) * (1.0 - x) ** 1.5)
@@ -1083,6 +1132,7 @@ def _cadet_pose(t, lv):
              lid_l=lid, lid_r=lid, look_x=gaze[0], look_y=gaze[1], eye_wide=d["wide"](t),
              brow_raise=d["brow"](t), mouth_open=d["open"](t) + 0.85 * mo + 0.3 * cough,
              mouth_round=clamp(mr + 0.5 * cough), smile=d["smile"](t) * (1.0 - cough), squint=0.6 * cough,
+             smirk=d["smirk"](t), brow_worry=d["worry"](t),
              brow_furrow=0.3 * cough, arm_r=free, arm_l=cup, mug=CUP_SIDE, **light)
     return p
 
@@ -1393,9 +1443,10 @@ def _shots():
     q0, q1 = _bt(29.61), _db(31.5)
     c_notice = _bt(37.53)                  # the beat just before he notices
     c_cross = _bt(40.89)                   # cut on his wipe across Rae
-    c_mutter = _bt(42.65)                  # just before "Cool music, Quill."
-    c_rae = T.cwave + 0.55                 # on the action: his wave is up -> her answer
-    c_exit = _bt(47.18)
+    c_mutter = _bt(42.65)                  # just before "Oh, hey Quill."
+    c_c02 = T.cwave                        # on the action: his head turns back to Rae -> the two-shot
+    c_rae = _bt(T.rwave - 0.12 - T.music, 0.2)   # the beat just before her wave ("...doing?" runs over the cut)
+    c_exit = T.hi_e + 0.32                 # her eyes are back up on the music -> he strolls off
     return (
         ("two", T.start, T.first_note),
         ("rae_med", T.first_note, T.theme),
@@ -1407,7 +1458,8 @@ def _shots():
         ("cad_enter", T.cdoor, c_notice),
         ("cad_notice", c_notice, c_cross),
         ("cad_cross", c_cross, c_mutter),
-        ("cad_mutter", c_mutter, c_rae),
+        ("cad_mutter", c_mutter, c_c02),
+        ("cad_c02", c_c02, c_rae),
         ("rae_wave", c_rae, c_exit),
         ("exit_wide", c_exit, T.gp),
         ("pause", T.gp, T.climax),
@@ -1499,12 +1551,16 @@ def _camera(name, t, a, b):
     if name == "cad_cross":
         return Camera.lerp(Camera(404.0, 776.0, 1.0), Camera(416.0, 770.0, 1.03), smoothstep(u))
     if name == "cad_mutter":
-        # medium: Quill conducting, the cadet passing in front of him (pans a little with him)
-        return Camera.lerp(Camera(578.0, 640.0, 1.45), Camera(622.0, 634.0, 1.5), ease_in_out(u))
+        # medium: Quill conducting, the cadet coming up to him and passing in front of him (pans a little with him)
+        return Camera.lerp(Camera(546.0, 640.0, 1.45), Camera(604.0, 634.0, 1.5), ease_in_out(u))
+    if name == "cad_c02":
+        # two-shot: the cadet (right, just past Quill) turned back to Rae (left, seated), Quill between them
+        return Camera.lerp(Camera(462.0, 770.0, 1.12), Camera(468.0, 766.0, 1.15), smoothstep(u))
     if name == "rae_wave":
         return _face_cam(fs[0], fs[1], lerp(1.96, 2.02, smoothstep(u)), 300.0, 520.0)
     if name == "exit_wide":
-        return Camera.lerp(Camera(452.0, 792.0, 0.8), Camera(360.0, 770.0, 1.1), ease_in_out(u))
+        # the ribbons swell; the camera pushes in on Rae as the cadet strolls out of frame right
+        return Camera.lerp(Camera(440.0, 782.0, 0.92), Camera(342.0, 770.0, 1.25), ease_in_out(u))
     if name == "pause":
         fk = _shot_face(a)
         return _face_cam(fk[0], fk[1], lerp(3.25, 3.4, u), PAUSE_SX, PAUSE_SY)

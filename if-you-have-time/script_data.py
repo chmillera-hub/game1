@@ -169,23 +169,23 @@ SEQ = [
     ("beat", "sym_cadet_notice", 37.6),
     ("beat", "sym_cadet_cough", 41.95),
     ("sfx", "cough_awkward", {"offset": 41.95, "gain_db": -3.0}),
-    # the cadet's footfalls (heel strikes from s2's walk; the last two are off screen, fading)
+    # the cadet's footfalls (heel strikes from s2's walk, s2._cad_strikes(); the last one is off screen, fading;
+    # none in the grand pause)
     ("sfx", "step_soft", {"offset": 34.872, "gain_db": -25.0}),
     ("sfx", "step_soft", {"offset": 35.903, "gain_db": -22.0}),
     ("sfx", "step_soft", {"offset": 38.020, "gain_db": -21.0}),
     ("sfx", "step_soft", {"offset": 39.630, "gain_db": -21.0}),
-    ("sfx", "step_soft", {"offset": 40.189, "gain_db": -21.0}),
-    ("sfx", "step_soft", {"offset": 40.747, "gain_db": -21.0}),
-    ("sfx", "step_soft", {"offset": 41.302, "gain_db": -21.0}),
-    ("sfx", "step_soft", {"offset": 41.890, "gain_db": -21.0}),
-    ("sfx", "step_soft", {"offset": 42.607, "gain_db": -22.0}),
-    ("sfx", "step_soft", {"offset": 43.331, "gain_db": -22.0}),
-    ("sfx", "step_soft", {"offset": 44.128, "gain_db": -22.0}),
-    ("sfx", "step_soft", {"offset": 45.094, "gain_db": -22.0}),
-    ("sfx", "step_soft", {"offset": 46.626, "gain_db": -22.0}),
-    ("sfx", "step_soft", {"offset": 47.426, "gain_db": -23.0}),
-    ("sfx", "step_soft", {"offset": 48.047, "gain_db": -26.0}),
-    ("sfx", "step_soft", {"offset": 48.644, "gain_db": -29.0}),
+    ("sfx", "step_soft", {"offset": 40.190, "gain_db": -21.0}),
+    ("sfx", "step_soft", {"offset": 40.777, "gain_db": -21.0}),
+    ("sfx", "step_soft", {"offset": 41.394, "gain_db": -21.0}),
+    ("sfx", "step_soft", {"offset": 42.081, "gain_db": -21.0}),
+    ("sfx", "step_soft", {"offset": 42.972, "gain_db": -22.0}),
+    ("sfx", "step_soft", {"offset": 43.741, "gain_db": -22.0}),
+    ("sfx", "step_soft", {"offset": 44.534, "gain_db": -22.0}),
+    ("sfx", "step_soft", {"offset": 45.800, "gain_db": -23.0}),   # he stops for the small talk
+    ("sfx", "step_soft", {"offset": 47.936, "gain_db": -22.0}),   # ... and walks on as Rae says "thanks"
+    ("sfx", "step_soft", {"offset": 48.529, "gain_db": -24.0}),
+    ("sfx", "step_soft", {"offset": 49.080, "gain_db": -28.0}),
     ("beat", "sym_cadet_mutter", 42.95),
     ("line_at", "c01", 42.95),   # "Oh, hey Quill. Cool song." - scripted small talk
     ("beat", "sym_quill_nod", 44.45),
