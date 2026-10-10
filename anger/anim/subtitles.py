@@ -6,12 +6,14 @@ column. Whispered lines (script_data.WHISPER) are set in italics.
 
     python3 -m anim.subtitles            # writes out/anger.srt
 """
+import re
 from functools import lru_cache
 
+import numpy as np
 import skia
 
 from anim.core import clamp, timeline
-from config import OUT, W
+from config import BUILD, OUT, W
 
 FONT_SIZE = 31
 LINE_GAP = 39            # baseline-to-baseline
@@ -55,9 +57,57 @@ def _wrap(text, font):
     return best[1]
 
 
+def _fits(text, font):
+    return all(font.measureText(x) <= MAX_WIDTH for x in _wrap(text, font))
+
+
+def _chunks(text, font):
+    """Split a line too long for a two-line caption into consecutive captions, at sentence
+    boundaries (then commas), each fitting two lines."""
+    if _fits(text, font):
+        return [text]
+    parts = []
+    for sent in re.split(r"(?<=[.?!…])\s+", text):
+        if _fits(sent, font):
+            parts.append(sent)
+        else:
+            parts += re.split(r"(?<=,)\s+", sent)
+    out = []
+    for ptxt in parts:
+        if out and _fits(out[-1] + " " + ptxt, font):
+            out[-1] += " " + ptxt
+        else:
+            out.append(ptxt)
+    return out
+
+
+def _vo_pause(lid, t_est, search=0.8):
+    """Line-local time of the quietest ~120 ms near t_est in the line's voice file (a pause
+    between sentences), or t_est when the file is missing."""
+    try:
+        import soundfile as sf
+        a, sr = sf.read(str(BUILD / "vo" / f"{lid}.wav"), dtype="float32")
+    except Exception:
+        return t_est
+    if a.ndim > 1:
+        a = a.mean(1)
+    hop = int(sr * 0.01)
+    n = len(a) // hop
+    rms = np.sqrt((a[:n * hop].reshape(n, hop) ** 2).mean(1) + 1e-12)
+    win = 12
+    sm = np.convolve(rms, np.ones(win) / win, mode="same")
+    i0, i1 = max(win, int((t_est - search) * 100)), min(n - win, int((t_est + search) * 100))
+    if i1 <= i0:
+        return t_est
+    # quietest point, gently biased toward the estimate
+    cost = sm[i0:i1] * (1 + 0.15 * np.abs(np.arange(i0, i1) - t_est * 100) / (search * 100))
+    return (i0 + int(np.argmin(cost))) / 100.0
+
+
 @lru_cache(maxsize=1)
 def cues():
-    """[(start, end, text, italic)] in film time, non-overlapping."""
+    """[(start, end, text, italic)] in film time, non-overlapping. A line too long for two
+    caption lines becomes several consecutive captions, switched at the pauses in its voice."""
     try:
         from script_data import WHISPER
     except ImportError:
@@ -65,12 +115,25 @@ def cues():
     lines = sorted(timeline()["lines"], key=lambda l: l["start"])
     out = []
     for i, ln in enumerate(lines):
+        italic = ln["id"] in WHISPER
         st = max(0.0, ln["start"] - LEAD_IN)
         en = max(ln["end"] + HOLD, st + MIN_DUR)
         if i + 1 < len(lines):
             en = min(en, lines[i + 1]["start"] - LEAD_IN - 0.02)
         en = max(en, ln["end"])  # never cut a caption before its line ends
-        out.append((st, en, ln["text"], ln["id"] in WHISPER))
+        parts = _chunks(ln["text"], _font(italic))
+        if len(parts) == 1:
+            out.append((st, en, ln["text"], italic))
+            continue
+        dur = ln["end"] - ln["start"]
+        total = sum(len(x) for x in parts)
+        cuts, acc = [], 0
+        for x in parts[:-1]:
+            acc += len(x)
+            cuts.append(ln["start"] + _vo_pause(ln["id"], dur * acc / total))
+        bounds = [st] + cuts + [en]
+        for k, x in enumerate(parts):
+            out.append((bounds[k], bounds[k + 1], x, italic))
     # an interrupting line can start before the previous one ends: trim the earlier caption
     for i in range(len(out) - 1):
         if out[i][1] > out[i + 1][0]:
