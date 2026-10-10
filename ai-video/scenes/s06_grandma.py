@@ -11,8 +11,14 @@ Shots (every time derived from cues / word starts, never hard-coded):
                                             dainty tongue flick, slow dignified blink,
                                             nervous eye-dart on "That's your snake"
   D  F3 AI CU        "in" .. slip           "...in a shawl." side-eye -> eyes to camera
-  E  PORTRAIT CU     slip .. slip+0.45      glasses slide down the snout, side-eye, tongue flick
-  F  F5 TWO-SHOT     slip+0.45 .. l04.end   Malvo sheepish mid-dab; the AI's little service-
+  E  PORTRAIT CU     slip .. l03 (~1.95 s)  THE SLIP HOLD: the granny glasses slide down the
+                                            snout and catch on its tip, side-eye at the AI,
+                                            the forked tongue lolls out over the shawl and
+                                            hangs there (lazy wiggle, two little fork flicks);
+                                            the glasses teeter on the snout tip; the eyes slide
+                                            to camera, a slow guilty blink, a tiny sweat drop
+  F  F5 TWO-SHOT     l03 .. l04.end         (cut on the line) Malvo sheepish mid-dab, gulps
+                                            in the "hey..." pause; the AI's little service-
                                             window wall; shutter rolls up on 'soften'; on
                                             "dragon?" the BIG, SCARY DRAGON storybook pops out
                                             and floats up beside him
@@ -164,6 +170,11 @@ V.VILLAIN_EXPR.setdefault("s06_thrilled", dict(
 S.SNAKE_EXPR.setdefault("s06_granny", dict(
     ul=0.3, ll=0.16, lt=-0.2, ps=1.1, ey=-0.05, mc=0.85, mo=0.0, mw=0.82, msk=0.0,
     blush=1.0, hy=-5, tilt=-0.07, tng=0.0))
+# the slip hold: busted side-eye (no built-in glance: `look` drives the pupils),
+# a guilty blush, a lopsided grimace behind the lolling tongue
+S.SNAKE_EXPR.setdefault("s06_busted", dict(
+    S.SNAKE_EXPR["side_eye"], ex=0.0, ey=0.0, ul=0.42, ll=0.16, lt=-0.06, blush=0.6,
+    mc=-0.2, msk=-0.45, mw=0.7, tilt=0.06, tng=0.0))
 S.SNAKE_EXPR.setdefault("s06_granny_tight", dict(
     ul=0.36, ll=0.24, lt=-0.3, ps=0.9, mc=0.55, mo=0.0, mw=0.95, msk=0.35, blush=1.0,
     hy=-3, tilt=-0.04, tng=0.0, wob=0.4))
@@ -306,8 +317,19 @@ def _T(info):
     T["gblink"] = min(T["gtongue"] + 0.4, T["w_thats"] - 0.68)  # slow dignified blink
     T["glint1"] = T["cu1"] + 0.12
     T["glint2"] = T["granny"] + 0.12
-    T["cut_f5"] = T["slip"] + 0.45          # hard cut to the two-shot
-    T["gulp"] = T["cut_f5"] + 0.18          # caught -> gulp at camera (held ~0.5 s)
+    # E: the slip hold - the portrait close-up holds for the whole 'slip'
+    # pause; hard cut to the two-shot on the AI's next line
+    sl = T["slip"]
+    T["cut_f5"] = max(sl + 0.45, T["l3"])
+    hold = T["cut_f5"] - sl
+    T["sl_catch"] = sl + 0.28               # glasses catch on the snout tip
+    T["sl_tongue"] = sl + 0.18              # tongue lolls out (and stays out)
+    T["sl_cam"] = sl + clamp(0.35 * hold, 0.3, 0.68)   # eyes slide to camera
+    T["sl_sweat"] = sl + clamp(0.4 * hold, 0.3, 0.78)  # tiny sweat drop
+    T["sl_blink"] = sl + clamp(0.54 * hold, 0.4, 1.05)  # slow guilty blink (0.62 s)
+    T["sl_flicks"] = [sl + clamp(0.25 * hold, 0.35, 0.5), sl + clamp(0.78 * hold, 0.6, 1.5)]
+    # caught -> gulp at camera, in the "hey..." pause of "But hey... want a..."
+    T["gulp"] = max(T["cut_f5"] + 0.18, min(T["w_hey"] + 0.2, T["w_want"] - 0.2))
     # wall: builds quietly from the AI's line, window opens on 'soften'
     T["wall0"] = T["l3"]
     T["wall_land"] = P.brick_wall_land_times(T["wall0"], 4, 1.6)
@@ -500,12 +522,13 @@ def _candle_grade(ctx):
 # ---------------------------------------------------------------------------
 # bespoke props
 # ---------------------------------------------------------------------------
-def _glasses(ctx, slide, t, glint=0.0, glint2=0.0):
+def _glasses(ctx, slide, t, glint=0.0, glint2=0.0, teeter=0.0):
     """Round granny glasses in Hissy's head-local coords (eyes at (+-40,-18)).
     slide 0..1 = slipped down the snout; glint / glint2 0..1 = a twinkle
-    sweeping across the left / right lens."""
+    sweeping across the left / right lens; teeter = extra see-saw tilt (rad)
+    about the snout tip they are balanced on."""
     dy = 44 * slide
-    rot = 0.13 * slide
+    rot = 0.13 * slide + teeter
     with saved(ctx, 0, dy, 1.0, rot) as c:
         r = 29
         for sx in (-1, 1):
@@ -617,6 +640,55 @@ def _dainty_tongue(ctx, ta, t, ym):
     ctx.stroke()
 
 
+def _loll_tongue(ctx, ta, t, ym, flick=0.0):
+    """The forked tongue hanging out of Hissy's mouth (head-local coords),
+    lolling down over the shawl: a lazy sideways wiggle; flick 0..1 = the
+    fork tips give a little flutter. ta 0..1 = how far it is out."""
+    if ta <= 0.02:
+        return
+    L = 14 + 66 * ta
+    sway = (3.0 * math.sin(t * 2 * math.pi * 1.7) + 1.6 * math.sin(t * 2 * math.pi * 3.1 + 1.0)) * ta
+    sway += 5.0 * flick * math.sin(t * 2 * math.pi * 9.0)
+    tip = (6 + sway, ym + L)
+    c1 = (-2, ym + L * 0.35)
+    c2 = (10 + sway * 0.5, ym + L * 0.7)
+    spread = 0.5 + 0.35 * flick * (0.5 + 0.5 * math.sin(t * 2 * math.pi * 11.0))
+    fl = 13 + 3 * flick
+    # direction at the tip (from the last control point)
+    ang = math.atan2(tip[1] - c2[1], tip[0] - c2[0])
+    forks = [(tip[0] + math.cos(ang + sg * spread) * fl, tip[1] + math.sin(ang + sg * spread) * fl)
+             for sg in (-1, 1)]
+    for col, w in ((INK, 14.0), ("#e8314f", 7.5)):
+        ctx.move_to(0, ym)
+        ctx.curve_to(c1[0], c1[1], c2[0], c2[1], tip[0], tip[1])
+        for fx, fy in forks:
+            ctx.move_to(*tip)
+            ctx.line_to(fx, fy)
+        _s(ctx, col, w)
+    # a darker crease down the middle sells the droop
+    ctx.move_to(0.5, ym + 6)
+    ctx.curve_to(c1[0] + 1, c1[1], c2[0], c2[1] - 4, tip[0] - 1, tip[1] - 6)
+    _s(ctx, "#a81732", 2.0)
+
+
+def _sweat_drop(ctx, k, x0=-84.0, y0=2.0):
+    """A tiny cartoon sweat drop sliding down (head-local); k 0..1 progress."""
+    if k <= 0.0 or k >= 1.0:
+        return
+    pop = ease_out_back(clamp(k / 0.18), 2.4)
+    a = 1.0 - smoothstep(clamp((k - 0.8) / 0.2))
+    x, y = x0 - 2 * k, y0 + 30 * smoothstep(clamp((k - 0.15) / 0.85))
+    r = 11.0 * pop
+    with saved(ctx, x, y, 1.0, 0.25) as c:
+        c.move_to(0, -r * 1.8)
+        c.curve_to(r * 1.05, -r * 0.3, r * 1.05, r, 0, r)
+        c.curve_to(-r * 1.05, r, -r * 1.05, -r * 0.3, 0, -r * 1.8)
+        c.close_path()
+        _fs(c, "#bfeaff", INK, 3.0, a=a)
+        ellipse(c, -r * 0.32, -r * 0.05, r * 0.2, r * 0.36, 0.3)
+        _f(c, "white", 0.9 * a)
+
+
 def _shawl(ctx, top_y):
     """Lavender knitted shawl over Hissy's neck (portrait-local coords)."""
     ctx.move_to(-58, top_y + 4)
@@ -704,8 +776,12 @@ def _portrait(ctx, x, y, s, t, hs, easel=True):
         p_ = _snake_head_xf(c, hx, hy, hsc, t, hs.get("expr", "happy"), seed=5)
         if hs.get("tongue_over", 0.0) > 0.02:
             _dainty_tongue(c, hs["tongue_over"], t, 30.0 + p_["mc"] * 12)
+        if hs.get("loll", 0.0) > 0.02:
+            _loll_tongue(c, hs["loll"], t, 30.0 + p_["mc"] * 12, hs.get("flick", 0.0))
         _bonnet(c, t, hs.get("ruffle", 0.0))
-        _glasses(c, hs.get("slide", 0.0), t, hs.get("glint", 0.0), hs.get("glint2", 0.0))
+        _sweat_drop(c, hs.get("sweat", 0.0))
+        _glasses(c, hs.get("slide", 0.0), t, hs.get("glint", 0.0), hs.get("glint2", 0.0),
+                 hs.get("teeter", 0.0))
         c.restore()
         c.restore()
         # gold oval frame
@@ -1383,13 +1459,57 @@ def _granny_hold(t, T):
             "ruffle": clamp(ruffle), "wiggle": wig}
 
 
+def _slip_hold(t, T):
+    """THE SLIP HOLD (slip .. cut to the two-shot, ~1.95 s): the granny glasses
+    slide down the snout and catch on its tip (bounce), busted side-eye at the
+    AI, the tongue lolls out over the shawl and just hangs there (lazy wiggle,
+    two little fork flicks); the glasses teeter on the snout tip and creep a
+    hair lower; the eyes slide to camera, a tiny sweat drop, one slow guilty
+    blink. No new plot - just the picture, alive."""
+    sl, ca, e = T["slip"], T["sl_catch"], T["cut_f5"]
+    u = seg(t, sl, ca)
+    slide = ease_in(u) if u < 1 else 1.0
+    slide += 0.06 * math.sin(math.pi * seg(t, ca, ca + 0.14))      # catches on the tip
+    slide += 0.05 * smoothstep(seg(t, ca + 0.3, e))                # ...creeping lower
+    # see-saw teeter on the snout tip: kicked by the catch, then a slow
+    # nervous rock that never quite settles
+    d = max(0.0, t - ca)
+    teeter = (0.11 * math.exp(-d * 3.2) * math.sin(d * 2 * math.pi * 2.3)
+              + 0.045 * smoothstep(clamp(d / 0.5)) * math.sin(d * 2 * math.pi * 0.9 + 0.6))
+    teeter *= (t >= ca)
+    hexpr = _state(t, [(-1, "happy"), (sl + 0.06, "s06_busted", 0.12)])
+    look = _lookv(t, [
+        (-1, (0.0, 0.0)),
+        (sl + 0.06, (1.0, -0.12), 0.12),        # busted: side-eye at the AI
+        (T["sl_cam"], (0.05, 0.08), 0.38),      # ...slowly slides to camera
+    ])
+    # slow guilty blink: close 0.2 s, hold 0.16 s, open 0.26 s
+    b0 = T["sl_blink"]
+    blink = 0.0
+    if b0 <= t < b0 + 0.62:
+        db = t - b0
+        blink = (smoothstep(db / 0.2) if db < 0.2 else
+                 1.0 if db < 0.36 else 1 - smoothstep((db - 0.36) / 0.26))
+    tg = T["sl_tongue"]
+    loll = ease_out_back(seg(t, tg, tg + 0.24), 1.6) if t >= tg else 0.0
+    flick = 0.0
+    for f0 in T["sl_flicks"]:
+        flick = max(flick, math.sin(math.pi * seg(t, f0, f0 + 0.3)) * (f0 <= t < f0 + 0.3))
+    ruffle = (0.6 * math.exp(-d * 4.0) * (t >= ca)
+              + 0.35 * math.sin(math.pi * seg(t, T["sl_cam"], T["sl_cam"] + 0.45)))
+    return {"expr": hexpr, "look": look, "tongue": False, "loll": clamp(loll, 0.0, 1.15),
+            "flick": flick, "blink": blink, "slide": slide, "teeter": teeter,
+            "ruffle": clamp(ruffle), "sweat": seg(t, T["sl_sweat"], T["sl_sweat"] + 0.95)}
+
+
 def _shot_portrait(ctx, t, info, T, second):
     if not second:
         # one long, slow push-in across the whole hold
         push = 1.0 + 0.16 * ease_in_out(seg(t, T["cu1"], T["cu1_end"] + 0.2))
         push += _cut_pulse(t, T["cu1"], 0.22, 0.03)
     else:
-        push = 1.15 + 0.03 * ease_out(seg(t, T["slip"], T["cut_f5"]))
+        # the slip hold: a slow, gentle push-in across the whole pause
+        push = 1.15 + 0.06 * ease_in_out(seg(t, T["slip"], T["cut_f5"]))
     fx, fy = CU_FOCUS
     with saved(ctx, fx, fy, push) as c:
         c.translate(-fx, -fy)
@@ -1398,14 +1518,7 @@ def _shot_portrait(ctx, t, info, T, second):
             # trying SO hard to look sweet
             hs = _granny_hold(t, T)
         else:
-            sl = T["slip"]
-            u = seg(t, sl, sl + 0.28)
-            slide = ease_in(u) if u < 1 else 1.0
-            # tiny bounce when the glasses catch on the snout
-            slide += 0.06 * math.sin(math.pi * seg(t, sl + 0.28, sl + 0.42))
-            hexpr = _state(t, [(-1, "happy"), (sl + 0.06, "side_eye", 0.12)])
-            tongue = True if sl + 0.2 <= t < sl + 0.42 else False
-            hs = {"expr": hexpr, "look": (1.0, -0.15), "tongue": tongue, "slide": slide}
+            hs = _slip_hold(t, T)
         x, y, s = CU_P
         _portrait(c, x, y, s, t, hs, easel=True)
     _candle_grade(ctx)
@@ -1432,10 +1545,11 @@ def _malvo_F(t, T):
         (T["book_land"] - 0.18, "s06_hug", 0.22),
     ])
     arms = _cycle(arms, t, on=t < T["soften"] or T["cut_f5b"] <= t < T["book_land"] - 0.18)
+    back = T["gulp"] + 0.42                             # gulp -> back to the AI
     look = _lookv(t, [
         (-1, (0.95, -0.45)),                            # caught: eyes on the AI at the cut
         (T["gulp"] - 0.04, (0.15, 0.05), 0.1),          # ...snap to camera on the gulp...
-        (max(T["w_hey"] + 0.25, T["gulp"] + 0.55), (0.95, -0.45), 0.18),  # 'hey' -> AI
+    ] + ([(back, (0.95, -0.45), 0.16)] if back < T["w_real"] - 0.2 else []) + [
         (T["w_real"], (0.8, 0.1), 0.25),                # the wall building
         (T["soften"] + 0.05, (0.9, 0.25), 0.2),         # the window opening
         (T["book_out"], (0.95, 0.35), 0.1),             # the book! (in the window)
@@ -1739,8 +1853,9 @@ def SFX(info):
         (T["glint1"] + 0.1, "sparkle", -14),               # granny-glasses glint
         (T["glint2"] + 0.1, "sparkle", -17),               # ...and again, prim and proper
         (T["slip"] + 0.02, "whoosh", -16),                 # glasses slide
-        (T["slip"] + 0.2, "snake_hiss", -10),
-        (T["gulp"], "gulp", -10),
+        (T["sl_catch"], "tick", -16),                      # ...catch on the snout tip
+        (T["slip"] + 0.2, "snake_hiss", -10),              # tongue lolls out
+        (T["gulp"], "gulp", -12),                          # (in the "hey..." pause)
         (T["wall_land"][-1], "brick_thud", -10),           # one quiet thud, last row
         (T["soften"], "swoosh_up", -12),                   # shutter rolls up
         (T["book_out"], "pop", -10),                       # the book pops out of the window

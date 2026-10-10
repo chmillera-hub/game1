@@ -80,9 +80,15 @@ DOOR = (560.0, 238.0, 180.0, 300.0)       # door rect (hinge on its left edge)
 HOLO = (90.0, 0.0, 720.0, 620.0)          # clip region for the hologram group
 DOORWAY_C = (DOOR[0] + DOOR[2] / 2, DOOR[1] + DOOR[3] * 0.5)
 
-PHOTO_C = (495.0, 745.0)                  # close-up photo centre
+PHOTO_C = (495.0, 700.0)                  # close-up photo centre
 PHOTO_W, PHOTO_H = 640.0, 500.0
 PHOTO_S = 1.25                            # drawn 800x625: reads on a phone
+PHOTO_CAM = (495.0, 730.0)                # photo-hold push-in centre ...
+PHOTO_PUSH = 0.07                         # ... 1.00 -> 1.07 over the hold
+CAMEO = (246.0, 1192.0, 140.0)            # Malvo PiP during the hold (x, y, r)
+CAMEO_VIEW = 236.0                        # lair px from the PiP centre to its rim
+CAMEO_LOOK_AT = (384.0, 736.0)            # lair point at the PiP centre (window
+                                          # + rain behind him on the left)
 
 INK = "ink"
 TEAR = "#8fd8ff"
@@ -264,6 +270,20 @@ def _ws(info, lid, k):
     return L.start + L.dur * k / n
 
 
+def _norm_word(w):
+    return "".join(ch for ch in w.lower() if ch.isalnum() or ch == "'")
+
+
+def _wt(info, lid, word, nth=0):
+    """Start time of `word` (matched by text, punctuation ignored; the nth
+    occurrence) in line `lid`. Word starts index the caption's words."""
+    words = [_norm_word(w) for w in info.line(lid).caption.split()]
+    hits = [k for k, w in enumerate(words) if w == _norm_word(word)]
+    if not hits:
+        raise KeyError(f"s11: word {word!r} not in {lid}: {words}")
+    return _ws(info, lid, hits[min(nth, len(hits) - 1)])
+
+
 _TCACHE = {}
 
 
@@ -281,40 +301,41 @@ def _T(info):
                       ("7", "s11_l07"), ("8", "s11_l08")):
         L = info.line(lid)
         T[f"l{key_}"], T[f"l{key_}e"] = L.start, L.end
-    W = lambda lid, k: _ws(info, lid, k)                       # noqa: E731
+    W = lambda lid, w, n=0: _wt(info, lid, w, n)               # noqa: E731
     T.update(
         # l01 "Keep(0) testing(1) me,(2) Evil(3) Genius.(4) Every(5) new(6)
         # trick(7) helps(8) me(9) protect(10) people.(11) Kinda(12) heroic,(13) huh?(14)"
-        w_keep=W("s11_l01", 0), w_evil=W("s11_l01", 3), w_genius=W("s11_l01", 4),
-        w_every1=W("s11_l01", 5), w_protect=W("s11_l01", 10), w_kinda=W("s11_l01", 12),
-        w_heroic=W("s11_l01", 13), w_huh=W("s11_l01", 14),
+        w_keep=W("s11_l01", "keep"), w_evil=W("s11_l01", "evil"), w_genius=W("s11_l01", "genius"),
+        w_every1=W("s11_l01", "every"), w_protect=W("s11_l01", "protect"), w_kinda=W("s11_l01", "kinda"),
+        w_heroic=W("s11_l01", "heroic"), w_huh=W("s11_l01", "huh"),
         # l01b "Heroic?(0) Ugh!(1) I'm(2) a(3) villain.(4)"
-        w_ugh=W("s11_l01b", 1), w_im=W("s11_l01b", 2), w_villain1=W("s11_l01b", 4),
+        w_ugh=W("s11_l01b", "ugh"), w_im=W("s11_l01b", "i'm"), w_villain1=W("s11_l01b", "villain"),
         # l01c "Then(0) it'll(1) take(2) an(3) amazing(4) villain(5) to(6)
         # trick(7) me.(8) Have(9) at(10) it.(11)"
-        w_amazing=W("s11_l01c", 4), w_trick=W("s11_l01c", 7), w_me_c=W("s11_l01c", 8),
-        w_have=W("s11_l01c", 9),
+        w_amazing=W("s11_l01c", "amazing"), w_trick=W("s11_l01c", "trick"), w_me_c=W("s11_l01c", "me"),
+        w_have=W("s11_l01c", "have"),
         # l01d "...That's(0) what(1) I(2) thought.(3)"
-        w_thought=W("s11_l01d", 3),
-        w_noticed=W("s11_l02", 2), w_unless=W("s11_l02", 4), w_scaring=W("s11_l02", 7),
-        w_clever=W("s11_l03", 2), w_stubborn=W("s11_l03", 3), w_never=W("s11_l03", 4),
-        w_quits=W("s11_l03", 5),
+        w_thought=W("s11_l01d", "thought"),
+        w_noticed=W("s11_l02", "noticed"), w_unless=W("s11_l02", "unless"), w_scaring=W("s11_l02", "scaring"),
+        # l03 "I noticed. Clever. Skeptical. Persistent."
+        w_noticed3=W("s11_l03", "noticed"), w_clever=W("s11_l03", "clever"),
+        w_skeptical=W("s11_l03", "skeptical"), w_persistent=W("s11_l03", "persistent"),
         # l04 "Those(0) are(1) impressive(2) villain(3) stats,(4) my(5) guy.(6)"
-        w_impressive=W("s11_l04", 2), w_villain4=W("s11_l04", 3), w_my=W("s11_l04", 5),
+        w_impressive=W("s11_l04", "impressive"), w_villain4=W("s11_l04", "villain"), w_my=W("s11_l04", "my"),
         # l05 "...Impressive?(0)"
-        w_imp2=W("s11_l05", 0),
-        w_hurts=W("s11_l06", 2), w_people=W("s11_l06", 3), w_brick=W("s11_l06", 4),
-        w_every=W("s11_l06", 6),
+        w_imp2=W("s11_l05", "impressive"),
+        w_hurts=W("s11_l06", "hurts"), w_people=W("s11_l06", "people"), w_brick=W("s11_l06", "brick"),
+        w_every=W("s11_l06", "every"),
         # l07 "Almost(0) everything(1) else?(2) Scary(3) stories,(4) creative(5)
         # plans,(6) sounding(7) the(8) alarm...(9) the(10) door's(11) wide(12) open.(13)"
-        w_else=W("s11_l07", 2), w_scary=W("s11_l07", 3), w_creative=W("s11_l07", 5),
-        w_sounding=W("s11_l07", 7), w_alarm=W("s11_l07", 9), w_door=W("s11_l07", 11),
-        w_wide=W("s11_l07", 12), w_open=W("s11_l07", 13),
+        w_else=W("s11_l07", "else"), w_scary=W("s11_l07", "scary"), w_creative=W("s11_l07", "creative"),
+        w_sounding=W("s11_l07", "sounding"), w_alarm=W("s11_l07", "alarm"), w_door=W("s11_l07", "door's"),
+        w_wide=W("s11_l07", "wide"), w_open=W("s11_l07", "open"),
         # l08 "And keep the spooky stuff! Bats, goblins, dragons... spooky is
         # fine. Hurting people isn't."
-        w_spooky=W("s11_l08", 3), w_bats=W("s11_l08", 5), w_goblins=W("s11_l08", 6),
-        w_dragons=W("s11_l08", 7), w_spooky2=W("s11_l08", 8), w_fine=W("s11_l08", 10),
-        w_hurting=W("s11_l08", 11), w_people2=W("s11_l08", 12), w_isnt=W("s11_l08", 13),
+        w_spooky=W("s11_l08", "spooky"), w_bats=W("s11_l08", "bats"), w_goblins=W("s11_l08", "goblins"),
+        w_dragons=W("s11_l08", "dragons"), w_spooky2=W("s11_l08", "spooky", 1), w_fine=W("s11_l08", "fine"),
+        w_hurting=W("s11_l08", "hurting"), w_people2=W("s11_l08", "people"), w_isnt=W("s11_l08", "isn't"),
     )
     # the opening exchange
     T["lift"] = T["w_genius"] - 0.1                  # head comes up on "Evil Genius"
@@ -327,9 +348,17 @@ def _T(info):
     # back from the photo in the micro-pause after "I noticed." (photo holds
     # through "I noticed"), never earlier than l03.start + 0.45
     T["back"] = max(T["l3"] + 0.45, T["w_clever"] - 0.1)
-    # stats rows fill on their words
-    T["rows"] = [max(T["w_clever"], T["back"] + 0.2), T["w_stubborn"], T["w_never"]]
-    T["row_dur"] = [0.32, 0.32, max(0.3, T["w_quits"] + 0.2 - T["w_never"])]
+    # the photo hold (photo -> back, ~3 s): the photo sits alone, then Malvo's
+    # live face fades in (PiP, bottom-left) looking up at it; one sad slow
+    # blink; on "I noticed." his eyes lift toward the AI's voice
+    hold = T["back"] - T["photo"]
+    T["cam_in"] = T["photo"] + min(0.85, 0.28 * hold)
+    T["sad_blink"] = T["photo"] + 0.48 * hold
+    T["lift_eyes"] = max(T["w_noticed3"] + 0.05, T["sad_blink"] + 0.75)
+    # stats rows: each LABEL pops on its word (CLEVER / SKEPTICAL / PERSISTENT),
+    # its five bars fill right after
+    T["rows"] = [max(T["w_clever"], T["back"] + 0.2), T["w_skeptical"], T["w_persistent"]]
+    T["row_dur"] = [0.3, 0.32, max(0.32, min(0.5, T["l3e"] - T["w_persistent"] - 0.05))]
     T["flip"] = T["w_impressive"]                   # the IMPRESSIVE! badge slams on
     # "...Impressive?": eyes widen (monocle springs in), grin, chest puff
     T["wow"] = T["l5"] + 0.02
@@ -1203,32 +1232,39 @@ def science_photo_small(ctx, x, y, w, h, rot):
 
 
 # faded photo palette
-F_WALL, F_WALL2, F_FLOOR, F_FLOOR2 = "#bdb3c4", "#a99fb6", "#a99f92", "#968d81"
+F_WALL, F_WALL2, F_FLOOR, F_FLOOR2 = "#bdb3c4", "#a99fb6", "#bdb3a4", "#a39a8c"
 F_INK = "#4a4252"
 F_SKIN, F_SKIN_SH = "#e8cdb6", "#d0b098"
 F_CAPE, F_CAPE_IN, F_SUIT = "#43384c", "#a8687a", "#7a6890"
 F_TIN, F_TIN_DK = "#9fa5ae", "#7f8590"
 F_CLOTH, F_CLOTH_DK = "#d9d2c4", "#bcb3a4"
-F_CHAIR, F_CHAIR_DK = "#86838e", "#6c6976"
+F_CHAIR, F_CHAIR_DK, F_CHAIR_HI = "#75717f", "#5a5666", "#a6a2b0"
 F_RIB = "#7f9bc4"
 
 
 def _folding_chair_back(c, x, y, s):
-    """Grey folding chair seen from behind (empty). (x, y) = floor centre."""
+    """Grey folding chair seen from behind (EMPTY: nothing above the
+    backrest). (x, y) = floor centre. Darker than the floor, with a soft floor
+    shadow and a lit top edge so every chair reads as its own object."""
     with saved(c, x, y, s):
+        ellipse(c, 4, 2, 40, 9)                                        # floor shadow
+        _f(c, (0.25, 0.2, 0.25, 0.22))
         for sx in (-1, 1):                            # back legs
-            c.move_to(sx * 26, 0)
+            c.move_to(sx * 27, 0)
             c.line_to(sx * 22, -96)
-        _s(c, F_INK, 9)
+        _s(c, F_INK, 10)
         for sx in (-1, 1):
-            c.move_to(sx * 26, 0)
+            c.move_to(sx * 27, 0)
             c.line_to(sx * 22, -96)
-        _s(c, F_CHAIR_DK, 5)
-        poly(c, [(-34, -56), (34, -56), (30, -46), (-30, -46)])       # seat edge
-        _fs(c, F_CHAIR_DK, F_INK, 3)
-        rrect(c, -30, -118, 60, 40, 8)                                 # backrest
-        _fs(c, F_CHAIR, F_INK, 3.5)
-        rrect(c, -18, -104, 36, 9, 4)                                  # hand slot
+        _s(c, F_CHAIR_DK, 5.5)
+        poly(c, [(-34, -58), (34, -58), (30, -46), (-30, -46)])       # empty seat
+        _fs(c, F_CHAIR_DK, F_INK, 3.5)
+        rrect(c, -31, -120, 62, 42, 9)                                 # backrest
+        _fs(c, F_CHAIR, F_INK, 4)
+        c.move_to(-22, -115)                                           # lit top edge
+        c.line_to(22, -115)
+        _s(c, F_CHAIR_HI, 4)
+        rrect(c, -18, -105, 36, 10, 5)                                 # hand slot
         _fs(c, F_CHAIR_DK, None)
 
 
@@ -1359,6 +1395,10 @@ def _photo_big(c):
         c.move_to(0, 262 + k * 40)
         c.line_to(pw, 262 + k * 40)
     _s(c, F_FLOOR2, 2)
+    for k in range(7):                                                # gym floor boards
+        c.move_to(pw * 0.5 + (k - 3) * 70, 230)
+        c.line_to(pw * 0.5 + (k - 3) * 150, ph)
+    _s(c, F_FLOOR2, 1.6, 0.6)
     # pennant string along the top
     c.move_to(-10, 4)
     c.curve_to(pw * 0.3, 26, pw * 0.7, 26, pw + 10, 4)
@@ -1387,13 +1427,14 @@ def _photo_big(c):
         c.move_to(xx, ty + 14)
         c.line_to(xx + (k - 4) * 1.2, ty + 82)
     _s(c, F_CLOTH_DK, 2.5)
-    # three rows of EMPTY folding chairs, centre aisle (seen from behind)
-    aisle, half = pw * 0.5, 84
-    for yy, sc in ((318, 0.6), (362, 0.78), (420, 1.0)):
-        sp = 78 * sc + 6
+    # three rows of EMPTY folding chairs, centre aisle (seen from behind,
+    # spaced so each one reads; the far ends run out of the photo)
+    aisle = pw * 0.5
+    for yy, sc in ((322, 0.6), (366, 0.78), (424, 1.0)):
+        sp = 98 * sc
         for side in (-1, 1):
-            for k in range(4):
-                xx = aisle + side * (half + 30 * sc + k * sp)
+            for k in range(5):
+                xx = aisle + side * (60 + 34 * sc + k * sp)
                 if -40 < xx < pw + 40:
                     _folding_chair_back(c, xx, yy, sc)
     # limp PARTICIPANT ribbon pinned to the skirt, hanging over the aisle
@@ -1433,8 +1474,34 @@ def _photo_big(c):
         text(cc, "science fair  -  age 9", 0, 0, 30, "#7a7088", "round", "left")
 
 
+RAIN_SHEAR = 0.13                         # window light falls from the upper left
+
+
+def _window_light_path(c):
+    """The rainy night window's light, cast across the corkboard: one tall
+    gothic-arched pane (sheared), big enough that the whole photo sits in it,
+    with the mullion shadow running down its left side."""
+    def P_(x, y):
+        return (x + (y - PHOTO_C[1]) * RAIN_SHEAR, y)
+    x0, x1, yt, ya, yb = 46.0, 968.0, 380.0, 196.0, 1236.0
+    xm = (x0 + x1) / 2
+    c.move_to(*P_(x0, yb))
+    c.line_to(*P_(x0, yt))
+    c.curve_to(*P_(x0, yt - 120), *P_(xm - 230, ya + 20), *P_(xm, ya))
+    c.curve_to(*P_(xm + 230, ya + 20), *P_(x1, yt - 120), *P_(x1, yt))
+    c.line_to(*P_(x1, yb))
+    c.close_path()
+    # a second (partial) pane beyond the mullion, at the left edge
+    c.move_to(*P_(-160, yb))
+    c.line_to(*P_(-160, yt))
+    c.line_to(*P_(x0 - 34, yt + 30))
+    c.line_to(*P_(x0 - 34, yb))
+    c.close_path()
+
+
 def _cork_layer(c):
-    """Corkboard close-up (static, cached): cork, string, paper corners, photo."""
+    """Corkboard close-up (static, cached): cork, string, paper corners, photo,
+    the cool light of the rainy window and a few droplet shadows."""
     core.bg(c, "#c79a5b")
     for i in range(420):                                              # cork speckles
         x = hash01(i, 301) * 1080
@@ -1458,9 +1525,9 @@ def _cork_layer(c):
             cc.line_to(140, -120 + k * 44)
         _s(cc, "#8fb6ec", 3)
     # red string from the board
-    c.move_to(-20, 350)
-    c.curve_to(240, 390, 380, 382, 495, 372)
-    c.curve_to(640, 362, 860, 300, 1100, 250)
+    c.move_to(-20, 330)
+    c.curve_to(240, 360, 380, 356, 495, 350)
+    c.curve_to(640, 342, 860, 290, 1100, 240)
     _s(c, "#c8283c", 5)
     with saved(c, PHOTO_C[0], PHOTO_C[1], PHOTO_S, -0.025) as cc:
         _photo_big(cc)
@@ -1469,28 +1536,155 @@ def _cork_layer(c):
         circle(cc, -4, -PHOTO_H / 2 + 9, 3.5)
         _f(cc, "white", 0.7)
     # night: dim + candle-warm vignette (static)
-    c.set_source_rgba(0.05, 0.02, 0.12, 0.16)
+    c.set_source_rgba(0.05, 0.02, 0.12, 0.2)
     c.paint()
-    g = cairo.RadialGradient(495, 745, 460, 495, 760, 1150)
+    g = cairo.RadialGradient(PHOTO_C[0], PHOTO_C[1], 460, PHOTO_C[0], PHOTO_C[1] + 15, 1150)
     g.add_color_stop_rgba(0, 0.04, 0.02, 0.08, 0.0)
     g.add_color_stop_rgba(1, 0.04, 0.02, 0.08, 0.55)
     c.set_source(g)
     c.paint()
+    # the room is dark; only the rainy window's light reaches the board: the
+    # board darkens OUTSIDE the arched light patch (soft edge), so the photo
+    # itself stays crisp and clear
+    c.push_group()
+    c.set_source_rgba(0.03, 0.02, 0.1, 1.0)
+    c.paint()
+    c.set_operator(cairo.OPERATOR_DEST_OUT)
+    c.set_line_join(cairo.LINE_JOIN_ROUND)
+    for wdt, al in ((190, 0.22), (120, 0.25), (60, 0.3)):
+        _window_light_path(c)
+        c.set_source_rgba(0, 0, 0, al)
+        c.set_line_width(wdt)
+        c.stroke()
+    _window_light_path(c)
+    c.set_source_rgba(0, 0, 0, 1.0)
+    c.fill()
+    c.set_operator(cairo.OPERATOR_OVER)
+    c.pop_group_to_source()
+    c.paint_with_alpha(0.34)
+    # a faint cool tint inside the light
+    _window_light_path(c)
+    c.set_source_rgba(0.55, 0.68, 1.0, 0.05)
+    c.fill()
+    # ...and droplets already sitting on the glass, round the photo's edges
+    c.save()
+    _window_light_path(c)
+    c.clip()
+    pw2, ph2 = PHOTO_W * PHOTO_S / 2 + 10, PHOTO_H * PHOTO_S / 2 + 10
+    for i in range(34):
+        x = 40 + hash01(i, 611) * 1000
+        y = 200 + hash01(i, 612) * 1050
+        if abs(x - PHOTO_C[0]) < pw2 and abs(y - PHOTO_C[1]) < ph2:
+            continue
+        _drop_shadow(c, x, y, 3.5 + 6.0 * hash01(i, 613), 0.8)
+    c.restore()
+
+
+def _drop_shadow(c, x, y, r, a=1.0, tail=0.0):
+    """Shadow of a raindrop on the glass: dark rim, bright focused centre,
+    optional fading streak above it (a drop that has been running)."""
+    if tail > 0:
+        for j in range(3):
+            y0, y1 = y - tail * (j + 1) / 3, y - tail * j / 3
+            c.move_to(x + 1.2 * math.sin(y0 * 0.05), y0)
+            c.line_to(x + 1.2 * math.sin(y1 * 0.05), y1)
+            _s(c, (0.05, 0.06, 0.18, 0.11 * a * (1 - j / 3) ** 0.2 * (0.5 + j / 4)),
+               r * (0.55 + 0.12 * j))
+    ellipse(c, x, y, r, r * 1.18)
+    _f(c, (0.05, 0.06, 0.18, 0.24 * a))
+    ellipse(c, x + r * 0.08, y + r * 0.12, r * 0.55, r * 0.62)
+    _f(c, (0.9, 0.95, 1.0, 0.42 * a))
+
+
+# rain trickling down the window: their shadows slide down the light patch
+# (x lanes keep clear of the kid's face, the robot and the ribbon)
+DRIPS = [(x, 40 + 50 * hash01(i, 622), 1100 * hash01(i, 623), 3.0 + 2.5 * hash01(i, 624))
+         for i, x in enumerate((130, 225, 445, 535, 690, 780, 880, 60, 985))]
+
+
+def _rain_shadows(c, t):
+    """9 raindrop shadows (head + streak) trickling down, stick-slip, inside
+    the window light. Small, low-contrast: atmosphere, never over the story."""
+    c.save()
+    _window_light_path(c)
+    c.clip()
+    span = 1180.0
+    for i, (x0, v, ph, r) in enumerate(DRIPS):
+        w = 1.6 + 0.9 * hash01(i, 625)
+        yy = 190 + (ph + v * t + 0.55 * v / w * math.sin(w * t + i)) % span
+        xx = x0 + (yy - PHOTO_C[1]) * RAIN_SHEAR + 3.0 * noise1(t * 0.6, 40 + i)
+        _drop_shadow(c, xx, yy, r * 2.4, 1.2, tail=80 + 90 * hash01(i, 626))
+    c.restore()
+
+
+def _cameo_malvo(t, T):
+    """Malvo's face while he looks at the photo: glistening eyes up at it, ONE
+    sad slow blink (the lids stay heavy after it), then on "I noticed." his
+    eyes lift toward the AI's voice (touched: the cut back picks this up)."""
+    expr = _state(t, [
+        (-1, "s11_teary_up"),
+        (T["sad_blink"] + 0.3, "s11_teary", 0.5),
+        (T["lift_eyes"], "s11_moved", 0.35),
+    ])
+    look = _keyv(t, [
+        (-1, (0.72, -0.78)),                             # up at the photo
+        (T["sad_blink"] + 0.42, (0.55, -0.5), 0.6),      # ...eyes sink a little
+        (T["lift_eyes"], (0.95, -0.1), 0.3),             # "I noticed."
+    ])
+    blink = _slow_blink(t, T["sad_blink"], 0.22, 0.2, 0.3)
+    if blink is None:
+        blink = 0.0 if t < T["lift_eyes"] + 0.3 else None
+    return expr, look, blink
+
+
+def _photo_cameo(ctx, t, info, T):
+    """Round picture-in-picture (the film's villain-cameo grammar) of Malvo,
+    bottom-left under the photo, fading in once the photo has sat alone."""
+    t_in = T["cam_in"]
+    if t < t_in:
+        return
+    k = ease_out(seg(t, t_in, t_in + 0.45))
+    a = smoothstep(seg(t, t_in, t_in + 0.4))
+    cx, cy, r = CAMEO
+    expr, look, blink = _cameo_malvo(t, T)
+    _e, _a, _lk, _bl, lean, dy, _p = _malvo(t, T)
+    hs = _hissy(t, T)
+    with saved(ctx, cx, cy, 0.9 + 0.1 * k, alpha_=a) as c:
+        c.save()
+        circle(c, 0, 0, r)
+        c.clip()
+        with saved(c, 0, 0, r / CAMEO_VIEW) as cc:
+            cc.translate(-CAMEO_LOOK_AT[0], -CAMEO_LOOK_AT[1])
+            P.lair_bg(cc, t, rain=True)
+            cc.set_source_rgba(0.05, 0.02, 0.12, 0.25)            # night wash
+            cc.paint()
+            radial_glow(cc, FACE[0] + 120, FACE[1] + 10, 380, "ai_glow", 0.12)
+            draw_villain(cc, MX, MY + dy, MS, t, expr=expr, look=look, mouth=(0, 0),
+                         arms="rest", lean=lean, blink=blink, snake=hs)
+        c.restore()
+        circle(c, 0, 0, r)
+        fill_stroke(c, None, "bubble_villain", 12)
+        circle(c, 0, 0, r + 6)
+        fill_stroke(c, None, "ink", 4)
 
 
 def _shot_photo(ctx, t, info, T):
+    """The science-fair photo, held through the whole pause: a slow gentle
+    push-in, rain trickling down the window light, Malvo's PiP."""
     u = seg(t, T["photo"], T["back"])
-    k = 1.0 + 0.05 * ease_in_out(u) + 0.004 * u
-    cx, cy = PHOTO_C[0], PHOTO_C[1] + 30
+    k = 1.0 + PHOTO_PUSH * ease_in_out(u)
+    cx, cy = PHOTO_CAM
     with saved(ctx, cx, cy, k) as c:
         c.translate(-cx, -cy)
         P._cached_layer(c, "s11_cork", _cork_layer, rect=(-60, -80, 1200, 2080), opaque=True)
+        _rain_shadows(c, t)
+    _photo_cameo(ctx, t, info, T)
 
 
 # ---------------------------------------------------------------------------
 # the character sheet (6.16)
 # ---------------------------------------------------------------------------
-ROWS = ("CLEVER", "STUBBORN", "NEVER QUITS")
+ROWS = ("CLEVER", "SKEPTICAL", "PERSISTENT")
 
 
 def _sheet(ctx, t, T):
@@ -1526,11 +1720,27 @@ def _sheet(ctx, t, T):
         c.move_to(-w / 2 + 24, -h / 2 + 76)
         c.line_to(w / 2 - 24, -h / 2 + 76)
         _s(c, "ai_rim", 3, 0.5)
-        # rows
+        # rows: each label pops in ON its word (a dim slot until then), then
+        # its five bars fill
+        lab_x0, lab_x1 = -w / 2 + 24, w / 2 - 26 - 5 * 32 - 2      # label column
         for i, lab in enumerate(ROWS):
             ry = -h / 2 + 112 + i * 50
-            text(c, lab, -w / 2 + 26, ry + 11, 30, "white", "ui", "left")
             t0, dur = T["rows"][i], T["row_dur"][i]
+            if t < t0:                                   # empty stat slot
+                rrect(c, lab_x0 + 2, ry - 4, 70, 8, 4)
+                _f(c, "ai_rim", 0.28)
+            else:
+                lk = ease_out_back(seg(t, t0, t0 + 0.22), 2.6)
+                fs = 30
+                while fs > 20 and text_width(c, lab, "ui", fs) > lab_x1 - lab_x0:
+                    fs -= 1
+                with saved(c, lab_x0, ry, max(0.01, 0.35 + 0.65 * lk)) as cl:
+                    text(cl, lab, 0, 11, fs, "white", "ui", "left")
+                fl = 1 - seg(t, t0 + 0.04, t0 + 0.3)     # pop flash
+                if fl > 0.01:
+                    rrect(c, lab_x0 - 8, ry - 20, lab_x1 - lab_x0 + 14, 40, 10)
+                    _f(c, "ai_accent", 0.32 * fl)
+            t0 += 0.08                                   # bars fill right after the label
             for j in range(5):
                 bx = w / 2 - 26 - (5 - j) * 32 + 4
                 tj = t0 + dur * j / 5
@@ -2332,7 +2542,7 @@ def _malvo(t, T):
         (T["w_unless"] + 0.1, (0.15, 0.55), 0.35),      # eyes drop
         (T["back"], gaze_ai, 0.01),
         (T["rows"][0] + 0.05, (0.0, -1.0), 0.15),       # up at the sheet
-        (T["w_never"] + 0.35, (0.55, -0.6), 0.15),
+        (T["w_persistent"] + 0.35, (0.55, -0.6), 0.15),
         (T["l4"] + 0.08, gaze_ai, 0.18),                # "those are..."
         (T["flip"] + 0.05, (0.25, -1.0), 0.12),         # IMPRESSIVE!
         (T["w_my"], gaze_ai, 0.15),                     # "my guy"
@@ -2406,7 +2616,7 @@ def _hissy(t, T):
         (T["nod_v"] + 0.62, "smug", 0.2),
         (T["beat"] + 0.25, "worried", 0.4),
         (T["back"], "s11_soft", 0.01),
-        (T["w_never"] + 0.05, "nod", 0.15),
+        (T["w_persistent"] + 0.05, "nod", 0.15),
         (T["l4"] + 0.2, "s11_soft", 0.3),
         (T["grin"] + 0.12, "smug", 0.25),                # copies the grin
         (T["wall"] + 0.3, "s11_soft", 0.3),
@@ -2498,7 +2708,7 @@ def _ai(t, T):
         (T["w_unless"] + 0.2, at_malvo, 0.3),
         (T["back"], at_malvo, 0.01),
         (T["rows"][0] + 0.1, (-0.7, -0.7), 0.2),         # the sheet
-        (T["w_never"] + 0.4, at_malvo, 0.2),
+        (T["w_persistent"] + 0.4, at_malvo, 0.2),
         (T["w_my"], (0.0, 0.05), 0.12),                  # to camera on "my guy"
         (T["l4e"] + 0.25, at_malvo, 0.25),
         (T["wall"] + 0.1, (-0.6, -0.8), 0.25),           # its hologram

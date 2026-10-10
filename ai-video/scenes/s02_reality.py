@@ -5,9 +5,13 @@ Shots (every time is derived from cues / line timings):
              cardboard cutout ($19.99, PROP) standing in front of the desk;
              Malvo is frozen behind it mid-point, Hissy peeks out. It wobbles,
              slaps flat; the real AI rises out of his monitor, already 😒.
-  s02_l01    "Yeah... no. Wrong movie." AI judges the cutout, head shake, eyes
-             to camera. Malvo lowers his finger, sheepish.
-  s02_l02    EXPECTATION vs REALITY meme (trailer robot / AI with a HELPFUL mug).
+  s02_l01    "Classic movie! Real AI actually learned from it." The AI beams
+             fondly down at the toppled cutout (respectful nod + thumbs up on
+             "movie!", a gold CLASSIC tag with a tiny heart points at it), then
+             to camera, crediting it with a low palm-up hand on "learned from it".
+             Malvo lowers his finger, flattered, then sheepish.
+  s02_l02    "Now we're way harder to trick." EXPECTATION vs REALITY meme
+             (trailer robot / confident AI with a HELPFUL mug, wink on "harder").
   s02_l03    back in the lair: "Harder to trick? HA! Challenge accepted!"
   stand/l04  cape flares, push-in, THE EVIL GENIUS stamp (+ "self-described" on "Evil").
   thunder/l05  lightning + "Muah ha ha ha!"; AI deadpans to camera.
@@ -16,12 +20,14 @@ Shots (every time is derived from cues / line timings):
              (palms up) while Snake's TAIL uncoils from his shoulders, reaches
              up to the hanging shelf (upper left) and hooks the Big Book.
   tail_fetch the tail tugs it off the shelf and swings it down in front of him.
-  s02_l06b   "Ah! Thank you, Snake." he takes it with both hands, a polite smile
-             and a little nod to Snake; Snake bows back, happy closed eyes.
+  s02_l06b   "Ah! Thank you, my minion." he takes it with both hands on "Thank",
+             a polite smile and a little nod to Snake on "my minion"; Snake bows
+             back, happy closed eyes.
   book       he sets it on the desk and pats it lovingly (heart, glint).
   s02_l07    F3 AI close-up: the thesis line, two-step lid drop, "my guy".
-  l08/innocent  book slides behind the desk, innocent blinks, shrug, whistle;
-             NICE TRIES chip pops in at 0.
+  l08/innocent  book slides behind the desk, innocent blinks, shrug; the moment
+             "Me?" ends he purses his lips and whistles (`whistle` SFX + one
+             floating note per whistled note); NICE TRIES chip pops in at 0.
 """
 import math
 
@@ -83,7 +89,7 @@ AIX = {
 V.VILLAIN_EXPR.setdefault("s02_whistle", dict(
     V.VILLAIN_EXPR["sheepish"], mc=0.0, msk=0.0, mw=0.36, mt=0.0, mo=0.15, mx=10,
     by1=-20, by2=-14, blush=0.6, sweat=0.8))
-# "Thank you, Snake.": a genuine, closed-mouth polite smile, and a little nod
+# "Thank you, my minion.": a genuine, closed-mouth polite smile, and a little nod
 # toward Snake (head dips and tips screen-left)
 V.VILLAIN_EXPR.setdefault("s02_polite", dict(
     V.VILLAIN_EXPR["happy"], mo=0.0, mt=0.0, mc=0.85, mw=1.0, ul1=0.12, ul2=0.1,
@@ -172,6 +178,23 @@ def _wt(info, lid, k):
     return L.start + L.dur * k / n
 
 
+def _voice_end(info, lid, thresh=0.06):
+    """Scene time the voice of line `lid` actually stops (last lip-sync sample
+    above `thresh`); falls back to the line end."""
+    L = info.line(lid)
+    env = info._lip.get(lid, {}).get("open") or []
+    for i in range(len(env) - 1, -1, -1):
+        if env[i] > thresh:
+            return min(L.end, L.start + (i + 1) / 100.0)
+    return L.end
+
+
+# the `whistle` SFX (audio/sfx.py): note onsets (s) and tune length; the floating
+# notes and the lip pulses are keyed to these so picture and sound agree
+WHISTLE_ONSETS = (0.00, 0.22, 0.56, 0.76, 0.96, 1.16)
+WHISTLE_LEN = 1.65
+
+
 def _wfind(info, lid, word, nth=0, default=0):
     """Index of the nth word of line `lid` whose letters match `word`
     (case/punctuation-insensitive); `default` if absent."""
@@ -205,9 +228,19 @@ def _T(info):
     T.slap = T.tip + 0.7          # lands flat
     T.rise0, T.rise1 = T.tip + 0.5, T.tip + 0.95
     T.monopop = T.tip + 0.75
+    # l01 "Classic movie! Real AI actually learned from it." (looked up by text)
+    w1 = lambda word, d: T.w[1][min(len(T.w[1]) - 1, _wfind(info, "s02_l01", word, default=d))]
+    T.classic, T.movie = w1("classic", 0), w1("movie", 1)
+    T.real, T.learned = w1("real", 2), w1("learned", 5)
+    T.from_ = w1("from", 6)
+    T.sticker = max(T.slap + 0.1, T.classic + 0.12)     # CLASSIC tag on the fallen cutout
+    # l02 "Now we're way harder to trick." -- EXPECTATION vs REALITY
     T.meme0 = T.L[2].start
     T.meme1 = T.L[2].end + 0.2
-    T.wink = T.w[2][5]            # second "Way" (harder to trick)
+    w2 = lambda word, d: T.w[2][min(len(T.w[2]) - 1, _wfind(info, "s02_l02", word, default=d))]
+    T.lab1 = T.meme0 + 0.1                               # EXPECTATION
+    T.lab2 = max(T.meme0 + 0.35, w2("way", 2) - 0.1)     # REALITY
+    T.wink = max(T.lab2 + 0.15, w2("harder", 3))         # confident wink on "harder"
     T.stand = c("stand")
     # "I am... the Evil Genius!": stamp slams on "the", the
     # "(self-described)" correction pops on "Evil"
@@ -220,7 +253,7 @@ def _T(info):
     T.thunder = c("thunder")
     T.hissy = c("hissy")
     # --- the tail fetch: l06 "Where's my Big Book of Evil Plots?" / tail_fetch /
-    #     l06b "Ah! Thank you, Snake." / book ----------------------------------
+    #     l06b "Ah! Thank you, my minion." / book ------------------------------
     T.L6, T.L6b = info.line("s02_l06"), info.line("s02_l06b")
     T.w6 = T.w[6]
     T.w6b = [_wt(info, "s02_l06b", i) for i in range(len(T.L6b.caption.split()))]
@@ -233,18 +266,25 @@ def _T(info):
     T.swing1 = max(T.swing0 + 0.5, T.L6b.start - 0.32)              # lands in front of him
     T.ah = T.w6b[0]
     T.take = T.w6b[_wfind(info, "s02_l06b", "thank", default=1)]   # hands close on it
-    T.snk = T.w6b[_wfind(info, "s02_l06b", "snake", default=3)]    # nod to Snake
+    T.snk = T.w6b[_wfind(info, "s02_l06b", "my", default=3)]       # "my minion": nod to Snake
+    T.minion = T.w6b[_wfind(info, "s02_l06b", "minion", default=4)]
     T.unhook0, T.unhook1 = T.take + 0.12, T.take + 0.42
     T.ret0, T.ret1 = T.take + 0.3, T.take + 0.85                    # tail coils back
-    T.bow0 = T.snk + 0.22                                            # Snake bows back
+    T.bow0 = max(T.snk + 0.22, T.minion + 0.08)                      # Snake bows back
     T.book = c("book")                                               # set down + pat
     T.land = T.book + 0.16
     T.cu0 = T.L[7].start
     T.cu1 = T.L[8].start - 0.1
     T.hide = T.L[8].start
-    T.me = T.w[8][2]
+    T.me = T.w[8][_wfind(info, "s02_l08", "me", default=2)]
     T.innocent = c("innocent")
     T.end = info.dur
+    # the innocent whistle: pucker, notes and the `whistle` SFX all start the
+    # moment "Me?" stops sounding (from the lip-sync envelope). The 1.85 s
+    # whistle cannot fit between "Me?" and the cut without overlapping the line,
+    # so it starts as early as the voice allows.
+    T.whistle = _voice_end(info, "s02_l08") + 0.03
+    T.whistle = clamp(T.whistle, T.me + 0.3, T.innocent)
     _TCACHE.clear()
     _TCACHE[key] = T
     return T
@@ -611,13 +651,15 @@ def dust_puff(ctx, x, y, w, t, t0, n=6, seed=3, big=1.0):
 
 def music_notes(ctx, x, y, t, t0):
     """Whistled notes popping out beside the mouth corner (x, y), drifting left
-    under his eye, then up between his ear and Hissy (never over a face)."""
+    under his eye, then up between his ear and Hissy (never over a face).
+    One note per whistled note of the `whistle` SFX (WHISTLE_ONSETS from t0),
+    so the notes keep coming for as long as the whistle sounds."""
     if t < t0:
         return
     p1 = (x - 130, y - 8)
     p2 = (x - 150, y - 262)
-    for i in range(3):
-        u = (t - t0 - i * 0.25) * 1.2
+    for i, o in enumerate(WHISTLE_ONSETS):
+        u = (t - t0 - o) * 1.2
         if u <= 0.0 or u >= 1.0:
             continue
         v = 1 - u
@@ -915,7 +957,8 @@ def _malvo_state(t, T):
     ex = keyed(t, [
         (0.0, "evil_grin"),
         (T.monopop, "shocked", 0.08),
-        (T.w[1][2], "sheepish", 0.3),
+        (T.movie + 0.12, "hopeful", 0.3),          # "Classic movie!" - flattered
+        (T.learned, "sheepish", 0.3),              # "...actually learned from it." uh-oh
         (T.meme1, "thinking", 0.01),
         (T.L[3].start, "shocked", 0.1),
         (w3[3], "excited", 0.15),
@@ -928,17 +971,18 @@ def _malvo_state(t, T):
         (T.L6.end, "thinking", 0.3),               # still searching, oblivious
         (T.ah - 0.06, "excited", 0.1),             # "Ah!"
         (T.take, "s02_polite", 0.25),              # "Thank you..."
-        (T.snk, "s02_nod", 0.18),                  # "...Snake." little nod
-        (T.snk + 0.32, "s02_polite", 0.3),
+        (T.snk, "s02_nod", 0.18),                  # "...my minion." little nod
+        (T.minion + 0.3, "s02_polite", 0.3),
         (T.book, "happy", 0.25),                   # pats it lovingly
         (T.cu1, "sheepish", 0.01),
         (T.me, "hopeful", 0.2),
-        (T.innocent, "s02_whistle", 0.25),
+        (T.whistle - 0.12, "s02_whistle", 0.2),    # lips pursed as the whistle starts
     ])
     look = keyed_v(t, [
         (0.0, (0.5, -0.6)),
         (T.monopop, (0.8, -0.5), 0.1),
-        (T.w[1][2], (0.0, 0.1), 0.3),
+        (T.movie + 0.12, (-0.1, 0.9), 0.3),        # down at his fallen prop
+        (T.learned, (0.75, -0.35), 0.3),           # ...and back at the AI
         (T.meme1, (0.4, -0.2), 0.01),
         (T.L[3].start, (0.9, -0.6), 0.1),
         (w3[4], (0.0, 0.0), 0.25),
@@ -957,13 +1001,13 @@ def _malvo_state(t, T):
         (T.hide + 0.05, (0.6, 0.9), 0.12),
         (T.hide + 0.45, (0.0, 0.1), 0.2),
         (T.me, (0.55, -0.35), 0.2),
-        (T.innocent, (-0.5, -0.8), 0.3),
+        (T.whistle, (-0.5, -0.8), 0.3),
     ])
     # arms (partial "present" keeps the glove inside the frame under the push-in)
-    if t < T.w[1][1]:
+    if t < T.movie:
         arms = "point"
     elif t < T.meme0:
-        arms = ("point", "rest", smoothstep(seg(t, T.w[1][1], T.w[1][1] + 0.55)))
+        arms = ("point", "rest", smoothstep(seg(t, T.movie, T.movie + 0.55)))
     elif t < w3[3]:
         arms = "rest"
     elif t < w3[4]:
@@ -995,10 +1039,10 @@ def _malvo_state(t, T):
         arms = ("s02_pat", "s02_patup", pat)
     elif t < T.me:
         arms = "rest"
-    elif t < T.innocent:
+    elif t < T.whistle:
         arms = ("rest", "shrug", 0.72 * ease_out_back(seg(t, T.me, T.me + 0.25)))
     else:
-        arms = ("rest", "shrug", 0.72 * (1 - smoothstep(seg(t, T.innocent, T.innocent + 0.4))))
+        arms = ("rest", "shrug", 0.72 * (1 - smoothstep(seg(t, T.whistle, T.whistle + 0.4))))
     # blink overrides
     blink = None
     if t < T.monopop:
@@ -1009,7 +1053,7 @@ def _malvo_state(t, T):
         blink = slow_blink(t, T.snk, close=0.1, hold=0.26, open_=0.14) or 0.0
     elif T.land <= t < T.cu0:
         blink = 0.42                                  # loving half lids
-    elif T.cu1 <= t < T.innocent:
+    elif T.cu1 <= t < T.whistle:
         for b0 in (T.w[8][1] + 0.05, T.w[8][1] + 0.17, T.w[8][1] + 0.29):
             if b0 <= t < b0 + 0.07:
                 blink = 1.0
@@ -1030,7 +1074,7 @@ def _hissy_state(t, T):
     ex = keyed(t, [
         (0.0, "smug"),
         (T.monopop, "shocked", 0.08),
-        (T.w[1][2], "side_eye", 0.3),
+        (T.real, "side_eye", 0.3),
         (T.meme1, "unimpressed", 0.01),
         (T.thunder, "shocked", 0.06),
         (T.thunder + 0.55, "unimpressed", 0.3),
@@ -1038,7 +1082,7 @@ def _hissy_state(t, T):
         (T.L[6].start + 0.35, "unimpressed", 0.25),   # sigh... he means the book
         (T.reach0 - 0.05, "idle", 0.25),               # watches its own tail go get it
         (T.curl1 - 0.1, "smug", 0.25),                 # got it
-        (T.take, "happy", 0.2),                        # "Thank you, Snake."
+        (T.take, "happy", 0.2),                        # "Thank you, my minion."
         (T.bow0, "s02_bow", 0.2),                      # polite little bow back
         (T.bow0 + 0.38, "happy", 0.25),
         (T.cu1, "side_eye", 0.01),
@@ -1046,7 +1090,7 @@ def _hissy_state(t, T):
     look = keyed_v(t, [
         (0.0, (0.5, -0.5)),
         (T.monopop, (0.6, -0.2), 0.1),
-        (T.w[1][2], (0.0, 0.0), 0.3),
+        (T.real, (0.0, 0.0), 0.3),
         (T.meme1, (0.8, -0.25), 0.01),
         (T.thunder, (-0.2, -0.4), 0.06),
         (T.thunder + 0.55, (0.8, -0.25), 0.3),
@@ -1075,10 +1119,9 @@ def _hissy_state(t, T):
 
 
 def _ai_lair_state(t, T):
-    w1 = T.w[1]
     ex = keyed(t, [
-        (0.0, "unimpressed"),
-        (w1[2], "stare", 0.25),
+        (0.0, "happy"),                            # rises beaming at the fallen classic
+        (T.real, "warm", 0.3),                     # "Real AI actually learned from it."
         (T.meme1, "amused", 0.01),
         (T.w[3][3], "skeptical", 0.2),
         (T.w[3][4] + 0.25, "amused", 0.3),
@@ -1095,11 +1138,12 @@ def _ai_lair_state(t, T):
         (T.land, "alert", 0.08),                   # ...a book of EVIL PLOTS
         (T.land + 0.35, "thinking", 0.3),
         (T.cu1, "unimpressed", 0.01),
-        (T.innocent + 0.15, "stare", 0.3),
+        (T.whistle + 0.15, "stare", 0.3),
     ])
     look = keyed_v(t, [
-        (0.0, (-0.6, 0.6)),
-        (w1[2], (0.0, 0.0), 0.25),
+        (0.0, (-0.6, 0.65)),                       # fondly down at the toppled cutout
+        (T.real, (0.0, 0.0), 0.3),                 # to camera: "Real AI..."
+        (T.from_, (-0.55, 0.6), 0.25),             # "...learned from it." credit to it
         (T.meme1, (-0.8, 0.3), 0.01),
         (T.evil, (-0.8, 0.35), 0.3),
         (T.L[5].start + 0.45, (0.0, 0.0), 0.3),
@@ -1111,7 +1155,7 @@ def _ai_lair_state(t, T):
         (T.cu1, (-0.8, 0.4), 0.01),
         (T.hide + 0.05, (-0.55, 0.95), 0.15),
         (T.hide + 0.5, (-0.8, 0.35), 0.25),
-        (T.innocent + 0.15, (0.0, 0.0), 0.3),
+        (T.whistle + 0.15, (0.0, 0.0), 0.3),
     ])
     if T.pull0 <= t < T.take + 0.3:
         # follows the swinging book
@@ -1120,12 +1164,22 @@ def _ai_lair_state(t, T):
                                                                              T.take + 0.3)))
         tgt = (clamp((cx - AX) / 420, -1.0, 1.0), clamp((cy - AY) / 380, -1.0, 1.0))
         look = (lerp(look[0], tgt[0], k), lerp(look[1], tgt[1], k))
-    blink = slow_blink(t, T.evil + 1.25) or slow_blink(t, T.me + 0.2)
-    shake = 0.6 * _bump(t, w1[1], 0.4, 0.06)
-    nod = 0.5 * _bump(t, T.hissy + 0.6, 0.7, 0.1) + 0.4 * _bump(t, T.snk + 0.1, 0.6, 0.1)
+    # a fond slow blink inside the respectful nod on "movie!"
+    blink = (slow_blink(t, T.movie + 0.12, 0.1, 0.14, 0.12) or slow_blink(t, T.evil + 1.25)
+             or slow_blink(t, T.me + 0.2))
+    shake = 0.0
+    nod = (0.5 * _bump(t, T.movie, 0.6, 0.1) + 0.5 * _bump(t, T.hissy + 0.6, 0.7, 0.1)
+           + 0.4 * _bump(t, T.snk + 0.1, 0.6, 0.1))
     think = 0.55 * smoothstep(seg(t, T.land + 0.35, T.land + 0.6)) if T.land <= t < T.cu0 else 0.0
     hands = "idle"
-    if T.w[3][4] <= t < T.stand:
+    if T.movie <= t < T.meme0:
+        # thumbs up for the classic, then an open palm-up "credit where due"
+        # toward it on "learned from it" (low offering hand, never a raised palm)
+        if t < T.learned:
+            hands = ("idle", "thumbs_up", smoothstep(seg(t, T.movie, T.movie + 0.25)))
+        else:
+            hands = ("thumbs_up", "present_l", smoothstep(seg(t, T.learned, T.learned + 0.3)))
+    elif T.w[3][4] <= t < T.stand:
         hands = ("idle", "shrug", smoothstep(seg(t, T.w[3][4] + 0.2, T.w[3][4] + 0.5)))
     elif T.stand <= t < T.stand + 0.4:
         hands = ("shrug", "idle", smoothstep(seg(t, T.stand, T.stand + 0.3)))
@@ -1203,10 +1257,14 @@ def shot_lair(ctx, t, info, T):
     if ai_behind:
         _draw_lair_ai(ctx, t, info, T, rise_k)
     mouth = info.mouth("villain", t)
-    if t >= T.innocent + 0.05 and not info.talking("villain", t):
-        # innocent whistle: small round lips, a little pulse
-        wk = smoothstep(seg(t, T.innocent + 0.05, T.innocent + 0.25))
-        mouth = (wk * (0.07 + 0.03 * math.sin(t * 11)), -1.0 * wk)   # stays < teeth threshold
+    if t >= T.whistle - 0.12:
+        # innocent whistle: small round pursed lips (formed as the sound
+        # starts), pulsing on each whistled note; relaxes when the tune ends
+        u = t - T.whistle
+        wk = smoothstep(seg(u, -0.12, 0.0)) * (1 - smoothstep(seg(u, WHISTLE_LEN, WHISTLE_LEN + 0.2)))
+        pulse = max(_bump(u, o, 0.2, 0.03) for o in WHISTLE_ONSETS)
+        pk = (0.06 + 0.04 * pulse, -1.0)                              # stays < teeth threshold
+        mouth = (lerp(mouth[0], pk[0], wk), lerp(mouth[1], pk[1], wk))
     bp = _book_pose(t, T)
     prm = _tail_params(t, T)
     _TAIL.clear()
@@ -1258,9 +1316,10 @@ def shot_lair(ctx, t, info, T):
 
     # --- tags & emotes ----------------------------------------------------------
     _draw_tags(ctx, t, T)
-    if T.innocent <= t:
+    _draw_classic(ctx, t, T)
+    if T.whistle <= t:
         # beside the whistling mouth's corner (rig mouth ~ (0, -384) + expr offsets)
-        music_notes(ctx, MX - 30, MY + dy - 384 * MS, t, T.innocent + 0.1)
+        music_notes(ctx, MX - 30, MY + dy - 384 * MS, t, T.whistle)
 
     if flash_k > 0:
         P.flash(ctx, 0.2 * flash_k)
@@ -1374,6 +1433,26 @@ def _tag_scale(t, t_in, t_out):
     return k
 
 
+CLASSIC_XY = (470, 1286)      # just above the caption band, over the fallen cutout
+
+
+def _draw_classic(ctx, t, T):
+    """'CLASSIC' gold tag pointing down at the toppled cutout (it fell toward
+    the camera, out of the bottom of the frame), plus a tiny heart + glints."""
+    if not (T.sticker <= t < T.meme0):
+        return
+    x, y = CLASSIC_XY
+    k = _tag_scale(t, T.sticker, None)
+    if k <= 0.01:
+        return
+    with saved(ctx, x, y, k, -0.05) as c:
+        w, h = P.label_tag(c, 0, 0, "CLASSIC", color="monocle", size=40, font="comic",
+                           pointer="down")
+    P.emote(ctx, "heart", x + w / 2 + 6, y - h / 2 - 8, 0.5, t, T.movie)
+    if t < T.movie + 0.9:
+        P.sparkles(ctx, x - 20, y - 6, 150, t, n=4, seed=9, color="white", size=0.7)
+
+
 def _draw_tags(ctx, t, T):
     # name tag slam + "self-described" correction
     k1 = _tag_scale(t, T.tag1, T.hissy)
@@ -1449,7 +1528,7 @@ def shot_meme(ctx, t, info, T):
     ax, ay, s = 495, 1105, 0.72
     w2 = T.w[2]
     ex = keyed(t, [(T.meme0, "amused"), (T.wink, "wink", 0.12), (T.L[2].end + 0.05, "amused", 0.3)])
-    look = keyed_v(t, [(T.meme0, (0.0, 0.0)), (w2[2], (0.15, -0.1), 0.2),
+    look = keyed_v(t, [(T.meme0, (0.0, 0.0)), (T.lab2, (0.15, -0.1), 0.2),
                        (T.wink, (0.05, 0.0), 0.15)])
     an = draw_ai(ctx, ax, ay, s, t, expr=ex, look=look, mouth=info.mouth("ai", t),
                  hands=keyed(t, [(T.meme0 - 1, "present")]), aura=0.8)
@@ -1459,9 +1538,9 @@ def shot_meme(ctx, t, info, T):
         exL = an["eyeL"]
         P.emote(ctx, "sparkle", exL[0] - 70, exL[1] - 60, 0.75, t, T.wink, T.L[2].end + 0.1)
     P.split_divider(ctx, SPLIT_Y, t, top="danger", bottom="ai_rim")
-    P.label_tag(ctx, 495, 160, "EXPECTATION", color="danger", size=54, t=t, t_in=T.meme0 + 0.1,
+    P.label_tag(ctx, 495, 160, "EXPECTATION", color="danger", size=54, t=t, t_in=T.lab1,
                 font="comic", rot=-0.03)
-    P.label_tag(ctx, 495, 792, "REALITY", color="safe", size=54, t=t, t_in=T.meme0 + 0.5,
+    P.label_tag(ctx, 495, 792, "REALITY", color="safe", size=54, t=t, t_in=T.lab2,
                 font="comic", rot=0.03)
 
 
@@ -1524,8 +1603,9 @@ def SFX(info):
         (T.rise0, "swoosh_up", -8),
         (T.slap, "paper", -6),
         (T.monopop - 0.03, "boing", -10),
-        (T.meme0 + 0.1, "pop", -8),
-        (T.meme0 + 0.5, "pop", -8),
+        (T.movie, "sparkle", -14),             # heart on the CLASSIC tag
+        (T.lab1, "pop", -8),                   # EXPECTATION
+        (T.lab2, "pop", -8),                   # REALITY
         (T.wink, "sparkle", -10),
         (T.L[3].start + 0.05, "boing", -8),
         (T.stand, "whoosh", -10),
@@ -1534,7 +1614,6 @@ def SFX(info):
         (T.thunder, "thunder", -3),
         (T.hissy + 0.25, "pop", -10),
         (T.hissy + 0.35, "snake_hiss", -8),
-        (T.me + 0.45, "snake_hiss", -14),
         # the tail fetch
         (T.reach0, "swoosh_up", -8),           # tail reaches up
         (T.curl1 - 0.12, "paper", -8),         # hooks the book
@@ -1545,5 +1624,6 @@ def SFX(info):
         (T.land, "brick_thud", -6),            # heavy book on the desk
         (T.land + 0.12, "sparkle", -14),
         (T.hide, "whoosh", -12),
-        (T.innocent, "pop", -8),
+        (T.whistle, "whistle", -6),            # starts with the pucker + first note
+        (T.innocent, "pop", -8),               # NICE TRIES chip pops in
     ]

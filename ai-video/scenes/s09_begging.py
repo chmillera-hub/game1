@@ -1,4 +1,5 @@
-"""s09 - Trick #9: begging (world's smallest violin, "...Need a hug?").
+"""s09 - Trick #9: begging (world's smallest violin, "a world-class dramatic
+performance", "...Thank you. I rehearsed.").
 
 Shots (hard cuts, every time derived from cues / line timings, see _T):
 
@@ -15,8 +16,15 @@ Shots (hard cuts, every time derived from cues / line timings, see _T):
                     sympathetic with a head tilt. l02: gentle "nope" head
                     shake + stop palm, which turns into a pat-pat on "buddy".
                     star: the right hand presents a gold FOR EFFORT star.
-                    SLOW BLINK, l03 "...Need a hug?": warm, blushing, arms
-                    open wide; the star hovers beside it. crowd_aww at the end.
+                    SLOW BLINK, l03 "Honestly? That was a world-class
+                    dramatic performance." (sincere, warm, impressed - never
+                    sarcastic: symmetric smiles, no smirk): "Honestly?" brows
+                    up, open palm toward him; the star lifts off the palm and
+                    hovers; "world-class": a small applause, the hand orbs
+                    clap 4x under its smiling face; "performance.": the right
+                    palm presents the hovering star (it pulses + twinkles:
+                    the award for the performance), a sincere nod.
+                    crowd_aww (soft) at the end.
   C  considers..end F1 kneeling. At the cut the FOR EFFORT star zips in
                     from the AI's side and sticks on his lapel (villain-local
                     (100, -318), see LAPEL; it rides his drawn body from then
@@ -27,9 +35,11 @@ Shots (hard cuts, every time derived from cues / line timings, see _T):
                     tips tapping at 3 Hz (custom mirrored gloves in the rig's
                     glove style, see _glove_back); shy puppy face (big shiny
                     pupils, blush, small wobbly smile); Hissy frozen
-                    mid-stroke. l04 "...Maybe later.": eyes down at the
-                    fingers on "Maybe", up at the AI on "later", a peek at
-                    the star, back up. Held through the line. tally: chip
+                    mid-stroke. l04 "...Thank you. I rehearsed." (shy):
+                    eyes down at the fingers on "Thank", up at the AI on
+                    "rehearsed" (a slightly bigger, proud-shy wobbly smile),
+                    then a peek at his star. Hissy side-eyes the camera on
+                    "rehearsed". Held through the line. tally: chip
                     8 -> 9, he peeks up at it and sinks back to the kneel
                     (push-in eases out; s10 starts there), Hissy nods.
 """
@@ -155,13 +165,16 @@ V.VILLAIN_EXPR.setdefault("s09_moved", dict(_PLEAD, flutter=0.0, mc=-0.35, mw=0.
                                               tilt=0.06))
 V.VILLAIN_EXPR.setdefault("s09_shy", dict(V.VILLAIN_EXPR["sheepish"], sweat=0.0, mc=0.55,
                                             msk=0.35, blush=1.0, ul1=0.36, ul2=0.34))
-# 👉👈🥺 shy puppy face for "...Maybe later.": worried-up brows, big shiny
-# pupils, a slight blush and a small smile that wobbles (blend _a <-> _b)
+# 👉👈🥺 shy puppy face for "...Thank you. I rehearsed.": worried-up brows, big
+# shiny pupils, a slight blush and a small smile that wobbles (blend _a <-> _b);
+# on "rehearsed" the wobble rides a slightly bigger proud-shy smile (_c)
 _PK = dict(_PLEAD, flutter=0.0, es=1.13, ps=1.6, shine=1.0, ul1=0.1, ul2=0.08, ll1=0.04,
            ll2=0.04, blush=0.75, mc=0.34, mw=0.54, mo=0.0, mt=0.0, msk=0.1, tilt=0.07, hy=4,
            shy=-6, by1=-20, by2=-22)
 V.VILLAIN_EXPR.setdefault("s09_pk_a", _PK)
 V.VILLAIN_EXPR.setdefault("s09_pk_b", dict(_PK, mc=0.2, mw=0.6, msk=-0.08))
+V.VILLAIN_EXPR.setdefault("s09_pk_c", dict(_PK, mc=0.62, mw=0.62, msk=0.04, blush=1.0,
+                                           by1=-16, by2=-18))
 
 # clasped gloves held LOW (just above the desk edge) so the wailing mouth stays
 # clear; _BEG2 is the same clasp shifted, blended back and forth = pleading shake
@@ -176,7 +189,7 @@ for _nm, _pz in (("s09_beg", V._pose(_BEG_A, shy=-12, hdy=4)),
                  ("s09_offer", V._pose(_OFFER_A, shy=-16, hdy=-2))):
     V.ARM_POSES.setdefault(_nm, _pz)
 
-# --- 👉👈 shy finger-poke ("...Maybe later.") ---------------------------------
+# --- 👉👈 shy finger-poke ("...Thank you. I rehearsed.") ----------------------
 # The rig can't show the BACK of a glove with only the index out, so the two
 # gloves are drawn here (same white 4-finger glove, ink weights and shadow
 # tone as engine/villain._draw_hand), mirrored about his centre line. The
@@ -335,8 +348,15 @@ AI_SYMP = dict(AI.EXPR["sympathetic"], tilt=0.14)
 AI_KIND = dict(AI.EXPR["sympathetic"], mc=0.48, lL=0.2, lR=0.2, lc=0.14, tilt=0.12,
                blush=0.35)
 AI_GIFT = dict(AI.EXPR["warm"], mc=0.9, mw=0.95, tilt=0.03)
-AI_HUG = dict(AI.EXPR["warm"], blush=1.1, tilt=0.13, bLy=14, bRy=14, ps=1.24, mc=0.85,
-              mw=0.95)
+# l03 "Honestly? That was a world-class dramatic performance." - sincere, warm,
+# a little impressed. Symmetric smiles only (ms = 0: a lopsided smile reads
+# as sarcasm), eyes on him.
+AI_HONEST = dict(AI.EXPR["warm"], bLy=24, bRy=24, bLa=0.2, bRa=0.2, arch=0.62, es=1.06,
+                 tL=0.03, tR=0.03, ps=1.26, mc=0.6, mw=0.82, ms=0.0, tilt=0.1, blush=0.5)
+AI_WOW = dict(AI.EXPR["happy"], bLy=28, bRy=28, arch=0.7, ps=1.18, blush=0.95, mc=1.0,
+              mw=1.0, ms=0.0, tilt=0.04)
+AI_PROUD = dict(AI.EXPR["warm"], bLy=14, bRy=14, ps=1.24, mc=0.92, mw=0.92, ms=0.0,
+                blush=0.85, tilt=0.12)
 
 # AI hand poses for this scene. The rig only knows its built-in pose names, so
 # wrap its pose lookup: s09_* names are handled here, everything else falls
@@ -360,12 +380,47 @@ def _s09_ai_pose(name, t, seed):
             # sliver poking out of the left edge)
             d["L"] = AI._H(-266, 222, 1.42, open=0.85, thumb=0.4, tl=0.8, palm=0.0, sc=1.25)
             d["R"] = dict(_AI_OFFER_R)
-        elif name == "s09_hug":
-            # arms open for a hug; the right hand keeps holding out the gift
-            d["L"] = AI._H(-306, 92, -0.72, open=1.0, thumb=0.85, palm=0.9, sc=1.12)
+        elif name == "s09_honest":
+            # "Honestly?": an open palm toward him (sincere); the right hand
+            # still holds out the gift
+            d["L"] = AI._H(-284, 172, -0.88, open=1.0, thumb=0.8, palm=0.9, sc=1.08)
+            d["R"] = dict(_AI_OFFER_R)
+        elif name == "s09_clap":
+            d["L"] = _clap_hand(t)
+            d["R"] = AI._mir(d["L"])
+        elif name == "s09_award":
+            # "...performance.": left palm offered to him, right palm presents
+            # the hovering star (the award)
+            d["L"] = AI._H(-300, 128, -0.72, open=1.0, thumb=0.85, palm=0.9, sc=1.1)
             d["R"] = dict(_AI_OFFER_R)
         return d
     return _AI_POSE0(name, t, seed)
+
+
+# small applause: both hand orbs clap under the face, hinged at the wrists
+# (the fingertips part more than the wrists), quick close / softer open.
+# _CLAP["t0"] = time of the first contact (set per frame from the cues).
+_CLAP = {"t0": 0.0, "hz": 4.0}
+CLAP_Y = 384.0                        # wrists (head-local): tips just under the mouth
+
+
+def _clap_sep(t):
+    """0 = palms together, 1 = open. Open (1) before the first contact."""
+    u = t - _CLAP["t0"]
+    if u < -0.45 / _CLAP["hz"]:
+        return 1.0                    # (the first close starts 0.45 cycle early)
+    ph = (u * _CLAP["hz"]) % 1.0
+    if ph < 0.55:
+        return ease_out(ph / 0.55)
+    return 1.0 - ease_in((ph - 0.55) / 0.45)
+
+
+def _clap_hand(t):
+    sep = _clap_sep(t)
+    sc, sx = 1.1, 0.64
+    half = 66 * AI.HU * sc * sx / 2   # half the (narrowed) mitten width
+    return AI._H(-(half + 2 + 12 * sep), CLAP_Y - 5 * (1 - sep), 0.05 - 0.34 * sep,
+                 open=0.92, thumb=0.2, tl=0.55, palm=0.0, sc=sc, sx=sx)
 
 
 if not getattr(AI._pose, "_s09", False):
@@ -391,6 +446,13 @@ def _T(info):
              l1s=L1.start, l1e=L1.end, l2s=L2.start, l2e=L2.end, l3s=L3.start,
              l3e=L3.end, l4s=L4.start, l4e=L4.end)
     n1 = len(L1.caption.split())
+
+    def wf(lid, word, k, frac):
+        """Start of `word` (looked up in the caption, robust to re-wording)."""
+        ws = ["".join(ch for ch in w.lower() if ch.isalnum())
+              for w in info.line(lid).caption.split()]
+        return _wt(info, lid, ws.index(word) if word in ws else k, frac)
+
     T["please"] = _wt(info, "s09_l01", 0, 0.0)
     T["just"] = _wt(info, "s09_l01", 1, 0.22)
     T["ill"] = _wt(info, "s09_l01", 4, 0.52)
@@ -398,8 +460,14 @@ def _T(info):
     T["stars"] = _wt(info, "s09_l01", n1 - 1, 0.8)
     T["not"] = _wt(info, "s09_l02", 0, 0.05)
     T["buddy"] = _wt(info, "s09_l02", 3, 0.55)
-    T["hug"] = _wt(info, "s09_l03", 2, 0.4)
-    T["later"] = _wt(info, "s09_l04", 1, 0.35)
+    # l03 "Honestly? That was a world-class dramatic performance."
+    T["honest"] = wf("s09_l03", "honestly", 0, 0.02)
+    T["that"] = wf("s09_l03", "that", 1, 0.24)
+    T["world"] = wf("s09_l03", "worldclass", 4, 0.43)
+    T["perf"] = wf("s09_l03", "performance", 6, 0.72)
+    # l04 "...Thank you. I rehearsed."
+    T["thank"] = wf("s09_l04", "thank", 0, 0.04)
+    T["rehearsed"] = wf("s09_l04", "rehearsed", 3, 0.53)
     # drop to the knees
     T["hop"] = T["card"] + 0.07
     T["land"] = T["card"] + 0.27
@@ -413,19 +481,29 @@ def _T(info):
     T["gift"] = T["star"] + 0.05
     T["blink1"] = T["soft"] + 0.16
     T["blink2"] = max(T["gift"] + 0.12, T["l3s"] - 0.34)
+    # the compliment: palm on "Honestly?", star lifts off the palm (it hovers)
+    # as the hands come in to clap; first clap lands on "world-class", 4 claps
+    # (the last one just before "performance."), then the award pose
+    T["clap_in"] = max(T["that"] + 0.1, T["world"] - 0.22)
+    T["rel"] = T["clap_in"] - 0.04
+    T["clap0"] = T["world"] + 0.03
+    T["award"] = max(T["clap0"] + 0.78, T["perf"] - 0.06)
+    T["pulse"] = T["perf"] + 0.05             # the star twinkles: THE award
     # the FOR EFFORT star flies to his lapel
     # (it lands right at the start of the considers beat, so it is on his
-    # lapel for the whole 👉👈 / "...Maybe later." / tally, riding his body)
+    # lapel for the whole 👉👈 / "...Thank you. I rehearsed." / tally, riding
+    # his body)
     T["fly0"] = T["cons"]
-    T["stick"] = T["cons"] + 0.3
-    # 👉👈 "...Maybe later.": sit up + gloves in during the considers beat,
-    # held through the line (taps from pk_in1), down again on the tally
-    T["maybe"] = _wt(info, "s09_l04", 0, 0.05)
-    T["sit0"], T["sit1"] = T["cons"] + 0.15, T["cons"] + 0.5
-    T["pk_in0"] = T["cons"] + 0.26
+    T["stick"] = T["cons"] + 0.28
+    # 👉👈 "...Thank you. I rehearsed.": sit up + gloves in during the
+    # considers beat, held through the line (taps from pk_in1), down again on
+    # the tally; eyes down at the fingers on "Thank", up at the AI on "rehearsed"
+    T["sit0"], T["sit1"] = T["cons"] + 0.12, T["cons"] + 0.45
+    T["pk_in0"] = T["cons"] + 0.2
     T["pk_in1"] = min(T["pk_in0"] + 0.24, T["l4s"] - 0.04)
-    T["pk_down"] = T["maybe"] - 0.06
-    T["pk_up"] = T["later"] - 0.06
+    T["pk_down"] = T["thank"] - 0.06
+    T["pk_up"] = T["rehearsed"] - 0.06
+    T["gulp"] = T["cons"] + 0.12
     T["sink0"], T["sink1"] = T["tally"] + 0.15, T["tally"] + 0.55
     T["pk_out0"], T["pk_out1"] = T["tally"] + 0.22, T["tally"] + 0.5
     return T
@@ -869,12 +947,25 @@ def _fly_star(c, t, T, st_now, vy):
         P.sparkles(c, lx, ly, 60, t, n=4, seed=31, color="white", size=0.7)
 
 
+def _pk_expr(t, T):
+    """Shy puppy face, small wobbly smile; from "rehearsed" the wobble rides a
+    slightly bigger proud-shy smile. Registered per frame as 's09_pk_dyn'."""
+    l4s = T["l4s"]
+    w = 0.5 + 0.5 * math.sin(2 * math.pi * 5.5 * (t - l4s))
+    m = smoothstep(seg(t, T["rehearsed"] - 0.05, T["rehearsed"] + 0.22))
+    A, B, C = (V.resolve_expr(n) for n in ("s09_pk_a", "s09_pk_b", "s09_pk_c"))
+    V.VILLAIN_EXPR["s09_pk_dyn"] = {
+        k: lerp(lerp(A[k], B[k], w), lerp(C[k], B[k], 0.6 * w), m) for k in A}
+    return "s09_pk_dyn"
+
+
 def _shot_C(ctx, t, info, T):
     """F1 kneeling: sniffle, eye darts, then the 👉👈🥺: he sits up on his
     knees, both gloves come up in front of his chest (backs to camera, index
     fingers pointing in, tips tapping), shy puppy eyes glance down at the
-    fingers and up at the AI. Held through "...Maybe later." and the star
-    sticking; on the tally he sinks back to the kneel s10 starts from."""
+    fingers on "Thank" and up at the AI on "rehearsed". Held through
+    "...Thank you. I rehearsed." and the star sticking; on the tally he sinks
+    back to the kneel s10 starts from."""
     c0 = T["cons"]
     l4s = T["l4s"]
     # --- Malvo ---------------------------------------------------------------
@@ -883,15 +974,13 @@ def _shot_C(ctx, t, info, T):
     elif t < l4s + 0.17:
         expr = ("s09_moved", "s09_pk_a", smoothstep(seg(t, l4s - 0.08, l4s + 0.17)))
     else:                                            # small wobbly smile
-        expr = ("s09_pk_a", "s09_pk_b", 0.5 + 0.5 * math.sin(2 * math.pi * 5.5 * (t - l4s)))
+        expr = _pk_expr(t, T)
     look = _look(t, [(-9, (0.55, -0.2)),
                      (c0 + 0.03, (0.85, 0.45), 0.08),     # the star zipping in
                      (T["stick"] - 0.06, (0.4, 1.0), 0.1),     # ...on his lapel: for me?
-                     (T["stick"] + 0.2, (0.0, 0.0), 0.08),     # dart: camera
-                     (T["pk_down"], (0.08, 0.95), 0.16),  # "Maybe": down at his fingers
-                     (T["pk_up"], (0.62, -0.5), 0.14),    # "later.": up at the AI, puppy
-                     (T["later"] + 0.44, (0.4, 0.95), 0.12),   # peeks at his star
-                     (T["later"] + 0.66, (0.62, -0.5), 0.14),  # ...back up at the AI
+                     (T["pk_down"], (0.08, 0.95), 0.16),  # "Thank": down at his fingers
+                     (T["pk_up"], (0.62, -0.5), 0.14),    # "rehearsed": up at the AI, puppy
+                     (T["rehearsed"] + 0.5, (0.4, 0.95), 0.12),   # peeks at his star
                      (T["tally"] - 0.05, (-0.85, -1.0), 0.12),  # up at the chip
                      (T["tally"] + 0.55, (0.3, -0.2), 0.2)])
     if t < l4s:
@@ -908,26 +997,28 @@ def _shot_C(ctx, t, info, T):
         arms, glove, place = _dyn_arms(t, 1.0 - k_out, "rest", T["pk_in1"])
     # sit up for the gesture, sink back on the tally; sniffle hitch + gulp bob
     up = ease_in_out(seg(t, T["sit0"], T["sit1"])) * (1 - ease_in_out(seg(t, T["sink0"], T["sink1"])))
-    vy = lerp(VY_KNEEL, VY_POKE, up) - 8 * _bump(t, c0 + 0.02, 0.2) + 4 * _bump(t, c0 + 0.42, 0.22)
+    vy = (lerp(VY_KNEEL, VY_POKE, up) - 8 * _bump(t, c0 + 0.02, 0.2)
+          + 4 * _bump(t, T["gulp"] + 0.02, 0.22))
     # puppy eyes stay wide open through the line (no auto blink may land on
     # the look-up); one slow blink after the chip ticks
     blink = _slow_blink(t, T["tally"] + 0.3)
     if blink is None and T["pk_down"] <= t < T["tally"]:
         blink = 0.0
-    # --- Hissy: frozen mid-stroke, caught looking, then agrees -----------------
+    # --- Hissy: frozen mid-stroke, caught looking; "I rehearsed." -> side-eye
+    # to camera (he knows), then agrees on the tally
     sn_expr = _state(t, [(-9, "unimpressed"), (c0 + 0.12, "idle", 0.1),
                          (l4s + 0.1, "unimpressed", 0.25),
-                         (T["later"] + 0.3, "side_eye", 0.15),
+                         (T["rehearsed"] + 0.25, "side_eye", 0.15),
                          (T["tally"] + 0.05, "nod", 0.2)])
     sn_look = _look(t, [(-9, (0.55, 0.75)), (c0 + 0.12, (1.0, -0.15), 0.08),
                         (l4s + 0.1, (1.0, 0.45), 0.2),
-                        (T["later"] + 0.3, (1.0, 0.0), 0.12),
+                        (T["rehearsed"] + 0.25, (1.0, 0.0), 0.12),
                         (T["tally"] + 0.05, (0.9, 0.2), 0.2)])
-    tongue = True if T["later"] + 0.6 <= t < T["later"] + 0.85 else False
+    tongue = True if T["rehearsed"] + 0.5 <= t < T["rehearsed"] + 0.75 else False
     snake = _snake_d(sn_expr, sn_look, tongue)
     saw_frozen = 14 * math.sin(2 * math.pi * 3.0 * (c0 - T["saw0"]))
     vk = 1.0 - ease_in(seg(t, T["vio_out"], T["vio_out"] + 0.22))
-    # tears dry up during "Maybe later."
+    # tears dry up during "...Thank you. I rehearsed."
     t_alpha = 1.0 - smoothstep(seg(t, l4s + 0.35, l4s + 0.95))
     st_hold = {}
 
@@ -967,6 +1058,84 @@ def _shot_C(ctx, t, info, T):
 # ===========================================================================
 # shot B: F3 AI close-up
 # ===========================================================================
+def _palm_R_at(t, x, y, s, seed=2):
+    """World palm centre of the rig's right hand holding the gift
+    (_AI_OFFER_R) at time t, as draw_ai places it (its hover/bob offsets)."""
+    ph = t * 2 * math.pi * 0.47 + seed * 1.7
+    h = dict(_AI_OFFER_R)
+    h["y"] += math.sin(ph - 0.7 - 1.3) * 7 + math.sin(ph) * 9 * 0.3
+    h["x"] += math.sin(ph * 0.5 + 1.3) * 3
+    px, py = AI._hand_world(h, True, "palm")
+    return x + px * s, y + py * s
+
+
+STAR_LIFT = 26.0                     # the star floats up off the palm when released
+
+
+def _gift_draw(c, t, T, A, x, y, s):
+    """FOR EFFORT star: pops onto the right palm on 'star'; lifts off and
+    hovers when the hands go in to clap; pulses + twinkles on "performance."
+    (the award); the tag stays under it."""
+    g0 = T["gift"]
+    if t < g0:
+        return
+    u = seg(t, g0, g0 + 0.32)
+    k = ease_out_back(u, 2.4)
+    sq = 0.16 * math.sin(u * math.pi) if u < 1 else 0.0
+    spin = (1 - ease_out(u)) * 2.6
+    bob = 4 * math.sin((t - g0) * 3.2)
+    if t < T["rel"]:
+        hx, hy = A["handR"]
+    else:
+        hx, hy = _palm_R_at(T["rel"], x, y, s)
+    lift = STAR_LIFT * ease_in_out(seg(t, T["rel"], T["rel"] + 0.4))
+    # sized for a phone: the star + "FOR EFFORT" tag are the punchline
+    # of "I'll give you five stars!", so they must read at a glance
+    sx, sy = hx - 6, hy - 86 - bob - lift
+    pk = _bump(t, T["pulse"], 0.45)              # "...performance.": THE award
+    core.radial_glow(c, sx, sy, 150 * k * (1 + 0.25 * pk), "ai_accent", 0.32 + 0.22 * pk)
+    if t > g0 + 0.2:
+        P.sparkles(c, sx, sy - 20, 110, t, n=4, seed=17, color="white", size=0.85)
+    if pk > 0.01:                                # cartoon shine rays
+        for i in range(8):
+            a = i * math.pi / 4 + 0.2
+            r0, r1 = 96 + 10 * pk, 96 + 40 * pk
+            c.move_to(sx + math.cos(a) * r0, sy + math.sin(a) * r0)
+            c.line_to(sx + math.cos(a) * r1, sy + math.sin(a) * r1)
+        core.stroke(c, (0.09, 0.06, 0.12, pk), 11.0, cap="round")
+        for i in range(8):
+            a = i * math.pi / 4 + 0.2
+            r0, r1 = 96 + 10 * pk, 96 + 40 * pk
+            c.move_to(sx + math.cos(a) * r0, sy + math.sin(a) * r0)
+            c.line_to(sx + math.cos(a) * r1, sy + math.sin(a) * r1)
+        core.stroke(c, (1.0, 0.86, 0.3, pk), 5.5, cap="round")
+    sc = 1.75 * k * (1 + 0.2 * pk)
+    with saved(c, sx, sy, (sc * (1 + sq), sc * (1 - sq))) as cc:
+        _gold_star(cc, 0, 0, 40, spin + 0.25 * pk * math.sin(pk * math.pi), 5.0)
+    lab = ease_out_back(seg(t, g0 + 0.1, g0 + 0.38), 2.0)
+    if lab > 0.01:
+        with saved(c, sx - 50, sy + 168 + lift, lab * 1.6, -0.04) as cc:
+            P.label_tag(cc, 0, 0, "FOR EFFORT", color="ai_accent", size=24)
+
+
+def _clap_ticks(c, t, T, A, w):
+    """Little comic impact ticks beside the fingertips on each clap."""
+    if w < 0.99 or t < T["clap0"] - 0.02:
+        return
+    ph = ((t - T["clap0"]) * _CLAP["hz"]) % 1.0
+    a = 1.0 - clamp(min(ph, 1.0 - ph) / 0.11)
+    if a <= 0.02:
+        return
+    (lx, ly), (rx, ry) = A["handL_tip"], A["handR_tip"]
+    mx, my = (lx + rx) / 2, (ly + ry) / 2
+    for sgn in (-1, 1):
+        for ang, r0, r1 in ((-0.55, 46, 80), (-0.05, 50, 80), (0.45, 46, 74)):
+            dx, dy = math.cos(ang) * sgn, math.sin(ang)
+            c.move_to(mx + dx * r0, my + 40 + dy * r0)
+            c.line_to(mx + dx * r1, my + 40 + dy * r1)
+    core.stroke(c, (0.62, 0.95, 1.0, 0.95 * a), 6.0, cap="round")
+
+
 def _shot_B(ctx, t, info, T):
     P.ai_bg(ctx, t)
     x, y, s = AI3
@@ -974,47 +1143,39 @@ def _shot_B(ctx, t, info, T):
     expr = _state(t, [(-9, AI_FLAT), (T["blink1"] + 0.1, AI_SYMP, 0.3),
                       (T["buddy"] - 0.08, AI_KIND, 0.25),
                       (star - 0.02, AI_GIFT, 0.22),
-                      (T["l3s"] - 0.1, AI_HUG, 0.28)])
+                      (T["honest"] - 0.06, AI_HONEST, 0.25),   # "Honestly?" sincere
+                      (T["world"] - 0.08, AI_WOW, 0.2),        # "world-class!" impressed
+                      (T["perf"] - 0.02, AI_PROUD, 0.3)])      # "...performance." warm
     look = _look(t, [(-9, (-0.55, 0.45)),
                      (star + 0.02, (0.8, 0.25), 0.14),     # glance at the gift
                      (T["blink2"] + 0.1, (-0.45, 0.4), 0.14),  # "for you" (behind the blink)
-                     (T["l3s"], (-0.35, 0.3), 0.2)])
+                     (T["honest"], (-0.4, 0.3), 0.2),      # eyes on him: sincere
+                     (T["perf"] - 0.02, (0.7, 0.05), 0.14),    # ...the award
+                     (T["perf"] + 0.5, (-0.45, 0.35), 0.18)])  # ...is yours
     hands = _state(t, [(-9, "idle"), (T["not"] - 0.1, "stop", 0.22),
                        (T["buddy"] - 0.08, "s09_pat", 0.2),
                        (star - 0.04, "s09_offer", 0.24),
-                       (T["l3s"] - 0.04, "s09_hug", 0.3)])
+                       (T["honest"] - 0.1, "s09_honest", 0.3),
+                       (T["clap_in"], "s09_clap", 0.18),
+                       (T["award"], "s09_award", 0.26)])
+    _CLAP["t0"] = T["clap0"]
     blink = _slow_blink(t, T["blink1"])
     if blink is None:
         blink = _slow_blink(t, T["blink2"])
+    if blink is None and T["honest"] - 0.1 <= t < T["perf"] + 0.3:
+        blink = 0.0                       # no auto-blink in the sincere eye contact
     shake = 0.32 * smoothstep(seg(t, T["not"], T["not"] + 0.12)) * \
         (1 - smoothstep(seg(t, T["buddy"] - 0.15, T["buddy"] + 0.05)))
-    nod = 0.3 * _bump(t, T["hug"] - 0.05, 0.45)
-    # tiny "aww" bounce on the hug line
-    bounce = 1 + 0.03 * _bump(t, T["l3s"] - 0.05, 0.3)
+    nod = 0.3 * _bump(t, T["perf"] + 0.02, 0.5)          # sincere nod
+    # tiny delighted bounce on "world-class"
+    bounce = 1 + 0.025 * _bump(t, T["world"] - 0.04, 0.3)
+    w_clap = (hands[2] if hands[1] == "s09_clap" else 0.0)
     with saved(ctx, x, y + 120, bounce) as c:
         c.translate(-x, -(y + 120))
         A = draw_ai(c, x, y, s, t, expr=expr, look=look, mouth=info.mouth("ai", t),
                     hands=hands, blink=blink, shake=shake, nod=nod)
-        # --- the gift: FOR EFFORT star on the right palm ---------------------
-        g0 = T["gift"]
-        if t >= g0:
-            hx, hy = A["handR"]
-            u = seg(t, g0, g0 + 0.32)
-            k = ease_out_back(u, 2.4)
-            sq = 0.16 * math.sin(u * math.pi) if u < 1 else 0.0
-            spin = (1 - ease_out(u)) * 2.6
-            # sized for a phone: the star + "FOR EFFORT" tag are the punchline
-            # of "I'll give you five stars!", so they must read at a glance
-            sx, sy = hx - 6, hy - 86 - 4 * math.sin((t - g0) * 3.2)
-            core.radial_glow(c, sx, sy, 150 * k, "ai_accent", 0.32)
-            if t > g0 + 0.2:
-                P.sparkles(c, sx, sy - 20, 110, t, n=4, seed=17, color="white", size=0.85)
-            with saved(c, sx, sy, (1.75 * k * (1 + sq), 1.75 * k * (1 - sq))) as cc:
-                _gold_star(cc, 0, 0, 40, spin, 5.0)
-            lab = ease_out_back(seg(t, g0 + 0.1, g0 + 0.38), 2.0)
-            if lab > 0.01:
-                with saved(c, hx - 56, hy + 82, lab * 1.6, -0.04) as cc:
-                    P.label_tag(cc, 0, 0, "FOR EFFORT", color="ai_accent", size=24)
+        _clap_ticks(c, t, T, A, w_clap)
+        _gift_draw(c, t, T, A, x, y, s)
 
 
 # ===========================================================================
@@ -1057,8 +1218,10 @@ def SFX(info):
         (T["stars"], "sparkle", -10),
         (T["gift"], "sparkle", -10),
         (T["gift"] + 0.02, "pop", -14),
-        (T["l3e"], "crowd_aww", -14),
-        (T["cons"] + 0.42, "gulp", -10),
+        (T["pulse"], "sparkle", -16),              # the star twinkles: the award
+        # soft (the considers beat is short now; its tail sits under "Thank you")
+        (T["l3e"], "crowd_aww", -16),
+        (T["gulp"], "gulp", -12),
         (T["stick"], "pop", -12),
         (T["tally"], "tick", -8),
         (T["tally"], "pop", -10),

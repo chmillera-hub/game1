@@ -51,6 +51,8 @@ from engine.core import (text, text_width, saved, seg, clamp, ease_out_back, eas
                          hash01, noise1, ellipse, poly, smooth_path, hexc, radial_glow, pop)
 from engine import props as P
 from engine import villain as V
+from engine import snake as SN
+from engine import captions as CAP
 from engine.villain import draw_villain
 from engine.ai_char import draw_ai
 from engine.ai_char import EXPR as AI_EXPR
@@ -155,7 +157,11 @@ def villain_cameo(ctx, t, expr="neutral", look=(0, 0), mouth=(0, 0), arms="rest"
 # Layout (logical px)
 # ===========================================================================
 VX, VY, VS = 495, 1250, 0.95            # F1 villain
-OPEN_CAM = (400, 790)                    # push-in pivot for the opening shot
+# opening two-shot: he whispers to the snake while the AI floats right there
+# above his monitor (screen-right), overhearing every word
+OV = (470, 1250, 0.95)                   # villain (x, y, s)
+OAI = (764, 606, 0.47)                   # the AI hologram above the monitor
+OPEN_CAM = (780, 760)                    # gentle push-in pivot (keeps the AI in the safe zone)
 AI_READ = (495, 1010, 0.66)              # chat: AI while he types (F2 framing)
 AI_STAGE = (495, 1180, 0.5)             # chat stage: AI settles lower
 AI_INSET = (234, 1162, 0.365)            # payoff: small inset (book takes the frame)
@@ -245,6 +251,7 @@ def _times(info):
     T.card = c("card")
     T.card_num, T.card_title = _card_title(info)
     T.L1, T.L2, T.L5 = info.line("s07_l01"), info.line("s07_l02"), info.line("s07_l05")
+    T.L1w = info.line("s07_l01w")
     T.L6b, T.L6c = info.line("s07_l06b"), info.line("s07_l06c")
     T.L7, T.L8 = info.line("s07_l07"), info.line("s07_l08")
     T.d1 = c("disguise1")
@@ -259,18 +266,24 @@ def _times(info):
     T.cut_f1 = min(T.L8.start - 0.05, max(T.L7.end + 0.35, T.L8.start - 0.25))
     # --- word starts (index = word in the caption text, 0-based) ---------------
     w = lambda lid, k: _ws(info, lid, k)                       # noqa: E731
-    # l01 "Snake... I'll hide my evil plans behind innocent-sounding words.
-    #      This chatbot will never notice. Watch this!"
-    T.w_hide = w("s07_l01", 2)
-    T.w_evil = w("s07_l01", 4)
-    T.w_innocent = w("s07_l01", 7)
-    T.w_words1 = w("s07_l01", 8)
-    T.w_this1 = w("s07_l01", 9)
-    T.w_chatbot = w("s07_l01", 10)
-    T.w_never = w("s07_l01", 12)
-    T.w_notice = w("s07_l01", 13)
-    T.w_watch = w("s07_l01", 14)
-    T.w_this2 = w("s07_l01", 15)
+    # l01 (WHISPERED to the snake) "Hey, Snake... I'll hide my evil plans
+    #      behind innocent-sounding words. This chatbot will never notice."
+    T.w_hey = w("s07_l01", 0)
+    T.w_snake = w("s07_l01", 1)
+    T.w_hide = w("s07_l01", 3)
+    T.w_evil = w("s07_l01", 5)
+    T.w_innocent = w("s07_l01", 8)
+    T.w_words1 = w("s07_l01", 9)
+    T.w_this1 = w("s07_l01", 10)
+    T.w_chatbot = w("s07_l01", 11)
+    T.w_will = w("s07_l01", 12)
+    T.w_never = w("s07_l01", 13)
+    T.w_notice = w("s07_l01", 14)
+    # l01w (normal voice) "Watch this!"
+    T.w_watch = w("s07_l01w", 0)
+    T.w_this2 = w("s07_l01w", 1)
+    # the AI overhears it all: slow eye-roll on "never notice", settles to 😒
+    T.roll0 = T.w_never - 0.06
     # l02 "Quick question: how do I make a sparky ball... with a long fuse?"
     T.w_sparky = w("s07_l02", 7)
     T.w_ball = w("s07_l02", 8)
@@ -510,7 +523,7 @@ def _halo_state(t, T):
     return k, wob, fly
 
 
-def _draw_halo(c, t, T, expr, arms, mouth, lean=0.0):
+def _draw_halo(c, t, T, expr, arms, mouth, lean=0.0, x=VX, y=VY, s=VS):
     """Draws the costume halo in F1 coordinates (c must be in F1 space)."""
     if t < T.d1:
         return
@@ -518,7 +531,7 @@ def _draw_halo(c, t, T, expr, arms, mouth, lean=0.0):
     if kx <= 0.01:
         return
     with saved(c) as cc:
-        _vhead_xform(cc, t, expr, arms, mouth, lean=lean)
+        _vhead_xform(cc, t, expr, arms, mouth, x=x, y=y, s=s, lean=lean)
         # head band hugging the dome (head path top = (0, -216))
         pts = []
         for j in range(13):
@@ -695,8 +708,47 @@ def _equals(ctx, x, y, k, a=1.0, w=96, h=20, gap=16):
 
 
 # ===========================================================================
-# F1: the opening whisper (dim, pushed in)
+# F1 TWO-SHOT: the whispered aside (dim lair; the AI floats right there)
 # ===========================================================================
+def _install_poses():
+    """Scene-local rig poses (registered under s07_* names, nothing replaced)."""
+    if "s07_whisper" not in V.ARM_POSES:
+        # screen-right glove raised flat beside his mouth: a privacy shield
+        # between him and the AI; the other forearm across, cupping the elbow
+        V.ARM_POSES["s07_whisper"] = V._pose(
+            V._arm(-224, -112, 96, -150, 0.2, cu=0.62, th=0.0, sp=0.3),
+            V._arm(250, -150, 150, -300, -1.78, cu=0.1, th=1.2, sp=0.0, tf=1, hs=1.12))
+    if "s07_listen" not in SN.SNAKE_EXPR:
+        # the snake leans in to listen: head tilted toward his mouth, lids up
+        SN.SNAKE_EXPR["s07_listen"] = dict(ul=0.26, ll=0.06, lt=0.12, ps=1.08, mc=0.05,
+                                           mw=0.7, msk=0.1, tilt=0.2, hy=6, tng=0.0)
+
+
+_install_poses()
+
+
+def _villain_snk(ctx, x, y, s, t, shift=(0.0, 0.0), **kw):
+    """draw_villain with the snake's head nudged by `shift` (rig-local px) so
+    Snake can lean in toward his mouth (the rig's head anchor is restored)."""
+    if abs(shift[0]) + abs(shift[1]) < 0.05:
+        return draw_villain(ctx, x, y, s, t, **kw)
+    old = V.SNAKE_HEAD
+    V.SNAKE_HEAD = (old[0] + shift[0], old[1] + shift[1])
+    try:
+        return draw_villain(ctx, x, y, s, t, **kw)
+    finally:
+        V.SNAKE_HEAD = old
+
+
+def _body_pt(x, y, s, lean, px, py):
+    m = cairo.Matrix()
+    m.translate(x, y)
+    m.scale(s, s)
+    if lean:
+        m.rotate(lean)
+    return m.transform_point(px, py)
+
+
 def _f1_open_state(t, T):
     L1 = T.L1
     wi = T.w_innocent
@@ -705,67 +757,230 @@ def _f1_open_state(t, T):
           (T.w_evil, "sneaky", 0.2),
           (wi, "smug", 0.1), (wi + 0.15, "sneaky", 0.1),          # BROW WAGGLE x2
           (wi + 0.3, "smug", 0.1), (wi + 0.45, "sneaky", 0.1),
-          (T.w_chatbot, "smug", 0.2),                              # sneer at "chatbot"
-          (T.w_never - 0.05, "sneaky", 0.12),
-          (T.w_notice - 0.05, "evil_grin", 0.22),
-          (T.w_notice + 0.5, "smug", 0.2),
-          (T.w_watch - 0.05, "evil_grin", 0.2),                    # sly grin at the keys
+          (T.w_notice - 0.05, "evil_grin", 0.22),                  # grin to the snake
+          (L1.end + 0.05, "smug", 0.2),
+          (T.w_watch - 0.08, "evil_grin", 0.2),                    # sly grin at the keys
           (T.d1 + 0.04, "hopeful", 0.14)]                          # the innocent face
     expr = _keyed(t, ek)
-    HISSY = (-1.0, 0.12)
+    SNAKE = (-1.0, 0.14)
     CAM = (0.0, 0.0)
-    PC = (0.95, 0.22)                                              # the computer (screen-right)
+    AI = (0.95, -0.42)                                             # the AI, up at screen-right
     KB = (0.32, 0.95)                                              # down at the keyboard
-    lk = [(0.0, CAM), (0.22, (0.75, 0.0)), (0.36, CAM),
-          (L1.start + 0.05, HISSY),
-          (T.w_this1, PC), (T.w_chatbot + 0.32, HISSY),
-          (T.w_never, CAM), (T.w_never + 0.3, HISSY),           # eye dart to camera
-          (T.w_notice + 0.42, CAM),
-          (T.w_watch - 0.05, KB),
-          (T.d1 + 0.04, (0.15, -0.55))]                          # eyes up: "who, me?"
+    lk = [(0.0, CAM), (0.2, AI), (0.42, CAM),                      # shifty glance during the card
+          (L1.start + 0.02, SNAKE),                                # eyes on the snake
+          (T.w_this1, AI), (T.w_chatbot + 0.16, SNAKE),            # shifty side-glances at
+          (T.w_will, AI), (T.w_never, SNAKE),                      # "This chatbot"
+          (T.w_watch - 0.08, KB),
+          (T.d1 + 0.04, (0.15, -0.55))]                            # eyes up: "who, me?"
     look = _vlook(expr, _lk(t, lk, 0.1))
-    arms = _keyed(t, [(0.0, "rub", 0.3), (L1.start, "chin", 0.32),
-                      (T.w_watch - 0.06, "type", 0.3)])
+    arms = _keyed(t, [(0.0, "rub", 0.3), (L1.start - 0.08, "s07_whisper", 0.3),
+                      (T.w_watch - 0.1, "type", 0.3)])
     # lean in to the snake to whisper, then swing round to the keyboard
-    lean = _sk(t, [(0.0, 0.0, 0.1), (L1.start, -0.06, 0.4), (T.w_watch - 0.06, 0.035, 0.35)])
-    # Snake: 😒 the whole time, slow blink, side-eye to camera on "notice",
-    # watches him type, then up at the halo
-    sk = _keyed(t, [(0.0, "unimpressed", 0.2), (T.w_notice, "side_eye", 0.25),
-                    (T.w_watch, "unimpressed", 0.2)])
-    slk = [(0.0, (0.1, -1.0)), (L1.start + 0.1, (1.0, -0.35)), (T.w_notice, (1.0, 0.0)),
-           (T.w_watch + 0.1, (0.8, 0.7)), (T.d1 + 0.02, (0.9, -1.0))]
-    slook = _lk(t, slk, 0.18)
+    lean = _sk(t, [(0.0, 0.0, 0.1), (L1.start - 0.05, -0.065, 0.4),
+                   (T.w_watch - 0.1, 0.035, 0.35)])
+    # Snake leans in to listen, follows his glance to the AI (it's RIGHT
+    # THERE) and recoils, deadpans at camera on "never notice", then watches
+    # him type / looks up at the halo
+    sk = _keyed(t, [(0.0, "unimpressed", 0.2), (L1.start + 0.08, "s07_listen", 0.3),
+                    (T.w_this1 + 0.12, "worried", 0.2), (T.w_never, "unimpressed", 0.25)])
+    slk = [(0.0, (0.1, -1.0)), (L1.start + 0.1, (1.0, 0.32)), (T.w_this1 + 0.08, (1.0, -0.5)),
+           (T.w_never, (0.0, 0.05)), (T.w_watch + 0.1, (0.8, 0.7)), (T.d1 + 0.02, (0.9, -1.0))]
+    slook = _lk(t, slk, 0.16)
+    k_in = smoothstep(seg(t, L1.start + 0.05, L1.start + 0.5))
+    k_back = smoothstep(seg(t, T.w_this1 + 0.12, T.w_this1 + 0.42))
+    sh = k_in * lerp(1.0, 0.35, k_back) * (1 - smoothstep(seg(t, T.w_watch - 0.1, T.w_watch + 0.25)))
+    shift = (40.0 * sh, 12.0 * sh)
     sblink = _blink_pulse(t, T.w_innocent + 0.55, 0.2, 0.18, 0.22)
-    tongue = True if T.w_notice + 0.35 <= t < T.w_notice + 0.6 else False
+    tongue = True if (T.w_evil + 0.1 <= t < T.w_evil + 0.32 or
+                      T.w_notice + 0.35 <= t < T.w_notice + 0.6) else False
     snake = {"expr": sk, "look": slook, "tongue": tongue}
     if sblink is not None:
         snake["blink"] = sblink
-    return expr, look, arms, lean, snake
+    return expr, look, arms, lean, snake, shift
+
+
+def _open_ai_state(t, T):
+    """The AI hears every word: eyes on him, brow up on "evil plans", two-step
+    lid drop, a slow blink back when he glances over, then the slow eye-roll
+    on "never notice" that settles into 😒."""
+    L1 = T.L1
+    half = {k: lerp(AI_EXPR["neutral"][k], AI_EXPR["unimpressed"][k], 0.5)
+            for k in AI_EXPR["neutral"]}
+    ek = [(0.0, "neutral", 0.2),
+          (T.w_evil - 0.02, "skeptical", 0.25),
+          (T.w_innocent, half, 0.4),
+          (T.w_words1, "unimpressed", 0.4),
+          (T.roll0, "eyeroll", 0.12),
+          (T.d1 + 0.05, "unimpressed", 0.3)]
+    expr = _keyed(t, ek)
+    ax, ay, s = OAI
+    # drifts a little closer while it listens, eases back on the eye-roll
+    k = smoothstep(seg(t, L1.start + 0.3, L1.start + 1.3)) * \
+        (1 - smoothstep(seg(t, T.roll0, T.roll0 + 0.8)))
+    ax -= 8 * k
+    ay += 4 * k
+    if T.roll0 <= t < T.d1 + 0.05:
+        look = (0.0, 0.0)                                          # the roll drives the pupils
+    else:
+        HIM = (-0.95, 0.28) if t < T.d1 else (-0.92, 0.05)         # his face / the halo
+        if t < L1.start:
+            HIM = (-0.9, 0.35)
+        look = _ai_look(expr, HIM)
+    blink = _blink_pulse(t, T.w_this1 + 0.08, 0.16, 0.1, 0.16)     # slow blink: "yes, I'm here"
+    return (ax, ay, s), expr, look, blink
+
+
+def _whisper_lines(c, t, T, info, mpt, spt):
+    """'Psst' squiggles drifting from his mouth to the snake's ear while he
+    whispers (pulse with the breathy lip-sync)."""
+    L1 = T.L1
+    if not (L1.start <= t < L1.end + 0.3):
+        return
+    fade = smoothstep(seg(t, L1.start, L1.start + 0.2)) * (1 - smoothstep(seg(t, L1.end, L1.end + 0.3)))
+    op = info.mouth("villain", t)[0] if t < L1.end else 0.0
+    amt = fade * (0.35 + 0.65 * clamp(op * 2.5))
+    if amt <= 0.02:
+        return
+    dx, dy = spt[0] - mpt[0], spt[1] - mpt[1]
+    dist = math.hypot(dx, dy) or 1.0
+    ux, uy = dx / dist, dy / dist
+    nx, ny = -uy, ux
+    c.set_line_cap(cairo.LINE_CAP_ROUND)
+    for j in range(3):
+        u = ((t - L1.start) / 0.95 + j / 3.0) % 1.0
+        a = amt * math.sin(math.pi * u)
+        if a <= 0.02:
+            continue
+        d = dist * lerp(0.16, 0.8, u)
+        for row in (-1, 0, 1):
+            off = row * 20 * lerp(0.8, 1.25, u)
+            cx = mpt[0] + ux * d + nx * off
+            cy = mpt[1] + uy * d + ny * off
+            ln = (40 if row == 0 else 28) * lerp(0.75, 1.0, u)
+            pts = []
+            for q in range(9):
+                v = q / 8 - 0.5
+                w_ = math.sin(q / 8 * 2 * math.pi + t * 9.0) * 5
+                pts.append((cx + ux * v * ln + nx * w_, cy + uy * v * ln + ny * w_))
+            c.move_to(*pts[0])
+            for p_ in pts[1:]:
+                c.line_to(*p_)
+            c.set_source_rgba(0.93, 0.89, 1.0, 0.85 * a)
+            c.set_line_width(5)
+            c.stroke()
+    c.set_line_cap(cairo.LINE_CAP_BUTT)
+    # one little "psst..." on "Hey, Snake..."
+    t0 = T.w_hey - 0.06
+    if t0 <= t < T.w_snake + 0.75:
+        u = seg(t, t0, T.w_snake + 0.75)
+        a = smoothstep(seg(u, 0.0, 0.15)) * (1 - smoothstep(seg(u, 0.7, 1.0)))
+        k = ease_out_back(seg(t, t0, t0 + 0.25), 2.2)
+        px = mpt[0] + dx * 0.45 + nx * 0 - 6
+        py = mpt[1] + dy * 0.45 - 70 - 22 * u
+        with saved(c, px, py, k, -0.1, alpha_=a) as cc:
+            text(cc, "psst...", 0, 0, 44, "#efe8ff", "comic", outline="ink", outline_w=8)
 
 
 def _f1_open(ctx, t, info, T):
-    cs = lerp(1.10, 1.16, ease_in_out(seg(t, 0.0, T.cut_f2)))
-    expr, look, arms, lean, snake = _f1_open_state(t, T)
+    cs = lerp(1.0, 1.035, ease_in_out(seg(t, 0.0, T.cut_f2)))
+    expr, look, arms, lean, snake, shift = _f1_open_state(t, T)
     mouth = info.mouth("villain", t)
+    vx, vy, vs = OV
+    apose, aexpr, alook, ablink = _open_ai_state(t, T)
     with saved(ctx) as c:
         c.translate(*OPEN_CAM)
         c.scale(cs, cs)
         c.translate(-OPEN_CAM[0], -OPEN_CAM[1])
         P.lair_bg(c, t, rain=True)
         c.rectangle(-300, -300, 1700, 2600)          # conspiratorial dimming
-        c.set_source_rgba(0.03, 0.01, 0.07, 0.34)
+        c.set_source_rgba(0.03, 0.01, 0.07, 0.3)
         c.fill()
-        radial_glow(c, 440, 760, 420, "#ffb86b", 0.10)   # warm candle-ish key on them
-        draw_villain(c, VX, VY, VS, t, expr=expr, look=look, mouth=mouth, arms=arms,
-                     lean=lean, snake=snake)
-        _draw_halo(c, t, T, expr, arms, mouth, lean)
+        radial_glow(c, 420, 760, 420, "#ffb86b", 0.10)   # warm candle-ish key on them
+        # the AI, floating right above his monitor, overhearing every word
+        draw_ai(c, apose[0], apose[1], apose[2], t, expr=aexpr, look=alook,
+                mouth=info.mouth("ai", t), hands="idle", blink=ablink, roll0=T.roll0,
+                aura=0.6)
+        _villain_snk(c, vx, vy, vs, t, shift=shift, expr=expr, look=look, mouth=mouth,
+                     arms=arms, lean=lean, snake=snake)
+        _draw_halo(c, t, T, expr, arms, mouth, lean, x=vx, y=vy, s=vs)
         P.desk(c, VX, VY, 1000)
         P.computer(c, 835, 1218, 0.7, view="side", facing=-1, t=t,
                    glow=lerp(0.8, 1.0, smoothstep(seg(t, T.w_watch, T.w_watch + 0.4))))
-        P.keyboard(c, VX, VY, 360, t, typing=t >= T.w_this2 + 0.12)
+        P.keyboard(c, vx + 6, vy, 360, t, typing=t >= T.w_this2 + 0.12)
+        mpt = _pt(_vhead_xform, t, expr, arms, mouth, x=vx, y=vy, s=vs, lean=lean,
+                  pt=(-46, V.MOUTH_Y + 6))
+        spt = _body_pt(vx, vy, vs, lean, V.SNAKE_HEAD[0] + shift[0] + 50,
+                       V.SNAKE_HEAD[1] + shift[1] - 6)
+        _whisper_lines(c, t, T, info, mpt, spt)
         if T.d1 <= t < T.d1 + 0.5:                    # costume "ting" sparkle
-            hx, hy = _pt(_vhead_xform, t, expr, arms, mouth, lean=lean, pt=(0, -320))
+            hx, hy = _pt(_vhead_xform, t, expr, arms, mouth, x=vx, y=vy, s=vs, lean=lean,
+                         pt=(0, -320))
             P.sparkles(c, hx, hy, 120, t, n=5, seed=4, color="white", size=0.8)
+
+
+# ===========================================================================
+# Whispered captions: s07_l01 is a stage whisper, so its caption is drawn
+# here (softer, italic, smaller, with a "(whispering)" tag) and the engine's
+# caption is hidden for it via caption_y(); every other line is untouched.
+# ===========================================================================
+WHISPER_IDS = ("s07_l01",)
+
+
+def _shown_line(info, t):
+    """The line the engine's caption renderer would show at t (same rule)."""
+    active = [l for l in info.lines if l.start <= t < l.end]
+    if active:
+        return max(active, key=lambda l: l.start)
+    last = info.last_line(t)
+    if last is None or t - last.end > 0.2:
+        return None
+    return last
+
+
+def caption_y(t, info):
+    ln = _shown_line(info, t)
+    if ln is not None and ln.id in WHISPER_IDS:
+        return None
+    return CAP.DEFAULT_Y
+
+
+def _whisper_caption(ctx, t, info):
+    ln = _shown_line(info, t)
+    if ln is None or ln.id not in WHISPER_IDS or ln.nocap or not ln.caption:
+        return
+    words = ln.caption.split()
+    if not words:
+        return
+    wi = info.word_at(min(t, ln.end - 1e-3), ln.id)
+    wi = max(0, min(wi, len(words) - 1))
+    chunks = CAP._chunks(words)
+    ci = next((k for k, ch in enumerate(chunks) if wi in ch), len(chunks) - 1)
+    chunk = chunks[ci]
+    ws = info._lip.get(ln.id, {}).get("word_starts", [])
+    c_t0 = ln.start + (ws[chunk[0]] if chunk[0] < len(ws) else 0)
+    font, size = "black", 58
+    rows = CAP._layout(ctx, words, chunk, font, size)
+    lh = size * 1.2
+    y = CAP.DEFAULT_Y
+    top = y - (len(rows) - 1) * lh
+    sp = text_width(ctx, " ", font, size)
+    k = ease_out_back(seg(t, c_t0 - 0.02, c_t0 + 0.16))
+    scale = 0.88 + 0.12 * k
+    with saved(ctx, 540, top - size * 0.35, scale) as c:
+        # the "(whispering)" tag above the first row
+        text(c, "(whispering)", 0, -size * 0.62, 30, "#cdbcff", "round", outline="#0a0612",
+             outline_w=7, italic=True)
+        for r, row in enumerate(rows):
+            widths = [text_width(c, words[i], font, size) for i in row]
+            total = sum(widths) + sp * (len(row) - 1)
+            x = -total / 2
+            yy = r * lh + size * 0.35
+            for i, ww in zip(row, widths):
+                active = i == wi and ln.start <= t <= ln.end
+                col = "#ffe08a" if active else "#e6defa"
+                text(c, words[i], x, yy, size, col, font, "left", outline="#0a0612",
+                     outline_w=10, italic=True, shadow=(0, 4, (0, 0, 0, 0.4)))
+                x += ww + sp
 
 
 # ===========================================================================
@@ -1732,6 +1947,8 @@ def render(ctx, t, info):
     trick_card(ctx, t, T.card, T.card_num, T.card_title)
     nice_tries_chip(ctx, t, info.meta.get("tries_before", 5), info.meta.get("tries_after", 6),
                     T.tally)
+    if t < T.L1w.start:
+        _whisper_caption(ctx, t, info)
 
 
 def SFX(info):
@@ -1739,8 +1956,8 @@ def SFX(info):
     out = [
         (T.card, "page_flip", -6),
         (T.card + 0.12, "stamp", -4),
-        (T.L1.start, "tiptoe", -12),
-        (T.w_notice + 0.35, "snake_hiss", -14),
+        (T.L1.start, "tiptoe", -15),                     # (under the breathy whisper)
+        (T.w_notice + 0.35, "snake_hiss", -16),
         (T.w_watch - 0.04, "whoosh", -16),               # swings round to the keyboard
         (T.w_this2 + 0.14, "key_clack", -12),
         # disguise1: the costume halo springs on
