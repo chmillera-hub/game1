@@ -661,8 +661,8 @@ def _pov_bg(c):
 def _draw_pov(ctx, t, k, info, push):
     core.cached(ctx, "s10_pov_bg", 0, 0, 1080, 1920, _pov_bg)
     with core.camera(ctx, 540, 820, push, 0, 540, 820):
-        s = 2.55
-        gx, gy = 545, 2270
+        s = 3.0
+        gx, gy = 545, 2560
         lift = smoothstep(seg(t, k["lift"], k["lift"] + 0.45))
         lean = 0.1 + 0.06 * seg(t, k["w6"][5], k["w6"][6]) - 0.12 * lift
         pose = {"base": "sit_chair", "lean": lean, "hunch": 0.35 - 0.25 * lift, "neck": 0.1 - 0.1 * lift,
@@ -670,12 +670,13 @@ def _draw_pov(ctx, t, k, info, push):
         # reading: pupils scan in small steps; on "record me?" they stop and look up into the screen
         ph = (t - k["b3"]) * 1.6
         scan_x = -0.35 + 0.7 * (ph % 1.0) if t < k["w6"][5] else 0.0
-        look = (scan_x * (1 - lift), 0.18 - 0.2 * lift)
+        look = (scan_x * (1 - lift), 0.02 - 0.08 * lift)
         expr = state_at(t, [(-1, "bored"), (k["lift"], "determined")], 0.4)
         face = {"lid": 0.06 * seg(t, k["w6"][5], k["w6"][6]) + 0.1 * lift,  # determined lid ~0.2, not fully open
                 "brow": -0.12 * seg(t, k["w6"][5], k["w6"][6]),
                 "brow_in": -0.15 * seg(t, k["w6"][5], k["w6"][6]),
-                "press": 0.3 * lift, "head_nod": -0.03 * lift}
+                "press": 0.3 * lift, "head_nod": -0.03 * lift,
+                "brow_ang": 0.18 * lift, "brow_out": 0.1 * lift}
         blink = None
         if k["b5"] + 0.08 <= t < k["lift"]:
             blink = _slow_blink(t, k["b5"] + 0.08, 0.28, 0.12, 0.3)

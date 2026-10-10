@@ -183,7 +183,7 @@ STRAIN = dict(brow=0.55, brow_ang=0.62, brow_in=0.2, lid=0.12, lower=0.25, pupil
               teeth=1.0, open=0.2, width=1.28, curve=-0.42, wobble=0.25, cheek=0.25, flare=0.5,
               squash=0.04)
 SCREAM_SHUT = dict(brow=0.7, brow_ang=0.85, brow_in=0.35, lid=1.0, lower=0.6, open=1.0,
-                   width=1.25, curve=-0.4, tongue=0.85, teeth=0.7, lip_up=0.45, squash=-0.14,
+                   width=1.5, lip_low=0.7, curve=-0.4, tongue=0.85, teeth=0.7, lip_up=0.45, squash=-0.24,
                    flare=0.7, cheek=0.25)
 
 
@@ -695,7 +695,7 @@ def shot_creak(ctx, t, info, c):
 # ----------------------------------------------------------------------------
 # J — the scream (a cartoon take on a radial burst)
 # ----------------------------------------------------------------------------
-_BURST_C = (520, 640)
+_BURST_C = (380, 800)
 
 
 def _burst_bg(c):
@@ -714,24 +714,29 @@ def _burst_bg(c):
     core.radial_glow(c, cx, cy, 560, "#fff0c4", 0.6)
 
 
-def _squeeze(ctx, a, s, t):
-    """crow's-feet creases: the eyes are SQUEEZED shut, not just closed."""
+def _squeeze(ctx, a, s, t, skin="t_skin"):
+    """Eyes SQUEEZED shut: replace the rig's closed lids with bold > < chevrons."""
     (lx, ly), (rx, ry) = a["eye_l"], a["eye_r"]
     if lx > rx:
         (lx, ly), (rx, ry) = (rx, ry), (lx, ly)
-    j = 1.0 + 0.06 * math.sin(t * 40)
-    for ex, ey, sd in ((lx, ly, -1), (rx, ry, 1)):
-        for k, (dy, ln) in enumerate(((-14, 20), (2, 24), (17, 18))):
-            x0 = ex + sd * 36 * s * j
-            y0 = ey + dy * s * 0.9
-            ctx.move_to(x0, y0)
-            ctx.line_to(x0 + sd * ln * s, y0 + (dy * 0.45) * s)
-            core.stroke(ctx, "ink", 3.4 * s)
+    j = 1.0 + 0.08 * math.sin(t * 40)
+    for ex, ey, sd in ((lx, ly, 1), (rx, ry, -1)):
+        core.ellipse(ctx, ex, ey + 5 * s, 30 * s, 19 * s)
+        core.fill(ctx, skin)
+        w, h = 17 * s * j, 11 * s * j
+        ctx.move_to(ex - sd * w, ey - h)
+        ctx.line_to(ex + sd * w * 0.9, ey + 1 * s)
+        ctx.line_to(ex - sd * w, ey + h)
+        core.stroke(ctx, "ink", 6.0 * s)
+        # one tension crease off the outer corner
+        ctx.move_to(ex - sd * (w + 9 * s), ey - 3 * s)
+        ctx.line_to(ex - sd * (w + 17 * s), ey - 7 * s)
+        core.stroke(ctx, "ink", 3.2 * s)
     # pinch line between the brows
     mx = (lx + rx) * 0.5
-    my = min(ly, ry) - 40 * s
-    ctx.move_to(mx - 6 * s, my - 10 * s)
-    ctx.curve_to(mx - 2 * s, my - 2 * s, mx - 2 * s, my + 6 * s, mx - 6 * s, my + 12 * s)
+    my = min(ly, ry) - 34 * s
+    ctx.move_to(mx - 4 * s, my - 9 * s)
+    ctx.curve_to(mx + 1 * s, my - 2 * s, mx + 1 * s, my + 4 * s, mx - 4 * s, my + 10 * s)
     core.stroke(ctx, "ink", 3.0 * s)
 
 
@@ -742,8 +747,8 @@ def shot_scream(ctx, t, info, c):
     sh = _shake(t, t3, 0.55, 16)
     z = 1.0 + 0.14 * (1 - ease_out_back(seg(u, 0.0, 0.2)))
     drop = t3e - 0.42
-    s2 = 1.8
-    x0, y0 = 430, 2330
+    s2 = 1.7
+    x0, y0 = 380, 2240
     with core.saved(ctx, _BURST_C[0] + sh[0], _BURST_C[1] + sh[1], z):
         ctx.translate(-_BURST_C[0], -_BURST_C[1])
         a = draw_person(ctx, "tired", x0, y0, s2, t, pose=T_JERK, turn=-0.25, expr=SCREAM_SHUT,

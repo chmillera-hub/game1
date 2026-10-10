@@ -238,6 +238,10 @@ def _tired(t, T, info):
         inh = _bump(t, T["exhale"] - 0.4, 0.3, 0.1, 0.2)
         settle = smoothstep(seg(t, T["exhale"], T["exhale"] + 0.45))
         pose = {"base": "arms_crossed", "hunch": 0.15 + 0.14 * inh - 0.1 * settle, "nod": 0.04 * ex}
+    # the ECU: no breathing bob or sway, so the head is rock-still and only the pupils
+    # travel (switched while he is off-screen, in the shots either side of it)
+    if T["cut_k"] - 0.45 <= t < T["cut_l"] + 0.05:
+        pose = {"base": "arms_crossed", "breath": 0.0, "sway": 0.0}
     # ---------------- body turn: faces Emb on the floor (left), then the desk (right)
     turn = tween(t, [(T["t_body"], -0.6), (T["t_body"] + 0.55, 0.62)], ease_in_out)
     # head turn leads the body (late and slow)
@@ -470,7 +474,7 @@ def _jerk_pose(t, T):
     """shift -> jerk: the free hand freezes; on jerk both arms pop up with the lump,
     then slam down stiff, with two decaying aftershocks. None outside the beat."""
     s0, j0 = T["shift"], T["jerk"]
-    if t < s0 - 0.02 or t > T["l6"] + 0.05:
+    if t < s0 - 0.02 or t > T["l6"] + 0.6:       # (the plea blend covers the hand-off)
         return None
     hold = dict(COVER, lean=0.6, hunch=0.8)
     up = dict(COVER, lean=0.58, hunch=0.95, al_ty=0.56, ar_ty=0.56, al_tx=0.14, ar_tx=0.1, al_h="splay",
@@ -587,7 +591,6 @@ def _stage(ctx, t, T, info, shot):
         anchors["tired"] = _draw_person_sq(ctx, "tired", tst, t)
     else:
         anchors["tired"] = _draw_person_sq(ctx, "tired", tst, t)
-        a_e = None
         # dizzy stars from the s05 landing, popping out as he snaps out of it
         hx, hy = 1236.0, 990.0
         fx.dizzy_stars(ctx, hx, hy, 0.6, t, t0=-1.0, dur=1.0 + T["glance"] + 0.3, layer="back")
@@ -638,8 +641,6 @@ def _camera(shot, t, t0, t1, T):
         return (1925, 990, lerp(1.85, 1.95, ease_in_out(u)))
     if shot == "tired_med":
         return (1518, 1052, lerp(2.2, 2.6, ease_in_out(u)))
-    if shot == "two_shot":
-        return (1700, 1060, lerp(1.32, 1.37, ease_in_out(u)))
     if shot == "emb_cu":
         return _frame_on((1900, 860), (545, 740), lerp(2.85, 3.15, ease_in_out(u)))
     if shot == "emb_gesture":

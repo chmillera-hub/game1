@@ -34,7 +34,7 @@ BM = sets.BEDROOM_MARKS
 HM = sets.HALL_MARKS
 S = 0.75                      # character scale in both sets
 BEAT = 60.0 / 104.0           # "sneaky" tempo (head bob)
-CAGE_S = 0.42                 # cage scale next to a person at S
+CAGE_S = 0.36                 # cage scale next to a person at S
 TH = 955.0                    # Tiredness height (s=1)
 EH = 1045.0                   # Embarrassment height (s=1)
 
@@ -315,10 +315,15 @@ def shot_hall(ctx, t, info, c):
         a = human.draw_person(ctx, "embar", x, gy, S, t, pose=pose, pose_t=pose_t, expr=expr,
                               look=look, face=face, turn=0.8, blush=blush, sweat=0.4,
                               shadow=tl >= t_land)
-        # cage handle clenched in his teeth, hanging under his chin
-        mx, my = a["mouth"]
-        sway = 0.12 * math.sin(t * 7.0)
-        cage(ctx, mx + 2, my - 10, t, rot=sway, swing=1.0, s=0.34)
+        if tl < t_go + 0.1:
+            # cage handle clenched in his teeth, hanging under his chin
+            mx, my = a["mouth"]
+            sway = 0.12 * math.sin(t * 7.0)
+            cage(ctx, mx + 2, my - 10, t, rot=sway, swing=1.0)
+        else:
+            # grabbed into his hand for the dash
+            hx, hy, _ = a["hand_r"]
+            cage(ctx, hx, hy - 6, t, rot=0.15 * math.sin(t * 9), swing=1.0)
         if tl > t_see and tl < t_see + 0.5:
             fx.emote(ctx, "exclaim", a["top"][0] + 40, a["top"][1] - 70, 0.75, t, t0 + t_see, 0.5)
         if tl > t_go:
@@ -342,16 +347,21 @@ def emb_doorway(ctx, t, c, info):
     x, y = E_DOOR
     # ---- body
     if t < tf:
-        k = ease_out(seg(t, c.burst + 0.04, c.burst + 0.26))
-        x = lerp(300, E_DOOR[0], k)
-        y = lerp(1338, E_DOOR[1], k)
-        pose = ("catch", "run_panic", 0.35)
+        tb = c.burst
+        k = ease_out_back(seg(t, tb + 0.02, tb + 0.3), 2.2)
+        x = lerp(285, E_DOOR[0], k)
+        y = lerp(1340, E_DOOR[1], clamp(k))
+        ready = {"base": "catch", "lean": 0.12, **L("l", 0.75, 0.2, 1.0), **L("r", -0.2, 0.15, 0.5),
+                 "hunch": 0.6, "neck": 0.1}
+        pose = (("catch", "run_panic", 0.35), ready, smoothstep_(seg(t, tb + 0.12, tb + 0.34)))
         pose_t = 0.12
-        expr = "panic"
+        expr = state_at(t, [(tb, "panic"), (tb + 0.3, "determined")], 0.15)
         blush = 0.55
-        look = (0.6, 0.0)
-        face = {"open": 0.15}
-        turn = 0.55
+        # eyes dart around the floor for the critter ... then land on Tiredness
+        look = tween(t, [(tb + 0.28, (0.2, 0.2)), (tb + 0.34, (-0.7, 0.45)), (tb + 0.42, (0.5, 0.4)),
+                         (tf - 0.04, (1.0, 0.0))])
+        face = {"open": 0.1, "teeth": 0.4}
+        turn = lerp(0.55, 0.3, seg(t, tb + 0.2, tb + 0.4))
     else:
         rel0 = c.pov1 - 0.05
         pose = state_at(t, [(tf, FREEZE_POSE), (rel0, RELIEF_POSE)], 0.4)

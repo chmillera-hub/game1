@@ -295,8 +295,8 @@ def shot_lift(ctx, t, T):
     r = T.reveal
     cam = (lerp(500, 494, seg(t, 0, r)), 1592, lerp(3.15, 3.25, seg(t, 0, r)))
     tilt = tween(t, [(0.08, -1.75), (0.42, -2.32)], ease_out)
-    look, hf = _gaze(t, [(0.0, (0.2, 0.3)), (0.24, (0.2, 0.3)), (0.36, (0.75, 0.2)),
-                         (r - 0.12, (0.75, 0.2)), (r, (0.7, -0.45))], lag=0.15, gx=0.15, gy=0.12)
+    look, hf = _gaze(t, [(0.0, (0.2, 0.3)), (0.24, (0.2, 0.3)), (0.36, (0.6, 0.6)),
+                         (r - 0.12, (0.6, 0.6)), (r, (0.6, 0.6))], lag=0.15, gx=0.15, gy=0.12)
     expr = state_at(t, [(0.0, "dazed"), (0.34, "neutral")], 0.18)
     focus = seg(t, 0.32, 0.46)
     face = _F(hf, {"lower": 0.25 * focus, "brow_r": 0.4 * focus, "brow_l": -0.1 * focus,
@@ -347,7 +347,7 @@ def shot_react(ctx, t, T, info):
         face = _F(face, {"lid_l": 0.95 * pk, "lower_l": 0.5 * pk, "brow_l": -0.3 * pk, "brow_r": 0.25 * pk,
                          "eye_size": 0.08 * pk})
     blink = 1.0 if cover > 0.5 else (0.0 if t < T.peek + 0.6 else None)
-    blush = tween(t, [(T.c2, 0.45), (T.l1 + 0.3, 0.42), (T.l1 + 1.0, 0.0)])
+    blush = tween(t, [(T.c2, 0.55), (T.l1 + 0.3, 0.52), (T.l1 + 1.0, 0.0)])
     glint = tween(t, [(T.l1 + 0.2, 0.0), (T.l1 + 0.3, 0.75), (T.l1 + 0.55, 0.0)])
     glasses = 0.2 * (1 - seg(t, T.l2 + 0.1, T.l2 + 0.35))
     with core.camera(ctx, *cam):

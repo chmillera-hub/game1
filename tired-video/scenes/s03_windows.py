@@ -44,9 +44,8 @@ XW1, XW2, XW3 = 998, 1110, 1880   # feet spots: w1 facing left, w2/w3 facing rig
 XP = 1752                    # panic spot (backed off the window)
 XT = 1700                    # pick-up / throw spot
 ROCK_XY = (1616, 1624)
-CAGE_REST = (1826, 1606)     # where the dropped cage lands
-XSC = 1780                   # tiptoe: scoop spot
-XTE = 1880                   # tiptoe end (under window 3)
+CAGE_REST = (1952, 1606)     # where the dropped cage lands (his right)
+XTE = 1864                   # tiptoe end: scoops the cage, under window 3
 
 E_COAT, E_COAT_SH = core.PAL["e_coat"], core.PAL["e_coat_sh"]
 E_PANTS = core.PAL["e_pants"]
@@ -100,14 +99,14 @@ def _T(info):
     T["peek"] = T["smash"] + 0.46
     T["tip0"] = T["tip"] + 0.14          # first tiptoe step
     T["G"] = T["tip0"] + 0.2             # cut to the tiptoe tracking shot
-    T["scoop"] = T["tip0"] + 0.78        # dips for the cage
-    T["scoop1"] = T["scoop"] + 0.32
-    T["tip1"] = T["l5e"] - 0.05          # tiptoe ends under window 3
+    T["tip1"] = T["l5e"] - 0.1           # tiptoe ends under window 3
+    T["scoop"] = T["tip1"]               # dips for the cage
+    T["scoop1"] = T["climb"]
     # --- H
-    T["cage_in"] = T["climb"] + 0.08
-    T["sill"] = T["climb"] + 0.6
-    T["crouch"] = T["climb"] + 0.78
-    T["hop"] = T["climb"] + 0.92
+    T["cage_in"] = T["climb"] + 0.02
+    T["sill"] = T["climb"] + 0.4
+    T["crouch"] = T["climb"] + 0.54
+    T["hop"] = T["climb"] + 0.66
     T["slip"] = T["heap"] - 0.06
     T["gone"] = T["heap"] + 0.12
     T["thud"] = T["heap"] + 0.4
@@ -178,16 +177,18 @@ def _cage(ctx, x, y, t, rot=0.0, s=CAGE_S, rattle=0.0):
     props.cage(ctx, x, y, s, t, door=1.0, latch="open", rattle=rattle, rot=rot, empty=True)
 
 
-def _cage_hold(rot=0.0):
+def _cage_hold(rot=0.0, wrist=False, rec=None):
+    """hold= callback: cage by the handle in the hand, or hooked over the wrist
+    (wrist=True) so the hand stays free. The rig draws it in the hold slot, so on
+    the far arm it hangs behind him."""
     def cb(ctx, side, hx, hy, ang):
+        if wrist:
+            hx -= math.cos(ang) * 30 * ES
+            hy -= math.sin(ang) * 30 * ES - 4 * ES
+        if rec is not None:
+            rec["p"] = (hx, hy)
         _cage(ctx, hx, hy, 0.0, rot)
     return cb
-
-
-def _wrist_cage(ctx, a, t, rot):
-    """Cage handle hooked over the near (rig-r) wrist, drawn over him."""
-    wx, wy = a["wrist_r"]
-    _cage(ctx, wx, wy + 6 * ES, t, rot)
 
 
 def _bump(t, t0, up=0.06, down=0.14):
@@ -251,7 +252,7 @@ def heave_pose(k=0.0, sq=0.0, fist=False):
     bend for the yank, k = the heave (rises onto his toes, leans back)."""
     h = "fist" if fist else "grip"
     return P(IK("l", 0.0, 0.69, 0.27, h, wa=-0.5, wabs=0.6),
-             IK("r", 0.03, 0.69, 0.25, h, wa=-0.5, wabs=0.6),
+             IK("r", 0.03, 0.69, 0.25, h, wa=-0.5, wabs=0.6), hold=1.0,
              lean=0.22 + 0.12 * sq - 0.16 * k, hunch=0.5 + 0.35 * k, lift=7 * k, neck=0.08,
              **L("l", 0.3 + 0.25 * sq, k=0.15 + 0.6 * sq), **L("r", -0.12 + 0.2 * sq, k=0.08 + 0.6 * sq))
 
@@ -266,11 +267,12 @@ def heave_at(t, times, up=0.12, down=0.14):
 
 
 RUN = "run_panic"
+RUNC = {"base": "run_panic", "hold": 1.0}
 SKID = P(A("l", 0.9, 0.7, 0.9, 0.2, h="splay"), A("r", 0.7, 0.5, 0.8, 0.2, h="splay"),
-         L("l", -0.45, 0.1, 0.08, 0.3), L("r", 0.5, 0.1, 0.35, 0.0), lean=-0.22, hunch=0.6,
+         L("l", -0.45, 0.1, 0.08, 0.3), L("r", 0.5, 0.1, 0.35, 0.0), hold=1.0, lean=-0.22, hunch=0.6,
          coat_trail=0.7, sway=0.0)
 DEFLATE = P(A("l", 0.15, 0.1, 0.35, h="relaxed"), A("r", 0.12, 0.12, 0.3, h="relaxed"),
-            hunch=0.15, lean=0.12, neck=0.25, nod=0.08, **L("l", 0.1, k=0.08))
+            hold=1.0, hunch=0.15, lean=0.12, neck=0.25, nod=0.08, **L("l", 0.1, k=0.08))
 WAIL = P(HK("l", 72, -6, "claw", layer="front", wa=-1.6, wabs=0.7),
          HK("r", 72, -6, "claw", layer="front", wa=-1.6, wabs=0.7),
          hunch=0.55, neck=-0.2, nod=-0.28, lean=-0.06,

@@ -552,7 +552,8 @@ def shot_crash(ctx, t, T, info):
     z = -0.06
     x, y, s = sets.corridor_scale(z, 0.08)
     sq = 1.0 - seg(t, t_burst - 0.02, t_burst + 0.06)
-    with core.camera(ctx, 540, 960, 1.0):
+    sx, sy = core.shake(t, hit, 0.3, 16, seed=5)
+    with core.camera(ctx, 540 - sx, 960 - sy, 1.0):
         sets.corridor(ctx, t, "bg", alarm=1.0)
         # guards skid behind
         for (gz, lane, sd) in ((0.36, 0.42, 3), (0.24, -0.38, 0)):

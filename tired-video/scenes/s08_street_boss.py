@@ -283,7 +283,7 @@ def shot_walk(ctx, t, info, T):
     if t > 1.5:
         door = 0.035 * math.exp(-9 * (t - 1.5)) * abs(math.sin((t - 1.5) * 24))
     k = smoothstep(seg(t, 0.0, T["c2"]))
-    cam = (lerp(1580, 1630, k), lerp(1214, 1200, k), lerp(2.05, 2.22, k))
+    cam = (lerp(1585, 1625, k), lerp(1196, 1160, k), lerp(2.2, 2.55, k))
     t_stop = T["vans"] - 0.05
     wk = 1.0 - smoothstep(seg(t, t_stop, t_stop + 0.25))
     pose = (CARRY, WALK_CARRY, wk) if wk < 1 else WALK_CARRY
@@ -311,13 +311,14 @@ def _emb_ots_face(t, T):
 
 def shot_ots(ctx, t, info, T):
     u = seg(t, T["c2"], T["c3"])
-    z = lerp(1.72, 1.8, smoothstep(u))
+    z = lerp(1.5, 2.05, ease_in_out(seg(t, T["c2"] + 0.15, T["jd"] + 0.1)))
     hx, hy = BOSS[0], BOSS[1] - BOSS_S * BOSS_HEAD
     cam = (hx + (540 - 410) / z, hy + (960 - 700) / z, z)       # her face at ~(410, 700)
-    with core.camera(ctx, *cam):
-        _street_bg(ctx, t)
-        _agents(ctx, t)
-        _boss(ctx, t, look=(0.3, 0.02))
+    with core.cache_steps(2):
+        with core.camera(ctx, *cam):
+            _street_bg(ctx, t)
+            _agents(ctx, t)
+            _boss(ctx, t, look=(0.3, 0.02))
     # foreground: Emb's head and shoulders, 3/4 facing into the frame (screen space)
     sh = core.shake(t, T["jd"], 0.3, 7, seed=5)
     face = _emb_ots_face(t, T)
