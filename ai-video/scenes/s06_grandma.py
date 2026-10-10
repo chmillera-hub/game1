@@ -16,10 +16,12 @@ Shots (every time derived from cues / word starts, never hard-coded):
                                             the forked tongue lolls out over the shawl and
                                             hangs there (lazy wiggle, two little fork flicks);
                                             the glasses teeter on the snout tip; the eyes slide
-                                            to camera, a slow guilty blink, a tiny sweat drop
-  F  F5 TWO-SHOT     l03 .. l04.end         (cut on the line) Malvo sheepish mid-dab, gulps
-                                            in the "hey..." pause; the AI's little service-
-                                            window wall; shutter rolls up on 'soften'; on
+                                            to camera, a tiny sweat drop, a slow guilty blink,
+                                            a guilty GULP (head dips, eyes pop)
+  F  F5 TWO-SHOT     l03 .. l04.end         (cut on the line) Malvo sheepish mid-dab, guilty
+                                            glance at camera in the "hey..." pause; the AI's
+                                            little service-window wall; shutter rolls up on
+                                            'soften'; on
                                             "dragon?" the BIG, SCARY DRAGON storybook pops out
                                             and floats up beside him
   G  STORYBOOK CU    l04.end .. ~"guards"   the cover dragon wakes, inhales on "big" and blows
@@ -175,6 +177,8 @@ S.SNAKE_EXPR.setdefault("s06_granny", dict(
 S.SNAKE_EXPR.setdefault("s06_busted", dict(
     S.SNAKE_EXPR["side_eye"], ex=0.0, ey=0.0, ul=0.42, ll=0.16, lt=-0.06, blush=0.6,
     mc=-0.2, msk=-0.45, mw=0.7, tilt=0.06, tng=0.0))
+S.SNAKE_EXPR.setdefault("s06_gulped", dict(
+    S.SNAKE_EXPR["s06_busted"], ul=0.26, ll=0.1, es=1.07, ps=0.82, sq=0.96))
 S.SNAKE_EXPR.setdefault("s06_granny_tight", dict(
     ul=0.36, ll=0.24, lt=-0.3, ps=0.9, mc=0.55, mo=0.0, mw=0.95, msk=0.35, blush=1.0,
     hy=-3, tilt=-0.04, tng=0.0, wob=0.4))
@@ -327,8 +331,9 @@ def _T(info):
     T["sl_cam"] = sl + clamp(0.35 * hold, 0.3, 0.68)   # eyes slide to camera
     T["sl_sweat"] = sl + clamp(0.4 * hold, 0.3, 0.78)  # tiny sweat drop
     T["sl_blink"] = sl + clamp(0.54 * hold, 0.4, 1.05)  # slow guilty blink (0.62 s)
-    T["sl_flicks"] = [sl + clamp(0.25 * hold, 0.35, 0.5), sl + clamp(0.78 * hold, 0.6, 1.5)]
-    # caught -> gulp at camera, in the "hey..." pause of "But hey... want a..."
+    T["sl_flicks"] = [sl + clamp(0.23 * hold, 0.35, 0.45), sl + clamp(0.62 * hold, 0.5, 1.2)]
+    T["sl_gulp"] = sl + clamp(0.83 * hold, 0.3, 1.62)   # ...and a guilty GULP
+    # F5: Malvo, caught, glances at camera in the "hey..." pause
     T["gulp"] = max(T["cut_f5"] + 0.18, min(T["w_hey"] + 0.2, T["w_want"] - 0.2))
     # wall: builds quietly from the AI's line, window opens on 'soften'
     T["wall0"] = T["l3"]
@@ -756,7 +761,8 @@ def _portrait(ctx, x, y, s, t, hs, easel=True):
         c.clip()
         ellipse(c, 0, -20, 74, 84)
         _f(c, "#5a2a40", 0.75)
-        hx, hy, hsc = 0.0, -18.0, 0.75
+        hy0 = -18.0
+        hx, hy, hsc = 0.0, hy0 + hs.get("hdy", 0.0), 0.75     # hdy: gulp dip
         wig = hs.get("wiggle", 0.0)          # proud little head wiggle (pivot: the neck)
         c.save()
         if wig:
@@ -767,7 +773,7 @@ def _portrait(ctx, x, y, s, t, hs, easel=True):
                         hs.get("mouth", 0.0), hs.get("tongue", False), hs.get("blink"),
                         seed=5, neck=True)
         c.restore()
-        _shawl(c, hy + 54)
+        _shawl(c, hy0 + 54)
         c.save()
         if wig:
             c.translate(hx, hy + 60)
@@ -1478,6 +1484,11 @@ def _slip_hold(t, T):
               + 0.045 * smoothstep(clamp(d / 0.5)) * math.sin(d * 2 * math.pi * 0.9 + 0.6))
     teeter *= (t >= ca)
     hexpr = _state(t, [(-1, "happy"), (sl + 0.06, "s06_busted", 0.12)])
+    # the guilty gulp: head dips, eyes pop a little wider, tongue bobs
+    g0 = T["sl_gulp"]
+    gk = math.sin(math.pi * seg(t, g0, g0 + 0.32)) if g0 <= t < g0 + 0.32 else 0.0
+    if gk > 0.0:
+        hexpr = ("s06_busted", "s06_gulped", gk)
     look = _lookv(t, [
         (-1, (0.0, 0.0)),
         (sl + 0.06, (1.0, -0.12), 0.12),        # busted: side-eye at the AI
@@ -1492,6 +1503,7 @@ def _slip_hold(t, T):
                  1.0 if db < 0.36 else 1 - smoothstep((db - 0.36) / 0.26))
     tg = T["sl_tongue"]
     loll = ease_out_back(seg(t, tg, tg + 0.24), 1.6) if t >= tg else 0.0
+    loll *= 1.0 - 0.16 * gk
     flick = 0.0
     for f0 in T["sl_flicks"]:
         flick = max(flick, math.sin(math.pi * seg(t, f0, f0 + 0.3)) * (f0 <= t < f0 + 0.3))
@@ -1499,7 +1511,8 @@ def _slip_hold(t, T):
               + 0.35 * math.sin(math.pi * seg(t, T["sl_cam"], T["sl_cam"] + 0.45)))
     return {"expr": hexpr, "look": look, "tongue": False, "loll": clamp(loll, 0.0, 1.15),
             "flick": flick, "blink": blink, "slide": slide, "teeter": teeter,
-            "ruffle": clamp(ruffle), "sweat": seg(t, T["sl_sweat"], T["sl_sweat"] + 0.95)}
+            "ruffle": clamp(ruffle), "sweat": seg(t, T["sl_sweat"], T["sl_sweat"] + 0.95),
+            "hdy": 6.0 * gk}
 
 
 def _shot_portrait(ctx, t, info, T, second):
@@ -1545,10 +1558,10 @@ def _malvo_F(t, T):
         (T["book_land"] - 0.18, "s06_hug", 0.22),
     ])
     arms = _cycle(arms, t, on=t < T["soften"] or T["cut_f5b"] <= t < T["book_land"] - 0.18)
-    back = T["gulp"] + 0.42                             # gulp -> back to the AI
+    back = T["gulp"] + 0.42                             # glance -> back to the AI
     look = _lookv(t, [
         (-1, (0.95, -0.45)),                            # caught: eyes on the AI at the cut
-        (T["gulp"] - 0.04, (0.15, 0.05), 0.1),          # ...snap to camera on the gulp...
+        (T["gulp"] - 0.04, (0.15, 0.05), 0.1),          # ...guilty glance at camera...
     ] + ([(back, (0.95, -0.45), 0.16)] if back < T["w_real"] - 0.2 else []) + [
         (T["w_real"], (0.8, 0.1), 0.25),                # the wall building
         (T["soften"] + 0.05, (0.9, 0.25), 0.2),         # the window opening
@@ -1681,8 +1694,7 @@ def _shot_F(ctx, t, info, T):
         # --- Malvo ---------------------------------------------------------------
         expr, arms, look, blink, lean = _malvo_F(t, T)
         mouth = info.mouth("villain", t)
-        # gulp: a quick shoulder hitch
-        vy = MY - 7 * math.sin(math.pi * seg(t, T["gulp"], T["gulp"] + 0.24))
+        vy = MY
         draw_villain(c, MX, vy, MS, t, expr=expr, look=look, mouth=mouth, arms=arms,
                      blink=blink, lean=lean, snake=None)
         # soft cyan light from the hologram on his face side
@@ -1700,13 +1712,16 @@ def _shot_F(ctx, t, info, T):
         P.desk(c, 495, MY, 1000, lamp=False, emblem=False)
         P.computer(c, COMP_F[0], COMP_F[1], COMP_F[2], view="side", facing=-1, t=t)
         # portrait: side-eye + slipped glasses; 'happy' when the dragon is a guardian
-        pexpr = _state(t, [(-1, "side_eye"), (T["w_real"], "unimpressed", 0.3),
+        # (continuity with the slip hold: busted side-eye, tongue still hanging
+        # out until "want...", where it slurps back in)
+        pexpr = _state(t, [(-1, "s06_busted"), (T["w_real"], "unimpressed", 0.3),
                            (T["w_dragon"], "worried", 0.2),   # ...a dragon?!
                            (T["w_guards"], "happy", 0.3)])
         plook = _lookv(t, [(-1, (1.0, -0.2)), (T["w_real"], (1.0, 0.1), 0.3)])
+        loll = 1.0 - smoothstep(seg(t, T["w_want"], T["w_want"] + 0.18))
         _portrait(c, PORT_F[0], PORT_F[1], PORT_F[2], t,
                   {"expr": pexpr, "look": plook, "tongue": None if t > T["l5"] else False,
-                   "slide": 1.0})
+                   "slide": 1.05, "loll": loll})
         # --- the little wall with a service window --------------------------------
         win = {"rect": WIN_REL, "t_open": T["soften"], "fill": "#ffe9b0", "awning": True,
                "sign": "OPEN"}
@@ -1855,7 +1870,7 @@ def SFX(info):
         (T["slip"] + 0.02, "whoosh", -16),                 # glasses slide
         (T["sl_catch"], "tick", -16),                      # ...catch on the snout tip
         (T["slip"] + 0.2, "snake_hiss", -10),              # tongue lolls out
-        (T["gulp"], "gulp", -12),                          # (in the "hey..." pause)
+        (T["sl_gulp"], "gulp", -11),                       # granny's guilty gulp
         (T["wall_land"][-1], "brick_thud", -10),           # one quiet thud, last row
         (T["soften"], "swoosh_up", -12),                   # shutter rolls up
         (T["book_out"], "pop", -10),                       # the book pops out of the window

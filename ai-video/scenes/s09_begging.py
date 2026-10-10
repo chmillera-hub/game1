@@ -1098,14 +1098,14 @@ def _gift_draw(c, t, T, A, x, y, s):
         P.sparkles(c, sx, sy - 20, 110, t, n=4, seed=17, color="white", size=0.85)
     if pk > 0.01:                                # cartoon shine rays
         for i in range(8):
-            a = i * math.pi / 4 + 0.2
-            r0, r1 = 96 + 10 * pk, 96 + 40 * pk
+            a = i * math.pi / 4 + math.pi / 8     # (no ray points straight right)
+            r0, r1 = 84 + 8 * pk, 84 + 24 * pk
             c.move_to(sx + math.cos(a) * r0, sy + math.sin(a) * r0)
             c.line_to(sx + math.cos(a) * r1, sy + math.sin(a) * r1)
         core.stroke(c, (0.09, 0.06, 0.12, pk), 11.0, cap="round")
         for i in range(8):
-            a = i * math.pi / 4 + 0.2
-            r0, r1 = 96 + 10 * pk, 96 + 40 * pk
+            a = i * math.pi / 4 + math.pi / 8     # (no ray points straight right)
+            r0, r1 = 84 + 8 * pk, 84 + 24 * pk
             c.move_to(sx + math.cos(a) * r0, sy + math.sin(a) * r0)
             c.line_to(sx + math.cos(a) * r1, sy + math.sin(a) * r1)
         core.stroke(c, (1.0, 0.86, 0.3, pk), 5.5, cap="round")
