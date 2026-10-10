@@ -408,6 +408,40 @@ def babble(t0, t1, gain=0.05):
         t += len(b) / SR - 1.0
 
 
+def bird(t0, gain=0.03, pan=0.0, scale=1.0):
+    """A small desert bird: two quick down-swept whistles."""
+    for k in range(2):
+        n = int(0.11 * SR)
+        tt = np.arange(n) / SR
+        f = (3600 - 1500 * tt / 0.11) * scale
+        s = np.sin(2 * np.pi * np.cumsum(f) / SR) * np.sin(np.pi * tt / 0.11) ** 2
+        amb.add(s, t0 + k * 0.15, gain, pan)
+
+
+def cough_sfx(t0):
+    """Moses clears his throat: a short in-breath, then two coughs in his own voice's timbre."""
+    path = os.path.join(BUILD, "cough_src.wav")
+    if not os.path.exists(path):
+        from kokoro_onnx import Kokoro
+        k = Kokoro(os.path.join(HERE, "models/kokoro-v1.0.onnx"), os.path.join(HERE, "models/voices-v1.0.bin"))
+        a, sr = k.create("Huh!", voice="am_michael", speed=1.2)
+        sf.write(path, dsp.resample(a.astype(np.float64), sr, SR).astype(np.float32), SR)
+    src, _ = sf.read(path)
+    src = src / (np.abs(src).max() + 1e-9)
+    on = np.argmax(np.abs(src) > 0.1)
+    src = src[on:on + int(0.3 * SR)]
+    body = 0.7 * dsp.whisperize(src, SR, seed=4, tilt=0.2) + 0.35 * src
+    n = len(body)
+    tt = np.arange(n) / SR
+    for k, (dt, g) in enumerate(((0.25, 1.0), (0.67, 0.7))):
+        e = np.minimum(1, tt / 0.004) * (0.25 + 0.75 * np.exp(-tt / 0.07)) * np.exp(-tt / 0.22)
+        c = dsp.highpass(body * e, SR, 140)
+        voice.add(c / (np.abs(c).max() + 1e-9), t0 + dt, 0.32 * g, -0.05)
+    m = int(0.22 * SR)
+    inh = dsp.bandpass(noise(m), SR, 900, 3200) * np.sin(np.pi * np.arange(m) / m) ** 2
+    voice.add(inh, t0 + 0.0, 0.04)
+
+
 # ------------------------------------------------------------------ the score
 def score():
     v, fear, sp, el2, ex, al, pr, v2, end = (MARKS[k] for k in ("village", "fear", "speech", "elder2", "expel",
@@ -524,7 +558,7 @@ def score():
     for k, (nt, t) in enumerate((("A3", S("n8b") + 0.5), ("F3", S("n8b") + 3.0), ("D3", S("mp1") - 0.4),
                                  ("C3", S("mp3") - 0.5), ("A2", S("mp4") + 1.0))):
         oud(nt, t, 0.08, -0.3 + 0.15 * k, 3.5)
-    whoosh(S("n9") + 0.5, 3.5, 0.18, 200, 1200, -0.3)
+    whoosh(S("n9") + 0.5, 3.8, 0.22, 200, 1200, 0.65)   # the dust devil, close on the right
     # 8. THE PRESENCE
     music.add(pad(["D5", "A5", "E6"], S("g1") - S("n10") + 2, bright=0.6, attack=4, release=2.5,
                   detune=0.003), S("n10") + 0.4, 0.07)
@@ -546,6 +580,7 @@ def score():
     bell("A5", swell + 0.4, 0.04, 0.4)
     bell("F#6", swell + 0.9, 0.03, 0.0)
     sg = S("sigh")
+    cough_sfx(S("cough"))
     breath_sigh(sg, 1.0, 0.22, -0.25, voiced=0.25)
     cosmic = np.zeros((int(5 * SR), 2))
     tmp = Bus.__new__(Bus)
@@ -555,7 +590,11 @@ def score():
     sfx.add(cosmic[:int(6 * SR)], sg + 0.05, 0.9)
     boom(sg + 1.15, 0.12)
     # 9. BACK IN THE VILLAGE
-    crickets(v2 - 0.5, end + 3, 0.012)
+    crickets(v2 - 0.5, S("n14b") - 0.4, 0.012)
+    # dawn outside the walls: a soft breeze and a few desert birds
+    wind(S("n14b") - 1.0, TOTAL + 0.5, 0.05, gust=0.2, seed=8, bright=700)
+    for k, dt in enumerate((1.6, 2.1, 4.4, 4.7, 7.3)):
+        bird(S("n14b") + dt, 0.025, (-0.6, -0.5, 0.5, 0.55, -0.2)[k], 1 + 0.15 * (k % 3))
     for t in np.arange(v2 + 0.2, v2 + 2.3, 0.62):
         knock(t, 0.09, -0.3)
     wh = np.zeros(int(6 * SR))
@@ -598,9 +637,6 @@ def place_voices():
         cur = 20 * np.log10(dsp.rms(x[:dry_len]) + 1e-9)
         g = 10 ** ((LEVEL[it["speaker"]] - cur) / 20)
         voice.add(x, it["start"], g)
-    # an echo of the Lord's promise beneath Moses quoting it
-    x, _ = sf.read(os.path.join(BUILD, "voices", "g0.wav"))
-    sfx.add(x, CAP("m7", 2) + 0.05, 0.08 * 10 ** ((LEVEL["god"] + 26) / 20))
 
 
 def duck_curve(v, depth_db=9.0):

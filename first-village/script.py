@@ -9,11 +9,11 @@ read, so the picture is always timed to the actual voice performance.
 VOICES = {
     "narrator": ("af_heart", 0.94, "narration"),
     "moses":    ("am_michael", 0.86, "dialogue"),
-    "moses_w":  ("am_michael", 0.80, "dialogue"),   # broken whisper (prayer)
+    "moses_w":  ("am_michael", 0.86, "dialogue"),   # the prayer: his plain, steady voice
     "elder":    ("bm_george", 0.93, "dialogue"),
     "potter":   ("am_puck", 0.95, "dialogue"),
     "fear":     ("am_fenrir", 0.82, "fear"),
-    "god":      ({"af_heart": 0.45, "am_michael": 0.55}, 0.78, "god"),
+    "god":      ("am_onyx", 0.82, "god"),           # low, booming, comforting
 }
 
 
@@ -40,7 +40,7 @@ SEQ = [
     Gap(4.2),                                        # title over the dawn desert
     L("n1", "narrator", "The dust of the wilderness still clung to Moses's cloak. "
                         "But the fire of the Lord was a furnace in his heart.", 0.7),
-    L("g0", "god", "I will be with your mouth.", 0.8),
+    L("g0", "god", "I will be with you, Moses.", 0.8),
     L("n2", "narrator", "Those words still echoed in his soul. A promise that felt more real "
                         "than the hard-packed earth beneath his sandals.", 1.0),
 
@@ -65,6 +65,7 @@ SEQ = [
                          "glory, of being seen by God.", 0.7),
 
     Mark("speech"),
+    Sfx("cough", 1.25, 0.3),
     L("m0", "moses", "Some...", 0.45, caption="Some—"),
     L("m1", "moses", "Sometimes, a truth lands in your heart that is too big for your mouth.", 0.7),
     L("m2", "moses", "You fear that when you speak it, the world will call you a liar.", 0.6),
@@ -104,10 +105,10 @@ SEQ = [
                           "over his shaking shoulders, like a heavy, comforting hand.", 0.6),
     L("n10c", "narrator", "And in the deepest part of his soul, a sound that was not a sound. "
                           "A whisper, like the turning of stars.", 0.8),
-    L("g1", "god", "Moses...", 0.8, speed=0.9),
-    L("g1b", "god", "Moses...", 1.3, speed=0.9),
+    L("g1", "god", "Moses...", 0.8),
+    L("g1b", "god", "Moses...", 1.5),
     L("n11", "narrator", "It did not offer answers. It did not promise victory. It simply said...", 0.5),
-    L("g2", "god", "I see you.", 2.0),
+    L("g2", "god", "I see you", 2.0, caption="I see you.", speed=0.76),
     L("n12", "narrator", "And as Moses knelt there, it was as if the universe itself was kneeling "
                          "beside him.", 0.6),
     L("n12b", "narrator", "Together, the man covered in dirt, and the Lord of his emotions, let out "
@@ -119,7 +120,7 @@ SEQ = [
                          "her work. She looked at the potter, who was staring at the closed gate.", 0.6),
     L("p1", "potter", "He... he was just talking about being afraid.", 0.4),
     L("p2", "potter", "He was quoting the Lord...", 0.5),
-    L("p3", "potter", "Why did the Elder throw him out for quoting the fucking Lord?", 1.3),
+    L("p3", "potter", "Why did the Elder throw him out for talking about the Lord?", 1.3),
     L("n14", "narrator", "The weaver had no answer. But for the first time in years, the straight "
                          "lines of the village felt like a cage.", 1.0),
     L("n14b", "narrator", "The seed was planted.", 1.6),

@@ -47,6 +47,11 @@ class Style:
             self.lips = mixc(self.skin, (150, 60, 60), 0.35)
 
 
+def ease_in_out_drop(u):
+    """A tear clings, then slides."""
+    return u * u * (3 - 2 * u) * 0.85 + u * 0.15
+
+
 DEFAULT_POSE = dict(
     kneel=0.0, bow=0.0, turn=0.0, tilt=0.0, pitch=0.0, lean=0.0,
     gx=0.0, gy=0.0, blink=0.0, lid=0.0, squint=0.0,
@@ -459,6 +464,22 @@ def draw_head(cv, st, p, front=True):
                 dy = ey + R * 0.14 + ln * ph
                 cv.drawCircle(ex + s * R * 0.01, dy, R * 0.045, paint((225, 238, 255), 0.85 * (1 - ph * 0.6)))
                 cv.drawCircle(ex + s * R * 0.0 - R * 0.012, dy - R * 0.015, R * 0.015, paint((255, 255, 255), 0.9))
+
+    # single tears: each (side, progress 0..1) rolls from the lower lid down the cheek
+    for side, u in p.get("drops", ()):
+        if u <= 0 or u >= 1.25:
+            continue
+        ex = lx if side < 0 else rxe
+        x0, y0 = ex + side * R * 0.05, ey + R * 0.15
+        ln = R * 0.85
+        pos = min(u, 1.0)
+        yy = y0 + ln * ease_in_out_drop(pos)
+        xx = x0 - side * R * 0.04 * math.sin(pos * math.pi)
+        fade = clamp((1.25 - u) / 0.25)
+        trail = _quad(skia.Path(), (x0, y0), (x0 - side * R * 0.03, (y0 + yy) / 2), (xx, yy))
+        cv.drawPath(trail, paint((220, 236, 252), 0.45 * fade, stroke=R * 0.03))
+        cv.drawCircle(xx, yy, R * 0.05, paint((225, 238, 255), 0.9 * fade))
+        cv.drawCircle(xx - R * 0.015, yy - R * 0.018, R * 0.017, paint((255, 255, 255), 0.95 * fade))
 
     # nose
     nx = fx * 1.35

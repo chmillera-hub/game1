@@ -30,7 +30,7 @@ def space_for(lid, speaker):
         return "god"
     if speaker == "fear":
         return "fear"
-    if lid.startswith(("mp",)):
+    if lid.startswith(("mp",)) or speaker == "moses_w":
         return "outside"
     if lid.startswith("p"):
         return "courtyard"
@@ -79,7 +79,7 @@ def ir(name):
             "courtyard": lambda: dsp.make_ir(SR, 0.8, 0.65, 0.018, 4, 0.8),
             "outside": lambda: dsp.make_ir(SR, 1.6, 0.75, 0.04, 5, 1.0),
             "fear": lambda: dsp.make_ir(SR, 1.4, 0.8, 0.03, 6, 1.0),
-            "god": lambda: dsp.make_ir(SR, 4.8, 0.55, 0.05, 7, 1.0),
+            "god": lambda: dsp.make_ir(SR, 3.2, 0.6, 0.06, 7, 1.0),
         }[name]()
     return IRS[name]
 
@@ -89,18 +89,14 @@ def fx(item, a):
     lid, spk = item["id"], item["speaker"]
     seed = zlib.crc32(lid.encode()) % 1000
     if spk == "god":
-        wh = dsp.whisperize(a, SR_TTS, seed=seed, tilt=0.5)
-        low = dsp.pitch(a, SR_TTS, 0.5)
-        shimmer = dsp.whisperize(dsp.pitch(a, SR_TTS, 1.5), SR_TTS, seed=seed + 1)
-        mono = 0.66 * a + 0.62 * wh + 0.36 * low + 0.10 * shimmer
-        mono = dsp.highpass(mono, SR_TTS, 60)
-        x = dsp.resample(mono, SR_TTS, SR)
-        # slow stereo drift so it seems to come from everywhere
-        t = np.arange(len(x)) / SR
-        p = 0.35 * np.sin(2 * np.pi * 0.23 * t + seed)
-        st = np.stack([x * np.sqrt(0.5 - p / 2), x * np.sqrt(0.5 + p / 2)], 1) * 1.41
-        out = dsp.reverb(st, ir("god"), wet=0.55, dry=0.75)
-        return out * 0.9
+        # low and booming but warm: deepen (formants kept), add a sub-octave and chest, then a large hall
+        deep = dsp.ffmpeg_filter(a, SR_TTS, "rubberband=pitch=0.84:formant=preserved")
+        deep = np.pad(deep, (0, max(0, len(a) - len(deep))))[:len(a)]
+        sub = dsp.lowpass(dsp.pitch(a, SR_TTS, 0.5), SR_TTS, 700)
+        chest = dsp.lowpass(deep, SR_TTS, 260)
+        mono = deep + 0.32 * sub + 0.45 * chest + 0.08 * dsp.whisperize(deep, SR_TTS, seed=seed)
+        x = dsp.resample(dsp.highpass(mono, SR_TTS, 45), SR_TTS, SR)
+        return dsp.reverb(x, ir("god"), wet=0.36, dry=1.0)
     if spk == "fear":
         wh = dsp.whisperize(dsp.pitch(a, SR_TTS, 0.86), SR_TTS, seed=seed, tilt=0.6)
         low = dsp.pitch(a, SR_TTS, 0.7)
@@ -112,12 +108,6 @@ def fx(item, a):
         p = 0.8 * np.sin(2 * np.pi * 0.45 * t + 1.0)   # circles from ear to ear
         st = np.stack([x * np.sqrt(0.5 - p / 2), x * np.sqrt(0.5 + p / 2)], 1) * 1.41
         return dsp.reverb(st, ir("fear"), wet=0.35, dry=1.0)
-    if spk == "moses_w":
-        wh = dsp.whisperize(a, SR_TTS, seed=seed, tilt=0.4)
-        mono = 0.8 * a + 0.55 * wh
-        mono = dsp.lowpass(mono, SR_TTS, 7000)
-        x = dsp.resample(mono, SR_TTS, SR)
-        return dsp.reverb(x, ir("outside"), wet=0.10, dry=1.0)
     x = dsp.resample(dsp.highpass(a, SR_TTS, 70), SR_TTS, SR)
     space = space_for(lid, spk)
     wet = {"narr": 0.05, "plaza": 0.11, "courtyard": 0.09, "outside": 0.08}[space]

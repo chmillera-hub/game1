@@ -1,4 +1,4 @@
-# The First Village — animated short (portrait, ~4:18)
+# The First Village — animated short (portrait, ~4:20)
 
 A 720×1280 (9:16) animated parable of Moses: the village of straight lines, the Elder,
 the speech about cracked vessels, the exile, and the presence that says *"I see you."*

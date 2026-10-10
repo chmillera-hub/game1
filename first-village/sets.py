@@ -199,56 +199,260 @@ def village_aerial(cv, t, glow_seed=0.0, night=0.0, lights=0.0):
         glow(cv, 0, 4, 18 + 20 * glow_seed, (255, 245, 210), glow_seed)
 
 
-def aerial_view(cv, t, zoom=1.0, focus=(0, 0), night=0.0, lights=0.0, glow_seed=0.0, horizon=330):
-    """The village seen from a high hill, in true perspective, with sky and horizon."""
+class Cam3:
+    """Minimal perspective camera: position, downward pitch (deg), focal length."""
+
+    def __init__(self, pos, pitch, f=900.0, cx=360.0, cy=640.0):
+        self.C = pos
+        p = math.radians(pitch)
+        self.up = (math.cos(p), math.sin(p))     # (y, z) components
+        self.fw = (-math.sin(p), math.cos(p))
+        self.f, self.cx, self.cy = f, cx, cy
+
+    @staticmethod
+    def look_at(pos, target, f=900.0, cy=640.0):
+        dy, dz = pos[1] - target[1], target[2] - pos[2]
+        return Cam3(pos, math.degrees(math.atan2(dy, dz)), f, cy=cy)
+
+    def depth(self, X, Y, Z):
+        vy, vz = Y - self.C[1], Z - self.C[2]
+        return vy * self.fw[0] + vz * self.fw[1]
+
+    def p(self, X, Y, Z):
+        vx, vy, vz = X - self.C[0], Y - self.C[1], Z - self.C[2]
+        yc = vy * self.up[0] + vz * self.up[1]
+        zc = max(0.5, vy * self.fw[0] + vz * self.fw[1])
+        return (self.cx + self.f * vx / zc, self.cy - self.f * yc / zc)
+
+
+def _quad(cam, pts):
+    return path([cam.p(*q) for q in pts])
+
+
+# drab, warm, lived-in adobe palette
+ADOBE = [(214, 198, 170), (204, 186, 156), (220, 208, 186), (196, 180, 152), (210, 192, 160)]
+
+
+def _village_layout():
+    rnd = lambda *k: hashf(77, *k)
+    houses = []
+    for zi, gz in enumerate((14, 34, 56, 78, 100)):
+        for xi, gx in enumerate((-45, -24, 24, 45)):
+            w = 11 + 5 * rnd(zi, xi, 1)
+            d = 9 + 4 * rnd(zi, xi, 2)
+            h = 4.5 + 2.5 * rnd(zi, xi, 3) + (3.2 if rnd(zi, xi, 4) > 0.78 else 0)
+            x = gx + (rnd(zi, xi, 5) - 0.5) * 4
+            z = gz + (rnd(zi, xi, 6) - 0.5) * 3
+            houses.append(dict(x0=x - w / 2, x1=x + w / 2, z0=z - d / 2, z1=z + d / 2, h=h, i=zi * 4 + xi,
+                               col=ADOBE[int(rnd(zi, xi, 7) * 5)]))
+    for k, gx in enumerate((-8, 9)):  # two houses behind the plaza
+        houses.append(dict(x0=gx - 6, x1=gx + 6, z0=96, z1=106, h=5.5 + k, i=40 + k, col=ADOBE[k + 2]))
+    return houses
+
+
+HOUSES = _village_layout()
+
+
+def _box(cv, cam, b, night=0.0, lights=0.0, details=True):
+    x0, x1, z0, z1, h = b["x0"], b["x1"], b["z0"], b["z1"], b["h"]
+    base = mixc(b["col"], (26, 30, 58), night * 0.8)
+    top_c, front_c, lit_side, dark_side = shade(base, 1.07), shade(base, 0.86), shade(base, 0.95), shade(base, 0.68)
+    cx = cam.C[0]
+    # side walls (light comes from the left)
+    if cx < x0:
+        cv.drawPath(_quad(cam, [(x0, 0, z0), (x0, h, z0), (x0, h, z1), (x0, 0, z1)]), paint(lit_side))
+    if cx > x1:
+        cv.drawPath(_quad(cam, [(x1, 0, z0), (x1, h, z0), (x1, h, z1), (x1, 0, z1)]), paint(dark_side))
+    # front wall, facing the camera
+    cv.drawPath(_quad(cam, [(x0, 0, z0), (x1, 0, z0), (x1, h, z0), (x0, h, z0)]), paint(front_c))
+    # roof with a low parapet lip
+    cv.drawPath(_quad(cam, [(x0, h, z0), (x1, h, z0), (x1, h, z1), (x0, h, z1)]), paint(top_c))
+    i = 0.6
+    cv.drawPath(_quad(cam, [(x0 + i, h, z0 + i), (x1 - i, h, z0 + i), (x1 - i, h, z1 - i), (x0 + i, h, z1 - i)]),
+                paint(shade(top_c, 0.94)))
+    cv.drawPath(path([cam.p(x0, h, z0), cam.p(x1, h, z0)], closed=False), paint(shade(top_c, 1.08), stroke=1.6))
+    # a little grime at the foot of the wall
+    cv.drawPath(_quad(cam, [(x0, 0, z0), (x1, 0, z0), (x1, 0.5, z0), (x0, 0.5, z0)]), paint(shade(front_c, 0.82)))
+    if not details:
+        return
+    r = lambda k: hashf(b["i"], k, 13)
+    w = x1 - x0
+    # one door, off-centre; at most one small window, never a symmetric "face"
+    dl = x0 + w * (0.14 if r(1) < 0.5 else 0.62)
+    door_c = mixc((74, 58, 46), (12, 12, 24), night * 0.6)
+    cv.drawPath(_quad(cam, [(dl, 0, z0), (dl + 2.0, 0, z0), (dl + 2.0, 2.9, z0), (dl, 2.9, z0)]), paint(door_c))
+    if r(2) > 0.35:
+        wl = x0 + w * (0.62 if dl < x0 + w / 2 else 0.18)
+        lit = lights * (r(9) > 0.4)
+        wc = mixc(mixc((86, 72, 62), (16, 16, 30), night * 0.6), (255, 196, 120), lit)
+        cv.drawPath(_quad(cam, [(wl, h * 0.55, z0), (wl + 1.4, h * 0.55, z0), (wl + 1.4, h * 0.55 + 1.2, z0),
+                                (wl, h * 0.55 + 1.2, z0)]), paint(wc))
+    if r(3) > 0.55:   # cloth awning over the door
+        aw = mixc([(150, 92, 70), (116, 120, 104), (170, 140, 96)][int(r(4) * 3)], (30, 30, 50), night * 0.7)
+        cv.drawPath(_quad(cam, [(dl - 0.6, 3.4, z0), (dl + 2.6, 3.4, z0), (dl + 2.6, 2.9, z0 - 1.6),
+                                (dl - 0.6, 2.9, z0 - 1.6)]), paint(aw))
+    if r(5) > 0.6:    # a cluster of clay jars in a back corner of the roof
+        for k, (ux, uz, sz) in enumerate(((0.78, 0.8, 1.0), (0.86, 0.66, 0.75), (0.7, 0.62, 0.6))):
+            jx, jz = x0 + w * ux, z0 + (z1 - z0) * uz
+            p0 = cam.p(jx, h, jz)
+            p1 = cam.p(jx, h + 1.2 * sz, jz)
+            rr = abs(cam.p(jx + 0.55 * sz, h, jz)[0] - p0[0])
+            jc = mixc((150, 98, 70), (40, 30, 46), night * 0.7)
+            cv.drawOval(oval(p0[0], (p0[1] + p1[1]) / 2, rr, abs(p0[1] - p1[1]) / 2 + rr * 0.3), paint(jc))
+            cv.drawOval(oval(p0[0] - rr * 0.3, (p0[1] + p1[1]) / 2 - rr * 0.2, rr * 0.35, rr * 0.5),
+                        paint(shade(jc, 1.2), 0.6))
+    if r(6) > 0.7:    # a ladder up the side
+        for k in range(2):
+            xx = x1 - 1.0 - k * 0.9
+            cv.drawPath(path([cam.p(xx, 0, z0 - 0.4), cam.p(xx, h + 0.8, z0 - 0.1)], closed=False),
+                        paint(mixc((110, 80, 52), (30, 26, 40), night * 0.7), stroke=1.4))
+
+
+def _shadow(cv, cam, b, night=0.0):
+    x0, x1, z0, z1, h = b["x0"], b["x1"], b["z0"], b["z1"], b["h"]
+    sx, sz = 0.75 * h, 0.35 * h
+    pts = [(x0, 0, z1), (x0, 0, z0), (x0 + sx, 0, z0 + sz), (x1 + sx, 0, z0 + sz), (x1 + sx, 0, z1 + sz), (x1, 0, z1)]
+    cv.drawPath(_quad(cam, pts), paint((40, 30, 30), 0.22 * (1 - 0.6 * night)))
+
+
+def _palm(cv, cam, x, z, h, t, night=0.0):
+    base, top = cam.p(x, 0, z), cam.p(x + 0.8, h, z)
+    s = cam.f / max(1, cam.depth(x, h, z))
+    trunk = mixc((122, 92, 64), (34, 30, 44), night * 0.7)
+    cv.drawPath(spline([base, ((base[0] + top[0]) / 2 + 2 * s, (base[1] + top[1]) / 2), top], closed=False),
+                paint(trunk, stroke=max(1.5, 0.5 * s)))
+    leaf = mixc((86, 112, 60), (24, 34, 40), night * 0.7)
+    for k in range(7):
+        ang = k / 7 * 2 * math.pi + 0.1 * math.sin(t + k)
+        ex, ey = top[0] + math.cos(ang) * 3.8 * s, top[1] + math.sin(ang) * 1.6 * s + 1.2 * s
+        cv.drawPath(spline([top, ((top[0] + ex) / 2, top[1] - 0.6 * s + (ey - top[1]) * 0.2), (ex, ey)], closed=False),
+                    paint(leaf, stroke=max(1.2, 0.35 * s)))
+
+
+def village3d(cv, cam, t, night=0.0, lights=0.0, crowd=True, glow_seed=0.0):
+    dim = lambda c: mixc(c, (24, 28, 56), night * 0.82)
+    # sand to the horizon, then the paved village floor with its straight lines
+    cv.drawPath(_quad(cam, [(-3000, 0, cam.C[2] + 2), (3000, 0, cam.C[2] + 2), (3000, 0, 6000), (-3000, 0, 6000)]),
+                paint(dim(SAND)))
+    for k in range(18):
+        zz = 140 + k * 26
+        cv.drawPath(path([cam.p(-900, 0, zz), cam.p(0, 0, zz + 6), cam.p(900, 0, zz)], closed=False),
+                    paint(dim(shade(SAND, 0.92)), 0.6, stroke=1.2))
+    cv.drawPath(_quad(cam, [(-60, 0, 0), (60, 0, 0), (60, 0, 120), (-60, 0, 120)]), paint(dim(GROUND_IN)))
+    for g in range(-60, 61, 8):
+        cv.drawPath(path([cam.p(g, 0, 0), cam.p(g, 0, 120)], closed=False), paint(dim(shade(GROUND_IN, 0.9)), 0.5,
+                                                                               stroke=0.8))
+    for g in range(0, 121, 8):
+        cv.drawPath(path([cam.p(-60, 0, g), cam.p(60, 0, g)], closed=False), paint(dim(shade(GROUND_IN, 0.9)), 0.5,
+                                                                             stroke=0.8))
+    walls = [dict(x0=-62, x1=62, z0=118, z1=121, h=7, i=90, col=(190, 176, 150)),
+             dict(x0=-62, x1=-59, z0=0, z1=121, h=7, i=91, col=(190, 176, 150)),
+             dict(x0=59, x1=62, z0=0, z1=121, h=7, i=92, col=(190, 176, 150)),
+             dict(x0=-62, x1=-6, z0=-1, z1=2, h=7, i=93, col=(184, 170, 144)),
+             dict(x0=6, x1=62, z0=-1, z1=2, h=7, i=94, col=(184, 170, 144))]
+    towers = [dict(x0=x - 4, x1=x + 4, z0=z - 4, z1=z + 4, h=10.5, i=95 + k, col=(196, 182, 156))
+              for k, (x, z) in enumerate(((-60, 0), (60, 0), (-60, 120), (60, 120), (-9, 0), (9, 0)))]
+    dais_b = dict(x0=-5, x1=5, z0=60, z1=67, h=1.3, i=99, col=(176, 166, 150))
+    blocks = HOUSES + walls + towers + [dais_b]
+    for b in HOUSES + [dais_b]:
+        _shadow(cv, cam, b, night)
+    if glow_seed > 0:
+        q = cam.p(0, 0, 64)
+        glow(cv, q[0], q[1], 60 + 160 * glow_seed, (255, 214, 140), 0.85 * glow_seed)
+    order = sorted(blocks, key=lambda b: -cam.depth((b["x0"] + b["x1"]) / 2, 0, (b["z0"] + b["z1"]) / 2))
+    palms = [(-14, 44), (15, 86), (-52, 66)]
+    drawn_palms = set()
+    for b in order:
+        dz = cam.depth(0, 0, (b["z0"] + b["z1"]) / 2)
+        for k, (px, pz) in enumerate(palms):
+            if k not in drawn_palms and cam.depth(px, 0, pz) > dz:
+                _palm(cv, cam, px, pz, 9, t, night)
+                drawn_palms.add(k)
+        _box(cv, cam, b, night, lights, details=b["i"] < 90)
+        if b is dais_b and crowd and night < 0.5:
+            for k in range(22):
+                a = math.pi * (0.1 + 0.8 * hashf(k, 31))
+                rr = 9 + 5 * hashf(k, 32)
+                fx, fz = math.cos(a) * rr, 63 - math.sin(a) * rr * 0.9
+                pb, ph = cam.p(fx, 0, fz), cam.p(fx, 1.7, fz)
+                sz = abs(pb[1] - ph[1])
+                cv.drawOval(oval(pb[0], (pb[1] + ph[1]) / 2 + sz * 0.1, sz * 0.22, sz * 0.42),
+                            paint(dim(HEAD_COLS[k % 4])))
+                cv.drawCircle(ph[0], ph[1], sz * 0.14, paint(dim((176, 140, 110))))
+            pe, he = cam.p(0, 1.3, 63.5), cam.p(0, 3.3, 63.5)
+            sz = abs(pe[1] - he[1])
+            cv.drawOval(oval(pe[0], (pe[1] + he[1]) / 2, sz * 0.2, sz * 0.45), paint((64, 62, 90)))
+    for k, (px, pz) in enumerate(palms):
+        if k not in drawn_palms:
+            _palm(cv, cam, px, pz, 9, t, night)
+    # the gate
+    g = [(-3.2, 0, -1.05), (3.2, 0, -1.05), (3.2, 5.2, -1.05), (-3.2, 5.2, -1.05)]
+    cv.drawPath(_quad(cam, g), paint(dim((96, 68, 44))))
+    cv.drawPath(path([cam.p(0, 0, -1.05), cam.p(0, 5.2, -1.05)], closed=False), paint(dim((60, 42, 28)), stroke=1.2))
+
+
+HEAD_COLS = [(160, 150, 130), (140, 132, 118), (120, 116, 108), (96, 100, 120)]
+
+
+def aerial_view(cv, t, cam, night=0.0, lights=0.0, glow_seed=0.0, crowd=True):
+    """The walled village from a hill, in true 3D, with sky and horizon."""
+    hz = cam.p(0, 0, 1e6)[1]
     top = mixc((120, 150, 190), (8, 10, 30), night)
     hor = mixc((238, 214, 180), (50, 46, 80), night)
-    sky(cv, [top, hor], None, 0, horizon + 10)
+    sky(cv, [top, hor], None, 0, hz + 10)
     if night:
-        stars(cv, t, night, n=160, y1=horizon)
-    mountains(cv, horizon + 4, mixc((176, 150, 140), (40, 40, 66), night), seed=11, h=36)
-    fx, fy = focus
-    # map the flat village plane into a receding trapezoid
-    src = [skia.Point(-900, -700), skia.Point(900, -700), skia.Point(900, 800), skia.Point(-900, 800)]
-    w_far, w_near, y_far, y_near = 520, 1700, horizon + 14, 1700
-    dst = [skia.Point(360 - w_far, y_far), skia.Point(360 + w_far, y_far), skia.Point(360 + w_near, y_near),
-           skia.Point(360 - w_near, y_near)]
-    m = skia.Matrix()
-    m.setPolyToPoly(src, dst)
-    cv.save()
-    cv.clipRect(skia.Rect.MakeLTRB(-400, horizon + 6, W + 400, H + 400))
-    # zoom toward the focus point on screen
-    fp = m.mapXY(fx, fy)
-    cv.translate(fp.x(), fp.y())
-    cv.scale(zoom, zoom)
-    cv.translate(-fp.x(), -fp.y())
-    cv.concat(m)
-    village_aerial(cv, t, glow_seed=glow_seed, night=night, lights=lights)
-    cv.restore()
-    # atmospheric haze toward the horizon
-    cv.drawRect(skia.Rect.MakeLTRB(-400, horizon, W + 400, horizon + 260), paint(
-        shader=lin((0, horizon), (0, horizon + 260), [(hor, 0.75), (hor, 0.0)])))
+        stars(cv, t, night, n=160, y1=hz)
+    mountains(cv, hz + 4, mixc((176, 150, 140), (40, 40, 66), night), seed=11, h=36)
+    village3d(cv, cam, t, night, lights, crowd, glow_seed)
+    cv.drawRect(skia.Rect.MakeLTRB(-400, hz, W + 400, hz + 200), paint(
+        shader=lin((0, hz), (0, hz + 200), [(hor, 0.7), (hor, 0.0)])))
 
 
 def house_row(cv, y_base, height, n=6, x0=-80, x1=W + 80, dim=0.0, seed=1, col=HOUSE_FRONT, lights=0.0):
+    """A street of plain adobe houses: varied heights, one door each, never a symmetric 'face'."""
     w = (x1 - x0) / n
+    vx = (x0 + x1) / 2
     for i in range(n):
+        r = lambda k: hashf(seed, i, k)
         x = x0 + i * w
-        c = mixc(col, (36, 40, 66), dim)
-        cv.drawRect(skia.Rect.MakeLTRB(x + 4, y_base - height, x + w - 4, y_base), paint(c))
-        cv.drawRect(skia.Rect.MakeLTRB(x, y_base - height - 10, x + w, y_base - height + 4), paint(shade(c, 1.12)))
-        cv.drawRect(skia.Rect.MakeLTRB(x + 4, y_base - height + 4, x + w - 4, y_base - height + 10),
-                    paint(shade(c, 0.8), 0.6))
+        hh = height * (0.82 + 0.3 * r(1))
+        c = mixc(mixc(col, ADOBE[int(r(2) * 5)], 0.4), (36, 40, 66), dim)
+        l, rr_ = x + 3, x + w - 3
+        # a sliver of side wall, turned away from the street's centre, gives each house depth
+        side = 14 if (l + rr_) / 2 < vx else -14
+        sx = rr_ if side > 0 else l
+        cv.drawPath(path([(sx, y_base - hh), (sx + side, y_base - hh - 8), (sx + side, y_base - 6), (sx, y_base)]),
+                    paint(shade(c, 0.72)))
+        cv.drawRect(skia.Rect.MakeLTRB(l, y_base - hh, rr_, y_base), paint(c))
+        cv.drawRect(skia.Rect.MakeLTRB(l - 3, y_base - hh - 9, rr_ + 3, y_base - hh + 3), paint(shade(c, 1.1)))
+        cv.drawRect(skia.Rect.MakeLTRB(l, y_base - hh + 3, rr_, y_base - hh + 9), paint(shade(c, 0.8), 0.5))
+        cv.drawRect(skia.Rect.MakeLTRB(l, y_base - 10, rr_, y_base), paint(shade(c, 0.85), 0.6))
+        # one door, off-centre
         dw = w * 0.2
-        cv.drawRect(skia.Rect.MakeLTRB(x + w / 2 - dw / 2, y_base - height * 0.55, x + w / 2 + dw / 2, y_base),
-                    paint(mixc((78, 66, 58), (20, 20, 36), dim)))
-        for s in (-1, 1):
-            wx = x + w / 2 + s * w * 0.3
-            lit = lights * (hashf(seed, i, s) > 0.4)
-            cv.drawRect(skia.Rect.MakeLTRB(wx - w * 0.06, y_base - height * 0.78, wx + w * 0.06, y_base - height * 0.62),
+        dx = l + (w - 6) * (0.18 if r(3) < 0.5 else 0.6)
+        door = mixc((78, 62, 50), (20, 20, 36), dim)
+        cv.drawRect(skia.Rect.MakeLTRB(dx, y_base - min(hh * 0.5, 120), dx + dw, y_base), paint(door))
+        cv.drawRect(skia.Rect.MakeLTRB(dx - 3, y_base - min(hh * 0.5, 120) - 5, dx + dw + 3,
+                                       y_base - min(hh * 0.5, 120)), paint(shade(c, 0.75)))
+        # at most one small window, on the other side and at its own height
+        if r(4) > 0.3:
+            wx = l + (w - 6) * (0.62 if dx < x + w / 2 else 0.16) + w * 0.04
+            wy = y_base - hh * (0.62 + 0.15 * r(5))
+            lit = lights * (r(6) > 0.35)
+            cv.drawRect(skia.Rect.MakeLTRB(wx, wy, wx + w * 0.13, wy + w * 0.11),
                         paint(mixc(mixc((86, 74, 66), (20, 20, 36), dim), (255, 196, 120), lit)))
             if lit:
-                glow(cv, wx, y_base - height * 0.7, w * 0.3, (255, 180, 100), 0.35 * lit)
+                glow(cv, wx + w * 0.06, wy + w * 0.05, w * 0.3, (255, 180, 100), 0.35 * lit)
+        if r(7) > 0.6:   # cloth awning
+            aw = mixc([(150, 96, 74), (118, 122, 104), (168, 140, 98)][int(r(8) * 3)], (30, 30, 50), dim * 0.9)
+            cv.drawPath(path([(dx - 10, y_base - min(hh * 0.5, 120) - 14), (dx + dw + 10, y_base - min(hh * 0.5, 120) - 14),
+                              (dx + dw + 16, y_base - min(hh * 0.5, 120) + 10), (dx - 16, y_base - min(hh * 0.5, 120) + 10)]),
+                         paint(aw))
+        if r(9) > 0.75:  # outside stair to the roof
+            sx0 = rr_ - 6 if dx < x + w / 2 else l + 6
+            sgn = -1 if dx < x + w / 2 else 1
+            cv.drawPath(path([(sx0, y_base), (sx0 + sgn * w * 0.3, y_base - hh * 0.95), (sx0 + sgn * w * 0.3, y_base)]),
+                        paint(shade(c, 0.9)))
 
 
 def paving(cv, vp, y0, y1, col, dim=0.0, spacing=90):
@@ -373,45 +577,93 @@ def wall_outside(cv, t, gate=0.0, night=0.0, horizon=820, ground_col=(176, 128, 
 
 
 # ------------------------------------------------------------------ props & effects
+def _branches(x, y, ang, length, width, depth, seed, out):
+    """Recursive branching: appends (x0, y0, x1, y1, width, depth) segments."""
+    x1 = x + math.cos(ang) * length
+    y1 = y + math.sin(ang) * length
+    out.append((x, y, x1, y1, width, depth))
+    if depth == 0:
+        return
+    n = 2 if hashf(seed, depth, 1) < 0.6 else 3
+    for k in range(n):
+        spread = (k - (n - 1) / 2) * 0.55 + (hashf(seed, k, depth) - 0.5) * 0.35
+        _branches(x1, y1, ang + spread, length * (0.68 + 0.12 * hashf(seed, k, 9)), width * 0.66, depth - 1,
+                  seed * 3 + k + 1, out)
+
+
 def burning_bush(cv, x, y, s, t, a=1.0):
-    """The bush that burned and was not consumed: a remembered vision."""
+    """The bush that burned and was not consumed: woody branches, green leaves, flames among them."""
     if a <= 0:
         return
     cv.saveLayerAlpha(None, int(255 * clamp(a)))
     cv.translate(x, y)
     cv.scale(s, s)
-    glow(cv, 0, -60, 300, (255, 140, 40), 0.45)
-    # the bush: a dome of leafy clumps
-    for i in range(16):
-        ang = math.pi + (i / 15) * math.pi
-        r = 70 + 18 * hashf(i, 7)
-        bx, by = math.cos(ang) * r * 1.1, math.sin(ang) * r * 0.8 - 10
-        cv.drawCircle(bx * 0.8, by * 0.9, 34 + 10 * hashf(i, 8), paint((54, 58, 30)))
-    for i in range(10):
-        bx = (hashf(i, 9) - 0.5) * 120
-        by = -30 - hashf(i, 10) * 40
-        cv.drawCircle(bx, by, 30, paint((70, 76, 38)))
-    for k in (-1, 1):
-        cv.drawLine(0, 20, k * 30, -30, paint((60, 38, 24), stroke=9))
-    cv.drawLine(0, 30, 0, -10, paint((60, 38, 24), stroke=11))
-    # tongues of flame licking around it, never consuming it
-    for i in range(34):
-        ang = math.pi * (1.05 + 0.9 * hashf(i, 1))
-        r = 60 + 40 * hashf(i, 2)
-        fx, fy = math.cos(ang) * r, math.sin(ang) * r * 0.85 - 20
-        h = 34 + 46 * hashf(i, 3)
-        fl = 1 + 0.35 * math.sin(t * (6 + 6 * hashf(i, 4)) + i * 1.7)
-        sway = 7 * math.sin(t * 4 + i)
-        w = 10 + 6 * hashf(i, 6)
-        f = skia.Path()
-        f.moveTo(fx - w, fy)
-        f.cubicTo(fx - w * 1.2, fy - h * 0.5 * fl, fx + sway - 3, fy - h * 0.7 * fl, fx + sway, fy - h * fl)
-        f.cubicTo(fx + sway + 3, fy - h * 0.7 * fl, fx + w * 1.2, fy - h * 0.5 * fl, fx + w, fy)
-        f.quadTo(fx, fy + w * 0.8, fx - w, fy)
-        f.close()
-        c = mixc((255, 110, 20), (255, 210, 90), hashf(i, 5))
-        cv.drawPath(f, paint(c, 0.8, blend="plus"))
-    glow(cv, 0, -40, 120, (255, 220, 150), 0.55)
+    glow(cv, 0, -110, 330, (255, 150, 50), 0.4)
+    # rocky mound it grows from
+    mound = skia.Path()
+    mound.moveTo(-150, 18)
+    mound.cubicTo(-120, -22, 120, -22, 150, 18)
+    mound.close()
+    cv.drawPath(mound, paint((120, 86, 60)))
+    for k in range(5):
+        cv.drawOval(oval(-110 + k * 55, 6 + 4 * (k % 2), 24, 13), paint((140, 104, 74)))
+    segs = []
+    for k, ang in enumerate((-2.45, -2.05, -1.7, -1.4, -1.05, -0.7)):
+        _branches(k * 12 - 30, 4, ang, 56 + 8 * hashf(k, 5), 10, 3, 11 + k, segs)
+    # flames behind the bush
+    def flames(front):
+        for i in range(34):
+            if (i % 3 == 0) != front:
+                continue
+            sx, sy, ex, ey, w, d = segs[(i * 7) % len(segs)]
+            fx, fy = ex, ey + 6
+            h = 30 + 46 * hashf(i, 3)
+            fl = 1 + 0.35 * math.sin(t * (6 + 6 * hashf(i, 4)) + i * 1.7)
+            sway = 6 * math.sin(t * 4 + i)
+            fw = 8 + 6 * hashf(i, 6)
+            f = skia.Path()
+            f.moveTo(fx - fw, fy)
+            f.cubicTo(fx - fw * 1.2, fy - h * 0.5 * fl, fx + sway - 3, fy - h * 0.7 * fl, fx + sway, fy - h * fl)
+            f.cubicTo(fx + sway + 3, fy - h * 0.7 * fl, fx + fw * 1.2, fy - h * 0.5 * fl, fx + fw, fy)
+            f.quadTo(fx, fy + fw * 0.8, fx - fw, fy)
+            f.close()
+            sh = lin((fx, fy), (fx, fy - h * fl), [((235, 70, 20), 0.88), ((255, 140, 30), 0.82),
+                                                    ((255, 225, 110), 0.72), ((255, 245, 200), 0.0)],
+                     [0, 0.35, 0.75, 1])
+            cv.drawPath(f, paint(shader=sh) if front else paint(shader=sh, blend="screen"))
+    flames(False)
+    # woody branches
+    for (sx, sy, ex, ey, w, d) in segs:
+        cv.drawLine(sx, sy, ex, ey, paint((74, 46, 28), stroke=w))
+        cv.drawLine(sx - w * 0.2, sy, ex - w * 0.2, ey, paint((110, 74, 46), 0.6, stroke=w * 0.35))
+    # leaves: clusters along the outer branches, clearly green
+    greens = [(46, 104, 38), (66, 132, 46), (92, 158, 58), (120, 176, 70)]
+    for j, (sx, sy, ex, ey, w, d) in enumerate(segs):
+        if d > 1:
+            continue
+        for k in range(7 if d == 0 else 4):
+            u = 0.35 + 0.65 * hashf(j, k, 1)
+            lx, ly = lerp(sx, ex, u), lerp(sy, ey, u)
+            ang = math.atan2(ey - sy, ex - sx) + (1 if k % 2 else -1) * (0.7 + 0.5 * hashf(j, k, 2))
+            ang += 0.08 * math.sin(t * 2 + j + k)
+            L = 15 + 8 * hashf(j, k, 3)
+            cx, cy = lx + math.cos(ang) * L * 0.55, ly + math.sin(ang) * L * 0.55
+            cv.save()
+            cv.translate(cx, cy)
+            cv.rotate(math.degrees(ang))
+            leaf = skia.Path()
+            leaf.moveTo(-L / 2, 0)
+            leaf.quadTo(0, -L * 0.36, L / 2, 0)
+            leaf.quadTo(0, L * 0.36, -L / 2, 0)
+            leaf.close()
+            g = greens[int(hashf(j, k, 4) * 4)]
+            cv.drawPath(leaf, paint(g))
+            cv.drawLine(-L / 2, 0, L / 2, 0, paint(shade(g, 1.35), 0.7, stroke=1.2))
+            cv.restore()
+    # firelight catching the leaves, and flames in front
+    glow(cv, 0, -90, 150, (255, 170, 70), 0.35, blend="screen")
+    flames(True)
+    glow(cv, 0, -100, 60, (255, 235, 180), 0.35)
     cv.restore()
 
 
@@ -532,6 +784,149 @@ def star_figure(cv, x, y, s, t, a=1.0, sigh=0.0, st=None):
         r = (1.4 + 2.6 * hashf(i, 75) ** 2) * br
         cv.drawCircle(px, py, r, paint((255, 250, 235), vis * tw))
         glow(cv, px, py, r * 7, (200, 215, 255), 0.45 * vis * tw)
+
+
+def _divine_parts():
+    """Parts of the colossal figure, back to front. Local coords: base centre (0, 0), head ~ -745."""
+    parts = []
+    hair = skia.Path()   # long hair falling behind the shoulders
+    hair.moveTo(-62, -812)
+    hair.cubicTo(-104, -770, -112, -680, -108, -585)
+    hair.lineTo(106, -585)
+    hair.cubicTo(110, -680, 100, -770, 58, -812)
+    hair.cubicTo(40, -860, -44, -860, -62, -812)
+    hair.close()
+    parts.append(("hair", hair))
+    body = skia.Path()   # shoulders and robe rising from behind the horizon
+    body.moveTo(-60, -615)
+    body.cubicTo(-170, -615, -262, -592, -286, -515)
+    body.cubicTo(-306, -420, -318, -200, -350, 40)
+    body.lineTo(350, 40)
+    body.cubicTo(318, -200, 306, -420, 286, -515)
+    body.cubicTo(262, -592, 170, -615, 60, -615)
+    body.close()
+    parts.append(("body", body))
+    face = skia.Path()
+    face.addOval(oval(-4, -748, 60, 76))
+    parts.append(("face", face))
+    beard = skia.Path()
+    beard.moveTo(-60, -736)
+    beard.cubicTo(-66, -650, -38, -580, -10, -555)
+    beard.lineTo(6, -555)
+    beard.cubicTo(32, -580, 58, -650, 54, -736)
+    beard.cubicTo(30, -706, 10, -712, -4, -722)
+    beard.cubicTo(-18, -712, -38, -706, -60, -736)
+    beard.close()
+    parts.append(("beard", beard))
+    arm = skia.Path()   # reaching down and forward, toward Moses
+    arm.moveTo(-286, -540)
+    arm.cubicTo(-330, -470, -360, -400, -352, -340)
+    arm.cubicTo(-344, -280, -300, -230, -250, -196)
+    arm.lineTo(-196, -236)
+    arm.cubicTo(-240, -262, -280, -300, -284, -350)
+    arm.cubicTo(-288, -410, -268, -470, -222, -536)
+    arm.close()
+    parts.append(("arm", arm))
+    hand = skia.Path()   # broad open hand, palm down, fingers curving toward his shoulders
+    hand.moveTo(-262, -214)
+    hand.cubicTo(-282, -186, -280, -160, -266, -140)
+    for k in range(4):
+        x = -262 + k * 27
+        hand.cubicTo(x - 4, -110, x + 2, -88, x + 9, -86)
+        hand.cubicTo(x + 18, -86, x + 20, -110, x + 22, -136)
+    hand.cubicTo(-140, -150, -160, -200, -190, -238)
+    hand.close()
+    parts.append(("hand", hand))
+    return parts
+
+
+DIVINE = _divine_parts()
+
+
+def _divine_union(cv):
+    for name, pth in DIVINE:
+        cv.save()
+        if name in ("face", "beard", "hair"):
+            cv.translate(-6, -560)
+            cv.rotate(-12)       # head bowed toward him
+            cv.translate(6, 560)
+        cv.drawPath(pth, paint((255, 255, 255)))
+        cv.restore()
+
+
+def divine_figure(cv, x, y, s, t, a=1.0, sigh=0.0):
+    """The presence: a towering masculine figure made of night and starlight, bending over him."""
+    if a <= 0:
+        return
+    br = 1 + 0.25 * sigh
+
+    def begin(alpha, blur=0.0, blend=None):
+        lp = skia.Paint()
+        if blur:
+            lp.setImageFilter(skia.ImageFilters.Blur(blur, blur))
+        if blend:
+            lp.setBlendMode(blend)
+        lp.setAlphaf(clamp(alpha))
+        cv.saveLayer(None, lp)
+        cv.save()
+        cv.translate(x, y)
+        cv.scale(s, s)
+
+    def end():
+        cv.restore()
+        cv.restore()
+
+    # outer aura
+    begin(0.4 * a * br, blur=36)
+    _divine_union(cv)
+    cv.drawPaint(paint((120, 145, 255), blend="srcin_fix"))
+    end()
+    # each part: a deep night-blue body with its own luminous rim, so beard, face, arm and hand all read
+    begin(a)
+    fill_sh = lin((0, -840), (0, 40), [(34, 42, 104), (22, 28, 74), ((16, 18, 50), 0.75)], [0, 0.6, 1])
+    for name, pth in DIVINE:
+        cv.save()
+        if name in ("face", "beard", "hair"):
+            cv.translate(-6, -560)
+            cv.rotate(-12)
+            cv.translate(6, 560)
+        f = paint(shader=fill_sh)
+        if name == "face":
+            f = paint((44, 54, 124))
+        cv.drawPath(pth, f)
+        cv.drawPath(pth, paint((150, 175, 255), 0.55, stroke=7, blur=5))
+        cv.drawPath(pth, paint((215, 228, 255), 0.95, stroke=2.2))
+        if name == "face":
+            for sx in (-28, 20):   # closed eyes, looking down at him
+                cv.drawPath(spline([(sx - 15, -764), (sx, -755), (sx + 15, -764)], closed=False),
+                            paint((225, 232, 255), 0.85, stroke=2.4))
+                cv.drawPath(spline([(sx - 16, -786), (sx, -792), (sx + 16, -786)], closed=False),
+                            paint((200, 215, 255), 0.5, stroke=2.2))
+            cv.drawPath(spline([(-2, -752), (-9, -728), (0, -722)], closed=False), paint((200, 215, 255), 0.6, stroke=2))
+        if name == "body":   # neckline and a few robe folds
+            for (x0, y0, x1, y1) in ((-120, -560, -170, 30), (120, -560, 190, 30), (0, -540, 10, 30)):
+                cv.drawLine(x0, y0, x1, y1, paint((150, 175, 255), 0.25, stroke=2))
+        if name == "beard":
+            for k in range(5):
+                xx = -40 + k * 20
+                cv.drawLine(xx, -690, xx * 0.6, -575, paint((170, 190, 255), 0.35, stroke=1.6))
+        cv.restore()
+    end()
+    # stars living inside the figure
+    begin(a)
+    for i in range(240):
+        px, py = (hashf(i, 81) - 0.5) * 820, -860 + hashf(i, 82) * 900
+        tw = 0.55 + 0.45 * math.sin(t * (1.5 + 3 * hashf(i, 83)) + i)
+        r = 0.9 + 2.4 * hashf(i, 84) ** 3
+        cv.drawCircle(px, py, r * br, paint((255, 250, 235), tw))
+        if r > 2:
+            glow(cv, px, py, r * 8, (200, 215, 255), 0.5 * tw)
+    mp = skia.Paint()
+    mp.setBlendMode(skia.BlendMode.kDstIn)
+    cv.saveLayer(None, mp)
+    _divine_union(cv)
+    cv.restore()
+    end()
 
 
 def sprout(cv, x, y, grow, t, a=1.0, s=1.0):
@@ -661,6 +1056,14 @@ def draw_back(cv, st, x, y, s, t=0.0, dim=0.0, turn=0.0):
         k.cubicTo(hx - 80, -350, hx - 62, -380, hx - 50, -410)
         k.close()
         cv.drawPath(k, paint(shader=lin((0, -530), (0, -330), [shade(hc, 1.1), shade(hc, 0.8)])))
+        if st.head == "keffiyeh":
+            cv.save()
+            cv.clipPath(k, skia.ClipOp.kIntersect, True)
+            for i in range(-3, 4):
+                cv.drawLine(hx + i * 22, -540, hx + i * 30, -330, paint(_dim(st.head_c2, p), 0.35, stroke=4))
+            cv.restore()
+            cv.drawPath(spline([(hx - 52, -470), (hx, -478), (hx + 52, -470)], closed=False),
+                        paint(_dim((40, 28, 24), p), stroke=13))
     else:
         cv.drawOval(oval(hx, -450, 44, 54), paint(_dim(st.hair, p)))
         cv.drawPath(spline([(hx - 46, -470), (hx, -520), (hx + 46, -470)], closed=False),

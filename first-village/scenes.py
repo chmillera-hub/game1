@@ -212,92 +212,128 @@ def title_text(cv, txt, y, a, size=58, col=(255, 236, 200), spacing=1.0):
 
 
 # ------------------------------------------------------------------ scene: OPENING (desert dawn)
+def _ik(hip, ankle, L1, L2, fwd=1):
+    """Two-bone IK: knee position bending forward (+x when fwd=1)."""
+    dx, dy = ankle[0] - hip[0], ankle[1] - hip[1]
+    d = min(math.hypot(dx, dy), L1 + L2 - 1)
+    a = math.atan2(dy, dx)
+    b = math.acos(clamp((L1 * L1 + d * d - L2 * L2) / (2 * L1 * d), -1, 1))
+    k = a - b * fwd
+    return hip[0] + math.cos(k) * L1, hip[1] + math.sin(k) * L1
+
+
+def _limb(cv, p0, p1, w0, w1, col):
+    ang = math.atan2(p1[1] - p0[1], p1[0] - p0[0]) + math.pi / 2
+    cx, cy = math.cos(ang), math.sin(ang)
+    pth = path([(p0[0] + cx * w0 / 2, p0[1] + cy * w0 / 2), (p1[0] + cx * w1 / 2, p1[1] + cy * w1 / 2),
+                (p1[0] - cx * w1 / 2, p1[1] - cy * w1 / 2), (p0[0] - cx * w0 / 2, p0[1] - cy * w0 / 2)])
+    cv.drawPath(pth, paint(col))
+    cv.drawCircle(*p1, w1 / 2, paint(col))
+
+
 def walk_feet(cv, t, t0):
-    """Close on his sandals striding over hard-cracked earth (profile)."""
-    ground = 960
-    S.sky(cv, [(120, 84, 120), (236, 150, 110), (252, 190, 130)], [0, 0.6, 1], 0, ground - 120)
-    with Blur(cv, 6):
-        S.dune_layer(cv, ground - 130, 40, (214, 150, 104), 3, bottom=ground + 40)
-        S.dune_layer(cv, ground - 40, 50, (200, 136, 92), 8, bottom=ground + 40)
-    v = 180
-    scroll = (t * v) % 2000
+    """Walking in profile: knee-length tunic, real knees and calves, sandals on hard-cracked earth."""
+    ground = 875
+    S.sky(cv, [(120, 84, 120), (236, 150, 110), (252, 190, 130)], [0, 0.6, 1], 0, ground - 150)
+    with Blur(cv, 5):
+        S.dune_layer(cv, ground - 170, 40, (214, 150, 104), 3, bottom=ground + 40)
+        S.dune_layer(cv, ground - 70, 50, (200, 136, 92), 8, bottom=ground + 40)
+    v = 230
     cv.save()
-    cv.translate(-scroll % 140, 0)
-    S.cracked_ground(cv, (-300, ground - 10, W + 300, H + 50), (182, 128, 84), seed=12, cell=140, line_a=0.6)
+    cv.translate(-((t * v) % 140), 0)
+    S.cracked_ground(cv, (-300, ground - 12, W + 300, H + 50), (182, 128, 84), seed=12, cell=140, line_a=0.6)
     cv.restore()
-    cv.drawRect(skia.Rect.MakeLTRB(0, ground - 30, W, ground + 60), paint(
-        shader=lin((0, ground - 30), (0, ground + 60), [((255, 210, 150), 0.0), ((255, 210, 150), 0.25)])))
-    T = 1.15
-    stride = 240
+    T = 1.2
+    stride = 300
     skin, sole, strap = MOSES.skin, (96, 62, 38), (70, 44, 28)
-    hem_y = 420 + 6 * math.sin(t / T * 2 * math.pi * 2)
-    feet = []
+    bob = 10 * abs(math.cos(t / T * 2 * math.pi))
+    hip = (350, -30 + bob)
+    L1, L2 = 468, 455
+    legs = []
     for i in range(2):
         ph = (t / T + i * 0.5) % 1.0
         if ph < 0.6:
             u = ph / 0.6
-            x = 360 + stride / 2 - u * stride
+            fx = 360 + stride / 2 - u * stride
             lift, rot = 0.0, 0.0
         else:
             u = (ph - 0.6) / 0.4
-            x = 360 - stride / 2 + smooth(u) * stride
-            lift = math.sin(math.pi * u) * 46
-            rot = -10 * math.sin(math.pi * u)
-        feet.append((x, ground - lift, rot, i))
-    for x, y, rot, i in sorted(feet, key=lambda f: f[3]):
-        dk = 0.82 if i == 0 else 1.0
-        kx, ky = 360 + (x - 360) * 0.25, hem_y + 30
-        shin = skia.Path()
-        shin.moveTo(x - 46, y - 64)
-        shin.lineTo(kx - 34, ky)
-        shin.lineTo(kx + 30, ky)
-        shin.lineTo(x - 8, y - 64)
-        shin.close()
-        cv.drawPath(shin, paint(shader=lin((kx - 40, 0), (kx + 40, 0), [shade(skin, 0.7 * dk), shade(skin, 0.95 * dk),
-                                                                      shade(skin, 0.8 * dk)])))
+            fx = 360 - stride / 2 + smooth(u) * stride
+            lift = math.sin(math.pi * u) * 60
+            rot = -12 * math.sin(math.pi * u)
+        legs.append((fx, ground - lift, rot, i, ph))
+    # far leg first (darker), then near leg
+    legs.sort(key=lambda L: L[3])
+    knees = []
+    for fx, fy, rot, i, ph in legs:
+        dk = 0.78 if i == 0 else 1.0
+        ankle = (fx - 38, fy - 52)
+        knee = _ik(hip, ankle, L1, L2, 1)
+        knees.append(knee)
+        col = shade(skin, dk)
+        _limb(cv, hip, knee, 150, 92, shade(skin, 0.92 * dk))      # thigh (mostly under the tunic)
+        _limb(cv, knee, ankle, 88, 50, col)                        # shin
+        # calf muscle and knee cap
+        mid = (lerp(knee[0], ankle[0], 0.3) - 26, lerp(knee[1], ankle[1], 0.3))
+        cv.drawOval(oval(mid[0], mid[1], 34, 90), paint(col))
+        cv.drawOval(oval(knee[0] + 16, knee[1] + 6, 30, 38), paint(shade(col, 1.07)))
         cv.save()
-        cv.translate(x, y)
+        cv.translate(fx, fy)
         cv.rotate(rot)
-        cv.drawRoundRect(skia.Rect.MakeLTRB(-70, -14, 80, 0), 8, 8, paint(shade(sole, dk)))
+        cv.drawRoundRect(skia.Rect.MakeLTRB(-78, -14, 88, 0), 8, 8, paint(shade(sole, dk)))
         foot = skia.Path()
-        foot.moveTo(-64, -14)
-        foot.cubicTo(-70, -60, -40, -84, -20, -80)
-        foot.cubicTo(10, -60, 40, -40, 74, -26)
-        foot.quadTo(84, -18, 76, -14)
+        foot.moveTo(-72, -14)
+        foot.cubicTo(-80, -64, -50, -88, -26, -84)
+        foot.cubicTo(8, -64, 44, -44, 82, -28)
+        foot.quadTo(92, -18, 84, -14)
         foot.close()
-        cv.drawPath(foot, paint(shade(skin, dk)))
-        for sx in (-34, 6, 40):
-            cv.drawLine(sx - 4, -14, sx + 6, -60 + abs(sx) * 0.4, paint(shade(strap, dk), stroke=8))
+        cv.drawPath(foot, paint(col))
+        for sx in (-40, 4, 42):
+            cv.drawLine(sx - 4, -14, sx + 6, -64 + abs(sx) * 0.4, paint(shade(strap, dk), stroke=8))
+        cv.drawLine(-60, -60, -20, -78, paint(shade(strap, dk), stroke=8))
         cv.restore()
-        ph = ((t / T + i * 0.5) % 1.0)
-        if ph < 0.25:  # dust kicked up on landing
+        if ph < 0.25:
             u = ph / 0.25
             for k in range(7):
                 ang = math.pi + (k / 6) * math.pi
                 d = 30 + 70 * u
-                cv.drawCircle(x + math.cos(ang) * d * 1.4, ground - 6 + math.sin(ang) * d * 0.4, 8 + 14 * u,
+                cv.drawCircle(fx + math.cos(ang) * d * 1.4, ground - 6 + math.sin(ang) * d * 0.4, 8 + 14 * u,
                               paint((230, 196, 150), 0.35 * (1 - u), blur=6))
-    # robe hem
-    hem = skia.Path()
-    hem.moveTo(-50, -100)
-    hem.lineTo(W + 50, -100)
-    pts = [(W + 50, hem_y)]
-    for k in range(9, -2, -1):
-        x = k * 80
-        pts.append((x, hem_y + 22 * math.sin(k * 1.3 + t * 3)))
-    hem.lineTo(*pts[0])
-    for q in pts[1:]:
-        hem.lineTo(*q)
-    hem.close()
-    cv.drawPath(hem, paint(shader=lin((0, 0), (0, hem_y), [(120, 100, 76), (176, 150, 112)])))
+    # knee-length tunic over the hips, its hem swinging with the stride
+    swing = 26 * math.sin(t / T * 2 * math.pi)
+    hem_y = 265 + bob
+    front = max(k[0] for k in knees) + 40
+    back = min(k[0] for k in knees) - 50
+    tunic = skia.Path()
+    tunic.moveTo(225, -60)
+    tunic.lineTo(480, -60)
+    tunic.cubicTo(500, 80, front + 20, 200, front + 10 + swing * 0.3, hem_y - 10)
+    tunic.quadTo(360, hem_y + 34, back - 10 - swing * 0.3, hem_y + 6)
+    tunic.cubicTo(back - 10, 220, 200, 90, 225, -60)
+    tunic.close()
+    cv.drawPath(tunic, paint(shader=lin((200, 0), (520, 0), [(126, 104, 78), (180, 154, 116), (150, 126, 94)])))
     cv.save()
-    cv.clipPath(hem, skia.ClipOp.kIntersect, True)
-    for k in range(12):
-        fx = k * 70 - 30 + 10 * math.sin(t * 2 + k)
-        cv.drawLine(fx, -100, fx + 12 * math.sin(k), hem_y + 30, paint((110, 88, 64), 0.5, stroke=6 + 4 * (k % 3)))
+    cv.clipPath(tunic, skia.ClipOp.kIntersect, True)
+    for k in range(6):
+        x0 = 250 + k * 45
+        cv.drawLine(x0, -60, x0 + (k - 2.5) * 14 + swing * 0.4, hem_y + 30, paint((112, 90, 66), 0.5, stroke=5))
+    cv.drawRect(skia.Rect.MakeLTRB(150, -60, 560, 10), paint((124, 70, 44)))   # sash
     cv.restore()
-    cv.drawPath(hem, paint((118, 84, 56), stroke=10))
-    S.dust(cv, t, 30, 0.35, wind=-120, y0=500, y1=1000)
+    cv.drawPath(tunic, paint((110, 80, 54), stroke=6))
+    # the cloak trailing behind
+    cloak = skia.Path()
+    cloak.moveTo(150, -60)
+    cloak.cubicTo(110, 80, 70 - swing * 0.4, 220, 40 - swing * 0.6, hem_y + 80)
+    cloak.quadTo(110, hem_y + 60, 175 - swing * 0.3, hem_y + 30)
+    cloak.cubicTo(205, 200, 220, 80, 240, -60)
+    cloak.close()
+    cv.drawPath(cloak, paint(shader=lin((40, 0), (240, 0), [(96, 66, 42), (124, 88, 58)])))
+    cv.save()
+    cv.clipPath(cloak, skia.ClipOp.kIntersect, True)
+    for k in range(4):
+        cv.drawLine(170 - k * 30, -60, 120 - k * 34 - swing * 0.4, hem_y + 80, paint((84, 58, 36), 0.6, stroke=5))
+    cv.restore()
+    S.dust(cv, t, 30, 0.35, wind=-140, y0=500, y1=900)
 
 
 def opening(cv, t):
@@ -351,9 +387,9 @@ def opening(cv, t):
                 S.desert(cv, t, horizon=760, sun=(520, 690), warm=1.0)
                 cv.restore()
             mem = window(t, g0 - 0.2, n2 + 0.9, 0.8, 1.0)
-            glow(cv, 360, 170, 260, (255, 210, 150), 0.35 * mem, blend="screen")
-            S.burning_bush(cv, 360, 215, 0.62, t, a=0.7 * mem)
-            S.light_rays(cv, 360, 160, mem * 0.45, t, n=11, L=900, spread=2.2, base=math.pi / 2)
+            glow(cv, 360, 250, 300, (255, 210, 150), 0.35 * mem, blend="screen")
+            S.light_rays(cv, 360, 210, mem * 0.3, t, n=11, L=700, spread=2.2, base=math.pi / 2)
+            S.burning_bush(cv, 360, 330, 0.95, t, a=0.92 * mem)
             closed = window(t, g0 - 0.25, n2 + 0.5, 0.35, 0.4)
             hand = window(t, g0 + 0.1, n2 + 0.8, 0.6, 0.6)
             p = mk(ember=1.0, lid=closed * 0.97, smile=0.35 * closed, staff=True, arm_l=(12, -36, 1, 1),
@@ -361,7 +397,7 @@ def opening(cv, t):
             life.apply(p, t)
             p["pitch"] = -0.12 * closed
             p["tint"] = ((255, 176, 110), 0.12)
-            at_head(cv, MOSES, p, 360, 500, 2.05, t)
+            at_head(cv, MOSES, p, 360, 560, 2.05, t)
             S.dust(cv, t, 40, 0.4, wind=-90, y0=500, y1=1280, size=1.6)
 
     def ridge_back(cv, t, lt):
@@ -369,9 +405,8 @@ def opening(cv, t):
             S.desert(cv, t, horizon=640, sun=(560, 520), warm=1.0, dunes=False)
             S.dune_layer(cv, 690, 30, (206, 140, 98), 5)
             cv.save()
-            cv.translate(420, 780)
-            cv.scale(0.3, 0.3)
-            S.village_aerial(cv, t)
+            cv.clipRect(skia.Rect.MakeLTRB(-200, 644, W + 200, 1000))
+            S.village3d(cv, S.Cam3((-40, 30, -170), 0.0, 900, cy=640), t)
             cv.restore()
             cv.drawRect(skia.Rect.MakeLTRB(-100, 700, W + 100, 900),
                         paint(shader=lin((0, 700), (0, 900), [((240, 180, 130), 0.35), ((240, 180, 130), 0.0)])))
@@ -423,15 +458,22 @@ def village(cv, t):
 
     def aerial(cv, t, lt):
         u = smooth(lt / (n3b - TL.m("village")))
-        S.aerial_view(cv, t, zoom=lerp(1.0, 1.9, u), focus=(0, lerp(80, 0, u)))
-        S.grade(cv, (140, 150, 180), 0.2)
+        cam = S.Cam3.look_at((lerp(-22, -4, u), lerp(78, 54, u), lerp(-112, -40, u)), (0, 0, lerp(70, 64, u)), 900,
+                             cy=lerp(700, 660, u))
+        S.aerial_view(cv, t, cam)
+        S.grade(cv, (140, 150, 180), 0.12)
 
     def wide(cv, t, lt):
         z = 1.0 + 0.03 * lt
 
         def elder():
-            p = elder_pose(t, open=fake_talk(t, 3, 0.5), arm_r=(lerp(10, 40, chop(t, [t - (t % 1.3) + 0.6])), -60, 1, 1),
-                           hand_r="fist", lid=0.25)
+            # addressing the crowd: arms bent and held out from the body, hands open toward them
+            gl = 0.5 + 0.5 * math.sin(t * 2.1)
+            gr = 0.5 + 0.5 * math.sin(t * 1.7 + 1.3)
+            p = elder_pose(t, open=fake_talk(t, 3, 0.5), lid=0.25, gx=0.3 * math.sin(t * 0.7),
+                           arm_l=(38 + 14 * gl, 78 + 18 * gl, 1, 0.85), arm_r=(38 + 14 * gr, 78 + 18 * gr, 1, 0.85),
+                           hand_l="open", hand_r="open", hand_rot_l=0, hand_rot_r=0)
+            p["turn"] += 0.15 * math.sin(t * 0.7)
             fig(cv, ELDER, p, 360, 676, 0.55, t)
 
         def people():
@@ -602,18 +644,42 @@ def speech(cv, t):
     life = LIVES["moses"]
     light_on = m5 + 1.0
 
+    cough = TL.s("cough")
+    coughs = (cough + 0.25, cough + 0.67)
+
     def mcu(cv, t, lt):
         with Cam(cv, 360, 640, 1.0 + 0.01 * lt, t=t):
             moses_bg(cv, t)
             up = ramp(t, m1 - 0.3, m1 + 0.6)
             hands = ramp(t, m1 + 0.3, m1 + 1.2)
-            p = mk(ember=0.6, worry=0.6 - 0.3 * up, gy=0.6 * (1 - up) - 0.15 * up, pitch=0.25 * (1 - up),
-                   arm_l=arm_mix(REST, OPEN, hands), arm_r=arm_mix(REST, OPEN, hands), hand_rot_l=40 * hands,
-                   hand_rot_r=-40 * hands)
+            # a cough to clear the throat before he speaks: fist to mouth, eyes squeezed, a jolt each time
+            fist = window(t, cough - 0.05, m0 - 0.15, 0.22, 0.3)
+            jolt = sum(max(0.0, 1 - abs(t - c - 0.04) / 0.12) for c in coughs)
+            p = mk(ember=0.6, worry=0.6 - 0.3 * up, gy=0.6 * (1 - up) - 0.15 * up, pitch=0.25 * (1 - up) + 0.25 * jolt,
+                   arm_l=arm_mix(REST, OPEN, hands), arm_r=arm_mix(arm_mix(REST, OPEN, hands), MOUTH, fist),
+                   hand_r="fist" if fist > 0.3 else "open", hand_rot_l=40 * hands, hand_rot_r=-40 * hands * (1 - fist))
             life.apply(p, t)
+            p["lid"] = max(p["lid"], 0.85 * min(1, jolt * 1.6))
+            p["furrow"] = 0.5 * min(1, jolt * 1.6)
+            p["sigh"] = -0.8 * jolt
             speak(p, ("moses",), t, 1.0, 1.2)
-            at_head(cv, MOSES, p, 360, 500, 2.2, t)
+            at_head(cv, MOSES, p, 360, 500 + 10 * jolt, 2.2, t)
         S.grade(cv, (255, 200, 150), 0.08)
+
+    def elder_watch(cv, t, lt):
+        """Cutaway: the Elder watching Moses, unmoved, measuring him."""
+        with Cam(cv, 360, 640, 1.03 + 0.01 * lt, t=t):
+            with Blur(cv, 6):
+                cv.save()
+                cv.translate(360, 640)
+                cv.scale(2.4, 2.4)
+                cv.translate(-390, -540)
+                plaza(cv, t)
+                cv.restore()
+            p = elder_pose(t, gx=-0.75, gy=0.05, turn=-0.22, lid=0.38, brow_l=0.35, brow_r=-0.1, press=0.6,
+                           anger=0.15, sneer=0.15, tilt=-3)
+            at_head(cv, ELDER, p, 380, 540, 2.4, t)
+        S.grade(cv, (150, 160, 180), 0.15)
 
     def listeners(cv, t, lt, lit=0.0):
         with Cam(cv, 360, 640, 1.0 + 0.012 * lt, t=t):
@@ -647,29 +713,44 @@ def speech(cv, t):
         S.grade(cv, (255, 200, 150), 0.08)
 
     def vessel_shot(cv, t, lt):
+        """The cracked vessel is a picture he holds up in words: it hangs, glowing and imaginary, above him."""
         crack = ramp(t, m4 + 0.6, m4 + 2.6)
         light = ramp(t, light_on, light_on + 1.4)
-        with Cam(cv, 360, 640 - 60 * light, 1.0 + 0.02 * lt + 0.25 * light, t=t):
+        appear = ramp(t, m4 - 0.2, m4 + 1.0)
+        point = window(t, m4 + 0.1, TL.cap("m4", 1) + 0.6, 0.5, 0.6) + ramp(t, m5 - 0.2, m5 + 0.5)
+        point = clamp(point)
+        with Cam(cv, 360, 640, 1.0 + 0.02 * lt + 0.06 * light, t=t):
             moses_bg(cv, t, 1.9, 360, 540, 6, warm=0.6 * light)
-            p = mk(ember=0.6 + 0.4 * light, worry=0.55 * (1 - light), brow=0.25 * light, smile=0.12 * light, gy=0.45,
-                   arm_l=(26, -70, 0.9, 1), arm_r=(26, -70, 0.9, 1), hand_rot_l=-50, hand_rot_r=50)
+            vy = 300 + 8 * math.sin(t * 1.3)
+            # imagined: a soft aura, a faint ring, drifting sparks
+            glow(cv, 360, vy - 10, 230 + 40 * light, (255, 226, 170), (0.35 + 0.35 * light) * appear, blend="screen")
+            ring = skia.Path()
+            ring.addOval(oval(360, vy - 10, 175, 175))
+            cv.drawPath(ring, paint((255, 236, 200), 0.35 * appear * (1 - 0.5 * light), stroke=2.5, blur=3))
+            for k in range(14):
+                ang = t * 0.4 + k * 0.45
+                rr = 150 + 30 * math.sin(t + k)
+                cv.drawCircle(360 + math.cos(ang) * rr, vy - 10 + math.sin(ang) * rr, 2.2,
+                              paint((255, 240, 210), 0.6 * appear))
+            S.vessel(cv, 360, vy + 40, 0.95, t, crack=crack, light=light, a=0.82 * appear)
+            p = mk(ember=0.6 + 0.4 * light, worry=0.4 * (1 - light), brow=0.2 + 0.2 * light, smile=0.1 * light,
+                   gy=-0.7 * point, gx=0.2 * point, pitch=-0.15 * point,
+                   arm_r=arm_mix(REST, (150, 25, 1, 1), point), hand_r="point",
+                   arm_l=arm_mix(REST, OPEN, 0.6), hand_rot_l=40)
             life.apply(p, t)
             speak(p, ("moses",), t, 0.95, 1.0)
-            at_head(cv, MOSES, p, 360, 330, 1.6, t)
-            S.vessel(cv, 360, 700 + 6 * math.sin(t * 1.3), 1.25, t, crack=crack, light=light,
-                     a=0.92 * ramp(t, m4 - 0.2, m4 + 0.8))
+            at_head(cv, MOSES, p, 360, 700, 1.75, t)
         S.grade(cv, (255, 200, 150), 0.08 + 0.15 * light)
 
     def ecu(cv, t, lt):
-        wav = window(t, m6, m7, 0.6, 0.3)
+        """Not near tears: dead serious, telling them straight what he believes."""
         with Cam(cv, 360, 640, 1.0 + 0.01 * lt, t=t):
-            moses_bg(cv, t, 3.4, 360, 520, 11, warm=0.4)
-            p = mk(ember=0.8, worry=0.45, wet=0.8 * wav, smile=0.18 + 0.05 * math.sin(t * 7), brow=0.1, gx=-0.1)
-            life.apply(p, t)
-            speak(p, ("moses",), t, 0.9, 0.8)
-            p["tilt"] += 1.5 * math.sin(t * 9) * wav  # the voice that wavers
+            moses_bg(cv, t, 3.4, 360, 520, 11, warm=0.25)
+            p = mk(ember=0.8, anger=0.12, furrow=0.3, lid=0.14, press=0.25, gx=0.0, gy=0.0, pitch=0.06)
+            life.apply(p, t, 0.35)
+            speak(p, ("moses",), t, 0.95, 0.9)
             at_head(cv, MOSES, p, 360, 520, 4.0, t)
-        S.grade(cv, (255, 200, 150), 0.1)
+        S.grade(cv, (255, 200, 150), 0.08)
 
     def hand_heart(cv, t, lt):
         up = window(t, TL.cap("m7", 1) - 0.4, TL.cap("m7", 1) + 1.6, 0.4, 0.6)
@@ -684,7 +765,8 @@ def speech(cv, t):
             at_head(cv, MOSES, p, 360, 470, 2.3, t)
         S.grade(cv, (255, 200, 150), 0.1)
 
-    run(cv, t, [(TL.m("speech"), mcu), (m2, listeners), (m3, cu_throat), (m4, vessel_shot),
+    run(cv, t, [(TL.m("speech"), mcu), (TL.cap("m1", 1), elder_watch), (m2, mcu), (TL.cap("m2", 1), listeners),
+                (m3, cu_throat), (m4, vessel_shot),
                 (TL.e("m5") + 0.5, lambda cv, t, lt: listeners(cv, t, lt, lit=1.0 - 0.4 * ramp(t, m6, m6 + 1.5))),
                 (m6 + 1.0, ecu), (m7, hand_heart)])
 
@@ -876,7 +958,7 @@ def dusk_of(t):
 
 
 def kneel_pose(t, **kw):
-    p = mk(kneel=1.0, bow=0.6, pitch=0.35, dirt=0.85, lid=0.5, worry=0.85, smile=-0.35, ember=0.1,
+    p = mk(kneel=1.0, bow=0.6, pitch=0.35, dirt=0.85, lid=0.42, worry=0.45, furrow=0.35, smile=-0.12, ember=0.1,
            arm_l=(14, -26, 1, 1), arm_r=(14, -26, 1, 1), hand_l="open", hand_r="open")
     p.update(kw)
     return p
@@ -895,7 +977,7 @@ def alone(cv, t):
     def medium(cv, t, lt):
         with Cam(cv, 360, 700, 1.0 + 0.1 * smooth(lt / 9), t=t):
             night = outside(t)
-            p = kneel_pose(t, dim=night * 0.45, tears=0.3)
+            p = kneel_pose(t, dim=night * 0.45)
             life.apply(p, t, 0.4)
             fig(cv, MOSES, p, 380, 1160, 1.2, t)
         S.grade(cv, (90, 100, 150), 0.2, "multiply")
@@ -910,10 +992,10 @@ def alone(cv, t):
                 cv.translate(-370, -700)
                 outside(t)
                 cv.restore()
-            p = kneel_pose(t, dim=night * 0.35, tears=tears, tear_t=t, wet=0.8, bow=0.2, pitch=0.25, lid=0.4,
-                           gx=0.0, gy=0.4)
-            life.apply(p, t, 0.5)
-            p["press"] = 0.4 + 0.2 * math.sin(t * 3)
+            # deep in thought: eyes on the ground a little way off, turning it over
+            p = kneel_pose(t, dim=night * 0.35, bow=0.2, pitch=0.25, lid=0.38, gx=-0.35, gy=0.45, turn=-0.08)
+            life.apply(p, t, 0.3)
+            p["press"] = 0.3
             at_head(cv, MOSES, p, 360, 560, 3.6, t)
         S.grade(cv, (90, 100, 150), 0.18, "multiply")
 
@@ -928,7 +1010,7 @@ def alone(cv, t):
                 cv.translate(-370, -720)
                 outside(t)
                 cv.restore()
-            p = kneel_pose(t, dim=night * 0.35, ember=em, tears=0.5, tear_t=t, wet=0.6)
+            p = kneel_pose(t, dim=night * 0.35, ember=em)
             life.apply(p, t, 0.4)
             at_head(cv, MOSES, p, 360, 360, 2.2, t)
         S.grade(cv, (90, 100, 150), 0.2, "multiply")
@@ -945,12 +1027,11 @@ def alone(cv, t):
                 outside(t)
                 cv.restore()
             closed = 1 - up
-            p = kneel_pose(t, dim=night * 0.32, tears=0.9, tear_t=t, wet=1.0, bow=0.25 * closed,
-                           pitch=0.45 * closed - 0.25 * up, lid=0.9 * closed + 0.15 * up, worry=1.0,
-                           gy=-0.8 * up, smile=-0.45)
+            p = kneel_pose(t, dim=night * 0.32, bow=0.25 * closed, pitch=0.4 * closed - 0.25 * up,
+                           lid=0.5 * closed + 0.12 * up, worry=0.45 + 0.25 * up, furrow=0.45 * closed,
+                           gy=0.5 * closed - 0.8 * up, gx=-0.2 * closed, smile=-0.15)
             life.apply(p, t, 0.3)
-            speak(p, ("moses_w",), t, 0.8, 0.4)
-            p["tilt"] += 0.8 * math.sin(t * 11) * 0.6
+            speak(p, ("moses_w",), t, 0.85, 0.5)
             at_head(cv, MOSES, p, 360, 560, 3.4, t)
         S.grade(cv, (90, 100, 150), 0.18, "multiply")
 
@@ -961,21 +1042,22 @@ def alone(cv, t):
             S.wall_outside(cv, t, gate=0, night=night)
             p = kneel_pose(t, dim=night * 0.5)
             fig(cv, MOSES, p, 380, 1000, 0.5, t)
-            # dust devil drifting past
-            cx = lerp(-300, 1000, swirl)
-            for k in range(60):
-                h = k / 60
-                ang = t * 6 + k * 0.7
-                r = 20 + 90 * h
-                cv.drawCircle(cx + math.cos(ang) * r, 1060 - h * 520 + math.sin(ang) * r * 0.2, 10 + 18 * h,
-                              paint((200, 160, 120), 0.32 * math.sin(math.pi * swirl), blur=10))
+        # a dust devil passing close to the lens on the right, half out of frame, away from him
+        cx = lerp(980, 640, smooth(swirl * 1.6)) + 40 * math.sin(t * 0.9)
+        fade = math.sin(math.pi * swirl)
+        for k in range(70):
+            h = k / 70
+            ang = t * 5 + k * 0.7
+            r = 40 + 210 * h
+            cv.drawCircle(cx + math.cos(ang) * r, 1290 - h * 1100 + math.sin(ang) * r * 0.18, 26 + 50 * h,
+                          paint((196, 158, 120), 0.2 * fade * (1 - 0.4 * h), blur=22))
         S.grade(cv, (90, 100, 150), 0.25, "multiply")
         S.vignette(cv, 0.55)
 
     def bowed(cv, t, lt):
         with Cam(cv, 360, 760, 1.12 + 0.05 * lt / 5, t=t):
             night = outside(t)
-            p = kneel_pose(t, dim=night * 0.5, bow=1.0, pitch=0.5, lid=0.9, shake=1.0, tears=0.6, tear_t=t)
+            p = kneel_pose(t, dim=night * 0.5, bow=1.0, pitch=0.5, lid=0.7, shake=0.5)
             life.apply(p, t, 0.2)
             fig(cv, MOSES, p, 370, 1160, 1.2, t)
         S.grade(cv, (80, 90, 150), 0.3, "multiply")
@@ -990,6 +1072,7 @@ def presence(cv, t):
     n10b, n10c, g1, n11, g2, n12, n12b = (TL.s(k) for k in ("n10b", "n10c", "g1", "n11", "g2", "n12", "n12b"))
     warmth = TL.cap("n10b", 3)
     sigh0 = TL.s("sigh")
+    g1b_e, g2_e = TL.e("g1b"), TL.e("g2")
     life = LIVES["moses"]
 
     def night_sky(cv, t, horizon=820, rot=0.0, amount=1.0):
@@ -1017,7 +1100,7 @@ def presence(cv, t):
             S.light_rays(cv, 370, -200, 0.9 * pres, t, n=7, L=1500, spread=0.5, base=math.pi / 2,
                          col=(255, 214, 150))
             p = kneel_pose(t, dim=night * 0.5 * (1 - 0.6 * warm), bow=1.0 - 0.5 * warm, pitch=0.5 - 0.2 * warm,
-                           lid=0.9 - 0.3 * ramp(t, warmth + 1.5, warmth + 3), shake=1.0 - warm, tears=0.6, tear_t=t,
+                           lid=0.7 - 0.25 * ramp(t, warmth + 1.5, warmth + 3), shake=0.5 * (1 - warm),
                            glowhand=warm)
             p["tint"] = ((255, 190, 120), 0.3 * warm)
             life.apply(p, t, 0.2)
@@ -1040,7 +1123,7 @@ def presence(cv, t):
             cv.drawRect(skia.Rect.MakeLTRB(-400, 1000, W + 400, H + 400), paint((24, 22, 40)))
             cv.drawRect(skia.Rect.MakeLTRB(-400, 960, W + 400, 1000), paint((34, 32, 54)))
             glow(cv, 360, 1080, 110, (255, 200, 130), 0.35, blend="screen")
-            p = kneel_pose(t, dim=0.6, bow=0.3, pitch=0.1, lid=0.4, tears=0.5)
+            p = kneel_pose(t, dim=0.6, bow=0.3, pitch=0.1, lid=0.4)
             fig(cv, MOSES, p, 360, 1150, 0.42, t)
         S.vignette(cv, 0.5)
 
@@ -1054,8 +1137,10 @@ def presence(cv, t):
             p = kneel_pose(t, dim=0.2, bow=0.0, pitch=-0.25 * hear * (1 - close) + 0.08 * close,
                            lid=0.1 + 0.88 * close, wide=0.4 * hear * (1 - smile),
                            brow=0.5 * hear * (1 - smile), worry=0.7 - 0.35 * smile, gy=-0.75 * hear * (1 - close),
-                           open=0.18 * hear * (1 - smile), smile=-0.2 + 0.55 * smile, tears=0.9, tear_t=t, wet=1.0,
-                           glowhand=0.55)
+                           open=0.18 * hear * (1 - smile), smile=-0.2 + 0.55 * smile, glowhand=0.55,
+                           wet=0.6 * ramp(t, g1b_e, g1b_e + 0.8) + 0.4 * ramp(t, g2_e, g2_e + 0.6),
+                           drops=[(1, (t - g1b_e - 0.5) / 2.6), (-1, (t - g2_e - 0.4) / 2.4),
+                                  (1, (t - g2_e - 1.1) / 2.4)])
             p["tint"] = ((255, 190, 130), 0.1)
             life.apply(p, t, 0.3)
             if smile:
@@ -1064,26 +1149,31 @@ def presence(cv, t):
         S.vignette(cv, 0.45)
 
     def two(cv, t, lt):
-        form = ramp(t, n12 + 0.6, n12 + 4.0)
+        """Not a figure kneeling beside him: the presence all around him, vast in the stars, bending close."""
+        form = ramp(t, n12 + 0.4, n12 + 4.2)
         sg = sighp(t)
         with Cam(cv, 360, 700, 1.0 + 0.04 * lt / 10, t=t):
             fill(cv, (8, 10, 28))
             S.sky(cv, [(6, 8, 26), (18, 20, 56), (44, 40, 80)], [0, 0.6, 1], 0, 960)
             S.stars(cv, t, 1.0, cx=360, cy=260, rot=(t - n10c) * 2.2, n=300, x0=-500, x1=1200, y0=-600, y1=1000)
+            S.divine_figure(cv, 425, 960, 0.86, t, a=form, sigh=max(0, sg))
             cv.drawRect(skia.Rect.MakeLTRB(-400, 960, W + 400, H + 400), paint((30, 28, 46)))
-            cv.drawRect(skia.Rect.MakeLTRB(-400, 940, W + 400, 960), paint((40, 38, 60)))
-            S.star_figure(cv, 480, 1100, 0.95, t, a=form, sigh=max(0, sg), st=MOSES)
+            cv.drawRect(skia.Rect.MakeLTRB(-400, 940, W + 400, 962), paint((40, 38, 60)))
             # a soft wave of light on the out-breath
             if t > sigh0 + 1.1:
                 u = clamp((t - sigh0 - 1.1) / 2.4)
                 ring = skia.Path()
-                ring.addOval(oval(390, 1000, 120 + 500 * u, 40 + 160 * u))
+                ring.addOval(oval(260, 1060, 120 + 500 * u, 40 + 160 * u))
                 cv.drawPath(ring, paint((255, 220, 170), 0.35 * (1 - u), stroke=10, blur=8, blend="plus"))
-            p = kneel_pose(t, dim=0.35, bow=0.15 - 0.1 * sg, pitch=0.1, lid=lerp(0.35, 0.95, ramp(t, sigh0 + 0.9, sigh0 + 1.6)),
-                           worry=0.4, smile=0.05, glowhand=0.7, sigh=sg, tears=0.6, breath=1.0)
+            p = kneel_pose(t, dim=0.35, bow=0.15 - 0.1 * sg, pitch=0.1,
+                           lid=lerp(0.35, 0.95, ramp(t, sigh0 + 0.9, sigh0 + 1.6)), worry=0.3, furrow=0.0,
+                           smile=0.08, glowhand=0.7, sigh=sg, breath=1.0)
             p["tint"] = ((200, 190, 255), 0.15)
             life.apply(p, t, 0.2, blinks=t < sigh0)
-            fig(cv, MOSES, p, 250, 1100, 0.95, t)
+            fig(cv, MOSES, p, 260, 1100, 0.95, t)
+            # the great hand resting over his shoulders, in front of him
+            glow(cv, 425 - 205 * 0.86, 960 - 130 * 0.86, 110 * (1 + 0.2 * max(0, sg)), (190, 205, 255), 0.3 * form,
+                 blend="screen")
             S.dust(cv, t, 30, 0.25 * ramp(t, sigh0 + 1.1, sigh0 + 2), wind=30, col=(255, 230, 190), y0=900, y1=1100)
         S.vignette(cv, 0.45)
 
@@ -1189,54 +1279,85 @@ def village2(cv, t):
         S.grade(cv, (60, 70, 130), 0.22 + 0.15 * bars, "multiply")
         S.vignette(cv, 0.4 + 0.3 * bars)
 
-    def seed(cv, t, lt):
-        fallu = ramp(t, n14b - 0.6, n14b + 1.4, ease_out)
-        landed = ramp(t, n14b + 1.2, n14b + 1.6)
-        miracle = ramp(t, n14c - 0.3, n14c + 3.2)
-        to_air = ramp(t, n14c + 2.4, n14c + 4.2)
-        cx, cy = 360, 930
-        with Cam(cv, 360, lerp(700, 760, smooth(lt / 8)), 1.0 + 0.05 * lt / 8, t=t):
-            S.sky(cv, [(6, 8, 26), (26, 28, 62)], None, 0, 470)
-            S.stars(cv, t, 1.0, n=140, y1=440)
-            S.house_row(cv, 470, 220, n=4, x0=-120, x1=W + 120, dim=0.82, seed=9, lights=1.0)
-            S.paving(cv, (360, 330), 470, 900, S.GROUND_IN, dim=0.82, spacing=150)
-            # the crack between two straight stones
-            crack = [(cx - 70, cy - 6), (cx - 30, cy + 4), (cx, cy - 2), (cx + 34, cy + 6), (cx + 80, cy - 4)]
-            cv.drawPath(path(crack, closed=False), paint((12, 12, 22), 0.9, stroke=6))
-            # the seed of light drifting down
-            sx = lerp(520, cx, fallu) + 30 * math.sin(fallu * 5) * (1 - fallu)
-            sy = lerp(-80, cy - 6, fallu)
-            if landed < 1:
-                for k in range(8):  # sparkle trail
-                    u = clamp(fallu - k * 0.03)
-                    tx = lerp(520, cx, u) + 30 * math.sin(u * 5) * (1 - u)
-                    ty = lerp(-80, cy - 6, u)
-                    glow(cv, tx, ty, 14, (255, 220, 160), 0.5 * (1 - k / 8) * (1 - landed))
-            pulse = 1 + 0.25 * math.sin(t * 3)
-            glow(cv, sx, sy, (40 + 40 * landed) * pulse, (255, 214, 150), 0.9)
-            glow(cv, sx, sy, 8, (255, 250, 230), 1.0)
-            if miracle > 0:
-                # warm light seeps along the straight joints and bends them
-                glow(cv, cx, cy - 40, 120 + 420 * miracle, (255, 196, 120), 0.4 * miracle, blend="screen")
-                for k in range(-3, 4):
-                    yy = cy + k * 22
-                    bend = skia.Path()
-                    bend.moveTo(cx - 260 * miracle, yy)
-                    bend.quadTo(cx, yy - 30 * miracle * (1 - abs(k) / 4), cx + 260 * miracle, yy)
-                    cv.drawPath(bend, paint((255, 214, 150), 0.3 * miracle * (1 - abs(k) / 4), stroke=2.5,
-                                            blend="plus"))
-                S.light_rays(cv, cx, cy - 20, miracle * 0.9, t, n=9, L=900, spread=1.4)
-                S.sprout(cv, cx, cy, miracle, t, a=1.0, s=2.4)
-        S.vignette(cv, 0.55)
-        if to_air > 0:
-            cv.saveLayerAlpha(None, int(255 * to_air))
-            S.aerial_view(cv, t, zoom=lerp(1.9, 1.15, ramp(t, n14c + 2.4, end)), focus=(0, 0), night=1.0,
-                          lights=1.0, glow_seed=0.4 + 0.6 * ramp(t, n14c + 3, end))
-            S.vignette(cv, 0.5)
-            cv.restore()
-        title_text(cv, "THE FIRST VILLAGE", 230, window(t, n14c + 3.4, end + 1, 1.2, 0.1), 46)
+    def exile_dawn(cv, t, lt):
+        """Dawn outside the walls. Moses walks away into the sunrise; his footprints lead back to where he
+        knelt, and from the place his tears fell, something green is pushing up."""
+        hz = 470
+        walk_u = ramp(t, n14b - 0.6, end, lambda u: u)
+        glint = ramp(t, n14b - 0.2, n14b + 1.2)
+        grow = ramp(t, n14c - 0.3, n14c + 3.4)
+        push = smooth(ramp(t, n14b, n14c + 1.5)) * (1 - smooth(ramp(t, n14c + 2.0, end - 0.5)))
+        spot = (330, 968)
 
-    run(cv, t, [(v2, weaver_loom), (look, two_shot), (p1, potter), (n14, weaver_cu), (n14b - 0.6, seed)])
+        def gy(z):                  # ground plane: depth z -> screen y
+            return hz + 500 / z
+
+        def gx(z):                  # his path curves gently away toward the sun
+            return 330 + 90 * (1 - 1 / z) + 12 * math.sin(z * 0.9)
+
+        zm = lerp(4.2, 9.5, walk_u)
+        with Cam(cv, lerp(360, spot[0], 0.5 * push), lerp(640, 820, push), 1.0 + 0.22 * push, t=t):
+            S.sky(cv, [(36, 44, 98), (150, 104, 132), (250, 170, 120), (255, 214, 160)], [0, 0.5, 0.85, 1], 0,
+                  hz + 4)
+            S.stars(cv, t, 0.35, n=80, y1=200)
+            sx = 520
+            glow(cv, sx, hz, 420, (255, 190, 120), 0.55)
+            cv.drawCircle(sx, hz + 18, 42, paint((255, 232, 190)))
+            S.mountains(cv, hz + 2, (150, 104, 120), seed=5, h=34)
+            ground = (170, 124, 90)
+            cv.drawRect(skia.Rect.MakeLTRB(-400, hz, W + 400, H + 600),
+                        paint(shader=lin((0, hz), (0, 1100), [(214, 160, 120), ground, shade(ground, 0.8)])))
+            cv.drawRect(skia.Rect.MakeLTRB(-400, hz, W + 400, hz + 70),
+                        paint(shader=lin((0, hz), (0, hz + 70), [((255, 200, 150), 0.5), ((255, 200, 150), 0.0)])))
+            for k in range(140):   # pebbles in perspective
+                z = 1 / (0.12 + 0.9 * hashf(k, 61))
+                x = (hashf(k, 62) - 0.5) * 2200 / z + 360
+                r = 10 / z
+                cv.drawOval(oval(x, gy(z), r, r * 0.55), paint(shade(ground, 0.75), 0.7))
+            # the long morning shadow of the wall behind us
+            cv.drawRect(skia.Rect.MakeLTRB(-400, 1000, W + 400, H + 600),
+                        paint(shader=lin((0, 1000), (0, 1200), [((40, 30, 40), 0.0), ((40, 30, 40), 0.35)])))
+            # where he knelt: knee prints, hand prints, and dark spots where tears fell
+            for dx in (-38, 38):
+                cv.drawOval(oval(spot[0] + dx, spot[1] + 30, 34, 13), paint(shade(ground, 0.68), 0.85))
+            for dx in (-120, 125):
+                cv.drawOval(oval(spot[0] + dx, spot[1] + 8, 24, 9), paint(shade(ground, 0.7), 0.7))
+            for k, (dx, dy) in enumerate(((0, 0), (-16, 6), (14, -4))):
+                cv.drawOval(oval(spot[0] + dx, spot[1] + dy, 7 - k, 3.5), paint(shade(ground, 0.55), 0.9))
+            # his footprints leading away to him
+            z = 1.16
+            k = 0
+            while z < zm - 0.15:
+                side = -1 if k % 2 else 1
+                x = gx(z) + side * 22 / z
+                y = gy(z)
+                fw, fl = 20 / z, 44 / z          # sandal prints pressed into the dust
+                cv.save()
+                cv.translate(x, y)
+                cv.drawOval(oval(0, 0, fw, fl * 0.4), paint(shade(ground, 0.62), 0.9))
+                cv.drawOval(oval(0, fl * 0.04, fw * 0.7, fl * 0.26), paint(shade(ground, 0.8), 0.9))
+                cv.drawOval(oval(-fw * 0.3, -fl * 0.4, fw * 0.32, fl * 0.12), paint(shade(ground, 0.62), 0.9))
+                cv.drawOval(oval(fw * 0.25, -fl * 0.38, fw * 0.3, fl * 0.11), paint(shade(ground, 0.62), 0.9))
+                cv.restore()
+                z += 0.38 * (1 + 0.15 * z)
+                k += 1
+            # Moses, small, walking into the sunrise
+            ms = 0.95 / zm
+            bob = abs(math.sin(t * 3.3)) * 6 * ms
+            S.draw_back(cv, MOSES, gx(zm), gy(zm) - bob, ms, t, dim=0.25)
+            cv.drawLine(gx(zm) - 90 * ms, gy(zm) - 560 * ms - bob, gx(zm) - 76 * ms, gy(zm) - bob,
+                        paint((70, 50, 40), stroke=max(1.2, 10 * ms)))
+            glow(cv, gx(zm), gy(zm) - 250 * ms, 120 * ms + 30, (255, 200, 140), 0.25)
+            # a tear's glint becomes a seed, the seed a sprout
+            glow(cv, spot[0], spot[1] - 2, 18 + 30 * glint, (255, 226, 160), 0.7 * glint * (1 - 0.4 * grow))
+            if grow > 0:
+                S.light_rays(cv, spot[0], spot[1] - 10, 0.45 * grow, t, n=9, L=700, spread=1.3)
+                glow(cv, spot[0], spot[1] - 30, 80 + 220 * grow, (255, 205, 130), 0.4 * grow, blend="screen")
+                S.sprout(cv, spot[0], spot[1], grow, t, a=1.0, s=1.5)
+        S.vignette(cv, 0.4)
+        title_text(cv, "THE FIRST VILLAGE", 210, window(t, n14c + 3.2, end + 1, 1.2, 0.1), 46)
+
+    run(cv, t, [(v2, weaver_loom), (look, two_shot), (p1, potter), (n14, weaver_cu), (n14b - 0.6, exile_dawn)])
 
 
 SCENES = [("opening", opening), ("village", village), ("fear", fear), ("speech", speech), ("elder2", elder2),
