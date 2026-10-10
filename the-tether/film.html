@@ -1413,33 +1413,77 @@ function wrapLines(text, maxw) {
   for (const w of words) { const tryl = cur ? cur + " " + w : w; if (ctx.measureText(tryl).width > maxw && cur) { lines.push(cur); cur = w; } else cur = tryl; }
   if (cur) lines.push(cur); return lines;
 }
+// Captions are large enough to read on a phone even when the widescreen cut is
+// shown small: bold, outlined, at most two lines at a time. Long lines are split
+// into phrases shown one after another, timed in proportion to their length.
+const CAP = PORTRAIT ? { fs: 44, lines: 2, width: 0.9, y: 0.86 } : { fs: 54, lines: 2, width: 0.94, y: 0 };
+const CHUNKS = new Map();
+function captionChunks(c, font) {
+  if (CHUNKS.has(c)) return CHUNKS.get(c);
+  ctx.font = font;
+  const maxw = W * CAP.width;
+  const fits = s => wrapLines(s, maxw).length <= CAP.lines;
+  // phrases end at sentence marks, ellipses and commas
+  const phrases = c.text.match(/[^.!?,…]+(?:\.\.\.|[.!?,…])*\s*/g).map(s => s.trim()).filter(Boolean);
+  const pieces = [];
+  let cur = "";
+  for (const p of phrases) {
+    const next = cur ? cur + " " + p : p;
+    if (fits(next)) { cur = next; continue; }
+    if (cur) pieces.push(cur);
+    cur = p;
+    while (!fits(cur)) {                      // a single phrase too long: break on words
+      const words = cur.split(" "); let head = "";
+      while (words.length && fits(head ? head + " " + words[0] : words[0])) head = head ? head + " " + words.shift() : words.shift();
+      pieces.push(head); cur = words.join(" ");
+    }
+  }
+  if (cur) pieces.push(cur);
+  const total = pieces.reduce((n, p) => n + p.length, 0);
+  let s = c.start;
+  const out = pieces.map(p => { const d = c.dur * p.length / total, r = { text: p, start: s, end: s + d }; s += d; return r; });
+  CHUNKS.set(c, out);
+  return out;
+}
 function drawCaptions(t) {
   ctx.setTransform(1, 0, 0, 1, 0, 0);
-  if (PORTRAIT) {                    // a soft dark band so captions read over the picture
-    const g = ctx.createLinearGradient(0, H * 0.7, 0, H);
-    g.addColorStop(0, "rgba(0,0,0,0)"); g.addColorStop(0.5, "rgba(0,0,0,0.45)"); g.addColorStop(1, "rgba(0,0,0,0.7)");
-    ctx.fillStyle = g; ctx.fillRect(0, H * 0.7, W, H * 0.3);
-  }
+  const lh = CAP.fs * 1.18;
+  let band = 0;
   CUES.forEach((c, i) => {
     if (c.who === "G") return;
     const next = CUES[i + 1] ? CUES[i + 1].start : 1e9;
     const end = Math.min(c.start + c.dur + 0.6, next - 0.05);
-    const a = ramp(t, c.start - 0.15, c.start + 0.2) * (1 - ramp(t, end - 0.3, end));
-    if (a <= 0) return;
-    const fs = (c.who === "J" ? 22 : 21) * (PORTRAIT ? 1.9 : 1);
-    const style = { N: ["", "232,226,214"], J: ["italic ", "255,214,170"], I: ["italic ", "214,200,255"] }[c.who];
-    ctx.font = `${style[0]}${fs}px Caladea`; ctx.textAlign = "center";
-    const txt = c.who === "N" ? c.text : `“${c.text}”`;
-    const lines = wrapLines(txt, W * (PORTRAIT ? 0.86 : 0.78));
-    const lh = PORTRAIT ? fs * 1.3 : 26;
-    const y0 = PORTRAIT ? H * 0.855 - (lines.length - 1) * lh / 2 : H - BAR + 36 - (lines.length - 1) * 8;
-    if (PORTRAIT) {
-      ctx.shadowColor = "rgba(0,0,0,0.9)"; ctx.shadowBlur = 12 * U;
-    }
-    ctx.fillStyle = `rgba(${style[1]},${a * 0.95})`;
-    lines.forEach((l, k) => ctx.fillText(l, W / 2, y0 + k * lh));
-    ctx.shadowBlur = 0; ctx.shadowColor = "rgba(0,0,0,0)";
+    if (t < c.start - 0.2 || t > end) return;
+    const style = { N: ["bold ", "245,240,230"], J: ["bold italic ", "255,214,165"], I: ["bold italic ", "222,210,255"] }[c.who];
+    const font = `${style[0]}${CAP.fs}px Caladea`;
+    const chunks = captionChunks(c, font);
+    chunks.forEach((k, j) => {
+      const s0 = j ? k.start : c.start - 0.15, s1 = j < chunks.length - 1 ? k.end : end;
+      const a = ramp(t, s0, s0 + 0.12) * (1 - ramp(t, s1 - 0.12, s1));
+      if (a <= 0) return;
+      band = Math.max(band, a);
+      const txt = c.who === "N" ? k.text : `${j ? "" : "“"}${k.text}${j < chunks.length - 1 ? "" : "”"}`;
+      ctx.font = font; ctx.textAlign = "center"; ctx.lineJoin = "round";
+      const lines = wrapLines(txt, W * CAP.width);
+      // landscape: bottom line sits in the letterbox, the block grows upward into the picture
+      const y0 = PORTRAIT ? H * CAP.y - (lines.length - 1) * lh / 2 : H - 30 - (lines.length - 1) * lh;
+      lines.forEach((l, n) => {
+        ctx.strokeStyle = `rgba(0,0,0,${0.85 * a})`; ctx.lineWidth = CAP.fs * 0.16;
+        ctx.strokeText(l, W / 2, y0 + n * lh);
+        ctx.fillStyle = `rgba(${style[1]},${a})`;
+        ctx.fillText(l, W / 2, y0 + n * lh);
+      });
+    });
   });
+  return band;
+}
+// soft dark band behind the caption area, drawn under the text
+function drawCaptionBand() {
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  const top = PORTRAIT ? H * 0.7 : H - BAR - CAP.fs * 1.6;
+  const g = ctx.createLinearGradient(0, top, 0, H);
+  g.addColorStop(0, "rgba(0,0,0,0)"); g.addColorStop(0.55, "rgba(0,0,0,0.5)"); g.addColorStop(1, "rgba(0,0,0,0.75)");
+  ctx.fillStyle = g; ctx.fillRect(0, top, W, H - top);
 }
 function drawTitle(t) {
   const a = ramp(t, M.title, M.title + 2.2) * (1 - ramp(t, M.end - 1.6, M.end - 0.1));
@@ -1507,6 +1551,7 @@ function render(t) {
   const black = 1 - ramp(t, 0.3, 4.5) + ramp(t, M.fade, M.title - 0.2);
   if (black > 0) { ctx.fillStyle = `rgba(0,0,0,${clamp(black)})`; ctx.fillRect(0, 0, W, H); }
   if (BAR) { ctx.fillStyle = "#000"; ctx.fillRect(0, 0, W, BAR); ctx.fillRect(0, H - BAR, W, BAR); }
+  drawCaptionBand();
   drawCaptions(t);
   drawTitle(t);
 }
