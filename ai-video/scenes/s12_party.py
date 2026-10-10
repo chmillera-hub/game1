@@ -4,7 +4,7 @@ Shots (every time is derived from cues / word starts, see _T):
 
   A  rise..party  F5 lair, morning (rain off, dawn-tinted window). Frame 0
                   picks up s11's REAL SMILE; Malvo springs up (dip, rise with
-                  overshoot, cape swish). "Hissy!" -> looks at Hissy, who
+                  overshoot, cape swish). "Snake!" -> looks at Hissy, who
                   perks up. "New plan." -> winds up and flings a yellow
                   'PARTY' sticky that slaps over the EVIL of EVIL PLANS (the
                   AI's eyes track it past its face). "We throw the whole town
@@ -22,9 +22,19 @@ Shots (every time is derived from cues / word starts, see _T):
                   l03: push-in 1 -> 1.35 on Malvo (hand on heart, glistening
                   eyes, monocle fogs, one happy tear on "ME?").
                   l04: the AI lantern (screen space) WINKs on "stats.".
+                  zombie_mask: the camera eases back out (him left, the witch-
+                  hat kid right); both hands pull the zombie mask (pushed up on
+                  his dome all party) down over his face. l04z "Braaains!":
+                  zombie arms (limp dangling gloves), side-to-side shamble
+                  toward the kid, who gasps happily, hands on cheeks (no
+                  contact, ever). kid_runs: she squeals (closed happy eyes,
+                  big laugh) and runs one giggly loop round the other kids,
+                  looking back laughing; they laugh/clap, Hissy nods, the AI
+                  laughs. l04y: AI shrug on "Scary? Yes.", wink + thumbs-up on
+                  "Nobody."; push back in while he pushes the mask back up.
                   lean: paranoid glances, lean toward the AI, SNEAKY SQUINT +
                   steeple; 'NICE TRIES: 10?' chip blinks in.
-                  l05 whisper. l06 "Malvo.": instant 😒 (no blend), red strike
+                  l05 whisper. l06 "My guy.": instant 😒 (no blend), red strike
                   through "10?", Hissy facepalms (tail over his glasses).
                   l07 "Kidding! Kidding!" shrug, sheepish -> happy; then they
                   both laugh, the chip pops out, ~12 confetti bits drift down
@@ -140,10 +150,13 @@ _GRAB_UP = V._arm(-292, -560, -126, -704, -1.05, cu=0.55, th=0.3, sp=0.2, hs=0.9
 _GRAB_DN = V._arm(-306, -404, -158, -492, -0.62, cu=0.55, th=0.3, sp=0.2, hs=0.95)
 V.ARM_POSES.setdefault("s12_grab_up", V._pose(_GRAB_UP, shy=-8))
 V.ARM_POSES.setdefault("s12_grab_dn", V._pose(_GRAB_DN, shy=-6))
+V.ARM_POSES.setdefault("s12_grab_out", V._pose(       # elbows wide: hands go round the face
+    V._arm(-352, -420, -318, -612, -1.6, cu=0.3, th=0.2, sp=0.5, hs=0.95), shy=-8))
 _ZOMB_A = V._arm(-268, -376, -212, -436, 1.45, cu=0.3, th=0.15, sp=0.4, hs=1.08)
 _ZOMB_B = V._mirror(_ZOMB_A)
-_ZOMB_A = dict(_ZOMB_A, wx=_ZOMB_A["wx"] + 8, ex=_ZOMB_A["ex"] + 6, ha=1.3)
-_ZOMB_B = dict(_ZOMB_B, wx=_ZOMB_B["wx"] + 4, ex=_ZOMB_B["ex"] + 4, wy=_ZOMB_B["wy"] - 12)
+_ZOMB_A = dict(_ZOMB_A, wx=_ZOMB_A["wx"] + 8, ex=_ZOMB_A["ex"] + 6, ha=1.15)
+_ZOMB_B = dict(_ZOMB_B, wx=_ZOMB_B["wx"] + 22, ex=_ZOMB_B["ex"] + 14, wy=_ZOMB_B["wy"] - 16,
+               ha=1.0)                    # limp fingers droop toward the kid
 V.ARM_POSES.setdefault("s12_zombie", V._pose(_ZOMB_A, _ZOMB_B, shy=-12, hdy=6))
 V.VILLAIN_EXPR.setdefault("s12_zomb", dict(_HAPPY, tilt=0.1, hy=8))
 
@@ -2060,7 +2073,7 @@ def _robot_world(px, py):
 # ---------------------------------------------------------------------------
 # camera for shot B
 # ---------------------------------------------------------------------------
-ZCAM = (1.32, -111.0, -70.0)              # zombie-gag framing: him (left) + the kid (right)
+ZCAM = (1.32, -111.0, -150.0)              # zombie-gag framing: him (left) + the kid (right)
 
 
 def _cam(t, T):
@@ -2400,13 +2413,15 @@ def _malvo_b(t, T, info):
     arms = keyed(t, [
         (0.0, "shrug"),
         (L3.start - 0.1, "s12_heart", 0.3),
-        (T.zm, "s12_grab_up", 0.24),                  # grips the mask on his dome
+        (T.zm, "s12_grab_out", 0.13),
+        (T.zm + 0.13, "s12_grab_up", 0.11),           # grips the mask on his dome
         (T.pull0, "s12_grab_dn", T.pull1 - T.pull0),  # ... and pulls it down
         (T.pull1 + 0.04, "s12_zombie", 0.22),         # zombie arms
         (T.kr1, "rest", 0.35),
         (T.mu0 - 0.15, "s12_grab_dn", 0.15),
         (T.mu0, "s12_grab_up", T.mu1 - T.mu0),        # pushes it back up
-        (T.mu1 + 0.02, "steeple", 0.22),
+        (T.mu1, "s12_grab_out", 0.12),
+        (T.mu1 + 0.12, "steeple", 0.2),
         (T.l7.start - 0.08, "shrug", 0.15),
         (T.lol + 0.15, "s12_heart", 0.35),
     ])
@@ -2740,7 +2755,8 @@ def _kid(t, T):
         lx = cx - rx * math.cos(th)
         # start/end blend into the kid's spot (the loop's leftmost point is cx - rx)
         lx += (x0 - (cx - rx)) * (1 - math.sin(th / 2) ** 2)
-        ly = cy + ry * math.sin(th)
+        sn_ = math.sin(th)
+        ly = cy + ry * sn_ * (1.0 if sn_ > 0 else 2.0)   # back pass higher: head clears the others
         dth = 2 * math.pi * (0.5 + 0.5 * math.pi / 2 * math.sin(math.pi * u))
         vx = rx * math.sin(th) * dth / (T.kr1 - T.kr0)
         d.update(x=lx, y=ly, arms="run", mouth="laugh", eyes="happy", squeal=0.8,
