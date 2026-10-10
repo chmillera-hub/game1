@@ -277,11 +277,16 @@ def lord_head(c, P, fedora=True, fedora_tilt=0.0, fedora_dy=0.0, glasses=True, g
         dy = -260 * (1 - ease_out_back(sunglasses, 1.2))
         c.save()
         c.translate(0, dy)
-        for s in (-1, 1):
-            fs(c, poly([(s * 6, ey - 28), (s * 82, ey - 28), (s * 82, ey - 4), (s * 70, ey - 4), (s * 70, ey + 8), (s * 18, ey + 8), (s * 18, ey - 4), (s * 6, ey - 4)]), "#111111", 3, "#000000")
-        c.drawRect(skia.Rect.MakeLTRB(-90, ey - 38, 90, ey - 26), fill("#111111"))
-        for i in range(6):
-            c.drawRect(skia.Rect.MakeXYWH(-70 + i * 10, ey - 24 + (i % 2) * 6, 6, 6), fill("#ffffff", 0.8))
+        # chunky pixel 'deal with it' shades that fully cover both eyes
+        c.drawRect(skia.Rect.MakeLTRB(-98, ey - 44, 98, ey - 30), fill("#0c0c0f"))
+        for s_ in (-1, 1):
+            lens = poly([(s_ * 4, ey - 32), (s_ * 90, ey - 32), (s_ * 90, ey + 14), (s_ * 80, ey + 14), (s_ * 80, ey + 26),
+                         (s_ * 68, ey + 26), (s_ * 68, ey + 36), (s_ * 18, ey + 36), (s_ * 18, ey + 26), (s_ * 8, ey + 26),
+                         (s_ * 8, ey + 14), (s_ * 4, ey + 14)])
+            fs(c, lens, "#0c0c0f", 3, "#000000")
+            for k in range(3):
+                c.drawRect(skia.Rect.MakeXYWH(s_ * 24 - (8 if s_ < 0 else 0) + k * 10 * s_, ey - 24 + k * 9, 8, 8), fill("#ffffff", 0.85))
+        c.drawRect(skia.Rect.MakeLTRB(-10, ey - 30, 10, ey - 14), fill("#0c0c0f"))
         c.restore()
     # nose
     if clown_nose > 0:
@@ -303,18 +308,34 @@ def lord_head(c, P, fedora=True, fedora_tilt=0.0, fedora_dy=0.0, glasses=True, g
         c.save()
         c.translate(0, -hh * 0.78 + fedora_dy)
         c.rotate(fedora_tilt)
+        # brim (back part) first, so the crown sits *on* it and hides its middle
+        fs(c, oval(0, 2, 150, 24), "#2f2d36", 5)
         crown = skia.Path()
-        crown.moveTo(-82, 0)
+        crown.moveTo(-82, 4)
         crown.cubicTo(-90, -60, -70, -102, -30, -98)
         crown.quadTo(0, -82, 30, -98)
-        crown.cubicTo(70, -102, 90, -60, 82, 0)
+        crown.cubicTo(70, -102, 90, -60, 82, 4)
+        crown.quadTo(0, 14, -82, 4)
         crown.close()
         fs(c, crown, "#3a3842", 5)
-        c.drawRect(skia.Rect.MakeLTRB(-84, -30, 84, -6), fill("#1b1a20"))
+        band = skia.Path()
+        band.moveTo(-84, -22)
+        band.quadTo(0, -12, 84, -22)
+        band.lineTo(83, 2)
+        band.quadTo(0, 12, -83, 2)
+        band.close()
+        c.drawPath(band, fill("#1b1a20"))
         c.drawPath(poly([(-30, -96), (0, -70), (30, -96)], False), stroke("#2a2830", 4))
-        brim = oval(0, 2, 150, 26)
-        fs(c, brim, "#2f2d36", 5)
-        c.drawPath(oval(0, -4, 84, 10), fill("#1b1a20"))
+        # front lip of the brim, in front of the crown base (no visible hat opening)
+        lip = skia.Path()
+        lip.moveTo(-150, 2)
+        lip.quadTo(-120, -2, -82, 4)
+        lip.quadTo(0, 16, 82, 4)
+        lip.quadTo(120, -2, 150, 2)
+        lip.arcTo(skia.Rect.MakeLTRB(-150, -22, 150, 26), 0, 180, False)
+        lip.close()
+        fs(c, lip, "#2f2d36", 5)
+        c.drawPath(smooth_path([(-120, 14), (0, 24), (120, 14)], False), stroke("#4a4854", 3, 0.7))
         c.restore()
     # dart (stuck between the brows, drawn last so it sits on top)
     if dart > 0:
@@ -394,6 +415,8 @@ ARM_POSES = {
     "clutch": ((175, 260), (60, 270), "open"),
     "mouth": ((190, 230), (30, 88), "open"),
     "up": ((230, 80), (250, -120), "open"),
+    "dance_up": ((240, 60), (300, -95), "open"),
+    "dance_out": ((265, 190), (350, 115), "open"),
 }
 
 

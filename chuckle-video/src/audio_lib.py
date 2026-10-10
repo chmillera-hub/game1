@@ -614,7 +614,7 @@ def sfx_deflate_long(dur=30.0, seed=50):
     place(out, squeal, 0.2, 0.75)
     # occasional wet sputters
     for _ in range(int(dur / 4)):
-        place(out, fart(r.uniform(0.25, 0.5), 50, 90, int(r.integers(1000)), 0.2, 0.4), r.uniform(1, dur - 1), 0.25)
+        place(out, fart(r.uniform(0.25, 0.5), 50, 90, int(r.integers(1000)), 0.2, 0.0), r.uniform(1, dur - 1), 0.25)
     return norm(out, 0.9)
 
 
@@ -773,3 +773,22 @@ def sfx_splort(seed=85):
 
 SFX.update({"maniacal_laugh": sfx_maniacal_laugh, "breath_in": sfx_breath_in, "breath_out": sfx_breath_out,
             "fart_bomb": sfx_fart_bomb, "jet_fart": sfx_jet_fart, "splort": sfx_splort})
+
+
+# ----------------------------------------------------------------- v3 additions
+def sfx_fart_dream(seed=90):
+    """Imagined, giant fart (with a dreamy echo)."""
+    x = fart(2.2, 45, 190, seed, 1.0, 0.0)
+    return norm(reverb(x, 1.0, 0.25)[: int(2.8 * SR)], 0.9)
+
+
+def sfx_fart_big(seed=91):
+    """The meme-video finale fart: long, brassy, rising — no explosion."""
+    out = np.zeros(int(3.0 * SR))
+    place(out, fart(2.4, 50, 210, seed, 1.0, 0.0), 0.0)
+    place(out, sfx_whoosh(1.6, 200, 3000, seed), 0.6, 0.5)
+    return norm(out, 0.9)
+
+
+SFX.update({"fart_dream": sfx_fart_dream, "fart_big": sfx_fart_big,
+            "fart_long": lambda: fart(3.6, 48, 170, 21, 0.9, 0.0)})

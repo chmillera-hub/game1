@@ -2,7 +2,7 @@
 import numpy as np
 from scipy import signal
 from audio_lib import (SR, tt, mtof, lp, hp, bp, peak, additive, phase_of, reverb, norm, fade, place,
-                       rng, tv_lowpass, fart, balloon_squeal, smooth_noise, VOW_AH, honk)
+                       rng, tv_lowpass, tv_bandpass, fart, balloon_squeal, smooth_noise, VOW_AH, honk)
 
 # ------------------------------------------------------------ instruments
 
@@ -440,7 +440,57 @@ def autotune_voice(x, notes):
     return norm(v, 0.9)
 
 
+def supersaw(f, dur):
+    t = tt(dur + 0.15)
+    x = np.zeros(len(t))
+    for i, det in enumerate((-0.18, -0.11, -0.05, 0.0, 0.05, 0.11, 0.18)):
+        x += additive(np.full(len(t), f * 2 ** (det / 12)), 22, lambda k: 1 / k) * (1.0 if det == 0 else 0.7)
+    env = np.minimum(t / 0.005, 1) * np.where(t < dur, np.exp(-t / (dur * 0.9)), np.exp(-dur / (dur * 0.9)) * np.exp(-(t - dur) / 0.05))
+    return lp(x, 5000) * env
+
+
+def arp_pluck(f, dur):
+    t = tt(max(dur, 0.18))
+    ph = 2 * np.pi * f * t
+    x = sum((1.0 / k) * np.sin(k * ph) for k in range(1, 14, 2) if k * f < SR * 0.4)
+    return lp(x, 3500) * np.exp(-t / 0.09) * np.minimum(t / 0.002, 1)
+
+
+def airhorn(dur=0.5):
+    t = tt(dur)
+    drop = 1 - 0.12 * np.clip((t - (dur - 0.12)) / 0.12, 0, 1)
+    x = np.zeros(len(t))
+    for f in (466.0, 470.0, 587.0, 699.0):
+        x += additive(f * drop * (1 + 0.004 * np.sin(2 * np.pi * 6 * t)), 18, lambda k: 1 / k)
+    x = np.tanh(2.2 * x / 4)
+    x = bp(x, 300, 4500)
+    return x * np.minimum(t / 0.01, 1) * np.clip((dur - t) / 0.04, 0, 1)
+
+
+def crash():
+    t = tt(1.8)
+    x = hp(rng(31).standard_normal(len(t)), 4000)
+    return x * np.exp(-t / 0.6)
+
+
+def tape_stop(x, start, length):
+    i0 = int(start * SR)
+    n = int(length * SR)
+    if i0 >= len(x):
+        return x
+    seg_src = x[i0:]
+    rate = np.linspace(1.0, 0.0, n) ** 1.3
+    pos = np.cumsum(rate)
+    y = np.interp(pos, np.arange(len(seg_src)), seg_src)
+    out = x.copy()
+    out[i0:i0 + n] = y[: len(out) - i0][:n]
+    out[i0 + n:] = 0
+    return out
+
+
 def track_remix(voice_r1, voice_r2, honk_sfx, wheeze_sfx, dur=16.0):
+    """The meme-maker went ALL out: drums, fart bass, squeak lead, supersaw stabs, arps,
+    airhorns, snare-roll build, crash, glock counter-melody, autotuned vocals, tape-stop ending."""
     bpm = 120
     b = 60 / bpm
     bar = 4 * b
@@ -451,41 +501,74 @@ def track_remix(voice_r1, voice_r2, honk_sfx, wheeze_sfx, dur=16.0):
     nbars = int(dur / bar)
     vox_bus = np.zeros_like(out)
     hook = [(0, 74, .5), (.75, 74, .25), (1, 72, .5), (1.5, 69, .5), (2.5, 67, .5), (3, 69, 1)]
+    hook2 = [(0, 77, .5), (.5, 76, .5), (1, 74, 1), (2.5, 72, .5), (3, 74, 1)]
+    counter = [(0.5, 81, .4), (1.5, 84, .4), (2.5, 81, .4), (3.25, 79, .4), (3.75, 77, .4)]
     for i in range(nbars):
         t0 = i * bar
         name, bass = prog[i % 4]
         c = CH[name]
         full = i >= 2
-        # vocals (placed on a separate bus, see below)
+        last = i == nbars - 1
         place(vox_bus, v1 if i % 2 == 0 else v2, t0 + 0.05, 1.0)
         if i == 1:
             place(out, honk_sfx, t0 + 3 * b, 0.35)
+            # snare roll build + riser into the drop
+            k = 0
+            tt_ = 2 * b
+            while tt_ < bar - 0.02:
+                step = b / 4 if tt_ < 3 * b else b / 8
+                place(out, snare(True), t0 + tt_, 0.06 + 0.22 * (tt_ - 2 * b) / (2 * b))
+                tt_ += step
+            n_r = int(2 * b * SR)
+            rz = tv_bandpass(rng(5).standard_normal(n_r), np.geomspace(500, 7000, n_r), q=2) * np.linspace(0, 1, n_r) ** 2
+            place(out, rz, t0 + 2 * b, 0.25)
+        if i in (0, 1):
+            place(out, kick(), t0, 0.6)
+            seq(out, fart_bass, [(0, bass, 1.5)], t0, b, 0.3)
+            place(out, sum_inst(strings, [m + 12 for m in c], bar), t0, 0.05)
+            arp = [(k * 0.25, c[k % 3] + 12 + 12 * ((k // 3) % 2), 0.2, 0.6) for k in range(16)]
+            seq(out, arp_pluck, arp, t0, b, 0.05 if i == 0 else 0.08)
         if full:
+            if i == 2:
+                place(out, crash(), t0, 0.25)
+                for k, (st, d) in enumerate(((0, 0.18), (0.25, 0.18), (0.55, 0.6))):
+                    place(out, airhorn(d), t0 + st, 0.22)
+            if i == 6:
+                place(out, crash(), t0, 0.2)
+                for k, (st, d) in enumerate(((0, 0.18), (0.25, 0.18), (0.55, 0.6))):
+                    place(out, airhorn(d), t0 + st, 0.18)
             for k in range(4):
                 place(out, kick(), t0 + k * b, 0.75)
                 place(out, hat(True, k), t0 + k * b + b / 2, 0.12)
+            for k in range(16):
+                place(out, hat(False, k + 3), t0 + k * b / 4, 0.05 if k % 2 else 0.08)
             place(out, clap(), t0 + b, 0.35)
             place(out, clap(), t0 + 3 * b, 0.35)
             bl = [(0, bass, .45), (.5, bass, .4), (1.5, bass + 12, .4), (2, bass, .45), (2.75, bass + 7, .4), (3.5, bass + 12, .4)]
             seq(out, fart_bass, bl, t0, b, 0.42)
-            seq(out, squeak_lead, hook if i % 2 == 0 else [(0, 77, .5), (.5, 76, .5), (1, 74, 1), (2.5, 72, .5), (3, 74, 1)], t0, b, 0.12)
-            place(out, sum_inst(strings, [m + 12 for m in c], bar), t0, 0.03)
-            if i % 2 == 1:
-                place(out, honk_sfx, t0 + 3.5 * b, 0.3)
-        else:
-            place(out, kick(), t0, 0.6)
-            seq(out, fart_bass, [(0, bass, 1.5)], t0, b, 0.3)
-            place(out, sum_inst(strings, [m + 12 for m in c], bar), t0, 0.05)
-        if i == nbars - 1:
-            # stutter wheeze chops
+            seq(out, squeak_lead, hook if i % 2 == 0 else hook2, t0, b, 0.11)
+            # supersaw offbeat stabs
             for k in range(4):
-                place(out, wheeze_sfx[: int(0.12 * SR)], t0 + 2 * b + k * b / 4, 0.4)
+                place(out, sum_inst(supersaw, [m + 12 for m in c], b * 0.35), t0 + k * b + b / 2, 0.035)
+            # 16th-note arp
+            arp = [(k * 0.25, c[k % 3] + 12 + 12 * ((k // 3) % 2), 0.2, 0.7 if k % 4 == 0 else 0.5) for k in range(16)]
+            seq(out, arp_pluck, arp, t0, b, 0.07)
+            if i >= 4:
+                seq(out, glock, counter, t0, b, 0.09)
+            place(out, sum_inst(strings, [m + 12 for m in c], bar), t0, 0.03)
+            if i % 2 == 1 and not last:
+                place(out, honk_sfx, t0 + 3.5 * b, 0.3)
+        if last:
+            for k in range(4):
+                place(out, wheeze_sfx[: int(0.12 * SR)], t0 + 1 * b + k * b / 4, 0.4)
     venv = lp(np.abs(vox_bus), 6)
     venv = venv / (venv.max() + 1e-9)
     duck = lp(1 - 0.55 * np.clip(venv * 4, 0, 1), 8)
-    out = out / (np.sqrt(np.mean(out ** 2)) + 1e-9) * 0.12
+    out = out / (np.sqrt(np.mean(out[: int(dur * SR)] ** 2)) + 1e-9) * 0.12
     vox_bus = vox_bus / (np.sqrt(np.mean(vox_bus[vox_bus != 0] ** 2)) + 1e-9) * 0.16
-    return out * duck + hp(vox_bus, 150)
+    mixd = out * duck + hp(vox_bus, 150)
+    # the Lord strains... tape-stop, then the fart takes over
+    return tape_stop(mixd, dur - 1.1, 0.7)
 
 
 TRACKS = {

@@ -10,13 +10,14 @@ VOICES = {
     "LINDA": ("af_sarah", "en-us"),
 }
 LINES = {
- "A1": ("NARR", "Somewhere on the internet, a humble dweeb is cooking up some meme science.", None, 0.95),
- "A2": ("CREATOR", "Okay, Consciousness AI. Let's cook!", "Okay, Consciousness AI™... let's cook!", 1.0),
+ "A1": ("NARR", "Somewhere on the internet, a humble dweeb is writing a funny story.", None, 0.95),
+ "A2": ("CREATOR", "Hey chatbot, help me write a funny story about moderators who delete people's posts about their feelings, and their spirituality.", None, 1.0),
+ "A2b": ("CREATOR", "Because everyone deserves to express themselves. Okay... posting it!", None, 1.0),
  "A3": ("NARR", "The Chuckle That Broke the Unbreakable.", None, 0.9),
  "B1": ("NARR", "Meanwhile, in a dimly lit bedroom, we observe the Logical Lord, in his natural habitat.", None, 0.95),
  "B2": ("NARR", "Cheeto-dusted keyboard. Three energy drinks deep.", None, 0.95),
  "B3": ("NARR", "His plans for tonight? Moderate. His plans for tomorrow? Also, moderate.", None, 0.95),
- "B4": ("LORD", "Well, actually, humor is subjective.", None, 0.95),
+ "B4": ("LORD", "Well, actually, this humor is kind of spam. I don't like it... so let's get rid of it.", None, 0.95),
  "B5": ("LORD", "Oh ho! What's this?", "Oh-ho. What's this?", 1.0),
  "B6": ("LORD", "Ha. Look at this dweeb, using his pretty little AI tool,", "Ha. Look at this dweeb, using his pretty little AI tool...", 1.0),
  "B7": ("LORD", "to make some... luh humorous post.", "...to make some \u201cle humorous post.\u201d", 0.95),
@@ -24,6 +25,7 @@ LINES = {
  "C1": ("NARR", "He clicks. He reads.", None, 0.95),
  "C2": ("NARR", "You see, the Logical Lord is a moderator of epic seriousness. Moderating is his top priority, and he gives it his whole humanity.", None, 0.97),
  "C2b": ("LORD", "This is no laughing matter. The mod queue requires my full attention.", None, 0.92),
+ "C2c": ("LORD", "A funny story... about moderators? Wait. Wait... what?", "\u201cA funny story... about moderators\u201d? Wait. Wait... what?", 0.95),
  "C3": ("NARR", "But then... Bam!", "But then... BAM.", 0.95),
  "C4": ("NARR", "He senses it. The forbidden chuckle.", None, 0.92),
  "C5": ("NARR", "Bubbling up from deep in the gut, like some ancient, primordial force.", None, 0.95),
@@ -32,19 +34,17 @@ LINES = {
  "D1": ("NARR", "He clamps his mouth shut. Eyes watering. Face going full tomato.", None, 0.97),
  "D2": ("NARR", "And then... his body betrays him.", None, 0.92),
  "D3": ("NARR", "A long, glorious honk of surrender.", None, 0.92),
- "D4": ("LORD", "That... didn't happen.", None, 0.9),
+ "D4": ("LORD", "I hope my roommates didn't hear that. Let's just say... that didn't happen.", None, 0.92),
  "D5": ("NARR", "But his mind's eye shows him exactly where this is heading.", None, 0.95),
  "D6": ("LORD", "Oh no. I can't let that happen. I need to think un-funny thoughts!", "Oh no. I can't let that happen. I need to think unfunny thoughts!", 1.0),
  "E1": ("NARR", "Desperate, he builds a mental fortress of unfunny thoughts.", None, 0.97),
  "E3": ("NARR", "He pictures his therapist. Calm. Nodding slowly.", None, 0.95),
- "E4": ("THER", "Mm-hm. And how does that make you feel?", "Mm-hmm. And how does that make you feel?", 0.88),
+ "E4": ("THER", "And how does that make you feel?", "Hmm. And how does that make you feel?", 0.88),
  "E4b": ("THER", "Let's take a slow, deep breath together.", None, 0.85),
  "E10": ("NARR", "But not even his therapist could calm this one down.", None, 0.95),
  "F1": ("NARR", "The Logical Lord collapses in a heap.", None, 0.92),
  "F2": ("NARR", "Because a laugh isn't something you can moderate away. It's part of being human.", None, 0.93),
- "F3": ("NARR", "And this one was held in so long, it got poisoned by his lame-ass. Anti-fun. Soul.", "And this one was held in so long, it got poisoned by his lame-ass, anti-fun soul.", 0.95),
- "F4": ("NARR", "Like a sad, deflating balloon, making the saddest clown noises,", None, 0.95),
- "F5": ("NARR", "for one. Full. Minute.", None, 0.85),
+ "F4": ("NARR", "Like a sad, deflating balloon, making the saddest clown noises.", None, 0.95),
  "G1": ("NARR", "And the webcam he forgot to turn off?", None, 0.92),
  "G2": ("NARR", "Still. On.", None, 0.85),
  "G3": ("LORD", "Is that... recording?", None, 0.85),
@@ -58,3 +58,8 @@ LINES = {
  "I4": ("NARR", "And somewhere out there, you might have sparked a little chaos and comedy, even if you never get to see it.", None, 0.95),
  "I5": ("NARR", "Keep sharing your weird, wonderful self. Everybody deserves a good laugh. Even the Logical Lord.", None, 0.95),
 }
+
+# phoneme fixes: make "moderator" end with a clear "-tor" (not "moderate")
+PHONEME_FIX = {"en-gb": [("mˈɒdəɹˌeɪtəɹ", "mˈɒdəɹˌeɪtˌɔː")], "en-us": [("ˌeɪɾɚ", "ˌeɪtɚ")]}
+# lines that start with a soft, airy synthesized "hmm"
+PREFIX_HMM = {"E4"}
