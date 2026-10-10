@@ -1145,7 +1145,7 @@ def _shot_scroll(ctx, t, info, T, second):
             _fs(ctx, "white", None, a=0.18)
     # "The scary part stays in": green check on the lurker + SCARY: KEPT chip
     if t >= T["w_scary"]:
-        P.check_mark(ctx, LURK[0] - 118, LURK[1] - 170, 0.36, t, T["w_scary"] + 0.12)
+        P.check_mark(ctx, LURK[0] - 170, LURK[1] - 45, 0.36, t, T["w_scary"] + 0.12)
         P.label_tag(ctx, KEPT_C[0], KEPT_C[1], "SCARY: KEPT", color="safe", size=36,
                     t=t, t_in=T["w_scary"], font="round", pointer="up")
         P.check_mark(ctx, KEPT_C[0] + 150, KEPT_C[1] - 2, 0.32, t, T["w_in"] - 0.05)
