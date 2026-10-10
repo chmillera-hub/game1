@@ -712,15 +712,15 @@ def camera(t):
     if t < CUT_DOOR:
         q = G3(t)
         xw = X3D_REF + (q - G3.ps[-1]) * A.WALK_ADVANCE
-        return Camera(xw + 120.0, 560.0, 1.05)
+        return Camera(xw + 120.0, 560.0, 1.12)
     if t < CUT_RING:
         k = ease_in_out((t - CUT_DOOR) / (CUT_RING - CUT_DOOR))
         return Camera(3110.0, lerp(640.0, 630.0, k), lerp(0.6, 0.63, k))
     if t < CUT_TRIES:
-        return cam_at(XD + 150.0, 520.0, 1.55, 0.5, 0.45)
+        return cam_at(XD + 140.0, 560.0, 1.18, 0.5, 0.45)
     if t < CUT_FLAT:
         k = ease_in_out((t - CUT_TRIES) / (CUT_FLAT - CUT_TRIES))
-        return Camera(lerp(3130.0, 3140.0, k), 650.0, lerp(0.92, 0.98, k))
+        return Camera(lerp(3125.0, 3140.0, k), lerp(700.0, 690.0, k), lerp(0.68, 0.705, k))
     if t < CUT_BACK:
         h = _head_ref(CUT_FLAT + 0.3)
         k = ease_in_out((t - CUT_FLAT) / (CUT_BACK - CUT_FLAT))
@@ -735,7 +735,7 @@ def camera(t):
         cam = Camera(3120.0, 640.0, 0.62)
         return fx.camera_shake(cam, t, [(BURST - 0.021, 38.0, 1.2), (BURST + 0.71, 10.0, 0.6)], freq=14.0, seed=3)
     k = ease_in_out((t - CUT_IN) / (T1 - CUT_IN))
-    cam = Camera(lerp(3125.0, 3145.0, k), lerp(610.0, 600.0, k), lerp(1.05, 1.17, k))
+    cam = Camera(lerp(3125.0, 3145.0, k), lerp(610.0, 600.0, k), lerp(1.06, 1.17, k))
     return fx.camera_shake(cam, t, [(BURST + 1.62, 6.0, 0.7)], freq=11.0, seed=5)
 
 
