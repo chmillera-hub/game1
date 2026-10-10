@@ -1,4 +1,4 @@
-"""End-to-end build of "If You Have Time".
+"""End-to-end build of "ANGER".
 
     python3 build.py              # everything that is missing, then mix + render + encode
     python3 build.py --force      # regenerate audio assets too
@@ -29,9 +29,9 @@ def audio(force=False):
     if force or not (VO_DIR / "manifest.json").exists():
         run(sys.executable, "audio/tts.py")
     run(sys.executable, "audio/timeline.py")
-    if force or not (MUSIC_DIR / "symphony.wav").exists():
+    if force or not (MUSIC_DIR / "endcard.wav").exists():
         run(sys.executable, "audio/music.py")
-    if force or not (SFX_DIR / "snap_back.wav").exists():
+    if force or not (SFX_DIR / "door_explode.wav").exists():
         run(sys.executable, "audio/sfx.py")
     run(sys.executable, "tools/auto_sfx.py")
     run(sys.executable, "audio/mix.py")
@@ -53,11 +53,9 @@ def duration(path):
 # scale=in_color_matrix=...:out_color_matrix=... route to yuv420p darkens Y/U/V by ~0.5 code and adds dither texture.
 COLOR_VF = "colormatrix=bt601:bt709,format=yuv420p"
 COLOR_TAGS = ["-colorspace", "bt709", "-color_primaries", "bt709", "-color_trc", "bt709", "-color_range", "tv"]
-# Beats whose frame must start a new IDR.  The snap is a flash cut (overexposed frame between a dark and a normal
-# shot); x264's flash handling codes it as P and puts the I-frame one frame late.  Ordinary hard cuts get IDRs from
-# scenecut, and scene starts are NOT all cuts (S0->S1 fades from white, S3 opens on S2's held shot, S3->S4 is
-# continuous), so they are deliberately not forced.
-KEY_BEATS = ("snap",)
+# Beats whose frame must start a new IDR (none needed so far: ordinary hard cuts get IDRs from scenecut, and scene
+# starts are not all cuts, e.g. S3->S4 and S5->S6 are continuous shots).
+KEY_BEATS = ()
 
 
 def forced_key_times():
