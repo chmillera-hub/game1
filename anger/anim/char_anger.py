@@ -1,6 +1,109 @@
-"""ANGER - the huge, grim armored warrior (BIBLE.md section 2). Procedural 2D rig.
+"""ANGER - the huge, grim armored warrior (BIBLE.md section 2). Procedural 2D rig (skia), same contract as the
+other films' rigs (anim/rig.py).
 
-PLACEHOLDER DOCSTRING (rewritten at the end)
+Public API
+    draw(canvas, pose, t)            draw Anger; the canvas already carries the camera (stage units)
+    head_center(pose, t=None)        stage point between the eyes (pass the draw time t to the anchors so the
+                                     automatic breathing / sway / state animation match the drawing)
+    hand_pos(pose, side, t=None)     palm centre of the 'l' / 'r' gauntlet; holding a prop = its grip point
+    torch_pos(pose, t=None)          centre of the held torch's flame (the scene's light source), None without a torch
+    sword_tip_pos(pose, t=None)      blade point; in 'sword_drag' the point where the blade enters the wall
+    eye_pos(pose, side, t), mouth_pos(pose, t), pelvis_pos(pose, t)
+    face_pos(pose, x0, y0, t=None)   any spot on the face from front-view head coords (x0 > 0 = Anger's LEFT, y0 down
+                                     from the eye line: eyes (+-20.5, 0), nose tip (0, 18), mouth (0, 38),
+                                     cheekbones (+-30, 12), beard bottom (0, 84)) - drips, saliva, a cut ...
+    near_side(pose) -> 'r' | 'l'     which side of Anger is nearer the camera
+    blink(t)                         his heavy, slow auto blink (what lid_l / lid_r = None use)
+    ARMS                             ArmPose presets: rest, torch_high, torch_up, torch_near, sword_low, sword_guard,
+                                     chop_windup, chop_strike, swipe_gather, swipe_back, door_grip, run_pump,
+                                     hang_reach, sword_both_hands_thrust, weak_raise, wipe_face, cross_arms, swat,
+                                     prop_rest, fist, shield_up, fall_up, flail, lie_side
+    EXPR, EXPR_EXTRA, expr(pose, name, amount=1.0, t=None)   face presets: grim, listen, scan, stoic_close, startled,
+                                     pain, dazed, strain, flat, eye_roll, squint, smirk, smirk_suppressed, deadpan,
+                                     exhausted, side_eye, confused, contemplate, raised_brow, one_eye
+                                     (pass t so the preset's lid levels keep the heavy blink)
+    HEIGHT = 820                     floor -> crown, standing, scale 1
+    WALK_CYCLE = 1.10 s, RUN_CYCLE = 0.62 s (BIBLE: fixed cadence; a footfall every half cycle)
+    WALK_ADVANCE = 300, RUN_ADVANCE = 560: stage units per cycle (scale 1, turn >= 0.4) so planted feet do not skate;
+    walk_advance(pose) = the same for the pose's state / turn / scale (front views advance less: 0.3x at turn 0)
+    phase_at(state, t, t0, phase0), cycle_len(state)
+    step_times(state, t0, t1, phase0=0) -> foot-plant times (walk/run/charge: right foot at phase 0, left at 0.5;
+                                     chop: the stamp at phase 0.5; stumble: slip 0.25 + recovery 0.62, with phase
+                                     running phase0 -> 1 over [t0, t1])
+    step_events(state, t0, t1, phase0=0, gain_db=-6) -> [{"name": "armor_step" | "armor_step_run", "start", ...}]
+    STATES                           the body states below
+    Loose props for scenes (same art, stage coords):
+    draw_torch(canvas, x, y, angle=0, t, scale=1, flame=1, light=1, glow=True)  grip at (x, y), angle = degrees from
+                                     up of the burning end (+ clockwise); the flame always rises; torch_flame_offset()
+    draw_flame(canvas, x, y, t, scale=1, intensity=1, wind=(0, 0))   just the flame (e.g. an emissive pass)
+    draw_sword(canvas, x, y, angle=180, scale=1, light=1, tint, tint_amt, embed=0)  grip centre at (x, y), angle of
+                                     the point from up (90 = right); embed hides that fraction of the blade (in rock);
+                                     sword_wall_point(x, y, angle, scale, embed) = where it enters the rock
+    draw_shield(canvas, x, y, scale=1, squash=1, angle=0, light=1, back_side=False)
+
+pose.extra keys (all optional)
+    state        "stand" (default; "walk" when pose.walk is set), "walk", "run", "chop", "swipe", "door_push",
+                 "charge", "stumble", "hang", "fall", "sword_drag", "crumpled", "lie_back", "prop_sit", "sleep"
+    state_b, mix blend toward a second state: every body parameter (joint angles, pelvis, body rotation, cloth wind,
+                 arm overrides) is interpolated, e.g. state="lie_back", state_b="prop_sit", mix=0..1 (propping up);
+                 stand -> walk (start / stop walking); sleep <-> prop_sit (waking); fall -> crumpled ...
+    phase        walk / run / charge: cycle phase in cycles (or pose.walk); chop / swipe / stumble: 0..1 progress;
+                 door_push: 0..1 per try (0-0.5 pull, 0.5-1 push), cycles allowed. phase_b: the same for state_b.
+    torch        None | "l" | "r": torch held in that hand (flickering flame, warm glow, key light from it);
+                 torch_flame 0..1 (0 = out); torch_angle: override the torch direction (deg from up, + = toward facing)
+    sword        "hand" (default, in sword_hand = "r") | "back" ("sheathed": scabbard on his back, hilt over the right
+                 shoulder) | "in_wall" (not drawn with him - draw it with draw_sword) | None;
+                 sword_angle (deg from up, + toward facing) overrides the blade direction;
+                 two_hand: the off hand closes on the grip (sword_drag does this itself)
+    shield       "back" (default: round shield on his back, peeking past the silhouette) | "arm" (left forearm) | None
+    cross_arms   0..1 blends both arms into crossed arms (near forearm on top); combine with sword="back"
+    arms_w       0..1 weight of the state's own arm animation (0 = use pose.arm_l / arm_r unchanged), default 1
+    one_eye      0..1 only the eye nearer the camera opens (the far one stays squeezed shut)
+    smirk_suppress 0..1 fights pose.smirk: corner twitching back, lips pressed, a little squint
+    bruised      0..1 dust smudges, scrapes, a cut over his right brow, dust on the armor
+    dazed        0..1 unfocused, drifting, slightly divergent eyes, heavy fluttering lids
+    grimace      0..1 clenched teeth (pain / effort); strain 0..1 effort brows + squint (hanging, sword_drag)
+    brow_l, brow_r  extra raise per brow (-1..1.5) on top of brow_raise: a single raised eyebrow = brow_l=1
+    Per state:   chop: sword_hand; swipe: swipe_side ("r"); door_push: grip_side ("r"), ring=(x, y) stage point the
+                 gripping hand holds (default 176 forward, 462 up from the floor point); charge: lead ("r" shoulder);
+                 stumble: slip_foot ("r"); hang: hang_hand ("l"), swing (deg, 5), kick 0..1, slip 0..1;
+                 fall: tumble (deg), fall_speed (900, drives the cloth); sword_drag: sword_tilt (8 deg, tip down),
+                 embed (0.78), shake (1); prop_sit / sleep: knee_up 0..1 (0.55); sleep: sleep_tilt (deg, 15)
+    reach_l / reach_r = (x, y) stage point (+ reach_l_w 0..1): IK that hand's palm onto a point
+    key_dir      cel-shading light direction (screen angle deg toward the light, or (x, y)); default: from the held
+                 torch when lit, else from the front-above
+    rim_dir / rim_pos   rim light direction (screen angle deg toward the light: 0 = from the right, -90 = from above;
+                 or a vector) or a stage point the light comes from (e.g. torch_pos(...)); default behind-above
+
+Pose fields used: x, y, scale, facing, turn (0..0.9), lean, head_tilt, head_nod, head_turn, breath (None = auto, big
+chest), lid_l/lid_r (None = heavy auto blink), look_x/look_y, pupil, squint, eye_wide, brow_raise, brow_worry,
+brow_furrow, mouth_open/mouth_round (lip-sync; the beard follows the jaw), smile, smirk (> 0 = the corner nearer the
+camera), mouth_tremble, arm_l/arm_r (ArmPose), shoulders_up, bounce, walk, light/tint/tint_amt (colour filter on every
+paint), rim/rim_color. Not used: back, sit, seat_y, kneel, foot_tap, mug, tears, blush, glow, process, sniffle.
+
+Conventions
+    * l / r are Anger's TRUE sides (sword in the right hand, torch in the left, scar through the LEFT eyebrow) for both
+      facings: facing -1 is not a pure mirror. With facing +1 his right side is nearer the camera (near_side()).
+      torch_high suits the FAR hand (facing +1 with the torch in the left hand); with the torch in the near hand
+      use torch_up (straight up) or torch_near, otherwise the raised arm crosses his face.
+    * (pose.x, pose.y) = the floor point under the pelvis (stand, walk, run, actions, fall: the body rotates / tumbles
+      about the pelvis 398 above it, lie_back / crumpled / prop_sit / sleep: the floor he lies or sits on).
+      hang: (x, y) = where the gripping gauntlet's fingers curl over the ledge edge (the body dangles below).
+      sword_drag: (x, y) = where the embedded blade enters the wall (the wall face is at x, on the facing side).
+    * lie_back / crumpled are side views (body turn >= 0.8, head at the end AWAY from facing: screen-left for facing
+      +1); pose.turn + head_turn then only turn the HEAD toward the camera (turn 0.35 shows his face). hang and
+      sword_drag force body turn >= 0.62; fall keeps pose.turn.
+    * ArmPose angles are relative to the chest: 0 = hanging, 90 = forward (toward facing), 180 = up; elbow + bends
+      the forearm forward/up; wrist rotates the gauntlet (a held prop's axis = hand direction + 60 deg). across pulls
+      the hand toward / across the chest or face (0.5 midline, 1 opposite shoulder); behind tucks it behind the back.
+      Near the front view arms swing out to the sides. In lying / sitting states the angles stay body-relative
+      ("rest" lies along his side, weak_raise points at the ceiling).
+    * A near arm raised high beside the head (hang, sword_drag, torch_up, swat) is drawn UNDER the head so the face
+      stays readable; a far hand that comes to the face (wipe_face, across) is drawn over it.
+    * Walking backward: decrease phase while x moves against facing. Footsteps: step_times / step_events.
+    * Lighting: light/tint go through core.light_filter on every paint; rim renders him offscreen (~+10 ms);
+      flames are emissive (never darkened) and in dark poses (light < 0.95) the eye catch-lights are re-drawn
+      un-darkened so his eyes read.
 """
 from __future__ import annotations
 
@@ -1150,6 +1253,7 @@ ARMS = {
     "rest": ArmPose(shoulder=6.0, elbow=14.0, wrist=0.0, hand="relaxed"),
     "torch_high": ArmPose(shoulder=132.0, elbow=48.0, wrist=-62.0, hand="hold"),
     "torch_up": ArmPose(shoulder=166.0, elbow=18.0, wrist=-64.0, hand="hold"),
+    "torch_near": ArmPose(shoulder=10.0, elbow=140.0, wrist=-30.0, hand="hold"),
     "sword_low": ArmPose(shoulder=10.0, elbow=16.0, wrist=-26.0, hand="hold"),
     "sword_guard": ArmPose(shoulder=32.0, elbow=76.0, wrist=-14.0, hand="hold", across=0.12),
     "chop_windup": ArmPose(shoulder=168.0, elbow=62.0, wrist=-14.0, hand="hold"),
@@ -1990,6 +2094,21 @@ def mouth_pos(pose: Pose, t=None):
     return _stage(R, R.MH, (x, y))
 
 
+def face_pos(pose: Pose, x0: float, y0: float, t=None, dz: float = 0.0):
+    """Stage point of a spot on the face given in front-view head coords (x0 > 0 = toward Anger's LEFT, y0 down
+    from the eye line; eyes at (+-20.5, 0), nose tip (0, 18), mouth (0, 38), cheekbones (+-30, 12), chin beard
+    (0, 80)). E.g. a drip landing on the cheek nearer the camera: face_pos(p, -26 * near_sign, 16)."""
+    R = _solve(pose, t)
+    xl = x0 * (1.0 if R.slot["l"] > 0 else -1.0)
+    x, y, _ = _hp(R.H, xl, y0, dz)
+    return _stage(R, R.MH, (x, y))
+
+
+def near_side(pose: Pose) -> str:
+    """'r' or 'l': which of Anger's sides is nearer the camera (his right when facing +1 and turned)."""
+    return "r" if (pose.facing >= 0) == (pose.turn >= 0) else "l"
+
+
 def hand_pos(pose: Pose, side: str, t=None):
     """Stage point at the palm centre of Anger's 'l' / 'r' gauntlet (on a held prop: the grip point)."""
     R = _solve(pose, t)
@@ -2477,6 +2596,10 @@ def _tabard_geom(R, t, front=True):
         d2 = _norm(wind[0] * 1.2 + sw, 1.0 + wind[1] * 1.2)
     l2 = 128.0
     e = (m[0] + d2[0] * l2, m[1] + d2[1] * l2)
+    fw = clamp(flut - 0.3) * (6.0 + 10.0 * clamp(math.hypot(P["wind_x"], P["wind_y"]) / 600.0))
+    if fw > 0:
+        m = (m[0] - d1[1] * fw * math.sin(tt * 8.3), m[1] + d1[0] * fw * math.sin(tt * 8.3))
+        e = (e[0] - d2[1] * fw * 1.6 * math.sin(tt * 8.3 - 1.2), e[1] + d2[0] * fw * 1.6 * math.sin(tt * 8.3 - 1.2))
     return att, m, e, d1, d2
 
 
@@ -2989,7 +3112,8 @@ def _draw_rimlit(c, R, pose, t, rim, emit):
     screen-right, -90 = from above, or an (x, y) vector toward the light); default from behind-above."""
     M = c.getTotalMatrix()
     MM = skia.Matrix.Concat(M, R.MS)
-    dscale = math.sqrt(abs(MM.getScaleX() * MM.getScaleY() - MM.getSkewX() * MM.getSkewY())) / max(pose.scale, 1e-3)
+    devs = math.sqrt(abs(MM.getScaleX() * MM.getScaleY() - MM.getSkewX() * MM.getSkewY()))   # device px per unit
+    dscale = devs / max(pose.scale, 1e-3)                                                      # camera zoom
     dev = MM.mapRect(_bounds_L(R))
     clipb = c.getDeviceClipBounds()
     bx0 = int(max(math.floor(dev.left()), clipb.left()))
@@ -3028,7 +3152,7 @@ def _draw_rimlit(c, R, pose, t, rim, emit):
     sc = sb.getCanvas()
     gp = skia.Paint()
     gp.setColorFilter(tint)
-    sig = clamp(7.0 * dscale / q, 0.8, 6.0)
+    sig = clamp(7.0 * devs / q, 0.6, 6.0)
     gp.setImageFilter(skia.ImageFilters.Blur(sig, sig))
     sc.save()
     sc.translate(pad, pad)
@@ -3041,7 +3165,7 @@ def _draw_rimlit(c, R, pose, t, rim, emit):
         fy = MM.mapXY(0.0, 0.0).fY
         c.save()
         c.clipRect(skia.Rect(-1e5, -1e5, 1e5, fy - 1.0))
-    off = 6.0 * dscale
+    off = 6.0 * devs
     ap = skia.Paint()
     ap.setAlphaf(clamp(0.75 * rim))
     dst = skia.Rect.MakeXYWH(bx0 - pad * q + lx * off, by0 - pad * q + ly * off, sw_ * q, sh_ * q)
