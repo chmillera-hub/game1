@@ -707,6 +707,43 @@ def _riser(sr, rng):
     return pan(y, 0)
 
 
+def _neighbor_trumpet(sr, seed_rng):
+    """Honky, slightly off-key amateur trumpet riff (the noisy neighbor)."""
+    notes = [(0.0, 67, 0.16), (0.2, 67, 0.16), (0.4, 72, 0.32), (0.78, 71, 0.14),
+             (0.96, 69, 0.14), (1.14, 70.6, 0.55)]   # last note sour on purpose
+    total = 1.95
+    n = secs(sr, total)
+    t = tvec(n, sr)
+    pitch = np.full(n, float(notes[0][1]))
+    amp = np.zeros(n)
+    for s, m, d in notes:
+        tt = t - s
+        on = (tt >= 0) & (tt < d + 0.08)
+        pitch = np.where(tt >= 0, m - 0.35 * np.exp(-np.maximum(tt, 0) / 0.03), pitch)
+        a = np.clip(tt / 0.02, 0, 1) * np.where(tt > d, np.exp(-(tt - d) / 0.04), 1.0)
+        amp = np.maximum(amp, np.where(on, a, 0))
+    vib = 0.02 * np.sin(TAU * 6.0 * t) * np.clip((t - 1.3) / 0.2, 0, 1)
+    f = hz(0) * 2 ** (pitch / 12) * (1 + vib)
+    src = saw(f, n, sr) + 0.5 * saw(f * 1.006, n, sr, 0.2)
+    y = tv_filter(src, 900 + 2600 * lp(amp, 30, sr, 1), sr, "lowpass", q=1.6, block=128)
+    y = biquad(y, "peak", 1500, sr, 1.0, 5.0)
+    y = np.tanh(2.2 * y * lp(amp, 50, sr, 1))
+    return fade_edges(y, sr, 0.002, 0.06)
+
+
+@fx("trumpet")
+def _trumpet(sr, rng):
+    return _room(pan(_neighbor_trumpet(sr, rng), 0.25), sr, 0.25, 0.9)
+
+
+@fx("trumpet_muffled", trim=-9.0)
+def _trumpet_muffled(sr, rng):
+    """The same riff heard through noise-cancelling headphones: dull + far."""
+    y = lp(_neighbor_trumpet(sr, rng), 380, sr, 2)
+    y = lp(y, 520, sr, 2)
+    return _room(pan(y, 0.25), sr, 0.35, 0.6)
+
+
 NAMES = sorted(_FX)
 ALIASES = {
     "thud": "brick_thud", "brick": "brick_thud", "bricks": "brick_thud", "click": "puzzle_click",
