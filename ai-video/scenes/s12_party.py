@@ -89,7 +89,7 @@ Z1 = 1.6
 AI_W = (760.0, 450.0, 0.32)              # AI lantern in the wide shot
 AI_S = (760.0, 330.0, 0.42)              # AI lantern pinned in screen space (push-in)
 TABLE = (292.0, 688.0, 1008.0, 1232.0)   # x0, x1, top, cloth bottom (long party cloth)
-CAKE = (402.0, 1010.0, 0.6)
+CAKE = (414.0, 1010.0, 0.6)
 BALLOON_W = (642.0, 800.0, 0.75)
 BAL_KNOT = (668.0, 1012.0)
 POPPER = (618.0, 1010.0, 0.55)
@@ -105,12 +105,8 @@ ROW_A, ROW_B = 1380.0, 1500.0             # audience seat lines (in front of the
 LAPEL = (100.0, -318.0)
 
 TEAR = "#8fd8ff"
-BALLOON, BALLOON_DK = "#ef3346", "#b81f30"
-YBAL, YBAL_DK = "#ffd166", "#d9a514"
-CAKE_C, CAKE_DK, CAKE_TOP = "#ff8fb8", "#e0679a", "#ffb7d2"
 GOLD, GOLD_DK = "#ffcf3a", "#d99a12"
 STICKY_C, STICKY_DK = "#ffe066", "#f2cf3a"
-BOOK, BOOK_DK, DRAGON = "#3f74d6", "#2a52a6", "#7cd35c"
 SHAWL, SHAWL_DK = "#b79ad6", "#8f72b4"
 CHAIR, CHAIR_DK = "#8d8798", "#6c6678"
 CONF_COLS = ["ai_accent", "danger", "safe", "bubble_villain", "ai_rim", "#ff8fb8"]
@@ -167,6 +163,16 @@ _ZOMB_B = dict(_ZOMB_B, wx=_ZOMB_B["wx"] + 22, ex=_ZOMB_B["ex"] + 14, wy=_ZOMB_B
                ha=1.0)                    # limp fingers droop toward the kid
 V.ARM_POSES.setdefault("s12_zombie", V._pose(_ZOMB_A, _ZOMB_B, shy=-12, hdy=6))
 V.VILLAIN_EXPR.setdefault("s12_zomb", dict(_HAPPY, tilt=0.1, hy=8))
+# the preen on "Impressive": chest out, chin up, lids lowered, both hands
+# tug his lapels (a little tug again on "villain")
+V.VILLAIN_EXPR.setdefault("s12_preen", dict(
+    V.VILLAIN_EXPR["smug"], sneer=0.0, by1=-24, by2=-30, ba1=-0.04, ba2=-0.08, bc1=0.5,
+    bc2=0.55, ul1=0.5, ul2=0.46, ll1=0.18, ll2=0.16, mc=1.0, mw=1.08, msk=0.25, mo=0.04,
+    blush=0.55, tilt=-0.07, hy=-14, shine=0.35))
+_PREEN_A = V._arm(-196, -168, -62, -262, -1.4, cu=0.85, th=0.45, sp=0.15, hs=0.95)
+V.ARM_POSES.setdefault("s12_preen", V._pose(_PREEN_A, shy=-16, hdy=-6))
+V.ARM_POSES.setdefault("s12_preen2", V._pose(
+    dict(_PREEN_A, wy=_PREEN_A["wy"] - 16, ey=_PREEN_A["ey"] - 10), shy=-22, hdy=-9))
 
 
 def _ax(name, **kw):
@@ -235,8 +241,10 @@ def _T(info):
     T.l3 = T.L[3]
     T.cheer = T.w[3][1]
     T.me = T.w[3][3]
-    T.l4 = T.L[4]
-    T.stats = T.w[4][3]
+    T.l4 = T.L[4]                                # "Told you. Impressive villain stats."
+    T.impr = T.w[4][2]                           # he preens on "Impressive"
+    T.vill = T.w[4][3]
+    T.stats = T.w[4][-1]                         # the AI winks on "stats."
     # --- the zombie gag (after "Hero stats.") ---------------------------------
     T.l4z = info.line("s12_l04z")                # "Brains... brains!"
     T.l4y = info.line("s12_l04y")                # "Scary? Yes. Hurt? Nobody."
@@ -244,16 +252,20 @@ def _T(info):
     T.wz = [_wt(info, "s12_l04z", i) for i in range(len(T.l4z.caption.split()))]
     T.br1, T.br2 = T.wz[0], T.wz[-1]             # "Brains..." / "brains!"
     T.zm = c("zombie_mask")
-    T.zout0 = T.l4.end - 0.1                     # camera pans to take in the kid
+    T.zout0 = T.l4.end - 0.1                     # camera eases out/up to take in the kid
     T.zout1 = T.zout0 + 0.6
     T.pull0 = T.zm + 0.24                        # hands up, then the mask comes down
     T.pull1 = T.pull0 + 0.26
     T.kr = c("kid_runs")
-    # the kid: wide-eyed "O" through the mask + "Brains...", squeal-laughs on
-    # "brains!", then dashes off screen right (never loops back)
+    # the kid: runs up to the front of the table (from off frame right) as the
+    # camera eases out, looks up at him; wide-eyed "O" as the mask comes down
+    # and through "Brains...", squeal-laughs on "brains!", looks back over her
+    # shoulder and dashes off screen right (never comes back)
+    T.arr1 = T.zm + 0.1                          # stops in front of the table
+    T.arr0 = T.arr1 - 0.7                        # (starts off frame)
     T.sq0 = T.br2 + 0.04                         # squeal
-    T.run0 = T.sq0 + 0.26                        # takes off
-    T.run1 = T.run0 + 0.62                       # out of frame
+    T.run0 = T.sq0 + 0.3                         # takes off
+    T.run1 = max(T.kr, T.run0 + 0.6)             # out of frame by 'kid_runs'
     T.kr1 = max(T.l4z.end + 0.1, T.run1 + 0.2, T.kr)  # he stops shambling
     T.scary = T.wy[0]
     T.hurt = T.wy[2]
@@ -562,23 +574,34 @@ def draw_party_hat(c, x, y, k=1.0, rot=-0.25):
         _fs(c, "#ffd166", INK, 4)
 
 
-def draw_balloon(c, x, y, s=1.0, rot=0.0, col=BALLOON, dk=BALLOON_DK):
-    """Party balloon (6.4). (x, y) = centre; knot at (0, 58)*s."""
+BLK_BAL, BLK_BAL_DK, BLK_BAL_RIM = "#2e2640", "#130e1c", "#7a68a6"
+
+
+def draw_black_balloon(c, x, y, s=1.0, rot=0.0):
+    """Spooky BLACK party balloon: glossy (a big white highlight + a dot and a
+    cool rim light on the shadow side), dark ink. (x, y) = centre; knot at
+    (0, 58)*s."""
     with saved(c, x, y, s, rot):
         poly(c, [(0, 52), (-11, 68), (11, 68)])
-        _fs(c, dk, INK, 4)
+        _fs(c, BLK_BAL_DK, INK, 4)
         ellipse(c, 0, 0, 45, 55)
-        _fs(c, col, INK, 5)
+        _fs(c, BLK_BAL, INK, 5)
         c.save()
         ellipse(c, 0, 0, 45, 55)
         c.clip()
         ellipse(c, 16, 18, 40, 48)
-        _f(c, dk, 0.55)
+        _f(c, BLK_BAL_DK, 0.7)
+        c.new_sub_path()                               # rim light, lower right
+        c.arc(0, 0, 39, 0.05, 1.25)
+        _s(c, BLK_BAL_RIM, 5, 0.8)
         c.restore()
-        ellipse(c, -16, -22, 11, 17, 0.45)
-        c.set_source_rgba(1, 1, 1, 0.6)
+        ellipse(c, -16, -22, 11, 18, 0.45)             # glossy highlight
+        c.set_source_rgba(1, 1, 1, 0.8)
         c.fill()
-        circle(c, -8, -38, 4)
+        circle(c, -6, -40, 4.2)
+        c.fill()
+        ellipse(c, -27, 2, 4, 9, 0.2)
+        c.set_source_rgba(1, 1, 1, 0.3)
         c.fill()
 
 
@@ -597,94 +620,217 @@ def draw_string(c, x0, y0, x1, y1, t, curls=3.0, amp=10.0, phase=0.0, w=1.0):
         _s(c, INK if layer == 0 else "#f6f2ff", (6.5 if layer == 0 else 3.0) * w)
 
 
+HC_BLACK, HC_BLACK_DK = "#2a2236", "#17111f"           # Halloween cake
+HC_ORANGE, HC_ORANGE_DK = "#ff8a1f", "#d9640c"
+HC_DRIP, HC_DRIP_DK = "#a45ee6", "#7b3fbf"
+GHOST_W, GHOST_EYE = "#f4f4f8", "#16101f"
+
+
+def _drips(cc, x0, x1, y0, band, n, seed, col, lw=3.5):
+    """Icing band on top of a tier with n rounded drips hanging from it."""
+    cc.move_to(x0, y0)
+    step = (x1 - x0) / n
+    for j in range(n):
+        xa = x0 + j * step
+        dl = band * (0.9 + 0.75 * ((j * seed) % 3) / 2.0)
+        cc.line_to(xa + step * 0.18, y0)
+        cc.curve_to(xa + step * 0.18, y0 + dl, xa + step * 0.82, y0 + dl, xa + step * 0.82, y0)
+    cc.line_to(x1, y0)
+    cc.line_to(x1, y0 - 11)
+    cc.line_to(x0, y0 - 11)
+    cc.close_path()
+    _fs(cc, col, INK, lw)
+
+
+def _mini_ghost(cc, x, y, k=1.0, rot=0.0):
+    """Tiny sheet-ghost decoration (~20 x 24 at k=1). (x, y) = centre."""
+    with saved(cc, x, y, k, rot) as g:
+        g.move_to(-10, 10)
+        g.line_to(-10, -2)
+        g.curve_to(-10, -16, 10, -16, 10, -2)
+        g.line_to(10, 10)
+        for j in range(3):
+            xa = 10 - j * 6.67
+            g.curve_to(xa - 1, 6, xa - 5.7, 6, xa - 6.67, 10)
+        g.close_path()
+        _fs(g, GHOST_W, INK, 2.5)
+        for sx in (-1, 1):
+            ellipse(g, sx * 3.6, -3, 1.7, 2.4)
+            _f(g, GHOST_EYE)
+        ellipse(g, 0, 3, 1.8, 2.2)
+        _f(g, GHOST_EYE)
+
+
+def _mini_bat(cc, x, y, k=1.0, rot=0.0):
+    """Tiny black bat silhouette (cake topper / decoration). (x, y) = body."""
+    with saved(cc, x, y, k, rot) as b:
+        for sx in (-1, 1):
+            b.move_to(sx * 3, -2)
+            b.curve_to(sx * 8, -10, sx * 16, -11, sx * 22, -6)
+            b.curve_to(sx * 18, -4, sx * 17, 0, sx * 18, 3)
+            b.curve_to(sx * 14, 0, sx * 11, 1, sx * 10, 4)
+            b.curve_to(sx * 8, 1, sx * 5, 1, sx * 3, 4)
+            b.close_path()
+        poly(b, [(-4, -4), (-3, -10), (0, -5), (3, -10), (4, -4)])
+        ellipse(b, 0, 0, 5.5, 6)
+        _fs(b, HC_BLACK, INK, 2.2)
+        for sx in (-1, 1):
+            circle(b, sx * 2, -1, 1.2)
+            _f(b, "#ffe066")
+
+
 def draw_cake(c, x, y, s, t):
-    """Two-tier pink birthday cake with one fizzing sparkler (6.4). bottom-centre."""
+    """Spooky HALLOWEEN cake (the party's birthday cake, now in costume): a
+    black bottom tier with little white ghosts, an orange jack-o'-lantern top
+    tier, purple drips on both, two bat toppers and one flickering candle.
+    bottom-centre; ~160 wide, ~200 tall (flame incl.) at s=1."""
     with saved(c, x, y, s) as cc:
-        ellipse(cc, 0, -4, 98, 13)
+        ellipse(cc, 0, -4, 98, 13)                             # plate
         _fs(cc, "#f4f1fb", INK, 4)
+        # bottom tier (black)
         rrect(cc, -80, -64, 160, 60, 12)
-        _fs(cc, CAKE_C, INK, 5)
+        _fs(cc, HC_BLACK, INK, 5)
         cc.save()
         rrect(cc, -80, -64, 160, 60, 12)
         cc.clip()
-        cc.rectangle(-90, -20, 180, 30)
-        _f(cc, CAKE_DK, 0.7)
+        cc.rectangle(40, -70, 50, 70)                          # one shadow tone
+        _f(cc, HC_BLACK_DK, 0.8)
         cc.restore()
-        cc.move_to(-80, -52)
-        for j in range(8):
-            xa = -80 + j * 20
-            dl = 14 + 10 * ((j * 7) % 3)
-            cc.line_to(xa + 4, -52)
-            cc.curve_to(xa + 4, -52 + dl, xa + 16, -52 + dl, xa + 16, -52)
-        cc.line_to(80, -52)
-        cc.line_to(80, -64)
-        cc.line_to(-80, -64)
-        cc.close_path()
-        _fs(cc, "#ffffff", INK, 3.5)
-        rrect(cc, -54, -108, 108, 46, 10)
-        _fs(cc, CAKE_TOP, INK, 5)
-        cc.move_to(-54, -98)
-        for j in range(5):
-            xa = -54 + j * 21.6
-            dl = 10 + 8 * ((j * 5) % 3)
-            cc.line_to(xa + 4, -98)
-            cc.curve_to(xa + 4, -98 + dl, xa + 17, -98 + dl, xa + 17, -98)
-        cc.line_to(54, -98)
-        cc.line_to(54, -108)
-        cc.line_to(-54, -108)
-        cc.close_path()
-        _fs(cc, "#ffffff", INK, 3.5)
-        for j, (sx, sy) in enumerate(((-30, -36), (10, -30), (44, -40), (-12, -84), (24, -88))):
-            circle(cc, sx, sy, 4)
-            _f(cc, ("#5ee7ff", "#ffd166", "#3ddc84", "#7b3fbf", "#5ee7ff")[j])
-        cc.move_to(0, -108)
-        cc.line_to(0, -164)
-        _s(cc, INK, 10)
-        cc.move_to(0, -110)
-        cc.line_to(0, -162)
-        _s(cc, "#b9c0d0", 4.5)
-        f = 1 + 0.25 * math.sin(t * 37) + 0.15 * noise1(t * 18, 4)
-        P._star4(cc, 0, -170, 20 * f, t * 5)
-        P._fs(cc, "ai_accent", INK, 3)
-        P._star4(cc, 0, -170, 9 * f, -t * 5)
-        P._f(cc, "#fff3c4")
-        P.sparkles(cc, 0, -172, 40, t, n=4, seed=17, color="ai_accent", size=0.45)
+        _drips(cc, -80, 80, -52, 13, 7, 5, HC_DRIP)
+        for j, gx in enumerate((-50, -8, 36)):                 # little ghosts
+            _mini_ghost(cc, gx, -22, 1.0, (-0.12, 0.08, -0.05)[j])
+        for (dx, dy) in ((-29, -30), (16, -36), (60, -26)):    # candy dots
+            circle(cc, dx, dy, 3.2)
+            _f(cc, HC_ORANGE)
+        # top tier (orange jack-o'-lantern)
+        rrect(cc, -56, -122, 112, 60, 12)
+        _fs(cc, HC_ORANGE, INK, 5)
+        cc.save()
+        rrect(cc, -56, -122, 112, 60, 12)
+        cc.clip()
+        cc.rectangle(28, -126, 34, 66)
+        _f(cc, HC_ORANGE_DK, 0.75)
+        for sx in (-1, 1):                                     # pumpkin ribs
+            cc.move_to(sx * 22, -110)
+            cc.curve_to(sx * 26, -96, sx * 26, -78, sx * 22, -64)
+        _s(cc, HC_ORANGE_DK, 3)
+        cc.restore()
+        for sx in (-1, 1):                                     # carved face
+            poly(cc, [(sx * 8, -86), (sx * 28, -86), (sx * 18, -102)])
+            _f(cc, HC_BLACK)
+        poly(cc, [(-30, -80), (-20, -74), (-12, -79), (-5, -72), (5, -72), (12, -79),
+                  (20, -74), (30, -80), (24, -68), (10, -64), (-10, -64), (-24, -68)])
+        _f(cc, HC_BLACK)
+        poly(cc, [(-4, -74), (4, -74), (0, -68)])              # one tooth
+        _f(cc, HC_ORANGE)
+        _drips(cc, -56, 56, -111, 9, 5, 4, HC_DRIP)
+        # bat toppers on wire picks
+        for (bx, by, a) in ((-40, -156, -0.25), (42, -148, 0.22)):
+            cc.move_to(bx * 0.55, -118)
+            cc.line_to(bx, by + 4)
+            _s(cc, INK, 2.5)
+            _mini_bat(cc, bx, by, 1.15, a)
+        # one candle (orange + purple stripes) with a flickering flame
+        rrect(cc, -6, -158, 12, 40, 3)
+        _fs(cc, HC_ORANGE, INK, 3)
+        cc.save()
+        rrect(cc, -6, -158, 12, 40, 3)
+        cc.clip()
+        for k in range(4):
+            poly(cc, [(-8, -150 + k * 10), (8, -156 + k * 10), (8, -152 + k * 10),
+                      (-8, -146 + k * 10)])
+            _f(cc, HC_DRIP_DK)
+        cc.restore()
+        cc.move_to(0, -158)
+        cc.line_to(0, -163)
+        _s(cc, INK, 2.5)
+        f = 1 + 0.12 * math.sin(t * 23) + 0.1 * noise1(t * 9, 4)
+        sw = 2.2 * math.sin(t * 13) + 1.5 * noise1(t * 5, 8)
+        with saved(cc, 0, -162, (1.0, f)) as fl:
+            circle(fl, 0, -8, 15)
+            _f(fl, "ai_accent", 0.18)
+            fl.move_to(0, 2)
+            fl.curve_to(-9, 0, -8, -12, sw, -24)
+            fl.curve_to(8, -12, 9, 0, 0, 2)
+            _fs(fl, "#ff9e2c", INK, 2.5)
+            fl.move_to(0, 0)
+            fl.curve_to(-4, -1, -4, -8, sw * 0.6, -14)
+            fl.curve_to(4, -8, 4, -1, 0, 0)
+            _f(fl, "#fff1a8")
 
 
-def draw_dragon_book(ctx, x, y, s, rot=0.0):
-    """THE GENTLE DRAGON storybook (6.4): 150x190 at s=1, centred."""
-    with saved(ctx, x, y, s, rot) as c:
-        rrect(c, -72, -92, 154, 192, 12)
+def draw_ghost_book(ctx, x, y, s, rot=0.0, t=0.0, sq=0.0):
+    """THE SPOOKY GHOST storybook (shared design with s11): 150x190 at s=1,
+    centred. Dark purple cover, gold title, a little white sheet ghost with
+    dark eyes and an "O" mouth that wobbles and waves its little arms."""
+    with saved(ctx, x, y, (s * (1 + sq * 0.5), s * (1 - sq)), rot) as c:
+        rrect(c, -72, -92, 154, 192, 12)                       # soft shadow
         c.set_source_rgba(0.03, 0.02, 0.06, 0.3)
         c.fill()
-        rrect(c, -70, -91, 150, 186, 10)
+        rrect(c, -70, -91, 150, 186, 10)                       # page block
         _fs(c, "#f3ead2", INK, 4)
-        rrect(c, -75, -95, 150, 190, 12)
-        _fs(c, BOOK, INK, 5)
-        rrect(c, -75, -95, 24, 190, 10)
-        _fs(c, BOOK_DK, INK, 4)
-        rrect(c, -44, -84, 110, 168, 9)
-        _s(c, "gold", 4)
-        text(c, "THE GENTLE", 11, -58, 19, P.C("gold"), "title")
-        text(c, "DRAGON", 11, -31, 29, P.C("gold"), "title")
-        fx, fy = 11, 30
-        for sx in (-1, 1):
-            poly(c, [(fx + sx * 30, fy - 4), (fx + sx * 56, fy - 26), (fx + sx * 50, fy - 6),
-                     (fx + sx * 58, fy + 4), (fx + sx * 34, fy + 14)])
-            _fs(c, "#a6e88a", INK, 3.5)
-        circle(c, fx, fy, 38)
-        _fs(c, DRAGON, INK, 4)
-        ellipse(c, fx, fy + 16, 22, 14)
-        _f(c, "#c8f0a8")
-        for sx in (-1, 1):
-            c.move_to(fx + sx * 14 - 8, fy - 6)
-            c.curve_to(fx + sx * 14 - 4, fy - 14, fx + sx * 14 + 4, fy - 14, fx + sx * 14 + 8, fy - 6)
-            _s(c, INK, 3.5)
-            ellipse(c, fx + sx * 24, fy + 6, 6, 4)
-            _f(c, "#ff8fb0", 0.85)
-        c.move_to(fx - 9, fy + 20)
-        c.curve_to(fx - 4, fy + 26, fx + 4, fy + 26, fx + 9, fy + 20)
-        _s(c, INK, 3.2)
+        rrect(c, -75, -95, 150, 190, 12)                       # cover
+        _fs(c, GB_COVER, INK, 5)
+        rrect(c, -75, -95, 24, 190, 10)                        # spine
+        _fs(c, GB_SPINE, INK, 4)
+        for yy in (-70, 70):
+            c.move_to(-73, yy)
+            c.line_to(-53, yy)
+        _s(c, GB_GOLD, 4)
+        rrect(c, -44, -84, 110, 168, 9)                        # gold border
+        _s(c, GB_GOLD, 4)
+        for txt, fs0, ty in (("THE SPOOKY", 19, -58), ("GHOST", 29, -31)):
+            fs = fs0
+            while fs > 10 and text_width(c, txt, "title", fs) > 98:
+                fs -= 1
+            text(c, txt, 11, ty, fs, GB_GOLD, "title")
+        for (sx_, sy_) in ((-30, 74), (50, 70), (52, -76)):    # little gold stars
+            P._star4(c, sx_, sy_, 7)
+            _f(c, GB_GOLD)
+        # the ghost: bob + wobble, little arms waving
+        bob = 3.0 * math.sin(t * 2 * math.pi * 1.1)
+        wob = 0.09 * math.sin(t * 2 * math.pi * 0.9 + 0.6)
+        with saved(c, 11, 32 + bob, 1.0, wob) as g:
+            for sx in (-1, 1):                                 # waving arms (behind)
+                a = -0.35 - 0.55 * (0.5 + 0.5 * math.sin(t * 2 * math.pi * 1.6 + (0 if sx < 0 else 2.2)))
+                with saved(g, sx * 22, 4, 1.0, a * sx) as ga:
+                    ga.move_to(0, -6)
+                    ga.curve_to(sx * 10, -9, sx * 20, -6, sx * 22, 0)
+                    ga.curve_to(sx * 20, 6, sx * 10, 7, 0, 6)
+                    ga.close_path()
+                    _fs(ga, GHOST_W, INK, 3.5)
+
+            def sheet():
+                g.move_to(-27, 26)
+                g.line_to(-27, -6)
+                g.curve_to(-27, -42, 27, -42, 27, -6)
+                g.line_to(27, 26)
+                for j in range(4):
+                    xa = 27 - j * 13.5
+                    g.curve_to(xa - 2, 18, xa - 11.5, 18, xa - 13.5, 26)
+                g.close_path()
+            sheet()
+            _fs(g, GHOST_W, INK, 4)
+            g.save()
+            sheet()
+            g.clip()
+            ellipse(g, 20, 4, 12, 34)                          # one shadow tone
+            _f(g, "#d6d2e6", 0.85)
+            g.restore()
+            sheet()
+            _s(g, INK, 4)
+            for sx in (-1, 1):                                 # dark eyes
+                ellipse(g, sx * 9, -12, 4.6, 6.2)
+                _f(g, GHOST_EYE)
+                circle(g, sx * 9 - 1.4, -14, 1.5)
+                _f(g, "white")
+                ellipse(g, sx * 17, -2, 4, 2.4)
+                _f(g, "#ff9ec4", 0.75)
+            ellipse(g, 0, 4, 4.2, 5.4)                         # "O" mouth
+            _f(g, GHOST_EYE)
+
+
+GB_COVER, GB_SPINE, GB_GOLD = "#3a2350", "#28173a", "#ffd166"
 
 
 def draw_popper(c, x, y, s, t, fired=False, squash=0.0, rot=0.0):
@@ -2846,7 +2992,7 @@ def shot_lair(ctx, t, info, T):
     draw_rolled_scroll(ctx, 280, 1212, 0.95, -0.12)
     draw_headphones(ctx, 528, 1206, 1.12, 0.12)
     draw_twist_script(ctx, *PILE_TWIST)
-    draw_dragon_book(ctx, 404, 1192, 0.62, 0.05)
+    draw_ghost_book(ctx, 404, 1192, 0.62, 0.05, t)
     draw_pumpkin(ctx, *PUMPKIN_AT, t)
     draw_dragon_fig(ctx, *DRAGON_AT, t, look=(-0.6, -0.2))
 
@@ -2900,7 +3046,10 @@ def _malvo_b(t, T, info):
         (L3.start - 0.05, "s12_moved", 0.3),
         (T.w[3][2] - 0.08, "s12_me", 0.25),           # "for ME?"
         (L3.end + 0.3, "s12_moved", 0.35),
-        (T.zm + 0.05, "excited", 0.2),                # idea! (then the mask hides it)
+        (T.impr - 0.06, "s12_preen", 0.16),           # "Impressive": preens
+        (T.stats + 0.3, "happy", 0.25),
+        (T.zm - 0.12, "s12_me", 0.15),                # oh! a little witch
+        (T.zm + 0.08, "excited", 0.15),               # idea! (then the mask hides it)
         (T.pull1, "s12_zomb", 0.2),
         (T.mu0 + 0.1, "happy", 0.1),                  # mask going up ...
         (T.glance + 0.05, "sneaky", 0.18),            # ... the sneaky squint is back
@@ -2924,7 +3073,9 @@ def _malvo_b(t, T, info):
         (T.w[3][2] - 0.08, (0.0, 0.05)),              # to camera
         (L3.end + 0.15, (-0.2, 0.55)),                # sniff, eyes down
         (T.l4.start - 0.05, (0.85, -0.75)),           # up at the AI
-        (T.zm + 0.05, (0.8, 0.6)),                    # eyes on the kid
+        (T.impr - 0.04, (0.15, -0.35)),               # chin up, to us: "Impressive"
+        (T.stats + 0.05, (0.85, -0.75)),              # the AI's wink
+        (T.zm - 0.14, (0.75, 0.85)),                  # down at the kid
         (T.glance, (-0.95, 0.05)),                    # paranoid glance left
         (T.glance + 0.2, (0.95, 0.05)),               # ... right
         (T.glance + 0.38, (0.9, -0.7)),               # at the AI
@@ -2935,6 +3086,9 @@ def _malvo_b(t, T, info):
     arms = keyed(t, [
         (0.0, "shrug"),
         (L3.start - 0.1, "s12_heart", 0.3),
+        (T.impr - 0.1, "s12_preen", 0.18),            # tugs his lapels ...
+        (T.vill - 0.04, "s12_preen2", 0.09),          # ... tug ...
+        (T.vill + 0.1, "s12_preen", 0.14),            # ... and settle
         (T.zm, "s12_grab_out", 0.13),
         (T.zm + 0.13, "s12_grab_up", 0.11),           # grips the mask on his dome
         (T.pull0, "s12_grab_dn", T.pull1 - T.pull0),  # ... and pulls it down
@@ -2949,8 +3103,11 @@ def _malvo_b(t, T, info):
     ])
     lean = 0.08 * ease_in_out(seg(t, T.lean + 0.35, T.lean + 0.7))
     lean *= 1 - ease_in_out(seg(t, T.malvo + 0.4, T.malvo + 0.8))
-    blink = _first(_pulses(t, [P0 + 0.3, L3.end + 0.12, L3.end + 0.3, T.mu1 - 0.02], 0.06, 0.9),
-                   slow_blink(t, T.l4.start + 0.35))
+    blink = _first(_pulses(t, [P0 + 0.3, L3.end + 0.12, L3.end + 0.3, T.mu1 - 0.02,
+                               T.zm - 0.12], 0.06, 0.9),
+                   slow_blink(t, T.l4.start + 0.2))
+    if T.impr - 0.06 <= t < T.stats + 0.3 and blink is None:
+        blink = 0.28                                  # self-satisfied lowered lids
     if T.malvo + 0.28 <= t < T.l7.start - 0.06:      # caught: frozen, wide-eyed
         blink = 0.0
     mouth = info.mouth("villain", t)
@@ -3198,39 +3355,89 @@ def _villain_overlays(ctx, t, m, T):
             V._draw_arm(c, (V.SHOULDER[0], V.SHOULDER[1] + st["shy"]), B)
 
 
+CLOTH, CLOTH_DK, CLOTH_HEM = "#e0611c", "#b54a12", "#2a1a3a"
+SKULL_C, PUMP_LT = "#fbf4e6", "#ffad4d"
+
+
+def _cloth_skull(c, x, y, k=1.0):
+    """Cute little skull for the tablecloth print (~24 x 26)."""
+    with saved(c, x, y, k) as q:
+        q.new_sub_path()
+        q.arc(0, -3, 11.5, math.pi * 0.82, math.pi * 2.18)
+        q.line_to(6.5, 11)
+        q.line_to(-6.5, 11)
+        q.close_path()
+        _fs(q, SKULL_C, INK, 2.2)
+        for sx in (-1, 1):
+            ellipse(q, sx * 4.6, -3, 3.4, 3.9)
+            _f(q, GHOST_EYE)
+        poly(q, [(-1.6, 3.5), (1.6, 3.5), (0, 1)])
+        _f(q, GHOST_EYE)
+        for xx in (-2.5, 0.0, 2.5):
+            q.move_to(xx, 7)
+            q.line_to(xx, 11)
+        _s(q, INK, 1.4)
+
+
+def _cloth_pumpkin(c, x, y, k=1.0):
+    """Little pumpkin for the tablecloth print (~26 x 24)."""
+    with saved(c, x, y, k) as q:
+        q.rectangle(-2, -15, 4, 6)
+        _fs(q, "#4f7a2a", INK, 1.8)
+        for sx in (-1, 1):
+            ellipse(q, sx * 6.5, 0, 7.5, 10)
+            _fs(q, "#f08a2a", INK, 2.2)
+        ellipse(q, 0, 0, 7.5, 10.5)
+        _fs(q, PUMP_LT, INK, 2.2)
+
+
+def _cloth_static(c):
+    x0, x1, top, bot = TABLE
+
+    def body():
+        c.move_to(x0 - 4, top + 6)
+        c.line_to(x1 + 4, top + 6)
+        c.line_to(x1 + 12, bot - 12)
+        n = 10
+        for k in range(n + 1):                        # scalloped hem
+            xa = x1 + 12 - (x1 - x0 + 24) * k / n
+            c.line_to(xa, bot - 12 + (10 if k % 2 else 0))
+        c.close_path()
+    ellipse(c, (x0 + x1) / 2, bot + 4, (x1 - x0) / 2 + 20, 9)   # floor shadow
+    _f(c, "#3a2240", 0.3)
+    body()
+    _f(c, CLOTH)
+    c.save()
+    body()
+    c.clip()
+    # repeating spooky print: little white ghosts, pumpkins and cute skulls
+    for r in range(4):
+        for k in range(9):
+            cx = x0 + 6 + k * 50 + (25 if r % 2 else 0)
+            cy = top + 40 + r * 48
+            kind = (k + 2 * r) % 3
+            if kind == 0:
+                _mini_ghost(c, cx, cy, 1.1, 0.12 if (k + r) % 2 else -0.12)
+            elif kind == 1:
+                _cloth_pumpkin(c, cx, cy + 2, 1.0)
+            else:
+                _cloth_skull(c, cx, cy, 1.0)
+    c.rectangle(x1 - 64, top, 80, bot - top)          # one shadow tone
+    _f(c, CLOTH_DK, 0.55)
+    c.move_to(x0 - 12, bot - 18)                       # dark hem band
+    c.line_to(x1 + 12, bot - 18)
+    _s(c, CLOTH_HEM, 10)
+    c.restore()
+    body()
+    _s(c, INK, 5)
+    rrect(c, x0 - 10, top - 10, x1 - x0 + 20, 20, 6)   # table top edge
+    _fs(c, "#f4efe6", INK, 5)
+
+
 def _table(ctx, t, T):
     x0, x1, top, bot = TABLE
-    ctx.move_to(x0 - 4, top + 6)
-    ctx.line_to(x1 + 4, top + 6)
-    ctx.line_to(x1 + 12, bot - 12)
-    n = 10
-    for k in range(n + 1):                            # scalloped hem
-        xa = x1 + 12 - (x1 - x0 + 24) * k / n
-        ctx.line_to(xa, bot - 12 + (10 if k % 2 else 0))
-    ctx.close_path()
-    _fs(ctx, "#13a8a0", INK, 5)
-    ctx.save()
-    ctx.move_to(x0 - 4, top + 6)
-    ctx.line_to(x1 + 4, top + 6)
-    ctx.line_to(x1 + 12, bot)
-    ctx.line_to(x0 - 12, bot)
-    ctx.close_path()
-    ctx.clip()
-    ctx.rectangle(x1 - 64, top, 80, bot - top)        # one shadow tone
-    _f(ctx, "#0b7f79", 0.6)
-    for r in range(4):
-        for k in range(8):
-            cx = x0 + 26 + k * 50 + (25 if r % 2 else 0)
-            circle(ctx, cx, top + 34 + r * 50, 7)
-    _f(ctx, "#ffffff", 0.7)
-    ctx.move_to(x0 - 12, bot - 16)
-    ctx.line_to(x1 + 12, bot - 16)
-    _s(ctx, "#ffffff", 8, 0.85)
-    ctx.restore()
-    rrect(ctx, x0 - 10, top - 10, x1 - x0 + 20, 20, 6)  # table top edge
-    _fs(ctx, "#f4efe6", INK, 5)
-    ellipse(ctx, (x0 + x1) / 2, bot + 4, (x1 - x0) / 2 + 20, 9)
-    _f(ctx, "#3a2240", 0.3)
+    P._cached_layer(ctx, "s12_cloth", _cloth_static,
+                    rect=(x0 - 40, top - 20, x1 - x0 + 80, bot - top + 44))
 
 
 def _crowd(t, T):
@@ -3354,7 +3561,7 @@ def shot_party(ctx, t, info, T):
     sway = math.sin(tc * 1.3) * 0.06
     kx, ky = _robot_world(250, 300)
     draw_string(ctx, bx + math.sin(sway) * 60 * bs, by + 58 * bs, kx, ky, tc, amp=7, phase=1.0)
-    draw_balloon(ctx, bx, by, bs, sway, YBAL, YBAL_DK)
+    draw_black_balloon(ctx, bx, by, bs, sway)
 
     # standing townsfolk behind the table (right); the little witch is the kid
     # Malvo 'zombies' at (she dashes off past the other two)
@@ -3379,7 +3586,7 @@ def shot_party(ctx, t, info, T):
     sw = math.sin(tc * 1.1 + 0.5) * 0.05
     draw_string(ctx, bx + math.sin(sw) * 50 * bs, by + 58 * bs, BAL_KNOT[0], BAL_KNOT[1], tc,
                 amp=8)
-    draw_balloon(ctx, bx, by, bs, sw)
+    draw_black_balloon(ctx, bx, by, bs, sw)
 
     _table(ctx, t, T)
     draw_cake(ctx, *CAKE, t)
@@ -3396,7 +3603,7 @@ def shot_party(ctx, t, info, T):
     _kids(ctx, tc, T)
     draw_pumpkin(ctx, *PUMPKIN_B, t)
     draw_hissy_reader(ctx, t, _hissy_b(t, T))
-    draw_dragon_book(ctx, *BOOK_B, -0.06)
+    draw_ghost_book(ctx, BOOK_B[0], BOOK_B[1], BOOK_B[2], -0.06, t)
 
     # audience: back row then front row (each person, then the chair in front)
     rowA = [(338.0, 0, "horns"), (436.0, 1, None), (534.0, 2, "batwings"), (632.0, 3, "witch")]

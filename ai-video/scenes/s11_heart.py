@@ -1,31 +1,45 @@
 """s11 . The turn: the wall and the door (music 'heart').
 
-Sincere first half, warm second half. F5 two-shot at night (lair, dim wash,
-rain), Malvo at screen-left with Hissy curled round him like a scarf, the AI
-hologram floating screen-right.
+F5 two-shot at night (lair, dim wash, rain), Malvo at screen-left with Hissy
+curled round him like a scarf, the AI hologram floating screen-right.
 
 Beats (every time from cues / word starts):
   slump   fade in from black; Malvo slumped, head down; Hissy worried.
-  l01     AI drifts lower + closer, sympathetic; small smile on "one bad idea".
-  beat    Malvo lifts his head; the monocle slips and dangles (tink).
+  l01     "Keep testing me, Evil Genius...": the AI drifts lower + closer,
+          warm and a little teasing (open palm "keep going", a shrug on
+          "Kinda heroic", WINK + sparkle on "huh?"). Malvo lifts his head on
+          "Evil Genius", frowns at "protect people", goes aghast at "heroic".
+  l01b    "Heroic? Ugh! I'm a villain.": disgusted; on "Ugh!" he CROSSES HIS
+          ARMS (forearms folded over the chest, gloves tucked) and turns his
+          head away from the AI, nose up, eyes shut. Hissy copies.
+  l01c    "Then it'll take an amazing villain to trick me. Have at it.": the
+          AI is amused, open palm on "Have at it". On "amazing villain" one
+          eye peeks open at the AI (Hissy peeks too), then snaps shut.
+  l01d    "...That's what I thought.": he peeks back, smug half-smile, a
+          begrudging little nod on "thought"; the arms relax at the end.
+  beat    the bravado drains: eyes drop, the monocle slips and dangles (tink).
   l02     glistening eyes; on "noticed me" his eyes go to the corkboard photo
           (the AI's eyes follow); eyes drop on "scaring them".
   photo   hard cut: the science-fair photo close-up (empty chairs), slow push.
   l03     cut back on "Clever": SLOW BLINK -> warm; the VILLAIN STATS sheet pops
           over his head, each row fills on its word.
-  l04     header flips to HERO STATS on "hero"; AI happy, eyes to camera on
-          "my guy", thumbs up. Hissy nods.
-  l05     "...Hero stats?": hopeful, pushes the monocle back in, smile tugs.
+  l04     on "impressive" a gold IMPRESSIVE! badge slams onto the sheet, the
+          header pulses on "villain"; AI happy + thumbs up, eyes to camera on
+          "my guy". Hissy nods.
+  l05     "...Impressive?": he LIKES the word: eyes widen (the monocle springs
+          back in), a pleased evil grin, chest puffs (elbows out), a sparkle.
   wall    sheet fades; the AI projects a cyan hologram: the door pops in, the
           wall builds so its last row thuds on "Brick"; firm nod "Every time".
   l07     light leaks round the door, it cracks ajar; three glowing chips
-          (SCARY STORIES / BIG FEELINGS / WARN PEOPLE) squeeze out, on "Scary",
-          "making" and "warning"; on "wide open" it swings open and warm gold
-          light spills across his face.
+          (SCARY STORIES / CREATIVE PLANS / SOUND THE ALARM) squeeze out, on
+          "Scary", "creative" (he rubs his hands) and "sounding"; on "wide
+          open" it swings open and warm gold light spills across his face.
   pile    five gifts pop out of the door and arc into his arms / onto the desk
-          (notebook + quill, headphones, THE CHEMIST scroll, THE GENTLE
-          DRAGON, the BOMBSHELL TWIST script);
-          his eyes follow each one, getting wider.
+          (notebook + quill, headphones, THE CHEMIST scroll, THE SPOOKY GHOST
+          book (its ghost waves its arms, "oooo"), the BOMBSHELL TWIST
+          script); his eyes follow each one, getting wider.
+  l08     the spooky gifts pop out on their words (pumpkin, bat, goblin mask,
+          dragon figurine).
   smile   he looks down at the pile; a slow REAL SMILE. Hissy happy. Hold.
 """
 import math
