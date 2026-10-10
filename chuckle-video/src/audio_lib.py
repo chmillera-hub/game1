@@ -792,3 +792,15 @@ def sfx_fart_big(seed=91):
 
 SFX.update({"fart_dream": sfx_fart_dream, "fart_big": sfx_fart_big,
             "fart_long": lambda: fart(3.6, 48, 170, 21, 0.9, 0.0)})
+
+
+# ----------------------------------------------------------------- v4 additions
+def sfx_roommate_laugh(seed=95):
+    """Two roommates cracking up in the doorway."""
+    out = np.zeros(int(2.6 * SR))
+    place(out, laugh_syllables(9, [230, 225, 220, 215, 210, 205, 200, 195, 190], rate=7.0, vowel=VOW_AH, breath=0.4, dec=0.1, seed=seed), 0.0, 0.8)
+    place(out, laugh_syllables(10, [330, 320, 315, 305, 300, 290, 285, 275, 270, 260], rate=8.0, vowel=VOW_EH, breath=0.35, dec=0.08, seed=seed + 3), 0.18, 0.7)
+    return norm(reverb(norm(out), 0.8, 0.25)[: len(out)], 0.8)
+
+
+SFX.update({"roommate_laugh": sfx_roommate_laugh})

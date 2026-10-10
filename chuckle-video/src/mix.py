@@ -54,7 +54,7 @@ for ln in tl["lines"]:
     envs[ln["id"]] = [round(float(v), 3) for v in e]
     y = fx_chain(x, ln["spk"], ln["id"])
     A.place(voice, y, ln["start"])
-for rid in ("R1", "R2"):
+for rid in [f"R{i}" for i in range(1, 9)]:
     x = load_voice(rid)
     hop = SR // env_fps
     e = np.array([rms(x[i:i + hop]) for i in range(0, len(x), hop)])
@@ -87,9 +87,9 @@ for m in tl["music"]:
     name = m["track"]
     L = m["end"] - m["start"] + m["offset"] + 1
     if name == "remix":
-        r1 = load_voice("R1"); r2 = load_voice("R2")
-        x = MU.track_remix(r1 / np.abs(r1).max(), r2 / np.abs(r2).max(), A.sfx_clown_honk(False),
-                           A.norm(A.inhale_wheeze(0.6)), dur=L)
+        rv = [load_voice(f"R{i}") for i in range(1, 9)]
+        x = MU.track_remix([v / np.abs(v).max() for v in rv], A.sfx_clown_honk(False),
+                           A.norm(A.inhale_wheeze(0.6)), dur=MU.REMIX_BARS * MU.REMIX_BAR)
         level = -17
     else:
         x = MU.TRACKS[name](dur=L)

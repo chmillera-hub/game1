@@ -8,6 +8,7 @@ VOICES = {
     "SJW": ("af_bella", "en-us"),
     "GREG": ("am_fenrir", "en-us"),
     "LINDA": ("af_sarah", "en-us"),
+    "POSTER": ("af_nicole", "en-us"),
 }
 LINES = {
  "A1": ("NARR", "Somewhere on the internet, a humble dweeb is writing a funny story.", None, 0.95),
@@ -16,21 +17,22 @@ LINES = {
  "A3": ("NARR", "The Chuckle That Broke the Unbreakable.", None, 0.9),
  "B1": ("NARR", "Meanwhile, in a dimly lit bedroom, we observe the Logical Lord, in his natural habitat.", None, 0.95),
  "B2": ("NARR", "Cheeto-dusted keyboard. Three energy drinks deep.", None, 0.95),
- "B3": ("NARR", "His plans for tonight? Moderate. His plans for tomorrow? Also, moderate.", None, 0.95),
+ "B3": ("NARR", "His plans for tonight? Moderator duty. His plans for tomorrow? Also, moderator duty.", None, 0.95),
+ "P1": ("POSTER", "My cat meditates with me every morning. Honestly? It healed something in me. I may have even shed a tear.", None, 1.15),
  "B4": ("LORD", "Well, actually, this humor is kind of spam. I don't like it... so let's get rid of it.", None, 0.95),
  "B5": ("LORD", "Oh ho! What's this?", "Oh-ho. What's this?", 1.0),
  "B6": ("LORD", "Ha. Look at this dweeb, using his pretty little AI tool,", "Ha. Look at this dweeb, using his pretty little AI tool...", 1.0),
  "B7": ("LORD", "to make some... luh humorous post.", "...to make some \u201cle humorous post.\u201d", 0.95),
- "B8": ("NARR", "He cracks his knuckles. Ready to roast.", None, 0.95),
+ "B8": ("NARR", "He cracks his knuckles. Back to the queue.", None, 0.95),
  "C1": ("NARR", "He clicks. He reads.", None, 0.95),
- "C2": ("NARR", "You see, the Logical Lord is a moderator of epic seriousness. Moderating is his top priority, and he gives it his whole humanity.", None, 0.97),
+ "C2": ("NARR", "You see, the Logical Lord is a moderator of epic seriousness. Being a moderator is his top priority, and he gives it his whole humanity.", None, 0.97),
  "C2b": ("LORD", "This is no laughing matter. The mod queue requires my full attention.", None, 0.92),
  "C2c": ("LORD", "A funny story... about moderators? Wait. Wait... what?", "\u201cA funny story... about moderators\u201d? Wait. Wait... what?", 0.95),
  "C3": ("NARR", "But then... Bam!", "But then... BAM.", 0.95),
  "C4": ("NARR", "He senses it. The forbidden chuckle.", None, 0.92),
  "C5": ("NARR", "Bubbling up from deep in the gut, like some ancient, primordial force.", None, 0.95),
  "C6": ("WHISP", "No. No, no, no! I can't laugh at this dweeb's post!", None, 1.0),
- "C7": ("WHISP", "I'm the Logical Lord of Reddit. If I laugh... I lose.", None, 1.05),
+ "C7": ("WHISP", "I'm the Logical Lord of social media. If I laugh... I lose.", None, 1.05),
  "D1": ("NARR", "He clamps his mouth shut. Eyes watering. Face going full tomato.", None, 0.97),
  "D2": ("NARR", "And then... his body betrays him.", None, 0.92),
  "D3": ("NARR", "A long, glorious honk of surrender.", None, 0.92),
@@ -43,15 +45,21 @@ LINES = {
  "E4b": ("THER", "Let's take a slow, deep breath together.", None, 0.85),
  "E10": ("NARR", "But not even his therapist could calm this one down.", None, 0.95),
  "F1": ("NARR", "The Logical Lord collapses in a heap.", None, 0.92),
- "F2": ("NARR", "Because a laugh isn't something you can moderate away. It's part of being human.", None, 0.93),
+ "F2": ("NARR", "Because a laugh isn't something a moderator can remove. It's part of being human.", None, 0.93),
  "F4": ("NARR", "Like a sad, deflating balloon, making the saddest clown noises.", None, 0.95),
  "G1": ("NARR", "And the webcam he forgot to turn off?", None, 0.92),
  "G2": ("NARR", "Still. On.", None, 0.85),
  "G3": ("LORD", "Is that... recording?", None, 0.85),
  "H1": ("NARR", "Deep in the bowels of the internet, the clip goes viral.", None, 0.97),
  "H2": ("NARR", "Somebody autotunes it.", None, 0.95),
- "R1": ("LORD", "I'm the Logical Lord.", None, 0.9),
- "R2": ("LORD", "If I laugh, I lose.", None, 0.9),
+ "R1": ("LORD", "I'm the Logical Lord, and I'm never ever bored,", None, 1.15),
+ "R2": ("LORD", "Got my mod tools ready, and my ban hammer stored!", None, 1.2),
+ "R3": ("LORD", "Well, actually! Well, actually! I don't laugh at all!", None, 1.15),
+ "R4": ("LORD", "Then a funny little story made my poker face fall!", None, 1.2),
+ "R5": ("LORD", "If I laugh, I lose! If I laugh, I lose!", None, 1.1),
+ "R6": ("LORD", "Holding in the giggles, now I'm shaking in my shoes!", None, 1.15),
+ "R7": ("LORD", "Hee hee! Ha ha! It's leaking out of me!", None, 1.1),
+ "R8": ("LORD", "I'm the Logical Lord, and I'm finally free!", None, 1.1),
  "I1": ("NARR", "So, to the humble dweeb at the laptop. The moral of the story?", None, 0.95),
  "I2": ("NARR", "Post the damn meme.", None, 0.9),
  "I3": ("NARR", "Even if a moderator smashes the ban button and deletes it, for one moment, you shared a piece of your heart.", None, 0.95),
@@ -60,6 +68,6 @@ LINES = {
 }
 
 # phoneme fixes: make "moderator" end with a clear "-tor" (not "moderate")
-PHONEME_FIX = {"en-gb": [("mˈɒdəɹˌeɪtəɹ", "mˈɒdəɹˌeɪtˌɔː")], "en-us": [("ˌeɪɾɚ", "ˌeɪtɚ")]}
+PHONEME_FIX = {"en-gb": [(r"mˈɒdəɹˌeɪtə(?:ɹ)?", "mˈɒdəɹˌeɪtɚ")], "en-us": [(r"ˌeɪɾɚ", "ˌeɪtɚ")]}  # regex: clear r-coloured "-ter" ending
 # lines that start with a soft, airy synthesized "hmm"
 PREFIX_HMM = {"E4"}

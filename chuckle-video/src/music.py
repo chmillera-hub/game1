@@ -665,3 +665,180 @@ def autotune_voice(x, notes):
     y = norm(sung) + 0.22 * norm(harm)
     y = y + 0.18 * np.concatenate([np.zeros(int(0.012 * SR)), y[:-int(0.012 * SR)]])
     return norm(reverb(y, 0.6, 0.12)[: len(x) + int(0.3 * SR)], 0.9)
+
+
+# ------------------------------------------------------------ v4: full song, swooping autotune
+
+REMIX_BPM = 98
+REMIX_BAR = 4 * 60 / REMIX_BPM
+REMIX_BARS = 10
+
+MELODIES = [
+    [50, 53, 57, 57, 55, 53, 57, 62, 60, 57],
+    [53, 55, 57, 58, 57, 55, 53, 58, 62, 58],
+    [62, 60, 57, 62, 60, 57, 55, 53, 57, 53],
+    [52, 55, 60, 59, 57, 55, 60, 64, 62, 60],
+    [57, 62, 65, 62, 57, 62, 65, 62],
+    [58, 57, 55, 53, 55, 57, 58, 62, 58, 57],
+    [65, 62, 65, 62, 60, 57, 53, 50],
+    [50, 53, 57, 62, 65, 62, 57, 69],
+]
+
+
+def psola_retune_v2(x, notes, seed=0):
+    """Hard autotune with swoops: scoops into each syllable, glides, and vibrato on held notes."""
+    f0, hop = f0_track(x)
+    times = np.arange(len(f0)) * hop + 720
+    voiced = np.interp(np.arange(len(x)), times, (f0 > 0).astype(float)) > 0.5
+    f0s = np.interp(np.arange(len(x)), times[f0 > 0], f0[f0 > 0]) if np.any(f0 > 0) else np.full(len(x), 120.0)
+    marks = []
+    i = 0
+    while i < len(x):
+        if voiced[i]:
+            p = int(SR / f0s[i])
+            seg = x[i:i + p]
+            if len(seg) == 0:
+                break
+            marks.append(i + int(np.argmax(seg)))
+            i = marks[-1] + max(20, int(SR / f0s[marks[-1]] * 0.9))
+        else:
+            i += 48
+    marks = np.array(marks)
+    ons = syllable_onsets(x) or [0.0]
+    n = len(x)
+    semi = np.full(n, float(notes[0]))
+    tt_ = np.arange(n) / SR
+    bends = np.zeros(n)
+    vib = np.zeros(n)
+    for k, o in enumerate(ons):
+        a = int(o * SR)
+        b = int(ons[k + 1] * SR) if k + 1 < len(ons) else n
+        semi[a:] = float(notes[k % len(notes)])
+        L = b - a
+        if L <= 0:
+            continue
+        loc = np.arange(L) / SR
+        d = 3.0 if k % 2 == 0 else -2.5          # scoop up / fall in
+        bends[a:b] += d * np.exp(-loc / 0.05)
+        vib[a:b] += 0.45 * np.clip((loc - 0.12) / 0.15, 0, 1) * np.sin(2 * np.pi * 7.0 * loc)
+    semi = lp(semi, 22) + bends + vib
+    tgt = 440.0 * 2 ** ((semi - 69) / 12)
+    out = np.zeros(n + 4000)
+    if len(marks) > 2:
+        t = marks[0]
+        while t < n - 1:
+            if not voiced[min(t, n - 1)]:
+                t += 48
+                continue
+            j = int(np.argmin(np.abs(marks - t)))
+            m = marks[j]
+            P = int(SR / f0s[m])
+            a, b = max(0, m - P), min(n, m + P)
+            g = x[a:b] * np.hanning(b - a)
+            o0 = t - (m - a)
+            if o0 >= 0:
+                out[o0:o0 + len(g)] += g
+            t += max(20, int(SR / tgt[t]))
+    vm = lp(voiced.astype(float), 30)
+    return out[:n] * vm + x * (1 - vm), ons
+
+
+def autotune_voice2(x, notes, harmony=0):
+    x = x / (np.max(np.abs(x)) + 1e-9)
+    sung, ons = psola_retune_v2(x, notes)
+    f = np.full(len(x), float(mtof(notes[0])))
+    for i, o in enumerate(ons):
+        f[int(o * SR):] = float(mtof(notes[i % len(notes)] + harmony))
+    f = lp(f, 40)
+    car = additive(f, 60, lambda k: 1 / k) + 0.5 * additive(f * 2, 30, lambda k: 1 / k)
+    harm = channel_vocoder(x, car)
+    y = norm(sung) + (0.3 if harmony else 0.18) * norm(harm)
+    y = y + 0.16 * np.concatenate([np.zeros(int(0.011 * SR)), y[:-int(0.011 * SR)]])
+    return norm(reverb(y, 0.55, 0.12)[: len(x) + int(0.25 * SR)], 0.9)
+
+
+def stutter(v, b):
+    """'If I— if I— if I laugh, I lose!' remix chop."""
+    out = np.zeros(int(REMIX_BAR * SR) + len(v))
+    chunk = v[: int(0.28 * SR)]
+    for k in range(3):
+        place(out, fade(chunk, 0.003, 0.02), k * b / 2)
+    place(out, v[: int(min(len(v), (REMIX_BAR - 1.5 * b) * SR))], 1.5 * b)
+    return out
+
+
+def track_remix(voices, honk_sfx, wheeze_sfx, dur=None):
+    """Full song: 8 sung lines (fast, swooping autotune), a stutter-chop hook bar, then the strain + tape stop."""
+    b = 60 / REMIX_BPM
+    bar = REMIX_BAR
+    dur = dur or REMIX_BARS * bar
+    out = np.zeros(int((dur + 2) * SR))
+    vox_bus = np.zeros_like(out)
+    prog = [("Dm", 38), ("Bb", 34), ("F", 41), ("C", 36)]
+    sung = [autotune_voice2(v, MELODIES[i], harmony=4 if i in (4, 7) else 0) for i, v in enumerate(voices[:8])]
+    hook = [(0, 74, .5), (.75, 74, .25), (1, 72, .5), (1.5, 69, .5), (2.5, 67, .5), (3, 69, 1)]
+    hook2 = [(0, 77, .5), (.5, 76, .5), (1, 74, 1), (2.5, 72, .5), (3, 74, 1)]
+    counter = [(0.5, 81, .4), (1.5, 84, .4), (2.5, 81, .4), (3.25, 79, .4), (3.75, 77, .4)]
+    for i in range(REMIX_BARS):
+        t0 = i * bar
+        name, bass = prog[i % 4]
+        c = CH[name]
+        if i < 8:
+            place(vox_bus, sung[i], t0 + 0.03, 1.0)
+        elif i == 8:
+            place(vox_bus, stutter(sung[4], b), t0 + 0.03, 1.0)
+        intro = i < 2
+        strain = i == REMIX_BARS - 1
+        if i == 1:
+            place(out, honk_sfx, t0 + 3 * b, 0.3)
+            tt_ = 2 * b
+            while tt_ < bar - 0.02:
+                step = b / 4 if tt_ < 3 * b else b / 8
+                place(out, snare(True), t0 + tt_, 0.06 + 0.22 * (tt_ - 2 * b) / (2 * b))
+                tt_ += step
+            n_r = int(2 * b * SR)
+            rz = tv_bandpass(rng(5).standard_normal(n_r), np.geomspace(500, 7000, n_r), q=2) * np.linspace(0, 1, n_r) ** 2
+            place(out, rz, t0 + 2 * b, 0.25)
+        if intro:
+            place(out, kick(), t0, 0.6)
+            place(out, kick(), t0 + 2 * b, 0.45)
+            seq(out, fart_bass, [(0, bass, 1.5), (2, bass, 1.5)], t0, b, 0.3)
+            place(out, sum_inst(strings, [m + 12 for m in c], bar), t0, 0.05)
+            arp = [(k * 0.25, c[k % 3] + 12 + 12 * ((k // 3) % 2), 0.2, 0.6) for k in range(16)]
+            seq(out, arp_pluck, arp, t0, b, 0.06 if i == 0 else 0.08)
+            continue
+        if i in (2, 6, 8):
+            place(out, crash(), t0, 0.22)
+            for st, d in ((0, 0.18), (0.25, 0.18), (0.55, 0.6)):
+                place(out, airhorn(d), t0 + st, 0.2)
+        beats = 2 if strain else 4
+        for k in range(beats):
+            place(out, kick(), t0 + k * b, 0.75)
+            place(out, hat(True, k), t0 + k * b + b / 2, 0.12)
+        for k in range(beats * 4):
+            place(out, hat(False, k + 3), t0 + k * b / 4, 0.05 if k % 2 else 0.08)
+        place(out, clap(), t0 + b, 0.35)
+        if not strain:
+            place(out, clap(), t0 + 3 * b, 0.35)
+        bl = [(0, bass, .45), (.5, bass, .4), (1.5, bass + 12, .4), (2, bass, .45), (2.75, bass + 7, .4), (3.5, bass + 12, .4)]
+        seq(out, fart_bass, bl[:3] if strain else bl, t0, b, 0.42)
+        seq(out, squeak_lead, hook if i % 2 == 0 else hook2, t0, b, 0.09)
+        for k in range(beats):
+            place(out, sum_inst(supersaw, [m + 12 for m in c], b * 0.35), t0 + k * b + b / 2, 0.035)
+        arp = [(k * 0.25, c[k % 3] + 12 + 12 * ((k // 3) % 2), 0.2, 0.7 if k % 4 == 0 else 0.5) for k in range(beats * 4)]
+        seq(out, arp_pluck, arp, t0, b, 0.07)
+        if i >= 4 and not strain:
+            seq(out, glock, counter, t0, b, 0.08)
+        place(out, sum_inst(strings, [m + 12 for m in c], bar), t0, 0.03)
+        if i in (3, 5, 7):
+            place(out, honk_sfx, t0 + 3.5 * b, 0.28)
+        if strain:
+            for k in range(4):
+                place(out, wheeze_sfx[: int(0.12 * SR)], t0 + 0.5 * b + k * b / 4, 0.35)
+    venv = lp(np.abs(vox_bus), 6)
+    venv = venv / (venv.max() + 1e-9)
+    duck = lp(1 - 0.55 * np.clip(venv * 4, 0, 1), 8)
+    out = out / (np.sqrt(np.mean(out[: int(dur * SR)] ** 2)) + 1e-9) * 0.12
+    vox_bus = vox_bus / (np.sqrt(np.mean(vox_bus[vox_bus != 0] ** 2)) + 1e-9) * 0.17
+    mixd = out * duck + hp(vox_bus, 150)
+    return tape_stop(mixd, dur - 1.4, 0.75)

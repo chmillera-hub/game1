@@ -435,7 +435,7 @@ def lord_body(c, P, poseL="type", poseR="type", blendL=None, blendR=None, t=0.0,
     fs(c, torso, sh, 5)
     # belly roll + print
     c.drawPath(poly([(-120, 330), (0, 345), (120, 330)], False), stroke("#2d4f4f", 4))
-    text(c, "r/LOGIC", 0, 270, "inter_black", 30, "#f2e6c9", a=0.9)
+    text(c, "LOGIC", 0, 270, "inter_black", 30, "#f2e6c9", a=0.9)
     c.drawPath(oval(0, 214, 22, 20), stroke("#f2e6c9", 4, 0.9))
     c.drawPath(poly([(-12, 214), (12, 214)], False), stroke("#f2e6c9", 3, 0.9))
     # neck

@@ -1,4 +1,4 @@
-import json, os, sys, numpy as np, soundfile as sf
+import json, os, re, sys, numpy as np, soundfile as sf
 from kokoro_onnx import Kokoro
 from lines import LINES, VOICES, PHONEME_FIX, PREFIX_HMM
 from hmm import airy_hmm
@@ -8,13 +8,13 @@ if os.path.exists("audio/voice/durations.json"):
     out = json.load(open("audio/voice/durations.json"))
 for lid, (spk, text, cap, speed) in LINES.items():
     path = f"audio/voice/{lid}.wav"
-    key = f"{spk}|{text}|{speed}|v3{'hmm' if lid in PREFIX_HMM else ''}"
-    if lid in out and out[lid].get("key") == key and os.path.exists(path):
-        continue
     voice, lang = VOICES[spk]
     ph = k.tokenizer.phonemize(text, lang)
     for a_, b_ in PHONEME_FIX.get(lang, []):
-        ph = ph.replace(a_, b_)
+        ph = re.sub(a_, b_, ph)
+    key = f"{spk}|{ph}|{speed}|v4{'hmm' if lid in PREFIX_HMM else ''}"
+    if lid in out and out[lid].get("key") == key and os.path.exists(path):
+        continue
     s, sr = k.create(ph, voice=voice, speed=speed, lang=lang, is_phonemes=True)
     s = np.asarray(s, dtype=np.float32)
     # trim leading/trailing silence

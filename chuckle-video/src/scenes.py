@@ -173,7 +173,7 @@ def cans_pyramid(c, x, y, t, fall=None):
         can(c, x + 60 * u, y - 82 + 82 * (u ** 2), 1.0, ang, "#ffd23f")
 
 
-def panel(c, x, y, w, h, title, accent="#ff5700", dark=True, a=1.0, icon=None):
+def panel(c, x, y, w, h, title, accent="#2f80ed", dark=True, a=1.0, icon=None):
     c.saveLayerAlpha(None, int(255 * clamp(a)))
     c.drawPath(rrect(x + 6, y + 10, w, h, 22), fill("#000000", 0.35))
     fs(c, rrect(x, y, w, h, 22), "#1d1d2b" if dark else "#f7f7fb", 5, "#000000")
@@ -454,7 +454,7 @@ def heap_shot(c, t, d=0.0, tears=1.0, mouth=0.6, gas=1.0, streak=0.0, puddle=0.0
     c.scale(sx, sy)
     torso = smooth_path([(-150, -150), (-175, 0), (-160, 120), (0, 140), (160, 120), (175, 0), (150, -150), (0, -175)])
     fs(c, torso, SHIRT_LORD, 6)
-    text(c, "r/LOGIC", 0, -20, "inter_black", 30, "#f2e6c9", a=0.9)
+    text(c, "LOGIC", 0, -20, "inter_black", 30, "#f2e6c9", a=0.9)
     if d > 0.15:
         for i in range(5):
             yy = -110 + i * 50
@@ -721,12 +721,15 @@ def lord_expr_intro(t):
         P.update(lid=0.4 * bl + 0.05, py=0.0, px=0.0, smile=0.6, asym=0.7, browR=1.0, browL=-0.2)
     if t >= M["snort"]:
         P.update(lid=0.0 if t < M["snort"] + 0.35 else 0.5 * bl, happy=1.0, smile=0.8, asym=0.4, mouth_open=0.0)
-    if t >= M["B8"]:
+    if M["B8"] <= t < M["notif"] - 1.0:
         u = ramp(t, M["B8"] + 0.3, M["B8"] + 0.6) * (1 - ramp(t, M["B8"] + 1.9, M["B8"] + 2.3))
         body.update(poseL="type", blendL=("knuck", u), poseR="type", blendR=("knuck", u), typing=0.0)
         P.update(lid=0.6 * bl, smile=0.6, asym=0.5, browR=0.6, brow_ang=-0.3, happy=0.0, px=0.0, py=0.2)
-    if t >= M["lean_in"]:
+    if M["lean_in"] <= t < M["notif"] - 1.0:
         P.update(lid=0.45, brow_ang=-0.5, smile=0.5, asym=0.6, py=0.6)
+    if M["type_comment"] <= t < M["B4"]:
+        # reading the heartfelt post, unimpressed
+        P.update(lid=0.5 * bl, smile=0.1, asym=0.5, browR=0.6, py=0.5, px=lerp(-0.4, 0.4, ((t - M["type_comment"]) * 0.6) % 1.0))
     return P, body
 
 
@@ -744,8 +747,8 @@ def plans_insert(c, t):
     text(c, "MOD SCHEDULE", 0, -248, "bangers", 66, "#ffffff", outline=OUT, ow=8)
     c.drawCircle(0, -330, 16, fill("#3a86ff"))
     c.drawCircle(0, -330, 16, stroke(OUT, 4))
-    rows = [("TONIGHT", "moderate", M["plans"] + 0.9), ("TOMORROW", "also moderate", M["B3"] + 2.9),
-            ("THE WEEKEND", "moderate (harder)", M["B3"] + 4.4)]
+    rows = [("TONIGHT", "moderator duty", M["B3"] + 1.3), ("TOMORROW", "moderator duty", M["B3"] + 4.3),
+            ("THE WEEKEND", "moderator duty (x2)", M["B3"] + 5.9)]
     for i, (lab, val, ta) in enumerate(rows):
         y = -130 + i * 150
         c.drawPath(poly([(-240, y + 70), (240, y + 70)], False), stroke("#c9c3b4", 3))
@@ -808,16 +811,18 @@ def sc_lord_intro(c, t):
     pa = ramp(t, M["type_comment"] - 0.4, M["type_comment"]) * (1 - ramp(t, M["lean_in"] - 0.2, M["lean_in"] + 0.2))
     if pa > 0:
         y0 = 60
-        panel(c, 40, y0, 640, 330, "r/LogicalLords  \u2022  MOD", "#ff5700", a=pa)
+        panel(c, 40, y0, 640, 330, "Logical Lords Forum  \u2022  MOD", "#2f80ed", a=pa)
         c.saveLayerAlpha(None, int(255 * pa))
         if t < M["notif"]:
             text(c, "MOD QUEUE", 70, y0 + 90, "inter_black", 20, "#9a9ab8", align="left")
-            fs(c, rrect(60, y0 + 102, 600, 128, 14), "#2a2a3d", 3, "#5a5a7a")
-            text(c, "u/soft_heart_42", 80, y0 + 132, "inter_bold", 19, "#c9c9e0", align="left")
-            draw_wrapped(c, "My cat meditates with me every morning. Honestly? It healed something in me.", 80, y0 + 164, 560, 23, "#ffffff", maxlines=2)
-            text(c, "Removal reason:", 70, y0 + 266, "inter_bold", 20, "#9a9ab8", align="left")
+            fs(c, rrect(60, y0 + 102, 600, 160, 14), "#2a2a3d", 3, "#5a5a7a")
+            text(c, "@soft_heart_42", 80, y0 + 132, "inter_bold", 19, "#c9c9e0", align="left")
+            draw_wrapped(c, "My cat meditates with me every morning. Honestly? It healed something in me. I may have even shed a tear.", 80, y0 + 164, 560, 23, "#ffffff", maxlines=3)
+            if t > M["P1_end"] - 1.6:
+                c.drawPath(oval(625, y0 + 235, 7, 10), fill("#8fd3ff"))
+            text(c, "Removal reason:", 70, y0 + 300, "inter_bold", 20, "#9a9ab8", align="left")
             reason = "spam (I don't like it)"
-            text(c, typed(reason, t, M["B4"] + 1.6, 9), 245, y0 + 266, "fredoka", 24, "#ffd23f", align="left")
+            text(c, typed(reason, t, M["B4"] + 1.6, 9), 245, y0 + 300, "fredoka", 24, "#ffd23f", align="left")
             if t > M["queue_removed"]:
                 su = clamp((t - M["queue_removed"]) / 0.18)
                 at(c, 420, y0 + 168, 1 + 1.2 * (1 - ease_out_back(su, 1.5)), -10)
@@ -827,15 +832,20 @@ def sc_lord_intro(c, t):
         else:
             u = ramp(t, M["notif"], M["notif"] + 0.3)
             at(c, 0, -30 * (1 - u))
-            fs(c, rrect(60, y0 + 72, 600, 238, 14), "#2a2a3d", 3, "#ff5700")
-            text(c, "NEW POST", 80, y0 + 108, "inter_black", 20, "#ff5700", align="left")
+            fs(c, rrect(60, y0 + 72, 600, 238, 14), "#2a2a3d", 3, "#2f80ed")
+            text(c, "NEW POST", 80, y0 + 108, "inter_black", 20, "#2f80ed", align="left")
             text(c, "A Funny Story About Moderators", 80, y0 + 150, "inter_black", 30, "#ffffff", align="left")
-            text(c, "by u/humble_dweeb", 80, y0 + 186, "fredoka_semi", 24, "#c9c9e0", align="left")
+            text(c, "by @humble_dweeb", 80, y0 + 186, "fredoka_semi", 24, "#c9c9e0", align="left")
             fs(c, rrect(80, y0 + 206, 250, 40, 20), "#5a4bd6", 0, None)
             chat_icon(c, 104, y0 + 226, 9, "#ffffff", 2.5)
             text(c, "written with a chatbot", 122, y0 + 233, "inter_bold", 17, "#ffffff", align="left")
             # upvote arrow
-            fs(c, poly([(600, y0 + 120), (630, y0 + 160), (612, y0 + 160), (612, y0 + 190), (588, y0 + 190), (588, y0 + 160), (570, y0 + 160)]), "#ff5700", 3)
+            hp_ = skia.Path()
+            hx_, hy_, hr_ = 600, y0 + 150, 20
+            hp_.moveTo(hx_, hy_ + hr_)
+            hp_.cubicTo(hx_ - 2.2 * hr_, hy_ - 0.2 * hr_, hx_ - 0.8 * hr_, hy_ - 1.6 * hr_, hx_, hy_ - 0.5 * hr_)
+            hp_.cubicTo(hx_ + 0.8 * hr_, hy_ - 1.6 * hr_, hx_ + 2.2 * hr_, hy_ - 0.2 * hr_, hx_, hy_ + hr_)
+            fs(c, hp_, "#ff5fa2", 3)
             c.restore()
         c.restore()
     black(c, 1 - ramp(t, M["lord_intro"], M["lord_intro"] + 0.6))
@@ -847,7 +857,7 @@ def mod_tools(c, t, a=1.0, hover=0.0):
     if a <= 0:
         return
     c.saveLayerAlpha(None, int(255 * clamp(a)))
-    panel(c, 50, 1075, 620, 170, "MOD TOOLS", "#ff5700")
+    panel(c, 50, 1075, 620, 170, "MOD TOOLS", "#2f80ed")
     for i, (lab, cc) in enumerate((("APPROVE", "#2a9d4b"), ("REMOVE", "#f4a261"), ("BAN", "#e63946"))):
         x = 75 + i * 200
         glow_ = hover * (0.5 + 0.5 * math.sin(t * 10)) if i == 2 else 0
@@ -862,20 +872,81 @@ def mod_tools(c, t, a=1.0, hover=0.0):
     c.restore()
 
 
+QUEUE_ITEMS = ["Daily discussion thread", "Is this allowed? (pls respond)", "Rule 7 reminder: no vibes",
+               "Weekly feedback megathread", "Question about flair colors", "Removed: too many feelings",
+               "Meta: new posting guidelines", "Can I post my art here?", "Report: user said 'lol'"]
+
+
+def queue_scroll(c, t, a):
+    """The generic mod queue he scans (eyes left-right), until he stumbles on the dweeb's post."""
+    st = M["stumble"]
+    c.saveLayerAlpha(None, int(255 * clamp(a)))
+    panel(c, 40, 40, 640, 200, "MOD QUEUE  \u2022  LOCKED IN", "#2f80ed")
+    c.drawCircle(640, 67, 10, fill("#ff2e2e", 0.6 + 0.4 * ((t * 2) % 1 < 0.5)))
+    c.save()
+    c.clipPath(rrect(44, 96, 632, 140, 18), skia.ClipOp.kIntersect, True)
+    speed = 46.0
+    scroll = (min(t, st) - M["post"]) * speed
+    n = len(QUEUE_ITEMS)
+    for k in range(-1, 7):
+        idx = int(scroll // 44) + k
+        y = 110 + k * 44 - (scroll % 44)
+        found = t >= st and k == 1
+        title = "A Funny Story About Moderators  \u2022  @humble_dweeb" if found else QUEUE_ITEMS[idx % n]
+        fs(c, rrect(60, y, 600, 38, 10), "#ffd23f" if found else "#2a2a3d", 0, None, a=1.0)
+        text(c, title, 76, y + 26, "inter_bold", 19, "#1d2a44" if found else "#d7d7ea", align="left")
+    c.restore()
+    c.restore()
+
+
+def desk_smug_shot(c, t):
+    """Back at the desk: 'Oh-ho. What's this?' + mocking air quotes, with the dweeb's post on screen."""
+    P, body = lord_expr_intro(t)
+    snort_k = pulse(t, M["snort"], 0.3)
+    body = dict(body)
+    body["head_dy"] = -14 * snort_k
+    body["head_rot"] = -4 * snort_k
+    lord_desk_shot(c, t, P, 1.04, (360, 640), body=body)
+    y0 = 60
+    pa = ramp(t, M["notif"], M["notif"] + 0.3)
+    panel(c, 40, y0, 640, 330, "Logical Lords Forum  \u2022  MOD", "#2f80ed", a=pa)
+    c.saveLayerAlpha(None, int(255 * pa))
+    fs(c, rrect(60, y0 + 72, 600, 238, 14), "#2a2a3d", 3, "#2f80ed")
+    text(c, "NEW IN QUEUE", 80, y0 + 108, "inter_black", 20, "#2f80ed", align="left")
+    text(c, "A Funny Story About Moderators", 80, y0 + 150, "inter_black", 30, "#ffffff", align="left")
+    text(c, "by @humble_dweeb", 80, y0 + 186, "fredoka_semi", 24, "#c9c9e0", align="left")
+    fs(c, rrect(80, y0 + 206, 250, 40, 20), "#5a4bd6", 0, None)
+    chat_icon(c, 104, y0 + 226, 9, "#ffffff", 2.5)
+    text(c, "written with a chatbot", 122, y0 + 233, "inter_bold", 17, "#ffffff", align="left")
+    c.restore()
+    black(c, 1 - ramp(t, M["notif"] - 0.05, M["notif"] + 0.1))
+
+
 def sc_post(c, t):
     hit = M["dart_hit"]
     bl = blink(t, 8, 2.8)
     glow = ramp(t, M["glow"], M["glow"] + 1.0)
-    serious = ramp(t, M["C2"] - 0.2, M["C2"] + 0.4)
-    scan = ((t - M["C1"]) * 1.2) % 1.0
-    P = P_(t=t, lid=0.6 * bl, smile=0.4, asym=0.5, browR=0.4, px=lerp(-0.5, 0.5, scan), py=0.5)
+    # desk shot while he mocks the post he just stumbled on
+    if M["notif"] - 0.05 <= t < M["read_start"]:
+        desk_smug_shot(c, t)
+        return
+    serious = ramp(t, M["post"], M["C2"] + 0.4)
+    P = P_(t=t, lid=0.6 * bl, smile=0.4, asym=0.5, browR=0.4, py=0.5)
     if serious > 0:
         # locked in: narrowed eyes, stern brows, flat mouth
         P.update(lid=lerp(0.6, 0.55, serious) * bl, smile=lerp(0.4, -0.08, serious), asym=lerp(0.5, 0.0, serious),
                  browR=lerp(0.4, 0.0, serious), brow_ang=-0.55 * serious, brow_y=-0.1 * serious,
                  px=lerp(-0.25, 0.25, (((t - M["C2"]) * 0.45) % 1.0)), py=0.5)
-    if M["C2b"] - 0.1 <= t < M["glow"]:
-        P.update(mouth_open=talk("C2b", t) * 0.8, px=0.0, py=0.15, lid=0.55 * bl)
+    if M["C2b"] - 0.1 <= t < M["stumble"]:
+        P.update(mouth_open=talk("C2b", t) * 0.8, py=0.4, lid=0.55 * bl)
+    if M["stumble"] <= t < M["notif"]:
+        # ...and then he stumbles onto the dweeb's post
+        u = ramp(t, M["stumble"], M["stumble"] + 0.15)
+        P.update(px=0.0, py=0.35, lid=lerp(0.55, 1.0, u) * bl, brow_ang=lerp(-0.55, 0.3, u), brow_y=0.7 * u, smile=0.1, mouth_open=0.0)
+    if M["read_start"] <= t < M["read_title"]:
+        # "He clicks. He reads." -- eyes run across the dweeb's post
+        scan = ((t - M["read_start"]) * 1.3) % 1.0
+        P.update(px=lerp(-0.5, 0.5, scan), py=0.45, lid=0.6 * bl, mouth_open=0.0, smile=0.0)
     # reading the title... "Wait. Wait... what?" -- the laugh starts tugging at his eyes and mouth
     if M["read_title"] <= t < M["glow"]:
         u = ramp(t, M["read_title"] + 1.3, M["C2c_end"])
@@ -895,7 +966,7 @@ def sc_post(c, t):
         shake = max(0, 1 - u * 2.5) * 2
         dart = 1.0
     light = hexs(mix("#6fc3ff", "#ffcf4d", glow))
-    zoom = 1.0 + 0.1 * ramp(t, M["C1"], M["C2b_end"]) + (0.25 * ease_out_back(clamp((t - hit) / 0.2)) if t > hit else 0)
+    zoom = 1.0 + 0.08 * ramp(t, M["C2"], M["C2b_end"]) + 0.12 * pulse(t, M["stumble"], 0.6) + (0.25 * ease_out_back(clamp((t - hit) / 0.2)) if t > hit else 0)
     lord_face_shot(c, t, P, 360, 600, 2.0, "gold" if glow > 0 else "room", shake, zoom,
                    headkw=dict(dart=dart, dart_wob=max(0, 1 - (t - hit) * 0.8) if t > hit else 0, glass_glow="#ffd84d", glow_a=glow * (1 if t < hit else 0.6)),
                    light=light, light_a=0.18 + 0.4 * glow)
@@ -905,21 +976,18 @@ def sc_post(c, t):
             p = poly([(360, 1400), (360 + math.cos(a) * 1600 - 40, 1400 + math.sin(a) * 1600), (360 + math.cos(a) * 1600 + 40, 1400 + math.sin(a) * 1600)])
             c.drawPath(p, fill("#ffe27a", 0.09 * glow))
     # 'MOD MODE: LOCKED IN' badge + mod tools while he reads with full seriousness
-    ba = ramp(t, M["C2"] + 0.3, M["C2"] + 0.6) * (1 - ramp(t, M["read_title"] - 0.2, M["read_title"]))
-    ta = ramp(t, M["read_title"], M["read_title"] + 0.3) * (1 - ramp(t, hit - 0.1, hit))
+    ba = ramp(t, M["C2"] + 0.3, M["C2"] + 0.6) * (1 - ramp(t, M["notif"] - 0.2, M["notif"]))
+    ta = ramp(t, M["read_start"], M["read_start"] + 0.3) * (1 - ramp(t, hit - 0.1, hit))
     if ta > 0:
         at(c, 360, 135, ease_out_back(ta, 2), -2)
         fs(c, rrect(-300, -62, 600, 118, 16), "#ffffff", 4, a=ta)
         text(c, "A Funny Story About Moderators", 0, -8, "inter_black", 30, "#1d2a44", a=ta)
-        text(c, "by u/humble_dweeb", 0, 32, "fredoka_semi", 24, "#5a6a88", a=ta)
+        text(c, "by @humble_dweeb", 0, 32, "fredoka_semi", 24, "#5a6a88", a=ta)
         c.restore()
     if ba > 0:
-        at(c, 360, 125, ease_out_back(ba, 2), -3)
-        fs(c, rrect(-215, -38, 430, 72, 36), "#111122", 4, "#ff5700", a=ba)
-        c.drawCircle(-175, -2, 12, fill("#ff2e2e", ba * (0.6 + 0.4 * ((t * 2) % 1 < 0.5))))
-        text(c, "MOD MODE: LOCKED IN", 15, 10, "inter_black", 30, "#ffffff", a=ba)
-        c.restore()
-    mod_tools(c, t, ramp(t, M["C2"] + 1.0, M["C2"] + 1.4) * (1 - ramp(t, hit - 0.1, hit)), ramp(t, M["C2b"], M["C2b"] + 1.5))
+        queue_scroll(c, t, ba)
+    mod_tools(c, t, ramp(t, M["C2"] + 1.0, M["C2"] + 1.4) * (1 - ramp(t, hit - 0.1, hit)),
+              ramp(t, M["C2b"], M["C2b"] + 1.5))
     if M["dart_fire"] <= t < hit:
         u = (t - M["dart_fire"]) / (hit - M["dart_fire"])
         y = lerp(1450, 600 - 2.0 * 52, u)
@@ -1127,16 +1195,37 @@ def draw_mess_dream(c, t):
     op = ramp(t, rm - 0.3, rm)
     if op > 0:
         c.drawRect(skia.Rect.MakeLTRB(500, 130, 500 + 115 * op, 372), fill("#3a2a2a"))
-        for k, (dx, hc) in enumerate(((528, "#3a2a1a"), (582, "#e8c35a"))):
-            hy = 210 + 10 * k
+        lg = ramp(t, M["roommates_laugh"], M["roommates_laugh"] + 0.2)
+        for k, (dx, hc, shirt) in enumerate(((528, "#3a2a1a", "#3a86ff"), (582, "#e8c35a", "#ff8c42"))):
+            bob = 5 * lg * math.sin(t * 22 + k * 1.7)
+            hy = 205 + 10 * k + bob
+            # body standing in the doorway
+            fs(c, rrect(dx - 24 * op, hy + 24, 48 * op, 130, 14), shirt, 3.5)
             c.drawCircle(dx, hy, 26 * op, fill("#f2cdb0"))
             c.drawCircle(dx, hy, 26 * op, stroke(OUT, 3.5))
             c.drawPath(oval(dx, hy - 18, 26 * op, 12 * op), fill(hc))
-            for ex in (-9, 9):
-                c.drawCircle(dx + ex, hy - 2, 6 * op, fill("#ffffff"))
-                c.drawCircle(dx + ex, hy - 2, 3 * op, fill(OUT))
-            c.drawPath(oval(dx, hy + 12, 6 * op, 7 * op), fill("#5a1626"))
-        text(c, "?!", 556, 172, "bangers", 50, "#e63946", outline=OUT, ow=7, a=op)
+            if lg < 0.5:
+                for ex in (-9, 9):
+                    c.drawCircle(dx + ex, hy - 2, 6 * op, fill("#ffffff"))
+                    c.drawCircle(dx + ex, hy - 2, 3 * op, fill(OUT))
+                c.drawPath(oval(dx, hy + 12, 6 * op, 7 * op), fill("#5a1626"))
+            else:
+                for ex in (-9, 9):
+                    c.drawPath(smooth_path([(dx + ex - 6, hy), (dx + ex, hy - 6), (dx + ex + 6, hy)], False), stroke(OUT, 3))
+                mo = skia.Path()
+                mo.moveTo(dx - 12, hy + 6)
+                mo.quadTo(dx, hy + 30 + 4 * math.sin(t * 30 + k), dx + 12, hy + 6)
+                mo.close()
+                fs(c, mo, "#5a1626", 2.5)
+                # one points at him
+                if k == 0:
+                    c.drawPath(poly([(dx - 14, hy + 50), (dx - 52, hy + 30)], False), stroke(OUT, 10))
+                    c.drawPath(poly([(dx - 14, hy + 50), (dx - 52, hy + 30)], False), stroke("#f2cdb0", 6))
+        if lg < 0.5:
+            text(c, "?!", 556, 172, "bangers", 50, "#e63946", outline=OUT, ow=7, a=op)
+        else:
+            for j, (hx, hy2) in enumerate(((560, 150), (470, 120), (640, 115))):
+                text(c, "HAHA", hx, hy2 + 5 * math.sin(t * 18 + j), "bangers", 34, "#ffffff", outline=OUT, ow=6, a=lg)
     sh = 6 * math.sin(t * 38)
     fc = ramp(t, sp, sp + 0.8)
     if fc > 0:
@@ -1333,7 +1422,7 @@ def sc_collapse(c, t):
         err = t > M["F2"] + 2.3
         c.saveLayerAlpha(None, int(255 * a))
         at(c, 360, 300, ease_out_back(a, 2))
-        panel(c, -300, -120, 600, 230, "MOD TOOLS", "#ff5700")
+        panel(c, -300, -120, 600, 230, "MOD TOOLS", "#2f80ed")
         if not err:
             text(c, "Remove this laugh?", 0, -10, "inter_black", 34, "#ffffff")
             fs(c, rrect(-90, 30, 180, 58, 16), "#e63946", 4, "#000000")
@@ -1445,12 +1534,20 @@ def sc_viral(c, t):
     flash(c, t, M["remix"] - 0.2, 0.2)
 
 
+REMIX_LYRICS = ["I'M THE LOGICAL LORD, AND I'M NEVER EVER BORED,", "GOT MY MOD TOOLS READY, AND MY BAN HAMMER STORED!",
+                "WELL, ACTUALLY! WELL, ACTUALLY! I DON'T LAUGH AT ALL!", "THEN A FUNNY LITTLE STORY MADE MY POKER FACE FALL!",
+                "IF I LAUGH, I LOSE! IF I LAUGH, I LOSE!", "HOLDING IN THE GIGGLES, NOW I'M SHAKING IN MY SHOES!",
+                "HEE HEE! HA HA! IT'S LEAKING OUT OF ME!", "I'M THE LOGICAL LORD, AND I'M FINALLY FREE!",
+                "IF I- IF I- IF I LAUGH, I LOSE!", "..."]
+
+
 def sc_remix(c, t):
     lt = t - M["remix"]
-    b = 0.5
+    BAR = M["remix_bar"]
+    b = BAR / 4
     beat = (lt / b) % 1.0
-    bar = int(lt / 2.0)
-    kickp = (1 - beat) ** 3 if bar >= 2 else ((1 - (lt % 2.0) / 2.0) ** 3 if True else 0)
+    bar = min(9, int(lt / BAR))
+    kickp = (1 - beat) ** 3 if bar >= 2 else (1 - ((lt / (2 * b)) % 1.0)) ** 3
     # synthwave
     c.drawRect(skia.Rect.MakeWH(W, H), lin_grad(0, 0, 0, 760, ["#12002e", "#5b0b6e", "#ff2e88"], [0, 0.6, 1]))
     sunp = skia.Path()
@@ -1466,40 +1563,46 @@ def sc_remix(c, t):
     for i in range(-12, 13):
         c.drawPath(poly([(360 + i * 18, 760), (360 + i * 140, H)], False), stroke("#ff2e88", 3, 0.8))
     for k in range(10):
-        u = ((k + (lt * 2) % 1.0) / 10) ** 2
+        u = ((k + (lt / (2 * b)) % 1.0) / 10) ** 2
         y = 760 + u * (H - 760)
         c.drawPath(poly([(0, y), (W, y)], False), stroke("#ff2e88", 3, 0.8))
     # title
     tw = 1 + 0.06 * kickp
-    at(c, 360, 110, tw, -3)
-    text(c, "LOGICAL REDDITOR'S", 0, 0, "bangers", 58, "#7ef0ff", outline=OUT, ow=10)
+    at(c, 360, 105, tw, -3)
+    text(c, "LOGICAL LORD'S", 0, 0, "bangers", 62, "#7ef0ff", outline=OUT, ow=10)
     text(c, "LAMENT (REMIX)", 0, 62, "bangers", 64, "#ffd23f", outline=OUT, ow=10)
     c.restore()
-    # lyrics
-    vox = [("R1", "I'M THE LOGICAL LORD"), ("R2", "IF I LAUGH, I LOSE")][bar % 2]
-    a = ramp(lt % 2.0, 0.0, 0.1) * (1 - ramp(lt % 2.0, 1.6, 1.9))
-    at(c, 360, 300, 1 + 0.05 * kickp)
-    text(c, vox[1], 0, 0, "bangers", 56, "#ffffff", outline="#ff2e88", ow=10, a=a)
-    c.restore()
-    # mouth from vocal envelopes (lyrics are re-timed onto each bar)
-    rid = vox[0]
-    env = LIPS[rid]
-    idx = int((lt % 2.0 - 0.05) * 24)
+    # karaoke lyrics, one line per bar
+    line = REMIX_LYRICS[bar]
+    inb = lt - bar * BAR
+    a = ramp(inb, 0.0, 0.08) * (1 - ramp(inb, BAR - 0.25, BAR - 0.05))
+    if bar < 9:
+        lines = wrap(line, "bangers", 50, 640)
+        at(c, 360, 262, 1 + 0.04 * kickp, -2 + 2 * math.sin(lt * 3))
+        for i, ln in enumerate(lines[:2]):
+            text(c, ln, 0, i * 54, "bangers", 50, "#ffffff", outline="#ff2e88", ow=10, a=a)
+        c.restore()
+    # mouth from the sung line's envelope
+    rid = "R%d" % (bar + 1) if bar < 8 else "R5"
+    env = LIPS.get(rid, [0])
+    idx = int((inb - 0.03 - (1.5 * b if bar == 8 else 0)) * 24)
+    if bar == 8 and inb < 1.5 * b:
+        idx = int(((inb % (b / 2)) - 0.03) * 24)
     mo = env[idx] * 0.9 if 0 <= idx < len(env) else 0.0
     # the whole Lord, doing a little clown dance (shades + clown nose)
-    sung = ramp(lt, 4.0, 4.3)
+    sung = ramp(lt, 2 * BAR, 2 * BAR + 0.3)
     strain = ramp(t, M["strain"], M["strain"] + 0.3)
     cloud_k = clamp((t - M["cloud"]) / 0.95)
     dance = (1.0 if bar >= 2 else 0.45) * (1 - strain)
-    sway = math.sin(2 * math.pi * lt * 1.0)
-    bounce = abs(math.sin(2 * math.pi * lt * 1.0))
+    fq = 1 / (2 * b)
+    sway = math.sin(2 * math.pi * lt * fq)
+    bounce = abs(math.sin(2 * math.pi * lt * fq))
     ph = (lt / b) % 2.0
     u = 0.5 - 0.5 * math.cos(math.pi * ph)
     P = P_(t=t, lid=0.6, smile=0.55, mouth_open=clamp(mo), teeth=True, brow_y=0.4, red=0.15)
     body = dict(poseL="dance_up", blendL=("dance_out", u), poseR="dance_out", blendR=("dance_up", u), typing=0)
     shake_ = 0.0
     if strain > 0:
-        # the strained face: clenched teeth, red cheeks, trembling
         P.update(clench=strain, mouth_open=0.0, red=0.25 + 0.7 * strain, puff=0.6 * strain, brow_ang=0.9, brow_y=0.7,
                  sweat=strain)
         body = dict(poseL="clutch", poseR="clutch", typing=0)
@@ -1514,19 +1617,23 @@ def sc_remix(c, t):
     if t > M["cloud"]:
         comic_text(c, "BRAAAP!", 360, 470, 90, "#ffd23f", t, M["cloud"] + 0.05, -6, True, "#5a2d82")
     # ghost dancer
-    ghost(c, 600 + 20 * math.sin(lt * 6.28), 520 + 30 * abs(math.sin(lt * 6.28)), t, 0.6, 0.85)
+    ghost(c, 600 + 20 * math.sin(lt * 6.28 * fq), 520 + 30 * abs(math.sin(lt * 6.28 * fq)), t, 0.6, 0.85)
     # EQ bars
     for i in range(14):
         hgt = 40 + 200 * abs(vnoise(lt * 6 + i * 3, i)) * (0.4 + 0.6 * kickp) * (1 if bar >= 2 else 0.4)
         x = 40 + i * 47
         c.drawRect(skia.Rect.MakeLTRB(x, 1250 - hgt, x + 34, 1250), lin_grad(0, 1250 - hgt, 0, 1250, ["#7ef0ff", "#ff2e88"]))
-    # honk bursts
-    honks = [M["remix"] + 2 + 1.5] + [M["remix"] + i * 2 + 1.75 for i in (3, 5)]
-    for ht in honks:
+    # honks + airhorns
+    for bi in (3, 5, 7):
+        ht = M["remix"] + bi * BAR + 3.5 * b
         if ht <= t < ht + 0.6:
-            comic_text(c, "HONK!", 160 if int(ht) % 2 else 560, 470, 70, "#ffffff", t, ht, -10, True, "#e8202a")
-    flash(c, t, M["remix"] + 4.0, 0.25, "#ffffff", 0.7)
-    if M["remix"] + 3.75 < t < M["remix"] + 4.0:
+            comic_text(c, "HONK!", 160 if bi % 4 == 1 else 560, 470, 70, "#ffffff", t, ht, -10, True, "#e8202a")
+    for bi in (2, 6, 8):
+        ht = M["remix"] + bi * BAR
+        if ht <= t < ht + 0.9:
+            comic_text(c, "AIRHORN!", 170 if bi != 6 else 550, 560, 50, "#ffd23f", t, ht, 8, True, "#3a86ff")
+    flash(c, t, M["remix"] + 2 * BAR, 0.25, "#ffffff", 0.7)
+    if M["remix"] + 2 * BAR - 0.25 < t < M["remix"] + 2 * BAR:
         c.drawRect(skia.Rect.MakeWH(W, H), fill("#000000", 0.6))
 
 
@@ -1639,7 +1746,7 @@ def sc_moral(c, t):
         at(c, 360, 230, 1.0, -2)
         fs(c, rrect(-280, -110, 560, 220, 20), "#ffffff", 5)
         text(c, "Another Funny Story", -250, -45, "inter_black", 38, "#1d2a44", align="left")
-        text(c, "by u/humble_dweeb", -250, -2, "fredoka_semi", 26, "#5a6a88", align="left")
+        text(c, "by @humble_dweeb", -250, -2, "fredoka_semi", 26, "#5a6a88", align="left")
         chat_icon(c, -230, 55, 13, "#5a4bd6", 3)
         text(c, "written with a chatbot", -205, 64, "inter_bold", 20, "#5a4bd6", align="left")
         if t > M["removed"]:
