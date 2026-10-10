@@ -673,7 +673,7 @@ def _blur_amt(t):
 def shot1(c, t):
     u = ease_in_out(clamp((t - T0) / (CUT2 - T0)))
     a = Camera(352.0, 830.0, 1.09)                     # = S3's last framing
-    b = face_cam(t, 1.55, 0.55, 0.5)
+    b = face_cam(t, 1.55, 0.55, 0.5, rot=-30.0)        # a slow, woozy roll as his vision swims
     cam = cam_mix(a, b, u * 0.85)
     draw_world(c, t, cam, crawler=False, vig=0.55)
     _blur(c, t, _blur_amt(t))

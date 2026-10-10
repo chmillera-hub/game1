@@ -132,13 +132,15 @@ def draw_flat(c, fn, zoom, res_k=0.8):
     if surf is None:
         surf = _FLAT["s"] = skia.Surface(1800, 1800)
     lc = surf.getCanvas()
+    lc.restoreToCount(1)          # (the surface's canvas persists between frames: no clip / matrix may leak)
     lc.resetMatrix()
+    lc.save()
     lc.clipRect(skia.Rect(0, 0, wl, hl))
     lc.clear(skia.ColorBLACK)
     lc.scale(zr, zr)
     lc.translate(-vis.left(), -vis.top())
     fn(lc)
-    lc.resetMatrix()
+    lc.restore()
     img = surf.makeImageSnapshot(skia.IRect(0, 0, wl, hl))
     c.drawImageRect(img, skia.Rect(0, 0, wl, hl), vis, skia.SamplingOptions(skia.FilterMode.kLinear), skia.Paint(),
                     skia.Canvas.kFast_SrcRectConstraint)
@@ -209,8 +211,8 @@ def kick_env(t, times, dur=0.35, freq=9.0):
 # =========================================================================== geometry (shaft world coordinates)
 SLAB_Y = env.LEDGE_Y                       # the slab surface he walks on
 CRACK_X = 380.0                            # crack origin (env)
-WALK_S = 0.5 * A.WALK_ADVANCE * A.WALK_STANCE  # planted foot ahead of the pelvis at the plant
-X_PLANT = CRACK_X - WALK_S                 # pelvis x when his right foot comes down on the crack
+X_PLANT = CRACK_X - 45.0                   # pelvis x when his right foot (half stride ahead) lands on the crack
+CREEP_ARM_L = ArmPose(shoulder=14.0, elbow=34.0, wrist=0.0, hand="fist")   # as S2 hands him over
 LIP_X = env.HOLE_X[1]                      # the right lip corner (the slab continues to the right)
 GRIP_Y = SLAB_Y - 15.0                     # top of the curled fingers: hooked over the lip, above its surface
 # (x, y) of the curled fingers after each slip: they slide toward the edge and off the top
@@ -231,27 +233,60 @@ def _pose(**kw):
 
 
 # ---------------------------------------------------------------- walk (cavern + slab)
+# S2 ends creeping with careful half-strides (stand->walk mix 0.5) on the tension cue's heartbeats, a step every
+# ~0.7 s; the next heartbeat after S2's last two is the wrong rock - the right foot lands ON it (phase 0 mod 1).
+CREEP_PLANTS = [(WRONG - 1.35, -1.0), (WRONG - 0.65, -0.5), (WRONG, 0.0)]
+CREEP_MIX = 0.5
+CREEP_ADV = A.WALK_ADVANCE * CREEP_MIX     # stage units per cycle at scale 1 (half strides)
+
+
 def walk_phase(t):
-    """Walk phase locked so the right foot plants ON wrong_rock (phase 0), then the freeze mid-stride."""
-    if t <= WRONG:
-        return (t - WRONG) / A.WALK_CYCLE
+    """Creep phase: through the plants above, then the freeze mid-stride on the crack."""
+    ks = CREEP_PLANTS
+    if t <= ks[0][0]:
+        return ks[0][1] + (t - ks[0][0]) * (ks[1][1] - ks[0][1]) / (ks[1][0] - ks[0][0])
+    for (ta, pa), (tb, pb) in zip(ks[:-1], ks[1:]):
+        if t <= tb:
+            return lerp(pa, pb, (t - ta) / (tb - ta))
+    rate = (ks[-1][1] - ks[-2][1]) / (ks[-1][0] - ks[-2][0])
     d = 0.25
-    return (d / A.WALK_CYCLE) / 3.0 * ease_out((t - WRONG) / d)
+    return rate * d / 3.0 * ease_out((t - WRONG) / d)
+
+
+def _s2_handoff():
+    """S2's last pose (position / scale / gaze), so the creep continues exactly; fallback = its known values."""
+    try:
+        from anim.scenes import s2 as S2
+        q = S2.anger_pose(T0 - 1e-3)
+        return q.x, q.y, q.scale, q.look_x, q.look_y
+    except Exception:     # pragma: no cover - S2 not importable: the values it hands over (BIBLE section 9)
+        return 764.0, 1117.0, 0.943, 0.95, -0.15
+
+
+_S2 = None
+
+
+def s2_handoff():
+    global _S2
+    if _S2 is None:
+        _S2 = _s2_handoff()
+    return _S2
 
 
 def _creep_face(p, t, seed=1):
     lx, ly, br = face_life(t, seed)
-    scan = 0.55 * noise1(t * 0.55, seed + 40)
-    return p.copy(look_x=clamp(0.25 + scan + lx, -1, 1), look_y=0.05 + ly, brow_furrow=0.35, brow_raise=br,
-                  squint=0.12, smile=-0.08)
+    gx0, gy0 = s2_handoff()[3:5]
+    u = smoothstep((t - T0) / 0.6)
+    scan = 0.45 * noise1(t * 0.55, seed + 40) * u
+    return p.copy(look_x=clamp(lerp(gx0, 0.45, u) + scan + lx * u, -1, 1), look_y=lerp(gy0, 0.05, u) + ly * u,
+                  brow_furrow=0.35, brow_raise=br, squint=0.12, smile=-0.08)
 
 
 def slab_walk_pose(t):
     ph = walk_phase(t)
-    x = X_PLANT + A.WALK_ADVANCE * ph
-    p = _pose(x=x, y=SLAB_Y, facing=1.0, turn=0.5, lean=4.0, arm_r=AR["sword_guard"],
-              arm_l=ArmPose(shoulder=24.0, elbow=30.0, wrist=0.0, hand="relaxed"),
-              extra=dict(state="walk", phase=ph, sword="hand", shield="back"))
+    x = X_PLANT + CREEP_ADV * ph
+    p = _pose(x=x, y=SLAB_Y, facing=1.0, turn=0.5, lean=4.0, arm_r=AR["sword_guard"], arm_l=CREEP_ARM_L,
+              extra=dict(state="stand", state_b="walk", mix=CREEP_MIX, phase=ph, sword="hand", shield="back"))
     p = _creep_face(p, t)
     # freeze: eyes snap down to his feet a beat after the crack, head follows a little
     dn = smoothstep((t - (CRACK + 0.22)) / 0.18)
@@ -592,14 +627,17 @@ def _draw_lowres(c, cam, zt, draw_fn, opaque):
     if surf is None:
         surf = _LR_SURF[(wl, hl, opaque)] = skia.Surface(wl, hl)
     lc = surf.getCanvas()
+    lc.restoreToCount(1)          # (the surface's canvas persists between frames: no clip / matrix may leak)
     lc.resetMatrix()
     lc.clear(skia.ColorBLACK if opaque else skia.ColorTRANSPARENT)
+    lc.save()
     lc.translate(wl / 2.0, hl / 2.0)
     lc.scale(zt, zt)
     if cam.rot:
         lc.rotate(cam.rot)
     lc.translate(-cam.cx, -cam.cy)
     draw_fn(lc)
+    lc.restore()
     img = surf.makeImageSnapshot()
     c.save()
     c.resetMatrix()
@@ -772,24 +810,22 @@ def cam_L(t):
 
 
 # =========================================================================== shot A: the cavern (S2 handoff)
-A_U0 = 0.43                                  # where he is on the cavern path at the scene start
-
-
 def cam_A(t):
-    p = _cavern_walk(t)
-    u = clamp((t - T0) / (CUT_B - T0))
-    return Camera(p.x + lerp(40.0, 70.0, u), 1176.0 - 380.0, 0.98)
+    x0, y0, sc0 = s2_handoff()[:3]
+    u = ease_in_out(clamp((t - T0) / (CUT_B - T0)))
+    return Camera(x0 + lerp(60.0, 95.0, u), y0 - 400.0 * sc0, 1.12)
 
 
 def _cavern_walk(t):
+    """Continue S2's creep along the cavern path (toward the far archway: right and receding)."""
+    x0, y0, sc0 = s2_handoff()[:3]
     ph = walk_phase(t)
-    ph0 = walk_phase(T0)
-    sc = 1.04
-    x = env.path_point(A_U0)[0] + A.WALK_ADVANCE * sc * (ph - ph0)
-    y = 1176.0
-    p = _pose(x=x, y=y, scale=sc, facing=1.0, turn=0.5, lean=4.0, arm_r=AR["sword_guard"],
-              arm_l=ArmPose(shoulder=24.0, elbow=30.0, wrist=0.0, hand="relaxed"),
-              extra=dict(state="walk", phase=ph, sword="hand", shield="back"))
+    d = CREEP_ADV * sc0 * (ph - walk_phase(T0))
+    x = x0 + d
+    y = y0 - 0.8 * d                            # the path's slope there (WALK_PATH (760,1120) -> (860,1040))
+    sc = sc0 * env.depth_scale(y) / env.depth_scale(y0)
+    p = _pose(x=x, y=y, scale=sc, facing=1.0, turn=0.5, lean=4.0, arm_r=AR["sword_guard"], arm_l=CREEP_ARM_L,
+              extra=dict(state="stand", state_b="walk", mix=CREEP_MIX, phase=ph, sword="hand", shield="back"))
     return _creep_face(p, t)
 
 
@@ -1020,9 +1056,10 @@ def render(canvas, t):
 # =========================================================================== motion-locked SFX
 def sfx_events():
     ev = []
-    for tk in A.step_times("walk", T0, WRONG + 1e-3, walk_phase(T0)):
-        ev.append({"name": ("armor_step", "armor_step_2", "armor_step_3")[len(ev) % 3], "start": round(tk, 3),
-                   "gain_db": -13.0})
+    for tk, ph in CREEP_PLANTS:                 # careful half-steps (S2 reports the ones before T0)
+        if T0 <= tk <= WRONG + 1e-3:
+            ev.append({"name": ("armor_step_2", "armor_step_3", "armor_step")[len(ev) % 3], "start": round(tk, 3),
+                       "gain_db": -16.0})
     ev.append({"name": "armor_shift", "start": round(CRACK + 0.24, 3), "gain_db": -20.0})   # the freeze
     ev.append({"name": "armor_shift", "start": round(CATCHES[0] + 0.05, 3), "gain_db": -18.0})
     ev.append({"name": "armor_shift", "start": round(CUT_J + 0.02, 3), "gain_db": -12.0})  # the twist / thrust
