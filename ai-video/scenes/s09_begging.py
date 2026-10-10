@@ -18,11 +18,19 @@ Shots (hard cuts, every time derived from cues / line timings, see _T):
                     SLOW BLINK, l03 "...Need a hug?": warm, blushing, arms
                     open wide; the star hovers beside it. crowd_aww at the end.
   C  considers..end F1 kneeling. Sniffle hitch, lip quiver, eyes dart to
-                    Hissy (frozen mid-stroke), to camera, back to the AI.
-                    l04 "...Maybe later.": sheepish, eyes down/away, shy
-                    finger-poke; the FOR EFFORT star floats in from the right
-                    and sticks to his lapel (villain-local (100, -318), see
-                    LAPEL). tally: chip 8 -> 9, he peeks up at it, Hissy nods.
+                    Hissy (frozen mid-stroke), to camera, back to the AI;
+                    he sits up on his knees (gentle 7% push-in) and does the
+                    shy 👉👈🥺: both gloves in front of his chest, BACKS to
+                    camera, index fingers pointing in, tips tapping at 3 Hz
+                    (custom mirrored gloves in the rig's glove style, see
+                    _glove_back), shy puppy face (big shiny pupils, blush,
+                    small wobbly smile). l04 "...Maybe later.": eyes down at
+                    the fingers on "Maybe", up at the AI on "later". The pose
+                    holds through the line while the FOR EFFORT star floats
+                    in and sticks to his lapel (villain-local (100, -318), see
+                    LAPEL). tally: chip 8 -> 9, he peeks up at it and sinks
+                    back to the kneel (push-in eases out; s10 starts there),
+                    Hissy nods.
 """
 import math
 
@@ -148,7 +156,7 @@ V.VILLAIN_EXPR.setdefault("s09_shy", dict(V.VILLAIN_EXPR["sheepish"], sweat=0.0,
                                             msk=0.35, blush=1.0, ul1=0.36, ul2=0.34))
 # 👉👈🥺 shy puppy face for "...Maybe later.": worried-up brows, big shiny
 # pupils, a slight blush and a small smile that wobbles (blend _a <-> _b)
-_PK = dict(_PLEAD, flutter=0.3, es=1.13, ps=1.6, shine=1.0, ul1=0.1, ul2=0.08, ll1=0.04,
+_PK = dict(_PLEAD, flutter=0.0, es=1.13, ps=1.6, shine=1.0, ul1=0.1, ul2=0.08, ll1=0.04,
            ll2=0.04, blush=0.75, mc=0.34, mw=0.54, mo=0.0, mt=0.0, msk=0.1, tilt=0.07, hy=4,
            shy=-6, by1=-20, by2=-22)
 V.VILLAIN_EXPR.setdefault("s09_pk_a", _PK)
@@ -173,13 +181,15 @@ for _nm, _pz in (("s09_beg", V._pose(_BEG_A, shy=-12, hdy=4)),
 # tone as engine/villain._draw_hand), mirrored about his centre line. The
 # rig still draws the purple sleeves (its own hands shrunk to nothing under
 # our cuffs) through a per-frame arm pose 's09_dyn'.
-POKE_HS = 1.1                        # glove scale (x rig HAND_SCALE), both hands
-POKE_Y = -238.0                      # index tips (villain-local)
+POKE_HS = 1.28                       # glove scale (x rig HAND_SCALE), both hands
+POKE_Y = -240.0                      # index tips (villain-local)
 POKE_ANG = -0.12                     # index tilt (up toward the tips)
-POKE_ELB = (-236.0, -150.0)          # screen-left elbow (mirrored for the right)
+POKE_ELB = (-262.0, -140.0)          # screen-left elbow (mirrored for the right)
 POKE_SHY = -10.0                     # shoulders hunched up (shy)
 POKE_TILT = 0.05
-VY_POKE = 1330.0                     # he sits up on his knees for the gesture
+VY_POKE = 1305.0                     # he sits up on his knees for the gesture
+KB_TOP = 1180.0                      # keyboard top edge (world y, desk at 1250)
+PUSH_C = 1.07                        # gentle push-in on the gesture (eases back out)
 TIP = (101.5, -13.0)                 # index tip in glove units
 _ARM_KEYS = ("ex", "ey", "wx", "wy", "ha")
 
@@ -306,12 +316,12 @@ def _draw_poke(c, place, sc, t=0.0, t_tap=None):
     if t_tap is not None and t >= t_tap and sc >= 0.999:
         ph = ((t - t_tap) * 3.0) % 1.0               # 0 = contact (see _poke_place)
         a = 1.0 - clamp(min(ph, 1.0 - ph) / 0.1)
-        if a > 0.02:
-            ty = POKE_Y - 13.0 * V.HAND_SCALE * POKE_HS * 0.25 - 26
-            for dx, dy, ex_, ey_ in ((-9, 0, -20, -16), (0, -4, 0, -22), (9, 0, 20, -16)):
-                c.move_to(dx, ty + dy)
-                c.line_to(ex_, ty + ey_)
-            core.stroke(c, (0.09, 0.06, 0.12, 0.85 * a), 4.5, cap="round")
+        if a > 0.02:                                 # impact ticks off the contact
+            for ang_ in (-math.pi / 2, -math.pi / 2 - 0.75, -math.pi / 2 + 0.75):
+                ca_, sa_ = math.cos(ang_), math.sin(ang_)
+                c.move_to(ca_ * 27, POKE_Y + sa_ * 27)
+                c.line_to(ca_ * 42, POKE_Y + sa_ * 42)
+            core.stroke(c, (0.09, 0.06, 0.12, 0.9 * a), 5.0, cap="round")
 
 
 def _ai_mix(a, b, k):
@@ -893,9 +903,11 @@ def _shot_C(ctx, t, info, T):
     # sit up for the gesture, sink back on the tally; sniffle hitch + gulp bob
     up = ease_in_out(seg(t, T["sit0"], T["sit1"])) * (1 - ease_in_out(seg(t, T["sink0"], T["sink1"])))
     vy = lerp(VY_KNEEL, VY_POKE, up) - 8 * _bump(t, c0 + 0.02, 0.2) + 4 * _bump(t, c0 + 0.42, 0.22)
-    blink = _pulses(t, [T["pk_up"] + 0.1, T["pk_up"] + 0.22, T["pk_up"] + 0.34], 0.1, 0.55)
-    if blink is None:
-        blink = _slow_blink(t, T["tally"] + 0.3)
+    # puppy eyes stay wide open through the line (no auto blink may land on
+    # the look-up); one slow blink after the chip ticks
+    blink = _slow_blink(t, T["tally"] + 0.3)
+    if blink is None and T["pk_down"] <= t < T["tally"]:
+        blink = 0.0
     # --- Hissy: frozen mid-stroke, caught looking, then agrees -----------------
     sn_expr = _state(t, [(-9, "unimpressed"), (c0 + 0.12, "idle", 0.1),
                          (l4s + 0.1, "unimpressed", 0.25),
@@ -921,16 +933,28 @@ def _shot_C(ctx, t, info, T):
             _draw_bow(c, g, vk)
             _tail_to_bow(c, t, st, g, vk)
         _tears(c, t, st, look, 1.0, t_alpha)
-        _draw_poke(c, place, glove, t, T["pk_in1"])
 
     # static standard F1 framing: s10 opens on exactly this frame (he explodes
     # up from behind the desk), so the cut matches
-    fx, fy = FACE_K[0], FACE_K[1] - 40
-    with saved(ctx, fx, fy, 1.0) as c:
+    # (a gentle push-in toward the gesture, back out to the standard F1
+    # framing on the tally sink, so s10's first frame still matches)
+    push = 1.0 + (PUSH_C - 1.0) * up
+    fx, fy = VX, 1060.0
+    with saved(ctx, fx, fy, push) as c:
         c.translate(-fx, -fy)
         P.lair_bg(c, t)
         _villain_group(c, t, vy, 0.0, expr, look, mouth, arms, snake, blink, extras)
         _lair_front(c, t)
+        # the gloves go on top of the desk set (so the monitor's teal light
+        # wedge doesn't tint just one of them), clipped at the keyboard's top
+        # edge so they still sink behind it on the tally
+        if glove > 0.0:
+            c.save()
+            c.rectangle(-200, -200, 1480, KB_TOP + 200)
+            c.clip()
+            with saved(c, VX, vy, VS) as cv:
+                _draw_poke(cv, place, glove, t, T["pk_in1"])
+            c.restore()
         _fly_star(c, t, T, st_hold, vy)
 
 

@@ -3,15 +3,25 @@
 Shots (every time derived from cues / word starts, never hard-coded):
   A  F1 CANDLE-LIT   card .. stare          card slams; PUPPY EYES + tears, hankie dabs,
                                             "at bedtime" -> presents grandma's portrait
-  B  F3 AI CU        stare .. stare+0.75    DEADPAN STARE, one slow blink
-  C  PORTRAIT CU     .. s06_l02             push-in: it's the snake in a shawl + bonnet + glasses
-  D  F3 AI CU        s06_l02 .. slip        "My guy. That's your snake in a shawl." -> eyes to camera
+  B  F3 AI CU        stare .. cu1           DEADPAN STARE, one slow blink
+  C  PORTRAIT CU     cu1 .. "in" (s06_l02)  the long hold (~2.6 s, through 'grandma_hold'
+                                            and "My guy. That's your snake..."): the snake
+                                            in shawl + bonnet + granny glasses; glints,
+                                            proud wiggle (bonnet ruffles), prim open eyes,
+                                            dainty tongue flick, slow dignified blink,
+                                            nervous eye-dart on "That's your snake"
+  D  F3 AI CU        "in" .. slip           "...in a shawl." side-eye -> eyes to camera
   E  PORTRAIT CU     slip .. slip+0.45      glasses slide down the snout, side-eye, tongue flick
-  F  F5 TWO-SHOT     slip+0.45 .. end       Malvo sheepish mid-dab; the AI's little service-
-                                            window wall; shutter rolls up on 'soften';
-                                            the BIG SCARY DRAGON storybook (a spooky-cute
-                                            dragon guarding a little village) floats into his
-                                            arms; chip 4 -> 5
+  F  F5 TWO-SHOT     slip+0.45 .. l04.end   Malvo sheepish mid-dab; the AI's little service-
+                                            window wall; shutter rolls up on 'soften'; on
+                                            "dragon?" the BIG, SCARY DRAGON storybook pops out
+                                            and floats up beside him
+  G  STORYBOOK CU    l04.end .. ~"guards"   the cover dragon wakes, inhales on "big" and blows
+                                            a big curling flame plume up into the sky over the
+                                            village on "scary" (embers, firelight); Malvo
+                                            THRILLED; plume pulls back into a puff of smoke
+  F  F5 TWO-SHOT     .. end                 the book settles into his arms -> hug; AI happy +
+                                            heart; chip 4 -> 5
 """
 import math
 
@@ -107,7 +117,7 @@ PORT_A = (250, 1080, 1.0)              # grandma's portrait on its easel (oval c
 AI3 = (495, 800, 1.1)
 # C/E: portrait close-up (own set; the portrait fills the frame)
 CU_P = (495, 770, 3.15)                 # portrait oval centre + scale in the close-up
-CU_FOCUS = (495, 720)                  # push-in centre (Hissy's face)
+CU_FOCUS = (495, 860)                  # push-in centre (Hissy's face)
 # F: F5 two-shot
 MX, MY, MS = 400, 1250, 0.92
 AX, AY, AS = 768, 636, 0.5             # the AI hologram (floats above its little wall)
@@ -984,7 +994,7 @@ def _flame_layer(c, at, wfun, t, seed, u_lo, u_top, lw, n_licks, amp, crown_n):
     _flame_path(c, out)
 
 
-def _flame(c, M, ang0, t, grow, fade, tf, W=46.0, L=172.0, seed=40):
+def _flame(c, M, ang0, t, grow, fade, tf, W=43.0, L=172.0, seed=40):
     """Big cartoon flame plume from the dragon's mouth M (cover-local units),
     leaving along ang0 and curling up into the sky (an S-curl that leans back
     over the cover); orange / amber / pale-yellow layers with licking,
@@ -992,7 +1002,7 @@ def _flame(c, M, ang0, t, grow, fade, tf, W=46.0, L=172.0, seed=40):
     plume shrinks, lifts off and puffs out, tf = seconds since the burst."""
     if grow <= 0.005:
         return
-    a_up = -math.pi / 2 - 0.2
+    a_up = -math.pi / 2 - 0.26
     N = 24
 
     def centre(Lk):
@@ -1618,8 +1628,8 @@ def _shot_F(ctx, t, info, T):
 # ---------------------------------------------------------------------------
 # shot G: storybook close-up - the cover dragon breathes fire on "scary"
 # ---------------------------------------------------------------------------
-BOOK_G = (668, 948, 2.55)               # the hovering storybook (centre, scale)
-MAL_G = (292, 1466, 1.25)               # Malvo, closer, at screen-left
+BOOK_G = (642, 952, 2.4)               # the hovering storybook (centre, scale)
+MAL_G = (256, 1466, 1.25)               # Malvo, closer, at screen-left
 
 
 def _book_fire(t, T):
@@ -1653,7 +1663,7 @@ def _malvo_G(t, T):
         (f1 - 0.05, (0.75, -0.45), 0.3),
         (f2 - 0.04, (0.85, 0.25), 0.3),                   # ...back down to the dragon
     ])
-    blink = 0.0 if t < f2 - 0.04 else None
+    blink = 0.0                                           # eyes wide the whole time
     # lean in on the inhale, jolt back on the burst, then a giddy little bounce
     lean = 0.03 * smoothstep(seg(t, T["cu_book"], f0)) - 0.06 * math.sin(
         math.pi * seg(t, f0, f0 + 0.3)) * (t < f0 + 0.3)
@@ -1735,7 +1745,7 @@ def SFX(info):
         (T["soften"], "swoosh_up", -12),                   # shutter rolls up
         (T["book_out"], "pop", -10),                       # the book pops out of the window
         (T["book_out"] + 0.06, "magic_chime", -9),
-        (T["fire0"] - 0.03, "whoosh", -7),                 # the cover dragon: FWOOSH
+        (T["fire0"] - 0.03, "whoosh", -9),                 # the cover dragon: FWOOSH
         (T["fire0"] + 0.03, "boom_cartoon", -17),          # ...soft storybook boom
         (T["cut_f5b"] + 0.12, "pop", -12),                 # heart
         (T["book_land"], "paper", -10),                    # caught in a hug

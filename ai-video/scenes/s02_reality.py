@@ -55,8 +55,8 @@ PRESENT_K = 0.58                             # "present" blend: glove stays in f
 # the tail-fetch gag
 SHELF = (58, 322, 455)                       # hanging shelf (upper left): plank x0, x1, top y
 BOOK_SHELF = (194, 455, 0.40)                # Big Book standing on it, cover out
-BOOK_HOLD = (BOOK_X, BOOK_Y - 30)            # where the tail hands it over (in front of his chest)
-SWING_C = (150, 1010)                        # bezier control of the swing (down past Snake)
+BOOK_HOLD = (BOOK_X, BOOK_Y - 10)            # where the tail hands it over (in front of his chest)
+SWING_C = (40, 1300)                         # bezier control: a low U-swoop past Snake, up into his hands
 HOLD_CX = (BOOK_X - MX) / MS                 # book centre x in villain-local units
 TAIL_J = 60          # rig coil sample (left of the chest) where the reaching tail peels off
 TAIL_NPER = 6        # spline samples per tail control point
@@ -89,10 +89,11 @@ V.VILLAIN_EXPR.setdefault("s02_polite", dict(
     V.VILLAIN_EXPR["happy"], mo=0.0, mt=0.0, mc=0.85, mw=1.0, ul1=0.34, ul2=0.32,
     ll1=0.3, ll2=0.3, blush=0.5, by1=-10, by2=-10))
 V.VILLAIN_EXPR.setdefault("s02_nod", dict(
-    V.VILLAIN_EXPR["s02_polite"], hy=14, tilt=-0.11, ul1=0.62, ul2=0.6))
+    V.VILLAIN_EXPR["s02_polite"], hy=16, tilt=-0.12, ul1=0.46, ul2=0.46, ll1=0.3,
+    ll2=0.3))
 # Snake's polite little bow back (happy closed eyes, head dips toward him)
 SN.SNAKE_EXPR.setdefault("s02_bow", dict(
-    SN.SNAKE_EXPR["happy"], hy=20, tilt=0.24, mo=0.1, mc=0.95, tng=0.0))
+    SN.SNAKE_EXPR["happy"], hy=30, tilt=0.36, mo=0.1, mc=0.95, tng=0.0))
 
 
 def _arm_pair(ex, ey, wx, wy, ha, **kw):
@@ -110,10 +111,10 @@ def _register_arms():
     V.ARM_POSES.setdefault("s02_where", V._pose(
         V._blend_arm(rest["a"], shrug["a"], k), V._blend_arm(rest["b"], shrug["b"], k),
         shy=lerp(rest["shy"], shrug["shy"], k), hdy=lerp(rest["hdy"], shrug["hdy"], k)))
-    # book held in front of the chest: bottom at BOOK_HOLD -> local y -50 .. -327
-    a, b = _arm_pair(-322, -176, -268, -132, -0.55, cu=0.05, th=-0.1, sp=0.8, pm=0.4)
+    # book held in front of the chest: bottom at BOOK_HOLD -> local y -28 .. -305
+    a, b = _arm_pair(-322, -160, -268, -112, -0.55, cu=0.05, th=-0.1, sp=0.8, pm=0.4)
     V.ARM_POSES.setdefault("s02_reach", V._pose(a, b, shy=-6))
-    a, b = _arm_pair(-302, -166, -214, -112, -0.22, cu=0.42, th=0.25, sp=0.25)
+    a, b = _arm_pair(-302, -150, -214, -94, -0.22, cu=0.42, th=0.25, sp=0.25)
     V.ARM_POSES.setdefault("s02_hold", V._pose(a, b, shy=-4))
     # on the desk: left hand keeps hugging its side, right hand pats the top
     top = (BOOK_Y - 300 * BOOK_S - MY) / MS
@@ -743,7 +744,7 @@ def _book_pose(t, T):
     # set down on the desk (heavy: small lift, then plop), squash, settle
     if t < T.land:
         u = seg(t, T.book, T.land)
-        return hx, lerp(hy, BOOK_Y, ease_in(u)) - 16 * math.sin(math.pi * u), BOOK_S, 0.0, 1, 1
+        return hx, lerp(hy, BOOK_Y, ease_in(u)) - 26 * math.sin(math.pi * u), BOOK_S, 0.0, 1, 1
     sx = sy = 1.0
     if t < T.land + 0.125:
         sx, sy = 1.12, 0.88
@@ -768,8 +769,9 @@ def _book_pt(bp, lx, ly):
 # drawn again after the book so the tail visibly wraps it.
 # ---------------------------------------------------------------------------
 HOOK_UP = [(0, -16), (4, -82), (12, -144), (22, -200)]       # tip searching, pointing up
-HOOK_CURL = [(4, -20), (30, -44), (56, -30), (58, 6)]        # curled over onto the cover
-HOOK_REL = [(0, -18), (-14, -56), (-38, -72), (-60, -60)]    # let go, lifting away
+HOOK_CURL = [(4, -20), (30, -44), (56, -30), (58, 6)]        # up from behind, curled onto the cover
+HOOK_DRAPE = [(-2, -40), (28, -36), (50, -12), (50, 22)]     # carried: over the top like a handle
+HOOK_REL = [(-10, -60), (8, -84), (32, -90), (48, -76)]      # let go: tip lifts off, uncurls
 _TAIL = {}
 
 
@@ -794,8 +796,9 @@ def _resample(pts, n):
 
 
 def _tail_params(t, T):
-    """(ext, curl, rel, near) or None. ext 0 rest coil .. 1 reaching; curl: hook
-    over the book; rel: let go; near: route from 'up past Snake' to 'held close'."""
+    """(ext, curl, rel, over) or None. ext 0 rest coil .. 1 reaching; curl: hook
+    over the book; rel: let go; over: from 'up behind the shelf book' to
+    'carrying it by the top edge' (once it is off the shelf)."""
     if t < T.reach0 or t >= T.ret1:
         return None
     ext = ease_out(seg(t, T.reach0, T.reach1))
@@ -803,33 +806,36 @@ def _tail_params(t, T):
         ext = 1 - ease_in_out(seg(t, T.ret0, T.ret1))
     curl = smoothstep(seg(t, T.reach1 - 0.05, T.curl1))
     rel = smoothstep(seg(t, T.unhook0, T.unhook1))
-    near = smoothstep(seg(t, lerp(T.swing0, T.swing1, 0.35), T.swing1))
-    return ext, curl, rel, near
+    over = smoothstep(seg(t, T.pull0, T.swing0 + 0.12))
+    return ext, curl, rel, over
 
 
 def _tail_ctrl(t, T, J, rest, bp, prm):
     """World control points of the tail (J = where it leaves the coil)."""
-    ext, curl, rel, near = prm
-    # behind the book: below its bottom on the shelf (behind the plank), mid-book when close
-    hk0 = _book_pt(bp, -110, lerp(40, -60, near))
-    hk1 = _book_pt(bp, -110, -150)
+    ext, curl, rel, over = prm
     ax, ay = _book_pt(bp, -110, -300)                  # top edge, left of the title
     c, s = math.cos(bp[3]), math.sin(bp[3])
+
+    def off(ox, oy):
+        return (ax + c * ox - s * oy, ay + s * ox + c * oy)
+    # approach: on the shelf from below, behind the plank and the book; once it
+    # is off the shelf, from above-left, draped over the top edge
+    b0, b1 = _book_pt(bp, -110, 40), _book_pt(bp, -110, -150)
+    a0, a1 = off(-62, -96), off(-26, -62)
+    hk0 = (lerp(b0[0], a0[0], over), lerp(b0[1], a0[1], over))
+    hk1 = (lerp(b1[0], a1[0], over), lerp(b1[1], a1[1], over))
     hook = []
-    for p_up, p_c, p_r in zip(HOOK_UP, HOOK_CURL, HOOK_REL):
-        ox = lerp(lerp(p_up[0], p_c[0], curl), p_r[0], rel)
-        oy = lerp(lerp(p_up[1], p_c[1], curl), p_r[1], rel)
-        hook.append((ax + c * ox - s * oy, ay + s * ox + c * oy))
+    for p_up, p_c, p_d, p_r in zip(HOOK_UP, HOOK_CURL, HOOK_DRAPE, HOOK_REL):
+        ox = lerp(lerp(lerp(p_up[0], p_c[0], curl), p_d[0], over), p_r[0], rel)
+        oy = lerp(lerp(lerp(p_up[1], p_c[1], curl), p_d[1], over), p_r[1], rel)
+        hook.append(off(ox, oy))
     # route J -> book: out under his left arm, up the gap between Snake's head
-    # and his face, then up to the shelf ... or straight behind the held book
+    # and his face, then on to the book (kept visible the whole way)
     A, G = (262, 992), (278, 862)
-    M = (lerp(G[0], hk0[0], 0.5) + 18, lerp(G[1], hk0[1], 0.5))
-    far = [A, G, M]
-    close = [(lerp(J[0], hk0[0], k), lerp(J[1], hk0[1], k)) for k in (0.25, 0.5, 0.75)]
-    route = [(lerp(f[0], n[0], near), lerp(f[1], n[1], near)) for f, n in zip(far, close)]
-    reach = [J] + route + [hk0, hk1] + hook
+    M = (lerp(G[0], hk0[0], 0.5) + 18 * (1 - over), lerp(G[1], hk0[1], 0.5) - 26 * over)
+    reach = [J, A, G, M, hk0, hk1] + hook
     # life: a travelling wiggle while it searches
-    wig = 9.0 * (1 - smoothstep(seg(t, T.reach1, T.curl1))) * (1 - near)
+    wig = 9.0 * (1 - smoothstep(seg(t, T.reach1, T.curl1)))
     for i in (1, 2, 3, 4):
         a, b = reach[i - 1], reach[i + 1]
         dx, dy = b[0] - a[0], b[1] - a[1]
@@ -867,6 +873,12 @@ def _tail_front(ctx, P, split, W, fp):
     loc[0] = P[TAIL_J]
     P2 = list(P[:TAIL_J]) + loc
     W2 = list(W[:TAIL_J]) + tw
+    if st["prm"][1] <= 0.01:
+        # still searching: the whole tail stays behind the book / plank
+        SN.draw_tube(ctx, P2, W2, split, len(P2) - 1, cap0=False, cap1=True, belly_side=-1,
+                     spot_phase=30)
+        st["wrap"] = None
+        return P2[-1]
     k = TAIL_J + TAIL_K * TAIL_NPER
     SN.draw_tube(ctx, P2, W2, split, k, cap0=False, cap1=False, belly_side=-1, spot_phase=30)
     st["wrap"] = ([_to_world(p, dy, lean) for p in P2], [w * MS for w in W2], k)
