@@ -18,8 +18,10 @@ Beats (every time from cues / word starts):
   l01d    "...That's what I thought.": he peeks back, smug half-smile, a
           begrudging little nod on "thought"; the arms relax at the end.
   beat    the bravado drains: eyes drop, the monocle slips and dangles (tink).
-  l02     glistening eyes; on "noticed me" his eyes go to the corkboard photo
-          (the AI's eyes follow); eyes drop on "scaring them".
+  l02     glistening eyes; on "noticed me" his eyes go to the corkboard photo;
+          eyes drop on "scaring them". The AI's eyes stay ON HIM, steady and
+          warm (damped darts, soft slow blinks; no glance up or away) from
+          the beat through the photo and l03.
   photo   hard cut: the science-fair photo close-up, held through the whole
           pause and "I noticed." (~3 s): slow gentle push-in 1.00 -> 1.07, the
           rainy window's light across the board with raindrop shadows
@@ -33,9 +35,21 @@ Beats (every time from cues / word starts):
           word, its five bars filling right after.
   l04     on "impressive" a gold IMPRESSIVE! badge slams onto the sheet, the
           header pulses on "villain"; AI happy + thumbs up, eyes to camera on
-          "my guy". Hissy nods.
-  l05     "...Impressive?": he LIKES the word: eyes widen (the monocle springs
-          back in), a pleased evil grin, chest puffs (elbows out), a sparkle.
+          "my guy". On "villain stats" Malvo slips into his theatrical villain
+          persona: monocle back in (glint), chin up, one brow arched, smirk,
+          steepled fingers. Hissy copies the smug look.
+  l05     "...Oh. Thank you." (quiet): he DROPS THE ACT: the face relaxes
+          into a genuinely touched, slightly vulnerable look, eyes lowered
+          down and away, head dipped + tilted, small sincere smile, blush, the
+          monocle slipping a little, arms dropping limp; one slow blink; a
+          small mouth (no villain teeth). Hissy melts ("aww"). The AI holds a
+          warm, steady gaze on him, slow blink, a soft nod after "you".
+  snap_back (0.45 s pause) he SNAPS back into villain mode: AHEM (fist to
+          mouth, eyes squeezed shut, sits up straight), then a CAPE FLOURISH
+          (the right glove sweeps the cape up across his chest, crimson
+          lining showing) and the smug evil grin is back (monocle glint).
+          Hissy does a double take (glances out at us, whips back, shocked).
+          The AI is amused. He releases the cape as the hologram opens.
   wall    sheet fades; the AI projects a cyan hologram: the door pops in, the
           wall builds so its last row thuds on "Brick"; firm nod "Every time".
   l07     light leaks round the door, it cracks ajar; three glowing chips
@@ -43,8 +57,8 @@ Beats (every time from cues / word starts):
           "Scary", "creative" (he rubs his hands) and "sounding"; on "wide
           open" it swings open and warm gold light spills across his face.
   pile    five gifts pop out of the door and arc into his arms / onto the desk
-          (notebook + quill, headphones, THE CHEMIST scroll, the SPACE LASERS
-          FOR DUMMIES book (its cover satellite fires pink bolts, "PEW PEW
+          (notebook + quill, headphones, THE CHEMIST scroll, THE PSYCHOLOGY OF
+          SPACE LASERS book (its cover satellite fires pink bolts, "PEW PEW
           PEW", at a startled little moon), the BOMBSHELL TWIST script); his
           eyes follow each one, getting wider. He hugs the book.
   l08     the spooky gifts pop out on their words (pumpkin, bat, goblin mask,
@@ -193,17 +207,36 @@ V.VILLAIN_EXPR.setdefault("s11_smug", dict(_SMUG, mc=0.55, msk=0.7, mw=0.9, tilt
                                            ul1=0.5, ul2=0.44, by2=-20))
 V.VILLAIN_EXPR.setdefault("s11_smug_nod", dict(V.VILLAIN_EXPR["s11_smug"], hy=14, tilt=0.07,
                                                ul1=0.62, ul2=0.56))
-# "...Impressive?": eyes widen (the monocle springs back in) -> a pleased evil grin
-V.VILLAIN_EXPR.setdefault("s11_wow", dict(_HOPE, mono=0.0, es=1.14, ps=1.2, shine=0.9, ul1=0.0,
-                                          ul2=0.0, ll1=0.0, ll2=0.0, by1=-38, by2=-40,
-                                          ba1=-0.12, ba2=-0.12, bc1=0.65, bc2=0.65, mc=0.3,
-                                          mw=0.66, mo=0.24, hy=-12, hair=0.35, blush=0.25))
+# l04 "...impressive VILLAIN stats": the theatrical villain persona (monocle
+# back in, chin up, one brow arched, half lids, curly smirk)
+V.VILLAIN_EXPR.setdefault("s11_preen", dict(_SMUG, mono=0.0, by1=6, by2=-30, ba1=0.24, ba2=0.0,
+                                            bc2=0.7, ul1=0.46, ul2=0.36, ll1=0.14, ll2=0.12,
+                                            mc=0.8, msk=0.6, mw=1.02, tilt=-0.07, hy=-12,
+                                            shy=-10, sneer=0.55, shine=0.35, blush=0.1))
+# l05 "...Oh. Thank you.": the act DROPS: genuinely touched, a little
+# vulnerable; lids lowered (eyes go down and away), inner brows up, a small
+# sincere smile, a blush, head dipped + tilted, the monocle slipping a little
+V.VILLAIN_EXPR.setdefault("s11_touched", dict(by1=-8, by2=-10, ba1=-0.62, ba2=-0.64, bc1=0.42,
+                                              bc2=0.42, ul1=0.42, ul2=0.4, ll1=0.1, ll2=0.1,
+                                              lt1=-0.2, lt2=-0.2, ps=1.14, shine=0.85,
+                                              mc=0.36, mw=0.62, mo=0.0, msk=0.16, mt=0.0,
+                                              tilt=-0.11, hy=10, shy=8, blush=0.62, mono=0.42,
+                                              hair=-0.25))
+V.VILLAIN_EXPR.setdefault("s11_touched2", dict(V.VILLAIN_EXPR["s11_touched"], mc=0.55, mw=0.68,
+                                               msk=0.2, blush=0.82, ul1=0.46, ul2=0.44,
+                                               mono=0.5, tilt=-0.13, hy=12))
+# 'snap_back': AHEM. (eyes squeezed shut, brows down, mouth pursed, sits up)
+V.VILLAIN_EXPR.setdefault("s11_ahem", dict(by1=14, by2=12, ba1=0.4, ba2=0.36, bc1=0.15,
+                                           bc2=0.15, ul1=0.5, ul2=0.5, ll1=0.2, ll2=0.2,
+                                           mc=-0.35, mw=0.5, mo=0.0, msk=0.35, mt=0.2,
+                                           tilt=0.04, hy=-12, shy=-12, blush=0.3, mono=0.0))
+# ...and the smug evil grin, restored (monocle firmly back in)
 V.VILLAIN_EXPR.setdefault("s11_grin", dict(V.VILLAIN_EXPR["evil_grin"], mono=0.0, ul1=0.3,
                                            ul2=0.24, ll1=0.3, ll2=0.28, lt1=0.3, lt2=0.28,
-                                           ps=0.95, shine=0.8, es=1.04, mc=1.15, mw=1.38,
-                                           mo=0.28, by1=-4, by2=-22, ba1=0.38, ba2=0.26,
-                                           bc1=0.3, bc2=0.65, blush=0.35, hy=-12, shy=-18,
-                                           tilt=-0.03, sneer=0.85))
+                                           ps=0.95, shine=0.5, es=1.04, mc=1.15, mw=1.38,
+                                           mo=0.28, by1=-4, by2=-24, ba1=0.38, ba2=0.26,
+                                           bc1=0.3, bc2=0.65, blush=0.15, hy=-14, shy=-14,
+                                           tilt=-0.04, sneer=0.85))
 
 # "creative plans": scheming, delighted (rubs his hands)
 V.VILLAIN_EXPR.setdefault("s11_scheme", dict(V.VILLAIN_EXPR["sneaky"], ex=0.3, mc=0.95, mw=1.12,
@@ -216,6 +249,9 @@ SN.SNAKE_EXPR.setdefault("s11_soft", dict(ul=0.08, ll=0.04, ps=1.12, mc=0.45, mw
                                           tilt=-0.04, blush=0.15, tng=0.0))
 SN.SNAKE_EXPR.setdefault("s11_wonder", dict(ul=0.0, ll=0.0, es=1.12, ps=1.22, mc=0.55,
                                             mo=0.3, mw=0.8, hy=-8, blush=0.45, tng=0.0))
+# "...Oh. Thank you.": Hissy melts a little (big soft eyes, blush)
+SN.SNAKE_EXPR.setdefault("s11_aww", dict(ul=0.1, ll=0.06, ps=1.26, es=1.06, mc=0.62, mw=0.86,
+                                         tilt=-0.1, hy=-2, blush=0.6, tng=0.0))
 # Hissy copies the "hmph" (nose up, head turned away) ... and the peek
 SN.SNAKE_EXPR.setdefault("s11_hmph", dict(ul=0.62, ll=0.14, lt=0.1, ps=0.9, mc=-0.3, mw=0.7,
                                           msk=0.4, tilt=0.24, hy=-10, tng=0.0))
@@ -230,9 +266,17 @@ _REST_A = V._arm(-262, -140, -152, -52, 0.06, cu=0.3, th=0.2, sp=0.45)
 _CROSS_A = V._arm(-246, -160, 214, -222, -1.86, cu=1.0, th=0.0, sp=0.2, hs=0.5)
 _CROSS_B = V._mirror(V._arm(-252, -138, 222, -200, -1.86, cu=1.0, th=0.0, sp=0.2, hs=0.5))
 V.ARM_POSES.setdefault("s11_cross", V._pose(_CROSS_A, _CROSS_B, shy=-8, hdy=-2))
-# chest puffed, elbows out, fists on hips (behind the desk edge)
-_HIPS_A = V._arm(-332, -150, -196, -44, 0.75, cu=1.0, th=0.0, sp=0.2, hs=0.9)
-V.ARM_POSES.setdefault("s11_hips", V._pose(_HIPS_A, shy=-14, hdy=-4))
+# l05: the arms DROP (hands go limp onto the desk)
+_DROP_A = V._arm(-258, -98, -178, -8, 0.95, cu=0.14, th=0.1, sp=0.25)
+V.ARM_POSES.setdefault("s11_drop", V._pose(_DROP_A, shy=8, hdy=6))
+# 'snap_back': AHEM: the screen-left fist up to his mouth (other hand at rest)
+_AHEM_A = V._arm(-214, -196, -76, -318, -0.95, cu=1.0, th=0.0, sp=0.2)
+V.ARM_POSES.setdefault("s11_ahem", V._pose(_AHEM_A, V._mirror(_REST_A), shy=-12, hdy=-4))
+# ...then the CAPE FLOURISH: the screen-right hand sweeps the cape's edge up
+# across his chest to the opposite shoulder (the classic villain pose; the
+# cape wing itself is _cape_wing, drawn over the arm)
+_CAPE_B = V._arm(132, -238, -150, -326, math.pi - 0.42, cu=1.0, th=0.0, sp=0.2, tf=-1)
+V.ARM_POSES.setdefault("s11_cape", V._pose(_REST_A, _CAPE_B, shy=-14, hdy=-4))
 # hug: wrists at the book's side edges (fingers drawn over the cover)
 _HUG_A = V._arm(-246, -112, -118, -214 + 60.0 / MS, -0.12, cu=0.6, th=0.2, sp=0.2, hs=1.0)
 V.ARM_POSES.setdefault("s11_hug", V._pose(_HUG_A, shy=-12, hdy=8))
@@ -245,7 +289,10 @@ AI_SYMP = AI.EXPR["sympathetic"]
 AI_X = {
     "symp": AI_SYMP,
     "symp_smile": dict(AI_SYMP, mc=0.42, mw=0.68, lc=0.12, lL=0.16, lR=0.16),
-    "symp_sad": {k: lerp(AI_SYMP[k], AI.EXPR["sad"][k], 0.55) for k in AI_SYMP},
+    # sad FOR him, but still warm: brows/lids share the sadness, the mouth
+    # stays soft (no frown, which read as disapproval)
+    "symp_sad": dict({k: lerp(AI_SYMP[k], AI.EXPR["sad"][k], 0.55) for k in AI_SYMP},
+                     mc=-0.08, mw=0.58, glow=0.9),
     "warm": AI.EXPR["warm"],
     "happy": AI.EXPR["happy"],
     "determined": dict(AI.EXPR["determined"], mc=0.38, ms=0.06, bLa=-0.15, bRa=-0.15,
@@ -260,9 +307,19 @@ AI_X = {
 }
 
 
-def _ai_ex(state):
+def _steady(d, w):
+    """Damp an AI expression's eye darts and level its pupils (weight w)."""
+    if isinstance(d, str):
+        d = AI.EXPR[d]
+    return dict(d, sacc=lerp(d["sacc"], 0.2, w), py=lerp(d["py"], min(d["py"], 0.06), w))
+
+
+def _ai_ex(state, steady=0.0):
     a, b, k = state
-    return (AI_X.get(a, a), AI_X.get(b, b), k)
+    a, b = AI_X.get(a, a), AI_X.get(b, b)
+    if steady > 0.0:
+        a, b = _steady(a, steady), _steady(b, steady)
+    return (a, b, k)
 
 
 # ---------------------------------------------------------------------------
@@ -329,8 +386,8 @@ def _T(info):
         w_skeptical=W("s11_l03", "skeptical"), w_persistent=W("s11_l03", "persistent"),
         # l04 "Those(0) are(1) impressive(2) villain(3) stats,(4) my(5) guy.(6)"
         w_impressive=W("s11_l04", "impressive"), w_villain4=W("s11_l04", "villain"), w_my=W("s11_l04", "my"),
-        # l05 "...Impressive?(0)"
-        w_imp2=W("s11_l05", "impressive"),
+        # l05 "...Oh.(0) Thank(1) you.(2)"
+        w_oh=W("s11_l05", "oh"), w_thank=W("s11_l05", "thank"), w_you=W("s11_l05", "you"),
         w_hurts=W("s11_l06", "hurts"), w_people=W("s11_l06", "people"), w_brick=W("s11_l06", "brick"),
         w_every=W("s11_l06", "every"),
         # l07 "Almost(0) everything(1) else?(2) Scary(3) stories,(4) creative(5)
@@ -367,10 +424,20 @@ def _T(info):
     T["rows"] = [max(T["w_clever"], T["back"] + 0.2), T["w_skeptical"], T["w_persistent"]]
     T["row_dur"] = [0.3, 0.32, max(0.32, min(0.5, T["l3e"] - T["w_persistent"] - 0.05))]
     T["flip"] = T["w_impressive"]                   # the IMPRESSIVE! badge slams on
-    # "...Impressive?": eyes widen (monocle springs in), grin, chest puff
-    T["wow"] = T["l5"] + 0.02
-    T["grin"] = T["w_imp2"] + 0.3
-    T["puff"] = T["grin"] + 0.05
+    # l04 "...impressive VILLAIN stats": he slips into his theatrical villain
+    # persona (monocle back in, chin up, smug brow, steepled fingers)
+    T["preen"] = T["w_villain4"] - 0.04
+    # l05 "...Oh. Thank you.": he DROPS THE ACT (genuinely touched, eyes down
+    # and away, small sincere smile, blush, monocle slipping, arms dropping)
+    T["drop"] = T["w_oh"] - 0.06
+    T["thank"] = T["w_thank"]
+    # 'snap_back' (0.45 s pause): AHEM (fist to mouth, eyes shut, sits up
+    # straight) -> cape flourish across his chest + smug evil grin restored;
+    # Hissy does a double take. Released into "listening" as the hologram opens.
+    T["snap"] = c("snap_back")
+    T["cape"] = T["snap"] + 0.17
+    T["grin"] = T["snap"] + 0.2
+    T["uncape"] = T["wall"] + 0.4
     # hologram: door pops in, wall's LAST row lands on "Brick"
     T["holo"] = T["wall"]
     T["door_in"] = T["wall"] + 0.3
@@ -564,17 +631,32 @@ def draw_scroll(ctx, x, y, s, rot=0.0):
 
 
 # ---------------------------------------------------------------------------
-# SPACE LASERS FOR DUMMIES (the gift-pile book; s12 draws the same design)
+# THE PSYCHOLOGY OF SPACE LASERS (the gift-pile book; s12 copies this design)
 # ---------------------------------------------------------------------------
-# A 150 x 190 hardcover (s=1, centred): deep-space navy cover #1b2550 with
-# little twinkling stars and a faint nebula; gold title #ffd166 (ink outline)
-# in two lines "SPACE LASERS" / "FOR DUMMIES" across the top; below it a cute
-# cartoon orbital laser satellite (silver body with a little face, blue solar
-# panels, pink emitter) at the left fires pink/magenta bolts #ff4fa3 (white
-# core) across the cover to the right in bursts of three, each shot popping a
-# tiny "PEW"; a startled little moon at the right ducks under every burst
-# (sweat drop) and bobs back up. Loops every 1.5 s. Original design: NOT the
-# real yellow/black "For Dummies" trade dress.
+# A 150 x 190 hardcover (s=1, centred on (x, y)), everything below in
+# cover-local px (x right, y down, origin = cover centre):
+#   * page block   rrect(-70, -91, 150, 186, r10) cream #f3ead2, ink 4
+#   * cover        rrect(-75, -95, 150, 190, r12) deep-space navy #1b2550, ink 5;
+#                  clipped inside it: a faint nebula band (ellipses at (26, 26),
+#                  rot -0.42, #25336c / #2e3f82), one shadow tone on the right
+#                  (x 38..78, #141c42 @0.55), 16 tiny twinkling stars (SL_STARS)
+#                  and 3 four-point stars (SL_BIG_STARS)
+#   * spine        rrect(-75, -95, 24, 190, r10) #11173a, ink 4, gold bands at
+#                  y -72 and +72 (x -73..-53)
+#   * TITLE, gold #ffd166 with ink outline, centred on x = +12 (the cover face
+#     right of the spine), each line shrunk to fit 116 px wide:
+#       line 1  "THE PSYCHOLOGY OF"  font "comic" (Bangers), start 20 px
+#               (fits at ~17 px), baseline y = -73, outline 3.5
+#       line 2  "SPACE LASERS"       font "title" (Luckiest Guy), start 26 px
+#               (fits at ~18 px), baseline y = -50, outline 4.5
+#   * the art (below the title, y > -40): a cute orbital laser satellite at
+#     SL_SAT (-26, 1) scale 0.7 (silver body with a little determined face,
+#     blue solar panels, pink emitter), aimed at a startled little moon at
+#     SL_MOON (47, 18) r 15; it fires pink/magenta bolts #ff4fa3 (white core)
+#     in bursts of three (SL_SHOTS 0.1/0.3/0.5 s of every SL_PERIOD 1.5 s, at
+#     SL_V 210 px/s), each shot popping a tiny "PEW" (comic 15, #ffe1f0); the
+#     moon ducks under every burst (squash, wide eyes, sweat drop) and bobs
+#     back up. Muzzle flash + recoil on each shot.
 SL_COVER, SL_COVER_DK, SL_SPINE = "#1b2550", "#141c42", "#11173a"
 SL_NEBULA, SL_NEBULA2 = "#25336c", "#2e3f82"
 SL_GOLD, SL_LASER, SL_LASER_CORE = "#ffd166", "#ff4fa3", "#fff0f7"
@@ -582,6 +664,9 @@ SL_PEW = "#ffe1f0"
 SAT_BODY, SAT_BODY_DK, SAT_STRUT = "#d7dde9", "#a7b0c6", "#8e98b0"
 SAT_PANEL, SAT_PANEL_LN, SAT_BARREL = "#3f7fe0", "#a8c8ff", "#5b6480"
 MOON_C, MOON_DK, MOON_CRATER = "#f6eabf", "#e0cf95", "#d8c584"
+SL_TITLE = (("THE PSYCHOLOGY OF", -73.0, "comic", 16.5, 3.5),   # (text, baseline y,
+            ("SPACE LASERS", -50.0, "title", 26.0, 4.5))        #  font, start px, outline)
+SL_TITLE_W = 116.0                    # each title line shrinks to fit this width
 SL_PERIOD = 1.5                       # one burst of three every 1.5 s
 SL_SHOTS = (0.1, 0.3, 0.5)            # shot times inside the cycle
 SL_V = 210.0                          # bolt speed (cover px / s)
@@ -703,9 +788,11 @@ def _sl_moon(c, t, dodge):
 
 
 def draw_space_lasers_book(ctx, x, y, s, t, rot=0.0, sq=0.0):
-    """SPACE LASERS FOR DUMMIES (the s11 gift-pile book; s12 draws the same
-    design). 150 x 190 at s=1, centred on (x, y); `sq` = squash (landing),
-    `rot` radians. Animated with `t` (see the design note above)."""
+    """THE PSYCHOLOGY OF SPACE LASERS (the s11 gift-pile book; s12 draws the
+    same design). 150 x 190 at s=1, centred on (x, y); `sq` = squash
+    (landing), `rot` radians. Animated with `t` (layout: the note above).
+    Self-contained: needs only the SL_* / SAT_* / MOON_* constants and
+    _sl_geom, _sl_moon_dodge, _sl_satellite, _sl_moon (+ engine helpers)."""
     mz, u, ang = _sl_geom()
     nx, ny = u[1], -u[0]                                   # path normal (upward)
     cyc = math.floor(t / SL_PERIOD)
@@ -783,11 +870,10 @@ def draw_space_lasers_book(ctx, x, y, s, t, rot=0.0, sq=0.0):
             c.move_to(-73, yy)
             c.line_to(-53, yy)
         _s(c, SL_GOLD, 4)
-        for txt, ty, mw in (("SPACE LASERS", -64, 114), ("FOR DUMMIES", -39, 108)):
-            fs = 26
-            while fs > 10 and text_width(c, txt, "title", fs) > mw:
+        for txt, ty, font, fs, ow in SL_TITLE:              # the title (2 lines)
+            while fs > 8 and text_width(c, txt, font, fs) > SL_TITLE_W:
                 fs -= 0.5
-            text(c, txt, 12, ty, fs, SL_GOLD, "title", outline=INK, outline_w=4)
+            text(c, txt, 12, ty, fs, SL_GOLD, font, outline=INK, outline_w=ow)
 
 
 NB_COVER, NB_COVER_DK, NB_PAGES = "#13a8a0", "#0b6f6a", "#fff6e0"   # as s03
@@ -1805,7 +1891,7 @@ def _photo_cameo(ctx, t, info, T):
     a = smoothstep(seg(t, t_in, t_in + 0.4))
     cx, cy, r = CAMEO
     expr, look, blink = _cameo_malvo(t, T)
-    _e, _a, _lk, _bl, lean, dy, _p = _malvo(t, T)
+    _e, _a, _lk, _bl, lean, dy = _malvo(t, T)
     hs = _hissy(t, T)
     with saved(ctx, cx, cy, 0.9 + 0.1 * k, alpha_=a) as c:
         c.save()
@@ -2638,6 +2724,16 @@ def _dir(ox, oy, tx, ty, mag=0.95):
     return (dx / L * mag, dy / L * mag)
 
 
+def _ahem_blink(t, T):
+    """Eyes squeezed shut for the AHEM (snap -> grin), popping open on the grin."""
+    t0, t1 = T["snap"], T["grin"] + 0.02
+    if t < t0 or t > t1 + 0.06:
+        return None
+    if t < t1:
+        return smoothstep(seg(t, t0, t0 + 0.05))
+    return 1.0 - smoothstep(seg(t, t1, t1 + 0.06))
+
+
 def _malvo(t, T):
     beat = T["beat"]
     expr = _state(t, [
@@ -2657,10 +2753,13 @@ def _malvo(t, T):
         (T["w_noticed"] - 0.05, "s11_teary_up", 0.2),    # lids lift: the photo
         (T["w_unless"], "s11_teary", 0.35),
         (T["back"], "s11_moved", 0.01),                  # (cut) touched, glistening
-        (T["flip"] + 0.1, "s11_hope_m", 0.3),            # "impressive villain stats"
-        (T["wow"], "s11_wow", 0.16),                     # ...Impressive?! monocle in
-        (T["grin"], "s11_grin", 0.3),                    # a pleased evil grin
-        (T["wall"] + 0.35, "s11_listen", 0.45),
+        (T["flip"] + 0.08, "s11_hope_m", 0.25),          # "impressive..." he perks up
+        (T["preen"], "s11_preen", 0.3),                  # "...VILLAIN stats": the persona
+        (T["drop"], "s11_touched", 0.55),                # "...Oh." the act drops
+        (T["thank"] - 0.05, "s11_touched2", 0.45),       # "Thank you." (sincere smile)
+        (T["snap"], "s11_ahem", 0.08),                   # 'snap_back': AHEM.
+        (T["grin"], "s11_grin", 0.12),                   # smug evil grin restored
+        (T["uncape"], "s11_listen", 0.45),
         (T["chips"][0] + 0.1, "s11_hope", 0.4),          # ...scary stories? for me?
         (T["chips"][1] + 0.04, "s11_scheme", 0.25),      # creative plans! (hand rub)
         (T["chips"][2] + 0.08, "s11_hope", 0.3),
@@ -2677,8 +2776,11 @@ def _malvo(t, T):
         (T["lift"] + 0.1, "rest", 0.7),
         (T["cross"], "s11_cross", 0.25),                 # Ugh! arms folded
         (T["uncross"], "rest", 0.55),                    # ...relaxing
-        (T["puff"] - 0.06, "s11_hips", 0.22),            # chest puffed, elbows out
-        (T["wall"] + 0.3, "rest", 0.45),
+        (T["preen"] + 0.04, "steeple", 0.35),            # villain stats: steepled fingers
+        (T["drop"] + 0.08, "s11_drop", 0.6),             # "...Oh." the arms drop
+        (T["snap"], "s11_ahem", 0.08),                   # AHEM (fist to mouth)
+        (T["cape"], "s11_cape", 0.2),                    # cape flourish
+        (T["uncape"], "rest", 0.45),
         (T["chips"][1] - 0.02, "rub", 0.25),             # creative plans: hand rub
         (T["chips"][2] + 0.1, "rest", 0.35),
         (T["gift_t"][0] - 0.05, "s11_open", 0.3),
@@ -2703,10 +2805,11 @@ def _malvo(t, T):
         (T["w_persistent"] + 0.35, (0.55, -0.6), 0.15),
         (T["l4"] + 0.08, gaze_ai, 0.18),                # "those are..."
         (T["flip"] + 0.05, (0.25, -1.0), 0.12),         # IMPRESSIVE!
-        (T["w_my"], gaze_ai, 0.15),                     # "my guy"
-        (T["l5"] + 0.02, (0.25, -0.95), 0.15),          # "...Impressive?" (the badge)
-        (T["grin"], gaze_ai, 0.18),                     # ...grins at the AI
-        (T["wall"] + 0.15, (0.4, -0.9), 0.3),           # the hologram (door)
+        (T["preen"] + 0.08, gaze_ai, 0.2),              # ...smug, at the AI
+        (T["drop"] + 0.04, (-0.42, 0.92), 0.6),         # "...Oh." down and away
+        (T["snap"], (0.1, -0.05), 0.08),                # AHEM (eyes shut)
+        (T["grin"], gaze_ai, 0.1),                      # the evil grin, at the AI
+        (T["wall"] + 0.3, (0.4, -0.9), 0.3),            # the hologram (door)
         (T["wall0"] + 0.2, (-0.15, -1.0), 0.25),        # bricks stacking
         (T["w_every"], gaze_ai, 0.2),
         (T["w_else"] + 0.15, (0.55, -0.85), 0.25),      # the door
@@ -2730,11 +2833,14 @@ def _malvo(t, T):
         look = _keyv(t, [(T["smile"], look), (T["smile"], (0.1, 0.8), 0.45),
                          (T["smile"] + 0.85, (0.9, -0.12), 0.3)])
     blink = _first(_slow_blink(t, T["photo"] - 0.6),
+                   _slow_blink(t, T["thank"] - 0.22, 0.16, 0.12, 0.2),   # taking it in
+                   _ahem_blink(t, T),
                    _slow_blink(t, T["open"] + 0.75, 0.1, 0.05, 0.12),
                    _slow_blink(t, T["sp_land"]["mask"] - 0.03, 0.05, 0.04, 0.09),
                    _slow_blink(t, T["w_hurting"] + 0.3, 0.1, 0.06, 0.12))
     if blink is None and (T["sp_t"]["bat"] - 0.1 <= t < T["sp_land"]["dragon"] + 0.4
-                          or T["l5"] - 0.15 <= t < T["grin"] + 0.6
+                          or T["grin"] <= t < T["grin"] + 0.6
+                          or T["preen"] <= t < T["snap"]
                           or T["peek"] - 0.05 <= t < T["unpeek"] + 0.1
                           or T["turn_back"] <= t < T["nod_v"] - 0.05
                           or T["w_heroic"] - 0.05 <= t < T["cross"]
@@ -2748,16 +2854,21 @@ def _malvo(t, T):
     # pleased; settles back for the hug
     sulk = smoothstep(seg(t, T["cross"], T["cross"] + 0.3)) * \
         (1 - smoothstep(seg(t, T["turn_back"], T["turn_back"] + 0.4)))
-    lean = -0.035 * sulk + 0.025 * smoothstep(seg(t, T["l5"], T["l5"] + 0.6)) \
+    # (shrinks a touch away from the AI while he's touched; sits up straight
+    # and leans in, villain-proud, from the snap back on)
+    shy_k = smoothstep(seg(t, T["drop"], T["drop"] + 0.6)) * \
+        (1 - smoothstep(seg(t, T["snap"], T["snap"] + 0.1)))
+    lean = -0.035 * sulk - 0.02 * shy_k + 0.025 * smoothstep(seg(t, T["snap"], T["snap"] + 0.2)) \
         - 0.02 * smoothstep(seg(t, T["open"], T["open"] + 0.6))
     # slump sink + rise; a small deflate in the beat (unseen rise during the photo)
     dy = 10 * (1 - smoothstep(seg(t, T["lift"], T["lift"] + 0.6)))
     dy += 8 * smoothstep(seg(t, beat, beat + 0.5)) * (1 - smoothstep(seg(t, T["photo"], T["back"])))
     dy += 9 * math.sin(math.pi * seg(t, T["sp_land"]["mask"], T["sp_land"]["mask"] + 0.26))
-    # "...Impressive?": the chest puffs (a little scale about the waist)
-    puff = ease_out_back(seg(t, T["puff"], T["puff"] + 0.22), 2.0) * \
-        (1 - smoothstep(seg(t, T["wall"] + 0.25, T["wall"] + 0.75)))
-    return expr, arms, look, blink, lean, dy, puff
+    # touched: he sinks a little; the snap back: he SITS UP straight
+    dy += 7 * shy_k
+    dy -= 9 * ease_out_back(seg(t, T["snap"], T["snap"] + 0.12), 2.0) * \
+        (1 - smoothstep(seg(t, T["uncape"], T["uncape"] + 0.45)))
+    return expr, arms, look, blink, lean, dy
 
 
 def _hissy(t, T):
@@ -2776,7 +2887,9 @@ def _hissy(t, T):
         (T["back"], "s11_soft", 0.01),
         (T["w_persistent"] + 0.05, "nod", 0.15),
         (T["l4"] + 0.2, "s11_soft", 0.3),
-        (T["grin"] + 0.12, "smug", 0.25),                # copies the grin
+        (T["preen"] + 0.12, "smug", 0.25),               # copies the villain preen
+        (T["drop"] + 0.22, "s11_aww", 0.4),              # "...Oh. Thank you." aww
+        (T["snap"] + 0.3, "shocked", 0.06),              # ...DOUBLE TAKE at the snap back
         (T["wall"] + 0.3, "s11_soft", 0.3),
         (T["w_every"] - 0.05, "nod", 0.12),
         (T["l6e"] + 0.15, "s11_soft", 0.3),
@@ -2801,7 +2914,9 @@ def _hissy(t, T):
         (T["w_scaring"], (0.55, 0.55), 0.3),             # looks down
         (T["back"], (0.62, -0.8), 0.01),                 # the sheet
         (T["l4"] + 0.25, (1.0, -0.15), 0.25),            # the AI
-        (T["l5"], face_dir, 0.2),
+        (T["drop"] + 0.15, (0.9, -0.12), 0.35),          # ...at him, softly
+        (T["snap"] + 0.06, (0.05, 0.12), 0.1),           # glances out at us ("aww")...
+        (T["snap"] + 0.3, (0.98, -0.32), 0.06),          # ...whips back: DOUBLE TAKE
         (T["wall"] + 0.25, (0.75, -0.75), 0.3),          # the hologram
         (T["w_every"] - 0.1, (1.0, -0.15), 0.15),
         (T["chips"][0] + 0.15, _dir(*HISSY, *CHIPS[0][2:4], 0.98), 0.25),
@@ -2845,8 +2960,8 @@ def _ai(t, T):
         (T["back"], "symp_sad", 0.01),
         (T["back"] + 0.2, "warm", 0.3),                  # SLOW BLINK -> warm
         (T["l4"], "happy", 0.25),
-        (T["l4e"] + 0.2, "warm_soft", 0.35),
-        (T["grin"], "amused", 0.3),                      # his pleased evil grin
+        (T["l4e"] + 0.2, "warm_soft", 0.35),             # "...Oh. Thank you." (touched)
+        (T["grin"], "amused", 0.3),                      # ...and the villain is back
         (T["wall"], "warm", 0.3),
         (T["w_hurts"], "determined", 0.3),
         (T["l6e"] + 0.05, "warm", 0.35),
@@ -2862,11 +2977,9 @@ def _ai(t, T):
     ])
     look = _keyv(t, [
         (-1, at_malvo),
-        (T["w_noticed"] + 0.15, (-0.05, -0.95), 0.2),    # follows his eyes to the photo
-        (T["w_unless"] + 0.2, at_malvo, 0.3),
-        (T["back"], at_malvo, 0.01),
-        (T["rows"][0] + 0.1, (-0.7, -0.7), 0.2),         # the sheet
-        (T["w_persistent"] + 0.4, at_malvo, 0.2),
+        # his confession, the photo, "I noticed. Clever. Skeptical.
+        # Persistent.": the AI's eyes stay ON HIM (steady and warm; no glance
+        # away or up, which read as an eye-roll)
         (T["w_my"], (0.0, 0.05), 0.12),                  # to camera on "my guy"
         (T["l4e"] + 0.25, at_malvo, 0.25),
         (T["wall"] + 0.1, (-0.6, -0.8), 0.25),           # its hologram
@@ -2906,7 +3019,9 @@ def _ai(t, T):
         (T["w_hurting"] - 0.02, "idle", 0.25),
     ])
     blink = _first(_slow_blink(t, T["beat"] + 0.15),
+                   _slow_blink(t, T["w_unless"] - 0.05, 0.14, 0.1, 0.16),   # soft, warm
                    _slow_blink(t, T["back"] + 0.12),
+                   _slow_blink(t, T["w_thank"] + 0.05, 0.14, 0.1, 0.16),
                    _slow_blink(t, T["l7"] - 0.3),
                    _slow_blink(t, T["l8e"] + 0.2),
                    _slow_blink(t, T["smile"] + 0.85, 0.14, 0.1, 0.16))
@@ -2916,14 +3031,22 @@ def _ai(t, T):
         nod = 0.32 * math.sin(math.pi * seg(t, n1, n1 + 0.45))
     if T["w_every"] <= t < T["w_every"] + 0.5:          # one firm nod
         nod = 0.6 * math.sin(math.pi * seg(t, T["w_every"], T["w_every"] + 0.5))
-    if T["l5e"] <= t < T["l5e"] + 0.55:                  # "yes. impressive."
-        nod = max(nod, 0.35 * math.sin(math.pi * seg(t, T["l5e"], T["l5e"] + 0.55)))
+    n5 = T["w_you"] + 0.3                                # "Thank you." -> a soft nod
+    if n5 <= t < n5 + 0.5:
+        nod = max(nod, 0.22 * math.sin(math.pi * seg(t, n5, n5 + 0.5)))
     n0 = T["w_people2"] + 0.08                           # one firm nod: "...isn't."
     if n0 <= t < n0 + 0.5:
         nod = max(nod, 0.6 * math.sin(math.pi * seg(t, n0, n0 + 0.5)))
     u = ease_in_out(seg(t, T["l1"], T["l1e"]))
     ay, s = lerp(AY0, AY1, u), lerp(AS0, AS1, u)
-    return _ai_ex(expr), look, hands, blink, nod, ay, s
+    # while he's vulnerable (the beat -> his confession -> the photo -> "I
+    # noticed..." and again on "...Oh. Thank you."), the eyes hold steady on
+    # him: micro-saccades damped, pupils level with his face
+    steady = max(smoothstep(seg(t, T["beat"] - 0.2, T["beat"] + 0.1)) *
+                 (1 - smoothstep(seg(t, T["l4"], T["l4"] + 0.2))),
+                 smoothstep(seg(t, T["l5"] - 0.3, T["l5"])) *
+                 (1 - smoothstep(seg(t, T["snap"] + 0.1, T["snap"] + 0.3))))
+    return _ai_ex(expr, steady), look, hands, blink, nod, ay, s
 
 
 # ---------------------------------------------------------------------------
@@ -3053,6 +3176,106 @@ def _cross_overlay(c, t, arms, st, dy, lean):
     c.restore()
 
 
+def _cape_weight(arms):
+    if isinstance(arms, (tuple, list)):
+        a, b, k = arms
+        return (1 - k) * (a == "s11_cape") + k * (b == "s11_cape")
+    return 1.0 if arms == "s11_cape" else 0.0
+
+
+def _cape_wing(c, t, T, arms, st, dy, lean):
+    """'snap_back' CAPE FLOURISH: the screen-right glove sweeps the cape's edge
+    up across his chest (villain-local; the wing hangs from the right shoulder
+    to the glove, crimson lining showing along the folded top edge, and drapes
+    down behind the desk). The glove is redrawn on top, holding the edge."""
+    k = _cape_weight(arms)
+    if k <= 0.02:
+        return
+    _A, B, _sh, _hd, _tl = V.resolve_arms(arms, t)
+    a = smoothstep(seg(k, 0.06, 0.45))
+    sy = st["shy"] * 0.6
+    wx, wy = B["wx"], B["wy"]
+    # the cape edge is held in the fist, a little past the wrist
+    hx = wx + math.cos(B["ha"]) * 34
+    hy = wy + math.sin(B["ha"]) * 34
+    p0 = (272.0, -346.0 + sy)                       # shoulder top (cape root)
+    bot = 90.0                                      # below the desk edge
+    c.save()
+    _xf_villain(c, dy, lean)
+    c.push_group()
+    # the wing: shoulder -> (folded top edge) -> glove -> drapes down -> hem
+    sag = 22 * k
+    c.move_to(*p0)
+    c.curve_to(lerp(p0[0], hx, 0.35), lerp(p0[1], hy, 0.35) + sag,
+               lerp(p0[0], hx, 0.75), lerp(p0[1], hy, 0.75) + sag * 0.6, hx, hy)
+    c.curve_to(hx - 34, hy + 120, hx - 6, bot - 160, hx - 40, bot)
+    c.line_to(352, bot)
+    c.curve_to(372, -60, 340, -250 + sy, p0[0] + 26, p0[1] + 30)
+    c.close_path()
+    wing = c.copy_path()
+    c.set_source_rgba(*V.CAPE)
+    c.fill()
+    # the crimson lining shows where the cape turns under the glove
+    c.save()
+    c.append_path(wing)
+    c.clip()
+    c.move_to(hx + 2, hy + 6)
+    c.curve_to(hx - 34, hy + 120, hx - 6, bot - 160, hx - 40, bot)
+    c.line_to(hx + 34 + 30 * k, bot)
+    c.curve_to(hx + 34, bot - 170, hx + 6, hy + 110, hx + 2, hy + 6)
+    c.close_path()
+    c.set_source_rgba(*V.CAPE_IN)
+    c.fill_preserve()
+    c.set_source_rgba(*V.INK)
+    c.set_line_width(V.IN_W)
+    c.stroke()
+    c.move_to(hx + 4, hy + 30)
+    c.curve_to(hx - 14, hy + 120, hx + 4, bot - 160, hx - 8, bot)
+    c.set_source_rgba(*V.CAPE_IN_DK)
+    c.set_line_width(9)
+    c.stroke()
+    c.restore()
+    c.append_path(wing)
+    c.set_source_rgba(*V.INK)
+    c.set_line_width(V.OUT_W)
+    c.set_line_join(cairo.LINE_JOIN_ROUND)
+    c.stroke()
+    # drape folds fanning from the glove (one lighter tone)
+    for j, (fx, fw) in enumerate(((0.28, 26), (0.55, 20), (0.8, 16))):
+        bx = lerp(hx + 60, 340, fx)
+        c.move_to(hx + 6, hy + 14)
+        c.curve_to(lerp(hx, bx, 0.4), hy + 90, bx - 20, bot - 160, bx, bot)
+        c.set_source_rgba(*V.CAPE_HI)
+        c.set_line_width(fw * (0.6 + 0.4 * k))
+        c.stroke()
+    # crimson lining along the folded-over top edge
+    c.move_to(*p0)
+    c.curve_to(lerp(p0[0], hx, 0.35), lerp(p0[1], hy, 0.35) + sag,
+               lerp(p0[0], hx, 0.75), lerp(p0[1], hy, 0.75) + sag * 0.6, hx, hy)
+    c.set_source_rgba(*V.INK)
+    c.set_line_width(30)
+    c.set_line_cap(cairo.LINE_CAP_ROUND)
+    c.stroke_preserve()
+    c.set_source_rgba(*V.CAPE_IN)
+    c.set_line_width(19)
+    c.stroke()
+    c.pop_group_to_source()
+    c.paint_with_alpha(a)
+    # the glove holding the edge (exactly the rig's hand, redrawn on top)
+    V._draw_hand(c, wx, wy, B)
+    # a swish behind the sweeping glove
+    sw = math.sin(math.pi * seg(t, T["cape"], T["cape"] + 0.24))
+    if sw > 0.02:
+        for j in range(3):
+            r = 330 + 34 * j
+            c.new_sub_path()
+            c.arc(150, -120, r, -2.2 + 0.08 * j, -1.25 + 0.05 * j)
+            c.set_source_rgba(1, 1, 1, 0.5 * sw * (1 - 0.25 * j))
+            c.set_line_width(6 - j)
+            c.stroke()
+    c.restore()
+
+
 def _shot_two(ctx, t, info, T):
     k = _cam(t, info)
     with saved(ctx, CAM_C[0], CAM_C[1], k) as c:
@@ -3068,8 +3291,10 @@ def _shot_two(ctx, t, info, T):
 
         # --- acting state ---------------------------------------------------------
         aexpr, alook, ahands, ablink, anod, ay, a_s = _ai(t, T)
-        expr, arms, look, blink, lean, dy, puff = _malvo(t, T)
+        expr, arms, look, blink, lean, dy = _malvo(t, T)
         mouth = info.mouth("villain", t)
+        if T["l5"] - 0.05 <= t < T["l5e"] + 0.1:         # "...Oh. Thank you." (quiet: a
+            mouth = (mouth[0] * 0.3, mouth[1] * 0.4)     # small mouth, no villain teeth)
         st = _vstate(t, expr, arms, mouth)
         hs = _hissy(t, T)
         targets = _sp_targets(c, t, T, st, dy, lean, hs["expr"])
@@ -3091,12 +3316,7 @@ def _shot_two(ctx, t, info, T):
         hand = (AX - 272 * a_s, ay + 150 * a_s)          # ~ the AI's projecting hand
         _holo_beam(c, t, T, hand)
         # --- Malvo + Hissy ----------------------------------------------------
-        # (chest puff on "...Impressive?": a little scale about the waist)
         c.save()
-        if puff > 0.001:
-            c.translate(MX, MY)
-            c.scale(1 + 0.035 * puff, 1 + 0.022 * puff)
-            c.translate(-MX, -MY)
         draw_villain(c, MX, MY + dy, MS, t, expr=expr, look=look, mouth=mouth, arms=arms,
                      lean=lean, blink=blink, snake=hs)
         _cross_overlay(c, t, arms, st, dy, lean)         # tucks the top glove away
@@ -3116,15 +3336,17 @@ def _shot_two(ctx, t, info, T):
         if not landed_book:
             with saved(c, MX, MY + dy, 1.0, lean):
                 _gift_star(c, LAPEL[0] * MS, (LAPEL[1] + st["shy"] * 0.5) * MS, LAPEL_S * MS)
+        # 'snap_back': the cape flourish (a cape wing over the screen-right arm)
+        _cape_wing(c, t, T, arms, st, dy, lean)
         c.restore()
-        # the monocle springs back in ("...Impressive?"): a glint as it lands
-        g0 = T["wow"] + 0.15
-        if g0 <= t < g0 + 0.4:
-            gk = math.sin(math.pi * seg(t, g0, g0 + 0.4))
-            mx_, my_ = _local_to_user(c, lambda cc: _xf_face(cc, st, dy, lean),
-                                      V.EYE_DX + 9 * look[0] + 40, V.EYE_DY - 42)
-            P._star4(c, mx_, my_, 18 * gk, 0.2)
-            _fs(c, "white", INK, 2.5, a=gk)
+        # the monocle back in place: a glint (villain persona on; the snap back)
+        for g0 in (T["preen"] + 0.26, T["grin"] + 0.02):
+            if g0 <= t < g0 + 0.4:
+                gk = math.sin(math.pi * seg(t, g0, g0 + 0.4))
+                mx_, my_ = _local_to_user(c, lambda cc: _xf_face(cc, st, dy, lean),
+                                          V.EYE_DX + 9 * look[0] + 40, V.EYE_DY - 42)
+                P._star4(c, mx_, my_, 18 * gk, 0.2)
+                _fs(c, "white", INK, 2.5, a=gk)
         if landed_book:
             draw_space_lasers_book(c, bpose[0], bpose[1] + dy, bpose[2], t, bpose[3], bpose[4])
             hk = ease_out(seg(t, T["gift_t"][3] + T["fly"] - 0.06,
@@ -3182,10 +3404,6 @@ def _shot_two(ctx, t, info, T):
                     T["sp_land"]["dragon"] + 0.05, t_out=T["w_hurting"])
         # --- the character sheet ----------------------------------------------
         _sheet(c, t, T)
-        # "...Impressive?": he LIKES that word (a sparkle by his dome)
-        if T["grin"] <= t < T["l6"] + 0.6:
-            P.emote(c, "sparkle", FACE[0] + 168, FACE[1] - 178, 0.75, t, T["grin"] + 0.06,
-                    t_out=T["l6"] + 0.2)
         # warm little sparkles over the pile once he smiles
         if t >= T["smile"]:
             sk = smoothstep(seg(t, T["smile"] + 0.2, T["smile"] + 0.8))
@@ -3216,8 +3434,11 @@ def SFX(info):
         out.append((tr, "pop", -10, -0.2))
     out.append((T["flip"] + 0.1, "stamp", -10))                        # IMPRESSIVE! badge
     out.append((T["flip"] + 0.14, "sparkle", -10))
-    out.append((T["wow"] + 0.15, "pop", -15, -0.2))                    # monocle springs in
-    out.append((T["grin"] + 0.08, "sparkle", -10, -0.2))               # he likes that word
+    out.append((T["preen"] + 0.26, "pop", -18, -0.2))                  # monocle back in
+    # (the "...Oh. Thank you." itself plays on music alone)
+    out.append((T["snap"] + 0.01, "gulp", -14, -0.2))                  # AHEM.
+    out.append((T["cape"] + 0.02, "whoosh", -10, -0.15))               # cape flourish
+    out.append((T["grin"] + 0.04, "sparkle", -15, -0.2))               # monocle glint, grin
     out.append((T["wall"], "swoosh_up", -14))                          # hologram on
     lands = T["lands"]
     out.append((lands[0], "brick_thud", -10, -0.3))

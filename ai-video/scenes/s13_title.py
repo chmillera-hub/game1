@@ -690,43 +690,22 @@ def science_photo(c, w, h):
     text(c, "science fair", -w / 2 + 18, h / 2 - 11, 20, "#8a8494", "round", "left")
 
 
-def _townsfolk(c, x, y, r, skin, body, hap=1.0, arms_up=False, ph=0.0):
-    """Tiny happy person (prop bible 6.3, mini): body + round head."""
-    bw, bh = r * 1.9, r * 2.4
-    if arms_up:
-        for sx in (-1, 1):
-            c.move_to(x + sx * bw * 0.35, y + r * 1.3)
-            c.line_to(x + sx * bw * 0.75, y - r * 0.6 + sx * ph)
-        core.stroke(c, INK, r * 0.5)
-        for sx in (-1, 1):
-            c.move_to(x + sx * bw * 0.35, y + r * 1.3)
-            c.line_to(x + sx * bw * 0.75, y - r * 0.6 + sx * ph)
-        core.stroke(c, body, r * 0.3)
-    ellipse(c, x, y + r * 0.9 + bh * 0.45, bw / 2, bh / 2)
-    _fs(c, body, INK, 2)
-    circle(c, x, y, r)
-    _fs(c, skin, INK, 2)
-    for sx in (-1, 1):
-        c.arc(x + sx * r * 0.38, y - r * 0.05, r * 0.2, math.pi + 0.3, 2 * math.pi - 0.3)
-        core.stroke(c, INK, 1.6)
-    c.arc(x, y + r * 0.22, r * 0.38, 0.25, math.pi - 0.25)
-    core.stroke(c, INK, 1.6)
+# --- party Polaroid (v7): "EVIL PLAN: SUCCESS!" ------------------------------
+# A posed party snapshot: the Evil Genius standing stiffly with a forced,
+# slightly sheepish smile (Snake draped round his neck, beaming), next to a
+# tall, angular, SCARY android (gunmetal, spiky pauldrons, claw hands, red V
+# visor eyes) wearing a cheerful striped party hat: it's a party bot.
+BOT, BOT_SH, BOT_DK, BOT_HI = "#5b6378", "#434a5c", "#2c3140", "#8790a6"
+BOT_RED, BOT_RED_HI = "#ff3b5c", "#ffd0d8"
+POL_CAP = ("EVIL PLAN:", "SUCCESS!")
 
 
-def party_photo(c, w, h):
-    """The block-party Polaroid (§6.18 simplified). Centred on (0, 0)."""
-    rrect(c, -w / 2, -h / 2, w, h, 5)
-    _fs(c, POL_W, INK, 4)
-    m = 18
-    px0, py0, pw = -w / 2 + m, -h / 2 + m, w - 2 * m
-    ph = pw
-    c.save()
-    c.rectangle(px0, py0, pw, ph)
-    c.clip()
+def _photo_bg(c, px0, py0, pw, ph):
+    """Dusk party street: gradient sky, house fronts with lit windows, two
+    strings of party lights."""
     core.vgradient(c, "#6a3d8f", "#ff9e7a", px0, py0, pw, ph * 0.75)
     c.rectangle(px0, py0 + ph * 0.75, pw, ph)
     core.fill(c, "#ff9e7a")
-    # house fronts with lit windows
     houses = [(-0.02, 0.50, 0.24, "#f2b5c4"), (0.21, 0.44, 0.22, "#a9d8c9"),
               (0.43, 0.52, 0.20, "#f6d38a"), (0.62, 0.46, 0.22, "#b6b4e8"),
               (0.83, 0.53, 0.2, "#f2b5c4")]
@@ -738,98 +717,298 @@ def party_photo(c, w, h):
         _fs(c, "#8a4a5a", INK, 2)
         c.rectangle(x0 + ww * 0.3, y0 + 10, ww * 0.4, 13)
         _fs(c, "#ffe9a0", INK, 1.5)
-    # string lights
-    for (y0, sag, n, ph0) in ((py0 + 16, 26, 9, 0), (py0 + 44, 20, 8, 1)):
+    c.rectangle(px0, py0, pw, ph)                              # soften: figures pop
+    core.fill(c, (0.25, 0.12, 0.3, 0.16))
+    for (y0, sag, n, ph0) in ((py0 + 14, 22, 9, 0), (py0 + 40, 16, 8, 1)):
         pts = _qbez((px0 - 4, y0), (px0 + pw / 2, y0 + sag * 2), (px0 + pw + 4, y0), 16)
         core.smooth_path(c, pts)
         core.stroke(c, "#3a2440", 1.6)
         for k in range(n):
             u = (k + 0.5 + ph0 * 0.5) / (n + 0.5)
             lx = lerp(px0, px0 + pw, u)
-            ly = y0 + 4 * sag * u * (1 - u) * 1.0 + 4
+            ly = y0 + 4 * sag * u * (1 - u) + 4
             circle(c, lx, ly, 4.2)
             core.fill(c, ["#ffd98a", "#ff8fb8", "#8ff0ff"][k % 3])
-    # banner
-    with saved(c, 0, py0 + 90, 1.0, -0.03) as cc:
-        poly(cc, [(-98, -16), (98, -16), (92, 16), (-92, 16)])
-        _fs(cc, "#d8283f", INK, 2.5)
-        text(cc, "BLOCK PARTY!", 0, 8, 22, "white", "comic")
-    # the AI lantern, top right
-    with saved(c, px0 + pw * 0.83, py0 + 60, 1.0) as cc:
-        ellipse(cc, 0, -24, 14, 4)
-        core.stroke(cc, "ai_rim", 2.2)
-        rrect(cc, -20, -16, 40, 32, 9)
-        _fs(cc, "ai_body", INK, 2)
-        rrect(cc, -15, -11, 30, 22, 6)
-        core.fill(cc, "ai_screen")
-        for sx in (-1, 1):
-            cc.arc(sx * 6, -1, 4, math.pi + 0.2, 2 * math.pi - 0.2)
-            core.stroke(cc, "ai_eye", 2)
-        cc.arc(0, 2, 5, 0.3, math.pi - 0.3)
-        core.stroke(cc, "ai_eye", 2)
-    # crowd row + Malvo in the middle (everyone came)
-    folks = [(-0.43, 0.83, 15, "#f1c7a0", "#9fd8c8", True), (-0.29, 0.86, 16, "#c68a5e", "#f6c2d4", False),
-             (-0.16, 0.81, 15, "#8d5a3b", "#ffe08a", True), (0.17, 0.82, 15, "#f1c7a0", "#b7c4f2", True),
-             (0.30, 0.86, 16, "#8d5a3b", "#c9f0a8", False), (0.43, 0.83, 15, "#c68a5e", "#ffb7a0", True)]
-    for i, (fx, fy, r, sk, bd, up) in enumerate(folks):
-        _townsfolk(c, fx * pw, py0 + ph * fy, r, sk, bd, arms_up=up, ph=3 * (i % 2))
-    # Malvo (tiny, happy, party hat) with Hissy on his shoulder
-    mx, my = 0.0, py0 + ph * 0.70
-    poly(c, [(mx - 34, my + 20), (mx + 34, my + 20), (mx + 46, my + 90), (mx - 46, my + 90)])
-    _fs(c, "suit", INK, 2.2)
-    poly(c, [(mx - 30, my + 18), (mx - 44, my + 4), (mx - 26, my + 34)])
-    poly(c, [(mx + 30, my + 18), (mx + 44, my + 4), (mx + 26, my + 34)])
-    _fs(c, "cape_in", INK, 2)
-    for sx in (-1, 1):                                       # arms up, cheering
-        c.move_to(mx + sx * 30, my + 30)
-        c.line_to(mx + sx * 50, my - 12)
-    core.stroke(c, INK, 9)
+
+
+def _photo_android(c, x0, y0, k=0.86):
+    """The scary android (photo-local, head centre (x0, y0), scale k), waist-up."""
+    with saved(c, x0, y0, k) as cc:
+        _photo_android_body(cc, 0.0, 0.0)
+
+
+def _photo_android_body(c, x, y):
+    c.set_line_join(1)
+    # long arms hanging stiffly, claws dangling (drawn behind the torso)
     for sx in (-1, 1):
-        c.move_to(mx + sx * 30, my + 30)
-        c.line_to(mx + sx * 50, my - 12)
-    core.stroke(c, "suit", 6)
+        sh = (x + sx * 50, y + 66)
+        el = (x + sx * 62, y + 100)
+        wr = (x + sx * 58, y + 136)
+        for col, w in ((INK, 17), (BOT_SH, 11)):
+            c.move_to(*sh)
+            c.line_to(*el)
+            c.line_to(*wr)
+            core.stroke(c, col, w)
+        circle(c, el[0], el[1], 7)
+        _fs(c, BOT_DK, INK, 2.2)
+        for k, (dx, ln) in enumerate(((-7, 18), (0, 22), (7, 18))):   # three claws
+            bx = wr[0] + dx * 1.0 - sx * 1
+            poly(c, [(bx - 3.2, wr[1] - 2), (bx + 3.2, wr[1] - 2),
+                     (bx + sx * 2.5 + dx * 0.25, wr[1] + ln)])
+            _fs(c, BOT_HI if k == 1 else BOT, INK, 2)
+        rrect(c, wr[0] - 9, wr[1] - 9, 18, 12, 4)              # wrist cuff
+        _fs(c, BOT_DK, INK, 2)
+    # V torso (wide chest tapering to the waist), plates + glowing red core
+    torso = [(x - 52, y + 52), (x + 52, y + 52), (x + 30, y + 150), (x + 20, y + 180),
+             (x - 20, y + 180), (x - 30, y + 150)]
+    poly(c, torso)
+    _fs(c, BOT, INK, 3)
+    c.save()
+    poly(c, torso)
+    c.clip()
+    c.rectangle(x + 14, y + 40, 60, 160)                        # one shadow tone
+    core.fill(c, BOT_SH)
+    c.move_to(x - 40, y + 64)
+    c.line_to(x, y + 104)
+    c.line_to(x + 40, y + 64)
+    core.stroke(c, INK, 2.2)
+    for yy in (y + 128, y + 146, y + 164):                      # ab plates
+        c.move_to(x - 26, yy)
+        c.line_to(x + 26, yy)
+    core.stroke(c, BOT_DK, 2.4)
+    c.restore()
+    radial_glow(c, x, y + 86, 22, BOT_RED, 0.5)
+    poly(c, [(x, y + 76), (x + 9, y + 88), (x, y + 100), (x - 9, y + 88)])
+    _fs(c, BOT_RED, INK, 2)
+    circle(c, x - 2, y + 86, 2.2)
+    core.fill(c, BOT_RED_HI)
+    # neck pistons
+    c.rectangle(x - 13, y + 34, 26, 22)
+    _fs(c, BOT_DK, INK, 2.2)
+    c.move_to(x - 5, y + 36)
+    c.line_to(x - 5, y + 54)
+    c.move_to(x + 5, y + 36)
+    c.line_to(x + 5, y + 54)
+    core.stroke(c, BOT_SH, 2)
+    # spiky angular pauldrons
     for sx in (-1, 1):
-        circle(c, mx + sx * 51, my - 16, 6)
-        _fs(c, "glove", INK, 1.6)
-    circle(c, mx, my, 24)
-    _fs(c, "skin", INK, 2.4)
-    for sx in (-1, 1):                                       # hair tufts
-        poly(c, [(mx + sx * 22, my - 8), (mx + sx * 32, my - 14), (mx + sx * 25, my + 2)])
-        _fs(c, "hair", INK, 1.4)
-        c.arc(mx + sx * 9, my - 2, 4.4, math.pi + 0.25, 2 * math.pi - 0.25)
-        core.stroke(c, INK, 2)
-    circle(c, mx + 9, my - 2, 7.5)
-    core.stroke(c, "monocle", 2)
-    c.move_to(mx - 10, my + 7)
-    c.curve_to(mx - 4, my + 4, mx - 1, my + 6, mx, my + 7)
-    c.curve_to(mx + 1, my + 6, mx + 4, my + 4, mx + 10, my + 7)
-    core.stroke(c, "mustache", 2.6)
-    c.arc(mx, my + 10, 7, 0.2, math.pi - 0.2)
+        pts = [(x + sx * 20, y + 50), (x + sx * 44, y + 38), (x + sx * 58, y + 22),
+               (x + sx * 64, y + 40), (x + sx * 80, y + 34), (x + sx * 72, y + 58),
+               (x + sx * 62, y + 82), (x + sx * 34, y + 70)]
+        poly(c, pts)
+        _fs(c, BOT_SH if sx > 0 else BOT, INK, 2.6)
+        c.move_to(x + sx * 34, y + 56)
+        c.line_to(x + sx * 64, y + 54)
+        core.stroke(c, BOT_DK, 2)
+    # angular helmet head: flat brow ridge, faceted cheeks, pointed chin
+    head = [(x - 30, y - 30), (x - 12, y - 40), (x + 12, y - 40), (x + 30, y - 30),
+            (x + 34, y - 2), (x + 22, y + 24), (x, y + 38), (x - 22, y + 24), (x - 34, y - 2)]
+    poly(c, head)
+    _fs(c, BOT, INK, 3)
+    c.save()
+    poly(c, head)
+    c.clip()
+    poly(c, [(x + 4, y - 44), (x + 40, y - 30), (x + 40, y + 40), (x + 2, y + 42)])
+    core.fill(c, BOT_SH)
+    poly(c, [(x - 28, y - 28), (x - 12, y - 36), (x - 8, y - 33), (x - 24, y - 22)])
+    core.fill(c, BOT_HI)
+    c.move_to(x - 22, y + 24)                                   # jaw seams
+    c.line_to(x - 10, y + 12)
+    c.line_to(x + 10, y + 12)
+    c.line_to(x + 22, y + 24)
     core.stroke(c, INK, 2)
-    party_hat(c, mx + 4, my - 21, 0.17, 0.12)
-    circle(c, mx - 33, my + 10, 9)                           # Hissy
-    _fs(c, "snake", INK, 2)
+    for k in range(3):                                          # mouth vents
+        c.move_to(x - 7 + k * 7, y + 17)
+        c.line_to(x - 7 + k * 7, y + 27)
+    core.stroke(c, BOT_DK, 2.4)
+    c.restore()
+    poly(c, head)
+    core.stroke(c, INK, 3)
+    # antenna fins
     for sx in (-1, 1):
-        c.arc(mx - 33 + sx * 3.5, my + 9, 2.4, math.pi, 2 * math.pi)
-        core.stroke(c, INK, 1.4)
-    # static confetti
-    for i in range(16):
+        poly(c, [(x + sx * 30, y - 24), (x + sx * 46, y - 50), (x + sx * 36, y - 16)])
+        _fs(c, BOT_DK, INK, 2.2)
+    # angry V visor: dark bezel, two slanted red eye slits glowing
+    radial_glow(c, x, y - 6, 44, BOT_RED, 0.45)
+    poly(c, [(x - 30, y - 18), (x, y - 4), (x + 30, y - 18), (x + 30, y - 4), (x, y + 8),
+             (x - 30, y - 4)])
+    _fs(c, "#141722", INK, 2.6)
+    for sx in (-1, 1):
+        poly(c, [(x + sx * 26, y - 13), (x + sx * 4, y - 3), (x + sx * 4, y + 2),
+                 (x + sx * 25, y - 6)])
+        core.fill(c, BOT_RED)
+        c.move_to(x + sx * 22, y - 9.5)
+        c.line_to(x + sx * 7, y - 2.5)
+        core.stroke(c, BOT_RED_HI, 2)
+    # ... and the cheerful striped party hat (the joke), tipped jauntily
+    party_hat(c, x + 6, y - 37, 0.34, 0.16)
+
+
+def _photo_malvo(c, x, y):
+    """The Evil Genius, waist-up (photo-local, head centre (x, y)): stiff,
+    shoulders up, arms pinned at his sides, a forced sheepish smile, eyes
+    sliding toward the android; Snake draped round his neck, beaming."""
+    c.set_line_join(1)
+    # cape behind (high collar points flanking the head)
+    poly(c, [(x - 60, y + 46), (x - 50, y + 4), (x - 36, y + 22), (x + 36, y + 22),
+             (x + 50, y + 4), (x + 60, y + 46), (x + 66, y + 150), (x - 66, y + 150)])
+    _fs(c, "cape", INK, 2.6)
+    poly(c, [(x - 46, y + 12), (x - 34, y + 26), (x - 40, y + 40)])
+    poly(c, [(x + 46, y + 12), (x + 34, y + 26), (x + 40, y + 40)])
+    core.fill(c, "cape_in")
+    # suit: shoulders hunched up (stiff)
+    body = [(x - 46, y + 44), (x - 22, y + 30), (x + 22, y + 30), (x + 46, y + 44),
+            (x + 52, y + 150), (x - 52, y + 150)]
+    _round_poly(c, body, 10)
+    _fs(c, "suit", INK, 2.6)
+    poly(c, [(x - 14, y + 31), (x + 14, y + 31), (x, y + 74)])            # shirt V
+    _fs(c, "white", INK, 1.8)
+    poly(c, [(x - 4, y + 38), (x + 4, y + 38), (x + 6, y + 66), (x, y + 74), (x - 6, y + 66)])
+    _fs(c, "cape_in", INK, 1.4)                                           # red tie
+    for sx in (-1, 1):                                                     # lapels
+        c.move_to(x + sx * 14, y + 31)
+        c.line_to(x + sx * 4, y + 76)
+    core.stroke(c, "suit_dk", 2.4)
+    _gold_star(c, x + 26, y + 58, 7.5, 0.0, 1.6)                          # FOR EFFORT
+    # arms pinned straight down at his sides, gloved fists
+    for sx in (-1, 1):
+        for col, w in ((INK, 15), ("suit", 10)):
+            c.move_to(x + sx * 40, y + 50)
+            c.line_to(x + sx * 46, y + 120)
+            core.stroke(c, col, w)
+        circle(c, x + sx * 46, y + 126, 8)
+        _fs(c, "glove", INK, 2)
+    # Snake draped round his neck like a scarf: coil behind the neck, the
+    # tail end hanging down his chest (screen right), head on his shoulder
+    for col, w in ((INK, 17), ("snake", 12)):
+        c.move_to(x + 22, y + 92)
+        c.curve_to(x + 30, y + 64, x + 40, y + 40, x + 18, y + 30)
+        c.curve_to(x, y + 26, x - 22, y + 30, x - 36, y + 34)
+        core.stroke(c, col, w)
+    c.move_to(x + 26, y + 70)
+    c.curve_to(x + 30, y + 56, x + 30, y + 44, x + 22, y + 36)
+    core.stroke(c, "snake_belly", 3)
+    for (sx_, sy_) in ((x + 30, y + 54), (x + 4, y + 28), (x - 18, y + 30)):  # spots
+        circle(c, sx_, sy_, 2)
+        core.fill(c, "snake_dk")
+    # head
+    circle(c, x, y + 4, 31)                                    # dome (a touch tall)
+    with saved(c, x, y, (1.0, 1.06)) as cc:
+        circle(cc, 0, 0, 31)
+        _fs(cc, "skin", INK, 2.6)
+        cc.save()
+        circle(cc, 0, 0, 31)
+        cc.clip()
+        circle(cc, 10, 8, 30)
+        cc.rectangle(-40, -40, 80, 80)
+        cc.set_fill_rule(1)
+        core.fill(cc, "skin_sh")
+        cc.set_fill_rule(0)
+        cc.restore()
+        ellipse(cc, -12, -18, 8, 4, -0.5)                      # dome shine
+        core.fill(cc, (1, 1, 1, 0.55))
+    c.new_path()
+    for sx in (-1, 1):                                         # wild hair tufts
+        poly(c, [(x + sx * 27, y - 10), (x + sx * 42, y - 20), (x + sx * 37, y - 8),
+                 (x + sx * 46, y - 4), (x + sx * 30, y + 6)])
+        _fs(c, "hair", INK, 1.6)
+    # worried-up brows (sheepish), eyes sliding toward the android
+    for sx in (-1, 1):
+        c.move_to(x + sx * 20, y - 11 + (2 if sx < 0 else 0))
+        c.line_to(x + sx * 6, y - 16)
+        core.stroke(c, "mustache", 3.4)
+        ellipse(c, x + sx * 11, y - 3, 6.2, 7)
+        _fs(c, "white", INK, 1.6)
+        circle(c, x + sx * 11 + 3.2, y - 2.5, 2.8)
+        core.fill(c, INK)
+    circle(c, x + 11, y - 3, 9.5)                              # monocle + chain
+    core.stroke(c, INK, 4.6)
+    circle(c, x + 11, y - 3, 9.5)
+    core.stroke(c, "monocle", 2.8)
+    c.move_to(x + 19, y + 2)
+    c.curve_to(x + 24, y + 14, x + 20, y + 22, x + 14, y + 30)
+    core.stroke(c, "monocle", 1.2)
+    ellipse(c, x - 20, y + 8, 5, 3)                            # blush
+    ellipse(c, x + 21, y + 9, 5, 3)
+    core.fill(c, (1, 0.45, 0.5, 0.45))
+    # forced, stiff smile: a wide flat grin showing teeth, corners barely up
+    c.move_to(x - 13, y + 16)
+    c.curve_to(x - 6, y + 21, x + 6, y + 21, x + 13, y + 16)
+    c.line_to(x + 12, y + 20)
+    c.curve_to(x + 5, y + 26, x - 5, y + 26, x - 12, y + 20)
+    c.close_path()
+    _fs(c, "white", INK, 1.8)
+    for xx in (x - 6, x, x + 6):
+        c.move_to(xx, y + 19)
+        c.line_to(xx, y + 24)
+    core.stroke(c, INK, 1.1)
+    for sx in (-1, 1):                                         # curly mustache
+        c.move_to(x, y + 11)
+        c.curve_to(x + sx * 6, y + 8, x + sx * 12, y + 9, x + sx * 15, y + 13)
+        c.curve_to(x + sx * 17, y + 15, x + sx * 19, y + 12, x + sx * 18, y + 10)
+    core.stroke(c, "mustache", 2.6)
+    poly(c, [(x - 4, y + 27), (x + 4, y + 27), (x, y + 38)])   # goatee
+    _fs(c, "mustache", INK, 1)
+    # a sweat drop (awkward)
+    with saved(c, x - 33, y - 14, 1.0, -0.3) as d:
+        d.move_to(0, -7)
+        d.curve_to(5, 0, 5, 5, 0, 5)
+        d.curve_to(-5, 5, -5, 0, 0, -7)
+        _fs(d, "#9fdcff", INK, 1.4)
+    # Snake's head resting on his (screen-left) shoulder, beaming at the camera
+    hx, hy = x - 46, y + 34
+    ellipse(c, hx, hy, 15, 12)
+    _fs(c, "snake", INK, 2.2)
+    ellipse(c, hx + 2, hy + 6, 9, 4)
+    core.fill(c, "snake_belly")
+    for sx in (-1, 1):
+        c.arc(hx + sx * 6, hy - 3, 3.2, math.pi + 0.2, 2 * math.pi - 0.2)
+        core.stroke(c, INK, 1.8)
+    c.arc(hx, hy + 2, 6, 0.35, math.pi - 0.35)
+    core.stroke(c, INK, 1.6)
+
+
+def party_photo(c, w, h):
+    """The party Polaroid, centred on (0, 0): the posed party snapshot, caption
+    "EVIL PLAN: SUCCESS!" in marker."""
+    rrect(c, -w / 2, -h / 2, w, h, 5)
+    _fs(c, POL_W, INK, 4)
+    m = 18
+    px0, py0, pw = -w / 2 + m, -h / 2 + m, w - 2 * m
+    ph = pw
+    c.save()
+    c.rectangle(px0, py0, pw, ph)
+    c.clip()
+    _photo_bg(c, px0, py0, pw, ph)
+    # static confetti (kept off the faces)
+    for i in range(14):
         cx_ = px0 + 8 + hash01(i, 71) * (pw - 16)
-        cy_ = py0 + 60 + hash01(i, 72) * (ph * 0.55)
+        cy_ = py0 + 50 + hash01(i, 72) * (ph * 0.42)
+        if abs(cx_ - (-50)) < 40 or abs(cx_ - 60) < 40:
+            continue
         with saved(c, cx_, cy_, 1.0, hash01(i, 73) * 3) as cc:
             cc.rectangle(-3.5, -2, 7, 4)
             core.fill(cc, ["#ff6fa8", "#ffd166", "#5ee7ff", "#3ddc84"][i % 4])
+    # warm party-light glow behind the two heads (separates the dark android
+    # from the dusk sky at phone size)
+    radial_glow(c, px0 + pw * 0.62, py0 + ph * 0.36, 128, "#ffc98a", 0.55)
+    _photo_android(c, px0 + pw * 0.71, py0 + ph * 0.41)
+    _photo_malvo(c, px0 + pw * 0.30, py0 + ph * 0.50)
     c.restore()
     c.rectangle(px0, py0, pw, ph)
     core.stroke(c, INK, 2)
-    with saved(c, 0, py0 + ph + (h / 2 - (py0 + ph)) * 0.5 + 12, 1.0, -0.03) as cc:
-        text(cc, "EVERYONE CAME!", -10, 0, 38, "#2b2a4a", "comic")
-        # little doodle heart
-        hx, hy = 112, -12
-        cc.move_to(hx, hy + 9)
-        cc.curve_to(hx - 14, hy - 2, hx - 6, hy - 14, hx, hy - 5)
-        cc.curve_to(hx + 6, hy - 14, hx + 14, hy - 2, hx, hy + 9)
-        core.fill(cc, "#e8314f")
+    # caption in marker: "EVIL PLAN:" (ink) "SUCCESS!" (red)
+    a, b = POL_CAP
+    fs = 40
+    gap = 9
+    while fs > 24 and (text_width(c, a, "comic", fs) + gap
+                       + text_width(c, b, "comic", fs)) > w - 36:
+        fs -= 1
+    wa, wb = text_width(c, a, "comic", fs), text_width(c, b, "comic", fs)
+    x0 = -(wa + gap + wb) / 2
+    with saved(c, 0, py0 + ph + (h / 2 - (py0 + ph)) * 0.5 + fs * 0.36, 1.0, -0.03) as cc:
+        text(cc, a, x0, 0, fs, "#2b2a4a", "comic", "left")
+        text(cc, b, x0 + wa + gap, 0, fs, "#d8283f", "comic", "left")
 
 
 # ===========================================================================

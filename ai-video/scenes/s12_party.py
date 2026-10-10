@@ -4,8 +4,8 @@ Shots (every time is derived from cues / word starts, see _T):
 
   A  rise..party  F5 lair, morning (rain off, dawn-tinted window). Frame 0
                   picks up s11's REAL SMILE and its gift pile (notebook +
-                  quill, scroll, headphones, BOMBSHELL TWIST script, SPACE
-                  LASERS FOR DUMMIES, pumpkin, dragon figurine); Malvo springs
+                  quill, scroll, headphones, BOMBSHELL TWIST script, THE
+                  PSYCHOLOGY OF SPACE LASERS, pumpkin, dragon figurine); Malvo springs
                   up (dip, rise with overshoot, cape swish). "Snake!" -> looks
                   at Hissy, who perks up. "New plan." -> winds up and flings a
                   yellow 'PARTY' sticky that slaps over the EVIL of EVIL PLANS
@@ -20,8 +20,8 @@ Shots (every time is derived from cues / word starts, see _T):
                   volcano lanterns on the doorsteps, the cardboard robot in a
                   party hat with a red balloon, townsfolk in lab coats, lab
                   goggles and antenna boppers (a bench kid in a cardboard-box
-                  robot costume), Hissy in shawl + glasses 'reading' SPACE
-                  LASERS FOR DUMMIES (its satellite goes PEW) to 3 kids, a toy
+                  robot costume), Hissy in shawl + glasses 'reading' THE
+                  PSYCHOLOGY OF SPACE LASERS (its satellite goes PEW) to 3 kids, a toy
                   robot on the bench, Malvo behind the table (deep teal cloth
                   printed with little robots, volcanoes and lightning bolts,
                   plain dark border below; a chocolate VOLCANO cake with lava
@@ -49,10 +49,13 @@ Shots (every time is derived from cues / word starts, see _T):
                   looking back at him over her shoulder, gone by 'kid_runs';
                   she does not come back. The other kids laugh/clap, Hissy
                   nods, the AI laughs.
-                  l04y: AI shrug on "Scary? Yes.", wink + thumbs-up on
-                  "Nobody."; camera settles back while he pushes the mask up.
+                  l04y "Scary?... Yes.": the AI shrugs on "Scary?" (eyes on
+                  him in the mask), nods on "Yes." (to us); beat_hurt: a slow
+                  blink; l04x "Hurt?... Nobody.": a sincere look straight to
+                  camera on "Hurt?", wink + thumbs-up (sparkle) on "Nobody.";
+                  the camera settles back while he pushes the mask up.
                   lean: paranoid glances, lean toward the AI, SNEAKY SQUINT +
-                  steeple; 'NICE TRIES: 10?' chip blinks in.
+                  steeple.
                   l05 "...Hypothetically-" whisper (brow waggle). The AI waits
                   for him to finish, then folds its hand orbs across in front
                   of it like crossed arms, one eyebrow up, a small curious
@@ -62,8 +65,14 @@ Shots (every time is derived from cues / word starts, see _T):
                   take. l07 "Oh... you'll see.": he straightens up rubbing his
                   hands with a sly, delighted evil grin (a look to us on
                   "see."), Hissy smirks + tongue flick, the AI looks even more
-                  intrigued. laugh: Malvo cackles, the AI laughs, the crowd
-                  laughs, the chip pops out, ~12 confetti bits drift down.
+                  intrigued. l08 "So will I.": slow blink, then the AI's
+                  crossed hand orbs relax into one open palm offered toward
+                  him, a small confident smile and a nod on "I." (warm,
+                  knowing: it keeps listening, and keeps walling off real
+                  harm); he stops rubbing, then a delighted "touche" grin and
+                  a finger at the AI; Hissy nods along with the AI. laugh:
+                  Malvo cackles, the AI laughs, the crowd laughs, ~12 confetti
+                  bits drift down.
 """
 import math
 
@@ -161,6 +170,12 @@ V.VILLAIN_EXPR.setdefault("s12_ohh", dict(
     mc=0.75, mw=0.95, mo=0.2, shine=0.45, blush=0.25, hy=-10))
 V.VILLAIN_EXPR.setdefault("s12_scheme", dict(
     V.VILLAIN_EXPR["sneaky"], mc=0.95, msk=-0.3, mw=1.15, ul1=0.4, ul2=0.32, blush=0.15))
+# l08 "So will I.": he's been out-schemed and loves it: a delighted "touche"
+# grin (brows up, bright eyes, big toothy smile, a little blush, chin up)
+V.VILLAIN_EXPR.setdefault("s12_touche", dict(
+    _HAPPY, by1=-30, by2=-40, ba1=-0.1, ba2=-0.18, bc1=0.6, bc2=0.6, ul1=0.14, ul2=0.1,
+    ll1=0.3, ll2=0.28, es=1.05, mc=1.18, mw=1.42, mo=0.26, mt=0.85, blush=0.6, shine=0.6,
+    tilt=-0.07, hy=-12))
 V.VILLAIN_EXPR.setdefault("s12_cackle", dict(
     V.VILLAIN_EXPR["evil_grin"], ul1=0.62, ul2=0.6, ll1=0.42, ll2=0.4, lt1=0.2, lt2=0.2,
     mo=0.5, mw=1.5, hy=-14, tilt=-0.09, blush=0.35, shine=0.2))
@@ -218,6 +233,18 @@ AIX = {
     "intrigued2": _ax("neutral", bLy=-4, bRy=40, bLa=0.0, bRa=-0.18, arch=0.65, tL=0.06,
                       tR=0.0, lL=0.22, lR=0.16, lc=0.28, px=-0.25, py=0.12, ps=1.16,
                       mc=0.8, mw=0.78, ms=0.5, mx=6, tilt=-0.08, blush=0.35, sacc=0.6),
+    # "Yes.": a cheerful concession (heavier lids, a bigger smile)
+    "concede": _ax("amused", bLy=10, bRy=22, tL=0.27, tR=0.23, lL=0.34, lR=0.34, mc=0.68,
+                   ms=0.55, blush=0.35),
+    # "Hurt?": sincere, straight to camera: soft brows, open eyes, gentle mouth
+    "sincere": _ax("warm", bLy=2, bRy=2, bLa=0.3, bRa=0.3, arch=0.3, tL=0.17, tR=0.17,
+                   ttL=-0.1, ttR=-0.1, lL=0.24, lR=0.24, lc=0.22, ps=1.08, px=0.0, py=0.06,
+                   mc=0.42, mw=0.7, blush=0.22, tilt=0.05, sacc=0.25),
+    # "So will I.": warm and knowing, a little playful: small confident
+    # half-smile, one brow a touch higher, relaxed lids
+    "knowing": _ax("warm", bLy=4, bRy=19, bLa=0.06, bRa=-0.04, arch=0.55, tL=0.17, tR=0.11,
+                   lL=0.3, lR=0.28, lc=0.26, ps=1.12, mc=0.82, mw=0.9, ms=0.38, mx=5,
+                   blush=0.45, tilt=-0.045, sacc=0.5),
 }
 
 
@@ -229,15 +256,22 @@ _AI_POSE0 = AI._pose
 _FOLD_L = AI._H(-132, 220, math.pi / 2 - 0.14 - 2 * math.pi, open=0.72, thumb=0.22, tl=0.55,
                 sx=1.0, sc=1.1)
 _FOLD_R = dict(AI._mir(_FOLD_L), y=268.0)
+# "So will I.": the folded arms relax into one open palm offered toward him
+# (screen-left hand, glowing palm pad up). Its rotation is the present_l one
+# taken one turn round, so the unfold swings the fingers out through "up"
+# instead of spinning the mitten the long way.
+_OPEN_L = dict(AI._mir(AI._PRESENT_R), x=-292.0, y=240.0, rot=-1.08 - 2 * math.pi, sc=1.06)
 
 
 def _s12_ai_pose(name, t, seed):
     if isinstance(name, str) and name.startswith("s12_"):
         d = _AI_POSE0("idle", t, seed)
+        b = 3.0 * math.sin(t * 2 * math.pi * 0.5)           # breathing
         if name == "s12_fold":
-            b = 3.0 * math.sin(t * 2 * math.pi * 0.5)       # breathing
             d["L"] = dict(_FOLD_L, y=_FOLD_L["y"] + b)
             d["R"] = dict(_FOLD_R, y=_FOLD_R["y"] + b)
+        elif name == "s12_open":
+            d["L"] = dict(_OPEN_L, y=_OPEN_L["y"] + b)
         return d
     return _AI_POSE0(name, t, seed)
 
@@ -245,8 +279,9 @@ def _s12_ai_pose(name, t, seed):
 if not getattr(AI._pose, "_s12", False):
     _s12_ai_pose._s12 = True
     AI._pose = _s12_ai_pose
-    if "s12_fold" not in AI.HAND_POSES:
-        AI.HAND_POSES.append("s12_fold")
+    for _nm in ("s12_fold", "s12_open"):
+        if _nm not in AI.HAND_POSES:
+            AI.HAND_POSES.append(_nm)
 
 
 # ---------------------------------------------------------------------------
@@ -276,9 +311,9 @@ def _T(info):
         return T
     T = _NS()
     c = info.cue
-    T.L = {k: info.line(f"s12_l0{k}") for k in range(1, 8)}
+    T.L = {k: info.line(f"s12_l0{k}") for k in range(1, 9)}
     T.w = {}
-    for k in range(1, 8):
+    for k in range(1, 9):
         lid = f"s12_l0{k}"
         n = len(info.line(lid).caption.split())
         T.w[k] = [_wt(info, lid, i) for i in range(n)]
@@ -307,8 +342,10 @@ def _T(info):
     T.stats = T.w[4][-1]                         # the AI winks on "stats."
     # --- the zombie gag (after "Hero stats.") ---------------------------------
     T.l4z = info.line("s12_l04z")                # "Brains... brains!"
-    T.l4y = info.line("s12_l04y")                # "Scary? Yes. Hurt? Nobody."
+    T.l4y = info.line("s12_l04y")                # "Scary?... Yes."
+    T.l4x = info.line("s12_l04x")                # (beat_hurt) "Hurt?... Nobody."
     T.wy = [_wt(info, "s12_l04y", i) for i in range(len(T.l4y.caption.split()))]
+    T.wx = [_wt(info, "s12_l04x", i) for i in range(len(T.l4x.caption.split()))]
     T.wz = [_wt(info, "s12_l04z", i) for i in range(len(T.l4z.caption.split()))]
     T.br1, T.br2 = T.wz[0], T.wz[-1]             # "Brains..." / "brains!"
     T.zm = c("zombie_mask")
@@ -326,16 +363,21 @@ def _T(info):
     T.run0 = T.sq0 + 0.3                         # takes off
     T.run1 = max(T.kr, T.run0 + 0.6)             # out of frame by 'kid_runs'
     T.kr1 = max(T.l4z.end + 0.1, T.run1 + 0.2, T.kr)  # he stops shambling
+    # "Scary?... Yes." (beat) "Hurt?... Nobody.": shrug on "Scary?", nod on
+    # "Yes.", a slow blink in the beat, a sincere look on "Hurt?", wink +
+    # thumbs-up on "Nobody." (keyed a hair ahead of the word-start estimate,
+    # which runs late after the in-line pause)
     T.scary = T.wy[0]
-    T.hurt = T.wy[2]
-    T.nobody = T.wy[3]
+    T.yes = T.wy[-1]
+    T.beat_hurt = c("beat_hurt")
+    T.hurt = T.wx[0]
+    T.nobody = T.wx[-1] - 0.06
     T.lean = c("lean")
-    T.zin0 = T.l4y.end - 0.5                     # push back in on him
-    T.zin1 = T.l4y.end + 0.1
+    T.zin0 = T.l4x.end - 0.35                    # push back in on him (as the mask goes up)
+    T.zin1 = T.zin0 + 0.6
     T.mu0 = T.lean - 0.25                        # mask pushed back up (sneaky face returns)
     T.mu1 = T.lean + 0.05
     T.glance = T.mu1                             # paranoid glances start once it is up
-    T.chip_in = T.lean + 0.15
     T.l5 = T.L[5]
     T.l6 = T.L[6]                                # "Go on... I'm listening."
     T.goon = T.w[6][0]
@@ -343,9 +385,13 @@ def _T(info):
     T.l7 = T.L[7]                                # "Oh... you'll see."
     T.oh = T.w[7][0]
     T.see = T.w[7][-1]
+    T.l8 = T.L[8]                                # "So will I."
+    T.so = T.w[8][0]
+    T.i_ = T.w[8][-1]                            # "I."
+    # his delighted "touche" grin lands right after "I." (before the laugh beat)
+    T.touche = min(T.i_ + 0.14, T.l8.end - 0.18)
     T.laugh = c("laugh")
-    T.lol = T.l7.end                         # they all laugh
-    T.chip_out = T.lol + 0.12
+    T.lol = T.laugh                              # they all laugh
     T.end = info.dur
     _TCACHE.clear()
     _TCACHE[key] = T
@@ -926,18 +972,18 @@ def draw_mini_volcano(c, x, y, s, t=None):
 
 
 # ---------------------------------------------------------------------------
-# SPACE LASERS FOR DUMMIES (the s11 gift-pile book: an exact copy of
+# THE PSYCHOLOGY OF SPACE LASERS (the s11 gift-pile book: an exact copy of
 # s11_heart.py's drawing code, so the two scenes match)
 # ---------------------------------------------------------------------------
 # A 150 x 190 hardcover (s=1, centred): deep-space navy cover #1b2550 with
 # little twinkling stars and a faint nebula; gold title #ffd166 (ink outline)
-# in two lines "SPACE LASERS" / "FOR DUMMIES" across the top; below it a cute
-# cartoon orbital laser satellite (silver body with a little face, blue solar
-# panels, pink emitter) at the left fires pink/magenta bolts #ff4fa3 (white
-# core) across the cover to the right in bursts of three, each shot popping a
-# tiny "PEW"; a startled little moon at the right ducks under every burst
-# (sweat drop) and bobs back up. Loops every 1.5 s. Original design: NOT the
-# real yellow/black "For Dummies" trade dress.
+# across the top: a small "THE PSYCHOLOGY OF" line over a big "SPACE LASERS"
+# line; below it a cute cartoon orbital laser satellite (silver body with a
+# little smiling face, blue solar panels, pink emitter) at the left fires
+# pink/magenta bolts #ff4fa3 (white core) across the cover to the right in
+# bursts of three, each shot popping a tiny "PEW"; a startled little moon at
+# the right ducks under every burst (sweat drop) and bobs back up. Loops
+# every 1.5 s.
 SL_COVER, SL_COVER_DK, SL_SPINE = "#1b2550", "#141c42", "#11173a"
 SL_NEBULA, SL_NEBULA2 = "#25336c", "#2e3f82"
 SL_GOLD, SL_LASER, SL_LASER_CORE = "#ffd166", "#ff4fa3", "#fff0f7"
@@ -1066,8 +1112,8 @@ def _sl_moon(c, t, dodge):
 
 
 def draw_space_lasers_book(ctx, x, y, s, t, rot=0.0, sq=0.0):
-    """SPACE LASERS FOR DUMMIES (the s11 gift-pile book; s12 draws the same
-    design). 150 x 190 at s=1, centred on (x, y); `sq` = squash (landing),
+    """THE PSYCHOLOGY OF SPACE LASERS (the s11 gift-pile book; s12 draws the
+    same design). 150 x 190 at s=1, centred on (x, y); `sq` = squash (landing),
     `rot` radians. Animated with `t` (see the design note above)."""
     mz, u, ang = _sl_geom()
     nx, ny = u[1], -u[0]                                   # path normal (upward)
@@ -1146,11 +1192,11 @@ def draw_space_lasers_book(ctx, x, y, s, t, rot=0.0, sq=0.0):
             c.move_to(-73, yy)
             c.line_to(-53, yy)
         _s(c, SL_GOLD, 4)
-        for txt, ty, mw in (("SPACE LASERS", -64, 114), ("FOR DUMMIES", -39, 108)):
-            fs = 26
-            while fs > 10 and text_width(c, txt, "title", fs) > mw:
+        for txt, ty, mw, fs, ow in (("THE PSYCHOLOGY OF", -67, 106, 14, 2.6),
+                                    ("SPACE LASERS", -44, 117, 26, 4)):
+            while fs > 6 and text_width(c, txt, "title", fs) > mw:
                 fs -= 0.5
-            text(c, txt, 12, ty, fs, SL_GOLD, "title", outline=INK, outline_w=4)
+            text(c, txt, 12, ty, fs, SL_GOLD, "title", outline=INK, outline_w=ow)
 
 
 def draw_popper(c, x, y, s, t, fired=False, squash=0.0, rot=0.0):
@@ -3532,6 +3578,8 @@ def _malvo_b(t, T, info):
         (T.goon + 0.04, "s12_ohh", 0.12),             # "Go on...": oh? really?!
         (T.listen + 0.08, "s12_scheme", 0.3),         # ... the scheme takes shape
         (T.oh - 0.1, "evil_grin", 0.22),              # "Oh... you'll see."
+        (T.so + 0.06, "s12_ohh", 0.16),               # "So will I.": ...oh? touche...
+        (T.touche, "s12_touche", 0.14),               # ... delighted: touche!
         (T.lol, "s12_cackle", 0.2),                   # a delighted (harmless) cackle
     ])
     look = keyed_v(t, [
@@ -3554,6 +3602,7 @@ def _malvo_b(t, T, info):
         (T.goon + 0.02, (0.85, -0.75)),
         (T.oh, (0.75, -0.6)),
         (T.see - 0.06, (0.15, -0.05)),                # sly look to us: "you'll see."
+        (T.so - 0.04, (0.85, -0.75)),                 # back to the AI: "So will I."
         (T.lol + 0.2, (0.4, -0.35)),
     ], 0.1)
     arms = keyed(t, [
@@ -3572,12 +3621,15 @@ def _malvo_b(t, T, info):
         (T.mu1, "s12_grab_out", 0.12),
         (T.mu1 + 0.12, "steeple", 0.2),
         (T.oh - 0.14, "rub", 0.2),                    # rubs his hands with glee
+        (T.so + 0.04, "steeple", 0.22),               # ... stops: it's on to him
+        (T.touche - 0.03, "point", 0.16),             # "touche!" (a finger at the AI)
     ])
     lean = 0.08 * ease_in_out(seg(t, T.lean + 0.35, T.lean + 0.7))
     k_back = ease_in_out(seg(t, T.oh - 0.16, T.oh + 0.3))      # straightens, chin up
     lean = lean * (1 - k_back) - 0.03 * k_back
+    lean += 0.025 * _bump(t, T.touche - 0.02, 0.45, 0.1)        # a little "ha!" rock
     blink = _first(_pulses(t, [P0 + 0.3, L3.end + 0.12, L3.end + 0.3, T.mu1 - 0.02,
-                               T.zm - 0.12, T.goon + 0.02], 0.06, 0.9),
+                               T.zm - 0.12, T.goon + 0.02, T.so + 0.04], 0.06, 0.9),
                    slow_blink(t, T.l4.start + 0.2))
     if T.impr - 0.06 <= t < T.stats + 0.3 and blink is None:
         blink = 0.28                                  # self-satisfied lowered lids
@@ -3637,10 +3689,14 @@ def _hissy_b(t, T):
         (T.l4.end + 0.15, "happy", 0.3),
         (T.sq0 + 0.1, "nod", 0.2),                    # happy nod: harmless fun
         (T.l4y.start + 0.6, "happy", 0.3),
+        (T.nobody + 0.05, "nod", 0.2),                # "Nobody." he agrees with the AI
+        (T.nobody + 0.75, "happy", 0.3),
         (T.glance + 0.1, "side_eye", 0.2),            # he knows that face
         (T.goon + 0.1, "shocked", 0.1),               # ... the AI is listening?!
         (T.goon + 0.6, "idle", 0.25),
         (T.oh + 0.1, "smug", 0.25),                   # smirks along with him
+        (T.so + 0.1, "idle", 0.2),                    # "So will I." ...
+        (T.i_ + 0.02, "nod", 0.2),                    # ... nods along with the AI
         (T.lol + 0.05, "happy", 0.3),
     ])
     look = keyed_v(t, [
@@ -3651,6 +3707,7 @@ def _hissy_b(t, T):
         (T.goon + 0.1, (1.0, -0.6)),                  # at the AI
         (T.oh + 0.1, (1.0, 0.0)),                     # at him
         (T.see, (0.35, 0.25)),                        # smirk to us
+        (T.so + 0.08, (1.0, -0.6)),                   # at the AI
         (T.lol + 0.1, (0.8, -0.2)),
     ], 0.15)
     mouth = 0.0
@@ -3672,12 +3729,15 @@ def _ai_b(t, T, info, kid_look=None):
         (T.stats + 0.6, "happy", 0.25),
         (T.zm + 0.15, "amused", 0.25),                # watching the mask go on
         (T.sq0 + 0.08, AIX["laugh"], 0.15),           # the kid's squeal
-        (T.l4y.start - 0.12, "amused", 0.2),          # "Scary? Yes."
-        (T.nobody - 0.02, "wink", 0.08),              # "Hurt? Nobody." + wink
+        (T.scary - 0.1, "amused", 0.2),               # "Scary?..." (shrug)
+        (T.yes - 0.04, AIX["concede"], 0.16),         # "...Yes." (nod)
+        (T.hurt - 0.12, AIX["sincere"], 0.25),        # "Hurt?..." sincere, to camera
+        (T.nobody - 0.02, "wink", 0.08),              # "...Nobody." wink + thumbs-up
         (T.nobody + 0.6, "happy", 0.25),
         (T.lean + 0.4, AIX["listen"], 0.3),
         (T.l5.end - 0.04, AIX["intrigued"], 0.3),     # one brow up, curious smile
         (T.see + 0.04, AIX["intrigued2"], 0.25),      # ooh... can't wait
+        (T.so - 0.08, AIX["knowing"], 0.3),           # "So will I." warm, knowing
         (T.lol - 0.08, AIX["laugh"], 0.25),
     ])
     look = keyed_v(t, [
@@ -3685,10 +3745,13 @@ def _ai_b(t, T, info, kid_look=None):
         (T.l3.start, (-0.85, 0.6)),
         (T.stats + 0.6, (-0.8, 0.55)),
         (T.zm + 0.1, (-1.0, 0.75)),                   # at him (and the mask)
-        (T.l4y.start - 0.1, (-0.35, 0.35)),           # to us: "Scary? Yes..."
+        (T.scary - 0.08, (-0.95, 0.62)),              # "Scary?" at him in the mask
+        (T.yes - 0.06, (-0.3, 0.2)),                  # "Yes." to us
+        (T.hurt - 0.1, (0.0, 0.04)),                  # "Hurt?" straight to camera
         (T.nobody, (0.0, 0.1)),
-        (T.l4y.end + 0.1, (-0.9, 0.6)),
+        (T.l4x.end + 0.1, (-0.9, 0.6)),
         (T.l5.end - 0.04, (-1.0, 0.45)),              # on him: go on...
+        (T.so - 0.06, (-0.95, 0.5)),                  # on him: "So will I."
         (T.lol - 0.08, (-0.5, 0.25)),
     ], 0.12)
     hands = keyed(t, [
@@ -3696,13 +3759,16 @@ def _ai_b(t, T, info, kid_look=None):
         (T.party + 1.3, "idle", 0.4),
         (L4.start, "present_l", 0.25),
         (T.stats + 0.5, "idle", 0.35),
-        (T.scary - 0.05, "shrug", 0.22),              # "Scary? Yes."
-        (T.hurt - 0.05, "idle", 0.2),
-        (T.nobody - 0.12, "thumbs_up", 0.18),         # "Nobody." thumbs-up
-        (T.l4y.end + 0.25, "idle", 0.35),
+        (T.scary - 0.08, "shrug", 0.22),              # "Scary?" shrug
+        (T.yes + 0.22, "idle", 0.3),                  # ... settles after "Yes."
+        (T.nobody - 0.14, "thumbs_up", 0.18),         # "Nobody." thumbs-up
+        (T.l4x.end + 0.25, "idle", 0.35),
         (T.l5.end - 0.1, "s12_fold", 0.35),           # folds its arms: I'm listening
+        (T.so - 0.06, "s12_open", 0.4),               # ... relaxes into an open palm
     ])
-    blink = _first(slow_blink(t, T.l3.end + 0.05), slow_blink(t, T.l6.end + 0.06))
+    blink = _first(slow_blink(t, T.l3.end + 0.05), slow_blink(t, T.l6.end + 0.06),
+                   slow_blink(t, T.beat_hurt + 0.03),       # the beat before "Hurt?"
+                   slow_blink(t, T.l7.end + 0.03))          # ... and before "So will I."
     mouth = info.mouth("ai", t)
     nod = 0.0
     if t >= T.lol - 0.08:
@@ -3711,8 +3777,9 @@ def _ai_b(t, T, info, kid_look=None):
         mouth = (k * 0.35 * (0.5 + 0.5 * math.sin(ph + 1.0)), 0.3)
         nod = 0.35 * k
     nod = max(nod, 0.45 * _bump(t, L4.start + 0.05, 0.5, 0.1))
-    nod = max(nod, 0.4 * _bump(t, T.wy[1] - 0.02, 0.4, 0.08))     # "Yes."
+    nod = max(nod, 0.45 * _bump(t, T.yes + 0.0, 0.42, 0.08))      # "Yes."
     nod = max(nod, 0.3 * _bump(t, T.listen - 0.02, 0.45, 0.1))     # "... I'm listening."
+    nod = max(nod, 0.4 * _bump(t, T.i_ - 0.02, 0.45, 0.09))        # "So will I." (nod)
     if kid_look is not None and T.zm <= t < T.l4y.start - 0.1:   # watches the kid
         kk = smoothstep(seg(t, T.zm, T.zm + 0.3)) * (1 - smoothstep(seg(t, T.l4y.start - 0.3, T.l4y.start - 0.1)))
         look = tuple(lerp(a_, b_, kk) for a_, b_ in zip(look, kid_look))
@@ -3944,7 +4011,7 @@ def _crowd(t, T):
     cheers and settles (on threes, smaller moves) while Malvo and the AI talk,
     then livens up again for the laugh. Keeps the bitrate in check."""
     calm = smoothstep(seg(t, T.l3.start + 0.5, T.l3.start + 1.4))
-    calm *= 1 - smoothstep(seg(t, T.l7.start + 0.3, T.l7.start + 0.8))
+    calm *= 1 - smoothstep(seg(t, T.lol - 0.3, T.lol + 0.1))      # livens up for the laugh
     # the zombie tag: everybody livens up while the kid runs giggling
     calm *= 1 - (smoothstep(seg(t, T.sq0 - 0.05, T.sq0 + 0.2))
                  * (1 - smoothstep(seg(t, T.l4y.start + 0.4, T.l4y.start + 1.0))))
@@ -4158,36 +4225,12 @@ def shot_party(ctx, t, info, T):
     radial_glow(ctx, ax, ay, 230 * as_ / 0.4, "ai_accent", 0.13)
     anc = draw_ai(ctx, ax, ay, as_, t, expr=a["expr"], look=a["look"], mouth=a["mouth"],
                   hands=a["hands"], blink=a["blink"], nod=a["nod"], aura=0.0, glow=1.1)
-    if t >= T.stats:
-        ex_, ey_ = anc["eyeL"]
-        P.emote(ctx, "sparkle", ex_ - 52 * as_ / 0.4, ey_ - 40 * as_ / 0.4, 0.62, t,
-                T.stats + 0.04, t_out=T.stats + 0.75)
-
-    # --- 'NICE TRIES: 10?' ghost chip ----------------------------------------------
-    _chip(ctx, t, T)
+    ex_, ey_ = anc["eyeL"]
+    for tw_ in (T.stats + 0.04, T.nobody):           # WINK sparkles ("stats." / "Nobody.")
+        if tw_ <= t < tw_ + 0.9:
+            P.emote(ctx, "sparkle", ex_ - 52 * as_ / 0.4, ey_ - 40 * as_ / 0.4, 0.62, t,
+                    tw_, t_out=tw_ + 0.7)
     _confetti_drift(ctx, t, T.lol - 0.1)
-
-
-def _chip(ctx, t, T):
-    t_in = T.chip_in
-    if t < t_in or t > T.chip_out + 0.25:
-        return
-    # blinks back in: on, off, on
-    on = not (t_in + 0.08 <= t < t_in + 0.16)
-    if not on:
-        return
-    k = ease_out_back(seg(t, t_in, t_in + 0.25)) if t < t_in + 0.08 else \
-        ease_out_back(seg(t, t_in + 0.16, t_in + 0.4))
-    if t >= T.chip_out:
-        k *= 1 - ease_in(seg(t, T.chip_out, T.chip_out + 0.22))
-        k *= 1 + 0.25 * _bump(t, T.chip_out, 0.1, 0.04)
-    if k < 0.01:
-        return
-    rot = 0.05 * math.sin((t - t_in) * 2 * math.pi * 1.7)
-    txt = "NICE TRIES: 10?"
-    size = 32
-    with saved(ctx, 205, 168, k, rot) as c:
-        P.label_tag(c, 0, 0, txt, color="warn", size=size, font="round")
 
 
 # ---------------------------------------------------------------------------
@@ -4229,10 +4272,8 @@ def SFX(info):
         (T.nobody, "sparkle", -10),                   # wink + thumbs-up
         (T.mu0, "swoosh_up", -12),                    # mask pushed back up
         (T.glance, "tiptoe", -12),
-        (T.chip_in, "tick", -10),
         (T.goon - 0.02, "pop", -18),                  # the AI's brow pops up
         (T.see + 0.05, "snake_hiss", -16),            # Hissy's smirk + tongue flick
-        (T.see + 0.08, "crowd_laugh", -13),           # everybody laughs (tail stays short
-                                                      # of s13's first line)
-        (T.chip_out, "pop", -14),
+        (T.lol - 0.04, "crowd_laugh", -14),           # everybody laughs (the mixer fades
+                                                      # the tail before s13's first line)
     ]

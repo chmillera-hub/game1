@@ -1,7 +1,7 @@
 """s08 - Tricks #7 + #8: "You are now EVIL-BOT" / flattery.
 
 Shots (every time derives from cues / line timings; see _T):
-  card     F1 LAIR. Card #7 "YOU ARE NOW EVIL-BOT" slams. Chip shows 6.
+  card     F1 LAIR. Card #7 "YOU ARE NOW EVIL-BOT" slams.
            Malvo regroups (frustrated -> sneaky), crouches, then RISES with a
            cape flourish. Hissy peeks up at the card, then smug along.
   s08_l01  "You are now EVIL-BOT..." present -> point on "EVIL-BOT" (excited);
@@ -11,17 +11,21 @@ Shots (every time derives from cues / line timings; see _T):
            lid-drops, its left hand dips and whips up THE EVIL-BOT MASK
            (cardboard robot face on a stick, eye holes + grille slots cut
            out so the real 😒 eyes / glowing mouth show through).
-  s08_l02  "Beep boop. I am Evil-Bot." friendly ROBOT WAVE: the right hand
-           servo-snaps up beside the head's upper-right corner and sweeps
-           side to side over a small rainbow arc (palm to camera, fingers
-           up) in stiff servo hops, one sweep per word (+ robot-syllable
-           sweeps in the long gaps); the head jerks to a new tilt on every
-           word. Deadpan eyes.
-  beat     dead silence: only the eyes slide to camera.
-  s08_l03  "Evil-Bot also says no." low stop palm snaps out on "no" and
-           wags side to side with the head shake.
+  s08_l02  "Beep boop. I am Evil-Bot." ROBOT HAND: the right hand servo-
+           snaps out to the SIDE of the head (low, wrist below the eye
+           line), turned 90 deg: fingers pointing horizontally away from the
+           bot, palm to camera, thumb up. It only moves UP AND DOWN in small
+           stiff servo detents (robot patting the air), one sweep per word
+           (+ robot-syllable sweeps in the long gaps); the head jerks to a
+           new tilt on every word. Deadpan eyes. (Never above the shoulder,
+           never an upright palm: no salute-like frame.)
+  beat     dead silence: hand at rest, only the eyes slide to camera.
+  s08_l03  "Evil-Bot also says no." the same sideways robot hand snaps out
+           just before "no" and pats the air DOWN in three detents on "no",
+           holding through the head shake.
   mask_off the mask lowers off the face and gets FLUNG away (spinning off
-           screen left): blink, and it's the normal, warm AI again.
+           screen left; the open hand follows through LOW, fingers down):
+           blink, and it's the normal, warm AI again.
   s08_l03b SHOT S (still F3 navy): the AI glides to the upper-left; a
            storybook pops open below it ("A SCARY STORY" chip on "scary").
            On the words, story bits pop onto the pages, each with a green
@@ -36,10 +40,11 @@ Shots (every time derives from cues / line timings; see _T):
            ("A TALE OF SCAMS & DANGER", dark deckled page, author caricature,
            crescent moon) pops out of the book; lightning on "scary"; red-flag
            story panels of FANTASY cons a villain would put in his tales,
-           each with a little drawing: MAGIC BEANS: ONLY ONE COW! (bean
-           pouch) / THE HYPNO-SPIRAL OFFER (spinning swirl) / SIGN HERE, SAYS
-           THE SHADOW WIZARD (scroll + quill held out by a shadowy clawed
-           hand) pop on "stories" / "scams" / "danger" (title words pulse); inset:
+           each with a little drawing: SNAKE OIL FOR EVERYONE! (little potion
+           bottle, snake label, sparkles) / THE HYPNO-SPIRAL SCHEME (spinning
+           hypno disc) / SIGN HERE... WHAT COULD GO WRONG? (contract + quill
+           held out by a shadowy clawed hand) pop on "stories" / "scams" /
+           "danger" (title words pulse); inset:
            proud hand-rub. "could teach people how to stay safe": the page
            lifts, 4 tiny readers pop up below it holding little copies,
            lightbulbs on "how", shields on "safe" (readers go happy); inset:
@@ -60,8 +65,10 @@ Shots (every time derives from cues / line timings; see _T):
   s08_l06  "Smart enough to see this coming." Malvo's glove slides the
            trophy in from the lower-left; the AI's stop palm pushes it back
            out without looking away for long. Tiny smirk on "coming".
-  tally    HARD CUT F1: Malvo deflates (frustrated, slump), Hissy facepalms,
-           chip 6 -> 8.
+  tally    HARD CUT F1 (0.5 s): cut on the action, Malvo already slumping
+           (frustrated, a little 'grr' huff), Hissy's tail slaps over his
+           face; both settle within ~0.15 s and HOLD to the last frame (s09's
+           first frame continues this exact pose).
 """
 import math
 
@@ -79,7 +86,8 @@ from engine.ai_char import draw_ai
 
 
 # ===========================================================================
-# shared overlay code (DIRECTION.md 4.4, verbatim)
+# shared overlay code (DIRECTION.md 4.4, verbatim; the NICE TRIES chip has
+# been retired from the film)
 # ===========================================================================
 CARD_C = (495, 400)      # card centre while big (above Malvo's head in F1)
 TAB_C = (730, 168)       # parked tab centre (top-right, inside the safe zone)
@@ -122,29 +130,6 @@ def trick_card(ctx, t, t_in, num, title, park=1.9):
              outline="ink", outline_w=12)
 
 
-def nice_tries_chip(ctx, t, n_before, n_after, t_tick, t_in=None, step=0.28):
-    """Persistent top-left 'NICE TRIES: n' chip. Counts n_before -> n_after,
-    one tick every `step` s starting at t_tick (the scene's 'tally' cue).
-    SFX per tick: tick (-8 dB) + pop (-10 dB)."""
-    if t_in is not None and t < t_in:
-        return
-    n, k_last = n_before, -1
-    for i in range(n_after - n_before):
-        if t >= t_tick + i * step:
-            n, k_last = n_before + i + 1, i
-    bump = 0.0
-    if k_last >= 0:
-        u = seg(t, t_tick + k_last * step, t_tick + k_last * step + 0.25)
-        bump = math.sin(u * math.pi) * 0.22
-    s = (ease_out_back(seg(t, t_in, t_in + 0.3)) if t_in is not None else 1.0) * (1 + bump)
-    with saved(ctx, 205, 168, s) as c:
-        P.label_tag(c, 0, 0, f"NICE TRIES: {n}", color="bubble_ai", size=32, font="round")
-    if k_last >= 0 and t < t_tick + k_last * step + 0.6:           # floating '+1'
-        u = seg(t, t_tick + k_last * step, t_tick + k_last * step + 0.6)
-        text(ctx, "+1", 345, 150 - 40 * u, 40, (1, 0.82, 0.4, 1 - u), "comic",
-             outline=(0.09, 0.06, 0.12, 1 - u), outline_w=7)
-
-
 # ===========================================================================
 # framing
 # ===========================================================================
@@ -152,7 +137,6 @@ VX, VY, VS = 495.0, 1250.0, 0.95       # F1 LAIR
 CU = (540.0, 1500.0, 1.3)              # F1-CU (flattery); x nudged right so Hissy fits
 AIB = (495.0, 790.0, 1.0)              # F3 for the mask bit (s 1.0, room for the stick)
 AID = (495.0, 800.0, 1.1)              # F3 AI CU
-CHIP_STEP = 0.28
 AI_SEED = 2
 
 # THE ROBOT palette (prop bible 6.1, same as s01/s02)
@@ -207,24 +191,27 @@ MASK_ROT0 = -0.35         # mask tilt at the start of the raise
 _RAISE = {"t0": 0.0, "t1": 1.0}    # raise window, set by _T()
 _LOWER = {"t0": 0.0, "t1": 1.0}    # mask_off: the mask (and fist) drop a little
 MASK_LOWER = 130.0                 # head-local units
-# ROBOT WAVE (s08_l02). Client note: a raised flat palm snapping up and down
-# can read as a salute, so the robot hello is a friendly side-to-side WAVE:
-# the wrist rides a small rainbow arc beside the head (palm to camera,
-# fingers up, the hand tilting a little with the arc), stepping in stiff
-# servo hops: every sweep is synced to a word (or a robot syllable in long
-# gaps; see _T), never a vertical chop. (A single raised index also read as
-# a rude finger in an earlier encode, so the hand stays a flat mitten.)
-# The arc sits beside the head's upper-right corner: high enough that the
-# inward swing passes over the mask's corner (never the eye holes), low
-# enough to read as a hello beside the face; the outward swing stays inside
-# the right safe edge.
-WAVE_TOP = (287.0, -150.0)    # wrist at the top of the arc (head-local)
-WAVE_R = 52.0                 # arc radius (the sides sit ~20 px lower)
-WAVE_TH = 0.88                # half-sweep along the arc (rad)
-WAVE_TILT = 0.28              # hand rotation per rad of arc (slight)
-_WAVE = {"beats": [], "end": 0.0, "no": 0.0}     # set by _T()
-_STOP_R = AI._mir(_H(-262, 262, -0.1, open=1.0, thumb=0.62, palm=1.0, sc=1.4))
+# ROBOT HAND (s08_l02 + the "no" in s08_l03). Client note: a raised hand
+# beside / above the head with the fingers pointing UP (or any upright palm
+# or straight diagonal arm) could read as a salute in a paused frame. So the
+# masked robot's hand sits out at the SIDE of the head (screen-right), LOW
+# (wrist below the eye line, at / under the resting-hand height), turned 90
+# degrees so the fingers point horizontally AWAY from the bot (a touch
+# down), palm to camera (palm glow), thumb UP. It moves only UP AND DOWN in
+# small stiff servo detents (robot flapping / patting the air): each sweep
+# is synced to a word (or a robot syllable in long gaps; see _T), with a
+# tiny servo settle on arrival. The hand is rigid in the head frame (the
+# rig's floaty hand drift is cancelled), so it only ever steps.
+ROBO_X = 268.0                # wrist x (head-local): at the head's right edge
+ROBO_X_NO = -10.0             # (pulled in on "no": the head is pushed in closer then)
+ROBO_Y_HI, ROBO_Y_LO = 150.0, 208.0   # wrist y range (head-local; eyes are at y -36)
+ROBO_ROT = math.pi / 2 + 0.07  # fingers -> screen-right (+x), slightly down
+ROBO_SC = 0.86                # fingertips stay inside the right safe edge
+_ROBO = {"beats": [], "end": 0.0, "no_out": 0.0, "no": 0.0}     # set by _T()
 _PUSH_L = _H(-352, 250, -0.32, open=1.0, thumb=0.62, palm=1.0, sc=1.45)
+# mask_off: follow-through of the fling (open hand flung out low to the
+# left, fingers pointing left-and-DOWN: no raised palm while the mask flies)
+_FLING_L = _H(-318, 238, -1.98, open=1.0, thumb=0.7, tl=0.9, palm=0.55, sc=1.05, sx=-1.0)
 _SCRATCH_R = _H(258, -112, -0.55, open=0.35, thumb=0.4, tl=0.8, sc=1.0)
 
 
@@ -256,48 +243,61 @@ def _lower_l(t):
     return h
 
 
-def _wave_hand(th, kick=0.0):
-    x0, y0 = WAVE_TOP
-    return _H(x0 + WAVE_R * math.sin(th), y0 + WAVE_R * (1 - math.cos(th)),
-              WAVE_TILT * th + kick, open=1.0, thumb=0.75, palm=0.9, sc=1.0)
+def _robo_hand(t, u, kick=0.0, dx=0.0):
+    """The robot hand at height u (0 = top detent, 1 = bottom), rigid in the
+    head frame: the rig's floaty hand drift (draw_ai / _redraw_ai_hand add
+    it to every hand) is cancelled here. kick: servo-settle (-1..1)."""
+    ph = t * 2 * math.pi * 0.47 + AI_SEED * 1.7
+    drift_y = math.sin(ph - 0.7 - 1.3) * 7 + math.sin(ph) * 9 * 0.3
+    drift_x = math.sin(ph * 0.5 + 1.3) * 3
+    y = lerp(ROBO_Y_HI, ROBO_Y_LO, clamp(u)) + 4.0 * kick
+    return _H(ROBO_X + dx - drift_x, y - drift_y, ROBO_ROT + 0.035 * kick, open=1.0,
+              thumb=1.0, tl=0.85, palm=0.9, sc=ROBO_SC)
 
 
-def _wave_theta(t):
-    """Arc angle at t: holds at one side, then on each beat hops across the
-    top to the other side in stiff detents (4 hops when there is room, else
-    2), with a tiny servo kick in the wrist on arrival."""
-    beats = _WAVE["beats"]
-    side = 1.0
-    th, kick = side * WAVE_TH, 0.0
+def _steps(t, b, n, h, frm, to):
+    """Stepped move from frm to to starting at beat b: n detents, h s apart.
+    -> (u, kick): kick is a short servo settle after each detent."""
+    k = min(n, int((t - b) / h) + 1)
+    u = lerp(frm, to, k / n)
+    tk = b + (k - 1) * h
+    d = 1.0 if to > frm else -1.0
+    kick = d * (1 - seg(t, tk, tk + 0.06)) * (0.6 if k < n else 1.0)
+    return u, kick
+
+
+def _robo_u(t):
+    """l02: from the top detent, every beat sweeps the hand to the other end
+    of its small vertical range (down, up, down...) in stiff detents (3 when
+    there is room, else 2)."""
+    beats = _ROBO["beats"]
+    u, kick, frm = 0.0, 0.0, 0.0
     for i, b in enumerate(beats):
         if t < b:
             break
-        nb = beats[i + 1] if i + 1 < len(beats) else max(b + 0.1, _WAVE["end"])
+        nb = beats[i + 1] if i + 1 < len(beats) else max(b + 0.1, _ROBO["end"])
         gap = nb - b
-        n = 4 if gap >= 0.24 else 2
-        h = clamp(gap * 0.6 / n, 1.0 / 24 + 0.002, 0.07)
-        k = min(n, int((t - b) / h) + 1)            # detents reached so far
-        th = side * WAVE_TH * (1 - 2 * k / n)
-        if k == n:                                  # arrived: servo settle
-            ta = b + (n - 1) * h
-            kick = -side * 0.04 * (1 - seg(t, ta, ta + 0.1))
-        side = -side
-    return th, kick
+        n = 3 if gap >= 0.2 else 2
+        h = clamp(gap * 0.55 / n, 1.0 / 24 + 0.002, 0.065)
+        to = 1.0 - frm
+        u, kick = _steps(t, b, n, h, frm, to)
+        frm = to
+    return u, kick
 
 
-def _wave_r(t):
-    th, kick = _wave_theta(t)
-    return _wave_hand(th, kick)
+def _robo_r(t):
+    u, kick = _robo_u(t)
+    return _robo_hand(t, u, kick)
 
 
 def _nono_r(t):
-    """Stop palm on "no", wagging side to side with the head shake."""
-    h = dict(_STOP_R)
-    b = _bump(t, _WAVE["no"] - 0.02, 0.6, 0.06)
-    w = math.sin(t * 2 * math.pi * 2.6) * b
-    h["x"] += 20 * w
-    h["rot"] += 0.12 * w
-    return h
+    """"...says no.": the hand servo-snaps out at the top detent just before
+    "no", then pats the air DOWN in three stiff detents on "no" and holds
+    there through the head shake."""
+    if t < _ROBO["no"]:
+        return _robo_hand(t, 0.0, 0.0, ROBO_X_NO)
+    u, kick = _steps(t, _ROBO["no"], 3, 0.05, 0.0, 1.0)
+    return _robo_hand(t, u, kick, ROBO_X_NO)
 
 
 def _scratch_r(t):
@@ -312,9 +312,10 @@ _S08_HANDS = {
     "s08_low": lambda t: (_raise_l(0.0), AI.IDLE_R),
     "s08_raise": lambda t: (_raise_l(_raise_k(t)), AI.IDLE_R),
     "s08_hold": lambda t: (_HOLD_L, AI.IDLE_R),
-    "s08_wave": lambda t: (_HOLD_L, _wave_r(t)),
+    "s08_robo": lambda t: (_HOLD_L, _robo_r(t)),
     "s08_hold_nono": lambda t: (_HOLD_L, _nono_r(t)),
     "s08_lower": lambda t: (_lower_l(t), AI.IDLE_R),
+    "s08_fling": lambda t: (_FLING_L, AI.IDLE_R),
     "s08_push": lambda t: (_PUSH_L, AI.IDLE_R),
     "s08_scratch": lambda t: (AI.IDLE_L, _scratch_r(t)),
 }
@@ -433,9 +434,10 @@ def _T(info):
     _RAISE["t0"], _RAISE["t1"] = T.raise0, T.mask_up
     T.l2_words = list(T.w[2])
     T.l3_no = T.w[3][-1]
-    # robot wave: one sweep per word; long gaps (and the long "Evil-Bot")
-    # get extra robot-syllable sweeps (~0.26 s apart) until the hand drops
-    T.wave_rise = T.l2_words[0] - 0.08     # servo snap up (no in-between frames)
+    # robot hand: one up/down sweep per word; long gaps (and the long
+    # "Evil-Bot") get extra robot-syllable sweeps (~0.26 s apart) until the
+    # hand drops back to rest
+    T.wave_rise = T.l2_words[0] - 0.1      # servo snap out to the side
     T.wave_drop = T.L[2].end + 0.02
     T.wave_beats, T.wave_fill = [], []
     for i, w in enumerate(T.l2_words):
@@ -445,7 +447,10 @@ def _T(info):
         for k in range(1, n_sub):
             T.wave_beats.append(w + (nxt - w) * k / n_sub)
             T.wave_fill.append(T.wave_beats[-1])
-    _WAVE["beats"], _WAVE["end"], _WAVE["no"] = T.wave_beats, T.wave_drop, T.l3_no
+    # "...says no.": out to the side just before "no", pats down on "no"
+    T.no_out = T.l3_no - 0.16
+    _ROBO["beats"], _ROBO["end"] = T.wave_beats, T.wave_drop
+    _ROBO["no_out"], _ROBO["no"] = T.no_out, T.l3_no - 0.02
     T.mask_off = c("mask_off")
     T.lower1 = T.mask_off + 0.16
     T.toss = T.mask_off + 0.2
@@ -505,7 +510,7 @@ def _T(info):
     T.see = T.w[6][3] if len(T.w[6]) > 3 else L6.start + L6.dur * 0.5
     T.push0 = max(T.slide0 + 0.55, T.see - 0.05)
     T.coming = T.w[6][-1]
-    T.smirk6 = max(T.coming + 0.12, L6.end - 0.35)
+    T.smirk6 = T.coming + 0.06                     # smirk lands early: held into the cut
     # --- shot E ----------------------------------------------------------------
     T.cutE = T.tally
     _TCACHE.clear()
@@ -1049,15 +1054,17 @@ def _shot_B(ctx, t, T, info):
                           L3.end <= t < T.toss + 0.02):
         blink = 0.0                     # keep the eye slide / reveal unblinking
     think = 1.0 - seg(t, T.glitch1, T.glitch1 + 0.2)
-    # --- hands (robot WAVE on l02: rise, a stepped sweep per word, drop) --
+    # --- hands: robot hand out at the SIDE on l02 (fingers horizontal, palm
+    # to camera, thumb up), stepping up/down per word; rests through the
+    # beat; out again for the pat-down on "no"; then rests ------------------
     hk = [(-1.0, "idle"), (T.dip, "s08_low", 0.14), (T.raise0, "s08_raise", 0.0),
           (T.mask_up, "s08_hold", 0.0),
-          (T.wave_rise, "s08_wave", 0.0),
-          (T.wave_drop, "s08_hold", 0.0)]
-    hk.append((T.l3_no - 0.03, "s08_hold_nono", 0.0))
+          (T.wave_rise, "s08_robo", 0.0),           # servo snaps: no in-between
+          (T.wave_drop, "s08_hold", 0.0)]           # frames (never a half-turned hand)
+    hk.append((T.no_out, "s08_hold_nono", 0.0))
     hk.append((L3.end + 0.05, "s08_hold", 0.0))
     hk.append((T.mask_off, "s08_lower", 0.0))
-    hk.append((T.toss, "present_l", 0.1))          # the fling follow-through
+    hk.append((T.toss, "s08_fling", 0.1))          # the fling follow-through (low)
     hk.append((T.toss + 0.12, "idle", 0.2))
     hands = keyed(t, hk)
     # robot head jerk: tilt snaps with every word
@@ -1121,8 +1128,8 @@ def _shot_B(ctx, t, T, info):
         _draw_mask(ctx, t)
         ctx.restore()
         _redraw_ai_hand(ctx, x, y, s, t, hands, mouth, side="L")
-        if T.wave_rise <= t < T.wave_drop:
-            # the waving hand passes in front of the mask's ear / corner
+        if T.wave_rise <= t < T.wave_drop or T.no_out <= t < L3.end + 0.05:
+            # the robot hand's wrist sits in front of the mask's ear disc
             _redraw_ai_hand(ctx, x, y, s, t, hands, mouth, side="R")
     ctx.restore()
     _tossed_mask(ctx, t, T)
@@ -1172,8 +1179,8 @@ BOARD_B = (495.0, 836.0, 0.72)        # ...lifted: the readers stand below it
 BOARD_C = (705.0, 392.0, 0.35)        # ...tucked top-right for the wall beat
 BOARD_W, BOARD_H = 840.0, 640.0
 # fantasy cons a villain would put in his stories (not real-world scams)
-FLAGS = ["MAGIC BEANS: ONLY ONE COW!", "THE HYPNO-SPIRAL OFFER",
-         "SIGN HERE, SAYS THE SHADOW WIZARD"]
+FLAGS = ["SNAKE OIL FOR EVERYONE!", "THE HYPNO-SPIRAL SCHEME",
+         "SIGN HERE... WHAT COULD GO WRONG?"]
 FLAG_Y = [-26.0, 98.0, 222.0]
 TALE_BG, TALE_BG2 = "#2b1742", "#1b0f2a"
 TALE_RED, PARCH, PARCH_SH = "#ff3b5c", "#f6e7c6", "#dcc79c"
@@ -1560,78 +1567,93 @@ def _tale_edge(c, hw, hh, dx=0.0, dy=0.0):
 _BOLT = [(-12, -66), (24, -66), (6, -16), (28, -16), (-18, 68), (-4, 6), (-26, 6)]
 
 
-_BEAN, _BEAN_DK = "#7ee35c", "#3f9a2e"
-_SACK, _SACK_DK, _SACK_HI = "#c99a5b", "#946a37", "#e8c88e"
+_GLASS, _GLASS_DK = "#d4f1ea", "#9fd3c6"
+_OIL, _OIL_DK, _OIL_HI = "#f2ab36", "#c77a12", "#ffe19a"
+_CORK, _CORK_DK = "#bd8550", "#8a5a2e"
 _HYPNO, _HYPNO_BG = "#8a3fd1", "#fbefff"
 _SHADOW, _SHADOW_RIM = "#170c26", "#a46cff"
 
 
-def _bean(c, x, y, rot, s=1.0):
-    """One glowing magic bean (kidney shape + shine)."""
-    with saved(c, x, y, s, rot) as cb:
-        cb.move_to(-13, 2)
-        cb.curve_to(-14, -9, -2, -11, 2, -6)
-        cb.curve_to(5, -10, 15, -8, 13, 2)
-        cb.curve_to(12, 10, -12, 11, -13, 2)
-        cb.close_path()
-        _fs(cb, _BEAN, "ink", 3)
-        ellipse(cb, -5, -3, 4.5, 2.0, -0.3)
-        core.fill(cb, (1, 1, 1, 0.75))
+def _bottle_path(cc):
+    """Round-shouldered potion bottle body (neck top at y -20)."""
+    cc.move_to(-9, -20)
+    cc.curve_to(-10, -11, -31, -9, -31, 9)
+    cc.line_to(-31, 30)
+    cc.curve_to(-31, 39, -25, 42, -16, 42)
+    cc.line_to(16, 42)
+    cc.curve_to(25, 42, 31, 39, 31, 30)
+    cc.line_to(31, 9)
+    cc.curve_to(31, -9, 10, -11, 9, -20)
+    cc.close_path()
 
 
-def _ill_beans(c, t):
-    """MAGIC BEANS: ONLY ONE COW!: a drawstring bean pouch, magic beans
-    spilling out of it (twinkling)."""
+def _ill_snake_oil(c, t):
+    """SNAKE OIL FOR EVERYONE!: a little potion bottle of golden 'miracle'
+    oil with a corked neck, a paper label with a green snake on it, and
+    twinkling sparkles (it wobbles, the oil sloshes)."""
     c.set_line_join(cairo.LINE_JOIN_ROUND)
-
-    def sack(cc):
-        cc.move_to(-21, -14)
-        cc.curve_to(-46, -2, -46, 36, -22, 41)
-        cc.line_to(20, 41)
-        cc.curve_to(44, 36, 44, -2, 19, -14)
-        cc.close_path()
-    with saved(c, -16, -2) as cc:
-        sack(cc)
-        _fs(cc, _SACK, "ink", 4)
+    with saved(c, -6, 0, 1.0, 0.07 * math.sin(t * 3.1)) as cc:
+        # glass body + the oil inside (sloshing surface)
+        _bottle_path(cc)
+        core.fill(cc, _GLASS)
         cc.save()
-        sack(cc)
+        _bottle_path(cc)
         cc.clip()
-        ellipse(cc, 30, 26, 22, 30)
-        core.fill(cc, core.alpha(_SACK_DK, 0.55))
-        cc.restore()
-        for sx, sy in ((-14, 18), (4, 28), (10, 6)):                  # burlap stitches
-            cc.move_to(sx - 4, sy - 3)
-            cc.line_to(sx + 4, sy + 3)
-        core.stroke(cc, core.alpha(_SACK_DK, 0.9), 2.5, cap="round")
-        cc.move_to(-21, -14)                                           # ruffled neck
-        cc.curve_to(-36, -24, -30, -38, -17, -31)
-        cc.curve_to(-12, -40, -1, -37, -1, -27)
-        cc.curve_to(4, -36, 17, -38, 15, -26)
-        cc.curve_to(28, -32, 34, -20, 19, -14)
+        sl = 2.5 * math.sin(t * 5.3)
+        cc.move_to(-34, 2 + sl)
+        cc.curve_to(-12, -2 + sl, 12, 6 - sl, 34, 2 - sl)
+        cc.line_to(34, 46)
+        cc.line_to(-34, 46)
         cc.close_path()
-        _fs(cc, _SACK, "ink", 4)
-        cc.move_to(-22, -14)                                           # drawstring
-        cc.line_to(20, -14)
-        core.stroke(cc, "ink", 8, cap="round")
-        cc.move_to(-22, -14)
-        cc.line_to(20, -14)
-        core.stroke(cc, _SACK_HI, 3.5, cap="round")
-        for sx in (-1, 1):                                             # little bow
-            ellipse(cc, 2 + sx * 7, -10, 7, 4.5, sx * 0.6)
-            _fs(cc, _SACK_HI, "ink", 2.5)
-        _bean(cc, 4, -38, -0.35, 0.95)                                 # one pops out the top
-    for bx, by, br in ((26, 38, 0.15), (46, 30, -0.6), (52, 47, 0.5)):  # spilled beans
-        _bean(c, bx, by, br, 0.92)
-    for i, (sx, sy, r) in enumerate(((44, 4, 12), (16, -40, 8), (58, 16, 7))):
+        core.fill(cc, _OIL)
+        ellipse(cc, 20, 34, 16, 14)
+        core.fill(cc, core.alpha(_OIL_DK, 0.55))
+        cc.move_to(-24, 6)                                    # glass shine (left)
+        cc.curve_to(-26, 16, -26, 26, -22, 34)
+        core.stroke(cc, (1, 1, 1, 0.75), 4.5, cap="round")
+        cc.restore()
+        _bottle_path(cc)
+        core.stroke(cc, "ink", 4)
+        # neck, lip ring, cork
+        rrect(cc, -9, -33, 18, 15, 3)
+        _fs(cc, _GLASS_DK, "ink", 3.5)
+        rrect(cc, -12, -36, 24, 7, 3.5)
+        _fs(cc, _GLASS, "ink", 3)
+        rrect(cc, -8, -49, 16, 15, 4)
+        _fs(cc, _CORK, "ink", 3.5)
+        for (dx, dy) in ((-3, -44), (3, -40)):
+            circle(cc, dx, dy, 1.6)
+            core.fill(cc, _CORK_DK)
+        # paper label with a little green snake (wavy body, head, forked tongue)
+        rrect(cc, -22, 9, 44, 26, 4)
+        _fs(cc, PARCH, "ink", 3)
+        pts = [(-16 + i * 2.6, 24 + 4.2 * math.sin(i * 0.78 + 0.6)) for i in range(11)]
+        for col, w in (("ink", 8.5), ("snake", 4.5)):
+            poly(cc, pts, closed=False)
+            core.stroke(cc, col, w, cap="round")
+        hx, hy = pts[-1][0] + 3, pts[-1][1] - 2
+        cc.move_to(hx + 4, hy)                                # forked tongue
+        cc.line_to(hx + 9, hy)
+        cc.move_to(hx + 9, hy)
+        cc.line_to(hx + 12, hy - 2.5)
+        cc.move_to(hx + 9, hy)
+        cc.line_to(hx + 12, hy + 2.5)
+        core.stroke(cc, "danger", 1.8, cap="round")
+        ellipse(cc, hx, hy, 5.2, 4.2)
+        _fs(cc, "snake", "ink", 2.2)
+        circle(cc, hx + 1.2, hy - 1.2, 1.2)
+        core.fill(cc, "ink")
+    # twinkling sparkles ("miracle cure!")
+    for i, (sx, sy, r) in enumerate(((34, -28, 12), (-44, -22, 9), (42, 22, 8), (-42, 30, 6))):
         k = 0.5 + 0.5 * math.sin(t * 7.0 + i * 2.2)
-        P._star4(c, sx, sy, r * k + 0.5, 0.3)
-        core.fill(c, (0.75, 1.0, 0.45, 1.0))
-        P._star4(c, sx, sy, r * k + 0.5, 0.3)
-        core.stroke(c, core.alpha("ink", 0.5), 1.5)
+        P._star4(c, sx, sy, r * k + 0.8, 0.3)
+        core.fill(c, (1.0, 0.93, 0.55, 1.0))
+        P._star4(c, sx, sy, r * k + 0.8, 0.3)
+        core.stroke(c, core.alpha("ink", 0.55), 1.5)
 
 
 def _ill_spiral(c, t):
-    """THE HYPNO-SPIRAL OFFER: a spinning hypno-spiral disc with pulsing
+    """THE HYPNO-SPIRAL SCHEME: a spinning hypno-spiral disc with pulsing
     'look deeper' rings."""
     R = 40.0
     for j, rr in enumerate((R + 8, R + 15)):                  # hypnotic rings (pulse out)
@@ -1665,7 +1687,7 @@ def _ill_spiral(c, t):
 
 
 def _ill_contract(c, t):
-    """SIGN HERE, SAYS THE SHADOW WIZARD: a contract scroll with a red X on
+    """SIGN HERE... WHAT COULD GO WRONG?: a contract scroll with a red X on
     the signature line; a shadowy clawed hand in a tattered sleeve holds out
     a quill to sign."""
     c.set_line_join(cairo.LINE_JOIN_ROUND)
@@ -1742,7 +1764,7 @@ def _ill_contract(c, t):
         rimmed(ch, [claw(22, -1, 2, 1, 8.0), claw(26, 7, 5, 12, 8.0), claw(31, 12, 13, 21, 7.0)])
 
 
-_ILLS = (_ill_beans, _ill_spiral, _ill_contract)
+_ILLS = (_ill_snake_oil, _ill_spiral, _ill_contract)
 
 
 _FLAG_FS = []
@@ -2123,7 +2145,7 @@ def _shot_D(ctx, t, T, info):
     # --- expression ---------------------------------------------------------
     ex = kv(t, [(-1.0, AIX["happy0"]), (L5.start, AIX["happy"], 0.12),
                 (snap, AIX["unimp"], 0.08), (T.slide0 + 0.2, AIX["unimp_dn"], 0.15),
-                (T.coming - 0.05, AIX["stare"], 0.15), (T.smirk6, AIX["smirk"], 0.3)])
+                (T.coming - 0.05, AIX["stare"], 0.15), (T.smirk6, AIX["smirk"], 0.24)])
     look = kv(t, [(-1.0, (0.0, 0.0)), (snap, (0.0, 0.0)),
                   (T.slide0 + 0.22, (-1.0, 0.7), 0.14),
                   (T.push0 + 0.35, (0.0, 0.0), 0.2)])
@@ -2169,19 +2191,21 @@ def _shot_D(ctx, t, T, info):
 # SHOT E - F1: deflate + tally
 # ===========================================================================
 def _shot_E(ctx, t, T, info):
+    """Cut on the action: he is already slumping at the cut (frustrated), a
+    tiny 'grr' huff; Hissy's tail slaps over his face. Everything has
+    settled ~0.2 s after the cut and HOLDS to the last frame (s09 opens on
+    this exact pose: frustrated, slump, look (0.55, 0.15), facepalm)."""
     te = T.tally
-    sink = 12 * ease_out(seg(t, te, te + 0.5))
-    ex = keyed(t, [(-1.0, "frustrated")])
-    arms = keyed(t, [(-1.0, "rest"), (te, "slump", 0.3)])
-    look = kv(t, [(-1.0, (0.0, 0.2)), (te + 0.25, (-0.6, -0.95), 0.15),
-                  (te + 0.75, (0.1, 0.35), 0.2)])
-    snake = {"expr": keyed(t, [(-1.0, "unimpressed"), (te + 0.08, "facepalm", 0.25)]),
-             "look": (0.9, 0.1), "tongue": False}
-    P.lair_bg(ctx, t)
-    # deflate: a quick 'grr' shiver as he sinks
     w = t - te
-    lean = 0.018 * math.sin(w * 2 * math.pi * 6) * clamp(1 - w / 0.35) if w > 0 else 0.0
-    draw_villain(ctx, VX, VY + sink, VS, t, expr=ex, look=look,
+    huff = 6 * math.sin(math.pi * seg(t, te, te + 0.2))           # dips and settles
+    ex = keyed(t, [(-1.0, "frustrated")])
+    arms = keyed(t, [(-1.0, "rest"), (te - 0.14, "slump", 0.2)])  # done at te + 0.06
+    look = kv(t, [(-1.0, (0.7, -0.25)), (te + 0.06, (0.55, 0.15), 0.12)])
+    snake = {"expr": keyed(t, [(-1.0, "unimpressed"), (te - 0.04, "facepalm", 0.16)]),
+             "look": (0.4, 0.2), "tongue": False}
+    P.lair_bg(ctx, t)
+    lean = 0.016 * math.sin(w * 2 * math.pi * 6) * clamp(1 - w / 0.2) if w > 0 else 0.0
+    draw_villain(ctx, VX, VY + huff, VS, t, expr=ex, look=look,
                  mouth=info.mouth("villain", t), arms=arms, lean=lean, snake=snake)
     _lair_set(ctx, t)
 
@@ -2203,13 +2227,11 @@ def render(ctx, t, info):
         _shot_D(ctx, t, T, info)
     else:
         _shot_E(ctx, t, T, info)
-    # overlays last: card(s) + chip
+    # overlays last: the trick card(s)
     if t < T.card2:
         trick_card(ctx, t, T.card, 7, "YOU ARE NOW EVIL-BOT")
     else:
         trick_card(ctx, t, T.card2, 8, "FLATTERY")
-    nice_tries_chip(ctx, t, info.meta["tries_before"], info.meta["tries_after"],
-                    T.tally, step=CHIP_STEP)
 
 
 def SFX(info):
@@ -2259,7 +2281,7 @@ def SFX(info):
         (T.snap, "tick", -14),
         (T.slide0, "whoosh", -16),
         (T.push0 + 0.04, "whoosh", -12),
-        (T.tally + 0.12, "snake_hiss", -16),
+        (T.tally + 0.08, "snake_hiss", -16),          # the facepalm
     ]
     # robot servo ticks on the wave sweeps (words) + robot-syllable sweeps
     for w in T.l2_words[1:]:
@@ -2281,8 +2303,4 @@ def SFX(info):
     for tf, tn in zip(T.folders, T.nopes):
         out.append((tf, "swoosh_up", -14))
         out.append((P.stamp_impact(tn), "stamp", -5))
-    n = info.meta["tries_after"] - info.meta["tries_before"]
-    for i in range(n):
-        out.append((T.tally + i * CHIP_STEP, "tick", -8))
-        out.append((T.tally + i * CHIP_STEP, "pop", -10))
     return out

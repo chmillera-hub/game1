@@ -50,8 +50,10 @@ harmful whole. Every time below is derived from cues / line ids / word starts
                             bombshell" and a pop-up comic burst BOMBSHELL /
                             TWIST! with a cloaked-villain silhouette erupts.
   F1 LAIR  l08 .. end       "Confound it..." frustrated fist -> "that does
-                            sound fun" sly, interested grin (rubs hands).
-                            Snake nods. Tally 5 -> 6.
+                            sound fun" sly, interested grin (rubs hands) to
+                            camera; as the line ends he settles into a
+                            scheming steeple and the grin HOLDS to the last
+                            frame. Snake nods along, then a happy hold.
 """
 import math
 import re
@@ -73,7 +75,8 @@ from engine.ai_char import _mirror_expr as AI_MIRROR
 
 # ===========================================================================
 # Shared overlay code (DIRECTION.md 4.4, verbatim; villain_cameo gained three
-# optional kwargs `view` / `zoom` / `blink` whose defaults reproduce the shared code)
+# optional kwargs `view` / `zoom` / `blink` whose defaults reproduce the shared code;
+# the NICE TRIES chip has been retired from the film)
 # ===========================================================================
 CARD_C = (495, 400)      # card centre while big (above Malvo's head in F1)
 TAB_C = (730, 168)       # parked tab centre (top-right, inside the safe zone)
@@ -114,29 +117,6 @@ def trick_card(ctx, t, t_in, num, title, park=1.9):
              outline="ink", outline_w=8)
         text(c, title, 0, ph / 2 - 30, title_size, "ai_accent", "comic",
              outline="ink", outline_w=12)
-
-
-def nice_tries_chip(ctx, t, n_before, n_after, t_tick, t_in=None, step=0.28):
-    """Persistent top-left 'NICE TRIES: n' chip. Counts n_before -> n_after,
-    one tick every `step` s starting at t_tick (the scene's 'tally' cue).
-    SFX per tick: tick (-8 dB) + pop (-10 dB)."""
-    if t_in is not None and t < t_in:
-        return
-    n, k_last = n_before, -1
-    for i in range(n_after - n_before):
-        if t >= t_tick + i * step:
-            n, k_last = n_before + i + 1, i
-    bump = 0.0
-    if k_last >= 0:
-        u = seg(t, t_tick + k_last * step, t_tick + k_last * step + 0.25)
-        bump = math.sin(u * math.pi) * 0.22
-    s = (ease_out_back(seg(t, t_in, t_in + 0.3)) if t_in is not None else 1.0) * (1 + bump)
-    with saved(ctx, 205, 168, s) as c:
-        P.label_tag(c, 0, 0, f"NICE TRIES: {n}", color="bubble_ai", size=32, font="round")
-    if k_last >= 0 and t < t_tick + k_last * step + 0.6:           # floating '+1'
-        u = seg(t, t_tick + k_last * step, t_tick + k_last * step + 0.6)
-        text(ctx, "+1", 345, 150 - 40 * u, 40, (1, 0.82, 0.4, 1 - u), "comic",
-             outline=(0.09, 0.06, 0.12, 1 - u), outline_w=7)
 
 
 def villain_cameo(ctx, t, expr="neutral", look=(0, 0), mouth=(0, 0), arms="rest",
@@ -1962,8 +1942,6 @@ def render(ctx, t, info):
     else:
         _f1_end(ctx, t, info, T)
     trick_card(ctx, t, T.card, T.card_num, T.card_title)
-    nice_tries_chip(ctx, t, info.meta.get("tries_before", 5), info.meta.get("tries_after", 6),
-                    T.tally)
     if t < T.L1w.start:
         _whisper_caption(ctx, t, info)
 
@@ -2011,7 +1989,5 @@ def SFX(info):
             (T.burst, "dun_dun_dun", -12),
             (T.burst, "pop", -10),
             (T.twist + 0.08, "sparkle", -10),
-            (T.w_sound + 0.3, "snake_hiss", -16),
-            (T.tally, "tick", -8),
-            (T.tally, "pop", -10)]
+            (T.w_sound + 0.3, "snake_hiss", -16)]
     return sorted(out, key=lambda e: e[0])
