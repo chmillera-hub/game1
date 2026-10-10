@@ -1596,7 +1596,7 @@ def SFX(info):
         (T.L2.end, "send", -8),
     ]
     out += [(tp, "puzzle_click", -8) for tp in T.tile_t]
-    out += [(T.halo_off, "boing", -10), (T.halo_off + 0.04, "whoosh", -14)]
+    out += [(T.halo_off, "boing", -12), (T.halo_off + 0.04, "whoosh", -14)]
     # F4: tiles line up, the sum appears
     out += [(tl, "puzzle_click", -12) for tl in T.row_land]
     out += [(tp, "pop", -12) for tp in T.plus_t]
