@@ -11,7 +11,8 @@ cup and grip).
 Rig contract (anim/rig.py):
     draw(canvas, pose, t)            draw the cadet; canvas already carries the camera (stage units)
     head_center(pose, t=None)        stage point between the eyes
-    hand_pos(pose, side, t=None)     palm centre of his 'l' / 'r' hand (behind the cup when he holds it)
+    hand_pos(pose, side, t=None)     palm centre of his 'l' / 'r' hand (holding the cup: in front of it for the
+                                     near hand, behind it for the far hand)
     ARMS                             rest, hold_cup, sip_cup, wave, hand_to_mouth, point
     HEIGHT                           floor -> top of the hair, standing, scale 1 (757; Rae 700, Quill 770)
 Extras:
@@ -28,8 +29,10 @@ Extras:
 
 Conventions: exactly Rae's (see anim/char_rae.py): pose.x = pelvis axis, facing=-1 is a pure mirror,
 arm_r is the near arm once turned, ArmPose.across targets face / chest features, pose.mug = 'r' / 'l' holds
-the coffee cup (the hand wraps the back of the cup, which sits in front of the hand; fingertips curl round
-the far side, thumb on the near side); bringing it to the mouth locks the lid's spout onto the lower lip.
+the coffee cup: the NEAR hand (arm_r once turned) is in front of the cup, its back toward the camera over the
+lower part of the sleeve, the fingers wrapping round the cup's far side (BIBLE section 10, Rae's near grip);
+the FAR hand wraps the back of the cup, which sits in front of it, fingertips curling round onto its front and
+the thumb round the other side. Bringing it to the mouth locks the lid's spout onto the lower lip.
 ARMS['wave'] (hand "wave") waves by itself from t: the forearm swings about the elbow and the wrist flaps;
 the wiggle amplitude follows how far the arm is raised, so blends into / out of the wave do not pop.
 """
@@ -762,7 +765,8 @@ def eye_pos(pose: Pose, side: str, t=None):
 
 
 def hand_pos(pose: Pose, side: str, t=None):
-    """Stage coords of the palm centre of his 'l' or 'r' hand (behind the cup when holding it)."""
+    """Stage coords of the palm centre of his 'l' or 'r' hand (holding the cup: in front of it for the near hand,
+    behind it for the far hand)."""
     return B.hand_pos(_prep(pose, t), side, t)
 
 
