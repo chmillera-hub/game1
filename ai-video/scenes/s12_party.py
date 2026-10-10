@@ -134,6 +134,18 @@ V.ARM_POSES.setdefault("s12_wind", V._pose(
     _REST_A, V._arm(318, -330, 236, -500, -1.95, cu=0.85, th=0.2, sp=0.2, tf=-1), shy=-6))
 V.ARM_POSES.setdefault("s12_throw", V._pose(
     _REST_A, V._arm(332, -322, 384, -414, -0.92, cu=0.05, th=-0.1, sp=0.9, tf=-1), shy=-4))
+# zombie gag: both hands grip the pushed-up mask, pull it down over the face,
+# then the classic zombie arms (raised forward, wrists limp, fingers dangling)
+_GRAB_UP = V._arm(-292, -560, -126, -704, -1.05, cu=0.55, th=0.3, sp=0.2, hs=0.95)
+_GRAB_DN = V._arm(-306, -404, -158, -492, -0.62, cu=0.55, th=0.3, sp=0.2, hs=0.95)
+V.ARM_POSES.setdefault("s12_grab_up", V._pose(_GRAB_UP, shy=-8))
+V.ARM_POSES.setdefault("s12_grab_dn", V._pose(_GRAB_DN, shy=-6))
+_ZOMB_A = V._arm(-268, -376, -212, -436, 1.45, cu=0.3, th=0.15, sp=0.4, hs=1.08)
+_ZOMB_B = V._mirror(_ZOMB_A)
+_ZOMB_A = dict(_ZOMB_A, wx=_ZOMB_A["wx"] + 8, ex=_ZOMB_A["ex"] + 6, ha=1.3)
+_ZOMB_B = dict(_ZOMB_B, wx=_ZOMB_B["wx"] + 4, ex=_ZOMB_B["ex"] + 4, wy=_ZOMB_B["wy"] - 12)
+V.ARM_POSES.setdefault("s12_zombie", V._pose(_ZOMB_A, _ZOMB_B, shy=-12, hdy=6))
+V.VILLAIN_EXPR.setdefault("s12_zomb", dict(_HAPPY, tilt=0.1, hy=8))
 
 
 def _ax(name, **kw):
@@ -204,7 +216,27 @@ def _T(info):
     T.me = T.w[3][3]
     T.l4 = T.L[4]
     T.stats = T.w[4][3]
+    # --- the zombie gag (after "Hero stats.") ---------------------------------
+    T.l4z = info.line("s12_l04z")                # "Braaains!"
+    T.l4y = info.line("s12_l04y")                # "Scary? Yes. Hurt? Nobody."
+    T.wy = [_wt(info, "s12_l04y", i) for i in range(len(T.l4y.caption.split()))]
+    T.zm = c("zombie_mask")
+    T.zout0 = T.l4.end - 0.1                     # camera eases back out to show the kid
+    T.zout1 = T.zout0 + 0.6
+    T.pull0 = T.zm + 0.24                        # hands up, then the mask comes down
+    T.pull1 = T.pull0 + 0.26
+    T.kr = c("kid_runs")
+    T.kr0 = T.kr + 0.12                          # squeal, then the giggly loop
+    T.kr1 = max(T.kr0 + 1.2, min(T.kr0 + 1.45, T.l4y.start + 0.3))
+    T.scary = T.wy[0]
+    T.hurt = T.wy[2]
+    T.nobody = T.wy[3]
     T.lean = c("lean")
+    T.zin0 = T.l4y.end - 0.5                     # push back in on him
+    T.zin1 = T.l4y.end + 0.1
+    T.mu0 = T.lean - 0.25                        # mask pushed back up (sneaky face returns)
+    T.mu1 = T.lean + 0.05
+    T.glance = T.mu1                             # paranoid glances start once it is up
     T.chip_in = T.lean + 0.15
     T.l5 = T.L[5]
     T.l6 = T.L[6]
@@ -1189,6 +1221,126 @@ def draw_mask_on_head(c):
     draw_goblin_mask(c, MASK_LOCAL[0], MASK_LOCAL[1], MASK_LOCAL[2], MASK_LOCAL[3])
 
 
+ZMB, ZMB_DK, ZMB_LT, ZMB_HAIR = "#a2b88c", "#7c9670", "#c4d6ac", "#3d5236"
+ZMB_MOUTH, ZMB_TOOTH, ZMB_BAG = "#3b2340", "#f4eecb", "#8d8fae"
+ZMASK_UP = (0.0, -190.0, 0.8, -0.1, 0.82)    # pushed up on the dome: y, s, rot, sy
+ZMASK_DN = (0.0, 40.0, 1.45, 0.0, 1.0)       # pulled down over the face
+
+
+def draw_zombie_mask(c, x, y, s, rot=0.0, sy=1.0, jaw=0.0):
+    """Goofy rubber ZOMBIE mask (cartoony, friendly, no gore): green-grey face,
+    scruffy hair tufts, droopy painted eyes, a stitched cheek, crooked buck
+    teeth. (x, y) = face centre; ~200 x 225 at s=1. jaw 0..1 stretches the
+    rubber mouth open (lip-sync)."""
+    with saved(c, x, y, (s, s * sy), rot) as cc:
+        for (hx, hy, a) in ((-46, -96, -0.5), (-8, -108, 0.1), (34, -100, 0.6)):  # hair tufts
+            with saved(cc, hx, hy, 1.0, a):
+                poly(cc, [(-16, 10), (-6, -26), (2, -6), (10, -30), (18, 10)])
+                _fs(cc, ZMB_HAIR, INK, 4.5)
+        jw = 26 * clamp(jaw)
+        face = [(0, -100), (54, -96), (92, -66), (102, -14), (96, 42), (78, 88 + jw * 0.5),
+                (40, 118 + jw), (-6, 124 + jw), (-46, 116 + jw), (-82, 84 + jw * 0.5),
+                (-100, 36), (-102, -18), (-90, -68), (-50, -96)]
+        smooth_path(cc, face, closed=True)
+        _fs(cc, ZMB, INK, 5.5)
+        cc.save()
+        smooth_path(cc, face, closed=True)
+        cc.clip()
+        ellipse(cc, 74, 30, 52, 110)                           # one shadow tone
+        _f(cc, ZMB_DK, 0.5)
+        ellipse(cc, -44, -70, 30, 12, -0.25)                   # rubbery shine
+        _f(cc, ZMB_LT, 0.85)
+        ellipse(cc, -66, 48, 16, 11)                           # mottled patches
+        _f(cc, ZMB_DK, 0.35)
+        ellipse(cc, 30, -58, 13, 8)
+        _f(cc, ZMB_DK, 0.3)
+        cc.restore()
+        # droopy painted eyes: big lids sagging toward the outer corners,
+        # mismatched pupils (one wanders), sleepy bags underneath
+        for sx, (px, py) in ((-1, (-4, 7)), (1, (7, 10))):
+            ex, ey = sx * 44, -22
+            ellipse(cc, ex, ey, 29, 25)
+            _fs(cc, "#f6f3e4", INK, 4.5)
+            circle(cc, ex + px, ey + py, 7.5)
+            _f(cc, INK)
+            circle(cc, ex + px - 2.5, ey + py - 2.5, 2.4)
+            _f(cc, "white")
+            cc.save()
+            ellipse(cc, ex, ey, 29, 25)
+            cc.clip()
+            cc.move_to(ex - 34, ey - 30)
+            cc.line_to(ex + 34, ey - 30)
+            cc.line_to(ex + 34, ey - 2 + sx * 9)
+            cc.curve_to(ex + 12, ey + 4, ex - 12, ey + 4, ex - 34, ey - 2 - sx * 9)
+            cc.close_path()
+            _f(cc, ZMB_DK)
+            cc.restore()
+            cc.move_to(ex - 30, ey - 2 - sx * 9)                # heavy lid line
+            cc.curve_to(ex - 12, ey + 4, ex + 12, ey + 4, ex + 30, ey - 2 + sx * 9)
+            _s(cc, INK, 5)
+            ellipse(cc, ex, ey, 29, 25)
+            _s(cc, INK, 4.5)
+            cc.move_to(ex - 20, ey + 30)                       # eye bags
+            cc.curve_to(ex - 8, ey + 38, ex + 8, ey + 38, ex + 20, ey + 30)
+            _s(cc, ZMB_BAG, 4)
+        cc.move_to(-30, -62)                                   # one raised, one droopy brow
+        cc.curve_to(-50, -70, -66, -62, -74, -50)
+        cc.move_to(24, -56)
+        cc.curve_to(44, -60, 62, -54, 72, -44)
+        _s(cc, ZMB_HAIR, 7)
+        for sx in (-1, 1):                                     # nostrils
+            ellipse(cc, sx * 8, 22, 4.5, 3, sx * 0.4)
+            _f(cc, INK, 0.8)
+        # stitched cheek (screen right): a curved seam with cross stitches
+        seam = [(52, 30), (64, 46), (70, 64), (68, 82)]
+        smooth_path(cc, seam)
+        _s(cc, INK, 3.5)
+        for (sx_, sy_) in seam:
+            cc.move_to(sx_ - 9, sy_ - 3)
+            cc.line_to(sx_ + 9, sy_ + 3)
+        _s(cc, INK, 3)
+
+        def mouth():                                           # lopsided goofy grin
+            cc.move_to(-52, 50)
+            cc.curve_to(-24, 62, 26, 60, 50, 44)
+            cc.curve_to(44, 76 + jw, -38, 84 + jw, -52, 50)
+            cc.close_path()
+        mouth()
+        _f(cc, ZMB_MOUTH)
+        cc.save()
+        mouth()
+        cc.clip()
+        ellipse(cc, 0, 82 + jw, 20, 10 + jw * 0.25)            # tongue
+        _f(cc, "#e06a8c")
+        for (tx, tw, th, ta) in ((-24, 17, 22, -0.12), (-4, 19, 27, 0.06), (24, 15, 17, 0.18)):
+            with saved(cc, tx, 50, 1.0, ta):                   # crooked buck teeth
+                rrect(cc, -tw / 2, -6, tw, th + 6, 4)
+                _fs(cc, ZMB_TOOTH, INK, 3)
+        cc.restore()
+        mouth()
+        _fs(cc, None, INK, 4.5)
+
+
+def draw_zmask_on_head(c, k, jaw=0.0):
+    """Zombie mask on Malvo's head, `c` in face-local coords. k: 0 pushed up on
+    the dome .. 1 pulled down over the face (values past 1 overshoot)."""
+    u = clamp(k, -0.1, 1.15)
+    a, b = ZMASK_UP, ZMASK_DN
+    x = lerp(a[0], b[0], u)
+    y = lerp(a[1], b[1], u)
+    s = lerp(a[2], b[2], u)
+    rot = lerp(a[3], b[3], u)
+    sy = lerp(a[4], b[4], clamp(u)) * (1 + 0.1 * math.sin(math.pi * clamp(u)))
+    if u < 0.6:                                        # elastic round the dome
+        al = 1 - smoothstep(u / 0.6)
+        for col, w in ((INK, 10), ("#3b2d4a", 5)):
+            for sx in (-1, 1):
+                c.move_to(sx * 58 * s / 0.8, y + 12)
+                c.curve_to(sx * 104, y + 22, sx * 136, -150, sx * 150, -112)
+            _s(c, col, w, al)
+    draw_zombie_mask(c, x, y, s, rot, sy, jaw * clamp(u))
+
+
 def _flap_once(t, t0, rest=-0.45):
     """Perched bat wing pose with one flap starting at t0."""
     d = t - t0
@@ -1309,8 +1461,12 @@ def _hair(c, style, hy, col):
 
 
 def draw_person_front(c, x, y, s, t, i, arms="cheer", look=(0.0, 0.0), mouth="smile",
-                      bounce=6.0, eyes="happy", energy=1.0, costume=None):
-    """Bouncing townsperson facing camera. (x, y) = between the feet."""
+                      bounce=6.0, eyes="happy", energy=1.0, costume=None, lean=0.0,
+                      run=None, squeal=0.0):
+    """Bouncing townsperson facing camera. (x, y) = between the feet.
+    Extras for the zombie-tag kid: arms 'cheeks' (hands on cheeks) / 'run'
+    (flailing), mouth 'laugh', `lean` (radians, about the feet), `run` (stride
+    phase: alternating feet), `squeal` 0..1 (laugh ticks round the head)."""
     skin = SKINS[i % len(SKINS)]
     shirt = SHIRTS[(i * 3 + 1) % len(SHIRTS)]
     hair = HAIRS[(i * 5 + 2) % len(HAIRS)]
@@ -1318,10 +1474,11 @@ def draw_person_front(c, x, y, s, t, i, arms="cheer", look=(0.0, 0.0), mouth="sm
     b = abs(math.sin(t * 2 * math.pi * 1.0 + ph))      # 2 hops / s
     dy = -b * bounce * energy
     sq = 1.0 + (0.05 * (1 - b) - 0.02) * energy
-    with saved(c, x, y + dy * s, s) as cc:
+    with saved(c, x, y + dy * s, s, lean) as cc:
         cc.scale(1 / math.sqrt(sq), sq)
         for sx in (-1, 1):                          # little shoes
-            ellipse(cc, sx * 20, -6, 18, 9)
+            lift = 0.0 if run is None else 12 * max(0.0, math.sin(run) * sx)
+            ellipse(cc, sx * 20 + (0 if run is None else sx * 4), -6 - lift, 18, 9)
             _fs(cc, "#3a2f4a", INK, 4)
         if costume == "ghost":
             _ghost_sheet(cc, t, ph)
@@ -1346,6 +1503,13 @@ def draw_person_front(c, x, y, s, t, i, arms="cheer", look=(0.0, 0.0), mouth="sm
                 u = max(0.0, math.sin(t * 2 * math.pi * 2.3 + ph)) * energy
                 hand = (sx * (8 + 22 * u), -98)
                 el = (sx * 50, -88)
+            elif arms == "run":
+                w = math.sin(t * 2 * math.pi * 3.2 + ph + k * 3.1)
+                hand = (sx * (74 + 12 * w), -200 - 22 * w)
+                el = (sx * 64, -150)
+            elif arms == "cheeks":
+                hand = (sx * 34, -160)
+                el = (sx * 62, -116)
             else:                                   # at sides
                 hand = (sx * 56, -48)
                 el = (sx * 50, -80)
@@ -1355,8 +1519,9 @@ def draw_person_front(c, x, y, s, t, i, arms="cheer", look=(0.0, 0.0), mouth="sm
             cc.move_to(*sh)
             cc.curve_to(el[0], el[1], el[0], el[1], hand[0], hand[1])
             _s(cc, shirt, 9)
-            circle(cc, hand[0], hand[1], 10)
-            _fs(cc, skin, INK, 3.5)
+            if arms != "cheeks":
+                circle(cc, hand[0], hand[1], 10)
+                _fs(cc, skin, INK, 3.5)
         hy = -178
         for sx in (-1, 1):
             circle(cc, sx * 45, hy + 2, 11)
@@ -1380,11 +1545,40 @@ def draw_person_front(c, x, y, s, t, i, arms="cheer", look=(0.0, 0.0), mouth="sm
         if mouth == "o":
             ellipse(cc, ex * 0.5, hy + 20, 7, 8)
             _fs(cc, "#7a2a3a", INK, 3.5)
+        elif mouth == "laugh":                       # big open squeal
+            mx_ = ex * 0.5
+            cc.move_to(mx_ - 21, hy + 10)
+            cc.curve_to(mx_ - 16, hy + 44, mx_ + 16, hy + 44, mx_ + 21, hy + 10)
+            cc.close_path()
+            _f(cc, "#7a2a3a")
+            cc.save()
+            cc.move_to(mx_ - 21, hy + 10)
+            cc.curve_to(mx_ - 16, hy + 44, mx_ + 16, hy + 44, mx_ + 21, hy + 10)
+            cc.close_path()
+            cc.clip()
+            ellipse(cc, mx_, hy + 38, 13, 8)
+            _f(cc, "#ff7a9a")
+            cc.restore()
+            cc.move_to(mx_ - 21, hy + 10)
+            cc.curve_to(mx_ - 16, hy + 44, mx_ + 16, hy + 44, mx_ + 21, hy + 10)
+            cc.close_path()
+            _fs(cc, None, INK, 4)
         else:
             cc.move_to(-15, hy + 15)
             cc.curve_to(-8, hy + 32, 8, hy + 32, 15, hy + 15)
             cc.close_path()
             _fs(cc, "#7a2a3a", INK, 4)
+        if arms == "cheeks":                         # hands in front of the face
+            for sx in (-1, 1):
+                ellipse(cc, sx * 36, hy + 18, 11, 13)
+                _fs(cc, skin, INK, 3.5)
+        if squeal > 0.01:                            # happy squeal ticks
+            for k, (a0, r0) in enumerate(((-2.5, 64), (-2.05, 70), (-0.6, 66), (-1.05, 72))):
+                wob = 5 * math.sin(t * 30 + k * 2)
+                r1 = r0 + 22 * squeal
+                cc.move_to(math.cos(a0) * r0, hy + math.sin(a0) * r0)
+                cc.line_to(math.cos(a0) * r1 + wob * 0.3, hy + math.sin(a0) * r1)
+            _s(cc, INK, 4.5, min(1.0, squeal * 1.5))
 
 
 def draw_person_back(c, x, y, s, t, i, dark=0.0, clap_amp=1.0, energy=1.0, costume=None):
@@ -1794,7 +1988,7 @@ def _town_static(c):
         _s(c, "#a12536", 4)
     c.rectangle(bx0 + 14, by1 - 16, bx1 - bx0 - 28, 8)
     _f(c, "#a12536")
-    ban = "SNEAKWORTH'S MONSTER BLOCK PARTY"
+    ban = "THE EVIL GENIUS'S MONSTER PARTY"
     fs_ = 54
     while text_width(c, ban, "comic", fs_) > bx1 - bx0 - 30 and fs_ > 36:
         fs_ -= 2
@@ -1866,12 +2060,21 @@ def _robot_world(px, py):
 # ---------------------------------------------------------------------------
 # camera for shot B
 # ---------------------------------------------------------------------------
+ZCAM = (1.32, -111.0, -70.0)              # zombie-gag framing: him (left) + the kid (right)
+
+
 def _cam(t, T):
-    """-> (z, ox, oy): screen = FOCUS + (world - FOCUS) * z + (ox, oy)."""
+    """-> (z, ox, oy, k1): screen = FOCUS + (world - FOCUS) * z + (ox, oy).
+    k1 = push-in progress (the AI lantern stays pinned in screen space after it).
+    For the zombie gag the camera eases back out so the kid's loop fits, then
+    pushes in again for the last 'Hypothetically'."""
     k1 = ease_in_out(seg(t, T.l3.start, T.l3.start + 0.6))
     z = lerp(1.0, Z1, k1)
     ox = lerp(0.0, TGT[0] - FOCUS[0], k1)
     oy = lerp(0.0, TGT[1] - FOCUS[1], k1)
+    kz = ease_in_out(seg(t, T.zout0, T.zout1)) * (1 - ease_in_out(seg(t, T.zin0, T.zin1)))
+    if kz > 0:
+        z, ox, oy = lerp(z, ZCAM[0], kz), lerp(ox, ZCAM[1], kz), lerp(oy, ZCAM[2], kz)
     return z, ox, oy, k1
 
 
@@ -2162,7 +2365,10 @@ def _malvo_b(t, T, info):
         (L3.start - 0.05, "s12_moved", 0.3),
         (T.w[3][2] - 0.08, "s12_me", 0.25),           # "for ME?"
         (L3.end + 0.3, "s12_moved", 0.35),
-        (T.lean + 0.12, "sneaky", 0.18),
+        (T.zm + 0.05, "excited", 0.2),                # idea! (then the mask hides it)
+        (T.pull1, "s12_zomb", 0.2),
+        (T.mu0 + 0.1, "happy", 0.1),                  # mask going up ...
+        (T.glance + 0.05, "sneaky", 0.18),            # ... the sneaky squint is back
         (T.l5.start + 0.08, "smug", 0.1),             # brow waggle
         (T.l5.start + 0.23, "sneaky", 0.1),
         (T.l5.start + 0.38, "smug", 0.1),
@@ -2183,9 +2389,10 @@ def _malvo_b(t, T, info):
         (T.w[3][2] - 0.08, (0.0, 0.05)),              # to camera
         (L3.end + 0.15, (-0.2, 0.55)),                # sniff, eyes down
         (T.l4.start - 0.05, (0.85, -0.75)),           # up at the AI
-        (T.lean, (-0.95, 0.05)),                      # paranoid glance left
-        (T.lean + 0.22, (0.95, 0.05)),                # ... right
-        (T.lean + 0.44, (0.9, -0.7)),                 # at the AI
+        (T.zm + 0.05, (0.9, 0.3)),                    # eyes on the kid
+        (T.glance, (-0.95, 0.05)),                    # paranoid glance left
+        (T.glance + 0.2, (0.95, 0.05)),               # ... right
+        (T.glance + 0.38, (0.9, -0.7)),               # at the AI
         (T.malvo + 0.05, (0.8, -0.65)),
         (T.l7.start, (0.7, -0.6)),
         (T.lol, (0.3, -0.2)),
@@ -2193,18 +2400,36 @@ def _malvo_b(t, T, info):
     arms = keyed(t, [
         (0.0, "shrug"),
         (L3.start - 0.1, "s12_heart", 0.3),
-        (T.lean + 0.05, "steeple", 0.25),
+        (T.zm, "s12_grab_up", 0.24),                  # grips the mask on his dome
+        (T.pull0, "s12_grab_dn", T.pull1 - T.pull0),  # ... and pulls it down
+        (T.pull1 + 0.04, "s12_zombie", 0.22),         # zombie arms
+        (T.kr1, "rest", 0.35),
+        (T.mu0 - 0.15, "s12_grab_dn", 0.15),
+        (T.mu0, "s12_grab_up", T.mu1 - T.mu0),        # pushes it back up
+        (T.mu1 + 0.02, "steeple", 0.22),
         (T.l7.start - 0.08, "shrug", 0.15),
         (T.lol + 0.15, "s12_heart", 0.35),
     ])
     lean = 0.08 * ease_in_out(seg(t, T.lean + 0.35, T.lean + 0.7))
     lean *= 1 - ease_in_out(seg(t, T.malvo + 0.4, T.malvo + 0.8))
-    blink = _first(_pulses(t, [P0 + 0.3, L3.end + 0.12, L3.end + 0.3], 0.06, 0.9),
+    blink = _first(_pulses(t, [P0 + 0.3, L3.end + 0.12, L3.end + 0.3, T.mu1 - 0.02], 0.06, 0.9),
                    slow_blink(t, T.l4.start + 0.35))
     if T.malvo + 0.28 <= t < T.l7.start - 0.06:      # caught: frozen, wide-eyed
         blink = 0.0
     mouth = info.mouth("villain", t)
     y = VY
+    x = VX
+    # zombie shamble: lurch toward the kid, bob side to side (never reaches her)
+    zk = smoothstep(seg(t, T.l4z.start - 0.1, T.l4z.start + 0.15))
+    zk *= 1 - smoothstep(seg(t, T.kr1 - 0.1, T.kr1 + 0.3))
+    if zk > 0:
+        ph = (t - T.l4z.start) * 2 * math.pi * 1.15
+        step = smoothstep(seg(t, T.l4z.start, T.l4z.end))
+        x += zk * (6 * step + 5 * math.sin(ph))
+        y -= zk * 7 * abs(math.cos(ph))
+        lean += zk * (0.02 + 0.03 * math.sin(ph))
+    if T.kr1 <= t < T.mu0:                            # proud little bounce, mask on
+        y -= 5.0 * abs(math.sin((t - T.kr1) * 2 * math.pi * 1.4)) * smoothstep(seg(t, T.kr1, T.kr1 + 0.3))
     if t >= T.lol:
         k = smoothstep(seg(t, T.lol, T.lol + 0.15))
         ph = (t - T.lol) * 2 * math.pi * 4.0
@@ -2213,10 +2438,20 @@ def _malvo_b(t, T, info):
     if t < T.l3.start:                                # little bounces at the party
         y -= 5.0 * abs(math.sin((t - P0) * 2 * math.pi * 1.0)) * smoothstep(seg(t, P0 + 0.9, P0 + 1.2))
         y -= 12.0 * _bump(t, P0 + 0.3, 0.4, 0.06)       # startle hop
-    tear = smoothstep(seg(t, T.me + 0.05, T.me + 0.45)) * (1 - smoothstep(seg(t, T.lean, T.lean + 0.3)))
-    fog = smoothstep(seg(t, T.cheer, T.me + 0.3)) * (1 - smoothstep(seg(t, T.lean, T.lean + 0.4)))
-    return dict(expr=ex, look=look, arms=arms, lean=lean, blink=blink, mouth=mouth, y=y,
-                tear=tear, fog=fog)
+    tear = smoothstep(seg(t, T.me + 0.05, T.me + 0.45)) * (1 - smoothstep(seg(t, T.zm, T.zm + 0.3)))
+    fog = smoothstep(seg(t, T.cheer, T.me + 0.3)) * (1 - smoothstep(seg(t, T.zm, T.zm + 0.3)))
+    # zombie mask: 0 pushed up on the dome .. 1 down over the face
+    if t < T.pull0 or t >= T.mu1:
+        mk = 0.0
+    elif t < T.pull1:
+        mk = ease_out_back(seg(t, T.pull0, T.pull1), 1.6)
+    elif t < T.mu0:
+        mk = 1.0
+    else:
+        mk = 1.0 - ease_in_out(seg(t, T.mu0, T.mu1))
+    jaw = clamp(float(mouth[0]) * 1.6) if T.l4z.start <= t < T.l4z.end else 0.0
+    return dict(expr=ex, look=look, arms=arms, lean=lean, blink=blink, mouth=mouth, y=y, x=x,
+                tear=tear, fog=fog, mask=mk, jaw=jaw)
 
 
 def _hissy_b(t, T):
@@ -2226,13 +2461,16 @@ def _hissy_b(t, T):
         (T.me, "happy", 0.3),                         # aww
         (T.l4.start + 0.2, "nod", 0.2),
         (T.l4.end + 0.15, "happy", 0.3),
-        (T.lean + 0.2, "side_eye", 0.2),              # he knows that face
+        (T.kr + 0.08, "nod", 0.2),                    # happy nod: harmless fun
+        (T.l4y.start + 0.6, "happy", 0.3),
+        (T.glance + 0.1, "side_eye", 0.2),            # he knows that face
         (T.malvo + 0.08, "facepalm", 0.2),
         (T.kid2 + 0.05, "happy", 0.3),
     ])
     look = keyed_v(t, [
         (0.0, (-0.3, 0.9)),                           # reading the book
         (T.l3.start + 0.3, (1.0, -0.2)),              # at Malvo
+        (T.kr, (1.0, 0.1)),                           # the kid's getaway
         (T.lean + 0.2, (1.0, 0.0)),
         (T.kid2 + 0.05, (0.8, -0.2)),
     ], 0.15)
@@ -2244,7 +2482,7 @@ def _hissy_b(t, T):
     return dict(expr=ex, look=look, mouth=mouth, tongue=tongue, flap=flap)
 
 
-def _ai_b(t, T, info):
+def _ai_b(t, T, info, kid_look=None):
     L4 = T.l4
     ex = keyed(t, [
         (0.0, AIX["lantern"]),
@@ -2252,6 +2490,11 @@ def _ai_b(t, T, info):
         (L4.start, "warm"),
         (T.stats + 0.04, "wink", 0.08),
         (T.stats + 0.6, "happy", 0.25),
+        (T.zm + 0.15, "amused", 0.25),                # watching the mask go on
+        (T.kr + 0.05, AIX["laugh"], 0.15),            # the kid's squeal
+        (T.l4y.start - 0.12, "amused", 0.2),          # "Scary? Yes."
+        (T.nobody - 0.02, "wink", 0.08),              # "Hurt? Nobody." + wink
+        (T.nobody + 0.6, "happy", 0.25),
         (T.lean + 0.4, AIX["listen"], 0.3),
         (T.l6.start, "unimpressed", 0.0),             # instantly 😒
         (T.kid2 + 0.08, "amused", 0.3),
@@ -2261,6 +2504,10 @@ def _ai_b(t, T, info):
         (0.0, (-0.6, 0.7)),
         (T.l3.start, (-0.85, 0.6)),
         (T.stats + 0.6, (-0.8, 0.55)),
+        (T.zm + 0.1, (-1.0, 0.75)),                   # at him (and the mask)
+        (T.l4y.start - 0.1, (-0.35, 0.35)),           # to us: "Scary? Yes..."
+        (T.nobody, (0.0, 0.1)),
+        (T.l4y.end + 0.1, (-0.9, 0.6)),
         (T.l6.start, (-1.0, 0.4)),                    # locked on Malvo
         (T.lol - 0.25, (-0.4, 0.2)),
     ], 0.12)
@@ -2271,6 +2518,10 @@ def _ai_b(t, T, info):
         (T.party + 1.3, "idle", 0.4),
         (L4.start, "present_l", 0.25),
         (T.stats + 0.5, "idle", 0.35),
+        (T.scary - 0.05, "shrug", 0.22),              # "Scary? Yes."
+        (T.hurt - 0.05, "idle", 0.2),
+        (T.nobody - 0.12, "thumbs_up", 0.18),         # "Nobody." thumbs-up
+        (T.l4y.end + 0.25, "idle", 0.35),
         (T.lol - 0.2, "idle"),
     ])
     blink = _first(slow_blink(t, T.l3.end + 0.05), slow_blink(t, T.l6.start + 0.62))
@@ -2284,6 +2535,10 @@ def _ai_b(t, T, info):
         mouth = (k * 0.35 * (0.5 + 0.5 * math.sin(ph + 1.0)), 0.3)
         nod = 0.35 * k
     nod = max(nod, 0.45 * _bump(t, L4.start + 0.05, 0.5, 0.1))
+    nod = max(nod, 0.4 * _bump(t, T.wy[1] - 0.02, 0.4, 0.08))     # "Yes."
+    if kid_look is not None and T.kr <= t < T.l4y.start - 0.1:   # tracks the giggling kid
+        kk = smoothstep(seg(t, T.kr, T.kr + 0.2)) * (1 - smoothstep(seg(t, T.l4y.start - 0.3, T.l4y.start - 0.1)))
+        look = tuple(lerp(a_, b_, kk) for a_, b_ in zip(look, kid_look))
     return dict(expr=ex, look=look, hands=hands, blink=blink, mouth=mouth, nod=nod)
 
 
@@ -2344,54 +2599,62 @@ def _confetti_drift(ctx, t, t0, n=12):
             ctx.stroke()
 
 
-def _villain_overlays(ctx, t, m):
-    """FOR EFFORT star on the lapel, monocle fog, the happy tear."""
+def _villain_overlays(ctx, t, m, T):
+    """FOR EFFORT star on the lapel, monocle fog, the happy tear, then the
+    zombie mask (pushed up, or pulled down over his face) and, while his hands
+    work the mask or do zombie arms, the arms again on top of it."""
+    vx = m["x"]
     st = _vstate(t, m["expr"], m["arms"], m["mouth"])
     # lapel star (rides the torso)
-    with saved(ctx, VX, m["y"], VS, m["lean"]) as c:
+    with saved(ctx, vx, m["y"], VS, m["lean"]) as c:
         draw_lapel_star(c, st)
-    ctx.save()                                        # the goblin mask, pushed up
-    _face_xf(ctx, VX, m["y"], VS, m["lean"], st)
-    draw_mask_on_head(ctx)
-    ctx.restore()
-    if m["fog"] <= 0.01 and m["tear"] <= 0.01:
-        return
     p = st["p"]
-    lx = clamp(m["look"][0] + p["ex"], -1.2, 1.2)
-    turn = lx * 9.0
-    ctx.save()
-    _face_xf(ctx, VX, m["y"], VS, m["lean"], st)
-    if m["fog"] > 0.01:
-        cx2, cy2 = V.EYE_DX + turn, V.EYE_DY + p["by2"] * 0.08
-        r = 52 * p["es"] ** 0.5 + 2 - 7
-        circle(ctx, cx2, cy2, r)
-        ctx.set_source_rgba(1, 1, 1, 0.4 * m["fog"])
-        ctx.fill()
-        for j in range(2):
-            ctx.move_to(cx2 - r * 0.5 + j * 18, cy2 + r * 0.25 - j * 12)
-            ctx.line_to(cx2 - r * 0.1 + j * 18, cy2 - r * 0.15 - j * 12)
-        _s(ctx, "#ffffff", 5, 0.5 * m["fog"])
-    if m["tear"] > 0.01:
-        es = p["es"]
-        cx, cy = -V.EYE_DX + turn, V.EYE_DY
-        y0 = cy + V.EYE_RY * es * 0.8
-        Lt = 96 * m["tear"]
-        pts = []
-        for i in range(8):
-            u = i / 7
-            pts.append((cx - (16 + 10 * u) + 3 * math.sin(u * 5 + t * 8) * u, y0 + Lt * u))
-        for w, col in ((10, INK), (5.5, TEAR)):
-            smooth_path(ctx, pts)
-            _s(ctx, col, w)
-        exx, eyy = pts[-1]
-        rr = 5.5 + 2.0 * m["tear"]
-        for r2, col in ((rr + 2.2, INK), (rr, TEAR)):
-            ellipse(ctx, exx, eyy + 2, r2 * 0.86, r2)
-            _f(ctx, col)
-        circle(ctx, exx - 2, eyy, 1.8)
-        ctx.set_source_rgba(1, 1, 1, 0.9)
-        ctx.fill()
+    if m["fog"] > 0.01 or m["tear"] > 0.01:
+        lx = clamp(m["look"][0] + p["ex"], -1.2, 1.2)
+        turn = lx * 9.0
+        ctx.save()
+        _face_xf(ctx, vx, m["y"], VS, m["lean"], st)
+        if m["fog"] > 0.01:
+            cx2, cy2 = V.EYE_DX + turn, V.EYE_DY + p["by2"] * 0.08
+            r = 52 * p["es"] ** 0.5 + 2 - 7
+            circle(ctx, cx2, cy2, r)
+            ctx.set_source_rgba(1, 1, 1, 0.4 * m["fog"])
+            ctx.fill()
+            for j in range(2):
+                ctx.move_to(cx2 - r * 0.5 + j * 18, cy2 + r * 0.25 - j * 12)
+                ctx.line_to(cx2 - r * 0.1 + j * 18, cy2 - r * 0.15 - j * 12)
+            _s(ctx, "#ffffff", 5, 0.5 * m["fog"])
+        if m["tear"] > 0.01:
+            es = p["es"]
+            cx, cy = -V.EYE_DX + turn, V.EYE_DY
+            y0 = cy + V.EYE_RY * es * 0.8
+            Lt = 96 * m["tear"]
+            pts = []
+            for i in range(8):
+                u = i / 7
+                pts.append((cx - (16 + 10 * u) + 3 * math.sin(u * 5 + t * 8) * u, y0 + Lt * u))
+            for w, col in ((10, INK), (5.5, TEAR)):
+                smooth_path(ctx, pts)
+                _s(ctx, col, w)
+            exx, eyy = pts[-1]
+            rr = 5.5 + 2.0 * m["tear"]
+            for r2, col in ((rr + 2.2, INK), (rr, TEAR)):
+                ellipse(ctx, exx, eyy + 2, r2 * 0.86, r2)
+                _f(ctx, col)
+            circle(ctx, exx - 2, eyy, 1.8)
+            ctx.set_source_rgba(1, 1, 1, 0.9)
+            ctx.fill()
+        ctx.restore()
+    ctx.save()                                        # the zombie mask
+    _face_xf(ctx, vx, m["y"], VS, m["lean"], st)
+    draw_zmask_on_head(ctx, m["mask"], m["jaw"])
     ctx.restore()
+    if T.zm <= t < T.mu1 + 0.25:                      # hands in front of the mask
+        A, B, a_shy, _h, _tl = V.resolve_arms(m["arms"], t)
+        with saved(ctx, vx, m["y"], VS, m["lean"]) as c:
+            c.set_line_join(1)
+            V._draw_arm(c, (-V.SHOULDER[0], V.SHOULDER[1] + st["shy"]), A)
+            V._draw_arm(c, (V.SHOULDER[0], V.SHOULDER[1] + st["shy"]), B)
 
 
 def _table(ctx, t, T):
@@ -2435,9 +2698,78 @@ def _crowd(t, T):
     then livens up again for the laugh. Keeps the bitrate in check."""
     calm = smoothstep(seg(t, T.l3.start + 0.5, T.l3.start + 1.4))
     calm *= 1 - smoothstep(seg(t, T.l7.start + 0.3, T.l7.start + 0.8))
+    # the zombie tag: everybody livens up while the kid runs giggling
+    calm *= 1 - (smoothstep(seg(t, T.kr - 0.05, T.kr + 0.2))
+                 * (1 - smoothstep(seg(t, T.l4y.start + 0.4, T.l4y.start + 1.0))))
     energy = 1.0 - 0.6 * calm
     fps = 8.0 if calm > 0.5 else 12.0
     return math.floor(t * fps) / fps, energy
+
+
+KID = (712.0, 1004.0, 0.6)                  # the witch-hat kid behind the table (right)
+KID_LOOP = (800.0, 1004.0, 80.0, 26.0)     # cx, cy, rx, ry of the giggly getaway loop
+
+
+def _kid(t, T):
+    """The kid Malvo 'zombies' at: watches, giggles, squeals, runs one happy
+    loop round the other kids (looking back, laughing) and comes back."""
+    x, y, s = KID
+    d = dict(x=x, y=y, s=s, arms="cheer", look=(0.0, 0.0), mouth="smile", eyes="happy",
+             lean=0.0, run=None, squeal=0.0, bounce=6.0, front=False, speed=0.0)
+    if t < T.zm:
+        return d
+    d["look"] = (-1.0, -0.2)                          # turns to watch him
+    if t < T.l4z.start:
+        d["arms"] = keyed(t, [(T.zm, "cheer"), (T.zm + 0.3, "side")])[1]
+        return d
+    if t < T.kr:                                      # "Braaains!": delighted gasp, backs off
+        u = smoothstep(seg(t, T.l4z.start, T.kr))
+        d.update(x=x + 40 * u + 2.0 * math.sin(t * 2 * math.pi * 9), arms="cheeks",
+                 mouth="o", eyes="dots", lean=0.07 * u, bounce=2.5)
+        return d
+    if t < T.kr0:                                     # squeal (anticipation squash)
+        d.update(x=x + 40, arms="run", mouth="laugh", eyes="happy", squeal=1.0, lean=-0.06,
+                 bounce=0.0)
+        d["y"] = y + 4
+        return d
+    cx, cy, rx, ry = KID_LOOP
+    x0 = x + 40
+    if t < T.kr1:                                     # the loop
+        u = seg(t, T.kr0, T.kr1)
+        th = 2 * math.pi * (0.5 * u + 0.5 * ease_in_out(u))
+        lx = cx - rx * math.cos(th)
+        # start/end blend into the kid's spot (the loop's leftmost point is cx - rx)
+        lx += (x0 - (cx - rx)) * (1 - math.sin(th / 2) ** 2)
+        ly = cy + ry * math.sin(th)
+        dth = 2 * math.pi * (0.5 + 0.5 * math.pi / 2 * math.sin(math.pi * u))
+        vx = rx * math.sin(th) * dth / (T.kr1 - T.kr0)
+        d.update(x=lx, y=ly, arms="run", mouth="laugh", eyes="happy", squeal=0.8,
+                 lean=clamp(vx / 900.0, -0.2, 0.2), run=(t - T.kr0) * 2 * math.pi * 3.4,
+                 bounce=0.0, front=math.sin(th) > 0, speed=vx)
+        d["y"] -= 14 * abs(math.sin((t - T.kr0) * 2 * math.pi * 3.4))
+        d["look"] = (-1.0, -0.1)                      # always looking back at him, laughing
+        return d
+    # back at her spot: still giggling, then cheering
+    k = smoothstep(seg(t, T.kr1, T.kr1 + 0.35))
+    d.update(x=lerp(x0, x, k), arms="cheer", mouth="laugh" if t < T.hurt else "smile",
+             squeal=0.6 * (1 - smoothstep(seg(t, T.kr1, T.hurt))), bounce=9.0)
+    d["look"] = (-0.8, -0.3)
+    return d
+
+
+def _draw_kid(ctx, t, T, tc, en, kd):
+    if kd["speed"] and abs(kd["speed"]) > 60:        # speed lines behind the runner
+        sgn = 1 if kd["speed"] > 0 else -1
+        for j, (dy, L) in enumerate(((-120, 46), (-92, 60), (-64, 40))):
+            x0 = kd["x"] - sgn * (44 + j * 6)
+            ctx.move_to(x0, kd["y"] + dy * kd["s"] * 1.4)
+            ctx.line_to(x0 - sgn * L, kd["y"] + dy * kd["s"] * 1.4)
+        _s(ctx, "#fff3c4", 5, 0.8)
+    draw_person_front(ctx, kd["x"], kd["y"], kd["s"], tc if kd["run"] is None else t, 2,
+                      arms=kd["arms"], look=kd["look"], mouth=kd["mouth"], eyes=kd["eyes"],
+                      energy=en if kd["run"] is None else 1.0, costume="witch",
+                      lean=kd["lean"], run=kd["run"], squeal=kd["squeal"],
+                      bounce=kd["bounce"])
 
 
 def shot_party(ctx, t, info, T):
@@ -2459,17 +2791,27 @@ def shot_party(ctx, t, info, T):
     draw_string(ctx, bx + math.sin(sway) * 60 * bs, by + 58 * bs, kx, ky, tc, amp=7, phase=1.0)
     draw_balloon(ctx, bx, by, bs, sway, YBAL, YBAL_DK)
 
-    # standing townsfolk behind the table (right)
-    draw_person_front(ctx, 712, 1004, 0.6, tc, 2, arms="cheer", energy=en, costume="witch")
-    if k1 < 0.5:                                      # (off-screen once pushed in)
-        draw_person_front(ctx, 804, 990, 0.56, tc, 5, arms="clap", energy=en, costume="horns")
-        draw_person_front(ctx, 892, 1008, 0.6, tc, 8, arms="cheer", energy=en,
-                          costume="batwings")
+    # standing townsfolk behind the table (right); the witch-hat kid is the one
+    # Malvo 'zombies' at (she runs a giggly loop round the other two)
+    kd = _kid(t, T)
+    if not kd["front"]:
+        _draw_kid(ctx, t, T, tc, en, kd)
+    if True:                                          # (mostly off-screen when pushed in)
+        fun = T.kr <= t < T.l4y.end                   # they laugh along with the tag
+        lk = (clamp((kd["x"] - 804) / 90.0, -1, 1), 0.0) if fun else (0.0, 0.0)
+        draw_person_front(ctx, 804, 990, 0.56, tc, 5, arms="clap", energy=en, costume="horns",
+                          mouth="laugh" if fun else "smile", look=lk)
+        lk = (clamp((kd["x"] - 892) / 90.0, -1, 1), 0.0) if fun else (0.0, 0.0)
+        draw_person_front(ctx, 892, 1008, 0.6, tc, 8, arms="clap" if fun else "cheer",
+                          energy=en, costume="batwings", mouth="laugh" if fun else "smile",
+                          look=lk)
+    if kd["front"]:
+        _draw_kid(ctx, t, T, tc, en, kd)
 
     # Malvo behind the table
-    draw_villain(ctx, VX, m["y"], VS, t, expr=m["expr"], look=m["look"], mouth=m["mouth"],
+    draw_villain(ctx, m["x"], m["y"], VS, t, expr=m["expr"], look=m["look"], mouth=m["mouth"],
                  arms=m["arms"], lean=m["lean"], blink=m["blink"])
-    _villain_overlays(ctx, t, m)
+    _villain_overlays(ctx, t, m, T)
 
     # the red balloon tied to the table
     bx, by, bs = BALLOON_W
@@ -2524,10 +2866,11 @@ def shot_party(ctx, t, info, T):
     ctx.restore()
 
     # --- the AI lantern (screen space during the push-in) --------------------------
-    a = _ai_b(t, T, info)
+    kx_, ky_ = _to_screen(cam, kd["x"], kd["y"] - 110)
+    a = _ai_b(t, T, info, kid_look=(clamp((kx_ - AI_S[0]) / 260.0, -1, 1), 1.0))
     wx, wy = _to_screen(cam, AI_W[0], AI_W[1])
     ws = AI_W[2] * z
-    lean_k = ease_in_out(seg(t, T.lean + 0.3, T.lean + 0.8)) * (1 - ease_in_out(seg(t, T.malvo + 0.5, T.malvo + 0.9)))
+    lean_k = ease_in_out(seg(t, T.glance + 0.25, T.glance + 0.7)) * (1 - ease_in_out(seg(t, T.malvo + 0.5, T.malvo + 0.9)))
     fx_, fy_, fs_ = AI_S[0], AI_S[1] - 6 * lean_k, AI_S[2]
     ax = lerp(wx, fx_, k1)
     ay = lerp(wy, fy_, k1)
@@ -2610,7 +2953,15 @@ def SFX(info):
         (T.party + 0.4, "ta_da", -6),
         (T.party + 0.7, "crowd_laugh", -12),
         (T.stats + 0.04, "sparkle", -10),             # the wink
-        (T.lean, "tiptoe", -12),
+        (T.pull0, "swoosh_up", -10),                  # zombie mask pulled down
+        (T.pull1, "boing", -16),                      # rubber mask settles
+        (T.l4z.start + 0.05, "tiptoe", -12),          # shamble steps
+        (T.l4z.start + 0.6, "tiptoe", -14),
+        (T.kr, "pop", -10),                           # the kid's squeal + getaway
+        (T.kr + 0.08, "crowd_laugh", -10),
+        (T.nobody, "sparkle", -10),                   # wink + thumbs-up
+        (T.mu0, "swoosh_up", -12),                    # mask pushed back up
+        (T.glance, "tiptoe", -12),
         (T.chip_in, "tick", -10),
         (T.malvo, "whoosh", -14),                     # strike through '10?'
         (T.malvo + 0.1, "snake_hiss", -14),           # Hissy's facepalm sigh
