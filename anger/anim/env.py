@@ -1077,6 +1077,8 @@ def _web_point(wd, ri, ei, p, tear_dir, t):
 
 
 def _draw_web(c, t, wd, p, tear_dir, alpha=1.0):
+    zs = _mscale(c)
+    th = min(1.0, (1.0 / max(zs, 0.3)) ** 0.6)          # threads stay fine in close-ups
     ne = len(wd["ends"])
     nr = len(wd["radii"])
     col = "#D9D6CF"
@@ -1095,7 +1097,7 @@ def _draw_web(c, t, wd, p, tear_dir, alpha=1.0):
     # frame threads (anchor to anchor) - thick; when torn they snap and dangle from each anchor
     fr = [e[0] for e in wd["ends"]]
     if p <= 0.02:
-        c.drawPath(_poly(fr, close=True), _S(col, 3.0, a_line * 0.8))
+        c.drawPath(_poly(fr, close=True), _S(col, 3.0 * th, a_line * 0.8))
     else:
         k = ease_out(clamp(p * 1.3))
         for ia in range(len(fr)):
@@ -1107,7 +1109,7 @@ def _draw_web(c, t, wd, p, tear_dir, alpha=1.0):
                 pth = skia.Path()
                 pth.moveTo(*p0)
                 pth.quadTo(mx, my + 40 * k, ex + tear_dir * 10 * k, ey)
-                c.drawPath(pth, _S(col, 2.4, a_line * 0.75))
+                c.drawPath(pth, _S(col, 2.4 * th, a_line * 0.75))
     # silk sheets near the centre (thick dusty webs)
     if p < 0.6:
         sheet = []
@@ -1120,7 +1122,7 @@ def _draw_web(c, t, wd, p, tear_dir, alpha=1.0):
         line += [pts[ei][ri] for ri in range(nr)] + [ends[ei]]
         if p >= 0.08:
             line = line[1:] if len(line) > 2 else line
-        c.drawPath(smooth_path(line, closed=False), _S(col, 2.2, a_line))
+        c.drawPath(smooth_path(line, closed=False), _S(col, 2.2 * th, a_line))
     # spiral rings (sagging chords between neighbouring radials); torn chords removed
     for ri in range(nr):
         for ei in range(ne):
@@ -1137,7 +1139,7 @@ def _draw_web(c, t, wd, p, tear_dir, alpha=1.0):
             pth = skia.Path()
             pth.moveTo(*a)
             pth.quadTo(mx, my, *b)
-            c.drawPath(pth, _S(col, 1.5, a_line * 0.85))
+            c.drawPath(pth, _S(col, 1.5 * th, a_line * 0.85))
     # wrapped husks caught in the web
     rng = np.random.default_rng(wd["seed"] + 5)
     for k in range(3):
@@ -1155,7 +1157,7 @@ def _draw_web(c, t, wd, p, tear_dir, alpha=1.0):
             pth = skia.Path()
             pth.moveTo(sx, sy)
             pth.quadTo(sx + 20 * tear_dir, sy + ln * 0.5, sx + 6, sy + ln)
-            c.drawPath(pth, _S(col, 1.3, 0.5 * alpha * (1 - p)))
+            c.drawPath(pth, _S(col, 1.3 * th, 0.5 * alpha * (1 - p)))
 
 
 def _draw_webs(c, t, webs_torn, tear_times, tear_dir):

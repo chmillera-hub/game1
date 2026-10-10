@@ -1468,6 +1468,12 @@ def process_stem(p: Part, cue: Cue, x: np.ndarray) -> np.ndarray:
     n = len(x)
     if p.eq is not None:
         x = p.eq(x)
+    if p.opts.get("sat"):
+        # drum-bus style soft saturation: tanh on the peak-normalized stem trims the transient spikes
+        # (a few dB of crest) so a tutti hit keeps its body under the master ceiling
+        pk = float(np.max(np.abs(x))) + 1e-12
+        k = float(p.opts["sat"])
+        x = np.tanh(k * x / pk) / math.tanh(k) * pk
     if p.vol:
         tt = np.array([cue.tmap.sec(b) for b, _ in p.vol])
         vv = np.array([v for _, v in p.vol], float)

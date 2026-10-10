@@ -1414,9 +1414,9 @@ def _st_sword_drag(p, t, ph, ex):
     other = _side_other(side)
     sh = float(ex.get("shake", 1.0))
     jit = sh * 1.6 * noise1(t * 31.0, 7)
-    P["rot"] = 7.0 + jit
-    P["spine"] = 4.0
-    P["neck"] = -4.0
+    P["rot"] = -12.0 + jit
+    P["spine"] = 6.0
+    P["neck"] = -6.0
     P["sh_up"] = 0.9
     sc = 0.5 + 0.5 * clamp(sh)
     P[side + "_th"] = 46.0 + 14.0 * sc * noise1(t * 2.3, 21)
@@ -1427,9 +1427,9 @@ def _st_sword_drag(p, t, ph, ex):
         P[s_ + "_ft"] = -10.0
         P[s_ + "_fr"] = 1.0
         P[s_ + "_sp"] = 8.0
-    P["arm_" + side] = ArmPose(shoulder=162.0, elbow=24.0, wrist=-40.0, hand="hold")
+    P["arm_" + side] = ArmPose(shoulder=150.0, elbow=30.0, wrist=-40.0, hand="hold")
     P["arm_" + side + "_w"] = 1.0
-    P["arm_" + other] = ArmPose(shoulder=158.0, elbow=30.0, wrist=-40.0, hand="hold")
+    P["arm_" + other] = ArmPose(shoulder=146.0, elbow=36.0, wrist=-40.0, hand="hold")
     P["arm_" + other + "_w"] = 1.0
     P["anchor"] = ("wall",)
     P["anchor_w"] = 1.0
@@ -1545,6 +1545,11 @@ def _params(p, t):
 
 
 # =========================================================================== solver
+def _blade_reach(embed=0.0):
+    """Distance from the grip centre to the blade point (embed 0) / to where an embedded blade enters the rock."""
+    return SWORD_GRIP * 0.5 + 10.0 + SWORD_BLADE * (1.0 - embed)
+
+
 def _mcopy(m):
     return skia.Matrix.Concat(m, skia.Matrix())
 
@@ -1773,6 +1778,7 @@ def _solve(p: Pose, t):
     if R.torch is True:
         R.torch = "l"
     R.torch_flame = clamp(ex.get("torch_flame", 1.0))
+    R.embed = clamp(ex.get("embed", 0.78), 0.0, 0.95)
     R.shield = ex.get("shield", "back")
     R.two_hand = bool(ex.get("two_hand", False)) or R.state == "sword_drag"
     # ---- anchoring (hang: the gripping hand; sword_drag: the blade's entry point in the wall)
@@ -1789,8 +1795,7 @@ def _solve(p: Pose, t):
             g = _mp(R.MC, A.palm)
             tilt = float(ex.get("sword_tilt", 8.0))
             ax_ = _dirv(90.0 - tilt)
-            embed = clamp(ex.get("embed", 0.72), 0.0, 0.95)
-            dist = 14.0 + SWORD_BLADE * (1.0 - embed)
+            dist = _blade_reach(R.embed)
             pt = (g[0] + ax_[0] * dist, g[1] + ax_[1] * dist)
         w = P["anchor_w"]
         off = (-pt[0] * w, -pt[1] * w)
@@ -1966,10 +1971,9 @@ def sword_tip_pos(pose: Pose, t=None):
     g, ang, A = R.props["sword"]
     dv = _dirv(ang)
     if R.state == "sword_drag":
-        embed = clamp(pose.extra.get("embed", 0.72), 0.0, 0.95)
-        d = 14.0 + SWORD_BLADE * (1.0 - embed)
+        d = _blade_reach(R.embed)
     else:
-        d = 14.0 + SWORD_BLADE
+        d = _blade_reach(0.0)
     return _mp(R.MS, (g[0] + dv[0] * d, g[1] + dv[1] * d))
 
 
@@ -2154,53 +2158,61 @@ def _draw_shield_local(c, r=120.0, back_side=False, dent=True):
 
 
 # =========================================================================== drawing: body parts
+def _cloth_floor(R, pts):
+    """Keep cloth above the floor (L coords y <= -3) unless Anger is airborne / hanging."""
+    if R.state in ("hang", "fall", "sword_drag"):
+        return pts
+    return [(x, min(y, -3.0)) for x, y in pts]
+
+
 def _draw_cape(c, R, t):
     P = R.P
     lie = max(R.lying, R.sitting)
-    if lie > 0.85:
+    if lie > 0.6:
         return
     tt = R.t
-    rot = P["rot"] + R.spine
-    g = _rot((0.0, 1.0), -rot)
-    wl = _rot((P["wind_x"], P["wind_y"]), -rot)
+    wind = (P["wind_x"], P["wind_y"])
     flut = P["flut"]
-    length = 470.0 * (1.0 - 0.75 * lie)
-    top_y = NECK_Y + 24.0
-    ztop = -(_tprof(24.0)[2] + 8.0)
+    length = 470.0 * (1.0 - 0.8 * lie)
+    zb = _tprof(24.0)[2] + 8.0
+    tl = _mp(R.MC, (-96.0 * R.cb - zb * R.sb, NECK_Y + 24.0))
+    tr = _mp(R.MC, (96.0 * R.cb - zb * R.sb, NECK_Y + 24.0))
+    top = (0.5 * (tl[0] + tr[0]), 0.5 * (tl[1] + tr[1]))
+    axv = _norm(tr[0] - tl[0], tr[1] - tl[1])
+    hw0 = 0.5 * math.hypot(tr[0] - tl[0], tr[1] - tl[1])
+    d = _norm(wind[0] / 520.0, 1.0 + wind[1] / 520.0)
     pts_l, pts_r = [], []
-    d = _norm(g[0] + wl[0] / 520.0, g[1] + wl[1] / 520.0)
     n = 6
     for i in range(n + 1):
         u = i / n
-        w = lerp(84.0, 136.0, u)
+        w = lerp(hw0, 136.0 * max(R.cb, 0.32), u)
         wave = flut * 14.0 * u * math.sin(tt * 7.0 + u * 5.0)
-        cx = -ztop * 0.0 + (ztop * R.sb) + d[0] * length * u + wave * 0.5
-        cy = top_y + d[1] * length * u
-        nx, ny = -d[1], d[0]
-        wx = w * max(R.cb, 0.32)
-        pts_l.append((cx - nx * wx, cy - ny * wx + wave * 0.3))
-        pts_r.append((cx + nx * wx, cy + ny * wx - wave * 0.3))
-    # torn hem
+        cx = top[0] + d[0] * length * u + wave * 0.5 - d[1] * wave * 0.4
+        cy = top[1] + d[1] * length * u
+        nx, ny = (axv if u == 0 else _norm(-d[1], d[0]))
+        if u > 0:
+            nx, ny = _norm(lerp(axv[0], -d[1], u), lerp(axv[1], d[0], u))
+        pts_l.append((cx - nx * w, cy - ny * w + wave * 0.3))
+        pts_r.append((cx + nx * w, cy + ny * w - wave * 0.3))
+    pts_l, pts_r = _cloth_floor(R, pts_l), _cloth_floor(R, pts_r)
     a, b = pts_l[-1], pts_r[-1]
     hem = []
     for j in range(1, 8):
         u = j / 8.0
         dd = (14.0 if j % 2 else -4.0) * (0.6 + 0.4 * hash01(j, 5)) + flut * 6.0 * math.sin(tt * 9.0 + j)
         hem.append((lerp(a[0], b[0], u) + d[0] * dd, lerp(a[1], b[1], u) + d[1] * dd))
+    hem = _cloth_floor(R, hem)
     path = skia.Path()
     _cr(path, pts_l)
     for q in hem:
         path.lineTo(*q)
     _cr(path, pts_r[::-1], move=False)
     path.close()
-    c.save()
-    c.concat(_chest_local(R))
     _cel(c, path, mix_col("a_cloth", "#2A0E0C", 0.35), col("#2A0C0A"), k=10.0, line=C_CLOTH_LINE, line_w=1.2)
     for k in (0.3, 0.55, 0.78):
         f0 = (lerp(pts_l[1][0], pts_r[1][0], k), lerp(pts_l[1][1], pts_r[1][1], k))
         f1 = (lerp(pts_l[-1][0], pts_r[-1][0], k + 0.04), lerp(pts_l[-1][1], pts_r[-1][1], k))
         _stroke(c, _curve([f0, f1]), col("#240A08"), 2.0, 0.5)
-    c.restore()
 
 
 def _chest_local(R):
@@ -2365,38 +2377,45 @@ def _draw_belt(c, R):
 
 
 def _tabard_geom(R, t, front=True):
+    """Front / back tabard panel centre line in L coords: hangs from the belt, drapes along the thighs when gravity
+    presses it onto them (standing, sitting, lying), swings / flies with the wind, never below the floor."""
     P = R.P
     tt = R.t
-    rot = P["rot"]
-    g = _rot((0.0, 1.0), -rot)
-    wl = _rot((P["wind_x"], P["wind_y"]), -rot)
     flut = P["flut"]
     a, zf, zb = _tab(_PTAB, -458.0)
     sgn = 1.0 if front else -1.0
-    ax = (zf + 6.0) * R.sb * sgn + R.px
-    ay = R.py + HIP_H - 458.0
-    # knees (upright coords) - the front panel drapes over the thighs
-    kn = []
-    for side in ("r", "l"):
-        th = P[side + "_th"]
-        d = _dirv(th)
-        kn.append((R.px + THIGH * d[0] * R.fk, R.py + THIGH * d[1], th))
-    kx = 0.5 * (kn[0][0] + kn[1][0])
-    ky = 0.5 * (kn[0][1] + kn[1][1])
-    thm = max(kn[0][2], kn[1][2]) if front else min(kn[0][2], kn[1][2])
-    wk = clamp((thm if front else -thm) / 55.0)
-    d1 = _norm(lerp(g[0], kx - ax, wk) + wl[0] / 900.0, lerp(g[1], ky - ay, wk) + wl[1] / 900.0)
-    if not front:
-        d1 = _norm(g[0] + wl[0] / 600.0, g[1] + wl[1] / 600.0)
+    att = _mp(R.MB, (R.px + ((zf + 6.0) if front else -(zb + 4.0)) * R.sb, R.py + HIP_H - 458.0))
+    fwd = _norm(*(lambda q0, q1: (q1[0] - q0[0], q1[1] - q0[1]))(_mp(R.MB, (0.0, 0.0)), _mp(R.MB, (1.0, 0.0))))
+    wind = (P["wind_x"] / 700.0, P["wind_y"] / 700.0)
+    kn = [L.knee for L in R.legs.values()]
+    an = [L.ankle for L in R.legs.values()]
+    hp = [L.hip for L in R.legs.values()]
+    if front:
+        thd = _norm(0.5 * (kn[0][0] + kn[1][0]) - 0.5 * (hp[0][0] + hp[1][0]), 0.5 * (kn[0][1] + kn[1][1]) - 0.5 * (hp[0][1] + hp[1][1]))
+        # forward-most thigh pushes the panel
+        k_fwd = max((kn[0][0] - hp[0][0]) * fwd[0] + (kn[0][1] - hp[0][1]) * fwd[1],
+                    (kn[1][0] - hp[1][0]) * fwd[0] + (kn[1][1] - hp[1][1]) * fwd[1]) / THIGH
+        thd = _norm(thd[0] + fwd[0] * max(0.0, k_fwd) * 0.5, thd[1] + fwd[1] * max(0.0, k_fwd) * 0.5)
+        sdot = fwd[1]                      # gravity (0, 1) . front direction: > 0 -> the panel falls away
+        d1 = _norm(lerp(thd[0], 0.0, clamp(sdot)) + wind[0], lerp(thd[1], 1.0, clamp(sdot)) + wind[1])
+    else:
+        d1 = _norm(wind[0] * 1.3, 1.0 + wind[1] * 1.3)
     l1 = 150.0
-    m = (ax + d1[0] * l1, ay + d1[1] * l1)
-    d2 = _norm(g[0] + wl[0] / 500.0 + flut * 0.25 * math.sin(tt * 6.0), g[1] + wl[1] / 500.0)
-    l2 = 128.0 * (1.0 - 0.25 * max(R.sitting, R.lying))
+    m = (att[0] + d1[0] * l1, att[1] + d1[1] * l1)
+    sw = flut * 0.25 * math.sin(tt * 6.0)
+    if front and R.lying > 0.5:
+        shd = _norm(0.5 * (an[0][0] + an[1][0]) - 0.5 * (kn[0][0] + kn[1][0]), 0.5 * (an[0][1] + an[1][1]) - 0.5 * (kn[0][1] + kn[1][1]))
+        d2 = _norm(lerp(wind[0] + sw, shd[0], R.lying), lerp(1.0 + wind[1], shd[1], R.lying))
+    else:
+        d2 = _norm(wind[0] * 1.2 + sw, 1.0 + wind[1] * 1.2)
+    l2 = 128.0
     e = (m[0] + d2[0] * l2, m[1] + d2[1] * l2)
-    return (ax, ay), m, e, d1, d2
+    return att, m, e, d1, d2
 
 
 def _draw_tabard(c, R, t, front=True):
+    if not front and R.lying > 0.5:
+        return
     p0, m, e, d1, d2 = _tabard_geom(R, t, front)
     tt = R.t
     flut = R.P["flut"]
@@ -2415,17 +2434,15 @@ def _draw_tabard(c, R, t, front=True):
         u = j / 7.0
         dd = (16.0 if j % 2 else 2.0) * (0.5 + 0.6 * hash01(j + (0 if front else 9), 3)) + flut * 5.0 * math.sin(tt * 8.0 + j)
         hem.append((lerp(a[0], b[0], u) + d2[0] * dd, lerp(a[1], b[1], u) + d2[1] * dd))
+    L, Rr, hem = _cloth_floor(R, L), _cloth_floor(R, Rr), _cloth_floor(R, hem)
     path = skia.Path()
     _cr(path, L)
     for q in hem:
         path.lineTo(*q)
     _cr(path, Rr[::-1], move=False)
     path.close()
-    c.save()
-    c.concat(R.MB)
     if front:
         _cel(c, path, C_CLOTH, C_CLOTH_SH, k=7.0, line=C_CLOTH_LINE, line_w=1.3)
-        tr0 = (L[0][0] + (Rr[0][0] - L[0][0]) * 0.0, L[0][1] + 10.0)
         _stroke(c, _curve([(L[0][0] + d1[0] * 12, L[0][1] + d1[1] * 12), (Rr[0][0] + d1[0] * 12, Rr[0][1] + d1[1] * 12)]),
                 C_GOLD, 2.4, 0.75)
         for k in (0.35, 0.68):
@@ -2434,7 +2451,6 @@ def _draw_tabard(c, R, t, front=True):
             _stroke(c, _curve([f0, (lerp(f0[0], f1[0], 0.5) + 2.0, lerp(f0[1], f1[1], 0.5)), f1]), C_CLOTH_LINE, 1.8, 0.45)
     else:
         _cel(c, path, mix_col("a_cloth", "#1A0806", 0.3), C_CLOTH_LINE, k=5.0, line=C_CLOTH_LINE, line_w=1.2)
-    c.restore()
 
 
 def _draw_torso(c, R, emit_far_pauldron):
@@ -2841,6 +2857,9 @@ def _draw_prop(c, R, name, emit):
     c.translate(*g)
     c.rotate(-ang)
     if name == "sword":
+        if R.state == "sword_drag" or R.sword == "in_wall":
+            embed = clamp(R.embed, 0.0, 0.95)
+            c.clipRect(skia.Rect(-80.0, -200.0, 80.0, _blade_reach(embed)))
         _draw_sword_local(c)
     else:
         _draw_torch_local(c, R.t, R.torch_flame, 1.0 - R.torch_flame)
@@ -3098,7 +3117,7 @@ def draw_sword(canvas, x, y, angle=180.0, scale=1.0, light=1.0, tint=(0, 0, 0), 
     c.scale(scale, scale)
     c.rotate(angle + 180.0)
     if embed > 0:
-        cut = SWORD_GRIP * 0.5 + 10.0 + SWORD_BLADE * (1.0 - embed)
+        cut = _blade_reach(embed)
         c.clipRect(skia.Rect(-80.0, -200.0, 80.0, cut))
     _draw_sword_local(c)
     c.restore()
@@ -3107,7 +3126,7 @@ def draw_sword(canvas, x, y, angle=180.0, scale=1.0, light=1.0, tint=(0, 0, 0), 
 
 def sword_wall_point(x, y, angle=90.0, scale=1.0, embed=0.72):
     """Where draw_sword(x, y, angle, scale, embed=embed)'s blade enters the wall (stage)."""
-    d = (14.0 + SWORD_BLADE * (1.0 - embed)) * scale
+    d = _blade_reach(embed) * scale
     a = angle * D2R
     return x + math.sin(a) * d, y - math.cos(a) * d
 

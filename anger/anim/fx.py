@@ -248,7 +248,7 @@ def _title_layers(text, size, tracking):
     gc.drawPath(path, _P("#C83A10", 0.30, blur=size * 0.42))
     gc.drawPath(path, _P("#FF6A20", 0.22, blur=size * 0.16))
     gc.drawPath(path, _P("#FFA040", 0.16, blur=size * 0.05))
-    arr = gs.makeImageSnapshot().toarray()
+    arr = gs.makeImageSnapshot().toarray(colorType=skia.kBGRA_8888_ColorType, alphaType=skia.kPremul_AlphaType)
     arr[..., 3] = 0
     glow = skia.Image.fromarray(np.ascontiguousarray(arr), colorType=skia.kBGRA_8888_ColorType,
                                 alphaType=skia.kPremul_AlphaType)

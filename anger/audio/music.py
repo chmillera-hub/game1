@@ -271,8 +271,8 @@ def compose_descent() -> Cue:
               (59, 0)]
 
     # ---------------------------------------------------------------- percussion (sync-locked)
-    tk = S("taiko", "taiko", pan=0.0, send=0.26, humanize=0.0, opts={"level": -16.0})
-    tkh = S("taiko_hi", "taiko", pan=-0.18, send=0.28, humanize=0.0, opts={"level": -20.5})
+    tk = S("taiko", "taiko", pan=0.0, send=0.26, humanize=0.0, opts={"sat": 1.6, "level": -16.0})
+    tkh = S("taiko_hi", "taiko", pan=-0.18, send=0.28, humanize=0.0, opts={"sat": 1.6, "level": -20.5})
     tk.add([Note(-6, 2, P("C2"), 127)])
     tkh.add([Note(-6, 2, P("A2"), 112)])
     for b in range(0, 18):                                # the walk: one drum per footfall
@@ -304,10 +304,10 @@ def compose_descent() -> Cue:
     boom.add([Note(19, 1, P("D1"), 120), Note(21, 1, P("C2"), 116), Note(23, 1, P("F1"), 124),
               Note(27, 1, P("G1"), 104), Note(31, 1, P("A1"), 108), Note(41, 1, P("A1"), 96), Note(43, 1, P("A1"), 104)])
     bigb = S("boom_big", "boom", synth=synth_boom, pan=0.0, send=0.1, opts={"decay": 1.3, "slap": 0.25, "drop": 1.6,
-                                                                              "peak": -5.5})
+                                                                              "sat": 1.4, "peak": -5.5})
     bigb.add([Note(-6, 2, P("D1"), 118), Note(49, 2, P("D1"), 127), Note(49, 2, P("A1"), 92)])
 
-    timp = S("timpani", "timpani", pan=0.14, send=0.28, humanize=0.0, opts={"level": -20.0})
+    timp = S("timpani", "timpani", pan=0.14, send=0.28, humanize=0.0, opts={"sat": 1.6, "level": -20.0})
     timp.add([Note(-6, 2, P("D2"), 122)])
     timp.add([Note(b, 1.5, P("D2"), 66) for b in (4, 8, 12)])
     timp.add([Note(19, 1.5, P("D2"), 118), Note(21, 1.5, P("C3"), 118), Note(23, 2, P("F2"), 122),
@@ -316,9 +316,9 @@ def compose_descent() -> Cue:
     timp.add([Note(41, 1, P("A2"), 76), Note(43, 1, P("A2"), 88)])
     timp.add(roll(P("A2"), 45, 48.95, tm, 12, 40, 118))
     timp.add([S.N(33.007, 1.6, "D2", 124)])
-    bd = S("gran_cassa", "bass_drum", pan=0.0, send=0.3, humanize=0.0, opts={"level": -20.0})
+    bd = S("gran_cassa", "bass_drum", pan=0.0, send=0.3, humanize=0.0, opts={"sat": 1.6, "level": -20.0})
     bd.add([Note(-6, 3, P("A1"), 116), Note(23, 3, P("A1"), 96), S.N(33.003, 2.0, "A1", 127)])
-    kit = S("snare_cym", "kit", pan=0.08, send=0.3, humanize=0.0, opts={"level": -24.0})
+    kit = S("snare_cym", "kit", pan=0.08, send=0.3, humanize=0.0, opts={"sat": 1.6, "level": -24.0})
     t = 31.4
     while t < 32.97:
         x = (t - 31.4) / 1.6
@@ -366,7 +366,7 @@ def compose_descent() -> Cue:
            (13.6, -7.5), (14.7, -6.0), (14.8, -2.0), (17.2, -1.5), (21.9, -1.5), (24.3, -0.5), (24.6, -3.0),
            (29.0, -6.5), (31.4, -6.5), (32.86, -6.0), (32.97, -15.0), (33.0, 1.5), (34.0, 1.0), (35.0, 0.0),
            (36.5, -1.5), (39.0, -5.0)]
-    cue = Cue("descent", tm, bars, chords_, S.list(), rt60=3.2, wet=0.36, predelay=0.03, target_lufs=-16.0,
+    cue = Cue("descent", tm, bars, chords_, S.list(), rt60=3.2, wet=0.36, predelay=0.03, target_lufs=-16.5,
               fade_in=0.01, fade_out=1.2, send_hp=80.0, comp=(-8.0, 1.3, 20.0, 250.0),
               master_vol=[(B(t_), v_) for t_, v_ in arc], wet_duck=[(32.86, 32.995, 0.35, 0.05)],
               hits=hits, landmarks=[(6.4, "title_out"), (13.5, "vines"), (19.6, "webs")],
@@ -447,7 +447,7 @@ def compose_cavern() -> Cue:
     pno = S("piano_low", "piano", pan=0.0, send=0.5, humanize=0.0, opts={"level": -24.0})
     pno.add([Note(12, 3, P(p_), 100) for p_ in ("D1", "Eb1", "A1")])
     pno.pedal = [(11.9, 15.5)]
-    timp = S("timpani", "timpani", pan=0.12, send=0.4, humanize=0.0, opts={"level": -21.0})
+    timp = S("timpani", "timpani", pan=0.12, send=0.4, humanize=0.0, opts={"sat": 1.6, "level": -21.0})
     timp.add([Note(12, 2, P("D2"), 92), Note(19.5, 0.5, P("D2"), 104)])
     timp.add(roll(P("A2"), 19.95, 21.2, tm, 13, 40, 120))
     sk = S("scurry_pizz", "vln_pizz", pan=0.35, send=0.5, humanize=0.0, opts={"level": -25.0})
@@ -473,7 +473,7 @@ def compose_cavern() -> Cue:
     ch = S("choir", "choir", pan=0.0, send=0.55, humanize=0.0, lazy=-0.2, opts={"level": -23.0})
     ch.add([Note(19.7, 1.55, P(p_), 100) for p_ in ("A3", "C#4", "G4", "Bb4")])
     ch.dyn = [(19.65, 0), (19.9, 30), (21.2, 127)]
-    tk = S("taiko", "taiko", pan=0.0, send=0.3, humanize=0.0, opts={"level": -20.0})
+    tk = S("taiko", "taiko", pan=0.0, send=0.3, humanize=0.0, opts={"sat": 1.6, "level": -20.0})
     tk.add([S.N(19.5, 0.5, "A2", 96)])
     for k in range(7):
         tk.add([S.N(20.5 + 0.1 * k, 0.1, "C2", 70 + 8 * k)])
@@ -671,8 +671,8 @@ def compose_fall() -> Cue:
               (11.95, 0), (12, 104), (19.9, 124), (20.3, 110), (20.5, 0)]
 
     # ---------------------------------------------------------------- percussion (sync-locked)
-    tk = S("taiko", "taiko", pan=0.0, send=0.26, humanize=0.0, opts={"level": -16.5})
-    tkh = S("taiko_hi", "taiko", pan=-0.18, send=0.28, humanize=0.0, opts={"level": -21.0})
+    tk = S("taiko", "taiko", pan=0.0, send=0.26, humanize=0.0, opts={"sat": 1.6, "level": -16.5})
+    tkh = S("taiko_hi", "taiko", pan=-0.18, send=0.28, humanize=0.0, opts={"sat": 1.6, "level": -21.0})
     tk.add([Note(-1, 1, P("C2"), 127), Note(0, 1, P("C2"), 116)])
     tkh.add([Note(-1, 1, P("F2"), 120)])
     for k in range(1, 8):                                    # the strain: one slow pulse per beat
@@ -689,16 +689,16 @@ def compose_fall() -> Cue:
     boom = S("boom", "boom", synth=synth_boom, opts={"decay": 0.55, "slap": 0.1, "level": -18.0})
     boom.add([Note(-1, 1, P("D1"), 124), Note(0, 1, P("D1"), 100), Note(12, 1, P("D1"), 124), Note(14, 1, P("D1"), 104),
               Note(16, 1, P("G1"), 116), Note(18, 1, P("A1"), 116)])
-    bigb = S("boom_big", "boom", synth=synth_boom, opts={"decay": 0.95, "slap": 0.3, "drop": 1.8, "peak": -5.0})
+    bigb = S("boom_big", "boom", synth=synth_boom, opts={"decay": 0.95, "slap": 0.3, "drop": 1.8, "sat": 1.4, "peak": -5.0})
     bigb.add([Note(20, 3, P("D1"), 127), Note(20, 3, P("A1"), 96)])
-    timp = S("timpani", "timpani", pan=0.14, send=0.28, humanize=0.0, opts={"level": -19.5})
+    timp = S("timpani", "timpani", pan=0.14, send=0.28, humanize=0.0, opts={"sat": 1.6, "level": -19.5})
     timp.add([Note(-1, 1, P("D2"), 124), Note(0, 1, P("D2"), 110), Note(12, 2, P("D2"), 124), Note(16, 2, P("G2"), 116),
               Note(18, 1, P("A2"), 116)])
     timp.add(roll(P("D2"), 19.0, 19.95, tm, 14, 70, 124))
     timp.add([S.N(15.607, 1.2, "D2", 124)])
-    bd = S("gran_cassa", "bass_drum", pan=0.0, send=0.3, humanize=0.0, opts={"level": -19.0})
+    bd = S("gran_cassa", "bass_drum", pan=0.0, send=0.3, humanize=0.0, opts={"sat": 1.6, "level": -19.0})
     bd.add([Note(-1, 2, P("A1"), 124), Note(12, 2, P("A1"), 116), S.N(15.603, 1.8, "A1", 127)])
-    kit = S("snare_cym", "kit", pan=0.08, send=0.3, humanize=0.0, opts={"level": -22.5})
+    kit = S("snare_cym", "kit", pan=0.08, send=0.3, humanize=0.0, opts={"sat": 1.6, "level": -22.5})
     kit.add([Note(-1, 2, 49, 118), Note(12, 2, 57, 120), S.N(15.609, 1.0, 49, 124), S.N(15.612, 1.0, 57, 116)])
     t_ = 10.8
     while t_ < 15.55:
@@ -852,13 +852,13 @@ def compose_menace() -> Cue:
     oo = S("choir", "oohs", pan=0.0, send=0.5, humanize=0.0, lazy=-0.2, opts={"level": -25.0})
     oo.add([Note(7, 8.2, P(p_), 90) for p_ in ("D3", "Eb3", "A3")])
     oo.dyn = [(6.9, 0), (8, 30), (11, 56), (14, 96), (15, 120)]
-    tk = S("taiko", "taiko", pan=0.0, send=0.3, humanize=0.0, opts={"level": -18.5})
+    tk = S("taiko", "taiko", pan=0.0, send=0.3, humanize=0.0, opts={"sat": 1.6, "level": -18.5})
     for b, v in ((0, 70), (2, 74), (4, 90), (5.5, 76), (7, 124), (8, 84), (9, 88), (10, 92), (11, 100), (12, 102),
                  (12.5, 90), (13, 108), (13.5, 98), (14, 120), (14.25, 104), (14.5, 112), (14.75, 120)):
         tk.add([Note(b, 0.5, P("C2") if v >= 100 or b % 1 == 0 else P("A2"), v)])
     boom = S("boom", "boom", synth=synth_boom, opts={"decay": 0.5, "slap": 0.0, "level": -20.0})
     boom.add([Note(7, 1, P("D1"), 124), Note(11, 1, P("D1"), 96), Note(14, 1, P("D1"), 120)])
-    timp = S("timpani", "timpani", pan=0.14, send=0.3, humanize=0.0, opts={"level": -21.0})
+    timp = S("timpani", "timpani", pan=0.14, send=0.3, humanize=0.0, opts={"sat": 1.6, "level": -21.0})
     timp.add([Note(7, 1, P("D2"), 116)])
     timp.add(roll(P("D2"), 12, 15.05, tm, 14, 44, 124))
     pno = S("piano_low", "piano", pan=0.0, send=0.45, humanize=0.0, opts={"level": -25.0})
@@ -1043,23 +1043,30 @@ def compose_friend() -> Cue:
     tuba.dyn = [(B(0.0), 127), (B(0.6), 90), (B(1.45), 0), (B(38.5), 0), (B(40.0), 46), (B(45.5), 56), (B(46.1), 0)]
     bdr = S("bass_drum", "bass_drum", pan=0.0, send=0.25, humanize=0.0, opts={"level": -21.0})
     bdr.add([S.N(0.0, 1.0, "A1", 116)])
-    timp = S("timpani", "timpani", pan=0.12, send=0.28, humanize=0.0, opts={"level": -21.0})
+    timp = S("timpani", "timpani", pan=0.12, send=0.28, humanize=0.0, opts={"sat": 1.6, "level": -21.0})
     timp.add([S.N(0.0, 1.0, "Bb2", 110)])
 
     # ---------------------------------------------------------------- the waddle (low only under dialogue)
     tst = S("tuba_waddle", "tuba_st", pan=0.0, send=0.2, humanize=0.006, opts={"level": -20.0})
     cbp = S("basses_pizz", "cb_pizz", pan=0.25, send=0.2, humanize=0.006, opts={"level": -22.0})
 
-    def waddle(b0, b1, v=80):
+    # the friend's waddle theme, sung by the tuba in its low register (under the voices: fundamentals
+    # 44-87 Hz, staccato), the contrabass pizzicato marking the strong beats an octave up. Phrases
+    # rock left-right (Bb-F) and climb by step (Bb C D Eb) like a heavy body shifting its weight.
+    WADDLE = {5: [("F1", 1)], 6: [("Bb1", 1)], 7: [("F1", 1)], 8: [("Bb1", 0.5), ("C2", 0.5)], 9: [("D2", 1)],
+              10: [("Bb1", 0.5)],
+              12: [("Eb2", 1)], 13: [("C2", 1)], 14: [("F1", 1)], 15: [("A1", 0.5), ("C2", 0.5)], 16: [("Bb1", 0.5)],
+              21: [("Bb1", 1)], 22: [("F1", 1)], 23: [("Bb1", 0.5), ("C2", 0.5)], 24: [("D2", 1)], 25: [("Eb2", 1)],
+              26: [("C2", 1)], 27: [("F1", 0.5), ("A1", 0.5)], 28: [("Bb1", 0.5)]}
+    for b0, cells in WADDLE.items():
         b = b0
-        while b < b1 - 1e-6:
-            root = "Bb1" if int(round(b - b0)) % 2 == 0 else "F1"
-            tst.add([Note(b, 0.45, P(root), v + (6 if int(round(b - b0)) % 2 == 0 else 0))])
-            cbp.add([Note(b, 0.8, P(root) + 12, v - 6)])
-            b += 1
-    waddle(5, 10.5, 60)            # m04
-    waddle(12, 16.5, 64)           # a04
-    waddle(21, 28.5, 62)           # m05
+        for k, (p_, d_) in enumerate(cells):
+            strong = (b % 2 == 0) and k == 0
+            tst.add([Note(b, 0.42 if d_ >= 1 else 0.3, P(p_), 70 if strong else 62)])
+            if k == 0 and d_ >= 1 or b % 1 == 0:
+                cbp.add([Note(b, 0.7, P(p_) + 12, 62 if strong else 52)])
+            b += d_
+
     bsn = S("bassoon", "bassoon_st", pan=0.08, send=0.24, humanize=0.006, opts={"level": -18.0})
     bsn.add([S.N(2.98, 0.14, "Bb2", 92), S.N(3.16, 0.14, "D3", 96), S.N(3.34, 0.2, "F3", 104)])   # "hi!"
     bsn.add([Note(10.5, 0.3, P("F3"), 96), Note(11.0, 0.3, P("D3"), 90), Note(11.5, 0.35, P("Bb2"), 100)])  # waddle
@@ -1208,8 +1215,8 @@ def compose_endcard() -> Cue:
     ch.add(pad_notes(chords_[:4], cv, {"c": [0, 1, 2, 3]}, 112)["c"])
     ch.add([Note(8, 0.4, P(p_), 127) for p_ in ("D3", "A3", "D4", "F4")])
     ch.dyn = [(0, 110), (8, 124)]
-    tk = S("taiko", "taiko", pan=0.0, send=0.24, humanize=0.0, opts={"level": -16.5})
-    tkh = S("taiko_hi", "taiko", pan=-0.18, send=0.26, humanize=0.0, opts={"level": -21.0})
+    tk = S("taiko", "taiko", pan=0.0, send=0.24, humanize=0.0, opts={"sat": 1.6, "level": -16.5})
+    tkh = S("taiko_hi", "taiko", pan=-0.18, send=0.26, humanize=0.0, opts={"sat": 1.6, "level": -21.0})
     for b in range(8):
         (tk if b % 2 == 0 else tkh).add([Note(b, 1, P("C2") if b % 2 == 0 else P("A2"), 116 if b % 2 == 0 else 96)])
     tkh.add([Note(7.5, 0.5, P("A2"), 104), Note(7.75, 0.25, P("C3"), 110)])
@@ -1219,11 +1226,11 @@ def compose_endcard() -> Cue:
     boom.add([Note(0, 1, P("D1"), 127), Note(2, 1, P("D1"), 104), Note(4, 1, P("G1"), 116), Note(6, 1, P("C2"), 112)])
     bb = S("boom_button", "boom", synth=synth_boom, opts={"decay": 0.28, "slap": 0.3, "peak": -6.0})
     bb.add([Note(0, 1, P("D1"), 116), Note(8, 1, P("D1"), 127)])
-    timp = S("timpani", "timpani", pan=0.14, send=0.26, humanize=0.0, opts={"level": -20.0})
+    timp = S("timpani", "timpani", pan=0.14, send=0.26, humanize=0.0, opts={"sat": 1.6, "level": -20.0})
     timp.add([Note(0, 1, P("D2"), 124), Note(4, 1, P("G2"), 116), Note(6, 0.5, P("C3"), 112), Note(7, 0.5, P("E2"), 112)])
     timp.add(roll(P("A2"), 7.5, 7.98, tm, 16, 80, 120))
     timp.add([Note(8, 0.6, P("D2"), 127)])
-    kit = S("cymbals", "kit", pan=0.08, send=0.3, humanize=0.0, opts={"level": -23.0})
+    kit = S("cymbals", "kit", pan=0.08, send=0.3, humanize=0.0, opts={"sat": 1.6, "level": -23.0})
     kit.add([Note(0, 2, 49, 120), Note(0, 2, 57, 110), Note(8, 0.4, 49, 116), Note(8, 0.4, 38, 120)])
     sub = S("sub", "sub_pedal", synth=synth_sub_pedal, opts={"attack": 0.02, "release": 0.06, "release_end": 0.15,
                                                              "h2": 0.2, "level": -21.0})
