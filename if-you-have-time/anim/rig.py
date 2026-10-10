@@ -77,7 +77,8 @@ class Pose:
     mouth_tremble: float = 0.0  # 0..1 lip quiver (animated from t)
     # ---- emotion extras
     tears: float = 0.0          # 0..1 welling (glossy lower lid, bigger highlights)
-    tear_l: float = 0.0         # 0..1 progress of a tear rolling down the left cheek (0 = none)
+    tear_l: float = 0.0         # 0..1 progress of a tear rolling down the left cheek (0 = none);
+                                # Rae: 1..2 = the dried streak fading away (2 = gone)
     tear_r: float = 0.0
     eye_shine: float = 0.0      # 0..1 extra sparkle in the eyes (awe)
     blush: float = 0.0

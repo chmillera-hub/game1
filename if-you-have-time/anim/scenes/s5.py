@@ -1,4 +1,4 @@
-"""S5 - "Coda" (BIBLE section 4, S5 + section 10, REVISION 3).
+"""S5 - "Coda" (BIBLE section 4, S5 + sections 10 / 11, REVISIONS 3 and 4).
 
 Rae has gone. Quill stands alone, the holo-cards fading out above his palm; he lowers his hand and looks
 into the middle distance - stillness, a robotic blink, the coda piano. The door slides open again: Rae leans
@@ -10,6 +10,9 @@ above it, gently orbiting; he studies them with quiet curiosity (head tilts, his
 next, a robotic blink, a faint flicker of processing in the irises): an android learning what makes music
 resonate. He turns and walks off screen to the right, still carrying them, leaving the empty lounge for a
 beat. Dissolve to the stars: "IF YOU HAVE TIME" and the small line "8 symphonies sent", fade to black.
+REVISION 4: the whale returns over the end card (cue whale_end): a faint, graceful whale silhouette glides slowly
+across the starfield behind the title - darker than the sky (it hides the stars it passes) with a thin cool rim
+of starlight - then everything fades to black.
 
 render(canvas, t) is a pure function of absolute time t. Both performances run continuously through every
 cut (cuts only choose a camera). All times derive from named beats and line starts/ends in
@@ -32,7 +35,8 @@ Shot list (absolute times only for orientation):
                                                     off screen right carrying them; the empty lounge (window,
                                                     bench, console) holds a beat; end_card: dissolve to the
                                                     starfield, title + "8 symphonies sent" (the check mark lands
-                                                    a beat later), fade to black over the last 1.5 s
+                                                    a beat later); a whale silhouette glides across the stars
+                                                    behind the title; fade to black over the last 1.5 s
 """
 from __future__ import annotations
 
@@ -46,7 +50,7 @@ from anim import char_quill as Q
 from anim import char_rae as R
 from anim import env, fx
 from anim.core import (Camera, Layer, Track, auto_blink, beat, breathe, clamp, ease_in_out, ease_out, glow,
-                       line_end, line_start, mouth, noise1, paint, remap, scene_span, smoothstep)
+                       lerp, line_end, line_start, mouth, music_env, noise1, paint, remap, scene_span, smoothstep)
 from anim.rig import ArmPose, Pose
 from config import H, W
 
@@ -684,8 +688,105 @@ def _draw_stage(canvas, t, cam, qp, rp, d):
 
 
 def _end_card(canvas, t):
-    """Screen-space starfield (under the dissolving stage)."""
+    """Screen-space starfield (under the dissolving stage) with the whale gliding across it."""
     env.draw_space(canvas, t, drift=0.55, brightness=1.0)
+    _draw_end_whale(canvas, t)
+
+
+# =========================================================================== end card: the whale returns
+# A humpback in profile swimming screen-left, in local units (nose at x 0, fluke notch at x 1; y down). Upper
+# outline nose -> tail, lower outline tail -> chin; the long pectoral fin is a separate shape.
+_WH_TOP = ((0.0, 0.01), (0.03, -0.012), (0.08, -0.03), (0.16, -0.05), (0.26, -0.068), (0.38, -0.08), (0.5, -0.078),
+           (0.6, -0.068), (0.64, -0.078), (0.665, -0.084), (0.69, -0.066), (0.76, -0.046), (0.84, -0.028),
+           (0.9, -0.017), (0.935, -0.013))
+_WH_BOT = ((0.935, 0.013), (0.88, 0.02), (0.8, 0.034), (0.7, 0.058), (0.58, 0.088), (0.45, 0.112), (0.33, 0.122),
+           (0.22, 0.112), (0.12, 0.085), (0.05, 0.05), (0.012, 0.026))
+WH_LEN = 400.0                        # screen px nose -> fluke notch
+WH_PATH = ((664.0, 552.0), (176.0, 486.0))   # body centre: in from the right, gently rising, out to the left
+WH_T0, WH_T1 = ENDC + 0.2, END            # it glides the whole card (the fade to black takes it at the end)
+WH_A = Track([(ENDC + 0.45, 0.0), (ENDC + 2.0, 1.0, "io"), (END - 1.3, 1.0), (END - 0.2, 0.0, "io")])
+WH_TINT = "#04060E"                   # a touch darker than the night sky: it hides the stars it passes
+WH_RIM = "#9ED6FF"
+
+
+def _wh_bend(x, ph):
+    """Vertical offset (local units) of the body at x: a slow swimming undulation, mostly in the tail."""
+    k = clamp((x - 0.45) / 0.55) ** 2
+    return 0.03 * k * math.sin(ph - 2.4 * x) + 0.004 * math.sin(ph * 0.5 + 1.0)
+
+
+def _whale_paths(ph):
+    """(body, fin) skia paths in local units for swim phase ph."""
+    from anim.core import smooth_path
+    top = [(x, y + _wh_bend(x, ph)) for x, y in _WH_TOP]
+    bot = [(x, y + _wh_bend(x, ph)) for x, y in _WH_BOT]
+    # flukes: broad horizontal blades swept back, seen a little from above (the two lobes part slightly), tipping
+    # up and down with the stroke
+    bx, by = 0.94, _wh_bend(0.94, ph)
+    s_ = -0.022 * math.cos(ph - 2.4 * 0.94)        # stroke: follows the undulation
+    body = smooth_path(top + [(bx + 0.025, by - 0.02 + 0.4 * s_), (bx + 0.085, by - 0.04 + s_),
+                              (bx + 0.135, by - 0.05 + 1.3 * s_), (bx + 0.11, by - 0.022 + s_),
+                              (bx + 0.09, by + 0.002 + 0.8 * s_),
+                              (bx + 0.11, by + 0.024 + s_), (bx + 0.13, by + 0.045 + 1.3 * s_),
+                              (bx + 0.08, by + 0.034 + s_), (bx + 0.025, by + 0.02 + 0.4 * s_)] + bot,
+                       closed=True, tension=0.42)
+    # the long pectoral fin (a humpback's signature), sweeping gently; a knobbly leading edge
+    sw = 0.022 * math.sin(ph * 0.5 + 0.4)
+    fin = smooth_path([(0.25, 0.092), (0.31, 0.137 + 0.3 * sw), (0.38, 0.176 + 0.6 * sw), (0.46, 0.211 + 0.85 * sw),
+                       (0.53, 0.236 + sw), (0.575, 0.244 + sw), (0.55, 0.226 + sw), (0.47, 0.19 + 0.85 * sw),
+                       (0.39, 0.152 + 0.6 * sw), (0.34, 0.118 + 0.3 * sw), (0.31, 0.1)], closed=True, tension=0.45)
+    return body, fin
+
+
+def end_whale_state(t):
+    """(x, y, scale, angle, alpha, swim phase) of the end-card whale (screen px), or None."""
+    a = WH_A(t)
+    if a <= 0.003 or t < WH_T0:
+        return None
+    u = clamp((t - WH_T0) / (WH_T1 - WH_T0))
+    (x0, y0), (x1, y1) = WH_PATH
+    x = lerp(x0, x1, u)
+    y = lerp(y0, y1, u) - 10.0 * math.sin(math.pi * u)            # a soft arc
+    ang = -4.0 + 3.0 * math.sin(0.9 * (t - WH_T0) + 0.6)           # nose a little up, slowly rolling with the glide
+    sc = 0.96 + 0.08 * u                                          # drifting a touch nearer
+    return x, y, sc, ang, a, 1.55 * (t - WH_T0)
+
+
+def _draw_end_whale(canvas, t):
+    st = end_whale_state(t)
+    if st is None:
+        return
+    x, y, sc, ang, a, ph = st
+    body, fin = _whale_paths(ph)
+    call = music_env("whale_end", t, "high")                       # (0 until audio/music.py writes its envelope)
+    L = WH_LEN * sc
+    canvas.save()
+    canvas.translate(x, y)
+    canvas.rotate(ang)
+    canvas.scale(L, L)
+    canvas.translate(-0.5, 0.0)                                   # body centre at the origin
+    lw = 1.0 / L                                                  # 1 screen px in local units
+    # a soft halo of faint light around it so the dark shape reads against the darker parts of the sky
+    canvas.drawPath(body, paint("#8EC9FF", 0.07 * a, blur=14.0 * lw))
+    for pth in (fin, body):
+        canvas.drawPath(pth, paint(WH_TINT, 0.88 * a))
+    # starlit rim along the back and the fin's leading edge; brightens a little with the call
+    rim_a = (0.26 + 0.18 * call) * a
+    canvas.drawPath(body, paint(WH_RIM, rim_a * 0.55, stroke=1.3 * lw))
+    canvas.drawPath(body, paint(WH_RIM, rim_a * 0.35, stroke=3.5 * lw, blur=2.5 * lw))
+    canvas.drawPath(fin, paint(WH_RIM, rim_a * 0.45, stroke=1.1 * lw))
+    # the mouth line, throat grooves and the eye, barely there
+    g = skia.Path()
+    g.moveTo(0.006, 0.022)
+    g.quadTo(0.1, 0.046, 0.2, 0.05)
+    canvas.drawPath(g, paint(WH_RIM, rim_a * 0.3, stroke=1.0 * lw))
+    for k in range(4):
+        g = skia.Path()
+        g.moveTo(0.045 + 0.012 * k, 0.058 + 0.013 * k)
+        g.quadTo(0.17, 0.088 + 0.012 * k, 0.32 - 0.015 * k, 0.104 + 0.008 * k)
+        canvas.drawPath(g, paint(WH_RIM, rim_a * 0.16, stroke=0.9 * lw))
+    canvas.drawCircle(0.215, 0.038, 2.2 * lw, paint(WH_RIM, rim_a * 0.65))
+    canvas.restore()
 
 
 def render(canvas, t):

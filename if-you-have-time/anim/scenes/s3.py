@@ -5,7 +5,9 @@ is no lighting transition here - the room is at normal light from the first fram
 no vignette); `lights_up` is just the moment after the music ends. Rae sits on the bench, wet-eyed and very
 still; a slow blink. Quill, casual and pleasant: "So. How did you like it?" A long beat - she stares ahead,
 sniffs, dabs one eye with a knuckle - and, in plain soft speech, "...pretty good." (the comedy is the gap
-between her face and her words). "Thank you. Here are the other ones I made." - his palm comes up and eight
+between her face and her words). REVISION 4: she wipes only that one (near) eye - the knuckle smears its tear
+streak away; the other eye's streak stays (she is lost in thought) and dries naturally through the kazoo,
+gone by the end of the arcade piece (far_tear, shared with S4). "Thank you. Here are the other ones I made." - his palm comes up and eight
 holo-cards fan out above it; she slowly picks her mug back up.
 
 render(canvas, t) is a pure function of absolute time t. The performances (rae_pose / quill_pose) run
@@ -36,7 +38,7 @@ from anim import char_quill as Q
 from anim import char_rae as R
 from anim import env, fx
 from anim.core import (Camera, Track, auto_blink, beat, breathe, clamp, ease_in_out, ease_out, glow, lerp,
-                       line_end, line_start, mouth, noise1, scene_span, smoothstep, timeline)
+                       line_end, line_start, mouth, music_cue, noise1, scene_span, smoothstep, timeline)
 from anim.rig import ArmPose, Pose
 from config import H, W
 
@@ -434,6 +436,32 @@ REACH_T = GRAB_T - 0.5
 MUG_UNDER_ARM_T = GRAB_T - 1.0
 SMILE_T = R10E + 0.12                       # the small involuntary smile after "...pretty good."
 
+# ---------------------------------------------------------------- tears (REVISION 4)
+# S2 hands over both tear streaks fully rolled (tear_l = tear_r = 1: the drop gone, a faint dried streak left).
+# char_rae: a tear value in 1..2 fades the dried streak away (2 = gone), so both fades are continuous.
+WIPE0, WIPE1 = DAB1 - 0.06, DAB2 + 0.12     # the near streak is smeared away under her knuckle (the two presses)
+try:
+    DRY0 = music_cue("alt_kazoo")["start"]  # the far streak: held while she is lost in thought, then it dries
+    DRY1 = music_cue("alt_chip")["end"] - 0.25  # ... through the kazoo - gone by the end of the arcade piece
+except KeyError:                            # pragma: no cover
+    DRY0, DRY1 = CARD2 + 3.0, CARD2 + 13.8
+
+
+def _dry(v0, t, t0, t1):
+    if v0 <= 0.0:
+        return 0.0
+    return lerp(v0, 2.0, smoothstep((t - t0) / (t1 - t0)))
+
+
+def near_tear(t):
+    """tear_r (the near eye, the one she wipes)."""
+    return _dry(TEARS0[1], t, WIPE0, WIPE1)
+
+
+def far_tear(t):
+    """tear_l (the far eye): S2's streak, drying away from the kazoo to the end of the arcade piece (S3 + S4)."""
+    return _dry(TEARS0[0], t, DRY0, DRY1)
+
 
 def _rae_tracks():
     d = {}
@@ -556,8 +584,6 @@ def rae_pose(t: float) -> Pose:
     sn = _sniff(t)
     nod = d["nod"](t) + 0.025 * noise1(t * 0.4, 3) - 0.07 * sn
     tilt = d["tilt"](t) + 1.0 * noise1(t * 0.33, 5)
-    # the near trail goes under her knuckle (reset at the dab, which covers it)
-    tear_r = TEARS0[1] if t < DAB1 + 0.05 else 0.0
     p = Pose(
         x=SEAT_X, y=FLOOR, facing=1.0, turn=d["turn"](t), sit=1.0, seat_y=SEAT_Y,
         lean=d["lean"](t), head_tilt=tilt, head_nod=nod, head_turn=d["hturn"](t) + 0.012 * noise1(t * 0.45, 4),
@@ -567,7 +593,7 @@ def rae_pose(t: float) -> Pose:
         brow_raise=d["brow_raise"](t), brow_worry=d["worry"](t), brow_furrow=d["furrow"](t),
         # plain soft speech (REVISION 3: no whisper) - lip-sync a touch under full size, the face stays small
         mouth_open=clamp(d["open"](t) + 0.72 * mo), mouth_round=clamp(0.9 * mr), smile=d["smile"](t),
-        mouth_tremble=d["tremble"](t), tears=d["tears"](t), tear_l=TEARS0[0], tear_r=tear_r,
+        mouth_tremble=d["tremble"](t), tears=d["tears"](t), tear_l=far_tear(t), tear_r=near_tear(t),
         eye_shine=d["shine"](t), blush=d["blush"](t), sniffle=d["sniffle"](t) + 0.1 * sn,
         shoulders_up=d["shoulders"](t) + 0.12 * sn,
         arm_r=_rae_arm_r(t), arm_l=d["arm_l"](t), mug=None if rae_mug_on_bench(t) else "r",

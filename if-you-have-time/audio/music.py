@@ -188,10 +188,12 @@ INST = {
     "vc_trem":   Inst(41, 44, 36, 81, True, "Celli tremolo (expr)"),
     "cb":        Inst(51, 49, 28, 67, True, "Contrabasses (slow, expr)"),
     "cb_trem":   Inst(51, 44, 28, 67, True, "Contrabasses tremolo (expr)"),
+    "cb_pizz":   Inst(50, 45, 28, 67, False, "Contrabasses pizzicato"),
     # winds / brass / voices
     "horns":     Inst(17, 60, 35, 77, True, "French horns (expr)"),
     "brass":     Inst(17, 61, 40, 82, True, "Brass section (expr)"),
     "trombone":  Inst(17, 57, 40, 72, True, "Trombones (expr)"),
+    "tuba":      Inst(17, 58, 28, 65, True, "Tuba (expr)"),
     "choir":     Inst(17, 52, 40, 81, True, "Choir aahs (expr)"),
     "flute":     Inst(0, 73, 60, 96, False, "Flute"),
     # keys / plucked / percussion
@@ -204,13 +206,16 @@ INST = {
     "harp":      Inst(0, 46, 23, 103, False, "Harp"),
     "ukulele":   Inst(8, 24, 60, 81, False, "Ukulele"),
     "timpani":   Inst(0, 47, 38, 57, False, "Timpani"),
+    "bass_drum": Inst(8, 116, 24, 60, False, "Concert bass drum (gran cassa)"),
+    "taiko":     Inst(0, 116, 24, 72, False, "Taiko drum"),
     # pads
     "warm_pad":  Inst(0, 89, 36, 96, False, "Warm pad"),
     "halo_pad":  Inst(0, 94, 36, 96, False, "Halo pad"),
 }
 SYNTH_RANGES = {"shimmer": (60, 100), "bell": (60, 108), "kazoo": (55, 84), "chip_lead": (57, 96),
                 "chip_echo": (57, 96), "chip_arp": (48, 84),
-                "chip_tri": (28, 60), "theremin": (48, 84), "sub_bass": (28, 52)}
+                "chip_tri": (28, 60), "theremin": (48, 84), "sub_bass": (28, 52), "sub_pedal": (26, 52),
+                "whale": (36, 84), "boom": (20, 60)}
 
 
 @dataclass
@@ -302,6 +307,7 @@ class Cue:
     wet_duck: list = field(default_factory=list)  # [(t0, t1, gain, ramp_s)] extra decay on the reverb return
     master_vol: list = field(default_factory=list)  # [(beat, dB)] whole-cue fader (pre-reverb)
     post: object = None               # callable(stereo, cue) -> stereo, after reverb
+    send_hp: float = 0.0              # >0: high-pass the reverb send (Hz) so the hall never blooms in the sub
     comp: tuple = (-22.0, 1.6, 25.0, 300.0)       # threshold dB (rel. to peak RMS), ratio, att ms, rel ms
     landmarks: list = field(default_factory=list)  # [(sec, label)]
     top_parts: tuple = ()
@@ -1155,6 +1161,43 @@ def synth_sub(part, cue, n):
     return stereo(y * 0.6)
 
 
+def _dyn_gain(part, cue, n, power=1.6):
+    """Per-sample linear gain from a part's dyn keyframes (0..127 -> (v/127)**power)."""
+    if not part.dyn:
+        return np.ones(n)
+    tg = np.arange(0, n / SR + 0.05, 0.02)
+    gk = np.array([dyn_at(part.dyn, cue.tmap.beat(tt)) / 127.0 for tt in tg])
+    return np.interp(np.arange(n) / SR, tg, np.clip(gk, 0, 1)) ** power
+
+
+def synth_sub_pedal(part, cue, n):
+    """Orchestral sub reinforcement (the low 'organ pedal' under the basses): per note a sine on the
+    fundamental + a faint 2nd/3rd harmonic (so small speakers still hear the pitch), raised-cosine
+    attack, a short release when the next note follows (a clean cross-fade, no long beating of two
+    low pitches) and a long one at the end of a phrase. Level = dyn keyframes x velocity. Pure sines
+    (no aliasing), DC-free, mono in the center."""
+    t = np.arange(n) / SR
+    y = np.zeros(n)
+    att = part.opts.get("attack", 0.2)
+    rel_leg, rel_end = part.opts.get("release", 0.1), part.opts.get("release_end", 0.7)
+    h2, h3 = part.opts.get("h2", 0.28), part.opts.get("h3", 0.08)
+    ns = sorted(part.notes, key=lambda x: x.beat)
+    starts = [cue.tmap.sec(x.beat) for x in ns]
+    for k, nt in enumerate(ns):
+        t0, t1 = starts[k], cue.tmap.sec(nt.beat + nt.dur)
+        legato = k + 1 < len(ns) and starts[k + 1] - t1 < 0.06
+        rel = rel_leg if legato else rel_end
+        i0, i1 = max(0, int(t0 * SR)), min(n, int((t1 + rel) * SR) + 1)
+        if i1 <= i0:
+            continue
+        tt = t[i0:i1] - t0
+        a = 0.5 - 0.5 * np.cos(np.pi * np.clip(tt / att, 0, 1))
+        r = 0.5 + 0.5 * np.cos(np.pi * np.clip((tt - (t1 - t0)) / rel, 0, 1))
+        ph = 2 * np.pi * (440.0 * 2 ** ((nt.pitch - 69) / 12)) * tt
+        y[i0:i1] += (nt.vel / 127.0) * a * r * (np.sin(ph) + h2 * np.sin(2 * ph + 0.4) + h3 * np.sin(3 * ph + 1.1))
+    return stereo(y * _dyn_gain(part, cue, n) * 0.5)
+
+
 def _metal(L, rng, fmin=320, fmax=13500, k=90):
     t = np.arange(L) / SR
     fr = np.exp(rng.uniform(math.log(fmin), math.log(fmax), k))
@@ -1245,6 +1288,125 @@ def synth_bell(part, cue, n):
                                 + 0.22 * np.exp(-tt / (tau * 0.45)) * np.sin(2 * np.pi * 2.0 * fd * tt + 0.7)
                                 + 0.06 * np.exp(-tt / (tau * 0.25)) * np.sin(2 * np.pi * 3.01 * fd * tt + 1.9))
     return y * 0.4
+
+
+def kf(keys, t, ease=True):
+    """Keyframe curve [(sec, value)] sampled at times t; cosine-eased between keys (a key repeated
+    = a hold), constant outside the keyed range."""
+    ks = np.array([k[0] for k in keys], float)
+    kv = np.array([k[1] for k in keys], float)
+    if len(ks) == 1:
+        return np.full(len(t), kv[0])
+    seg = np.clip(np.searchsorted(ks, t, side="right") - 1, 0, len(ks) - 2)
+    x = np.clip((t - ks[seg]) / np.maximum(ks[seg + 1] - ks[seg], 1e-9), 0, 1)
+    if ease:
+        x = 0.5 - 0.5 * np.cos(np.pi * x)
+    return kv[seg] + (kv[seg + 1] - kv[seg]) * x
+
+
+# whale-sized vocal tract: formant (Hz, bandwidth Hz, level dB), ~0.62x an adult male's
+WHALE_VOWELS = {
+    "m": [(170, 60, 0.0), (470, 90, -16.0), (1250, 150, -36.0), (2150, 220, -46.0)],   # hummed, closed
+    "u": [(215, 70, 0.0), (560, 90, -8.0), (1400, 160, -26.0), (2250, 220, -34.0)],    # "oo"
+    "o": [(330, 80, 0.0), (610, 95, -3.0), (1480, 160, -19.0), (2300, 230, -28.0)],    # "oh"
+    "a": [(490, 110, 0.0), (820, 125, -1.5), (1600, 180, -11.0), (2450, 250, -19.0)],  # "aa"
+    "e": [(380, 95, 0.0), (1350, 150, -5.0), (1950, 210, -9.0), (2750, 270, -16.0)],   # the bright "nee"
+}
+
+
+def synth_whale(part, cue, n):
+    """A cosmic humpback 'moan' (all additive, so nothing can alias):
+    * pitch: opts['path'] keyframes [(sec, midi)] eased like slow glides and swoops (repeat a key to
+      hold; an extra key past the target = overshoot), + whale vibrato opts['vib'] [(sec, depth st)]
+      at ~4.5 Hz with drift, + a slow random wander;
+    * source: band-limited harmonics (tilt k^-1) whose amplitudes are read off a time-varying vowel
+      envelope (opts['vowel'] [(sec, 'm'|'u'|'o'|'a'|'e')] morphing between the WHALE_VOWELS formant
+      sets) at each harmonic's own frequency -> moving formants with no filter state at all; the
+      envelope is power-normalized so opts['amp'] alone sets the loudness;
+    * growl: opts['growl'] [(sec, 0..1)] amplitude-modulates the voice at f0/2 (subharmonics, the
+      'period doubling' grunt of a big animal) plus rough 30 Hz flutter; a quiet sub-octave sine;
+    * size: two detuned (+-8 cent) copies spread L/R, breath noise, and a dark ping-pong echo
+      (opts['echo'] = [(delay s, gain)]) before the cue's own long hall."""
+    o = part.opts
+    t = np.arange(n) / SR
+    rng = np.random.default_rng(o.get("seed", 41))
+    midi = kf(o["path"], t)
+    vr = o.get("vib_rate", 4.5) * (1 + 0.06 * lp_noise(n, 0.7, SR, rng))
+    midi = midi + kf(o.get("vib", [(0, 0.0)]), t) * np.sin(2 * np.pi * np.cumsum(vr) / SR)
+    midi = midi + 0.05 * lp_noise(n, 3.0, SR, rng)
+    amp = np.clip(kf(o["amp"], t), 0, None)
+    growl = np.clip(kf(o.get("growl", [(0, 0.0)]), t), 0, 1)
+    hop = 64
+    tg = t[::hop]
+    vk = o["vowel"]
+    form = []
+    for i in range(4):
+        fr = kf([(s, math.log(WHALE_VOWELS[v][i][0])) for s, v in vk], tg)
+        bw = kf([(s, WHALE_VOWELS[v][i][1]) for s, v in vk], tg)
+        gd = kf([(s, WHALE_VOWELS[v][i][2]) for s, v in vk], tg)
+        form.append((np.exp(fr), bw, db(gd)))
+    tilt = o.get("tilt", 0.85)
+
+    def voice(cents, seed):
+        r2 = np.random.default_rng(seed)
+        f0 = 440.0 * 2 ** ((midi + cents / 100 - 69) / 12)
+        ph = 2 * np.pi * np.cumsum(f0) / SR
+        f0g = f0[::hop]
+        kmax = int(min(64, 15500 / max(40.0, float(f0.min()))))
+        amps = []
+        for k in range(1, kmax + 1):
+            fk = k * f0g
+            env = 0.02 + sum(g / (1 + ((fk - F) / (B / 2)) ** 2) for F, B, g in form)
+            amps.append(env * k ** -tilt * np.clip((15500 - fk) / 1500, 0, 1))
+        norm = np.sqrt(np.sum(np.array(amps) ** 2, axis=0)) + 1e-9
+        y = np.zeros(n)
+        for k, a in enumerate(amps, start=1):
+            y += np.interp(t, tg, a / norm) * np.sin(k * ph + r2.uniform(0, 2 * np.pi))
+        y += o.get("sub8", 0.15) * np.sin(ph / 2 + 0.3)                       # sub-octave weight
+        rough = 0.55 * np.cos(ph / 2 + 0.7) + 0.3 * lp_noise(n, 30.0, SR, r2)
+        return y * (1 + growl * rough)
+    main = voice(0.0, 1)
+    side_l, side_r = voice(-8.0, 2), voice(8.0, 3)
+    br = bp(rng.standard_normal(n), 280, 1900)
+    br *= o.get("breath", 0.05) / (np.std(br) + 1e-9) * (1 + 1.5 * growl)
+    yl = (main + 0.42 * side_l + br) * amp
+    yr = (main + 0.42 * side_r + br[::-1]) * amp
+    y = np.stack([yl, yr], axis=1)
+    y = filt(lp(hp(y, 70), 9000), sos_shelf(1500, o.get("presence", 3.0)))
+    for k, (d, g) in enumerate(o.get("echo", [])):                          # dark ping-pong taps
+        i = int(d * SR)
+        e = np.zeros_like(y)
+        e[i:] = lp(y[:-i], 1700) * g
+        y = y + (e[:, ::-1] if k % 2 == 0 else e)
+    return y / (np.max(np.abs(y)) + 1e-9) * 0.6
+
+
+def synth_boom(part, cue, n):
+    """Epic low drum 'booms' (the weight under the taiko skins): per note a sine that falls from
+    ~2.2x to the note's pitch in ~45 ms, an exponential body decay (opts['decay'] s, longer when
+    louder and lower), a felt-mallet thud (low-passed noise, 18 ms), gentle tanh saturation, then a
+    crisp skin 'slap' (band-passed noise, ~9 ms, opts['slap']) so every hit reads on small speakers;
+    every hit window ends in a 15 ms fade (no clicks). Mono, centered."""
+    y = np.zeros(n)
+    rng = np.random.default_rng(29)
+    for nt in part.notes:
+        i0 = int(cue.tmap.sec(nt.beat) * SR)
+        dec = part.opts.get("decay", 0.5) * (0.55 + 0.45 * nt.vel / 127) * (1.0 if nt.pitch < 40 else 0.55)
+        L = min(n - i0, int(dec * 6.5 * SR))
+        if L <= 0 or i0 < 0:
+            continue
+        tt = np.arange(L) / SR
+        fe = 440.0 * 2 ** ((nt.pitch - 69) / 12)
+        f = fe * (1 + 1.2 * np.exp(-tt / 0.045))
+        body = np.sin(2 * np.pi * np.cumsum(f) / SR) * np.exp(-tt / dec) * np.clip(tt / 0.0015, 0, 1)
+        th = lp(rng.standard_normal(L), 900)
+        th = th / (np.std(th[: int(0.03 * SR)]) + 1e-9) * np.exp(-tt / 0.018) * 0.22
+        hit = np.tanh(1.7 * (body + th)) / math.tanh(1.7)
+        sl = bp(rng.standard_normal(L), 700, 5200)
+        hit += part.opts.get("slap", 0.0) * sl / (np.std(sl[: int(0.02 * SR)]) + 1e-9) * np.exp(-tt / 0.009)
+        hit[-int(0.015 * SR):] *= np.linspace(1, 0, int(0.015 * SR))
+        y[i0:i0 + L] += (nt.vel / 127.0) ** 1.4 * hit
+    return stereo(y * 0.5)
 
 
 def synth_vinyl(n, rng, density=11.0, hiss_db=-50.0):
@@ -1366,8 +1528,8 @@ def midi_file(tracks):
 
 # GM stand-ins used only in the inspection MIDI (<cue>.mid) for parts that are synthesized in numpy
 SYNTH_GM = {"kazoo": 22, "chip_lead": 80, "chip_echo": 80, "chip_arp": 80, "chip_tri": 38,
-            "theremin": 79, "sub_bass": 38, "shimmer": 92, "bell": 10}
-DRUM_KINDS = {"chip_noise", "drums_lofi", "cymbal"}
+            "theremin": 79, "sub_bass": 38, "shimmer": 92, "bell": 10, "sub_pedal": 38, "whale": 53}
+DRUM_KINDS = {"chip_noise", "drums_lofi", "cymbal", "boom"}
 
 
 def score_midi(cue: Cue) -> mido.MidiFile:
@@ -1517,25 +1679,64 @@ def compose_symphony() -> Cue:
         parts[name] = Part(name, inst, **kw)
         return parts[name]
 
-    # ---------------------------------------------------------------- bass line (cb) + celli 8va
-    cb = part("cb", "cb", pan=0.38, send=0.22, legato=0.08)
-    cb.add(seq("D2:w | B1:w", 0))
-    cb.add(seq("D2:w | B1:w | G1:w | A1:w | F#1:w | G1:w | G1:h A1:h | D2:w", 8, bar=4))
-    cb.add(seq("B1:w | G1:w | F#1:h E1:h | A1:w", 40, bar=4))
-    cb.add(seq("E1:w | B1:w | A1:w | A1:h B1:h", 57, bar=4))
-    cb.add(seq("E1:10", 73))
-    cb.dyn = [(-0.6, 0), (0.3, 22), (6, 26), (8, 36), (20, 42), (24, 48), (36, 50), (40, 64), (47.6, 76),
-              (48, 50), (50, 52), (52, 80), (54, 100), (55.8, 114), (57, 120), (65, 124), (69, 116),
-              (72.8, 122)] + CODA_STR
-    cb.vol = [(-1, -4.0), (7.5, -4.0), (8.5, 0.0)] + CODA_VOL
+    # ---------------------------------------------------------------- the low end (REVISION 4)
+    # One bass line, doubled by register so the soaring lines have weight under them: contrabasses
+    # arco (+ divisi pizz on the beats in the theme and the B-section), a soft sine sub pedal on the
+    # same fundamentals (the low E1 under the climax), celli II an octave up (from theme bar 5), tuba +
+    # trombone at the build and climax, timpani and gran cassa on the arrivals. Passing tones sit on
+    # weak beats (D-C#-B-A-G descends against the rising tune; A-G-F# = V4/2 -> I6 into bar 5) and
+    # octave drops lead into the cadences (A2 -> A1 -> D2, B2 -> B1 -> the big low E1). Below C3
+    # the lines only ever double in octaves (no mud).
+    BASS_INTRO = "D2:w | B1:w"
+    BASS_THEME = "D2:h. C#2:q | B1:h. A1:q | G1:w | A1:h. G1:q | F#1:w | G1:w | G1:h A2:q A1:q | D2:w"
+    BASS_BUILD = "B1:h. A1:q | G1:w | F#1:h E1:h | A1:w"
+    BASS_CLIM = "E1:w | B1:w | A1:w | A1:h B2:q B1:q"
+    SUBP = [(47.6, 0.0), (48.0, -3.0), (51.6, -3.0), (52.4, 0.0)]     # the held subito p: dialogue sits here
 
-    vc2 = part("vc2", "vc_slow", pan=0.3, send=0.25, legato=0.08)
-    vc2.add(seq("B2:w | G2:w | F#2:h E2:h | A2:w", 40, bar=4))
+    cb = part("cb", "cb", pan=0.3, send=0.2, legato=0.08, gain_db=5.0)
+    cb.add(seq(BASS_INTRO, 0)).add(seq(BASS_THEME, 8, bar=4)).add(seq(BASS_BUILD, 40, bar=4))
+    cb.add(seq(BASS_CLIM, 57, bar=4)).add(seq("E1:10", 73))
+    cb.dyn = [(-0.6, 0), (0.3, 30), (6, 34), (8, 46), (16, 50), (20, 54), (24, 60), (28, 66), (32, 62),
+              (36, 64), (40, 72), (47.6, 82), (48, 52), (50, 54), (52, 80), (54, 100), (55.8, 114), (57, 120),
+              (65, 124), (69, 116), (72.8, 122)] + CODA_STR
+    cb.vol = [(-1, -6.0), (7.5, -6.0), (8.5, -2.0), (19, -2.0), (24, 0.0)] + SUBP + CODA_VOL
+
+    pz = part("cb_pizz", "cb_pizz", pan=0.24, send=0.2, humanize=0.006, gain_db=11.0)
+    # downbeats in theme bars 1-4, beats 1 + 3 once the violins enter (bars 5-8) and through the first
+    # B-section phrase; every pizz is damped before the arco's next passing tone (no low seconds)
+    pz.add(seq("D2:h. r:q | B1:h. r:q | G1:w | A1:h. r:q | F#1:h F#1:h | G1:h G1:h | G1:h A2:q A1:q | "
+               "D2:h D2:h", 8, bar=4, vels=[62, 60, 62, 64, 70, 58, 74, 62, 74, 70, 64, 76, 64]))
+    pz.add(seq("B1:h. r:q | G1:h G1:h", 40, bar=4, vels=[80, 82, 70]))
+    pz.dyn = [(7.0, 0), (7.5, 96), (24, 104), (40, 112), (48.2, 112), (48.6, 0)]
+
+    sub = part("sub", "sub_pedal", synth=synth_sub_pedal, pan=0.0, send=0.0, gain_db=-17.0)
+    sub.add(seq(BASS_INTRO, 0, 100)).add(seq(BASS_THEME, 8, 100, bar=4)).add(seq(BASS_BUILD, 40, 100, bar=4))
+    sub.add(seq(BASS_CLIM, 57, 110, bar=4)).add(seq("E1:10", 73, 110))
+    for nt in sub.notes:                    # passing tones lighter than the roots
+        if nt.dur <= 1.0:
+            nt.vel -= 20
+    sub.dyn = [(-0.6, 0), (0.3, 28), (6, 30), (8, 35), (20, 40), (24, 47), (28, 52), (32, 48), (36, 50),
+               (40, 61), (47.6, 73), (48, 44), (51.6, 44), (52, 50), (54, 74), (55.8, 100), (57, 127), (61, 114),
+               (65, 124), (69, 114), (72.8, 124)] + CODA_STR
+    sub.vol = [(72, 0.0)] + CODA_VOL
+
+    vc2 = part("vc2", "vc_slow", pan=0.3, send=0.22, legato=0.08, gain_db=2.0)
+    vc2.add(seq("F#2:w | G2:w | G2:h A2:h | D3:w", 24, bar=4))        # joins at theme bar 5 (~21 s)
+    vc2.add(seq("B2:h. A2:q | G2:w | F#2:h E2:h | A2:w", 40, bar=4))
     vc2.add(seq("E2:w | B2:w | A2:w | A2:h B2:h", 57, bar=4))
-    vc2.add(seq("(E2,B2):10", 73))
-    vc2.dyn = [(39.5, 0), (40, 60), (47.6, 72), (48, 48), (50, 50), (52, 80), (54, 100), (55.8, 114), (57, 118),
-               (65, 122), (69, 112), (72.8, 120)] + CODA_STR
-    vc2.vol = [(72, 0.0)] + CODA_VOL
+    vc2.add(seq("(E2,E3):10", 73))
+    vc2.dyn = [(23.5, 0), (24, 40), (28, 52), (32, 48), (36, 54), (39.6, 58), (40, 64), (47.6, 76), (48, 48),
+               (50, 50), (52, 80), (54, 100), (55.8, 114), (57, 118), (65, 122), (69, 112), (72.8, 120)] + CODA_STR
+    vc2.vol = [(23, -4.0), (28, -1.0), (40, 0.0)] + SUBP + CODA_VOL
+
+    tuba = part("tuba", "tuba", pan=0.1, send=0.2, legato=0.06, gain_db=2.0)
+    tuba.add(seq("G1:3.6", 44))                                   # under the horns, 2nd B-section phrase
+    tuba.add(seq("A1:w", 52))                                     # the dominant: p -> ff into the pause
+    tuba.add(seq("E1:w | B1:w | A1:w | A1:h B1:h", 57, bar=4))
+    tuba.add(seq("E1:4", 73))
+    tuba.dyn = [(43.6, 0), (44.1, 50), (46, 60), (47.4, 74), (47.75, 0), (51.9, 0), (52.1, 30), (54, 72),
+                (55.8, 118), (57, 124)] + CLIMAX + [(73.0, 118), (73.8, 112), (75, 70), (76.2, 30), (76.8, 0)]
+    tuba.vol = [(56, 0.0)] + CODA_FAST
 
     # ---------------------------------------------------------------- melody carriers
     vc = part("vc", "vc", pan=0.26, send=0.3, legato=0.075, gain_db=2.0)
@@ -1669,9 +1870,11 @@ def compose_symphony() -> Cue:
                                                                           (75.8, 0)]
     brass.vol = [(56, 0.0)] + CODA_FAST
 
-    trb = part("trombone", "trombone", pan=0.24, send=0.35, gain_db=-5.0)
+    trb = part("trombone", "trombone", pan=0.24, send=0.32, gain_db=-2.0)
+    trb.add(seq("A2:w", 52, 96))                                  # joins the tuba on the dominant
     trb.add(seq("E2:w | B2:w | A2:w | A2:h B2:h | E2:4", 57, 100))
-    trb.dyn = [(56.6, 0), (56.95, 108)] + CLIMAX + [(73.0, 110), (73.8, 104), (75, 30), (76, 0)]
+    trb.dyn = [(51.9, 0), (52.1, 24), (54, 66), (55.8, 112)] + CLIMAX + \
+        [(73.0, 110), (73.8, 104), (75, 30), (76, 0)]
 
     # ---------------------------------------------------------------- harp, timpani, glock, cymbal
     harp = part("harp", "harp", pan=-0.45, send=0.38, humanize=0.006)
@@ -1690,14 +1893,24 @@ def compose_symphony() -> Cue:
               enumerate([P(x) for x in ("E2", "B2", "E3", "G#3", "B3", "E4", "G#4", "B4", "E5")])])
     harp.vol = [(70, 0.0), (76, -8.0), (80, -20.0)]
 
-    timp = part("timpani", "timpani", pan=0.16, send=0.32, humanize=0.004)
-    timp.add(roll(P("A2"), 52.0, 55.9, tm, 12, 30, 112))
-    timp.add([Note(57, 2, P("E2"), 124), Note(61, 2, P("B2"), 104)])
-    timp.add(roll(P("B2"), 63.0, 64.96, tm, 12, 50, 112))
-    timp.add([Note(65, 2, P("A2"), 122), Note(69, 2, P("A2"), 108)])
-    timp.add(roll(P("B2"), 71.0, 72.96, tm, 12, 58, 118))
-    timp.add([Note(73, 2, P("E2"), 124)])
+    timp = part("timpani", "timpani", pan=0.16, send=0.28, humanize=0.004, gain_db=3.0)
+    # theme: soft strokes on the statement, the high point and the cadence; build: the B-section
+    # downbeats, a short crescendo roll cut off for the breath before the subito p (nothing under the
+    # dialogue), then the long A roll into the grand pause; climax: every arrival
+    timp.add([Note(8, 2, P("D2"), 60), Note(28, 2, P("G2"), 68), Note(36, 2, P("D2"), 66)])
+    timp.add([Note(40, 2, P("B2"), 88), Note(44, 2, P("G2"), 92)])
+    timp.add(roll(P("G2"), 46.4, 47.55, tm, 12, 44, 98))
+    timp.add(roll(P("A2"), 52.0, 55.9, tm, 12, 30, 118))
+    timp.add([Note(57, 2, P("E2"), 127), Note(59, 2, P("E2"), 100), Note(61, 2, P("B2"), 108)])
+    timp.add(roll(P("B2"), 63.0, 64.96, tm, 12, 50, 118))
+    timp.add([Note(65, 2, P("A2"), 126), Note(67, 2, P("A2"), 96), Note(69, 2, P("A2"), 112)])
+    timp.add(roll(P("B2"), 71.0, 72.96, tm, 12, 58, 122))
+    timp.add([Note(73, 2, P("E2"), 127)])
     timp.add(roll(P("E2"), 73.4, 76.0, tm, 11, 58, 20))
+
+    # gran cassa (soft mallet): the three arrivals of the climax - the weight under the big low E
+    bd = part("bass_drum", "bass_drum", pan=0.0, send=0.3, humanize=0.0, gain_db=4.0)
+    bd.add([Note(57, 3, P("A1"), 120), Note(65, 3, P("A1"), 104), Note(73, 4, P("A1"), 112)])
 
     glock = part("glock", "glock", pan=-0.24, send=0.4, gain_db=5.0, humanize=0.004)
     glock.add(seq("B5:q E6:q G#6:h | r:h F#6:h | C#7:h. B6:q | A6:h r:h | E6:q", 57, 60))
@@ -1714,12 +1927,32 @@ def compose_symphony() -> Cue:
                           (tm.sec(71.6), tm.sec(73.0), 0.4, 0.55, 2.6)]
     cym.notes = [Note(57, 1, 49, 110), Note(65, 1, 49, 80), Note(73, 1, 49, 74)]
 
+    # no low string may ring a step (mod 8ve) against a bass passing tone: damp it like a harpist would
+    lows = cb.notes + vc2.notes
+    for nt in harp.notes + pno.notes:
+        if nt.pitch >= P("C3"):
+            continue
+        for b_ in lows:
+            d = abs(b_.pitch - nt.pitch) % 12
+            if min(d, 12 - d) in (1, 2) and nt.beat + 1e-6 < b_.beat < nt.beat + nt.dur - 1e-6:
+                nt.dur = b_.beat - nt.beat
+
+    # clean low end: everything that is not a bass part is high-passed below its lowest fundamental
+    def hpf(f):
+        return lambda x: hp(x, f)
+    for nm, f in (("celesta", 180), ("glock", 300), ("piano", 30), ("harp", 50), ("vln_gp", 200), ("vln1", 140),
+                  ("vln2_mel", 140), ("vln2", 140), ("vln2_trem", 140), ("vla", 100), ("vla_trem", 100),
+                  ("vc", 90), ("horns", 75), ("brass", 75), ("choir", 90), ("trombone", 45), ("vc2", 30),
+                  ("cb", 25), ("cb_pizz", 25), ("tuba", 25), ("timpani", 28), ("bass_drum", 25)):
+        parts[nm].eq = hpf(f)
+
     order = ["celesta", "piano", "glock", "harp", "vln_gp", "vln1", "vln2_mel", "vln2", "vln2_trem", "vla",
-             "vla_trem", "vc", "vc2", "cb", "horns", "brass", "trombone", "choir", "timpani", "cymbal"]
+             "vla_trem", "vc", "vc2", "cb", "cb_pizz", "sub", "horns", "brass", "trombone", "tuba", "choir",
+             "timpani", "bass_drum", "cymbal"]
     cue = Cue("symphony", tm, bars, chords_, [parts[k] for k in order], rt60=2.6, wet=0.42, predelay=0.024,
               target_lufs=-15.5, st_target=-12.5, fade_out=0.4,
               gates=[(49.40, 50.47, {"vln_gp", "cymbal"}, 0.15)],
-              wet_duck=[(49.42, 50.48, 0.3, 0.6)],
+              wet_duck=[(49.42, 50.48, 0.3, 0.6)], send_hp=70.0,
               comp=(-8.0, 1.4, 30.0, 400.0),
               # whole-cue fader: lifts the intro/theme to an audible level (the arc is ~14 dB, not
               # ~21), a held subito p at 41.8 s, and the final tonic at least as big as the B7
@@ -1732,7 +1965,8 @@ def compose_symphony() -> Cue:
                          (66.0, "coda"), (68.3, "celesta"), (70.0, "G#"), (72.04, "F#"), (74.0, "end")],
               top_parts=("vc", "vln1"), bass_parts=("cb",))
     cue.notes_txt = ("Top line for the outer-voice check: Theme A in the celli (beats 8-40), violins I "
-                     "(countermelody, B-section, climax 8va). Bass: contrabasses.")
+                     "(countermelody, B-section, climax 8va). Bass: contrabasses (doubled by pizz, the sine sub "
+                     "pedal, celli II 8va from beat 24, tuba/trombone at the build + climax).")
     return cue
 
 
@@ -2036,6 +2270,173 @@ def compose_alt_lullaby() -> Cue:
                landmarks=[(5.0, "rae stands"), (7.75, "F#->E"), (9.1, "E rings"), (9.85, "D")])
 
 
+# =========================================================================== cues: alt_whale, whale_end
+
+
+def _whale_notes(spec, tm):
+    """[(sec, sec_len, 'A3', vel)] -> 'mel' Notes in beats (the sung theme fragment, for the score
+    dump, the MIDI and the visual onsets; the sound itself comes from the whale's pitch path)."""
+    return [Note(tm.beat(s), tm.beat(s + d) - tm.beat(s), P(p_), v, "mel") for s, d, p_, v in spec]
+
+
+def _duck(hits, big=-4.5, small=-2.5, att=0.006, rel=0.2):
+    """Trailer-style sidechain for a sustained stem: dip it under every drum hit [(sec, key, vel)] so
+    the skins punch through (big hits = low keys < 48)."""
+    def eq(x):
+        t = np.arange(len(x)) / SR
+        g = np.zeros(len(x))
+        for s, key, v in hits:
+            d = (big if key < 48 else small) * v / 127
+            u = t - s
+            env = np.where(u < 0, 0.0, np.where(u < att, u / att, np.exp(-(u - att) / rel)))
+            g = np.minimum(g, d * env)
+        return x * db(g)[:, None]
+    return eq
+
+
+def _whale_cue_parts(tm, hits, booms, drone_v, strings_dyn, strings_len, brass_t=None):
+    """Shared backing for both whale cues: taiko skins (fluidsynth) + numpy booms, timpani on the big
+    D's, a D1/D2 sine drone, contrabass + celli tremolo on D (octaves only) and an optional low brass
+    'braam' landing with the last hit."""
+    def S(sec):
+        b = tm.beat(sec)
+        return round(b * 8) / 8 if abs(b * 8 - round(b * 8)) < 0.02 else b
+    taiko = Part("taiko", "taiko", pan=0.0, send=0.3, humanize=0.0, gain_db=4.0)
+    for s, key, v in hits:
+        taiko.notes.append(Note(S(s), S(s + 0.9) - S(s), key, v))
+    boom = Part("boom", "boom", synth=synth_boom, pan=0.0, send=0.18, gain_db=-9.0, opts={"decay": 0.42, "slap": 0.0})
+    for s, p_, v in booms:
+        boom.notes.append(Note(S(s), S(s + 0.8) - S(s), P(p_), v))
+    # the skins: a crisp slap + a short higher body on every hit (the 'da's are mid drums)
+    skin = Part("skins", "boom", synth=synth_boom, pan=-0.12, send=0.25, gain_db=-6.0, opts={"decay": 0.12, "slap": 0.55})
+    for s, key, v in hits:
+        skin.notes.append(Note(S(s), S(s + 0.3) - S(s), P("D3") if key >= 48 else P("A2"), v))
+    timp = Part("timpani", "timpani", pan=0.12, send=0.3, humanize=0.0, gain_db=0.0)
+    timp.add([Note(S(s), S(s + 1.2) - S(s), P("D2"), min(127, v + 6)) for s, p_, v in booms if v >= 110])
+    drone = Part("drone", "sub_pedal", synth=synth_sub_pedal, pan=0.0, send=0.04, gain_db=-19.0,
+                 opts={"attack": 0.35, "release_end": 0.5, "h2": 0.35, "h3": 0.12})
+    drone.add([Note(S(0.0), S(strings_len) - S(0.0), P("D2"), 100),
+               Note(S(0.0), S(strings_len) - S(0.0), P("D1"), 76)])
+    drone.dyn = drone_v
+    drone.eq = _duck(hits, -3.0, -1.5)
+    cbt = Part("cb_trem", "cb_trem", pan=0.25, send=0.28, humanize=0.0, gain_db=1.0)
+    cbt.add([Note(S(0.02), S(strings_len) - S(0.02), P("D2"), 100)])
+    vct = Part("vc_trem", "vc_trem", pan=-0.2, send=0.3, humanize=0.0, gain_db=-1.0)
+    vct.add([Note(S(0.02), S(strings_len) - S(0.02), P("D3"), 100)])
+    cbt.dyn = vct.dyn = strings_dyn
+    parts = [taiko, boom, skin, timp, drone, cbt, vct]
+    for p_ in (cbt, vct):
+        p_.eq = lambda x: lp(x, 2500)
+    if brass_t is not None:
+        ts, th, te = brass_t
+        br = Part("brass", "brass", pan=0.1, send=0.4, humanize=0.0, gain_db=-4.0)
+        br.add([Note(S(ts), S(te) - S(ts), P(x), 100) for x in ("D3", "A3", "D4")])
+        br.dyn = [(S(ts), 20), (S(th), 112), (S(th + 0.35), 84), (S(te), 0)]
+        tu = Part("tuba", "tuba", pan=0.0, send=0.25, humanize=0.0, gain_db=-2.0)
+        tu.add([Note(S(ts), S(te) - S(ts), P("D2"), 100)])
+        tu.dyn = [(S(ts), 20), (S(th), 116), (S(th + 0.35), 90), (S(te), 0)]
+        parts += [br, tu]
+    return parts
+
+
+def compose_alt_whale() -> Cue:
+    """Card 5: a majestic, slightly ridiculous cosmic whale sings the head of Theme A (A-D-F# | E-D-B)
+    as huge slow glides - rising 'neee' to an overshooting F#, falling 'ooww' - over trailer taiko,
+    booms and a D drone, then whoops up to the tonic on the last hit and rings out."""
+    tm = TempoMap.const(90)                     # drum grid: 1 beat = 0.667 s
+    S = tm.beat
+    bars = [0, 4, 7.5]
+    c = [(0, 4, "D"), (4, 6, "D6add9"), (6, 7.5, "D")]       # D pedal; the whale's E and B colour it
+    wh = Part("whale", "whale", synth=synth_whale, pan=0.0, send=0.78, gain_db=-1.0)
+    wh.opts = {
+        "path": [(0.0, 51.0), (0.10, 52.0), (0.40, 57.3), (0.50, 56.9), (0.86, 57.0),       # scoop into A3
+                 (1.20, 62.3), (1.30, 61.9), (1.52, 62.0),                                   # glide to D4
+                 (1.92, 68.4), (2.10, 66.5), (2.24, 66.0), (2.66, 66.0),                     # swoop: F#4 (overshoot)
+                 (2.92, 64.0), (3.04, 64.0), (3.27, 62.0), (3.38, 62.0),                     # E4, D4
+                 (3.66, 59.0), (3.80, 59.0),                                                 # B3 "ooww"
+                 (4.02, 63.4), (4.12, 62.2), (4.26, 62.0), (4.62, 61.7), (5.0, 60.6)],       # whoop up to D4, droop
+        "amp": [(0.0, 0.0), (0.10, 0.0), (0.32, 0.62), (0.86, 0.7), (1.20, 0.78), (1.55, 0.74), (1.95, 1.0),
+                (2.66, 0.92), (3.0, 0.86), (3.4, 0.8), (3.8, 0.66), (3.92, 0.7), (4.08, 0.96), (4.40, 0.72),
+                (4.72, 0.3), (4.9, 0.0)],
+        "vowel": [(0.10, "m"), (0.42, "u"), (1.15, "o"), (1.55, "o"), (1.86, "e"), (2.20, "a"), (2.66, "a"),
+                  (3.02, "o"), (3.55, "u"), (3.92, "u"), (4.10, "o"), (4.50, "u"), (4.90, "m")],
+        "vib": [(0.0, 0.0), (0.45, 0.04), (0.86, 0.2), (1.15, 0.04), (1.50, 0.14), (1.90, 0.04), (2.24, 0.22),
+                (2.66, 0.5), (2.86, 0.1), (3.75, 0.12), (4.15, 0.12), (4.55, 0.42), (5.0, 0.5)],
+        "growl": [(0.0, 0.55), (0.45, 0.28), (0.95, 0.12), (1.85, 0.0), (2.66, 0.08), (3.3, 0.3), (3.8, 0.5),
+                  (4.05, 0.12), (4.6, 0.32)],
+        "echo": [(0.23, 0.2), (0.41, 0.12)], "vib_rate": 4.4, "breath": 0.05, "seed": 41}
+    wh.add(_whale_notes([(0.12, 0.8, "A3", 90), (0.95, 0.6, "D4", 96), (1.60, 1.25, "F#4", 112),
+                         (2.75, 0.4, "E4", 100), (3.10, 0.35, "D4", 96), (3.45, 0.5, "B3", 92),
+                         (3.85, 1.0, "D4", 108)], tm))
+    # BOOM . . . boom-da BOOM . boom . da-da BOOM . da da-da | THE LAST HIT (whale whoops onto it)
+    hits = [(0.0, 41, 124), (1.333, 45, 96), (1.667, 52, 82), (2.0, 41, 120), (2.667, 45, 98),
+            (3.0, 52, 80), (3.167, 52, 86), (3.333, 43, 116), (3.667, 50, 84), (3.833, 52, 90), (3.917, 52, 96),
+            (4.0, 40, 127)]
+    booms = [(0.0, "D1", 124), (1.333, "A1", 92), (2.0, "D1", 116), (2.667, "A1", 94), (3.333, "F#1", 104),
+             (4.0, "D1", 127)]
+    drone_v = [(S(0.0), 0), (S(0.05), 70), (S(1.8), 92), (S(4.0), 116), (S(4.5), 80), (S(4.95), 0)]
+    str_dyn = [(S(0.0), 30), (S(1.9), 70), (S(3.95), 112), (S(4.2), 80), (S(4.85), 0)]
+    wh.eq = _duck(hits)
+    parts = [wh] + _whale_cue_parts(tm, hits, booms, drone_v, str_dyn, 4.9, brass_t=(3.55, 4.0, 4.85))
+    cym = Part("cymbal", "cymbal", synth=synth_cymbal, pan=0.15, send=0.4, gain_db=-10.0)
+    cym.opts["events"] = [(3.35, 4.0, 0.5, 0.75, 1.4, 3.6)]
+    cym.notes = [Note(S(4.0), 1.0, 49, 100)]
+    parts.append(cym)
+    return Cue("alt_whale", tm, bars, c, parts, rt60=3.8, wet=0.5, predelay=0.045, target_lufs=-16.0,
+               fade_out=0.45, comp=(-11.0, 1.5, 15.0, 180.0), send_hp=90.0,
+               top_parts=("whale",), bass_parts=("cb_trem",),
+               landmarks=[(0.0, "BOOM"), (0.12, "A"), (0.95, "D"), (1.92, "F# (neee)"), (2.92, "ooww"),
+                          (4.0, "last hit / D"), (5.0, "end")])
+
+
+def compose_whale_end() -> Cue:
+    """End card: the whale comes back for a bigger call - a long rising 'NEEE' from D3 through the theme's
+    A-D-F# to an overshooting high A, a held wobbling A over the first boom, the 'OOWWW' fall F#-E-D
+    onto the biggest hit, the D4 ringing - and then one tiny curious 'whoop?' as the button; the hall
+    tail is gone by 6.0 s."""
+    tm = TempoMap.const(90)
+    S = tm.beat
+    bars = [0, 4, 8, 9]
+    c = [(0, 4.5, "D"), (4.5, 5.7, "Dadd9"), (5.7, 9, "D")]
+    wh = Part("whale", "whale", synth=synth_whale, pan=0.0, send=0.78, gain_db=-1.0)
+    wh.opts = {
+        "path": [(0.0, 48.0), (0.22, 48.5), (0.55, 50.2), (0.75, 50.0),                     # low "mmm" D3
+                 (1.02, 57.0), (1.10, 57.0), (1.30, 62.0), (1.36, 62.0), (1.56, 66.0),     # rising A-D-F#...
+                 (1.80, 71.2), (1.98, 69.3), (2.12, 69.0), (2.95, 69.0),                   # ...to high A (NEEE)
+                 (3.18, 66.0), (3.30, 66.0), (3.50, 64.0), (3.58, 64.0),                   # OOWWW: F#, E,
+                 (3.80, 61.6), (3.92, 62.1), (4.05, 62.0), (4.55, 61.6), (4.72, 60.4),     # D (lands), droops
+                 (4.80, 60.4), (4.88, 62.0), (5.02, 69.6), (5.12, 69.0), (5.40, 68.6), (6.0, 68.6)],  # whoop?
+        "amp": [(0.0, 0.0), (0.22, 0.0), (0.50, 0.5), (0.75, 0.55), (1.10, 0.66), (1.40, 0.76), (1.80, 1.0),
+                (2.95, 0.94), (3.30, 0.88), (3.58, 0.82), (3.82, 0.92), (4.15, 0.8), (4.55, 0.42), (4.74, 0.0),
+                (4.86, 0.0), (4.96, 0.4), (5.08, 0.46), (5.22, 0.2), (5.34, 0.0)],
+        "vowel": [(0.22, "m"), (0.70, "u"), (1.10, "o"), (1.50, "a"), (1.78, "e"), (2.15, "a"), (2.95, "a"),
+                  (3.30, "o"), (3.80, "u"), (4.10, "o"), (4.60, "u"), (4.88, "u"), (5.04, "e"), (5.30, "u")],
+        "vib": [(0.0, 0.0), (0.6, 0.06), (0.95, 0.02), (1.70, 0.04), (2.12, 0.18), (2.95, 0.55), (3.15, 0.1),
+                (3.85, 0.1), (4.10, 0.16), (4.55, 0.4), (4.8, 0.0), (5.1, 0.1), (5.4, 0.3)],
+        "growl": [(0.0, 0.6), (0.6, 0.45), (1.0, 0.15), (1.75, 0.0), (2.9, 0.1), (3.5, 0.35), (3.85, 0.5),
+                  (4.15, 0.15), (4.6, 0.4), (4.9, 0.0)],
+        "echo": [(0.23, 0.2), (0.41, 0.12)], "vib_rate": 4.3, "breath": 0.05, "seed": 43}
+    wh.add(_whale_notes([(0.25, 0.75, "D3", 84), (1.0, 0.3, "A3", 92), (1.3, 0.26, "D4", 98),
+                         (1.56, 0.24, "F#4", 104), (1.8, 1.2, "A4", 120), (3.1, 0.4, "F#4", 106),
+                         (3.45, 0.35, "E4", 100), (3.8, 0.9, "D4", 112), (4.92, 0.4, "A4", 70)], tm))
+    hits = [(0.0, 38, 70), (1.5, 50, 80), (1.667, 52, 88), (1.8, 41, 124), (2.667, 45, 96),
+            (3.333, 52, 84), (3.5, 52, 90), (3.667, 52, 98), (3.8, 40, 127)]
+    booms = [(0.0, "D1", 84), (1.8, "D1", 122), (2.667, "A1", 92), (3.8, "D1", 127)]
+    drone_v = [(S(0.0), 0), (S(0.3), 60), (S(1.8), 96), (S(3.8), 116), (S(4.4), 70), (S(5.3), 26), (S(5.9), 0)]
+    str_dyn = [(S(0.0), 20), (S(1.75), 80), (S(3.75), 112), (S(4.1), 76), (S(4.75), 22), (S(5.2), 0)]
+    wh.eq = _duck(hits)
+    parts = [wh] + _whale_cue_parts(tm, hits, booms, drone_v, str_dyn, 5.3, brass_t=(3.35, 3.8, 4.75))
+    cym = Part("cymbal", "cymbal", synth=synth_cymbal, pan=0.15, send=0.4, gain_db=-10.0)
+    cym.opts["events"] = [(1.2, 1.8, 0.35, 0.6, 1.3, 3.6), (3.15, 3.8, 0.5, 0.8, 1.5, 3.6)]
+    cym.notes = [Note(S(1.8), 1.0, 49, 90), Note(S(3.8), 1.0, 49, 104)]
+    parts.append(cym)
+    return Cue("whale_end", tm, bars, c, parts, rt60=3.6, wet=0.5, predelay=0.045, target_lufs=-16.0,
+               fade_out=0.55, comp=(-11.0, 1.5, 15.0, 180.0), send_hp=90.0,
+               top_parts=("whale",), bass_parts=("cb_trem",),
+               landmarks=[(0.25, "mmm"), (1.8, "BOOM / high A"), (3.1, "OOWWW"), (3.8, "BOOM / D"),
+                          (4.95, "whoop?"), (6.0, "end")])
+
+
 # =========================================================================== cue: coda
 
 
@@ -2079,7 +2480,8 @@ def compose_coda() -> Cue:
 
 COMPOSERS = {"opening": compose_opening, "lounge": compose_lounge, "symphony": compose_symphony,
              "alt_kazoo": compose_alt_kazoo, "alt_chip": compose_alt_chip, "alt_lofi": compose_alt_lofi,
-             "alt_theremin": compose_alt_theremin, "alt_lullaby": compose_alt_lullaby, "coda": compose_coda}
+             "alt_theremin": compose_alt_theremin, "alt_lullaby": compose_alt_lullaby,
+             "alt_whale": compose_alt_whale, "whale_end": compose_whale_end, "coda": compose_coda}
 
 
 # =========================================================================== render pipeline
@@ -2150,6 +2552,8 @@ def mix_cue(cue: Cue, stems: dict, n: int):
         levels[p.name] = 20 * np.log10(np.sqrt(np.mean(x[on] ** 2)) + 1e-12) if on.any() else -120.0
         dry += x
         send += x * p.send
+    if cue.send_hp:
+        send = hp(send, cue.send_hp)
     ir = make_ir(cue.rt60, seed=len(cue.name), predelay=cue.predelay)
     wet = convolve(send, ir) * cue.wet
     for (t0, t1, g, ramp) in cue.wet_duck:
@@ -2351,7 +2755,7 @@ def check_ranges(cue: Cue):
     out = []
     for p in cue.parts:
         lo_, hi_ = (INST[p.inst].lo, INST[p.inst].hi) if p.inst in INST else SYNTH_RANGES.get(p.inst, (0, 127))
-        if p.inst in ("cymbal", "chip_noise", "drums_lofi"):
+        if p.inst in DRUM_KINDS:
             continue
         for nt in p.notes:
             if not lo_ <= nt.pitch <= hi_:

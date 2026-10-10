@@ -4,15 +4,16 @@ Rig contract (anim/rig.py):
     draw(canvas, pose, t, before_near_arm=None)   draw Rae; canvas already carries the camera (stage units);
                                      before_near_arm(canvas) is drawn between her body and her near arm
     head_center(pose, t=None)        stage point between the eyes
-    hand_pos(pose, side, t=None)     stage point at the palm centre of Rae's 'l' / 'r' hand (holding the mug: in
-                                     front of it for the near hand, behind it for the far hand)
+    hand_pos(pose, side, t=None)     stage point at the palm centre of Rae's 'l' / 'r' hand (holding the mug: the
+                                     middle of the hand gripping the handle, just outside the handle)
     ARMS                             ArmPose presets (rest, hold_mug, sip, mug_raise, point, hand_on_chest,
                                      wipe_eye, cover_mouth, hands_up, grip_knee, reach_back, shrug,
                                      hug_self, knee_rest)
     HEIGHT                           floor -> top of the hair puff, standing, scale 1 (700)
     (pass the draw time t to the anchor functions to include the automatic breathing; ~1 unit)
 Extras:
-    draw_mug(canvas, x, y, scale=1.0, angle=0.0, flip=False)   the mug standing on its base at (x, y)
+    draw_mug(canvas, x, y, scale=1.0, angle=0.0, flip=False)   the mug standing on its base at (x, y); handle on
+                                     the left (toward Rae facing right), flip=True on the right
     mug_pose(pose, t=None) -> (x, y, scale, angle, flip) | None  the held mug; draw_mug(c, *mug_pose(p, t)) matches
     mouth_pos(pose, t=None), eye_pos(pose, side, t=None)        stage points of the mouth centre / an eye centre
     blink(t)                         Rae's natural blink (1 open .. 0 shut) - exactly what lid_*=None uses
@@ -37,17 +38,18 @@ Conventions specific to Rae (on top of rig.py):
       outward and raised ones come toward the camera; across < 0 spreads in the picture plane.
     * facing=-1 is a pure mirror image (as in Quill's rig): arm_r / lid_r / tear_r always belong to the
       side nearer the camera once Rae is turned (screen-left of the body for facing +1).
-    * Mug: held round its body like a real mug; the hand continues the forearm (no cocked wrist). NEAR hand
-      (arm_r once turned; BIBLE section 10): the hand is in front of the mug - the back of the hand / the edge
-      of the palm toward the camera over the lower front of the body (the rim and the top of the logo show
-      above it), the knuckles toward the handle side, the fingers wrapping round the far side (they vanish
-      round its silhouette edge), the thumb tucked along the top of the hand; a hand coming down from above
-      grips a little higher. FAR hand: the hand wraps the back of the mug, which sits in front of the hand
-      (toward the camera) centred just past the palm; the fingers come round through the handle (outer side,
-      logo toward the camera) with their tips over the front and the thumb rests on top of the handle (if the
-      hand points the other way in the mug's frame - far arm near the front view - the fingers wrap the bare
-      side instead). Either way mug_pose() is the drawn mug. When the hand comes near
-      the mouth ('sip'), the rig places the rim on the lower lip and tilts the mug - for either arm. The lip
+    * Mug (REVISION 4, BIBLE section 11): held BY THE HANDLE like a real mug, by either hand, in every state.
+      The hand continues the forearm (no cocked wrist) and sits just outside the handle on the wrist side of the
+      body: the back of the hand / knuckles against the handle's outer bar, the index, middle and ring fingers
+      threaded through the loop to the body (the bar drawn over them; their middle joints and tips show between
+      its inner edge and the body), the little finger curled under the lower arm, the thumb lying on top of the
+      handle; the body hangs rigidly right beside the hand with the heart logo clear. The mug faces whichever
+      way puts the handle toward the wrist (a hand pointing forward, as in every held state in the film, gets
+      the unflipped mug - handle toward her; one pointing back gets it mirrored; a hand within ~6 deg of
+      straight up / down is drawn cross-faded between the two). Held, the coffee stays level (the mug does not
+      tilt with her lean). mug_pose() is the drawn mug, hand_pos() the middle of the gripping hand. When the
+      hand comes near the mouth ('sip'), the rig places the rim on the lower lip and tilts the mug - for either
+      arm (the near hand then sits under her chin, the handle toward her; the far hand beyond the mug). The lip
       lock blends in while the palm is ~78 -> 26 units from the mouth (scenes hold the mug at the chin / chest
       inside that band on purpose, so it is not widened). From hold_mug that band is blend(hold_mug, sip,
       ~0.47 -> 0.8): ease the lift onto blend(hold_mug, sip, 0.8) and lower from it, or the lock snaps on in
@@ -101,11 +103,30 @@ TURN_DEG = 82.0
 
 MUG_S = 1.4             # mug scale (base design is 26 x 32): ~45 units tall, ~0.31 of the head height
 MUG_W, MUG_H = 13.0, 32.0
-MUG_GX, MUG_GY = 22.0, -17.5    # the handle's grip point (mug-local, base units; legacy reference)
+MUG_GX, MUG_GY = -23.0, -17.0   # the handle's grip point (mug-local, base units, unflipped; legacy reference)
 MUG_TILT = 40.0         # mug tilt (deg) when drinking
-MUG_HEEL = 4.0          # held mug (far hand): its edge sits this far past the wrist (the heel of the hand shows)
-# near hand (the one nearer the camera) on the mug: the hand is IN FRONT of the mug (BIBLE section 10), the back of
-# the hand / the outer edge of the palm toward the camera, the fingers wrapping round the far side of the body
+# Rae's mug is held BY THE HANDLE, with either hand (REVISION 4, BIBLE section 11). Mug-local base units; the
+# unflipped mug has its handle on -x (flip=True: on +x). The hand sits just outside the handle, on the wrist side of
+# the body: its knuckle stack hugs the handle's outer bar, the index, middle and ring fingers thread through the loop
+# to the body (the handle is drawn over them; their middle joints / tips show between its inner edge and the body),
+# the little finger curls under the lower arm of the handle, the thumb lies on top of the handle. The hand's line
+# (wrist -> knuckles = the forearm's line: the wrist is never cocked) meets the knuckle stack at HG_K whatever its
+# angle, so the mug hangs rigidly off the hand; the handle is always on the side the wrist is on.
+HG_K = (-27.4, -14.6)   # where the hand's line meets the knuckle stack
+HG_LK = 19.0            # hand-local wrist -> knuckle-line distance (the palm centre, hand_pos(), is at 15)
+HG_FINGERS = (          # (knuckle, middle joint, tip, r_knuckle, r_tip): index, middle, ring (in the loop), little
+    ((-27.2, -21.5), (-20.8, -21.8), (-14.3, -20.4), 2.45, 2.2),
+    ((-28.0, -17.1), (-21.0, -17.4), (-14.1, -16.0), 2.55, 2.3),
+    ((-27.6, -12.7), (-21.0, -13.0), (-14.5, -11.7), 2.45, 2.2),
+    ((-26.2, -8.4), (-21.6, -4.4), (-16.2, -2.4), 2.15, 1.9),
+)
+HG_THUMB = ((-30.4, -23.0), (-26.6, -31.0), (-17.8, -33.0), 3.0, 2.75, 2.4)   # base, joint, tip, radii (base
+                                                                                # units): up and along the handle top
+HG_WRIST_R = 7.4        # half-width of the hand at the wrist (units; the forearm ends at 7.6)
+# body grip (the cadet's handle-less takeaway cup: his module re-skins this rig and keeps these; Rae does not use
+# them). Far hand: the cup sits in front of the hand; near hand (BIBLE section 10): the hand IN FRONT of the cup,
+# the back of the hand toward the camera, the fingers wrapping round the far side of the body.
+MUG_HEEL = 4.0          # held cup (far hand): its edge sits this far past the wrist (the heel of the hand shows)
 MUG_BODY_H = MUG_H      # height (base units) of the part of the body the near hand wraps (the cadet's: below the lid)
 MUG_NEAR_Y = 0.25       # near hand: the fingers wrap the far side at this fraction of the body height (low: logo shows)
 MUG_NEAR_FING = 11.0    # near hand: visible finger length (units) from the knuckles to the far silhouette edge
@@ -831,50 +852,71 @@ def _solve(p: Pose, t):
     MS.preScale(fac * p.scale, p.scale)
     R.MS = MS
 
-    # ---------------- mug (upper-body frame). Near hand (the arm nearer the camera): the hand is in front of the
-    # mug, its back / outer edge toward the camera, the fingers wrapping round the far side of the body (they
-    # vanish round its far silhouette edge), the thumb lying along the near face. Far hand: the palm wraps the
-    # back of the mug body, which sits in front of the hand, centred just past the palm; the fingers come round
-    # through the handle (outer, +x side) and the thumb rests on top of the handle. Either way the wrist keeps
-    # the forearm line (no cocked-back wrist).
+    # ---------------- mug (upper-body frame). Rae's mug: held by the handle, either hand (see HG_K): the hand
+    # beside the handle on the wrist side of the body, the fingers threaded through the loop. A re-skinned rig
+    # whose mug has no handle (the cadet's cup) keeps the body grip: near hand (the arm nearer the camera) in front
+    # of the cup, its back / outer edge toward the camera, the fingers wrapping round the far side of the body;
+    # far hand: the palm wraps the back of the body, which sits in front of the hand, centred just past the palm.
+    # Either way the wrist keeps the forearm line (no cocked-back wrist).
     R.mug = None
     if p.mug in ("l", "r"):
         A = arms[-1] if arms[-1].side == p.mug else arms[1]
         near = A.o < 0 and not back
-        hs = 1.0
+        handle = _mug_local is _HANDLED_MUG_LOCAL
+        hs, ks = 1.0, 1.0
         mouth = MHr.mapXY(_hx(H, 0.0, MOUTH_Y)[0], MOUTH_Y)
         dist = math.hypot(A.palm[0] - (mouth.fX + 30.0), A.palm[1] - mouth.fY)
         w = 1.0 - smoothstep((dist - 26.0) / 52.0)                  # how much this is a sip
         ang = -MUG_TILT * smoothstep(w)
+        if handle:
+            ang -= lean * (1.0 - smoothstep(w))     # held by the handle the coffee stays level (not tilted with the
+            #                                         body's lean); the sip tilt is relative to her face
         a = ang * D2R
         ca_, sa_ = math.cos(a), math.sin(a)
 
         def rot(v):
             return (v[0] * ca_ - v[1] * sa_, v[0] * sa_ + v[1] * ca_)
+
+        def grip():
+            """Palm centre in mug-local coords (the mug rotated by a)."""
+            if handle:
+                return _hg_palm(A.hd, a, hs)
+            return _mug_grip(A.hd, a, near)
+        if handle:
+            # which side the handle is on follows the hand's direction before the lip lock (kept through it)
+            hs, ks = _hg_side(A.hd, a)
         if w > 0.001:
             # sip: put the rim's face-side edge on the lower lip
             cx_, _, _, _ = _hx(H, -4.0, MOUTH_Y + 3.0)
             C = MHr.mapXY(cx_, MOUTH_Y + 3.0)
             Kc = (-(MUG_W - 1.0) * MUG_S, -MUG_H * MUG_S)
             palm0 = A.palm
-            for _ in range(7 if near else 3):         # the near grip moves more with the hand angle: more passes
-                G = _mug_grip(A.hd, a, near)
+            for _ in range(7 if near or handle else 3):     # grips that move with the hand angle: more passes
+                G = grip()
                 off = rot((G[0] - Kc[0], G[1] - Kc[1]))
                 goal = (lerp(palm0[0], C.fX + off[0], w), lerp(palm0[1], C.fY + off[1], w))
                 hd = A.hd
                 _arm_finish(R, A, A.fk, (goal[0] - hd[0] * 15.0 * HAND_S, goal[1] - hd[1] * 15.0 * HAND_S))
-        G = _mug_grip(A.hd, a, near)                                # palm centre in mug-local coords
+        G = grip()                                                  # palm centre in mug-local coords
         g = rot(G)
         M = _NS()
         M.x = A.palm[0] - g[0]
         M.y = A.palm[1] - g[1]
         M.ang = ang
-        M.hs = hs
+        M.hs = hs                      # +1: the unflipped mug (Rae's: handle on -x); -1: mirrored
         M.flip = hs < 0
         M.arm = A
-        M.near = near                  # hand in front of the mug (near arm) / behind it (far arm)
+        M.near = near                  # the arm nearer the camera holds it
+        M.handle = handle              # held by the handle (Rae) / round the body (the cadet's cup)
         M.tilt = w
         M.dist = dist                  # raw palm -> mouth distance (QA probes)
+        # handle grip: [(x, y, hs, weight)] - the mug as drawn; a hand pointing straight up / down sits between the
+        # two sides and is drawn cross-faded (weight < 1). mug_pose() reports the first (dominant) one.
+        M.cfg = [(M.x, M.y, hs, 1.0)]
+        if handle and min(ks, 1.0 - ks) > 0.004:
+            g2 = rot(_hg_palm(A.hd, a, -hs))
+            wk = ks if hs > 0 else 1.0 - ks
+            M.cfg = [(M.x, M.y, hs, wk), (A.palm[0] - g2[0], A.palm[1] - g2[1], -hs, 1.0 - wk)]
         R.mug = M
     return R
 
@@ -886,12 +928,12 @@ def _mug_hw(y):
 
 
 def _mug_grip(hd, a, near=False):
-    """Palm centre of the holding hand in mug-local coords (mug rotated by `a` radians, scaled units, bottom
-    centre at the origin). Far hand: the mug body sits in front of the hand, centred on the hand's line just past
-    the palm, its near edge MUG_HEEL past the wrist whatever the hand direction (rounded-box support distance).
-    Near hand (near=True): the hand lies over the front of the body; its knuckle line sits MUG_NEAR_FING short
-    of the far silhouette edge (the side the hand points to), where the fingers wrap round at MUG_NEAR_Y of the
-    body height."""
+    """Body grip (the cadet's handle-less cup; Rae uses _hg_palm). Palm centre of the holding hand in mug-local
+    coords (mug rotated by `a` radians, scaled units, bottom centre at the origin). Far hand: the mug body sits in
+    front of the hand, centred on the hand's line just past the palm, its near edge MUG_HEEL past the wrist
+    whatever the hand direction (rounded-box support distance). Near hand (near=True): the hand lies over the front
+    of the body; its knuckle line sits MUG_NEAR_FING short of the far silhouette edge (the side the hand points
+    to), where the fingers wrap round at MUG_NEAR_Y of the body height."""
     ca_, sa_ = math.cos(a), math.sin(a)
     hx_, hy_ = hd[0] * ca_ + hd[1] * sa_, -hd[0] * sa_ + hd[1] * ca_
     if near:
@@ -903,6 +945,26 @@ def _mug_grip(hd, a, near=False):
     e = 0.5 * (abs(hx_) * bx + abs(hy_) * by + math.hypot(hx_ * bx, hy_ * by))
     dl = e + MUG_HEEL - 15.0 * HAND_S
     return (-hx_ * dl, -by - hy_ * dl)
+
+
+def _hg_side(hd, a):
+    """Handle grip: which way the mug faces for hand direction hd (mug rotated by `a` radians). Returns (hs, k):
+    hs = +1 - the unflipped mug, handle on -x - for a hand pointing +x in the mug's frame, -1 (mirrored, handle on
+    +x) for one pointing -x: the handle is always on the wrist side, the body beyond the fingers. k = the weight
+    of hs=+1 (1 / 0 except for a hand pointing within ~6 deg of straight up / down: cross-faded)."""
+    hx_ = hd[0] * math.cos(a) + hd[1] * math.sin(a)
+    k = smoothstep((hx_ + 0.1) / 0.2)
+    return (1.0 if k >= 0.5 else -1.0), k
+
+
+def _hg_palm(hd, a, hs):
+    """Handle grip: palm centre (hand_pos) in mug-local coords (mug rotated by `a` radians, scaled units, bottom
+    centre at the origin; hs as in _hg_side). The hand's line meets the knuckle stack at HG_K, HG_LK - 15
+    hand units past the palm centre."""
+    ca_, sa_ = math.cos(a), math.sin(a)
+    hx_, hy_ = hd[0] * ca_ + hd[1] * sa_, -hd[0] * sa_ + hd[1] * ca_
+    dk = (HG_LK - 15.0) * HAND_S
+    return (hs * HG_K[0] * MUG_S - hx_ * dk, HG_K[1] * MUG_S - hy_ * dk)
 
 
 def _arm_fk(R, o, ap):
@@ -1080,7 +1142,8 @@ def eye_pos(pose: Pose, side: str, t=None):
 
 
 def hand_pos(pose: Pose, side: str, t=None):
-    """Stage coords of the palm centre of Rae's 'l' or 'r' hand."""
+    """Stage coords of the palm centre of Rae's 'l' or 'r' hand (holding the mug: the middle of the hand on the
+    handle)."""
     R = _solve(pose, t)
     A = R.arms[-1] if R.arms[-1].side == side else R.arms[1]
     return _to_stage(R, R.MU.mapXY(*A.palm))
@@ -1108,10 +1171,20 @@ def walk_advance(pose: Pose) -> float:
 
 # --------------------------------------------------------------------------- mug
 def _mug_handle_path():
+    """The handle's centre line (unflipped mug: on -x). A roomy D: the loop takes three fingers."""
     w = MUG_W
     hp = skia.Path()
-    _cr(hp, [(w - 1, -26.5), (w + 8.0, -26.0), (w + 10.8, -17.0), (w + 7.4, -9.0), (w - 1, -8.0)])
+    _cr(hp, [(-w + 1, -27.6), (-w - 8.6, -27.4), (-w - 12.2, -17.6), (-w - 8.4, -7.0), (-w + 1, -6.2)])
     return hp
+
+
+def _mug_handle_draw(c):
+    """The handle (mug-local base units, unflipped)."""
+    w = MUG_W
+    hp = _mug_handle_path()
+    _stroke(c, hp, C_MUG_LINE, 6.4)
+    _stroke(c, hp, C_MUG, 4.3)
+    _stroke(c, _curve([(-w - 4.0, -26.0), (-w - 9.4, -23.4), (-w - 10.6, -17.0)]), WHITE, 1.1, 0.6)
 
 
 def _mug_body_path():
@@ -1124,14 +1197,12 @@ def _mug_body_path():
 
 
 def _mug_local(c, flip=False, handle=True):
-    """Mug in its own frame: bottom centre at origin, MUG_H*MUG_S tall, handle on +x (or -x if flip)."""
+    """Mug in its own frame: bottom centre at origin, MUG_H*MUG_S tall, handle on -x (or +x if flip: a pure
+    mirror image)."""
     c.scale(-MUG_S if flip else MUG_S, MUG_S)
     w, h = MUG_W, MUG_H
     if handle:
-        hp = _mug_handle_path()
-        _stroke(c, hp, C_MUG_LINE, 6.4)
-        _stroke(c, hp, C_MUG, 4.3)
-        _stroke(c, _curve([(w + 4.0, -25.0), (w + 8.6, -22.0), (w + 9.2, -16.0)]), WHITE, 1.1, 0.6)
+        _mug_handle_draw(c)
     body = _mug_body_path()
     _fill(c, body, C_MUG_SH)
     c.save()
@@ -1139,7 +1210,7 @@ def _mug_local(c, flip=False, handle=True):
     c.translate(-4.5, 0)
     _fill(c, body, C_MUG)
     c.restore()
-    lx, ly = -2.0, -15.5        # logo sits a little away from the handle (flip is a pure mirror)
+    lx, ly = 2.0, -15.5         # logo sits a little away from the handle (flip is a pure mirror)
     c.drawCircle(lx, ly, 6.4, paint(C_LOGO, stroke=1.35))
     hp2 = skia.Path()
     hp2.moveTo(lx, ly + 3.7)
@@ -1158,13 +1229,18 @@ def _mug_local(c, flip=False, handle=True):
 
 def draw_mug(canvas, x, y, scale=1.0, angle=0.0, flip=False):
     """Rae's off-white mug (red heart-in-circle logo). (x, y) = bottom centre where it rests,
-    `angle` degrees (rotation about the bottom centre), flip=True puts the handle on the left."""
+    `angle` degrees (rotation about the bottom centre). The handle is on the left (toward Rae when she faces
+    right: how she sets it down and picks it up by the handle); flip=True mirrors it (handle on the right)."""
     canvas.save()
     canvas.translate(x, y)
     canvas.rotate(angle)
     canvas.scale(scale, scale)
     _mug_local(canvas, flip)
     canvas.restore()
+
+
+_HANDLED_MUG_LOCAL = _mug_local     # a re-skinning module that replaces _mug_local (the cadet's handle-less cup)
+                                    # keeps the body grip (see _solve)
 
 
 # --------------------------------------------------------------------------- hands
@@ -1255,89 +1331,169 @@ def _draw_hand(c, A):
     c.restore()
 
 
-def _grip_fingers(handle_side):
-    """[(knuckle, tip, r_knuckle, r_tip)] of the fingers wrapped round the held mug, mug base units (handle on +x).
-    handle_side: through the handle with the tips resting on the front of the body beside it (and the little
-    finger curled under the handle); otherwise round the bare (-x) side of the body."""
-    w = MUG_W
-    if handle_side:
-        return [((w + 4.0, -21.0), (w - 3.4, -21.4), 2.45, 2.2),
-                ((w + 4.4, -16.3), (w - 4.2, -16.6), 2.55, 2.3),
-                ((w + 4.0, -11.6), (w - 3.3, -11.7), 2.45, 2.2),
-                ((w + 1.6, -6.3), (w - 2.6, -5.6), 2.05, 1.85)]
-    return [((-w - 3.6, -24.2), (-w + 4.4, -24.6), 2.55, 2.25),
-            ((-w - 3.9, -19.3), (-w + 5.0, -19.6), 2.65, 2.35),
-            ((-w - 3.6, -14.4), (-w + 4.4, -14.5), 2.55, 2.25),
-            ((-w - 2.8, -9.6), (-w + 3.4, -9.4), 2.2, 1.95)]
+# --------------------------------------------------------------------------- handle grip (Rae; see HG_K)
+def _hg_matrix(M, cfg):
+    """Mug-local base units -> upper-body frame for one drawn configuration (x, y, hs, weight) of the held mug."""
+    m = skia.Matrix()
+    m.setTranslate(cfg[0], cfg[1])
+    m.preRotate(M.ang)
+    m.preScale(cfg[2] * MUG_S, MUG_S)
+    return m
 
 
-def _draw_grip_set(c, handle_side):
-    fingers = _grip_fingers(handle_side)
-    body = _mug_body_path()
-    fp = skia.Path()
-    for kn, tp, rk, rt in fingers:
-        _capsule(fp, kn, tp, rk, rt)
-    # soft contact shadow of the fingers on the mug
+def _hull(pts):
+    """Convex hull of 2-D points (monotone chain)."""
+    pts = sorted(set(pts))
+    if len(pts) < 3:
+        return pts
+
+    def chain(seq):
+        out = []
+        for q in seq:
+            while len(out) >= 2 and ((out[-1][0] - out[-2][0]) * (q[1] - out[-2][1]) -
+                                     (out[-1][1] - out[-2][1]) * (q[0] - out[-2][0])) <= 0:
+                out.pop()
+            out.append(q)
+        return out
+    return chain(pts)[:-1] + chain(pts[::-1])[:-1]
+
+
+def _hg_geo(A, M, cfg):
+    """Upper-body-frame geometry of the hand on the handle for one configuration: (m, fingers, fist, thumb).
+    fingers: [(knuckle, middle joint, tip, r_knuckle, r_tip)] index first; fist: the back of the hand - the hull of
+    the wrist (exactly at the forearm's end: the hand keeps the forearm line) and the knuckle stack; thumb: (base,
+    joint, tip, r_base, r_joint, r_tip)."""
+    m = _hg_matrix(M, cfg)
+
+    def mp(x, y):
+        q = m.mapXY(x, y)
+        return (q.fX, q.fY)
+    fingers = [(mp(*kn), mp(*md), mp(*tp), rk * MUG_S, rt * MUG_S) for kn, md, tp, rk, rt in HG_FINGERS]
+    pts = []
+    for cx, cy, r, n in ([(A.W[0], A.W[1], HG_WRIST_R, 24)] +
+                         [(f[0][0], f[0][1], f[3] * 1.3, 16) for f in fingers]):
+        for i in range(n):
+            t_ = 2.0 * math.pi * i / n
+            pts.append((cx + r * math.cos(t_), cy + r * math.sin(t_)))
+    fist = _hull(pts)
+    tb, tj, tt, rb, rj, rt = HG_THUMB
+    thumb = (mp(*tb), mp(*tj), mp(*tt), rb * MUG_S, rj * MUG_S, rt * MUG_S)
+    return m, fingers, fist, thumb
+
+
+def _hg_finger_path(f):
+    kn, md, tp, rk, rt = f
+    p = skia.Path()
+    rm = lerp(rk, rt, 0.45)
+    _capsule(p, kn, md, rk, rm)
+    _capsule(p, md, tp, rm, rt)
+    return p
+
+
+def _hg_draw_mug(c, R, cfg):
     c.save()
-    c.clipPath(body, doAntiAlias=True)
-    c.save()
-    c.translate(0.9, 1.3)
-    _fill(c, fp, C_MUG_LINE, 0.45, blur=1.3)
+    c.translate(cfg[0], cfg[1])
+    c.rotate(R.mug.ang)
+    _mug_local(c, flip=cfg[2] < 0)
     c.restore()
-    c.restore()
-    _cel(c, fp, C_SKIN, C_SKIN_SH, -1.0, -1.3, line=C_SKIN_LINE, line_w=0.85, line_a=0.85)
-    for kn, tp, rk, rt in fingers:
-        ux, uy = _norm(tp[0] - kn[0], tp[1] - kn[1])
-        # last knuckle crease and a hint of nail at the tip
-        jx, jy = tp[0] - ux * 3.6, tp[1] - uy * 3.6
-        _stroke(c, _curve([(jx + uy * rt * 0.8, jy - ux * rt * 0.8), (jx - ux * 0.5, jy - uy * 0.5),
-                           (jx - uy * rt * 0.8, jy + ux * rt * 0.8)]), C_SKIN_SH, 0.6, 0.6)
-        nx_, ny_ = tp[0] - ux * 0.9, tp[1] - uy * 0.9 - 0.5
-        c.drawOval(skia.Rect(nx_ - 1.3, ny_ - 0.9, nx_ + 1.3, ny_ + 0.7), paint("#D9A98A", 0.55))
 
 
-def _draw_held_mug(c, R):
-    """Mug held round its body: the hand continues the forearm behind the mug, the mug sits in front of it (toward
-    the camera) centred just past the palm, the fingers come round through the handle with their tips over the
-    front of the body, the thumb rests on top of the handle. When the hand points the other way in the mug's frame
-    (far arm near the front view) the fingers wrap the bare side instead (cross-faded over a narrow band)."""
+def _hg_draw_hand(c, R, cfg):
+    """The hand on the handle (drawn over the mug and the forearm): the fingers threaded through the loop to the
+    body, the back of the hand (fist) outside the handle, the handle's bar drawn again over the fingers and the
+    knuckle edge (not over the body), then the thumb lying on top of the handle."""
     M = R.mug
     A = M.arm
-    W, hd = A.W, A.hd
-    # the hand behind the mug (only the heel shows past the mug's edge; the rest is hidden by the mug)
-    hand = skia.Path()
-    _capsule(hand, (W[0] - hd[0] * 1.5, W[1] - hd[1] * 1.5), (W[0] + hd[0] * 26.0, W[1] + hd[1] * 26.0), 7.7, 10.4,
-             bulge=0.6, bulge_at=0.3)
-    _cel(c, hand, C_SKIN, C_SKIN_SH, -1.6, -1.4, line=C_SKIN_LINE, line_w=1.1, line_a=0.8)
+    m, fingers, fist_pts, thumb = _hg_geo(A, M, cfg)
+    body = _mug_body_path()
+    body.transform(m)
+    fpaths = [_hg_finger_path(f) for f in fingers]
+    fall = skia.Path()
+    for fp in fpaths:
+        fall.addPath(fp)
+    # soft contact shadow of the fingertips on the body
     c.save()
-    c.translate(M.x, M.y)
-    c.rotate(M.ang)
-    hs = M.hs
-    c.save()
-    _mug_local(c, flip=hs < 0)
+    c.clipPath(body, doAntiAlias=True)
+    c.translate(1.0, 1.4)
+    _fill(c, fall, C_MUG_LINE, 0.45, blur=1.4)
     c.restore()
-    c.scale(hs * MUG_S, MUG_S)
-    a = -M.ang * D2R
-    hlx = (hd[0] * math.cos(a) - hd[1] * math.sin(a)) * hs
-    k = smoothstep((hlx + 0.4) / 0.1)        # 1: fingers through the handle; 0: round the bare side
-    for side, wgt in ((True, k), (False, 1.0 - k)):
-        if wgt <= 0.005:
-            continue
-        if wgt < 0.995:
-            c.saveLayerAlpha(skia.Rect(-MUG_W - 12, -MUG_H - 12, MUG_W + 18, 8), int(255 * wgt))
-            _draw_grip_set(c, side)
+    for fp in reversed(fpaths):             # little finger first: each contour reads over the one below
+        _cel(c, fp, C_SKIN, C_SKIN_SH, -1.0, -1.2, line=C_SKIN_LINE, line_w=0.9, line_a=0.85)
+    # last-joint creases and a hint of nail at the tips (index .. ring: the ones in the loop)
+    for kn, md, tp, rk, rt in fingers[:3]:
+        ux, uy = _norm(tp[0] - md[0], tp[1] - md[1])
+        jx, jy = tp[0] - ux * 4.4, tp[1] - uy * 4.4
+        _stroke(c, _curve([(jx + uy * rt * 0.8, jy - ux * rt * 0.8), (jx - ux * 0.6, jy - uy * 0.6),
+                           (jx - uy * rt * 0.8, jy + ux * rt * 0.8)]), C_SKIN_SH, 0.7, 0.6)
+    # the handle's shadow on the fingers inside the loop (depth: they pass behind its outer bar)
+    c.save()
+    c.clipPath(fall, doAntiAlias=True)
+    c.translate(0.7, 1.0)
+    c.concat(m)
+    _stroke(c, _mug_handle_path(), C_SKIN_SH, 7.4, 0.75, blur=0.9)
+    c.restore()
+    # back of the hand
+    fist = skia.Path()
+    fist.addPoly([skia.Point(*q) for q in fist_pts], True)
+    _cel(c, fist, C_SKIN, C_SKIN_SH, -1.6, -1.4, line=C_SKIN_LINE, line_w=1.25, line_a=0.8)
+    c.save()
+    c.clipPath(fist, doAntiAlias=True)
+    wx, wy = A.W
+    hd = A.hd
+    ridge = []
+    for i, (kn, md, tp, rk, rt) in enumerate(fingers):
+        # knuckle bumps (highlights) and the soft valleys between them, running back toward the wrist
+        vx, vy = _norm(wx - kn[0], wy - kn[1])
+        k0 = (kn[0] + vx * rk * 1.1, kn[1] + vy * rk * 1.1)
+        ridge.append((kn[0] + vx * rk * 2.2, kn[1] + vy * rk * 2.2))
+        c.drawCircle(k0[0], k0[1], rk * 0.8, paint(C_SKIN_HI, 0.42, blur=1.0))
+        if i < len(fingers) - 1:
+            k2 = fingers[i + 1][0]
+            mx_, my_ = 0.5 * (kn[0] + k2[0]), 0.5 * (kn[1] + k2[1])
+            vx2, vy2 = _norm(wx - mx_, wy - my_)
+            _stroke(c, _curve([(mx_ + vx2 * 1.5, my_ + vy2 * 1.5), (mx_ + vx2 * 8.0, my_ + vy2 * 8.0)]),
+                    C_SKIN_SH, 1.2, 0.55, blur=0.5)
+    # the fold behind the knuckles (where the fingers turn into the handle) and the wrist crease
+    _stroke(c, _curve(ridge), C_SKIN_SH, 1.3, 0.5, blur=0.6)
+    r_ = HG_WRIST_R * 0.95
+    _stroke(c, _curve([(wx - hd[1] * r_ + hd[0] * 1.5, wy + hd[0] * r_ + hd[1] * 1.5),
+                       (wx + hd[0] * 2.6, wy + hd[1] * 2.6),
+                       (wx + hd[1] * r_ + hd[0] * 1.5, wy - hd[0] * r_ + hd[1] * 1.5)]), C_SKIN_SH, 1.2, 0.5, blur=0.5)
+    c.restore()
+    # the handle over the fingers (its bar) and the edge of the knuckles - never over the body
+    c.save()
+    c.clipPath(body, skia.ClipOp.kDifference, True)
+    c.concat(m)
+    _mug_handle_draw(c)
+    c.restore()
+    # thumb: up from the side of the hand and resting along the top of the handle
+    tb, tj, tt, rb, rj, rt = thumb
+    th = _capsule(skia.Path(), tb, tj, rb, rj)
+    _capsule(th, tj, tt, rj, rt)
+    _cel(c, th, C_SKIN, C_SKIN_SH, -1.0, -1.2, line=C_SKIN_LINE, line_w=0.9, line_a=0.85)
+    ux, uy = _norm(tt[0] - tj[0], tt[1] - tj[1])
+    nail = skia.Path()
+    nail.addOval(skia.Rect(-1.9, -1.25, 1.9, 1.25))
+    nx_, ny_ = tt[0] - ux * 1.6, tt[1] - uy * 1.6
+    nail.transform(skia.Matrix.MakeAll(ux, -uy, nx_, uy, ux, ny_, 0, 0, 1))
+    _fill(c, nail, C_NAIL, 0.55)
+
+
+def _hg_pass(c, R, fn):
+    """Run fn(c, R, cfg) for each drawn configuration of the held mug (a cross-faded one in its own layer)."""
+    for cfg in R.mug.cfg:
+        if cfg[3] >= 0.996:
+            fn(c, R, cfg)
+        elif cfg[3] > 0.004:
+            x, y = cfg[0], cfg[1]
+            c.saveLayerAlpha(skia.Rect(x - 120, y - 120, x + 120, y + 60), int(round(255 * cfg[3])))
+            fn(c, R, cfg)
             c.restore()
-        else:
-            _draw_grip_set(c, side)
-    # thumb resting on top of the handle
-    w = MUG_W
-    th = _capsule(skia.Path(), (w - 0.6, -28.4), (w + 5.6, -29.6), 2.6, 2.3)
-    _cel(c, th, C_SKIN, C_SKIN_SH, -1.0, -1.3, line=C_SKIN_LINE, line_w=0.85, line_a=0.85)
-    c.drawOval(skia.Rect(w + 3.6, -31.0, w + 6.4, -29.4), paint("#D9A98A", 0.6))
-    c.restore()
 
 
-# near hand on the mug: fingers (index .. little) as (hand-local x, knuckle y, r_knuckle, r_tip), hand units
+# --------------------------------------------------------------------------- body grip, near hand (the cadet's
+# handle-less cup; his module re-skins this rig - Rae holds her mug by the handle, above)
+# near hand on the cup: fingers (index .. little) as (hand-local x, knuckle y, r_knuckle, r_tip), hand units
 _NEAR_FINGERS = ((5.0, 18.4, 2.7, 2.45), (1.6, 19.4, 2.9, 2.6), (-1.9, 19.0, 2.8, 2.5), (-5.1, 17.4, 2.45, 2.2))
 _NEAR_BACK = ((-7.4, -1.0), (-8.6, 6.0), (-8.9, 12.5), (-7.8, 17.8), (-4.2, 20.2), (1.0, 21.0), (5.2, 20.2),
               (8.0, 16.8), (8.5, 9.0), (7.3, 0.0))
@@ -1743,8 +1899,12 @@ def _arm_occluder(A, R):
         m = skia.Matrix()
         m.setRotate(R.mug.ang, R.mug.x, R.mug.y)
         mp = skia.Path()
-        mp.addRect(skia.Rect(R.mug.x - (MUG_W + 7) * MUG_S, R.mug.y - (MUG_H + 5) * MUG_S,
-                             R.mug.x + (MUG_W + 14) * MUG_S, R.mug.y + 1))
+        lo, hi = (MUG_W + 7) * MUG_S, (MUG_W + 14) * MUG_S    # (the cadet's cup: the body grip)
+        if R.mug.handle:
+            lo, hi = (MUG_W + 16) * MUG_S, (MUG_W + 7) * MUG_S    # the handle side (the hand beyond it) / other
+            if R.mug.hs < 0:
+                lo, hi = hi, lo
+        mp.addRect(skia.Rect(R.mug.x - lo, R.mug.y - (MUG_H + 5) * MUG_S, R.mug.x + hi, R.mug.y + 1))
         mp.transform(m)
         occ.addPath(mp)
     return occ
@@ -1754,16 +1914,13 @@ def _draw_arm(c, A, R):
     S, E, W = A.S, A.E, A.W
     ux, uy = _norm(E[0] - S[0], E[1] - S[1])
     held = R.mug is not None and R.mug.arm is A
-    near = held and R.mug.near
-    if near:
-        _draw_mug_in_hand(c, R)          # near hand: the mug first, the forearm and the hand over it
+    if held:
+        _hg_pass(c, R, _hg_draw_mug)     # held by the handle: the mug first, the forearm and the hand over it
     fore = skia.Path()
     _capsule(fore, (E[0] - ux * 2, E[1] - uy * 2), W, 10.8, 7.6, bulge=1.4, bulge_at=0.3)
     _cel(c, fore, C_SKIN, C_SKIN_SH, -3.0, -2.0, line=C_SKIN_LINE, line_w=1.25, line_a=0.75)
-    if near:
-        _draw_near_grip(c, R)
-    elif held:
-        _draw_held_mug(c, R)
+    if held:
+        _hg_pass(c, R, _hg_draw_hand)
     else:
         _draw_hand(c, A)
     sl = skia.Path()
@@ -1996,7 +2153,11 @@ def _eye_glints(c, ix, iy, fsi, P):
 
 def _draw_tear(c, H, slot, prog):
     """A droplet rolling from the lower lid down the cheek, leaving a shiny trail that dries to a faint streak.
-    On the far side of the face the tear runs inward (toward the nose) instead of along the silhouette."""
+    On the far side of the face the tear runs inward (toward the nose) instead of along the silhouette.
+    prog 0..1 = the roll; 1..2 = the dried streak fading away (linearly; 2 = gone - the scene eases it)."""
+    wet = 1.0 - clamp(prog - 1.0)
+    if wet <= 0.0:
+        return
     kf = smoothstep((slot * H.s - 0.08) / 0.25)
     pts = []
     for (xo_n, xo_f), y in (((4.0, 1.0), 11.5), ((6.5, -1.5), 21.0), ((7.5, -3.5), 32.0), ((5.0, -5.0), 44.0),
@@ -2021,7 +2182,8 @@ def _draw_tear(c, H, slot, prog):
     u = clamp(1.0 - 0.32 * total / max(d, 1e-3), 0.0, 0.999)
     for colr, a, wd in ((C_TEAR, 0.45, 3.2), (WHITE, 0.7, 1.1)):
         sh = skia.GradientShader.MakeLinear([(p0.fX, p0.fY), (p1.fX, p1.fY)],
-                                            [col(colr, a * 0.3), col(colr, a * 0.3), col(colr, a * bright)], [0.0, u, 1.0])
+                                            [col(colr, a * 0.3 * wet), col(colr, a * 0.3 * wet),
+                                             col(colr, a * bright * wet)], [0.0, u, 1.0])
         tp = paint(None, stroke=wd, shader=sh, cap="butt")
         if _CF is not None:
             tp.setColorFilter(_CF)
@@ -2508,7 +2670,7 @@ def _draw_head(c, R, p, t):
         E.lash_out = lashes
         E.lid = lids[side]
         E.emit = R.emit
-        E.tear_roll = clamp(p.tear_r if side == "r" else p.tear_l)
+        E.tear_roll = clamp(p.tear_r if side == "r" else p.tear_l, 0.0, 2.0)   # (1..2: the streak drying)
         xs = 1.0 if slot > 0 else -1.0
         E.braise = clamp(p.brow_raise + 0.25 * P.wide - 0.45 * p.smirk * xs, -1.2, 1.4)
         E.bworry = clamp(p.brow_worry)
