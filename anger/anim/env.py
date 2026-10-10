@@ -1,88 +1,109 @@
 """Sets for "ANGER" (BIBLE sections 3, 4, 7): the tunnel, the cavern, the shaft (the fall), the depths.
 
 All sets draw in STAGE coordinates (the scene applies its Camera first; stage = 720 x 1280, sets
-extend far beyond it for pans; built to hold up from zoom ~0.45 wide shots to zoom 3 close-ups).
+extend far beyond it for pans; checked from zoom 0.45 wide shots to zoom 3 close-ups).
 They are drawn LIT (readable full colour); light.apply_darkness turns them into a dark cave.
-Characters stand with their feet at the exported FLOOR_Y values.
+Characters stand with their feet at the exported floor values (FLOOR_Y = 1150 in tunnel, cavern
+near floor and depths; SHAFT_FLOOR_Y = 600 on the cut-away floor of the fall set).
 
 Public API ----------------------------------------------------------------------------------------
 
-TUNNEL (S1) -- side view of a rough passage running left -> right; the DOOR ends it on the right.
+TUNNEL (S1) -- side view of a rough passage running left -> right; the DOOR ends it on the right,
+frontal in a carved stone arch set in the end rock face (Anger walks right, stands in front of it).
     draw_tunnel(canvas, t, scroll=0.0, vines_cut=0.0, webs_torn=0.0, door="closed", door_t=0.0,
                 part="all", cut_times=None, tear_times=None, tear_dir=-1.0)
         scroll    parallax of the far wall: pass the camera's x offset (cam.cx - 360) for natural
                   depth (the far wall then slides at 1-BACK_PARALLAX of the camera speed).
-        vines_cut 0..1: the vine curtain at VINES_X is cut in 3 groups (one per chop). Group k is cut
-                  once vines_cut >= k/3 and its pieces have been falling for
-                  (vines_cut - k/3) * VINE_CUT_SPAN seconds -> ramp vines_cut linearly from 0 at chop1
-                  to 1 at chop1 + VINE_CUT_SPAN (3.6 s, = 3 chops 1.2 s apart).
-                  Or pass cut_times=(t_chop1, t_chop2, t_chop3) (absolute) to drive it by real time.
-        webs_torn 0..1: web A (lower) tears over 0..0.5, web B (upper) over 0.5..1
-                  (or tear_times=(t_swipe1, t_swipe2) -> each tears over WEB_TEAR_DUR seconds).
+        vines_cut 0..1: the vine curtain at VINES_X (15 strands, some brown roots) is cut in 3 groups
+                  (one per chop), high up (around VINE_CHOP_Y) so short stubs stay hanging and the long
+                  lower pieces fall and pile on the floor.  Group k is cut once vines_cut >= k/3 and
+                  its pieces have been falling for (vines_cut - k/3) * VINE_CUT_SPAN seconds -> ramp
+                  vines_cut linearly from 0 at chop1 to 1 at chop1 + VINE_CUT_SPAN (3.6 s = three
+                  chops 1.2 s apart).  Or pass cut_times=(t_chop1, t_chop2, t_chop3) (absolute t).
+        webs_torn 0..1: web A (big, lower, WEB_A) tears over 0..0.5, web B (upper right) over 0.5..1
+                  (or tear_times=(t_swipe1, t_swipe2): each tears over WEB_TEAR_DUR s).  Torn webs
+                  collapse toward their anchors and hang as tattered remnants.
                   tear_dir = direction of the gauntlet swipe (-1 = toward screen-left).
-        door      "closed" | "rattle" (door_t = seconds since that pull started: shaking, ring swinging,
-                  dust sifting) | "burst" (door_t = seconds since the burst: planks and splinters fly,
-                  dust, then a broken frame with darkness beyond; door_t < 0 = still closed).
-        part      "all" | "back" (everything behind characters) | "front" (things that fly toward the
-                  camera: burst splinters, dust; foreground rocks) -> back, characters, front.
-    door_lights(door, door_t) -> [light.Light]   flash for the burst (add to apply_darkness lights)
-    Constants: FLOOR_Y, FLOOR_BACK_Y, CEIL_Y, VINES_X, VINES_SPAN, VINE_CHOP_Y (chop height),
-               WEBS_X, WEB_A, WEB_B (centres), DOOR_X, DOOR_W, DOOR_TOP, DOOR_BOTTOM,
-               DOOR_RING_POS, DOOR_IMPACT (shoulder hit point), TUNNEL_X (walkable x range),
-               BACK_PARALLAX, VINE_CUT_SPAN, WEB_TEAR_DUR
+        door      "closed" | "rattle" (door_t = seconds since that pull started: the door shakes,
+                  the ring swings, dust sifts from the arch; fades out over ~1.5 s) | "burst" (door_t =
+                  seconds since the burst: the planks break into pieces that fly (some recede into
+                  the dark, some fly at the camera and land on the floor), splinters, stones and a big
+                  dust cloud; afterwards a broken frame with hinge stubs and darkness beyond;
+                  door_t < 0 = still closed).
+        part      "all" | "back" (everything behind characters) | "front" (what flies toward the
+                  camera: burst pieces in the air, splinters, dust; dark foreground rocks at the
+                  very bottom of wide shots) -> draw back, characters, front.
+    door_lights(door, door_t) -> [light.Light]   the burst flash (add to apply_darkness lights)
+    Constants: FLOOR_Y, FLOOR_BACK_Y (floor meets the wall), CEIL_Y, VINES_X, VINES_SPAN, VINE_CHOP_Y,
+               WEBS_X, WEB_A, WEB_B (web centres), DOOR_X (centre), DOOR_W, DOOR_TOP, DOOR_BOTTOM,
+               DOOR_SPRING_Y, DOOR_RING_POS (iron ring: hand target), DOOR_IMPACT (shoulder hit
+               point), TUNNEL_X (walkable x range), BACK_PARALLAX, VINE_CUT_SPAN, WEB_TEAR_DUR
 
-CAVERN (S2) -- vast; depth by perspective (horizon y ~ CAV_HORIZON_Y), Anger walks the near floor.
+CAVERN (S2) -- vast; depth by perspective (floor horizon CAV_HORIZON_Y; depth_scale(y) gives the size
+factor). Entry arch (broken door) on the left wall, the pool front-centre, the crevice in the
+receding right wall, the far archway small at the back, pillars and stalactites at many depths.
     draw_cavern(canvas, t, stone_tilt=0.0, pool_splash_t=None, torch_pos=None, drips=True,
                 torch_float=True)
-        stone_tilt   0..1 (beyond is fine for wobble): the stone at SHIFT_STONE_POS tips up to 24 deg
-                     (pivot on its right foot, left end rising).
+        stone_tilt    0..1 (beyond / negative fine for wobble): the stone at SHIFT_STONE_POS tips up
+                      to 24 deg (pivot on its right foot, the left end rises, a dark gap under it).
         pool_splash_t seconds since the torch hit the water at TORCH_SPLASH_POS (None = never):
-                     splash, ripples across the pool (clipped to it), steam, then the dead torch
-                     floating and bobbing.
-        torch_pos    optional (x, y) of the lit flame -> a warm reflection streak on the pool.
-    cavern_lights(t, strength=1.0) -> [Light]     dim teal fungus lights (for apply_darkness)
-    path_point(u) -> (x, y, scale)                 walkable path, u 0 (entry) .. 1 (far archway);
-                                                   scale = perspective size factor for Anger.
-    depth_scale(y) -> float                        perspective size factor at floor y.
-    Constants: FLOOR_Y (=1150, same as the tunnel), CAV_HORIZON_Y, WALK_PATH (points), ENTRY_POS,
-               ENTRY_ARCH, FAR_ARCH_POS, POOL_POS, POOL_R (rx, ry), TORCH_SPLASH_POS,
-               SHIFT_STONE_POS, CREVICE_POS (eyes centre), CREVICE_SCALE, CAV_FUNGI
+                      splash crown + jet + droplets, rings across the pool (clipped to it), steam
+                      for ~4 s, then the dead torch floating and bobbing (torch_float).
+        torch_pos     optional (x, y) of the lit flame -> warm reflection streaks on the pool.
+        drips         a drop falls from above into the pool every 3.7 s (rings synced).
+    cavern_lights(t, strength=1.0, far_glow=1.0) -> [Light]
+                      dim teal fungus lights + a very faint teal haze over the far floor (so the vast
+                      space reads behind silhouetted pillars even at ambient 0.06).
+    path_point(u) -> (x, y, scale)     walkable path, u 0 (entry arch) .. 1 (far archway), by arc
+                                       length; scale = perspective size factor for Anger.
+    depth_scale(y) -> float            perspective size factor at floor y (1 at FLOOR_Y).
+    Constants: FLOOR_Y, CAV_HORIZON_Y, WALK_PATH (list of floor points), ENTRY_POS, ENTRY_ARCH
+               (x, base y, scale), FAR_ARCH_POS, POOL_POS, POOL_R (rx, ry), TORCH_SPLASH_POS,
+               SHIFT_STONE_POS, CREVICE_POS (centre of the 4 eyes), CREVICE_SCALE, CAV_FUNGI
 
-SHAFT (S3) -- face-on view of the shaft's back wall; the cavern floor's broken lip at the top.
+SHAFT (S3) -- cut-away: the cavern floor is a thick slab seen in section; the hole opens between
+HOLE_X; below, the shaft (face-on back wall of rock & soil strata) between cut-away earth.
     draw_shaft(canvas, t, scroll=0.0, gouge=None, crack=0.0, collapse_t=None, blur=0.0,
-               bottom=None, dust=1.0)
-        scroll   stage units the wall has moved UP (falling = increasing scroll). Everything (lip,
-                 wall, gouge) is drawn at y - scroll; the wall texture repeats every SHAFT_PERIOD.
-        gouge    (x, y0, y1) in WALL coordinates (= stage coords at scroll 0): the long cut the
-                 sword carves from y0 down to y1 (the end y1 is fresh and glowing hot).
-                 shaft_wall_y(stage_y, scroll) converts a stage point into wall coordinates.
-        crack    0..1 cracks spreading in the floor before the collapse (scroll 0 framing).
-        collapse_t seconds since the floor gave way (None = intact floor slab over the hole):
-                 slabs drop into the hole with grit, the hole opens.
-        blur     vertical motion smear in stage units (pass ~fall speed / 24 * 0.6).
-        bottom   wall-y of the shaft bottom (the rubble floor of the depths) or None (bottomless).
-    shaft_wall_y(y, scroll) -> wall y ; shaft_lights(t) -> [Light]
-    Constants: LEDGE_POS (hand grip on the lip), LEDGE_Y, SHAFT_FLOOR_Y (standing on the floor before
-               the collapse), HOLE_X (x0, x1), SHAFT_X (wall x range), SHAFT_PERIOD, GOUGE_X (x)
+               bottom=None, dust=0.0)
+        scroll     stage units the world has moved UP (falling = increasing scroll). Everything (slab,
+                   lip, wall, gouge) is drawn at y - scroll; the wall repeats every SHAFT_PERIOD.
+        gouge      (x, y0, y1) in WALL coordinates (= stage coords at scroll 0): the long cut the
+                   sword carves from y0 down to y1 (the end y1 is fresh and glowing hot).
+                   shaft_wall_y(stage_y, scroll) converts a stage point into wall coordinates.
+        crack      0..1 cracks spreading through the slab under Anger before the collapse (+ grit).
+        collapse_t seconds since the floor gave way (None = intact slab over the hole): the slab
+                   breaks into chunks that drop with stones and dust; the hole opens.
+        blur       vertical motion smear in stage units (e.g. ~0.6 * fall speed / 24).
+        bottom     wall-y of the shaft bottom (a rubble floor appears there) or None (bottomless).
+        dust       0..1 grit trickling from the lip at LEDGE_POS (his fingers slipping).
+    shaft_wall_y(y, scroll) -> wall y ;  shaft_lights(t, scroll=0, strength=1) -> [Light]
+    Constants: LEDGE_POS (the lip corner his gauntlet grips), LEDGE_Y, SHAFT_FLOOR_Y (standing on the
+               slab before the collapse), HOLE_X (x0, x1), SHAFT_X (wall x span), SHAFT_PERIOD,
+               GOUGE_X (a good x for the gouge)
 
-DEPTHS (S4-S6) -- the bottom grotto: rubble, a wall at screen-right to lean on, voice in the dark left.
+DEPTHS (S4-S6) -- the bottom grotto: rubble heap under the hole in the ceiling, a rock wall on the
+right to lean against, roots, dim fungi, deep shadow on screen-left (the voice, the glove).
     draw_depths(canvas, t, dust=0.0, shake=0.0)
-        dust 0..1 dust hanging in the air (after the impact / stomps); shake = extra grit falling.
+        dust 0..1 dust hanging in the air (after the impact); shake 0..1 grit falling (stomps).
     depths_lights(t, strength=1.0) -> [Light]       dim fungus lights
     Constants: FLOOR_Y, WALL_X (face of the wall Anger leans on), WALL_LEAN_Y (shoulder height when
-               propped), DARK_X (x left of which it is deep shadow / the voice), SHAFT_OPEN_X,
-               DEP_FUNGI
+               propped), DARK_X (x left of which it is deep shadow), SHAFT_OPEN_X, DEP_FUNGI
 
-Generic helpers
-    draw_fungi_glow(canvas, t, which="cavern"|"depths", alpha=1.0)   EMISSIVE fungus specks: draw
-        after apply_darkness so the caps visibly glow (cheap).
+Generic
+    draw_fungi_glow(canvas, t, which="cavern"|"depths", alpha=1.0, exclude=None)
+        EMISSIVE fungus specks (after apply_darkness, under the camera). It draws over everything:
+        pass exclude=[(x0, y0, x1, y1), ...] stage rects (characters standing in front) or skip it.
 
 Implementation notes ------------------------------------------------------------------------------
 * The static part of every set is recorded ONCE as a vector skia Picture (with an R-tree) and
   rasterised on demand into camera-sized tiles at a zoom-bucketed resolution (LRU cache bounded by
   pixels, as in the previous film) -> a frame costs one or two image blits + the small dynamic bits
-  (vines, webs, door, stone, water, gouge).  Periodic layers (tunnel far wall, shaft wall) wrap.
-* No noise/grain: rock is cel-shaded plates (light top lip, dark bottom lip) + smooth gradients.
+  (vines, webs, door, stone, water, gouge).  Periodic layers wrap (tunnel far wall in x; the shaft
+  wall in y, rasterised as one full-period strip per zoom bucket so a fast fall never misses).
+  A tile miss (first frame of a framing / big camera move) costs ~0.1-0.6 s once per process.
+* Steady-state cost per frame (this machine): tunnel 13-20 ms (27 ms during the door burst),
+  cavern 4-6 ms, shaft 4-11 ms (with blur), depths 2 ms.
+* No noise/grain: rock is overlapping cel-shaded lumps + smooth gradients (compression friendly).
 """
 from __future__ import annotations
 
@@ -94,10 +115,8 @@ import numpy as np
 import skia
 
 from anim import fx
-from anim.core import clamp, ease_in_out, ease_out, hash01, lerp, noise1, smooth_path, smoothstep
+from anim.core import clamp, ease_out, hash01, lerp, noise1, smooth_path, smoothstep
 from anim.light import Light, flash_light, fungus_light
-from config import H, W
-
 TAU = math.tau
 _LIN = skia.SamplingOptions(skia.FilterMode.kLinear)
 
@@ -543,19 +562,18 @@ def _fungi_patch(c, x, y, r, seed, n=None, scale=1.0, facing=0.0):
         c.drawOval(cap, _S("#1F5A50", max(0.6, s * 0.12), 0.8))
 
 
-def _fungi_glow_specks(c, t, patches, alpha=1.0, seed0=900, scales=None):
-    """EMISSIVE glow for fungus patches [(x, y, r), ...] (same random caps as _fungi_patch(seed0 + i))."""
-    for i, (x, y, r) in enumerate(patches):
-        br = (0.8 + 0.2 * math.sin(t * 0.7 + i * 1.7)) * alpha
-        scale = 1.0 if scales is None else scales[i]
-        fx._blob(c, x, y - r * 0.2, r * 2.6, "#3FD8B8", 0.22 * br, add=True)
-        rng = np.random.default_rng(seed0 + i)
-        n = int(5 + r / 6)
-        for k in range(n):
-            dx = (rng.random() - 0.5) * 2 * r
-            dy = (rng.random() - 0.5) * r * 0.6
-            s = scale * (3 + 6 * rng.random() ** 2)
-            fx._blob(c, x + dx, y + dy - s * 1.2, s * 2.4, "#B8FFF0", 0.5 * br, add=True)
+def _fungi_glow_specks_one(c, t, i, patch, alpha=1.0, seed0=900, scale=1.0):
+    """EMISSIVE glow for one fungus patch (same random caps as _fungi_patch(seed0 + i))."""
+    x, y, r = patch
+    br = (0.8 + 0.2 * math.sin(t * 0.7 + i * 1.7)) * alpha
+    fx._blob(c, x, y - r * 0.2, r * 2.6, "#3FD8B8", 0.22 * br, add=True)
+    rng = np.random.default_rng(seed0 + i)
+    n = int(5 + r / 6)
+    for k in range(n):
+        dx = (rng.random() - 0.5) * 2 * r
+        dy = (rng.random() - 0.5) * r * 0.6
+        s = scale * (3 + 6 * rng.random() ** 2)
+        fx._blob(c, x + dx, y + dy - s * 1.2, s * 2.4, "#B8FFF0", 0.5 * br, add=True)
 
 
 # =========================================================================== TUNNEL constants
@@ -707,7 +725,6 @@ def _paint_stone_arch(c, cx, top, w, bottom, seed, frame=88.0, broken=False):
     for side in (-1, 1):
         xin = cx + side * r_in
         xout = cx + side * r_out
-        yb = cyc
         hgt = bottom - cyc
         nb = 5
         ys = [cyc + hgt * k / nb + (rng.random() - 0.5) * 18 * (0 < k < nb) for k in range(nb + 1)]
@@ -778,7 +795,6 @@ def _paint_tunnel_main(c):
         top = -1500
         pts_l, pts_r = [], []
         for yy in np.linspace(top, _floor_back_y(px) + 30, 26):
-            u = (yy - top) / (FLOOR_BACK_Y + 30 - top)
             waist = 1.0 - 0.18 * math.sin(math.pi * clamp((yy + 100) / 1150))
             wl = pw * 0.5 * waist * (1 + 0.12 * _nz(yy + k * 900, 40 + k))
             wr = pw * 0.5 * waist * (1 + 0.12 * _nz(yy + k * 700, 50 + k))
@@ -874,7 +890,7 @@ def _paint_tunnel_main(c):
             continue
         _boulder(c, x, FLOOR_Y + 60 + rng.random() * 140, 30 + 40 * rng.random(), 20 + 18 * rng.random(), 1800 + k)
     # ---------------- far left: the passage fades into the dark
-    c.drawRect(skia.Rect(X0, Y0, -2300, Y1), _G(_lg(X0, 0, -2300, 0, [_c("#0A090D", 1.0), _c("#0A090D", 0.0)])))
+    c.drawRect(skia.Rect(X0, Y0, -3150, Y1), _G(_lg(X0, 0, -3150, 0, [_c("#0A090D", 1.0), _c("#0A090D", 0.0)])))
 
 
 @lru_cache(maxsize=1)
@@ -1262,9 +1278,12 @@ def _door_pic():
     return _record((DOOR_X - DOOR_W, DOOR_TOP - 40, DOOR_X + DOOR_W, DOOR_BOTTOM + 40), _paint_door)
 
 
+_PIECE_RES = 1.25
+
+
 @lru_cache(maxsize=1)
 def _door_pieces():
-    """Burst pieces: (local Picture, centre, polygon) per piece; recorded in door coordinates."""
+    """Burst pieces: (raster image, local rect, centre, plank i, segment k), cut from the door once."""
     rng = np.random.default_rng(777)
     pieces = []
     for i in range(_N_PLANKS):
@@ -1272,31 +1291,32 @@ def _door_pieces():
         nb = 2 + int(rng.random() * 2)
         cuts = sorted([DOOR_TOP + (DOOR_BOTTOM - DOOR_TOP) * (k + 0.5 + (rng.random() - 0.5) * 0.6) / nb for k in range(nb - 1)])
         ys = [DOOR_TOP - 20] + cuts + [DOOR_BOTTOM]
+        # one shared jagged break line per cut (so the pieces fit together exactly at age 0)
+        breaks = [[(lerp(xa, xb, u), yc + (rng.random() - 0.5) * 50) for u in np.linspace(0, 1, 5)] for yc in cuts]
         for k in range(nb):
             ya, yb = ys[k], ys[k + 1]
-            # jagged break edges
-            top = [(xa, ya)] if k == 0 else [(lerp(xa, xb, u), ya + (rng.random() - 0.5) * 50) for u in np.linspace(0, 1, 5)]
-            bot = [(xb, yb)] if k == nb - 1 else [(lerp(xb, xa, u), yb + (rng.random() - 0.5) * 50) for u in np.linspace(0, 1, 5)]
-            if k == 0:
-                top = [(xa, ya), (xb, ya)]
-            if k == nb - 1:
-                bot = [(xb, yb), (xa, yb)]
+            top = [(xa, ya), (xb, ya)] if k == 0 else list(breaks[k - 1])
+            bot = [(xb, yb), (xa, yb)] if k == nb - 1 else list(reversed(breaks[k]))
             poly = top + bot
             cx = sum(p[0] for p in poly) / len(poly)
             cy = sum(p[1] for p in poly) / len(poly)
-            rec = skia.PictureRecorder()
-            pc = rec.beginRecording(skia.Rect(xa - cx - 60, ya - cy - 60, xb - cx + 60, yb - cy + 60))
-            pc.save()
-            pc.translate(-cx, -cy)
+            lx0 = min(p[0] for p in poly) - cx - 4
+            ly0 = min(p[1] for p in poly) - cy - 4
+            lx1 = max(p[0] for p in poly) - cx + 4
+            ly1 = max(p[1] for p in poly) - cy + 4
+            iw, ih = int((lx1 - lx0) * _PIECE_RES) + 1, int((ly1 - ly0) * _PIECE_RES) + 1
+            surf = skia.Surface(iw, ih)
+            pc = surf.getCanvas()
+            pc.clear(skia.ColorTRANSPARENT)
+            pc.scale(_PIECE_RES, _PIECE_RES)
+            pc.translate(-lx0 - cx, -ly0 - cy)
             pp = _poly(poly)
+            pc.save()
             pc.clipPath(pp, skia.ClipOp.kIntersect, True)
             pc.drawPicture(_door_pic())
             pc.restore()
-            pc.save()
-            pc.translate(-cx, -cy)
             pc.drawPath(pp, _S("#1A0F08", 3.0, 0.9))
-            pc.restore()
-            pieces.append((rec.finishRecordingAsPicture(), (cx, cy), i, k))
+            pieces.append((surf.makeImageSnapshot(), skia.Rect(lx0, ly0, lx1, ly1), (cx, cy), i, k))
     return pieces
 
 
@@ -1324,7 +1344,6 @@ def _draw_door_closed(c, t, door, door_t):
 def _piece_motion(i, k, cx, cy, age):
     h = lambda q: hash01(i * 17 + k * 5 + q, 991)
     dx, dy = cx - DOOR_IMPACT[0], cy - DOOR_IMPACT[1]
-    dl = math.hypot(dx, dy) or 1.0
     ang = math.atan2(dy, dx) + (h(1) - 0.5) * 0.7
     sp = 700 + 900 * h(2)
     vx, vy = math.cos(ang) * sp, math.sin(ang) * sp - 500 * h(3)
@@ -1373,54 +1392,48 @@ def _draw_door_burst(c, t, age, part):
         # receding pieces (flying into the dark beyond): clipped to the opening
         c.save()
         _clip(c, _door_path())
-        for (pic, (cx, cy), i, k) in _door_pieces():
+        for (img, lr, (cx, cy), i, k) in _door_pieces():
             x, y, rot, sc, toward, landed = _piece_motion(i, k, cx, cy, age)
             if toward:
                 continue
             fade = clamp(1 - age / 0.7)
             if fade <= 0:
                 continue
-            c.save()
-            c.translate(lerp(DOOR_X, x, 0.6), y)
-            c.rotate(rot)
-            c.scale(sc, sc)
-            p = skia.Paint()
-            p.setAlphaf(fade)
-            c.saveLayer(None, p)
-            c.drawPicture(pic)
-            c.restore()
-            c.restore()
+            _draw_piece_flat(c, img, lr, lerp(DOOR_X, x, 0.6), y, rot, sc, fade)
         c.restore()
         # pieces that already landed on the floor stay behind characters
-        for (pic, (cx, cy), i, k) in _door_pieces():
+        for (img, lr, (cx, cy), i, k) in _door_pieces():
             x, y, rot, sc, toward, landed = _piece_motion(i, k, cx, cy, age)
             if toward and landed:
-                _draw_piece_flat(c, pic, x, y, rot, sc)
+                _draw_piece_flat(c, img, lr, x, y, rot, sc)
         fx.debris(c, t, age, (DOOR_X - 20, 640), seed=12, kind="wood", n=14, speed=1100, direction=-90, spread=360,
                   floor_y=FLOOR_Y + 60, size=1.3)
     if part in ("all", "front"):
-        for (pic, (cx, cy), i, k) in _door_pieces():
+        for (img, lr, (cx, cy), i, k) in _door_pieces():
             x, y, rot, sc, toward, landed = _piece_motion(i, k, cx, cy, age)
             if toward and not landed:
-                _draw_piece_flat(c, pic, x, y, rot, sc)
+                _draw_piece_flat(c, img, lr, x, y, rot, sc)
         fx.debris(c, t, age, DOOR_IMPACT, seed=13, kind="wood", n=22, speed=1500, direction=-90, spread=360,
                   floor_y=None, size=1.6, toward=1.2, life=1.6)
         fx.debris(c, t, age, (DOOR_X, 300), seed=14, kind="stone", n=8, speed=500, direction=90, spread=120,
                   floor_y=FLOOR_Y + 30, size=1.4)
-        fx.dust_cloud(c, t, DOOR_X, DOOR_BOTTOM - 20, age, size=3.0, seed=3, n=20, life=4.5, alpha=1.0)
-        fx.dust_cloud(c, t, DOOR_X - 60, 620, age, size=2.4, seed=4, n=14, life=3.2, ground=False, alpha=0.8,
+        fx.dust_cloud(c, t, DOOR_X, DOOR_BOTTOM - 20, age, size=3.5, seed=3, n=8, life=4.5, alpha=1.0)
+        fx.dust_cloud(c, t, DOOR_X - 60, 620, age, size=2.8, seed=4, n=6, life=3.2, ground=False, alpha=0.8,
                       drift=(-140.0, -10.0))
         if age < 1.5:
             fx.dust_fall(c, t, DOOR_X - DOOR_W / 2 - 60, DOOR_X + DOOR_W / 2 + 60, DOOR_TOP - 80,
                          amount=1.0 - age / 1.5, seed=9, length=500, size=1.6)
 
 
-def _draw_piece_flat(c, pic, x, y, rot, sc):
+def _draw_piece_flat(c, img, lr, x, y, rot, sc, alpha=1.0):
     c.save()
     c.translate(x, y)
     c.rotate(rot)
     c.scale(sc, sc)
-    c.drawPicture(pic)
+    p = skia.Paint(AntiAlias=True)
+    if alpha < 1:
+        p.setAlphaf(alpha)
+    c.drawImageRect(img, lr, _LIN, p)
     c.restore()
 
 
@@ -1508,6 +1521,8 @@ CAV_FUNGI = [(-430.0, 992.0, 26.0), (175.0, 978.0, 16.0), (985.0, 792.0, 14.0), 
              (-760.0, 994.0, 20.0), (40.0, 1250.0, 18.0), (1130.0, 1180.0, 22.0), (560.0, 690.0, 7.0),
              (-250.0, 1300.0, 24.0), (1700.0, 1350.0, 28.0)]
 _CAV_STALAC_DRIP = (520.0, 990.0)                  # where drips hit the pool
+_CAV_DRIP_PER = 3.7
+_CAV_DRIP_FALL = 1400.0
 
 
 @lru_cache(maxsize=4)
@@ -1876,12 +1891,11 @@ def _draw_pool_dynamic(c, t, splash_t, torch_pos, drips, torch_float):
                 ww = 26 + 10 * k + 6 * math.sin(t * 3 + k)
                 xo = 6 * math.sin(t * 2.3 + k * 1.3)
                 c.drawLine(mx - ww / 2 + xo, yy, mx + ww / 2 + xo, yy, _S("#FFB860", 3.0, 0.55 * a * (1 - k / 7)))
-    # periodic drip ripples from the stalactite above
+    # ripples where the drips from the stalactite above land (synced with fx.drips below)
     if drips:
         dx, dy = _CAV_STALAC_DRIP
-        per = 3.7
-        ph = (t + 1.3) % per
-        fx.ripples(c, dx, dy, ph, size=0.35, n=2, alpha=0.8, life=2.2)
+        for ti in fx.drip_times(t - 2.6, t, period=_CAV_DRIP_PER, seed=7, fall=_CAV_DRIP_FALL):
+            fx.ripples(c, dx, dy, t - ti, size=0.35, n=2, alpha=0.8, life=2.2)
     c.restore()
     if splash_t is not None and splash_t >= 0:
         sx, sy = TORCH_SPLASH_POS
@@ -1908,8 +1922,7 @@ def _draw_pool_dynamic(c, t, splash_t, torch_pos, drips, torch_float):
     # drips falling from the stalactite (the drop itself)
     if drips:
         dx, dy = _CAV_STALAC_DRIP
-        fx.drips(c, t, dx, dy - 640, period=3.7, phase=-1.3 - 3.7 * 0.78 - math.sqrt(2 * 640 / 2000.0), fall=640,
-                 size=0.8, splash=False)
+        fx.drips(c, t, dx, dy - _CAV_DRIP_FALL, period=_CAV_DRIP_PER, seed=7, fall=_CAV_DRIP_FALL, size=0.8, splash=False)
 
 
 def draw_cavern(canvas, t, stone_tilt=0.0, pool_splash_t=None, torch_pos=None, drips=True, torch_float=True):
@@ -1923,27 +1936,48 @@ def draw_cavern(canvas, t, stone_tilt=0.0, pool_splash_t=None, torch_pos=None, d
         _draw_pool_dynamic(c, t, pool_splash_t, torch_pos, drips, torch_float)
 
 
-def cavern_lights(t, strength=1.0):
-    """Dim teal fungus lights of the cavern (stage coords) for light.apply_darkness."""
+def cavern_lights(t, strength=1.0, far_glow=1.0):
+    """Dim teal fungus lights of the cavern (stage coords) for light.apply_darkness, plus a very faint
+    luminous haze over the far floor (far_glow) so the vast space reads behind the pillars."""
     if strength <= 0:
         return []
     out = []
+    if far_glow > 0:
+        br = 0.9 + 0.1 * math.sin(t * 0.37)
+        out.append(Light(560.0, 600.0, 1250.0, 0.20 * strength * far_glow * br, "#4FA8A0", "point", ry=520.0))
+        out.append(Light(1250.0, 520.0, 700.0, 0.12 * strength * far_glow * br, "#4FA8A0", "point", ry=600.0))
     for i, (x, y, r) in enumerate(CAV_FUNGI):
         ds = max(0.35, depth_scale(y))
         out.append(fungus_light(x, y - r * 0.3, t, radius=(230 + r * 8) * ds, strength=strength, seed=i))
     return out
 
 
-def draw_fungi_glow(canvas, t, which="cavern", alpha=1.0):
-    """EMISSIVE glow specks on the fungus patches (draw after apply_darkness, under the camera)."""
+def draw_fungi_glow(canvas, t, which="cavern", alpha=1.0, exclude=None):
+    """EMISSIVE glow specks on the fungus patches (draw after apply_darkness, under the camera).
+    It draws over everything: pass exclude=[(x0, y0, x1, y1), ...] (stage rects, e.g. character
+    bounding boxes) to skip patches hidden behind someone, or skip it -- the fungus lights alone
+    already keep the caps visibly teal."""
     if alpha <= 0.01:
         return
     if which == "cavern":
         sc = [max(0.35, depth_scale(y)) for (x, y, r) in CAV_FUNGI]
         patches = [(x, y, r * k) for (x, y, r), k in zip(CAV_FUNGI, sc)]
-        _fungi_glow_specks(canvas, t, patches, alpha, seed0=900, scales=sc)
+        seed0 = 900
     else:
-        _fungi_glow_specks(canvas, t, DEP_FUNGI, alpha, seed0=950)
+        sc = [1.0] * len(DEP_FUNGI)
+        patches = list(DEP_FUNGI)
+        seed0 = 950
+    if exclude:
+        keep = []
+        for i, (x, y, r) in enumerate(patches):
+            hidden = any(r0[0] <= x <= r0[2] and r0[1] <= y <= r0[3] for r0 in exclude)
+            keep.append(i if not hidden else None)
+    else:
+        keep = list(range(len(patches)))
+    for i in keep:
+        if i is None:
+            continue
+        _fungi_glow_specks_one(canvas, t, i, patches[i], alpha, seed0, sc[i])
 
 
 # =========================================================================== SHAFT (S3)
@@ -2125,6 +2159,12 @@ def _paint_shaft_top(c):
         c.drawPath(slab, _S(K_INK, 3.5, 0.85))
         c.drawPath(_poly(top, close=False), _S("#B8ACBA", 2.0, 0.45))
     _pebbles(c, X0, X1, lambda x: LEDGE_Y - 6, 40, 1299, smin=3, smax=10, yspread=(0, 6))
+    # inside the hole: the far floor's lip and deep shadow under it (reads as an opening, not a slab)
+    c.drawRect(skia.Rect(HOLE_X[0], LEDGE_Y - 16, HOLE_X[1], LEDGE_Y + 2), _P("#4A4256"))
+    c.drawLine(HOLE_X[0], LEDGE_Y - 15, HOLE_X[1], LEDGE_Y - 15, _S("#9A8EA2", 2.0, 0.5))
+    c.drawRect(skia.Rect(HOLE_X[0], LEDGE_Y + 2, HOLE_X[1], _SLAB_Y + 160),
+               _G(_lg(0, LEDGE_Y, 0, _SLAB_Y + 160, [_c("#060508", 0.92), _c("#060508", 0.55), _c("#060508", 0.0)],
+                      [0, 0.45, 1])))
 
 
 @lru_cache(maxsize=1)
@@ -2236,7 +2276,8 @@ def _draw_slab(c, t, crack, collapse_t, scroll):
                 x += math.cos(ang) * L / 5
                 y += abs(math.sin(ang)) * L / 5 * (1 if b > 1 else 0.15)
                 pts.append((x, y - scroll))
-            c.drawPath(_poly(pts, close=False), _S(K_INK, 3.0 * (1 - 0.1 * b), 0.9))
+            c.drawPath(_poly(pts, close=False), _S("#B8ACBA", 2.0, 0.5))
+            c.drawPath(_poly([(px_ + 1.5, py_ + 1.5) for px_, py_ in pts], close=False), _S(K_INK, 4.5 * (1 - 0.1 * b), 0.95))
         fx.dust_fall(c, t, ox - 80, ox + 80, _SLAB_Y - scroll, amount=crack, seed=31, length=240)
 
 
@@ -2295,9 +2336,9 @@ def draw_shaft(canvas, t, scroll=0.0, gouge=None, crack=0.0, collapse_t=None, bl
                 _boulder(c, bx, by + 30 + rng.random() * 60, r, r * 0.6, 1350 + k, base=K_R3, moss=0.0)
 
 
-def shaft_lights(t, strength=1.0):
-    """Faint cold glow from the cavern above the lip (stage coords at scroll 0; offset y by -scroll)."""
-    return [Light(380.0, 200.0, 900.0, 0.18 * strength, "#6A86B0", "point")]
+def shaft_lights(t, scroll=0.0, strength=1.0):
+    """Faint cold glow from the cavern above the lip (follows the scroll) -> [Light]."""
+    return [Light(380.0, 200.0 - scroll, 900.0, 0.18 * strength, "#6A86B0", "point")]
 
 
 # =========================================================================== DEPTHS (S4-S6)

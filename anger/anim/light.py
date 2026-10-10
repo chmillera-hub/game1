@@ -221,10 +221,11 @@ def _grid(dw, dh) -> _Grid:
     return g
 
 
-def _to_image(arr_rgb01, alpha=None):
+def _to_image(arr_rgb01, alpha=None, out=None):
     """float (h, w, 3) -> BGRA premul skia Image (alpha 255 unless given as uint8 array)."""
     h, w = arr_rgb01.shape[:2]
-    out = np.empty((h, w, 4), np.uint8)
+    if out is None:
+        out = np.empty((h, w, 4), np.uint8)
     q = np.clip(arr_rgb01 * 255.0 + 0.5, 0, 255).astype(np.uint8)
     out[..., 0] = q[..., 2]
     out[..., 1] = q[..., 1]
@@ -296,7 +297,7 @@ def apply_darkness(canvas, cam, ambient=0.15, ambient_color="dark_ambient", ligh
     Lm, glows = _accumulate(g, amb, slights)
     _softclip(Lm)
     if float(Lm.min()) < 0.998:
-        img = _to_image(Lm)
+        img = _to_image(Lm, out=g.bgra)
         sc = g.scratch.getCanvas()
         sc.drawImageRect(img, skia.Rect(0, 0, dw, dh), _LIN, skia.Paint())   # opaque: src-over == src (fast path)
         snap = g.scratch.makeImageSnapshot()
@@ -398,17 +399,27 @@ def _vig_assets(dw, dh, color):
 
 
 def vignette(canvas, amount=0.5, color="#05060A"):
-    """SCREEN space soft dark elliptical edges (amount 0..1). Resets/restores the matrix."""
+    """SCREEN space soft dark elliptical edges (amount 0..1). Resets/restores the matrix.
+    The gradient is rendered once into a full-frame image (cached) -> ~1-2 ms per call."""
     if amount <= 0.002:
         return
     info = canvas.imageInfo()
     dw, dh = (info.width(), info.height()) if info.width() > 0 else (W, H)
-    sh, path = _vig_assets(dw, dh, color)
-    p = skia.Paint(AntiAlias=True)
-    p.setShader(sh)
+    key = ("img", dw, dh, color)
+    img = _VIG.get(key)
+    if img is None:
+        sh, path = _vig_assets(dw, dh, color)
+        surf = skia.Surface(dw, dh)
+        cc = surf.getCanvas()
+        cc.clear(skia.ColorTRANSPARENT)
+        p = skia.Paint(AntiAlias=True)
+        p.setShader(sh)
+        p.setDither(True)
+        cc.drawPath(path, p)
+        img = _VIG[key] = surf.makeImageSnapshot()
+    p = skia.Paint()
     p.setAlphaf(clamp(amount))
-    p.setDither(True)
     canvas.save()
     canvas.resetMatrix()
-    canvas.drawPath(path, p)
+    canvas.drawImage(img, 0, 0, _NEAR, p)
     canvas.restore()

@@ -15,10 +15,11 @@ Public API
                embers=1.0, cx=W/2)
         Heavy wide-tracked caps (Inter Display Black) filled with a hot-metal gradient, a deep
         ember-orange glow that breathes, a few embers drifting up.  cy = baseline (default 0.70*H).
-        Rendered once per (text, size, tracking) into cached images -> ~2 ms per frame.
+        Rendered once per (text, size, tracking) into cached images -> ~5 ms per frame.
     flash(canvas, amount, color="#FFE7C2")                     full-frame flash (src-over)
-    blur_vision(canvas, amount, t=0.0)                          dazed / doubled vision (S4) ~6-8 ms
-        Soft blur (2x2x downsample + blur), a drifting ghost double image and darker blurry edges.
+    blur_vision(canvas, amount, t=0.0, ghost=1.0, edge=1.0)     dazed / doubled vision (S4) ~14 ms
+        Soft blur (snapshot downsampled 8x and smoothly upscaled over the frame), a drifting ghost
+        double image (ghost) and darker edges (edge, via light.vignette).  Needs a surface canvas.
   STAGE (or any) space
     draw_torch_flame(canvas, x, y, t, scale=1.0, angle=0.0, wind=(0, 0), intensity=1.0, seed=0,
                      embers=1.0, glow=1.0)
@@ -30,9 +31,10 @@ Public API
         The whole torch prop (wooden handle + wrapped pitch head + flame if lit>0) centred on (x, y),
         rotated by angle (deg, 0 = head up).  For the torch tumbling through the air / floating.
         torch_head(x, y, angle, scale) -> (hx, hy) = flame base of such a torch.
-    dust_cloud(canvas, t, x, y, age, size=1.0, seed=0, n=14, color="#8E7E6C", alpha=0.85, life=3.2,
+    dust_cloud(canvas, t, x, y, age, size=1.0, seed=0, n=16, color="#8A8075", alpha=0.85, life=3.2,
                spread=1.0, drift=(0, -14), ground=True)
-        Billowing puffs from (x, y), age seconds after the event; ground=True spreads them sideways.
+        Billowing cloud of soft overlapping puffs (lit from above) from (x, y), age seconds after
+        the event; ground=True spreads it sideways along the floor. ~1-8 ms depending on size.
     dust_fall(canvas, t, x0, x1, y, amount=1.0, seed=0, length=260, color="#9A8A76")
         Thin trickles of dust/grit falling from the edge [x0, x1] at height y (ledge, door arch).
     debris(canvas, t, age, origin, seed=0, kind="stone"|"wood"|"mix", n=12, speed=800, direction=-90,
@@ -65,8 +67,8 @@ Public API
         events = [(t0, amp, dur), ...]: decaying noise shake (amp stage units, ends at t0+dur).
     camera_shake(cam, t, events, freq=13.0, seed=0, rot=True) -> Camera   copy of cam with the shake.
 
-Performance: soft things are cached sprite blits; streaks/polygons are tiny vector draws.  Flame
-~1-2 ms, 70-spark stream ~2 ms, dust cloud ~1 ms, title ~2 ms.
+Performance (this machine): flame ~4 ms at zoom 1 / ~10 ms at zoom 3, 120-spark stream ~1 ms,
+dust cloud 1-8 ms (size), title ~5 ms, blur_vision ~14 ms, the rest < 1 ms.
 """
 from __future__ import annotations
 
@@ -76,8 +78,7 @@ from functools import lru_cache
 import numpy as np
 import skia
 
-from anim.core import (Camera, clamp, col, ease_out, font, hash01, lerp, noise1, rgb, smooth_path,
-                       smoothstep)
+from anim.core import Camera, clamp, ease_out, font, hash01, lerp, noise1, rgb, smooth_path, smoothstep
 from config import H, W
 
 TAU = math.tau
@@ -492,12 +493,12 @@ def dust_cloud(canvas, t, x, y, age, size=1.0, seed=0, n=16, color="#8A8075", al
             ang = math.radians(-8 - 40 * h1) if side > 0 else math.radians(-172 + 40 * h1)
         else:
             ang = TAU * h1
-        v0 = (240 + 560 * h2) * size * spread
+        v0 = (60 + 520 * h2 * h2) * size * spread
         tau = 0.30 + 0.25 * h3
         dist = v0 * tau * (1.0 - math.exp(-age / tau))
         px = x + math.cos(ang) * dist + drift[0] * age
         py = y + math.sin(ang) * dist * (0.55 if ground else 1.0) + drift[1] * age * (0.6 + 0.8 * h4)
-        r = size * (55 + 60 * h4) * (0.45 + 0.55 * (1.0 - math.exp(-age / 0.45))) + 32 * size * age * (0.6 + h3)
+        r = size * (60 + 70 * h4) * (0.45 + 0.55 * (1.0 - math.exp(-age / 0.45))) + 45 * size * age * (0.6 + h3)
         a = alpha * fade * (0.45 + 0.35 * h2)
         _blob(canvas, px, py, r, color, a, kind="cloud", ry=r * (0.8 if ground else 1.0))
 
