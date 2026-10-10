@@ -1035,20 +1035,12 @@ def alone(cv, t):
 
     def tiny(cv, t, lt):
         night = dusk_of(t)
-        swirl = ramp(t, n9 + 0.4, n9b + 0.5)
         with Cam(cv, 360, 560, 0.62, t=t):
             S.wall_outside(cv, t, gate=0, night=night)
             p = kneel_pose(t, dim=night * 0.5)
             fig(cv, MOSES, p, 380, 1000, 0.5, t)
-        # a dust devil passing close to the lens on the right, half out of frame, away from him
-        cx = lerp(980, 640, smooth(swirl * 1.6)) + 40 * math.sin(t * 0.9)
-        fade = math.sin(math.pi * swirl)
-        for k in range(70):
-            h = k / 70
-            ang = t * 5 + k * 0.7
-            r = 40 + 210 * h
-            cv.drawCircle(cx + math.cos(ang) * r, 1290 - h * 1100 + math.sin(ang) * r * 0.18, 26 + 50 * h,
-                          paint((196, 158, 120), 0.2 * fade * (1 - 0.4 * h), blur=22))
+        # ...and a tumbleweed bounces across the foreground, far from him
+        S.tumbleweed(cv, t, TL.e("n9") + 0.5, dim=dusk_of(t) * 0.3)
         S.grade(cv, (90, 100, 150), 0.25, "multiply")
         S.vignette(cv, 0.55)
 
@@ -1168,10 +1160,22 @@ def presence(cv, t):
                            smile=0.08, glowhand=0.7, sigh=sg, breath=1.0)
             p["tint"] = ((200, 190, 255), 0.15)
             life.apply(p, t, 0.2, blinks=t < sigh0)
-            fig(cv, MOSES, p, 260, 1100, 0.95, t)
-            # the great hand resting over his shoulders, in front of him
-            glow(cv, 425 - 205 * 0.86, 960 - 130 * 0.86, 110 * (1 + 0.2 * max(0, sg)), (190, 205, 255), 0.3 * form,
-                 blend="screen")
+            r = fig(cv, MOSES, p, 260, 1100, 0.95, t)
+            # the great hand resting on his shoulder, in front of him
+            shoulder = (260 - (r["SW"] - 14) * 0.95, 1100 + (r["shoulder_y"] + 24) * 0.95)
+            S.divine_arm(cv, 425, 960, 0.86, t, form, sg, shoulder)
+            # the presence breathes out too: a soft stream of starlight from its mouth, down over him
+            if t > sigh0 + 1.0:
+                mx, my = S.divine_mouth(425, 960, 0.86, sg)
+                for k in range(26):
+                    u = ((t - sigh0 - 1.0) * 0.55 - k * 0.035)
+                    if not 0 < u < 1:
+                        continue
+                    px = lerp(mx, 250, u) + 26 * math.sin(u * 7 + k) * u
+                    py = lerp(my, 880, u) + 14 * math.cos(u * 5 + k)
+                    fade = math.sin(math.pi * u) * (1 - ramp(t, sigh0 + 3.0, sigh0 + 4.2))
+                    glow(cv, px, py, 14 + 16 * u, (200, 215, 255), 0.45 * fade)
+                    cv.drawCircle(px, py, 1.6, paint((255, 250, 235), 0.9 * fade))
             S.dust(cv, t, 30, 0.25 * ramp(t, sigh0 + 1.1, sigh0 + 2), wind=30, col=(255, 230, 190), y0=900, y1=1100)
         S.vignette(cv, 0.45)
 
@@ -1179,6 +1183,63 @@ def presence(cv, t):
                 (g2 - 0.3, lambda cv, t, lt: cu(cv, t, lt, ramp(t, g2 + 0.5, g2 + 1.6),
                                               ramp(t, g2 + 1.1, g2 + 1.8))),
                 (n12, two)])
+
+
+def wall_dawn(cv, hz, t):
+    """A towering village wall receding along the left of frame, lit by the low dawn sun, gate closed.
+    World units: eye height 10, a man ~10 tall; screen = (360 + 900 X / Z, hz + 900 (10 - Y) / Z)."""
+    def p(X, Y, Z):
+        return (360 + 900 * X / Z, hz + 900 * (10 - Y) / Z)
+
+    ax, az, bx, bz, top = -30.0, 24.0, -7.0, 320.0, 30.0
+
+    def at(u):          # point on the wall's base line, u in [0, 1]
+        return ax + (bx - ax) * u, az + (bz - az) * u
+
+    stone = (196, 156, 128)
+    face = path([p(ax, 0, az), p(ax, top, az), p(bx, top, bz), p(bx, 0, bz)])
+    near, far = p(ax, 15, az), p(bx, 15, bz)
+    cv.drawPath(face, paint(shader=lin(near, far, [shade(stone, 0.78), stone, shade(stone, 1.12)])))
+    cv.save()
+    cv.clipPath(face, skia.ClipOp.kIntersect, True)
+    joint = paint(shade(stone, 0.7), 0.55, stroke=1.6)
+    for k in range(1, 13):                                  # courses of stone
+        y = k * top / 12
+        cv.drawLine(*p(ax, y, az), *p(bx, y, bz), joint)
+        for j in range(60):                                 # staggered vertical joints
+            u = (j + (0.5 if k % 2 else 0.0)) / 60
+            if u > 1:
+                continue
+            X, Z = at(u)
+            cv.drawLine(*p(X, y - top / 12, Z), *p(X, y, Z), joint)
+    cv.restore()
+    for j in range(0, 74, 2):                               # crenellations along the top
+        u0, u1 = j / 74, (j + 1) / 74
+        (x0, z0), (x1, z1) = at(u0), at(u1)
+        cv.drawPath(path([p(x0, top, z0), p(x0, top + 2.6, z0), p(x1, top + 2.6, z1), p(x1, top, z1)]),
+                    paint(shade(stone, 0.95)))
+    cv.drawLine(*p(ax, top, az), *p(bx, top, bz), paint(shade(stone, 1.25), 0.8, stroke=2))
+    # the gate: a deep stone frame and two heavy wooden doors, shut
+    g0, g1 = 0.2, 0.255
+    (fx0, fz0), (fx1, fz1) = at(g0 - 0.012), at(g1 + 0.012)
+    cv.drawPath(path([p(fx0, 0, fz0), p(fx0, 21, fz0), p(fx1, 21, fz1), p(fx1, 0, fz1)]),
+                paint(shade(stone, 0.6)))
+    (dx0, dz0), (dx1, dz1) = at(g0), at(g1)
+    wood = (104, 70, 44)
+    cv.drawPath(path([p(dx0, 0, dz0), p(dx0, 18.5, dz0), p(dx1, 18.5, dz1), p(dx1, 0, dz1)]),
+                paint(shader=lin(p(dx0, 9, dz0), p(dx1, 9, dz1), [shade(wood, 0.7), wood])))
+    for k in range(1, 6):                                   # planks
+        u = g0 + (g1 - g0) * k / 6
+        X, Z = at(u)
+        cv.drawLine(*p(X, 0, Z), *p(X, 18.5, Z), paint(shade(wood, 0.62), 0.8, stroke=1.6))
+    um = (g0 + g1) / 2
+    X, Z = at(um)
+    cv.drawLine(*p(X, 0, Z), *p(X, 18.5, Z), paint((40, 26, 18), stroke=3))   # the seam between the doors
+    for yb in (4.0, 14.0):                                  # iron bands and the bolt
+        cv.drawLine(*p(dx0, yb, dz0), *p(dx1, yb, dz1), paint((52, 44, 40), stroke=4))
+    cv.drawLine(*p(X - 0.3, 9.2, Z - 3), *p(X + 0.3, 9.2, Z + 3), paint((60, 52, 46), stroke=5))
+    # the wall's foot, in shadow
+    cv.drawPath(path([p(ax, 0, az), p(ax, 1.4, az), p(bx, 1.4, bz), p(bx, 0, bz)]), paint((60, 40, 40), 0.35))
 
 
 # ------------------------------------------------------------------ scene: BACK INSIDE THE VILLAGE
@@ -1312,15 +1373,11 @@ def village2(cv, t):
                 x = (hashf(k, 62) - 0.5) * 2200 / z + 360
                 r = 10 / z
                 cv.drawOval(oval(x, gy(z), r, r * 0.55), paint(shade(ground, 0.75), 0.7))
-            # the village he was thrown out of, off to one side: walled, straight-lined, grey in the dawn shade
-            cv.save()
-            cv.clipRect(skia.Rect.MakeLTRB(-400, hz + 1, W + 400, H + 600))
-            S.village3d(cv, S.Cam3((96, 46, -190), 0.0, 900, cy=hz), t, night=0.5, lights=0.25, crowd=False,
-                        ground=False)
-            cv.restore()
-            cv.drawRect(skia.Rect.MakeLTRB(-400, hz - 30, W + 400, hz + 200),   # morning haze softens it
+            # the village wall, towering along one side, its great gate shut behind him
+            wall_dawn(cv, hz, t)
+            cv.drawRect(skia.Rect.MakeLTRB(-400, hz - 30, W + 400, hz + 200),   # morning haze
                         paint(shader=lin((0, hz - 30), (0, hz + 200), [((230, 180, 150), 0.0),
-                                                                        ((230, 180, 150), 0.22),
+                                                                        ((230, 180, 150), 0.18),
                                                                         ((230, 180, 150), 0.0)])))
             # where he knelt: knee prints, hand prints, and dark spots where tears fell
             for dx in (-38, 38):

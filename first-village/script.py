@@ -119,7 +119,7 @@ SEQ = [
     L("n13", "narrator", "Moses could not see it. But back inside the village, a weaver had stopped "
                          "her work. She looked at the potter, who was staring at the closed gate.", 0.6),
     L("p1", "potter", "He... he was just talking about being afraid.", 0.4),
-    L("p2", "potter", "He was quoting the Lord...", 0.5),
+    L("p2", "potter", "He was talking about what God means to him...", 0.5),
     L("p3", "potter", "Why did the Elder throw him out for talking about the Lord?", 1.3),
     L("n14", "narrator", "The weaver had no answer. But for the first time in years, the straight "
                          "lines of the village felt like a cage.", 1.0),

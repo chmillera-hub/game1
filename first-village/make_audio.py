@@ -408,6 +408,26 @@ def babble(t0, t1, gain=0.05):
         t += len(b) / SR - 1.0
 
 
+def tumbleweed_sfx(t0, dur=3.2, hop=0.62):
+    """Dry twigs bouncing and rolling past, left to right (same timing as sets.tumbleweed)."""
+    whoosh(t0 - 0.3, dur + 0.6, 0.06, 300, 1400, 0.0)          # the gust that carries it
+    n = int(dur * SR)
+    roll = dsp.bandpass(noise(n), SR, 1500, 7000) * (rng.uniform(size=n) > 0.93)
+    tt = np.arange(n) / SR
+    pan_curve = np.clip(-1 + 2 * tt / dur, -1, 1)
+    st = np.stack([roll * np.sqrt(0.5 * (1 - pan_curve)), roll * np.sqrt(0.5 * (1 + pan_curve))], 1)
+    sfx.add(st * env(n, 0.3, 0.4)[:, None], t0, 0.05)
+    k = 0
+    while k * hop < dur:
+        tb = k * hop
+        m = int(0.18 * SR)
+        mt = np.arange(m) / SR
+        crunch = dsp.bandpass(noise(m) * (rng.uniform(size=m) > 0.7), SR, 900, 6000) * np.exp(-mt / 0.05)
+        crunch += 0.5 * np.sin(2 * np.pi * 140 * mt) * np.exp(-mt / 0.03)
+        sfx.add(crunch, t0 + tb, 0.12 * (1 - 0.3 * tb / dur), -1 + 2 * tb / dur)
+        k += 1
+
+
 def bird(t0, gain=0.03, pan=0.0, scale=1.0):
     """A small desert bird: two quick down-swept whistles."""
     for k in range(2):
@@ -558,7 +578,7 @@ def score():
     for k, (nt, t) in enumerate((("A3", S("n8b") + 0.5), ("F3", S("n8b") + 3.0), ("D3", S("mp1") - 0.4),
                                  ("C3", S("mp3") - 0.5), ("A2", S("mp4") + 1.0))):
         oud(nt, t, 0.08, -0.3 + 0.15 * k, 3.5)
-    whoosh(S("n9") + 0.5, 3.8, 0.22, 200, 1200, 0.65)   # the dust devil, close on the right
+    tumbleweed_sfx(E("n9") + 0.5)
     # 8. THE PRESENCE
     music.add(pad(["D5", "A5", "E6"], S("g1") - S("n10") + 2, bright=0.6, attack=4, release=2.5,
                   detune=0.003), S("n10") + 0.4, 0.07)
@@ -587,7 +607,7 @@ def score():
     tmp.x = cosmic
     breath_sigh(0, 0.62, 0.3, 0.3, voiced=0.15, bus=tmp)
     cosmic = dsp.reverb(cosmic, dsp.make_ir(SR, 3.5, 0.6, 0.04, 9), wet=0.8, dry=0.5)
-    sfx.add(cosmic[:int(6 * SR)], sg + 0.05, 0.9)
+    sfx.add(cosmic[:int(6 * SR)], sg + 0.05, 1.15)   # the presence sighs with him
     boom(sg + 1.15, 0.12)
     # 9. BACK IN THE VILLAGE
     crickets(v2 - 0.5, S("n14b") - 0.4, 0.012)

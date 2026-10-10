@@ -819,47 +819,97 @@ def _divine_parts():
     beard.cubicTo(-18, -712, -38, -706, -60, -736)
     beard.close()
     parts.append(("beard", beard))
-    arm = skia.Path()   # reaching down and forward, toward Moses
-    arm.moveTo(-286, -540)
-    arm.cubicTo(-330, -470, -360, -400, -352, -340)
-    arm.cubicTo(-344, -280, -300, -230, -250, -196)
-    arm.lineTo(-196, -236)
-    arm.cubicTo(-240, -262, -280, -300, -284, -350)
-    arm.cubicTo(-288, -410, -268, -470, -222, -536)
-    arm.close()
-    parts.append(("arm", arm))
-    hand = skia.Path()   # broad open hand, palm down, fingers curving toward his shoulders
-    hand.moveTo(-262, -214)
-    hand.cubicTo(-282, -186, -280, -160, -266, -140)
-    for k in range(4):
-        x = -262 + k * 27
-        hand.cubicTo(x - 4, -110, x + 2, -88, x + 9, -86)
-        hand.cubicTo(x + 18, -86, x + 20, -110, x + 22, -136)
-    hand.cubicTo(-140, -150, -160, -200, -190, -238)
-    hand.close()
-    parts.append(("hand", hand))
     return parts
 
 
 DIVINE = _divine_parts()
 
 
-def _divine_union(cv):
+def _head(cv, name, tilt):
+    if name in ("face", "beard", "hair"):
+        cv.translate(-6, -560)
+        cv.rotate(tilt)          # head bowed toward him
+        cv.translate(6, 560)
+
+
+def _divine_union(cv, tilt=-12.0):
     for name, pth in DIVINE:
         cv.save()
-        if name in ("face", "beard", "hair"):
-            cv.translate(-6, -560)
-            cv.rotate(-12)       # head bowed toward him
-            cv.translate(6, 560)
+        _head(cv, name, tilt)
         cv.drawPath(pth, paint((255, 255, 255)))
         cv.restore()
+
+
+def divine_pose(sigh):
+    """Breathing: sigh in [-0.6, 1]. Returns (vertical scale, head tilt in degrees)."""
+    return 1 + 0.035 * sigh, -12 - 7 * max(0.0, -sigh) + 3 * max(0.0, sigh)
+
+
+def divine_mouth(x, y, s, sigh):
+    """Screen position of the figure's mouth (for its breath)."""
+    sy, tilt = divine_pose(sigh)
+    lx, ly = -4 + 6, -712 + 560
+    r = math.radians(tilt)
+    mx = math.cos(r) * lx - math.sin(r) * ly - 6
+    my = math.sin(r) * lx + math.cos(r) * ly - 560
+    return x + mx * s, y + my * s * sy
+
+
+def divine_arm(cv, x, y, s, t, a, sigh, target):
+    """The great arm reaching down, its open hand resting ON his shoulder (drawn in front of him)."""
+    if a <= 0:
+        return
+    sy, _ = divine_pose(sigh)
+    S = (x - 280 * s, y - 530 * s * sy)
+    tx, ty = target
+    Wr = (tx - 4, ty - 26)
+    E = (min(S[0], Wr[0]) - 80, (S[1] + Wr[1]) / 2 - 10)
+    arm = skia.Path()
+    arm.moveTo(*S)
+    arm.quadTo(*E, *Wr)
+    w = 62 * s
+    lp = skia.Paint()
+    lp.setAlphaf(clamp(a))
+    cv.saveLayer(None, lp)
+    cv.drawPath(arm, paint((130, 155, 255), 0.35, stroke=w + 40, blur=18))
+    ang = math.degrees(math.atan2(Wr[1] - E[1], Wr[0] - E[0])) - 90 + 25
+
+    def hand_shapes(stroke_extra, col, alpha, blur=None):
+        p = paint(col, alpha, blur=blur) if stroke_extra == 0 else paint(col, alpha, stroke=stroke_extra, blur=blur)
+        cv.save()
+        cv.translate(*Wr)
+        cv.rotate(ang)
+        cv.scale(s, s)
+        cv.drawOval(oval(0, 14, 44, 30), p)                     # palm across the top of his shoulder
+        for k in range(4):                                       # fingers draped down over the front
+            fx = -30 + k * 19
+            cv.drawRoundRect(skia.Rect.MakeLTRB(fx - 8, 20, fx + 8, 70 - 5 * abs(k - 1.5)), 8, 8, p)
+        cv.drawRoundRect(skia.Rect.MakeLTRB(34, 0, 50, 44), 8, 8, p)   # thumb
+        cv.restore()
+
+    # rim first, then fill, so arm and hand read as one luminous outline
+    cv.drawPath(arm, paint((215, 228, 255), 0.95, stroke=w + 5))
+    hand_shapes(5, (215, 228, 255), 0.95)
+    cv.drawPath(arm, paint((150, 175, 255), 0.5, stroke=w + 14, blur=6))
+    cv.drawPath(arm, paint((26, 32, 86), stroke=w))
+    hand_shapes(0, (30, 38, 96), 1.0)
+    for i in range(26):                                          # stars inside the arm
+        u = hashf(i, 101)
+        bx = (1 - u) ** 2 * S[0] + 2 * (1 - u) * u * E[0] + u * u * Wr[0]
+        by = (1 - u) ** 2 * S[1] + 2 * (1 - u) * u * E[1] + u * u * Wr[1]
+        off = (hashf(i, 102) - 0.5) * w * 0.6
+        tw = 0.55 + 0.45 * math.sin(t * (2 + 2 * hashf(i, 103)) + i)
+        cv.drawCircle(bx + off, by + off * 0.3, 1.2 + 1.6 * hashf(i, 104) ** 2, paint((255, 250, 235), tw))
+    cv.restore()
+    glow(cv, Wr[0], Wr[1] + 10, 90, (190, 205, 255), 0.35 * a * (1 + 0.3 * max(0.0, sigh)), blend="screen")
 
 
 def divine_figure(cv, x, y, s, t, a=1.0, sigh=0.0):
     """The presence: a towering masculine figure made of night and starlight, bending over him."""
     if a <= 0:
         return
-    br = 1 + 0.25 * sigh
+    br = 1 + 0.25 * max(0.0, sigh)
+    sy, tilt = divine_pose(sigh)
 
     def begin(alpha, blur=0.0, blend=None):
         lp = skia.Paint()
@@ -871,7 +921,7 @@ def divine_figure(cv, x, y, s, t, a=1.0, sigh=0.0):
         cv.saveLayer(None, lp)
         cv.save()
         cv.translate(x, y)
-        cv.scale(s, s)
+        cv.scale(s, s * sy)
 
     def end():
         cv.restore()
@@ -879,7 +929,7 @@ def divine_figure(cv, x, y, s, t, a=1.0, sigh=0.0):
 
     # outer aura
     begin(0.4 * a * br, blur=36)
-    _divine_union(cv)
+    _divine_union(cv, tilt)
     cv.drawPaint(paint((120, 145, 255), blend="srcin_fix"))
     end()
     # each part: a deep night-blue body with its own luminous rim, so beard, face, arm and hand all read
@@ -887,10 +937,7 @@ def divine_figure(cv, x, y, s, t, a=1.0, sigh=0.0):
     fill_sh = lin((0, -840), (0, 40), [(34, 42, 104), (22, 28, 74), ((16, 18, 50), 0.75)], [0, 0.6, 1])
     for name, pth in DIVINE:
         cv.save()
-        if name in ("face", "beard", "hair"):
-            cv.translate(-6, -560)
-            cv.rotate(-12)
-            cv.translate(6, 560)
+        _head(cv, name, tilt)
         f = paint(shader=fill_sh)
         if name == "face":
             f = paint((44, 54, 124))
@@ -925,9 +972,45 @@ def divine_figure(cv, x, y, s, t, a=1.0, sigh=0.0):
     mp = skia.Paint()
     mp.setBlendMode(skia.BlendMode.kDstIn)
     cv.saveLayer(None, mp)
-    _divine_union(cv)
+    _divine_union(cv, tilt)
     cv.restore()
     end()
+
+
+TUMBLE_DUR, TUMBLE_HOP = 3.2, 0.62   # make_audio.py times the bounces with the same numbers
+
+
+def tumbleweed(cv, t, t0, ground_y=1165, r=60, dim=0.0):
+    """A tumbleweed bouncing across the foreground, left to right, rolling as it goes."""
+    u = (t - t0) / TUMBLE_DUR
+    if u < 0 or u > 1:
+        return
+    x = lerp(-170, W + 170, u)
+    ph = ((t - t0) % TUMBLE_HOP) / TUMBLE_HOP
+    hop = 4 * ph * (1 - ph)
+    y = ground_y - r - 95 * hop * (1 - 0.35 * u)
+    squash = 1 - 0.14 * max(0.0, 1 - ph / 0.12) - 0.14 * max(0.0, (ph - 0.9) / 0.1)
+    cv.drawOval(oval(x, ground_y - 2, r * (1.05 - 0.35 * hop), r * 0.22 * (1 - 0.4 * hop)),
+                paint((30, 24, 30), 0.35 * (1 - 0.5 * hop), blur=6))
+    cv.save()
+    cv.translate(x, y + r * (1 - squash))
+    cv.scale(1 / squash ** 0.5, squash)
+    cv.rotate(math.degrees((x + 170) / r))
+    cols = [mixc(c, (40, 40, 60), dim) for c in ((150, 112, 72), (122, 90, 58), (176, 140, 96))]
+    glow(cv, 0, 0, r * 1.1, (60, 44, 30), 0.25, blend=None)
+    cv.drawCircle(0, 0, r * 0.62, paint(mixc((96, 70, 46), (40, 40, 60), dim), 0.55, blur=r * 0.15))
+    for i in range(80):   # a tangle of dry, curling twigs
+        cx_, cy_ = (hashf(i, 91) - 0.5) * r * 1.1, (hashf(i, 92) - 0.5) * r * 1.1
+        rr = r * (0.25 + 0.55 * hashf(i, 93))
+        start = hashf(i, 94) * 360
+        arc = skia.Path()
+        arc.addArc(oval(cx_, cy_, rr, rr), start, 90 + 150 * hashf(i, 95))
+        cv.drawPath(arc, paint(cols[i % 3], 0.95, stroke=2.0 + 1.8 * hashf(i, 96)))
+    for i in range(10):   # stray twigs poking out
+        ang = hashf(i, 97) * 2 * math.pi
+        cv.drawLine(math.cos(ang) * r * 0.7, math.sin(ang) * r * 0.7, math.cos(ang) * r * 1.18,
+                    math.sin(ang) * r * 1.18, paint(cols[1], 0.9, stroke=1.6))
+    cv.restore()
 
 
 def sprout(cv, x, y, grow, t, a=1.0, s=1.0):
