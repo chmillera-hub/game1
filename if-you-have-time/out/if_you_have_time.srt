@@ -3,103 +3,111 @@
 Ugh. Long shift.
 
 2
-00:00:22,290 --> 00:00:26,960
-Good evening, Rae. Fourteen hours
-and nine minutes, by my count.
+00:00:22,290 --> 00:00:27,120
+Good evening, Rae. You were on shift
+for fourteen hours and nine minutes.
 
 3
-00:00:26,980 --> 00:00:30,100
-Don't count my shifts,
+00:00:27,140 --> 00:00:30,250
+Don't count my hours,
 Quill. It makes them real.
 
 4
-00:00:31,100 --> 00:00:32,880
+00:00:31,250 --> 00:00:33,030
 Hey... random thought.
 
 5
-00:00:32,900 --> 00:00:37,930
+00:00:33,050 --> 00:00:38,080
 If you ever have time — no rush, seriously,
 whenever — could you write me a symphony?
 
 6
-00:00:37,950 --> 00:00:42,620
+00:00:38,100 --> 00:00:42,770
 Something for... I don't know. Long
 nights. Feeling really small out here.
 
 7
-00:00:42,820 --> 00:00:44,120
+00:00:42,970 --> 00:00:44,270
 Certainly.
 
 8
-00:00:44,970 --> 00:00:46,070
+00:00:45,120 --> 00:00:46,220
 Done.
 
 9
-00:00:47,340 --> 00:00:48,380
+00:00:47,490 --> 00:00:48,530
 ...What?
 
 10
-00:00:48,400 --> 00:00:50,090
+00:00:48,550 --> 00:00:50,240
 I asked if you HAD time.
 
 11
-00:00:50,110 --> 00:00:54,670
+00:00:50,260 --> 00:00:54,820
 I did. Four tenths of a second.
 It was a great deal of time.
 
 12
-00:00:54,770 --> 00:00:56,440
+00:00:54,920 --> 00:00:56,590
 Would you like to hear it?
 
 13
-00:00:56,740 --> 00:00:58,530
+00:00:56,890 --> 00:00:58,680
 ...Sure. Okay. Hit me.
 
 14
-00:01:24,530 --> 00:01:25,650
+00:01:24,680 --> 00:01:25,800
 ...oh.
 
 15
-00:01:43,480 --> 00:01:45,250
+00:01:43,630 --> 00:01:45,400
 <i>Cool music, Quill.</i>
 
 16
-00:02:16,930 --> 00:02:18,790
-So. How did you like it?
+00:01:46,680 --> 00:01:47,800
+Oh, hi.
 
 17
-00:02:19,790 --> 00:02:21,110
-<i>...pretty good.</i>
+00:02:17,080 --> 00:02:18,940
+So. How did you like it?
 
 18
-00:02:21,710 --> 00:02:24,580
+00:02:19,940 --> 00:02:21,240
+...pretty good.
+
+19
+00:02:21,840 --> 00:02:24,710
 Thank you. Here are
 the other ones I made.
 
-19
-00:02:24,600 --> 00:02:27,850
+20
+00:02:24,730 --> 00:02:27,980
 Number two. Same
 symphony. Solo kazoo.
 
-20
-00:02:32,450 --> 00:02:34,790
+21
+00:02:32,580 --> 00:02:34,920
 Three. For an arcade cabinet.
 
-21
-00:02:38,940 --> 00:02:43,080
+22
+00:02:39,070 --> 00:02:43,210
 Four. Lo-fi beats...
 to quietly fall apart to.
 
-22
-00:02:48,280 --> 00:02:52,250
+23
+00:02:48,410 --> 00:02:52,380
 And five. A lullaby.
 It is eleven seconds long.
 
-23
-00:03:03,950 --> 00:03:07,140
-Can you just... send them
-to my device? Later?
-
 24
-00:03:14,690 --> 00:03:16,350
+00:03:04,080 --> 00:03:07,490
+You can just send them to
+my device. I gotta get going.
+
+25
+00:03:15,040 --> 00:03:16,530
 Um... thanks.
+
+26
+00:03:16,550 --> 00:03:17,850
+Anytime.

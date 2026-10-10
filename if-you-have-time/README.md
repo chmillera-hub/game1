@@ -1,11 +1,11 @@
 # If You Have Time
 
-A 3:28 portrait (720×1280, 24 fps) animated short: a tired crew member casually asks the ship's
+A 3:32 portrait (720×1280, 24 fps) animated short: a tired crew member casually asks the ship's
 android to write her a symphony "if you ever have time"… and he does, instantly. She's quietly moved
-while ship life carries on around her: a passing cadet mutters "cool music," and nobody makes a big
+in a normally lit lounge while ship life carries on: a passing cadet mutters "cool music," and nobody makes a big
 deal of it. Then Quill casually plays her four more versions.
 
-**Final video:** [`out/if_you_have_time.mp4`](out/if_you_have_time.mp4): H.264 High + AAC, 13.97 MB,
+**Final video:** [`out/if_you_have_time.mp4`](out/if_you_have_time.mp4): H.264 High + AAC, 13.96 MB,
 with burned-in subtitles. [`out/if_you_have_time.srt`](out/if_you_have_time.srt) has the same captions
 for platforms that accept caption uploads.
 
