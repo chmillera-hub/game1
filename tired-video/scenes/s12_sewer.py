@@ -240,6 +240,8 @@ def tired_state(t, k):
             face["pupil"] = -0.35
             st["look"] = tween(t, [(k["spin0"], (0.9, 0.0)), (k["catch"], (0.6, 0.2))])
         st["power"] = tween(t, [(k["ping"], 0.0), (k["ping"] + 0.1, 1.0), (k["ping"] + 0.5, 0.8)])
+        if k["ping"] - 0.05 <= t < k["leap"]:
+            st["blink"] = 0.0             # keep the new teal glow on screen through the sense
     else:
         # ------------------------------------------------------------ holding it
         xs, v = _xstop(k)
@@ -530,7 +532,7 @@ def shot_C(ctx, t, info, k):
 def shot_D(ctx, t, info, k):
     st = tired_state(t, k)
     # pan with him as he stumbles off to the left (lead room ahead of him)
-    xs, v = _xstop(k)
+    xs, _v = _xstop(k)
     cx = lerp(1380, xs - 40, ease_in_out(seg(t, k["rise0"] + 0.3, k["watched"] + 0.3)))
     with core.camera(ctx, cx, 960, 1.4):
         sewer_bg(ctx, t, k)
@@ -552,7 +554,7 @@ def shot_E1(ctx, t, info, k):
 
 def shot_E2(ctx, t, info, k):
     st = tired_state(t, k)
-    xs, v = _xstop(k)
+    xs, _v = _xstop(k)
     with core.camera(ctx, xs + 30, 800, 2.3):
         sewer_bg(ctx, t, k)
         draw_tired(ctx, t, info, k, st)
@@ -624,7 +626,7 @@ def _two_shot(ctx, t, info, k, cam, hearts=False, glow_pool=0.0):
 
 def shot_H(ctx, t, info, k):
     """writhe + form: one shot with a slow push-in as the shadow settles into its true shape."""
-    xs, v = _xstop(k)
+    xs, _v = _xstop(k)
     p = ease_in_out(seg(t, k["writhe"] + 0.6, k["wide"]))
     z = lerp(1.85, 2.3, p)
     dx, dy = core.shake(t, k["writhe"] + 0.95, 0.3, 7)
@@ -640,20 +642,20 @@ def shot_H(ctx, t, info, k):
 
 
 def shot_J(ctx, t, info, k):
-    xs, v = _xstop(k)
+    xs, _v = _xstop(k)
     z = 3.15 + 0.12 * ease_in_out(seg(t, k["wide"], k["calm"]))
     _two_shot(ctx, t, info, k, (xs - 80, 790, z))
 
 
 def shot_K(ctx, t, info, k):
-    xs, v = _xstop(k)
+    xs, _v = _xstop(k)
     z = 2.05 + 0.1 * ease_in_out(seg(t, k["calm"], k["l3"]))
     _two_shot(ctx, t, info, k, (xs - 135, 880, z), hearts=True, glow_pool=warm_k(t, k))
 
 
 def shot_L(ctx, t, info, k):
     """'...Okay. Hi.' close, then (bond) a slow pull-back into the warm shaft -- no cut."""
-    xs, v = _xstop(k)
+    xs, _v = _xstop(k)
     z = 2.95 + 0.1 * ease_in_out(seg(t, k["l3"], k["bond"]))
     p = ease_in_out(seg(t, k["bond"] - 0.1, k["dur"] + 0.3))
     z = lerp(z, 1.45, p)
@@ -744,15 +746,28 @@ def SFX(info):
     ev.append((k["l3"] + 0.3, "creature_purr", -4, 0.0))
     ev.append((k["hi"] + 0.35, "creature_chitter", -7, 0.0))
     ev.append((k["bond"] + 0.4, "creature_purr", 0, 0.0))
-    t0 = k["calm"] + 0.35
-    j = 1
-    while t0 + j * 0.9 < k["bond"] + 0.8:
-        tb = t0 + j * 0.9
-        sync = smoothstep(seg(tb, t0 + 0.3, k["l3"] + 0.2))
-        lag = (1 - sync) * (0.5 + 0.22 * math.sin(math.tau * (tb - t0) / 3.1)) * 0.9
-        g = -10 if k["l3"] - 0.1 < tb < k["l3e"] else -7
-        ev.append((tb, "heartbeat", g, -0.15))
-        if lag > 0.06:
-            ev.append((tb + 0.9 - lag, "heartbeat", g - 3, 0.15))
-        j += 1
+    # heartbeat SFX on the drawn beats: heart 1 steady, heart 2 drifting into sync (fx.heartbeat_sync)
+    t0, per = k["calm"] + 0.35, 0.9
+
+    def lag(tt):
+        sync = smoothstep(seg(tt, t0 + 0.3, k["l3"] + 0.2))
+        return (1 - sync) * (0.5 + 0.22 * math.sin(math.tau * (tt - t0) / 3.1))
+
+    beats = {1: [], 2: []}
+    prev = {1: None, 2: None}
+    tt = t0 + 0.25
+    while tt < k["bond"] + 0.9:
+        for h in (1, 2):
+            ph = ((tt - t0) / per + (lag(tt) if h == 2 else 0.0)) % 1.0
+            if prev[h] is not None and ph < prev[h]:
+                beats[h].append(tt)
+            prev[h] = ph
+        tt += 0.01
+    for tb in beats[1]:
+        quiet = k["l3"] - 0.1 < tb < k["l3e"]
+        together = any(abs(tb - b2) < 0.09 for b2 in beats[2])
+        ev.append((tb, "heartbeat", (-10 if quiet else -7) + (2 if together else 0), -0.12))
+    for tb in beats[2]:
+        if not any(abs(tb - b1) < 0.09 for b1 in beats[1]):
+            ev.append((tb, "heartbeat", -11 if k["l3"] - 0.1 < tb < k["l3e"] else -9, 0.15))
     return ev

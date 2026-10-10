@@ -401,14 +401,15 @@ def _tired_door(t, k, info):
         # watch Emb turn and stumble; then the recorder
         rec_look = (-0.42, 0.92)
         look = tween(t, [(k["turn0"], at_emb), (k["trip"] + 0.1, (-0.95, 0.1)), (k["pop"] + 0.08, (-0.6, -0.35)),
-                         (k["land"] - 0.02, rec_look)], ease_out)
+                         (k["land"] - 0.02, rec_look), (k["both"] + 0.5, rec_look),
+                         (k["both"] + 0.68, (-0.95, -0.02))], ease_out)       # recorder -> slides up to Emb
         face["lid"] = tween(t, [(k["land"] - 0.1, 0.0), (k["land"] + 0.02, -0.09), (k["both"] + 0.35, -0.09),
-                                (k["both"] + 0.75, 0.07)])          # small surprise -> lids LOWER: he gets it
+                                (k["both"] + 0.75, 0.06)])          # small surprise -> lids LOWER: he gets it
         face["press"] = 0.3 * seg(t, k["both"] + 0.35, k["both"] + 0.75)
         face["head_nod"] = 0.08 * seg(t, k["land"], k["land"] + 0.2)
         if t >= k["L4"]:
-            look = tween(t, [(k["L4"], rec_look), (k["grab"] + 0.05, (-0.55, 0.85)), (k["up"] + 0.05, (-0.75, -0.25)),
-                             (k["up"] + 0.35, (-0.72, -0.12))])
+            look = tween(t, [(k["L4"], (-0.95, -0.02)), (k["grab"] + 0.05, (-0.55, 0.85)),
+                             (k["up"] + 0.05, (-0.75, 0.25)), (k["up"] + 0.35, (-0.72, -0.12))])
             face["head_nod"] = 0.08 * (1 - seg(t, k["grab"], k["up"] + 0.2))
             # pretend: pupils to the pocket, hold, back to his face
             pocket_look = (-0.88, 0.42)
@@ -579,6 +580,7 @@ def _draw_bedroom(ctx, t, k, info):
     dxc = 60
     sets.bedroom(ctx, t, "bg", light_on=False, chair_dx=dxc,
                  screen_fn=lambda c, tt: _search(c, 0, 0, 640, 400, tt, k))
+    sets.bedroom(ctx, t, "fg", parts=("desk",), chair_dx=dxc)    # desk leg BEHIND him (he sits at its corner)
     gy = human.ground_from_seat("tired", sy, SB)
     ty_ = (gy - 1100) / SB / H_T
     pose = {"base": "type", "al_ty": ty_, "ar_ty": ty_, "al_tz": 0.32, "ar_tz": 0.32, "lean": 0.12,
@@ -587,7 +589,6 @@ def _draw_bedroom(ctx, t, k, info):
     human.draw_person(ctx, "tired", sx + dxc, gy, SB, t, pose=pose, pose_t=t - k["S"], expr="bored", turn=1.0,
                       headphones="neck", bandage=True, look=(0.9, -0.15 + 0.05 * scan),
                       face={"lid": 0.02})
-    sets.bedroom(ctx, t, "fg", parts=("desk", "chair"), chair_dx=dxc)
     _dim(ctx, 0.42)
     with sets.bedroom_monitor_space(ctx) as c:
         _search(c, 0, 0, 640, 400, t, k)
@@ -780,9 +781,11 @@ def SFX(info):
           (k["dc2"], "latch_click", 3.0, 0.2),
           (k["dc2"] + 0.01, "door_bang", -16.0, 0.2),
           (k["S"] + 0.05, "chair_creak", -6.0, 0.2)]
-    # Emb's stiff footsteps on the path while walking off
+    ev.append((k["stuff1"] + 0.04, "tap_tap", -2.0, -0.1))      # pats the pocket
+    # Emb's stiff footsteps on the path while walking off (walk contacts at phase ~0.17 / 0.67)
+    t0 = k["sh10"] - 0.1
     for i in range(3):
-        ev.append((k["sh10"] + 0.15 + i * 0.5, "footstep", -6.0, -0.35))
+        ev.append((t0 + 0.17 + i * 0.5, "footstep", -6.0, -0.35))
     # typing HUSHCORP + Enter, mouse click on the result
     for i, tt in enumerate(fx.type_times(k["t_type"], "HUSHCORP", k["char_dt"])):
         ev.append((tt, "key_clack", -3.0, 0.15))

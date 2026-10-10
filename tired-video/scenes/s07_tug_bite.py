@@ -508,6 +508,7 @@ T_PEER = {"base": "arms_crossed", "lean": 0.6, "neck": 0.3, "nod": -0.1,
           "ll_p": 1.1, "ll_o": 0.24, "ll_k": 1.9, "ll_a": 0.15,
           "lr_p": 0.85, "lr_o": 0.2, "lr_k": 1.95, "lr_a": 0.25}
 T_RISE = {"base": "arms_crossed", "lean": -0.08, "chest": -0.06, "nod": -0.06, "lift": 6.0}
+T_HALF = dict(T_PEER, lean=0.16, neck=0.12, nod=0.0)
 
 
 def _tug_rig(t, c, freeze_t=None):
@@ -578,7 +579,13 @@ def shot_tug(ctx, t, info, c):
     v = abs(cycle_speed("tired", "walk", -0.9)) * S
     tx = TIR_TUG[0] + v * clamp(w1 - t, 0.0, w1 - w0)
     walking = t < w1
-    tpose = state_at(t, [(-1, T_WALK), (w1, T_CROSS)], 0.3)
+    r0 = c["tug"] + 1.62
+    if t < r0:
+        tpose = state_at(t, [(-1, T_WALK), (w1, T_CROSS)], 0.3)
+    elif t < r0 + 0.1:
+        tpose = (T_CROSS, T_RISE, ease_in_out(seg(t, r0, r0 + 0.1)))
+    else:
+        tpose = (T_RISE, T_HALF, clamp(ease_out_back(seg(t, r0 + 0.1, r0 + 0.4), 1.3), 0.0, 1.08))
     bl = _blinkdip(t, c["tug"] + 1.35, 0.34, 0.12, 0.34)
     # pupils ride the shaking cage, head follows late
     cage_c = _cage_pt(rig["mouth"][0], rig["mouth"][1], rig["rot"], 0, 150)
@@ -605,15 +612,12 @@ def shot_tug(ctx, t, info, c):
 
 
 def _peer_pose(t, t0):
-    """stand -> rise (anticipation) -> half-squat lean with a soft overshoot."""
-    u = t - t0
-    if u < 0.1:
-        return (T_CROSS, T_RISE, ease_in_out(seg(u, 0.0, 0.1)))
-    k = seg(u, 0.1, 0.5)
-    return (T_RISE, T_PEER, clamp(ease_out_back(k, 1.2), 0.0, 1.06))
+    """half-squat (from the wide) -> lean in toward the bars with a soft overshoot."""
+    k = seg(t - t0, 0.04, 0.42)
+    return (T_HALF, T_PEER, clamp(ease_out_back(k, 1.2), 0.0, 1.06))
 
 
-CLOSE_CAM = (790.0, 1190.0, 2.15)
+CLOSE_CAM = (835.0, 1185.0, 2.15)
 
 
 def shot_squint(ctx, t, info, c):
@@ -622,12 +626,12 @@ def shot_squint(ctx, t, info, c):
     pose = _peer_pose(t, c["squint"])
     expr = state_at(u, [(-1, "unamused"), (0.42, "squint")], 0.28)
     look = tween(u, [(0.0, (-0.95, 0.15)), (0.3, (-0.9, 0.35))])
-    face = {"head_turn": -0.1, "lid": -0.16 * seg(u, 0.3, 0.6), "lower": 0.12 * seg(u, 0.4, 0.7),
-            "head_nod": 0.06 * seg(u, 0.2, 0.5)}
+    face = {"head_turn": -0.1, "lid": -0.12 - 0.14 * seg(u, 0.3, 0.6), "lower": 0.05 * seg(u, 0.4, 0.7),
+            "head_nod": 0.06 * seg(u, 0.2, 0.5), "brow": -0.1 * seg(u, 0.4, 0.7)}
 
     def tired_fn():
         return draw_person(ctx, "tired", TIR_PEER[0], TIR_PEER[1], S, t, pose=pose, turn=-0.75,
-                           expr=expr, look=look, face=face, headphones=HP,
+                           expr=expr, look=look, face=face, headphones=HP, blink=0.0,
                            mouth=info.mouth("tired", t))
 
     z = CLOSE_CAM[2] + 0.1 * ease_in_out(seg(u, 0, 0.8))
@@ -667,9 +671,9 @@ def shot_creak(ctx, t, info, c):
     latch = "half" if te < cr + 0.05 else "open"
     lift = seg(te, cr + 0.22, cr + 0.44)
     look = tween(te, [(cr, (-0.9, 0.35)), (cr + 0.18, (-0.85, 0.6)), (bi, (-0.85, 0.6)),
-                      (tf + 0.12, (-0.75, 0.7)), (tf + 0.22, (-0.2, 0.95))], ease_out)
-    face = {"head_turn": -0.1, "head_nod": 0.06, "lid": -0.16 - 0.12 * lift, "lower": 0.12 * (1 - lift),
-            "brow": 0.18 * lift,
+                      (tf + 0.12, (-0.75, 0.7)), (tf + 0.24, (0.15, 1.0))], ease_out)
+    face = {"head_turn": -0.1, "head_nod": 0.06, "lid": -0.26 - 0.1 * lift, "lower": 0.05 * (1 - lift),
+            "brow": -0.1 + 0.28 * lift,
             "brow_r": 0.12 * lift, "pupil": -0.3 * seg(te, tf + 0.1, tf + 0.25),
             "press": 0.4 * seg(te, tf + 0.1, tf + 0.25)}
     expr = state_at(te, [(-1, "squint"), (cr + 0.22, "bored")], 0.2)
@@ -678,7 +682,7 @@ def shot_creak(ctx, t, info, c):
 
     def tired_fn():
         st["a"] = draw_person(ctx, "tired", TIR_PEER[0], TIR_PEER[1], S, te, pose=pose, turn=-0.75,
-                              expr=expr, look=look, face=face, headphones=HP,
+                              expr=expr, look=look, face=face, headphones=HP, blink=0.0,
                               mouth=info.mouth("tired", t))
         return st["a"]
 
@@ -937,32 +941,51 @@ def shot_catch(ctx, t, info, c):
                             1.0 - seg(u, 0.3, 0.4))
 
 
+def _stare_world(ctx, t, info, c, emb_face=None, emb_expr="relieved", emb_look=(-0.9, -0.1),
+                 emb_pose=None, imp_ll=None, imp_lr=(0.9, 0.12), blush=0.4):
+    ax, ay = CAGE_FLOOR
+    _room(ctx, t, door=0.0)
+    creatures.draw_impulsivity(ctx, IMP_X - 30, TUG_Y, IMP_S, t, pose="sit", pant=1.0,
+                               look_l=imp_ll, look_r=imp_lr)
+    _cage(ctx, ax, ay, t, door=0.0, latch="closed", inside=_inside("thing", t, look=(0.7, -0.3)))
+    return draw_person(ctx, "embar", EMB_KNEEL_X, TUG_Y, S, t, pose=emb_pose or P_KNEEL, turn=-0.8,
+                       expr=emb_expr, look=emb_look, face=emb_face, blush=blush, sweat=0.6,
+                       mouth=info.mouth("embar", t))
+
+
 def shot_stare(ctx, t, info, c):
     s0 = c["stare"]
     u = t - s0
-    t4 = c["l04"]
-    ax, ay = CAGE_FLOOR
-    ex = EMB_KNEEL_X
-    pose = state_at(t, [(-1, P_KNEEL), (t4 - 0.12, P_FACEPALM)], 0.28)
-    # his face slowly falls: relieved -> blank -> dread
-    face = _fk(u, [(-1, {"curve": 0.25}), (0.35, {"curve": 0.05, "lid": -0.05}),
-                   (0.9, {"curve": -0.25, "brow_ang": 0.45, "brow": 0.25, "pupil": -0.25, "lid": -0.08,
-                          "press": 0.3}),
-                   (1.5, {"curve": -0.42, "brow_ang": 0.7, "brow": 0.35, "pupil": -0.35, "lid": -0.1,
-                          "frown": 0.4, "press": 0.15})], 0.5)
-    expr = state_at(u, [(-1, "relieved"), (0.35, "neutral"), (t4 - s0, "sad")], 0.4)
-    look = (-0.9, -0.15) if t < t4 else (-0.3, 0.5)
-    blush = tween(u, [(0, 0.45), (1.6, 0.15)])
-    # Impulsivity: frozen grin; one eye slowly slides onto Emb
-    ll = tween(u, [(0.3, creatures.IMP_DERP_L), (1.9, (0.85, 0.1))])
-    k = ease_in_out(seg(u, 0.2, info.dur - s0))
-    z = lerp(1.48, 1.66, k)
-    with core.camera(ctx, lerp(CATCH_CAM[0], 715, k), lerp(CATCH_CAM[1], 1210, k), z):
-        _room(ctx, t, door=0.0)
-        creatures.draw_impulsivity(ctx, IMP_X - 30, TUG_Y, IMP_S, t, pose="sit", pant=1.0, look_l=ll)
-        _cage(ctx, ax, ay, t, door=0.0, latch="closed", inside=_inside("thing", t, look=(0.7, -0.3)))
-        draw_person(ctx, "embar", ex, TUG_Y, S, t, pose=pose, turn=-0.8, expr=expr, look=look,
-                    face=face, blush=blush, sweat=0.6, mouth=info.mouth("embar", t))
+    t4, t4e = c["l04"], c["l04e"]
+    n1, n2 = s0 + 0.78, t4e + 0.12
+    if t < n1:
+        # Impulsivity close-up: frozen grin, panting; its stray eye slides onto him
+        ll = tween(t, [(s0 + 0.08, creatures.IMP_DERP_L), (s0 + 0.72, (0.88, 0.1))])
+        with core.camera(ctx, 452, 1150, 2.45 + 0.08 * seg(u, 0, 0.78)):
+            _stare_world(ctx, t, info, c, imp_ll=ll)
+        return
+    ll = (0.88, 0.1)
+    v = t - n1
+    face = _fk(v, [(-1, {"curve": 0.12}),
+                   (0.3, {"curve": -0.15, "brow_ang": 0.35, "brow": 0.18, "pupil": -0.2, "press": 0.35}),
+                   (0.85, {"curve": -0.5, "brow_ang": 0.85, "brow": 0.42, "pupil": -0.45, "lid": -0.14,
+                           "frown": 0.6, "press": 0.15, "wobble": 0.45})], 0.45)
+    blush = tween(v, [(0.0, 0.42), (1.0, 0.12)])
+    pose = state_at(t, [(-1, P_KNEEL), (t4 - 0.12, P_FACEPALM)], 0.26)
+    expr = state_at(t, [(-1, "relieved"), (n1 + 0.3, "neutral"), (t4 - 0.12, "sad")], 0.35)
+    look = (-0.9, -0.12) if t < t4 - 0.12 else (-0.35, 0.55)
+    bl = _blinkdip(t, n1 + 0.95, 0.2, 0.08, 0.24)
+    if t < n2:
+        k = ease_in_out(seg(t, n1, n2))
+        with core.camera(ctx, 780 - 10 * k, 1188 - 8 * k, 2.5 + 0.22 * k):
+            _stare_world(ctx, t, info, c, emb_face=face, emb_expr=expr, emb_look=look, emb_pose=pose,
+                         imp_ll=ll, blush=blush)
+        return
+    # button: back to the two-shot, him facepalming beside the grinning dog
+    k = ease_out(seg(t, n2, info.dur))
+    with core.camera(ctx, CATCH_CAM[0] - 20 * k, CATCH_CAM[1] - 40, 1.5 + 0.04 * k):
+        _stare_world(ctx, t, info, c, emb_face=face, emb_expr=expr, emb_look=look, emb_pose=pose,
+                     imp_ll=ll, blush=blush)
 
 
 # ----------------------------------------------------------------------------

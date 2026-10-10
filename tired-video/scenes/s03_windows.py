@@ -41,9 +41,9 @@ W3X, W3Y = WIN[2][0] + WIN[2][2] / 2, WIN[2][1] + WIN[2][3] / 2     # (1985, 114
 
 X0 = 1478                    # just off the porch steps (end of s02)
 XW1, XW2, XW3 = 998, 1110, 1880   # feet spots: w1 facing left, w2/w3 facing right
-XP = 1752                    # panic spot (backed off the window)
-XT = 1700                    # pick-up / throw spot
-ROCK_XY = (1616, 1624)
+XP = 1712                    # panic spot (backed off the window, in front of the door)
+XT = 1730                    # pick-up / throw spot
+ROCK_XY = (1643, 1606)
 CAGE_REST = (1952, 1606)     # where the dropped cage lands (his right)
 XTE = 1864                   # tiptoe end: scoops the cage, under window 3
 
@@ -96,6 +96,8 @@ def _T(info):
     T["peek"] = T["smash"] + 0.46
     T["tip0"] = T["tip"] + 0.14          # first tiptoe step
     T["G"] = T["tip0"] + 0.2             # cut to the tiptoe tracking shot
+    T["f0"] = T["tip0"] + 0.42           # a shard tinks under his foot: freeze mid-step
+    T["f1"] = T["f0"] + 0.55
     T["tip1"] = T["l5e"] - 0.1           # tiptoe ends under window 3
     T["scoop"] = T["tip1"]               # dips for the cage
     T["scoop1"] = T["climb"]
@@ -217,6 +219,11 @@ def _dart(t, t0, pts, hold=0.16, tr=0.05):
     return (lerp(a[0], b[0], k), lerp(a[1], b[1], k))
 
 
+def _snap(u):
+    """Fast eye-dart easing (saccade)."""
+    return smoothstep(clamp(u * 1.6))
+
+
 def _glint(t, t0, dur=0.3):
     if t < t0 or t > t0 + dur:
         return 0.0
@@ -295,6 +302,8 @@ FLINCH = P({"base": "hands_up_small"}, hunch=1.0, lean=-0.14, neck=-0.1, nod=0.1
            **L("l", 0.12, k=0.28), **L("r", -0.06, k=0.26))
 TIPTOE = "tiptoe"
 TIP_CAGE = {"base": "tiptoe", "hold": 1.0}
+TIP_FROZEN = {"base": "tiptoe", "hunch": 1.0, "neck": -0.05, "lean": 0.32, "ll_p": 1.25, "ll_k": 1.55,
+              "ll_a": -0.7, "al_p": 0.75, "ar_p": 0.7}
 SCOOP = P({"base": "pick_up"}, hold=1.0)
 CAGE_LIFT = P(IK("r", 0.04, 0.9, 0.34, "grip", wa=-0.6, wabs=0.6, layer="front"),
               IK("l", 0.08, 0.84, 0.3, "flat", wa=-0.6, wabs=0.6), hold=1.0,
@@ -387,6 +396,18 @@ def _rattle_marks(ctx, t, t0, x, y, w, h, seed=0, dur=0.2, big=1.0):
             oy = y + h * (0.4 + 0.32 * j) + 8 * hash01(j, seed)
             core.poly(ctx, [(ox, oy - 18 * big), (ox + side * 10 * big, oy), (ox, oy + 18 * big)], closed=False)
             core.stroke(ctx, core.alpha(INK, k), 5)
+
+
+def _lawn_cheat(ctx):
+    """Insert only: the camera sits inside the fence line, so the lawn runs on."""
+    g = sets.C["grass"]
+    ctx.rectangle(ROCK_XY[0] - 400, ROCK_XY[1] + 26, 800, 500)
+    core.fill(ctx, g)
+    for i in range(14):
+        gx = ROCK_XY[0] - 300 + 600 * hash01(i, 81)
+        gy = ROCK_XY[1] + 40 + 220 * hash01(i, 82)
+        core.poly(ctx, [(gx, gy), (gx + 4, gy - 16), (gx + 9, gy)], closed=False)
+        core.stroke(ctx, core.mixc(g, "#1d6b2a", 0.35), 3)
 
 
 def _fence(ctx, t):
@@ -559,6 +580,16 @@ def _emb_B(ctx, info, t, T):
 _STREAK = {}
 
 
+def _streak_start(info, T):
+    """Palm positions when he starts sliding down (probed, so every frame agrees)."""
+    key = (id(info), T["l3e"])
+    if key not in _STREAK:
+        a, _ = _emb_B(_probe_ctx(), info, _B_times(T)[2], T)
+        _STREAK.clear()
+        _STREAK[key] = (a["hand_l"][:2], a["hand_r"][:2])
+    return _STREAK[key]
+
+
 def _shot_B(ctx, info, t, T, dx=0.0):
     l3, l3e = T["l3"], T["l3e"]
     slam, hv, slide = _B_times(T)
@@ -577,9 +608,7 @@ def _shot_B(ctx, info, t, T, dx=0.0):
         on_glass = slam <= t < T["panic"]
         # palms flattened on the glass (pale contact patches) + streaks as he slides down
         if on_glass:
-            if t < slide:
-                _STREAK["p"] = (a["hand_l"][:2], a["hand_r"][:2])
-            p0 = _STREAK.get("p", (a["hand_l"][:2], a["hand_r"][:2]))
+            p0 = _streak_start(info, T) if t >= slide else (a["hand_l"][:2], a["hand_r"][:2])
             for (hx, hy), (cx_, cy_) in zip(p0, (a["hand_l"][:2], a["hand_r"][:2])):
                 if t >= slide and cy_ > hy:
                     ctx.rectangle(hx - 22, hy, 44, cy_ - hy)
@@ -669,13 +698,13 @@ def _shot_C(ctx, info, t, T):
 def _shot_D(ctx, info, t, T):
     i0 = T["ins0"]
     z = tween(t, [(i0, 3.4), (T["ins1"], 3.65)])
-    with core.camera(ctx, ROCK_XY[0] + 52, ROCK_XY[1] - 30, z):
+    with core.camera(ctx, ROCK_XY[0] + 40, ROCK_XY[1] - 70, z):     # inside the fence line
         _house(ctx, t, T)
+        _lawn_cheat(ctx)
         _lawn_props(ctx, t, T)
         _emb_C(ctx, info, T["rock"] + 0.3, T)       # his frozen shoes behind the rock
         fx.eye_glint(ctx, ROCK_XY[0] - 14, ROCK_XY[1] - 14, 1.0, t, i0 + 0.06, dur=0.34, halo=None)
         fx.emote(ctx, "sparkle", ROCK_XY[0] + 20, ROCK_XY[1] - 44, 0.5, t, i0 + 0.08, dur=0.34)
-        _fence(ctx, t)
 
 
 # ---------------------------------------------------------------------------
@@ -750,14 +779,28 @@ def _emb_EF(ctx, info, t, T):
     return a, x
 
 
+def _tip_sp():
+    return cycle_speed("embar", TIPTOE, 0.95) * ES
+
+
 def _tip_x(t, T):
-    """Tiptoe from the throw spot to under window 3 (foot-locked)."""
-    return lerp(XT, XTE, seg(t, T["tip0"], T["tip1"]))
+    """Tiptoe from the throw spot to under window 3 (foot-locked): a natural first
+    step, a frozen beat with one knee up (glass tink), then slower, warier steps."""
+    xf = XT + _tip_sp() * (T["f0"] - T["tip0"])
+    if t < T["f0"]:
+        return lerp(XT, xf, seg(t, T["tip0"], T["f0"]))
+    if t < T["f1"]:
+        return xf
+    return lerp(xf, XTE, seg(t, T["f1"], T["tip1"]))
 
 
 def _tip_pt(t, T):
-    x = _tip_x(t, T)
-    return _travel_pt(x, XT, TIPTOE, 0.95)
+    return _travel_pt(_tip_x(t, T), XT, TIPTOE, 0.95)
+
+
+def _tip_freeze(t, T):
+    """0..1 'caught mid-step' amount for the freeze beat."""
+    return smoothstep(seg(t, T["f0"], T["f0"] + 0.06)) * (1 - smoothstep(seg(t, T["f1"] - 0.1, T["f1"])))
 
 
 def _rock_flight(ctx, t, T, rx, ry):
@@ -825,14 +868,20 @@ def _emb_G(ctx, info, t, T):
     mo = info.mouth("embar", t)[0]
     ht = tween(t, [(l5 + 0.42, 0.0), (l5 + 0.6, -0.4), (l5e - 0.14, -0.4), (l5e + 0.02, 0.0)])
     if t < sc:
-        pose = TIPTOE
-        # eyes on the glass, a glance at the hole, guilty slide to us on "pay", back down
-        look = tween(t, [(T["G"], (0.4, 0.85)), (l5 - 0.25, (0.45, 0.85)), (l5 - 0.1, (0.85, -0.35)),
+        f0, f1 = T["f0"], T["f1"]
+        fr = _tip_freeze(t, T)
+        pose = (TIPTOE, TIP_FROZEN, fr)
+        # eyes on the glass; tink! -> foot, the house, us; on: the hole, a guilty slide
+        # to us on "pay", back down to the glass
+        look = tween(t, [(T["G"], (0.4, 0.85)), (f0, (0.4, 0.85)), (f0 + 0.05, (0.15, 0.98)),
+                         (f0 + 0.2, (0.15, 0.98)), (f0 + 0.26, (0.85, -0.45)), (f0 + 0.38, (0.85, -0.45)),
+                         (f0 + 0.43, (-0.3, -0.05)), (f1 - 0.06, (-0.3, -0.05)), (f1 + 0.04, (0.45, 0.85)),
+                         (l5 - 0.25, (0.45, 0.85)), (l5 - 0.1, (0.85, -0.35)),
                          (l5 + 0.35, (0.85, -0.35)), (l5 + 0.45, (-0.2, 0.0)), (l5e - 0.16, (-0.2, 0.0)),
-                         (l5e - 0.06, (0.45, 0.85))])
-        expr = state_at(t, [(0, "guilty"), (l5 - 0.06, "whisper")], 0.15)
-        face = {"brow_ang": 0.75, "head_nod": 0.1, "head_turn": ht, "press": 0.55 * (1 - mo),
-                "brow_in": 0.2}
+                         (l5e - 0.06, (0.45, 0.85))], ease=_snap)
+        expr = state_at(t, [(0, "guilty"), (f0, "terrified"), (f1 - 0.05, "guilty"), (l5 - 0.06, "whisper")], 0.12)
+        face = {"brow_ang": 0.75, "head_nod": 0.1 + 0.08 * fr, "head_turn": ht, "press": 0.55 * (1 - mo) * (1 - fr),
+                "brow_in": 0.2, "pupil": -0.3 * fr, "wobble": 0.5 * fr, "brow": 0.2 * fr}
     else:
         u = seg(t, sc, sc1)
         dip = math.sin(math.pi * min(1.0, u * 1.15))
@@ -861,14 +910,14 @@ def _shot_G(ctx, info, t, T):
 # ---------------------------------------------------------------------------
 # shot H — cage in, hop, butt + kicking legs, slip in, thud, "oof"
 # ---------------------------------------------------------------------------
-def _emb_H(ctx, info, t, T):
+def _emb_H(ctx, info, t, T, rec=None):
     cl, ci, sl, cr, hop = T["climb"], T["cage_in"], T["sill"], T["crouch"], T["hop"]
     x = XTE
     hold = None
     if t < sl:
         u = smoothstep(seg(t, cl, ci + 0.2))
         pose = (TIP_CAGE, CAGE_LIFT, u)
-        hold = _cage_hold(-0.25 * u) if t < ci + 0.22 else None
+        hold = _cage_hold(-0.25 * u, rec=rec) if t < ci + 0.22 else None
         pt = _travel_pt(XTE, XT, TIPTOE, 0.95)
         expr, look = "guilty", (0.8, -0.6)
         face = {"brow_ang": 0.6, "press": 0.4}
@@ -886,20 +935,34 @@ def _emb_H(ctx, info, t, T):
                 pose_t=pt, blush=0.5, sweat=0.5, hold=hold)
 
 
-def _cage_into_hole(ctx, t, T):
-    """The cage leaves his hand and slides through the hole (clipped = inside)."""
-    ci = T["cage_in"] + 0.24
-    if not (ci <= t < ci + 0.5):
+_HANDOFF = {}
+
+
+def _handoff_pt(info, T):
+    """Where the cage is in his hand at the hand-off (probed: frame-independent)."""
+    key = (id(info), T["cage_in"])
+    if key not in _HANDOFF:
+        rec = {}
+        _emb_H(_probe_ctx(), info, T["cage_in"] + 0.22 - 1e-3, T, rec=rec)
+        _HANDOFF.clear()
+        _HANDOFF[key] = rec.get("p", (W3X - 60, W3Y - 30))
+    return _HANDOFF[key]
+
+
+def _cage_into_hole(ctx, info, t, T):
+    """The cage leaves his hand and slides in through the hole (clipped to it, fading)."""
+    ci = T["cage_in"] + 0.22
+    if not (ci <= t < ci + 0.3):
         return
-    u = ease_in_out(seg(t, ci, ci + 0.32))
-    x = lerp(W3X - 40, W3X + 10, u)
-    y = lerp(W3Y - 40, W3Y - 20, u)
+    u = ease_in_out(seg(t, ci, ci + 0.3))
+    x0, y0 = _handoff_pt(info, T)
+    x = lerp(x0, W3X + 30, u)
+    y = lerp(y0, W3Y - 30, u)
     ctx.save()
     _hole_path(ctx)
     ctx.clip()
-    _cage(ctx, x, y, t, rot=-0.25 * (1 - u), s=CAGE_S * lerp(1.0, 0.72, u))
-    _hole_path(ctx)
-    core.fill(ctx, core.alpha(HOLE_DARK, 0.85 * u))
+    with core.saved(ctx, 0, 0, 1.0, 0.0, alpha_=1 - u):
+        _cage(ctx, x, y, t, rot=-0.25 * (1 - u), s=CAGE_S * lerp(1.0, 0.7, u))
     ctx.restore()
 
 
@@ -1010,7 +1073,7 @@ def _shot_H(ctx, info, t, T):
             _emb_H(ctx, info, t, T)
         if T["hop"] <= t < T["hop"] + 0.3:
             fx.motion_lines(ctx, XTE + 60, Y - 260, -1.1, 220, t, 1.0, width=10, seed=8)
-        _cage_into_hole(ctx, t, T)
+        _cage_into_hole(ctx, info, t, T)
         _butt_legs(ctx, t, T)
         fx.dust_puff(ctx, XTE + 20, Y, 0.45, t, T["hop"], seed=12, dur=0.5)
         fx.dust_puff(ctx, W3X, HOLE_BOTTOM - 6, 0.38, t, th, seed=13, dur=0.7)
@@ -1086,6 +1149,7 @@ def SFX(info):
     ev.append((T["rel"] - 0.03, "whoosh", -5, 0.2))
     ev.append((T["smash"], "glass_smash", 0, 0.25))
     ev.append((T["tip0"], "tiptoe", -4, 0.0))
+    ev.append((T["f0"], "plate_clink", -15, 0.1))
     ev.append((T["scoop1"] - 0.12, "cage_rattle", -12, 0.1))
     ev.append((T["cage_in"] + 0.5, "brick_thud", -16, 0.15))
     ev.append((T["hop"], "cloth_rustle", -4, 0.0))

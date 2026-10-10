@@ -23,7 +23,6 @@ from engine.core import (tween, seg, clamp, lerp, state_at, ease_out_back, ease_
                          ease_in, smoothstep, hash01)
 from engine.human import draw_person, cycle_speed, IK
 from engine.creatures import draw_thing
-from audio import sfx
 
 HM = sets.HOUSE_MARKS
 SC = sets.C
@@ -109,7 +108,7 @@ def _times(info):
     T["tag_in"] = T["c2"] + 0.1
     T["tag_out"] = T["c3"] - 0.36
     T["c4"] = T["debris"] + 0.32                     # damage pan
-    T["c5"] = max(T["c4"] + 0.5, T["eye"] - 0.3)     # back on Emb: eyes return
+    T["c5"] = T["eye"]                               # (no return shot: the pan cuts to her eyes)
     T["c6"] = T["eye"]                               # Boss ECU: eyes meet
     T["c7"] = min(T["eye"] + 0.34, T["l03"] - 0.04)  # Emb snaps to attention
     T["c8"] = _wt(info, "s08_l03", 2)                # "How you doing?" -> Boss MCU (no reaction)
@@ -313,7 +312,7 @@ def _emb_ots_face(t, T):
 
 def shot_ots(ctx, t, info, T):
     u = seg(t, T["c2"], T["c3"])
-    z = lerp(1.5, 2.05, ease_in_out(seg(t, T["c2"] + 0.15, T["jd"] + 0.1)))
+    z = lerp(1.5, 2.05, ease_in_out(seg(t, T["c2"] + 0.15, T["jd"] + 0.1))) + 0.06 * u
     hx, hy = BOSS[0], BOSS[1] - BOSS_S * BOSS_HEAD
     cam = (hx + (540 - 410) / z, hy + (960 - 700) / z, z)       # her face at ~(410, 700)
     with core.cache_steps(2):
@@ -371,8 +370,8 @@ def shot_emb_cu(ctx, t, info, T, part):
 
 # ============================================================================ SH4 damage pan
 def shot_damage(ctx, t, info, T):
-    u = ease_in_out(seg(t, T["c4"], T["c5"] + 0.02))
-    cam = (lerp(1985, 2585, u), lerp(1205, 1385, u), lerp(1.5, 1.08, u))
+    u = ease_in_out(seg(t, T["c4"] + 0.05, T["c5"] - 0.12))
+    cam = (lerp(1985, 2450, u), lerp(1205, 1415, u), lerp(1.5, 1.0, u))
     with core.cache_steps(2):
         with core.camera(ctx, *cam):
             _house_bg(ctx, t)
@@ -750,7 +749,7 @@ def render(ctx, t, info):
         shot_emb_cu(ctx, t, info, T, "l02")
     elif t < T["c5"]:
         shot_damage(ctx, t, info, T)
-    elif t < T["c6"]:
+    elif t < T["c6"]:                       # (empty unless c5 < c6: an optional return shot)
         shot_emb_cu(ctx, t, info, T, "back")
     elif t < T["c7"]:
         shot_boss(ctx, t, info, T, "ecu")
@@ -800,7 +799,7 @@ def SFX(info):
     ev.append((T["c6"], "heartbeat", -7.0))
     # SH7: snap to attention (cloth snap, the cage swings on its handle)
     snap = T["c7"] + 0.06
-    ev.append((snap - 0.05, "whoosh", -14.0))
+    ev.append((snap - 0.32, "whoosh", -14.0))
     ev.append((snap, "cloth_rustle", -4.0))
     ev.append((snap + 0.05, "cage_rattle", -10.0, 0.15))
     # SH9: the cage lifted up; SH10: the thing hisses inside
@@ -808,7 +807,7 @@ def SFX(info):
     ev.append((T["hiss"] - 0.03, "critter_hiss", -3.0, 0.1))
     ev.append((T["hiss"], "cage_rattle", -7.0, 0.1))
     # SH11: the pink slip slides out between her fingers
-    ev.append((T["c11"] + 0.1, "paper", -7.0))
+    ev.append((T["c11"] - 0.05, "paper", -7.0))
     # SH13: Tiredness trips into the hedge (far, small)
     d = T["c14"] - T["c13"]
     t_trip = T["c13"] + 0.4 * d

@@ -121,8 +121,8 @@ class _T:
         self.tag_out = self.l2 + 0.3
         self.gulp = self.l4e + 0.08
         # tiptoe: walk, freeze mid-step when he notices the eye, walk on
-        self.f0 = 1.30
-        self.f1 = min(1.68, (self.plates - self.tip) - 0.3)
+        self.f0 = 1.18
+        self.f1 = min(1.75, (self.plates - self.tip) - 0.22)
         self.shadow0 = self.stairs + 0.45
         self.shadow1 = self.stairs + 1.15
 
@@ -423,7 +423,7 @@ def _tip_walk(u, T):
     return T.f0 + (u - T.f1) * 1.25
 
 
-TIP_X0, TIP_Y, TIP_TURN = 130, 1430, 0.9
+TIP_X0, TIP_Y, TIP_TURN = 130, 1385, 0.9
 
 
 def shot_tiptoe(ctx, t, T):
@@ -435,15 +435,15 @@ def shot_tiptoe(ctx, t, T):
     wclk = _tip_walk(u, T)
     x = TIP_X0 + v * wclk
     ia = _probe_imp()
-    eye_l = ia["eye_l"]
+    eye_r = ia["eye_r"]          # the screen-right eye does the tracking; the left stays put
     pa = _probe_emb("tip", 0.0, TIP_Y, TIPTOE, TIP_TURN)
     hx_off, hy = pa["head"][0], pa["head"][1]
     lagx = TIP_X0 + v * _tip_walk(max(0.0, u - 0.3), T) + hx_off
-    tgt = _norm(lagx - eye_l[0], hy - eye_l[1], 0.92)
-    kt = smoothstep(seg(u, 0.25, 0.85))
-    look_l = (lerp(creatures.IMP_DERP_L[0], tgt[0], kt), lerp(creatures.IMP_DERP_L[1], tgt[1], kt))
+    tgt = _norm(lagx - eye_r[0], hy - eye_r[1], 0.92)
+    kt = smoothstep(seg(u, 0.2, 0.95))
+    look_r = (lerp(creatures.IMP_DERP_R[0], tgt[0], kt), lerp(creatures.IMP_DERP_R[1], tgt[1], kt))
     noticed = seg(u, T.f0 - 0.08, T.f0 + 0.1)
-    to_eye = _norm(eye_l[0] - (x + hx_off), eye_l[1] - hy, m=0.95)
+    to_eye = _norm(eye_r[0] - (x + hx_off), eye_r[1] - hy, m=0.95)
     look = (lerp(0.55, to_eye[0], noticed), lerp(0.75, to_eye[1], noticed))
     face = {"brow_ang": 0.45 + 0.2 * noticed, "press": 0.35 * (1 - noticed), "pupil": -0.2 - 0.35 * noticed,
             "eye_size": 0.1 * noticed, "head_nod": 0.14, "head_turn": 0.08,
@@ -454,7 +454,7 @@ def shot_tiptoe(ctx, t, T):
         living(ctx, t)
         ea = emb(ctx, x, TIP_Y, t, pose=TIPTOE, pose_t=wclk * TIP_K, turn=TIP_TURN, expr=expr, look=look,
                  face=face, blink=blink, blush=0.1, sweat=0.5 + 0.4 * noticed, hold=cage_hold_cb(t))
-        draw_imp(ctx, t, T, look_l=look_l)
+        draw_imp(ctx, t, T, look_r=look_r)
         tx_, ty_ = ea["top"]
         fx.sweat_fly(ctx, tx_ - 10, ty_ + 40, 0.6, t, T.tip + T.f0 + 0.06, seed=4, n=3, side=0)
         sets.living_room(ctx, t, layer="fg")
@@ -477,8 +477,9 @@ def coffee_table_front(ctx):
 def shot_plates(ctx, t, T):
     P = T.plates
     cam = tween(t, [(P, (1190, 1190, 1.6)), (T.drawer, (1190, 1180, 1.66))])
-    lift = tween(t, [(P + 0.08, 0.0), (P + 0.34, 1.0), (P + 0.66, 1.0), (P + 0.9, 0.0)])
-    pose = (PLATE_DOWN, PLATE_UP, lift)
+    # cut in as the plate leaves the stack; cut out as it goes back down (delicate)
+    lift = tween(t, [(P - 0.08, 0.0), (P + 0.3, 1.0), (P + 0.66, 1.0), (P + 1.06, 0.0)])
+    pose = (PLATE_DOWN, PLATE_UP, math.sqrt(lift))
     look, hf = _gaze(t, [(P, (0.1, 0.8)), (P + 0.25, (0.1, 0.75)), (P + 0.36, (0.15, 1.0)),
                          (P + 0.47, (0.15, 1.0)), (P + 0.53, (-0.55, -0.35)), (P + 0.66, (-0.55, -0.35)),
                          (P + 0.8, (0.1, 0.8))], lag=0.12, gx=0.14, gy=0.18)
@@ -654,8 +655,8 @@ def SFX(info):
     ev.append((T.grab, "latch_click", -6, -0.3))
     ev.append((T.tip + 0.05, "tiptoe", -6, 0.0))
     ev.append((T.tip + T.f1, "tiptoe", -10, 0.1))
-    ev.append((T.plates + 0.12, "plate_clink", -10, 0.1))
-    ev.append((T.plates + 0.88, "plate_clink", -12, 0.1))
+    ev.append((T.plates + 0.02, "plate_clink", -10, 0.1))
+    ev.append((T.plates + 0.97, "plate_clink", -13, 0.1))
     ev.append((T.drawer + 0.12, "drawer_open", -4, 0.2))
     ev.append((T.drawer + 0.66, "drawer_open", -10, 0.2))
     ev.append((T.table + 0.05, "cloth_rustle", -10, 0.2))

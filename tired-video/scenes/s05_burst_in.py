@@ -48,6 +48,7 @@ E_CLOSET = (780, 1536)
 T_BEHIND = (1050, 1538)        # Tiredness right behind him
 E_FLOOR = (745, 1552)         # Emb's landing spot (butt)
 CAGE_FLOOR = (520, 1548)      # where the cage sits once he puts it down
+DOOR_OPEN = 0.98              # he burst it open; it stays open (s07 needs it open)
 CHAIR_DX = -300               # he rolled the chair back when he got up
 
 
@@ -441,7 +442,7 @@ def shot_door(ctx, t, info, c):
         else:
             k = ease_in_out(seg(t, c.pov1, c.search))
             cam = (lerp(372, 380, k), lerp(840, 828, k), lerp(1.95, 2.05, k))
-        door = 0.98
+        door = DOOR_OPEN
     with core.camera(ctx, *cam):
         sets.bedroom(ctx, t, layer="bg", door_open=clamp(door))
         sets.bedroom(ctx, t, layer="fg", parts=("door",), door_open=clamp(door))
@@ -560,7 +561,8 @@ def shot_search(ctx, t, info, c):
     empty, spin, cdx = chair_state(t, c)
     with core.camera(ctx, *cam):
         sets.bedroom(ctx, t, layer="bg", laundry=laundry_lift(t, c), closet_open=clamp(closet),
-                     chair_empty=empty, chair_spin=spin, chair_dx=cdx, laundry_scattered=t >= tb)
+                     chair_empty=empty, chair_spin=spin, chair_dx=cdx, laundry_scattered=t >= tb,
+                     door_open=DOOR_OPEN)
         if not empty:
             gl = tween(t, [(ts + 0.42, 0.0), (ts + 0.62, 1.0)])
             draw_gamer(ctx, t, notes=0.7, glance=gl)
@@ -584,15 +586,16 @@ def shot_search(ctx, t, info, c):
 _MEAS = {}
 
 
-def _measure_top():
-    """Head-top height of Emb's leap pose at lift 0 (s=1), measured once."""
-    if "top" not in _MEAS:
+def _measure_top(expr="scream", face=None):
+    """Head-top height of Emb's leap pose at lift 0 (s=1), measured once per face."""
+    key = ("top", expr, tuple(sorted((face or {}).items())))
+    if key not in _MEAS:
         surf = cairo.ImageSurface(cairo.FORMAT_ARGB32, 4, 4)
         cc = cairo.Context(surf)
         a = human.draw_person(cc, "embar", 0, 0, 1.0, 0.0, pose={"base": "leap_scared", "lift": 0.0},
-                              expr="scream", shadow=False)
-        _MEAS["top"] = -a["top"][1]
-    return _MEAS["top"]
+                              expr=expr, face=face, shadow=False, drift=False)
+        _MEAS[key] = -a["top"][1]
+    return _MEAS[key]
 
 
 def emb_late(t, c, info):
@@ -628,7 +631,7 @@ def emb_late(t, c, info):
         return dict(x=E_CLOSET[0], y=E_CLOSET[1], pose=pose, pose_t=None, turn=turn, expr=expr, look=look,
                     face=face, blush=0.45 + 0.3 * sq, mode="tap", mouth=mouth)
     top0 = _measure_top()
-    ceil_lift = (E_CLOSET[1] - BM["ceiling_y"] - top0 * S) / S - 4
+    ceil_lift = (E_CLOSET[1] - BM["ceiling_y"] - top0 * S) / S + 30   # hair (not the tuft) hits it
     if t < c.ceil:
         u = seg(t, c.launch, c.ceil)
         lift = ceil_lift * (0.25 * u + 0.75 * ease_out(u)) if u < 1 else ceil_lift
@@ -638,9 +641,11 @@ def emb_late(t, c, info):
                     look=(0.4, -0.2), face={"squash": -0.12}, blush=0.8, mode="up", mouth=mouth,
                     stretch=1.0 - u * 0.4)
     if t < c.ceil + c.hang:
-        pose = {"base": "leap_scared", "lift": ceil_lift + 4}
+        bonk_face = {"squash": 0.22}
+        top_b = _measure_top("pain", bonk_face)
+        pose = {"base": "leap_scared", "lift": (E_CLOSET[1] - BM["ceiling_y"] - top_b * S) / S + 34}
         return dict(x=E_CLOSET[0] - 10, y=E_CLOSET[1], pose=pose, pose_t=None, turn=-0.15, expr="pain",
-                    look=(0, 0), face={"squash": 0.25}, blush=0.8, mode="bonk")
+                    look=(0, 0), face=bonk_face, blush=0.8, mode="bonk")
     if t < c.land:
         u = seg(t, c.ceil + c.hang, c.land)
         lift = (ceil_lift + 4) * (1 - u * u) - 120 * u * u
@@ -732,7 +737,7 @@ def tired_late(t, c, info, emb_shoulder):
 def draw_late(ctx, t, info, c):
     """Everything in the bedroom from the reveal on (world space)."""
     sets.bedroom(ctx, t, layer="bg", closet_open=1.0, chair_empty=True, chair_spin=chair_spin(t, c),
-                 laundry_scattered=True,
+                 laundry_scattered=True, door_open=DOOR_OPEN,
                  chair_dx=CHAIR_DX)
     draw_clothes(ctx, t, c)
     cage(ctx, CAGE_FLOOR[0], CAGE_FLOOR[1] - CAGE_S * 300, t, swing=0.0)
@@ -755,7 +760,13 @@ def draw_late(ctx, t, info, c):
         star_xy = (top[0] + 4, top[1] + 8)
         fx.dizzy_stars(ctx, star_xy[0], star_xy[1], 0.75, t, t0=c.land + 0.08, dur=c.foot + 0.9 - c.land - 0.08,
                        layer="back")
-    pivot_y = BM["ceiling_y"] if mode == "bonk" else ey
+    if mode == "bonk":
+        pivot_y = BM["ceiling_y"]
+    elif mode == "up":
+        # stretch about the head top so the head lands exactly on the ceiling line
+        pivot_y = ey - (_measure_top() + e["pose"]["lift"]) * S
+    else:
+        pivot_y = ey
     ctx.save()
     ctx.translate(ex, pivot_y)
     ctx.scale(sx, sy)
@@ -840,6 +851,7 @@ def SFX(info):
     ev.append((c.crawl + 0.05, "cloth_rustle", -6, -0.3))
     ev.append((c.crawl + 0.9, "scurry", -5, 0.4))
     ev.append((c.crawl + 1.36, "footsteps_run", -7, 0.2))
+    ev.append((c.crawl + 1.44, "cage_rattle", -10, 0.3))
     # burst + freeze
     ev.append((c.burst + 0.04, "door_bang", 0, -0.4))
     ev.append((c.freeze, "stinger_shock", -1))

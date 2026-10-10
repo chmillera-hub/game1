@@ -39,7 +39,7 @@ FEET = SW["walk_feet_y"]                 # 1282
 TUN = SW["side_tunnel"]                  # variant -> (x, top, w, h)
 WALL_X = SW["wall_lean_x"]               # 640
 SP = 0.75                                # people in the sewer
-KC = 1.0                                 # creature scale relative to Tiredness
+KC = 0.95                                # creature scale relative to Tiredness (s12: 0.70 / 0.75)
 SC = SP * KC
 SH_S = sets.SHAFT_MARKS["char_scale"]    # 0.22 on the catwalk
 SH_FEET = sets.SHAFT_MARKS["catwalk_feet_y"]
@@ -231,13 +231,51 @@ def sewer_cam_y(z, feet_screen):
     return FEET - (feet_screen - 960) / z
 
 
+# ----------------------------------------------------------------------------
+# walker positions (shared by render and SFX so steps land on contacts)
+# ----------------------------------------------------------------------------
+def x_sh1(t, T):
+    return TUN[1][0] - 200 - V_T * (T["tunnels"] - t)
+
+
+def x_sh2a(t, T):
+    return TUN[3][0] - 300 - V_T * (T["sh2b"] - t)
+
+
+def x_sh2b(t, T):
+    return decel(t, T["l2"] - 0.06, WALL_X, V_T, 0.42)
+
+
+def _push_t(T):
+    return T["l4"] + 0.42
+
+
+def x_sh6(t, T):
+    t_walk = _push_t(T) + 0.45
+    if t <= t_walk:
+        return WALL_X
+    u = t - t_walk
+    return WALL_X + (V_T * u * u / 0.5 if u < 0.25 else V_T * (0.125 + (u - 0.25)))
+
+
+def x_sh7(t, T):
+    return 520 + V_T * 1.15 * (t - T["enter"])
+
+
+SH_WALK_V = _V1 / 0.7 * SH_S             # plain walk on the catwalk
+
+
+def x_sh8(t, T):
+    t_stop = min(T["sh8"] + 0.62, T["reveal"] - 0.2)
+    return decel(t, t_stop, SH_TX, SH_WALK_V, 0.38)
+
+
 # ============================================================================
 # SH1  walk + l01  (junction A)
 # ============================================================================
 def sh1(ctx, t, T, info):
     t_end = T["tunnels"]
-    x_end = TUN[1][0] - 200
-    xt = x_end - V_T * (t_end - t)
+    xt = x_sh1(t, T)
     xc = xt - 236
     k = ease_in_out(seg(t, 0, t_end))
     z = lerp(1.5, 1.6, k)
@@ -273,9 +311,7 @@ def sh1(ctx, t, T, info):
 # ============================================================================
 def sh2a(ctx, t, T, info):
     v = 3
-    t_end = T["sh2b"]
-    x_end = TUN[v][0] - 300
-    xt = x_end - V_T * (t_end - t)
+    xt = x_sh2a(t, T)
     xc = xt + 262
     z = 1.45
     with core.camera(ctx, TUN[v][0] - 170, sewer_cam_y(z, 1400), z):
@@ -290,7 +326,7 @@ def sh2b(ctx, t, T, info):
     v = 2
     l2, l2e = T["l2"], T["l2e"]
     t_stop = l2 - 0.06
-    xt = decel(t, t_stop, WALL_X, V_T, 0.42)
+    xt = x_sh2b(t, T)
     c_stop = t_stop + 0.12
     xc = decel(t, c_stop, CX_SEW, V_T, 0.45)
     z = lerp(1.45, 1.55, ease_in_out(seg(t, l2, T["point"])))
@@ -421,7 +457,7 @@ def _annoy_beats(T):
     b = T["l4"]
     span = b - a0
     # chitter, tug, headbutt, poke, plead (fractions of the span before "Fine.")
-    fr = (0.0, 0.15, 0.41, 0.56, 0.70)
+    fr = (0.0, 0.15, 0.41, 0.555, 0.665)
     return [a0 + f * span for f in fr] + [b]
 
 
@@ -429,7 +465,7 @@ def sh6(ctx, t, T, info):
     v = 2
     c0, c1, c2, c3, c4, b = _annoy_beats(T)
     l4, l4e = T["l4"], T["l4e"]
-    push = l4 + 0.42                     # he gets up off the floor
+    push = _push_t(T)                    # he gets up off the floor
     z = lerp(1.6, 1.72, ease_in_out(seg(t, c0, l4)))
     camx, camy = WALL_X + 140, sewer_cam_y(z, 1420)
     # ---------------- Tiredness
@@ -441,7 +477,7 @@ def sh6(ctx, t, T, info):
     if c2 + 0.16 <= t < c3 + 0.4:
         u = t - (c2 + 0.16)
         jolt = math.exp(-u * 8) * math.cos(u * 22)
-    crumble = smoothstep(seg(t, c4 + 0.15, l4 + 0.05))
+    crumble = smoothstep(seg(t, c4 + 0.1, l4 + 0.05))
     pose = dict(SIT)
     pose["dx"] = 10 * pull - 8 * jolt
     pose["side"] = 0.08 * pull
@@ -458,10 +494,8 @@ def sh6(ctx, t, T, info):
         up = {"base": "slouch", "lean": 0.1 + ant}
         pose = (pose, up, ease_in_out(k_up))
     t_walk = push + 0.45
-    xt = WALL_X
+    xt = x_sh6(t, T)
     if t > t_walk:
-        u = t - t_walk
-        xt = WALL_X + (V_T * u * u / 0.5 if u < 0.25 else V_T * (0.125 + (u - 0.25)))
         pose = (pose, TRUDGE, smoothstep(seg(t, t_walk, t_walk + 0.25)))
     turn = lerp(SIT_TURN, TURN_W, smoothstep(seg(t, push + 0.25, push + 0.6)))
     # gaze: the creature's face / the hem / the shin / the poke; then lids drop
@@ -475,7 +509,7 @@ def sh6(ctx, t, T, info):
             "brow_r": 0.22 * smoothstep(seg(t, c0 + 0.1, c0 + 0.3)) * (1 - crumble),
             "press": 0.35 * (1 - crumble), "brow_ang": 0.28 * crumble,
             "lid_r": 0.0}
-    expr = state_at(t, [(0, "unamused"), (c4 + 0.3, "sigh"), (l4 - 0.05, "deadpan"),
+    expr = state_at(t, [(0, "unamused"), (c4 + 0.14, "sigh"), (l4 - 0.05, "deadpan"),
                         (push + 0.3, "bored")], 0.28)
     blink = None
     if c2 + 0.18 < t < c2 + 0.75:
@@ -666,7 +700,7 @@ def sh7(ctx, t, T, info):
     t0, t1 = T["enter"], T["sh8"]
     k = seg(t, t0, t1)
     z = lerp(1.25, 1.3, k)
-    xt = 520 + V_T * 1.15 * (t - t0)
+    xt = x_sh7(t, T)
     xc = xt + 270
     camx = 800 + 30 * k
     camy = ST_FLOOR - (1300 - 960) / z
@@ -742,15 +776,18 @@ def sh8(ctx, t, T, info):
     cam1 = (400, 1900, 0.56)
     cx, cy, z = _pull_cam(t, tr, min(tr + 1.55, tw - 0.3), cam0, cam1)
     # Tiredness steps out of the tunnel mouth, stops, looks up
-    walk_v = _V1 / 0.7 * SH_S
+    walk_v = SH_WALK_V
     t_stop = min(t0 + 0.62, tr - 0.2)
-    xt = decel(t, t_stop, SH_TX, walk_v, 0.38)
+    xt = x_sh8(t, T)
     wk = 1 - smoothstep(seg(t, t_stop - 0.38, t_stop))
     pose = ("walk", "stand", 1 - wk)
     look_up = smoothstep(seg(t, t_stop - 0.05, t_stop + 0.3))
     blink = 0.0 if t_stop - 0.3 < t < tr + 0.6 else None
     look = (lerp(0.55, 0.3, look_up), lerp(0.25, -0.85, look_up))
-    face = {"head_nod": -0.14 * look_up, "head_turn": 0.1 * look_up, "pupil": 0.2 * look_up}
+    # a small surprise only (+~10%): protect the full-open payoff for the close-up
+    face = {"head_nod": -0.14 * look_up, "head_turn": 0.1 * look_up, "pupil": 0.2 * look_up,
+            "lid": 0.12 * look_up, "brow": 0.25 * look_up, "open": 0.1 * look_up,
+            "press": -0.1 * look_up, "curve": 0.08 * look_up}
     # the creature trots out ahead and sits beside him, gazing up at the pods
     c_stop = t0 + 0.4
     xc_stop = SH_TX + SIDE_C * SH_S
@@ -759,8 +796,8 @@ def sh8(ctx, t, T, info):
     with core.cache_steps(1):
         with core.camera(ctx, cx, cy, z):
             shaft_bg(ctx, t)
-            tkw = dict(pose=pose, pose_t=xt / walk_v, turn=lerp(0.85, 0.5, look_up),
-                       expr=state_at(t, [(0, "bored"), (t_stop + 0.05, "surprised")], 0.3),
+            tkw = dict(pose=pose, pose_t=xt / walk_v, turn=lerp(TURN_W, 0.5, look_up),
+                       expr="bored",
                        look=look, face=face, blink=blink)
             if t < sit_t:
                 ckw = dict(pose="walk", pose_t=xc / (CR.SPEC_WALK_SPEED * SH_S * KC_SH),
@@ -787,7 +824,7 @@ def _cast_grad(x, y, r, a=1.0):
 def sh9(ctx, t, T, info):
     tw, ts = T["wide"], T["sad"]
     k = seg(t, tw, ts)
-    with core.camera(ctx, 610, 1240 - 70 * ease_in_out(k), 1.45 + 0.06 * k):
+    with core.camera(ctx, 610, 1150 - 60 * ease_in_out(k), 1.45 + 0.06 * k):
         shaft_bg(ctx, t)
     fx.vignette(ctx, 0.42)
     # the payoff: pupils widen first, then the lids roll all the way open; hold
@@ -1006,44 +1043,57 @@ def caption_y(t, info):
 # ============================================================================
 # sound
 # ============================================================================
+def _steps(xfn, T, stride, t0, t1, name, gain, pan=0.0, dt=1 / 96):
+    """Foot contacts = where the cycle phase (x / stride) crosses a half cycle."""
+    ev = []
+    prev = xfn(t0, T) / stride
+    t = t0 + dt
+    while t < t1:
+        cur = xfn(t, T) / stride
+        if math.floor(cur * 2) != math.floor(prev * 2) and cur > prev:
+            ev.append((round(t, 3), name, gain, pan))
+        prev = cur
+        t += dt
+    return ev
+
+
 def SFX(info):
     T = _times(info)
     ev = []
-    # sewer room tone until we leave the main tunnel; pods hum from the reveal
+    c0, c1, c2, c3, c4, b = _annoy_beats(T)
+    push = _push_t(T)
+    # sewer room tone until we leave the main tunnel; the pods hum from the catwalk on
     ev += _sfx.loop_events("sewer_ambience", 0.0, T["enter"] + 0.6, -5)
-    ev += _sfx.loop_events("pod_hum", T["sh8"] - 0.3, T["reveal"], -16)
-    ev += _sfx.loop_events("pod_hum", T["reveal"], T["end"], -7)
-    # wet trudging steps (one per half cycle of the trudge)
-    half = 0.5 / TS * 1.0
-    tt = 0.18
-    while tt < T["l2"] - 0.1:
-        ev.append((tt, "squish", -10, -0.1))
-        tt += half
-    ev.append((T["walk"] + 1.7, "drip", -14, 0.4))
-    ev.append((T["tunnels"] + 0.1, "drip", -16, -0.3))
-    ev.append((T["sh2b"] + 0.15, "drip", -15, 0.3))
-    # l01 sigh
+    ev += _sfx.loop_events("pod_hum", T["enter"] + 0.2, T["reveal"], -18)
+    ev += _sfx.loop_events("pod_hum", T["reveal"], T["end"], -8)
+    # wet trudging steps exactly on his foot contacts
+    ev += _steps(x_sh1, T, STRIDE_T, 0.0, T["tunnels"], "squish", -11, -0.1)
+    ev += _steps(x_sh2a, T, STRIDE_T, T["tunnels"], T["sh2b"], "squish", -11, -0.1)
+    ev += _steps(x_sh2b, T, STRIDE_T, T["sh2b"], T["l2"], "squish", -11, -0.1)
+    ev += _steps(x_sh6, T, STRIDE_T, push + 0.45, T["enter"], "squish", -12, 0.0)
+    ev += _steps(x_sh7, T, STRIDE_T, T["enter"], T["sh8"], "squish", -15, 0.0)
+    ev += _steps(x_sh8, T, SH_WALK_V, T["sh8"], T["reveal"], "footstep", -12, -0.2)
+    ev.append((1.7, "drip", -15, 0.4))
+    ev.append((T["tunnels"] + 0.1, "drip", -17, -0.3))
+    ev.append((T["sh2b"] + 0.15, "drip", -16, 0.3))
+    # "Why me." -> sigh
     ev.append((T["l1e"] + 0.05, "sigh", -6))
-    # slump against the wall
-    ev.append((T["l2"] + 0.28, "body_thud", -14, -0.1))
-    ev.append((T["l2"] + 0.2, "cloth_rustle", -8, -0.1))
+    # slides down the wall
+    ev.append((T["l2"] + 0.12, "cloth_rustle", -8, -0.1))
+    ev.append((T["l2"] + 0.5, "body_thud", -15, -0.1))
     ev.append((T["l2e"] + 0.05, "sigh", -8))
     # the creature points: eager chirp
     ev.append((T["point"] + 0.12, "creature_chitter", -9, 0.2))
-    # annoy
-    c0, c1, c2, c3, c4, b = _annoy_beats(T)
+    # annoy escalation
     ev.append((c0 + 0.02, "creature_chitter", -3, 0.15))
     ev.append((c1 + 0.05, "cloth_rustle", -2, 0.1))
-    ev.append((c2 + 0.16, "bonk", -12, 0.05))
-    ev.append((c3 + 0.04, "tap_tap", 0, 0.05))
-    ev.append((c4 + 0.3, "sigh", -2))
-    ev.append((T["l4e"] - 0.1, "creature_purr", -2, 0.2))
-    # into the side tunnel, out onto the catwalk
-    for k in range(3):
-        ev.append((T["l4"] + 0.8 + k * 0.42, "footstep", -14, 0.0))
-    ev.append((T["sh8"] + 0.25, "footstep", -12, -0.2))
-    ev.append((T["sh8"] + 0.65, "footstep", -14, -0.2))
-    # the sad nod
-    ev.append((T["nod"] + 0.38, "creature_chirp_sad", 0, 0.15))
-    ev.append((T["nod"] + 1.05, "cloth_rustle", -10, 0.0))
+    ev.append((c2 + 0.16, "bonk", -13, 0.05))
+    ev.append((c3 + 0.03, "tap_tap", 1, 0.05))
+    ev.append((c4 + 0.12, "sigh", -4))
+    ev.append((T["l4"] + 0.3, "creature_purr", 0, 0.2))
+    ev.append((push + 0.05, "cloth_rustle", -10, 0.0))
+    # the sad nod, the hand on its head
+    ev.append((T["nod"] + 0.4, "creature_chirp_sad", 0, 0.15))
+    ev.append((T["nod"] + 1.05, "cloth_rustle", -12, 0.0))
+    ev.append((T["nod"] + 1.2, "creature_purr", -3, 0.1))
     return ev
