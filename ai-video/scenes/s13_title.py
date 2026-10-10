@@ -5,10 +5,15 @@ Every time is derived from cues / line timings (see _T).
   A  polaroid..title   CORKBOARD close-up (hard cut from s12's town square).
                        The lair corkboard, header now reads "PARTY PLANS" (s12's
                        sticky).  The old science-fair photo (empty chairs) is
-                       pinned left; at +0.1 s a Polaroid of the block party
+                       pinned left; at +0.1 s a Polaroid from the block party
                        SLAPS in beside it (squash, impact ticks), a red pin
                        pops in, and the red string draws from the old photo to
-                       the new one.  Slow push-in.
+                       the new one.  The Polaroid ("EVIL PLAN: SUCCESS!") is a
+                       posed snapshot: the Evil Genius standing stiffly with a
+                       forced, sheepish smile (sweat drop), Snake draped round
+                       his neck, beaming, next to a tall, angular, scary
+                       android (red V visor, spiky pauldrons, claws) wearing a
+                       cheerful striped party hat: a party bot.
                        s13_l01 (narrator): on "AI" the camera slides down-left
                        (0.8 s, ease_in_out, pulling back a touch) to reveal the
                        cardboard robot cutout ($19.99, PROP) leaning on the wall
@@ -23,7 +28,8 @@ Every time is derived from cues / line timings (see _T).
   B  title..end        Hard cut: TITLE CARD on ai_bg.  Static sunburst,
                        "NICE TRY," / "MY GUY." letters drop in (Luckiest Guy),
                        taglines "A wall for harm." (brick red) and "A door for
-                       everything else." (gold) slide up, a small wall builds
+                       almost everything else." (gold, "almost" in white: the
+                       AI is still learning) slide up, a small wall builds
                        (3 thuds) and its service window rolls open (a heart
                        inside).  The AI pops in under the wall watching the
                        bricks; Malvo rises from the bottom-right waving (FOR
@@ -1428,16 +1434,30 @@ def _burst(c, t, T):
         core.fill(cc, core.alpha("ai_rim", 0.09))
 
 
-def _tagline(c, t, t_in, txt, y, col):
+TAG_MAX_W = 790.0                          # longest tagline width (fits x 60..930)
+
+
+def _tagline(c, t, t_in, parts, y, size=54):
+    """Slide-up tagline. parts: [(text, colour), ...] drawn as one centred
+    line (shrunk from `size` until it fits TAG_MAX_W)."""
     if t < t_in:
         return
+    if isinstance(parts, str):
+        parts = [(parts, "white")]
+    full = "".join(p for p, _ in parts)
+    fs = size
+    while fs > 30 and text_width(c, full, "round", fs) > TAG_MAX_W:
+        fs -= 1
     q = ease_out(seg(t, t_in, t_in + 0.35))
     a = clamp(q * 1.4)
     ink = core.hexc(INK)
-    cc = core.hexc(col)
-    text(c, txt, TX, y + (1 - q) * 34, 54, (cc[0], cc[1], cc[2], a), "round",
-         outline=(ink[0], ink[1], ink[2], a), outline_w=10,
-         shadow=(0, 5, (0, 0, 0, 0.4 * a)))
+    x = TX - text_width(c, full, "round", fs) / 2
+    yy = y + (1 - q) * 34
+    for txt, col in parts:
+        cc = core.hexc(col)
+        x += text(c, txt, x, yy, fs, (cc[0], cc[1], cc[2], a), "round", "left",
+                  outline=(ink[0], ink[1], ink[2], a), outline_w=10,
+                  shadow=(0, 5, (0, 0, 0, 0.4 * a)))
 
 
 def _heart(c, x, y, r):
@@ -1629,8 +1649,10 @@ def _shot_b(ctx, t, info, T):
     with saved(ctx, TX - W / 2, 0, 1.0) as c:
         P.title_card(c, t, T["t1_in"], "NICE TRY,", y=T1_Y, size=T_SIZE, color="white")
         P.title_card(c, t, T["t2_in"], "MY GUY.", y=T2_Y, size=T_SIZE, color="ai_accent")
-    _tagline(ctx, t, T["tag1"], "A wall for harm.", TAG1_Y, BRICK_RED)
-    _tagline(ctx, t, T["tag2"], "A door for everything else.", TAG2_Y, "ai_accent")
+    _tagline(ctx, t, T["tag1"], [("A wall for harm.", BRICK_RED)], TAG1_Y)
+    # (the AI is still learning: "almost" gets a little emphasis)
+    _tagline(ctx, t, T["tag2"], [("A door for ", "ai_accent"), ("almost", "white"),
+                                 (" everything else.", "ai_accent")], TAG2_Y)
     wx, wy, ww, wh = WALL
     # drop=260: the bricks start below "MY GUY." instead of falling through it
     res = P.brick_wall(ctx, wx, wy, ww, wh, t, T["wall0"], rows=4, speed=2.0, drop=260,

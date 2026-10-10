@@ -875,13 +875,15 @@ def _whisper_lines(c, t, T, info, mpt, spt):
         px = spt[0] - 26                                    # above the snake's ear
         py = spt[1] - 112 - 22 * u
         with saved(c, px, py, k, -0.1, alpha_=a) as cc:
-            text(cc, "psst...", 0, 0, 44, "#efe8ff", "comic", outline="ink", outline_w=8)
+            text(cc, "psst...", 0, 0, 52, "#efe8ff", "comic", outline="ink", outline_w=9)
 
 
 def _f1_open(ctx, t, info, T):
     cs = lerp(1.0, 1.035, ease_in_out(seg(t, 0.0, T.cut_f2)))
     expr, look, arms, lean, snake, shift = _f1_open_state(t, T)
     mouth = info.mouth("villain", t)
+    if T.L1.start - 0.1 <= t < T.L1.end + 0.1:       # hushed whisper: smaller lip shapes
+        mouth = (mouth[0] * 0.7, mouth[1] * 0.6)
     vx, vy, vs = OV
     apose, aexpr, alook, ablink = _open_ai_state(t, T)
     with saved(ctx) as c:
@@ -964,9 +966,19 @@ def _whisper_caption(ctx, t, info):
     k = ease_out_back(seg(t, c_t0 - 0.02, c_t0 + 0.16))
     scale = 0.88 + 0.12 * k
     with saved(ctx, 540, top - size * 0.35, scale) as c:
-        # the "(whispering)" tag above the first row
-        text(c, "(whispering)", 0, -size * 0.62, 30, "#cdbcff", "round", outline="#0a0612",
-             outline_w=7, italic=True)
+        # the "(whispering)" tag above the first row, on a small dark pill so
+        # it stays legible over the desk crest behind the caption
+        tg, tfs = "(whispering)", 34
+        tw = text_width(c, tg, "round", tfs) + 8
+        ty = -size * 0.62 - 4
+        rrect(c, -tw / 2 - 16, ty - tfs * 0.86, tw + 32, tfs * 1.18, tfs * 0.59)
+        c.set_source_rgba(0.06, 0.03, 0.12, 0.78)
+        c.fill_preserve()
+        c.set_source_rgba(0.80, 0.74, 1.0, 0.55)
+        c.set_line_width(3)
+        c.stroke()
+        text(c, tg, 0, ty, tfs, "#d9ccff", "round", outline="#0a0612", outline_w=6,
+             italic=True)
         for r, row in enumerate(rows):
             widths = [text_width(c, words[i], font, size) for i in row]
             total = sum(widths) + sp * (len(row) - 1)
@@ -1866,7 +1878,11 @@ def _draw_bombshell(ctx, t, T, bx, by):
 # F1: "Confound it... that does sound fun."
 # ===========================================================================
 def _f1_end_state(t, T):
+    """l08 + the end hold: grumble -> ponder -> sly grin to camera; as the
+    line ends he settles into a scheming steeple and everything HOLDS (only
+    blinks / breathing / finger taps) to the last frame."""
     L8 = T.L8
+    settle = L8.end - 0.06                                  # the end-hold starts here
     ek = [(0.0, "frustrated", 0.01),
           (T.w_that - 0.05, "thinking", 0.25),
           (T.w_sound - 0.08, "evil_grin", 0.28)]
@@ -1874,19 +1890,20 @@ def _f1_end_state(t, T):
     arms = _keyed(t, [(0.0, "rest", 0.01), (L8.start - 0.12, "fist", 0.18),
                       (T.w_that - 0.05, "chin", 0.3),
                       (T.w_sound - 0.05, "rub", 0.3),
-                      (T.tally + 0.3, "steeple", 0.35)])
+                      (settle, "steeple", 0.28)])
     # "Confound it" up at the AI (screen-right) -> ponders -> sly grin to
-    # camera -> glances at the chip on the tally -> back to camera
+    # camera, held
     lk = [(0.0, (0.55, -0.15)),
           (T.w_that - 0.05, (0.7, -0.6)),
           (T.w_sound - 0.08, (0.15, 0.0)),
-          (T.tally, (-0.6, -0.95)),
-          (T.tally + 0.45, (0.05, 0.0))]
+          (settle, (0.05, 0.0))]
     look = _vlook(expr, _lk(t, lk, 0.12))
-    # Snake: side-eye at him through the grumbling -> nods along ("fun")
+    # Snake: side-eye at him through the grumbling -> nods along ("fun") ->
+    # a happy hold (the traitor is in)
     sk = _keyed(t, [(0.0, "unimpressed", 0.01), (T.w_that, "side_eye", 0.2),
-                    (T.w_sound, "nod", 0.25), (T.tally + 0.6, "happy", 0.3)])
-    slk = [(0.0, (1.0, -0.35)), (T.w_that, (1.0, 0.0)), (T.w_sound, (0.6, -0.2))]
+                    (T.w_sound, "nod", 0.25), (settle, "happy", 0.25)])
+    slk = [(0.0, (1.0, -0.35)), (T.w_that, (1.0, 0.0)), (T.w_sound, (0.6, -0.2)),
+           (settle, (0.8, 0.0))]
     tongue = True if T.w_fun + 0.35 <= t < T.w_fun + 0.6 else False
     snake = {"expr": sk, "look": _lk(t, slk, 0.15), "tongue": tongue}
     return expr, arms, look, snake
@@ -1906,7 +1923,7 @@ def _f1_end(ctx, t, info, T):
     P.emote(ctx, "anger", an["dome"][0] + 40, an["dome"][1] - 10, 0.85, t, L8.start + 0.05,
             t_out=T.w_that)
     ex, ey = an["eye_r"]
-    P.emote(ctx, "sparkle", ex + 92, ey - 70, 0.8, t, T.w_fun - 0.05, t_out=T.w_fun + 0.9)
+    P.emote(ctx, "sparkle", ex + 92, ey - 70, 0.8, t, T.w_fun - 0.05)      # glint, held
 
 
 

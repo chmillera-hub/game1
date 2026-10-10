@@ -971,19 +971,34 @@ def draw_mini_volcano(c, x, y, s, t=None):
             _steam(cc, t, 2, -138, 0.9, n=1, period=2.2, rise=80, seed=2)
 
 
+# (s12: verbatim copy of s11_heart.py's book block, keep the two in sync)
 # ---------------------------------------------------------------------------
-# THE PSYCHOLOGY OF SPACE LASERS (the s11 gift-pile book: an exact copy of
-# s11_heart.py's drawing code, so the two scenes match)
+# THE PSYCHOLOGY OF SPACE LASERS (the gift-pile book; s12 copies this design)
 # ---------------------------------------------------------------------------
-# A 150 x 190 hardcover (s=1, centred): deep-space navy cover #1b2550 with
-# little twinkling stars and a faint nebula; gold title #ffd166 (ink outline)
-# across the top: a small "THE PSYCHOLOGY OF" line over a big "SPACE LASERS"
-# line; below it a cute cartoon orbital laser satellite (silver body with a
-# little smiling face, blue solar panels, pink emitter) at the left fires
-# pink/magenta bolts #ff4fa3 (white core) across the cover to the right in
-# bursts of three, each shot popping a tiny "PEW"; a startled little moon at
-# the right ducks under every burst (sweat drop) and bobs back up. Loops
-# every 1.5 s.
+# A 150 x 190 hardcover (s=1, centred on (x, y)), everything below in
+# cover-local px (x right, y down, origin = cover centre):
+#   * page block   rrect(-70, -91, 150, 186, r10) cream #f3ead2, ink 4
+#   * cover        rrect(-75, -95, 150, 190, r12) deep-space navy #1b2550, ink 5;
+#                  clipped inside it: a faint nebula band (ellipses at (26, 26),
+#                  rot -0.42, #25336c / #2e3f82), one shadow tone on the right
+#                  (x 38..78, #141c42 @0.55), 16 tiny twinkling stars (SL_STARS)
+#                  and 3 four-point stars (SL_BIG_STARS)
+#   * spine        rrect(-75, -95, 24, 190, r10) #11173a, ink 4, gold bands at
+#                  y -72 and +72 (x -73..-53)
+#   * TITLE, gold #ffd166 with ink outline, centred on x = +12 (the cover face
+#     right of the spine), each line shrunk to fit 116 px wide:
+#       line 1  "THE PSYCHOLOGY OF"  font "comic" (Bangers), start 20 px
+#               (fits at ~17 px), baseline y = -73, outline 3.5
+#       line 2  "SPACE LASERS"       font "title" (Luckiest Guy), start 26 px
+#               (fits at ~18 px), baseline y = -50, outline 4.5
+#   * the art (below the title, y > -40): a cute orbital laser satellite at
+#     SL_SAT (-26, 1) scale 0.7 (silver body with a little determined face,
+#     blue solar panels, pink emitter), aimed at a startled little moon at
+#     SL_MOON (47, 18) r 15; it fires pink/magenta bolts #ff4fa3 (white core)
+#     in bursts of three (SL_SHOTS 0.1/0.3/0.5 s of every SL_PERIOD 1.5 s, at
+#     SL_V 210 px/s), each shot popping a tiny "PEW" (comic 15, #ffe1f0); the
+#     moon ducks under every burst (squash, wide eyes, sweat drop) and bobs
+#     back up. Muzzle flash + recoil on each shot.
 SL_COVER, SL_COVER_DK, SL_SPINE = "#1b2550", "#141c42", "#11173a"
 SL_NEBULA, SL_NEBULA2 = "#25336c", "#2e3f82"
 SL_GOLD, SL_LASER, SL_LASER_CORE = "#ffd166", "#ff4fa3", "#fff0f7"
@@ -991,6 +1006,9 @@ SL_PEW = "#ffe1f0"
 SAT_BODY, SAT_BODY_DK, SAT_STRUT = "#d7dde9", "#a7b0c6", "#8e98b0"
 SAT_PANEL, SAT_PANEL_LN, SAT_BARREL = "#3f7fe0", "#a8c8ff", "#5b6480"
 MOON_C, MOON_DK, MOON_CRATER = "#f6eabf", "#e0cf95", "#d8c584"
+SL_TITLE = (("THE PSYCHOLOGY OF", -73.0, "comic", 16.5, 3.5),   # (text, baseline y,
+            ("SPACE LASERS", -50.0, "title", 26.0, 4.5))        #  font, start px, outline)
+SL_TITLE_W = 116.0                    # each title line shrinks to fit this width
 SL_PERIOD = 1.5                       # one burst of three every 1.5 s
 SL_SHOTS = (0.1, 0.3, 0.5)            # shot times inside the cycle
 SL_V = 210.0                          # bolt speed (cover px / s)
@@ -1113,8 +1131,10 @@ def _sl_moon(c, t, dodge):
 
 def draw_space_lasers_book(ctx, x, y, s, t, rot=0.0, sq=0.0):
     """THE PSYCHOLOGY OF SPACE LASERS (the s11 gift-pile book; s12 draws the
-    same design). 150 x 190 at s=1, centred on (x, y); `sq` = squash (landing),
-    `rot` radians. Animated with `t` (see the design note above)."""
+    same design). 150 x 190 at s=1, centred on (x, y); `sq` = squash
+    (landing), `rot` radians. Animated with `t` (layout: the note above).
+    Self-contained: needs only the SL_* / SAT_* / MOON_* constants and
+    _sl_geom, _sl_moon_dodge, _sl_satellite, _sl_moon (+ engine helpers)."""
     mz, u, ang = _sl_geom()
     nx, ny = u[1], -u[0]                                   # path normal (upward)
     cyc = math.floor(t / SL_PERIOD)
@@ -1192,11 +1212,10 @@ def draw_space_lasers_book(ctx, x, y, s, t, rot=0.0, sq=0.0):
             c.move_to(-73, yy)
             c.line_to(-53, yy)
         _s(c, SL_GOLD, 4)
-        for txt, ty, mw, fs, ow in (("THE PSYCHOLOGY OF", -67, 106, 14, 2.6),
-                                    ("SPACE LASERS", -44, 117, 26, 4)):
-            while fs > 6 and text_width(c, txt, "title", fs) > mw:
+        for txt, ty, font, fs, ow in SL_TITLE:              # the title (2 lines)
+            while fs > 8 and text_width(c, txt, font, fs) > SL_TITLE_W:
                 fs -= 0.5
-            text(c, txt, 12, ty, fs, SL_GOLD, "title", outline=INK, outline_w=ow)
+            text(c, txt, 12, ty, fs, SL_GOLD, font, outline=INK, outline_w=ow)
 
 
 def draw_popper(c, x, y, s, t, fired=False, squash=0.0, rot=0.0):
