@@ -1,4 +1,4 @@
-"""Builds the dialogue (Piper TTS + android chirps), the timeline and the final audio mix.
+"""Builds the dialogue (Piper TTS), the timeline and the final audio mix.
 
 Outputs (in OUT dir):  mix.wav, timeline.json
 timeline.json = {duration, fps, events: {id: {t0, t1, ...}}, mouth: {...}, intercut: [...]}
@@ -24,6 +24,7 @@ from piper import PiperVoice, SynthesisConfig
 VOX = {
     'jun': PiperVoice.load(f'{VOICES}/en_US-lessac-high.onnx'),
     'orrin': PiperVoice.load(f'{VOICES}/en_GB-alan-medium.onnx'),
+    'vesper': PiperVoice.load(f'{VOICES}/en_US-ryan-high.onnx'),
 }
 
 # --------------------------------------------------------------------- script
@@ -89,7 +90,7 @@ S = [
     ('beat', 'nod', 0.9),
     ('cue', 'shuffle', 'shuffle', {'adv': False}),
     ('beat', 'leave', 3.2),
-    ('beat', 'alone', 4.0),
+    ('beat', 'alone', 5.6),
     ('cue', 'endcard', 'lullaby_full', {}),
 ]
 
@@ -98,16 +99,15 @@ S = [
 INTERCUT = [
     (1, 2.5, 'J', 'start'), (2.5, 9, 'J', 'awe'), (9, 11.5, 'J', 'tears'), (11.5, 14, 'J', 'cosmic'),
     (14, 15.6, 'O', 'glance'), (15.6, 17, 'J', 'cu'), (17, 19, 'J', 'kneel'), (19, 21.4, 'J', 'climax'),
-    (21.4, 23, 'J', 'peak'), (23, 25.4, 'O', 'chat'), (25.4, 99, 'J', 'collapse'),
+    (21.4, 23, 'J', 'peak'), (23, 25.7, 'O', 'chat'), (25.7, 99, 'J', 'collapse'),
 ]
-# android chat lines: (intercut id, offset s, who, text)
+# android-to-android chat, spoken in English: (intercut id, offset s, who, text)
 CHAT = [
     ('chat', 0.25, 'orrin', "Coolant pressure on deck seven is low."),
     ('chat', None, 'vesper', "Rerouted. Why is the lieutenant crying?"),
     ('chat', None, 'orrin', "They asked for a symphony."),
     ('chat', None, 'vesper', "Ah. Nice."),
 ]
-CHIRP_BASE = {'orrin': 820.0, 'vesper': 1250.0}
 
 FIXED = {
     'harpsichord': M.sn_harpsichord, 'jazz': M.sn_jazz, 'lullaby': M.sn_lullaby, 'march': M.sn_march,
@@ -117,7 +117,7 @@ FIXED = {
 
 def tts(who, text, opt):
     v = VOX[who]
-    cfg = SynthesisConfig(length_scale=opt.get('len', 1.0) * (1.04 if who == 'orrin' else 1.0),
+    cfg = SynthesisConfig(length_scale=opt.get('len', 1.0) * (1.04 if who != 'jun' else 1.0),
                           noise_scale=0.75 if who == 'jun' else 0.45,
                           noise_w_scale=0.9 if who == 'jun' else 0.5)
     a = np.concatenate([c.audio_float_array for c in v.synthesize(text, syn_config=cfg)]).astype(np.float64)
@@ -130,7 +130,7 @@ def tts(who, text, opt):
     if 'cut' in opt:  # interrupted mid-word: hard-ish stop
         a[-600:] *= np.linspace(1, 0, 600)
     a = a / (np.max(np.abs(a)) + 1e-9) * 0.8
-    if who == 'orrin':
+    if who != 'jun':  # androids share the synthetic sheen
         d = int(0.0045 * SR)
         comb = np.zeros_like(a)
         comb[d:] = a[:-d]
@@ -240,19 +240,17 @@ def main():
         if ic['mode'] == 'O':
             placed.append((ic['t0'], M.sfx_typing(ic['t1'] - ic['t0'], seed=int(ic['t0'])), 0.9))
 
-    # ---- android chat (chirps), timed inside their cutaways
-    chirp_env = {'orrin': [0.0] * nf, 'vesper': [0.0] * nf}
+    # ---- android chat, timed inside its cutaway
     cur = {}
     for ci, (icname, off, who, text) in enumerate(CHAT):
         ic = events['ic_' + icname]
-        st = M.android_chirp(text, CHIRP_BASE[who], seed=ci)
+        a = tts(who, text, {'len': 0.95, 'pitch': 1.04} if who == 'vesper' else {'len': 0.95})
         t0 = ic['t0'] + off if off is not None else cur[icname]
-        dur = st.shape[1] / SR
-        events[f'a{ci}'] = {'t0': t0, 't1': t0 + dur, 'who': who, 'text': text, 'android': True}
-        placed.append((t0, st, 0.9 if who == 'orrin' else 0.8))
-        env_into(st[0], t0, nf, chirp_env[who])
-        cur[icname] = t0 + dur + 0.3
-        assert t0 + dur <= ic['t1'] + 0.05, f'chat line {ci} overruns {icname}'
+        dur = len(a) / SR
+        events[f'a{ci}'] = {'t0': t0, 't1': t0 + dur, 'who': who, 'text': text}
+        voice_clips.append((t0, a, who))
+        cur[icname] = t0 + dur + 0.25
+        assert t0 + dur <= ic['t1'] + 0.05, f'chat line {ci} overruns {icname} by {t0 + dur - ic["t1"]:.2f}s'
 
     for (t0, st, g) in placed:
         i = int(t0 * SR)
@@ -260,13 +258,13 @@ def main():
         if k > 0:
             mus[:, i:i + k] += st[:, :k] * g
     vox = np.zeros(n)
-    mouth = {'jun': [0.0] * nf, 'orrin': [0.0] * nf}
+    mouth = {'jun': [0.0] * nf, 'orrin': [0.0] * nf, 'vesper': [0.0] * nf}
     for (t0, a, who) in voice_clips:
         i = int(t0 * SR)
         k = min(len(a), n - i)
         vox[i:i + k] += a[:k] * (1.0 if who == 'jun' else 0.95)
         env_into(a, t0, nf, mouth[who])
-    for d in (mouth, chirp_env):
+    for d in (mouth,):
         for who in d:
             m = np.array(d[who])
             p = np.percentile(m[m > 0.01], 92) if np.any(m > 0.01) else 1
@@ -302,7 +300,7 @@ def main():
         w.setsampwidth(2)
         w.setframerate(SR)
         w.writeframes(pcm.tobytes())
-    json.dump({'duration': total, 'fps': FPS, 'events': events, 'mouth': mouth, 'chirp': chirp_env,
+    json.dump({'duration': total, 'fps': FPS, 'events': events, 'mouth': mouth,
                'intercut': intercut}, open(f'{OUT}/timeline.json', 'w'))
     print('total duration %.1f s' % total)
     for k_, v in sorted(events.items(), key=lambda kv: kv[1]['t0']):

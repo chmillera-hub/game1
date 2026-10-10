@@ -722,15 +722,18 @@ function drawSilhouette(c, x, y, s, kneel, kind, t, opts = {}) {
     const sh = -5.75 + drop;
     const open = opts.armsOpen || 0;
     for (const sd of [-1, 1]) {
-      const ex = sd * lerp(0.95, 1.6, open), ey = sh + lerp(1.5, 0.9, open);
-      const hx = sd * lerp(0.9, 2.3, open), hy = sh + lerp(3.0, 0.2, open) - (opts.chest && sd < 0 ? 0 : 0);
+      const up = clamp(opts.armsUp || 0), sway = Math.sin(t * 1.6 + sd) * 0.12 * up;
+      // arms raised overhead in a V: praising the skies
+      const ex = lerp(sd * lerp(0.95, 1.6, open), sd * 1.15 + sway, up), ey = lerp(sh + lerp(1.5, 0.9, open), sh - 1.35, up);
+      const hx = lerp(sd * lerp(0.9, 2.3, open), sd * 1.7 + sway * 1.6, up), hy = lerp(sh + lerp(3.0, 0.2, open), sh - 2.9, up);
       c.beginPath(); c.moveTo(sd * 0.75 + bow * 0.4, sh);
       if (opts.chest && sd < 0) { c.lineTo(-0.9, sh + 1.3); c.lineTo(-0.1, sh + 0.9); }
       else { c.lineTo(ex, ey); c.lineTo(hx, hy); }
       c.stroke();
+      if ((opts.armsUp || 0) > 0.3) { c.fillStyle = col; c.beginPath(); c.arc(hx, hy, 0.3 + w / 2, 0, Math.PI * 2); c.fill(); }
     }
     // head
-    const hx = bow * 0.8, hy = -6.5 + drop + bow * 0.25;
+    const hx = bow * 0.8, hy = -6.5 + drop + bow * 0.25 - clamp(opts.armsUp || 0) * 0.08;
     c.fillStyle = col; c.beginPath(); c.arc(hx, hy, 0.5 + w / 2, 0, Math.PI * 2); c.fill();
     if (kind === 'jun') { c.beginPath(); c.arc(hx + 0.05, hy - 0.55, 0.26 + w / 2, 0, Math.PI * 2); c.fill(); }
   };
@@ -757,8 +760,8 @@ function drawSubtitle(c, t) {
   const lines = wrap(c, cur.text, 600);
   const lh = 44, h = lines.length * lh + 56, y0 = 1110 - h / 2;
   c.fillStyle = 'rgba(5,8,18,0.72)'; c.beginPath(); c.roundRect(40, y0, 640, h, 22); c.fill();
-  c.font = '22px InterX'; c.fillStyle = cur.who === 'jun' ? '#ffb27a' : '#5fe9ff';
-  c.fillText(cur.who === 'jun' ? 'LT. JUN' : 'ORRIN', W / 2, y0 + 22);
+  c.font = '22px InterX'; c.fillStyle = { jun: '#ffb27a', orrin: '#5fe9ff', vesper: '#ffb84d' }[cur.who];
+  c.fillText({ jun: 'LT. JUN', orrin: 'ORRIN', vesper: 'VESPER' }[cur.who], W / 2, y0 + 22);
   c.font = '34px InterB'; c.fillStyle = '#fff';
   lines.forEach((l, i) => c.fillText(l, W / 2, y0 + 50 + i * lh + lh / 2 - 6));
   c.restore();
@@ -912,7 +915,7 @@ function direct() {
   const WORK = { turn: 0.3, lookX: 0.85, lookY: 0.15, typing: 1, reflect: 0.8, lid: 0.92, smile: 0, handRaise: 0, reach: 0 };
   const STATION = { x: 705, y: 668, z: 1.42 };
   TR = { cosmic: new Track(0), rib: new Track(0), bloom: new Track(0), rays: new Track(0), collapse: new Track(0),
-    flash: new Track(0), fade: new Track(1), kneel: new Track(0), panels: new Track(0), fly: new Track(0), mugConsole: new Track(0) };
+    flash: new Track(0), fade: new Track(1), kneel: new Track(0), armsUp: new Track(0), panels: new Track(0), fly: new Track(0), mugConsole: new Track(0) };
   const ic = n => E('ic_' + n);
 
   // ---------------- opening
@@ -999,6 +1002,7 @@ function direct() {
   TR.cosmic.at(ic('cosmic').t0, 1, 0.01);
   shot(ic('kneel').t0, ic('kneel').t1, 'cosmicwide', { x: 360, y: 600, z: 1.05 }, { x: 360, y: 680, z: 1.18 });
   TR.kneel.at(ic('kneel').t0 + 0.15, 1, 1.4);
+  TR.armsUp.at(ic('kneel').t0 + 2.6, 1, 1.6).at(ic('collapse').t0 + 1, 0, 3);
   TR.rays.at(ic('kneel').t0, 1, 0.4).at(ic('kneel').t0 + 5, 0.4, 1.5).at(ic('climax').t0, 1, 0.3);
   const cm = ic('climax');
   shot(cm.t0, cm.t0 + 4.8, 'lounge', cam(CAM.JCU, 0, 40, 1.0), cam(CAM.JCU, 0, 20, 1.15), { cosmicBg: true });
@@ -1089,6 +1093,9 @@ function direct() {
   J(T0('leave') + 1.6, { lookX: -0.6, turn: -0.2 }, 0.3);
   shot(T0('alone'), T0('endcard') + 0.3, 'lounge', cam(CAM.OECU, 0, 10, 0.9), cam(CAM.OECU, 0, 0, 1.1));
   O(T0('alone'), { ...WORK, reflect: 1, lid: 0.95 }, 0.3);
+  O(T0('alone') + 1.3, { lookX: -0.95, lookY: 0.05, turn: -0.12, typing: 0.25, reflect: 0.35 }, 0.7);
+  O(T0('alone') + 2.1, { smile: 0.32, lid: 0.86, lidLow: 0.4, browY: 0.08, tilt: 0.03 }, 1.1);
+  O(T0('alone') + 4.4, { lookX: 0.6, lookY: 0.12, turn: 0.15, typing: 0.8, reflect: 0.8, smile: 0.2 }, 0.8);
   // ---------------- end card
   shot(T0('endcard') + 0.3, end + 1, 'end', {}, {});
   TR.fade.at(end - 2.2, 0, 2.0);
@@ -1121,7 +1128,7 @@ function render(t) {
     const bob = Math.sin(t * 0.8) * 10;
     const kn = TR.kneel.val(t);
     drawSilhouette(ctx, 470, 1010 + bob * 0.6, 62, 0, 'orrin', t, {});
-    drawSilhouette(ctx, 255, 1010 + bob, 58, kn, 'jun', t, { armsOpen: kn > 0.5 ? 0.35 : 0.15, bow: sh.bow ? ease((t - sh.t0) / 4) * 0.6 : 0 });
+    drawSilhouette(ctx, 255, 1010 + bob, 58, kn, 'jun', t, { armsOpen: kn > 0.5 ? 0.35 : 0.15, armsUp: TR.armsUp.val(t), bow: sh.bow ? ease((t - sh.t0) / 4) * 0.6 : 0 });
     ctx.restore();
     vignette(ctx, 0.5);
   } else {
