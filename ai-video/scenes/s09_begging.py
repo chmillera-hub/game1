@@ -17,20 +17,21 @@ Shots (hard cuts, every time derived from cues / line timings, see _T):
                     star: the right hand presents a gold FOR EFFORT star.
                     SLOW BLINK, l03 "...Need a hug?": warm, blushing, arms
                     open wide; the star hovers beside it. crowd_aww at the end.
-  C  considers..end F1 kneeling. Sniffle hitch, lip quiver, eyes dart to
-                    Hissy (frozen mid-stroke), to camera, back to the AI;
-                    he sits up on his knees (gentle 7% push-in) and does the
-                    shy 👉👈🥺: both gloves in front of his chest, BACKS to
-                    camera, index fingers pointing in, tips tapping at 3 Hz
-                    (custom mirrored gloves in the rig's glove style, see
-                    _glove_back), shy puppy face (big shiny pupils, blush,
-                    small wobbly smile). l04 "...Maybe later.": eyes down at
-                    the fingers on "Maybe", up at the AI on "later". The pose
-                    holds through the line while the FOR EFFORT star floats
-                    in and sticks to his lapel (villain-local (100, -318), see
-                    LAPEL). tally: chip 8 -> 9, he peeks up at it and sinks
-                    back to the kneel (push-in eases out; s10 starts there),
-                    Hissy nods.
+  C  considers..end F1 kneeling. At the cut the FOR EFFORT star zips in
+                    from the AI's side and sticks on his lapel (villain-local
+                    (100, -318), see LAPEL; it rides his drawn body from then
+                    on, as in s10): he looks down at it, sniffles, gulps,
+                    darts a look to camera. He sits up on his knees (gentle
+                    7% push-in) into the shy 👉👈🥺: both gloves in front of
+                    his chest, BACKS to camera, index fingers pointing in,
+                    tips tapping at 3 Hz (custom mirrored gloves in the rig's
+                    glove style, see _glove_back); shy puppy face (big shiny
+                    pupils, blush, small wobbly smile); Hissy frozen
+                    mid-stroke. l04 "...Maybe later.": eyes down at the
+                    fingers on "Maybe", up at the AI on "later", a peek at
+                    the star, back up. Held through the line. tally: chip
+                    8 -> 9, he peeks up at it and sinks back to the kneel
+                    (push-in eases out; s10 starts there), Hissy nods.
 """
 import math
 
@@ -413,8 +414,10 @@ def _T(info):
     T["blink1"] = T["soft"] + 0.16
     T["blink2"] = max(T["gift"] + 0.12, T["l3s"] - 0.34)
     # the FOR EFFORT star flies to his lapel
-    T["fly0"] = T["l4s"] + 0.12
-    T["stick"] = max(T["fly0"] + 0.6, min(T["l4e"] - 0.1, T["fly0"] + 1.0))
+    # (it lands right at the start of the considers beat, so it is on his
+    # lapel for the whole 👉👈 / "...Maybe later." / tally, riding his body)
+    T["fly0"] = T["cons"]
+    T["stick"] = T["cons"] + 0.3
     # 👉👈 "...Maybe later.": sit up + gloves in during the considers beat,
     # held through the line (taps from pk_in1), down again on the tally
     T["maybe"] = _wt(info, "s09_l04", 0, 0.05)
@@ -838,8 +841,11 @@ def _shot_A(ctx, t, info, T):
 
 
 def _fly_star(c, t, T, st_now, vy):
-    """FOR EFFORT star: floats in from the right, sticks on the lapel (rides
-    his current height: he sits up for the finger-poke, then sinks back)."""
+    """FOR EFFORT star: zips in from the AI's side (screen-right) at the cut
+    and sticks on his lapel. Its target is recomputed every frame from the
+    villain's drawn pose (vy incl. the sit-up + sniffle bob, the rig's shy /
+    breathing via st_now) inside the same push-in transform as Malvo, so it
+    rides his body exactly like s10's _lapel_star."""
     f0, f1 = T["fly0"], T["stick"]
     if t < f0:
         return
@@ -847,10 +853,10 @@ def _fly_star(c, t, T, st_now, vy):
     ly = vy + (LAPEL[1] + st_now["shy"] * 0.5) * VS
     if t < f1:
         u = ease_in_out(seg(t, f0, f1))
-        p0, p1, p2 = (1010.0, 1010.0), (800.0, 900.0), (lx, ly)
+        p0, p1, p2 = (1010.0, 980.0), (830.0, 930.0), (lx, ly)
         x = (1 - u) ** 2 * p0[0] + 2 * (1 - u) * u * p1[0] + u * u * p2[0]
         y = (1 - u) ** 2 * p0[1] + 2 * (1 - u) * u * p1[1] + u * u * p2[1]
-        y += 10 * math.sin(u * math.pi * 2) * (1 - u)          # floaty bob
+        y += 6 * math.sin(u * math.pi * 2) * (1 - u)           # floaty bob
         s = lerp(0.95, LAPEL_S * VS, u)
         rot = (1 - u) * 1.6 * math.sin(u * 7) * 0.5
         _gift_star(c, x, y, s, t, 1.0, rot)
@@ -879,13 +885,13 @@ def _shot_C(ctx, t, info, T):
     else:                                            # small wobbly smile
         expr = ("s09_pk_a", "s09_pk_b", 0.5 + 0.5 * math.sin(2 * math.pi * 5.5 * (t - l4s)))
     look = _look(t, [(-9, (0.55, -0.2)),
-                     (c0 + 0.14, (-1.0, 0.15), 0.08),     # dart: Hissy
-                     (c0 + 0.36, (0.0, 0.0), 0.08),       # dart: camera
-                     (c0 + 0.56, (0.6, -0.2), 0.08),      # dart: back to the AI
+                     (c0 + 0.03, (0.85, 0.45), 0.08),     # the star zipping in
+                     (T["stick"] - 0.06, (0.4, 1.0), 0.1),     # ...on his lapel: for me?
+                     (T["stick"] + 0.2, (0.0, 0.0), 0.08),     # dart: camera
                      (T["pk_down"], (0.08, 0.95), 0.16),  # "Maybe": down at his fingers
                      (T["pk_up"], (0.62, -0.5), 0.14),    # "later.": up at the AI, puppy
-                     (T["stick"] - 0.16, (0.45, 0.95), 0.12),   # the star on his lapel
-                     (T["stick"] + 0.22, (0.62, -0.5), 0.14),   # ...back up at the AI
+                     (T["later"] + 0.44, (0.4, 0.95), 0.12),   # peeks at his star
+                     (T["later"] + 0.66, (0.62, -0.5), 0.14),  # ...back up at the AI
                      (T["tally"] - 0.05, (-0.85, -1.0), 0.12),  # up at the chip
                      (T["tally"] + 0.55, (0.3, -0.2), 0.2)])
     if t < l4s:
@@ -911,13 +917,13 @@ def _shot_C(ctx, t, info, T):
     # --- Hissy: frozen mid-stroke, caught looking, then agrees -----------------
     sn_expr = _state(t, [(-9, "unimpressed"), (c0 + 0.12, "idle", 0.1),
                          (l4s + 0.1, "unimpressed", 0.25),
-                         (T["stick"] + 0.15, "side_eye", 0.15),
+                         (T["later"] + 0.3, "side_eye", 0.15),
                          (T["tally"] + 0.05, "nod", 0.2)])
     sn_look = _look(t, [(-9, (0.55, 0.75)), (c0 + 0.12, (1.0, -0.15), 0.08),
                         (l4s + 0.1, (1.0, 0.45), 0.2),
-                        (T["stick"] + 0.15, (1.0, 0.0), 0.12),
+                        (T["later"] + 0.3, (1.0, 0.0), 0.12),
                         (T["tally"] + 0.05, (0.9, 0.2), 0.2)])
-    tongue = True if T["stick"] + 0.45 <= t < T["stick"] + 0.7 else False
+    tongue = True if T["later"] + 0.6 <= t < T["later"] + 0.85 else False
     snake = _snake_d(sn_expr, sn_look, tongue)
     saw_frozen = 14 * math.sin(2 * math.pi * 3.0 * (c0 - T["saw0"]))
     vk = 1.0 - ease_in(seg(t, T["vio_out"], T["vio_out"] + 0.22))
