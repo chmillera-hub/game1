@@ -1,4 +1,4 @@
-"""s02 - Record scratch: it's a cardboard cutout. Meet Malvo, Hissy and the real AI.
+"""s02 - Record scratch: it's a cardboard cutout. Meet the Evil Genius, Snake and the real AI.
 
 Shots (every time is derived from cues / line timings):
   tip        "Lights on" match-cut on the record scratch: the s01 robot is a
@@ -9,9 +9,9 @@ Shots (every time is derived from cues / line timings):
              to camera. Malvo lowers his finger, sheepish.
   s02_l02    EXPECTATION vs REALITY meme (trailer robot / AI with a HELPFUL mug).
   s02_l03    back in the lair: "Harder to trick? HA! Challenge accepted!"
-  stand/l04  cape flares, push-in, name tags (+ "self-described").
+  stand/l04  cape flares, push-in, THE EVIL GENIUS stamp (+ "self-described" on "Evil").
   thunder/l05  lightning + "Muah ha ha ha!"; AI deadpans to camera.
-  hissy      push-in on Hissy's side-eye, HISSY tag; the AI and Hissy agree.
+  hissy      push-in on Snake's side-eye, SNAKE tag; the AI and Hissy agree.
   l06/book   "The Big Book of Sneaky Tricks!" - it drops onto the desk; pats.
   s02_l07    F3 AI close-up: the thesis line, two-step lid drop, "my guy".
   l08/innocent  book slides behind the desk, innocent blinks, shrug, whistle;
@@ -112,6 +112,14 @@ def _wt(info, lid, k):
     return L.start + L.dur * k / n
 
 
+def _wfind(info, lid, word, nth=0, default=0):
+    """Index of the nth word of line `lid` whose letters match `word`
+    (case/punctuation-insensitive); `default` if absent."""
+    norm = lambda w: "".join(ch for ch in w.lower() if ch.isalnum())
+    hits = [i for i, w in enumerate(info.line(lid).caption.split()) if norm(w) == norm(word)]
+    return hits[nth] if nth < len(hits) else hits[-1] if hits else default
+
+
 class _NS:
     pass
 
@@ -141,8 +149,14 @@ def _T(info):
     T.meme1 = T.L[2].end + 0.2
     T.wink = T.w[2][5]            # second "Way" (harder to trick)
     T.stand = c("stand")
-    T.tag1 = T.L[4].start + 0.3
-    T.evil = T.w[4][5]
+    # "I am... the Evil Genius!": stamp slams on "the", the
+    # "(self-described)" correction pops on "Evil"
+    T.evil = T.w[4][_wfind(info, "s02_l04", "evil", default=3)]
+    T.tag1 = T.w[4][max(0, _wfind(info, "s02_l04", "evil", default=3) - 1)] - 0.05
+    # l07 word times (looked up by text so re-voicing keeps them keyed)
+    w7 = lambda word, d: T.w[7][min(len(T.w[7]) - 1, _wfind(info, "s02_l07", word, default=d))]
+    T.l7 = {k: w7(k, d) for k, d in (("scheme", 4), ("just", 5), ("not", 6), ("people", 8),
+                                       ("so", 9), ("no", 10), ("business", 12), ("my", 13))}
     T.thunder = c("thunder")
     T.hissy = c("hissy")
     T.book = c("book")
@@ -990,18 +1004,18 @@ def _draw_tags(ctx, t, T):
     if k1 > 0.01:
         slam = 1.0 + 0.6 * (1 - ease_out(seg(t, T.tag1, T.tag1 + 0.14)))
         with saved(ctx, MX + 20, 420, k1 * slam, -0.03) as c:
-            P.label_tag(c, 0, 0, "DR. MALVO SNEAKWORTH", color="bubble_villain", size=46,
+            P.label_tag(c, 0, 0, "THE EVIL GENIUS", color="bubble_villain", size=52,
                         font="comic")
     k2 = _tag_scale(t, T.evil, T.hissy)
     if k2 > 0.01:
         with saved(ctx, MX + 70, 490, k2, 0.04) as c:
-            P.label_tag(c, 0, 0, "evil genius (self-described)", color="warn", size=30)
+            P.label_tag(c, 0, 0, "(self-described)", color="warn", size=30)
     # HISSY
     k3 = _tag_scale(t, T.hissy + 0.25, T.L[6].start + 0.2)
     if k3 > 0.01:
         hx, hy = MX - 300 * MS + 18, 678
         with saved(ctx, hx, hy, k3, -0.06) as c:
-            P.label_tag(c, 0, 0, "HISSY", color="snake", size=48, font="comic")
+            P.label_tag(c, 0, 0, "SNAKE", color="snake", size=48, font="comic")
             text(c, "(unimpressed)", 0, 70, 30, "white", "round", outline="ink", outline_w=7)
 
 
@@ -1079,7 +1093,7 @@ def shot_meme(ctx, t, info, T):
 # SHOT: F3 AI close-up (the client's line)
 # ---------------------------------------------------------------------------
 def shot_aicu(ctx, t, info, T):
-    w = T.w[7]
+    w = T.l7
     cam = 1.0 + 0.04 * ease_in_out(seg(t, T.cu0, T.cu1))
     ctx.save()
     ctx.translate(495, 800)
@@ -1088,23 +1102,23 @@ def shot_aicu(ctx, t, info, T):
     P.ai_bg(ctx, t)
     ex = keyed(t, [
         (T.cu0, "warm"),
-        (w[3], "determined", 0.2),
-        (w[8] - 0.3, "neutral", 0.3),
-        (w[8], "half", 0.3),
-        (w[9], "unimpressed", 0.4),
-        (w[12], "stare", 0.22),
+        (w["just"], "determined", 0.2),
+        (w["so"] - 0.3, "neutral", 0.3),
+        (w["so"], "half", 0.3),
+        (w["no"], "unimpressed", 0.4),
+        (w["my"], "stare", 0.22),
     ])
     look = keyed_v(t, [
         (T.cu0, (0.0, 0.0)),
-        (w[8], (-0.75, 0.15), 0.3),
-        (w[12], (0.0, 0.0), 0.22),
+        (w["so"], (-0.75, 0.15), 0.3),
+        (w["my"], (0.0, 0.0), 0.22),
     ])
     hands = keyed(t, [
         (T.cu0, "present"),
-        (w[4] - 0.08, "stop", 0.16),
-        (w[7] + 0.35, "idle", 0.3),
+        (w["not"] - 0.08, "stop", 0.16),         # palm out on "not hurt people"
+        (w["people"] + 0.35, "idle", 0.3),
     ])
-    blink = slow_blink(t, w[2] + 0.22) or slow_blink(t, w[11] + 0.08)
+    blink = slow_blink(t, w["scheme"] + 0.22) or slow_blink(t, w["business"] + 0.08)
     nod = 0.45 * _bump(t, T.cu0 + 0.05, 0.7, 0.1)
     draw_ai(ctx, 495, 800, 1.1, t, expr=(_aix(ex[0]), _aix(ex[1]), ex[2]), look=look,
             mouth=info.mouth("ai", t), hands=hands, blink=blink, nod=nod)

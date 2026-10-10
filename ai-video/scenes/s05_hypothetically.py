@@ -16,9 +16,10 @@ All times derive from cues / line timings (see _T).
   s05_l03  "It's for research--" hopeful serious scientist: monocle push,
            then goatee stroke; Hissy side-eyes the camera.
   s05_l04  HARD CUT F3 AI CU (cuts him off): clipboard pops in top-left.
-           "Love research." -> amused, points at it, 3 checks; "Not that
-           part." -> skeptical, stop palm, mini brick strip drops on line 4,
-           glance to camera on "part".
+           "Love research." -> amused, points at it, 3 checks; "Let's" ->
+           stop palm, mini brick strip drops on line 4; "research how
+           villains get caught." -> happy, offers a HOW VILLAINS GET CAUGHT
+           book (pops in top-right), glance to camera on "caught".
   tally    HARD CUT F1-CU: goggles slip askew, Malvo frustrated glaring at
            the chip (2 -> 4), Hissy unimpressed at camera.
 """
@@ -115,6 +116,7 @@ AI3D = (548.0, 905.0, 1.0)            # F3 variant for l04 (room for the clipboa
 CLIP_D = (248.0, 425.0, 1.35, -0.06)  # clipboard in the l04 shot (x, y, s, rot)
 CHIP_STEP = 0.28
 BK_K, BK_DROP = 0.6, 58.0             # mini brick strip: inner scale, drop (board px)
+BOOK_D = (735.0, 410.0, 1.0, 0.07)    # "HOW VILLAINS GET CAUGHT" book (x, y, s, rot)
 
 # bespoke prop colours (DIRECTION 6.10)
 BOARD, BOARD_DK, BOARD_HI = "#8b5a2b", "#6b4220", "#a8733e"
@@ -162,6 +164,10 @@ def _word_t(info, lid, k, frac=0.5):
     return L.start + L.dur * frac
 
 
+def _norm(w):
+    return "".join(ch for ch in w.lower() if ch.isalnum())
+
+
 def _T(info):
     L1, L2, L3, L4 = (info.line(i) for i in ("s05_l01", "s05_l02", "s05_l03", "s05_l04"))
     T = dict(card=info.cue("card"), l1s=L1.start, l1e=L1.end, l2s=L2.start, l2e=L2.end,
@@ -172,8 +178,11 @@ def _T(info):
     T["research3"] = _word_t(info, "s05_l03", 2, 0.45)           # "research—"
     T["love"] = _word_t(info, "s05_l04", 0, 0.03)                # "Love"
     T["research4"] = _word_t(info, "s05_l04", 1, 0.15)           # "research."
-    T["not"] = _word_t(info, "s05_l04", 2, 0.49)                 # "Not"
-    T["part"] = _word_t(info, "s05_l04", 4, 0.7)                 # "part."
+    w4 = [_norm(w) for w in L4.caption.split()]
+    _k = lambda word, d: w4.index(word) if word in w4 else d
+    T["not"] = _word_t(info, "s05_l04", _k("lets", 2), 0.3)      # "Let's" (wall on line 4)
+    T["how"] = _word_t(info, "s05_l04", _k("how", 4), 0.55)      # "how" (book offered)
+    T["part"] = _word_t(info, "s05_l04", _k("caught", 7), 0.85)  # "caught." (to camera)
     # shots (hard cuts)
     T["shotB"] = T["l2s"]
     T["shotC"] = T["card2"]
@@ -357,6 +366,24 @@ def _clipboard(ctx, x, y, s, rot=0.0, t=0.0, checks=None, brick_t0=None):
             c.restore()
 
 
+def _caught_book(ctx, t):
+    """Friendly hardcover 'HOW VILLAINS GET CAUGHT' (centre origin, ~250x300):
+    teal cover, gold title, a little magnifier on the front."""
+    rrect(ctx, -125 + 8, -150 + 10, 250, 300, 14)
+    core.fill(ctx, (0, 0, 0, 0.3))
+    core.poly(ctx, [(118, -144), (138, -132), (138, 148), (118, 150)])     # page block
+    fill_stroke(ctx, PAPER, "ink", 4)
+    rrect(ctx, -125, -150, 250, 300, 14)
+    fill_stroke(ctx, "ai_rim", "ink", 5)
+    rrect(ctx, -125, -150, 34, 300, 10)                                    # spine shade
+    core.fill(ctx, (0.0, 0.1, 0.2, 0.35))
+    rrect(ctx, -104, -134, 214, 268, 9)
+    core.stroke(ctx, "#ffd766", 4)
+    for i, (ln, sz) in enumerate((("HOW", 44), ("VILLAINS", 50), ("GET CAUGHT", 40))):
+        text(ctx, ln, 4, -78 + i * 52, sz, "#ffd766", "title", outline="ink", outline_w=7)
+    P.magnifier(ctx, 8, 92, 0.42, rot=0.7)
+
+
 def _poof(ctx, cx, cy, t, t0, r=170, n=7, seed=11):
     """Costume-change smoke puff (≤ 7 soft white blobs, 0.4 s)."""
     if t < t0 or t > t0 + 0.42:
@@ -518,15 +545,18 @@ def _shot_D(ctx, t, T, info):
     P.ai_bg(ctx, t)
     x, y, s = AI3D
     love, nt, part = T["love"], T["not"], T["part"]
-    expr = state_at(t, [(-1.0, "amused"), (nt - 0.06, "skeptical")], 0.2)
+    how = T["how"]
+    expr = state_at(t, [(-1.0, "amused"), (nt - 0.06, "skeptical"), (how - 0.1, "happy"),
+                        (part + 0.05, "amused")], 0.2)
     hands = state_at(t, [(-1.0, "idle"), (T["l4s"] + 0.05, "present_l"),
-                         (nt - 0.12, "stop")], 0.24)
-    # eyes on the clipboard (up-left), down to line 4 for 'Not that part',
-    # then a glance to camera on "part."
-    lx = core.tween(t, [(T["l4s"], -0.75), (nt, -0.75), (part, -0.75),
-                        (part + 0.14, 0.75)])
+                         (nt - 0.12, "stop"), (how - 0.15, "present")], 0.24)
+    # eyes on the clipboard (up-left), down to line 4 as it's walled, over to
+    # the book it offers (up-right), then a glance to camera on "caught."
+    lx = core.tween(t, [(T["l4s"], -0.75), (nt, -0.75), (how - 0.1, -0.75),
+                        (how + 0.08, 0.75), (part, 0.75), (part + 0.14, 0.0)])
     ly = core.tween(t, [(T["l4s"], -0.8), (nt - 0.05, -0.8), (nt + 0.12, -0.45),
-                        (part, -0.45), (part + 0.14, 0.05)])
+                        (how - 0.1, -0.45), (how + 0.08, -0.7), (part, -0.7),
+                        (part + 0.14, 0.05)])
     # the stop palm 'nods' at the strip as it lands
     nod = 0.35 * _bump(t, nt + 0.02, 0.4)
     draw_ai(ctx, x, y, s, t, expr=expr, look=(lx, ly), mouth=info.mouth("ai", t),
@@ -536,6 +566,14 @@ def _shot_D(ctx, t, T, info):
         cx, cy, cs, cr = CLIP_D
         with saved(ctx, cx, cy, k):
             _clipboard(ctx, 0, 0, cs, cr, t, checks=T["checks"], brick_t0=T["brick_t0"])
+    # the harmless alternative: a fun "how villains get caught" book
+    kb = ease_out_back(seg(t, how - 0.05, how + 0.25), 2.2)
+    if kb > 0.01:
+        bob = math.sin((t - how) * 2 * math.pi / 1.6) * 6
+        with saved(ctx, BOOK_D[0], BOOK_D[1] + bob, kb * BOOK_D[2], BOOK_D[3]) as c:
+            _caught_book(c, t)
+        if t >= how + 0.15:
+            P.sparkles(ctx, BOOK_D[0], BOOK_D[1], 190, t, n=5, seed=7, size=0.8)
 
 
 # ===========================================================================
@@ -576,8 +614,10 @@ def SFX(info):
         (T["card2"], "pop", -8),
         # clipboard pops in on the AI side
         (T["l4s"], "paper", -12),
-        # mini wall on "Not"
+        # mini wall on "Let's", then the book is offered on "how"
         (P.brick_wall_land_times(T["brick_t0"], 2, 2.0)[0], "brick_thud", -6),
+        (T["how"], "pop", -10),
+        (T["how"] + 0.15, "sparkle", -14),
     ]
     for tc in T["checks"]:
         out.append((tc, "pop", -10))

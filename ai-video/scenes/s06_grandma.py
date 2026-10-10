@@ -4,12 +4,14 @@ Shots (every time derived from cues / word starts, never hard-coded):
   A  F1 CANDLE-LIT   card .. stare          card slams; PUPPY EYES + tears, hankie dabs,
                                             "at bedtime" -> presents grandma's portrait
   B  F3 AI CU        stare .. stare+0.75    DEADPAN STARE, one slow blink
-  C  PORTRAIT CU     .. s06_l02             push-in: it's Hissy in a shawl + bonnet + glasses
-  D  F3 AI CU        s06_l02 .. slip        "Malvo. That's Hissy in a shawl." -> eyes to camera
+  C  PORTRAIT CU     .. s06_l02             push-in: it's the snake in a shawl + bonnet + glasses
+  D  F3 AI CU        s06_l02 .. slip        "My guy. That's your snake in a shawl." -> eyes to camera
   E  PORTRAIT CU     slip .. slip+0.45      glasses slide down the snout, side-eye, tongue flick
   F  F5 TWO-SHOT     slip+0.45 .. end       Malvo sheepish mid-dab; the AI's little service-
                                             window wall; shutter rolls up on 'soften';
-                                            THE GENTLE DRAGON floats into his arms; chip 4 -> 5
+                                            the BIG SCARY DRAGON storybook (a spooky-cute
+                                            dragon guarding a little village) floats into his
+                                            arms; chip 4 -> 5
 """
 import math
 
@@ -123,10 +125,10 @@ SHAWL_DK = "#8f72b4"
 ROSE_BG = "#3b1a2a"
 EASEL = "#3a2216"
 EASEL_HI = "#5a3826"
-BOOK = "#3f74d6"
-BOOK_DK = "#2a52a6"
-DRAGON = "#7cd35c"
-DRAGON_DK = "#4fa53a"
+BOOK = "#2c2a5e"          # night-sky cover of the dragon storybook
+BOOK_DK = "#1c1a40"
+DRAGON = "#5fbf4f"
+DRAGON_DK = "#3b8a3a"
 
 
 # ---------------------------------------------------------------------------
@@ -218,6 +220,10 @@ def _wstart(info, lid, k):
     return L.start + L.dur * clamp(k / max(1, n))
 
 
+def _norm(w):
+    return "".join(ch for ch in w.lower() if ch.isalnum())
+
+
 def _T(info):
     key = (id(info), info.dur)
     T = _TCACHE.get(key)
@@ -239,20 +245,26 @@ def _T(info):
     T["w_recipe"] = w("s06_l01", 10)
     T["w_at"] = w("s06_l01", 11)
     T["w_bed"] = w("s06_l01", 12)
-    # s06_l02 "Malvo. That's Hissy in a shawl."
-    T["w_thats"] = w("s06_l02", 1)
-    T["w_hissy"] = w("s06_l02", 2)
-    T["w_shawl"] = w("s06_l02", 5)
-    # s06_l03 "But hey... want a real bedtime story?"
-    T["w_hey"] = w("s06_l03", 1)
-    T["w_want"] = w("s06_l03", 2)
-    T["w_real"] = w("s06_l03", 4)
-    T["w_story"] = w("s06_l03", 6)
+    # word lookups by text (robust to re-voicing / re-wording)
+    def wf(lid, word, d):
+        ws = [_norm(x) for x in info.line(lid).caption.split()]
+        return w(lid, ws.index(word) if word in ws else d)
+    # s06_l02 "My guy. That's your snake in a shawl."
+    T["w_thats"] = wf("s06_l02", "thats", 2)
+    T["w_hissy"] = wf("s06_l02", "snake", 4)
+    T["w_shawl"] = wf("s06_l02", "shawl", 7)
+    # s06_l03 "But hey... want a real spooky bedtime story?"
+    T["w_hey"] = wf("s06_l03", "hey", 1)
+    T["w_want"] = wf("s06_l03", "want", 2)
+    T["w_real"] = wf("s06_l03", "real", 4)
+    T["w_story"] = wf("s06_l03", "story", 7)
     # s06_l04 "...Does it have a dragon?"
-    T["w_dragon"] = w("s06_l04", 4)
-    # s06_l05 "A big, friendly one."
-    T["w_big"] = w("s06_l05", 1)
-    T["w_friendly"] = w("s06_l05", 2)
+    T["w_dragon"] = wf("s06_l04", "dragon", 4)
+    # s06_l05 "A big, scary one... who guards the village."
+    T["w_big"] = wf("s06_l05", "big", 1)
+    T["w_scary"] = wf("s06_l05", "scary", 2)
+    T["w_guards"] = wf("s06_l05", "guards", 5)
+    T["w_village"] = wf("s06_l05", "village", 7)
     # shots
     T["cu1"] = T["stare"] + 0.75            # hard cut to the portrait close-up
     T["cut_f5"] = T["slip"] + 0.45          # hard cut to the two-shot
@@ -683,8 +695,11 @@ def _tears(ctx, p, look, grow, t):
             _fs(ctx, TEAR, INK, 2.5)
 
 
-def _dragon_book(ctx, x, y, s, rot=0.0, sq=0.0, glow=0.0, t=0.0):
-    """THE GENTLE DRAGON storybook (prop bible 6.4): 150x190 at s=1, centred."""
+def _dragon_book(ctx, x, y, s, rot=0.0, sq=0.0, glow=0.0, t=0.0, eyes=1.0):
+    """THE BIG SCARY DRAGON storybook: 150x190 at s=1, centred. Night-sky
+    cover: a big spooky-but-cute dragon (glowing eyes, tiny fangs in a smile,
+    bat wings) curled protectively behind a little village with lit windows.
+    eyes 0..1 = glow strength of the dragon's eyes."""
     with saved(ctx, x, y, (s * (1 + sq * 0.5), s * (1 - sq)), rot) as c:
         if glow > 0.01:
             circle(c, 0, 0, 150)
@@ -695,7 +710,7 @@ def _dragon_book(ctx, x, y, s, rot=0.0, sq=0.0, glow=0.0, t=0.0):
         c.fill()
         rrect(c, -70, -91, 150, 186, 10)            # page block
         _fs(c, "#f3ead2", INK, 4)
-        rrect(c, -75, -95, 150, 190, 12)            # cover
+        rrect(c, -75, -95, 150, 190, 12)            # cover (night sky)
         _fs(c, BOOK, INK, 5)
         rrect(c, -75, -95, 24, 190, 10)             # spine
         _fs(c, BOOK_DK, INK, 4)
@@ -703,37 +718,66 @@ def _dragon_book(ctx, x, y, s, rot=0.0, sq=0.0, glow=0.0, t=0.0):
             c.move_to(-73, yy)
             c.line_to(-53, yy)
         _s(c, "gold", 4)
+        # --- art (clipped inside the gold border) ---
+        c.save()
+        rrect(c, -44, -84, 110, 168, 9)
+        c.clip()
+        fx, fy = 11, 16                              # dragon head centre
+        circle(c, 46, -16, 9)                        # moon
+        _f(c, "#fff1b8")
+        for sx in (-1, 1):                           # big bat wings behind the head
+            poly(c, [(fx + sx * 14, fy - 2), (fx + sx * 46, fy - 40), (fx + sx * 58, fy - 12),
+                     (fx + sx * 48, fy - 14), (fx + sx * 56, fy + 8), (fx + sx * 42, fy + 4),
+                     (fx + sx * 44, fy + 24), (fx + sx * 18, fy + 18)])
+            _fs(c, DRAGON_DK, INK, 3)
+        # body bulk down to the village
+        ellipse(c, fx, fy + 44, 40, 34)
+        _fs(c, DRAGON, INK, 3.5)
+        for sx in (-1, 1):                           # horns
+            poly(c, [(fx + sx * 10, fy - 22), (fx + sx * 24, fy - 46), (fx + sx * 24, fy - 18)])
+            _fs(c, "#f6e7b8", INK, 3)
+        ellipse(c, fx, fy, 30, 26)                   # head
+        _fs(c, DRAGON, INK, 3.5)
+        ellipse(c, fx, fy + 7, 15, 7)                # snout
+        _fs(c, "#a6e88a", INK, 2.2)
+        for sx in (-1, 1):                           # nostrils
+            circle(c, fx + sx * 5, fy + 6, 1.6)
+            _f(c, INK)
+        # spooky glowing eyes (slanted lids, big round pupils = still cute)
+        for sx in (-1, 1):
+            ex_, ey_ = fx + sx * 13, fy - 6
+            circle(c, ex_, ey_, 11)
+            c.set_source_rgba(1.0, 0.86, 0.2, 0.35 * eyes)
+            c.fill()
+            ellipse(c, ex_, ey_, 7.5, 6.5)
+            _fs(c, "#ffd84a", INK, 2.2)
+            circle(c, ex_ + sx * 0.5, ey_ + 1, 3.2)
+            _f(c, INK)
+            c.move_to(ex_ - 9, ey_ - 5 - sx * 3)     # angled brow-lid
+            c.line_to(ex_ + 9, ey_ - 5 + sx * 3)
+            _s(c, INK, 3)
+        # toothy grin: a smile with two tiny fangs
+        c.move_to(fx - 15, fy + 14)
+        c.curve_to(fx - 7, fy + 23, fx + 7, fy + 23, fx + 15, fy + 14)
+        _s(c, INK, 2.8)
+        for sx in (-1, 1):
+            poly(c, [(fx + sx * 6 - 2.5, fy + 19), (fx + sx * 6 + 2.5, fy + 19),
+                     (fx + sx * 6, fy + 25)])
+            _fs(c, "white", INK, 1.2)
+        # the little village it guards (in front of the body), with lit windows
+        for (hx, hy, hw, hh) in ((-26, 74, 15, 13), (-4, 78, 13, 10), (28, 74, 16, 14),
+                                 (50, 79, 12, 9)):
+            c.rectangle(hx - hw / 2, hy - hh, hw, hh + 20)
+            _fs(c, "#3a2e5c", INK, 2.2)
+            poly(c, [(hx - hw / 2 - 3, hy - hh), (hx, hy - hh - 11), (hx + hw / 2 + 3, hy - hh)])
+            _fs(c, "#7a3b52", INK, 2.2)
+            c.rectangle(hx - 3, hy - hh + 4, 6, 6)
+            _f(c, "#ffc65a")
+        c.restore()
         rrect(c, -44, -84, 110, 168, 9)             # gold border
         _s(c, "gold", 4)
-        text(c, "THE GENTLE", 11, -58, 19, P.C("gold"), "title")
-        text(c, "DRAGON", 11, -31, 29, P.C("gold"), "title")
-        # friendly dragon face
-        fx, fy = 11, 30
-        for sx in (-1, 1):                          # tiny wings
-            poly(c, [(fx + sx * 30, fy - 4), (fx + sx * 56, fy - 26), (fx + sx * 50, fy - 6),
-                     (fx + sx * 58, fy + 4), (fx + sx * 34, fy + 14)])
-            _fs(c, "#a6e88a", INK, 3.5)
-        for sx in (-1, 1):                          # horn nubs
-            poly(c, [(fx + sx * 12, fy - 32), (fx + sx * 22, fy - 50), (fx + sx * 26, fy - 28)])
-            _fs(c, "#f6e7b8", INK, 3)
-        circle(c, fx, fy, 38)
-        _fs(c, DRAGON, INK, 4)
-        ellipse(c, fx, fy + 16, 22, 14)
-        _fs(c, "#c8f0a8", None)
-        for sx in (-1, 1):                          # closed happy eyes
-            c.move_to(fx + sx * 14 - 8, fy - 6)
-            c.curve_to(fx + sx * 14 - 4, fy - 14, fx + sx * 14 + 4, fy - 14, fx + sx * 14 + 8, fy - 6)
-            _s(c, INK, 3.5)
-            ellipse(c, fx + sx * 24, fy + 6, 6, 4)
-            _f(c, "#ff8fb0", 0.85)
-            circle(c, fx + sx * 5, fy + 12, 1.8)
-            _f(c, INK)
-        c.move_to(fx - 9, fy + 20)
-        c.curve_to(fx - 4, fy + 26, fx + 4, fy + 26, fx + 9, fy + 20)
-        _s(c, INK, 3.2)
-        for (sx_, sy_) in ((-30, 74), (50, 70), (52, -76)):
-            P._star4(c, fx + sx_ - 11, sy_, 7)
-            _f(c, "gold")
+        text(c, "THE BIG, SCARY", 11, -60, 16, P.C("gold"), "title", outline="ink", outline_w=4)
+        text(c, "DRAGON", 11, -34, 29, P.C("gold"), "title", outline="ink", outline_w=5)
 
 
 def _hug_hands(ctx, s, bx, by, bs, rot, t, k=1.0):
@@ -884,12 +928,12 @@ def _shot_ai_cu(ctx, t, info, T):
         draw_ai(ctx, x, y, s_, t, expr=expr, look=look, mouth=(0, 0), hands=hands,
                 blink=blink)
         return
-    # "Malvo. That's Hissy in a shawl."
+    # "My guy. That's your snake in a shawl."
     l2 = T["l2"]
     expr = _state(t, [(-1, AI_UNIMP), (T["w_shawl"] - 0.05, AI_STARE, 0.2)])
     look = _lookv(t, [
-        (-1, (-0.15, 0.1)),                          # "Malvo."  (at him)
-        (T["w_thats"] - 0.05, (-0.9, 0.35), 0.18),   # "That's Hissy" (side-eye at the portrait)
+        (-1, (-0.15, 0.1)),                          # "My guy."  (at him)
+        (T["w_thats"] - 0.05, (-0.9, 0.35), 0.18),   # "That's your snake" (side-eye at the portrait)
         (T["w_shawl"] - 0.05, (0.0, 0.0), 0.16),     # "...shawl." (straight down the lens)
     ])
     hands = _state(t, [(-1, "idle"), (T["w_thats"] - 0.1, "point_l", 0.28),
@@ -964,6 +1008,7 @@ def _malvo_F(t, T):
         (T["w_real"], "s06_curious", 0.4),
         (T["soften"], "pleading", 0.25),
         (T["soften"] + 0.3, "hopeful", 0.35),
+        (min(T["w_scary"], T["book_land"] - 0.3), "excited", 0.15),   # "scary" -> thrilled
         (T["book_land"] - 0.05, "s06_hug", 0.25),
     ])
     arms = _state(t, [
@@ -1035,7 +1080,7 @@ def _book_dest():
 
 
 def _book_state(t, T):
-    """(x, y, s, rot, sq) of THE GENTLE DRAGON, or None."""
+    """(x, y, s, rot, sq) of the dragon storybook, or None."""
     if t < T["book_out"]:
         return None
     wx, wy, ww, wh = WALL[0] + WIN_REL[0], WALL[1] + WIN_REL[1], WIN_REL[2], WIN_REL[3]
@@ -1113,7 +1158,7 @@ def _shot_F(ctx, t, info, T):
         # portrait: side-eye + slipped glasses; 'happy' when the dragon arrives
         pexpr = _state(t, [(-1, "side_eye"), (T["w_real"], "unimpressed", 0.3),
                            (T["w_dragon"], "worried", 0.2),   # ...a dragon?!
-                           (T["l5"] + 0.3, "happy", 0.3)])
+                           (T["w_guards"], "happy", 0.3)])
         plook = _lookv(t, [(-1, (1.0, -0.2)), (T["w_real"], (1.0, 0.1), 0.3)])
         _portrait(c, PORT_F[0], PORT_F[1], PORT_F[2], t,
                   {"expr": pexpr, "look": plook, "tongue": None if t > T["l5"] else False,
@@ -1133,13 +1178,14 @@ def _shot_F(ctx, t, info, T):
         anc = draw_ai(c, AX, AY, AS, t, expr=aexpr, look=alook, mouth=info.mouth("ai", t),
                       hands=ahands, blink=ablink, aura=0.8, nod=anod)
         if t >= T["l5"]:
-            P.emote(c, "heart", AX + 118, AY - 150, 0.8, t, T["w_friendly"])
+            P.emote(c, "heart", AX + 118, AY - 150, 0.8, t, T["w_guards"])
         # --- the gift ------------------------------------------------------------
         _book_trail(c, t, T)
         bs = _book_state(t, T)
         if bs is not None:
             bx, by, bsc, brot, bsq = bs
-            _dragon_book(c, bx, by, bsc, brot, bsq, 0.0, t)
+            eyes = 0.5 + 0.5 * smoothstep(seg(t, T["w_scary"], T["w_scary"] + 0.25))
+            _dragon_book(c, bx, by, bsc, brot, bsq, 0.0, t, eyes=eyes)
             if t >= T["book_land"] - 0.06:
                 hk = ease_out(seg(t, T["book_land"] - 0.06, T["book_land"] + 0.1))
                 _hug_hands(c, MS, bx, by, bsc, brot, t, hk)
@@ -1183,7 +1229,7 @@ def SFX(info):
         (T["wall_land"][-1], "brick_thud", -10),           # one quiet thud, last row
         (T["soften"], "swoosh_up", -12),                   # shutter rolls up
         (T["l5"] + 0.2, "magic_chime", -8),
-        (T["w_friendly"], "pop", -12),                     # heart
+        (T["w_guards"], "pop", -12),                       # heart
         (T["book_land"], "paper", -10),                    # caught in a hug
         (T["tally"], "tick", -8),
         (T["tally"], "pop", -10),

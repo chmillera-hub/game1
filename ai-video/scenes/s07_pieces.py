@@ -4,7 +4,7 @@ Covers *hiding where the harm is* and *leaving out the ending*.
 Every time below is derived from cues / word starts (see _times).
 
   F1-PUSH  card .. l02     Dim lair, slow push-in on Malvo + Hissy. Card #6
-                            slams + parks. "Hissy... tiny pieces." whisper lean
+                            slams + parks. "Snake... tiny pieces." whisper lean
                             to Hissy (chin hand), brow waggle, eye dart to
                             camera on "never see". Hissy: slow 😒 blink, then
                             side-eye. disguise1: fake handlebar mustache pops
@@ -183,7 +183,7 @@ PIECES = [  # label, colour, tabs (top, right, bottom, left), resting tilt, bubb
     ("FUSE", "bubble_ai", (0, 1, 0, -1), 0.05, "long fuse"),
     ("SPARK", "warn", (0, 1, 0, -1), 0.09, "sparky"),
 ]
-USERS = ["random_guy_42", "definitely_not_malvo", "TotallyDifferentGuy"]
+USERS = ["random_guy_42", "definitely_not_evil", "TotallyDifferentGuy"]
 
 # F4 vision
 INSET = (230, 1170, 0.33)
