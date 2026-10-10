@@ -427,19 +427,19 @@ NB_PJ, NB_PJ_ST = "#e8e2d0", "#9aa6c8"
 NB_SLIP, NB_SLIP_HI = "#f2b6c8", "#fbdbe5"
 NB_HEIGHT = 358.0                     # feet -> top of hair at s=1
 NB_HY = -314.0                        # head centre (head 68 x 76: ~1/5 of his height)
-_ROBE = [(-58, -274), (-73, -255), (-85, -214), (-91, -180), (-87, -146), (-83, -114),
-         (-42, -106), (0, -104), (42, -106), (83, -114), (87, -146), (91, -180),
-         (85, -214), (73, -255), (58, -274), (22, -285), (-22, -285)]
-_OPEN = [(-22, -285), (-12, -254), (-29, -224), (-40, -198), (-31, -179), (0, -172),
-         (31, -179), (40, -198), (29, -224), (12, -254), (22, -285)]
-_SH_L, _SH_R = (-64, -262), (64, -262)
+_ROBE = [(-48, -278), (-63, -263), (-68, -238), (-76, -202), (-75, -168), (-70, -140),
+         (-67, -113), (-34, -107), (0, -105), (34, -107), (67, -113), (70, -140),
+         (75, -168), (76, -202), (68, -238), (63, -263), (48, -278), (20, -287), (-20, -287)]
+_OPEN = [(-20, -287), (-11, -256), (-26, -226), (-35, -200), (-27, -181), (0, -174),
+         (27, -181), (35, -200), (26, -226), (11, -256), (20, -287)]
+_SH_L, _SH_R = (-55, -262), (55, -262)
 
 
 def _trumpet_frame(k):
     """(ox, oy, angle) of the trumpet's mouthpiece frame: k=0 held at his side
     (bell up), k=1 at his lips (bell pointing screen-left, a jaunty tilt up)."""
     e = smoothstep(clamp(k))
-    return lerp(78, -2, e), lerp(-150, -287, e), lerp(1.95, 0.14, e)
+    return lerp(62, -2, e), lerp(-158, -287, e), lerp(2.3, 0.14, e)
 
 
 def _tr_pt(fr, lx):
@@ -518,7 +518,7 @@ def draw_neighbor(c, x, y, s, t, mood="relieved", look=(0.0, 0.0), lean=0.0, squ
         head_dev = c.user_to_device(0, hy)
         # ---- striped pajama legs ----------------------------------------------
         for sx in (-1, 1):
-            leg = [(sx * 5, -116), (sx * 46, -116), (sx * 43, -26), (sx * 9, -26)]
+            leg = [(sx * 5, -116), (sx * 43, -116), (sx * 41, -26), (sx * 8, -26)]
             poly(c, leg)
             c.set_source_rgba(*hexc(NB_PJ))
             c.fill()
@@ -557,7 +557,7 @@ def draw_neighbor(c, x, y, s, t, mood="relieved", look=(0.0, 0.0), lean=0.0, squ
         c.save()
         smooth_path(c, _ROBE, closed=True, tension=0.35)
         c.clip()
-        ellipse(c, 66, -190, 34, 100)
+        ellipse(c, 58, -190, 28, 100)
         c.set_source_rgba(*hexc(NB_ROBE_SH, 0.6))
         c.fill()
         c.move_to(8, -168)                     # front overlap below the belt
@@ -585,18 +585,18 @@ def draw_neighbor(c, x, y, s, t, mood="relieved", look=(0.0, 0.0), lean=0.0, squ
         c.restore()
         smooth_path(c, _OPEN, closed=True, tension=0.4)
         fill_stroke(c, None, "ink", 4)
-        c.move_to(-27, -207)                   # roundness of the little belly
-        c.curve_to(-14, -219, 10, -219, 24, -209)
+        c.move_to(-24, -207)                   # roundness of the little belly
+        c.curve_to(-12, -218, 9, -218, 21, -209)
         _stroke(c, (1, 1, 1, 0.5), 3.5)
         for by in (-246, -222):
             circle(c, 0, by, 3.6)
             fill_stroke(c, "white", "ink", 2)
         # belt (sags under the belly) + knot + hanging ends
-        c.move_to(-88, -178)
-        c.curve_to(-40, -166, 40, -166, 88, -178)
+        c.move_to(-75, -180)
+        c.curve_to(-34, -166, 34, -166, 75, -180)
         _stroke(c, "ink", 17)
-        c.move_to(-88, -178)
-        c.curve_to(-40, -166, 40, -166, 88, -178)
+        c.move_to(-75, -180)
+        c.curve_to(-34, -166, 34, -166, 75, -180)
         _stroke(c, NB_ROBE_SH, 9)
         poly(c, [(15, -168), (26, -168), (30, -128), (19, -126)])
         fill_stroke(c, NB_ROBE_SH, "ink", 3.5)
@@ -682,19 +682,23 @@ def draw_neighbor(c, x, y, s, t, mood="relieved", look=(0.0, 0.0), lean=0.0, squ
                 circle(c, sx * 17, hy + 20, 9 + 3.5 * clamp(puff))
                 fill_stroke(c, NB_SKIN, "ink", 3)
         elif mood == "delight":
-            c.move_to(-11, hy + 25)
-            c.curve_to(-6, hy + 38, 6, hy + 38, 11, hy + 25)
+            c.move_to(-13, hy + 23)
+            c.curve_to(-7, hy + 41, 7, hy + 41, 13, hy + 23)
             c.close_path()
             fill_stroke(c, "#7a2a3a", "ink", 3.5)
+            ellipse(c, 0, hy + 33, 5, 3)
+            c.set_source_rgba(*hexc("#e0566e"))
+            c.fill()
         elif mood == "worried":
             c.move_to(-9, hy + 28)
             c.curve_to(-5, hy + 24, -2, hy + 31, 2, hy + 27)
             c.curve_to(5, hy + 24, 7, hy + 27, 9, hy + 28)
             _stroke(c, "ink", 3.5)
-        else:
-            c.move_to(-9, hy + 25)
-            c.curve_to(-4, hy + 31, 4, hy + 31, 9, hy + 25)
-            _stroke(c, "ink", 3.5)
+        else:                                   # friendly open smile under the mustache
+            c.move_to(-10, hy + 24)
+            c.curve_to(-5, hy + 34, 5, hy + 34, 10, hy + 24)
+            c.close_path()
+            fill_stroke(c, "#7a2a3a", "ink", 3.2)
         ellipse(c, 0, hy + 7, 7.5, 6.5)        # nose
         fill_stroke(c, NB_SKIN, "ink", 3.2)
         ellipse(c, -2, hy + 5, 2.4, 1.6)
@@ -711,9 +715,9 @@ def draw_neighbor(c, x, y, s, t, mood="relieved", look=(0.0, 0.0), lean=0.0, squ
             _trumpet(c)
         e = smoothstep(k)
         grip_r = _tr_pt(fr, lerp(36, 30, e))
-        hand_l = (lerp(-82, _tr_pt(fr, 64)[0], e), lerp(-150, _tr_pt(fr, 64)[1], e))
-        _sleeve(c, _SH_L, (lerp(-90, -94, e), lerp(-206, -238, e)), hand_l)
-        _sleeve(c, _SH_R, (lerp(100, 36, e), lerp(-222, -228, e)), grip_r)
+        hand_l = (lerp(-73, _tr_pt(fr, 64)[0], e), lerp(-152, _tr_pt(fr, 64)[1], e))
+        _sleeve(c, _SH_L, (lerp(-80, -88, e), lerp(-208, -238, e)), hand_l)
+        _sleeve(c, _SH_R, (lerp(90, 30, e), lerp(-232, -228, e)), grip_r)
     return {"bell": c.device_to_user(*bell_dev), "head": c.device_to_user(*head_dev)}
 
 
@@ -1659,7 +1663,7 @@ def _burst_fx(ctx, t, T):
     # "(metaphorically)" - the AI's footnote on the boom
     if t >= T.meta:
         P.label_tag(ctx, BURST_C[0] + 4, BURST_C[1] + 0.55 * BURST_R, "(metaphorically)",
-                    color="bubble_ai", size=32, font="round", t=t, t_in=T.meta, rot=-0.05)
+                    color="bubble_ai", size=36, font="round", t=t, t_in=T.meta, rot=-0.05)
     ctx.pop_group_to_source()
     ctx.paint_with_alpha(ba)
 
@@ -1745,8 +1749,10 @@ def _avatar_fx(ctx, t, T, win):
         if t < T.zip:
             q = seg(t, T.hp - 0.02, T.hp + 0.38)
             e = ease_out_back(q, 1.3)
-            x = lerp(src[0], HP_HOVER[0], ease_out(q))
-            y = lerp(src[1], HP_HOVER[1], ease_out(q)) - 50 * math.sin(math.pi * q) + hb * q
+            # out of the window to the right first, then up to the presenting spot
+            # (well clear of the avatar until "for you")
+            x = lerp(src[0], HP_HOVER[0], ease_out(min(1.0, q * 1.5)))
+            y = lerp(src[1], HP_HOVER[1], ease_in_out(q)) + hb * q
             s = lerp(0.35, 1.05, e)
             rot = (1 - ease_out(q)) * -2 * math.pi + 0.08 * math.sin(t * 3.1) * q
             if q > 0.6:
@@ -2066,13 +2072,13 @@ def SFX(info):
         # the metaphorical boom
         (T.book_in, "page_flip", -6),
         (T.write + 0.1, "sparkle", -14),
-        (T.blows, "boom_cartoon", -15),
+        (T.blows, "boom_cartoon", -12),
         (T.blows + 0.03, "sparkle", -10),
-        (T.people + 0.05, "crowd_aww", -13),
+        (T.people + 0.05, "crowd_aww", -7),
         (T.meta, "pop", -8),
         (T.meta + 0.03, "sparkle", -12),
         # the noisy neighbor: loud honky riff, then muffled once the headphones are on
-        (T.trump, "trumpet", -6),
+        (T.trump, "trumpet", -4),
         (T.hp, "pop", -8),
         (T.hp + 0.12, "sparkle", -14),
         (T.zip, "whoosh", -10),
