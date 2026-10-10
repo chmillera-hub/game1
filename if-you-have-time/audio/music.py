@@ -31,7 +31,9 @@ How it works
       CC2 dynamics for MuseScore "Expr." presets / CC11 for the rest, CC64 pedal) and rendered one
       stem at a time with the fluidsynth CLI (<= 2 processes).
     * Synth parts (kazoo, chiptune, theremin, lo-fi drums/bass, suspended cymbal, glass shimmer,
-      sine tine-ring) are numpy.
+      sine tine-ring, the cosmic whale vocal with moving formants, drum booms/skins, the symphony's
+      sine sub pedal) are numpy. Sampled basses get a coherent fundamental lift (fundamental_lift)
+      instead of a layered sine wherever their own fundamental is strong enough to cancel against one.
     * Accompaniment is voiced by a small voice-leading search (voice_chords) that also stays a 2nd
       away from accented melody non-chord tones (mel_avoid); harp arpeggios are damped at chord
       changes unless the string belongs to the next chord.
@@ -1165,11 +1167,9 @@ def fundamental_lift(notes, tm, gain_db, lo_pitch=0, width=1.12, fade=0.08, base
     """Coherent low-end reinforcement for a sampled bass stem (a Part.eq): for every note at or above
     `lo_pitch`, the stem's OWN fundamental (zero-phase band-pass f0/width..f0*width, so it is exactly in
     phase with what it lifts) is added back under a raised-cosine window over the note -> +gain_db on
-    the fundamental. A zero-phase band-pass has a real, non-negative response, so unlike a layered
+    the fundamental (gain_db may be a callable note -> dB). A zero-phase band-pass has a real, non-negative response, so unlike a layered
     sine it can never cancel the sample's fundamental (no notes that mysteriously go thin).
     tm: the cue's TempoMap; base: optional eq applied first (e.g. a high-pass)."""
-    k = 10 ** (gain_db / 20) - 1
-
     def eq(x):
         x = base(x) if base is not None else x
         n = len(x)
@@ -1177,6 +1177,7 @@ def fundamental_lift(notes, tm, gain_db, lo_pitch=0, width=1.12, fade=0.08, base
         for nt in notes:
             if nt.pitch < lo_pitch:
                 continue
+            k = 10 ** ((gain_db(nt) if callable(gain_db) else gain_db) / 20) - 1
             f0 = 440.0 * 2 ** ((nt.pitch - 69) / 12)
             t0, t1 = tm.sec(nt.beat), tm.sec(nt.beat + nt.dur)
             i0, i1 = max(0, int((t0 - 0.15) * SR)), min(n, int((t1 + 0.35) * SR))
@@ -1414,7 +1415,7 @@ def synth_whale(part, cue, n):
 
 def synth_boom(part, cue, n):
     """Epic low drum 'booms' (the weight under the taiko skins): per note a sine that falls from
-    ~2.2x to the note's pitch in ~45 ms, an exponential body decay (opts['decay'] s, longer when
+    (1 + opts['drop'], default 2.2)x to the note's pitch in ~45 ms, an exponential body decay (opts['decay'] s, longer when
     louder and lower), a felt-mallet thud (low-passed noise, 18 ms), gentle tanh saturation, then a
     crisp skin 'slap' (band-passed noise, ~9 ms, opts['slap']) so every hit reads on small speakers;
     every hit window ends in a 15 ms fade (no clicks). Mono, centered."""
@@ -1428,7 +1429,7 @@ def synth_boom(part, cue, n):
             continue
         tt = np.arange(L) / SR
         fe = 440.0 * 2 ** ((nt.pitch - 69) / 12)
-        f = fe * (1 + 1.2 * np.exp(-tt / 0.045))
+        f = fe * (1 + part.opts.get("drop", 1.2) * np.exp(-tt / 0.045))
         body = np.sin(2 * np.pi * np.cumsum(f) / SR) * np.exp(-tt / dec) * np.clip(tt / 0.0015, 0, 1)
         th = lp(rng.standard_normal(L), 900)
         th = th / (np.std(th[: int(0.03 * SR)]) + 1e-9) * np.exp(-tt / 0.018) * 0.22
@@ -1488,6 +1489,8 @@ def part_events(part: Part, cue: Cue, rng) -> list:
           (0.0, 0, dict(type="control_change", control=7, value=100)),
           (0.0, 0, dict(type="control_change", control=10, value=64)),
           (0.0, 0, dict(type="control_change", control=64, value=0))]
+    if part.opts.get("bend_cents"):          # a constant tuning offset (default bend range +-200 cents)
+        ev.append((0.0, 0, dict(type="pitchwheel", pitch=int(round(part.opts["bend_cents"] / 200 * 8192)))))
     cc = 2 if inst.expr else 11
     if part.dyn:
         b0, b1 = part.dyn[0][0], part.dyn[-1][0]
@@ -1724,13 +1727,16 @@ def compose_symphony() -> Cue:
     BASS_CLIM = "E1:w | B1:w | A1:w | A1:h B2:q B1:q"
     SUBP = [(47.6, 0.0), (48.0, -3.0), (51.6, -3.0), (52.4, 0.0)]     # the held subito p: dialogue sits here
 
-    cb = part("cb", "cb", pan=0.3, send=0.2, legato=0.08, gain_db=5.0)
-    cb.add(seq(BASS_INTRO, 0)).add(seq(BASS_THEME, 8, bar=4)).add(seq(BASS_BUILD, 40, bar=4))
-    cb.add(seq(BASS_CLIM, 57, bar=4)).add(seq("E1:10", 73))
+    # the slow-bow bass samples need ~0.25 s to speak: like real players the section leans in a
+    # little early (lazy -0.1 s) and overlaps its legato changes, so a new root never leaves a hole
+    cb = part("cb", "cb", pan=0.3, send=0.2, legato=0.12, gain_db=5.0, lazy=-0.1)
+    cb.add(seq(BASS_INTRO, 0, 96)).add(seq(BASS_THEME, 8, 96, bar=4)).add(seq(BASS_BUILD, 40, 96, bar=4))
+    cb.add(seq(BASS_CLIM, 57, 100, bar=4)).add(seq("E1:10", 73, 100))
     cb.dyn = [(-0.6, 0), (0.3, 30), (6, 34), (8, 46), (16, 50), (20, 54), (24, 60), (28, 66), (32, 62),
               (36, 64), (40, 72), (47.6, 82), (48, 52), (50, 54), (52, 80), (54, 100), (55.8, 114), (57, 120),
               (65, 124), (69, 116), (72.8, 122)] + CODA_STR
-    cb.vol = [(-1, -6.0), (7.5, -6.0), (8.5, -2.0), (19, -2.0), (24, 0.0)] + SUBP + CODA_VOL
+    cb.vol = [(-1, -6.0), (7.5, -6.0), (8.5, -4.5), (19, -4.5), (24, -3.0), (36, -2.5), (40, 0.0)] + SUBP + \
+        CODA_VOL
 
     pz = part("cb_pizz", "cb_pizz", pan=0.24, send=0.2, humanize=0.006, gain_db=11.0)
     # downbeats in theme bars 1-4, beats 1 + 3 once the violins enter (bars 5-8) and through the first
@@ -1739,11 +1745,12 @@ def compose_symphony() -> Cue:
                "D2:h D2:h", 8, bar=4, vels=[62, 60, 62, 64, 70, 58, 74, 62, 74, 70, 64, 76, 64]))
     pz.add(seq("B1:h. r:q | G1:h G1:h", 40, bar=4, vels=[80, 82, 70]))
     pz.dyn = [(7.0, 0), (7.5, 96), (24, 104), (40, 112), (48.2, 112), (48.6, 0)]
+    pz.vol = [(7, -3.0), (19, -3.0), (24, 0.0)]       # lighter until the memories arrive
 
     # the sine sub only sounds the fundamentals the sampled basses barely have (G1 and below: the
     # sample's own fundamental is ~16-25 dB under its harmonics there, so a pure sine cannot cancel
     # it); from A1 up the basses' own fundamental is lifted coherently instead (fundamental_lift)
-    sub = part("sub", "sub_pedal", synth=synth_sub_pedal, pan=0.0, send=0.0, gain_db=-17.0,
+    sub = part("sub", "sub_pedal", synth=synth_sub_pedal, pan=0.0, send=0.0, gain_db=-15.0,
                opts={"attack": 0.08, "release": 0.08, "release_end": 0.12, "h2": 0.12, "h3": 0.04})
     sub.add(seq(BASS_INTRO, 0, 100)).add(seq(BASS_THEME, 8, 100, bar=4)).add(seq(BASS_BUILD, 40, 100, bar=4))
     sub.add(seq(BASS_CLIM, 57, 110, bar=4)).add(seq("E1:10", 73, 110))
@@ -1751,12 +1758,14 @@ def compose_symphony() -> Cue:
     for nt in sub.notes:                    # passing tones lighter than the roots
         if nt.dur <= 1.0:
             nt.vel -= 12
-    sub.dyn = [(-0.6, 0), (0.3, 28), (6, 30), (8, 35), (20, 40), (24, 47), (28, 52), (32, 48), (36, 50),
+    sub.dyn = [(-0.6, 0), (0.3, 28), (6, 30), (8, 32), (20, 36), (24, 42), (28, 46), (32, 44), (36, 46),
                (40, 61), (47.6, 73), (48, 44), (51.6, 44), (52, 50), (54, 74), (55.8, 100), (57, 127), (61, 114),
                (65, 124), (69, 114), (72.8, 124)] + CODA_STR
-    sub.vol = [(72, 0.0)] + CODA_VOL
+    sub.vol = [(-1, -2.0), (56.5, -2.0), (57, 0.0), (72, 0.0)] + CODA_VOL     # +2 dB: the big low E
 
-    vc2 = part("vc2", "vc_slow", pan=0.3, send=0.22, legato=0.08, gain_db=2.0)
+    # doublings are never phase-locked in a real orchestra: celli II and the tuba sit a few cents off the
+    # basses, so where their harmonics coincide they drift (ensemble beating) instead of cancelling
+    vc2 = part("vc2", "vc_slow", pan=0.3, send=0.22, legato=0.1, gain_db=2.0, lazy=-0.05, opts={"bend_cents": -5})
     vc2.add(seq("F#2:w | G2:w | G2:h A2:h | D3:w", 24, bar=4))        # joins at theme bar 5 (~21 s)
     vc2.add(seq("B2:h. A2:q | G2:w | F#2:h E2:h | A2:w", 40, bar=4))
     vc2.add(seq("E2:w | B2:w | A2:w | A2:h B2:h", 57, bar=4))
@@ -1765,7 +1774,7 @@ def compose_symphony() -> Cue:
                (50, 50), (52, 80), (54, 100), (55.8, 114), (57, 118), (65, 122), (69, 112), (72.8, 120)] + CODA_STR
     vc2.vol = [(23, -4.0), (28, -1.0), (40, 0.0)] + SUBP + CODA_VOL
 
-    tuba = part("tuba", "tuba", pan=0.1, send=0.2, legato=0.06, gain_db=2.0)
+    tuba = part("tuba", "tuba", pan=0.1, send=0.2, legato=0.06, gain_db=2.0, opts={"bend_cents": 6})
     tuba.add(seq("G1:3.6", 44))                                   # under the horns, 2nd B-section phrase
     tuba.add(seq("A1:w", 52))                                     # the dominant: p -> ff into the pause
     tuba.add(seq("E1:w | B1:w | A1:w | A1:h B1:h", 57, bar=4))
@@ -1981,7 +1990,9 @@ def compose_symphony() -> Cue:
                   ("vc", 90), ("horns", 75), ("brass", 75), ("choir", 90), ("trombone", 45), ("vc2", 30),
                   ("cb", 25), ("cb_pizz", 25), ("tuba", 25), ("timpani", 28), ("bass_drum", 25)):
         parts[nm].eq = hpf(f)
-    cb.eq = fundamental_lift(cb.notes, tm, 6.0, lo_pitch=P("A1"), base=hpf(25))
+    # the samples' A1/B1 fundamentals sit 3-11 dB under their 2nd harmonic, C#2/D2 only ~2-3 dB
+    cb.eq = fundamental_lift(cb.notes, tm, lambda nt: 6.0 if nt.pitch < P("C#2") else 3.5, lo_pitch=P("A1"),
+                             base=hpf(25))
     tuba.eq = fundamental_lift(tuba.notes, tm, 6.0, lo_pitch=P("A1"), base=hpf(25))
 
     order = ["celesta", "piano", "glock", "harp", "vln_gp", "vln1", "vln2_mel", "vln2", "vln2_trem", "vla",
@@ -2346,7 +2357,7 @@ def _whale_cue_parts(tm, hits, booms, drone_v, strings_dyn, strings_len, brass_t
     for s, p_, v in booms:
         boom.notes.append(Note(S(s), S(s + 0.8) - S(s), P(p_), v))
     # the skins: a crisp slap + a short higher body on every hit (the 'da's are mid drums)
-    skin = Part("skins", "boom", synth=synth_boom, pan=-0.12, send=0.25, gain_db=-6.0, opts={"decay": 0.12, "slap": 0.55})
+    skin = Part("skins", "boom", synth=synth_boom, pan=-0.12, send=0.25, gain_db=-6.0, opts={"decay": 0.12, "slap": 0.55, "drop": 0.35})
     for s, key, v in hits:
         skin.notes.append(Note(S(s), S(s + 0.3) - S(s), P("D3") if key >= 48 else P("A2"), v))
     timp = Part("timpani", "timpani", pan=0.12, send=0.3, humanize=0.0, gain_db=0.0)
