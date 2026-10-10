@@ -1,0 +1,1354 @@
+{
+ "title": "Tiredness",
+ "voices": {
+  "tired": {
+   "voice": "am_michael*0.7+am_onyx*0.3",
+   "lang": "en-us",
+   "speed": 0.95
+  },
+  "embar": {
+   "voice": "am_puck",
+   "lang": "en-us",
+   "speed": 1.14
+  },
+  "boss": {
+   "voice": "bf_emma",
+   "lang": "en-gb",
+   "speed": 0.98
+  },
+  "guard": {
+   "voice": "am_fenrir",
+   "lang": "en-us",
+   "speed": 1.05
+  },
+  "recep": {
+   "voice": "af_bella",
+   "lang": "en-us",
+   "speed": 0.92
+  }
+ },
+ "scenes": [
+  {
+   "id": "s01",
+   "module": "s01_bedroom",
+   "music": "chill",
+   "head": 0.0,
+   "tail": 0.35,
+   "min_dur": 0,
+   "title": "Tiredness just wants to game",
+   "beats": [
+    {
+     "t": "pause",
+     "dur": 1.5,
+     "cue": "gaming"
+    },
+    {
+     "t": "pause",
+     "dur": 0.7,
+     "cue": "commotion"
+    },
+    {
+     "t": "line",
+     "id": "s01_l01",
+     "who": "embar",
+     "text": "Come back here! No no no no!",
+     "pre": 0.0,
+     "post": 0.1,
+     "caption": "(outside) Come back here! No no no!",
+     "fx": "muffled",
+     "gain": -8.0
+    },
+    {
+     "t": "pause",
+     "dur": 0.4,
+     "cue": "eyeroll"
+    },
+    {
+     "t": "line",
+     "id": "s01_l02",
+     "who": "tired",
+     "text": "Ugh.",
+     "pre": 0.25,
+     "post": 0.2
+    },
+    {
+     "t": "pause",
+     "dur": 1.3,
+     "cue": "headphones"
+    },
+    {
+     "t": "pause",
+     "dur": 1.0,
+     "cue": "bliss"
+    },
+    {
+     "t": "pause",
+     "dur": 0.6,
+     "cue": "shake"
+    },
+    {
+     "t": "line",
+     "id": "s01_l03",
+     "who": "tired",
+     "text": "What the actual—",
+     "pre": 0.1,
+     "post": 0.0,
+     "say": "What the actual"
+    },
+    {
+     "t": "pause",
+     "dur": 0.5,
+     "cue": "thud2"
+    },
+    {
+     "t": "pause",
+     "dur": 1.5,
+     "cue": "window"
+    },
+    {
+     "t": "pause",
+     "dur": 0.9,
+     "cue": "nothing"
+    },
+    {
+     "t": "line",
+     "id": "s01_l04",
+     "who": "tired",
+     "text": "Why can't people just leave me alone?",
+     "pre": 0.2,
+     "post": 0.2
+    },
+    {
+     "t": "line",
+     "id": "s01_l05",
+     "who": "tired",
+     "text": "I'm trying to play a game here.",
+     "pre": 0.2,
+     "post": 0.2
+    }
+   ]
+  },
+  {
+   "id": "s02",
+   "module": "s02_outside",
+   "music": "panic",
+   "head": 0.0,
+   "tail": 0.35,
+   "min_dur": 0,
+   "title": "Embarrassment lost the thing",
+   "beats": [
+    {
+     "t": "pause",
+     "dur": 0.7,
+     "cue": "peel"
+    },
+    {
+     "t": "line",
+     "id": "s02_l01",
+     "who": "embar",
+     "text": "Oh God. Oh God, oh God.",
+     "pre": 0.05,
+     "post": 0.2
+    },
+    {
+     "t": "line",
+     "id": "s02_l02",
+     "who": "embar",
+     "text": "My boss is gonna be so mad. I have to find this thing!",
+     "pre": 0.12,
+     "post": 0.2
+    },
+    {
+     "t": "pause",
+     "dur": 1.0,
+     "cue": "scurry"
+    },
+    {
+     "t": "line",
+     "id": "s02_l03",
+     "who": "embar",
+     "text": "No no no, not in there!",
+     "pre": 0.05,
+     "post": 0.2
+    },
+    {
+     "t": "pause",
+     "dur": 0.3,
+     "cue": "bang"
+    },
+    {
+     "t": "line",
+     "id": "s02_l04",
+     "who": "embar",
+     "text": "Tiredness! Open up! It's me!",
+     "pre": 0.05,
+     "post": 0.2
+    },
+    {
+     "t": "pause",
+     "dur": 1.7,
+     "cue": "inside"
+    },
+    {
+     "t": "line",
+     "id": "s02_l05",
+     "who": "embar",
+     "text": "...He can't hear me.",
+     "pre": 0.1,
+     "post": 0.2
+    }
+   ],
+   "music_xfade": 0.05
+  },
+  {
+   "id": "s03",
+   "module": "s03_windows",
+   "music": "panic",
+   "head": 0.0,
+   "tail": 0.35,
+   "min_dur": 0,
+   "title": "Every window is locked",
+   "beats": [
+    {
+     "t": "pause",
+     "dur": 0.3,
+     "cue": "start"
+    },
+    {
+     "t": "pause",
+     "dur": 0.8,
+     "cue": "win1"
+    },
+    {
+     "t": "line",
+     "id": "s03_l01",
+     "who": "embar",
+     "text": "Locked.",
+     "pre": 0.0,
+     "post": 0.2
+    },
+    {
+     "t": "pause",
+     "dur": 0.4,
+     "cue": "win2"
+    },
+    {
+     "t": "line",
+     "id": "s03_l02",
+     "who": "embar",
+     "text": "Locked!",
+     "pre": 0.0,
+     "post": 0.2
+    },
+    {
+     "t": "pause",
+     "dur": 0.4,
+     "cue": "win3"
+    },
+    {
+     "t": "line",
+     "id": "s03_l03",
+     "who": "embar",
+     "text": "Why is everything locked?!",
+     "pre": 0.0,
+     "post": 0.2
+    },
+    {
+     "t": "pause",
+     "dur": 1.5,
+     "cue": "panic"
+    },
+    {
+     "t": "pause",
+     "dur": 0.9,
+     "cue": "rock"
+    },
+    {
+     "t": "line",
+     "id": "s03_l04",
+     "who": "embar",
+     "text": "Sorry, sorry, sorry!",
+     "pre": 0.05,
+     "post": 0.2
+    },
+    {
+     "t": "pause",
+     "dur": 0.6,
+     "cue": "smash"
+    },
+    {
+     "t": "pause",
+     "dur": 1.4,
+     "cue": "tiptoe"
+    },
+    {
+     "t": "line",
+     "id": "s03_l05",
+     "who": "embar",
+     "text": "I'll pay for that.",
+     "pre": 0.0,
+     "post": 0.2,
+     "fx": "whisper",
+     "gain": -4.4
+    },
+    {
+     "t": "pause",
+     "dur": 1.4,
+     "cue": "climb"
+    },
+    {
+     "t": "pause",
+     "dur": 1.0,
+     "cue": "heap"
+    }
+   ]
+  },
+  {
+   "id": "s04",
+   "module": "s04_impulsivity",
+   "music": "sneaky",
+   "head": 0.0,
+   "tail": 0.35,
+   "min_dur": 0,
+   "title": "Impulsivity, the tripwire",
+   "beats": [
+    {
+     "t": "pause",
+     "dur": 0.6,
+     "cue": "lift"
+    },
+    {
+     "t": "pause",
+     "dur": 1.0,
+     "cue": "reveal"
+    },
+    {
+     "t": "line",
+     "id": "s04_l01",
+     "who": "embar",
+     "text": "Oh no. Impulsivity.",
+     "pre": 0.05,
+     "post": 0.2,
+     "fx": "whisper",
+     "gain": -4.4
+    },
+    {
+     "t": "line",
+     "id": "s04_l02",
+     "who": "embar",
+     "text": "It's gonna eat me.",
+     "pre": 0.15,
+     "post": 0.2,
+     "fx": "whisper",
+     "gain": -4.4
+    },
+    {
+     "t": "pause",
+     "dur": 0.9,
+     "cue": "peek"
+    },
+    {
+     "t": "pause",
+     "dur": 1.6,
+     "cue": "derp"
+    },
+    {
+     "t": "line",
+     "id": "s04_l03",
+     "who": "embar",
+     "text": "Okay. Nobody move.",
+     "pre": 0.05,
+     "post": 0.2,
+     "fx": "whisper",
+     "gain": -4.4
+    },
+    {
+     "t": "pause",
+     "dur": 1.4,
+     "cue": "tiptoe"
+    },
+    {
+     "t": "pause",
+     "dur": 1.0,
+     "cue": "plates"
+    },
+    {
+     "t": "pause",
+     "dur": 1.0,
+     "cue": "drawer"
+    },
+    {
+     "t": "pause",
+     "dur": 1.1,
+     "cue": "table"
+    },
+    {
+     "t": "pause",
+     "dur": 0.6,
+     "cue": "scratch"
+    },
+    {
+     "t": "pause",
+     "dur": 1.4,
+     "cue": "stairs"
+    },
+    {
+     "t": "line",
+     "id": "s04_l04",
+     "who": "embar",
+     "text": "Upstairs.",
+     "pre": 0.0,
+     "post": 0.2,
+     "fx": "whisper",
+     "gain": -4.4
+    }
+   ],
+   "music_xfade": 0.1
+  },
+  {
+   "id": "s05",
+   "module": "s05_burst_in",
+   "music": "sneaky",
+   "head": 0.0,
+   "tail": 0.35,
+   "min_dur": 0,
+   "title": "Bursting in on Tiredness",
+   "beats": [
+    {
+     "t": "pause",
+     "dur": 1.1,
+     "cue": "music"
+    },
+    {
+     "t": "pause",
+     "dur": 1.1,
+     "cue": "crawl"
+    },
+    {
+     "t": "pause",
+     "dur": 0.5,
+     "cue": "burst"
+    },
+    {
+     "t": "pause",
+     "dur": 1.3,
+     "cue": "freeze"
+    },
+    {
+     "t": "pause",
+     "dur": 0.8,
+     "cue": "notice"
+    },
+    {
+     "t": "line",
+     "id": "s05_l01",
+     "who": "embar",
+     "text": "He can't hear me. Perfect.",
+     "pre": 0.0,
+     "post": 0.2,
+     "fx": "whisper",
+     "gain": -4.4
+    },
+    {
+     "t": "pause",
+     "dur": 2.2,
+     "cue": "search"
+    },
+    {
+     "t": "pause",
+     "dur": 1.4,
+     "cue": "reveal"
+    },
+    {
+     "t": "pause",
+     "dur": 0.9,
+     "cue": "tap"
+    },
+    {
+     "t": "line",
+     "id": "s05_l02",
+     "who": "embar",
+     "text": "AAAH!",
+     "pre": 0.0,
+     "post": 0.0,
+     "say": "Aaaah!",
+     "pitch": 1.12
+    },
+    {
+     "t": "pause",
+     "dur": 0.6,
+     "cue": "ceiling"
+    },
+    {
+     "t": "pause",
+     "dur": 0.9,
+     "cue": "land"
+    },
+    {
+     "t": "line",
+     "id": "s05_l03",
+     "who": "tired",
+     "text": "Hi.",
+     "pre": 0.2,
+     "post": 0.2
+    },
+    {
+     "t": "pause",
+     "dur": 1.1,
+     "cue": "footTap"
+    }
+   ]
+  },
+  {
+   "id": "s06",
+   "module": "s06_sweater",
+   "music": "awkward",
+   "head": 0.0,
+   "tail": 0.35,
+   "min_dur": 0,
+   "title": "Act natural",
+   "beats": [
+    {
+     "t": "pause",
+     "dur": 0.6,
+     "cue": "spot"
+    },
+    {
+     "t": "pause",
+     "dur": 0.6,
+     "cue": "teleport"
+    },
+    {
+     "t": "line",
+     "id": "s06_l01",
+     "who": "embar",
+     "text": "Yeah. So. Um.",
+     "pre": 0.1,
+     "post": 0.2
+    },
+    {
+     "t": "line",
+     "id": "s06_l02",
+     "who": "embar",
+     "text": "How's... everything? I mean... uhhh...",
+     "pre": 0.15,
+     "post": 0.2,
+     "say": "How's, everything? I mean, uhhh."
+    },
+    {
+     "t": "pause",
+     "dur": 0.4,
+     "cue": "rollEyes"
+    },
+    {
+     "t": "pause",
+     "dur": 1.1,
+     "cue": "rollHand"
+    },
+    {
+     "t": "line",
+     "id": "s06_l03",
+     "who": "tired",
+     "text": "So. How's that new research job going?",
+     "pre": 0.05,
+     "post": 0.2
+    },
+    {
+     "t": "line",
+     "id": "s06_l04",
+     "who": "embar",
+     "text": "Oh! Yeah, it's good. I think. Yeah. No— wait. It's good.",
+     "pre": 0.12,
+     "post": 0.2,
+     "say": "Oh! Yeah, it's good. I think. Yeah. No, wait. It's good."
+    },
+    {
+     "t": "line",
+     "id": "s06_l05",
+     "who": "embar",
+     "text": "I was just walking by, and I knocked, and nobody answered, so I... let myself in.",
+     "pre": 0.12,
+     "post": 0.2,
+     "say": "I was just walking by, and I knocked, and nobody answered, so I, let myself in."
+    },
+    {
+     "t": "pause",
+     "dur": 0.4,
+     "cue": "shift"
+    },
+    {
+     "t": "pause",
+     "dur": 0.8,
+     "cue": "jerk"
+    },
+    {
+     "t": "line",
+     "id": "s06_l06",
+     "who": "embar",
+     "text": "Please don't tell anyone. Please. I really want this job. I'm sorry. Please.",
+     "pre": 0.05,
+     "post": 0.2
+    },
+    {
+     "t": "pause",
+     "dur": 0.8,
+     "cue": "stare"
+    },
+    {
+     "t": "line",
+     "id": "s06_l07",
+     "who": "tired",
+     "text": "...Sure.",
+     "pre": 0.0,
+     "post": 0.2
+    }
+   ],
+   "music_xfade": 0.2
+  },
+  {
+   "id": "s07",
+   "module": "s07_tug_bite",
+   "music": "chaos",
+   "head": 0.0,
+   "tail": 0.35,
+   "min_dur": 0,
+   "title": "Tug-of-war and the bite",
+   "beats": [
+    {
+     "t": "pause",
+     "dur": 0.6,
+     "cue": "scoop"
+    },
+    {
+     "t": "line",
+     "id": "s07_l01",
+     "who": "embar",
+     "text": "Okay! Gonna need to go now. Bye!",
+     "pre": 0.05,
+     "post": 0.2
+    },
+    {
+     "t": "pause",
+     "dur": 0.6,
+     "cue": "doorClose"
+    },
+    {
+     "t": "line",
+     "id": "s07_l02",
+     "who": "embar",
+     "text": "Heh. Heh heh.",
+     "pre": 0.1,
+     "post": 0.2,
+     "say": "Heh. Heh, heh."
+    },
+    {
+     "t": "pause",
+     "dur": 0.5,
+     "cue": "open"
+    },
+    {
+     "t": "pause",
+     "dur": 0.5,
+     "cue": "burst"
+    },
+    {
+     "t": "pause",
+     "dur": 2.0,
+     "cue": "tug"
+    },
+    {
+     "t": "pause",
+     "dur": 1.2,
+     "cue": "squint"
+    },
+    {
+     "t": "pause",
+     "dur": 0.8,
+     "cue": "creak"
+    },
+    {
+     "t": "pause",
+     "dur": 0.4,
+     "cue": "bite"
+    },
+    {
+     "t": "line",
+     "id": "s07_l03",
+     "who": "tired",
+     "text": "AAAAAAAH!",
+     "pre": 0.0,
+     "post": 0.0,
+     "say": "Aaaaaaaah!",
+     "pitch": 1.3
+    },
+    {
+     "t": "pause",
+     "dur": 1.6,
+     "cue": "runout"
+    },
+    {
+     "t": "pause",
+     "dur": 1.0,
+     "cue": "catch"
+    },
+    {
+     "t": "pause",
+     "dur": 1.8,
+     "cue": "stare"
+    },
+    {
+     "t": "line",
+     "id": "s07_l04",
+     "who": "embar",
+     "text": "Oh my God. What do I do?",
+     "pre": 0.05,
+     "post": 0.2
+    }
+   ],
+   "music_xfade": 0.05
+  },
+  {
+   "id": "s08",
+   "module": "s08_street_boss",
+   "music": "tension",
+   "head": 0.0,
+   "tail": 0.35,
+   "min_dur": 0,
+   "title": "The vans are already here",
+   "beats": [
+    {
+     "t": "pause",
+     "dur": 0.8,
+     "cue": "walk"
+    },
+    {
+     "t": "line",
+     "id": "s08_l01",
+     "who": "embar",
+     "text": "Okay. Okay. Nobody saw anything—",
+     "pre": 0.0,
+     "post": 0.0,
+     "say": "Okay. Okay. Nobody saw anything"
+    },
+    {
+     "t": "pause",
+     "dur": 0.5,
+     "cue": "vans"
+    },
+    {
+     "t": "pause",
+     "dur": 0.9,
+     "cue": "jawDrop"
+    },
+    {
+     "t": "line",
+     "id": "s08_l02",
+     "who": "embar",
+     "text": "Act natural. You are in control.",
+     "pre": 0.05,
+     "post": 0.2,
+     "fx": "whisper",
+     "gain": -4.4
+    },
+    {
+     "t": "pause",
+     "dur": 1.4,
+     "cue": "debris"
+    },
+    {
+     "t": "pause",
+     "dur": 0.4,
+     "cue": "eyeContact"
+    },
+    {
+     "t": "line",
+     "id": "s08_l03",
+     "who": "embar",
+     "text": "Hey, boss! How you doing? Yeah, it's all good! Got the thing right here.",
+     "pre": 0.0,
+     "post": 0.2
+    },
+    {
+     "t": "line",
+     "id": "s08_l04",
+     "who": "embar",
+     "text": "Nothing to be afraid of! Heh heh.",
+     "pre": 0.1,
+     "post": 0.2,
+     "say": "Nothing to be afraid of! Heh, heh."
+    },
+    {
+     "t": "pause",
+     "dur": 1.8,
+     "cue": "consider"
+    },
+    {
+     "t": "line",
+     "id": "s08_l05",
+     "who": "boss",
+     "text": "Get in the van.",
+     "pre": 0.0,
+     "post": 0.2
+    },
+    {
+     "t": "line",
+     "id": "s08_l06",
+     "who": "embar",
+     "text": "Yes, ma'am!",
+     "pre": 0.05,
+     "post": 0.2
+    }
+   ]
+  },
+  {
+   "id": "s09",
+   "module": "s09_office",
+   "music": "corporate",
+   "head": 0.0,
+   "tail": 0.35,
+   "min_dur": 0,
+   "title": "Feelings aren't data",
+   "beats": [
+    {
+     "t": "pause",
+     "dur": 0.8,
+     "cue": "office"
+    },
+    {
+     "t": "line",
+     "id": "s09_l01",
+     "who": "embar",
+     "text": "I know how it looks, but I can—",
+     "pre": 0.12,
+     "post": 0.0,
+     "say": "I know how it looks, but I can"
+    },
+    {
+     "t": "line",
+     "id": "s09_l02",
+     "who": "boss",
+     "text": "You lost a specimen. You wrecked a street.",
+     "pre": 0.0,
+     "post": 0.2,
+     "overlap": 0.1
+    },
+    {
+     "t": "line",
+     "id": "s09_l03",
+     "who": "boss",
+     "text": "And you are sweating on my carpet.",
+     "pre": 0.15,
+     "post": 0.2
+    },
+    {
+     "t": "pause",
+     "dur": 0.5,
+     "cue": "sweat"
+    },
+    {
+     "t": "line",
+     "id": "s09_l04",
+     "who": "boss",
+     "text": "Your friend. The sleepy one. He touched it.",
+     "pre": 0.1,
+     "post": 0.2
+    },
+    {
+     "t": "line",
+     "id": "s09_l05",
+     "who": "embar",
+     "text": "Tiredness? He's harmless! He's barely awake!",
+     "pre": 0.12,
+     "post": 0.2
+    },
+    {
+     "t": "pause",
+     "dur": 0.5,
+     "cue": "slide"
+    },
+    {
+     "t": "line",
+     "id": "s09_l06",
+     "who": "boss",
+     "text": "Wear this.",
+     "pre": 0.0,
+     "post": 0.2
+    },
+    {
+     "t": "line",
+     "id": "s09_l07",
+     "who": "embar",
+     "text": "Is that... a tracker?",
+     "pre": 0.12,
+     "post": 0.2,
+     "say": "Is that, a tracker?"
+    },
+    {
+     "t": "line",
+     "id": "s09_l08",
+     "who": "boss",
+     "text": "A recorder. Every word he says. Or you can clean out your desk.",
+     "pre": 0.12,
+     "post": 0.2
+    },
+    {
+     "t": "line",
+     "id": "s09_l09",
+     "who": "embar",
+     "text": "That doesn't feel right...",
+     "pre": 0.2,
+     "post": 0.2
+    },
+    {
+     "t": "line",
+     "id": "s09_l10",
+     "who": "boss",
+     "text": "Feelings aren't data.",
+     "pre": 0.1,
+     "post": 0.2
+    },
+    {
+     "t": "pause",
+     "dur": 0.8,
+     "cue": "gulp"
+    }
+   ],
+   "music_xfade": 0.3
+  },
+  {
+   "id": "s10",
+   "module": "s10_visit",
+   "music": "awkward",
+   "head": 0.0,
+   "tail": 0.35,
+   "min_dur": 0,
+   "title": "A normal friend visit",
+   "beats": [
+    {
+     "t": "pause",
+     "dur": 0.7,
+     "cue": "knock"
+    },
+    {
+     "t": "line",
+     "id": "s10_l01",
+     "who": "embar",
+     "text": "Hey, buddy! Just checking in! As a friend! A normal friend visit!",
+     "pre": 0.0,
+     "post": 0.2
+    },
+    {
+     "t": "line",
+     "id": "s10_l02",
+     "who": "embar",
+     "text": "How's the arm? I mean, what arm? Don't say anything about arms.",
+     "pre": 0.12,
+     "post": 0.2
+    },
+    {
+     "t": "pause",
+     "dur": 0.6,
+     "cue": "look"
+    },
+    {
+     "t": "line",
+     "id": "s10_l03",
+     "who": "tired",
+     "text": "...Okay.",
+     "pre": 0.0,
+     "post": 0.2
+    },
+    {
+     "t": "pause",
+     "dur": 0.5,
+     "cue": "trip"
+    },
+    {
+     "t": "pause",
+     "dur": 1.0,
+     "cue": "both"
+    },
+    {
+     "t": "line",
+     "id": "s10_l04",
+     "who": "embar",
+     "text": "Pocket calculator!",
+     "pre": 0.0,
+     "post": 0.2
+    },
+    {
+     "t": "pause",
+     "dur": 0.4,
+     "cue": "pretend"
+    },
+    {
+     "t": "line",
+     "id": "s10_l05",
+     "who": "tired",
+     "text": "...Cool.",
+     "pre": 0.0,
+     "post": 0.2
+    },
+    {
+     "t": "pause",
+     "dur": 1.2,
+     "cue": "leave"
+    },
+    {
+     "t": "pause",
+     "dur": 1.7,
+     "cue": "search"
+    },
+    {
+     "t": "line",
+     "id": "s10_l06",
+     "who": "tired",
+     "text": "Why would anyone want to record me?",
+     "pre": 0.0,
+     "post": 0.2
+    },
+    {
+     "t": "pause",
+     "dur": 1.1,
+     "cue": "resolve"
+    }
+   ],
+   "music_xfade": 0.2
+  },
+  {
+   "id": "s11",
+   "module": "s11_infiltrate",
+   "music": "tension",
+   "head": 0.0,
+   "tail": 0.0,
+   "min_dur": 0,
+   "title": "The printer guy",
+   "beats": [
+    {
+     "t": "pause",
+     "dur": 1.0,
+     "cue": "lobby"
+    },
+    {
+     "t": "line",
+     "id": "s11_l01",
+     "who": "tired",
+     "text": "I'm here to fix the printer.",
+     "pre": 0.0,
+     "post": 0.2
+    },
+    {
+     "t": "line",
+     "id": "s11_l02",
+     "who": "recep",
+     "text": "Which printer?",
+     "pre": 0.12,
+     "post": 0.2
+    },
+    {
+     "t": "line",
+     "id": "s11_l03",
+     "who": "tired",
+     "text": "All of them.",
+     "pre": 0.25,
+     "post": 0.2
+    },
+    {
+     "t": "pause",
+     "dur": 0.6,
+     "cue": "stare"
+    },
+    {
+     "t": "line",
+     "id": "s11_l04",
+     "who": "recep",
+     "text": "...Godspeed.",
+     "pre": 0.0,
+     "post": 0.2
+    },
+    {
+     "t": "pause",
+     "dur": 1.0,
+     "cue": "walk"
+    },
+    {
+     "t": "pause",
+     "dur": 1.8,
+     "cue": "lab"
+    },
+    {
+     "t": "pause",
+     "dur": 1.0,
+     "cue": "realize"
+    },
+    {
+     "t": "pause",
+     "dur": 0.4,
+     "cue": "lean"
+    },
+    {
+     "t": "pause",
+     "dur": 0.5,
+     "cue": "alarm"
+    },
+    {
+     "t": "line",
+     "id": "s11_l05",
+     "who": "tired",
+     "text": "Oh no.",
+     "pre": 0.0,
+     "post": 0.2
+    },
+    {
+     "t": "line",
+     "id": "s11_l06",
+     "who": "guard",
+     "text": "Hey! Stop right there!",
+     "pre": 0.05,
+     "post": 0.2
+    },
+    {
+     "t": "pause",
+     "dur": 1.8,
+     "cue": "chase"
+    },
+    {
+     "t": "pause",
+     "dur": 0.5,
+     "cue": "window"
+    },
+    {
+     "t": "pause",
+     "dur": 0.7,
+     "cue": "fall"
+    },
+    {
+     "t": "line",
+     "id": "s11_l07",
+     "who": "tired",
+     "text": "Great. This is how I go.",
+     "pre": 0.0,
+     "post": 0.2
+    },
+    {
+     "t": "pause",
+     "dur": 0.9,
+     "cue": "powers"
+    },
+    {
+     "t": "pause",
+     "dur": 0.5,
+     "cue": "impact"
+    },
+    {
+     "t": "pause",
+     "dur": 0.8,
+     "cue": "black"
+    }
+   ]
+  },
+  {
+   "id": "s12",
+   "module": "s12_sewer",
+   "music": "ominous",
+   "head": 0.0,
+   "tail": 0.35,
+   "min_dur": 0,
+   "title": "Something in the sewer",
+   "beats": [
+    {
+     "t": "pause",
+     "dur": 1.3,
+     "cue": "eyesOpen"
+    },
+    {
+     "t": "pause",
+     "dur": 1.0,
+     "cue": "sit"
+    },
+    {
+     "t": "line",
+     "id": "s12_l01",
+     "who": "tired",
+     "text": "...Where am I?",
+     "pre": 0.0,
+     "post": 0.2
+    },
+    {
+     "t": "line",
+     "id": "s12_l02",
+     "who": "tired",
+     "text": "Why am I wet?",
+     "pre": 0.35,
+     "post": 0.2
+    },
+    {
+     "t": "pause",
+     "dur": 1.4,
+     "cue": "stumble"
+    },
+    {
+     "t": "pause",
+     "dur": 1.4,
+     "cue": "watched"
+    },
+    {
+     "t": "pause",
+     "dur": 1.4,
+     "cue": "sense"
+    },
+    {
+     "t": "pause",
+     "dur": 0.6,
+     "cue": "leap"
+    },
+    {
+     "t": "pause",
+     "dur": 0.4,
+     "cue": "grab"
+    },
+    {
+     "t": "pause",
+     "dur": 2.2,
+     "cue": "writhe"
+    },
+    {
+     "t": "pause",
+     "dur": 1.4,
+     "cue": "form"
+    },
+    {
+     "t": "pause",
+     "dur": 1.3,
+     "cue": "eyesWide"
+    },
+    {
+     "t": "pause",
+     "dur": 1.6,
+     "cue": "calm"
+    },
+    {
+     "t": "line",
+     "id": "s12_l03",
+     "who": "tired",
+     "text": "...Okay. Hi.",
+     "pre": 0.0,
+     "post": 0.2
+    },
+    {
+     "t": "pause",
+     "dur": 1.0,
+     "cue": "bond"
+    }
+   ],
+   "music_xfade": 0.4
+  },
+  {
+   "id": "s13",
+   "module": "s13_shaft",
+   "music": "reveal",
+   "head": 0.0,
+   "tail": 0.2,
+   "min_dur": 0,
+   "title": "What they were hiding",
+   "beats": [
+    {
+     "t": "pause",
+     "dur": 1.0,
+     "cue": "walk"
+    },
+    {
+     "t": "line",
+     "id": "s13_l01",
+     "who": "tired",
+     "text": "Oh God. Why me.",
+     "pre": 0.0,
+     "post": 0.2
+    },
+    {
+     "t": "pause",
+     "dur": 1.0,
+     "cue": "tunnels"
+    },
+    {
+     "t": "line",
+     "id": "s13_l02",
+     "who": "tired",
+     "text": "We're never getting out of here.",
+     "pre": 0.0,
+     "post": 0.2
+    },
+    {
+     "t": "pause",
+     "dur": 0.6,
+     "cue": "point"
+    },
+    {
+     "t": "line",
+     "id": "s13_l03",
+     "who": "tired",
+     "text": "That's not the way out.",
+     "pre": 0.0,
+     "post": 0.2
+    },
+    {
+     "t": "pause",
+     "dur": 0.6,
+     "cue": "roll"
+    },
+    {
+     "t": "pause",
+     "dur": 1.8,
+     "cue": "annoy"
+    },
+    {
+     "t": "line",
+     "id": "s13_l04",
+     "who": "tired",
+     "text": "Fine.",
+     "pre": 0.0,
+     "post": 0.2
+    },
+    {
+     "t": "pause",
+     "dur": 1.6,
+     "cue": "enter"
+    },
+    {
+     "t": "pause",
+     "dur": 1.9,
+     "cue": "reveal"
+    },
+    {
+     "t": "pause",
+     "dur": 1.0,
+     "cue": "wide"
+    },
+    {
+     "t": "pause",
+     "dur": 1.2,
+     "cue": "sad"
+    },
+    {
+     "t": "line",
+     "id": "s13_l05",
+     "who": "tired",
+     "text": "...Is this your family?",
+     "pre": 0.0,
+     "post": 0.2
+    },
+    {
+     "t": "pause",
+     "dur": 1.3,
+     "cue": "nod"
+    },
+    {
+     "t": "pause",
+     "dur": 2.8,
+     "cue": "title"
+    }
+   ],
+   "music_xfade": 0.6
+  }
+ ]
+}
