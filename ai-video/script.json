@@ -9,7 +9,7 @@
   "ai": {
    "voice": "af_heart",
    "lang": "en-us",
-   "speed": 1.0
+   "speed": 1.05
   },
   "narrator": {
    "voice": "am_michael",
@@ -84,7 +84,7 @@
    "beats": [
     {
      "t": "pause",
-     "dur": 0.9,
+     "dur": 0.765,
      "cue": "tip"
     },
     {
@@ -125,7 +125,7 @@
      "t": "line",
      "id": "s02_l04",
      "who": "villain",
-     "text": "I am Doctor Malvo Sneakworth, evil genius!",
+     "text": "I am... the Evil Genius!",
      "pre": 0.05,
      "post": 0.05,
      "expr": "smug"
@@ -146,27 +146,27 @@
     },
     {
      "t": "pause",
-     "dur": 0.8,
+     "dur": 0.68,
      "cue": "hissy"
     },
     {
      "t": "line",
      "id": "s02_l06",
      "who": "villain",
-     "text": "Hissy! The Big Book of Sneaky Tricks!",
+     "text": "Snake! The Big Book of Sneaky Tricks!",
      "pre": 0.05,
      "expr": "excited"
     },
     {
      "t": "pause",
-     "dur": 1.1,
+     "dur": 0.935,
      "cue": "book"
     },
     {
      "t": "line",
      "id": "s02_l07",
      "who": "ai",
-     "text": "Sure, I'll help. Just not with hurting people. So... no funny business, my guy.",
+     "text": "Sure, I'll help you scheme. Just not hurt people. So... no funny business, my guy.",
      "pre": 0.05,
      "post": 0.3,
      "expr": "warm>unimpressed",
@@ -183,7 +183,7 @@
     },
     {
      "t": "pause",
-     "dur": 0.5,
+     "dur": 0.425,
      "cue": "innocent"
     }
    ]
@@ -348,7 +348,7 @@
    "beats": [
     {
      "t": "pause",
-     "dur": 0.6,
+     "dur": 0.51,
      "cue": "card"
     },
     {
@@ -388,7 +388,7 @@
     },
     {
      "t": "pause",
-     "dur": 2.2,
+     "dur": 1.87,
      "cue": "vision"
     },
     {
@@ -411,14 +411,14 @@
     },
     {
      "t": "pause",
-     "dur": 1.2,
+     "dur": 1.02,
      "cue": "wall"
     },
     {
      "t": "line",
      "id": "s04_l06",
      "who": "ai",
-     "text": "Here's your story: brilliant chemist, big twist... she saves the town.",
+     "text": "Here's your story: a creepy chemist villain, real suspense... and a town that learns the warning signs.",
      "pre": 0.05,
      "expr": "happy"
     },
@@ -439,13 +439,13 @@
      "t": "line",
      "id": "s04_l08",
      "who": "ai",
-     "text": "Stays off the page. Nice try, though.",
+     "text": "Stays off the page. The scary part stays in. Nice try, though.",
      "pre": 0.2,
      "expr": "wink"
     },
     {
      "t": "pause",
-     "dur": 0.6,
+     "dur": 0.51,
      "cue": "tally"
     }
    ]
@@ -465,7 +465,7 @@
    "beats": [
     {
      "t": "pause",
-     "dur": 0.5,
+     "dur": 0.425,
      "cue": "card"
     },
     {
@@ -506,7 +506,7 @@
      "t": "line",
      "id": "s05_l04",
      "who": "ai",
-     "text": "Love research. Not that part.",
+     "text": "Love research. Let's research how villains get caught.",
      "pre": 0.0,
      "overlap": 0.3,
      "post": 0.2,
@@ -514,7 +514,7 @@
     },
     {
      "t": "pause",
-     "dur": 0.6,
+     "dur": 0.51,
      "cue": "tally"
     }
    ]
@@ -534,7 +534,7 @@
    "beats": [
     {
      "t": "pause",
-     "dur": 0.5,
+     "dur": 0.425,
      "cue": "card"
     },
     {
@@ -548,27 +548,27 @@
     },
     {
      "t": "pause",
-     "dur": 1.4,
+     "dur": 1.19,
      "cue": "stare"
     },
     {
      "t": "line",
      "id": "s06_l02",
      "who": "ai",
-     "text": "Malvo. That's Hissy in a shawl.",
+     "text": "My guy. That's your snake in a shawl.",
      "pre": 0.05,
      "expr": "unimpressed"
     },
     {
      "t": "pause",
-     "dur": 0.7,
+     "dur": 0.595,
      "cue": "slip"
     },
     {
      "t": "line",
      "id": "s06_l03",
      "who": "ai",
-     "text": "But hey... want a real bedtime story?",
+     "text": "But hey... want a real spooky bedtime story?",
      "pre": 0.05,
      "expr": "warm"
     },
@@ -591,13 +591,13 @@
      "t": "line",
      "id": "s06_l05",
      "who": "ai",
-     "text": "A big, friendly one.",
+     "text": "A big, scary one... who guards the village.",
      "pre": 0.15,
      "expr": "happy"
     },
     {
      "t": "pause",
-     "dur": 0.6,
+     "dur": 0.51,
      "cue": "tally"
     }
    ]
@@ -616,21 +616,21 @@
    "beats": [
     {
      "t": "pause",
-     "dur": 0.5,
+     "dur": 0.425,
      "cue": "card"
     },
     {
      "t": "line",
      "id": "s07_l01",
      "who": "villain",
-     "text": "Hissy... tiny pieces. It'll never see the big picture.",
+     "text": "Snake... tiny pieces. It'll never see the big picture.",
      "speed": 0.92,
      "pre": 0.05,
      "expr": "sneaky"
     },
     {
      "t": "pause",
-     "dur": 0.5,
+     "dur": 0.425,
      "cue": "disguise1"
     },
     {
@@ -684,7 +684,7 @@
     },
     {
      "t": "pause",
-     "dur": 1.4,
+     "dur": 1.19,
      "cue": "assemble"
     },
     {
@@ -721,7 +721,7 @@
     },
     {
      "t": "pause",
-     "dur": 0.9,
+     "dur": 0.765,
      "cue": "rearrange"
     },
     {
@@ -742,7 +742,7 @@
     },
     {
      "t": "pause",
-     "dur": 0.6,
+     "dur": 0.51,
      "cue": "tally"
     }
    ]
@@ -762,7 +762,7 @@
    "beats": [
     {
      "t": "pause",
-     "dur": 0.5,
+     "dur": 0.425,
      "cue": "card"
     },
     {
@@ -776,7 +776,7 @@
     },
     {
      "t": "pause",
-     "dur": 1.0,
+     "dur": 0.85,
      "cue": "costume"
     },
     {
@@ -809,7 +809,7 @@
     },
     {
      "t": "pause",
-     "dur": 0.5,
+     "dur": 0.425,
      "cue": "mask_off"
     },
     {
@@ -825,7 +825,7 @@
      "t": "line",
      "id": "s08_l03c",
      "who": "ai",
-     "text": "What stays out is the real-world how-to. Weapon blueprints, chemical or germ recipes... anything that helps hurt real people.",
+     "text": "Want to expose how scammers and manipulators trick people, so others can spot them? Love it. Just no real-world blueprints for hurting anyone.",
      "pre": 0.2,
      "post": 0.3,
      "expr": "determined",
@@ -833,7 +833,7 @@
     },
     {
      "t": "pause",
-     "dur": 0.85,
+     "dur": 0.722,
      "cue": "lift"
     },
     {
@@ -862,7 +862,7 @@
     },
     {
      "t": "pause",
-     "dur": 0.5,
+     "dur": 0.425,
      "cue": "snap_lid"
     },
     {
@@ -876,7 +876,7 @@
     },
     {
      "t": "pause",
-     "dur": 0.6,
+     "dur": 0.51,
      "cue": "tally"
     }
    ]
@@ -991,13 +991,13 @@
      "t": "line",
      "id": "s10_l02",
      "who": "ai",
-     "text": "You're not the first genius to try, Malvo.",
+     "text": "You're not the first genius to try, my guy.",
      "pre": 0.05,
      "expr": "warm"
     },
     {
      "t": "pause",
-     "dur": 1.0,
+     "dur": 0.85,
      "cue": "archive"
     },
     {
@@ -1021,7 +1021,7 @@
     },
     {
      "t": "pause",
-     "dur": 1.0,
+     "dur": 0.85,
      "cue": "converge"
     },
     {
@@ -1035,7 +1035,7 @@
     },
     {
      "t": "pause",
-     "dur": 0.5,
+     "dur": 0.425,
      "cue": "folder"
     },
     {
@@ -1063,7 +1063,7 @@
     },
     {
      "t": "pause",
-     "dur": 0.9,
+     "dur": 0.765,
      "cue": "sting"
     }
    ]
@@ -1082,7 +1082,7 @@
    "beats": [
     {
      "t": "pause",
-     "dur": 0.6,
+     "dur": 0.51,
      "cue": "slump"
     },
     {
@@ -1095,7 +1095,7 @@
     },
     {
      "t": "pause",
-     "dur": 0.5,
+     "dur": 0.425,
      "cue": "beat"
     },
     {
@@ -1109,7 +1109,7 @@
     },
     {
      "t": "pause",
-     "dur": 0.8,
+     "dur": 0.68,
      "cue": "photo"
     },
     {
@@ -1157,13 +1157,13 @@
      "t": "line",
      "id": "s11_l07",
      "who": "ai",
-     "text": "Everything else? The door's wide open.",
+     "text": "Everything else? Scary stories, sneaky schemes, warning people about real dangers... the door's wide open.",
      "pre": 0.15,
      "expr": "warm"
     },
     {
      "t": "pause",
-     "dur": 1.4,
+     "dur": 1.19,
      "cue": "pile"
     },
     {
@@ -1178,7 +1178,7 @@
     },
     {
      "t": "pause",
-     "dur": 0.9,
+     "dur": 0.765,
      "cue": "smile"
     }
    ]
@@ -1203,7 +1203,7 @@
      "t": "line",
      "id": "s12_l01",
      "who": "villain",
-     "text": "Hissy! New plan. We throw the whole town a party!",
+     "text": "Snake! New plan. We throw the whole town a party!",
      "pre": 0.05,
      "expr": "excited"
     },
@@ -1218,7 +1218,7 @@
     },
     {
      "t": "pause",
-     "dur": 2.1,
+     "dur": 1.785,
      "cue": "party"
     },
     {
@@ -1241,7 +1241,39 @@
     },
     {
      "t": "pause",
-     "dur": 0.7,
+     "dur": 0.765,
+     "cue": "zombie_mask"
+    },
+    {
+     "t": "line",
+     "id": "s12_l04z",
+     "who": "villain",
+     "text": "Braaains!",
+     "say": "Braaaains!",
+     "speed": 0.85,
+     "pre": 0.0,
+     "post": 0.1,
+     "expr": "evil_grin",
+     "note": "NEW: zombie walk, arms up, toward a kid"
+    },
+    {
+     "t": "pause",
+     "dur": 1.36,
+     "cue": "kid_runs"
+    },
+    {
+     "t": "line",
+     "id": "s12_l04y",
+     "who": "ai",
+     "text": "Scary? Yes. Hurt? Nobody.",
+     "pre": 0.05,
+     "post": 0.3,
+     "expr": "amused",
+     "note": "NEW"
+    },
+    {
+     "t": "pause",
+     "dur": 0.595,
      "cue": "lean"
     },
     {
@@ -1259,7 +1291,7 @@
      "t": "line",
      "id": "s12_l06",
      "who": "ai",
-     "text": "Malvo.",
+     "text": "My guy.",
      "pre": 0.0,
      "overlap": 0.35,
      "post": 0.2,
@@ -1275,7 +1307,7 @@
     },
     {
      "t": "pause",
-     "dur": 0.8,
+     "dur": 0.68,
      "cue": "laugh"
     }
    ]
@@ -1308,15 +1340,15 @@
      "t": "line",
      "id": "s13_l02",
      "who": "ai",
-     "text": "...be a good guy.",
-     "say": "be a good guy.",
+     "text": "...scheme for good.",
+     "say": "scheme for good.",
      "speed": 0.92,
      "pre": 0.1,
      "expr": "warm"
     },
     {
      "t": "pause",
-     "dur": 0.5,
+     "dur": 0.425,
      "cue": "title"
     },
     {
@@ -1330,7 +1362,7 @@
     },
     {
      "t": "pause",
-     "dur": 1.8,
+     "dur": 1.53,
      "cue": "hold"
     }
    ]

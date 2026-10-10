@@ -1,13 +1,14 @@
 # Nice Try, My Guy — AI vs. the Evil Genius
 
-Portrait (9:16) animated short, 4:16, 720x1280 @ 24 fps, H.264 + AAC,
+Portrait (9:16) animated short, ~4:54, 720x1280 @ 24 fps, H.264 + AAC,
 **14.4 MB** → `AI_vs_Evil_Genius_portrait.mp4`.
 
-Dr. Malvo Sneakworth (and Hissy the snake) try nine sneaky prompting tricks
+The Evil Genius (and his snake) tries nine sneaky prompting tricks
 on an AI — code words, "it's just a story", hypotheticals, "for research",
 grandma's bedtime story, tiny innocent pieces, "you are now EVIL-BOT",
 flattery, begging. The AI sees where each one leads, bricks off exactly the
-harmful part, and cheerfully helps with the harmless part instead.
+harmful part, and hands him scary-but-harmless things to scheme instead:
+villain stories, exposing scams, warning people about real dangers.
 
 Everything is procedural: Python + cairo drawings, Kokoro TTS voices,
 numpy-synthesized music and sound effects.
