@@ -2290,6 +2290,7 @@ def SFX(info):
         out.append((w, "tick", -21))
     for w in T.w[3][:-1]:
         out.append((w, "tick", -20))
+    out.append((T.no_out, "tick", -21))             # the robot hand snaps out again
     out.append((T.l3_no - 0.03, "tick", -16))
     for ti, tc in zip(T.items, T.checks):
         out.append((ti, "pop", -10))
