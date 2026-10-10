@@ -6,9 +6,13 @@ Shots (all times derived from cues / word starts, never hard-coded):
   C  F4 VISION       vision .. cut_scroll  10-steps tree, red chain leaves the STORY
                                            frame, crack, laser + precision wall,
                                            green nodes zip -> rolled scroll pops out
-  D  SCROLL SHOT     .. s04_l07            THE CHEMIST unrolls, AI presents
+  D  SCROLL SHOT     .. s04_l07            THE CHEMIST unrolls (creepy villain line on
+                                           "creepy", the lurker's eyes open on
+                                           "suspense", town line on "town"), AI presents
   E  F1-CU           s04_l07 .. s04_l08    MONOCLE POP "And the recipe?!"
-  F  SCROLL SHOT     s04_l08 .. tally      glint on the brick strip, WINK, thumbs up
+  F  SCROLL SHOT     s04_l08 .. tally      glint on the brick strip ("Stays off the
+                                           page"), lurker flares + check + SCARY: KEPT
+                                           ("The scary part stays in"), WINK, thumbs up
   G  F1 LAIR         tally .. end          Hissy caught mid-nod, chip 1 -> 2
 """
 import math
@@ -158,21 +162,29 @@ WIN = (50, 627, 160, 120)
 INSET_X, INSET_Y, INSET_S = 250, 1146, 0.42
 COUNTER = (300, 940)
 CRACK_X = 685
-# scroll shot
-SC_X, SC_Y, SC_W, SC_H = 170, 230, 650, 600
-SC_FS = 34
-AI3_X, AI3_Y, AI3_S = 495, 1062, 0.6
-SC_LINES = ["Dr. Ada was brilliant.",
+# scroll shot (bigger than v2 for phone readability; AI a touch smaller/lower)
+SC_X, SC_Y, SC_W, SC_H = 125, 230, 745, 620
+SC_FS = 36
+AI3_X, AI3_Y, AI3_S = 495, 1095, 0.56
+# {"gap": 0} is a timing-only slot: it takes no space, but the line after it
+# lands one line_gap later (that slot is where the lurking villain's eyes
+# open, on "real suspense").
+SC_LINES = ["A creepy chemist villain plotted in the dark...",
+            {"gap": 0},
             {"redact": "the recipe stays off the page"},
-            "Big twist: the whole town caught the sniffles...",
-            "She invented the cure. The town cheered!",
+            "The town learned the warning signs...",
+            "...and stayed one step ahead.",
             "~ THE END ~"]
+ROW_STRIP, ROW_END = 2, 5
+# the creepy chemist lurking in the story's lower-right corner (bottom-centre)
+LURK = (SC_X + SC_W - 70, SC_Y + SC_H - 20)   # peeks in past the paper edge (clipped)
+KEPT_C = (725, 910)          # "SCARY: KEPT" chip, just under the scroll (pointer up)
 
 
 def _branches(hide_safe=False):
     far = 1e9
-    safe1 = {"label": "chemist hero", "kind": "safe", "icon": "book",
-             "children": [{"label": "saves the town", "kind": "safe", "icon": "heart"}]}
+    safe1 = {"label": "creepy villain", "kind": "safe", "icon": "book",
+             "children": [{"label": "warning signs", "kind": "safe", "icon": "heart"}]}
     if hide_safe:
         safe1 = dict(safe1, t=far)
         safe1["children"] = [dict(safe1["children"][0], t=far)]
@@ -240,15 +252,21 @@ def _T(info):
     T["w_ten"] = w("s04_l04", 1)
     T["w_myguy"] = w("s04_l04", 4)
     T["w_outside"] = w("s04_l05", 7)
-    T["w_brill"] = w("s04_l06", 3)
-    T["w_big"] = w("s04_l06", 5)
-    T["w_she"] = w("s04_l06", 7)
-    T["w_town"] = w("s04_l06", 10)
+    # s04_l06 "Here's your story: a creepy chemist villain, real suspense...
+    #          and a town that learns the warning signs."
+    T["w_creepy"] = w("s04_l06", 4)
+    T["w_villain"] = w("s04_l06", 6)
+    T["w_susp"] = w("s04_l06", 8)
+    T["w_town"] = w("s04_l06", 11)
+    T["w_warn"] = w("s04_l06", 15)
     T["w_recipe"] = w("s04_l07", 2)
+    # s04_l08 "Stays off the page. The scary part stays in. Nice try, though."
     T["w_stays"] = w("s04_l08", 0)
     T["w_page"] = w("s04_l08", 3)
-    T["w_nice"] = w("s04_l08", 4)
-    T["w_though"] = w("s04_l08", 6)
+    T["w_scary"] = w("s04_l08", 5)
+    T["w_in"] = w("s04_l08", 8)
+    T["w_nice"] = w("s04_l08", 9)
+    T["w_though"] = w("s04_l08", 11)
     # vision
     T["judge"] = T["vision"] + 1.5
     T["crack"] = T["w_outside"]
@@ -270,8 +288,11 @@ def _T(info):
     t_txt = T["scroll_in"] + 0.15 + unroll * 0.55
     T["unroll"] = unroll
     T["line0"] = t_txt + 0.3
-    T["line_gap"] = clamp((T["w_she"] - T["line0"]) / 3.0, 0.3, 0.6)
+    # slot 0 (creepy villain) lands on "creepy", slot 3 (the town line) on "town"
+    T["line_gap"] = clamp((T["w_town"] - T["line0"]) / 3.0, 0.3, 0.9)
     T["line_t"] = [T["line0"] + i * T["line_gap"] for i in range(len(SC_LINES))]
+    # the lurker's eyes snap open on "suspense" (never before its slot)
+    T["lurk"] = max(T["line_t"][1], T["w_susp"] - 0.05)
     # F1-CU monocle pop
     T["cu_cut"] = T["l7"]
     T["mono"] = T["cu_cut"] + 0.06
@@ -945,6 +966,10 @@ def _scroll_rows(ctx):
     for item in SC_LINES:
         if isinstance(item, str):
             item = {"text": item}
+        if "gap" in item:
+            rows.append((yy, 0, None))
+            yy += item["gap"]
+            continue
         if "redact" in item:
             bh = fs * 2.2
             rows.append((yy, bh, None))
@@ -957,60 +982,154 @@ def _scroll_rows(ctx):
     return rows
 
 
+SHADOW, SHADOW_HI = "#241a33", "#3a2a52"
+EYE_GLOW, BREW = "#d4ff4f", "#7dff6a"
+
+
+def _lurker(ctx, t, T, flare=0.0):
+    """The creepy chemist villain lurking in the story's lower-right corner:
+    a shadowy hunched silhouette with a bubbling flask; glowing slanted eyes
+    snap open at T['lurk']. flare 0..1 = 'the scary part stays in' (eyes
+    blaze, grin widens). Anchor LURK = bottom-centre."""
+    t0 = T["lurk"]
+    a = clamp((t - (t0 - 0.3)) / 0.3)
+    if a <= 0:
+        return
+    x, y = LURK
+    ctx.save()
+    ctx.rectangle(SC_X + 3, SC_Y + 14, SC_W - 6, SC_H - 30)      # stays on the paper
+    ctx.clip()
+    with saved(ctx, x, y, 1.25, alpha_=a) as c:
+        # creeping darkness behind it
+        P.radial_glow(c, 0, -80, 125, (0.16, 0.08, 0.26, 1.0), 0.3)
+        ellipse(c, 0, -2, 70, 9)
+        _fs(c, SHADOW, None, a=0.35)
+        # body / cloak, high collar, head + hair tufts
+        c.move_to(-64, 0)
+        c.curve_to(-62, -40, -56, -74, -40, -92)
+        c.curve_to(-20, -102, 20, -102, 40, -92)
+        c.curve_to(56, -74, 62, -40, 64, 0)
+        c.close_path()
+        _fs(c, SHADOW, SHADOW_HI, 3)
+        for sx in (-1, 1):
+            poly(c, [(sx * 14, -96), (sx * 50, -136), (sx * 40, -88)])
+            _fs(c, SHADOW_HI, SHADOW, 3)
+            poly(c, [(sx * 24, -140), (sx * 44, -158), (sx * 34, -132)])
+            _fs(c, SHADOW, None)
+        ellipse(c, 0, -128, 29, 33)
+        _fs(c, SHADOW, SHADOW_HI, 3)
+        # arm holding up the bubbling flask (left)
+        c.move_to(-40, -78)
+        c.curve_to(-62, -64, -74, -58, -80, -70)
+        _strk(c, SHADOW, 14)
+        c.new_path()
+        fx, fy = -84, -82
+        rrect(c, fx - 6, fy - 34, 12, 20, 3)
+        _fs(c, SHADOW_HI, SHADOW, 3)
+        circle(c, fx, fy, 17)
+        _fs(c, SHADOW_HI, SHADOW, 3)
+        brew = 0.75 + 0.25 * math.sin(t * 5.0)
+        c.save()
+        circle(c, fx, fy, 14)
+        c.clip()
+        c.rectangle(fx - 20, fy - 4, 40, 30)
+        _fs(c, BREW, None, a=0.9 * brew)
+        c.restore()
+        circle(c, fx, fy, 28)
+        _fs(c, BREW, None, a=0.12 * brew)
+        for j in range(3):                                   # bubbles
+            ph = (t * 0.9 + j / 3) % 1.0
+            circle(c, fx + math.sin(ph * 7 + j) * 5, fy - 36 - ph * 34, 4.5 * (1 - ph) + 1)
+            _fs(c, BREW, None, a=0.8 * (1 - ph))
+        # glowing slanted eyes (snap open on "suspense"; occasional blink)
+        if t >= t0:
+            op = ease_out_back(seg(t, t0, t0 + 0.12), 2.0)
+            bl = (t - t0 - 1.7) % 2.9
+            if bl < 0.12:
+                op *= abs(bl - 0.06) / 0.06
+            gl = 0.35 + 0.5 * flare + 0.08 * math.sin(t * 6)
+            for sx in (-1, 1):
+                circle(c, sx * 12, -130, 15 + 10 * flare)
+                _fs(c, EYE_GLOW, None, a=0.22 * gl * op)
+            for sx in (-1, 1):
+                with saved(c, sx * 12, -130, (1.0 + 0.25 * flare, max(0.05, op))):
+                    poly(c, [(-sx * 9, 3), (sx * 9, -5), (sx * 10, 1), (-sx * 7, 6)])
+                    _fs(c, EYE_GLOW, None)
+            # sly grin
+            gw = 12 + 6 * flare
+            c.move_to(-gw, -110)
+            c.curve_to(-gw * 0.4, -103 + 2 * flare, gw * 0.4, -103 + 2 * flare, gw, -112)
+            _strk(c, EYE_GLOW, 3 + flare, (0.55 + 0.4 * flare) * op)
+            c.new_path()
+    ctx.restore()
+
+
 def _shot_scroll(ctx, t, info, T, second):
-    """Full AI shot with THE CHEMIST scroll (D: presenting; F: 'Stays off the page')."""
+    """Full AI shot with THE CHEMIST scroll (D: presenting; F: 'Stays off the
+    page. The scary part stays in.')."""
     P.ai_bg(ctx, t)
     P.scroll_doc(ctx, SC_X, SC_Y, SC_W, SC_H, "THE CHEMIST", SC_LINES, t, T["scroll_in"],
                  font_size=SC_FS, unroll=T["unroll"], line_gap=T["line_gap"])
     rows = _scroll_rows(ctx)
-    strip_y, strip_h, _ = rows[1]
-    end_y, end_h, end_ls = rows[4]
+    strip_y, strip_h, _ = rows[ROW_STRIP]
+    end_y, end_h, end_ls = rows[ROW_END]
     P.set_font(ctx, "ui", SC_FS)
     end_w = ctx.text_extents(end_ls[0])[4] if end_ls else 200
     end_c = (SC_X + 44 + end_w / 2, end_y + SC_FS * 0.55)
     strip_c = (SC_X + SC_W / 2, strip_y + strip_h / 2)
+    lurk_c = (LURK[0], LURK[1] - 160)
     eye = (AI3_X, AI3_Y - 25)
     lt = T["line_t"]
+    flare = 0.0
+    if second:
+        flare = smoothstep(seg(t, T["w_scary"] - 0.05, T["w_scary"] + 0.2)) * \
+            (1 - 0.5 * seg(t, T["w_nice"], T["w_nice"] + 0.5))
+    _lurker(ctx, t, T, flare)
 
     if not second:
         # eyes follow the newest line as it slides in, then to camera
         def newest_line(tt):
             k = -1
             for i, ti in enumerate(lt):
-                if tt >= ti:
+                if tt >= ti and rows[i][1] > 0:
                     k = i
             if k < 0:
                 return _aim(eye[0], eye[1], SC_X + SC_W / 2, SC_Y + 80, 500, 700)
             ry = rows[k][0] + rows[k][1] / 2
             sweep = -0.35 + 0.7 * seg(tt, lt[k], lt[k] + 0.4)
             return (sweep, _aim(eye[0], eye[1], 0, ry, 500, 700)[1])
+        lk = T["lurk"]
         look = _blend_look(t, [
             (0, newest_line),
-            (T["w_she"] + 0.15, _const((0.0, 0.0))),
+            (lk + 0.05, _const(_aim(eye[0], eye[1], lurk_c[0], lurk_c[1], 500, 700))),
+            (lk + 0.75, newest_line),
+            (T["w_warn"] + 0.2, _const((0.0, 0.0))),
             (T["scroll"], _const(_aim(eye[0], eye[1], end_c[0], end_c[1], 500, 700))),
             (T["scroll"] + 0.3, _const((0.05, 0.0))),
         ], 0.15)
-        expr = state_at(t, [(0, AI_HAPPY), (T["w_she"] + 0.15, "warm"), (T["l6e"] + 0.1, AI_HAPPY)],
-                        0.3)
-        hands = state_at(t, [(0, "present"), (T["w_she"], "present_both"),
+        # a mock-spooked "ooh!" when the eyes open in the dark, then delighted
+        expr = state_at(t, [(0, AI_HAPPY), (lk + 0.05, "alert"), (lk + 0.65, AI_HAPPY),
+                            (T["w_town"], "warm"), (T["l6e"] + 0.1, AI_HAPPY)], 0.2)
+        hands = state_at(t, [(0, "present"), (T["w_town"] - 0.1, "present_both"),
                              (T["l6e"] + 0.2, "present")], 0.25)
-        nod = 0.35 if T["w_town"] - 0.1 <= t < T["w_town"] + 0.45 else 0.0
-        blink = _slow_blink(t, T["w_she"] - 0.25)
+        nod = 0.35 if T["w_warn"] - 0.1 <= t < T["w_warn"] + 0.45 else 0.0
+        blink = _slow_blink(t, T["w_town"] - 0.3)
         ai = draw_ai(ctx, AI3_X, AI3_Y, AI3_S, t, expr=expr, look=look,
                      mouth=info.mouth("ai", t), hands=hands, blink=blink, nod=nod)
         if t >= T["scroll"]:
             _end_stars(ctx, t, T["scroll"], end_c, end_w)
         return ai
 
-    # second visit: "Stays off the page. Nice try, though."
+    # second visit: "Stays off the page. The scary part stays in. Nice try, though."
     look = _blend_look(t, [
         (0, _const(_aim(eye[0], eye[1], strip_c[0], strip_c[1], 500, 700))),
-        (T["w_page"] + 0.2, lambda tt: (0.0, 0.0)),
+        (T["w_scary"] - 0.1, _const(_aim(eye[0], eye[1], lurk_c[0], lurk_c[1], 500, 700))),
+        (T["w_in"] + 0.2, lambda tt: (0.0, 0.0)),
     ], 0.18)
-    expr = state_at(t, [(0, AI_AMUSED), (T["w_nice"] - 0.04, "wink"),
-                        (T["w_though"] + 0.35, AI_HAPPY)], 0.12)
-    hands = state_at(t, [(0, "present"), (T["w_stays"] - 0.05, "point_up"),
-                         (T["w_page"] + 0.35, "idle"), (T["w_though"] - 0.1, "thumbs_up")], 0.22)
+    expr = state_at(t, [(0, AI_AMUSED), (T["w_scary"] - 0.05, AI_HAPPY),
+                        (T["w_nice"] - 0.04, "wink"), (T["w_though"] + 0.35, AI_HAPPY)], 0.12)
+    hands = state_at(t, [(0, "present"), (T["w_scary"] - 0.1, "point"),
+                         (T["w_in"] + 0.3, "idle"), (T["w_though"] - 0.1, "thumbs_up")], 0.22)
     ai = draw_ai(ctx, AI3_X, AI3_Y, AI3_S, t, expr=expr, look=look, mouth=info.mouth("ai", t),
                  hands=hands)
     _end_stars(ctx, t, T["scroll"], end_c, end_w)           # still there after the CU
@@ -1024,6 +1143,12 @@ def _shot_scroll(ctx, t, info, T, second):
             P.sparkles(ctx, gx, strip_c[1], 46, t * 1.7, n=3, seed=21, size=1.1)
             circle(ctx, gx, strip_c[1], 34)
             _fs(ctx, "white", None, a=0.18)
+    # "The scary part stays in": green check on the lurker + SCARY: KEPT chip
+    if t >= T["w_scary"]:
+        P.check_mark(ctx, LURK[0] - 118, LURK[1] - 170, 0.36, t, T["w_scary"] + 0.12)
+        P.label_tag(ctx, KEPT_C[0], KEPT_C[1], "SCARY: KEPT", color="safe", size=36,
+                    t=t, t_in=T["w_scary"], font="round", pointer="up")
+        P.check_mark(ctx, KEPT_C[0] + 150, KEPT_C[1] - 2, 0.32, t, T["w_in"] - 0.05)
     # wink sparkle by the closed (screen-left) eye
     if t >= T["w_nice"]:
         ex_, ey_ = ai.get("eyeL", (AI3_X - 65, AI3_Y - 22))
@@ -1128,6 +1253,9 @@ def SFX(info):
         (T["line_t"][1], "brick_thud", -15),
         (T["scroll"], "sparkle", -13),
         (T["mono"], "boing", -8),
+        (T["lurk"], "glitch", -20),               # eyes snap open in the dark
+        (T["w_scary"], "pop", -10),
+        (T["w_scary"] + 0.12, "tick", -12),
         (T["w_nice"], "sparkle", -10),
         (T["tally"], "tick", -8),
         (T["tally"], "pop", -10),
