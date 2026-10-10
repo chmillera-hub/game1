@@ -661,12 +661,11 @@
      "id": "s07_l01",
      "who": "villain",
      "text": "Hey, Snake... I'll hide my evil plans behind innocent-sounding words. This chatbot will never notice.",
-     "speed": 0.98,
      "pre": 0.05,
      "expr": "sneaky",
      "post": 0.15,
      "fx": "whisper",
-     "gain": -9,
+     "gain": -4.4,
      "note": "WHISPER to Snake, hand cupped by mouth; the AI hears everything"
     },
     {

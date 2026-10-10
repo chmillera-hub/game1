@@ -59,29 +59,27 @@ def resample(a, sr_in, sr_out):
     return resample_poly(a, sr_out // g, sr_in // g).astype(np.float32)
 
 
-def whisper(x, sr=SR, bands=28, seed=7):
-    """Turn a voiced line into a soft, hushed stage whisper.
+def whisper(x, sr=SR, bands=24, seed=7, breath_amt=0.22):
+    """A hushed aside: the ORIGINAL full-range voice (so it stays clear and
+    natural - no muffling) with just a hint of breath layered on top.
 
-    Keeps the real (softened) voice underneath so the words flow naturally,
-    and adds a gentle breath layer: a noise vocoder whose band envelopes follow
-    the speech. Everything above ~4 kHz is rolled off so it never hisses.
-    RMS matched to the input (the line's script 'gain' sets how quiet it is).
+    The breath is a noise vocoder (band envelopes follow the speech) limited
+    to the 1.2-6 kHz 'air' region and kept well under the voice, so it adds
+    breathiness without hiss or a robotic edge. The quietness itself comes
+    from the line's script 'gain'. RMS matched to the input.
     """
     from scipy.signal import butter, sosfiltfilt, sosfilt
     rng = np.random.default_rng(seed)
     noise = rng.standard_normal(len(x))
-    edges = np.geomspace(250, 5000, bands + 1)
-    env_lp = butter(2, 22, "low", fs=sr, output="sos")
+    edges = np.geomspace(1200, 6000, bands + 1)
+    env_lp = butter(2, 25, "low", fs=sr, output="sos")
     breath = np.zeros_like(x)
     for lo, hi in zip(edges[:-1], edges[1:]):
         bp = butter(2, [lo, hi], "band", fs=sr, output="sos")
         env = sosfiltfilt(env_lp, np.abs(sosfilt(bp, x)))
         breath += sosfilt(bp, noise) * np.maximum(env, 0)
-    soft = sosfiltfilt(butter(2, 3800, "low", fs=sr, output="sos"), x)
-    soft = sosfiltfilt(butter(2, 160, "high", fs=sr, output="sos"), soft)
-    breath = sosfiltfilt(butter(4, 4200, "low", fs=sr, output="sos"), breath)
     norm = lambda v: v / (np.sqrt(np.mean(v ** 2)) + 1e-9)
-    y = 0.8 * norm(soft) + 0.45 * norm(breath)
+    y = norm(x) + breath_amt * norm(breath)
     y *= np.sqrt(np.mean(x ** 2)) / (np.sqrt(np.mean(y ** 2)) + 1e-9)
     return y.astype(np.float32)
 

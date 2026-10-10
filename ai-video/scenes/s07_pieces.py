@@ -742,15 +742,26 @@ def _body_pt(x, y, s, lean, px, py):
     return m.transform_point(px, py)
 
 
+# Side-of-the-mouth whisper faces: the mouth slides toward Snake (screen-left),
+# shrinks, and its near corner curls up, so it reads as whispering AT Snake.
+for _src, _dst in (("sneaky", "s07_sw_sneaky"), ("smug", "s07_sw_smug"),
+                   ("evil_grin", "s07_sw_grin")):
+    if _dst not in V.VILLAIN_EXPR:
+        _e = dict(V.VILLAIN_EXPR[_src])
+        _e.update(mx=-44.0, mw=_e.get("mw", 1.0) * 0.46, msk=-0.55, mt=0.0, mo=0.0, sneer=0.0)
+        V.VILLAIN_EXPR[_dst] = _e
+
+
 def _f1_open_state(t, T):
     L1 = T.L1
     wi = T.w_innocent
     ek = [(0.0, "sneaky", 0.25),
-          (T.w_hide, "smug", 0.15),
-          (T.w_evil, "sneaky", 0.2),
-          (wi, "smug", 0.1), (wi + 0.15, "sneaky", 0.1),          # BROW WAGGLE x2
-          (wi + 0.3, "smug", 0.1), (wi + 0.45, "sneaky", 0.1),
-          (T.w_notice - 0.05, "evil_grin", 0.22),                  # grin to the snake
+          (L1.start - 0.05, "s07_sw_sneaky", 0.2),                 # side-mouth whisper
+          (T.w_hide, "s07_sw_smug", 0.15),
+          (T.w_evil, "s07_sw_sneaky", 0.2),
+          (wi, "s07_sw_smug", 0.1), (wi + 0.15, "s07_sw_sneaky", 0.1),   # BROW WAGGLE x2
+          (wi + 0.3, "s07_sw_smug", 0.1), (wi + 0.45, "s07_sw_sneaky", 0.1),
+          (T.w_notice - 0.05, "s07_sw_grin", 0.22),                # grin to the snake
           (L1.end + 0.05, "smug", 0.2),
           (T.w_watch - 0.08, "evil_grin", 0.2),                    # sly grin at the keys
           (T.d1 + 0.04, "hopeful", 0.14)]                          # the innocent face
@@ -761,8 +772,7 @@ def _f1_open_state(t, T):
     KB = (0.32, 0.95)                                              # down at the keyboard
     lk = [(0.0, CAM), (0.2, AI), (0.42, CAM),                      # shifty glance during the card
           (L1.start + 0.02, SNAKE),                                # eyes on the snake
-          (T.w_this1, AI), (T.w_chatbot + 0.16, SNAKE),            # shifty side-glances at
-          (T.w_will, AI), (T.w_never, SNAKE),                      # "This chatbot"
+          (T.w_chatbot, AI), (T.w_chatbot + 0.28, SNAKE),          # one quick dart at the AI
           (T.w_watch - 0.08, KB),
           (T.d1 + 0.04, (0.15, -0.55))]                            # eyes up: "who, me?"
     look = _vlook(expr, _lk(t, lk, 0.1))
@@ -883,7 +893,7 @@ def _f1_open(ctx, t, info, T):
     expr, look, arms, lean, snake, shift = _f1_open_state(t, T)
     mouth = info.mouth("villain", t)
     if T.L1.start - 0.1 <= t < T.L1.end + 0.1:       # hushed whisper: smaller lip shapes
-        mouth = (mouth[0] * 0.7, mouth[1] * 0.6)
+        mouth = (mouth[0] * 0.5, mouth[1] * 0.4)
     vx, vy, vs = OV
     apose, aexpr, alook, ablink = _open_ai_state(t, T)
     with saved(ctx) as c:
