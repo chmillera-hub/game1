@@ -930,7 +930,7 @@ def sh12(ctx, t, T, info):
 def sh13(ctx, t, T, info):
     tt = T["title"]
     cam0 = (SH_TX + 60, SH_FEET - 120, 2.7)
-    cam1 = (SH_TX + 22, SH_FEET - 262, 1.38)
+    cam1 = (SH_TX + 30, SH_FEET - 240, 1.55)
     cx, cy, z = _pull_cam(t, tt, tt + 2.3, cam0, cam1)
     sil = lerp(0.5, 0.88, smoothstep(seg(t, tt + 0.1, tt + 1.8)))
     tkw = dict(pose=_hand_on_head(1.0), turn=0.45, expr="sad", look=(0.75, 0.8),

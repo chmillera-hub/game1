@@ -194,7 +194,8 @@ def _recep_kw(t, T, info):
     sb = T["stare"] + 0.28
     if sb - 0.05 <= t <= sb + 1.0:
         blink = _slow_blink(t, sb, 0.32, 0.18, 0.38)
-    pose = "sit_desk"
+    # types (bored) until he arrives; her hands stop a beat after her eyes go up
+    pose = ("type", "sit_desk", seg(t, ta + 0.05, ta + 0.3))
     return dict(pose=pose, expr="bored", look=look, mouth=info.mouth("recep", t), face=face,
                 blink=blink)
 

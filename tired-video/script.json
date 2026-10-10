@@ -73,7 +73,7 @@
     },
     {
      "t": "pause",
-     "dur": 1.3,
+     "dur": 1.6,
      "cue": "headphones"
     },
     {
@@ -83,7 +83,7 @@
     },
     {
      "t": "pause",
-     "dur": 0.6,
+     "dur": 1.0,
      "cue": "shake"
     },
     {
@@ -107,7 +107,7 @@
     },
     {
      "t": "pause",
-     "dur": 0.9,
+     "dur": 2.1,
      "cue": "nothing"
     },
     {
@@ -139,7 +139,7 @@
    "beats": [
     {
      "t": "pause",
-     "dur": 0.7,
+     "dur": 1.05,
      "cue": "peel"
     },
     {
@@ -160,7 +160,7 @@
     },
     {
      "t": "pause",
-     "dur": 1.0,
+     "dur": 1.6,
      "cue": "scurry"
     },
     {
@@ -261,7 +261,7 @@
     },
     {
      "t": "pause",
-     "dur": 0.9,
+     "dur": 1.7,
      "cue": "rock"
     },
     {
@@ -294,7 +294,7 @@
     },
     {
      "t": "pause",
-     "dur": 1.4,
+     "dur": 1.7,
      "cue": "climb"
     },
     {
@@ -321,7 +321,7 @@
     },
     {
      "t": "pause",
-     "dur": 1.0,
+     "dur": 1.3,
      "cue": "reveal"
     },
     {
@@ -366,7 +366,7 @@
     },
     {
      "t": "pause",
-     "dur": 1.4,
+     "dur": 2.0,
      "cue": "tiptoe"
     },
     {
@@ -418,12 +418,12 @@
    "beats": [
     {
      "t": "pause",
-     "dur": 1.1,
+     "dur": 1.5,
      "cue": "music"
     },
     {
      "t": "pause",
-     "dur": 1.1,
+     "dur": 1.8,
      "cue": "crawl"
     },
     {
@@ -453,7 +453,7 @@
     },
     {
      "t": "pause",
-     "dur": 2.2,
+     "dur": 2.8,
      "cue": "search"
     },
     {
@@ -512,7 +512,7 @@
    "beats": [
     {
      "t": "pause",
-     "dur": 0.6,
+     "dur": 1.2,
      "cue": "spot"
     },
     {
@@ -580,7 +580,7 @@
     },
     {
      "t": "pause",
-     "dur": 0.8,
+     "dur": 1.2,
      "cue": "jerk"
     },
     {
@@ -593,7 +593,7 @@
     },
     {
      "t": "pause",
-     "dur": 0.8,
+     "dur": 1.3,
      "cue": "stare"
     },
     {
@@ -618,7 +618,7 @@
    "beats": [
     {
      "t": "pause",
-     "dur": 0.6,
+     "dur": 1.0,
      "cue": "scoop"
     },
     {
@@ -645,7 +645,7 @@
     },
     {
      "t": "pause",
-     "dur": 0.5,
+     "dur": 0.8,
      "cue": "open"
     },
     {
@@ -703,7 +703,7 @@
     },
     {
      "t": "pause",
-     "dur": 0.9,
+     "dur": 1.5,
      "cue": "catch"
     },
     {
@@ -727,7 +727,7 @@
    "module": "s08_street_boss",
    "music": "tension",
    "head": 0.0,
-   "tail": 0.35,
+   "tail": 0.55,
    "min_dur": 0,
    "title": "The vans are already here",
    "beats": [
@@ -794,7 +794,7 @@
     },
     {
      "t": "pause",
-     "dur": 1.8,
+     "dur": 3.1,
      "cue": "consider"
     },
     {
@@ -857,7 +857,7 @@
     },
     {
      "t": "pause",
-     "dur": 0.5,
+     "dur": 0.7,
      "cue": "sweat"
     },
     {
@@ -924,7 +924,7 @@
     },
     {
      "t": "pause",
-     "dur": 0.8,
+     "dur": 1.6,
      "cue": "gulp"
     }
    ],
@@ -962,7 +962,7 @@
     },
     {
      "t": "pause",
-     "dur": 0.6,
+     "dur": 0.9,
      "cue": "look"
     },
     {
@@ -975,7 +975,7 @@
     },
     {
      "t": "pause",
-     "dur": 0.5,
+     "dur": 0.7,
      "cue": "trip"
     },
     {
@@ -1006,7 +1006,7 @@
     },
     {
      "t": "pause",
-     "dur": 1.2,
+     "dur": 2.0,
      "cue": "leave"
     },
     {
@@ -1070,7 +1070,7 @@
     },
     {
      "t": "pause",
-     "dur": 0.6,
+     "dur": 0.9,
      "cue": "stare"
     },
     {
@@ -1083,22 +1083,32 @@
     },
     {
      "t": "pause",
-     "dur": 1.0,
+     "dur": 2.2,
      "cue": "walk"
     },
     {
      "t": "pause",
-     "dur": 1.8,
+     "dur": 1.1,
      "cue": "lab"
     },
     {
      "t": "pause",
-     "dur": 1.0,
+     "dur": 1.5,
+     "cue": "screen"
+    },
+    {
+     "t": "pause",
+     "dur": 1.2,
+     "cue": "terrarium"
+    },
+    {
+     "t": "pause",
+     "dur": 1.7,
      "cue": "realize"
     },
     {
      "t": "pause",
-     "dur": 0.4,
+     "dur": 0.6,
      "cue": "lean"
     },
     {
@@ -1147,7 +1157,7 @@
     },
     {
      "t": "pause",
-     "dur": 0.9,
+     "dur": 1.3,
      "cue": "powers"
     },
     {
@@ -1261,7 +1271,7 @@
   {
    "id": "s13",
    "module": "s13_shaft",
-   "music": "reveal",
+   "music": "reveal:awe=0.5607,sad=0.7008,sting=3.60",
    "head": 0.0,
    "tail": 0.2,
    "min_dur": 0,
@@ -1313,7 +1323,7 @@
     },
     {
      "t": "pause",
-     "dur": 1.8,
+     "dur": 2.8,
      "cue": "annoy"
     },
     {
@@ -1336,7 +1346,7 @@
     },
     {
      "t": "pause",
-     "dur": 1.0,
+     "dur": 1.9,
      "cue": "wide"
     },
     {
@@ -1359,7 +1369,7 @@
     },
     {
      "t": "pause",
-     "dur": 2.8,
+     "dur": 3.4,
      "cue": "title"
     }
    ],

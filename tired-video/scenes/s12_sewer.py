@@ -208,7 +208,7 @@ def tired_state(t, k):
             st["pose_t"] = k["walk1"] - k["walk0"]
             st["turn"] = tween(t, [(k["walk1"], -0.95), (k["walk1"] + 0.3, -0.72)])
         if rk >= 1:
-            st["expr"] = state_at(t, [(0, "groggy"), (k["walk0"] + 0.7, "bored"),
+            st["expr"] = state_at(t, [(0, "groggy"), (k["walk0"] + 0.5, "bored"),
                                       (k["hunch0"], "neutral")], 0.3)
             st["look"] = tween(t, [(k["walk0"], (-0.6, 0.2)), (k["walk0"] + 0.5, (-0.7, 0.05)),
                                    (k["slide0"], (-0.5, 0.0)), (k["slide0"] + 0.22, (0.95, 0.02)),

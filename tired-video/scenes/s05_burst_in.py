@@ -733,9 +733,10 @@ def draw_late(ctx, t, info, c):
     ctx.translate(ex, pivot_y)
     ctx.scale(sx, sy)
     ctx.translate(-ex, -pivot_y)
+    no_blink = mode in ("tap", "up", "bonk") and t >= c.tap1
     ea = human.draw_person(ctx, "embar", ex, ey, S, t, pose=e["pose"], pose_t=e["pose_t"], expr=e["expr"],
                            look=e["look"], face=e["face"], turn=e["turn"], blush=e["blush"], sweat=0.6,
-                           mouth=e.get("mouth", (0, 0)))
+                           mouth=e.get("mouth", (0, 0)), blink=0.0 if no_blink else None)
     ctx.restore()
     if star_xy is not None:
         fx.dizzy_stars(ctx, star_xy[0], star_xy[1], 0.75, t, t0=c.land + 0.08, dur=c.foot + 0.9 - c.land - 0.08,

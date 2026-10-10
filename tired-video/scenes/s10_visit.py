@@ -423,7 +423,7 @@ def _tired_door(t, k, info):
             # watches Emb walk off; eyes narrow as the door closes
             look = tween(t, [(k["L5e"], (-0.74, -0.1)), (k["sh10"] + 0.2, (-1.0, 0.05)), (k["dc1"], (-1.0, 0.12))])
             nk = smoothstep(seg(t, k["dc0"] - 0.3, k["dc1"] + 0.15))
-            face = {"lid": 0.07 + 0.11 * nk, "lower": 0.38 * nk, "brow": -0.18 * nk, "brow_ang": -0.2 * nk,
+            face = {"lid": 0.07 - 0.03 * nk, "lower": 0.32 * nk, "brow": -0.22 * nk, "brow_ang": -0.25 * nk,
                     "press": 0.35, "head_turn": 0.3 * nk}
             if t >= k["dc1"] + 0.2:
                 face["look_x"] = -0.1
