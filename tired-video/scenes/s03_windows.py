@@ -416,17 +416,17 @@ def _fence(ctx, t):
 def _emb_A(ctx, info, t, T):
     w1, l1, l1e, w2, l2, l2e = T["w1"], T["l1"], T["l1e"], T["w2"], T["l2"], T["l2e"]
     face = {}
-    blush, sweat, flip = 0.3, 0.35, False
+    blush, sweat, flip = 0.3, 0.35, True
     turn, pt = -1.0, t
     if t < T["r1e"]:                       # dash left to window 1
         x = lerp(X0, XW1 + 46, t / T["r1e"])
-        pose, pt = RUN, _travel_pt(x, X0, RUN, -1.0)
+        pose, pt = RUNC, _travel_pt(x, X0, RUN, -1.0)
         look, expr = (-0.85, -0.2), "panic"
         rot_c = 0.35 * math.sin(pt / 0.44 * TAU)
     elif t < T["k1e"]:                     # skid
         u = seg(t, T["r1e"], T["k1e"])
         x = lerp(XW1 + 46, XW1, ease_out(u))
-        pose = (RUN, SKID, smoothstep(seg(t, T["r1e"], T["r1e"] + 0.06)))
+        pose = (RUNC, SKID, smoothstep(seg(t, T["r1e"], T["r1e"] + 0.06)))
         pt = _travel_pt(XW1 + 46, X0, RUN, -1.0)
         look, expr = (-0.9, -0.35), "panic"
         rot_c = -0.4 * (1 - u)
@@ -448,22 +448,22 @@ def _emb_A(ctx, info, t, T):
         expr = state_at(t, [(0, "panic"), (l1 - 0.05, "sad")], 0.2)
         rot_c = 0.18 * k - 0.1 * sq + 0.12 * let_go * math.sin((t - l1) * 14) * math.exp(-(t - l1 - 0.3) * 4)
     elif t < T["k2e"]:                     # snap turn, lunge to window 2, skid
-        flip = True
+        flip = False
         u = seg(t, T["r2s"], T["r2e"])
         turn = 1.0
         if t < T["r2e"]:
             x = lerp(XW1, XW2 - 28, smoothstep(u))
-            pose = (DEFLATE, RUN, smoothstep(seg(t, T["r2s"], T["r2s"] + 0.05)))
+            pose = (DEFLATE, RUNC, smoothstep(seg(t, T["r2s"], T["r2s"] + 0.05)))
             pt = _travel_pt(x, XW1, RUN, 1.0) + 0.11
         else:
             x = lerp(XW2 - 28, XW2, ease_out(seg(t, T["r2e"], T["k2e"])))
-            pose = (RUN, SKID, smoothstep(seg(t, T["r2e"], T["r2e"] + 0.05)))
+            pose = (RUNC, SKID, smoothstep(seg(t, T["r2e"], T["r2e"] + 0.05)))
             pt = _travel_pt(XW2 - 28, XW1, RUN, 1.0) + 0.11
         look, expr = (0.9, -0.25), "panic"
         blush = lerp(0.3, 0.42, u)
         rot_c = -0.35 * math.sin(u * math.pi)
     elif t < T["r3s"]:                     # yank x2, then rattles it yelling "Locked!"
-        flip, turn = True, 1.0
+        flip, turn = False, 1.0
         x = XW2
         k, sq = heave_at(t, T["hv2"], 0.08, 0.08)
         yell = smoothstep(seg(t, l2 - 0.02, l2 + 0.1))
@@ -482,17 +482,16 @@ def _emb_A(ctx, info, t, T):
         blush, sweat = 0.45, 0.45
         rot_c = 0.22 * (k - 0.5) * rat + 0.15 * k * (1 - rat)
     else:                                  # dash off to window 3 (whip)
-        flip, turn = True, 1.0
+        flip, turn = False, 1.0
         tt = t - T["r3s"]
         x = XW2 + 1150 * tt - 280 * max(0.0, 0.12 - tt)
-        pose = (heave_pose(0.0), RUN, smoothstep(seg(t, T["r3s"], T["r3s"] + 0.06)))
+        pose = (heave_pose(0.0), RUNC, smoothstep(seg(t, T["r3s"], T["r3s"] + 0.06)))
         pt = _travel_pt(x, XW2, RUN, 1.0)
         look, expr = (0.9, -0.15), "panic"
         blush, sweat = 0.45, 0.45
         rot_c = -0.35 * math.sin(pt / 0.44 * TAU)
     a = _emb(ctx, info, t, x, Y, pose, expr, look, face, turn, flip=flip, pose_t=pt, blush=blush,
-             sweat=sweat)
-    _wrist_cage(ctx, a, t, rot_c)
+             sweat=sweat, hold=_cage_hold(rot_c, wrist=True))
     return a, x
 
 
@@ -533,7 +532,7 @@ def _emb_B(ctx, info, t, T):
     face, cage_rot, pt = {}, None, t
     if t < T["r4e"]:
         x = lerp(1690, XW3 - 34, seg(t, w3, T["r4e"]))
-        pose, pt = RUN, _travel_pt(x, 1690, RUN, 1.0)
+        pose, pt = RUNC, _travel_pt(x, 1690, RUN, 1.0)
         turn, look, expr = 1.0, (0.9, -0.2), "panic"
         cage_rot = -0.35 * math.sin(pt / 0.44 * TAU)
     elif t < l3:
@@ -562,12 +561,24 @@ def _emb_B(ctx, info, t, T):
         if t < T["drop"]:
             cage_rot = 0.2
         blush, sweat = 0.55, 0.65
-    a = _emb(ctx, info, t, x, Y, pose, expr, look, face, turn, flip=True, pose_t=pt, blush=blush,
-             sweat=sweat)
-    if cage_rot is not None:
-        _wrist_cage(ctx, a, t, cage_rot)
-        _DROP_PT["p"] = (a["wrist_r"][0], a["wrist_r"][1] + 6 * ES)
+    hold = _cage_hold(cage_rot, wrist=True, rec=_DROP_PT) if cage_rot is not None else None
+    if hold is not None and isinstance(pose, tuple) and len(pose) == 3:
+        pose = (_with_hold(pose[0]), _with_hold(pose[1]), pose[2])
+    elif hold is not None:
+        pose = _with_hold(pose)
+    a = _emb(ctx, info, t, x, Y, pose, expr, look, face, turn, flip=False, pose_t=pt, blush=blush,
+             sweat=sweat, hold=hold)
     return a, x
+
+
+def _with_hold(p):
+    if isinstance(p, tuple):
+        return (_with_hold(p[0]), _with_hold(p[1]), p[2])
+    if isinstance(p, str):
+        return {"base": p, "hold": 1.0}
+    d = dict(p)
+    d["hold"] = 1.0
+    return d
 
 
 def _shot_B(ctx, info, t, T, dx=0.0):
