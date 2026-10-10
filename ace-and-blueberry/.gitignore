@@ -9,3 +9,4 @@ master.mkv
 mix.wav
 music_only.wav
 preview/
+__pycache__/
