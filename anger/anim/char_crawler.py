@@ -1222,18 +1222,28 @@ def _draw_drool_side(c, R, pose, t, jx, hx):
 
 
 def _rim_pass(c, paths, pose):
+    """Rim edges of the collected part paths (in draw order). Each part's rim is clipped by the parts drawn
+    after it, so an occluded edge (a leg behind the head, the far side of the body) never shows through."""
     a = clamp(pose.rim)
     dx, dy = (-3.5, -3.5)
     if pose.facing < 0:
         dx = -dx
-    for pth in paths:
+    cover = None
+    for pth in reversed(paths):
         c.save()
         c.clipPath(pth, doAntiAlias=True)
         sh = skia.Path(pth)
         sh.offset(-dx, -dy)
         c.clipPath(sh, skia.ClipOp.kDifference, True)
+        if cover is not None:
+            c.clipPath(cover, skia.ClipOp.kDifference, True)
         c.drawPath(pth, paint(pose.rim_color, a * 0.9))
         c.restore()
+        if cover is None:
+            cover = skia.Path(pth)
+        else:
+            u = skia.Op(cover, pth, skia.PathOp.kUnion_PathOp)
+            cover = u if u is not None else cover
 
 
 # --------------------------------------------------------------------------- front view
