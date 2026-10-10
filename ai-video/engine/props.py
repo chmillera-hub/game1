@@ -1099,9 +1099,53 @@ def desk(ctx, x, y, w, lamp=True, emblem=True, h=None):
         ellipse(ctx, ex, ey, 48, 60)
         _fs(ctx, "cape_in", INK, 3)
         _snake_emblem(ctx, ex - 5, ey + 2, 0.5)
+        # side-panel crests for extra evil-genius flair
+        pcx = [xl + 14 + 22 + i * (pw + 22) + pw / 2 for i in range(3)]
+        if pw > 150:
+            _gear_crest(ctx, pcx[0], ey, 0.92)
+            _volcano_crest(ctx, pcx[2], ey, 0.92)
     if lamp:
         lx = x - w / 2 + 120 if lamp is True else x + float(lamp)
         skull_lamp(ctx, lx, y - 12, 0.95)
+
+
+def _gear_crest(ctx, x, y, s=1.0):
+    """Gold cog medallion with a red lightning bolt (mad-science crest)."""
+    teeth, r_out, r_in = 10, 66 * s, 54 * s
+    pts = []
+    for i in range(teeth * 2):
+        a0 = i * math.pi / teeth
+        r = r_out if i % 2 == 0 else r_in
+        for da in (-0.13, 0.13):
+            pts.append((x + r * math.cos(a0 + da), y + r * math.sin(a0 + da)))
+    poly(ctx, pts)
+    _fs(ctx, "gold", INK, 4 * s + 1)
+    circle(ctx, x, y, 40 * s)
+    _fs(ctx, "cape_in", INK, 3)
+    bolt = [(6, -30), (-14, 4), (-1, 4), (-8, 30), (14, -6), (1, -6), (8, -30)]
+    poly(ctx, [(x + bx * s, y + by * s) for bx, by in bolt])
+    _fs(ctx, "gold", INK, 3)
+
+
+def _volcano_crest(ctx, x, y, s=1.0):
+    """Gold hexagon medallion with a little volcano lair (evil-lair crest)."""
+    poly(ctx, [(x + 64 * s * math.cos(math.pi / 6 + i * math.pi / 3),
+                y + 64 * s * math.sin(math.pi / 6 + i * math.pi / 3)) for i in range(6)])
+    _fs(ctx, "gold", INK, 4 * s + 1)
+    poly(ctx, [(x + 50 * s * math.cos(math.pi / 6 + i * math.pi / 3),
+                y + 50 * s * math.sin(math.pi / 6 + i * math.pi / 3)) for i in range(6)])
+    _fs(ctx, "cape_in", INK, 3)
+    poly(ctx, [(x - 32 * s, y + 26 * s), (x - 9 * s, y - 14 * s), (x + 9 * s, y - 14 * s),
+               (x + 32 * s, y + 26 * s)])
+    _fs(ctx, "gold", INK, 3)
+    poly(ctx, [(x - 9 * s, y - 14 * s), (x - 3 * s, y - 4 * s), (x + 3 * s, y - 9 * s),
+               (x + 9 * s, y - 14 * s)])
+    _fs(ctx, "#ff7a2f", INK, 2.5)
+    for dx, dy, r in ((-6, -26, 5), (5, -33, 4), (0, -42, 3)):
+        circle(ctx, x + dx * s, y + dy * s, r * s)
+        _fs(ctx, "#ff7a2f", INK, 2)
+    rrect(ctx, x - 6 * s, y + 10 * s, 12 * s, 16 * s, 5 * s)
+    _fs(ctx, "cape_in", INK, 2)
 
 
 def keyboard(ctx, x, y, w=380, t=0.0, typing=False, seed=0):

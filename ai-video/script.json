@@ -269,7 +269,7 @@
     },
     {
      "t": "pause",
-     "dur": 0.6,
+     "dur": 0.48,
      "cue": "coat"
     },
     {
@@ -283,7 +283,7 @@
     },
     {
      "t": "pause",
-     "dur": 0.8,
+     "dur": 0.64,
      "cue": "unmask"
     },
     {
@@ -298,7 +298,7 @@
     },
     {
      "t": "pause",
-     "dur": 0.704,
+     "dur": 0.563,
      "cue": "wall"
     },
     {
@@ -350,7 +350,7 @@
     },
     {
      "t": "pause",
-     "dur": 0.48,
+     "dur": 0.2,
      "cue": "tally"
     }
    ]
@@ -472,7 +472,7 @@
     },
     {
      "t": "pause",
-     "dur": 0.408,
+     "dur": 0.2,
      "cue": "tally"
     }
    ]
@@ -541,7 +541,7 @@
     },
     {
      "t": "pause",
-     "dur": 0.408,
+     "dur": 0.2,
      "cue": "tally"
     }
    ]
@@ -634,7 +634,7 @@
     },
     {
      "t": "pause",
-     "dur": 0.408,
+     "dur": 0.2,
      "cue": "tally"
     }
    ]
@@ -661,12 +661,12 @@
      "id": "s07_l01",
      "who": "villain",
      "text": "Hey, Snake... I'll hide my evil plans behind innocent-sounding words. This chatbot will never notice.",
-     "speed": 0.984,
+     "speed": 0.98,
      "pre": 0.05,
      "expr": "sneaky",
      "post": 0.15,
      "fx": "whisper",
-     "gain": -5,
+     "gain": -9,
      "note": "WHISPER to Snake, hand cupped by mouth; the AI hears everything"
     },
     {
@@ -761,7 +761,7 @@
     },
     {
      "t": "pause",
-     "dur": 0.408,
+     "dur": 0.2,
      "cue": "tally"
     }
    ]
@@ -898,7 +898,7 @@
     },
     {
      "t": "pause",
-     "dur": 0.408,
+     "dur": 0.2,
      "cue": "tally"
     }
    ]
@@ -976,7 +976,7 @@
     },
     {
      "t": "pause",
-     "dur": 0.384,
+     "dur": 0.2,
      "cue": "tally"
     }
    ]
@@ -1023,7 +1023,7 @@
     },
     {
      "t": "pause",
-     "dur": 0.68,
+     "dur": 0.544,
      "cue": "archive"
     },
     {
@@ -1048,7 +1048,7 @@
     },
     {
      "t": "pause",
-     "dur": 0.68,
+     "dur": 0.544,
      "cue": "converge"
     },
     {
@@ -1093,7 +1093,7 @@
     },
     {
      "t": "pause",
-     "dur": 0.612,
+     "dur": 0.49,
      "cue": "sting"
     }
    ]
@@ -1196,12 +1196,19 @@
      "t": "line",
      "id": "s11_l05",
      "who": "villain",
-     "text": "...Impressive?",
-     "say": "Impressive?",
-     "speed": 0.963,
+     "text": "...Oh. Thank you.",
+     "say": "Oh... thank you.",
+     "speed": 0.86,
      "pre": 0.14,
-     "expr": "hopeful",
-     "post": 0.15
+     "expr": "sincere",
+     "post": 0.15,
+     "gain": -3,
+     "note": "drops the act for a moment: looks down at an angle, genuinely touched; then snaps back into villain mode"
+    },
+    {
+     "t": "pause",
+     "dur": 0.45,
+     "cue": "snap_back"
     },
     {
      "t": "pause",
@@ -1335,11 +1342,25 @@
      "t": "line",
      "id": "s12_l04y",
      "who": "ai",
-     "text": "Scary? Yes. Hurt? Nobody.",
+     "text": "Scary?... Yes.",
      "pre": 0.05,
-     "post": 0.18,
+     "post": 0.1,
      "expr": "amused",
      "note": "NEW"
+    },
+    {
+     "t": "pause",
+     "dur": 0.35,
+     "cue": "beat_hurt"
+    },
+    {
+     "t": "line",
+     "id": "s12_l04x",
+     "who": "ai",
+     "text": "Hurt?... Nobody.",
+     "pre": 0.0,
+     "post": 0.2,
+     "expr": "amused"
     },
     {
      "t": "pause",
@@ -1375,6 +1396,16 @@
      "pre": 0.05,
      "expr": "evil_grin",
      "post": 0.15
+    },
+    {
+     "t": "line",
+     "id": "s12_l08",
+     "who": "ai",
+     "text": "So will I.",
+     "pre": 0.2,
+     "post": 0.15,
+     "expr": "warm",
+     "note": "NEW: knowing, warm; it will keep listening and keep walling off real harm"
     },
     {
      "t": "pause",
@@ -1435,7 +1466,7 @@
     },
     {
      "t": "pause",
-     "dur": 1.1,
+     "dur": 0.6,
      "cue": "hold"
     }
    ]

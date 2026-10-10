@@ -59,27 +59,29 @@ def resample(a, sr_in, sr_out):
     return resample_poly(a, sr_out // g, sr_in // g).astype(np.float32)
 
 
-def whisper(x, sr=SR, bands=20, seed=7):
-    """Turn a voiced line into a breathy stage whisper.
+def whisper(x, sr=SR, bands=28, seed=7):
+    """Turn a voiced line into a soft, hushed stage whisper.
 
-    Channel noise-vocoder: each band's speech envelope modulates band-limited
-    noise (no pitch = whisper), plus a little of the original's top end so
-    consonants stay crisp. RMS matched to the input.
+    Keeps the real (softened) voice underneath so the words flow naturally,
+    and adds a gentle breath layer: a noise vocoder whose band envelopes follow
+    the speech. Everything above ~4 kHz is rolled off so it never hisses.
+    RMS matched to the input (the line's script 'gain' sets how quiet it is).
     """
     from scipy.signal import butter, sosfiltfilt, sosfilt
     rng = np.random.default_rng(seed)
     noise = rng.standard_normal(len(x))
-    edges = np.geomspace(180, 9000, bands + 1)
-    env_lp = butter(2, 45, "low", fs=sr, output="sos")
-    out = np.zeros_like(x)
+    edges = np.geomspace(250, 5000, bands + 1)
+    env_lp = butter(2, 22, "low", fs=sr, output="sos")
+    breath = np.zeros_like(x)
     for lo, hi in zip(edges[:-1], edges[1:]):
         bp = butter(2, [lo, hi], "band", fs=sr, output="sos")
         env = sosfiltfilt(env_lp, np.abs(sosfilt(bp, x)))
-        out += sosfilt(bp, noise) * np.maximum(env, 0)
-    air = sosfilt(butter(2, 2500, "high", fs=sr, output="sos"), x)
-    out = out / (np.sqrt(np.mean(out ** 2)) + 1e-9)
-    air = air / (np.sqrt(np.mean(air ** 2)) + 1e-9)
-    y = 0.85 * out + 0.25 * air
+        breath += sosfilt(bp, noise) * np.maximum(env, 0)
+    soft = sosfiltfilt(butter(2, 3800, "low", fs=sr, output="sos"), x)
+    soft = sosfiltfilt(butter(2, 160, "high", fs=sr, output="sos"), soft)
+    breath = sosfiltfilt(butter(4, 4200, "low", fs=sr, output="sos"), breath)
+    norm = lambda v: v / (np.sqrt(np.mean(v ** 2)) + 1e-9)
+    y = 0.8 * norm(soft) + 0.45 * norm(breath)
     y *= np.sqrt(np.mean(x ** 2)) / (np.sqrt(np.mean(y ** 2)) + 1e-9)
     return y.astype(np.float32)
 
@@ -116,7 +118,7 @@ def synth_line(line, voices):
     pitch = float(v.get("pitch", 1.0))
     fx = v.get("fx")
     say = line.get("say", line["text"])  # 'say' lets spoken text differ from caption
-    key = hashlib.sha1(json.dumps([say, voice, speed, lang, pitch, fx, 3]).encode()).hexdigest()[:12]
+    key = hashlib.sha1(json.dumps([say, voice, speed, lang, pitch, fx, 4]).encode()).hexdigest()[:12]
     path = os.path.join(LINES, f"{line['id']}.wav")
     keyf = path + ".key"
     if os.path.exists(path) and os.path.exists(keyf) and open(keyf).read() == key:
