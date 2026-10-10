@@ -472,7 +472,7 @@
      "pre": 0.0,
      "post": 0.0,
      "say": "Aaaah!",
-     "pitch": 1.12
+     "pitch": 1.25
     },
     {
      "t": "pause",
@@ -679,16 +679,29 @@
      "pre": 0.0,
      "post": 0.0,
      "say": "Aaaaaaaah!",
-     "pitch": 1.3
+     "pitch": 1.55
     },
     {
      "t": "pause",
-     "dur": 1.6,
+     "dur": 0.7,
      "cue": "runout"
     },
     {
+     "t": "line",
+     "id": "s07_l03b",
+     "who": "tired",
+     "text": "AAAAAH!",
+     "pre": 0.0,
+     "post": 0.05,
+     "say": "Aaaaaaaah!",
+     "caption": "(outside) AAAAAH!",
+     "fx": "muffled",
+     "gain": -9.0,
+     "pitch": 1.55
+    },
+    {
      "t": "pause",
-     "dur": 1.0,
+     "dur": 0.9,
      "cue": "catch"
     },
     {

@@ -7,8 +7,7 @@ Pipeline
     frames, so scene k starts at sum(frames_j)/FPS (not the unrounded
     timeline start). Keeps lip-sync exact even after many scenes.
   * Voices: HPF, per-line level match, gentle compression, mud/de-ess EQ,
-    character colour (villain: small stone-room reverb, AI: subtle chorus +
-    bright shimmer, narrator: nearly dry). Line meta: "gain" (dB), "dry" (bool).
+    character colour (boss: cold glassy room, everyone else: nearly dry). Line meta: "gain" (dB), "dry" (bool).
   * Music: consecutive scenes with the same `music` cue are rendered as ONE
     seamless render_cue call; 0.6 s equal-power crossfades between cues
     (scene meta "music_xfade" overrides for the cut INTO that scene,
@@ -219,15 +218,9 @@ def process_voice(x, sr, who, gain_db=0.0, dry=False):
     x, _ = limiter(x, sr, CFG["voice_rms_db"] + gain_db + 12.5, 0.002, 0.04)
     st = np.stack([x, x], 1)
     if not dry:
-        if who == "ai":
-            cl = _chorus(x, sr, 9.0, 0.6, 0.55)
-            cr = _chorus(x, sr, 11.5, 0.5, 0.71, 1.3)
-            st[:, 0] += 0.16 * cl
-            st[:, 1] += 0.16 * cr
-            sh = M.hp(x, 2500, sr, 2)
-            st += 0.06 * M.reverb(sh, sr, rt60=0.9, predelay=0.015, damp=0.15, seed=21)
-        elif who == "villain":
-            st += 0.14 * M.reverb(x, sr, rt60=0.75, predelay=0.012, damp=0.55, seed=31, er=0.5)
+        if who == "boss":   # glassy office: a cold, slightly longer room
+            st += 0.10 * M.reverb(M.hp(x, 300, sr, 2), sr, rt60=0.9, predelay=0.014, damp=0.3,
+                                  seed=31, er=0.45)
         else:
             st += 0.05 * M.reverb(x, sr, rt60=0.5, predelay=0.01, damp=0.6, seed=41)
     return M.fade_edges(st, sr, 0.0, 0.25)
