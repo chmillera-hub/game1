@@ -38,6 +38,7 @@ def main():
     ap.add_argument("--target-mb", type=float, default=14.3)
     ap.add_argument("--audio-kbps", type=int, default=64)
     ap.add_argument("--out", default=os.path.join(BUILD, "the_first_village.mp4"))
+    ap.add_argument("--audio-only", action="store_true", help="keep the encoded picture, replace the soundtrack")
     a = ap.parse_args()
 
     video, wav = os.path.join(BUILD, "video_master.mkv"), os.path.join(BUILD, "mix.wav")
@@ -50,6 +51,14 @@ def main():
     run(["ffmpeg", "-v", "error", "-y", "-i", wav, "-af", loudnorm_filter(wav), "-ar", "48000", "-c:a", "aac",
          "-b:a", f"{a.audio_kbps}k", aac])
 
+    if a.audio_only:
+        prev = a.out + ".prev.mp4"
+        os.replace(a.out, prev)
+        run(["ffmpeg", "-v", "error", "-y", "-i", prev, "-i", aac, "-map", "0:v", "-map", "1:a", "-c", "copy",
+             "-movflags", "+faststart", "-metadata", "title=The First Village", a.out])
+        os.remove(prev)
+        print(f"{a.out}: {os.path.getsize(a.out) / 1e6:.2f} MB")
+        return
     x264 = ["-c:v", "libx264", "-preset", "veryslow", "-tune", "animation", "-b:v", f"{vk}k",
             "-pix_fmt", "yuv420p", "-profile:v", "high", "-level", "4.0", "-g", "240", "-keyint_min", "24",
             "-x264-params", "aq-mode=3:aq-strength=0.9:deblock=1,1"]
