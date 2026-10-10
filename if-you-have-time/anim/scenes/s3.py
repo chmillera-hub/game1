@@ -193,6 +193,11 @@ def sniff_lift(t, t0):
 LIGHT_UP = Track([(T0, 0.25), (LUP, 0.25), (LUP + 1.05, 1.0, "smooth")])
 
 
+def lights_k(t):
+    """0 (S2's dark symphony lighting) .. 1 (normal) as the lights come up."""
+    return smoothstep((t - LUP) / 1.05)
+
+
 def char_lighting(light=1.0, warm=0.0):
     """env.char_light, with the tint hue blended (env flips it at warm 0.5) - no one-frame colour jump."""
     d = env.char_light(light, warm)
@@ -336,25 +341,29 @@ def _solve_mug_arm(t_grab, target, body_fn, base):
 # =========================================================================== S2 -> S3 handoff
 _NUM_FIELDS = ("x", "turn", "lean", "head_tilt", "head_nod", "head_turn", "look_x", "look_y", "pupil", "squint",
                "eye_wide", "brow_raise", "brow_worry", "brow_furrow", "smile", "smirk", "mouth_tremble", "tears",
-               "eye_shine", "blush", "sniffle", "shoulders_up", "bounce", "glow", "light", "tint_amt", "rim")
+               "eye_shine", "blush", "sniffle", "shoulders_up", "bounce", "glow")
 
 
 def _s2_end():
-    """(rae_pose, quill_pose, mug_xy) as S2 leaves them at the boundary, or Nones (S2 mid-edit / renamed)."""
+    """(rae_pose, quill_pose, mug_xy, room) as S2 leaves them at the boundary, or Nones (S2 mid-edit / renamed).
+    room: dict(swirl, wb, vign, rae, quill) - S2's window state, vignette and character light levels."""
     t = T0 - 1e-4
     try:
         from anim.scenes import s2
     except Exception:
-        return None, None, None
-    rp = qp = None
+        return None, None, None, None
+    rp = qp = room = None
     try:
         if hasattr(s2, "_levels") and hasattr(s2, "_rae_pose"):
             lv = s2._levels(t)
             rp, qp = s2._rae_pose(t, lv), s2._quill_pose(t, lv)
+            g = (lambda k, d: lv.get(k, d)) if isinstance(lv, dict) else (lambda k, d: getattr(lv, k, d))
+            room = dict(light=float(g("room", 0.25)), swirl=float(g("swirl", 0.0)), wb=float(g("wb", 1.0)),
+                        vign=float(g("vign", 0.0)), rae=g("rae", None), quill=g("quill", None))
         elif hasattr(s2, "rae_pose"):
             rp, qp = s2.rae_pose(t), s2.quill_pose(t)
     except Exception:
-        rp = qp = None
+        rp = qp = room = None
     mug = None
     try:
         bm = s2._bench_mug(t) if hasattr(s2, "_bench_mug") else None
@@ -363,14 +372,39 @@ def _s2_end():
     except Exception:
         mug = None
     if rp is not None and (abs(rp.x - SEAT_X) > 12.0 or rp.sit < 0.95 or getattr(rp, "kneel", 0.0) > 0.05):
-        rp = None                   # (S2 still in its old staging: follow the BIBLE row instead)
-    return rp, qp, mug
+        rp = room = None            # (S2 still in its old staging: follow the BIBLE row instead)
+    return rp, qp, mug, room
 
 
-S2_RAE, S2_QUILL, S2_MUG = _s2_end()
+S2_RAE, S2_QUILL, S2_MUG, S2_ROOM = _s2_end()
 if S2_MUG is not None and math.hypot(S2_MUG[0] - MUG_SPOT[0], S2_MUG[1] - MUG_SPOT[1]) < 25.0:
     MUG_SPOT = S2_MUG
 INHERIT = 0.9                               # seconds over which S2's last pose eases into this scene's
+_ROOM0 = S2_ROOM or dict(light=0.25, swirl=0.0, wb=1.0, vign=0.0, rae=None, quill=None)
+
+
+def room(t):
+    """(light, swirl, window_bright, vignette): S2's closing state (galaxy still in the window, dark room, soft
+    vignette) brought back to the normal lounge as the lights come up."""
+    k = lights_k(t)
+    return (lerp(_ROOM0["light"], 1.0, k), _ROOM0["swirl"] * (1.0 - k), lerp(_ROOM0["wb"], 1.0, k),
+            _ROOM0["vign"] * (1.0 - k))
+
+
+def s3_char_light(who, t):
+    """Character light fields: S2's own levels at the boundary -> the normal room (env.char_light(1))."""
+    k = lights_k(t)
+    end = char_lighting(1.0)
+    st = _ROOM0.get(who)
+    if not st:
+        st = char_lighting(0.25)
+    out = dict(end)
+    out["light"] = lerp(float(st["light"]), end["light"], k)
+    out["tint_amt"] = lerp(float(st["tint_amt"]), end["tint_amt"], k)
+    out["rim"] = lerp(float(st["rim"]), end["rim"], k)
+    out["tint"] = tuple(st.get("tint", end["tint"]))
+    out["rim_color"] = st.get("rim_color", end["rim_color"])
+    return out
 
 
 def inherit(cur: Pose, prev: Pose | None, t: float, t0: float = T0, dur: float = INHERIT) -> Pose:
@@ -552,7 +586,7 @@ def rae_pose(t: float) -> Pose:
         eye_shine=d["shine"](t), blush=d["blush"](t), sniffle=d["sniffle"](t) + 0.1 * sn,
         shoulders_up=d["shoulders"](t) + 0.12 * sn,
         arm_r=_rae_arm_r(t), arm_l=d["arm_l"](t), mug=None if rae_mug_on_bench(t) else "r",
-        **char_lighting(LIGHT_UP(t)),
+        **s3_char_light("rae", t),
     )
     return inherit(p, S2_RAE, t)
 
@@ -573,8 +607,10 @@ def _quill_tracks():
         (T0, QREST), (RAISE_T0, QREST), (RAISE_T0 + 0.16, arm_add(QREST, -2.0, 4.0), "io"),
         (CARDS - 0.02, arm_add(PRESENT, 3.0, 6.0, -6.0), "io"), (CARDS + 0.35, PRESENT, "io"),
     ])
-    # the other hand goes behind his back while she is in close-up: a maitre d' with the menu
-    d["arm_l"] = ArmSeq([(T0, QREST), (R10E + 0.3, QREST), (R10E + 1.0, BEHIND, "io")])
+    # the other hand stays behind his back (S2 leaves it there); without S2's pose it goes there while she is in
+    # close-up (off screen): a maitre d' with the menu
+    l0 = BEHIND if (S2_QUILL is not None and S2_QUILL.arm_l.behind > 0.5) else QREST
+    d["arm_l"] = ArmSeq([(T0, l0), (R10E + 0.3, l0), (R10E + 1.0, BEHIND, "io")])
     d["tilt"] = Track([(T0, 3.0), (LUP + 1.0, 3.0), (Q06, 2.0), (HOW, 2.5), (HOW + 0.5, 7.0), (Q06E + 0.6, 6.0),
                        (R10, 6.0), (R10E + 0.2, 4.0), (THANKS, 3.0), (CARDS, 2.0), (CARDS + 1.0, 4.0),
                        (T1, 6.0), (T1 + 1, 6.0)])
@@ -614,7 +650,7 @@ def quill_pose(t: float) -> Pose:
         head_tilt=d["tilt"](t) + 0.35 * noise1(t * 0.25, 43),
         lid_l=blink, lid_r=blink, look_x=lx, look_y=ly, brow_raise=d["brow"](t), smile=d["smile"](t),
         mouth_open=0.9 * mo, mouth_round=mr, glow=d["glow"](t),
-        arm_r=d["arm_r"](t), arm_l=d["arm_l"](t), **char_lighting(LIGHT_UP(t)),
+        arm_r=d["arm_r"](t), arm_l=d["arm_l"](t), **s3_char_light("quill", t),
     )
     if S2_QUILL is not None:
         p = inherit(p, S2_QUILL.copy(lid_l=None, lid_r=None), t)
@@ -680,11 +716,11 @@ def shot_name(t):
 
 
 # =========================================================================== render
-def draw_stage(c, t, cam, rp, qp, mug_on_bench, fan_fn, light=1.0):
+def draw_stage(c, t, cam, rp, qp, mug_on_bench, fan_fn, light=1.0, swirl=0.0, wb=1.0):
     """Lounge -> mug on bench -> Quill -> Rae -> lounge front -> holo-cards (stage space)."""
     c.save()
     cam.apply(c, t)
-    env.draw_lounge(c, t, light=light)
+    env.draw_lounge(c, t, light=light, swirl=swirl, window_bright=wb)
     if mug_on_bench:
         R.draw_mug(c, MUG_SPOT[0], MUG_SPOT[1], 1.0, 0.0, False)
     Q.draw(c, qp, t)
@@ -701,4 +737,8 @@ def _fan_fx(c, t):
 
 
 def render(canvas, t):
-    draw_stage(canvas, t, camera(t), rae_pose(t), quill_pose(t), rae_mug_on_bench(t), _fan_fx, LIGHT_UP(t))
+    light, swirl, wb, vign = room(t)
+    draw_stage(canvas, t, camera(t), rae_pose(t), quill_pose(t), rae_mug_on_bench(t), _fan_fx, light, swirl, wb)
+    if vign > 0.003:
+        canvas.resetMatrix()
+        fx.draw_vignette(canvas, vign)

@@ -45,7 +45,7 @@ from anim.core import (Camera, Track, auto_blink, beat, breathe, clamp, ease_in_
                        line_start, mouth, music_cue, music_env, music_onsets, noise1, scene_span, smoothstep)
 from anim.rig import ArmPose, Pose
 from anim.scenes import s3
-from anim.scenes.s3 import (FAN, FLOOR, SEAT_X, SEAT_Y, ArmSeq, _face_cam, arm, arm_add, blink_amt, bump, card_xy,
+from anim.scenes.s3 import (FAN, FLOOR, SEAT_X, SEAT_Y, ArmSeq, _face_cam, arm, arm_add, blink_amt, bump,
                             char_lighting, drift, draw_fan, gaze, inherit, select_flash, sfx_time, smoothed)
 from config import FPS, MUSIC_ENV, H, W
 
@@ -160,7 +160,7 @@ CYCLE = R.WALK_ADVANCE
 PH0 = 0.25                              # walk phase with both feet under her (no stance pop on the cut)
 WALK_RATE = 1.35                        # cycles per second (brisk)
 WALK_ACC = 0.35
-IN_DOOR = DOOR_O + 0.85                 # door fully open and her trailing edge left of the right jamb:
+IN_DOOR = DOOR_O + 1.0                  # door fully open and her trailing edge left of the right jamb:
 #                                         from here she is behind the door plane (the closing panel covers her)
 
 

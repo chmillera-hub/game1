@@ -33,7 +33,7 @@ import skia
 from anim import char_quill as Q
 from anim import char_rae as R
 from anim import env, fx
-from anim.core import (Camera, Layer, Track, auto_blink, beat, breathe, clamp, ease_in_out, glow, line_end,
+from anim.core import (Camera, Layer, Track, auto_blink, beat, breathe, clamp, glow, line_end,
                        line_start, mouth, noise1, paint, remap, scene_span, smoothstep, timeline)
 from anim.rig import ArmPose, Pose
 from config import H, W
