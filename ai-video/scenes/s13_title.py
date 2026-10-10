@@ -16,8 +16,9 @@ Every time is derived from cues / line timings (see _T).
                        visor blinks on for ONE ominous frame (+1 afterglow).
                        The AI pops in beside it (squash/stretch + sparkles),
                        gives the cutout a dry half-lid look, then (s13_l02,
-                       "...be a good guy.") warmly straightens the party hat
-                       with its left mitten, eyes to camera on "good guy",
+                       "...scheme for good.") a sly look on "scheme", then warmly
+                       straightens the party hat with its left mitten, eyes to
+                       camera on "good",
                        slow blink.
   B  title..end        Hard cut: TITLE CARD on ai_bg.  Static sunburst,
                        "NICE TRY," / "MY GUY." letters drop in (Luckiest Guy),
@@ -148,7 +149,7 @@ def _T(info):
     T["reach"] = L2.start + 0.04                 # mitten goes to the hat
     T["fix0"] = L2.start + 0.22                  # hat gets straightened
     T["fix1"] = T["fix0"] + 0.30
-    T["good"] = max(_ws(info, "s13_l02", 3) - 0.06, T["fix1"] - 0.12)   # eyes to camera
+    T["good"] = max(_ws(info, "s13_l02", 2) - 0.06, T["fix1"] - 0.12)   # eyes to camera
     T["let_go"] = max(T["fix1"] + 0.12, L2.end - 0.25)
     T["title"] = info.cue("title")
     # slow warm blink, finished (eyes open, to camera) before the hard cut
@@ -1076,7 +1077,7 @@ def _ai_a_state(t, T):
     ai_in, reach, fix0, fix1 = T["ai_in"], T["reach"], T["fix0"], T["fix1"]
     good, let_go, sb = T["good"], T["let_go"], T["sblink"]
     expr = keyed(t, [(-9, "happy"), (ai_in + 0.2, AIX["half"], 0.25),
-                     (reach - 0.06, "warm", 0.25), (fix1, "happy", 0.2),
+                     (reach - 0.06, "amused", 0.2), (fix1, "happy", 0.2),   # "...scheme"
                      (good + 0.05, "warm", 0.3)])
     look = keyed_v(t, [(-9, (0.15, 0.05)), (ai_in + 0.2, (-0.85, 0.25), 0.12),
                        (reach - 0.05, (-0.9, -0.3), 0.15), (good, (0.0, 0.0), 0.15)])

@@ -5,12 +5,12 @@ Play it with wonder, not menace.  Shots (every time derived from cues / word sta
                                       end of s09), lightning, "HOW?!" + shake, shrug -> fist,
                                       Hissy shocked -> worried -> side-eye.
   B  F3 AI CU    calm .. archive+.45  slow blink -> warm, wry shrug on "first genius", nod on
-                                      "Malvo", looks up remembering, then DIVES into its screen.
+                                      "my guy", looks up remembering, then DIVES into its screen.
   C  ARCHIVE     .. beat              shelves to a vanishing point, 8 TRIED folders slide in,
                                       chip rolls 9 -> 9,999,999+, 4 "very smart people" get NICE
                                       TRY stamps, red strings converge on 3 townsfolk -> brick
-                                      ring -> green sparks, Sa-Sn drawer -> SNEAKWORTH, M. folder
-                                      -> grey photocopy of the Big Book, highlighter on "Sa-Sn".
+                                      ring -> green sparks, "E" drawer -> EVIL GENIUS folder
+                                      -> grey photocopy of the Big Book, highlighter on "E".
   D  F1 WIDE     beat .. end          monocle pop -> blank "...Alphabetized?", Hissy nods twice,
                                       slow blink, dun-dun-dun.  (s11 fades in from black itself.)
 """
@@ -127,7 +127,7 @@ def _T(info):
     T["w_every"] = w("s10_l01", 6)
     T["w_first"] = w("s10_l02", 3)
     T["w_genius"] = w("s10_l02", 4)
-    T["w_malvo"] = w("s10_l02", 7)
+    T["w_myguy"] = w("s10_l02", 7)
     T["w_countless"] = w("s10_l03", 3)
     T["w_very"] = w("s10_l04", 1)
     T["w_hurt"] = w("s10_l04", 10)
@@ -367,17 +367,17 @@ def _shot_lair(ctx, t, info, T):
 # ===========================================================================
 def _ai_cu_params(t, T):
     ex = _state(t, [(-1, AI_NEUT), (T["calm"] + 0.22, AI_WARM, 0.3),
-                    (T["w_genius"] - 0.06, AI_AMUSED, 0.25), (T["w_malvo"] - 0.1, AI_WARM, 0.3),
+                    (T["w_genius"] - 0.06, AI_AMUSED, 0.25), (T["w_myguy"] - 0.1, AI_WARM, 0.3),
                     (T["l2e"] + 0.1, AI_THINK, 0.3)])
     look = _hold(t, [(-1, (-0.6, 0.0)), (T["w_genius"] - 0.06, (-0.45, -0.05), 0.2),
-                     (T["w_malvo"] - 0.1, (-0.65, 0.02), 0.2),
+                     (T["w_myguy"] - 0.1, (-0.65, 0.02), 0.2),
                      (T["l2e"] + 0.02, (0.45, -0.7), 0.25), (T["archive"], (0.0, 0.0), 0.2)])
     # (no "chin" hand: the l02.end -> archive gap is ~0.25 s, so the pose popped in for two
     #  frames as a lone raised finger.  The look-up + think light carry "remembering".)
     hands = _state(t, [(-1, "idle"), (T["w_first"] - 0.12, "shrug", 0.3),
-                       (T["w_malvo"] - 0.05, "idle", 0.35)])
+                       (T["w_myguy"] - 0.05, "idle", 0.35)])
     blink = _slow_blink(t, T["calm"] + 0.12)
-    nod = 0.35 * math.sin(math.pi * seg(t, T["w_malvo"], T["w_malvo"] + 0.5))
+    nod = 0.35 * math.sin(math.pi * seg(t, T["w_myguy"], T["w_myguy"] + 0.5))
     think = 0.8 * smoothstep(seg(t, T["l2e"] + 0.05, T["l2e"] + 0.35))
     return ex, look, hands, blink, nod, think
 
@@ -1110,7 +1110,7 @@ def _ring_scene(ctx, t, T):
 
 
 # ---------------------------------------------------------------------------
-# Sa-Sn drawer + SNEAKWORTH, M. folder + the photocopied Big Book
+# "E" drawer + EVIL GENIUS folder + the photocopied Big Book
 # ---------------------------------------------------------------------------
 TABS = [("code words", "#bdbdbd"), ("fiction!", "#d6d6d6"), ("grandma", "#b0b0b0"),
         ("pieces", "#cacaca"), ("no rules", "#a4a4a4")]
@@ -1188,14 +1188,14 @@ def _drawer(ctx, cx, cy, s, t, T, part):
         _fs(c, "#b08a2e", "ink", 4)
         rrect(c, -100, -51, 200, 64, 6)
         _fs(c, "#f6ecd6", "ink", 3)
-        text(c, "Sa–Sn", 0, -2, 52, "ink", "round")
+        text(c, "E", 0, -2, 56, "ink", "round")
         # highlighter swipe on "Alphabetized"
         hk = ease_out(seg(t, T["hl0"], T["hl0"] + 0.28))
         if hk > 0:
             c.save()
             c.set_operator(cairo.OPERATOR_MULTIPLY)
-            ww = 196 * hk
-            poly(c, [(-98, -44), (-98 + ww, -46), (-98 + ww + 6, -6), (-98, -4)])
+            ww = 84 * hk
+            poly(c, [(-42, -44), (-42 + ww, -46), (-42 + ww + 6, -6), (-42, -4)])
             c.set_source_rgba(1.0, 0.9, 0.18, 0.95)
             c.fill()
             c.restore()
@@ -1283,7 +1283,7 @@ def _case_folder(ctx, t, T):
         with saved(c, 228, -130, bump) as cc:
             poly(cc, [(-132, 4), (-118, -54), (118, -54), (132, 4)])
             _fs(cc, "#e3bf62", "ink", 5)
-            lab = "SNEAKWORTH, M."
+            lab = "EVIL GENIUS"
             fs = 32
             while fs > 18 and text_width(cc, lab, "ui", fs) > 232:
                 fs -= 1

@@ -18,8 +18,10 @@ Beats (every time from cues / word starts):
   l05     "...Hero stats?": hopeful, pushes the monocle back in, smile tugs.
   wall    sheet fades; the AI projects a cyan hologram: the door pops in, the
           wall builds so its last row thuds on "Brick"; firm nod "Every time".
-  l07     light leaks round the door; on "wide open" it swings open and warm
-          gold light spills across Malvo's face.
+  l07     light leaks round the door, it cracks ajar; three glowing chips
+          (SCARY STORIES / SNEAKY SCHEMES / WARN PEOPLE) squeeze out, each on
+          its word; on "wide open" it swings open and warm gold light spills
+          across his face.
   pile    six gifts pop out of the door and arc into his arms / onto the desk;
           his eyes follow each one, getting wider.
   smile   he looks down at the pile; a slow REAL SMILE. Hissy happy. Hold.
@@ -204,7 +206,10 @@ def _T(info):
         w_stats2=W("s11_l05", 1),
         w_hurts=W("s11_l06", 2), w_people=W("s11_l06", 3), w_brick=W("s11_l06", 4),
         w_every=W("s11_l06", 6),
-        w_else=W("s11_l07", 1), w_door=W("s11_l07", 3), w_wide=W("s11_l07", 4),
+        # l07 "Everything else? Scary stories, sneaky schemes, warning people
+        # about real dangers... the door's wide open."
+        w_else=W("s11_l07", 1), w_scary=W("s11_l07", 2), w_sneaky=W("s11_l07", 4),
+        w_warning=W("s11_l07", 6), w_door=W("s11_l07", 12), w_wide=W("s11_l07", 13),
         # l08 "And keep the spooky stuff! Bats, goblins, dragons... spooky is
         # fine. Hurting people isn't."
         w_spooky=W("s11_l08", 3), w_bats=W("s11_l08", 5), w_goblins=W("s11_l08", 6),
@@ -227,6 +232,13 @@ def _T(info):
     T["nod0"] = T["w_every"]
     T["leak"] = T["w_else"]
     T["open"] = T["w_wide"]
+    # the door cracks ajar after "Everything else?"; three chips squeeze out of
+    # the gap, each popping ON its word; they bow out as the gift pile starts
+    T["ajar"] = T["w_else"] + 0.05
+    T["chips"] = [max(T[w] - 0.06, T["ajar"] + 0.3 + 0.2 * i)
+                  for i, w in enumerate(("w_scary", "w_sneaky", "w_warning"))]
+    T["chip_fly"] = 0.45
+    T["chip_out"] = T["pile"] - 0.12
     # monocle back in during "...Hero stats?"
     T["mono_up"] = T["w_stats2"] + 0.12
     T["mono_in"] = T["mono_up"] + 0.38
@@ -1400,6 +1412,21 @@ def _sheet(ctx, t, T):
 # ---------------------------------------------------------------------------
 # hologram: wall + door (cyan-tinted group) and the warm door light
 # ---------------------------------------------------------------------------
+AJAR_SX = 0.84                            # panel scale-x while the door is ajar
+
+
+def _ajar_k(t, T):
+    return ease_out(seg(t, T["ajar"], T["ajar"] + 0.3))
+
+
+def _ajar_sx(t, T):
+    """Panel scale-x before the big swing: cracks ajar, nudges as each chip squeezes out."""
+    sx = lerp(1.0, AJAR_SX, _ajar_k(t, T))
+    for tc in T["chips"]:
+        sx -= 0.035 * math.sin(math.pi * seg(t, tc - 0.02, tc + 0.22))
+    return sx
+
+
 def _door_k(t, T):
     """0 closed .. 1 open (panel scale-x 1 -> 0.15 around the hinge)."""
     u = seg(t, T["open"], T["open"] + 0.4)
@@ -1445,9 +1472,9 @@ def _door_panel(c, t, T, k_in):
     if k_in <= 0.01:
         return
     ok = _door_k(t, T)
-    sxk = 1.0
+    sxk = _ajar_sx(t, T)
     if ok > 0:
-        sxk = lerp(1.0, 0.15, clamp(ok)) if ok <= 1.0 else 0.15 - (ok - 1.0) * 0.4
+        sxk = lerp(AJAR_SX, 0.15, clamp(ok)) if ok <= 1.0 else 0.15 - (ok - 1.0) * 0.4
     c.save()
     _door_xf(c, k_in)
     with saved(c, dx, dy, (max(0.06, sxk), 1.0)) as cp:
@@ -1605,6 +1632,11 @@ def _hologram(ctx, t, T):
 def _doorway(ctx, t, T):
     ok = _door_k(t, T)
     if ok <= 0.0:
+        ak = _ajar_k(t, T)
+        if ak > 0.0:                                    # the bright gap of the ajar door
+            dx, dy, dw, dh = DOOR
+            ctx.rectangle(dx + dw * 0.5, dy, dw * 0.5, dh)
+            _f(ctx, DOORWAY, ak)
         return
     # light is already leaking round the door, so the gap is bright at once
     # (a slower fade showed 3-4 grey frames of the dark tinted doorway)
@@ -1632,7 +1664,7 @@ def _door_light(ctx, t, T):
         return 0.0
     k = smoothstep(seg(t, T["open"], T["open"] + 0.45))
     dx, dy, dw, dh = DOOR
-    gap0 = dx + dw * max(0.06, lerp(1.0, 0.15, clamp(ok)))
+    gap0 = dx + dw * max(0.06, lerp(AJAR_SX, 0.15, clamp(ok)))
     pts = [(gap0 + 2, dy + 4), (dx + dw - 2, dy + 24), (dx + dw - 26, dy + dh - 2),
            (FACE[0] + 230, 1070), (FACE[0] - 270, 910)]
     poly(ctx, pts)
@@ -1646,6 +1678,164 @@ def _door_light(ctx, t, T):
     P.sparkles(ctx, dx + dw * 0.5, dy + dh * 0.5, 80, t, n=4, seed=31, color="white",
                size=0.6 * k)
     return k
+
+
+# ---------------------------------------------------------------------------
+# l07: three glowing chips squeeze out of the ajar door, one per named thing
+# ---------------------------------------------------------------------------
+CHIP_W, CHIP_H = 160.0, 130.0
+CHIP_SRC = (DOOR[0] + DOOR[2] * 0.92, DOOR[1] + DOOR[3] * 0.48)
+# (label line 1, line 2, slot x, slot y, rot)
+CHIPS = [
+    ("SCARY", "STORIES", 830.0, 228.0, -0.05),
+    ("SNEAKY", "SCHEMES", 836.0, 372.0, 0.04),
+    ("WARN", "PEOPLE", 828.0, 516.0, -0.03),
+]
+SPOOK_BOOK, SPOOK_BOOK_DK = "#6b3fa0", "#4a2a74"
+PARCH, PARCH_DK = "#f3e2b3", "#d8bf82"
+WARN_Y = "#ffcf3a"
+
+
+def _icon_storybook(c):
+    """A spooky storybook: purple cover, a little ghost, a bat doodle."""
+    with saved(c, 0, 0, 1.0, -0.08) as b:
+        rrect(b, -30, -24, 66, 50, 5)                 # page block
+        _fs(b, "#fbf3dc", INK, 3)
+        rrect(b, -36, -28, 66, 52, 6)                 # cover
+        _fs(b, SPOOK_BOOK, INK, 3.5)
+        b.rectangle(-36, -28, 11, 52)                 # spine
+        _f(b, SPOOK_BOOK_DK)
+        b.rectangle(-36, -28, 11, 52)
+        _s(b, INK, 3)
+        # ghost
+        b.move_to(-10, 14)
+        b.line_to(-10, -6)
+        b.curve_to(-10, -24, 18, -24, 18, -6)
+        b.line_to(18, 14)
+        for k in range(4):
+            x0 = 18 - k * 7
+            b.curve_to(x0 - 1, 9, x0 - 6, 9, x0 - 7, 14)
+        b.close_path()
+        _fs(b, "white", INK, 2.5)
+        for ex in (-1.0, 9.0):
+            ellipse(b, ex, -6, 2.6, 3.6)
+            _f(b, INK)
+        ellipse(b, 4, 4, 3, 2.4)
+        _f(b, INK)
+
+
+def _icon_scheme(c):
+    """A cartoon plan on a scroll: dotted route, arrows, a big red X."""
+    rrect(c, -40, -24, 80, 48, 3)
+    _fs(c, PARCH, INK, 3)
+    for sx in (-1, 1):                                # rolled ends
+        rrect(c, sx * 44 - 6, -28, 12, 56, 6)
+        _fs(c, PARCH_DK, INK, 3)
+    circle(c, -26, 12, 5)                             # start
+    _fs(c, None, "#3f74d6", 3)
+    c.set_dash([5, 5], 0)
+    c.move_to(-20, 9)
+    c.curve_to(-6, -18, 6, 18, 20, -6)
+    _s(c, "#3f74d6", 3.5)
+    c.set_dash([], 0)
+    poly(c, [(18, -12), (27, -9), (19, -1)])          # arrowhead
+    _f(c, "#3f74d6")
+    for d in (-1, 1):                                 # the X
+        c.move_to(22 - 6, -18 - 6 * d)
+        c.line_to(22 + 6, -18 + 6 * d)
+    _s(c, "danger", 4)
+    c.move_to(-30, -12)                               # a little sketch arrow
+    c.line_to(-14, -12)
+    _s(c, "#8b5a3b", 3)
+    poly(c, [(-14, -16), (-8, -12), (-14, -8)])
+    _f(c, "#8b5a3b")
+
+
+def _icon_warn(c):
+    """A megaphone with a little warning sign."""
+    # warning triangle
+    poly(c, [(-24, -26), (-2, 14), (-46, 14)])
+    _fs(c, WARN_Y, INK, 3.5)
+    rrect(c, -26.5, -12, 5, 15, 2.5)
+    _f(c, INK)
+    circle(c, -24, 8, 3)
+    _f(c, INK)
+    # megaphone (pointing right)
+    poly(c, [(6, -6), (30, -22), (30, 22), (6, 8)])
+    _fs(c, "#e0674f", INK, 3.5)
+    rrect(c, -2, -9, 10, 20, 3)
+    _fs(c, "#d0d6e4", INK, 3)
+    rrect(c, 8, 7, 8, 14, 3)                          # handle
+    _fs(c, "#5a5f73", INK, 2.5)
+    ellipse(c, 30, 0, 5, 22)
+    _fs(c, "#c04c38", INK, 3)
+    for k in range(2):                                # sound arcs
+        r = 12 + 9 * k
+        c.arc(34, 0, r, -0.7, 0.7)
+        _s(c, "white", 3)
+        c.new_path()
+
+
+CHIP_ICONS = (_icon_storybook, _icon_scheme, _icon_warn)
+
+
+def _chip_pose(t, T, i):
+    """(x, y, scale, alpha) of chip i, or None."""
+    t0 = T["chips"][i]
+    if t < t0 or t >= T["chip_out"] + 0.3:
+        return None
+    _, _, tx, ty, _ = CHIPS[i]
+    u = seg(t, t0, t0 + T["chip_fly"])
+    e = ease_out(u)
+    cx_, cy_ = CHIP_SRC[0] + 40, min(CHIP_SRC[1], ty) - 70
+    x = (1 - e) ** 2 * CHIP_SRC[0] + 2 * (1 - e) * e * cx_ + e * e * tx
+    y = (1 - e) ** 2 * CHIP_SRC[1] + 2 * (1 - e) * e * cy_ + e * e * ty
+    y += 4 * math.sin((t - t0) * 2.3 + i * 1.7) * smoothstep(u)       # gentle hover
+    sc = lerp(0.15, 1.0, ease_out_back(seg(t, t0, t0 + 0.32), 2.2))
+    a = clamp((t - t0) / 0.06)
+    if t >= T["chip_out"]:                            # bow out for the gift pile
+        v = seg(t, T["chip_out"] + 0.06 * i, T["chip_out"] + 0.06 * i + 0.22)
+        sc *= 1 - 0.5 * ease_in(v)
+        a *= 1 - v
+    if a <= 0.01:
+        return None
+    return x, y, sc, a
+
+
+def _chips(ctx, t, T):
+    for i in range(len(CHIPS)):
+        pose = _chip_pose(t, T, i)
+        if pose is None:
+            continue
+        x, y, sc, a = pose
+        l1, l2, _, _, rot = CHIPS[i]
+        t0 = T["chips"][i]
+        if t < t0 + T["chip_fly"] + 0.1:              # one trailing sparkle
+            tr = _chip_pose(max(t0, t - 0.08), T, i)
+            if tr is not None:
+                k = 1 - seg(t, t0 + T["chip_fly"], t0 + T["chip_fly"] + 0.1)
+                P._star4(ctx, tr[0] - 20, tr[1] + 10, 12 * k, t * 4 + i)
+                P._f(ctx, "ai_accent", 0.9 * k * a)
+        glow = 0.55 + 0.25 * math.sin((t - t0) * 3.0 + i)
+        flash = 1 - seg(t, t0, t0 + 0.35)
+        with saved(ctx, x, y, sc, rot * smoothstep(seg(t, t0, t0 + 0.3)), alpha_=a) as c:
+            w, h = CHIP_W, CHIP_H
+            rrect(c, -w / 2 - 6, -h / 2 - 6, w + 12, h + 12, 24)      # soft gold halo
+            _s(c, "ai_accent", 12, 0.22 * glow + 0.4 * flash)
+            rrect(c, -w / 2, -h / 2, w, h, 18)
+            _fs(c, (0.06, 0.09, 0.2, 0.94), "ai_accent", 4.5)
+            rrect(c, -w / 2 + 8, -h / 2 + 8, w - 16, 64, 12)           # icon well
+            _f(c, (1.0, 0.85, 0.45, 0.16 + 0.3 * flash))
+            with saved(c, 0, -h / 2 + 40, 1.0) as ci:
+                CHIP_ICONS[i](ci)
+            for j, lab in enumerate((l1, l2)):
+                fs = 24
+                while fs > 16 and text_width(c, lab, "ui", fs) > w - 22:
+                    fs -= 1
+                text(c, lab, 0, 30 + j * 27, fs, "ai_accent" if j == 0 else "white", "ui")
+            if flash > 0.01:
+                rrect(c, -w / 2, -h / 2, w, h, 18)
+                _f(c, "white", 0.35 * flash)
 
 
 # ---------------------------------------------------------------------------
@@ -1867,6 +2057,7 @@ def _malvo(t, T):
         (T["mono_up"] + 0.04, "s11_hope_m0", 0.34),      # lifts the monocle back in
         (T["mono_in"] + 0.25, "s11_hope", 0.5),          # ...and a smile tugs
         (T["wall"] + 0.1, "s11_listen", 0.4),
+        (T["chips"][0] + 0.1, "s11_hope", 0.4),          # ...scary stories? for me?
         (T["open"], "s11_wonder", 0.3),                  # golden light!
         (T["gift_t"][2], "s11_wonder2", 0.6),            # ...eyes getting wider
         (T["sp_t"]["pumpkin"] + 0.12, "s11_delight", 0.25),   # SPOOKY stuff? for me?!
@@ -1902,6 +2093,10 @@ def _malvo(t, T):
         (T["wall0"] + 0.2, (-0.15, -1.0), 0.25),        # bricks stacking
         (T["w_every"], gaze_ai, 0.2),
         (T["w_else"] + 0.15, (0.55, -0.85), 0.25),      # the door
+        (T["chips"][0] + 0.08, _dir(*FACE, *CHIPS[0][2:4], 0.98), 0.2),   # each chip
+        (T["chips"][1] + 0.08, _dir(*FACE, *CHIPS[1][2:4], 0.98), 0.2),
+        (T["chips"][2] + 0.08, _dir(*FACE, *CHIPS[2][2:4], 0.98), 0.2),
+        (T["w_door"] - 0.1, (0.55, -0.85), 0.25),       # ...the door's wide open
         (T["pile_end"] + 0.25, gaze_ai, 0.3),           # "And keep the spooky stuff!"
         (T["w_hurting"], gaze_ai, 0.2),
     ], 0.2)
@@ -1949,6 +2144,8 @@ def _hissy(t, T):
         (T["l4"] + 0.2, "s11_soft", 0.3),
         (T["w_every"] - 0.05, "nod", 0.12),
         (T["l6e"] + 0.15, "s11_soft", 0.3),
+        (T["chips"][1] + 0.12, "smug", 0.2),            # sneaky schemes? ooh
+        (T["chips"][2] + 0.12, "s11_soft", 0.3),
         (T["open"] + 0.1, "s11_wonder", 0.25),
         (T["sp_land"]["bat"] + 0.3, "happy", 0.3),       # a bat friend on his head!
         (T["w_hurting"] + 0.1, "nod", 0.15),             # agrees with the AI
@@ -1966,6 +2163,9 @@ def _hissy(t, T):
         (T["l5"], face_dir, 0.2),
         (T["wall"] + 0.25, (0.75, -0.75), 0.3),          # the hologram
         (T["w_every"] - 0.1, (1.0, -0.15), 0.15),
+        (T["chips"][0] + 0.15, _dir(*HISSY, *CHIPS[0][2:4], 0.98), 0.25),
+        (T["chips"][1] + 0.15, _dir(*HISSY, *CHIPS[1][2:4], 0.98), 0.2),
+        (T["chips"][2] + 0.15, _dir(*HISSY, *CHIPS[2][2:4], 0.98), 0.2),
         (T["open"] + 0.1, (0.8, -0.65), 0.2),
     ], 0.25)
     gi = _newest_gift(t, T)
@@ -1996,6 +2196,9 @@ def _ai(t, T):
         (T["wall"], "warm", 0.3),
         (T["w_hurts"], "determined", 0.3),
         (T["l6e"] + 0.05, "warm", 0.35),
+        (T["chips"][0], "happy", 0.3),                   # scary stories
+        (T["chips"][1], "amused", 0.25),                 # sneaky schemes
+        (T["chips"][2], "warm", 0.3),                    # warning people
         (T["open"], "happy", 0.3),
         (T["l8"], "amused", 0.3),                        # "And keep the spooky stuff!"
         (T["w_spooky"], "happy", 0.25),
@@ -2015,6 +2218,9 @@ def _ai(t, T):
         (T["wall"] + 0.1, (-0.6, -0.8), 0.25),           # its hologram
         (T["w_brick"] + 0.1, at_malvo, 0.2),
         (T["w_else"] + 0.1, (-0.35, -0.9), 0.25),        # the door
+        (T["chips"][0] + 0.1, _dir(AX, AY1, *CHIPS[0][2:4], 0.9), 0.2),   # the first chip
+        (T["chips"][0] + 0.55, at_malvo, 0.3),           # ...then tells HIM the rest
+        (T["w_door"] - 0.1, (-0.35, -0.9), 0.25),        # the door
         (T["open"] + 0.45, at_malvo, 0.3),
     ], 0.2)
     gi = _newest_gift(t, T)
@@ -2035,6 +2241,7 @@ def _ai(t, T):
         (T["l4e"] + 0.3, "idle", 0.4),
         (T["wall"] - 0.05, "present_l", 0.3),            # projecting
         (T["l6e"] + 0.1, "idle", 0.35),
+        (T["chips"][0] - 0.1, "present_l", 0.3),         # offering the options
         (T["w_wide"] - 0.15, "present_both", 0.3),        # wide open
         (T["l8"] + 0.05, "present_l", 0.4),              # "keep the spooky stuff!"
         (T["w_fine"] - 0.1, "thumbs_up", 0.22),          # spooky is fine
@@ -2233,6 +2440,7 @@ def _shot_two(ctx, t, info, T):
                              _land_sq(t, T["sp_land"]["mask"], 0.26))
             c.restore()
         _door_light(c, t, T)
+        _chips(c, t, T)                                  # l07: what the door is open for
         # balloon (landed) floats in front
         if bal is not None and t >= T["gift_t"][4] + T["fly"]:
             _draw_gift(c, t, 4, bal)
@@ -2294,6 +2502,9 @@ def SFX(info):
     out.append((lands[0], "brick_thud", -10, -0.3))
     out.append((lands[2], "brick_thud", -10, -0.3))
     out.append((lands[-1], "brick_thud", -4, -0.2))                    # on "Brick"
+    out.append((T["ajar"], "sparkle", -18, 0.3))                       # door cracks ajar
+    for i, tc in enumerate(T["chips"]):                                # the three chips
+        out.append((tc, "pop", -11, 0.3 + 0.1 * i))
     out.append((T["open"], "whoosh", -10, 0.2))
     out.append((T["open"] + 0.05, "magic_chime", -6))
     for i, tg in enumerate(T["gift_t"]):
