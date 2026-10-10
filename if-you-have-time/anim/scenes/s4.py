@@ -204,8 +204,9 @@ CARD = (0.44, -0.74)                    # the card out in front of him, seated
 MID = (0.18, -0.06)
 DOOR = (-0.62, 0.02)                    # standing, facing the door (screen-left)
 WIN = (-0.32, -0.62)                    # up at the rain on the window behind her
-BOXG = (0.5, -0.5)                      # the music box above his palm
-DOWN = (0.16, 0.14)                     # eyes lowered, absorbing
+BOXG = (0.56, -0.16)                    # the music box above his palm (level with her, to the right)
+DOWN = (0.12, 0.36)                     # eyes lowered, absorbing
+QU_UP = (0.5, -0.62)                    # up at his face (standing over her): the head lifts with it
 # kazoo: the toast (the mug comes up toward him as the music starts, held while she nods along, then down)
 TOAST0 = KZ0 + 0.5
 TOAST1 = TOAST0 + 0.5
@@ -245,9 +246,9 @@ def _rae_tracks():
     d["nod"] = Track([
         (T0, -0.1), (C2 + 0.4, -0.12), (KAZOO_W, -0.08), (TOAST0, -0.04), (TOAST1, 0.04), (TOAST2, 0.02),
         (KZ1, -0.02), (CH0, 0.0), (C4, -0.06), (FALL_APART + 0.3, 0.02), (LF0 + 0.4, 0.02), (LF0 + 1.3, -0.16),
-        (CUT_LR, -0.12), (LOOK0, -0.12), (LOOK0 + 0.7, 0.04), (LOOK1, 0.02), (LOOK1 + 0.6, -0.08),
-        (C5, -0.08), (LL0 + 0.4, -0.04), (HALF0, -0.02), (CLOSE0 + 0.8, 0.08), (OPEN0, 0.06), (GLANCE, 0.0),
-        (GLANCE + 0.3, 0.04), (BACK + 0.4, 0.02), (LL1, 0.04), (R11, 0.04), (DEVICE_E, 0.06),
+        (CUT_LR, -0.14), (LOOK0, -0.16), (LOOK0 + 0.75, 0.17), (LOOK1, 0.12), (LOOK1 + 0.6, -0.06),
+        (C5, -0.08), (LL0 + 0.4, -0.02), (HALF0, 0.0), (CLOSE0 + 0.8, 0.06), (OPEN0, 0.02), (OPEN0 + 0.4, -0.08),
+        (GLANCE, -0.08), (GLANCE + 0.35, 0.15), (BACK, 0.08), (BACK + 0.4, 0.02), (LL1, 0.04), (R11, 0.04), (DEVICE_E, 0.06),
         (GOING + 0.3, 0.12), (R11E, 0.12), (UP, 0.08), (RISE1, 0.14), (CUT_X, 0.18), (T1 + 1, 0.2)])
     d["tilt"] = Track([
         (T0, 0.0), (C2 + 0.5, 1.5), (TOAST0, 2.0), (TOAST1 + 0.3, 4.0), (KZ1, 4.0), (C3, 1.0), (CH0 + 1.0, 2.0),
@@ -256,14 +257,15 @@ def _rae_tracks():
         (LL1, 4.5), (R11, 2.0), (R11E, 0.0), (UP, 0.0), (CUT_X, -2.0), (T1 + 1, -2.0)])
     d["hturn"] = Track([
         (T0, 0.02), (TOAST0, 0.02), (TOAST1, 0.05), (TOAST3, 0.02), (LF0 + 0.3, 0.02), (LF0 + 1.3, -0.12),
-        (CUT_LR, -0.04), (LOOK0 + 0.1, -0.03), (LOOK0 + 0.9, 0.05), (LOOK1 + 0.6, 0.0), (GLANCE, 0.0),
-        (GLANCE + 0.5, 0.04), (BACK + 0.4, 0.01), (UP, 0.0),
+        (CUT_LR, -0.04), (LOOK0 + 0.1, -0.03), (LOOK0 + 0.9, 0.11), (LOOK1 + 0.6, 0.02), (GLANCE, 0.0),
+        (GLANCE + 0.5, 0.09), (BACK + 0.4, 0.03), (UP, 0.0),
         (UP + 0.3, -0.12, "io"), (CUT_X - 0.001, -0.14), (CUT_X, 0.0, "step"), (T1 + 1, 0.0)])
     # ---------------- eyes
     d["lid"] = Track([
-        (T0, 0.92), (KZ0 + 1.0, 0.88), (KZ1, 0.86), (CH0, 0.9), (C4, 0.92), (LF0 + 1.0, 0.84), (CUT_LR, 0.8),
-        (LOOK0 + 0.4, 0.88), (LOOK1, 0.8), (C5, 0.88), (LL0 + 1.0, 0.84), (HALF0, 0.82), (CLOSE0, 0.78),
-        (CLOSE0 + 0.75, 0.04), (OPEN0, 0.04), (OPEN0 + 0.5, 0.8), (GLANCE, 0.84), (BACK, 0.84), (LL1, 0.8),
+        (T0, 0.92), (KZ0 + 1.0, 0.88), (KZ1, 0.86), (CH0, 0.9), (C4, 0.92), (LF0 + 1.0, 0.84), (CUT_LR, 0.76),
+        (LOOK0, 0.74), (LOOK0 + 0.45, 0.95), (LOOK1, 0.9), (LOOK1 + 0.5, 0.8), (C5, 0.88), (LL0 + 1.0, 0.86),
+        (HALF0, 0.84), (CLOSE0, 0.78), (CLOSE0 + 0.75, 0.04), (OPEN0, 0.04), (OPEN0 + 0.5, 0.76), (GLANCE, 0.76),
+        (GLANCE + 0.25, 0.95), (SNOD + 0.5, 0.88), (BACK, 0.88), (LL1, 0.8),
         (R11, 0.88), (UP, 0.9), (CUT_X, 0.86), (T1 + 1, 0.86)])
     d["blinks"] = [
         (C2 + 0.05, 0.3), (KAZOO_W + 0.1, 0.35), (TOAST2 + 0.2, 0.4), (C3 + 0.1, 0.3), (CH0 + 2.2, 0.3),
@@ -287,12 +289,12 @@ def _rae_tracks():
         (C4 + 0.04, CARD, 0.14), (Q10 + 1.0, QU), (FALL_APART + 0.25, (0.3, -0.1), 0.25),
         (LF0 + 0.5, WIN, 0.5),                                                  # the rain
         (LF0 + 1.7, DOWN, 0.45),
-        (LOOK0, QU, 0.45),                                                      # quiet recognition: up to him
-        (LOOK1, (0.24, 0.06), 0.5),
+        (LOOK0, QU_UP, 0.42),                                                   # quiet recognition: up to him
+        (LOOK1, (0.24, 0.2), 0.5),
         (C5 + 0.04, CARD, 0.14), (Q11 + 1.4, QU), (ELEVEN + 0.3, CARD, 0.2),
         (LL0 + 0.15, BOXG, 0.3),                                                # the music box
-        (CLOSE0 - 0.25, (0.36, -0.3), 0.5),
-        (OPEN0 + 0.1, (0.22, 0.12), 0.3), (GLANCE, QU, 0.18),                  # the glance up to him
+        (CLOSE0 - 0.25, (0.4, -0.06), 0.5),
+        (OPEN0 + 0.1, (0.2, 0.3), 0.3), (GLANCE, QU_UP, 0.18),                 # the glance up to him
         (BACK, BOXG, 0.3), (LL1 - 0.3, (0.24, 0.14), 0.4),
         (R11 - 0.15, QU, 0.14),                                                 # "You can just send them..."
         (DEVICE_E - 0.1, (0.28, 0.1), 0.18), (DEVICE_E + 0.12, QU, 0.12),
@@ -303,8 +305,8 @@ def _rae_tracks():
     d["brow_raise"] = Track([
         (T0, 0.32), (C2 + 0.3, 0.36), (KAZOO_W, 0.3), (KAZOO_W + 0.3, 0.5), (TOAST1, 0.42), (KZ1, 0.28),
         (C3, 0.32), (CH0 + 1.0, 0.2), (C4, 0.3), (FALL_APART, 0.3), (FALL_APART + 0.4, 0.45), (LF0, 0.35),
-        (LF0 + 1.3, 0.4), (CUT_LR, 0.24), (LOOK0 + 0.5, 0.4), (LOOK1, 0.3), (C5, 0.3), (ELEVEN + 0.2, 0.42),
-        (LL0, 0.38), (HALF0, 0.3), (CLOSE0 + 0.5, 0.2), (OPEN0, 0.22), (GLANCE + 0.2, 0.4), (LL1, 0.3),
+        (LF0 + 1.3, 0.4), (CUT_LR, 0.24), (LOOK0, 0.22), (LOOK0 + 0.5, 0.48), (LOOK1, 0.36), (LF1, 0.3), (C5, 0.3), (ELEVEN + 0.2, 0.42),
+        (LL0, 0.38), (HALF0, 0.3), (CLOSE0 + 0.5, 0.2), (OPEN0, 0.22), (GLANCE, 0.22), (GLANCE + 0.25, 0.46), (BACK, 0.34), (LL1, 0.3),
         (R11, 0.36), (DEVICE_E, 0.3), (GOING + 0.3, 0.4), (R11E, 0.32), (UP, 0.35), (T1 + 1, 0.3)])
     d["worry"] = Track([
         (T0, 0.45), (KZ0, 0.35), (TOAST1, 0.26), (KZ1, 0.34), (CH0, 0.3), (C4, 0.32), (FALL_APART + 0.4, 0.55),
@@ -664,6 +666,8 @@ def draw_cards(c, t, shot=None):
                                px=6.0, count=5)
     # the music box above his palm (card 5 becomes it)
     bi = music_box_alpha(t)
+    if shot is not None and shot[0] in RAE_SINGLES:   # (its fading tail would hang by her head in her single)
+        bi = 0.0
     if bi > 0.003:
         px, py = FAN
         sc = lerp(0.35, BOX_SCALE, smoothstep(clamp((t - BOX_IN - 0.2) / 0.9)))

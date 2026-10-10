@@ -172,10 +172,10 @@ BEHIND = QA["behind_back"]
 # wrist trails on the way down; the hand goes palm_up -> open -> relaxed in two soft steps (no single pop)
 LOWER_MID = ArmPose(shoulder=12.0, elbow=40.0, wrist=10.0, hand="open")
 LIFT_MID = ArmPose(shoulder=12.0, elbow=48.0, wrist=-14.0, hand="open")          # palm turning up on the way
-HOLD_MEM = ArmPose(shoulder=22.0, elbow=76.0, wrist=-8.0, hand="palm_up")        # palm out, the memories above
-STUDY_MEM = ArmPose(shoulder=24.0, elbow=80.0, wrist=-10.0, hand="palm_up")      # ... brought a touch closer
+HOLD_MEM = ArmPose(shoulder=36.0, elbow=58.0, wrist=-8.0, hand="palm_up")        # palm out, the memories above
+STUDY_MEM = ArmPose(shoulder=37.0, elbow=60.0, wrist=-11.0, hand="palm_up")      # ... a touch closer to look
 CARRY_IN = ArmPose(shoulder=16.0, elbow=92.0, wrist=-6.0, hand="palm_up")        # drawn in as he turns away
-CARRY = ArmPose(shoulder=18.0, elbow=80.0, wrist=-8.0, hand="palm_up")           # carried in front as he walks
+CARRY = ArmPose(shoulder=28.0, elbow=68.0, wrist=-8.0, hand="palm_up")           # carried in front as he walks
 
 HAND_DOWN0 = ALONE + 0.45             # the cards are fading: the hand comes down ...
 HAND_DOWN1 = ALONE + 1.55
@@ -287,14 +287,14 @@ def _carry_arm(a: ArmPose, ph):
 # kind, radius, spawn point (stage: rising from the bench side, where she sat), orbit phase (deg), birth (s after
 # quill_memories). Small (r 44-56); young Rae at the car window is the biggest.
 MEMS = (
-    ("car_window", 56.0, (262.0, 975.0), 205.0, 0.10),
-    ("hands", 47.0, (332.0, 1035.0), 295.0, 0.42),
-    ("kitchen_dawn", 45.0, (196.0, 905.0), 25.0, 0.74),
-    ("sea_sunset", 50.0, (392.0, 1060.0), 115.0, 1.06),
+    ("car_window", 50.0, (262.0, 975.0), 115.0, 0.10),
+    ("hands", 42.0, (332.0, 1035.0), 205.0, 0.42),
+    ("kitchen_dawn", 40.0, (196.0, 905.0), 295.0, 0.74),
+    ("sea_sunset", 44.0, (392.0, 1060.0), 25.0, 1.06),
 )
 GATHER = 1.35                         # seconds from birth to the orbit
-ORBIT_OFF = (34.0, -98.0)             # orbit centre relative to the palm (x toward his facing side = forward)
-ORBIT_R = (68.0, 15.0)                # flattened ring (a slow turn around a vertical axis above the palm)
+ORBIT_OFF = (36.0, -100.0)            # orbit centre relative to the palm (x toward his facing side = forward)
+ORBIT_R = (76.0, 32.0)                # a little ring seen from slightly above (slow turn about a vertical axis)
 ORBIT_W = 360.0 / 12.0                # deg / s
 
 
@@ -618,8 +618,8 @@ RAE_MED_B = Camera(-44.0, 698.0, 2.16)
 CU_A = _cam_on((_qh[0] + 6, _qh[1] + 6), 3.2, 0.52, 0.42)
 CU_B = _cam_on((_qh[0] + 6, _qh[1] + 6), 3.38, 0.52, 0.42)
 OUT_A = Camera(206.0, 680.0, 0.8)                 # the door shuts (same set-up as wide_in)
-MEM_A = Camera(428.0, 652.0, 1.6)                 # his face upper third, the palm + memories, the bench side
-MEM_B = Camera(440.0, 626.0, 1.76)
+MEM_A = Camera(410.0, 652.0, 1.6)                 # his face upper third, the palm + memories, the bench side
+MEM_B = Camera(420.0, 628.0, 1.74)
 # the lounge (window, the empty bench, the console); he exits right. The floor line sits just below the frame:
 # char_quill's walk cycle sets the swinging foot down before the end of its swing (it would visibly slide
 # forward on the floor), so his feet stay out of shot - thighs and shins carry the walk.

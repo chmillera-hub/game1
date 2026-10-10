@@ -289,6 +289,13 @@ SEQ = [
     ("sfx", "holo_open", {"offset": 0.1, "gain_db": -22.0}),
     ("wait", 3.2),
     ("beat", "quill_walk_off"),  # walks off screen, still holding them
+    # his footfalls (anim/scenes/s5.py: the walk starts on the cut, heel strikes at walk phase 0.25 / 0.75);
+    # the third is at the frame edge, the last two are off screen, receding
+    ("sfx", "step_soft", {"offset": 0.638, "gain_db": -20.0}),
+    ("sfx", "step_soft", {"offset": 1.201, "gain_db": -20.0}),
+    ("sfx", "step_soft", {"offset": 1.747, "gain_db": -22.0}),
+    ("sfx", "step_soft", {"offset": 2.288, "gain_db": -25.0}),
+    ("sfx", "step_soft", {"offset": 2.830, "gain_db": -29.0}),
     ("wait", 2.8),
     ("beat", "end_card"),
     ("wait", 6.0),
