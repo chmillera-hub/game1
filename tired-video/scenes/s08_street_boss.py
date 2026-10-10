@@ -646,6 +646,7 @@ def shot_pov(ctx, t, info, T):
                     lx = hx - 80 + hash01(i, 6) * 220 + (hash01(i, 7) - 0.5) * 140 * k
                     ly = hy - 100 - 150 * math.sin(math.pi * min(1.0, k * 1.3)) * (0.5 + 0.5 * hash01(i, 8)) + 90 * k
                     props.leaf(ctx, lx, ly, 0.45, k * 5 + i, SC["leaf"])
+        _house_fg(ctx, t, parts=("fence",))      # he runs on the lawn, behind the fence
 
 
 # ============================================================================ SH16 he scurries into the van

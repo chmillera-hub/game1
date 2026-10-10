@@ -421,7 +421,7 @@ def _annoy_beats(T):
     b = T["l4"]
     span = b - a0
     # chitter, tug, headbutt, poke, plead (fractions of the span before "Fine.")
-    fr = (0.0, 0.17, 0.47, 0.64, 0.80)
+    fr = (0.0, 0.15, 0.41, 0.56, 0.70)
     return [a0 + f * span for f in fr] + [b]
 
 
@@ -532,8 +532,8 @@ def sh6(ctx, t, T, info):
             ram = ease_in(seg(t, c2 + 0.08, c2 + 0.16)) * (1 - ease_out(seg(t, c2 + 0.22, c3)))
             shin_x = foot[0] + 14
             gx = shin_x + 150 * 0.92 * SC + 46 + 26 * back - 60 * ram
-            creature(ctx, gx, FEET + 8, SC, t, pose="stand", flip=True, expr="annoyed",
-                     look=(-0.5, 0.1), tilt=0.32 * ram + 0.06 * back)
+            creature(ctx, gx, FEET + 8, SC, t, sq=squash_at(t, c2, 0.1, 0.18), pose="stand",
+                     flip=True, expr="annoyed", look=(-0.5, 0.1), tilt=0.32 * ram + 0.06 * back)
             if t >= c2 + 0.16:
                 fx.impact_star(ctx, shin_x + 26, FEET - 120 * SP, 0.4, t, c2 + 0.16, dur=0.3,
                                spikes=9)

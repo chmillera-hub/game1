@@ -1271,7 +1271,7 @@
   {
    "id": "s13",
    "module": "s13_shaft",
-   "music": "reveal:awe=0.5607,sad=0.7008,sting=3.60",
+   "music": "reveal:awe=0.5655,sad=0.7041,sting=3.60",
    "head": 0.0,
    "tail": 0.2,
    "min_dur": 0,
@@ -1323,7 +1323,7 @@
     },
     {
      "t": "pause",
-     "dur": 2.8,
+     "dur": 3.1,
      "cue": "annoy"
     },
     {

@@ -169,14 +169,19 @@ def draw_room_gaming(ctx, t, c, notes=0.9):
     return draw_gamer(ctx, t, notes)
 
 
-def draw_gamer(ctx, t, notes=0.9):
-    bob = math.sin(2 * math.pi * t / BEAT)
-    face = {"head_nod": 0.03 * bob, "head_tilt": 0.015 * bob, "curve": 0.12, "lower": 0.12}
+def draw_gamer(ctx, t, notes=0.9, glance=0.0):
+    """Tiredness gaming. glance 0..1: his pupils slide back toward the noise behind him
+    (the head stays), the bob stops and the lids drop a hair."""
+    g = clamp(glance)
+    bob = math.sin(2 * math.pi * t / BEAT) * (1 - g)
+    face = {"head_nod": 0.03 * bob, "head_tilt": 0.015 * bob, "curve": 0.12 * (1 - g), "lower": 0.12,
+            "lid": 0.08 * g, "press": 0.25 * g}
+    look = (lerp(0.7, -1.0, g), lerp(-0.05, 0.12, g))
     a = human.draw_person(ctx, "tired", T_GAME[0], T_GAME[1], S, t, pose="game", expr="bored",
-                          turn=0.45, headphones="on", face=face, look=(0.7, -0.05))
+                          turn=0.45, headphones="on", face=face, look=look)
     sets.bedroom(ctx, t, layer="fg", parts=("desk", "chair"))
     hx, hy = a["head"]
-    cup = (hx - 112 * S, hy + 10 * S)
+    cup = (hx - 88 * S, hy + 4 * S)
     fx.music_notes(ctx, cup[0], cup[1] - 30 * S, 1.25, t, notes, direction=-1, seed=5)
     return a
 
@@ -557,7 +562,8 @@ def shot_search(ctx, t, info, c):
         sets.bedroom(ctx, t, layer="bg", laundry=laundry_lift(t, c), closet_open=clamp(closet),
                      chair_empty=empty, chair_spin=spin, chair_dx=cdx, laundry_scattered=t >= tb)
         if not empty:
-            draw_gamer(ctx, t, notes=0.7)
+            gl = tween(t, [(ts + 0.42, 0.0), (ts + 0.62, 1.0)])
+            draw_gamer(ctx, t, notes=0.7, glance=gl)
         draw_clothes(ctx, t, c)
         cage(ctx, CAGE_FLOOR[0], CAGE_FLOOR[1] - CAGE_S * 300, t, swing=0.0)
         a = human.draw_person(ctx, "embar", x, y, S, t, pose=pose, pose_t=pose_t, expr=expr, look=look,

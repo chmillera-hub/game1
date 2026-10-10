@@ -382,9 +382,9 @@ def shot_back(ctx, t, info, c):
     px = clamp(ex + 150, 600, 1250)
     # snap push-in onto the frozen face after the bump, then a slow creep during the laugh
     kz = ease_out(seg(t, tb + 0.1, tb + 0.42))
-    zoom = 0.95 + 0.8 * kz + 0.12 * seg(t, c["l02"], c["C1"])
-    cx = lerp(px, ex + 40, kz)
-    cy = lerp(1040, 930, kz)
+    zoom = 0.95 + 1.2 * kz + 0.12 * seg(t, c["l02"], c["C1"])
+    cx = lerp(px, ex + 30, kz)
+    cy = lerp(1040, 905, kz)
     sh = _shake(t, tb, 0.18, 5)
     with core.cache_steps(1), core.camera(ctx, cx + sh[0], cy + sh[1], zoom):
         _room(ctx, t, door=_door_c(t, c))
@@ -583,7 +583,8 @@ def shot_tug(ctx, t, info, c):
     # pupils ride the shaking cage, head follows late
     cage_c = _cage_pt(rig["mouth"][0], rig["mouth"][1], rig["rot"], 0, 150)
     lk = (-0.95, 0.12 + 0.06 * math.sin(t * 2.2 * math.tau))
-    t_face = {"head_turn": -0.12 * seg(t, w1 + 0.1, w1 + 0.4), "lid": 0.06 * seg(t, c["tug"] + 1.8, c["squint"])}
+    t_face = {"head_turn": -0.12 * seg(t, w1 + 0.1, w1 + 0.4),
+              "lid": -0.12 + 0.07 * seg(t, c["tug"] + 1.75, c["squint"])}
 
     def tired_fn():
         return draw_person(ctx, "tired", tx, TIR_TUG[1], S, t, pose=tpose,
