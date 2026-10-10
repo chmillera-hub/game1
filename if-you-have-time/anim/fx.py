@@ -818,6 +818,30 @@ def _cw_back(c):
     c.restore()
 
 
+# young Rae (BIBLE section 10): brown skin like Rae's, a curly dark hair puff tied up on top, big dark eyes
+_YR_SKIN, _YR_SHADE, _YR_HI = "r_skin", "r_skin_shade", "r_skin_hi"
+_YR_LINE = "#5A361D"
+_YR_HAIR, _YR_HAIR_HI = "r_hair", "r_hair_hi"
+_YR_TIE = ("#D9B566", "#A9853F")          # her gold hair tie (as grown-up Rae's)
+_YR_COAT = ("#B5762F", "#CB8B3F", "#93591F")   # a mustard kid's jacket (the colour of Rae's shirt, at night)
+
+
+def _curly(c, pts, r, paint_, jitter=0.25, seed=0):
+    """Curly hair edge: a run of overlapping small circles along pts (a polyline)."""
+    for i in range(len(pts) - 1):
+        (x0, y0), (x1, y1) = pts[i], pts[i + 1]
+        n = max(1, int(math.hypot(x1 - x0, y1 - y0) / (r * 1.1)))
+        for k in range(n):
+            u = k / n
+            rr = r * (1.0 + jitter * (hash01(i * 31 + k, seed) - 0.5) * 2)
+            c.drawCircle(lerp(x0, x1, u), lerp(y0, y1, u), rr, paint_)
+
+
+def _yr_hair_cap():
+    return _sp([(-12, -56), (-20, -68), (-40, -84), (-70, -92), (-102, -82), (-124, -58), (-134, -22), (-128, 12),
+                (-112, 34), (-100, 20), (-98, -2), (-90, -24), (-74, -38), (-54, -46), (-36, -52), (-22, -50)])
+
+
 def _cw_front(c):
     # glass sheen
     c.save()
@@ -833,41 +857,85 @@ def _cw_front(c):
     # window frame (rubber seal)
     c.drawRRect(_CW_WIN, _S("#120F1C", 13))
     c.drawRRect(skia.RRect.MakeRectXY(skia.Rect(-143, -151, 233, 55), 40, 40), _S("#4C4470", 1.6, 0.6))
-    # child: jacket / shoulders
+    coat, coat_hi, coat_dk = _YR_COAT
+    # the hair puff, tied up on top of her head (behind the head; curly edge, a cool edge light from the window)
+    puff_c, puff_r = (-76.0, -116.0), 36.0
+    hp = _P(_YR_HAIR)
+    c.drawCircle(puff_c[0], puff_c[1], puff_r, hp)
+    ring = [(puff_c[0] + math.cos(a) * (puff_r - 2), puff_c[1] + math.sin(a) * (puff_r - 3))
+            for a in (math.radians(d) for d in range(0, 361, 30))]
+    _curly(c, ring, 10.5, hp, seed=3)
+    edge = skia.Path()
+    edge.addArc(skia.Rect(puff_c[0] - puff_r - 8, puff_c[1] - puff_r - 8, puff_c[0] + puff_r + 8, puff_c[1] + puff_r + 8),
+                -80, 115)
+    c.drawPath(edge, _S("#7F8FC4", 2.2, 0.35))
+    for (x, y, a0) in ((-92, -128, 200), (-70, -138, 250), (-58, -112, 300), (-84, -104, 160), (-66, -122, 20),
+                       (-96, -112, 120)):
+        arc = skia.Path()
+        arc.addArc(skia.Rect(x - 6, y - 6, x + 6, y + 6), a0, 220)
+        c.drawPath(arc, _S(_YR_HAIR_HI, 2.0, 0.9))
+    # jacket / shoulders
     c.drawPath(_sp([(-210, 210), (-210, 70), (-160, 48), (-110, 44), (-62, 52), (-20, 80), (10, 130), (20, 210)]),
-               _P("#A5524A"))
-    c.drawPath(_sp([(-120, 60), (-80, 64), (-40, 84), (-15, 120), (-60, 120), (-110, 90)]), _P("#BE6457", 0.8))
-    c.drawPath(_sp([(-104, 44), (-60, 46), (-40, 62), (-70, 70), (-104, 62)]), _P("#8E4540"))   # collar
-    c.drawPath(_sp([(-86, 30), (-52, 30), (-50, 56), (-88, 58)]), _P("#C98F6E"))                 # neck
+               _P(coat))
+    c.drawPath(_sp([(-120, 60), (-80, 64), (-40, 84), (-15, 120), (-60, 120), (-110, 90)]), _P(coat_hi, 0.8))
+    c.drawPath(_sp([(-104, 44), (-60, 46), (-40, 62), (-70, 70), (-104, 62)]), _P(coat_dk))    # collar
+    c.drawPath(_sp([(-86, 30), (-52, 30), (-50, 56), (-88, 58)]), _P(_YR_SHADE))                # neck
     # arm up to the glass + small hand pressed on it
-    c.drawPath(_sp([(-30, 130), (14, 84), (52, 50), (72, 40), (86, 56), (62, 80), (24, 118), (-2, 150)]), _P("#A5524A"))
-    c.drawPath(_sp([(58, 48), (74, 39), (86, 54), (68, 66)]), _P("#8E4540"))   # cuff
+    c.drawPath(_sp([(-30, 130), (14, 84), (52, 50), (72, 40), (86, 56), (62, 80), (24, 118), (-2, 150)]), _P(coat))
+    c.drawPath(_sp([(58, 48), (74, 39), (86, 54), (68, 66)]), _P(coat_dk))   # cuff
     hand = _sp([(70, 48), (68, 26), (70, 4), (75, 2), (78, 20), (80, -4), (85, -6), (87, 18), (90, -2),
                 (95, -2), (95, 20), (99, 8), (104, 10), (100, 32), (96, 48), (84, 58)])
-    c.drawPath(hand, _P("#D9A07C"))
-    c.drawPath(hand, _S("#9A6248", 1.2, 0.6))
+    c.drawPath(hand, _P(_YR_SKIN))
+    c.drawPath(hand, _S(_YR_LINE, 1.2, 0.6))
     # head
     head = _child_head_path()
-    c.drawPath(head, _P("#D9A07C"))
+    c.drawPath(head, _P(_YR_SKIN))
     c.save()
     c.clipPath(head, True)
-    c.drawCircle(-96, 0, 70, _P("#B98060", 0.55))          # shade on the back of the head (lit from the window)
-    c.drawCircle(-34, 2, 13, _P("#E58C7A", 0.35))           # cheek
+    c.drawCircle(-98, 0, 70, _P(_YR_SHADE, 0.6))           # shade on the back of the head (lit from the window)
+    c.drawCircle(-6, -30, 26, _P(_YR_HI, 0.35))            # forehead / brow catching the window light
+    c.drawCircle(-30, 4, 13, _P("#C46552", 0.3))           # cheek
     c.restore()
-    c.drawPath(_sp([(-84, -16), (-74, -14), (-70, 0), (-76, 12), (-86, 8)]), _P("#C98B69"))      # ear
-    c.drawPath(_sp([(-80, -8), (-75, 0), (-79, 6)], closed=False), _S("#A26A4E", 1.6))
-    hair = _sp([(-14, -58), (-30, -76), (-62, -92), (-100, -86), (-124, -60), (-132, -22), (-124, 12),
-                (-108, 34), (-100, 10), (-96, -16), (-84, -30), (-66, -38), (-46, -40), (-36, -50), (-22, -46)])
-    c.drawPath(hair, _P("#3A2420"))
-    c.drawPath(_sp([(-60, -84), (-92, -80), (-112, -60), (-104, -62), (-88, -74)]), _P("#5E3B2D", 0.9))
-    # brow, eye (wide, looking out), little 'o' mouth
-    c.drawPath(_sp([(-30, -37), (-20, -40), (-12, -37)], closed=False), _S("#3A2420", 2.4))
-    c.drawPath(_sp([(-24, -25), (-14, -29), (-8, -24), (-14, -19), (-22, -21)]), _P("#FFFFFF", 0.95))
-    c.drawCircle(-12, -24, 4.4, _P("#2A1A16"))
-    c.drawCircle(-11, -26, 1.5, _P("#FFFFFF"))
-    c.drawPath(_sp([(-25, -26), (-14, -31), (-6, -25)], closed=False), _S("#2A1A16", 1.8))
-    c.drawOval(skia.Rect(-9, 7, -2, 15), _P("#7A3B33"))
-    c.drawPath(_sp([(4, -11), (1, -5)], closed=False), _S("#A26A4E", 1.3, 0.8))
+    c.drawPath(_sp([(-84, -16), (-74, -14), (-70, 0), (-76, 12), (-86, 8)]), _P(_YR_SHADE))     # ear
+    c.drawPath(_sp([(-80, -8), (-75, 0), (-79, 6)], closed=False), _S(_YR_LINE, 1.6))
+    # hair: curly cap over the top and back of the head, curls along its edge, a gold tie at the puff
+    cap = _yr_hair_cap()
+    c.drawPath(cap, hp)
+    _curly(c, [(-22, -66), (-40, -84), (-70, -93), (-102, -83), (-124, -59), (-134, -24), (-128, 10), (-114, 32)],
+           7.5, hp, seed=5)
+    _curly(c, [(-24, -52), (-40, -52), (-56, -47)], 4.5, hp, seed=6)        # little curls along the hairline
+    for (x, y, a0) in ((-48, -70, 190), (-80, -78, 220), (-108, -62, 250), (-118, -30, 280), (-112, 4, 300),
+                       (-64, -58, 160), (-94, -46, 210)):
+        arc = skia.Path()
+        arc.addArc(skia.Rect(x - 5.5, y - 5.5, x + 5.5, y + 5.5), a0, 220)
+        c.drawPath(arc, _S(_YR_HAIR_HI, 1.8, 0.85))
+    # a loose ringlet at the temple, in front of the ear (as Rae's)
+    c.drawPath(_sp([(-64, -40), (-58, -30), (-64, -22), (-58, -14), (-63, -6)], closed=False, tension=0.6),
+               _S(_YR_HAIR, 3.2))
+    tie, tie_dk = _YR_TIE
+    for k in range(5):
+        x = -98 + k * 10.5
+        y = -86 - 4.0 * math.sin(math.pi * k / 4)
+        c.drawOval(skia.Rect(x - 6, y - 4.5, x + 6, y + 4.5), _P(tie))
+        c.drawOval(skia.Rect(x - 6, y - 4.5, x + 6, y + 4.5), _S(tie_dk, 1.0, 0.8))
+    # brow, a big dark eye (wide, looking out at the lights), a little 'o' mouth
+    c.drawPath(_sp([(-36, -42), (-24, -47), (-11, -43)], closed=False), _S(_YR_HAIR, 2.8))
+    eye = _sp([(-31, -26), (-23, -34), (-12, -34), (-5, -27), (-11, -18), (-24, -18)])
+    c.drawPath(eye, _P("#F4EEE6"))
+    c.save()
+    c.clipPath(eye, True)
+    c.drawCircle(-13, -26, 8.2, _P("r_iris"))
+    c.drawCircle(-13, -26, 8.2, _S("#1E120B", 1.4))
+    c.drawCircle(-12, -26, 4.4, _P("#120A06"))
+    c.drawCircle(-10, -29.5, 2.6, _P("#FFFFFF"))
+    c.drawCircle(-16, -22, 1.2, _P("#FFFFFF", 0.75))
+    c.restore()
+    c.drawPath(_sp([(-32, -27), (-23, -35.5), (-12, -35), (-4, -27)], closed=False), _S("#1A0F0A", 2.8))
+    c.drawPath(_sp([(-31, -28), (-36, -33)], closed=False), _S("#1A0F0A", 1.8))         # lashes
+    c.drawPath(_sp([(-28, -32), (-32, -38)], closed=False), _S("#1A0F0A", 1.6))
+    c.drawPath(_sp([(-24, -17), (-12, -16.5)], closed=False), _S(_YR_LINE, 1.1, 0.6))    # lower lid
+    c.drawOval(skia.Rect(-9, 7, -2, 15), _P("#4E201A"))
+    c.drawPath(_sp([(4, -11), (1, -5)], closed=False), _S(_YR_LINE, 1.3, 0.8))
 
 
 _CW_LIGHTS = ("#FFC46B", "#FFE9C2", "#6FD6D0", "#F08FA0", "#FFB45A", "#9FC2FF")

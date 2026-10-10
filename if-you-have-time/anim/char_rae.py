@@ -96,7 +96,13 @@ MUG_S = 1.4             # mug scale (base design is 26 x 32): ~45 units tall, ~0
 MUG_W, MUG_H = 13.0, 32.0
 MUG_GX, MUG_GY = 22.0, -17.5    # the handle's grip point (mug-local, base units; legacy reference)
 MUG_TILT = 40.0         # mug tilt (deg) when drinking
-MUG_HEEL = 4.0          # held mug: its edge sits this far past the wrist (the heel of the hand shows)
+MUG_HEEL = 4.0          # held mug (far hand): its edge sits this far past the wrist (the heel of the hand shows)
+# near hand (the one nearer the camera) on the mug: the hand is IN FRONT of the mug (BIBLE section 10), the back of
+# the hand / the outer edge of the palm toward the camera, the fingers wrapping round the far side of the body
+MUG_BODY_H = MUG_H      # height (base units) of the part of the body the near hand wraps (the cadet's: below the lid)
+MUG_NEAR_Y = 0.25       # near hand: the fingers wrap the far side at this fraction of the body height (low: logo shows)
+MUG_NEAR_FING = 11.0    # near hand: visible finger length (units) from the knuckles to the far silhouette edge
+MUG_NEAR_KY = 19.0      # near hand: hand-local y of the knuckle line (the palm centre is at 15)
 
 RIM_LIGHT_POS = (360.0, 380.0)   # stage point the rim light comes from (the window); scenes may reassign.
 RIM_MIN = 0.08          # pose.rim at or below this is invisible and skipped (env.char_light(1) gives 0.06)
@@ -167,6 +173,7 @@ C_MUG_SH = col("#C8C6BE")
 C_MUG_LINE = col("#8A877F")
 C_LOGO = col("mug_text")
 C_COFFEE = col("#4B2A19")
+C_NAIL = col("#D9A98A")
 WHITE = col("#FFFFFF")
 
 # Colour filter applied to every paint while the body is drawn (lighting). Filtering each paint is
@@ -817,12 +824,16 @@ def _solve(p: Pose, t):
     MS.preScale(fac * p.scale, p.scale)
     R.MS = MS
 
-    # ---------------- mug (upper-body frame): the palm wraps the back of the mug body, which sits in front of the
-    # hand (toward the camera), centred just past the palm; the fingers come round through the handle (outer, +x
-    # side) and the thumb rests on top of the handle. The wrist keeps the forearm line (no cocked-back wrist).
+    # ---------------- mug (upper-body frame). Near hand (the arm nearer the camera): the hand is in front of the
+    # mug, its back / outer edge toward the camera, the fingers wrapping round the far side of the body (they
+    # vanish round its far silhouette edge), the thumb lying along the near face. Far hand: the palm wraps the
+    # back of the mug body, which sits in front of the hand, centred just past the palm; the fingers come round
+    # through the handle (outer, +x side) and the thumb rests on top of the handle. Either way the wrist keeps
+    # the forearm line (no cocked-back wrist).
     R.mug = None
     if p.mug in ("l", "r"):
         A = arms[-1] if arms[-1].side == p.mug else arms[1]
+        near = A.o < 0 and not back
         hs = 1.0
         mouth = MHr.mapXY(_hx(H, 0.0, MOUTH_Y)[0], MOUTH_Y)
         dist = math.hypot(A.palm[0] - (mouth.fX + 30.0), A.palm[1] - mouth.fY)
@@ -840,12 +851,12 @@ def _solve(p: Pose, t):
             Kc = (-(MUG_W - 1.0) * MUG_S, -MUG_H * MUG_S)
             palm0 = A.palm
             for _ in range(3):
-                G = _mug_grip(A.hd, a)
+                G = _mug_grip(A.hd, a, near)
                 off = rot((G[0] - Kc[0], G[1] - Kc[1]))
                 goal = (lerp(palm0[0], C.fX + off[0], w), lerp(palm0[1], C.fY + off[1], w))
                 hd = A.hd
                 _arm_finish(R, A, A.fk, (goal[0] - hd[0] * 15.0 * HAND_S, goal[1] - hd[1] * 15.0 * HAND_S))
-        G = _mug_grip(A.hd, a)                                      # palm centre in mug-local coords
+        G = _mug_grip(A.hd, a, near)                                # palm centre in mug-local coords
         g = rot(G)
         M = _NS()
         M.x = A.palm[0] - g[0]
@@ -854,6 +865,7 @@ def _solve(p: Pose, t):
         M.hs = hs
         M.flip = hs < 0
         M.arm = A
+        M.near = near                  # hand in front of the mug (near arm) / behind it (far arm)
         M.tilt = w
         M.dist = dist                  # raw palm -> mouth distance (QA probes)
         R.mug = M
@@ -861,12 +873,25 @@ def _solve(p: Pose, t):
 
 
 # --------------------------------------------------------------------------- arm solving helpers
-def _mug_grip(hd, a):
+def _mug_hw(y):
+    """Half-width (base units) of the mug body at base-unit height y (<= 0); straight sides."""
+    return MUG_W
+
+
+def _mug_grip(hd, a, near=False):
     """Palm centre of the holding hand in mug-local coords (mug rotated by `a` radians, scaled units, bottom
-    centre at the origin). The mug body sits in front of the hand, centred on the hand's line just past the
-    palm, its near edge MUG_HEEL past the wrist whatever the hand direction (rounded-box support distance)."""
+    centre at the origin). Far hand: the mug body sits in front of the hand, centred on the hand's line just past
+    the palm, its near edge MUG_HEEL past the wrist whatever the hand direction (rounded-box support distance).
+    Near hand (near=True): the hand lies over the front of the body; its knuckle line sits MUG_NEAR_FING short
+    of the far silhouette edge (the side the hand points to), where the fingers wrap round at MUG_NEAR_Y of the
+    body height."""
     ca_, sa_ = math.cos(a), math.sin(a)
     hx_, hy_ = hd[0] * ca_ + hd[1] * sa_, -hd[0] * sa_ + hd[1] * ca_
+    if near:
+        ye = -MUG_NEAR_Y * MUG_BODY_H
+        ex = clamp(hx_ / 0.3, -1.0, 1.0) * _mug_hw(ye) * MUG_S
+        dk = MUG_NEAR_FING + (MUG_NEAR_KY - 15.0) * HAND_S
+        return (ex - hx_ * dk, ye * MUG_S - hy_ * dk)
     bx, by = MUG_W * MUG_S, MUG_H * MUG_S * 0.5
     e = 0.5 * (abs(hx_) * bx + abs(hy_) * by + math.hypot(hx_ * bx, hy_ * by))
     dl = e + MUG_HEEL - 15.0 * HAND_S
@@ -1305,6 +1330,148 @@ def _draw_held_mug(c, R):
     c.restore()
 
 
+# near hand on the mug: fingers (index .. little) as (hand-local x, knuckle y, r_knuckle, r_tip), hand units
+_NEAR_FINGERS = ((5.0, 18.4, 2.7, 2.45), (1.6, 19.4, 2.9, 2.6), (-1.9, 19.0, 2.8, 2.5), (-5.1, 17.4, 2.45, 2.2))
+_NEAR_BACK = ((-7.4, -1.0), (-8.6, 6.0), (-8.9, 12.5), (-7.8, 17.8), (-4.2, 20.2), (1.0, 21.0), (5.2, 20.2),
+              (8.0, 16.8), (8.5, 9.0), (7.3, 0.0))
+_NEAR_THUMB = ((7.4, 3.6), (10.4, 15.4), 3.15, 2.55)     # base, tip (hand-local), radii (hand units)
+_NEAR_THUMB_UNDER = True
+NEAR_HAND_W = 0.9           # the near hand seen a little edge-on: its width (across the fingers) foreshortened
+
+
+def _draw_mug_in_hand(c, R):
+    """The held mug on its own (drawn before the near hand, which lies over it)."""
+    M = R.mug
+    c.save()
+    c.translate(M.x, M.y)
+    c.rotate(M.ang)
+    _mug_local(c, flip=M.hs < 0)
+    c.restore()
+
+
+def _near_grip_geo(R):
+    """Upper-body-frame geometry of the near hand gripping the mug: (hp, back, fingers, thumb, df).
+    hp(x, y): hand-local -> upper-body frame; fingers: [(knuckle, mid, end, r_knuckle, r_end)] (index first). The
+    finger ends sit just past the far silhouette edge of the body (found by marching along the finger), so the
+    fingers read as wrapping round behind it; they rise a little toward the edge like the front of the rim
+    ellipse (the mug is seen from slightly above)."""
+    M = R.mug
+    A = M.arm
+    W, hd, fx = A.W, A.hd, A.fx
+    hs = HAND_S
+
+    def hp(x, y):
+        x *= NEAR_HAND_W
+        return (W[0] + (fx[0] * x + hd[0] * y) * hs, W[1] + (fx[1] * x + hd[1] * y) * hs)
+    a = M.ang * D2R
+    ca_, sa_ = math.cos(a), math.sin(a)
+    body = _mug_body_path()
+    msx = MUG_S * M.hs
+
+    def inside(p):
+        dx, dy = p[0] - M.x, p[1] - M.y
+        return body.contains((dx * ca_ + dy * sa_) / msx, (-dx * sa_ + dy * ca_) / MUG_S)
+    # the fingers bend round the body: their direction leans from the hand's line toward the mug's sideways axis
+    side = (ca_ * M.hs, sa_ * M.hs)
+    if hd[0] * side[0] + hd[1] * side[1] < 0:
+        side = (-side[0], -side[1])
+    up = (sa_, -ca_)                                     # the mug's axis (base -> rim) in the upper-body frame
+    df = _norm(hd[0] + 0.55 * side[0], hd[1] + 0.55 * side[1])
+    fingers = []
+    for x, ky, rk, rt in _NEAR_FINGERS:
+        K = hp(x, ky)
+        e = 2.0
+        if inside(K):
+            step = 0.6
+            while e < 60.0 and inside((K[0] + df[0] * (e + step), K[1] + df[1] * (e + step))):
+                e += step
+        rk_, rt_ = rk * hs * NEAR_HAND_W, rt * hs * NEAR_HAND_W
+        e = max(e + 0.1 * rt_, 0.5)
+        lift = 0.1 * e
+        mid = (K[0] + df[0] * e * 0.5 + up[0] * lift * 0.35, K[1] + df[1] * e * 0.5 + up[1] * lift * 0.35)
+        end = (K[0] + df[0] * e + up[0] * lift, K[1] + df[1] * e + up[1] * lift)
+        fingers.append(((K[0] - df[0] * 2.0, K[1] - df[1] * 2.0), mid, end, rk_, rt_))
+    back = [hp(x, y) for x, y in _NEAR_BACK]
+    thumb = (hp(*_NEAR_THUMB[0]), hp(*_NEAR_THUMB[1]), _NEAR_THUMB[2] * hs * NEAR_HAND_W, _NEAR_THUMB[3] * hs * NEAR_HAND_W)
+    return hp, back, fingers, thumb, df
+
+
+def _finger_path(f):
+    kn, mid, en, rk, rt = f
+    p = skia.Path()
+    _capsule(p, kn, mid, rk, lerp(rk, rt, 0.5))
+    _capsule(p, mid, en, lerp(rk, rt, 0.5), rt)
+    return p
+
+
+def _draw_near_grip(c, R):
+    """The near hand in front of the held mug (drawn after the mug and the forearm): the back of the hand over the
+    front of the body, the knuckle ridge toward the far side, the fingers running on to its far edge and
+    wrapping round it (their ends turn away into shadow), the thumb along the top of the hand. The edge of the
+    palm (the 'meat' of the hand) shows as a lighter band along the little-finger side."""
+    M = R.mug
+    hp, back_pts, fingers, thumb, df = _near_grip_geo(R)
+    back = smooth_path(back_pts)
+    fpaths = [_finger_path(f) for f in fingers]
+    th = _capsule(skia.Path(), thumb[0], thumb[1], thumb[2], thumb[3])
+    allp = skia.Path(back)
+    for fp in fpaths:
+        allp.addPath(fp)
+    allp.addPath(th)
+    # soft contact shadow of the hand on the mug
+    mm = skia.Matrix()
+    mm.setTranslate(M.x, M.y)
+    mm.preRotate(M.ang)
+    mm.preScale(MUG_S * M.hs, MUG_S)
+    body = _mug_body_path()
+    body.transform(mm)
+    c.save()
+    c.clipPath(body, doAntiAlias=True)
+    c.translate(1.2, 1.8)
+    _fill(c, allp, C_MUG_LINE, 0.4, blur=1.6)
+    c.restore()
+
+    def draw_thumb():
+        _cel(c, th, C_SKIN, C_SKIN_SH, -1.0, -1.2, line=C_SKIN_LINE, line_w=0.9, line_a=0.85)
+        tx, ty = thumb[1]
+        ux, uy = _norm(thumb[1][0] - thumb[0][0], thumb[1][1] - thumb[0][1])
+        nx_, ny_ = tx - ux * 1.0, ty - uy * 1.0
+        nail = skia.Path()
+        nail.addOval(skia.Rect(-1.6, -1.2, 1.6, 1.2))
+        nail.transform(skia.Matrix.MakeAll(ux, -uy, nx_, uy, ux, ny_, 0, 0, 1))
+        _fill(c, nail, C_NAIL, 0.55)
+    if _NEAR_THUMB_UNDER:
+        draw_thumb()
+    # back of the hand (contour only round the outside), then the fingers from under the knuckle ridge
+    c.drawPath(back, paint(C_SKIN_LINE, 0.8, stroke=2.2))
+    fp_all = skia.Path()
+    for fp in reversed(fpaths):              # little finger first: each contour reads over its neighbour
+        fp_all.addPath(fp)
+        _cel(c, fp, C_SKIN, C_SKIN_SH, -1.0, -1.2, line=C_SKIN_LINE, line_w=0.9, line_a=0.85)
+    # the fingers turn away round the far edge: darken their ends
+    c.save()
+    c.clipPath(fp_all, doAntiAlias=True)
+    for kn, mid, en, rk, rt in fingers:
+        c.drawCircle(en[0] + df[0] * rt * 0.7, en[1] + df[1] * rt * 0.7, rt * 1.3, paint(C_SKIN_SH, 0.8, blur=1.8))
+    c.restore()
+    _cel(c, back, C_SKIN, C_SKIN_SH, -1.6, -1.4)
+    c.save()
+    c.clipPath(back, doAntiAlias=True)
+    meat = _curve([hp(-8.4, 0.5), hp(-9.2, 7.0), hp(-9.2, 13.0), hp(-8.0, 18.0)])
+    _stroke(c, meat, C_PALM, 2.4 * HAND_S, 0.7, blur=0.8)
+    # knuckle ridge: highlights on the knuckles, soft valleys between them
+    for i, (x, ky, rk, rt) in enumerate(_NEAR_FINGERS):
+        k0 = hp(x, ky - 1.0)
+        c.drawCircle(k0[0], k0[1], 2.0, paint(C_SKIN_HI, 0.28, blur=1.0))
+        if i < len(_NEAR_FINGERS) - 1:
+            x2, ky2 = _NEAR_FINGERS[i + 1][0], _NEAR_FINGERS[i + 1][1]
+            v0, v1 = hp(0.5 * (x + x2), 0.5 * (ky + ky2) - 3.5), hp(0.5 * (x + x2), 0.5 * (ky + ky2) + 1.5)
+            _stroke(c, _curve([v0, v1]), C_SKIN_SH, 1.0, 0.55, blur=0.4)
+    c.restore()
+    if not _NEAR_THUMB_UNDER:
+        draw_thumb()
+
+
 # --------------------------------------------------------------------------- legs / hips / shoes
 def _draw_leg(c, L, R):
     p = skia.Path()
@@ -1580,10 +1747,16 @@ def _arm_occluder(A, R):
 def _draw_arm(c, A, R):
     S, E, W = A.S, A.E, A.W
     ux, uy = _norm(E[0] - S[0], E[1] - S[1])
+    held = R.mug is not None and R.mug.arm is A
+    near = held and R.mug.near
+    if near:
+        _draw_mug_in_hand(c, R)          # near hand: the mug first, the forearm and the hand over it
     fore = skia.Path()
     _capsule(fore, (E[0] - ux * 2, E[1] - uy * 2), W, 10.8, 7.6, bulge=1.4, bulge_at=0.3)
     _cel(c, fore, C_SKIN, C_SKIN_SH, -3.0, -2.0, line=C_SKIN_LINE, line_w=1.25, line_a=0.75)
-    if R.mug is not None and R.mug.arm is A:
+    if near:
+        _draw_near_grip(c, R)
+    elif held:
         _draw_held_mug(c, R)
     else:
         _draw_hand(c, A)

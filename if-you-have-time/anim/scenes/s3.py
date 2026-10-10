@@ -1,26 +1,29 @@
-"""S3 - "Lights up" (BIBLE section 4, S3 - REVISION 2).
+"""S3 - "Lights up" (BIBLE section 4, S3 + section 10, REVISION 3).
 
-The symphony is over. The lounge lights come back up to normal over about a second (no flash, no jolt).
-Rae sits on the bench, wet-eyed and very still; a slow blink. Quill, casual and pleasant: "So. How did you
-like it?" A long beat - she stares ahead, sniffs, dabs one eye with a knuckle - and, in a tiny whisper,
-"...pretty good." (the comedy is the gap between her face and her words). "Thank you. Here are the other
-ones I made." - his palm comes up and eight holo-cards fan out above it; she slowly picks her mug back up.
+The symphony is over. REVISION 3: the lights were never dimmed (S2 plays in the normally lit lounge), so there
+is no lighting transition here - the room is at normal light from the first frame (light 1, no galaxy swirl,
+no vignette); `lights_up` is just the moment after the music ends. Rae sits on the bench, wet-eyed and very
+still; a slow blink. Quill, casual and pleasant: "So. How did you like it?" A long beat - she stares ahead,
+sniffs, dabs one eye with a knuckle - and, in plain soft speech, "...pretty good." (the comedy is the gap
+between her face and her words). "Thank you. Here are the other ones I made." - his palm comes up and eight
+holo-cards fan out above it; she slowly picks her mug back up.
 
 render(canvas, t) is a pure function of absolute time t. The performances (rae_pose / quill_pose) run
 continuously through every cut; each shot only picks a camera. Times derive from named beats / lines /
 SFX in build/timeline.json. S2 hands over Rae seated at x 230 with her mug on the bench at (330, 960) and
 Quill at rest (BIBLE section 9): both poses are read from anim.scenes.s2 at the boundary when it imports and
-eased into this scene's performance over the first ~0.9 s (fallback: the BIBLE values).
+eased into this scene's performance over the first ~0.9 s (fallback: the BIBLE values). Only the poses are
+inherited - the lighting is always the normal lounge (env.char_light(1)).
 
 The shared helpers (arm tracks, gaze, blinks, card fan, mug solver, camera helpers, room lighting) live here;
 anim/scenes/s4.py and s5.py import them. The last shot (the presentation two-shot) runs on into S4 until the
 kazoo starts: s4 renders it with present_cam().
 
 Shot list (absolute times are only for orientation):
-  A  s3 start -> q06-0.32       TWO-SHOT (medium-wide): stillness; the lights come up around them; a slow blink
+  A  s3 start -> q06-0.32       TWO-SHOT (medium-wide): stillness after the last note; a slow blink
   B  -> q06 end+0.2             MEDIUM Quill: "So. How did you like it?" (casual, head tilt)
   C  -> cards_appear-0.4        CLOSE-UP Rae: the long beat - stares ahead, knuckle dab, sniff; whispered
-                                "...pretty good."; a small involuntary smile; "Thank you." lands on her face
+                                "...pretty good." (soft, plain); a small involuntary smile; "Thank you." lands
   D  -> (S4) kazoo start        PRESENTATION TWO-SHOT: palm up, the eight cards fan out, No. 1 softly lit;
                                 she looks up at them and slowly picks her mug up off the bench
 """
@@ -190,14 +193,6 @@ def sniff_lift(t, t0):
 
 
 # =========================================================================== room lighting
-LIGHT_UP = Track([(T0, 0.25), (LUP, 0.25), (LUP + 1.05, 1.0, "smooth")])
-
-
-def lights_k(t):
-    """0 (S2's dark symphony lighting) .. 1 (normal) as the lights come up."""
-    return smoothstep((t - LUP) / 1.05)
-
-
 def char_lighting(light=1.0, warm=0.0):
     """env.char_light, with the tint hue blended (env flips it at warm 0.5) - no one-frame colour jump."""
     d = env.char_light(light, warm)
@@ -380,31 +375,18 @@ S2_RAE, S2_QUILL, S2_MUG, S2_ROOM = _s2_end()
 if S2_MUG is not None and math.hypot(S2_MUG[0] - MUG_SPOT[0], S2_MUG[1] - MUG_SPOT[1]) < 25.0:
     MUG_SPOT = S2_MUG
 INHERIT = 0.9                               # seconds over which S2's last pose eases into this scene's
-_ROOM0 = S2_ROOM or dict(light=0.25, swirl=0.0, wb=1.0, vign=0.0, rae=None, quill=None)
+NORMAL_LIGHT = char_lighting(1.0)           # REVISION 3: the lounge is at normal light for the whole scene
 
 
 def room(t):
-    """(light, swirl, window_bright, vignette): S2's closing state (galaxy still in the window, dark room, soft
-    vignette) brought back to the normal lounge as the lights come up."""
-    k = lights_k(t)
-    return (lerp(_ROOM0["light"], 1.0, k), _ROOM0["swirl"] * (1.0 - k), lerp(_ROOM0["wb"], 1.0, k),
-            _ROOM0["vign"] * (1.0 - k))
+    """(light, swirl, window_bright, vignette) of the lounge: always the normal room (REVISION 3 - the lights
+    were never dimmed, so nothing comes up; no galaxy in the window, no vignette)."""
+    return 1.0, 0.0, 1.0, 0.0
 
 
 def s3_char_light(who, t):
-    """Character light fields: S2's own levels at the boundary -> the normal room (env.char_light(1))."""
-    k = lights_k(t)
-    end = char_lighting(1.0)
-    st = _ROOM0.get(who)
-    if not st:
-        st = char_lighting(0.25)
-    out = dict(end)
-    out["light"] = lerp(float(st["light"]), end["light"], k)
-    out["tint_amt"] = lerp(float(st["tint_amt"]), end["tint_amt"], k)
-    out["rim"] = lerp(float(st["rim"]), end["rim"], k)
-    out["tint"] = tuple(st.get("tint", end["tint"]))
-    out["rim_color"] = st.get("rim_color", end["rim_color"])
-    return out
+    """Character light fields: the normal room (env.char_light(1)) throughout."""
+    return dict(NORMAL_LIGHT)
 
 
 def inherit(cur: Pose, prev: Pose | None, t: float, t0: float = T0, dur: float = INHERIT) -> Pose:
@@ -472,7 +454,7 @@ def _rae_tracks():
     d["lid"] = Track([(T0, 0.84), (LUP + 1.2, 0.88), (Q06 + 0.8, 0.9), (Q06E + 0.4, 0.88), (SNIFF + 0.5, 0.84),
                       (R10, 0.86), (R10E + 0.2, 0.86), (SMILE_T + 0.5, 0.82), (THANKS + 0.4, 0.88),
                       (CARDS + 0.3, 0.96), (CARDS + 1.2, 0.92), (T1 + 1, 0.92)])
-    d["blinks"] = [(LUP + 0.42, 0.62),                          # a slow blink as the light comes up
+    d["blinks"] = [(LUP + 0.42, 0.62),                          # a slow blink: the music has ended
                    (Q06 - 0.7, 0.4), (HOW + 0.35, 0.3), (SNIFF + 0.4, 0.42), (R10E + 0.3, 0.5),
                    (THANKS + 0.55, 0.55), (CARDS + 0.65, 0.42), (GRAB_T + 0.35, 0.3)]
     d["pupil"] = Track([(T0, 1.18), (LUP + 1.0, 1.05), (CARDS, 1.05), (CARDS + 0.6, 1.15), (T1 + 1, 1.12)])
@@ -485,7 +467,7 @@ def _rae_tracks():
     UPF = (0.3, -0.78)                      # the fan above them
     d["gaze"] = gaze([
         (T0, (0.18, -0.02)),
-        (LUP + 0.75, MID, 0.4),                                  # (eyes settle as the room comes back)
+        (LUP + 0.75, MID, 0.4),                                  # (eyes settle as the last note dies)
         (Q06 + 0.35, (0.24, -0.1), 0.3),                         # hears him ... does not look
         (DAB0 + 0.1, (0.12, 0.0), 0.25),
         (DAB3 + 0.1, MID, 0.3),
@@ -580,8 +562,8 @@ def rae_pose(t: float) -> Pose:
         lid_l=lid, lid_r=lid * (0.99 + 0.01 * noise1(t * 0.7, 3)), look_x=lx, look_y=ly, pupil=d["pupil"](t),
         squint=d["squint"](t), eye_wide=0.0,
         brow_raise=d["brow_raise"](t), brow_worry=d["worry"](t), brow_furrow=d["furrow"](t),
-        # the whisper: a tiny mouth (no big shapes)
-        mouth_open=d["open"](t) + 0.42 * mo, mouth_round=clamp(0.6 * mr), smile=d["smile"](t),
+        # plain soft speech (REVISION 3: no whisper) - lip-sync a touch under full size, the face stays small
+        mouth_open=clamp(d["open"](t) + 0.72 * mo), mouth_round=clamp(0.9 * mr), smile=d["smile"](t),
         mouth_tremble=d["tremble"](t), tears=d["tears"](t), tear_l=TEARS0[0], tear_r=tear_r,
         eye_shine=d["shine"](t), blush=d["blush"](t), sniffle=d["sniffle"](t) + 0.1 * sn,
         shoulders_up=d["shoulders"](t) + 0.12 * sn,
@@ -748,8 +730,5 @@ def _fan_fx(c, t):
 
 
 def render(canvas, t):
-    light, swirl, wb, vign = room(t)
+    light, swirl, wb, _ = room(t)
     draw_stage(canvas, t, camera(t), rae_pose(t), quill_pose(t), rae_mug_on_bench(t), _fan_fx, light, swirl, wb)
-    if vign > 0.003:
-        canvas.resetMatrix()
-        fx.draw_vignette(canvas, vign)

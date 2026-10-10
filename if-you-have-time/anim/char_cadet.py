@@ -322,6 +322,12 @@ def _draw_held_mug(c, R):
 
 
 B._draw_held_mug = _draw_held_mug
+# near hand (in front of the cup, fingers round its far side): Rae's machinery on the cup's tapered body
+B._mug_body_path = _cup_body_path
+B._mug_hw = _cup_hw
+B.MUG_BODY_H = CUP_BH
+B.C_MUG_LINE = C_CUP_LINE          # contact shadow of the near hand on the cup
+B.C_NAIL = col("#FFF0E4")
 
 
 # =========================================================================== body overrides
@@ -427,7 +433,12 @@ def _draw_arm(c, A, R):
     S, E, W = A.S, A.E, A.W
     ux, uy = _norm(E[0] - S[0], E[1] - S[1])
     held = R.mug is not None and R.mug.arm is A
-    if held:
+    near = held and R.mug.near
+    if near:
+        # near hand: the cup first, the hand over it (the sleeve then covers the wrist)
+        B._draw_mug_in_hand(c, R)
+        B._draw_near_grip(c, R)
+    elif held:
         _held_hand_behind(c, R)
     else:
         B._draw_hand(c, A)
@@ -439,7 +450,7 @@ def _draw_arm(c, A, R):
     fl = max(1.0, math.hypot(We[0] - E[0], We[1] - E[1]))
     cuff = B._limb_band(E, We, 1.0 - 9.0 / fl, 1.0, 9.8)
     _cel(c, cuff, B.C_JACKET_HI, B.C_JACKET, -2.0, -2.0, line=B.C_JACKET_LINE, line_w=1.2, line_a=0.85)
-    if held:
+    if held and not near:
         _held_cup_front(c, R)
     sl = skia.Path()
     Ee = (E[0] + ux * 3, E[1] + uy * 3)
