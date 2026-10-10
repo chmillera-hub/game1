@@ -429,6 +429,9 @@ DAB2 = DAB1 + 0.34                          # (two small presses)
 DAB3 = DAB2 + 0.5                           # ... back down in her lap
 GRAB_T = CARDS + 1.02                       # fingers close on the mug (bench -> hand)
 REACH_T = GRAB_T - 0.5
+# from here until GRAB_T the bench mug is drawn under her near arm (draw_stage). Chosen where her resting hand does
+# not overlap the mug at all (frames 142.875-143.0 s), so the order switch changes no pixel.
+MUG_UNDER_ARM_T = GRAB_T - 1.0
 SMILE_T = R10E + 0.12                       # the small involuntary smile after "...pretty good."
 
 
@@ -715,9 +718,14 @@ def draw_stage(c, t, cam, rp, qp, mug_on_bench, fan_fn, light=1.0, swirl=0.0, wb
     cam.apply(c, t)
     env.draw_lounge(c, t, light=light, swirl=swirl, window_bright=wb)
     Q.draw(c, qp, t)
-    R.draw(c, rp, t)
-    if mug_on_bench:
-        _draw_bench_mug(c, rp)
+    if mug_on_bench and MUG_UNDER_ARM_T <= t < GRAB_T:
+        # her near hand reaches in FRONT of the mug to pick it up (BIBLE section 10): the bench mug goes between
+        # her body and her near arm. Switched on while her hand still rests on her lap, clear of the mug.
+        R.draw(c, rp, t, before_near_arm=lambda cc: _draw_bench_mug(cc, rp))
+    else:
+        R.draw(c, rp, t)
+        if mug_on_bench:
+            _draw_bench_mug(c, rp)
     env.draw_lounge_front(c, t, light=light)
     if fan_fn is not None:
         fan_fn(c, t)
