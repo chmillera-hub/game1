@@ -1983,9 +1983,11 @@ def _cue_awkward(S):
                 tt = S.ht(tb + (beat + late) * S.beat, 0.008)
                 S.add(S.up(inst_bassoon(m, ln * S.beat, lo, rng, S.hv(vel))), tt, 0.40, 0.05, 0.2)
                 S.ev(tt, "bassoon", m)
-        if bb in (1, 5):                        # sad little glock echo of the Ab-G sigh
+        if bb in (1, 5):                        # sad little glock echo of the Ab-G sigh (damped)
             for beat, m in ((3.0, 80), (3.5, 79)):
-                S.add(inst_bell(m, 0.6, 0.45, sr), S.ht(tb + beat * S.beat), 0.07, 0.4, 0.4)
+                g = inst_bell(m, 0.6, 0.45, sr)
+                g = g[: secs(sr, 1.1)] * np.linspace(1, 0, secs(sr, 1.1)) ** 2
+                S.add(g, S.ht(tb + beat * S.beat), 0.07, 0.4, 0.3)
         for q in rest_ticks.get(bb, ()):        # the clock in the awkward silence
             S.add(dr_wood(sr, rng, 0.5, 3300 if q % 2 == 0 else 2800), tb + q * S.beat, 0.035,
                   0.5 if q % 2 else 0.3, 0.3)
@@ -2189,8 +2191,8 @@ def _cue_ominous(S, turn=0.66):
             S.chord(t0, sym, [38] + v)
             S.add(S.up(inst_strings_sect(v, ln + 0.3, lo, rng, cutoff=2200, attack=1.0 if i == 0 else 0.6,
                                          release=1.6)), t0, 0.26, 0, 0.55)
-            S.add(S.up(inst_choir(v[1:], ln + 0.3, lo, rng, "oo", attack=1.2 if i == 0 else 0.7, release=1.6)),
-                  t0, 0.16, 0, 0.6)
+            S.add(lp(S.up(inst_choir(v[1:], ln + 0.3, lo, rng, "oo", attack=1.2 if i == 0 else 0.7, release=1.6)),
+                     2800, sr), t0, 0.16, 0, 0.6)
             S.add(S.up(inst_sub(ch.bass_note(38, 49), ln, lo, 0.4, 0.8, 0.3)), t0, 0.10)
         # celesta: two 'questions' over Bb and C, then the lullaby from the D chord
         for t0, notes in ((plan[0][0] + 0.3, [(0, 86), (0.6, 81)]), (plan[1][0] + 0.3, [(0, 88), (0.6, 79)])):

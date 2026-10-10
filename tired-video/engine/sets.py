@@ -2224,6 +2224,13 @@ _HL_EXT = (600, 700, 500, 900)
 _HL_TOP_X = 700                     # stairwell edge (top step nosing)
 _HL_RISE, _HL_RUN, _HL_N = 70, 110, 9
 _HL_DOOR = (860, 505, 400, 825)     # bedroom door from the hallway side (hinge on the RIGHT)
+_HL_DIM = (0.30, 0.13, 0.22, 0.20)  # warm dim over the (lights-off) hallway
+
+
+def _dim(col, d=_HL_DIM):
+    a = hexc(col)
+    k = d[3]
+    return (a[0] * (1 - k) + d[0] * k, a[1] * (1 - k) + d[1] * k, a[2] * (1 - k) + d[2] * k, a[3])
 HALL_MARKS = {
     "size": (HALL_W, HALL_H),
     "char_scale": 0.75,
@@ -2274,28 +2281,24 @@ def _hl_static(c):
     core.fill(c, mixc(C["lv_wain"], C["lv_wain_sh"], 0.5))
     for k in range(6):
         rect(c, -e[0] + 30 + k * 140, FLOOR + 80, 100, 300, None, 3.5, sc=C["lv_wain_sh"], r=6)
-    # steps descending to the left
-    for k in range(1, _HL_N + 2):
-        x1 = tx - (k - 1) * _HL_RUN
-        x0 = x1 - _HL_RUN
-        y = FLOOR + k * _HL_RISE - _HL_RISE
-        # riser (front face, toward us below the tread), tread
-        rect(c, x0, y + 16, _HL_RUN + 6, _HL_RISE - 16, C["wood"], 3.5)
-        rect(c, x0 - 6, y, _HL_RUN + 12, 18, C["wood_hi"], 4, r=4)
-        rect(c, x0 + 14, y + 2, _HL_RUN - 22, 12, "#8a4a63", 0, r=3)
-    # landing floor edge + nosing
-    rect(c, tx - 8, FLOOR - 4, 40, 22, C["wood_hi"], 4, r=4)
-    # stair stringer (solid side of the staircase under the treads)
+    # stair stringer (white side board) with wood treads + runner on top
     pts = [(tx + 30, FLOOR + 18)]
     for k in range(1, _HL_N + 2):
         x1 = tx - (k - 1) * _HL_RUN
         y = FLOOR + k * _HL_RISE - _HL_RISE
         pts += [(x1, y + 18), (x1 - _HL_RUN, y + 18)]
     pts += [(-e[0], H + e[3]), (tx + 30, H + e[3])]
-    polyf(c, pts, "#efe2c8", 5)
+    polyf(c, pts, C["trim"], 5)
+    for k in range(1, _HL_N + 2):
+        x1 = tx - (k - 1) * _HL_RUN
+        y = FLOOR + k * _HL_RISE - _HL_RISE
+        rect(c, x1 - _HL_RUN - 8, y, _HL_RUN + 14, 20, C["wood_hi"], 4, r=5)
+        rect(c, x1 - _HL_RUN + 10, y - 6, _HL_RUN - 18, 9, "#8a4a63", 3, r=3)
     for k in range(1, 5):
-        line(c, [(tx + 30 - k * 260, FLOOR + 140 + k * 160), (tx + 30 - k * 260 + 160, FLOOR + 140 + k * 160 - 100)],
-             C["lv_wain_sh"], 4)
+        line(c, [(tx - 40 - k * 220, FLOOR + 160 + k * 140), (tx - 40 - k * 220 + 130, FLOOR + 160 + k * 140 - 82)],
+             C["trim_sh"], 4)
+    # landing floor edge + nosing
+    rect(c, tx - 8, FLOOR - 4, 40, 22, C["wood_hi"], 4, r=4)
     dx, dt, dw, dh = _HL_DOOR
     # runner rug on the landing
     polyf(c, [(tx + 60, 1360), (W + 400, 1360), (W + 460, 1470), (tx + 20, 1470)], "#8a4a63", 4)
@@ -2315,7 +2318,7 @@ def _hl_static(c):
     _plant(c, 1405, 1062, 0.7, seed=4)
     # the hallway is dim (lights off upstairs) so the bedroom light gap pops
     c.rectangle(-e[0], -e[1], W + e[0] + e[2], H + e[1] + e[3])
-    core.fill(c, (0.12, 0.08, 0.20, 0.30))
+    core.fill(c, _HL_DIM)
     # warm glow spilling from under the bedroom door onto the floor + door foot
     g = cairo.RadialGradient(0, 0, 0, 0, 0, 1)
     g.add_color_stop_rgba(0, 1.0, 0.93, 0.70, 0.75)
@@ -2365,20 +2368,20 @@ def _hl_door_panel(ctx, opening, burst, t):
         wob = 0.10 * math.sin(burst * 26) * (1 - burst)
     op = clamp(opening + wob)
     q = door_quad(dx + dw, dt, dt + dh, dw, op, _HL_VP, D=2600, toward=False, hinge_left=False)
-    polyf(ctx, q, "#efe6d6", 6)
+    polyf(ctx, q, _dim("#efe6d6"), 6)
     if op < 0.97:
         def P(u, v):
             top = (lerp(q[0][0], q[1][0], u), lerp(q[0][1], q[1][1], u))
             bot = (lerp(q[3][0], q[2][0], u), lerp(q[3][1], q[2][1], u))
             return (lerp(top[0], bot[0], v), lerp(top[1], bot[1], v))
         for (u0, v0, u1, v1) in ((0.16, 0.07, 0.84, 0.44), (0.16, 0.53, 0.84, 0.92)):
-            polyf(ctx, [P(u0, v0), P(u1, v0), P(u1, v1), P(u0, v1)], None, 4, sc=C["trim_sh"])
-        kx, ky = P(0.89, 0.55)
+            polyf(ctx, [P(u0, v0), P(u1, v0), P(u1, v1), P(u0, v1)], None, 4, sc=_dim(C["trim_sh"]))
+        kx, ky = P(0.11, 0.55)
         core.circle(ctx, kx, ky, 15 * (1 - 0.6 * op))
-        fs(ctx, "#f2c14e", 4)
+        fs(ctx, _dim("#f2c14e"), 4)
         # hanging sign on the knob
         if op < 0.3:
-            sx, sy = P(0.89, 0.62)
+            sx, sy = P(0.11, 0.62)
             with core.saved(ctx, sx, sy, 1.0, 0.05 * math.sin(t * 2)):
                 line(ctx, [(0, -60), (-30, 0)], "#5a5368", 2.5)
                 line(ctx, [(0, -60), (30, 0)], "#5a5368", 2.5)
@@ -2403,7 +2406,7 @@ def _hl_casing(ctx):
     dx, dt, dw, dh = _HL_DOOR
     trim = 30
     polyf(ctx, [(dx - trim, dt - trim), (dx + dw + trim, dt - trim), (dx + dw + trim, dt + dh),
-                (dx + dw, dt + dh), (dx + dw, dt), (dx, dt), (dx, dt + dh), (dx - trim, dt + dh)], C["trim"], 5)
+                (dx + dw, dt + dh), (dx + dw, dt), (dx, dt), (dx, dt + dh), (dx - trim, dt + dh)], _dim(C["trim"]), 5)
 
 
 def _hl_railing(c):
@@ -2415,11 +2418,11 @@ def _hl_railing(c):
         bx = tx - (k - 0.5) * _HL_RUN
         by = _HL_FLOOR + (k - 1) * _HL_RISE
         yr = lerp(a[1], b[1], (bx - a[0]) / (b[0] - a[0]))
-        rect(c, bx - 7, yr, 14, by - yr, C["trim"], 3)
+        rect(c, bx - 7, yr, 14, by - yr, _dim(C["trim"]), 3)
     line(c, [a, b], INK, 24)
-    line(c, [a, b], C["wood_dk"], 15)
-    rect(c, tx + 8, _HL_FLOOR - hr - 30, 46, hr + 40, C["wood_dk"], 5, r=6)   # newel
-    core.circle(c, tx + 31, _HL_FLOOR - hr - 42, 26); fs(c, C["wood_dk"], 5)
+    line(c, [a, b], _dim(C["wood_dk"]), 15)
+    rect(c, tx + 8, _HL_FLOOR - hr - 30, 46, hr + 40, _dim(C["wood_dk"]), 5, r=6)   # newel
+    core.circle(c, tx + 31, _HL_FLOOR - hr - 42, 26); fs(c, _dim(C["wood_dk"]), 5)
 
 
 def hallway_upstairs(ctx, t=0.0, layer="bg", door_open=0.0, burst=0.0, parts=None):

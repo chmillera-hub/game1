@@ -560,7 +560,7 @@ POSES = {
                   A("l", 0.02, 0.05, 0.15), hunch=0.6, tilt=-0.12, nod=0.08, lean=0.03),
     "plead": P(IK("l", -0.005, 0.64, 0.16, "flat", wa=-1.45, wabs=0.9, layer="front"),
                IK("r", -0.005, 0.64, 0.16, "flat", wa=-1.45, wabs=0.9, layer="front"),
-               lean=0.1, hunch=0.5, nod=-0.08, neck=0.1, L("l", k=0.12), L("r", k=0.12)),
+               lean=0.1, hunch=0.5, nod=-0.08, neck=0.1, **L("l", k=0.12), **L("r", k=0.12)),
     "cover_eyes": P(HK("l", 16, 2, "flat", layer="front", wa=-1.7, wabs=0.85, bend=1.0),
                     HK("r", 16, 2, "flat", layer="front", wa=-1.7, wabs=0.85, bend=1.0),
                     hunch=0.7, nod=0.12, neck=0.1),
@@ -580,7 +580,7 @@ POSES = {
                  neck=0.28, nod=-0.18, hunch=0.25),
     "look_window": P(IK("l", 0.12, 0.56, 0.26, "flat", wa=0.1, wabs=0.9),
                      IK("r", 0.12, 0.56, 0.26, "flat", wa=0.1, wabs=0.9),
-                     lean=0.32, neck=0.12, nod=-0.08, L("l", k=0.06), L("r", k=0.06)),
+                     lean=0.32, neck=0.12, nod=-0.08, **L("l", k=0.06), **L("r", k=0.06)),
     # ------------------------------------------------------------ seated / floor
     "sit_chair": P(_SEAT, A("l", 0.32, 0.12, 0.85, -0.1, 0.3), A("r", 0.32, 0.12, 0.85, -0.1, 0.3)),
     "sit_game": P(_SEAT, IK("l", 0.06, "seat+0.16", 0.24, "grip", layer="front", wa=-0.4, wabs=0.6),
@@ -658,3 +658,436 @@ POSES = {
               L("l", 2.1, 0.12, 2.5, 0.2), L("r", 2.1, 0.12, 2.5, 0.2), lean=0.6, chest=0.3, nod=0.35,
               neck=0.3, hunch=0.6, sway=0.0),
 }
+
+# ---------------------------------------------------------------------------
+# Animated cycles: name -> (period seconds, base pose, wave table)
+# ---------------------------------------------------------------------------
+_WALK_LEGS = P(L("l", W(0.0, 0.42, 0.0), 0.04, W(0.06, 0.78, 0.22, r=1), W(0.02, 0.26, 0.02)),
+               L("r", W(0.0, 0.42, 0.5), 0.04, W(0.06, 0.78, 0.72, r=1), W(0.02, 0.26, 0.52)))
+_RUN_LEGS = P(L("l", W(0.18, 0.78, 0.0), 0.05, W(0.4, 1.3, 0.16, r=1), W(-0.05, 0.35, 0.0)),
+              L("r", W(0.18, 0.78, 0.5), 0.05, W(0.4, 1.3, 0.66, r=1), W(-0.05, 0.35, 0.5)))
+CYCLES = {
+    # ------------------------------------------------------------ locomotion
+    "walk": (1.0, "stand", P(_WALK_LEGS,
+                             A("l", W(0.02, 0.36, 0.5), 0.1, W(0.3, 0.14, 0.5)),
+                             A("r", W(0.02, 0.36, 0.0), 0.1, W(0.3, 0.14, 0.0)),
+                             twist=W(0.0, 0.07, 0.5), hip_roll=W(0.0, 0.0, 0.0, 0.035, 0.0),
+                             lean=0.05, nod=W(0.0, 0.0, 0.0, 0.025, 0.1), sway=0.0, coat_trail=0.2)),
+    "run": (0.56, "stand", P(_RUN_LEGS,
+                             A("l", W(0.15, 0.85, 0.5), 0.15, W(1.45, 0.2, 0.5), h="fist"),
+                             A("r", W(0.15, 0.85, 0.0), 0.15, W(1.45, 0.2, 0.0), h="fist"),
+                             twist=W(0.0, 0.14, 0.5), lean=0.26, neck=0.1, lift=W(10, 0, 0, 12, 0.0),
+                             nod=W(0.0, 0.0, 0.0, 0.04, 0.2), sway=0.0, coat_trail=0.85)),
+    "run_panic": (0.44, "stand", P(_RUN_LEGS,
+                                   A("l", W(0.7, 1.0, 0.3), W(1.05, 0.5, 0.05), W(0.9, 0.6, 0.7), h="splay"),
+                                   A("r", W(0.7, 1.0, 0.8), W(1.05, 0.5, 0.55), W(0.9, 0.6, 0.2), h="splay"),
+                                   lean=0.14, nod=-0.12, hunch=0.5, lift=W(10, 0, 0, 12, 0.0),
+                                   tilt=W(0.0, 0.08, 0.1), sway=0.0, coat_trail=1.0)),
+    "scream_run": (0.46, "stand", P(_RUN_LEGS,
+                                    A("l", W(0.2, 0.2, 0.0), W(2.25, 0.3, 0.0, 0.12, 0.1), W(0.75, 0.4, 0.3),
+                                      h="splay"),
+                                    A("r", W(0.2, 0.2, 0.5), W(2.25, 0.3, 0.5, 0.12, 0.6), W(0.75, 0.4, 0.8),
+                                      h="splay"),
+                                    lean=0.02, nod=-0.18, lift=W(10, 0, 0, 12, 0.0), tilt=W(0, 0.06, 0.2),
+                                    sway=0.0, coat_trail=1.0)),
+    "tiptoe": (1.4, "stand", P(L("l", W(0.42, 0.62, 0.0), 0.08, W(0.45, 1.25, 0.17, r=1), -0.55),
+                               L("r", W(0.42, 0.62, 0.5), 0.08, W(0.45, 1.25, 0.67, r=1), -0.55),
+                               A("l", W(1.05, 0.2, 0.5), 0.4, 1.75, -0.45, 1.05, h="relaxed"),
+                               A("r", W(1.05, 0.2, 0.0), 0.4, 1.75, -0.45, 1.05, h="relaxed"),
+                               lean=0.24, hunch=0.7, neck=0.32, nod=-0.06, lift=W(4, 0, 0, 7, 0.1),
+                               twist=W(0, 0.06, 0.5), sway=0.0)),
+    "crawl": (1.2, "stand", P(L("l", W(0.05, 0.3, 0.0), 0.08, W(1.55, 0.22, 0.25), -0.6),
+                              L("r", W(0.05, 0.3, 0.5), 0.08, W(1.55, 0.22, 0.75), -0.6),
+                              A("l", W(0.02, 0.3, 0.5), 0.12, W(0.12, 0.25, 0.75, r=1), h="flat",
+                                wa=0.1, wabs=0.5),
+                              A("r", W(0.02, 0.3, 0.0), 0.12, W(0.12, 0.25, 0.25, r=1), h="flat",
+                                wa=0.1, wabs=0.5),
+                              lean=1.3, chest=0.12, neck=-0.85, nod=-0.25, plant_hands=1.0, sway=0.0,
+                              twist=W(0, 0.05, 0.0), posture=0.0)),
+    "stumble": (1.6, "stand", P(L("l", W(0.0, 0.3, 0.0, 0.08), 0.1, W(0.15, 0.5, 0.22, r=1), 0.05),
+                                L("r", W(0.0, 0.26, 0.5, 0.08), 0.1, W(0.15, 0.5, 0.72, r=1), 0.05),
+                                A("l", W(0.0, 0.2, 0.5), W(0.18, 0.06, 0.2), 0.15, h="relaxed"),
+                                A("r", W(0.0, 0.2, 0.0), W(0.18, 0.06, 0.7), 0.15, h="relaxed"),
+                                side=W(0, 0.08, 0.0), rot=W(0, 0.045, 0.1), lean=0.14, hunch=0.7,
+                                nod=W(0.1, 0.06, 0.2), tilt=W(0.0, 0.12, 0.3), sway=0.0)),
+    # ------------------------------------------------------------ gestures
+    "bang_door": (0.5, "stand", P(A("r", W(1.55, 0.1, 0.0), 0.15, W(0.55, 0.5, 0.0), 0.0, -0.2, h="fist"),
+                                  A("l", 1.3, 0.25, 0.7, -0.2, -0.6, h="flat"),
+                                  lean=W(0.12, 0.05, 0.0), hunch=0.4, nod=W(0.0, 0.04, 0.05),
+                                  **L("l", 0.15, k=0.1), **L("r", -0.12, k=0.05))),
+    "wring_hands": (0.8, "stand", P(IK("l", W(0.0, 0.015, 0.0), W(0.53, 0.012, 0.25), 0.14, "relaxed",
+                                       w=1.0, wa=-1.2, wabs=0.5),
+                                    IK("r", W(0.0, 0.015, 0.5), W(0.53, 0.012, 0.75), 0.14, "relaxed",
+                                       w=1.0, wa=-1.2, wabs=0.5),
+                                    {"al_w": W(0, 0.5, 0.0), "ar_w": W(0, 0.5, 0.5)},
+                                    hunch=0.85, nod=0.06, tilt=W(0, 0.04, 0.0))),
+    "shake_arms": (0.25, "stand", P(A("l", 0.75, W(0.62, 0.18, 0.25), W(0.75, 0.35, 0.0), 0.2, h="splay"),
+                                    A("r", 0.75, W(0.62, 0.18, 0.75), W(0.75, 0.35, 0.5), 0.2, h="splay"),
+                                    hunch=0.8, tilt=W(0, 0.035, 0.0), nod=W(0, 0.02, 0.3), sway=0.0)),
+    "tap_foot": (0.5, "arms_crossed", P(L("r", 0.18, 0.12, 0.06, W(0.22, 0.22, 0.0, r=1)),
+                                        nod=W(0, 0.012, 0.0))),
+    "roll_hand": (0.7, "stand", P(IK("r", W(0.17, 0.03, 0.0), W(0.56, 0.03, 0.25), 0.18, "open", tf=-1.0,
+                                     wa=W(-0.4, 0.8, 0.1), wabs=0.8),
+                                  A("l", 0.05, 0.1, 0.2), tilt=0.06)),
+    "tug": (1.2, "stand", P(IK("l", 0.05, 0.47, W(0.36, 0.03, 0.0), "grip", wa=0.0, wabs=0.6),
+                            IK("r", 0.05, 0.5, W(0.36, 0.03, 0.0), "grip", wa=0.0, wabs=0.6),
+                            L("l", 0.55, 0.06, 0.12, 0.25), L("r", -0.1, 0.08, 0.62, 0.0),
+                            lean=W(-0.36, 0.08, 0.0), dx=W(0, 10, 0.0), hunch=0.4, nod=0.1,
+                            tilt=W(0, 0.05, 0.25), hold=2.0, sway=0.0)),
+    "struggle_hold": (0.9, "stand", P(IK("l", W(0.0, 0.02, 0.0), W(0.52, 0.03, 0.25), 0.17, "claw",
+                                         layer="front", wa=0.4, wabs=0.5),
+                                      IK("r", W(0.0, 0.02, 0.5), W(0.58, 0.03, 0.75), 0.17, "claw",
+                                         layer="mid", wa=-0.4, wabs=0.5),
+                                      L("l", 0.12, 0.16, 0.25), L("r", -0.08, 0.16, 0.3),
+                                      side=W(0, 0.08, 0.0), twist=W(0, 0.15, 0.25), lean=W(0.05, 0.06, 0.5),
+                                      dx=W(0, 7, 0.0), tilt=W(0, 0.08, 0.1), hold=2.0, sway=0.0)),
+    "game": (0.3, "sit_game", P({"al_thumb": W(0, 0.3, 0.0), "ar_thumb": W(0, 0.3, 0.37)},
+                                nod=W(-0.16, 0.012, 0.0), lean=W(0.3, 0.01, 0.2))),
+    "type": (0.35, "sit_desk", P({"al_fing": 1.0, "ar_fing": 1.0, "al_h": "claw", "ar_h": "claw"},
+                                 nod=W(0.05, 0.01, 0.0))),
+}
+
+# Per-character pose tweaks: (who, pose) -> overrides merged on top.
+POSE_WHO = {
+    ("tired", "hands_pockets"): P(A("l", 0.32, 0.2, 0.95, -1.05, hide=1.0),
+                                  A("r", 0.32, 0.2, 0.95, -1.05, hide=1.0), hunch=0.6),
+    ("boss", "stand"): P(_HANDS_BACK),
+    ("guard", "stand"): P(A("l", 0.05, 0.16, 0.25), A("r", 0.05, 0.16, 0.25)),
+}
+
+# Static poses that are secretly animated (waves) use this period (s).
+STATIC_PERIOD = 0.5
+
+# Poses whose hands hold a prop: "hold" 1 = right hand, 2 = both hands (the
+# callback gets side "both" and the midpoint between the hands).
+
+
+# ============================================================================
+# 6. SOLVER
+# ============================================================================
+_HAND_KEYS = ("al_h", "ar_h")
+_STR_KEYS = ("al_layer", "ar_layer")
+
+
+def _eval(v, phase):
+    if isinstance(v, tuple) and v and v[0] == "~":
+        return _wave(phase, *v[1:])
+    return v
+
+
+def _overlay(d, table, phase):
+    for k, v in table.items():
+        if k in ("base", "period"):
+            continue
+        d[k] = _eval(v, phase)
+
+
+def _pose_raw(spec, who, pt):
+    """Resolve one pose spec (name / dict) into a flat dict (hand names kept)."""
+    if isinstance(spec, dict):
+        d = _pose_raw(spec.get("base", "stand"), who, pt)
+        _overlay(d, spec, (pt / spec.get("period", STATIC_PERIOD)) % 1.0)
+        return d
+    name = spec
+    if name in CYCLES:
+        period, base, table = CYCLES[name]
+        d = _pose_raw(base, who, pt)
+        _overlay(d, table, (pt / period) % 1.0)
+        d["_cycle"] = period
+    else:
+        if name not in POSES:
+            raise KeyError(f"human: unknown pose {name!r}")
+        d = dict(POSE_DEFAULTS)
+        if name != "stand" and ("boss", "stand") in POSE_WHO and who == "boss":
+            pass
+        tab = POSES[name]
+        _overlay(d, tab, (pt / tab.get("period", STATIC_PERIOD)) % 1.0)
+    tw = POSE_WHO.get((who, name))
+    if tw:
+        _overlay(d, tw, 0.0)
+    return d
+
+
+def _numeric(d, C, who):
+    """Hand names -> vectors, named heights -> numbers."""
+    out = dict(d)
+    for k in _HAND_KEYS:
+        v = out[k]
+        out[k] = list(_HAND_VEC[v]) if isinstance(v, str) else list(v)
+    H = C["height"]
+    leglen = C["thigh"] + C["shin"] + C["foot_h"]
+    for k in ("hip_h", "al_ty", "ar_ty"):
+        v = out[k]
+        if isinstance(v, str):
+            base, _, add = v.partition("+")
+            if base == "seat":
+                val = SEAT_H[who] + C["leg_r"][0] * 0.75
+            elif base == "desk":
+                val = DESK_H[who]
+            elif base == "sill":
+                val = SILL_H[who]
+            else:
+                val = 0.0
+            if k == "hip_h":
+                out[k] = val / leglen + (float(add) if add else 0.0)
+            else:
+                out[k] = val / H + (float(add) if add else 0.0)
+    return out
+
+
+def resolve_pose(pose, who, pt):
+    """pose (name | dict | (a, b, k)) -> numeric joint dict."""
+    C = CHARS[who]
+    if isinstance(pose, (tuple, list)) and len(pose) == 3 and not isinstance(pose[0], (int, float)):
+        a = resolve_pose(pose[0], who, pt)
+        b = resolve_pose(pose[1], who, pt)
+        k = clamp(float(pose[2]))
+        out = {}
+        for key, va in a.items():
+            vb = b.get(key, va)
+            if isinstance(va, list):
+                out[key] = [x + (y - x) * k for x, y in zip(va, vb)]
+            elif isinstance(va, str) or isinstance(vb, str):
+                out[key] = vb if k >= 0.5 else va
+            else:
+                out[key] = va + (vb - va) * k
+        for key, vb in b.items():
+            if key not in out:
+                out[key] = vb
+        return out
+    return _numeric(_pose_raw(pose, who, pt), C, who)
+
+
+def _up(p, r):
+    return (math.sin(r), -math.cos(r) * math.cos(p), math.cos(r) * math.sin(p))
+
+
+def _dir(p, o, sgn):
+    co = math.cos(o)
+    return (sgn * math.sin(o), co * math.cos(p), co * math.sin(p))
+
+
+def _add(a, b, k=1.0):
+    return (a[0] + b[0] * k, a[1] + b[1] * k, a[2] + b[2] * k)
+
+
+class _Proj:
+    """Yaw projection + whole-body screen roll + translation (rig-local 2D)."""
+    __slots__ = ("c", "s", "rc", "rs", "tx", "ty")
+
+    def __init__(self, yaw, rot, tx=0.0, ty=0.0):
+        self.c, self.s = math.cos(yaw), math.sin(yaw)
+        self.rc, self.rs = math.cos(rot), math.sin(rot)
+        self.tx, self.ty = tx, ty
+
+    def __call__(self, p):
+        X = p[0] * self.c + p[2] * self.s
+        Z = -p[0] * self.s + p[2] * self.c
+        Y = p[1]
+        return (X * self.rc - Y * self.rs + self.tx, X * self.rs + Y * self.rc + self.ty, Z)
+
+
+def _ik2(S, T, L1, L2, pref, bend):
+    dx, dy = T[0] - S[0], T[1] - S[1]
+    d = math.hypot(dx, dy)
+    d = clamp(d, abs(L1 - L2) + 1.0, L1 + L2 - 0.5)
+    ux, uy = _norm(dx, dy)
+    ca = clamp((L1 * L1 + d * d - L2 * L2) / (2 * L1 * d), -1.0, 1.0)
+    a = math.acos(ca)
+    best = None
+    for sgn in (1, -1):
+        ex, ey = _rot(ux, uy, sgn * a)
+        E = (S[0] + ex * L1, S[1] + ey * L1)
+        sc = (ex * pref[0] + ey * pref[1]) * bend
+        if best is None or sc > best[0]:
+            best = (sc, E)
+    E = best[1]
+    W = (S[0] + ux * d, S[1] + uy * d)
+    return E, W
+
+
+def _ang_lerp(a, b, k):
+    d = (b - a + math.pi) % TAU - math.pi
+    return a + d * k
+
+
+def _solve(C, Q, who, turn, t, fx, headphones, lag_Q=None):
+    """Skeleton in rig-local 2D (ground origin, y down). Returns dict J."""
+    H = C["height"]
+    sp = C["spine"]
+    leglen = C["thigh"] + C["shin"] + C["foot_h"]
+    tq = clamp(turn + Q["turn"], -1.6, 1.6)
+    phi = tq * TURN_RAD
+    tw = Q["twist"]
+    rot = Q["rot"]
+    seed = C["seed"]
+    br = Q["breath"] * math.sin(TAU * t / 3.7 + seed)
+    lean, chest, side, hunch = Q["lean"], Q["chest"], Q["side"], Q["hunch"]
+
+    # ---- spine (body frame, pelvis at origin)
+    P0 = (0.0, 0.0, 0.0)
+    hem = _add(P0, _up(lean * 0.3, side * 0.3), sp["hem"])
+    wst = _add(P0, _up(lean * 0.5, side * 0.5), sp["waist"])
+    chs = _add(wst, _up(lean, side), sp["chest"] - sp["waist"])
+    shl = _add(chs, _up(lean + chest * 0.6, side), sp["shoulder"] - sp["chest"])
+    shl = (shl[0], shl[1] - br * 1.6 - hunch * 8, shl[2] + hunch * 6)
+    nck = _add(shl, _up(lean + chest + Q["neck"] * 0.3, side), sp["neck"] - sp["shoulder"] + hunch * 4)
+    hpv = _add(nck, _up(lean + chest + Q["neck"], side * 1.2), C["neck_len"] - hunch * 10)
+    hpv = (hpv[0], hpv[1], hpv[2] + hunch * 10)
+
+    pr = _Proj(phi, rot)
+    pr_w = _Proj(phi + tw * 0.3, rot)
+    pr_c = _Proj(phi + tw * 0.65, rot)
+    pr_s = _Proj(phi + tw, rot)
+
+    J = {"phi": phi, "turn": tq, "rot": rot}
+    # ---- legs
+    lowest = -1e9
+    legs = {}
+    for s_, sgn in (("l", -1), ("r", 1)):
+        hip = (sgn * C["hip_w"] * math.cos(Q["hip_roll"]), sgn * C["hip_w"] * math.sin(Q["hip_roll"]) * -1, 0.0)
+        p, o, k = Q[f"l{s_}_p"], Q[f"l{s_}_o"], Q[f"l{s_}_k"]
+        kn = _add(hip, _dir(p, o, sgn), C["thigh"])
+        q = p - k
+        an = _add(kn, _dir(q, o + Q[f"l{s_}_ko"], sgn), C["shin"])
+        fp = q + Q[f"l{s_}_a"]
+        fdir = (sgn * 0.1, -math.sin(fp), math.cos(fp))
+        dn = (0.0, math.cos(fp), math.sin(fp))
+        sole = _add(an, dn, C["foot_h"])
+        toe = _add(sole, fdir, C["foot_len"] * 0.72)
+        heel = _add(sole, fdir, -C["foot_len"] * 0.28)
+        g = dict(hip=pr(hip), knee=pr(kn), ankle=pr(an), sole=pr(sole), toe=pr(toe), heel=pr(heel),
+                 fp=fp)
+        legs[s_] = g
+        lowest = max(lowest, g["sole"][1], g["toe"][1], g["heel"][1], g["knee"][1] + C["leg_r"][1])
+    # ---- torso nodes
+    nodes = dict(hem=pr(hem), pel=pr(P0), wst=pr_w(wst), chs=pr_c(chs), shl=pr_s(shl), nck=pr_s(nck),
+                 hpv=pr_s(hpv))
+    sw = C["sw"] * (1 - 0.05 * hunch)
+    shj = {}
+    for s_, sgn in (("l", -1), ("r", 1)):
+        off = _rot(sgn * sw, 0.0, side)
+        shj[s_] = pr_s((shl[0] + off[0], shl[1] + off[1] + hunch * 4, shl[2] - hunch * 4))
+    # ---- arms (FK)
+    arms = {}
+    for s_, sgn in (("l", -1), ("r", 1)):
+        off = _rot(sgn * sw, 0.0, side)
+        S3 = (shl[0] + off[0], shl[1] + off[1] + hunch * 4, shl[2] - hunch * 4)
+        p, o, e, eo = Q[f"a{s_}_p"], Q[f"a{s_}_o"], Q[f"a{s_}_e"], Q[f"a{s_}_eo"]
+        E3 = _add(S3, _dir(p, o, sgn), C["arm"][0])
+        W3 = _add(E3, _dir(p + e, o + eo, sgn), C["arm"][1])
+        T3 = _add(W3, _dir(p + e + Q[f"a{s_}_w"], o + eo, sgn), 30.0)
+        arms[s_] = dict(S=pr_s(S3), E=pr_s(E3), W=pr_s(W3), T=pr_s(T3))
+        if Q["plant_hands"] > 0:
+            lowest = max(lowest, arms[s_]["W"][1] + C["hand"] * 0.35)
+
+    # ---- ground lock
+    lock_dy = -lowest
+    pel_dy = -Q["hip_h"] * leglen
+    gy = lerp(pel_dy, lock_dy, Q["plant"]) - Q["lift"] + Q["dy"]
+    gx = Q["dx"] + Q["sway"] * 2.5 * noise1(t * 0.33, seed)
+
+    def mv(p):
+        return (p[0] + gx, p[1] + gy, p[2])
+
+    for g in legs.values():
+        for k in ("hip", "knee", "ankle", "sole", "toe", "heel"):
+            g[k] = mv(g[k])
+    for k in list(nodes):
+        nodes[k] = mv(nodes[k])
+    for s_ in "lr":
+        shj[s_] = mv(shj[s_])
+        for k in ("S", "E", "W", "T"):
+            arms[s_][k] = mv(arms[s_][k])
+    J["legs"], J["nodes"], J["shj"], J["arms"] = legs, nodes, shj, arms
+    J["pel_y"] = gy
+
+    # ---- head transform (needed for head-relative IK targets)
+    fdir = 1.0 if tq >= -0.001 else -1.0
+    J["fdir"] = fdir
+    hd = C["head"]
+    psi = clamp(tq + tw / TURN_RAD + Q["head_yaw"] + fx["head_turn"], -1.6, 1.6) * HEAD_TURN_RAD
+    tilt = (Q["tilt"] + fx["head_tilt"] + rot + side * 0.5
+            + (lean + chest + Q["neck"]) * math.sin(phi) * 0.35
+            + Q["sway"] * 0.022 * noise1(t * 0.27, seed + 3))
+    nod = Q["nod"] + fx["head_nod"] + (lean + chest + Q["neck"]) * 0.1
+    piv = nodes["hpv"]
+    up_off = hd["chin"] * hd["pivot"]
+    hcx, hcy = _rot(0.0, -up_off, tilt)
+    J["head"] = dict(pivot=(piv[0], piv[1]), cx=piv[0] + hcx, cy=piv[1] + hcy, tilt=tilt, psi=psi,
+                     nod=nod, z=piv[2])
+
+    # ---- arm IK (2D) + hand angles + layering
+    cphi, sphi = math.cos(phi), math.sin(phi)
+    order = ("l", "r") if Q["ar_grab"] >= Q["al_grab"] else ("r", "l")
+    for s_ in order:
+        sgn = -1 if s_ == "l" else 1
+        a = arms[s_]
+        S, E, Wr, T = a["S"], a["E"], a["W"], a["T"]
+        fk_ang = math.atan2(T[1] - Wr[1], T[0] - Wr[0]) if math.hypot(T[0] - Wr[0], T[1] - Wr[1]) > 4 \
+            else math.pi / 2
+        ik = Q[f"a{s_}_ik"]
+        z_e, z_w = E[2], Wr[2]
+        Ef, Wf, ang = (E[0], E[1]), (Wr[0], Wr[1]), fk_ang
+        if ik > 0.001:
+            # ground-frame target
+            x3, z3 = sgn * Q[f"a{s_}_tx"] * H, Q[f"a{s_}_tz"] * H
+            tgt = (nodes["pel"][0] + x3 * cphi + z3 * sphi, -Q[f"a{s_}_ty"] * H)
+            tz_ = -x3 * sphi + z3 * cphi
+            th = Q[f"a{s_}_th"]
+            if th > 0:
+                hh = J["head"]
+                ox = sgn * Q[f"a{s_}_hx"] * math.cos(psi) + hd["levels"][4][2] * math.sin(psi) * 0.6
+                oy = Q[f"a{s_}_hy"]
+                rx, ry = _rot(ox, oy, hh["tilt"])
+                tgt = _lerp2(tgt, (hh["cx"] + rx, hh["cy"] + ry), th)
+                tz_ = lerp(tz_, hh["z"] + 60, th)
+            if Q[f"a{s_}_cup"] > 0:
+                cups = _cup_positions(C, J, headphones)
+                tgt = _lerp2(tgt, cups[s_], Q[f"a{s_}_cup"])
+                tz_ = lerp(tz_, J["head"]["z"] + 40, Q[f"a{s_}_cup"])
+            if Q[f"a{s_}_grab"] > 0:
+                o_ = arms["r" if s_ == "l" else "l"]
+                m = _lerp2(o_["E2"], o_["W2"], 0.62)
+                tgt = _lerp2(tgt, m, Q[f"a{s_}_grab"])
+                tz_ = lerp(tz_, max(o_["E"][2], o_["W"][2]) + 20, Q[f"a{s_}_grab"])
+            hand_back = C["hand"] * 0.42
+            pref = (0.55 * sgn * cphi - 0.6 * sphi, 0.65)
+            Ei, Wi = _ik2((S[0], S[1]), tgt, C["arm"][0], C["arm"][1] + hand_back * 0.0, pref,
+                          Q[f"a{s_}_bend"])
+            ik_ang = math.atan2(Wi[1] - Ei[1], Wi[0] - Ei[0]) + Q[f"a{s_}_w"] * 1.0
+            Ef = _lerp2(Ef, Ei, ik)
+            Wf = _lerp2(Wf, Wi, ik)
+            ang = _ang_lerp(ang, ik_ang, ik)
+            z_e = lerp(z_e, tz_ * 0.6, ik)
+            z_w = lerp(z_w, tz_, ik)
+        wabs = Q[f"a{s_}_wabs"]
+        if wabs > 0:
+            wa = Q[f"a{s_}_wa"]
+            abs_ang = wa if fdir > 0 else math.pi - wa
+            ang = _ang_lerp(ang, abs_ang, wabs)
+        a["E2"], a["W2"], a["ang"], a["zE"], a["zW"] = Ef, Wf, ang, z_e, z_w
+    J["Q"] = Q
+    J["lag"] = lag_Q
+    return J
+
+
+def _cup_positions(C, J, hp):
+    """Screen positions of the headphone cups for state hp (0 neck .. 1 on)."""
+    hh = J["head"]
+    hd = C["head"]
+    a = hd["levels"][4][1]
+    k = smoothstep(hp)
+    psi = hh["psi"]
+    out = {}
+    nk = J["nodes"]["nck"]
+    for s_, sgn in (("l", -1), ("r", 1)):
+        ex, ey = _rot(sgn * (a + 6) * math.cos(psi) - math.sin(psi) * 10, (hd["ear_y"][0] + hd["ear_y"][1]) / 2,
+                      hh["tilt"])
+        on = (hh["cx"] + ex, hh["cy"] + ey)
+        neck = (nk[0] + sgn * (C["neck_r"] + 34) * math.cos(J["phi"]), nk[1] + 6)
+        mid = _lerp2(neck, on, k)
+        # arc outward while lifting
+        bulge = math.sin(k * math.pi) * 34
+        out[s_] = (mid[0] + sgn * bulge, mid[1])
+    return out
