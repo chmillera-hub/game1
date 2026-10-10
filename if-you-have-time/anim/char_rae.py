@@ -3,7 +3,7 @@
 Rig contract (anim/rig.py):
     draw(canvas, pose, t)            draw Rae; canvas already carries the camera (stage units)
     head_center(pose, t=None)        stage point between the eyes
-    hand_pos(pose, side, t=None)     stage point at the palm centre of Rae's 'l' / 'r' hand (at the mug handle when held)
+    hand_pos(pose, side, t=None)     stage point at the palm centre of Rae's 'l' / 'r' hand (behind the mug when held)
     ARMS                             ArmPose presets (rest, hold_mug, sip, mug_raise, point, hand_on_chest,
                                      wipe_eye, cover_mouth, hands_up, grip_knee, reach_back, shrug,
                                      hug_self, knee_rest)
@@ -35,7 +35,11 @@ Conventions specific to Rae (on top of rig.py):
       outward and raised ones come toward the camera; across < 0 spreads in the picture plane.
     * facing=-1 is a pure mirror image (as in Quill's rig): arm_r / lid_r / tear_r always belong to the
       side nearer the camera once Rae is turned (screen-left of the body for facing +1).
-    * Mug: held by its handle (the hand on the outer side, logo toward the camera). When the hand comes near
+    * Mug: held round its body like a real mug: the hand continues the forearm (no cocked wrist) and wraps the
+      back of the mug, which sits in front of the hand (toward the camera) centred just past the palm; the
+      fingers come round through the handle (outer side, logo toward the camera) with their tips over the front
+      and the thumb rests on top of the handle (if the hand points the other way in the mug's frame - far arm
+      near the front view - the fingers wrap the bare side instead). When the hand comes near
       the mouth ('sip'), the rig places the rim on the lower lip and tilts the mug - for either arm. The lip
       lock blends in while the palm is ~78 -> 26 units from the mouth (scenes hold the mug at the chin / chest
       inside that band on purpose, so it is not widened). From hold_mug that band is blend(hold_mug, sip,
@@ -90,14 +94,26 @@ TURN_DEG = 82.0
 
 MUG_S = 1.4             # mug scale (base design is 26 x 32): ~45 units tall, ~0.31 of the head height
 MUG_W, MUG_H = 13.0, 32.0
-MUG_GX, MUG_GY = 22.0, -17.5    # where the hand grips the handle (mug-local, base units)
+MUG_GX, MUG_GY = 22.0, -17.5    # the handle's grip point (mug-local, base units; legacy reference)
 MUG_TILT = 40.0         # mug tilt (deg) when drinking
+MUG_HEEL = 4.0          # held mug: its edge sits this far past the wrist (the heel of the hand shows)
 
 RIM_LIGHT_POS = (360.0, 380.0)   # stage point the rim light comes from (the window); scenes may reassign.
 RIM_MIN = 0.08          # pose.rim at or below this is invisible and skipped (env.char_light(1) gives 0.06)
 
 HEIGHT = 700.0         # floor -> top of the hair puff, standing (head top without the puff ~ 640, eyes ~ 552)
 WALK_ADVANCE = 4.0 * STRIDE * math.sin(68.0 * D2R)   # 126.1: pelvis travel per walk cycle (turn >= 0.3, scale 1)
+
+# look knobs (Rae's values; anim/char_cadet.py runs its own instance of this module with different ones)
+LASH_TH = 1.0           # upper lash line thickness multiplier
+LASH_FLICK = 1.0        # outer lash flick length multiplier
+LASH_EXTRA = True       # the two little flick lashes above the outer corner
+BROW_W = (6.4, 1.6)     # brow ribbon width, inner -> outer end
+EYE_BAG = 0.2           # under-eye (tired) shading
+WALK_BOB = 2.6          # pelvis bob per step
+WALK_SWING = 8.0        # arm swing (deg)
+WALK_LEAN = 3.0         # forward lean while walking (deg)
+HEAD_SY = 1.0           # extra vertical scale of the head (face length)
 
 # --------------------------------------------------------------------------- palette
 C_SKIN = col("r_skin")
@@ -640,7 +656,7 @@ def _solve(p: Pose, t):
     walking = p.walk is not None
     ph = (p.walk or 0.0)
     R.walking, R.ph = walking, ph
-    bob = 2.6 * (0.5 - 0.5 * math.cos(4 * math.pi * ph)) if walking else 0.0
+    bob = WALK_BOB * (0.5 - 0.5 * math.cos(4 * math.pi * ph)) if walking else 0.0
     hv_st = HIP_H - (6.0 if walking else 0.0) + bob
     sb = clamp(p.sit)
     hv_b = (1.0 - sb) * hv_st + sb * (seat_h + SEAT_OFF)       # hip height before kneeling
@@ -702,7 +718,7 @@ def _solve(p: Pose, t):
         L.o = o
         legs[o] = L
     R.legs = legs
-    lean = p.lean + (3.0 if walking else 0.0) * stw
+    lean = p.lean + (WALK_LEAN if walking else 0.0) * stw
     R.lean = lean
     MU = skia.Matrix()
     MU.preTranslate(0.0, -hv)
@@ -727,7 +743,7 @@ def _solve(p: Pose, t):
     # nod pitches the head about the neck pivot (visible as a rotation in 3/4 views) ...
     MHr.preRotate(p.head_tilt - H.nod * 14.0 * H.s)
     # ... and foreshortens the face vertically when seen from the front
-    MHr.preScale(HEAD_S, HEAD_S * (1.0 - 0.07 * abs(H.nod) * abs(H.c)))
+    MHr.preScale(HEAD_S, HEAD_S * HEAD_SY * (1.0 - 0.07 * abs(H.nod) * abs(H.c)))
     MHr.preTranslate(0.0, -PIVOT_HL)
     R.MHr = MHr
     R.MH = skia.Matrix.Concat(MU, MHr)
@@ -737,7 +753,7 @@ def _solve(p: Pose, t):
     R.turn_k = smoothstep((turn - 0.02) / 0.23)
 
     # ---------------- arms (upper-body frame)
-    R.sw_amp = 8.0 * stw if walking else 0.0
+    R.sw_amp = WALK_SWING * stw if walking else 0.0
     arms = {}
     for o in (-1, 1):
         A = _NS()
@@ -801,12 +817,13 @@ def _solve(p: Pose, t):
     MS.preScale(fac * p.scale, p.scale)
     R.MS = MS
 
-    # ---------------- mug (upper-body frame): held by its handle, the hand on the outer (+x) side
+    # ---------------- mug (upper-body frame): the palm wraps the back of the mug body, which sits in front of the
+    # hand (toward the camera), centred just past the palm; the fingers come round through the handle (outer, +x
+    # side) and the thumb rests on top of the handle. The wrist keeps the forearm line (no cocked-back wrist).
     R.mug = None
     if p.mug in ("l", "r"):
         A = arms[-1] if arms[-1].side == p.mug else arms[1]
         hs = 1.0
-        G = (hs * MUG_GX * MUG_S, MUG_GY * MUG_S)                   # grip point in mug-local coords
         mouth = MHr.mapXY(_hx(H, 0.0, MOUTH_Y)[0], MOUTH_Y)
         dist = math.hypot(A.palm[0] - (mouth.fX + 30.0), A.palm[1] - mouth.fY)
         w = 1.0 - smoothstep((dist - 26.0) / 52.0)                  # how much this is a sip
@@ -821,11 +838,14 @@ def _solve(p: Pose, t):
             cx_, _, _, _ = _hx(H, -4.0, MOUTH_Y + 3.0)
             C = MHr.mapXY(cx_, MOUTH_Y + 3.0)
             Kc = (-(MUG_W - 1.0) * MUG_S, -MUG_H * MUG_S)
-            off = rot((G[0] - Kc[0], G[1] - Kc[1]))
-            goal = (lerp(A.palm[0], C.fX + off[0], w), lerp(A.palm[1], C.fY + off[1], w))
-            for _ in range(2):
+            palm0 = A.palm
+            for _ in range(3):
+                G = _mug_grip(A.hd, a)
+                off = rot((G[0] - Kc[0], G[1] - Kc[1]))
+                goal = (lerp(palm0[0], C.fX + off[0], w), lerp(palm0[1], C.fY + off[1], w))
                 hd = A.hd
                 _arm_finish(R, A, A.fk, (goal[0] - hd[0] * 15.0 * HAND_S, goal[1] - hd[1] * 15.0 * HAND_S))
+        G = _mug_grip(A.hd, a)                                      # palm centre in mug-local coords
         g = rot(G)
         M = _NS()
         M.x = A.palm[0] - g[0]
@@ -841,6 +861,18 @@ def _solve(p: Pose, t):
 
 
 # --------------------------------------------------------------------------- arm solving helpers
+def _mug_grip(hd, a):
+    """Palm centre of the holding hand in mug-local coords (mug rotated by `a` radians, scaled units, bottom
+    centre at the origin). The mug body sits in front of the hand, centred on the hand's line just past the
+    palm, its near edge MUG_HEEL past the wrist whatever the hand direction (rounded-box support distance)."""
+    ca_, sa_ = math.cos(a), math.sin(a)
+    hx_, hy_ = hd[0] * ca_ + hd[1] * sa_, -hd[0] * sa_ + hd[1] * ca_
+    bx, by = MUG_W * MUG_S, MUG_H * MUG_S * 0.5
+    e = 0.5 * (abs(hx_) * bx + abs(hy_) * by + math.hypot(hx_ * bx, hy_ * by))
+    dl = e + MUG_HEEL - 15.0 * HAND_S
+    return (-hx_ * dl, -by - hy_ * dl)
+
+
 def _arm_fk(R, o, ap):
     """Forward kinematics of arm `o` (-1 near / +1 far) in the upper-body frame."""
     F = _NS()
@@ -1191,42 +1223,85 @@ def _draw_hand(c, A):
     c.restore()
 
 
+def _grip_fingers(handle_side):
+    """[(knuckle, tip, r_knuckle, r_tip)] of the fingers wrapped round the held mug, mug base units (handle on +x).
+    handle_side: through the handle with the tips resting on the front of the body beside it (and the little
+    finger curled under the handle); otherwise round the bare (-x) side of the body."""
+    w = MUG_W
+    if handle_side:
+        return [((w + 4.0, -21.0), (w - 3.4, -21.4), 2.45, 2.2),
+                ((w + 4.4, -16.3), (w - 4.2, -16.6), 2.55, 2.3),
+                ((w + 4.0, -11.6), (w - 3.3, -11.7), 2.45, 2.2),
+                ((w + 1.6, -6.3), (w - 2.6, -5.6), 2.05, 1.85)]
+    return [((-w - 3.6, -24.2), (-w + 4.4, -24.6), 2.55, 2.25),
+            ((-w - 3.9, -19.3), (-w + 5.0, -19.6), 2.65, 2.35),
+            ((-w - 3.6, -14.4), (-w + 4.4, -14.5), 2.55, 2.25),
+            ((-w - 2.8, -9.6), (-w + 3.4, -9.4), 2.2, 1.95)]
+
+
+def _draw_grip_set(c, handle_side):
+    fingers = _grip_fingers(handle_side)
+    body = _mug_body_path()
+    fp = skia.Path()
+    for kn, tp, rk, rt in fingers:
+        _capsule(fp, kn, tp, rk, rt)
+    # soft contact shadow of the fingers on the mug
+    c.save()
+    c.clipPath(body, doAntiAlias=True)
+    c.save()
+    c.translate(0.9, 1.3)
+    _fill(c, fp, C_MUG_LINE, 0.45, blur=1.3)
+    c.restore()
+    c.restore()
+    _cel(c, fp, C_SKIN, C_SKIN_SH, -1.0, -1.3, line=C_SKIN_LINE, line_w=0.85, line_a=0.85)
+    for kn, tp, rk, rt in fingers:
+        ux, uy = _norm(tp[0] - kn[0], tp[1] - kn[1])
+        # last knuckle crease and a hint of nail at the tip
+        jx, jy = tp[0] - ux * 3.6, tp[1] - uy * 3.6
+        _stroke(c, _curve([(jx + uy * rt * 0.8, jy - ux * rt * 0.8), (jx - ux * 0.5, jy - uy * 0.5),
+                           (jx - uy * rt * 0.8, jy + ux * rt * 0.8)]), C_SKIN_SH, 0.6, 0.6)
+        nx_, ny_ = tp[0] - ux * 0.9, tp[1] - uy * 0.9 - 0.5
+        c.drawOval(skia.Rect(nx_ - 1.3, ny_ - 0.9, nx_ + 1.3, ny_ + 0.7), paint("#D9A98A", 0.55))
+
+
 def _draw_held_mug(c, R):
-    """Mug held by its handle: palm behind the mug, fingers curled through the handle, thumb on top."""
+    """Mug held round its body: the hand continues the forearm behind the mug, the mug sits in front of it (toward
+    the camera) centred just past the palm, the fingers come round through the handle with their tips over the
+    front of the body, the thumb rests on top of the handle. When the hand points the other way in the mug's frame
+    (far arm near the front view) the fingers wrap the bare side instead (cross-faded over a narrow band)."""
     M = R.mug
     A = M.arm
+    W, hd = A.W, A.hd
+    # the hand behind the mug (only the heel shows past the mug's edge; the rest is hidden by the mug)
+    hand = skia.Path()
+    _capsule(hand, (W[0] - hd[0] * 1.5, W[1] - hd[1] * 1.5), (W[0] + hd[0] * 26.0, W[1] + hd[1] * 26.0), 7.7, 10.4,
+             bulge=0.6, bulge_at=0.3)
+    _cel(c, hand, C_SKIN, C_SKIN_SH, -1.6, -1.4, line=C_SKIN_LINE, line_w=1.1, line_a=0.8)
     c.save()
     c.translate(M.x, M.y)
     c.rotate(M.ang)
-    a = -M.ang * D2R
-    wx, wy = A.W[0] - M.x, A.W[1] - M.y
-    wl = ((wx * math.cos(a) - wy * math.sin(a)) / MUG_S, (wx * math.sin(a) + wy * math.cos(a)) / MUG_S)
     hs = M.hs
-    c.save()
-    c.scale(hs * MUG_S, MUG_S)
-    if hs < 0:
-        wl = (-wl[0], wl[1])
-    w = MUG_W
-    # palm / back of the hand from the wrist to the handle (drawn under the mug body)
-    palm = skia.Path()
-    _capsule(palm, wl, (w + 10.0, -17.5), 6.4, 8.6)
-    _cel(c, palm, C_SKIN, C_SKIN_SH, -1.6, -1.2, line=C_SKIN_LINE, line_w=1.0, line_a=0.8)
-    c.restore()
     c.save()
     _mug_local(c, flip=hs < 0)
     c.restore()
     c.scale(hs * MUG_S, MUG_S)
-    # fingers curled around the handle bar (knuckles outside, tips toward the mug)
-    fingers = skia.Path()
-    for fy, x0, x1, r in ((-23.2, w + 2.4, w + 12.6, 3.1), (-18.0, w + 2.0, w + 13.2, 3.2), (-12.9, w + 2.4, w + 12.6, 3.1),
-                          (-8.4, w + 3.6, w + 11.2, 2.7)):
-        _capsule(fingers, (x0, fy), (x1, fy + 0.4), r * 0.85, r)
-    _cel(c, fingers, C_SKIN, C_SKIN_SH, -1.3, -1.2, line=C_SKIN_LINE, line_w=1.0, line_a=0.85)
-    for fy in (-20.6, -15.5, -10.7):
-        _stroke(c, _curve([(w + 4.0, fy), (w + 8.0, fy - 0.2), (w + 11.6, fy + 0.2)]), C_SKIN_SH, 0.8, 0.5)
-    th = _capsule(skia.Path(), (w + 11.5, -26.0), (w + 2.6, -28.6), 3.4, 2.8)
-    _cel(c, th, C_SKIN, C_SKIN_SH, -1.2, -1.2, line=C_SKIN_LINE, line_w=1.0, line_a=0.85)
-    c.drawOval(skia.Rect(w + 2.0, -29.8, w + 4.6, -27.6), paint("#D9A98A", 0.7))
+    a = -M.ang * D2R
+    hlx = (hd[0] * math.cos(a) - hd[1] * math.sin(a)) * hs
+    k = smoothstep((hlx + 0.4) / 0.1)        # 1: fingers through the handle; 0: round the bare side
+    for side, wgt in ((True, k), (False, 1.0 - k)):
+        if wgt <= 0.005:
+            continue
+        if wgt < 0.995:
+            c.saveLayerAlpha(skia.Rect(-MUG_W - 12, -MUG_H - 12, MUG_W + 18, 8), int(255 * wgt))
+            _draw_grip_set(c, side)
+            c.restore()
+        else:
+            _draw_grip_set(c, side)
+    # thumb resting on top of the handle
+    w = MUG_W
+    th = _capsule(skia.Path(), (w - 0.6, -28.4), (w + 5.6, -29.6), 2.6, 2.3)
+    _cel(c, th, C_SKIN, C_SKIN_SH, -1.0, -1.3, line=C_SKIN_LINE, line_w=0.85, line_a=0.85)
+    c.drawOval(skia.Rect(w + 3.6, -31.0, w + 6.4, -29.4), paint("#D9A98A", 0.6))
     c.restore()
 
 
@@ -1495,7 +1570,7 @@ def _arm_occluder(A, R):
         m = skia.Matrix()
         m.setRotate(R.mug.ang, R.mug.x, R.mug.y)
         mp = skia.Path()
-        mp.addRect(skia.Rect(R.mug.x - (MUG_W + 2) * MUG_S, R.mug.y - (MUG_H + 5) * MUG_S,
+        mp.addRect(skia.Rect(R.mug.x - (MUG_W + 7) * MUG_S, R.mug.y - (MUG_H + 5) * MUG_S,
                              R.mug.x + (MUG_W + 14) * MUG_S, R.mug.y + 1))
         mp.transform(m)
         occ.addPath(mp)
@@ -1597,7 +1672,7 @@ def _draw_eye(c, H, P, slot, t):
     pUL = [m(u, v) for u, v in zip(us, UL)]
     # under-eye: tired shading + sniffle puffiness
     bag = _closed2([(x, y + 2.0) for x, y in pLL[2:-1]], [(x, y + 6.0 + 2.0 * P.sniffle) for x, y in pLL[2:-1]][::-1])
-    _fill(c, bag, C_SKIN_SH, 0.2 + 0.12 * P.sniffle, blur=2.0)
+    _fill(c, bag, C_SKIN_SH, EYE_BAG + 0.12 * P.sniffle, blur=2.0)
     if P.sniffle > 0:
         _fill(c, bag, C_BLUSH, 0.45 * P.sniffle, blur=2.2)
         _stroke(c, _curve([(x, y + 4.8 + 1.5 * P.sniffle) for x, y in pLL[3:-2]]), C_SKIN_SH, 1.2, 0.45 * P.sniffle)
@@ -1662,7 +1737,7 @@ def _draw_eye(c, H, P, slot, t):
 
     def lash(c):
         # lash line (upper lid edge) with an outer flick
-        th = [lerp(1.0, 4.0, ((s + 1) / 2) ** 0.5) for s in _SS]
+        th = [lerp(1.0, 4.0, ((s + 1) / 2) ** 0.5) * LASH_TH for s in _SS]
         if closed:
             th = [w * 0.85 for w in th]
         base = pUL
@@ -1671,17 +1746,17 @@ def _draw_eye(c, H, P, slot, t):
         # the flick keeps some length on the far eye so it can poke past the cheek silhouette
         fk = max(fso, min(fs + 0.2, 0.8)) if far else fs
         e0 = m(EW, 0.0)[0]
-        flick_tip = (e0 + sd * 6.0 * fk, ey + bo - 4.6 - 1.4 * P.wide + (1.5 if closed else 0.0))
+        flick_tip = (e0 + sd * 6.0 * LASH_FLICK * fk, ey + bo - 4.6 * LASH_FLICK - 1.4 * LASH_FLICK * P.wide + (1.5 if closed else 0.0))
         lash = skia.Path()
         _cr(lash, base)
-        q1 = (e0 + sd * 2.8 * fk, ey + bo - 0.6)
+        q1 = (e0 + sd * 2.8 * LASH_FLICK * fk, ey + bo - 0.6)
         lash.quadTo(q1[0], q1[1], flick_tip[0], flick_tip[1])
-        q2 = (e0 + sd * 1.0 * fk, ey + bo - 4.4 - P.wide)
+        q2 = (e0 + sd * 1.0 * LASH_FLICK * fk, ey + bo - 4.4 * LASH_FLICK - LASH_FLICK * P.wide)
         lash.quadTo(q2[0], top[-1][1] - 0.6, top[-1][0], top[-1][1])
         _cr(lash, top[::-1], move=False)
         lash.close()
         _fill(c, lash, C_LASH)
-        if not closed:
+        if not closed and LASH_EXTRA:
             for k, (u, ln, ang) in enumerate(((0.66, 2.8, -40.0), (0.86, 3.6, -22.0))):
                 i = min(range(len(_SS)), key=lambda j: abs(_SS[j] - u))
                 px, py = top[i]
@@ -1805,7 +1880,7 @@ def _draw_brow(c, H, P, slot):
         u = lerp(-EW * 0.92, EW * 1.18, s)
         # worry flattens the arch and tilts the whole brow (inner end up, outer end down)
         v = -23.5 - 4.2 * (1.0 - 0.45 * w) * math.sin(math.pi * min(1.0, s * 1.08)) + 1.6 * s
-        th = lerp(6.4, 1.6, s ** 1.1)
+        th = lerp(BROW_W[0], BROW_W[1], s ** 1.1)
         if r >= 0:
             v -= r * (6.5 + 2.8 * math.sin(math.pi * s))
         else:
