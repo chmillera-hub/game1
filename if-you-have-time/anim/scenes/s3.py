@@ -716,15 +716,26 @@ def shot_name(t):
 
 
 # =========================================================================== render
+def _draw_bench_mug(c, rp):
+    """Same mug draw as S2's ending (lit with Rae's light + contact shadow); plain mug as a fallback."""
+    try:
+        from anim.scenes import s2
+        s2._draw_bench_mug(c, (MUG_SPOT[0], MUG_SPOT[1], 1.0, 0.0, False), rp)
+    except (ImportError, AttributeError):
+        R.draw_mug(c, MUG_SPOT[0], MUG_SPOT[1], 1.0, 0.0, False)
+
+
 def draw_stage(c, t, cam, rp, qp, mug_on_bench, fan_fn, light=1.0, swirl=0.0, wb=1.0):
-    """Lounge -> mug on bench -> Quill -> Rae -> lounge front -> holo-cards (stage space)."""
+    """Lounge -> Quill -> Rae -> mug on bench -> lounge front -> holo-cards (stage space).
+
+    The bench mug is drawn in front of Rae's thigh, as S2 leaves it, so the S2->S3 cut doesn't pop."""
     c.save()
     cam.apply(c, t)
     env.draw_lounge(c, t, light=light, swirl=swirl, window_bright=wb)
-    if mug_on_bench:
-        R.draw_mug(c, MUG_SPOT[0], MUG_SPOT[1], 1.0, 0.0, False)
     Q.draw(c, qp, t)
     R.draw(c, rp, t)
+    if mug_on_bench:
+        _draw_bench_mug(c, rp)
     env.draw_lounge_front(c, t, light=light)
     if fan_fn is not None:
         fan_fn(c, t)

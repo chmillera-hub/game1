@@ -53,6 +53,7 @@ from types import SimpleNamespace
 
 import skia
 
+from anim import char_cadet as CAD
 from anim import char_quill as Q
 from anim import char_rae as R
 from anim import env, fx
@@ -246,7 +247,7 @@ def _light_tracks():
     d["dark"] = Track([(D, 0.0), (D + 1.5, 1.0, "io")])
     # window: brightens a touch with the dim, breathes, blazes at the climax (kept below clipping), settles
     d["wb"] = Track([(D, 1.0), (D + 1.5, 1.12), (T.build, 1.15), (T.gp - 0.4, 1.3), (T.gp + 0.2, 1.0),
-                     (CL - 0.05, 1.02), (CL + 0.35, 1.62, "out"), (T.tear, 1.26), (T.peak, 1.24),
+                     (CL - 0.01, 1.02), (CL + 0.35, 1.62, "out"), (T.tear, 1.26), (T.peak, 1.24),
                      (T.peak + 1.6, 1.36), (T.final, 1.28), (T.final + 3.2, 1.05), (T.end, 1.0)])
     # the galaxy gathers in the window through the build (while the cadet strolls through)
     d["swirl"] = Track([(T.build, 0.0), (T.build + 10.5, 0.82, "io"), (CL - 0.2, 0.93), (CL + 1.2, 1.0),
@@ -271,7 +272,7 @@ def _light_tracks():
     d["sparkle_a"] = Track([(F1 - 1, 1.0), (CL - 0.5, 1.0), (CL + 0.5, 0.55), (T.final, 0.6),
                             (T.final + 2, 0.9)])
     # characters: low light, deep-blue tint, rim lit by the nearest light
-    d["c_light"] = Track([(D, 1.0), (D + 1.5, 0.33, "io"), (CL - 0.05, 0.33), (CL + 0.3, 0.52, "out"),
+    d["c_light"] = Track([(D, 1.0), (D + 1.5, 0.33, "io"), (CL - 0.01, 0.33), (CL + 0.3, 0.52, "out"),
                           (T.tear, 0.4), (T.peak + 1.5, 0.44), (T.final, 0.4), (T.final + 3, 0.3)])
     d["c_tint"] = Track([(D, 0.0), (D + 1.5, 0.36, "io"), (CL, 0.36), (CL + 0.3, 0.2), (T.final, 0.22),
                          (T.final + 3, 0.36)])
@@ -756,8 +757,8 @@ def _quill_tracks():
                        (T.climax + 2.6, 7.0), (T.peak, 6.0), (T.peak + 1.6, 10.0), (FC, 6.0), (FC + 0.5, 0.0)])
     d["shoulders"] = Track([(S, 0.0), (S + 0.25, 0.1), (S + 0.9, 0.0)])
     # the cadet's "Cool music, Quill.": the eyes go to him, a small casual nod (the hand keeps conducting)
-    d["nod"] = Track([(S, 0.0), (S + 0.3, 0.06), (S + 1.4, 0.02), (QN - 0.06, 0.02), (QN + 0.2, -0.17, "out"),
-                      (QN + 0.6, -0.01, "io"), (T.gp - 0.4, 0.0), (T.gp + 0.1, -0.08), (T.climax, -0.07),
+    d["nod"] = Track([(S, 0.0), (S + 0.3, 0.06), (S + 1.4, 0.02), (QN - 0.06, 0.02), (QN + 0.2, -0.22, "out"),
+                      (QN + 0.62, -0.01, "io"), (T.gp - 0.4, 0.0), (T.gp + 0.1, -0.08), (T.climax, -0.07),
                       (T.climax + 0.5, 0.0), (FC + 2.0, -0.06)])
     d["hturn"] = Track([(MU + 0.3, 0.0), (MU + 0.75, -0.1), (QN + 0.8, -0.12), (QN + 1.35, 0.0)])
     d["tilt"] = Track([(S, 2.75), (S + 1.6, 1.0), (T.glis + 1.0, 0.0), (T.glis + 1.6, 1.5), (T.glis + 2.8, 6.0),
@@ -840,19 +841,15 @@ def _draw_palm_light(c, t, qp, lv):
 
 
 def _C():
-    """The cadet rig (anim/char_cadet.py), or None while it is not importable."""
-    try:
-        from anim import char_cadet as C
-        return C
-    except Exception:
-        return None
+    """The cadet rig (anim/char_cadet.py)."""
+    return CAD
 
 
 CAD_SCALE = 1.0
 CAD_FLOOR_IN = float(env.FLOOR_Y)          # in the doorway he walks on the wall line ...
 CAD_FLOOR = 1185.0                         # ... and along the front of the room, nearer the camera than the bench
-CAD_DOORWAY_X = (-110.0, 70.0)             # x range over which his floor line comes forward
-CAD_STOP_X = 50.0                          # where he stops to gawk (his cup stays clear of Rae's face, x ~258)
+CAD_DOORWAY_X = (-140.0, -30.0)            # x range over which his floor line comes forward
+CAD_STOP_X = -18.0                         # he stops just inside the door (the sip's swing stays clear of Rae)
 
 
 @lru_cache(maxsize=1)
@@ -862,19 +859,19 @@ def _cad_keys():
     and waves, then off screen right. Hermite-interpolated (C1), so his speed changes are smooth."""
     T = _T()
     return (
-        (T.cdoor - 0.25, -262.0, 88.0),        # a sleepy stroll
-        (T.cdoor + 2.5, -20.0, 82.0),          # door_close sfx: the panel slides shut behind him
-        (T.notice, 38.0, 36.0),                # he notices: slows ...
-        (T.notice + 0.78, CAD_STOP_X, 0.0),    # ... and stops (heel strike: contact pose)
-        (T.notice + 1.52, CAD_STOP_X, 0.0),    # (sips) ... walks on
-        (T.notice + 2.72, 165.0, 120.0),
-        (T.cough, 352.0, 112.0),               # passing in front of Rae's knees: the cough
-        (T.c01_s, 465.0, 112.0),               # "Cool music, Quill." as he passes in front of him
-        (T.qnod, 620.0, 96.0),                 # past Quill (clear of his face): the nod
-        (T.cwave, 690.0, 52.0),                # glances back, waves
-        (T.cwave + 1.02, 738.0, 46.0),
-        (T.cexit, 985.0, 115.0),               # gone off screen right
-        (T.cexit + 2.0, 1215.0, 115.0),
+        (T.cdoor - 0.25, -262.0, 80.0),        # a sleepy stroll in
+        (T.cdoor + 2.5, -60.0, 62.0),          # door_close sfx: the panel slides shut behind him
+        (T.notice, -26.0, 18.0),               # he notices: slows ...
+        (T.notice + 0.42, CAD_STOP_X, 0.0),    # ... and stops in his tracks (heel strike: contact pose)
+        (T.notice + 1.12, CAD_STOP_X, 0.0),    # (sips) ... walks on, a little briskly
+        (T.notice + 2.47, 115.0, 128.0),
+        (T.cough, 360.0, 118.0),               # just past Rae's face, in front of her knees: the cough
+        (T.c01_s, 462.0, 110.0),               # "Cool music, Quill." as he passes in front of him
+        (T.qnod, 597.0, 100.0),                # past Quill (his head clear of Quill's face): the nod
+        (T.cwave, 660.0, 50.0),                # glances back, waves
+        (T.cwave + 1.02, 706.0, 46.0),
+        (T.cexit, 965.0, 118.0),               # gone off screen right
+        (T.cexit + 2.0, 1201.0, 118.0),
     )
 
 
@@ -956,9 +953,14 @@ def _cad_strikes():
     return out
 
 
-# coffee in his FAR hand (in front of his belly: across >= 0.3 draws the far arm over the body), so the
-# camera-side hand is free for the cough and for the wave back toward Rae
+# Coffee in his FAR hand, carried low at his side (across 0: plain FK, steady while he walks), so the camera-side
+# NEAR hand is free for the cough and for the wave back toward Rae (it is also the rim-lit side). The rig re-targets
+# far-arm face / chest touches (across >= ~0.18) onto the far side and its IK can flip the elbow between two
+# solutions on the way there, so the sip goes up via a raised-forward key (CAD_SIP_MID): no elbow flip, and the
+# draw-layer switch at across 0.25 happens while the arm is clear of his torso.
 CUP_SIDE = "l"
+CAD_CUP_LOW = ArmPose(shoulder=4.0, elbow=30.0, wrist=0.0, hand="hold")
+CAD_SIP_MID = ArmPose(shoulder=58.0, elbow=112.0, wrist=4.0, hand="hold", across=0.14)
 
 
 @lru_cache(maxsize=1)
@@ -966,20 +968,20 @@ def _cad_tracks():
     C = _C()
     T = _T()
     NO, CO, MU, ME_, QN, CW, CX = T.notice, T.cough, T.c01_s, T.c01_e, T.qnod, T.cwave, T.cexit
-    sip0 = NO + 0.8                       # the sip (stopped, eyes on Rae over the cup)
+    sip0 = NO + 0.2                       # the sip (as he stops; eyes on Rae over the cup)
     d = {"sip0": sip0}
-    hold = _arm(C.ARMS["hold_cup"], across=0.34, elbow=88.0)
+    low = CAD_CUP_LOW
     sip = C.ARMS["sip_cup"]
-    near = ArmPose(shoulder=4.0, elbow=12.0, wrist=0.0, hand="relaxed")
+    rest = ArmPose(shoulder=4.0, elbow=10.0, wrist=0.0, hand="relaxed")
     mouth_ = C.ARMS["hand_to_mouth"]
-    d["arm_cup"] = ArmTrack([(T.cdoor, hold), (sip0, hold), (sip0 + 0.32, ArmPose.blend(hold, sip, 0.8), "io"),
-                             (sip0 + 0.42, sip, "out"), (sip0 + 0.78, sip), (sip0 + 0.9, ArmPose.blend(hold, sip, 0.8)),
-                             (sip0 + 1.25, hold, "io"),
-                             (MU + 0.95, hold), (MU + 1.2, _arm(hold, shoulder=16.0, elbow=96.0), "io"),   # a little
-                             (QN + 0.2, _arm(hold, shoulder=16.0, elbow=96.0)), (QN + 0.55, hold, "io")])   # cup salute
-    d["arm_free"] = ArmTrack([(T.cdoor, near), (CO - 0.3, near), (CO - 0.04, mouth_, "io"), (CO + 0.62, mouth_),
-                              (CO + 0.95, _arm(near, shoulder=10.0, elbow=30.0), "io"), (CO + 1.3, near, "io")])
-    d["wave"] = Track([(CW - 0.02, 0.0), (CW + 0.3, 0.88, "io"), (CW + 1.0, 0.88), (CW + 1.38, 0.0, "io")])
+    salute = ArmPose(shoulder=26.0, elbow=92.0, wrist=0.0, hand="hold")
+    d["arm_cup"] = ArmTrack([(T.cdoor, low), (sip0, low), (sip0 + 0.32, CAD_SIP_MID, "in"), (sip0 + 0.55, sip, "out"),
+                             (sip0 + 0.8, sip), (sip0 + 1.0, CAD_SIP_MID, "in"), (sip0 + 1.32, low, "out"),
+                             (MU + 0.95, low), (MU + 1.25, salute, "io"),               # a little cup salute
+                             (QN + 0.2, salute), (QN + 0.6, low, "io")])               # back at Quill
+    d["arm_free"] = ArmTrack([(T.cdoor, rest), (CO - 0.55, rest), (CO - 0.05, mouth_, "io"), (CO + 0.72, mouth_),
+                              (CO + 1.25, rest, "io")])
+    d["wave"] = Track([(CW - 0.1, 0.0), (CW + 0.3, 0.88, "io"), (CW + 1.0, 0.88), (CW + 1.45, 0.0, "io")])
     d["turn"] = Track([(T.cdoor, 0.36)])
     d["hturn"] = Track([(NO - 0.05, 0.0), (NO + 0.3, -0.06), (NO + 1.6, -0.02), (NO + 2.4, -0.12), (NO + 3.0, 0.02),
                         (MU - 0.2, 0.02), (MU + 0.6, -0.16), (ME_, -0.3), (QN + 0.15, -0.34), (QN + 0.6, 0.0),
@@ -1048,8 +1050,9 @@ def _cadet_pose(t, lv):
     jolt = _cad_bounce(t)
     wave = d["wave"](t)
     free = d["arm_free"](t)
+    cup = d["arm_cup"](t)
     if wave > 0.0:
-        # ARMS['wave'] (pop-free wiggle), lifted higher and further out toward Rae so it reads in the medium
+        # ARMS['wave'] (pop-free wiggle) on his near hand, lifted higher and further out toward Rae
         free = C.wave_arm(t - T.cwave, wave, base=free)
         free = _arm(free, shoulder=free.shoulder + 24.0 * wave, elbow=free.elbow - 14.0 * wave,
                     across=free.across - 0.2 * wave)
@@ -1063,7 +1066,7 @@ def _cadet_pose(t, lv):
              lid_l=lid, lid_r=lid, look_x=gaze[0], look_y=gaze[1], eye_wide=d["wide"](t),
              brow_raise=d["brow"](t), mouth_open=d["open"](t) + 0.85 * mo + 0.3 * cough,
              mouth_round=clamp(mr + 0.5 * cough), smile=d["smile"](t) * (1.0 - cough), squint=0.6 * cough,
-             brow_furrow=0.3 * cough, arm_r=free, arm_l=d["arm_cup"](t), mug=CUP_SIDE, **light)
+             brow_furrow=0.3 * cough, arm_r=free, arm_l=cup, mug=CUP_SIDE, **light)
     return p
 
 
@@ -1460,7 +1463,7 @@ def _camera(name, t, a, b):
         return Camera.lerp(Camera(298.0, 690.0, 0.72), Camera(306.0, 702.0, 0.755), smoothstep(u))
     if name == "cad_notice":
         # medium two-shot: the cadet (left, foreground) gawking at Rae and the lights
-        return Camera.lerp(Camera(202.0, 652.0, 1.55), Camera(214.0, 646.0, 1.6), smoothstep(u))
+        return Camera.lerp(Camera(160.0, 650.0, 1.55), Camera(176.0, 646.0, 1.6), smoothstep(u))
     if name == "cad_cross":
         return Camera.lerp(Camera(404.0, 776.0, 1.0), Camera(416.0, 770.0, 1.03), smoothstep(u))
     if name == "cad_mutter":
