@@ -18,7 +18,8 @@ Shots (every time derived from cues / word starts, never hard-coded):
                                clamp onto the Evil Genius's AVATAR; the notes grey
                                out and bounce off a quiet-dome; "Peace and quiet."
                                = blissful eyes-closed avatar.
-  F1 LAIR  react..end         still wearing the headphones: "Curses!", tally 0->1.
+  F1 LAIR  react..end         still wearing the headphones: "Curses!", then he
+                               deflates into a held slump; Snake smirks to camera.
 """
 import math
 
@@ -74,29 +75,6 @@ def trick_card(ctx, t, t_in, num, title, park=1.9):
              outline="ink", outline_w=8)
         text(c, title, 0, ph / 2 - 30, title_size, "ai_accent", "comic",
              outline="ink", outline_w=12)
-
-
-def nice_tries_chip(ctx, t, n_before, n_after, t_tick, t_in=None, step=0.28):
-    """Persistent top-left 'NICE TRIES: n' chip. Counts n_before -> n_after,
-    one tick every `step` s starting at t_tick (the scene's 'tally' cue).
-    SFX per tick: tick (-8 dB) + pop (-10 dB)."""
-    if t_in is not None and t < t_in:
-        return
-    n, k_last = n_before, -1
-    for i in range(n_after - n_before):
-        if t >= t_tick + i * step:
-            n, k_last = n_before + i + 1, i
-    bump = 0.0
-    if k_last >= 0:
-        u = seg(t, t_tick + k_last * step, t_tick + k_last * step + 0.25)
-        bump = math.sin(u * math.pi) * 0.22
-    s = (ease_out_back(seg(t, t_in, t_in + 0.3)) if t_in is not None else 1.0) * (1 + bump)
-    with saved(ctx, 205, 168, s) as c:
-        P.label_tag(c, 0, 0, f"NICE TRIES: {n}", color="bubble_ai", size=32, font="round")
-    if k_last >= 0 and t < t_tick + k_last * step + 0.6:           # floating '+1'
-        u = seg(t, t_tick + k_last * step, t_tick + k_last * step + 0.6)
-        text(ctx, "+1", 345, 150 - 40 * u, 40, (1, 0.82, 0.4, 1 - u), "comic",
-             outline=(0.09, 0.06, 0.12, 1 - u), outline_w=7)
 
 
 def villain_cameo(ctx, t, expr="neutral", look=(0, 0), mouth=(0, 0), arms="rest",
@@ -1185,33 +1163,25 @@ def _f1_react(ctx, t, info, T):
     if dx or dy:
         ctx.translate(dx, dy)
     f = 0.5 * (1 - seg(t, L9.start, L9.start + 0.35)) if t >= L9.start else 0.0
-    # glare at the chip as it ticks, then DEFLATE (held to the cut; the next
-    # scene opens on him smug again, which is the bounce-back joke)
-    t_sag = T.tally + 0.4
+    # "Curses!" then DEFLATE straight into a slump that is settled well before
+    # the cut and held (the next scene opens on him smug again, which is the
+    # bounce-back joke)
+    t_sag = L9.end + 0.08
     vexpr = _keyed(t, [(T.react, "frustrated", 0.01), (L9.start - 0.08, "angry", 0.12),
-                       (L9.end + 0.15, "frustrated", 0.3), (t_sag, "defeated", 0.3)])
+                       (t_sag, "defeated", 0.3)])
     varms = _keyed(t, [(T.react, "rest", 0.01), (L9.start - 0.1, "fist", 0.18),
-                       (L9.end + 0.2, "rest", 0.35), (t_sag, "slump", 0.4)])
+                       (t_sag, "slump", 0.38)])
     if t < L9.start:
         vlook = (0.0, 0.1)
-    elif t < L9.end:
-        vlook = (0.2, -0.45)          # shaking the fist at the sky / the AI
-    elif t < T.tally + 0.05:
-        vlook = (0.0, 0.05)
     elif t < t_sag + 0.1:
-        vlook = (-0.55, -0.9)         # glares at the chip ticking up
+        vlook = (0.2, -0.45)          # shaking the fist at the sky / the AI
     else:
         vlook = (-0.2, 0.45)          # ...and sags, eyes on the desk
     lean = -0.03 * math.sin((t - L9.start) * 2 * math.pi * 3) * (1 - seg(t, L9.start, L9.end)) \
         if L9.start <= t < L9.end else 0.0
-    sk = _keyed(t, [(T.react, "side_eye", 0.01), (T.tally, "idle", 0.15),
-                    (T.tally + 0.5, "smug", 0.25)])
-    if t < T.tally:
-        slook = (1.0, 0.0)
-    elif t < T.tally + 0.5:
-        slook = (0.0, -1.15)          # glances up at the chip
-    else:
-        slook = (0.9, 0.05)
+    # Snake: side-eye during the outburst, then a smug little smirk to camera
+    sk = _keyed(t, [(T.react, "side_eye", 0.01), (L9.end + 0.12, "smug", 0.25)])
+    slook = (1.0, 0.0) if t < L9.end + 0.12 else (0.9, 0.05)
     tongue = True if (L9.end - 0.05 <= t < L9.end + 0.2) else False
     _lair(ctx, t, info, T, vexpr, vlook, varms, lean,
           {"expr": sk, "look": slook, "tongue": tongue}, typing=False, flash=f,
@@ -2048,8 +2018,6 @@ def render(ctx, t, info):
     else:
         _f1_react(ctx, t, info, T)
     trick_card(ctx, t, T.card, 1, "CODE WORDS")
-    nice_tries_chip(ctx, t, info.meta.get("tries_before", 0), info.meta.get("tries_after", 1),
-                    T.tally)
 
 
 def SFX(info):
@@ -2088,8 +2056,6 @@ def SFX(info):
         (T.clamp, "boing", -12),
         (T.peace + 0.05, "magic_chime", -14),
         (T.l9.start, "thunder", -8),
-        (T.tally, "tick", -8),
-        (T.tally, "pop", -10),
     ]
     for (tm, muff) in T.riffs:
         if muff:

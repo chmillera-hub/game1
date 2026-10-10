@@ -27,7 +27,7 @@ Shots (every time is derived from cues / line timings):
   s02_l07    F3 AI close-up: the thesis line, two-step lid drop, "my guy".
   l08/innocent  book slides behind the desk, innocent blinks, shrug; the moment
              "Me?" ends he purses his lips and whistles (`whistle` SFX + one
-             floating note per whistled note); NICE TRIES chip pops in at 0.
+             floating note per whistled note).
 """
 import math
 
@@ -137,32 +137,6 @@ _register_arms()
 
 def _aix(name):
     return AIX.get(name, name)
-
-
-# ---------------------------------------------------------------------------
-# shared overlay (DIRECTION 4.4, verbatim)
-# ---------------------------------------------------------------------------
-def nice_tries_chip(ctx, t, n_before, n_after, t_tick, t_in=None, step=0.28):
-    """Persistent top-left 'NICE TRIES: n' chip. Counts n_before -> n_after,
-    one tick every `step` s starting at t_tick (the scene's 'tally' cue).
-    SFX per tick: tick (-8 dB) + pop (-10 dB)."""
-    if t_in is not None and t < t_in:
-        return
-    n, k_last = n_before, -1
-    for i in range(n_after - n_before):
-        if t >= t_tick + i * step:
-            n, k_last = n_before + i + 1, i
-    bump = 0.0
-    if k_last >= 0:
-        u = seg(t, t_tick + k_last * step, t_tick + k_last * step + 0.25)
-        bump = math.sin(u * math.pi) * 0.22
-    s = (ease_out_back(seg(t, t_in, t_in + 0.3)) if t_in is not None else 1.0) * (1 + bump)
-    with saved(ctx, 205, 168, s) as c:
-        P.label_tag(c, 0, 0, f"NICE TRIES: {n}", color="bubble_ai", size=32, font="round")
-    if k_last >= 0 and t < t_tick + k_last * step + 0.6:           # floating '+1'
-        u = seg(t, t_tick + k_last * step, t_tick + k_last * step + 0.6)
-        text(ctx, "+1", 345, 150 - 40 * u, 40, (1, 0.82, 0.4, 1 - u), "comic",
-             outline=(0.09, 0.06, 0.12, 1 - u), outline_w=7)
 
 
 # ---------------------------------------------------------------------------
@@ -1604,8 +1578,6 @@ def render(ctx, t, info):
         shot_aicu(ctx, t, info, T)
     else:
         shot_lair(ctx, t, info, T)
-    nice_tries_chip(ctx, t, info.meta.get("tries_before", 0), info.meta.get("tries_after", 0),
-                    999, t_in=T.innocent)
 
 
 def SFX(info):
@@ -1638,5 +1610,4 @@ def SFX(info):
         (T.land + 0.12, "sparkle", -14),
         (T.hide, "whoosh", -12),
         (T.whistle, "whistle", -6),            # starts with the pucker + first note
-        (T.innocent, "pop", -8),               # NICE TRIES chip pops in
     ]

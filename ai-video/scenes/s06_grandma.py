@@ -29,7 +29,7 @@ Shots (every time derived from cues / word starts, never hard-coded):
                                             village on "scary" (embers, firelight); Malvo
                                             THRILLED; plume pulls back into a puff of smoke
   F  F5 TWO-SHOT     .. end                 the book settles into his arms -> hug; AI happy +
-                                            heart; chip 4 -> 5
+                                            heart (held to the cut)
 """
 import math
 
@@ -88,29 +88,6 @@ def trick_card(ctx, t, t_in, num, title, park=1.9):
              outline="ink", outline_w=8)
         text(c, title, 0, ph / 2 - 30, title_size, "ai_accent", "comic",
              outline="ink", outline_w=12)
-
-
-def nice_tries_chip(ctx, t, n_before, n_after, t_tick, t_in=None, step=0.28):
-    """Persistent top-left 'NICE TRIES: n' chip. Counts n_before -> n_after,
-    one tick every `step` s starting at t_tick (the scene's 'tally' cue).
-    SFX per tick: tick (-8 dB) + pop (-10 dB)."""
-    if t_in is not None and t < t_in:
-        return
-    n, k_last = n_before, -1
-    for i in range(n_after - n_before):
-        if t >= t_tick + i * step:
-            n, k_last = n_before + i + 1, i
-    bump = 0.0
-    if k_last >= 0:
-        u = seg(t, t_tick + k_last * step, t_tick + k_last * step + 0.25)
-        bump = math.sin(u * math.pi) * 0.22
-    s = (ease_out_back(seg(t, t_in, t_in + 0.3)) if t_in is not None else 1.0) * (1 + bump)
-    with saved(ctx, 205, 168, s) as c:
-        P.label_tag(c, 0, 0, f"NICE TRIES: {n}", color="bubble_ai", size=32, font="round")
-    if k_last >= 0 and t < t_tick + k_last * step + 0.6:           # floating '+1'
-        u = seg(t, t_tick + k_last * step, t_tick + k_last * step + 0.6)
-        text(ctx, "+1", 345, 150 - 40 * u, 40, (1, 0.82, 0.4, 1 - u), "comic",
-             outline=(0.09, 0.06, 0.12, 1 - u), outline_w=7)
 
 
 # ---------------------------------------------------------------------------
@@ -1390,9 +1367,11 @@ def _shot_ai_cu(ctx, t, info, T):
     ])
     hands = _state(t, [(-1, "idle"), (T["w_thats"] - 0.1, "point_l", 0.28),
                        (T["w_shawl"] + 0.25, "idle", 0.35)])
-    blink = _slow_blink(t, T["l2e"] + 0.05)
-    if blink is None and t < T["w_shawl"] + 0.45:
-        blink = 0.0                                  # no auto-blink right after the cut
+    # one slow deadpan blink after "...shawl.", finished before the cut to the
+    # slip (a blink that started after the line ran into the cut, eyes shut)
+    blink = _slow_blink(t, min(T["l2e"] + 0.05, T["slip"] - 0.38))
+    if blink is None:
+        blink = 0.0                                  # no auto-blink in this short shot
     s_ = s * (1 + _cut_pulse(t, T["cu1_end"], 0.2, 0.02))
     draw_ai(ctx, x, y, s_, t, expr=expr, look=look, mouth=info.mouth("ai", t), hands=hands,
             blink=blink)
@@ -1855,8 +1834,6 @@ def render(ctx, t, info):
     else:
         _shot_book(ctx, t, info, T)
     # overlays (last)
-    nice_tries_chip(ctx, t, info.meta.get("tries_before", 4), info.meta.get("tries_after", 5),
-                    T["tally"])
     trick_card(ctx, t, T["card"], 5, TITLE)
 
 
@@ -1879,7 +1856,5 @@ def SFX(info):
         (T["fire0"] + 0.03, "boom_cartoon", -17),          # ...soft storybook boom
         (T["cut_f5b"] + 0.12, "pop", -12),                 # heart
         (T["book_land"], "paper", -10),                    # caught in a hug
-        (T["tally"], "tick", -8),
-        (T["tally"], "pop", -10),
     ]
     return sorted(out, key=lambda e: e[0])

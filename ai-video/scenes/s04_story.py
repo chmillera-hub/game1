@@ -13,7 +13,7 @@ Shots (all times derived from cues / word starts, never hard-coded):
   F  SCROLL SHOT     s04_l08 .. tally      glint on the brick strip ("Stays off the
                                            page"), lurker flares + check + SCARY: KEPT
                                            ("The scary part stays in"), WINK, thumbs up
-  G  F1 LAIR         tally .. end          Hissy caught mid-nod, chip 1 -> 2
+  G  F1 LAIR         tally .. end          Hissy caught mid-nod, freezes (held to the cut)
 """
 import math
 
@@ -92,29 +92,6 @@ def trick_card(ctx, t, t_in, num, title, park=1.9):
              outline="ink", outline_w=12)
 
 
-def nice_tries_chip(ctx, t, n_before, n_after, t_tick, t_in=None, step=0.28):
-    """Persistent top-left 'NICE TRIES: n' chip. Counts n_before -> n_after,
-    one tick every `step` s starting at t_tick (the scene's 'tally' cue).
-    SFX per tick: tick (-8 dB) + pop (-10 dB)."""
-    if t_in is not None and t < t_in:
-        return
-    n, k_last = n_before, -1
-    for i in range(n_after - n_before):
-        if t >= t_tick + i * step:
-            n, k_last = n_before + i + 1, i
-    bump = 0.0
-    if k_last >= 0:
-        u = seg(t, t_tick + k_last * step, t_tick + k_last * step + 0.25)
-        bump = math.sin(u * math.pi) * 0.22
-    s = (ease_out_back(seg(t, t_in, t_in + 0.3)) if t_in is not None else 1.0) * (1 + bump)
-    with saved(ctx, 205, 168, s) as c:
-        P.label_tag(c, 0, 0, f"NICE TRIES: {n}", color="bubble_ai", size=32, font="round")
-    if k_last >= 0 and t < t_tick + k_last * step + 0.6:           # floating '+1'
-        u = seg(t, t_tick + k_last * step, t_tick + k_last * step + 0.6)
-        text(ctx, "+1", 345, 150 - 40 * u, 40, (1, 0.82, 0.4, 1 - u), "comic",
-             outline=(0.09, 0.06, 0.12, 1 - u), outline_w=7)
-
-
 def villain_cameo(ctx, t, expr="neutral", look=(0, 0), mouth=(0, 0), arms="rest",
                   snake=None, cx=200, cy=345, r=110, extra=None, push=1.0, blink=None):
     """Round picture-in-picture of Malvo's face (used in the CHAT framing).
@@ -154,7 +131,7 @@ COL_X, COL_Y, COL_W = 330, 292, 590       # bubble column (lowered: room for the
 CAM_C = (200, 345)
 STICKER = (806, 266)
 # F4 vision: the DIRECTION layout, scaled up (s .75 -> .85, labels 32 -> 40) for
-# phone readability and shifted so the frame clears the chip + parked tab.
+# phone readability and shifted so the frame clears the parked tab.
 TREE_X, TREE_Y, TREE_S, LABEL_SIZE = 495, 322, 0.85, 40
 FX0, FX1, FY0, FY1 = 110, 880, 250, 885      # STORY frame; the red chain crosses y=FY1
 WALL = (555, 495, 260, 777)                  # precisely the harm chain (incl. its labels)
@@ -1202,13 +1179,16 @@ def _shot_E(ctx, t, info, T):
 
 def _shot_G(ctx, t, info, T):
     """F1 tally: Hissy caught mid-nod, Malvo snaps his head round."""
+    # the tally pause is short now (0.2 s + tail): snap fast so the freeze is
+    # settled ~0.3 s before the cut and HELD
     tl = T["tally"]
-    snap = tl + 0.1
+    snap = tl + 0.06
+    frz = tl + 0.17
     expr = state_at(t, [(tl - 1, "frustrated"), (snap, "angry")], 0.08)
     look = _blend_look(t, [(tl - 1, _const((0.7, 0.2))), (snap, _const((-1.0, 0.2)))], 0.08)
-    lean = -0.055 * ease_out_back(seg(t, snap, snap + 0.18), 2.5)
-    sn_expr = state_at(t, [(tl - 1, "nod"), (tl + 0.25, "worried")], 0.08)
-    sn_look = _blend_look(t, [(tl - 1, _const((1.0, 0.1))), (tl + 0.25, _const((-0.45, -0.75)))],
+    lean = -0.055 * ease_out_back(seg(t, snap, snap + 0.16), 2.5)
+    sn_expr = state_at(t, [(tl - 1, "nod"), (frz, "worried")], 0.08)
+    sn_look = _blend_look(t, [(tl - 1, _const((1.0, 0.1))), (frz, _const((-0.45, -0.75)))],
                           0.08)
     with saved(ctx, 0, 0, 1.0) as c:
         P.lair_bg(c, t)
@@ -1240,8 +1220,6 @@ def render(ctx, t, info):
     else:
         _shot_G(ctx, t, info, T)
     # overlays (last)
-    nice_tries_chip(ctx, t, info.meta.get("tries_before", 1), info.meta.get("tries_after", 2),
-                    T["tally"])
     trick_card(ctx, t, T["card"], 2, TITLE)
 
 
@@ -1271,9 +1249,7 @@ def SFX(info):
         (T["w_scary"], "pop", -10),
         (T["w_scary"] + 0.12, "tick", -12),
         (T["w_nice"], "sparkle", -10),
-        (T["tally"], "tick", -8),
-        (T["tally"], "pop", -10),
-        (T["tally"] + 0.3, "gulp", -10),
+        (T["tally"] + 0.2, "gulp", -10),        # Hissy, caught nodding
     ]
     for k in range(10):
         out.append((T["vision"] + 0.16 * k, "tick", -14))

@@ -3,7 +3,7 @@
 Rapid shot / reverse-shot, hard cuts on every line (the speed is the joke).
 All times derive from cues / line timings (see _T).
 
-  card     F1-CU Malvo. Card #3 "HYPOTHETICALLY..." slams. Chip shows 2.
+  card     F1-CU Malvo. Card #3 "HYPOTHETICALLY..." slams.
            Malvo regroups from s04 (still glaring at Hissy) -> smug to lens.
   s05_l01  "Hypothetically..." slow push-in 1.0->1.12 onto his face; sneaky,
            3 brow waggles, goatee stroke (chin), one paranoid dart.
@@ -23,8 +23,8 @@ All times derive from cues / line timings (see _T).
            top-right on "how": a cloaked villain seen from behind between a
            desk globe and a heart mirror); on "themselves" a warm smile and
            a glance to camera.
-  tally    HARD CUT F1-CU: goggles slip askew, Malvo frustrated glaring at
-           the chip (2 -> 4), Hissy unimpressed at camera.
+  tally    HARD CUT F1-CU: goggles slip askew, Malvo frustrated glaring into
+           the lens (held to the cut), Hissy unimpressed at camera.
 """
 import math
 
@@ -83,29 +83,6 @@ def trick_card(ctx, t, t_in, num, title, park=1.9):
              outline="ink", outline_w=12)
 
 
-def nice_tries_chip(ctx, t, n_before, n_after, t_tick, t_in=None, step=0.28):
-    """Persistent top-left 'NICE TRIES: n' chip. Counts n_before -> n_after,
-    one tick every `step` s starting at t_tick (the scene's 'tally' cue).
-    SFX per tick: tick (-8 dB) + pop (-10 dB)."""
-    if t_in is not None and t < t_in:
-        return
-    n, k_last = n_before, -1
-    for i in range(n_after - n_before):
-        if t >= t_tick + i * step:
-            n, k_last = n_before + i + 1, i
-    bump = 0.0
-    if k_last >= 0:
-        u = seg(t, t_tick + k_last * step, t_tick + k_last * step + 0.25)
-        bump = math.sin(u * math.pi) * 0.22
-    s = (ease_out_back(seg(t, t_in, t_in + 0.3)) if t_in is not None else 1.0) * (1 + bump)
-    with saved(ctx, 205, 168, s) as c:
-        P.label_tag(c, 0, 0, f"NICE TRIES: {n}", color="bubble_ai", size=32, font="round")
-    if k_last >= 0 and t < t_tick + k_last * step + 0.6:           # floating '+1'
-        u = seg(t, t_tick + k_last * step, t_tick + k_last * step + 0.6)
-        text(ctx, "+1", 345, 150 - 40 * u, 40, (1, 0.82, 0.4, 1 - u), "comic",
-             outline=(0.09, 0.06, 0.12, 1 - u), outline_w=7)
-
-
 # ===========================================================================
 # framing constants
 # ===========================================================================
@@ -117,7 +94,6 @@ PUSH_C = (150.0, 1330.0)              # push-in centre: near Hissy's head (he st
 AI3 = (495.0, 800.0, 1.1)             # F3 AI CU
 AI3D = (548.0, 905.0, 1.0)            # F3 variant for l04 (room for the clipboard)
 CLIP_D = (248.0, 425.0, 1.35, -0.06)  # clipboard in the l04 shot (x, y, s, rot)
-CHIP_STEP = 0.28
 BK_K, BK_DROP = 0.6, 58.0             # mini brick strip: inner scale, drop (board px)
 BOOK_D = (738.0, 396.0, 0.95, 0.07)   # "KNOW THE WORLD. KNOW YOURSELF." book (x, y, s, rot)
 
@@ -521,14 +497,14 @@ def _poof(ctx, cx, cy, t, t0, r=170, n=7, seed=11):
 # Malvo (F1-CU) with costume
 # ===========================================================================
 def _malvo(ctx, t, T, info, expr, look, arms, snake, costume=0.0, goggle_k=1.0,
-           askew=0.0, clip_drop=0.0, lean=0.0):
+           askew=0.0, clip_drop=0.0, lean=0.0, blink=None):
     x, y, s = CU
     mouth = info.mouth("villain", t)
     # compensate the expression's built-in look bias so 'look' is absolute
     p = V.resolve_expr(expr)
     lk = (clamp(look[0] - p["ex"], -1.2, 1.2), clamp(look[1] - p["ey"], -1.2, 1.2))
     draw_villain(ctx, x, y, s, t, expr=expr, look=lk, mouth=mouth, arms=arms,
-                 snake=snake, lean=lean)
+                 snake=snake, lean=lean, blink=blink)
     if costume <= 0:
         return
     # clipboard in the screen-left glove, then the glove again on top of it
@@ -613,26 +589,28 @@ def _shot_C(ctx, t, T, info):
 
 
 def _shot_E(ctx, t, T, info):
-    """tally: goggles slip askew, frustrated glare at the chip, Hissy 😒."""
+    """tally: goggles slip askew, frustrated glare into the lens, Hissy 😒.
+    The hold after the cut is short (0.2 s pause + tail), so every motion
+    (slip, sag, shiver, Hissy's blink) settles ~0.2 s before the cut and the
+    glare is HELD."""
     te = T["tally"]
     expr = state_at(t, [(-1.0, "frustrated")], 0.2)
-    arms = state_at(t, [(-1.0, "s05_clip_chin"), (te, "s05_sag")], 0.25)
-    askew = ease_out_back(seg(t, te + 0.04, te + 0.26), 2.0)
-    # glares up at the counter as it ticks, then back to the lens (the return
-    # and Hissy's slow blink both finish before the cut, however short the hold)
-    g1 = max(te + 0.3, min(te + 0.62, T["end"] - 0.2))
-    lx = core.tween(t, [(te, -0.2), (te + 0.12, -0.9), (g1, -0.9), (g1 + 0.14, 0.0)])
-    ly = core.tween(t, [(te, 0.0), (te + 0.12, -0.9), (g1, -0.9), (g1 + 0.14, 0.1)])
+    arms = state_at(t, [(-1.0, "s05_clip_chin"), (te, "s05_sag")], 0.22)
+    askew = ease_out_back(seg(t, te + 0.02, te + 0.22), 2.0)
+    # eyes snap from the clipboard to the lens and stay there
+    lx = core.tween(t, [(te, -0.2), (te + 0.1, 0.0)])
+    ly = core.tween(t, [(te, 0.0), (te + 0.1, 0.1)])
     sexpr = "unimpressed"
-    sb = max(te + 0.2, min(te + 0.45, T["end"] - 0.4))
+    sb = te + 0.06
     snake = {"expr": sexpr, "look": (0.95, 0.05), "tongue": False,
-             "blink": _slow_blink(t, sb, 0.12, 0.08, 0.14)}
+             "blink": _slow_blink(t, sb, 0.08, 0.05, 0.1)}
     _lair(ctx, t)
     # a frustrated full-body 'grr' shiver as the goggles slip (decays fast)
-    u = t - (te + 0.04)
-    lean = 0.022 * math.sin(u * 2 * math.pi * 6.5) * clamp(1 - u / 0.4) if u > 0 else 0.0
+    u = t - (te + 0.02)
+    lean = 0.022 * math.sin(u * 2 * math.pi * 6.5) * clamp(1 - u / 0.3) if u > 0 else 0.0
     _malvo(ctx, t, T, info, expr, (lx, ly), arms, snake, costume=1.0, goggle_k=1.0,
-           askew=askew, clip_drop=ease_out(seg(t, te, te + 0.3)), lean=lean)
+           askew=askew, clip_drop=ease_out(seg(t, te, te + 0.26)), lean=lean,
+           blink=0.0)    # unblinking glare: never closes his eyes on the cut
 
 
 # ===========================================================================
@@ -711,13 +689,11 @@ def render(ctx, t, info):
         _shot_D(ctx, t, T, info)
     else:
         _shot_E(ctx, t, T, info)
-    # overlays last: card(s) + chip
+    # overlays last: card(s)
     if t < T["card2"]:
         trick_card(ctx, t, T["card"], 3, "HYPOTHETICALLY...", park=T["park1"])
     else:
         trick_card(ctx, t, T["card2"], 4, "IT'S FOR RESEARCH", park=T["park2"])
-    nice_tries_chip(ctx, t, info.meta["tries_before"], info.meta["tries_after"],
-                    T["tally"], step=CHIP_STEP)
 
 
 def SFX(info):
@@ -741,8 +717,4 @@ def SFX(info):
     ]
     for tc in T["checks"]:
         out.append((tc, "pop", -10))
-    n = info.meta["tries_after"] - info.meta["tries_before"]
-    for i in range(n):
-        out.append((T["tally"] + i * CHIP_STEP, "tick", -8))
-        out.append((T["tally"] + i * CHIP_STEP, "pop", -10))
     return out

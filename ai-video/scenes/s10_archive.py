@@ -6,13 +6,17 @@ Play it with wonder, not menace.  Shots (every time derived from cues / word sta
                                       Hissy shocked -> worried -> side-eye.
   B  F3 AI CU    calm .. archive+.45  slow blink -> warm, wry shrug on "first genius", nod on
                                       "my guy", looks up remembering, then DIVES into its screen.
-  C  ARCHIVE     .. beat              shelves to a vanishing point, 8 TRIED folders slide in,
-                                      chip rolls 9 -> 9,999,999+, 4 "very smart people" get NICE
-                                      TRY stamps, red strings converge on 3 townsfolk -> brick
+  C  ARCHIVE     .. beat              shelves of TRIED folders to a vanishing point, 8 named
+                                      TRIED folders slide in; on "countless" a stream of TRIED
+                                      folders keeps pouring out of the endless corridor and
+                                      files itself into the shelves (the "countless attempts"
+                                      beat, no counter); 4 "very smart people" get NICE TRY
+                                      stamps, red strings converge on 3 townsfolk -> brick
                                       ring -> green sparks, "E" drawer -> EVIL GENIUS folder
                                       -> grey photocopy of the Big Book, highlighter on "E".
   D  F1 WIDE     beat .. end          monocle pop -> blank "...Alphabetized?", Hissy nods twice,
-                                      slow blink, dun-dun-dun.  (s11 fades in from black itself.)
+                                      slow blink, dun-dun-dun (settled before the cut).
+                                      (s11 fades in from black itself.)
 """
 import math
 
@@ -48,7 +52,6 @@ INSET_EYE = (230, 1160)
 VPX, VPY = 495.0, 560.0               # archive vanishing point
 RC = (495.0, 840.0)                   # protected townsfolk / brick ring centre
 RING_R = 168.0
-CHIP_Y = 168
 
 # foreground folders: label, x, y, s, rot, side it slides in from (-1 left, 1 right,
 # 2 = flies out of the corridor depth; it then leaves to the left).  Nothing enters from
@@ -142,8 +145,12 @@ def _T(info):
     # B: dive
     T["dive1"] = T["archive"] + 0.45
     # C: archive
-    T["roll0"] = T["archive"] + 0.3
-    T["roll1"] = max(T["l4e"], T["roll0"] + 1.0)
+    # "countless": TRIED folders stream out of the corridor and file themselves
+    # into the shelves, launched from "countless" until the stations pop in (l04)
+    st0 = T["w_countless"] - 0.12
+    st1 = max(st0 + 0.3, T["l3e"] - STREAM_FLY)
+    n = max(4, int((st1 - st0) / STREAM_STEP) + 1)
+    T["stream"] = [st0 + (st1 - st0) * k / (n - 1) for k in range(n)]
     T["push0"] = max(T["dive1"], T["l3"] - 0.3)          # push only over l03 (bitrate)
     T["push1"] = max(T["push0"] + 1.5, T["l3e"])
     T["fg0"] = T["archive"] + 0.3
@@ -179,8 +186,19 @@ def _T(info):
     T["blank"] = max(T["l7"] - 0.05, T["beat"] + 0.5)     # hold the shock >= 0.5 s
     T["nod0"] = T["l7"] + 0.08
     T["nod1"] = T["nod0"] + 1.25
-    T["sblink"] = T["sting"] + 0.12
-    T["dun"] = [T["sting"], T["sting"] + 0.34, T["sting"] + 0.68]   # dun_dun_dun hits
+    # dun-dun-DUN: the sting pause is shorter now, so the sting starts as soon as
+    # "...Alphabetized?" has stopped sounding (never later than the cue) and its
+    # last snap-zoom lands ~0.2 s before the cut
+    L7 = info.line("s10_l07")
+    env = (getattr(info, "_lip", {}) or {}).get("s10_l07", {}).get("open") or []
+    v_end = L7.end
+    for i in range(len(env) - 1, -1, -1):
+        if env[i] > 0.06:
+            v_end = min(L7.end, L7.start + (i + 1) / 100.0)
+            break
+    T["dun0"] = min(T["sting"], max(v_end + 0.06, T["end"] - 0.95))
+    T["sblink"] = T["dun0"] + 0.12
+    T["dun"] = [T["dun0"], T["dun0"] + 0.34, T["dun0"] + 0.68]      # dun_dun_dun hits
     _TC.clear()
     _TC[key] = T
     return T
@@ -422,6 +440,8 @@ Z_FAR = 9.0
 WALL_X = 640.0
 CEIL_Y, FLOOR_Y = -760.0, 1250.0
 TIER_B = [-300.0, 200.0, 700.0, 1200.0]       # shelf boards (bottom of each tier)
+STREAM_STEP = 0.035                            # "countless" folder stream: launch spacing
+STREAM_FLY = 0.8                               # ...and flight time of one folder
 HAZE = "#1d3d72"
 
 
@@ -592,6 +612,43 @@ def _corridor_pulse(ctx, t, t0, dur=1.1):
     _rgba(ctx, "ai_eye", 0.55 * a)
     ctx.set_line_width(max(1.5, 6.0 / z))
     ctx.stroke()
+
+
+def _folder_stream(ctx, t, T):
+    """'countless': a river of TRIED folders pours out of the corridor's endless
+    depth toward camera, fanning out past the named folders and out of frame
+    (never down through the caption band). World coords (inside the push);
+    drawn behind the named foreground folders, so those stay readable."""
+    if not T["stream"] or t < T["stream"][0] or t > T["stream"][-1] + STREAM_FLY:
+        return
+    z0, z1 = 8.6, 0.8
+    live = []
+    for k, tk in enumerate(T["stream"]):
+        u = seg(t, tk, tk + STREAM_FLY)
+        if u <= 0.0 or u >= 1.0:
+            continue
+        # fan: upper half + the sides (down to ~35 deg below horizontal)
+        side = -1 if k % 2 == 0 else 1
+        ang = (math.pi * (0.5 + side * (0.12 + 0.62 * hash01(k, 5)))) - math.pi
+        ang = clamp(ang, -math.pi - 0.6, 0.6)
+        R = 820.0 + 160.0 * hash01(k, 7)            # off-frame radius at z1
+        z = z0 * (z1 / z0) ** u                     # exponential zoom toward camera
+        X = R * math.cos(ang) * z1 * (0.35 + 0.65 * u)
+        Y = R * math.sin(ang) * z1 * (0.35 + 0.65 * u)
+        live.append((z, X, Y, u, k))
+    live.sort(key=lambda q: -q[0])                    # far first
+    ctx.save()
+    ctx.rectangle(-300, -300, W + 600, 1300 + 300)    # keep the caption band calm
+    ctx.clip()
+    for z, X, Y, u, k in live:
+        x, y = _pj(X, Y, z)
+        s = 0.8 / z
+        if x < -200 or x > W + 200 or y < -200:
+            continue
+        rot = 0.5 * (hash01(k, 17) - 0.5) + (1 if k % 2 else -1) * 0.5 * u
+        col = "#e8c76a" if k % 3 else "#dfbd5e"
+        P.folder(ctx, x, y, s, label="", color=col, stamp_txt="TRIED", rot=rot)
+    ctx.restore()
 
 
 # ---------------------------------------------------------------------------
@@ -1379,6 +1436,7 @@ def _shot_archive(ctx, t, info, T):
         c.translate(-VPX, -VPY)
         _archive_bg(c)
         _corridor_pulse(c, t, T["w_countless"] - 0.15)
+        _folder_stream(c, t, T)
     # very smart people (l04)
     for i, ((sx, sy), kind) in enumerate(STATIONS):
         _station(ctx, sx, sy, ST_S, kind, t, T["st_pop"][i], T["st_stamp"][i], T["st_out"], i)
@@ -1421,10 +1479,10 @@ def _shot_wide(ctx, t, info, T):
         look = _hold(t, [(-1, (0.0, -0.05)), (T["blank"], (0.0, 0.0), 0.3)])
         blink = _slow_blink(t, T["sblink"], 0.2, 0.16, 0.26)
         sn_expr = _state(t, [(-1, "shocked"), (T["nod0"] - 0.1, "nod", 0.25),
-                             (T["nod1"], "unimpressed", 0.25), (T["sting"] + 0.2, "side_eye", 0.2)])
+                             (T["nod1"], "unimpressed", 0.25), (T["dun0"] + 0.2, "side_eye", 0.2)])
         sn_look = _hold(t, [(-1, (0.6, -0.45)), (T["nod0"] - 0.1, (0.7, -0.3), 0.25),
-                            (T["sting"] + 0.2, (1.0, 0.0), 0.15)])
-        tongue = True if T["sting"] + 0.6 <= t < T["sting"] + 0.85 else (
+                            (T["dun0"] + 0.2, (1.0, 0.0), 0.15)])
+        tongue = True if T["dun0"] + 0.45 <= t < T["dun0"] + 0.7 else (
             False if t < T["nod0"] else None)
         draw_villain(c, WX, WY + sink, WS, t, expr=expr, look=look,
                      mouth=info.mouth("villain", t), arms=arms, blink=blink,
@@ -1439,46 +1497,6 @@ def _shot_wide(ctx, t, info, T):
 # ===========================================================================
 # overlays
 # ===========================================================================
-ROLL_KEYS = [(0.0, 9.0), (0.3, 1204.0), (0.62, 88031.0), (1.0, 9999999.0)]
-
-
-def _roll_text(t, T):
-    if t < T["roll0"]:
-        return "9", -1
-    if t >= T["roll1"]:
-        return "9,999,999+", -2
-    n = max(1, int((T["roll1"] - T["roll0"]) / 0.12))
-    step = int((t - T["roll0"]) / 0.12)
-    k = clamp(step / n)
-    ms = {int(round(0.3 * n)): 1204, int(round(0.62 * n)): 88031}
-    if step == 0:
-        return "9", 0
-    if step in ms:
-        return f"{ms[step]:,}", step
-    for (a, va), (b, vb) in zip(ROLL_KEYS, ROLL_KEYS[1:]):
-        if k <= b:
-            u = (k - a) / (b - a)
-            v = math.exp(lerp(math.log(va), math.log(vb), u))
-            break
-    v *= 1 + 0.16 * (hash01(step, 77) - 0.5)
-    return f"{min(9999998, max(10, int(v))):,}", step
-
-
-def _chip(ctx, t, T):
-    val, step = _roll_text(t, T)
-    txt = f"NICE TRIES: {val}"
-    w0 = text_width(ctx, "NICE TRIES: 9", "round", 32) + 32 * 1.1
-    w1 = text_width(ctx, txt, "round", 32) + 32 * 1.1
-    left = 205 - w0 / 2
-    s = 1.0
-    if step >= 0:
-        s += 0.05 * math.sin(math.pi * clamp(((t - T["roll0"]) % 0.12) / 0.12))
-    if t >= T["roll1"]:
-        s += 0.24 * math.sin(math.pi * seg(t, T["roll1"], T["roll1"] + 0.3))
-    with saved(ctx, left + w1 / 2, CHIP_Y, s) as c:
-        P.label_tag(c, 0, 0, txt, color="bubble_ai", size=32, font="round")
-
-
 def render(ctx, t, info):
     T = _T(info)
     if t < T["calm"]:
@@ -1489,7 +1507,6 @@ def render(ctx, t, info):
         _shot_archive(ctx, t, info, T)
     else:
         _shot_wide(ctx, t, info, T)
-    _chip(ctx, t, T)
     # 2-frame pale-cyan flash on the cut into the archive
     d = t - T["dive1"]
     if 0 <= d < 2.0 / 24:
@@ -1505,7 +1522,8 @@ def SFX(info):
         (T["archive"], "whoosh", -6),
         (T["archive"] + 0.4, "magic_chime", -10),
         (T["fg0"] + 0.2, "paper", -14),
-        (T["roll1"], "pop", -10),
+        (T["stream"][0], "page_flip", -13),        # the countless folders riffle in
+        (T["stream"][len(T["stream"]) // 2], "paper", -16),
         (T["converge"], "whoosh", -12),
         (T["folk"][0], "pop", -13),
         (T["brick_land"][0], "brick_thud", -6),
@@ -1516,10 +1534,8 @@ def SFX(info):
         (P.stamp_impact(T["pstamp"]), "stamp", -12),
         (T["hl0"], "swoosh_up", -16),
         (T["beat"], "boing", -8),
-        (T["sting"], "dun_dun_dun", -6),
+        (T["dun0"], "dun_dun_dun", -6),
     ]
-    for k in range(10):
-        out.append((T["roll0"] + (T["roll1"] - T["roll0"]) * k / 10.0, "tick", -16))
     for i in range(4):
         out.append((T["st_pop"][i], "key_clack", -16))
         out.append((P.stamp_impact(T["st_stamp"][i]), "stamp", -14))

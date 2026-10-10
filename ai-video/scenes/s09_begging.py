@@ -39,9 +39,10 @@ Shots (hard cuts, every time derived from cues / line timings, see _T):
                     eyes down at the fingers on "Thank", up at the AI on
                     "rehearsed" (a slightly bigger, proud-shy wobbly smile),
                     then a peek at his star. Hissy side-eyes the camera on
-                    "rehearsed". Held through the line. tally: chip
-                    8 -> 9, he peeks up at it and sinks back to the kneel
-                    (push-in eases out; s10 starts there), Hissy nods.
+                    "rehearsed". Held through the line. Right after it he
+                    sinks back to the kneel (push-in eases out; s10 starts
+                    there), still admiring his star, settled and HELD to the
+                    cut; Hissy holds his knowing side-eye.
 """
 import math
 
@@ -99,29 +100,6 @@ def trick_card(ctx, t, t_in, num, title, park=1.9):
              outline="ink", outline_w=8)
         text(c, title, 0, ph / 2 - 30, title_size, "ai_accent", "comic",
              outline="ink", outline_w=12)
-
-
-def nice_tries_chip(ctx, t, n_before, n_after, t_tick, t_in=None, step=0.28):
-    """Persistent top-left 'NICE TRIES: n' chip. Counts n_before -> n_after,
-    one tick every `step` s starting at t_tick (the scene's 'tally' cue).
-    SFX per tick: tick (-8 dB) + pop (-10 dB)."""
-    if t_in is not None and t < t_in:
-        return
-    n, k_last = n_before, -1
-    for i in range(n_after - n_before):
-        if t >= t_tick + i * step:
-            n, k_last = n_before + i + 1, i
-    bump = 0.0
-    if k_last >= 0:
-        u = seg(t, t_tick + k_last * step, t_tick + k_last * step + 0.25)
-        bump = math.sin(u * math.pi) * 0.22
-    s = (ease_out_back(seg(t, t_in, t_in + 0.3)) if t_in is not None else 1.0) * (1 + bump)
-    with saved(ctx, 205, 168, s) as c:
-        P.label_tag(c, 0, 0, f"NICE TRIES: {n}", color="bubble_ai", size=32, font="round")
-    if k_last >= 0 and t < t_tick + k_last * step + 0.6:           # floating '+1'
-        u = seg(t, t_tick + k_last * step, t_tick + k_last * step + 0.6)
-        text(ctx, "+1", 345, 150 - 40 * u, 40, (1, 0.82, 0.4, 1 - u), "comic",
-             outline=(0.09, 0.06, 0.12, 1 - u), outline_w=7)
 
 
 # ===========================================================================
@@ -491,21 +469,26 @@ def _T(info):
     T["pulse"] = T["perf"] + 0.05             # the star twinkles: THE award
     # the FOR EFFORT star flies to his lapel
     # (it lands right at the start of the considers beat, so it is on his
-    # lapel for the whole 👉👈 / "...Thank you. I rehearsed." / tally, riding
+    # lapel for the whole 👉👈 / "...Thank you. I rehearsed." / ending, riding
     # his body)
     T["fly0"] = T["cons"]
     T["stick"] = T["cons"] + 0.28
     # 👉👈 "...Thank you. I rehearsed.": sit up + gloves in during the
-    # considers beat, held through the line (taps from pk_in1), down again on
-    # the tally; eyes down at the fingers on "Thank", up at the AI on "rehearsed"
+    # considers beat, held through the line (taps from pk_in1), down again right
+    # after it; eyes down at the fingers on "Thank", up at the AI on "rehearsed"
     T["sit0"], T["sit1"] = T["cons"] + 0.12, T["cons"] + 0.45
     T["pk_in0"] = T["cons"] + 0.2
     T["pk_in1"] = min(T["pk_in0"] + 0.24, T["l4s"] - 0.04)
     T["pk_down"] = T["thank"] - 0.06
     T["pk_up"] = T["rehearsed"] - 0.06
     T["gulp"] = T["cons"] + 0.12
-    T["sink0"], T["sink1"] = T["tally"] + 0.15, T["tally"] + 0.55
-    T["pk_out0"], T["pk_out1"] = T["tally"] + 0.22, T["tally"] + 0.5
+    # the post-line pause is short now (0.2 s tally + tail): sink back to the
+    # kneel right after the line so it is settled (s10's first frame) and held
+    # for ~0.25 s before the cut
+    T["sink0"] = T["l4e"] + 0.03
+    T["sink1"] = min(T["sink0"] + 0.38, T["end"] - 0.25)
+    T["pk_out0"] = T["l4e"] + 0.06
+    T["pk_out1"] = min(T["pk_out0"] + 0.28, T["end"] - 0.28)
     return T
 
 
@@ -964,8 +947,8 @@ def _shot_C(ctx, t, info, T):
     knees, both gloves come up in front of his chest (backs to camera, index
     fingers pointing in, tips tapping), shy puppy eyes glance down at the
     fingers on "Thank" and up at the AI on "rehearsed". Held through
-    "...Thank you. I rehearsed." and the star sticking; on the tally he sinks
-    back to the kneel s10 starts from."""
+    "...Thank you. I rehearsed." and the star sticking; right after the line he
+    sinks back to the kneel s10 starts from and holds it."""
     c0 = T["cons"]
     l4s = T["l4s"]
     # --- Malvo ---------------------------------------------------------------
@@ -980,40 +963,36 @@ def _shot_C(ctx, t, info, T):
                      (T["stick"] - 0.06, (0.4, 1.0), 0.1),     # ...on his lapel: for me?
                      (T["pk_down"], (0.08, 0.95), 0.16),  # "Thank": down at his fingers
                      (T["pk_up"], (0.62, -0.5), 0.14),    # "rehearsed": up at the AI, puppy
-                     (T["rehearsed"] + 0.5, (0.4, 0.95), 0.12),   # peeks at his star
-                     (T["tally"] - 0.05, (-0.85, -1.0), 0.12),  # up at the chip
-                     (T["tally"] + 0.55, (0.3, -0.2), 0.2)])
+                     (T["rehearsed"] + 0.5, (0.4, 0.95), 0.12)])  # peeks at his star (held)
     if t < l4s:
         q = 0.5 + 0.5 * math.sin(2 * math.pi * 6.0 * (t - c0))
         mouth = (0.1 * q * smoothstep(seg(t, c0, c0 + 0.1)), 0.0)    # lip quiver
     else:
         mouth = info.mouth("villain", t)
-    # arms: clasp -> 👉👈 (custom gloves) -> held -> back down on the tally
+    # arms: clasp -> 👉👈 (custom gloves) -> held -> back down after the line
     k_in = smoothstep(seg(t, T["pk_in0"], T["pk_in1"]))
     k_out = smoothstep(seg(t, T["pk_out0"], T["pk_out1"]))
     if t < T["pk_out0"]:
         arms, glove, place = _dyn_arms(t, k_in, "s09_beg", T["pk_in1"])
     else:
         arms, glove, place = _dyn_arms(t, 1.0 - k_out, "rest", T["pk_in1"])
-    # sit up for the gesture, sink back on the tally; sniffle hitch + gulp bob
+    # sit up for the gesture, sink back after the line; sniffle hitch + gulp bob
     up = ease_in_out(seg(t, T["sit0"], T["sit1"])) * (1 - ease_in_out(seg(t, T["sink0"], T["sink1"])))
     vy = (lerp(VY_KNEEL, VY_POKE, up) - 8 * _bump(t, c0 + 0.02, 0.2)
           + 4 * _bump(t, T["gulp"] + 0.02, 0.22))
     # puppy eyes stay wide open through the line (no auto blink may land on
-    # the look-up); one slow blink after the chip ticks
-    blink = _slow_blink(t, T["tally"] + 0.3)
-    if blink is None and T["pk_down"] <= t < T["tally"]:
+    # the look-up); one slow contented blink as he sinks, then open to the cut
+    blink = _slow_blink(t, T["sink0"] + 0.04)
+    if blink is None and T["pk_down"] <= t:
         blink = 0.0
     # --- Hissy: frozen mid-stroke, caught looking; "I rehearsed." -> side-eye
-    # to camera (he knows), then agrees on the tally
+    # to camera (he knows), held to the cut
     sn_expr = _state(t, [(-9, "unimpressed"), (c0 + 0.12, "idle", 0.1),
                          (l4s + 0.1, "unimpressed", 0.25),
-                         (T["rehearsed"] + 0.25, "side_eye", 0.15),
-                         (T["tally"] + 0.05, "nod", 0.2)])
+                         (T["rehearsed"] + 0.25, "side_eye", 0.15)])
     sn_look = _look(t, [(-9, (0.55, 0.75)), (c0 + 0.12, (1.0, -0.15), 0.08),
                         (l4s + 0.1, (1.0, 0.45), 0.2),
-                        (T["rehearsed"] + 0.25, (1.0, 0.0), 0.12),
-                        (T["tally"] + 0.05, (0.9, 0.2), 0.2)])
+                        (T["rehearsed"] + 0.25, (1.0, 0.0), 0.12)])
     tongue = True if T["rehearsed"] + 0.5 <= t < T["rehearsed"] + 0.75 else False
     snake = _snake_d(sn_expr, sn_look, tongue)
     saw_frozen = 14 * math.sin(2 * math.pi * 3.0 * (c0 - T["saw0"]))
@@ -1034,7 +1013,7 @@ def _shot_C(ctx, t, info, T):
     # static standard F1 framing: s10 opens on exactly this frame (he explodes
     # up from behind the desk), so the cut matches
     # (a gentle push-in toward the gesture, back out to the standard F1
-    # framing on the tally sink, so s10's first frame still matches)
+    # framing on the sink, so s10's first frame still matches)
     push = 1.0 + (PUSH_C - 1.0) * up
     fx, fy = VX, 1060.0
     with saved(ctx, fx, fy, push) as c:
@@ -1044,7 +1023,7 @@ def _shot_C(ctx, t, info, T):
         _lair_front(c, t)
         # the gloves go on top of the desk set (so the monitor's teal light
         # wedge doesn't tint just one of them), clipped at the keyboard's top
-        # edge so they still sink behind it on the tally
+        # edge so they still sink behind it at the end
         if glove > 0.0:
             c.save()
             c.rectangle(-200, -200, 1480, KB_TOP + 200)
@@ -1190,8 +1169,6 @@ def render(ctx, t, info):
     else:
         _shot_C(ctx, t, info, T)
     # overlays (last)
-    nice_tries_chip(ctx, t, info.meta.get("tries_before", 8), info.meta.get("tries_after", 9),
-                    T["tally"])
     trick_card(ctx, t, T["card"], 9, TITLE)
 
 
@@ -1223,8 +1200,6 @@ def SFX(info):
         (T["l3e"], "crowd_aww", -16),
         (T["gulp"], "gulp", -12),
         (T["stick"], "pop", -12),
-        (T["tally"], "tick", -8),
-        (T["tally"], "pop", -10),
     ]
     for t0 in T["stars_t"]:
         out.append((t0, "pop", -10))
