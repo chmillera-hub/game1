@@ -232,7 +232,17 @@ SEQ = [
     ("beat", "rae_up"),              # she stands, a little abruptly
     ("wait", 0.55),
     ("beat", "rae_walk"),            # brisk walk to the door (x 230 -> -40)
-    ("sfx", "door_open", {"offset": 1.1, "gain_db": -8.0}),
+    # the door senses her coming: it starts to slide as she reaches the end of the bench (anim/scenes/s4.py door())
+    ("sfx", "door_open", {"offset": 0.8, "gain_db": -8.0}),
+    # her footfalls (s4.walk_phase: a plant every half cycle); the last ones are already in the corridor
+    ("sfx", "step_soft", {"offset": 0.36, "gain_db": -17.0}),
+    ("sfx", "step_soft", {"offset": 0.73, "gain_db": -17.0}),
+    ("sfx", "step_soft", {"offset": 1.10, "gain_db": -17.0}),
+    ("sfx", "step_soft", {"offset": 1.47, "gain_db": -17.0}),
+    ("sfx", "step_soft", {"offset": 1.84, "gain_db": -18.0}),
+    ("sfx", "step_soft", {"offset": 2.21, "gain_db": -19.0}),
+    ("sfx", "step_soft", {"offset": 2.58, "gain_db": -22.0}),
+    ("sfx", "step_soft", {"offset": 2.95, "gain_db": -26.0}),
     ("wait", 2.1),
     ("beat", "rae_exit_door"),       # she is through the doorway
     ("wait", 0.35),
