@@ -64,7 +64,7 @@ S = [
     ('say', 'l12', 'cadet', "Wait! Wait. What the heck was that?!", {'gap': 0.6, 'len': 0.9, 'pitch': 1.05}),
     ('say', 'l13', 'android', "Hmmm? Oh. Was it not to your liking?", {'gap': 0.15, 'len': 1.05}),
     ('say', 'l14', 'cadet', "No, that's not, I mean,", {'gap': 0.2, 'len': 0.85, 'pitch': 1.04}),
-    ('say', 'l15', 'android', "No problem. I made eleven, and sent you the one I thought was best. But here are a few of the others.", {'gap': 0.2}),
+    ('say', 'l15', 'android', "Well. I made eleven, and sent you the one I thought was best. But here are a few of the others.", {'gap': 0.2}),
     ('cue', 'holo', 'holo', {'adv': False}),
     ('beat', 'holobeat', 0.6),
     ('say', 'p2', 'android', "Number two. A fugue, for harpsichord.", {'gap': 0.05}),
@@ -79,7 +79,7 @@ S = [
     ('say', 'p5b', 'android', "I like the whale one. It is kind of funny.", {'gap': 0.3, 'len': 1.05}),
     ('beat', 'hesitate', 0.9),
     ('say', 'l17', 'cadet', "Oh. Uh... yeah. Just... send them to my phone.", {'gap': 0.9, 'len': 1.2}),
-    ('say', 'l17b', 'cadet', "I'll... look at them later.", {'gap': 0.6, 'len': 1.25}),
+    ('say', 'l17b', 'cadet', "I'll... look at them later.", {'gap': 0.6, 'len': 1.15, 'speak': ["Aisle.", 0.45, "look at them later."]}),
     ('say', 'l18', 'android', "Sounds good.", {'gap': 0.1}),
     ('cue', 'send', 'tap', {'adv': False}),
     ('beat', 'sendbeat', 1.0),
@@ -122,8 +122,16 @@ def tts(who, text, opt):
     cfg = SynthesisConfig(length_scale=opt.get('len', 1.0) * (1.04 if who != 'cadet' else 1.0),
                           noise_scale=0.75 if who == 'cadet' else 0.45,
                           noise_w_scale=0.9 if who == 'cadet' else 0.5)
-    a = np.concatenate([c.audio_float_array for c in v.synthesize(text, syn_config=cfg)]).astype(np.float64)
     sr = v.config.sample_rate
+    parts = []
+    for piece in opt.get('speak', [text]):  # 'speak' lets the spoken audio differ from the subtitle
+        if isinstance(piece, (int, float)):
+            parts.append(np.zeros(int(piece * sr)))
+        else:
+            pa = np.concatenate([c.audio_float_array for c in v.synthesize(piece, syn_config=cfg)]).astype(np.float64)
+            nz = np.where(np.abs(pa) > 0.01 * np.max(np.abs(pa)))[0]
+            parts.append(pa[max(0, nz[0] - 200): nz[-1] + 400] if len(opt.get('speak', [])) > 1 else pa)
+    a = np.concatenate(parts)
     p = opt.get('pitch', 1.0)
     a = resample_poly(a, int(SR / p / 50), int(sr / 50)) if p != 1.0 else resample_poly(a, 2, 1)
     thr = 0.01 * np.max(np.abs(a))
@@ -142,6 +150,20 @@ def tts(who, text, opt):
     else:
         a = M.hp(a, 70)
     return a
+
+
+def soft_ahem():
+    """A gentle, breathy 'uh-hem' in the cadet's own voice, synthesised straight from phonemes."""
+    v = VOX['cadet']
+    ids = v.phonemes_to_ids(['ʌ', 'h', 'ˈ', 'ɛ', 'm', '.'])
+    a = v.phoneme_ids_to_audio(ids, SynthesisConfig(length_scale=1.15, noise_scale=0.8, noise_w_scale=0.9)).astype(np.float64)
+    a = resample_poly(a, int(SR / 0.96 / 50), int(v.config.sample_rate / 50))  # a touch lower, throatier
+    nz = np.where(np.abs(a) > 0.02 * np.max(np.abs(a)))[0]
+    a = a[max(0, nz[0] - 300): nz[-1] + 800]
+    a = M.lp(a / np.max(np.abs(a)), 2800)
+    breath = M.bp(np.random.default_rng(5).standard_normal(len(a)), 500, 2500) * 0.05 * np.abs(a).max()
+    a = (a + breath) * np.linspace(1, 0.7, len(a))
+    return np.vstack([a, a]) * 0.5
 
 
 def env_into(a, t0, total_frames, arr):
@@ -174,7 +196,7 @@ def main():
     snapmix[:, int(0.25 * SR):int(0.25 * SR) + g.shape[1]] += g * 1.4
     sounds['snap'] = snapmix
     sounds['shuffle'] = M.sfx_footsteps(9, 0.3) * 0.7
-    sounds['cough'] = rms_to(M.sfx_cough(), -24)
+    sounds['cough'] = rms_to(soft_ahem(), -27)
 
     t = 0.0
     events = {}

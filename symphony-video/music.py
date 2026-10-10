@@ -253,7 +253,7 @@ CH = {  # chord tones (midi, mid register) and bass root
 PROG = ['D', 'Bm', 'G', 'A', 'D', 'F#m', 'G', 'A', 'Bm', 'G', 'D/F#', 'A',
         'G', 'A', 'F#m', 'Bm', 'Bb', 'C', 'E', 'C#m', 'A', 'B', 'E', 'E', 'E']
 WALK = {  # bar: descending quarter-note bassline (midi)
-    9: [47, 45, 43, 42], 10: [43, 42, 40, 38], 11: [42, 40, 38, 37], 12: [45, 43, 42, 40],
+    10: [43, 42, 40, 38], 11: [42, 40, 38, 37], 12: [45, 43, 42, 40],
     13: [43, 42, 40, 38], 14: [45, 43, 42, 40], 15: [42, 40, 38, 37], 16: [35, 37, 38, 40],
 }
 MEL = {  # bar: [(beat, dur, midi)]
@@ -336,6 +336,15 @@ def symphony(bpm=70):
         if b >= 17:
             for k, m in enumerate(tones + [tones[0] + 12]):
                 choir.add(choir_note(m, hold, 0.22 * dyn), t0, pan=-0.6 + 0.4 * k)
+        # high notes cascading down from the top (bells + high violins), entering just before the bass
+        if 9 <= b <= 16:
+            hi = sorted(tones)
+            casc = [hi[2] + 24, hi[1] + 24, hi[0] + 24, hi[2] + 12, hi[1] + 12, hi[0] + 12, hi[2] + 12, hi[1] + 12]
+            for i, m in enumerate(casc):
+                v = (0.32 if b < 13 else 0.26) * (1.0 - 0.05 * i)
+                harp.add(musicbox_note(m, 1.8, v), t0 + i * B / 2, pan=0.45 - 0.11 * i)
+            for (bt, d, m) in MEL.get(b, []):
+                solo.add(strings_note(m + 12, d * B, 0.16, att=0.15, rel=0.5, bright=1.4), t0 + bt * B, pan=0.35)
         # walking bassline stepping down (cellos + basses, low drum on every beat)
         if b in WALK:
             for i, m in enumerate(WALK[b]):
@@ -432,27 +441,53 @@ def sn_choir(dur=2.8):
     return trim(reverb(tr.st(), 0.5, 3.5), dur)
 
 
-WHALE_CALLS = [  # (start s, duration s, start Hz, end Hz): slow, singing glides
-    (0.0, 1.9, 170, 260), (1.7, 1.5, 250, 195), (3.0, 2.2, 140, 300), (5.0, 1.8, 300, 230),
-    (6.9, 2.6, 210, 150), (9.4, 1.6, 180, 290), (10.8, 2.4, 280, 200), (13.0, 3.0, 220, 130),
+# whale melody: (start s, duration s, midi note). Low, hummed, legato; glides only between notes.
+WHALE_TUNE = [
+    (0.0, 1.1, 50), (1.0, 0.7, 53), (1.6, 1.6, 57), (3.3, 0.6, 55), (3.8, 0.9, 53), (4.6, 1.5, 50),
+    (6.6, 0.8, 57), (7.3, 0.7, 60), (7.9, 1.8, 62), (9.8, 0.6, 60), (10.3, 0.8, 57), (11.0, 1.6, 55),
+    (13.0, 0.6, 53), (13.5, 0.6, 55), (14.0, 1.2, 57), (15.1, 0.5, 62), (15.5, 0.8, 60), (16.2, 2.6, 50),
 ]
 
 
-def whale_song(dur, calls=WHALE_CALLS, gain=1.0):
-    """Majestic humpback-style song: long legato glides with a gentle, slow vibrato."""
+def whale_song(dur, tune=WHALE_TUNE, gain=1.0):
+    """A whale humming a melody: held notes, short scoops between them, gentle vibrato, vocal 'wah' timbre."""
     tr = Track(dur)
-    for (c0, cd, f0, f1) in calls:
-        if c0 >= dur:
+    # group notes into phrases (gap > 0.4 s starts a new breath)
+    phrases, cur = [], []
+    for nt in tune:
+        if nt[0] >= dur:
             break
-        tt = t_arr(min(cd, dur - c0 + 1))
-        k = tt / cd
-        f = f0 + (f1 - f0) * (0.5 - 0.5 * np.cos(np.pi * np.clip(k, 0, 1)))  # smooth portamento
-        f *= 1 + 0.008 * np.sin(2 * np.pi * 3.2 * tt) * np.clip(tt / 0.6, 0, 1)
+        if cur and nt[0] - (cur[-1][0] + cur[-1][1]) > 0.4:
+            phrases.append(cur); cur = []
+        cur.append(nt)
+    if cur:
+        phrases.append(cur)
+    for ph_notes in phrases:
+        p0 = ph_notes[0][0]
+        p1 = min(dur, ph_notes[-1][0] + ph_notes[-1][1])
+        n = int((p1 - p0) * SR)
+        tt = np.arange(n) / SR
+        f = np.zeros(n)
+        amp = np.zeros(n)
+        prev = mtof(ph_notes[0][2] - 3)  # each phrase scoops up into its first note
+        for (st, d, m) in ph_notes:
+            i0, i1 = int((st - p0) * SR), min(n, int((st - p0 + d) * SR))
+            seg = np.arange(i1 - i0) / SR
+            tgt = mtof(m)
+            glide = np.clip(seg / 0.14, 0, 1)
+            glide = glide * glide * (3 - 2 * glide)
+            f[i0:i1] = prev + (tgt - prev) * glide
+            swell = np.clip(seg / 0.12, 0, 1) * (0.85 + 0.15 * np.sin(np.pi * np.clip(seg / max(d, 0.01), 0, 1)))
+            amp[i0:i1] = np.maximum(amp[i0:i1], swell)
+            prev = tgt
+        amp *= np.clip((p1 - p0 - tt) / 0.35, 0, 1)
+        f *= 1 + 0.006 * np.sin(2 * np.pi * 4.3 * tt) * np.clip((tt - 0.3) / 0.5, 0, 1)
         ph = np.cumsum(f) / SR
-        w = np.sin(2 * np.pi * ph) + 0.25 * np.sin(4 * np.pi * ph) + 0.08 * np.sin(6 * np.pi * ph)
-        w = lp(w, 1400)
-        w *= np.sin(np.pi * np.clip(k, 0, 1)) ** 0.8
-        tr.add(w * 0.6 * gain, c0, pan=-0.15 + 0.1 * np.sin(c0))
+        w = np.sin(2 * np.pi * ph) + 0.35 * np.sin(4 * np.pi * ph) + 0.15 * np.sin(6 * np.pi * ph) + 0.06 * np.sin(8 * np.pi * ph)
+        # 'wah': the mouth opens with the swell, brightening the tone
+        dark, bright = lp(w, 450), lp(w, 1500)
+        w = dark * (1 - 0.6 * amp) + bright * 0.6 * amp
+        tr.add(w * amp * 0.75 * gain, p0, pan=-0.1)
     return tr
 
 

@@ -1191,8 +1191,8 @@ function direct() {
   J(ic('cu').t0 - 0.01, { mugY: 2.2, chest: 1, tear: 1, wet: 1, smile: 0.3, mouth: 0.15, lid: 1.05, browTilt: 0.6, browY: 0.6, lookY: -0.6, lookX: 0.1, shake: 0.25 }, 0.01);
   TR.cosmic.at(ic('cosmic').t0, 1, 0.01);
   shot(ic('kneel').t0, ic('kneel').t1, 'cosmicwide', { x: 360, y: 600, z: 1.05 }, { x: 360, y: 680, z: 1.18 });
-  TR.kneel.at(ic('kneel').t0 + 0.15, 1, 1.4);
-  TR.armsUp.at(ic('kneel').t0 + 2.6, 1, 1.6).at(ic('collapse').t0 + 0.8, 0, 1.2);
+  // (the cadet no longer kneels: they rise)
+  TR.armsUp.at(ic('kneel').t0 + 0.3, 1, 1.4).at(ic('collapse').t0 + 0.8, 0, 1.2);
   TR.rise.at(ic('kneel').t0 + 0.6, 1, 7).at(ic('collapse').t0 + 0.8, 0, 1.6);
   TR.aura.at(ic('kneel').t0, 1, 6).at(ic('collapse').t0, 0, 1.5);
   TR.nature.at(ic('collapse').t0 + 1.0, 1, 2.2);
@@ -1337,14 +1337,10 @@ function render(t) {
     const dance = TR.dance.val(t), rise = TR.rise.val(t), aura = TR.aura.val(t), close = ease(TR.close.val(t));
     const beatPh = 2 * Math.PI * (t - sym.t0) / sym.beat;
     const sA = lerp(62, 50, nat), sC = lerp(58, 46, nat);
-    let ax = lerp(470, 452, close), cxp = lerp(255, 268, close);
+    let ax = lerp(470, 462, close), cxp = lerp(255, 262, close);
     let aOpt = { dance, beatPh: dance > 0 ? beatPh : beatPh + 0.6, rise, aura };
     let cOpt = { armsOpen: kn > 0.5 ? 0.35 : 0.15, armsUp: TR.armsUp.val(t), dance, beatPh, aura, bow: sh.bow ? ease((t - sh.t0) / 4) * 0.6 * (1 - nat) : 0 };
     let ckn = kn, bird = null;
-    if (close > 0.01) { // holding hands, joined hands pumped into the air, free hands waving
-      const hx = (ax + cxp) / 2, hy = 1010 - 8.4 * 60 + Math.sin(beatPh) * 14;
-      aOpt.hold = { side: -1, x: hx, y: hy, k: close }; cOpt.hold = { side: 1, x: hx, y: hy, k: close };
-    }
     if (sh.nature && nat > 0.01) {
       const mp = meadowPose(t - (ic('collapse').t0 + 1.0), t);
       cxp = lerp(cxp, mp.cadet.x, nat); ckn = Math.min(kn, mp.cadet.kneel);
@@ -1353,15 +1349,18 @@ function render(t) {
       Object.assign(aOpt, mp.android);
       bird = mp.bird;
     }
-    const oy = 1010 + bob * 0.6 - ease(rise) * 150;
+    const oy = 1010 + bob * 0.6;
+    const cy0 = 1010 + bob - ease(rise) * 170;
     drawSpot(ctx, ax, oy, ease(rise), t);
-    drawSilhouette(ctx, ax, oy, sA, 0, 'android', t, aOpt);
-    drawSilhouette(ctx, cxp, 1010 + bob, sC, ckn, 'cadet', t, cOpt);
-    if (close > 0.3 && aOpt.hold) { // glow where the hands clasp
-      const g = ctx.createRadialGradient(aOpt.hold.x, aOpt.hold.y, 0, aOpt.hold.x, aOpt.hold.y, 40);
-      g.addColorStop(0, `rgba(255,255,240,${0.9 * close})`); g.addColorStop(1, 'rgba(255,240,200,0)');
-      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(aOpt.hold.x, aOpt.hold.y, 40, 0, Math.PI * 2); ctx.fill();
+    if (rise > 0.02) { // a soft column of light lifting the cadet
+      ctx.save(); ctx.globalCompositeOperation = 'lighter';
+      const lg = ctx.createLinearGradient(0, cy0, 0, 1060);
+      lg.addColorStop(0, `rgba(255,215,160,${0.35 * ease(rise)})`); lg.addColorStop(1, 'rgba(255,215,160,0)');
+      ctx.fillStyle = lg; ctx.beginPath(); ctx.moveTo(cxp - 45, cy0); ctx.lineTo(cxp + 45, cy0); ctx.lineTo(cxp + 90, 1060); ctx.lineTo(cxp - 90, 1060); ctx.fill();
+      ctx.restore();
     }
+    drawSilhouette(ctx, ax, oy, sA, 0, 'android', t, Object.assign({}, aOpt, { rise: 0, armsUp: 0.8 * TR.armsUp.val(t) * (1 - nat) }));
+    drawSilhouette(ctx, cxp, cy0, sC, ckn, 'cadet', t, Object.assign({}, cOpt, { rise: 0 }));
     if (bird && nat > 0.5) drawBird(ctx, bird.x, bird.y, 1.7, bird.flap, '#3a2f4a');
     ctx.restore();
     vignette(ctx, 0.5);
