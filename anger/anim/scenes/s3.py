@@ -114,16 +114,17 @@ def cam_on_rot(pt, zoom, sx=0.5, sy=0.5, rot=0.0):
 _FLAT = {}
 
 
-def draw_flat(c, fn, zoom, res_k=0.8):
+def draw_flat(c, fn, zoom, res_k=0.8, res_z=None, cap=None):
     """Draw a static set (fn(canvas) in stage coords) under a ROLLED camera fast: env blits big pre-rasterised
     tiles, and a rotated blit of those is ~10x slower than an axis-aligned one. So render the set unrotated into
     an offscreen covering the view's bounding box and draw that one image under the rolled camera."""
     m = c.getTotalMatrix()
-    if abs(m.getSkewX()) < 1e-4 and abs(m.getSkewY()) < 1e-4:
+    flat = abs(m.getSkewX()) < 1e-4 and abs(m.getSkewY()) < 1e-4
+    if flat and (cap is None or zoom <= cap * 1.25):
         fn(c)
         return
     vis = c.getLocalClipBounds()
-    zr = zoom * res_k
+    zr = (zoom * res_k if res_z is None else res_z) if not flat else cap
     wl, hl = int(math.ceil(vis.width() * zr)), int(math.ceil(vis.height() * zr))
     if wl > 1800 or hl > 1800:
         zr *= 1800.0 / max(wl, hl)
@@ -291,10 +292,10 @@ def slab_walk_pose(t):
     # freeze: eyes snap down to his feet a beat after the crack, head follows a little
     dn = smoothstep((t - (CRACK + 0.22)) / 0.18)
     oh = smoothstep((t - (CRACK2 + 0.12)) / 0.3)
-    p = p.copy(look_x=lerp(p.look_x, 0.15, dn), look_y=lerp(p.look_y, 1.0, dn), head_nod=-0.7 * dn,
+    p = p.copy(look_x=lerp(p.look_x, 0.15, dn), look_y=lerp(p.look_y, 1.0, dn), head_nod=-1.0 * dn,
                brow_furrow=lerp(0.35, 0.12, oh), brow_raise=0.18 * oh,
-               lid_l=lerp(1.0, 0.8, dn) * lerp(1.0, 0.86, oh) * A.blink(t + 3),
-               lid_r=lerp(1.0, 0.78, dn) * lerp(1.0, 0.86, oh) * A.blink(t + 3), mouth_open=0.05 * oh, squint=lerp(0.12, 0.0, dn),
+               lid_l=lerp(1.0, 0.68, dn) * lerp(1.0, 0.86, oh) * A.blink(t + 3),
+               lid_r=lerp(1.0, 0.66, dn) * lerp(1.0, 0.86, oh) * A.blink(t + 3), mouth_open=0.05 * oh, squint=lerp(0.12, 0.0, dn),
                breath=0.0 if t > CRACK + 0.2 else None)          # he stops breathing
     return p
 

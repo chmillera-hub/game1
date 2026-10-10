@@ -203,8 +203,8 @@ def _look_track(t):
             (M02 + 1.6, (-1.0, -0.05)),               # back to the voice
             (GLOVE + 0.15, (-0.85, 0.25)),            # the glove / the monster sliding away
             (TUGS[2] + 0.2, (-1.0, 0.1)),
-            (CHOMPS[3], (-0.5, -0.6)),                # the ceiling
-            (GULP + 0.2, (-0.3, -0.85)),
+            (CHOMPS[3], (-0.2, -0.35)),               # a blank stare up into nothing
+            (GULP + 0.2, (-0.05, -0.3)),
             (CRUNCH_END + 0.15, (-0.95, -0.1))]       # toward the dark
     return _sacc(t, keys)
 
@@ -289,7 +289,7 @@ def anger_pose(t):
                brow_raise=br + 0.12 * slurp - 0.15 * tense,
                smile=-0.15 - 0.2 * tense - 0.25 * snap - 0.1 * gulp,
                head_turn=0.05 * noise1(t * 0.3, 44) - 0.08 * flinch + 0.06 * one - 0.1 * closed,
-               head_nod=0.12 * (gy < -0.5) - 0.15 * squeeze,
+               head_nod=-0.3 * smoothstep((-gx - 0.4) / 0.5) * (1 - closed) - 0.15 * squeeze,
                head_tilt=-6.0 * flinch,
                breath=None if tense < 0.5 else 0.15 * math.sin(2 * math.pi * 0.9 * t))
     return p
@@ -301,6 +301,13 @@ def anger_lit(p, t, amb, L, rim=0.6):
 
 
 # =========================================================================== the crawler
+def growl_env(t):
+    """0..1 while the monster_growl phrases sound (+0.1-1.7, +1.95-4.05; peak ~+3.1)."""
+    a = t - GROWL
+    e = _pulse(a, 0.1, 0.15, 1.3, 0.15) + _pulse(a, 1.95, 0.2, 1.75, 0.15) * (0.8 + 0.2 * _pulse(a, 2.7, 0.3, 0.2, 0.5))
+    return clamp(e)
+
+
 def _drag_pull(t):
     """How far the glove has dragged it left (stage units)."""
     v = 0.0
@@ -325,9 +332,10 @@ def crawler_pose(t):
         v = C.ADVANCE["creep"] * CR_S / 1.3
         x = X_SNARL - (REVEAL - t) * v * (1.0 - 0.35 * smoothstep((t - (REVEAL - 0.8)) / 0.8))
         ph = (x - X_APP0) / (C.ADVANCE["creep"] * CR_S)
-        p = _pose(x=x, y=BACK_Y, scale=CR_S, facing=1.0, head_tilt=-4.0,
+        g = growl_env(t)
+        p = _pose(x=x, y=BACK_Y, scale=CR_S, facing=1.0, head_tilt=-4.0 + 1.5 * g * noise1(t * 11.0, 315),
                   extra=dict(state="creep", state2="snarl", mix=smoothstep((t - (REVEAL - 0.5)) / 0.5), phase=ph,
-                             jaw=0.12, drool=0.5))
+                             jaw=0.12 + 0.16 * g + 0.04 * g * noise1(t * 13.0, 316), drool=0.5))
         return p, "back"
     if t < LUNGE:           # snarl over him
         jaw = lerp(0.18, 0.88, ease_out(clamp((t - HISS) / 0.12)))
@@ -417,7 +425,7 @@ def rock_state(t):
     floor = FRONT_Y + 22.0
     g = 2600.0
     t1 = ROCK_B1 - BONK
-    vx = 300.0
+    vx = 180.0
     vy = (floor - hy - 0.5 * g * t1 * t1) / t1
     ang0 = -900.0 * (BONK - WHOOSH)
     if t < ROCK_B1:
@@ -428,19 +436,19 @@ def rock_state(t):
         a = t - ROCK_B1
         d = ROCK_B2 - ROCK_B1
         vb = 0.5 * g * d
-        return x1 + 190.0 * a, floor - (vb * a - 0.5 * g * a * a), ang0 + 500.0 * t1 + 420.0 * a
-    x2 = x1 + 190.0 * (ROCK_B2 - ROCK_B1)
+        return x1 + 120.0 * a, floor - (vb * a - 0.5 * g * a * a), ang0 + 500.0 * t1 + 420.0 * a
+    x2 = x1 + 120.0 * (ROCK_B2 - ROCK_B1)
     a = min(t, ROCK_REST) - ROCK_B2
     d = ROCK_REST - ROCK_B2
     k = 1.0 - (1.0 - a / d) ** 2
-    return x2 + 45.0 * k, floor, ang0 + 500.0 * t1 + 420.0 * (ROCK_B2 - ROCK_B1) + 120.0 * k
+    return x2 + 30.0 * k, floor, ang0 + 500.0 * t1 + 420.0 * (ROCK_B2 - ROCK_B1) + 80.0 * k
 
 
 def _rock_path():
     pts = []
     for i in range(9):
         a = i / 9 * math.tau
-        r = 21.0 * (0.8 + 0.3 * hash01(i, 321))
+        r = 27.0 * (0.8 + 0.3 * hash01(i, 321))
         pts.append((math.cos(a) * r * 1.15, math.sin(a) * r * 0.9))
     path = skia.Path()
     path.moveTo(*pts[0])
@@ -473,13 +481,13 @@ def draw_rock(c, t):
     c.save()
     c.translate(x, y)
     c.rotate(ang)
-    c.drawPath(_ROCK, paint("#5E5868"))
+    c.drawPath(_ROCK, paint("#6E6878"))
     c.save()
     c.clipPath(_ROCK, doAntiAlias=True)
-    c.drawCircle(-7, -8, 13, paint("#8E8698", 0.8))
-    c.drawCircle(9, 9, 15, paint("#3A3442", 0.7))
+    c.drawCircle(-9, -10, 17, paint("#A69EB0", 0.85))
+    c.drawCircle(11, 11, 19, paint("#3A3442", 0.7))
     c.restore()
-    c.drawPath(_ROCK, paint("#0E0C12", 0.9, stroke=2.0))
+    c.drawPath(_ROCK, paint("#0E0C12", 0.9, stroke=2.2))
     c.restore()
 
 
@@ -526,7 +534,7 @@ def draw_drool(c, t):
     # the splat (lit) stays on the armour
     if t >= DROOL_LAND:
         a = t - DROOL_LAND
-        k = 1.0 - 0.5 * smoothstep(a / 1.5)
+        k = (1.0 - 0.5 * smoothstep(a / 1.5)) * (1.0 - smoothstep((t - (LUNGE - 0.35)) / 0.5))
         sp = 1.0 + 0.6 * ease_out(clamp(a / 0.12))
         c.drawOval(skia.Rect(tx - 13 * sp, ty - 5 * sp, tx + 13 * sp, ty + 5 * sp), paint("m_drool", 0.6 * k))
         c.drawOval(skia.Rect(tx - 13 * sp, ty - 5 * sp, tx + 13 * sp, ty + 5 * sp),
@@ -568,7 +576,7 @@ def _draw_bg_cached(c, cam, cam0):
         lc.clear(skia.ColorBLACK)
         lc.save()
         camc.apply(lc, 0.0)
-        s3.draw_flat(lc, lambda cc: env.draw_depths(cc, 0.0, dust=0.0), camc.zoom)
+        s3.draw_flat(lc, lambda cc: env.draw_depths(cc, 0.0, dust=0.0), camc.zoom, res_k=0.55)
         lc.restore()
         if len(_BG) > 6:
             _BG.clear()
@@ -588,7 +596,7 @@ def _draw_bg_cached(c, cam, cam0):
 
 
 def draw_world(c, t, cam, *, anger=True, crawler=True, glove=True, rock=True, dust=None, extra=None,
-               amb=DEP_AMB, vig=0.5, dim=0.0, emissive_extra=None, lights_extra=(), bg0=None):
+               amb=DEP_AMB, vig=0.5, dim=0.0, emissive_extra=None, lights_extra=(), bg0=None, flat_z=None):
     p = anger_pose(t)
     L = scene_lights(t, p) + list(lights_extra)
     if glove and CUT19 <= t < CRUNCH + 0.5:      # a breath of light where the glove comes out of the dark
@@ -603,7 +611,8 @@ def draw_world(c, t, cam, *, anger=True, crawler=True, glove=True, rock=True, du
     else:
         c.save()
         cam.apply(c, t)
-        s3.draw_flat(c, lambda cc: env.draw_depths(cc, t, dust=dd), cam.zoom)
+        s3.draw_flat(c, lambda cc: env.draw_depths(cc, t, dust=dd), cam.zoom, res_z=0.82 if flat_z is None else flat_z,
+                     cap=1.6)
     s3.draw_stuck_sword(c, t)
     if abs(cam.rot) < 0.5:          # (big soft sprites: far too slow to blit rolled; it has settled by then)
         s3.impact_dust(c, t)
@@ -673,8 +682,8 @@ def _blur_amt(t):
 def shot1(c, t):
     u = ease_in_out(clamp((t - T0) / (CUT2 - T0)))
     a = Camera(352.0, 830.0, 1.09)                     # = S3's last framing
-    b = face_cam(t, 1.55, 0.55, 0.5, rot=-30.0)        # a slow, woozy roll as his vision swims
-    cam = cam_mix(a, b, u * 0.85)
+    b = face_cam(t, 1.19, 0.55, 0.52, rot=0.0)      # (stays inside one tile-resolution bucket)
+    cam = cam_mix(a, b, u * 0.9)
     draw_world(c, t, cam, crawler=False, vig=0.55)
     _blur(c, t, _blur_amt(t))
 
@@ -796,8 +805,10 @@ def approach_front_pose(t):
     sc = lerp(0.3, 0.62, u * u * 0.4 + u * 0.6)
     y = lerp(1088.0, 1150.0, u)
     ph = (t - CUT10) / 1.2
+    g = growl_env(t)
     return _pose(x=-170.0 + 30 * u, y=y, scale=sc, facing=1.0, look_x=0.15, look_y=0.25,
-                 extra=dict(state="creep", view="front", phase=ph, jaw=0.15, drool=0.5))
+                 extra=dict(state="creep", view="front", phase=ph, jaw=0.12 + 0.2 * g + 0.05 * g * noise1(t * 13.0, 317),
+                            drool=0.5))
 
 
 def shot10(c, t):
