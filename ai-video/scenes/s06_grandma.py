@@ -1299,7 +1299,10 @@ def _shot_ai_cu(ctx, t, info, T):
     hands = _state(t, [(-1, "idle"), (T["w_thats"] - 0.1, "point_l", 0.28),
                        (T["w_shawl"] + 0.25, "idle", 0.35)])
     blink = _slow_blink(t, T["l2e"] + 0.05)
-    draw_ai(ctx, x, y, s, t, expr=expr, look=look, mouth=info.mouth("ai", t), hands=hands,
+    if blink is None and t < T["w_shawl"] + 0.45:
+        blink = 0.0                                  # no auto-blink right after the cut
+    s_ = s * (1 + _cut_pulse(t, T["cu1_end"], 0.2, 0.02))
+    draw_ai(ctx, x, y, s_, t, expr=expr, look=look, mouth=info.mouth("ai", t), hands=hands,
             blink=blink)
 
 
