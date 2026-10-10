@@ -1,0 +1,11 @@
+venv/
+models/
+fonts/
+voices/
+render/node_modules/
+render/package-lock.json
+timeline.json
+master.mkv
+mix.wav
+music_only.wav
+preview/

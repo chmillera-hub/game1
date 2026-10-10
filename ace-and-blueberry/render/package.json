@@ -1,0 +1,8 @@
+{
+  "name": "ace-and-blueberry-render",
+  "private": true,
+  "description": "Frame renderer for the Ace and Blueberry animated video",
+  "dependencies": {
+    "@napi-rs/canvas": "0.1.65"
+  }
+}
