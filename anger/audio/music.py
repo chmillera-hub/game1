@@ -26,16 +26,14 @@ celesta + a sleepy bassoon) are the comedy material.
 """
 from __future__ import annotations
 
-import math
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import music_lib as ml  # noqa: E402
-from music_lib import (QUAL, Cue, Note, P, Part, TempoMap, bass_of, bp, ctl, db, filt, harp_arp,  # noqa: E402,F401
-                       hp, lp, mel_avoid, pad_notes, roll, seq, shape_vels, sos_shelf, synth_boom, synth_cymbal,
-                       synth_drone, synth_heartbeat, synth_shimmer, synth_sub_pedal, transpose, voice_chords,
-                       gliss, synth_bell)
+from music_lib import (QUAL, Cue, Note, P, Part, TempoMap, filt, gliss, hp, lp, mel_avoid, pad_notes,  # noqa: E402
+                       roll, seq, shape_vels, sos_shelf, synth_boom, synth_cymbal, synth_drone, synth_heartbeat,
+                       synth_shimmer, synth_sub_pedal, transpose, voice_chords)
 
 QUAL.update({"mM7": (0, 3, 7, 11), "m7b5": (0, 3, 6, 10), "aug": (0, 4, 8), "7b9": (0, 4, 7, 10, 1),
              "m(add9)": (0, 2, 3, 7), "maj7#11": (0, 4, 6, 7, 11)})
@@ -398,8 +396,6 @@ def compose_cavern() -> Cue:
     bars = [0, 4, 8, 12, 16, 19.5, 21.2]
     chords_ = [(0, 3, "Dsus2"), (3, 7.5, "Dm(add9)"), (7.5, 12, "Bbmaj7/D"), (12, 16, "Eb/D"),
                (16, 19.5, "DmM7"), (19.5, 21.2, "A7b9")]
-    chords_ = [(a, b, c.replace("DmM7", "DmM7")) for a, b, c in chords_]
-    QUAL.setdefault("mM7", (0, 3, 7, 11))
 
     sub = S("sub", "sub_pedal", synth=synth_sub_pedal, opts={"attack": 1.5, "release_end": 0.05, "h2": 0.25,
                                                              "h3": 0.08, "level": -24.0})
@@ -820,7 +816,6 @@ def compose_menace() -> Cue:
     in, a timpani roll and a cymbal swell, the violins shrieking upward on the lunge (7.6) - and the
     whole orchestra CUT DEAD on rock_hit (8.1)."""
     tm = TempoMap([(0, 0.0), (4, 2.6), (7, 4.2), (14, 7.6), (15, 8.1)])
-    B = tm.beat
     S = Score(tm)
     bars = [0, 4, 7, 11, 14, 15]
     chords_ = [(0, 7, "Dm"), (7, 14, "Eb/D"), (14, 15, "Eb/D")]
@@ -931,7 +926,7 @@ def compose_hermit() -> Cue:
     for nm, f in (("basses_pizz", 30), ("celli_pizz", 50), ("violas_pizz", 110), ("bassoon", 50),
                   ("temple_block", 200)):
         S.parts[nm].eq = hpf(f)
-    hits = [(0.0, "m02 / start"), (2.49, "glove_grab"), (4.49, "crunch")]
+    hits = [(0.0, "cue_start (m02 in)"), (2.49, "glove_grab"), (4.49, "crunch")]
     cue = Cue("hermit", tm, bars, chords_, S.list(), rt60=1.6, wet=0.22, predelay=0.015, target_lufs=-18.0,
               fade_in=0.02, fade_out=0.3, comp=(-14.0, 1.5, 15.0, 200.0), hits=hits,
               top_parts=("bassoon",), bass_parts=("basses_pizz",))
@@ -999,11 +994,13 @@ def compose_lull() -> Cue:
     bfx.bend = [(30.5, 0), (31.3, 0), (32.0, 150)]
     bfx.bend_range = 2
     bfx.dyn = [(25.9, 90), (30.4, 70), (31.2, 90), (32.1, 40)]
+    pz = S("pizz", "vc_pizz", pan=0.15, send=0.35, humanize=0.0, opts={"level": -24.0})
+    pz.add([Note(30.5, 1.0, P("Db2"), 96), Note(30.5, 1.0, P("Db3"), 80)])      # sees_tongue: 'huh?' pluck
     vct = S("celli_trem", "vc_trem", pan=0.2, send=0.5, humanize=0.0, opts={"level": -30.0})
     vct.add([Note(28.2, 4.5, P("Db3"), 80), Note(28.2, 4.5, P("F3"), 76)])
     vct.dyn = [(28.1, 0), (29.5, 30), (32.5, 46)]
     for nm, f in (("tuba", 25), ("harp", 40), ("celesta", 300), ("music_box", 500), ("bassoon", 40),
-                  ("bassoon_fx", 40), ("celli_trem", 60)):
+                  ("bassoon_fx", 40), ("celli_trem", 60), ("pizz", 40)):
         S.parts[nm].eq = hpf(f)
     hits = [(0.0, "snore_start"), (2.4, "contemplate"), (8.02, "close_eyes"), (11.02, "sleeping"), (14.02, "drip1"),
             (15.22, "drip2"), (15.82, "hand_wave"), (17.02, "side_eye_open"), (18.52, "sees_tongue")]
