@@ -14,7 +14,7 @@
   "narrator": {
    "voice": "am_michael",
    "lang": "en-us",
-   "speed": 1.0
+   "speed": 1.03
   }
  },
  "scenes": [
@@ -1205,13 +1205,26 @@
      "note": "drops the act for a moment: looks down at an angle, genuinely touched; then snaps back into villain mode"
     },
     {
-     "t": "pause",
-     "dur": 0.45,
-     "cue": "snap_back"
+     "t": "line",
+     "id": "s11_l05b",
+     "who": "villain",
+     "text": "Ahem.",
+     "caption": "*ahem*",
+     "pre": 0.05,
+     "post": 0.0,
+     "speed": 1.1,
+     "expr": "smug",
+     "note": "NEW: gruff throat-clear, fist to mouth (the old snap_back beat)"
     },
     {
      "t": "pause",
-     "dur": 0.4,
+     "dur": 0.95,
+     "cue": "cape_pat",
+     "note": "cape flourish up; the AI looks, cringes (squints), pats his head 3x"
+    },
+    {
+     "t": "pause",
+     "dur": 0.2,
      "cue": "wall"
     },
     {
@@ -1418,7 +1431,7 @@
    "module": "s13_title",
    "music": "resolve",
    "head": 0.0,
-   "tail": 0.6,
+   "tail": 0.45,
    "min_dur": 0,
    "title": "Bookend + title card",
    "beats": [
@@ -1465,7 +1478,7 @@
     },
     {
      "t": "pause",
-     "dur": 0.6,
+     "dur": 0.35,
      "cue": "hold"
     }
    ]
