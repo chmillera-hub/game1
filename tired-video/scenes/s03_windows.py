@@ -314,7 +314,7 @@ HOLD_ROCK = P(IK("r", 0.0, 0.58, 0.2, "grip", wa=1.2, wabs=0.6, layer="front"),
               IK("l", 0.03, 0.555, 0.2, "flat", wa=1.7, wabs=0.6, layer="front"),
               hunch=1.0, neck=-0.15, nod=0.12, lean=0.04, **L("l", k=0.12), **L("r", k=0.1))
 THROW = P({"base": "throw"}, hunch=0.5, hold=0.0)
-THROW_PUMP = P(HK("r", 95, -40, "grip", hz=-30, layer="mid", wa=-1.6, wabs=0.5),
+THROW_PUMP = P(HK("r", 118, -112, "grip", hz=-30, layer="mid", wa=-1.6, wabs=0.5),
                A("l", 1.2, 0.35, 0.3, h="open"), twist=-0.05, lean=0.02, side=0.04, hunch=0.5,
                **L("l", 0.45, 0.1, 0.2), **L("r", -0.2, 0.1, 0.25))
 FOLLOW = P(A("r", 1.35, 0.25, 0.2, h="open"), A("l", 0.15, 0.3, 0.4, h="open"),
@@ -388,15 +388,42 @@ def _hole_overlay(ctx, t):
 def _lawn_props(ctx, t, T, draw_rock=True, draw_cage=True):
     if draw_rock and t < T["ins1"]:
         props.rock(ctx, ROCK_XY[0], ROCK_XY[1], ROCK_S)
-    if draw_cage and T["drop"] <= t < T["scoop"] + 0.16:
+    if draw_cage and T["drop"] <= t < _grab(T)[0]:
         _cage_drop(ctx, t, T)
+
+
+CAGE_H = 268 * CAGE_S        # handle top -> cage bottom
+_GRAB = {}
+
+
+def _grab(T):
+    """(t_grab, handle_x): the dip frame where his hand reaches the handle of the cage
+    lying on the lawn, and where that handle is (probed once, frame-independent)."""
+    key = T["scoop"]
+    if key not in _GRAB:
+        best = None
+        sc, sc1 = T["scoop"], T["scoop1"]
+        n = 24
+        for i in range(n + 1):
+            tt = sc + (sc1 - sc) * 0.5 * i / n
+            a, _ = _emb_G(_probe_ctx(), _PROBE_INFO[0], tt, T, probe=True)
+            hx, hy = a["hand_r"][0], a["hand_r"][1]
+            if hy >= CAGE_REST[1] - CAGE_H - 4 or i == n:
+                best = (tt, hx)
+                break
+        _GRAB.clear()
+        _GRAB[key] = best
+    return _GRAB[key]
+
+
+_PROBE_INFO = [None]
 
 
 def _cage_drop(ctx, t, T):
     """The cage he lost at window 3, lying on the lawn until he scoops it up."""
     tau = t - T["panic"]
-    rot = 0.1 + 0.05 * math.exp(-max(0.0, tau) * 4) * math.cos(tau * 14)
-    _cage(ctx, CAGE_REST[0], CAGE_REST[1] - 268 * CAGE_S, t, rot)
+    rot = 0.05 * math.exp(-max(0.0, tau) * 4) * math.cos(tau * 14)
+    _cage(ctx, _grab(T)[1], CAGE_REST[1] - CAGE_H, t, rot)
 
 
 def _shards(ctx, t, T):
@@ -439,7 +466,7 @@ def _fence(ctx, t):
 # shot A — along the facade (0 .. w3)
 # ---------------------------------------------------------------------------
 def _emb_A(ctx, info, t, T):
-    w1, l1, l1e, w2, l2, l2e = T["w1"], T["l1"], T["l1e"], T["w2"], T["l2"], T["l2e"]
+    l1, l1e, l2, l2e = T["l1"], T["l1e"], T["l2"], T["l2e"]
     face = {}
     blush, sweat, flip = 0.3, 0.35, False
     turn, pt = -1.0, t
@@ -576,7 +603,7 @@ def _B_times(T):
 
 def _emb_B(ctx, info, t, T):
     """Inside view: he slams onto the glass, shoves it up twice, wails, slides down."""
-    l3, l3e = T["l3"], T["l3e"]
+    l3 = T["l3"]
     slam, hv, slide = _B_times(T)
     pop = ease_out_back(seg(t, slam - 0.06, slam + 0.04), 1.6)
     sink = ease_in(seg(t, slide, T["panic"] - 0.06))
@@ -617,7 +644,7 @@ def _shot_B(ctx, info, t, T, dx=0.0):
     l3, l3e = T["l3"], T["l3e"]
     slam, hv, slide = _B_times(T)
     z = tween(t, [(T["w3"], 1.95), (l3, 2.0), (l3e, 2.2)])
-    cy = tween(t, [(T["w3"], 770), (l3e, 735)])
+    cy = tween(t, [(T["w3"], 812), (l3e, 796)])      # keep the sash lock above the caption band
     sx, sy = core.shake(t, slam, 0.18, 10, seed=21)
     for th in hv:
         ax, ay = core.shake(t, th, 0.12, 5, seed=22)
@@ -644,15 +671,15 @@ def _shot_B(ctx, info, t, T, dx=0.0):
                 mx, my = a["mouth"]
                 core.ellipse(ctx, mx, my + 6, 70 + 14 * math.sin((t - l3) * 7), 46)
                 core.fill(ctx, (1, 1, 1, 0.3 * fog))
+        # tears flung from the squeezed eyes (outside, behind the glass)
+        for i, ts in enumerate((l3 + 0.28, l3 + 0.6, l3 + 0.9)):
+            fx.sweat_fly(ctx, a["eye_l"][0] - 10, a["eye_l"][1] + 4, 0.7, t, ts, seed=20 + i, n=2, side=-1)
+            fx.sweat_fly(ctx, a["eye_r"][0] + 10, a["eye_r"][1] + 4, 0.7, t, ts + 0.05, seed=30 + i, n=2, side=1)
         # glass reflections
         for (x0, w0, al) in ((LVX + 40, 46, 0.18), (LVX + 110, 20, 0.14), (LVX + LVW - 120, 30, 0.12)):
             core.poly(ctx, [(x0, LVY), (x0 + w0, LVY), (x0 + w0 - 160, LVY + LVH), (x0 - 160, LVY + LVH)])
             core.fill(ctx, (1, 1, 1, al))
         ctx.restore()
-        # tears flung from the squeezed eyes
-        for i, ts in enumerate((l3 + 0.28, l3 + 0.6, l3 + 0.9)):
-            fx.sweat_fly(ctx, a["eye_l"][0] - 10, a["eye_l"][1] + 4, 0.7, t, ts, seed=20 + i, n=2, side=-1)
-            fx.sweat_fly(ctx, a["eye_r"][0] + 10, a["eye_r"][1] + 4, 0.7, t, ts + 0.05, seed=30 + i, n=2, side=1)
         _sash_lock(ctx, t, k + (1 - seg(t, slam, slam + 0.15)) * (t >= slam))
         _rattle_marks(ctx, t, slam, LVX, LVY, LVW, LVH, seed=31, big=1.2)
         for i, th in enumerate(hv):
@@ -883,11 +910,11 @@ def _shot_F2(ctx, info, t, T):
 # ---------------------------------------------------------------------------
 # shot G — tiptoe over the glass, scoop the cage, whisper
 # ---------------------------------------------------------------------------
-def _emb_G(ctx, info, t, T):
-    tp0, l5, l5e, sc, sc1 = T["tip0"], T["l5"], T["l5e"], T["scoop"], T["scoop1"]
+def _emb_G(ctx, info, t, T, probe=False):
+    l5, l5e, sc, sc1 = T["l5"], T["l5e"], T["scoop"], T["scoop1"]
     x = _tip_x(t, T)
     pt = _tip_pt(t, T)
-    has_cage = t >= sc + 0.15
+    has_cage = (not probe) and t >= _grab(T)[0]
     mo = info.mouth("embar", t)[0]
     ht = tween(t, [(l5 + 0.42, 0.0), (l5 + 0.6, -0.4), (l5e - 0.14, -0.4), (l5e + 0.02, 0.0)])
     if t < sc:
@@ -907,12 +934,13 @@ def _emb_G(ctx, info, t, T):
                 "brow_in": 0.2, "pupil": -0.3 * fr, "wobble": 0.5 * fr, "brow": 0.2 * fr}
     else:
         u = seg(t, sc, sc1)
-        dip = math.sin(math.pi * min(1.0, u * 1.15))
+        dip = math.sin(math.pi * min(1.0, u * 1.1))
         pose = ((TIPTOE if not has_cage else TIP_CAGE), SCOOP, dip * 0.9)
         look = (0.45, 0.85)
         expr = state_at(t, [(0, "whisper"), (l5e + 0.02, "guilty")], 0.15)
         face = {"brow_ang": 0.65, "press": 0.5 * (1 - mo), "head_turn": ht}
-    cage_rot = 0.18 * math.sin((t - sc) * 9) * math.exp(-max(0.0, t - sc - 0.15) * 3)
+    tg = t - _grab(T)[0] if not probe else 0.0
+    cage_rot = 0.16 * math.sin(tg * 11) * math.exp(-max(0.0, tg) * 3.5)
     a = _emb(ctx, info, t, x, Y, pose, expr, look, face, 0.95, flip=False, pose_t=pt, blush=0.6,
              sweat=0.6, hold=_cage_hold(cage_rot) if has_cage else None)
     return a, x
@@ -927,9 +955,10 @@ def _shot_G(ctx, info, t, T):
                    (T["climb"], 1285)])
     with core.camera(ctx, cx, cy, z):
         _house(ctx, t, T)
-        _lawn_props(ctx, t, T)
+        _lawn_props(ctx, t, T, draw_cage=False)
         _shards(ctx, t, T)
         _emb_G(ctx, info, t, T)
+        _lawn_props(ctx, t, T, draw_rock=False)      # the cage lies just in front of his feet line
         _fence(ctx, t)
 
 
@@ -1120,6 +1149,7 @@ def _shot_H(ctx, info, t, T):
 # ---------------------------------------------------------------------------
 def render(ctx, t, info):
     T = _T(info)
+    _PROBE_INFO[0] = info
     dx = 0.0
     if T["whip"] <= t < T["whip"] + 0.32:
         dx, _ = fx.whip_pan_offset(t, T["whip"], 0.32, 1300, 1)
@@ -1147,6 +1177,7 @@ def render(ctx, t, info):
 # ---------------------------------------------------------------------------
 def SFX(info):
     T = _T(info)
+    _PROBE_INFO[0] = info
     ev = []
 
     def steps(x0, x1, t0, t1, gain, pan, pose=RUN, turn=1.0, phase0=0.0):
@@ -1171,7 +1202,7 @@ def SFX(info):
     for th in _pound_times(T):
         ev.append((th, "knock", -6, 0.0))
     ev.append((T["whip"], "whoosh", -8, 0.3))
-    slam, hv3, slide = _B_times(T)
+    slam, hv3, _slide = _B_times(T)
     ev.append((slam, "door_bang", -5, 0.0))
     for th in hv3:
         ev.append((th + 0.02, "door_bang", -12, 0.0))
@@ -1183,7 +1214,7 @@ def SFX(info):
     ev.append((T["smash"], "glass_smash", 0, 0.25))
     ev.append((T["tip0"], "tiptoe", -4, 0.0))
     ev.append((T["f0"], "plate_clink", -15, 0.1))
-    ev.append((T["scoop1"] - 0.12, "cage_rattle", -12, 0.1))
+    ev.append((_grab(T)[0], "cage_rattle", -12, 0.1))
     ev.append((T["cage_in"] + 0.5, "brick_thud", -16, 0.15))
     ev.append((T["hop"], "cloth_rustle", -4, 0.0))
     ev.append((T["hop"] + 0.6, "cloth_rustle", -7, 0.05))

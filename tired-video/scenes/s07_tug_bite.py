@@ -40,17 +40,13 @@ CAGE_S = 0.62            # pet carrier
 THING_S = 0.5            # the thing
 FLOOR = M["stand_y"]     # 1520 feet line
 TUG_Y = 1540
-UP_Y = 1474              # upstage feet line (Tiredness behind the tug)
 DESK_Y = M["desk_top_y"]
 H_EMB = human.metrics("embar")["height"]
-H_TIR = human.metrics("tired")["height"]
 BR = dict(laundry_scattered=True, closet_open=1.0, chair_empty=True, chair_spin=1.1)
 HP = "neck"              # Tiredness's headphones (round his neck since the s05 reveal)
 
 CAGE_DESK = (2160.0, DESK_Y - 278 * CAGE_S)   # cage anchor (handle top) on the desk
 IMP_X = 470.0
-EMB_TUG_X = 935.0
-TIR_UP_X = 800.0
 DOOR_BUMP_X = 405.0
 KNIT = "#c9524a"
 
@@ -278,7 +274,6 @@ P_TUG = {"base": "tug", "period": 1.2, "lean": HW(-0.52, 0.1, 0.0), "al_ty": 0.3
 # catch / crouch with both hands low in front
 P_CROUCH_READY = {"base": "crouch", "lean": 0.45, **HIK("l", 0.1, 0.35, 0.3, "claw"),
                   **HIK("r", 0.1, 0.35, 0.32, "claw")}
-P_DIVE = {"base": "catch", "lean": 0.55, "lift": 40.0}
 P_GRAB = {"base": "crouch", **HIK("l", 0.06, 0.13, 0.42, "claw"), **HIK("r", 0.06, 0.15, 0.44, "claw"),
           "hold": 2.0}
 P_STUFF = {"base": "crouch", **HIK("l", 0.04, 0.2, 0.62, "claw"), **HIK("r", 0.04, 0.22, 0.64, "claw"),
@@ -294,9 +289,6 @@ P_FACEPALM = {"base": "crouch", **HIK("l", 0.05, 0.2, 0.5, "flat", wa=0.3, wabs=
 
 # Tiredness
 T_CROSS = "arms_crossed"
-T_LEAN = {"base": "arms_crossed", "lean": 0.62, "neck": 0.34, "nod": -0.12, "hunch": 0.3,
-          "ll_p": 0.3, "ll_k": 0.45, "lr_p": 0.18, "lr_k": 0.38}
-T_UPRIGHT = {"base": "arms_crossed", "lean": -0.06, "chest": -0.05, "nod": -0.05}
 T_JERK = {"base": "arm_jerk", "period": 0.11, "ar_p": HW(0.6, 0.1, 0.0), "ar_o": HW(1.3, 0.12, 0.3),
           "ar_e": HW(1.2, 0.18, 0.15), "ar_eo": -0.5, "dx": HW(0.0, 4.0, 0.1),
           "tilt": HW(0.1, 0.03, 0.2), "lean": -0.12, "hunch": 0.85}
@@ -349,9 +341,9 @@ def shot_scoop(ctx, t, info, c):
             bundle(lump_x, DESK_Y + 2, 0.5, 0.7)
         _cage(ctx, ax, ay, t, door=door, latch="half" if u > 0.5 else "open", rattle=rattle,
               inside=inside)
-        a = draw_person(ctx, "embar", ex, ey, S, t, pose=pose, expr=expr, look=look, turn=turn,
-                        face=face, pose_t=u, hold=hold_fn, mouth=info.mouth("embar", t),
-                        blush=0.5, sweat=0.6)
+        draw_person(ctx, "embar", ex, ey, S, t, pose=pose, expr=expr, look=look, turn=turn,
+                    face=face, pose_t=u, hold=hold_fn, mouth=info.mouth("embar", t),
+                    blush=0.5, sweat=0.6)
         if 0.14 <= u < 0.38 and "h" in st:
             # the squirming bundle, scooped up in both hands (drawn over the fingers)
             bundle(st["h"][0], st["h"][1] + 30, 0.5, 0.85, -0.12 * seg(u, 0.14, 0.38))
@@ -421,7 +413,6 @@ def shot_back(ctx, t, info, c):
     tx, ty = 1450.0, FLOOR
     rel = (ex - tx) / 600.0
     t_look = (clamp(rel * 0.9, -1.0, 0.2), 0.08)
-    t_head = clamp(rel * 0.35, -0.4, 0.1)
     # camera follows Emb, then pushes in on the freeze
     px = clamp(ex + 150, 600, 1250)
     # snap push-in onto the frozen face after the bump, then a slow creep during the laugh
@@ -482,7 +473,6 @@ def _imp_lunge_c(t, c):
 
 def shot_door(ctx, t, info, c):
     o, b = c["open"], c["burst"]
-    u = t - o
     # Emb: reach, pull the door open stepping back, gawk, get blasted
     ex = tween(t, [(o + 0.05, 470.0), (o + 0.42, 600.0), (b + 0.3, 600.0), (b + 0.5, 700.0)], ease_out)
     pose = state_at(t, [(-1, P_REACH), (o + 0.08, P_PULL), (o + 0.42, P_GAWK), (b + 0.3, P_KNOCKED)],
@@ -638,7 +628,6 @@ def shot_tug(ctx, t, info, c):
         tpose = (T_RISE, T_HALF, clamp(ease_out_back(seg(t, r0 + 0.1, r0 + 0.4), 1.3), 0.0, 1.08))
     bl = _blinkdip(t, c["tug"] + 1.35, 0.34, 0.12, 0.34)
     # pupils ride the shaking cage, head follows late
-    cage_c = _cage_pt(rig["mouth"][0], rig["mouth"][1], rig["rot"], 0, 150)
     lk = (-0.95, 0.12 + 0.06 * math.sin(t * 2.2 * math.tau))
     t_face = {"head_turn": -0.12 * seg(t, w1 + 0.1, w1 + 0.4),
               "lid": -0.12 + 0.07 * seg(t, c["tug"] + 1.75, c["squint"])}
@@ -676,7 +665,7 @@ def shot_squint(ctx, t, info, c):
     pose = _peer_pose(t, c["squint"])
     expr = state_at(u, [(-1, "unamused"), (0.42, "squint")], 0.28)
     look = tween(u, [(0.0, (-0.95, 0.15)), (0.3, (-0.9, 0.35))])
-    face = {"head_turn": -0.1, "lid": -0.12 - 0.14 * seg(u, 0.3, 0.6), "lower": 0.05 * seg(u, 0.4, 0.7),
+    face = {"head_turn": -0.1, "lid": -0.12 - 0.06 * seg(u, 0.3, 0.6), "lower": -0.18 * seg(u, 0.3, 0.6),
             "head_nod": 0.06 * seg(u, 0.2, 0.5), "brow": -0.1 * seg(u, 0.4, 0.7)}
 
     def tired_fn():
@@ -722,7 +711,7 @@ def shot_creak(ctx, t, info, c):
     lift = seg(te, cr + 0.22, cr + 0.44)
     look = tween(te, [(cr, (-0.9, 0.35)), (cr + 0.18, (-0.85, 0.6)), (bi, (-0.85, 0.6)),
                       (tf + 0.12, (-0.75, 0.7)), (tf + 0.24, (0.15, 1.0))], ease_out)
-    face = {"head_turn": -0.1, "head_nod": 0.06, "lid": -0.26 - 0.1 * lift, "lower": 0.05 * (1 - lift),
+    face = {"head_turn": -0.1, "head_nod": 0.06, "lid": -0.18 - 0.18 * lift, "lower": -0.18 * (1 - lift),
             "brow": -0.1 + 0.28 * lift,
             "brow_r": 0.12 * lift, "pupil": -0.3 * seg(te, tf + 0.1, tf + 0.25),
             "press": 0.4 * seg(te, tf + 0.1, tf + 0.25)}
@@ -969,9 +958,9 @@ def shot_catch(ctx, t, info, c):
         if u < 0.34:
             creatures.draw_thing(ctx, THING_FLOOR[0], THING_FLOOR[1], THING_S, t,
                                  state="sit" if u < 0.1 else "hiss", look=(0.8, -0.4))
-        a = draw_person(ctx, "embar", ex, TUG_Y, S, t, pose=pose, turn=-0.8, expr=expr, look=look,
-                        face=face, blush=0.55, sweat=0.8, mouth=info.mouth("embar", t),
-                        hold=hold_fn, pose_t=u)
+        draw_person(ctx, "embar", ex, TUG_Y, S, t, pose=pose, turn=-0.8, expr=expr, look=look,
+                    face=face, blush=0.55, sweat=0.8, mouth=info.mouth("embar", t),
+                    hold=hold_fn, pose_t=u)
         if 0.34 <= u < 0.8 and "h" in st:
             hx, hy = st["h"]
             if u < 0.62:
@@ -992,7 +981,7 @@ def shot_catch(ctx, t, info, c):
 
 
 def _stare_world(ctx, t, info, c, emb_face=None, emb_expr="relieved", emb_look=(-0.9, -0.1),
-                 emb_pose=None, imp_ll=None, imp_lr=(0.9, 0.12), blush=0.4):
+                 emb_pose=None, imp_ll=None, imp_lr=(0.9, 0.12), blush=0.4, emb_blink=None):
     ax, ay = CAGE_FLOOR
     _room(ctx, t, door=0.0)
     creatures.draw_impulsivity(ctx, IMP_X - 30, TUG_Y, IMP_S, t, pose="sit", pant=1.0,
@@ -1000,7 +989,7 @@ def _stare_world(ctx, t, info, c, emb_face=None, emb_expr="relieved", emb_look=(
     _cage(ctx, ax, ay, t, door=0.0, latch="closed", inside=_inside("thing", t, look=(0.7, -0.3)))
     return draw_person(ctx, "embar", EMB_KNEEL_X, TUG_Y, S, t, pose=emb_pose or P_KNEEL, turn=-0.8,
                        expr=emb_expr, look=emb_look, face=emb_face, blush=blush, sweat=0.6,
-                       mouth=info.mouth("embar", t))
+                       mouth=info.mouth("embar", t), blink=emb_blink)
 
 
 def shot_stare(ctx, t, info, c):
@@ -1024,12 +1013,13 @@ def shot_stare(ctx, t, info, c):
     pose = state_at(t, [(-1, P_KNEEL), (t4 - 0.12, P_FACEPALM)], 0.26)
     expr = state_at(t, [(-1, "relieved"), (n1 + 0.3, "neutral"), (t4 - 0.12, "sad")], 0.35)
     look = (-0.9, -0.12) if t < t4 - 0.12 else (-0.35, 0.55)
-    bl = _blinkdip(t, n1 + 0.95, 0.2, 0.08, 0.24)
+    # relief (eyes soft-shut) -> eyes open on the dog's stare and stay open while the face falls
+    bl = 0.0 if n1 + 0.3 <= t < t4 - 0.12 else None
     if t < n2:
         k = ease_in_out(seg(t, n1, n2))
         with core.camera(ctx, 780 - 10 * k, 1188 - 8 * k, 2.5 + 0.22 * k):
             _stare_world(ctx, t, info, c, emb_face=face, emb_expr=expr, emb_look=look, emb_pose=pose,
-                         imp_ll=ll, blush=blush)
+                         imp_ll=ll, blush=blush, emb_blink=bl)
         return
     # button: back to the two-shot, him facepalming beside the grinning dog
     k = ease_out(seg(t, n2, info.dur))
