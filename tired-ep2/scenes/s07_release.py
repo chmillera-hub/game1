@@ -1,0 +1,1147 @@
+"""s07 -- release (TIREDNESS Episode 2: Lights Out).  Music: "chaos:stop=0.74".
+
+Everything happens in ONE simulated control room (sets.control_room, people
+at s=0.75); every shot is just a camera on that world, so positions, props
+and damage always match from cut to cut.
+
+Beats (all times from info.cue / info.line):
+  smash    he punches the MASTER RELEASE glass (anticipation -> punch -> burst)
+  pull     both hands on the T-handle, feet braced, straining; the lever gives
+  button   the Boss calmly presses LOCKDOWN  -> s07_l01 "Lockdown."
+  shutters through the window (and on the monitors) the pods start to open,
+           then shutters slam tier by tier, sparks, the room jolts
+  one_pod  their faces fall... a hiss: the one tiny pod by the console (JOY)
+           has no shutter; its seal hisses open
+  baby     the baby tumbles out, blinks, wobbles, giggles; Curiosity bounds
+           over and nuzzles it
+  alarm    red alarm; footsteps outside; the hatch bursts open
+  s07_l02  Embarrassment at the hatch, small bent-elbow wave
+  run      Tiredness scoops the baby; they run THROUGH the hatch
+  hatch    Emb pulls it shut: SLAM (the chaos cue's final hit)
+  watch    the Boss looks up at the monitor: the empty hatch
+  s07_l03  "Let them run."  (slow push-in, held cold face)
+"""
+import math
+
+from engine import core, sets, props, fx, human, creatures as CR
+from engine.core import tween, seg, clamp, lerp, smoothstep, ease_in_out, ease_out, ease_in, ease_out_back
+from engine.human import P, IK, A, L
+
+M = sets.CONTROL_MARKS
+SP = 0.75                     # people (set char_scale)
+SC = 0.75                     # Curiosity
+SB = 0.64                     # baby Joy
+FEET = M["feet_y"]            # 1500
+CUR_Y = 1516                  # creatures stand a hair in front of the people line
+BABY_Y = 1542
+
+# the one tiny pod: stands on the floor between the release console and the
+# LOCKDOWN pedestal, right under the observation window
+POD_X, POD_Y, POD_S = 1290.0, 1522.0, 0.46
+POD_FLOOR = POD_Y - 122 * POD_S          # interior floor (world y) where the baby sleeps
+
+SMASH_X = M["smash_feet"][0]   # 855
+HAUL_X = M["haul_feet"][0]     # 940
+CUR_X0 = 705.0
+TIRED_X2 = 1062.0              # where he walks to beside the baby
+HATCH = M["hatch"]             # (40, 700, 290, 600)
+HATCH_FEET = 1330.0            # threshold line for someone ducking through
+EMB_X = 430.0                  # Emb standing beside the hatch
+
+H_UP = M["release_handle_up"]
+H_DN = M["release_handle_down"]
+IMPACT = (1094.0, 932.0)
+
+# ducking poses (the hatch is only 600 px tall)
+DUCK = dict(P(L("l", 1.05, 0.1, 1.75, 0.2), L("r", 0.7, 0.1, 1.45, 0.3),
+              A("l", 0.6, 0.2, 0.9), A("r", 0.6, 0.2, 0.9)), lean=0.55, neck=0.3, nod=0.2, hunch=0.7)
+DUCK_DEEP = dict(P(L("l", 1.25, 0.1, 2.05, 0.2), L("r", 0.9, 0.1, 1.75, 0.3),
+                   A("l", 0.6, 0.2, 0.9), A("r", 0.6, 0.2, 0.9)), lean=0.62, neck=0.32, nod=0.22, hunch=0.8)
+_CRAD = P(IK("r", -0.02, 0.50, 0.17, "cup", layer="mid", tf=-1.0, wa=0.0, wabs=0.5),
+          IK("l", 0.02, 0.60, 0.19, "relaxed", layer="front", wa=0.6, wabs=0.5))
+RUN_CRADLE = {"base": "run", **_CRAD, "hold": 2.0, "lean": 0.16}
+CRADLE = {"base": "cradle", "nod": 0.22, "tilt": 0.03}
+DUCK_CRADLE = dict(DUCK)
+DUCK_CRADLE.update(P(IK("r", -0.02, 0.40, 0.2, "cup", layer="mid", tf=-1.0, wa=0.0, wabs=0.5),
+                     IK("l", 0.02, 0.48, 0.22, "relaxed", layer="front", wa=0.6, wabs=0.5)))
+DUCK_CRADLE["hold"] = 2.0
+HAUL_FOLLOW = {"base": "haul", "lean": -0.72, "hunch": 0.95, "nod": 0.28}
+
+
+# ============================================================================
+# timing (all derived from the timeline)
+# ============================================================================
+class _Times:
+    pass
+
+
+_TCACHE = {}
+
+
+def times(info):
+    key = (info.id, tuple(sorted(info.cues.items())))
+    T = _TCACHE.get(key)
+    if T is not None:
+        return T
+    T = _Times()
+    c = info.cue
+    T.pull, T.button, T.shut = c("pull"), c("button"), c("shutters")
+    T.pod, T.baby, T.alarm = c("one_pod"), c("baby"), c("alarm")
+    T.run, T.hatch, T.watch, T.end = c("run"), c("hatch"), c("watch"), info.dur
+    T.L1, T.L2, T.L3 = info.line("s07_l01"), info.line("s07_l02"), info.line("s07_l03")
+    # smash
+    T.hit = max(0.6, T.pull - 0.5)          # the fist lands
+    T.p0 = T.hit - 0.62                     # punch_cycle start (wind-up 0.48 s in)
+    # pull
+    T.grab = T.pull + 0.34
+    T.give = T.button - 0.74
+    T.clunk = T.give + 0.3
+    # button
+    T.press = T.L1.start - 0.2
+    T.reach0 = T.press - 0.6
+    # shutters: the pods begin to open from the clunk; six tiers slam top -> bottom
+    T.open0 = T.clunk + 0.25
+    T.rows = [T.shut + 0.6 + i * 0.27 for i in range(6)]
+    # one pod
+    T.hiss = T.pod + 1.05
+    T.pan0, T.pan1 = T.hiss + 0.25, T.hiss + 0.75
+    T.glass0, T.glass1 = T.hiss + 0.12, T.hiss + 0.95
+    # baby
+    T.roll0 = T.baby + 0.08
+    T.roll1 = T.roll0 + 0.72
+    T.blink0 = T.roll1 + 0.04
+    T.wob0, T.wob1 = T.blink0 + 0.95, T.blink0 + 1.45
+    T.giggle = T.wob1
+    T.cur_go = T.baby + 1.0
+    T.cur_land = T.cur_go + 0.74
+    T.nuzzle = T.cur_land + 0.18
+    T.tw0 = T.baby + 2.1                     # Tiredness walks over
+    # alarm / hatch / Emb
+    T.al0 = T.alarm
+    T.burst = T.L2.start - 0.8
+    T.emb_out0, T.emb_out1 = T.burst + 0.2, T.burst + 0.68
+    # run
+    T.scoop1 = T.run + 0.32                  # baby in his hand
+    T.cradle1 = T.run + 0.62                 # up, baby against his chest
+    T.run0 = T.run + 0.62
+    T.cur_run0 = T.run + 0.18
+    T.emb_duck0 = T.hatch - 0.95
+    T.emb_duck1 = T.emb_duck0 + 0.38
+    T.emb_gone = T.emb_duck1 + 0.3
+    T.slam0 = T.hatch - 0.2                  # the panel swings shut -> SLAM at T.hatch
+    _TCACHE[key] = T
+    return T
+
+
+def _blend(t, keys, trans=0.25):
+    a, b, k = core.state_at(t, keys, trans)
+    return a if k >= 1 or a == b else (a, b, k)
+
+
+def _run_x(T, t):
+    """Tiredness's x while running left with the baby (no foot sliding)."""
+    v = human.cycle_speed("tired", "run", -0.9) * SP           # negative (left)
+    return TIRED_X2 + 10 + v * max(0.0, t - T.run0)
+
+
+def _tired_duck_t(T):
+    """When his run reaches the hatch and he ducks in."""
+    v = abs(human.cycle_speed("tired", "run", -0.9) * SP)
+    return T.run0 + (TIRED_X2 + 10 - 330) / v
+
+
+# ============================================================================
+# characters: state at time t (one simulated world)
+# ============================================================================
+def tired_state(T, info, t):
+    st = dict(x=SMASH_X, y=FEET, pose="stand", pose_t=None, turn=1.0, expr="determined",
+              face={"lid": 0.15}, look=(0.0, 0.0), blink=None, power=0.68, reach=None,
+              hold_mode=None, clip=None, visible=True, aura=0.0)
+    f = st["face"]
+    if t < T.pull:
+        # ---- the smash
+        k_look = smoothstep(seg(t, 0.0, 0.18))
+        st["look"] = (lerp(0.2, 0.75, k_look), lerp(-0.1, 0.08, k_look))
+        f["head_turn"] = 0.14 * smoothstep(seg(t, 0.12, 0.32))
+        f["brow"] = -0.25
+        f["brow_ang"] = -0.3
+        pt = clamp(t - T.p0, 0.0, 0.86)
+        if t < T.p0:
+            st["pose"] = ("stand", "punch_cycle", smoothstep(seg(t, T.p0 - 0.3, T.p0)))
+        else:
+            st["pose"] = "punch_cycle"
+        st["pose_t"] = pt
+        w = smoothstep(seg(pt, 0.5, 0.62))
+        if w > 0:
+            st["reach"] = {"l": (IMPACT[0], IMPACT[1], w)}
+        if T.hit - 0.12 < t < T.hit + 0.25:      # squint into the impact
+            f["lower"] = 0.35 * (1 - seg(t, T.hit, T.hit + 0.25))
+            f["squash"] = 0.06 * (1 - seg(t, T.hit, T.hit + 0.2))
+        f["teeth"] = 0.6 * seg(t, T.p0 + 0.3, T.hit)
+        f["press"] = 0.3
+        return st
+    st["x"] = HAUL_X
+    if t < T.pod:
+        # ---- the haul
+        lv = lever_at(T, t)
+        hx, hy = props.release_console_handle(*M["release"], SP, lv)
+        if t < T.grab:
+            k = smoothstep(seg(t, T.pull, T.grab))
+            st["pose"] = ("stand", "haul", k)
+            st["reach"] = {"l": (hx - 11, hy, k), "r": (hx + 11, hy, k)}
+        elif t < T.give:
+            st["pose"] = "haul_strain"
+            st["pose_t"] = t - T.grab
+            st["reach"] = {"l": (hx - 11, hy), "r": (hx + 11, hy)}
+        elif t < T.clunk + 0.7:
+            k = smoothstep(seg(t, T.give, T.clunk + 0.05))
+            k2 = smoothstep(seg(t, T.clunk + 0.1, T.clunk + 0.7))
+            st["pose"] = ("haul", HAUL_FOLLOW, k * (1 - 0.6 * k2))
+            st["reach"] = {"l": (hx - 11, hy), "r": (hx + 11, hy)}
+        else:
+            # lets go, straightens, looks up at the window
+            k = smoothstep(seg(t, T.clunk + 0.7, T.clunk + 1.2))
+            st["pose"] = (("haul", HAUL_FOLLOW, 0.4), "stand", k)
+            st["reach"] = {"l": (hx - 11, hy, 1 - k), "r": (hx + 11, hy, 1 - k)}
+            st["turn"] = lerp(1.0, 0.55, k)
+        # face: grit -> all-out squeeze -> it gives
+        if t < T.grab + 0.2:
+            f.update(brow=-0.3, brow_ang=-0.3, teeth=0.4, press=0.2)
+            st["look"] = (0.5, -0.45)
+        elif t < T.give - 0.38:
+            st["expr"] = "determined"
+            k = seg(t, T.grab, T.give - 0.4)
+            f.update(lid=0.15 + 0.08 * k, brow=-0.5, brow_ang=-0.45, teeth=1.0, lip_up=0.55,
+                     lip_low=0.3, open=0.12, flare=0.6 * k, cheek=0.15)
+            st["look"] = (0.45, -0.5)
+            st["power"] = lerp(0.7, 0.95, k)
+            st["aura"] = 0.55 * smoothstep(seg(t, T.grab, T.grab + 0.6)) + 0.3 * k
+        elif t < T.give:
+            st["expr"] = "pain"
+            f = st["face"] = {"teeth": 1.0, "squash": 0.04, "flare": 0.8}
+            st["power"] = 0.95
+            st["aura"] = 0.95
+        else:
+            k = seg(t, T.give, T.give + 0.25)
+            st["expr"] = "determined"
+            f.update(lid=lerp(0.0, 0.18, seg(t, T.clunk, T.clunk + 0.5)), brow=0.2 * (1 - k),
+                     open=0.35 * (1 - seg(t, T.clunk + 0.3, T.clunk + 1.0)), teeth=0.0)
+            st["power"] = lerp(0.95, 0.72, seg(t, T.clunk, T.clunk + 0.8))
+            st["aura"] = 0.95 * (1 - seg(t, T.give, T.clunk + 0.6))
+            st["look"] = tween(t, [(T.clunk + 0.2, (0.5, 0.1)), (T.clunk + 0.45, (0.45, -0.8))])
+            f["head_nod"] = -0.12 * smoothstep(seg(t, T.clunk + 0.4, T.clunk + 0.8))
+        if t >= T.pod - 0.2:
+            pass
+        return st
+    # ---- after the lever: standing at the console
+    st["turn"] = 0.55
+    if t < T.hiss:
+        # S5a: the shutters landed. Faces fall.
+        k = smoothstep(seg(t, T.pod, T.pod + 0.6))
+        st["expr"] = "determined"
+        f.update(lid=lerp(0.2, 0.3, k), brow=0.15 * k, brow_ang=0.5 * k, press=0.55 * k,
+                 frown=0.3 * k, head_nod=-0.1)
+        st["look"] = (0.4, -0.75)
+        st["power"] = 0.68
+        if t > T.pod + 0.55:          # a slow, heavy blink
+            st["blink"] = tween(t, [(T.pod + 0.55, 0.0), (T.pod + 0.75, 1.0), (T.pod + 0.85, 1.0),
+                                     (T.pod + 1.05, 0.0)])
+        return st
+    if t < T.run:
+        # the hiss: pupils snap right, the head follows; then he watches the baby
+        st["expr"] = "determined"
+        ks = smoothstep(seg(t, T.hiss + 0.02, T.hiss + 0.16))
+        kh = smoothstep(seg(t, T.hiss + 0.15, T.hiss + 0.4))
+        f.update(lid=lerp(0.3, 0.2, ks), brow=lerp(0.15, 0.35, ks), brow_ang=lerp(0.5, 0.1, ks),
+                 press=lerp(0.55, 0.0, ks), head_turn=0.28 * kh, head_nod=lerp(-0.1, 0.05, kh))
+        st["look"] = (lerp(0.4, 0.95, ks), lerp(-0.75, 0.15, ks))
+        if t >= T.giggle:              # the faintest smile at the giggle
+            kk = smoothstep(seg(t, T.giggle + 0.2, T.giggle + 0.8))
+            f.update(curve=0.25 * kk, lid=0.2 + 0.08 * kk, brow_ang=0.15 * kk)
+        if t >= T.tw0:
+            # walks over beside them
+            v = abs(human.cycle_speed("tired", "walk", 0.8) * SP)
+            dur = (TIRED_X2 - HAUL_X) / v
+            if t < T.tw0 + dur:
+                st["pose"] = "walk"
+                st["pose_t"] = t - T.tw0
+                st["turn"] = 0.8
+                st["x"] = HAUL_X + v * (t - T.tw0)
+            else:
+                st["x"] = TIRED_X2
+                st["pose"] = ("walk", "stand", smoothstep(seg(t, T.tw0 + dur, T.tw0 + dur + 0.25)))
+                st["pose_t"] = dur
+                st["turn"] = lerp(0.8, 0.45, seg(t, T.tw0 + dur, T.tw0 + dur + 0.4))
+            st["look"] = (0.6, 0.55)
+            f["head_nod"] = 0.12
+        if t >= T.al0:
+            # alarm: lids lift, eyes up to the beacon, then left to the doors / hatch
+            ka = smoothstep(seg(t, T.al0 + 0.05, T.al0 + 0.2))
+            f.update(lid=lerp(f.get("lid", 0.2), 0.12, ka), brow=0.45 * ka, curve=0.0,
+                     brow_ang=0.2, head_nod=lerp(0.12, -0.08, ka))
+            st["look"] = tween(t, [(T.al0, (0.6, 0.55)), (T.al0 + 0.15, (0.2, -0.85)),
+                                   (T.al0 + 0.55, (0.2, -0.85)), (T.al0 + 0.7, (-0.95, -0.1)),
+                                   (T.burst + 0.1, (-0.95, -0.1)), (T.burst + 0.25, (-1.0, 0.0))])
+            f["head_turn"] = tween(t, [(T.al0 + 0.7, 0.28), (T.al0 + 0.95, -0.35)])
+            st["power"] = 0.7
+        return st
+    # ---- the run
+    st["face"] = f = {"lid": 0.14, "brow": -0.1, "brow_ang": -0.2, "press": 0.2}
+    st["power"] = 0.72
+    st["x"] = TIRED_X2
+    td = _tired_duck_t(T)
+    if t < T.scoop1:
+        k = smoothstep(seg(t, T.run, T.run + 0.26))
+        st["pose"] = ("stand", "pick_up", k)
+        st["turn"] = lerp(0.45, 0.7, k)
+        st["look"] = (0.7, 0.8)
+        st["hold_mode"] = "r"
+        f["head_nod"] = 0.1
+    elif t < T.cradle1:
+        k = smoothstep(seg(t, T.scoop1, T.cradle1))
+        st["pose"] = ("pick_up", CRADLE, k)
+        st["turn"] = lerp(0.7, -0.9, smoothstep(seg(t, T.scoop1 + 0.08, T.cradle1)))
+        st["look"] = tween(t, [(T.scoop1, (0.5, 0.7)), (T.cradle1, (-0.9, 0.0))])
+        st["hold_mode"] = "r" if k < 0.5 else "both"
+    elif t < td:
+        st["pose"] = ("cradle", RUN_CRADLE, smoothstep(seg(t, T.run0, T.run0 + 0.12)))
+        st["pose_t"] = t - T.run0
+        st["turn"] = -0.9
+        st["x"] = _run_x(T, t)
+        st["look"] = (-0.9, 0.05)
+        st["hold_mode"] = "both"
+        f["brow"] = -0.25
+    else:
+        # duck through: up onto the threshold, then into the crawlway
+        x_d = _run_x(T, td)
+        k = smoothstep(seg(t, td, td + 0.26))
+        st["pose"] = (RUN_CRADLE, DUCK_CRADLE, k)
+        st["pose_t"] = t - T.run0
+        st["turn"] = -1.0
+        st["x"] = lerp(x_d, 205, k) - 900 * max(0.0, t - td - 0.26)
+        st["y"] = lerp(FEET + 6, HATCH_FEET, k)
+        st["look"] = (-0.9, 0.2)
+        st["hold_mode"] = "both"
+        st["clip"] = "hatch" if st["x"] < 255 else None
+        if st["x"] < -200:
+            st["visible"] = False
+    if t < td:
+        st["y"] = FEET + 6
+    return st
+
+
+def lever_at(T, t):
+    if t < T.grab + 0.3:
+        return 0.0
+    if t < T.give:
+        # resists: creeps a few degrees in two jerks
+        return 0.05 * smoothstep(seg(t, T.grab + 0.35, T.grab + 0.7)) + \
+               0.05 * smoothstep(seg(t, T.give - 0.55, T.give - 0.3))
+    return lerp(0.1, 1.0, ease_in(seg(t, T.give, T.clunk)))
+
+
+def _bound(t, t0, x0, x1, n, dur, gy, s=SC):
+    """Curiosity bounding from x0 to x1 in n leaps: (x, y, pose, airborne)."""
+    k = clamp((t - t0) / dur)
+    if k >= 1:
+        return x1, gy, "stand", False
+    ph = k * n
+    i = min(n - 1, int(ph))
+    q = ph - i
+    xa = lerp(x0, x1, i / n)
+    xb = lerp(x0, x1, (i + 1) / n)
+    if q < 0.18:                     # contact: crouched, gathering
+        return lerp(xa, xb, q * 0.4), gy, "crouch", False
+    u = (q - 0.18) / 0.82
+    x = lerp(lerp(xa, xb, 0.18 * 0.4), xb, u)
+    y = gy - 112 * s - 120 * s * math.sin(math.pi * u)
+    return x, y, "leap", True
+
+
+def cur_state(T, info, t):
+    st = dict(x=CUR_X0, y=CUR_Y, pose="sit", expr="hopeful", look=(0.3, -0.6), ears=None, tilt=0.0,
+              face=None, flip=False, tail_curl=0.0, pose_t=None, blink=None, clip=None, visible=True,
+              pose_from=None, pose_mix=1.0, airborne=False)
+    if t < T.pull:
+        if t < T.hit:
+            st["expr"] = "curious"
+            st["look"] = (0.45, -0.6)
+            st["ears"] = 0.6
+        else:
+            k = ease_out_back(seg(t, T.hit, T.hit + 0.18))
+            st["expr"] = "wide"
+            st["ears"] = lerp(0.6, 1.0, k)
+            st["tilt"] = -0.12 * (1 - seg(t, T.hit + 0.2, T.hit + 0.6))
+            st["look"] = (0.7, -0.45)
+        return st
+    if t < T.pod:
+        st["expr"] = "hopeful"
+        st["ears"] = 0.8 if t < T.clunk else lerp(0.8, 1.0, ease_out_back(seg(t, T.clunk, T.clunk + 0.2)))
+        st["look"] = (0.35, -0.55) if t < T.clunk + 0.2 else (0.55, -0.8)
+        st["tail_curl"] = 0.35 * smoothstep(seg(t, T.grab, T.grab + 0.8))
+        return st
+    if t < T.hiss:
+        # the shutters landed: ears lower degree by degree
+        st["expr"] = "sad"
+        st["ears"] = lerp(0.62, 0.12, ease_in_out(seg(t, T.pod + 0.05, T.hiss - 0.05)))
+        st["look"] = (0.45, -0.95)
+        st["tail_curl"] = 0.0
+        return st
+    if t < T.cur_go:
+        ke = ease_out_back(seg(t, T.hiss + 0.03, T.hiss + 0.22))
+        st["expr"] = "surprised_soft"
+        st["ears"] = lerp(0.12, 0.95, ke)
+        st["look"] = (lerp(0.45, 0.95, smoothstep(seg(t, T.hiss, T.hiss + 0.12))), 0.1)
+        st["tilt"] = -0.08 * ke
+        if t > T.baby:
+            st["expr"] = "hopeful"
+            st["look"] = (0.9, 0.3)
+        return st
+    if t < T.run:
+        bx_end = baby_rest_x(T)
+        x_to = bx_end - 222
+        if t < T.cur_land:
+            x, y, pose, air = _bound(t, T.cur_go, CUR_X0, x_to, 2, T.cur_land - T.cur_go, CUR_Y)
+            st.update(x=x, y=y, pose=pose, airborne=air, expr="hopeful", ears=0.95, look=(0.8, 0.2),
+                      tail_curl=0.2)
+            return st
+        st["x"] = x_to
+        st["pose"] = "stand"
+        if t < T.nuzzle:
+            st.update(expr="hopeful", ears=0.9, look=(0.5, 0.5), tilt=0.15)
+        else:
+            k = smoothstep(seg(t, T.nuzzle, T.nuzzle + 0.25))
+            ph = (t - T.nuzzle) * math.tau / 1.1
+            st.update(expr="content", ears=0.55, tilt=0.42 * k + 0.06 * math.sin(ph) * k,
+                      tail_curl=0.7 * smoothstep(seg(t, T.nuzzle, T.nuzzle + 0.8)))
+            st["x"] = x_to + 6 * math.sin(ph) * k
+        if t >= T.al0:
+            # alarm: ears shoot up, head up, looking round
+            ka = ease_out_back(seg(t, T.al0 + 0.08, T.al0 + 0.26))
+            st.update(expr="wide", ears=lerp(0.55, 1.0, ka), tilt=lerp(0.4, -0.1, ka), tail_curl=0.0)
+            st["x"] = x_to
+            st["look"] = tween(t, [(T.al0 + 0.1, (0.2, -0.9)), (T.al0 + 0.7, (0.2, -0.9)),
+                                   (T.al0 + 0.85, (-0.9, -0.2))])
+            if t >= T.al0 + 0.75:
+                st["face"] = tween(t, [(T.al0 + 0.75, 1.0), (T.al0 + 1.0, -1.0)])
+        return st
+    # ---- the run: bound to the hatch and dive through
+    x_from = baby_rest_x(T) - 222
+    st["flip"] = True
+    st.update(expr="wide", ears=0.9, look=(-0.6, 0.0))
+    t_dive = T.run + 1.55
+    if t < T.cur_run0:
+        st["pose"] = "stand"
+        st["x"] = x_from
+        st["face"] = -1.0
+        st["flip"] = False
+        return st
+    if t < t_dive:
+        x, y, pose, air = _bound(t, T.cur_run0, x_from, 300, 3, t_dive - T.cur_run0, CUR_Y)
+        st.update(x=x, y=y, pose=pose, airborne=air)
+        return st
+    # the dive: up onto the threshold and into the crawlway
+    k = seg(t, t_dive, t_dive + 0.3)
+    st["pose"] = "leap"
+    st["airborne"] = True
+    st["x"] = lerp(300, 150, k) - 1100 * max(0.0, t - t_dive - 0.3)
+    st["y"] = lerp(CUR_Y, HATCH_FEET, k) - 112 * SC - 90 * SC * math.sin(math.pi * k)
+    st["clip"] = "hatch" if k > 0.45 else None
+    if st["x"] < -260:
+        st["visible"] = False
+    return st
+
+
+def baby_rest_x(T):
+    r = 1.15 * math.pi
+    return POD_X - 18 - r * CR.BABY_ROLL_RADIUS * SB
+
+
+def baby_state(T, info, t):
+    st = dict(x=POD_X, y=POD_FLOOR, pose="curl", expr="calm", look=None, flip=True, roll=None,
+              pose_t=None, ears=None, tilt=0.0, inside=True, held=False, visible=True, tail_curl=0.0)
+    if t < T.roll0:
+        if t > T.glass1:
+            st["expr"] = "calm"
+        return st
+    st["inside"] = False
+    if t < T.roll1:
+        k = seg(t, T.roll0, T.roll1)
+        r = 1.15 * math.pi * ease_out(k)
+        st["pose"] = "tumble"
+        st["roll"] = -r
+        st["flip"] = False
+        st["x"] = POD_X - 18 - r * CR.BABY_ROLL_RADIUS * SB
+        # drops off the pod's base onto the floor with a small bounce
+        yk = seg(t, T.roll0, T.roll0 + 0.3)
+        y = lerp(POD_FLOOR + 4, BABY_Y, yk * yk)
+        if k > 0.42:
+            y -= 22 * math.sin(math.pi * seg(t, T.roll0 + 0.3, T.roll0 + 0.55))
+        st["y"] = y
+        return st
+    st["x"] = baby_rest_x(T)
+    st["y"] = BABY_Y
+    if t < T.wob0:
+        st["pose"] = "sit"
+        st["expr"] = "blink"
+        st["pose_t"] = t - T.blink0
+        st["tilt"] = 0.1 * math.sin((t - T.blink0) * 7.0) * (1 - seg(t, T.blink0, T.blink0 + 0.6))
+        st["look"] = (-0.3, 0.1)
+    elif t < T.wob1:
+        st["pose"] = "wobble_walk"
+        st["pose_t"] = t - T.wob0
+        st["expr"] = "curious"
+        st["x"] = baby_rest_x(T) - CR.BABY_WALK_SPEED * SB * (t - T.wob0)
+        st["look"] = (-0.6, 0.0)
+    else:
+        st["pose"] = "sit"
+        st["x"] = baby_rest_x(T) - CR.BABY_WALK_SPEED * SB * (T.wob1 - T.wob0)
+        st["expr"] = "giggle"
+        st["tail_curl"] = 0.6
+        if t >= T.al0 + 0.1:
+            st["expr"] = "curious"
+            st["ears"] = 0.9
+            st["look"] = (0.0, -0.9)
+            st["tail_curl"] = 0.0
+    if t >= T.scoop1:
+        st["held"] = True
+        st["pose"] = "held"
+        st["expr"] = "giggle"
+        st["tail_curl"] = 0.5
+    return st
+
+
+def emb_state(T, info, t):
+    st = dict(x=185, y=HATCH_FEET, pose=DUCK_DEEP, pose_t=None, turn=0.6, expr="alarmed", face={},
+              look=(0.8, 0.0), reach=None, visible=False, clip="hatch", blush=0.25, sweat=0.25)
+    if t < T.burst + 0.05 or t >= T.emb_gone:
+        return st
+    st["visible"] = True
+    f = st["face"]
+    if t < T.emb_out0:
+        st["x"] = lerp(120, 185, smoothstep(seg(t, T.burst, T.emb_out0)))
+        return st
+    if t < T.emb_out1:
+        k = smoothstep(seg(t, T.emb_out0, T.emb_out1))
+        st["x"] = lerp(185, EMB_X, k)
+        st["y"] = lerp(HATCH_FEET, FEET - 8, k)
+        st["pose"] = (DUCK_DEEP, "stand", k)
+        st["clip"] = None
+        return st
+    st["clip"] = None
+    st["x"], st["y"] = EMB_X, FEET - 8
+    hold = M["hatch_hold"]
+    if t < T.emb_duck0:
+        kr = smoothstep(seg(t, T.emb_out1 - 0.1, T.emb_out1 + 0.25))
+        st["reach"] = {"l": (hold[0], hold[1], kr)}
+        wave_on = T.L2.start - 0.25
+        wave_off = T.run + 0.4
+        if t < wave_on:
+            st["pose"] = "stand"
+        elif t < wave_off:
+            st["pose"] = ("stand", "wave_small", smoothstep(seg(t, wave_on, wave_on + 0.2)))
+            st["pose_t"] = t - wave_on
+        else:
+            st["pose"] = ("wave_small", "stand", smoothstep(seg(t, wave_off, wave_off + 0.25)))
+            st["pose_t"] = t - wave_on
+        st["expr"] = "alarmed" if t < T.L2.start else "determined"
+        f.update(brow=0.25, brow_ang=0.35)
+        st["mouth"] = info.mouth("embar", t)
+        # watching the others: right (the group) -> follows Tiredness past him -> a nervous
+        # glance back at the Boss -> into the hatch
+        tdk = _tired_duck_t(T)
+        st["look"] = tween(t, [(T.emb_out1, (0.9, 0.0)), (T.run + 0.7, (0.9, 0.05)),
+                               (tdk, (-0.6, 0.1)), (tdk + 0.25, (-0.6, 0.1)),
+                               (tdk + 0.4, (0.95, -0.05)), (T.emb_duck0 - 0.05, (0.95, -0.05)),
+                               (T.emb_duck0, (-0.8, 0.0))])
+        f["head_turn"] = tween(t, [(tdk + 0.4, 0.0), (tdk + 0.6, 0.25), (T.emb_duck0 - 0.1, 0.25),
+                                   (T.emb_duck0, 0.0)])
+        if t > tdk + 0.4:
+            st["expr"] = "alarmed"
+            st["sweat"] = 0.45
+        return st
+    # ducks in after them
+    k = smoothstep(seg(t, T.emb_duck0, T.emb_duck1))
+    st["pose"] = ("stand", DUCK_DEEP, k)
+    st["turn"] = lerp(0.6, -1.0, smoothstep(seg(t, T.emb_duck0, T.emb_duck0 + 0.2)))
+    st["x"] = lerp(EMB_X, 200, k) - 1000 * max(0.0, t - T.emb_duck1)
+    st["y"] = lerp(FEET - 8, HATCH_FEET, k)
+    st["look"] = (-0.9, 0.1)
+    st["expr"] = "determined"
+    st["clip"] = "hatch" if st["x"] < 250 else None
+    return st
+
+
+def boss_state(T, info, t):
+    ct = 1.0 - 0.2 * smoothstep(seg(t, T.watch + 0.05, T.watch + 0.75))
+    st = dict(chair_turn=ct, turn=0.7 * (1 - ct) / 0.2 * 1.0 if ct < 1 else 0.0, expr="cold",
+              face={}, look=(-0.75, 0.02), reach=None, pressed=0.0, mouth=info.mouth("boss", t))
+    f = st["face"]
+    bx, by = M["lockdown"]
+    # LOCKDOWN: the hand travels from the armrest to the button, presses, rests, returns
+    if T.reach0 <= t < T.L1.end + 1.0:
+        w = smoothstep(seg(t, T.reach0, T.press - 0.06))
+        w *= 1 - smoothstep(seg(t, T.L1.end + 0.3, T.L1.end + 0.9))
+        dip = 9 * math.sin(math.pi * seg(t, T.press - 0.06, T.press + 0.16))
+        st["reach"] = {"l": (bx + 2, by - 24 + dip, w)}
+    st["pressed"] = clamp(seg(t, T.press - 0.02, T.press + 0.06))
+    if t < T.watch:
+        st["look"] = tween(t, [(T.reach0 - 0.12, (-0.75, 0.02)), (T.reach0 + 0.02, (-0.55, 0.6)),
+                               (T.press + 0.08, (-0.55, 0.6)), (T.press + 0.22, (-0.8, 0.0))])
+        f["head_turn"] = tween(t, [(T.reach0, -0.12), (T.reach0 + 0.18, -0.2), (T.press + 0.2, -0.2),
+                                   (T.press + 0.4, -0.16)])
+        f["head_nod"] = tween(t, [(T.reach0, 0.0), (T.reach0 + 0.18, 0.08), (T.press + 0.2, 0.08),
+                                  (T.press + 0.4, 0.0)])
+        f["lid"] = 0.05 * smoothstep(seg(t, T.L1.end - 0.4, T.L1.end + 0.2))
+        if t >= T.hatch:
+            f["lid"] = 0.0
+    else:
+        # watching the empty hatch on the big monitor, then "Let them run."
+        st["look"] = tween(t, [(T.watch + 0.1, (-0.6, 0.0)), (T.watch + 0.3, (0.5, -0.85)),
+                               (T.L3.start - 0.45, (0.5, -0.85)), (T.L3.start - 0.2, (0.05, -0.05))])
+        f["head_turn"] = tween(t, [(T.watch + 0.25, 0.0), (T.watch + 0.55, 0.22),
+                                   (T.L3.start - 0.4, 0.22), (T.L3.start - 0.05, 0.05)])
+        f["head_nod"] = tween(t, [(T.watch + 0.25, 0.0), (T.watch + 0.55, -0.12),
+                                  (T.L3.start - 0.4, -0.12), (T.L3.start - 0.05, 0.0)])
+        f["lid"] = 0.07 * smoothstep(seg(t, T.L3.end - 0.5, T.L3.end + 0.15))
+        f["smirk"] = 0.14 * smoothstep(seg(t, T.L3.end + 0.3, T.L3.end + 1.0))
+        f["press"] = 0.1
+    return st
+
+
+# ============================================================================
+# props drawn by the scene
+# ============================================================================
+def _pod_open(T, t):
+    return ease_in_out(seg(t, T.glass0, T.glass1))
+
+
+def draw_joy_pod(ctx, T, t, inside_fn=None):
+    """The one tiny pod (JOY) by the console. Anchor = floor under it."""
+    op = _pod_open(T, t)
+    pw = core.PAL["power"]
+    pulse = 0.85 + 0.15 * math.sin(t * math.tau * 0.25)
+    g = pulse * (1.0 + 0.25 * seg(t, T.hiss, T.hiss + 0.3))
+    s = POD_S
+    # floor light pool + halo (behind)
+    core.ellipse(ctx, POD_X, POD_Y + 4, 210 * s * (1 + 0.6 * op), 34 * s)
+    core.fill(ctx, core.alpha(pw, 0.12 + 0.12 * op))
+    core.radial_glow(ctx, POD_X, POD_Y - 360 * s, 520 * s, pw, 0.22 * g)
+    with core.saved(ctx, POD_X, POD_Y, s):
+        # tubes up into the wall
+        for sd in (-1, 1):
+            props.curve(ctx, [(sd * 110, -670), (sd * 170, -720), (sd * 175, -820)], props.INK, 22)
+            props.curve(ctx, [(sd * 110, -670), (sd * 170, -720), (sd * 175, -820)], "#3b4757", 12)
+        # interior (always there; the glass front slides up out of the way)
+        core.rrect(ctx, -135, -600, 270, 480, 135)
+        props.fs(ctx, core.mixc("#0b3a40", pw, 0.42 + 0.18 * g * (1 - 0.5 * op)), 0)
+        ctx.save()
+        core.rrect(ctx, -135, -600, 270, 480, 135)
+        ctx.clip()
+        core.radial_glow(ctx, 0, -300, 300, pw, 0.5 * g)
+        for k in range(4):
+            ph = (t * 0.3 + core.hash01(k, 71)) % 1.0
+            bx = -80 + 160 * core.hash01(k, 72) + 8 * math.sin(t * 2 + k)
+            byy = -140 - ph * 420
+            core.circle(ctx, bx, byy, 7 + 5 * core.hash01(k, 73))
+            core.stroke(ctx, (0.85, 1.0, 0.98, 0.6 * (1 - op)), 3)
+        if inside_fn is not None:
+            ctx.save()
+            ctx.scale(1 / s, 1 / s)
+            inside_fn(ctx)
+            ctx.restore()
+        # glass front (slides up into the top cap)
+        dy = -470 * op
+        core.rrect(ctx, -135, -600 + dy, 270, 480, 135)
+        core.fill(ctx, (0.75, 1.0, 0.97, 0.16))
+        core.poly(ctx, [(-95, -560 + dy), (-58, -575 + dy), (-58, -170 + dy), (-95, -150 + dy)])
+        core.fill(ctx, (1, 1, 1, 0.2))
+        core.poly(ctx, [(40, -540 + dy), (56, -548 + dy), (56, -300 + dy), (40, -292 + dy)])
+        core.fill(ctx, (1, 1, 1, 0.12))
+        core.rrect(ctx, -135, -600 + dy, 270, 480, 135)
+        core.stroke(ctx, (0.85, 1.0, 1.0, 0.55), 4)
+        ctx.restore()
+        core.rrect(ctx, -135, -600, 270, 480, 135)
+        core.stroke(ctx, props.INK, 7)
+        # the seal line flashes on the hiss
+        if T.hiss - 0.02 < t < T.hiss + 0.5:
+            a = 1 - seg(t, T.hiss + 0.1, T.hiss + 0.5)
+            props.line(ctx, [(-120, -128), (120, -128)], (0.9, 1.0, 1.0, 0.9 * a), 6)
+        # caps
+        props.rect(ctx, -160, -690, 320, 96, "#4a5868", 7, r=26)
+        props.line(ctx, [(-130, -642), (130, -642)], "#6b7a8c", 6)
+        for k in range(3):
+            core.circle(ctx, -50 + k * 50, -618, 8)
+            props.fs(ctx, pw if k != 1 or int(t * 2) % 2 == 0 else "#2a6a70", 3)
+        props.rect(ctx, -165, -128, 330, 128, "#4a5868", 7, r=24)
+        props.rect(ctx, -165, -40, 330, 40, "#3b4757", 0, r=10)
+        props.rect(ctx, -165, -128, 330, 128, None, 7, r=24)
+        props.nameplate(ctx, 0, -72, 0.6, text="JOY", sub="SPECIMEN 01", seed=3)
+
+
+def draw_pod_steam(ctx, T, t):
+    """Pneumatic hiss: a few soft puffs from the seal (<= 8 pieces)."""
+    if not (T.hiss <= t < T.hiss + 1.4):
+        return
+    s = POD_S
+    for i in range(8):
+        sd = -1 if i % 2 else 1
+        t0 = T.hiss + 0.06 * (i // 2)
+        k = seg(t, t0, t0 + 1.1)
+        if k <= 0 or k >= 1:
+            continue
+        h = core.hash01(i, 91)
+        x = POD_X + sd * (150 + 260 * ease_out(k) * (0.6 + 0.4 * h)) * s
+        y = POD_Y - 128 * s - (40 + 220 * k) * s * (0.5 + 0.5 * h)
+        r = (26 + 70 * ease_out(k)) * s
+        core.circle(ctx, x, y, r)
+        core.fill(ctx, (0.85, 0.97, 1.0, 0.42 * (1 - k)))
+
+
+# --- the window onto the shaft: same look as the set's default view, but the
+# shutters fall TIER BY TIER and the pods first begin to open
+def _row_shutter(T, t, r):
+    t1 = T.rows[r]
+    if t < t1 - 0.17:
+        return 0.0
+    if t < t1:
+        return ease_in(seg(t, t1 - 0.17, t1))
+    return 1.0 - 0.07 * math.sin(math.pi * seg(t, t1, t1 + 0.14))
+
+
+def _opening(T, t):
+    return smoothstep(seg(t, T.open0, T.open0 + 1.6))
+
+
+def window_fn_for(T):
+    def window_fn(ctx, x, y, w, h, t):
+        import cairocffi as cairo
+        g = cairo.LinearGradient(0, y, 0, y + h)
+        g.add_color_stop_rgba(0, *core.hexc("#06141b"))
+        g.add_color_stop_rgba(1, *core.hexc("#11404a"))
+        ctx.rectangle(x, y, w, h)
+        ctx.set_source(g)
+        ctx.fill()
+        cx = x + w / 2
+        op = _opening(T, t)
+        rows = []
+        for r in range(6):
+            f = r / 5.0
+            yy = y + h * (0.10 + 0.17 * r)
+            rr = w * (0.62 + 0.18 * f)
+            sag = h * (0.05 + 0.05 * f)
+            n = 7 + r // 2
+            pw_, ph_ = w * (0.040 + 0.022 * f), h * (0.070 + 0.040 * f)
+            pts = []
+            for k in range(n):
+                u = (k + 0.5) / n
+                pts.append((cx + (u - 0.5) * 2 * rr * 0.62, yy + sag * (1 - (2 * u - 1) ** 2)))
+            rows.append((pts, pw_, ph_))
+            lp = [(cx + (u / 20 - 0.5) * 2 * rr * 0.7, yy + ph_ * 0.6 + sag * (1 - (2 * u / 20 - 1) ** 2))
+                  for u in range(21)]
+            props.line(ctx, lp, core.mixc("#1d4f5a", "#4f8f98", f), 2 + 3 * f)
+        for ri, (pts, pw_, ph_) in enumerate(rows):
+            sh = _row_shutter(T, t, ri)
+            if sh >= 0.999:
+                continue
+            for (px, py) in pts:
+                core.rrect(ctx, px - pw_ / 2, py - ph_ / 2, pw_, ph_, pw_ / 2)
+            core.fill(ctx, core.mixc(core.mixc("#1b6f72", "#3ff2e0", 0.45 + 0.1 * ri), "#e8fffb",
+                                     0.35 * op))
+        core.radial_glow(ctx, cx, y + h * 0.7, w * 0.6, core.PAL["power"], 0.22 + 0.15 * op)
+        # the pods begin to open: the lids crack apart (a bright seam that widens)
+        if op > 0.01:
+            for ri, (pts, pw_, ph_) in enumerate(rows):
+                if _row_shutter(T, t, ri) > 0.5:
+                    continue
+                for (px, py) in pts:
+                    yy = py - ph_ * 0.18
+                    ctx.move_to(px - pw_ * 0.48, yy)
+                    ctx.line_to(px + pw_ * 0.48, yy)
+            core.stroke(ctx, (1.0, 1.0, 1.0, 0.9), 1.2 + 3.2 * op, cap="butt")
+        # shutters slam down, tier by tier
+        for ri, (pts, pw_, ph_) in enumerate(rows):
+            sh = _row_shutter(T, t, ri)
+            if sh <= 0.0:
+                continue
+            for (px, py) in pts:
+                ctx.rectangle(px - pw_ * 0.65, py - ph_ * 0.62, pw_ * 1.3, ph_ * 1.24 * sh)
+            core.fill(ctx, "#56646f", preserve=True)
+            core.stroke(ctx, props.INK, 1.6)
+            for (px, py) in pts:
+                yy = py - ph_ * 0.62 + ph_ * 1.24 * sh
+                ctx.move_to(px - pw_ * 0.65, yy - 1.5)
+                ctx.line_to(px + pw_ * 0.65, yy - 1.5)
+            core.stroke(ctx, core.PAL["warn"], 2.0)
+        # sparks where each tier lands (<= 2 tiers alive: <= 16 streaks)
+        for ri, (pts, pw_, ph_) in enumerate(rows):
+            t1 = T.rows[ri]
+            if t1 <= t < t1 + 0.6:
+                for j, kk in enumerate((len(pts) // 3, (2 * len(pts)) // 3)):
+                    px, py = pts[kk]
+                    fx.sparks(ctx, px, py + ph_ * 0.62, t, t1, seed=ri * 7 + j, s=0.22, n=6,
+                              angle=-math.pi / 2, spread=2.4, dur=0.55, speed=700)
+    return window_fn
+
+
+# --- monitors: the "pods" feeds get the same cascade; after the escape the big
+# one shows the hatch (where the Boss looks)
+def _mon_pods(T, i):
+    base = sets._cr2_feed
+
+    def fn(ctx, x, y, w, h, t):
+        base(ctx, x, y, w, h, "pods", sets._CR2_FEEDS[i][1])
+        op = _opening(T, t)
+        for r in range(3):
+            sh = _row_shutter(T, t, 2 * r + 1)
+            for k in range(6):
+                px = x + w * (0.1 + 0.17 * k) + (w * 0.08 if r % 2 else 0)
+                py = y + h * (0.2 + 0.3 * r)
+                if op > 0.01 and sh < 0.5:
+                    props.line(ctx, [(px - w * 0.035, py - h * 0.03), (px + w * 0.035, py - h * 0.03)],
+                               (1, 1, 1, 0.85 * op), 1 + 2 * op)
+                if sh > 0:
+                    ctx.rectangle(px - w * 0.05, py - h * 0.11, w * 0.1, h * 0.22 * sh)
+            if sh > 0:
+                core.fill(ctx, "#56646f")
+    return fn
+
+
+def _mon_catwalk(T, i, label):
+    base = sets._cr2_feed
+
+    def fn(ctx, x, y, w, h, t):
+        base(ctx, x, y, w, h, "catwalk", label)
+        op = _opening(T, t)
+        for k in range(5):
+            sh = _row_shutter(T, t, min(5, k + 1))
+            px = x + w * (0.12 + 0.2 * k)
+            if op > 0.01 and sh < 0.5:
+                props.line(ctx, [(px - w * 0.05, y + h * 0.3), (px + w * 0.05, y + h * 0.3)],
+                           (1, 1, 1, 0.85 * op), 1.5 + 3 * op)
+            if sh > 0:
+                ctx.rectangle(px - w * 0.07, y + h * 0.16, w * 0.14, h * 0.54 * sh)
+                core.fill(ctx, "#56646f", preserve=True)
+                core.stroke(ctx, props.INK, 1.5)
+    return fn
+
+
+def _hatch_feed(T):
+    def draw_feed(c, x, y, w, h, t):
+        # the room's own security camera on the (empty) hatch
+        wx0, wy0, ww = -80.0, 640.0, 620.0
+        k = w / ww
+        c.save()
+        c.translate(x, y)
+        c.scale(k, k)
+        c.translate(-wx0, -wy0)
+        sets.control_room(c, t, "bg", hatch_open=hatch_open(T, t), alarm=alarm_at(T, t),
+                          case_broken=1.0, lever=1.0, pressed=1.0, window_shutters=1.0, chair_turn=1.0)
+        c.restore()
+
+    def fn(ctx, x, y, w, h, t):
+        if t < T.hatch - 0.3:
+            _mon_catwalk(T, 3, "CAM 01  SHAFT A")(ctx, x, y, w, h, t)
+            return
+        fx.monitor_feed(ctx, x, y, w, h, t, draw_feed, style="night", label="CAM 07  MAINT.",
+                        t_on=T.hatch - 0.3, rec=True)
+    return fn
+
+
+def alarm_at(T, t):
+    return smoothstep(seg(t, T.al0, T.al0 + 0.35))
+
+
+def hatch_open(T, t):
+    if t < T.burst:
+        return 0.0
+    if t < T.slam0:
+        return clamp(ease_out_back(seg(t, T.burst, T.burst + 0.32), 1.2))
+    return 1.0 - ease_in(seg(t, T.slam0, T.hatch))
+
+
+# ============================================================================
+# drawing the world
+# ============================================================================
+def _clip_hatch(ctx, feet_y):
+    hx, ht, hw, hh = HATCH
+    ctx.rectangle(hx, ht, hw, max(hh, feet_y + 40 - ht))
+    ctx.clip()
+
+
+def _draw_tired(ctx, T, info, t, st, baby_st):
+    def hold(c, side, hx, hy, ang):
+        if not baby_st["held"]:
+            return
+        if side == "both":
+            bx, by = hx + 4, hy - 40 * SB
+        else:
+            bx, by = hx - 10, hy - 52 * SB
+        CR.draw_specimen(c, bx, by, SB, t, baby=True, pose="held", expr=baby_st["expr"], flip=True,
+                         tail_curl=baby_st["tail_curl"], look=(-0.3, 0.2))
+    kw = dict(pose=st["pose"], pose_t=st["pose_t"], turn=st["turn"], expr=st["expr"], face=st["face"],
+              look=st["look"], blink=st["blink"], power=st["power"], outfit="sewer", bandage=True,
+              headphones=None, hood=0.0, reach=st["reach"], mouth=info.mouth("tired", t))
+    if baby_st["held"]:
+        kw["hold"] = hold
+        if st["hold_mode"] == "r":
+            kw["hold_sides"] = "r"
+    return human.draw_person(ctx, "tired", st["x"], st["y"], SP, t, **kw)
+
+
+def _draw_cur(ctx, t, st):
+    return CR.draw_specimen(ctx, st["x"], st["y"], SC, t, form=1.0, pose=st["pose"], expr=st["expr"],
+                            look=st["look"], ears=st["ears"], tilt=st["tilt"], face=st["face"],
+                            flip=st["flip"], tail_curl=st["tail_curl"], pose_t=st["pose_t"],
+                            blink=st["blink"])
+
+
+def _draw_baby(ctx, t, st):
+    return CR.draw_specimen(ctx, st["x"], st["y"], SB, t, baby=True, pose=st["pose"], expr=st["expr"],
+                            look=st["look"], flip=st["flip"], roll=st["roll"], pose_t=st["pose_t"],
+                            ears=st["ears"], tilt=st["tilt"], tail_curl=st["tail_curl"])
+
+
+def _draw_emb(ctx, info, t, st):
+    return human.draw_person(ctx, "embar", st["x"], st["y"], SP, t, pose=st["pose"], pose_t=st["pose_t"],
+                             turn=st["turn"], expr=st["expr"], face=st["face"], look=st["look"],
+                             reach=st["reach"], mouth=st.get("mouth", (0.0, 0.0)), blush=st["blush"],
+                             sweat=st["sweat"], pocket_side="near")
+
+
+def _draw_boss(ctx, info, t, st):
+    gy = FEET
+    return human.draw_person(ctx, "boss", M["chair"][0], gy, SP, t, pose="sit_chair", turn=st["turn"],
+                             expr=st["expr"], face=st["face"], look=st["look"], reach=st["reach"],
+                             mouth=st["mouth"])
+
+
+def _visible_x(view, x0, x1):
+    return not (x1 < view[0] or x0 > view[2])
+
+
+def draw_world(ctx, T, info, t, cam):
+    al = alarm_at(T, t)
+    bs = boss_state(T, info, t)
+    ts = tired_state(T, info, t)
+    cs = cur_state(T, info, t)
+    bb = baby_state(T, info, t)
+    es = emb_state(T, info, t)
+    lever = lever_at(T, t) if t >= T.pull else 0.0
+    broken = 1.0 if t >= T.hit else 0.0
+    hop = hatch_open(T, t)
+    room = dict(case_broken=broken, lever=lever, pressed=bs["pressed"], alarm=al, hatch_open=hop,
+                chair_turn=bs["chair_turn"], window_fn=window_fn_for(T),
+                monitor_fns={0: _mon_catwalk(T, 0, "CAM 02"), 3: _hatch_feed(T), 4: _mon_pods(T, 4),
+                             7: _mon_pods(T, 7), 10: _mon_pods(T, 10)})
+    sets.control_room(ctx, t, "bg", **room)
+    view = ctx.clip_extents()
+    shade_al = al * 0.55
+
+    # someone in the hatch opening (clipped to it; the open panel goes over them)
+    def hatch_people():
+        for who, st in (("emb", es), ("cur", cs), ("tired", ts)):
+            if st.get("clip") == "hatch" and st["visible"]:
+                ctx.save()
+                _clip_hatch(ctx, st["y"])
+                sets.dimmed(ctx, (HATCH[0] - 10, HATCH[1] - 10, HATCH[2] + 20, 900), 0.45,
+                            lambda c, who=who, st=st: (_draw_emb(c, info, t, st) if who == "emb" else
+                                                       _draw_cur(c, t, st) if who == "cur" else
+                                                       _draw_tired(c, T, info, t, st, bb)))
+                ctx.restore()
+
+    hatch_people()
+    # the JOY pod (the baby sleeps inside until it tumbles out)
+    if _visible_x(view, POD_X - 200, POD_X + 200):
+        inside = None
+        if bb["inside"]:
+            def inside(c):
+                CR.draw_specimen(c, 0, -122 * POD_S + 0, SB, t, baby=True, pose="curl",
+                                 expr=bb["expr"], flip=True)
+        draw_joy_pod(ctx, T, t, inside)
+    # the haul aura goes behind him
+    if ts["aura"] > 0.01 and ts["visible"]:
+        fx.power_aura(ctx, ts["x"] + 40, ts["y"] - 400, 420, 760, t, ts["aura"], pulse=0.6)
+    with sets.shaded(ctx, sets.control_room, t, layer="shade", alarm=shade_al):
+        if _visible_x(view, 1450, 1950):
+            _draw_boss(ctx, info, t, bs)
+        if es["visible"] and es.get("clip") != "hatch" and _visible_x(view, es["x"] - 200, es["x"] + 200):
+            _draw_emb(ctx, info, t, es)
+        order = []
+        if ts["visible"] and ts.get("clip") != "hatch":
+            order.append((ts["y"], 0, "tired"))
+        if cs["visible"] and cs.get("clip") != "hatch":
+            order.append((cs["y"] + (112 * SC if cs["airborne"] else 0), 1, "cur"))
+        if not bb["inside"] and not bb["held"]:
+            order.append((bb["y"] + 10, 2, "baby"))
+        for _, _, who in sorted(order):
+            if who == "tired" and _visible_x(view, ts["x"] - 260, ts["x"] + 300):
+                _draw_tired(ctx, T, info, t, ts, bb)
+            elif who == "cur" and _visible_x(view, cs["x"] - 300, cs["x"] + 300):
+                _draw_cur(ctx, t, cs)
+            elif who == "baby":
+                _draw_baby(ctx, t, bb)
+    parts = ["chair"]
+    if hop > 0.02:
+        parts.append("hatch")
+    sets.control_room(ctx, t, "fg", chair_turn=bs["chair_turn"], hatch_open=hop, alarm=al,
+                      case_broken=broken, lever=lever, parts=tuple(parts))
+    # ---- world fx
+    if t >= T.hit:
+        props.shards(ctx, t, T.hit, IMPACT[0] + 10, IMPACT[1], seed=4, n=9, s=SP, floor_y=FEET + 20,
+                     dir=1, spread=0.8)
+        props.shards(ctx, t, T.hit, IMPACT[0] - 10, IMPACT[1] + 10, seed=9, n=5, s=SP,
+                     floor_y=FEET + 30, dir=-1, spread=0.5)
+        fx.impact_star(ctx, IMPACT[0], IMPACT[1], 0.55, t, T.hit, dur=0.3, color="#e8fbff",
+                       inner="#ffffff", spikes=9)
+    if _visible_x(view, POD_X - 250, POD_X + 250):
+        draw_pod_steam(ctx, T, t)
+    if T.hatch <= t < T.hatch + 0.9:
+        fx.dust_puff(ctx, HATCH[0] + HATCH[2] / 2, HATCH[1] + HATCH[3] + 10, 0.9, t, T.hatch, seed=5)
+
+
+# ============================================================================
+# cameras
+# ============================================================================
+def _shake(t, t0, dur, amp, seed=3):
+    return core.shake(t, t0, dur, amp, seed)
+
+
+def camera_at(T, t):
+    """(cx, cy, zoom, dx, dy) for the shot at time t."""
+    dx = dy = 0.0
+    if t < T.pull:                                     # S1 the smash
+        z = lerp(1.45, 1.52, seg(t, 0.0, T.pull))
+        cx, cy = 985.0, 1145.0
+        sx, sy = _shake(t, T.hit, 0.32, 12)
+        dx, dy = sx, sy
+    elif t < T.button:                                 # S2 the haul
+        k = smoothstep(seg(t, T.grab, T.give))
+        z = lerp(1.62, 1.78, k)
+        cx, cy = lerp(1010, 1020, k), lerp(1085, 1060, k)
+        if t >= T.give:
+            kk = smoothstep(seg(t, T.give, T.clunk + 0.25))
+            z = lerp(1.78, 1.62, kk)
+            cy = lerp(1060, 1100, kk)
+        sx, sy = _shake(t, T.clunk, 0.45, 14)
+        dx, dy = sx, sy
+    elif t < T.shut:                                   # S3 the Boss presses LOCKDOWN
+        k = seg(t, T.button, T.shut)
+        cx, cy, z = 1600.0, lerp(1015, 1000, k), lerp(1.82, 1.9, k)
+    elif t < T.pod:                                    # S4 the window: shutters
+        k = seg(t, T.shut, T.pod)
+        cx, cy, z = 1105.0, lerp(612, 600, k), lerp(2.0, 2.12, k)
+        for r, t1 in enumerate(T.rows):
+            last = r == len(T.rows) - 1
+            sx, sy = _shake(t, t1, 0.5 if last else 0.2, 11 if last else 5, seed=11 + r)
+            dx += sx
+            dy += sy
+    elif t < T.pan0:                                   # S5a their faces fall
+        k = seg(t, T.pod, T.pan0)
+        cx, cy, z = lerp(845, 850, k), 1165.0, lerp(1.7, 1.75, k)
+    elif t < T.baby:                                   # S5b pan to the pod
+        k = ease_in_out(seg(t, T.pan0, T.pan1))
+        cx, cy, z = lerp(850, 1245, k), lerp(1165, 1375, k), lerp(1.75, 2.25, k)
+    elif t < T.al0:                                    # S6 the baby
+        k = smoothstep(seg(t, T.baby, T.al0))
+        cx, cy, z = lerp(1245, 1170, k), lerp(1375, 1360, k), lerp(2.25, 2.1, k)
+    elif t < T.burst + 0.42:                           # S7 alarm: wide, the hatch bursts
+        k = seg(t, T.al0, T.burst + 0.42)
+        cx, cy, z = lerp(820, 800, k), 1060.0, lerp(0.78, 0.76, k)
+    elif t < T.run:                                    # S8 Emb at the hatch
+        k = seg(t, T.burst + 0.42, T.run)
+        cx, cy, z = 335.0, lerp(1060, 1050, k), lerp(1.5, 1.56, k)
+    elif t < T.hatch:                                  # S9 the run (tracking left)
+        tx = tired_x_for_cam(T, t)
+        cx = clamp(tx - 110, 335, 1130)
+        cy, z = 1100 - 40 * seg(cx, 1130, 335) * -1 + 0, 1.42
+        cy = lerp(1110, 1060, seg(1130 - cx, 0, 795))
+    elif t < T.watch:                                  # S10 the shut hatch
+        k = seg(t, T.hatch, T.watch)
+        cx, cy, z = 335.0, 1060.0, lerp(1.42, 1.3, smoothstep(k))
+        sx, sy = _shake(t, T.hatch, 0.55, 12)
+        dx, dy = sx, sy
+    else:                                              # S11 the Boss: watch -> "Let them run."
+        k = ease_in_out(seg(t, T.watch + 0.2, T.L3.start + 0.25))
+        cx = lerp(1700, 1705, k)
+        cy = lerp(800, 925, k)
+        z = lerp(1.28, 2.15, k)
+        z += 0.06 * seg(t, T.L3.start + 0.25, T.end)
+    return cx, cy, z, dx, dy
+
+
+def tired_x_for_cam(T, t):
+    if t < T.run0:
+        return TIRED_X2
+    return max(_run_x(T, min(t, _tired_duck_t(T))), 300)
+
+
+# ============================================================================
+# scene API
+# ============================================================================
+def render(ctx, t, info):
+    T = times(info)
+    cx, cy, z, dx, dy = camera_at(T, t)
+    big_zoom = T.watch <= t
+    core.bg(ctx, "#06090e")
+    if big_zoom:
+        with core.cache_steps(1):
+            with core.camera(ctx, cx, cy, z, 0.0, 540 + dx, 960 + dy):
+                draw_world(ctx, T, info, t, (cx, cy, z))
+    else:
+        with core.camera(ctx, cx, cy, z, 0.0, 540 + dx, 960 + dy):
+            draw_world(ctx, T, info, t, (cx, cy, z))
+
+
+def SFX(info):
+    T = times(info)
+    ev = []
+    # smash
+    ev.append((max(0.0, T.p0 + 0.05), "cloth_rustle", -4, -0.1))
+    ev.append((T.hit - 0.02, "glass_case_smash", 0, 0.1))
+    # haul
+    ev.append((T.pull + 0.05, "footstep", 0, -0.1))
+    ev.append((T.grab - 0.05, "latch_click", 2, 0.1))
+    ev.append((T.grab + 0.05, "lever_strain", 0, 0.1))
+    ev.append((T.give - 0.9, "lever_strain", -3, 0.1))
+    ev.append((T.give - 0.4, "power_surge", -10, 0.0))
+    ev.append((T.clunk - 0.02, "lever_clunk", 0, 0.1))
+    ev.append((T.open0, "pod_hiss", -12, -0.4))
+    ev.append((T.open0 + 0.5, "pod_hiss", -12, 0.4))
+    # LOCKDOWN
+    ev.append((T.press - 0.02, "recorder_click", 3, 0.2))
+    ev.append((T.press + 0.02, "latch_click", 0, 0.2))
+    # the shutters, tier by tier (the slam sits ~0.3 s into the clip)
+    pans = (-0.5, 0.4, -0.3, 0.3, -0.15, 0.0)
+    gains = (-8, -7, -6, -5, -4, -2)
+    for r, t1 in enumerate(T.rows):
+        ev.append((t1 - 0.3, "shutter_slam", gains[r], pans[r]))
+    # one pod: faces fall... then the hiss
+    ev.append((T.pod + 0.25, "creature_chirp_sad", -6, -0.2))
+    ev.append((T.hiss - 0.02, "pod_hiss", -3, 0.3))
+    ev.append((T.hiss + 0.06, "ears_perk", 2, -0.2))
+    # baby
+    ev.append((T.roll0 + 0.3, "body_thud", -18, 0.2))
+    ev.append((T.blink0 + 0.1, "baby_coo", -2, 0.1))
+    ev.append((T.cur_go, "creature_chitter", -4, -0.2))
+    ev.append((T.cur_go + 0.05, "scurry", -8, -0.1))
+    ev.append((T.giggle, "baby_giggle", -1, 0.1))
+    ev.append((T.nuzzle + 0.2, "creature_purr", 2, 0.0))
+    # alarm + footsteps outside (left, coming closer)
+    ev += sfx.loop_events("alarm_soft", T.al0, T.end, -2, 0.0)
+    ev.append((T.al0 + 0.4, "footsteps_run", -16, -0.7))
+    ev.append((T.al0 + 1.4, "footsteps_run", -12, -0.7))
+    ev.append((T.L2.end + 0.3, "footsteps_run", -9, -0.6))
+    ev.append((T.run + 1.2, "footsteps_run", -7, -0.6))
+    # the hatch bursts open
+    ev.append((T.burst - 0.02, "latch_click", 2, -0.5))
+    ev.append((T.burst + 0.02, "whoosh", -10, -0.5))
+    # the run
+    ev.append((T.run + 0.25, "baby_giggle", -5, 0.0))
+    ev.append((T.run0, "footsteps_run", -3, -0.2))
+    ev.append((T.cur_run0, "scurry", -6, -0.3))
+    ev.append((_tired_duck_t(T), "whoosh", -8, -0.5))
+    ev.append((T.emb_duck0, "cloth_rustle", -4, -0.5))
+    # SLAM (sync with the chaos cue's last hit)
+    ev.append((T.hatch - 0.1, "hatch_slam", 0, -0.4))
+    return ev

@@ -166,7 +166,7 @@
     },
     {
      "t": "pause",
-     "dur": 1.6,
+     "dur": 2.2,
      "cue": "nudge"
     },
     {
@@ -229,7 +229,7 @@
     },
     {
      "t": "pause",
-     "dur": 3.0,
+     "dur": 3.4,
      "cue": "walk"
     },
     {
@@ -782,12 +782,12 @@
    "beats": [
     {
      "t": "pause",
-     "dur": 2.4,
+     "dur": 2.8,
      "cue": "dawn"
     },
     {
      "t": "pause",
-     "dur": 1.6,
+     "dur": 2.0,
      "cue": "flop"
     },
     {
@@ -802,22 +802,22 @@
     },
     {
      "t": "pause",
-     "dur": 2.2,
+     "dur": 3.2,
      "cue": "pile"
     },
     {
      "t": "pause",
-     "dur": 2.0,
+     "dur": 2.4,
      "cue": "smile"
     },
     {
      "t": "pause",
-     "dur": 2.4,
+     "dur": 3.2,
      "cue": "phone"
     },
     {
      "t": "pause",
-     "dur": 2.4,
+     "dur": 3.0,
      "cue": "sleep"
     },
     {
