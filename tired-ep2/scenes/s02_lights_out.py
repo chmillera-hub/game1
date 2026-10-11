@@ -2,24 +2,32 @@
 
 Pitch dark on the shaft catwalk (continues s01's last frame: Curiosity's big
 eyes low-left at its empty pod, Tiredness's faint eyes high-right). He gives up
-and sits on the plinth of the empty pod; Curiosity hops up beside him and tugs
-his hood over his eyes. Eyes closed, his new sense pings the world into teal.
+and sits on the plinth of the empty pod; Curiosity hops up beside him and SHOWS
+him the sense first: eyes shut, a little tremble, a teal pulse. He thinks it is
+having a fit. It rolls its eyes and pulls his hood over his eyes; he peeks out
+from under the rim with one eye; it pointedly shuts its eyes and pulses again.
+"Oh." He lets the hood drop, it nods, and his own first ping lights the world.
 Smug, he strides off down the stair... and walks face-first into a low pipe.
 
 All timing comes from info.cue()/info.line(); nothing is hard-coded to the
 audio. Shots (scene-local):
   S1  dark ....... two pairs of eyes, l01, he sits down (eyes drop)
-  S2  climb ...... Curiosity hops up beside him on hind legs, reaches; l02
-  S3  hood ....... CU: the hood comes up and over his eyes; annoyance; sigh
-  S4  ping ....... wide: silence, whoom, the first rings reveal the catwalk
-  S5  look ....... "Oh." (brows lift under the hood); head turns L / R, pings follow
-  S6  nod ........ "So I just... close my eyes?" -- Curiosity nods, revealed by a ping
-  S7  stand ...... he stands up proud on "Finally."
-  S7b smug ....... CU "A superpower I'm actually good at." (+ a proud ping)
-  S8  roll ....... CU Curiosity's slow sassy eye-roll
-  S9  walk ....... tracking: confident stride, pings, down the stair -> BONK
-  S10 bonk ....... CU held beat, dazed: "...Mostly good at."
-  S11 giggle ..... CU Curiosity on the stair hides its smile behind a paw
+  S2  climb ...... Curiosity hops up beside him onto its hind legs; DEMO: it shuts its
+                   eyes (its light goes out), trembles, and sends out its own pulse
+  S3  fit ........ tight two-shot, l02 "Uh... what are you doing? Are you okay?" (a
+                   second pulse on "doing?"; it opens its eyes, flat, on "okay?")
+  S4  roll ....... CU Curiosity: a very sassy eye-roll with a head toss
+  S5  hood ....... two-shot CU: it yanks the hood over his eyes; annoyance, a sigh; PEEK:
+                   a finger lifts the rim, one eye peeks; it shuts its eyes, pulses again
+  S6  oh ......... CU on him: "Oh." (the peeking eye widens), LOOK: the eye wanders the dark
+  S7  nod ........ two-shot: "So I just... close my eyes?" -- the rim drops; it nods
+  S8  ping ....... wide: HIS first ping (eyes closed under the hood) reveals the catwalk;
+                   a second one follows his head; he stands up proud on "Finally."
+  S9  smug ....... CU "A superpower I'm actually good at." (+ a proud ping)
+  S10 roll2 ...... CU Curiosity's slow eye-roll at his smugness
+  S11 walk ....... tracking: confident stride, pings, down the stair -> BONK
+  S12 bonk ....... CU held beat, dazed: "...Mostly good at."
+  S13 giggle ..... CU Curiosity on the stair hides its smile behind a paw
 """
 import math
 
@@ -39,7 +47,7 @@ T_X = 1090                                 # ... sits here on the empty pod's pl
 T_GSEAT = PLINTH_Y + human.CRATE_H["tired"] * S      # ground y for sit_crate on the plinth
 C_X0 = 750                                 # Curiosity where s01 leaves it (left of its pod, faces right)
 C_XP = 935                                 # ... hops up onto the plinth here (at his left, faces right)
-C_XS = 872                                 # ... and sits back on it here once it lets go of the hood
+C_XS = 872                                 # ... and sits back on it here (from the "nod" shot on)
 FEET = M["feet_y"]                         # 1500
 LAND = M["landing_feet_y"]                 # 1770
 BONK_X = M["bonk_feet"][0]                 # -44: feet x when his face meets the pipe
@@ -49,6 +57,20 @@ STEP_C = 2                                 # the stair tread Curiosity stops on 
 DARK_RGB = (0.012, 0.027, 0.043)
 TEAL = (0.247, 0.949, 0.878)
 S01_DARK_CAM = (1010, 1105, 1.35)          # s01's last framing (lights out, two pairs of eyes)
+
+# the hood peek (a finger lifts the rim so ONE eye shows): the rig's hood is symmetric, so
+# the lifted part is a second render with the rim higher, shown through an arch-shaped window
+HOOD_PEEK = 0.70                           # rim of the second render: well above the eye
+try:
+    _HOOD_TOP = human._dk(human.PAL["t_hoodie"], 0.1)          # outfit "sewer" hoodie
+    _HOOD_DK = human.PAL["t_hoodie_dk"]
+    _INK = human.PAL["ink"]
+except Exception:                          # palette moved: fall back to the measured colours
+    _HOOD_TOP, _HOOD_DK, _INK = "#33416f", "#252f52", "#1d1424"
+# the peek hand: index finger out, drawn over the head; placed with world-space `reach`
+ARM_PEEK = {"ar_h": "point", "ar_layer": "front"}
+FINGER = 25.0                              # grip point -> index fingertip (px at s=1)
+FINGER_ANG = -2.3                          # finger direction in the eye-line frame (up-left)
 
 
 def _sleeper(c, x, y, s, t, seed):
@@ -66,6 +88,11 @@ SET_KW = dict(sleeper_fn=_sleeper, sleeper_fns={"JOY": _baby}, sleeper_key="s02_
 
 def kf(t, keys, ease=ease_in_out):
     return tween(t, keys, ease)
+
+
+def bump(t, t0, t1):
+    """0 -> 1 -> 0 over [t0, t1] (sine)."""
+    return math.sin(math.pi * seg(t, t0, t1))
 
 
 # ---------------------------------------------------------------------------
@@ -88,13 +115,16 @@ def timing(info):
     L = info.line
     k.L1, k.L1e = L("s02_l01").start, L("s02_l01").end
     k.NUDGE = c("nudge")
+    k.DEMO = c("demo")
     k.L2, k.L2e = L("s02_l02").start, L("s02_l02").end
+    k.ROLL = c("roll")
     k.HOOD = c("hood")
-    k.PING = c("ping")
+    k.PEEK = c("peek")
     k.L3, k.L3e = L("s02_l03").start, L("s02_l03").end
     k.LOOK = c("look")
     k.L4, k.L4e = L("s02_l04").start, L("s02_l04").end
     k.NOD = c("nod")
+    k.PING = c("ping")
     k.L5, k.L5e = L("s02_l05").start, L("s02_l05").end
     k.SMUG = c("smug")
     k.WALK = c("walk")
@@ -109,10 +139,6 @@ def timing(info):
         except Exception:
             pass
         return default
-    # "look": head left, hold, right, hold (the pings follow the head)
-    k.lk1 = k.L3e + 0.95
-    k.lk2 = k.lk1 + 0.3
-    k.lk3 = k.lk2 + 0.8
     # Tiredness sits down right after l01 (a step back onto the plinth)
     k.sit0 = k.L1e + 0.12
     k.sit1 = k.sit0 + 0.85
@@ -120,10 +146,39 @@ def timing(info):
     k.hop0 = max(k.sit1 + 0.12, k.NUDGE + 0.35)      # anticipation crouch starts
     k.hop1 = k.hop0 + 0.22                            # take-off
     k.hop2 = k.hop1 + 0.30                            # lands on its hind legs
+    # DEMO: it shuts its eyes, charges up (a little tremble) and pulses
+    k.dm_close = k.DEMO + 0.12                        # lids close over 0.3 s
+    k.dm_charge = k.DEMO + 0.5
+    k.dm_pulse = k.DEMO + 1.0
+    k.dm_pulse2 = max(k.dm_pulse + 1.7, word("s02_l02", 4, k.L2 + 1.0) - 0.05)   # on "doing?"
+    k.dm_charge2 = k.dm_pulse2 - 0.4
+    k.w_okay = word("s02_l02", 5, k.L2 + 1.45)        # "Are you okay?"
+    k.dm_open = k.w_okay + 0.15                       # it opens its eyes: a flat look
+    # the sassy eye-roll (CR.EYEROLL_DUR = 1.25 s)
+    k.roll0 = max(k.L2e + 0.12, k.ROLL - 0.3)
     # the hood pull
-    k.hd0 = k.HOOD + 0.12
-    k.hd1 = k.hd0 + 0.85                              # hood fully over his eyes
-    k.sigh = k.hd1 + 0.55
+    k.hd0 = k.HOOD + 0.08
+    k.hd1 = k.hd0 + 0.8                               # hood fully over his eyes
+    k.sigh = k.hd1 + 0.3
+    # PEEK: the hand comes up, a finger lifts the rim, one eye peeks out
+    k.pk0 = max(k.PEEK + 0.08, k.sigh + 0.7)
+    k.pk1 = k.pk0 + 0.5                               # fingertip under the rim
+    k.pk2 = k.pk1 + 0.3                               # rim lifted
+    k.pk_see = k.pk2 + 0.2                            # Curiosity spots the eye ...
+    k.pk_close = k.pk_see + 0.32                      # ... and pointedly shuts its own
+    k.pk_pulse = min(k.pk_close + 0.42, k.L3 - 0.55)  # and pulses
+    # "look": the one eye wanders the dark, then back to it
+    k.lk1 = k.LOOK + 0.05
+    k.lk2 = k.lk1 + 0.65
+    k.lk3 = k.lk2 + 0.55
+    # l04: the rim drops back down on "close"; the hand settles in his lap
+    k.dr0 = word("s02_l04", 3, k.L4 + 0.9)
+    k.dr1 = k.dr0 + 0.28
+    k.dr2 = k.dr0 + 0.9
+    # the nod; then his first own ping (+ a second one following his head)
+    k.n0 = k.NOD + 0.1
+    k.p1 = k.PING + 0.45
+    k.p2 = k.PING + 1.4
     # he stands up into l05; the CU cut on "A superpower..."
     k.stand0 = k.L5 - 0.35
     k.stand1 = k.stand0 + 0.75
@@ -140,6 +195,11 @@ def timing(info):
     k.cv = 2.2 * CR.SPEC_WALK_SPEED * S
     # post-bonk
     k.giggle0 = k.L6e + 0.25
+    # shot cuts
+    k.cut_fit = k.L2 - 0.1
+    k.cut_roll = k.L2e + 0.08
+    k.cut_oh = k.L3 - 0.22
+    k.cut_nod = k.L4 - 0.1
     k.shots = _shots(k)
     _KC.clear()
     _KC[key] = k
@@ -162,17 +222,19 @@ def walk_y(x):
 
 
 def sit_pose(t, k):
-    """sit_crate with an animated slump: slumped -> straighter after "Oh."."""
-    up = smoothstep(seg(t, k.L3 - 0.12, k.L3 + 0.35))
-    lift2 = kf(t, [(k.L2 - 0.4, 0.0), (k.L2 + 0.1, 0.45), (k.HOOD + 0.4, 0.45), (k.hd1 + 0.15, 0.1),
-                   (k.sigh + 0.2, 0.0)])
-    ping_lift = kf(t, [(k.PING + 0.5, 0.0), (k.PING + 0.9, 0.25), (k.PING + 1.6, 0.25),
-                       (k.PING + 2.0, 0.45)])
-    a = max(lift2, ping_lift * (1 - up))
-    lean = lerp(lerp(0.5, 0.36, a), 0.22, up)
+    """sit_crate with an animated slump: slumped -> engaged -> straighter after his ping."""
+    up = smoothstep(seg(t, k.p1 - 0.1, k.p1 + 0.4))
+    lift2 = kf(t, [(k.DEMO - 0.3, 0.0), (k.DEMO + 0.3, 0.3), (k.L2, 0.32), (k.L2 + 0.3, 0.45),
+                   (k.HOOD + 0.4, 0.45), (k.hd1 + 0.15, 0.1), (k.sigh + 0.2, 0.0),
+                   (k.pk0, 0.0), (k.pk1, 0.32), (k.dr0, 0.32), (k.dr2, 0.2)])
+    a = max(lift2, 0.0) * (1 - up)
+    # the demo pulse makes him flinch back a little (and the second one, less)
+    fl = 0.7 * bump(t, k.dm_pulse - 0.02, k.dm_pulse + 0.7) + 0.4 * bump(t, k.dm_pulse2 - 0.02, k.dm_pulse2 + 0.6)
+    lean = lerp(lerp(0.5, 0.36, a), 0.22, up) - 0.12 * fl
+    lean += 0.07 * smoothstep(seg(t, k.w_okay - 0.2, k.w_okay + 0.3)) * (1 - smoothstep(seg(t, k.L2e, k.HOOD)))
     nod = lerp(lerp(0.34, 0.12, a), 0.0, up)
     neck = lerp(0.32, 0.2, max(a, up))
-    sg = math.sin(math.pi * seg(t, k.sigh - 0.1, k.sigh + 0.9))     # sigh: shoulders drop
+    sg = bump(t, k.sigh - 0.1, k.sigh + 0.8)                     # sigh: shoulders drop
     return {"base": "sit_crate", "lean": lean + 0.05 * sg, "nod": nod + 0.06 * sg, "neck": neck,
             "hunch": 0.65 + 0.2 * sg}
 
@@ -180,9 +242,20 @@ def sit_pose(t, k):
 PROUD = {"base": "stand", "chest": -0.1, "nod": -0.12, "neck": -0.08, "posture": 0.4, "hunch": 0.1}
 
 
+def peek_amount(t, k):
+    """0 = rim down over both eyes, 1 = lifted over his screen-right eye (a bit more on "Oh.")."""
+    return kf(t, [(k.pk1 - 0.02, 0.0), (k.pk2, 1.0), (k.L3 - 0.05, 1.0), (k.L3 + 0.2, 1.18),
+                  (k.L3e + 0.4, 1.18), (k.L3e + 0.8, 1.05), (k.dr0, 1.05), (k.dr1, 0.0)])
+
+
+def arm_amount(t, k):
+    """0 = hands clasped on his knees, 1 = the r hand up at the hood rim."""
+    return kf(t, [(k.pk0, 0.0), (k.pk1, 1.0), (k.dr0 + 0.1, 1.0), (k.dr2, 0.0)])
+
+
 def tired_state(t, k, info):
     st = dict(x=T_X, y=FEET, pose="stand", pose_t=None, turn=0.25, expr="bored", face={},
-              look=(0.0, 0.0), blink=None, hood=0.0, mouth=info.mouth("tired", t))
+              look=(0.0, 0.0), blink=None, hood=0.0, mouth=info.mouth("tired", t), peek=0.0, bface=None)
     f = st["face"]
     # ---------------- standing in the dark (where s01 left him), l01, sits down
     if t < k.sit1:
@@ -208,43 +281,102 @@ def tired_state(t, k, info):
     # ---------------- seated on the plinth
     if t < k.stand0:
         st["y"] = T_GSEAT
-        st["pose"] = sit_pose(t, k)
-        # (body turn stays > -0.2: below that the clasped hands swap draw order)
-        st["turn"] = kf(t, [(k.L3e + 0.35, 0.25), (k.lk1 + 0.1, -0.1), (k.lk2, -0.1),
-                            (k.lk3 + 0.1, 0.62), (k.L4, 0.62), (k.L4 + 0.6, 0.15)])
-        st["expr"] = state_at(t, [(0.0, "bored"), (k.L2 - 0.1, "annoyed"), (k.hd0 + 0.25, "annoyed"),
-                                  (k.sigh - 0.1, "sigh"), (k.sigh + 0.9, "bored"), (k.PING + 1.9, "neutral"),
-                                  (k.L3 - 0.1, "surprised"), (k.L3e + 0.35, "neutral"),
-                                  (k.L4 - 0.15, "curious"), (k.L4e + 0.2, "neutral")], 0.25)
-        # eyes (before the hood): Curiosity lands on his LEFT -> pupils lead, head follows ~0.15 s later
+        sp = sit_pose(t, k)
+        ka = arm_amount(t, k)
+        st["pose"] = sp
+        st["turn"] = 0.25
+        st["expr"] = state_at(t, [(0.0, "bored"), (k.dm_close + 0.2, "neutral"), (k.L2 - 0.15, "neutral"),
+                                  (k.roll0 + 0.3, "unamused"), (k.HOOD + 0.1, "annoyed"),
+                                  (k.sigh - 0.1, "sigh"), (k.sigh + 0.8, "unamused"),
+                                  (k.L3 - 0.1, "neutral"), (k.L4 - 0.15, "curious"),
+                                  (k.L4e + 0.2, "neutral")], 0.25)
+        # ---- eyes (before the hood): pupils lead, head follows ~0.15 s later
         st["look"] = kf(t, [(k.sit1, (0.1, 0.2)), (k.hop2 - 0.05, (0.1, 0.15)), (k.hop2 + 0.15, (-0.85, -0.1)),
-                            (k.L2 + 0.6, (-0.85, -0.15)), (k.L2e, (-0.75, -0.3)),
+                            (k.dm_pulse + 0.15, (-0.85, -0.1)), (k.dm_pulse + 0.4, (0.35, -0.35)),   # the ring flies past
+                            (k.dm_pulse + 0.85, (0.35, -0.3)), (k.dm_pulse + 1.15, (-0.85, -0.12)),  # ... back to it
+                            (k.L2e, (-0.8, -0.2)), (k.roll0 + 0.2, (-0.8, -0.2)),
                             (k.hd0 - 0.05, (-0.7, -0.3)), (k.hd0 + 0.25, (-0.25, -0.9))])
-        f["head_turn"] = kf(t, [(k.hop2 + 0.15, 0.0), (k.hop2 + 0.45, -0.42), (k.HOOD, -0.42),
-                                (k.hd0 + 0.3, -0.12), (k.hd1 + 0.2, 0.0), (k.PING + 1.0, 0.0),
-                                (k.PING + 1.4, -0.1),
-                                (k.L3e + 0.3, -0.1), (k.lk1, -0.8), (k.lk2, -0.8),       # look left ...
-                                (k.lk3, 0.75), (k.L4 - 0.05, 0.75),                      # ... and right
-                                (k.L4 + 0.55, -0.45), (k.L5, -0.4)])                     # back to it
-        f["head_tilt"] = kf(t, [(k.L2, 0.0), (k.L2 + 0.4, 0.06), (k.L2e, 0.06), (k.HOOD, 0.0),
-                                (k.L3e + 0.3, 0.0), (k.lk1, 0.08), (k.lk2, 0.08),
-                                (k.lk3, -0.08), (k.L4 + 0.5, 0.0),
-                                (k.L4 + 0.9, 0.0), (k.L4 + 1.3, -0.1), (k.L4e + 0.6, -0.1), (k.NOD + 1.2, -0.03)])
-        f["brow_l"] = kf(t, [(k.L2 + 0.2, 0.0), (k.L2 + 0.5, 0.25), (k.hd0, 0.25), (k.hd0 + 0.3, 0.0)])
+        f["head_turn"] = kf(t, [(k.hop2 + 0.15, 0.0), (k.hop2 + 0.45, -0.42),
+                                (k.dm_pulse + 0.3, -0.42), (k.dm_pulse + 0.6, -0.2), (k.dm_pulse + 1.0, -0.2),
+                                (k.dm_pulse + 1.3, -0.42), (k.HOOD, -0.42),
+                                (k.hd0 + 0.3, -0.12), (k.hd1 + 0.2, -0.05), (k.sigh + 0.6, -0.05),
+                                (k.pk1, -0.3), (k.pk_pulse + 0.4, -0.3), (k.pk_pulse + 0.7, -0.15),   # ring passes
+                                (k.L3 + 0.1, -0.32), (k.lk1 + 0.15, -0.32), (k.lk1 + 0.5, -0.05),    # look: out ...
+                                (k.lk2 + 0.15, -0.05), (k.lk2 + 0.45, -0.5), (k.lk3 + 0.2, -0.35),  # ... and back
+                                (k.L4 + 0.6, -0.35), (k.NOD + 0.1, -0.42),
+                                (k.p1 + 0.3, -0.42), (k.p1 + 0.55, -0.3),                          # his ping
+                                (k.p2 - 0.3, -0.3), (k.p2 - 0.05, -0.62), (k.p2 + 0.5, -0.62),       # head follows
+                                (k.stand0, -0.4)])
+        f["head_tilt"] = kf(t, [(k.dm_charge, 0.0), (k.dm_pulse - 0.1, 0.05), (k.L2 + 0.4, 0.07),
+                                (k.w_okay, 0.07), (k.w_okay + 0.3, 0.11), (k.L2e + 0.2, 0.11), (k.HOOD, 0.0),
+                                (k.pk1, 0.0), (k.pk2, 0.05), (k.L3, 0.05), (k.L3 + 0.3, -0.03),
+                                (k.lk1, -0.03), (k.lk1 + 0.4, 0.06), (k.lk2 + 0.4, -0.06), (k.L4 + 0.5, 0.0),
+                                (k.L4 + 0.9, 0.0), (k.L4 + 1.3, -0.1), (k.L4e + 0.6, -0.1), (k.NOD + 1.0, -0.03)])
+        # brows: one up while it shuts its eyes ("...what?"), worried through l02
+        f["brow_l"] = kf(t, [(k.dm_close + 0.1, 0.0), (k.dm_close + 0.4, 0.3), (k.L2 - 0.2, 0.3),
+                             (k.L2 + 0.2, 0.0)])
+        f["brow_ang"] = kf(t, [(k.L2 - 0.3, 0.0), (k.L2 + 0.1, 0.45), (k.w_okay, 0.45), (k.w_okay + 0.25, 0.65),
+                               (k.L2e + 0.1, 0.6), (k.roll0 + 0.3, 0.6), (k.roll0 + 0.6, 0.0)])
+        f["brow"] = kf(t, [(k.L2 - 0.3, 0.0), (k.L2 + 0.1, 0.2), (k.w_okay + 0.25, 0.35), (k.L2e + 0.2, 0.3),
+                           (k.roll0 + 0.6, 0.0),
+                           (k.p1 - 0.05, 0.0), (k.p1 + 0.25, 0.65), (min(k.p2 + 0.4, k.stand0 - 0.05), 0.65),
+                           (k.stand0, 0.3)])
+        # the demo pulse: a small startle (lids lift a little, pupils shrink, head pulls back)
+        st_k = kf(t, [(k.dm_pulse - 0.02, 0.0), (k.dm_pulse + 0.08, 1.0), (k.dm_pulse + 0.6, 0.85),
+                      (k.dm_pulse + 1.3, 0.25), (k.L2, 0.25), (k.dm_pulse2, 0.25), (k.dm_pulse2 + 0.08, 0.7),
+                      (k.dm_pulse2 + 0.7, 0.3), (k.L2e + 0.3, 0.2), (k.roll0 + 0.6, 0.0)])
+        f["lid"] = -0.12 * st_k
+        f["pupil"] = -0.3 * st_k
+        f["squash"] = -0.06 * bump(t, k.dm_pulse - 0.02, k.dm_pulse + 0.3)
+        f["frown"] = kf(t, [(k.L2 - 0.2, 0.0), (k.L2 + 0.1, 0.18), (k.w_okay, 0.12), (k.L2e, 0.1),
+                            (k.roll0 + 0.3, 0.1), (k.hd0 + 0.1, 0.1), (k.hd0 + 0.4, 0.35), (k.sigh, 0.35),
+                            (k.sigh + 0.5, 0.1), (k.L3 - 0.2, 0.1), (k.L3, 0.0)])
+        f["asym"] = kf(t, [(k.L2 - 0.2, 0.0), (k.L2 + 0.15, -0.35), (k.w_okay, -0.35), (k.w_okay + 0.2, 0.0)])
+        f["press"] = kf(t, [(k.roll0 + 0.3, 0.0), (k.roll0 + 0.6, 0.35), (k.hd0, 0.35), (k.hd0 + 0.3, 0.55),
+                            (k.sigh - 0.15, 0.55), (k.sigh, 0.0), (k.sigh + 0.8, 0.0), (k.pk1, 0.35),
+                            (k.pk_pulse, 0.35), (k.pk_pulse + 0.3, 0.0),
+                            (k.lk1, 0.0), (k.lk1 + 0.3, 0.25), (k.lk3, 0.25), (k.L4 - 0.1, 0.0),
+                            (k.L4e + 0.3, 0.0), (k.L4e + 0.6, 0.25), (k.PING + 0.1, 0.25), (k.PING + 0.3, 0.4),
+                            (k.p1, 0.4), (k.p1 + 0.15, 0.0)])
+        f["open"] = kf(t, [(k.L3 - 0.1, 0.0), (k.L3, 0.0), (k.L3e + 0.1, 0.0), (k.L3e + 0.3, 0.1),
+                           (k.lk1, 0.1), (k.lk1 + 0.3, 0.0),
+                           (k.p1 + 0.05, 0.0), (k.p1 + 0.3, 0.14), (k.p2, 0.14), (k.p2 + 0.3, 0.22),
+                           (k.L5 - 0.1, 0.22), (k.L5, 0.0)])
+        f["smirk"] = kf(t, [(k.L4e + 0.2, 0.0), (k.L4e + 0.5, 0.12), (k.NOD + 0.6, 0.12),
+                            (k.NOD + 0.9, 0.0)])
+        # ---- the hood: yanked up, then (peek) a finger lifts the rim, dropped again on "close"
         st["hood"] = kf(t, [(k.hd0, 0.0), (k.hd0 + 0.38, 0.45), (k.hd1, 1.0)])
-        # the yank nods his head forward; he lifts it a hair at the first ping; settles after "Oh."
-        f["head_nod"] = (0.2 * math.sin(math.pi * seg(t, k.hd1 - 0.3, k.hd1 + 0.4))
-                         - 0.06 * smoothstep(seg(t, k.PING + 0.6, k.PING + 1.0))
-                         + 0.06 * smoothstep(seg(t, k.L3e + 0.3, k.L3e + 0.8)))
-        f["press"] = kf(t, [(k.hd0, 0.0), (k.hd0 + 0.3, 0.55), (k.sigh - 0.15, 0.55), (k.sigh, 0.0),
-                            (k.sigh + 0.9, 0.0), (k.sigh + 1.2, 0.2), (k.PING + 0.5, 0.2),
-                            (k.PING + 0.7, 0.0), (k.L4e + 0.3, 0.0), (k.L4e + 0.6, 0.25), (k.L5, 0.25)])
-        f["open"] = kf(t, [(k.PING + 0.55, 0.0), (k.PING + 0.8, 0.12), (k.PING + 1.65, 0.12),
-                           (k.PING + 1.9, 0.22), (k.L3 - 0.1, 0.22), (k.L3, 0.0),
-                           (k.L3e + 0.1, 0.0), (k.L3e + 0.3, 0.12), (k.lk3 + 0.2, 0.12), (k.L4 - 0.1, 0.0)])
-        f["frown"] = kf(t, [(k.hd0 + 0.1, 0.0), (k.hd0 + 0.4, 0.35), (k.sigh, 0.35), (k.sigh + 0.5, 0.1),
-                            (k.PING + 0.5, 0.1), (k.PING + 0.8, 0.0)])
-        f["smirk"] = kf(t, [(k.NOD + 1.0, 0.0), (k.NOD + 1.35, 0.18)])    # "hm." -- he got the nod
+        f["head_nod"] = (0.2 * bump(t, k.hd1 - 0.3, k.hd1 + 0.4)
+                         - 0.05 * bump(t, k.dm_pulse - 0.02, k.dm_pulse + 0.5)
+                         - 0.04 * smoothstep(seg(t, k.pk1, k.pk2)) * (1 - smoothstep(seg(t, k.dr0, k.dr2)))
+                         + 0.08 * bump(t, k.dr0, k.dr0 + 0.6)                 # the rim drops: a little dip
+                         - 0.06 * smoothstep(seg(t, k.p1 - 0.05, k.p1 + 0.35)))
+        p = peek_amount(t, k)
+        if p > 0.0:
+            st["peek"] = p
+            # the peeking eye (screen-right) in the lifted-rim render
+            lk = kf(t, [(k.pk2 - 0.2, (-0.7, 0.05)), (k.pk_pulse + 0.15, (-0.75, 0.0)),
+                        (k.pk_pulse + 0.4, (0.55, -0.25)), (k.L3 - 0.25, (0.35, -0.2)),     # follows the ring out
+                        (k.L3, (-0.75, -0.05)),                                            # "Oh." back to it
+                        (k.lk1, (-0.75, -0.05)), (k.lk1 + 0.2, (0.8, -0.15)), (k.lk2, (0.8, -0.15)),   # the dark
+                        (k.lk2 + 0.2, (-0.95, -0.3)), (k.lk3, (-0.8, -0.1))])
+            wide = kf(t, [(k.L3 - 0.1, 0.0), (k.L3 + 0.12, 1.0), (k.L3e + 0.5, 1.0), (k.lk1, 0.55),
+                          (k.lk3, 0.4)])
+            skept = kf(t, [(k.pk2, 1.0), (k.pk_pulse, 1.0), (k.pk_pulse + 0.4, 0.4), (k.L3, 0.0)])
+            bf = dict(f)
+            bf.update({"lid": 0.12 * skept - 0.2 * wide, "pupil": 0.18 * wide - 0.1 * skept,
+                       "brow_r": 0.4 * wide - 0.15 * skept, "hl": 0.25 * wide})
+            st["bface"] = bf
+            st["blook"] = lk
+            # lets the eye close as the rim drops ("close my eyes?")
+            st["bblink"] = kf(t, [(k.dr0 - 0.05, 0.0), (k.dr0 + 0.15, 1.0)]) if t > k.dr0 - 0.05 else None
+        if ka > 0.0:
+            # the r hand leaves the clasp and comes up to the rim (a blend: the rig switches the
+            # draw order once, where the hands are apart); the finger goes where the rim lifts
+            g = peek_frame(t, st, p)
+            st["peek_geo"] = g
+            st["pose"] = (sp, dict(sp, **ARM_PEEK), ease_in_out(ka))
+            st["reach"] = {"r": (g["grip"][0], g["grip"][1], ease_in_out(ka), g["fang"])}
         return st
     # ---------------- stands up into l05, proud; then turns and walks
     st["hood"] = 1.0
@@ -254,14 +386,15 @@ def tired_state(t, k, info):
         sp = sit_pose(t, k)
         sp = dict(sp, lean=sp["lean"] + 0.18 * math.sin(math.pi * seg(kk, 0.0, 0.45)))   # lean in, push up
         st["pose"] = (sp, PROUD, smoothstep(seg(kk, 0.25, 1.0)))
-        st["turn"] = lerp(0.15, 0.1, smoothstep(kk))
+        st["turn"] = lerp(0.25, 0.1, smoothstep(kk))
         f["head_turn"] = lerp(-0.4, 0.12, smoothstep(seg(kk, 0.2, 1.0)))       # chin up, away from it
         st["expr"] = "deadpan"
         sm = smoothstep(seg(t, k.w_actually - 0.1, k.w_actually + 0.5))
         f["smirk"] = 0.18 + 0.32 * sm
         f["curve"] = 0.15 * sm
+        f["brow"] = lerp(0.3, 0.0, smoothstep(kk))
         f["head_tilt"] = kf(t, [(k.stand1, 0.0), (k.stand1 + 0.4, 0.05)])
-        f["head_nod"] = -0.04 * smoothstep(seg(t, k.L5 + 0.4, k.L5 + 0.9))
+        f["head_nod"] = -0.06 * (1 - smoothstep(kk)) - 0.04 * smoothstep(seg(t, k.L5 + 0.4, k.L5 + 0.9))
         return st
     f.update({"smirk": 0.4, "curve": 0.12})
     st["expr"] = "deadpan"
@@ -308,24 +441,161 @@ def tired_state(t, k, info):
     return st
 
 
+def _draw_person(ctx, t, st, hood=None, face=None, look=None, blink="st", pose=None, reach="st"):
+    return human.draw_person(ctx, "tired", st["x"], st["y"], S, t, pose=st["pose"] if pose is None else pose,
+                             pose_t=st["pose_t"],
+                             turn=st["turn"], expr=st["expr"], face=face if face is not None else st["face"],
+                             look=look if look is not None else st["look"],
+                             mouth=st["mouth"], blink=st["blink"] if blink == "st" else blink,
+                             hood=st["hood"] if hood is None else hood, power=0.6,
+                             outfit="sewer", bandage=True, headphones=None, shadow=False,
+                             reach=st.get("reach") if reach == "st" else reach)
+
+
+def _loc(O, ux, uy, P):
+    dx, dy = P[0] - O[0], P[1] - O[1]
+    return (dx * ux + dy * uy, -dx * uy + dy * ux)
+
+
+def peek_frame(t, st, p):
+    """The lifted rim in the peek eye's local frame (x along the eye line toward screen-right,
+    y down; origin = the screen-right eye), from two cheap solves with the arm down:
+    the hood-down rim (yA), the second render's higher rim (yB), the tent peak at the finger."""
+    a = _draw_person(_dummy(), t, st, reach=None)
+    b = _draw_person(_dummy(), t, st, hood=HOOD_PEEK, reach=None)
+    el, er = a["eye_l"], a["eye_r"]
+    ang = math.atan2(er[1] - el[1], er[0] - el[0])
+    ux, uy = math.cos(ang), math.sin(ang)
+    O = er
+    ed = math.hypot(er[0] - el[0], er[1] - el[1])
+    yA = _loc(O, ux, uy, a["hood_rim"])[1] + 2.6 * S
+    yB = _loc(O, ux, uy, b["hood_rim"])[1] + 2.6 * S
+    hmax = max(0.0, yA - (yB + 5.0 * S))
+    h = hmax * clamp(p / 1.25, 0.0, 1.0)
+    Fx = 0.62 * ed
+    fx_, fy_ = Fx, yA - h - 4.0 * S                          # fingertip, tucked just under the hem
+    gl = (fx_ - FINGER * S * math.cos(FINGER_ANG), fy_ - FINGER * S * math.sin(FINGER_ANG))
+    grip = (O[0] + gl[0] * ux - gl[1] * uy, O[1] + gl[0] * uy + gl[1] * ux)
+    return dict(O=O, ang=ang, ed=ed, yA=yA, yB=yB, h=h, Fx=Fx, xl=-0.85 * ed, xr=Fx + 0.5 * ed,
+                grip=grip, fang=ang + FINGER_ANG, eye_b=b["eye_r"])
+
+
+def _arch(g):
+    xl, xr, Fx, yA, h = g["xl"], g["xr"], g["Fx"], g["yA"], g["h"]
+
+    def arch(x):
+        if x <= xl or x >= xr:
+            return yA
+        u = (x - xl) / (Fx - xl) if x < Fx else (xr - x) / (xr - Fx)
+        return yA - h * math.sin(0.5 * math.pi * u) ** 1.3
+    xs = [xl + (Fx - xl) * i / 16 for i in range(16)] + [Fx + (xr - Fx) * i / 8 for i in range(9)]
+    return arch, xs
+
+
 def draw_tired(ctx, t, st):
-    return human.draw_person(ctx, "tired", st["x"], st["y"], S, t, pose=st["pose"], pose_t=st["pose_t"],
-                             turn=st["turn"], expr=st["expr"], face=st["face"], look=st["look"],
-                             mouth=st["mouth"], blink=st["blink"], hood=st["hood"], power=0.6,
-                             outfit="sewer", bandage=True, headphones=None, shadow=False)
+    a = _draw_person(ctx, t, st)
+    p = st.get("peek", 0.0)
+    g = st.get("peek_geo")
+    if p <= 0.005 or g is None or g["h"] < 0.5 or not a.get("hood_rim"):
+        return a
+    # ---- the lifted rim: a second render with the rim above the eye, through a tent window
+    hxy = a["head"]
+    R = 230 * S
+    ctx.save()
+    ctx.rectangle(hxy[0] - R, hxy[1] - R, 2 * R, 2 * R)
+    ctx.clip()
+    ctx.push_group()
+    bl = st.get("bblink")
+    _draw_person(ctx, t, st, hood=HOOD_PEEK, face=st.get("bface") or st["face"],
+                 look=st.get("blook"), blink=st["blink"] if bl is None else bl)
+    pat = ctx.pop_group()
+    O, ang, ed, yA, h = g["O"], g["ang"], g["ed"], g["yA"], g["h"]
+    arch, xs = _arch(g)
+    xl, xr = g["xl"], g["xr"]
+    # mask: the window (hard, under the tent) + a soft blend of the face shading below the rim
+    ctx.push_group()
+    ctx.save()
+    ctx.translate(*O)
+    ctx.rotate(ang)
+    ctx.move_to(xs[0], yA + 2.5 * S)
+    for x in xs:
+        ctx.line_to(x, arch(x))
+    ctx.line_to(xs[-1], yA + 2.5 * S)
+    ctx.close_path()
+    ctx.set_source_rgba(0, 0, 0, 1)
+    ctx.fill()
+    D = 0.85 * ed
+    span = xr - xl
+    ctx.push_group()
+    ctx.rectangle(xl - 0.4 * span, yA - 1.0, 1.8 * span, D)
+    gx = cairo.LinearGradient(xl - 0.4 * span, 0, xr + 0.4 * span, 0)
+    gx.add_color_stop_rgba(0.0, 0, 0, 0, 0)
+    gx.add_color_stop_rgba(0.3, 0, 0, 0, 1)
+    gx.add_color_stop_rgba(0.7, 0, 0, 0, 1)
+    gx.add_color_stop_rgba(1.0, 0, 0, 0, 0)
+    ctx.set_source(gx)
+    ctx.fill()
+    ctx.set_operator(cairo.OPERATOR_DEST_IN)
+    gy = cairo.LinearGradient(0, yA, 0, yA + D)
+    gy.add_color_stop_rgba(0.0, 0, 0, 0, min(1.0, h / (6.0 * S)))
+    gy.add_color_stop_rgba(1.0, 0, 0, 0, 0)
+    ctx.set_source(gy)
+    ctx.paint()
+    ctx.pop_group_to_source()
+    ctx.paint()
+    ctx.restore()
+    mask = ctx.pop_group()
+    ctx.set_source(pat)
+    ctx.mask(mask)
+    # the lifted hem: a soft shadow under it, the rolled hem band above it, the ink edge
+    ctx.save()
+    ctx.translate(*O)
+    ctx.rotate(ang)
+
+    def arch_path():
+        ctx.move_to(xs[0], arch(xs[0]))
+        for x in xs[1:]:
+            ctx.line_to(x, arch(x))
+    arch_path()
+    ctx.set_source_rgba(0.07, 0.06, 0.13, 0.35 * min(1.0, h / (10 * S)))
+    ctx.set_line_width(14 * S)
+    ctx.set_line_cap(cairo.LINE_CAP_ROUND)
+    ctx.stroke()
+    hb = 11.0 * S
+    arch_path()
+    for x in reversed(xs):
+        ctx.line_to(x, arch(x) - hb)
+    ctx.close_path()
+    core.set_color(ctx, _HOOD_DK)
+    ctx.fill()
+    arch_path()
+    core.set_color(ctx, _INK)
+    ctx.set_line_width(5.5 * S)
+    ctx.set_line_join(cairo.LINE_JOIN_ROUND)
+    ctx.stroke()
+    ctx.restore()
+    ctx.restore()
+    a = dict(a)
+    a["peek_eye"] = g["eye_b"]
+    return a
 
 
 _DUMMY = None
 
 
-def tired_anchors(t, k, info, st=None):
-    """Anchors of Tiredness at time t without drawing to the frame."""
+def _dummy():
     global _DUMMY
     if _DUMMY is None:
         surf = cairo.ImageSurface(cairo.FORMAT_ARGB32, 4, 4)
         _DUMMY = cairo.Context(surf)
         _DUMMY.scale(0.002, 0.002)
-    return draw_tired(_DUMMY, t, st or tired_state(t, k, info))
+    return _DUMMY
+
+
+def tired_anchors(t, k, info, st=None):
+    """Anchors of Tiredness at time t without drawing to the frame."""
+    st = st or tired_state(t, k, info)
+    return _draw_person(_dummy(), t, st)
 
 
 # ---------------------------------------------------------------------------
@@ -334,7 +604,7 @@ def tired_anchors(t, k, info, st=None):
 def cur_state(t, k):
     st = dict(x=C_X0, y=FEET, pose="sit", flip=False, expr="calm", look=(0.6, -0.55), face=None,
               tilt=0.0, ears=0.6, tail_curl=0.0, reach=0.0, pose_t=None, glow=1.0, blink=None,
-              sy=1.0, pose_from=None, pose_mix=1.0, look_target=None)
+              sy=1.0, rot=0.0, pose_from=None, pose_mix=1.0, look_target=None, eyes=1.0)
     # ---------------- on the deck, watching him in the dark (s01 ends on "wide")
     if t < k.hop0:
         st["look_target"] = "eyes"
@@ -359,51 +629,99 @@ def cur_state(t, k):
         st["look"] = (0.4, -0.6)
         st["ears"] = 0.85
         return st
-    # ---------------- up on its hind legs beside him: reaches, pokes his hair, yanks the hood
+    # ---------------- up on its hind legs beside him (paws at its chest): the demo, the roll,
+    #                  the hood yank, the pointed pulse at his peeking eye
     st["x"], st["y"] = C_XP, PLINTH_Y
-    if t < k.PING:
+    if t < k.cut_nod:
         st["pose"] = "reach_up"
         land = seg(t, k.hop2, k.hop2 + 0.32)
-        st["sy"] = 0.84 + 0.16 * ease_out_back(land) if land < 1 else 1.0
-        poke = 0.05 * math.sin((t - k.hop2) * 6.0) * seg(t, k.hop2 + 0.9, k.hop2 + 1.2) * (1 - seg(t, k.L2 - 0.2, k.L2))
-        r = kf(t, [(k.hop2, 0.0), (k.hop2 + 0.25, 0.05), (k.hop2 + 0.85, 0.86), (k.L2 - 0.1, 0.86),
-                   (k.L2 + 0.05, 0.8), (k.L2e, 0.84), (k.hd0 - 0.1, 0.9),
-                   # grab high (1.0), then yank down / forward over his eyes (0.42)
-                   (k.hd0 + 0.25, 1.0), (k.hd0 + 0.4, 1.0), (k.hd1, 0.42), (k.hd1 + 0.25, 0.5),
-                   (k.hd1 + 0.6, 0.12)])
-        st["reach"] = clamp(r + poke)
-        st["x"] = C_XP + kf(t, [(k.hd0 + 0.35, -4.0), (k.hd1, 30.0), (k.hd1 + 0.6, 0.0)])
+        sy = 0.84 + 0.16 * ease_out_back(land) if land < 1 else 1.0
+        # demo: charge up (a little crouch + tremble), the pulse stretches it tall, settle
+        ch = smoothstep(seg(t, k.dm_charge, k.dm_pulse)) * (1 - smoothstep(seg(t, k.dm_pulse, k.dm_pulse + 0.06)))
+        ch2 = smoothstep(seg(t, k.dm_charge2, k.dm_pulse2)) * (1 - smoothstep(seg(t, k.dm_pulse2, k.dm_pulse2 + 0.06)))
+        ch3 = smoothstep(seg(t, k.pk_pulse - 0.3, k.pk_pulse)) * (1 - smoothstep(seg(t, k.pk_pulse, k.pk_pulse + 0.06)))
+        chg = max(ch, 0.7 * ch2, 0.5 * ch3)
+        pop = 0.0
+        for (tp, g) in ((k.dm_pulse, 1.0), (k.dm_pulse2, 0.7), (k.pk_pulse, 0.6)):
+            u = seg(t, tp, tp + 0.5)
+            if 0 < u < 1:
+                pop = max(pop, g * math.sin(math.pi * u) * (1 - u) * 1.6)
+        st["sy"] = sy - 0.05 * chg + 0.08 * pop
+        trem = chg * (3.0 * math.sin(t * 2 * math.pi * 17.0) + 1.5 * math.sin(t * 2 * math.pi * 23.0 + 1.0))
+        rr = kf(t, [(k.hop2, 0.0), (k.hop2 + 0.3, 0.06), (k.dm_pulse - 0.05, 0.02),
+                    (k.dm_pulse + 0.12, 0.3), (k.dm_pulse + 0.7, 0.08), (k.dm_pulse2 - 0.05, 0.04),
+                    (k.dm_pulse2 + 0.12, 0.22), (k.dm_pulse2 + 0.6, 0.06),
+                    (k.HOOD - 0.15, 0.06),
+                    # grab high (1.0), then yank down / forward over his eyes (0.42)
+                    (k.hd0 + 0.25, 1.0), (k.hd0 + 0.4, 1.0), (k.hd1, 0.42), (k.hd1 + 0.25, 0.5),
+                    (k.hd1 + 0.6, 0.1), (k.pk_pulse - 0.05, 0.06), (k.pk_pulse + 0.12, 0.2),
+                    (k.pk_pulse + 0.6, 0.06)])
+        st["reach"] = clamp(rr)
+        st["x"] = C_XP + trem + kf(t, [(k.hd0 + 0.35, -4.0), (k.hd1, 30.0), (k.hd1 + 0.6, 0.0)])
         st["tilt"] = kf(t, [(k.hd0 + 0.3, -0.1), (k.hd1 - 0.1, 0.22), (k.hd1 + 0.5, 0.0)])
-        st["ears"] = kf(t, [(k.hop2, 0.85), (k.hop2 + 0.6, 0.75), (k.L2, 0.75), (k.L2 + 0.15, 0.6),
-                            (k.L2e, 0.65), (k.hd0, 0.75), (k.hd1 + 0.6, 0.78)])
+        # eyes: shut for the demo (its light goes out), open flat on "okay?", shut again (pointedly)
+        st["eyes"] = kf(t, [(k.dm_close, 1.0), (k.dm_close + 0.3, 0.0), (k.dm_open, 0.0), (k.dm_open + 0.22, 1.0)])
+        if k.dm_close <= t < k.dm_open + 0.22:
+            st["blink"] = 1.0 - st["eyes"]
+        st["ears"] = kf(t, [(k.hop2, 0.85), (k.hop2 + 0.6, 0.75), (k.dm_close, 0.75), (k.dm_close + 0.3, 0.88),
+                            (k.dm_pulse - 0.05, 0.92), (k.dm_pulse + 0.1, 1.0), (k.dm_pulse + 0.8, 0.85),
+                            (k.dm_pulse2 + 0.1, 0.95), (k.dm_open - 0.05, 0.86),
+                            (k.dm_open + 0.25, 0.55), (k.roll0, 0.55), (k.roll0 + 0.2, 0.62),
+                            (k.roll0 + 0.7, 0.36), (k.roll0 + 1.3, 0.42), (k.hd0, 0.75), (k.hd1 + 0.6, 0.78),
+                            (k.pk_see - 0.05, 0.7), (k.pk_see + 0.12, 0.95), (k.pk_close, 0.9),
+                            (k.pk_pulse + 0.1, 1.0), (k.L3, 0.85), (k.L3 + 0.3, 0.92)])
         st["expr"] = "calm"
-        if k.L2 + 0.05 <= t < k.hd0:
-            st["expr"] = "curious"
-        if k.hd0 + 0.3 <= t < k.hd1 + 0.1:
-            st["expr"] = "annoyed"        # effort: flat focused lids
-        if t >= k.hd1 + 0.5:
-            st["expr"] = "proud"
-        st["tail_curl"] = kf(t, [(k.hd1 + 0.4, 0.0), (k.hd1 + 0.9, 0.65)])
-        st["look_target"] = "hood" if t < k.L2 else ("eyes" if t < k.hd0 else "hood")
+        st["look_target"] = "eyes"
+        if k.dm_open <= t < k.roll0:
+            st["expr"] = "annoyed"                 # opens its eyes: a flat look at him
+        elif k.roll0 <= t < k.roll0 + CR.EYEROLL_DUR + 0.15:
+            st["expr"] = "eyeroll"                 # very sassy: lids drop, roll, a head toss
+            st["pose_t"] = t - k.roll0
+            ru = seg(t, k.roll0, k.roll0 + CR.EYEROLL_DUR)
+            st["rot"] = -0.07 * bump(ru, 0.12, 0.85) + 0.03 * bump(ru, 0.75, 1.0)
+            st["sy"] *= 1.0 - 0.04 * bump(ru, 0.7, 1.0)          # the "hmph" shoulder drop
+        elif k.roll0 + CR.EYEROLL_DUR + 0.15 <= t < k.HOOD:
+            st["expr"] = "annoyed"
+        if k.L2 - 0.5 <= t < k.hd0:
+            st["look_target"] = "eyes"
+        if k.hd0 <= t < k.hd1 + 0.1:
+            st["look_target"] = "hood"
+            if t >= k.hd0 + 0.3:
+                st["expr"] = "annoyed"             # effort: flat focused lids
+        if k.hd1 + 0.45 <= t < k.hd1 + 1.05:
+            st["expr"] = "proud"                   # job done
+        if t >= k.hd1 + 1.05:
+            st["look_target"] = "peek" if t >= k.pk2 - 0.1 else "hood"
+            if k.pk_see <= t < k.pk_close:
+                st["expr"] = "annoyed"             # caught him peeking: a flat look at the eye
+            elif k.pk_close <= t < k.L3 + 0.2:
+                st["expr"] = "proud"               # pointedly shuts its eyes, chin up, and pulses
+                st["eyes"] = 0.0
+            elif t >= k.L3 + 0.2:
+                st["expr"] = "hopeful"             # he gets it
+        st["tail_curl"] = kf(t, [(k.hd1 + 0.4, 0.0), (k.hd1 + 0.9, 0.55), (k.pk_see, 0.55), (k.pk_see + 0.2, 0.2),
+                                 (k.L3 + 0.2, 0.2), (k.L3 + 0.7, 0.7)])
+        if k.dm_close <= t < k.dm_open:
+            st["tail_curl"] = 0.25 * smoothstep(seg(t, k.dm_pulse, k.dm_pulse + 0.5))
         return st
     # ---------------- sitting on the plinth beside him
     st["x"] = C_XS
     st["pose"] = "sit"
     st["look_target"] = "eyes"
-    st["ears"] = kf(t, [(k.PING, 0.72), (k.L3, 0.72), (k.L3 + 0.2, 0.88), (k.LOOK + 0.5, 0.8),
-                        (k.NOD - 0.1, 0.8), (k.NOD + 0.2, 0.9), (k.L5 + 1.0, 0.75), (k.L5e - 0.6, 0.6),
+    st["ears"] = kf(t, [(k.cut_nod, 0.85), (k.L4 + 0.9, 0.8), (k.L4e, 0.88),
+                        (k.NOD - 0.1, 0.88), (k.NOD + 0.2, 0.95), (k.L5 + 1.0, 0.75), (k.L5e - 0.6, 0.6),
                         (k.SMUG, 0.5)])
-    st["tail_curl"] = kf(t, [(k.PING, 0.4), (k.L3, 0.4), (k.L3 + 0.4, 0.75), (k.L5 + 1.0, 0.6),
+    st["tail_curl"] = kf(t, [(k.cut_nod, 0.6), (k.NOD, 0.6), (k.NOD + 0.4, 0.75), (k.L5 + 1.0, 0.6),
                              (k.L5e - 0.5, 0.25), (k.SMUG, 0.15)])
-    st["expr"] = "calm"
-    if k.L3 - 0.05 <= t < k.L3e + 0.6:
-        st["expr"] = "surprised_soft"
-    if k.NOD - 0.05 <= t < k.L5 + 0.5:
-        st["expr"] = "hopeful"
+    st["expr"] = "hopeful"
+    if k.L4 + 0.9 <= t < k.L4e + 0.2:
+        st["expr"] = "curious"                # "So I just... close my eyes?" -- it waits, head tilted
+    if k.L5 + 0.5 <= t < k.L5e - 0.9:
+        st["expr"] = "calm"
     if k.L5e - 0.9 <= t < k.SMUG:
-        st["expr"] = "annoyed"            # his smugness wears thin
-    n0 = k.NOD + 0.3                      # the nod (revealed by a ping): two firm dips + a bob
-    st["tilt"] = kf(t, [(n0, 0.0), (n0 + 0.3, 0.72), (n0 + 0.6, -0.08), (n0 + 0.9, 0.58), (n0 + 1.25, 0.0)])
+        st["expr"] = "annoyed"                # his smugness wears thin
+    n0 = k.n0                                 # the nod: two firm dips + a bob
+    st["tilt"] = kf(t, [(n0, 0.0), (n0 + 0.28, 0.72), (n0 + 0.55, -0.08), (n0 + 0.82, 0.58), (n0 + 1.12, 0.0)])
     st["sy"] = 1.0 - 0.035 * max(0.0, st["tilt"])
     if t < k.SMUG:
         return st
@@ -457,33 +775,46 @@ def cur_state(t, k):
 
 def draw_cur(ctx, t, st, hold=None):
     x, y, sy = st["x"], st["y"], st.get("sy", 1.0)
+    rot = st.get("rot", 0.0)
     sx = 1.0 / math.sqrt(max(0.5, sy))
     m0 = ctx.get_matrix()
     hold_fn = None
     if hold is not None:
         def hold_fn(c, a):
             c.save()
-            c.set_matrix(m0)              # never squash what the callback draws (him)
+            c.set_matrix(m0)              # never squash / rotate what the callback draws (him)
             hold(c, a)
             c.restore()
-    if sy != 1.0:
+    xf = sy != 1.0 or rot != 0.0
+    if xf:
         ctx.save()
         ctx.translate(x, y)
+        ctx.rotate(rot)
         ctx.scale(sx, sy)
         ctx.translate(-x, -y)
     a = CR.draw_specimen(ctx, x, y, S, t, form=1.0, pose=st["pose"], expr=st["expr"], look=st["look"],
                          glow=st["glow"], flip=st["flip"], pose_t=st["pose_t"], face=st["face"],
                          tilt=st["tilt"], ears=st["ears"], tail_curl=st["tail_curl"], reach=st["reach"],
                          blink=st["blink"], hold=hold_fn, pose_from=st["pose_from"], pose_mix=st["pose_mix"])
-    if sy != 1.0:
+    if xf:
         ctx.restore()
-        a = {kk: ((x + (v[0] - x) * sx, y + (v[1] - y) * sy) if isinstance(v, tuple) and len(v) == 2
+        cr, sr = math.cos(rot), math.sin(rot)
+
+        def tf(v):
+            dx, dy = (v[0] - x) * sx, (v[1] - y) * sy
+            return (x + dx * cr - dy * sr, y + dx * sr + dy * cr)
+        a = {kk: (tf(v) if isinstance(v, tuple) and len(v) == 2
                   and all(isinstance(q, (int, float)) for q in v) else v) for kk, v in a.items()}
     return a
 
 
+def cur_anchors(t, k, st=None):
+    st = st or cur_state(t, k)
+    return draw_cur(_dummy(), t, st)
+
+
 def _resolve_look(cst, ta):
-    """Curiosity's screen-space gaze at his hood / eyes (from his real anchors)."""
+    """Curiosity's screen-space gaze at his hood / eyes / peeking eye (from his real anchors)."""
     lt = cst.get("look_target")
     if lt is None:
         return cst
@@ -491,6 +822,8 @@ def _resolve_look(cst, ta):
     hx, hy = ta["head"]
     if lt == "hood":
         hx, hy = ta["top"][0], (ta["top"][1] + hy) / 2
+    elif lt == "peek":
+        hx, hy = ta.get("peek_eye") or ta["eye_r"]
     ex = st["x"] + (-55 if st["flip"] else 55)
     ey = st["y"] - {"reach_up": 250, "sit": 180}.get(st["pose"], 150)
     base = aim((ex, ey), (hx, hy), 0.85)
@@ -501,7 +834,7 @@ def _resolve_look(cst, ta):
 
 
 # ---------------------------------------------------------------------------
-# the sense: pings from his head
+# the sense: Curiosity's demo pulses from its head, then his pings from under the hood
 # ---------------------------------------------------------------------------
 _PC = {}
 
@@ -510,25 +843,31 @@ def pings_for(k, info):
     p = _PC.get(id(k))
     if p is not None:
         return p
-    times = [(k.PING + 0.45, 1.0), (k.PING + 1.6, 0.85),        # the first whoom, a second
-             (k.lk1 - 0.1, 0.8), (k.lk3 - 0.05, 0.8),           # following his head L / R
-             (k.NOD + 0.05, 0.75),                              # reveals the nod
-             (k.w_super, 0.9),                                  # "superpower": a proud ping
-             (k.tgo + 0.12, 0.55), (k.tgo + 1.12, 0.55),        # small ones guiding his steps
-             (k.BONK + 0.42, 0.6)]                              # dazed, too late: there's the pipe
+    times = [(k.dm_pulse, "cur", 0.85), (k.dm_pulse2, "cur", 0.7),       # the demo ("look: eyes shut")
+             (k.pk_pulse, "cur", 0.8),                                    # pointedly, at his peeking eye
+             (k.p1, "tired", 1.0), (k.p2, "tired", 0.85),                 # HIS first whoom, then his head turn
+             (k.w_super, "tired", 0.9),                                   # "superpower": a proud ping
+             (k.tgo + 0.12, "tired", 0.55), (k.tgo + 1.12, "tired", 0.55),   # small ones guiding his steps
+             (k.BONK + 0.42, "tired", 0.6)]                               # dazed, too late: there's the pipe
     out = []
-    for (t0, kk) in times:
-        a = tired_anchors(t0, k, info)
-        hx, hy = a["hood_rim"] or a["head"]
-        tx, ty = a["top"]
-        out.append((t0, (hx + tx) / 2, (hy * 0.6 + ty * 0.4), kk))
+    for (t0, who, kk) in times:
+        if who == "cur":
+            b = cur_anchors(t0, k)
+            px, py = mid(b["eye_l"], b["eye_r"])
+            py -= 10 * S
+        else:
+            a = tired_anchors(t0, k, info)
+            hx, hy = a["hood_rim"] or a["head"]
+            tx, ty = a["top"]
+            px, py = (hx + tx) / 2, (hy * 0.6 + ty * 0.4)
+        out.append((t0, px, py, kk))
     _PC.clear()
     _PC[id(k)] = out
     return out
 
 
 def ping_flash(ctx, t, pings):
-    """The ping flash at the source, on top of his hood (the fx one sits behind him)."""
+    """The ping flash at the source, on top of his hood / its head (the fx one sits behind)."""
     for (t0, px, py, kk) in pings:
         pc = (t - t0) / 0.5
         if not (0 <= pc < 1):
@@ -543,6 +882,9 @@ def ping_flash(ctx, t, pings):
 # ---------------------------------------------------------------------------
 # shots
 # ---------------------------------------------------------------------------
+CUR_HEAD = (944, 1029)                     # Curiosity's head on its hind legs on the plinth (world)
+
+
 def _shots(k):
     """[(t0, t1, name, cam(t) -> (cx, cy, zoom), sense)]"""
     T = []
@@ -554,17 +896,20 @@ def _shots(k):
     add(0.0, s1_end, "dark", lambda t: (lerp(c0[0], 1030, smoothstep(seg(t, 0.0, s1_end))),
                                         lerp(c0[1], 1110, smoothstep(seg(t, 0.0, s1_end))),
                                         lerp(c0[2], 1.43, smoothstep(seg(t, 0.0, s1_end)))), False)
-    add(s1_end, k.HOOD, "climb", lambda t: (lerp(955, 1035, smoothstep(seg(t, k.hop1, k.hop2 + 0.5))), 1060, 1.85),
-        False)
-    add(k.HOOD, k.PING, "hood", lambda t: (1050, 1000, lerp(2.4, 2.55, smoothstep(seg(t, k.HOOD, k.PING)))),
-        False)
-    add(k.PING, k.L3 - 0.15, "ping", lambda t: (990, 900, 1.15))
-    add(k.L3 - 0.15, k.L4 - 0.1, "look", lambda t: (1095, 1020, 1.75))
-    add(k.L4 - 0.1, k.stand0 - 0.05, "nod", lambda t: (1040, 1060, 1.6))
-    add(k.stand0 - 0.05, k.smug_cu, "stand",
-        lambda t: (1045, lerp(1060, 990, smoothstep(seg(t, k.stand0, k.stand1 + 0.2))), 1.4))
+    add(s1_end, k.cut_fit, "climb",
+        lambda t: (lerp(955, 1030, smoothstep(seg(t, k.hop1, k.hop2 + 0.5))), 1060, 1.85))
+    add(k.cut_fit, k.cut_roll, "fit", lambda t: (1040, lerp(1000, 994, seg(t, k.cut_fit, k.cut_roll)), 2.3))
+    add(k.cut_roll, k.HOOD, "roll", lambda t: (CUR_HEAD[0] + 10, CUR_HEAD[1] + 55, 3.0))
+    add(k.HOOD, k.cut_oh, "hood",
+        lambda t: (1050, 1000, lerp(2.4, 2.5, smoothstep(seg(t, k.HOOD, k.pk0)))))
+    add(k.cut_oh, k.cut_nod, "oh", lambda t: (1080, 945, 3.0))
+    add(k.cut_nod, k.PING, "nod", lambda t: (1040, 1060, 1.6))
+
+    def ping_cam(t):
+        return (990, lerp(900, 870, smoothstep(seg(t, k.stand0, k.stand1 + 0.2))), 1.15)
+    add(k.PING, k.smug_cu, "ping", ping_cam)
     add(k.smug_cu, k.SMUG, "smug", lambda t: (T_X + 130, lerp(800, 785, seg(t, k.smug_cu, k.SMUG)), 2.35))
-    add(k.SMUG, k.WALK, "roll", lambda t: (C_XS + 60, 1090, 2.5))
+    add(k.SMUG, k.WALK, "roll2", lambda t: (C_XS + 60, 1090, 2.5))
     walk_end = k.BONK + 1.25
 
     def walk_cam(t):
@@ -733,6 +1078,9 @@ def lit_set(c):
     sets.catwalk(c, 0.0, layer="fg", lit=True)
 
 
+CLOSE = ("fit", "hood", "oh", "smug", "bonk", "roll")
+
+
 def render(ctx, t, info):
     k = timing(info)
     pings = pings_for(k, info)
@@ -741,6 +1089,9 @@ def render(ctx, t, info):
     cx, cy, zoom = cam(t)
     tst = tired_state(t, k, info)
     ta = tired_anchors(t, k, info, tst)            # where his head is (Curiosity's gaze, bbox)
+    if tst.get("peek_geo"):                        # its gaze needs the peeking eye's real spot
+        ta = dict(ta)
+        ta["peek_eye"] = tst["peek_geo"]["eye_b"]
     cst = _resolve_look(cur_state(t, k), ta)
     deep = deep_dark(t, k, name)
     post = 0.0
@@ -770,23 +1121,30 @@ def render(ctx, t, info):
                 res["t"] = draw_tired(c, t, tst)
             return res
 
-        close = name in ("hood", "look", "smug", "bonk")
+        close = name in CLOSE
 
         def lights_fn(res):
             a, b = res["t"], res["c"]
             L, Tn = [], []
             ce = mid(b["eye_l"], b["eye_r"])
+            eo = cst.get("eyes", 1.0)
             if name == "dark":
                 L.append((ce[0], ce[1], 90, 0.3))
             else:
-                L += [(b["eye_l"][0], b["eye_l"][1], 30, 1.0), (b["eye_r"][0], b["eye_r"][1], 30, 1.0),
-                      (ce[0], ce[1], 250, 0.62)]
-                Tn.append((ce[0], ce[1], 330, 0.2))
+                # its open eyes light the faces; shut, only its soft teal halo is left
+                L += [(b["eye_l"][0], b["eye_l"][1], 30, eo), (b["eye_r"][0], b["eye_r"][1], 30, eo),
+                      (ce[0], ce[1], 250, lerp(0.3, 0.62, eo))]
+                Tn.append((ce[0], ce[1], 330, lerp(0.1, 0.2, eo)))
             hood = tst["hood"]
             if hood < 0.6 and name != "dark":
                 for e in ("eye_l", "eye_r"):          # his teal irises glow (not the skin around)
                     L.append((a[e][0], a[e][1], 15, 0.75 * (1 - hood / 0.6)))
                     Tn.append((a[e][0], a[e][1], 26, 0.3 * (1 - hood / 0.6)))
+            if a.get("peek_eye") and tst.get("peek", 0.0) > 0.3:     # the one peeking eye glints
+                ex, ey = a["peek_eye"]
+                pk = clamp((tst["peek"] - 0.3) / 0.5)
+                L.append((ex, ey, 26, 0.7 * pk))
+                Tn.append((ex, ey, 34, 0.3 * pk))
             if a.get("hood_rim") and hood > 0.5:
                 hx, hy = a["hood_rim"]
                 hk = seg(hood, 0.5, 1.0)
@@ -853,23 +1211,33 @@ def SFX(info):
     # he steps back and sits on the plinth (cloth + a soft bump)
     ev.append((k.sit0 + 0.15, "cloth_rustle", 0, 0.1))
     ev.append((k.sit0 + 0.7, "body_thud", -12, 0.1))
-    # Curiosity hops up: claws, a soft landing, a curious chitter as it reaches for his head
+    # Curiosity hops up: claws, a soft landing, a curious chitter as it looks at him
     ev.append((k.hop1 - 0.02, "scratch_wood", -4, -0.25))
     ev.append((k.hop2, "footstep", -9, -0.2))
-    ev.append((k.hop2 + 0.7, "creature_chitter", -6, -0.2))
-    # the hood: cloth, then his sigh
+    ev.append((k.hop2 + 0.45, "creature_chitter", -7, -0.2))
+    # the demo: a concentrating purr under the tremble, then its own (smaller) pulses
+    ev.append((k.dm_charge - 0.25, "creature_purr", -7, -0.2))
+    ev.append((k.dm_charge2 - 0.2, "creature_purr", -10, -0.2))
+    # the eye-roll: ears flick, then the hood: cloth, his sigh
+    ev.append((k.roll0 + 0.7, "ears_perk", -6, -0.2))
     ev.append((k.hd0, "cloth_rustle", 2, 0.0))
     ev.append((k.sigh - 0.05, "sigh", 1, 0.1))
-    # the sense
+    # the peek: the rim lifted, caught (its ears), the rim dropping again
+    ev.append((k.pk1 - 0.05, "cloth_rustle", -9, 0.1))
+    ev.append((k.pk_see + 0.05, "ears_perk", -3, -0.2))
+    ev.append((k.dr0, "cloth_rustle", -7, 0.1))
+    # the sense: its pulses small, his first ones the big signature whoom
     pings = pings_for(k, info)
     for i, (t0, x, y, kk) in enumerate(pings):
-        if kk >= 0.75:
-            ev.append((t0, "sonar_ping", 0 if i < 2 else -3, 0.0))
+        if i < 3:
+            ev.append((t0, "sonar_ping_small", -1 if i != 1 else -4, -0.15))
+        elif kk >= 0.75:
+            ev.append((t0, "sonar_ping", 0 if i == 3 else -3, 0.0))
         else:
             ev.append((t0, "sonar_ping_small", -4 if t0 < k.BONK else -2, 0.0))
     # "Oh." -> its ears perk; the nod
-    ev.append((k.L3 + 0.18, "ears_perk", 0, -0.2))
-    ev.append((k.NOD + 0.35, "ears_perk", 2, -0.2))
+    ev.append((k.L3 + 0.25, "ears_perk", 0, -0.2))
+    ev.append((k.n0 + 0.25, "ears_perk", 2, -0.2))
     # stands up
     ev.append((k.stand0 + 0.2, "cloth_rustle", -2, 0.1))
     # the confident stride: one step per heel strike of walk_eyes_closed (pose_t 0.17 + n * 0.525)

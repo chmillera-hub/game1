@@ -12,11 +12,15 @@ Shot list (all times derive from cues / line timing; see _T and _render()):
              on his face for "Worst. Day. Ever." (muffled into the pillow).
   S3  pile   Curiosity looks up, crouches, hops onto his back, settles into a curl;
              the baby clambers on top of Curiosity and curls up.
-  S4  smile  close-up of the trio: his eyes slide toward the warm weight on his
-             back, a tiny real smile, the eyes close.
-  E1  phone  (same close-up) the phone on the nightstand buzzes; the camera eases
-             over to it; eyes still shut, his bandaged arm gropes out for it.
-  E2  insert the phone: "you ok?"; his thumb taps "zzz"; send.
+  S4  smile  close-up of his face on the pillow: plain tired, NO smile; the lids
+             slowly sink shut; three little z's float up off him one by one; THEN
+             the subtlest smile tugs one corner of his mouth.
+  E1  phone  (same close-up) the phone on the nightstand buzzes (the smile pinches
+             away); the camera eases over to it; eyes still shut, his bandaged hand
+             slides off the pillow, pats the nightstand top (a miss), finds the phone.
+  E2  insert the phone: "you ok bro?"; an emoji strip; his thumb taps the
+             tired-face emoji (vector, fx.draw_emoji) and sends it: a jumbo
+             tired face lands in the thread.
   S6  sleep  slow pull-back: all three asleep, purring, sunrise growing, zzz.
       title  end card over the sleeping trio (captions hidden), held.
 """
@@ -35,8 +39,12 @@ BED_Y = M["bed_top_y"]        # 1165
 HIP_X = 1455                  # lying: hips here puts his head on the pillow
 HIP_Y = 1117                  # pelvis height lying: chest, hips and thighs sunk ~20 px into the bed
 LEG_REST = (-1.2, -1.32)      # knee bend: thighs on the mattress, knees at the footboard, shins hang off
+# lying: the near (l) arm hangs limp over the edge of the bed (NOT up past his head);
+# the far (r) arm lies along the pillow under his cheek, hand by his face
+ARM_HANG = (1.2, 0.5, 0.4)    # al_p / al_e / al_o
 LIE = {"base": "lie_front", "plant": 0, "hip_h": 0, "ll_p": 0.22, "lr_p": 0.14,
-       "ll_k": LEG_REST[0], "lr_k": LEG_REST[1], "ll_a": -0.6, "lr_a": -0.6}
+       "ll_k": LEG_REST[0], "lr_k": LEG_REST[1], "ll_a": -0.6, "lr_a": -0.6,
+       "al_p": ARM_HANG[0], "al_e": ARM_HANG[1], "al_o": ARM_HANG[2]}
 CHAIR_DX = 320                # the gaming chair pushed back to the desk, away from the foot of the bed
 STAND = (1505, 1470)          # where he stands before the flop (feet)
 DOOR_FEET = (305, 1336)       # in the doorway
@@ -48,10 +56,14 @@ PHONE = M["phone"]            # (985, 1112)
 PHONE_S = 0.42
 PHONE_ROT = 0.04
 Z_INS = 580.0 / (props.PHONE_W * PHONE_S)    # insert zoom: docked phone = 580 px wide
-TKW = dict(outfit="sewer", bandage="l", power=0.5, headphones=None, hood=0.0)
+TKW = dict(outfit="sewer", bandage=True, power=0.5, headphones=None, hood=0.0)   # bandage on r (continuity)
 CAD = 0.66                    # trudge: walk cycle played at 66 %
 LEAN = {"base": "walk", "lean": 0.07, "hunch": 0.35, "nod": 0.1}
 _ANTIC = {"base": "stand", "lean": -0.06, "hunch": 0.55, "nod": -0.08}   # the breath in, before the fall
+R_REST = (1057, 1114)         # lying: the far (r) hand's resting place on the pillow, by his face
+R_PHONE = (1020, 1122)        # ... reaching the docked phone (clamped at arm's length: the fingers on its edge)
+SMIRK = 0.8                   # the subtlest smile: one corner of his mouth curls up (dimple)
+ARM_W = 44                    # sleeve + ink width of his hanging arm (world px), for the duvet strip
 
 
 def _lk(x, y, flip):
@@ -86,14 +98,20 @@ class _T:
         self.C3 = self.C2 + 0.15            # settles (stand -> perch)
         self.B0 = self.C3 + 0.55            # baby hops onto Curiosity
         self.B1 = self.B0 + 0.38            # baby lands
+        # S4 smile: plain tired -> lids sink shut -> z's -> the subtlest smile
+        self.SC0 = self.S + 0.7             # lids start to sink
+        self.SC1 = self.S + 1.55            # shut
+        self.ZS = (self.S + 1.6, self.S + 1.9, self.S + 2.2)   # a z floats up off him
+        self.SM = self.S + 2.05             # one mouth corner tugs up (full by SM + 0.45)
         # E: phone
-        self.MSG = self.PH + 0.15           # "you ok?" arrives (buzz)
-        self.GROPE = self.PH + 0.6          # his hand sets off
+        self.MSG = self.PH + 0.15           # "you ok bro?" arrives (buzz)
+        self.GROPE = self.PH + 0.6          # his hand slides off the pillow
+        self.PAT = self.PH + 0.98           # pats the nightstand top beside the phone (a miss)
         self.TOUCH = self.PH + 1.2          # hand lands on the phone
         self.INS = self.PH + 1.35           # cut to the insert
-        self.TYPE = self.PH + 1.5           # first key
-        self.SEND = self.TYPE + 0.48 + 0.5  # 3 keys 0.24 apart, then send
-        self.DROP = self.SEND + 0.35        # the hand slides off, dangles
+        self.TYPE = self.INS + 0.75         # thumb taps the tired-face emoji key
+        self.SEND = self.TYPE + 0.55        # ... and send
+        self.DROP = self.SEND + 0.4         # the hand slides away (back to the pillow)
 
 
 # ----------------------------------------------------------------------------
@@ -220,8 +238,12 @@ def _tired(t, T, info):
     # follow-through: the dangling shins swing up off the end of the bed and settle
     u = max(0.0, t - T.I)
     sw = 0.75 * math.exp(-u / 0.32) * math.sin(u * 2 * math.pi * 1.5) if u < 2.0 else 0.0
+    # ... and the near arm, flung down over the edge of the bed, swings like a pendulum and
+    # hangs limp (a small jolt when Curiosity lands on his back)
+    asw = -0.42 * math.exp(-u / 0.42) * math.sin(u * 2 * math.pi * 1.1) if u < 2.6 else 0.0
+    asw += 0.12 * math.sin(math.pi * seg(t, T.C2 - 0.02, T.C2 + 0.45))
     pose = dict(LIE, ll_k=LEG_REST[0] + sw, lr_k=LEG_REST[1] + 0.85 * sw, ll_a=-0.6 + 0.3 * sw,
-                lr_a=-0.6 + 0.3 * sw)
+                lr_a=-0.6 + 0.3 * sw, al_p=ARM_HANG[0] + asw, al_e=ARM_HANG[1] + 0.25 * max(0.0, -asw))
     if t < T.OPEN:
         mash = tween(t - T.I, [(0.0, 0.0), (0.06, 1.0), (0.3, 0.55), (0.9, 0.35)])
         face.update(squash=0.16 * mash, cheek=0.5 * mash, press=0.35 * mash, jaw=-0.15 * mash)
@@ -250,38 +272,43 @@ def _tired(t, T, info):
         look = tween(t, [(T.C2 + 0.35, (-0.3, 0.1)), (T.C2 + 0.6, (0.75, -0.35)), (T.B1 + 0.2, (0.75, -0.35)),
                          (T.B1 + 0.5, (0.1, 0.0))])
     if T.S <= t < T.PH:
-        # S4: the tiny real smile, eyes close
-        k1 = smoothstep(seg(t, T.S + 0.9, T.S + 1.4))
-        face.update(cheek=0.25, jaw=-0.06, curve=0.8 * k1, width=0.12 * k1, lower=0.4 * k1,
-                    lid=0.02 - 0.05 * smoothstep(seg(t, T.S + 0.45, T.S + 0.7)))
-        look = tween(t, [(T.S + 0.35, (0.0, 0.0)), (T.S + 0.5, (0.7, -0.3)), (T.S + 1.1, (0.7, -0.3)),
-                         (T.S + 1.3, (0.15, 0.05))])
-        if t > T.S + 1.45:
-            blink = tween(t, [(T.S + 1.45, 0.0), (T.S + 2.0, 1.0)], ease_in_out)
+        # S4: plain tired (NO smile) -- the lids sink slowly shut (they catch once, then
+        # give up), the face lets go; z's float up; THEN the subtlest smile, one corner
+        sink = smoothstep(seg(t, T.SC0, T.SC1))
+        sm = smoothstep(seg(t, T.SM, T.SM + 0.45))
+        face.update(cheek=0.25, jaw=-0.06, lid=0.07, brow=-0.05 * sink, press=0.12 * (1 - sink),
+                    smirk=SMIRK * sm, curve=0.15 * sm)
+        look = tween(t, [(T.S, (0.1, 0.0)), (T.SC0, (0.0, 0.14))])
+        if t > T.SC0:
+            blink = tween(t, [(T.SC0, 0.0), (T.SC0 + 0.45, 0.7), (T.SC0 + 0.56, 0.62), (T.SC1, 1.0)],
+                          ease_in_out)
     if t >= T.PH:
-        # eyes stay shut from here; buzz -> a pinch of the brows, then the smile returns
+        # eyes stay shut from here; the buzz pinches the smile away (brows knit), a
+        # little effort for the grope; asleep, the faint corner smile comes back
         blink = 1.0
         pin = math.sin(math.pi * seg(t, T.MSG, T.MSG + 0.9))
-        face.update(cheek=0.25, jaw=-0.06, curve=0.8 - 0.65 * pin, width=0.12, lower=0.4 - 0.2 * pin,
-                    brow=-0.15 * pin, brow_in=0.5 * pin, press=0.4 * pin)
+        gone = smoothstep(seg(t, T.MSG, T.MSG + 0.2))
+        eff = smoothstep(seg(t, T.GROPE, T.GROPE + 0.25)) * (1 - smoothstep(seg(t, T.TOUCH, T.TOUCH + 0.3)))
+        face.update(cheek=0.25, jaw=-0.06, lid=0.07, brow=-0.05 - 0.15 * pin, brow_in=0.5 * pin,
+                    press=0.4 * pin + 0.2 * eff, smirk=SMIRK * (1 - gone), curve=0.15 * (1 - gone))
         if t >= T.Z:
-            face.update(curve=0.55, lower=0.3, open=0.06 * smoothstep(seg(t, T.Z + 0.6, T.Z + 1.4)),
-                        press=0.0, brow=0.0, brow_in=0.0)
-        # reach for the phone, tap, slide off, dangle
-        tgt = (1006, 1104)
-        if t < T.DROP:
-            # a lazy grope: the arm lifts off the pillow, drifts out and pats down on the phone
-            kg = seg(t, T.GROPE, T.TOUCH)
-            w = ease_in_out(kg)
-            lift = -70 * math.sin(math.pi * kg) ** 1.5     # dips under his chin (keeps the shut eyes in view)
-            pat = 6 * math.sin(math.pi * seg(t, T.TOUCH - 0.02, T.TOUCH + 0.14))
-            tap = 0.0
-            for kt in (T.TYPE, T.TYPE + 0.24, T.TYPE + 0.48, T.SEND - 0.05):
-                tap = max(tap, math.sin(math.pi * seg(t, kt - 0.06, kt + 0.06)))
-            kw["reach"] = {"l": (tgt[0], tgt[1] - lift + pat + 5 * tap, w)}
-        else:
-            kd = ease_in_out(seg(t, T.DROP, T.DROP + 0.55))
-            kw["reach"] = {"l": (lerp(tgt[0], 1036, kd), lerp(tgt[1], 1212, kd), 1.0)}
+            back = smoothstep(seg(t, T.Z + 0.5, T.Z + 1.1))
+            face.update(smirk=SMIRK * back, curve=0.15 * back, press=0.0, brow=-0.05, brow_in=0.0,
+                        open=0.05 * smoothstep(seg(t, T.Z + 1.2, T.Z + 1.8)))
+        # the far (r) hand slides off the pillow, pats the nightstand (a miss), finds the
+        # phone, taps (in the insert), then slides back to the pillow
+        if t < T.DROP + 0.55:
+            tgt = tween(t, [(T.GROPE, R_REST), (T.GROPE + 0.2, (1052, 1098)), (T.PAT - 0.1, (1040, 1126)),
+                            (T.PAT, (1036, 1150)), (T.PAT + 0.09, (1038, 1141)), (T.TOUCH - 0.1, (1030, 1110)),
+                            (T.TOUCH, R_PHONE)])
+            pat = 5 * math.sin(math.pi * seg(t, T.TOUCH - 0.02, T.TOUCH + 0.14))
+            w = smoothstep(seg(t, T.GROPE, T.GROPE + 0.2))
+            if t >= T.DROP:
+                kd = ease_in_out(seg(t, T.DROP, T.DROP + 0.55))
+                tgt = (lerp(R_PHONE[0], R_REST[0], kd), lerp(R_PHONE[1], R_REST[1], kd) - 12 * math.sin(math.pi * kd))
+                w = 1 - kd
+            if w > 0.002:
+                kw["reach"] = {"r": (tgt[0], tgt[1] + pat, w)}
     face["head_tilt"] = face.get("head_tilt", 0.0) - 0.22 * smoothstep(seg(t, T.I + 0.1, T.I + 0.6))
     kw.update(pose=pose, turn=0.0, expr="bored", look=_lk(*look, flip), blink=blink, face=face)
     return HIP_X, y, kw
@@ -465,15 +492,43 @@ def _draw_baby_top(ctx, t, T, ca):
 # ----------------------------------------------------------------------------
 # set helpers
 # ----------------------------------------------------------------------------
+MSG_IN = "you ok bro?"
+EMO = "\U0001F629"            # the tired (weary) face emoji, drawn as a vector (fx.draw_emoji)
+EMO_KEYS = ("\u2764", "\U0001F602", "\U0001F634", EMO)    # the emoji strip in the insert
+
+
+def _dock_screen(T):
+    """The docked phone's little chat screen (bed / sleep shots): the same thread as
+    the insert -- "you ok bro?" (grey, left), then his tired-face emoji (right)."""
+    base = props.phone_chat_screen(msgs=())
+
+    def fn(ctx, x, y, w, h, t):
+        base(ctx, x, y, w, h, t)
+        yy = y + h * 0.22
+        fsz = w * 0.105
+        if t >= T.MSG:
+            k = max(0.01, ease_out_back(seg(t, T.MSG, T.MSG + 0.25)))
+            bw, bh = core.text_width(ctx, MSG_IN, "ui", fsz) + fsz, fsz * 1.7
+            with core.saved(ctx, x + w * 0.06, yy + bh / 2, k):
+                core.rrect(ctx, 0, -bh / 2, bw, bh, bh / 2)
+                core.fill(ctx, "#d9dde6")
+                core.text(ctx, MSG_IN, bw / 2, fsz * 0.36, fsz, INK, "ui")
+            yy += bh + h * 0.05
+        if t >= T.SEND:
+            es = w * 0.34
+            k = max(0.01, ease_out_back(seg(t, T.SEND, T.SEND + 0.3)))
+            fx.draw_emoji(ctx, x + w * 0.92 - es / 2, yy + es / 2, es * k, EMO)
+    return fn
+
+
 def _set_state(t, T):
-    msgs = (("them", "you ok?", T.MSG), ("me", "zzz", T.SEND))
     on = T.MSG - 0.05 <= t < T.Z + 1.6
     buzz = 0.0
     if T.MSG <= t < T.MSG + 1.15:
         u = t - T.MSG
         buzz = 1.0 if (u < 0.48 or 0.62 <= u < 1.1) else 0.0
     sr = smoothstep(seg(t, T.Z, T.TT + 1.8))
-    return dict(light="dawn", phone_fn=props.phone_chat_screen(msgs) if on else None, phone_on=on,
+    return dict(light="dawn", phone_fn=_dock_screen(T) if on else None, phone_on=on,
                 phone_buzz=buzz, bed_squash=_bed_squash(t, T), sunrise=sr, chair_dx=CHAIR_DX,
                 chair_empty=True)
 
@@ -516,11 +571,12 @@ def _shot_door(ctx, t, T, info):
             sets.bedroom(ctx, t, layer="fg", door_open=op, parts=("door",), light="dawn")
 
 
-def _blanket_lip(ctx, t, T, st):
+def _blanket_lip(ctx, t, T, st, ta=None):
     """The duvet hugging his underside: a strip of blanket drawn over his lower edge
     from the chest to the knees, with dent creases under the hips, so he lies IN the
     bed instead of on top of it. Graded with the set's own dawn light; it moves with
-    the mattress squash and forms on impact."""
+    the mattress squash and forms on impact. His near arm hangs over the edge IN FRONT
+    of the duvet, so the strip is erased where that arm is (ta = his anchors)."""
     if t < T.I - 0.01:
         return
     k = smoothstep(seg(t, T.I - 0.01, T.I + 0.08))
@@ -552,16 +608,56 @@ def _blanket_lip(ctx, t, T, st):
     ctx.save()
     ctx.rectangle(1236, 1150 + dy - rise, 380, 80 + rise)    # keep the graded group small (cost)
     ctx.clip()
+    ctx.push_group()
     try:
         sets._bd_graded(ctx, True, kq, draw)        # the bed's own dawn grade (cool dim + sun beams)
     except AttributeError:                          # (fallback if the private helper ever moves)
         draw(ctx)
+    if ta is not None:
+        pts = [ta[k][:2] for k in ("shoulder_l", "elbow_l", "wrist_l", "hand_l")]
+        ctx.move_to(*pts[0])
+        for q in pts[1:]:
+            ctx.line_to(*q)
+        ctx.set_operator(cairo.OPERATOR_DEST_OUT)
+        core.stroke(ctx, "#000000", ARM_W)
+        ctx.set_operator(cairo.OPERATOR_OVER)
+    ctx.pop_group_to_source()
+    ctx.paint()
     ctx.restore()
 
 
 def _warm(t, T):
     """the sunbeam warming his back once they curl up (grows with the sunrise)."""
     return 0.3 * smoothstep(seg(t, T.C3, T.C3 + 1.2)) + 0.12 * smoothstep(seg(t, T.Z, T.TT + 1.5))
+
+
+_ZPTS = [(-0.45, -0.5), (0.45, -0.5), (0.45, -0.3), (-0.08, 0.28), (0.47, 0.28),
+         (0.47, 0.5), (-0.47, 0.5), (-0.47, 0.3), (0.06, -0.28), (-0.45, -0.28)]
+Z_LIFE = 1.15
+
+
+def _smile_zs(ctx, t, T, ta):
+    """S4: three little z's float up off him one by one once his eyes are shut."""
+    hx, hy = ta["head"][:2]
+    x0, y0 = hx + 34, hy - 84
+    for i, tz in enumerate(T.ZS):
+        k = (t - tz) / Z_LIFE
+        if not 0.0 < k < 1.0:
+            continue
+        a = smoothstep(seg(k, 0.0, 0.14)) * (1 - smoothstep(seg(k, 0.6, 1.0)))
+        if a < 0.02:
+            continue
+        x = x0 + 8 * i + 44 * k + 7 * math.sin(2 * math.pi * k)
+        y = y0 - 118 * k
+        sz = 19 + 15 * k + 3 * i
+        ctx.save()
+        ctx.translate(x, y)
+        ctx.rotate(-0.18 + 0.12 * math.sin(2 * math.pi * k + i))
+        ctx.scale(sz, sz)
+        core.poly(ctx, _ZPTS)
+        ctx.restore()
+        core.fill(ctx, core.alpha("#ffffff", a), preserve=True)
+        core.stroke(ctx, core.alpha(INK, a), 2.6)
 
 
 def _shot_bed(ctx, t, T, info, cam, birds=None):
@@ -572,7 +668,7 @@ def _shot_bed(ctx, t, T, info, cam, birds=None):
             _birds(ctx, t, birds)
         with _shade(ctx, t, st):
             ta = _draw_tired(ctx, t, T, info)
-        _blanket_lip(ctx, t, T, st)
+        _blanket_lip(ctx, t, T, st, ta)
         wa = _warm(t, T)
         if wa > 0.005:
             core.radial_glow(ctx, PERCH[0], PERCH[1] - 40, 200, "#ffcf9a", wa)
@@ -581,28 +677,46 @@ def _shot_bed(ctx, t, T, info, cam, birds=None):
             _draw_baby(ctx, t, T, ta)
         else:
             _draw_baby_top(ctx, t, T, ca)
+        if T.ZS[0] <= t < T.ZS[-1] + Z_LIFE:
+            _smile_zs(ctx, t, T, ta)
     return st
 
 
 SKIN, SKIN_SH, INK = "#c08a62", "#a06e4c", "#1d1626"
 
 
-def _thumb_hand(ctx, t, T):
-    """His hand in the insert (screen space): a loose fist resting against the
-    docked phone's right edge, the thumb tapping the reply, then sliding away."""
-    keys = [T.TYPE, T.TYPE + 0.24, T.TYPE + 0.48, T.SEND]
+def _ins_scr(p):
+    """docked-phone local point (the insert's translate(PHONE) + rotate(PHONE_ROT)
+    space) -> insert screen coordinates."""
+    c, s_ = math.cos(PHONE_ROT), math.sin(PHONE_ROT)
+    return (540 + Z_INS * (p[0] * c - p[1] * s_), 730 + Z_INS * (p[0] * s_ + p[1] * c))
+
+
+THUMB_V = (-170.0, -24.0)     # thumb base -> tip (insert screen px): it points left, a bit up
+
+
+def _thumb_hand(ctx, t, T, key, send):
+    """His hand in the insert (screen space): a loose fist by the phone's right edge,
+    the thumb hovering, lifting (anticipation), then tapping the tired-face emoji key,
+    then the send button; then the hand slides away (back toward the bed)."""
     press = 0.0
-    for kt in keys:
-        press = max(press, math.sin(math.pi * seg(t, kt - 0.07, kt + 0.06)))
+    for kt in (T.TYPE, T.SEND):
+        press = max(press, math.sin(math.pi * seg(t, kt - 0.07, kt + 0.07)))
     settle = 1 - ease_out(seg(t, T.INS - 0.12, T.INS + 0.16))
     away = ease_in(seg(t, T.DROP, T.DROP + 0.4))
     ox, oy = 330 * away, 260 * away + 14 * settle
-    tip = tween(t, [(T.TYPE + 0.56, (676, 1178)), (T.SEND - 0.2, (744, 1186))])
-    base = (868 + ox, 1196 + oy)
-    tip = (tip[0] + ox - 5 * press, tip[1] + oy + 7 * press)
+    # the pad (just behind the tip) lands on each target
+    kx, ky = key[0] - 15, key[1] - 2
+    sx, sy = send[0] - 15, send[1] - 2
+    tip = tween(t, [(T.INS, (kx + 46, ky + 92)), (T.TYPE - 0.36, (kx + 40, ky + 80)),
+                    (T.TYPE - 0.14, (kx + 16, ky - 22)), (T.TYPE, (kx, ky)), (T.TYPE + 0.14, (kx + 4, ky - 18)),
+                    (T.SEND - 0.16, (sx + 10, sy - 30)), (T.SEND, (sx, sy)), (T.SEND + 0.16, (sx + 14, sy - 16))])
+    tip = (tip[0] + ox - 4 * press, tip[1] + oy + 6 * press)
+    base = (tip[0] - THUMB_V[0], tip[1] - THUMB_V[1] + 4 * press)
     # forearm + bandage (the sleeve is pushed up), coming in from the bed (right)
-    ax0, ay0 = 930 + ox, 1262 + oy
-    ax1, ay1 = 1180 + ox, 1372 + oy
+    fx_, fy_ = base[0] + 32, base[1] + 54             # the loose fist
+    ax0, ay0 = fx_ + 30, fy_ + 12
+    ax1, ay1 = fx_ + 280, fy_ + 122
     ang = math.atan2(ay1 - ay0, ax1 - ax0)
     nx, ny = -math.sin(ang), math.cos(ang)
     wd = 62
@@ -615,7 +729,6 @@ def _thumb_hand(ctx, t, T):
                         (bx_ - nx * (wd + 3) + 22, by_ - ny * (wd + 3) + 8), (bx_ - nx * (wd + 3) - 22, by_ - ny * (wd + 3) - 8)])
         core.fill_stroke(ctx, "#f4f1e8" if j != 1 else "#e6e1d6", INK, 6)
     # loose fist (knuckles to the left, against the phone)
-    fx_, fy_ = 900 + ox, 1250 + oy
     core.ellipse(ctx, fx_, fy_, 108, 92, -0.25)
     core.fill_stroke(ctx, SKIN, INK, 9)
     for k in range(3):
@@ -660,15 +773,15 @@ def _shot_insert(ctx, t, T, info):
         ctx.save()
         ctx.translate(*PHONE)
         ctx.rotate(PHONE_ROT)
-        fx.phone_screen(ctx, -w / 2, -h / 2, w, h, t, [(T.MSG, "in", "you ok?")],
-                        typing=(T.TYPE, "zzz", 0.24, T.SEND), clock="6:12")
+        an = fx.phone_screen(ctx, -w / 2, -h / 2, w, h, t, [(T.MSG, "in", MSG_IN)],
+                             typing=(T.TYPE, EMO, 0.24, T.SEND), clock="6:12", emoji_keys=EMO_KEYS)
         ctx.restore()
         with _shade(ctx, t, st):
             ctx.save()
             ctx.translate(*PHONE)
             ctx.scale(1 / Z_INS, 1 / Z_INS)
             ctx.translate(-540, -730)
-            _thumb_hand(ctx, t, T)
+            _thumb_hand(ctx, t, T, _ins_scr(an["keys"][EMO_KEYS.index(EMO)]), _ins_scr(an["send"]))
             ctx.restore()
 
 
@@ -789,11 +902,15 @@ def SFX(info):
     ev.append((T.C2 - 0.02, "cloth_rustle", -2.0, 0.0))
     ev.append((T.C3 + 0.3, "creature_purr", 2.0, 0.1))
     ev.append((T.B1, "baby_coo", -4.0, -0.1))
+    # S4: he lets go -- a soft breath out as the lids sink
+    ev.append((T.SC0 + 0.1, "sigh", -9.0, -0.2))
     # E: phone
     ev.append((T.MSG, "phone_buzz", -3.0, -0.4))
-    for k in range(3):
-        ev.append((T.TYPE + 0.24 * k, "mouse_click", -3.0, -0.2))
-    ev.append((T.SEND, "text_send", 0.0, -0.1))
+    ev.append((T.GROPE, "cloth_rustle", -10.0, -0.3))
+    ev.append((T.PAT, "tap_tap", -9.0, -0.4))              # pats the nightstand (a miss)
+    ev.append((T.TYPE, "mouse_click", -3.0, -0.2))          # taps the tired-face emoji
+    ev.append((T.SEND, "mouse_click", -5.0, -0.2))
+    ev.append((T.SEND + 0.02, "text_send", 0.0, -0.1))
     # S6: the purring trio
     for k, pan in enumerate((-0.3, 0.0, 0.3)):
         ev.append((T.Z + 0.3 + 0.5 * k, "creature_purr", 3.0, pan))

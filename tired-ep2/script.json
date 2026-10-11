@@ -91,7 +91,7 @@
     },
     {
      "t": "pause",
-     "dur": 1.4,
+     "dur": 1.7,
      "cue": "grin"
     },
     {
@@ -328,7 +328,7 @@
     },
     {
      "t": "pause",
-     "dur": 2.6,
+     "dur": 3.0,
      "cue": "troll"
     },
     {
@@ -506,7 +506,7 @@
    "beats": [
     {
      "t": "pause",
-     "dur": 2.2,
+     "dur": 2.6,
      "cue": "catch"
     },
     {
@@ -591,7 +591,7 @@
     },
     {
      "t": "pause",
-     "dur": 3.2,
+     "dur": 3.3,
      "cue": "conflict"
     },
     {
@@ -757,7 +757,7 @@
     },
     {
      "t": "pause",
-     "dur": 3.0,
+     "dur": 3.4,
      "cue": "eyes_open"
     }
    ],
@@ -910,7 +910,7 @@
     },
     {
      "t": "pause",
-     "dur": 3.2,
+     "dur": 3.6,
      "cue": "phone"
     },
     {

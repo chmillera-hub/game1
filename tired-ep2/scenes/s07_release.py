@@ -1,4 +1,4 @@
-"""s07 -- release (TIREDNESS Episode 2: Lights Out).  Music: "chaos:stop=0.74".
+"""s07 -- release (TIREDNESS Episode 2: Lights Out).  Music: "chaos:stop=0.779".
 
 Everything happens in ONE simulated control room (sets.control_room, people
 at s=0.75); every shot is a camera on that world, so positions, props and
@@ -6,24 +6,35 @@ damage always match from cut to cut. All timing comes from info.cue/line.
 
 Shots:
   S1  smash    medium: eyes to the case, wind-up, the punch, the glass bursts
-  S2  pull     close on face + hands: grip, lean back, strain (sweat, teal glow,
-               groan); the lever gives -> camera pulls back with it -> clunk
+  S2  pull     close on face + hands: both fists GRIP the T-handle (world-space
+               reach on the handle mark, held through the strain and the whole
+               travel down); lean back, strain (sweat, teal glow, groan); the
+               lever gives -> camera pulls back with it -> clunk
   S3  button   the Boss in her chair: eyes slide to LOCKDOWN, the hand follows,
-               press -> "Lockdown."  (the monitors behind her: pods opening)
-  S4  shutters the window: pod lids lift... shutters slam tier by tier (sparks,
-               jolts), then a pan to the monitor wall (sealed too) and her
+               press -> "Lockdown."; the monitors behind her flash LOCKDOWN
+  S4  shutters the window: a red LOCKDOWN sign flashing over the shaft; the
+               pods' doors creep open... two pop open and two small creatures
+               leap out and dash away; then heavy hazard-striped steel shutters
+               slam down over the pods tier by tier (clang, sparks, shake each),
+               red LOCKED lamps; the room shakes, dust falls
   S5a one_pod  two-shot: faces fall, ears lower; a hiss -> eyes snap right
-  S5b          pan to the one tiny pod by the console (JOY): seal hisses, the
-               glass slides up
+  S5b          pan to the one tiny pod by the console (THING 38): seal hisses,
+               the glass slides up
   S6  baby     the baby tumbles out, blinks, toddles, giggles; Curiosity bounds
                over and nuzzles it
   S7  alarm    red alarm, guards' light under the doors; he dashes over and
                scoops the baby up
   S8  s07_l02  the hatch bursts open: Embarrassment ducks out, small wave
   S9  run      they run through the hatch (Curiosity first), Emb last
-  S10 hatch    Emb pulls it shut: SLAM (the chaos cue's final hit); empty room
-  S11 watch    insert: the empty hatch on her monitor -> her face, eyes come
-               down: "Let them run."  slow blink, the faintest smirk
+  S10 hatch    Emb pulls it shut: SLAM; empty room
+  S11a watch   insert: her hatch-cam monitor rewinds and freezes on Emb at the
+               hatch (glancing back), a red ID bracket on his face. "Oh."
+  S11b s07_l03 the Boss, 3/4, half-lidded, eyes up on that monitor: "...You
+               too, Embarrassment."  flat, numb
+  S11c numb    wider: her alone in the big chair, the frozen Emb on the monitor
+               beside her. A slow blink; her eyes slide off it into nothing;
+               "No matter. I'll catch you." -- eyes back to him, no feeling, no
+               smirk; eyes drift away, a second slow blink; slow push-in
 """
 import math
 
@@ -35,7 +46,7 @@ from engine.human import P, IK, A, L, W
 M = sets.CONTROL_MARKS
 SP = 0.75                     # people (set char_scale)
 SC = 0.75                     # Curiosity
-SB = 0.64                     # baby Joy
+SB = 0.64                     # the baby
 FEET = M["feet_y"]            # 1500
 CUR_Y = 1516                  # creatures stand a hair in front of the people line
 BABY_Y = 1542
@@ -44,9 +55,11 @@ BABY_Y = 1542
 # LOCKDOWN pedestal, right under the observation window
 POD_X, POD_Y, POD_S = 1290.0, 1522.0, 0.46
 POD_FLOOR = POD_Y - 122 * POD_S          # interior floor (world y) where the baby sleeps
+POD_TEXT, POD_SUB = "THING 38", "SPECIMEN 038"
 
 SMASH_X = M["smash_feet"][0]   # 855
-HAUL_X = M["haul_feet"][0]     # 940
+HAUL_X = 1015.0                # close enough that both hands reach the T-handle UP
+GRIP = 26.0                    # the two fists sit +-GRIP px from the T-bar centre
 TIRED_X1 = 640.0               # stepped back from the console to see the window
 CUR_X0 = 590.0
 TIRED_X2 = 1012.0              # where he scoops the baby up
@@ -73,11 +86,16 @@ DUCK_CRADLE = dict(DUCK)
 DUCK_CRADLE.update(P(IK("r", -0.02, 0.34, 0.26, "cup", layer="mid", tf=-1.0, wa=0.0, wabs=0.5),
                      IK("l", 0.02, 0.41, 0.28, "relaxed", layer="front", wa=0.6, wabs=0.5)))
 DUCK_CRADLE["hold"] = 2.0
-# hauling with all his weight: leaning far back, head back (so the arms clear his face)
-HAUL_STRAIN = {"base": "haul_strain", "lean": W(-0.7, 0.02, 0.0), "neck": -0.3, "nod": W(-0.3, 0.02, 0.4),
-               "head_face": 0.25}
-HAUL_GRIP = {"base": "haul", "lean": -0.62, "neck": -0.2, "nod": -0.2, "head_face": 0.25}
-HAUL_FOLLOW = {"base": "haul", "lean": -0.8, "hunch": 0.95, "nod": 0.05, "neck": -0.2, "head_face": 0.3}
+# the haul: both fists closed on the T-handle ("grip" hands, world-space reach).
+# The lean is limited while the handle is UP (shoulder height) so both hands
+# really reach it; he hangs back further only as the lever comes down.
+_HAUL_ARMS = {"al_h": "grip", "ar_h": "grip", "al_layer": "front", "ar_layer": "back"}
+HAUL_GRIP = {"base": "haul", "lean": -0.22, "neck": -0.2, "nod": -0.2, "head_face": 0.25, **_HAUL_ARMS}
+HAUL_STRAIN = {"base": "haul_strain", "lean": W(-0.28, 0.02, 0.0), "neck": -0.3, "nod": W(-0.3, 0.02, 0.4),
+               "head_face": 0.25, **_HAUL_ARMS}
+HAUL_FOLLOW = {"base": "haul", "lean": -0.8, "hunch": 0.95, "nod": 0.05, "neck": -0.2, "head_face": 0.3,
+               **_HAUL_ARMS}
+GUARD_IN = {"base": "guard_fists", "al_layer": "front", "ar_layer": "back"}   # same layers as the haul
 CROUCH = {"base": "crouch", "lean": 0.45, "neck": 0.05, "nod": 0.1}
 
 
@@ -101,7 +119,9 @@ def times(info):
     T.pull, T.button, T.shut = c("pull"), c("button"), c("shutters")
     T.pod, T.baby, T.alarm = c("one_pod"), c("baby"), c("alarm")
     T.run, T.hatch, T.watch, T.end = c("run"), c("hatch"), c("watch"), info.dur
+    T.numb = c("numb")
     T.L1, T.L2, T.L3 = info.line("s07_l01"), info.line("s07_l02"), info.line("s07_l03")
+    T.L3b = info.line("s07_l03b")
     # smash
     T.hit = max(0.6, T.pull - 0.5)          # the fist lands
     T.p0 = T.hit - 0.62                     # punch_cycle start (wind-up 0.48 s in)
@@ -112,9 +132,13 @@ def times(info):
     # button
     T.press = T.L1.start - 0.2
     T.reach0 = T.press - 0.6
-    # shutters: the pods begin to open from the clunk; six tiers slam top -> bottom
+    T.lock_on = T.press + 0.08               # LOCKDOWN signs light up
+    # shutters: the pods creep open from the clunk; two pop and get out; then
+    # four tiers of steel shutters slam top -> bottom
     T.open0 = T.clunk + 0.25
-    T.rows = [T.shut + 0.6 + i * 0.27 for i in range(6)]
+    T.popA = T.shut + 0.12                   # near tier: door pops, a creature dashes LEFT
+    T.popB = T.shut + 0.50                   # 2nd tier: door pops, a creature dashes RIGHT
+    T.rows = [T.shut + 0.95 + i * 0.38 for i in range(4)]
     # one pod
     T.hiss = T.pod + 1.05
     T.pan0, T.pan1 = T.hiss + 0.25, T.hiss + 0.75
@@ -144,9 +168,19 @@ def times(info):
     T.emb_duck1 = T.emb_duck0 + 0.36
     T.emb_gone = T.emb_duck1 + 0.32
     T.slam0 = T.hatch - 0.2                  # the panel swings shut -> SLAM at T.hatch
-    T.wcut = T.L3.start - 0.5                # monitor insert -> her face
+    # watch: her hatch-cam feed rewinds to Emb's glance back, and freezes
+    T.t_freeze = min(_tired_duck_t_raw(T) + 0.38, T.emb_duck0 - 0.03)
+    T.rew0 = T.watch + 0.18
+    T.rew1 = T.rew0 + 0.55
+    T.wcut = info.word_time("s07_l03", 1) - 0.14      # insert -> her face on "You too"
+    T.wcut2 = T.L3.end + 0.32                         # -> wider: her + the monitor (numb)
     _TCACHE[key] = T
     return T
+
+
+def _tired_duck_t_raw(T):
+    v = abs(human.cycle_speed("tired", "run", -0.9) * SP)
+    return T.run0 + (TIRED_X2 + 10 - 330) / v
 
 
 def _run_x(T, t):
@@ -157,13 +191,16 @@ def _run_x(T, t):
 
 def _tired_duck_t(T):
     """When his run reaches the hatch and he ducks in."""
-    v = abs(human.cycle_speed("tired", "run", -0.9) * SP)
-    return T.run0 + (TIRED_X2 + 10 - 330) / v
+    return _tired_duck_t_raw(T)
 
 
 # ============================================================================
 # characters: state at time t (one simulated world)
 # ============================================================================
+def _grip_targets(hx, hy, w=1.0):
+    return {"l": (hx - GRIP, hy, w), "r": (hx + GRIP, hy, w)}
+
+
 def tired_state(T, info, t):
     st = dict(x=SMASH_X, y=FEET, pose="stand", pose_t=None, turn=0.85, expr="determined",
               face={"lid": 0.15}, look=(0.0, 0.0), blink=None, power=0.68, reach=None,
@@ -194,27 +231,28 @@ def tired_state(T, info, t):
         return st
     st["x"] = HAUL_X
     if t < T.pod:
-        # ---- the haul
+        # ---- the haul: both fists closed on the T-handle the whole time
         lv = lever_at(T, t)
         hx, hy = props.release_console_handle(*M["release"], SP, lv)
+        kf = smoothstep(seg(lv, 0.35, 1.0))      # hangs back further only as the handle comes down
         if t < T.grab:
             k = smoothstep(seg(t, T.pull, T.grab))
-            st["pose"] = ("guard_fists", HAUL_GRIP, k)
-            st["reach"] = {"l": (hx - 11, hy, k), "r": (hx + 11, hy, k)}
+            st["pose"] = (GUARD_IN, HAUL_GRIP, k)
+            st["reach"] = _grip_targets(hx, hy, k)
         elif t < T.give:
             st["pose"] = (HAUL_GRIP, HAUL_STRAIN, smoothstep(seg(t, T.grab, T.grab + 0.3)))
             st["pose_t"] = t - T.grab
-            st["reach"] = {"l": (hx - 11, hy), "r": (hx + 11, hy)}
+            st["reach"] = _grip_targets(hx, hy)
         elif t < T.clunk + 0.7:
-            k = smoothstep(seg(t, T.give, T.clunk + 0.05))
             k2 = smoothstep(seg(t, T.clunk + 0.1, T.clunk + 0.7))
-            st["pose"] = (HAUL_STRAIN, HAUL_FOLLOW, k * (1 - 0.6 * k2))
-            st["reach"] = {"l": (hx - 11, hy), "r": (hx + 11, hy)}
+            st["pose"] = (HAUL_STRAIN, HAUL_FOLLOW, kf * (1 - 0.6 * k2))
+            st["pose_t"] = t - T.grab
+            st["reach"] = _grip_targets(hx, hy)
         else:
             # lets go, straightens, steps back to see the window (offscreen: the Boss's shot)
             k = smoothstep(seg(t, T.clunk + 0.7, T.clunk + 1.3))
             st["pose"] = ((HAUL_STRAIN, HAUL_FOLLOW, 0.4), "stand", k)
-            st["reach"] = {"l": (hx - 11, hy, 1 - k), "r": (hx + 11, hy, 1 - k)}
+            st["reach"] = _grip_targets(hx, hy, 1 - k)
             st["turn"] = lerp(1.0, 0.55, k)
             st["x"] = lerp(HAUL_X, TIRED_X1, k)
         # face: grit -> all-out squeeze -> it gives
@@ -625,10 +663,16 @@ def emb_state(T, info, t):
     return st
 
 
+# the Boss's gaze targets for the ending (eye look, screen-ish)
+B_MON = (0.72, -0.5)          # up-right: the hatch-cam monitor beside her
+B_AWAY = (-0.18, 0.38)        # down and a little left: nothing in particular
+B_REST = (-0.75, 0.02)        # (s06/s07 default: toward Tiredness's side of the room)
+
+
 def boss_state(T, info, t):
     ct = 1.0 - 0.2 * smoothstep(seg(t, T.watch + 0.05, T.watch + 0.75))
-    st = dict(chair_turn=ct, turn=3.5 * (1 - ct), expr="cold", blink=None,
-              face={}, look=(-0.75, 0.02), reach=None, pressed=0.0, mouth=info.mouth("boss", t))
+    st = dict(chair_turn=ct, turn=3.5 * (1 - ct), expr="cold", blink=None, pose="sit_chair",
+              face={}, look=B_REST, reach=None, pressed=0.0, mouth=info.mouth("boss", t))
     f = st["face"]
     bx, by = M["lockdown"]
     # LOCKDOWN: the hand travels from the armrest to the button, presses, rests, returns
@@ -639,7 +683,7 @@ def boss_state(T, info, t):
         st["reach"] = {"l": (bx + 2, by - 24 + dip, w)}
     st["pressed"] = clamp(seg(t, T.press - 0.02, T.press + 0.06))
     if t < T.watch:
-        st["look"] = tween(t, [(T.reach0 - 0.12, (-0.75, 0.02)), (T.reach0 + 0.02, (-0.55, 0.6)),
+        st["look"] = tween(t, [(T.reach0 - 0.12, B_REST), (T.reach0 + 0.02, (-0.55, 0.6)),
                                (T.press + 0.08, (-0.55, 0.6)), (T.press + 0.22, (-0.8, 0.0))])
         f["head_turn"] = tween(t, [(T.reach0, -0.12), (T.reach0 + 0.18, -0.2), (T.press + 0.2, -0.2),
                                    (T.press + 0.4, -0.16)])
@@ -648,22 +692,42 @@ def boss_state(T, info, t):
         f["lid"] = 0.05 * smoothstep(seg(t, T.L1.end - 0.4, T.L1.end + 0.2))
         if t >= T.hatch:
             f["lid"] = 0.0
+        return st
+    # ---- the ending: bored, sad, numb. Half-lidded, flat mouth, no smirk.
+    st["expr"] = "bored"
+    tb1 = T.wcut2 + 0.12                  # slow blink in the numb beat: eyes leave the monitor
+    tg = T.L3b.start + (info.word_time("s07_l03b", 2) - T.L3b.start) - 0.12   # back up on "I'll"
+    tb2 = T.L3b.end + 1.0                 # a second, slower blink after the line
+    st["look"] = tween(t, [(T.watch + 0.1, B_REST), (T.watch + 0.3, B_MON),          # (offscreen)
+                           (tb1 + 0.2, B_MON), (tb1 + 0.45, B_AWAY),               # during the blink
+                           (tg, B_AWAY), (tg + 0.22, B_MON),
+                           (T.L3b.end + 0.55, B_MON), (T.L3b.end + 0.95, (0.1, 0.4))])
+    # the head follows the pupils ~0.15 s later
+    f["head_turn"] = tween(t, [(T.watch + 0.4, 0.0), (T.watch + 0.7, 0.16),
+                               (tb1 + 0.35, 0.16), (tb1 + 0.7, 0.02),
+                               (tg + 0.15, 0.02), (tg + 0.45, 0.14),
+                               (T.L3b.end + 0.7, 0.14), (T.L3b.end + 1.2, 0.04)])
+    f["head_nod"] = tween(t, [(T.watch + 0.4, 0.0), (T.watch + 0.7, -0.07),
+                              (tb1 + 0.35, -0.07), (tb1 + 0.7, 0.07),
+                              (tg + 0.15, 0.07), (tg + 0.45, -0.04),
+                              (T.L3b.end + 0.7, -0.04), (T.L3b.end + 1.2, 0.08)])
+    heavy = (0.20 + 0.06 * smoothstep(seg(t, T.L3.end, T.L3.end + 0.6))
+             + 0.06 * smoothstep(seg(t, tb2 + 0.4, tb2 + 1.0)))
+    f.update(lid=heavy, lid_ang=0.22, brow=-0.04, brow_ang=0.16, curve=-0.07, frown=0.1,
+             press=0.0, smirk=0.0, width=-0.04)
+    # unfocused while she stares at nothing
+    f["focus"] = -0.35 * smoothstep(seg(t, tb1 + 0.3, tb1 + 0.7)) * (1 - smoothstep(seg(t, tg, tg + 0.25))) \
+        - 0.35 * smoothstep(seg(t, T.L3b.end + 0.7, T.L3b.end + 1.2))
+    # slow blinks (0.35-0.45 s close, hold, open); no auto-blinks in between
+    if t < T.wcut:
+        st["blink"] = None
+    elif t < tb2 - 0.2:
+        st["blink"] = tween(t, [(tb1, 0.0), (tb1 + 0.38, 1.0), (tb1 + 0.52, 1.0), (tb1 + 0.95, 0.0)])
     else:
-        # watching the empty hatch on the big monitor; her eyes come down, then "Let them run."
-        st["look"] = tween(t, [(T.watch + 0.1, (-0.6, 0.0)), (T.watch + 0.3, (0.1, -1.0)),
-                               (T.wcut + 0.12, (0.1, -1.0)), (T.wcut + 0.32, (-0.4, 0.0))])
-        f["head_turn"] = tween(t, [(T.watch + 0.25, 0.0), (T.watch + 0.55, -0.1),
-                                   (T.wcut + 0.25, -0.1), (T.wcut + 0.5, -0.3)])
-        f["head_nod"] = tween(t, [(T.watch + 0.25, 0.0), (T.watch + 0.55, -0.2),
-                                  (T.wcut + 0.25, -0.2), (T.wcut + 0.5, 0.02)])
-        # a slow judgement blink after the line
-        tb = T.L3.end + 0.45
-        st["blink"] = tween(t, [(tb, 0.0), (tb + 0.25, 1.0), (tb + 0.55, 1.0), (tb + 0.9, 0.0)])
-        if t < tb:
-            st["blink"] = 0.0 if t > T.wcut else None
-        f["lid"] = 0.07 * smoothstep(seg(t, T.L3.end - 0.5, T.L3.end + 0.15))
-        f["smirk"] = 0.14 * smoothstep(seg(t, T.L3.end + 0.3, T.L3.end + 1.0))
-        f["press"] = 0.1
+        st["blink"] = tween(t, [(tb2, 0.0), (tb2 + 0.45, 1.0), (tb2 + 0.65, 1.0), (tb2 + 1.15, 0.0)])
+    # a faint breath out in the numb beat (shoulders sink a hair)
+    sink = smoothstep(seg(t, T.L3.end + 0.1, T.L3.end + 0.8))
+    st["pose"] = {"base": "sit_chair", "hunch": 0.12 * (1 - sink), "nod": 0.03 * sink}
     return st
 
 
@@ -675,7 +739,7 @@ def _pod_open(T, t):
 
 
 def draw_joy_pod(ctx, T, t, inside_fn=None):
-    """The one tiny pod (JOY) by the console. Anchor = floor under it."""
+    """The one tiny pod (THING 38) by the console. Anchor = floor under it."""
     op = _pod_open(T, t)
     pw = core.PAL["power"]
     pulse = 0.85 + 0.15 * math.sin(t * math.tau * 0.25)
@@ -745,7 +809,7 @@ def draw_joy_pod(ctx, T, t, inside_fn=None):
         props.rect(ctx, -170, -130, 340, 130, "#4a5868", 7, r=24)
         props.rect(ctx, -170, -34, 340, 34, "#3b4757", 0, r=10)
         props.rect(ctx, -170, -130, 340, 130, None, 7, r=24)
-        props.nameplate(ctx, 0, -70, 0.95, text="JOY", sub="SPECIMEN 01", seed=3)
+        props.nameplate(ctx, 0, -70, 0.95, text=POD_TEXT, sub=POD_SUB, seed=3)
 
 
 class _ClosedPod:
@@ -753,7 +817,7 @@ class _ClosedPod:
 
 
 def joy_pod_closed(ctx, t):
-    """The tiny JOY pod, sealed, with baby Joy asleep inside, at (POD_X, POD_Y)
+    """The tiny THING 38 pod, sealed, with the baby asleep inside, at (POD_X, POD_Y)
     in CONTROL_MARKS world coords (for continuity in s06's control-room shots)."""
     def inside(c):
         CR.draw_specimen(c, 0, -122 * POD_S, SB, t, baby=True, pose="curl", expr="calm", flip=True)
@@ -779,134 +843,303 @@ def draw_pod_steam(ctx, T, t):
         core.fill(ctx, (0.85, 0.97, 1.0, 0.42 * (1 - k)))
 
 
-# --- the window onto the shaft: same look as the set's default view, but the
-# shutters fall TIER BY TIER and the pods first begin to open
+# ============================================================================
+# the window onto the shaft: four tiers of pods behind shutter housings; a
+# LOCKDOWN sign over the shaft; two pods pop and their creatures get out; then
+# heavy hazard-striped steel shutters slam down tier by tier
+# ============================================================================
+WIN = M["window"]                       # (905, 380, 400, 420)
+_TIER_TOP = (52, 124, 208, 304)         # px below the window top (far -> near)
+_TIER_H = (72, 84, 96, 116)
+_TIER_N = (7, 6, 6, 5)
+_TIER_W = (0.84, 0.9, 0.97, 1.04)       # x window width
+ESCAPE = {(3, 1): ("A", -1), (2, 4): ("B", 1)}   # (tier, pod) -> who, run direction
+STEEL = "#5d6a76"
+STEEL_DK = "#3d4853"
+STEEL_LT = "#8796a3"
+
+
+def _tier(r):
+    x, y, w, h = WIN
+    yt, th = y + _TIER_TOP[r], _TIER_H[r]
+    tw, n = w * _TIER_W[r], _TIER_N[r]
+    cx = x + w / 2
+    sp = tw / n
+    ph = 0.64 * th
+    pw = 0.6 * ph
+    hh = 0.15 * th
+    py = yt + hh + 0.07 * th + ph / 2
+    ly = yt + 0.88 * th
+    pods = [(cx + (k + 0.5 - n / 2) * sp, py) for k in range(n)]
+    return dict(r=r, yt=yt, th=th, tw=tw, cx=cx, sp=sp, ph=ph, pw=pw, hh=hh, py=py, ly=ly, pods=pods,
+                x0=cx - tw / 2 - 10, x1=cx + tw / 2 + 10)
+
+
+_TIERS = [_tier(r) for r in range(4)]
+
+
+def _sleeper(ctx, px, py, pw, ph, seed):
+    """A dark curled creature shape asleep in a pod (amorphous, a hint of an ear)."""
+    sd = -1 if seed % 2 else 1
+    by = py + ph * 0.2
+    core.ellipse(ctx, px, by, pw * 0.36, ph * 0.13)
+    core.ellipse(ctx, px + sd * pw * 0.2, by - ph * 0.09, pw * 0.16, ph * 0.1)
+    core.fill(ctx, "#0e2a33")
+    ctx.move_to(px + sd * pw * 0.26, by - ph * 0.15)
+    ctx.line_to(px + sd * pw * 0.05, by - ph * 0.3)
+    ctx.line_to(px + sd * pw * 0.12, by - ph * 0.12)
+    ctx.close_path()
+    core.fill(ctx, "#0e2a33")
+
+
+def _win_static(c):
+    """Everything in the window that never changes (cached)."""
+    import cairocffi as cairo
+    x, y, w, h = WIN
+    g = cairo.LinearGradient(0, y, 0, y + h)
+    g.add_color_stop_rgba(0, *core.hexc("#05121a"))
+    g.add_color_stop_rgba(1, *core.hexc("#0f3943"))
+    c.rectangle(x, y, w, h)
+    c.set_source(g)
+    c.fill()
+    # the shaft's far wall: faint vertical ribs
+    for i in range(9):
+        xx = x + w * (0.06 + 0.11 * i)
+        props.line(c, [(xx, y), (xx, y + h)], (0.3, 0.6, 0.65, 0.10), 6)
+    core.radial_glow(c, x + w / 2, y + h * 0.72, w * 0.62, core.PAL["power"], 0.20)
+    # the LOCKDOWN sign's housing (unlit)
+    bx, by, bw, bh = x + 52, y + 9, w - 104, 36
+    props.rect(c, bx - 4, by - 4, bw + 8, bh + 8, "#232b33", 2.5, r=6)
+    props.hazard_band(c, bx, by, 26, bh, step=20, lw=1.5)
+    props.hazard_band(c, bx + bw - 26, by, 26, bh, step=20, lw=1.5)
+    props.rect(c, bx + 30, by + 3, bw - 60, bh - 6, "#2a0a10", 1.5, r=3)
+    for g_ in _TIERS:
+        # back wall band + ledge
+        c.rectangle(x - 10, g_["yt"] + g_["hh"], w + 20, g_["ly"] - g_["yt"] - g_["hh"])
+        core.fill(c, (0.02, 0.10, 0.13, 0.55))
+        props.rect(c, x - 10, g_["ly"], w + 20, g_["yt"] + g_["th"] - g_["ly"], "#29505a", 0)
+        props.line(c, [(x - 10, g_["ly"] + 1), (x + w + 10, g_["ly"] + 1)], "#6fb3b8", 1.5 + g_["r"] * 0.5)
+        pw, ph = g_["pw"], g_["ph"]
+        lw = 1.2 + 0.35 * g_["r"]
+        for k, (px, py) in enumerate(g_["pods"]):
+            # capsule with a teal-lit interior
+            core.rrect(c, px - pw / 2, py - ph / 2, pw, ph, pw / 2)
+            props.fs(c, core.mixc("#11555a", "#3ff2e0", 0.38 + 0.08 * g_["r"]), lw)
+            core.rrect(c, px - pw * 0.34, py - ph * 0.36, pw * 0.68, ph * 0.72, pw * 0.34)
+            core.fill(c, (0.75, 1.0, 0.95, 0.18))
+            if (g_["r"], k) not in ESCAPE:
+                _sleeper(c, px, py, pw, ph, k + 3 * g_["r"])
+            # caps
+            props.rect(c, px - pw * 0.6, py - ph / 2 - ph * 0.08, pw * 1.2, ph * 0.13, STEEL_DK, lw * 0.8,
+                       r=2)
+            props.rect(c, px - pw * 0.6, py + ph / 2 - ph * 0.06, pw * 1.2, ph * 0.13, STEEL_DK, lw * 0.8,
+                       r=2)
+        # the shutter housing: a heavy steel beam over the tier (the shutter rolls out of it)
+        hx0, hx1 = g_["x0"] - 4, g_["x1"] + 4
+        props.rect(c, hx0, g_["yt"], hx1 - hx0, g_["hh"], STEEL_DK, lw, r=2)
+        props.line(c, [(hx0 + 3, g_["yt"] + 2.5), (hx1 - 3, g_["yt"] + 2.5)], STEEL_LT, 1.2)
+        props.line(c, [(hx0, g_["yt"] + g_["hh"] - 1.5), (hx1, g_["yt"] + g_["hh"] - 1.5)], "#11171d", 2.5)
+        for kk in range(7):
+            core.circle(c, hx0 + (hx1 - hx0) * (0.08 + 0.14 * kk), g_["yt"] + g_["hh"] * 0.5, 1.3 + 0.3 * g_["r"])
+        core.fill(c, STEEL_LT)
+        # lock lamps (dark until the tier is sealed)
+        for lx in (hx0 + 10, hx1 - 10):
+            core.circle(c, lx, g_["yt"] + g_["hh"] * 0.5, 2.6 + 0.6 * g_["r"])
+            props.fs(c, "#3a0d14", 1.0)
+
+
+def _pods_open(T, t):
+    """0..0.45: every pod's glass door creeps up after the release (heavy, slow)."""
+    return 0.45 * smoothstep(seg(t, T.open0, T.open0 + 2.8))
+
+
 def _row_shutter(T, t, r):
+    """Shutter r: 0 = up in its housing .. 1 = down; a fast drop + a bounce."""
     t1 = T.rows[r]
-    if t < t1 - 0.17:
+    if t < t1 - 0.13:
         return 0.0
     if t < t1:
-        return ease_in(seg(t, t1 - 0.17, t1))
-    return 1.0 - 0.07 * math.sin(math.pi * seg(t, t1, t1 + 0.14))
+        return ease_in(seg(t, t1 - 0.13, t1))
+    return 1.0 - 0.09 * math.sin(math.pi * seg(t, t1, t1 + 0.12)) * (1 - 0.0) \
+        - 0.03 * math.sin(math.pi * seg(t, t1 + 0.12, t1 + 0.22))
 
 
-def _opening(T, t):
-    return smoothstep(seg(t, T.open0, T.open0 + 1.6))
+def _esc_times(T, who):
+    return T.popA if who == "A" else T.popB
+
+
+def _esc_creature(T, t, g_, k, who, d):
+    """(x, y, pose, flip, airborne) of an escaping creature, or None."""
+    t0 = _esc_times(T, who)
+    px, py = g_["pods"][k]
+    s = g_["pw"] / 480.0
+    if t < t0 + 0.06:
+        return None
+    gy = g_["ly"] + 1
+    if t < t0 + 0.2:                      # crouched in the open pod, gathering
+        return px, py + g_["ph"] * 0.32, "crouch", d < 0, False, s
+    if t < t0 + 0.42:                     # leaps out onto the ledge
+        u = seg(t, t0 + 0.2, t0 + 0.42)
+        x = lerp(px, px + d * g_["sp"] * 0.45, u)
+        y = lerp(py + g_["ph"] * 0.1, gy - 112 * s, u) - 40 * s * 6 * math.sin(math.pi * u) * 0.25
+        return x, y, "leap", d < 0, True, s
+    x0 = px + d * g_["sp"] * 0.45
+    x1 = (WIN[0] - 70) if d < 0 else (WIN[0] + WIN[2] + 70)
+    xx, yy, pose, air = _bound(t, t0 + 0.42, x0, x1, 2, 0.55, gy, s)
+    if t > t0 + 0.97:
+        return None
+    return xx, yy, pose, d < 0, air, s
+
+
+def _draw_banner(ctx, T, t, lit_scale=1.0):
+    x, y, w, h = WIN
+    if t < T.lock_on:
+        return
+    bx, by, bw, bh = x + 52, y + 9, w - 104, 36
+    on = smoothstep(seg(t, T.lock_on, T.lock_on + 0.12))
+    p = 0.5 + 0.5 * math.cos(math.tau * (t - T.lock_on) / 0.9)       # smooth 0.9 s flash (no strobe)
+    a = on * (0.45 + 0.55 * p) * lit_scale
+    props.rect(ctx, bx + 30, by + 3, bw - 60, bh - 6, core.mixc("#2a0a10", "#c4142c", a), 1.5, r=3)
+    core.radial_glow(ctx, x + w / 2, by + bh / 2, 150, core.PAL["danger"], 0.45 * a)
+    core.text(ctx, "LOCKDOWN", x + w / 2, by + bh * 0.5 + 9, 25, core.mixc("#5a1a22", "#fff1f2", a), "black")
 
 
 def window_fn_for(T):
-    def window_fn(ctx, x, y, w, h, t):
-        import cairocffi as cairo
-        g = cairo.LinearGradient(0, y, 0, y + h)
-        g.add_color_stop_rgba(0, *core.hexc("#06141b"))
-        g.add_color_stop_rgba(1, *core.hexc("#11404a"))
-        ctx.rectangle(x, y, w, h)
-        ctx.set_source(g)
-        ctx.fill()
-        cx = x + w / 2
-        op = _opening(T, t)
-        rows = []
-        for r in range(6):
-            f = r / 5.0
-            yy = y + h * (0.10 + 0.17 * r)
-            rr = w * (0.62 + 0.18 * f)
-            sag = h * (0.05 + 0.05 * f)
-            n = 7 + r // 2
-            pw_, ph_ = w * (0.040 + 0.022 * f), h * (0.070 + 0.040 * f)
-            pts = []
-            for k in range(n):
-                u = (k + 0.5) / n
-                pts.append((cx + (u - 0.5) * 2 * rr * 0.62, yy + sag * (1 - (2 * u - 1) ** 2)))
-            rows.append((pts, pw_, ph_))
-            lp = [(cx + (u / 20 - 0.5) * 2 * rr * 0.7, yy + ph_ * 0.6 + sag * (1 - (2 * u / 20 - 1) ** 2))
-                  for u in range(21)]
-            props.line(ctx, lp, core.mixc("#1d4f5a", "#4f8f98", f), 2 + 3 * f)
-        for ri, (pts, pw_, ph_) in enumerate(rows):
-            sh = _row_shutter(T, t, ri)
-            if sh >= 0.999:
+    x, y, w, h = WIN
+
+    def window_fn(ctx, x_, y_, w_, h_, t):
+        core.cached(ctx, "s07_window_static", x, y, w, h, _win_static)
+        op = _pods_open(T, t)
+        # glass doors (slide up into the top caps), escapee pods pop wide open
+        for g_ in _TIERS:
+            r = g_["r"]
+            pw, ph = g_["pw"], g_["ph"]
+            for k, (px, py) in enumerate(g_["pods"]):
+                esc = ESCAPE.get((r, k))
+                o = op
+                if esc:
+                    t0 = _esc_times(T, esc[0])
+                    o = max(o, clamp(ease_out_back(seg(t, t0, t0 + 0.16), 1.6), 0.0, 1.06))
+                    if t < t0 + 0.06:
+                        _sleeper(ctx, px, py, pw, ph, k + 3 * r)
+                if o > 0.01:   # the open gap at the bottom of the capsule: brighter interior light
+                    core.rrect(ctx, px - pw * 0.42, py + ph / 2 - ph * o * 0.95, pw * 0.84, ph * o * 0.95,
+                               min(pw * 0.42, ph * o * 0.45))
+                    core.fill(ctx, (0.72, 1.0, 0.96, 0.32))
+                ctx.save()
+                core.rrect(ctx, px - pw / 2, py - ph / 2, pw, ph, pw / 2)
+                ctx.clip()
+                dy = -ph * o
+                core.rrect(ctx, px - pw * 0.44, py - ph * 0.46 + dy, pw * 0.88, ph * 0.92, pw * 0.44)
+                core.fill(ctx, (0.80, 1.0, 0.98, 0.20))
+                core.poly(ctx, [(px - pw * 0.30, py - ph * 0.36 + dy), (px - pw * 0.14, py - ph * 0.40 + dy),
+                                (px - pw * 0.14, py + ph * 0.10 + dy), (px - pw * 0.30, py + ph * 0.16 + dy)])
+                core.fill(ctx, (1, 1, 1, 0.30))
+                ctx.restore()
+                if esc and seg(t, _esc_times(T, esc[0]), _esc_times(T, esc[0]) + 0.25) not in (0.0, 1.0):
+                    kk = seg(t, _esc_times(T, esc[0]), _esc_times(T, esc[0]) + 0.25)
+                    core.circle(ctx, px, py + ph * 0.3, pw * (0.4 + 0.8 * kk))
+                    core.stroke(ctx, (1, 1, 1, 0.8 * (1 - kk)), 1.5 + 2 * (1 - kk))
+        # the two that get out
+        for (r, k), (who, d) in ESCAPE.items():
+            g_ = _TIERS[r]
+            cr = _esc_creature(T, t, g_, k, who, d)
+            if cr is None:
                 continue
-            gap = ph_ * 0.24 * op
-            for (px, py) in pts:
-                r_ = pw_ / 2
-                sy = py - ph_ * 0.16                      # the seam
-                top, bot = py - ph_ / 2, py + ph_ / 2
-                if gap < 0.3:
-                    core.rrect(ctx, px - r_, top, pw_, ph_, r_)
-                    continue
-                # body (below the seam)
-                ctx.move_to(px - r_, sy)
-                ctx.line_to(px - r_, bot - r_)
-                ctx.arc_negative(px, bot - r_, r_, math.pi, 0.0)
-                ctx.line_to(px + r_, sy)
-                ctx.close_path()
-                # lid (lifted off)
-                ctx.move_to(px - r_, sy - gap)
-                ctx.line_to(px - r_, top + r_ - gap)
-                ctx.arc(px, top + r_ - gap, r_, math.pi, 2 * math.pi)
-                ctx.line_to(px + r_, sy - gap)
-                ctx.close_path()
-            core.fill(ctx, core.mixc(core.mixc("#1b6f72", "#3ff2e0", 0.45 + 0.1 * ri), "#e8fffb",
-                                     0.25 * op))
-        core.radial_glow(ctx, cx, y + h * 0.7, w * 0.6, core.PAL["power"], 0.22 + 0.2 * op)
-        # light pouring out of the opened seams
-        if op > 0.01:
-            for ri, (pts, pw_, ph_) in enumerate(rows):
-                if _row_shutter(T, t, ri) > 0.5:
-                    continue
-                gap = ph_ * 0.24 * op
-                for (px, py) in pts:
-                    yy = py - ph_ * 0.16 - gap / 2
-                    ctx.move_to(px - pw_ * 0.75, yy)
-                    ctx.line_to(px + pw_ * 0.75, yy)
-                core.stroke(ctx, (1.0, 1.0, 0.96, 0.95), max(1.0, gap * 0.8), cap="round")
-        # shutters slam down, tier by tier
-        for ri, (pts, pw_, ph_) in enumerate(rows):
-            sh = _row_shutter(T, t, ri)
+            cx_, cy_, pose, flip, air, s = cr
+            CR.draw_specimen(ctx, cx_, cy_, s, t, form=1.0, pose=pose, expr="wide", flip=flip,
+                             look=(-0.6 if flip else 0.6, 0.0), glow=1.6, ears=0.95, pose_t=t - _esc_times(T, who))
+        # LOCKDOWN sign over the shaft
+        _draw_banner(ctx, T, t)
+        # the shutters: thick corrugated steel, hazard stripes on the leading edge
+        for g_ in _TIERS:
+            r = g_["r"]
+            sh = _row_shutter(T, t, r)
             if sh <= 0.0:
                 continue
-            for (px, py) in pts:
-                ctx.rectangle(px - pw_ * 0.65, py - ph_ * 0.62, pw_ * 1.3, ph_ * 1.24 * sh)
-            core.fill(ctx, "#56646f", preserve=True)
-            core.stroke(ctx, props.INK, 1.6)
-            for (px, py) in pts:
-                yy = py - ph_ * 0.62 + ph_ * 1.24 * sh
-                ctx.move_to(px - pw_ * 0.65, yy - 1.5)
-                ctx.line_to(px + pw_ * 0.65, yy - 1.5)
-            core.stroke(ctx, core.PAL["warn"], 2.0)
-        # sparks where each tier lands (<= 2 tiers alive: <= 16 streaks)
-        for ri, (pts, pw_, ph_) in enumerate(rows):
-            t1 = T.rows[ri]
-            if t1 <= t < t1 + 0.6:
-                for j, kk in enumerate((len(pts) // 3, (2 * len(pts)) // 3)):
-                    px, py = pts[kk]
-                    fx.sparks(ctx, px, py + ph_ * 0.62, t, t1, seed=ri * 7 + j, s=0.22, n=5,
-                              angle=-math.pi / 2, spread=2.4, dur=0.55, speed=700)
+            x0, x1 = g_["x0"], g_["x1"]
+            top = g_["yt"] + g_["hh"]
+            full = g_["ly"] - top
+            bot = top + full * sh
+            hz = 0.15 * g_["th"]
+            lw = 1.4 + 0.4 * r
+            ctx.rectangle(x0, top, x1 - x0, bot - top)
+            core.fill(ctx, STEEL)
+            step = 0.11 * g_["th"]
+            yy = bot - hz - step * 0.5
+            while yy > top + 1:
+                props.line(ctx, [(x0, yy), (x1, yy)], STEEL_DK, 1.6 + 0.3 * r)
+                props.line(ctx, [(x0, yy + 1.8), (x1, yy + 1.8)], STEEL_LT, 0.9)
+                yy -= step
+            for kk in range(1, 4):
+                xx = lerp(x0, x1, kk / 4)
+                props.line(ctx, [(xx, top), (xx, bot - hz)], STEEL_DK, 1.2 + 0.2 * r)
+            props.hazard_band(ctx, x0, bot - hz, x1 - x0, hz, step=hz * 1.5, lw=0)
+            props.line(ctx, [(x0, bot - hz), (x1, bot - hz)], props.INK, lw)
+            ctx.rectangle(x0, top, x1 - x0, bot - top)
+            core.stroke(ctx, props.INK, lw)
+            if sh >= 0.9:
+                # locked: the lamps go red
+                la = smoothstep(seg(t, T.rows[r] + 0.08, T.rows[r] + 0.2))
+                for lx in (g_["x0"] + 6, g_["x1"] - 6):
+                    core.circle(ctx, lx, g_["yt"] + g_["hh"] * 0.5, 2.6 + 0.6 * r)
+                    core.fill(ctx, core.mixc("#3a0d14", "#ff3b5c", la))
+                    core.radial_glow(ctx, lx, g_["yt"] + g_["hh"] * 0.5, 14 + 3 * r, core.PAL["danger"], 0.5 * la)
+        # sparks where each shutter lands (<= 2 tiers alive: <= 20 streaks)
+        for g_ in _TIERS:
+            t1 = T.rows[g_["r"]]
+            if t1 <= t < t1 + 0.55:
+                for j, (sx, ang) in enumerate(((g_["x0"] + 22, -2.3), (g_["x1"] - 22, -0.85))):
+                    fx.sparks(ctx, sx, g_["ly"], t, t1, seed=g_["r"] * 7 + j, s=0.2 + 0.03 * g_["r"], n=5,
+                              angle=ang, spread=1.5, dur=0.5, speed=620)
     return window_fn
 
 
-MON_DELAY = 0.45     # the monitors' shutters land just after the window's (the camera pans to them)
+MON_DELAY = 0.45     # the monitors' shutters land just after the window's
 
 
-# --- monitors: the "pods" feeds get the same cascade; after the escape the big
-# one shows the hatch (where the Boss looks)
+def _lock_overlay(ctx, T, x, y, w, h, t):
+    """LOCKDOWN flashing across a monitor after the button."""
+    if t < T.lock_on:
+        return
+    on = smoothstep(seg(t, T.lock_on, T.lock_on + 0.1))
+    p = 0.5 + 0.5 * math.cos(math.tau * (t - T.lock_on) / 0.9)
+    a = on * (0.55 + 0.45 * p)
+    bh = h * 0.26
+    ctx.rectangle(x, y + h * 0.5 - bh / 2, w, bh)
+    core.fill(ctx, core.alpha("#b0122a", 0.85 * a))
+    core.text(ctx, "LOCKDOWN", x + w / 2, y + h * 0.5 + bh * 0.3, bh * 0.8, core.alpha("#fff1f2", a), "black")
+
+
+def _mon_slab(ctx, x0, y0, w, hfull, sh, lw=1.2):
+    if sh <= 0:
+        return
+    hh = hfull * sh
+    ctx.rectangle(x0, y0, w, hh)
+    core.fill(ctx, STEEL)
+    hz = min(hfull * 0.2, hh)
+    props.hazard_band(ctx, x0, y0 + hh - hz, w, hz, step=max(4.0, hz * 1.5), lw=0)
+    ctx.rectangle(x0, y0, w, hh)
+    core.stroke(ctx, props.INK, lw)
+
+
+# --- monitors: the "pods" feeds get the same cascade + LOCKDOWN
 def _mon_pods(T, i):
     base = sets._cr2_feed
 
     def fn(ctx, x, y, w, h, t):
         base(ctx, x, y, w, h, "pods", sets._CR2_FEEDS[i][1])
-        op = _opening(T, t)
+        op = _pods_open(T, t) / 0.45
         for r in range(3):
-            sh = _row_shutter(T, t - MON_DELAY, 2 * r + 1)
-            for k in range(6):
-                px = x + w * (0.1 + 0.17 * k) + (w * 0.08 if r % 2 else 0)
-                py = y + h * (0.2 + 0.3 * r)
-                if op > 0.01 and sh < 0.5:
-                    props.line(ctx, [(px - w * 0.035, py - h * 0.03), (px + w * 0.035, py - h * 0.03)],
-                               (1, 1, 1, 0.85 * op), 1 + 2 * op)
-                if sh > 0:
-                    ctx.rectangle(px - w * 0.05, py - h * 0.11, w * 0.1, h * 0.22 * sh)
-            if sh > 0:
-                core.fill(ctx, "#56646f")
+            sh = _row_shutter(T, t - MON_DELAY, min(3, r + 1))
+            py = y + h * (0.2 + 0.3 * r)
+            if op > 0.01 and sh < 0.5:
+                for k in range(6):
+                    px = x + w * (0.1 + 0.17 * k) + (w * 0.08 if r % 2 else 0)
+                    props.line(ctx, [(px - w * 0.03, py + h * 0.08), (px + w * 0.03, py + h * 0.08)],
+                               (1, 1, 1, 0.8 * op), 1 + 1.5 * op)
+            _mon_slab(ctx, x, py - h * 0.12, w, h * 0.24, sh)
+        _lock_overlay(ctx, T, x, y, w, h, t)
     return fn
 
 
@@ -915,41 +1148,146 @@ def _mon_catwalk(T, i, label):
 
     def fn(ctx, x, y, w, h, t):
         base(ctx, x, y, w, h, "catwalk", label)
-        op = _opening(T, t)
-        for k in range(5):
-            sh = _row_shutter(T, t - MON_DELAY, min(5, k + 1))
-            px = x + w * (0.12 + 0.2 * k)
-            if op > 0.01 and sh < 0.5:
-                props.line(ctx, [(px - w * 0.05, y + h * 0.3), (px + w * 0.05, y + h * 0.3)],
-                           (1, 1, 1, 0.85 * op), 1.5 + 3 * op)
-            if sh > 0:
-                ctx.rectangle(px - w * 0.07, y + h * 0.16, w * 0.14, h * 0.54 * sh)
-                core.fill(ctx, "#56646f", preserve=True)
-                core.stroke(ctx, props.INK, 1.5)
+        op = _pods_open(T, t) / 0.45
+        sh = _row_shutter(T, t - MON_DELAY, 3)
+        if op > 0.01 and sh < 0.5:
+            for k in range(5):
+                px = x + w * (0.12 + 0.2 * k)
+                props.line(ctx, [(px - w * 0.05, y + h * 0.6), (px + w * 0.05, y + h * 0.6)],
+                           (1, 1, 1, 0.85 * op), 1.5 + 2 * op)
+        _mon_slab(ctx, x, y + h * 0.16, w, h * 0.56, sh, 1.6)
+        _lock_overlay(ctx, T, x, y, w, h, t)
     return fn
 
 
-def _hatch_feed(T):
-    def draw_feed(c, x, y, w, h, t):
-        # the room's own security camera on the (empty) hatch
-        wx0, wy0, ww = -95.0, 618.0, 700.0
-        k = w / ww
+# --- the hatch camera (CAM 07): live, then (at the watch beat) rewound and
+# frozen on Emb glancing back at the hatch
+FEED_X0, FEED_Y0, FEED_W = -300.0, 600.0, 640.0
+FACE_ZOOM = 1.28                       # the digital push-in on his face while frozen
+
+
+def feed_time(T, t):
+    if t < T.rew0:
+        return t
+    if t < T.rew1:
+        return lerp(T.rew0, T.t_freeze, ease_in_out(seg(t, T.rew0, T.rew1)) ** 0.85)
+    return T.t_freeze
+
+
+def _feed_zoom(T, t):
+    return lerp(1.0, FACE_ZOOM, ease_in_out(seg(t, T.rew1 + 0.1, T.rew1 + 0.9)))
+
+
+def _hatch_world(c, T, info, tt):
+    """The maintenance-hatch corner of the room at (feed) time tt."""
+    hop = hatch_open(T, tt)
+    sets.control_room(c, tt, "bg", hatch_open=hop, alarm=0.0, case_broken=1.0, lever=1.0,
+                      pressed=1.0, chair_turn=1.0)
+    es, ts = emb_state(T, info, tt), tired_state(T, info, tt)
+    cs, bb = cur_state(T, info, tt), baby_state(T, info, tt)
+    _hatch_people(c, T, info, tt, es, cs, ts, bb)
+    if es["visible"] and es.get("clip") != "hatch" and not es["front_of_panel"]:
+        _draw_emb(c, info, tt, es)
+    if hop > 0.02:
+        sets.control_room(c, tt, "fg", hatch_open=hop, alarm=0.0, alarm_tint=False, parts=("hatch",))
+    if es["visible"] and es.get("clip") != "hatch" and es["front_of_panel"]:
+        _draw_emb(c, info, tt, es)
+    return es
+
+
+def _feed_xform(T, info, x, y, w, h, zoom):
+    """(scale, world x0, world y0) mapping the hatch-cam window into the rect."""
+    k = w / FEED_W
+    wh = FEED_W * h / w
+    cx0, cy0 = FEED_X0 + FEED_W / 2, FEED_Y0 + wh / 2
+    fxw, fyw = EMB_X + 40, 830.0              # Emb's face (where the push-in goes)
+    q = (zoom - 1.0) / (FACE_ZOOM - 1.0) if FACE_ZOOM > 1 else 0.0
+    cx = lerp(cx0, lerp(cx0, fxw, 0.8), q)
+    cy = lerp(cy0, lerp(cy0, fyw, 0.8), q)
+    kz = k * zoom
+    return kz, cx - (w / 2) / kz, cy - (h / 2) / kz
+
+
+def _hatch_feed_draw(T, info, zoom):
+    def draw_feed(c, x, y, w, h, tt):
+        kz, wx0, wy0 = _feed_xform(T, info, x, y, w, h, zoom)
         c.save()
         c.translate(x, y)
-        c.scale(k, k)
+        c.scale(kz, kz)
         c.translate(-wx0, -wy0)
-        sets.control_room(c, t, "bg", hatch_open=hatch_open(T, t), alarm=0.0,
-                          case_broken=1.0, lever=1.0, pressed=1.0, window_shutters=1.0, chair_turn=1.0)
-        c.rectangle(wx0, wy0, ww, ww * h / w)
-        core.fill(c, (1, 1, 1, 0.26))
+        _hatch_world(c, T, info, tt)
+        c.rectangle(wx0, wy0, w / kz, h / kz)
+        core.fill(c, (1, 1, 1, 0.22))
         c.restore()
+    return draw_feed
+
+
+def _id_bracket(ctx, T, info, x, y, w, h, zoom, t):
+    """A red ID bracket over Emb's face on the frozen frame."""
+    a = smoothstep(seg(t, T.rew1 + 0.35, T.rew1 + 0.55))
+    if a <= 0:
+        return
+    kz, wx0, wy0 = _feed_xform(T, info, x, y, w, h, zoom)
+    fx_, fy_ = (EMB_X + 30 - wx0) * kz + x, (812 - wy0) * kz + y
+    s = (1.25 - 0.25 * a) * kz
+    bw, bh = 120 * s, 150 * s
+    L_ = 30 * s
+    col = core.alpha("#ff3b5c", 0.95 * a)
+    for sx in (-1, 1):
+        for sy in (-1, 1):
+            cx, cy = fx_ + sx * bw / 2, fy_ + sy * bh / 2
+            props.line(ctx, [(cx - sx * L_, cy), (cx, cy), (cx, cy - sy * L_)], col, max(1.5, 5 * s / kz * kz * 0.6))
+
+
+def _rew_marks(ctx, T, x, y, w, h, t):
+    """REW / PAUSE indicator (top-right) + rewind tracking bands."""
+    sc = w / 600.0
+    if t < T.rew0:
+        return
+    ix, iy = x + w - 70 * sc, y + 52 * sc
+    if t < T.rew1:
+        for k in range(2):           # two triangles: rewind
+            ox = ix - 34 * sc * k
+            core.poly(ctx, [(ox, iy - 15 * sc), (ox, iy + 15 * sc), (ox - 26 * sc, iy)])
+            core.fill(ctx, "#eafff4")
+        core.text(ctx, "REW", ix - 76 * sc, iy + 9 * sc, 26 * sc, "#eafff4", "mono", "right")
+        for k in range(2):           # rolling tracking bands
+            yy = y + h * ((seg(t, T.rew0, T.rew1) * 2.6 + 0.45 * k) % 1.0)
+            ctx.rectangle(x, yy, w, h * 0.05)
+            core.fill(ctx, (0.85, 1.0, 0.92, 0.22))
+            ctx.rectangle(x, yy + h * 0.012, w, h * 0.008)
+            core.fill(ctx, (1, 1, 1, 0.35))
+    else:
+        a = 0.65 + 0.35 * math.cos(math.tau * (t - T.rew1) / 1.4)
+        for k in range(2):           # two bars: pause
+            ctx.rectangle(ix - 30 * sc + 18 * sc * k, iy - 15 * sc, 10 * sc, 30 * sc)
+        core.fill(ctx, core.alpha("#eafff4", a))
+        core.text(ctx, "PAUSE", ix - 46 * sc, iy + 9 * sc, 26 * sc, core.alpha("#eafff4", a), "mono", "right")
+
+
+HATCH_MON = 10      # the monitor beside her chair (upper right of her face)
+
+
+def draw_hatch_feed(ctx, T, info, x, y, w, h, t):
+    """The CAM 07 hatch feed at scene time t (live -> rewind -> frozen)."""
+    tt = feed_time(T, t)
+    zoom = _feed_zoom(T, t)
+    frozen = t >= T.rew1 + 0.95
+    fx.monitor_feed(ctx, x, y, w, h, tt, _hatch_feed_draw(T, info, zoom), style="night",
+                    label="CAM 07  MAINT.", rec=t < T.rew0, res=0.5,
+                    cache_key=("s07_freeze", round(zoom, 3)) if frozen else None)
+    _id_bracket(ctx, T, info, x, y, w, h, zoom, t)
+    _rew_marks(ctx, T, x, y, w, h, t)
+
+
+def _hatch_mon_fn(T, info):
+    pods = _mon_pods(T, HATCH_MON)
 
     def fn(ctx, x, y, w, h, t):
         if t < T.hatch - 0.3:
-            _mon_catwalk(T, 3, "CAM 01  SHAFT A")(ctx, x, y, w, h, t)
+            pods(ctx, x, y, w, h, t)
             return
-        fx.monitor_feed(ctx, x, y, w, h, t, draw_feed, style="night", label="CAM 07  MAINT.",
-                        t_on=T.hatch - 0.3, rec=True)
+        draw_hatch_feed(ctx, T, info, x, y, w, h, t)
     return fn
 
 
@@ -1036,7 +1374,7 @@ def _draw_emb(ctx, info, t, st):
 
 def _draw_boss(ctx, info, t, st):
     gy = FEET
-    return human.draw_person(ctx, "boss", M["chair"][0], gy, SP, t, pose="sit_chair", turn=st["turn"],
+    return human.draw_person(ctx, "boss", M["chair"][0], gy, SP, t, pose=st["pose"], turn=st["turn"],
                              expr=st["expr"], face=st["face"], look=st["look"], reach=st["reach"],
                              mouth=st["mouth"], blink=st["blink"])
 
@@ -1068,7 +1406,7 @@ def _alarm_p(t):
 
 def _char_shade(c, t, al, pod_glow):
     """Light on the characters: a light darkness wash, cool monitor light from
-    the right, the teal window, the JOY pod's teal glow, and the red alarm."""
+    the right, the teal window, the pod's teal glow, and the red alarm."""
     vx0, vy0, vx1, vy1 = c.clip_extents()
     c.rectangle(vx0, vy0, vx1 - vx0, vy1 - vy0)
     core.fill(c, core.alpha("#04070d", 0.30 + 0.06 * al))
@@ -1079,6 +1417,13 @@ def _char_shade(c, t, al, pod_glow):
     if al > 0.003:
         c.rectangle(vx0, vy0, vx1 - vx0, vy1 - vy0)
         core.fill(c, core.alpha("#c0142a", al * (0.16 + 0.07 * _alarm_p(t))))
+
+
+def _boss_feed_light(c, t, k):
+    """The green CCTV light from the monitor beside her on her face (ending)."""
+    if k > 0:
+        mx, my, mw, mh = M["monitors"][HATCH_MON]
+        core.radial_glow(c, mx + mw * 0.3, my + mh * 0.6, 420, "#7dffb0", 0.16 * k)
 
 
 def _alarm_tint(ctx, t, al, a0=0.20, a1=0.08):
@@ -1093,6 +1438,32 @@ def _visible_x(view, x0, x1):
     return not (x1 < view[0] or x0 > view[2])
 
 
+def _hatch_people(ctx, T, info, t, es, cs, ts, bb):
+    """Whoever is in the hatch opening (clipped to it; the open panel goes over them)."""
+    for who, st0 in (("emb", es), ("cur", cs), ("tired", ts)):
+        if st0.get("clip") == "hatch" and st0["visible"]:
+            st, k = _deep(st0)
+            ctx.save()
+            _clip_hatch(ctx, st0["y"], st0.get("depth", 0.0))
+
+            def fn(c, who=who, st=st, k=k):
+                ox, oy = st["x"], st["y"]
+                c.save()
+                c.translate(ox, oy)
+                c.scale(k, k)
+                c.translate(-ox, -oy)
+                if who == "emb":
+                    _draw_emb(c, info, t, st)
+                elif who == "cur":
+                    _draw_cur(c, t, st)
+                else:
+                    _draw_tired(c, T, info, t, st, bb)
+                c.restore()
+            sets.dimmed(ctx, (HATCH[0] - 10, HATCH[1] - 10, HATCH[2] + 20, 900),
+                        lerp(0.4, 0.92, st0.get("depth", 0.0)), fn)
+            ctx.restore()
+
+
 def draw_world(ctx, T, info, t, cam):
     al = alarm_at(T, t)
     bs = boss_state(T, info, t)
@@ -1105,41 +1476,15 @@ def draw_world(ctx, T, info, t, cam):
     hop = hatch_open(T, t)
     room = dict(case_broken=broken, lever=lever, pressed=bs["pressed"], alarm=al, alarm_tint=False,
                 hatch_open=hop, chair_turn=bs["chair_turn"], window_fn=window_fn_for(T),
-                monitor_fns={0: _mon_catwalk(T, 0, "CAM 02"), 3: _hatch_feed(T), 4: _mon_pods(T, 4),
-                             7: _mon_pods(T, 7), 10: _mon_pods(T, 10)})
+                monitor_fns={0: _mon_catwalk(T, 0, "CAM 02"), 3: _mon_catwalk(T, 3, "CAM 01  SHAFT A"),
+                             4: _mon_pods(T, 4), 7: _mon_pods(T, 7), HATCH_MON: _hatch_mon_fn(T, info)})
     sets.control_room(ctx, t, "bg", **room)
     _alarm_tint(ctx, t, al)
     view = ctx.clip_extents()
     if t > T.al0 + 0.3 and _visible_x(view, 420, 800):
         _door_leaks(ctx, T, t)
-
-    # someone in the hatch opening (clipped to it; the open panel goes over them)
-    def hatch_people():
-        for who, st0 in (("emb", es), ("cur", cs), ("tired", ts)):
-            if st0.get("clip") == "hatch" and st0["visible"]:
-                st, k = _deep(st0)
-                ctx.save()
-                _clip_hatch(ctx, st0["y"], st0.get("depth", 0.0))
-
-                def fn(c, who=who, st=st, k=k):
-                    ox, oy = st["x"], st["y"]
-                    c.save()
-                    c.translate(ox, oy)
-                    c.scale(k, k)
-                    c.translate(-ox, -oy)
-                    if who == "emb":
-                        _draw_emb(c, info, t, st)
-                    elif who == "cur":
-                        _draw_cur(c, t, st)
-                    else:
-                        _draw_tired(c, T, info, t, st, bb)
-                    c.restore()
-                sets.dimmed(ctx, (HATCH[0] - 10, HATCH[1] - 10, HATCH[2] + 20, 900),
-                            lerp(0.4, 0.92, st0.get("depth", 0.0)), fn)
-                ctx.restore()
-
-    hatch_people()
-    # the JOY pod (the baby sleeps inside until it tumbles out)
+    _hatch_people(ctx, T, info, t, es, cs, ts, bb)
+    # the tiny pod (the baby sleeps inside until it tumbles out)
     if _visible_x(view, POD_X - 200, POD_X + 200):
         inside = None
         if bb["inside"]:
@@ -1155,6 +1500,7 @@ def draw_world(ctx, T, info, t, cam):
     pod_glow = 0.0 if not _visible_x(view, POD_X - 600, POD_X + 600) else 1.0
     with sets.shaded(ctx, _char_shade, t, al, pod_glow):
         if _visible_x(view, 1450, 1950):
+            _boss_feed_light(ctx, t, smoothstep(seg(t, T.hatch - 0.3, T.hatch)))
             _draw_boss(ctx, info, t, bs)
         if es["visible"] and es.get("clip") != "hatch" and not es["front_of_panel"] and \
                 _visible_x(view, es["x"] - 200, es["x"] + 200):
@@ -1196,10 +1542,45 @@ def draw_world(ctx, T, info, t, cam):
                      floor_y=FEET + 30, dir=-1, spread=0.5)
         fx.impact_star(ctx, IMPACT[0], IMPACT[1], 0.55, t, T.hit, dur=0.3, color="#e8fbff",
                        inner="#ffffff", spikes=9)
+    if T.rows[-1] <= t < T.rows[-1] + 1.4 and _visible_x(view, WIN[0] - 50, WIN[0] + WIN[2] + 50):
+        # the last (biggest) slam shakes dust off the window frame: the room reacts
+        fx.plaster_dust(ctx, WIN[0] + WIN[2] / 2, WIN[1] - 6, 0.45, t, T.rows[-1], seed=7, width=340, n=8,
+                        fall=260)
     if _visible_x(view, POD_X - 250, POD_X + 250):
         draw_pod_steam(ctx, T, t)
     if T.hatch <= t < T.hatch + 0.9:
         fx.dust_puff(ctx, HATCH[0] + HATCH[2] / 2, HATCH[1] + HATCH[3] + 10, 0.9, t, T.hatch, seed=5)
+
+
+# ============================================================================
+# the monitor insert (S11a, screen space): her hatch-cam monitor up close
+# ============================================================================
+INS = (96.0, 520.0, 830.0, 581.0)       # feed rect on screen (x, y, w, h); aspect = monitor 10's
+
+
+def draw_insert(ctx, T, info, t):
+    x, y, w, h = INS
+    core.bg(ctx, "#0a1018")
+    # neighbouring screens of the monitor wall, cut by the frame edges
+    for (rx, ry, rw, rh, col) in ((-260, 560, 300, 500, "#123842"), (968, 600, 300, 470, "#1a2f3a"),
+                                  (130, 150, 360, 300, "#0f2f38"), (560, 170, 420, 280, "#123842"),
+                                  (150, 1190, 380, 300, "#152a33"), (590, 1190, 380, 300, "#0f2f38")):
+        props.rect(ctx, rx - 18, ry - 18, rw + 36, rh + 36, "#1a2028", 4, r=10)
+        ctx.rectangle(rx, ry, rw, rh)
+        core.fill(ctx, col)
+    core.radial_glow(ctx, x + w / 2, y + h / 2, 760, "#7dffb0", 0.10)
+    # the bezel
+    props.rect(ctx, x - 30, y - 30, w + 60, h + 60, "#1c232c", 6, r=16)
+    props.rect(ctx, x - 10, y - 10, w + 20, h + 20, "#0b0f14", 3, r=10)
+    draw_hatch_feed(ctx, T, info, x, y, w, h, t)
+    core.circle(ctx, x + w + 2, y + h + 18, 5)
+    core.fill(ctx, "#7cf2b0")
+    # the room's alarm wash reaches the glass too
+    al = alarm_at(T, t)
+    if al > 0:
+        ctx.rectangle(0, 0, core.W, core.H)
+        core.fill(ctx, core.alpha("#9a0c1c", al * (0.10 + 0.05 * _alarm_p(t))))
+    fx.vignette(ctx, 0.45)
 
 
 # ============================================================================
@@ -1218,23 +1599,20 @@ def camera_at(T, t):
         dx, dy = _shake(t, T.hit, 0.32, 12)
     elif t < T.button:                                 # S2 the haul: close on face + hands
         k = smoothstep(seg(t, T.pull, T.give))
-        cx, cy, z = lerp(985, 992, k), lerp(985, 965, k), lerp(1.98, 2.12, k)
+        cx, cy, z = lerp(1046, 1052, k), lerp(975, 955, k), lerp(2.0, 2.12, k)
         if t >= T.give - 0.05:                         # it gives: pull back with it
             kk = ease_out(seg(t, T.give - 0.05, T.clunk + 0.3))
-            cx, cy, z = lerp(992, 948, kk), lerp(965, 1085, kk), lerp(2.12, 1.52, kk)
-        dx, dy = _shake(t, T.clunk, 0.45, 14)
+            cx, cy, z = lerp(1052, 1010, kk), lerp(955, 1085, kk), lerp(2.12, 1.52, kk)
+        dx, dy = _shake(t, T.clunk, 0.6, 14)
     elif t < T.shut:                                   # S3 the Boss presses LOCKDOWN
         k = seg(t, T.button, T.shut)
         cx, cy, z = 1600.0, lerp(1015, 1000, k), lerp(1.82, 1.9, k)
-    elif t < T.pod:                                    # S4 the window: shutters (-> the monitors)
+    elif t < T.pod:                                    # S4 the window: escape, then the shutters
         k = seg(t, T.shut, T.pod)
-        cx, cy, z = 1105.0, lerp(612, 600, k), lerp(2.0, 2.12, k)
-        kp = ease_in_out(seg(t, T.rows[-1] + 0.2, T.rows[-1] + 0.7))
-        if kp > 0:
-            cx, cy, z = lerp(cx, 1600, kp), lerp(cy, 600, kp), lerp(z, 1.55, kp)
+        cx, cy, z = 1105.0, lerp(626, 616, k), lerp(2.06, 2.16, k)
         for r, t1 in enumerate(T.rows):
             last = r == len(T.rows) - 1
-            sx, sy = _shake(t, t1, 0.5 if last else 0.2, 11 if last else 5, seed=11 + r)
+            sx, sy = _shake(t, t1, 0.65 if last else 0.3, 13 if last else 6, seed=11 + r)
             dx += sx
             dy += sy
     elif t < T.pan0:                                   # S5a their faces fall
@@ -1260,14 +1638,16 @@ def camera_at(T, t):
     elif t < T.watch:                                  # S10 the shut hatch
         k = seg(t, T.hatch, T.watch)
         cx, cy, z = 175.0, 1060.0, lerp(1.42, 1.3, smoothstep(k))
-        sx, sy = _shake(t, T.hatch, 0.55, 12)
+        sx, sy = _shake(t, T.hatch, 0.6, 12)
         dx, dy = sx, sy
-    elif t < T.wcut:                                   # S11a what she watches: the empty hatch
-        k = seg(t, T.watch, T.wcut)
-        cx, cy, z = 1700.0, lerp(528, 522, k), lerp(2.3, 2.42, k)
-    else:                                              # S11b the Boss: "Let them run."
-        k = seg(t, T.wcut, T.end)
-        cx, cy, z = lerp(1712, 1706, k), lerp(985, 975, k), lerp(2.25, 2.55, smoothstep(k))
+    elif t < T.wcut:                                   # S11a the monitor insert (screen space)
+        cx, cy, z = 1700.0, 900.0, 2.0
+    elif t < T.wcut2:                                  # S11b the Boss MCU: "You too, Embarrassment."
+        k = seg(t, T.wcut, T.wcut2)
+        cx, cy, z = lerp(1758, 1754, k), lerp(1022, 1016, k), lerp(2.5, 2.58, k)
+    else:                                              # S11c her + the monitor: numb
+        k = smoothstep(seg(t, T.wcut2, T.end))
+        cx, cy, z = lerp(1846, 1836, k), lerp(905, 925, k), lerp(1.98, 2.14, k)
     return cx, cy, z, dx, dy
 
 
@@ -1282,16 +1662,13 @@ def tired_x_for_cam(T, t):
 # ============================================================================
 def render(ctx, t, info):
     T = times(info)
+    if T.watch <= t < T.wcut:
+        draw_insert(ctx, T, info, t)
+        return
     cx, cy, z, dx, dy = camera_at(T, t)
-    big_zoom = T.watch <= t
     core.bg(ctx, "#06090e")
-    if big_zoom:
-        with core.cache_steps(1):
-            with core.camera(ctx, cx, cy, z, 0.0, 540 + dx, 960 + dy):
-                draw_world(ctx, T, info, t, (cx, cy, z))
-    else:
-        with core.camera(ctx, cx, cy, z, 0.0, 540 + dx, 960 + dy):
-            draw_world(ctx, T, info, t, (cx, cy, z))
+    with core.camera(ctx, cx, cy, z, 0.0, 540 + dx, 960 + dy):
+        draw_world(ctx, T, info, t, (cx, cy, z))
 
 
 def SFX(info):
@@ -1312,11 +1689,21 @@ def SFX(info):
     # LOCKDOWN
     ev.append((T.press - 0.02, "recorder_click", 3, 0.2))
     ev.append((T.press + 0.02, "latch_click", 0, 0.2))
-    # the shutters, tier by tier (the slam sits ~0.3 s into the clip)
-    pans = (-0.5, 0.4, -0.3, 0.3, -0.15, 0.0)
-    gains = (-8, -7, -6, -5, -4, -2)
+    ev.append((T.shut - 0.05, "alarm", -12, 0.1))                 # the lockdown klaxon, once
+    # two get out
+    ev.append((T.popA - 0.02, "pod_hiss", -7, -0.3))
+    ev.append((T.popA + 0.2, "critter_squeak", -6, -0.35))
+    ev.append((T.popA + 0.4, "scurry", -9, -0.5))
+    ev.append((T.popB - 0.02, "pod_hiss", -8, 0.35))
+    ev.append((T.popB + 0.22, "critter_squeak", -7, 0.4))
+    ev.append((T.popB + 0.42, "scurry", -10, 0.5))
+    # the shutters, tier by tier: rattle down -> SLAM -> a heavy clang each
+    pans = (-0.35, 0.3, -0.15, 0.0)
+    gains = (-6, -5, -3, -1)
     for r, t1 in enumerate(T.rows):
         ev.append((t1 - 0.3, "shutter_slam", gains[r], pans[r]))
+        ev.append((t1 - 0.01, "lever_clunk", gains[r] - 2, pans[r]))
+    ev.append((T.rows[-1], "hatch_slam", -7, 0.0))                 # the last one booms
     # one pod: faces fall... then the hiss
     ev.append((T.pod + 0.25, "creature_chirp_sad", -6, -0.2))
     ev.append((T.hiss - 0.02, "pod_hiss", -3, 0.3))
@@ -1352,4 +1739,8 @@ def SFX(info):
     ev.append((T.emb_duck0, "cloth_rustle", -4, -0.5))
     # SLAM (sync with the chaos cue's last hit)
     ev.append((T.hatch - 0.03, "hatch_slam", 0, -0.4))
+    # watch: her chair turns a hair; the feed rewinds (tape zip) and pauses (click)
+    ev.append((T.watch + 0.05, "chair_creak", -10, 0.2))
+    ev.append((T.rew0, "smear_zip", -12, 0.1))
+    ev.append((T.rew1, "mouse_click", -4, 0.1))
     return ev

@@ -1,6 +1,9 @@
 """s01 - "The empty pod" (TIREDNESS Episode 2: Lights Out).
 
-Shot list (scene-local; every time is derived from info cues / lines):
+HushCorp gives the creatures bland, flattening names (SPECIMEN 001 / THING 1 ...); the creature
+is anything but a thing: it hears the name and is visibly, intelligently offended.
+
+Shot list (scene-local; every time is derived from info cues / lines / lip data):
   S1  [0, pod)            POD POV thumbnail: Curiosity's face through its empty pod's glass,
                           paw pressed to the glass, breath fog blooms and fades; slow push-in.
   S2  [pod, touch)        catwalk medium-wide: the camera tracks Tiredness walking in along the
@@ -8,22 +11,31 @@ Shot list (scene-local; every time is derived from info cues / lines):
                           he stops; pupils pod -> creature -> pod (head follows); l01 (soft); on
                           "kept you" he crouches down to its level (camera eases down/in).
   S3  [touch, plate)      Curiosity close-up: slow nod with a slow blink, ears lowering a little;
-                          its eyes drop to the dusty nameplate (motivates the insert).
+                          its eyes go to the dusty nameplate (motivates the insert).
   S4  [plate, c5)         insert: the dusty plate; his bandaged hand comes in, the thumb wipes
-                          left -> right revealing SPECIMEN 00 / CURIOSITY; l02 read over it.
-  S5  [c5, grin)          crouched two-shot, plate between them: he finishes the word, eyes lift
-                          to it; PERK (ears shoot up, eyes widen + brighten, glint) + name tag;
-                          l03 deadpan -> faintest smile.
-  S6  [grin, plates)      Curiosity medium: proud grin, chin up, tail tip curling.
-  S7  [plates, frown)     slow pan along the neighbouring pods: KINDNESS .. HOPE (his POV).
-  S8  [frown, c10)        Tiredness CU (standing now) under the wall camera: eyes along the row,
-                          inner brows up a hair, then a lip press. Silence. At "camera" the red
-                          LED blinks on, the lens whirs and swivels to look at them; his pupils
-                          slide up to it, the head follows (gentle tilt up).
+                          left -> right revealing SPECIMEN 001 / THING 1; l02 "...Thing One."
+                          read flatly over it.
+  S5a [c5, c5b)           Curiosity CU, the plate beside it: a beat of hope (ears up), then it
+                          processes the name: a slow contemptuous blink that opens on flat
+                          half-lids, ears sagging, chin up, a tiny huff through the nose.
+                          Name tag THING 1 / "according to HushCorp".
+  S5b [c5b, c6)           Tiredness CU (crouched), the plate in frame: l03 "Wow. Creative."
+                          deadpan, one brow up a hair, a slow judging blink; his eyes slide from
+                          the plate to the creature.
+  S6  [c6, plates)        crouched two-shot: it looks up at him, a shared look, it rolls its
+                          eyes toward the plate (he follows), then back to him: a small smirk,
+                          his faint smirk + tiny nod. They agree. He glances along the row.
+  S7  [plates, frown)     his POV: slow pan from NOTHING TO SEE HERE over THING 2 / THING 3 to
+                          the next NOTHING TO SEE HERE over THING 4 / THING 5, sleepers inside.
+  S8  [frown, c10)        Tiredness CU (standing) under the wall camera: inner brows up, a lip
+                          press, silence; l03b "...They're not things." quiet, to the creature
+                          below (glassy eyes); a press after it. At "camera" the red LED blinks
+                          on, the lens whirs and swivels to them; his pupils slide up, head follows.
   S10 [c10, reach)        control room: start on the big monitor (CCTV of the two looking up),
-                          tilt down to the Boss in her chair, lit by the monitor wall; l04.
+                          tilt down to the Boss in her chair, turned 3/4 to us, face clear; l04
+                          into the lens.
   S11 [reach, c12)        medium: her eyes slide to the SHAFT POWER switch, her hand follows, a
-                          finger rests on the toggle; l05 on her face; slow push-in.
+                          finger rests on the toggle; l05 into the lens; slow push-in.
   S12 [c12, c13)          insert: she flips the switch OFF (click), lamp goes red.
   S13 [c13, end)          the shaft: lights die section by section from the top (chunks), pods to
                           embers; push in through the dark to two pairs of teal eyes, which blink.
@@ -55,15 +67,23 @@ WALK_FIX = 1.57
 STAND_TURN2 = 0.3              # after he stands up again (looking along the row of pods)
 WAVE_STILL = 1.0 / 1.7         # pose_t for "wave": paw fully raised, no swing
 SWITCH = KM["power_switch"]
-CHAIR_X = KM["chair"][0] - 50          # her chair, swivelled to the controls (drawn by this scene)
+CHAIR_X = KM["chair"][0] - 60          # her chair, near the SHAFT POWER pedestal (drawn by this scene)
+CHAIR_TURN = 0.9                       # props.boss_chair: 1 = facing camera, 0.5 = profile
 BOSS_SEAT = (CHAIR_X, KM["boss_seat"][1])
 BOSS_GY = H.ground_from_seat("boss", BOSS_SEAT[1], S)
-BOSS_TURN = -1.2
+BOSS_TURN = -0.35                      # 3/4 toward camera (slightly to the switch): face reads
+SIGNS_X = (2235, 3215)                 # sets.catwalk: the two hanging NOTHING TO SEE HERE signs
+ROLL_DUR = 1.0                         # Curiosity's eye-roll (the rig's 1.25 s roll, a bit brisker)
 
 # crouch: both hands draped over the knees (world targets for reach=)
 CROUCH = "crouch"
 KNEE_L = (TIR_X - 90, 1330)
 KNEE_R = (TIR_X - 30, 1340)
+
+# Curiosity's small knowing smirk (s01 "grin"): the rig has no small closed smirk, so register
+# one scene-local expression (flat half-lids, one cocked brow, a small closed smile).
+CR._SPX.setdefault("s01_smirk", dict(CR._SPX["annoyed"], up=0.40, lo=0.24, pr=0.5, mouth="grin",
+                                     brow=1.0, lcurve=0.12, tilt=0.02))
 
 
 def _sleeper(c, x, y, s, t, seed):
@@ -74,13 +94,36 @@ def _baby(c, x, y, s, t, seed):
     CR.draw_specimen_pod_sleeper(c, x, y, s * 1.6, t, seed=seed, baby=True)
 
 
-SLEEP = dict(sleeper_fn=_sleeper, sleeper_fns={"KINDNESS": _baby}, sleeper_key="s01_sleepers_v2")
+SLEEP = dict(sleeper_fn=_sleeper, sleeper_fns={"THING 7": _baby}, sleeper_key="s01_sleepers_v3")
 
 
 # ----------------------------------------------------------------------------
-# timing (all from cues)
+# timing (all from cues / lines / lip data)
 # ----------------------------------------------------------------------------
 _TC = {}
+
+
+def _voice_span(info, who, lid):
+    """(first, last) moment the mouth is really open on line lid (the TTS has silent tails)."""
+    L = info.line(lid)
+    t0, t1 = L.start, L.end
+    t = t0
+    first = None
+    while t <= t1:
+        if info.mouth(who, t)[0] > 0.08:
+            first = t
+            break
+        t += 0.02
+    t = t1
+    last = None
+    while t >= t0:
+        if info.mouth(who, t)[0] > 0.08:
+            last = t
+            break
+        t -= 0.02
+    if first is None or last is None or last <= first:
+        return t0, t1
+    return first, last
 
 
 def TT(info):
@@ -90,12 +133,15 @@ def TT(info):
     c = info.cue
     T = {n: c(n) for n in ("pod", "touch", "plate", "perk", "grin", "plates", "frown", "camera",
                            "reach", "click", "dark", "end")}
-    for lid, nm in (("s01_l01", "l01"), ("s01_l02", "l02"), ("s01_l03", "l03"),
-                    ("s01_l04", "l04"), ("s01_l05", "l05")):
+    for lid, nm, who in (("s01_l01", "l01", "tired"), ("s01_l02", "l02", "tired"),
+                         ("s01_l03", "l03", "tired"), ("s01_l03b", "l03b", "tired"),
+                         ("s01_l04", "l04", "boss"), ("s01_l05", "l05", "boss")):
         T[nm] = info.line(lid).start
         T[nm + "e"] = info.line(lid).end
+        T[nm + "v0"], T[nm + "v"] = _voice_span(info, who, lid)     # voiced span
     T["kept"] = info.word_time("s01_l01", -2)
-    T["fits"] = info.word_time("s01_l03", -1)
+    T["wow"] = info.word_time("s01_l03", 0)
+    T["creative"] = info.word_time("s01_l03", -1)
     # walk-in: starts a little before the cut, four steps, stops on a contact
     T["w0"] = T["pod"] - 0.5
     T["wstop"] = T["w0"] + 2.0
@@ -106,23 +152,43 @@ def TT(info):
     T["wipe0"] = T["plate"] + 0.62
     T["wipe1"] = T["wipe0"] + 0.95
     T["hand_out"] = T["wipe1"] + 0.15
-    # cuts
-    T["c5"] = max(T["l02"] + 0.9, T["l02e"] - 0.4)
+    # S5a: Curiosity hears "Thing One." -- a beat of hope, then the slow contemptuous blink,
+    # the ears sag, a tiny huff
+    T["c5"] = max(T["l02v"] + 0.35, T["hand_out"] + 0.6)
+    T["bo"] = max(T["perk"] + 0.05, T["c5"] + 0.4)              # slow blink starts
+    T["flip"] = T["bo"] + 0.24                                  # lids shut: hopeful -> annoyed
+    T["huff"] = T["bo"] + 1.0
+    T["tag_in"] = T["bo"] + 0.5
+    T["tag_out"] = T["l03v"]
+    T["c5b"] = T["l03"] - 0.25                                  # -> his CU ("Wow. Creative.")
+    # S6: the shared look, the eye-roll toward the plate, the smirk
+    T["roll"] = T["grin"] - 0.2
+    T["c6"] = min(T["l03v"] + 0.25, T["roll"] - 0.4)
+    T["roll_end"] = T["roll"] + ROLL_DUR
+    T["smirk"] = T["roll_end"] + 0.12
+    T["stand2"] = T["plates"] + 0.4             # he stands up off-screen during the pan
+    # S8 + the camera
     T["look_up"] = T["camera"] + 0.65           # his pupils slide up to the camera
     T["c10"] = T["l04"] - 0.65
     T["c12"] = T["click"] - 0.2
     T["c13"] = T["click"] + 0.55
+    # lights out
     T["casc"] = T["click"] + 0.85               # first light section dies
-    T["casc_end"] = sets.shaft_power_times(T["casc"], 4, 0.55)[-1] + 0.16
-    T["push0"] = T["casc_end"] + 0.15
-    T["push1"] = min(T["push0"] + 1.5, T["end"] - 0.25)
-    T["stand2"] = T["plates"] + 0.4             # he stands up off-screen during the pan
+    cuts = sets.shaft_power_times(T["casc"], 4, 0.55)
+    T["casc_end"] = cuts[-1] + 0.16
+    T["push0"] = cuts[2] + 0.15                 # push in as the main tier dies
+    T["push1"] = max(T["push0"] + 1.2, T["end"] - 0.3)
     _TC[k] = T
     return T
 
 
 def _ramp(t, a, b, e=ease_in_out):
     return e(seg(t, a, b))
+
+
+def _pulse(t, a, b):
+    """0 -> 1 -> 0 over [a, b] (sine)."""
+    return math.sin(math.pi * seg(t, a, b)) if a <= t <= b else 0.0
 
 
 # ----------------------------------------------------------------------------
@@ -163,8 +229,10 @@ def tired_kw(t, T, info):
     # ---- eyes / face -----------------------------------------------------
     POD = (-0.85, 0.15)          # the empty pod glass (left, level) while standing
     CUR_ST = (-0.7, 0.85)        # Curiosity (left-down) while standing
-    CUR_CR = (-0.85, 0.45)       # Curiosity while crouched
-    PLT = (-0.45, 0.95)          # the plate (down-left) while crouched
+    CUR_CR = (-0.8, 0.5)         # Curiosity while crouched
+    PLT = (-0.42, 0.95)          # the plate (down-left) while crouched
+    ROW = (0.75, 0.05)           # along the row of pods (standing)
+    DOWN = (-0.55, 0.75)         # down to the creature (standing CU)
     look = tween(t, [
         (T["pod"], (-0.9, 0.05)),
         (T["wstop"] + 0.3, (-0.9, 0.05)), (T["wstop"] + 0.45, POD),     # at the pod
@@ -173,12 +241,16 @@ def tired_kw(t, T, info):
         (T["kept"] - 0.1, POD), (T["kept"] + 0.12, CUR_ST),               # "kept YOU": to it
         (T["cr0"] + 0.65, CUR_CR),
         (T["plate"] - 0.25, CUR_CR), (T["plate"] - 0.05, PLT),            # notices the plate
-        (T["l02e"] + 0.05, PLT), (T["l02e"] + 0.22, CUR_CR),             # reads, then to it
-        (T["l03"] + 0.4, CUR_CR), (T["l03"] + 0.55, (-0.6, 0.55)),       # "That fits."
-        (T["grin"] + 0.2, (-0.6, 0.55)), (T["grin"] + 0.35, CUR_CR),
-        (T["stand2"], (0.75, 0.05)),                                      # along the row
-        (T["frown"] + 1.15, (0.75, 0.05)), (T["frown"] + 1.3, (0.6, 0.15)),
-        (T["look_up"] + 0.12, (0.6, 0.15)), (T["look_up"] + 0.32, (0.5, -1.0)),   # up at the camera
+        (T["bo"] + 0.3, PLT), (T["bo"] + 0.48, CUR_CR),                   # (off) its face falls
+        (T["c5b"] - 0.3, CUR_CR), (T["c5b"] - 0.12, PLT),                 # back to the plate
+        (T["l03v"] + 0.02, PLT), (T["l03v"] + 0.2, CUR_CR),               # "...Creative." -> to it
+        (T["roll"] + 0.5, CUR_CR), (T["roll"] + 0.66, PLT),               # follows its roll
+        (T["smirk"] - 0.06, PLT), (T["smirk"] + 0.1, CUR_CR),             # back to it: agreed
+        (T["plates"] - 0.24, CUR_CR), (T["plates"] - 0.05, (0.7, -0.05)),  # glance along the row
+        (T["stand2"], ROW),
+        (T["frown"] + 1.15, ROW), (T["frown"] + 1.3, (0.6, 0.15)),
+        (T["l03b"] - 0.45, (0.6, 0.15)), (T["l03b"] - 0.25, DOWN),        # to the creature below
+        (T["look_up"] + 0.12, DOWN), (T["look_up"] + 0.32, (0.5, -1.0)),   # up at the camera
         (T["casc"] - 0.1, (0.5, -1.0)), (T["casc"] + 0.25, (0.15, -0.9)),
         (T["casc"] + 1.3, (-0.3, -0.7)), (T["push0"] + 0.3, (-0.55, 0.4)),  # finds Curiosity
     ], ease_in_out)
@@ -196,33 +268,44 @@ def tired_kw(t, T, info):
     k_soft = _ramp(t, T["l01"] - 0.4, T["l01"]) * (1 - _ramp(t, T["plate"], T["plate"] + 0.4))
     face["brow_ang"] = 0.18 * k_soft
     face["lid"] = -0.02 * k_soft
-    # reading the plate: one brow lifts a hair
-    k_read = _ramp(t, T["plate"] + 0.2, T["plate"] + 0.6) * (1 - _ramp(t, T["perk"], T["perk"] + 0.3))
-    face["brow_l"] = 0.18 * k_read
+    # reading the plate (flatly): the lids sink a hair
+    k_read = _ramp(t, T["plate"] + 0.2, T["plate"] + 0.6) * (1 - _ramp(t, T["c5b"] - 0.3, T["c5b"]))
+    face["lid"] += 0.04 * k_read
     # pupils lead, the head follows ~0.15 s later (pod -> creature -> pod)
     face["head_nod"] = face.get("head_nod", 0.0) + 0.1 * _ramp(t, T["wstop"] + 1.12, T["wstop"] + 1.4) * \
         (1 - _ramp(t, T["l01"] - 0.22, T["l01"] - 0.02))
     face["head_turn"] = -0.08 * _ramp(t, T["wstop"] + 0.5, T["wstop"] + 0.8) * (1 - _ramp(t, T["cr0"], T["cr0"] + 0.4))
-    face["head_nod"] += 0.12 * _ramp(t, T["plate"] - 0.1, T["plate"] + 0.3) * \
-        (1 - _ramp(t, T["l02e"], T["l02e"] + 0.35))
-    # perk: lids lift a hair (small surprise), brows up
-    k_perk = tween(t, [(T["perk"] + 0.05, 0.0), (T["perk"] + 0.25, 1.0), (T["l03"] - 0.1, 1.0),
-                       (T["l03"] + 0.2, 0.0)])
-    face["lid"] += -0.07 * k_perk
-    face["brow"] = 0.12 * k_perk
-    # "Huh. That fits." -> the faintest smile at the end
-    k_sm = tween(t, [(T["fits"] + 0.2, 0.0), (T["l03e"] + 0.15, 1.0), (T["plates"] - 0.2, 1.0),
+    # head down to the plate, up to it on "...Creative.", down to the plate with its roll
+    k_hd = _ramp(t, T["plate"] - 0.1, T["plate"] + 0.3) * (1 - _ramp(t, T["bo"] + 0.45, T["bo"] + 0.8))
+    k_hd = max(k_hd, _ramp(t, T["c5b"] - 0.25, T["c5b"] + 0.05) * (1 - _ramp(t, T["l03v"] + 0.15, T["l03v"] + 0.45)))
+    k_hd = max(k_hd, 0.5 * _ramp(t, T["roll"] + 0.62, T["roll"] + 0.85) * (1 - _ramp(t, T["smirk"] + 0.05, T["smirk"] + 0.3)))
+    face["head_nod"] += 0.12 * k_hd
+    # "Wow. Creative.": deadpan sarcasm, one brow up a hair (held into the shared look)
+    k_brow = _ramp(t, T["wow"] - 0.1, T["wow"] + 0.18) * (1 - _ramp(t, T["smirk"] + 0.3, T["plates"]))
+    face["brow_r"] = 0.32 * k_brow
+    face["brow_l"] = -0.04 * k_brow
+    # the shared joke: the faintest smirk + a tiny nod (they agree)
+    k_sm = tween(t, [(T["smirk"], 0.0), (T["smirk"] + 0.25, 1.0), (T["plates"] - 0.15, 1.0),
                      (T["plates"], 0.0)])
-    face["curve"] = 0.3 * k_sm
-    face["smirk"] = -0.22 * k_sm
-    # the meaning lands: inner brows up a hair, then a lip press
+    face["curve"] = 0.2 * k_sm
+    face["smirk"] = -0.28 * k_sm
+    face["head_nod"] += 0.06 * _pulse(t, T["smirk"] + 0.08, T["smirk"] + 0.5)
+    # the meaning lands: inner brows up a hair, then a lip press (released to speak)
     k_fr = _ramp(t, T["frown"] + 0.25, T["frown"] + 0.6)
-    k_pr = _ramp(t, T["frown"] + 0.85, T["frown"] + 1.15)
     k_fr_out = 1 - _ramp(t, T["c10"], T["c10"] + 0.1)
-    face["brow_ang"] += 0.26 * k_fr * k_fr_out
-    face["brow_in"] = 0.12 * k_fr * k_fr_out
+    k_line = _ramp(t, T["l03b"] - 0.2, T["l03bv"]) * (1 - _ramp(t, T["look_up"], T["look_up"] + 0.5))
+    face["brow_ang"] += (0.26 * k_fr + 0.1 * k_line) * k_fr_out
+    face["brow_in"] = (0.12 * k_fr + 0.06 * k_line) * k_fr_out
+    k_pr = _ramp(t, T["frown"] + 0.85, T["frown"] + 1.15) * (1 - _ramp(t, T["l03b"] - 0.3, T["l03b"] - 0.05))
+    k_pr = max(k_pr, _ramp(t, T["l03bv"] + 0.05, T["l03bv"] + 0.35))
     face["press"] = 0.45 * k_pr * (1 - _ramp(t, T["look_up"] + 0.3, T["look_up"] + 0.6))
     face["head_turn"] += 0.18 * _ramp(t, T["stand2"], T["stand2"] + 0.3)
+    # "...They're not things.": the head drops a little toward the creature, lids heavy
+    k_dn = _ramp(t, T["l03b"] - 0.12, T["l03b"] + 0.2) * (1 - _ramp(t, T["look_up"] + 0.2, T["look_up"] + 0.5))
+    face["head_turn"] += -0.12 * k_dn
+    face["head_nod"] += 0.07 * k_dn
+    face["lid"] += 0.04 * k_dn
+    kw["tears"] = 0.22 * _ramp(t, T["l03b"], T["l03bv"] + 0.2) * (1 - _ramp(t, T["look_up"], T["look_up"] + 0.6))
     # camera: pupils lead, the head follows 0.15 s later; lids lift a little
     k_up = _ramp(t, T["look_up"] + 0.27, T["look_up"] + 0.55)
     face["head_nod"] += -0.12 * k_up
@@ -230,20 +313,25 @@ def tired_kw(t, T, info):
     face["lid"] += -0.06 * _ramp(t, T["look_up"] + 0.15, T["look_up"] + 0.35)
     # the dark: brows up, lids lift a hair as the lights die
     k_dk = _ramp(t, T["casc"], T["casc"] + 0.5)
-    face["brow"] += 0.15 * k_dk
+    face["brow"] = 0.15 * k_dk
     face["lid"] += -0.04 * k_dk
     kw.update(expr=expr, look=look, face=face, mouth=info.mouth("tired", t))
-    # "Huh." ... a slow judging blink ... "That fits."; never blink through the perk
+    # blinks: "Wow." ... a slow judging blink ... "Creative."
     kw["blink"] = None
-    b0 = info.word_time("s01_l03", 0) + 0.18
-    if b0 <= t <= b0 + 0.75:
+    b0 = T["wow"] + 0.22
+    if T["c5b"] - 0.1 <= t < b0:
+        kw["blink"] = 0.0                   # no stray blink at the cut into his CU
+    if b0 <= t <= b0 + 0.7:
         kw["blink"] = tween(t, [(b0, 0.0), (b0 + 0.18, 1.0), (b0 + 0.3, 1.0), (b0 + 0.62, 0.0)])
-    if T["l02e"] - 0.1 <= t <= T["perk"] + 0.8:
+    # the shared look: no stray blinks
+    if T["c6"] - 0.1 <= t <= T["plates"]:
         kw["blink"] = 0.0
-    # the meaning lands: no stray blinks, one slow blink as the lips press
+    # the meaning lands: slow blinks only (after the press, after the line)
     if T["frown"] <= t <= T["camera"] + 1.6:
-        b1 = T["frown"] + 1.0
-        kw["blink"] = tween(t, [(b1, 0.0), (b1 + 0.2, 1.0), (b1 + 0.32, 1.0), (b1 + 0.6, 0.0)])
+        kw["blink"] = 0.0
+        for b1 in (T["frown"] + 1.0, T["l03bv"] + 0.3):
+            if b1 <= t <= b1 + 0.62:
+                kw["blink"] = tween(t, [(b1, 0.0), (b1 + 0.2, 1.0), (b1 + 0.32, 1.0), (b1 + 0.6, 0.0)])
     return kw
 
 
@@ -257,77 +345,144 @@ def draw_tired(ctx, t, T, info, **over):
 # ----------------------------------------------------------------------------
 # Curiosity on the catwalk
 # ----------------------------------------------------------------------------
+def _roll_blink(pt, hold=0.5):
+    """Extra lid for the rig's eye-roll so it starts from flat half-lids (no lid pop)."""
+    up_e = CR._eyeroll(pt)[2]
+    d = lerp(hold, up_e, ease_in_out(seg(pt, 0.0, 0.25)))
+    return clamp((d - up_e) / (1.0 - up_e)) if d > up_e else 0.0
+
+
 def cur_kw(t, T, info):
     kw = dict(pose="sit", glow=1.0, tail_curl=0.0)
     GLASS = (0.45, -0.8)
     HIM_ST = (0.85, -0.5)
-    HIM_CR = (0.9, -0.15)
-    PLT = (0.55, 0.7)
+    HIM_CR = (0.8, -0.5)
+    PLT = (0.9, 0.12)          # the plate: right of it, at eye level
     look = tween(t, [
         (T["pod"], GLASS), (T["pod"] + 0.35, GLASS), (T["pod"] + 0.55, HIM_ST),   # footsteps
         (T["l01"] + 0.6, HIM_ST), (T["l01"] + 0.8, GLASS),                          # "...where"
         (T["kept"], GLASS), (T["kept"] + 0.2, HIM_ST), (T["cr0"] + 0.65, HIM_CR),   # follows him down
         (T["touch"] + 1.3, HIM_CR), (T["touch"] + 1.5, PLT),                        # to the plate
-        (T["plate"] + 0.1, PLT), (T["c5"] - 0.4, PLT), (T["c5"] - 0.15, HIM_CR),     # back to him
-        (T["perk"], HIM_CR), (T["perk"] + 0.12, (0.95, -0.3)),
-        (T["grin"] - 0.1, (0.95, -0.3)), (T["grin"] + 0.2, (0.6, -0.2)),
-        (T["casc"] - 0.2, (0.6, -0.2)), (T["casc"] + 0.2, (0.2, -0.9)),            # the lights
+        (T["c6"] + 0.1, PLT), (T["c6"] + 0.26, HIM_CR),                             # S6: up at him
+        (T["roll_end"], PLT), (T["roll_end"] + 0.12, HIM_CR),                       # roll -> plate -> him
+        (T["casc"] - 0.2, HIM_CR), (T["casc"] + 0.2, (0.2, -0.9)),                  # the lights
         (T["casc"] + 1.2, (0.55, -0.85)), (T["push0"] + 0.3, (0.85, -0.55)),        # to him
     ], ease_in_out)
-    # ears: wistful 0.4; twitch at his steps; lowering on the nod; PERK; proud
-    perk_k = ease_out_back(seg(t, T["perk"], T["perk"] + 0.2), 2.2)
+    if T["c6"] + 0.26 <= t < T["roll"]:
+        look = HIM_CR
+    # ears: wistful 0.4; twitch at his steps; lowering on the nod; hope rises while the plate is
+    # wiped (off-screen); the name lands: they sag degree by degree; a flick on the huff
     ears = tween(t, [(T["pod"], 0.40), (T["pod"] + 0.15, 0.40), (T["pod"] + 0.28, 0.62),
                      (T["pod"] + 0.6, 0.44), (T["touch"] + 0.2, 0.40), (T["touch"] + 1.3, 0.27),
-                     (T["perk"], 0.27)])
-    if t >= T["perk"]:
-        ears = lerp(0.27, 1.0, perk_k)
-        ears = lerp(ears, 0.82, _ramp(t, T["l03"] + 0.3, T["grin"]))
+                     (T["plate"] + 0.8, 0.27), (T["c5"] - 0.2, 0.62), (T["bo"] + 0.12, 0.65),
+                     (T["bo"] + 0.8, 0.31), (T["c5b"], 0.27), (T["roll"], 0.25),
+                     (T["roll_end"], 0.30), (T["smirk"] + 0.05, 0.31), (T["smirk"] + 0.4, 0.44),
+                     (T["plates"], 0.46)])
+    ears += 0.06 * _pulse(t, T["huff"] - 0.05, T["huff"] + 0.3)
     if t >= T["casc"]:
-        ears = lerp(0.82, 0.9, _ramp(t, T["casc"], T["casc"] + 0.3))
+        ears = lerp(0.46, 0.9, _ramp(t, T["casc"], T["casc"] + 0.3))
     tilt = 0.0
     # the slow nod (touch)
     tn = T["touch"]
     tilt += 0.26 * tween(t, [(tn + 0.25, 0.0), (tn + 0.8, 1.0), (tn + 1.05, 1.0), (tn + 1.55, 0.0)])
-    # perk: head back a hair with a little overshoot
-    tilt += -0.10 * math.sin(math.pi * seg(t, T["perk"], T["perk"] + 0.6)) * (t < T["perk"] + 0.6)
-    # expressions (switch on cuts or as takes)
+    # the name lands: the head sinks a hair as the face falls, then the huff lifts the chin
+    # (nose in the air) and it keeps a little offended dignity
+    tilt += 0.04 * _ramp(t, T["bo"] + 0.15, T["bo"] + 0.6) * (1 - _ramp(t, T["huff"] - 0.2, T["huff"]))
+    tilt += -0.07 * _pulse(t, T["huff"] - 0.15, T["huff"] + 0.35)
+    tilt += -0.03 * _ramp(t, T["huff"] + 0.1, T["huff"] + 0.4) * (1 - _ramp(t, T["c6"] + 0.2, T["c6"] + 0.5))
+    # S6: chin up to him (head follows the pupils), then a knowing chin-dip with the smirk
+    tilt += -0.04 * _ramp(t, T["c6"] + 0.22, T["c6"] + 0.42) * (1 - _ramp(t, T["roll"], T["roll"] + 0.2))
+    tilt += 0.035 * _ramp(t, T["smirk"], T["smirk"] + 0.3) * (1 - _ramp(t, T["plates"] - 0.1, T["plates"]))
+    # expressions (switch on cuts or behind a closed blink)
+    blink = None
+    pose_t = None
     if t < T["touch"]:
         expr = "hopeful"
-    elif t < T["perk"]:
+    elif t < T["c5"]:
         expr = "teary"
         kw["tears"] = 0.12
-    elif t < T["grin"]:
-        expr = "surprised_soft"
+    elif t < T["flip"]:
+        expr = "hopeful"
+    elif t < T["roll"]:
+        expr = "annoyed"
+    elif t < T["roll_end"]:
+        expr = "eyeroll"
+        pose_t = (t - T["roll"]) * (CR.EYEROLL_DUR / ROLL_DUR)
+        blink = _roll_blink(pose_t)
+        look = PLT                       # the roll settles on the plate
+    elif t < T["smirk"]:
+        expr = "annoyed"
     elif t < T["plates"]:
-        expr = "proud"
+        expr = "s01_smirk"
+        kw["tail_curl"] = 0.35 * _ramp(t, T["smirk"] + 0.1, T["smirk"] + 0.6)
     elif t < T["casc"]:
         expr = "calm"
     else:
         expr = "wide"
-    if expr == "proud":
-        kw["tail_curl"] = 0.75 * _ramp(t, T["grin"] + 0.1, T["grin"] + 0.85)
-        tilt += 0.035 * math.sin((t - T["grin"]) * 2 * math.pi * 1.6) * (1 - _ramp(t, T["grin"] + 0.3, T["plates"]))
-    if t >= T["plates"]:
-        kw["tail_curl"] = lerp(0.75, 0.4, _ramp(t, T["plates"], T["plates"] + 1.0)) * \
-            (1 - _ramp(t, T["casc"], T["casc"] + 0.6))
-    # brighten on the perk
-    kw["glow"] = 1.0 + 0.7 * tween(t, [(T["perk"], 0.0), (T["perk"] + 0.15, 1.0), (T["perk"] + 0.9, 0.55),
-                                       (T["grin"], 0.4), (T["plates"], 0.0)])
-    blink = None
+    # the expression's own gaze offset is added by the rig: aim the true gaze
+    if expr != "eyeroll":
+        off = CR._SPX.get(expr, CR._SPX["calm"])["look"]
+        look = (look[0] - off[0], look[1] - off[1])
+    # blinks: the nod's slow blink; the slow contemptuous blink that opens on half-lids; a
+    # deeper lid drop after the huff, which lifts again to meet his eyes
     b0 = tn + 0.6
     if b0 <= t <= b0 + 0.9:
         blink = tween(t, [(b0, 0.0), (b0 + 0.3, 1.0), (b0 + 0.45, 1.0), (b0 + 0.85, 0.0)])
-    if T["perk"] - 0.25 <= t <= T["perk"] + 0.9:
-        blink = 0.0          # never blink through the perk
+    if T["c5"] - 0.05 <= t < T["roll"]:
+        bo = T["bo"]
+        blink = tween(t, [(bo, 0.0), (bo + 0.18, 1.0), (bo + 0.3, 1.0), (bo + 0.66, 0.0),
+                          (T["huff"] + 0.35, 0.0), (T["huff"] + 0.8, 0.14), (T["c6"] + 0.1, 0.14),
+                          (T["c6"] + 0.3, 0.0)])
+    if T["roll_end"] <= t < T["plates"]:
+        blink = 0.0
     face = 0.62
-    kw.update(expr=expr, look=look, ears=ears, tilt=tilt, blink=blink, face=face)
+    kw.update(expr=expr, look=look, ears=ears, tilt=tilt, blink=blink, face=face, pose_t=pose_t)
     return kw
+
+
+def _huff_squash(t, T):
+    """(sx, sy) about the feet: a little intake of breath, then the deflating huff."""
+    k_in = _pulse(t, T["huff"] - 0.3, T["huff"] + 0.02)
+    k_out = _pulse(t, T["huff"], T["huff"] + 0.38)
+    return 1.0 - 0.012 * k_in + 0.016 * k_out, 1.0 + 0.025 * k_in - 0.03 * k_out
 
 
 def draw_cur(ctx, t, T, info, **over):
     kw = cur_kw(t, T, info)
     kw.update(over)
+    sx, sy = _huff_squash(t, T)
+    if sx != 1.0 or sy != 1.0:
+        ctx.save()
+        ctx.translate(CUR_X, FEET)
+        ctx.scale(sx, sy)
+        ctx.translate(-CUR_X, -FEET)
+        a = CR.draw_specimen(ctx, CUR_X, FEET, S, t, **kw)
+        ctx.restore()
+        return a
     return CR.draw_specimen(ctx, CUR_X, FEET, S, t, **kw)
+
+
+def _huff_puff(ctx, t, T, nose):
+    """The tiny huff: two little breath puffs out of the nose (forward and a bit down)."""
+    age = t - T["huff"]
+    if not (0.0 <= age <= 0.6) or nose is None:
+        return
+    nx, ny = nose
+    for i, (ang, dl, sz) in enumerate(((-0.12, 0.0, 1.0), (0.42, 0.07, 0.8))):
+        a_ = age - dl
+        if a_ <= 0.0:
+            continue
+        k = clamp(a_ / 0.5)
+        a = (1.0 - k) ** 1.4 * smoothstep(seg(a_, 0.0, 0.05))
+        d = 8 + 46 * ease_out(k)
+        cx_, cy_ = nx + 6 + d * math.cos(ang), ny + 4 + d * math.sin(ang)
+        r = (4.5 + 8 * ease_out(k)) * sz
+        for (ox, oy, rr) in ((0, 0, 1.0), (-0.7, 0.5, 0.7), (0.6, 0.55, 0.65)):
+            core.circle(ctx, cx_ + ox * r, cy_ + oy * r, rr * r)
+        core.fill(ctx, (0.86, 1.0, 1.0, 0.62 * a))
+        ctx.new_sub_path()
+        ctx.arc(cx_, cy_, r * 1.05, -2.4, -0.6)
+        core.stroke(ctx, (1.0, 1.0, 1.0, 0.75 * a), 2.2, cap="round")
 
 
 # ----------------------------------------------------------------------------
@@ -384,6 +539,8 @@ def catwalk_shot(ctx, t, T, info, cam, chars=True, rail=True, light=None, draw_t
                     an["cur"] = draw_cur(ctx, t, T, info, **(over_c or {}))
                 if draw_t:
                     an["tir"] = draw_tired(ctx, t, T, info, **(over_t or {}))
+            if draw_c:
+                _huff_puff(ctx, t, T, an["cur"].get("nose"))
         parts = ("rail", "stair") if rail else ("stair",)
         sets.catwalk(ctx, t, layer="fg", parts=parts, **li)
     return an
@@ -409,12 +566,15 @@ def _paw_print(ctx, x, y, s, k=1.0):
 
 def shot_pov(ctx, t, T, info):
     k = ease_in_out(seg(t, 0.0, T["pod"]))
+    q = T["pod"] / 2.4                    # beats authored for a 2.4 s hold; keyed to the cue
     cam = (lerp(540, 552, k), lerp(960, 918, k), lerp(1.0, 1.08, k))
-    fog = tween(t, [(0.45, 0.0), (0.95, 0.72), (1.25, 0.66), (2.35, 0.0)])
-    ears = tween(t, [(0.0, 0.45), (2.4, 0.38)])
-    look = tween(t, [(0.0, (0.0, -0.05)), (1.5, (0.0, -0.05)), (1.75, (-0.18, -0.12)), (2.4, (-0.18, -0.12))])
-    blink = 0.0 if t < 0.6 else tween(t, [(1.2, 0.0), (1.42, 1.0), (1.55, 1.0), (1.85, 0.0)])
-    tilt = 0.05 * math.sin(math.pi * seg(t, 0.4, 2.4))
+    fog = tween(t, [(0.45 * q, 0.0), (0.95 * q, 0.72), (1.25 * q, 0.66), (2.35 * q, 0.0)])
+    ears = tween(t, [(0.0, 0.45), (2.4 * q, 0.38)])
+    look = tween(t, [(0.0, (0.0, -0.05)), (1.5 * q, (0.0, -0.05)), (1.75 * q, (-0.18, -0.12)),
+                     (2.4 * q, (-0.18, -0.12))])
+    blink = 0.0 if t < 0.6 * q else tween(t, [(1.2 * q, 0.0), (1.2 * q + 0.22, 1.0), (1.2 * q + 0.35, 1.0),
+                                              (1.2 * q + 0.65, 0.0)])
+    tilt = 0.05 * math.sin(math.pi * seg(t, 0.4 * q, 2.4 * q))
     with core.camera(ctx, *cam):
         sets.pod_pov(ctx, t)
         with sets.shaded(ctx, sets.pod_pov, t, layer="shade"):
@@ -535,7 +695,7 @@ def shot_plate(ctx, t, T, info):
 
 
 # ----------------------------------------------------------------------------
-# S7: pan along the pods
+# S7: pan along the pods (THING 2 .. THING 5 under the NOTHING TO SEE HERE signs)
 # ----------------------------------------------------------------------------
 def _trapezoid(u, ramp=0.22):
     """0..1 -> 0..1 with eased ends and a constant-speed middle (calm, readable pans)."""
@@ -550,12 +710,15 @@ def _trapezoid(u, ramp=0.22):
     return 0.5 * vmax * r + vmax * (u - r)
 
 
+PAN_Z = 1.25                   # two plates (490 apart) + the sign between them fill x 60..930
+PAN_DX = 36                    # centre the pair in the safe zone (x 60..930), not the frame
+PAN_CY = 1110                  # signs at y ~375, plates at ~1235 (above the caption band)
+
+
 def shot_plates(ctx, t, T, info):
-    u = seg(t, T["plates"] + 0.3, T["frown"] - 0.25)
-    xl = lerp(1500, 3460, _trapezoid(u))
-    # his gaze settles on each plate in turn (the pan slows over every plate, glides between)
-    x = xl - 50 * math.sin(2 * math.pi * (xl - 1500) / 490)
-    cam = (x, 1150, 1.35)
+    u = seg(t, T["plates"] + 0.25, T["frown"] - 0.5)
+    x = lerp(SIGNS_X[0] + PAN_DX, SIGNS_X[1] + PAN_DX, _trapezoid(u, 0.34))
+    cam = (x, PAN_CY, PAN_Z)
     st = cw_state(t, T)
     with core.camera(ctx, *cam):
         sets.catwalk(ctx, t, **st)
@@ -571,7 +734,7 @@ def _feed(ctx, x, y, w, h, t, T=None, info=None):
     with core.camera(ctx, 1000, 1080, zz, sx=x + w / 2, sy=y + h / 2):
         sets.catwalk(ctx, 1.0, plate_dust=0.0, plate_wipe=1.0, cam_led=1.0, cam_face=1.0, **SLEEP)
         CR.draw_specimen(ctx, CUR_X, FEET, S, t, pose="sit", expr="calm", look=(0.5, -0.85), ears=0.8,
-                         face=0.62, tail_curl=0.4)
+                         face=0.62, tail_curl=0.2)
         H.draw_person(ctx, "tired", TIR_X, FEET, S, t, pose="stand", turn=STAND_TURN2, outfit="sewer",
                       bandage=True, power=0.6, look=(0.5, -1.0), face={"head_nod": -0.12, "head_turn": 0.18},
                       drift=False)
@@ -579,8 +742,8 @@ def _feed(ctx, x, y, w, h, t, T=None, info=None):
 
 def _boss_chair(ctx, part):
     cx, cy = CHAIR_X, KM["chair"][1]
-    sets.sprite(ctx, ("s01_chair", part), cx - 330, cy - 1080 * S, 660, 1100 * S,
-                lambda c: props.boss_chair(c, cx, cy, S, 0.5, part=part, dir=-1))
+    sets.sprite(ctx, ("s01_chair2", part), cx - 330, cy - 1080 * S, 660, 1100 * S,
+                lambda c: props.boss_chair(c, cx, cy, S, CHAIR_TURN, part=part, dir=-1))
 
 
 def _switch_tip(on):
@@ -594,16 +757,23 @@ def _switch_on(t, T):
 
 def boss_kw(t, T, info):
     face = {}
+    LENS = (0.08, -0.06)                  # into our lens (= the shaft camera: she is watching)
+    SW = (-0.8, 0.72)                     # the SHAFT POWER switch (down-left)
     # "Right on time.": calm, lids lowering a hair, the faintest knowing smirk at the end
     k1 = _ramp(t, T["l04e"] - 0.3, T["l04e"] + 0.3)
     face["lid"] = 0.06 * k1
     face["smirk"] = -0.25 * k1 * (1 - _ramp(t, T["reach"] + 0.2, T["reach"] + 0.6))
-    # glances: up-right at the monitor while listening, then to the switch
-    look = tween(t, [(T["c10"], (0.55, -0.75)), (T["l04"] + 0.25, (0.55, -0.75)), (T["l04"] + 0.5, (-0.25, 0.05)),
-                     (T["reach"] - 0.05, (-0.25, 0.05)), (T["reach"] + 0.12, (-0.75, 0.75)),
-                     (T["l05"] - 0.15, (-0.75, 0.75)), (T["l05"] + 0.05, (-0.35, 0.25)),
-                     (T["l05e"] + 0.05, (-0.35, 0.25)), (T["l05e"] + 0.25, (-0.75, 0.8))], ease_in_out)
-    face["head_nod"] = 0.06 * _ramp(t, T["reach"] + 0.15, T["reach"] + 0.45)
+    # glances: on the monitors below the lens while the camera tilts down, up into the lens for
+    # the line, then to the switch; back to the lens for "Lights out.", then the switch
+    look = tween(t, [(T["c10"], (0.35, 0.25)), (T["l04"] - 0.2, (0.35, 0.25)), (T["l04"] + 0.0, LENS),
+                     (T["reach"] - 0.05, LENS), (T["reach"] + 0.12, SW),
+                     (T["l05"] - 0.25, SW), (T["l05"] - 0.08, LENS),
+                     (T["l05e"] + 0.05, LENS), (T["l05e"] + 0.22, SW)], ease_in_out)
+    face["head_nod"] = 0.06 * _ramp(t, T["reach"] + 0.15, T["reach"] + 0.45) * \
+        (1 - 0.6 * _ramp(t, T["l05"] - 0.1, T["l05"] + 0.15)) + \
+        0.04 * _ramp(t, T["l05e"] + 0.2, T["l05e"] + 0.5)
+    face["head_turn"] = -0.12 * _ramp(t, T["reach"] + 0.15, T["reach"] + 0.45) * \
+        (1 - _ramp(t, T["l05"] - 0.1, T["l05"] + 0.15)) - 0.1 * _ramp(t, T["l05e"] + 0.2, T["l05e"] + 0.5)
     # "Lights out.": a slow lid drop on the line, a slow blink after it
     face["lid"] += 0.05 * _ramp(t, T["l05"], T["l05e"])
     # she barely blinks: one slow blink after each line
@@ -619,7 +789,7 @@ def boss_kw(t, T, info):
     if kr > 0.0:
         gx, gy = tip[0] + 2, tip[1] - 7          # "point": the grip point is the fingertip
         reach = {"l": (gx, gy, kr, a_pt)}
-    lean = 0.14 * kr
+    lean = 0.1 * kr
     pose = {"base": "sit_chair", "al_h": "point", "lean": lean} if kr > 0.5 else \
         {"base": "sit_chair", "lean": lean}
     return dict(pose=pose, turn=BOSS_TURN, expr="cold", look=look, face=face, blink=blink, reach=reach,
@@ -642,14 +812,14 @@ def control_shot(ctx, t, T, info, cam, feed=True):
 
 def shot_control(ctx, t, T, info):
     k = ease_in_out(seg(t, T["c10"] + 0.3, T["c10"] + 1.05))
-    cam = (1690 - 10 * k, lerp(540, 900, k), 1.9)
-    cam = (cam[0], cam[1] + 15 * seg(t, T["c10"] + 1.05, T["reach"]), cam[2])
+    cam = (lerp(1700, 1660, k), lerp(540, 935, k), 1.9)
+    cam = (cam[0], cam[1] + 12 * seg(t, T["c10"] + 1.05, T["reach"]), cam[2])
     control_shot(ctx, t, T, info, cam)
 
 
 def shot_reach(ctx, t, T, info):
     k = ease_in_out(seg(t, T["l05"] - 0.3, T["c12"]))
-    cam = (lerp(1545, 1528, k), lerp(1112, 1135, k), lerp(1.68, 1.9, k))
+    cam = (lerp(1540, 1545, k), lerp(1105, 1080, k), lerp(1.68, 1.95, k))
     control_shot(ctx, t, T, info, cam)
 
 
@@ -662,7 +832,7 @@ def shot_switch(ctx, t, T, info):
 # S13: lights out
 # ----------------------------------------------------------------------------
 DARK_CAM0 = (1000, 700, 0.6)
-DARK_CAM1 = (1030, 1105, 1.35)
+DARK_CAM1 = (1010, 1105, 1.35)        # = s02's first framing (S01_DARK_CAM there)
 
 
 def shot_dark(ctx, t, T, info):
@@ -713,6 +883,16 @@ def shot_dark(ctx, t, T, info):
 # ----------------------------------------------------------------------------
 # render
 # ----------------------------------------------------------------------------
+CAM_S5A = ((845, 1290, 2.92), (848, 1292, 3.06))      # Curiosity CU (the plate's edge at right)
+CAM_S5B = ((1112, 1200, 2.2), (1108, 1196, 2.28))     # his CU (crouched), the plate lower left
+CAM_S6 = ((950, 1218, 1.62), (954, 1220, 1.7))          # the crouched two-shot
+
+
+def _cam_lerp(pair, k):
+    a, b = pair
+    return (lerp(a[0], b[0], k), lerp(a[1], b[1], k), lerp(a[2], b[2], k))
+
+
 def render(ctx, t, info):
     T = TT(info)
     if t < T["pod"]:
@@ -735,20 +915,18 @@ def render(ctx, t, info):
         catwalk_shot(ctx, t, T, info, cam, rail=False)
     elif t < T["c5"]:
         shot_plate(ctx, t, T, info)
-    elif t < T["grin"]:
-        # S5: crouched two-shot; a slow push toward the creature on the perk
-        k = ease_in_out(seg(t, T["perk"] - 0.1, T["l03"]))
-        k2 = ease_in_out(seg(t, T["l03"] - 0.2, T["grin"]))
-        cam = (lerp(950, 938, k) + 20 * k2, lerp(1218, 1225, k), lerp(1.95, 2.03, k) + 0.04 * k2)
-        an = catwalk_shot(ctx, t, T, info, cam, rail=False)
-        g0 = T["perk"] + 0.08
-        if g0 <= t <= g0 + 0.45 and "cur" in an:
-            ex, ey = _to_screen(cam, an["cur"]["eye_r"])
-            fx.eye_glint(ctx, ex + 14, ey - 20, 1.5, t, g0, dur=0.45)
+    elif t < T["c5b"]:
+        # S5a: Curiosity CU: it hears the name (slow push-in through the reaction)
+        k = ease_in_out(seg(t, T["c5"], T["c5b"]))
+        catwalk_shot(ctx, t, T, info, _cam_lerp(CAM_S5A, k), rail=False)
+    elif t < T["c6"]:
+        # S5b: his CU: "Wow. Creative."
+        k = ease_in_out(seg(t, T["c5b"], T["c6"]))
+        catwalk_shot(ctx, t, T, info, _cam_lerp(CAM_S5B, k), rail=False)
     elif t < T["plates"]:
-        k = seg(t, T["grin"], T["plates"])
-        cam = (792, 1312, 2.35 + 0.08 * k)
-        catwalk_shot(ctx, t, T, info, cam, rail=False)
+        # S6: the shared look
+        k = ease_in_out(seg(t, T["c6"], T["plates"]))
+        catwalk_shot(ctx, t, T, info, _cam_lerp(CAM_S6, k), rail=False)
     elif t < T["frown"]:
         shot_plates(ctx, t, T, info)
     elif t < T["c10"]:
@@ -768,8 +946,8 @@ def render(ctx, t, info):
     else:
         shot_dark(ctx, t, T, info)
     # overlays (screen space)
-    if T["perk"] <= t < T["l03"] + 0.6:
-        fx.name_tag(ctx, "CURIOSITY", "specimen 00", t, T["perk"] + 0.25, T["l03"] - 0.05,
+    if T["tag_in"] <= t < T["tag_out"] + 0.4:
+        fx.name_tag(ctx, "THING 1", "according to HushCorp", t, T["tag_in"], T["tag_out"],
                     x=90, y=170, color="curiosity")
 
 
@@ -797,11 +975,10 @@ def SFX(info):
     # the wipe
     ev.append((T["hand_in"] + 0.05, "cloth_rustle", -8, 0.3))
     ev.append((T["wipe0"], "cloth_rustle", -9, 0.1))
-    # the perk
-    ev.append((T["perk"], "ears_perk", 2, -0.2))
-    ev.append((T["perk"] + 0.3, "creature_chitter", -4, -0.2))
-    # proud grin: purr
-    ev.append((T["grin"] + 0.1, "creature_purr", 1, -0.2))
+    # the name lands: a tiny unimpressed huff through the nose
+    ev.append((T["huff"] - 0.04, "sigh", -9, -0.25))
+    # the shared joke: a short pleased purr with the smirk
+    ev.append((T["smirk"] + 0.05, "creature_purr", -3, -0.2))
     # he stands up (off-screen, under the pan)
     ev.append((T["stand2"], "cloth_rustle", -10, 0.2))
     # the security camera

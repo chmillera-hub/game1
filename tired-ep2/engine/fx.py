@@ -3883,7 +3883,172 @@ def _phone_ui_static(c, RW, RH, contact, clock):
     _fill(c, INK)
 
 
+# --- vector emoji (the film has no emoji font) ---------------------------------
+# Strings made only of these characters are drawn as vector emoji (in bubbles,
+# the input field and phone_screen's `emoji_keys` strip); anything else is text.
+EMOJI = {"\U0001F629": "weary", "\U0001F62B": "weary", "\U0001F634": "sleeping",
+         "\U0001F602": "joy", "❤": "heart"}
+EMOJI_KINDS = ("weary", "sleeping", "joy", "heart")
+
+
+def emoji_kinds(s):
+    """The emoji kinds of a string made only of known emoji (spaces and the
+    U+FE0F variation selector ignored), else None."""
+    out = []
+    for ch in s or "":
+        if ch in " ️":
+            continue
+        k = EMOJI.get(ch)
+        if k is None:
+            return None
+        out.append(k)
+    return out or None
+
+
+def _emoji_face(ctx):
+    g = cairo.RadialGradient(-0.32, -0.42, 0.08, 0.0, 0.05, 1.05)
+    for o, col in ((0.0, "#ffe97a"), (0.62, "#ffcc33"), (1.0, "#f5a218")):
+        r_, g_, b_, _ = hexc(col)
+        g.add_color_stop_rgb(o, r_, g_, b_)
+    circle(ctx, 0, 0, 1.0)
+    ctx.set_source(g)
+    ctx.fill_preserve()
+    _stroke(ctx, "#c47a0c", 0.07)
+    ellipse(ctx, -0.36, -0.56, 0.3, 0.15, -0.55)
+    _fill(ctx, "#ffffff", 0.4)
+
+
+def _emoji_mouth(ctx, pts, teeth_y=None, tongue=None):
+    """Open mouth: closed curve pts (move + curve_to triples), dark fill,
+    clipped teeth band / tongue, thin rim."""
+    def path():
+        ctx.move_to(*pts[0])
+        for i in range(1, len(pts), 3):
+            ctx.curve_to(*pts[i], *pts[i + 1], *pts[i + 2])
+        ctx.close_path()
+    path()
+    _fill(ctx, "#5b230b")
+    ctx.save()
+    path()
+    ctx.clip()
+    if tongue is not None:
+        ellipse(ctx, tongue[0], tongue[1], tongue[2], tongue[3])
+        _fill(ctx, "#ff6f73")
+    if teeth_y is not None:
+        ctx.rectangle(-1, -1, 2, teeth_y + 1)
+        _fill(ctx, "#ffffff")
+    ctx.restore()
+    path()
+    _stroke(ctx, "#5b230b", 0.06)
+
+
+def draw_emoji(ctx, x, y, size, kind="weary", a=1.0):
+    """A vector emoji centred at (x, y); `size` = the face's diameter.
+    kind: an EMOJI_KINDS name or one of the EMOJI characters:
+      weary    (U+1F629 / U+1F62B) yellow face, worried brows, scrunched shut
+               '> <' eyes, a groaning open mouth (top teeth) and a sweat drop
+      sleeping (U+1F634) closed eyes, small 'o' mouth, a little blue z
+      joy      (U+1F602) happy '^ ^' eyes, big open grin, two tears
+      heart    (U+2764) red heart
+    Reads down to ~40 px."""
+    kind = EMOJI.get(kind, kind)
+    if a < 0.999:
+        ctx.push_group()
+    ctx.save()
+    ctx.translate(x, y)
+    ctx.scale(size / 2.0, size / 2.0)
+    brown = "#5a3209"
+    if kind == "heart":
+        ctx.move_to(0, 0.9)
+        ctx.curve_to(-0.5, 0.5, -1.0, 0.1, -0.98, -0.32)
+        ctx.curve_to(-0.96, -0.78, -0.42, -0.98, 0.0, -0.52)
+        ctx.curve_to(0.42, -0.98, 0.96, -0.78, 0.98, -0.32)
+        ctx.curve_to(1.0, 0.1, 0.5, 0.5, 0, 0.9)
+        ctx.close_path()
+        _fill(ctx, "#f2334f", preserve=True)
+        _stroke(ctx, "#b81a33", 0.07)
+        ellipse(ctx, -0.5, -0.42, 0.22, 0.13, -0.7)
+        _fill(ctx, "#ffffff", 0.5)
+    else:
+        _emoji_face(ctx)
+        if kind == "joy":
+            for sd in (-1, 1):
+                ctx.move_to(sd * 0.62, -0.1)
+                ctx.curve_to(sd * 0.54, -0.44, sd * 0.24, -0.44, sd * 0.16, -0.1)
+                _stroke(ctx, brown, 0.13)
+            _emoji_mouth(ctx, [(-0.6, 0.14), (-0.5, 0.92), (0.5, 0.92), (0.6, 0.14),
+                               (0.25, 0.24), (-0.25, 0.24), (-0.6, 0.14)], teeth_y=0.32,
+                         tongue=(0, 0.74, 0.3, 0.16))
+            for sd in (-1, 1):
+                ctx.save()
+                ctx.translate(sd * 0.78, 0.02)
+                ctx.rotate(sd * -0.5)
+                ctx.move_to(0, -0.22)
+                ctx.curve_to(sd * 0.16, -0.02, sd * 0.2, 0.18, 0, 0.26)
+                ctx.curve_to(sd * -0.2, 0.18, sd * -0.16, -0.02, 0, -0.22)
+                ctx.close_path()
+                _fill(ctx, "#6cc4ff", preserve=True)
+                _stroke(ctx, "#2f7fd0", 0.05)
+                ctx.restore()
+        elif kind == "sleeping":
+            for sd in (-1, 1):
+                ctx.move_to(sd * 0.6, -0.16)
+                ctx.curve_to(sd * 0.52, 0.04, sd * 0.28, 0.04, sd * 0.2, -0.16)
+                _stroke(ctx, brown, 0.12)
+            ellipse(ctx, 0, 0.46, 0.15, 0.19)
+            _fill(ctx, "#5b230b")
+            _z_path(ctx, 0.66, -0.72, 0.46, -0.2)
+            _fill(ctx, "#4f8ef7", preserve=True)
+            _stroke(ctx, "#ffffff", 0.06)
+        else:   # weary / tired face
+            for sd in (-1, 1):
+                # worried brows (inner ends up)
+                ctx.move_to(sd * 0.66, -0.44)
+                ctx.curve_to(sd * 0.52, -0.56, sd * 0.36, -0.64, sd * 0.2, -0.66)
+                _stroke(ctx, brown, 0.1)
+                # scrunched shut eyes: '>' (left) '<' (right)
+                ctx.move_to(sd * 0.62, -0.36)
+                ctx.line_to(sd * 0.26, -0.2)
+                ctx.line_to(sd * 0.62, -0.04)
+                _stroke(ctx, brown, 0.13)
+            # the groan: a wide open arch mouth with top teeth and a tongue
+            _emoji_mouth(ctx, [(-0.46, 0.7), (-0.46, 0.34), (-0.2, 0.18), (0.0, 0.18),
+                               (0.2, 0.18), (0.46, 0.34), (0.46, 0.7),
+                               (0.22, 0.6), (-0.22, 0.6), (-0.46, 0.7)], teeth_y=0.3,
+                         tongue=(0, 0.7, 0.3, 0.17))
+            # sweat drop on the brow (screen-right)
+            ctx.move_to(0.74, -0.98)
+            ctx.curve_to(0.82, -0.84, 0.94, -0.74, 0.94, -0.62)
+            ctx.arc(0.76, -0.62, 0.18, 0.0, math.pi)
+            ctx.curve_to(0.58, -0.74, 0.66, -0.86, 0.74, -0.98)
+            ctx.close_path()
+            _fill(ctx, "#7fcfff", preserve=True)
+            _stroke(ctx, "#2f7fd0", 0.05)
+            ellipse(ctx, 0.71, -0.6, 0.05, 0.08, 0.3)
+            _fill(ctx, "#ffffff", 0.85)
+    ctx.restore()
+    if a < 0.999:
+        ctx.pop_group_to_source()
+        ctx.paint_with_alpha(clamp(a))
+
+
+def _draw_emoji_run(c, kinds, x, cy, es, gap):
+    """Emoji in a row from x (left), centred on cy."""
+    for i, k in enumerate(kinds):
+        draw_emoji(c, x + es / 2 + i * (es + gap), cy, es, k)
+
+
+_EMOJI_BIG, _EMOJI_GAP = 160.0, 12.0     # an emoji-only message shows jumbo, without a bubble
+
+
 def _bubble_geom(c, text_, side, RW, y, size=52):
+    ek = emoji_kinds(text_)
+    if ek:
+        es = _EMOJI_BIG if len(ek) == 1 else _EMOJI_BIG * 0.72
+        bw = len(ek) * es + (len(ek) - 1) * _EMOJI_GAP
+        bh = es + 12
+        bx = 40 if side == "in" else RW - 40 - bw
+        return bx, y, bw, bh
     tw_ = _tw(c, text_, "ui", size)
     bw = tw_ + 54
     bh = size * 1.25 + 34
@@ -3892,6 +4057,16 @@ def _bubble_geom(c, text_, side, RW, y, size=52):
 
 
 def _bubble(c, text_, side, bx, by, bw, bh, size=52, a=1.0):
+    ek = emoji_kinds(text_)
+    if ek:
+        es = _EMOJI_BIG if len(ek) == 1 else _EMOJI_BIG * 0.72
+        if a < 0.999:
+            c.push_group()
+        _draw_emoji_run(c, ek, bx, by + bh / 2, es, _EMOJI_GAP)
+        if a < 0.999:
+            c.pop_group_to_source()
+            c.paint_with_alpha(a)
+        return
     col = "#e4e8f1" if side == "in" else PHONE_BLUE
     tcol = INK if side == "in" else "#ffffff"
     rrect(c, bx, by, bw, bh, 30)
@@ -3914,7 +4089,7 @@ def _bubble(c, text_, side, bx, by, bw, bh, size=52, a=1.0):
 
 
 def phone_screen(ctx, x, y, w, h, t, messages, typing=None, contact="Embarrassment",
-                 t_on=None, clock="6:12", buzz=True, body=True):
+                 t_on=None, clock="6:12", buzz=True, body=True, emoji_keys=None):
     """A phone (body + messaging app) in rect (x, y, w, h) = the whole device
     (designed at 500 x 1000, so text scales with w; w >= ~520 in the 1080
     frame keeps the bubbles readable on a phone).
@@ -3925,7 +4100,16 @@ def phone_screen(ctx, x, y, w, h, t, messages, typing=None, contact="Embarrassme
     turns blue), then at t_send (default last key + 0.5) it WHOOSHES up into
     the thread as an outgoing bubble with speed streaks, then 'Delivered'.
     The screen is dark before t_on (default: the first incoming message),
-    waking over 0.2 s. Use phone_times() for SFX."""
+    waking over 0.2 s. Use phone_times() for SFX.
+    Emoji (there is no emoji font): message / typed text made only of
+    EMOJI characters (e.g. "\U0001F629" the weary/tired face) is drawn as
+    vector emoji (draw_emoji): an emoji-only message shows jumbo, without a
+    bubble; typed emoji appear in the input field. emoji_keys=("\u2764",
+    "\U0001F602", ...) shows a strip of emoji keys above the input field
+    while typing (from the caret, typing t_start - 0.6); a typed emoji's key
+    flashes and pops a big preview when it is tapped.
+    Returns anchors in the caller's coordinates (buzz shake ignored):
+    {"keys": [(x, y), ...] (emoji key centres), "send": (x, y), "input": (x, y)}."""
     RW = PHONE_W
     sc = w / RW
     RH = h / sc
@@ -3954,6 +4138,7 @@ def phone_screen(ctx, x, y, w, h, t, messages, typing=None, contact="Embarrassme
     if body:
         _layer(ctx, ("phone_body", round(RH, 1)), -20, -20, RW + 40, RH + 40,
                lambda c: _phone_body(c, RW, RH))
+    keys_xy = _emoji_key_layout(RW, RH, emoji_keys)
     wake = smoothstep(seg(t, t_on, t_on + 0.2))
     if wake < 1:
         rrect(ctx, 16, 16, RW - 32, RH - 32, 50)
@@ -3995,7 +4180,7 @@ def phone_screen(ctx, x, y, w, h, t, messages, typing=None, contact="Embarrassme
                         _taper(ctx, fx_ + bw * 0.2 + 30 * i, ly_ + ll * 0.9, fx_ + bw * 0.2 + 30 * i,
                                ly_ + 10, 4, 9)
                         _fill(ctx, PHONE_BLUE, 0.55 * (1 - p))
-                with saved(ctx, fx_ + bw, fy + bh, lerp(0.85, 1.0, p)):
+                with saved(ctx, fx_ + bw, fy + bh, lerp(0.4 if emoji_kinds(tx_) else 0.85, 1.0, p)):
                     _bubble(ctx, tx_, side, -bw, -bh, bw, bh)
                 dl = smoothstep(seg(t, tm + 0.5, tm + 0.8))
                 if dl > 0.01:
@@ -4012,7 +4197,16 @@ def phone_screen(ctx, x, y, w, h, t, messages, typing=None, contact="Embarrassme
         if ty is not None and not sent:
             typed = ty[1][:sum(1 for kt in ty[3] if t >= kt)]
         fy0 = RH - 126
-        if typed:
+        tek = emoji_kinds(typed) if typed else None
+        if keys_xy and ty is not None:
+            _emoji_strip(ctx, t, emoji_keys, keys_xy, ty)
+        if tek:
+            es = 52.0
+            pk = max((math.sin(math.pi * seg(t, kt, kt + 0.22)) for kt in ty[3]), default=0.0)
+            with saved(ctx, 66 + es / 2, fy0 + 35, 1 + 0.25 * pk):
+                _draw_emoji_run(ctx, tek, -es / 2, 0, es, 6)
+            cx_ = 66 + len(tek) * (es + 6) + 2
+        elif typed:
             text(ctx, typed, 66, fy0 + 51, 44, INK, "ui", "left")
             cx_ = 66 + _tw(ctx, typed, "ui", 44) + 4
         else:
@@ -4053,6 +4247,62 @@ def phone_screen(ctx, x, y, w, h, t, messages, typing=None, contact="Embarrassme
                 ctx.curve_to(ox + sd * 18 * sc, oy - 14 * sc, ox + sd * 18 * sc, oy + 14 * sc,
                              ox, oy + (40 + 16 * j) * sc)
                 _stroke(ctx, INK, 7 * sc, bz_k)
+
+    def _out(lx, ly):
+        return (x + w / 2 + (lx - RW / 2) * sc, y + h / 2 + (ly - RH / 2) * sc)
+    return {"keys": [_out(kx, ky) for (kx, ky) in keys_xy], "send": _out(RW - 78, RH - 91),
+            "input": _out(66, RH - 91)}
+
+
+_EK_SIZE, _EK_GAP = 92.0, 14.0
+
+
+def _emoji_key_layout(RW, RH, keys):
+    if not keys:
+        return []
+    n = len(keys)
+    total = n * _EK_SIZE + (n - 1) * _EK_GAP
+    x0 = (RW - total) / 2 + _EK_SIZE / 2
+    return [(x0 + i * (_EK_SIZE + _EK_GAP), RH - 212) for i in range(n)]
+
+
+def _emoji_strip(ctx, t, keys, keys_xy, ty):
+    """Emoji keys above the input field while typing; a tapped key flashes and
+    pops a big preview above itself."""
+    show = smoothstep(seg(t, ty[0] - 0.6, ty[0] - 0.4))
+    if show <= 0.01:
+        return
+    ctx.rectangle(16, keys_xy[0][1] - _EK_SIZE / 2 - 14, PHONE_W - 32, _EK_SIZE + 28)
+    _fill(ctx, "#e9ecf3", show)
+    pops = []
+    for (kx, ky), ch in zip(keys_xy, keys):
+        press = 0.0
+        for i, kt in enumerate(ty[3]):
+            if ty[1][i] == ch or ty[1][i:i + len(ch)] == ch:
+                press = max(press, math.sin(math.pi * seg(t, kt - 0.04, kt + 0.26)))
+        sz = _EK_SIZE * (1 - 0.08 * press)
+        rrect(ctx, kx - sz / 2, ky - sz / 2, sz, sz, 22)
+        _fill(ctx, mixc("#ffffff", "#c9d6f2", press), show, preserve=True)
+        _stroke(ctx, "#cfd5e1", 2.5, show)
+        k = ease_out_back(show, 1.6)
+        if emoji_kinds(ch):
+            if show < 0.999:
+                ctx.push_group()
+            draw_emoji(ctx, kx, ky, 62 * k * (1 - 0.1 * press), ch)
+            if show < 0.999:
+                ctx.pop_group_to_source()
+                ctx.paint_with_alpha(show)
+        else:
+            text(ctx, ch, kx, ky + 16, 44, INK, "ui", "center")
+        if press > 0.02:
+            pops.append((kx, ky, press, ch))
+    for (kx, ky, press, ch) in pops:      # key preview, drawn over the strip
+        py_ = ky - _EK_SIZE * 0.95
+        rrect(ctx, kx - 66, py_ - 66, 132, 132, 30)
+        _fill(ctx, "#ffffff", press, preserve=True)
+        _stroke(ctx, "#cfd5e1", 3, press)
+        if emoji_kinds(ch):
+            draw_emoji(ctx, kx, py_, 104 * (0.7 + 0.3 * press), ch, a=press)
 
 
 # --- security camera feed ----------------------------------------------------

@@ -4,7 +4,9 @@ The keycard opens the control room. The tall chair turns: the Boss was
 waiting. She knew the moment it bit him, and she offers him the one thing he
 wants: go home, sleep, never be bothered again. He is tempted (a daydream of
 his bed). He looks down at Curiosity, its ears droop... "But for once... I'm
-not tired." His lids open FULLY for the first time in both episodes.
+not tired." He says the whole line slumped, lids heavy. Only AFTER it, in the
+eyes_open beat, do his lids slowly open FULLY (~1.8 s) for the first time in
+both episodes, and the teal glow comes up with them. Then her lids narrow.
 
 All timing comes from info.cue / info.line / info.word_time.
 """
@@ -63,10 +65,12 @@ def _timing(info):
     L = info.line
     k.end = info.dur
     # --- doors (scene start): beep -> reader green -> heavy doors slide open
-    k.beep = c("doors") + 0.3
-    k.green = k.beep + 0.34
-    k.open0 = k.beep + 0.55
-    k.open1 = k.open0 + 1.6
+    #     (the 2.4 s doors beat: the slide ends ~0.45 s before the cut so we
+    #     get to see the pair standing in the doorway, looking in)
+    k.beep = c("doors") + 0.25
+    k.green = k.beep + 0.3
+    k.open0 = k.beep + 0.45
+    k.open1 = k.open0 + 1.45             # matches door_slide's end-stop thunk
     k.look_in = k.open1 - 0.15          # they look into the room
     # --- chair: the wide (they walk in), the chair starts to turn
     k.chair = c("chair")
@@ -97,9 +101,16 @@ def _timing(info):
     k.droop = c("droop")
     k.l08, k.l08e = L("s06_l08").start, L("s06_l08").end
     k.w_but = info.word_time("s06_l08", 0)
+    k.w_once = info.word_time("s06_l08", 2)
     k.w_im = info.word_time("s06_l08", 3)
     k.w_not = info.word_time("s06_l08", 4)
+    k.w_tired = info.word_time("s06_l08", 5)
     k.eyes_open = c("eyes_open")
+    # the payoff: he says the whole line TIRED; only after it do the lids
+    # open, slowly (~1.8 s), and the glow comes up with them
+    k.op0 = k.eyes_open + 0.1
+    k.op1 = k.op0 + 1.8
+    k.blink08 = k.w_once + 0.2           # one heavy slow blink in the "..." of the line
     # --- shot list (cut times)
     k.s4 = k.l01e + 0.25                # Tiredness MCU: reaction + l02
     k.s5 = k.l02e + 0.3                 # Boss MCU: l03
@@ -110,8 +121,8 @@ def _timing(info):
     k.s10 = k.l06e + 0.2                # Tiredness: tempt (daydream)
     k.s11 = k.look + 0.7                # two-shot: he looks down at Curiosity; l07
     k.s12 = k.droop                     # Curiosity CU: the droop
-    k.s13 = k.droop + 1.5               # Tiredness: decision + l08 (slow push-in)
-    k.s14 = k.eyes_open + 1.3           # Boss CU: lids narrow
+    k.s13 = k.droop + 1.5               # Tiredness: decision + l08, then the eyes open (slow push-in)
+    k.s14 = min(k.op1 + 0.6, k.end - 1.2)   # Boss CU: lids narrow (after a hold on his open eyes)
     # --- acting beats
     k.band0 = k.bandage + 0.05          # pupils to the bandage
     k.band_up = k.bandage + 0.15        # forearm rises
@@ -119,8 +130,8 @@ def _timing(info):
     k.dream0 = k.tempt - 0.25
     k.dream1 = k.look - 0.15            # bubble dissolves as he looks down
     k.cur_up = k.s11 + 0.2              # Curiosity looks up at him
-    k.decide = k.s13 + 0.25             # lip press, then resolve
-    k.narrow = k.s14 + 0.4
+    k.decide = k.s13 + 0.25             # a small lip press (the decision), low energy
+    k.narrow = k.s14 + 0.35
     _KCACHE[key] = k
     return k
 
@@ -149,6 +160,16 @@ def slow_blink(t, t0, close=0.35, hold=0.35, open_=0.45):
     return tw(t, [(t0, 0.0), (t0 + close, 1.0), (t0 + close + hold, 1.0), (t0 + close + hold + open_, 0.0)])
 
 
+def smootherstep(x):
+    x = core.clamp(x)
+    return x * x * x * (x * (6 * x - 15) + 10)
+
+
+def _open_k(t, k):
+    """0..1: the payoff lid opening (slow start, slow settle; no overshoot)."""
+    return smootherstep(seg(t, k.op0, k.op1))
+
+
 def chair_turn(t, k):
     if t < k.ct0:
         return 0.0
@@ -167,6 +188,58 @@ def _chair(ctx, ct, part):
     ctk = round(ct, 3)
     sets.sprite(ctx, ("s06_chair", part, ctk), cx - 330, cy - 1080 * SC, 660, 1100 * SC,
                 lambda c: props.boss_chair(c, cx, cy, SC, ctk, part=part, dir=-1))
+
+
+_SHADE = {}
+
+
+def _shade_bitmap(t):
+    """The control room's "shade" layer (monitor light on the characters),
+    rendered ONCE at 1/4 resolution. Work-around: sets.control_room(layer=
+    "shade") is a 3500x2400 sprite with max_mp=14, so above zoom ~1.9 it is
+    drawn LIVE every frame (a full-room fill + two ~2000 px radial glows,
+    ~34 ms/frame at 720p). It is pure flat wash + soft gradients, so a
+    low-res bitmap scaled up bilinearly is visually identical."""
+    hit = _SHADE.get("shade")
+    if hit is None:
+        q = 0.25
+        X0, Y0, X1, Y1 = M["drawable"]
+        surf = cairo.ImageSurface(cairo.FORMAT_ARGB32, int(math.ceil((X1 - X0) * q)),
+                                  int(math.ceil((Y1 - Y0) * q)))
+        c = cairo.Context(surf)
+        c.scale(q, q)
+        c.translate(-X0, -Y0)
+        sets.control_room(c, t, layer="shade")      # (static: no alarm in s06)
+        surf.flush()
+        hit = _SHADE["shade"] = (surf, X0, Y0, q)
+    return hit
+
+
+class _shaded:
+    """Same compositing as sets.shaded(ctx, sets.control_room, t, layer="shade"),
+    with the shade blitted from _shade_bitmap()."""
+    def __init__(self, ctx, t):
+        self.ctx, self.t = ctx, t
+
+    def __enter__(self):
+        self.ctx.push_group()
+        return self.ctx
+
+    def __exit__(self, *exc):
+        c = self.ctx
+        surf, X0, Y0, q = _shade_bitmap(self.t)
+        c.save()
+        c.set_operator(cairo.OPERATOR_ATOP)
+        c.translate(X0, Y0)
+        c.scale(1 / q, 1 / q)
+        c.set_source_surface(surf, 0, 0)
+        pat = c.get_source()
+        pat.set_filter(cairo.FILTER_BILINEAR)
+        pat.set_extend(cairo.EXTEND_PAD)
+        c.paint()
+        c.restore()
+        c.pop_group_to_source()
+        c.paint()
 
 
 def _doorway_light(ctx, draw):
@@ -219,10 +292,16 @@ def tired_kw(t, k, info):
         pose = {"base": "stand", "rot": 0.028 * sway_amt * math.sin(2 * math.pi * ph),
                 "side": 0.02 * sway_amt * math.sin(2 * math.pi * ph + 0.6),
                 "hunch": 0.18 * sigh_k, "nod": 0.05 * sigh_k}
-    # "I'm not tired": the slouch leaves his spine (shoulders square, chin up a hair)
-    straight = smoothstep(seg(t, k.w_not - 0.05, k.w_not + 0.8))
-    if straight > 0.001 and pose == "stand":
-        pose = {"base": "stand", "posture": 1 - 0.55 * straight, "hunch": -0.15 * straight}
+    # "But for once... I'm not tired." is said SLUMPED: he sinks a hair deeper
+    # into his slouch through the line. Only after it, as the eyes open, does
+    # a held breath lift his shoulders and the slump ease a little.
+    op = _open_k(t, k)
+    slump = smoothstep(seg(t, k.decide, k.w_but + 0.6))
+    rise = smootherstep(seg(t, k.op0 + 0.3, k.op1 + 0.35))
+    breath_in = tw(t, [(k.eyes_open - 0.2, 0.0), (k.op0 + 0.8, 1.0), (k.op1 + 0.5, 0.6)])
+    if slump > 0.001 and pose == "stand":
+        pose = {"base": "stand", "posture": 1 + 0.2 * slump - 0.42 * rise, "hunch": 0.07 * breath_in,
+                "nod": 0.03 * slump * (1 - rise)}
     # the bandaged forearm lifts so he can look at it
     reach = None
     wr = tw(t, [(k.band_up, 0.0), (k.band_up + 0.42, 1.0), (k.band_back + 0.15, 1.0),
@@ -231,48 +310,49 @@ def tired_kw(t, k, info):
         reach = {"r": (STAND_T[0] + 120, STAND_T[1] - 315, wr, 0.9)}
 
     # ---------------- expression
-    open_k = ease_out_back(seg(t, k.w_not - 0.02, k.w_not + 0.3), 1.2)
-    open_s = smoothstep(seg(t, k.w_not - 0.02, k.w_not + 0.3))
-    if t < k.w_not - 0.02:
-        expr = "neutral"
-    elif open_s < 1:
-        expr = ("neutral", "determined", open_s)
-    else:
-        expr = "determined"
-
+    # No expression swap for the payoff: the whole line stays tired (heavy
+    # lids, weary brows), then the lids alone open, slowly, with face deltas.
+    expr = "neutral"
     lid = tw(t, [(0, 0.0), (k.look_in, 0.0), (k.look_in + 0.25, -0.06), (k.look_in + 1.4, -0.02),
                  (k.s4 + 0.05, -0.02), (k.s4 + 0.3, -0.09), (k.l02e + 0.2, -0.07), (k.l02e + 0.7, -0.03),
                  (k.l03, -0.03), (k.w_bit + 0.1, -0.05),
                  (k.w_sleep + 0.05, 0.0), (k.w_sleep + 0.35, 0.1), (k.l06, 0.11), (k.l06e, 0.15),
                  (k.tempt, 0.13), (k.tempt + 1.3, 0.19), (k.look - 0.25, 0.17), (k.look + 0.2, -0.03),
-                 (k.l07, -0.02), (k.l07e, 0.05), (k.droop + 1.4, 0.0), (k.decide + 0.4, -0.04),
-                 (k.w_but - 0.1, -0.04), (k.w_but + 0.25, 0.02)])
-    lid += -0.11 * open_k               # the payoff: FULLY open (with a hair of overshoot)
+                 (k.l07, -0.02), (k.l07e, 0.05), (k.droop + 1.4, 0.0),
+                 # l08: heavy lids from "But" on; heavier still after the slow blink
+                 (k.w_but - 0.1, 0.0), (k.w_but + 0.45, 0.07), (k.blink08 + 0.5, 0.07),
+                 (k.blink08 + 0.75, 0.11), (k.op0, 0.11)])
+    # the payoff: from his heaviest (0.56) all the way to FULLY open (0.0)
+    lid += -0.56 * op
+    lid_ang = tw(t, [(k.w_but, 0.0), (k.w_but + 0.5, 0.07), (k.op0, 0.07), (k.op1, 0.0)])
     brow = tw(t, [(0, 0.0), (k.look_in, 0.0), (k.look_in + 0.25, 0.1), (k.look_in + 1.4, 0.04),
                   (k.s4 + 0.05, 0.04), (k.s4 + 0.3, 0.16), (k.l02e + 0.5, 0.1), (k.l03, 0.08),
                   (k.w_bit + 0.1, 0.16), (k.bandage + 1.4, 0.08),
                   (k.w_sleep, 0.05), (k.tempt, 0.08), (k.look, 0.08), (k.look + 0.3, 0.14),
-                  (k.decide, 0.14), (k.decide + 0.5, 0.1), (k.w_but, 0.0), (k.w_not, 0.0),
-                  (k.w_not + 0.3, 0.12)])
+                  (k.decide, 0.14), (k.decide + 0.5, 0.1), (k.w_but + 0.35, -0.02), (k.l08e, -0.03),
+                  (k.op0, -0.03), (k.op1, 0.02)])
+    brow += 0.1 * math.sin(math.pi * op)          # the forehead helps the lids up, then lets go
     brow_ang = tw(t, [(0, 0.0), (k.s4 + 0.05, 0.05), (k.s4 + 0.3, 0.2), (k.l02e + 0.5, 0.12),
                       (k.w_bit, 0.12), (k.w_bit + 0.25, 0.25), (k.bandage + 1.4, 0.15),
                       (k.w_sleep, 0.12), (k.tempt, 0.18), (k.look, 0.18), (k.look + 0.35, 0.34),
-                      (k.l07e, 0.38), (k.decide, 0.38), (k.decide + 0.35, 0.45),
-                      (k.w_but - 0.15, 0.1), (k.w_im, -0.05), (k.w_not, -0.05), (k.w_not + 0.3, 0.2)])
+                      (k.l07e, 0.38), (k.decide, 0.38), (k.decide + 0.35, 0.42),
+                      (k.w_but + 0.1, 0.16), (k.l08e, 0.12), (k.op0, 0.12), (k.op1 + 0.2, -0.08)])
     curve = tw(t, [(0, -0.08), (k.w_sleep, -0.08), (k.l06e, 0.02), (k.tempt + 0.3, 0.06),
                    (k.tempt + 1.4, 0.24), (k.look, 0.22), (k.look + 0.4, 0.0),
                    (k.w_sound, 0.04), (k.l07e, 0.12), (k.l07e + 0.6, 0.06), (k.decide, 0.0),
-                   (k.w_but, -0.04)])
+                   (k.w_but, -0.04), (k.op1, -0.02)])
     press = tw(t, [(0, 0.12), (k.l02e + 0.1, 0.12), (k.l02e + 0.4, 0.38), (k.l03 + 0.5, 0.25),
                    (k.bandage, 0.2), (k.band_back + 0.3, 0.35), (k.l04, 0.2),
                    (k.w_sleep, 0.12), (k.tempt, 0.0), (k.look + 0.3, 0.1), (k.l07, 0.1),
-                   (k.decide, 0.1), (k.decide + 0.25, 0.5), (k.w_but - 0.2, 0.35), (k.w_but, 0.12)])
-    head_turn = tw(t, [(k.look - 0.03, 0.0), (k.look + 0.4, -0.48), (k.w_but - 0.05, -0.48),
-                       (k.w_but + 0.35, 0.0)])
+                   (k.decide, 0.1), (k.decide + 0.25, 0.32), (k.w_but - 0.2, 0.25), (k.w_but, 0.1),
+                   (k.l08e, 0.1), (k.l08e + 0.3, 0.2), (k.op1, 0.3)])
+    head_turn = tw(t, [(k.look - 0.03, 0.0), (k.look + 0.4, -0.48), (k.w_but - 0.08, -0.48),
+                       (k.w_but + 0.45, 0.0)])
     head_nod = tw(t, [(0, 0.0), (k.band0 + 0.12, 0.0), (k.band0 + 0.45, 0.15), (k.band_back + 0.12, 0.15),
                       (k.band_back + 0.5, 0.0), (k.tempt, 0.0), (k.tempt + 1.2, 0.06),
-                      (k.look - 0.03, 0.06), (k.look + 0.4, 0.16), (k.w_but - 0.05, 0.16),
-                      (k.w_but + 0.35, -0.02), (k.w_not + 0.3, -0.04)])
+                      (k.look - 0.03, 0.06), (k.look + 0.4, 0.16), (k.w_but - 0.08, 0.16),
+                      (k.w_but + 0.45, 0.04), (k.w_tired, 0.04), (k.w_tired + 0.4, 0.08),
+                      (k.op0 + 0.3, 0.07), (k.op1 + 0.3, -0.03)])
     head_tilt = 0.05 * sway_amt * math.sin(2 * math.pi * (t - k.tempt) / 2.6 + 1.1)
     head_tilt += tw(t, [(k.s4, 0.0), (k.s4 + 0.3, -0.03), (k.l02e + 0.6, 0.0)])
     # gaze: pupils lead, the head follows ~0.15 s later
@@ -292,28 +372,37 @@ def tired_kw(t, k, info):
     # the tempted exhale (sigh SFX at tempt + 0.25)
     sigh_open = tw(t, [(k.tempt + 0.22, 0.0), (k.tempt + 0.38, 0.13), (k.tempt + 0.95, 0.07),
                        (k.tempt + 1.25, 0.0)])
-    face = {"lid": lid, "brow": brow, "brow_ang": brow_ang, "curve": curve, "press": press, "open": sigh_open,
-            "head_turn": head_turn, "head_nod": head_nod, "head_tilt": head_tilt, "focus": focus}
+    face = {"lid": lid, "lid_ang": lid_ang, "brow": brow, "brow_ang": brow_ang, "curve": curve,
+            "press": press, "open": sigh_open, "head_turn": head_turn, "head_nod": head_nod,
+            "head_tilt": head_tilt, "focus": focus,
+            # the eyes come alive as they open: tighter pupils, wetter catchlights
+            "pupil": -0.12 * op, "hl": 0.35 * op, "lower": 0.04 * op}
     # ---------------- blinks
     blink = None
     if k.tempt - 0.2 <= t < k.look + 0.6:
         blink = 0.0                       # no random blinks in the dream: one slow heavy blink only
-    for b0, cl, ho, op in ((k.w_sleep + 0.85, 0.35, 0.3, 0.5), (k.tempt + 1.0, 0.4, 0.4, 0.5)):
-        v = slow_blink(t, b0, cl, ho, op)
+    if t >= k.w_but - 0.3:
+        blink = 0.0                       # he holds her gaze; no random blinks through the payoff
+    for b0, cl, ho, opn in ((k.w_sleep + 0.85, 0.35, 0.3, 0.5), (k.tempt + 1.0, 0.4, 0.4, 0.5),
+                            (k.blink08, 0.2, 0.08, 0.32)):   # the heavy blink in "for once..."
+        v = slow_blink(t, b0, cl, ho, opn)
         if v is not None:
             blink = v
-    if t >= k.w_but - 0.3:
-        blink = 0.0                       # he holds her gaze; the eyes stay open
-    power = lerp(0.6, 0.9, smoothstep(seg(t, k.w_not, k.w_not + 0.45)))
+    # the teal comes up with the lids (a beat behind them)
+    glow = smoothstep(seg(t, k.op0 + 0.25, k.op1 + 0.15))
+    power = lerp(0.6, 0.95, glow)
     return dict(x=x, y=y, pose=pose, pose_t=pose_t, turn=turn, expr=expr, face=face, look=look,
-                blink=blink, power=power, reach=reach, open_k=open_s)
+                blink=blink, power=power, reach=reach, open_k=op, glow_k=glow)
 
 
 def draw_tired(ctx, t, k, info, kw=None):
     kw = kw or tired_kw(t, k, info)
+    mo = info.mouth("tired", t)
+    if k.l08 - 0.1 <= t <= k.l08e + 0.1:
+        mo = (mo[0] * 0.82, mo[1])       # low energy: he barely moves his mouth on the line
     return human.draw_person(ctx, "tired", kw["x"], kw["y"], SC, t, pose=kw["pose"], pose_t=kw["pose_t"],
                              expr=kw["expr"], look=kw["look"], face=kw["face"], turn=kw["turn"],
-                             mouth=info.mouth("tired", t), blink=kw["blink"], power=kw["power"],
+                             mouth=mo, blink=kw["blink"], power=kw["power"],
                              outfit="sewer", bandage=True, headphones=None, hood=0.0, reach=kw["reach"],
                              seed=6)
 
@@ -396,7 +485,7 @@ def draw_boss_and_chair(ctx, t, k, info, kw=None):
             return human.draw_person(c, "boss", CHAIR[0], BOSS_GY, SC, t, pose=STEEPLE, expr="cold",
                                      turn=boss_body_turn(ct), look=kw["look"], face=kw["face"],
                                      mouth=info.mouth("boss", t), blink=kw["blink"], seed=3)
-        with sets.shaded(ctx, sets.control_room, t, layer="shade"):
+        with _shaded(ctx, t):
             if alpha < 0.999:
                 ctx.push_group()
                 a = boss()
@@ -438,8 +527,9 @@ def camera_for(sh, t, t0, k):
     if sh == 12:                                  # Curiosity CU
         z = tw(t, [(t0, 3.8), (k.s13, 3.95)])
         return (740, 1335 + 70 / z, z)
-    if sh == 13:                                  # decision + payoff: slow push-in
-        return tw(t, [(t0, (925, 1010, 2.35)), (k.l08, (922, 1000, 2.45)), (k.s14, (896, 944, 3.9))])
+    if sh == 13:                                  # decision + l08 (near hold), then the push-in on the eyes
+        return tw(t, [(t0, (925, 1010, 2.35)), (k.l08e, (921, 998, 2.5)), (k.op0, (920, 996, 2.52)),
+                      (k.op1 + 0.3, (900, 952, 3.55)), (max(k.s14, k.op1 + 0.31), (898, 948, 3.62))])
     # 14: Boss CU
     return tw(t, [(t0, (1678, 1055, 3.3)), (k.end, (1677, 1050, 3.42))])
 
@@ -453,8 +543,9 @@ NEEDS = {1: "TC", 2: "TCB", 3: "B", 4: "T", 5: "B", 6: "T", 7: "B", 8: "T", 9: "
 # render
 # ----------------------------------------------------------------------------
 def _joy_pod(ctx, t):
-    """Continuity with s07: the sealed tiny JOY pod stands between the release
-    console and the LOCKDOWN pedestal."""
+    """Continuity with s07: the sealed tiny pod (label "THING 38", drawn by
+    s07's joy_pod_closed) stands between the release console and the
+    LOCKDOWN pedestal."""
     from scenes.s07_release import joy_pod_closed
     joy_pod_closed(ctx, t)
 
@@ -503,7 +594,7 @@ def render(ctx, t, info):
                 _chair(ctx, ct, "behind")
                 _chair(ctx, ct, "front")
             if "T" in need or "C" in need:
-                with sets.shaded(ctx, sets.control_room, t, layer="shade"):
+                with _shaded(ctx, t):
                     # Curiosity sits a hair in front of him (never crosses him: no z flicker)
                     if "T" in need:
                         ta = draw_tired(ctx, t, k, info, tkw)
@@ -513,10 +604,16 @@ def render(ctx, t, info):
         if ca is not None:
             _eye_glow(ctx, ca, 26, 0.2)
         if ta is not None:
-            ok = tkw["open_k"]
-            _eye_glow(ctx, ta, 28 + 4 * ok, 0.1 + 0.12 * ok)
-            if t >= k.w_not and sh == 13:
-                fx.eye_glint(ctx, ta["eye_r"][0] + 6, ta["eye_r"][1] - 8, 0.55, t, k.w_not + 0.12, 0.5)
+            g = tkw["glow_k"]
+            _eye_glow(ctx, ta, 28 + 12 * g, 0.1 + 0.2 * g)
+            if g > 0.01:
+                # the glow softly lights his own face as the eyes open
+                ex = (ta["eye_l"][0] + ta["eye_r"][0]) / 2
+                ey = (ta["eye_l"][1] + ta["eye_r"][1]) / 2
+                core.radial_glow(ctx, ex, ey + 12, 150, "power", 0.1 * g)
+            if sh == 13:
+                # one small glint as the lids reach the top
+                fx.eye_glint(ctx, ta["eye_l"][0] + 7, ta["eye_l"][1] - 7, 0.4, t, k.op1 - 0.3, 0.6)
             # the bandage: a faint teal pulse while he looks at it (the bite = their connection)
             gk = tw(t, [(k.band_up + 0.25, 0.0), (k.band_up + 0.6, 1.0), (k.band_back, 0.7),
                         (k.band_back + 0.45, 0.0)])
@@ -525,6 +622,8 @@ def render(ctx, t, info):
                 wx, wy = ta["wrist_r"]
                 core.radial_glow(ctx, lerp(ex, wx, 0.55), lerp(ey, wy, 0.55), 70, "power", 0.32 * gk)
     # ---------------- screen space
+    if sh == 13 and tkw is not None and tkw["glow_k"] > 0.01:
+        fx.vignette(ctx, 0.4 * tkw["glow_k"], inner=0.5)     # the room falls away around the eyes
     if sh == 10 and ta is not None:
         hx, hy = ta["top"]
         sx = 540 + (hx - cx) * zoom
@@ -540,7 +639,7 @@ def SFX(info):
     k = _timing(info)
     ev = []
     ev.append((k.beep - 0.06, "keycard_beep", -3, 0.15))
-    ev.append((k.open0 - 0.12, "door_slide", 0, 0.0))
+    ev.append((k.open0 - 0.17, "door_slide", 0, 0.0))     # rollers 0.12-1.67 s, end thunk ~1.6 s
     ev.append((k.ct0 + 0.05, "chair_creak", -7, 0.45))
     ev.append((k.s3 + 0.08, "chair_creak", -5, 0.3))
     for i in range(3):
@@ -550,5 +649,6 @@ def SFX(info):
     ev.append((k.cur_up + 0.05, "creature_chitter", -11, -0.2))   # a small hopeful "huh?" up at him
     ev.append((k.tempt + 0.25, "sigh", -3, -0.05))
     ev.append((k.droop + 0.35, "creature_chirp_sad", -7, -0.15))
+    ev.append((k.op0 - 0.1, "eye_open", -13, 0.1))      # a soft swell under the lids opening
     ev += sfx.loop_events("pod_hum", 0.0, info.dur, -15, 0.0)
     return ev
