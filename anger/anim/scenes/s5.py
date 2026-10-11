@@ -420,8 +420,12 @@ S4_NEAR = ArmPose(shoulder=-6.0, elbow=22.0, wrist=0.0, hand="relaxed")      # S
 S4_FAR = ArmPose(shoulder=4.0, elbow=18.0, wrist=10.0, hand="relaxed")
 ARM_NEAR = ArmSeq([(PROP + 0.12, S4_NEAR), (ELBOW - 0.1, PUSH_NEAR), (THUMP - 0.05, PUSH_NEAR),
                    (THUMP + 0.65, REST_NEAR)])
-PLANT = (SIT_X + 48.0, FLOOR - 10.0)            # the near palm on the floor: he drags himself toward it
-PLANT_W = Track([(PROP + 0.15, 0.0), (ELBOW - 0.1, 1.0, "io"), (THUMP - 0.15, 1.0), (THUMP + 0.35, 0.0, "io")])
+# the near palm plants on the floor (toward the wall) for each drag and he drags himself toward it; between
+# the drags it lifts and re-plants further back
+PLANT1 = (LIE_X + 230.0, FLOOR - 8.0)
+PLANT2 = (_X_MID + 225.0, FLOOR - 8.0)
+PLANT1_W = Track([(DRAG1 - 0.4, 0.0), (DRAG1 - 0.02, 1.0, "io"), (DRAG1E + 0.02, 1.0), (DRAG1E + 0.22, 0.0, "io")])
+PLANT2_W = Track([(DRAG2 - 0.3, 0.0), (DRAG2 + 0.02, 1.0, "io"), (THUMP - 0.1, 1.0), (THUMP + 0.35, 0.0, "io")])
 ARM_FAR = ArmSeq([(DRAG1 - 0.35, S4_FAR), (DRAG1, PUSH_FAR), (THUMP - 0.02, PUSH_FAR), (THUMP + 0.8, REST_FAR)])
 
 
@@ -558,10 +562,10 @@ def anger_pose(t) -> Pose:
     p.extra = dict(state=st, state_b=stb, mix=mix, sword=None, shield="back", bruised=1.0,
                    one_eye=ONE_EYE(t), strain=STRAIN(t), grimace=clamp(GRIMACE(t) + 0.45 * w), knee_up=0.55,
                    rim_dir=-105.0)
-    pw = PLANT_W(t)
-    if pw > 0.001:
-        p.extra["reach_l"] = PLANT
-        p.extra["reach_l_w"] = pw
+    w1, w2 = PLANT1_W(t), PLANT2_W(t)
+    if w1 > 0.001 or w2 > 0.001:
+        p.extra["reach_l"] = PLANT1 if w1 >= w2 else PLANT2
+        p.extra["reach_l_w"] = max(w1, w2)
     return p
 
 
