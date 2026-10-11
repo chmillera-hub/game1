@@ -57,7 +57,7 @@ CFG = dict(
     duck_db=7.0, duck_attack=0.08, duck_release=0.40, duck_lookahead=0.12, duck_hold=0.25,
     lift_db=4.0,                 # extra music level in dialogue-free stretches
     xfade=0.6, end_fade=1.6,
-    sfx_db=0.0,
+    sfx_db=0.0, sfx_duck_db=5.0,   # SFX dip under dialogue (keeps lines clear of ping tails etc.)
     target_lufs=-14.0, ceiling_dbtp=-2.0,
 )
 
@@ -477,6 +477,10 @@ def run(timeline_path=TIMELINE, out_path=MIX, lines_dir=LINES, lip_path=LIP, pro
 
     # ---- sfx ----------------------------------------------------------------
     sfxbus, nsfx, warns, counts = collect_sfx(tl, vstart, n, sr, sfx_override)
+    if CFG.get("sfx_duck_db"):
+        gs = 10 ** (-CFG["sfx_duck_db"] * _to_samples(duck_env, n, sr) / 20)
+        sfxbus = sfxbus * gs.astype(np.float32)[:, None]
+        del gs
     log(f"sfx: {nsfx} placed ({', '.join(f'{k}x{v}' for k, v in sorted(counts.items()))}) "
         f"[t={time.time() - t_start:.1f}s]")
     for w in warns:
