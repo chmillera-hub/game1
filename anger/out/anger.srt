@@ -1,77 +1,281 @@
 1
-00:02:07,350 --> 00:02:09,590
+00:00:01,150 --> 00:00:05,150
+<i>Deep beneath the mountain,</i>
+<i>where the sun had never shone...</i>
+
+2
+00:00:05,150 --> 00:00:07,679
+<i>walked a warrior named Anger.</i>
+
+3
+00:00:07,850 --> 00:00:12,916
+<i>He was a man of very few words...</i>
+<i>and even fewer smiles.</i>
+
+4
+00:00:13,440 --> 00:00:17,650
+<i>When vines blocked his path,</i>
+<i>he did not go around.</i>
+
+5
+00:00:20,350 --> 00:00:24,489
+<i>Cobwebs, he swept aside</i>
+<i>with the back of his hand.</i>
+
+6
+00:00:25,850 --> 00:00:30,012
+<i>At the end of the tunnel</i>
+<i>stood an old iron door.</i>
+
+7
+00:00:32,100 --> 00:00:33,730
+<i>It was locked.</i>
+
+8
+00:00:33,750 --> 00:00:37,306
+<i>Anger did not believe</i>
+<i>in locked doors.</i>
+
+9
+00:00:38,850 --> 00:00:41,360
+<i>Only in open ones.</i>
+
+10
+00:00:41,650 --> 00:00:44,890
+<i>Beyond the door lay</i>
+<i>a cavern so vast,</i>
+
+11
+00:00:44,890 --> 00:00:48,190
+<i>his torchlight could</i>
+<i>not find its walls.</i>
+
+12
+00:00:48,250 --> 00:00:52,555
+<i>It was dark, and cold,</i>
+<i>and very, very quiet.</i>
+
+13
+00:00:55,150 --> 00:01:00,240
+<i>He did not see the eyes.</i>
+<i>But the eyes... had seen him.</i>
+
+14
+00:01:03,250 --> 00:01:06,030
+<i>And then, there</i>
+<i>was only darkness.</i>
+
+15
+00:01:06,050 --> 00:01:09,737
+<i>Anger stood perfectly</i>
+<i>still... and listened.</i>
+
+16
+00:01:11,550 --> 00:01:15,030
+<i>Nothing. Nothing he could see.</i>
+
+17
+00:01:15,050 --> 00:01:17,910
+<i>So he pressed on, sword raised...</i>
+
+18
+00:01:17,910 --> 00:01:22,149
+<i>never noticing the thin cracks</i>
+<i>spreading beneath his feet.</i>
+
+19
+00:01:24,150 --> 00:01:30,132
+<i>He caught the edge. But steel is</i>
+<i>heavy... and stone is unforgiving.</i>
+
+20
+00:01:30,250 --> 00:01:32,530
+<i>Anger did not scream.</i>
+
+21
+00:01:32,550 --> 00:01:35,119
+<i>He simply closed his eyes.</i>
+
+22
+00:01:35,400 --> 00:01:37,880
+<i>His sword bit into the stone...</i>
+
+23
+00:01:37,900 --> 00:01:40,528
+<i>...until it struck solid rock.</i>
+
+24
+00:01:47,050 --> 00:01:51,914
+<i>The sword had saved his</i>
+<i>life. But not his bones.</i>
+
+25
+00:01:53,714 --> 00:01:55,998
+<i>And he was not alone.</i>
+
+26
+00:01:57,014 --> 00:01:59,559
+<i>Then the darkness took him.</i>
+
+27
+00:02:02,114 --> 00:02:05,634
+<i>When he woke...</i>
+<i>he could move only one arm.</i>
+
+28
+00:02:06,434 --> 00:02:11,892
+<i>The creature had waited a very</i>
+<i>long time for a meal like this.</i>
+
+29
+00:02:19,392 --> 00:02:22,139
+<i>Someone... had thrown that rock.</i>
+
+30
+00:02:22,339 --> 00:02:24,749
 You gotta watch
 out for those things.
 
-2
-00:02:09,590 --> 00:02:11,550
+31
+00:02:24,749 --> 00:02:27,049
 They'll make you their lunch.
 
-3
-00:02:11,570 --> 00:02:14,260
+32
+00:02:27,249 --> 00:02:29,989
 But I'm gonna make
 it MY lunch now.
 
-4
-00:02:23,660 --> 00:02:26,100
-Who are you?
+33
+00:02:32,489 --> 00:02:36,437
+<i>Anger had no idea</i>
+<i>how to feel about this.</i>
+
+34
+00:02:36,689 --> 00:02:41,369
+<i>With great effort, Anger dragged</i>
+<i>himself up against the wall.</i>
+
+35
+00:02:41,389 --> 00:02:47,359
+Who... are you?
 How did you get here?
 
-5
-00:02:28,200 --> 00:02:32,190
+36
+00:02:49,459 --> 00:02:55,749
 The food was good... but now
 a nap sounds even better.
 
-6
-00:02:36,890 --> 00:02:39,610
+37
+00:02:55,769 --> 00:02:58,160
+<i>Anger rolled his eyes.</i>
+
+38
+00:03:00,260 --> 00:03:04,165
+<i>Within seconds,</i>
+<i>the stranger was snoring.</i>
+
+39
+00:03:04,185 --> 00:03:06,625
+<i>Anger stared into the darkness,</i>
+
+40
+00:03:06,625 --> 00:03:09,810
+<i>and wondered where</i>
+<i>his life had gone wrong.</i>
+
+41
+00:03:09,910 --> 00:03:14,190
 How did I get myself into this...
 
-7
-00:02:54,010 --> 00:02:55,810
-What the hell are you?
+42
+00:03:14,690 --> 00:03:18,507
+<i>Eventually, he gave up...</i>
+<i>and went to sleep.</i>
 
-8
-00:02:56,010 --> 00:03:00,230
+43
+00:03:20,107 --> 00:03:22,545
+<i>He did not sleep for long.</i>
+
+44
+00:03:25,107 --> 00:03:29,626
+<i>Something warm... and wet...</i>
+<i>was dripping on his face.</i>
+
+45
+00:03:33,226 --> 00:03:35,676
+What the hell are you?!
+
+46
+00:03:35,976 --> 00:03:40,966
 That's my friend. He's saying hi.
 I think he likes you.
 
-9
-00:03:00,930 --> 00:03:04,250
+47
+00:03:40,986 --> 00:03:44,518
+<i>Anger shuffled out</i>
+<i>from under the drool.</i>
+
+48
+00:03:44,618 --> 00:03:49,508
 Tell your friend to give
 me a little space. Please.
 
-10
-00:03:07,250 --> 00:03:10,610
+49
+00:03:49,708 --> 00:03:52,693
+<i>The creature did not like that.</i>
+
+50
+00:03:56,093 --> 00:04:00,533
 Hey, he can hear you, buddy.
 Treat him with some respect.
 
-11
-00:03:10,610 --> 00:03:12,680
+51
+00:04:00,533 --> 00:04:02,623
 We go way back, okay?
 
-12
-00:03:19,180 --> 00:03:21,860
+52
+00:04:02,643 --> 00:04:05,890
+<i>Anger wiped the</i>
+<i>slobber from his face.</i>
+
+53
+00:04:08,390 --> 00:04:12,636
+<i>No one said anything...</i>
+<i>for a very long time.</i>
+
+54
+00:04:12,790 --> 00:04:17,680
 Well. How are you guys
 gonna get out of here?
 
-13
-00:03:21,880 --> 00:03:30,656
+55
+00:04:17,700 --> 00:04:26,476
 (laughs for way too long)
 
-14
-00:03:30,756 --> 00:03:34,226
+56
+00:04:26,576 --> 00:04:30,786
 We would've gotten out of here
 a long time ago if we could have.
 
-15
-00:03:34,226 --> 00:03:37,086
+57
+00:04:30,786 --> 00:04:33,776
 But now it seems you're
 stuck in here with us.
 
-16
-00:03:37,086 --> 00:03:38,876
+58
+00:04:33,776 --> 00:04:35,986
 How do you feel about that?
 
-17
-00:03:39,576 --> 00:03:41,976
+59
+00:04:36,686 --> 00:04:40,506
 Well... I guess I'll die then.
+
+60
+00:04:45,106 --> 00:04:49,209
+<i>For one brief moment,</i>
+<i>Anger had almost smiled.</i>
+
+61
+00:04:49,609 --> 00:04:55,056
+<i>And so began the strangest</i>
+<i>friendship the deep had ever known.</i>
