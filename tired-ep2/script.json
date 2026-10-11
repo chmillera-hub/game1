@@ -1,0 +1,825 @@
+{
+ "title": "Tiredness - Episode 2: Lights Out",
+ "voices": {
+  "tired": {
+   "voice": "am_michael*0.7+am_onyx*0.3",
+   "lang": "en-us",
+   "speed": 0.9
+  },
+  "embar": {
+   "voice": "am_puck",
+   "lang": "en-us",
+   "speed": 1.0
+  },
+  "boss": {
+   "voice": "bf_emma",
+   "lang": "en-gb",
+   "speed": 0.9
+  },
+  "guard": {
+   "voice": "am_fenrir",
+   "lang": "en-us",
+   "speed": 0.95
+  },
+  "guard2": {
+   "voice": "am_eric",
+   "lang": "en-us",
+   "speed": 1.0
+  }
+ },
+ "scenes": [
+  {
+   "id": "s01",
+   "module": "s01_pods",
+   "music": "bond",
+   "head": 0.0,
+   "tail": 0.5,
+   "min_dur": 0,
+   "title": "The empty pod",
+   "beats": [
+    {
+     "t": "pause",
+     "dur": 2.4,
+     "cue": "open"
+    },
+    {
+     "t": "pause",
+     "dur": 2.0,
+     "cue": "pod"
+    },
+    {
+     "t": "line",
+     "id": "s01_l01",
+     "who": "tired",
+     "text": "So this is where they kept you.",
+     "pre": 0.3,
+     "post": 0.45
+    },
+    {
+     "t": "pause",
+     "dur": 1.8,
+     "cue": "touch"
+    },
+    {
+     "t": "pause",
+     "dur": 1.6,
+     "cue": "plate"
+    },
+    {
+     "t": "line",
+     "id": "s01_l02",
+     "who": "tired",
+     "text": "...Curiosity.",
+     "pre": 0.2,
+     "post": 0.45,
+     "say": "Curiosity.",
+     "speed": 0.85
+    },
+    {
+     "t": "pause",
+     "dur": 1.6,
+     "cue": "perk"
+    },
+    {
+     "t": "line",
+     "id": "s01_l03",
+     "who": "tired",
+     "text": "Huh. That fits.",
+     "pre": 0.2,
+     "post": 0.45
+    },
+    {
+     "t": "pause",
+     "dur": 1.4,
+     "cue": "grin"
+    },
+    {
+     "t": "pause",
+     "dur": 3.0,
+     "cue": "plates"
+    },
+    {
+     "t": "pause",
+     "dur": 1.6,
+     "cue": "frown"
+    },
+    {
+     "t": "pause",
+     "dur": 1.6,
+     "cue": "camera"
+    },
+    {
+     "t": "line",
+     "id": "s01_l04",
+     "who": "boss",
+     "text": "Right on time.",
+     "pre": 0.6,
+     "post": 0.45
+    },
+    {
+     "t": "pause",
+     "dur": 1.2,
+     "cue": "reach"
+    },
+    {
+     "t": "line",
+     "id": "s01_l05",
+     "who": "boss",
+     "text": "Lights out.",
+     "pre": 0.2,
+     "post": 0.45
+    },
+    {
+     "t": "pause",
+     "dur": 1.0,
+     "cue": "click"
+    },
+    {
+     "t": "pause",
+     "dur": 2.2,
+     "cue": "dark"
+    }
+   ]
+  },
+  {
+   "id": "s02",
+   "module": "s02_lights_out",
+   "music": "ominous:turn=0.62",
+   "head": 0.0,
+   "tail": 0.5,
+   "min_dur": 0,
+   "title": "Close your eyes",
+   "beats": [
+    {
+     "t": "pause",
+     "dur": 1.6,
+     "cue": "eyes"
+    },
+    {
+     "t": "line",
+     "id": "s02_l01",
+     "who": "tired",
+     "text": "Great. Now I can't see anything.",
+     "pre": 0.2,
+     "post": 0.45
+    },
+    {
+     "t": "pause",
+     "dur": 1.6,
+     "cue": "nudge"
+    },
+    {
+     "t": "line",
+     "id": "s02_l02",
+     "who": "tired",
+     "text": "Hey. What are you doing?",
+     "pre": 0.2,
+     "post": 0.45
+    },
+    {
+     "t": "pause",
+     "dur": 2.0,
+     "cue": "hood"
+    },
+    {
+     "t": "pause",
+     "dur": 2.0,
+     "cue": "ping"
+    },
+    {
+     "t": "line",
+     "id": "s02_l03",
+     "who": "tired",
+     "text": "Oh.",
+     "pre": 0.2,
+     "post": 0.6
+    },
+    {
+     "t": "pause",
+     "dur": 1.6,
+     "cue": "look"
+    },
+    {
+     "t": "line",
+     "id": "s02_l04",
+     "who": "tired",
+     "text": "So I just... close my eyes?",
+     "pre": 0.3,
+     "post": 0.45,
+     "say": "So I just, close my eyes?"
+    },
+    {
+     "t": "pause",
+     "dur": 1.2,
+     "cue": "nod"
+    },
+    {
+     "t": "line",
+     "id": "s02_l05",
+     "who": "tired",
+     "text": "Finally. A superpower I'm actually good at.",
+     "pre": 0.3,
+     "post": 0.45
+    },
+    {
+     "t": "pause",
+     "dur": 1.6,
+     "cue": "smug"
+    },
+    {
+     "t": "pause",
+     "dur": 3.0,
+     "cue": "walk"
+    },
+    {
+     "t": "pause",
+     "dur": 0.8,
+     "cue": "bonk"
+    },
+    {
+     "t": "line",
+     "id": "s02_l06",
+     "who": "tired",
+     "text": "...Mostly good at.",
+     "pre": 0.5,
+     "post": 0.45,
+     "say": "Mostly good at."
+    },
+    {
+     "t": "pause",
+     "dur": 1.2,
+     "cue": "end"
+    }
+   ],
+   "music_xfade": 0.0
+  },
+  {
+   "id": "s03",
+   "module": "s03_stealth",
+   "music": "sneaky",
+   "head": 0.0,
+   "tail": 0.5,
+   "min_dur": 0,
+   "title": "Flashlights",
+   "beats": [
+    {
+     "t": "pause",
+     "dur": 2.0,
+     "cue": "beams"
+    },
+    {
+     "t": "line",
+     "id": "s03_l01",
+     "who": "guard",
+     "text": "The boss says they're down here somewhere.",
+     "pre": 0.1,
+     "post": 0.45
+    },
+    {
+     "t": "pause",
+     "dur": 1.6,
+     "cue": "hide"
+    },
+    {
+     "t": "line",
+     "id": "s03_l02",
+     "who": "guard2",
+     "text": "I hate the dark.",
+     "pre": 0.1,
+     "post": 0.45
+    },
+    {
+     "t": "pause",
+     "dur": 2.6,
+     "cue": "sneak"
+    },
+    {
+     "t": "pause",
+     "dur": 2.6,
+     "cue": "troll"
+    },
+    {
+     "t": "line",
+     "id": "s03_l03",
+     "who": "tired",
+     "text": "Stop that.",
+     "pre": 0.1,
+     "post": 0.45,
+     "fx": "whisper",
+     "gain": -3.5
+    },
+    {
+     "t": "pause",
+     "dur": 1.4,
+     "cue": "turn"
+    },
+    {
+     "t": "pause",
+     "dur": 2.0,
+     "cue": "melt"
+    },
+    {
+     "t": "line",
+     "id": "s03_l04",
+     "who": "guard",
+     "text": "Huh. Just pipes.",
+     "pre": 0.1,
+     "post": 0.45
+    },
+    {
+     "t": "pause",
+     "dur": 1.8,
+     "cue": "reform"
+    },
+    {
+     "t": "pause",
+     "dur": 1.2,
+     "cue": "end"
+    }
+   ]
+  },
+  {
+   "id": "s04",
+   "module": "s04_not_my_problem",
+   "music": "lonely",
+   "head": 0.0,
+   "tail": 0.5,
+   "min_dur": 0,
+   "title": "Not my problem",
+   "beats": [
+    {
+     "t": "pause",
+     "dur": 2.0,
+     "cue": "corridor"
+    },
+    {
+     "t": "line",
+     "id": "s04_l01",
+     "who": "tired",
+     "text": "Okay. I'm done.",
+     "pre": 0.2,
+     "post": 0.45
+    },
+    {
+     "t": "pause",
+     "dur": 1.4,
+     "cue": "slump"
+    },
+    {
+     "t": "line",
+     "id": "s04_l02",
+     "who": "tired",
+     "text": "I fell out of a building today. I just want to go home and sleep.",
+     "pre": 0.3,
+     "post": 0.45
+    },
+    {
+     "t": "pause",
+     "dur": 2.2,
+     "cue": "tug"
+    },
+    {
+     "t": "line",
+     "id": "s04_l03",
+     "who": "tired",
+     "text": "Look. I'm sorry about your family.",
+     "pre": 0.4,
+     "post": 0.45
+    },
+    {
+     "t": "pause",
+     "dur": 0.9,
+     "cue": "beat"
+    },
+    {
+     "t": "line",
+     "id": "s04_l04",
+     "who": "tired",
+     "text": "But they're not my problem.",
+     "pre": 0.2,
+     "post": 0.45
+    },
+    {
+     "t": "pause",
+     "dur": 2.6,
+     "cue": "hurt"
+    },
+    {
+     "t": "pause",
+     "dur": 3.0,
+     "cue": "leave"
+    },
+    {
+     "t": "pause",
+     "dur": 3.2,
+     "cue": "alone"
+    },
+    {
+     "t": "line",
+     "id": "s04_l05",
+     "who": "tired",
+     "text": "...Ugh.",
+     "pre": 0.2,
+     "post": 0.6,
+     "say": "Uuugh."
+    },
+    {
+     "t": "pause",
+     "dur": 1.8,
+     "cue": "follow"
+    }
+   ]
+  },
+  {
+   "id": "s05",
+   "module": "s05_calculator",
+   "music": "awkward",
+   "head": 0.0,
+   "tail": 0.5,
+   "min_dur": 0,
+   "title": "The pocket calculator",
+   "beats": [
+    {
+     "t": "pause",
+     "dur": 1.6,
+     "cue": "catch"
+    },
+    {
+     "t": "pause",
+     "dur": 1.4,
+     "cue": "steps"
+    },
+    {
+     "t": "line",
+     "id": "s05_l01",
+     "who": "embar",
+     "text": "Tiredness?! What are you doing down here?",
+     "pre": 0.2,
+     "post": 0.45
+    },
+    {
+     "t": "line",
+     "id": "s05_l02",
+     "who": "tired",
+     "text": "Hi. Long story.",
+     "pre": 0.3,
+     "post": 0.45
+    },
+    {
+     "t": "pause",
+     "dur": 1.4,
+     "cue": "notice"
+    },
+    {
+     "t": "line",
+     "id": "s05_l03",
+     "who": "embar",
+     "text": "Is that... Specimen Zero?",
+     "pre": 0.2,
+     "post": 0.45,
+     "say": "Is that, Specimen Zero?"
+    },
+    {
+     "t": "line",
+     "id": "s05_l04",
+     "who": "embar",
+     "text": "And why are your eyes glowing?",
+     "pre": 0.3,
+     "post": 0.45
+    },
+    {
+     "t": "line",
+     "id": "s05_l05",
+     "who": "tired",
+     "text": "I fell out of a window.",
+     "pre": 0.3,
+     "post": 0.45
+    },
+    {
+     "t": "pause",
+     "dur": 1.6,
+     "cue": "blink"
+    },
+    {
+     "t": "pause",
+     "dur": 1.4,
+     "cue": "led"
+    },
+    {
+     "t": "pause",
+     "dur": 2.6,
+     "cue": "conflict"
+    },
+    {
+     "t": "pause",
+     "dur": 0.8,
+     "cue": "click"
+    },
+    {
+     "t": "line",
+     "id": "s05_l06",
+     "who": "embar",
+     "text": "Huh. My pocket calculator just stopped working.",
+     "pre": 0.3,
+     "post": 0.45,
+     "speed": 0.92
+    },
+    {
+     "t": "pause",
+     "dur": 1.4,
+     "cue": "smile"
+    },
+    {
+     "t": "line",
+     "id": "s05_l07",
+     "who": "embar",
+     "text": "The control room is on level nine. Take my keycard.",
+     "pre": 0.3,
+     "post": 0.45,
+     "speed": 0.95
+    },
+    {
+     "t": "pause",
+     "dur": 0.8,
+     "cue": "card"
+    },
+    {
+     "t": "line",
+     "id": "s05_l08",
+     "who": "embar",
+     "text": "And Tiredness? Be careful.",
+     "pre": 0.3,
+     "post": 0.45,
+     "speed": 0.9
+    },
+    {
+     "t": "pause",
+     "dur": 1.4,
+     "cue": "nod"
+    }
+   ]
+  },
+  {
+   "id": "s06",
+   "module": "s06_the_offer",
+   "music": "lullaby",
+   "head": 0.0,
+   "tail": 0.5,
+   "min_dur": 0,
+   "title": "The offer",
+   "beats": [
+    {
+     "t": "pause",
+     "dur": 1.8,
+     "cue": "doors"
+    },
+    {
+     "t": "pause",
+     "dur": 2.0,
+     "cue": "chair"
+    },
+    {
+     "t": "line",
+     "id": "s06_l01",
+     "who": "boss",
+     "text": "I wondered when you'd get here.",
+     "pre": 0.3,
+     "post": 0.45
+    },
+    {
+     "t": "line",
+     "id": "s06_l02",
+     "who": "tired",
+     "text": "You knew I was coming?",
+     "pre": 0.3,
+     "post": 0.45
+    },
+    {
+     "t": "line",
+     "id": "s06_l03",
+     "who": "boss",
+     "text": "I knew the moment it bit you.",
+     "pre": 0.3,
+     "post": 0.45
+    },
+    {
+     "t": "pause",
+     "dur": 1.4,
+     "cue": "bandage"
+    },
+    {
+     "t": "line",
+     "id": "s06_l04",
+     "who": "boss",
+     "text": "So. Here is my offer.",
+     "pre": 0.4,
+     "post": 0.45
+    },
+    {
+     "t": "line",
+     "id": "s06_l05",
+     "who": "boss",
+     "text": "Walk away. Go home. Sleep as long as you like.",
+     "pre": 0.3,
+     "post": 0.45
+    },
+    {
+     "t": "line",
+     "id": "s06_l06",
+     "who": "boss",
+     "text": "Nobody will ever bother you again.",
+     "pre": 0.2,
+     "post": 0.45
+    },
+    {
+     "t": "pause",
+     "dur": 2.6,
+     "cue": "tempt"
+    },
+    {
+     "t": "pause",
+     "dur": 1.6,
+     "cue": "look"
+    },
+    {
+     "t": "line",
+     "id": "s06_l07",
+     "who": "tired",
+     "text": "...That does sound nice.",
+     "pre": 0.2,
+     "post": 0.45,
+     "say": "That does sound nice."
+    },
+    {
+     "t": "pause",
+     "dur": 1.4,
+     "cue": "droop"
+    },
+    {
+     "t": "line",
+     "id": "s06_l08",
+     "who": "tired",
+     "text": "But for once... I'm not tired.",
+     "pre": 0.4,
+     "post": 0.45,
+     "say": "But for once, I'm not tired.",
+     "speed": 0.84
+    },
+    {
+     "t": "pause",
+     "dur": 1.8,
+     "cue": "eyes_open"
+    }
+   ],
+   "music_xfade": 0.4
+  },
+  {
+   "id": "s07",
+   "module": "s07_release",
+   "music": "chaos",
+   "head": 0.0,
+   "tail": 0.5,
+   "min_dur": 0,
+   "title": "Release",
+   "beats": [
+    {
+     "t": "pause",
+     "dur": 0.8,
+     "cue": "smash"
+    },
+    {
+     "t": "pause",
+     "dur": 2.2,
+     "cue": "pull"
+    },
+    {
+     "t": "pause",
+     "dur": 1.0,
+     "cue": "button"
+    },
+    {
+     "t": "line",
+     "id": "s07_l01",
+     "who": "boss",
+     "text": "Lockdown.",
+     "pre": 0.0,
+     "post": 0.45
+    },
+    {
+     "t": "pause",
+     "dur": 2.4,
+     "cue": "shutters"
+    },
+    {
+     "t": "pause",
+     "dur": 2.0,
+     "cue": "one_pod"
+    },
+    {
+     "t": "pause",
+     "dur": 2.2,
+     "cue": "baby"
+    },
+    {
+     "t": "pause",
+     "dur": 1.0,
+     "cue": "alarm"
+    },
+    {
+     "t": "line",
+     "id": "s07_l02",
+     "who": "embar",
+     "text": "Over here! This way!",
+     "pre": 0.1,
+     "post": 0.45
+    },
+    {
+     "t": "pause",
+     "dur": 3.0,
+     "cue": "run"
+    },
+    {
+     "t": "pause",
+     "dur": 1.4,
+     "cue": "hatch"
+    },
+    {
+     "t": "pause",
+     "dur": 1.4,
+     "cue": "watch"
+    },
+    {
+     "t": "line",
+     "id": "s07_l03",
+     "who": "boss",
+     "text": "Let them run.",
+     "pre": 0.2,
+     "post": 0.45
+    },
+    {
+     "t": "pause",
+     "dur": 1.0,
+     "cue": "end"
+    }
+   ],
+   "music_xfade": 0.05
+  },
+  {
+   "id": "s08",
+   "module": "s08_home",
+   "music": "chill",
+   "head": 0.0,
+   "tail": 0.3,
+   "min_dur": 0,
+   "title": "Home",
+   "beats": [
+    {
+     "t": "pause",
+     "dur": 2.4,
+     "cue": "dawn"
+    },
+    {
+     "t": "pause",
+     "dur": 1.6,
+     "cue": "flop"
+    },
+    {
+     "t": "line",
+     "id": "s08_l01",
+     "who": "tired",
+     "text": "Worst. Day. Ever.",
+     "pre": 0.4,
+     "post": 0.45,
+     "say": "Worst. Day. Ever.",
+     "speed": 0.82
+    },
+    {
+     "t": "pause",
+     "dur": 2.2,
+     "cue": "pile"
+    },
+    {
+     "t": "pause",
+     "dur": 2.0,
+     "cue": "smile"
+    },
+    {
+     "t": "pause",
+     "dur": 2.4,
+     "cue": "phone"
+    },
+    {
+     "t": "pause",
+     "dur": 2.4,
+     "cue": "sleep"
+    },
+    {
+     "t": "pause",
+     "dur": 3.6,
+     "cue": "title"
+    }
+   ],
+   "music_xfade": 0.6
+  }
+ ]
+}
