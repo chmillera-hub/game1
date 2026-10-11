@@ -91,18 +91,28 @@ _CR = sfx_time("crunching", T0)
 CHOMPS = [_CR + d for d in (0.0, 0.38, 0.75, 1.15, 1.52, 1.95, 2.33, 2.75)]
 SNAPS = [CHOMPS[0], CHOMPS[2], CHOMPS[4]]
 SLURP, GULP = _CR + 2.95, _CR + 3.30
+N21, N21E = line_start("n21"), line_end("n21")     # "The sword had saved his life. But not his bones."
+N22, N22E = line_start("n22"), line_end("n22")     # "And he was not alone."
+N23, N23E = line_start("n23"), line_end("n23")     # "Then the darkness took him."
+N24, N24E = line_start("n24"), line_end("n24")     # "When he woke... he could move only one arm."
+N25, N25E = line_start("n25"), line_end("n25")     # "The creature had waited a very long time ..."
+N26, N26E = line_start("n26"), line_end("n26")     # "Someone... had thrown that rock."
+N27, N27E = line_start("n27"), line_end("n27")     # "Anger had no idea how to feel about this."
+BONES = N21E - 0.45                                # the wince lands on "bones"
+ARM_WORDS = N24 + 0.55 * (N24E - N24)              # "...he could move only one arm."
 
 # ---------------------------------------------------------------- cuts
 CUT2 = GROAN - 0.1
 CUT3 = ASSESS + 0.65
-CUT4 = ASSESS + 2.1
-CUT5 = ASSESS + 4.0
+CUT4 = BONES - 1.3
+CUT5 = EYES_AGAIN - 0.9
 CUT6 = EYES_AGAIN + 1.6
+CUT6B = PASS_OUT + 1.6
 CUT7 = WAKE
 CUT8 = WAKE + 0.6
 CUT9 = ONE_ARM
 CUT10 = APPROACH
-CUT11 = APPROACH + 1.6
+CUT11 = APPROACH + 2.6
 CUT12 = ARM_UP - 0.1
 CUT13 = REVEAL
 CUT14 = DROOL - 0.1
@@ -110,20 +120,22 @@ CUT15 = LUNGE
 CUT16 = ONE_EYE
 CUT17 = M01
 CUT18 = HERMIT + 0.1
-CUT19 = GLOVE - 0.25
-CUT19B = TUGS[0] + 0.3
+CUT19 = GLOVE - 0.45
+CUT19B = TUGS[0] + 0.45
 CUT20 = CRUNCH - 0.1
 CUT21 = CRUNCH + 0.65
 
 # =========================================================================== geometry
 LIE_X, LIE_Y = s3.LIE_X, s3.LIE_Y
 CR_S = 0.9                        # crawler scale
-BACK_Y = 1110.0                   # crawler floor behind him
-FRONT_Y = 1215.0                  # crawler floor in front of him
-X_SNARL = 108.0                   # crawler (side) while it snarls over him
-X_APP0 = -240.0                   # where it is when it comes out of the dark (side view)
-X_KO = 190.0                      # where it lies KO
+FRONT_Y = 1215.0                  # the crawler's floor: ALWAYS in front of him (between him and the camera)
+X_SNARL = 138.0                   # crawler (side, facing +1) while it rears over him and snarls
+SNARL_LEAN = 16.0                 # it rears up so its jaws hang above his face
+CREEP_V = 110.0                   # creeping in from the dark at screen-left (stage units/s)
+X_APP0 = -240.0                   # gait reference x
+X_KO = 220.0                      # where it lies KO (it collapses where it was hit: head by his chin)
 LUNGE_HIT = 0.42                  # lunge phase at the clonk
+GRAB_FRAC = 0.55                  # the glove closes on the tail this far back from the tip (the thick meat)
 
 
 def _pose(**kw):
@@ -178,31 +190,34 @@ def _groan_mouth(t):
 
 
 def _look_track(t):
-    """Gaze (look_x, look_y) over the whole scene (screen directions: -x = the dark on the left, -y = up)."""
+    """Gaze over the whole scene in WORLD directions (-x = the dark / his feet on the left, -y = up)."""
     keys = [(T0, (0.0, -0.2)),
-            (ASSESS + 2.35, (0.0, -0.9)),            # up the shaft
-            (ASSESS + 2.95, (-0.7, -0.4)),            # the dark left
-            (ASSESS + 3.55, (0.5, -0.6)),             # the wall
-            (ASSESS + 4.1, (-0.9, 0.0)),              # (POV) ... back to the dark
+            (BONES + 0.45, (0.0, -0.9)),             # up the shaft
+            (BONES + 0.9, (-0.7, -0.4)),              # the dark left
             (EYES_AGAIN + 1.65, (-0.95, -0.15)),      # tracking where it went
-            (EYES_AGAIN + 2.3, (-0.6, -0.5)),
+            (N22 + 0.6, (-0.6, -0.5)),                # "And he was not alone." - searching the dark
+            (N22 + 1.3, (-1.0, 0.0)),
             (PASS_OUT + 0.4, (-0.2, -0.3)),
             (WAKE + 0.95, (-0.9, -0.1)),              # eyes open, find the noise
             (WAKE + 1.5, (-0.3, -0.7)),
-            (ONE_ARM + 0.2, (0.2, -0.4)),             # tries to move: looks at his own arm
-            (ONE_ARM + 0.9, (-0.4, 0.1)),
-            (APPROACH + 1.75, (-1.0, -0.2)),          # it is coming (from the left)
+            (ONE_ARM + 0.35, (-0.55, 0.65)),          # his arm, lying there
+            (ARM_WORDS + 0.15, (-0.45, 0.2)),         # ... following it up
+            (ARM_WORDS + 1.4, (-0.55, 0.6)),          # ... and down
+            (APPROACH + 2.75, (-1.0, -0.2)),          # it is coming (from the left)
             (ARM_UP + 0.3, (-0.7, -0.6)),
-            (REVEAL + 0.15, (-0.5, -1.0)),            # the jaws above him
-            (DROOL_LAND + 0.3, (-0.6, -0.8)),
-            (ONE_EYE + 0.5, (-0.75, 0.25)),           # the monster, out cold, next to him
+            (REVEAL + 0.15, (-0.6, -0.8)),            # the jaws rearing over him
+            (DROOL_LAND + 0.3, (-0.5, -0.7)),
+            (ONE_EYE + 0.5, (-0.45, 0.7)),            # the monster, out cold, right by his chin
             (ONE_EYE + 1.05, (-1.0, -0.2)),           # ... the dark
-            (ONE_EYE + 1.55, (-0.75, 0.25)),          # ... the monster
+            (ONE_EYE + 1.55, (-0.45, 0.7)),           # ... the monster
+            (N26 + 0.35, (-1.0, -0.1)),               # "Someone..." - the dark
+            (N26 + 1.15, (-0.85, -0.4)),
+            (N26 + 1.85, (-1.0, 0.0)),
             (M01 + 0.35, (-1.0, -0.05)),              # the voice
-            (M02 + 0.95, (-0.7, 0.3)),                # "MY lunch": the monster
+            (M02 + 0.95, (-0.45, 0.7)),               # "MY lunch": the monster
             (M02 + 1.6, (-1.0, -0.05)),               # back to the voice
-            (GLOVE + 0.15, (-0.85, 0.25)),            # the glove / the monster sliding away
-            (TUGS[2] + 0.2, (-1.0, 0.1)),
+            (GLOVE + 0.15, (-0.85, 0.45)),            # the glove / the monster sliding away
+            (TUGS[2] + 0.2, (-1.0, 0.2)),
             (CHOMPS[3], (-0.2, -0.35)),               # a blank stare up into nothing
             (GULP + 0.2, (-0.05, -0.3)),
             (CRUNCH_END + 0.15, (-0.95, -0.1))]       # toward the dark
@@ -211,20 +226,27 @@ def _look_track(t):
 
 def anger_pose(t):
     """Anger's whole S4 performance (depths coords)."""
-    # ---- body state: crumpled -> (tries to move) -> lie_back
-    mix = smoothstep((t - (ONE_ARM + 0.15)) / 1.0)
+    # ---- body state: crumpled -> lie_back: he goes limp as the darkness takes him (so that on waking, only
+    #      ONE arm moves)
+    mix = smoothstep((t - (PASS_OUT + 0.8)) / 2.0)
     base = "crumpled"
     # ---- the near (left) arm: twitching fingers, the one-arm try, the weak raise, the sinking
     arm_l = ArmPose(shoulder=-6.0, elbow=22.0, wrist=0.0, hand="relaxed")
     arm_r = ArmPose(shoulder=4.0, elbow=18.0, wrist=10.0, hand="relaxed")
     hand = "relaxed"
-    for k, tw in enumerate((ASSESS + 0.85, ASSESS + 1.25, ASSESS + 1.55, ASSESS + 1.8)):
+    for k, tw in enumerate((CUT3 + 0.25, CUT3 + 0.65, CUT3 + 0.95, CUT3 + 1.2, CUT3 + 1.6)):
         if tw <= t < tw + (0.16 if k != 2 else 0.3):
-            hand = ("claw", "open", "claw", "relaxed")[k]
-    arm_l = ArmPose(arm_l.shoulder + 4.0 * _pulse(t, ASSESS + 1.5, 0.15, 0.2, 0.3), arm_l.elbow, arm_l.wrist
-                    + 8.0 * _pulse(t, ASSESS + 0.85, 0.08, 0.1, 0.2), hand)
-    try_ = _pulse(t, ONE_ARM + 0.3, 0.45, 0.25, 0.5)
-    arm_l = ArmPose.blend(arm_l, ArmPose(shoulder=40.0, elbow=60.0, wrist=6.0, hand="claw"), 0.8 * try_)
+            hand = ("claw", "open", "claw", "relaxed", "claw")[k]
+    arm_l = ArmPose(arm_l.shoulder + 4.0 * _pulse(t, CUT3 + 0.9, 0.15, 0.2, 0.3), arm_l.elbow, arm_l.wrist
+                    + 8.0 * _pulse(t, CUT3 + 0.25, 0.08, 0.1, 0.2), hand)
+    # waking: only the arm - first the fingers, then the forearm lifts, the hand opens and closes, it sinks back
+    if ONE_ARM + 0.4 <= t < ONE_ARM + 0.75:
+        arm_l = ArmPose(arm_l.shoulder, arm_l.elbow, arm_l.wrist + 6.0 * math.sin((t - ONE_ARM - 0.4) * 30.0),
+                        "claw")
+    try_ = _pulse(t, ARM_WORDS, 0.55, 0.45, 0.65)
+    top = ArmPose(shoulder=36.0, elbow=78.0, wrist=10.0 + 4.0 * noise1(t * 7.0, 303),
+                  hand="open" if t < ARM_WORDS + 0.75 else "fist")
+    arm_l = ArmPose.blend(arm_l, top, try_)
     raise_ = smoothstep((t - ARM_UP) / 0.75) * (1.0 - smoothstep((t - (FLOP + 0.25)) / 0.9))
     trem = 3.0 * noise1(t * 9.0, 301) + 2.0 * noise1(t * 3.1, 302)
     wr = ArmPose(shoulder=AR["weak_raise"].shoulder + trem, elbow=AR["weak_raise"].elbow + trem * 0.6,
@@ -247,7 +269,7 @@ def anger_pose(t):
     # the groan
     mo, eff, creak = _groan_mouth(t)
     # wince when he tries to move (assess) and on the one-arm try
-    wince = _pulse(t, ASSESS + 2.15, 0.12, 0.25, 0.5) + 0.8 * _pulse(t, ONE_ARM + 0.45, 0.15, 0.3, 0.5)
+    wince = _pulse(t, BONES - 0.05, 0.12, 0.3, 0.55) + 0.35 * _pulse(t, ARM_WORDS + 0.1, 0.3, 0.5, 0.5)
     # approach: jaw set, breath shallow; drool flinch; brace for the bite (eyes shut)
     tense = smoothstep((t - (APPROACH + 1.7)) / 0.5) * (1 - smoothstep((t - ONE_EYE) / 0.6))
     flinch = _pulse(t, DROOL_LAND + 0.06, 0.05, 0.08, 0.25)
@@ -273,7 +295,7 @@ def anger_pose(t):
     p.extra["dazed"] = clamp(dz)
     p.extra["one_eye"] = one
     p.extra["grimace"] = clamp(0.1 + 0.6 * eff + 0.5 * wince + 0.35 * squeeze + 0.2 * snap)
-    p.extra["strain"] = clamp(0.6 * eff + 0.3 * try_)
+    p.extra["strain"] = clamp(0.6 * eff + 0.25 * try_ + 0.4 * _pulse(t, BONES - 0.6, 0.3, 0.2, 0.3))
     # gaze: the track is in WORLD screen directions (-x = the dark on the left, -y = the ceiling); lying on his
     # back with the crown to the right, the rig's head-local axes map as: look_x = world y, look_y = -world x
     look_x = clamp(gy + ly * (1 - closed), -1.0, 1.0)
@@ -309,14 +331,18 @@ def growl_env(t):
 
 
 def _drag_pull(t):
-    """How far the glove has dragged it left (stage units)."""
-    v = 0.0
-    for k, tg in enumerate(TUGS):
-        v += 210.0 * ease_out(clamp((t - tg) / 0.32))
+    """How far the glove has dragged it left (stage units): one hard yank, two more tugs, then hauled away."""
+    v = 170.0 * ease_out(clamp((t - TUGS[0]) / 0.18))
+    for tg in TUGS[1:]:
+        v += 210.0 * ease_out(clamp((t - tg) / 0.3))
     if t > TUGS[2] + 0.35:
         a = t - (TUGS[2] + 0.35)
         v += 380.0 * a + 300.0 * a * a
     return v
+
+
+def _drag_lift(t):
+    return 60.0 * ease_out(clamp((t - TUGS[0]) / 0.18)) - 15.0 * smoothstep((t - TUGS[0] - 0.25) / 0.4)
 
 
 def _lunge_dx():
@@ -325,72 +351,128 @@ def _lunge_dx():
 
 
 def crawler_pose(t):
-    """(pose, layer) of the crawler in the depths two-shots; layer 'back' (behind Anger) / 'front' / None."""
+    """(pose, layer) of the crawler in the depths two-shots. It is ALWAYS in front of Anger (layer 'front',
+    floor FRONT_Y, facing +1: head toward him / screen-right, tail to the dark at screen-left): it creeps in from
+    the dark, rears up over him, lunges, is clonked and collapses right where it was - until the glove drags it
+    off to screen-left."""
     if t < APPROACH:
         return None, None
-    if t < REVEAL:          # creep in from the dark, behind him
-        v = C.ADVANCE["creep"] * CR_S / 1.3
-        x = X_SNARL - (REVEAL - t) * v * (1.0 - 0.35 * smoothstep((t - (REVEAL - 0.8)) / 0.8))
+    if t < REVEAL:          # creep in out of the dark at screen-left, rearing up as it arrives
+        x = X_SNARL - (REVEAL - t) * CREEP_V * (1.0 - 0.35 * smoothstep((t - (REVEAL - 0.8)) / 0.8))
         ph = (x - X_APP0) / (C.ADVANCE["creep"] * CR_S)
         g = growl_env(t)
-        p = _pose(x=x, y=BACK_Y, scale=CR_S, facing=1.0, head_tilt=-4.0 + 1.5 * g * noise1(t * 11.0, 315),
-                  extra=dict(state="creep", state2="snarl", mix=smoothstep((t - (REVEAL - 0.5)) / 0.5), phase=ph,
+        rear = smoothstep((t - (REVEAL - 0.7)) / 0.7)
+        p = _pose(x=x, y=FRONT_Y, scale=CR_S, facing=1.0, lean=SNARL_LEAN * rear,
+                  head_tilt=-4.0 + 1.5 * g * noise1(t * 11.0, 315),
+                  extra=dict(state="creep", state2="snarl", mix=rear, phase=ph,
                              jaw=0.12 + 0.16 * g + 0.04 * g * noise1(t * 13.0, 316), drool=0.5))
-        return p, "back"
-    if t < LUNGE:           # snarl over him
+        return p, "front"
+    if t < LUNGE:           # reared over him, snarling
         jaw = lerp(0.18, 0.88, ease_out(clamp((t - HISS) / 0.12)))
         jaw -= 0.25 * _pulse(t, HISS + 1.15, 0.3, 0.6, 0.6)
         jaw += 0.06 * noise1(t * 6.0, 311)
-        p = _pose(x=X_SNARL, y=BACK_Y, scale=CR_S, facing=1.0,
+        p = _pose(x=X_SNARL, y=FRONT_Y, scale=CR_S, facing=1.0,
+                  lean=SNARL_LEAN + 1.5 * math.sin(t * 2 * math.pi * 0.9),
                   head_tilt=4.0 * _pulse(t, HISS, 0.1, 0.8, 0.5) + 2.0 * noise1(t * 0.8, 312),
-                  extra=dict(state="snarl", jaw=clamp(jaw), drool=0.55, tongue=0.6))
-        return p, "back"
+                  extra=dict(state="snarl", jaw=clamp(jaw), drool=0.55, tongue=0.25))
+        return p, "front"
     if t < BONK:            # the lunge
         u = clamp((t - LUNGE) / (BONK - LUNGE))
         ph = 0.35 * smoothstep(u / 0.6) + (LUNGE_HIT - 0.35) * ease_in(clamp((u - 0.6) / 0.4))
-        p = _pose(x=X_SNARL, y=BACK_Y, scale=CR_S, facing=1.0, extra=dict(state="lunge", phase=ph))
-        return p, "back"
-    # clonk -> KO: it drops down in FRONT of him (the hit knocks it off its line)
+        p = _pose(x=X_SNARL, y=FRONT_Y, scale=CR_S, facing=1.0, lean=lerp(SNARL_LEAN, 6.0, smoothstep(u)),
+                  extra=dict(state="lunge", phase=ph))
+        return p, "front"
+    if t >= GLOVE - 0.05 and t >= TUGS[0] - 0.06:   # dragged away by the tail (the fist holds GRAB_FRAC of it)
+        pull = _drag_pull(t - 0.05)
+        dm = smoothstep((t - (TUGS[0] - 0.06)) / 0.2)
+        ex = dict(state="ko", state2="dragged", mix=dm, tail_to=glove_point(t), tail_grab=GRAB_FRAC,
+                  tail_squeeze=glove_squeeze(t))
+        return _pose(x=X_KO - pull, y=FRONT_Y, scale=CR_S, facing=1.0, extra=ex), "front"
+    # clonk -> KO: it collapses where it was hit (in front of him), the lunge's travel absorbed into the drop
     a = t - BONK
     m = smoothstep(a / 0.38)
     dx = _lunge_dx()
-    x0 = X_SNARL + dx
-    x = lerp(x0, X_KO, ease_out(clamp(a / 0.42)))
-    fall = clamp(a / (THUD - BONK))
-    y = lerp(BACK_Y - 30.0, FRONT_Y, fall * fall) if a < (THUD - BONK) else FRONT_Y
+    x = lerp(X_SNARL + dx, X_KO, ease_out(clamp(a / 0.42)))
     flop = 9.0 * _pulse(t, FLOP - 0.02, 0.05, 0.02, 0.15)
     ex = dict(state="lunge", phase=LUNGE_HIT, state2="ko", mix=m)
-    # the lunge carries its own forward travel: shift the pose so the blend does not slide
-    x_l = x - dx * (1 - m)
-    if t >= GLOVE - 0.05:   # dragged away by the tail
-        pull = _drag_pull(t)
-        dm = smoothstep((t - (TUGS[0] - 0.05)) / 0.25)
-        ex = dict(state="ko", state2="dragged", mix=dm, tail_to=glove_point(t))
-        p = _pose(x=X_KO - pull, y=FRONT_Y, scale=CR_S, facing=1.0, extra=ex)
-        return p, "front"
-    p = _pose(x=x_l, y=y - flop, scale=CR_S, facing=1.0,
+    if t >= GLOVE - 0.05:
+        ex = dict(state="ko", tail_grab=GRAB_FRAC, tail_squeeze=glove_squeeze(t))
+    p = _pose(x=x - dx * (1 - m), y=FRONT_Y - flop, scale=CR_S, facing=1.0, lean=6.0 * (1.0 - m),
               head_tilt=28.0 * _pulse(t, BONK, 0.03, 0.08, 0.4), extra=ex)
     p.extra["twitch"] = 1.0 if t > FLOP + 0.6 else 0.0
     return p, "front"
 
 
-def ko_tail_tip():
-    p = _pose(x=X_KO, y=FRONT_Y, scale=CR_S, facing=1.0, extra=dict(state="ko"))
+def _ko_pose():
+    return _pose(x=X_KO, y=FRONT_Y, scale=CR_S, facing=1.0, extra=dict(state="ko"))
+
+
+def grab_point():
+    """Where the fist closes: on the thick meat of the tail (GRAB_FRAC back from the tip), as it lies KO."""
+    p = _ko_pose()
+    if hasattr(C, "tail_point"):
+        return C.tail_point(p, GRAB_FRAC, GLOVE)
     return C.tail_tip(p, GLOVE)
 
 
+def ko_tail_tip():
+    return C.tail_tip(_ko_pose(), GLOVE)
+
+
 def glove_point(t):
-    """The glove's grip point: reaches the KO tail tip out of the dark, then pulls."""
-    tx, ty = ko_tail_tip()
+    """The fist: lunges in out of the dark onto the tail, clamps, a beat, then the yank and the drag."""
+    gx, gy = grab_point()
     if t < GLOVE:
-        u = ease_out(clamp((t - CUT19) / (GLOVE - CUT19)))
-        return lerp(tx - 520.0, tx - 4.0, u), lerp(ty - 70.0, ty - 6.0, u)
-    pull = _drag_pull(t + 0.06)
-    return tx - 4.0 - pull, ty - 6.0 - 12.0 * smoothstep((t - TUGS[0]) / 0.3)
+        u = ease_out(clamp((t - (GLOVE - 0.3)) / 0.3))
+        return lerp(gx - 430.0, gx, u), lerp(gy - 170.0, gy - 2.0, u)
+    beat_ = 1.0 if GRIP_CLOSE <= t < TUGS[0] else 0.0
+    trem = 1.6 * noise1(t * 28.0, 391) * beat_
+    return gx - _drag_pull(t), gy - 2.0 - _drag_lift(t) + trem
 
 
 def glove_grip(t):
-    return smoothstep((t - (GRIP_CLOSE - 0.08)) / 0.1)
+    return smoothstep((t - GLOVE) / (GRIP_CLOSE - GLOVE))
+
+
+def glove_squeeze(t):
+    if t < GLOVE:
+        return 0.0
+    sq = 0.65 * glove_grip(t) + 0.35 * _pulse(t, GRIP_CLOSE, 0.06, 0.12, 0.15)
+    return clamp(max(sq, 0.85 * glove_grip(t)) + 0.15 * max(_pulse(t, tg, 0.05, 0.15, 0.2) for tg in TUGS))
+
+
+def glove_tug(t):
+    return clamp(max(_pulse(t, tg - 0.03, 0.05, 0.2, 0.25) for tg in TUGS) + (0.6 if t > TUGS[2] + 0.35 else 0.0))
+
+
+_GLOVE_KW = None
+
+
+def draw_glove(c, t, cp, layer):
+    """The glove at its fist point, reaching along the tail (toward the body), sized / squeezing / tugging."""
+    global _GLOVE_KW
+    if _GLOVE_KW is None:
+        import inspect
+        try:
+            _GLOVE_KW = set(inspect.signature(C.draw_glove).parameters)
+        except (TypeError, ValueError):     # pragma: no cover
+            _GLOVE_KW = set()
+    gx, gy = glove_point(t)
+    ang = 6.0
+    if cp is not None and hasattr(C, "tail_point") and t >= GLOVE - 0.05:
+        bx, by = C.tail_point(cp, min(1.0, GRAB_FRAC + 0.12), t)
+        ang = math.degrees(math.atan2(by - gy, bx - gx))
+    elif t < GLOVE:
+        ang = lerp(25.0, 6.0, ease_out(clamp((t - (GLOVE - 0.3)) / 0.3)))
+    kw = {}
+    if "tail_r" in _GLOVE_KW and hasattr(C, "tail_radius"):
+        kw["tail_r"] = C.tail_radius(_ko_pose(), GRAB_FRAC)
+    if "squeeze" in _GLOVE_KW:
+        kw["squeeze"] = glove_squeeze(t)
+    if "tug" in _GLOVE_KW:
+        kw["tug"] = glove_tug(t)
+    with Layer(c, cf=light_filter(0.85)):
+        C.draw_glove(c, gx, gy, 0.95, grip=glove_grip(t), angle=ang, layer=layer, **kw)
 
 
 def draw_crawler(c, t, p, amb, L):
@@ -622,16 +704,13 @@ def draw_world(c, t, cam, *, anger=True, crawler=True, glove=True, rock=True, du
         A.draw(c, anger_lit(p, t, amb, L), t)
     if crawler:
         draw_drool(c, t)
-    gp = None
-    if glove and CUT19 <= t < CRUNCH + 0.5:
-        gp = glove_point(t)
-        with Layer(c, cf=light_filter(0.8)):
-            C.draw_glove(c, gp[0], gp[1], 0.95, grip=glove_grip(t), angle=4.0, layer="back")
+    show_glove = glove and CUT19 <= t < CRUNCH + 0.5
+    if show_glove:
+        draw_glove(c, t, cp, "back")
     if cp is not None and layer == "front":
         draw_crawler(c, t, cp, amb, L)
-    if gp is not None:
-        with Layer(c, cf=light_filter(0.8)):
-            C.draw_glove(c, gp[0], gp[1], 0.95, grip=glove_grip(t), angle=4.0, layer="front")
+    if show_glove:
+        draw_glove(c, t, cp, "front")
     if rock:
         draw_rock(c, t)
     if extra is not None:
@@ -660,10 +739,13 @@ def face_cam(t, zoom, sx=0.5, sy=0.45, dx=0.0, dy=0.0, at=None, rot=FACE_ROT):
     return cam_on_rot((hc[0] + dx, hc[1] + dy), zoom, sx, sy, rot)
 
 
-def cu(t, cut, end, z0, z1, sx=0.5, sy=0.45, dx=0.0, dy=0.0):
+CRAWLER_ROT = -55.0  # close-ups with the crawler in them roll less: it stays below-left of his face, as in the wides
+
+
+def cu(t, cut, end, z0, z1, sx=0.5, sy=0.45, dx=0.0, dy=0.0, rot=FACE_ROT):
     """Face close-up framed at the cut, with a slow push from z0 to z1: (camera, start camera)."""
     u = ease_in_out(clamp((t - cut) / (end - cut)))
-    return face_cam(cut, lerp(z0, z1, u), sx, sy, dx, dy), face_cam(cut, z0, sx, sy, dx, dy)
+    return (face_cam(cut, lerp(z0, z1, u), sx, sy, dx, dy, rot=rot), face_cam(cut, z0, sx, sy, dx, dy, rot=rot))
 
 
 def _blur(c, t, amount):
@@ -681,8 +763,8 @@ def _blur_amt(t):
 # =========================================================================== shots
 def shot1(c, t):
     u = ease_in_out(clamp((t - T0) / (CUT2 - T0)))
-    a = Camera(352.0, 830.0, 1.09)                     # = S3's last framing
-    b = face_cam(t, 1.19, 0.55, 0.52, rot=0.0)      # (stays inside one tile-resolution bucket)
+    a = s3.M_CAM1                                      # = S3's last framing
+    b = face_cam(t, 0.84, 0.55, 0.55, rot=0.0)      # (stays inside one tile-resolution bucket)
     cam = cam_mix(a, b, u * 0.9)
     draw_world(c, t, cam, crawler=False, vig=0.55)
     _blur(c, t, _blur_amt(t))
@@ -701,7 +783,7 @@ def shot3(c, t):
     cam = Camera(hx + 20 - 10 * u, hy - 30, lerp(3.0, 3.2, u))
 
     def pebbles(cc):   # a few grains roll off as the fingers scrape
-        for i, tw in enumerate((ASSESS + 0.85, ASSESS + 1.55)):
+        for i, tw in enumerate((CUT3 + 0.25, CUT3 + 0.95)):
             fx.debris(cc, t, t - tw - 0.03, (hx + 22, hy + 14), seed=330 + i, kind="stone", n=4, speed=90,
                       direction=-40, spread=60, size=0.35, gravity=1500, floor_y=hy + 30, life=1.2)
     draw_world(c, t, cam, crawler=False, vig=0.55, extra=pebbles)
@@ -728,8 +810,8 @@ def lurker_pose(t):
 
 def shot5(c, t):
     """POV: a slow, woozy pan across the dark grotto; the eyes; the scurry."""
-    u = ease_in_out(clamp((t - CUT5) / (EYES_AGAIN - 0.2 - CUT5)))
-    a = Camera(760.0, 640.0, 0.9, rot=-4.0)
+    u = ease_in_out(clamp((t - CUT5) / (EYES_AGAIN + 0.4 - CUT5)))
+    a = Camera(560.0, 700.0, 0.92, rot=-3.0)
     b = Camera(90.0, 920.0, 1.0, rot=2.0)
     cam = cam_mix(a, b, u)
     cam = Camera(cam.cx + 6 * noise1(t * 0.5, 351), cam.cy + 5 * noise1(t * 0.45, 352), cam.zoom, cam.rot)
@@ -755,12 +837,21 @@ def shot5(c, t):
 
 
 def shot6(c, t):
-    """Close-up: eyes track the scurry; pass out (the lids close, the frame dims); dark hold."""
-    cam, c0 = cu(t, CUT6, CUT7, 2.45, 2.85, 0.5, 0.46, dx=-8)
+    """Close-up: eyes track the scurry ("And he was not alone."); pass out: the lids close, the frame dims."""
+    cam, c0 = cu(t, CUT6, CUT6B, 2.45, 2.85, 0.5, 0.46, dx=-8)
     dim = 0.55 * smoothstep((t - (PASS_OUT + 0.3)) / 1.6)
     amb = lerp(DEP_AMB, 0.085, smoothstep((t - PASS_OUT) / 1.5))
     draw_world(c, t, cam, crawler=False, vig=lerp(0.55, 0.85, dim / 0.55), amb=amb, dim=dim, bg0=c0)
     _blur(c, t, 0.45 * smoothstep((t - (PASS_OUT + 0.2)) / 1.2))
+
+
+def shot6b(c, t):
+    """"Then the darkness took him.": a dim, still wide - he lies small in the dark, going limp."""
+    u = ease_in_out(clamp((t - CUT6B) / (CUT7 - CUT6B)))
+    cam = cam_mix(Camera(300.0, 900.0, 0.74), Camera(310.0, 910.0, 0.78), u)
+    dim = 0.5 - 0.15 * smoothstep((t - (CUT7 - 0.6)) / 0.6)
+    draw_world(c, t, cam, crawler=False, vig=0.8, amb=0.085, dim=dim)
+    _blur(c, t, 0.35)
 
 
 def shot7(c, t):
@@ -794,8 +885,8 @@ def shot8(c, t):
 
 
 def shot9(c, t):
-    u = ease_in_out(clamp((t - CUT9) / (CUT10 - CUT9)))
-    cam = cam_mix(Camera(330.0, 985.0, 1.3), Camera(345.0, 990.0, 1.38), u)
+    """"When he woke... he could move only one arm.": a static medium - only the near arm moves."""
+    cam = Camera(290.0, 990.0, 1.25)
     draw_world(c, t, cam, crawler=False, vig=0.55)
 
 
@@ -858,7 +949,7 @@ def shot13(c, t):
 
 
 def shot14(c, t):
-    cam, c0 = cu(t, CUT14, CUT15, 2.1, 2.25, 0.55, 0.55, dx=-40)
+    cam, c0 = cu(t, CUT14, CUT15, 2.1, 2.25, 0.55, 0.55, dx=-40, rot=CRAWLER_ROT)
     draw_world(c, t, cam, vig=0.55, bg0=c0)
 
 
@@ -870,7 +961,7 @@ def shot15(c, t):
 
 
 def shot16(c, t):
-    cam, c0 = cu(t, CUT16, CUT17, 2.0, 2.2, 0.6, 0.45, dx=-60, dy=20)
+    cam, c0 = cu(t, CUT16, CUT17, 2.0, 2.2, 0.6, 0.45, dx=-60, dy=20, rot=CRAWLER_ROT)
     draw_world(c, t, cam, vig=0.55, bg0=c0)
 
 
@@ -881,15 +972,17 @@ def shot17(c, t):
 
 
 def shot18(c, t):
-    cam, c0 = cu(t, CUT18, CUT19, 2.35, 2.55, 0.55, 0.42, dx=-10)
+    cam, c0 = cu(t, CUT18, CUT19, 2.35, 2.55, 0.55, 0.42, dx=-10, rot=CRAWLER_ROT)
     draw_world(c, t, cam, vig=0.55, bg0=c0)
 
 
 def shot19(c, t):
-    """Close: the glove reaches out of the dark and closes on the tail; the first tug."""
-    tx, ty = ko_tail_tip()
+    """Close insert: the glove lunges out of the dark onto the meat of the tail, the fist clamps and squeezes,
+    a beat - then the hard yank (the camera jolts with it)."""
+    gx, gy = grab_point()
     u = ease_in_out(clamp((t - CUT19) / (CUT19B - CUT19)))
-    cam = Camera(tx + 60.0 - 40.0 * u, ty - 60.0, 1.45)
+    cam = Camera(gx + 40.0 - 30.0 * u, gy - 45.0 - 15.0 * u, 2.1)
+    cam = fx.camera_shake(cam, t, [(GRIP_CLOSE, 3.0, 0.2), (TUGS[0], 12.0, 0.35)], seed=43, rot=False)
     draw_world(c, t, cam, vig=0.55)
 
 
@@ -914,7 +1007,7 @@ def shot21(c, t):
     draw_world(c, t, cam, vig=0.55, bg0=c0)
 
 
-SHOTS = [(T0, shot1), (CUT2, shot2), (CUT3, shot3), (CUT4, shot4), (CUT5, shot5), (CUT6, shot6), (CUT7, shot7),
+SHOTS = [(T0, shot1), (CUT2, shot2), (CUT3, shot3), (CUT4, shot4), (CUT5, shot5), (CUT6, shot6), (CUT6B, shot6b), (CUT7, shot7),
          (CUT8, shot8), (CUT9, shot9), (CUT10, shot10), (CUT11, shot11), (CUT12, shot12), (CUT13, shot13),
          (CUT14, shot14), (CUT15, shot15), (CUT16, shot16), (CUT17, shot17), (CUT18, shot18), (CUT19, shot19),
          (CUT19B, shot19b), (CUT20, shot20), (CUT21, shot21)]
@@ -935,8 +1028,8 @@ def render(canvas, t):
 # =========================================================================== motion-locked SFX
 def sfx_events():
     return [
-        {"name": "armor_shift", "start": round(ASSESS + 2.1, 3), "gain_db": -20.0},     # the wince (tries to move)
-        {"name": "armor_shift", "start": round(ONE_ARM + 0.3, 3), "gain_db": -16.0},    # tries to rise
+        {"name": "armor_shift", "start": round(BONES - 0.1, 3), "gain_db": -20.0},      # the wince (tries to move)
+        {"name": "armor_shift", "start": round(ARM_WORDS + 0.05, 3), "gain_db": -18.0},  # the one arm lifts
         {"name": "armor_shift", "start": round(ARM_UP + 0.05, 3), "gain_db": -18.0},    # the weak raise
         {"name": "armor_shift", "start": round(FLOP + 0.3, 3), "gain_db": -20.0},       # the arm sinks
     ]

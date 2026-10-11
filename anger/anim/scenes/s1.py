@@ -31,8 +31,8 @@ import skia
 
 from anim import char_anger as A
 from anim import env, fx, light
-from anim.core import (Camera, Track, beat, clamp, ease_in_out, ease_out, lerp, music_cue, noise1, scene_span,
-                       smoothstep)
+from anim.core import (Camera, Track, beat, clamp, ease_in_out, ease_out, lerp, line_end, line_start, music_cue,
+                       noise1, scene_span, smoothstep)
 from anim.rig import ArmPose, Pose
 from config import MUSIC_ENV
 
@@ -43,10 +43,15 @@ FLOOR = env.FLOOR_Y
 
 # =========================================================================== shared helpers (also used by s2)
 def cue_beats(cue):
-    """Absolute beat times of a music cue (build/music/envelopes.json 'beats'), [] if unavailable."""
+    """Absolute beat times of a music cue (build/music/envelopes.json 'beats'), [] if unavailable or stale
+    (the envelope's length must match the cue's span in build/timeline.json)."""
     try:
         d = json.loads(Path(MUSIC_ENV).read_text())[cue]
-        st = music_cue(cue)["start"]
+        m = music_cue(cue)
+        st = m["start"]
+        n = len(d.get("rms", []))
+        if n and abs(n / 24.0 - (m["end"] - st)) > 0.6:
+            return []
         return [round(st + b, 4) for b in d.get("beats", [])]
     except Exception:
         return []
@@ -202,22 +207,45 @@ _BEATS = cue_beats("descent")
 
 
 def _beats(a, b, fallback):
+    """The score's real beat times in [a, b] when they make a sane walk (similar count, 0.45-0.8 s apart),
+    otherwise the fallback grid."""
     got = [x for x in _BEATS if a - 1e-6 <= x <= b + 1e-6]
-    return got if got else fallback
+    if len(got) >= 2 and abs(len(got) - len(fallback)) <= 1 and \
+            all(0.45 <= y - x <= 0.8 for x, y in zip(got[:-1], got[1:])):
+        return got
+    return fallback
 
 
-# footfalls: the walk grid (taiko on every 0.55 s), then the ritardando beats as he reaches the vines
-W1 = _beats(WALK_START, VINES, [WALK_START + 0.55 * k for k in range(18)])
-W2 = _beats(CHOPS[2] + 0.9, WEBS, [WEBS - 0.05 - 0.5875 * k for k in (2, 1, 0)])
-W3 = _beats(SWIPES[1] + 0.45, DOOR_ARRIVE, [DOOR_ARRIVE - 0.675 * k for k in (3, 2, 1, 0)])
+def _grid_to(end, after, step=0.55):
+    """Footfalls step apart ending exactly on `end`, all later than `after`."""
+    out = []
+    k = 0
+    while end - step * k > after:
+        out.append(end - step * k)
+        k += 1
+    return sorted(out)
+
+
+# footfalls: the walk grid walk_start + k*0.55 (one taiko per footfall) until he reaches the vines; after the
+# vines the score's real beats (fallback: 0.55 s steps that land exactly on the next set-piece beat)
+W1 = [WALK_START + 0.55 * k for k in range(64) if WALK_START + 0.55 * k <= VINES - 0.3]
+if len(W1) % 2 == 1:
+    W1 = W1[:-1]
+W2 = _beats(CHOPS[2] + 0.85, WEBS, _grid_to(WEBS - 0.05, CHOPS[2] + 0.85))
+W3 = _beats(SWIPES[1] + 0.45, DOOR_ARRIVE, _grid_to(DOOR_ARRIVE, SWIPES[1] + 0.45))
 WB = _beats(BACK_UP + 0.1, CHARGE - 0.3, [BACK_UP + 0.6 * k for k in (1, 2, 3)])
+# parity: walk 1 and walk 3 must stop on the left foot (even count), walk 2 on the right (odd count)
+if len(W2) % 2 == 0:
+    W2 = W2[1:]
+if len(W3) % 2 == 1:
+    W3 = W3[1:]
 RUNP = [CHARGE + 0.31 * k for k in range(6) if CHARGE + 0.31 * k < BURST]
 
 # ---------------------------------------------------------------- positions (stage x)
 XC = 590.0                       # chop stance: the blade crosses the vine curtain (x 825..1175) around y 300
 X_SW = 1900.0                    # swipe stance: the back-hand sweep crosses web A, and web B's lower half
-XD = env.DOOR_RING_POS[0] - 176.0  # door stance (door_push reaches 176 forward to the ring)
-X_DS = XD + 12.0                 # plain stance at the door (left foot where door_push puts it)
+XD = env.DOOR_RING_POS[0] - 140.0  # door stance: close enough that the gauntlet stays on the ring through the yank
+X_DS = XD - 4.0                  # plain stance at the door: feet centred where door_push widens them
 
 # walk 1: right foot plants at W1[0] (phase 0); stop on the left foot (last plant) into "stand" at XC + 4
 G1 = gait_track(W1, 0.0, 0.5, lead_rate=0.5 / 0.55)
@@ -274,32 +302,35 @@ def xr(q):
 # in the doorway after the burst
 X_IN, Y_IN, S_IN = env.DOOR_X - 70.0, env.DOOR_BOTTOM + 8.0, 0.92
 SETTLE = (BURST, BURST + 0.62)
-REACH = (TRIES[0] - 0.62, TRIES[0] - 0.12)            # hand onto the iron ring
-REL = (TRIES[1] + 0.65, TRIES[1] + 0.95)              # lets go of it
+REACH = (TRIES[0] - 0.5, TRIES[0] - 0.09)             # hand onto the iron ring (just after the door reveal)
+REL = (TRIES[1] + 0.8, TRIES[1] + 1.1)                # lets go of it (inside the flat-look close-up)
 SHEATH_ANGLE = 205.0                                   # blade direction in the scabbard (deg from up)
 DRAW = (BURST + 2.05, BURST + 2.45, BURST + 2.95)       # reach the hilt, sword out, down to the guard
 STEP_OUT = T1                                          # first plant of S2 (right foot) on the reveal beat
 STEPON = (STEP_OUT - 0.4 / (0.5 / 0.55), STEP_OUT)
 
 # ---------------------------------------------------------------- shots (cut times)
-CUT_LOW = 7.3                  # 2  low-angle profile wide
-CUT_BOOTS = 10.35              # 3  boots insert on the taiko
-CUT_VINES = 12.55              # 4  the vine curtain (wide), he walks up and stops
-CUT_LOOKUP = VINES + 0.45      # 5  close: looks up at the vines, sword comes up
-CUT_CHOP1 = CHOPS[0] - 0.2     # 6  chop 1, medium-wide low angle
-CUT_CHOP2 = CONTACT[0] + 0.45  # 7  chop 2, closer (the stance resets between chops off-screen)
-CUT_CHOP3 = CONTACT[1] + 0.75  # 8  chop 3, wide - the curtain falls
-CUT_WEBS = CHOPS[2] + 0.67     # 9  the webs (wide): walks in, swipe 1
-CUT_WEBCU = SWIPES[0] + 0.4    # 10 close: eyes flick up to web B
-CUT_WEB2 = SWIPES[1] - 0.3     # 11 wide: swipe 2, walks on
-CUT_DOORAPP = W3[1] + 0.05     # 12 tracking medium: the approach
-CUT_DOOR = DOOR_ARRIVE         # 13 the door (frontal wide)
-CUT_RING = DOOR_ARRIVE + 0.9   # 14 medium-close: eyes to the ring, the reach
-CUT_TRIES = TRIES[0] - 0.05    # 15 medium: two tries, locked
-CUT_FLAT = TRIES[1] + 0.78     # 16 close-up: the flat look
-CUT_BACK = BACK_UP             # 17 wide side: backs up, shoulder roll, head down
-CUT_RUN = CHARGE               # 18 tracking: the charge
+N01, N02, N03, N04, N05, N06, N07, N08 = [(line_start(k), line_end(k)) for k in
+                                          ("n01", "n02", "n03", "n04", "n05", "n06", "n07", "n08")]
+CUT_LOW = N02[0] - 0.6         # 2  low-angle profile wide (n01 ends on "...a warrior named Anger")
+CUT_GRIM = N02[0] + 1.0        # 3  close, tracking: the grim face ("very few words... even fewer smiles")
+CUT_BOOTS = N02[1] + 0.15      # 4  boots insert on the taiko
+CUT_VINES = N03[0] + 0.2       # 5  the vine curtain (wide) on "vines": he walks up and stops
+CUT_LOOKUP = VINES + 0.45      # 6  close: looks up at the vines, sword comes up ("he did not go around")
+CUT_CHOP1 = CHOPS[0] - 0.2     # 7  chop 1, medium-wide low angle
+CUT_CHOP2 = CONTACT[0] + 0.45  # 8  chop 2, closer (the stance resets between chops off-screen)
+CUT_CHOP3 = CONTACT[1] + 0.75  # 9  chop 3, wide - the curtain falls
+CUT_WEBS = N04[0] + 0.07       # 10 the webs (wide) on "Cobwebs": he walks in, swipe 1
+CUT_WEBCU = SWIPES[0] + 0.4    # 11 close: eyes flick up to web B
+CUT_WEB2 = SWIPES[1] - 0.3     # 12 wide: swipe 2, walks on
+CUT_DOORAPP = W3[1] + 0.05     # 13 tracking close: the approach (the door not yet in frame)
+CUT_DOOR = N05[1] - 0.45       # 14 the door reveal (frontal wide) on "...door": the reach, try 1
+CUT_TRIES = TRIES[1] - 0.75    # 15 medium-wide: try 2, locked
+CUT_FLAT = TRIES[1] + 0.78     # 16 close-up: the flat look, held through "It was locked."
+CUT_BACK = BACK_UP             # 17 wide side: backs up, shoulder roll, head down ("did not believe in...")
+CUT_RUN = CHARGE               # 18 tracking: the charge ("...locked doors")
 CUT_SLAM = CHARGE + 1.05       # 19 frontal door wide: impact + burst
+DOOR_CHEAT = 640.0             # the approach shot plays further back down the tunnel (door off-screen)
 CUT_IN = BURST + 1.3           # 20 in the doorway: dust settles, sword drawn, steps through
 
 
@@ -337,15 +368,28 @@ def ring_point(t):
     return ox + dx + vx * math.cos(a) - vy * math.sin(a), oy + vx * math.sin(a) + vy * math.cos(a)
 
 
+PULL_PEAK = 0.45     # the yank leans him back only this far, so the gauntlet can stay on the ring
+
+
+def _soft_pull(u):
+    """Remap the pull half of door_push (u 0..0.5) so the pull amount peaks at PULL_PEAK (continuous)."""
+    if u >= 0.5:
+        return u
+    a = math.asin(PULL_PEAK * math.sin(math.pi * u / 0.5)) / math.pi * 0.5
+    return a if u <= 0.25 else 0.5 - a
+
+
 def door_u(t, k):
     """door_push phase for try k: pull peak (0.25) on the yank thunk, push peak (0.75) on the shove."""
     y, s = YANK[k], SHOVE[k]
     r = 0.5 / (s - y)
     if t < y:
-        return clamp(0.25 - (y - t) * r * 1.0, 0.0, 1.0)
-    if t < s:
-        return 0.25 + (t - y) * r
-    return clamp(0.75 + (t - s) * r, 0.0, 1.0)
+        u = clamp(0.25 - (y - t) * r * 1.0, 0.0, 1.0)
+    elif t < s:
+        u = 0.25 + (t - y) * r
+    else:
+        u = clamp(0.75 + (t - s) * r, 0.0, 1.0)
+    return _soft_pull(u)
 
 
 # =========================================================================== chop / swipe phase tracks
@@ -366,8 +410,10 @@ def swipe_u(t, k):
 # =========================================================================== the performance
 GAZE = Gaze([
     (0.0, 0.35, 0.3), (1.25, 0.55, -0.04), (2.62, 0.78, 0.02), (2.98, 0.52, -0.06),
-    (4.7, 0.62, 0.06), (6.15, 0.85, -0.3), (6.75, 0.6, 0.0), (8.4, 0.78, 0.18), (8.9, 0.62, 0.02),
-    (10.7, 0.82, -0.12), (12.35, 0.66, 0.0),
+    (4.7, 0.62, 0.06), (6.15, 0.85, -0.3), (6.75, 0.6, 0.0), (7.85, 0.78, 0.18),
+    # the grim close-up (n02): eyes fixed ahead, one flick up the wall and back, nothing else moves
+    (N02[0] + 0.9, 0.74, 0.02), (N02[0] + 1.75, 0.95, -0.14, 0.08), (N02[0] + 2.2, 0.74, 0.03),
+    (N02[1] + 0.5, 0.66, 0.0), (N03[0] + 0.6, 0.8, -0.1), (VINES - 0.9, 0.7, -0.2),
     (VINES + 0.05, 0.7, -0.55, 0.12), (VINES + 0.62, 0.55, -0.32), (CHOPS[0] - 0.42, 0.72, -0.3),
     (CHOPS[2] + 0.42, 0.6, 0.38), (CHOPS[2] + 1.1, 0.72, 0.0),
     (WEBS - 0.25, 0.78, -0.22), (SWIPES[0] - 0.4, 0.82, -0.12), (SWIPES[0] + 0.62, 0.68, -0.62, 0.12),
@@ -378,7 +424,7 @@ GAZE = Gaze([
     (CHARGE + 0.1, 0.85, -0.3), (BURST + 0.62, 0.7, -0.05), (BURST + 1.6, 0.92, 0.02), (DRAW[0] - 0.05, 0.6, 0.12),
     (DRAW[2] + 0.1, 0.88, 0.0),
 ])
-BLINKS = [1.0, 2.36, 5.45, 9.25, VINES + 0.03, CHOPS[2] + 0.4, WEBS - 0.3, SWIPES[0] + 0.6, DOOR_ARRIVE + 0.1,
+BLINKS = [1.0, 2.36, 5.45, N02[0] + 0.55, N02[1] - 0.35, VINES + 0.03, CHOPS[2] + 0.4, WEBS - 0.3, SWIPES[0] + 0.6, DOOR_ARRIVE + 0.1,
           TRIES[0] + 0.72, TRIES[1] + 1.15, BACK_UP + 0.95, BURST + 0.75, BURST + 1.75, DRAW[2] + 0.25]
 
 
@@ -416,6 +462,11 @@ def _face(p, t):
     grim = max(grim, 0.6 * bump(t, CHARGE - 0.05, CHARGE + 0.2, BURST + 0.1, BURST + 0.6))
     squint = max(squint, 0.4 * bump(t, CHARGE - 0.05, CHARGE + 0.2, BURST + 0.1, BURST + 0.7))
     squint = max(squint, 0.18 * bump(t, BURST + 1.2, BURST + 1.6, DRAW[0], DRAW[0] + 0.4))   # peering into the dark
+    # "...and even fewer smiles": the mouth corners settle a hair lower, the jaw sets (subtle)
+    k_grim = bump(t, N02[1] - 1.9, N02[1] - 1.2, N02[1] + 0.6, N02[1] + 1.4)
+    smile -= 0.1 * k_grim
+    grim = max(grim, 0.12 * k_grim)
+    furrow += 0.08 * k_grim
     p.squint = squint
     b = blinks(t, BLINKS)
     p.lid_l = p.lid_r = clamp(lid) * b
@@ -449,7 +500,7 @@ def _sword_state(t):
     return "back"
 
 
-SHEATHE = (W2[0] + 0.15, W2[0] + 0.58, W2[0] + 1.0)     # reach the hilt, swap, hand back down
+SHEATHE = (W2[-3] + 0.1, W2[-3] + 0.53, W2[-3] + 0.95)  # reach the hilt, swap, hand back down (in frame)
 
 
 def _stop(t, g, xf, stop, side_planted, target):
@@ -610,6 +661,8 @@ def anger_pose(t):
             xw = X_IN + (STANCE["stand"]["l"] - foot_fwd(-0.4, "l") + (q2 + 0.4) * A.WALK_ADVANCE) * S_IN
             p.x = lerp(X_IN, xw, ms)
             p.extra.update(state="stand", state_b="walk", phase_b=q2, phase=q2, mix=ms)
+    if CUT_DOORAPP <= t < CUT_DOOR:
+        p.x -= DOOR_CHEAT                  # the approach shot plays further back down the tunnel
     # ---------------------------------------------------------------- arms / props over the states
     ex = p.extra
     sw = _sword_state(t)
@@ -680,9 +733,12 @@ def camera(t):
         fx_ = lerp(xs + 96.0, xs + 120.0, k)
         fy_ = lerp(398.0, 600.0, k)
         return cam_at(fx_, fy_, z, 0.5, lerp(0.37, 0.5, k))
-    if t < CUT_BOOTS:
+    if t < CUT_GRIM:
         xa = _x_smooth(CUT_LOW)
-        return Camera(xa + 260.0 + (_x_smooth(t) - xa) * 0.55, 730.0, 0.78)
+        return Camera(xa + 220.0 + (_x_smooth(t) - xa) * 0.6, 730.0, 0.78)
+    if t < CUT_BOOTS:
+        # close, tracking with him: the grim face (no smile)
+        return cam_at(_x_smooth(t) + 72.0, 400.0, 2.1, 0.46, 0.4)
     if t < CUT_VINES:
         return Camera(_x_smooth(t) + 40.0, 1032.0, 2.4)
     if t < CUT_LOOKUP:
@@ -710,14 +766,12 @@ def camera(t):
         k = ease_in_out((t - CUT_WEB2) / (CUT_DOORAPP - CUT_WEB2))
         return Camera(X_SW + lerp(90.0, 210.0, k), 620.0, 0.74)
     if t < CUT_DOOR:
-        q = G3(t)
-        xw = X3D_REF + (q - G3.ps[-1]) * A.WALK_ADVANCE
-        return Camera(xw + 120.0, 560.0, 1.12)
-    if t < CUT_RING:
-        k = ease_in_out((t - CUT_DOOR) / (CUT_RING - CUT_DOOR))
-        return Camera(3110.0, lerp(640.0, 630.0, k), lerp(0.6, 0.63, k))
+        # close tracking on the approach; the door stays off-screen to the right until the reveal cut
+        xx = anger_pose(min(t, STOP3[1])).x
+        return cam_at(xx + 55.0, 420.0, 1.9, 0.44, 0.4)
     if t < CUT_TRIES:
-        return cam_at(XD + 140.0, 560.0, 1.18, 0.5, 0.45)
+        k = ease_in_out((t - CUT_DOOR) / (CUT_TRIES - CUT_DOOR))
+        return Camera(3110.0, lerp(640.0, 632.0, k), lerp(0.6, 0.64, k))
     if t < CUT_FLAT:
         k = ease_in_out((t - CUT_TRIES) / (CUT_FLAT - CUT_TRIES))
         return Camera(lerp(3125.0, 3140.0, k), lerp(700.0, 690.0, k), lerp(0.68, 0.705, k))
@@ -770,6 +824,8 @@ def _plant_list():
         q = G3.ps[i]
         side = "r" if abs((q % 1.0)) < 1e-6 else "l"
         xw = X3W_REF + (q + 0.4) * A.WALK_ADVANCE if tk < CUT_DOORAPP else X3D_REF + (q - G3.ps[-1]) * A.WALK_ADVANCE
+        if CUT_DOORAPP <= tk < CUT_DOOR:
+            xw -= DOOR_CHEAT
         out.append((tk, xw + foot_fwd(q + 0.01, side), 1.0))
     for i, tk in enumerate(RUNP):
         q = GR.ps[i]

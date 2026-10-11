@@ -1,34 +1,38 @@
-"""S3 - The fall (BIBLE section 4 S3, section 9 handoffs S2->S3 and S3->S4).
+"""S3 - The fall (BIBLE section 4 S3, section 9 handoffs S2->S3 and S3->S4). Rev 2: narrated; the sword now
+grinds down until it hits a vein of solid rock, stops dead, his gauntlets tear off the hilt and he FALLS the rest
+of the way (a real, visible fall into a hard landing).
 
 render(canvas, t) is a pure function of the absolute time t. Every time comes from a named beat or from an SFX
 placement in build/timeline.json (+ the hit offsets in build/sfx_timing_notes.md).
 
 The performance is ONE continuous trajectory in the shaft's world coordinates (draw_shaft with scroll 0; the
-camera simply follows him down): walk in on the slab -> freeze on the crack -> the slab drops -> his far (left)
-gauntlet catches the right lip (hang) -> four slips -> he lets go -> a stoic free fall -> the two-handed thrust
-into the right wall (sword_drag) grinding down with sparks -> the bottom. Anger is placed by his PELVIS through
-every state change (place_by_pelvis), so blends between differently anchored states never jump.
-After the impact we cut into the depths set (S4's set): he lies crumpled (head toward the right wall, facing -1)
-and his sword stays stuck in that wall above him, quivering, the end of its gouge cooling.
+camera simply follows him down): freeze on the crack -> the slab drops -> his far (left) gauntlet catches the
+right lip (hang) -> four slips -> he lets go -> a stoic free fall -> the two-handed thrust into the right wall
+(sword_drag) grinding down with sparks -> CLANG on the rock vein -> the hands tear off the hilt -> free fall (a
+half spin: he turns to face the other way, head toward the right wall) -> feet-first landing that crumples him
+onto his back. Anger is placed by his PELVIS through every state change (place_by_pelvis), so blends between
+differently anchored states never jump. On the landing we cut (mid-crumple, same motion) into the depths set
+(S4's set); the sword stays stuck high on the right wall above him, in its vein of hard rock.
 
 Shot list (absolute times only for orientation; all derive from beats):
-  A  s3 start -> wrong_rock-0.25    CAVERN medium: creeping on, sword raised, dim teal (S2 handoff)
-  B  -> wrong_rock+0.33             SHAFT cut-away: he steps onto the slab, the foot plants ON the crack, he
-                                    freezes mid-stride; the crack spreads under him
+  A  s3 start -> wrong_rock+0.35    CAVERN medium: creeping on over S2's hairline cracks; his foot lands on the
+                                    wrong rock, the cracks race out from under it, he freezes, eyes down
   C  -> collapse+0.14               CLOSE-UP: eyes down at his feet; the second crack: a tiny "...oh." Floor gives
   D  -> grab_ledge+0.85             WIDE cut-away: the slab drops, he drops, the far gauntlet catches the lip
-                                    (armor_clank, jolt), he swings, debris rains into the dark shaft
-  E  -> slipping-0.05               MEDIUM: hanging, strain, he looks up at his grip
+  E  -> slipping-0.05               MEDIUM: hanging, strain, he looks up at his grip      (n16 "He caught the edge")
   F  -> slipping+1.95               INSERT: the gauntlet on the dusty lip: slip / catch / slip / catch, grit
-  G  -> let_go+0.12                 CLOSE-UP: strain -> the third and fourth slips -> calm acceptance; he lets go
-  H  -> falling+1.3                 WIDE: the empty lip; he drops away into the dark (no scream)
-  I  -> sword_thrust-0.12           CLOSE-UP falling: the wall streams past, eyes close slowly; time stops;
-                                    the eyes SNAP open
+  G  -> let_go+0.12                 CLOSE-UP: strain -> the last slips -> calm acceptance; he lets go
+  H  -> falling+0.6                 WIDE: the empty lip; he drops away into the dark
+  I  -> sword_thrust-0.12           CLOSE-UP falling (n17 "did not scream", n18 "He simply closed his eyes": the
+                                    eyes close ON the line) ... the eyes SNAP open
   J  -> sword_thrust+1.6            MEDIUM: both hands ram the sword into the wall: sparks, soil, the gouge
-  K  -> sword_thrust+3.1            CLOSE-UP: grinding strain in the spark light
-  L  -> impact+0.06                 WIDE: the long glowing gouge, the bottom rushing up; IMPACT (dust, jolt)
-  M  -> s3 end                      DEPTHS low wide: crumpled, armor settling (clatter bounces), dust, the sword
-                                    stuck in the wall above, quivering; stillness
+  K  -> sword_thrust+3.1            CLOSE-UP: grinding strain in the spark light (n19)
+  L  -> impact+0.08                 WIDE, one continuous move: still grinding fast; a band of dark hard rock rises
+                                    below the blade; CLANG on "rock" (n20): dead stop, spark burst, jolt; the
+                                    gauntlets slip off the hilt; he falls ~1.3 s (half spin, stoic), the floor
+                                    rushes up; feet-first IMPACT
+  M  -> s3 end                      DEPTHS low wide: the crumple finishes (head to the wall), armor settles on the
+                                    clatter, dust; the sword stuck high above, quivering; stillness
 """
 from __future__ import annotations
 
@@ -66,6 +70,8 @@ SLIP = beat("slipping")
 LETGO = beat("let_go")
 FALLING = beat("falling")
 THRUST = beat("sword_thrust")
+CLANG = beat("sword_clang")                             # the blade hits the vein of hard rock: dead stop
+FREEFALL = beat("freefall")                             # his gauntlets tear off the hilt
 IMPACT = beat("impact")
 FALL_END = beat("fall_end")
 CRACK = sfx_time("rock_crack", T0)
@@ -78,20 +84,27 @@ SCRAPE = sfx_time("sword_scrape", T0)
 JUDDER = SCRAPE + 3.4                                   # the screech starts to judder (sparks pulse)
 _CL = sfx_time("armor_clatter", T0)
 CLATTER = [_CL + d for d in (0.0, 0.17, 0.31, 0.42, 0.50, 0.56)]
+SLIP_OFF = (sfx_time("sword_clang", T0) + 0.14, sfx_time("sword_clang", T0) + 0.42)   # gauntlets slip off
+N18 = (beat("falling") + 2.7, beat("sword_thrust") - 0.43)          # (fallback) "He simply closed his eyes."
+try:
+    from anim.core import line as _line
+    N18 = (_line("n18")["start"], _line("n18")["end"])
+except Exception:     # pragma: no cover
+    pass
+EYES_SHUT = N18[1] - 0.37                  # the lids reach shut as the word "eyes" ends (~0.37 s before the end)
 
 # ---------------------------------------------------------------- cuts
-CUT_B = WRONG - 0.25
-CUT_C = WRONG + 0.33
+CUT_C = WRONG + 0.35
 CUT_D = COLLAPSE + 0.14
 CUT_E = GRAB + 0.85
 CUT_F = SLIP - 0.05
 CUT_G = SLIP + 1.95
 CUT_H = LETGO + 0.12
-CUT_I = FALLING + 1.3
+CUT_I = FALLING + 0.6
 CUT_J = THRUST - 0.12
 CUT_K = THRUST + 1.6
 CUT_L = THRUST + 3.1
-CUT_M = IMPACT + 0.06
+CUT_M = IMPACT + 0.08
 
 # =========================================================================== shared helpers (s4 imports them)
 RIM_COLD = "#A6C8E6"
@@ -222,8 +235,9 @@ GRIP_STEPS = [(LIP_X + 30.0, SLAB_Y - 18.0), (LIP_X + 21.0, SLAB_Y - 13.0), (LIP
 WALL_GX = LIP_X - 14.0                     # x of the gouge / blade entry on the right wall of the shaft
 EMBED = 0.6
 G_FALL, V_MAX = 3000.0, 2400.0             # free fall (stage units/s^2) and the 'time stops' terminal speed
-V_END = 520.0                              # speed when he hits the bottom
-FEET_DY = 335.0                            # pelvis -> soles in sword_drag (bent legs)
+V_CLANG = 1100.0                           # still grinding down fast when the blade hits the hard rock
+G_FREE = 2600.0                            # the last fall, from the stuck sword to the floor
+FEET_DY = 372.0                            # pelvis -> soles in the falling pose (legs a little bent)
 
 
 def _pose(**kw):
@@ -259,9 +273,12 @@ def _s2_handoff():
     try:
         from anim.scenes import s2 as S2
         q = S2.anger_pose(T0 - 1e-3)
-        return q.x, q.y, q.scale, q.look_x, q.look_y
+        q0 = S2.anger_pose(T0 - 0.4)
+        slope = clamp((q.y - q0.y) / max(1.0, q.x - q0.x), -1.0, 1.0)
+        cam = S2.camera(T0 - 1e-3)
+        return q.x, q.y, q.scale, q.look_x, q.look_y, slope, (cam.cx, cam.cy, cam.zoom)
     except Exception:     # pragma: no cover - S2 not importable: the values it hands over (BIBLE section 9)
-        return 764.0, 1117.0, 0.943, 0.95, -0.15
+        return 770.0, 1160.0, 0.95, 0.95, -0.15, -0.06, (800.0, 1112.0, 2.2)
 
 
 _S2 = None
@@ -288,8 +305,11 @@ def slab_walk_pose(t):
     x = X_PLANT + CREEP_ADV * ph
     p = _pose(x=x, y=SLAB_Y, facing=1.0, turn=0.5, lean=4.0, arm_r=AR["sword_guard"], arm_l=CREEP_ARM_L,
               extra=dict(state="stand", state_b="walk", mix=CREEP_MIX, phase=ph, sword="hand", shield="back"))
-    p = _creep_face(p, t)
-    # freeze: eyes snap down to his feet a beat after the crack, head follows a little
+    return _freeze_face(_creep_face(p, t), t)
+
+
+def _freeze_face(p, t):
+    """The wrong rock: he freezes; a beat after the crack his eyes drop to his feet, the head follows."""
     dn = smoothstep((t - (CRACK + 0.22)) / 0.18)
     oh = smoothstep((t - (CRACK2 + 0.12)) / 0.3)
     p = p.copy(look_x=lerp(p.look_x, 0.15, dn), look_y=lerp(p.look_y, 1.0, dn), head_nod=-1.0 * dn,
@@ -407,16 +427,26 @@ def drop_pose(t):
 
 # ---------------------------------------------------------------- free fall + drag: pelvis trajectory
 def _speed(t):
-    if t < LETGO:
+    """Fall speed (stage units/s) from let_go to the clang (the sword's grind)."""
+    if t < LETGO or t >= CLANG:
         return 0.0
     if t < STAB:
         return V_MAX * math.tanh(G_FALL * (t - LETGO) / V_MAX)
     v0 = V_MAX * math.tanh(G_FALL * (STAB - LETGO) / V_MAX)
     a = t - STAB
-    v = V_END + (v0 - V_END) * (0.7 * math.exp(-0.85 * a) + 0.3 * math.exp(-12.0 * a))
+    v = V_CLANG + (v0 - V_CLANG) * (0.62 * math.exp(-0.75 * a) + 0.38 * math.exp(-11.0 * a))
     if t > JUDDER:
         v *= 1.0 + 0.2 * math.sin(2 * math.pi * 10.5 * (t - JUDDER)) * smoothstep((t - JUDDER) / 0.25)
     return v
+
+
+def body_speed(t):
+    """Vertical speed of his body (for the blur / cloth): the grind, the dead stop, the last fall."""
+    if t < CLANG:
+        return _speed(t)
+    if t < FREEFALL:
+        return 0.0
+    return G_FREE * (t - FREEFALL)
 
 
 _DT = 1.0 / 480.0
@@ -424,7 +454,7 @@ _DT = 1.0 / 480.0
 
 @lru_cache(maxsize=1)
 def _ytab():
-    n = int((IMPACT + 0.2 - LETGO) / _DT) + 2
+    n = int((CLANG + 0.05 - LETGO) / _DT) + 2
     ys = np.zeros(n)
     for i in range(1, n):
         ta = LETGO + (i - 0.5) * _DT
@@ -437,7 +467,7 @@ def fall_dist(t):
     if t <= LETGO:
         return 0.0
     ys = _ytab()
-    f = (min(t, IMPACT) - LETGO) / _DT
+    f = (min(t, CLANG) - LETGO) / _DT
     i = int(f)
     if i >= len(ys) - 1:
         return float(ys[-1])
@@ -457,12 +487,22 @@ def pelvis_world(t):
     od = _drag_offset()
     xd = WALL_GX + od[0]
     u = ease_in_out(clamp((t - (LETGO + 0.2)) / (CUT_J - (LETGO + 0.2))))
-    return lerp(hx, xd, u), hy + fall_dist(t)
+    x, y = lerp(hx, xd, u), hy + fall_dist(t)
+    if t > FREEFALL:          # torn off the hilt: the last fall, drifting away from the wall
+        a = t - FREEFALL
+        x -= 150.0 * smoothstep(a / 1.1)
+        y += 0.5 * G_FREE * a * a
+    return x, y
 
 
 def entry_y(t):
-    """World y of the blade entry (the bottom of the gouge) during the drag."""
-    return pelvis_world(t)[1] - _drag_offset()[1]
+    """World y of the blade entry (the bottom of the gouge); fixed in the rock vein from the clang on."""
+    return pelvis_world(min(t, CLANG))[1] - _drag_offset()[1]
+
+
+def vein_y():
+    """Top of the vein of hard rock = where the blade stops dead."""
+    return entry_y(CLANG)
 
 
 def _fall_arms(t, k_up=1.0):
@@ -489,7 +529,7 @@ def fall_pose(t):
         p = hp.copy(arm_l=ArmPose.blend(hp.arm_l, arm_l, hm), arm_r=ArmPose.blend(hp.arm_r, arm_r, hm), extra=hx)
     # face: calm acceptance -> eyes close slowly -> SNAP open
     lx, ly, br = face_life(t, 13)
-    close = ease_in_out(clamp((t - (FALLING + 1.45)) / 1.35))
+    close = ease_in_out(clamp((t - (N18[0] + 0.4)) / (EYES_SHUT - (N18[0] + 0.4))))
     snap = clamp((t - (THRUST - 0.24)) / 0.07)
     lid = lerp(0.72, 0.0, close)
     lid = lerp(lid, 1.0, snap)
@@ -508,21 +548,113 @@ def fall_pose(t):
 
 
 def drag_pose(t):
-    """sword_thrust -> impact: anchored at the blade entry on the wall."""
+    """sword_thrust -> freefall: anchored at the blade entry on the wall (fixed in the vein from the clang)."""
     a = t - STAB
-    sh = smoothstep(a / 0.12) * (1.0 + 0.7 * smoothstep((t - JUDDER) / 0.2))
+    if t < CLANG:
+        sh = smoothstep(a / 0.12) * (1.0 + 0.7 * smoothstep((t - JUDDER) / 0.2))
+    else:   # dead stop: one violent shudder, then he just hangs there for a heartbeat
+        sh = 2.4 * (1.0 - smoothstep((t - CLANG) / 0.13))
     p = _pose(x=WALL_GX, y=entry_y(t), facing=1.0, turn=0.66,
               extra=dict(state="sword_drag", embed=EMBED, shake=sh, sword="hand", shield="back"))
     p = A.expr(p, "strain", 1.0, t)
-    p.extra["grimace"] = 0.75 + 0.2 * noise1(t * 3.0, 71)
+    jolt = _pulse(t, CLANG, 0.03, 0.06, 0.25)
+    p.extra["grimace"] = clamp(0.75 + 0.2 * noise1(t * 3.0, 71) + 0.3 * jolt)
     lx, ly, br = face_life(t, 17)
-    p = p.copy(look_x=0.5 + lx, look_y=-0.55 + ly, lid_l=0.62 * A.blink(t), lid_r=0.6 * A.blink(t),
-               squint=0.55, brow_furrow=0.8, head_nod=-0.15)
+    p = p.copy(look_x=0.5 + lx, look_y=-0.55 + ly, lid_l=0.62 * A.blink(t) * (1 - 0.8 * jolt),
+               lid_r=0.6 * A.blink(t) * (1 - 0.8 * jolt), squint=0.55 + 0.3 * jolt, brow_furrow=0.8, head_nod=-0.15)
     return p
 
 
+def _pulse(t, t0, rise, hold, fall):
+    """0 -> 1 -> 0 envelope."""
+    if t < t0:
+        return 0.0
+    a = t - t0
+    if a < rise:
+        return smoothstep(a / rise)
+    a -= rise
+    if a < hold:
+        return 1.0
+    return 1.0 - smoothstep((a - hold) / fall)
+
+
+SPIN = (FREEFALL + 0.72, FREEFALL + 1.2)     # the half spin: square to the camera (facing flips) ... turned
+
+
+def _grip_points():
+    """Stage points of his two palms on the stuck hilt (main hand at the grip centre, off hand toward the pommel)."""
+    ex, ey = WALL_GX, vein_y()
+    r = math.radians(SWORD_ANG)
+    dv = (math.sin(r), -math.cos(r))
+    d = A.SWORD_GRIP * 0.5 + 10.0 + A.SWORD_BLADE * (1.0 - EMBED)
+    g = (ex - dv[0] * d, ey - dv[1] * d)
+    return g, (g[0] - dv[0] * 24.0, g[1] - dv[1] * 24.0)
+
+
+def release_pose(t):
+    """freefall -> impact: the gauntlets peel off the hilt and he drops - a half spin on the way down so he
+    lands facing the other way (head toward the right wall), stoic, arms flung up by the air."""
+    a = t - FREEFALL
+    v = body_speed(t)
+    m_drag = 1.0 - smoothstep(a / 0.32)
+    w_hold = 1.0 - smoothstep(a / (SLIP_OFF[1] - FREEFALL))
+    if t < SPIN[0]:
+        fac, turn = 1.0, lerp(0.66, 0.0, ease_in_out(a / (SPIN[0] - FREEFALL)))
+        tum = 3.0 * math.sin(a * 4.0)
+    else:
+        fac, turn = -1.0, lerp(0.0, 0.32, ease_out(clamp((t - SPIN[0]) / (SPIN[1] - SPIN[0]))))
+        tum = -16.0 * smoothstep((t - SPIN[0]) / (IMPACT - SPIN[0]))
+    fl_l = ArmPose(shoulder=124.0 + 8 * noise1(t * 2.1, 66), elbow=40.0, wrist=8.0, hand="open")
+    fl_r = ArmPose(shoulder=132.0 + 8 * noise1(t * 2.0, 65), elbow=32.0, wrist=8.0, hand="open")
+    k = smoothstep(a / 0.6)
+    gr, gl = _grip_points()
+    ex = dict(state="fall", state_b="sword_drag", mix=m_drag, tumble=tum, fall_speed=max(300.0, v), arms_w=0.0,
+              sword="in_wall", shield="back", embed=EMBED, shake=0.0, reach_r=gr, reach_r_w=w_hold,
+              reach_l=gl, reach_l_w=w_hold)
+    hold = "hold" if a < 0.06 else "open"
+    p = _pose(facing=fac, turn=turn, arm_l=ArmPose.blend(ArmPose(146.0, 36.0, -40.0, hold), fl_l, k),
+              arm_r=ArmPose.blend(ArmPose(150.0, 30.0, -40.0, hold), fl_r, k), extra=ex)
+    # face: the grip goes (a flicker of it: brows up, eyes wide) ... then stoic again, eyes on the floor below
+    lx, ly, br = face_life(t, 19)
+    know = _pulse(t, FREEFALL + 0.04, 0.08, 0.2, 0.35)
+    look_down = smoothstep((t - (FREEFALL + 0.6)) / 0.3)
+    p = p.copy(lid_l=lerp(0.8, 1.0, know) * A.blink(t), lid_r=lerp(0.8, 1.0, know) * A.blink(t),
+               eye_wide=0.35 * know, brow_raise=0.35 * know - 0.1 * (1 - know) + br, brow_furrow=0.45 * (1 - know),
+               look_x=0.1 + lx, look_y=lerp(0.1, 0.75, look_down) + ly, smile=-0.25, mouth_open=0.0,
+               head_nod=-0.2 * look_down)
+    return place_by_pelvis(p, pelvis_world(t), t)
+
+
+CRUMPLE = 0.34          # s from the feet hitting the floor to lying crumpled on his back
+CRUMPLE_DX = 40.0       # the pelvis travels this far toward the wall (+x) as he goes down backward
+
+
+def landing_pose(t, x_crumpled, floor_y):
+    """impact -> crumpled: feet first, the knees buckle, he slams down onto his back (head to the right)."""
+    if t >= IMPACT + CRUMPLE:
+        return crumpled_pose(t, x_crumpled, floor_y)
+    a = t - IMPACT
+    m = ease_out(a / CRUMPLE)
+    cp = crumpled_pose(t, x_crumpled, floor_y)
+    p0 = release_pose(IMPACT - 1e-3)
+    ex = dict(p0.extra)
+    ex.update(state="fall", state_b="crumpled", mix=m, reach_r_w=0.0, reach_l_w=0.0, arms_w=0.0, fall_speed=300.0,
+              tumble=-16.0, bruised=m, dazed=0.5 * m, grimace=0.6 * (1 - m) + 0.15 * m)
+    shut = smoothstep(a / 0.06)
+    p = cp.copy(facing=-1.0, turn=lerp(0.32, cp.turn, m), arm_l=ArmPose.blend(p0.arm_l, cp.arm_l, m),
+                arm_r=ArmPose.blend(p0.arm_r, cp.arm_r, m), extra=ex, lid_l=1 - shut, lid_r=1 - shut,
+                squint=0.6 * shut * (1 - m), bounce=0.0)
+    px0 = x_crumpled - CRUMPLE_DX
+    py0 = floor_y - FEET_DY
+    tx, ty = A.pelvis_pos(cp, t)
+    yk = clamp(a / 0.13)
+    yk = yk * yk * (3 - 2 * yk) if yk < 1 else 1.0
+    return place_by_pelvis(p, (lerp(px0, tx, m), lerp(py0, ty, yk) - 10.0 * math.sin(math.pi * clamp((a - 0.13) / 0.2))
+                               * (a > 0.13)), t)
+
+
 def anger_shaft(t):
-    """Anger in the shaft world at time t (any time from CUT_B to the impact)."""
+    """Anger in the shaft world at time t (from the slab to just after the landing)."""
     if t < COLLAPSE:
         return slab_walk_pose(t)
     if t < GRAB:
@@ -531,10 +663,16 @@ def anger_shaft(t):
         return hang_pose(t)
     if t < STAB:
         return fall_pose(t)
-    return drag_pose(t)
+    if t < FREEFALL:
+        return drag_pose(t)
+    if t < IMPACT:
+        return release_pose(t)
+    return landing_pose(t, pelvis_world(IMPACT)[0] + CRUMPLE_DX, _floor_w())
 
 
+@lru_cache(maxsize=1)
 def _floor_w():
+    """Shaft world y of the floor his feet hit at the impact."""
     return pelvis_world(IMPACT)[1] + FEET_DY
 
 
@@ -548,7 +686,7 @@ def shaft_ambient(cam_y):
 
 
 def _sparks_on(t):
-    return STAB - 0.01 <= t <= IMPACT + 0.02
+    return STAB - 0.01 <= t < CLANG + 0.03
 
 
 def _spark_amount(t):
@@ -558,17 +696,27 @@ def _spark_amount(t):
     burst = 1.6 * math.exp(-a / 0.18)
     base = 0.85 + 0.15 * noise1(t * 7.0, 81)
     jud = 1.0 + 0.45 * max(0.0, math.sin(2 * math.pi * 10.5 * (t - JUDDER))) * smoothstep((t - JUDDER) / 0.2)
-    fade = 1.0 - smoothstep((t - (IMPACT - 0.05)) / 0.07)
+    fade = 1.0 - smoothstep((t - CLANG) / 0.03)
     return (base * jud + burst) * fade
+
+
+def blade_heat(t):
+    """0..1 glow of the blade / gouge end after the clang (cools over ~3 s)."""
+    if t < CLANG:
+        return 1.0 if t >= STAB else 0.0
+    return clamp(1.0 - (t - CLANG) / 3.4) ** 1.6
 
 
 def _shaft_lights(t, p_anger):
     L = list(env.shaft_lights(t))
-    if t >= CUT_L:
+    if t >= CLANG:
         fy = _floor_w()
-        k = smoothstep((t - CUT_L) / 0.8)
-        L.append(Light(360.0, fy + 20.0, 760.0, 0.3 * k, "fungus", "fungus"))
+        k = smoothstep((t - CLANG) / 0.8)
+        L.append(Light(360.0, fy + 20.0, 820.0, 0.32 * k, "fungus", "fungus"))
         L.append(Light(430.0, fy + 30.0, 520.0, 1.2 * clamp(1 - (t - IMPACT) / 0.4) * (t >= IMPACT), "#FFE2B0", "flash"))
+        vy = vein_y()
+        L.append(light.flash_light(WALL_GX, vy, t - CLANG, strength=1.7, radius=1300, dur=0.5))
+        L.append(Light(WALL_GX - 30, vy, 420.0, 0.6 * blade_heat(t), "#FF9A50", "point"))
     if _sparks_on(t):
         ex, ey = WALL_GX, entry_y(t)
         sa = _spark_amount(t)
@@ -578,12 +726,10 @@ def _shaft_lights(t, p_anger):
     return L
 
 
-def _draw_shaft_world(c, t, cam, p, crack=0.0, collapse_t=None, show_floor=False):
-    v = _speed(t) if t >= LETGO else 0.0
-    blur = 0.0
-    follow = cam_follows(t)
-    if follow and v > 200:
-        blur = min(70.0, 0.55 * v / 24.0)
+def _draw_shaft_world(c, t, cam, p, crack=0.0, collapse_t=None, show_floor=False, blur=None):
+    if blur is None:
+        v = body_speed(t) if t >= LETGO else 0.0
+        blur = min(70.0, 0.55 * v / 24.0) if (cam_follows(t) and v > 200) else 0.0
     gouge = None
     if t >= STAB:
         gouge = (WALL_GX, entry_y(STAB) - 6.0, entry_y(t))
@@ -593,12 +739,87 @@ def _draw_shaft_world(c, t, cam, p, crack=0.0, collapse_t=None, show_floor=False
         env.draw_shaft(c, t, **kw)
     else:
         draw_shaft_hz(c, t, cam, kw)
+    if t >= STAB:
+        draw_vein(c)
     if _sparks_on(t) and t >= STAB:          # soil spat out of the groove (lit), bursts every 0.2 s
         k1 = int((t - STAB) / 0.2)
         for k in range(max(0, k1 - 4), k1 + 1):
             te = STAB + k * 0.2
             fx.debris(c, t, t - te, (WALL_GX - 6, entry_y(te)), seed=400 + k, kind="stone", n=4, speed=520,
                       direction=-150, spread=50, size=0.45, gravity=2200, life=0.8)
+
+
+_VEIN = None
+
+
+def _vein_path():
+    """A band of dark, glassy hard rock across the shaft (world coords): the blade stops dead on its top."""
+    y0 = vein_y() - 4.0
+    xs = np.arange(env.HOLE_X[0] - 260.0, WALL_GX + 241.0, 20.0)
+    top = [(x, y0 + 9.0 * noise1(x / 80.0, 611) + 3.0 * noise1(x / 21.0, 612) + 0.05 * (x - WALL_GX)) for x in xs]
+    bot = [(x, y0 + 150.0 + 18.0 * noise1(x / 110.0, 613) + 0.05 * (x - WALL_GX)) for x in xs[::-1]]
+    path = skia.Path()
+    path.moveTo(*top[0])
+    for q in top[1:] + bot:
+        path.lineTo(*q)
+    path.close()
+    return path, top, y0
+
+
+def draw_vein(c):
+    """The vein of hard rock (lit; it catches the spark light as the blade comes down onto it)."""
+    global _VEIN
+    if _VEIN is None:
+        _VEIN = _vein_path()
+    path, top, y0 = _VEIN
+    vis = c.getLocalClipBounds()
+    if vis.bottom() < y0 - 20 or vis.top() > y0 + 200:
+        return
+    sh = skia.GradientShader.MakeLinear([(0, y0), (0, y0 + 160)], [skia.Color(96, 112, 136), skia.Color(44, 52, 68),
+                                                                    skia.Color(30, 34, 46)], [0.0, 0.35, 1.0])
+    pt = skia.Paint(AntiAlias=True)
+    pt.setShader(sh)
+    c.drawPath(path, pt)
+    c.save()
+    c.clipPath(path, doAntiAlias=True)
+    for i in range(9):                          # quartz streaks
+        x = top[0][0] + (i + 0.5) / 9 * (top[-1][0] - top[0][0]) + 30 * hash01(i, 621)
+        c.drawLine(x - 60, y0 + 20 + 40 * hash01(i, 622), x + 50, y0 + 70 + 60 * hash01(i, 623),
+                   paint("#B8CCE0", 0.35 + 0.25 * hash01(i, 624), stroke=1.6 + 2.0 * hash01(i, 625)))
+    for i in range(14):                         # glints
+        x = top[0][0] + hash01(i, 631) * (top[-1][0] - top[0][0])
+        y = y0 + 12 + 120 * hash01(i, 632)
+        r = 2.5 + 3.0 * hash01(i, 633)
+        c.drawPath(_diamond(x, y, r), paint("#E8F2FF", 0.55))
+    c.restore()
+    tp = skia.Path()
+    tp.moveTo(*top[0])
+    for q in top[1:]:
+        tp.lineTo(*q)
+    c.drawPath(tp, paint("#C8D8EA", 0.75, stroke=3.0))
+    c.drawPath(path, paint("#0C0A10", 0.85, stroke=3.0))
+
+
+def _diamond(x, y, r):
+    p = skia.Path()
+    p.moveTo(x, y - r)
+    p.lineTo(x + r * 0.5, y)
+    p.lineTo(x, y + r)
+    p.lineTo(x - r * 0.5, y)
+    p.close()
+    return p
+
+
+def _draw_stuck_sword_shaft(c, t):
+    """After the clang the sword stays in the vein (drawn alone: he has let go of it)."""
+    if t < FREEFALL:
+        return
+    ex, ey = WALL_GX, vein_y()
+    a = t - CLANG
+    ang = SWORD_ANG + 6.0 * math.exp(-a / 0.4) * math.sin(2 * math.pi * 9.0 * a)
+    d = A.SWORD_GRIP * 0.5 + 10.0 + A.SWORD_BLADE * (1.0 - EMBED)
+    r = math.radians(ang)
+    A.draw_sword(c, ex - math.sin(r) * d, ey + math.cos(r) * d, ang, 1.0, embed=EMBED)
 
 
 def _draw_grit(c, t):
@@ -696,15 +917,35 @@ def _draw_sparks(c, t):
     fx.ember_burst(c, t, ex - 6, ey, t - STAB, n=22, seed=93, size=1.3, speed=520, life=0.9)
 
 
+def _draw_clang(c, t):
+    """EMISSIVE: the clang - a big spray of sparks off the vein, embers falling, the hot blade cooling."""
+    a = t - CLANG
+    if a < 0:
+        return
+    ex, ey = WALL_GX - 4, vein_y()
+    if a < 1.6:
+        fx.sparks(c, t, ex, ey, rate=900, direction=-150, spread=150, speed=1400, life=0.55, gravity=1800,
+                  size=1.4, seed=95, t0=CLANG, t1=CLANG + 0.09, glow=a < 0.2)
+        fx.ember_burst(c, t, ex, ey, a, n=40, seed=96, size=1.6, speed=760, life=1.3)
+    if a < 0.18:
+        from anim.core import glow
+        glow(c, ex, ey, 160.0 * (1 + 2 * a), "#FFF2D0", 0.9 * (1 - a / 0.18))
+    k = blade_heat(t)
+    if k > 0.01:
+        from anim.core import glow
+        glow(c, ex - 2, ey, 34.0, "#FF8A3A", 0.55 * k)
+
+
 def _anger_lit(p, t, ambient, L, rim=0.6):
     hc = A.head_center(p, t)
-    if _sparks_on(t):
+    if _sparks_on(t) or CLANG <= t < FREEFALL + 0.25:
         sp = (WALL_GX - 10, entry_y(t) - 20)
         return dress(p, hc, ambient, L, rim=0.85, rim_color="#FFC27A", rim_pos=sp, key_dir=sp, tint_amt=0.18)
     return dress(p, hc, ambient, L, rim=rim)
 
 
-def _render_shaft(c, t, cam, *, crack=0.0, collapse_t=None, show_floor=False, vig=0.45, extra_draw=None):
+def _render_shaft(c, t, cam, *, crack=0.0, collapse_t=None, show_floor=False, vig=0.45, extra_draw=None,
+                  blur=None):
     p = anger_shaft(t)
     amb = shaft_ambient(cam.cy)
     L = _shaft_lights(t, p)
@@ -712,7 +953,8 @@ def _render_shaft(c, t, cam, *, crack=0.0, collapse_t=None, show_floor=False, vi
     L.append(Light(hc[0], hc[1] + 120, 520.0, 0.16, FILL_COLD, "point"))     # soft cold fill so he reads
     c.save()
     cam.apply(c, t)
-    _draw_shaft_world(c, t, cam, p, crack=crack, collapse_t=collapse_t, show_floor=show_floor)
+    _draw_shaft_world(c, t, cam, p, crack=crack, collapse_t=collapse_t, show_floor=show_floor, blur=blur)
+    _draw_stuck_sword_shaft(c, t)
     A.draw(c, _anger_lit(p, t, amb, L), t)
     _draw_grit(c, t)
     if extra_draw is not None:
@@ -721,25 +963,19 @@ def _render_shaft(c, t, cam, *, crack=0.0, collapse_t=None, show_floor=False, vi
 
     def emit(cc):
         _draw_sparks(cc, t)
+        _draw_clang(cc, t)
     finish(c, cam, t, amb, L, emissive=emit, vig=vig)
 
 
 # =========================================================================== cameras
 def _shake(cam, t):
-    ev = [(COLLAPSE, 16.0, 0.9), (GRAB, 12.0, 0.45), (STAB, 18.0, 0.5), (IMPACT, 30.0, 0.7)]
+    ev = [(COLLAPSE, 16.0, 0.9), (GRAB, 12.0, 0.45), (STAB, 18.0, 0.5), (CLANG, 30.0, 0.55), (IMPACT, 34.0, 0.7)]
     ev += [(s, 2.5, 0.25) for s in SLIPS]
-    if t >= JUDDER and t < IMPACT:
-        ev.append((JUDDER, 5.0, IMPACT - JUDDER + 0.01))
-    if STAB <= t < IMPACT:
-        ev.append((STAB, 3.0, IMPACT - STAB))
+    if JUDDER <= t < CLANG:
+        ev.append((JUDDER, 5.0, CLANG - JUDDER + 0.01))
+    if STAB <= t < CLANG:
+        ev.append((STAB, 3.0, CLANG - STAB))
     return fx.camera_shake(cam, t, ev, freq=14.0, seed=3, rot=False)
-
-
-def cam_B(t):
-    u = clamp((t - CUT_B) / (CUT_C - CUT_B))
-    a = Camera(345.0, 300.0, 0.8)
-    b = Camera(350.0, 290.0, 0.84)
-    return cam_mix(a, b, ease_in_out(u))
 
 
 def cam_C(t):
@@ -797,24 +1033,46 @@ def cam_K(t):
     return cam_on((hc[0] + 40, hc[1] - 20), 2.4, 0.5, 0.45)
 
 
-def cam_L(t):
-    py = pelvis_world(t)[1]
-    z = 0.68
+L_LAG = 0.1
+
+
+def _cam_L_y(t):
+    """One continuous move: rides down with the grind, stops DEAD with the blade, lets him drop away from the
+    stuck sword (a short lag), follows the fall and settles on the floor (smooth min) for the impact."""
+    z = cam_L_zoom(t)
     stop = _floor_w() + 60.0 - 0.36 * H / z          # the floor ends up at ~86% of the frame height
-    want = py - 40.0
-    # follow him, then ease into the stop (smooth min) so the camera does not hit it hard
+    if t < CLANG:
+        want = pelvis_world(t)[1] - 40.0
+    else:
+        a = max(0.0, t - FREEFALL - L_LAG)
+        want = pelvis_world(CLANG)[1] - 40.0 + 0.5 * G_FREE * a * a
     k = 140.0
     lo, hi = min(want, stop), max(want, stop)
-    cy = lo - k * math.log1p(math.exp(-(hi - lo) / k))
+    return lo - k * math.log1p(math.exp(-(hi - lo) / k))
+
+
+def cam_L_zoom(t):
+    return lerp(0.68, 0.62, smoothstep((t - FREEFALL) / 0.5))
+
+
+def cam_L(t):
     u = ease_in_out(clamp((t - CUT_L) / (CUT_M - CUT_L)))
-    return Camera(lerp(400.0, 420.0, u), cy, z)
+    return Camera(lerp(400.0, 380.0, u), _cam_L_y(t), cam_L_zoom(t))
+
+
+def cam_L_blur(t):
+    v = abs(_cam_L_y(t) - _cam_L_y(t - 1.0 / 48.0)) * 48.0
+    return min(70.0, 0.55 * v / 24.0) if v > 200 else 0.0
 
 
 # =========================================================================== shot A: the cavern (S2 handoff)
 def cam_A(t):
-    x0, y0, sc0 = s2_handoff()[:3]
-    u = ease_in_out(clamp((t - T0) / (CUT_B - T0)))
-    return Camera(x0 + lerp(60.0, 95.0, u), y0 - 400.0 * sc0, 1.12)
+    """S2 ends close on his boots over the hairline cracks: hold that framing, then drift with his feet so the
+    next step - onto the wrong rock - lands in the frame."""
+    cx0, cy0, z0 = s2_handoff()[6]
+    u = smoothstep(clamp((t - T0) / (WRONG - T0)))
+    fx0 = cavern_foot()[0]
+    return Camera(lerp(cx0, fx0 - 40.0, u), cy0 + 10.0 * u, lerp(z0, z0 * 1.06, u))
 
 
 def _cavern_walk(t):
@@ -823,35 +1081,106 @@ def _cavern_walk(t):
     ph = walk_phase(t)
     d = CREEP_ADV * sc0 * (ph - walk_phase(T0))
     x = x0 + d
-    y = y0 - 0.8 * d                            # the path's slope there (WALK_PATH (760,1120) -> (860,1040))
+    y = y0 + s2_handoff()[5] * d               # keep S2's heading (toward its hairline cracks)
     sc = sc0 * env.depth_scale(y) / env.depth_scale(y0)
     p = _pose(x=x, y=y, scale=sc, facing=1.0, turn=0.5, lean=4.0, arm_r=AR["sword_guard"], arm_l=CREEP_ARM_L,
               extra=dict(state="stand", state_b="walk", mix=CREEP_MIX, phase=ph, sword="hand", shield="back"))
-    return _creep_face(p, t)
+    return _freeze_face(_creep_face(p, t), t)
+
+
+def cavern_foot():
+    """Where his right foot comes down on the wrong rock (cavern stage coords)."""
+    p = _cavern_walk(WRONG)
+    return p.x + 45.0 * p.scale, p.y
+
+
+def _s2_cracks():
+    try:
+        from anim.scenes import s2 as S2
+        return getattr(S2, "draw_floor_cracks", None)
+    except Exception:     # pragma: no cover
+        return None
+
+
+def draw_crack_burst(c, t):
+    """The wrong rock: from under his foot, cracks race out across the cavern floor (perspective-squashed),
+    growing on the first crack and again on the second (rock_crack +0.45); grit puffs up from them."""
+    if t < CRACK:
+        return
+    fx_, fy = cavern_foot()
+    g1 = ease_out(clamp((t - CRACK) / 0.16))
+    g2 = ease_out(clamp((t - CRACK2) / 0.14))
+    for b in range(7):
+        ang = math.pi * (-0.05 + 1.1 * hash01(b, 641)) if b > 1 else (0.0 if b == 0 else math.pi)
+        L = (150 + 260 * hash01(b, 642)) * (0.55 * g1 + 0.45 * g2) * (1.0 if b < 4 else g2)
+        if L < 2:
+            continue
+        pts = [(fx_, fy)]
+        x, y = fx_, fy
+        for k in range(6):
+            ang += (hash01(b * 7 + k, 643) - 0.5) * 0.8
+            x += math.cos(ang) * L / 6
+            y += math.sin(ang) * L / 6 * 0.28           # floor in perspective
+            pts.append((x, y))
+        path = skia.Path()
+        path.moveTo(*pts[0])
+        for q in pts[1:]:
+            path.lineTo(*q)
+        c.drawPath(path, paint("#C8BCCA", 0.55, stroke=3.0))
+        c.save()
+        c.translate(1.5, 2.0)
+        c.drawPath(path, paint("#050407", 0.97, stroke=6.5 * (1.0 - 0.08 * b)))
+        c.restore()
+    # the slab under him sags a hair: a dark rim opens around the boot
+    k = 0.6 * g1 + 0.4 * g2
+    c.drawOval(skia.Rect(fx_ - 70 * k, fy - 6 * k, fx_ + 70 * k, fy + 14 * k), paint("#050407", 0.55 * k, blur=4.0))
+    fx.debris(c, t, t - CRACK, (fx_, fy - 6), seed=651, kind="stone", n=8, speed=260, direction=-90, spread=130,
+              gravity=1800, floor_y=fy + 6, size=0.55, life=1.2)
+    fx.dust_cloud(c, t, fx_, fy, t - CRACK, size=0.7, seed=653, n=8, life=1.2, alpha=0.45)
+    fx.dust_cloud(c, t, fx_, fy, t - CRACK2, size=0.8, seed=652, n=8, life=1.4, alpha=0.55)
 
 
 def shot_A(c, t):
+    """Continues S2's last shot (close on his boots over the hairline cracks) with S2's own look: the set at
+    half resolution, ambient 0.11 + the cavern lights, Anger drawn AFTER the darkness, lit by light_at with
+    S2's teal rim - so the cut at the scene boundary is invisible."""
     p = _cavern_walk(t)
-    hc = A.head_center(p, t)
     cam = cam_A(t)
-    amb = 0.12
+    cam = fx.camera_shake(cam, t, [(CRACK, 4.0, 0.3), (CRACK2, 3.0, 0.25)], seed=11, rot=False)
+    amb = 0.11
     L = list(env.cavern_lights(t))
-    L.append(Light(hc[0], hc[1] + 150, 560.0, 0.14, FILL_COLD, "point"))
     c.save()
     cam.apply(c, t)
-    env.draw_cavern(c, t, pool_splash_t=t - beat("torch_splash"), torch_float=True)
-    A.draw(c, dress(p, hc, amb, L, rim=0.6), t)
+    draw_flat(c, lambda cc: env.draw_cavern(cc, t, pool_splash_t=t - beat("torch_splash"), torch_float=True,
+                                            drips=False), cam.zoom, cap=cam.zoom * 0.5)
+    cracks = _s2_cracks()
+    if cracks is not None:
+        try:
+            cracks(c, t)              # S2's hairline cracks ahead of / under him (continuity)
+        except Exception:         # pragma: no cover
+            pass
+    draw_crack_burst(c, t)
     c.restore()
-
-    def emit(cc):
-        env.draw_fungi_glow(cc, t, "cavern", exclude=[(p.x - 260, 300, p.x + 330, 1260)])
-    finish(c, cam, t, amb, L, emissive=emit, vig=0.45)
+    c.resetMatrix()
+    light.apply_darkness(c, cam, amb, lights=L, t=t)
+    c.save()
+    cam.apply(c, t)
+    env.draw_fungi_glow(c, t, "cavern")
+    lv = max(light.light_at(p.x, p.y - 520.0 * p.scale, amb, L))
+    ex = dict(p.extra)
+    ex["rim_pos"] = (560.0, 600.0)
+    q = p.copy(light=clamp(0.1 + 0.95 * lv, 0.26, 0.62), tint=(14, 34, 54), tint_amt=clamp(0.5 - 0.3 * lv, 0.15, 0.5),
+               rim=0.75, rim_color="#7FE0C8", extra=ex)
+    A.draw(c, q, t)
+    c.restore()
+    c.resetMatrix()
+    light.vignette(c, 0.45)
 
 
 # =========================================================================== shot M: the depths (S3 -> S4)
 LIE_X = 150.0                                # pelvis x of the lying Anger (depths), head toward the right wall
 LIE_Y = env.FLOOR_Y
-SWORD_Y = 420.0                              # where the blade is stuck in the right wall (depths coords)
+SWORD_Y = 100.0                              # stuck high in the right wall, in its vein of hard rock (depths)
 SWORD_ANG = 98.0                             # point direction (deg from up): into the wall, tip a hair down
 GOUGE_LEN = 360.0
 LIE_EXCLUDE = [(LIE_X - 600, 880, LIE_X + 560, 1240)]     # fungi glow must not draw over him
@@ -869,8 +1198,8 @@ def sword_entry():
 def sword_grip(t):
     """Grip of the stuck sword (the blade pivots at its entry and quivers after he is torn off it)."""
     ex, ey = sword_entry()
-    a = t - IMPACT
-    ang = SWORD_ANG + (7.0 * math.exp(-a / 0.45) * math.sin(2 * math.pi * 8.5 * a) if a > 0 else 0.0)
+    a = t - CLANG
+    ang = SWORD_ANG + (6.0 * math.exp(-a / 0.4) * math.sin(2 * math.pi * 9.0 * a) if a > 0 else 0.0)
     d = (A.SWORD_GRIP * 0.5 + 10.0 + A.SWORD_BLADE * (1.0 - EMBED))
     r = math.radians(ang)
     return ex - math.sin(r) * d, ey + math.cos(r) * d, ang
@@ -891,11 +1220,27 @@ def draw_stuck_sword(c, t, light_k=1.0):
     c.drawPath(path, paint("#2A1E18", 0.7, stroke=16.0))
     c.drawPath(path, paint("#060506", 0.95, stroke=8.0))
     c.drawPath(path, paint("#B8A898", 0.45, stroke=2.0))
+    # the vein of hard rock it stopped in (a glassy dark band across the wall)
+    band = skia.Path()
+    xs = [ex - 14.0 + 40.0 * i for i in range(9)]
+    top = [(x, ey - 8.0 + 6.0 * noise1(x / 60.0, 661) + 0.05 * (x - ex)) for x in xs]
+    bot = [(x, ey + 96.0 + 10.0 * noise1(x / 70.0, 662) + 0.05 * (x - ex)) for x in xs[::-1]]
+    band.moveTo(*top[0])
+    for q in top[1:] + bot:
+        band.lineTo(*q)
+    band.close()
+    c.drawPath(band, paint("#2E3646", 0.95))
+    c.drawPath(band, paint("#0C0A10", 0.8, stroke=2.4))
+    c.drawLine(top[0][0], top[0][1], top[-1][0], top[-1][1], paint("#B4C6DA", 0.6, stroke=2.4))
+    for i in range(5):
+        x = ex + 30 + 55 * i + 10 * hash01(i, 671)
+        y = ey + 20 + 60 * hash01(i, 672)
+        c.drawPath(_diamond(x, y, 3.0), paint("#E8F2FF", 0.5))
     A.draw_sword(c, gx, gy, ang, 1.0, light=light_k, embed=EMBED)
 
 
 def gouge_heat(t):
-    return clamp(1.0 - (t - IMPACT) / 3.2) ** 1.5 if t >= IMPACT else 1.0
+    return blade_heat(t)
 
 
 def draw_gouge_glow(c, t):
@@ -908,7 +1253,7 @@ def draw_gouge_glow(c, t):
     path.moveTo(wall_x(ey - 120) - 6, ey - 120)
     path.lineTo(ex - 2, ey)
     c.drawPath(path, paint("#FF7A2A", 0.55 * k, stroke=5.0, blend="add"))
-    fx.ember_burst(c, t, ex - 6, ey, t - IMPACT, n=10, seed=511, size=0.8, speed=160, life=1.2)
+    fx.ember_burst(c, t, ex - 6, ey, t - CLANG, n=10, seed=511, size=0.8, speed=160, life=1.2)
     from anim.core import glow
     glow(c, ex - 4, ey, 36.0, "#FF8A3A", 0.5 * k)
 
@@ -922,14 +1267,16 @@ def bottom_lights(t, strength=1.0):
     return L
 
 
-def crumpled_pose(t, seed=21):
+def crumpled_pose(t, x=None, y=None):
     """Crumpled on his back (facing -1: head toward the right wall); out cold. Armor settles on the clatter."""
+    x = LIE_X if x is None else x
+    y = LIE_Y if y is None else y
     a = t - IMPACT
     bump = sum(kick_env(t, [ct], dur=0.22, freq=6.0) * (6.0 - 0.8 * i) for i, ct in enumerate(CLATTER))
     flop = kick_env(t, CLATTER, dur=0.3, freq=5.0)
     arm_r = ArmPose(shoulder=4.0 + 8.0 * flop, elbow=18.0 - 6.0 * flop, wrist=10.0, hand="relaxed")
     arm_l = ArmPose(shoulder=-6.0 + 6.0 * flop, elbow=22.0 + 6.0 * flop, wrist=0.0, hand="relaxed")
-    p = _pose(x=LIE_X, y=LIE_Y, facing=-1.0, turn=0.32, arm_r=arm_r, arm_l=arm_l, bounce=-abs(bump),
+    p = _pose(x=x, y=y, facing=-1.0, turn=0.32, arm_r=arm_r, arm_l=arm_l, bounce=-abs(bump),
               head_tilt=4.0 * flop, lid_l=0.0, lid_r=0.0, mouth_open=0.08, brow_worry=0.2,
               breath=0.25 * math.sin(2 * math.pi * 0.22 * t) * smoothstep((a - 0.8) / 1.0),
               extra=dict(state="crumpled", arms_w=0.0, sword=None, shield="back", bruised=1.0,
@@ -937,12 +1284,17 @@ def crumpled_pose(t, seed=21):
     return p
 
 
+M_CAM0 = Camera(330.0, 760.0, 0.72)
+M_CAM1 = Camera(336.0, 792.0, 0.77)          # = S4's first framing
+
+
 def shot_M(c, t):
-    p = crumpled_pose(t)
+    p = landing_pose(t, LIE_X, LIE_Y)
     hc = A.head_center(p, t)
     u = ease_in_out(clamp((t - (IMPACT + 0.7)) / (T1 - IMPACT - 0.7)))
-    cam = cam_mix(Camera(345.0, 800.0, 1.02), Camera(352.0, 830.0, 1.09), u)
-    cam = fx.camera_shake(cam, t, [(IMPACT, 22.0, 0.6)] + [(ct, 3.0, 0.15) for ct in CLATTER], freq=14, seed=7)
+    cam = cam_mix(M_CAM0, M_CAM1, u)
+    cam = fx.camera_shake(cam, t, [(IMPACT, 30.0, 0.65)] + [(ct, 3.0, 0.15) for ct in CLATTER], freq=14, seed=7,
+                          rot=False)
     amb = 0.105
     L = bottom_lights(t)
     L.append(Light(hc[0] - 120, hc[1] + 40, 600.0, 0.2, FILL_COLD, "point"))
@@ -971,12 +1323,6 @@ def impact_dust(c, t):
 
 
 # =========================================================================== the shaft shots
-def shot_B(c, t):
-    cam = _shake(cam_B(t), t)
-    cr = 0.55 * smoothstep((t - CRACK) / 0.18) + 0.45 * smoothstep((t - CRACK2) / 0.15)
-    _render_shaft(c, t, cam, crack=cr)
-
-
 def shot_C(c, t):
     cam = cam_C(t)
     if t > COLLAPSE:   # the floor goes: the face drops out of the frame, the camera jolts after it
@@ -1033,11 +1379,13 @@ def shot_L(c, t):
     def floor_dust(cc):
         a = t - IMPACT
         if a >= 0:
-            fx.dust_cloud(cc, t, pelvis_world(IMPACT)[0], _floor_w(), a, size=2.2, seed=541, n=16, life=3.0)
-    _render_shaft(c, t, cam, collapse_t=t - COLLAPSE, show_floor=True, extra_draw=floor_dust)
+            fx.dust_cloud(cc, t, pelvis_world(IMPACT)[0] + CRUMPLE_DX, _floor_w(), a, size=2.2, seed=541, n=16,
+                          life=3.0)
+    _render_shaft(c, t, cam, collapse_t=t - COLLAPSE, show_floor=t >= CLANG, extra_draw=floor_dust,
+                  blur=cam_L_blur(t))
 
 
-SHOTS = [(T0, shot_A), (CUT_B, shot_B), (CUT_C, shot_C), (CUT_D, shot_D), (CUT_E, shot_E), (CUT_F, shot_F),
+SHOTS = [(T0, shot_A), (CUT_C, shot_C), (CUT_D, shot_D), (CUT_E, shot_E), (CUT_F, shot_F),
          (CUT_G, shot_G), (CUT_H, shot_H), (CUT_I, shot_I), (CUT_J, shot_J), (CUT_K, shot_K), (CUT_L, shot_L),
          (CUT_M, shot_M)]
 
@@ -1064,4 +1412,5 @@ def sfx_events():
     ev.append({"name": "armor_shift", "start": round(CRACK + 0.24, 3), "gain_db": -20.0})   # the freeze
     ev.append({"name": "armor_shift", "start": round(CATCHES[0] + 0.05, 3), "gain_db": -18.0})
     ev.append({"name": "armor_shift", "start": round(CUT_J + 0.02, 3), "gain_db": -12.0})  # the twist / thrust
+    ev.append({"name": "armor_shift", "start": round(SPIN[0] - 0.1, 3), "gain_db": -16.0})  # the turn in the air
     return ev

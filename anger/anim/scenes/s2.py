@@ -25,7 +25,8 @@ import skia
 from anim import char_anger as A
 from anim import char_crawler as C
 from anim import env, fx, light
-from anim.core import Camera, beat, clamp, ease_in_out, ease_out, lerp, noise1, scene_span, smoothstep, timeline
+from anim.core import (Camera, beat, clamp, ease_in_out, ease_out, lerp, line_end, line_start, noise1, scene_span,
+                       smoothstep, timeline)
 from anim.rig import ArmPose, Pose
 from anim.scenes.s1 import STEP_NAMES, Gaze, _lowres, blinks, bump, cam_at, cue_beats, gait_track, mk_pose
 
@@ -47,6 +48,8 @@ LISTEN = beat("listen")
 SC_BEHIND = beat("scurry_behind")
 OVER = beat("over_shoulder")
 CONT = beat("continue")
+CRACKS_SEEN = beat("cracks_seen")
+WRONG_ROCK = beat("wrong_rock")
 CRESTS = [TFLY + o for o in (0.0, 0.40, 0.76, 1.11)]      # torch_whoosh: one end-over-end turn per crest
 CLACK = STONE + 0.22                                        # stone_shift clack
 
@@ -56,8 +59,9 @@ def _sfx_times(name):
 
 
 DRIPS = _sfx_times("drip")                                  # plinks on the beat (drop lands)
-HEART = [b for b in cue_beats("tension") if b < T1 + 1.0] or [CONT + o for o in
-                                                             (0.25, 1.13, 1.98, 2.81, 3.6, 4.38, 5.13, 5.85, 6.55, 7.25)]
+HEART = [b for b in cue_beats("tension")] or [CONT + o for o in
+                                                             (0.25, 1.13, 1.98, 2.81, 3.6, 4.38, 5.13, 5.85, 6.55, 7.25,
+                                                              7.95)]
 DRIP_XY = (520.0, 990.0)                                    # where the stalactite drips hit the pool
 
 # =========================================================================== the floor path (x -> y, size)
@@ -78,6 +82,20 @@ def path_scale(x):
     return env.depth_scale(path_y(x))
 
 
+# the creep on (dark part): WALK_PATH to the pool's right edge, then a flatter line along the near floor that
+# only slowly bends away toward the far side (planted feet barely drift in depth while he creeps)
+_CREEP = [(620.0, 1170.0), (800.0, 1158.0), (950.0, 1128.0), (1100.0, 1080.0), (1250.0, 1016.0)]
+
+
+def creep_y(x):
+    if x <= _CREEP[0][0]:
+        return path_y(x)
+    for (xa, ya), (xb, yb) in zip(_CREEP[:-1], _CREEP[1:]):
+        if x <= xb:
+            return lerp(ya, yb, (x - xa) / (xb - xa))
+    return _CREEP[-1][1]
+
+
 def fk(turn):
     return lerp(0.3, 1.0, smoothstep(abs(turn) / 0.4))
 
@@ -85,17 +103,18 @@ def fk(turn):
 class PathWalk:
     """x(q) along the path: dx/dq = WALK_ADVANCE * fk(turn) * mix * size(x) (feet stay planted)."""
 
-    def __init__(self, x_ref, q_ref, turn, mix=1.0, span=(-3.0, 6.0)):
+    def __init__(self, x_ref, q_ref, turn, mix=1.0, span=(-3.0, 6.0), yfn=None):
         self.q_ref, self.x_ref = q_ref, x_ref
+        yfn = yfn or creep_y
         k = A.WALK_ADVANCE * fk(turn) * mix
         dq = 0.01
         n0, n1 = int(round(-span[0] / dq)), int(round(span[1] / dq))
         fw = [x_ref]
         for _ in range(n1):
-            fw.append(fw[-1] + k * path_scale(fw[-1]) * dq)
+            fw.append(fw[-1] + k * env.depth_scale(yfn(fw[-1])) * dq)
         bw = [x_ref]
         for _ in range(n0):
-            bw.append(bw[-1] - k * path_scale(bw[-1]) * dq)
+            bw.append(bw[-1] - k * env.depth_scale(yfn(bw[-1])) * dq)
         self.tab = list(reversed(bw[1:])) + fw
         self.q0 = q_ref - n0 * dq
         self.dq = dq
@@ -109,8 +128,8 @@ class PathWalk:
 def place(p, x):
     """Put the pose on the path at x (y and size from the floor perspective)."""
     p.x = x
-    p.y = path_y(x)
-    p.scale = path_scale(x)
+    p.y = creep_y(x)
+    p.scale = env.depth_scale(p.y)
     return p
 
 
@@ -261,24 +280,28 @@ WALKC_ON = (WC[0] - 0.4 / GC.rb, WC[0])
 PWC = PathWalk(start_ref(X_DARK, TURN_CR, MIX_CREEP), -0.4, TURN_CR, MIX_CREEP)
 
 # =========================================================================== shots
-CUT_PUSH = SETTLE                 # B  medium-close: torch up, looks up / around
-CUT_PAN = LOOK + 2.4              # C  wide pan across the cavern
-CUT_SEARCH = SEARCH + 0.6         # D  medium: careful steps, lights the ground behind the rocks
+CUT_PUSH = LOOK                   # B  medium-close: looks up / around (n09 "...so vast" plays on the wide)
+CUT_PAN = LOOK + 1.9              # C  wide pan: "his torchlight could not find its walls"
+CUT_SEARCH = SEARCH + 0.6         # D  medium: careful steps, lights the ground ("dark, and cold, ... quiet")
 CUT_EYES = EYES - 0.3             # E1 two planes: Anger peering back left, the crevice behind him (eyes open)
 CUT_CREV = EYES + 0.75            # E2 close on the crevice: the eyes blink, dart, skitter off
-CUT_BACK = SCURRY + 0.55          # E3 medium: Anger unaware, looks up at the stalactites, the pool
-CUT_APPROACH = STONE - 2.7        # F  wide-ish: he moves on toward the pool
+CUT_BACK = SCURRY + 0.55          # E3 medium: Anger unaware ("He did not see the eyes.")
+CUT_APPROACH = line_start("n11") + 2.3   # F  wide-ish: he moves on; in the dark the eyes "had seen him"
 CUT_STONE = STONE - 0.75          # G  medium-wide: the stone tips, stumble, the torch flies
 CUT_POOL = TSPLASH - 0.25         # H  insert: splash, steam, the light dies
-CUT_DARK = TOUT + 0.65            # I  dark wide: frozen in the dark
-CUT_LISTEN = LISTEN + 0.8         # J  close: only the eyes move
+CUT_DARK = TOUT + 0.65            # I  dark wide: "And then, there was only darkness."
+CUT_STILL = line_start("n13") - 0.3      # I2 medium: "Anger stood perfectly still..."
+CUT_LISTEN = line_start("n13") + 0.9     # J  close: "...and listened." only the eyes move
 CUT_SCURRY = SC_BEHIND - 0.15     # K  medium: a shape scuttles across behind him
 CUT_OVER = OVER - 0.05            # L  close: the look over the shoulder
-CUT_POV = OVER + 0.95             # M  what he sees: nothing
-CUT_FACE = OVER + 2.15            # N  close: eyes narrow, turns back
-CUT_GUARD = CONT + 0.2            # O  medium: sword up, starts creeping
-CUT_WIDE = CONT + 3.3             # P  wide: creeping toward the far archway in the vast dark
+CUT_POV = OVER + 0.95             # M  what he sees: "Nothing."
+CUT_FACE = OVER + 2.25            # N  close: "Nothing he could see." eyes narrow, turns back
+CUT_GUARD = CONT + 0.2            # O  medium: sword up, starts creeping ("So he pressed on, sword raised...")
+CUT_WIDE = CONT + 3.3             # P  wide: creeping on in the vast dark
+CUT_CRACKS = CRACKS_SEEN          # Q1 low medium-wide: the floor ahead of him - hairline cracks spreading
+CUT_BOOTS = line_start("n15") + 4.6      # Q2 close on his boots: "...the thin cracks spreading beneath his feet"
 CUTS = [CUT_PUSH, CUT_PAN, CUT_SEARCH, CUT_EYES, CUT_CREV, CUT_BACK, CUT_APPROACH, CUT_STONE, CUT_POOL, CUT_DARK,
+        CUT_STILL, CUT_CRACKS, CUT_BOOTS,
         CUT_LISTEN, CUT_SCURRY, CUT_OVER, CUT_POV, CUT_FACE, CUT_GUARD, CUT_WIDE]
 
 TORCH_LOW = ArmPose(shoulder=62.0, elbow=48.0, wrist=-40.0, hand="hold")       # lighting the ground ahead
@@ -498,6 +521,87 @@ def anger_pose(t, force_torch=False):
     return _face(p, t)
 
 
+# =========================================================================== floor cracks (foreshadow the collapse)
+# hairline cracks in the CAVERN floor (stage coords), ahead of / under his creep at the end of S2.
+# (points, growth window (g0, g1) within crack_growth(), core width at depth scale 1). Each crack spreads from
+# its first point toward its last (the main one runs back toward and under his boots).
+FLOOR_CRACKS = [
+    ([(1062.0, 1112.0), (1030.0, 1126.0), (1004.0, 1121.0), (972.0, 1138.0), (941.0, 1143.0), (913.0, 1158.0),
+      (884.0, 1160.0), (858.0, 1174.0), (829.0, 1170.0), (801.0, 1166.0), (776.0, 1173.0), (750.0, 1186.0),
+      (724.0, 1190.0)], (0.0, 0.62), 2.5),
+    ([(941.0, 1143.0), (953.0, 1162.0), (944.0, 1180.0), (962.0, 1198.0), (958.0, 1214.0)], (0.3, 0.75), 1.6),
+    ([(884.0, 1160.0), (872.0, 1146.0), (849.0, 1142.0), (826.0, 1131.0), (803.0, 1134.0)], (0.45, 0.9), 1.3),
+    ([(905.0, 1100.0), (933.0, 1092.0), (957.0, 1099.0), (990.0, 1086.0), (1012.0, 1090.0)], (0.12, 0.55), 1.4),
+]
+CRACK_ZONE = (700.0, 1080.0, 1080.0, 1220.0)           # bounding box of all cracks (x0, y0, x1, y1)
+
+
+def crack_growth(t):
+    """0..1: the cracks start spreading a little before cracks_seen and are complete at wrong_rock."""
+    return clamp((t - (CRACKS_SEEN - 0.9)) / (WRONG_ROCK - CRACKS_SEEN + 0.9))
+
+
+def draw_floor_cracks(canvas, t, growth=None, alpha=1.0):
+    """Thin hairline cracks spreading through the cavern floor (STAGE coords, cavern set). Draw it in the LIT pass
+    (after env.draw_cavern, before light.apply_darkness): a near-black core, a faint lighter upper lip and a
+    little grit. growth None = crack_growth(t) (from cracks_seen to wrong_rock); 0 = invisible."""
+    g = crack_growth(t) if growth is None else clamp(growth)
+    if g <= 0.0 or alpha <= 0.0:
+        return
+    vis = canvas.getLocalClipBounds()
+    if vis.right() < CRACK_ZONE[0] or vis.left() > CRACK_ZONE[2] or vis.bottom() < CRACK_ZONE[1] or \
+            vis.top() > CRACK_ZONE[3]:
+        return
+    core = skia.Paint(AntiAlias=True, Color=skia.Color(6, 5, 9))
+    core.setStyle(skia.Paint.kStroke_Style)
+    core.setStrokeCap(skia.Paint.kRound_Cap)
+    lip = skia.Paint(AntiAlias=True, Color=skia.Color(182, 176, 196))
+    lip.setStyle(skia.Paint.kStroke_Style)
+    lip.setStrokeCap(skia.Paint.kRound_Cap)
+    grit = skia.Paint(AntiAlias=True, Color=skia.Color(150, 144, 160))
+    for ci, (pts, (g0, g1), w0) in enumerate(FLOOR_CRACKS):
+        f = clamp((g - g0) / (g1 - g0))
+        if f <= 0.0:
+            continue
+        seg = [math.hypot(b[0] - a[0], b[1] - a[1]) for a, b in zip(pts[:-1], pts[1:])]
+        total = sum(seg)
+        reach = f * total
+        acc = 0.0
+        for i, L in enumerate(seg):
+            if acc >= reach:
+                break
+            a, b = pts[i], pts[i + 1]
+            u = min(1.0, (reach - acc) / L)
+            bx, by = lerp(a[0], b[0], u), lerp(a[1], b[1], u)
+            s_ = env.depth_scale(0.5 * (a[1] + by))
+            taper = 1.0 - 0.55 * (acc + 0.5 * L * u) / total            # thinner toward the spreading tip
+            w = w0 * s_ * taper
+            core.setStrokeWidth(max(0.7, 1.15 * w))
+            core.setAlphaf(0.88 * alpha)
+            canvas.drawLine(a[0], a[1], bx, by, core)
+            lip.setStrokeWidth(max(0.5, 0.45 * w))
+            lip.setAlphaf(0.4 * alpha)
+            canvas.drawLine(a[0], a[1] - 0.9 * w - 0.6, bx, by - 0.9 * w - 0.6, lip)
+            acc += L
+        # grit: a few specks kicked up along the crack (only where it has already spread)
+        for k in range(int(total / 18)):
+            h1, h2, h3 = (math.sin((ci * 31 + k) * 12.9898 + j * 78.233) * 43758.5453 % 1.0 for j in range(3))
+            d = h1 * total
+            if d > reach:
+                continue
+            acc, i = 0.0, 0
+            while i < len(seg) - 1 and acc + seg[i] < d:
+                acc += seg[i]
+                i += 1
+            a, b = pts[i], pts[i + 1]
+            u = (d - acc) / seg[i]
+            s_ = env.depth_scale(a[1])
+            gx = lerp(a[0], b[0], u) + (h2 - 0.5) * 16 * s_
+            gy = lerp(a[1], b[1], u) + (h3 - 0.5) * 7 * s_
+            grit.setAlphaf((0.25 + 0.3 * h2) * alpha)
+            canvas.drawCircle(gx, gy, (0.7 + 1.1 * h3) * s_, grit)
+
+
 # =========================================================================== crawler
 LURK = (env.CREVICE_POS[0], env.CREVICE_POS[1] + 216.0 * env.CREVICE_SCALE)
 
@@ -522,6 +626,23 @@ def crawler_lurk(t):
         lx = (-0.7 if (t - EYES) % 0.9 < 0.45 else 0.6)
     p.look_x = lx
     p.extra = dict(state="lurk", eye_glow=glow, body_alpha=0.55)
+    return p
+
+
+WATCH = (line_start("n11") + 3.5, line_end("n11") - 0.05)       # "But the eyes... had seen him."
+WATCH_POS = (700.0, 868.0)                                       # out in the dark beyond the pool
+
+
+def crawler_watch(t):
+    """The four eyes, watching him from the dark (eyes only, no body), on the narrator's last words of n11."""
+    if not (WATCH[0] - 0.05 <= t < WATCH[1] + 0.3):
+        return None
+    sc = env.depth_scale(WATCH_POS[1]) * 0.85
+    p = Pose(x=WATCH_POS[0], y=WATCH_POS[1] + 216.0 * sc, scale=sc)
+    op = smoothstep((t - WATCH[0]) / 0.3) * (1.0 - smoothstep((t - WATCH[1]) / 0.22))
+    p.lid_l = p.lid_r = op
+    p.look_x, p.look_y = -0.75, 0.25                             # on him
+    p.extra = dict(state="lurk", eye_glow=op, body_alpha=0.0)
     return p
 
 
@@ -582,9 +703,13 @@ def camera(t):
     if t < CUT_DARK:
         k = ease_in_out((t - CUT_POOL) / (CUT_DARK - CUT_POOL))
         return Camera(lerp(545.0, 550.0, k), lerp(930.0, 945.0, k), lerp(1.45, 1.55, k))
+    if t < CUT_STILL:
+        k = ease_in_out((t - CUT_DARK) / (CUT_STILL - CUT_DARK))
+        return Camera(lerp(330.0, 315.0, k), lerp(760.0, 750.0, k), lerp(0.6, 0.66, k))
     if t < CUT_LISTEN:
-        k = ease_in_out((t - CUT_DARK) / (CUT_LISTEN - CUT_DARK))
-        return Camera(lerp(330.0, 320.0, k), lerp(760.0, 750.0, k), lerp(0.6, 0.66, k))
+        h = _head_ref(CUT_STILL + 0.5)
+        k = ease_in_out((t - CUT_STILL) / (CUT_LISTEN - CUT_STILL))
+        return cam_at(h[0] + 20.0, h[1] + 300.0, lerp(0.86, 0.95, k), 0.5, 0.36)
     if t < CUT_SCURRY:
         h = _head_ref(CUT_LISTEN + 0.5)
         k = ease_in_out((t - CUT_LISTEN) / (CUT_SCURRY - CUT_LISTEN))
@@ -607,8 +732,15 @@ def camera(t):
         h = _head_ref(CONT + 1.0)
         k = ease_in_out((t - CUT_GUARD) / (CUT_WIDE - CUT_GUARD))
         return cam_at(h[0] + lerp(120.0, 190.0, k), h[1] + 250.0, lerp(1.02, 1.1, k), 0.5, 0.4)
-    k = ease_in_out((t - CUT_WIDE) / (T1 - CUT_WIDE))
-    return Camera(lerp(470.0, 560.0, k), lerp(640.0, 650.0, k), lerp(0.44, 0.49, k))
+    if t < CUT_CRACKS:
+        k = ease_in_out((t - CUT_WIDE) / (CUT_CRACKS - CUT_WIDE))
+        return Camera(lerp(470.0, 540.0, k), lerp(640.0, 650.0, k), lerp(0.44, 0.48, k))
+    if t < CUT_BOOTS:
+        # low medium-wide: the floor ahead with the hairline cracks, he creeps in from the left
+        k = ease_in_out((t - CUT_CRACKS) / (CUT_BOOTS - CUT_CRACKS))
+        return Camera(lerp(790.0, 830.0, k), 1030.0, lerp(0.74, 0.8, k))
+    k = ease_in_out((t - CUT_BOOTS) / (T1 - CUT_BOOTS))
+    return Camera(lerp(745.0, 800.0, k), 1112.0, lerp(2.05, 2.2, k))
 
 
 # =========================================================================== rendering
@@ -661,6 +793,7 @@ def render(canvas, t):
         _lowres(c, cam, t, 0.5, _set)            # close-ups: soft background, cheaper tile fills
     else:
         _set(c)
+    draw_floor_cracks(c, t)                      # always crisp (the boots close-up looks right at them)
     lurk = crawler_lurk(t)
     if lurk is not None:
         C.draw(c, lurk, t)
@@ -692,6 +825,9 @@ def render(canvas, t):
         A.draw(c, pose, t)
     if lurk is not None:
         C.draw_eyes(c, lurk, t)
+    watch = crawler_watch(t)
+    if watch is not None:
+        C.draw_eyes(c, watch, t)
     if scur is not None:
         C.draw_eyes(c, scur, t)
     c.resetMatrix()

@@ -1508,6 +1508,11 @@ def mix_cue(cue: Cue, stems: dict, n: int):
                 want = p.opts["peak"]
             if cur > -110:
                 x = x * db(want - cur)
+        if p.opts.get("vo_duck") and cue.dialogue:
+            # narration-aware thinning: this (mid-band, melodic) part steps back under every line;
+            # gaps under 0.9 s are bridged so it does not pump between sentences
+            x = x * db(-float(p.opts["vo_duck"]) * dialogue_gain(cue, n, ramp=0.25, pre=0.15, post=0.25,
+                                                                 merge=0.9))[:, None]
         if mv is not None:
             x = x * mv
         act = np.sqrt(np.mean(x ** 2, axis=1))
@@ -1534,12 +1539,24 @@ def mix_cue(cue: Cue, stems: dict, n: int):
     return x, levels
 
 
-def dialogue_gain(cue: Cue, n: int, ramp=0.12, pre=0.10, post=0.18) -> np.ndarray:
+def merged_windows(cue: Cue, merge=0.0) -> list:
+    """Dialogue windows [(t0, t1)] sorted, with gaps shorter than `merge` s bridged."""
+    ws = sorted((t0, t1) for t0, t1, _ in cue.dialogue)
+    out = []
+    for t0, t1 in ws:
+        if out and t0 - out[-1][1] < merge:
+            out[-1] = (out[-1][0], max(out[-1][1], t1))
+        else:
+            out.append((t0, t1))
+    return out
+
+
+def dialogue_gain(cue: Cue, n: int, ramp=0.12, pre=0.10, post=0.18, merge=0.0) -> np.ndarray:
     """Per-sample 0..1 weight: 1 inside every dialogue window (with a little pre-roll / tail), cosine
-    ramps in and out."""
+    ramps in and out; windows separated by less than `merge` s are bridged (no pumping)."""
     t = np.arange(n) / SR
     w = np.zeros(n)
-    for t0, t1, _ in cue.dialogue:
+    for t0, t1 in merged_windows(cue, merge):
         a, b = t0 - pre, t1 + post
         up = np.clip((t - (a - ramp)) / ramp, 0, 1)
         dn = np.clip(((b + ramp) - t) / ramp, 0, 1)
@@ -1552,7 +1569,7 @@ def carve(cue: Cue, x: np.ndarray) -> np.ndarray:
     dipped by cue.carve_db wherever somebody speaks; everything below/above is untouched."""
     if not cue.carve_db or not cue.dialogue:
         return x
-    w = dialogue_gain(cue, len(x))
+    w = dialogue_gain(cue, len(x), merge=0.6)
     if not np.any(w > 0):
         return x
     mid = signal.sosfiltfilt(signal.butter(2, [300, 3000], "band", fs=SR, output="sos"), x, axis=0)
