@@ -918,29 +918,34 @@ def render(ctx, t, info):
 
     with core.camera(ctx, cx, cy, zoom):
         sets.service_tunnel(ctx, t_set, drip=drip)
+        pk = {k: v for k, v in p.items() if k not in ("x", "y")}
+        behind = c["y"] < FEET_Y - 20              # Curiosity deep in the side tunnel: behind him
+        split = c["wait"]                          # its glowing eyes go between it and him
         with sets.shaded(ctx, sets.service_tunnel, t_set, layer="shade"):
-            behind = c["y"] < FEET_Y - 20          # Curiosity deep in the side tunnel: behind him
             ca = {}
             if behind:
                 ca = _draw_cur(ctx, t, c)
-            pk = {k: v for k, v in p.items() if k not in ("x", "y")}
-            a = human.draw_person(ctx, "tired", p["x"], p["y"], S, t, **pk)
-            if not behind:
-                ca = _draw_cur(ctx, t, c)
+            if not split:
+                a = human.draw_person(ctx, "tired", p["x"], p["y"], S, t, **pk)
+                if not behind:
+                    ca = _draw_cur(ctx, t, c)
+        if split:
+            if "eye_l" in ca and "eye_r" in ca:
+                # its two teal eyes, still glowing in the dark down the side tunnel
+                (x1, y1), (x2, y2) = ca["eye_l"][:2], ca["eye_r"][:2]
+                se = c["s"] * 0.95
+                gap = max(95.0, math.hypot(x2 - x1, y2 - y1) / se)
+                look, lid, blink = _wait_eyes(t, T)
+                ctx.save()
+                _mouth_path(ctx)
+                ctx.clip()
+                fx.eyes_in_dark(ctx, (x1 + x2) / 2, (y1 + y2) / 2, se, t, kind="curiosity",
+                                blink=blink, look=look, gap=gap, lid=lid, tilt=0.05)
+                ctx.restore()
+            with sets.shaded(ctx, sets.service_tunnel, t_set, layer="shade"):
+                a = human.draw_person(ctx, "tired", p["x"], p["y"], S, t, **pk)
         if bandage_amt > 0:
             _bandage_glow(ctx, a, bandage_amt)
-        if c["wait"] and "eye_l" in ca and "eye_r" in ca:
-            # its two teal eyes, still glowing in the dark down the side tunnel
-            (x1, y1), (x2, y2) = ca["eye_l"][:2], ca["eye_r"][:2]
-            se = c["s"] * 0.95
-            gap = max(60.0, math.hypot(x2 - x1, y2 - y1) / se)
-            look, lid, blink = _wait_eyes(t, T)
-            ctx.save()
-            _mouth_path(ctx)
-            ctx.clip()
-            fx.eyes_in_dark(ctx, (x1 + x2) / 2, (y1 + y2) / 2, se, t, kind="curiosity", blink=blink,
-                            look=look, gap=gap, lid=lid, tilt=0.05)
-            ctx.restore()
     fx.vignette(ctx, 0.3, inner=0.62)
 
 
