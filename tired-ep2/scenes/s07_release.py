@@ -135,6 +135,7 @@ def times(info):
     T.emb_duck1 = T.emb_duck0 + 0.36
     T.emb_gone = T.emb_duck1 + 0.32
     T.slam0 = T.hatch - 0.2                  # the panel swings shut -> SLAM at T.hatch
+    T.wcut = T.L3.start - 0.5                # monitor insert -> her face
     _TCACHE[key] = T
     return T
 
@@ -615,7 +616,7 @@ def emb_state(T, info, t):
 
 def boss_state(T, info, t):
     ct = 1.0 - 0.2 * smoothstep(seg(t, T.watch + 0.05, T.watch + 0.75))
-    st = dict(chair_turn=ct, turn=0.7 * (1 - ct) / 0.2 * 1.0 if ct < 1 else 0.0, expr="cold",
+    st = dict(chair_turn=ct, turn=3.5 * (1 - ct), expr="cold", blink=None,
               face={}, look=(-0.75, 0.02), reach=None, pressed=0.0, mouth=info.mouth("boss", t))
     f = st["face"]
     bx, by = M["lockdown"]
@@ -637,13 +638,18 @@ def boss_state(T, info, t):
         if t >= T.hatch:
             f["lid"] = 0.0
     else:
-        # watching the empty hatch on the big monitor, then "Let them run."
+        # watching the empty hatch on the big monitor; her eyes come down, then "Let them run."
         st["look"] = tween(t, [(T.watch + 0.1, (-0.6, 0.0)), (T.watch + 0.3, (0.1, -1.0)),
-                               (T.L3.start - 0.45, (0.1, -1.0)), (T.L3.start - 0.2, (-0.4, 0.0))])
+                               (T.wcut + 0.12, (0.1, -1.0)), (T.wcut + 0.32, (-0.4, 0.0))])
         f["head_turn"] = tween(t, [(T.watch + 0.25, 0.0), (T.watch + 0.55, -0.1),
-                                   (T.L3.start - 0.4, -0.1), (T.L3.start - 0.05, -0.3)])
+                                   (T.wcut + 0.25, -0.1), (T.wcut + 0.5, -0.3)])
         f["head_nod"] = tween(t, [(T.watch + 0.25, 0.0), (T.watch + 0.55, -0.2),
-                                  (T.L3.start - 0.4, -0.2), (T.L3.start - 0.05, 0.02)])
+                                  (T.wcut + 0.25, -0.2), (T.wcut + 0.5, 0.02)])
+        # a slow judgement blink after the line
+        tb = T.L3.end + 0.45
+        st["blink"] = tween(t, [(tb, 0.0), (tb + 0.25, 1.0), (tb + 0.55, 1.0), (tb + 0.9, 0.0)])
+        if t < tb:
+            st["blink"] = 0.0 if t > T.wcut else None
         f["lid"] = 0.07 * smoothstep(seg(t, T.L3.end - 0.5, T.L3.end + 0.15))
         f["smirk"] = 0.14 * smoothstep(seg(t, T.L3.end + 0.3, T.L3.end + 1.0))
         f["press"] = 0.1
@@ -1004,7 +1010,7 @@ def _draw_boss(ctx, info, t, st):
     gy = FEET
     return human.draw_person(ctx, "boss", M["chair"][0], gy, SP, t, pose="sit_chair", turn=st["turn"],
                              expr=st["expr"], face=st["face"], look=st["look"], reach=st["reach"],
-                             mouth=st["mouth"])
+                             mouth=st["mouth"], blink=st["blink"])
 
 
 def _door_leaks(ctx, T, t):
@@ -1225,12 +1231,12 @@ def camera_at(T, t):
         cx, cy, z = 215.0, 1060.0, lerp(1.42, 1.3, smoothstep(k))
         sx, sy = _shake(t, T.hatch, 0.55, 12)
         dx, dy = sx, sy
-    else:                                              # S11 the Boss: watch -> "Let them run."
-        k = ease_in_out(seg(t, T.watch + 0.2, T.L3.start + 0.25))
-        cx = lerp(1700, 1705, k)
-        cy = lerp(800, 945, k)
-        z = lerp(1.28, 2.3, k)
-        z += 0.15 * seg(t, T.L3.start + 0.25, T.end)
+    elif t < T.wcut:                                   # S11a what she watches: the empty hatch
+        k = seg(t, T.watch, T.wcut)
+        cx, cy, z = 1700.0, lerp(528, 522, k), lerp(2.3, 2.42, k)
+    else:                                              # S11b the Boss: "Let them run."
+        k = seg(t, T.wcut, T.end)
+        cx, cy, z = lerp(1712, 1706, k), lerp(985, 975, k), lerp(2.25, 2.55, smoothstep(k))
     return cx, cy, z, dx, dy
 
 

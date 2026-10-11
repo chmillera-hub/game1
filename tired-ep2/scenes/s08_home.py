@@ -549,10 +549,14 @@ def _blanket_lip(ctx, t, T, st):
             core.stroke(c, core.alpha(C["blanket_sh"], k), 5)
 
     kq = round(clamp(st["sunrise"]) * 10) / 10
+    ctx.save()
+    ctx.rectangle(1236, 1150 + dy - rise, 380, 80 + rise)    # keep the graded group small (cost)
+    ctx.clip()
     try:
         sets._bd_graded(ctx, True, kq, draw)        # the bed's own dawn grade (cool dim + sun beams)
     except AttributeError:                          # (fallback if the private helper ever moves)
         draw(ctx)
+    ctx.restore()
 
 
 def _warm(t, T):
