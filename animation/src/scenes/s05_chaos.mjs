@@ -15,13 +15,13 @@
 //                                    shoulders sag; Fear slides down the wall and hugs itself, eyes on the Void
 
 import { createCanvas } from '@napi-rs/canvas';
-import { W, H, TAU, clamp, lerp, fbm, blinkAt, applyCamera, drift, vignette } from '../engine.mjs';
+import { W, H, TAU, clamp, lerp, fbm, blinkAt, applyCamera, drift, vignette, shade, circle, roundRect } from '../engine.mjs';
 import { withSpeech } from '../face.mjs';
 import { drawFear } from '../chars/fear.mjs';
 import { drawSelf, SELF_EXPR, drawClipboard, selfPoseAnchors, selfLocal } from '../chars/self.mjs';
 import { drawEmotion, EMOTION_EXPR, PANIC_FACE } from '../chars/emotions.mjs';
 import { drawVoid } from '../chars/void.mjs';
-import { drawHQ, drawHQForeground, drawAlarmLight, HQ_VIEWS, hqScaleAt, ALARM_REACH } from '../sets/hq.mjs';
+import { drawHQ, drawHQForeground, drawAlarmLight, drawAlarmStation, HQ_VIEWS, HQ_COLORS, hqScaleAt, ALARM_REACH } from '../sets/hq.mjs';
 import { drawCage } from '../sets/props.mjs';
 
 export const id = 's05';
@@ -34,16 +34,16 @@ export const sfx = [
   { at: 's05b01+0.58', name: 'footsteps', gain: -17, rate: 1.9 },
   { at: 's05b01+0.75', name: 'crowd_murmur', gain: -18 },
   { at: 's05b01+0.9', name: 'cloth_rustle', gain: -16 },                 // the CEO rising from the knee
-  { at: 's05b01+1.47', name: 'door_whoosh', gain: -15 },                 // the EXIT door swings open
-  { at: 's05b01+1.65', name: 'footsteps', gain: -15, rate: 1.25 },        // ANGER stomping
+  { at: 's05b01+1.47', name: 'door_whoosh', gain: -15 },                 // the EXIT door swings open (left edge of the wide)
+  { at: 's05b01+1.88', name: 'footsteps', gain: -15, rate: 1.8 },         // ANGER lands from his hop and stomps (≈0.31 s steps)
   { at: 's05b02-0.45', name: 'crowd_murmur', gain: -21 },
-  { at: 's05b02+0.05', name: 'footsteps', gain: -17 },
-  { at: 's05b02.end-0.1', name: 'door_whoosh', gain: -17, rate: 0.92 },  // swings shut (thud ≈ +1.0 in the file)
+  { at: 's05b02+0.48', name: 'footsteps', gain: -17, rate: 1.2 },         // through the door: ANGER, SADNESS, CALM, JOY
+  { at: 's05b02+1.55', name: 'door_whoosh', gain: -17, rate: 1.15 },     // swings shut behind JOY (b02+1.92 → +2.42; thud on +2.42)
   // alone: the turn, the pages, the clipboard dropped as the hands go to the ears
-  { at: 's05b03+0.5', name: 'cloth_rustle', gain: -20, rate: 0.85 },
-  { at: 's05b03+0.85', name: 'paper_rustle', gain: -17 },
-  { at: 's05b03+1.55', name: 'paper_rustle', gain: -20, rate: 1.1 },
-  { at: 's05b03+2.75', name: 'paper_rustle', gain: -19, rate: 1.1 },
+  { at: 's05b03+1.05', name: 'cloth_rustle', gain: -20, rate: 0.85 },    // the half circle starts as the empty room cuts in
+  { at: 's05b03+1.2', name: 'paper_rustle', gain: -17 },                 // pages slip at b03+1.3 / +2.3 / +3.4
+  { at: 's05b03+2.2', name: 'paper_rustle', gain: -20, rate: 1.1 },
+  { at: 's05b03+3.3', name: 'paper_rustle', gain: -19, rate: 1.1 },
   { at: 's05b03.end-0.42', name: 'cloth_rustle', gain: -17 },
   { at: 's05b03.end-0.52', name: 'paper_rustle', gain: -14 },            // the clipboard lands (swish peak 0.5 s in)
   // the long shaky exhale as the hands come down (exhale ≈ 1.45 s into the file)
@@ -175,7 +175,8 @@ function ceoAlarmPose(t, S) {
   const HOOD = { lookX: -0.72, lookY: -0.86 }, FEAR = { lookX: 0.62, lookY: 0.3 }, RUN = { lookX: 0.92, lookY: 0.12 };
   const gaze = k([['scene.start', HOOD], ['s05b01+0.02', HOOD], ['s05b01+0.12', FEAR, 'out'], ['s05b01+0.66', FEAR], ['s05b01+0.82', RUN]]);
   const startle = k([['s05b01+0.02', 0], ['s05b01+0.14', 1, 'out'], ['s05b01+0.7', 0.6]]);
-  const KNIT = { browIn: 0.55, browUp: -0.05, browSquish: 0.7, lidTilt: 0.28, lidU: 0.2, lidL: 0.1, smile: -0.22, pressed: 0.8, tears: 0.2 };
+  // = s04's last frame (eyes up at the hood, lids lifted with the gaze, brows knit, lips pressed): a cut, no time skip
+  const KNIT = { browIn: 0.55, browUp: -0.05, browSquish: 0.7, lidTilt: 0.15, lidU: -0.1, lidL: 0.04, smile: -0.22, pressed: 0.8, tears: 0.2 };
   const ALARM = { browIn: 0.6, browUp: 0.75, browSquish: 0.2, lidTilt: 0.1, lidU: -0.22, lidL: 0, smile: -0.25, pressed: 0, open: 0.12, tears: 0.15 };
   const ex = k([['scene.start', KNIT], ['s05b01+0.02', KNIT], ['s05b01+0.16', ALARM, 'out']]);
   // a silent "wait": w (round) → ay (open) → closing
@@ -185,13 +186,13 @@ function ceoAlarmPose(t, S) {
   // the reach goes after Fear's back at its shoulder height (world ≈ (590, 1075)), fingers open, a beat too late —
   // it used to rise above Fear's head with the palm up, which read as hailing a cab
   const reachK = k([['s05b01+0.8', 0], ['s05b01+1.08', 1, 'out']]);
-  const KNEE = [58, -150], AFTER = [218, -212];
+  const KNEE = [58, -150], AFTER = [198, -214];
   const armR = reachK > 0.02
     ? { target: [lerp(KNEE[0], AFTER[0], reachK), lerp(KNEE[1], AFTER[1], reachK)], bend: -1, front: true,
         hand: 'open', handAngle: lerp(0.5, -0.12, reachK), thumb: -1 }
     : { target: KNEE, bend: -1, front: true, hand: 'drape', palm: true, wrist: 0.75, thumb: -1 };
   return { t, outfit: 'ceo', facing: 1, kneel: k([['s05b01+0.9', 1], ['s05b01+1.3', 0.4]]),
-    headTurn: k([['scene.start', 0.04], ['s05b01+0.06', 0.04], ['s05b01+0.3', 0.38, 'out']]),
+    headTurn: k([['scene.start', -0.06], ['s05b01+0.06', -0.06], ['s05b01+0.3', 0.38, 'out']]),
     headTilt: k([['scene.start', -0.05], ['s05b01+0.3', 0.02]]), headDY: -4 * startle, lean: -0.03 * startle, face, armR };
 }
 
@@ -284,7 +285,7 @@ function emotionState(name, t, S, shot) {
       armL: { preset: 'rest', hand: 'fist' }, armR: { preset: 'rest', hand: 'fist' } };
   } else if (name === 'SADNESS') {
     // waits behind ANGER looking back over its shoulder, lower lip out, a tiny wave at the empty room; goes
-    p = path(t, S, [['s05b02', [208, 946]], ['s05b02+0.55', [192, 943]], ['s05b02+0.62', [192, 943]],
+    p = path(t, S, [['s05b02', [230, 951]], ['s05b02+0.55', [214, 948]], ['s05b02+0.62', [214, 948]],
       ['s05b02+0.86', DOOR_IN, 'inOut'], ['s05b02+1.16', DOOR_OUT, 'in']]);
     walking = moving(t, S, [['s05b02-0.1', 's05b02+0.55'], ['s05b02+0.62', 's05b02+1.2']]);
     const back = k([['s05b02+0.7', 1], ['s05b02+0.82', 0]]);
@@ -293,7 +294,7 @@ function emotionState(name, t, S, shot) {
       armL: t > S.T('s05b02+0.12') && t < S.T('s05b02+0.66') ? { preset: 'wave', dy: 34, dx: -6 } : 'rest' };
   } else if (name === 'CALM') {
     // the only unhurried body in the room: a hand at SADNESS's elbow, the other palm open toward the door; follows
-    p = path(t, S, [['s05b02', [250, 956]], ['s05b02+0.6', [236, 952]], ['s05b02+0.9', [212, 946], 'inOut'],
+    p = path(t, S, [['s05b02', [266, 946]], ['s05b02+0.6', [254, 944]], ['s05b02+0.9', [216, 945], 'inOut'],
       ['s05b02+1.14', DOOR_IN], ['s05b02+1.42', DOOR_OUT, 'in']]);
     walking = moving(t, S, [['s05b02-0.1', 's05b02+1.45']]);
     face = { smile: 0.18, lidU: 0.45, lidL: 0.12, lidTilt: 0, browIn: 0.1, lookX: -0.45, lookY: 0.15 };
@@ -495,9 +496,97 @@ function drawPages(g, t, S, ceo) {
   }
 }
 
-// The console shot is the heaviest frame of the scene: its set, the Void (idle 0) and the empty cage do not change
-// during its 1.6 s (the strobe and the opening door are out of its frame), so they are painted once, in world space,
-// from fixed parameters (deterministic), and laid back under the live camera.
+// ---- live pieces over a cached front set -------------------------------------------------------------------------
+// The front set is ~11–19 ms per frame (more at the door's zoom); everything in it is static in these shots except
+// the EXIT door (it swings) and the alarm station (bell + beacon animate). The set is painted once per shot with the
+// door shut and the station idle, and those two are painted live on top, exactly as drawHQ composes them:
+// part → room dim (rgba(6,5,14,.62·lightsDim)) → for an open door: floor glow + the undimmed door again.
+// Wall transforms replicate hq.mjs wallXform(G.front, side, lam, yup, cheat) (GEO.front: vx 450, vy 520, eye 320,
+// hw 232, f 900); the door painter is a copy of hq.mjs drawExitDoor (not exported).
+function frontWallXf(side, lam, yup, cheat) {
+  const ox = 450 + lam * side * 232, oy = 520 + lam * (320 - yup), k = (lam * lam) / 900;
+  return [lerp(232 * k, lam, cheat), lerp(side * (320 - yup) * k, 0, cheat), 0, lam, ox, oy];
+}
+const DOOR_XF = frontWallXf(-1, 1.3, 0, 0.12);
+const ALARM_XF = frontWallXf(1, 1.42, 180 * 0.296, 0.5);
+const HQ_LINE = HQ_COLORS.line;
+function doorPath(g, pad = 0) {
+  const W2 = 62, Hs = 150;
+  g.beginPath();
+  g.moveTo(-W2 - pad, 0); g.lineTo(-W2 - pad, -Hs); g.arc(0, -Hs, W2 + pad, Math.PI, 0); g.lineTo(W2 + pad, 0);
+  g.closePath();
+}
+function paintExitDoor(g, open) {
+  const W2 = 62, Hs = 150, R = 62;
+  const lin = (x0, y0, x1, y1, stops) => { const gr = g.createLinearGradient(x0, y0, x1, y1); for (const [k, c] of stops) gr.addColorStop(k, c); return gr; };
+  doorPath(g, 14); g.fillStyle = '#41377a'; g.fill(); g.strokeStyle = HQ_LINE; g.lineWidth = 3; g.stroke();
+  doorPath(g, 14); g.save(); g.clip();
+  g.strokeStyle = 'rgba(170,150,240,0.3)'; g.lineWidth = 3; doorPath(g, 10); g.stroke();
+  g.restore();
+  doorPath(g, 0); g.save(); g.clip();
+  g.fillStyle = lin(0, -Hs - R, 0, 0, [[0, '#fff3d6'], [1, '#ffd9a0']]);
+  g.fillRect(-W2 - 2, -Hs - R - 2, W2 * 2 + 4, Hs + R + 4);
+  const ang = open * 1.35, lw = W2 * 2 * Math.cos(ang);
+  if (lw > 1) {
+    g.save();
+    g.translate(-W2, 0); g.scale(lw / (W2 * 2), 1); g.translate(W2, 0);
+    doorPath(g, 0);
+    const sh = open * 0.5;
+    g.fillStyle = lin(-W2, 0, W2, 0, [[0, shade('#5a4290', -sh)], [1, shade('#463370', -sh)]]);
+    g.fill(); g.strokeStyle = HQ_LINE; g.lineWidth = 2.5; g.stroke();
+    g.strokeStyle = 'rgba(15,10,30,0.5)'; g.lineWidth = 2.5;
+    g.beginPath(); g.moveTo(0, -Hs - R + 4); g.lineTo(0, 0); g.stroke();
+    for (const sx of [-1, 1]) { roundRect(g, sx * 31 - 20, -Hs + 6, 40, 70, 10); g.stroke(); roundRect(g, sx * 31 - 20, -64, 40, 50, 10); g.stroke(); }
+    g.fillStyle = '#ffe6b0'; circle(g, 0, -Hs - 12, 18); g.fill();
+    g.strokeStyle = '#2b2255'; g.lineWidth = 4; g.stroke();
+    g.fillStyle = '#e8c25a'; circle(g, W2 - 14, -80, 6); g.fill();
+    g.strokeStyle = HQ_LINE; g.lineWidth = 1.5; g.stroke();
+    g.restore();
+  }
+  g.restore();
+}
+function drawDoorLive(g, st) {
+  const open = clamp(st.doorOpen || 0), dim = 0.62 * (st.lightsDim || 0);
+  g.save(); g.transform(...DOOR_XF);
+  paintExitDoor(g, open);
+  if (dim > 0) { doorPath(g, 16); g.clip(); g.fillStyle = `rgba(6,5,14,${dim})`; g.fillRect(-90, -300, 180, 320); }
+  g.restore();
+  if (open > 0) {
+    g.save(); g.globalCompositeOperation = 'lighter';
+    g.translate(DOOR_XF[4] + 70, DOOR_XF[5] + 10); g.scale(1, 40 / 160);
+    const a = 0.25 * open, gr = g.createRadialGradient(0, 0, 0, 0, 0, 160);
+    gr.addColorStop(0, `rgba(255,226,168,${a})`); gr.addColorStop(0.5, `rgba(255,226,168,${a * 0.5})`); gr.addColorStop(1, 'rgba(255,226,168,0)');
+    g.fillStyle = gr; g.fillRect(-160, -160, 320, 320);
+    g.restore();
+    if (dim > 0.006) { g.save(); g.globalAlpha = clamp(open * 1.5); g.transform(...DOOR_XF); paintExitDoor(g, open); g.restore(); }
+  }
+}
+// the station is dimmed like the room around it: painted in a small offscreen, darkened with source-atop, blitted
+let stCan = null, stCtx = null;
+function drawStationLive(g, st) {
+  const m = g.getTransform();
+  const corners = [[742, 722], [818, 722], [742, 952], [818, 952]].map(([x, y]) => [m.a * x + m.c * y + m.e, m.b * x + m.d * y + m.f]);
+  const x0 = Math.floor(Math.min(...corners.map((c) => c[0]))) - 2, y0 = Math.floor(Math.min(...corners.map((c) => c[1]))) - 2;
+  const x1 = Math.ceil(Math.max(...corners.map((c) => c[0]))) + 2, y1 = Math.ceil(Math.max(...corners.map((c) => c[1]))) + 2;
+  if (x1 <= 0 || y1 <= 0 || x0 >= W || y0 >= H) return;
+  const bw = x1 - x0, bh = y1 - y0;
+  if (!stCan || stCan.width < bw || stCan.height < bh) { stCan = createCanvas(Math.max(bw, 160), Math.max(bh, 400)); stCtx = stCan.getContext('2d'); }
+  const c = stCtx;
+  c.setTransform(1, 0, 0, 1, 0, 0); c.globalCompositeOperation = 'source-over'; c.clearRect(0, 0, stCan.width, stCan.height);
+  c.setTransform(m.a, m.b, m.c, m.d, m.e - x0, m.f - y0);
+  c.transform(...ALARM_XF);
+  drawAlarmStation(c, 0, 0, 0.296, st);
+  c.setTransform(1, 0, 0, 1, 0, 0);
+  const dim = 0.62 * (st.lightsDim || 0);
+  if (dim > 0) { c.globalCompositeOperation = 'source-atop'; c.fillStyle = `rgba(6,5,14,${dim})`; c.fillRect(0, 0, bw, bh); c.globalCompositeOperation = 'source-over'; }
+  g.save(); g.setTransform(1, 0, 0, 1, 0, 0);
+  g.drawImage(stCan, 0, 0, bw, bh, x0, y0, bw, bh);
+  g.restore();
+}
+
+// Shots 2 and 3: the set (door shut, station idle), the Void (idle 0) and the empty cage are painted once per shot, in
+// world space, from fixed parameters (deterministic), and laid back under the live camera (drift + a small push in,
+// both inside the cached margin); the door and the station are then drawn live on top (above).
 const SET_M = 40;
 const setCache = new Map();
 function cachedSet(key, cam, st) {
@@ -523,32 +612,42 @@ function renderFront(g, t, S, cam, drawCam, cacheKey) {
   g.save();
   applyCamera(g, drawCam);
   if (cacheKey) {
-    const e = cachedSet(cacheKey, cam, setState(S.T(CUT12), S));
+    // the door is baked in while it is fully shut or fully open; only the swing itself is painted live
+    const swing = st.doorOpen > 0.001 && st.doorOpen < 0.999;
+    const held = swing ? 0 : Math.round(st.doorOpen);
+    const e = cachedSet(`${cacheKey}:${held}`, cam,
+      { ...setState(S.T(cacheKey === 'door' ? CUT23 : CUT12), S), t: 69, doorOpen: held, alarm: 0 });
     g.drawImage(e.c, e.x, e.y, e.w, e.h);
+    if (swing) drawDoorLive(g, st);
+    if (cacheKey !== 'door') drawStationLive(g, st);   // off-frame in the door shot
   } else {
     drawHQ(g, 'front', st);
     drawVoid(g, ...VOID_F, { t, ...STARE_F, idle: 0, shadow: false });
     drawCage(g, ...CAGE_F, { t, door: 1, locked: 0 });
   }
   const items = [];
-  const ceo = ceoFrontState(t, S);
-  items.push({ y: ceo.y, draw: () => { drawSelf(g, ceo.x, ceo.y, ceo.s, ceo.pose); } });
+  // the door shot (x ≈ 60…400) never sees the CEO (crossing at x ≥ 540) nor Fear (at the alarm, x 734): skip them
+  const ceo = shot === 3 ? null : ceoFrontState(t, S);
+  if (ceo) items.push({ y: ceo.y, draw: () => { drawSelf(g, ceo.x, ceo.y, ceo.s, ceo.pose); } });
   if (shot === 4) items.push({ y: CEO_MID[1] + 8, draw: () => drawPages(g, t, S, ceo) });
-  const fear = fearFrontState(t, S);
-  items.push({ y: fear.y, draw: () => drawFear(g, fear.x, fear.y, fear.s, fear.pose) });
+  const fear = shot === 3 ? null : fearFrontState(t, S);
+  if (fear) items.push({ y: fear.y, draw: () => drawFear(g, fear.x, fear.y, fear.s, fear.pose) });
   for (const name of ['CALM', 'ANGER', 'SADNESS', 'JOY']) {
     const e = emotionState(name, t, S, shot);
     if (e.alpha <= 0.01) continue;
+    if (e.door && e.x < 76) continue;              // fully behind the near jamb (x 115) now: nothing to draw
+    // walking out: hidden by the near jamb once past the wall plane (clip only when near the doorway, x < 230)
+    const clip = e.door && e.x < 230;
     items.push({ y: e.y + (name === 'JOY' ? 0.5 : 0), draw: () => {
-      if (e.door) { g.save(); clipDoor(g); }      // walking out: hidden by the near jamb once past the wall plane
+      if (clip) { g.save(); clipDoor(g); }
       drawEmotion(g, name, e.x, e.y, e.s, e.pose);
       if (e.pose.redCheek) drawRedCheek(g, e, t, st.alarm);
-      if (e.door) g.restore();
+      if (clip) g.restore();
     } });
   }
   items.sort((a, b) => a.y - b.y);
   for (const it of items) it.draw();
-  drawHQForeground(g, 'front', st);
+  if (shot !== 3) drawHQForeground(g, 'front', st);   // the console is below the door shot's frame (measured: 0 px)
   drawAlarmLight(g, 'front', st);
   g.restore();
 }
@@ -559,10 +658,10 @@ export function render(g, t, S) {
   if (shot === 1) renderAlarm(g, t, S);
   else if (shot === 2) {
     const cam = lerpCam(CAM.console, CAM.console2, sine((t - S.T(CUT12)) / (S.T(CUT23) - S.T(CUT12))));
-    renderFront(g, t, S, cam, liveCam(cam, t, 2.5));
+    renderFront(g, t, S, CAM.console, liveCam(cam, t, 2.5), 'wide');
   } else if (shot === 3) {
     const cam = lerpCam(CAM.door, CAM.door2, sine((t - S.T(CUT23)) / (S.T(CUT34) - S.T(CUT23))));
-    renderFront(g, t, S, cam, liveCam(cam, t, 2.5));
+    renderFront(g, t, S, CAM.door, liveCam(cam, t, 2.5), 'door');
   } else {
     const pre = clamp((t - S.T(CUT34)) / (S.T('s05b04') - S.T(CUT34)));
     const push = sine((t - S.T('s05b04')) / (S.T('scene.end') - S.T('s05b04')));

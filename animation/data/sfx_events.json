@@ -354,7 +354,7 @@
  {
   "scene": "s04",
   "name": "breath_shaky",
-  "at": 64.635,
+  "at": 64.255,
   "until": 66.935,
   "gain": -21,
   "loop": false,
@@ -431,13 +431,13 @@
  {
   "scene": "s05",
   "name": "footsteps",
-  "at": 69.035,
+  "at": 69.265,
   "until": null,
   "gain": -15,
   "loop": false,
   "pan": 0,
   "fade": 0.3,
-  "rate": 1.25
+  "rate": 1.8
  },
  {
   "scene": "s05",
@@ -453,29 +453,29 @@
  {
   "scene": "s05",
   "name": "footsteps",
-  "at": 70.35,
+  "at": 70.78,
   "until": null,
   "gain": -17,
   "loop": false,
   "pan": 0,
   "fade": 0.3,
-  "rate": 1
+  "rate": 1.2
  },
  {
   "scene": "s05",
   "name": "door_whoosh",
-  "at": 71.368,
+  "at": 71.85,
   "until": null,
   "gain": -17,
   "loop": false,
   "pan": 0,
   "fade": 0.3,
-  "rate": 0.92
+  "rate": 1.15
  },
  {
   "scene": "s05",
   "name": "cloth_rustle",
-  "at": 72.368,
+  "at": 72.918,
   "until": null,
   "gain": -20,
   "loop": false,
@@ -486,7 +486,7 @@
  {
   "scene": "s05",
   "name": "paper_rustle",
-  "at": 72.718,
+  "at": 73.068,
   "until": null,
   "gain": -17,
   "loop": false,
@@ -497,7 +497,7 @@
  {
   "scene": "s05",
   "name": "paper_rustle",
-  "at": 73.418,
+  "at": 74.068,
   "until": null,
   "gain": -20,
   "loop": false,
@@ -508,7 +508,7 @@
  {
   "scene": "s05",
   "name": "paper_rustle",
-  "at": 74.618,
+  "at": 75.168,
   "until": null,
   "gain": -19,
   "loop": false,

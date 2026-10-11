@@ -36,8 +36,8 @@ export const sfx = [
   { at: 's04b02+0.2', name: 'breath_shaky', gain: -19, rate: 1.3, until: 's04b03', fade: 0.35 },
   // the scarf pulled up over the mouth on "…not safe here."
   { at: 's04b03+3.66', name: 'cloth_rustle', gain: -20, rate: 1.2 },
-  // the silent beat: one more held breath from Fear
-  { at: 's04b06+0.5', name: 'breath_shaky', gain: -21, rate: 0.95, until: 'scene.end', fade: 0.5 },
+  // the silent beat: the CEO's in-breath for words that never come (shoulders rise at b06+0.2), held, let out
+  { at: 's04b06+0.12', name: 'breath_shaky', gain: -21, rate: 0.95, until: 'scene.end', fade: 0.5 },
 ];
 
 // ---------------------------------------------------------------- staging constants (staging.md §1.4)
@@ -171,7 +171,9 @@ function fearPose(t, S) {
   const slump = k([['s04b05+1.1', 0], ['s04b05+1.7', 1]]);
   const cy = crouch * 20;
   const arm = (side) => {
-    const scarf = [side * 13, -134 + cy], mouth = [side * 17, -139 + cy], belly = [side * 12, -106 + cy * 0.4];
+    // mouth: fists on the pulled-up band's lower edge, a hair below the shoulder line, so the elbows hang down
+    // outside the body (a target above the shoulder folds both forearms across the chest into an X)
+    const scarf = [side * 13, -134 + cy], mouth = [side * 13, -131 + cy], belly = [side * 12, -106 + cy * 0.4];
     const p = [lerp(lerp(scarf[0], mouth[0], up), belly[0], slump), lerp(lerp(scarf[1], mouth[1], up), belly[1], slump)];
     return { target: p, bend: side, front: true, hand: 'fist' };
   };
@@ -288,7 +290,7 @@ function ceoPose(t, S) {
   const headTurn = k([
     ['scene.start', 0.32], ['s04b01+1.45', 0.32], ['s04b01+1.8', -0.12, 'cubic'], ['s04b01+2.0', -0.12], ['s04b01+2.3', 0.3, 'cubic'],
     ['s04b02+0.7', 0.3], ['s04b02+0.85', 0.2], ['s04b02+1.05', 0.3],
-    ['s04b06+1.15', 0.3], ['s04b06+2.1', 0.04, 'sine'],
+    ['s04b06+1.15', 0.3], ['s04b06+2.1', -0.06, 'sine'],
   ]);
   const headTilt = k([
     ['scene.start', 0.05], ['s04b01+1.45', 0.05], ['s04b01+1.8', -0.06], ['s04b01+2.05', -0.06], ['s04b01+2.35', 0.05],
@@ -309,11 +311,15 @@ function ceoPose(t, S) {
   ex.smile = lerp(ex.smile, 0.02, falter); ex.browUp = (ex.browUp || 0) + 0.25 * falter; ex.lidU = (ex.lidU || 0) - 0.1 * falter;
   // little mouth events: the aborted answer in b03, the lips parting in b06
   const opens = Math.max(k([['s04b03+1.5', 0], ['s04b03+1.68', 0.2], ['s04b03+1.95', 0.2], ['s04b03+2.15', 0]]),
-    k([['s04b06+0.28', 0], ['s04b06+0.5', 0.16], ['s04b06+0.86', 0.16], ['s04b06+1.04', 0]]));
+    k([['s04b06+0.28', 0], ['s04b06+0.5', 0.3], ['s04b06+0.92', 0.3], ['s04b06+1.12', 0]]));
   const swallow = k([['s04b01+2.12', 0], ['s04b01+2.25', 1], ['s04b01+2.5', 0]]);
   const chin = k([['s04b04-0.35', 0], ['s04b04-0.05', 1], ['s04b04+1.9', 1], ['s04b05+0.4', 0]]);
   const nod = k([['s04b04+1.12', 0], ['s04b04+1.3', 1], ['s04b04+1.62', 0]]);
   const lean = k([['scene.start', 0.01], ['s04b01+2.15', 0.01], ['s04b02+0.2', 0.06], ['s04b03+3', 0.06], ['s04b04', 0.02], ['s04b06', 0.04]]);
+  // b06: as the eyes drift up to the hood the upper lids lift with them (under CE_KNIT's heavy lids the irises
+  // only slid sideways and read as "looking left"), the chin comes up a touch and the head eases toward the hood
+  const upK = k([['s04b06+1.05', 0], ['s04b06+1.8', 1, 'sine']]);
+  ex.lidU = lerp(ex.lidU || 0, -0.1, upK); ex.lidTilt = (ex.lidTilt || 0) * (1 - 0.45 * upK); ex.lidL = (ex.lidL || 0) * (1 - 0.6 * upK);
   const lip = S.lip('CONSCIOUSNESS', t);
   const blink = Math.max(blinkAt(t, S.T('s04b01+2.0'), 0.2), blinkAt(t, S.T('s04b03+2.35'), 0.46),
     blinkAt(t, S.T('s04b05+1.0'), 0.2), blinkAt(t, S.T('s04b06+1.0'), 0.22));
@@ -331,7 +337,7 @@ function ceoPose(t, S) {
     ...(rp > 0.08 ? { handAngle: lerp(-0.2, -0.62, rp) } : { wrist: 0.75 }), thumb: -1 };
   const inhale = k([['s04b06+0.2', 0], ['s04b06+0.55', 1], ['s04b06+0.95', 1], ['s04b06+1.5', 0]]);  // breath for words that never come
   return { t, outfit: 'ceo', kneel: 1, facing: 1, face, headTurn, headTilt, lean, shrug: 0.22 * inhale,
-    headDY: 5 * swallow - 4 * chin + 6 * nod - 2 * inhale, armR };
+    headDY: 5 * swallow - 4 * chin + 6 * nod - 2 * inhale - 4 * upK, armR };
 }
 
 function drawClipboardOnFloor(g) {
