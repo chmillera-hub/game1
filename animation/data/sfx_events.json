@@ -1179,7 +1179,7 @@
  {
   "scene": "s11",
   "name": "cage_creak",
-  "at": 155.365,
+  "at": 154.865,
   "until": null,
   "gain": -12,
   "loop": false,
@@ -1196,6 +1196,17 @@
   "loop": false,
   "pan": 0,
   "fade": 0.3,
+  "rate": 1
+ },
+ {
+  "scene": "s11",
+  "name": "footsteps",
+  "at": 158.185,
+  "until": 158.565,
+  "gain": -24,
+  "loop": false,
+  "pan": 0,
+  "fade": 0.1,
   "rate": 1
  },
  {
@@ -1230,17 +1241,6 @@
   "pan": 0,
   "fade": 0.12,
   "rate": 1
- },
- {
-  "scene": "s12",
-  "name": "cage_creak",
-  "at": 173.994,
-  "until": null,
-  "gain": -15,
-  "loop": false,
-  "pan": 0,
-  "fade": 0.3,
-  "rate": 1.5
  },
  {
   "scene": "s12",
