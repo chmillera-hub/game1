@@ -47,7 +47,8 @@ T_X = 1090                                 # ... sits here on the empty pod's pl
 T_GSEAT = PLINTH_Y + human.CRATE_H["tired"] * S      # ground y for sit_crate on the plinth
 C_X0 = 750                                 # Curiosity where s01 leaves it (left of its pod, faces right)
 C_XP = 935                                 # ... hops up onto the plinth here (at his left, faces right)
-C_XS = 872                                 # ... and sits back on it here (from the "nod" shot on)
+C_XS = 900                                 # ... and sits back on it here (from the "oh" shot on)
+C_XS2 = 868                                # ... shuffling back a step when he stands up
 FEET = M["feet_y"]                         # 1500
 LAND = M["landing_feet_y"]                 # 1770
 BONK_X = M["bonk_feet"][0]                 # -44: feet x when his face meets the pipe
@@ -194,7 +195,7 @@ def timing(info):
     k.tgo = k.BONK - (T_X - BONK_X) / k.v
     k.turn0 = max(k.WALK + 0.05, k.tgo - 0.5)
     # Curiosity follows once he has passed it (hops down, trots)
-    k.chop0 = k.tgo + (T_X - (C_XS - 150)) / k.v
+    k.chop0 = k.tgo + (T_X - (C_XS2 - 150)) / k.v
     k.chop1 = k.chop0 + 0.36
     k.cv = 2.2 * CR.SPEC_WALK_SPEED * S
     # post-bonk
@@ -204,6 +205,9 @@ def timing(info):
     k.cut_roll = k.L2e + 0.08
     k.cut_oh = k.L3 - 0.22
     k.cut_nod = k.L4 - 0.1
+    # Curiosity settles down off its hind legs (a little hop) while his eye wanders the dark
+    k.c_sit0 = k.lk1 + 0.1
+    k.c_sit1 = k.c_sit0 + 0.32
     k.shots = _shots(k)
     _KC.clear()
     _KC[key] = k
@@ -361,9 +365,9 @@ def tired_state(t, k, info):
             # the peeking eye (screen-right) in the lifted-rim render
             lk = kf(t, [(k.pk2 - 0.2, (-0.7, 0.05)), (k.pk_pulse + 0.15, (-0.75, 0.0)),
                         (k.pk_pulse + 0.4, (0.55, -0.25)), (k.L3 - 0.25, (0.35, -0.2)),     # follows the ring out
-                        (k.L3, (-0.75, -0.05)),                                            # "Oh." back to it
-                        (k.lk1, (-0.75, -0.05)), (k.lk1 + 0.2, (0.8, -0.15)), (k.lk2, (0.8, -0.15)),   # the dark
-                        (k.lk2 + 0.2, (-0.95, -0.3)), (k.lk3, (-0.8, -0.1))])
+                        (k.L3, (-0.8, 0.05)),                                              # "Oh." back to it
+                        (k.lk1, (-0.8, 0.05)), (k.lk1 + 0.2, (0.8, -0.15)), (k.lk2, (0.8, -0.15)),   # the dark
+                        (k.lk2 + 0.2, (-0.92, 0.3)), (k.lk3, (-0.85, 0.25))])
             wide = kf(t, [(k.L3 - 0.1, 0.0), (k.L3 + 0.12, 1.0), (k.L3e + 0.5, 1.0), (k.lk1, 0.55),
                           (k.lk3, 0.4)])
             skept = kf(t, [(k.pk2, 1.0), (k.pk_pulse, 1.0), (k.pk_pulse + 0.4, 0.4), (k.L3, 0.0)])
@@ -736,7 +740,7 @@ def cur_state(t, k):
     # ---------------- up on its hind legs beside him (paws at its chest): the demo, the roll,
     #                  the hood yank, the pointed pulse at his peeking eye
     st["x"], st["y"] = C_XP, PLINTH_Y
-    if t < k.cut_nod:
+    if t < k.c_sit0:
         st["pose"] = "reach_up"
         land = seg(t, k.hop2, k.hop2 + 0.32)
         sy = 0.84 + 0.16 * ease_out_back(land) if land < 1 else 1.0
@@ -808,14 +812,31 @@ def cur_state(t, k):
         if k.dm_close <= t < k.dm_open:
             st["tail_curl"] = 0.25 * smoothstep(seg(t, k.dm_pulse, k.dm_pulse + 0.5))
         return st
+    if t < k.c_sit1:                      # the hop down onto its haunches (pose switch mid-air)
+        kk = seg(t, k.c_sit0, k.c_sit1)
+        st["pose"] = "reach_up" if kk < 0.5 else "sit"
+        st["x"] = lerp(C_XP, C_XS, ease_in_out(kk))
+        st["y"] = PLINTH_Y - 34 * math.sin(math.pi * kk)
+        st["sy"] = 1.0 + 0.08 * math.sin(math.pi * kk)
+        st["expr"] = "hopeful"
+        st["ears"] = 0.9
+        st["tail_curl"] = 0.7
+        st["look_target"] = "eyes"
+        return st
     # ---------------- sitting on the plinth beside him
     st["x"] = C_XS
     st["pose"] = "sit"
     st["look_target"] = "eyes"
-    st["ears"] = kf(t, [(k.cut_nod, 0.85), (k.L4 + 0.9, 0.8), (k.L4e, 0.88),
-                        (k.NOD - 0.1, 0.88), (k.NOD + 0.2, 0.95), (k.L5 + 1.0, 0.75), (k.L5e - 0.6, 0.6),
-                        (k.SMUG, 0.5)])
-    st["tail_curl"] = kf(t, [(k.cut_nod, 0.6), (k.NOD, 0.6), (k.NOD + 0.4, 0.75), (k.L5 + 1.0, 0.6),
+    land = seg(t, k.c_sit1, k.c_sit1 + 0.3)
+    if land < 1.0:
+        st["sy"] = 0.9 + 0.1 * ease_out_back(land)
+    sc = seg(t, k.stand0 + 0.1, k.stand0 + 0.42)          # he stands up: it shuffles back a step
+    st["x"] = lerp(C_XS, C_XS2, ease_in_out(sc))
+    st["y"] = PLINTH_Y - 16 * math.sin(math.pi * sc)
+    st["ears"] = kf(t, [(k.c_sit1, 0.9), (k.cut_nod, 0.85), (k.L4 + 0.9, 0.8), (k.L4e, 0.88),
+                        (k.NOD - 0.1, 0.88), (k.NOD + 0.2, 0.95), (k.stand0 + 0.1, 0.95), (k.stand0 + 0.3, 0.7),
+                        (k.stand0 + 0.7, 0.85), (k.L5 + 1.0, 0.75), (k.L5e - 0.6, 0.6), (k.SMUG, 0.5)])
+    st["tail_curl"] = kf(t, [(k.c_sit1, 0.7), (k.cut_nod, 0.6), (k.NOD, 0.6), (k.NOD + 0.4, 0.75), (k.L5 + 1.0, 0.6),
                              (k.L5e - 0.5, 0.25), (k.SMUG, 0.15)])
     st["expr"] = "hopeful"
     if k.L4 + 0.9 <= t < k.L4e + 0.2:
@@ -826,7 +847,7 @@ def cur_state(t, k):
         st["expr"] = "annoyed"                # his smugness wears thin
     n0 = k.n0                                 # the nod: two firm dips + a bob
     st["tilt"] = kf(t, [(n0, 0.0), (n0 + 0.28, 0.72), (n0 + 0.55, -0.08), (n0 + 0.82, 0.58), (n0 + 1.12, 0.0)])
-    st["sy"] = 1.0 - 0.035 * max(0.0, st["tilt"])
+    st["sy"] = st["sy"] - 0.035 * max(0.0, st["tilt"])
     if t < k.SMUG:
         return st
     if t < k.tgo + 0.2:
@@ -844,14 +865,14 @@ def cur_state(t, k):
     if t < k.chop1:
         kk = seg(t, k.chop0, k.chop1)
         st["pose"] = "stand"
-        st["x"] = lerp(C_XS, C_XS - 90, kk)
+        st["x"] = lerp(C_XS2, C_XS2 - 90, kk)
         st["y"] = lerp(PLINTH_Y, FEET, ease_in(kk)) - 60 * math.sin(math.pi * kk)
         st["sy"] = 1.0 + 0.1 * math.sin(math.pi * kk)
         st["look"] = (-0.8, 0.2)
         return st
     tw = t - k.chop1                      # trotting: walk cycle at 2.2x (feet planted at this speed)
     x_stop = M["stair_steps"][STEP_C][0]
-    x0 = C_XS - 90
+    x0 = C_XS2 - 90
     x = max(x_stop, x0 - k.cv * tw)
     t_stop = k.chop1 + (x0 - x_stop) / k.cv
     st["x"] = x
@@ -1013,7 +1034,7 @@ def _shots(k):
         return (990, lerp(900, 870, smoothstep(seg(t, k.stand0, k.stand1 + 0.2))), 1.15)
     add(k.PING, k.smug_cu, "ping", ping_cam)
     add(k.smug_cu, k.SMUG, "smug", lambda t: (T_X + 130, lerp(800, 785, seg(t, k.smug_cu, k.SMUG)), 2.35))
-    add(k.SMUG, k.WALK, "roll2", lambda t: (C_XS + 60, 1090, 2.5))
+    add(k.SMUG, k.WALK, "roll2", lambda t: (C_XS2 + 60, 1090, 2.5))
     walk_end = k.BONK + 1.25
 
     def walk_cam(t):

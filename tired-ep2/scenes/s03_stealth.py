@@ -594,7 +594,20 @@ def _draw_guard(ctx, t, info, g, dark, T=None):
 
     def hold(c, side, x, y, a_):
         if side == "l":
-            if clip is not None:
+            if clip is None:
+                return
+            tn = g["turn"]
+            if T["turn"] <= t <= T["g1off"] + 1.0 and tn < 0.4:
+                # turning away: the keys slide behind his thigh gradually (the l arm, whose
+                # slot they share, only switches behind the body at turn ~ -0.23, where
+                # this clip already matches the thigh's edge -> no pop either way)
+                e = a0["hip"][0] + lerp(-75.0, -5.0, smoothstep(clamp((tn + 0.15) / 0.55))) * (s / SC)
+                c.save()
+                c.rectangle(e - 3000, -6000, 3000, 12000)
+                c.clip()
+                _keyring(c, clip[0], clip[1], 1.3 * s / SC, swing, krec)
+                c.restore()
+            else:
                 _keyring(c, clip[0], clip[1], 1.3 * s / SC, swing, krec)
             return
         w = g["reach_w"]
@@ -962,7 +975,7 @@ def _cam(name, t, t0, t1, T):
         return c + (_view(*c),)
     # reform: two-shot, slow push-in
     k = ease_in_out(seg(t, t0, t1))
-    a, b = (1468, 1185, 1.68), (1472, 1172, 1.78)
+    a, b = (1490, 1185, 1.68), (1494, 1172, 1.78)
     return (lerp(a[0], b[0], k), lerp(a[1], b[1], k), lerp(a[2], b[2], k), _union(_view(*a), _view(*b)))
 
 
@@ -1018,7 +1031,7 @@ def render(ctx, t, info):
     show_g1 = name in ("est", "stair", "hide", "shadow", "sneak", "troll", "sulk", "pipes")
     show_g2 = name in ("est", "stair", "hide", "shadow", "sneak")
     show_us = name in ("est", "hide", "shadow", "sneak", "react", "reform")
-    show_c = name in ("est", "hide", "sneak", "troll", "sulk", "pipes", "reform", "react")
+    show_c = name in ("est", "hide", "sneak", "troll", "sulk", "pipes", "reform")
     krec = {}
     with core.camera(ctx, cx, cy, z):
         sets.shaft_lower(ctx, t)
