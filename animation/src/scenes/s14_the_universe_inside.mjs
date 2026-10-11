@@ -1,11 +1,14 @@
 // s14 · the_universe_inside · VOID_FACE / backOfMind
 // The revelation: Fear's POV pushes into the dark hood, the cosmos kindles, a long drift through the stars,
-// then the change happens on Fear's face (close), the pull-back two-shot, "Why are you showing me this?",
-// the hand lifts away, the hood turns back to the distance, and Fear turns to look where the Void looks.
+// then the change happens on Fear's face (close): the fear lets go of its body on 'wasn't afraid', a soft "o"
+// on 'wonder' that becomes a small trembling smile by 'amazement' (held at face size), the two-shot under the
+// starry hood, "Why are you showing me this?", an insert as the hand slides off its shoulder, a raised wide
+// that keeps the whole hood in frame while it turns back to the distance, and Fear turning to look where the
+// Void looks.
 
 import { createCanvas } from '@napi-rs/canvas';
 import { W, H, clamp, lerp, ease, smoothstep, blinkAt, applyCamera, drift, vignette, fbm } from '../engine.mjs';
-import { withSpeech } from '../face.mjs';
+import { withSpeech, star } from '../face.mjs';
 import { drawFear } from '../chars/fear.mjs';
 import { drawVoid, drawVoidGlow, drawVoidArm, drawVoidHand, toVoidLocal, voidRig, VOID_HANDS } from '../chars/void.mjs';
 import { drawCosmos, vfbm } from '../fx/cosmos.mjs';
@@ -24,6 +27,14 @@ const THRESH = [440, 1648, 0.97];
 const VOID_ARM_B = { bend: 1 };
 const APPROACH_SHOULDER = [120, -40];
 const SLEEVE_CLIP_Y = 1100;
+// The resting hand in s14 (QA: s13's contact pose — fingers splayed and curled across Fear's scarf and chest —
+// read as a claw during the wonder). Here the fingers are together and only softly curved, they come DOWN onto
+// the top of the shoulder (fingertip contact nudged up/in by SH_NUDGE, Fear-local units, still exact), and Fear's
+// big head is redrawn over them, so the hand rests on the shoulder behind the head. The open padlock's shackle
+// now hangs clear below the hand (it used to peek out at the fingers' edge and read as in front of them).
+// The hand is first seen at s14b05, 17 s after s13's last view of it, so the change never meets a cut.
+const REST_HAND = { angle: 2.3, open: 0.04, gentle: 0.5 };
+const SH_NUDGE = [-4, -8];
 
 // ---------------------------------------------------------------- sound
 export const sfx = [
@@ -33,10 +44,10 @@ export const sfx = [
   { at: 's14b02+4.08', name: 'twinkle', gain: -19 },            // '...of lights'
   { at: 's14b03+2.58', name: 'twinkle', gain: -21 },            // '...and stars'
   { at: 's14b04+1.75', name: 'shimmer', gain: -15 },            // glyphs bloom, swell peaks near 'meaning'
-  { at: 's14b06+5.06', name: 'twinkle', gain: -21 },            // 'wonder' (the little smile)
-  { at: 's14b09+0.02', name: 'cloth_rustle', gain: -17 },       // the hand lifts off the shoulder
-  { at: 's14b09+1.45', name: 'cloth_rustle', gain: -21, rate: 0.85 }, // the hood turns back to the distance
-  { at: 's14b10+1.42', name: 'footsteps', gain: -19, until: 's14b10+1.9', fade: 0.15 }, // Fear's small turning step
+  { at: 's14b06+5.06', name: 'twinkle', gain: -21 },            // 'wonder' (the hands open, the soft "o")
+  { at: 's14b09+0.12', name: 'cloth_rustle', gain: -17 },       // the hand slides off the shoulder
+  { at: 's14b09+1.85', name: 'cloth_rustle', gain: -21, rate: 0.85 }, // the hood turns back to the distance
+  { at: 's14b10+2.2', name: 'footsteps', gain: -19, until: 's14b10+2.7', fade: 0.15 }, // Fear's small turning step
 ];
 
 // ---------------------------------------------------------------- helpers
@@ -79,6 +90,13 @@ function offscreen() {
   return o;
 }
 
+
+// ---------------------------------------------------------------- shot boundaries (cuts)
+const CUT_TWO = 's14b07+0.2';    // close (the smile held at face size) → two-shot under the starry hood
+const CUT_CLOSE = 's14b07+1.6';  // two-shot → close (the swallow, the question)
+const CUT_WIDE = 's14b09+1.5';   // insert (the hand leaves the shoulder) → raised wide (the hood turns)
+const CUT_MED = 's14b10+1.6';    // raised wide → Fear turns to look where the Void looks
+
 // ---------------------------------------------------------------- tracks
 function cosmosAt(t, S) {
   return S.k(t, [
@@ -87,35 +105,43 @@ function cosmosAt(t, S) {
     ['scene.start', 0], ['s14b01+0.6', 0], ['s14b01+0.95', 0.055, 'out'],
     ['s14b01+1.5', 0.07], ['s14b01.end', 0.3, 'in'],                      // another… then hundreds
     ['s14b02.end', 0.62], ['s14b03.end', 0.85], ['s14b04+1.5', 1.0],
-    ['s14b09', 1.0], ['s14b10+2.0', 0.6],
+    ['s14b09+1.5', 1.0], ['s14b10+2.0', 0.6],                               // still bright while the hood turns
   ]);
 }
 
 /** The Void's pose for this instant (hand on Fear's shoulder until b09, then lifted away). */
 function voidPose(t, S, cosmos, fear) {
-  const head = S.k(t, [['s14b09+1.4', LOOK_FEAR], ['s14b09+3.4', STARE_B]]);
+  const head = S.k(t, [['s14b09+1.8', LOOK_FEAR], ['s14b09+3.8', STARE_B]]);
   // withdrawal = s13's approach in reverse: the fingertips slide off the shoulder (settle), the hand rises
   // beside the cage's right bars to s13's waypoint (ascend) while it slips back into the sleeve (show), and
   // only then the empty sleeve swings back to rest (reach) — the hand never passes over the TIME-OUT sign.
-  const settle = S.k(t, [['s14b09', 1], ['s14b09+0.6', 0, 'inOut']]);
-  const ascend = S.k(t, [['s14b09+0.5', 0], ['s14b09+1.6', 1, 'inOut']]);
-  const show = S.k(t, [['s14b09+1.25', 1], ['s14b09+2.0', 0, 'inOut']]);
-  const reach = S.k(t, [['s14b09+1.9', 1], ['s14b09+2.9', 0, 'inOut']]);
+  const settle = S.k(t, [['s14b09+0.1', 1], ['s14b09+0.7', 0, 'inOut']]);
+  const ascend = S.k(t, [['s14b09+0.6', 0], ['s14b09+1.7', 1, 'inOut']]);
+  const show = S.k(t, [['s14b09+1.35', 1], ['s14b09+2.1', 0, 'inOut']]);
+  const reach = S.k(t, [['s14b09+2.0', 1], ['s14b09+3.0', 0, 'inOut']]);
   const [fx, fy, fs] = THRESH;
-  // Fear's near (right) shoulder, following crouch and lean (staging §1.5)
-  let sh = [fx + 36 * fs, fy - (130 - 20 * fear.crouch) * fs];
+  // Fear's near (right) shoulder, following crouch and lean (staging §1.5), nudged onto its top (SH_NUDGE)
+  let sh = [fx + (36 + SH_NUDGE[0]) * fs, fy - (130 - 20 * fear.crouch - SH_NUDGE[1]) * fs];
   sh = rotAbout(sh, [fx, fy], fear.leanScreen);
   const ap = [sh[0] + APPROACH_SHOULDER[0] * fs, sh[1] + APPROACH_SHOULDER[1] * fs];
   const WP1 = [ap[0] + 15, ap[1] - 235];                 // = s13's waypoint beside the cage's right bars
   const tA = [lerp(ap[0], WP1[0], ascend), lerp(ap[1], WP1[1], ascend)];
   const tgt = [lerp(tA[0], sh[0], settle), lerp(tA[1], sh[1], settle)];
-  const angle = lerp(Math.PI - 0.38, Math.PI / 2 + 0.3, ease.sine(clamp(ascend * 1.15)));
+  const angle = lerp(REST_HAND.angle, Math.PI / 2 + 0.3, ease.sine(clamp(ascend * 1.15)));
   return {
     t, ...head, idle: 0.5, cosmos, cosmosOpts: COSMOS_OPTS, glow: 1.2,
     shadowSpread: S.k(t, [['s14b04', 1], ['s14b06', 0.8]]),
-    handL: { ...VOID_HANDS.shoulder(toVoidLocal(...VOID_B, ...tgt), -1), ...VOID_ARM_B, angle, elbow: 0.8 * reach, show, reach, defer: 'hand' },
+    handL: { ...VOID_HANDS.shoulder(toVoidLocal(...VOID_B, ...tgt), -1), ...VOID_ARM_B, open: REST_HAND.open,
+      gentle: REST_HAND.gentle, angle, elbow: 0.8 * reach, show, reach, defer: 'hand' },
   };
 }
+
+// face-channel shorthands (every key carries every field, so the blends never jump)
+const BR = (browUp, browIn, browSquish = 0, browUpL = 0, browUpR = 0) => ({ browUp, browIn, browSquish, browUpL, browUpR });
+const LD = (lidU, lidL, lidTilt) => ({ lidU, lidL, lidTilt });
+const MO = (open, smile, round, wide, pressed, tremble) => ({ open, smile, round, wide, pressed, tremble });
+const GZ = (lookX, lookY) => ({ lookX, lookY });
+const AR = (lx, ly, rx, ry) => ({ lx, ly, rx, ry });
 
 /** Fear on the threshold: body + face for this instant. */
 function fearState(t, S) {
@@ -124,172 +150,200 @@ function fearState(t, S) {
   // ---------- body
   const crouch = K([
     ['s14b05', 0.3],
-    ['s14b10+0.3', 0.3], ['s14b10+1.25', 0, 'inOut'],                      // stands up
+    ['s14b10+0.2', 0.3], ['s14b10+1.2', 0, 'inOut'],                       // straightens up as the Void stares
   ]);
-  const leanScreen = K([['s14b09+0.3', 0], ['s14b09+1.0', 0.09, 'outCubic'], ['s14b09+2.3', 0, 'inOut']]); // leans after the hand
-  const facing = t < S.T('s14b10+1.52') ? 1 : -1;
+  const leanScreen = K([['s14b09+0.35', 0], ['s14b09+1.0', 0.09, 'outCubic'], ['s14b09+2.3', 0, 'inOut']]); // leans after the hand
+  const facing = t < S.T('s14b10+2.3') ? 1 : -1;
   const headTurn = K([
     ['s14b05', 0.25],
-    ['s14b09+0.25', 0.25], ['s14b09+0.7', 0.42],                            // glance at its own shoulder
-    ['s14b09+1.5', 0.25],
-    ['s14b10+1.1', 0.25], ['s14b10+1.95', -0.22, 'inOut'],                 // turns to the glow
+    ['s14b06+4.9', 0.25], ['s14b06+5.9', 0.32],                             // 'wonder': turns a touch into the light
+    ['s14b07+1.0', 0.25],
+    ['s14b09+0.25', 0.25], ['s14b09+0.7', 0.45],                            // glance at its own shoulder
+    ['s14b09+1.4', 0.3], ['s14b09+2.2', 0.25],
+    // follows the Void's gaze: the eyes lead (b10+1.75), the head comes round 0.2 s later to a 3/4 toward the
+    // far glow (screen-left and up), the body turns under it (facing flips at +2.3 inside a blink)
+    ['s14b10+1.95', 0.25], ['s14b10+2.8', -0.7, 'inOut'],
   ]);
   const tiltScreen = K([
     ['s14b05', -0.15],
     ['s14b06+2.6', -0.15], ['s14b06+3.3', -0.12],
+    ['s14b06+4.9', -0.12], ['s14b06+5.9', -0.18],                            // the head tips up toward the light
+    ['s14b07+1.2', -0.14],
     ['s14b08', -0.14], ['s14b08.end', -0.23],                               // tilts a few degrees as it asks
     ['s14b09+0.25', -0.2], ['s14b09+0.8', 0.07],                            // dips toward the shoulder
     ['s14b09+1.6', -0.13],
-    ['s14b10+1.1', -0.14], ['s14b10+2.0', -0.06, 'inOut'],
+    ['s14b10+1.95', -0.14], ['s14b10+2.8', -0.04, 'inOut'],
   ]) + fbm(t * 0.35, 21) * 0.015;
   const headDY = K([
     ['s14b06+2.75', 0], ['s14b06+2.95', -3], ['s14b06+3.2', -0.5], ['s14b06+3.4', -2.5], ['s14b06+3.7', 0], // breath of a laugh
-    ['s14b07+0.85', 0], ['s14b07+1.0', 3.2], ['s14b07+1.2', 0],             // swallow
-    ['s14b07+1.2', 0], ['s14b07+1.5', -1.8], ['s14b07+1.9', 0],             // small breath
-    ['s14b10+1.45', 0], ['s14b10+1.55', 2.5], ['s14b10+1.75', 0],          // weight shift on the turn
+    ['s14b06+4.9', 0], ['s14b06+5.9', -3], ['s14b07+0.6', -3.4], ['s14b07+1.5', 0],                         // lifts on 'wonder'
+    ['s14b07+2.05', 0], ['s14b07+2.18', 3.2], ['s14b07+2.35', 0],           // swallow
+    ['s14b07+2.35', 0], ['s14b07+2.55', -1.8], ['s14b07+2.85', 0],          // small breath in, then the question
+    ['s14b10+2.2', 0], ['s14b10+2.3', 2.5], ['s14b10+2.5', 0],              // weight shift on the turn
   ]);
 
-  // arms: (first seen at b05, 17 s after s13's last view of Fear) the left arm hugs the belly, the right hand
-  // holds the scarf; they relax; on 'wonder' the left hand lifts a little, outward and open, without meaning
-  // to, then drifts down; at the end the hands clasp at the scarf (= s15). The left arm keeps bend +1 (elbow
-  // down) until the body turns round (facing flips at b10+1.52, which masks the switch to s15's bend −1).
-  const L2 = (p, q, k) => [lerp(p[0], q[0], k), lerp(p[1], q[1], k)];
-  const relax = K([['s14b05', 0], ['s14b05+3.8', 1]]);
-  const lift = K([['s14b06+5.3', 0], ['s14b06+6.2', 1, 'inOut'], ['s14b06+6.9', 1], ['s14b06.end+0.4', 0, 'inOut']]);
+  // arms (first seen at b05, 17 s after s13's last view of Fear): the self-hug from s13 relaxes a little; on
+  // 'wasn't afraid' it slides open and the hands come down; on 'wonder' the arms open out and the hands turn
+  // open, palms out, rising a little more on 'amazement' (held through the cut); then they settle together in
+  // front. When the Void's hand leaves (b09) the right hand lifts after it a little, then drops. At the end the
+  // hands clasp at the scarf (= s15). (The padlock hangs at Fear-local ≈ (72,−106): the right hand stays inside it.)
+  const A = K([
+    ['s14b05', AR(-20, -106, 14, -118)],
+    ['s14b05+3.8', AR(-24, -100, 19, -103)],
+    ['s14b06+1.5', AR(-24, -100, 19, -103)],
+    ['s14b06+3.1', AR(-36, -86, 33, -88)],                                  // 'wasn't afraid': the hug lets go
+    ['s14b06+4.9', AR(-37, -87, 34, -89)],
+    ['s14b06+5.9', AR(-62, -76, 56, -78), 'inOut'],                         // 'wonder': arms open, palms out
+    ['s14b06+6.4', AR(-63, -78, 57, -79)],
+    ['s14b06+7.2', AR(-70, -90, 61, -86)],                                  // 'amazement': they rise a little
+    ['s14b07+0.6', AR(-71, -92, 62, -88)],
+    ['s14b07+1.5', AR(-13, -102, 12, -104), 'inOut'],                       // settle together in front
+    ['s14b09+0.45', AR(-13, -102, 12, -104)],
+    ['s14b09+1.0', AR(-15, -102, 42, -121), 'inOut'],                       // the right hand lifts after the hand…
+    ['s14b09+1.5', AR(-15, -102, 42, -120)],
+    ['s14b09+2.4', AR(-13, -102, 12, -104), 'inOut'],                       // …and drops
+  ]);
   const clasp = K([['s14b10+3.2', 0], ['s14b10+4.0', 1, 'inOut']]);
+  const palm = K([['s14b06+5.0', 0], ['s14b06+5.5', 1], ['s14b07+0.9', 1], ['s14b07+1.2', 0]]) > 0.5;
   let armL, armR;
   if (facing > 0) {
-    let tL = L2([-20, -106], [-24, -100], relax);
-    // the lift opens OUT and a little up (fingers angled up and away), not up beside the head: with the hand
-    // raised to shoulder height and the fingers vertical (the old [-58,-126]) it read as a wave hello
-    const drift = K([['s14b06+6.2', 0], ['s14b06+6.9', 1]]);
-    if (lift > 0) tL = L2(tL, [-78, -111 - 6 * drift], lift);
-    armL = { target: tL, bend: 1, front: true, hand: lift > 0.3 ? 'open' : undefined };
-    armR = { target: L2([14, -118], [19, -103], relax), bend: 1, front: true, hand: 'open' };
+    armL = { target: [A.lx, A.ly], bend: 1, front: true, hand: palm ? 'palm' : 'open' };
+    // bend −1: the right elbow drops (s13's hug had it up and out, which made every open pose a hand-on-hip)
+    armR = { target: [A.rx, A.ry], bend: -1, front: true, hand: palm ? 'palm' : 'open' };
   } else {
-    armL = { target: L2([-15, -108], [-7, -127], clasp), bend: -1, front: true, hand: clasp > 0.5 ? 'fist' : undefined };
-    armR = { target: L2([19, -103], [7, -124], clasp), bend: 1, front: true, hand: clasp > 0.5 ? 'fist' : 'open' };
+    armL = { target: [lerp(-12, -7, clasp), lerp(-103, -127, clasp)], bend: -1, front: true, hand: clasp > 0.5 ? 'fist' : 'open' };
+    armR = { target: [lerp(12, 7, clasp), lerp(-104, -124, clasp)], bend: 1, front: true, hand: clasp > 0.5 ? 'fist' : 'open' };
   }
 
   // ---------- face channels
   const brows = K([
-    ['s14b05', { browUp: 0.12, browIn: 0.85, browSquish: 0.45, browUpL: 0, browUpR: 0 }],
-    ['s14b05+0.4', { browUp: 0.12, browIn: 0.85, browSquish: 0.45, browUpL: 0, browUpR: 0 }],
-    ['s14b05+1.9', { browUp: 0.48, browIn: 0.38, browSquish: 0.0, browUpL: 0, browUpR: 0 }],   // un-knot, open
-    ['s14b06+2.6', { browUp: 0.52, browIn: 0.32, browSquish: 0, browUpL: 0, browUpR: 0 }],
-    ['s14b06+3.1', { browUp: 0.6, browIn: 0.2, browSquish: 0, browUpL: 0, browUpR: 0 }],        // lift and soften
-    ['s14b07+0.1', { browUp: 0.6, browIn: 0.22, browSquish: 0, browUpL: 0, browUpR: 0 }],
-    ['s14b07+0.5', { browUp: 0.66, browIn: 0.42, browSquish: 0, browUpL: 0, browUpR: 0 }],      // trying to speak
-    ['s14b08+0.1', { browUp: 0.55, browIn: 0.48, browSquish: 0, browUpL: 0, browUpR: 0 }],      // gently raised, asking
-    ['s14b08.end', { browUp: 0.6, browIn: 0.5, browSquish: 0, browUpL: 0, browUpR: 0 }],
-    ['s14b09+0.25', { browUp: 0.6, browIn: 0.5, browSquish: 0, browUpL: 0, browUpR: 0 }],
-    ['s14b09+0.7', { browUp: 0.22, browIn: 0.72, browSquish: 0.15, browUpL: 0, browUpR: 0 }],   // dip: missing the hand
-    ['s14b09+1.6', { browUp: 0.3, browIn: 0.6, browSquish: 0.1, browUpL: 0.18, browUpR: -0.05 }], // puzzled, watching the hood turn
-    ['s14b10+1.8', { browUp: 0.32, browIn: 0.55, browSquish: 0.1, browUpL: 0.15, browUpR: 0 }],
-    ['s14b10+2.35', { browUp: -0.22, browIn: 0.05, browSquish: 0.55, browUpL: 0, browUpR: 0 }], // narrow to see (peering)
-    ['s14b10+3.0', { browUp: -0.22, browIn: 0.05, browSquish: 0.55, browUpL: 0, browUpR: 0 }],
-    ['s14b10+3.45', { browUp: 0.7, browIn: 0.45, browSquish: 0, browUpL: 0, browUpR: 0 }],      // widen
+    ['s14b05', BR(0.12, 0.85, 0.45)],
+    ['s14b05+0.4', BR(0.12, 0.85, 0.45)],
+    ['s14b05+1.9', BR(0.48, 0.38)],                                         // un-knot, open
+    ['s14b06+1.4', BR(0.5, 0.34)],
+    ['s14b06+2.6', BR(0.6, 0.24)],                                          // 'wasn't afraid': the knot is gone
+    ['s14b06+3.1', BR(0.62, 0.18)],
+    ['s14b06+4.6', BR(0.62, 0.2)],
+    ['s14b06+5.4', BR(0.86, 0.3)],                                          // 'wonder': brows lift high
+    ['s14b06+6.6', BR(0.8, 0.4)],                                           // 'amazement': lifted, softly moved
+    ['s14b07+1.5', BR(0.66, 0.4)],
+    ['s14b07+1.85', BR(0.7, 0.5)],                                          // trying to speak
+    ['s14b08+0.1', BR(0.55, 0.48)],                                         // gently raised, asking
+    ['s14b08.end', BR(0.6, 0.5)],
+    ['s14b09+0.25', BR(0.6, 0.5)],
+    ['s14b09+0.7', BR(0.22, 0.72, 0.15)],                                   // dip: missing the hand
+    ['s14b09+1.6', BR(0.3, 0.6, 0.1, 0.18, -0.05)],                         // puzzled, watching the hood turn
+    ['s14b10+1.8', BR(0.32, 0.55, 0.1, 0.15, 0)],
+    ['s14b10+2.15', BR(0.5, 0.4)],                                          // the eyes find the glow
+    ['s14b10+2.9', BR(-0.2, 0.05, 0.55)],                                   // narrow to see (peering)
+    ['s14b10+3.4', BR(-0.2, 0.05, 0.55)],
+    ['s14b10+3.85', BR(0.7, 0.45)],                                         // widen: they're looking back
   ]);
   const lids = K([
-    ['s14b05', { lidU: 0.1, lidL: 0.14, lidTilt: 0.34 }],
-    ['s14b05+1.2', { lidU: 0.12, lidL: 0.14, lidTilt: 0.3 }],
-    ['s14b05+2.7', { lidU: -0.12, lidL: 0.05, lidTilt: 0.08 }],      // heavy lids rise, softly
-    ['s14b06+2.8', { lidU: -0.12, lidL: 0.05, lidTilt: 0.08 }],
-    ['s14b06+3.2', { lidU: -0.05, lidL: 0.18, lidTilt: 0.05 }],      // the breath of a laugh lifts the cheeks
-    ['s14b06+5.15', { lidU: -0.05, lidL: 0.2, lidTilt: 0.05 }],
-    ['s14b06+5.75', { lidU: 0.0, lidL: 0.32, lidTilt: 0.06 }],        // smiling eyes on 'wonder'
-    ['s14b06.end', { lidU: -0.04, lidL: 0.22, lidTilt: 0.06 }],
-    ['s14b08', { lidU: -0.08, lidL: 0.12, lidTilt: 0.12 }],
-    ['s14b09+0.3', { lidU: -0.08, lidL: 0.12, lidTilt: 0.12 }],
-    ['s14b09+0.7', { lidU: 0.22, lidL: 0.1, lidTilt: 0.25 }],         // eyes drop to the shoulder
-    ['s14b09+1.5', { lidU: -0.02, lidL: 0.05, lidTilt: 0.15 }],
-    ['s14b10+1.85', { lidU: -0.02, lidL: 0.05, lidTilt: 0.12 }],
-    ['s14b10+2.35', { lidU: 0.15, lidL: 0.5, lidTilt: -0.12 }],      // narrow: lower lids rise, peering
-    ['s14b10+3.0', { lidU: 0.15, lidL: 0.5, lidTilt: -0.12 }],
-    ['s14b10+3.45', { lidU: -0.2, lidL: 0.0, lidTilt: 0.1 }],         // widen
+    ['s14b05', LD(0.1, 0.14, 0.34)],
+    ['s14b05+1.2', LD(0.12, 0.14, 0.3)],
+    ['s14b05+2.7', LD(-0.12, 0.05, 0.08)],                                  // heavy lids rise, softly
+    ['s14b06+2.8', LD(-0.12, 0.05, 0.08)],
+    ['s14b06+3.2', LD(-0.08, 0.16, 0.05)],                                  // the breath of a laugh lifts the cheeks
+    ['s14b06+4.5', LD(-0.12, 0.08, 0.04)],
+    ['s14b06+5.3', LD(-0.26, 0.02, 0.02)],                                  // 'wonder': upper lids high, eyes wide
+    ['s14b06+6.5', LD(-0.18, 0.2, 0.04)],                                   // the smile lifts the lower lids; uppers stay high
+    ['s14b07+1.2', LD(-0.14, 0.16, 0.05)],
+    ['s14b08', LD(-0.08, 0.12, 0.12)],
+    ['s14b09+0.3', LD(-0.08, 0.12, 0.12)],
+    ['s14b09+0.7', LD(0.22, 0.1, 0.25)],                                    // eyes drop to the shoulder
+    ['s14b09+1.5', LD(-0.02, 0.05, 0.15)],
+    ['s14b10+2.4', LD(-0.04, 0.05, 0.1)],
+    ['s14b10+2.9', LD(0.15, 0.5, -0.12)],                                   // narrow: lower lids rise, peering
+    ['s14b10+3.4', LD(0.15, 0.5, -0.12)],
+    ['s14b10+3.85', LD(-0.2, 0.0, 0.1)],                                    // widen
   ]);
   const mouth = K([
-    ['s14b05', { open: 0.07, smile: -0.32, round: 0, wide: 0.05, pressed: 0, tremble: 0 }],
-    ['s14b05+1.5', { open: 0.07, smile: -0.3, round: 0, wide: 0.05, pressed: 0, tremble: 0 }],
-    ['s14b05+2.8', { open: 0.27, smile: -0.06, round: 0.34, wide: -0.05, pressed: 0, tremble: 0.1 }],  // falls open
+    ['s14b05', MO(0.07, -0.32, 0, 0.05, 0, 0)],
+    ['s14b05+1.5', MO(0.07, -0.3, 0, 0.05, 0, 0)],
+    ['s14b05+2.8', MO(0.27, -0.06, 0.34, -0.05, 0, 0.1)],                   // falls open
     // lower lip quivers: the rig's lip tremble is ~0.07·mouthW·tremble, i.e. 1.4 screen px at 0.32 in this
     // close (invisible on a phone); 0.62 gives a readable ~2.7 px quiver while the mouth stays soft and open
-    ['s14b05+3.6', { open: 0.25, smile: -0.08, round: 0.32, wide: -0.05, pressed: 0, tremble: 0.62 }],
-    ['s14b06+1.6', { open: 0.22, smile: -0.06, round: 0.3, wide: -0.05, pressed: 0, tremble: 0.55 }],
-    ['s14b06+2.75', { open: 0.2, smile: -0.04, round: 0.28, wide: -0.05, pressed: 0, tremble: 0.3 }],
-    ['s14b06+2.95', { open: 0.32, smile: 0.12, round: 0.12, wide: 0.1, pressed: 0, tremble: 0.1 }],    // a breath of a laugh
-    ['s14b06+3.25', { open: 0.16, smile: 0.04, round: 0.2, wide: 0, pressed: 0, tremble: 0.15 }],
-    ['s14b06+3.45', { open: 0.25, smile: 0.1, round: 0.1, wide: 0.08, pressed: 0, tremble: 0.1 }],
-    ['s14b06+3.9', { open: 0.17, smile: 0.0, round: 0.22, wide: 0, pressed: 0, tremble: 0.15 }],
-    ['s14b06+5.15', { open: 0.17, smile: 0.0, round: 0.22, wide: 0, pressed: 0, tremble: 0.12 }],
-    ['s14b06+5.7', { open: 0.13, smile: 0.56, round: 0.0, wide: 0.14, pressed: 0, tremble: 0.06 }],    // small disbelieving smile on 'wonder' (+5.08)
-    ['s14b06+6.6', { open: 0.1, smile: 0.42, round: 0.0, wide: 0.1, pressed: 0, tremble: 0.05 }],      // 'amazement': smaller
-    ['s14b06.end', { open: 0.12, smile: 0.25, round: 0.05, wide: 0.05, pressed: 0, tremble: 0.05 }],
-    // b07: lips move, nothing comes out; it swallows; one small breath
-    ['s14b07+0.1', { open: 0.12, smile: 0.2, round: 0.05, wide: 0.05, pressed: 0, tremble: 0.05 }],
-    ['s14b07+0.3', { open: 0.24, smile: 0.06, round: 0.3, wide: 0, pressed: 0, tremble: 0.1 }],
-    ['s14b07+0.48', { open: 0.05, smile: 0.04, round: 0.1, wide: 0, pressed: 0, tremble: 0.05 }],
-    ['s14b07+0.62', { open: 0.18, smile: 0.02, round: 0.35, wide: 0, pressed: 0, tremble: 0.1 }],
-    ['s14b07+0.85', { open: 0.0, smile: 0.0, round: 0.0, wide: 0, pressed: 0.25, tremble: 0 }],
-    ['s14b07+1.05', { open: 0.0, smile: -0.02, round: 0.0, wide: -0.1, pressed: 0.65, tremble: 0 }],   // swallow
-    ['s14b07+1.25', { open: 0.04, smile: 0.0, round: 0.1, wide: 0, pressed: 0.1, tremble: 0 }],
-    ['s14b07+1.5', { open: 0.12, smile: 0.0, round: 0.25, wide: 0, pressed: 0, tremble: 0 }],          // small breath in
-    ['s14b08', { open: 0.06, smile: 0.06, round: 0.1, wide: 0, pressed: 0, tremble: 0.12 }],
-    ['s14b08.end', { open: 0.06, smile: 0.04, round: 0.1, wide: 0, pressed: 0, tremble: 0.12 }],
-    ['s14b08.end+0.4', { open: 0.1, smile: 0.0, round: 0.15, wide: 0, pressed: 0, tremble: 0.1 }],     // lips parted, waiting
-    ['s14b09+0.3', { open: 0.1, smile: 0.0, round: 0.15, wide: 0, pressed: 0, tremble: 0.1 }],
-    ['s14b09+0.8', { open: 0.03, smile: -0.18, round: 0.0, wide: -0.08, pressed: 0.2, tremble: 0.05 }], // missing it
-    ['s14b09+1.8', { open: 0.07, smile: -0.12, round: 0.1, wide: 0, pressed: 0, tremble: 0 }],
-    ['s14b10+1.9', { open: 0.06, smile: -0.08, round: 0.1, wide: 0, pressed: 0, tremble: 0 }],
-    ['s14b10+2.35', { open: 0.0, smile: -0.05, round: 0.0, wide: -0.05, pressed: 0.3, tremble: 0 }],   // squinting
-    ['s14b10+3.0', { open: 0.0, smile: -0.05, round: 0.0, wide: -0.05, pressed: 0.3, tremble: 0 }],
-    ['s14b10+3.45', { open: 0.2, smile: 0.0, round: 0.4, wide: -0.05, pressed: 0, tremble: 0.1 }],     // widen: a soft "oh"
+    ['s14b05+3.6', MO(0.25, -0.08, 0.32, -0.05, 0, 0.62)],
+    ['s14b06+1.6', MO(0.22, -0.06, 0.3, -0.05, 0, 0.55)],
+    ['s14b06+2.75', MO(0.2, -0.04, 0.28, -0.05, 0, 0.3)],
+    ['s14b06+2.95', MO(0.32, 0.12, 0.12, 0.1, 0, 0.1)],                     // a breath of a laugh
+    ['s14b06+3.25', MO(0.16, 0.04, 0.2, 0, 0, 0.15)],
+    ['s14b06+3.45', MO(0.25, 0.1, 0.1, 0.08, 0, 0.1)],
+    ['s14b06+3.9', MO(0.12, 0.03, 0.2, 0, 0, 0.12)],
+    ['s14b06+4.45', MO(0.11, 0.02, 0.2, 0, 0, 0.1)],
+    ['s14b06+5.15', MO(0.32, 0.0, 0.62, -0.1, 0, 0.18)],                    // 'It felt wonder': a soft "o"
+    ['s14b06+5.6', MO(0.3, 0.06, 0.56, -0.08, 0, 0.25)],
+    ['s14b06+6.35', MO(0.15, 0.42, 0.14, 0.06, 0, 0.6)],                    // ...that melts into a small smile
+    ['s14b06+7.2', MO(0.13, 0.56, 0.06, 0.1, 0, 0.62)],                     // 'amazement': trembling, held
+    ['s14b07+0.2', MO(0.13, 0.54, 0.06, 0.1, 0, 0.55)],
+    ['s14b07+1.5', MO(0.12, 0.3, 0.12, 0.04, 0, 0.25)],
+    // b07 (close again): lips part, nothing comes out; it swallows; one small breath in; then it asks
+    ['s14b07+1.7', MO(0.22, 0.08, 0.32, 0, 0, 0.12)],
+    ['s14b07+1.88', MO(0.06, 0.04, 0.12, 0, 0, 0.05)],
+    ['s14b07+2.02', MO(0.0, 0.0, 0.0, 0, 0.3, 0)],
+    ['s14b07+2.18', MO(0.0, -0.02, 0.0, -0.1, 0.65, 0)],                    // swallow
+    ['s14b07+2.35', MO(0.04, 0.0, 0.1, 0, 0.1, 0)],
+    ['s14b07+2.55', MO(0.12, 0.0, 0.25, 0, 0, 0)],                          // small breath in
+    ['s14b08', MO(0.06, 0.06, 0.1, 0, 0, 0.12)],
+    ['s14b08.end', MO(0.06, 0.04, 0.1, 0, 0, 0.12)],
+    ['s14b08.end+0.4', MO(0.1, 0.0, 0.15, 0, 0, 0.1)],                      // lips parted, waiting
+    ['s14b09+0.3', MO(0.1, 0.0, 0.15, 0, 0, 0.1)],
+    ['s14b09+0.8', MO(0.03, -0.18, 0.0, -0.08, 0.2, 0.05)],                 // missing it
+    ['s14b09+1.8', MO(0.07, -0.12, 0.1, 0, 0, 0)],
+    ['s14b10+2.4', MO(0.06, -0.08, 0.1, 0, 0, 0)],
+    ['s14b10+2.9', MO(0.0, -0.05, 0.0, -0.05, 0.3, 0)],                     // squinting
+    ['s14b10+3.4', MO(0.0, -0.05, 0.0, -0.05, 0.3, 0)],
+    ['s14b10+3.85', MO(0.2, 0.0, 0.4, -0.05, 0, 0.1)],                      // widen: a soft "oh"
   ]);
   const eyes = K([
     ['s14b05', { pupil: 0.82, sparkle: 0.85 }],
     ['s14b05+0.5', { pupil: 0.82, sparkle: 0.9 }],
     ['s14b05+2.6', { pupil: 1.32, sparkle: 1 }],
+    ['s14b06+4.6', { pupil: 1.32, sparkle: 1 }],
+    ['s14b06+5.4', { pupil: 1.45, sparkle: 1 }],                            // 'wonder': the pupils bloom
+    ['s14b07+1.2', { pupil: 1.32, sparkle: 1 }],
     ['s14b09+1.0', { pupil: 1.28, sparkle: 1 }],
-    ['s14b10+1.5', { pupil: 1.15, sparkle: 0.85 }],
-    ['s14b10+2.35', { pupil: 0.95, sparkle: 0.45 }],
-    ['s14b10+3.45', { pupil: 1.3, sparkle: 0.6 }],
+    ['s14b10+1.8', { pupil: 1.15, sparkle: 0.85 }],
+    ['s14b10+2.9', { pupil: 0.95, sparkle: 0.45 }],
+    ['s14b10+3.85', { pupil: 1.3, sparkle: 0.6 }],
   ]);
   // gaze (with micro-saccades that "search the stars")
   const gaze = K([
-    ['s14b05', { lookX: 0.35, lookY: -1 }],
-    ['s14b08+0.5', { lookX: 0.35, lookY: -1 }], ['s14b08+0.58', { lookX: 0.5, lookY: -0.92 }],
-    ['s14b08+1.32', { lookX: 0.5, lookY: -0.92 }], ['s14b08+1.4', { lookX: 0.26, lookY: -1 }],
-    ['s14b08.end+0.6', { lookX: 0.26, lookY: -1 }], ['s14b08.end+0.68', { lookX: 0.38, lookY: -0.98 }],
-    ['s14b09+0.2', { lookX: 0.38, lookY: -0.98 }], ['s14b09+0.45', { lookX: 0.8, lookY: 0.4 }],      // glance at its own shoulder
-    ['s14b09+1.0', { lookX: 0.8, lookY: 0.4 }], ['s14b09+1.3', { lookX: 0.62, lookY: -0.7 }],         // up the withdrawing arm
-    ['s14b09+1.7', { lookX: 0.5, lookY: -0.9 }], ['s14b09+3.0', { lookX: 0.32, lookY: -1 }],          // to the hood as it turns
-    ['s14b10+0.9', { lookX: 0.34, lookY: -1 }], ['s14b10+1.4', { lookX: -0.22, lookY: -0.82 }],       // eyes lead to the glow
-    ['s14b10+1.9', { lookX: -0.2, lookY: -0.8 }],
+    ['s14b05', GZ(0.35, -1)],
+    ['s14b08+0.5', GZ(0.35, -1)], ['s14b08+0.58', GZ(0.5, -0.92)],
+    ['s14b08+1.32', GZ(0.5, -0.92)], ['s14b08+1.4', GZ(0.26, -1)],
+    ['s14b08.end+0.6', GZ(0.26, -1)], ['s14b08.end+0.68', GZ(0.38, -0.98)],
+    ['s14b09+0.2', GZ(0.38, -0.98)], ['s14b09+0.45', GZ(0.8, 0.4)],          // glance at its own shoulder
+    ['s14b09+1.0', GZ(0.8, 0.4)], ['s14b09+1.3', GZ(0.62, -0.7)],             // up the withdrawing arm
+    ['s14b09+1.7', GZ(0.5, -0.9)], ['s14b09+3.4', GZ(0.32, -1)],              // to the hood as it turns
+    ['s14b10+1.75', GZ(0.32, -1)], ['s14b10+2.0', GZ(-0.65, -0.62)],          // eyes lead to where it looks
+    ['s14b10+2.8', GZ(-0.3, -0.72)],                                         // the head has come round
   ]);
   const searching = S.talking('FEAR', t) * 0.05;
   const micro = (s) => fbm(t * 0.45, s) * (0.05 + searching);
   // tears of wonder
   const tears = K([['s14b05', 0.38], ['s14b05+0.6', 0.4], ['s14b05+2.4', 0.92], ['s14b09', 0.9], ['s14b10+3.0', 0.82], ['s14b10+3.6', 0.95]]);
-  // both drops run down the screen-LEFT cheek: the right cheek is under the Void's fingers in the close (a
-  // right-hand drop was hidden for ~80 % of its run). One spills (b05+2.45), then a second (b05+4.25); the
-  // track restarts only after the first drop has faded out (alpha 0 from progress 1), so nothing pops.
+  // both drops run down the screen-LEFT cheek (the right cheek is the hand's side). One spills (b05+2.45, squeezed
+  // out by a quick blink), then a second (b05+4.25); the track restarts only after the first drop has faded out
   const drop = (a, b) => clamp((t - S.T(a)) / (S.T(b) - S.T(a)), 0, 1);
   const d1 = drop('s14b05+2.45', 's14b05+4.15'), d2 = drop('s14b05+4.25', 's14b05+5.95');
   const tearL = t < S.T('s14b05+4.2') ? d1 : d2;
   const tearR = 0;
   const stream = K([['s14b05+2.7', 0], ['s14b05+4.6', 0.32], ['s14b09', 0.3], ['s14b10.end', 0.24]]);
-  const blush = K([['s14b06+4.9', 0], ['s14b06+6.3', 0.6], ['s14b08.end', 0.45], ['s14b10', 0.3]]);
+  const blush = K([['s14b06+5.3', 0], ['s14b06+6.4', 0.6], ['s14b07+0.5', 0.6], ['s14b08.end', 0.45], ['s14b10', 0.3]]);
+  // wide eyes through the wonder: no slow blinks (they read as sleepy) — one quick blink squeezes out the first
+  // tear, one rides the breath of a laugh, one after 'amazement' while the smile holds
   const blink = Math.max(
-    blinkAt(t, S.T('s14b05+1.0'), 0.5),       // the realisation: a slow blink, then the lids rise
-    blinkAt(t, S.T('s14b06+1.15'), 0.36),
-    blinkAt(t, S.T('s14b06+3.55'), 0.18),
-    blinkAt(t, S.T('s14b06+7.3'), 0.42),      // after 'amazement' (the word ends at +7.22)
-    blinkAt(t, S.T('s14b07+0.92'), 0.2),      // with the swallow
-    blinkAt(t, S.T('s14b08.end+0.2'), 0.42),  // waiting for an answer
+    blinkAt(t, S.T('s14b05+2.3'), 0.16),
+    blinkAt(t, S.T('s14b06+3.55'), 0.16),
+    blinkAt(t, S.T('s14b06+7.45'), 0.18),
+    blinkAt(t, S.T('s14b07+2.1'), 0.2),       // with the swallow
+    blinkAt(t, S.T('s14b08.end+0.2'), 0.3),   // waiting for an answer
     blinkAt(t, S.T('s14b09+1.08'), 0.18),     // gaze shift up the arm
-    blinkAt(t, S.T('s14b10+1.42'), 0.22),     // the eyes have led to the glow; blink as the head and body come
-                                              // round: lids shut across the facing flip at b10+1.52 (masks it)
-    blinkAt(t, S.T('s14b10+3.02'), 0.17),     // "did I see that right?"
+    blinkAt(t, S.T('s14b09+3.05'), 0.18),
+    blinkAt(t, S.T('s14b10+2.2'), 0.22),      // the head comes round: lids shut across the facing flip at +2.3
+    blinkAt(t, S.T('s14b10+3.42'), 0.17),     // "did I see that right?"
   );
 
   let face = {
@@ -347,6 +401,83 @@ function glowLowRes(g, camera, vp) {
   g.drawImage(glowC, 0, 0, W, H); g.restore();
 }
 
+
+/** Fear's head outline as a path, built in the current (camera) space: replicates drawFear's transform chain
+ *  (fear.mjs: feet → scale → facing → lean → neck (NECK_Y −148 + crouch·20 + breath·1.2 + headDY) → headTilt →
+ *  head ellipse (turn·3, −66) 74×68), grown by `grow` units. tremble is 0 in s14 (no shiver offsets). */
+function headPath(g, fx, fy, fs, p, grow = 0, shift = [0, 0]) {
+  const facing = p.facing || 1;
+  const br = Math.sin(p.t * 2 * Math.PI * (p.breathRate || 0.28)) * (p.breathe ?? 1);
+  g.save();
+  g.translate(fx, fy); g.scale(fs, fs); g.scale(facing, 1);
+  g.rotate(p.lean || 0);
+  g.translate(p.headDX || 0, -148 + (p.crouch || 0) * 20 + br * 1.2 + (p.headDY || 0));
+  g.rotate(p.headTilt || 0);
+  const cx = clamp(p.headTurn ?? 0, -1, 1) * facing * 3;
+  g.ellipse(cx + shift[0] * facing, -66 + shift[1], 74 + grow, 68 + grow, 0, 0, Math.PI * 2);
+  g.restore();
+}
+
+/** The Void's fingers rest on the shoulder BEHIND Fear's big head: redraw Fear clipped to its head. */
+function headOver(g, fx, fy, fs, pose) {
+  g.save();
+  g.beginPath(); headPath(g, fx, fy, fs, pose, 1.2); g.clip();
+  drawFear(g, fx, fy, fs, { ...pose, shadow: false });
+  g.restore();
+}
+
+/** A faint cool rim of cosmos light on the hood side (upper right) of Fear's head: a crescent inside the head. */
+function fearRim(g, fx, fy, fs, pose, k) {
+  if (k <= 0.01) return;
+  g.save();
+  g.beginPath(); headPath(g, fx, fy, fs, pose, 0); g.clip();
+  g.globalCompositeOperation = 'screen';
+  for (const [d, a] of [[13, 0.1], [6, 0.2]]) {
+    g.beginPath();
+    headPath(g, fx, fy, fs, pose, 0);
+    headPath(g, fx, fy, fs, pose, 0, [-0.5 * d, 0.86 * d]);   // the head moved AWAY from the light (up-right)
+    g.fillStyle = `rgba(165,195,255,${a * k})`;
+    g.fill('evenodd');
+  }
+  g.restore();
+}
+
+/** The resting hand, softened: drawn on its own layer so the cosmos light can touch only the hand — a violet
+ *  sheen over the knuckles and a few faint twinkling stars on the back of the hand and the fingers. */
+let handC = null;
+const HAND_STARS = [[0.3, -0.12, 2.6, 0.0], [0.47, 0.18, 2.1, 1.7], [0.62, -0.02, 2.9, 3.1], [0.78, 0.2, 2.0, 4.4],
+  [0.9, -0.15, 2.3, 5.6], [0.4, 0.02, 1.7, 2.4]];
+function drawHandSoft(g, camera, vp, t, cosmos) {
+  const k = clamp((cosmos - 0.55) / 0.45) * vp.handL.show;
+  if (k < 0.02) { g.save(); applyCamera(g, camera); drawVoidHand(g, ...VOID_B, vp, 'L'); g.restore(); return; }
+  if (!handC) handC = createCanvas(W, H);
+  const o = handC.getContext('2d');
+  o.setTransform(1, 0, 0, 1, 0, 0); o.globalCompositeOperation = 'source-over'; o.globalAlpha = 1;
+  o.clearRect(0, 0, W, H);
+  o.save();
+  applyCamera(o, camera);
+  drawVoidHand(o, ...VOID_B, vp, 'L');
+  o.globalCompositeOperation = 'source-atop';
+  const h = voidRig(vp).handL, s = VOID_B[2];
+  const P = (p) => [VOID_B[0] + p[0] * s, VOID_B[1] + p[1] * s];
+  const wr = P(h.wrist), tip = P(h.tip);
+  const ux = tip[0] - wr[0], uy = tip[1] - wr[1], len = Math.hypot(ux, uy) || 1;
+  const nx = -uy / len, ny = ux / len, hw = 34 * s;
+  // sheen: the knuckles catch the light from the hood (up-right)
+  const kn = [wr[0] + ux * 0.55, wr[1] + uy * 0.55];
+  const gr = o.createRadialGradient(kn[0] + 20, kn[1] - 30, 0, kn[0], kn[1], len * 0.75);
+  gr.addColorStop(0, `rgba(150,135,255,${0.2 * k})`); gr.addColorStop(1, 'rgba(120,150,255,0)');
+  o.fillStyle = gr; o.fillRect(kn[0] - len, kn[1] - len, 2 * len, 2 * len);
+  for (const [a, b, r, ph] of HAND_STARS) {
+    const tw = 0.5 + 0.5 * Math.sin(t * (1.1 + ph * 0.13) + ph * 2.1);
+    const al = k * (0.18 + 0.62 * tw * tw * tw);
+    o.fillStyle = `rgba(232,224,255,${al})`;
+    star(o, wr[0] + ux * a + nx * b * hw * 2, wr[1] + uy * a + ny * b * hw * 2, r * (0.75 + 0.35 * tw));
+  }
+  o.restore();
+  g.save(); g.setTransform(1, 0, 0, 1, 0, 0); g.drawImage(handC, 0, 0); g.restore();
+}
+
 /**
  * opts: cosmos, starK, fear (false = no Fear/cage, hood POV),
  *       plate: { key, rect, res, tb }  (static background), tb: frozen time for the set + cage (pull-back)
@@ -385,13 +516,19 @@ function drawStage(g, t, S, camera, opts = {}) {
   }
   g.restore();
   if (opts.fear !== false) {
-    glowLowRes(g, camera, vp);
     const [fx, fy, fs] = THRESH;
+    // the hand on the shoulder, then Fear's head over its fingers; the glow and the starlight fall on both
+    if (vp.handL.show > 0.001) {
+      drawHandSoft(g, camera, vp, t, cosmos);
+      g.save(); applyCamera(g, camera); headOver(g, fx, fy, fs, fear.pose); g.restore();
+    }
+    glowLowRes(g, camera, vp);
     g.save();
     applyCamera(g, camera);
-    starlight(g, fx + 25 * fs, fy - 250 * fs, 190 * fs, opts.starK ?? cosmos);
-    if (vp.handL.show > 0.001 && !process.env.NOHAND) { drawVoidHand(g, ...VOID_B, vp, "L"); if (process.env.HAND2) drawVoidHand(g, ...VOID_B, vp, "L"); }
-    if (!process.env.NOFG) drawHQForeground(g, 'backOfMind', st);
+    const sk = opts.starK ?? cosmos;
+    starlight(g, fx + 25 * fs, fy - 250 * fs, 190 * fs, sk);
+    fearRim(g, fx, fy, fs, fear.pose, sk);
+    drawHQForeground(g, 'backOfMind', st);
     g.restore();
   } else {
     g.save(); applyCamera(g, camera); drawHQForeground(g, 'backOfMind', st); g.restore();
@@ -402,13 +539,17 @@ function drawStage(g, t, S, camera, opts = {}) {
 // close on Fear (b05, b07–b08). Staging gives {450,1430,3.0}; pushed to 3.3 and down to y 1500 so the face
 // sits on the upper third and the TIME-OUT sign leaves the top of the frame (it fought the face for attention)
 const CLOSE = [445, 1500, 3.3];
-// the two-shot from the side (end of b06, b09). Staging gives {560,1000,0.85}, which crops the hood opening
-// at the frame top; 0.8 a little higher keeps the whole starry hood bowed above Fear
-const TWO = [560, 965, 0.8];
-// over the Void's shoulder {360,1200,1.3} (b10)
-// Staging gives {360,1200,1.3}; nudged left/wider so the floor's glowing paths run into the far glow across the
-// open left of the frame and Fear (right of centre) looks into that space; the Void's sleeve/robe at the right
-const OTS = [330, 1160, 1.2];
+// the two-shot from the side after 'amazement' (b07). Staging gives {560,1000,0.85}, which crops the bowed hood
+// at the frame top; a little higher and wider keeps the whole starry hood above tiny Fear
+const TWO_A = [556, 935, 0.83], TWO_B = [560, 922, 0.8];
+// insert as the hand leaves the shoulder (b09): Fear's face, its right shoulder and the space the hand rises into
+const INSERT = [470, 1532, 2.65];
+// the raised wide for the hood's turn (b09–b10): the whole hood stays in frame from LOOK_FEAR to STARE_B
+// (peak y≈56 in STARE_B), the far glow screen-left, Fear's face above the bottom 15 %
+const WIDE = [560, 868, 0.75];
+// Fear follows the Void's gaze (b10 → end): medium, the far glow up-left where Fear turns to, the Void's empty
+// sleeve and robe on the right; a slow push-in while it looks
+const MED_A = [336, 1300, 1.78], MED_B = [338, 1302, 1.86];
 
 function hoodPOV(g, t, S, cosmos) {
   // Fear's POV pushing slowly into the bowed hood: {679,336,4.5} → {679,336,7.0}
@@ -442,25 +583,22 @@ function cosmosFull(g, t, S, cosmos) {
   }
 }
 
-// b06 is one slow pull-back told in two pieces. A single continuous move CLOSE (3.47) → TWO (0.8) inside b06
-// cannot be slow AND keep the smile on 'wonder' readable: the smile needs zoom ≳ 2.3 at b06+5.7, which leaves
-// < 3 s for the remaining 2.9× (the first version peaked at 1.85×/s and landed on the two-shot on the very
-// frame of the cut, so the composition never held). Now: (a) the close breathes out slowly to a medium,
-// anchored on Fear's face (ease-in, ≤ 1.26×/s, zoom ≈ 2.6 at the smile), and (b) on 'amazement' it cuts on the
-// motion to the two-shot from the side, which keeps pulling back very gently (0.86 → 0.80, easing out) for
-// 1.7 s: tiny Fear under the starry hood bowed above it, held before b07's close.
+
+// b06 → b07: the close breathes out, anchored on Fear's face, to a big close-up that still holds the face at
+// ≈ 2.7 (≥ 2.6) through 'amazement': the open hands, the smile and the blush stay at face size for ≈ 2.5 s, and
+// only after the line (b06.end + 0.7) does it cut to the two-shot under the starry hood (QA: the old move reached
+// 2.3 on 'wonder' and cut on 'amazement' to a wide where Fear's face was ≈ 45 px).
 const FACE_P = [440, 1454];
 const CLOSE_PUSH = 1.05, Z_A = CLOSE[2] * CLOSE_PUSH;     // the close's zoom when the pull-back starts
-const Z_M = 2.3;                                           // the medium the close breathes out to
+const Z_M = 2.7;                                           // the big close-up the close breathes out to
 const S0 = [360 + (FACE_P[0] - CLOSE[0]) * Z_A, 640 + (FACE_P[1] - CLOSE[1]) * Z_A];
-const S_M = [352, 522];                                    // Fear's face on screen at the medium
+const S_M = [356, 540];                                    // Fear's face on screen at the end of the move
 function pullCam(k) {
   const zoom = zoomExp(Z_A, Z_M, k);
   const sx = lerp(S0[0], S_M[0], k), sy = lerp(S0[1], S_M[1], k);
   return { x: FACE_P[0] - (sx - 360) / zoom, y: FACE_P[1] - (sy - 640) / zoom, zoom };
 }
 const pullCamAtZoom = (z) => pullCam(clamp(Math.log(z / Z_A) / Math.log(Z_M / Z_A)));
-const TWO_B06 = [552, 985, 0.86];                          // the two-shot as b06 cuts to it (→ TWO by b07)
 
 // "a soft shimmer passes through them" (b06, VOID): a faint band of light crossing the stars in the hood
 // opening, clipped inside the opening so the hood shell itself stays unlit (staging §5.4)
@@ -506,10 +644,10 @@ export function render(g, t, S) {
     const z = CLOSE[2] * S.k(t, [['s14b05', 1], ['s14b06+2.8', CLOSE_PUSH, 'sine']]);
     const plate = { key: 'b05', rect: frameRect(CLOSE[0], CLOSE[1], CLOSE[2]), res: CLOSE[2] * CLOSE_PUSH, tb: T('s14b05') };
     drawStage(g, t, S, cam(CLOSE[0], CLOSE[1], z, t, 2), { cosmos, plate });
-  } else if (t < T('s14b06+6.35')) {
-    // 4a. the same shot breathes out to a medium, anchored on the face: slow at first (the laugh), ≈2.6 at the
-    // smile on 'wonder', still gently moving when it cuts (b) — the pull-back continues across the cut
-    const k = S.k(t, [['s14b06+2.8', 0], ['s14b06+6.35', 1, 'in']]);
+  } else if (t < T(CUT_TWO)) {
+    // 4a. the same shot breathes out, slowly, anchored on the face (≈ 2.7 by the end): the open hands, the soft
+    // "o" on 'wonder', the trembling smile on 'amazement' and the blush all hold at face size until after the line
+    const k = S.k(t, [['s14b06+2.8', 0], [CUT_TWO, 1, 'sine']]);
     const pb = pullCam(k);
     const tb = T('s14b05');   // same frozen instant as shot 3's plate: the shot runs on without a pop
     // background plates per zoom bucket (each rendered at its bucket's highest zoom, then shrunk)
@@ -518,25 +656,32 @@ export function render(g, t, S) {
     const a = pullCamAtZoom(zHi), b2 = pullCamAtZoom(Math.max(zLo, Z_M * 0.98));
     const plate = { key: 'pb' + kb, rect: unionRect(frameRect(a.x, a.y, a.zoom), frameRect(b2.x, b2.y, b2.zoom)), res: zHi, tb };
     drawStage(g, t, S, cam(pb.x, pb.y, pb.zoom, t, 2), { cosmos, plate, tb });
-  } else if (t < T('s14b07')) {
-    // 4b. cut on 'amazement' to the two-shot from the side; the pull-back carries on, very slowly, and settles
-    const k = S.k(t, [['s14b06+6.35', 0], ['s14b07', 1, 'out']]);
-    const c = cam(lerp(TWO_B06[0], TWO[0], k), lerp(TWO_B06[1], TWO[1], k), zoomExp(TWO_B06[2], TWO[2], k), t, 2);
+  } else if (t < T(CUT_CLOSE)) {
+    // 4b. the two-shot from the side: tiny Fear under the whole starry hood bowed above it; a soft shimmer
+    // passes through the stars; the camera keeps easing back a little
+    const k = S.k(t, [[CUT_TWO, 0], [CUT_CLOSE, 1, 'out']]);
+    const c = cam(lerp(TWO_A[0], TWO_B[0], k), lerp(TWO_A[1], TWO_B[1], k), zoomExp(TWO_A[2], TWO_B[2], k), t, 2);
     drawStage(g, t, S, c, { cosmos });
-    hoodShimmer(g, c, S.k(t, [['s14b06+6.5', 0], ['s14b06+7.9', 1, 'linear']]));
+    hoodShimmer(g, c, S.k(t, [[CUT_TWO, 0], [CUT_CLOSE, 1, 'linear']]));
   } else if (t < T('s14b09')) {
-    // 5. close on Fear: the swallow, the breath, "Why are you showing me this?" (b07–b08)
-    const z = CLOSE[2] * S.k(t, [['s14b07', 1], ['s14b09', 1.05]]);
-    const plate = { key: 'b07', rect: frameRect(CLOSE[0], CLOSE[1] - 4, CLOSE[2]), res: CLOSE[2] * 1.05, tb: T('s14b07') };
+    // 5. close on Fear: lips part, the swallow, the breath, "Why are you showing me this?" (b07–b08)
+    const z = CLOSE[2] * S.k(t, [[CUT_CLOSE, 1], ['s14b09', 1.05]]);
+    const plate = { key: 'b07', rect: frameRect(CLOSE[0], CLOSE[1] - 4, CLOSE[2]), res: CLOSE[2] * 1.05, tb: T(CUT_CLOSE) };
     drawStage(g, t, S, cam(CLOSE[0], CLOSE[1] - 4, z, t, 2), { cosmos, plate });
-  } else if (t < T('s14b10')) {
-    // 6. two-shot: the hand lifts away, the hood turns back to the distance (b09)
-    drawStage(g, t, S, cam(TWO[0], TWO[1], TWO[2], t, 2), { cosmos });
+  } else if (t < T(CUT_WIDE)) {
+    // 6a. insert: the fingertips slide off Fear's shoulder and the hand rises away out of frame; Fear's eyes drop
+    // to its shoulder, it leans after the hand, its own hand goes to where the Void's was (live: the sleeve moves)
+    drawStage(g, t, S, cam(INSERT[0], INSERT[1], INSERT[2], t, 2), { cosmos });
+  } else if (t < T(CUT_MED)) {
+    // 6b. raised wide: the empty sleeve returns to rest and the hood turns from Fear back to the distance — the
+    // whole hood in frame, the cosmos in it, the far glow screen-left — held into b10 ("And the Void stared…")
+    drawStage(g, t, S, cam(WIDE[0], WIDE[1], WIDE[2], t, 2), { cosmos });
   } else {
-    // 7. over the Void's shoulder: the far glow; Fear stands and turns to look (b10 → end)
-    const z = OTS[2] * S.k(t, [['s14b10', 1], ['scene.end+0.9', 1.03]]);
-    const starK = S.k(t, [['s14b10', 1], ['s14b10+2.0', 0.5]]);
-    drawStage(g, t, S, cam(OTS[0], OTS[1], z, t, 2), { cosmos, starK });
+    // 7. Fear follows the Void's gaze: the eyes lead, the head comes round to the far glow, the body turns
+    const k = S.k(t, [[CUT_MED, 0], ['scene.end+0.9', 1, 'linear']]);
+    const z = zoomExp(MED_A[2], MED_B[2], k);
+    const starK = S.k(t, [['s14b10', 1], ['s14b10+2.6', 0.5]]);
+    drawStage(g, t, S, cam(lerp(MED_A[0], MED_B[0], k), lerp(MED_A[1], MED_B[1], k), z, t, 2), { cosmos, starK });
   }
 
   grade(g, cold, 0);

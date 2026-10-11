@@ -9,10 +9,16 @@
 //                                    and goes to her; the CEO in the background finishes rising
 //   3  s05b02        → s05b03       `front` door: CALM guiding SADNESS out, ANGER's glance back, JOY last ("We always
 //                                    come back."), the door swings shut behind her
-//   4  s05b03        → s05b04       `front` establishing: the empty console, the CEO alone turning a slow half circle,
-//                                    pages slipping from the clipboard; Fear clinging to the handle, eyes shut
-//   5  s05b04        → end (+0.9)   slow push: hands over the ears, the clipboard drops, the bell dies, hands lower,
-//                                    shoulders sag; Fear slides down the wall and hugs itself, eyes on the Void
+//   4  s05b02+1.9    → s05b03+2.7   `alarm` close: the PANIC ATTACK under "Panic attacks, forcing every…": Fear
+//                                    clinging to the handle, eyes squeezed shut, hyperventilating (fast shoulder rise
+//                                    and fall), tuft vibrating, the red pulse on its cheek; the door slams off-screen
+//                                    behind the evacuated emotions and it flinches
+//   5  s05b03+2.7    → end (+0.9)   `front` wide on "…emotion out of my mind" → "Causing chaos.": the empty console,
+//                                    the CEO alone finishing a slow half circle (begun off-screen), pages slipping;
+//                                    hands over the ears, the clipboard drops and spills its pages, the bell dies,
+//                                    hands lower, shoulders sag; Fear slides down the wall and hugs itself. One slow
+//                                    push ends EXACTLY on s06's first camera (CAM.end), held through the dissolve, so
+//                                    the "one day" dissolve keeps the set still and only the people change
 
 import { createCanvas } from '@napi-rs/canvas';
 import { W, H, TAU, clamp, lerp, fbm, blinkAt, applyCamera, drift, vignette, shade, circle, roundRect } from '../engine.mjs';
@@ -48,6 +54,11 @@ export const sfx = [
   { at: 's05b03.end-0.52', name: 'paper_rustle', gain: -14 },            // the clipboard lands (swish peak 0.5 s in)
   // the long shaky exhale as the hands come down (exhale ≈ 1.45 s into the file)
   { at: 's05b04+0.3', name: 'breath_shaky', gain: -15 },
+  // Fear lets go: the handle springs back up (alarmPulled 1→0 over s05b04+0.72 → +0.98), as in s02 / s07
+  { at: 's05b04+0.67', name: 'alarm_pull', gain: -20, rate: 0.85, pan: 0.4 },
+  // the panic-attack close: racing heart + fast shaky breathing under "Panic attacks, forcing every…"
+  { at: 's05b02+1.9', name: 'heartbeat', until: 's05b03+2.95', loop: true, gain: -15, rate: 2.0, fade: 0.5 },
+  { at: 's05b02+1.92', name: 'breath_shaky', until: 's05b03+2.85', gain: -19, rate: 1.35, fade: 0.3, pan: 0.15 },
 ];
 
 // ---------------------------------------------------------------- staging constants (staging.md §1.4)
@@ -72,21 +83,27 @@ const CAM = {
   console2: { x: 462, y: 852, zoom: 1.03 },
   door: { x: 234, y: 846, zoom: 2.08 },          // tighter than the staged {215,820,1.7}: the group fills the frame
   door2: { x: 228, y: 842, zoom: 2.14 },
-  est: { x: 450, y: 812, zoom: 0.96 },             // the staged 'establish' wide, a touch tighter so the CEO reads
-  est2: { x: 456, y: 824, zoom: 1.03 },
-  end: { x: 500, y: 860, zoom: 1.3 },
-  after: { x: 503, y: 864, zoom: 1.33 },          // the move keeps breathing through the dissolve into s06
+  est: { x: 452, y: 816, zoom: 0.98 },             // the staged 'establish' wide, a touch tighter so the CEO reads
+  // = s06's FIRST camera (s06 holds it through the dissolve, then moves on): with both scenes on the same camera
+  // the set, the Void, the cage and Fear's spot do not double in the "one day" dissolve; only the people change
+  end: { x: 540, y: 940, zoom: 1.2 },
+  // the panic medium, alarm view: Fear to the knees, face on the left third, the red station on the right
+  panic: { x: 572, y: 1092, zoom: 1.46 },        // (zoom stays inside one hq.mjs cache resolution bucket, ≤ 1.56)
+  panic2: { x: 566, y: 1080, zoom: 1.55 },
 };
 // cuts (one source of truth for every track, so no blocking can leak across a cut)
 const CUT12 = 's05b01+1.3';     // alarm wall → the evacuation wide
 const CUT23 = 's05b02';         // → the EXIT door
-const CUT34 = 's05b03+0.95';    // → the empty room: after JOY is through and the door has shut (staged at s05b03, which
-                                //    cut away while JOY was still fading and the door still open), on "forcing…"
+const CUT3P = 's05b02+1.9';     // → the panic close: JOY is through the door (gone at +1.9), the door starts to swing
+                                //    shut; the cut lands on "attacks" (b03+0.28); the slam is heard off-screen
+const CUTPW = 's05b03+2.7';     // → the empty room, on "emotion out of my mind" (b03+2.74); the close runs 2.4 s
+const SWEEP0 = 's05b03+1.0';    // the CEO's slow look around starts off-screen, during the panic close
 function shotOf(t, S) {
   if (t < S.T(CUT12)) return 1;
   if (t < S.T(CUT23)) return 2;
-  if (t < S.T(CUT34)) return 3;
-  return 4;
+  if (t < S.T(CUT3P)) return 3;
+  if (t < S.T(CUTPW)) return 4;
+  return 5;
 }
 const DOOR_SHUT0 = 's05b02+1.92', DOOR_SHUT1 = 's05b02+2.42';   // JOY is through at +1.9
 
@@ -209,7 +226,70 @@ function renderAlarm(g, t, S) {
   g.restore();
 }
 
-// ================================================================ the FRONT room (shots 2–5)
+// ================================================================ SHOT 4 — the panic attack (alarm view close)
+// Back at its post (the front room's shot 5 picks it up in the same state): both hands locked on the pulled handle,
+// eyes squeezed shut, hyperventilating — the shoulders heave at ~1.9 Hz and the mouth gasps on each in-breath — the
+// whole body shivering so the tuft buzzes; the red beacon pulses on its cheek. The door thuds shut off-screen behind
+// the others (door_whoosh thud at s05b02+2.42): a flinch that hunches it tighter.
+const PANIC_BR = 1.9;   // breaths per second (= drawFear's own breathRate, so the extra heave below is in phase)
+function fearPanicPose(t, S) {
+  const ph = Math.sin(t * TAU * PANIC_BR);                        // +1 = top of the in-breath
+  const ts = S.T('s05b02+2.45');
+  const fl = t >= ts ? Math.exp(-(t - ts) * 5) * clamp((t - ts) / 0.05) : 0;   // the slam: sharp, fast decay
+  const crouch = clamp(0.26 - 0.1 * ph + 0.2 * fl);
+  const handleY = ALARM_REACH[1] + 26;                            // the handle is pulled down (alarmPulled 1)
+  const sway = Math.sin(t * TAU * 0.6) * 3;                      // the weight hangs off the handle
+  // squeezed shut (lidL < 0.4: above it the rig draws happy closed arcs), lids pinched toward the nose under knotted,
+  // inner-up brows; a gasping grimace that opens on every in-breath; a sweat drop
+  const face = {
+    browIn: 1, browUp: 0.5 - 0.2 * fl, browSquish: 1, lidU: 1, lidL: 0.36, lidTilt: -0.8,
+    smile: -0.6, wide: 0.75, teeth: 0.85, tremble: 1, sweat: 0.9,
+    open: 0.16 + 0.26 * Math.max(0, ph) - 0.08 * fl,             // gasping in; teeth clench at the slam
+    lookX: 0.3, lookY: 0, noAutoBlink: true,
+  };
+  return {
+    t, facing: 1, face, crouch, tremble: 0.85, breathRate: PANIC_BR, breathe: 2,
+    headDY: -4.5 * ph + 8 * fl, headTilt: -0.05 + 0.04 * fl, headTurn: 0.14, lean: 0.07 + 0.03 * fl,
+    armR: { target: [ALARM_REACH[0], handleY + sway], bend: 1, hand: 'grip', front: true },
+    armL: { target: [80, handleY + 10 + sway], bend: 1, hand: 'grip', front: true },
+    scarfWind: 0.15 * ph,
+  };
+}
+// world-space centre of Fear's head (drawFear geometry: neck −148 + crouch·20 + breath·1.2 + headDY, head centre −66)
+function fearHeadAt(x, y, s, P) {
+  const br = Math.sin(P.t * TAU * P.breathRate) * P.breathe;
+  const h = -148 + P.crouch * 20 + br * 1.2 + (P.headDY || 0) - 66;
+  return [x - h * Math.sin(P.lean || 0) * s, y + h * Math.cos(P.lean || 0) * s];
+}
+// the beacon's red on the station-side cheek, kept inside the head outline (pulse = the set's alarm pulse)
+function drawFearRedCheek(g, x, y, s, P, t, A) {
+  const [hx, hy] = fearHeadAt(x, y, s, P);
+  g.save();
+  g.beginPath(); g.ellipse(hx, hy, 74 * s, 68 * s, 0, 0, TAU); g.clip();
+  const cx = hx + 58 * s, cy = hy + 18 * s, r = 82 * s;
+  const a = A * (0.16 + 0.22 * pulse(t));
+  const gr = g.createRadialGradient(cx, cy, 0, cx, cy, r);
+  gr.addColorStop(0, `rgba(255,64,84,${a})`); gr.addColorStop(0.6, `rgba(255,64,84,${a * 0.4})`); gr.addColorStop(1, 'rgba(255,64,84,0)');
+  g.fillStyle = gr; g.fillRect(cx - r, cy - r, 2 * r, 2 * r);
+  g.restore();
+}
+function renderPanic(g, t, S) {
+  const st = setState(t, S);
+  const u = sine((t - S.T(CUT3P)) / (S.T(CUTPW) - S.T(CUT3P)));
+  const cam = { x: lerp(CAM.panic.x, CAM.panic2.x, u), y: lerp(CAM.panic.y, CAM.panic2.y, u),
+    zoom: Math.exp(lerp(Math.log(CAM.panic.zoom), Math.log(CAM.panic2.zoom), u)) };
+  g.save();
+  applyCamera(g, liveCam(cam, t, 1.6));
+  drawHQ(g, 'alarm', st);
+  const P = fearPanicPose(t, S);
+  drawFear(g, AFX, AFY, AFS, P);
+  drawFearRedCheek(g, AFX, AFY, AFS, P, t, st.alarm);
+  drawHQForeground(g, 'alarm', st);
+  drawAlarmLight(g, 'alarm', st);
+  g.restore();
+}
+
+// ================================================================ the FRONT room (shots 2, 3, 5)
 // ---- the emotions: shot 2 (the evacuation wide: they leave the console row) and shot 3 (the EXIT door: they
 //      file out through the opening, JOY last). Nobody fades in the middle of the room any more.
 const SLOT_OF = { CALM: 'consoleSlot1', ANGER: 'consoleSlot2', SADNESS: 'consoleSlot3', JOY: 'consoleSlot4' };
@@ -396,17 +476,18 @@ function ceoFrontState(t, S) {
       bodyTurn: -0.25, headTurn: -0.45, face, clipboard: true, armL: 'rest',
       armR: { preset: 'palmOut' } } };
   }
-  if (t < S.T(CUT34)) {
+  if (t < S.T(CUT3P)) {
     // crossing to the middle of the room, off-screen during the door shot (its frame ends at x ≈ 414)
-    const p = k([[CUT23, 0], [CUT34, 1]]);
+    const p = k([[CUT23, 0], [CUT3P, 1]]);
     const x = lerp(640, 540, p), y = lerp(1000, 1060, p);
     return { x, y, s: hqScaleAt('front', y), pose: { t, outfit: 'ceo', facing: -1, clipboard: true, armL: 'rest',
       walk: { phase: t * TAU * 0.8 }, face: SELF_EXPR.worried } };
   }
   const [x, y, s] = CEO_MID;
   // the slow half circle, eyes leading the head, the head leading the body
-  // (from the door, screen-left, across the empty console to the alarm side; it starts as the shot opens)
-  const c34 = S.T(CUT34);
+  // (from the door, screen-left, across the empty console to the alarm side; it starts off-screen during the panic
+  // close, so the wide cuts back in on the middle of it)
+  const c34 = S.T(SWEEP0);
   const sweep = (lag) => k([[c34 + 0.1 + lag, -1], [c34 + 2.9 + lag, 1, 'sine']]);
   const eyesK = sweep(0), headK = sweep(0.3), bodyK = sweep(0.6);
   const ears = k([['s05b03.end-0.3', 0], ['s05b03.end+0.05', 1, 'out'], ['s05b04+0.98', 1], ['s05b04+1.6', 0, 'inOut']]);
@@ -462,15 +543,18 @@ function drawPages(g, t, S, ceo) {
   const [x, y, s] = CEO_MID;
   const hand = [x - 66 * s, y - 175 * s];
   const floor = y + 6;
-  const c34 = S.T(CUT34);                          // three pages slip loose during the half circle
-  const pages = [[c34 + 0.35, -1, 0.3], [c34 + 1.35, 1, 0.75], [c34 + 2.45, -1, 0.5]];
+  const c34 = S.T(SWEEP0);                         // three pages slip loose during the half circle
+  const td = S.T('s05b03.end-0.3');               // ...and as the hands fly to the ears the clipboard spills the rest:
+  // [start, dir, seed, sideways spread, fall time, floor offset]  a slow paper flurry under "Causing chaos."
+  const pages = [[c34 + 0.35, -1, 0.3, 26, 1.7, 4], [c34 + 1.35, 1, 0.75, 26, 1.7, 7], [c34 + 2.45, -1, 0.5, 26, 1.7, 10],
+    [td, 1, 0.15, 64, 1.5, 2], [td + 0.04, -1, 0.62, 52, 1.9, 9], [td + 0.07, 1, 0.41, 96, 2.2, 13],
+    [td + 0.1, -1, 0.88, 84, 1.7, 5], [td + 0.14, 1, 0.27, 30, 2.4, 11]];
   for (let i = 0; i < pages.length; i++) {
-    const [a, dir, seed] = pages[i];
-    const t0 = S.T(a);
+    const [t0, dir, seed, spread, dur, fo] = pages[i];
     if (t < t0) continue;
-    const p = clamp((t - t0) / 1.7);
-    const fx = hand[0] + dir * (18 + 26 * p) + Math.sin(p * 7 + seed * 5) * 9 * (1 - p);
-    const fy = lerp(hand[1] + 4, floor + 4 + i * 3, p * p * (3 - 2 * p));
+    const p = clamp((t - t0) / dur);
+    const fx = hand[0] + dir * (18 + spread * p) + Math.sin(p * 7 + seed * 5) * 9 * (1 - p);
+    const fy = lerp(hand[1] + 4, floor + fo, p * p * (3 - 2 * p));
     const flat = p < 1 ? 0.55 + 0.45 * Math.abs(Math.cos(p * 6 + seed)) : 0.32;
     g.save();
     g.translate(fx, fy);
@@ -615,8 +699,10 @@ function renderFront(g, t, S, cam, drawCam, cacheKey) {
     // the door is baked in while it is fully shut or fully open; only the swing itself is painted live
     const swing = st.doorOpen > 0.001 && st.doorOpen < 0.999;
     const held = swing ? 0 : Math.round(st.doorOpen);
-    const e = cachedSet(`${cacheKey}:${held}`, cam,
-      { ...setState(S.T(cacheKey === 'door' ? CUT23 : CUT12), S), t: 69, doorOpen: held, alarm: 0 });
+    // 'end' = the held last camera (dissolve into s06): baked at scene.end itself, so the Void's shimmer does not
+    // jump when the live drawing hands over to the cache
+    const at = S.T(cacheKey === 'door' ? CUT23 : cacheKey === 'end' ? 'scene.end' : CUT12);
+    const e = cachedSet(`${cacheKey}:${held}`, cam, { ...setState(at, S), t: cacheKey === 'end' ? at : 69, doorOpen: held, alarm: 0 });
     g.drawImage(e.c, e.x, e.y, e.w, e.h);
     if (swing) drawDoorLive(g, st);
     if (cacheKey !== 'door') drawStationLive(g, st);   // off-frame in the door shot
@@ -629,7 +715,7 @@ function renderFront(g, t, S, cam, drawCam, cacheKey) {
   // the door shot (x ≈ 60…400) never sees the CEO (crossing at x ≥ 540) nor Fear (at the alarm, x 734): skip them
   const ceo = shot === 3 ? null : ceoFrontState(t, S);
   if (ceo) items.push({ y: ceo.y, draw: () => { drawSelf(g, ceo.x, ceo.y, ceo.s, ceo.pose); } });
-  if (shot === 4) items.push({ y: CEO_MID[1] + 8, draw: () => drawPages(g, t, S, ceo) });
+  if (shot === 5) items.push({ y: CEO_MID[1] + 8, draw: () => drawPages(g, t, S, ceo) });
   const fear = shot === 3 ? null : fearFrontState(t, S);
   if (fear) items.push({ y: fear.y, draw: () => drawFear(g, fear.x, fear.y, fear.s, fear.pose) });
   for (const name of ['CALM', 'ANGER', 'SADNESS', 'JOY']) {
@@ -660,15 +746,22 @@ export function render(g, t, S) {
     const cam = lerpCam(CAM.console, CAM.console2, sine((t - S.T(CUT12)) / (S.T(CUT23) - S.T(CUT12))));
     renderFront(g, t, S, CAM.console, liveCam(cam, t, 2.5), 'wide');
   } else if (shot === 3) {
-    const cam = lerpCam(CAM.door, CAM.door2, sine((t - S.T(CUT23)) / (S.T(CUT34) - S.T(CUT23))));
+    const cam = lerpCam(CAM.door, CAM.door2, sine((t - S.T(CUT23)) / (S.T(CUT3P) - S.T(CUT23))));
     renderFront(g, t, S, CAM.door, liveCam(cam, t, 2.5), 'door');
+  } else if (shot === 4) {
+    renderPanic(g, t, S);
   } else {
-    const pre = clamp((t - S.T(CUT34)) / (S.T('s05b04') - S.T(CUT34)));
-    const push = sine((t - S.T('s05b04')) / (S.T('scene.end') - S.T('s05b04')));
-    const tail = clamp((t - S.T('scene.end')) / 0.9);
-    const est = lerpCam(CAM.est, CAM.est2, pre);                        // linear creep, then the eased push
-    const cam = t < S.T('s05b04') ? est : t <= S.T('scene.end') ? lerpCam(CAM.est2, CAM.end, push) : lerpCam(CAM.end, CAM.after, tail);
-    renderFront(g, t, S, cam, liveCam(cam, t, 2));
+    // one slow push from the establishing wide to s06's first camera (log zoom, ≤ ~55 px/s on screen), then held
+    // through the dissolve; the drift is s06's own (drift(t, 2, seed 6) as a screen shake) so the two layers of the
+    // dissolve stay in register
+    const u = sine((t - S.T(CUTPW)) / (S.T('scene.end') - S.T(CUTPW)));
+    const cam = { x: lerp(CAM.est.x, CAM.end.x, u), y: lerp(CAM.est.y, CAM.end.y, u),
+      zoom: Math.exp(lerp(Math.log(CAM.est.zoom), Math.log(CAM.end.zoom), u)) };
+    const d = drift(t, 2, 6);
+    // once the camera holds (the dissolve), the static set is painted once and reused: the dissolve frames draw
+    // both scenes, and the live front set is the most expensive part of each (~17 ms)
+    const held = t >= S.T('scene.end');
+    renderFront(g, t, S, held ? CAM.end : cam, { ...cam, shakeX: d.dx, shakeY: d.dy, rot: d.dr * 0.5 }, held ? 'end' : undefined);
   }
   grade(g, COLD, 0);
   vignette(g, VIGNETTE);

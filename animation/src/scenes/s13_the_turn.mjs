@@ -3,7 +3,12 @@
 // Consciousness made comes back from the last place Fear expected it: a hand on its shoulder.
 //
 // Shots (data/staging.md §3 s13):
-//   S.start → b02  LOCKED wide {500,889,0.72} (= s12's last frame, pixel-matched): THE TURN; Fear freezes.
+//   S.start → b01+2.0  LOCKED wide {500,889,0.72} (= s12's last frame, pixel-matched): THE TURN begins (a rim-light
+//                  swell along the hood's edge makes it register); Fear stiffens, freezes.
+//   b01+2.0 → +3.5 close on Fear {3.4}: frozen terror readable — eyes enormous, pupils to pinpoints, no breath;
+//                  lips part as the hood arrives; a tiny dry swallow. (QA: in the wide Fear's face was ~45 px.)
+//   b01+3.5 → b02  Fear's POV, low on the hood {668,480,1.45}, LOCKED: the turn arrives and the hood BOWS to look
+//                  straight down at us/Fear — the Void's first movement, now large on screen.
 //   b02 → b03      ECU on Fear's eyes (zoom 6.3 → 6.65, centred on the eyes): the hood reflected in them.
 //   b03 → b04      high angle, the hood's POV {448,1495,1.6 → 1.74} inside a dark hood-oval: Fear hides.
 //   b04 → b05      side close {525,1425,1.75}: Fear left third; the hand comes down the right, settles; flinch.
@@ -112,6 +117,49 @@ function drawEcuBackground(g, ref, t0, vpose, st) {
   g.drawImage(ecuBG, ref[0] - ECU_W / 2 / ECU_Z, ref[1] - ECU_H / 2 / ECU_Z, ECU_W / ECU_Z, ECU_H / ECU_Z);
 }
 
+// The close on Fear during the turn: everything behind Fear (set, robe, cage) is static there — the hood is far
+// above the frame and the bow has not begun — so it is baked once at the shot's framing (crisp at its zoom).
+const CU_Z0 = 3.9, CU_Z1 = 3.98, CU_M = 1.12;
+let cuBG = null;
+function drawCuBackground(g, S, st) {
+  const c0 = CU_CAM(S), rw = (W / CU_Z0) * CU_M, rh = (H / CU_Z0) * CU_M, rx = c0.x - rw / 2, ry = c0.y - rh / 2;
+  if (!cuBG) {
+    const t0 = S.T(CU_IN);
+    cuBG = createCanvas(Math.ceil(rw * CU_Z1), Math.ceil(rh * CU_Z1));
+    const c = cuBG.getContext('2d');
+    c.scale(cuBG.width / rw, cuBG.height / rh); c.translate(-rx, -ry);
+    drawHQ(c, 'backOfMind', { ...st, t: t0, lightsDim: 0.4 });
+    drawVoid(c, ...VOID_B, { t: t0, ...voidPose(t0, S).head, idle: 0, cosmos: 0, shadowSpread: 1, handL: { ...VOID_ARM_B, show: 0, defer: 'hand' } });
+    drawCage(c, ...CAGE_B, { t: t0, door: 0.9, locked: 0 });
+  }
+  g.drawImage(cuBG, rx, ry, rw, rh);
+}
+
+// THE TURN's rim-light swell (QA: the turn, the Void's first movement, was easy to miss on a phone). The hood's own
+// rim light is doubled — the same rim, drawn again from a silhouette pass, screen-blended and kept to the hood — so
+// as the hood turns, the light visibly slides along its edge. It swells with the turn and ebbs after the bow.
+let rimLayer = null, povBG = null;
+function rimSwell(g, cam, vpose, k) {
+  if (k <= 0.01) return;
+  // half resolution: it is a glow (softer is better), and the silhouette hood sprites build at half the cost
+  rimLayer ||= createCanvas(W / 2, H / 2);
+  const c = rimLayer.getContext('2d');
+  c.setTransform(1, 0, 0, 1, 0, 0); c.globalCompositeOperation = 'source-over'; c.globalAlpha = 1; c.clearRect(0, 0, W / 2, H / 2);
+  c.save();
+  c.scale(0.5, 0.5);
+  applyCamera(c, cam);
+  drawVoid(c, ...VOID_B, { ...vpose, silhouette: true, handL: { ...VOID_ARM_B, show: 0, defer: 'hand' } });
+  c.globalCompositeOperation = 'destination-in';                       // keep the hood, fade out over the mantle
+  const gr = c.createLinearGradient(0, 330, 0, 560);
+  gr.addColorStop(0, 'rgba(0,0,0,1)'); gr.addColorStop(1, 'rgba(0,0,0,0)');
+  c.fillStyle = gr; c.fillRect(-1e4, -1e4, 2e4, 2e4);
+  c.restore();
+  g.save(); g.setTransform(1, 0, 0, 1, 0, 0);
+  g.globalCompositeOperation = 'screen'; g.globalAlpha = clamp(k);
+  g.drawImage(rimLayer, 0, 0, W, H);
+  g.restore();
+}
+
 // ---------------------------------------------------------------- timing helpers
 function beats(S) {
   const T = (a) => S.T(a);
@@ -189,7 +237,7 @@ function fearPose(t, S) {
   ]);
   let headDY = S.k(t, [
     ['scene.start', 8], ['s13b01+0.2', 7], ['s13b01+0.6', -3, 'out'],   // (s12 ends at 8) lifts
-    ['s13b01+4.75', -3], ['s13b01+4.85', 2, 'out'], ['s13b01+5.2', -2.5, 'sine'], // dry swallow
+    ['s13b01+3.22', -3], ['s13b01+3.32', 2, 'out'], ['s13b01+3.7', -2.5, 'sine'], // dry swallow (in the close)
     ['s13b03+2.2', -2.5], ['s13b03+2.8', 4, 'inOut'],        // ducks into its hands
     ['s13b03+4.8', 4], ['s13b03+4.95', 7, 'out'], ['s13b03+5.6', 5, 'sine'],         // "destroy": cringes
     ['s13b04+2.72', 5], ['s13b04+2.79', 10, 'out'], ['s13b04+3.35', 5, 'sine'],        // flinch at the touch
@@ -239,11 +287,14 @@ function fearPose(t, S) {
     ['s13b01+0.12', sad],
     ['s13b01+0.4', { ...sad, lookX: 0.35, lookY: -1, lidU: 0.1 }, 'out'],   // eyes first
     ['s13b01+0.75', frozen, 'out'],                                          // then everything opens
-    ['s13b01+3.9', { ...frozen, lookX: 0.3 }],
-    ['s13b01+4.4', { ...frozen, lookX: 0.3, open: 0.22 }, 'sine'],           // lips part as the hood arrives
-    ['s13b01+4.8', { ...frozen, lookX: 0.3, open: 0.22 }],
-    ['s13b01+4.9', { ...frozen, lookX: 0.3, open: 0, pressed: 0.7 }, 'out'], // tiny dry swallow
-    ['s13b01+5.25', { ...frozen, lookX: 0.3, open: 0.07 }, 'sine'],
+    ['s13b01+2.0', frozen],
+    ['s13b01+2.6', { ...frozen, lookX: 0.3, pupil: 0.3, lidU: -0.45, browUp: 0.95 }, 'sine'], // eyes go enormous, pupils to pinpoints
+    ['s13b01+2.75', { ...frozen, lookX: 0.3, pupil: 0.3, lidU: -0.45, browUp: 0.95 }],
+    ['s13b01+3.0', { ...frozen, lookX: 0.3, pupil: 0.3, lidU: -0.45, browUp: 0.95, open: 0.22 }, 'sine'], // lips part as the hood arrives
+    ['s13b01+3.22', { ...frozen, lookX: 0.3, pupil: 0.3, lidU: -0.45, browUp: 0.95, open: 0.22 }],
+    ['s13b01+3.32', { ...frozen, lookX: 0.3, pupil: 0.3, lidU: -0.42, browUp: 0.95, open: 0, pressed: 0.7 }, 'out'], // tiny dry swallow
+    ['s13b01+3.7', { ...frozen, lookX: 0.3, pupil: 0.32, open: 0.07 }, 'sine'],
+    ['s13b01+5.0', { ...frozen, lookX: 0.3, pupil: 0.35, open: 0.07 }],
     ['s13b02', { ...ecu, lookX: 0.3, open: 0.07 }, 'sine'],
     ['s13b02+0.9', { ...ecu, lookX: 0.3, open: 0.07, tears: 0.95, browIn: 1 }, 'sine'],  // "...it."
     ['s13b03', { ...atLens, open: 0.07 }],
@@ -401,11 +452,28 @@ function tiltProgress(t, t0, t1, a, b) {
   return 1 - v * y * y / (2 * b);
 }
 
+// THE TURN is cut into three: the locked wide (the turn begins), a close on Fear's frozen terror, then Fear's POV
+// low on the hood as it arrives and bows. (QA: the frozen face and the hood's movement were both lost in the wide.)
+const CU_IN = 's13b01+2.0', POV_IN = 's13b01+3.5';
+const POV_CAM = { x: 668, y: 480, zoom: 1.45 };
+// face at screen (340, 585) at zoom 3.9 (the TIME-OUT sign stays just above the frame), from Fear's pose at the cut
+const CU_CAM = (S) => {
+  const t0 = S.T(CU_IN), P0 = fearPose(t0, S);
+  const fx = THRESH[0] + ((P0.headDX || 0) + P0.headTurn * 16) * THRESH[2];
+  const fy = THRESH[1] + (NECK_Y + 20 * P0.crouch + P0.headDY + HEAD_CY + 8) * THRESH[2];
+  return { x: fx + (W / 2 - 340) / CU_Z0, y: fy + (H / 2 - 585) / CU_Z0 };
+};
+
 function camera(t, S, P) {
   const B = beats(S);
   let cam;
-  if (t < B.b02) {
+  if (t < S.T(CU_IN)) {
     return { x: 500, y: 889, zoom: 0.72 };                                   // LOCKED (= s12's last frame)
+  } else if (t < S.T(POV_IN)) {
+    // the close on Fear's frozen face, framed on its face at the cut (low-left, looking up-right at the hood)
+    cam = { ...CU_CAM(S), zoom: S.k(t, [[CU_IN, CU_Z0], [POV_IN, CU_Z1, 'sine']]) };
+  } else if (t < B.b02) {
+    return { ...POV_CAM };                                                   // LOCKED: nothing moves but the hood
   } else if (t < B.b03) {
     // ECU on the eyes (both eyes fill the frame); a creeping push
     const m = eyesMid(...THRESH, P, t);
@@ -465,11 +533,24 @@ export function render(g, t, S) {
 
   g.save();
   applyCamera(g, cam);
+  const cu = t >= S.T(CU_IN) && t < S.T(POV_IN), pov = t >= S.T(POV_IN) && t < B.b02;
   if (ecu) {
     // fixed reference framing = the ECU camera at its first frame (deterministic)
     const t0 = S.T('s13b02');
     const ref = eyesMid(...THRESH, fearPose(t0, S), t0);
     drawEcuBackground(g, [ref[0] - 1, ref[1] + 4], t0, vpose, { ...st, lightsDim: 0.4 });
+  } else if (cu) {
+    drawCuBackground(g, S, st);
+  } else if (pov) {
+    // LOCKED frame: the cavern behind the hood is baked once (the cage and Fear are far below this frame)
+    if (!povBG) {
+      povBG = createCanvas(W, H);
+      const c = povBG.getContext('2d');
+      applyCamera(c, POV_CAM);
+      drawHQ(c, 'backOfMind', { ...st, t: S.T(POV_IN), lightsDim: 0.4 });
+    }
+    g.save(); g.setTransform(1, 0, 0, 1, 0, 0); g.drawImage(povBG, 0, 0); g.restore();
+    drawVoid(g, ...VOID_B, vpose);
   } else {
     drawHQ(g, 'backOfMind', st);
     drawVoid(g, ...VOID_B, vpose);
@@ -494,6 +575,7 @@ export function render(g, t, S) {
   if (handOut) drawVoidHand(g, ...VOID_B, vpose, 'L');
   drawHQForeground(g, 'backOfMind', st);
   g.restore();
+  if (t < B.b02 + 0.6 && !cu) rimSwell(g, cam, vpose, 0.85 * S.k(t, [['s13b01+0.3', 0], ['s13b01+2.4', 1, 'sine'], ['s13b01+5.0', 1], ['s13b02+0.5', 0, 'sine']]));
 
   // hood POV: we look out of the darkness of the hood — a soft dark oval closes in from the edges
   if (t >= B.b03 && t < B.b04) {

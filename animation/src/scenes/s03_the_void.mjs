@@ -151,14 +151,18 @@ function ceoPose(S, t) {
   return pose;
 }
 
-// ---------------------------------------------------------------- one dust mote, drifting into the hood
+// ---------------------------------------------------------------- one dust mote, dying out at the hood's rim
+// It drifts down over the hood's crown fabric (up-right of the opening) toward the opening's upper-right rim and
+// fades out BEFORE it reaches the dark: the light dies near the hood. (It used to come to rest at the centre of the
+// opening, where it read as a single glowing pupil just before "its face was pure darkness" — the face has no eyes,
+// and any light inside the hood belongs to s14's reveal.) Opening half-size ≈ 29.6 × 41.4 world px (80 × 112 × 0.37).
 function mote(g, S, t) {
   const a = S.T('s03b01+1.5'), b = S.T('s03b01+3.0');
   if (t < a || t > b) return;
   const k = (t - a) / (b - a);
-  const x = lerp(FACE[0] + 34, FACE[0] + 3, ease.sine(k)) + Math.sin(k * 5) * 1.5;
-  const y = lerp(FACE[1] - 30, FACE[1] + 4, k) + Math.sin(k * 3.7) * 1.2;
-  const alpha = Math.min(1, k * 5) * (1 - sstep(0.6, 1, k));
+  const x = lerp(FACE[0] + 50, FACE[0] + 27, ease.sine(k)) + Math.sin(k * 5) * 1.5;
+  const y = lerp(FACE[1] - 80, FACE[1] - 36, k) + Math.sin(k * 3.7) * 1.2;
+  const alpha = Math.min(1, k * 5) * (1 - sstep(0.5, 0.88, k));
   g.save(); g.globalCompositeOperation = 'lighter';
   const r = 6.5;
   const gr = g.createRadialGradient(x, y, 0, x, y, r);

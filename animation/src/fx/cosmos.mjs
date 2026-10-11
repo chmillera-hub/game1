@@ -19,7 +19,8 @@
 // Works at any size: content density / line widths / mip levels adapt to the effective on-screen
 // size (it reads g.getTransform()), so it looks right both tiny inside a hood (rx≈40-120 px) and
 // as a full-screen close-up (rx≥420). Nebula, galaxy, glyph and star-stamp textures are generated once
-// and cached; background+nebulae are composited into one cached "deep field" per size bucket.
+// and cached; the nebulae are composited into one cached layer per (resolution bucket, aspect) and the
+// background glow is a live gradient, so slow changes of rx/ry/reveal never step.
 // Cost (rasterized): full-screen ~6-9 ms, hood-sized ~1 ms. Deterministic in t (no Math.random).
 // Also exported: hrand(i, seed) 0..1, vnoise(x, seed) / vfbm(x, seed) -1..1 — integer-safe hash noise.
 
@@ -52,10 +53,14 @@ const CC = COSMOS_COLORS;
 const STAR_COLORS = ['#ffffff', '#d6e4ff', '#ffe8c8', '#e1d3ff', '#c6f4ff'];
 const LAYERS = [
   // far, mid, near — density per device px², min/max counts, radius range (device px), alpha, drift (normalized units/s)
-  { dens: 5.2e-4, min: 26, max: 720, r0: 0.42, r1: 0.95, a: 0.7, vx: 0.0011, vy: 0.0004, kmul: 1.0, band: 0.45 },
+  { dens: 4.4e-4, min: 22, max: 620, r0: 0.42, r1: 0.95, a: 0.7, vx: 0.0011, vy: 0.0004, kmul: 1.0, band: 0.45 },
   { dens: 1.7e-4, min: 10, max: 240, r0: 0.7, r1: 1.55, a: 0.9, vx: 0.0024, vy: 0.0008, kmul: 0.85, band: 0.25 },
   { dens: 0.55e-4, min: 4, max: 72, r0: 1.1, r1: 2.6, a: 1.0, vx: 0.0042, vy: 0.0014, kmul: 0.55, band: 0 },
 ];
+// smallest star stamp: a TINY_CORE-px bright core (device px). A star whose true footprint is smaller
+// keeps its faintness through alpha instead: (true side / TINY_CORE)^TINY_GAMMA.
+const TINY_CORE = 2, TINY_GAMMA = 1.2;
+const tinyAlpha = (rd) => Math.pow(Math.min(1, (rd * 1.77) / TINY_CORE), TINY_GAMMA);
 const starCache = new Map();
 function starData(seed) {
   let d = starCache.get(seed);
@@ -162,22 +167,33 @@ function nebulae() {
   return nebCache;
 }
 
-// deep-field cache: background gradient + all nebulae composited once per (size bucket)
+// deep-field cache: all nebulae composited once per (resolution bucket, aspect). The background glow is a
+// live gradient (see drawCosmos), so only the nebulae are baked.
+// The picture is laid out in units of S = min(rx, ry) at the caller's own aspect (quantised to 0.19 %, i.e.
+// sub-pixel even full screen), and only the canvas RESOLUTION is bucketed (q = canvas px per S unit, one
+// 2^(1/4) bucket for both axes, so the canvas always has the exact aspect). A slowly growing or shrinking
+// rx/ry therefore never changes the composition: crossing a bucket only resamples the same image.
+// (The old cache snapped w and h to size buckets independently, so the aspect — and with it every
+// nebula's size and the background glow — jumped in a single frame during slow drifts/zooms.)
+//   onBlack = true : opaque black + nebulae 'screen'-ed in; drawn with 'screen' over the live background this
+//                    gives exactly the old screen-over-gradient look (1-(1-bg)·Π(1-neb)).
+//   onBlack = false: transparent + nebulae 'lighter'-ed in (the bg:false overlay).
 const fieldCache = new Map();
 const qsize = (v) => Math.max(8, Math.round(2 ** (Math.ceil(Math.log2(Math.max(8, v)) * 4) / 4)));
-function fieldCanvas(w, h, withBg) {
-  const key = `${withBg ? 1 : 0}:${w}x${h}`;
+const ASPECT_Q = 360; // aspect quantisation steps per octave
+function fieldCanvas(q, aq, onBlack) {
+  const key = `${onBlack ? 1 : 0}:${q}:${aq}`;
   let c = fieldCache.get(key);
   if (c) { fieldCache.delete(key); fieldCache.set(key, c); return c; }
+  const asp = 2 ** (aq / ASPECT_Q); // ry / rx
+  // local units: S = min(rx, ry) = 1; the canvas maps (0..2rx, 0..2ry) → (0..w, 0..h)
+  const rx = asp >= 1 ? 1 : 1 / asp, ry = asp >= 1 ? asp : 1, S = 1;
+  const w = Math.max(4, Math.round(2 * rx * q)), h = Math.max(4, Math.round(2 * ry * q));
   c = createCanvas(w, h);
   const x = c.getContext('2d');
-  const rx = w / 2, ry = h / 2, S = Math.min(rx, ry);
-  if (withBg) {
-    const gr = x.createRadialGradient(rx * 1.1, ry * 0.95, 0, rx, ry, Math.max(rx, ry) * 1.15);
-    gr.addColorStop(0, CC.core); gr.addColorStop(0.45, CC.mid); gr.addColorStop(1, CC.deep);
-    x.fillStyle = gr; x.fillRect(0, 0, w, h);
-  }
-  x.globalCompositeOperation = withBg ? 'screen' : 'lighter';
+  x.scale(w / (2 * rx), h / (2 * ry));
+  if (onBlack) { x.fillStyle = '#000000'; x.fillRect(0, 0, 2 * rx, 2 * ry); }
+  x.globalCompositeOperation = onBlack ? 'screen' : 'lighter';
   const neb = nebulae();
   NEBULAE.forEach((N, i) => {
     const sz = N.size * S;
@@ -443,15 +459,20 @@ export function drawCosmosGlyph(g, name, x, y, size, color, opts = {}) {
   const k = devScale(g);
   if (opts.vector) { drawGlyphVector(g, name, x, y, size, color, a, rot, clamp(1.0 + size * k / 30, 1.1, 2.6) / k); return; }
   const devSize = size * k;
-  const mips = glyphMips(name, color, devSize < 16);
   const D = (GLY_N / GLY_S) * size; // drawn sprite size (local units)
-  const img = pickMip(mips, D * k);
+  // bold line weight for tiny glyphs, fine for big ones — crossfaded over 13–19 device px so a glyph that
+  // grows or shrinks slowly never switches weight in one frame
+  const wb = clamp((19 - devSize) / 6);
   g.save();
   g.globalCompositeOperation = 'lighter';
-  g.globalAlpha *= clamp(a);
+  const a0 = g.globalAlpha * clamp(a);
   g.translate(x, y);
   if (rot) g.rotate(rot);
-  g.drawImage(img, -D / 2, -D / 2, D, D);
+  for (const [bold, w] of [[true, wb], [false, 1 - wb]]) {
+    if (w <= 0.002) continue;
+    g.globalAlpha = a0 * w;
+    g.drawImage(pickMip(glyphMips(name, color, bold), D * k), -D / 2, -D / 2, D, D);
+  }
   g.restore();
 }
 
@@ -477,8 +498,8 @@ export function drawCosmos(g, cx, cy, rx, ry, t = 0, opts = {}) {
   if (clipMode === 'rect') { g.beginPath(); g.rect(cx - rx, cy - ry, rx * 2, ry * 2); g.clip(); }
   else if (clipMode === 'ellipse') { g.beginPath(); g.ellipse(cx, cy, rx, ry, 0, 0, TAU); g.clip(); }
 
-  // --- background + nebulae: one cached "deep field" canvas (built once per size bucket), faded in by
-  //     reveal and drifted as a whole. Drawing one cached layer keeps full-screen cost low.
+  // --- background (live gradient) + nebulae (one cached layer, built once per resolution bucket + aspect),
+  //     faded in by reveal and drifted as a whole. Drawing one cached layer keeps full-screen cost low.
   const fk = smoothstep(0.2, 0.8, reveal);
   const baseA = g.globalAlpha;
   if (opts.bg !== false && fk < 0.999) {
@@ -486,14 +507,30 @@ export function drawCosmos(g, cx, cy, rx, ry, t = 0, opts = {}) {
     g.fillRect(cx - rx, cy - ry, rx * 2, ry * 2);
   }
   if (fk > 0.003) {
-    const wDev = 2 * rx * k, hDev = 2 * ry * k;
-    const f = Math.max(wDev, hDev) > 420 ? 0.5 : 1;
-    const field = fieldCanvas(qsize(wDev * f), qsize(hDev * f), opts.bg !== false);
     const ov = 1.04 + 0.008 * Math.sin(T * 0.09);
     const dx = fbm(T * 0.011, seed + 3) * 0.015 * rx, dy = fbm(T * 0.01, seed + 4) * 0.015 * ry;
-    g.globalAlpha = baseA * fk;
-    if (opts.bg === false) g.globalCompositeOperation = 'lighter';
-    g.drawImage(field, cx - rx * ov + dx, cy - ry * ov + dy, 2 * rx * ov, 2 * ry * ov);
+    const fx = cx - rx * ov + dx, fy = cy - ry * ov + dy, hw = rx * ov, hh = ry * ov; // field rect
+    const fa = baseA * fk;
+    if (opts.bg !== false) {
+      // the deep-space glow: a LIVE gradient (evaluated per pixel in float, so its fade-in never steps)
+      const gr = g.createRadialGradient(fx + hw * 1.1, fy + hh * 0.95, 0, fx + hw, fy + hh, Math.max(hw, hh) * 1.15);
+      gr.addColorStop(0, CC.core); gr.addColorStop(0.45, CC.mid); gr.addColorStop(1, CC.deep);
+      g.globalAlpha = fa;
+      g.fillStyle = gr;
+      g.fillRect(fx, fy, 2 * hw, 2 * hh);
+    }
+    const f = 2 * Math.max(rx, ry) * k > 420 ? 0.5 : 1;          // big fields: half-res (they are soft)
+    const aq = Math.round(Math.log2(Math.max(1e-6, ry) / Math.max(1e-6, rx)) * ASPECT_Q);
+    const field = fieldCanvas(qsize(R * f), aq, opts.bg !== false);
+    g.globalAlpha = fa;
+    g.globalCompositeOperation = opts.bg === false ? 'lighter' : 'screen';
+    // While the nebulae are translucent (the reveal fade), draw them through Skia's float pipeline ('high' =
+    // bicubic): the default 8-bit pipeline rounds dark translucent pixels coherently, so on some alpha steps
+    // the WHOLE frame dimmed by ~0.7 luma for one frame (measured: 1/255 more alpha → 0.77 darker).
+    const q0 = g.imageSmoothingQuality;
+    if (fa < 0.999) g.imageSmoothingQuality = 'high';
+    g.drawImage(field, fx, fy, 2 * hw, 2 * hh);
+    g.imageSmoothingQuality = q0;
     g.globalAlpha = baseA;
     g.globalCompositeOperation = 'source-over';
   }
@@ -517,8 +554,11 @@ export function drawCosmos(g, cx, cy, rx, ry, t = 0, opts = {}) {
     g.restore();
   });
 
-  // --- stars: three parallax layers. Tiny stars are batched as sub-pixel squares (one path per colour,
-  //     very cheap); bigger / kindling / twinkling stars are stamped from cached soft-dot sprites.
+  // --- stars: three parallax layers. Tiny stars are batched as small squares (one path per colour and
+  //     brightness level, very cheap); bigger / kindling / twinkling / fading stars are stamped one by one.
+  //     Every star has a bright core of at least TINY_CORE device px: a sub-pixel dot flickers as it drifts
+  //     across pixel boundaries and is wiped out by 4:2:0 + quantisation in the compressed film. The tiniest
+  //     stars keep their relative faintness through alpha (∝ their true size), so the sky isn't busier.
   const data = starData(seed);
   const area = 4 * rx * ry * k * k;
   const sizeMul = clamp(Math.pow(R / 420, 0.25), 0.72, 1.3);
@@ -528,36 +568,49 @@ export function drawCosmos(g, cx, cy, rx, ry, t = 0, opts = {}) {
   const ox = cx - rx, oy = cy - ry, W2 = rx * 2, H2 = ry * 2;
   const indiv = [];
   const spr = starSprites();
+  const core = TINY_CORE / k;                                   // local units
   g.globalCompositeOperation = 'lighter';
   LAYERS.forEach((L, li) => {
-    const n = Math.round(clamp(area * L.dens, L.min, L.max));
+    // star count follows the on-screen area; the newest stars FADE in/out over ~3 % of the count, so a
+    // slowly growing field gains stars smoothly instead of popping them in one by one
+    const nf = clamp(area * L.dens, L.min, L.max);
+    const fadeN = Math.max(2, nf * 0.03);
+    const n = Math.min(L.max, Math.ceil(nf));
     const arr = data[li];
     const offU = T * L.vx, offV = T * L.vy;
-    const bins = [[], [], [], [], []];
+    const bins = new Map();
     for (let i = 0; i < n; i++) {
       const st = arr[i];
       if (kindle - st.thr * 0.5 <= 0) continue;              // cheap early-out (radial term ≥ 0)
+      const na = clamp((nf - i) / fadeN);
+      if (na <= 0) continue;
       const u = st.u + offU, v = st.v + offV;
       const fu = u - Math.floor(u), fv = v - Math.floor(v);
       const rr = Math.min(1, Math.hypot(fu - 0.5, fv - 0.5) * 1.5); // 0 centre … 1 edges/corners
-      const ka = clamp((kindle - (st.thr * 0.5 + rr * 0.58)) / 0.07);
+      const ka = clamp((kindle - (st.thr * 0.5 + rr * 0.58)) / 0.07) * na;
       if (ka <= 0) continue;
       const x = ox + fu * W2, y = oy + fv * H2;
       const rd = (L.r0 + (L.r1 - L.r0) * st.sz) * sizeMul; // device px
       const r = rd / k;
-      if (ka < 1 || st.tw || rd >= 1.05 || (li === 2 && st.sz > 0.45)) indiv.push([x, y, r, st, L, li, ka]);
-      else bins[st.c].push(x, y, r * 1.77);
+      if (ka < 1 || st.tw || rd >= 1.05 || (li === 2 && st.sz > 0.45)) indiv.push([x, y, r, st, L, li, ka, rd]);
+      else {
+        // tiny: a TINY_CORE square; alpha ∝ its true size (quantised to 8 levels for batching)
+        const lv = Math.round(clamp((tinyAlpha(rd) - 0.3) / 0.7) * 7);
+        const key = st.c * 8 + lv;
+        let b = bins.get(key);
+        if (!b) bins.set(key, (b = []));
+        b.push(x, y);
+      }
     }
-    for (let c = 0; c < 5; c++) {
-      const bn = bins[c];
-      if (!bn.length) continue;
-      g.fillStyle = rgba(STAR_COLORS[c], L.a);
+    for (const [key, bn] of bins) {
+      const c = Math.floor(key / 8), lv = key % 8;
+      g.fillStyle = rgba(STAR_COLORS[c], L.a * (0.3 + 0.1 * lv));
       g.beginPath();
-      for (let j = 0; j < bn.length; j += 3) g.rect(bn[j] - bn[j + 2] / 2, bn[j + 1] - bn[j + 2] / 2, bn[j + 2], bn[j + 2]);
+      for (let j = 0; j < bn.length; j += 2) g.rect(bn[j] - core / 2, bn[j + 1] - core / 2, core, core);
       g.fill();
     }
   });
-  const spikes = R > 140;
+  const spikeK = clamp((R - 120) / 40), spikes = spikeK > 0.01; // glints fade in with size (no pop)
   // the FIRST star: a single point of light just off-centre that kindles before all others
   const fs = smoothstep(0.015, 0.09, reveal);
   if (fs > 0.003) {
@@ -569,28 +622,40 @@ export function drawCosmos(g, cx, cy, rx, ry, t = 0, opts = {}) {
     g.drawImage(spr.bright[0], x - D / 2, y - D / 2, D, D);
     if (spikes) {
       const sl = r * (4 + 2.5 * tw);
-      g.strokeStyle = rgba('#ffffff', 0.6);
+      g.strokeStyle = rgba('#ffffff', 0.6 * spikeK);
       g.lineWidth = Math.max(0.6 / k, r * 0.3);
       g.beginPath(); g.moveTo(x - sl, y); g.lineTo(x + sl, y); g.moveTo(x, y - sl); g.lineTo(x, y + sl); g.stroke();
     }
   }
-  for (const [x, y, r, st, L, li, ka] of indiv) {
+  for (const [x, y, r, st, L, li, ka, rd] of indiv) {
     const tw = st.tw ? 0.62 + 0.38 * Math.sin(t * st.w + st.ph) : 1;
     const a = L.a * ka * tw;
     g.globalAlpha = baseA * a;
-    if (li === 2 && st.sz > 0.45) {
+    if (rd < 1.05 && !(li === 2 && st.sz > 0.45)) {
+      // tiny (kindling / twinkling / fading): the same TINY_CORE square as the batched ones
+      g.globalAlpha = baseA * a * tinyAlpha(rd);
+      g.fillStyle = STAR_COLORS[st.c];
+      g.fillRect(x - core / 2, y - core / 2, core, core);
+    } else if (li === 2 && st.sz > 0.45) {
       // bright star: core + halo sprite and (in close-ups) a tiny 4-point glint
       const D = r * 11;
       g.drawImage(spr.bright[st.c], x - D / 2, y - D / 2, D, D);
       if (spikes) {
         const sl = r * (3.5 + 2.5 * tw);
-        g.strokeStyle = rgba(STAR_COLORS[st.c], 0.55);
+        g.strokeStyle = rgba(STAR_COLORS[st.c], 0.55 * spikeK);
         g.lineWidth = Math.max(0.6 / k, r * 0.3);
         g.beginPath(); g.moveTo(x - sl, y); g.lineTo(x + sl, y); g.moveTo(x, y - sl); g.lineTo(x, y + sl); g.stroke();
       }
     } else {
       const D = r * 4 * (st.tw ? 0.85 + 0.25 * tw : 1);
       g.drawImage(spr.dot[st.c], x - D / 2, y - D / 2, D, D);
+      // the soft dot's own flat core is 0.88·rd px wide: back it with a TINY_CORE square until it's that big
+      const cf = clamp((TINY_CORE - 0.88 * rd) / (TINY_CORE - 0.88 * 1.05));
+      if (cf > 0.01) {
+        g.globalAlpha = baseA * a * cf * 0.75;
+        g.fillStyle = STAR_COLORS[st.c];
+        g.fillRect(x - core / 2, y - core / 2, core, core);
+      }
     }
   }
   g.globalAlpha = baseA;
@@ -599,12 +664,13 @@ export function drawCosmos(g, cx, cy, rx, ry, t = 0, opts = {}) {
   const gk0 = smoothstep(0.58, 0.98, reveal) * glyphAmt;
   if (gk0 > 0.003) {
     const small = clamp((260 - R) / 200);
-    const nG = Math.round(clamp(4 + R / 38, 5, GLYPHS.length));
+    const nGf = clamp(4 + R / 38, 5, GLYPHS.length);              // glyph count grows with size…
+    const nG = Math.min(GLYPHS.length, Math.ceil(nGf + 0.5));      // …and each new one fades in (no pop)
     const gsz = S * lerp(0.09, 0.115, small); // full screen: ~50-80 px glyphs (legible on a phone)
     g.globalCompositeOperation = 'source-over';
     for (let i = 0; i < nG; i++) {
       const G = GLYPHS[i];
-      const ga = smoothstep(i * 0.04, i * 0.04 + 0.55, gk0);
+      const ga = smoothstep(i * 0.04, i * 0.04 + 0.55, gk0) * clamp(nGf + 0.5 - i);
       if (ga <= 0.003) continue;
       const sd = seed * 13 + i * 17;
       const x = cx + (G.nx + fbm(T * 0.045 + i * 2.3, sd) * 0.07 + Math.sin(T * 0.07 + i) * 0.025) * rx;

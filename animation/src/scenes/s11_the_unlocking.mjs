@@ -24,6 +24,11 @@ const UNLOCK_ANGLE = 2.3;
 const SLEEVE_CLIP_Y = 1100;
 const FS = CAGE_B[2];                       // Fear inside the cage uses the cage scale
 const OCC_SIDE = [363, 1619];               // cagePoint('occupantSide', ...CAGE_B)
+// Fear stands 11 px left of occupantSide in this scene: with its face centred at x ≈ 356 the fixed bar (303) sits on
+// the outer rim of its left eye, the hinge stile (353) between the eyes and the gate's centre stile (430 → 408 as the
+// gate drifts to 0.3) stays right of the right eye, so the moving gate never crosses its face (at 363 + headDX the
+// centre stile swept across the right eye for ~1 s). s12 opens on a wide (Fear ≈ 9 px on screen off: invisible).
+const FEAR_X = 352;
 const OFF = { JOY: 1.3, SADNESS: 2.9, ANGER: 4.1, CALM: 5.7 };
 
 const sleeveFront = (g, pose) => {
@@ -159,10 +164,14 @@ function drawBoM(g, t, S) {
   let cam;
   if (t < tB2) cam = withDrift({ x: 490, y: 1250, zoom: 1.3 }, t);
   else if (t < tB3) cam = withDrift(camLerp({ x: 490, y: 1250, zoom: 1.3 }, { x: 490, y: 1300, zoom: 1.4 }, ease.sine(clamp((t - tB2) / (tB3 - tB2)))), t);
-  else if (t < tB3 + 1.4) cam = withDrift({ x: 400, y: 1420, zoom: 2.2 }, t, 2);
   else {
-    const k = ease.sine(clamp((t - tB3 - 1.4) / (S.end - tB3 - 1.4)));   // sine: gentler peak speed than inOut
-    cam = withDrift(camLerp({ x: 400, y: 1420, zoom: 2.2 }, { x: 560, y: 900, zoom: 0.8 }, k), t, lerp(2, 2.5, k));
+    // the close holds on Fear's face to the end (its frozen stare, the hanging tear that falls): the gate opens beside
+    // it, the eyes climb the withdrawing hand out of the top-right of frame to the hood; a slow push-in keeps the face
+    // at the same place on screen. The low angle (Fear tiny, the hood far above) is s12's opening wide: a cut on the
+    // look. (The old tilt-out to {560,900,0.8} shrank Fear to ~40 px before the tear fell.)
+    const k = ease.sine(clamp((t - tB3 - 0.9) / (S.end + 0.2 - tB3 - 0.9)));
+    const z = Math.exp(lerp(Math.log(2.2), Math.log(2.55), k));
+    cam = withDrift({ x: FEAR_X + 75 / z, y: 1416 - 22 / z, zoom: z }, t, 2);
   }
 
   // ---------------- the Void's hand (staging §1.5 unlock recipe)
@@ -245,8 +254,10 @@ function fearPose(t, S, pull) {
   const release = S.k(t, [['s11b03+1.55', 0], ['s11b03+1.95', 1, 'sine']]);
   // lean back pulling on the bar; straightens as it lets go
   const lean = lerp(-0.07 - 0.04 * pull - 0.012 * hitch, 0, release) * (crying ? 1 : 1);
-  const headDX = lerp(-15, 0, release);
-  const x = OCC_SIDE[0], y = OCC_SIDE[1];
+  // at the creak the head recoils a little away from the gate (left) before it turns to it, so the face settles with
+  // the hinge stile between the eyes and the moving centre stile clear of the right eye
+  const headDX = lerp(S.k(t, [['s11b03+0.12', -15], ['s11b03+0.45', 3, 'out']]), 0, release);
+  const x = FEAR_X, y = OCC_SIDE[1];
 
   const gA = [355, 1497], gB = [356, 1532];   // chest level: the fists stay clear of the mouth
   const tremble = S.k(t, [['s11b03', 0.6], ['s11b03+0.25', 0, 'out']]);

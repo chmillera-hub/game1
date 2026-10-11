@@ -10,7 +10,9 @@
 //                          next button (it glows), Fear's eyes follow, it presses; Fear leans its head on SADNESS
 //                          (CALM's slow blink); a star twinkles in the hood; JOY looks up at us.
 //   Work faces look down at the console with the lids following the gaze, so every look-up reads.
-import { W, H, TAU, clamp, lerp, ease, env, blinkAt, applyCamera, drift, vignette, fbm } from '../engine.mjs';
+//   Beat 23 "pressing the buttons": in A the presses are staged over the rim (pressMove) — Fear (+0.3), JOY (+0.85),
+//   ANGER (+4.0), JOY (+4.38) — each with its station-coloured light (stationPulse) and soft console_beeps.
+import { W, H, TAU, clamp, lerp, ease, env, kf, blinkAt, applyCamera, drift, vignette, fbm } from '../engine.mjs';
 import { EXPR, makeExpr } from '../face.mjs';
 import { drawFear } from '../chars/fear.mjs';
 import { drawEmotion } from '../chars/emotions.mjs';
@@ -33,8 +35,15 @@ const TOFF = { JOY: 1.3, SADNESS: 2.9, ANGER: 4.1, CALM: 5.7 };
 export const sfx = [
   // Fear's concentrated press lights its button (blips start 0.02 into the file)
   { at: 's19b01+0.30', name: 'console_beeps', gain: -21 },
+  // JOY's press, right after Fear's (gold button, blips a little softer and farther)
+  { at: 's19b01+0.83', name: 'console_beeps', gain: -28 },
   // SADNESS settles its head against Fear / JOY leans in (soft fabric)
   { at: 's19b01+1.45', name: 'cloth_rustle', gain: -20 },
+  // back to work: ANGER's firm press, then JOY's
+  { at: 's19b01+3.98', name: 'console_beeps', gain: -26 },
+  { at: 's19b01+4.36', name: 'console_beeps', gain: -30 },
+  // Fear's first press in the POV shot (fearPress bump at s19b02+2.33; same action, same sound as the second)
+  { at: 's19b02+2.31', name: 'console_beeps', gain: -27 },
   // the next button, pointed out by CALM (POV, farther away: quieter)
   { at: 's19b03+1.08', name: 'console_beeps', gain: -25 },
   // a single star twinkles in the hood
@@ -57,6 +66,41 @@ function bumps(t, ats, up = 0.09, down = 0.2) {
 }
 /** smooth window 0→1→0 with eased edges (absolute seconds) */
 const win = (t, a, b, c, d) => (t <= a || t >= d ? 0 : t < b ? ease.sine((t - a) / (b - a)) : t <= c ? 1 : 1 - ease.sine((t - c) / (d - c)));
+
+// ---- presses that READ in the front view (beat 23: "my emotions pressing the buttons on the console"). The buttons sit
+// on the console top behind the rim, so a press is staged as: the hand rises over the rim (fingertip down), dips behind
+// it onto the button at `a` (absolute s), rests a beat and settles back to its working height; the button's light
+// answers in the station colour on the rim and from below on the operator's face (stationPulse).
+function pressMove(t, a, base, peak) {
+  return {
+    y: kf(t, [[a - 0.42, base], [a - 0.14, peak, 'out'], [a, base + 12, 'in'], [a + 0.22, base + 12], [a + 0.62, base, 'sine']]),
+    pulse: env(t, a - 0.03, 0.07, 0.14, 0.8),
+  };
+}
+const STATION_RGB = { JOY: '255,204,80', SADNESS: '110,175,255', ANGER: '255,118,88', CALM: '110,228,165' };
+const rimY = (x) => 1247 + ((x - 450) / 450) ** 2 * 21;
+/** a button lighting up behind the rim at world x: an uplight in the station colour on the operator's chest and face, the
+ *  rim tinted where the light spills over it, and a small hot core on the edge */
+function stationPulse(g, x, rgb, k, reach = 1) {
+  if (k <= 0.01) return;
+  const y = rimY(x), R = 200 * reach;
+  g.save();
+  g.translate(x, y + 4); g.scale(0.72, 1);
+  g.globalCompositeOperation = 'screen';
+  let gr = g.createRadialGradient(0, 0, 0, 0, 0, R);
+  gr.addColorStop(0, `rgba(${rgb},${0.8 * k})`); gr.addColorStop(0.45, `rgba(${rgb},${0.38 * k})`); gr.addColorStop(1, `rgba(${rgb},0)`);
+  g.fillStyle = gr; g.fillRect(-R, -R, 2 * R, R + 6);
+  g.restore();
+  g.save();
+  gr = g.createRadialGradient(x, y, 0, x, y, 78);
+  gr.addColorStop(0, `rgba(${rgb},${0.95 * k})`); gr.addColorStop(0.5, `rgba(${rgb},${0.5 * k})`); gr.addColorStop(1, `rgba(${rgb},0)`);
+  g.fillStyle = gr;
+  g.beginPath(); g.ellipse(x, y + 3, 78, 17, 0, 0, TAU); g.fill();
+  g.globalCompositeOperation = 'lighter';
+  g.fillStyle = `rgba(255,248,225,${0.45 * k})`;
+  g.beginPath(); g.ellipse(x, y + 1, 16, 3, 0, 0, TAU); g.fill();
+  g.restore();
+}
 
 /** where Fear's mouth is in world coords (mirrors fear.mjs: neck → head tilt → face → mouth; lean about the feet) */
 function fearMouth(x, y, s, pose) {
@@ -200,8 +244,9 @@ export function render(g, t, S) {
     fHeadDY = -4 * Math.abs(Math.sin((t - T('s19b01+2.55')) * TAU * 1.9)) * gig;
     fHeadTilt += 0.05 * gig;
     // the pressing hand: hover → tiny lift (anticipation) → press (behind the rim) → rest → covers the mouth
-    const press = S.k(t, [['s19b01+0.05', 0], ['s19b01+0.18', -1], ['s19b01+0.3', 1, 'in'], ['s19b01+0.55', 1], ['s19b01+0.8', 0]]);
-    const rx = 42, ry = -106 + (press > 0 ? press * 16 : press * 6);
+    // (the lift brings the hand up over the rim so the press reads: it dips out of sight onto the button)
+    const press = S.k(t, [['s19b01-0.08', 0], ['s19b01+0.18', -1, 'inOut'], ['s19b01+0.3', 1, 'in'], ['s19b01+0.55', 1], ['s19b01+0.8', 0]]);
+    const rx = 42, ry = -106 + (press > 0 ? press * 16 : press * 26);
     const cover = S.k(t, [['s19b01+2.36', 0], ['s19b01+2.64', 1, 'out'], ['s19b01+3.6', 1], ['s19b01+3.95', 0]]);
     // the palm lands ON the mouth (wrist under the chin, fingers up over the lips); the old target (10,−164) put
     // the hand beside the mouth corner, where it read as a little wave next to the smile
@@ -245,6 +290,9 @@ export function render(g, t, S) {
 
   // ================= EMOTIONS =================
   const em = {};
+  // coloured button-light pulses [station, world x, 0..1] (drawn after the console foreground)
+  const pulses = [];
+  let jPressY = -182;
   // ---- JOY (695): taps → notices Fear's glance → leans in past SADNESS, beaming → back to work;
   //      B: humming smile, star tuft in time; looks up at us (Consciousness) and smiles
   {
@@ -269,9 +317,16 @@ export function render(g, t, S) {
       headTilt += 0.05 * up;
       armDY = 7 * bumps(t, [T('s19b02+0.4'), T('s19b02+1.3'), T('s19b02+2.2'), T('s19b03+0.6'), T('s19b03+1.7'), T('s19b03+3.2')]);
     } else {
-      armDY = 7 * bumps(t, [T('scene.start+0.3'), T('s19b01+0.1'), T('s19b01+0.7'), T('s19b01+4.2'), T('s19b01+4.55')]);
+      armDY = 7 * bumps(t, [T('scene.start+0.3'), T('s19b01+0.1')]);
+      // presses that read (beat 23): the near hand rises over the rim and dips onto the gold button — once right after
+      // Fear's (Fear's proud glance at +1.08 goes to a busy, glowing JOY), once back at work after the lean-in
+      const p1 = pressMove(t, T('s19b01+0.85'), -182, -208), p2 = pressMove(t, T('s19b01+4.38'), -182, -210);
+      jPressY = t < T('s19b01+2.6') ? p1.y : p2.y;
+      pulses.push(['JOY', ROW_S19.JOY - 52, Math.max(p1.pulse, p2.pulse)]);
     }
-    const arm = (side) => ({ preset: 'pressButton', atY: -182, dy: side > 0 ? armDY : armDY * 0.3 });
+    // B (wide): its taps light its gold buttons softly
+    if (shotB) pulses.push(['JOY', ROW_S19.JOY + 30, 0.35 * armDY / 7]);
+    const arm = (side) => ({ preset: 'pressButton', atY: side < 0 ? jPressY : -182, dy: side > 0 ? armDY : armDY * 0.3 });
     em.JOY = { pose: { t: tt, face: f, lean: -0.075 * lean, headDX: -10 * lean, headTilt, headDY, armL: arm(-1), armR: arm(1), shadow: false },
       press: armDY / 7 };
   }
@@ -331,7 +386,13 @@ export function render(g, t, S) {
     }
     // the lever: a slow pull down and back (left hand), the right hand resting
     const lv = 0.5 - 0.5 * Math.cos((t + 0.7) * TAU * 0.32);
-    em.ANGER = { pose: { t: tt, face: f, lean, headTilt, headDY, armL: { preset: 'pressButton', atY: -186, dy: 11 * lv }, armR: { preset: 'pressButton', atY: -180 }, shadow: false },
+    // A: caught smiling, it gets back to work with one firm, businesslike press (the near hand over the rim and down)
+    let aPressY = -180;
+    if (!shotB) {
+      const pm = pressMove(t, T('s19b01+4.0'), -180, -205);
+      aPressY = pm.y; pulses.push(['ANGER', ROW_S19.ANGER + 50, pm.pulse]);
+    }
+    em.ANGER = { pose: { t: tt, face: f, lean, headTilt, headDY, armL: { preset: 'pressButton', atY: -186, dy: 11 * lv }, armR: { preset: 'pressButton', atY: aPressY }, shadow: false },
       press: lv };
   }
   // ---- CALM (205): serene half lids, closed smile, sliding a slider, watching Fear; a small nod when Fear's
@@ -388,6 +449,7 @@ export function render(g, t, S) {
     tongueTip(g, mx, my, SC, mr, tongue);
   }
   drawHQForeground(g, 'front', st);
+  for (const [n, x, k] of pulses) stationPulse(g, x, STATION_RGB[n], clamp(k), shotB ? 0.8 : 1);
   // while CALM points, the next button at Fear's spot glows softly ("this one"), then flares when pressed
   const ready = 0.3 * calmPoint * (0.75 + 0.25 * Math.sin((t - T('s19b03')) * TAU * 2.2));
   pressFlare(g, 480, clamp(Math.max(fearPress, ready)));

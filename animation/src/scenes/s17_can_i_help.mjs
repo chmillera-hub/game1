@@ -12,6 +12,11 @@ import { EXPR, withSpeech } from '../face.mjs';
 
 export const id = 's17';
 
+// b05: the answer to "Can I help?" plays in a held close on Consciousness (E1, 2.55 s); the step-stool business
+// follows in the wide (E). The business was laid out for a cut at b05+1.15: BIZ shifts it with the cut.
+const E1_END = 's17b05+2.55';
+const BIZ = (x) => `s17b05+${(x + 1.45).toFixed(2)}`;
+
 export const sfx = [
   // b01: the trot up the corridor, the pause under the alarm (a breath), on again, lighter
   { at: 'scene.start+0.36', name: 'footsteps', gain: -14, rate: 2.1, until: 's17b01+0.95' },
@@ -19,12 +24,15 @@ export const sfx = [
   { at: 's17b01+2.0', name: 'footsteps', gain: -16, rate: 1.1, until: 's17b02+0.55' },
   // b02: the pen stops; Fear pops up behind the console
   { at: 's17b02+0.75', name: 'cloth_rustle', gain: -20, pan: 0.2 },
-  // b05: Calm lowers the step-stool, the row scoots over, Consciousness steps aside, Fear climbs, first button
-  { at: 's17b05+0.32', name: 'cloth_rustle', gain: -19 },                      // clipboard down behind the rim
-  { at: 's17b05+1.05', name: 'cloth_rustle', gain: -19, pan: -0.45 },         // CALM lowers the stool, the row scoots
-  { at: 's17b05+1.15', name: 'footsteps', gain: -16, pan: 0.3, until: 's17b05+2.45' },
-  { at: 's17b05+1.9', name: 'cloth_rustle', gain: -20, pan: -0.05 },          // Fear climbs onto the stool
-  { at: 's17b05+2.98', name: 'console_beeps', gain: -18 },
+  // b05: Consciousness's eyes well (in-breath), the smile breaks with a laugh-breath out (the exhale, sync 1.45 in
+  // the file, lands at b05+1.1), a nod, the clipboard goes down; then (wide) Calm lowers the step-stool, the row
+  // scoots over, Consciousness steps aside, Fear climbs, first button
+  { at: 's17b05-0.35', name: 'breath_shaky', gain: -22, rate: 1.0, until: 's17b05+2.3', fade: 0.4 },
+  { at: 's17b05+2.0', name: 'cloth_rustle', gain: -19 },                       // clipboard down behind the rim
+  { at: BIZ(1.05), name: 'cloth_rustle', gain: -19, pan: -0.45 },             // CALM lowers the stool, the row scoots
+  { at: BIZ(1.15), name: 'footsteps', gain: -16, pan: 0.3, until: BIZ(2.45) },
+  { at: BIZ(1.9), name: 'cloth_rustle', gain: -20, pan: -0.05 },              // Fear climbs onto the stool
+  { at: BIZ(2.98), name: 'console_beeps', gain: -18 },
 ];
 
 // ---------------------------------------------------------------- staging constants (data/staging.md §1.4)
@@ -83,7 +91,7 @@ function shotOf(t, S) {
   if (t < S.T('s17b03')) return 'B';     // front: CEO at the console, Fear pops up
   if (t < S.T('s17b04')) return 'C';     // close on CEO: "Fear."
   if (t < S.T('s17b05')) return 'D';     // close on Fear: "Can I help?"
-  if (t < S.T('s17b05+1.15')) return 'E1'; // close on the CEO: the answer is on their face
+  if (t < S.T(E1_END)) return 'E1';       // held close on the CEO: the answer is on their face
   return 'E';                             // console: everyone makes room
 }
 
@@ -158,12 +166,16 @@ function renderAlarm(g, t, S) {
 // ================================================================= B–E · the console (front view)
 function frontCam(t, S, shot) {
   if (shot === 'B') return cam(t, { x: 500, y: 1150, zoom: 1.32 + 0.04 * seg(t, S.T('s17b02'), S.T('s17b03')) }, 2);
-  if (shot === 'C') return cam(t, { x: 452, y: 1010, zoom: 2.4 + 0.08 * seg(t, S.T('s17b03'), S.T('s17b04')) }, 1.6);
-  // E1: back on the CEO (the C framing) for the reaction to "Can I help?": eyes well, the smile, the laugh-breath, the nod
-  if (shot === 'E1') return cam(t, { x: 452, y: 1010, zoom: 2.48 + 0.07 * seg(t, S.T('s17b05'), S.T('s17b05+1.15')) }, 1.6);
+  // C / E1: the CEO's face at ≈ 35 % of the height, Fear (on tiptoe, bottom right) with its eyes at ≈ 70 %, out of the
+  // bottom 15 % caption band (the console rim may sit in it)
+  if (shot === 'C') { const z = 2.4 + 0.08 * seg(t, S.T('s17b03'), S.T('s17b04')); return cam(t, { x: 452, y: 1181 - 262 / z, zoom: z }, 1.6); }
+  // E1: back on the CEO (a touch closer) for the answer to "Can I help?", held 2.55 s: eyes well, the smile breaks,
+  // a laugh-breath, one nod; a slow push
+  // (zoom 2.6 → 2.85: the CEO's face ≈ 40 % of the frame width, eyes at ≈ 31 %; Fear's eyes held at ≈ 72 %)
+  if (shot === 'E1') { const k = ease.inOut(seg(t, S.T('s17b05'), S.T(E1_END))), z = lerp(2.6, 2.85, k); return cam(t, { x: lerp(464, 470, k), y: 1181 - 280 / z, zoom: z }, 1.4); }
   if (shot === 'D') return cam(t, { x: 528, y: 1166, zoom: 2.85 + 0.06 * seg(t, S.T('s17b04'), S.T('s17b05')) }, 1.6);
   // wide at the console: all five in frame as they make room; then a slow push toward Fear for its first button
-  const k = ease.inOut(seg(t, S.T('s17b05+2.0'), S.T('scene.end+0.9')));
+  const k = ease.inOut(seg(t, S.T(BIZ(2.0)), S.T('scene.end+0.9')));
   return cam(t, { x: 450, y: lerp(1110, 1150, k), zoom: lerp(1.15, 1.42, k) }, 2.2);
 }
 
@@ -175,8 +187,8 @@ function fearConsole(t, S) {
   let y = lerp(1428, FEAR_TIPTOE_F[1], ease.outBack(pop));
   let s = FEAR_TIPTOE_F[2];
   // b05: down off tiptoe, step across, up onto the stool (consoleFear 450,1328)
-  const across = seg(t, S.T('s17b05+1.25'), S.T('s17b05+2.0'));
-  const climb = seg(t, S.T('s17b05+1.95'), S.T('s17b05+2.6'));
+  const across = seg(t, S.T(BIZ(1.25)), S.T(BIZ(2.0)));
+  const climb = seg(t, S.T(BIZ(1.95)), S.T(BIZ(2.6)));
   if (across > 0) {
     x = lerp(FEAR_TIPTOE_F[0], FA.consoleFear[0], ease.inOut(across));
     y = FEAR_TIPTOE_F[1] + 24 * Math.sin(Math.PI * across) * 0.6 + 14 * ease.inOut(across);
@@ -230,20 +242,24 @@ function fearPoseFront(t, S, shot, F) {
     pose.breathe = lerp(1, 0.15, hold);
   }
   if (shot === 'E1') {
-    // at the bottom of the CEO's close: still holding its breath, then it lets it out as the smile breaks above it
-    const relief = S.k(t, [['s17b05+0.35', 0], ['s17b05+0.65', 1]]);
-    const sm = S.k(t, [['s17b05+0.45', 0], ['s17b05+1.05', 1]]);
-    face = { lookX: -0.48, lookY: -0.8, browIn: lerp(0.65, 0.3, sm), browUp: lerp(0.45, 0.3, sm), lidU: -0.12, lidL: 0.22 * sm,
-      smile: lerp(0.03, 0.45, sm), pressed: 0.55 * (1 - relief), blush: 0.32 + 0.15 * sm, sparkle: 0.5, pupil: 1.2 };
+    // at the bottom of the CEO's close: still holding its breath, then it lets it out as the smile breaks above it;
+    // at the CEO's nod its eyes light up and it bobs on its toes
+    const relief = S.k(t, [['s17b05+0.55', 0], ['s17b05+0.9', 1]]);
+    const sm = S.k(t, [['s17b05+0.7', 0], ['s17b05+1.4', 1, 'sine']]);
+    const lit = S.k(t, [['s17b05+1.75', 0], ['s17b05+2.1', 1, 'outCubic']]);
+    const bob = Math.sin(Math.PI * seg(t, S.T('s17b05+1.95'), S.T('s17b05+2.3')));
+    face = { lookX: -0.48, lookY: -0.8, browIn: lerp(0.65, 0.3, sm) - 0.15 * lit, browUp: lerp(0.45, 0.3, sm) + 0.25 * lit, lidU: -0.12 - 0.1 * lit,
+      lidL: 0.22 * sm, smile: lerp(0.03, 0.5, sm) + 0.15 * lit, open: 0.1 * lit, pressed: 0.55 * (1 - relief), blush: 0.32 + 0.15 * sm,
+      sparkle: 0.5 + 0.3 * lit, pupil: 1.2 + 0.1 * lit };
     pose.headTilt = -0.12; pose.breathe = lerp(0.15, 1.3, relief);
-    pose.headDY = 6 * relief * (1 - relief);
+    pose.headDY = 6 * relief * (1 - relief) - 6 * bob;
   }
   if (shot === 'E') {
-    const shyL = S.k(t, [['s17b05+2.55', 0], ['s17b05+2.65', 1], ['s17b05+2.75', 1], ['s17b05+2.85', 0]]);   // glance at ANGER
-    const shyR = S.k(t, [['s17b05+2.7', 0], ['s17b05+2.8', 1], ['s17b05+2.88', 1], ['s17b05+2.96', 0]]);    // and at SADNESS
-    const reachB = S.k(t, [['s17b05+2.7', 0], ['s17b05+2.9', 1, 'outCubic']]);                 // hand to the button
-    const press = S.k(t, [['s17b05+2.92', 0], ['s17b05+3.0', 1], ['s17b05+3.3', 1], ['s17b05+3.5', 0.35]]);
-    const lit = S.k(t, [['s17b05+3.0', 0], ['s17b05+3.25', 1, 'outCubic']]);
+    const shyL = S.k(t, [[BIZ(2.55), 0], [BIZ(2.65), 1], [BIZ(2.75), 1], [BIZ(2.85), 0]]);   // glance at ANGER
+    const shyR = S.k(t, [[BIZ(2.7), 0], [BIZ(2.8), 1], [BIZ(2.88), 1], [BIZ(2.96), 0]]);    // and at SADNESS
+    const reachB = S.k(t, [[BIZ(2.7), 0], [BIZ(2.9), 1, 'outCubic']]);                 // hand to the button
+    const press = S.k(t, [[BIZ(2.92), 0], [BIZ(3.0), 1], [BIZ(3.3), 1], [BIZ(3.5), 0.35]]);
+    const lit = S.k(t, [[BIZ(3.0), 0], [BIZ(3.25), 1, 'outCubic']]);
     const climbing = F.across > 0 && F.climb < 1;
     face = {
       lookX: climbing ? -0.25 : -0.45 * shyL + 0.55 * shyR, lookY: climbing ? 0.45 : lerp(0.1, 0.6, Math.max(reachB * (1 - lit), press * 0.6)) - 0.1 * lit,
@@ -269,7 +285,7 @@ function fearPoseFront(t, S, shot, F) {
 
 // --- the CEO at consoleMid: writing → senses → sees Fear → "Fear." → the glance back → welling → steps aside
 function ceoState(t, S, shot) {
-  const step = seg(t, S.T('s17b05+1.2'), S.T('s17b05+2.25'));
+  const step = seg(t, S.T(BIZ(1.2)), S.T(BIZ(2.25)));
   const ks = ease.inOut(step);
   const x = lerp(450, CEO_ASIDE_F[0], ks), y = lerp(ROW_Y, CEO_ASIDE_F[1], ks);
   const s = hqScaleAt('front', y);
@@ -283,39 +299,44 @@ function ceoPose(t, S, shot, C) {
   const glance = S.k(t, [['s17b03+0.85', 0], ['s17b03+0.98', 1], ['s17b03+1.32', 1], ['s17b03+1.48', 0]]);
   const glanceHead = S.k(t, [['s17b03+0.9', 0], ['s17b03+1.05', 1], ['s17b03+1.32', 1], ['s17b03+1.55', 0]]);
   const soften = S.k(t, [['s17b03+1.45', 0], ['s17b03+1.9', 1]]);
-  // b05 opens on the CEO (E1, until +1.15): eyes well, the smile breaks slowly, a laugh-breath through the nose,
-  // a nod (no words), the clipboard goes down behind the rim; then (wide) they step aside
-  const well = S.k(t, [['s17b04+0.6', 0], ['s17b05+0.5', 1]]);
-  const smile = S.k(t, [['s17b05+0.08', 0], ['s17b05+0.85', 1, 'sine']]);
-  const laugh = S.k(t, [['s17b05+0.52', 0], ['s17b05+0.62', 1], ['s17b05+0.9', 0]]);
-  const nod = S.k(t, [['s17b05+0.78', 0], ['s17b05+0.93', 1], ['s17b05+1.12', 0]]);
-  const putDown = S.k(t, [['s17b05+0.3', 0], ['s17b05+0.85', 1]]);
+  // b05 opens on the CEO (E1, held until +2.55): the eyes well up on the lower lids, the smile breaks across the
+  // whole face (open, teeth, cheeks up), a laugh-breath out (two little pulses), one nod (no words), the clipboard
+  // goes down behind the rim; then (wide) they step aside
+  const well = S.k(t, [['s17b04+0.6', 0], ['s17b05+0.3', 0.4], ['s17b05+1.2', 1, 'sine']]);
+  const smile = S.k(t, [['s17b05+0.25', 0], ['s17b05+1.15', 1, 'sine']]);
+  const laugh = S.k(t, [['s17b05+1.02', 0], ['s17b05+1.12', 1], ['s17b05+1.3', 0.35], ['s17b05+1.4', 0.8], ['s17b05+1.75', 0]]);
+  const nod = S.k(t, [['s17b05+1.75', 0], ['s17b05+1.97', 1, 'inOut'], ['s17b05+2.25', 0, 'inOut']]);
+  const putDown = S.k(t, [['s17b05+1.95', 0], ['s17b05+2.5', 1]]);
 
   // gaze: clipboard (down-left) → Fear (down-right) → over the shoulder (back of the mind) → Fear
   let lookX = lerp(-0.1, 0.5, senses), lookY = lerp(0.5, 0.62, senses);
   lookX = lerp(lookX, -0.8, glance); lookY = lerp(lookY, -0.2, glance);
-  if (shot === 'E' || shot === 'E1') { lookX = lerp(0.5, -0.45, ease.inOut(seg(t, S.T('s17b05+1.7'), S.T('s17b05+2.5')))); lookY = lerp(0.62, 0.68, C.step); }
+  if (shot === 'E' || shot === 'E1') { lookX = lerp(0.5, -0.45, ease.inOut(seg(t, S.T(BIZ(1.7)), S.T(BIZ(2.5))))); lookY = lerp(0.62, 0.68, C.step); }
   let face = { ...SELF_EXPR.focused, lookX: lookX + gx, lookY: lookY + gy };
   face = { ...face, lidU: lerp(0.3, 0.05, senses) - 0.25 * sees, browIn: lerp(-0.15, 0.25, senses) + 0.15 * soften, browUp: 0.55 * sees * (1 - 0.4 * soften) + 0.15 * soften,
     browSquish: 0.35 * (1 - senses), open: 0.16 * sees * (1 - soften), pupil: 1 + 0.15 * sees, smile: -0.05 + 0.2 * soften, lidL: 0.15 * soften };
   face.browIn += 0.12 * soften;                                                  // the soft, tender inner lift
   // stunned: no blink from the moment it sees Fear until the glance back (which carries the blink)
   face.noAutoBlink = t > S.T('s17b02+0.95') && t < S.T('s17b03+1.3');
-  face.blink = blinkAt(t, S.T('s17b03+0.9'), 0.2) + blinkAt(t, S.T('s17b05+0.45'), 0.36);
+  // (no slow blink as the answer lands — the eyes stay open on Fear while they fill; one quick blink after the nod)
+  face.blink = blinkAt(t, S.T('s17b03+0.9'), 0.2) + blinkAt(t, S.T('s17b05+2.32'), 0.24);
   face = withSpeech(face, S.lip('CONSCIOUSNESS', t));
   if (shot === 'D') { // soft at the frame edge: lips parted, eyes glistening, breath held
     face = { ...face, open: 0.12, tears: 0.45 + 0.2 * well, browIn: 0.45, browUp: 0.3, lookX: 0.45, lookY: 0.7, lidU: 0.05 };
   }
   if (shot === 'E' || shot === 'E1') {
-    face = { ...face, tears: 0.85 * well + 0.1, sparkle: 0.35 * well, browIn: 0.5 * (1 - smile * 0.4), browUp: 0.25,
-      smile: 0.75 * smile, lidL: 0.45 * smile + 0.25 * laugh, lidU: 0.1 + 0.15 * laugh, open: 0.1 * laugh, teeth: 0.4 * smile, blush: 0.25 * smile };
+    // tears 0.6 welling on the lower lids; the broad open smile (0.9, lidL 0.4); tender inner brows that stay up
+    face = { ...face, tears: 0.6 * well, sparkle: 0.2 + 0.35 * well, browIn: 0.55 - 0.2 * smile, browUp: 0.22 + 0.15 * laugh,
+      smile: 0.95 * smile, wide: 0.35 * smile, lidL: 0.4 * smile + 0.15 * laugh, lidU: 0.04 + 0.12 * laugh,
+      open: 0.2 * smile + 0.14 * laugh, teeth: 0.75 * smile, blush: 0.35 * smile, pressed: 0, noAutoBlink: shot === 'E1',
+      lookY: face.lookY - 0.08 * smile };
   }
   const writeWob = [Math.sin(t * 9) * 2.5 * write, Math.sin(t * 13.7) * 1.5 * write];
   const pose = {
     t, outfit: 'ceo', facing: 1,
-    headTurn: lerp(-0.05, 0.22, senses) * (1 - glanceHead) - 0.35 * glanceHead + (shot === 'E' ? -0.32 * ease.inOut(seg(t, S.T('s17b05+1.75'), S.T('s17b05+2.6'))) : 0),
-    headTilt: 0.06 * senses + 0.05 * soften, headDY: 4 * senses + 4 * nod,
-    face, shrug: 0.25 * sees * (1 - soften),
+    headTurn: lerp(-0.05, 0.22, senses) * (1 - glanceHead) - 0.35 * glanceHead + (shot === 'E' ? -0.32 * ease.inOut(seg(t, S.T(BIZ(1.75)), S.T(BIZ(2.6)))) : 0),
+    headTilt: 0.06 * senses + 0.05 * soften + 0.04 * smile, headDY: 4 * senses + 9 * nod - 3 * laugh,
+    face, shrug: 0.25 * sees * (1 - soften) + 0.3 * laugh,
   };
   // clipboard in the left hand, pen in the right (both lowered behind the console rim in b05, then put down)
   if (putDown < 1) {
@@ -337,11 +358,11 @@ function emotionPose(name, t, S, shot) {
   const gx = fbm(te * 0.4, 21) * 0.06, gy = fbm(te * 0.37, 23) * 0.05;
   const notice = S.k(t, [['s17b02+0.85', 0], ['s17b02+1.2', 1]]);
   const welcome = S.k(t, [['s17b05+0.1', 0], ['s17b05+0.6', 1]]);
-  const scoot = ease.inOut(seg(t, S.T('s17b05+1.15'), S.T('s17b05+2.0')));
+  const scoot = ease.inOut(seg(t, S.T(BIZ(1.15)), S.T(BIZ(2.0))));
   const x = lerp(ROW_START[name], ROW_S19[name], scoot);
   const pose = { t: te, armL: 'pressButton', armR: 'pressButton' };
   let face;
-  const fearX = shot === 'E' ? lerp(532, 450, seg(t, S.T('s17b05+1.25'), S.T('s17b05+2.0'))) : 532;
+  const fearX = shot === 'E' ? lerp(532, 450, seg(t, S.T(BIZ(1.25)), S.T(BIZ(2.0)))) : 532;
   const dir = Math.sign(fearX - x);                                  // which way Fear is
   if (name === 'JOY') {
     // pauses mid-button, glances over: brows up, a hopeful "oh" · b05 scoots, pats the space beside her
@@ -350,32 +371,32 @@ function emotionPose(name, t, S, shot) {
       smile: 0.25 * notice + 0.5 * welcome, lidL: 0.3 * welcome, blush: 0.25 * welcome };
     pose.headTurn = -0.3 * notice;
     pose.armR = { preset: 'pressButton', dy: tap };
-    const pat = S.k(t, [['s17b05+1.4', 0], ['s17b05+1.6', 1], ['s17b05+2.5', 1], ['s17b05+2.7', 0]]);
-    if (pat > 0.01) pose.armL = { preset: 'pressButton', atY: -266, dx: 10, dy: 7 * Math.max(0, Math.sin((t - S.T('s17b05+1.6')) * 11)) * pat };
+    const pat = S.k(t, [[BIZ(1.4), 0], [BIZ(1.6), 1], [BIZ(2.5), 1], [BIZ(2.7), 0]]);
+    if (pat > 0.01) pose.armL = { preset: 'pressButton', atY: -266, dx: 10, dy: 7 * Math.max(0, Math.sin((t - S.T(BIZ(1.6))) * 11)) * pat };
   } else if (name === 'SADNESS') {
     // stops turning its dial; inner brows lift; the eyes go wet · b05 leans its shoulder against Fear's
     face = { lookX: lerp(0, -0.65, notice), lookY: lerp(0.5, 0.35, notice), browIn: 0.65 * notice, browUp: 0.15 * notice, tears: 0.6 * notice,
       smile: 0.35 * welcome, lidL: 0.2 * welcome, blush: 0.2 * welcome };
     pose.headTurn = -0.25 * notice;
-    const lean = S.k(t, [['s17b05+1.95', 0], ['s17b05+2.55', 1], ['scene.end', 1]]);
+    const lean = S.k(t, [[BIZ(1.95), 0], [BIZ(2.55), 1], ['scene.end', 1]]);
     pose.lean = -0.07 * lean;
     pose.headTilt = -0.08 * lean;
     if (shot === 'E') { face.lookX = -0.6; face.lookY = 0.45; }
   } else if (name === 'ANGER') {
     // freezes with a hand on a lever, eyes sliding sideways; the brows ease a hair · b05 slides a lever over
     const slide = S.k(t, [['s17b02+0.65', 0], ['s17b02+0.9', 1]]);
-    face = { lookX: lerp(0, 0.75, slide), lookY: 0.35, browIn: -0.3 + 0.18 * notice, pressed: 0.3 * (1 - welcome), smile: 0.3 * S.k(t, [['s17b05+1.9', 0], ['s17b05+2.3', 1]]) };
+    face = { lookX: lerp(0, 0.75, slide), lookY: 0.35, browIn: -0.3 + 0.18 * notice, pressed: 0.3 * (1 - welcome), smile: 0.3 * S.k(t, [[BIZ(1.9), 0], [BIZ(2.3), 1]]) };
     if (shot === 'E') { face.lookX = 0.05; face.lookY = 0.5; }          // "without looking"
     pose.noBase = true; face.browIn -= 0.3;
-    const lever = S.k(t, [['s17b05+1.35', 0], ['s17b05+1.95', 1]]);
+    const lever = S.k(t, [[BIZ(1.35), 0], [BIZ(1.95), 1]]);
     pose.armR = { preset: 'pressButton', dx: 22 * lever, dy: 3 };
   } else {
     // CALM: already smiling, eyelids at half; the long arm drifts toward a step-stool under the console
     face = { lidU: 0.15, smile: 0.35 + 0.1 * welcome, lookX: lerp(0.3, 0.7, notice), lookY: 0.45, lidL: 0.15 };
-    const reach = S.k(t, [['s17b02+1.0', 0], ['s17b02+1.6', 0.35], ['s17b05+0.6', 0.4], ['s17b05+1.05', 1], ['s17b05+1.6', 1], ['s17b05+1.95', 0]]);
+    const reach = S.k(t, [['s17b02+1.0', 0], ['s17b02+1.6', 0.35], [BIZ(0.6), 0.4], [BIZ(1.05), 1], [BIZ(1.6), 1], [BIZ(1.95), 0]]);
     pose.armR = { preset: 'pressButton', dx: 10 + 30 * reach, dy: 40 * reach };
     pose.lean = 0.05 * reach;
-    face.blink = blinkAt(t, S.T('s17b05+2.3'), 0.45);
+    face.blink = blinkAt(t, S.T(BIZ(2.3)), 0.45);
   }
   pose.face = { ...face, lookX: face.lookX + gx, lookY: face.lookY + gy };
   return { x, pose };
@@ -396,7 +417,7 @@ function softLayer(g, camera, draw) {
 }
 
 function renderFront(g, t, S, shot) {
-  const pressGlow = S.k(t, [['s17b05+3.0', 0], ['s17b05+3.2', 1, 'outCubic']]);
+  const pressGlow = S.k(t, [[BIZ(3.0), 0], [BIZ(3.2), 1, 'outCubic']]);
   const st = { t, lightsDim: 0.1, consoleGlow: 1.1 + 0.1 * pressGlow, mist: 0.3, voidShadow: 0.1, screenMode: 'room' };
   const camera = frontCam(t, S, shot);
   const F = fearConsole(t, S);
@@ -408,13 +429,15 @@ function renderFront(g, t, S, shot) {
   g.save();
   applyCamera(g, camera);
   drawHQ(g, 'front', st);
-  if (shot !== 'D') {   // the back of the mind peeks in at the top (under the TOP SHADE)
+  // the back of the mind peeks in at the top (under the TOP SHADE) — skipped when the robe hem / cage feet (y ≤ 846)
+  // are above the frame (E1's tighter close): saves ≈ 2.5 ms
+  if (shot !== 'D' && camera.y - 640 / camera.zoom < 850) {
     // only the lower robe shows (the hood, y≈272, is above every framing here), so its cosmos is not drawn
     drawVoid(g, ...VOID_F, { t, ...STARE_F, idle: 0.5, cosmos: 0, shadow: false });
     drawCage(g, ...CAGE_F, { t, door: 0.9, locked: 0 });
   }
   // cull characters outside the frame; clip everything that stands behind the console to above its hull
-  const vw = 360 / camera.zoom + 40, vh = 640 / camera.zoom + 40;
+  const vw = 360 / camera.zoom + 12, vh = 640 / camera.zoom + 40;
   const inView = (x, top, bottom, hw) => x + hw > camera.x - vw && x - hw < camera.x + vw && bottom > camera.y - vh && top < camera.y + vh;
   const behindConsole = (c, fn) => { c.save(); c.beginPath(); c.rect(-1e4, -1e4, 2e4, 1e4 + 1290); c.clip(); fn(); c.restore(); };
   const drawCEO = (c) => {
@@ -422,7 +445,7 @@ function renderFront(g, t, S, shot) {
     behindConsole(c, () => { drawSelf(c, C.x, C.y, C.s, cp); if (pen) drawPen(c, C.x, C.y, C.s, 1, pen.wrist, pen.wob); });
   };
   const drawEm = (c, n) => {
-    if (!inView(ems[n].x, ROW_Y - 540 * ROW_S, ROW_Y, 130 * ROW_S)) return;
+    if (!inView(ems[n].x, ROW_Y - 540 * ROW_S, ROW_Y, 100 * ROW_S)) return;   // half-width ≤ 94 local (+ arms in)
     behindConsole(c, () => drawEmotion(c, n, ems[n].x, ROW_Y, ROW_S, ems[n].pose));
   };
   if (shot === 'D') {

@@ -1,12 +1,13 @@
 // s12 · why_are_you_doing_this — Fear's accusations meet absolute silence and collapse into pleas.
 // backOfMind throughout. The Void never moves (STARE_B, idle 0, hand hidden with bend 1). The camera keeps
 // changing sizes around a stillness that gives nothing back; Fear does all the moving.
-import { W, H, clamp, lerp, ease, blinkAt, applyCamera, drift, vignette } from '../engine.mjs';
+import { W, H, TAU, clamp, lerp, ease, noise1, blinkAt, applyCamera, drift, vignette } from '../engine.mjs';
 import { makeExpr, withSpeech } from '../face.mjs';
 import { drawFear } from '../chars/fear.mjs';
 import { drawVoid } from '../chars/void.mjs';
 import { drawHQ, drawHQForeground } from '../sets/hq.mjs';
 import { drawCage, cagePoint } from '../sets/props.mjs';
+import { createCanvas } from '@napi-rs/canvas';
 
 export const id = 's12';
 
@@ -22,6 +23,12 @@ const FS = CAGE_B[2];
 // crosses an iris in the full-cage shots (b03, b06). Centred at 430 a stile ran through each eye.
 const OCC_SIDE = [363, 1619], OCC_BACK = [452, 1598], OCC_FRONT = [452, 1630];
 const DOORWAY_Y = 1642;
+// Fear's rig (src/chars/fear.mjs): neck pivot and head centre (local), face origin = head centre + 8
+const NECK_Y = -148, HEAD_CY = -66, HEAD_RX = 74, HEAD_RY = 68;
+// the inside-cage closes keep ONE piece of the front layer: the right (lock) jamb with the popped padlock, so the
+// glances at "the open gate" have something to land on. Bars left of this x (the ajar door's stiles at 353/395/464)
+// would cross the face; the jamb bar (x≈505) runs just right of the far eye and is masked out behind the head.
+const LOCK_STRIP_X = 497;
 
 export const sfx = [
   { at: 'scene.start+0.564', name: 'footsteps', gain: -19, rate: 1.31, until: 'scene.start+1.25', fade: 0.12 }, // two tiny shuffles back: steps land on the contacts (+0.63, +1.05)
@@ -54,49 +61,153 @@ const lerp2 = (a, b, k) => [lerp(a[0], b[0], k), lerp(a[1], b[1], k)];
 const sobHitch = (t, at, catches = 1) => bump(t, at + 0.07, 0.07) + bump(t, at + 0.23, 0.07) + bump(t, at + 0.37, 0.07)
   + catches * (0.6 * bump(t, at + 0.58, 0.09) + 0.5 * bump(t, at + 0.85, 0.09));
 
+// Fear's face transform: replicates drawFear → drawFearHead up to drawFace's origin (facing 1), so overlays
+// (the chin crumple, the head mask of the lock strip) sit exactly on the drawn face, tremble included.
+function faceXform(g, F, t) {
+  const trem = clamp(F.tremble || 0), crouch = clamp(F.crouch || 0);
+  const br = Math.sin(t * TAU * (F.breathRate || (0.28 + trem * 0.5))) * (F.breathe ?? 1);
+  g.translate(F.pos[0], F.pos[1]); g.scale(F.scale, F.scale);
+  g.translate(trem * noise1(t * 38, 1) * 2.2, trem * noise1(t * 41, 2) * 1.4);
+  g.rotate((F.lean || 0) + trem * noise1(t * 30, 3) * 0.015);
+  g.translate(F.headDX || 0, NECK_Y + crouch * 20 + br * 1.2 + (F.headDY || 0));
+  g.rotate((F.headTilt || 0) + trem * noise1(t * 26, 6) * 0.02);
+  g.translate(0, HEAD_CY + 8);
+}
+// world point of the face origin, smooth (no breath / shiver): used to frame the closes
+function faceAt(F) {
+  return [F.pos[0] + ((F.headDX || 0) + clamp(F.headTurn, -1, 1) * 32 * 0.5) * F.scale,
+    F.pos[1] + (NECK_Y + 20 * clamp(F.crouch || 0) + (F.headDY || 0) + HEAD_CY + 8) * F.scale];
+}
+
+// the chin crumples (mentalis): the lower lip pushes up into a dimpled little ball under a frowning mouth.
+// face.mjs has no chin parameter, so it is drawn here, in face coordinates, just above the scarf (y < 57).
+function chinCrumple(g, F, k, t) {
+  if (k <= 0.01) return;
+  const e = F.face, W0 = 19;
+  const mx = clamp(F.headTurn, -1, 1) * 32 * 0.45, my = 38;
+  const pressed = clamp(e.pressed || 0), open = clamp(e.open || 0) * (1 - pressed * 0.9), round = clamp(e.round || 0);
+  const h = W0 * 1.3 * open * (1 + 0.35 * round);
+  const smile = clamp(e.smile || 0, -1, 1);
+  const under = h < 1.6 ? Math.max(1.5, -smile * W0 * 0.12) : h * 0.72 + smile * W0 * 0.1;
+  const q = 0.8 * Math.sin(t * TAU * 4.3) + 0.5 * Math.sin(t * TAU * 6.1 + 1.7);       // the chin quivers
+  const y0 = Math.min(my + under + 4.5 + q * 0.5 * k, 52);
+  const hw = 9 + 2 * k;
+  g.save();
+  faceXform(g, F, t);
+  g.lineCap = 'round';
+  // the ball of the chin: a soft shaded cup under the lip
+  const gr = g.createRadialGradient(mx, y0 + 1, 0, mx, y0 + 1, hw);
+  gr.addColorStop(0, `rgba(61,44,102,${0.16 * k})`); gr.addColorStop(1, 'rgba(61,44,102,0)');
+  g.fillStyle = gr; g.beginPath(); g.ellipse(mx, y0 + 1, hw, hw * 0.55, 0, 0, TAU); g.fill();
+  // its lower contour, bumpy: the dimpled "pebbled" skin
+  g.strokeStyle = `rgba(61,44,102,${0.62 * k})`; g.lineWidth = 1.7;
+  g.beginPath();
+  for (let i = 0; i <= 12; i++) {
+    const u = i / 12, x = mx + (u * 2 - 1) * hw;
+    const y = y0 + 4.2 * Math.sin(u * Math.PI) + 0.9 * k * Math.sin(u * Math.PI * 4 + t * 9) * Math.sin(u * Math.PI);
+    if (i === 0) g.moveTo(x, y); else g.lineTo(x, y);
+  }
+  g.stroke();
+  // three tiny dimples
+  g.fillStyle = `rgba(61,44,102,${0.4 * k})`;
+  for (const [dx, dy] of [[-4.2, 1.6], [0.6, 2.6], [4.8, 1.4]]) { g.beginPath(); g.arc(mx + dx, y0 + dy + 0.3 * q, 0.95, 0, TAU); g.fill(); }
+  g.restore();
+}
+
+// the inside-cage closes: only the right (lock) jamb and the popped padlock of the front layer, masked out
+// behind Fear's head (so the jamb never crosses the face; it reads as passing behind the head)
+function lockStrip(g, cst, F, t) {
+  g.save();
+  // from the eye line down: above it the strip would catch the end of the TIME-OUT sign and the jamb's top
+  const yTop = faceAt(F)[1] - 14 * F.scale;
+  g.beginPath(); g.rect(LOCK_STRIP_X, yTop, 2e4, 2e4); g.clip();
+  g.beginPath(); g.rect(-1e4, -1e4, 2e4, 2e4);
+  g.save(); faceXform(g, F, t);
+  g.ellipse(clamp(F.headTurn, -1, 1) * 3, -8, HEAD_RX + 2.5, HEAD_RY + 2.5, 0, 0, TAU);
+  g.restore();
+  g.clip('evenodd');
+  drawCage(g, ...CAGE_B, { ...cst, layer: 'front' });
+  g.restore();
+}
+
 // ---------------------------------------------------------------- shots
-// [start anchor, camera fn, cage mode]   cage: 'full' | 'cheat' (inside-cage close: back layer only, §1.7-10)
-function shot(t, S) {
+// cage: 'full' | 'cheat' (inside-cage close: back layer only, §1.7-10) | 'cheatLock' (cheat + the lock jamb)
+// The closes frame Fear's FACE (QA: the old 2.0–2.2 "closes" were full-length figures): b01 a big close-up with the
+// darkness above it, b02/b04 true face close-ups inside the cage, b03 a medium-close through the ajar gate with the
+// fold of the sleeve above, b08/b09 a face close-up on the threshold. The wides (b05, b10) are unchanged.
+function shot(t, S, F) {
   const T = (a) => S.T(a);
-  if (t < T('s12b02-0.3')) {
+  // frame the face at screen (sx, sy) for zoom z, using the face position at a reference time (no head tracking)
+  const frame = (ref, z, sx, sy) => { const f = faceAt(fearState(T(ref), S)); return { x: f[0] + (W / 2 - sx) / z, y: f[1] + (H / 2 - sy) / z, zoom: z }; };
+  const push = (a, b, z0, z1) => Math.exp(lerp(Math.log(z0), Math.log(z1), ease.sine(clamp((t - T(a)) / (T(b) - T(a))))));
+  if (t < T('s12b01+0.55')) {
     const k = ease.sine(clamp((t - S.start) / (T('s12b02') - S.start)));
     return { cam: withDrift(camLerp({ x: 560, y: 900, zoom: 0.8 }, { x: 560, y: 940, zoom: 0.8 }, k), t), cage: 'full' };
   }
-  if (t < T('s12b03-0.25')) return { cam: withDrift({ x: 440, y: 1400, zoom: 2.2 }, t, 2), cage: 'cheat' };
-  if (t < T('s12b04-0.2')) {
-    const k = ease.sine(clamp((t - T('s12b03-0.25')) / 1.6));
-    return { cam: withDrift(camLerp({ x: 470, y: 1300, zoom: 1.3 }, { x: 468, y: 1296, zoom: 1.34 }, k), t), cage: 'full' };
+  if (t < T('s12b02-0.3')) {
+    // b01 close-up, cut on the last shuffle step: the face low-left, looking up and back into the dark of the robe
+    const z = push('s12b01+0.55', 's12b02-0.3', 2.95, 3.05);
+    const c = frame('s12b01+1.0', 2.95, 318, 770);
+    return { cam: withDrift(frame('s12b01+1.0', z, 318, 770), t, 2), cage: 'cheat', bake: { key: 'b01', x: c.x, y: c.y, zMin: 2.95, zMax: 3.05, m: 1.12, at: 's12b01+1.0' } };
   }
-  if (t < T('s12b05')) return { cam: withDrift({ x: 440, y: 1400, zoom: 2.2 }, t, 2), cage: 'cheat' };
+  if (t < T('s12b03-0.25')) {
+    const z = push('s12b02-0.3', 's12b03-0.25', 3.95, 4.1);
+    const c = frame('s12b02+0.5', 3.95, 352, 610);
+    return { cam: withDrift(frame('s12b02+0.5', z, 352, 610), t, 1.5), cage: 'cheatLock', bake: { key: 'b02', x: c.x, y: c.y, zMin: 3.95, zMax: 4.1, m: 1.12, at: 's12b02+0.5' } };
+  }
+  if (t < T('s12b04-0.2')) {
+    // b03 medium-close, inside the cage: the face low in the frame, the dark fold of the sleeve where the hand
+    // went (cuff ≈ (464,1096)) hanging at the top. (Through the ajar gate the door's top rail and centre stile
+    // crossed the squint at any size.)
+    const z = push('s12b03-0.25', 's12b04-0.2', 2.45, 2.52);
+    const c = frame('s12b03+0.4', 2.45, 372, 905);
+    return { cam: withDrift(frame('s12b03+0.4', z, 372, 905), t, 2), cage: 'cheat', bake: { key: 'b03', x: c.x, y: c.y, zMin: 2.45, zMax: 2.52, m: 1.12, at: 's12b03+0.4' } };
+  }
+  if (t < T('s12b05')) {
+    const z = push('s12b04-0.2', 's12b05', 3.95, 4.1);
+    const c = frame('s12b04+0.3', 3.95, 352, 610);
+    return { cam: withDrift(frame('s12b04+0.3', z, 352, 610), t, 1.5), cage: 'cheatLock', bake: { key: 'b04', x: c.x, y: c.y, zMin: 3.95, zMax: 4.1, m: 1.12, at: 's12b04+0.3' } };
+  }
   if (t < T('s12b06-0.1')) return { cam: { x: 500, y: 889, zoom: 0.72 }, cage: 'full' };                     // LOCKED
   if (t < T('s12b07-0.3')) {
     const k = ease.sine(clamp((t - T('s12b06-0.1')) / 2.6));
     return { cam: withDrift(camLerp({ x: 450, y: 1380, zoom: 1.6 }, { x: 452, y: 1384, zoom: 1.66 }, k), t), cage: 'full' };
   }
   if (t < T('s12b08-0.3')) return { cam: withDrift({ x: 560, y: 980, zoom: 0.8 }, t), cage: 'full' };
-  if (t < T('s12b09')) return { cam: withDrift({ x: 450, y: 1430, zoom: 2.0 }, t, 2), cage: 'full' };
   if (t < T('s12b10')) {
-    const k = ease.sine(clamp((t - T('s12b09')) / (T('s12b10') - T('s12b09'))));
-    return { cam: withDrift(camLerp({ x: 450, y: 1430, zoom: 2.0 }, { x: 450, y: 1440, zoom: 2.15 }, k), t, 2), cage: 'full' };
+    // b08 → b09: one face close-up on the threshold, from above; a slight push through the plea, the camera
+    // easing down after the face as Fear sinks onto the threshold
+    const c0 = frame('s12b08+0.6', 3.7, 360, 575);
+    const f = faceAt(F), follow = ease.sine(clamp((t - T('s12b09+1.2')) / 1.6));
+    const z = push('s12b09', 's12b10', 3.7, 4.05);
+    const y = lerp(c0.y, f[1] + (H / 2 - 640) / z, 0.75 * follow);
+    return { cam: withDrift({ x: c0.x, y, zoom: z }, t, 1.5), cage: 'full', bake: { key: 'b08', x: c0.x, y: c0.y + 22, zMin: 3.7, zMax: 4.05, m: 1.3, at: 's12b08+0.6', front: true } };
   }
   return { cam: { x: 500, y: 889, zoom: 0.72 }, cage: 'full' };                                               // LOCKED
 }
 
 // ---------------------------------------------------------------- Fear
 const FROZEN = E({ browIn: 0.8, browUp: 0.65, lidU: -0.22, pupil: 0.62, smile: -0.35, open: 0.12, wide: 0.05, tears: 0.85, stream: 0.6, lookX: 0.36, lookY: -1 });
-const ACCUSE = E({ browIn: 0.95, browUp: 0.55, lidU: -0.12, pupil: 0.7, smile: -0.45, tremble: 0.55, tears: 0.85, stream: 0.55, lookX: 0.38, lookY: -1 });
-const CRACK = E(ACCUSE, { browUp: 0.9, browIn: 1, lidU: -0.28, pupil: 0.66 });
-const CERTAIN = E({ browIn: 0.9, browUp: 0.35, lidTilt: 0.35, lidU: 0.04, smile: -0.55, tremble: 0.95, tears: 0.95, stream: 0.55, pupil: 0.75, lookX: 0.38, lookY: -1 });
-// suspicious squint from BELOW (lower lids high, inner corners low); a heavy upper lid over an up-looking iris read as an eye-roll
-const SUSPECT = E({ lidU: 0.12, lidL: 0.85, lidTilt: -0.2, browIn: -0.22, browUpL: -0.32, browUpR: 0.2, browSquish: 0.6, smile: -0.3, wide: -0.15, tremble: 0.4, tears: 0.7, stream: 0.5, pupil: 0.8, lookX: 0.38, lookY: -0.8 });
-const CONFUSED = E({ browUpL: 0.7, browUpR: -0.3, browIn: 0.35, lidU: 0.05, lidL: 0.08, smile: -0.32, wide: -0.12, tremble: 0.35, tears: 0.78, stream: 0.5, pupil: 0.85, lookX: 0.38, lookY: -1 });
+// The five faces of the accusation are pushed apart so they read as five different thoughts at phone size
+// (QA: they all read as one wide-eyed worried look-up). ACCUSE/CRACK: wide, brows up. CERTAIN: lids lowered, brows
+// knit, chin trembling. SUSPECT: squeezed from below, brows DOWN, eyes sliding sideways. CONFUSED: one brow up,
+// one down. SHOUT: hard V, mouth wide. PLEA: brows tipped up, chin crumpled, streaming.
+const ACCUSE = E({ browIn: 1, browUp: 0.6, lidU: -0.18, pupil: 0.66, smile: -0.5, tremble: 0.6, tears: 0.85, stream: 0.55, lookX: 0.4, lookY: -1 });
+const CRACK = E(ACCUSE, { browUp: 1, browIn: 1, lidU: -0.32, pupil: 0.6, wide: 0.25 });
+const CERTAIN = E({ browIn: 0.6, browUp: -0.12, browSquish: 0.75, lidTilt: 0.3, lidU: 0.02, lidL: 0.42, smile: -0.72, wide: 0.15, tremble: 1, tears: 1, stream: 0.65, pupil: 0.72, lookX: 0.4, lookY: -0.9 });
+// suspicious squint from BELOW (lower lids right up, inner corners low), brows pulled DOWN and in, eyes slid to the
+// side; the upper lid stays light (a heavy upper lid over an up-looking iris reads as an eye-roll)
+const SUSPECT = E({ lidU: 0.16, lidL: 1, lidTilt: -0.4, browIn: -0.75, browUp: -0.3, browUpL: -0.12, browUpR: 0.22, browSquish: 1, smile: -0.32, wide: -0.32, tremble: 0.35, tears: 0.75, stream: 0.5, pupil: 0.8, lookX: 0.85, lookY: -0.5 });
+const CONFUSED = E({ browUpL: 1, browUpR: -0.6, browIn: 0.35, browSquish: 0.25, lidU: 0.0, lidL: 0.12, smile: -0.28, wide: -0.2, open: 0.06, tremble: 0.3, tears: 0.78, stream: 0.5, pupil: 0.88, lookX: 0.3, lookY: -0.8 });
 const WAITING = E({ browIn: 0.72, browUp: 0.48, lidU: -0.16, pupil: 0.68, smile: -0.22, pressed: 0.55, tears: 0.82, stream: 0.5, lookX: 0.38, lookY: -1 });
 const CRUMBLE = E({ browIn: 1, browUp: 0.4, lidTilt: 0.6, lidU: 0.18, lidL: 0.22, smile: -0.62, tremble: 0.85, pressed: 0.25, tears: 1, stream: 0.6, pupil: 0.8, lookX: 0.38, lookY: -0.95 });
 const CRY = E({ browIn: 1, browUp: 0.35, lidTilt: 0.75, lidU: 0.16, lidL: 0.32, smile: -0.75, wide: 0.3, tremble: 0.95, tears: 1, stream: 0.72, pupil: 0.85, lookX: 0.36, lookY: -0.9 });
-const FURY = E({ browIn: -0.32, browSquish: 0.75, lidU: 0.14, lidL: 0.3, lidTilt: -0.05, smile: -0.6, wide: 0.35, teeth: 0.45, tremble: 0.55, tears: 1, stream: 0.75, pupil: 0.8, lookX: 0.42, lookY: -1 });
-// squeezed half shut from BELOW (cheeks up), the upper lids only a little: heavy upper lids + eyes up read as an eye-roll
-const SHOUT = E({ lidU: 0.24, lidL: 0.72, lidTilt: 0.3, browIn: 1, browUp: 0.3, browSquish: 1, open: 0.2, wide: 0.6, teeth: 0.7, smile: -0.5, tremble: 0.5, tears: 1, stream: 0.8, pupil: 0.8, lookX: 0.36, lookY: -0.55 });
-const PLEA = E({ browIn: 1, browUp: 0.45, lidTilt: 0.85, lidU: 0.12, lidL: 0.34, smile: -0.85, wide: 0.42, tremble: 1, tears: 1, stream: 0.9, pupil: 0.85, lookX: 0.36, lookY: -0.8 });
+const FURY = E({ browIn: -0.55, browSquish: 0.85, browUp: -0.15, lidU: 0.14, lidL: 0.35, lidTilt: -0.25, smile: -0.6, wide: 0.35, teeth: 0.45, tremble: 0.55, tears: 1, stream: 0.75, pupil: 0.8, lookX: 0.42, lookY: -1 });
+// SHOUT: brows in a hard V, eyes squeezed half shut from below (cheeks up) — heavy upper lids + eyes up read as an
+// eye-roll — and the mouth held wide open under the words
+const SHOUT = E({ lidU: 0.2, lidL: 0.62, lidTilt: -0.5, browIn: -1, browUp: -0.35, browSquish: 1, open: 0.6, wide: 0.65, teeth: 0.85, smile: -0.55, tremble: 0.5, tears: 1, stream: 0.85, pupil: 0.75, lookX: 0.32, lookY: -0.6 });
+// PLEA: the anger collapses — brows tip right up in the middle, lids droop, the chin crumples (drawn: chinCrumple)
+const PLEA = E({ browIn: 1, browUp: 0.55, browSquish: 0.35, lidTilt: 0.95, lidU: 0.14, lidL: 0.38, smile: -0.9, wide: 0.45, tremble: 1, tears: 1, stream: 1, pupil: 0.9, lookX: 0.32, lookY: -0.8 });
 const SOBBING = E(PLEA, { lidU: 0.92, lidL: 0.5, open: 0.22, lookY: 0.3 });
 const SPENT = E({ browIn: 0.78, browUp: 0.1, lidTilt: 0.7, lidU: 0.42, lidL: 0.15, smile: -0.45, tremble: 0.3, tears: 0.7, stream: 0.75, pupil: 0.9, lookX: 0.05, lookY: 0.62 });
 
@@ -130,7 +241,7 @@ function fearState(t, S) {
     ['s12b01.end+0.15', CRACK], ['s12b01.end+0.6', ACCUSE],
     ['s12b02-0.2', CERTAIN], ['s12b02.end+0.2', CERTAIN],
     ['s12b03-0.15', SUSPECT, 'out'], ['s12b03.end+0.1', SUSPECT],
-    ['s12b04+0.05', CONFUSED], ['s12b04.end+0.2', E(CONFUSED, { browUpL: 0.55, browIn: 0.55 })],
+    ['s12b04+0.05', CONFUSED], ['s12b04.end+0.2', E(CONFUSED, { browUpL: 0.75, browUpR: -0.35, browIn: 0.55 })],
     ['s12b05+0.25', WAITING], ['s12b05+2.1', WAITING], ['s12b05+2.95', CRUMBLE],
     ['s12b06+0.3', CRY], ['s12b06.end+0.5', CRY],
     ['s12b07-0.05', FURY, 'out'], ['s12b07.end+0.2', FURY],
@@ -141,7 +252,8 @@ function fearState(t, S) {
   const face = { ...faceK };
 
   // gaze: eyelines are absolute (the hood up-right, the gate down in front, the glow up-left)
-  const HOOD = { lookX: 0.38, lookY: -1 }, GATE = { lookX: 0.16, lookY: 0.95 };
+  // (the closes show the popped padlock low on the right: the glances "at the gate" go down-right onto it)
+  const HOOD = { lookX: 0.38, lookY: -1 }, GATE = { lookX: 0.45, lookY: 0.95 };
   let gz = null;
   const gaze = (keys) => S.k(t, keys);
   if (t >= T('s12b02-0.3') && t < T('s12b03-0.25')) {
@@ -149,11 +261,11 @@ function fearState(t, S) {
     gz = gaze([['s12b02+0.18', HOOD], ['s12b02+0.3', GATE, 'out'], ['s12b02+0.66', GATE], ['s12b02+0.8', HOOD, 'out']]);
   } else if (t >= T('s12b03-0.25') && t < T('s12b04-0.2')) {
     // suspicious: the eyes dart to the fold where the hand went, then back to the hood
-    const HOOD_SQ = { lookX: 0.38, lookY: -0.8 }, FOLD_SQ = { lookX: 0.06, lookY: -0.86 };
-    gz = gaze([['s12b03-0.25', HOOD], ['s12b03+0.12', HOOD_SQ], ['s12b03+0.22', FOLD_SQ, 'out'], ['s12b03+0.5', FOLD_SQ], ['s12b03+0.6', HOOD_SQ, 'out'], ['s12b03+0.95', HOOD_SQ], ['s12b03+1.03', { lookX: 0.1, lookY: -0.84 }, 'out'], ['s12b03+1.2', HOOD_SQ, 'out'], ['s12b04-0.2', HOOD, 'sine']]);
+    const HOOD_SQ = { lookX: 0.85, lookY: -0.5 }, FOLD_SQ = { lookX: 0.06, lookY: -0.86 };   // side-eye at the hood; the fold is straight above
+    gz = gaze([['s12b03-0.25', HOOD], ['s12b03+0.12', HOOD_SQ], ['s12b03+0.22', FOLD_SQ, 'out'], ['s12b03+0.5', FOLD_SQ], ['s12b03+0.6', HOOD_SQ, 'out'], ['s12b03+0.95', HOOD_SQ], ['s12b03+1.03', { lookX: 0.12, lookY: -0.84 }, 'out'], ['s12b03+1.2', HOOD_SQ, 'out'], ['s12b04-0.2', HOOD, 'sine']]);
   } else if (t >= T('s12b04-0.2') && t < T('s12b05+0.25')) {
     // the glance at the gate again, longer this time
-    gz = gaze([['s12b04+0.2', HOOD], ['s12b04+0.34', GATE, 'out'], ['s12b05-0.05', GATE], ['s12b05+0.2', HOOD, 'out']]);
+    gz = gaze([['s12b04+0.5', HOOD], ['s12b04+0.66', GATE, 'out'], ['s12b05-0.05', GATE], ['s12b05+0.2', HOOD, 'out']]);
   } else if (t >= T('s12b05+0.25') && t < T('s12b06')) {
     // searching the hood for any sign; following its stare into the distance; back up
     gz = gaze([['s12b05+0.3', HOOD], ['s12b05+0.4', { lookX: 0.27, lookY: -0.9 }, 'out'], ['s12b05+0.7', { lookX: 0.27, lookY: -0.9 }],
@@ -171,7 +283,7 @@ function fearState(t, S) {
   // dips after them (~0.12 s later), so it reads as looking at the gate in front, not into the lens
   const gateK = (u) => Math.max(
     S.k(u, [['s12b02+0.18', 0], ['s12b02+0.3', 1, 'out'], ['s12b02+0.66', 1], ['s12b02+0.8', 0, 'out']]),
-    S.k(u, [['s12b04+0.2', 0], ['s12b04+0.34', 1, 'out'], ['s12b05-0.05', 1], ['s12b05+0.2', 0, 'out']]));
+    S.k(u, [['s12b04+0.5', 0], ['s12b04+0.66', 1, 'out'], ['s12b05-0.05', 1], ['s12b05+0.2', 0, 'out']]));
   const gk = gateK(t), gkHead = gateK(t - 0.12);
   face.lidU += 0.2 * gk; face.browUp -= 0.12 * gk;
   // looking up once in b10: the heavy lids lift with the eyes (hope), then sink again
@@ -220,6 +332,8 @@ function fearState(t, S) {
   if (t > T('s12b04-0.1') && t < T('s12b04.end+0.1')) amount = 0.8;             // the voice drops
   if (t > T('s12b08-0.1') && t < T('s12b08.end+0.1')) amount = 1.3;             // the most volume Fear has
   let spoken = withSpeech(face, lip, amount);
+  // the shout: the jaw never closes between the words (the most volume Fear has)
+  if (lip && t > T('s12b08-0.1') && t < T('s12b08.end+0.1')) spoken = { ...spoken, open: Math.max(spoken.open, 0.4 + 0.45 * (lip.open || 0)) };
   if (lip && t > T('s12b08+0.85') && t < T('s12b08+1.35')) spoken = { ...spoken, open: clamp(spoken.open + 0.35 * bump(t, T('s12b08+1.1'), 0.3)), wide: spoken.wide + 0.2 }; // mouth wide on 'standing'
 
   // ---------------- head
@@ -233,7 +347,8 @@ function fearState(t, S) {
     ['s12b03', 0.03], ['s12b04', 0.0], ['s12b04+0.4', 0.11], ['s12b05+0.2', 0.03], ['s12b05+1.6', 0.03], ['s12b05+2.2', -0.06], ['s12b05+2.8', 0],
     ['s12b06+0.6', 0.05], ['s12b07', -0.04], ['s12b08', -0.08], ['s12b09+0.5', -0.02], ['s12b09+2.3', 0.1], ['s12b10+1.5', 0.12], ['s12b10+1.7', 0.02], ['s12b10+2.6', 0.12]])
     + 0.035 * Math.sin(t * 2 * Math.PI * 1.6) * S.k(t, [['s12b06', 0], ['s12b06+0.2', 1], ['s12b06.end', 1], ['s12b06.end+0.2', 0]]);   // a wobbling "no" shake
-  const headTurn = S.k(t, [['scene.start-1', 0.28], ['s12b01', 0.28], ['s12b02', 0.25], ['s12b04+0.3', 0.25], ['s12b04+0.5', 0.12], ['s12b05+0.2', 0.25],
+  const headTurn = S.k(t, [['scene.start-1', 0.28], ['s12b01', 0.28], ['s12b02', 0.25], ['s12b03-0.15', 0.25], ['s12b03+0.2', 0.08, 'out'], ['s12b03.end', 0.1], // side-eye: the head turns a little away, the eyes stay on the hood
+    ['s12b04+0.1', 0.25], ['s12b04+0.55', 0.25], ['s12b04+0.8', 0.12], ['s12b05+0.2', 0.25],
     ['s12b05+1.7', 0.25], ['s12b05+2.2', -0.12], ['s12b05+2.4', -0.12], ['s12b05+2.75', 0.25], ['s12b06+0.4', 0.15], ['s12b06+1.5', 0.25],
     ['s12b07+0.4', 0.35], ['s12b08', 0.3], ['s12b09+1.6', 0.2], ['s12b10', 0.05]]);
   const lean = S.k(t, [['s12b05+0.6', 0], ['s12b05+0.95', 0.06, 'out'], ['s12b05+1.25', 0.06], ['s12b05+1.6', -0.02, 'sine'], ['s12b05+2.0', 0],
@@ -287,13 +402,38 @@ function fearState(t, S) {
     armR = { target: P(armR.target, [6 + 12 * sweep, -158], wipe), bend: -1, front: true, hand: 'fist' };
   }
 
-  return { pos, scale, walk, face: spoken, headDY, headTilt, headTurn, lean, crouch, tremble, breathe, breathRate, armL, armR, grips, door };
+  // the chin: trembles under 'certain', starts to go in the silence, crumples in the plea
+  const chin = S.k(t, [['s12b02-0.3', 0], ['s12b02', 0.5], ['s12b02.end+0.2', 0.5], ['s12b03-0.1', 0],
+    ['s12b05+2.4', 0], ['s12b05+2.95', 0.45], ['s12b06+0.3', 0.6], ['s12b07-0.1', 0.6], ['s12b07+0.2', 0.15], ['s12b08-0.2', 0],
+    ['s12b09+0.1', 0], ['s12b09+0.5', 1, 'out'], ['s12b10+0.5', 0.8], ['s12b11', 0.4]]);
+  return { pos, scale, walk, chin, face: spoken, headDY, headTilt, headTurn, lean, crouch, tremble, breathe, breathRate, armL, armR, grips, door };
+}
+
+// ---------------------------------------------------------------- baked backgrounds (perf)
+// In the closes everything behind Fear is static (the set, the frozen Void, the cage with the gate standing still),
+// but drawn at 3–4× zoom it cost ~25 ms a frame. Each close bakes it once into a world-space sprite at the shot's
+// widest framing, sampled at its tightest zoom (crisp through the push). Built from a fixed reference time, so a
+// frame renders identically whatever was rendered before it.
+const BG_CACHE = new Map();
+function drawBaked(g, spec, build) {
+  let e = BG_CACHE.get(spec.key);
+  if (!e) {
+    const rw = (W / spec.zMin) * spec.m, rh = (H / spec.zMin) * spec.m;
+    const rx = spec.x - rw / 2, ry = spec.y - rh / 2;
+    const c = createCanvas(Math.ceil(rw * spec.zMax), Math.ceil(rh * spec.zMax));
+    const cg = c.getContext('2d');
+    cg.scale(c.width / rw, c.height / rh); cg.translate(-rx, -ry);
+    build(cg);
+    e = { c, rx, ry, rw, rh };
+    BG_CACHE.set(spec.key, e);
+  }
+  g.drawImage(e.c, e.rx, e.ry, e.rw, e.rh);
 }
 
 // ---------------------------------------------------------------- render
 export function render(g, t, S) {
-  const { cam, cage } = shot(t, S);
   const F = fearState(t, S);
+  const { cam, cage, bake } = shot(t, S, F);
   const cst = { t, door: F.door, locked: 0, shake: 0.12 * bump(t, S.T('s12b07+0.62'), 0.2) };
   const vpose = { t, ...STARE_B, idle: 0, shadowSpread: 1, handL: { ...VOID_ARM_B, show: 0, defer: 'hand' } };
   const st = { t, lightsDim: 0.35, mist: 0.6 };
@@ -304,13 +444,33 @@ export function render(g, t, S) {
 
   g.save();
   applyCamera(g, cam);
-  drawHQ(g, 'backOfMind', st);
-  drawVoid(g, ...VOID_B, vpose);
-  drawCage(g, ...CAGE_B, { ...cst, layer: 'back' });
+  if (bake) {
+    drawBaked(g, bake, (cg) => {
+      const tb = S.T(bake.at), cb = { t: tb, door: fearState(tb, S).door, locked: 0, shake: 0 };
+      drawHQ(cg, 'backOfMind', { ...st, t: tb });
+      drawVoid(cg, ...VOID_B, { ...vpose, t: tb });
+      drawCage(cg, ...CAGE_B, { ...cb, layer: 'back' });
+      if (bake.front) drawCage(cg, ...CAGE_B, { ...cb, layer: 'front' });
+    });
+  } else {
+    drawHQ(g, 'backOfMind', st);
+    drawVoid(g, ...VOID_B, vpose);
+    drawCage(g, ...CAGE_B, { ...cst, layer: 'back' });
+  }
   if (inside) drawFear(g, F.pos[0], F.pos[1], F.scale, fearPose);
-  if (cage === 'full') drawCage(g, ...CAGE_B, { ...cst, layer: 'front', grips: F.grips });
-  if (!inside) drawFear(g, F.pos[0], F.pos[1], F.scale, fearPose);
+  if (inside) chinCrumple(g, F, F.chin, t);
+  if (cage === 'full' && !(bake && bake.front)) drawCage(g, ...CAGE_B, { ...cst, layer: 'front', grips: F.grips });
+  else if (cage === 'cheatLock') lockStrip(g, cst, F, t);
+  if (!inside) { drawFear(g, F.pos[0], F.pos[1], F.scale, fearPose); chinCrumple(g, F, F.chin, t); }
   drawHQForeground(g, 'backOfMind', st);
   g.restore();
+  // b08–b09 close from above: the darkness of the hood edges the top of the frame (and swallows the sign's end)
+  if (t >= S.T('s12b08-0.3') && t < S.T('s12b10')) {
+    g.save(); g.setTransform(1, 0, 0, 1, 0, 0);
+    const gr = g.createLinearGradient(0, 0, 0, 330);
+    gr.addColorStop(0, 'rgba(5,3,14,0.97)'); gr.addColorStop(0.3, 'rgba(5,3,14,0.82)'); gr.addColorStop(1, 'rgba(5,3,14,0)');
+    g.fillStyle = gr; g.fillRect(0, 0, W, 330);
+    g.restore();
+  }
   finish(g, 0.6, 0, 0.5);
 }

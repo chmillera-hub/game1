@@ -1,14 +1,26 @@
 // s16 · the_gentle_push · backOfMind. Fear wipes its tears; the Void's enormous hand gives the gentlest
 // push; Fear stops, looks back at the stars in the dark hood, smiles for real, and skips off toward the HQ.
+import fs from 'fs';
 import { clamp, lerp, ease, fbm, blinkAt, applyCamera, drift, vignette } from '../engine.mjs';
 import { star } from '../face.mjs';
-import { createCanvas } from '@napi-rs/canvas';
 import { drawHQ, drawHQForeground, hqScaleAt } from '../sets/hq.mjs';
 import { drawCage } from '../sets/props.mjs';
 import { drawVoid, drawVoidArm, drawVoidHand, drawVoidGlow, voidRig, toVoidLocal, VOID_HANDS } from '../chars/void.mjs';
 import { drawFear, FEAR_COLORS } from '../chars/fear.mjs';
 
 export const id = 's16';
+
+// word starts in s16b03 (data/lines.json) — "The Void stood there, with | galaxies twinkling in its dark | facade."
+// — so the cut to the hood lands on "galaxies" and the cut back to Fear on "facade" if the voice is re-rendered
+const WORDS = (() => {
+  const w = { galaxies: 2.26, facade: 4.8 };
+  try {
+    const L = JSON.parse(fs.readFileSync(new URL('../../data/lines.json', import.meta.url), 'utf8')).s16b03;
+    for (const k of Object.keys(w)) { const x = L.words.find((q) => q.w.toLowerCase().replace(/[^a-z]/g, '') === k); if (x) w[k] = x.start; }
+  } catch (e) { /* keep the defaults */ }
+  return w;
+})();
+const W = (word, d = 0) => `s16b03+${(WORDS[word] + d).toFixed(3)}`;
 
 export const sfx = [
   // b01: the wipes, the big wet sniff, the shaky breath out that is almost a laugh
@@ -23,7 +35,7 @@ export const sfx = [
   // b03: walks on and stops; the hand slides back into the folds; the galaxies twinkle
   { at: 's16b02+3.47', name: 'footsteps', gain: -16, rate: 1.3, until: 's16b03+1.05' },
   { at: 's16b03+1.25', name: 'cloth_rustle', gain: -21, pan: 0.45 },
-  { at: 's16b03+2.75', name: 'twinkle', gain: -14 },
+  { at: W('galaxies', 0.5), name: 'twinkle', gain: -14 },
   // b04: the skip back toward the HQ
   { at: 'scene.end-1.76', name: 'footsteps', gain: -15, rate: 1.4, until: 'scene.end-0.3' },   // one per hop landing
 ];
@@ -32,6 +44,8 @@ export const sfx = [
 const VOID_B = [700, 1600, 0.9];
 const STARE_B = { headTurn: -0.65, headDown: 0.12 };
 const COSMOS_RESIDUE = 0.5;
+const COSMOS_HOOD = 0.75;   // the hood insert (shot D) only: galaxies bright enough to read on a phone (QA); the hood is
+                            // in frame nowhere else in s16, and s17/s19 show it small at COSMOS_RESIDUE
 const CAGE_B = [430, 1630, 0.952];
 const THRESH = [440, 1648, 0.97];
 const FEAR_STOP_B = [250, 1700, 1.065];
@@ -96,9 +110,10 @@ function scarfEnd(g, fx, fy, fs, facing, hand, k) {
 function shotOf(t, S) {
   if (t < S.T('s16b02')) return 'A';          // medium: the wipe
   if (t < S.T('s16b03')) return 'B';          // side: the push
-  if (t < S.T('s16b03+2.6')) return 'C';      // front medium: walks on, stops, looks back
-  if (t < S.T('s16b04')) return 'D';          // over Fear's shoulder: the starry hood
-  return 'E';                                  // close: the smile, the nod, the skip
+  if (t < S.T(W('galaxies', -0.15))) return 'C';   // front medium: walks on, stops, looks back over its shoulder
+  if (t < S.T(W('facade', -0.05))) return 'D';     // Fear's eyeline: push in on the hood, galaxies twinkling
+  return 'E';                                  // medium close (body to the HQ, head turned back up at the hood):
+                                               // brows ease, eyes glisten → the smile, the nod, the skip
 }
 
 // ---------------------------------------------------------------- Fear's path & pose
@@ -153,7 +168,10 @@ function fearPose(t, S, shot) {
   const eyesBack = S.k(t, [['s16b03+1.05', 0], ['s16b03+1.25', 1]]);
   const headBack = S.k(t, [['s16b03+1.2', 0], ['s16b03+1.75', 1, 'inOut']]);
   // ---- b04: the smile arrives (eyes first), a last tear, a nod; turns to the light and skips
-  const relax = S.k(t, [['s16b04-0.4', 0], ['s16b04+0.7', 1]]);
+  // the change starts as soon as we are back on Fear after the hood: brows ease, the eyes fill and shine (wonder);
+  // the smile at b04 is the end of it
+  const relax = S.k(t, [[W('facade', -0.05), 0], ['s16b04', 0.55, 'sine'], ['s16b04+0.7', 1]]);
+  const glisten = S.k(t, [[W('facade', -0.3), 0], [W('facade', 0.6), 1, 'sine'], ['s16b04+0.9', 1], ['scene.end-1.9', 0.5]]);
   const eyeSmile = S.k(t, [['s16b04+0.2', 0], ['s16b04+0.9', 1]]);
   const blush = S.k(t, [['s16b04+0.4', 0], ['s16b04+1.1', 1]]);
   const mouth = S.k(t, [['s16b04+0.75', 0], ['s16b04+1.5', 1, 'sine']]);
@@ -179,10 +197,10 @@ function fearPose(t, S, shot) {
     browIn: lerp(0.55, 0.0, relax) + 0.25 * surprise, browUp: 0.15 * (1 - relax) + 0.6 * surprise,
     lidU: 0.05 - 0.3 * surprise - 0.05 * eyeSmile - 0.08 * laugh, lidL: 0.32 * eyeSmile + 0.38 * laugh, lidTilt: 0.12 * (1 - relax),
     smile: 0.1 + 0.48 * laugh - 0.15 * surprise + 0.55 * mouth, open: 0.17 * laugh + 0.16 * surprise, round: 0.5 * surprise,
-    tremble: 0.35 * laugh + 0.15 * (1 - relax) * (shot === 'A' ? 1 : 0), pupil: 1.1 + 0.15 * eyesBack,
-    tears: Math.max(tearsA, shot === 'D' || shot === 'E' ? lerp(0.6, 0.3, tearDrop) : 0),
+    tremble: 0.35 * laugh + 0.15 * (1 - relax) * (shot === 'A' ? 1 : 0), pupil: 1.1 + 0.15 * eyesBack + 0.1 * glisten,
+    tears: Math.max(tearsA, shot === 'E' ? lerp(0.35, 0.65, glisten) * lerp(1, 0.5, tearDrop) : 0),
     tearR: tearDrop > 0 && tearDrop < 1 ? tearDrop : 0,
-    blush: 0.12 + 0.4 * blush, sparkle: 0.25 + 0.3 * eyesBack * (1 - eyesFwd),
+    blush: 0.12 + 0.4 * blush, sparkle: 0.25 + 0.3 * eyesBack * (1 - eyesFwd) + 0.35 * glisten,
   };
   // wipes: a crying squeeze while the fist rubs (eyes down), eyes shut tight for the sniff
   const wipe = Math.max(w1, w2);
@@ -241,19 +259,27 @@ function voidPose(t, S, shot) {
     ? { ...VOID_HANDS.push(toVoidLocal(...VOID_B, ...tgt), -1), ...VOID_ARM_B, elbow: 0.8 * reach, angle: PUSH_ANGLE, show, reach, defer: 'hand' }
     : { ...VOID_ARM_B, show: 0, defer: 'hand' };
   // only shot D frames the hood; elsewhere the cosmos would be drawn off-frame (≈2 ms), so it is skipped
-  return { t, ...STARE_B, idle: 0.5, cosmos: shot === 'D' ? COSMOS_RESIDUE : 0, cosmosOpts: { seed: 7, glyphs: 0 }, shadowSpread: 0.6, handL };
+  return { t, ...STARE_B, idle: 0.5, cosmos: shot === 'D' ? COSMOS_HOOD : 0, cosmosOpts: { seed: 7, glyphs: 0 }, shadowSpread: 0.6, handL };
 }
 
 // ---------------------------------------------------------------- cameras
 function camOf(t, S, shot) {
   if (shot === 'A') return cam(t, { x: 440, y: 1420, zoom: 1.8 + 0.06 * S.k(t, [['scene.start', 0], ['s16b02', 1, 'linear']]) }, 2);
   if (shot === 'B') return cam(t, { x: 420 - 12 * S.k(t, [['s16b02+1.9', 0], ['s16b03', 1]]), y: 1330, zoom: 1.25 }, 2);
-  if (shot === 'C') return cam(t, { x: 300, y: 1300, zoom: 1.25 + 0.05 * S.k(t, [['s16b03', 0], ['s16b03+2.6', 1, 'linear']]) }, 2);
-  if (shot === 'D') {
-    const k = S.k(t, [['s16b03+2.6', 0], ['s16b04', 1, 'linear']]);
-    return cam(t, { x: lerp(600, 612, k), y: lerp(720, 690, k), zoom: lerp(0.85, 0.9, k) }, 2);
+  if (shot === 'C') {
+    // a gentle push toward Fear once it has stopped and turns to look back over its shoulder
+    const k = S.k(t, [['s16b03+0.9', 0], [W('galaxies', -0.15), 1, 'inOut']]);
+    return cam(t, { x: lerp(300, 290, k), y: lerp(1300, 1335, k), zoom: lerp(1.25, 1.42, k) }, 2);
   }
-  return cam(t, { x: 255, y: 1470, zoom: 2.8 }, 1.8);
+  if (shot === 'D') {
+    // Fear's eyeline: the hood opening fills the upper middle of the frame (≈ 210×390 px), a slow push in
+    const k = S.k(t, [[W('galaxies', -0.15), 0], [W('facade', -0.05), 1, 'linear']]);
+    return cam(t, { x: HOOD[0] + 6, y: lerp(350, 336, k), zoom: lerp(1.85, 2.05, k) }, 1.4);
+  }
+  // E: medium close. Fear on the left third with room to look up-right at the (off-frame) hood; the open cage and the
+  // WHOLE TIME-OUT sign behind it on the right (at zoom 2.8 the sign was cropped to a stray "T" in the corner)
+  const k = S.k(t, [[W('facade', -0.05), 0], ['scene.end', 1, 'linear']]);
+  return cam(t, { x: lerp(332, 338, k), y: lerp(1478, 1474, k), zoom: lerp(1.84, 1.95, k) }, 1.8);
 }
 
 // ---------------------------------------------------------------- render
@@ -291,14 +317,14 @@ export function render(g, t, S) {
   }
   drawHQForeground(g, 'backOfMind', st);
   g.restore();
-  if (shot === 'D') foregroundFear(g, t, S, fp);
   grade(g, 0.15, 0.15);
   vignette(g, 0.4);
 }
 
 // tiny glints among the galaxies on "twinkling" (in addition to the cosmos' own slow twinkle)
 function hoodTwinkles(g, t, S) {
-  const glints = [[-14, -40, 's16b03+2.7'], [16, 22, 's16b03+2.9'], [-6, 58, 's16b03+3.12'], [10, -12, 's16b03+3.9'], [-12, 30, 's16b03+4.8']];
+  const glints = [[-14, -40, W('galaxies', 0.45)], [16, 22, W('galaxies', 0.65)], [-6, 58, W('galaxies', 0.9)], [20, -62, W('galaxies', 1.25)],
+    [10, -12, W('galaxies', 1.65)], [-22, 8, W('galaxies', 1.95)], [-12, 34, W('galaxies', 2.3)]];
   g.save();
   g.globalCompositeOperation = 'lighter';
   for (const [dx, dy, at] of glints) {
@@ -310,43 +336,4 @@ function hoodTwinkles(g, t, S) {
     g.beginPath(); g.arc(HOOD[0] + dx, HOOD[1] + dy, 9 * k + 3, 0, Math.PI * 2); g.fill();
   }
   g.restore();
-}
-
-// Over-the-shoulder foreground: Fear's head soft and close in the lower-left (screen space). It is rendered
-// at a third of the resolution and scaled up, which gives a cheap, even softness ("out of focus").
-let FG = null;
-function foregroundFear(g, t, S, fp) {
-  const R = 3;
-  if (!FG) FG = createCanvas(Math.ceil(720 / R), Math.ceil(1280 / R));
-  const c = FG.getContext('2d');
-  c.setTransform(1, 0, 0, 1, 0, 0);
-  c.clearRect(0, 0, FG.width, FG.height);
-  c.setTransform(1 / R, 0, 0, 1 / R, 0, 0);
-  const s = 2.6;
-  const hx = 122 + fbm(t * 0.3, 61) * 3, hy = 1045 + fbm(t * 0.27, 63) * 2;            // head centre on screen
-  const x = hx, y = hy + 214 * s;
-  const glisten = S.k(t, [['s16b03+2.6', 0.45], ['s16b04', 0.85]]);
-  drawFear(c, x, y, s, {
-    t, facing: 1, headTurn: 0.5, headTilt: -0.08, breathe: 0.6, shadow: false,
-    // alive while it looks: one slow blink after "galaxies twinkling", the water rising on the lower lids
-    face: { ...fp.face, lookX: 0.55 + fbm(t * 0.35, 65) * 0.05, lookY: -0.85, tears: glisten, sparkle: 0.5 + 0.2 * glisten, lidU: 0.02,
-      lidL: 0.08 + 0.1 * glisten, smile: 0.05, open: 0.04, browIn: 0.35 + 0.1 * glisten, browUp: 0.2,
-      blink: blinkAt(t, S.T('s16b03+4.25'), 0.42), noAutoBlink: true },
-    armL: { target: [-30, -80], bend: 1 }, armR: { target: [30, -80], bend: -1 },
-  });
-  // backlit: darken toward the camera side, starlight on the cheek turned to the hood
-  c.globalCompositeOperation = 'source-atop';
-  const gr = c.createLinearGradient(hx - 200, hy + 120, hx + 200, hy - 160);
-  gr.addColorStop(0, 'rgba(10,8,26,0.62)'); gr.addColorStop(0.6, 'rgba(10,8,26,0.25)'); gr.addColorStop(1, 'rgba(120,150,255,0.12)');
-  c.fillStyle = gr; c.fillRect(0, 0, 720, 1280);
-  c.globalCompositeOperation = 'source-over';
-  g.save();
-  g.setTransform(1, 0, 0, 1, 0, 0);
-  g.imageSmoothingEnabled = true;
-  g.drawImage(FG, 0, 0, FG.width, FG.height, 0, 0, FG.width * R, FG.height * R);
-  g.restore();
-  starlightScreen(g, hx + 70, hy - 60, 230, 0.35);
-}
-function starlightScreen(g, x, y, r, k) {
-  g.save(); g.setTransform(1, 0, 0, 1, 0, 0); starlight(g, x, y, r, k); g.restore();
 }

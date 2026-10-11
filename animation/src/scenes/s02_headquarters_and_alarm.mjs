@@ -9,8 +9,11 @@
 //  C  → s02b02+2.8               alarm 'pull': Fear reaches blindly, pulls on 'alarm' (s02b02+2.40)
 //  D  → s02b03+0.45              back view: the four (three in frame) don't even startle; red wash from the left
 //  E  → s02b03+4.70 ('looking')  front 'door': the door opens, the CEO steps in, stops to tug the lapels, walks on
-//  F  → s02b04                   front: camera drifts right with the CEO's gaze to Fear; CEO kneels at the alarm
-//  G  → S.end                    alarm two-shot: "Fear? What are you looking at?" → Fear points; cut on the head turn
+//  F  → s02b03.end−0.2           front: camera drifts right with the CEO's gaze to the alarm; CEO kneels by Fear
+//  H  → s02b04+1.3               alarm view, CEO close (Fear's head at the right edge): the eyes come down from the
+//                                bell and land on Fear, the brows soften, "Fear?" (QA: the intro had no readable face)
+//  G  → S.end                    alarm two-shot: "What are you looking at?" → Fear points up-left; the CEO's eyes
+//                                follow the finger, then the head turns over the left shoulder; cut on the turn
 
 import { clamp, lerp, ease, mix, blinkAt, applyCamera, drift, vignette, noise1, fbm, ik, TAU } from '../engine.mjs';
 import { makeExpr, withSpeech } from '../face.mjs';
@@ -296,9 +299,20 @@ function emotionsFront(g, S, t, vis = () => true) {
     const shrug = S.k(t, [[`${b3}+5.85`, 0], [`${b3}+6.25`, 1, 'outCubic'], [`${b3}+6.9`, 1], [`${b3}+7.4`, 0]]);
     const face = mix(E({ smile: 0.35, lidL: 0.25, lookY: 0.4 }),
       E({ browUp: 0.75, browIn: 0.25, smile: 0.15, wide: -0.35, lidU: -0.05, lookX: -0.75, lookY: -0.55, turn: -0.15 }), turn);
-    const arm = (side) => (shrug > 0.02
-      ? { target: [side * lerp(50, 92, shrug), lerp(-150, -268, shrug)], bend: side, hand: 'palm', layer: 'over', handAng: -Math.PI / 2 + side * 0.9 }
-      : { preset: 'pressButton' });
+    // palms-up shrug: the hands swing off the console out to the sides (arm straight), then the forearms lift with
+    // the elbows tucked down at her sides, so the open palms come up BESIDE the shoulders, outside the head
+    // silhouette (rx 84), and never cross the face. The elbow side flips exactly where the arm is fully straight
+    // (target ≥ reach 106 from the shoulder (34,−213)), so there is no elbow pop. Drawn 'front' (over the chest,
+    // after the head), like the pressButton hands they come from: no layer pop either.
+    const SW = 0.35, OUT = [115, -142], UP = [122, -200];
+    const arm = (side) => {
+      if (shrug <= 0.02) return { preset: 'pressButton' };
+      const a = shrug < SW ? ease.sine(shrug / SW) : ease.sine((shrug - SW) / (1 - SW));
+      const p = shrug < SW ? [lerp(46, OUT[0], a), lerp(-150, OUT[1], a)] : [lerp(OUT[0], UP[0], a), lerp(OUT[1], UP[1], a)];
+      const angR = shrug < SW ? lerp(1.2, 0.75, a) : lerp(0.75, -0.52, a); // fingers: down-out → up-out (palm up)
+      return { target: [side * p[0], p[1]], bend: shrug < SW ? side : -side, hand: 'palm', layer: 'front',
+        handAng: side > 0 ? angR : Math.PI - angR };
+    };
     drawEmotion(g, 'JOY', x, y, s, {
       t: tt, face, headTurn: -0.6 * turn, headTilt: 0.1 * shrug, headDY: -shrug * 4, armL: arm(-1), armR: arm(1),
     });
@@ -347,7 +361,7 @@ function fearPose(S, t) {
   let face = mix(up, shut, squeeze);
   // b03 glances: between them the eyes drop to the handle — braced and tense, never sleepy
   const b3 = S.T('s02b03');
-  if (t > b3 + 2.5 && t < S.T('s02b04')) {
+  if (t > b3 + 2.5 && t < S.T('s02b03.end-0.2')) {
     const gl = [3.3, 4.5, 5.4, 6.25, 7.0].reduce((m, a) => Math.max(m, pulseEnv(t, b3 + a, 0.09, 0.32, 0.14)), 0);
     const down = E({ browIn: 1, browUp: 0.45, browSquish: 0.6, lidU: 0.08, lidL: 0.25, pupil: 0.6, smile: -0.45, pressed: 0.55, lookX: 0.35, lookY: 0.4, tremble: 0.8 });
     const k = clamp((t - b3 - 2.5) / 0.6);
@@ -356,10 +370,14 @@ function fearPose(S, t) {
     face = mix(mix(face, down, k), up, Math.max(gl, hold));
     face.headTurnG = Math.max(gl, hold);
   }
-  // b04: no answer; the eyes do not leave the dark — a fixed stare, one slow blink on "What" (a cut lands on
-  // open eyes: no automatic blinks in the two-shot)
+  // b04 (from the CEO close on): no answer; the eyes do not leave the dark — a fixed stare well up and LEFT, the
+  // same line as the finger that follows (at the old lookX −0.62 under a −0.25 head turn the irises sat nearly
+  // centred and read as looking up at the bell, up-right). One slow blink on "What" (a cut lands on open eyes: no
+  // automatic blinks in the close or the two-shot)
+  const stare = t >= S.T('s02b03.end-0.2') ? 1 : 0;
+  if (stare) { face.lookX = -0.98; face.lookY = -0.68; }
   if (t >= S.T('s02b04')) face.blink = blinkAt(t, S.T(`${b4}+1.7`), 0.22);
-  face.noAutoBlink = squeeze > 0.05 || t >= S.T(`${b4}-0.3`);
+  face.noAutoBlink = squeeze > 0.05 || t >= S.T('s02b03.end-0.25');
   const g0 = face.headTurnG || 0;
   const tremble = 0.6 + 0.35 * squeeze + 0.2 * point;
   return {
@@ -367,7 +385,7 @@ function fearPose(S, t) {
     crouch,
     lean: 0.05 * grope * (1 - hang) + 0.04 * hang - 0.03 * point,
     headTilt: -0.12 * (1 - squeeze) + 0.06 * squeeze - 0.06 * g0,
-    headTurn: -0.25 + 0.1 * squeeze - 0.15 * g0,
+    headTurn: -0.25 + 0.1 * squeeze - 0.15 * g0 - 0.17 * stare,
     headDY: yank * 4,
     armL, armR, point, fingerWobble: Math.sin(t * 23) * 0.06,
   };
@@ -376,14 +394,14 @@ function fearPose(S, t) {
 // ---------------------------------------------------------------- CEO
 function ceoFace(S, t) {
   const b3 = 's02b03';
-  // performed confidence → flicker → looking around → lands on Fear: the performance drops out
+  // performed confidence → flicker → looking around → up at the bell, kneeling beside it. The landing on Fear (and
+  // the performance dropping out) is played in the close that follows (shotTwo, H), where the face can be read.
   const chinUp = E({ browIn: -0.12, browUp: 0.05, lidU: 0.04, pressed: 0.35, smile: 0.12, lookX: 0.35, lookY: 0.0 });
   const flicker = E({ browIn: 0.35, browUp: 0.15, lidU: 0.08, pressed: 0.15, smile: 0.0, lookX: 0.3, lookY: 0.15 });
   const console_ = E({ browIn: 0.15, browUp: 0.15, lidU: 0.1, smile: 0.0, lookX: -0.1, lookY: 0.5 });
-  const alarm_ = E({ browIn: 0.2, browUp: 0.25, lidU: 0.0, smile: -0.05, lookX: 0.75, lookY: -0.2 });
-  const onFear = E({ browIn: 0.75, browUp: 0.25, lidTilt: 0.2, lidU: 0.05, smile: -0.12, lookX: 0.7, lookY: 0.35 });
+  const alarm_ = E({ browIn: 0.2, browUp: 0.28, lidU: 0.0, pressed: 0.25, smile: -0.03, lookX: 0.72, lookY: -0.42 });
   const f = S.k(t, [[`${b3}+0.4`, chinUp], [`${b3}+3.2`, chinUp], [`${b3}+3.5`, flicker], [`${b3}+4.70`, flicker],
-    [`${b3}+4.95`, console_], [`${b3}+5.55`, console_], [`${b3}+5.85`, alarm_], [`${b3}+6.35`, alarm_], [`${b3}+6.7`, onFear]]);
+    [`${b3}+4.95`, console_], [`${b3}+5.55`, console_], [`${b3}+5.85`, alarm_]]);
   f.blink = Math.max(blinkAt(t, S.T(`${b3}+3.25`), 0.13), blinkAt(t, S.T(`${b3}+3.47`), 0.13), blinkAt(t, S.T(`${b3}+6.5`), 0.2));
   return f;
 }
@@ -459,7 +477,9 @@ function shotFront(g, S, t, which) {
     c = { x: lerp(215, 322, k), y: lerp(826, 846, k), zoom: lerp(1.7, 1.6, k) };
   } else {
     const k = ease.sine(clamp((t - S.T('s02b03+4.70')) / (S.T('s02b04') - S.T('s02b03+4.70'))));
-    c = { x: lerp(468, 645, k), y: lerp(900, 890, k), zoom: 1.25 * Math.pow(1.68 / 1.25, k) };
+    // (y keeps the console row's faces out of the bottom social-UI band: JOY's face (world y ≈ 1149) sits at
+    // screen y ≈ 890 → 950, not 950 → 1075; the shot is cut at s02b03.end−0.2 (k ≈ 0.95) for the CEO close)
+    c = { x: lerp(468, 645, k), y: lerp(950, 962, k), zoom: 1.25 * Math.pow(1.68 / 1.25, k) };
   }
   const door = S.k(t, [['s02b03+0.2', 0], ['s02b03+0.95', 1, 'out'], ['s02b03+2.1', 1], ['s02b03+2.9', 0, 'inOut']]);
   const st = { t, ...A, lightsDim: L.lightsDim, consoleGlow: L.consoleGlow, mist: L.mist, voidShadow: 0.15, doorOpen: door };
@@ -547,11 +567,24 @@ function sparkle(g, x, y, r, a) {
   g.closePath(); g.fill(); g.restore();
 }
 
+// H (s02b03.end−0.2 → s02b04+1.3) and G (→ S.end) share one performance in the alarm view; only the camera cuts.
+// H: a close on the CEO (Fear's head at the right edge), cut in on the last of the kneel: the eyes come down from the
+// bell and land on Fear, the performed composure drains out of the brows and lids, a soft blink, "Fear?".
+// G: punch out to the two-shot just before "What are you looking at?" (b04+1.46) — Fear doesn't answer.
+const CU_FROM = 's02b03.end-0.2', CU_TO = 's02b04+1.3';
 function shotTwo(g, S, t) {
   const L = lightState(S, t), A = alarmState(S, t);
-  const k = ease.sine(clamp((t - S.T('s02b04+2.6')) / (S.end - S.T('s02b04+2.6'))));
-  // (the alarm stage is 1600 tall: keep y ≤ 1600 − 640/zoom so the frame never runs off its bottom edge)
-  const c = { x: lerp(398, 384, k), y: lerp(956, 986, k), zoom: lerp(1.0, 1.1, k) };
+  let c;
+  if (t < S.T(CU_TO)) {
+    // the CEO's eyes (world ≈ (201,756) kneeling) at screen ≈ (300,520): looking room toward Fear on the right
+    // (x ≥ 360/1.5 = 240 keeps the frame on the stage's left edge); a barely-there push
+    const k = ease.sine(clamp((t - S.T(CU_FROM)) / (S.T(CU_TO) - S.T(CU_FROM))));
+    c = { x: lerp(242, 244, k), y: lerp(838, 832, k), zoom: lerp(1.5, 1.54, k) };
+  } else {
+    const k = ease.sine(clamp((t - S.T('s02b04+2.6')) / (S.end - S.T('s02b04+2.6'))));
+    // (the alarm stage is 1600 tall: keep y ≤ 1600 − 640/zoom so the frame never runs off its bottom edge)
+    c = { x: lerp(398, 384, k), y: lerp(956, 986, k), zoom: lerp(1.0, 1.1, k) };
+  }
   const st = { t, ...A, lightsDim: L.lightsDim, mist: L.mist };
   g.save();
   cam(g, c, t, 2.2);
@@ -562,22 +595,36 @@ function shotTwo(g, S, t) {
   fearFinger(g, fx, fy, fs, { t, ...fp }, -1, clamp(fp.point * 3 - 0.6));
   // CEO kneeling, lip-synced; head tilts to find Fear's eyes; after the line the eyes follow the finger, then the head
   const [cx, cy, cs] = AA.ceoKneel;
-  const b4 = 's02b04';
-  // after "at?" (b04+3.06) the eyes drop (through a blink) to the finger rising beside their shoulder, then run
-  // up-left along it, over the shoulder; the head follows ~0.2 s later (cut on the turn)
+  const b4 = 's02b04', e3 = 's02b03.end';
+  // H: eyes up-right on the bell (still holding the CEO face: lips pressed) → drop and land on Fear (a small lift of
+  // the brows: how small it is) → the performance drains: inner brows up, lids soften → "Fear?"
+  const bell = E({ browIn: 0.2, browUp: 0.3, lidU: -0.02, pressed: 0.3, smile: -0.02, lookX: 0.7, lookY: -0.6 });
+  const land = E({ browIn: 0.35, browUp: 0.4, lidU: -0.04, pressed: 0.15, smile: -0.05, lookX: 0.6, lookY: 0.45 });
+  const soft = E({ browIn: 0.8, browUp: 0.32, lidU: 0.14, lidTilt: 0.22, smile: -0.08, lookX: 0.6, lookY: 0.45 });
   const ask = E({ browIn: 0.6, browUp: 0.4, lidU: 0.02, smile: -0.05, lookX: 0.6, lookY: 0.45 });
+  // after "at?" (b04+3.06) the eyes drop (through a blink) to the finger rising beside their shoulder, rest on it,
+  // then run up-left along it, over the shoulder; the head follows ~0.25 s later and is most of the way round at
+  // the cut (match on action into s03's back view)
   const finger = E({ browIn: 0.55, browUp: 0.5, lidU: 0.1, smile: -0.08, lookX: 0.5, lookY: 0.7 });
-  const behind = E({ browIn: 0.7, browUp: 0.55, lidU: -0.12, smile: -0.12, open: 0.06, lookX: -0.75, lookY: -0.6 });
-  const face = S.k(t, [[`${b4}+0.0`, ask], [`${b4}+3.1`, ask], [`${b4}+3.3`, finger], ['scene.end-0.64', finger], ['scene.end-0.36', behind]]);
+  const behind = E({ browIn: 0.7, browUp: 0.6, lidU: -0.14, smile: -0.12, open: 0.06, lookX: -0.8, lookY: -0.65 });
+  const face = S.k(t, [[CU_FROM, bell], [`${e3}+0.05`, bell], [`${e3}+0.2`, land], [`${e3}+0.3`, land],
+    [`${b4}-0.02`, soft], [`${b4}+0.5`, soft], [`${b4}+0.95`, ask], [`${b4}+3.1`, ask], [`${b4}+3.3`, finger],
+    [`${b4}+3.85`, finger], [`${b4}+4.2`, behind]]);
   const said = withSpeech(face, S.lip('CONSCIOUSNESS', t));
-  said.blink = Math.max(blinkAt(t, S.T(`${b4}+1.05`), 0.16), blinkAt(t, S.T(`${b4}+3.1`), 0.16));
-  said.noAutoBlink = t > S.T(`${b4}+3.0`); // the breath stops; nothing blinks now
-  const turn = S.k(t, [[`${b4}+0.0`, 0.14], [`${b4}+2.6`, 0.2], ['scene.end-0.42', 0.2], ['scene.end+0.25', -0.75, 'inOut']]);
-  const tilt = S.k(t, [[`${b4}+0.0`, 0.08], [`${b4}+1.4`, 0.17], ['scene.end-0.5', 0.17], ['scene.end', 0.02]]);
+  said.blink = Math.max(blinkAt(t, S.T(`${e3}+0.3`), 0.28), blinkAt(t, S.T(`${b4}+1.05`), 0.16), blinkAt(t, S.T(`${b4}+3.1`), 0.16));
+  // deliberate blinks only in the close; the breath stops after the line: nothing blinks then
+  said.noAutoBlink = t < S.T(CU_TO) || t > S.T(`${b4}+3.0`);
+  const turn = S.k(t, [[CU_FROM, 0.42], [`${e3}+0.12`, 0.42], [`${e3}+0.55`, 0.16, 'inOut'], [`${b4}+2.6`, 0.2],
+    [`${b4}+4.05`, 0.2], ['scene.end+0.3', -0.75, 'inOut']]);
+  const tilt = S.k(t, [[CU_FROM, 0.0], [`${e3}+0.2`, 0.0], [`${b4}+0.1`, 0.1], [`${b4}+1.4`, 0.17], [`${b4}+4.0`, 0.17], ['scene.end', -0.02]]);
   const held = clamp((t - S.T(`${b4}.end+0.05`)) / 0.3);
+  const kneel = S.k(t, [['s02b03.end-0.8', 0], ['s02b03.end', 1, 'inOut']]);
+  // the out-breath as the composure goes (head and shoulders settle)
+  const sigh = pulseEnv(t, S.T(`${e3}+0.35`), 0.3, 0.15, 0.6);
   drawSelf(g, cx, cy, cs, {
-    t: t + 0.7, outfit: 'ceo', kneel: 1, facing: 1, clipboard: true, armL: 'rest',
-    face: said, headTurn: turn, headTilt: tilt, headDX: 6 * (1 - held), breathe: 1 - 0.85 * held, shrug: 0.12 * held,
+    t: t + 0.7, outfit: 'ceo', kneel, facing: 1, clipboard: true, armL: 'rest',
+    face: said, headTurn: turn, headTilt: tilt, headDX: 6 * (1 - held), headDY: 4 * sigh,
+    breathe: 1 - 0.85 * held + 0.6 * sigh, shrug: 0.12 * held,
   });
   drawHQForeground(g, 'alarm', st);
   drawAlarmLight(g, 'alarm', st);
@@ -593,8 +640,8 @@ export function render(g, t, S) {
   if (t < S.T('s02b02+2.8')) return shotAlarmPull(g, S, t);
   if (t < S.T('s02b03+0.45')) return shotBack(g, S, t, 'D');
   if (t < S.T('s02b03+4.70')) return shotFront(g, S, t, 'E');
-  if (t < S.T('s02b04')) return shotFront(g, S, t, 'F');
-  return shotTwo(g, S, t);
+  if (t < S.T(CU_FROM)) return shotFront(g, S, t, 'F');
+  return shotTwo(g, S, t); // H (CEO close) → G (two-shot)
 }
 
 // =========================================================================== sound
@@ -603,8 +650,9 @@ function computeSfx() {
   const out = [
     { at: 's02b01+0.05', name: 'console_beeps', gain: -20, pan: -0.3 },
     { at: 's02b01+1.1', name: 'console_beeps', gain: -22, pan: 0.25, rate: 0.94 },
-    { at: 's02b02+2.345', name: 'alarm_pull', gain: -8, pan: -0.35 },
-    { at: 's02b02+2.45', name: 'alarm_bell', until: 's02b04+2.2', fade: 1.6, gain: -20, loop: true, pan: -0.2 },
+    // the pull station and bell are screen-right in the pull shot and in every front/alarm shot after it
+    { at: 's02b02+2.345', name: 'alarm_pull', gain: -8, pan: 0.35 },
+    { at: 's02b02+2.45', name: 'alarm_bell', until: 's02b04+2.2', fade: 1.6, gain: -20, loop: true, pan: 0.2 },
     { at: 's02b03-0.05', name: 'door_whoosh', gain: -14, pan: -0.5 },
     { at: 's02b03+1.9', name: 'door_whoosh', gain: -19, pan: -0.55, rate: 0.92 }, // swings shut behind them (thud)
     { at: 's02b03+2.55', name: 'cloth_rustle', gain: -17 },

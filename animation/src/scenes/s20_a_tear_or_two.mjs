@@ -17,7 +17,7 @@ export const id = 's20';
 
 export const sfx = [
   // the sweater sleeve wipes the cheek (swishes at 0.0 / 0.28: the arm rising / the stroke over the drop)
-  { at: 's20b03+2.8', name: 'cloth_rustle', gain: -18 },
+  { at: 's20b03+2.65', name: 'cloth_rustle', gain: -18 },
   // the notebook closes: the cover is lifted (+0.8), stands up (+1.45) and is laid down (+2.0); swish peak at 0.5
   { at: 's20b04+0.85', name: 'paper_rustle', gain: -16 },
   // reaching over to the lamp (+1.5 → +2.25)
@@ -34,9 +34,9 @@ const NBK = REALROOM.anchors.notebook;                   // 430, 984, 0.6
 const NB_ROT = -0.05;
 const CAM_DESK = REALROOM.cameras.desk;                  // {424,760,1.5}
 const CAM_OPEN = REALROOM.cameras.opening;               // {420,655,1.12}
-// the tear close-up: the face fills ~43 % of the width (centre ≈ screen y 660), so the welling, the drop and its wet
+// the tear close-up: the face fills ~41 % of the width (centre ≈ screen y 655), so the welling, the drop and its wet
 // trail survive the encoder (at the old 2.1 the streak vanished in the compressed film)
-const CAM_CLOSE = { x: 428, y: 702, zoom: 2.5 };
+const CAM_CLOSE = { x: 428, y: 704, zoom: 2.4 };
 const LEAF_RISE = 220 * 0.866;                           // a standing cover's height on screen (page units)
 const HAND_S = 1.42;
 const PENCIL_LEN = 52;
@@ -73,11 +73,11 @@ function tracks(t, S) {
     lampOff,
     // THE tear (drawn locally, bigger than the rig's, on the lamp-lit near cheek — screen-left): a bead gathers on the
     // lower lid while the eyes well (b02 → b03), squeezes out with the slow blink and spills on 'tear' (+0.86); it slides
-    // slowly with one stutter, stops on the cheek (+2.2) and hangs there at face size until the sleeve takes it (+3.15)
+    // slowly with one stutter, stops on the cheek (+2.2) and hangs there at face size until the sleeve takes it (+3.0)
     bead: k([['s20b02+0.6', 0], ['s20b03+0.5', 0.8, 'sine'], ['s20b03+0.85', 1, 'inOut']]),
     drop: k([['s20b03+0.85', 0], ['s20b03+1.45', 0.42, 'inOut'], ['s20b03+1.65', 0.47], ['s20b03+2.25', 1, 'inOut']]),
-    wiped: k([['s20b03+3.05', 0], ['s20b03+3.25', 1, 'inOut']]),
-    trailOff: k([['s20b03+3.1', 0], ['s20b03+3.4', 0.7], ['s20b04+1.0', 1]]),
+    wiped: k([['s20b03+2.9', 0], ['s20b03+3.08', 1, 'inOut']]),
+    trailOff: k([['s20b03+3.0', 0], ['s20b03+3.3', 0.7], ['s20b04+1.0', 1]]),
   };
 }
 
@@ -253,14 +253,14 @@ function armLeft(t, S, pose, tr) {
   rest.reach1 = rest.reach2 = foreshorten(pose, rest.target, -1).reach1;
   // after the hold on the hanging drop: up to the cheek, one stroke over the drop, back down to the page just before
   // the hand takes the cover (b04+0.5)
-  const wipe = S.k(t, [['s20b03+2.65', 0], ['s20b03+3.05', 1, 'inOut'], ['s20b03+3.4', 1], ['s20b04+0.38', 0, 'inOut']]);
+  const wipe = S.k(t, [['s20b03+2.5', 0], ['s20b03+2.92', 1, 'inOut'], ['s20b03+3.18', 1], ['s20b04+0.46', 0, 'inOut']]);
   if (t < T('s20b04+0.5')) {
     if (wipe <= 0) return rest;
     // the sweater-paw knuckle under the lamp-side eye (self.mjs wipeTear geometry), one small stroke outward
     const ref = selfPoseAnchors(SX, SY, SS, pose);
     const hc = ref.headCenter, ht = ref.headTop;
     const rot = Math.atan2(ht[0] - hc[0], -(ht[1] - hc[1]));
-    const stroke = S.k(t, [['s20b03+2.95', 0], ['s20b03+3.35', 1, 'inOut']]);
+    const stroke = S.k(t, [['s20b03+2.82', 0], ['s20b03+3.18', 1, 'inOut']]);
     const hx = lerp(-34, -44, stroke), hy = lerp(44, 50, stroke);
     const c = Math.cos(rot), sn = Math.sin(rot);
     const wT = selfLocal(SX, SY, SS, 1, hc[0] + hx * c - hy * sn, hc[1] + hx * sn + hy * c);
@@ -390,10 +390,10 @@ function selfPose(t, S, tr) {
   // (during the tear the gaze stays soft and inward, a little down-right — the eyes stay open on the camera's side;
   // after the wipe they come back down to the page)
   const lookX = k([['scene.start', 0.42], ['s20b01+0.8', 0.5], ['s20b01+2.4', 0.55], ['s20b02', 0.5], ['s20b02+1.0', 0.3],
-    ['s20b03+1.6', 0.2], ['s20b03+2.9', 0.24], ['s20b03+3.45', 0.4], ['s20b04+0.4', 0.3], ['s20b04+0.75', -0.15], ['s20b04+1.25', 0.05],
+    ['s20b03+1.6', 0.2], ['s20b03+2.8', 0.24], ['s20b03+3.35', 0.4], ['s20b04+0.4', 0.3], ['s20b04+0.75', -0.15], ['s20b04+1.25', 0.05],
     ['s20b04+1.55', -0.75], ['s20b04+2.5', -0.75], ['s20b04+2.9', 0.0], ['s20b04+3.5', 0.55]]) + fbm(t * 0.4, 61) * 0.03;
   const lookY = k([['scene.start', 0.66], ['s20b01+2.4', 0.62], ['s20b02', 0.55], ['s20b02+1.0', 0.4], ['s20b03+1.6', 0.34],
-    ['s20b03+2.9', 0.38], ['s20b03+3.45', 0.62], ['s20b04+0.75', 0.7], ['s20b04+1.25', 0.5], ['s20b04+1.55', 0.15], ['s20b04+2.5', 0.15], ['s20b04+2.9', -0.4],
+    ['s20b03+2.8', 0.38], ['s20b03+3.35', 0.62], ['s20b04+0.75', 0.7], ['s20b04+1.25', 0.5], ['s20b04+1.55', 0.15], ['s20b04+2.5', 0.15], ['s20b04+2.9', -0.4],
     ['s20b04+3.6', -1.0]]) + fbm(t * 0.37, 62) * 0.025;
   // brows inner-up (moved) → softening as they laugh at themselves → raised gently at the stars
   const browIn = k([['scene.start', 0.55], ['s20b02', 0.62], ['s20b03+0.9', 0.75], ['s20b03+2.0', 0.45], ['s20b03.end', 0.35],
@@ -416,8 +416,8 @@ function selfPose(t, S, tr) {
     ['s20b04+2.6', 0.25], ['s20b04+3.6', 0.05]]);
   // tears: glistening → welling on 'After that,' (the rig's band + drawWetEyes' bright water line) → the drop (drawn
   // locally, tracks.drop) spills on 'tear' (+0.86) → the eyes stay wet through the hold → wiped → dry-ish
-  const tears = k([['scene.start', 0.42], ['s20b02', 0.45], ['s20b02+1.2', 0.9], ['s20b03+0.8', 1], ['s20b03+2.9', 0.85],
-    ['s20b03+3.35', 0.45], ['s20b04+0.4', 0.3], ['s20b04+2.6', 0.28], ['s20b04+4', 0.4]]);
+  const tears = k([['scene.start', 0.42], ['s20b02', 0.45], ['s20b02+1.2', 0.9], ['s20b03+0.8', 1], ['s20b03+2.8', 0.85],
+    ['s20b03+3.25', 0.45], ['s20b04+0.4', 0.3], ['s20b04+2.6', 0.28], ['s20b04+4', 0.4]]);
   // the rig's symmetric streaks stay faint: the one tear on the near cheek carries its own wet trail (drawWetEyes)
   const stream = k([['s20b03+1.3', 0], ['s20b03+2.4', 0.22], ['s20b03+3.2', 0.1], ['s20b04+0.6', 0]]);
   const tremble = k([['s20b02+0.8', 0], ['s20b03+0.6', 0.18], ['s20b03+1.9', 0.12], ['s20b03+2.2', 0]]);
@@ -577,14 +577,19 @@ function drawWetEyes(g, pose, tr, well) {
     const dx0 = side * e.rx * 0.5, x0 = e.cx + dx0, y0 = e.lowY(dx0) + 1.2;
     const bead = tr.bead * (drop > 0 ? 0 : 1);
     if (bead > 0.01 && well > 0.01) {
-      const r = lerp(1.6, 4.2, bead);
-      teardrop(g, x0, y0 + r * 0.55, r, -0.9 * (1 - bead), Math.min(1, bead * 1.6) * alive);
+      // a swelling lens of water clinging to the lid (not yet a drop): it rounds and sags just before it lets go
+      const r = lerp(1.4, 3.6, bead), sag = clamp((bead - 0.75) * 4), ba = Math.min(1, bead * 1.6) * alive;
+      const by = y0 - 0.6 + r * lerp(0.25, 0.6, sag), rxB = r * lerp(1.35, 1.05, sag), ryB = r * lerp(0.62, 1.0, sag);
+      g.fillStyle = `rgba(214,238,255,${0.94 * ba})`; g.strokeStyle = `rgba(86,138,198,${0.8 * ba})`; g.lineWidth = 1.1;
+      g.beginPath(); g.ellipse(x0, by, rxB, ryB, 0, 0, TAU); g.fill(); g.stroke();
+      g.fillStyle = `rgba(255,255,255,${ba})`;
+      g.beginPath(); g.ellipse(x0 - rxB * 0.38, by - ryB * 0.2, r * 0.32, r * 0.26, -0.3, 0, TAU); g.fill();
     }
     if (drop <= 0) continue;
     const L = 31;                                         // lid → the cheek beside the mouth corner
     const px = (p) => x0 + side * (Math.sin(p * Math.PI) * 2.6 + p * 1.4), py = (p) => y0 + 3 + p * L;
     const tx = px(drop), ty = py(drop);
-    const sz = lerp(4.6, 6.6, clamp(drop * 3)) + 0.5 * clamp((drop - 0.9) * 10);
+    const sz = lerp(3.8, 6.6, clamp(drop * 3)) + 0.5 * clamp((drop - 0.9) * 10);
     const moving = clamp(Math.abs(drop - 0.47) > 0.03 && drop < 0.99 ? 1 : 0);
     // the wet trail it leaves (a wide glossy body, a specular stripe on the lamp side)
     if (trailA > 0.01 && drop > 0.04) {
@@ -632,7 +637,7 @@ export function render(g, t, S) {
   let cam;
   // the push arrives as the drop comes to rest on the cheek (+2.25); a held close-up on the hanging drop and the wipe;
   // the pull-back starts once the sleeve has left the face
-  const tPullA = S.T('s20b03+3.3'), tPullB = S.T('s20b04+2.6');
+  const tPullA = S.T('s20b03+3.15'), tPullB = S.T('s20b04+2.6');
   if (t < S.T('s20b02')) cam = { ...CAM_DESK };
   else if (t < tPullA) {
     const p = S.k(t, [['s20b02', 0], ['s20b03+2.3', 1, 'inOut']]);

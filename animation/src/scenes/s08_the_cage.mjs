@@ -20,8 +20,10 @@ const CAGE_B = [430, 1630, 0.952];
 const CEO_B_DOOR = [300, 1730, 1.12];                // staging value (kept for reference)
 const CEO_KNEEL = [255, 1730, 1.12];                 // s08 only: 45 px left of CEO_B_DOOR so the kneeling CEO's head
                                                      //   clears Fear's face in the wide; the hand still reaches the lock
-const CEO_B_BARS = [96, 1735, 1.12];                 // staging 140 assumed the close at x 430; this close sits at x 414,
-                                                     //   where the kneeling CEO's hair and raised knee peeked in at frame-left
+const CEO_B_BARS = [60, 1735, 1.12];                 // staging 140 assumed the close at x 430; this close sits at x 366–370
+                                                     //   so the arm (blazer sleeve + cuff) reaches in from the left edge to
+                                                     //   the leftmost bar and reads as the CEO's arm, not a floating fist; at
+                                                     //   x 60 the kneeling CEO's hair and raised knee stay off-frame
 
 // ---- light (§4.2)
 const SET_B = { lightsDim: 0.3, mist: 0.6 };
@@ -35,9 +37,11 @@ export const sfx = [
   { at: 's08b01+1.15', name: 'cloth_rustle', gain: -16 },                 // goes down on one knee
   { at: 's08b01+1.65', name: 'cage_creak', gain: -21, until: 's08b01+2.4', fade: 0.05 },   // the gate swinging round
   { at: 's08b01+2.37', name: 'cage_close', gain: -8 },                    // clang at +2.4 (sync 0.03)
+  { at: 's08b01+2.54', name: 'lock_click', gain: -26, rate: 1.4 },       // the key seats in the keyhole (it appears at +2.55)
   { at: 's08b02-0.88', name: 'key_turn', gain: -10 },                     // bolt (0.68) lands on the lock at b02-0.2
   { at: 's08b02-0.22', name: 'lock_click', gain: -10 },
   { at: 's08b02+0.15', name: 'cloth_rustle', gain: -20, pan: -0.5 },      // the CEO rising beside the bars
+  { at: 's08b02+0.65', name: 'cage_creak', gain: -24, until: 's08b02+1.7', fade: 0.15, pan: 0.15 },   // Fear pulls on 'leave' (+1.0 → +1.6; swell peak +1.35)
   { at: 's08b03+0.0', name: 'sob', gain: -16, pan: 0.15 },
   { at: 's08b03+0.12', name: 'cloth_rustle', gain: -18, pan: -0.3 },      // turns away from the cage
   { at: 's08b03+0.52', name: 'footsteps', gain: -16, rate: 1.2, until: 's08b03+1.3', fade: 0.12, pan: -0.3 },   // two steps (+0.58, +1.06)
@@ -319,9 +323,10 @@ function shotInsert(g, t, S, T) {
 function shotClose(g, t, S, T) {
   g.save();
   // close (staging {430,1430,2.2}), pushed in so Fear's face fills ~half the frame width (at 2.2 the whole cage and
-  // plinth were in frame: a medium) and nudged left so the leftmost bar + the CEO's hand sit at the frame edge;
-  // the TIME-OUT sign stays in at the top. A slow push through the line.
-  cam(g, S.k(t, [['s08b02', { x: 404, y: 1440, zoom: 2.35 }], ['s08b03', { x: 405, y: 1436, zoom: 2.52 }, 'linear']]), t, 2);
+  // plinth were in frame: a medium) and slid left so the CEO's forearm and sleeve reach in from the left edge to the
+  // leftmost bar (at x 404 only the fist showed: a floating hand); the TIME-OUT sign stays in at the top, the padlock
+  // at the right edge. A slow push through the line.
+  cam(g, S.k(t, [['s08b02', { x: 366, y: 1440, zoom: 2.35 }], ['s08b03', { x: 370, y: 1436, zoom: 2.52 }, 'linear']]), t, 2);
   const st = { t, ...SET_B };
   drawHQ(g, 'backOfMind', st);
   drawVoid(g, ...VOID_B, { t, ...STARE_B, idle: 0, shadowSpread: 0.7 });

@@ -3,7 +3,7 @@
 // Views: `front` (opening wide), `alarm` (two-shots / closes), BACKDROP (front set + Void behind the alarm pair),
 // an OTS cheat with Fear's crown in the foreground. See data/staging.md §3 s06.
 import { createCanvas } from '@napi-rs/canvas';
-import { clamp, lerp, ease, fbm, noise1, blinkAt, applyCamera, drift, vignette, TAU } from '../engine.mjs';
+import { W, H, clamp, lerp, ease, fbm, noise1, blinkAt, applyCamera, drift, vignette, TAU } from '../engine.mjs';
 import { EXPR, makeExpr, withSpeech } from '../face.mjs';
 import { drawFear } from '../chars/fear.mjs';
 import { drawSelf, SELF_EXPR, selfLocal, drawClipboard } from '../chars/self.mjs';
@@ -32,7 +32,8 @@ const STARE_F = { headTurn: 0, headDown: 0.1 };
 const CAGE_F = [302, 846, 0.3];
 const CEO_AT_ALARM_F = [640, 1000, 0.444];
 const FEAR_ALARM_F = [734, 973, 0.42];
-const CEO_START_F = [560, 1150];
+const CEO_START_F = [606, 1160];      // (was 560: clear of s05's last CEO position (450,1060) in the dissolve)
+const S05_END_CAM = { x: 540, y: 940, zoom: 1.2 };   // = s05 CAM.end (keep the two in sync)
 const AA = HQ_VIEWS.alarm.anchors;
 const FA = HQ_VIEWS.front.anchors;
 const [FX, FY, FS] = AA.fearAtAlarm;   // 498, 1406, 1.8
@@ -98,7 +99,7 @@ function fearPose(t, S, L) {
   // backdrop two-shot: ±0.07 yaw was ~2 px on screen)
   const shakeAmt = S.k(t, [['s06b06+1.85', 0], ['s06b06+2.1', 1], ['s06b07', 0.75], ['s06b07+0.3', 0.45], ['s06b07+0.9', 0.15], ['s06b07+1.4', 0]]);
   const shakeW = Math.sin((t - S.T('s06b06')) * TAU * 3.1) * shakeAmt;
-  const headTurn = shakeW * 0.17;
+  const headTurn = shakeW * 0.17 + S.k(t, [['s06b05+1.15', 0], ['s06b05+1.45', -0.12, 'out'], ['s06b06+0.6', -0.1], ['s06b06+1.5', 0]]);
   const headDX = shakeW * 2.6;
   const tremble = clamp(S.k(t, [['s06b01', 0.7], ['s06b06', 0.65], ['s06b07+2.6', 0.65], ['s06b08+0.2', 0.95], ['scene.end', 0.85]]) + fl * 0.4);
 
@@ -110,6 +111,7 @@ function fearPose(t, S, L) {
   // ---- face
   const toVoid = { lookX: -0.62, lookY: -0.74 };
   const toCeo = { lookX: -0.6, lookY: -0.3 };
+  const toCeoUs = { lookX: -0.9, lookY: -0.3 };      // b05 close: unmistakably at the CEO (off-frame left)
   const scaredUp = X(EXPR.scared, { lidU: -0.12, open: 0.05, ...toVoid });
   const pinched = X(EXPR.worried, { browIn: 0.95, browSquish: 0.55, browUp: 0.25, lidTilt: 0.3, lidU: -0.05, smile: -0.35, ...toCeo });
   let face = S.k(t, [
@@ -126,15 +128,18 @@ function fearPose(t, S, L) {
     // b04: lower lip pushes up and trembles; eyes drop in shame
     ['s06b04+0.45', X(EXPR.worried, { browIn: 1, browUp: 0.2, lidTilt: 0.45, lidU: 0.05, smile: -0.62, pressed: 0.45, tremble: 0.7, ...toCeo })],
     ['s06b04+0.75', X(EXPR.worried, { browIn: 1, browUp: 0.1, lidTilt: 0.55, lidU: 0.32, smile: -0.62, pressed: 0.5, tremble: 0.7, lookX: -0.12, lookY: 0.8 }), 'out'],
-    ['s06b04+1.55', X(EXPR.worried, { browIn: 1, browUp: 0.1, lidTilt: 0.55, lidU: 0.34, smile: -0.6, pressed: 0.5, tremble: 0.6, lookX: -0.1, lookY: 0.82 })],
+    // (the shame stings: the eyes start to fill while they are down)
+    ['s06b04+1.55', X(EXPR.worried, { browIn: 1, browUp: 0.1, lidTilt: 0.55, lidU: 0.34, smile: -0.6, pressed: 0.5, tremble: 0.6, tears: 0.2, lookX: -0.1, lookY: 0.82 })],
     // ...then slowly the eyes drift up, past the CEO's shoulder, to the Void
-    ['s06b04+2.4', X(EXPR.scared, { browIn: 1, browUp: 0.45, lidTilt: 0.25, lidU: -0.08, smile: -0.45, tremble: 0.4, pupil: 0.8, ...toVoid })],
-    ['s06b05-0.2', X(EXPR.scared, { browIn: 1, browUp: 0.45, lidTilt: 0.25, lidU: -0.08, smile: -0.45, tremble: 0.4, pupil: 0.8, ...toVoid })],
-    // b05: back to Consciousness; tears well; chin crumples
-    ['s06b05+0.15', X(EXPR.worried, { browIn: 1, browUp: 0.35, lidTilt: 0.4, smile: -0.5, tremble: 0.55, tears: 0.15, ...toCeo }), 'out'],
-    ['s06b05+1.25', X(EXPR.worried, { browIn: 1, browUp: 0.35, lidTilt: 0.45, smile: -0.55, tremble: 0.6, tears: 0.65, ...toCeo })],
-    ['s06b05+1.4', X(EXPR.worried, { browIn: 0.9, browUp: 0.7, lidTilt: 0.3, lidU: -0.18, smile: -0.5, tremble: 0.5, tears: 0.75, pupil: 1.1, lookX: -0.63, lookY: -0.33 }), 'out'],
-    ['s06b05+1.7', X(EXPR.crying, { browIn: 1, browUp: 0.55, lidTilt: 0.5, lidU: -0.02, lidL: 0.2, smile: -0.7, open: 0.1, tremble: 0.8, tears: 0.88, stream: 0, ...toCeo })],
+    ['s06b04+2.4', X(EXPR.scared, { browIn: 1, browUp: 0.45, lidTilt: 0.25, lidU: -0.08, smile: -0.45, tremble: 0.4, pupil: 0.8, tears: 0.4, ...toVoid })],
+    ['s06b05-0.2', X(EXPR.scared, { browIn: 1, browUp: 0.45, lidTilt: 0.25, lidU: -0.08, smile: -0.45, tremble: 0.4, pupil: 0.8, tears: 0.48, ...toVoid })],
+    // b05: back to Consciousness; the tears already glisten on the lower lids (~0.5 from the line's start) and keep
+    // rising; chin crumples. On 'us' (+1.30) the eyes go hard left INTO the CEO's ("I was protecting you too"): the
+    // eyeline-table lookX −0.6 only moves the iris a quarter of the eye in this close and read as a look at the lens
+    ['s06b05+0.15', X(EXPR.worried, { browIn: 1, browUp: 0.35, lidTilt: 0.4, smile: -0.5, tremble: 0.55, tears: 0.58, ...toCeo }), 'out'],
+    ['s06b05+1.15', X(EXPR.worried, { browIn: 1, browUp: 0.35, lidTilt: 0.45, smile: -0.55, tremble: 0.6, tears: 0.68, ...toCeo })],
+    ['s06b05+1.4', X(EXPR.worried, { browIn: 0.9, browUp: 0.7, lidTilt: 0.3, lidU: -0.16, smile: -0.5, tremble: 0.5, tears: 0.76, pupil: 1.1, ...toCeoUs }), 'out'],
+    ['s06b05+1.75', X(EXPR.crying, { browIn: 1, browUp: 0.55, lidTilt: 0.5, lidU: -0.02, lidL: 0.2, smile: -0.7, open: 0.1, tremble: 0.8, tears: 0.88, stream: 0, ...toCeoUs })],
     ['s06b06', X(EXPR.crying, { browIn: 1, browUp: 0.5, lidTilt: 0.5, lidU: 0.0, lidL: 0.22, smile: -0.62, open: 0, tremble: 0.6, tears: 0.92, stream: 0, ...toCeo })],
     // b06: watches the nod; a tear sits on the lid; then the eyes slide to the Void and stay
     ['s06b06+1.35', X(EXPR.crying, { browIn: 1, browUp: 0.5, lidTilt: 0.5, lidU: 0.02, lidL: 0.22, smile: -0.6, open: 0, tremble: 0.5, tears: 0.95, stream: 0, ...toCeo })],
@@ -165,8 +170,10 @@ function fearPose(t, S, L) {
   // tiny eye flicks while it waits (searching the CEO's face): b03, b06 start
   const srch = S.k(t, [['s06b02+1.0', 0], ['s06b02+1.3', 1], ['s06b04', 1], ['s06b04+0.3', 0]]);
   face.lookX += srch * (Math.sin(t * TAU * 1.6) > 0 ? 0.05 : -0.05);
-  face.noAutoBlink = t > S.T('s06b07+0.2') && t < S.T('s06b07+1.6') || t > S.T('s06b08+0.35');
-  if (!face.noAutoBlink) face.blink = blinkAt(t, S.T('s06b05+1.0'), 0.2) + blinkAt(t, S.T('s06b06+0.55'), 0.32);
+  // no blinks through "I'm only trying to keep us safe." (the brimming eyes hold the CEO's), until the deliberate
+  // slow blink in b06 (the old b05+1.0 blink and a random auto-blink fell inside the line)
+  face.noAutoBlink = t > S.T('s06b05-0.3') && t < S.T('s06b06+0.95') || t > S.T('s06b07+0.2') && t < S.T('s06b07+1.6') || t > S.T('s06b08+0.35');
+  if (t < S.T('s06b07')) face.blink = blinkAt(t, S.T('s06b06+0.55'), 0.32);
   face = withSpeech(face, lip, 0.9);
 
   // ---- arms (facing -1: armL = screen-RIGHT (the handle side), armR = screen-LEFT (toward the CEO))
@@ -338,14 +345,37 @@ function shotAlarm(g, t, S, L, c, opts = {}) {
   if (opts.tint) redTint(g, t, L, opts.tint[0], opts.tint[1]);
 }
 
+// While the camera holds on S05_END_CAM (the dissolve from s05), the static set + Void + empty cage are painted
+// once (baked at the hand-over time, so nothing jumps when live drawing takes over) and reused: the dissolve frames
+// draw both scenes and the live front set is the most expensive part of each.
+const SET_M = 40;
+let heldSet = null;
+function drawHeldSet(g, t0, st) {
+  if (!heldSet) {
+    const c = createCanvas(W + 2 * SET_M, H + 2 * SET_M), b = c.getContext('2d'), cm = S05_END_CAM;
+    b.translate(SET_M, SET_M); applyCamera(b, cm);
+    drawHQ(b, 'front', { ...st, t: t0 });
+    drawVoid(b, ...VOID_F, { t: t0, ...STARE_F, idle: 0, shadow: false });
+    drawCage(b, ...CAGE_F, { t: t0, door: 1, locked: 0 });
+    heldSet = { c, x: cm.x - (W / 2 + SET_M) / cm.zoom, y: cm.y - (H / 2 + SET_M) / cm.zoom, w: (W + 2 * SET_M) / cm.zoom, h: (H + 2 * SET_M) / cm.zoom };
+  }
+  g.drawImage(heldSet.c, heldSet.x, heldSet.y, heldSet.w, heldSet.h);
+}
+
 // opening wide in the front view: the emotions back at the console, the CEO crossing to Fear and kneeling
 function shotFrontWide(g, t, S, L) {
-  const c = camK(S, t, [['scene.start+0.6', { x: 560, y: 960, zoom: 1.05 }], ['s06b01+2.28', { x: 586, y: 962, zoom: 1.18 }]]);
+  // starts on s05's LAST camera (s05 CAM.end, held there with this same drift), so the "one day" dissolve keeps
+  // the set, the Void, the cage and Fear's spot in register (no doubled room); moves on once the dissolve is done
+  const c = camK(S, t, [['scene.start+0.9', S05_END_CAM], ['s06b01+2.28', { x: 586, y: 962, zoom: 1.18 }]]);
   const st = setState(t, L);
   g.save(); cam(g, c, t, 2);
-  drawHQ(g, 'front', st);
-  drawVoid(g, ...VOID_F, { t, ...STARE_F, idle: 0, shadow: false });
-  drawCage(g, ...CAGE_F, { t, door: 1, locked: 0 });
+  const tHold = S.T('scene.start+0.9');
+  if (t < tHold) drawHeldSet(g, tHold, setState(tHold, L));
+  else {
+    drawHQ(g, 'front', st);
+    drawVoid(g, ...VOID_F, { t, ...STARE_F, idle: 0, shadow: false });
+    drawCage(g, ...CAGE_F, { t, door: 1, locked: 0 });
+  }
   // CEO: crossing up-right, then kneeling beside Fear (back view, eyes on Fear)
   const t0 = S.T('scene.start'), tk = S.T('s06b01+1.48');
   const u = clamp((t - t0) / (tk - t0));

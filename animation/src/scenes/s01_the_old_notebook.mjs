@@ -158,10 +158,23 @@ function armsA(t, S) {
   const ang = lerp(0.3, 0.78, slide) + fbm(t * 0.3, 21) * 0.02;   // on the hood the wrist straightens: the hand lies above crayon Fear, not over it
   let target = wristForTip(tip, ang, 1);
   let armL = { target, bend: -1, front: true, hand: 'point', handAngle: ang, thumb: 1, ...foreshorten(t, S, target, -1) };
+  // the relaxed hand at rest, flat on the outer half of the LEFT page
+  const restAng = 1.25;
+  const restW = [L_REST_PALM[0] - Math.cos(restAng) * 17 * HAND_S, L_REST_PALM[1] - Math.sin(restAng) * 17 * HAND_S];
+  // THUMBNAIL: on the first frame this hand rests on the left page, so the crayon Fear-and-hood doodle on the right
+  // page is completely clear (the only picture of the two title characters in the preview still). During the
+  // silent beat it reaches over and sets a fingertip on the little crayon Fear (eyes are already there), then
+  // traces up to the hood as before.
+  const reach = S.k(t, [['s01b01+0.3', 0], ['s01b01+1.15', 1, 'inOut']]);
+  if (reach < 1) {
+    const toW = [SX + target[0] * SS, SY + target[1] * SS];
+    const w = [lerp(restW[0], toW[0], reach), lerp(restW[1], toW[1], reach) - Math.sin(reach * Math.PI) * 14];
+    target = selfLocal(SX, SY, SS, 1, w[0], w[1]);
+    armL = { target, bend: -1, front: true, hand: reach > 0.55 ? 'point' : 'flat', handAngle: lerp(restAng, ang, reach), thumb: 1,
+      ...foreshorten(t, S, target, -1) };
+  }
   if (away > 0) {
     // the fingertip lifts off the page and the relaxed hand settles back on the left page
-    const restAng = 1.25;
-    const restW = [L_REST_PALM[0] - Math.cos(restAng) * 17 * HAND_S, L_REST_PALM[1] - Math.sin(restAng) * 17 * HAND_S];
     const fromW = [SX + target[0] * SS, SY + target[1] * SS];
     const w = [lerp(fromW[0], restW[0], away), lerp(fromW[1], restW[1], away) - Math.sin(away * Math.PI) * 14];
     target = selfLocal(SX, SY, SS, 1, w[0], w[1]);
