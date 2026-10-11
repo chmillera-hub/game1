@@ -1,5 +1,7 @@
 {
- "duration": 339.07,
+ "timeline": "data/timeline_play.json",
+ "speech_from": "data/timeline_play.json",
+ "duration": 319.185,
  "cues": [
   {
    "mood": "tender_memory",
@@ -7,7 +9,7 @@
    "fade_in": 0.4,
    "fade_out": 2.5,
    "start": 0.0,
-   "end": 19.896,
+   "end": 18.276,
    "hits": []
   },
   {
@@ -15,8 +17,8 @@
    "intensity": 0.3,
    "fade_in": 2.0,
    "fade_out": 1.5,
-   "start": 19.396,
-   "end": 35.769,
+   "start": 17.776,
+   "end": 33.119,
    "hits": []
   },
   {
@@ -24,12 +26,12 @@
    "intensity": 0.38,
    "fade_in": 1.0,
    "fade_out": 1.2,
-   "start": 35.769,
-   "end": 50.59,
+   "start": 33.119,
+   "end": 46.757,
    "hits": [
     {
-     "t": 39.219,
-     "type": "sting"
+     "type": "sting",
+     "t": 36.569
     }
    ]
   },
@@ -38,8 +40,8 @@
    "intensity": 0.24,
    "fade_in": 1.0,
    "fade_out": 0.8,
-   "start": 50.59,
-   "end": 66.935,
+   "start": 46.757,
+   "end": 61.746,
    "hits": []
   },
   {
@@ -47,8 +49,8 @@
    "intensity": 0.5,
    "fade_in": 0.3,
    "fade_out": 2.2,
-   "start": 66.935,
-   "end": 80.113,
+   "start": 61.746,
+   "end": 73.584,
    "hits": []
   },
   {
@@ -56,8 +58,8 @@
    "intensity": 0.26,
    "fade_in": 2.0,
    "fade_out": 1.0,
-   "start": 79.313,
-   "end": 101.345,
+   "start": 72.784,
+   "end": 92.862,
    "hits": []
   },
   {
@@ -65,12 +67,12 @@
    "intensity": 0.3,
    "fade_in": 0.4,
    "fade_out": 1.0,
-   "start": 101.345,
-   "end": 105.423,
+   "start": 92.862,
+   "end": 96.703,
    "hits": [
     {
-     "t": 103.145,
-     "type": "drop"
+     "type": "drop",
+     "t": 94.662
     }
    ]
   },
@@ -79,8 +81,8 @@
    "intensity": 0.2,
    "fade_in": 0.6,
    "fade_out": 1.0,
-   "start": 105.423,
-   "end": 108.895,
+   "start": 96.703,
+   "end": 99.977,
    "hits": []
   },
   {
@@ -88,12 +90,12 @@
    "intensity": 0.34,
    "fade_in": 1.5,
    "fade_out": 2.5,
-   "start": 108.895,
-   "end": 132.602,
+   "start": 99.977,
+   "end": 123.552,
    "hits": [
     {
-     "t": 130.602,
-     "type": "resolve"
+     "type": "resolve",
+     "t": 121.552
     }
    ]
   },
@@ -102,25 +104,31 @@
    "intensity": 0.2,
    "fade_in": 2.0,
    "fade_out": 1.5,
-   "start": 132.602,
-   "end": 157.789,
-   "hits": []
+   "start": 123.552,
+   "end": 147.193,
+   "hits": [
+    {
+     "type": "swell",
+     "len": 4,
+     "t": 139.993
+    }
+   ]
   },
   {
    "mood": "stillness",
    "intensity": 0.2,
    "fade_in": 1.0,
    "fade_out": 1.0,
-   "start": 157.789,
-   "end": 188.643,
+   "start": 147.193,
+   "end": 175.587,
    "hits": [
     {
-     "t": 169.483,
-     "type": "swell"
+     "type": "swell",
+     "t": 158.191
     },
     {
-     "t": 180.418,
-     "type": "drop"
+     "type": "drop",
+     "t": 168.039
     }
    ]
   },
@@ -129,43 +137,45 @@
    "intensity": 0.22,
    "fade_in": 0.8,
    "fade_out": 0.6,
-   "start": 188.643,
-   "end": 203.325,
+   "start": 175.587,
+   "end": 189.316,
    "hits": [
     {
-     "t": 190.293,
-     "type": "drop"
+     "type": "drop",
+     "t": 177.237
     },
     {
-     "t": 194.293,
-     "type": "silence"
+     "type": "silence",
+     "t": 181.237
     }
    ]
   },
   {
    "mood": "reveal_wonder",
-   "intensity": 0.18,
-   "fade_in": 0.3,
-   "fade_out": 0.5,
-   "start": 203.325,
-   "end": 214.902,
-   "hits": []
-  },
-  {
-   "mood": "reveal_wonder",
-   "intensity": 0.55,
-   "fade_in": 0.5,
+   "intensity": 0.5,
+   "fade_in": 0.6,
    "fade_out": 1.5,
-   "start": 214.902,
-   "end": 256.842,
+   "start": 189.316,
+   "end": 240.148,
+   "open_at": 201.538,
    "hits": [
     {
-     "t": 216.552,
-     "type": "swell"
+     "type": "sting",
+     "t": 191.669
     },
     {
-     "t": 244.656,
-     "type": "drop"
+     "type": "swell",
+     "len": 5,
+     "t": 201.538
+    },
+    {
+     "type": "drop",
+     "t": 226.985
+    },
+    {
+     "type": "swell",
+     "len": 4,
+     "t": 232.264
     }
    ]
   },
@@ -174,12 +184,12 @@
    "intensity": 0.4,
    "fade_in": 1.0,
    "fade_out": 1.0,
-   "start": 256.842,
-   "end": 285.628,
+   "start": 240.148,
+   "end": 267.869,
    "hits": [
     {
-     "t": 281.428,
-     "type": "swell"
+     "type": "swell",
+     "t": 263.669
     }
    ]
   },
@@ -188,12 +198,12 @@
    "intensity": 0.42,
    "fade_in": 0.8,
    "fade_out": 1.2,
-   "start": 285.628,
-   "end": 296.769,
+   "start": 267.869,
+   "end": 280.076,
    "hits": [
     {
-     "t": 293.069,
-     "type": "resolve"
+     "type": "resolve",
+     "t": 274.976
     }
    ]
   },
@@ -202,8 +212,8 @@
    "intensity": 0.38,
    "fade_in": 1.5,
    "fade_out": 2.0,
-   "start": 296.769,
-   "end": 322.814,
+   "start": 280.076,
+   "end": 303.433,
    "hits": []
   },
   {
@@ -211,12 +221,12 @@
    "intensity": 0.32,
    "fade_in": 1.5,
    "fade_out": 3.0,
-   "start": 322.814,
-   "end": 339.07,
+   "start": 303.433,
+   "end": 319.185,
    "hits": [
     {
-     "t": 331.77,
-     "type": "resolve"
+     "type": "resolve",
+     "t": 311.885
     }
    ]
   }

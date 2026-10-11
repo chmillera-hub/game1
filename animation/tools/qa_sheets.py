@@ -8,7 +8,8 @@ from PIL import Image, ImageDraw, ImageFont
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 QA = os.path.join(ROOT, "out/qa")
 os.makedirs(QA, exist_ok=True)
-tl = json.load(open(os.path.join(ROOT, "data/timeline.json")))
+_tp = os.path.join(ROOT, "data/timeline_play.json")
+tl = json.load(open(_tp if os.path.exists(_tp) else os.path.join(ROOT, "data/timeline.json")))
 only = set(sys.argv[1].split(",")) if len(sys.argv) > 1 else None
 try:
     FONT = ImageFont.truetype("/usr/share/fonts/opentype/inter/Inter-Medium.otf", 15)

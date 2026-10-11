@@ -3,6 +3,9 @@
 //   node src/render.mjs --stills 3.5,10,42 --outdir out/stills    render PNG stills at given seconds
 //   node src/render.mjs --sheet s05 [--n 12] --out out/s05.png     contact sheet of one scene (labelled thumbnails)
 //   node src/render.mjs --sheet s05 --times 101.2,103,104.5 ...    contact sheet at explicit times
+//   node src/render.mjs --place-subs                               choose caption positions that avoid faces
+// All times on the command line are PLAY time (the film as heard); add --story to give story-time values
+// (data/timeline.json, which scene code is authored against). --nosubs renders without captions.
 // Scene modules live in src/scenes/*.mjs and export { id, render(g, t, S) }.
 
 import { createCanvas, GlobalFonts } from '@napi-rs/canvas';
@@ -11,7 +14,8 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath, pathToFileURL } from 'url';
 import { W, H, FPS, clamp } from './engine.mjs';
-import { loadTimeline, makeScene } from './timeline.mjs';
+import { loadTimeline, makeScene, playToStory, storyToPlay, playTimeline } from './timeline.mjs';
+import { drawSubtitles, loadSubtitles, captionRect } from './subtitles.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 for (const [f, name] of [['Caveat.ttf', 'Caveat'], ['Fraunces.ttf', 'Fraunces'], ['PatrickHand.ttf', 'Patrick Hand']]) {
@@ -73,8 +77,19 @@ const canvas = createCanvas(W, H);
 const g = canvas.getContext('2d');
 const tmp = createCanvas(W, H);
 const gt = tmp.getContext('2d');
+globalThis.__FACE_CANVASES = new Set([canvas, tmp]);
+loadSubtitles();
+const toPlay = (x) => (args.story ? storyToPlay(x) : x);
 
-export function renderFrame(t) {
+/** render the frame at PLAY time tp: scenes are evaluated at story time, captions at play time */
+export function renderFrame(tp, opts = {}) {
+  const t = playToStory(tp);
+  renderStory(t);
+  if (opts.subs !== false && !args.nosubs) drawSubtitles(g, tp);
+  return canvas;
+}
+
+function renderStory(t) {
   const scenes = TL.scenes;
   let i = scenes.findIndex((s) => t >= s.start && t < s.end);
   if (i < 0) i = t < scenes[0].start ? 0 : scenes.length - 1;
@@ -121,15 +136,15 @@ async function main() {
     fs.mkdirSync(dir, { recursive: true });
     for (const s of String(args.stills).split(',')) {
       const t = parseFloat(s);
-      renderFrame(t);
+      renderFrame(toPlay(t));
       fs.writeFileSync(path.join(dir, `still_${t.toFixed(2)}.png`), canvas.toBuffer('image/png'));
     }
     return;
   }
   if (args.sheet) {
-    const sc = TL.scenes.find((s) => s.id === args.sheet);
+    const sc = playTimeline().scenes.find((s) => s.id === args.sheet);
     let times;
-    if (args.times) times = String(args.times).split(',').map(Number);
+    if (args.times) times = String(args.times).split(',').map(Number).map(toPlay);
     else {
       const n = parseInt(args.n || 12);
       times = Array.from({ length: n }, (_, i) => sc.start + (sc.end - sc.start) * (i + 0.5) / n);
@@ -145,13 +160,61 @@ async function main() {
       gs.drawImage(canvas, x, y + 26, tw, th);
       gs.fillStyle = '#fff'; gs.font = '15px Inter';
       const S = helper(sc.id);
-      gs.fillText(`${t.toFixed(1)}s ${S.current(t)}`, x + 4, y + 18);
+      gs.fillText(`${t.toFixed(1)}s ${S.current(playToStory(t))}`, x + 4, y + 18);
     });
     fs.writeFileSync(args.out || path.join(ROOT, `out/sheet_${sc.id}.png`), sheet.toBuffer('image/png'));
     return;
   }
+  if (args['place-subs']) return placeSubs();
   const from = parseInt(args.from || 0);
-  const to = parseInt(args.to || Math.ceil(TL.duration * FPS));
+  const to = parseInt(args.to || Math.ceil(playTimeline().duration * FPS));
   await renderVideo(from, to, args.out || path.join(ROOT, 'out/render.mp4'));
 }
+/** For each caption, render frames across its span, collect on-screen face boxes, and pick the placement
+ *  (low / top / mid) that covers none of them; keep the previous placement within a scene when it is free. */
+function placeSubs() {
+  const caps = loadSubtitles();
+  let prevPos = 'low', prevScene = null;
+  const counts = {};
+  for (const c of caps) {
+    const n = Math.max(3, Math.ceil((c.end - c.start) / 0.45) + 1);
+    const faces = [];
+    for (let i = 0; i < n; i++) {
+      const t = c.start + 0.04 + (c.end - c.start - 0.08) * (i / (n - 1));
+      globalThis.__FACE_LOG = [];
+      renderFrame(t, { subs: false });
+      faces.push(...globalThis.__FACE_LOG);
+    }
+    globalThis.__FACE_LOG = null;
+    // on-screen faces; a hood opening that fills most of the frame is a backdrop, not something to avoid
+    const vis = faces.filter((f) => f.x1 > 0 && f.x0 < W && f.y1 > 0 && f.y0 < H &&
+      !(f.void && (Math.min(f.x1, W) - Math.max(f.x0, 0)) * (Math.min(f.y1, H) - Math.max(f.y0, 0)) > 0.35 * W * H));
+    const overlap = (pos) => {
+      const r = captionRect(g, c, pos);
+      let a = 0;
+      for (const f of vis) {
+        const ix = Math.max(0, Math.min(r.x1 + 10, f.x1) - Math.max(r.x0 - 10, f.x0));
+        const iy = Math.max(0, Math.min(r.y1 + 10, f.y1) - Math.max(r.y0 - 10, f.y0));
+        a += ix * iy;
+      }
+      return a;
+    };
+    const base = ['low', 'top', 'upper', 'mid'];
+    const order = prevScene === c.scene && prevPos !== 'low' ? [prevPos, ...base.filter((p) => p !== prevPos)] : base;
+    let best = null, bestO = Infinity;
+    for (const p of order) {
+      const o = overlap(p);
+      if (o === 0) { best = p; bestO = 0; break; }
+      if (o < bestO) { best = p; bestO = o; }
+    }
+    c.pos = best;
+    c.pos_overlap = Math.round(bestO);
+    counts[best] = (counts[best] || 0) + 1;
+    prevPos = best; prevScene = c.scene;
+  }
+  fs.writeFileSync(path.join(ROOT, 'data/subtitles.json'), JSON.stringify({ captions: caps }, null, 1));
+  const covered = caps.filter((c) => c.pos_overlap > 0).map((c) => `${c.beat}:${c.idx}`);
+  console.log('placements', counts, covered.length ? `still overlapping a face: ${covered.join(' ')}` : 'no caption covers a face');
+}
+
 await main();

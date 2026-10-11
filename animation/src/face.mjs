@@ -82,6 +82,7 @@ export function makeExpr(...parts) {
 export function drawFace(g, style, exprIn) {
   const e = { ...DEFAULT_EXPR, ...exprIn };
   const s = style;
+  if (globalThis.__FACE_LOG) logFace(g, s);
   const turn = clamp(e.turn, -1, 1);
   const shiftX = turn * s.eyeSpacing * 0.55;
 
@@ -516,4 +517,18 @@ export function withSpeech(expr, lip, amount = 1) {
     round: clamp((expr.round || 0) * 0.5 + (lip.round || 0) * amount),
     pressed: (expr.pressed || 0) * (1 - clamp(lip.open * 3)),
   };
+}
+
+/** Record this face's screen-space box (used by `render.mjs --place-subs` so captions avoid faces).
+ *  Only faces drawn onto a canvas registered in globalThis.__FACE_CANVASES (the frame, not offscreen caches). */
+function logFace(g, s) {
+  if (globalThis.__FACE_CANVASES && !globalThis.__FACE_CANVASES.has(g.canvas)) return;
+  if (g.globalAlpha < 0.35) return;
+  const hw = s.eyeSpacing + s.eyeRx * 1.35;
+  const y0 = (s.browY ?? s.eyeY - s.eyeRy * 1.45) - s.eyeRy * 0.5;
+  const y1 = (s.mouthY ?? 30) + (s.mouthW ?? 20) * 1.1;
+  const m = g.getTransform();
+  const pts = [[-hw, y0], [hw, y0], [-hw, y1], [hw, y1]].map(([x, y]) => [m.a * x + m.c * y + m.e, m.b * x + m.d * y + m.f]);
+  const xs = pts.map((p) => p[0]), ys = pts.map((p) => p[1]);
+  globalThis.__FACE_LOG.push({ x0: Math.min(...xs), x1: Math.max(...xs), y0: Math.min(...ys), y1: Math.max(...ys) });
 }

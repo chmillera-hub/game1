@@ -1,0 +1,1308 @@
+{
+ "fps": 24,
+ "duration": 319.185,
+ "scenes": [
+  {
+   "id": "s01",
+   "slug": "the_old_notebook",
+   "location": "REAL_ROOM",
+   "start": 0.0,
+   "end": 15.376,
+   "transition_in": "cut",
+   "music": {
+    "mood": "tender, nostalgic, hushed",
+    "instrumentation": "felt piano single notes, warm low pad, faint music-box glints",
+    "intensity": 0.25
+   }
+  },
+  {
+   "id": "s02",
+   "slug": "headquarters_and_alarm",
+   "location": "MIND_HQ",
+   "start": 15.376,
+   "end": 33.119,
+   "transition_in": "dissolve",
+   "music": {
+    "mood": "gentle curiosity, then interrupted and uneasy",
+    "instrumentation": "felt piano and pizzicato, cut off by the bell, then a low uneasy pad",
+    "intensity": 0.3
+   }
+  },
+  {
+   "id": "s03",
+   "slug": "the_void",
+   "location": "MIND_HQ_BACK",
+   "start": 33.119,
+   "end": 46.757,
+   "transition_in": "cut",
+   "music": {
+    "mood": "cavernous, suspended, dread",
+    "instrumentation": "sub drone, bowed bass, one distant low piano note",
+    "intensity": 0.35
+   }
+  },
+  {
+   "id": "s04",
+   "slug": "not_safe",
+   "location": "MIND_HQ",
+   "start": 46.757,
+   "end": 61.746,
+   "transition_in": "cut",
+   "music": {
+    "mood": "hushed, uneasy, intimate",
+    "instrumentation": "low pad, single cello notes, a faint heartbeat pulse",
+    "intensity": 0.28
+   }
+  },
+  {
+   "id": "s05",
+   "slug": "chaos",
+   "location": "MIND_HQ",
+   "start": 61.746,
+   "end": 72.784,
+   "transition_in": "cut",
+   "music": {
+    "mood": "anxious, pulsing, restrained",
+    "instrumentation": "staccato pizzicato strings, ticking pulse, low pad; drains away at the end",
+    "intensity": 0.5
+   }
+  },
+  {
+   "id": "s06",
+   "slug": "a_hand_on_the_shoulder",
+   "location": "MIND_HQ",
+   "start": 72.784,
+   "end": 96.703,
+   "transition_in": "dissolve",
+   "music": {
+    "mood": "quiet, tender, uncertain",
+    "instrumentation": "solo cello, felt piano",
+    "intensity": 0.3
+   }
+  },
+  {
+   "id": "s07",
+   "slug": "time_out",
+   "location": "MIND_HQ",
+   "start": 96.703,
+   "end": 105.052,
+   "transition_in": "cut",
+   "music": {
+    "mood": "held breath, sorrow gathering",
+    "instrumentation": "low strings, one sustained piano chord",
+    "intensity": 0.3
+   }
+  },
+  {
+   "id": "s08",
+   "slug": "the_cage",
+   "location": "MIND_HQ_BACK",
+   "start": 105.052,
+   "end": 114.878,
+   "transition_in": "cut",
+   "music": {
+    "mood": "sorrowful, restrained",
+    "instrumentation": "solo piano, low strings swelling faintly",
+    "intensity": 0.35
+   }
+  },
+  {
+   "id": "s09",
+   "slug": "responsible",
+   "location": "MIND_HQ",
+   "start": 114.878,
+   "end": 123.552,
+   "transition_in": "cut",
+   "music": {
+    "mood": "sorrowful, very quiet",
+    "instrumentation": "solo piano, a single high string note",
+    "intensity": 0.28
+   }
+  },
+  {
+   "id": "s10",
+   "slug": "stone_faced",
+   "location": "MIND_HQ_BACK",
+   "start": 123.552,
+   "end": 133.114,
+   "transition_in": "dissolve",
+   "music": {
+    "mood": "suspended, cold, very sparse",
+    "instrumentation": "sub drone, a single low piano note now and then",
+    "intensity": 0.22
+   }
+  },
+  {
+   "id": "s11",
+   "slug": "the_unlocking",
+   "location": "MIND_HQ_BACK",
+   "start": 133.114,
+   "end": 147.193,
+   "transition_in": "cut",
+   "music": {
+    "mood": "hushed, mysterious, warming by a hair",
+    "instrumentation": "celesta single notes over a soft pad",
+    "intensity": 0.2
+   }
+  },
+  {
+   "id": "s12",
+   "slug": "why_are_you_doing_this",
+   "location": "MIND_HQ_BACK",
+   "start": 147.193,
+   "end": 175.587,
+   "transition_in": "cut",
+   "music": {
+    "mood": "fragile, questioning, mostly silence",
+    "instrumentation": "solo piano, high register, breathy pad",
+    "intensity": 0.22
+   }
+  },
+  {
+   "id": "s13",
+   "slug": "the_turn",
+   "location": "MIND_HQ_BACK",
+   "start": 175.587,
+   "end": 199.888,
+   "transition_in": "cut",
+   "music": {
+    "mood": "music drops nearly to nothing; one low held note, then a single warm chord on the hand",
+    "instrumentation": "low held cello note, sub drone, then one soft piano chord",
+    "intensity": 0.15
+   }
+  },
+  {
+   "id": "s14",
+   "slug": "the_universe_inside",
+   "location": "VOID_FACE",
+   "start": 199.888,
+   "end": 240.148,
+   "transition_in": "cut",
+   "music": {
+    "mood": "awe, a warm swell, then hush",
+    "instrumentation": "celesta, shimmering pad, soft strings, the music-box motif from the opening",
+    "intensity": 0.5
+   }
+  },
+  {
+   "id": "s15",
+   "slug": "looking_back",
+   "location": "MIND_HQ",
+   "start": 240.148,
+   "end": 252.205,
+   "transition_in": "cut",
+   "music": {
+    "mood": "warm, gentle hope",
+    "instrumentation": "felt piano, soft strings",
+    "intensity": 0.35
+   }
+  },
+  {
+   "id": "s16",
+   "slug": "the_gentle_push",
+   "location": "MIND_HQ_BACK",
+   "start": 252.205,
+   "end": 267.869,
+   "transition_in": "cut",
+   "music": {
+    "mood": "rising tenderness",
+    "instrumentation": "piano and strings; the music-box motif returns, fuller",
+    "intensity": 0.42
+   }
+  },
+  {
+   "id": "s17",
+   "slug": "can_i_help",
+   "location": "MIND_HQ",
+   "start": 267.869,
+   "end": 280.076,
+   "transition_in": "cut",
+   "music": {
+    "mood": "tender, warm, a little lump in the throat",
+    "instrumentation": "felt piano, soft strings, the music-box motif",
+    "intensity": 0.4
+   }
+  },
+  {
+   "id": "s18",
+   "slug": "the_rusted_cage",
+   "location": "MIND_HQ_BACK",
+   "start": 280.076,
+   "end": 289.487,
+   "transition_in": "dissolve",
+   "music": {
+    "mood": "gentle, a little wistful",
+    "instrumentation": "solo felt piano, music box",
+    "intensity": 0.25
+   }
+  },
+  {
+   "id": "s19",
+   "slug": "the_scene_changed",
+   "location": "MIND_HQ",
+   "start": 289.487,
+   "end": 303.433,
+   "transition_in": "dissolve",
+   "music": {
+    "mood": "warm, resolved, open",
+    "instrumentation": "full gentle ensemble: piano, strings, celesta",
+    "intensity": 0.45
+   }
+  },
+  {
+   "id": "s20",
+   "slug": "a_tear_or_two",
+   "location": "REAL_ROOM",
+   "start": 303.433,
+   "end": 319.185,
+   "transition_in": "dissolve",
+   "music": {
+    "mood": "tender resolution",
+    "instrumentation": "felt piano, the music-box motif, warm pad fading",
+    "intensity": 0.25
+   }
+  }
+ ],
+ "beats": {
+  "s01b01": {
+   "scene": "s01",
+   "kind": "silent",
+   "start": 1.6,
+   "end": 3.6
+  },
+  "s01b02": {
+   "scene": "s01",
+   "kind": "line",
+   "start": 3.6,
+   "speaker": "NARRATOR",
+   "text": "So, I was having a memory, of the first story I wrote about my emotions.",
+   "inner": false,
+   "audio": "audio/wav_play/s01b02.wav",
+   "end": 9.437,
+   "sfx": [
+    "paper_rustle"
+   ]
+  },
+  "s01b03": {
+   "scene": "s01",
+   "kind": "line",
+   "start": 9.937,
+   "speaker": "NARRATOR",
+   "text": "And the more I read, the more I was back inside my mind.",
+   "inner": false,
+   "audio": "audio/wav_play/s01b03.wav",
+   "end": 14.876,
+   "sfx": [
+    "shimmer"
+   ]
+  },
+  "s02b01": {
+   "scene": "s02",
+   "kind": "silent",
+   "start": 16.276,
+   "end": 18.276,
+   "sfx": [
+    "console_beeps"
+   ]
+  },
+  "s02b02": {
+   "scene": "s02",
+   "kind": "line",
+   "start": 18.276,
+   "speaker": "NARRATOR",
+   "text": "And my fear kept pulling the fire alarm.",
+   "inner": false,
+   "audio": "audio/wav_play/s02b02.wav",
+   "end": 21.177,
+   "sfx": [
+    "alarm_pull",
+    "alarm_bell"
+   ]
+  },
+  "s02b03": {
+   "scene": "s02",
+   "kind": "line",
+   "start": 21.677,
+   "speaker": "NARRATOR",
+   "text": "So I imagined myself as the CEO of my mind, looking around to see why.",
+   "inner": false,
+   "audio": "audio/wav_play/s02b03.wav",
+   "end": 28.331,
+   "sfx": [
+    "door_whoosh",
+    "footsteps",
+    "cloth_rustle"
+   ]
+  },
+  "s02b04": {
+   "scene": "s02",
+   "kind": "line",
+   "start": 28.731,
+   "speaker": "CONSCIOUSNESS",
+   "text": "Fear? What are you looking at?",
+   "inner": false,
+   "audio": "audio/wav_play/s02b04.wav",
+   "end": 31.519
+  },
+  "s03b01": {
+   "scene": "s03",
+   "kind": "silent",
+   "start": 33.569,
+   "end": 36.969,
+   "sfx": [
+    "rumble_low"
+   ]
+  },
+  "s03b02": {
+   "scene": "s03",
+   "kind": "line",
+   "start": 36.969,
+   "speaker": "NARRATOR",
+   "text": "The Void.",
+   "inner": false,
+   "audio": "audio/wav_play/s03b02.wav",
+   "end": 37.873
+  },
+  "s03b03": {
+   "scene": "s03",
+   "kind": "line",
+   "start": 39.373,
+   "speaker": "NARRATOR",
+   "text": "Huge. Unmoving. And its face was pure darkness.",
+   "inner": false,
+   "audio": "audio/wav_play/s03b03.wav",
+   "end": 46.157,
+   "sfx": [
+    "rumble_low"
+   ]
+  },
+  "s04b01": {
+   "scene": "s04",
+   "kind": "line",
+   "start": 47.207,
+   "speaker": "FEAR",
+   "text": "It's going to hurt me.",
+   "inner": false,
+   "audio": "audio/wav_play/s04b01.wav",
+   "end": 48.502,
+   "sfx": [
+    "heartbeat"
+   ]
+  },
+  "s04b02": {
+   "scene": "s04",
+   "kind": "line",
+   "start": 49.302,
+   "speaker": "CONSCIOUSNESS",
+   "text": "It hasn't moved.",
+   "inner": false,
+   "audio": "audio/wav_play/s04b02.wav",
+   "end": 50.527
+  },
+  "s04b03": {
+   "scene": "s04",
+   "kind": "line",
+   "start": 51.227,
+   "speaker": "FEAR",
+   "text": "That's what scares me. It's not safe here.",
+   "inner": false,
+   "audio": "audio/wav_play/s04b03.wav",
+   "end": 54.641
+  },
+  "s04b04": {
+   "scene": "s04",
+   "kind": "line",
+   "start": 55.341,
+   "speaker": "CONSCIOUSNESS",
+   "text": "Nothing is going to hurt you.",
+   "inner": false,
+   "audio": "audio/wav_play/s04b04.wav",
+   "end": 57.012
+  },
+  "s04b05": {
+   "scene": "s04",
+   "kind": "line",
+   "start": 57.712,
+   "speaker": "FEAR",
+   "text": "You don't know that.",
+   "inner": false,
+   "audio": "audio/wav_play/s04b05.wav",
+   "end": 58.746
+  },
+  "s04b06": {
+   "scene": "s04",
+   "kind": "silent",
+   "start": 58.946,
+   "end": 61.746
+  },
+  "s05b01": {
+   "scene": "s05",
+   "kind": "line",
+   "start": 62.196,
+   "speaker": "FEAR",
+   "text": "Out! Everybody out!",
+   "inner": false,
+   "audio": "audio/wav_play/s05b01.wav",
+   "end": 64.464,
+   "sfx": [
+    "alarm_pull",
+    "alarm_bell",
+    "crowd_murmur"
+   ]
+  },
+  "s05b02": {
+   "scene": "s05",
+   "kind": "line",
+   "start": 64.764,
+   "speaker": "JOY",
+   "text": "We always come back.",
+   "inner": false,
+   "audio": "audio/wav_play/s05b02.wav",
+   "end": 65.784,
+   "sfx": [
+    "crowd_murmur",
+    "footsteps",
+    "door_whoosh"
+   ]
+  },
+  "s05b03": {
+   "scene": "s05",
+   "kind": "line",
+   "start": 66.184,
+   "speaker": "NARRATOR",
+   "text": "Panic attacks, forcing every emotion out of my mind.",
+   "inner": false,
+   "audio": "audio/wav_play/s05b03.wav",
+   "end": 70.41,
+   "sfx": [
+    "alarm_bell"
+   ]
+  },
+  "s05b04": {
+   "scene": "s05",
+   "kind": "line",
+   "start": 70.81,
+   "speaker": "NARRATOR",
+   "text": "Causing chaos.",
+   "inner": false,
+   "audio": "audio/wav_play/s05b04.wav",
+   "end": 72.184,
+   "sfx": [
+    "alarm_bell"
+   ]
+  },
+  "s06b01": {
+   "scene": "s06",
+   "kind": "line",
+   "start": 73.684,
+   "speaker": "NARRATOR",
+   "text": "Then one day, I put my hand on my fear's shoulder.",
+   "inner": false,
+   "audio": "audio/wav_play/s06b01.wav",
+   "end": 77.79,
+   "sfx": [
+    "footsteps",
+    "cloth_rustle"
+   ]
+  },
+  "s06b02": {
+   "scene": "s06",
+   "kind": "silent",
+   "start": 77.99,
+   "end": 79.99,
+   "sfx": [
+    "breath_shaky"
+   ]
+  },
+  "s06b03": {
+   "scene": "s06",
+   "kind": "line",
+   "start": 79.99,
+   "speaker": "CONSCIOUSNESS",
+   "text": "You need to stop pulling the fire alarm.",
+   "inner": false,
+   "audio": "audio/wav_play/s06b03.wav",
+   "end": 82.559
+  },
+  "s06b04": {
+   "scene": "s06",
+   "kind": "line",
+   "start": 83.259,
+   "speaker": "CONSCIOUSNESS",
+   "text": "It's causing turmoil.",
+   "inner": false,
+   "audio": "audio/wav_play/s06b04.wav",
+   "end": 84.851
+  },
+  "s06b05": {
+   "scene": "s06",
+   "kind": "line",
+   "start": 85.751,
+   "speaker": "FEAR",
+   "text": "I'm only trying to keep us safe.",
+   "inner": false,
+   "audio": "audio/wav_play/s06b05.wav",
+   "end": 87.628
+  },
+  "s06b06": {
+   "scene": "s06",
+   "kind": "silent",
+   "start": 87.928,
+   "end": 90.128
+  },
+  "s06b07": {
+   "scene": "s06",
+   "kind": "line",
+   "start": 90.128,
+   "speaker": "FEAR",
+   "text": "I can't. I'm sorry.",
+   "inner": false,
+   "audio": "audio/wav_play/s06b07.wav",
+   "end": 92.662
+  },
+  "s06b08": {
+   "scene": "s06",
+   "kind": "silent",
+   "start": 92.862,
+   "end": 94.662,
+   "sfx": [
+    "alarm_pull",
+    "alarm_bell"
+   ]
+  },
+  "s06b09": {
+   "scene": "s06",
+   "kind": "line",
+   "start": 94.662,
+   "speaker": "NARRATOR",
+   "text": "My fear refused.",
+   "inner": false,
+   "audio": "audio/wav_play/s06b09.wav",
+   "end": 96.203,
+   "sfx": [
+    "alarm_bell"
+   ]
+  },
+  "s07b01": {
+   "scene": "s07",
+   "kind": "silent",
+   "start": 97.153,
+   "end": 98.553
+  },
+  "s07b02": {
+   "scene": "s07",
+   "kind": "line",
+   "start": 98.553,
+   "speaker": "CONSCIOUSNESS",
+   "text": "Fear,",
+   "inner": false,
+   "audio": "audio/wav_play/s07b02.wav",
+   "end": 99.077
+  },
+  "s07b03": {
+   "scene": "s07",
+   "kind": "line",
+   "start": 99.977,
+   "speaker": "CONSCIOUSNESS",
+   "text": "we need to put you in a time-out.",
+   "inner": false,
+   "audio": "audio/wav_play/s07b03.wav",
+   "end": 102.052
+  },
+  "s08b01": {
+   "scene": "s08",
+   "kind": "line",
+   "start": 105.502,
+   "speaker": "NARRATOR",
+   "text": "So I put my fear into a cage.",
+   "inner": false,
+   "audio": "audio/wav_play/s08b01.wav",
+   "end": 107.828,
+   "sfx": [
+    "footsteps",
+    "cage_close",
+    "key_turn",
+    "lock_click"
+   ]
+  },
+  "s08b02": {
+   "scene": "s08",
+   "kind": "line",
+   "start": 109.028,
+   "speaker": "FEAR",
+   "text": "Please don't leave me with it.",
+   "inner": false,
+   "audio": "audio/wav_play/s08b02.wav",
+   "end": 110.878
+  },
+  "s08b03": {
+   "scene": "s08",
+   "kind": "silent",
+   "start": 111.278,
+   "end": 114.878,
+   "sfx": [
+    "sob",
+    "cage_creak"
+   ]
+  },
+  "s09b01": {
+   "scene": "s09",
+   "kind": "line",
+   "start": 115.328,
+   "speaker": "NARRATOR",
+   "text": "I told myself it was the responsible thing to do.",
+   "inner": false,
+   "audio": "audio/wav_play/s09b01.wav",
+   "end": 119.43
+  },
+  "s09b02": {
+   "scene": "s09",
+   "kind": "line",
+   "start": 120.03,
+   "speaker": "NARRATOR",
+   "text": "And I felt sadness.",
+   "inner": false,
+   "audio": "audio/wav_play/s09b02.wav",
+   "end": 121.552
+  },
+  "s10b01": {
+   "scene": "s10",
+   "kind": "line",
+   "start": 124.452,
+   "speaker": "NARRATOR",
+   "text": "And the Void stood there, stone-faced, its shadow filling half the room.",
+   "inner": false,
+   "audio": "audio/wav_play/s10b01.wav",
+   "end": 129.914,
+   "sfx": [
+    "rumble_low"
+   ]
+  },
+  "s10b02": {
+   "scene": "s10",
+   "kind": "silent",
+   "start": 130.314,
+   "end": 133.114,
+   "sfx": [
+    "sob"
+   ]
+  },
+  "s11b01": {
+   "scene": "s11",
+   "kind": "line",
+   "start": 133.564,
+   "speaker": "NARRATOR",
+   "text": "And then, when I wasn't looking, I had an image in my mind.",
+   "inner": false,
+   "audio": "audio/wav_play/s11b01.wav",
+   "end": 138.293,
+   "sfx": [
+    "shimmer"
+   ]
+  },
+  "s11b02": {
+   "scene": "s11",
+   "kind": "silent",
+   "start": 138.493,
+   "end": 143.493,
+   "sfx": [
+    "key_turn",
+    "lock_click"
+   ]
+  },
+  "s11b03": {
+   "scene": "s11",
+   "kind": "silent",
+   "start": 143.493,
+   "end": 147.193,
+   "sfx": [
+    "cage_creak"
+   ]
+  },
+  "s12b01": {
+   "scene": "s12",
+   "kind": "line",
+   "start": 147.643,
+   "speaker": "FEAR",
+   "text": "Why are you doing this?",
+   "inner": false,
+   "audio": "audio/wav_play/s12b01.wav",
+   "end": 149.017
+  },
+  "s12b02": {
+   "scene": "s12",
+   "kind": "line",
+   "start": 149.917,
+   "speaker": "FEAR",
+   "text": "You're going to hurt me.",
+   "inner": false,
+   "audio": "audio/wav_play/s12b02.wav",
+   "end": 151.246
+  },
+  "s12b03": {
+   "scene": "s12",
+   "kind": "line",
+   "start": 151.946,
+   "speaker": "FEAR",
+   "text": "This is a trick.",
+   "inner": false,
+   "audio": "audio/wav_play/s12b03.wav",
+   "end": 153.094
+  },
+  "s12b04": {
+   "scene": "s12",
+   "kind": "line",
+   "start": 153.694,
+   "speaker": "FEAR",
+   "text": "This can't be right.",
+   "inner": false,
+   "audio": "audio/wav_play/s12b04.wav",
+   "end": 154.891
+  },
+  "s12b05": {
+   "scene": "s12",
+   "kind": "silent",
+   "start": 155.191,
+   "end": 158.191,
+   "sfx": [
+    "breath_shaky"
+   ]
+  },
+  "s12b06": {
+   "scene": "s12",
+   "kind": "line",
+   "start": 158.191,
+   "speaker": "FEAR",
+   "text": "This doesn't make any sense.",
+   "inner": false,
+   "audio": "audio/wav_play/s12b06.wav",
+   "end": 159.918
+  },
+  "s12b07": {
+   "scene": "s12",
+   "kind": "line",
+   "start": 160.718,
+   "speaker": "FEAR",
+   "text": "You're supposed to hurt me.",
+   "inner": false,
+   "audio": "audio/wav_play/s12b07.wav",
+   "end": 162.176
+  },
+  "s12b08": {
+   "scene": "s12",
+   "kind": "line",
+   "start": 162.876,
+   "speaker": "FEAR",
+   "text": "Why are you just standing there?",
+   "inner": false,
+   "audio": "audio/wav_play/s12b08.wav",
+   "end": 164.603
+  },
+  "s12b09": {
+   "scene": "s12",
+   "kind": "line",
+   "start": 165.403,
+   "speaker": "FEAR",
+   "text": "Are you just here to scare me forever?",
+   "inner": false,
+   "audio": "audio/wav_play/s12b09.wav",
+   "end": 167.439,
+   "sfx": [
+    "sob"
+   ]
+  },
+  "s12b10": {
+   "scene": "s12",
+   "kind": "silent",
+   "start": 168.039,
+   "end": 170.439
+  },
+  "s12b11": {
+   "scene": "s12",
+   "kind": "line",
+   "start": 170.439,
+   "speaker": "NARRATOR",
+   "text": "And the Void did not move. It stood there.",
+   "inner": false,
+   "audio": "audio/wav_play/s12b11.wav",
+   "end": 174.887
+  },
+  "s13b01": {
+   "scene": "s13",
+   "kind": "silent",
+   "start": 176.037,
+   "end": 181.237,
+   "sfx": [
+    "rumble_low",
+    "cloth_rustle"
+   ]
+  },
+  "s13b02": {
+   "scene": "s13",
+   "kind": "line",
+   "start": 181.237,
+   "speaker": "FEAR",
+   "text": "This is it.",
+   "inner": true,
+   "audio": "audio/wav_play/s13b02.wav",
+   "end": 182.294,
+   "sfx": [
+    "heartbeat"
+   ]
+  },
+  "s13b03": {
+   "scene": "s13",
+   "kind": "line",
+   "start": 182.894,
+   "speaker": "NARRATOR",
+   "text": "My fear thought the Void had had enough of its complaining, and would destroy it.",
+   "inner": false,
+   "audio": "audio/wav_play/s13b03.wav",
+   "end": 188.116,
+   "sfx": [
+    "heartbeat",
+    "breath_shaky"
+   ]
+  },
+  "s13b04": {
+   "scene": "s13",
+   "kind": "line",
+   "start": 189.316,
+   "speaker": "NARRATOR",
+   "text": "But then, my fear felt a hand on its shoulder.",
+   "inner": false,
+   "audio": "audio/wav_play/s13b04.wav",
+   "end": 192.78,
+   "sfx": [
+    "cloth_rustle"
+   ]
+  },
+  "s13b05": {
+   "scene": "s13",
+   "kind": "silent",
+   "start": 192.98,
+   "end": 196.28
+  },
+  "s13b06": {
+   "scene": "s13",
+   "kind": "line",
+   "start": 196.28,
+   "speaker": "NARRATOR",
+   "text": "And it looked up, into the face of the Void.",
+   "inner": false,
+   "audio": "audio/wav_play/s13b06.wav",
+   "end": 199.388
+  },
+  "s14b01": {
+   "scene": "s14",
+   "kind": "silent",
+   "start": 200.338,
+   "end": 203.338,
+   "sfx": [
+    "shimmer",
+    "twinkle"
+   ]
+  },
+  "s14b02": {
+   "scene": "s14",
+   "kind": "line",
+   "start": 203.338,
+   "speaker": "NARRATOR",
+   "text": "And instead of darkness, my fear saw the twinkling of lights.",
+   "inner": false,
+   "audio": "audio/wav_play/s14b02.wav",
+   "end": 207.584,
+   "sfx": [
+    "twinkle"
+   ]
+  },
+  "s14b03": {
+   "scene": "s14",
+   "kind": "line",
+   "start": 208.084,
+   "speaker": "NARRATOR",
+   "text": "Like galaxies, and nebulae, and stars of the universe.",
+   "inner": false,
+   "audio": "audio/wav_play/s14b03.wav",
+   "end": 211.693,
+   "sfx": [
+    "twinkle"
+   ]
+  },
+  "s14b04": {
+   "scene": "s14",
+   "kind": "line",
+   "start": 212.193,
+   "speaker": "NARRATOR",
+   "text": "The Void, filled with bits and pieces of meaning.",
+   "inner": false,
+   "audio": "audio/wav_play/s14b04.wav",
+   "end": 215.128,
+   "sfx": [
+    "shimmer"
+   ]
+  },
+  "s14b05": {
+   "scene": "s14",
+   "kind": "silent",
+   "start": 215.528,
+   "end": 219.928
+  },
+  "s14b06": {
+   "scene": "s14",
+   "kind": "line",
+   "start": 219.928,
+   "speaker": "NARRATOR",
+   "text": "And for once, my fear wasn't afraid. It felt wonder, and amazement.",
+   "inner": false,
+   "audio": "audio/wav_play/s14b06.wav",
+   "end": 226.485,
+   "sfx": [
+    "twinkle"
+   ]
+  },
+  "s14b07": {
+   "scene": "s14",
+   "kind": "silent",
+   "start": 226.985,
+   "end": 229.585
+  },
+  "s14b08": {
+   "scene": "s14",
+   "kind": "line",
+   "start": 229.585,
+   "speaker": "FEAR",
+   "text": "Why are you showing me this?",
+   "inner": false,
+   "audio": "audio/wav_play/s14b08.wav",
+   "end": 231.264
+  },
+  "s14b09": {
+   "scene": "s14",
+   "kind": "silent",
+   "start": 231.864,
+   "end": 236.064,
+   "sfx": [
+    "cloth_rustle"
+   ]
+  },
+  "s14b10": {
+   "scene": "s14",
+   "kind": "line",
+   "start": 236.064,
+   "speaker": "NARRATOR",
+   "text": "And the Void stared into the screen of my consciousness.",
+   "inner": false,
+   "audio": "audio/wav_play/s14b10.wav",
+   "end": 239.648
+  },
+  "s15b01": {
+   "scene": "s15",
+   "kind": "line",
+   "start": 240.598,
+   "speaker": "NARRATOR",
+   "text": "My other emotions were looking back.",
+   "inner": false,
+   "audio": "audio/wav_play/s15b01.wav",
+   "end": 242.989
+  },
+  "s15b02": {
+   "scene": "s15",
+   "kind": "silent",
+   "start": 243.289,
+   "end": 247.289
+  },
+  "s15b03": {
+   "scene": "s15",
+   "kind": "line",
+   "start": 247.289,
+   "speaker": "NARRATOR",
+   "text": "They smiled, just for a moment, then went back to helping me.",
+   "inner": false,
+   "audio": "audio/wav_play/s15b03.wav",
+   "end": 251.705,
+   "sfx": [
+    "console_beeps"
+   ]
+  },
+  "s16b01": {
+   "scene": "s16",
+   "kind": "silent",
+   "start": 252.655,
+   "end": 254.655,
+   "sfx": [
+    "breath_shaky"
+   ]
+  },
+  "s16b02": {
+   "scene": "s16",
+   "kind": "line",
+   "start": 254.655,
+   "speaker": "NARRATOR",
+   "text": "Then my fear felt the gentle push of the Void.",
+   "inner": false,
+   "audio": "audio/wav_play/s16b02.wav",
+   "end": 257.599,
+   "sfx": [
+    "cloth_rustle",
+    "footsteps"
+   ]
+  },
+  "s16b03": {
+   "scene": "s16",
+   "kind": "line",
+   "start": 258.099,
+   "speaker": "NARRATOR",
+   "text": "The Void stood there, with galaxies twinkling in its dark facade.",
+   "inner": false,
+   "audio": "audio/wav_play/s16b03.wav",
+   "end": 263.369,
+   "sfx": [
+    "twinkle"
+   ]
+  },
+  "s16b04": {
+   "scene": "s16",
+   "kind": "silent",
+   "start": 263.669,
+   "end": 267.869
+  },
+  "s17b01": {
+   "scene": "s17",
+   "kind": "silent",
+   "start": 268.319,
+   "end": 270.719
+  },
+  "s17b02": {
+   "scene": "s17",
+   "kind": "silent",
+   "start": 270.719,
+   "end": 272.319
+  },
+  "s17b03": {
+   "scene": "s17",
+   "kind": "line",
+   "start": 272.319,
+   "speaker": "CONSCIOUSNESS",
+   "text": "Fear.",
+   "inner": false,
+   "audio": "audio/wav_play/s17b03.wav",
+   "end": 272.851
+  },
+  "s17b04": {
+   "scene": "s17",
+   "kind": "line",
+   "start": 273.751,
+   "speaker": "FEAR",
+   "text": "Can I help?",
+   "inner": false,
+   "audio": "audio/wav_play/s17b04.wav",
+   "end": 274.676
+  },
+  "s17b05": {
+   "scene": "s17",
+   "kind": "silent",
+   "start": 275.076,
+   "end": 280.076,
+   "sfx": [
+    "footsteps",
+    "console_beeps"
+   ]
+  },
+  "s18b01": {
+   "scene": "s18",
+   "kind": "silent",
+   "start": 280.976,
+   "end": 282.276,
+   "sfx": [
+    "rust_creak"
+   ]
+  },
+  "s18b02": {
+   "scene": "s18",
+   "kind": "line",
+   "start": 282.276,
+   "speaker": "NARRATOR",
+   "text": "The old cage had rusted, its gate hanging open.",
+   "inner": false,
+   "audio": "audio/wav_play/s18b02.wav",
+   "end": 286.169
+  },
+  "s18b03": {
+   "scene": "s18",
+   "kind": "line",
+   "start": 286.669,
+   "speaker": "NARRATOR",
+   "text": "But that was just a small detail.",
+   "inner": false,
+   "audio": "audio/wav_play/s18b03.wav",
+   "end": 288.987
+  },
+  "s19b01": {
+   "scene": "s19",
+   "kind": "line",
+   "start": 290.387,
+   "speaker": "NARRATOR",
+   "text": "Because the scene changed, to my emotions at the console.",
+   "inner": false,
+   "audio": "audio/wav_play/s19b01.wav",
+   "end": 294.091,
+   "sfx": [
+    "console_beeps"
+   ]
+  },
+  "s19b02": {
+   "scene": "s19",
+   "kind": "line",
+   "start": 294.491,
+   "speaker": "NARRATOR",
+   "text": "And the Void, standing in the background.",
+   "inner": false,
+   "audio": "audio/wav_play/s19b02.wav",
+   "end": 296.785
+  },
+  "s19b03": {
+   "scene": "s19",
+   "kind": "line",
+   "start": 297.185,
+   "speaker": "NARRATOR",
+   "text": "I could barely see that rusty cage anymore, in the back of my mind.",
+   "inner": false,
+   "audio": "audio/wav_play/s19b03.wav",
+   "end": 302.633,
+   "sfx": [
+    "twinkle"
+   ]
+  },
+  "s20b01": {
+   "scene": "s20",
+   "kind": "silent",
+   "start": 304.333,
+   "end": 307.133
+  },
+  "s20b02": {
+   "scene": "s20",
+   "kind": "line",
+   "start": 307.133,
+   "speaker": "NARRATOR",
+   "text": "After that,",
+   "inner": false,
+   "audio": "audio/wav_play/s20b02.wav",
+   "end": 308.172
+  },
+  "s20b03": {
+   "scene": "s20",
+   "kind": "line",
+   "start": 309.072,
+   "speaker": "NARRATOR",
+   "text": "I may have shed a tear or two myself.",
+   "inner": false,
+   "audio": "audio/wav_play/s20b03.wav",
+   "end": 311.385
+  },
+  "s20b04": {
+   "scene": "s20",
+   "kind": "silent",
+   "start": 312.185,
+   "end": 316.185,
+   "sfx": [
+    "lamp_click",
+    "twinkle"
+   ]
+  }
+ },
+ "order": [
+  "s01b01",
+  "s01b02",
+  "s01b03",
+  "s02b01",
+  "s02b02",
+  "s02b03",
+  "s02b04",
+  "s03b01",
+  "s03b02",
+  "s03b03",
+  "s04b01",
+  "s04b02",
+  "s04b03",
+  "s04b04",
+  "s04b05",
+  "s04b06",
+  "s05b01",
+  "s05b02",
+  "s05b03",
+  "s05b04",
+  "s06b01",
+  "s06b02",
+  "s06b03",
+  "s06b04",
+  "s06b05",
+  "s06b06",
+  "s06b07",
+  "s06b08",
+  "s06b09",
+  "s07b01",
+  "s07b02",
+  "s07b03",
+  "s08b01",
+  "s08b02",
+  "s08b03",
+  "s09b01",
+  "s09b02",
+  "s10b01",
+  "s10b02",
+  "s11b01",
+  "s11b02",
+  "s11b03",
+  "s12b01",
+  "s12b02",
+  "s12b03",
+  "s12b04",
+  "s12b05",
+  "s12b06",
+  "s12b07",
+  "s12b08",
+  "s12b09",
+  "s12b10",
+  "s12b11",
+  "s13b01",
+  "s13b02",
+  "s13b03",
+  "s13b04",
+  "s13b05",
+  "s13b06",
+  "s14b01",
+  "s14b02",
+  "s14b03",
+  "s14b04",
+  "s14b05",
+  "s14b06",
+  "s14b07",
+  "s14b08",
+  "s14b09",
+  "s14b10",
+  "s15b01",
+  "s15b02",
+  "s15b03",
+  "s16b01",
+  "s16b02",
+  "s16b03",
+  "s16b04",
+  "s17b01",
+  "s17b02",
+  "s17b03",
+  "s17b04",
+  "s17b05",
+  "s18b01",
+  "s18b02",
+  "s18b03",
+  "s19b01",
+  "s19b02",
+  "s19b03",
+  "s20b01",
+  "s20b02",
+  "s20b03",
+  "s20b04"
+ ],
+ "story_duration": 344.761
+}

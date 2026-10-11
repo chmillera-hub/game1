@@ -17,6 +17,11 @@
 //   S.current(t)                 -> id of the beat active at t in this scene (or the last one started)
 //   S.p(t)                       -> 0..1 progress through the scene
 //   S.lineProgress(id, t)        -> 0..1 progress through a beat
+//
+// TIME WARP (data/timewarp.json, from tools/speed_dialogue.py): scenes are authored in STORY time
+// (data/timeline.json). The film plays in PLAY time, where spoken lines are faster. The renderer maps each
+// output frame with playToStory(); lip-sync data is recorded in play time and looked up via storyToPlay().
+// Without timewarp.json both maps are the identity.
 
 import fs from 'fs';
 import path from 'path';
@@ -24,14 +29,36 @@ import { fileURLToPath } from 'url';
 import { clamp, kf } from './engine.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-let TL = null, LIPS = null;
+let TL = null, LIPS = null, KS = [0], KP = [0], PLAY = null;
 
-export function loadTimeline(file = path.join(ROOT, 'data/timeline.json'), lipFile = path.join(ROOT, 'data/lipsync.json')) {
+export function loadTimeline(file = path.join(ROOT, 'data/timeline.json'), lipFile = path.join(ROOT, 'data/lipsync.json'),
+  warpFile = path.join(ROOT, 'data/timewarp.json'), playFile = path.join(ROOT, 'data/timeline_play.json')) {
   TL = JSON.parse(fs.readFileSync(file, 'utf8'));
   LIPS = fs.existsSync(lipFile) ? JSON.parse(fs.readFileSync(lipFile, 'utf8')) : {};
+  KS = [0]; KP = [0]; PLAY = null;
+  if (fs.existsSync(warpFile) && fs.existsSync(playFile)) {
+    const W = JSON.parse(fs.readFileSync(warpFile, 'utf8'));
+    KS = W.knots.map((k) => k[0]);
+    KP = W.knots.map((k) => k[1]);
+    PLAY = JSON.parse(fs.readFileSync(playFile, 'utf8'));
+  }
   return TL;
 }
 export const timeline = () => TL;
+/** the timeline as played (line beats shortened); falls back to the story timeline */
+export const playTimeline = () => PLAY || TL;
+
+function interp(x, X, Y) {
+  const n = X.length;
+  if (x >= X[n - 1]) return Y[n - 1] + (x - X[n - 1]);
+  if (x <= X[0]) return Y[0] + (x - X[0]);
+  let lo = 0, hi = n - 1;
+  while (hi - lo > 1) { const m = (lo + hi) >> 1; if (X[m] <= x) lo = m; else hi = m; }
+  const k = X[hi] === X[lo] ? 0 : (x - X[lo]) / (X[hi] - X[lo]);
+  return Y[lo] + (Y[hi] - Y[lo]) * k;
+}
+export const storyToPlay = (t) => interp(t, KS, KP);
+export const playToStory = (t) => interp(t, KP, KS);
 
 export function resolveAnchor(a, scene) {
   if (typeof a === 'number') return a;
@@ -47,10 +74,10 @@ export function resolveAnchor(a, scene) {
   return base + (off ? parseFloat(off) : 0);
 }
 
-function lipFrame(id, t) {
+function lipFrame(id, tStory) {
   const L = LIPS[id];
   if (!L) return null;
-  const f = (t - L.start) * L.fps;
+  const f = (storyToPlay(tStory) - L.start) * L.fps;   // lip data is recorded in play time
   const i = Math.floor(f);
   if (i < 0 || i >= L.open.length) return null;
   const k = f - i;

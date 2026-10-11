@@ -70,7 +70,8 @@ def envelope(x, attack, release):
     return y
 
 def main():
-    tl = json.load(open(os.path.join(ROOT, "data/timeline.json")))
+    tp = os.path.join(ROOT, "data/timeline_play.json")
+    tl = json.load(open(tp if os.path.exists(tp) else os.path.join(ROOT, "data/timeline.json")))
     N = int((tl["duration"] + 1.0) * SR)
     voice = np.zeros((N, 2), np.float32)
     scenes = {s["id"]: s for s in tl["scenes"]}

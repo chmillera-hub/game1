@@ -2,7 +2,8 @@
 story (cosmos reveal, the Void's starry facade, the final tear), fewer in busy alarm scenes."""
 import json, os
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-tl = json.load(open(os.path.join(ROOT, "data/timeline.json")))
+_tp = os.path.join(ROOT, "data/timeline_play.json")
+tl = json.load(open(_tp if os.path.exists(_tp) else os.path.join(ROOT, "data/timeline.json")))
 S = {s["id"]: s for s in tl["scenes"]}
 B = tl["beats"]
 F = lambda t: int(round(t * 24))

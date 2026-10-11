@@ -6,7 +6,7 @@ cd "$(dirname "$0")/.."
 TARGET_MB=${1:-14.5}
 JOBS=${2:-4}
 AK=${3:-64}
-DUR=$(python3 -c "import json;print(json.load(open('data/timeline.json'))['duration'])")
+DUR=$(python3 -c "import json,os;f='data/timeline_play.json' if os.path.exists('data/timeline_play.json') else 'data/timeline.json';print(json.load(open(f))['duration'])")
 FRAMES=$(python3 -c "import math;print(math.ceil($DUR*24))")
 mkdir -p out/seg
 rm -f out/seg/*.mp4 out/seg/list.txt

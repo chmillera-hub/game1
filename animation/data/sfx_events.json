@@ -2,7 +2,7 @@
  {
   "scene": "s01",
   "name": "paper_rustle",
-  "at": 6.8,
+  "at": 6.384,
   "until": null,
   "gain": -14,
   "loop": false,
@@ -13,7 +13,7 @@
  {
   "scene": "s01",
   "name": "shimmer",
-  "at": 14.109,
+  "at": 12.817,
   "until": null,
   "gain": -14,
   "loop": false,
@@ -24,7 +24,7 @@
  {
   "scene": "s02",
   "name": "console_beeps",
-  "at": 17.918,
+  "at": 16.326,
   "until": null,
   "gain": -20,
   "loop": false,
@@ -35,7 +35,7 @@
  {
   "scene": "s02",
   "name": "console_beeps",
-  "at": 18.968,
+  "at": 17.376,
   "until": null,
   "gain": -22,
   "loop": false,
@@ -46,7 +46,7 @@
  {
   "scene": "s02",
   "name": "alarm_pull",
-  "at": 22.213,
+  "at": 20.323,
   "until": null,
   "gain": -8,
   "loop": false,
@@ -57,8 +57,8 @@
  {
   "scene": "s02",
   "name": "alarm_bell",
-  "at": 22.318,
-  "until": 33.927,
+  "at": 20.414,
+  "until": 30.653,
   "gain": -20,
   "loop": true,
   "pan": 0.2,
@@ -68,7 +68,7 @@
  {
   "scene": "s02",
   "name": "door_whoosh",
-  "at": 23.642,
+  "at": 21.627,
   "until": null,
   "gain": -14,
   "loop": false,
@@ -79,8 +79,8 @@
  {
   "scene": "s02",
   "name": "footsteps",
-  "at": 24.283,
-  "until": 24.763,
+  "at": 22.192,
+  "until": 22.61,
   "gain": -15,
   "loop": false,
   "pan": -0.33290000000000003,
@@ -90,8 +90,8 @@
  {
   "scene": "s02",
   "name": "footsteps",
-  "at": 24.679,
-  "until": 25.159,
+  "at": 22.537,
+  "until": 22.956,
   "gain": -15,
   "loop": false,
   "pan": -0.2933,
@@ -101,8 +101,8 @@
  {
   "scene": "s02",
   "name": "footsteps",
-  "at": 25.054,
-  "until": 25.534,
+  "at": 22.864,
+  "until": 23.282,
   "gain": -15,
   "loop": false,
   "pan": -0.2558,
@@ -112,8 +112,8 @@
  {
   "scene": "s02",
   "name": "footsteps",
-  "at": 25.449,
-  "until": 25.929,
+  "at": 23.208,
+  "until": 23.627,
   "gain": -15,
   "loop": false,
   "pan": -0.21630000000000002,
@@ -123,7 +123,7 @@
  {
   "scene": "s02",
   "name": "door_whoosh",
-  "at": 25.592,
+  "at": 23.333,
   "until": null,
   "gain": -19,
   "loop": false,
@@ -134,8 +134,8 @@
  {
   "scene": "s02",
   "name": "footsteps",
-  "at": 25.804,
-  "until": 26.284,
+  "at": 23.518,
+  "until": 23.936,
   "gain": -15,
   "loop": false,
   "pan": -0.1808,
@@ -145,7 +145,7 @@
  {
   "scene": "s02",
   "name": "cloth_rustle",
-  "at": 26.242,
+  "at": 23.899,
   "until": null,
   "gain": -17,
   "loop": false,
@@ -156,8 +156,8 @@
  {
   "scene": "s02",
   "name": "footsteps",
-  "at": 27.616,
-  "until": 28.096,
+  "at": 25.097,
+  "until": 25.515,
   "gain": -15,
   "loop": false,
   "pan": 0.00039999999999995595,
@@ -167,8 +167,8 @@
  {
   "scene": "s02",
   "name": "footsteps",
-  "at": 28.075,
-  "until": 28.555,
+  "at": 25.497,
+  "until": 25.915,
   "gain": -15,
   "loop": false,
   "pan": 0.04630000000000001,
@@ -178,8 +178,8 @@
  {
   "scene": "s02",
   "name": "footsteps",
-  "at": 28.533,
-  "until": 29.013,
+  "at": 25.896,
+  "until": 26.314,
   "gain": -15,
   "loop": false,
   "pan": 0.09210000000000002,
@@ -189,8 +189,8 @@
  {
   "scene": "s02",
   "name": "footsteps",
-  "at": 29.012,
-  "until": 29.492,
+  "at": 26.313,
+  "until": 26.732,
   "gain": -15,
   "loop": false,
   "pan": 0.14,
@@ -200,8 +200,8 @@
  {
   "scene": "s02",
   "name": "footsteps",
-  "at": 29.47,
-  "until": 29.95,
+  "at": 26.713,
+  "until": 27.131,
   "gain": -15,
   "loop": false,
   "pan": 0.18579999999999997,
@@ -211,8 +211,8 @@
  {
   "scene": "s02",
   "name": "footsteps",
-  "at": 30.033,
-  "until": 30.513,
+  "at": 27.203,
+  "until": 27.622,
   "gain": -15,
   "loop": false,
   "pan": 0.2421000000000001,
@@ -222,7 +222,7 @@
  {
   "scene": "s02",
   "name": "cloth_rustle",
-  "at": 30.527,
+  "at": 27.634,
   "until": null,
   "gain": -16,
   "loop": false,
@@ -233,7 +233,7 @@
  {
   "scene": "s02",
   "name": "alarm_pull",
-  "at": 34.027,
+  "at": 30.74,
   "until": null,
   "gain": -16,
   "loop": false,
@@ -244,7 +244,7 @@
  {
   "scene": "s02",
   "name": "cloth_rustle",
-  "at": 34.477,
+  "at": 31.133,
   "until": null,
   "gain": -22,
   "loop": false,
@@ -255,7 +255,7 @@
  {
   "scene": "s03",
   "name": "rumble_low",
-  "at": 36.669,
+  "at": 33.269,
   "until": null,
   "gain": -14,
   "loop": false,
@@ -266,7 +266,7 @@
  {
   "scene": "s03",
   "name": "breath_shaky",
-  "at": 37.419,
+  "at": 34.019,
   "until": null,
   "gain": -20,
   "loop": false,
@@ -277,7 +277,7 @@
  {
   "scene": "s03",
   "name": "cloth_rustle",
-  "at": 40.489,
+  "at": 37.074,
   "until": null,
   "gain": -22,
   "loop": false,
@@ -288,7 +288,7 @@
  {
   "scene": "s03",
   "name": "rumble_low",
-  "at": 41.701,
+  "at": 38.173,
   "until": null,
   "gain": -14,
   "loop": false,
@@ -299,7 +299,7 @@
  {
   "scene": "s03",
   "name": "rumble_low",
-  "at": 46.301,
+  "at": 42.327,
   "until": null,
   "gain": -16,
   "loop": false,
@@ -310,8 +310,8 @@
  {
   "scene": "s04",
   "name": "heartbeat",
-  "at": 51.359,
-  "until": 61.369,
+  "at": 46.807,
+  "until": 55.866,
   "gain": -14,
   "loop": true,
   "pan": 0,
@@ -321,7 +321,7 @@
  {
   "scene": "s04",
   "name": "cloth_rustle",
-  "at": 53.179,
+  "at": 48.45,
   "until": null,
   "gain": -19,
   "loop": false,
@@ -332,8 +332,8 @@
  {
   "scene": "s04",
   "name": "breath_shaky",
-  "at": 54.238,
-  "until": 56.148,
+  "at": 49.476,
+  "until": 51.227,
   "gain": -19,
   "loop": false,
   "pan": 0,
@@ -343,7 +343,7 @@
  {
   "scene": "s04",
   "name": "cloth_rustle",
-  "at": 59.808,
+  "at": 54.414,
   "until": null,
   "gain": -20,
   "loop": false,
@@ -354,8 +354,8 @@
  {
   "scene": "s04",
   "name": "breath_shaky",
-  "at": 64.877,
-  "until": 67.557,
+  "at": 59.066,
+  "until": 61.746,
   "gain": -21,
   "loop": false,
   "pan": 0,
@@ -365,7 +365,7 @@
  {
   "scene": "s05",
   "name": "alarm_pull",
-  "at": 68.202,
+  "at": 62.366,
   "until": null,
   "gain": -6,
   "loop": false,
@@ -376,8 +376,8 @@
  {
   "scene": "s05",
   "name": "alarm_bell",
-  "at": 68.307,
-  "until": 79.275,
+  "at": 62.458,
+  "until": 72.184,
   "gain": -20,
   "loop": true,
   "pan": 0,
@@ -387,7 +387,7 @@
  {
   "scene": "s05",
   "name": "footsteps",
-  "at": 68.587,
+  "at": 62.703,
   "until": null,
   "gain": -17,
   "loop": false,
@@ -398,7 +398,7 @@
  {
   "scene": "s05",
   "name": "crowd_murmur",
-  "at": 68.757,
+  "at": 62.851,
   "until": null,
   "gain": -18,
   "loop": false,
@@ -409,7 +409,7 @@
  {
   "scene": "s05",
   "name": "cloth_rustle",
-  "at": 68.907,
+  "at": 62.983,
   "until": null,
   "gain": -16,
   "loop": false,
@@ -420,7 +420,7 @@
  {
   "scene": "s05",
   "name": "door_whoosh",
-  "at": 69.477,
+  "at": 63.481,
   "until": null,
   "gain": -15,
   "loop": false,
@@ -431,7 +431,7 @@
  {
   "scene": "s05",
   "name": "footsteps",
-  "at": 69.887,
+  "at": 63.839,
   "until": null,
   "gain": -15,
   "loop": false,
@@ -442,7 +442,7 @@
  {
   "scene": "s05",
   "name": "crowd_murmur",
-  "at": 70.452,
+  "at": 64.333,
   "until": null,
   "gain": -21,
   "loop": false,
@@ -453,7 +453,7 @@
  {
   "scene": "s05",
   "name": "footsteps",
-  "at": 71.382,
+  "at": 65.188,
   "until": null,
   "gain": -17,
   "loop": false,
@@ -464,7 +464,7 @@
  {
   "scene": "s05",
   "name": "door_whoosh",
-  "at": 72.452,
+  "at": 66.179,
   "until": null,
   "gain": -17,
   "loop": false,
@@ -475,8 +475,8 @@
  {
   "scene": "s05",
   "name": "heartbeat",
-  "at": 72.802,
-  "until": 75.407,
+  "at": 66.485,
+  "until": 68.756,
   "gain": -15,
   "loop": true,
   "pan": 0,
@@ -486,8 +486,8 @@
  {
   "scene": "s05",
   "name": "breath_shaky",
-  "at": 72.822,
-  "until": 75.307,
+  "at": 66.502,
+  "until": 68.668,
   "gain": -19,
   "loop": false,
   "pan": 0.15,
@@ -497,7 +497,7 @@
  {
   "scene": "s05",
   "name": "cloth_rustle",
-  "at": 73.507,
+  "at": 67.099,
   "until": null,
   "gain": -20,
   "loop": false,
@@ -508,7 +508,7 @@
  {
   "scene": "s05",
   "name": "paper_rustle",
-  "at": 73.657,
+  "at": 67.23,
   "until": null,
   "gain": -17,
   "loop": false,
@@ -519,7 +519,7 @@
  {
   "scene": "s05",
   "name": "paper_rustle",
-  "at": 74.657,
+  "at": 68.102,
   "until": null,
   "gain": -20,
   "loop": false,
@@ -530,7 +530,7 @@
  {
   "scene": "s05",
   "name": "paper_rustle",
-  "at": 75.757,
+  "at": 69.061,
   "until": null,
   "gain": -19,
   "loop": false,
@@ -541,7 +541,7 @@
  {
   "scene": "s05",
   "name": "paper_rustle",
-  "at": 76.785,
+  "at": 69.957,
   "until": null,
   "gain": -14,
   "loop": false,
@@ -552,7 +552,7 @@
  {
   "scene": "s05",
   "name": "cloth_rustle",
-  "at": 76.885,
+  "at": 70.044,
   "until": null,
   "gain": -17,
   "loop": false,
@@ -563,7 +563,7 @@
  {
   "scene": "s05",
   "name": "breath_shaky",
-  "at": 78.005,
+  "at": 71.073,
   "until": null,
   "gain": -15,
   "loop": false,
@@ -574,7 +574,7 @@
  {
   "scene": "s05",
   "name": "alarm_pull",
-  "at": 78.375,
+  "at": 71.396,
   "until": null,
   "gain": -20,
   "loop": false,
@@ -585,7 +585,7 @@
  {
   "scene": "s06",
   "name": "footsteps",
-  "at": 80.355,
+  "at": 73.264,
   "until": null,
   "gain": -14,
   "loop": false,
@@ -596,7 +596,7 @@
  {
   "scene": "s06",
   "name": "cloth_rustle",
-  "at": 82.225,
+  "at": 74.949,
   "until": null,
   "gain": -16,
   "loop": false,
@@ -607,7 +607,7 @@
  {
   "scene": "s06",
   "name": "cloth_rustle",
-  "at": 84.625,
+  "at": 77.043,
   "until": null,
   "gain": -21,
   "loop": false,
@@ -618,8 +618,8 @@
  {
   "scene": "s06",
   "name": "breath_shaky",
-  "at": 85.681,
-  "until": 87.831,
+  "at": 77.99,
+  "until": 80.121,
   "gain": -16,
   "loop": false,
   "pan": 0,
@@ -629,7 +629,7 @@
  {
   "scene": "s06",
   "name": "cloth_rustle",
-  "at": 101.894,
+  "at": 92.962,
   "until": null,
   "gain": -18,
   "loop": false,
@@ -640,7 +640,7 @@
  {
   "scene": "s06",
   "name": "alarm_pull",
-  "at": 102.339,
+  "at": 93.407,
   "until": null,
   "gain": -6,
   "loop": false,
@@ -651,8 +651,8 @@
  {
   "scene": "s06",
   "name": "alarm_bell",
-  "at": 102.394,
-  "until": 107.704,
+  "at": 93.462,
+  "until": 98.553,
   "gain": -20,
   "loop": true,
   "pan": 0.25,
@@ -662,7 +662,7 @@
  {
   "scene": "s06",
   "name": "crowd_murmur",
-  "at": 104.094,
+  "at": 95.1,
   "until": null,
   "gain": -24,
   "loop": false,
@@ -673,7 +673,7 @@
  {
   "scene": "s06",
   "name": "door_whoosh",
-  "at": 104.094,
+  "at": 95.1,
   "until": null,
   "gain": -22,
   "loop": false,
@@ -684,7 +684,7 @@
  {
   "scene": "s07",
   "name": "cloth_rustle",
-  "at": 106.054,
+  "at": 96.903,
   "until": null,
   "gain": -16,
   "loop": false,
@@ -695,8 +695,8 @@
  {
   "scene": "s07",
   "name": "breath_shaky",
-  "at": 106.504,
-  "until": 107.704,
+  "at": 97.353,
+  "until": 98.553,
   "gain": -20,
   "loop": false,
   "pan": -0.25,
@@ -706,7 +706,7 @@
  {
   "scene": "s07",
   "name": "cloth_rustle",
-  "at": 107.004,
+  "at": 97.853,
   "until": null,
   "gain": -19,
   "loop": false,
@@ -717,7 +717,7 @@
  {
   "scene": "s07",
   "name": "alarm_pull",
-  "at": 107.954,
+  "at": 98.776,
   "until": null,
   "gain": -17,
   "loop": false,
@@ -728,7 +728,7 @@
  {
   "scene": "s07",
   "name": "cloth_rustle",
-  "at": 108.084,
+  "at": 98.892,
   "until": null,
   "gain": -22,
   "loop": false,
@@ -739,8 +739,8 @@
  {
   "scene": "s07",
   "name": "breath_shaky",
-  "at": 111.702,
-  "until": 112.632,
+  "at": 102.172,
+  "until": 103.102,
   "gain": -23,
   "loop": false,
   "pan": 0.2,
@@ -750,8 +750,8 @@
  {
   "scene": "s08",
   "name": "footsteps",
-  "at": 114.562,
-  "until": 116.332,
+  "at": 105.032,
+  "until": 106.637,
   "gain": -14,
   "loop": false,
   "pan": 0,
@@ -761,8 +761,8 @@
  {
   "scene": "s08",
   "name": "footsteps",
-  "at": 114.682,
-  "until": 116.632,
+  "at": 105.152,
+  "until": 106.899,
   "gain": -22,
   "loop": false,
   "pan": 0.15,
@@ -772,7 +772,7 @@
  {
   "scene": "s08",
   "name": "cloth_rustle",
-  "at": 116.182,
+  "at": 106.506,
   "until": null,
   "gain": -16,
   "loop": false,
@@ -783,8 +783,8 @@
  {
   "scene": "s08",
   "name": "cage_creak",
-  "at": 116.682,
-  "until": 117.432,
+  "at": 106.943,
+  "until": 107.597,
   "gain": -21,
   "loop": false,
   "pan": 0,
@@ -794,7 +794,7 @@
  {
   "scene": "s08",
   "name": "cage_close",
-  "at": 117.402,
+  "at": 107.571,
   "until": null,
   "gain": -8,
   "loop": false,
@@ -805,7 +805,7 @@
  {
   "scene": "s08",
   "name": "lock_click",
-  "at": 117.572,
+  "at": 107.72,
   "until": null,
   "gain": -26,
   "loop": false,
@@ -816,7 +816,7 @@
  {
   "scene": "s08",
   "name": "key_turn",
-  "at": 118.016,
+  "at": 108.148,
   "until": null,
   "gain": -10,
   "loop": false,
@@ -827,7 +827,7 @@
  {
   "scene": "s08",
   "name": "lock_click",
-  "at": 118.676,
+  "at": 108.808,
   "until": null,
   "gain": -10,
   "loop": false,
@@ -838,7 +838,7 @@
  {
   "scene": "s08",
   "name": "cloth_rustle",
-  "at": 119.046,
+  "at": 109.159,
   "until": null,
   "gain": -20,
   "loop": false,
@@ -849,8 +849,8 @@
  {
   "scene": "s08",
   "name": "cage_creak",
-  "at": 119.546,
-  "until": 120.596,
+  "at": 109.594,
+  "until": 110.509,
   "gain": -24,
   "loop": false,
   "pan": 0.25,
@@ -860,7 +860,7 @@
  {
   "scene": "s08",
   "name": "sob",
-  "at": 121.419,
+  "at": 111.278,
   "until": null,
   "gain": -16,
   "loop": false,
@@ -871,7 +871,7 @@
  {
   "scene": "s08",
   "name": "cloth_rustle",
-  "at": 121.539,
+  "at": 111.398,
   "until": null,
   "gain": -18,
   "loop": false,
@@ -882,8 +882,8 @@
  {
   "scene": "s08",
   "name": "cage_creak",
-  "at": 121.719,
-  "until": 122.719,
+  "at": 111.578,
+  "until": 112.578,
   "gain": -17,
   "loop": false,
   "pan": 0.3,
@@ -893,8 +893,8 @@
  {
   "scene": "s08",
   "name": "footsteps",
-  "at": 121.939,
-  "until": 122.719,
+  "at": 111.798,
+  "until": 112.578,
   "gain": -16,
   "loop": false,
   "pan": -0.3,
@@ -904,8 +904,8 @@
  {
   "scene": "s08",
   "name": "cage_creak",
-  "at": 122.669,
-  "until": 123.569,
+  "at": 112.528,
+  "until": 113.428,
   "gain": -18,
   "loop": false,
   "pan": 0.3,
@@ -915,7 +915,7 @@
  {
   "scene": "s08",
   "name": "breath_shaky",
-  "at": 122.719,
+  "at": 112.578,
   "until": null,
   "gain": -18,
   "loop": false,
@@ -926,7 +926,7 @@
  {
   "scene": "s08",
   "name": "sob",
-  "at": 123.269,
+  "at": 113.128,
   "until": null,
   "gain": -17,
   "loop": false,
@@ -937,8 +937,8 @@
  {
   "scene": "s08",
   "name": "cage_creak",
-  "at": 123.419,
-  "until": 124.319,
+  "at": 113.278,
+  "until": 114.178,
   "gain": -19,
   "loop": false,
   "pan": 0.3,
@@ -948,8 +948,8 @@
  {
   "scene": "s08",
   "name": "door_whoosh",
-  "at": 123.519,
-  "until": 125.069,
+  "at": 113.378,
+  "until": 114.928,
   "gain": -22,
   "loop": false,
   "pan": -0.7,
@@ -959,7 +959,7 @@
  {
   "scene": "s08",
   "name": "footsteps",
-  "at": 124.069,
+  "at": 113.928,
   "until": null,
   "gain": -15,
   "loop": false,
@@ -970,8 +970,8 @@
  {
   "scene": "s08",
   "name": "cage_creak",
-  "at": 124.169,
-  "until": 124.969,
+  "at": 114.028,
+  "until": 114.828,
   "gain": -21,
   "loop": false,
   "pan": 0.3,
@@ -981,7 +981,7 @@
  {
   "scene": "s09",
   "name": "door_whoosh",
-  "at": 124.999,
+  "at": 114.858,
   "until": null,
   "gain": -16,
   "loop": false,
@@ -992,8 +992,8 @@
  {
   "scene": "s09",
   "name": "footsteps",
-  "at": 125.069,
-  "until": 126.769,
+  "at": 114.928,
+  "until": 116.463,
   "gain": -15,
   "loop": false,
   "pan": -0.3,
@@ -1003,8 +1003,8 @@
  {
   "scene": "s09",
   "name": "footsteps",
-  "at": 125.219,
-  "until": 126.319,
+  "at": 115.078,
+  "until": 116.07,
   "gain": -24,
   "loop": false,
   "pan": -0.7,
@@ -1014,7 +1014,7 @@
  {
   "scene": "s09",
   "name": "paper_rustle",
-  "at": 126.569,
+  "at": 116.288,
   "until": null,
   "gain": -15,
   "loop": false,
@@ -1025,7 +1025,7 @@
  {
   "scene": "s09",
   "name": "paper_rustle",
-  "at": 130.219,
+  "at": 119.48,
   "until": null,
   "gain": -24,
   "loop": false,
@@ -1036,7 +1036,7 @@
  {
   "scene": "s09",
   "name": "cloth_rustle",
-  "at": 130.719,
+  "at": 119.98,
   "until": null,
   "gain": -17,
   "loop": false,
@@ -1047,7 +1047,7 @@
  {
   "scene": "s09",
   "name": "cloth_rustle",
-  "at": 131.819,
+  "at": 120.946,
   "until": null,
   "gain": -22,
   "loop": false,
@@ -1058,7 +1058,7 @@
  {
   "scene": "s10",
   "name": "rumble_low",
-  "at": 137.614,
+  "at": 126.368,
   "until": null,
   "gain": -14,
   "loop": false,
@@ -1069,7 +1069,7 @@
  {
   "scene": "s10",
   "name": "sob",
-  "at": 138.134,
+  "at": 126.82,
   "until": null,
   "gain": -24,
   "loop": false,
@@ -1080,7 +1080,7 @@
  {
   "scene": "s10",
   "name": "cloth_rustle",
-  "at": 143.137,
+  "at": 131.364,
   "until": null,
   "gain": -19,
   "loop": false,
@@ -1091,8 +1091,8 @@
  {
   "scene": "s10",
   "name": "cage_creak",
-  "at": 143.637,
-  "until": 144.487,
+  "at": 131.864,
+  "until": 132.714,
   "gain": -19,
   "loop": false,
   "pan": -0.15,
@@ -1102,7 +1102,7 @@
  {
   "scene": "s10",
   "name": "sob",
-  "at": 143.837,
+  "at": 132.064,
   "until": null,
   "gain": -16,
   "loop": false,
@@ -1113,7 +1113,7 @@
  {
   "scene": "s11",
   "name": "shimmer",
-  "at": 148.537,
+  "at": 136.352,
   "until": null,
   "gain": -14,
   "loop": false,
@@ -1124,7 +1124,7 @@
  {
   "scene": "s11",
   "name": "sob",
-  "at": 150.915,
+  "at": 138.443,
   "until": null,
   "gain": -17,
   "loop": false,
@@ -1135,7 +1135,7 @@
  {
   "scene": "s11",
   "name": "cloth_rustle",
-  "at": 151.015,
+  "at": 138.543,
   "until": null,
   "gain": -22,
   "loop": false,
@@ -1146,7 +1146,7 @@
  {
   "scene": "s11",
   "name": "sob",
-  "at": 152.965,
+  "at": 140.493,
   "until": null,
   "gain": -20,
   "loop": false,
@@ -1157,7 +1157,7 @@
  {
   "scene": "s11",
   "name": "key_turn",
-  "at": 154.085,
+  "at": 141.613,
   "until": null,
   "gain": -11,
   "loop": false,
@@ -1168,7 +1168,7 @@
  {
   "scene": "s11",
   "name": "lock_click",
-  "at": 154.745,
+  "at": 142.273,
   "until": null,
   "gain": -10,
   "loop": false,
@@ -1179,7 +1179,7 @@
  {
   "scene": "s11",
   "name": "cage_creak",
-  "at": 154.865,
+  "at": 142.393,
   "until": null,
   "gain": -12,
   "loop": false,
@@ -1190,7 +1190,7 @@
  {
   "scene": "s11",
   "name": "cloth_rustle",
-  "at": 157.715,
+  "at": 145.243,
   "until": null,
   "gain": -22,
   "loop": false,
@@ -1201,8 +1201,8 @@
  {
   "scene": "s11",
   "name": "footsteps",
-  "at": 158.185,
-  "until": 158.565,
+  "at": 145.713,
+  "until": 146.093,
   "gain": -24,
   "loop": false,
   "pan": 0,
@@ -1212,8 +1212,8 @@
  {
   "scene": "s12",
   "name": "footsteps",
-  "at": 160.229,
-  "until": 160.915,
+  "at": 147.742,
+  "until": 148.34,
   "gain": -19,
   "loop": false,
   "pan": 0,
@@ -1223,7 +1223,7 @@
  {
   "scene": "s12",
   "name": "breath_shaky",
-  "at": 168.733,
+  "at": 155.541,
   "until": null,
   "gain": -14,
   "loop": false,
@@ -1234,8 +1234,8 @@
  {
   "scene": "s12",
   "name": "footsteps",
-  "at": 171.703,
-  "until": 172.533,
+  "at": 158.469,
+  "until": 159.191,
   "gain": -18,
   "loop": false,
   "pan": 0,
@@ -1245,8 +1245,8 @@
  {
   "scene": "s12",
   "name": "footsteps",
-  "at": 174.67,
-  "until": 174.92,
+  "at": 161.156,
+  "until": 161.374,
   "gain": -18,
   "loop": false,
   "pan": 0,
@@ -1256,8 +1256,8 @@
  {
   "scene": "s12",
   "name": "footsteps",
-  "at": 175.05,
-  "until": 175.42,
+  "at": 161.488,
+  "until": 161.812,
   "gain": -11,
   "loop": false,
   "pan": 0,
@@ -1267,7 +1267,7 @@
  {
   "scene": "s12",
   "name": "sob",
-  "at": 181.209,
+  "at": 167.06,
   "until": null,
   "gain": -14,
   "loop": false,
@@ -1278,7 +1278,7 @@
  {
   "scene": "s12",
   "name": "cloth_rustle",
-  "at": 182.394,
+  "at": 168.189,
   "until": null,
   "gain": -21,
   "loop": false,
@@ -1289,8 +1289,8 @@
  {
   "scene": "s12",
   "name": "sob",
-  "at": 183.344,
-  "until": 183.794,
+  "at": 169.139,
+  "until": 169.589,
   "gain": -21,
   "loop": false,
   "pan": 0,
@@ -1300,8 +1300,8 @@
  {
   "scene": "s12",
   "name": "breath_shaky",
-  "at": 186.594,
-  "until": 188.244,
+  "at": 172.138,
+  "until": 173.576,
   "gain": -23,
   "loop": false,
   "pan": 0,
@@ -1311,7 +1311,7 @@
  {
   "scene": "s13",
   "name": "rumble_low",
-  "at": 191.098,
+  "at": 176.237,
   "until": null,
   "gain": -14,
   "loop": false,
@@ -1322,7 +1322,7 @@
  {
   "scene": "s13",
   "name": "cloth_rustle",
-  "at": 194.598,
+  "at": 179.737,
   "until": null,
   "gain": -19,
   "loop": false,
@@ -1333,8 +1333,8 @@
  {
   "scene": "s13",
   "name": "heartbeat",
-  "at": 195.978,
-  "until": 200.497,
+  "at": 181.117,
+  "until": 185.158,
   "gain": -12,
   "loop": true,
   "pan": 0,
@@ -1344,7 +1344,7 @@
  {
   "scene": "s13",
   "name": "breath_shaky",
-  "at": 200.197,
+  "at": 184.897,
   "until": null,
   "gain": -16,
   "loop": false,
@@ -1355,8 +1355,8 @@
  {
   "scene": "s13",
   "name": "heartbeat",
-  "at": 200.397,
-  "until": 208.094,
+  "at": 185.071,
+  "until": 191.931,
   "gain": -13,
   "loop": true,
   "pan": 0,
@@ -1366,7 +1366,7 @@
  {
   "scene": "s13",
   "name": "breath_shaky",
-  "at": 204.094,
+  "at": 188.316,
   "until": null,
   "gain": -18,
   "loop": false,
@@ -1377,7 +1377,7 @@
  {
   "scene": "s13",
   "name": "cloth_rustle",
-  "at": 205.394,
+  "at": 189.577,
   "until": null,
   "gain": -16,
   "loop": false,
@@ -1388,7 +1388,7 @@
  {
   "scene": "s13",
   "name": "cloth_rustle",
-  "at": 207.544,
+  "at": 191.452,
   "until": null,
   "gain": -21,
   "loop": false,
@@ -1399,8 +1399,8 @@
  {
   "scene": "s13",
   "name": "heartbeat",
-  "at": 207.994,
-  "until": 211.668,
+  "at": 191.844,
+  "until": 195.38,
   "gain": -15,
   "loop": true,
   "pan": 0,
@@ -1410,8 +1410,8 @@
  {
   "scene": "s13",
   "name": "breath_shaky",
-  "at": 212.718,
-  "until": 213.868,
+  "at": 196.411,
+  "until": 197.412,
   "gain": -21,
   "loop": false,
   "pan": 0,
@@ -1421,7 +1421,7 @@
  {
   "scene": "s14",
   "name": "shimmer",
-  "at": 217.436,
+  "at": 200.688,
   "until": null,
   "gain": -17,
   "loop": false,
@@ -1432,7 +1432,7 @@
  {
   "scene": "s14",
   "name": "twinkle",
-  "at": 217.866,
+  "at": 201.118,
   "until": null,
   "gain": -18,
   "loop": false,
@@ -1443,7 +1443,7 @@
  {
   "scene": "s14",
   "name": "twinkle",
-  "at": 219.286,
+  "at": 202.538,
   "until": null,
   "gain": -21,
   "loop": false,
@@ -1454,7 +1454,7 @@
  {
   "scene": "s14",
   "name": "twinkle",
-  "at": 224.166,
+  "at": 206.891,
   "until": null,
   "gain": -19,
   "loop": false,
@@ -1465,7 +1465,7 @@
  {
   "scene": "s14",
   "name": "twinkle",
-  "at": 228.042,
+  "at": 210.324,
   "until": null,
   "gain": -21,
   "loop": false,
@@ -1476,7 +1476,7 @@
  {
   "scene": "s14",
   "name": "shimmer",
-  "at": 231.868,
+  "at": 213.715,
   "until": null,
   "gain": -15,
   "loop": false,
@@ -1487,7 +1487,7 @@
  {
   "scene": "s14",
   "name": "twinkle",
-  "at": 243.353,
+  "at": 224.335,
   "until": null,
   "gain": -21,
   "loop": false,
@@ -1498,7 +1498,7 @@
  {
   "scene": "s14",
   "name": "cloth_rustle",
-  "at": 251.573,
+  "at": 231.984,
   "until": null,
   "gain": -17,
   "loop": false,
@@ -1509,7 +1509,7 @@
  {
   "scene": "s14",
   "name": "cloth_rustle",
-  "at": 253.303,
+  "at": 233.714,
   "until": null,
   "gain": -21,
   "loop": false,
@@ -1520,8 +1520,8 @@
  {
   "scene": "s14",
   "name": "footsteps",
-  "at": 257.853,
-  "until": 258.353,
+  "at": 237.979,
+  "until": 238.414,
   "gain": -19,
   "loop": false,
   "pan": 0,
@@ -1531,7 +1531,7 @@
  {
   "scene": "s15",
   "name": "cloth_rustle",
-  "at": 270.929,
+  "at": 250.043,
   "until": null,
   "gain": -19,
   "loop": false,
@@ -1542,7 +1542,7 @@
  {
   "scene": "s15",
   "name": "cloth_rustle",
-  "at": 271.569,
+  "at": 250.601,
   "until": null,
   "gain": -20,
   "loop": false,
@@ -1553,7 +1553,7 @@
  {
   "scene": "s15",
   "name": "console_beeps",
-  "at": 272.249,
+  "at": 251.193,
   "until": null,
   "gain": -18,
   "loop": false,
@@ -1564,7 +1564,7 @@
  {
   "scene": "s15",
   "name": "console_beeps",
-  "at": 272.619,
+  "at": 251.516,
   "until": null,
   "gain": -22,
   "loop": false,
@@ -1575,7 +1575,7 @@
  {
   "scene": "s16",
   "name": "cloth_rustle",
-  "at": 273.386,
+  "at": 252.255,
   "until": null,
   "gain": -20,
   "loop": false,
@@ -1586,7 +1586,7 @@
  {
   "scene": "s16",
   "name": "breath_shaky",
-  "at": 274.286,
+  "at": 253.155,
   "until": null,
   "gain": -16,
   "loop": false,
@@ -1597,7 +1597,7 @@
  {
   "scene": "s16",
   "name": "cloth_rustle",
-  "at": 274.346,
+  "at": 253.215,
   "until": null,
   "gain": -21,
   "loop": false,
@@ -1608,7 +1608,7 @@
  {
   "scene": "s16",
   "name": "cloth_rustle",
-  "at": 275.686,
+  "at": 254.555,
   "until": null,
   "gain": -17,
   "loop": false,
@@ -1619,7 +1619,7 @@
  {
   "scene": "s16",
   "name": "cloth_rustle",
-  "at": 277.436,
+  "at": 256.095,
   "until": null,
   "gain": -19,
   "loop": false,
@@ -1630,8 +1630,8 @@
  {
   "scene": "s16",
   "name": "footsteps",
-  "at": 277.756,
-  "until": 278.536,
+  "at": 256.374,
+  "until": 257.055,
   "gain": -15,
   "loop": false,
   "pan": 0,
@@ -1641,8 +1641,8 @@
  {
   "scene": "s16",
   "name": "footsteps",
-  "at": 278.456,
-  "until": 278.986,
+  "at": 256.985,
+  "until": 257.448,
   "gain": -16,
   "loop": false,
   "pan": 0,
@@ -1652,8 +1652,8 @@
  {
   "scene": "s16",
   "name": "footsteps",
-  "at": 279.256,
-  "until": 280.709,
+  "at": 257.696,
+  "until": 259.015,
   "gain": -16,
   "loop": false,
   "pan": 0,
@@ -1663,7 +1663,7 @@
  {
   "scene": "s16",
   "name": "cloth_rustle",
-  "at": 280.909,
+  "at": 259.19,
   "until": null,
   "gain": -21,
   "loop": false,
@@ -1674,7 +1674,7 @@
  {
   "scene": "s16",
   "name": "twinkle",
-  "at": 282.419,
+  "at": 260.508,
   "until": null,
   "gain": -14,
   "loop": false,
@@ -1685,8 +1685,8 @@
  {
   "scene": "s16",
   "name": "footsteps",
-  "at": 288.437,
-  "until": 289.897,
+  "at": 266.109,
+  "until": 267.569,
   "gain": -15,
   "loop": false,
   "pan": 0,
@@ -1696,8 +1696,8 @@
  {
   "scene": "s17",
   "name": "footsteps",
-  "at": 290.557,
-  "until": 291.597,
+  "at": 268.229,
+  "until": 269.269,
   "gain": -14,
   "loop": false,
   "pan": 0,
@@ -1707,7 +1707,7 @@
  {
   "scene": "s17",
   "name": "breath_shaky",
-  "at": 291.497,
+  "at": 269.169,
   "until": null,
   "gain": -22,
   "loop": false,
@@ -1718,8 +1718,8 @@
  {
   "scene": "s17",
   "name": "footsteps",
-  "at": 292.647,
-  "until": 293.597,
+  "at": 270.319,
+  "until": 271.269,
   "gain": -16,
   "loop": false,
   "pan": 0,
@@ -1729,7 +1729,7 @@
  {
   "scene": "s17",
   "name": "cloth_rustle",
-  "at": 293.797,
+  "at": 271.469,
   "until": null,
   "gain": -20,
   "loop": false,
@@ -1740,8 +1740,8 @@
  {
   "scene": "s17",
   "name": "breath_shaky",
-  "at": 297.241,
-  "until": 299.891,
+  "at": 274.726,
+  "until": 277.376,
   "gain": -22,
   "loop": false,
   "pan": 0,
@@ -1751,7 +1751,7 @@
  {
   "scene": "s17",
   "name": "cloth_rustle",
-  "at": 299.591,
+  "at": 277.076,
   "until": null,
   "gain": -19,
   "loop": false,
@@ -1762,7 +1762,7 @@
  {
   "scene": "s17",
   "name": "cloth_rustle",
-  "at": 300.091,
+  "at": 277.576,
   "until": null,
   "gain": -19,
   "loop": false,
@@ -1773,8 +1773,8 @@
  {
   "scene": "s17",
   "name": "footsteps",
-  "at": 300.191,
-  "until": 301.491,
+  "at": 277.676,
+  "until": 278.976,
   "gain": -16,
   "loop": false,
   "pan": 0.3,
@@ -1784,7 +1784,7 @@
  {
   "scene": "s17",
   "name": "cloth_rustle",
-  "at": 300.941,
+  "at": 278.426,
   "until": null,
   "gain": -20,
   "loop": false,
@@ -1795,7 +1795,7 @@
  {
   "scene": "s17",
   "name": "console_beeps",
-  "at": 302.021,
+  "at": 279.506,
   "until": null,
   "gain": -18,
   "loop": false,
@@ -1806,7 +1806,7 @@
  {
   "scene": "s18",
   "name": "rust_creak",
-  "at": 303.491,
+  "at": 280.976,
   "until": null,
   "gain": -16,
   "loop": false,
@@ -1817,7 +1817,7 @@
  {
   "scene": "s18",
   "name": "twinkle",
-  "at": 310.031,
+  "at": 286.914,
   "until": null,
   "gain": -25,
   "loop": false,
@@ -1828,7 +1828,7 @@
  {
   "scene": "s19",
   "name": "console_beeps",
-  "at": 314.101,
+  "at": 290.649,
   "until": null,
   "gain": -21,
   "loop": false,
@@ -1839,7 +1839,7 @@
  {
   "scene": "s19",
   "name": "console_beeps",
-  "at": 314.631,
+  "at": 291.111,
   "until": null,
   "gain": -28,
   "loop": false,
@@ -1850,7 +1850,7 @@
  {
   "scene": "s19",
   "name": "cloth_rustle",
-  "at": 315.251,
+  "at": 291.652,
   "until": null,
   "gain": -20,
   "loop": false,
@@ -1861,7 +1861,7 @@
  {
   "scene": "s19",
   "name": "console_beeps",
-  "at": 317.781,
+  "at": 293.858,
   "until": null,
   "gain": -26,
   "loop": false,
@@ -1872,7 +1872,7 @@
  {
   "scene": "s19",
   "name": "console_beeps",
-  "at": 318.161,
+  "at": 294.204,
   "until": null,
   "gain": -30,
   "loop": false,
@@ -1883,7 +1883,7 @@
  {
   "scene": "s19",
   "name": "console_beeps",
-  "at": 320.758,
+  "at": 296.501,
   "until": null,
   "gain": -27,
   "loop": false,
@@ -1894,7 +1894,7 @@
  {
   "scene": "s19",
   "name": "console_beeps",
-  "at": 322.564,
+  "at": 298.125,
   "until": null,
   "gain": -25,
   "loop": false,
@@ -1905,7 +1905,7 @@
  {
   "scene": "s19",
   "name": "twinkle",
-  "at": 322.964,
+  "at": 298.473,
   "until": null,
   "gain": -18,
   "loop": false,
@@ -1916,7 +1916,7 @@
  {
   "scene": "s20",
   "name": "cloth_rustle",
-  "at": 336.968,
+  "at": 311.392,
   "until": null,
   "gain": -18,
   "loop": false,
@@ -1927,7 +1927,7 @@
  {
   "scene": "s20",
   "name": "paper_rustle",
-  "at": 338.611,
+  "at": 313.035,
   "until": null,
   "gain": -16,
   "loop": false,
@@ -1938,7 +1938,7 @@
  {
   "scene": "s20",
   "name": "cloth_rustle",
-  "at": 339.261,
+  "at": 313.685,
   "until": null,
   "gain": -20,
   "loop": false,
@@ -1949,7 +1949,7 @@
  {
   "scene": "s20",
   "name": "lamp_click",
-  "at": 340.141,
+  "at": 314.565,
   "until": null,
   "gain": -12,
   "loop": false,
@@ -1960,7 +1960,7 @@
  {
   "scene": "s20",
   "name": "twinkle",
-  "at": 341.721,
+  "at": 316.145,
   "until": null,
   "gain": -14,
   "loop": false,

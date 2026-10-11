@@ -1,0 +1,131 @@
+
+=== s01 the_old_notebook [0.00 - 15.38] (play time)
+     1.60-   3.60 s01b01   --silent--      
+     3.60-   9.44 s01b02   NARRATOR        So, I was having a memory, of the first story I wrote about my emotions.
+     9.94-  14.88 s01b03   NARRATOR        And the more I read, the more I was back inside my mind.
+
+=== s02 headquarters_and_alarm [15.38 - 33.12] (play time)
+    16.28-  18.28 s02b01   --silent--      
+    18.28-  21.18 s02b02   NARRATOR        And my fear kept pulling the fire alarm.
+    21.68-  28.33 s02b03   NARRATOR        So I imagined myself as the CEO of my mind, looking around to see why.
+    28.73-  31.52 s02b04   CONSCIOUSNESS   Fear? What are you looking at?
+
+=== s03 the_void [33.12 - 46.76] (play time)
+    33.57-  36.97 s03b01   --silent--      
+    36.97-  37.87 s03b02   NARRATOR        The Void.
+    39.37-  46.16 s03b03   NARRATOR        Huge. Unmoving. And its face was pure darkness.
+
+=== s04 not_safe [46.76 - 61.75] (play time)
+    47.21-  48.50 s04b01   FEAR            It's going to hurt me.
+    49.30-  50.53 s04b02   CONSCIOUSNESS   It hasn't moved.
+    51.23-  54.64 s04b03   FEAR            That's what scares me. It's not safe here.
+    55.34-  57.01 s04b04   CONSCIOUSNESS   Nothing is going to hurt you.
+    57.71-  58.75 s04b05   FEAR            You don't know that.
+    58.95-  61.75 s04b06   --silent--      
+
+=== s05 chaos [61.75 - 72.78] (play time)
+    62.20-  64.46 s05b01   FEAR            Out! Everybody out!
+    64.76-  65.78 s05b02   JOY             We always come back.
+    66.18-  70.41 s05b03   NARRATOR        Panic attacks, forcing every emotion out of my mind.
+    70.81-  72.18 s05b04   NARRATOR        Causing chaos.
+
+=== s06 a_hand_on_the_shoulder [72.78 - 96.70] (play time)
+    73.68-  77.79 s06b01   NARRATOR        Then one day, I put my hand on my fear's shoulder.
+    77.99-  79.99 s06b02   --silent--      
+    79.99-  82.56 s06b03   CONSCIOUSNESS   You need to stop pulling the fire alarm.
+    83.26-  84.85 s06b04   CONSCIOUSNESS   It's causing turmoil.
+    85.75-  87.63 s06b05   FEAR            I'm only trying to keep us safe.
+    87.93-  90.13 s06b06   --silent--      
+    90.13-  92.66 s06b07   FEAR            I can't. I'm sorry.
+    92.86-  94.66 s06b08   --silent--      
+    94.66-  96.20 s06b09   NARRATOR        My fear refused.
+
+=== s07 time_out [96.70 - 105.05] (play time)
+    97.15-  98.55 s07b01   --silent--      
+    98.55-  99.08 s07b02   CONSCIOUSNESS   Fear,
+    99.98- 102.05 s07b03   CONSCIOUSNESS   we need to put you in a time-out.
+
+=== s08 the_cage [105.05 - 114.88] (play time)
+   105.50- 107.83 s08b01   NARRATOR        So I put my fear into a cage.
+   109.03- 110.88 s08b02   FEAR            Please don't leave me with it.
+   111.28- 114.88 s08b03   --silent--      
+
+=== s09 responsible [114.88 - 123.55] (play time)
+   115.33- 119.43 s09b01   NARRATOR        I told myself it was the responsible thing to do.
+   120.03- 121.55 s09b02   NARRATOR        And I felt sadness.
+
+=== s10 stone_faced [123.55 - 133.11] (play time)
+   124.45- 129.91 s10b01   NARRATOR        And the Void stood there, stone-faced, its shadow filling half the room.
+   130.31- 133.11 s10b02   --silent--      
+
+=== s11 the_unlocking [133.11 - 147.19] (play time)
+   133.56- 138.29 s11b01   NARRATOR        And then, when I wasn't looking, I had an image in my mind.
+   138.49- 143.49 s11b02   --silent--      
+   143.49- 147.19 s11b03   --silent--      
+
+=== s12 why_are_you_doing_this [147.19 - 175.59] (play time)
+   147.64- 149.02 s12b01   FEAR            Why are you doing this?
+   149.92- 151.25 s12b02   FEAR            You're going to hurt me.
+   151.95- 153.09 s12b03   FEAR            This is a trick.
+   153.69- 154.89 s12b04   FEAR            This can't be right.
+   155.19- 158.19 s12b05   --silent--      
+   158.19- 159.92 s12b06   FEAR            This doesn't make any sense.
+   160.72- 162.18 s12b07   FEAR            You're supposed to hurt me.
+   162.88- 164.60 s12b08   FEAR            Why are you just standing there?
+   165.40- 167.44 s12b09   FEAR            Are you just here to scare me forever?
+   168.04- 170.44 s12b10   --silent--      
+   170.44- 174.89 s12b11   NARRATOR        And the Void did not move. It stood there.
+
+=== s13 the_turn [175.59 - 199.89] (play time)
+   176.04- 181.24 s13b01   --silent--      
+   181.24- 182.29 s13b02   FEAR            This is it.
+   182.89- 188.12 s13b03   NARRATOR        My fear thought the Void had had enough of its complaining, and would destroy it.
+   189.32- 192.78 s13b04   NARRATOR        But then, my fear felt a hand on its shoulder.
+   192.98- 196.28 s13b05   --silent--      
+   196.28- 199.39 s13b06   NARRATOR        And it looked up, into the face of the Void.
+
+=== s14 the_universe_inside [199.89 - 240.15] (play time)
+   200.34- 203.34 s14b01   --silent--      
+   203.34- 207.58 s14b02   NARRATOR        And instead of darkness, my fear saw the twinkling of lights.
+   208.08- 211.69 s14b03   NARRATOR        Like galaxies, and nebulae, and stars of the universe.
+   212.19- 215.13 s14b04   NARRATOR        The Void, filled with bits and pieces of meaning.
+   215.53- 219.93 s14b05   --silent--      
+   219.93- 226.49 s14b06   NARRATOR        And for once, my fear wasn't afraid. It felt wonder, and amazement.
+   226.99- 229.59 s14b07   --silent--      
+   229.59- 231.26 s14b08   FEAR            Why are you showing me this?
+   231.86- 236.06 s14b09   --silent--      
+   236.06- 239.65 s14b10   NARRATOR        And the Void stared into the screen of my consciousness.
+
+=== s15 looking_back [240.15 - 252.21] (play time)
+   240.60- 242.99 s15b01   NARRATOR        My other emotions were looking back.
+   243.29- 247.29 s15b02   --silent--      
+   247.29- 251.71 s15b03   NARRATOR        They smiled, just for a moment, then went back to helping me.
+
+=== s16 the_gentle_push [252.21 - 267.87] (play time)
+   252.66- 254.66 s16b01   --silent--      
+   254.66- 257.60 s16b02   NARRATOR        Then my fear felt the gentle push of the Void.
+   258.10- 263.37 s16b03   NARRATOR        The Void stood there, with galaxies twinkling in its dark facade.
+   263.67- 267.87 s16b04   --silent--      
+
+=== s17 can_i_help [267.87 - 280.08] (play time)
+   268.32- 270.72 s17b01   --silent--      
+   270.72- 272.32 s17b02   --silent--      
+   272.32- 272.85 s17b03   CONSCIOUSNESS   Fear.
+   273.75- 274.68 s17b04   FEAR            Can I help?
+   275.08- 280.08 s17b05   --silent--      
+
+=== s18 the_rusted_cage [280.08 - 289.49] (play time)
+   280.98- 282.28 s18b01   --silent--      
+   282.28- 286.17 s18b02   NARRATOR        The old cage had rusted, its gate hanging open.
+   286.67- 288.99 s18b03   NARRATOR        But that was just a small detail.
+
+=== s19 the_scene_changed [289.49 - 303.43] (play time)
+   290.39- 294.09 s19b01   NARRATOR        Because the scene changed, to my emotions at the console.
+   294.49- 296.79 s19b02   NARRATOR        And the Void, standing in the background.
+   297.19- 302.63 s19b03   NARRATOR        I could barely see that rusty cage anymore, in the back of my mind.
+
+=== s20 a_tear_or_two [303.43 - 319.19] (play time)
+   304.33- 307.13 s20b01   --silent--      
+   307.13- 308.17 s20b02   NARRATOR        After that,
+   309.07- 311.38 s20b03   NARRATOR        I may have shed a tear or two myself.
+   312.19- 316.19 s20b04   --silent--      

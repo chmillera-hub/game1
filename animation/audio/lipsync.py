@@ -96,8 +96,12 @@ def frames_for(line, start):
             "round": [round(float(v), 3) for v in rnd]}
 
 def main():
-    lines = json.load(open(os.path.join(ROOT, "data/lines.json")))
-    tl = json.load(open(os.path.join(ROOT, "data/timeline.json")))
+    # play-time files (tools/speed_dialogue.py) when present: mouth data must follow the audio actually heard
+    lp, tp = os.path.join(ROOT, "data/lines_play.json"), os.path.join(ROOT, "data/timeline_play.json")
+    if not os.path.exists(lp):
+        lp, tp = os.path.join(ROOT, "data/lines.json"), os.path.join(ROOT, "data/timeline.json")
+    lines = json.load(open(lp))
+    tl = json.load(open(tp))
     out = {}
     for bid, line in lines.items():
         if line.get("inner") or bid not in tl["beats"]:

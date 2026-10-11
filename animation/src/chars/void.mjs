@@ -304,6 +304,16 @@ let layer = null;
 export function drawVoid(g, x, y, scale = 1, pose = {}) {
   const alpha = pose.alpha == null ? 1 : clamp(pose.alpha);
   if (alpha <= 0.003) return;
+  // caption placement (render.mjs --place-subs): the hood's face opening is the Void's "face" — keep it clear
+  if (globalThis.__FACE_LOG && alpha > 0.35 && (!globalThis.__FACE_CANVASES || globalThis.__FACE_CANVASES.has(g.canvas))) {
+    const m = g.getTransform();
+    const fx = x + ANCHORS.face[0] * scale, fy = y + ANCHORS.face[1] * scale;
+    const rx = ANCHORS.faceRx * scale * 1.6, ry = ANCHORS.faceRy * scale * 1.5;
+    const pts = [[fx - rx, fy - ry], [fx + rx, fy - ry], [fx - rx, fy + ry], [fx + rx, fy + ry]]
+      .map(([px, py]) => [m.a * px + m.c * py + m.e, m.b * px + m.d * py + m.f]);
+    const xs = pts.map((p) => p[0]), ys = pts.map((p) => p[1]);
+    globalThis.__FACE_LOG.push({ x0: Math.min(...xs), x1: Math.max(...xs), y0: Math.min(...ys), y1: Math.max(...ys), void: true });
+  }
   if (alpha < 0.997 && g.canvas && pose.layer !== false) {
     // draw through an offscreen layer so overlapping cloak parts fade as one
     const cw = g.canvas.width, ch = g.canvas.height;
