@@ -927,10 +927,14 @@ def alarm_at(T, t):
 
 def hatch_open(T, t):
     if t < T.burst:
-        return 0.0
-    if t < T.slam0:
-        return clamp(ease_out_back(seg(t, T.burst, T.burst + 0.32), 1.2))
-    return 1.0 - ease_in(seg(t, T.slam0, T.hatch))
+        v = 0.0
+    elif t < T.slam0:
+        v = clamp(ease_out_back(seg(t, T.burst, T.burst + 0.32), 1.2))
+    else:
+        v = 1.0 - ease_in(seg(t, T.slam0, T.hatch))
+    # work around sets._cr2_hatch_panel: cos(opening*95deg)**0.5 goes complex for
+    # opening in (0.947, 1) and raises; snap that last 5 degrees of swing
+    return 1.0 if v > 0.94 else v
 
 
 # ============================================================================

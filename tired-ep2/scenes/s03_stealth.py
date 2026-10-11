@@ -41,8 +41,7 @@ import math
 import cairocffi as cairo
 
 from engine import core, sets, human, creatures as CR, fx, props
-from engine.core import (tween, seg, lerp, clamp, smoothstep, ease_in_out, ease_out, ease_in,
-                         ease_out_back, hexc)
+from engine.core import tween, seg, lerp, clamp, smoothstep, ease_in_out, ease_out_back, hexc
 from audio import sfx
 
 M = sets.SHAFT_LOWER_MARKS
@@ -588,7 +587,6 @@ def _curio(t, T):
     if t < T["hop0"]:
         km = smoothstep(seg(t, sn0 - 0.2, sn0 + 0.1))
         pt = d / (CR.SPEC_WALK_SPEED * SC)
-        pose = "walk" if (kmv > 0.05 or (fr1 > t > fr0)) else "stand"
         kw.update(pose="walk" if t < fr0 or t > fr1 else "stand", pose_t=pt, expr="annoyed", ears=0.35,
                   glow=0.45, look=(0.5, -0.5))
         if km < 1:
@@ -614,7 +612,6 @@ def _curio(t, T):
         kw["_rot"] = lerp(-0.85, 0.15, ease_in_out(u))
         return bx, by, kw
     # sitting on the lid
-    land = smoothstep(seg(t, T["hop2"], T["hop2"] + 0.2))
     if t < TR:
         kw.update(pose="sit", expr="calm", ears=0.62, look=(0.6, 0.05), tail_curl=0.2)
         kw["_squash"] = 0.12 * math.sin(math.pi * seg(t, T["hop2"], T["hop2"] + 0.22))
@@ -887,7 +884,7 @@ def SFX(info):
     ev.append((T["tj"] + 0.47, "footstep", -4, 0.1))
     # Curiosity's hop: claws on the wood lid
     ev.append((T["hop2"] - 0.03, "scratch_wood", -6, 0.1))
-    # the troll wave: a tiny smug chitter only we hear? no: silence sells it.
+    # (the troll wave itself is silent: the silence sells it)
     ev.append((T["troll"] + 1.85, "sonar_ping_small", -8, 0.0))
     ev.append((T["turn"] + 0.35, "cloth_rustle", -6, 0.25))
     ev.append((T["melt"], "creature_melt", 1, 0.1))

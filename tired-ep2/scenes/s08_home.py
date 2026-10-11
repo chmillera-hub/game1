@@ -40,7 +40,7 @@ LIE = {"base": "lie_front", "plant": 0, "hip_h": 0, "ll_p": 0.22, "lr_p": 0.14,
 CHAIR_DX = 320                # the gaming chair pushed back to the desk, away from the foot of the bed
 STAND = (1505, 1470)          # where he stands before the flop (feet)
 DOOR_FEET = (305, 1336)       # in the doorway
-CUR_FLOOR = (1628, 1542)      # Curiosity sits at his heels, at the foot of the bed
+CUR_FLOOR = (1672, 1542)      # Curiosity sits at his heels, at the foot of the bed
 PERCH = (1395, 1102)          # Curiosity's perch base on his back
 BABY_BACK = (1294, 1084)      # baby sitting on his upper back
 G_CUR, G_BABY = 1.4, 1.7      # rim/eye glow: keeps the dark creatures readable on his navy hoodie
@@ -714,11 +714,11 @@ def _render(ctx, t, T, info):
         # the frame before the caption comes up)
         k = ease_in_out(seg(t, T.I + 0.6, T.L0 + 0.35))
         k2 = ease_in_out(seg(t, T.L0 + 0.35, T.P))
-        cam = _cam_lerp(_cam_lerp((1370, 1100, 1.25), (1222, 965, 1.72), k), (1210, 975, 1.8), k2)
+        cam = _cam_lerp(_cam_lerp((1392, 1100, 1.25), (1222, 965, 1.72), k), (1210, 975, 1.8), k2)
         _shot_bed(ctx, t, T, info, cam)
         return
     if t < T.S:
-        _shot_bed(ctx, t, T, info, (1365, 1185, 1.32))
+        _shot_bed(ctx, t, T, info, (1392, 1185, 1.32))
         return
     if t < T.INS:
         kp = ease_in_out(seg(t, T.S, T.S + 2.2))          # slow push onto his face for the smile
