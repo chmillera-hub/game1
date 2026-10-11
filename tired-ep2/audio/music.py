@@ -2582,7 +2582,7 @@ def _cue_reveal(S):
 # =============================================================================
 # Episode 2 instruments
 # =============================================================================
-@lru_cache(maxsize=2048)
+@lru_cache(maxsize=512)
 def _mbox(c100, nsamp, velq, sr):
     """One music-box tine (cantilever comb: partials 1 : 6.27 : 17.55, a touch of
     2nd harmonic from the box, a tiny pin 'tick'). c100 = pitch in MIDI cents."""
@@ -2600,6 +2600,7 @@ def _mbox(c100, nsamp, velq, sr):
     y *= np.clip(t / 0.0005, 0, 1)
     q = int(0.006 * sr)
     y[-q:] *= np.linspace(1, 0, q)
+    y = y.astype(np.float32)                                   # cached: keep it compact
     y.flags.writeable = False
     return y
 
@@ -2612,7 +2613,7 @@ def inst_musicbox(m, vel, sr, cents=0.0, length=None, double=3.5):
     n = secs(sr, L)
     velq = int(np.clip(round(vel * 8), 1, 10))
     c = int(round(m * 100 + cents))
-    y = np.array(_mbox(c, n, velq, sr)) + 0.55 * np.array(_mbox(c + int(round(double)), n, velq, sr))
+    y = _mbox(c, n, velq, sr).astype(float) + 0.55 * _mbox(c + int(round(double)), n, velq, sr).astype(float)
     return y * (0.45 + 0.55 * vel) / 1.55
 
 
