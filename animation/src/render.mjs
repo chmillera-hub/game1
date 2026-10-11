@@ -89,7 +89,11 @@ export function renderFrame(t) {
     gt.clearRect(0, 0, W, H);
     drawScene(gt, sc, t);
     g.globalAlpha = clamp((t - sc.start) / dis);
+    // Skia's default 8-bit blend rounds translucent draws one way (a visible 1-level jump on the first
+    // dissolve frame); the high-quality path blends in float.
+    g.imageSmoothingQuality = 'high';
     g.drawImage(tmp, 0, 0);
+    g.imageSmoothingQuality = 'low';
     g.globalAlpha = 1;
   } else {
     drawScene(g, sc, t);

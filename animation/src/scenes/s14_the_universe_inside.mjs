@@ -633,7 +633,7 @@ export function render(g, t, S) {
     if (x > 0) {
       const o = offscreen();
       cosmosFull(o, t, S, cosmos);
-      g.save(); g.setTransform(1, 0, 0, 1, 0, 0); g.globalAlpha = x; g.drawImage(off, 0, 0); g.restore();
+      g.save(); g.setTransform(1, 0, 0, 1, 0, 0); g.globalAlpha = x; g.imageSmoothingQuality = 'high'; g.drawImage(off, 0, 0); g.restore();
     }
   } else if (t < T('s14b05')) {
     // 2. drifting through the stars (b02–b04)

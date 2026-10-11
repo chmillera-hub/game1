@@ -46,7 +46,9 @@ Scenes must render sensibly for t slightly before `S.start` and after `S.end` (d
 7. **Tears**: well (`tears` 0→1 over ≥1 s), then a drop (`tearL` 0→1 over ~1.6 s), streams (`stream`) only
    when really crying. Wiping = arm preset `wipeEye` + `tears` reducing. The rig's streak is built to survive
    compression (wide wet body + a near-white specular edge on the light side, opacity ∝ `stream`^0.8), so even
-   `stream` 0.2–0.3 reads as a faint wet line in the film; 0.5+ is a clearly crying face.
+   `stream` 0.2–0.3 reads as a faint wet line in the film; 0.5+ is a clearly crying face. The streak runs from
+   under the eye to about the mouth line (shorter on the side the head turns to), so it stays on the cheek and
+   never hangs past Fear's jaw outline.
 8. **Bodies**: posture tells the story (Fear hunched/crouched when afraid, slowly straightening as trust
    grows). Use `lean`, `crouch`, `headTilt`, `headDY`, `tremble` (decreasing over the film), arm presets.
 9. **Timing**: hold moments. The creator wants slowness. Big emotional beats deserve 1.5–3 s of nearly still,

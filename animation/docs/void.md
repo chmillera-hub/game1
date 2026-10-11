@@ -189,7 +189,7 @@ drawVoid(g, vx, vy, vs, pose);  drawCage(...);  drawVoidArm(g, vx, vy, vs, pose,
 | animated head turn, per frame (incl. one hood build) | ~6 @0.55 · ~7 @1.0 · ~24 @2.3 |
 | `alpha` 0.6 (layer) | ~6.5 |
 | `drawVoidGlow` | ~2.5 |
-| `drawCosmos` full screen reveal 1 / 0.4 | ~9 / ~7 |
+| `drawCosmos` full screen reveal 1 / 0.4 | ~12 / ~13 (live glow gradient + 2 px star cores ≈ +3 ms vs. the old cache; while the nebulae are translucent, reveal ≈ 0.2–0.8, the float-pipeline draw adds ≈ +5 ms) |
 
 Caches: the cloak body (+ resting sleeves) is one sprite keyed by quantized on-screen scale; the mantle is one
 sprite per scale (a bow only translates it); the hood shell is one sprite per scale + quantized head pose

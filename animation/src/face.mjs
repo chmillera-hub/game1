@@ -111,20 +111,27 @@ export function drawFace(g, style, exprIn) {
     const sw = Math.max(1 / k, bw * 0.2);                         // specular edge: ≥ 1 device px
     g.save();
     g.lineCap = 'round'; g.lineJoin = 'round';
+    // the streak ends on the cheek, never much below the mouth line: on big-eyed round heads (Fear) the old
+    // 2.1·eyeRy run reached past the jaw outline and hung in the air beside the head (very visible once the
+    // streak got its bright edge). Faces whose run already ends above that (Self) are unchanged.
+    const y0 = s.eyeY + s.eyeRy * 0.85;
+    const len0 = s.mouthY != null ? clamp(s.mouthY + s.eyeRy * 0.3 - y0, s.eyeRy, s.eyeRy * 2.1) : s.eyeRy * 2.1;
     for (const side of [-1, 1]) {
       const ex = side * s.eyeSpacing * (1 - Math.abs(turn) * 0.3) + shiftX;
-      const x0 = ex + side * s.eyeRx * 0.35, y0 = s.eyeY + s.eyeRy * 0.85;
+      const x0 = ex + side * s.eyeRx * 0.35;
+      // the features slide toward the side the head turns to, so the jaw is closer there: shorter run
+      const len = len0 * (1 - 0.3 * Math.max(0, side * turn));
       const path = (dx) => {
         g.beginPath();
         g.moveTo(x0 + dx, y0);
-        g.bezierCurveTo(x0 + dx + side * 3, y0 + s.eyeRy * 0.8, x0 + dx - side * 2, y0 + s.eyeRy * 1.4, x0 + dx + side * 2, y0 + s.eyeRy * 2.1);
+        g.bezierCurveTo(x0 + dx + side * 3, y0 + len * 0.381, x0 + dx - side * 2, y0 + len * 0.667, x0 + dx + side * 2, y0 + len);
       };
       // each layer thins out toward the tail (the trail dries / runs off the cheek)
-      const y1 = y0 + s.eyeRy * 2.1;
+      const y1 = y0 + len;
       const fade = (rgb, a) => {
         const gr = g.createLinearGradient(0, y0, 0, y1);
-        gr.addColorStop(0, `rgba(${rgb},${a})`); gr.addColorStop(0.55, `rgba(${rgb},${a})`);
-        gr.addColorStop(1, `rgba(${rgb},${a * 0.12})`);
+        gr.addColorStop(0, `rgba(${rgb},${a})`); gr.addColorStop(0.68, `rgba(${rgb},${a})`);
+        gr.addColorStop(1, `rgba(${rgb},${a * 0.25})`);
         return gr;
       };
       // shadow-side fringe (a hair of refraction shadow gives the wet line an edge on pale skin)

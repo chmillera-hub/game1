@@ -21,7 +21,8 @@
 // as a full-screen close-up (rx≥420). Nebula, galaxy, glyph and star-stamp textures are generated once
 // and cached; the nebulae are composited into one cached layer per (resolution bucket, aspect) and the
 // background glow is a live gradient, so slow changes of rx/ry/reveal never step.
-// Cost (rasterized): full-screen ~6-9 ms, hood-sized ~1 ms. Deterministic in t (no Math.random).
+// Cost (rasterized): full-screen ~10-13 ms (+~5 ms during the translucent nebula fade), hood-sized ~1-2 ms.
+// Deterministic in t (no Math.random).
 // Also exported: hrand(i, seed) 0..1, vnoise(x, seed) / vfbm(x, seed) -1..1 — integer-safe hash noise.
 
 import { createCanvas } from '@napi-rs/canvas';
