@@ -67,8 +67,11 @@ try:
     _INK = human.PAL["ink"]
 except Exception:                          # palette moved: fall back to the measured colours
     _HOOD_TOP, _HOOD_DK, _INK = "#33416f", "#252f52", "#1d1424"
-# the peek hand: index finger out, drawn over the head; placed with world-space `reach`
-ARM_PEEK = {"ar_h": "point", "ar_layer": "front"}
+# the peek hand: index finger out, placed with world-space `reach`. The arm stays in the rig's
+# "mid" layer (under the head: no shoulder popping over his jaw); only the hand is drawn again
+# over the head, from a front-layer copy clipped to a small disc around it
+ARM_PEEK = {"ar_h": "point"}
+HAND_R = 40.0                              # that disc's radius (px at s=1)
 FINGER = 25.0                              # grip point -> index fingertip (px at s=1)
 FINGER_ANG = -2.5                          # finger direction in the eye-line frame (up-left)
 PEEK_FX = 0.72                             # fingertip: this many eye-spacings outside the eye centre
@@ -372,12 +375,25 @@ def tired_state(t, k, info):
             # lets the eye close as the rim drops ("close my eyes?")
             st["bblink"] = kf(t, [(k.dr0 - 0.05, 0.0), (k.dr0 + 0.15, 1.0)]) if t > k.dr0 - 0.05 else None
         if ka > 0.0:
-            # the r hand leaves the clasp and comes up to the rim (a blend: the rig switches the
-            # draw order once, where the hands are apart); the finger goes where the rim lifts
+            # the r hand leaves the clasp, swings out to the side and up to the rim (a pose blend:
+            # the rig switches the draw order once, mid-path, where the hand is clear of the head
+            # and of the other hand); the finger goes where the rim lifts
             g = peek_frame(t, st, p)
             st["peek_geo"] = g
-            st["pose"] = (sp, dict(sp, **ARM_PEEK), ease_in_out(ka))
-            st["reach"] = {"r": (g["grip"][0], g["grip"][1], ease_in_out(ka), g["fang"])}
+            (x0, y0, a0), (x2, y2) = g["hand0"], g["grip"]
+            x1, y1 = max(x0, x2) + 75 * S / 0.75, (y0 + y2) / 2 + 25 * S / 0.75
+            u = ka
+            hx = (1 - u) ** 2 * x0 + 2 * u * (1 - u) * x1 + u * u * x2
+            hy = (1 - u) ** 2 * y0 + 2 * u * (1 - u) * y1 + u * u * y2
+            fa = g["fang"]
+            while fa - a0 > math.pi:
+                fa -= 2 * math.pi
+            while fa - a0 < -math.pi:
+                fa += 2 * math.pi
+            st["pose"] = (sp, dict(sp, **ARM_PEEK), ka)
+            st["pose_front"] = (dict(sp, ar_layer="front"), dict(sp, ar_layer="front", **ARM_PEEK), ka)
+            st["arm"] = ka
+            st["reach"] = {"r": (hx, hy, 1.0, lerp(a0, fa, smoothstep(u)))}
         return st
     # ---------------- stands up into l05, proud; then turns and walks
     st["hood"] = 1.0
@@ -477,8 +493,22 @@ def peek_frame(t, st, p):
     fx_, fy_ = Fx, yA - h - 4.0 * S                          # fingertip, tucked just under the hem
     gl = (fx_ - FINGER * S * math.cos(FINGER_ANG), fy_ - FINGER * S * math.sin(FINGER_ANG))
     grip = (O[0] + gl[0] * ux - gl[1] * uy, O[1] + gl[0] * uy + gl[1] * ux)
-    return dict(O=O, ang=ang, ed=ed, yA=yA, yB=yB, h=h, Fx=Fx, xl=-0.85 * ed, xr=Fx + 0.5 * ed,
-                grip=grip, fang=ang + FINGER_ANG, eye_b=b["eye_r"])
+    return dict(O=O, ang=ang, ed=ed, yA=yA, yB=yB, h=h, hmax=hmax, Fx=Fx, xl=-0.85 * ed, xr=Fx + 0.5 * ed,
+                grip=grip, fang=ang + FINGER_ANG, eye_b=b["eye_r"], hand0=a["hand_r"])
+
+
+def _tent_at_finger(g, a, p):
+    """Re-key the tent to the finger actually drawn (the reach may fall a few px short)."""
+    O, ang = g["O"], g["ang"]
+    ux, uy = math.cos(ang), math.sin(ang)
+    hx, hy, hang = a["hand_r"]
+    tip = (hx + FINGER * S * math.cos(hang), hy + FINGER * S * math.sin(hang))
+    tx, ty = _loc(O, ux, uy, tip)
+    g = dict(g)
+    g["Fx"] = clamp(tx, 0.3 * g["ed"], 0.95 * g["ed"])
+    g["xr"] = g["Fx"] + 0.5 * g["ed"]
+    g["h"] = clamp(g["yA"] - ty - 4.0 * S, 0.0, g["hmax"]) * smoothstep(clamp(p / 0.15))
+    return g
 
 
 def _arch(g):
@@ -493,40 +523,97 @@ def _arch(g):
     return arch, xs
 
 
+def _bface_kw(st):
+    bl = st.get("bblink")
+    return dict(hood=HOOD_PEEK, face=st.get("bface") or st["face"], look=st.get("blook"),
+                blink=st["blink"] if bl is None else bl)
+
+
+def _hand_disc(ctx, a):
+    hx, hy, hang = a["hand_r"]
+    cx_, cy_ = hx + 0.45 * FINGER * S * math.cos(hang), hy + 0.45 * FINGER * S * math.sin(hang)
+    ctx.arc(cx_, cy_, HAND_R * S, 0, 2 * math.pi)
+
+
+def _window_path(ctx, g, arch, xs, local=True):
+    """The lifted-rim window (under the tent, down to just below the hood-down rim)."""
+    O, ang, yA = g["O"], g["ang"], g["yA"]
+    ux, uy = math.cos(ang), math.sin(ang)
+    pts = [(xs[0], yA + 2.5 * S)] + [(x, arch(x)) for x in xs] + [(xs[-1], yA + 2.5 * S)]
+    if not local:
+        pts = [(O[0] + x * ux - y * uy, O[1] + x * uy + y * ux) for (x, y) in pts]
+    ctx.move_to(*pts[0])
+    for q in pts[1:]:
+        ctx.line_to(*q)
+    ctx.close_path()
+
+
+def _hand_over(ctx, t, st, a, g=None, arch=None, xs=None):
+    """Redraw only his r hand over the head: a front-layer copy clipped to a disc at the hand
+    (inside the lifted-rim window the copy is the lifted-rim one, so no hood patch shows)."""
+    if g is None:
+        ctx.save()
+        _hand_disc(ctx, a)
+        ctx.clip()
+        _draw_person(ctx, t, st, pose=st["pose_front"])
+        ctx.restore()
+        return
+    ctx.save()
+    _hand_disc(ctx, a)
+    ctx.clip()
+    ctx.save()
+    hx, hy = a["hand_r"][:2]
+    ctx.rectangle(hx - 400, hy - 400, 800, 800)
+    _window_path(ctx, g, arch, xs, local=False)
+    ctx.set_fill_rule(cairo.FILL_RULE_EVEN_ODD)
+    ctx.clip()
+    _draw_person(ctx, t, st, pose=st["pose_front"])
+    ctx.restore()
+    _window_path(ctx, g, arch, xs, local=False)
+    ctx.clip()
+    _draw_person(ctx, t, st, pose=st["pose_front"], **_bface_kw(st))
+    ctx.restore()
+
+
 def draw_tired(ctx, t, st):
     a = _draw_person(ctx, t, st)
+    hand = st.get("arm", 0.0) > 0.35 and st.get("pose_front")
     p = st.get("peek", 0.0)
     g = st.get("peek_geo")
-    if p <= 0.005 or g is None or g["h"] < 0.5 or not a.get("hood_rim"):
+    if g is not None and p > 0.005 and a.get("hood_rim"):
+        g = _tent_at_finger(g, a, p)
+    if g is None or p <= 0.005 or g["h"] < 0.5 or not a.get("hood_rim"):
+        if hand:
+            _hand_over(ctx, t, st, a)
         return a
     # ---- the lifted rim: a second render with the rim above the eye, through a tent window
-    hxy = a["head"]
-    R = 230 * S
-    ctx.save()
-    ctx.rectangle(hxy[0] - R, hxy[1] - R, 2 * R, 2 * R)
-    ctx.clip()
-    ctx.push_group()
-    bl = st.get("bblink")
-    _draw_person(ctx, t, st, hood=HOOD_PEEK, face=st.get("bface") or st["face"],
-                 look=st.get("blook"), blink=st["blink"] if bl is None else bl)
-    pat = ctx.pop_group()
     O, ang, ed, yA, h = g["O"], g["ang"], g["ed"], g["yA"], g["h"]
+    ux, uy = math.cos(ang), math.sin(ang)
     arch, xs = _arch(g)
     xl, xr = g["xl"], g["xr"]
+    span = xr - xl
+    D = 0.85 * ed
+    hb = 11.0 * S
+    # tight clip (world) around the window + its soft skirt: the second render is costly
+    corners = [(xl - 0.4 * span, yA - h - hb - 12 * S), (xr + 0.4 * span, yA - h - hb - 12 * S),
+               (xl - 0.4 * span, yA + D + 2), (xr + 0.4 * span, yA + D + 2)]
+    wc = [(O[0] + x * ux - y * uy, O[1] + x * uy + y * ux) for (x, y) in corners]
+    bx0, by0 = min(q[0] for q in wc), min(q[1] for q in wc)
+    bx1, by1 = max(q[0] for q in wc), max(q[1] for q in wc)
+    ctx.save()
+    ctx.rectangle(bx0, by0, bx1 - bx0, by1 - by0)
+    ctx.clip()
+    ctx.push_group()
+    _draw_person(ctx, t, st, **_bface_kw(st))
+    pat = ctx.pop_group()
     # mask: the window (hard, under the tent) + a soft blend of the face shading below the rim
     ctx.push_group()
     ctx.save()
     ctx.translate(*O)
     ctx.rotate(ang)
-    ctx.move_to(xs[0], yA + 2.5 * S)
-    for x in xs:
-        ctx.line_to(x, arch(x))
-    ctx.line_to(xs[-1], yA + 2.5 * S)
-    ctx.close_path()
+    _window_path(ctx, g, arch, xs)
     ctx.set_source_rgba(0, 0, 0, 1)
     ctx.fill()
-    D = 0.85 * ed
-    span = xr - xl
     ctx.push_group()
     ctx.rectangle(xl - 0.4 * span, yA - 1.0, 1.8 * span, D)
     gx = cairo.LinearGradient(xl - 0.4 * span, 0, xr + 0.4 * span, 0)
@@ -548,21 +635,27 @@ def draw_tired(ctx, t, st):
     mask = ctx.pop_group()
     ctx.set_source(pat)
     ctx.mask(mask)
-    # the lifted hem: a soft shadow under it, the rolled hem band above it, the ink edge
-    ctx.save()
-    ctx.translate(*O)
-    ctx.rotate(ang)
+    ctx.restore()
 
     def arch_path():
         ctx.move_to(xs[0], arch(xs[0]))
         for x in xs[1:]:
             ctx.line_to(x, arch(x))
+    # the lifted hem: a soft shadow under it, (the finger), the rolled hem band, the ink edge
+    ctx.save()
+    ctx.translate(*O)
+    ctx.rotate(ang)
     arch_path()
     ctx.set_source_rgba(0.07, 0.06, 0.13, 0.35 * min(1.0, h / (10 * S)))
     ctx.set_line_width(14 * S)
     ctx.set_line_cap(cairo.LINE_CAP_ROUND)
     ctx.stroke()
-    hb = 11.0 * S
+    ctx.restore()
+    if hand:                                   # the finger hooks under the lifted hem
+        _hand_over(ctx, t, st, a, g, arch, xs)
+    ctx.save()
+    ctx.translate(*O)
+    ctx.rotate(ang)
     arch_path()
     for x in reversed(xs):
         ctx.line_to(x, arch(x) - hb)
@@ -574,7 +667,6 @@ def draw_tired(ctx, t, st):
     ctx.set_line_width(5.5 * S)
     ctx.set_line_join(cairo.LINE_JOIN_ROUND)
     ctx.stroke()
-    ctx.restore()
     ctx.restore()
     a = dict(a)
     a["peek_eye"] = g["eye_b"]

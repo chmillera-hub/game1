@@ -73,12 +73,13 @@ TUG_RK = 0.28                  # reach_up "reach" while holding his cuff
 HAND_OFF = (2.0, 24.0)         # his hand hangs below its paws (paws on the cuff)
 HAND_ANG = 1.9                 # ... pointing down and a little toward it
 WALK_RATE = 0.8                # his trudge (fraction of the walk cycle rate)
+FOLLOW_RATE = 0.58             # ... slower and reluctant when he follows it (ends short of the mouth)
 MOUTH_X0 = 470                 # Curiosity's corridor-floor point in front of the side tunnel
 VP = M["far_end"]              # side tunnel vanishing point (300, 1010)
 CUR_V = CR.SPEC_WALK_SPEED * S  # its foot-locked speed at cycle rate 1
 LEAVE_RATE = 1.55              # its walk-away cycle rate
 K_STOP = 0.09                  # a short way into the side tunnel: it stops and looks back
-K_WAIT = 0.2                   # a little further down: it sits in the dark and waits
+K_WAIT = 0.32                  # a little further down: it sits in the dark and waits
 
 # sit_crate with longer shins so his soles reach the floor in front of the set's crate.
 # Arm layers are pinned (no per-frame layer decisions while hands reach).
@@ -375,17 +376,26 @@ def _tired(t, T, info, paws=None):
                     (T["l05"], 0.65), (T["l05"] + 0.4, 0.5), (T["l05e"] + 0.1, 0.72)])
     pose = _sitp(nod=nod, lean=lean, hunch=hunch)
 
-    # slump: the NEAR (r, bandaged) hand comes up to rub his eyes. The elbow stays low
-    # (upper arm below the head); the arm is on the front layer only while the hand is
-    # away from the knee-level start, so only the hand covers the face.
-    rub_w = _ramp(t, T["rub0"], T["rub1"]) * (1 - _ramp(t, T["hand_dn"], T["hand_dn1"]))
-    if rub_w > 0.0:
+    # slump: the NEAR (r, bandaged) hand comes up beside his jaw to rub his near eye
+    # (upper arm below the head, forearm along the side of the face): only the hand is on
+    # the face. Front layer only between rest and rest (the layer flips at the knee).
+    if T["rub0"] < t < T["hand_dn1"]:
         pose = dict(pose, ar_layer="front")
         pb = _probe_person(x, FEET_Y, t, dict(kw, pose=pose, turn=turn))
         ex, ey = pb["eye_r"][:2]
-        rb = math.sin((t - T["rub1"]) * 2 * math.pi * 1.6) * _bump(t, T["rub1"] - 0.05, T["rub_end"] + 0.1)
-        rc = math.cos((t - T["rub1"]) * 2 * math.pi * 1.6) * _bump(t, T["rub1"] - 0.05, T["rub_end"] + 0.1)
-        reach["r"] = (ex + 10 + 6 * rb, ey - 10 + 4 * rc, rub_w)
+        hx0, hy0 = pb["hand_r"][:2]
+        shx, shy = pb["shoulder_r"][:2]
+        env = _bump(t, T["rub1"] - 0.05, T["rub_end"] + 0.1)
+        ph = (t - T["rub1"]) * 2 * math.pi * 1.6
+        tx_, ty_ = ex + 28 + 6 * math.sin(ph) * env, ey - 6 + 4 * math.cos(ph) * env
+        mx_, my_ = ex + 72, ey + 96              # beside the jaw: it never sweeps over the mouth
+        u = _ramp(t, T["rub0"], T["rub1"]) * (1 - _ramp(t, T["hand_dn"], T["hand_dn1"]))
+        bx = (1 - u) ** 2 * hx0 + 2 * u * (1 - u) * mx_ + u * u * tx_
+        by = (1 - u) ** 2 * hy0 + 2 * u * (1 - u) * my_ + u * u * ty_
+        w = _ramp(t, T["rub0"], T["rub0"] + 0.12) * (1 - _ramp(t, T["hand_dn1"] - 0.12, T["hand_dn1"]))
+        a_def = math.atan2(by - shy, bx - shx)
+        d_ang = (-2.25 - a_def + math.pi) % (2 * math.pi) - math.pi
+        reach["r"] = (bx, by, w, a_def + d_ang * smoothstep(seg(u, 0.5, 1.0)))
 
     # S3: the near hand to his chest on "me"
     ch_w = _ramp(t, T["chest0"], T["chest1"]) * (1 - _ramp(t, T["chest_off"], T["chest_off1"]))
@@ -414,8 +424,8 @@ def _tired(t, T, info, paws=None):
         turn = lerp(-0.6, -1.0, k)
         if t >= T["walk2"]:
             pose = _pose_of(("stand", "walk", _ramp(t, T["walk2"], T["walk2"] + 0.3)))
-            x = SEAT_X - _tired_walk_speed() * max(0.0, t - T["walk2"] - 0.15)
-        pose_t = WALK_RATE * max(0.0, t - T["walk2"]) + 0.5
+            x = SEAT_X - _tired_walk_speed() / WALK_RATE * FOLLOW_RATE * max(0.0, t - T["walk2"] - 0.15)
+        pose_t = FOLLOW_RATE * max(0.0, t - T["walk2"]) + 0.5
 
     # --- eyes (pupils lead, the head follows ~0.15 s later via head_turn)
     look = _tw(t, [
@@ -580,7 +590,7 @@ def _cur_s1_s3(t, T, d):
     if t >= T["s3b"]:
         ta_ = T["w2b_anyone"]
         d["look"] = _tw(t, [(ta_ - 0.1, (0.45, -0.6)), (ta_ + 0.15, (-0.85, -0.1))])
-        d["face"] = _tw(t, [(ta_ + 0.05, 1.0), (ta_ + 0.4, 0.3)])
+        d["face"] = _tw(t, [(ta_ + 0.05, 1.0), (ta_ + 0.55, -0.6)])
         d["ears"] = 0.42 + 0.2 * core.ease_out_back(seg(t, ta_ + 0.05, ta_ + 0.4))
         d["tilt"] = _tw(t, [(ta_, 0.1), (ta_ + 0.35, -0.05)])
         if ta_ - 0.3 < t < ta_ + 0.5:
@@ -900,7 +910,7 @@ def _cam(t, T):
         k = smoothstep(seg(t, T["s9"], T["s10"]))
         return 9, 1000, 1150, lerp(2.25, 2.4, k)
     k = ease_in_out(seg(t, T["s10"] + 0.5, T["end"]))
-    return 10, lerp(870, 700, k), 1150, 1.12
+    return 10, lerp(830, 690, k), 1150, 1.12
 
 
 def render(ctx, t, info):
@@ -933,7 +943,7 @@ def render(ctx, t, info):
             if "eye_l" in ca and "eye_r" in ca:
                 # its two teal eyes, still glowing in the dark down the side tunnel
                 (x1, y1), (x2, y2) = ca["eye_l"][:2], ca["eye_r"][:2]
-                se = c["s"] * 0.95
+                se = c["s"] * 1.25
                 gap = max(95.0, math.hypot(x2 - x1, y2 - y1) / se)
                 look, lid, blink = _wait_eyes(t, T)
                 ctx.save()
@@ -991,7 +1001,7 @@ def SFX(info):
     ev.append((T["up0"] + 0.3, "chair_creak", -8.0, 0.05))
     ev.append((T["up0"] + 0.4, "cloth_rustle", -8.0, 0.0))
     for n in range(0, 12):
-        tw = T["walk2"] + (0.81 + 0.5 * n - 0.5) / WALK_RATE
+        tw = T["walk2"] + (0.81 + 0.5 * n - 0.5) / FOLLOW_RATE
         if tw < T["end"] - 0.1:
             ev.append((tw, "footstep", -8.0, -0.15))
     return [e for e in ev if 0.0 <= e[0] < T["end"]]

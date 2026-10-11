@@ -59,7 +59,7 @@ POD_TEXT, POD_SUB = "THING 38", "SPECIMEN 038"
 
 SMASH_X = M["smash_feet"][0]   # 855
 HAUL_X = 1015.0                # close enough that both hands reach the T-handle UP
-GRIP = 42.0                    # the two fists sit +-GRIP px from the T-bar centre (bar shows between)
+GRIP = 40.0                    # the two fists sit +-GRIP px from the T-bar centre (bar shows between)
 TIRED_X1 = 640.0               # stepped back from the console to see the window
 CUR_X0 = 590.0
 TIRED_X2 = 1012.0              # where he scoops the baby up
@@ -198,6 +198,8 @@ def _tired_duck_t(T):
 # characters: state at time t (one simulated world)
 # ============================================================================
 def _grip_targets(hx, hy, w=1.0):
+    # one fist on each end of the T-bar (the far arm takes the near end, so both
+    # really reach); the red bar shows between them
     return {"l": (hx - GRIP, hy, w), "r": (hx + GRIP, hy, w)}
 
 
@@ -849,8 +851,8 @@ def draw_pod_steam(ctx, T, t):
 # heavy hazard-striped steel shutters slam down tier by tier
 # ============================================================================
 WIN = M["window"]                       # (905, 380, 400, 420)
-_TIER_TOP = (52, 124, 208, 304)         # px below the window top (far -> near)
-_TIER_H = (72, 84, 96, 116)
+_TIER_TOP = (52, 116, 188, 268)         # px below the window top (far -> near); the
+_TIER_H = (64, 72, 80, 92)              # bottom 60 px stay clear (the console stands in front)
 _TIER_N = (7, 6, 6, 5)
 _TIER_W = (0.84, 0.9, 0.97, 1.04)       # x window width
 ESCAPE = {(3, 1): ("A", -1), (2, 4): ("B", 1)}   # (tier, pod) -> who, run direction
@@ -972,7 +974,7 @@ def _esc_creature(T, t, g_, k, who, d):
     """(x, y, pose, flip, airborne) of an escaping creature, or None."""
     t0 = _esc_times(T, who)
     px, py = g_["pods"][k]
-    s = g_["pw"] / 480.0
+    s = g_["pw"] / 300.0
     if t < t0 + 0.06:
         return None
     gy = g_["ly"] + 1
@@ -1031,7 +1033,10 @@ def window_fn_for(T):
                 ctx.clip()
                 dy = -ph * o
                 core.rrect(ctx, px - pw * 0.44, py - ph * 0.46 + dy, pw * 0.88, ph * 0.92, pw * 0.44)
-                core.fill(ctx, (0.80, 1.0, 0.98, 0.20))
+                core.fill(ctx, (0.80, 1.0, 0.98, 0.30))
+                if o > 0.01:     # the glass door's lower edge, lifting
+                    props.line(ctx, [(px - pw * 0.42, py + ph * 0.46 + dy), (px + pw * 0.42, py + ph * 0.46 + dy)],
+                               (1, 1, 1, 0.9), 1.2 + 0.3 * r)
                 core.poly(ctx, [(px - pw * 0.30, py - ph * 0.36 + dy), (px - pw * 0.14, py - ph * 0.40 + dy),
                                 (px - pw * 0.14, py + ph * 0.10 + dy), (px - pw * 0.30, py + ph * 0.16 + dy)])
                 core.fill(ctx, (1, 1, 1, 0.30))
@@ -1047,8 +1052,13 @@ def window_fn_for(T):
             if cr is None:
                 continue
             cx_, cy_, pose, flip, air, s = cr
+            bcy = cy_ if air else cy_ - 150 * s
+            core.radial_glow(ctx, cx_, bcy, 330 * s, "#bffff6", 0.35)
+            if t > _esc_times(T, who) + 0.42:
+                fx.motion_lines(ctx, cx_ - d * 160 * s, bcy, 0.0 if d > 0 else math.pi, 260 * s, t,
+                                intensity=0.8, color="#d9fffb", width=12 * s * 3, seed=r)
             CR.draw_specimen(ctx, cx_, cy_, s, t, form=1.0, pose=pose, expr="wide", flip=flip,
-                             look=(-0.6 if flip else 0.6, 0.0), glow=1.6, ears=0.95, pose_t=t - _esc_times(T, who))
+                             look=(-0.6 if flip else 0.6, 0.0), glow=1.8, ears=0.95, pose_t=t - _esc_times(T, who))
         # LOCKDOWN sign over the shaft
         _draw_banner(ctx, T, t)
         # the shutters: thick corrugated steel, hazard stripes on the leading edge
@@ -1099,16 +1109,20 @@ MON_DELAY = 0.45     # the monitors' shutters land just after the window's
 
 
 def _lock_overlay(ctx, T, x, y, w, h, t):
-    """LOCKDOWN flashing across a monitor after the button."""
+    """LOCKDOWN flashing across a monitor after the button; after ~4 s it settles
+    into a small status strip at the top of the screen (quieter for the ending)."""
     if t < T.lock_on:
         return
     on = smoothstep(seg(t, T.lock_on, T.lock_on + 0.1))
+    q = smoothstep(seg(t, T.lock_on + 4.0, T.lock_on + 4.6))      # big band -> small strip
     p = 0.5 + 0.5 * math.cos(math.tau * (t - T.lock_on) / 0.9)
-    a = on * (0.55 + 0.45 * p)
-    bh = h * 0.26
-    ctx.rectangle(x, y + h * 0.5 - bh / 2, w, bh)
+    a = on * lerp(0.55 + 0.45 * p, 0.7 + 0.15 * p, q)
+    bh = h * lerp(0.26, 0.13, q)
+    by = lerp(y + h * 0.5 - bh / 2, y + h * 0.04, q)
+    bx, bw = lerp(x, x + w * 0.3, q), lerp(w, w * 0.4, q)
+    ctx.rectangle(bx, by, bw, bh)
     core.fill(ctx, core.alpha("#b0122a", 0.85 * a))
-    core.text(ctx, "LOCKDOWN", x + w / 2, y + h * 0.5 + bh * 0.3, bh * 0.8, core.alpha("#fff1f2", a), "black")
+    core.text(ctx, "LOCKDOWN", bx + bw / 2, by + bh * 0.8, bh * 0.8, core.alpha("#fff1f2", a), "black")
 
 
 def _mon_slab(ctx, x0, y0, w, hfull, sh, lw=1.2):
@@ -1244,13 +1258,13 @@ def _rew_marks(ctx, T, x, y, w, h, t):
     sc = w / 600.0
     if t < T.rew0:
         return
-    ix, iy = x + w - 70 * sc, y + 52 * sc
+    ix, iy = x + w / 2 + 70 * sc, y + h - 50 * sc
     if t < T.rew1:
         for k in range(2):           # two triangles: rewind
             ox = ix - 34 * sc * k
             core.poly(ctx, [(ox, iy - 15 * sc), (ox, iy + 15 * sc), (ox - 26 * sc, iy)])
             core.fill(ctx, "#eafff4")
-        core.text(ctx, "REW", ix - 76 * sc, iy + 9 * sc, 26 * sc, "#eafff4", "mono", "right")
+        core.text(ctx, "REW", ix - 80 * sc, iy + 9 * sc, 26 * sc, "#eafff4", "mono", "right")
         for k in range(2):           # rolling tracking bands
             yy = y + h * ((seg(t, T.rew0, T.rew1) * 2.6 + 0.45 * k) % 1.0)
             ctx.rectangle(x, yy, w, h * 0.05)
@@ -1542,10 +1556,6 @@ def draw_world(ctx, T, info, t, cam):
                      floor_y=FEET + 30, dir=-1, spread=0.5)
         fx.impact_star(ctx, IMPACT[0], IMPACT[1], 0.55, t, T.hit, dur=0.3, color="#e8fbff",
                        inner="#ffffff", spikes=9)
-    if T.rows[-1] <= t < T.rows[-1] + 1.4 and _visible_x(view, WIN[0] - 50, WIN[0] + WIN[2] + 50):
-        # the last (biggest) slam shakes dust off the window frame: the room reacts
-        fx.plaster_dust(ctx, WIN[0] + WIN[2] / 2, WIN[1] - 6, 0.45, t, T.rows[-1], seed=7, width=340, n=8,
-                        fall=260)
     if _visible_x(view, POD_X - 250, POD_X + 250):
         draw_pod_steam(ctx, T, t)
     if T.hatch <= t < T.hatch + 0.9:
@@ -1609,7 +1619,7 @@ def camera_at(T, t):
         cx, cy, z = 1600.0, lerp(1015, 1000, k), lerp(1.82, 1.9, k)
     elif t < T.pod:                                    # S4 the window: escape, then the shutters
         k = seg(t, T.shut, T.pod)
-        cx, cy, z = 1105.0, lerp(626, 616, k), lerp(2.06, 2.16, k)
+        cx, cy, z = 1105.0, lerp(578, 572, k), lerp(2.55, 2.65, k)
         for r, t1 in enumerate(T.rows):
             last = r == len(T.rows) - 1
             sx, sy = _shake(t, t1, 0.65 if last else 0.3, 13 if last else 6, seed=11 + r)
@@ -1644,10 +1654,10 @@ def camera_at(T, t):
         cx, cy, z = 1700.0, 900.0, 2.0
     elif t < T.wcut2:                                  # S11b the Boss MCU: "You too, Embarrassment."
         k = seg(t, T.wcut, T.wcut2)
-        cx, cy, z = lerp(1758, 1754, k), lerp(1022, 1016, k), lerp(2.5, 2.58, k)
+        cx, cy, z = lerp(1752, 1750, k), lerp(1017, 1012, k), lerp(2.9, 2.98, k)
     else:                                              # S11c her + the monitor: numb
         k = smoothstep(seg(t, T.wcut2, T.end))
-        cx, cy, z = lerp(1846, 1836, k), lerp(905, 925, k), lerp(1.98, 2.14, k)
+        cx, cy, z = lerp(1846, 1834, k), lerp(908, 930, k), lerp(1.98, 2.2, k)
     return cx, cy, z, dx, dy
 
 
