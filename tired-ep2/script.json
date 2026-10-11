@@ -39,7 +39,7 @@
    "beats": [
     {
      "t": "pause",
-     "dur": 2.4,
+     "dur": 2.2,
      "cue": "open"
     },
     {
@@ -69,24 +69,25 @@
      "t": "line",
      "id": "s01_l02",
      "who": "tired",
-     "text": "...Curiosity.",
+     "text": "...Thing One.",
      "pre": 0.2,
      "post": 0.45,
-     "say": "Curiosity.",
+     "say": "Thing. One.",
      "speed": 0.85
     },
     {
      "t": "pause",
-     "dur": 2.2,
+     "dur": 1.8,
      "cue": "perk"
     },
     {
      "t": "line",
      "id": "s01_l03",
      "who": "tired",
-     "text": "Huh. That fits.",
+     "text": "Wow. Creative.",
      "pre": 0.2,
-     "post": 0.45
+     "post": 0.45,
+     "say": "Wow. Creative."
     },
     {
      "t": "pause",
@@ -95,13 +96,23 @@
     },
     {
      "t": "pause",
-     "dur": 4.2,
+     "dur": 3.6,
      "cue": "plates"
     },
     {
      "t": "pause",
      "dur": 1.6,
      "cue": "frown"
+    },
+    {
+     "t": "line",
+     "id": "s01_l03b",
+     "who": "tired",
+     "text": "...They're not things.",
+     "pre": 0.3,
+     "post": 0.6,
+     "say": "They're not things.",
+     "speed": 0.88
     },
     {
      "t": "pause",
@@ -136,7 +147,7 @@
     },
     {
      "t": "pause",
-     "dur": 2.7,
+     "dur": 2.4,
      "cue": "dark"
     }
    ],
@@ -153,7 +164,7 @@
    "beats": [
     {
      "t": "pause",
-     "dur": 1.6,
+     "dur": 1.4,
      "cue": "eyes"
     },
     {
@@ -166,16 +177,27 @@
     },
     {
      "t": "pause",
-     "dur": 2.2,
+     "dur": 2.0,
      "cue": "nudge"
+    },
+    {
+     "t": "pause",
+     "dur": 2.1,
+     "cue": "demo"
     },
     {
      "t": "line",
      "id": "s02_l02",
      "who": "tired",
-     "text": "Hey. What are you doing?",
+     "text": "Uh... what are you doing? Are you okay?",
      "pre": 0.2,
-     "post": 0.45
+     "post": 0.45,
+     "say": "Uh. What are you doing? Are you okay?"
+    },
+    {
+     "t": "pause",
+     "dur": 1.1,
+     "cue": "roll"
     },
     {
      "t": "pause",
@@ -184,8 +206,8 @@
     },
     {
      "t": "pause",
-     "dur": 2.0,
-     "cue": "ping"
+     "dur": 2.3,
+     "cue": "peek"
     },
     {
      "t": "line",
@@ -197,7 +219,7 @@
     },
     {
      "t": "pause",
-     "dur": 1.6,
+     "dur": 1.3,
      "cue": "look"
     },
     {
@@ -215,6 +237,11 @@
      "cue": "nod"
     },
     {
+     "t": "pause",
+     "dur": 1.8,
+     "cue": "ping"
+    },
+    {
      "t": "line",
      "id": "s02_l05",
      "who": "tired",
@@ -224,12 +251,12 @@
     },
     {
      "t": "pause",
-     "dur": 1.6,
+     "dur": 1.4,
      "cue": "smug"
     },
     {
      "t": "pause",
-     "dur": 3.9,
+     "dur": 3.5,
      "cue": "walk"
     },
     {
@@ -278,7 +305,7 @@
     },
     {
      "t": "pause",
-     "dur": 2.2,
+     "dur": 2.0,
      "cue": "hide"
     },
     {
@@ -296,7 +323,7 @@
     },
     {
      "t": "pause",
-     "dur": 4.5,
+     "dur": 4.0,
      "cue": "sneak"
     },
     {
@@ -308,11 +335,17 @@
      "t": "line",
      "id": "s03_l03",
      "who": "tired",
-     "text": "Stop that.",
+     "text": "Don't. We'll get caught.",
      "pre": 0.1,
      "post": 0.45,
      "fx": "whisper",
-     "gain": -3.5
+     "gain": -3.5,
+     "say": "Don't. We'll get caught."
+    },
+    {
+     "t": "pause",
+     "dur": 1.3,
+     "cue": "sulk"
     },
     {
      "t": "pause",
@@ -361,40 +394,50 @@
    "beats": [
     {
      "t": "pause",
-     "dur": 3.0,
+     "dur": 2.6,
      "cue": "corridor"
     },
     {
      "t": "line",
      "id": "s04_l01",
      "who": "tired",
-     "text": "Okay. I'm done.",
+     "text": "I don't have the bandwidth for this right now.",
      "pre": 0.2,
      "post": 0.45
     },
     {
      "t": "pause",
-     "dur": 1.4,
+     "dur": 1.0,
      "cue": "slump"
     },
     {
      "t": "line",
      "id": "s04_l02",
      "who": "tired",
-     "text": "I fell out of a building today. I just want to go home and sleep.",
+     "text": "I fell out of a building today. I'm overwhelmed.",
      "pre": 0.3,
      "post": 0.45
     },
     {
+     "t": "line",
+     "id": "s04_l02b",
+     "who": "tired",
+     "text": "I have to take care of me first... before I can take care of anyone else.",
+     "pre": 0.4,
+     "post": 0.45,
+     "say": "I have to take care of me first. Before I can take care of anyone else.",
+     "speed": 0.98
+    },
+    {
      "t": "pause",
-     "dur": 2.2,
+     "dur": 2.0,
      "cue": "tug"
     },
     {
      "t": "line",
      "id": "s04_l03",
      "who": "tired",
-     "text": "Look. I'm sorry about your family.",
+     "text": "Look. What they're doing to your family is wrong.",
      "pre": 0.4,
      "post": 0.45
     },
@@ -407,23 +450,33 @@
      "t": "line",
      "id": "s04_l04",
      "who": "tired",
-     "text": "But they're not my problem.",
+     "text": "But I don't see a way to help without somebody getting hurt.",
      "pre": 0.2,
-     "post": 0.45
+     "post": 0.45,
+     "speed": 0.95
+    },
+    {
+     "t": "line",
+     "id": "s04_l04b",
+     "who": "tired",
+     "text": "Maybe me. ...I need time to think.",
+     "pre": 0.35,
+     "post": 0.45,
+     "say": "Maybe me. I need time to think."
     },
     {
      "t": "pause",
-     "dur": 3.4,
+     "dur": 3.0,
      "cue": "hurt"
     },
     {
      "t": "pause",
-     "dur": 3.8,
+     "dur": 3.2,
      "cue": "leave"
     },
     {
      "t": "pause",
-     "dur": 3.6,
+     "dur": 3.0,
      "cue": "alone"
     },
     {
@@ -437,7 +490,7 @@
     },
     {
      "t": "pause",
-     "dur": 1.8,
+     "dur": 2.4,
      "cue": "follow"
     }
    ]
@@ -453,12 +506,12 @@
    "beats": [
     {
      "t": "pause",
-     "dur": 2.4,
+     "dur": 2.2,
      "cue": "catch"
     },
     {
      "t": "pause",
-     "dur": 2.0,
+     "dur": 1.8,
      "cue": "steps"
     },
     {
@@ -473,29 +526,29 @@
      "t": "line",
      "id": "s05_l02",
      "who": "tired",
-     "text": "Hi. Long story.",
+     "text": "Oh. Hey.",
      "pre": 0.3,
      "post": 0.45
     },
     {
      "t": "pause",
-     "dur": 1.4,
+     "dur": 1.2,
      "cue": "notice"
     },
     {
      "t": "line",
      "id": "s05_l03",
      "who": "embar",
-     "text": "Is that... Specimen Zero?",
+     "text": "Is that... Thing One?",
      "pre": 0.2,
      "post": 0.45,
-     "say": "Is that, Specimen Zero?"
+     "say": "Is that, Thing One?"
     },
     {
      "t": "line",
      "id": "s05_l04",
      "who": "embar",
-     "text": "And why are your eyes glowing?",
+     "text": "And why are your eyes glowing?!",
      "pre": 0.3,
      "post": 0.45
     },
@@ -503,23 +556,42 @@
      "t": "line",
      "id": "s05_l05",
      "who": "tired",
-     "text": "I fell out of a window.",
+     "text": "Oh, yeah. A critter bit me, I fell out of a building, and now I can see in the dark.",
      "pre": 0.3,
+     "post": 0.45,
+     "say": "Oh, yeah. A critter bit me, I fell out of a building, and now I can see in the dark.",
+     "speed": 1.0
+    },
+    {
+     "t": "line",
+     "id": "s05_l05b",
+     "who": "embar",
+     "text": "You fell out of a WHAT?!",
+     "pre": 0.15,
+     "post": 0.45,
+     "say": "You fell out of a what?!"
+    },
+    {
+     "t": "line",
+     "id": "s05_l05c",
+     "who": "tired",
+     "text": "It's been a day.",
+     "pre": 0.35,
      "post": 0.45
     },
     {
      "t": "pause",
-     "dur": 1.6,
+     "dur": 1.2,
      "cue": "blink"
     },
     {
      "t": "pause",
-     "dur": 1.8,
+     "dur": 1.6,
      "cue": "led"
     },
     {
      "t": "pause",
-     "dur": 3.6,
+     "dur": 3.2,
      "cue": "conflict"
     },
     {
@@ -531,14 +603,20 @@
      "t": "line",
      "id": "s05_l06",
      "who": "embar",
-     "text": "Huh. My pocket calculator just stopped working.",
+     "text": "Huh. My \"pocket calculator\"... just stopped working.",
      "pre": 0.3,
      "post": 0.45,
-     "speed": 0.92
+     "speed": 0.86,
+     "say": "Huh. My pocket calculator, just stopped working."
     },
     {
      "t": "pause",
-     "dur": 1.4,
+     "dur": 1.0,
+     "cue": "wink"
+    },
+    {
+     "t": "pause",
+     "dur": 1.2,
      "cue": "smile"
     },
     {
@@ -566,7 +644,7 @@
     },
     {
      "t": "pause",
-     "dur": 1.4,
+     "dur": 1.2,
      "cue": "nod"
     }
    ]
@@ -582,12 +660,12 @@
    "beats": [
     {
      "t": "pause",
-     "dur": 2.8,
+     "dur": 2.4,
      "cue": "doors"
     },
     {
      "t": "pause",
-     "dur": 2.8,
+     "dur": 2.4,
      "cue": "chair"
     },
     {
@@ -645,7 +723,7 @@
     },
     {
      "t": "pause",
-     "dur": 2.6,
+     "dur": 2.4,
      "cue": "tempt"
     },
     {
@@ -679,7 +757,7 @@
     },
     {
      "t": "pause",
-     "dur": 2.3,
+     "dur": 3.0,
      "cue": "eyes_open"
     }
    ],
@@ -724,12 +802,12 @@
     },
     {
      "t": "pause",
-     "dur": 2.6,
+     "dur": 2.4,
      "cue": "one_pod"
     },
     {
      "t": "pause",
-     "dur": 3.0,
+     "dur": 2.6,
      "cue": "baby"
     },
     {
@@ -747,7 +825,7 @@
     },
     {
      "t": "pause",
-     "dur": 2.6,
+     "dur": 2.4,
      "cue": "run"
     },
     {
@@ -757,20 +835,35 @@
     },
     {
      "t": "pause",
-     "dur": 1.4,
+     "dur": 1.2,
      "cue": "watch"
     },
     {
      "t": "line",
      "id": "s07_l03",
      "who": "boss",
-     "text": "Let them run.",
+     "text": "Oh. You too, Embarrassment.",
      "pre": 0.2,
-     "post": 0.45
+     "post": 0.45,
+     "speed": 0.84
     },
     {
      "t": "pause",
-     "dur": 1.0,
+     "dur": 0.7,
+     "cue": "numb"
+    },
+    {
+     "t": "line",
+     "id": "s07_l03b",
+     "who": "boss",
+     "text": "No matter. I'll catch you.",
+     "pre": 0.1,
+     "post": 0.45,
+     "speed": 0.82
+    },
+    {
+     "t": "pause",
+     "dur": 1.4,
      "cue": "end"
     }
    ],
@@ -787,7 +880,7 @@
    "beats": [
     {
      "t": "pause",
-     "dur": 2.8,
+     "dur": 2.6,
      "cue": "dawn"
     },
     {
@@ -807,12 +900,12 @@
     },
     {
      "t": "pause",
-     "dur": 3.2,
+     "dur": 2.8,
      "cue": "pile"
     },
     {
      "t": "pause",
-     "dur": 2.4,
+     "dur": 3.0,
      "cue": "smile"
     },
     {
@@ -822,7 +915,7 @@
     },
     {
      "t": "pause",
-     "dur": 3.0,
+     "dur": 2.6,
      "cue": "sleep"
     },
     {

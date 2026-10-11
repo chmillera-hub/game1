@@ -1146,7 +1146,7 @@ def hazard_band(ctx, x, y, w, h, step=None, col1=HAZ_Y, col2=INK, lw=3.0, slant=
 # ----------------------------------------------------------------------------
 # pod nameplate (dusty, thumb-wipe reveal)
 # ----------------------------------------------------------------------------
-def nameplate_size(text="CURIOSITY", sub="SPECIMEN 00", size=44):
+def nameplate_size(text="THING 1", sub="SPECIMEN 001", size=44):
     """(w, h) of a nameplate at s=1 (needs a font context; cheap)."""
     surf = cairo.ImageSurface(cairo.FORMAT_ARGB32, 1, 1)
     c = cairo.Context(surf)
@@ -1157,7 +1157,7 @@ def nameplate_size(text="CURIOSITY", sub="SPECIMEN 00", size=44):
     return w, h
 
 
-def nameplate(ctx, x, y, s=1.0, text="CURIOSITY", sub="SPECIMEN 00", dust=0.0, wipe=0.0,
+def nameplate(ctx, x, y, s=1.0, text="THING 1", sub="SPECIMEN 001", dust=0.0, wipe=0.0,
               rot=0.0, seed=0, size=44, light=1.0):
     """Brushed-steel pod nameplate with engraved text. ANCHOR = centre.
 

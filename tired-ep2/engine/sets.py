@@ -486,8 +486,15 @@ def _bd_static(c, light_on=True, light="day", sunrise=0.0):
         fs(c, "#f4f7c8", 3, sc=C["bd_ceil_sh"])
     # stuff on the near floor (only seen in wide framings)
     props.sock(c, 1750, 2050, 1.2, 0.5, "#ffffff")
-    rect(c, 300, 2080, 300, 60, "#e8b25a", 5, r=8)          # pizza box
-    core.text(c, "PIZZA", 450, 2124, 40, "#c0453f", "comic")
+    # pizza box (a real box: lid top in perspective, front side, lid seam, grease spot)
+    polyf(c, [(300, 2058), (600, 2058), (640, 2010), (340, 2010)], "#f0c06a", 5)   # lid top
+    c.save(); core.ellipse(c, 560, 2026, 26, 9); core.fill(c, (0.72, 0.45, 0.18, 0.35)); c.restore()
+    core.text(c, "PIZZA", 470, 2044, 30, "#c0453f", "comic")
+    polyf(c, [(300, 2058), (600, 2058), (600, 2110), (300, 2110)], "#d9a14c", 5)   # front side
+    polyf(c, [(600, 2058), (640, 2010), (640, 2062), (600, 2110)], "#c68e3e", 5)   # right side
+    line(c, [(306, 2072), (594, 2072)], "#b7843a", 3)                               # lid seam
+    for k in range(3):                                                              # vent slots
+        rect(c, 330 + k * 90, 2084, 50, 9, "#b7843a", 0, r=4)
     # spare game controller (clearly a gamepad: grips, d-pad, coloured buttons)
     blob(c, [(1222, 2190), (1236, 2128), (1290, 2112), (1350, 2112), (1404, 2128),
              (1418, 2190), (1392, 2206), (1360, 2176), (1280, 2176), (1248, 2206)],
@@ -4214,7 +4221,7 @@ def _sh_nearest(x, y, wmin=0):
 
 
 _SH_JOY = _sh_nearest(540, 2960, wmin=8)
-_SH_DEFAULT_LABELS = {_SH_JOY: "JOY"}
+_SH_DEFAULT_LABELS = {_SH_JOY: "THING 38"}
 SHAFT_MARKS["pods"] = [(p[0], p[1], p[2], p[3]) for p in _SH_PODS]   # (x, y, w, h) per index
 _SH_PULSE = [[[(p[0], p[1], p[2], p[3]) for p in _SH_PODS
                if p[6] == g and p[2] >= 3 and b0 <= p[1] < b1] for g in range(3)] for (b0, b1) in _SH_BANDS]
@@ -4318,7 +4325,7 @@ def _sh_static(c, sleeper_fn, labels=None):
             idx = _SH_INDEX.get((round(x, 1), round(y, 1)))
             txt = (labels or {}).get(idx) or _SH_DEFAULT_LABELS.get(idx)
             if txt is None:
-                txt = f"SPECIMEN {(idx or 0) % 100:02d}" if w > 90 else None
+                txt = f"THING {(idx or 0) % 100 + 1}" if w > 90 else None
             if txt and (w > 44 or (idx in (labels or {}) or idx in _SH_DEFAULT_LABELS) and w > 18):
                 fsz = min(h * 0.055, w * 1.5 / max(4, len(txt)))
                 core.text(c, txt, x, y + h / 2 + h * 0.055, fsz, "#1f2a33", "ui")
@@ -4848,10 +4855,10 @@ _CW_PIPE = (-90, 1150)         # low pipe contact point (the bonk), s = 0.75
 _CW_CAM = (1250, 650)          # security camera wall mount
 _CW_BANDS = [(-1e9, _CW_LEDGE2 + 40), (_CW_LEDGE2 + 40, _CW_LEDGE + 40), (_CW_LEDGE + 40, _CW_WALL),
              (_CW_WALL, 1e9)]
-_CW_MAIN = [(1000, "CURIOSITY", "SPECIMEN 00", "empty"), (1500, "KINDNESS", "SPECIMEN 07", "tiny"),
-            (1990, "COURAGE", "SPECIMEN 02", "pod"), (2480, "CALM", "SPECIMEN 03", "pod"),
-            (2970, "WONDER", "SPECIMEN 04", "pod"), (3460, "HOPE", "SPECIMEN 05", "pod"),
-            (3950, "TRUST", "SPECIMEN 06", "pod")]
+_CW_MAIN = [(1000, "THING 1", "SPECIMEN 001", "empty"), (1500, "THING 7", "SPECIMEN 007", "tiny"),
+            (1990, "THING 2", "SPECIMEN 002", "pod"), (2480, "THING 3", "SPECIMEN 003", "pod"),
+            (2970, "THING 4", "SPECIMEN 004", "pod"), (3460, "THING 5", "SPECIMEN 005", "pod"),
+            (3950, "THING 6", "SPECIMEN 006", "pod")]
 _CW_UP = [760 + 490 * k for k in range(8)]
 _CW_TOP = [1000 + 490 * k for k in range(-1, 8)]
 _CW_LAMPS = [760, 1745, 2725, 3705]
@@ -5111,7 +5118,7 @@ def _cw_base(c, lab=None):
     _cw_ledge(c, _CW_LEDGE2, x0, x1)
     # upper tier + ledge
     for i, x in enumerate(_CW_UP):
-        _cw_pod_shell(c, x, "pod", 0.86, base_y=_CW_LEDGE, plate=(f"SPECIMEN {i + 12:02d}", None),
+        _cw_pod_shell(c, x, "pod", 0.86, base_y=_CW_LEDGE, plate=(f"THING {i + 12}", None),
                       tubes_to=_CW_LEDGE2 + 52)
     _cw_ledge(c, _CW_LEDGE, _CW_ST_TOP - 120, x1)
     c.rectangle(x0, y0, x1 - x0, -200 - y0)
@@ -5128,6 +5135,14 @@ def _cw_base(c, lab=None):
         props.cage_lamp(c, x, _CW_LEDGE + 64, 0.8, on=0.0, halo=False)
     for x in _CW_LAMPS2:
         props.cage_lamp(c, x, _CW_LEDGE2 + 64, 0.7, on=0.0, halo=False)
+    # corporate signage along the main tier: drab and dismissive
+    for sx in (2235, 3215):          # hung from the upper ledge between pods
+        for dx in (-80, 80):
+            line(c, [(sx + dx, _CW_LEDGE + 4), (sx + dx, 600)], "#59656f", 4)
+        rect(c, sx - 124, 596, 248, 92, "#d9dde1", 4.5, r=8)
+        rect(c, sx - 114, 605, 228, 14, PAL["hush"], 0, r=4)
+        core.text(c, "NOTHING TO", sx, 646, 31, "#2a3138", "ui")
+        core.text(c, "SEE HERE", sx, 677, 31, "#2a3138", "ui")
     # main deck
     dx0 = _CW_ST_TOP
     c.rectangle(dx0, _CW_WALL, x1 - dx0, _CW_FRONT - _CW_WALL)
