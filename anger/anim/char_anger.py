@@ -697,6 +697,9 @@ def _face_params(p: Pose, R, t):
     one = clamp(ex.get("one_eye", 0.0))
     sup = clamp(ex.get("smirk_suppress", 0.0))
     F.dazed, F.one, F.sup = dazed, one, sup
+    # the smile reaching the eyes: even the tiny S6 smirk (0.38) gets all of it; suppression takes it away again
+    warm = smoothstep(clamp(abs(p.smirk) * (1.0 - 0.75 * sup) / 0.32))
+    F.warm = warm
     F.bruised = clamp(ex.get("bruised", 0.0))
     F.grimace = clamp(ex.get("grimace", 0.0))
     F.strain = clamp(ex.get("strain", 0.0))
@@ -715,7 +718,7 @@ def _face_params(p: Pose, R, t):
         lv = (1.0 if lid is None else clamp(lid))
         if lid is None:
             lv *= bl
-        lv *= (1.0 - 0.38 * dazed) * (1.0 - sleepk if lid is None else 1.0)
+        lv *= (1.0 - 0.38 * dazed) * (1.0 - sleepk if lid is None else 1.0) * (1.0 - 0.05 * warm)
         if dazed > 0:
             # slow, heavy, out-of-sync lid flutter
             lv *= 1.0 - 0.22 * dazed * (0.5 + 0.5 * noise1(tt * 0.9, 41 + slot))
@@ -723,7 +726,8 @@ def _face_params(p: Pose, R, t):
             lv *= 1.0 - one
         E.lid = clamp(lv)
         sm_side = (-1 if p.smirk >= 0 else 1) == slot
-        E.squint = clamp(F.squint + (0.3 * one if slot > 0 else 0.0) + (0.4 * abs(p.smirk) if sm_side else 0.0))
+        E.squint = clamp(F.squint + (0.3 * one if slot > 0 else 0.0) + (0.4 * abs(p.smirk) if sm_side else 0.0)
+                         + (0.2 + (0.06 if sm_side else 0.0)) * warm)       # cheeks push the lower lids up
         E.wide = F.wide * (1.0 if slot < 0 or one < 0.5 else 0.0)
         dgx = dazed * (0.32 * slot + 0.35 * noise1(tt * 0.33, 7 + 3 * slot))
         dgy = dazed * 0.3 * noise1(tt * 0.27, 19 + slot)
@@ -731,16 +735,17 @@ def _face_params(p: Pose, R, t):
         E.gy = clamp(gy * (1.0 - 0.4 * dazed) + dgy + 0.15 * dazed, -1.0, 1.0)
         braise = p.brow_raise + float(ex.get("brow_" + side, 0.0))
         braise += 0.25 * F.wide + (0.35 * one if slot < 0 else -0.15 * one)
-        braise += 0.12 * dazed - 0.25 * F.strain
+        braise += 0.12 * dazed - 0.25 * F.strain + 0.1 * warm
         E.braise = clamp(braise, -1.2, 1.5)
-        E.bworry = clamp(p.brow_worry + 0.35 * dazed + 0.25 * F.strain + 0.15 * F.grimace)
+        E.bworry = clamp(p.brow_worry + 0.35 * dazed + 0.25 * F.strain + 0.15 * F.grimace + 0.05 * warm)
+        # warm: the brows relax - the default scowl (0.3) un-knots and the inner ends stop pulling down
         E.bfurrow = clamp(0.3 + p.brow_furrow + 0.45 * F.grimace + 0.35 * F.strain - 0.3 * max(0.0, braise)
-                          - 0.2 * dazed + 0.12 * sup)
+                          - 0.2 * dazed + 0.12 * sup - 0.42 * warm)
         E.side = side
         F.eye[slot] = E
     F.open = clamp(p.mouth_open + R.mouth_add)
     F.round = clamp(p.mouth_round)
-    F.smile = clamp(p.smile, -1.0, 1.0)
+    F.smile = clamp(p.smile + 0.16 * warm, -1.0, 1.0)      # a hint of the OTHER corner too: warm, not a sneer
     sm = p.smirk * (1.0 - 0.75 * sup)
     F.smirk_slot = -1 if sm >= 0 else 1      # smirk > 0 lifts the corner nearer the camera
     F.smirk = abs(sm)
@@ -855,7 +860,7 @@ def _draw_eye(c, H, F, slot, emit):
             px, py = pUL[i]
             _stroke(c, _curve([(px, py), (px + sd * 0.8, py + 2.0)]), C_LASH, 0.9, 0.6)
     # squint / pain creases at the outer corner, under-eye bags
-    k = clamp((E.squint - 0.3) / 0.5)
+    k = clamp((E.squint - 0.3 - 0.26 * F.warm) / 0.5)
     if k > 0.01:
         ox, oy = P(cx + sd * (EW + 2.0), L[-1] + 1.0)
         for dy_, ln in ((1.5, 7.0), (5.0, 5.5)):
@@ -863,7 +868,17 @@ def _draw_eye(c, H, F, slot, emit):
             q1 = P(cx + sd * (EW + 1.0 + ln), L[-1] + dy_ - 1.5)
             _stroke(c, _curve([q0, q1]), C_SKIN_DEEP, 1.1, 0.5 * k)
     bag = [P(x, v + 3.8 + 1.0 * pl) for x, v, pl in zip(xs[2:-2], L[2:-2], _EL[2:-2])]
-    _stroke(c, _curve(bag), C_SKIN_DEEP, 1.0, 0.32 + 0.15 * F.dazed)
+    _stroke(c, _curve(bag), C_SKIN_DEEP, 1.0, 0.32 + 0.15 * F.dazed + 0.1 * F.warm)
+    if F.warm > 0.02:
+        # a hint of crow's feet: three fine lines fanning out of the outer corner, the cheek pushed up under the eye
+        y0 = 0.5 * (UL[-1] + L[-1])
+        for dy0, sl_, ln, a_ in ((-1.6, -0.42, 5.0, 0.32), (0.6, -0.08, 6.0, 0.38), (2.8, 0.3, 4.6, 0.3)):
+            q0 = (cx + sd * (EW + 2.4), y0 + dy0)
+            q1 = (cx + sd * (EW + 2.4 + 0.55 * ln), y0 + dy0 + 0.55 * ln * sl_ - 0.35)
+            q2 = (cx + sd * (EW + 2.4 + ln), y0 + dy0 + ln * sl_)
+            _stroke(c, _curve([P(*q0, -1.5), P(*q1, -2.0), P(*q2, -3.0)]), C_SKIN_DEEP, 0.85, a_ * F.warm)
+        ch = [P(x, v + 6.2 + 1.2 * pl, -0.5) for x, v, pl in zip(xs[1:-1], L[1:-1], _EL[1:-1])]
+        _stroke(c, _curve(ch), C_SKIN_HI, 1.6, 0.22 * F.warm, blur=0.8)
     if info is not None and emit is not None:
         emit.append(info)
     return info
@@ -899,19 +914,69 @@ def _draw_brow(c, H, F, slot):
     return pts
 
 
-def _draw_scar(c, H, F, slot, brow_pts):
-    """Pale scar through Anger's LEFT eyebrow: a gap in the brow and a slanted line onto the upper lid."""
+def _fold_y(E, xa):
+    """Front-view height of the upper-lid crease (the top of the eye region _draw_eye paints) at |x| = xa."""
+    U = _eye_curves(E)[0]
+    s = clamp((xa - EX) / EW, -1.0, 1.0)
+    for i in range(1, len(_ES)):
+        if s <= _ES[i] or i == len(_ES) - 1:
+            u = clamp((s - _ES[i - 1]) / (_ES[i] - _ES[i - 1]))
+            uu = lerp(U[i - 1], U[i], u)
+            pu = lerp(_EU[i - 1], _EU[i], u)
+            return uu - 3.2 - 2.4 * pu * (1.0 - 0.5 * E.wide)
+    return U[-1] - 3.2
+
+
+SCAR_CLEAR = 3.4          # front-view clearance kept between the scar and the lid crease (stroke + projection slack)
+
+
+def _scar_geom(F, slot, brow_pts):
+    """Front-view points (x0, y) of the scar line and of the notch cut through the brow (Anger's LEFT brow).
+    A short slash across the brow, from the forehead just above it down to the brow's lower half - never lower
+    than SCAR_CLEAR above the lid crease, so it can't reach the eyelid / eye in any expression, turn or blink."""
     sd = float(slot)
+    E = F.eye[slot]
     bx, by = brow_pts[2]
-    a0 = (sd * (bx / sd - 3.5), by - 9.0)
-    a1 = (sd * (bx / sd + 1.0), by + 0.5)
-    a2 = (sd * (bx / sd + 3.0), -3.6)
-    p0, p1, p2 = _hpp(H, *a0, 6.0), _hpp(H, *a1, 6.0), _hpp(H, *a2, 2.0)
-    pb0 = _hpp(H, sd * (bx / sd - 1.2), by - 4.0, 6.0)
-    pb1 = _hpp(H, sd * (bx / sd + 0.4), by + 4.0, 6.0)
-    _stroke(c, _curve([pb0, pb1]), C_LID, 3.6)                 # the notch cut through the brow
-    _stroke(c, _curve([p0, p1, p2]), C_SCAR, 2.2, 0.85)
-    _stroke(c, _curve([p0, p1, p2]), C_SCAR_HI, 1.1, 0.95)
+    xa = bx / sd
+    xs = (xa - 2.4, xa - 0.4, xa + 1.2)
+    y_lo = min(by + 2.0, _fold_y(E, xs[2]) - SCAR_CLEAR)
+    y_top = min(by - 8.0, y_lo - 5.0)
+    y_mid = min(by - 2.4, lerp(y_top, y_lo, 0.6))
+    line = [(sd * xs[0], y_top), (sd * xs[1], y_mid), (sd * xs[2], y_lo)]
+    n_lo = min(by + 3.0, _fold_y(E, xa + 0.4) - SCAR_CLEAR + 0.6)
+    notch = [(sd * (xa - 1.2), min(by - 4.0, n_lo - 2.0)), (sd * (xa + 0.4), n_lo)]
+    return line, notch
+
+
+def _draw_scar(c, H, F, slot, brow_pts):
+    """Pale scar through Anger's LEFT eyebrow: a gap cut through the brow and a short slanted line across it
+    (forehead -> brow only; it stops above the lid crease)."""
+    line, notch = _scar_geom(F, slot, brow_pts)
+    # the same clamp once more in projected head coords (a nodding / turned head shifts the brow ridge against the
+    # deeper-set eye): every point stays above the projected crease by its stroke radius + a margin
+    E = F.eye[slot]
+    sd = float(slot)
+    U = _eye_curves(E)[0]
+    fold = sorted(_hpp(H, sd * (EX + s * EW), v - 3.2 - 2.4 * pu * (1.0 - 0.5 * E.wide), -3.0)
+                  for s, v, pu in zip(_ES, U, _EU))
+
+    def clampq(q, r):
+        x, y = q
+        if fold[0][0] <= x <= fold[-1][0]:
+            for (x0, y0), (x1, y1) in zip(fold, fold[1:]):
+                if x0 <= x <= x1:
+                    fy = y0 + (y1 - y0) * ((x - x0) / (x1 - x0) if x1 > x0 else 0.0)
+                    return (x, min(y, fy - r - 1.3))
+        return q
+
+    pn = [clampq(_hpp(H, x, y, 6.0), 1.5) for x, y in notch]
+    pn[0] = (pn[0][0], min(pn[0][1], pn[1][1] - 1.5))
+    _stroke(c, _curve(pn), C_LID, 3.0)                          # the notch cut through the brow
+    pl = [clampq(_hpp(H, x, y, 6.0), 1.1) for x, y in line]
+    pl[1] = (pl[1][0], min(pl[1][1], pl[2][1] - 1.0))
+    pl[0] = (pl[0][0], min(pl[0][1], pl[1][1] - 2.0))
+    _stroke(c, _curve(pl), C_SCAR, 2.2, 0.85)
+    _stroke(c, _curve(pl), C_SCAR_HI, 1.1, 0.95)
 
 
 def _draw_forehead(c, H, F):
@@ -1213,9 +1278,9 @@ def _draw_head(c, R, F, emit):
     sx, sy, _ = _hp(H, lx * 18.0, -44.0 + ly * 6.0, 2.0)
     _soft_oval(c, sx, sy, 15.0, 7.0, C_SKIN_HI, 0.6)
     for slot in (-1, 1):
-        q = _hp(H, slot * 33.0, 12.0, 0.0)
+        q = _hp(H, slot * 33.0, 12.0 - 3.2 * F.warm, 0.0)
         if q[2] > 5:
-            _soft_oval(c, q[0], q[1], 7.0, 3.0, C_SKIN_HI, 0.3 + 0.2 * (lx * slot > 0))
+            _soft_oval(c, q[0], q[1], 7.0, 3.0 + 0.6 * F.warm, C_SKIN_HI, 0.3 + 0.2 * (lx * slot > 0) + 0.14 * F.warm)
         q = _hp(H, slot * 18.0, -20.0, 3.0)
         _soft_oval(c, q[0], q[1], 9.0, 2.5, C_SKIN_HI, 0.3)
     # nasolabial folds (above the beard line); the smirk side bunches up into a deeper crease + cheek highlight
@@ -1799,10 +1864,55 @@ def _arm_solve(R, side, ap, P, swing):
     return A
 
 
-def _arm_ik(A, W):
+def _elbow_side(R, A, W, k):
+    """Which side of the shoulder->wrist line the elbow goes, -1..1 (+1 = the normal n = (-d_y, d_x)), for
+    reach-type IK (door ring, reach_l / reach_r, the two-handed grip). Anatomical rule: the elbow points OUT (the
+    arm's own side) + DOWN + a little BACK (projected for the body turn), plus a flexion term in the arm plane (the
+    forearm folds toward the biceps, never backward), so a hand reaching forward / down never flips its elbow up
+    and across the chest. Near the indifferent direction the side changes smoothly (the elbow swivels through the
+    line, i.e. points at the camera for a moment) instead of popping; k (the reach weight) fades the rule in from
+    the FK elbow's side, so a reach starting / ending on the free arm pose is continuous."""
+    S, Efk = A.S, A.Efk
+    px, py = A.slot * 0.6 * R.cb - 0.42 * R.sb, 1.0
+    pl = math.hypot(px, py)
+    dx, dy = W[0] - S[0], W[1] - S[1]
+    dl = math.hypot(dx, dy) or 1.0
+    nx, ny = -dy / dl, dx / dl
+    # flexion weight (turned views): it decides alone (> any pole term) unless the hand is well above the shoulder,
+    # so a hand that sweeps around the shoulder at or below its height never flips the elbow; overhead / behind the
+    # head the pole takes over and the elbow flares OUT; none in the stylised front view (arms swing to the sides)
+    kf = clamp(A.ax, -1.0, 1.0) * R.wf * (0.25 + 0.95 * smoothstep((dy / dl + 0.9) / 0.4))
+    pole = (nx * px + ny * py) / pl + kf
+    s_pole = clamp(pole / 0.15, -1.0, 1.0)
+    if k >= 1.0:
+        return s_pole
+    # the FK elbow's side, soft (a near-straight FK arm must not flip the elbow from frame to frame)
+    d = clamp(dl, abs(UPPER - FORE) + 1e-3, UPPER + FORE)
+    a = (UPPER * UPPER - FORE * FORE + d * d) / (2.0 * d)
+    h = math.sqrt(max(0.0, UPPER * UPPER - a * a))
+    s_fk = clamp(((Efk[0] - S[0]) * nx + (Efk[1] - S[1]) * ny) / max(0.5 * h, 4.0), -1.0, 1.0)
+    return lerp(s_fk, s_pole, clamp(k))
+
+
+def _arm_ik(A, W, R=None, k=1.0):
+    """Re-solve the elbow for wrist target W. With R: reach-type IK, the elbow side from _elbow_side (weight k);
+    without it (across / behind pulls of the presets) the elbow nearest the FK pose wins."""
     Efk = A.Efk
-    near = (lambda j1, j2: j1 if math.hypot(j1[0] - Efk[0], j1[1] - Efk[1]) <= math.hypot(j2[0] - Efk[0], j2[1] - Efk[1]) else j2)
-    E = _ik(A.S, W, UPPER, FORE, near)
+    if R is not None:
+        S = A.S
+        dx, dy = W[0] - S[0], W[1] - S[1]
+        d0 = math.hypot(dx, dy)
+        if d0 < 1e-6:
+            dx, dy, d0 = 0.0, 1.0, 1.0
+        ux, uy = dx / d0, dy / d0
+        d = clamp(d0, abs(UPPER - FORE) + 1e-3, UPPER + FORE)
+        a = (UPPER * UPPER - FORE * FORE + d * d) / (2.0 * d)
+        h = math.sqrt(max(0.0, UPPER * UPPER - a * a))
+        sd = _elbow_side(R, A, W, k)
+        E = (S[0] + ux * a - uy * h * sd, S[1] + uy * a + ux * h * sd)
+    else:
+        near = (lambda j1, j2: j1 if math.hypot(j1[0] - Efk[0], j1[1] - Efk[1]) <= math.hypot(j2[0] - Efk[0], j2[1] - Efk[1]) else j2)
+        E = _ik(A.S, W, UPPER, FORE, near)
     fv = _norm(W[0] - E[0], W[1] - E[1])
     d = math.hypot(W[0] - A.S[0], W[1] - A.S[1])
     if d > UPPER + FORE:
@@ -1922,7 +2032,7 @@ def _solve(p: Pose, t):
             _hand_frame(A)
             hv = _dirv(A.ha)
             wt = (tc[0] - hv[0] * PALM, tc[1] - hv[1] * PALM)
-            _arm_ik(A, (lerp(A.W[0], wt[0], w), lerp(A.W[1], wt[1], w)))
+            _arm_ik(A, (lerp(A.W[0], wt[0], w), lerp(A.W[1], wt[1], w)), R, w)
     for A in arms.values():
         _hand_frame(A)
     # ---- props (decided before anchoring)
@@ -1993,7 +2103,7 @@ def _solve(p: Pose, t):
             hc = hl_target - rotc
             hv = _dirv(hc)
             wt = (tc[0] - hv[0] * PALM, tc[1] - hv[1] * PALM)
-            _arm_ik(other, wt)
+            _arm_ik(other, wt, R)
             fv = _norm(other.W[0] - other.E[0], other.W[1] - other.E[1])
             other.hrel = hc - _ang_of(*fv)
             other.shape = "hold"
