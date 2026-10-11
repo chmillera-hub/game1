@@ -261,7 +261,7 @@ def arm_amount(t, k):
     return kf(t, [(k.pk0, 0.0), (k.pk1, 1.0), (k.dr0 + 0.1, 1.0), (k.dr2, 0.0)])
 
 
-def tired_state(t, k, info):
+def tired_state(t, k, info, noarm=False):
     st = dict(x=T_X, y=FEET, pose="stand", pose_t=None, turn=0.25, expr="bored", face={},
               look=(0.0, 0.0), blink=None, hood=0.0, mouth=info.mouth("tired", t), peek=0.0, bface=None)
     f = st["face"]
@@ -380,11 +380,11 @@ def tired_state(t, k, info):
             st["blook"] = lk
             # lets the eye close as the rim drops ("close my eyes?")
             st["bblink"] = kf(t, [(k.dr0 - 0.05, 0.0), (k.dr0 + 0.15, 1.0)]) if t > k.dr0 - 0.05 else None
-        if ka > 0.0:
+        if ka > 0.0 and not noarm:
             # the r hand leaves the clasp, swings out to the side and up to the rim (a pose blend:
             # the rig switches the draw order once, mid-path, where the hand is clear of the head
             # and of the other hand); the finger goes where the rim lifts
-            g = peek_frame(t, st, p)
+            g = peek_frame(t, st, p, k, info)
             st["peek_geo"] = g
             (x0, y0, a0), (x2, y2) = g["hand0"], g["grip"]
             x1, y1 = max(x0, x2) + 75 * S / 0.75, (y0 + y2) / 2 + 25 * S / 0.75
@@ -480,11 +480,33 @@ def _loc(O, ux, uy, P):
     return (dx * ux + dy * uy, -dx * uy + dy * ux)
 
 
-def peek_frame(t, st, p):
+_PGRID = {}
+
+
+def _armdown(t, k, info):
+    """His arm-down anchors (eyes, hood rim, the resting hand, head, crown) on the fixed
+    0.125 s grid, interpolated: the head barely moves while he peeks."""
+    i = int(math.floor(t / GRID_DT))
+    out = []
+    for j in (i, i + 1):
+        v = _PGRID.get((id(k), j))
+        if v is None:
+            if len(_PGRID) > 2000:
+                _PGRID.clear()
+            tg = j * GRID_DT
+            a = _draw_person(_dummy(), tg, tired_state(tg, k, info, noarm=True), reach=None)
+            v = {n: a[n] for n in ("eye_l", "eye_r", "hood_rim", "hand_r", "head", "top")}
+            _PGRID[(id(k), j)] = v
+        out.append(v)
+    u = (t - i * GRID_DT) / GRID_DT
+    return {n: tuple(a_ + (b_ - a_) * u for a_, b_ in zip(out[0][n], out[1][n])) for n in out[0]}
+
+
+def peek_frame(t, st, p, k, info):
     """The lifted rim in the peek eye's local frame (x along the eye line toward screen-right,
-    y down; origin = the screen-right eye), from two cheap solves with the arm down:
+    y down; origin = the screen-right eye), from the arm-down anchors:
     the hood-down rim (yA), the second render's higher rim (yB), the tent peak at the finger."""
-    a = _draw_person(_dummy(), t, st, reach=None)
+    a = _armdown(t, k, info)
     el, er = a["eye_l"], a["eye_r"]
     ang = math.atan2(er[1] - el[1], er[0] - el[0])
     ux, uy = math.cos(ang), math.sin(ang)
@@ -1000,8 +1022,8 @@ def pings_for(k, info):
     p = _PC.get(id(k))
     if p is not None:
         return p
-    times = [(k.dm_pulse, "cur", 0.85), (k.dm_pulse2, "cur", 0.7),       # the demo ("look: eyes shut")
-             (k.pk_pulse, "cur", 0.8),                                    # pointedly, at his peeking eye
+    times = [(k.dm_pulse, "cur", 0.85), (k.dm_pulse2, "cur", 0.6),       # the demo ("look: eyes shut")
+             (k.pk_pulse, "cur", 0.7),                                    # pointedly, at his peeking eye
              (k.p1, "tired", 1.0), (k.p2, "tired", 0.85),                 # HIS first whoom, then his head turn
              (k.w_super, "tired", 0.9),                                   # "superpower": a proud ping
              (k.tgo + 0.12, "tired", 0.55), (k.tgo + 1.12, "tired", 0.55),   # small ones guiding his steps
@@ -1059,7 +1081,7 @@ def _shots(k):
     add(k.cut_roll, k.HOOD, "roll", lambda t: (CUR_HEAD[0] + 10, CUR_HEAD[1] - 44, 3.0))   # plate text cropped
     add(k.HOOD, k.cut_oh, "hood",
         lambda t: (lerp(1050, 1070, smoothstep(seg(t, k.hd1, k.pk1))), 968, 2.4))   # pans to keep his hand in
-    add(k.cut_oh, k.cut_nod, "oh", lambda t: (1072, 960, 2.55))
+    add(k.cut_oh, k.cut_nod, "oh", lambda t: (1065, 955, 2.35))
     add(k.cut_nod, k.PING, "nod", lambda t: (1040, 1060, 1.6))
 
     def ping_cam(t):
@@ -1220,7 +1242,13 @@ def deep_dark(t, k, name):
     return 0.4
 
 
-def dark_set(c, t, k, deep, rail=False):
+def dark_set(c, t, k, deep, rail=False, rect=None):
+    if rect is not None:
+        # a still shot of the dark set: one cached bitmap per shot (the sense's own darkness
+        # bake is just as still), instead of mixing the set's layers + the wash every frame
+        core.cached(c, ("s02_dark", rect, round(deep, 3), rail), *rect,
+                    lambda cc: dark_set(cc, 0.0, k, deep, rail))
+        return
     # the pipe shivers after the bonk (it has died out by the cut to the close-up)
     sets.catwalk(c, t, power=0.0, cam_led=1.0, pipe_wobble=1.0 if 0.0 <= t - k.BONK < 1.25 else 0.0,
                  pipe_wobble_t0=k.BONK, **SET_KW)
@@ -1265,7 +1293,7 @@ def render(ctx, t, info):
             fx.sense_reveal(ctx, t, pings, lit_set, lambda c: dark_set(c, t, k, deep, True), key=("s02", name),
                             rect=shot_rect(k, sh), s=SW)
         else:
-            dark_set(ctx, t, k, deep)
+            dark_set(ctx, t, k, deep, rect=None if name in ("walk", "bonk") else shot_rect(k, sh))
 
         # ---- characters: Curiosity behind (on the plinth / following), him in front;
         #      in reach_up he is drawn inside its pose so its near paw lands on his hood
