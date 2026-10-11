@@ -1,31 +1,212 @@
 {
-  "cues": [
-    { "from": 0, "to": "s02b01.end", "mood": "tender_memory", "intensity": 0.32, "fade_in": 0.4, "fade_out": 2.5 },
-    { "from": "s02b02-0.5", "to": "s02.end", "mood": "curious_unease", "intensity": 0.3, "fade_in": 2.0, "fade_out": 1.5 },
-    { "from": "s03", "to": "s03.end", "mood": "void_presence", "intensity": 0.38, "fade_in": 1.0, "fade_out": 1.2,
-      "hits": [ { "at": "s03b02-0.4", "type": "sting" } ] },
-    { "from": "s04", "to": "s04.end", "mood": "curious_unease", "intensity": 0.24, "fade_in": 1.0, "fade_out": 0.8 },
-    { "from": "s05", "to": "s05.end+0.8", "mood": "alarm_chaos", "intensity": 0.5, "fade_in": 0.3, "fade_out": 2.2 },
-    { "from": "s06", "to": "s06b08", "mood": "confrontation", "intensity": 0.26, "fade_in": 2.0, "fade_out": 1.0 },
-    { "from": "s06b08", "to": "s06.end", "mood": "dread", "intensity": 0.3, "fade_in": 0.4, "fade_out": 1.0,
-      "hits": [ { "at": "s06b09", "type": "drop" } ] },
-    { "from": "s07", "to": "s07b03", "mood": "stillness", "intensity": 0.2, "fade_in": 0.6, "fade_out": 1.0 },
-    { "from": "s07b03", "to": "s09.end", "mood": "sorrow", "intensity": 0.34, "fade_in": 1.5, "fade_out": 2.5,
-      "hits": [ { "at": "s09b02.end", "type": "resolve" } ] },
-    { "from": "s10", "to": "s11.end", "mood": "void_presence", "intensity": 0.2, "fade_in": 2.0, "fade_out": 1.5 },
-    { "from": "s12", "to": "s12.end", "mood": "stillness", "intensity": 0.2, "fade_in": 1.0, "fade_out": 1.0,
-      "hits": [ { "at": "s12b06", "type": "swell" }, { "at": "s12b10", "type": "drop" } ] },
-    { "from": "s13", "to": "s13b04", "mood": "dread", "intensity": 0.22, "fade_in": 0.8, "fade_out": 0.6,
-      "hits": [ { "at": "s13b01+1.2", "type": "drop" }, { "at": "s13b02", "type": "silence" } ] },
-    { "from": "s13b04", "to": "s13.end", "mood": "reveal_wonder", "intensity": 0.18, "fade_in": 0.3, "fade_out": 0.5 },
-    { "from": "s14", "to": "s14.end", "mood": "reveal_wonder", "intensity": 0.55, "fade_in": 0.5, "fade_out": 1.5,
-      "hits": [ { "at": "s14b01+1.2", "type": "swell" }, { "at": "s14b07", "type": "drop" } ] },
-    { "from": "s15", "to": "s16.end", "mood": "belonging", "intensity": 0.4, "fade_in": 1.0, "fade_out": 1.0,
-      "hits": [ { "at": "s16b04", "type": "swell" } ] },
-    { "from": "s17", "to": "s17.end", "mood": "belonging", "intensity": 0.42, "fade_in": 0.8, "fade_out": 1.2,
-      "hits": [ { "at": "s17b04.end+0.3", "type": "resolve" } ] },
-    { "from": "s18", "to": "s19.end", "mood": "resolution", "intensity": 0.38, "fade_in": 1.5, "fade_out": 2.0 },
-    { "from": "s20", "to": "s20.end", "mood": "outro", "intensity": 0.32, "fade_in": 1.5, "fade_out": 3.0,
-      "hits": [ { "at": "s20b03.end+0.5", "type": "resolve" } ] }
-  ]
+ "cues": [
+  {
+   "from": 0,
+   "to": "s02b01.end",
+   "mood": "tender_memory",
+   "intensity": 0.32,
+   "fade_in": 0.4,
+   "fade_out": 2.5
+  },
+  {
+   "from": "s02b02-0.5",
+   "to": "s02.end",
+   "mood": "curious_unease",
+   "intensity": 0.3,
+   "fade_in": 2.0,
+   "fade_out": 1.5
+  },
+  {
+   "from": "s03",
+   "to": "s03.end",
+   "mood": "void_presence",
+   "intensity": 0.38,
+   "fade_in": 1.0,
+   "fade_out": 1.2,
+   "hits": [
+    {
+     "at": "s03b02-0.4",
+     "type": "sting"
+    }
+   ]
+  },
+  {
+   "from": "s04",
+   "to": "s04.end",
+   "mood": "curious_unease",
+   "intensity": 0.24,
+   "fade_in": 1.0,
+   "fade_out": 0.8
+  },
+  {
+   "from": "s05",
+   "to": "s05.end+0.8",
+   "mood": "alarm_chaos",
+   "intensity": 0.5,
+   "fade_in": 0.3,
+   "fade_out": 2.2
+  },
+  {
+   "from": "s06",
+   "to": "s06b08",
+   "mood": "confrontation",
+   "intensity": 0.26,
+   "fade_in": 2.0,
+   "fade_out": 1.0
+  },
+  {
+   "from": "s06b08",
+   "to": "s06.end",
+   "mood": "dread",
+   "intensity": 0.3,
+   "fade_in": 0.4,
+   "fade_out": 1.0,
+   "hits": [
+    {
+     "at": "s06b09",
+     "type": "drop"
+    }
+   ]
+  },
+  {
+   "from": "s07",
+   "to": "s07b03",
+   "mood": "stillness",
+   "intensity": 0.2,
+   "fade_in": 0.6,
+   "fade_out": 1.0
+  },
+  {
+   "from": "s07b03",
+   "to": "s09.end",
+   "mood": "sorrow",
+   "intensity": 0.34,
+   "fade_in": 1.5,
+   "fade_out": 2.5,
+   "hits": [
+    {
+     "at": "s09b02.end",
+     "type": "resolve"
+    }
+   ]
+  },
+  {
+   "from": "s10",
+   "to": "s11.end",
+   "mood": "void_presence",
+   "intensity": 0.2,
+   "fade_in": 2.0,
+   "fade_out": 1.5
+  },
+  {
+   "from": "s12",
+   "to": "s12.end",
+   "mood": "stillness",
+   "intensity": 0.2,
+   "fade_in": 1.0,
+   "fade_out": 1.0,
+   "hits": [
+    {
+     "at": "s12b06",
+     "type": "swell"
+    },
+    {
+     "at": "s12b10",
+     "type": "drop"
+    }
+   ]
+  },
+  {
+   "from": "s13",
+   "to": "s13b04",
+   "mood": "dread",
+   "intensity": 0.22,
+   "fade_in": 0.8,
+   "fade_out": 0.6,
+   "hits": [
+    {
+     "at": "s13b01+1.2",
+     "type": "drop"
+    },
+    {
+     "at": "s13b02",
+     "type": "silence"
+    }
+   ]
+  },
+  {
+   "from": "s13b04",
+   "to": "s14.end",
+   "mood": "reveal_wonder",
+   "intensity": 0.5,
+   "fade_in": 0.6,
+   "fade_out": 1.5,
+   "open_at": "s14b01+1.2",
+   "hits": [
+    {
+     "at": "s13b04+0.4",
+     "type": "sting"
+    },
+    {
+     "at": "s14b01+1.2",
+     "type": "swell",
+     "len": 5
+    },
+    {
+     "at": "s14b07",
+     "type": "drop"
+    }
+   ]
+  },
+  {
+   "from": "s15",
+   "to": "s16.end",
+   "mood": "belonging",
+   "intensity": 0.4,
+   "fade_in": 1.0,
+   "fade_out": 1.0,
+   "hits": [
+    {
+     "at": "s16b04",
+     "type": "swell"
+    }
+   ]
+  },
+  {
+   "from": "s17",
+   "to": "s17.end",
+   "mood": "belonging",
+   "intensity": 0.42,
+   "fade_in": 0.8,
+   "fade_out": 1.2,
+   "hits": [
+    {
+     "at": "s17b04.end+0.3",
+     "type": "resolve"
+    }
+   ]
+  },
+  {
+   "from": "s18",
+   "to": "s19.end",
+   "mood": "resolution",
+   "intensity": 0.38,
+   "fade_in": 1.5,
+   "fade_out": 2.0
+  },
+  {
+   "from": "s20",
+   "to": "s20.end",
+   "mood": "outro",
+   "intensity": 0.32,
+   "fade_in": 1.5,
+   "fade_out": 3.0,
+   "hits": [
+    {
+     "at": "s20b03.end+0.5",
+     "type": "resolve"
+    }
+   ]
+  }
+ ]
 }
