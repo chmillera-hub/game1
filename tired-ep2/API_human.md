@@ -349,7 +349,7 @@ Eye keys also accept `_l` / `_r` (one eye only, e.g. `lid_r`, `brow_l`). Values 
   * `"sewer"`: hoodie, damp hair (drooping cowlick, drips), two band-aids (forehead, cheek), smudges.
 * **Built in per character:**
   * Embarrassment: round glasses, freckles, lab coat with pens in the breast pocket. The coat tails lag behind the legs and trail when running.
-  * Boss: teal HushCorp pin, cheekbones.
+  * Boss: teal HushCorp pin, sharp silver bob (its side curtains are 3D at 3/4, see "Boss face at 3/4" in the Episode 2 notes). The old cheekbone strokes are gone.
   * Guard: cap with badge, mustache, shoulder radio, chest badge, belt.
   * Receptionist: headset with mic, name badge, and the counter (`counter=False` if the set draws its own; its top is `DESK_H`).
 
@@ -521,6 +521,16 @@ Each frame the rig decides, for both arms, a layer (`back` = behind the legs and
 * Fully closed lids stayed open a sliver with `lid_ang` (sad and bored blinks).
 * Lab-coat tails ignored the body roll (pointed down through the bed in lying poses).
 * `plant_all` (lying poses) measures the torso's projected thickness, so profile bodies rest on `y` (identical at turn 0).
+
+**Boss face at 3/4 (rig pass, Episode 2 review)**
+* **Hair over the nose and mouth** (s01 at turn −1.2): the bob's side curtains were warped onto the head *silhouette* and drawn over the face, so the curtain on the side she turns toward sat on the face profile and hid the nose, mouth and far eye. Now each curtain point has a depth and is yawed in 3D:
+  * the **far** curtain (the side the face turns toward) is drawn *behind* the face, so the face silhouette clips it. At mild turns a band shows past the cheek; its jaw end slides behind the jaw as she turns, so no hair spike pokes past the chin;
+  * the **near** curtain frames the cheek. Its front edge is yawed rigidly, so it keeps its front-view clearance from the eyes, nose and mouth at every turn (−1.6..1.6, and with `flip`). Its back edge wraps the back of the head and covers the ear, as a chin-length bob does;
+  * the fringe tucks behind the far temple (it no longer hangs past the far brow or eye). Where it lies over the near curtain its ink edge is painted out, sweeping in from the back as the turn grows, so the side of the head reads as one hair mass instead of a helmet rim;
+  * the far-side back hair below the crown slides behind the face instead of sticking out past the profile.
+* **Stray line off the nose tip** (s06 at about 3:02): this was the Boss-only "cheekbone" stroke. It was a straight line at nose-tip height, culled in front views, so it only ever showed at 3/4, running from the nose toward the ear. It is removed. Tiredness, Embarrassment, the Guard and the Receptionist never drew it; their noses at ±0.3..0.9 were checked and are unchanged.
+* Front views are unchanged apart from 1–2 px curve shifts along the curtain edges at the temples. Other characters render pixel-identical. Same signature, anchors and hair `top`. The Boss costs ≈0.1–0.3 ms more per body at 3/4.
+* Boards: `python3 preview/rig_boss_board.py TAG [boss|others|timing]` (Boss close-ups at s=2.5: turns −1.4..1.4 + flip; cold / stern / neutral / talking).
 
 **New:** `hood`, `tears`, `power` with closed eyes / under the hood, `CRATE_H` and the anchors `crate`, `elbow_*`, `knee_*`, `order`, `layers`, `hood_rim`, the pose keys `hand_top`, `head_face`, `hold_hand`, `pillow`, `K()` keyframes. Poses: `sit_crate punch_wind punch guard_fists haul lie_front flop hand_out`. Cycles: `sneak punch_cycle haul_strain wave_small phone_thumb phone_thumb_lie walk_eyes_closed`. `shrug` was retuned to a big, clear shrug.
 

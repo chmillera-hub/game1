@@ -618,7 +618,7 @@ def K(info):
     k["k_take"] = k["k_take0"] + 0.36
     k["k_back"] = k["k_take"] + 0.12
     # ---- Curiosity comes out after the click
-    k["c_out0"] = k["wink"] + 0.5
+    k["c_out0"] = k["wink"] - 0.1
     k["c_out1"] = k["c_out0"] + 1.0
     # ---- the end
     k["nod0"] = k["nod"] + 0.22
@@ -741,7 +741,7 @@ def shrug_pose(a):
     """A lazy, nonchalant shrug with his hands staying in the hoodie pocket: shoulders up,
     elbows out a little, head tilt (a = 0..1)."""
     return {"base": "hands_pockets", "hunch": 0.6 + 0.8 * a, "neck": -0.5 * a, "tilt": 0.12 * a,
-            "lift": 8 * a, "al_o": 0.2 + 0.04 * a, "ar_o": 0.2 + 0.3 * a}
+            "lift": 8 * a}
 
 
 # a lazy hello: the near hand comes out of the hoodie pocket for one small bent-elbow wave,
@@ -855,11 +855,11 @@ def tired_state(t, k):
                       (cr + 0.42, (-0.25, 0.9)), (cr + 0.58, (-0.85, 0.05)),
                       (k["l5e"] + 0.2, (-0.85, 0.05))])
         f = addf(f, fk(t, {
-            "lid": [(k["l4e"], 0.0), (k["l4e"] + 0.35, 0.05), (k["l5"], 0.05)],
+            "lid": [(k["l4e"], 0.0), (k["l4e"] + 0.35, -0.05)],
             "head_nod": [(cr - 0.05, 0.0), (cr + 0.15, 0.06), (cr + 0.5, 0.06), (cr + 0.7, 0.0)],
         }))
         sa_ = shrug_amt(t, k)
-        f = addf(f, {"brow": 0.16 * sa_, "lid": 0.03 * sa_, "frown": 0.22 * sa_, "head_tilt": 0.05 * sa_})
+        f = addf(f, {"brow": 0.18 * sa_, "frown": 0.22 * sa_, "head_tilt": 0.05 * sa_})
     # l05b / l05c: watches Emb freak out, unmoved; a slow blink after "a day."
     if t >= k["l5e"] + 0.2:
         look = tw(t, [(k["l5e"] + 0.2, (-0.85, 0.05)), (k["l5b"] + 0.1, (-0.85, -0.05)),
@@ -867,7 +867,7 @@ def tired_state(t, k):
         b0 = k["l5ce"] + 0.08
         if b0 <= t < b0 + 1.0:
             d["blink"] = tw(t, [(b0, 0.0), (b0 + 0.3, 1.0), (b0 + 0.55, 1.0), (b0 + 0.95, 0.0)])
-        f = addf(f, fk(t, {"lid": [(k["l5c"] - 0.3, 0.0), (k["l5c"], 0.04), (k["led"], 0.04)]}))
+        f = addf(f, fk(t, {"lid": [(k["l5c"] - 0.3, 0.0), (k["l5c"], 0.03), (k["led"], 0.07)]}))
     # led: eyes slide down to the pocket (after Emb's)
     led = k["led"]
     if t >= led:
