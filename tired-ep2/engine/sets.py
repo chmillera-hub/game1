@@ -139,17 +139,18 @@ def _overscan(ctx, x0, y0, x1, y1, top, bottom, left=None, right=None):
     """Flat fills outside the drawn rect (x0, y0)-(x1, y1) so extreme framings
     never show void. Colours may be None to skip a side."""
     vx0, vy0, vx1, vy1 = ctx.clip_extents()
+    o = 12   # overlap into the drawn rect (hidden under it) so no seam pixel shows
     if vy0 < y0 and top:
-        ctx.rectangle(vx0 - 2, vy0 - 2, vx1 - vx0 + 4, y0 - vy0 + 3)
+        ctx.rectangle(vx0 - 2, vy0 - 2, vx1 - vx0 + 4, y0 - vy0 + 2 + o)
         core.fill(ctx, top)
     if vy1 > y1 and bottom:
-        ctx.rectangle(vx0 - 2, y1 - 1, vx1 - vx0 + 4, vy1 - y1 + 3)
+        ctx.rectangle(vx0 - 2, y1 - o, vx1 - vx0 + 4, vy1 - y1 + 2 + o)
         core.fill(ctx, bottom)
     if vx0 < x0 and left:
-        ctx.rectangle(vx0 - 2, y0, x0 - vx0 + 3, y1 - y0)
+        ctx.rectangle(vx0 - 2, y0 - o, x0 - vx0 + 2 + o, y1 - y0 + 2 * o)
         core.fill(ctx, left)
     if vx1 > x1 and right:
-        ctx.rectangle(x1 - 1, y0, vx1 - x1 + 3, y1 - y0)
+        ctx.rectangle(x1 - o, y0 - o, vx1 - x1 + 2 + o, y1 - y0 + 2 * o)
         core.fill(ctx, right)
 
 
@@ -342,6 +343,17 @@ BEDROOM_MARKS = {
     "desk_lean_feet": (1880, 1520),  # Emb leaning on the desk (s06)
     "tug_left_feet": (560, 1540),   # s07 tug-of-war spots
     "tug_right_feet": (1080, 1540),
+    # Episode 2 (dawn, s08)
+    "bed_top_y": 1165,              # top of the blanket: a body lying on the bed rests here
+    "pillow": (1165, 1150),         # pillow centre (head of the bed, left)
+    "lie_head": (1170, 1128),       # face-down sleeper: head on the pillow (face turned to us)
+    "lie_hips": (1390, 1168),
+    "lie_feet": (1600, 1176),       # feet hang just past the footboard post
+    "bed_entry_feet": (1460, 1530), # where he stands before the flop
+    "nightstand": (945, 1360),      # floor centre; top surface y 1150
+    "nightstand_top_y": 1150,
+    "phone": (985, 1112),           # phone centre (docked upright, screen to camera)
+    "phone_screen": None,           # filled below: screen rect in world px
     "cam": {  # suggested framings: (cx, cy, zoom)
         "s01_open": (1735, 980, 1.12),
         "desk_medium": (1760, 1010, 1.7),
@@ -349,6 +361,10 @@ BEDROOM_MARKS = {
         "door_wide": (520, 1000, 1.0),
         "closet_bed": (980, 1050, 1.0),
         "tug": (760, 1030, 0.85),
+        "dawn_wide": (1180, 1040, 0.62),
+        "flop": (1300, 1080, 1.25),
+        "pillow_close": (1105, 1100, 2.8),   # his face on the pillow + the phone on the nightstand
+        "phone": (985, 1110, 5.0),
     },
 }
 
@@ -364,6 +380,8 @@ _q = BEDROOM_MARKS["monitor_quad"]
 BEDROOM_MARKS["monitor_rect"] = (min(p[0] for p in _q), min(p[1] for p in _q),
                                  max(p[0] for p in _q) - min(p[0] for p in _q),
                                  max(p[1] for p in _q) - min(p[1] for p in _q))
+BEDROOM_MARKS["phone_screen"] = (985 + props.PHONE_SCREEN[0] * 0.42, 1112 + props.PHONE_SCREEN[1] * 0.42,
+                                 props.PHONE_SCREEN[2] * 0.42, props.PHONE_SCREEN[3] * 0.42)
 
 
 class bedroom_monitor_space:
@@ -445,7 +463,8 @@ def _room_shell(c, W, H, CEIL, FLOOR, vp, wall, wall_sh, ceil, ceil_sh, floor, f
 _BD_EXT = (500, 800, 500, 800)
 
 
-def _bd_static(c, light_on=True):
+def _bd_static(c, light_on=True, light="day", sunrise=0.0):
+    dawn = light == "dawn"
     W, H = BEDROOM_W, BEDROOM_H
     CEIL, FLOOR = _BD_CEIL, _BD_FLOOR
     _room_shell(c, W, H, CEIL, FLOOR, _BD_VP, C["bd_wall"], C["bd_wall_sh"], C["bd_ceil"],
@@ -486,8 +505,9 @@ def _bd_static(c, light_on=True):
     curve(c, pts, "#4a4458", 3)
     for k, (x, y) in enumerate(pts):
         col = ["#ffd27a", "#ff9aac", "#9fd8f7", "#c9f29b"][k % 4]
-        _glow(c, x, y + 14, 34, col, 0.45)
-        ell(c, x, y + 12, 8, 11, col, 2.5)
+        if not dawn:
+            _glow(c, x, y + 14, 34, col, 0.45)
+        ell(c, x, y + 12, 8, 11, col if not dawn else mixc(col, "#6a5a70", 0.55), 2.5)
 
     # ---- door frame recess (the doorway opening is cleared at the end)
     dx, dt, dw, dh = _BD_DOOR
@@ -530,21 +550,24 @@ def _bd_static(c, light_on=True):
     c.save()
     c.rectangle(wx, wy, ww, wh)
     c.clip()
-    core.vgradient(c, "#8fd0f5", "#d2f0ff", wx, wy, ww, wh)
-    _cloud(c, wx + 110, wy + 80, 0.55)
-    _cloud(c, wx + 330, wy + 50, 0.4)
-    # houses across the street
-    _house_far(c, wx - 40, wy + 330, 200, 120, "#f2b6a0", "#7a6a9a", 1, 3)
-    _house_far(c, wx + 200, wy + 336, 230, 140, "#bfe0c0", "#c0453f", 2, 3)
-    _tree(c, wx + 170, wy + 340, 0.42, seed=4)
-    c.rectangle(wx, wy + 330, ww, 30)
-    core.fill(c, C["grass"])
-    c.rectangle(wx, wy + 356, ww, 60)
-    core.fill(c, C["road"])
-    line(c, [(wx, wy + 384), (wx + ww, wy + 384)], "#f3ead6", 4)
+    if dawn:
+        _bd_dawn_sky(c, wx, wy, ww, wh)
+    else:
+        core.vgradient(c, "#8fd0f5", "#d2f0ff", wx, wy, ww, wh)
+        _cloud(c, wx + 110, wy + 80, 0.55)
+        _cloud(c, wx + 330, wy + 50, 0.4)
+        # houses across the street
+        _house_far(c, wx - 40, wy + 330, 200, 120, "#f2b6a0", "#7a6a9a", 1, 3)
+        _house_far(c, wx + 200, wy + 336, 230, 140, "#bfe0c0", "#c0453f", 2, 3)
+        _tree(c, wx + 170, wy + 340, 0.42, seed=4)
+        c.rectangle(wx, wy + 330, ww, 30)
+        core.fill(c, C["grass"])
+        c.rectangle(wx, wy + 356, ww, 60)
+        core.fill(c, C["road"])
+        line(c, [(wx, wy + 384), (wx + ww, wy + 384)], "#f3ead6", 4)
     c.restore()
     # window light spill on the wall
-    _glow(c, wx + ww / 2, wy + wh / 2, 420, "#fff6d0", 0.28)
+    _glow(c, wx + ww / 2, wy + wh / 2, 420, "#fff6d0" if not dawn else "#ffc9a8", 0.28 if not dawn else 0.34)
     # sash + glass glints
     rect(c, wx, wy, ww, wh, None, 5)
     rect(c, wx - 6, wy + wh * 0.5 - 8, ww + 12, 16, C["trim"], 4)
@@ -574,7 +597,22 @@ def _bd_static(c, light_on=True):
         core.circle(c, kx, wy - 65, 16)
         fs(c, "#f2c14e", 4)
 
-    # ---- bed (headboard left)
+    # ---- (the bed is its own sprite: _bd_bed, so it can squash on a flop)
+    # ---- wall shelf above the desk (figurine is live)
+    _bd_shelf_desk_rug(c, light_on, dawn)
+    if dawn:
+        _bd_dawn_grade(c, sunrise)
+
+    # clear the doorway so the hallway (layer 'back') shows through
+    c.save()
+    c.set_operator(cairo.OPERATOR_CLEAR)
+    c.rectangle(dx, dt, dw, dh)
+    c.fill()
+    c.restore()
+
+
+def _bd_bed(c):
+    """The bed (headboard left), drawn around its own floor line (y 1460)."""
     bx, by, bw, bh = BEDROOM_MARKS["bed"]
     rect(c, bx, 1000, 50, 440, C["wood_sh"], 5, r=16)       # headboard post
     rect(c, bx + 4, 1010, 42, 30, C["wood_hi"], 0, r=10)
@@ -602,7 +640,8 @@ def _bd_static(c, light_on=True):
     # a dangling blanket corner
     blob(c, [(bx + 470, 1340), (bx + 560, 1350), (bx + 580, 1440), (bx + 520, 1430)], C["blanket"], 4.5)
 
-    # ---- wall shelf above the desk (figurine is live)
+
+def _bd_shelf_desk_rug(c, light_on, dawn):
     rect(c, 1790, 646, 290, 20, C["wood"], 4, r=4)
     for kx in (1820, 2050):
         polyf(c, [(kx, 666), (kx + 12, 666), (kx + 12, 700)], C["wood_sh"], 3)
@@ -610,7 +649,7 @@ def _bd_static(c, light_on=True):
     _plant(c, 1950, 646, 0.5, pot="#7fb2e8", seed=2)
 
     # ---- desk (right). Front-left leg also in fg (part 'desk').
-    _bd_desk_back(c)
+    _bd_desk_back(c, dawn)
 
     # posters/frames that never move are in the live layer (they tilt on shake)
     # ---- rug
@@ -620,22 +659,18 @@ def _bd_static(c, light_on=True):
     ell(c, 920, 1700, 250, 44, C["rug_sh"], 0)
 
     # hanging lamp glow (static; the lamp itself is live so it can swing)
-    if light_on:
+    if light_on and not dawn:
         core.radial_glow(c, 1440, 300, 230, "#ffe7a0", 0.30)
 
-    # clear the doorway so the hallway (layer 'back') shows through
-    c.save()
-    c.set_operator(cairo.OPERATOR_CLEAR)
-    c.rectangle(dx, dt, dw, dh)
-    c.fill()
-    c.restore()
 
-
-def _bd_rest(c, frame_state, with_laundry, light_on):
+def _bd_rest(c, frame_state, with_laundry, light_on, light="day"):
     """Cached overlay of the props that only move on shake: right sun patch,
     posters, picture frame, figurine, hanging lamp, laundry heap at rest."""
-    _sun_patch(c, [(1560, 520), (1810, 492), (1850, 1060), (1590, 1100)], 0.5)
-    _sun_patch(c, [(1580, 560), (1676, 549), (1692, 770), (1596, 784)], 0.22, "#ffffff")
+    if light == "dawn":
+        _sun_patch(c, [(1540, 640), (1880, 600), (1900, 860), (1560, 900)], 0.42, "#ffc29c")
+    else:
+        _sun_patch(c, [(1560, 520), (1810, 492), (1850, 1060), (1590, 1100)], 0.5)
+        _sun_patch(c, [(1580, 560), (1676, 549), (1692, 770), (1596, 784)], 0.22, "#ffffff")
     _bd_posters(c, 0.0, 0.0)
     _bd_frame(c, 0.0, frame_state)
     _bd_figurine(c, 0.0, 0.0)
@@ -647,13 +682,14 @@ def _bd_rest(c, frame_state, with_laundry, light_on):
 _BD_REST_RECT = (600, -10, 1740, 1780)
 
 
-def _bd_desk_back(c):
+def _bd_desk_back(c, dawn=False):
     # desk: top surface, apron, legs, PC tower, stuff on it
     x0, x1 = 1700, 2340
     top_back, top_front = 1076, 1110
-    # monitor glow on the wall (static) + desk lamp pool
-    _glow(c, 1960, 900, 380, "#bfe6ff", 0.35)
-    _glow(c, 2290, 980, 300, "#ffd27a", 0.40)
+    # monitor glow on the wall (static) + desk lamp pool (off at dawn)
+    _glow(c, 1960, 900, 380, "#bfe6ff", 0.35 if not dawn else 0.22)
+    if not dawn:
+        _glow(c, 2290, 980, 300, "#ffd27a", 0.40)
     # right leg + PC tower
     rect(c, x1 - 50, top_front + 30, 34, 1450 - top_front - 30, C["desk_sh"], 4.5)
     rect(c, 2090, 1180, 170, 270, "#2f2b3d", 5, r=10)
@@ -1042,10 +1078,140 @@ def _bd_dust(ctx, t, shake):
         core.fill(ctx, core.alpha("#fff7dc", shake * (1 - ph) * 0.9))
 
 
+def _bd_dawn_sky(c, wx, wy, ww, wh):
+    """Sunrise through the bedroom window: gold-pink sky, low sun, backlit houses."""
+    g = cairo.LinearGradient(0, wy, 0, wy + wh)
+    g.add_color_stop_rgba(0, *hexc("#a98bd0"))
+    g.add_color_stop_rgba(0.45, *hexc("#f5a3b5"))
+    g.add_color_stop_rgba(0.8, *hexc("#ffd29a"))
+    g.add_color_stop_rgba(1, *hexc("#ffe7b8"))
+    c.rectangle(wx, wy, ww, wh)
+    c.set_source(g)
+    c.fill()
+    core.radial_glow(c, wx + ww * 0.62, wy + 318, 260, "#fff2c8", 0.85)
+    core.circle(c, wx + ww * 0.62, wy + 318, 46)
+    core.fill(c, "#fff6dc")
+    for (cx_, cy_, s_) in ((wx + 100, wy + 90, 0.5), (wx + 300, wy + 150, 0.38)):
+        with core.saved(c, cx_, cy_, (s_, s_ * 0.6)):
+            core.circle(c, -60, 10, 42); core.circle(c, 0, -10, 58); core.circle(c, 62, 8, 44)
+            core.rrect(c, -100, 0, 200, 52, 26)
+            core.fill(c, "#ffc4c8")
+    _house_far(c, wx - 40, wy + 330, 200, 120, "#8a6a96", "#5e4a78", 1, 3)
+    _house_far(c, wx + 200, wy + 336, 230, 140, "#7d6690", "#584672", 2, 3)
+    rect(c, wx + 40, wy + 248, 26, 30, "#ffd27a", 0)
+    _tree(c, wx + 170, wy + 340, 0.42, seed=4, leafc="#5a5a7a", leaf_sh="#4a4a68")
+    c.rectangle(wx, wy + 330, ww, 30)
+    core.fill(c, "#6a7a6a")
+    c.rectangle(wx, wy + 356, ww, 60)
+    core.fill(c, "#7a6a80")
+    line(c, [(wx, wy + 384), (wx + ww, wy + 384)], "#d9b8a8", 4)
+
+
+def _bd_hall_lit(c, dawn):
+    _bd_hall(c)
+    if dawn:
+        dx, dt, dw, dh = _BD_DOOR
+        c.rectangle(dx - 12, dt - 12, dw + 24, dh + 24)
+        core.fill(c, core.alpha("#2b1d4a", 0.38))
+
+
+def _bd_bed_sq(c, squash):
+    """Bed sprite; squash 0..1 dips the mattress/blanket ~22 px (hinged at the rail)."""
+    if squash <= 0:
+        _bd_bed(c)
+        return
+    c.save()
+    c.translate(0, 1380)
+    c.scale(1.0, 1.0 - 0.09 * squash)
+    c.translate(0, -1380)
+    _bd_bed(c)
+    c.restore()
+
+
+_BD_NS = (945, 1360)            # nightstand floor centre
+_BD_PHONE = (985, 1112)         # phone centre (in its dock, screen facing us)
+_BD_PHONE_S = 0.42
+
+
+def _bd_nightstand(c, dawn):
+    x, fy = _BD_NS
+    top = 1166
+    rect(c, x - 82, top, 164, fy - top, C["wood_sh"], 5, r=6)
+    rect(c, x - 92, top - 16, 184, 22, C["wood"], 4.5, r=6)
+    rect(c, x - 66, top + 40, 132, 70, C["wood"], 4, r=5)
+    core.circle(c, x, top + 75, 7)
+    fs(c, "#f2c14e", 3)
+    rect(c, x - 66, top + 126, 132, 56, C["wood"], 4, r=5)
+    for lx in (x - 74, x + 62):
+        rect(c, lx, fy - 14, 12, 14, C["wood_dk"], 3)
+    # alarm clock "6:02"
+    rect(c, x - 76, top - 76, 74, 60, "#3a3550", 4, r=10)
+    rect(c, x - 70, top - 68, 62, 36, "#14121c", 0, r=6)
+    core.text(c, "6:02", x - 39, top - 40, 24, "#ff7a6a" if dawn else "#ffb0a0", "mono")
+    # little lamp (off at dawn)
+    line(c, [(x - 52, top - 76), (x - 52, top - 150)], INK, 9)
+    line(c, [(x - 52, top - 76), (x - 52, top - 150)], "#c9c6d4", 5)
+    polyf(c, [(x - 84, top - 150), (x - 20, top - 150), (x - 32, top - 196), (x - 72, top - 196)],
+          "#e8d7b8" if dawn else "#ffe9a6", 4)
+    # phone dock
+    polyf(c, [(x + 6, top - 16), (x + 74, top - 16), (x + 66, top - 34), (x + 14, top - 34)], "#2a2d3a", 4)
+
+
+def _bd_phone(ctx, t, phone_fn, on, buzz, dawn):
+    px, py = _BD_PHONE
+    s_ = _BD_PHONE_S
+
+    def scr(c, x, y, w, h, tt):
+        if phone_fn is not None:
+            phone_fn(c, x, y, w, h, tt)
+        else:
+            props._phone_lock(c, x, y, w, h, tt)
+    props.phone(ctx, px, py, s_, rot=0.04, t=t, screen_fn=scr, on=on, buzz=buzz, glow=0.5 if on else 0.0)
+
+
+def _bd_graded(c, dawn, k, draw_fn):
+    """(for bakes) draw_fn, then the dawn grade ATOP it (only where it drew)."""
+    if not dawn:
+        draw_fn(c)
+        return
+    c.push_group()
+    draw_fn(c)
+    c.set_operator(cairo.OPERATOR_ATOP)
+    _bd_dawn_grade(c, k, hole=False)
+    c.pop_group_to_source()
+    c.paint()
+
+
+def _bd_dawn_grade(ctx, sunrise=0.0, chars=False, hole=True):
+    """Dawn light: a cool dim over the room (window glass excluded) + soft
+    gold-pink sun beams across the bed and floor. sunrise grows it."""
+    k = clamp(sunrise)
+    vx0, vy0, vx1, vy1 = ctx.clip_extents()
+    wx, wy, ww, wh = _BD_WIN
+    ctx.save()
+    ctx.set_fill_rule(cairo.FILL_RULE_EVEN_ODD)
+    ctx.rectangle(vx0, vy0, vx1 - vx0, vy1 - vy0)
+    if not chars and hole:
+        ctx.rectangle(wx, wy, ww, wh)
+    core.fill(ctx, core.alpha("#2b1d4a", (0.27 if not chars else 0.20) * (1 - 0.45 * k)))
+    ctx.restore()
+    # warm sunrise glow spreading from the window
+    core.radial_glow(ctx, wx + ww * 0.6, wy + wh * 0.6, 1150, "#ffb08a", (0.13 + 0.09 * k) * (0.8 if chars else 1.0))
+    a = (0.22 + 0.12 * k) * (0.8 if chars else 1.0)
+    for (x0_, x1_, f0, f1) in ((wx + 30, wx + 190, 1130, 1500), (wx + 220, wx + 370, 1400, 1760)):
+        g = cairo.LinearGradient(wx, wy, x1_ + 500, 1700)
+        g.add_color_stop_rgba(0, 1.0, 0.82, 0.62, a)
+        g.add_color_stop_rgba(1, 1.0, 0.70, 0.66, 0.0)
+        core.poly(ctx, [(x0_, wy + 40), (x1_, wy + 40), (x1_ + 620, f1), (x0_ + 380, f1 + 60)])
+        ctx.set_source(g)
+        ctx.fill()
+
+
 def bedroom(ctx, t=0.0, layer="bg", door_open=0.0, closet_open=0.0, laundry=0.0,
             laundry_scattered=False, chair_spin=0.0, chair_empty=False, chair_dx=0.0,
             shake=0.0, frame_fallen=True, screen_fn=None, screen_on=True, game_speed=1.0,
-            light_on=True, parts=None):
+            light_on=True, parts=None, light="day", nightstand=None, phone_fn=None, phone_on=True,
+            phone_buzz=0.0, bed_squash=0.0, sunrise=0.0):
     """Tiredness's bedroom. World 2400 x 1920, people at s=0.75. See BEDROOM_MARKS.
 
     layer: "bg" (everything behind characters), "back" (only the hallway
@@ -1057,42 +1223,88 @@ def bedroom(ctx, t=0.0, layer="bg", door_open=0.0, closet_open=0.0, laundry=0.0,
     chair_empty, chair_dx, shake 0..1, frame_fallen (bool or 0..1 fall
     progress), screen_fn(ctx, t) draws into bedroom_monitor_space (default:
     props.monitor_game_screen), screen_on, game_speed, light_on.
+    Episode 2: light "day" | "dawn" (soft gold-pink sunrise in the window,
+    slightly dim room, lamps + string lights off, sun beams across the
+    bed; sunrise 0..1 grows the light in the final hold), nightstand (None
+    = only at dawn) by the bed with a clock and the docked phone (phone_fn
+    (ctx, x, y, w, h, t) draws its screen at BEDROOM_MARKS["phone_screen"];
+    phone_on, phone_buzz 0..1), bed_squash 0..1 (mattress dip for the
+    flop; animate with a bounce). layer "shade" (dawn light on the
+    characters, sets.shaded()).
     """
+    dawn = light == "dawn"
+    if dawn:
+        light_on = False
+    if nightstand is None:
+        nightstand = dawn
     W, H = BEDROOM_W, BEDROOM_H
     if layer in ("bg", "back"):
         dx, dt, dw, dh = _BD_DOOR
-        cached_or_live(ctx, "bedroom_hall", dx - 12, dt - 12, dw + 24, dh + 24, _bd_hall)
+        cached_or_live(ctx, ("bedroom_hall", light), dx - 12, dt - 12, dw + 24, dh + 24,
+                       lambda c: _bd_hall_lit(c, dawn))
         if layer == "back":
             return
     if layer in ("bg", "room"):
         e = _BD_EXT
         _overscan(ctx, -e[0], -e[1], W + e[2], H + e[3], C["bd_ceil"], C["wood"], C["bd_wall_sh"],
                   C["bd_wall_sh"])
-        static_layer(ctx, ("bedroom_room", bool(light_on)), -e[0], -e[1], W + e[0] + e[2], H + e[1] + e[3],
-                     lambda c: _bd_static(c, light_on))
-        _bd_door_casing(ctx)
-        _bd_door_panel(ctx, door_open)
-        _bd_closet_panel(ctx, closet_open)
-        # sun patch from the (off-screen) side window over the closet (live: panel moves)
-        _sun_patch(ctx, [(600, 640), (860, 610), (930, 1060), (660, 1110)], 0.22)
+        kq = round(clamp(sunrise) * 10) / 10 if dawn else 0.0
+        bsq = round(clamp(bed_squash), 3)
+        dop, cop = round(clamp(door_open), 3), round(clamp(closet_open), 3)
         fs_ = frame_fallen
         frame_rest = fs_ in (True, False, None) or float(fs_) in (0.0, 1.0)
         frame_state = bool(fs_) if frame_rest else None
         laundry_rest = laundry_scattered or laundry <= 0.0
-        if shake <= 0.0 and frame_rest:
-            lk = ("scattered" if laundry_scattered else "heap") if laundry_rest else None
-            cached_or_live(ctx, ("bedroom_rest", frame_state, lk, bool(light_on)), *_BD_REST_RECT,
-                           lambda c: _bd_rest(c, frame_state, lk, light_on))
-            if not laundry_rest:
-                _bd_laundry(ctx, t, laundry, laundry_scattered)
+        lk = ("scattered" if laundry_scattered else "heap") if laundry_rest else None
+        if dawn and shake <= 0.0 and frame_rest and laundry_rest and bsq == 0.0 and cop == 0.0:
+            # dawn at rest: room + bed + closet + nightstand + props in ONE bake
+            def merged(c):
+                _bd_static(c, light_on, light, kq)
+                _bd_graded(c, True, kq, lambda cc: (_bd_bed(cc), _bd_closet_panel(cc, 0.0)))
+                if nightstand:
+                    _bd_graded(c, True, kq, lambda cc: _bd_nightstand(cc, True))
+                _bd_graded(c, True, kq, lambda cc: _bd_rest(cc, frame_state, lk, light_on, light))
+            static_layer(ctx, ("bedroom_dawn_all", kq, bool(nightstand), frame_state, lk), -e[0], -e[1],
+                         W + e[0] + e[2], H + e[1] + e[3], merged)
+            sprite(ctx, ("bd_doorpanel", dop, kq), -40, 380, 860, 1060,
+                   lambda c: _bd_graded(c, True, kq, lambda cc: (_bd_door_casing(cc), _bd_door_panel(cc, dop))))
+            if nightstand:
+                _bd_phone(ctx, t, phone_fn, phone_on, phone_buzz, dawn)
         else:
-            _sun_patch(ctx, [(1560, 520), (1810, 492), (1850, 1060), (1590, 1100)], 0.5)
-            _sun_patch(ctx, [(1580, 560), (1676, 549), (1692, 770), (1596, 784)], 0.22, "#ffffff")
-            _bd_posters(ctx, t, shake)
-            _bd_frame(ctx, t, frame_fallen)
-            _bd_figurine(ctx, t, shake)
-            _bd_light(ctx, t, shake, light_on)
-            _bd_laundry(ctx, t, laundry, laundry_scattered)
+            static_layer(ctx, ("bedroom_room", bool(light_on), light, kq), -e[0], -e[1], W + e[0] + e[2],
+                         H + e[1] + e[3], lambda c: _bd_static(c, light_on, light, kq))
+            cached_or_live(ctx, ("bedroom_bed", bsq, light, kq), 1020, 980, 600, 490,
+                           lambda c: _bd_graded(c, dawn, kq, lambda cc: _bd_bed_sq(cc, bsq)))
+            if dawn:
+                sprite(ctx, ("bd_doorpanel", dop, kq), -40, 380, 860, 1060,
+                       lambda c: _bd_graded(c, True, kq, lambda cc: (_bd_door_casing(cc), _bd_door_panel(cc, dop))))
+                sprite(ctx, ("bd_closetpanel", cop, kq), 580, 550, 430, 790,
+                       lambda c: _bd_graded(c, True, kq, lambda cc: _bd_closet_panel(cc, cop)))
+            else:
+                _bd_door_casing(ctx)
+                _bd_door_panel(ctx, door_open)
+                _bd_closet_panel(ctx, closet_open)
+            # sun patch from the (off-screen) side window over the closet (live: panel moves)
+            if not dawn:
+                _sun_patch(ctx, [(600, 640), (860, 610), (930, 1060), (660, 1110)], 0.22)
+            if nightstand:
+                sprite(ctx, ("bedroom_nightstand", light, kq), 840, 960, 210, 420,
+                       lambda c: _bd_graded(c, dawn, kq, lambda cc: _bd_nightstand(cc, dawn)))
+                _bd_phone(ctx, t, phone_fn, phone_on, phone_buzz, dawn)
+            if shake <= 0.0 and frame_rest:
+                layer_blit(ctx, ("bedroom_rest", frame_state, lk, bool(light_on), light, kq), *_BD_REST_RECT,
+                           lambda c: _bd_graded(c, dawn, kq, lambda cc: _bd_rest(cc, frame_state, lk, light_on,
+                                                                                 light)))
+                if not laundry_rest:
+                    _bd_laundry(ctx, t, laundry, laundry_scattered)
+            else:
+                _sun_patch(ctx, [(1560, 520), (1810, 492), (1850, 1060), (1590, 1100)], 0.5)
+                _sun_patch(ctx, [(1580, 560), (1676, 549), (1692, 770), (1596, 784)], 0.22, "#ffffff")
+                _bd_posters(ctx, t, shake)
+                _bd_frame(ctx, t, frame_fallen)
+                _bd_figurine(ctx, t, shake)
+                _bd_light(ctx, t, shake, light_on)
+                _bd_laundry(ctx, t, laundry, laundry_scattered)
         if screen_on:
             with bedroom_monitor_space(ctx) as c:
                 if screen_fn is not None:
@@ -1104,7 +1316,12 @@ def bedroom(ctx, t=0.0, layer="bg", door_open=0.0, closet_open=0.0, laundry=0.0,
             core.fill(ctx, "#1b1d27")
         core.poly(ctx, BEDROOM_MARKS["monitor_quad"])
         core.stroke(ctx, INK, 4)
-        _bd_chair(ctx, chair_spin, chair_empty, chair_dx, "bg")
+        if dawn:
+            cs = (round(chair_spin, 3), bool(chair_empty), round(chair_dx, 1))
+            sprite(ctx, ("bd_chair", cs, kq), 1360 + chair_dx, 900, 540, 720,
+                   lambda c: _bd_graded(c, True, kq, lambda cc: _bd_chair(cc, cs[0], cs[1], cs[2], "bg")))
+        else:
+            _bd_chair(ctx, chair_spin, chair_empty, chair_dx, "bg")
         _bd_dust(ctx, t, shake)
         return
     if layer == "fg":
@@ -1117,6 +1334,9 @@ def bedroom(ctx, t=0.0, layer="bg", door_open=0.0, closet_open=0.0, laundry=0.0,
             _bd_desk_front(ctx)
         if "chair" in parts:
             _bd_chair(ctx, chair_spin, chair_empty, chair_dx, "fg")
+    elif layer == "shade":
+        if dawn:
+            _bd_dawn_grade(ctx, sunrise, chars=True)
 
 
 # ============================================================================
@@ -4347,8 +4567,12 @@ def blit(ctx, key, x0, y0, w, h, draw_fn, alpha=1.0, pad=4, clip=None):
         core._LAYERS.move_to_end(k)
     ctx.save()
     if clip is not None:
+        # pixel-aligned clip: each pixel belongs to exactly one tile / band, so
+        # neighbouring blits never leave a half-covered (seam) pixel line
+        ctx.set_antialias(cairo.ANTIALIAS_NONE)
         ctx.rectangle(*clip)
         ctx.clip()
+        ctx.set_antialias(cairo.ANTIALIAS_DEFAULT)
     ctx.translate(x0 - pad, y0 - pad)
     ctx.scale(1 / q, 1 / q)
     ctx.set_source_surface(surf, 0, 0)
@@ -4712,8 +4936,8 @@ _E = CATWALK_MARKS["pods"][0]
 CATWALK_MARKS["empty_pod"] = 0
 CATWALK_MARKS["empty_glass"] = _E["glass"]
 CATWALK_MARKS["paw_spot"] = (_E["x"] + 120, 1236)          # on the glass at creature paw height
-CATWALK_MARKS["creature_at_pod"] = (_E["x"] + 235, _CW_FEET)  # feet; faces LEFT to the glass
-CATWALK_MARKS["tired_at_pod"] = (_E["x"] + 560, _CW_FEET)
+CATWALK_MARKS["creature_at_pod"] = (_E["x"] + 222, _CW_FEET)  # feet; faces LEFT to the glass
+CATWALK_MARKS["tired_at_pod"] = (_E["x"] + 450, _CW_FEET)
 CATWALK_MARKS["fog_spot"] = (_E["x"] + 70, 1170)
 
 
@@ -5357,7 +5581,7 @@ SHAFT_LOWER_MARKS = {
     "grates": [(x, _SL_FEET - 40, w, 110) for (x, w) in _SL_GRATES],
     "exit": (_SL_EXIT[0], _SL_EXIT[1], _SL_EXIT[2], _SL_WALL - _SL_EXIT[1]),
     "exit_feet": (_SL_EXIT[0] + _SL_EXIT[2] / 2, _SL_WALL + 40),
-    "pipes": [(-900, 760, 4200, 95), (-900, 985, 4200, 70)],     # x, centre y, length, radius
+    "pipes": [(-900, 720, 4200, 125), (-900, 985, 4200, 80), (-900, 1238, 4200, 46)],   # x, centre y, length, r
     "lamps": _SL_LAMPS,
     "cam": {
         "wide": (1300, 1000, 0.6),
@@ -5410,7 +5634,7 @@ def _sl_wall(c):
 def _sl_pipes(c):
     x0, x1 = _SL_X0, _SL_X1
     for (px, py, L, r) in SHAFT_LOWER_MARKS["pipes"]:
-        col = "#3f6670" if r > 80 else "#4a6a62"
+        col = "#3f6670" if r > 100 else ("#4a6a62" if r > 60 else "#5a6a72")
         rect(c, px, py - r, L, 2 * r, col, 6)
         line(c, [(px, py - r * 0.55), (px + L, py - r * 0.55)], mixc(col, "#ffffff", 0.22), r * 0.22)
         line(c, [(px, py + r * 0.6), (px + L, py + r * 0.6)], mixc(col, INK, 0.3), r * 0.25)
@@ -5434,8 +5658,21 @@ def _sl_pipes(c):
     for (vx2, vr2) in ((2020, 46), (2130, 46)):
         rect(c, vx2 - vr2, -400, 2 * vr2, _SL_WALL - 30 + 400, "#4a6a62", 5)
         line(c, [(vx2 - vr2 * 0.4, -400), (vx2 - vr2 * 0.4, _SL_WALL - 40)], "#64867c", 8)
+    # a big elbow coming down from the main pipe into the floor (right) + a branch up (left)
+    ex, er = 2380, 110
+    rect(c, ex - er, 720, 2 * er, _SL_WALL - 720 - 40, "#3f6670", 6)
+    line(c, [(ex - er * 0.5, 760), (ex - er * 0.5, _SL_WALL - 50)], "#5d838c", 22)
+    rect(c, ex - er - 20, _SL_WALL - 80, 2 * er + 40, 46, "#2f4a52", 5, r=6)
+    rect(c, ex - er - 20, 850, 2 * er + 40, 36, "#2f4a52", 5, r=6)
+    rect(c, 250 - 60, -400, 120, 720 + 400 - 110, "#3f6670", 6)
+    line(c, [(250 - 30, -400), (250 - 30, 600)], "#5d838c", 14)
+    rect(c, 250 - 80, 560, 160, 36, "#2f4a52", 5, r=6)
+    # pipe saddles on the floor pipe
+    for k in range(7):
+        sx_ = -700 + k * 600
+        polyf(c, [(sx_ - 40, _SL_WALL), (sx_ + 40, _SL_WALL), (sx_ + 28, 1238), (sx_ - 28, 1238)], "#24383e", 4)
     # big red valve wheel + gauge on the main pipe
-    wx, wy = 1560, 760
+    wx, wy = 1560, 720
     core.circle(c, wx, wy, 86)
     core.stroke(c, INK, 20)
     core.circle(c, wx, wy, 86)
@@ -5446,10 +5683,10 @@ def _sl_pipes(c):
              "#b5544a", 9)
     core.circle(c, wx, wy, 18)
     fs(c, "#7a2f2a", 4)
-    core.circle(c, 760, 985 - 120, 44)
+    core.circle(c, 760, 985 - 140, 44)
     fs(c, "#e9eef2", 5)
-    line(c, [(760, 865), (782, 840)], INK, 4)
-    line(c, [(760, 985 - 70), (760, 985 - 76)], INK, 6)
+    line(c, [(760, 845), (782, 820)], INK, 4)
+    line(c, [(760, 985 - 80), (760, 985 - 96)], INK, 6)
     # junction box + cable tray
     rect(c, 560, 1060, 220, 160, "#34505a", 5, r=8)
     rect(c, 580, 1080, 180, 26, "#24404a", 0, r=4)
@@ -5544,6 +5781,14 @@ def _sl_crates(c, which="all"):
         for yy in (_SL_FEET - 170, _SL_FEET - 60):
             line(c, [(bx - 60, yy), (bx + 60, yy)], "#43553a", 6)
         props.crate(c, 470, _SL_FEET - 10, 1.0, w=220, h=170, kind="steel", stencil=None)
+        # pallet + a coiled hose by crate A, a small crate beside the stack
+        rect(c, 1730, _SL_FEET - 40, 260, 40, "#7d5d3c", 4.5)
+        for k in range(4):
+            rect(c, 1742 + k * 64, _SL_FEET - 34, 44, 28, "#5a4028", 0)
+        for k in range(3):
+            ell(c, 1860, _SL_FEET - 70 - k * 12, 110 - k * 12, 30, None, 9, sc="#c0453f")
+        ell(c, 1860, _SL_FEET - 70, 110, 30, None, 3, sc=INK)
+        props.crate(c, 2610, _SL_FEET, 1.0, w=240, h=200, kind="wood", stencil=None, seed=7)
 
 
 def _sl_exit(c, lit_sign=False):
@@ -6038,11 +6283,11 @@ def _tn_shade(c):
 CONTROL_W, CONTROL_H = 2100, 1920
 _CR2_X0, _CR2_X1, _CR2_Y0, _CR2_Y1 = -700, 2800, -700, 2620
 _CR2_CEIL, _CR2_WALL, _CR2_FEET = 260, 1300, 1500
-_CR2_HATCH = (70, 1060, 200, 240)          # x, top, w, h (bottom = wall base)
-_CR2_DOORS = (330, 480, 360, 820)          # x, top, w, h
-_CR2_READER = (740, 940)
-_CR2_WIN = (800, 380, 450, 420)            # observation window onto the shaft
-_CR2_RELEASE = (1025, _CR2_FEET)           # release_console floor anchor (s 0.75)
+_CR2_HATCH = (40, 700, 290, 600)           # x, top, w, h (bottom = wall base): duck through, no crawl
+_CR2_DOORS = (430, 480, 360, 820)          # x, top, w, h
+_CR2_READER = (845, 940)
+_CR2_WIN = (905, 380, 400, 420)            # observation window onto the shaft
+_CR2_RELEASE = (1105, _CR2_FEET)           # release_console floor anchor (s 0.75)
 _CR2_CHAIR = (1700, _CR2_FEET)             # boss_chair floor anchor (s 0.75)
 _CR2_PED = (1450, 1140)                    # LOCKDOWN pedestal: centre x, top surface y
 _CR2_DESK = (1320, 1110, 740)              # console desk x, top y, w
@@ -6051,7 +6296,7 @@ _CR2_MONS = ([(1340, 380 + r * 120, 130, 100) for r in range(3)] +
              [_CR2_MAIN] +
              [(1930, 380 + r * 120, 130, 100) for r in range(3)] +
              [(1340 + i * 182, 720, 170, 100) for i in range(4)])
-_CR2_BEACONS = [(240, _CR2_CEIL + 40), (1030, _CR2_CEIL + 40), (1830, _CR2_CEIL + 40)]
+_CR2_BEACONS = [(300, _CR2_CEIL + 40), (1100, _CR2_CEIL + 40), (1830, _CR2_CEIL + 40)]
 _CR2_S = 0.75
 
 
@@ -6070,15 +6315,16 @@ CONTROL_MARKS = {
     "door_feet": (_CR2_DOORS[0] + _CR2_DOORS[2] / 2, _CR2_FEET),
     "reader": _CR2_READER,
     "hatch": _CR2_HATCH,
-    "hatch_feet": (_CR2_HATCH[0] + _CR2_HATCH[2] / 2, _CR2_FEET),     # Emb holding it open (beside: +170)
-    "hatch_hold": (_CR2_HATCH[0] + _CR2_HATCH[2] + 20, _CR2_HATCH[1] + 60),
+    "hatch_feet": (_CR2_HATCH[0] + _CR2_HATCH[2] / 2, _CR2_FEET),     # running through it
+    "hatch_hold_feet": (_CR2_HATCH[0] + _CR2_HATCH[2] + 150, _CR2_FEET),  # Emb beside it, holding it open
+    "hatch_hold": (_CR2_HATCH[0] + _CR2_HATCH[2] + 40, _CR2_HATCH[1] + 260),   # hand on the frame
     "release": _CR2_RELEASE,          # props.release_console(x, y, 0.75, ...)
     "release_handle_up": props.release_console_handle(*_CR2_RELEASE, _CR2_S, 0.0),
     "release_handle_down": props.release_console_handle(*_CR2_RELEASE, _CR2_S, 1.0),
     "release_impact": props.release_console_impact(*_CR2_RELEASE, _CR2_S),
     "release_floor_y": _CR2_FEET,     # shards land here
-    "smash_feet": (_CR2_RELEASE[0] + 250, _CR2_FEET),    # Tiredness right of the case, facing LEFT
-    "haul_feet": (_CR2_RELEASE[0] + 170, _CR2_FEET),
+    "smash_feet": (_CR2_RELEASE[0] - 250, _CR2_FEET),    # Tiredness LEFT of the case, facing RIGHT
+    "haul_feet": (_CR2_RELEASE[0] - 165, _CR2_FEET),     # (the Boss stays across the room)
     "chair": _CR2_CHAIR,              # props.boss_chair(x, y, 0.75, turn)
     "boss_seat": (_CR2_CHAIR[0], _CR2_FEET - props.BOSS_CHAIR_SEAT * _CR2_S),
     "pedestal": _CR2_PED,
@@ -6090,12 +6336,12 @@ CONTROL_MARKS = {
         "s01_boss": (1640, 960, 1.15),      # the Boss's chair back against the monitors
         "monitor_main": (1700, 520, 2.6),
         "switch": (1420, 1260, 3.0),
-        "doors": (510, 1000, 0.95),
+        "doors": (610, 1000, 0.95),
         "chair": (1640, 1060, 1.35),
-        "release": (1080, 1000, 1.45),
-        "release_close": (1025, 900, 2.6),
-        "button": (1470, 1110, 2.8),
-        "hatch": (260, 1150, 1.3),
+        "release": (1020, 1000, 1.45),
+        "release_close": (1105, 900, 2.6),
+        "button": (1450, 1230, 2.6),
+        "hatch": (300, 1080, 1.1),
         "two_shot": (1350, 1060, 0.85),
     },
 }
@@ -6163,44 +6409,55 @@ _CR2_FEEDS = [("catwalk", "CAM 02"), ("tunnel", "CAM 14"), ("graph", "PWR"), ("c
 
 
 def _cr2_window_view(c, x, y, w, h, shutters=0.0, joy_open=True):
-    """Default view through the observation window: down into the shaft."""
+    """Default view through the observation window: down into the shaft
+    (curved tiers of glowing pods on ledges, the tiny JOY pod bottom-centre)."""
     c.save()
     c.rectangle(x, y, w, h)
     c.clip()
     g = cairo.LinearGradient(0, y, 0, y + h)
-    g.add_color_stop_rgba(0, *hexc("#071820"))
-    g.add_color_stop_rgba(1, *hexc("#0f3a40"))
+    g.add_color_stop_rgba(0, *hexc("#06141b"))
+    g.add_color_stop_rgba(1, *hexc("#11404a"))
     c.rectangle(x, y, w, h)
     c.set_source(g)
     c.fill()
     cx = x + w / 2
     sh = clamp(shutters)
-    for r in range(7):
-        yy = y + h * (0.12 + 0.13 * r)
-        rr = w * (0.7 - 0.06 * r)
-        n = 9 - r // 2
+    rows = []
+    for r in range(6):
+        f = r / 5.0
+        yy = y + h * (0.10 + 0.17 * r)
+        rr = w * (0.62 + 0.18 * f)
+        sag = h * (0.05 + 0.05 * f)
+        n = 7 + r // 2
+        pw_, ph_ = w * (0.040 + 0.022 * f), h * (0.070 + 0.040 * f)
+        pts = []
         for k in range(n):
-            a = math.pi * (0.12 + 0.76 * k / (n - 1))
-            px = cx - math.cos(a) * rr
-            py = yy + math.sin(a) * h * 0.06
-            pw_, ph_ = w * (0.05 - 0.003 * r), h * (0.075 - 0.004 * r)
+            u = (k + 0.5) / n
+            px = cx + (u - 0.5) * 2 * rr * 0.62
+            py = yy + sag * (1 - (2 * u - 1) ** 2)
+            pts.append((px, py))
+        rows.append((pts, pw_, ph_, yy, rr, sag))
+        # ledge arc under the row
+        lp = [(cx + (u / 20 - 0.5) * 2 * rr * 0.7, yy + ph_ * 0.6 + sag * (1 - (2 * u / 20 - 1) ** 2))
+              for u in range(21)]
+        line(c, lp, mixc("#1d4f5a", "#4f8f98", f), 2 + 3 * f)
+    for ri, (pts, pw_, ph_, yy, rr, sag) in enumerate(rows):
+        for (px, py) in pts:
             core.rrect(c, px - pw_ / 2, py - ph_ / 2, pw_, ph_, pw_ / 2)
-        core.fill(c, mixc("#1b6f72", "#3ff2e0", 0.8 - 0.07 * r))
-    core.radial_glow(c, cx, y + h * 0.65, w * 0.6, PAL["power"], 0.25)
+        core.fill(c, mixc("#1b6f72", "#3ff2e0", 0.45 + 0.1 * ri))
+    core.radial_glow(c, cx, y + h * 0.7, w * 0.6, PAL["power"], 0.22)
+    # the tiny JOY pod, bottom centre
+    jx, jy = cx, y + h * 0.93
+    core.rrect(c, jx - w * 0.025, jy - h * 0.04, w * 0.05, h * 0.08, w * 0.025)
+    fs(c, "#7ffff2", 2)
     if sh > 0:
-        for r in range(7):
-            yy = y + h * (0.12 + 0.13 * r)
-            rr = w * (0.7 - 0.06 * r)
-            n = 9 - r // 2
-            for k in range(n):
-                if joy_open and r == 6 and k == n // 2:
-                    continue
-                a = math.pi * (0.12 + 0.76 * k / (n - 1))
-                px = cx - math.cos(a) * rr
-                py = yy + math.sin(a) * h * 0.06
-                pw_, ph_ = w * (0.05 - 0.003 * r) * 1.3, h * (0.075 - 0.004 * r) * 1.2
-                c.rectangle(px - pw_ / 2, py - ph_ / 2, pw_, ph_ * sh)
-        core.fill(c, "#56646f")
+        for ri, (pts, pw_, ph_, yy, rr, sag) in enumerate(rows):
+            for (px, py) in pts:
+                c.rectangle(px - pw_ * 0.65, py - ph_ * 0.62, pw_ * 1.3, ph_ * 1.24 * sh)
+        if not joy_open:
+            c.rectangle(jx - w * 0.033, jy - h * 0.05, w * 0.066, h * 0.1 * sh)
+        core.fill(c, "#56646f", preserve=True)
+        core.stroke(c, INK, 1.5)
     c.restore()
 
 
@@ -6211,12 +6468,26 @@ def _cr2_static(c):
     core.fill(c, "#0a0f17")
     for k in range(-2, 9):
         rect(c, k * 320 + 40, _CR2_CEIL - 50, 220, 14, "#141c28", 3, sc="#0a0f17", r=5)
-    c.rectangle(x0, _CR2_CEIL, x1 - x0, _CR2_WALL - _CR2_CEIL)
+    c.rectangle(x0, _CR2_CEIL, x1 - x0, _CR2_WALL - _CR2_CEIL + 24)
     core.fill(c, "#121b27")
     for xx in range(int(x0), int(x1), 210):
         line(c, [(xx, _CR2_CEIL), (xx, _CR2_WALL)], "#0e1620", 4)
     rect(c, x0, 1000, x1 - x0, 12, PAL["hush_dk"], 0)
     rect(c, x0, _CR2_CEIL, x1 - x0, 22, "#1a2432", 4)
+    # cable tray + conduits along the top of the wall
+    rect(c, x0, 300, x1 - x0, 18, "#1b2431", 3.5)
+    for k in range(int((x1 - x0) / 140)):
+        line(c, [(x0 + k * 140, 318), (x0 + k * 140, 334)], "#1b2431", 4)
+    # CONTROL sign + logo above the entrance
+    ddx_, ddt_, ddw_, _ = _CR2_DOORS
+    lx_, ly_ = ddx_ + ddw_ / 2, 360
+    rect(c, lx_ - 170, ly_ - 48, 340, 84, "#0f1620", 4.5, r=10)
+    hush_logo(c, lx_ - 118, ly_ - 6, 26, color=PAL["hush_dk"], hole="#0f1620", lw=0)
+    spaced_text(c, "CONTROL", lx_ + 28, ly_ + 8, 34, "#5fa8a8", "ui", 0.2)
+    # wall panels with faint vents between the openings
+    for vx_ in (360, 820):
+        for k in range(5):
+            line(c, [(vx_ - 18, 560 + k * 26), (vx_ + 18, 560 + k * 26)], "#0b1119", 6)
     # monitor wall housing
     mx0, mx1 = 1320, 2075
     rect(c, mx0 - 20, 355, mx1 - mx0 + 40, 485, "#0b1119", 5, r=8)
@@ -6265,12 +6536,13 @@ def _cr2_static(c):
         line(c, [(x0, yy), (x1, yy)], "#121a26", 3)
     c.rectangle(x0, _CR2_WALL, x1 - x0, 22)
     core.fill(c, core.alpha("#000000", 0.4))
-    c.save()
-    c.rectangle(x0, _CR2_WALL + 4, x1 - x0, y1 - _CR2_WALL)
-    c.clip()
-    rect(c, mx0 - 10, _CR2_WALL + 30, mx1 - mx0 + 20, 260, (0.35, 0.85, 1.0, 0.10), 0)
-    rect(c, wx, _CR2_WALL + 30, ww, 220, (0.25, 0.95, 0.88, 0.08), 0)
-    c.restore()
+    for (rx0, rw, col, a) in ((mx0 - 10, mx1 - mx0 + 20, (0.35, 0.85, 1.0), 0.12), (wx, ww, (0.25, 0.95, 0.88), 0.10)):
+        g = cairo.LinearGradient(0, _CR2_WALL + 20, 0, _CR2_WALL + 320)
+        g.add_color_stop_rgba(0, col[0], col[1], col[2], a)
+        g.add_color_stop_rgba(1, col[0], col[1], col[2], 0.0)
+        c.rectangle(rx0, _CR2_WALL + 20, rw, 300)
+        c.set_source(g)
+        c.fill()
     # LOCKDOWN pedestal (button + switch are live)
     px, pt = _CR2_PED
     polyf(c, [(px - 110, _CR2_FEET), (px + 110, _CR2_FEET), (px + 90, pt + 20), (px - 90, pt + 20)], "#1f2834", 5)
@@ -6538,3 +6810,141 @@ def _cr2_shade(c):
     core.radial_glow(c, 1700, 620, 1000, "#5fd8ff", 0.26)
     wx, wy, ww, wh = _CR2_WIN
     core.radial_glow(c, wx + ww / 2, wy + wh, 650, PAL["power"], 0.18)
+
+
+# ============================================================================
+# 17. POD POV (Episode 2 s01 frame 0): looking OUT through the empty pod's glass
+# ============================================================================
+POD_POV_W, POD_POV_H = 1080, 1920
+_PP_GLASS = (70, 150, 940, 1640)           # capsule-shaped glass opening (screen = world at zoom 1)
+POD_POV_MARKS = {
+    "size": (POD_POV_W, POD_POV_H),
+    "glass": _PP_GLASS,
+    "face": (540, 890),        # where Curiosity's face reads best (draw it at s ~2.6, BEHIND the fg glass)
+    "creature_sit_feet": (368, 1500),   # draw_specimen(pose="sit", s=2.6, face=0) puts its head at "face"
+    "paw": (770, 1080),        # paw pressed on the glass
+    "fog": (630, 975),         # breath fog spot in front of its nose
+    "deck_y": 1700,            # the catwalk deck behind/below it (its feet, if shown)
+    "cam": {"default": (540, 960, 1.0), "push": (560, 900, 1.12)},
+}
+
+
+def _pp_capsule(c, inset=0.0):
+    x, y, w, h = _PP_GLASS
+    core.rrect(c, x + inset, y + inset, w - 2 * inset, h - 2 * inset, (w - 2 * inset) / 2)
+
+
+def _pp_bg(c):
+    """Beyond the glass: the lit shaft (far wall of pods, logo), the catwalk rail."""
+    W, H = POD_POV_W, POD_POV_H
+    g = cairo.LinearGradient(0, -300, 0, H + 300)
+    g.add_color_stop_rgba(0, *hexc("#0a2730"))
+    g.add_color_stop_rgba(0.5, *hexc("#15505a"))
+    g.add_color_stop_rgba(1, *hexc("#0d3a42"))
+    c.rectangle(-300, -300, W + 600, H + 600)
+    c.set_source(g)
+    c.fill()
+    # far wall across the shaft: curved tiers of pods (soft, low contrast, like depth of field)
+    for r in range(6):
+        yy = 120 + r * 230
+        sag = 70 + 8 * r
+        n = 6
+        for k in range(n + 2):
+            u = (k - 0.5 + 0.5 * (r % 2)) / n
+            px = -120 + u * (W + 240)
+            py = yy + sag * (1 - (2 * u - 1) ** 2)
+            core.radial_glow(c, px, py, 120, "#7ff6ec", 0.16)
+            core.rrect(c, px - 42, py - 66, 84, 132, 42)
+        core.fill(c, mixc("#1d6e74", "#5ff5e8", 0.42 + 0.03 * r))
+        lp = [(-150 + i * (W + 300) / 20, yy + 80 + sag * (1 - (2 * (i / 20) - 1) ** 2)) for i in range(21)]
+        line(c, lp, "#22606a", 8)
+    hush_logo(c, 540, 260, 110, color="#2a7f7c", hole="#123e46", lw=0)
+    core.radial_glow(c, 540, 880, 760, "#c9fff8", 0.34)
+    # haze bands
+    for (hy, hh, a) in ((600, 300, 0.10), (1250, 380, 0.14)):
+        gh = cairo.LinearGradient(0, hy - hh / 2, 0, hy + hh / 2)
+        gh.add_color_stop_rgba(0, 0.6, 1.0, 0.96, 0)
+        gh.add_color_stop_rgba(0.5, 0.6, 1.0, 0.96, a)
+        gh.add_color_stop_rgba(1, 0.6, 1.0, 0.96, 0)
+        c.rectangle(-300, hy - hh / 2, W + 600, hh)
+        c.set_source(gh)
+        c.fill()
+    # catwalk railing behind the creature + the deck
+    for k in range(-1, 8):
+        px = 40 + k * 170
+        line(c, [(px, 1240), (px, 1700)], INK, 16)
+        line(c, [(px, 1240), (px, 1700)], "#7fa0ac", 9)
+    for (yy, w_) in ((1240, 18), (1470, 12)):
+        line(c, [(-300, yy), (W + 300, yy)], INK, w_ + 8)
+        line(c, [(-300, yy), (W + 300, yy)], "#a9c6cf", w_)
+    c.rectangle(-300, 1700, W + 600, 900)
+    core.fill(c, "#4a6e7a")
+    for k in range(-6, 14):
+        line(c, [(k * 110, 1700), (540 + (k * 110 - 540) * 2.2, 2300)], "#3b5a66", 5)
+
+
+def _pp_fg(c):
+    """The empty pod around us: dark rim + glass (tint, glare, old scratches)."""
+    W, H = POD_POV_W, POD_POV_H
+    x, y, w, h = _PP_GLASS
+    # glass tint + glare streaks + scratches (seen from inside)
+    c.save()
+    _pp_capsule(c)
+    c.clip()
+    c.rectangle(x, y, w, h)
+    core.fill(c, (0.6, 1.0, 0.95, 0.07))
+    for (gx, gw_, a) in ((160, 70, 0.16), (260, 26, 0.12), (820, 40, 0.10)):
+        core.poly(c, [(gx, y), (gx + gw_, y), (gx + gw_ - 160, y + h), (gx - 160, y + h)])
+        core.fill(c, (1, 1, 1, a))
+    for k in range(3):
+        curve(c, [(250 + k * 26, 1380), (238 + k * 26, 1470), (256 + k * 26, 1560)], (0.9, 1.0, 1.0, 0.18), 5)
+    c.restore()
+    # the pod interior around the glass (dark teal metal, lit by the pod light)
+    c.save()
+    c.set_fill_rule(cairo.FILL_RULE_EVEN_ODD)
+    c.rectangle(-300, -300, W + 600, H + 600)
+    _pp_capsule(c)
+    g = cairo.RadialGradient(540, 960, 400, 540, 960, 1300)
+    g.add_color_stop_rgba(0, *hexc("#2f7d84"))
+    g.add_color_stop_rgba(1, *hexc("#0c2a30"))
+    c.set_source(g)
+    c.fill()
+    c.restore()
+    _pp_capsule(c, -14)
+    core.stroke(c, "#5d9aa2", 22)
+    _pp_capsule(c, -2)
+    core.stroke(c, INK, 7)
+    _pp_capsule(c, -30)
+    core.stroke(c, INK, 4)
+    for (bx, by) in ((60, 700), (60, 1300), (1020, 700), (1020, 1300)):
+        core.circle(c, bx, by, 9)
+        fs(c, "#1c4a52", 3)
+
+
+def pod_pov(ctx, t=0.0, layer="bg", fog=0.0, fog_xy=None, glow=1.0):
+    """Looking OUT from inside Curiosity's empty pod through its glass
+    (world 1080 x 1920 = the frame at zoom 1): the thumbnail / frame 0 of
+    s01. Draw Curiosity BETWEEN "bg" and "fg" (face at POD_POV_MARKS["face"],
+    s ~2.4-3, its paw at "paw"): bg = the lit shaft beyond (bright teal, far
+    pods, the catwalk railing), fg = the glass (tint, glare, old claw
+    scratches) framed by the pod's dark rim. fog 0..1 = breath fog on the
+    glass at fog_xy (default "fog"): a soft pale disc with a few droplets.
+    layer "shade" = the pod's teal light on the creature's face (front
+    light; use with sets.shaded()). glow scales that light.
+    """
+    if layer == "bg":
+        static_layer(ctx, "pod_pov_bg", -300, -300, POD_POV_W + 600, POD_POV_H + 600, _pp_bg)
+    elif layer == "fg":
+        if fog > 0.003:
+            fx, fy = fog_xy or POD_POV_MARKS["fog"]
+            f = clamp(fog)
+            core.radial_glow(ctx, fx, fy, 150 * (0.7 + 0.3 * f), "#f2fffd", 0.70 * f)
+            for k in range(7):
+                a_ = k / 7 * TAU + 0.4
+                rr = 70 + 30 * hash01(k, 3)
+                core.circle(ctx, fx + math.cos(a_) * rr, fy + math.sin(a_) * rr * 0.8, 4 + 3 * hash01(k, 4))
+            core.fill(ctx, core.alpha("#ffffff", 0.45 * f))
+        cached_or_live(ctx, "pod_pov_fg", -300, -300, POD_POV_W + 600, POD_POV_H + 600, _pp_fg)
+    elif layer == "shade":
+        core.radial_glow(ctx, 540, 900, 900, PAL["power"], 0.32 * glow)
+        core.radial_glow(ctx, 540, 860, 420, "#e9fffd", 0.18 * glow)

@@ -1012,14 +1012,15 @@ BUTTON_OFFSET = (150, -470)
 
 
 def containment_pod(ctx, x, y, s=1.0, t=0.0, sleeper_fn=None, seed=0, glow=1.0, pulse=None,
-                    lit=True):
+                    lit=True, label=None, sub=None, dust=0.0):
     """Standalone containment pod for close-ups. ANCHOR = centre of the glass.
 
     ~420 x 760 at s=1 (glass 300 x 560). Teal liquid glow (power colour),
     metal caps, tubes, a few bubbles. sleeper_fn(ctx, x, y, s, t, seed) is
     called inside the glass at the sleeper's centre (s = this pod's s * 0.9);
     without it a dim curled silhouette is drawn. pulse: glow multiplier
-    (None -> slow 0.25 Hz breathing pulse from t).
+    (None -> slow 0.25 Hz breathing pulse from t). label (+ sub, dust):
+    a nameplate on the bottom cap (see nameplate()).
     """
     if pulse is None:
         pulse = 0.85 + 0.15 * math.sin(t * TAU * 0.25 + seed)
@@ -1062,9 +1063,12 @@ def containment_pod(ctx, x, y, s=1.0, t=0.0, sleeper_fn=None, seed=0, glow=1.0, 
         for cy, hh in ((-330, 90), (240, 100)):
             rect(ctx, -190, cy, 380, hh, "#4a5868", 7, r=26)
             line(ctx, [(-160, cy + hh * 0.5), (160, cy + hh * 0.5)], "#6b7a8c", 6)
-        for k in range(3):
-            core.circle(ctx, -60 + k * 60, 300, 9)
-            fs(ctx, pw if lit else "#3b4757", 3)
+        if label:
+            nameplate(ctx, 0, 290, 0.78, text=label, sub=sub, dust=dust, seed=seed)
+        else:
+            for k in range(3):
+                core.circle(ctx, -60 + k * 60, 300, 9)
+                fs(ctx, pw if lit else "#3b4757", 3)
 
 
 def sleeper_silhouette(ctx, x, y, s=1.0, t=0.0, seed=0, color="#123a44"):

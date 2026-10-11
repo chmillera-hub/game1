@@ -873,7 +873,7 @@ CYCLES.update({
     "haul_strain": (0.36, "haul", P(lean=W(-0.3, 0.02, 0.0), tilt=W(0.05, 0.025, 0.25), dx=W(0, 2.0, 0.5),
                                     hunch=W(0.85, 0.05, 0.1), nod=W(0.12, 0.02, 0.4))),
     # small bent-elbow wave at chest height (palm out)
-    "wave_small": (0.7, "stand", P(A("r", 0.3, 0.52, 1.55, W(-0.5, 0.28, 0.0), W(0.0, 0.25, 0.1),
+    "wave_small": (0.7, "stand", P(A("r", 0.22, 0.62, 2.2, W(-0.55, 0.3, 0.0), W(0.0, 0.25, 0.1),
                                      h="open", tf=-1.0),
                                    A("l", 0.02, 0.06, 0.18), tilt=W(0.05, 0.02, 0.0), hunch=0.3,
                                    side=-0.02)),
@@ -1318,8 +1318,9 @@ def _solve(C, Q, who, turn, t, fx, headphones, lag_Q=None, reach=None):
             E3 = _lerp3(E3, Ei, ik)
             W3 = _lerp3(W3, Wi, ik)
         rc_ = reach.get(s_) if reach else None
+        r_ang = None
         if rc_ is not None and rc_[2] > 0.001:
-            E3, W3 = _reach_ik(C, Q, s_, sgn, S3, E3, W3, rc_, proj, lift)
+            E3, W3, r_ang = _reach_ik(C, Q, s_, sgn, S3, E3, W3, rc_, proj, lift)
         Ep, Wp = proj(E3), proj(W3)
         if ik > 0.001:
             dxp, dyp = Wp[0] - Ep[0], Wp[1] - Ep[1]
@@ -1331,11 +1332,7 @@ def _solve(C, Q, who, turn, t, fx, headphones, lag_Q=None, reach=None):
             wa = Q[f"a{s_}_wa"]
             abs_ang = wa if fdir > 0 else math.pi - wa
             ang = _ang_lerp(ang, abs_ang, wabs)
-        if rc_ is not None and rc_[2] > 0.001:
-            if rc_[3] is not None:
-                r_ang = rc_[3]
-            else:
-                r_ang = math.atan2(Wp[1] - Ep[1], Wp[0] - Ep[0])
+        if r_ang is not None:
             ang = _ang_lerp(ang, r_ang, rc_[2])
         a["E3f"], a["W3f"] = E3, W3
         a["E2"], a["W2"], a["ang"], a["zE"], a["zW"] = (Ep[0], Ep[1]), (Wp[0], Wp[1]), ang, Ep[2], Wp[2]
@@ -1347,8 +1344,11 @@ def _solve(C, Q, who, turn, t, fx, headphones, lag_Q=None, reach=None):
 def _reach_ik(C, Q, s_, sgn, S3, E3, W3, rc, proj, lift):
     """World-space reach: put the hand's GRIP point on the rig-local 2D target (x, y).
 
-    The depth is kept near the pose's own hand depth (clamped so the arm can reach), the
-    target is clamped to the arm length, elbows bend naturally via the pose's `bend` pole."""
+    The hand points along the shoulder -> target line unless an angle is given (the wrist
+    bends as needed), so the grip lands exactly on reachable targets.  The depth is kept near
+    the pose's own hand depth (clamped so the arm can reach), unreachable targets are
+    clamped to the arm length, and elbows bend naturally via the pose's `bend` pole.
+    Returns (E3, W3, hand angle)."""
     tx, ty, w, rang = rc
     L1, L2 = C["arm"]
     Lmax = (L1 + L2) * 0.985
@@ -1360,28 +1360,19 @@ def _reach_ik(C, Q, s_, sgn, S3, E3, W3, rc, proj, lift):
     gx_, gy_ = hv[2] * hv[0] * hs, ys * hv[3] * hs      # grip offset in the hand frame
     bend = Q[f"a{s_}_bend"]
     pole = (sgn * 0.6 * bend, 0.75, -0.5 + 0.4 * max(0.0, -bend))
-    dx, dy = tx - Sp[0], ty - Sp[1]
-    a0 = rang if rang is not None else math.atan2(dy, dx)
+    a0 = rang if rang is not None else math.atan2(ty - Sp[1], tx - Sp[0])
     wx = tx - (math.cos(a0) * gx_ - math.sin(a0) * gy_)
     wy = ty - (math.sin(a0) * gx_ + math.cos(a0) * gy_)
-    Ei = Wi = None
-    for _ in range(2):
-        ddx, ddy = wx - Sp[0], wy - Sp[1]
-        dd = math.hypot(ddx, ddy)
-        if dd > Lmax:
-            wx, wy = Sp[0] + ddx * Lmax / dd, Sp[1] + ddy * Lmax / dd
-            zt = Sp[2]
-        else:
-            rem = math.sqrt(Lmax * Lmax - dd * dd)
-            zt = Sp[2] + clamp(Wp0[2] - Sp[2], -0.7 * rem, 0.7 * rem)
-        Ei, Wi = _ik3(S3, lift(wx, wy, zt), L1, L2, pole)
-        if rang is not None:
-            break
-        Ep_, Wp_ = proj(Ei), proj(Wi)
-        a1 = math.atan2(Wp_[1] - Ep_[1], Wp_[0] - Ep_[0])
-        wx = tx - (math.cos(a1) * gx_ - math.sin(a1) * gy_)
-        wy = ty - (math.sin(a1) * gx_ + math.cos(a1) * gy_)
-    return _lerp3(E3, Ei, w), _lerp3(W3, Wi, w)
+    ddx, ddy = wx - Sp[0], wy - Sp[1]
+    dd = math.hypot(ddx, ddy)
+    if dd > Lmax:
+        wx, wy = Sp[0] + ddx * Lmax / dd, Sp[1] + ddy * Lmax / dd
+        zt = Sp[2]
+    else:
+        rem = math.sqrt(Lmax * Lmax - dd * dd)
+        zt = Sp[2] + clamp(Wp0[2] - Sp[2], -0.7 * rem, 0.7 * rem)
+    Ei, Wi = _ik3(S3, lift(wx, wy, zt), L1, L2, pole)
+    return _lerp3(E3, Ei, w), _lerp3(W3, Wi, w), a0
 
 
 def _cup_positions(C, J, hp):
@@ -1601,8 +1592,9 @@ def _draw_leg(ctx, C, col, g, inkw, other=None, k0=0.0):
     rr = C["leg_r"]
     pk = clamp(1.0 + g["knee"][2] * 0.0012, 0.9, 1.25)
     sf = g.get("sf", 0.0)
-    rr = (rr[0] * (1.0 - 0.16 * sf), rr[1] * pk, rr[2] * clamp(1.0 + g["ankle"][2] * 0.0012, 0.9, 1.2))
-    rp = rr[0] * (1.05 - 0.12 * sf)
+    rr = (rr[0] * (1.0 - 0.18 * sf), rr[1] * pk, rr[2] * clamp(1.0 + g["ankle"][2] * 0.0012, 0.9, 1.2))
+    rp = rr[0] * (1.05 - 0.14 * sf)
+    k0 = max(k0, 0.13 * sf)       # flexed hips: the thigh tube starts a little toward the knee
 
     def build(d):
         _leg_path(ctx, C, g, rr, k0, d)
@@ -2085,16 +2077,19 @@ def _torso_overlay(ctx, C, col, J, lv, top, inkw, t):
         _fs(ctx, PAL["hush"], 2)
         ctx.rectangle(b[0] - 10, b[1] - 2, 20, 18)
         _fs(ctx, "#c9d2da", 2)
-    elif top == "suit":
+    far_r = J["turn"] > 1.25      # near profile: far-chest details are out of sight (Ep2)
+    if top == "suit":
         pin = _front(lv, "chest", 34, 26)
-        circle(ctx, pin[0], pin[1], 5.5)
-        _fs(ctx, PAL["hush"], 2.5)
+        if not far_r:
+            circle(ctx, pin[0], pin[1], 5.5)
+            _fs(ctx, PAL["hush"], 2.5)
     elif top == "uniform":
         # badge (wearer's left) + shoulder radio
         bd = _front(lv, "chest", 48, 34)
         p = [(bd[0], bd[1] - 14), (bd[0] + 12, bd[1] - 8), (bd[0] + 10, bd[1] + 8), (bd[0], bd[1] + 14),
              (bd[0] - 10, bd[1] + 8), (bd[0] - 12, bd[1] - 8)]
-        _shape(ctx, p, "#e8c25a", 3)
+        if not far_r:
+            _shape(ctx, p, "#e8c25a", 3)
         sl = J["shj"]["l"]
         rx, ry = sl[0] + n[0] * 26 - tt[0] * 0, sl[1] + 24
         ctx.new_path()
@@ -2853,7 +2848,7 @@ def resolve_face(who, expr="neutral", face=None):
 # Gaze-driven lid follow (Episode 2 fix): looking down drops the upper lids, but the
 # droop is capped so heavy-lidded characters keep their irises visible.
 #   who -> (down gain, up gain, closure cap for the down droop)
-GAZE_LID = {"tired": (0.22, 0.22, 0.6), "boss": (0.2, 0.26, 0.64)}
+GAZE_LID = {"tired": (0.22, 0.16, 0.6), "boss": (0.2, 0.26, 0.64)}
 GAZE_LID_DEFAULT = (0.22, 0.3, 0.66)
 
 
@@ -3395,10 +3390,9 @@ def _hood_front(ctx, C, col, hg, st, inkw):
             if kk < 0.15:
                 continue
             seg = []
-            for j in range(7):
+            for j in range(7):        # just under the rim, across this eye (rim y ~ front-view x)
                 xx = X + (j / 6.0 - 0.5) * ew * 2.1
-                ux = xx  # rim y at this screen x (rim is defined in front-view x; approximate)
-                q = clamp(ux / max(1.0, wc), -1, 1)
+                q = clamp(xx / max(1.0, wc), -1, 1)
                 seg.append((xx, yr + droop * (1 - q * q) + 4.5 * sc))
             ctx.move_to(*seg[0])
             for q in seg[1:]:
@@ -3713,14 +3707,21 @@ def _hand_tip(C, a):
 
 def _sig_separation(C, J, sa, sb):
     """Smallest clearance (px) among the element pairs whose order differs between sa, sb."""
+    hs, bs = _sig_seps(C, J, sa, sb)
+    return min(hs if hs is not None else 1e9, bs if bs is not None else 1e9)
+
+
+def _sig_seps(C, J, sa, sb):
+    """(hand-vs-hand clearance or None, hand-vs-body/head clearance or None)."""
     arms = J["arms"]
     ra, rb = _sig_ranks(sa), _sig_ranks(sb)
     rad = C["arm_r"][2] + C["hand"] * 0.38
+    hand_sep = None
     seps = []
     if (ra[0] < ra[1]) != (rb[0] < rb[1]):
         al, ar = arms["l"], arms["r"]
         d = _seg_dist(al["E2"], _hand_tip(C, al), ar["E2"], _hand_tip(C, ar))
-        seps.append(d - 2 * rad)
+        hand_sep = d - 2 * rad
     hh = J["head"]
     hr = C["head"]["levels"][4][1]
     poly = None
@@ -3741,7 +3742,7 @@ def _sig_separation(C, J, sa, sb):
         if (sa[i] == "front") != (sb[i] == "front"):    # arm vs head
             best = min(math.hypot(p[0] - hh["cx"], p[1] - hh["cy"]) for p in pts[2:]) - hr
             seps.append(best - rad)
-    return min(seps) if seps else 1e9
+    return hand_sep, (min(seps) if seps else None)
 
 
 def _poly_sdist(p, poly):
@@ -3760,21 +3761,51 @@ def _poly_sdist(p, poly):
     return -best if inside else best
 
 
-def _detour(Q, sa, sb, k):
-    """Blend path tweak: an arm that goes between behind-the-body and in-front swings out
-    around the hips/torso instead of passing through them (bell-shaped in k)."""
+def _detour(Q, flags, k):
+    """Blend path tweak: an arm that travels from behind the body to in front of it (or back)
+    swings out around the hips/torso instead of passing through them (bell-shaped in k)."""
     w = 4.0 * k * (1.0 - k)
-    if w <= 0.0:
+    if w <= 0.0 or not flags:
         return
     for i, s_ in enumerate("lr"):
-        if (sa[i] == "back") != (sb[i] == "back"):
-            Q[f"a{s_}_o"] += 0.45 * w
-            Q[f"a{s_}_eo"] += 0.25 * w
-            Q[f"a{s_}_tx"] += 0.08 * w
+        amp = flags[i]          # 1.0 = behind <-> in front of the body, 0.7 = layer change only
+        if amp:
+            Q[f"a{s_}_o"] += 0.45 * w * amp
+            Q[f"a{s_}_eo"] += 0.25 * w * amp
+            Q[f"a{s_}_tx"] += 0.08 * w * amp
+
+
+def _hand_depths(pose, who, C, turn, hp):
+    """Body-frame depth (z, + = in front) of both wrists for a pose (phase 0)."""
+    fx0 = {"head_turn": 0.0, "head_tilt": 0.0, "head_nod": 0.0}
+    Q = resolve_pose(pose, who, 0.0)
+    for kk, v in C["posture"].items():
+        Q[kk] = Q[kk] + v * Q["posture"]
+    J = _solve(C, Q, who, turn, 0.0, fx0, hp)
+    return J["arms"]["l"]["W3f"][2], J["arms"]["r"]["W3f"][2]
+
+
+_DETOUR_CACHE = {}
+
+
+def _detour_flags(who, C, a, b, turn, hp, sa, sb):
+    key = (C["_who"], id(C), _pose_key(a), _pose_key(b), round(turn * 20) / 20)
+    f = _DETOUR_CACHE.get(key)
+    if f is None:
+        tq = round(turn * 20) / 20
+        za, zb = _hand_depths(a, who, C, tq, hp), _hand_depths(b, who, C, tq, hp)
+        lim = C["tw"]["chest"][1] * 0.5
+        f = tuple(0.0 if (sa[i] == "back") == (sb[i] == "back") else
+                  (1.0 if min(za[i], zb[i]) < -8.0 and max(za[i], zb[i]) > lim else 0.7)
+                  for i in range(2))
+        if len(_DETOUR_CACHE) > 2000:
+            _DETOUR_CACHE.clear()
+        _DETOUR_CACHE[key] = f
+    return f
 
 
 _CYCLE_ORDER = {}
-_CYC_N = 48
+_CYC_N = 32
 
 
 def _cycle_sig(pose, who, C, pt, turn, hp, period):
@@ -3847,7 +3878,8 @@ def _sig_detail(pose, who, C, pt, turn, fx, hp):
         return sb, None
     if sa == sb:
         return sa, None
-    return (sa if k < _switch_k(who, C, a, b, turn, hp, sa, sb) else sb), (sa, sb, k)
+    flags = _detour_flags(who, C, a, b, turn, hp, sa, sb)
+    return (sa if k < _switch_k(who, C, a, b, turn, hp, sa, sb, flags) else sb), (flags, k)
 
 
 def _sig_for(pose, who, C, pt, turn, fx, hp, reach=None):
@@ -3864,8 +3896,8 @@ def _sig_for(pose, who, C, pt, turn, fx, hp, reach=None):
     return _arm_sig(Q, J)
 
 
-def _switch_k(who, C, a, b, turn, hp, sa, sb):
-    key = (C["_who"], id(C), _pose_key(a), _pose_key(b), round(turn * 20) / 20, sa, sb)
+def _switch_k(who, C, a, b, turn, hp, sa, sb, flags=None):
+    key = (C["_who"], id(C), _pose_key(a), _pose_key(b), round(turn * 20) / 20, sa, sb, flags)
     ks = _SWITCH_CACHE.get(key)
     if ks is not None:
         return ks
@@ -3878,9 +3910,12 @@ def _switch_k(who, C, a, b, turn, hp, sa, sb):
             Q[kk] = Q[kk] + v * Q["posture"]
         Q["breath"] = 0.0
         Q["sway"] = 0.0
-        _detour(Q, sa, sb, k)
+        _detour(Q, flags, k)
         J = _solve(C, Q, who, tq, 0.0, fx0, hp)
-        score = min(_sig_separation(C, J, sa, sb), 60.0) - 40.0 * abs(k - 0.5)
+        hs, bs = _sig_seps(C, J, sa, sb)
+        # hands clearly apart first (the brief's rule), then arm vs body / head, then mid-blend
+        score = (3.0 * min(hs, 40.0) if hs is not None else 120.0) + \
+            (min(bs, 60.0) if bs is not None else 60.0) - 40.0 * abs(k - 0.5)
         if score > best + 1e-6:
             best, ks = score, k
     if len(_SWITCH_CACHE) > 2000:
