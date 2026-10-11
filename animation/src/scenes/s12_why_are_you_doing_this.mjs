@@ -1,7 +1,7 @@
 // s12 · why_are_you_doing_this — Fear's accusations meet absolute silence and collapse into pleas.
 // backOfMind throughout. The Void never moves (STARE_B, idle 0, hand hidden with bend 1). The camera keeps
 // changing sizes around a stillness that gives nothing back; Fear does all the moving.
-import { W, H, TAU, clamp, lerp, ease, noise1, blinkAt, applyCamera, drift, vignette } from '../engine.mjs';
+import { W, H, TAU, clamp, lerp, ease, noise1, blinkAt, applyCamera, drift, vignette, smoothstep } from '../engine.mjs';
 import { makeExpr, withSpeech } from '../face.mjs';
 import { drawFear } from '../chars/fear.mjs';
 import { drawVoid } from '../chars/void.mjs';
@@ -36,6 +36,9 @@ const NECK_Y = -148, HEAD_CY = -66, HEAD_RX = 74, HEAD_RY = 68;
 const LOCK_STRIP_X = 497;
 // b06: the right hand on the lock jamb (cage x +79 local) at shoulder height, above the padlock's staple (510,1516)
 const JAMB_GRIP = [505, 1478];
+// the reach path (Fear-local): chin → hip (arm almost straight, 87 of 90 long) → up onto the jamb
+const REACH_C0 = [20, -70], REACH_OUT = [66, -56], REACH_C1 = [98, -98];
+const quad = (a, c, b, u) => [(1 - u) * (1 - u) * a[0] + 2 * (1 - u) * u * c[0] + u * u * b[0], (1 - u) * (1 - u) * a[1] + 2 * (1 - u) * u * c[1] + u * u * b[1]];
 
 export const sfx = [
   { at: 'scene.start+0.564', name: 'footsteps', gain: -19, rate: 1.31, until: 'scene.start+1.25', fade: 0.12 }, // two tiny shuffles back: steps land on the contacts (+0.63, +1.05)
@@ -397,11 +400,22 @@ function fearState(t, S) {
   // (the lock jamb, just above the dangling padlock), holds it through the line, lets go as Fear steps out (b07)
   let grips;
   const door = DOOR_OPEN;
-  const reachK = S.k(t, [['s12b06+0.85', 0], ['s12b06+1.4', 1, 'inOut'], ['s12b07+0.22', 1], ['s12b07+0.45', 0, 'sine']]);
+  const reachK = S.k(t, [['s12b06+0.75', 0], ['s12b06+1.45', 1, 'inOut'], ['s12b07+0.22', 1], ['s12b07+0.5', 0, 'sine']]);
   if (reachK > 0) {
     const h = JAMB_GRIP;
     const loc = [(h[0] - pos[0]) / scale, (h[1] - pos[1]) / scale];
-    armR = { target: P(armR.target, loc, reachK), bend: -1, front: true, hand: reachK > 0.85 ? 'grip' : 'open' };
+    let tgt, bend;
+    if (t < T('s12b07')) {
+      // the reach: the hand drops from the chin to the hip, where the arm is nearly straight and the elbow can change
+      // sides without a pop, then swings up onto the jamb, elbow down. (The straight chin → jamb path ran past the
+      // shoulder with the elbow flipped: the upper arm stood straight up across the mouth for ~5 frames mid-line.)
+      tgt = reachK < 0.5 ? quad(armR.target, REACH_C0, REACH_OUT, reachK / 0.5) : quad(REACH_OUT, REACH_C1, loc, (reachK - 0.5) / 0.5);
+      bend = lerp(armR.bend, -1, smoothstep(0.4, 0.6, reachK));
+    } else {
+      // letting go (b07, the wide): straight down to the arms' pose, elbow down (as the b07 fists pose that follows)
+      tgt = P(armR.target, loc, reachK); bend = -1;
+    }
+    armR = { target: tgt, bend, front: true, hand: reachK > 0.85 ? 'grip' : 'open' };
     if (reachK > 0.85 && t < T('s12b07+0.3')) grips = [[(h[0] - CAGE_B[0]) / FS, (h[1] - CAGE_B[1]) / FS]];
   }
   // b10: wipes its nose on the scarf (right hand), then folds back into the hug

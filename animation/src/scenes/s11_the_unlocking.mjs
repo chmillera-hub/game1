@@ -53,6 +53,7 @@ export const sfx = [
   { at: 's11b02+3.78', name: 'lock_click', gain: -10 },                // shackle pops at +3.80
   { at: 's11b03-1.1', name: 'cage_creak', gain: -12 },                 // the gate swings wide 0 → 0.9 (b03−1.05 → +0.95); swell peak b03−0.4
   { at: 's11b03+1.75', name: 'cloth_rustle', gain: -22 },              // the hand draws back into the sleeve (+1.7 → +2.85)
+  { at: 's11b03+2.22', name: 'footsteps', gain: -24, until: 's11b03+2.6', fade: 0.1 },   // the one small shuffle step as it turns (lands +2.3)
 ];
 
 // ---------------------------------------------------------------- helpers
@@ -195,8 +196,9 @@ function drawBoM(g, t, S) {
   const clickAge = t - T('s11b02+3.8');
   // the gate swings wide on its own weight, starting 0.2 s after the click (the creak starts in the wider unlock shot
   // and carries across the cut): the leaf sweeps left across Fear's crying face while its eyes are still shut (it is
-  // edge-on, beside the hinge, at 0.59 when they snap open at +0.12, and clears the face as the head jerks away) and folds out to the left beside the cage, 0.9 by
-  // +1.0 (s12 keeps 0.9). Wide open, the doorway in front of Fear's face is empty: no stile on the face.
+  // edge-on beside the hinge, ~0.66, when they snap open at +0.2 — after the head has flinched away from the bars, so
+  // the opening eyes are clear of them) and folds out to the left beside the cage, 0.9 by +1.0 (s12 keeps 0.9).
+  // Wide open, the doorway in front of Fear's face is empty: no stile on the face.
   const door = S.k(t, [['s11b03-1.05', 0], ['s11b03+0.95', 0.9, 'inOut']]);
 
   // Fear pulls at the bars (dream / b02): cage rattles with each pull
@@ -239,7 +241,7 @@ function drawBoM(g, t, S) {
   const out = S.k(t, [['s11b03+1.4', 0], ['scene.end', 1, 'sine']]);
   const dreamIn = S.k(t, [['s11b01+3.44', 0.6], ['s11b01+4.64', 1, 'sine']]);
   // the softness clears the instant Fear's eyes snap open at the creak (the grade itself eases out later)
-  const wake = S.k(t, [['s11b03+0.12', 0], ['s11b03+0.5', 1, 'out']]);
+  const wake = S.k(t, [['s11b03+0.2', 0], ['s11b03+0.58', 1, 'out']]);
   dreamBloom(g, dreamIn * (1 - wake));
   finish(g, lerp(0.5, 0.6, out), lerp(0.15, 0, out), lerp(0.45, 0.5, out), mixColor('#2a1408', '#000000', out));
 }
@@ -319,8 +321,10 @@ function fearPose(t, S, pull) {
   const release = S.k(t, [['s11b03+1.55', 0], ['s11b03+1.95', 1, 'sine']]);
   // crying, the head rests against the bar it clings to (leaning screen-left, toward the hinge jamb); each pull leans it
   // back. At the creak it jerks up and away from the swinging leaf (screen-right: lean and headDX flip, ~30 px) and holds
-  // there until the hands let go; facing −1, a positive headDX / lean moves the head screen-LEFT.
-  const startle = S.k(t, [['s11b03+0.12', 0], ['s11b03+0.55', 1, 'out']]);
+  // there until the hands let go; facing −1, a positive headDX / lean moves the head screen-LEFT. The flinch comes
+  // first, eyes still shut (+0.0 → +0.28), and the eyes snap open at +0.2: opening them while the head still rested
+  // on the bar put the hinge stile across the left eye for the first ~5 frames of the stare.
+  const startle = S.k(t, [['s11b03+0.0', 0], ['s11b03+0.28', 1, 'out']]);
   const lean = lerp(lerp(0.025 - 0.1 * pull - 0.012 * hitch, -0.02, startle), 0, release);
   const headDX = lerp(lerp(5, -18, startle), 0, release);
   // as it lets go and turns to the Void it shuffles one small step right, so the face stays in the clear doorway
@@ -362,7 +366,7 @@ function fearPose(t, S, pull) {
   ]);
   const shock = E({ browIn: 0.8, browUp: 0.65, lidU: -0.22, lidL: 0, pupil: 0.62, smile: -0.35, open: 0.12, wide: 0.05,
     tears: 0.85, stream: 0.6, tremble: 0, ...gaze });
-  const snap = S.k(t, [['s11b03+0.12', 0], ['s11b03+0.22', 1, 'out']]);
+  const snap = S.k(t, [['s11b03+0.2', 0], ['s11b03+0.3', 1, 'out']]);
   const face = snap <= 0 ? cry : snap >= 1 ? shock : mixFace(cry, shock, snap);
   // a hanging tear on the right lid; it finally falls at the very end (continues into s12)
   face.tearR = S.k(t, [['s11b03+0.3', 0], ['s11b03+0.6', 0.07], ['scene.end-0.5', 0.07], ['scene.end+0.4', 1, 'in']]);
