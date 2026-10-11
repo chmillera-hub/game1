@@ -443,12 +443,12 @@
    "beats": [
     {
      "t": "pause",
-     "dur": 1.6,
+     "dur": 2.4,
      "cue": "catch"
     },
     {
      "t": "pause",
-     "dur": 1.4,
+     "dur": 2.0,
      "cue": "steps"
     },
     {
@@ -504,12 +504,12 @@
     },
     {
      "t": "pause",
-     "dur": 1.4,
+     "dur": 1.8,
      "cue": "led"
     },
     {
      "t": "pause",
-     "dur": 2.6,
+     "dur": 3.6,
      "cue": "conflict"
     },
     {
@@ -572,12 +572,12 @@
    "beats": [
     {
      "t": "pause",
-     "dur": 1.8,
+     "dur": 2.8,
      "cue": "doors"
     },
     {
      "t": "pause",
-     "dur": 2.0,
+     "dur": 2.8,
      "cue": "chair"
     },
     {
@@ -654,7 +654,7 @@
     },
     {
      "t": "pause",
-     "dur": 1.4,
+     "dur": 1.8,
      "cue": "droop"
     },
     {
@@ -669,7 +669,7 @@
     },
     {
      "t": "pause",
-     "dur": 1.8,
+     "dur": 2.3,
      "cue": "eyes_open"
     }
    ],
