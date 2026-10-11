@@ -2807,7 +2807,7 @@ def _cue_lullaby(S):
         ln = te - tb + 0.25
         # cold glass pad + a dark low string pad (+ the breathing drone below)
         pg = 1.9 if b < b_box else 1.0              # the intro (doors, the chair turning) is pad alone
-        S.add(inst_glass(v, ln, sr, rng, attack=1.0, release=1.8, bright=0.25, drift=0.0025), tb, 0.07 * pg, 0, 0.6)
+        S.add(S.up(inst_glass(v, ln, lo, rng, attack=1.0, release=1.8, bright=0.25, drift=0.0025)), tb, 0.07 * pg, 0, 0.6)
         S.add(S.up(inst_strings_sect([bn + 12, bn + 19], ln, lo, rng, cutoff=520, attack=0.9, release=1.6)),
               tb, 0.12 * pg, 0, 0.35)
         # the music box
