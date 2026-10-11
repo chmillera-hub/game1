@@ -42,9 +42,9 @@ POD_FLOOR = POD_Y - 122 * POD_S          # interior floor (world y) where the ba
 
 SMASH_X = M["smash_feet"][0]   # 855
 HAUL_X = M["haul_feet"][0]     # 940
-TIRED_X1 = 735.0               # stepped back from the console to see the window
-CUR_X0 = 610.0
-TIRED_X2 = 1000.0              # crouched behind Curiosity and the baby
+TIRED_X1 = 700.0               # stepped back from the console to see the window
+CUR_X0 = 590.0
+TIRED_X2 = 1012.0              # where he scoops the baby up
 HATCH = M["hatch"]             # (40, 700, 290, 600)
 HATCH_FEET = 1330.0            # threshold line for someone ducking through
 EMB_X = 430.0                  # Emb standing beside the hatch
@@ -117,19 +117,21 @@ def times(info):
     T.cur_go = T.baby + 1.0
     T.cur_land = T.cur_go + 0.74
     T.nuzzle = T.cur_land + 0.18
-    T.tw0 = T.baby - 0.12                    # he walks over as the baby rolls out
-    # alarm / hatch / Emb
+    # alarm: he dashes to the baby and scoops it up; the hatch bursts open
     T.al0 = T.alarm
+    vr = abs(human.cycle_speed("tired", "run", 0.9) * SP)
+    T.dash0 = T.al0 + 0.42
+    T.dash1 = T.dash0 + (TIRED_X2 - TIRED_X1) / vr
+    T.scoop1 = T.dash1 + 0.34                # baby in his hand
+    T.cradle1 = T.scoop1 + 0.34              # up, baby against his chest
     T.burst = T.L2.start - 0.5
     T.emb_out0, T.emb_out1 = T.burst + 0.12, T.burst + 0.58
     # run
-    T.scoop1 = T.run + 0.32                  # baby in his hand
-    T.cradle1 = T.run + 0.62                 # up, baby against his chest
-    T.run0 = T.run + 0.62
-    T.cur_run0 = T.run + 0.18
-    T.emb_duck0 = T.hatch - 0.95
-    T.emb_duck1 = T.emb_duck0 + 0.38
-    T.emb_gone = T.emb_duck1 + 0.3
+    T.run0 = T.run + 0.22
+    T.cur_run0 = T.run + 0.0
+    T.emb_duck0 = T.hatch - 0.86
+    T.emb_duck1 = T.emb_duck0 + 0.36
+    T.emb_gone = T.emb_duck1 + 0.32
     T.slam0 = T.hatch - 0.2                  # the panel swings shut -> SLAM at T.hatch
     _TCACHE[key] = T
     return T
@@ -262,62 +264,35 @@ def tired_state(T, info, t):
         if t >= T.giggle:              # the faintest smile at the giggle
             kk = smoothstep(seg(t, T.giggle + 0.2, T.giggle + 0.8))
             f.update(curve=0.25 * kk, lid=0.2 + 0.08 * kk, brow_ang=0.15 * kk)
-        if t >= T.tw0:
-            # walks over to them and crouches down behind, watching
-            v = abs(human.cycle_speed("tired", "walk", 0.8) * SP)
-            dur = (TIRED_X2 - TIRED_X1) / v
-            tc = T.tw0 + dur
-            if t < tc:
-                st["pose"] = "walk"
-                st["pose_t"] = t - T.tw0
-                st["turn"] = 0.8
-                st["x"] = TIRED_X1 + v * (t - T.tw0)
-                st["look"] = (0.8, 0.45)
-            else:
-                st["x"] = TIRED_X2
-                kc = smoothstep(seg(t, tc, tc + 0.45))
-                ku = smoothstep(seg(t, T.al0 + 0.05, T.al0 + 0.45))      # the alarm: up again
-                st["pose"] = ("walk", CROUCH, kc) if kc < 1 else (CROUCH, "stand", ku)
-                st["pose_t"] = dur
-                st["turn"] = lerp(0.8, 0.55, seg(t, tc, tc + 0.4))
-                st["look"] = (0.55, 0.75)
-                f["head_nod"] = 0.16 * kc
         if t >= T.al0:
-            # alarm: lids lift, eyes up to the beacon, then left to the doors / hatch
+            # the alarm: lids lift, eyes up to the beacon... then he dashes to the baby
             ka = smoothstep(seg(t, T.al0 + 0.05, T.al0 + 0.2))
             f.update(lid=lerp(f.get("lid", 0.2), 0.12, ka), brow=0.45 * ka, curve=0.0,
-                     brow_ang=0.2, head_nod=lerp(0.12, -0.08, ka))
-            st["look"] = tween(t, [(T.al0, (0.6, 0.55)), (T.al0 + 0.15, (0.2, -0.85)),
-                                   (T.al0 + 0.55, (0.2, -0.85)), (T.al0 + 0.7, (-0.95, -0.1)),
-                                   (T.burst + 0.1, (-0.95, -0.1)), (T.burst + 0.25, (-1.0, 0.0))])
-            f["head_turn"] = tween(t, [(T.al0 + 0.7, 0.28), (T.al0 + 0.95, -0.35)])
-            st["power"] = 0.7
+                     brow_ang=0.25, head_nod=lerp(0.05, -0.12, ka), head_turn=0.1)
+            st["look"] = (0.25, -0.9)
+            st["power"] = 0.72
+            if t >= T.dash0 - 0.12:
+                st["look"] = (0.9, 0.45)
+                f["head_nod"] = 0.1
+        if t >= T.dash0:
+            return _tired_scoop(T, t, st, f)
         return st
-    # ---- the run
+    # ---- the run (holding the baby)
     st["face"] = f = {"lid": 0.14, "brow": -0.1, "brow_ang": -0.2, "press": 0.2}
     st["power"] = 0.72
     st["x"] = TIRED_X2
+    st["hold_mode"] = "both"
     td = _tired_duck_t(T)
-    if t < T.scoop1:
-        k = smoothstep(seg(t, T.run, T.run + 0.26))
-        st["pose"] = ("stand", "pick_up", k)
-        st["turn"] = lerp(0.45, 0.7, k)
-        st["look"] = (0.7, 0.8)
-        st["hold_mode"] = "r"
-        f["head_nod"] = 0.1
-    elif t < T.cradle1:
-        k = smoothstep(seg(t, T.scoop1, T.cradle1))
-        st["pose"] = ("pick_up", CRADLE, k)
-        st["turn"] = lerp(0.7, -0.9, smoothstep(seg(t, T.scoop1 + 0.08, T.cradle1)))
-        st["look"] = tween(t, [(T.scoop1, (0.5, 0.7)), (T.cradle1, (-0.9, 0.0))])
-        st["hold_mode"] = "r" if k < 0.5 else "both"
+    if t < T.run0:
+        st["pose"] = CRADLE
+        st["turn"] = -0.9
+        st["look"] = (-0.95, 0.0)
     elif t < td:
-        st["pose"] = ("cradle", RUN_CRADLE, smoothstep(seg(t, T.run0, T.run0 + 0.12)))
+        st["pose"] = (CRADLE, RUN_CRADLE, smoothstep(seg(t, T.run0, T.run0 + 0.14)))
         st["pose_t"] = t - T.run0
         st["turn"] = -0.9
         st["x"] = _run_x(T, t)
         st["look"] = (-0.9, 0.05)
-        st["hold_mode"] = "both"
         f["brow"] = -0.25
     else:
         # duck through: up onto the threshold, then into the crawlway
@@ -329,12 +304,52 @@ def tired_state(T, info, t):
         st["x"] = lerp(x_d, 205, k) - 900 * max(0.0, t - td - 0.26)
         st["y"] = lerp(FEET + 6, HATCH_FEET, k)
         st["look"] = (-0.9, 0.2)
-        st["hold_mode"] = "both"
         st["clip"] = "hatch" if st["x"] < 255 else None
         if st["x"] < -200:
             st["visible"] = False
     if t < td:
         st["y"] = FEET + 6
+    return st
+
+
+def _tired_scoop(T, t, st, f):
+    """The alarm: he dashes over, scoops the baby up, turns toward the hatch."""
+    st["power"] = 0.72
+    if t < T.dash1:
+        k = (t - T.dash0)
+        st["pose"] = ("stand", "run", smoothstep(seg(t, T.dash0, T.dash0 + 0.1)))
+        st["pose_t"] = k
+        st["turn"] = 0.9
+        vr = abs(human.cycle_speed("tired", "run", 0.9) * SP)
+        st["x"] = TIRED_X1 + vr * k
+        st["look"] = (0.9, 0.45)
+        f.update(lid=0.12, brow=0.2, brow_ang=0.0)
+        return st
+    st["x"] = TIRED_X2
+    if t < T.scoop1:
+        k = smoothstep(seg(t, T.dash1, T.dash1 + 0.24))
+        st["pose"] = ("run", "pick_up", k)
+        st["pose_t"] = T.dash1 - T.dash0
+        st["turn"] = lerp(0.9, 0.7, k)
+        st["look"] = (0.7, 0.85)
+        st["hold_mode"] = "r"
+        f.update(lid=0.14, brow=0.1, head_nod=0.12)
+        return st
+    if t < T.cradle1:
+        k = smoothstep(seg(t, T.scoop1, T.cradle1))
+        st["pose"] = ("pick_up", CRADLE, k)
+        st["turn"] = lerp(0.7, -0.9, smoothstep(seg(t, T.scoop1 + 0.06, T.cradle1)))
+        st["look"] = tween(t, [(T.scoop1, (0.5, 0.7)), (T.cradle1, (-0.6, 0.3))])
+        st["hold_mode"] = "r" if k < 0.5 else "both"
+        f.update(lid=0.16, brow=0.1)
+        return st
+    # holding it close; eyes on the doors (the footsteps), then the hatch bursting open
+    st["pose"] = CRADLE
+    st["turn"] = -0.9
+    st["hold_mode"] = "both"
+    st["look"] = tween(t, [(T.cradle1, (-0.6, 0.3)), (T.cradle1 + 0.15, (-0.95, -0.05)),
+                           (T.burst + 0.05, (-0.95, -0.05)), (T.burst + 0.15, (-1.0, 0.05))])
+    f.update(lid=lerp(0.16, 0.08, seg(t, T.burst, T.burst + 0.12)), brow=0.3, brow_ang=0.2)
     return st
 
 
@@ -424,20 +439,21 @@ def cur_state(T, info, t):
                       tail_curl=0.7 * smoothstep(seg(t, T.nuzzle, T.nuzzle + 0.8)))
             st["x"] = x_to + 6 * math.sin(ph) * k
         if t >= T.al0:
-            # alarm: ears shoot up, head up, looking round
+            # alarm: ears shoot up, head up, a hop back as he swoops in for the baby
             ka = ease_out_back(seg(t, T.al0 + 0.08, T.al0 + 0.26))
             st.update(expr="wide", ears=lerp(0.55, 1.0, ka), tilt=lerp(0.4, -0.1, ka), tail_curl=0.0)
-            st["x"] = x_to
-            st["look"] = tween(t, [(T.al0 + 0.1, (0.2, -0.9)), (T.al0 + 0.7, (0.2, -0.9)),
-                                   (T.al0 + 0.85, (-0.9, -0.2))])
-            if t >= T.al0 + 0.75:
-                st["face"] = tween(t, [(T.al0 + 0.75, 1.0), (T.al0 + 1.0, -1.0)])
+            st["x"] = x_to - 70 * smoothstep(seg(t, T.dash0 + 0.1, T.dash1 + 0.1))
+            st["look"] = tween(t, [(T.al0 + 0.1, (0.2, -0.9)), (T.dash0, (0.2, -0.9)),
+                                   (T.dash0 + 0.15, (0.6, -0.4)), (T.cradle1, (0.3, -0.7)),
+                                   (T.burst + 0.05, (0.3, -0.7)), (T.burst + 0.2, (-0.9, -0.2))])
+            if t >= T.burst + 0.1:
+                st["face"] = tween(t, [(T.burst + 0.1, 1.0), (T.burst + 0.4, -1.0)])
         return st
     # ---- the run: bound to the hatch and dive through
-    x_from = baby_rest_x(T) - 222
+    x_from = baby_rest_x(T) - 222 - 70
     st["flip"] = True
     st.update(expr="wide", ears=0.9, look=(-0.6, 0.0))
-    t_dive = T.run + 1.55
+    t_dive = T.run + 0.8
     if t < T.cur_run0:
         st["pose"] = "stand"
         st["x"] = x_from
@@ -512,6 +528,7 @@ def baby_state(T, info, t):
             st["look"] = (0.0, -0.9)
             st["tail_curl"] = 0.0
     if t >= T.scoop1:
+        st["flip"] = True
         st["held"] = True
         st["pose"] = "held"
         st["expr"] = "giggle"
@@ -543,7 +560,7 @@ def emb_state(T, info, t):
         kr = smoothstep(seg(t, T.emb_out1 - 0.1, T.emb_out1 + 0.25))
         st["reach"] = {"l": (hold[0], hold[1], kr)}
         wave_on = T.emb_out1 - 0.05
-        wave_off = T.run + 0.4
+        wave_off = T.run + 0.3
         if t < wave_on:
             st["pose"] = "stand"
         elif t < wave_off:
@@ -558,13 +575,13 @@ def emb_state(T, info, t):
         # watching the others: right (the group) -> follows Tiredness past him -> a nervous
         # glance back at the Boss -> into the hatch
         tdk = _tired_duck_t(T)
-        st["look"] = tween(t, [(T.emb_out1, (0.9, 0.0)), (T.run + 0.7, (0.9, 0.05)),
-                               (tdk, (-0.6, 0.1)), (tdk + 0.25, (-0.6, 0.1)),
-                               (tdk + 0.4, (0.95, -0.05)), (T.emb_duck0 - 0.05, (0.95, -0.05)),
+        st["look"] = tween(t, [(T.emb_out1, (0.9, 0.0)), (T.run + 0.4, (0.9, 0.05)),
+                               (tdk - 0.05, (-0.6, 0.1)), (tdk + 0.12, (-0.6, 0.1)),
+                               (tdk + 0.24, (0.95, -0.05)), (T.emb_duck0 - 0.05, (0.95, -0.05)),
                                (T.emb_duck0, (-0.8, 0.0))])
-        f["head_turn"] = tween(t, [(tdk + 0.4, 0.0), (tdk + 0.6, 0.25), (T.emb_duck0 - 0.1, 0.25),
+        f["head_turn"] = tween(t, [(tdk + 0.24, 0.0), (tdk + 0.4, 0.25), (T.emb_duck0 - 0.1, 0.25),
                                    (T.emb_duck0, 0.0)])
-        if t > tdk + 0.4:
+        if t > tdk + 0.24:
             st["expr"] = "alarmed"
             st["sweat"] = 0.45
         return st
@@ -1119,20 +1136,20 @@ def camera_at(T, t):
     elif t < T.baby:                                   # S5b pan to the pod
         k = ease_in_out(seg(t, T.pan0, T.pan1))
         cx, cy, z = lerp(704, 1240, k), lerp(1195, 1395, k), lerp(1.76, 2.3, k)
-    elif t < T.al0:                                    # S6 the baby (+ the family tableau)
+    elif t < T.al0:                                    # S6 the baby
         k = ease_in_out(seg(t, T.baby + 0.35, T.cur_land))
-        cx, cy, z = lerp(1240, 1015, k), lerp(1395, 1330, k), lerp(2.3, 2.1, k)
-    elif t < T.burst + 0.3:                            # S7 alarm: wide, the hatch bursts
-        k = seg(t, T.al0, T.burst + 0.3)
-        cx, cy, z = lerp(820, 800, k), 1060.0, lerp(0.78, 0.76, k)
-    elif t < T.run:                                    # S8 Emb at the hatch
-        k = seg(t, T.burst + 0.3, T.run)
+        cx, cy, z = lerp(1240, 1040, k), lerp(1395, 1335, k), lerp(2.3, 2.12, k)
+    elif t < T.burst - 0.12:                           # S7 alarm: he swoops in for the baby
+        k = seg(t, T.al0, T.burst)
+        cx, cy, z = lerp(905, 915, k), lerp(1175, 1160, k), lerp(1.3, 1.36, k)
+    elif t < T.run:                                    # S8 the hatch bursts: Emb
+        k = seg(t, T.burst - 0.12, T.run)
         cx, cy, z = 335.0, lerp(1060, 1050, k), lerp(1.5, 1.56, k)
     elif t < T.hatch:                                  # S9 the run (tracking left)
         tx = tired_x_for_cam(T, t)
-        cx = clamp(tx - 110, 335, 1130)
-        cy, z = 1100 - 40 * seg(cx, 1130, 335) * -1 + 0, 1.42
-        cy = lerp(1110, 1060, seg(1130 - cx, 0, 795))
+        cx = clamp(tx - 110, 335, 900)
+        cy = lerp(1110, 1060, seg(900 - cx, 0, 565))
+        z = 1.42
     elif t < T.watch:                                  # S10 the shut hatch
         k = seg(t, T.hatch, T.watch)
         cx, cy, z = 335.0, 1060.0, lerp(1.42, 1.3, smoothstep(k))
@@ -1206,17 +1223,22 @@ def SFX(info):
     ev.append((T.nuzzle + 0.2, "creature_purr", 2, 0.0))
     # alarm + footsteps outside (left, coming closer)
     ev += sfx.loop_events("alarm_soft", T.al0, T.end, -2, 0.0)
-    ev.append((T.al0 + 0.4, "footsteps_run", -16, -0.7))
-    ev.append((T.al0 + 1.4, "footsteps_run", -12, -0.7))
-    ev.append((T.L2.end + 0.3, "footsteps_run", -9, -0.6))
-    ev.append((T.run + 1.2, "footsteps_run", -7, -0.6))
+    ev.append((T.al0 + 0.5, "footsteps_run", -17, -0.7))
+    ev.append((T.al0 + 1.5, "footsteps_run", -13, -0.7))
+    ev.append((T.L2.end + 0.2, "footsteps_run", -10, -0.6))
+    ev.append((T.run + 1.3, "footsteps_run", -8, -0.6))
+    # he swoops in for the baby
+    ev.append((T.dash0, "footsteps_run", -6, 0.1))
+    ev.append((T.dash1 + 0.05, "cloth_rustle", -2, 0.2))
+    ev.append((T.scoop1 + 0.1, "baby_coo", -3, 0.15))
     # the hatch bursts open
     ev.append((T.burst - 0.02, "latch_click", 2, -0.5))
     ev.append((T.burst + 0.02, "whoosh", -10, -0.5))
     # the run
-    ev.append((T.run + 0.25, "baby_giggle", -5, 0.0))
+    ev.append((T.run0 - 0.1, "baby_giggle", -6, 0.0))
     ev.append((T.run0, "footsteps_run", -3, -0.2))
     ev.append((T.cur_run0, "scurry", -6, -0.3))
+    ev.append((T.run + 0.8, "creature_chitter", -8, -0.5))
     ev.append((_tired_duck_t(T), "whoosh", -8, -0.5))
     ev.append((T.emb_duck0, "cloth_rustle", -4, -0.5))
     # SLAM (sync with the chaos cue's last hit)
