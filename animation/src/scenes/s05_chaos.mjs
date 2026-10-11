@@ -18,7 +18,7 @@ import { createCanvas } from '@napi-rs/canvas';
 import { W, H, TAU, clamp, lerp, fbm, blinkAt, applyCamera, drift, vignette } from '../engine.mjs';
 import { withSpeech } from '../face.mjs';
 import { drawFear } from '../chars/fear.mjs';
-import { drawSelf, SELF_EXPR, drawClipboard } from '../chars/self.mjs';
+import { drawSelf, SELF_EXPR, drawClipboard, selfPoseAnchors, selfLocal } from '../chars/self.mjs';
 import { drawEmotion, EMOTION_EXPR, PANIC_FACE } from '../chars/emotions.mjs';
 import { drawVoid } from '../chars/void.mjs';
 import { drawHQ, drawHQForeground, drawAlarmLight, HQ_VIEWS, hqScaleAt, ALARM_REACH } from '../sets/hq.mjs';
@@ -70,8 +70,8 @@ const CAM = {
   // rhymes with the empty wide of shot 4 (same room, a minute later, nobody left)
   console: { x: 466, y: 846, zoom: 1.0 },
   console2: { x: 462, y: 852, zoom: 1.03 },
-  door: { x: 214, y: 850, zoom: 1.8 },
-  door2: { x: 206, y: 846, zoom: 1.84 },
+  door: { x: 234, y: 846, zoom: 2.08 },          // tighter than the staged {215,820,1.7}: the group fills the frame
+  door2: { x: 228, y: 842, zoom: 2.14 },
   est: { x: 450, y: 812, zoom: 0.96 },             // the staged 'establish' wide, a touch tighter so the CEO reads
   est2: { x: 456, y: 824, zoom: 1.03 },
   end: { x: 500, y: 860, zoom: 1.3 },
@@ -228,7 +228,7 @@ function emotionState(name, t, S, shot) {
     // ------------------------------------------------ shot 2: the evacuation wide (all four in frame)
     if (name === 'JOY') {
       // shooed off her stool by Fear popping up behind her: eyes pop, round "oh", windmilling; hops left, then hurries
-      x = k([['s05b01+1.32', sx0], ['s05b01+1.62', 640, 'out'], ['s05b01+2.18', 634], ['s05b02', 512, 'in']]); y = sy0 + 10;
+      x = k([['s05b01+1.32', sx0], ['s05b01+1.62', 630, 'out'], ['s05b01+2.18', 624], ['s05b02', 516, 'in']]); y = sy0 + 10;
       const pop = k([['s05b01+1.3', 0.6], ['s05b01+1.4', 1], ['s05b01+1.78', 0]]);
       const flail = k([['s05b01+1.3', 1], ['s05b01+2.08', 1], ['s05b01+2.22', 0]]);
       face = { browUp: 0.95, browIn: 0.35, lidU: -0.35, pupil: 0.7, open: 0.45, round: 0.85, smile: 0,
@@ -240,7 +240,7 @@ function emotionState(name, t, S, shot) {
     } else if (name === 'SADNESS') {
       // slides off its stool slowly, lower lip out, eyes on the floor; shuffles left
       const slide = k([['s05b01+1.3', 0.3], ['s05b01+2.0', 1, 'sine']]);
-      x = k([['s05b01+1.45', sx0 - 8], ['s05b02', 418, 'inOut']]); y = sy0 - 4;
+      x = k([['s05b01+1.4', sx0 - 8], ['s05b02', 424, 'inOut']]); y = sy0 - 4;
       face = { ...EMOTION_EXPR.SADNESS, smile: -0.7, wide: -0.15, lookY: 0.75, lookX: -0.2, tears: 0.3 };
       pose = { facing: -1, headDY: 14 * slide, crouch: 0.15 * slide, headTilt: -0.05,
         walk: t > S.T('s05b01+1.5') ? walkPh(0.75) : null, armL: 'rest', armR: 'rest' };
@@ -248,7 +248,7 @@ function emotionState(name, t, S, shot) {
       // both hands thrown up, brows in a hard V, a hop off the stool, then stomping out toward the door (frame left)
       const up = k([['s05b01+1.3', 0.7], ['s05b01+1.42', 1], ['s05b01+1.78', 1], ['s05b01+1.96', 0]]);
       const hop = k([['s05b01+1.62', 0], ['s05b01+1.76', 1, 'out'], ['s05b01+1.92', 0, 'in']]);
-      x = k([['s05b01+1.92', sx0], ['s05b02', 70, 'in']]); y = sy0 + 6;
+      x = k([['s05b01+1.92', sx0], ['s05b02', 296, 'in']]); y = sy0 + 6;   // stomping off; never crosses CALM in this shot
       face = { ...EMOTION_EXPR.ANGER, browIn: -1, browSquish: 0.85, pressed: 0.85, smile: -0.6, lidTilt: -0.45,
         lookX: k([['s05b01+1.9', 0.5], ['s05b01+2.05', -0.4]]), lookY: 0.1 };
       const raised = (side) => ({ target: [side * 92, -300], bend: -side, hand: 'palm' });
@@ -258,7 +258,7 @@ function emotionState(name, t, S, shot) {
     } else { // CALM
       // rises in one smooth motion, lids level at half, and steps up toward SADNESS with an open palm
       const rise = k([['s05b01+1.3', 0.45], ['s05b01+1.95', 1, 'sine']]);
-      const p = path(t, S, [['s05b01+2.0', [sx0, sy0 - 10]], ['s05b02', [214, sy0 - 34], 'inOut']]);
+      const p = path(t, S, [['s05b01+2.0', [sx0, sy0 - 10]], ['s05b02', [182, sy0 - 22], 'inOut']]);
       x = p.x; y = p.y; s = hqScaleAt('front', y);
       face = { smile: 0.05, lidU: 0.45, lidL: 0.1, lidTilt: 0, browIn: 0.15, lookX: 0.6, lookY: 0.2 };
       pose = { facing: 1, headDY: 12 * (1 - rise), headTurn: 0.45 * rise,
@@ -330,9 +330,9 @@ function drawRedCheek(g, e, t, A) {
   const s = e.s, hx = e.x + (e.pose.headDX || 0) * s, hy = e.y - 304 * s + (e.pose.headDY || 0) * s;
   g.save();
   g.beginPath(); g.ellipse(hx, hy, 84 * s, 80 * s, 0, 0, TAU); g.clip();
-  const cx = hx + 62 * s, cy = hy + 18 * s, r = 74 * s;
+  const cx = hx + 64 * s, cy = hy + 42 * s, r = 56 * s;            // under the right eye, toward the off-frame alarm
   const gr = g.createRadialGradient(cx, cy, 0, cx, cy, r);
-  const a = A * (0.3 + 0.24 * pulse(t));
+  const a = A * (0.26 + 0.22 * pulse(t));
   gr.addColorStop(0, `rgba(255,70,88,${a})`); gr.addColorStop(0.55, `rgba(255,70,88,${a * 0.45})`); gr.addColorStop(1, 'rgba(255,70,88,0)');
   g.fillStyle = gr; g.fillRect(cx - r, cy - r, 2 * r, 2 * r);
   g.restore();
@@ -341,15 +341,20 @@ function drawRedCheek(g, e, t, A) {
 // ---- Fear in the front room
 function fearFrontState(t, S) {
   const k = (keys, e) => S.k(t, keys, e);
-  if (t < S.T('s05b02')) {
-    // on tiptoe behind the console row, scurrying right → left, shooing (FEAR_TIPTOE_F depth)
-    const x = k([['s05b01+1.3', 792], ['s05b01+1.62', 600, 'out'], ['s05b01+2.3', 596], ['s05b02', 530, 'in']]);
-    const run = t < S.T('s05b01+1.62') || t > S.T('s05b01+2.3');
+  if (t < S.T(CUT23)) {
+    // on tiptoe behind the console row (FEAR_TIPTOE_F depth): pops up behind JOY from the right, stands its ground in
+    // the clear spot JOY has just vacated for "…body out!", flapping its arms at the others, a darting glance up at
+    // the Void (up-left of it in this view), then scurries left after them
+    const x = k([['s05b01+1.3', 822], ['s05b01+1.52', 754, 'out'], ['s05b01+2.3', 748], ['s05b02', 664, 'in']]);
+    const run = t < S.T('s05b01+1.52') || t > S.T('s05b01+2.32');
     const ph = t * TAU * 4;
     const face = withSpeech({ browIn: 0.5, browUp: 1, lidU: -0.4, pupil: 0.52, open: 0.2, wide: 0.6, smile: -0.5, tremble: 0.7,
-      lookX: k([['s05b01+1.3', -0.85], ['s05b01+1.9', -0.85], ['s05b01+2.0', -0.6], ['s05b01+2.35', -0.6], ['s05b01+2.45', 0.3]]),
-      lookY: k([['s05b01+1.9', 0.1], ['s05b01+2.0', -0.5], ['s05b01+2.35', -0.5], ['s05b01+2.45', 0.1]]), noAutoBlink: true }, S.lip('FEAR', t), 1);
-    const shoo = (side) => ({ target: [side * 66 + 10 * Math.sin(ph * 0.5 + side), -150 - 34 * Math.sin(ph * 0.5 + side * 1.4)], bend: side, hand: 'open', front: side < 0 });
+      lookX: k([['s05b01+1.3', -0.85], ['s05b01+1.96', -0.85], ['s05b01+2.03', -0.5], ['s05b01+2.17', -0.5], ['s05b01+2.24', -0.85]]),
+      lookY: k([['s05b01+1.96', 0.1], ['s05b01+2.03', -0.8], ['s05b01+2.17', -0.8], ['s05b01+2.24', 0.1]]), noAutoBlink: true },
+    S.lip('FEAR', t), 1);
+    // arms flap high, above the console rim, shooing the others left
+    const shoo = (side) => ({ target: [side * 70 + 10 * Math.sin(ph * 0.5 + side), -188 - 30 * Math.sin(ph * 0.5 + side * 1.4)],
+      bend: -side, hand: 'open', front: side < 0 });
     return { x, y: 1350, s: 0.8, pose: { t, facing: -1, face, tremble: 0.6, lean: 0.06, headTurn: -0.2,
       armL: shoo(-1), armR: shoo(1), walk: run ? { phase: ph } : null, breathRate: 1.5, breathe: 1.3 } };
   }
@@ -382,7 +387,7 @@ function mixFlat(a, b, k) {
 // ---- Consciousness in the front room
 function ceoFrontState(t, S) {
   const k = (keys, e) => S.k(t, keys, e);
-  if (t < S.T('s05b02')) {
+  if (t < S.T(CUT23)) {
     // background: finishing the rise beside the alarm, turning to watch the others go
     const [x, y, s] = CEO_AT_ALARM_F;
     const face = { ...SELF_EXPR.worried, browUp: 0.45, lidU: -0.1, open: 0.08, lookX: -0.7, lookY: 0.35 };
@@ -390,16 +395,18 @@ function ceoFrontState(t, S) {
       bodyTurn: -0.25, headTurn: -0.45, face, clipboard: true, armL: 'rest',
       armR: { preset: 'palmOut' } } };
   }
-  if (t < S.T('s05b03')) {
-    // crossing to the middle of the room, off-screen during the door shot (kept clear of its frame)
-    const p = k([['s05b02', 0], ['s05b03-0.1', 1]]);
-    const x = lerp(640, 520, p), y = lerp(1000, 1060, p);
+  if (t < S.T(CUT34)) {
+    // crossing to the middle of the room, off-screen during the door shot (its frame ends at x ≈ 414)
+    const p = k([[CUT23, 0], [CUT34, 1]]);
+    const x = lerp(640, 540, p), y = lerp(1000, 1060, p);
     return { x, y, s: hqScaleAt('front', y), pose: { t, outfit: 'ceo', facing: -1, clipboard: true, armL: 'rest',
       walk: { phase: t * TAU * 0.8 }, face: SELF_EXPR.worried } };
   }
   const [x, y, s] = CEO_MID;
   // the slow half circle, eyes leading the head, the head leading the body
-  const sweep = (lag) => k([[`s05b03+${0.5 + lag}`, -1], [`s05b03+${3.9 + lag}`, 1, 'sine']]);
+  // (from the door, screen-left, across the empty console to the alarm side; it starts as the shot opens)
+  const c34 = S.T(CUT34);
+  const sweep = (lag) => k([[c34 + 0.1 + lag, -1], [c34 + 2.9 + lag, 1, 'sine']]);
   const eyesK = sweep(0), headK = sweep(0.3), bodyK = sweep(0.6);
   const ears = k([['s05b03.end-0.3', 0], ['s05b03.end+0.05', 1, 'out'], ['s05b04+0.98', 1], ['s05b04+1.6', 0, 'inOut']]);
   const shut = k([['s05b03.end-0.3', 0], ['s05b03.end-0.1', 1], ['s05b04+1.2', 1], ['s05b04+1.75', 0]]);
@@ -417,20 +424,36 @@ function ceoFrontState(t, S) {
   const bodyTurn = lerp(-0.42, 0.42, (bodyK + 1) / 2) * (1 - 0.7 * Math.max(ears, stare));
   // hands: clipboard hanging → heels of the hands over the ears (the clipboard slips) → lowered, limp
   const hasBoard = t < S.T('s05b03.end-0.34');
-  // heels of the hands over the ears: elbows forward and out (upper arm foreshortened, like rubEyes), one bend
-  // side throughout so the arms travel up and down without flipping
-  const armAt = (side, e) => {
-    const kk = 0.88 * sine(e);                       // 0.88 of the way to the ear target: elbows down in front
-    return { preset: 'rubEyes', target: [side * lerp(72, 66, kk), lerp(-196, -462, kk)], bend: side, front: kk > 0.15,
-      hand: kk > 0.5 ? 'palm' : 'rest', handAngle: kk > 0.5 ? -Math.PI / 2 + side * 0.12 : Math.PI / 2,
-      reach1: lerp(1, 0.5, kk), reach2: lerp(1, 1.25, kk), thumb: -side };
-  };
   const pose = { t, outfit: 'ceo', facing: 1, bodyTurn, headTurn, face,
     clipboard: hasBoard, headDY: 6 * sag + 2 * shut, headTilt: 0.05 * sag - 0.03 * shut, lean: 0.035 * sag,
     shrug: 0.45 * ears - 0.2 * sag, breathe: lerp(1, 1.8, sag), breathRate: lerp(0.24, 0.13, sag) };
-  if (ears > 0.01) { pose.armL = armAt(-1, ears); pose.armR = armAt(1, ears); }
+  if (ears > 0.01) { pose.armL = earsArm(x, y, s, pose, -1, ears); pose.armR = earsArm(x, y, s, pose, 1, ears); }
   else pose.armL = 'rest';
   return { x, y, s, pose, ears, hasBoard };
+}
+
+// Palms over the ears with the elbows down in front of the chest. The elbow AND the wrist follow explicit paths
+// (rest → hands up in front of the chest → at the ears), and the bone lengths/bend are derived from them, so the IK
+// lands exactly on that elbow every frame: no elbows splaying out (hands-on-hips) and no folded "slab" sleeves on
+// the way up or down. Upper arm foreshortened toward the camera (short), forearm upright.
+function earsArm(x, y, s, pose, side, e) {
+  const A = selfPoseAnchors(x, y, s, pose);
+  const sh = selfLocal(x, y, s, 1, ...(side < 0 ? A.shoulderL : A.shoulderR));
+  const hc = selfLocal(x, y, s, 1, ...A.headCenter);
+  const K = [
+    { k: 0, E: [sh[0] + side * 5, sh[1] + 99], W: [sh[0] + side * 12, sh[1] + 184] },
+    { k: 0.45, E: [sh[0] + side * 9, sh[1] + 62], W: [sh[0] - side * 4, sh[1] - 8] },
+    { k: 1, E: [sh[0] + side * 6, sh[1] + 34], W: [hc[0] + side * 61, hc[1] + 32] },
+  ];
+  const kk = clamp(e);
+  const i = kk < K[1].k ? 0 : 1;
+  const u = sine((kk - K[i].k) / (K[i + 1].k - K[i].k));
+  const P = (a, b) => [lerp(a[0], b[0], u), lerp(a[1], b[1], u)];
+  const E = P(K[i].E, K[i + 1].E), Wr = P(K[i].W, K[i + 1].W);
+  const L1 = Math.hypot(E[0] - sh[0], E[1] - sh[1]), L2 = Math.hypot(Wr[0] - E[0], Wr[1] - E[1]);
+  const cross = (Wr[0] - sh[0]) * (E[1] - sh[1]) - (Wr[1] - sh[1]) * (E[0] - sh[0]);
+  return { target: Wr, bend: cross < 0 ? 1 : -1, reach1: L1 / 100, reach2: L2 / 92, front: kk > 0.12,
+    hand: kk > 0.55 ? 'flat' : 'rest', ...(kk > 0.55 ? { handAngle: -Math.PI / 2 - side * 0.1 } : {}), thumb: -side };
 }
 
 // pages slipping from the clipboard, and the clipboard itself dropping (front-view props)
@@ -438,7 +461,8 @@ function drawPages(g, t, S, ceo) {
   const [x, y, s] = CEO_MID;
   const hand = [x - 66 * s, y - 175 * s];
   const floor = y + 6;
-  const pages = [['s05b03+0.9', -1, 0.3], ['s05b03+2.0', 1, 0.75], ['s05b03+3.2', -1, 0.5]];
+  const c34 = S.T(CUT34);                          // three pages slip loose during the half circle
+  const pages = [[c34 + 0.35, -1, 0.3], [c34 + 1.35, 1, 0.75], [c34 + 2.45, -1, 0.5]];
   for (let i = 0; i < pages.length; i++) {
     const [a, dir, seed] = pages[i];
     const t0 = S.T(a);
@@ -494,11 +518,12 @@ function cachedSet(key, cam, st) {
 }
 
 function renderFront(g, t, S, cam, drawCam, cacheKey) {
+  const shot = shotOf(t, S);
   const st = setState(t, S);
   g.save();
   applyCamera(g, drawCam);
   if (cacheKey) {
-    const e = cachedSet(cacheKey, cam, setState(S.T('s05b01+1.3'), S));
+    const e = cachedSet(cacheKey, cam, setState(S.T(CUT12), S));
     g.drawImage(e.c, e.x, e.y, e.w, e.h);
   } else {
     drawHQ(g, 'front', st);
@@ -508,16 +533,17 @@ function renderFront(g, t, S, cam, drawCam, cacheKey) {
   const items = [];
   const ceo = ceoFrontState(t, S);
   items.push({ y: ceo.y, draw: () => { drawSelf(g, ceo.x, ceo.y, ceo.s, ceo.pose); } });
-  if (t >= S.T('s05b03') - 0.05) items.push({ y: CEO_MID[1] + 8, draw: () => drawPages(g, t, S, ceo) });
+  if (shot === 4) items.push({ y: CEO_MID[1] + 8, draw: () => drawPages(g, t, S, ceo) });
   const fear = fearFrontState(t, S);
   items.push({ y: fear.y, draw: () => drawFear(g, fear.x, fear.y, fear.s, fear.pose) });
   for (const name of ['CALM', 'ANGER', 'SADNESS', 'JOY']) {
-    const e = emotionState(name, t, S);
+    const e = emotionState(name, t, S, shot);
     if (e.alpha <= 0.01) continue;
-    // the console cam crops everything left of x ≈ 180; cull characters that are fully out of frame
     items.push({ y: e.y + (name === 'JOY' ? 0.5 : 0), draw: () => {
-      drawEmotion(g, name, e.x, e.y, e.s, { ...e.pose, alpha: e.alpha < 1 ? e.alpha : undefined });
+      if (e.door) { g.save(); clipDoor(g); }      // walking out: hidden by the near jamb once past the wall plane
+      drawEmotion(g, name, e.x, e.y, e.s, e.pose);
       if (e.pose.redCheek) drawRedCheek(g, e, t, st.alarm);
+      if (e.door) g.restore();
     } });
   }
   items.sort((a, b) => a.y - b.y);
@@ -529,11 +555,16 @@ function renderFront(g, t, S, cam, drawCam, cacheKey) {
 
 // ================================================================ render
 export function render(g, t, S) {
-  if (t < S.T('s05b01+1.3')) renderAlarm(g, t, S);
-  else if (t < S.T('s05b02')) renderFront(g, t, S, CAM.console, liveCam(CAM.console, t, 2.5), 'console');
-  else if (t < S.T('s05b03')) renderFront(g, t, S, CAM.door, liveCam(CAM.door, t, 2.5));
-  else {
-    const pre = clamp((t - S.T('s05b03')) / (S.T('s05b04') - S.T('s05b03')));
+  const shot = shotOf(t, S);
+  if (shot === 1) renderAlarm(g, t, S);
+  else if (shot === 2) {
+    const cam = lerpCam(CAM.console, CAM.console2, sine((t - S.T(CUT12)) / (S.T(CUT23) - S.T(CUT12))));
+    renderFront(g, t, S, cam, liveCam(cam, t, 2.5));
+  } else if (shot === 3) {
+    const cam = lerpCam(CAM.door, CAM.door2, sine((t - S.T(CUT23)) / (S.T(CUT34) - S.T(CUT23))));
+    renderFront(g, t, S, cam, liveCam(cam, t, 2.5));
+  } else {
+    const pre = clamp((t - S.T(CUT34)) / (S.T('s05b04') - S.T(CUT34)));
     const push = sine((t - S.T('s05b04')) / (S.T('scene.end') - S.T('s05b04')));
     const tail = clamp((t - S.T('scene.end')) / 0.9);
     const est = lerpCam(CAM.est, CAM.est2, pre);                        // linear creep, then the eased push

@@ -62,8 +62,10 @@ export function render(g, t, S) {
   if (!close) {
     // medium at the console: first frame {400,1060,1.2} (= the staging), then it widens with the CEO's walk so the
     // whole row (CALM … JOY) is in frame for their reactions, and settles into a very slow push
-    cam(g, S.k(t, [['scene.start', { x: 400, y: 1060, zoom: 1.2 }], ['scene.start+0.2', { x: 400, y: 1060, zoom: 1.2 }],
-      ['scene.start+2.3', { x: 450, y: 905, zoom: 1.0 }, 'inOut'], ['s09b02', { x: 452, y: 915, zoom: 1.05 }, 'sine']]), t, 2.5);
+    // (over 3 s, sine: the tilt peaks at ≈85 px/s on screen; over 2.1 s inOut it hit ≈160 px/s. JOY is in frame by
+    // her smile at b01+2.1)
+    cam(g, S.k(t, [['scene.start', { x: 400, y: 1060, zoom: 1.2 }],
+      ['scene.start+3.0', { x: 450, y: 905, zoom: 1.0 }, 'sine'], ['s09b02', { x: 452, y: 915, zoom: 1.05 }, 'sine']]), t, 2.5);
   } else {
     // close on the CEO with SADNESS at their elbow (staging {480,1020,2.0}→{470,1010,2.15}), centred between them and
     // far enough right that the little cage (world x ≤ 356, top-left) stays out of frame instead of peeking in as a
