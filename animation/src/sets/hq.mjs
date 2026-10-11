@@ -725,12 +725,15 @@ export function drawConsole(g, x, y, w, scale = 1, state = {}) {
   const H = (side === 'back' ? 240 : CON.H1 + CON.D * dk + CON.R + 10) * s;
   const key = `console:${side}:${Math.round(w)}:${s.toFixed(3)}:${dk}`;
   const x0 = -w / 2 - pad, y0 = -H - pad;
+  // optional crop (internal): don't cache/draw below world y = _clipY
+  const ch = state._clipY != null ? Math.max(1, Math.min(H + pad * 2, state._clipY - y - y0)) : H + pad * 2;
+  const ckey = key + (state._clipY != null ? `:c${Math.round(ch)}` : '');
   const res = resLevel(g);
-  blit(g, key, x0, y0, w + pad * 2, H + pad * 2, (cg) => (side === 'back' ? paintConsoleBack(cg, w, s) : paintConsoleControls(cg, w, s, dk)), res);
+  blit(g, ckey, x0, y0, w + pad * 2, ch, (cg) => (side === 'back' ? paintConsoleBack(cg, w, s) : paintConsoleControls(cg, w, s, dk)), res);
   if (st.lightsDim > 0) {
     g.globalAlpha = st.lightsDim * 0.55;
     g.filter = 'brightness(0)';
-    blit(g, key, x0, y0, w + pad * 2, H + pad * 2, null, res);
+    blit(g, ckey, x0, y0, w + pad * 2, ch, null, res);
     g.filter = 'none';
     g.globalAlpha = 1;
   }
@@ -783,12 +786,12 @@ export function drawConsole(g, x, y, w, scale = 1, state = {}) {
     const H0 = 210 * s;
     g.save();
     g.globalCompositeOperation = 'lighter';
+    const fl = 0.9 + 0.1 * Math.sin(st.t * 0.9);
+    softEllipse(g, 0, -H0 - 10 * s, w * 0.5, 40 * s, C.amber, 0.2 * glowK * fl, 0.6);
     for (let i = 0; i < 4; i++) {
-      const cx = (-0.375 + i * 0.25) * w;
       let press = 0;
       for (let k = 0; k < 4; k++) press = Math.max(press, clamp(st.consolePress[4 * i + k] || 0));
-      const fl = 0.85 + 0.15 * Math.sin(st.t * 1.1 + i * 2.1);
-      softEllipse(g, cx, -H0 - 10 * s, 130 * s, 40 * s, C.amber, 0.22 * glowK * fl * (1 + press * 0.8), 0.5);
+      if (press > 0.01) softEllipse(g, (-0.375 + i * 0.25) * w, -H0 - 10 * s, 110 * s, 34 * s, C.amber, 0.2 * glowK * press, 0.5);
     }
     g.fillStyle = rgba(C.amberHot, 0.5 * glowK);
     g.beginPath();
@@ -1263,11 +1266,10 @@ function drawFront(g, st) {
       g.restore();
     }
   }
-  // console (back side). drawHQForeground draws it again over the operators' legs.
-  drawFrontConsole(g, st);
+  // NOTE: the console (nearest object to the camera) is drawn by drawHQForeground('front').
 }
 function drawFrontConsole(g, st) {
-  drawConsole(g, 450, 1700, 980, 2.3, { ...st, consoleSide: 'back' });
+  drawConsole(g, 450, 1700, 980, 2.3, { ...st, consoleSide: 'back', _clipY: GEO.front.H + 4 });
 }
 function wallXform(g, G, side, lam, yup, cheat = 0) {
   const P = proj(G);
@@ -1625,11 +1627,12 @@ export function drawHQForeground(g, view = 'front', state = {}) {
     // amber light rising from the console onto the operators (additive, soft)
     const glowK = st.consoleGlow * (1 - st.lightsDim * 0.35);
     g.globalCompositeOperation = 'lighter';
+    softEllipse(g, 450, 1235, 430, 150, C.amber, 0.085 * glowK, 0.6);
     for (let i = 0; i < 4; i++) {
       const [x] = HQ_VIEWS.front.anchors[`consoleSlot${i + 1}`];
       let press = 0;
       for (let k = 0; k < 4; k++) press = Math.max(press, clamp(st.consolePress[4 * i + k] || 0));
-      softEllipse(g, x, 1225, 115, 165, C.amber, 0.09 * glowK * (1 + press * 0.6), 0.5);
+      if (press > 0.01) softEllipse(g, x, 1225, 100, 140, C.amber, 0.08 * glowK * press, 0.5);
     }
   } else {
     drawMist(g, MIST_FG[view] || [], st, 5);
@@ -1665,10 +1668,7 @@ export function drawAlarmLight(g, view = 'front', state = {}) {
   // gentle wash (strongest near the beacon)
   const wash = A * (0.2 + 0.2 * pulse);
   g.globalCompositeOperation = 'multiply';
-  let gr = g.createRadialGradient(bx, by, 0, bx, by, Math.max(G.W, G.H) * 1.1);
-  gr.addColorStop(0, rgba('#ff5a6a', wash));
-  gr.addColorStop(1, rgba('#ff7884', wash * 0.7));
-  g.fillStyle = gr;
+  g.fillStyle = rgba('#ff6472', wash * 0.85);
   g.fillRect(-200, -200, G.W + 400, G.H + 400);
   g.globalCompositeOperation = 'lighter';
   const gr2 = 520 * Math.max(1, bs);

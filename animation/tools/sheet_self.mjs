@@ -31,7 +31,7 @@ const bust = (name, face, pose = {}) => ({
   name, w: 300, h: 330,
   draw(g, cx, top, w, h, t) {
     const s = BUST;
-    drawSelf(g, cx, top + 178 + 488 * s, s, { t, face: { ...face, noAutoBlink: true }, ...pose });
+    drawSelf(g, cx, top + 212 + 488 * s, s, { t, face: { ...face, noAutoBlink: true }, ...pose });
   },
 });
 const full = (name, pose, opts = {}) => ({

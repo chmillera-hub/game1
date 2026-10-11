@@ -375,7 +375,7 @@ const ANGER = {
   neckY: -216, headCY: -64, headRx: 90, headRy: 70, faceDY: 8, headPath: headFlatTop,
   shoulderX: 50, shoulderY: -199, L1: 50, L2: 48, armW1: 15, armW2: 13, handS: 1.32,
   bodyW: 62, shadowR: 84, crouchDrop: 24, breathRate: 0.36, blinkRate: 0.24, tuftBehind: true,
-  baseExpr: { browIn: -0.3, browSquish: 0.2 }, defaultHeat: 0.2,
+  baseExpr: { browIn: -0.3, browSquish: 0.2 }, defaultHeat: 0.2, cheekBump: 0.5,
   face: {
     eyeSpacing: 38, eyeY: -2, eyeRx: 19.5, eyeRy: 21, eyeShape: 'round',
     white: '#fffaf6', irisColor: AC.iris, irisColor2: AC.iris2, irisR: 0.62, pupilColor: '#2a0c06',
@@ -619,7 +619,7 @@ function makeArms(S) {
   return {
     rest: (side) => ({ target: [side * restX, sy + restDY], bend: side }),
     pressButton: (side, view) => (view === 'back'
-      ? { target: [side * pb[0], pb[1]], bend: -side, fore: 1, layer: 'front', hand: 'open', follow: false }
+      ? { target: [side * pb[0], pb[1]], bend: -side, boneK: [0.95, 0.45], layer: 'front', hand: 'open', handAng: -Math.PI / 2 + side * 0.25, follow: false }
       : { target: [side * pf[0], pf[1]], bend: side, fore: 0.8, layer: 'front', hand: 'point', follow: false }),
     coverEars: (side) => ({ target: [side * (hrx + (S.earOut || 6)), hcy + hry * 0.42], bend: -side, layer: 'over', hand: 'palm', handAng: -Math.PI / 2 - side * 0.32 }),
     wave: (side, view, t) => ({ target: [side * (sx + R * (0.5 + 0.16 * Math.sin(t * TAU * 1.4))), sy - R * 0.74], bend: -side, hand: 'palm' }),
@@ -666,7 +666,9 @@ for (const S of Object.values(SPECS)) {
   S.lookPsi = S.lookPsi ?? 1.0; // face yaw at lookBack 1 (rad, ~57°)
   S.eyeAng = Math.asin(clamp(S.face.eyeSpacing / S.hw(S.faceDY + S.face.eyeY), 0, 0.95));
   // back view: hands reach forward onto the console, just visible beside the body
-  S.pressBack = [Math.round(S.bodyW * 0.95), Math.round(S.shoulderY + 0.25 * (S.hipY - S.shoulderY))];
+  // (seen from behind: the elbow drops just outside the torso, the foreshortened forearm rises to the deck and
+  //  the hand shows beside the collar, fingers pointing away from camera)
+  S.pressBack = [Math.round(S.bodyW), Math.round(S.shoulderY + 0.12 * (S.hipY - S.shoulderY))];
   // front view: hands come down-forward onto a console in front of the character (elbows out)
   S.pressFront = [S.shoulderX + 8, Math.round(S.shoulderY + 0.62 * (S.L1 + S.L2))];
   S.arms = makeArms(S);
@@ -720,7 +722,19 @@ function resolveArm(S, a, side, back, t) {
   } else r = { follow: false, ...spec };
   r.tx = r.target[0] + side * (spec.dx || 0);
   r.ty = (spec.atY != null ? spec.atY : r.target[1]) + (spec.dy || 0);
-  if (spec.atY != null) r.follow = false;
+  if (spec.atY != null) {
+    r.follow = false;
+    if (spec.preset === 'pressButton' && !back) {
+      // a console top higher than the default: hands spread outward as they rise (so they clear the head/face)
+      // and the fingertip points down onto the edge
+      const lift = Math.max(0, S.pressFront[1] - spec.atY);
+      r.tx += side * lift * 0.5;
+      if (spec.atY < S.shoulderY + 25) {
+        if (spec.handAng == null) r.handAng = Math.PI / 2 + side * 0.25;
+        if (spec.bend == null) r.bend = side;
+      }
+    }
+  }
   r.layer = r.layer || (r.front ? 'front' : 'back');
   return r;
 }
@@ -732,8 +746,9 @@ function drawArm(g, S, side, a, c) {
   const tx = a.tx + trem * noise1(t * 33 + side, 12) * 3 * u;
   const ty = a.ty + off + trem * noise1(t * 29 + side, 13) * 3 * u;
   // fore 0..1: the arm points into depth (toward/away from camera) -> bones foreshortened
+  // boneK [upper, lower] overrides with explicit bone-length multipliers (e.g. a forearm pointing straight away)
   const fore = clamp(a.fore || 0);
-  const L1 = S.L1 * (1 - 0.32 * fore), L2 = S.L2 * (1 - 0.45 * fore);
+  const L1 = S.L1 * (a.boneK ? a.boneK[0] : 1 - 0.32 * fore), L2 = S.L2 * (a.boneK ? a.boneK[1] : 1 - 0.45 * fore);
   const { a1, a2 } = ik(sx, sy, tx, ty, L1, L2, a.bend ?? side);
   const hang = a.handAng != null ? a.handAng : null; // absolute hand angle (local, radians)
   if (S.arm) { S.arm(g, S, sx, sy, a1, a2, a, side, L1, L2, hang); return; }
@@ -865,7 +880,8 @@ function drawLookBackFace(g, S, c, ox, cy, L) {
   const { facing } = c;
   const { e, psi, s, fy, cheek, cb } = L;
   const F = S.face, rx = S.headRx, D = rx * 6;
-  const vis = (phi) => smoothstep(Math.PI / 2 + 0.05, Math.PI / 2 - 0.25, phi);
+  // features fade in as they come round the edge (the far eye stays just hidden at lookBack 1)
+  const vis = (phi) => smoothstep(Math.PI / 2 - 0.16, Math.PI / 2 - 0.4, phi);
   // gaze: the default looks at the camera (iris shifted toward the head centre); face.lookX is relative to that
   const lookX = clamp((e.lookX || 0) - s * 0.6 * Math.sin(Math.min(psi, Math.PI / 2)), -1, 1);
   g.save();
@@ -910,12 +926,12 @@ function drawLookBackFace(g, S, c, ox, cy, L) {
   }
 
   // mouth: its own pass, foreshortened (a little cheated wider so the smile reads small)
-  const yM = fy + F.mouthY, aM = vis(psi);
+  const yM = fy + F.mouthY, aM = vis(psi), pM = psi - 0.1; // mouth cheated a touch inward so the smile reads whole
   if (aM > 0.01) {
-    const fm = lerp(Math.max(0, Math.cos(psi)), 1, 0.3);
+    const fm = lerp(Math.max(0, Math.cos(pM)), 1, 0.3);
     g.save();
     if (aM < 0.999) g.globalAlpha *= aM;
-    g.translate(s * S.hw(yM) * Math.sin(psi), fy);
+    g.translate(s * S.hw(yM) * Math.sin(pM), fy);
     g.scale(fm, 1);
     drawFace(g, { ...F, eyeY: -1e4, browY: -1e4, blushColor: null, mouthW: F.mouthW * 1.15 },
       { ...e, turn: 0, tears: 0, stream: 0, tearL: 0, tearR: 0, sweat: 0 });

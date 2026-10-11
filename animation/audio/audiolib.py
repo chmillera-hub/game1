@@ -12,13 +12,14 @@ Main API (see docs/audio.md for the full reference)
   gain_db, fade_in, fade_out, fades, pan, remove_dc, peak_normalize
   highpass, lowpass, bandpass, peaking_eq, low_shelf, high_shelf
   make_reverb_ir, reverb, reverb_wet
-  compress, duck, place, render_sfx_events
+  compress, duck, place, render_sfx_events, mix_film
   loudness (BS.1770-4 integrated LUFS), normalize_loudness, true_peak, limit, master
   analyze, spectrogram_png
 
-CLI (quick checks):
+CLI:
   python3 audio/audiolib.py check a.wav [b.wav ...]            # peak / true-peak / LUFS / DC / NaN / jumps
   python3 audio/audiolib.py spectro in.wav out.png [--max-hz 8000] [--seconds a:b]
+  python3 audio/audiolib.py mix --music out/music.wav [--sfx data/sfx_events.json] [--out out/mix.wav]
 """
 import json
 import math
@@ -729,12 +730,107 @@ def spectrogram_png(x, path, sr=SR, max_hz=8000, width=1400, height=420, db_rang
 
 
 # --------------------------------------------------------------------------------------------
+# film mix
+
+# recommended event gains (dB, applied to the -3 dBFS-peak files in audio/sfx) — used when an event has no gain
+SFX_GAIN = {
+    "alarm_bell": -17, "alarm_pull": -6, "footsteps": -12, "door_whoosh": -10, "crowd_murmur": -14,
+    "heartbeat": -9, "breath_shaky": -12, "sob": -10, "cage_close": -7, "lock_click": -9, "cage_creak": -12,
+    "key_turn": -9, "rumble_low": -8, "shimmer": -11, "twinkle": -12, "console_beeps": -13,
+    "paper_rustle": -11, "lamp_click": -10, "cloth_rustle": -14, "rust_creak": -12,
+}
+
+
+def _timeline_lines(tl):
+    beats = tl.get("beats", {})
+    recs = beats.items() if isinstance(beats, dict) else [(b[0], b[1]) if isinstance(b, list) else (b.get("id"), b) for b in beats]
+    return [(bid, r) for bid, r in recs if r.get("kind") == "line" and r.get("audio")]
+
+
+def sfx_events_from_timeline(tl, offset=0.15):
+    """Fallback SFX events from the screenplay's per-beat `sfx` lists (beat start + offset, recommended gains)."""
+    beats = tl.get("beats", {})
+    recs = beats.values() if isinstance(beats, dict) else [b[1] if isinstance(b, list) else b for b in beats]
+    ev = []
+    for r in recs:
+        for nm in r.get("sfx", []) or []:
+            ev.append({"name": nm, "at": float(r["start"]) + offset, "until": None, "gain": SFX_GAIN.get(nm, -12),
+                       "loop": False, "pan": 0, "fade": 0.3, "rate": 1})
+    return sorted(ev, key=lambda e: e["at"])
+
+
+def mix_film(timeline="data/timeline.json", music=None, sfx_events=None, out="out/mix.wav", duration=None,
+             voice_lufs=-18.0, music_lufs=-25.0, duck_db=-8.0, sfx_db=0.0, master_lufs=-16.0, ceiling_db=-1.0,
+             verbose=True):
+    """Dialogue + music + SFX → mastered stereo wav.
+
+    timeline   data/timeline.json (beats of kind 'line' with 'audio' paths are placed at their 'start')
+    music      wav from audio/music.py (normalised to `music_lufs`, then ducked under the dialogue by `duck_db`)
+    sfx_events list or path (data/sfx_events.json from tools/collect_sfx.mjs); None → derived from the
+               timeline's per-beat sfx lists with SFX_GAIN; [] → no SFX
+    The sum is loudness-normalised to `master_lufs` and true-peak limited to `ceiling_db`."""
+    rp = lambda p: p if os.path.isabs(p) else os.path.join(ROOT, p)
+    tl = json.load(open(rp(timeline)))
+    dur = float(duration or tl["duration"])
+    n = int(round(dur * SR))
+    voice = silence(dur)
+    for bid, r in _timeline_lines(tl):
+        p = rp(r["audio"])
+        if os.path.exists(p):
+            voice = place(voice, load(p), float(r["start"]), 0.0, 0.0)
+    voice = voice[:n]
+    voice = normalize_loudness(voice, voice_lufs)
+    mixbuf = voice.astype(np.float64).copy()
+    stems = {"voice": voice}
+    if music:
+        m = load(rp(music))
+        m = np.concatenate([m, np.zeros((max(0, n - len(m)), 2), np.float32)])[:n]
+        m = normalize_loudness(m, music_lufs)
+        m = duck(m, voice, depth_db=duck_db)
+        mixbuf += m
+        stems["music"] = m
+    if sfx_events is None:
+        ev = sfx_events_from_timeline(tl)
+    elif isinstance(sfx_events, str):
+        ev = json.load(open(rp(sfx_events)))
+    else:
+        ev = sfx_events
+    if ev:
+        s = gain_db(render_sfx_events(ev, dur), sfx_db)
+        mixbuf += s
+        stems["sfx"] = s
+    y = master(mixbuf, master_lufs, ceiling_db)
+    save(rp(out), y)
+    if verbose:
+        for k, v in stems.items():
+            print(f"  {k:6s} LUFS {loudness(v):6.1f}  peak {lin2db(np.abs(v).max()):6.1f} dBFS", file=sys.stderr)
+        print(f"  mix    {json.dumps(analyze(y))}", file=sys.stderr)
+    return y
+
+
+# --------------------------------------------------------------------------------------------
 if __name__ == "__main__":
     a = sys.argv[1:]
-    if not a or a[0] not in ("check", "spectro"):
+    if not a or a[0] not in ("check", "spectro", "mix"):
         print(__doc__)
         sys.exit(0)
-    if a[0] == "check":
+    if a[0] == "mix":
+        import argparse
+        ap = argparse.ArgumentParser(prog="audiolib.py mix")
+        ap.add_argument("--timeline", default="data/timeline.json")
+        ap.add_argument("--music", default=None)
+        ap.add_argument("--sfx", default=None, help="sfx events json; 'none' for no SFX; default: from timeline")
+        ap.add_argument("--out", default="out/mix.wav")
+        ap.add_argument("--voice-lufs", type=float, default=-18.0)
+        ap.add_argument("--music-lufs", type=float, default=-25.0)
+        ap.add_argument("--duck", type=float, default=-8.0)
+        ap.add_argument("--sfx-db", type=float, default=0.0)
+        ap.add_argument("--lufs", type=float, default=-16.0)
+        o = ap.parse_args(a[1:])
+        sfx = [] if o.sfx == "none" else o.sfx
+        mix_film(o.timeline, o.music, sfx, o.out, None, o.voice_lufs, o.music_lufs, o.duck, o.sfx_db, o.lufs)
+        print(o.out)
+    elif a[0] == "check":
         for p in a[1:]:
             print(os.path.basename(p), json.dumps(analyze(load(p))))
     else:

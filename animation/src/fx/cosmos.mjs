@@ -158,6 +158,56 @@ function nebulae() {
   return nebCache;
 }
 
+// deep-field cache: background gradient + all nebulae composited once per (size bucket)
+const fieldCache = new Map();
+const qsize = (v) => Math.max(8, Math.round(2 ** (Math.ceil(Math.log2(Math.max(8, v)) * 4) / 4)));
+function fieldCanvas(w, h, withBg) {
+  const key = `${withBg ? 1 : 0}:${w}x${h}`;
+  let c = fieldCache.get(key);
+  if (c) { fieldCache.delete(key); fieldCache.set(key, c); return c; }
+  c = createCanvas(w, h);
+  const x = c.getContext('2d');
+  const rx = w / 2, ry = h / 2, S = Math.min(rx, ry);
+  if (withBg) {
+    const gr = x.createRadialGradient(rx * 1.1, ry * 0.95, 0, rx, ry, Math.max(rx, ry) * 1.15);
+    gr.addColorStop(0, CC.core); gr.addColorStop(0.45, CC.mid); gr.addColorStop(1, CC.deep);
+    x.fillStyle = gr; x.fillRect(0, 0, w, h);
+  }
+  x.globalCompositeOperation = withBg ? 'screen' : 'lighter';
+  const neb = nebulae();
+  NEBULAE.forEach((N, i) => {
+    const sz = N.size * S;
+    x.save();
+    x.globalAlpha = N.a;
+    x.translate(rx + N.nx * rx, ry + N.ny * ry);
+    x.rotate(N.rot);
+    x.scale(N.sx, 1 / Math.sqrt(N.sx));
+    x.drawImage(neb[i], -sz / 2, -sz / 2, sz, sz);
+    x.restore();
+  });
+  fieldCache.set(key, c);
+  if (fieldCache.size > 10) fieldCache.delete(fieldCache.keys().next().value);
+  return c;
+}
+
+// soft star stamps (per colour): a crisp core with a short falloff, and a bright core + halo
+let starSpr = null;
+function starSprites() {
+  if (starSpr) return starSpr;
+  const mk = (N, col, stops) => {
+    const c = createCanvas(N, N), x = c.getContext('2d');
+    const gr = x.createRadialGradient(N / 2, N / 2, 0, N / 2, N / 2, N / 2);
+    for (const [o, a] of stops) gr.addColorStop(o, rgba(col, a));
+    x.fillStyle = gr; x.fillRect(0, 0, N, N);
+    return c;
+  };
+  starSpr = {
+    dot: STAR_COLORS.map((col) => mk(32, col, [[0, 1], [0.22, 1], [0.34, 0.45], [0.55, 0.1], [1, 0]])),
+    bright: STAR_COLORS.map((col) => mk(64, col, [[0, 1], [0.15, 1], [0.22, 0.5], [0.4, 0.18], [0.7, 0.05], [1, 0]])),
+  };
+  return starSpr;
+}
+
 // ---------------------------------------------------------------- galaxy sprites (cached + mip chain)
 const GAL_N = 512;
 const galCache = new Map();
@@ -340,14 +390,10 @@ const GLYPHS = [
   { name: 'pencil', col: '#ffe3a3', nx: 0.14, ny: -0.16, sz: 0.72 },
 ];
 
-/** draw one glowing glyph by name at (x,y) — size = half-extent in current units. Exported for scenes. */
-export function drawCosmosGlyph(g, name, x, y, size, color, opts = {}) {
-  const a = opts.alpha ?? 1, rot = opts.rot || 0;
-  const k = devScale(g);
-  const lw = (opts.lineWidth ?? clamp(1.0 + size * k / 30, 1.1, 2.6)) / k;
+/** vector glyph renderer (used to bake the sprites; also handy for one-off big glyphs) */
+function drawGlyphVector(g, name, x, y, size, color, a, rot, lwLocal) {
   g.save();
   g.globalCompositeOperation = 'lighter';
-  // halo
   const hr = size * 1.9;
   const gr = g.createRadialGradient(x, y, 0, x, y, hr);
   gr.addColorStop(0, rgba(color, 0.2 * a)); gr.addColorStop(1, rgba(color, 0));
@@ -357,11 +403,51 @@ export function drawCosmosGlyph(g, name, x, y, size, color, opts = {}) {
   const P = { a };
   if (name === 'fear') { GL.fear(g, P); g.restore(); return; }
   g.strokeStyle = rgba(color, 0.22 * a); g.fillStyle = rgba(color, 0.22 * a);
-  g.lineWidth = (lw * 3.2) / size;
+  g.lineWidth = (lwLocal * 3.2) / size;
   GL[name](g, P);
   g.strokeStyle = rgba(mixColor(color, '#ffffff', 0.35), 0.95 * a); g.fillStyle = rgba(mixColor(color, '#ffffff', 0.35), 0.95 * a);
-  g.lineWidth = lw / size;
+  g.lineWidth = lwLocal / size;
   GL[name](g, P);
+  g.restore();
+}
+// baked glyph sprites with mip chains: 'fine' line weight for large glyphs, 'bold' for tiny ones
+const GLY_N = 160, GLY_S = 40;
+const glyphCache = new Map();
+function glyphMips(name, color, bold) {
+  const key = name + color + (bold ? 'b' : 'f');
+  let m = glyphCache.get(key);
+  if (m) return m;
+  const c = createCanvas(GLY_N, GLY_N), x = c.getContext('2d');
+  drawGlyphVector(x, name, GLY_N / 2, GLY_N / 2, GLY_S, color, 1, 0, GLY_S * (bold ? 0.15 : 0.07));
+  m = [c];
+  let cur = c, sz = GLY_N;
+  while (sz > 20) {
+    sz >>= 1;
+    const d = createCanvas(sz, sz), dg = d.getContext('2d');
+    dg.imageSmoothingQuality = 'high';
+    dg.drawImage(cur, 0, 0, sz, sz);
+    m.push(d); cur = d;
+  }
+  glyphCache.set(key, m);
+  return m;
+}
+
+/** draw one glowing glyph by name at (x,y) — size = half-extent in current units. Exported for scenes.
+ *  opts: { alpha, rot, vector (true = draw live vector strokes instead of the baked sprite) } */
+export function drawCosmosGlyph(g, name, x, y, size, color, opts = {}) {
+  const a = opts.alpha ?? 1, rot = opts.rot || 0;
+  const k = devScale(g);
+  if (opts.vector) { drawGlyphVector(g, name, x, y, size, color, a, rot, clamp(1.0 + size * k / 30, 1.1, 2.6) / k); return; }
+  const devSize = size * k;
+  const mips = glyphMips(name, color, devSize < 16);
+  const D = (GLY_N / GLY_S) * size; // drawn sprite size (local units)
+  const img = pickMip(mips, D * k);
+  g.save();
+  g.globalCompositeOperation = 'lighter';
+  g.globalAlpha *= clamp(a);
+  g.translate(x, y);
+  if (rot) g.rotate(rot);
+  g.drawImage(img, -D / 2, -D / 2, D, D);
   g.restore();
 }
 
@@ -387,39 +473,31 @@ export function drawCosmos(g, cx, cy, rx, ry, t = 0, opts = {}) {
   if (clipMode === 'rect') { g.beginPath(); g.rect(cx - rx, cy - ry, rx * 2, ry * 2); g.clip(); }
   else if (clipMode === 'ellipse') { g.beginPath(); g.ellipse(cx, cy, rx, ry, 0, 0, TAU); g.clip(); }
 
-  // --- background: the abyss lifts into deep indigo space
-  if (opts.bg !== false) {
-    const bk = smoothstep(0.0, 0.85, reveal);
-    const big = Math.max(rx, ry);
-    const gr = g.createRadialGradient(cx + rx * 0.1, cy - ry * 0.05, 0, cx, cy, big * 1.15);
-    gr.addColorStop(0, mixColor(CC.abyss, CC.core, bk));
-    gr.addColorStop(0.45, mixColor(CC.abyss, CC.mid, bk));
-    gr.addColorStop(1, mixColor(CC.abyss, CC.deep, bk));
-    g.fillStyle = gr;
+  // --- background + nebulae: one cached "deep field" canvas (built once per size bucket), faded in by
+  //     reveal and drifted as a whole. Drawing one cached layer keeps full-screen cost low.
+  const fk = smoothstep(0.2, 0.8, reveal);
+  const baseA = g.globalAlpha;
+  if (opts.bg !== false && fk < 0.999) {
+    g.fillStyle = CC.abyss;
     g.fillRect(cx - rx, cy - ry, rx * 2, ry * 2);
   }
-
-  // --- nebulae (bloom after the first stars)
-  const neb = nebulae();
-  g.globalCompositeOperation = 'screen';
-  NEBULAE.forEach((N, i) => {
-    const nk = smoothstep(0.22 + N.ro, 0.72 + N.ro, reveal);
-    if (nk <= 0.003) return;
-    const x = cx + (N.nx + fbm(T * 0.012 + i * 3.1, seed + i) * 0.05) * rx;
-    const y = cy + (N.ny + fbm(T * 0.011 + i * 5.3, seed + 20 + i) * 0.05) * ry;
-    const sz = N.size * S * (0.82 + 0.18 * nk) * (1 + 0.025 * Math.sin(T * 0.13 + i));
-    g.save();
-    g.globalAlpha = (opts.alpha ?? 1) * N.a * nk;
-    g.translate(x, y);
-    g.rotate(N.rot + N.sd * T * 0.006);
-    g.scale(N.sx, 1 / Math.sqrt(N.sx));
-    g.drawImage(neb[i], -sz / 2, -sz / 2, sz, sz);
-    g.restore();
-  });
+  const SK = opts.__skip || {};
+  if (fk > 0.003 && !SK.field) {
+    const wDev = 2 * rx * k, hDev = 2 * ry * k;
+    const f = Math.max(wDev, hDev) > 420 ? 0.5 : 1;
+    const field = fieldCanvas(qsize(wDev * f), qsize(hDev * f), opts.bg !== false);
+    const ov = 1.04 + 0.008 * Math.sin(T * 0.09);
+    const dx = fbm(T * 0.011, seed + 3) * 0.015 * rx, dy = fbm(T * 0.01, seed + 4) * 0.015 * ry;
+    g.globalAlpha = baseA * fk;
+    if (opts.bg === false) g.globalCompositeOperation = 'lighter';
+    g.drawImage(field, cx - rx * ov + dx, cy - ry * ov + dy, 2 * rx * ov, 2 * ry * ov);
+    g.globalAlpha = baseA;
+    g.globalCompositeOperation = 'source-over';
+  }
 
   // --- galaxies (cached sprites, rotated per frame)
   g.globalCompositeOperation = 'lighter';
-  GALAXIES.forEach((G, i) => {
+  if (!SK.gal) GALAXIES.forEach((G, i) => {
     const gk = smoothstep(0.48 + G.ro, 0.86 + G.ro, reveal);
     if (gk <= 0.003) return;
     const x = cx + (G.nx + fbm(T * 0.01 + i * 7.7, seed + 40 + i) * 0.03) * rx;
@@ -427,7 +505,7 @@ export function drawCosmos(g, cx, cy, rx, ry, t = 0, opts = {}) {
     const sz = G.size * S * (0.85 + 0.15 * gk);
     const img = pickMip(galaxy(G.style), sz * k);
     g.save();
-    g.globalAlpha = (opts.alpha ?? 1) * gk * 0.95;
+    g.globalAlpha = baseA * gk * 0.95;
     g.translate(x, y);
     g.rotate(G.tilt);
     g.scale(1, G.incl);
@@ -436,62 +514,66 @@ export function drawCosmos(g, cx, cy, rx, ry, t = 0, opts = {}) {
     g.restore();
   });
 
-  // --- stars: three parallax layers, batched by colour; twinklers drawn individually
+  // --- stars: three parallax layers. Tiny stars are batched as sub-pixel squares (one path per colour,
+  //     very cheap); bigger / kindling / twinkling stars are stamped from cached soft-dot sprites.
   const data = starData(seed);
   const area = 4 * rx * ry * k * k;
   const sizeMul = clamp(Math.pow(R / 420, 0.25), 0.72, 1.3);
   const kindle = smoothstep(0.03, 0.62, reveal) * 1.08; // star kindle front (0..~1.08)
   const ox = cx - rx, oy = cy - ry, W2 = rx * 2, H2 = ry * 2;
   const indiv = [];
+  const spr = starSprites();
   g.globalCompositeOperation = 'lighter';
-  LAYERS.forEach((L, li) => {
+  if (!SK.stars) LAYERS.forEach((L, li) => {
     const n = Math.round(clamp(area * L.dens, L.min, L.max));
     const arr = data[li];
     const offU = T * L.vx, offV = T * L.vy;
     const bins = [[], [], [], [], []];
     for (let i = 0; i < n; i++) {
-      const s = arr[i];
-      const ka = clamp((kindle - s.thr) / 0.07);
+      const st = arr[i];
+      const ka = clamp((kindle - st.thr) / 0.07);
       if (ka <= 0) continue;
-      const u = s.u + offU, v = s.v + offV;
+      const u = st.u + offU, v = st.v + offV;
       const x = ox + (u - Math.floor(u)) * W2, y = oy + (v - Math.floor(v)) * H2;
-      const r = (L.r0 + (L.r1 - L.r0) * s.sz) * sizeMul / k;
-      if (ka < 1 || s.tw) indiv.push([x, y, r, s, L, li, ka]);
-      else bins[s.c].push(x, y, r);
+      const rd = (L.r0 + (L.r1 - L.r0) * st.sz) * sizeMul; // device px
+      const r = rd / k;
+      if (ka < 1 || st.tw || rd >= 1.05 || (li === 2 && st.sz > 0.45)) indiv.push([x, y, r, st, L, li, ka]);
+      else bins[st.c].push(x, y, r * 1.77);
     }
     for (let c = 0; c < 5; c++) {
-      const b = bins[c];
-      if (!b.length) continue;
+      const bn = bins[c];
+      if (!bn.length) continue;
       g.fillStyle = rgba(STAR_COLORS[c], L.a);
       g.beginPath();
-      for (let j = 0; j < b.length; j += 3) { g.moveTo(b[j] + b[j + 2], b[j + 1]); g.arc(b[j], b[j + 1], b[j + 2], 0, TAU); }
+      for (let j = 0; j < bn.length; j += 3) g.rect(bn[j] - bn[j + 2] / 2, bn[j + 1] - bn[j + 2] / 2, bn[j + 2], bn[j + 2]);
       g.fill();
     }
   });
   const spikes = R > 140;
-  for (const [x, y, r, s, L, li, ka] of indiv) {
-    const tw = s.tw ? 0.62 + 0.38 * Math.sin(t * s.w + s.ph) : 1;
+  for (const [x, y, r, st, L, li, ka] of indiv) {
+    const tw = st.tw ? 0.62 + 0.38 * Math.sin(t * st.w + st.ph) : 1;
     const a = L.a * ka * tw;
-    const col = STAR_COLORS[s.c];
-    if (li === 2 && s.sz > 0.45) {
-      // bright star: halo + (in close-ups) a tiny 4-point glint
-      const hr = r * 5.5;
-      const gr = g.createRadialGradient(x, y, 0, x, y, hr);
-      gr.addColorStop(0, rgba(col, 0.5 * a)); gr.addColorStop(1, rgba(col, 0));
-      g.fillStyle = gr; g.fillRect(x - hr, y - hr, hr * 2, hr * 2);
+    g.globalAlpha = baseA * a;
+    if (li === 2 && st.sz > 0.45) {
+      // bright star: core + halo sprite and (in close-ups) a tiny 4-point glint
+      const D = r * 11;
+      g.drawImage(spr.bright[st.c], x - D / 2, y - D / 2, D, D);
       if (spikes) {
         const sl = r * (3.5 + 2.5 * tw);
-        g.strokeStyle = rgba(col, 0.55 * a); g.lineWidth = Math.max(0.6 / k, r * 0.3);
+        g.strokeStyle = rgba(STAR_COLORS[st.c], 0.55);
+        g.lineWidth = Math.max(0.6 / k, r * 0.3);
         g.beginPath(); g.moveTo(x - sl, y); g.lineTo(x + sl, y); g.moveTo(x, y - sl); g.lineTo(x, y + sl); g.stroke();
       }
+    } else {
+      const D = r * 4 * (st.tw ? 0.85 + 0.25 * tw : 1);
+      g.drawImage(spr.dot[st.c], x - D / 2, y - D / 2, D, D);
     }
-    g.fillStyle = rgba(col, a);
-    g.beginPath(); g.arc(x, y, r * (s.tw ? 0.85 + 0.25 * tw : 1), 0, TAU); g.fill();
   }
+  g.globalAlpha = baseA;
 
   // --- glyphs: bits and pieces of meaning, drifting slowly
   const gk0 = smoothstep(0.58, 0.98, reveal) * glyphAmt;
-  if (gk0 > 0.003) {
+  if (gk0 > 0.003 && !SK.glyphs) {
     const small = clamp((260 - R) / 200);
     const nG = Math.round(clamp(4 + R / 38, 5, GLYPHS.length));
     const gsz = S * lerp(0.07, 0.115, small);
@@ -506,7 +588,7 @@ export function drawCosmos(g, cx, cy, rx, ry, t = 0, opts = {}) {
       const rot = fbm(T * 0.05 + i, sd + 2) * 0.35;
       const pulse = 0.85 + 0.15 * Math.sin(t * (0.6 + rand(i, seed) * 0.5) + i * 1.3);
       const depth = lerp(0.68, 1, clamp((G.sz - 0.7) / 0.5));
-      drawCosmosGlyph(g, G.name, x, y, gsz * G.sz, G.col, { alpha: (opts.alpha ?? 1) * ga * pulse * depth, rot });
+      drawCosmosGlyph(g, G.name, x, y, gsz * G.sz, G.col, { alpha: ga * pulse * depth, rot });
     }
   }
   g.restore();
@@ -514,4 +596,4 @@ export function drawCosmos(g, cx, cy, rx, ry, t = 0, opts = {}) {
 
 /** warm-up caches (call once at startup if you want the first frame to be fast) */
 export function _cosmosSprites() { return { neb: nebulae(), warm: galaxy('warm'), cool: galaxy('cool') }; }
-export function preloadCosmos() { nebulae(); galaxy('warm'); galaxy('cool'); starData(7); }
+export function preloadCosmos() { nebulae(); galaxy('warm'); galaxy('cool'); starData(7); starSprites(); }

@@ -1135,8 +1135,8 @@ def render_cue(syn, cue, verbose=True):
 
 
 REVERBS = {
-    "hall": dict(decay=2.6, predelay=0.024, damping=0.55, size=0.65, cross=0.3, ret=0.55),
-    "vast": dict(decay=5.5, predelay=0.045, damping=0.68, size=0.95, cross=0.4, ret=0.62),
+    "hall": dict(decay=2.6, predelay=0.024, damping=0.55, size=0.65, cross=0.3, ret=0.48),
+    "vast": dict(decay=5.5, predelay=0.045, damping=0.68, size=0.95, cross=0.4, ret=0.52),
 }
 
 

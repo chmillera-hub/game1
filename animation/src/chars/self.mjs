@@ -38,7 +38,7 @@ const SH_REL = -132, SX = 58;            // shoulder joints, relative to hip (to
 const NECK_REL = -150, PIVOT_REL = -166; // neck base / head pivot, relative to hip
 const HEAD_UP = 72;                      // pivot -> face centre
 const UPPER = 100, FORE = 92;            // arm bones (wrist = IK target)
-const HAND_S = 1.25;                     // hand drawing scale (hand ≈ 40px long)
+const HAND_S = 1.42;                     // hand drawing scale (hand ≈ 46px long)
 const SEAT_HIP = 40;                     // seated: hip sits 40px below the desk line
 const KNEEL_HIP = [-24, -136];
 const TORSO_D = 30;                      // torso half-depth (for bodyTurn projection)
@@ -141,7 +141,7 @@ const defSk = () => (DEFAULT_SK ||= skeleton({}));
 //         prop, board, palm, reach1, reach2, shake }
 export const SELF_ARMS = {
   rest: (side, k = defSk()) => ({ target: [k.sh[side].x + side * 12, k.sh[side].y + 184], bend: side, hand: 'open' }),
-  onShoulder: (side, k = defSk()) => ({ target: [k.sh[side].x + side * 110, k.sh[side].y + 130], bend: -side, front: true, hand: 'rest', palm: true, wrist: side * 0.35 }),
+  onShoulder: (side, k = defSk()) => ({ target: [k.sh[side].x + side * 110, k.sh[side].y + 130], bend: -side, front: true, hand: 'drape', palm: true, wrist: side * 0.75, thumb: -side }),
   handOnHeart: (side, k = defSk()) => {
     const p = k.tp(12 + k.fshift, -96);
     return { target: [p[0] - side * 4 - 6, p[1] + 20], bend: side, front: true, hand: 'flat', handAngle: side > 0 ? -2.25 : -0.95, thumb: -1, reach2: 0.85 };
@@ -153,14 +153,18 @@ export const SELF_ARMS = {
     return { target: p, bend: side, front: true, hand: 'grip', handAngle: side > 0 ? Math.PI + 0.25 : -0.25, thumb: -1, prop: 'clipboard', board: [-side * 24, -38, -side * 0.12], reach2: 0.55 };
   },
   pointing: (side, k = defSk()) => ({ target: [k.sh[side].x + side * 172, k.sh[side].y + 26], bend: -side, front: true, hand: 'point', thumb: -side }),
-  rubNeck: (side, k = defSk()) => ({ target: [k.piv[0] + side * 30, k.piv[1] - 2], bend: -side, layer: 'side', hand: 'open', handAngle: side > 0 ? Math.PI + 0.6 : -0.6, thumb: 1 }),
+  rubNeck: (side, k = defSk()) => {
+    const p = k.hp(side * 34, 40); // behind the jaw: the hand disappears behind the head
+    return { target: p, bend: -side, layer: 'side', hand: 'open', handAngle: side > 0 ? Math.PI + 0.9 : -0.9, thumb: 1 };
+  },
   wipeTear: (side, k = defSk()) => {
     const e = k.hp(side * 30, 28);
     return { target: [e[0] + side * 8, e[1] + 22], bend: side, front: true, hand: 'fist', handAngle: side > 0 ? -2.05 : -1.09, thumb: -side };
   },
   rubEyes: (side, k = defSk()) => {
     const e = k.hp(side * 28, 22);
-    return { target: [e[0] + side * 10, e[1] + 26], bend: side, front: true, hand: 'fist', handAngle: side > 0 ? -2.1 : -1.05, thumb: -side };
+    // elbows forward (upper arm foreshortened toward camera), forearms up, heels of the hands on the eyes
+    return { target: [e[0] + side * 8, e[1] + 12], bend: side, front: true, hand: 'fist', handAngle: side > 0 ? -1.85 : -1.29, thumb: -side, reach1: 0.5, reach2: 1.25 };
   },
   clasped: (side, k = defSk()) => {
     const p = k.tp(k.fshift * 0.8 + side * 12, -22);
@@ -272,7 +276,17 @@ export function drawSelf(g, x, y, scale = 1, pose = {}) {
   const ctx = { k, outfit, pose, back, sil: silhouette(k, outfit) };
 
   if (layer !== 'front') {
-    drawArmGroup(g, geo.filter((_, i) => lay[i] === 'back'), ctx, false);
+    if (back) {
+      // seen from behind, arms raised in front of the body (to the face, a console, a notebook) are hidden by
+      // the head and shoulders: only what pokes out below the shoulder line (elbows) can show
+      g.save();
+      g.beginPath();
+      g.rect(-600, Math.min(k.sh[-1].y, k.sh[1].y) - 6, 1200, 1200);
+      g.clip();
+      drawArmGroup(g, geo.filter((_, i) => lay[i] === 'back' && arms[i].front), ctx, false);
+      g.restore();
+      drawArmGroup(g, geo.filter((_, i) => lay[i] === 'back' && !arms[i].front), ctx, false);
+    } else drawArmGroup(g, geo.filter((_, i) => lay[i] === 'back'), ctx, false);
     if (!k.seated) drawLegs(g, k, outfit);
     withDeskClip(g, k, () => {
       if (back) {
@@ -606,7 +620,7 @@ function drawLegs(g, k, outfit) {
     if (walk) {
       const st = (side < 0 ? 1 : -1) * Math.sin(ph);
       const lift = Math.max(0, (side < 0 ? 1 : -1) * Math.cos(ph));
-      ax = hx * 0.7 + st * 42 * fwd;
+      ax = hx * 1.15 + st * 38 * fwd;
       ay = ANKLE_Y - lift * 22;
       kneeDir = fwd;
       shoeRot = -st * 0.14 * fwd - lift * 0.18 * fwd;
@@ -914,8 +928,7 @@ function drawFrontHair(g, u, lx, sway) {
   g.beginPath(); g.moveTo(14 + p, -84); g.quadraticCurveTo(10 + p, -72, 6 + p, -60); g.stroke();
 
   // loose strands (secondary motion)
-  strand(g, 24 + p, -64, sw * 1.2 + 0.1, [[-12, 8], [-14, 26]], 4.6);
-  strand(g, 30 + p, -62, sw * 1.4 + 0.25, [[-2, 12], [-10, 22]], 3.2);
+  strand(g, 22 + p, -60, sw * 1.3, [[-10, 12], [-4, 28]], 5);
   strand(g, -2 + o, -106, sw * 0.8 - 0.1, [[4, -14], [14, -22]], 5);
   strand(g, 8 + o, -106, sw * 0.9 + 0.2, [[10, -10], [22, -10]], 3.8);
 }
@@ -1105,20 +1118,38 @@ function drawArmGroup(g, geos, ctx, merge) {
   const { k, pose, outfit } = ctx;
   // props first (hands grip over them)
   const nb = geos.filter((q) => q.a.prop === 'notebook' || q.a.prop === 'notebookCover');
+  const cover = nb.length && nb[0].a.prop === 'notebookCover';
   if (nb.length) {
-    const cx = nb.reduce((s, q) => s + q.wx, 0) / nb.length;
-    const cy = nb.reduce((s, q) => s + q.wy, 0) / nb.length;
-    const cover = nb[0].a.prop === 'notebookCover';
+    const cx = nb.reduce((s, q) => s + q.wx, 0) / nb.length + (nb.length === 1 ? -nb[0].side * 40 : 0);
+    const cy = nb.reduce((s, q) => s + q.wy, 0) / nb.length + (cover ? -24 : -12);
     const tilt = (pose.notebook && pose.notebook.tilt) || 0;
+    const sc = cover ? 0.95 : 0.82;
+    // closed book shown to camera: the hands hold it from behind, only the thumbs wrap the front edges
+    if (cover) for (const q of nb) drawHand(g, q);
     g.save();
-    g.translate(cx + (nb.length === 1 ? -nb[0].side * 40 : 0), cy + (cover ? -18 : -12));
+    g.translate(cx, cy);
     g.rotate(tilt);
     g.scale(k.facing, 1); // keep the cover art readable
-    drawSelfNotebook(g, 0, 0, cover ? 0.95 : 0.82, { mode: cover ? 'closed' : 'heldOpen', t: k.t });
+    drawSelfNotebook(g, 0, 0, sc, { mode: cover ? 'closed' : 'heldOpen', t: k.t });
     g.restore();
+    if (cover) {
+      for (const q of nb) {
+        const ex = cx + q.side * 35 * sc * Math.cos(tilt), ey = q.wy - 12;
+        g.save();
+        g.translate(ex, ey);
+        g.rotate(q.side * 0.25 + tilt);
+        g.fillStyle = C.skin;
+        g.strokeStyle = C.skinLine;
+        g.lineWidth = 2.6;
+        g.beginPath();
+        g.roundRect(-q.side * 9 - 5, -13, 10, 22, 5);
+        g.fill(); g.stroke();
+        g.restore();
+      }
+    }
   }
   for (const q of geos) if (q.a.prop === 'clipboard') drawClipboardAt(g, q, k);
-  for (const q of geos) drawHand(g, q);
+  for (const q of geos) if (!(cover && nb.includes(q))) drawHand(g, q);
   for (const q of geos) drawSleeve(g, q, ctx, merge && !ctx.back);
 }
 
@@ -1160,9 +1191,9 @@ function drawSleeve(g, q, ctx, merge) {
   const fl = Math.hypot(wx - ex, wy - ey) || 1;
   const ux = (wx - ex) / fl, uy = (wy - ey) / fl;
   // sleeve end: the sweater cuff covers the wrist ("sweater paw"); the blazer stops short to show the teal cuff
-  const endBack = ceo ? 9 : 2;
+  const endBack = ceo ? 21 : 2;
   const fx = wx - ux * endBack, fy = wy - uy * endBack;
-  if (ceo) cuff(g, wx - ux * 13, wy - uy * 13, wx + ux * 5, wy + uy * 5, 26, C.sweater, C.sweaterLine, true);
+  if (ceo) cuff(g, wx - ux * 16, wy - uy * 16, wx + ux * 5, wy + uy * 5, 27, C.sweater, C.sweaterLine, true);
   const outline = () => {
     g.strokeStyle = line;
     g.lineWidth = W1 + 5.5;
@@ -1210,7 +1241,7 @@ function drawSleeve(g, q, ctx, merge) {
     g.strokeStyle = rgba(line, 0.9);
     g.lineWidth = 2.4;
     const nx = -uy, ny = ux;
-    g.beginPath(); g.moveTo(fx - ux * 6 + nx * 14, fy - uy * 6 + ny * 14); g.lineTo(fx - ux * 6 - nx * 14, fy - uy * 6 - ny * 14); g.stroke();
+    g.beginPath(); g.moveTo(fx + ux * 2 + nx * 14, fy + uy * 2 + ny * 14); g.lineTo(fx + ux * 2 - nx * 14, fy + uy * 2 - ny * 14); g.stroke();
   }
 }
 
@@ -1246,6 +1277,7 @@ function cuff(g, x0, y0, x1, y1, w, col, line, ribs) {
 const HANDS = {
   open: { f: [[5.2, 14, 0.4], [1.7, 15.5, 0.32], [-1.8, 14.5, 0.36], [-5.2, 12, 0.45]], spread: 0.08, thumb: [0.85, 12.5] },
   rest: { f: [[5.2, 15, 0.6], [1.7, 16, 0.55], [-1.8, 15, 0.6], [-5.2, 12.5, 0.65]], spread: 0.05, thumb: [0.6, 12.5] },
+  drape: { f: [[5, 16, 0.22], [1.7, 17.5, 0.18], [-1.7, 16.5, 0.2], [-5, 13.5, 0.26]], spread: 0.05, thumb: [0.45, 12.5] },
   palm: { f: [[5.4, 15, 0.02], [1.8, 17, 0], [-1.9, 16, 0], [-5.4, 13, 0.05]], spread: 0.24, thumb: [1.15, 13] },
   flat: { f: [[5, 15.5, 0.05], [1.7, 17, 0.04], [-1.7, 16, 0.05], [-5, 13, 0.08]], spread: 0.04, thumb: [0.55, 12.5] },
   cup: { f: [[5, 15, 0.25], [1.7, 16.5, 0.2], [-1.7, 15.5, 0.22], [-5, 13, 0.3]], spread: 0.06, thumb: [1.35, 13.5] },
@@ -1262,7 +1294,7 @@ function drawHand(g, q) {
   g.translate(q.wx, q.wy);
   g.rotate(q.handAng);
   g.scale(HAND_S, HAND_S * th);
-  const OL = 2.1, FW = 6.2;
+  const OL = 1.9, FW = 6.6;
   const fingers = H.f.map(([by, len, curl]) => {
     const ang = (by / 5.4) * H.spread;
     const l = len * (1 - 0.42 * curl);
@@ -1274,9 +1306,9 @@ function drawHand(g, q) {
   const palm = () => {
     g.beginPath();
     g.moveTo(-1, -8);
-    g.bezierCurveTo(6, -10.5, 14, -10, 18, -7.5);
-    g.bezierCurveTo(H.fist ? 25 : 21, -3, H.fist ? 25 : 21, 3, 18, 7.5);
-    g.bezierCurveTo(13, 10.5, 6, 10.5, -1, 8.5);
+    g.bezierCurveTo(6, -11, 14, -11, 18, -8.5);
+    g.bezierCurveTo(H.fist ? 26 : 22, -3.5, H.fist ? 26 : 22, 3.5, 18, 8.5);
+    g.bezierCurveTo(13, 11.5, 6, 11, -1, 8.5);
     g.closePath();
   };
   const fingerPaths = () => {
@@ -1465,15 +1497,16 @@ function drawCoverArt(g, cx, cy, s, t, pencil) {
   g.save();
   g.translate(cx, cy);
   g.scale(s, s);
-  // crayon title scribble
-  g.strokeStyle = pencil ? 'rgba(70,70,90,0.7)' : '#d0584a';
-  g.lineWidth = 2.4;
-  g.beginPath();
-  g.moveTo(-24, -34); g.lineTo(-20, -40); g.lineTo(-17, -34); g.lineTo(-14, -40); g.lineTo(-11, -34); // M
-  g.moveTo(-7, -40); g.lineTo(-4, -36); g.lineTo(-1, -40); g.moveTo(-4, -36); g.lineTo(-4, -33);       // Y
-  g.moveTo(10, -39); g.quadraticCurveTo(4, -41, 5, -37); g.quadraticCurveTo(12, -36, 9, -33); g.quadraticCurveTo(6, -32, 4, -34); // S
-  g.moveTo(14, -40); g.lineTo(21, -40); g.moveTo(17.5, -40); g.lineTo(17.5, -33);                     // T
-  g.stroke();
+  // crayon title (handwriting font if the renderer registered one; plain fallback otherwise)
+  g.fillStyle = pencil ? 'rgba(70,70,90,0.75)' : '#d0584a';
+  g.font = 'bold 15px Caveat, "Patrick Hand", sans-serif';
+  g.textAlign = 'center';
+  g.textBaseline = 'alphabetic';
+  g.save();
+  g.rotate(-0.06);
+  g.fillText('My Story', 0, -31);
+  g.restore();
+  g.textAlign = 'start';
   // tall dark hooded figure
   g.fillStyle = pencil ? 'rgba(60,60,80,0.35)' : '#2b2a4a';
   g.strokeStyle = pencil ? 'rgba(60,60,80,0.8)' : '#16152a';
