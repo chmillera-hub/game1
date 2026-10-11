@@ -28,4 +28,4 @@
     - the website and monitors;
     - name tags and dialogue.
 
-**Length warning.** These add roughly 20–25 s of dialogue and beats, and the current cut is 4:51. Tighten elsewhere to stay under 5:00: shorter pauses, slightly quicker non-key lines, trimming the s05 "It's been a day" exchange if needed. Ask the user if a cut is needed.
+**LENGTH: NO LIMIT (user instruction, supersedes the 5:00 cap).** Going over 5 minutes is fine, even 10. Do NOT tighten pauses or cut beats (keep "It's been a day"). Add the new lines and scenes with generous breathing room, so nothing feels rushed. The ~15 MB size target scales with length; ask the user before exceeding it, or encode at the same quality per second.
