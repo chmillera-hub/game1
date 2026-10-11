@@ -11,11 +11,12 @@ python3 audio/sfx.py heartbeat sob --spectro out       # rebuild some + write ou
 python3 audio/music.py data/music_cues.example.json out/music_example.wav    # ~45 s for the 5.65-min score
 python3 audio/music.py data/music_plan.json out/music.wav   # the production plan renders directly (from/to/at)
 python3 audio/music.py cues.json out.wav --roll out/roll.png --notes out/notes.txt   # debug: piano roll + note list
+python3 audio/music.py cues.json out.wav --lufs -18 --seed 0 --cue-dir out/cues --quiet  # target / humanisation / per-cue stems
 python3 audio/audiolib.py mix --music out/music.wav --sfx data/sfx_events.json --out out/mix.wav
 python3 audio/audiolib.py check out/mix.wav            # peak / true peak / LUFS / DC / NaN / click score
 python3 audio/audiolib.py spectro in.wav out.png [--max-hz 8000] [--seconds a:b]
 ```
-Render speed: the score takes ≈ 8 s per minute of film (4 cores) — well inside "< 2 min for a 6-min score".
+Render speed: the score takes ≈ 7–8 s per minute of film (4 cores) — well inside "< 2 min for a 6-min score".
 
 **Production path** (what `tools/render_all.sh` ends up muxing): `tools/resolve_music.py` turns
 `data/music_plan.json` into `data/music_cues.json` → `python3 audio/music.py data/music_cues.json out/music.wav`
@@ -151,7 +152,9 @@ very soft high piano "pings". The bar grid is stretched ≤ ±12 % so hits land 
 (b3-2-b3 · 5, hesitant), `fear_question` (…5-6, hangs on IV), `fear_hope` (major, ends on 5), `fear_resolved`
 (3-2-3-5 | 4-3-2-1 over a cadential 6/4), `wonder` (3-2-3-5-#4-5, lydian), `lament` (5-4-3-2-1).
 In the example score the Fear motif travels: fragile music box (s02) → fragile minor piano (s04) → questioning
-(s06, s11, s12) → wonder (s14, at the void's opening and in its pauses) → hopeful (s15–s16) → resolved (s17, s20).
+(s06) → fragile on cello + the lament (s07–s08) → questioning music box (s11) → questioning/fragile fragments in
+the pauses of s12 → wonder (s14: at the void's opening and in its pauses) → hopeful (s15–s16) → resolved
+(s17 after "Can I help?", s20 ending on the final tonic).
 
 Console report (stdout): per cue RMS / peak / LUFS / phrase count + whole-file health. `--cue-dir DIR` writes each cue dry.
 The example sheet's loudness arc (file normalised to -18 LUFS integrated): tender ≈ -19, curious/alarm -19…-23,

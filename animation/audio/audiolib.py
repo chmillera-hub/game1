@@ -584,7 +584,8 @@ def _tp_envelope(x, ref, oversample=4, margin_db=6.0, blk=8192):
 
     Only blocks whose *sample* peak comes within `margin_db` of `ref` are oversampled — inter-sample
     overs on real audio stay well under +6 dB, so everything else cannot reach `ref`; elsewhere the
-    sample peak is returned. This keeps limiting / true-peak metering of a 6-minute film at ~1 s."""
+    sample peak is returned. Quiet material (most of a film score) is then metered/limited several
+    times faster; a loud, dense mix costs about as much as full oversampling."""
     xs = np.asarray(x, dtype=np.float64)
     xa = _absmax_ch(xs)
     pk = xa.copy()
