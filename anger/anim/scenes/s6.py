@@ -782,7 +782,7 @@ def _cam_a(t):
 
 def _cam_c(t):
     """Low close: his face low in frame, the tongue hanging into it from above (its mouth stays out of frame)."""
-    return cam_at(_face(round(SEES, 2)), 3.3, 392.0, 1005.0)
+    return cam_at(_face(round(SEES, 2)), 3.3, 340.0, 1005.0)
 
 
 def _fit(pts, margin=(130.0, 150.0), zmax=2.0, sy_bias=0.0):

@@ -306,9 +306,22 @@ REACH = (TRIES[0] - 0.5, TRIES[0] - 0.09)             # hand onto the iron ring 
 REL = (TRIES[1] + 0.8, TRIES[1] + 1.1)                # lets go of it (inside the flat-look close-up)
 SHEATH_ANGLE = 205.0                                   # blade direction in the scabbard (deg from up)
 # the draw: hand up to the hilt (FK), on it, sword out (swap) up over the shoulder, down to the guard
-DRAW = (BURST + 1.35, BURST + 2.1, BURST + 2.3, BURST + 2.65, BURST + 3.12)
+DRAW = (BURST + 1.25, BURST + 2.15, BURST + 2.3, BURST + 2.7, BURST + 3.15)
 HILT_ARM = ArmPose(shoulder=140.0, elbow=110.0, wrist=-30.0, hand="hold", across=0.3, behind=0.5)  # palm on the
-DRAW_OUT = ArmPose(shoulder=150.0, elbow=70.0, wrist=-30.0, hand="hold")                         # sheathed grip
+#                                                                                  sheathed grip (FK, within ~3 units)
+# via poses so the gauntlet goes round BEHIND his head / out in front, never across his face
+BEHIND_UP = ArmPose(shoulder=60.0, elbow=60.0, wrist=-20.0, hand="hold", across=0.0, behind=0.6)
+BACK_DOWN = ArmPose(shoulder=40.0, elbow=50.0, wrist=-10.0, hand="relaxed", across=0.0, behind=0.6)
+DRAW_UP = ArmPose(shoulder=150.0, elbow=40.0, wrist=-30.0, hand="hold")
+DRAW_FWD = ArmPose(shoulder=110.0, elbow=15.0, wrist=-30.0, hand="hold")
+
+
+def arm_route(keys, u):
+    """ArmPose along a polyline of key poses, u 0..1 (equal shares, continuous)."""
+    u = clamp(u)
+    n = len(keys) - 1
+    i = min(int(u * n), n - 1)
+    return ArmPose.blend(keys[i], keys[i + 1], u * n - i)
 STEP_OUT = T1                                          # first plant of S2 (right foot) on the reveal beat
 STEPON = (STEP_OUT - 0.4 / (0.5 / 0.55), STEP_OUT)
 
@@ -504,7 +517,7 @@ def _sword_state(t):
 
 
 # sheathing while walking (in frame): arm up to the hilt, swap, on the hilt, back down to the swing
-SHEATHE = (W2[-3] - 0.3, W2[-3] + 0.42, W2[-3] + 0.55, W2[-3] + 1.35)
+SHEATHE = (W2[-3] - 0.55, W2[-3] + 0.42, W2[-3] + 0.55, W2[-3] + 1.45)
 
 
 def _stop(t, g, xf, stop, side_planted, target):
@@ -678,18 +691,20 @@ def anger_pose(t):
     if SHEATHE[0] <= t < SHEATHE[3]:
         up = ease_in_out((t - SHEATHE[0]) / (SHEATHE[1] - SHEATHE[0]))
         down = ease_in_out((t - SHEATHE[2]) / (SHEATHE[3] - SHEATHE[2]))
-        p.arm_r = ArmPose.blend(ArmPose.blend(AR["sword_low"], HILT_ARM, up), AR["rest"], down)
+        if t < SHEATHE[2]:
+            p.arm_r = arm_route([AR["sword_low"], BEHIND_UP, HILT_ARM], up)
+        else:
+            p.arm_r = arm_route([HILT_ARM, BACK_DOWN, AR["rest"]], down)
         if sw == "hand":
             ex["sword_angle"] = lerp(_natural_sword_angle(p, t), SHEATH_ANGLE, up)
     # the doorway: draws the sword (same FK route up to the hilt, out over the shoulder, down to the guard)
     if DRAW[0] <= t:
         up = ease_in_out((t - DRAW[0]) / (DRAW[1] - DRAW[0]))
         if t < DRAW[2]:
-            p.arm_r = ArmPose.blend(AR["rest"], HILT_ARM, up)
+            p.arm_r = arm_route([AR["rest"], BEHIND_UP, HILT_ARM], up)
         if t >= DRAW[2]:
-            out = ease_in_out((t - DRAW[2]) / (DRAW[3] - DRAW[2]))
-            guard = ease_in_out((t - DRAW[3]) / (DRAW[4] - DRAW[3]))
-            p.arm_r = ArmPose.blend(ArmPose.blend(HILT_ARM, DRAW_OUT, out), AR["sword_guard"], guard)
+            out = ease_in_out((t - DRAW[2]) / (DRAW[4] - DRAW[2]))
+            p.arm_r = arm_route([HILT_ARM, DRAW_UP, DRAW_FWD, AR["sword_guard"]], out)
             if t > DRAW[4] + 0.05:       # lowers it as he steps through (S2 opens with the sword low)
                 p.arm_r = ArmPose.blend(AR["sword_guard"], AR["sword_low"],
                                         smoothstep((t - DRAW[4] - 0.05) / 0.4))
