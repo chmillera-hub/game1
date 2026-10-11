@@ -140,13 +140,25 @@ def cmd_sheet(sid, n=12, cols=4, t0=None, t1=None, out=None, cell_w=270, caption
 # video
 # ---------------------------------------------------------------------------
 def _render_chunk(args):
+    # re-raise worker errors as plain RuntimeErrors: some (e.g. CairoError) can't be
+    # unpickled by multiprocessing, which would make Pool.map hang forever
+    try:
+        return _render_chunk_impl(args)
+    except Exception as e:  # noqa: BLE001
+        import traceback
+        raise RuntimeError(f"render chunk {args[:3]} failed: {e!r}\n{traceback.format_exc()}")
+
+
+def _render_chunk_impl(args):
     sid, f0, f1, w, h, path = args
     ensure_fonts()
     tl = Timeline()
     info = tl.scene(sid)
     mod = load_scene(info.module)
+    # optional per-scene tone curve (e.g. lift deep shadows of a dark scene for phones)
+    vf = getattr(mod, "POST_FILTER", None)
     cmd = ["ffmpeg", "-y", "-loglevel", "error", "-f", "rawvideo", "-pix_fmt", "bgr0",
-           "-s", f"{w}x{h}", "-r", str(FPS), "-i", "-",
+           "-s", f"{w}x{h}", "-r", str(FPS), "-i", "-"] + (["-vf", vf] if vf else []) + [
            "-c:v", "libx264", "-preset", "veryfast", "-qp", "0", "-pix_fmt", "yuv444p", path]
     p = subprocess.Popen(cmd, stdin=subprocess.PIPE)
     for f in range(f0, f1):

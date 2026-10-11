@@ -893,3 +893,8 @@ def SFX(info):
     ev.append((T["rf0"] + 0.92, "ears_perk", 0, 0.1))
     ev.append((T["rise0"] - 0.1, "sigh", 1, -0.1))
     return ev
+
+
+# Director: lift the deep shadows a little so the dark reads on a phone screen
+# (applied when the segment is encoded; previews/sheets show the raw render).
+POST_FILTER = "curves=all='0/0 0.06/0.10 0.2/0.265 0.5/0.56 1/1'"

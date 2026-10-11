@@ -452,6 +452,13 @@ NEEDS = {1: "TC", 2: "TCB", 3: "B", 4: "T", 5: "B", 6: "T", 7: "B", 8: "T", 9: "
 # ----------------------------------------------------------------------------
 # render
 # ----------------------------------------------------------------------------
+def _joy_pod(ctx, t):
+    """Continuity with s07: the sealed tiny JOY pod stands between the release
+    console and the LOCKDOWN pedestal."""
+    from scenes.s07_release import joy_pod_closed
+    joy_pod_closed(ctx, t)
+
+
 def render(ctx, t, info):
     k = _timing(info)
     sh, t0 = _shot(t, k)
@@ -478,10 +485,12 @@ def render(ctx, t, info):
             _eye_glow(ctx, ta, 28, 0.1)
             ca = ta = None
             sets.control_room(ctx, t, layer="room", doors_open=doors_open, reader=reader, chair=False)
+            _joy_pod(ctx, t)
             _chair(ctx, 0.0, "behind")
             _chair(ctx, 0.0, "front")
         else:
             sets.control_room(ctx, t, layer="bg", doors_open=doors_open, reader=reader, chair=False)
+            _joy_pod(ctx, t)
             if need == "T" and zoom > 1.8:
                 # focus pull: the bright pod window behind his head steps back a little
                 wx, wy, ww, wh = M["window"]

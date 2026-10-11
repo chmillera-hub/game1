@@ -888,3 +888,8 @@ def SFX(info):
     # the stifled giggle behind its paw
     ev.append((k.giggle0 + 0.05, "creature_chitter", -5, 0.2))
     return ev
+
+
+# Director: lift the deep shadows a little so the dark reads on a phone screen
+# (applied when the segment is encoded; previews/sheets show the raw render).
+POST_FILTER = "curves=all='0/0 0.06/0.115 0.2/0.30 0.5/0.6 1/1'"

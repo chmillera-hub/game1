@@ -15,7 +15,7 @@ Shot list (scene-local; every time is derived from info cues / lines):
                           to it; PERK (ears shoot up, eyes widen + brighten, glint) + name tag;
                           l03 deadpan -> faintest smile.
   S6  [grin, plates)      Curiosity medium: proud grin, chin up, tail tip curling.
-  S7  [plates, frown)     slow pan along the neighbouring pods: JOY .. HOPE (his POV).
+  S7  [plates, frown)     slow pan along the neighbouring pods: KINDNESS .. HOPE (his POV).
   S8  [frown, c10)        Tiredness CU (standing now) under the wall camera: eyes along the row,
                           inner brows up a hair, then a lip press. Silence. At "camera" the red
                           LED blinks on, the lens whirs and swivels to look at them; his pupils
@@ -74,7 +74,7 @@ def _baby(c, x, y, s, t, seed):
     CR.draw_specimen_pod_sleeper(c, x, y, s * 1.6, t, seed=seed, baby=True)
 
 
-SLEEP = dict(sleeper_fn=_sleeper, sleeper_fns={"JOY": _baby}, sleeper_key="s01_sleepers")
+SLEEP = dict(sleeper_fn=_sleeper, sleeper_fns={"KINDNESS": _baby}, sleeper_key="s01_sleepers_v2")
 
 
 # ----------------------------------------------------------------------------

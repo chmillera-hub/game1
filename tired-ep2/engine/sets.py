@@ -4848,7 +4848,7 @@ _CW_PIPE = (-90, 1150)         # low pipe contact point (the bonk), s = 0.75
 _CW_CAM = (1250, 650)          # security camera wall mount
 _CW_BANDS = [(-1e9, _CW_LEDGE2 + 40), (_CW_LEDGE2 + 40, _CW_LEDGE + 40), (_CW_LEDGE + 40, _CW_WALL),
              (_CW_WALL, 1e9)]
-_CW_MAIN = [(1000, "CURIOSITY", "SPECIMEN 00", "empty"), (1500, "JOY", "SPECIMEN 01", "tiny"),
+_CW_MAIN = [(1000, "CURIOSITY", "SPECIMEN 00", "empty"), (1500, "KINDNESS", "SPECIMEN 07", "tiny"),
             (1990, "COURAGE", "SPECIMEN 02", "pod"), (2480, "CALM", "SPECIMEN 03", "pod"),
             (2970, "WONDER", "SPECIMEN 04", "pod"), (3460, "HOPE", "SPECIMEN 05", "pod"),
             (3950, "TRUST", "SPECIMEN 06", "pod")]
@@ -6632,7 +6632,7 @@ def _cr2_hatch_panel(ctx, opening):
         return (lerp(top[0], bot[0], v), lerp(top[1], bot[1], v))
     polyf(ctx, [P(0.12, 0.12), P(0.88, 0.12), P(0.88, 0.88), P(0.12, 0.88)], None, 3.5, sc="#3b4757")
     wx, wy = P(0.5, 0.5)
-    rr = hw * 0.22 * max(0.25, math.cos(clamp(opening) * math.radians(95)) ** 0.5 if opening < 1 else 0.25)
+    rr = hw * 0.22 * max(0.25, max(0.0, math.cos(clamp(opening) * math.radians(95))) ** 0.5)
     core.ellipse(ctx, wx, wy, max(4, rr), hw * 0.22)
     core.stroke(ctx, INK, 12)
     core.ellipse(ctx, wx, wy, max(4, rr), hw * 0.22)
