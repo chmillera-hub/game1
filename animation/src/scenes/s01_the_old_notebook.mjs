@@ -223,15 +223,16 @@ function shotB(g, t, S) {
   // the camera is SELF's eyes: the little lavender one first, then up the tall dark one, then down to the caption
   // (a tiny nod at the remembered sentence); slow push 1.12 → 1.2
   const P_CAP = [112, 246];
-  const focus = S.k(t, [['s01b02+3.04', { x: P_FEAR[0], y: P_FEAR[1] }], ['s01b02+3.7', { x: P_FEAR[0], y: P_FEAR[1] }],
-    ['s01b02+5.2', { x: P_HOOD[0], y: P_HOOD[1] - 10 }, 'inOut'], ['s01b02+5.7', { x: P_HOOD[0], y: P_HOOD[1] - 10 }],
-    ['s01b02+6.7', { x: P_CAP[0], y: P_CAP[1] }, 'inOut']]);
+  // (follow factor 0.22, sine moves of 1.3–1.5 s: the drop to the caption was a 140 px/s pan over text)
+  const focus = S.k(t, [['s01b02+3.04', { x: P_FEAR[0], y: P_FEAR[1] }], ['s01b02+3.5', { x: P_FEAR[0], y: P_FEAR[1] }],
+    ['s01b02+5.0', { x: P_HOOD[0], y: P_HOOD[1] - 10 }, 'sine'], ['s01b02+5.3', { x: P_HOOD[0], y: P_HOOD[1] - 10 }],
+    ['s01b02+6.6', { x: P_CAP[0], y: P_CAP[1] }, 'sine']]);
   const z = lerp(1.12, 1.2, ease.sine(p));
   const fS = insWorld(focus.x, focus.y);
   const dd = drift(t, 2, 6);
-  const fx = (fS[0] - 360) * 0.3 + dd.dx, fy = (fS[1] - 640) * 0.3 + dd.dy;
+  const fx = (fS[0] - 360) * 0.22 + dd.dx, fy = (fS[1] - 640) * 0.22 + dd.dy;
   // tiny nod at the remembered sentence: a soft dip of the view
-  const nod = Math.sin(clamp((t - S.T('s01b02+6.75')) / 0.8) * Math.PI) * 7;
+  const nod = Math.sin(clamp((t - S.T('s01b02+6.55')) / 0.6) * Math.PI) * 7;
   // background: the warm desk top in the lamp pool (dim, out of focus)
   g.save();
   g.fillStyle = '#5a3624'; g.fillRect(0, 0, W, H);
@@ -287,9 +288,9 @@ function drawDogEar(g, k) {
   g.restore();
 }
 
-// SELF's page hand (screen-right in the wide, where it has just slid down to this corner) is already on the
-// dog-ear at the cut, seen from the back from the bottom-right of this POV; the thumb presses the fold and smooths it
-// flat, then the hand withdraws. Drawn locally: at this size the character's mitten hands read as fists, and only the
+// SELF's page hand (screen-right in the wide, where it holds this bottom corner) is already on the dog-ear at the
+// cut, seen from the back from the bottom-right of this POV; the thumb presses the fold and smooths it flat, then the
+// hand withdraws. Drawn locally: at this size the character's mitten hands read as fists, and only the
 // hand and sweater cuff are in frame.
 function drawInsertHand(g, t, S, smooth) {
   const enter = S.k(t, [['s01b02+3.04', 1], ['s01b02+5.5', 1], ['s01b02+6.5', 0, 'inOut']]);

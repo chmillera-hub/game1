@@ -3,7 +3,7 @@
 import { clamp, lerp, ease, fbm, blinkAt, applyCamera, drift, vignette, TAU } from '../engine.mjs';
 import { EXPR, withSpeech } from '../face.mjs';
 import { drawFear } from '../chars/fear.mjs';
-import { drawSelf, SELF_EXPR, selfLocal, selfPoseAnchors, WALK_ADVANCE } from '../chars/self.mjs';
+import { drawSelf, SELF_EXPR, selfLocal, WALK_ADVANCE } from '../chars/self.mjs';
 import { drawVoid } from '../chars/void.mjs';
 import { drawHQ, drawHQForeground, hqScaleAt } from '../sets/hq.mjs';
 import { drawCage, cagePoint } from '../sets/props.mjs';
@@ -121,7 +121,7 @@ function times(S) {
 
 // The cage state (shared by all shots)
 function cageState(t, S) {
-  // the left hand swings it out from behind the kneeling CEO (1 → 0.62), the right hand pulls it shut (→ 0)
+  // it swings out from behind the kneeling CEO (1 → 0.62, out of sight), the CEO's hand pulls it shut (→ 0)
   const door = S.k(t, [['s08b01+1.8', 1], ['s08b01+2.06', 0.62, 'in'], ['s08b01+2.4', 0, 'out']]);
   const locked = S.k(t, [['s08b02-0.2', 0], ['s08b02-0.14', 1, 'linear']]);
   return { t, door, locked };
@@ -215,10 +215,11 @@ function shotWide(g, t, S, T) {
   if (!inside) drawFear(g, fw.x, fw.y, fs, fp);
 
   // ---- the CEO: hand on Fear's shoulder while walking, lets go, kneels, swings the gate shut
-  // The open gate lies BEHIND the kneeling CEO's left side (its free edge at x≈229), so the far (left) hand reaches
-  // back for the hasp and swings the gate out from behind the body (door 1 → 0.62); the near (right) hand, resting
-  // on the knee, meets the hasp as it comes past and pulls it shut (0.62 → 0, into the insert). No arm ever crosses
-  // the body.
+  // The CEO is in 3/4 toward the cage, so the right arm is the FAR arm: it is drawn behind the torso (not `front`) and
+  // its hand comes out past the body's right edge — onto Fear's shoulder, then resting on the forward knee, then onto
+  // the gate's hasp. (Drawn `front`, the far arm read as folded across the chest.) The open gate lies behind the
+  // kneeling body, so its first swing (door 1 → 0.62) happens out of sight; the hand meets the hasp as it comes past
+  // the body and pulls it shut (0.62 → 0, into the insert).
   const c = ceoWalk(t, S);
   const cs = CEO_KNEEL[2];
   const kneel = S.k(t, [['s08b01+1.2', 0], ['s08b01+1.8', 1, 'inOut']]);
@@ -232,28 +233,19 @@ function shotWide(g, t, S, T) {
   const hold = 1 - sstep(T.let - 0.05, T.let + 0.3, t);          // lets go as Fear steps in
   const hasp = cagePoint('doorHandle', ...CAGE_B, cst);
   const kE = sstep(0, 1, kneel);
-  const kneeR = [lerp(75, 66, kE), lerp(-205, -168, kE)];          // right hand comes to rest on the front thigh
-  const catchK = sstep(S.T('s08b01+1.86'), S.T('s08b01+2.06'), t);  // right hand rises to meet the swinging hasp
+  const kneeR = [lerp(75, 66, kE), lerp(-205, -168, kE)];          // the hand comes to rest on the forward knee
+  const catchK = sstep(S.T('s08b01+1.84'), S.T('s08b01+2.06'), t);  // ...and rises to meet the swinging hasp
   let armR;
   if (catchK > 0) {
     const tg = L(hasp[0] - 16, hasp[1] + 6);
-    armR = { target: [lerp(kneeR[0], tg[0], catchK), lerp(kneeR[1], tg[1], catchK)], bend: -1, front: true, hand: catchK > 0.85 ? 'grip' : 'open', thumb: -1 };
+    armR = { target: [lerp(kneeR[0], tg[0], catchK), lerp(kneeR[1], tg[1], catchK)], bend: -1, hand: catchK > 0.85 ? 'grip' : 'open', thumb: -1 };
   } else if (hold > 0.999) {
-    armR = { preset: 'onShoulder', target: L(...shN), hand: 'drape', front: true };
+    armR = { preset: 'onShoulder', target: L(...shN), hand: 'drape', front: false };
   } else {
     const tR = L(shN[0] - 6, shN[1] - 18 * (1 - hold));
-    armR = { target: [lerp(kneeR[0], tR[0], hold), lerp(kneeR[1], tR[1], hold)], bend: -1, front: true, hand: 'open' };
+    armR = { target: [lerp(kneeR[0], tR[0], hold), lerp(kneeR[1], tR[1], hold)], bend: -1, hand: 'open' };
   }
-  // left (far) hand: hangs → reaches back for the hasp (+1.4 → +1.78) → carries the gate to 0.62 (+2.06) → lets go
-  const reachL = sstep(S.T('s08b01+1.4'), S.T('s08b01+1.78'), t) * (1 - sstep(S.T('s08b01+2.06'), S.T('s08b01+2.4'), t));
-  let armL = 'rest';
-  if (reachL > 0) {
-    const a = selfPoseAnchors(c.x, c.y, cs, bodyPose);
-    const sl = L(...a.shoulderL);
-    const rest = [sl[0] - 12, sl[1] + 184];
-    const tg = L(hasp[0] - 20, hasp[1] + 4);
-    armL = { target: [lerp(rest[0], tg[0], reachL), lerp(rest[1], tg[1], reachL)], hand: reachL > 0.8 ? 'grip' : 'rest', thumb: 1 };
-  }
+  const armL = 'rest';
   // face set, eyes on Fear's back / the gate — never up at the Void, never quite meeting Fear's eyes.
   // For the gate: a glance down-left to find the hasp, then the eyes follow the gate across to the lock.
   const ceoFace = S.k(t, [

@@ -409,7 +409,8 @@ function renderFront(g, t, S, shot) {
   applyCamera(g, camera);
   drawHQ(g, 'front', st);
   if (shot !== 'D') {   // the back of the mind peeks in at the top (under the TOP SHADE)
-    drawVoid(g, ...VOID_F, { t, ...STARE_F, idle: 0.5, cosmos: COSMOS_RESIDUE, cosmosOpts: { seed: 7, glyphs: 0 }, shadow: false });
+    // only the lower robe shows (the hood, y≈272, is above every framing here), so its cosmos is not drawn
+    drawVoid(g, ...VOID_F, { t, ...STARE_F, idle: 0.5, cosmos: 0, shadow: false });
     drawCage(g, ...CAGE_F, { t, door: 0.9, locked: 0 });
   }
   // cull characters outside the frame; clip everything that stands behind the console to above its hull

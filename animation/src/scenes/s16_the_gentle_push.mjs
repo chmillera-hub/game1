@@ -228,7 +228,7 @@ function fearPose(t, S, shot) {
 }
 
 // ---------------------------------------------------------------- the Void's push hand
-function voidPose(t, S) {
+function voidPose(t, S, shot) {
   const show = S.k(t, [['s16b02+0.35', 0], ['s16b02+0.72', 1], ['s16b03+1.55', 1], ['s16b03+1.85', 0]]);
   const reach = S.k(t, [['s16b02', 0], ['s16b02+1.2', 1, 'inOut'], ['s16b03+1.3', 1], ['s16b03+2.0', 0, 'inOut']]);
   const settle = S.k(t, [['s16b02+1.2', 0], ['s16b02+1.8', 1, 'inOut'], ['s16b03+1.0', 1], ['s16b03+1.4', 0, 'inOut']]);
@@ -240,7 +240,8 @@ function voidPose(t, S) {
   const handL = show > 0.001
     ? { ...VOID_HANDS.push(toVoidLocal(...VOID_B, ...tgt), -1), ...VOID_ARM_B, elbow: 0.8 * reach, angle: PUSH_ANGLE, show, reach, defer: 'hand' }
     : { ...VOID_ARM_B, show: 0, defer: 'hand' };
-  return { t, ...STARE_B, idle: 0.5, cosmos: COSMOS_RESIDUE, cosmosOpts: { seed: 7, glyphs: 0 }, shadowSpread: 0.6, handL };
+  // only shot D frames the hood; elsewhere the cosmos would be drawn off-frame (≈2 ms), so it is skipped
+  return { t, ...STARE_B, idle: 0.5, cosmos: shot === 'D' ? COSMOS_RESIDUE : 0, cosmosOpts: { seed: 7, glyphs: 0 }, shadowSpread: 0.6, handL };
 }
 
 // ---------------------------------------------------------------- cameras
@@ -261,7 +262,7 @@ const BOM = (t) => ({ t, lightsDim: 0.25, mist: 0.45 });
 export function render(g, t, S) {
   const shot = shotOf(t, S);
   const st = BOM(t);
-  const vp = voidPose(t, S);
+  const vp = voidPose(t, S, shot);
   const { pose: fp, P, wipe } = fearPose(t, S, shot);
   g.save();
   g.setTransform(1, 0, 0, 1, 0, 0); g.fillStyle = '#06050d'; g.fillRect(0, 0, 720, 1280);   // base under the stage seams

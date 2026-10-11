@@ -2,8 +2,10 @@
 // Shots (data/staging.md §3 s20):
 //   S.start → s20b02         desk {424,760,1.5}: SELF picks up a gold pencil and draws one tiny star in the black hood
 //   s20b02 → s20b03.end      push {424,760,1.5} → {424,690,2.1}: tear wells, spills, soft laugh, sleeve wipe, smile down
-//   s20b04 → S.end           pull back to the opening composition {420,655,1.12} by +2.6: the notebook closes, palm on
-//                            the cover, lamp click (+2.4), the room goes blue, eyes up to the window, star-hood + wink
+//   s20b03.end+0.3 → S.end   pull back to the opening composition {420,655,1.12} by s20b04+2.6 (arcing through the desk
+//                            framing so the closing book stays clear of the bottom 15 %): the cover is lifted to vertical
+//                            (+0.8 → +1.45) and laid down (→ +2.0), palm on the cover, lamp click (+2.4), the room goes
+//                            blue, eyes up to the window with stars in them, star-hood + wink
 // Last frame = the mirror of the film's first frame (same camera and desk, lamp off, notebook closed under the palm).
 import { W, H, clamp, lerp, ease, fbm, blinkAt, applyCamera, drift, vignette, TAU, ik } from '../engine.mjs';
 import { star } from '../face.mjs';

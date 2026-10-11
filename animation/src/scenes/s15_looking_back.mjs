@@ -251,7 +251,8 @@ function renderFear(g, t, S, shot) {
   g.save();
   applyCamera(g, cam(t, { x: 440, y: 1430, zoom: z }, 2));
   drawHQ(g, 'backOfMind', st);
-  const vpose = { t, ...STARE_B, idle: 0.5, cosmos: 0.5, cosmosOpts: { seed: 7, glyphs: 0 }, shadowSpread: 0.7, handL: { bend: 1, show: 0, defer: 'hand' } };
+  // the hood (face y≈243) is far above this frame, so its cosmos (0.5 from s14b10) is not drawn: saves ≈2 ms
+  const vpose = { t, ...STARE_B, idle: 0.5, cosmos: 0, shadowSpread: 0.7, handL: { bend: 1, show: 0, defer: 'hand' } };
   drawVoid(g, ...VOID_B, vpose);
   const cst = { t, door: 0.9, locked: 0 };
   drawCage(g, ...CAGE_B, { ...cst, layer: 'back' });
