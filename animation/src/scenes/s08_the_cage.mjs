@@ -165,7 +165,7 @@ const fearScaleB = (y) => (y >= 1642 ? hqScaleAt('backOfMind', y) : lerp(0.952, 
 // px left of the bar, so the lip shapes of Fear's only line through the bars read whole. (A plain x shift cannot do
 // this: the face is ≈1.8 bar spacings wide, so any shift that clears the mouth puts the next bar through an eye.)
 // `roll`/`turn` = the extra tilt / headTurn of the look up at the Void on 'with it' (kept on the bar too).
-const PLEA_TILT = 0.24, PLEA_LEAN = -0.05;
+const PLEA_TILT = 0.32, PLEA_LEAN = -0.05;
 const pleaK = (t, S) => S.k(t, [['s08b02-0.15', 0], ['s08b02+0.4', 1, 'inOut']]);
 function pleaHead(plea, roll = 0, turn = 0) {
   const tot = PLEA_TILT * plea + roll;              // the face's total rotation on screen

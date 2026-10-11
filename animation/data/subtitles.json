@@ -8,7 +8,7 @@
    "inner": false,
    "text": "So, I was having a memory,",
    "start": 3.6,
-   "end": 6.12,
+   "end": 6.25,
    "pos": "low",
    "pos_overlap": 0
   },
@@ -20,7 +20,7 @@
    "inner": false,
    "text": "of the first story I wrote about my emotions.",
    "start": 6.25,
-   "end": 9.937,
+   "end": 9.9583,
    "pos": "low",
    "pos_overlap": 0
   },
@@ -31,7 +31,7 @@
    "speaker": "NARRATOR",
    "inner": false,
    "text": "And the more I read, the more I was back inside my mind.",
-   "start": 9.958,
+   "start": 9.9583,
    "end": 15.147,
    "pos": "low",
    "pos_overlap": 0
@@ -44,7 +44,7 @@
    "inner": false,
    "text": "And my fear kept pulling the fire alarm.",
    "start": 18.276,
-   "end": 21.677,
+   "end": 21.446,
    "pos": "low",
    "pos_overlap": 0
   },
@@ -55,10 +55,10 @@
    "speaker": "NARRATOR",
    "inner": false,
    "text": "So I imagined myself as the CEO of my mind,",
-   "start": 21.677,
+   "start": 22.0833,
    "end": 26.327,
    "pos": "top",
-   "pos_overlap": 29606
+   "pos_overlap": 0
   },
   {
    "beat": "s02b03",
@@ -202,7 +202,7 @@
    "inner": false,
    "text": "Nothing is going to hurt you.",
    "start": 55.375,
-   "end": 57.308,
+   "end": 57.3083,
    "pos_override": "low",
    "pos": "low",
    "pos_overlap": 0
@@ -215,7 +215,7 @@
    "inner": false,
    "text": "You don't know that.",
    "start": 57.75,
-   "end": 58.958,
+   "end": 58.9583,
    "pos_override": "low",
    "pos": "low",
    "pos_overlap": 0
@@ -228,7 +228,7 @@
    "inner": false,
    "text": "Out! Everybody out!",
    "start": 62.196,
-   "end": 64.764,
+   "end": 64.7917,
    "pos": "top",
    "pos_overlap": 0
   },
@@ -239,8 +239,8 @@
    "speaker": "JOY",
    "inner": false,
    "text": "We always come back.",
-   "start": 64.792,
-   "end": 66.184,
+   "start": 64.7917,
+   "end": 66.125,
    "pos": "top",
    "pos_overlap": 0
   },
@@ -251,7 +251,7 @@
    "speaker": "NARRATOR",
    "inner": false,
    "text": "Panic attacks, forcing every emotion out of my mind.",
-   "start": 66.184,
+   "start": 66.5,
    "end": 70.81,
    "pos": "low",
    "pos_overlap": 0
@@ -313,7 +313,7 @@
    "speaker": "CONSCIOUSNESS",
    "inner": false,
    "text": "It's causing turmoil.",
-   "start": 83.292,
+   "start": 83.2917,
    "end": 85.119,
    "pos": "top",
    "pos_overlap": 0
@@ -337,7 +337,7 @@
    "speaker": "FEAR",
    "inner": false,
    "text": "I can't.",
-   "start": 90.167,
+   "start": 90.1667,
    "end": 91.238,
    "pos_override": "top",
    "pos": "top",
@@ -362,7 +362,7 @@
    "speaker": "NARRATOR",
    "inner": false,
    "text": "My fear refused.",
-   "start": 94.667,
+   "start": 94.6667,
    "end": 96.472,
    "pos": "top",
    "pos_overlap": 0
@@ -374,9 +374,10 @@
    "speaker": "CONSCIOUSNESS",
    "inner": false,
    "text": "Fear,",
-   "start": 98.583,
-   "end": 99.583,
-   "pos": "low",
+   "start": 98.5833,
+   "end": 99.5833,
+   "pos_override": "top",
+   "pos": "top",
    "pos_overlap": 0
   },
   {
@@ -387,8 +388,8 @@
    "inner": false,
    "text": "we need to put you in a time-out.",
    "start": 100,
-   "end": 102.337,
-   "pos": "low",
+   "end": 102.0833,
+   "pos": "top",
    "pos_overlap": 0
   },
   {
@@ -410,9 +411,10 @@
    "speaker": "FEAR",
    "inner": false,
    "text": "Please don't leave me with it.",
-   "start": 109.042,
+   "start": 109.0417,
    "end": 111.148,
-   "pos": "top",
+   "pos_override": "upper",
+   "pos": "upper",
    "pos_overlap": 0
   },
   {
@@ -423,7 +425,7 @@
    "inner": false,
    "text": "I told myself it was the responsible thing to do.",
    "start": 115.328,
-   "end": 120.03,
+   "end": 120.0417,
    "pos": "low",
    "pos_overlap": 0
   },
@@ -434,7 +436,7 @@
    "speaker": "NARRATOR",
    "inner": false,
    "text": "And I felt sadness.",
-   "start": 120.042,
+   "start": 120.0417,
    "end": 121.83,
    "pos": "top",
    "pos_overlap": 0
@@ -495,7 +497,7 @@
    "inner": false,
    "text": "You're going to hurt me.",
    "start": 149.917,
-   "end": 151.517,
+   "end": 151.7083,
    "pos": "low",
    "pos_overlap": 0
   },
@@ -506,8 +508,8 @@
    "speaker": "FEAR",
    "inner": false,
    "text": "This is a trick.",
-   "start": 151.946,
-   "end": 153.694,
+   "start": 151.7083,
+   "end": 153.5,
    "pos_override": "upper",
    "pos": "upper",
    "pos_overlap": 0
@@ -519,7 +521,7 @@
    "speaker": "FEAR",
    "inner": false,
    "text": "This can't be right.",
-   "start": 153.694,
+   "start": 153.5,
    "end": 155.154,
    "pos": "low",
    "pos_overlap": 0
@@ -531,7 +533,7 @@
    "speaker": "FEAR",
    "inner": false,
    "text": "This doesn't make any sense.",
-   "start": 158.191,
+   "start": 158.125,
    "end": 160.201,
    "pos": "low",
    "pos_overlap": 0
@@ -556,7 +558,7 @@
    "inner": false,
    "text": "Why are you just standing there?",
    "start": 162.876,
-   "end": 165.009,
+   "end": 165.0093,
    "pos": "top",
    "pos_overlap": 0
   },
@@ -568,7 +570,7 @@
    "inner": false,
    "text": "Are you just here to scare me forever?",
    "start": 165.403,
-   "end": 167.936,
+   "end": 167.9363,
    "pos": "top",
    "pos_overlap": 0
   },
@@ -614,9 +616,9 @@
    "scene": "s13",
    "speaker": "NARRATOR",
    "inner": false,
-   "text": "My fear thought the Void had had enough",
-   "start": 182.917,
-   "end": 184.986,
+   "text": "My fear thought the Void had had enough of its complaining,",
+   "start": 182.9167,
+   "end": 186.734,
    "pos": "top",
    "pos_overlap": 0
   },
@@ -626,8 +628,8 @@
    "scene": "s13",
    "speaker": "NARRATOR",
    "inner": false,
-   "text": "of its complaining, and would destroy it.",
-   "start": 184.986,
+   "text": "and would destroy it.",
+   "start": 186.734,
    "end": 188.394,
    "pos": "top",
    "pos_overlap": 0
@@ -639,7 +641,7 @@
    "speaker": "NARRATOR",
    "inner": false,
    "text": "But then, my fear felt a hand on its shoulder.",
-   "start": 189.333,
+   "start": 189.3333,
    "end": 193.046,
    "pos": "top",
    "pos_overlap": 0
@@ -688,7 +690,7 @@
    "inner": false,
    "text": "The Void, filled with bits and pieces of meaning.",
    "start": 212.193,
-   "end": 215.46,
+   "end": 215.4597,
    "pos": "low",
    "pos_overlap": 0
   },
@@ -771,8 +773,8 @@
    "speaker": "NARRATOR",
    "inner": false,
    "text": "Then my fear felt the gentle push of the Void.",
-   "start": 254.667,
-   "end": 258.099,
+   "start": 254.6667,
+   "end": 258.125,
    "pos": "low",
    "pos_overlap": 0
   },
@@ -784,7 +786,7 @@
    "inner": false,
    "text": "The Void stood there,",
    "start": 258.125,
-   "end": 259.909,
+   "end": 259.9583,
    "pos": "low",
    "pos_overlap": 0
   },
@@ -795,7 +797,7 @@
    "speaker": "NARRATOR",
    "inner": false,
    "text": "with galaxies twinkling in its dark facade.",
-   "start": 259.958,
+   "start": 259.9583,
    "end": 263.639,
    "pos": "low",
    "pos_overlap": 0
@@ -807,8 +809,8 @@
    "speaker": "CONSCIOUSNESS",
    "inner": false,
    "text": "Fear.",
-   "start": 272.333,
-   "end": 273.333,
+   "start": 272.3333,
+   "end": 273.3333,
    "pos": "top",
    "pos_overlap": 0
   },
@@ -819,7 +821,7 @@
    "speaker": "FEAR",
    "inner": false,
    "text": "Can I help?",
-   "start": 273.792,
+   "start": 273.7917,
    "end": 274.941,
    "pos_override": "low",
    "pos": "low",
@@ -857,7 +859,7 @@
    "inner": false,
    "text": "Because the scene changed, to my emotions at the console.",
    "start": 290.387,
-   "end": 294.491,
+   "end": 294.5,
    "pos": "low",
    "pos_overlap": 0
   },

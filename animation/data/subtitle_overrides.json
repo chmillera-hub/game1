@@ -3,6 +3,9 @@
  "split_after": {
   "s06b01": [
    "day,"
+  ],
+  "s13b03": [
+   "complaining,"
   ]
  },
  "pos": {
@@ -14,7 +17,9 @@
   "s12b03:0": "upper",
   "s17b04:0": "low",
   "s06b01:0": "top",
-  "s06b01:1": "low"
+  "s06b01:1": "low",
+  "s08b02:0": "upper",
+  "s07b02:0": "top"
  },
  "end_max": {
   "s13b06:0": 199.05,

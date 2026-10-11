@@ -1,0 +1,124 @@
+[
+ {
+  "verdict": "TECHNICAL + SYNC: PASS on every measurable spec, with one checklist fix only partly done (s08 bar), a stale root deliverable, and a few small caption-frame and SFX nits.\n\nWhat passes:\n- **File:** out/final.mp4 is 14,502,382 B (under 15,000,000). H.264 High@4.0, yuv420p, 720x1280, 24 fps, moov before mdat. Tagged bt709/bt709/bt709/tv.\n- **Durations:** video is 7660 frames = 319.167 s, AAC is 319.185 s and timeline_play is 319.185 s. The master has 7661 frames; -shortest drops the last one (18 ms, harmless).\n- **Audio:** loudnorm summary gives -16.5 LUFS integrated, LRA 5.5, true peak -1.1 dBTP (ebur128: -16.4 LUFS, -1.1 dBFS TP). It passes, but with only 0.1 dB of margin.\n- **Voice placement:** all 62 wav_play lines cross-correlate against the final AAC at exactly 0 ms from their timeline_play starts, with normalised correlation 0.84-0.95.\n- **Lip-sync:** checked in final.mp4 for s02b04, s04b03, s04b04, s05b01, s06b07, s07b03, s08b02, s12b01, s14b08, s17b03 and s17b04. Mouths are open on the loudest frames and closed in mid-line gaps: 53.00 inside 'scares me. | It's not', 91.40 inside 'I can't. | I'm sorry', 29.60 inside 'Fear? | What'. They are also closed before and after lines (147.52, 274.99). The inner line s13b02 has no lip data, which is correct.\n- **Cuts:** 83 cuts detected in final.mp4 match data/cuts_play.json exactly, apart from one soft cut at 179.29 my threshold missed.\n- **Frame 0:** the bright title still with no caption, and it matches thumbnail.png.\n- **s01 title:** fully gone by 3.40; the first caption fades in at 3.60.\n- **s14 music-note glyph:** fully visible to the right of the caption during 'The Void, filled with bits and pieces of meaning.' (checked 213.8 and 215.2).\n- **Line boundaries:** a frame-difference scan at all 125 warp knots found only caption swaps, a scripted blink (92.62), the hands-off snap on 'Fear,' (98.9-99.0) and the fast tear-wipe at 311.4. Rendered frame by frame, none is a warp glitch.\n- **Ending:** clean. Lamp off, no caption, audio decays to -80 dB by 319.1.\n- **Heartbeats:** no on-screen beat to sync to. The tempo of the s13 and s05 loops was corrected for the speed-up.\n- **Captions:** out/subtitles.srt matches subtitles.json for all 76 captions. Every caption covers its voice span except two deliberate early ends (s08b01 ends at the cut; s13b06 ends at 199.05).\n\nRemaining problems are listed below. The s08 bar no longer splits the mouth down the middle, but it still sits on the right corner of Fear's open mouth through 'Please don't leave\u2026', with the corner showing again past the bar.",
+  "issues": [
+   {
+    "scene": "deliverable",
+    "time": 0,
+    "severity": "medium",
+    "problem": "The packaged deliverable is still v1. /home/user/game1/animation/The_Void_and_My_Fear.mp4 is 344.76 s, 14,541,820 B, no captions, original-speed dialogue (md5 c3cce820\u2026, not out/final.mp4's 6907ba92\u2026). README.md lists The_Void_and_My_Fear.srt as a deliverable, but that file does not exist. Anyone taking the root files gets the old cut with no captions.",
+    "fix": "cp out/final.mp4 The_Void_and_My_Fear.mp4 && cp out/subtitles.srt The_Void_and_My_Fear.srt. thumbnail.png already matches v2 frame 0 (mean diff 1.6 levels), so keep it. Commit the result."
+   },
+   {
+    "scene": "s08",
+    "time": 109.24,
+    "severity": "medium",
+    "problem": "The cage bar still runs through Fear's mouth during 'Please don't leave me with it.' (109.04-110.88), only less centrally than in v1. In clean renders the door's centre bar is at x\u2248500-520. The open mouth spans x\u2248435-537 at 109.24, so the bar covers its right ~30% and a ~18 px corner shows again past the bar. Pixel zooms show the same at 109.08, 109.40 and 109.80. From about 110.0 to 110.8 the mouth corner ends under the bar, so it is still touched but no longer split. The s08 code comment assumes 'mouth \u224825 px left of the bar'. That offset is from the mouth centre, but the open mouth is about 100 px wide, so 25 px does not clear it.",
+    "fix": "In src/scenes/s08_the_cage.mjs pleaHead(), stop pinning the eye midpoint exactly on the bar. Add about +45 screen px to the head's x offset (Fear moves left, so the mouth spans about x 390-492 and clears the bar at 500 by about 8 px). The bar then grazes the inner edge of the right eye, which keeps the 'behind bars' read. Re-check with: node src/render.mjs --stills 109.08,109.24,109.6,110.0,110.6 --nosubs. Then crop x 415-565, y 650-760 and confirm no mouth outline appears right of x 520."
+   },
+   {
+    "scene": "s08",
+    "time": 109.5,
+    "severity": "low",
+    "problem": "The top-placed caption 'Please don't leave me with it.' (109.042-111.148) sits on the TIME-OUT sign in the close-up. The box (y\u2248187-241, x\u2248108-592) covers the upper half of the 'TIME-OUT' letters for the whole line, as seen in final.mp4 at 109.21. That sign is the shot's key prop.",
+    "fix": "Add a data/subtitle_overrides.json pos_override for s08b02 idx 0. Use 'low': simulated on clean renders at 109.6 and 110.6, it covers only Fear's feet and the cage floor, no face or hands. 'upper' also clears the sign but sits just above Fear's tuft. Then rebuild captions and re-render s08 frames 2617-2665."
+   },
+   {
+    "scene": "s05 / s09 / s16",
+    "time": 64.792,
+    "severity": "low",
+    "problem": "Three captions blank out for one frame (hard off/on with no fade, because JOIN skips the fades):\n- Frame 1555 (64.792) is the first frame after the cut. It has no caption, because 'We always come back.' starts at 64.792, 0.3 ms after the frame time 64.79167. The caption therefore appears one frame after the cut.\n- Frame 2881 (120.042): the same thing for 'And I felt sadness.' (start 120.042 vs cut 120.04167).\n- Frame 6238 (259.917): 'The Void stood there,' ends at 259.909, and 'with galaxies twinkling\u2026' starts at the cut, 259.958. One empty frame shows between two low captions.\nAll three are confirmed in final.mp4. Cause: tools/build_subtitles.py writes cut-snapped times rounded to 3 decimals, which can land after the frame time. drawSubtitles also never fills gaps shorter than JOIN; it only removes the fades.",
+    "fix": "In tools/build_subtitles.py, write snapped times as floor(frame_time*1000)/1000 (e.g. 64.791, 120.041, 259.958). Chain any gap under 2 frames (0.084 s) by setting prev.end = next.start: s05b01 end 64.764\u219264.791, s09b01 end 120.03\u2192120.041, s16b03.0 end 259.909\u2192259.958. Optionally, in src/subtitles.mjs drawSubtitles, keep drawing caption i while t < cs[i+1].start when the two are joined. Then confirm frames 1555, 2881 and 6238 show a caption."
+   },
+   {
+    "scene": "s08",
+    "time": 106.06,
+    "severity": "low",
+    "problem": "The CEO's walk-in footsteps are one 4-hit sample at a fixed rate (at 105.032, rate 1.17, until 106.637). The scene's visible foot contacts are about 105.14, 105.65 and 106.20; I computed them from ceoWalk and the walk phase, and the rendered feet are widest at 105.59-105.64 and 106.20. The walk slows as the CEO arrives, but the sample's hits stay evenly spaced: 105.100, 105.588, 106.058, 106.528. The 3rd step is heard about 145 ms (3.5 frames) before the foot lands. The speed-up compensation in tools/collect_sfx.mjs never fires for this event: it measures the warp slope only in the 0.4 s after the onset, which falls in the silent stretch before s08b01. The rate therefore stayed 1.17. The feet are low in frame, so this is minor.",
+    "fix": "In s08_the_cage.mjs sfx, replace the single CEO footsteps event with one event per contact, as s02 does. The story-time contacts are scene.start+0.091, s08b01+0.164 and s08b01+0.803. Set each event's at = contact - 0.07, until = contact + 0.40, fade 0.12, gain -14, and keep the existing Fear patter. Re-run node tools/collect_sfx.mjs, python3 audio/mix.py and tools/encode.sh."
+   },
+   {
+    "scene": "s02",
+    "time": 21.677,
+    "severity": "low",
+    "problem": "'So I imagined myself / as the CEO of my mind,' switches from low to top 0.41 s (10 frames) before the cut at 22.083. In the same console shot, the box jumps up the screen and covers the lower half of the red alarm warning triangle in the window (final.mp4 at 21.70-22.04). Only after the cut does the top position land on clean dark wall.",
+    "fix": "Snap s02b03 idx 0's start to the cut, 21.677 \u2192 22.083, so the position change happens on the cut. Narration of 'So I' starts 0.4 s earlier, which is acceptable. Alternatively, extend s02b02's low caption to 22.083 and start s02b03 at the cut."
+   },
+   {
+    "scene": "s07",
+    "time": 99.2,
+    "severity": "low",
+    "problem": "The CEO's off-screen 'Fear,' (98.583-99.583) is placed low, so the small gold box sits right on Fear's chest in the Fear-only close-up (final.mp4 at 99.2). It reads like a name tag pinned on Fear rather than a line spoken to Fear.",
+    "fix": "Add pos_override 'top' for s07b02 idx 0. At y 187-241 the short box sits on the dark wall between the sticky note (bottom edge y\u2248175) and Fear's tuft (top y\u2248310), clear of both."
+   }
+  ]
+ },
+ {
+  "issues": [
+   {
+    "scene": "s01 / s05 / s09 / s16 (subtitles.mjs + build_subtitles.py)",
+    "time": 6.125,
+    "severity": "medium",
+    "problem": "The fix for blinking between back-to-back captions is incomplete. JOIN=0.2 only turns off the fades. activeCaption() still returns -1 inside the gap, so captions closer than 0.2 s still drop out as hard cuts at full opacity. Confirmed in out/final.mp4: frames 147-149 (6.125-6.208 s) show no caption between 'So, I was having a memory,' (ends 6.12) and 'of the first story\u2026' (starts 6.25, on the cut), so the first caption pops off 3 frames before the cut. Frame 6238 (259.917) has no caption in the middle of the sentence 'The Void stood there, / with galaxies twinkling\u2026', one frame before the cut at 259.958. Frame 1555 (64.792, the cut frame) is blank between 'Out! Everybody out!' and 'We always come back.' (both top), and so is frame 2881 (120.042) between s09b01 and s09b02. There are two causes. (a) The builder's bridging step uses the next caption's start from before that caption is snapped to the cut. s01b02:0 was bridged to roughly 6.12, then s01b02:1 moved to 6.25, and the same happened with s16b03:0 at 259.909 against 259.958. (b) Cut-snapped starts are rounded up at 3 decimals (64.7917\u219264.792, 120.0417\u2192120.042), which puts them after the cut frame's time f/24.",
+    "fix": "src/subtitles.mjs drawSubtitles: when activeCaption(t) < 0, find i with cs[i].end <= t < cs[i+1].start and cs[i+1].start - cs[i].end < JOIN, and draw cs[i] at alpha 1 so it holds until the next caption takes over. tools/build_subtitles.py: run the cut-snapping of every start in its own pass before the end/bridge pass, and store cut-snapped times at frame precision (round(cut*24)/24 written with 4 decimals, e.g. 64.7917). Alternatively compare with t >= start - 1e-3. Resulting data: s01b02:0 end 6.12\u21926.25; s05b01 end 64.764\u219264.7917 and s05b02 start \u219264.7917; s09b01 end 120.03\u2192120.0417 and s09b02 start \u2192120.0417; s16b03:0 end 259.909\u2192259.9583 and s16b03:1 start \u2192259.9583. Re-render and confirm that frames 147-149, 1555, 2881 and 6238 carry a caption."
+   },
+   {
+    "scene": "s08",
+    "time": 109.042,
+    "severity": "medium",
+    "problem": "s08b02 'Please don't leave me with it.' (Fear, top, 109.04-111.15) covers the top half of the cage's 'TIME-OUT' sign for its whole span. The box (x 107-593, y 185-243) cuts across the 'TIME-' letters (sign at about x 315-700, y 170-300; checked full-size at 109.2 and 110.8 in final.mp4). The words 'leave me with it.' sit on the bright tan wood, so the lavender text has poor contrast on Fear's only line from inside the cage.",
+    "fix": "Add \"s08b02:0\": \"upper\" to data/subtitle_overrides.json pos. Checked on --nosubs renders at 109.1, 109.5, 110.4 and 111.1: the upper box (y 343-401) sits on the cage's top ring, between the sign's bottom edge (about y 300) and the tip of Fear's tuft (about y 405-430), and covers no face or sign. Then re-run --place-subs and re-render."
+   },
+   {
+    "scene": "s07",
+    "time": 102.083,
+    "severity": "low",
+    "problem": "s07b03 'we need to put you in a time-out.' (CONSCIOUSNESS, low, 100.00-102.337) runs 7 frames (102.083-102.375) past the hard cut to Fear's close-up. The CEO's line appears over Fear's scarf and belly right after the cut (frames 2450-2455 in final.mp4). The voice ended at 102.04. The builder's end-on-cut rule did not fire because it needs cut >= voice_end + 0.05, and the cut is only 0.043 s after the voice.",
+    "fix": "End s07b03:0 at the cut, 102.083: add \"s07b03:0\": 102.083 to end_max, or relax the near_end condition in build_subtitles.py to x >= voice_end. That still gives 2.08 s on screen (15.8 cps)."
+   },
+   {
+    "scene": "s12",
+    "time": 153.5,
+    "severity": "low",
+    "problem": "s12b03 'This is a trick.' (upper) was bridged across the cut at 153.5 to meet s12b04 at 153.694. For 5 frames (153.5-153.69) the stale caption sits on top of Fear's head and the base of the tuft in the new close-up, then jumps to 'This can't be right.' at low. The result is a second jolt just after the cut (frames 3684-3688). The voice for 'trick.' ended at 153.07.",
+    "fix": "End s12b03 at 153.5 and start s12b04 at 153.5, on the cut 0.21 s before 'This'. In build_subtitles.py, the bridge step (0 < nxt-end < 0.35 \u2192 end = nxt) should stop at any cut in (end, nxt] and set end = next.start = cut. Also allow a start to snap back to a cut up to 0.25 s before the first word."
+   },
+   {
+    "scene": "s13",
+    "time": 182.917,
+    "severity": "low",
+    "problem": "s13b03:0 'My fear thought the Void / had had enough' runs at 18.8 cps (39 chars in 2.07 s, 182.917-184.986). It is the only caption above the ~17 cps limit, and the v2 review's request to rebalance this split was not applied. The split falls in continuous speech, so the caption can't be held longer. The narration's only real pause is the comma after 'complaining' (voice gap 186.31-186.78).",
+    "fix": "Add split_after {\"s13b03\": [\"complaining,\"]} to data/subtitle_overrides.json. That gives 'My fear thought the Void had had enough of its complaining,' at about 182.917-186.73 (59 chars, 15.5 cps) and 'and would destroy it.' at about 186.73-188.39 (12.6 cps), with the break in the real pause. In layout(), add a +60 penalty when the words on both sides of a break are identical. The first caption then breaks as 'My fear thought the Void had had / enough of its complaining,' (519.6 px, which fits in 520) rather than 'Void had / had enough'."
+   },
+   {
+    "scene": "s05 / s09 / s10 / s14",
+    "time": 115.328,
+    "severity": "low",
+    "problem": "Four line breaks still split phrases or leave a determiner dangling. layout() gives 'the' and 'every' the same +70 as words like 'was', and the comma bonus is too small to win 'stood there,'. The four are: 'I told myself it was the / responsible thing to do.' (115.33), 'And the Void stared into the / screen of my consciousness.' (236.06), 'And the Void stood / there, stone-faced,' (124.45) and 'Panic attacks, forcing every / emotion out of my mind.' (66.18).",
+    "fix": "In src/subtitles.mjs layout(), score breaks as follows: -120 after , . ? !; +160 when line 1 ends in a|an|the|my|its|every|that|this|your; +70 for to|of|into|and|i|in|on|with|you; drop is/was/are from the list. A simulation against all 76 captions changes exactly these four: 'I told myself it was / the responsible thing to do.', 'And the Void stared into / the screen of my consciousness.' (509 px), 'And the Void stood there, / stone-faced,' and 'Panic attacks, forcing / every emotion out of my mind.' (470 px). All still fit in 520 px."
+   },
+   {
+    "scene": "s02",
+    "time": 21.708,
+    "severity": "low",
+    "problem": "s02b03:0 'So I imagined myself / as the CEO of my mind,' (top) spans three shots. In the window insert (21.708-22.083, 9 frames) the box covers the left half of the flashing red warning triangle and the foot of its '!'. The pale triangle behind 'myself' and 'mind,' also lowers contrast. In the following wide (22.083 to about 25.8), the glowing green EXIT sign shows through the 0.64 box directly behind 'the CEO'. The placer logged pos_overlap 29606 for this caption. Low and upper are not alternatives: low covers Calm's face in the wide, and upper touches the CEO's head after the 25.79 cut.",
+    "fix": "Keep top and move the art instead. In the s02 window insert, shift the warning triangle about 60 px right (left edge at x \u2265 560, the box's right edge is 549) or below y \u2248 270. In the s02 HQ wide, lower the EXIT sign above the door below y \u2248 270, or raise the caption box alpha from 0.64 to about 0.8 for top-position captions over bright signage."
+   },
+   {
+    "scene": "s08",
+    "time": 109.3,
+    "severity": "low",
+    "problem": "The v2 fix that moved the s08 cage bar off Fear's mouth only partly works. In the close-up the centre bar now sits at x \u2248 502-516, and Fear's open mouth on 'Please' (109.3) spans x \u2248 432-537. The bar still hides the right quarter of the mouth, leaving a thin sliver on the right. At 109.7-110.0 the bar sits on the right corner of the mouth. By 110.7 the mouth is clear.",
+    "fix": "In s08_the_cage.mjs, shift Fear's close-up framing, or the bar phase, about 35-40 px further, so the centre bar sits at x \u2265 545, just right of the mouth's right corner (it may cross the edge of the right eye, which is acceptable). Alternatively move it to x \u2264 420, left of the mouth."
+   },
+   {
+    "scene": "delivery",
+    "time": 0,
+    "severity": "low",
+    "problem": "README.md now says The_Void_and_My_Fear.mp4 has 'captions burned in' and that a sidecar The_Void_and_My_Fear.srt exists. The root The_Void_and_My_Fear.mp4 is still v1: 344.761 s, 14,541,820 B, no captions. No .srt is in the root; only out/subtitles.srt exists.",
+    "fix": "After the caption fixes, copy out/final.mp4 to The_Void_and_My_Fear.mp4 and out/subtitles.srt to The_Void_and_My_Fear.srt, and check that the README matches."
+   }
+  ],
+  "verdict": "The captions are close to done. Timing, text and safe zones are clean. Two things remain worth fixing: a 1-3 frame dropout where back-to-back captions meet, and one bad placement (s08b02 sits on the TIME-OUT sign). What I checked: (1) Audio sync. Cross-correlating each line WAV with the decoded final mix gives 0 ms offset for all 62 lines, so the voice-energy edges are the heard edges. Every caption starts between 0.05 s before and 0.03 s after its first voiced frame, or on a shot cut just before it (s01b02:1 is +0.08 s, on the 6.25 cut). Every caption stays at least 0.25 s past its last voiced frame, with two deliberate exceptions. s08b01 ends at the 107.44 cut, as 'cage' finishes. s13b06 fades out over 198.93-199.05 while 'Void' runs to about 199.12. That one is needed: on caption-free renders the hood opening reaches the upper box's top edge at about 199.08-199.12. The last line s20b03 holds to 312.85. (2) Cuts. No caption starts on the outgoing shot 1-3 frames before a cut. Cut-snapped captions start on the cut or one frame after it. s05b03 starts 7 frames before the 66.5 cut, but that is on the voice and over clean floor. Two captions spill 5-7 frames past a cut (s07b03, s12b03). (3) Placement. The lowest box edge is y=1072 (the bottom-15% line is 1088) and the rightmost is x=626. On full-size frames I checked every Fear and Consciousness line and all multi-shot captions; none covers eyes or mouths. s04 is now low, under Fear. s06b01's low half sits about 70 px below the emotions' mouths in the console shot. The s12b03 sleeve balloon and the s17b04 cheek overlap are gone. The new tints, Fear #c7b5ff and Consciousness #ffd98c, read clearly apart for off-screen lines such as 'It's causing turmoil.' and 'Fear,'. (4) Text. All 62 spoken lines are captioned, and the text and speaker match screenplay.json exactly. The ASR differences ('imagine', 'a huge', 'and after that', 'it's') are Whisper artifacts. out/subtitles.srt matches subtitles.json for all 76 captions. (5) Reading speed. Every caption is at or under 15.9 cps except s13b03:0 at 18.8. Previous report (qa_v2.json): resolved are s08b01 running past the cut, the pre-cut starts, the early second halves (6.25/26.33/53.33/300.99, against voice 6.17/26.38/53.38/301.04), the s03b03 split, captions ending before the voice, the s02b04 split, the s10b01 blink, the s13b06 tilt overlap, the s14 music-note glyph (now well clear of the box), the speaker tints, the title overlap (title gone by 3.58, caption fades in at 3.60) and the AAC true peak (now -1.1 dBTP, -16.4 LUFS). Partly resolved: back-to-back blinking (4 places still drop 1-3 frames), dangling line breaks (4 remain), and the s08 bar on Fear's mouth (it still clips the right quarter of the mouth on 'Please'). Not applied: the s13b03 rebalance. The root deliverable is still v1 with no captions. Work files are in /tmp/claude-0/-home-user-game1/431c6cf3-9061-55b0-82f1-1947bb12410c/scratchpad: capanal.json, sim.py, blink.png, spill.png, s08c.png, tilt.png, mouth2.png and exit2.png."
+ }
+]

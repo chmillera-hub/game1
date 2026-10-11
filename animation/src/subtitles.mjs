@@ -12,7 +12,7 @@ const FILE = path.join(ROOT, 'data/subtitles.json');
 
 export const SUB_STYLE = {
   size: 32, lineH: 42, padX: 18, padY: 11, maxW: 520, cx: 350, radius: 16,
-  box: 'rgba(13,10,28,0.64)', edge: 'rgba(255,255,255,0.10)',
+  box: 'rgba(13,10,28,0.72)', edge: 'rgba(255,255,255,0.10)',
   colors: { NARRATOR: '#ffffff', CONSCIOUSNESS: '#ffd98c', FEAR: '#c7b5ff', JOY: '#ffe39a', SADNESS: '#d4e7ff', ANGER: '#ffcfc4', CALM: '#cff3e2' },
 };
 // vertical centre of the caption block for each placement
@@ -44,9 +44,11 @@ export function layout(g, c) {
       const a = width(words.slice(0, i)), b = width(words.slice(i));
       if (a > SUB_STYLE.maxW || b > SUB_STYLE.maxW) continue;
       // balanced lines; prefer breaking after punctuation, never leave a function word dangling
-      const prevW = words[i - 1].toLowerCase();
-      const score = Math.max(a, b) + (/[,.?!]$/.test(prevW) ? -90 : 0) +
-        (/^(a|an|the|my|its|to|of|that|into|and|i|in|on|with|is|was|are|you)$/.test(prevW) ? 70 : 0);
+      const prevW = words[i - 1].toLowerCase(), nextW = words[i].toLowerCase();
+      const same = prevW.replace(/[^a-z']/g, '') === nextW.replace(/[^a-z']/g, '');   // avoid 'had / had'
+      const score = Math.max(a, b) + (/[,.?!]$/.test(prevW) ? -120 : 0) +
+        (/^(a|an|the|my|its|every|that|this|your)$/.test(prevW) ? 160 : 0) +
+        (/^(to|of|into|and|i|in|on|with|you)$/.test(prevW) ? 70 : 0) + (same ? 60 : 0);
       if (!best || score < best.score) best = { score, i };
     }
     if (best) lines = [words.slice(0, best.i).join(' '), words.slice(best.i).join(' ')];
@@ -73,9 +75,12 @@ export function captionRect(g, c, pos) {
   return { x0: SUB_STYLE.cx - L.w / 2, x1: SUB_STYLE.cx + L.w / 2, y0: cy - L.h / 2, y1: cy + L.h / 2 };
 }
 
+// times are stored at frame precision (4 decimals); compare with a small epsilon so a caption that starts on a cut
+// is on screen on the cut frame itself
+const EPS = 1e-3;
 export function activeCaption(t) {
   const cs = captions();
-  for (let i = 0; i < cs.length; i++) if (t >= cs[i].start && t < cs[i].end) return i;
+  for (let i = 0; i < cs.length; i++) if (t >= cs[i].start - EPS && t < cs[i].end - EPS) return i;
   return -1;
 }
 
@@ -83,8 +88,12 @@ const FADE = 0.12, JOIN = 0.2; // captions closer than JOIN swap instantly (no b
 
 export function drawSubtitles(g, t) {
   const cs = captions();
-  const i = activeCaption(t);
-  if (i < 0) return;
+  let i = activeCaption(t);
+  if (i < 0) {
+    // inside a tiny gap between back-to-back captions: keep the previous one up until the next takes over
+    i = cs.findIndex((c, k) => k + 1 < cs.length && t >= c.end - EPS && t < cs[k + 1].start - EPS && cs[k + 1].start - c.end < JOIN);
+    if (i < 0) return;
+  }
   const c = cs[i];
   const joinedIn = i > 0 && c.start - cs[i - 1].end < JOIN;
   const joinedOut = i + 1 < cs.length && cs[i + 1].start - c.end < JOIN;

@@ -190,36 +190,47 @@ def main():
             caps.append({"beat": bid, "idx": ci, "scene": b["scene"], "speaker": b["speaker"], "inner": bool(b.get("inner")),
                          "text": " ".join(toks[i] for i in ix), "start": starts[ci], "end": ends[ci], "voice_end": ends[ci] - TAIL})
 
-    # snap to shot cuts, reading speed, flicker, overlaps
+    fr = lambda x: round(round(x * 24) / 24, 4)   # frame-precise time
+    # pass 1 - starts: a cut just after the start (the caption would flash over the outgoing shot) or just before
+    # the first word (start the caption with the new shot)
     for i, c in enumerate(caps):
-        nxt = caps[i + 1]["start"] if i + 1 < len(caps) else c["end"] + 5
-        # a cut just after the caption starts: start on the cut (no flash of the caption over the old shot)
-        near = [x for x in cuts if c["start"] < x <= c["start"] + 0.3]
-        if near:
-            c["start"] = near[0]
-        # reading speed: hold longer when there is room (stop at the next cut if it is close)
+        prev_end = caps[i - 1]["end"] if i else -1
+        after = [x for x in cuts if c["start"] < x <= c["start"] + 0.45]
+        before = [x for x in cuts if c["start"] - 0.25 <= x < c["start"] and x >= prev_end]
+        if after:
+            c["start"] = fr(after[0])
+        elif before:
+            c["start"] = fr(before[-1])
+    # pass 2 - ends: reading speed, end on a cut once the voice is done, bridge tiny gaps (never across a cut)
+    for i, c in enumerate(caps):
+        nxt_c = caps[i + 1] if i + 1 < len(caps) else None
+        nxt = nxt_c["start"] if nxt_c else c["end"] + 5
         need = len(c["text"]) / CPS
         if c["end"] - c["start"] < max(MIN_DUR, need):
-            target = c["start"] + max(MIN_DUR, need)
-            target = min(target, c["end"] + 1.0, nxt - 0.1)
+            target = min(c["start"] + max(MIN_DUR, need), c["end"] + 1.0, nxt - 0.1)
             later = [x for x in cuts if c["end"] < x < target]
             if later and later[0] - c["end"] >= 0.2:
                 target = later[0]
             c["end"] = max(c["end"], target)
-        # a cut just before the caption ends, after the voice has finished: end on the cut
-        near_end = [x for x in cuts if c["end"] - 0.35 <= x < c["end"] and x >= c["voice_end"] + 0.05]
+        near_end = [x for x in cuts if c["end"] - 0.35 <= x < c["end"] and x >= c["voice_end"]]
         if near_end:
-            c["end"] = near_end[-1]
-        # bridge short gaps to the next caption (no blink between them)
+            c["end"] = fr(near_end[-1])
         if 0 < nxt - c["end"] < 0.35:
-            c["end"] = nxt
-        c["end"] = min(c["end"], nxt)
+            cut_between = [x for x in cuts if c["end"] < x <= nxt]
+            if cut_between:
+                c["end"] = fr(cut_between[0])
+                if nxt_c and nxt - cut_between[0] <= 0.25:
+                    nxt_c["start"] = fr(cut_between[0])
+            else:
+                c["end"] = nxt
+        c["end"] = min(c["end"], nxt_c["start"] if nxt_c else c["end"])
         key = f"{c['beat']}:{c['idx']}"
         if key in ov.get("end_max", {}):
             c["end"] = min(c["end"], ov["end_max"][key])
         if key in ov.get("pos", {}):
             c["pos_override"] = ov["pos"][key]
-        c["start"], c["end"] = round(max(0.0, c["start"]), 3), round(c["end"], 3)
+    for c in caps:
+        c["start"], c["end"] = round(max(0.0, c["start"]), 4), round(c["end"], 4)
         c.pop("voice_end", None)
     # the film's last line: hold it into the silence that follows
     if caps:
