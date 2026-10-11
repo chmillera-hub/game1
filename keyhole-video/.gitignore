@@ -1,0 +1,6 @@
+tts/
+src/build/
+src/cache_tts/
+src/out_*/
+src/qa/
+__pycache__/
