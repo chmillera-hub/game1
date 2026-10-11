@@ -41,17 +41,18 @@ export const sfx = [
   { at: 's08b02-0.88', name: 'key_turn', gain: -10 },                     // bolt (0.68) lands on the lock at b02-0.2
   { at: 's08b02-0.22', name: 'lock_click', gain: -10 },
   { at: 's08b02+0.15', name: 'cloth_rustle', gain: -20, pan: -0.5 },      // the CEO rising beside the bars
-  { at: 's08b02+0.65', name: 'cage_creak', gain: -24, until: 's08b02+1.7', fade: 0.15, pan: 0.15 },   // Fear pulls on 'leave' (+1.0 → +1.6; swell peak +1.35)
-  { at: 's08b03+0.0', name: 'sob', gain: -16, pan: 0.15 },
+  { at: 's08b02+0.65', name: 'cage_creak', gain: -24, until: 's08b02+1.7', fade: 0.15, pan: 0.25 },   // Fear pulls on 'leave' (+1.0 → +1.6; swell peak +1.35)
+  { at: 's08b03+0.0', name: 'sob', gain: -16, pan: 0.3 },
   { at: 's08b03+0.12', name: 'cloth_rustle', gain: -18, pan: -0.3 },      // turns away from the cage
   { at: 's08b03+0.52', name: 'footsteps', gain: -16, rate: 1.2, until: 's08b03+1.3', fade: 0.12, pan: -0.3 },   // two steps (+0.58, +1.06)
-  // weak rattles at +0.55 / +1.5 / +2.25 / +3.0: the creak's swell (peak 0.7 s into the file) lands inside each shake
-  { at: 's08b03+0.3', name: 'cage_creak', gain: -17, pan: 0.15, until: 's08b03+1.3' },
+  // weak rattles at +0.55 / +1.5 / +2.25 / +3.0: the creak's swell (peak 0.7 s into the file) lands inside each shake.
+  // (Fear sits upper-right of the CEO's medium close: pan 0.3; the CEO lower-left: −0.3)
+  { at: 's08b03+0.3', name: 'cage_creak', gain: -17, pan: 0.3, until: 's08b03+1.3' },
   { at: 's08b03+1.3', name: 'breath_shaky', gain: -18, pan: -0.3 },        // the CEO's in-breath
-  { at: 's08b03+1.25', name: 'cage_creak', gain: -18, pan: 0.15, until: 's08b03+2.15' },
-  { at: 's08b03+1.85', name: 'sob', gain: -17, pan: 0.15 },
-  { at: 's08b03+2.0', name: 'cage_creak', gain: -19, pan: 0.15, until: 's08b03+2.9' },
-  { at: 's08b03+2.75', name: 'cage_creak', gain: -21, pan: 0.15, until: 's08b03+3.55' },
+  { at: 's08b03+1.25', name: 'cage_creak', gain: -18, pan: 0.3, until: 's08b03+2.15' },
+  { at: 's08b03+1.85', name: 'sob', gain: -17, pan: 0.3 },
+  { at: 's08b03+2.0', name: 'cage_creak', gain: -19, pan: 0.3, until: 's08b03+2.9' },
+  { at: 's08b03+2.75', name: 'cage_creak', gain: -21, pan: 0.3, until: 's08b03+3.55' },
   { at: 's08b03+2.65', name: 'footsteps', gain: -15, rate: 1.15, pan: -0.35 },
   { at: 'scene.end-1.5', name: 'door_whoosh', gain: -22, pan: -0.7, until: 'scene.end+0.05', fade: 0.1 },   // the door begins to open
 ];
@@ -368,7 +369,8 @@ function shotClose(g, t, S, T) {
   const off = sstep(S.T('s08b02.end'), S.T('s08b02.end+0.35'), t);
   const target = selfLocal(cx, cy, cs, 1, 262 - 4 * tight - 120 * off, barY + 30 * off);
   drawSelf(g, cx, cy, cs, {
-    t, outfit: 'ceo', facing: 1, kneel, face: { ...SELF_EXPR.holdingBackTears, lookX: 0.7, lookY: 0.6 },
+    t, outfit: 'ceo', facing: 1, kneel, layer: 'front',   // only the arm: the body and head are off-frame left (x < 180)
+    face: { ...SELF_EXPR.holdingBackTears, lookX: 0.7, lookY: 0.6 },
     armR: { target, bend: -1, front: true, hand: off > 0.2 ? 'open' : tight > 0.5 ? 'fist' : 'grip', handAngle: -0.05 - 0.12 * tight, thumb: -1, shake: 0.3 * tight },
     armL: 'rest',
   });

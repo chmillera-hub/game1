@@ -173,7 +173,10 @@ function fearPose(t, S, L) {
     const k = sine((t - S.T('s07b02+0.55')) / 0.4);
     const side = (sd) => {
       const tg = [lerp(sd * 44, sd * 36, k), lerp(-66, -84, k)];
-      return { target: [lerp(tg[0], sd * 68, palms), lerp(tg[1], -100, palms)], bend: -sd, front: palms > 0.3, hand: palms > 0.3 ? 'palm' : 'open' };
+      // the arms stay BEHIND the body through the lift and the drop: the forearms come out at the hips, palms open.
+      // (Drawn in front, the elbows crossed over the belly in an "X" on the way up and down: the IK elbow sits on the
+      // body's centre line until the hands are nearly out.)
+      return { target: [lerp(tg[0], sd * 70, palms), lerp(tg[1], -98, palms)], bend: -sd, front: false, hand: palms > 0.3 ? 'palm' : 'open' };
     };
     armL = side(-1); armR = side(1);
   }

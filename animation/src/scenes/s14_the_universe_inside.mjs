@@ -92,8 +92,8 @@ function offscreen() {
 
 
 // ---------------------------------------------------------------- shot boundaries (cuts)
-const CUT_TWO = 's14b07+0.2';    // close (the smile held at face size) → two-shot under the starry hood
-const CUT_CLOSE = 's14b07+1.6';  // two-shot → close (the swallow, the question)
+const CUT_TWO = 's14b07+0.35';    // close (the smile held at face size) → two-shot under the starry hood
+const CUT_CLOSE = 's14b07+1.7';  // two-shot → close (the swallow, the question)
 const CUT_WIDE = 's14b09+1.5';   // insert (the hand leaves the shoulder) → raised wide (the hood turns)
 const CUT_MED = 's14b10+1.6';    // raised wide → Fear turns to look where the Void looks
 
@@ -177,42 +177,44 @@ function fearState(t, S) {
   const headDY = K([
     ['s14b06+2.75', 0], ['s14b06+2.95', -3], ['s14b06+3.2', -0.5], ['s14b06+3.4', -2.5], ['s14b06+3.7', 0], // breath of a laugh
     ['s14b06+4.9', 0], ['s14b06+5.9', -3], ['s14b07+0.6', -3.4], ['s14b07+1.5', 0],                         // lifts on 'wonder'
-    ['s14b07+2.05', 0], ['s14b07+2.18', 3.2], ['s14b07+2.35', 0],           // swallow
-    ['s14b07+2.35', 0], ['s14b07+2.55', -1.8], ['s14b07+2.85', 0],          // small breath in, then the question
+    ['s14b07+2.0', 0], ['s14b07+2.12', 3.2], ['s14b07+2.3', 0],             // swallow
+    ['s14b07+2.3', 0], ['s14b07+2.5', -1.8], ['s14b07+2.8', 0],             // small breath in, then the question
     ['s14b10+2.2', 0], ['s14b10+2.3', 2.5], ['s14b10+2.5', 0],              // weight shift on the turn
   ]);
 
   // arms (first seen at b05, 17 s after s13's last view of Fear): the self-hug from s13 relaxes a little; on
-  // 'wasn't afraid' it slides open and the hands come down; on 'wonder' the arms open out and the hands turn
-  // open, palms out, rising a little more on 'amazement' (held through the cut); then they settle together in
-  // front. When the Void's hand leaves (b09) the right hand lifts after it a little, then drops. At the end the
-  // hands clasp at the scarf (= s15). (The padlock hangs at Fear-local ≈ (72,−106): the right hand stays inside it.)
+  // 'wasn't afraid' the arms uncross and drop, hanging loose; on 'wonder' they open out from the sides, palms out,
+  // and rise a little more on 'amazement' (held through the cut); for the question the hands meet low in front.
+  // At the end the hands clasp at the scarf (= s15). Until the question the bends stay those of the hug (elbows
+  // toward the body: with the hands out to the sides that is the natural elbow-down); they switch to elbows-out
+  // only while both arms hang dead straight (b07+1.05, in the two-shot), so no elbow ever flips on screen.
+  // (The padlock hangs at Fear-local ≈ (72,−106): the right hand stays clear of it.)
   const A = K([
     ['s14b05', AR(-20, -106, 14, -118)],
     ['s14b05+3.8', AR(-24, -100, 19, -103)],
     ['s14b06+1.5', AR(-24, -100, 19, -103)],
-    ['s14b06+3.1', AR(-36, -86, 33, -88)],                                  // 'wasn't afraid': the hug lets go
-    ['s14b06+4.9', AR(-37, -87, 34, -89)],
-    ['s14b06+5.9', AR(-62, -76, 56, -78), 'inOut'],                         // 'wonder': arms open, palms out
-    ['s14b06+6.4', AR(-63, -78, 57, -79)],
-    ['s14b06+7.2', AR(-70, -90, 61, -86)],                                  // 'amazement': they rise a little
-    ['s14b07+0.6', AR(-71, -92, 62, -88)],
-    ['s14b07+1.5', AR(-13, -102, 12, -104), 'inOut'],                       // settle together in front
-    ['s14b09+0.45', AR(-13, -102, 12, -104)],
-    ['s14b09+1.0', AR(-15, -102, 42, -121), 'inOut'],                       // the right hand lifts after the hand…
-    ['s14b09+1.5', AR(-15, -102, 42, -120)],
-    ['s14b09+2.4', AR(-13, -102, 12, -104), 'inOut'],                       // …and drops
+    ['s14b06+3.1', AR(-39, -43, 37, -43)],                                  // 'wasn't afraid': uncross, drop loose
+    ['s14b06+4.9', AR(-39, -44, 37, -44)],
+    ['s14b06+5.9', AR(-68, -80, 60, -74), 'inOut'],                         // 'wonder': arms open out, palms out
+    ['s14b06+6.4', AR(-69, -81, 61, -75)],
+    ['s14b06+7.2', AR(-73, -91, 63, -82)],                                  // 'amazement': they rise a little
+    ['s14b07+0.6', AR(-74, -93, 64, -84)],
+    ['s14b07+1.05', AR(-39, -43, 37, -43), 'inOut'],                        // (two-shot) down, straight: the elbows
+    ['s14b07+1.6', AR(-12, -67, 12, -67), 'inOut'],                         // switch sides; the hands meet low in front
+    ['s14b09+0.5', AR(-12, -67, 12, -67)],
+    ['s14b09+1.1', AR(-16, -69, 20, -70), 'inOut'],                         // part a little as it leans after the hand
+    ['s14b09+2.4', AR(-12, -67, 12, -67), 'inOut'],
   ]);
   const clasp = K([['s14b10+3.2', 0], ['s14b10+4.0', 1, 'inOut']]);
   const palm = K([['s14b06+5.0', 0], ['s14b06+5.5', 1], ['s14b07+0.9', 1], ['s14b07+1.2', 0]]) > 0.5;
   let armL, armR;
   if (facing > 0) {
-    armL = { target: [A.lx, A.ly], bend: 1, front: true, hand: palm ? 'palm' : 'open' };
-    // bend −1: the right elbow drops (s13's hug had it up and out, which made every open pose a hand-on-hip)
-    armR = { target: [A.rx, A.ry], bend: -1, front: true, hand: palm ? 'palm' : 'open' };
+    const out = t >= S.T('s14b07+1.05');
+    armL = { target: [A.lx, A.ly], bend: out ? -1 : 1, front: true, hand: palm ? 'palm' : 'open' };
+    armR = { target: [A.rx, A.ry], bend: out ? 1 : -1, front: true, hand: palm ? 'palm' : 'open' };
   } else {
-    armL = { target: [lerp(-12, -7, clasp), lerp(-103, -127, clasp)], bend: -1, front: true, hand: clasp > 0.5 ? 'fist' : 'open' };
-    armR = { target: [lerp(12, 7, clasp), lerp(-104, -124, clasp)], bend: 1, front: true, hand: clasp > 0.5 ? 'fist' : 'open' };
+    armL = { target: [lerp(-12, -7, clasp), lerp(-67, -127, clasp)], bend: -1, front: true, hand: clasp > 0.5 ? 'fist' : 'open' };
+    armR = { target: [lerp(12, 7, clasp), lerp(-67, -124, clasp)], bend: 1, front: true, hand: clasp > 0.5 ? 'fist' : 'open' };
   }
 
   // ---------- face channels
@@ -227,7 +229,7 @@ function fearState(t, S) {
     ['s14b06+5.4', BR(0.86, 0.3)],                                          // 'wonder': brows lift high
     ['s14b06+6.6', BR(0.8, 0.4)],                                           // 'amazement': lifted, softly moved
     ['s14b07+1.5', BR(0.66, 0.4)],
-    ['s14b07+1.85', BR(0.7, 0.5)],                                          // trying to speak
+    ['s14b07+1.95', BR(0.7, 0.5)],                                          // gathering itself to speak
     ['s14b08+0.1', BR(0.55, 0.48)],                                         // gently raised, asking
     ['s14b08.end', BR(0.6, 0.5)],
     ['s14b09+0.25', BR(0.6, 0.5)],
@@ -272,18 +274,18 @@ function fearState(t, S) {
     ['s14b06+3.45', MO(0.25, 0.1, 0.1, 0.08, 0, 0.1)],
     ['s14b06+3.9', MO(0.12, 0.03, 0.2, 0, 0, 0.12)],
     ['s14b06+4.45', MO(0.11, 0.02, 0.2, 0, 0, 0.1)],
-    ['s14b06+5.15', MO(0.32, 0.0, 0.62, -0.1, 0, 0.18)],                    // 'It felt wonder': a soft "o"
-    ['s14b06+5.6', MO(0.3, 0.06, 0.56, -0.08, 0, 0.25)],
-    ['s14b06+6.35', MO(0.15, 0.42, 0.14, 0.06, 0, 0.6)],                    // ...that melts into a small smile
+    ['s14b06+5.1', MO(0.32, 0.0, 0.62, -0.1, 0, 0.18)],                     // 'It felt wonder': a soft "o"
+    ['s14b06+5.45', MO(0.3, 0.06, 0.56, -0.08, 0, 0.25)],
+    ['s14b06+6.15', MO(0.15, 0.42, 0.14, 0.06, 0, 0.6)],                    // ...that melts into a small smile
     ['s14b06+7.2', MO(0.13, 0.56, 0.06, 0.1, 0, 0.62)],                     // 'amazement': trembling, held
-    ['s14b07+0.2', MO(0.13, 0.54, 0.06, 0.1, 0, 0.55)],
+    ['s14b07+0.35', MO(0.13, 0.54, 0.06, 0.1, 0, 0.55)],
     ['s14b07+1.5', MO(0.12, 0.3, 0.12, 0.04, 0, 0.25)],
-    // b07 (close again): lips part, nothing comes out; it swallows; one small breath in; then it asks
-    ['s14b07+1.7', MO(0.22, 0.08, 0.32, 0, 0, 0.12)],
-    ['s14b07+1.88', MO(0.06, 0.04, 0.12, 0, 0, 0.05)],
-    ['s14b07+2.02', MO(0.0, 0.0, 0.0, 0, 0.3, 0)],
-    ['s14b07+2.18', MO(0.0, -0.02, 0.0, -0.1, 0.65, 0)],                    // swallow
-    ['s14b07+2.35', MO(0.04, 0.0, 0.1, 0, 0.1, 0)],
+    // b07 (close again, from +1.7): the smile lingers as the lips come together; it swallows; one small breath in;
+    // then it asks
+    ['s14b07+1.85', MO(0.06, 0.12, 0.12, 0, 0, 0.1)],
+    ['s14b07+2.0', MO(0.0, 0.02, 0.0, 0, 0.3, 0)],
+    ['s14b07+2.12', MO(0.0, -0.02, 0.0, -0.1, 0.65, 0)],                    // swallow
+    ['s14b07+2.3', MO(0.04, 0.0, 0.1, 0, 0.1, 0)],
     ['s14b07+2.55', MO(0.12, 0.0, 0.25, 0, 0, 0)],                          // small breath in
     ['s14b08', MO(0.06, 0.06, 0.1, 0, 0, 0.12)],
     ['s14b08.end', MO(0.06, 0.04, 0.1, 0, 0, 0.12)],
@@ -338,7 +340,7 @@ function fearState(t, S) {
     blinkAt(t, S.T('s14b05+2.3'), 0.16),
     blinkAt(t, S.T('s14b06+3.55'), 0.16),
     blinkAt(t, S.T('s14b06+7.45'), 0.18),
-    blinkAt(t, S.T('s14b07+2.1'), 0.2),       // with the swallow
+    blinkAt(t, S.T('s14b07+2.04'), 0.2),      // with the swallow
     blinkAt(t, S.T('s14b08.end+0.2'), 0.3),   // waiting for an answer
     blinkAt(t, S.T('s14b09+1.08'), 0.18),     // gaze shift up the arm
     blinkAt(t, S.T('s14b09+3.05'), 0.18),
@@ -442,45 +444,35 @@ function fearRim(g, fx, fy, fs, pose, k) {
   g.restore();
 }
 
-/** The resting hand, softened: drawn on its own layer so the cosmos light can touch only the hand — a violet
- *  sheen over the knuckles and a few faint twinkling stars on the back of the hand and the fingers. */
-let handC = null;
-const HAND_STARS = [[0.3, -0.12, 2.6, 0.0], [0.47, 0.18, 2.1, 1.7], [0.62, -0.02, 2.9, 3.1], [0.78, 0.2, 2.0, 4.4],
-  [0.9, -0.15, 2.3, 5.6], [0.4, 0.02, 1.7, 2.4]];
+/** The resting hand, softened: the cosmos glow is drawn over it (it was drawn under it, leaving a pitch-black
+ *  claw) and, once the cosmos is revealed, a few faint stars twinkle on the back of the hand and along the
+ *  middle finger (placed along the wrist → fingertip line, well inside the silhouette, so no clip is needed). */
+const HAND_STARS = [[0.24, -0.1, 2.6, 0.0], [0.38, 0.13, 2.0, 1.7], [0.5, -0.05, 2.8, 3.1], [0.66, 0.02, 1.9, 4.4],
+  [0.84, 0.0, 1.7, 5.6], [0.3, 0.02, 1.6, 2.4]];
 function drawHandSoft(g, camera, vp, t, cosmos) {
-  const k = clamp((cosmos - 0.55) / 0.45) * vp.handL.show;
-  if (k < 0.02) { g.save(); applyCamera(g, camera); drawVoidHand(g, ...VOID_B, vp, 'L'); g.restore(); return; }
-  if (!handC) handC = createCanvas(W, H);
-  const o = handC.getContext('2d');
-  o.setTransform(1, 0, 0, 1, 0, 0); o.globalCompositeOperation = 'source-over'; o.globalAlpha = 1;
-  o.clearRect(0, 0, W, H);
-  o.save();
-  applyCamera(o, camera);
-  drawVoidHand(o, ...VOID_B, vp, 'L');
-  o.globalCompositeOperation = 'source-atop';
-  const h = voidRig(vp).handL, s = VOID_B[2];
-  const P = (p) => [VOID_B[0] + p[0] * s, VOID_B[1] + p[1] * s];
-  const wr = P(h.wrist), tip = P(h.tip);
-  const ux = tip[0] - wr[0], uy = tip[1] - wr[1], len = Math.hypot(ux, uy) || 1;
-  const nx = -uy / len, ny = ux / len, hw = 34 * s;
-  // sheen: the knuckles catch the light from the hood (up-right)
-  const kn = [wr[0] + ux * 0.55, wr[1] + uy * 0.55];
-  const gr = o.createRadialGradient(kn[0] + 20, kn[1] - 30, 0, kn[0], kn[1], len * 0.75);
-  gr.addColorStop(0, `rgba(150,135,255,${0.2 * k})`); gr.addColorStop(1, 'rgba(120,150,255,0)');
-  o.fillStyle = gr; o.fillRect(kn[0] - len, kn[1] - len, 2 * len, 2 * len);
-  for (const [a, b, r, ph] of HAND_STARS) {
-    const tw = 0.5 + 0.5 * Math.sin(t * (1.1 + ph * 0.13) + ph * 2.1);
-    const al = k * (0.18 + 0.62 * tw * tw * tw);
-    o.fillStyle = `rgba(232,224,255,${al})`;
-    star(o, wr[0] + ux * a + nx * b * hw * 2, wr[1] + uy * a + ny * b * hw * 2, r * (0.75 + 0.35 * tw));
+  g.save();
+  applyCamera(g, camera);
+  drawVoidHand(g, ...VOID_B, vp, 'L');
+  const k = clamp((cosmos - 0.55) / 0.45) * clamp((vp.handL.show - 0.85) / 0.15);
+  if (k > 0.02) {
+    const h = voidRig(vp).handL, s = VOID_B[2];
+    const wr = [VOID_B[0] + h.wrist[0] * s, VOID_B[1] + h.wrist[1] * s];
+    const tip = [VOID_B[0] + h.tip[0] * s, VOID_B[1] + h.tip[1] * s];
+    const ux = tip[0] - wr[0], uy = tip[1] - wr[1], len = Math.hypot(ux, uy) || 1;
+    const nx = -uy / len, ny = ux / len, hw = 34 * s;
+    for (const [a, b, r, ph] of HAND_STARS) {
+      const tw = 0.5 + 0.5 * Math.sin(t * (1.1 + ph * 0.13) + ph * 2.1);
+      g.fillStyle = `rgba(232,224,255,${k * (0.2 + 0.6 * tw * tw * tw)})`;
+      star(g, wr[0] + ux * a + nx * b * hw, wr[1] + uy * a + ny * b * hw, r * (0.75 + 0.35 * tw));
+    }
   }
-  o.restore();
-  g.save(); g.setTransform(1, 0, 0, 1, 0, 0); g.drawImage(handC, 0, 0); g.restore();
+  g.restore();
 }
 
 /**
  * opts: cosmos, starK, fear (false = no Fear/cage, hood POV),
- *       plate: { key, rect, res, tb }  (static background), tb: frozen time for the set + cage (pull-back)
+ *       plate: { key, rect, res, tb }  (static background), tb: frozen time for the set + cage (pull-back),
+ *       hoodOff: the hood is out of frame (its cosmos is not drawn)
  */
 function drawStage(g, t, S, camera, opts = {}) {
   const cosmos = opts.cosmos;
@@ -489,14 +481,19 @@ function drawStage(g, t, S, camera, opts = {}) {
   const tb = opts.plate ? opts.plate.tb : opts.tb ?? t;
   const st = { t, lightsDim: 0.35, mist: 0.5, alarm: 0 };
   const handOut = vp.handL.show > 0.001 || vp.handL.reach > 0.001;
+  const noArm = !!(opts.plate && opts.plate.noArm);
   const back = (c, tt, v) => {
     drawHQ(c, 'backOfMind', { ...st, t: tt });
-    drawVoid(c, ...VOID_B, v);
+    // hoodOff: the hood is far above the frame — skip its cosmos (the glow still uses the real value);
+    // noArm: a plate without the left arm (it moves): the sleeve is drawn live in front of the cage instead
+    let vv = opts.hoodOff ? { ...v, cosmos: 0 } : v;
+    if (noArm) vv = { ...vv, handL: { ...v.handL, defer: true } };
+    drawVoid(c, ...VOID_B, vv);
     if (opts.fear === false) return;
     const cst = { t: tt, door: 0.9, locked: 0, rust: 0, dim: 0 };
     drawCage(c, ...CAGE_B, { ...cst, layer: 'back' });
     drawCage(c, ...CAGE_B, { ...cst, layer: 'front' });
-    if (handOut) sleeveFront(c, v);
+    if (!noArm && (v.handL.show > 0.001 || v.handL.reach > 0.001)) sleeveFront(c, v);
   };
   g.save();
   applyCamera(g, camera);
@@ -507,6 +504,8 @@ function drawStage(g, t, S, camera, opts = {}) {
     // i.e. the picture depended on which frame a render process happened to reach first (chunked renders)
     const pl = getPlate(P.key, P.rect, P.res, (pg) => back(pg, P.tb, voidPose(P.tb, S, cosmosAt(P.tb, S), fearState(P.tb, S))));
     g.drawImage(pl.c, pl.rect[0], pl.rect[1], pl.rect[2] - pl.rect[0], pl.rect[3] - pl.rect[1]);
+    // (noArm plates are only used where the whole visible sleeve lies below SLEEVE_CLIP_Y, i.e. in front of the cage)
+    if (noArm && handOut) sleeveFront(g, vp);
   } else {
     back(g, tb, vp);
   }
@@ -671,7 +670,9 @@ export function render(g, t, S) {
   } else if (t < T(CUT_WIDE)) {
     // 6a. insert: the fingertips slide off Fear's shoulder and the hand rises away out of frame; Fear's eyes drop
     // to its shoulder, it leans after the hand, its own hand goes to where the Void's was (live: the sleeve moves)
-    drawStage(g, t, S, cam(INSERT[0], INSERT[1], INSERT[2], t, 2), { cosmos });
+    // plate: set + Void without its left arm + cage, frozen at b09 (frame top y ≈ 1290: hood and mantle far above)
+    const plate = { key: 'ins', rect: frameRect(INSERT[0], INSERT[1], INSERT[2]), res: INSERT[2], tb: T('s14b09'), noArm: true };
+    drawStage(g, t, S, cam(INSERT[0], INSERT[1], INSERT[2], t, 2), { cosmos, hoodOff: true, plate });
   } else if (t < T(CUT_MED)) {
     // 6b. raised wide: the empty sleeve returns to rest and the hood turns from Fear back to the distance — the
     // whole hood in frame, the cosmos in it, the far glow screen-left — held into b10 ("And the Void stared…")
@@ -681,7 +682,9 @@ export function render(g, t, S) {
     const k = S.k(t, [[CUT_MED, 0], ['scene.end+0.9', 1, 'linear']]);
     const z = zoomExp(MED_A[2], MED_B[2], k);
     const starK = S.k(t, [['s14b10', 1], ['s14b10+2.6', 0.5]]);
-    drawStage(g, t, S, cam(lerp(MED_A[0], MED_B[0], k), lerp(MED_A[1], MED_B[1], k), z, t, 2), { cosmos, starK });
+    // plate: everything behind Fear is still now (hood turned, hand gone, sleeve at rest)
+    const plate = { key: 'med', rect: unionRect(frameRect(...MED_A), frameRect(...MED_B)), res: MED_B[2], tb: T(CUT_MED) };
+    drawStage(g, t, S, cam(lerp(MED_A[0], MED_B[0], k), lerp(MED_A[1], MED_B[1], k), z, t, 2), { cosmos, starK, hoodOff: true, plate });
   }
 
   grade(g, cold, 0);

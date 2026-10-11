@@ -146,7 +146,7 @@ export function render(g, t, S) {
   drawFear(lg, fx, fy, fs, fp);
   drawCage(lg, ...CAGE_B, { ...cst, layer: 'front', grips: fp.gripping ? ['gripL'] : undefined, gripScale: 1 });
   // dims Fear's lavender and the cage's rim light as it passes (kept readable: Fear's face must still read)
-  layerShadow(lg, xe - 25, 0.42 * clamp(shA / 0.82));
+  layerShadow(lg, xe - 25, 0.34 * clamp(shA / 0.82));
   lg.restore();
   g.save();
   g.setTransform(1, 0, 0, 1, 0, 0);

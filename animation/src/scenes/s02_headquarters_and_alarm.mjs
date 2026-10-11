@@ -375,7 +375,9 @@ function fearPose(S, t) {
   // centred and read as looking up at the bell, up-right). One slow blink on "What" (a cut lands on open eyes: no
   // automatic blinks in the close or the two-shot)
   const stare = t >= S.T('s02b03.end-0.2') ? 1 : 0;
-  if (stare) { face.lookX = -0.98; face.lookY = -0.68; }
+  // (verifier: −0.98/−0.68 sat flat-left, on the kneeling CEO's chin; −0.9/−0.92 aims up past the CEO's head, along
+  // the near-vertical finger, and matches s03's −0.62/−0.8 stare)
+  if (stare) { face.lookX = -0.9; face.lookY = -0.92; }
   if (t >= S.T('s02b04')) face.blink = blinkAt(t, S.T(`${b4}+1.7`), 0.22);
   face.noAutoBlink = squeeze > 0.05 || t >= S.T('s02b03.end-0.25');
   const g0 = face.headTurnG || 0;

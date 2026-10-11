@@ -97,7 +97,8 @@ function backCam(t, S, shot) {
   }
   // 'screen': settle back on the whole console row (JOY and CALM inside the face-safe band); a whisper of a push
   const k = S.k(t, [[W('then'), 0], ['scene.end+1', 1, 'linear']]);
-  return cam(t, { x: 450, y: lerp(655, 660, k), zoom: lerp(0.93, 0.955, k) }, 2.5);
+  // (y keeps the set's top edge, world y 0, above the frame: at y 655 a flat 28 px strip showed at the top)
+  return cam(t, { x: 450, y: lerp(694, 680, k), zoom: lerp(0.93, 0.955, k) }, 2.5);
 }
 
 // per-emotion timing of the smile (closeA: JOY then SADNESS; closeB: ANGER then CALM — every smile is full and held
@@ -151,7 +152,7 @@ function emotionPose(name, t, S) {
   } else if (name === 'ANGER') {
     // b01: arms folded but looking; brows not quite as low · b02: a corner twitches up, one gruff nod
     const f0 = { browIn: -0.15, browSquish: 0.25, lidU: 0.12, pressed: 0.35, smile: -0.1 };
-    const twitch = S.k(t, [[SMILE_AT.ANGER, 0], [add(SMILE_AT.ANGER, 0.2), 0.78, 'outCubic'], [add(SMILE_AT.ANGER, 0.45), 0.42], [add(SMILE_AT.ANGER, 0.6), 0.5]]);
+    const twitch = S.k(t, [[SMILE_AT.ANGER, 0], [add(SMILE_AT.ANGER, 0.2), 0.82, 'outCubic'], [add(SMILE_AT.ANGER, 0.45), 0.52], [add(SMILE_AT.ANGER, 0.6), 0.64]]);
     face = { ...f0, smile: -0.1 + twitch, pressed: 0.35 * (1 - twitch * 1.5) };
     face = mix(face, { browIn: -0.2, smile: 0.05 }, work);
     pose.noBase = true;
@@ -173,7 +174,7 @@ function emotionPose(name, t, S) {
   } else {
     // CALM: lids level at half, faint closed smile already there · b02 slow deliberate blink, soft closed smile
     const f0 = { lidU: 0.12, smile: 0.12 };
-    const f1 = { lidU: 0.12, smile: 0.42, lidL: 0.2 };
+    const f1 = { lidU: 0.12, smile: 0.56, lidL: 0.26, blush: 0.15 };
     face = mix(f0, f1, sm);
     face.blink = blinkAt(t, S.T(add(SMILE_AT.CALM, 0.62)), 0.55);
     face.noAutoBlink = Math.abs(t - S.T(add(SMILE_AT.CALM, 0.9))) < 0.9;

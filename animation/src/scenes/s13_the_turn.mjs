@@ -18,7 +18,7 @@
 import { W, H, TAU, clamp, lerp, ease, fbm, blinkAt, applyCamera, drift, vignette } from '../engine.mjs';
 import { makeExpr } from '../face.mjs';
 import { drawFear, FEAR_ARMS, FEAR_FACE } from '../chars/fear.mjs';
-import { drawVoid, drawVoidArm, drawVoidHand, toVoidLocal, VOID_HANDS } from '../chars/void.mjs';
+import { drawVoid, drawVoidArm, drawVoidHand, toVoidLocal, voidRig, VOID_HANDS } from '../chars/void.mjs';
 import { drawHQ, drawHQForeground } from '../sets/hq.mjs';
 import { drawCage } from '../sets/props.mjs';
 import { createCanvas } from '@napi-rs/canvas';
@@ -141,22 +141,37 @@ function drawCuBackground(g, S, st) {
 let rimLayer = null, povBG = null;
 function rimSwell(g, cam, vpose, k) {
   if (k <= 0.01) return;
-  // half resolution: it is a glow (softer is better), and the silhouette hood sprites build at half the cost
+  // half resolution (it is a glow: softer is better, and the silhouette hood sprites build at half the cost), and
+  // all the raster work is clipped to the hood's on-screen box
   rimLayer ||= createCanvas(W / 2, H / 2);
   const c = rimLayer.getContext('2d');
-  c.setTransform(1, 0, 0, 1, 0, 0); c.globalCompositeOperation = 'source-over'; c.globalAlpha = 1; c.clearRect(0, 0, W / 2, H / 2);
+  const f = voidRig(vpose).face, fx = VOID_B[0] + f[0] * VOID_B[2], fy = VOID_B[1] + f[1] * VOID_B[2];
+  const z = cam.zoom, sx = (x) => W / 2 + (cam.shakeX || 0) + (x - cam.x) * z, sy = (y) => H / 2 + (cam.shakeY || 0) + (y - cam.y) * z;
+  const X0 = clamp(Math.floor((sx(fx - 250) - 6) / 2), 0, W / 2), X1 = clamp(Math.ceil((sx(fx + 250) + 6) / 2), 0, W / 2);
+  const Y0 = clamp(Math.floor((sy(fy - 260) - 6) / 2), 0, H / 2), Y1 = clamp(Math.ceil((sy(fy + 70) + 6) / 2), 0, H / 2);
+  if (X1 <= X0 || Y1 <= Y0) return;
+  c.setTransform(1, 0, 0, 1, 0, 0); c.globalCompositeOperation = 'source-over'; c.globalAlpha = 1;
+  c.clearRect(X0, Y0, X1 - X0, Y1 - Y0);
   c.save();
+  c.beginPath(); c.rect(X0, Y0, X1 - X0, Y1 - Y0); c.clip();
   c.scale(0.5, 0.5);
   applyCamera(c, cam);
   drawVoid(c, ...VOID_B, { ...vpose, silhouette: true, handL: { ...VOID_ARM_B, show: 0, defer: 'hand' } });
-  c.globalCompositeOperation = 'destination-in';                       // keep the hood, fade out over the mantle
-  const gr = c.createLinearGradient(0, 330, 0, 560);
+  c.restore();
+  // keep the hood's crown and sides only: in the silhouette pass the rims hidden under the mantle (the sleeve tops)
+  // show through, from ~65 below the opening's centre — fade out above them. (Applied without the clip: a
+  // destination-in fill under a clip wiped the whole layer in @napi-rs/canvas.)
+  c.save();
+  c.scale(0.5, 0.5);
+  applyCamera(c, cam);
+  c.globalCompositeOperation = 'destination-in';
+  const gr = c.createLinearGradient(0, fy + 15, 0, fy + 58);
   gr.addColorStop(0, 'rgba(0,0,0,1)'); gr.addColorStop(1, 'rgba(0,0,0,0)');
-  c.fillStyle = gr; c.fillRect(-1e4, -1e4, 2e4, 2e4);
+  c.fillStyle = gr; c.fillRect(fx - 400, fy - 400, 800, 800);
   c.restore();
   g.save(); g.setTransform(1, 0, 0, 1, 0, 0);
   g.globalCompositeOperation = 'screen'; g.globalAlpha = clamp(k);
-  g.drawImage(rimLayer, 0, 0, W, H);
+  g.drawImage(rimLayer, X0, Y0, X1 - X0, Y1 - Y0, X0 * 2, Y0 * 2, (X1 - X0) * 2, (Y1 - Y0) * 2);
   g.restore();
 }
 
@@ -575,7 +590,7 @@ export function render(g, t, S) {
   if (handOut) drawVoidHand(g, ...VOID_B, vpose, 'L');
   drawHQForeground(g, 'backOfMind', st);
   g.restore();
-  if (t < B.b02 + 0.6 && !cu) rimSwell(g, cam, vpose, 0.85 * S.k(t, [['s13b01+0.3', 0], ['s13b01+2.4', 1, 'sine'], ['s13b01+5.0', 1], ['s13b02+0.5', 0, 'sine']]));
+  if (t < B.b02 + 0.6 && !cu) rimSwell(g, cam, vpose, S.k(t, [['s13b01+0.3', 0], ['s13b01+2.4', 1, 'sine'], ['s13b01+5.0', 1], ['s13b02+0.5', 0, 'sine']]));
 
   // hood POV: we look out of the darkness of the hood — a soft dark oval closes in from the edges
   if (t >= B.b03 && t < B.b04) {

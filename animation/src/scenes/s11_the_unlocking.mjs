@@ -24,11 +24,13 @@ const UNLOCK_ANGLE = 2.3;
 const SLEEVE_CLIP_Y = 1100;
 const FS = CAGE_B[2];                       // Fear inside the cage uses the cage scale
 const OCC_SIDE = [363, 1619];               // cagePoint('occupantSide', ...CAGE_B)
-// Fear stands 11 px left of occupantSide in this scene: with its face centred at x ≈ 356 the fixed bar (303) sits on
-// the outer rim of its left eye, the hinge stile (353) between the eyes and the gate's centre stile (430 → 408 as the
-// gate drifts to 0.3) stays right of the right eye, so the moving gate never crosses its face (at 363 + headDX the
-// centre stile swept across the right eye for ~1 s). s12 opens on a wide (Fear ≈ 9 px on screen off: invisible).
-const FEAR_X = 352;
+// Fear stands 21 px left of occupantSide in this scene. Its eyes (~48 px wide each, ~16 px apart) are wider than the
+// gaps between the bars, so some bar always crosses an eye; at x 342 with the head turned to the gate, the bars at rest
+// (fixed 303, hinge stile 353, the gate's centre stile at 393 once the gate is at 0.3) fall on the eye rims, clear of
+// the pupils. The gate's swing (its centre stile sweeps 430 → 393, across the right eye) now happens in the last half
+// second of b02 while Fear's eyes are still squeezed shut, and is done by the time they snap open. s12 opens on a wide
+// with Fear at occupantSide (363): 21 world px = 17 screen px, across a close → wide cut.
+const FEAR_X = 342;
 const OFF = { JOY: 1.3, SADNESS: 2.9, ANGER: 4.1, CALM: 5.7 };
 
 const sleeveFront = (g, pose) => {
@@ -43,7 +45,7 @@ export const sfx = [
   { at: 's11b02+2.0', name: 'sob', gain: -20 },                        // weaker sob, eyes still shut
   { at: 's11b02+3.12', name: 'key_turn', gain: -11 },                  // fingertip turns the lock (bolt 0.68 → +3.80)
   { at: 's11b02+3.78', name: 'lock_click', gain: -10 },                // shackle pops at +3.80
-  { at: 's11b03-0.1', name: 'cage_creak', gain: -12 },                 // the gate drifts open 0 → 0.3
+  { at: 's11b03-0.6', name: 'cage_creak', gain: -12 },                 // the gate drifts open 0 → 0.3 (b03−0.5 → +0.7); swell peak +0.1
   { at: 's11b03+1.75', name: 'cloth_rustle', gain: -22 },              // the hand draws back into the sleeve (+1.7 → +2.85)
 ];
 
@@ -184,7 +186,9 @@ function drawBoM(g, t, S) {
   const wobble = 0.08 * turnW * Math.sin((t - T('s11b02+3.4')) * Math.PI * 2 / 0.5);
   const locked = t < T('s11b02+3.8') ? 1 : 0;
   const clickAge = t - T('s11b02+3.8');
-  const door = S.k(t, [['s11b03', 0], ['s11b03+2.0', 0.3, 'outCubic']]);
+  // the gate drifts open on its own weight from the end of b02 (the creak starts in the wider unlock shot and carries
+  // across the cut); by the time Fear's eyes snap open (+0.12) it is at 0.27 and it settles at 0.3 by +0.7
+  const door = S.k(t, [['s11b03-0.5', 0], ['s11b03+0.7', 0.3, 'outCubic']]);
 
   // Fear pulls at the bars (dream / b02): cage rattles with each pull
   const pulls = [T('s11b01+3.0'), T('s11b01+3.9'), T('s11b01+4.7'), T('s11b02+0.7'), T('s11b02+2.15')];
@@ -216,6 +220,7 @@ function drawBoM(g, t, S) {
   drawVoid(g, ...VOID_B, vpose);
   drawCage(g, ...CAGE_B, { ...cst, layer: 'back' });
   drawFearTurning(g, fear.x, fear.y, FS, fear.pose, fear.squash);
+  if (t >= tB3) hangingTear(g, fear.x, fear.y, FS, fear.pose, fear.squash);
   drawCage(g, ...CAGE_B, { ...cst, layer: 'front', grips: fear.grips });
   if (handOut) { sleeveFront(g, vpose); drawVoidHand(g, ...VOID_B, vpose, 'L'); }
   drawHQForeground(g, 'backOfMind', st);
@@ -228,6 +233,57 @@ function drawBoM(g, t, S) {
   const wake = S.k(t, [['s11b03+0.12', 0], ['s11b03+0.5', 1, 'out']]);
   dreamBloom(g, dreamIn * (1 - wake));
   finish(g, lerp(0.5, 0.6, out), lerp(0.15, 0, out), lerp(0.45, 0.5, out), mixColor('#2a1408', '#000000', out));
+}
+
+// ---- the hanging tear, large and catch-lit for the close (drawn over the rig's own small drop, behind the bars)
+const F_HEAD_CY = -66, F_NECK_Y = -148, F_EYE = { sp: 32, y: -6, rx: 24.5, ry: 28.5 };   // fear.mjs / FEAR_FACE geometry
+const rot = (x, y, a) => [x * Math.cos(a) - y * Math.sin(a), x * Math.sin(a) + y * Math.cos(a)];
+/** world point of a face-local point (u, v) of Fear drawn at (x, y, s) with `pose` (mirrors drawFear's chain; the
+ *  shiver terms are left out: the tear is drawn only after the tremble has stopped) */
+function fearFacePoint(x, y, s, pose, u, v) {
+  const f = pose.facing || 1;
+  const br = Math.sin(pose.t * 2 * Math.PI * (pose.breathRate || 0.28)) * (pose.breathe ?? 1);
+  let [px, py] = rot(f * u, v + F_HEAD_CY + 8, pose.headTilt || 0);
+  px += pose.headDX || 0; py += F_NECK_Y + (pose.crouch || 0) * 20 + br * 1.2 + (pose.headDY || 0);
+  [px, py] = rot(px, py, pose.lean || 0);
+  return [x + s * f * px, y + s * py];
+}
+function hangingTear(g, x, y, s, pose, squash = 1) {
+  const k = clamp(pose.face.tearR || 0);
+  if (k <= 0.001) return;
+  const turn = clamp(pose.headTurn || 0, -1, 1), at = Math.abs(turn);
+  const rx = F_EYE.rx * (turn > 0 ? 1 - at * 0.38 : 1 + at * 0.06);
+  const cx = F_EYE.sp * (1 - at * 0.3) + turn * F_EYE.sp * 0.55;
+  // (0.23 rx instead of the rig's 0.45: a touch toward the nose, so the gate's centre stile at rest does not cut it)
+  const u = cx + rx * 0.23 + Math.sin(k * 5) * 2, v = F_EYE.y + F_EYE.ry * 0.9 + k * F_EYE.ry * 2.6;
+  let [tx, ty] = fearFacePoint(x, y, s, pose, u, v);
+  tx = x + (tx - x) * squash;
+  const grow = clamp(k / 0.07);                         // swells on the lid as it gathers (tearR 0 → 0.07)
+  const a = k < 0.85 ? 1 : 1 - (k - 0.85) / 0.15;
+  const sz = s * rx * 0.17 * 1.75 * (0.55 + 0.45 * grow);
+  g.save();
+  g.translate(tx, ty);
+  g.rotate(pose.headTilt || 0);
+  // a faint cool glow around it (it catches the far light)
+  g.globalCompositeOperation = 'screen';
+  const gl = g.createRadialGradient(0, 0, 0, 0, 0, sz * 3.2);
+  gl.addColorStop(0, `rgba(170,215,255,${0.35 * a})`); gl.addColorStop(1, 'rgba(170,215,255,0)');
+  g.fillStyle = gl; g.fillRect(-sz * 3.2, -sz * 3.2, sz * 6.4, sz * 6.4);
+  g.globalCompositeOperation = 'source-over';
+  const drop = () => {
+    g.beginPath(); g.moveTo(0, -sz * 1.9);
+    g.bezierCurveTo(sz * 1.1, -sz * 0.2, sz, sz, 0, sz);
+    g.bezierCurveTo(-sz, sz, -sz * 1.1, -sz * 0.2, 0, -sz * 1.9);
+  };
+  const body = g.createLinearGradient(-sz, -sz, sz, sz);
+  body.addColorStop(0, `rgba(235,247,255,${0.95 * a})`); body.addColorStop(1, `rgba(150,200,245,${0.9 * a})`);
+  g.fillStyle = body; g.strokeStyle = `rgba(90,130,200,${0.75 * a})`; g.lineWidth = Math.max(1, sz * 0.14);
+  drop(); g.fill(); g.stroke();
+  // catch-light: a bright crescent upper-left (toward the far glow) and a pin-point
+  g.fillStyle = `rgba(255,255,255,${0.95 * a})`;
+  g.beginPath(); g.ellipse(-sz * 0.38, -sz * 0.15, sz * 0.22, sz * 0.5, 0.35, 0, 2 * Math.PI); g.fill();
+  g.beginPath(); g.arc(sz * 0.32, sz * 0.48, sz * 0.12, 0, 2 * Math.PI); g.fill();
+  g.restore();
 }
 
 /** draws Fear with an optional horizontal squash (sx < 1) — a cheap body turn that hides the facing flip */
@@ -256,7 +312,7 @@ function fearPose(t, S, pull) {
   const lean = lerp(-0.07 - 0.04 * pull - 0.012 * hitch, 0, release) * (crying ? 1 : 1);
   // at the creak the head recoils a little away from the gate (left) before it turns to it, so the face settles with
   // the hinge stile between the eyes and the moving centre stile clear of the right eye
-  const headDX = lerp(S.k(t, [['s11b03+0.12', -15], ['s11b03+0.45', 3, 'out']]), 0, release);
+  const headDX = lerp(S.k(t, [['s11b03+0.12', -15], ['s11b03+0.45', 0, 'out']]), 0, release);
   const x = FEAR_X, y = OCC_SIDE[1];
 
   const gA = [355, 1497], gB = [356, 1532];   // chest level: the fists stay clear of the mouth

@@ -330,10 +330,13 @@ function hoodTwinkles(g, t, S) {
   for (const [dx, dy, at] of glints) {
     const k = Math.sin(Math.PI * seg(t, S.T(at), S.T(at) + 0.7));
     if (k <= 0) continue;
+    // a soft halo (a flat disc read as a grey "button" behind the star at this zoom), then the four-point glint
+    const x = HOOD[0] + dx, y = HOOD[1] + dy, r = 11 * k + 3;
+    const halo = g.createRadialGradient(x, y, 0, x, y, r);
+    halo.addColorStop(0, `rgba(205,190,255,${0.32 * k})`); halo.addColorStop(1, 'rgba(190,170,255,0)');
+    g.fillStyle = halo; g.fillRect(x - r, y - r, 2 * r, 2 * r);
     g.fillStyle = `rgba(255,248,225,${0.9 * k})`;
-    star(g, HOOD[0] + dx, HOOD[1] + dy, 7 * k + 2);
-    g.fillStyle = `rgba(190,170,255,${0.25 * k})`;
-    g.beginPath(); g.arc(HOOD[0] + dx, HOOD[1] + dy, 9 * k + 3, 0, Math.PI * 2); g.fill();
+    star(g, x, y, 7 * k + 2);
   }
   g.restore();
 }
