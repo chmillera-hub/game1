@@ -52,7 +52,8 @@ WALK_TURN = -0.8
 STAND_TURN2 = 0.3              # after he stands up again (looking along the row of pods)
 WAVE_STILL = 1.0 / 1.7         # pose_t for "wave": paw fully raised, no swing
 SWITCH = KM["power_switch"]
-BOSS_SEAT = KM["boss_seat"]
+CHAIR_X = KM["chair"][0] - 50          # her chair, swivelled to the controls (drawn by this scene)
+BOSS_SEAT = (CHAIR_X, KM["boss_seat"][1])
 BOSS_GY = H.ground_from_seat("boss", BOSS_SEAT[1], S)
 BOSS_TURN = -1.2
 DARK_COL = hexc(sets.DARK)
@@ -196,7 +197,11 @@ def tired_kw(t, T, info):
     # reading the plate: one brow lifts a hair
     k_read = _ramp(t, T["plate"] + 0.2, T["plate"] + 0.6) * (1 - _ramp(t, T["perk"], T["perk"] + 0.3))
     face["brow_l"] = 0.18 * k_read
-    face["head_nod"] = face.get("head_nod", 0.0) + 0.12 * _ramp(t, T["plate"] - 0.1, T["plate"] + 0.3) * \
+    # pupils lead, the head follows ~0.15 s later (pod -> creature -> pod)
+    face["head_nod"] = face.get("head_nod", 0.0) + 0.1 * _ramp(t, T["wstop"] + 1.12, T["wstop"] + 1.4) * \
+        (1 - _ramp(t, T["l01"] - 0.22, T["l01"] - 0.02))
+    face["head_turn"] = -0.08 * _ramp(t, T["wstop"] + 0.5, T["wstop"] + 0.8) * (1 - _ramp(t, T["cr0"], T["cr0"] + 0.4))
+    face["head_nod"] += 0.12 * _ramp(t, T["plate"] - 0.1, T["plate"] + 0.3) * \
         (1 - _ramp(t, T["l02e"], T["l02e"] + 0.35))
     # perk: lids lift a hair (small surprise), brows up
     k_perk = tween(t, [(T["perk"] + 0.05, 0.0), (T["perk"] + 0.25, 1.0), (T["l03"] - 0.1, 1.0),
@@ -206,8 +211,8 @@ def tired_kw(t, T, info):
     # "Huh. That fits." -> the faintest smile at the end
     k_sm = tween(t, [(T["fits"] + 0.2, 0.0), (T["l03e"] + 0.15, 1.0), (T["plates"] - 0.2, 1.0),
                      (T["plates"], 0.0)])
-    face["curve"] = 0.22 * k_sm
-    face["smirk"] = -0.18 * k_sm
+    face["curve"] = 0.3 * k_sm
+    face["smirk"] = -0.22 * k_sm
     # the meaning lands: inner brows up a hair, then a lip press
     k_fr = _ramp(t, T["frown"] + 0.25, T["frown"] + 0.6)
     k_pr = _ramp(t, T["frown"] + 0.85, T["frown"] + 1.15)
@@ -215,7 +220,7 @@ def tired_kw(t, T, info):
     face["brow_ang"] += 0.26 * k_fr * k_fr_out
     face["brow_in"] = 0.12 * k_fr * k_fr_out
     face["press"] = 0.45 * k_pr * (1 - _ramp(t, T["c9b"] + 0.3, T["c9b"] + 0.6))
-    face["head_turn"] = 0.18 * _ramp(t, T["stand2"], T["stand2"] + 0.3)
+    face["head_turn"] += 0.18 * _ramp(t, T["stand2"], T["stand2"] + 0.3)
     # camera: pupils lead, the head follows 0.15 s later; lids lift a little
     k_up = _ramp(t, T["c9b"] + 0.27, T["c9b"] + 0.55)
     face["head_nod"] += -0.12 * k_up
@@ -226,11 +231,13 @@ def tired_kw(t, T, info):
     face["brow"] += 0.15 * k_dk
     face["lid"] += -0.04 * k_dk
     kw.update(expr=expr, look=look, face=face, mouth=info.mouth("tired", t))
-    # a slow blink while the plate's word sinks in (judgement beat)
+    # "Huh." ... a slow judging blink ... "That fits."; never blink through the perk
     kw["blink"] = None
-    b0 = T["l02e"] + 0.25
-    if b0 <= t <= b0 + 0.9:
-        kw["blink"] = tween(t, [(b0, 0.0), (b0 + 0.3, 1.0), (b0 + 0.5, 1.0), (b0 + 0.85, 0.0)])
+    b0 = info.word_time("s01_l03", 0) + 0.18
+    if b0 <= t <= b0 + 0.75:
+        kw["blink"] = tween(t, [(b0, 0.0), (b0 + 0.18, 1.0), (b0 + 0.3, 1.0), (b0 + 0.62, 0.0)])
+    if T["l02e"] - 0.1 <= t <= T["perk"] + 0.8:
+        kw["blink"] = 0.0
     return kw
 
 
@@ -382,7 +389,7 @@ def catwalk_shot(ctx, t, T, info, cam, chars=True, rail=True, light=None, draw_t
 # ----------------------------------------------------------------------------
 # S1: the thumbnail (looking out of the empty pod)
 # ----------------------------------------------------------------------------
-POV_X = 412                       # creature ground x (s 2.6): face lands at ~(534, 864)
+POV_X, POV_Y, POV_S = 404, 1585, 2.9   # creature ground point / scale: face at ~(540, 875)
 
 
 def _paw_print(ctx, x, y, s, k=1.0):
@@ -408,10 +415,10 @@ def shot_pov(ctx, t, T, info):
     with core.camera(ctx, *cam):
         sets.pod_pov(ctx, t)
         with sets.shaded(ctx, sets.pod_pov, t, layer="shade"):
-            a = CR.draw_specimen(ctx, POV_X, 1500, 2.6, t, pose="wave", pose_t=WAVE_STILL, face=0.0,
+            a = CR.draw_specimen(ctx, POV_X, POV_Y, POV_S, t, pose="wave", pose_t=WAVE_STILL, face=0.0,
                                  expr="hopeful", ears=ears, look=look, blink=blink, tilt=tilt)
         px, py = a["paw"]
-        _paw_print(ctx, px - 6, py + 4, 2.6 / 2.2)
+        _paw_print(ctx, px - 7, py + 5, POV_S / 2.2)
         mx, my = a["mouth"]
         sets.pod_pov(ctx, t, layer="fg", fog=fog, fog_xy=(mx + 10, my + 18))
 
@@ -527,9 +534,23 @@ def shot_plate(ctx, t, T, info):
 # ----------------------------------------------------------------------------
 # S7: pan along the pods
 # ----------------------------------------------------------------------------
+def _trapezoid(u, ramp=0.22):
+    """0..1 -> 0..1 with eased ends and a constant-speed middle (calm, readable pans)."""
+    u = clamp(u)
+    r = ramp
+    vmax = 1.0 / (1.0 - r)
+    if u < r:
+        return 0.5 * vmax * u * u / r
+    if u > 1 - r:
+        v = 1 - u
+        return 1.0 - 0.5 * vmax * v * v / r
+    return 0.5 * vmax * r + vmax * (u - r)
+
+
 def shot_plates(ctx, t, T, info):
-    x = tween(t, [(T["plates"], 1500), (T["plates"] + 0.45, 1530), (T["frown"] - 0.35, 3460)], ease_in_out)
-    cam = (x, 1180, 1.45)
+    u = seg(t, T["plates"] + 0.35, T["frown"] - 0.3)
+    x = lerp(1520, 3440, _trapezoid(u))
+    cam = (x, 1150, 1.35)
     st = cw_state(t, T)
     with core.camera(ctx, *cam):
         sets.catwalk(ctx, t, **st)
@@ -541,8 +562,8 @@ def shot_plates(ctx, t, T, info):
 # ----------------------------------------------------------------------------
 def _feed(ctx, x, y, w, h, t, T=None, info=None):
     """SHAFT CAM 03: the two of them at the empty pod, looking up into the lens."""
-    zz = w / 820.0
-    with core.camera(ctx, 1000, 1150, zz, sx=x + w / 2, sy=y + h / 2 + 10):
+    zz = w / 760.0
+    with core.camera(ctx, 1005, 1112, zz, sx=x + w / 2, sy=y + h / 2):
         sets.catwalk(ctx, 1.0, plate_dust=0.0, plate_wipe=1.0, cam_led=1.0, cam_face=1.0, **SLEEP)
         CR.draw_specimen(ctx, CUR_X, FEET, S, t, pose="sit", expr="calm", look=(0.5, -0.85), ears=0.8,
                          face=0.62, tail_curl=0.4)
@@ -552,7 +573,7 @@ def _feed(ctx, x, y, w, h, t, T=None, info=None):
 
 
 def _boss_chair(ctx, part):
-    cx, cy = KM["chair"]
+    cx, cy = CHAIR_X, KM["chair"][1]
     sets.sprite(ctx, ("s01_chair", part), cx - 330, cy - 1080 * S, 660, 1100 * S,
                 lambda c: props.boss_chair(c, cx, cy, S, 0.5, part=part, dir=-1))
 
@@ -588,9 +609,13 @@ def boss_kw(t, T, info):
     tip = _switch_tip(_switch_on(t, T))
     kr = ease_in_out(seg(t, T["reach"] + 0.22, T["reach"] + 0.85))
     reach = None
+    a_pt = 1.95                                  # index finger aimed down-left at the knob
     if kr > 0.0:
-        reach = {"r": (tip[0] + 28, tip[1] + 6, kr)}
-    pose = {"base": "sit_chair", "ar_h": "point"} if kr > 0.5 else "sit_chair"
+        gx, gy = tip[0] + 2, tip[1] - 7          # "point": the grip point is the fingertip
+        reach = {"l": (gx, gy, kr, a_pt)}
+    lean = 0.14 * kr
+    pose = {"base": "sit_chair", "al_h": "point", "lean": lean} if kr > 0.5 else \
+        {"base": "sit_chair", "lean": lean}
     return dict(pose=pose, turn=BOSS_TURN, expr="cold", look=look, face=face, blink=blink, reach=reach,
                 mouth=info.mouth("boss", t))
 
@@ -618,7 +643,7 @@ def shot_control(ctx, t, T, info):
 
 def shot_reach(ctx, t, T, info):
     k = ease_in_out(seg(t, T["l05"] - 0.3, T["c12"]))
-    cam = (lerp(1575, 1545, k), lerp(1110, 1135, k), lerp(1.5, 1.68, k))
+    cam = (lerp(1545, 1528, k), lerp(1112, 1135, k), lerp(1.68, 1.9, k))
     control_shot(ctx, t, T, info, cam)
 
 
@@ -687,8 +712,8 @@ def render(ctx, t, info):
         # and in with him as he crouches
         k0 = ease_in_out(seg(t, T["wstop"], T["wstop"] + 1.0))
         k1 = ease_in_out(seg(t, T["cr0"] - 0.2, T["touch"] - 0.1))
-        cam = (lerp(lerp(995, 1005, k0), 972, k1), lerp(lerp(1120, 1100, k0), 1192, k1),
-               lerp(lerp(1.3, 1.48, k0), 1.6, k1))
+        cam = (lerp(lerp(975, 990, k0), 962, k1), lerp(lerp(1120, 1100, k0), 1212, k1),
+               lerp(lerp(1.3, 1.48, k0), 1.92, k1))
         catwalk_shot(ctx, t, T, info, cam, rail=False)
     elif t < T["plate"]:
         # S3: Curiosity close-up, the nod
@@ -701,13 +726,15 @@ def render(ctx, t, info):
         # S5: crouched two-shot; a slow push toward the creature on the perk
         k = ease_in_out(seg(t, T["perk"] - 0.1, T["l03"]))
         k2 = ease_in_out(seg(t, T["l03"] - 0.2, T["grin"]))
-        cam = (lerp(972, 955, k) + 25 * k2, 1205, lerp(1.62, 1.7, k) + 0.04 * k2)
-        catwalk_shot(ctx, t, T, info, cam, rail=False)
-        if t >= T["perk"]:
-            pass
+        cam = (lerp(940, 928, k) + 22 * k2, lerp(1218, 1225, k), lerp(1.98, 2.06, k) + 0.04 * k2)
+        an = catwalk_shot(ctx, t, T, info, cam, rail=False)
+        g0 = T["perk"] + 0.08
+        if g0 <= t <= g0 + 0.45 and "cur" in an:
+            ex, ey = _to_screen(cam, an["cur"]["eye_r"])
+            fx.eye_glint(ctx, ex + 8, ey - 12, 0.9, t, g0, dur=0.45)
     elif t < T["plates"]:
         k = seg(t, T["grin"], T["plates"])
-        cam = (835, 1312, 2.35 + 0.08 * k)
+        cam = (792, 1312, 2.35 + 0.08 * k)
         catwalk_shot(ctx, t, T, info, cam, rail=False)
     elif t < T["frown"]:
         shot_plates(ctx, t, T, info)
@@ -731,8 +758,6 @@ def render(ctx, t, info):
     if T["perk"] <= t < T["l03"] + 0.6:
         fx.name_tag(ctx, "CURIOSITY", "specimen 00", t, T["perk"] + 0.25, T["l03"] - 0.05,
                     x=90, y=170, color="curiosity")
-    if T["perk"] + 0.06 <= t <= T["perk"] + 0.5 and T["c5"] <= t < T["grin"]:
-        pass
 
 
 # ----------------------------------------------------------------------------
@@ -749,6 +774,7 @@ def SFX(info):
         tt = T["w0"] + 0.5 * k
         if tt >= T["pod"] - 0.05:
             ev.append((tt, "footstep", 0 if k < 3 else 1, 0.25))
+    ev.append((T["wstop"] + 0.28, "footstep", -5, 0.22))     # feet come together
     # Curiosity's ear twitch at the steps
     ev.append((T["pod"] + 0.2, "ears_perk", -6, -0.3))
     # crouch (cloth)
@@ -757,7 +783,7 @@ def SFX(info):
     ev.append((T["touch"] + 0.35, "creature_chirp_sad", -9, -0.1))
     # the wipe
     ev.append((T["hand_in"] + 0.05, "cloth_rustle", -8, 0.3))
-    ev.append((T["wipe0"], "scratch_wood", -12, 0.0))
+    ev.append((T["wipe0"], "cloth_rustle", -9, 0.1))
     # the perk
     ev.append((T["perk"], "ears_perk", 2, -0.2))
     ev.append((T["perk"] + 0.3, "creature_chitter", -4, -0.2))

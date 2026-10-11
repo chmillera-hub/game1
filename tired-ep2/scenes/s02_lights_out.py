@@ -34,7 +34,7 @@ SW = 0.8                                   # sense scale (world px), shared by e
 PLINTH_Y = 1280                            # top of the pod plinths (base caps)
 T_X = 880                                  # Tiredness: stands / sits here (Curiosity's pod)
 T_GSEAT = PLINTH_Y + human.CRATE_H["tired"] * S      # ground y for sit_crate on the plinth
-C_X0 = 1112                                # Curiosity on the deck at the start (faces left)
+C_X0 = 1200                                # Curiosity on the deck at the start (faces left)
 C_XP = 1112                                # Curiosity on the plinth (faces left, at his right)
 FEET = M["feet_y"]                         # 1500
 LAND = M["landing_feet_y"]                 # 1770
@@ -88,6 +88,10 @@ def timing(info):
     k.BONK = c("bonk")
     k.L6, k.L6e = L("s02_l06").start, L("s02_l06").end
     k.END = info.dur
+    # the "look" head turns (left, hold, right, hold), pings follow the head
+    k.lk1 = k.L3e + 0.95
+    k.lk2 = k.lk1 + 0.3
+    k.lk3 = k.lk2 + 0.8
     # Tiredness sits down right after l01
     k.sit0 = k.L1e + 0.12
     k.sit1 = k.sit0 + 0.75
@@ -175,9 +179,8 @@ def tired_state(t, k, info):
                             (k.L1 + 2.05, (0.55, -0.05)), (k.L1e - 0.05, (0.55, -0.05)),
                             (k.sit0 + 0.2, (0.0, 0.45)), (k.sit1, (0.1, 0.2))])
         b0 = k.L1 + 0.45
-        st["blink"] = kf(t, [(b0, 0.0), (b0 + 0.25, 1.0), (b0 + 0.55, 1.0), (b0 + 0.9, 0.0)])
-        if t < b0 - 0.05 or t > b0 + 0.95:
-            st["blink"] = None
+        bl = max(math.sin(math.pi * seg(t, 1.05, 1.25)), math.sin(math.pi * seg(t, k.L1e - 0.35, k.L1e - 0.15)))
+        st["blink"] = max(bl, kf(t, [(b0, 0.0), (b0 + 0.25, 1.0), (b0 + 0.55, 1.0), (b0 + 0.9, 0.0)]))
         if t >= k.sit0:
             kk = seg(t, k.sit0, k.sit1)
             st["pose"] = ("stand", sit_pose(t, k), smoothstep(seg(kk, 0.1, 0.85)))
@@ -191,8 +194,8 @@ def tired_state(t, k, info):
     if t < k.stand0:
         st["y"] = T_GSEAT
         st["pose"] = sit_pose(t, k)
-        st["turn"] = kf(t, [(k.LOOK + 0.1, 0.25), (k.LOOK + 0.8, 0.02), (k.LOOK + 1.1, 0.02),
-                            (k.LOOK + 1.9, 0.42), (k.L4 + 0.6, 0.3)])
+        st["turn"] = kf(t, [(k.L3e + 0.35, 0.25), (k.lk1 + 0.1, -0.25), (k.lk2, -0.25),
+                            (k.lk3 + 0.1, 0.62), (k.L4, 0.62), (k.L4 + 0.6, 0.3)])
         st["expr"] = state_at(t, [(0.0, "bored"), (k.L2 - 0.1, "annoyed"), (k.hd0 + 0.25, "annoyed"),
                                   (k.sigh - 0.1, "sigh"), (k.sigh + 0.9, "bored"), (k.PING + 1.9, "neutral"),
                                   (k.L3 - 0.1, "surprised"), (k.L3e + 0.35, "neutral"),
@@ -204,17 +207,17 @@ def tired_state(t, k, info):
         ht = kf(t, [(k.hop2 + 0.15, 0.0), (k.hop2 + 0.45, 0.32), (k.HOOD, 0.32), (k.hd0 + 0.3, 0.1),
                     (k.hd1 + 0.2, 0.0), (k.PING + 1.0, 0.0), (k.PING + 1.4, 0.12),
                     # look: slowly left ... slowly right ... back to Curiosity
-                    (k.LOOK + 0.05, 0.12), (k.LOOK + 0.75, -0.8), (k.LOOK + 1.1, -0.8),
-                    (k.LOOK + 1.85, 0.75), (k.L4 - 0.05, 0.75), (k.L4 + 0.55, 0.35)])
+                    (k.L3e + 0.3, 0.12), (k.lk1, -0.8), (k.lk2, -0.8),
+                    (k.lk3, 0.75), (k.L4 - 0.05, 0.75), (k.L4 + 0.55, 0.35)])
         f["head_turn"] = ht
         f["head_tilt"] = kf(t, [(k.L2, 0.0), (k.L2 + 0.4, -0.06), (k.L2e, -0.06), (k.HOOD, 0.0),
-                                (k.LOOK + 0.1, 0.0), (k.LOOK + 0.75, 0.07), (k.LOOK + 1.1, 0.07),
-                                (k.LOOK + 1.85, -0.07), (k.L4 + 0.5, 0.0),
+                                (k.L3e + 0.3, 0.0), (k.lk1, 0.08), (k.lk2, 0.08),
+                                (k.lk3, -0.08), (k.L4 + 0.5, 0.0),
                                 (k.L4 + 0.9, 0.0), (k.L4 + 1.3, 0.1), (k.L4e + 0.6, 0.1), (k.NOD + 1.2, 0.03)])
         f["brow_r"] = kf(t, [(k.L2 + 0.2, 0.0), (k.L2 + 0.5, 0.25), (k.hd0, 0.25), (k.hd0 + 0.3, 0.0)])
         # hood pull: the tug nods his head forward a hair at the end
         st["hood"] = kf(t, [(k.hd0, 0.0), (k.hd0 + 0.38, 0.45), (k.hd1, 1.0)])
-        f["head_nod"] = (0.1 * math.sin(math.pi * seg(t, k.hd1 - 0.25, k.hd1 + 0.35))
+        f["head_nod"] = (0.2 * math.sin(math.pi * seg(t, k.hd1 - 0.3, k.hd1 + 0.4))
                          - 0.06 * smoothstep(seg(t, k.PING + 0.6, k.PING + 1.0))
                          + 0.06 * smoothstep(seg(t, k.L3e + 0.3, k.L3e + 0.8)))
         f["press"] = kf(t, [(k.hd0, 0.0), (k.hd0 + 0.3, 0.55), (k.sigh - 0.15, 0.55), (k.sigh, 0.0),
@@ -342,8 +345,9 @@ def cur_state(t, k, tst=None):
             st["look"] = (-0.3, -0.7)
             st["ears"] = 0.7
             return st
-        kk = seg(t, k.hop1, k.hop2)                        # airborne: stretched
-        st["pose"] = "stand"
+        kk = seg(t, k.hop1, k.hop2)                        # airborne: upright, stretched, paws tucked
+        st["pose"] = "reach_up"
+        st["reach"] = 0.0
         st["x"] = lerp(C_X0, C_XP, kk)
         st["y"] = lerp(FEET, PLINTH_Y, ease_out(kk)) - 70 * math.sin(math.pi * kk)
         st["sy"] = 1.0 + 0.14 * math.sin(math.pi * min(1.0, kk * 1.4))
@@ -359,16 +363,19 @@ def cur_state(t, k, tst=None):
         poke = 0.05 * math.sin((t - k.hop2) * 6.0) * seg(t, k.hop2 + 0.9, k.hop2 + 1.2) * (1 - seg(t, k.L2 - 0.2, k.L2))
         r = kf(t, [(k.hop2, 0.0), (k.hop2 + 0.25, 0.05), (k.hop2 + 0.85, 0.86), (k.L2 - 0.1, 0.86),
                    (k.L2 + 0.05, 0.8), (k.L2e, 0.84), (k.hd0 - 0.1, 0.9),
-                   # pull: up and over (1.0), then down / forward over his eyes (0.55)
-                   (k.hd0 + 0.3, 1.0), (k.hd1, 0.5), (k.hd1 + 0.25, 0.55),
+                   # grab high (1.0), then yank down / forward over his eyes (0.42)
+                   (k.hd0 + 0.25, 1.0), (k.hd0 + 0.4, 1.0), (k.hd1, 0.42), (k.hd1 + 0.25, 0.5),
                    (k.hd1 + 0.6, 0.12)])
         st["reach"] = clamp(r + poke)
-        st["x"] = C_XP + kf(t, [(k.hd0 + 0.3, 0.0), (k.hd1, -22.0), (k.hd1 + 0.6, 0.0)])
+        st["x"] = C_XP + kf(t, [(k.hd0 + 0.35, 4.0), (k.hd1, -34.0), (k.hd1 + 0.6, 0.0)])
+        st["tilt"] = kf(t, [(k.hd0 + 0.3, -0.1), (k.hd1 - 0.1, 0.22), (k.hd1 + 0.5, 0.0)])
         st["ears"] = kf(t, [(k.hop2, 0.85), (k.hop2 + 0.6, 0.75), (k.L2, 0.75), (k.L2 + 0.15, 0.6),
                             (k.L2e, 0.65), (k.hd0, 0.75), (k.hd1 + 0.6, 0.78)])
         st["expr"] = "calm"
         if k.L2 + 0.05 <= t < k.hd0:
             st["expr"] = "curious"
+        if k.hd0 + 0.3 <= t < k.hd1 + 0.1:
+            st["expr"] = "annoyed"        # effort: flat focused lids
         if t >= k.hd1 + 0.5:
             st["expr"] = "proud"
         st["tail_curl"] = kf(t, [(k.hd1 + 0.4, 0.0), (k.hd1 + 0.9, 0.65)])
@@ -391,7 +398,7 @@ def cur_state(t, k, tst=None):
         st["expr"] = "annoyed"
     # the nod (revealed by a ping)
     n0 = k.NOD + 0.3
-    st["tilt"] = kf(t, [(n0, 0.0), (n0 + 0.22, 0.34), (n0 + 0.45, -0.04), (n0 + 0.66, 0.24), (n0 + 0.9, 0.0)])
+    st["tilt"] = kf(t, [(n0, 0.0), (n0 + 0.28, 0.48), (n0 + 0.56, -0.06), (n0 + 0.84, 0.38), (n0 + 1.15, 0.0)])
     if t < k.SMUG:
         return st
     if t < k.tgo + 0.3:
@@ -487,7 +494,7 @@ def pings_for(k, info):
     if p is not None:
         return p
     times = [(k.PING + 0.45, 1.0), (k.PING + 1.6, 0.85),
-             (k.LOOK + 0.6, 0.8), (k.LOOK + 1.65, 0.8),
+             (k.lk1 - 0.1, 0.8), (k.lk3 - 0.05, 0.8),
              (k.NOD + 0.05, 0.75)]
     try:
         tw = info.word_time("s02_l05", 2)
@@ -525,7 +532,7 @@ def _shots(k):
     add(k.L4 - 0.1, k.stand0 - 0.05, "nod", lambda t: (1010, 1060, 1.6))
     add(k.stand0 - 0.05, k.smug_cu, "stand",
         lambda t: (960, lerp(1060, 990, smoothstep(seg(t, k.stand0, k.stand1 + 0.2))), 1.4))
-    add(k.smug_cu, k.SMUG, "smug", lambda t: (T_X + 20, lerp(850, 835, seg(t, k.smug_cu, k.SMUG)), 2.15))
+    add(k.smug_cu, k.SMUG, "smug", lambda t: (T_X - 95, lerp(800, 785, seg(t, k.smug_cu, k.SMUG)), 2.35))
     add(k.SMUG, k.WALK, "roll", lambda t: (C_XP - 50, 1090, 2.5))
     walk_end = k.BONK + 1.25
 
@@ -568,44 +575,101 @@ def shot_rect(k, sh):
 # ---------------------------------------------------------------------------
 # light: characters in the dark, lit by Curiosity's eyes, his own glow and the pings
 # ---------------------------------------------------------------------------
-def light_chars(ctx, draw_fn, lights_fn, base=0.9):
+def _lowres(ctx, bbox, paint_fn, scale=0.25, content=cairo.FORMAT_ARGB32):
+    """Render paint_fn(c) (world coords) into a quarter-res bitmap covering
+    bbox and return it as a smooth pattern for the current user space.
+    Soft light fields don't need full resolution: this is ~16x cheaper."""
+    m = ctx.get_matrix()
+    xs, ys = [], []
+    for (px, py) in ((bbox[0], bbox[1]), (bbox[0] + bbox[2], bbox[1]),
+                     (bbox[0], bbox[1] + bbox[3]), (bbox[0] + bbox[2], bbox[1] + bbox[3])):
+        dx, dy = ctx.user_to_device(px, py)
+        xs.append(dx)
+        ys.append(dy)
+    x0, y0 = math.floor(min(xs)), math.floor(min(ys))
+    w = max(2, int(math.ceil((max(xs) - x0) * scale)) + 2)
+    h = max(2, int(math.ceil((max(ys) - y0) * scale)) + 2)
+    surf = cairo.ImageSurface(content, w, h)
+    c = cairo.Context(surf)
+    c.scale(scale, scale)
+    c.translate(-x0, -y0)
+    c.transform(m)
+    pm = c.get_matrix()
+    paint_fn(c)
+    surf.flush()
+    pat = cairo.SurfacePattern(surf)
+    pat.set_matrix(pm)
+    pat.set_filter(cairo.FILTER_BILINEAR)
+    pat.set_extend(cairo.EXTEND_PAD)
+    return pat
+
+
+def _radial(c, x, y, r, rgb, a, mid_=0.62):
+    g = cairo.RadialGradient(x, y, 0, x, y, r)
+    g.add_color_stop_rgba(0, *rgb, a)
+    g.add_color_stop_rgba(0.4, *rgb, a * mid_)
+    g.add_color_stop_rgba(1, *rgb, 0)
+    c.set_source(g)
+    c.arc(x, y, r, 0, 2 * math.pi)
+    c.fill()
+
+
+def light_chars(ctx, draw_fn, lights_fn, base=0.9, bbox=None):
+    """Draw the characters into a group, darken them ATOP with a mask that
+    has soft holes at the light sources, then tint teal near them. `bbox`
+    (world rect) clips every group: the cost scales with its area."""
+    if bbox is not None:
+        ctx.save()
+        ctx.rectangle(*bbox)
+        ctx.clip()
     ctx.push_group()
     info = draw_fn(ctx)
     chars = ctx.pop_group()
     lights, tints = lights_fn(info)
-    ctx.push_group_with_content(cairo.CONTENT_ALPHA)
-    ctx.set_source_rgba(0, 0, 0, base)
-    ctx.paint()
-    ctx.set_operator(cairo.OPERATOR_DEST_OUT)
-    for (x, y, r, a) in lights:
-        if a <= 0.01 or r <= 1:
-            continue
-        g = cairo.RadialGradient(x, y, 0, x, y, r)
-        g.add_color_stop_rgba(0, 0, 0, 0, a)
-        g.add_color_stop_rgba(0.4, 0, 0, 0, a * 0.62)
-        g.add_color_stop_rgba(1, 0, 0, 0, 0)
-        ctx.set_source(g)
-        ctx.arc(x, y, r, 0, 2 * math.pi)
-        ctx.fill()
-    mask = ctx.pop_group()
+    bb = bbox or (-2000, -2000, 8000, 8000)
+
+    def mask_fn(c):
+        c.set_source_rgba(0, 0, 0, base)
+        c.paint()
+        c.set_operator(cairo.OPERATOR_DEST_OUT)
+        for (x, y, r, a) in lights:
+            if a > 0.01 and r > 1:
+                _radial(c, x, y, r, (0, 0, 0), a)
+
+    def tint_fn(c):
+        for (x, y, r, a) in tints:
+            if a > 0.01 and r > 1:
+                _radial(c, x, y, r, TEAL, a, 0.5)
+    mask = _lowres(ctx, bb, mask_fn)
+    tint = _lowres(ctx, bb, tint_fn) if any(a > 0.01 for (_, _, _, a) in tints) else None
     ctx.push_group()
     ctx.set_source(chars)
     ctx.paint()
     ctx.set_operator(cairo.OPERATOR_ATOP)
     ctx.set_source_rgba(*DARK_RGB, 1.0)
     ctx.mask(mask)
-    for (x, y, r, a) in tints:
-        if a <= 0.01:
-            continue
-        g = cairo.RadialGradient(x, y, 0, x, y, r)
-        g.add_color_stop_rgba(0, *TEAL, a)
-        g.add_color_stop_rgba(1, *TEAL, 0)
-        ctx.set_source(g)
-        ctx.arc(x, y, r, 0, 2 * math.pi)
-        ctx.fill()
+    if tint is not None:
+        ctx.set_source(tint)
+        ctx.paint()
     ctx.pop_group_to_source()
     ctx.paint()
+    if bbox is not None:
+        ctx.restore()
     return info
+
+
+def char_bbox(tst, cst, ta):
+    """World rect around both characters (for clipping the light groups)."""
+    tx, ty = tst["x"], tst["y"]
+    top = ta["top"][1]
+    rects = [(tx - 300, top - 120, 600, ty - top + 200)]
+    cx_, cy_ = cst["x"], cst["y"]
+    rects.append((cx_ - 330, cy_ - 520, 660, 600))
+    x0 = min(r[0] for r in rects)
+    y0 = min(r[1] for r in rects)
+    x1 = max(r[0] + r[2] for r in rects)
+    y1 = max(r[1] + r[3] for r in rects)
+    return (x0, y0, x1 - x0, y1 - y0)
 
 
 def mid(a, b):
@@ -710,7 +774,8 @@ def render(ctx, t, info):
                     Tn.append((sx_, sy_, 480, 0.22 * sa))
             return L, Tn
 
-        res = light_chars(ctx, draw_chars, lights_fn, base=0.94 if name == "dark" else 0.9)
+        res = light_chars(ctx, draw_chars, lights_fn, base=0.94 if name == "dark" else 0.9,
+                          bbox=char_bbox(tst, cst, ta))
         # foreground stair stringer + handrail over his legs on the stair (dark)
         if name in ("walk", "giggle"):
             sets.catwalk(ctx, t, layer="fg", power=0.0, parts=("stair",))
@@ -722,8 +787,10 @@ def render(ctx, t, info):
             fx.eyes_in_dark(ctx, em[0], em[1] + 2, 0.95, t, "tired", blink=bt,
                             look=(tst["look"][0] * 0.6, tst["look"][1] * 0.5))
             ce = mid(b["eye_l"], b["eye_r"])
+            lk = cst["look"] or (-0.4, -0.5)
             fx.eyes_in_dark(ctx, ce[0] - 4, ce[1], 0.52, t, "curiosity",
-                            look=(-0.35, -0.45), tilt=-0.12 if cst["expr"] == "curious" else 0.0, seed=3)
+                            look=(lk[0] * 0.6, lk[1] * 0.6), tilt=-0.12 if cst["expr"] == "curious" else 0.0,
+                            seed=3)
         if sense:
             ping_flash(ctx, t, pings)
         # ---- the bonk
@@ -783,7 +850,7 @@ def SFX(info):
     ev.append((k.stand0 + 0.2, "cloth_rustle", -2, 0.0))
     # the confident stride: one step per foot contact (two per cycle)
     per = 1.05 / 2
-    tt = k.tgo + 0.02
+    tt = k.tgo + 0.17                       # first heel strike of walk_eyes_closed (pose_t 0.17)
     i = 0
     while tt < k.BONK - 0.05:
         ev.append((tt, "footstep", -3 if i % 2 else -5, -0.1))

@@ -30,14 +30,15 @@ from engine.core import clamp, lerp, seg, smoothstep, tween, ease_in, ease_out, 
 M = sets.BEDROOM_MARKS
 S_T = 0.75                    # Tiredness (the set's char_scale)
 S_C = 0.6                     # Curiosity
-S_B = 0.5                     # baby Joy
+S_B = 0.58                    # baby Joy
 BED_Y = M["bed_top_y"]        # 1165
 HIP_X = 1455                  # lying: hips here puts his head on the pillow
 STAND = (1505, 1470)          # where he stands before the flop (feet)
 DOOR_FEET = (305, 1336)       # in the doorway
-CUR_FLOOR = (1598, 1542)      # Curiosity sits at his heels by the bed
-PERCH = (1372, 1080)          # Curiosity's perch base on his back
-BABY_BACK = (1240, 1066)      # baby sitting on his upper back
+CUR_FLOOR = (1628, 1542)      # Curiosity sits at his heels, at the foot of the bed
+PERCH = (1395, 1080)          # Curiosity's perch base on his back
+BABY_BACK = (1258, 1064)      # baby sitting on his upper back
+G_CUR, G_BABY = 1.4, 1.7      # rim/eye glow: keeps the dark creatures readable on his navy hoodie
 PHONE = M["phone"]            # (985, 1112)
 PHONE_S = 0.42
 PHONE_ROT = 0.04
@@ -245,7 +246,7 @@ def _tired(t, T, info):
     if T.S <= t < T.PH:
         # S4: the tiny real smile, eyes close
         k1 = smoothstep(seg(t, T.S + 0.9, T.S + 1.4))
-        face.update(cheek=0.25, jaw=-0.06, curve=0.42 * k1, smirk=-0.12 * k1, lower=0.25 * k1,
+        face.update(cheek=0.25, jaw=-0.06, curve=0.8 * k1, width=0.12 * k1, lower=0.4 * k1,
                     lid=0.02 - 0.05 * smoothstep(seg(t, T.S + 0.45, T.S + 0.7)))
         look = tween(t, [(T.S + 0.35, (0.0, 0.0)), (T.S + 0.5, (0.7, -0.3)), (T.S + 1.1, (0.7, -0.3)),
                          (T.S + 1.3, (0.15, 0.05))])
@@ -255,11 +256,11 @@ def _tired(t, T, info):
         # eyes stay shut from here; buzz -> a pinch of the brows, then the smile returns
         blink = 1.0
         pin = math.sin(math.pi * seg(t, T.MSG, T.MSG + 0.9))
-        face.update(cheek=0.25, jaw=-0.06, curve=0.42 - 0.3 * pin, lower=0.25, brow=-0.12 * pin,
-                    brow_in=0.4 * pin, press=0.3 * pin)
+        face.update(cheek=0.25, jaw=-0.06, curve=0.8 - 0.65 * pin, width=0.12, lower=0.4 - 0.2 * pin,
+                    brow=-0.15 * pin, brow_in=0.5 * pin, press=0.4 * pin)
         if t >= T.Z:
-            face.update(curve=0.3, open=0.06 * smoothstep(seg(t, T.Z + 0.6, T.Z + 1.4)), press=0.0,
-                        brow=0.0, brow_in=0.0)
+            face.update(curve=0.55, lower=0.3, open=0.06 * smoothstep(seg(t, T.Z + 0.6, T.Z + 1.4)),
+                        press=0.0, brow=0.0, brow_in=0.0)
         # reach for the phone, tap, slide off, dangle
         tgt = (1006, 1104)
         if t < T.DROP:
@@ -271,6 +272,7 @@ def _tired(t, T, info):
         else:
             kd = ease_in_out(seg(t, T.DROP, T.DROP + 0.55))
             kw["reach"] = {"l": (lerp(tgt[0], 1036, kd), lerp(tgt[1], 1212, kd), 1.0)}
+    face["head_tilt"] = face.get("head_tilt", 0.0) - 0.22 * smoothstep(seg(t, T.I + 0.1, T.I + 0.6))
     kw.update(pose=pose, turn=0.0, expr="bored", look=_lk(*look, flip), blink=blink, face=face)
     return HIP_X, y, kw
 
@@ -308,19 +310,20 @@ def _cur(t, T, ta=None):
     x, y = CUR_FLOOR
     kw = dict(flip=True, pose="sit", expr="calm")
     if t < T.P:
-        # S2: watching him from the floor; the impact flicks its ears; eyes on the baby
-        kw["look"] = tween(t, [(T.F, (-0.35, -0.9)), (T.I + 0.05, (-0.35, -0.9)), (T.I + 0.2, (-0.7, -0.75)),
-                               (T.I + 0.7, (-0.85, -0.5)), (T.L0, (-0.85, -0.45))])
-        kw["ears"] = tween(t, [(T.I - 0.02, 0.55), (T.I + 0.1, 0.92), (T.I + 0.6, 0.62)])
-        kw["tilt"] = 0.12 * smoothstep(seg(t, T.L0 + 0.3, T.L0 + 0.8))
+        # S2: at his heels, looking up at him; the impact flicks its ears; its eyes
+        # follow the flying baby, then rest on his face
         kw["face"] = 0.55
+        kw["look"] = tween(t, [(T.F, (-0.3, -0.92)), (T.A1, (-0.3, -0.92)), (T.I + 0.05, (-0.45, -0.85)),
+                               (T.I + 0.45, (-0.75, -0.65)), (T.I + 0.9, (-0.85, -0.5))])
+        kw["ears"] = tween(t, [(T.I - 0.02, 0.55), (T.I + 0.1, 0.95), (T.I + 0.7, 0.62)])
+        kw["tilt"] = 0.12 * smoothstep(seg(t, T.L0 + 0.3, T.L0 + 0.8))
         return x, y, kw
     if t < T.C1:
         # S3: decides (ears up), crouches
-        kw["look"] = (-0.45, -0.85)
+        kw["look"] = tween(t, [(T.P, (-0.85, -0.5)), (T.P + 0.3, (-0.5, -0.85))])
         kw["ears"] = tween(t, [(T.P + 0.15, 0.6), (T.P + 0.35, 0.9)], ease_out_back)
         kw["tail_curl"] = 0.5 * smoothstep(seg(t, T.P + 0.2, T.P + 0.6))
-        kw["face"] = 0.75
+        kw["face"] = tween(t, [(T.P, 0.35), (T.P + 0.4, 0.6)])
         m = smoothstep(seg(t, T.C0, T.C1))
         if m > 0:
             kw.update(pose="crouch", pose_from="sit", pose_mix=m)
@@ -356,8 +359,8 @@ def _draw_cur(ctx, t, T, ta=None):
     if rot or st != 1.0 or sq:
         with core.saved(ctx, x, y, (1.0 / st ** 0.5 * (1 + 0.1 * sq), st * (1 - 0.14 * sq)),
                         rot if not kw.get("flip") else -rot):
-            return creatures.draw_specimen(ctx, 0, 0, S_C, t, **kw)
-    return creatures.draw_specimen(ctx, x, y, S_C, t, **kw)
+            return creatures.draw_specimen(ctx, 0, 0, S_C, t, glow=G_CUR, **kw)
+    return creatures.draw_specimen(ctx, x, y, S_C, t, glow=G_CUR, **kw)
 
 
 # ----------------------------------------------------------------------------
@@ -374,12 +377,12 @@ def _draw_baby(ctx, t, T, ta):
     if t < T.F:
         bx, by = _baby_on_shoulder(ta, False)
         wake = t > T.D1 + 0.3
-        return creatures.draw_specimen(ctx, bx, by, S_B, t, baby=True, pose="held",
+        return creatures.draw_specimen(ctx, bx, by, S_B, t, baby=True, glow=G_BABY, pose="held",
                                        expr="calm" if wake else "sleepy",
                                        look=(0.6, 0.1) if wake else None, face=0.6)
     if t < T.A1:
         bx, by = _baby_on_shoulder(ta, True)
-        return creatures.draw_specimen(ctx, bx, by, S_B, t, baby=True, pose="held", flip=True,
+        return creatures.draw_specimen(ctx, bx, by, S_B, t, baby=True, glow=G_BABY, pose="held", flip=True,
                                        expr="curious" if t > T.F + 0.4 else "calm", look=(-0.7, 0.3), face=0.7)
     # flung off as he tips: a tumbling arc onto his back, a spring hop, giggles
     land = T.I + 0.16
@@ -391,7 +394,7 @@ def _draw_baby(ctx, t, T, ta):
         x = lerp(b0[0], BABY_BACK[0], k)
         y = lerp(b0[1], BABY_BACK[1], k) - 120 * math.sin(math.pi * k) * (1 - 0.3 * k)
         r = -2 * math.pi * ease_out(k)
-        return creatures.draw_specimen(ctx, x, y + 30 * S_B, S_B, t, baby=True, pose="tumble", roll=r,
+        return creatures.draw_specimen(ctx, x, y + 30 * S_B, S_B, t, baby=True, glow=G_BABY, pose="tumble", roll=r,
                                        flip=True)
     x, y = BABY_BACK
     hop = 34 * math.sin(math.pi * seg(t, T.I + 0.3, T.I + 0.6))
@@ -409,7 +412,7 @@ def _draw_baby(ctx, t, T, ta):
             expr = "curious"
         look = (-0.8, 0.25) if t < T.C1 else (0.7, 0.0)
         with core.saved(ctx, x, y - hop, (1 + 0.12 * sq, 1 - 0.16 * sq)):
-            return creatures.draw_specimen(ctx, 0, 0, S_B, t, baby=True, pose="sit", flip=True, expr=expr,
+            return creatures.draw_specimen(ctx, 0, 0, S_B, t, baby=True, glow=G_BABY, pose="sit", flip=True, expr=expr,
                                            look=look, face=0.75)
     return None
 
@@ -423,17 +426,17 @@ def _draw_baby_top(ctx, t, T, ca):
         y = lerp(BABY_BACK[1], ty, k) - 70 * math.sin(math.pi * k)
         st = 1 + 0.1 * math.sin(math.pi * k)
         with core.saved(ctx, x, y, (1 / st, st)):
-            return creatures.draw_specimen(ctx, 0, 0, S_B, t, baby=True, pose="sit", flip=True,
+            return creatures.draw_specimen(ctx, 0, 0, S_B, t, baby=True, glow=G_BABY, pose="sit", flip=True,
                                            expr="calm", look=(0.6, 0.3), face=0.75)
     sk = seg(t, T.B1, T.B1 + 0.22)
     if sk < 1:
         sq = math.sin(math.pi * sk)
         with core.saved(ctx, tx, ty, (1 + 0.15 * sq, 1 - 0.25 * sq)):
             if sk < 0.5:
-                return creatures.draw_specimen(ctx, 0, 0, S_B, t, baby=True, pose="sit", flip=True,
+                return creatures.draw_specimen(ctx, 0, 0, S_B, t, baby=True, glow=G_BABY, pose="sit", flip=True,
                                                expr="sleepy", face=0.75)
-            return creatures.draw_specimen(ctx, 0, 0, S_B, t, baby=True, pose="curl", flip=True)
-    return creatures.draw_specimen(ctx, tx, ty, S_B, t, baby=True, pose="curl", flip=True)
+            return creatures.draw_specimen(ctx, 0, 0, S_B, t, baby=True, glow=G_BABY, pose="curl", flip=True)
+    return creatures.draw_specimen(ctx, tx, ty, S_B, t, baby=True, glow=G_BABY, pose="curl", flip=True)
 
 
 # ----------------------------------------------------------------------------
@@ -465,7 +468,7 @@ def _cam_lerp(a, b, k):
 def _shot_door(ctx, t, T, info):
     st = _set_state(t, T)
     op = ease_out(seg(t, T.D0 + 0.03, T.D1))
-    cam = _cam_lerp((690, 1000, 0.95), (770, 1005, 0.97), ease_in_out(seg(t, T.D1, T.F + 0.6)))
+    cam = _cam_lerp((800, 1060, 0.82), (650, 1015, 1.0), ease_in_out(seg(t, 0.3, T.F + 0.3)))
     inside = t >= T.W0 + 0.12
     with core.camera(ctx, *cam):
         sets.bedroom(ctx, t, door_open=op, **st)
@@ -478,13 +481,18 @@ def _shot_door(ctx, t, T, info):
                 ctx.rectangle(dx, dt_, dw, dh + 6)
                 ctx.rectangle(-400, 1336, 3200, 1000)
                 ctx.clip()
+            _draw_cur(ctx, t, T)
             with _shade(ctx, t, st):
-                _draw_cur(ctx, t, T)
                 ta = _draw_tired(ctx, t, T, info)
-                _draw_baby(ctx, t, T, ta)
+            _draw_baby(ctx, t, T, ta)
             ctx.restore()
         if not inside:
             sets.bedroom(ctx, t, layer="fg", door_open=op, parts=("door",), light="dawn")
+
+
+def _warm(t, T):
+    """the sunbeam warming his back once they curl up (grows with the sunrise)."""
+    return 0.3 * smoothstep(seg(t, T.C3, T.C3 + 1.2)) + 0.12 * smoothstep(seg(t, T.Z, T.TT + 1.5))
 
 
 def _shot_bed(ctx, t, T, info, cam):
@@ -493,11 +501,14 @@ def _shot_bed(ctx, t, T, info, cam):
         sets.bedroom(ctx, t, **st)
         with _shade(ctx, t, st):
             ta = _draw_tired(ctx, t, T, info)
-            ca = _draw_cur(ctx, t, T)
-            if t < T.B0:
-                _draw_baby(ctx, t, T, ta)
-            else:
-                _draw_baby_top(ctx, t, T, ca)
+        wa = _warm(t, T)
+        if wa > 0.005:
+            core.radial_glow(ctx, PERCH[0], PERCH[1] - 40, 200, "#ffcf9a", wa)
+        ca = _draw_cur(ctx, t, T)
+        if t < T.B0:
+            _draw_baby(ctx, t, T, ta)
+        else:
+            _draw_baby_top(ctx, t, T, ca)
     return st
 
 
@@ -596,16 +607,20 @@ def render(ctx, t, info):
         _shot_door(ctx, t, T, info)
         return
     if t < T.P:
-        k = ease_in_out(seg(t, T.I + 0.75, T.L1 + 0.5))
-        cam = _cam_lerp((1360, 1080, 1.25), (1262, 1078, 1.62), k)
+        # push in on his face as the bounce settles (Curiosity drops out of the bottom of
+        # the frame before the caption comes up)
+        k = ease_in_out(seg(t, T.I + 0.6, T.L0 + 0.35))
+        k2 = ease_in_out(seg(t, T.L0 + 0.35, T.P))
+        cam = _cam_lerp(_cam_lerp((1370, 1100, 1.25), (1222, 965, 1.72), k), (1210, 975, 1.8), k2)
         _shot_bed(ctx, t, T, info, cam)
         return
     if t < T.S:
         _shot_bed(ctx, t, T, info, (1390, 1190, 1.32))
         return
     if t < T.INS:
-        k = ease_in_out(seg(t, T.MSG + 0.1, T.MSG + 0.85))
-        cam = _cam_lerp((1262, 1062, 1.95), (1118, 1085, 1.9), k)
+        kp = ease_in_out(seg(t, T.S, T.S + 2.2))          # slow push onto his face for the smile
+        k = ease_in_out(seg(t, T.MSG + 0.1, T.MSG + 0.85))  # then ease over to the buzzing phone
+        cam = _cam_lerp(_cam_lerp((1290, 1062, 2.0), (1225, 1075, 2.35), kp), (1112, 1085, 1.95), k)
         _shot_bed(ctx, t, T, info, cam)
         return
     if t < T.Z:

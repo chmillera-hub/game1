@@ -13,8 +13,8 @@ import math
 import cairocffi as cairo
 
 from engine import core, sets, props, human, creatures, fx
-from engine.core import (tween, seg, smoothstep, clamp, lerp, ease_in_out, ease_out, ease_in,
-                         ease_out_back, state_at)
+from engine.core import (tween, seg, smoothstep, lerp, ease_in_out, ease_out, ease_in,
+                         ease_out_back)
 from audio import sfx
 
 M = sets.CONTROL_MARKS
@@ -215,8 +215,10 @@ def tired_kw(t, k, info):
     sway_amt = smoothstep(seg(t, k.tempt - 0.2, k.tempt + 0.8)) * (1 - smoothstep(seg(t, k.look, k.look + 0.5)))
     if sway_amt > 0.001 and t >= k.walk1 + 0.4:
         ph = (t - k.tempt) / 2.6
+        sigh_k = tw(t, [(k.tempt + 0.2, 0.0), (k.tempt + 0.5, 1.0), (k.tempt + 1.3, 1.0), (k.tempt + 1.9, 0.6)])
         pose = {"base": "stand", "rot": 0.028 * sway_amt * math.sin(2 * math.pi * ph),
-                "side": 0.02 * sway_amt * math.sin(2 * math.pi * ph + 0.6)}
+                "side": 0.02 * sway_amt * math.sin(2 * math.pi * ph + 0.6),
+                "hunch": 0.18 * sigh_k, "nod": 0.05 * sigh_k}
     # "I'm not tired": the slouch leaves his spine (shoulders square, chin up a hair)
     straight = smoothstep(seg(t, k.w_not - 0.05, k.w_not + 0.8))
     if straight > 0.001 and pose == "stand":
@@ -287,11 +289,16 @@ def tired_kw(t, k, info):
                   (k.l07e + 0.25, (0.15, 0.75)), (k.l07e + 0.45, (-0.55, 0.8)),
                   (k.w_but - 0.22, (-0.55, 0.8)), (k.w_but - 0.06, (lx, ly - 0.04))])
     focus = -0.35 * smoothstep(seg(t, k.tempt, k.tempt + 1.0)) * (1 - smoothstep(seg(t, k.look, k.look + 0.2)))
-    face = {"lid": lid, "brow": brow, "brow_ang": brow_ang, "curve": curve, "press": press,
+    # the tempted exhale (sigh SFX at tempt + 0.25)
+    sigh_open = tw(t, [(k.tempt + 0.22, 0.0), (k.tempt + 0.38, 0.13), (k.tempt + 0.95, 0.07),
+                       (k.tempt + 1.25, 0.0)])
+    face = {"lid": lid, "brow": brow, "brow_ang": brow_ang, "curve": curve, "press": press, "open": sigh_open,
             "head_turn": head_turn, "head_nod": head_nod, "head_tilt": head_tilt, "focus": focus}
     # ---------------- blinks
     blink = None
-    for b0, cl, ho, op in ((k.w_sleep + 0.85, 0.35, 0.3, 0.5), (k.tempt + 1.5, 0.4, 0.45, 0.55)):
+    if k.tempt - 0.2 <= t < k.look + 0.6:
+        blink = 0.0                       # no random blinks in the dream: one slow heavy blink only
+    for b0, cl, ho, op in ((k.w_sleep + 0.85, 0.35, 0.3, 0.5), (k.tempt + 1.0, 0.4, 0.4, 0.5)):
         v = slow_blink(t, b0, cl, ho, op)
         if v is not None:
             blink = v
@@ -383,7 +390,7 @@ def draw_boss_and_chair(ctx, t, k, info, kw=None):
     ct = kw["ct"]
     _chair(ctx, ct, "behind")
     a = None
-    alpha = smoothstep(seg(ct, 0.14, 0.3))
+    alpha = smoothstep(seg(ct, 0.16, 0.25))
     if alpha > 0.001:
         def boss(c=ctx):
             return human.draw_person(c, "boss", CHAIR[0], BOSS_GY, SC, t, pose=STEEPLE, expr="cold",
@@ -466,6 +473,10 @@ def render(ctx, t, info):
                 ca = draw_cur(ctx, t, k)
                 ta = draw_tired(ctx, t, k, info, tkw)
             _doorway_light(ctx, pair)
+            # their eyes glow in the doorway; drawn BEFORE the room layer so the closed doors hide them
+            _eye_glow(ctx, ca, 26, 0.2)
+            _eye_glow(ctx, ta, 28, 0.1)
+            ca = ta = None
             sets.control_room(ctx, t, layer="room", doors_open=doors_open, reader=reader, chair=False)
             _chair(ctx, 0.0, "behind")
             _chair(ctx, 0.0, "front")
@@ -525,7 +536,9 @@ def SFX(info):
     ev.append((k.s3 + 0.08, "chair_creak", -5, 0.3))
     for i in range(3):
         ev.append((k.walk0 + 0.5 * i, "footstep", -9, -0.25 + 0.1 * i))
+    ev.append((k.look_in, "ears_perk", -3, -0.3))        # Curiosity's ears up at the doorway
     ev.append((k.band_up, "cloth_rustle", -8, -0.1))
+    ev.append((k.cur_up + 0.05, "creature_chitter", -11, -0.2))   # a small hopeful "huh?" up at him
     ev.append((k.tempt + 0.25, "sigh", -3, -0.05))
     ev.append((k.droop + 0.35, "creature_chirp_sad", -7, -0.15))
     ev += sfx.loop_events("pod_hum", 0.0, info.dur, -15, 0.0)

@@ -59,6 +59,7 @@ TK = dict(outfit="sewer", bandage=True, headphones=None, hood=0.0, power=0.6)
 T_FACE = (XT - 64, 912)          # Tiredness's face (beam target)
 CUR_EYE = (CH - 82, 1318)        # Curiosity's peeking (visible) eye
 FLASH_S = 0.42
+REC_S = 0.52
 WARM = "#ffe9c4"
 
 
@@ -202,23 +203,23 @@ def keys_for(info):
 def shots(k):
     st = k["steps"]
     return [
-        ("S1", 0.0, lambda t: tw(t, [(0.0, (640, 1110, 1.30)), (0.9, (645, 1115, 1.33)),
-                                     (st + 0.3, (685, 1150, 1.62))])),
-        ("S2", k["S2"], lambda t: tw(t, [(k["S2"], (505, 1090, 1.22)), (k["S3"], (512, 1092, 1.25))])),
+        ("S1", 0.0, lambda t: tw(t, [(0.0, (592, 1190, 1.55)), (0.3, (594, 1189, 1.55)),
+                                     (1.7, (688, 1152, 1.62)), (k["S2"], (694, 1150, 1.66))])),
+        ("S2", k["S2"], lambda t: tw(t, [(k["S2"], (505, 1090, 1.22)), (k["S3"], (515, 1092, 1.27))])),
         ("S3", k["S3"], lambda t: (470, 950, 2.3)),
-        ("S4", k["S4"], lambda t: (690, 1010, 2.3)),
-        ("S5", k["S5"], lambda t: (565, 1105, 1.46)),
+        ("S4", k["S4"], lambda t: (735, 1010, 2.3)),
+        ("S5", k["S5"], lambda t: (565, 1135, 1.46)),
         ("S6", k["S6"], lambda t: (450, 905, 2.6)),
         ("S7", k["S7"], lambda t: (700, 955, 2.6)),
         ("S8", k["S8"], lambda t: (450, 905, 2.6)),
-        ("S9", k["S9"], lambda t: (565, 1110, 1.5)),
-        ("S10", k["S10"], lambda t: tw(t, [(k["S10"], (405, 935, 2.4)), (k["S11"], (400, 930, 2.58))])),
-        ("S11", k["S11"], lambda t: (575, 1105, 1.55)),
-        ("S12", k["S12"], lambda t: (700, 1125, 1.8)),
-        ("S13", k["S13"], lambda t: (570, 1120, 1.6)),
+        ("S9", k["S9"], lambda t: (562, 1108, 1.7)),
+        ("S10", k["S10"], lambda t: tw(t, [(k["S10"], (392, 925, 2.75)), (k["S11"], (388, 922, 3.0))])),
+        ("S11", k["S11"], lambda t: (575, 1185, 1.55)),
+        ("S12", k["S12"], lambda t: (758, 1150, 1.85)),
+        ("S13", k["S13"], lambda t: (570, 1195, 1.6)),
         ("S14", k["S14"], None),
         ("S15", k["S15"], lambda t: (450, 905, 2.6)),
-        ("S16", k["S16"], lambda t: tw(t, [(k["S16"], (640, 1095, 1.55)), (k["dur"], (665, 1090, 1.62))])),
+        ("S16", k["S16"], lambda t: tw(t, [(k["S16"], (580, 1170, 1.5)), (k["dur"], (598, 1166, 1.56))])),
     ]
 
 
@@ -239,7 +240,14 @@ def view_rect(cam, pad=60):
 # --------------------------------------------------------------------------- Tiredness
 STAND_T = "stand"
 POCKET_T = "hands_pockets"
-WAVE_T = "wave_small"
+# a lazy hello: the near hand comes out of the hoodie pocket for one small bent-elbow wave,
+# the other hand stays in the pocket (wave_small's arm on top of hands_pockets)
+WAVE_T = {"base": "hands_pockets", "period": 0.7, "ar_p": 0.35, "ar_o": 1.2, "ar_e": 2.3,
+          "ar_eo": human.W(-1.1, 0.15, 0.0), "ar_w": human.W(0.0, 0.18, 0.1), "ar_h": "open",
+          "ar_tf": -1.0, "ar_hide": 0.0, "hunch": 0.3}
+# on the way up / down the hand swings out to the side first, so it never crosses his face
+WAVE_MID = {"base": "hands_pockets", "ar_p": 0.25, "ar_o": 1.35, "ar_e": 1.25, "ar_eo": -0.6,
+            "ar_h": "open", "ar_tf": -1.0, "ar_hide": 0.0, "hunch": 0.3}
 
 
 def tired_state(t, k):
@@ -256,19 +264,13 @@ def tired_state(t, k):
     # ---- body poses
     keys = [(-1, "walk"), (ts, STAND_T), (ts + 0.6, POCKET_T)]
     hi = k["l2_hi"]
-    keys += [(hi - 0.12, WAVE_T), (hi + 0.62, POCKET_T)]
+    keys += [(hi - 0.32, WAVE_MID), (hi - 0.14, WAVE_T), (hi + 0.56, WAVE_MID), (hi + 0.74, POCKET_T)]
     keys += [(k["k_take0"] - 0.45, STAND_T)]
     keys += [(k["go_walk"], "walk")]
     pose = state_at(t, keys, 0.3)
-    if pose[1] == WAVE_T or pose[0] == WAVE_T:
-        # a lazy, half-height hello: only ~75 % of the wave pose, one flap
-        a, b, kk = pose
-        wv = 0.78
-        if b == WAVE_T:
-            pose = (a, b, kk * wv)
-        else:
-            pose = (a, b, 1 - (1 - kk) * wv)
-        d["pose_t"] = max(0.0, t - (hi - 0.12)) * 0.9
+    if pose[1] in (WAVE_T, WAVE_MID) or pose[0] in (WAVE_T, WAVE_MID):
+        pose = state_at(t, keys, 0.18)
+        d["pose_t"] = max(0.0, t - (hi - 0.14))
     elif pose[1] == "walk" and t >= k["go_walk"]:
         d["pose_t"] = t - k["go_walk"]
     else:
@@ -318,9 +320,10 @@ def tired_state(t, k):
     # the beam in his face: squint, flinch, head away (until the beam drifts down)
     b_on = smoothstep(seg(t, k["swing1"] - 0.08, k["swing1"] + 0.1)) * \
         (1 - smoothstep(seg(t, k["notice"] + 0.25, k["notice"] + 0.65)))
+    d["squint"] = b_on
     if b_on > 0:
-        f["lower"] = f.get("lower", 0) + 0.38 * b_on
-        f["lid"] = f.get("lid", 0) + 0.1 * b_on
+        f["lower"] = f.get("lower", 0) + 0.24 * b_on
+        f["lid"] = f.get("lid", 0) + 0.03 * b_on
         f["brow"] = f.get("brow", 0) - 0.18 * b_on
         f["head_turn"] = f.get("head_turn", 0) + 0.12 * b_on
         f["head_nod"] = f.get("head_nod", 0) + 0.04 * b_on
@@ -371,16 +374,17 @@ def tired_state(t, k):
             "lid": [(k["l6_calc"], 0.0), (k["l6_calc"] + 0.25, -0.05), (k["smile"], 0.04)],
         }))
     # smile: the faintest smile, soft eyes (soft_smile expr + small deltas)
-    sm = k["smile"]
-    if t >= sm - 0.6:
+    s12 = k["S12"]
+    if t >= s12 - 0.6:
         f = addf(f, fk(t, {
-            "curve": [(sm - 0.6, -0.15), (sm + 0.15, -0.15), (sm + 0.7, 0.05)],
-            "smirk": [(sm + 0.1, 0.0), (sm + 0.6, -0.25), (k["S13"], -0.2), (k["S13"] + 0.4, 0.0)],
-            "lid": [(sm + 0.1, 0.0), (sm + 0.6, 0.06)],
+            "curve": [(s12 - 0.6, -0.15), (s12 - 0.05, -0.15), (s12 + 0.5, 0.06)],
+            "smirk": [(s12 - 0.05, 0.0), (s12 + 0.45, -0.28), (k["S13"], -0.22), (k["S13"] + 0.4, 0.0)],
+            "lid": [(s12, 0.0), (s12 + 0.5, 0.06)],
         }))
         if t < k["S13"]:
-            look = tw(t, [(sm - 0.6, (-0.9, 0.05)), (sm + 0.9, (-0.9, 0.05)),
-                          (sm + 1.1, (-0.45, 0.7)), (k["S13"], (-0.45, 0.7))])
+            look = tw(t, [(s12 - 0.6, (-0.9, 0.05)), (s12 + 0.85, (-0.9, 0.05)),
+                          (s12 + 1.0, (-0.45, 0.75)), (k["S13"], (-0.45, 0.75))])
+            f = addf(f, fk(t, {"head_nod": [(s12 + 0.9, 0.0), (s12 + 1.1, 0.06)]}))
     # l07: on Emb, then on the card he takes; reads it
     if t >= k["S13"]:
         look = tw(t, [(k["S13"], (-0.9, 0.05)), (k["k_out"], (-0.9, 0.1)), (k["k_out"] + 0.2, (-0.9, 0.5)),
@@ -406,13 +410,13 @@ def tired_state(t, k):
 
 
 # --------------------------------------------------------------------------- Embarrassment
-EMB_BASE = {"base": "stand", "ar_h": "grip", "al_h": "relaxed"}
-EMB_WALK = {"base": "walk", "ar_h": "grip"}
-EMB_JOLT = {"base": "stand", "ar_h": "grip", "al_h": "open", "hunch": 0.75, "lean": -0.12, "lift": 14}
-EMB_NERV = {"base": "stand", "ar_h": "grip", "al_h": "relaxed", "hunch": 0.25}
-EMB_PINCH = {"base": "stand", "ar_h": "grip", "al_h": "pinch"}
-EMB_CUP = {"base": "stand", "ar_h": "grip", "al_h": "cup", "al_tf": -1}
-EMB_CUPB = {"base": "stand", "ar_h": "grip", "al_h": "cup", "al_tf": -1, "hunch": 0.22}
+EMB_BASE = {"base": "stand", "ar_h": "grip", "al_h": "relaxed", "ar_layer": "mid"}
+EMB_WALK = {"base": "walk", "ar_h": "grip", "ar_layer": "mid"}
+EMB_JOLT = {"base": "stand", "ar_h": "grip", "ar_layer": "mid", "al_h": "open", "hunch": 0.75, "lean": -0.12, "lift": 14}
+EMB_NERV = {"base": "stand", "ar_h": "grip", "ar_layer": "mid", "al_h": "relaxed", "hunch": 0.25}
+EMB_PINCH = {"base": "stand", "ar_h": "grip", "ar_layer": "mid", "al_h": "pinch"}
+EMB_CUP = {"base": "stand", "ar_h": "grip", "ar_layer": "mid", "al_h": "cup", "al_tf": -1}
+EMB_CUPB = {"base": "stand", "ar_h": "grip", "ar_layer": "mid", "al_h": "cup", "al_tf": -1, "hunch": 0.22}
 
 
 def emb_depth(t, k):
@@ -444,7 +448,7 @@ def embar_state(t, k):
         d["look"] = tw(t, [(k["e0"], (0.15, 0.5)), (k["e0"] + 0.7, (0.4, 0.45)), (k["e1"], (0.6, 0.2))])
         d["face"] = {"brow_ang": 0.25, "press": 0.2}
         sc = d["s"]
-        d["reach"] = {"r": (x + 62 * sc / S * 0.75, y - 520 * sc / S * 0.75, 1.0)}
+        d["reach"] = {"r": (x + 46 * sc / S, y - 455 * sc / S, 1.0)}
         sweep = 0.16 * math.sin((t - k["e0"]) * 4.2)
         d["aim_ang"] = 1.05 + sweep
         return d
@@ -471,7 +475,7 @@ def embar_state(t, k):
     aim = tw(t, [(k["swing0"], (560, 1420)), (k["swing1"], face_aim), (nt + 0.12, face_aim),
                  (k["c_found"], CUR_EYE), (k["l4"] + 0.05, CUR_EYE), (k["l4"] + 0.65, floor_aim),
                  (cf, floor_aim), (cf + 0.35, (520, 1495)), (k["click"] + 0.5, (520, 1495)),
-                 (k["click"] + 0.8, floor_aim)])
+                 (k["click"] + 0.8, (470, 1498))])
     # startle wobble
     j = t - k["jolt"]
     if 0 <= j < 0.6:
@@ -492,8 +496,8 @@ def embar_state(t, k):
     if wl > 0:
         d["reach"]["l"] = (XE + 30, 1012, wl)
     if k["r_reach"] - 0.05 <= t < k["r_gone"] + 0.45:
-        palm = tw(t, [(k["r_grab"], pocket), (k["r_up"], (XE + 62, 980)),
-                      (k["click"] + 0.6, (XE + 64, 978)), (k["l6_pocket"] - 0.1, (XE + 92, 1000)),
+        palm = tw(t, [(k["r_grab"], pocket), (k["r_up"], (XE + 24, 1002)),
+                      (k["click"] + 0.6, (XE + 26, 1000)), (k["l6_pocket"] - 0.1, (XE + 92, 1000)),
                       (k["l6_stop"], (XE + 98, 996)), (k["r_pocket"], (XE + 98, 996)),
                       (k["r_gone"], (pocket[0] + 2, pocket[1] - 6))])
         w = tw(t, [(k["r_reach"], 0.0), (k["r_grab"], 1.0), (k["r_gone"], 1.0), (k["r_gone"] + 0.4, 0.0)])
@@ -519,8 +523,10 @@ def embar_state(t, k):
                              s=tw(t, [(k["k_have"], 0.12), (k["k_have"] + 0.25, 0.19)]))
     # ---- the LED in his chest pocket (blinks until he takes the recorder out)
     if t < k["r_grab"]:
-        d["led"] = 1.0 if (t % 1.0) < 0.45 else 0.12
-        d["led_glow"] = 0.55 + 0.45 * smoothstep(seg(t, k["led"], k["led"] + 0.3))
+        hot = smoothstep(seg(t, k["led"], k["led"] + 0.25))
+        d["led"] = 1.0 if (t % 1.0) < 0.45 else 0.12 - 0.07 * hot
+        d["led_glow"] = 0.55 + 0.9 * hot
+        d["led_s"] = 0.9 + 0.3 * hot
         d["led_pos"] = pocket
     # ---- expression, eyes, blush
     d["expr"] = state_at(t, [(0, "neutral"), (jt, "surprised"), (k["l1e"] + 0.3, "neutral"),
@@ -712,12 +718,12 @@ def cur_state(t, k):
         else:
             d.update(x=C1, pose="sit", pose_from="walk", pose_mix=seg(t, o1, o1 + 0.3),
                      pose_t=(o1 - o0 - 0.15) * (CH - C1) / (o1 - o0) / (creatures.SPEC_WALK_SPEED * SC))
-    sm = k["smile"]
     if t >= k["S12"]:
-        d["face"] = tw(t, [(k["S12"], 0.25)])
-        d["look"] = tw(t, [(k["S12"], (-0.6, -0.6)), (sm + 0.2, (-0.6, -0.6)), (sm + 0.4, (0.55, -0.85))])
+        s12 = k["S12"]
+        d["face"] = 0.25
+        d["look"] = tw(t, [(s12, (-0.6, -0.6)), (s12 + 0.15, (-0.6, -0.6)), (s12 + 0.32, (0.55, -0.85))])
         d["tilt"] = 0.0
-        grin = sm + 0.75
+        grin = s12 + 0.62
         d["expr"] = "proud" if t >= grin else "hopeful"
         d["ears"] = tw(t, [(k["S12"], 0.66), (grin, 0.66), (grin + 0.22, 0.86, ease_out_back)])
         d["tail_curl"] = tw(t, [(grin, 0.0), (grin + 0.5, 0.75)])
@@ -769,7 +775,7 @@ def _beam_on_chars(c, lens, ang, L, spread, amt):
     col = core.hexc(WARM)
     c.save()
     c.set_operator(cairo.OPERATOR_ATOP)
-    for sp, a in ((1.0, 0.13), (0.72, 0.13), (0.45, 0.14)):
+    for sp, a in ((1.0, 0.07), (0.72, 0.07), (0.45, 0.08)):
         g = cairo.RadialGradient(x, y, 0, x, y, L)
         g.add_color_stop_rgba(0.0, col[0], col[1], col[2], a * amt * 1.3)
         g.add_color_stop_rgba(0.55, col[0], col[1], col[2], a * amt)
@@ -789,25 +795,31 @@ def _tunnel_torch(c, e, lens):
     x, y = e["x"], e["y"]
     a = e["aim_ang"]
     px, py = x + 120 * sc + 70 * sc * math.cos(a) * 0.4, y + 40 * sc
-    c.save()
-    mouth_path(c)
-    c.rectangle(MOUTH[0] - 40, WALL_Y, MOUTH[2] + 80, 320)
-    c.clip()
     br = 0.35 + 0.65 * smoothstep(seg(sc, 0.2, 0.75))
-    core.radial_glow(c, px, py, 330 * sc + 60, "#ffcf8a", 0.32 * br)
-    core.radial_glow(c, px, py, 150 * sc + 30, "#fff2d6", 0.42 * br)
     lx, ly = lens
-    g = cairo.LinearGradient(lx, ly, px, py)
-    wc = core.hexc("#ffe2b0")
-    g.add_color_stop_rgba(0, wc[0], wc[1], wc[2], 0.22 * br)
-    g.add_color_stop_rgba(1, wc[0], wc[1], wc[2], 0.04)
-    c.move_to(lx, ly)
-    c.line_to(px - 170 * sc, py)
-    c.line_to(px + 170 * sc, py)
-    c.close_path()
-    c.set_source(g)
-    c.fill()
-    c.restore()
+
+    def paint(cc):
+        core.radial_glow(cc, px, py, 330 * sc + 60, "#ffcf8a", 0.32 * br)
+        core.radial_glow(cc, px, py, 150 * sc + 30, "#fff2d6", 0.42 * br)
+        g = cairo.LinearGradient(lx, ly, px, py)
+        wc = core.hexc("#ffe2b0")
+        g.add_color_stop_rgba(0, wc[0], wc[1], wc[2], 0.22 * br)
+        g.add_color_stop_rgba(1, wc[0], wc[1], wc[2], 0.04)
+        cc.move_to(lx, ly)
+        cc.line_to(px - 170 * sc, py)
+        cc.line_to(px + 170 * sc, py)
+        cc.close_path()
+        cc.set_source(g)
+        cc.fill()
+    w_out = smoothstep(seg(sc, 0.5, 0.72))
+    if w_out < 0.99:
+        c.save()
+        mouth_path(c)
+        c.clip()
+        core.fade_group(c, 1 - w_out, paint)
+        c.restore()
+    if w_out > 0.01:
+        core.fade_group(c, w_out, paint)
 
 
 def draw_world(ctx, t, k, cam, shot_name, exact=True):
@@ -855,7 +867,7 @@ def draw_world(ctx, t, k, cam, shot_name, exact=True):
         hx, hy, ha = a["hand_l"]
         if E["rec"] is not None:
             r = E["rec"]
-            props.recorder(ctx, hx + 2, hy - 9, 0.44, t, led=r["led"], glow=0.5 if r["led"] > 0.5 else 0.0,
+            props.recorder(ctx, hx + 2, hy - 10, REC_S, t, led=r["led"], glow=0.5 if r["led"] > 0.5 else 0.0,
                            rot=r["rot"], button=r["button"])
             _thumb(ctx, hx, hy, r, t, k)
         if E["card"] is not None:
@@ -880,17 +892,17 @@ def draw_world(ctx, t, k, cam, shot_name, exact=True):
     sets.service_tunnel(ctx, t, "shade")
     ctx.restore()
     beam = None
-    if "lens" in lens and not E["inside"] and t >= k["e1"] - 0.05:
+    if "lens" in lens and E["aim"] is not None:
         lx, ly = lens["lens"]
         ax, ay = E["aim"]
         L = clamp(math.hypot(ax - lx, ay - ly) * 1.22, 320, 1000)
-        pw = smoothstep(seg(t, k["e1"] - 0.05, k["e1"] + 0.15))
+        pw = smoothstep(seg(t, k["e1"], k["e1"] + 0.18))
         beam = (lx, ly, lens["angle"], L, 0.5, pw)
         _beam_on_chars(ctx, (lx, ly), lens["angle"], L, 0.56, pw)
     pat = ctx.pop_group()
     # torch light on the set
     if E["visible"] and t < k["e1"] + 0.15 and "lens" in lens:
-        a_in = 1 - smoothstep(seg(t, k["e1"] - 0.1, k["e1"] + 0.12))
+        a_in = 1 - smoothstep(seg(t, k["e1"] - 0.02, k["e1"] + 0.15))
         if a_in > 0.01:
             ctx.push_group()
             _tunnel_torch(ctx, E, lens["lens"])
@@ -905,7 +917,20 @@ def draw_world(ctx, t, k, cam, shot_name, exact=True):
     # ---- emissive bits on top: the pocket LED, Curiosity's eyeshine
     if E["visible"] and E.get("led") is not None and "emb" in anchors:
         px, py = anchors["emb"]["pocket"]
-        props.recorder(ctx, px + 6, py + 10, 0.9 * E["s"] / S, t, led=E["led"], glow=E["led_glow"], only_led=True)
+        props.recorder(ctx, px + 6, py + 10, E.get("led_s", 0.9) * E["s"] / S, t, led=E["led"],
+                       glow=E["led_glow"], only_led=True)
+    # ---- his teal eyes stay bright (the rig's own glow is dimmed by the shade pass)
+    if "tired" in anchors:
+        a = anchors["tired"]
+        op = (1 - a["blink"]) * (1 - 0.7 * T["squint"])
+        if op > 0.02:
+            for e_ in ("eye_l", "eye_r"):
+                ex, ey = a[e_]
+                core.radial_glow(ctx, ex, ey, 30, core.PAL["power"], 0.2 * op)
+    jt = k["jolt"]
+    if jt <= t < jt + 0.8 and "emb" in anchors:
+        tx_, ty_ = anchors["emb"]["top"]
+        fx.emote(ctx, "exclaim", tx_ + 42, ty_ - 62, 0.85, t, jt, dur=0.75)
     if Cr["glint"] is not None and "cur" in anchors:
         ex, ey = anchors["cur"]["eye_l"]
         fx.eye_glint(ctx, ex, ey, 0.7, t, Cr["glint"], dur=0.5)
@@ -920,10 +945,10 @@ def _thumb(ctx, hx, hy, r, t, k):
     u = tw(t, [(p0, 0.0), (k["press"] - 0.05, 1.0), (k["press"] + 0.45, 1.0), (k["press"] + 0.75, 0.0)])
     dn = tw(t, [(k["press"] - 0.05, 0.0), (k["press"] + 0.06, 1.0, ease_out), (k["press"] + 0.32, 1.0),
                 (k["press"] + 0.5, 0.0)])
-    rs = 0.44
+    rs = REC_S
     rot = r["rot"]
     bx, by = props.RECORDER_BUTTON
-    cx, cy = hx + 2, hy - 9
+    cx, cy = hx + 2, hy - 10
     ca, sa = math.cos(rot), math.sin(rot)
 
     def L(px, py):
@@ -953,57 +978,66 @@ def info_mouth(who, t):
 
 
 # --------------------------------------------------------------------------- the card insert
+def _capsule(ctx, p0, p1, w, fillc, ink, lw):
+    ctx.set_line_cap(cairo.LINE_CAP_ROUND)
+    for ww, col in ((w + 2 * lw, ink), (w, fillc)):
+        ctx.move_to(*p0)
+        ctx.line_to(*p1)
+        core.set_color(ctx, col)
+        ctx.set_line_width(ww)
+        ctx.stroke()
+
+
 def draw_insert(ctx, t, k):
+    """S14: the keycard in his (bandaged) hand, close. Screen space: a dim, defocused
+    tunnel wall behind, a custom big hand (the rig's hands are not built for this size)."""
     t0 = k["S14"]
     u = seg(t, t0, k["S15"])
     with core.camera(ctx, 820, 1000, 3.1 + 0.15 * u):
         sets.service_tunnel(ctx, t, "bg")
     ctx.rectangle(0, 0, core.W, core.H)
-    core.fill(ctx, core.alpha("#0b0b12", 0.45))
+    core.fill(ctx, core.alpha("#0b0b12", 0.5))
     fx.vignette(ctx, 0.75, inner=0.35)
+    core.radial_glow(ctx, 160, 1250, 760, "#ffcf8a", 0.10)      # Emb's torch on the floor, off left
     bob = 3 * math.sin((t - t0) * 2.4)
-    cx, cy = 505 + 10 * u, 760 + bob - 18 * u
-    rot = tw(t, [(t0, -0.14), (t0 + 0.6, -0.07), (k["S15"], -0.05)])
-    cs = 1.75 + 0.06 * u
-    # forearm (navy sleeve pushed up, the white bandage wrap) + palm behind the card
+    cx, cy = 470 + 12 * u, 770 + bob - 16 * u
+    rot = tw(t, [(t0, -0.16), (t0 + 0.6, -0.08), (k["S15"], -0.06)])
+    cs = 1.72 + 0.06 * u
     ink = core.PAL["ink"]
     skin, skin_sh = core.PAL["t_skin"], core.PAL["t_skin_sh"]
+    lw = 6
+    # ---- behind the card: forearm (bandage, pushed-up sleeve), palm, curled fingers
     with core.saved(ctx, cx, cy, 1.0, rot):
-        arm = [(330, 140), (860, 920)]
-        ctx.set_line_cap(cairo.LINE_CAP_ROUND)
-        for w, col in ((210, ink), (198, skin)):
-            ctx.move_to(*arm[0]); ctx.line_to(*arm[1])
-            core.set_color(ctx, col); ctx.set_line_width(w); ctx.stroke()
-        # bandage wrap bands
-        for i in range(4):
-            a = 0.36 + 0.12 * i
-            px, py = lerp(arm[0][0], arm[1][0], a), lerp(arm[0][1], arm[1][1], a)
-            with core.saved(ctx, px, py, 1.0, math.atan2(780, 530) + math.pi / 2):
-                core.rrect(ctx, -112, -34, 224, 70, 20)
-                core.fill_stroke(ctx, "#f2f0ea" if i % 2 == 0 else "#e4e1d8", ink, 5)
-        # sleeve cuff
-        with core.saved(ctx, lerp(arm[0][0], arm[1][0], 0.95), lerp(arm[0][1], arm[1][1], 0.95), 1.0,
-                        math.atan2(780, 530) + math.pi / 2):
-            core.rrect(ctx, -135, -70, 270, 200, 40)
-            core.fill_stroke(ctx, core.PAL["t_hoodie"], ink, 6)
-        # palm + fingers behind the card
-        core.ellipse(ctx, 250, 110, 150, 120, -0.6)
-        core.fill_stroke(ctx, skin, ink, 6)
-        for i, (fx_, fy_) in enumerate(((-40, 150), (10, 175), (75, 185))):
-            core.ellipse(ctx, fx_ + 60, fy_ - 10, 58, 40, 0.3)
-            core.fill_stroke(ctx, skin_sh if i == 1 else skin, ink, 5)
+        wr, el = (372, 238), (760, 1060)
+        ang = math.atan2(el[1] - wr[1], el[0] - wr[0])
+        _capsule(ctx, wr, el, 176, skin, ink, lw)
+        for i in range(3):                     # the white wrap
+            a_ = 0.24 + 0.15 * i
+            px, py = lerp(wr[0], el[0], a_), lerp(wr[1], el[1], a_)
+            with core.saved(ctx, px, py, 1.0, ang + math.pi / 2):
+                core.rrect(ctx, -100, -38, 200, 80, 22)
+                core.fill_stroke(ctx, "#f3f1ea" if i != 1 else "#e6e3da", ink, 5)
+                ctx.move_to(-70, -8); ctx.line_to(60, 12)
+                core.stroke(ctx, core.alpha("#b8b2a4", 0.8), 4)
+        with core.saved(ctx, lerp(wr[0], el[0], 0.9), lerp(wr[1], el[1], 0.9), 1.0, ang + math.pi / 2):
+            core.rrect(ctx, -128, -90, 256, 240, 46)           # navy sleeve pushed up to the elbow
+            core.fill_stroke(ctx, core.PAL["t_hoodie"], ink, lw)
+            ctx.move_to(-110, -40); ctx.line_to(110, -50)
+            core.stroke(ctx, core.PAL["t_hoodie_dk"], 6)
+        core.ellipse(ctx, 338, 118, 112, 142, -0.35)            # palm / back of the hand
+        core.fill_stroke(ctx, skin, ink, lw)
+        for i, fy_ in enumerate((-118, -52, 14)):              # curled fingers behind the card edge
+            core.ellipse(ctx, 318, fy_, 62, 34, 0.12)
+            core.fill_stroke(ctx, skin_sh if i % 2 else skin, ink, 5)
     props.keycard(ctx, cx, cy, cs, rot=rot, glint=smoothstep(seg(t, t0 + 0.35, t0 + 1.05)))
+    # ---- in front: the thumb pressing on the card face
     with core.saved(ctx, cx, cy, 1.0, rot):
-        # thumb pressing on the bottom-right corner of the card
-        th = [(310, 150), (205, 120)]
-        ctx.set_line_cap(cairo.LINE_CAP_ROUND)
-        for w, col in ((96, ink), (85, skin)):
-            ctx.move_to(*th[0]); ctx.line_to(*th[1])
-            core.set_color(ctx, col); ctx.set_line_width(w); ctx.stroke()
-        core.ellipse(ctx, 196, 112, 26, 18, -0.3)
-        core.fill(ctx, core.mixc(skin, "#ffffff", 0.35))
-    # warm torch spill from the bottom-left (Emb's beam on the floor)
-    core.radial_glow(ctx, 120, 1500, 700, "#ffcf8a", 0.10)
+        base, tip = (372, 200), (226, 92)
+        _capsule(ctx, base, tip, 74, skin, ink, lw)
+        core.ellipse(ctx, tip[0] + 6, tip[1] + 4, 24, 17, math.atan2(tip[1] - base[1], tip[0] - base[0]))
+        core.fill_stroke(ctx, core.mixc(skin, "#ffffff", 0.38), core.alpha(ink, 0.6), 3)
+        ctx.move_to(300, 168); ctx.curve_to(285, 150, 280, 140, 268, 132)
+        core.stroke(ctx, core.alpha(ink, 0.5), 4)
 
 
 # --------------------------------------------------------------------------- render
@@ -1054,7 +1088,7 @@ def SFX(info):
     ev.append((k["r_pocket"] + 0.1, "cloth_rustle", -12, -0.3))
     # Curiosity creeps out; grins
     ev.append((k["c_out0"] + 0.2, "scratch_wood", -18, 0.0))
-    ev.append((k["smile"] + 0.75, "creature_chitter", -6, 0.0))
+    ev.append((k["S12"] + 0.62, "creature_chitter", -6, 0.0))
     # keycard out of the coat, handed over
     ev.append((k["k_reach"] + 0.1, "cloth_rustle", -9, -0.3))
     ev.append((k["k_take"], "tap_tap", -10, 0.1))
