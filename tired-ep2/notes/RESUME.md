@@ -27,3 +27,5 @@ The scene revisions were interrupted, so each scene file is in a partial or old 
 3. `python3 build.py video` → `audio` → `final --mb 13.7`.
 4. Check the size, SSIM and frame 0.
 5. Commit and push, then send the MP4.
+
+**Rev 2 complete.** All user notes applied; final cut 4:51, 14.4 MB.
