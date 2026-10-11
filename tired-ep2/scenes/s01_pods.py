@@ -159,11 +159,11 @@ def TT(info):
     T["flip"] = T["bo"] + 0.24                                  # lids shut: hopeful -> annoyed
     T["huff"] = T["bo"] + 1.0
     T["tag_in"] = T["bo"] + 0.5
-    T["tag_out"] = T["l03v"]
     T["c5b"] = T["l03"] - 0.25                                  # -> his CU ("Wow. Creative.")
     # S6: the shared look, the eye-roll toward the plate, the smirk
     T["roll"] = T["grin"] - 0.2
     T["c6"] = min(T["l03v"] + 0.25, T["roll"] - 0.4)
+    T["tag_out"] = min(T["l03v"], T["c6"] - 0.35)       # gone before the cut to the two-shot
     T["roll_end"] = T["roll"] + ROLL_DUR
     T["smirk"] = T["roll_end"] + 0.12
     T["stand2"] = T["plates"] + 0.4             # he stands up off-screen during the pan

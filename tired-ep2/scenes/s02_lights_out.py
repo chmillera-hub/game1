@@ -70,8 +70,8 @@ except Exception:                          # palette moved: fall back to the mea
 # the peek hand: index finger out, drawn over the head; placed with world-space `reach`
 ARM_PEEK = {"ar_h": "point", "ar_layer": "front"}
 FINGER = 25.0                              # grip point -> index fingertip (px at s=1)
-FINGER_ANG = -2.3                          # finger direction in the eye-line frame (up-left)
-PEEK_FX = 0.62                             # fingertip: this many eye-spacings outside the eye centre
+FINGER_ANG = -2.5                          # finger direction in the eye-line frame (up-left)
+PEEK_FX = 0.72                             # fingertip: this many eye-spacings outside the eye centre
 
 
 def _sleeper(c, x, y, s, t, seed):
@@ -365,7 +365,7 @@ def tired_state(t, k, info):
                           (k.lk3, 0.4)])
             skept = kf(t, [(k.pk2, 1.0), (k.pk_pulse, 1.0), (k.pk_pulse + 0.4, 0.4), (k.L3, 0.0)])
             bf = dict(f)
-            bf.update({"lid": 0.12 * skept - 0.2 * wide, "pupil": 0.18 * wide - 0.1 * skept,
+            bf.update({"lid": 0.04 * skept - 0.2 * wide, "pupil": 0.18 * wide - 0.1 * skept,
                        "brow_r": 0.4 * wide - 0.15 * skept, "hl": 0.25 * wide})
             st["bface"] = bf
             st["blook"] = lk
