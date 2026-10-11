@@ -753,6 +753,13 @@ WAVE_MID = {"base": "hands_pockets", "ar_p": 0.25, "ar_o": 1.35, "ar_e": 1.25, "
             "ar_h": "open", "ar_tf": -1.0, "ar_hide": 0.0, "hunch": 0.3}
 
 
+# taking the keycard: only the near hand comes out of the pocket (the other stays in: chill)
+CARD_T = {"base": "hands_pockets", "ar_hide": 0.0, "ar_h": "relaxed"}
+# walking off with the far hand still in the pocket
+WALK_T = {"base": "walk", "al_p": 0.32, "al_o": 0.2, "al_e": 0.95, "al_eo": -1.05, "al_w": 0.0,
+          "al_hide": 1.0, "ar_h": "relaxed"}
+
+
 def shrug_amt(t, k):
     """0..1 lazy shrugs: on "Oh, yeah.", on "...in the dark." and on "It's been a day."."""
     a = 0.0
@@ -769,13 +776,13 @@ def tired_state(t, k):
     hey = k["l2_hey"]
     keys = [(-1, POCKET_T), (hey - 0.32, WAVE_MID), (hey - 0.14, WAVE_T), (hey + 0.56, WAVE_MID),
             (hey + 0.74, POCKET_T)]
-    keys += [(k["k_take0"] - 0.45, "stand")]
-    keys += [(k["go_walk"], "walk")]
+    keys += [(k["k_take0"] - 0.12, CARD_T)]
+    keys += [(k["go_walk"], WALK_T)]
     pose = state_at(t, keys, 0.3)
     if pose[1] in (WAVE_T, WAVE_MID) or pose[0] in (WAVE_T, WAVE_MID):
         pose = state_at(t, keys, 0.18)
         d["pose_t"] = max(0.0, t - (hey - 0.14))
-    elif pose[1] == "walk" and t >= k["go_walk"]:
+    elif pose[1] is WALK_T and t >= k["go_walk"]:
         d["pose_t"] = t - k["go_walk"]
     sa = shrug_amt(t, k)
     if sa > 0.001 and pose[1] == POCKET_T and pose[2] >= 1.0:
