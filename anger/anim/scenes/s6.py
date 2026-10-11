@@ -159,8 +159,14 @@ FS = 0.7                               # 1600 * 0.7 = 1120 tall: ~1.37x Anger st
 FY = 1120.0                            # its floor line (a little deeper than his: drawn behind him)
 F_TURN = 0.15
 LOOM_LEAN, LOOM_LD = 15.0, 0.32        # leaning over him (body lean, lean_down)
-TIP_ABOVE = 170.0                      # the tongue tip hangs this far above his near cheek
+TIP_ABOVE = 165.0                      # the end of the tongue hangs this far above his near cheek
 FX1_TARGET = -640.0                    # where the four stomps leave it: well clear of his feet, by the dark
+
+
+def _tongue_end(q, t):
+    """The very end of the rounded tongue tip (rig >= rev 2: tongue_end; older rigs: tongue_tip)."""
+    fn = getattr(F, "tongue_end", None)
+    return fn(q, t) if fn is not None else F.tongue_tip(q, t)
 
 
 def _loom_q(x, tongue):
@@ -184,7 +190,7 @@ def loom_place():
     for x in range(120, 461, 10):
         for k in range(2, 51):
             tg = k / 50.0
-            tp = F.tongue_tip(_loom_q(x, tg), 0.0)
+            tp = _tongue_end(_loom_q(x, tg), 0.0)
             if tp is None:
                 continue
             d = math.hypot(tp[0] - tx, tp[1] - ty) + 6.0 * tg
@@ -195,7 +201,7 @@ def loom_place():
         for tg in [tg0 + dk / 100.0 for dk in range(-3, 4)]:
             if tg <= 0.01:
                 continue
-            tp = F.tongue_tip(_loom_q(x, tg), 0.0)
+            tp = _tongue_end(_loom_q(x, tg), 0.0)
             if tp is None:
                 continue
             d = math.hypot(tp[0] - tx, tp[1] - ty) + 6.0 * tg
@@ -369,12 +375,12 @@ DROP_SIZE = 1.8
 
 
 def tip_anchor(t):
-    """Stage point the forming drop hangs from: under the end of the tongue."""
+    """Stage point the forming drop hangs from: the end of the tongue."""
     q = friend_pose(t)
-    tp = F.tongue_tip(q, t)
+    tp = _tongue_end(q, t)
     if tp is None:
         return None
-    return (tp[0], tp[1] + 22.0 * FS)
+    return (tp[0], tp[1] - 4.0 * FS)
 
 
 class Drop:
@@ -553,7 +559,7 @@ LID = Track([(T0, 0.0), (SIDE, 0.0), (SIDE + 0.45, 0.42, "io"), (SEES + 0.32, 0.
              (ROLL2 + 0.3, 0.72), (WIPE + 0.24, 0.32), (WIPE + 0.66, 0.32), (WIPE + 0.95, 0.8), (A05, 0.8),
              (A05 + 0.3, 0.86), (LAUGH + 0.6, 0.86), (LAUGH + 1.9, 0.82), (M07, 0.82), (A06 - 0.4, 0.8),
              (A06, 0.68), (A06E + 0.4, 0.68), (SNORT + 0.4, 0.68), (SNORT + 0.55, 0.8), (SMIRK, 0.8),
-             (SMIRK + 0.4, 0.78), (NOTICE, 0.78), (NOTICE + 0.08, 0.9, "out"), (SERIOUS, 0.86),
+             (SMIRK + 0.4, 0.78), (NOTICE, 0.78), (NOTICE + 0.25, 0.9, "io"), (SERIOUS, 0.86),
              (SERIOUS + 0.5, 0.9)])
 ONE_EYE = Track([(T0, 0.0), (SIDE - 0.05, 0.0), (SIDE, 1.0, "step"), (STARTLED + 0.02, 1.0), (STARTLED + 0.1, 0.0)])
 EYE_WIDE = Track([(STARTLED, 0.0), (STARTLED + 0.05, 1.0, "out"), (STARTLED + 0.55, 0.9), (STARTLED + 1.25, 0.0),
@@ -643,8 +649,8 @@ BROW_FURROW = Track([(T0, 0.0), (LAND2 + 0.28, 0.0), (LAND2 + 0.55, 0.55, "out")
 SQUINT = Track([(SHIFT - 0.1, 0.0), (SHIFT + 0.25, 0.45), (A04 + 0.5, 0.35), (SASS + 0.2, 0.3), (SASS + 0.8, 0.12),
                 (M05, 0.08), (AWK, 0.05)])
 RAISED = Track([(LAUGH + 0.55, 0.0), (LAUGH + 2.0, 1.0, "io"), (M06E + 0.25, 1.0), (M06E + 1.0, 0.0, "io")])
-SMIRK_T = Track([(SMIRK + 0.02, 0.0), (SMIRK + 0.45, 0.38, "io"), (NOTICE + 0.05, 0.38), (NOTICE + 0.22, 0.0, "io")])
-SUPPRESS = Track([(NOTICE, 0.0), (NOTICE + 0.08, 1.0, "out"), (NOTICE + 0.45, 0.6), (CLEAR + 0.9, 0.0)])
+SMIRK_T = Track([(SMIRK + 0.02, 0.0), (SMIRK + 0.45, 0.38, "io"), (NOTICE + 0.04, 0.38), (NOTICE + 0.36, 0.0, "io")])
+SUPPRESS = Track([(NOTICE, 0.0), (NOTICE + 0.3, 1.0, "io"), (NOTICE + 0.6, 0.6), (CLEAR + 0.9, 0.0)])
 
 
 def anger_pose(t) -> Pose:
@@ -776,7 +782,7 @@ def _cam_a(t):
 
 def _cam_c(t):
     """Low close: his face low in frame, the tongue hanging into it from above (its mouth stays out of frame)."""
-    return cam_at(_face(round(SEES, 2)), 3.0, 392.0, 905.0)
+    return cam_at(_face(round(SEES, 2)), 3.3, 392.0, 1005.0)
 
 
 def _fit(pts, margin=(130.0, 150.0), zmax=2.0, sy_bias=0.0):

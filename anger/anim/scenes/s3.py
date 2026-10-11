@@ -1081,7 +1081,8 @@ def _cavern_walk(t):
     ph = walk_phase(t)
     d = CREEP_ADV * sc0 * (ph - walk_phase(T0))
     x = x0 + d
-    y = y0 + s2_handoff()[5] * d               # keep S2's heading (toward its hairline cracks)
+    cy = _s2_creep_y()
+    y = cy(x) if cy is not None else y0 + s2_handoff()[5] * d     # S2's creep line (toward its hairline cracks)
     sc = sc0 * env.depth_scale(y) / env.depth_scale(y0)
     p = _pose(x=x, y=y, scale=sc, facing=1.0, turn=0.5, lean=4.0, arm_r=AR["sword_guard"], arm_l=CREEP_ARM_L,
               extra=dict(state="stand", state_b="walk", mix=CREEP_MIX, phase=ph, sword="hand", shield="back"))
@@ -1092,6 +1093,14 @@ def cavern_foot():
     """Where his right foot comes down on the wrong rock (cavern stage coords)."""
     p = _cavern_walk(WRONG)
     return p.x + 45.0 * p.scale, p.y
+
+
+def _s2_creep_y():
+    try:
+        from anim.scenes import s2 as S2
+        return getattr(S2, "creep_y", None)
+    except Exception:     # pragma: no cover
+        return None
 
 
 def _s2_cracks():

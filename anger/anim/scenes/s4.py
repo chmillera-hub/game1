@@ -135,7 +135,7 @@ CREEP_V = 110.0                   # creeping in from the dark at screen-left (st
 X_APP0 = -240.0                   # gait reference x
 X_KO = 220.0                      # where it lies KO (it collapses where it was hit: head by his chin)
 LUNGE_HIT = 0.42                  # lunge phase at the clonk
-GRAB_FRAC = 0.55                  # the glove closes on the tail this far back from the tip (the thick meat)
+GRAB_FRAC = 0.4                   # the glove closes on the tail this far back from the tip (the meat, not the tip)
 
 
 def _pose(**kw):
@@ -374,7 +374,7 @@ def crawler_pose(t):
         p = _pose(x=X_SNARL, y=FRONT_Y, scale=CR_S, facing=1.0,
                   lean=SNARL_LEAN + 1.5 * math.sin(t * 2 * math.pi * 0.9),
                   head_tilt=4.0 * _pulse(t, HISS, 0.1, 0.8, 0.5) + 2.0 * noise1(t * 0.8, 312),
-                  extra=dict(state="snarl", jaw=clamp(jaw), drool=0.55, tongue=0.25))
+                  extra=dict(state="snarl", jaw=clamp(jaw), drool=0.55, tongue=0.05))
         return p, "front"
     if t < BONK:            # the lunge
         u = clamp((t - LUNGE) / (BONK - LUNGE))
@@ -442,7 +442,7 @@ def glove_squeeze(t):
 
 
 def glove_tug(t):
-    return clamp(max(_pulse(t, tg - 0.03, 0.05, 0.2, 0.25) for tg in TUGS) + (0.6 if t > TUGS[2] + 0.35 else 0.0))
+    return clamp(max(_drag_pull(t) / 60.0, max(_pulse(t, tg - 0.03, 0.05, 0.2, 0.25) for tg in TUGS)))
 
 
 _GLOVE_KW = None
@@ -981,7 +981,7 @@ def shot19(c, t):
     a beat - then the hard yank (the camera jolts with it)."""
     gx, gy = grab_point()
     u = ease_in_out(clamp((t - CUT19) / (CUT19B - CUT19)))
-    cam = Camera(gx + 40.0 - 30.0 * u, gy - 45.0 - 15.0 * u, 2.1)
+    cam = Camera(gx - 5.0 - 25.0 * u, gy - 45.0 - 15.0 * u, 2.1)
     cam = fx.camera_shake(cam, t, [(GRIP_CLOSE, 3.0, 0.2), (TUGS[0], 12.0, 0.35)], seed=43, rot=False)
     draw_world(c, t, cam, vig=0.55)
 

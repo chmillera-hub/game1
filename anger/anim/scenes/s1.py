@@ -305,7 +305,10 @@ SETTLE = (BURST, BURST + 0.62)
 REACH = (TRIES[0] - 0.5, TRIES[0] - 0.09)             # hand onto the iron ring (just after the door reveal)
 REL = (TRIES[1] + 0.8, TRIES[1] + 1.1)                # lets go of it (inside the flat-look close-up)
 SHEATH_ANGLE = 205.0                                   # blade direction in the scabbard (deg from up)
-DRAW = (BURST + 2.05, BURST + 2.45, BURST + 2.95)       # reach the hilt, sword out, down to the guard
+# the draw: hand up to the hilt (FK), on it, sword out (swap) up over the shoulder, down to the guard
+DRAW = (BURST + 1.35, BURST + 2.1, BURST + 2.3, BURST + 2.65, BURST + 3.12)
+HILT_ARM = ArmPose(shoulder=140.0, elbow=110.0, wrist=-30.0, hand="hold", across=0.3, behind=0.5)  # palm on the
+DRAW_OUT = ArmPose(shoulder=150.0, elbow=70.0, wrist=-30.0, hand="hold")                         # sheathed grip
 STEP_OUT = T1                                          # first plant of S2 (right foot) on the reveal beat
 STEPON = (STEP_OUT - 0.4 / (0.5 / 0.55), STEP_OUT)
 
@@ -495,12 +498,13 @@ TORCH_DOOR = ArmPose(shoulder=108.0, elbow=64.0, wrist=-52.0, hand="hold")    # 
 
 def _sword_state(t):
     """'hand' until sheathed during walk 2, 'back' until drawn in the doorway."""
-    if t < SHEATHE[1] or t >= DRAW[1]:
+    if t < SHEATHE[1] + 0.04 or t >= DRAW[2]:
         return "hand"
     return "back"
 
 
-SHEATHE = (W2[-3] + 0.1, W2[-3] + 0.53, W2[-3] + 0.95)  # reach the hilt, swap, hand back down (in frame)
+# sheathing while walking (in frame): arm up to the hilt, swap, on the hilt, back down to the swing
+SHEATHE = (W2[-3] - 0.3, W2[-3] + 0.42, W2[-3] + 0.55, W2[-3] + 1.35)
 
 
 def _stop(t, g, xf, stop, side_planted, target):
@@ -669,33 +673,29 @@ def anger_pose(t):
     ex["sword"] = sw
     if sw == "back":
         p.arm_r = AR["rest"]
-    # walk 2: sheathing the sword on the move
-    if SHEATHE[0] <= t < SHEATHE[2]:
-        w = bump(t, SHEATHE[0], SHEATHE[1], SHEATHE[1] + 0.04, SHEATHE[2])
-        p.arm_r = ArmPose.blend(AR["sword_low"], AR["rest"], smoothstep((t - SHEATHE[0]) / (SHEATHE[2] - SHEATHE[0])))
-        if w > 0:
-            ex["reach_r"] = sword_hilt_back(p, t)
-            ex["reach_r_w"] = w
+    # walk 2: sheathing the sword on the move. The arm travels to the hilt in FK only (HILT_ARM puts the palm
+    # within ~3 units of the sheathed grip), so the elbow swings round smoothly - no IK side flip.
+    if SHEATHE[0] <= t < SHEATHE[3]:
+        up = ease_in_out((t - SHEATHE[0]) / (SHEATHE[1] - SHEATHE[0]))
+        down = ease_in_out((t - SHEATHE[2]) / (SHEATHE[3] - SHEATHE[2]))
+        p.arm_r = ArmPose.blend(ArmPose.blend(AR["sword_low"], HILT_ARM, up), AR["rest"], down)
         if sw == "hand":
-            k = smoothstep((t - SHEATHE[0]) / (SHEATHE[1] - SHEATHE[0]))
-            ex["sword_angle"] = lerp(_natural_sword_angle(p, t), SHEATH_ANGLE, k)
-    # the doorway: draws the sword
-    if DRAW[0] - 0.45 <= t:
-        w = bump(t, DRAW[0] - 0.45, DRAW[0], DRAW[1], DRAW[1] + 0.25)
-        if w > 0:
-            q = p.copy(extra=dict(ex, sword="back"))
-            ex["reach_r"] = sword_hilt_back(q, t)
-            ex["reach_r_w"] = w
-        if t >= DRAW[1]:
-            k = smoothstep((t - DRAW[1]) / (DRAW[2] - DRAW[1]))
-            p.arm_r = ArmPose.blend(ArmPose(150.0, 70.0, -30.0, "hold"), AR["sword_guard"], k)
-            if t > DRAW[2] + 0.15:        # lowers it as he steps through (S2 opens with the sword low)
+            ex["sword_angle"] = lerp(_natural_sword_angle(p, t), SHEATH_ANGLE, up)
+    # the doorway: draws the sword (same FK route up to the hilt, out over the shoulder, down to the guard)
+    if DRAW[0] <= t:
+        up = ease_in_out((t - DRAW[0]) / (DRAW[1] - DRAW[0]))
+        if t < DRAW[2]:
+            p.arm_r = ArmPose.blend(AR["rest"], HILT_ARM, up)
+        if t >= DRAW[2]:
+            out = ease_in_out((t - DRAW[2]) / (DRAW[3] - DRAW[2]))
+            guard = ease_in_out((t - DRAW[3]) / (DRAW[4] - DRAW[3]))
+            p.arm_r = ArmPose.blend(ArmPose.blend(HILT_ARM, DRAW_OUT, out), AR["sword_guard"], guard)
+            if t > DRAW[4] + 0.05:       # lowers it as he steps through (S2 opens with the sword low)
                 p.arm_r = ArmPose.blend(AR["sword_guard"], AR["sword_low"],
-                                        smoothstep((t - DRAW[2] - 0.15) / 0.45))
+                                        smoothstep((t - DRAW[4] - 0.05) / 0.4))
+            k = clamp((t - DRAW[2]) / (DRAW[4] - DRAW[2]))
             if k < 1.0:
-                ex["sword_angle"] = lerp(SHEATH_ANGLE, _natural_sword_angle(p, t), smoothstep(k * 1.25))
-        else:
-            p.arm_r = AR["rest"]
+                ex["sword_angle"] = lerp(SHEATH_ANGLE, _natural_sword_angle(p, t), smoothstep(k))
     return _face(p, t)
 
 
@@ -920,7 +920,7 @@ def sfx_events():
     for tk in W2:
         step(tk)
     step(STOP2[1] - 0.04, -15.0)
-    ev.append({"name": "armor_shift", "start": round(SHEATHE[1] - 0.05, 4), "gain_db": -16.0})
+    ev.append({"name": "armor_shift", "start": round(SHEATHE[1], 4), "gain_db": -16.0})
     for tk in W3:
         step(tk)
     step(STOP3[1] - 0.04, -15.0)
@@ -932,6 +932,6 @@ def sfx_events():
         ev.append({"name": RUN_NAMES[i % 2], "start": round(tk, 4), "gain_db": -9.0})
     ev.append({"name": "armor_shift", "start": round(BURST + 0.3, 4), "gain_db": -14.0})
     ev.append({"name": "armor_step", "start": round(SETTLE[1] - 0.1, 4), "gain_db": -13.0})
-    ev.append({"name": "armor_shift", "start": round(DRAW[1] - 0.05, 4), "gain_db": -15.0})
+    ev.append({"name": "armor_shift", "start": round(DRAW[2], 4), "gain_db": -15.0})
     ev.append({"name": "armor_shift", "start": round(3.05, 4), "gain_db": -19.0})                # torch comes up
     return sorted(ev, key=lambda e: e["start"])
