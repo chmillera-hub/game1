@@ -195,10 +195,11 @@ function fearState(t, S) {
     ['s14b06+1.5', AR(-24, -100, 19, -103)],
     ['s14b06+3.1', AR(-39, -43, 37, -43)],                                  // 'wasn't afraid': uncross, drop loose
     ['s14b06+4.9', AR(-39, -44, 37, -44)],
-    ['s14b06+5.9', AR(-68, -80, 60, -74), 'inOut'],                         // 'wonder': arms open out, palms out
-    ['s14b06+6.4', AR(-69, -81, 61, -75)],
-    ['s14b06+7.2', AR(-73, -91, 63, -82)],                                  // 'amazement': they rise a little
-    ['s14b07+0.6', AR(-74, -93, 64, -84)],
+    // (the right one opens less: its side is under the Void's hand, and its palm must stay below the padlock)
+    ['s14b06+5.9', AR(-68, -80, 50, -56), 'inOut'],                         // 'wonder': arms open out, palms out
+    ['s14b06+6.4', AR(-69, -81, 51, -57)],
+    ['s14b06+7.2', AR(-73, -91, 55, -63)],                                  // 'amazement': they rise a little
+    ['s14b07+0.6', AR(-74, -93, 56, -64)],
     ['s14b07+1.05', AR(-39, -43, 37, -43), 'inOut'],                        // (two-shot) down, straight: the elbows
     ['s14b07+1.6', AR(-12, -67, 12, -67), 'inOut'],                         // switch sides; the hands meet low in front
     ['s14b09+0.5', AR(-12, -67, 12, -67)],

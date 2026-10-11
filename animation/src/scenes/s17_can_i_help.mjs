@@ -6,7 +6,7 @@ import { drawHQ, drawHQForeground, HQ_VIEWS, hqScaleAt } from '../sets/hq.mjs';
 import { drawCage } from '../sets/props.mjs';
 import { drawVoid } from '../chars/void.mjs';
 import { drawFear } from '../chars/fear.mjs';
-import { drawSelf, SELF_EXPR, WALK_ADVANCE } from '../chars/self.mjs';
+import { drawSelf, SELF_EXPR, WALK_ADVANCE, selfPoseAnchors, SELF_FACE } from '../chars/self.mjs';
 import { drawEmotion } from '../chars/emotions.mjs';
 import { EXPR, withSpeech } from '../face.mjs';
 
@@ -82,6 +82,68 @@ function drawPen(g, x, y, s, facing, wrist, wob) {
   g.beginPath(); g.moveTo(lerp(tip[0], top[0], 0.12), lerp(tip[1], top[1], 0.12)); g.lineTo(top[0], top[1]); g.stroke();
   g.strokeStyle = '#e8c25a'; g.lineWidth = 4.2 * s;
   g.beginPath(); g.moveTo(lerp(tip[0], top[0], 0.86), lerp(tip[1], top[1], 0.86)); g.lineTo(top[0], top[1]); g.stroke();
+  g.restore();
+}
+
+// The welling in E1. The rig's own \`tears\` band sits on the lower half of SELF's small eyes and is hidden by the
+// smile's raised lower lids, so at phone size it did not read. This overlay (same recipe as s20's drawWetEyes, so the
+// welling here foreshadows the narrator's tear there) draws a glossy water line on each lower lid and a bright
+// catch-light on the wet iris. No drop falls: the tear is s20's.
+function eyeGeom(pose, side) {
+  const f = pose.face, turn = clamp(pose.headTurn ?? 0, -1, 1), at = Math.abs(turn);
+  const squeeze = side * turn > 0 ? 1 - at * 0.38 : 1 + at * 0.06;
+  const rx = SELF_FACE.eyeRx * squeeze, ry = SELF_FACE.eyeRy, cy = SELF_FACE.eyeY;
+  const cx = side * SELF_FACE.eyeSpacing * (1 - at * 0.3) + turn * SELF_FACE.eyeSpacing * 0.55;
+  const rest = SELF_FACE.restLid, lidU = f.lidU || 0, blink = clamp(f.blink || 0);
+  let up = clamp(rest + lidU * (lidU < 0 ? 0.3 : 1) + blink * (1 - (rest + lidU)), -0.25, 1);
+  if (lidU < 0) up = clamp(rest + lidU * 0.3 + blink * (1 - rest), -0.25, 1);
+  const low = clamp(f.lidL || 0) * (1 - clamp(up, 0, 1) * 0.5);
+  const bnd = (dx) => ry * Math.sqrt(clamp(1 - (dx * dx) / (rx * rx)));
+  const lowY = (dx) => cy + lerp(bnd(dx) + ry * 0.05, -ry * 0.05 + (dx * dx) / (rx * rx) * ry * 0.25, low * 0.75);
+  const upY = (dx) => {
+    const k = clamp(up, -0.25, 1), tilt = f.lidTilt || 0, outer = (dx * side) / rx;
+    return cy + lerp(-bnd(dx) - ry * 0.05, ry * 0.3 - (dx * dx) / (rx * rx) * ry * 0.1, Math.max(0, k)) + (k < 0 ? k * ry * 0.35 : 0) +
+      tilt * outer * ry * 0.38 * Math.min(1, Math.max(0, k) + 0.6);
+  };
+  const ix = cx + clamp(f.lookX || 0, -1, 1) * rx * 0.42, iy = cy + clamp(f.lookY || 0, -1, 1) * ry * 0.36 + ry * 0.04;
+  return { cx, cy, rx, ry, up, lowY, upY, ix, iy, irisR: rx * 0.6 };
+}
+function drawWetEyes(g, C, pose, well) {
+  if (well <= 0.01) return;
+  const a = selfPoseAnchors(C.x, C.y, C.s, pose);
+  const hc = a.headCenter, ht = a.headTop;
+  g.save();
+  g.translate(hc[0], hc[1]); g.rotate(Math.atan2(ht[0] - hc[0], -(ht[1] - hc[1]))); g.scale(C.s, C.s);
+  g.lineCap = 'round'; g.lineJoin = 'round';
+  for (const side of [-1, 1]) {
+    const e = eyeGeom(pose, side);
+    const open = clamp(1 - e.up) / 0.85;
+    const line = (from, to, off) => {
+      g.beginPath();
+      for (let i = 0; i <= 10; i++) {
+        const dx = lerp(from, to, i / 10) * e.rx, y = e.lowY(dx) + off;
+        if (i === 0) g.moveTo(e.cx + dx, y); else g.lineTo(e.cx + dx, y);
+      }
+    };
+    // water pooled on the lower lid: a glossy band just above the lash line, a white specular stripe on it
+    g.strokeStyle = `rgba(196,230,255,${0.62 * well * open})`; g.lineWidth = 2.8;
+    line(-0.8, 0.8, -1.1); g.stroke();
+    g.strokeStyle = `rgba(255,255,255,${0.92 * well * open})`; g.lineWidth = 1.3;
+    line(side > 0 ? -0.5 : -0.1, side > 0 ? 0.1 : 0.5, -1.5); g.stroke();
+    // the bright catch-light on the wet iris, only where the upper lid leaves the iris open
+    const hx = e.ix - e.irisR * 0.36, hy = e.iy - e.irisR * 0.38;
+    const vis = clamp((hy - e.upY(hx - e.cx) - 1.5) / 2.5) * open;
+    if (vis > 0.01) {
+      const ka = well * vis;
+      const gl = g.createRadialGradient(hx, hy, 0, hx, hy, e.irisR * 0.62);
+      gl.addColorStop(0, `rgba(255,255,255,${0.5 * ka})`); gl.addColorStop(1, 'rgba(255,255,255,0)');
+      g.fillStyle = gl; g.fillRect(hx - e.irisR, hy - e.irisR, e.irisR * 2, e.irisR * 2);
+      g.fillStyle = `rgba(255,255,255,${ka})`;
+      g.beginPath(); g.arc(hx, hy, e.irisR * 0.27, 0, Math.PI * 2); g.fill();
+      g.fillStyle = `rgba(255,255,255,${0.8 * ka})`;
+      g.beginPath(); g.arc(e.ix + e.irisR * 0.34, e.iy + e.irisR * 0.3, e.irisR * 0.12, 0, Math.PI * 2); g.fill();
+    }
+  }
   g.restore();
 }
 
@@ -443,6 +505,7 @@ function renderFront(g, t, S, shot) {
   const drawCEO = (c) => {
     if (!inView(C.x, C.y - 610 * C.s, C.y, 110 * C.s)) return;
     behindConsole(c, () => { drawSelf(c, C.x, C.y, C.s, cp); if (pen) drawPen(c, C.x, C.y, C.s, 1, pen.wrist, pen.wob); });
+    if (shot === 'E1') drawWetEyes(c, C, cp, clamp((cp.face.tears || 0) / 0.6));
   };
   const drawEm = (c, n) => {
     if (!inView(ems[n].x, ROW_Y - 540 * ROW_S, ROW_Y, 100 * ROW_S)) return;   // half-width ≤ 94 local (+ arms in)
