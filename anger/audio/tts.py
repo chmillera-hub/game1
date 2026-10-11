@@ -21,6 +21,10 @@ from scipy import signal
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from config import FPS, KOKORO_MODEL, KOKORO_VOICES, LIPSYNC, SR, VO_DIR  # noqa: E402
 from script_data import BREATHY, COMPOSED, LINES, VOICES, WHISPER  # noqa: E402
+try:
+    from script_data import MOOD  # noqa: E402
+except ImportError:
+    MOOD = {}
 
 
 def trim_silence(x, sr, thresh_db=-45.0, pad=0.03):
@@ -310,6 +314,74 @@ def compose_laugh(k, voice):
     return out[: int((pos + 0.3) * SR)]
 
 
+GAP = {"|": 0.42, "||": 0.85}      # pause inserted between the parts of a line (tts text "A | B || C")
+
+
+def speak(k, text, v, speed):
+    """One line through Kokoro. "|" splits the text into separately spoken parts joined by a short pause
+    ("||" a long one), so long lines breathe instead of rattling through."""
+    import re
+    toks = re.split(r"\s*(\|\|?)\s*", text)
+    out = []
+    for i, tok in enumerate(toks):
+        if tok in GAP:
+            out.append(np.zeros(int(GAP[tok] * SR)))
+            continue
+        if not tok.strip():
+            continue
+        samples, sr = k.create(tok.strip(), voice=v["voice"], speed=speed, lang=v["lang"])
+        y = signal.resample_poly(np.asarray(samples, dtype=np.float64), SR, sr)
+        y = trim_silence(y, SR)
+        out.append(y / (np.max(np.abs(y)) + 1e-9))
+    return np.concatenate(out)
+
+
+def _breath(dur=0.45, lo=500, hi=3200, shaky=0.0, seed=0, exhale=False):
+    """A breath of filtered noise: in-breath (rises, cuts) or out-breath / sigh (falls off slowly).
+    shaky > 0 adds a trembling ~11 Hz flutter (a pained breath)."""
+    rng = np.random.default_rng(seed)
+    n = int(dur * SR)
+    t = np.arange(n) / SR
+    x = signal.sosfilt(signal.butter(2, [lo, hi], btype="band", fs=SR, output="sos"), rng.standard_normal(n))
+    if exhale:
+        env = np.clip(t / 0.06, 0, 1) * np.exp(-t / (dur * 0.45))
+    else:
+        env = np.clip(t / (dur * 0.7), 0, 1) ** 1.5 * np.clip((dur - t) / 0.05, 0, 1)
+    if shaky:
+        env *= 1 + shaky * np.sin(2 * np.pi * 11 * t + rng.uniform(0, 6))
+    x = x * env
+    return x / (np.max(np.abs(x)) + 1e-9)
+
+
+def mood(x, m, seed=0):
+    """Emotional colouring of a line (script_data.MOOD):
+      pre    "breath" (in-breath), "pain" (shaky, pained in-breath), "gasp" (sharp startle)
+      post   "sigh" (long out-breath)
+      tremble  0..1  shaky voice (hurt): a slow-drifting 6-8 Hz amplitude tremor
+      breathy  0..1  airy aspiration layer
+      semis    pitch shift (also changes tempo; keep it small)"""
+    if m.get("semis"):
+        x = _pitch(x, m["semis"])
+    if m.get("breathy"):
+        x = breathy(x, SR, m["breathy"], seed=seed)
+    if m.get("tremble"):
+        t = np.arange(len(x)) / SR
+        rate = 6.5 + 1.2 * np.sin(2 * np.pi * 0.35 * t)
+        ph = 2 * np.pi * np.cumsum(rate) / SR
+        x = x * (1 + m["tremble"] * np.sin(ph))
+    peak = np.max(np.abs(x)) + 1e-9
+    pre = m.get("pre")
+    if pre:
+        b = {"breath": lambda: _breath(0.42, seed=seed) * 0.10,
+             "pain": lambda: _breath(0.55, 400, 2600, shaky=0.6, seed=seed) * 0.16,
+             "gasp": lambda: _gasp(0.3, seed=seed) / 0.25 * 0.22}[pre]()
+        gap = np.zeros(int((0.08 if pre == "gasp" else 0.16) * SR))
+        x = np.concatenate([b * peak, gap, x])
+    if m.get("post") == "sigh":
+        x = np.concatenate([x, np.zeros(int(0.12 * SR)), _breath(0.9, 250, 1800, seed=seed, exhale=True) * 0.12 * peak])
+    return x
+
+
 def main(only=None):
     from kokoro_onnx import Kokoro
 
@@ -326,19 +398,21 @@ def main(only=None):
         if lid in COMPOSED:
             x = compose_laugh(k, v)
         else:
-            samples, sr = k.create(text, voice=v["voice"], speed=speed or v["speed"], lang=v["lang"])
-            x = np.asarray(samples, dtype=np.float64)
-            x = signal.resample_poly(x, SR, sr)
-            x = trim_silence(x, SR)
+            x = speak(k, text, v, speed or v["speed"])
+        if v.get("semis"):
+            x = _pitch(x, v["semis"])           # narrator: lower and slower (formants too: an old, big voice)
         if char == "quill":
             x = android_fx(x, SR)
         if lid in WHISPER:
             x = whisperize(x, SR, WHISPER[lid])
         if lid in BREATHY:
             x = breathy(x, SR, BREATHY[lid])
+        if lid in MOOD:
+            x = mood(x, MOOD[lid], seed=sum(map(ord, lid)))
         x = x / (np.max(np.abs(x)) + 1e-9) * 0.89
         sf.write(VO_DIR / f"{lid}.wav", x.astype(np.float32), SR, subtype="FLOAT")
-        lips[lid] = _lips_for(lid, x)
+        if v.get("lips", True):
+            lips[lid] = _lips_for(lid, x)
         manifest[lid] = {"char": char, "text": display, "dur": round(len(x) / SR, 3)}
         print(f"{lid:4s} {char:5s} {len(x)/SR:5.2f}s  {display}")
     manifest_path.write_text(json.dumps(manifest, indent=1))

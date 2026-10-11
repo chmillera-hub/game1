@@ -22,13 +22,14 @@ from config import BUILD, MUSIC_DIR, SFX_DIR, SR, TIMELINE, VO_DIR  # noqa: E402
 
 TARGET_LUFS = -15.0
 CEILING_DB = -2.0           # dBTP (true peak): 96 kbps AAC overshoots the source by ~0.7-0.9 dB
-PAN = {"anger": -0.05, "voice": -0.4}   # the hermit is in the dark at screen-left
-VO_GAIN_DB = {"anger": 0.0, "voice": -0.5}
+PAN = {"anger": -0.05, "voice": -0.4, "narrator": 0.0}   # the hermit is in the dark at screen-left
+VO_GAIN_DB = {"anger": 0.0, "voice": -0.5, "narrator": 0.5}
+NARRATOR_WET = 0.22          # the storyteller sits in a bigger, softer space than the characters
 # How much each music cue ducks (dB) while somebody is talking.
-DUCK_DB = {"descent": 6, "cavern": 6, "tension": 6, "fall": 6, "depths": 7, "menace": 6, "hermit": 8,
-           "lull": 8, "friend": 9, "endcard": 6}
+DUCK_DB = {"descent": 8, "cavern": 7, "tension": 6, "fall": 8, "depths": 7, "menace": 7, "hermit": 8,
+           "lull": 8, "friend": 9, "endcard": 7}
 # Extra per-line gain tweaks (dB) for performance.
-LINE_GAIN = {"a02": -4.0, "m06": -1.0}
+LINE_GAIN = {"a02": -3.0, "m06": -1.0}
 # Lines that dip the music by a fixed amount (dB) instead of the cue's full DUCK_DB (r09: the breathed "...oh."
 # inside the symphony should surface without the music audibly pumping).
 LINE_DUCK = {}
@@ -161,11 +162,12 @@ def main(stems_dir=None):
     hp = signal.butter(2, 85, btype="high", fs=SR, output="sos")
     activity = np.zeros(n)
     fixed = np.zeros(n)          # fixed-depth music dips (dB) from LINE_DUCK lines
+    nar = np.zeros((n, 2))
     for ln in tl["lines"]:
         x = load(VO_DIR / f"{ln['id']}.wav").mean(axis=1)
         x = signal.sosfilt(hp, x)
         g = db(VO_GAIN_DB[ln["char"]] + LINE_GAIN.get(ln["id"], 0.0))
-        place(vo, pan_mono(x, PAN[ln["char"]]), ln["start"], g)
+        place(nar if ln["char"] == "narrator" else vo, pan_mono(x, PAN[ln["char"]]), ln["start"], g)
         a, b = int(ln["start"] * SR), int(ln["end"] * SR)
         if ln["id"] in LINE_DUCK:
             fixed[a:b] = np.maximum(fixed[a:b], LINE_DUCK[ln["id"]])
@@ -174,6 +176,10 @@ def main(stems_dir=None):
     ir_l, ir_r = room_ir()
     wet = np.stack([signal.fftconvolve(vo[:, 0], ir_l)[:n], signal.fftconvolve(vo[:, 1], ir_r)[:n]], axis=1)
     vo = vo + wet * 0.13
+    if np.any(nar):
+        il, irr = room_ir(dur=1.3, seed=11)
+        nwet = np.stack([signal.fftconvolve(nar[:, 0], il)[:n], signal.fftconvolve(nar[:, 1], irr)[:n]], axis=1)
+        vo = vo + nar + nwet * NARRATOR_WET
 
     # duck envelope: attack 60 ms, release 350 ms (smoothed activity)
     att = np.exp(-1 / (0.06 * SR))
@@ -213,6 +219,8 @@ def main(stems_dir=None):
             length = s["end"] - s["start"]
             x = loop_tile(x, int(length * SR))
             x = fades(x, 1.0, 1.5)
+        elif s.get("end") is not None:      # a one-shot cut short at an end beat (e.g. the scrape at the clang)
+            x = fades(x[: max(1, int((s["end"] - s["start"] + s.get("skip", 0.0)) * SR))], 0.0, 0.03)
         place(sfx, x, s["start"], db(s["gain_db"]), s.get("skip", 0.0))
 
     raw = vo + music + sfx

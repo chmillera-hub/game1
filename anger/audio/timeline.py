@@ -39,15 +39,17 @@ def build():
             beats[ev[1]] = round(now + off, 3)
         elif kind == "wait":
             now += ev[1]
-        elif kind in ("line", "line_at"):
+        elif kind in ("line", "line_at", "line_end_at"):
             lid = ev[1]
             dur = manifest[lid]["dur"]
             char, display = LINES[lid][0], LINES[lid][1]
             if kind == "line":
                 start = now - (ev[2] if len(ev) > 2 else 0.0)
                 now = max(now, start + dur)
-            else:
+            elif kind == "line_at":             # overlay: starts at now + offset, time does not advance
                 start = now + ev[2]
+            else:                               # overlay that ENDS at now + offset (narration lands on the action)
+                start = now + ev[2] - dur
             lines.append({"id": lid, "char": char, "text": display,
                           "start": round(start, 3), "end": round(start + dur, 3)})
         elif kind == "music":

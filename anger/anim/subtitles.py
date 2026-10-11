@@ -115,7 +115,7 @@ def cues():
     lines = sorted(timeline()["lines"], key=lambda l: l["start"])
     out = []
     for i, ln in enumerate(lines):
-        italic = ln["id"] in WHISPER
+        italic = ln["id"] in WHISPER or ln["char"] == "narrator"   # the narrator is set in warm italics
         st = max(0.0, ln["start"] - LEAD_IN)
         en = max(ln["end"] + HOLD, st + MIN_DUR)
         if i + 1 < len(lines):
@@ -159,7 +159,8 @@ def _draw_block(canvas, text, italic, alpha):
                         StrokeJoin=skia.Paint.kRound_Join)
     shadow = skia.Paint(AntiAlias=True, Color=skia.Color(0, 0, 0, int(120 * alpha)),
                         MaskFilter=skia.MaskFilter.MakeBlur(skia.kNormal_BlurStyle, 5.0))
-    fill = skia.Paint(AntiAlias=True, Color=skia.Color(255, 255, 255, int(255 * alpha)))
+    fill = skia.Paint(AntiAlias=True, Color=(skia.Color(246, 226, 186, int(255 * alpha)) if italic
+                                             else skia.Color(255, 255, 255, int(255 * alpha))))
     for i, s in enumerate(lines):
         y = BOTTOM_BASELINE - (n - 1 - i) * LINE_GAP
         x = CENTER_X - font.measureText(s) / 2

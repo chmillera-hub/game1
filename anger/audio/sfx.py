@@ -1055,6 +1055,24 @@ def sword_stab():
     return cave(buf, rt=2.4, wet=0.28)
 
 
+def sword_clang():
+    """The dragging blade slams into a vein of solid rock at +0.00: a huge, high CLANG with a long ring, a
+    burst of sparks, then the gauntlets rip off the hilt (metal slip +0.14..+0.42)."""
+    d = 2.6
+    t = t_axis(d)
+    x = metal_hit(980, d, tau=1.1, hard=1.0, ratios=BAR, beat=0.7) * 0.85
+    x += metal_hit(1630, d, tau=0.6, hard=1.0) * 0.4
+    x += np.pad(stone_hit(1.0), (0, N(d)))[: N(d)] * 0.8
+    x += thump(d, 160, 70, tau=0.07, ptau=0.015) * 0.7
+    x += u(crackle(d, 6000 * np.exp(-t / 0.04), 500, 8000, grain=0.0008)) * 0.6
+    x += u(bp(noise(d), 1500, 6000) * rough(N(d), 40, 0.9, 2)) * curve(
+        N(d), [(0, 0), (0.13, 0), (0.16, 1), (0.36, 0.6), (0.42, 0), (d, 0)]) * 0.35
+    buf = pan2(x, 0.0)
+    for ch in range(2):
+        buf[:, ch] += u(crackle(d, 2500 * np.exp(-t / 0.2), 5000, 14000, grain=0.00015, alpha=1.3)) * 0.35
+    return cave(buf, rt=2.6, wet=0.3)
+
+
 def sword_scrape():
     """4.70 s: the blade gouging down the shaft wall - a screaming metal squeal (blade modes driven by
     stick-slip friction, pitch sinking as the fall slows), grinding rock, crackling sparks and soil;
@@ -1634,7 +1652,7 @@ EFFECTS = {f.__name__: f for f in [
     cave_air_loop, torch_loop, deep_air_loop, snore_loop,
     sword_chop, vines_fall, web_tear, door_locked, door_explode, debris_rain,
     scurry, stone_shift, torch_whoosh, torch_splash, drip,
-    rock_crack, floor_collapse, armor_clank, dust_slip, sword_stab, sword_scrape, heavy_impact, armor_clatter,
+    rock_crack, floor_collapse, armor_clank, dust_slip, sword_stab, sword_scrape, sword_clang, heavy_impact, armor_clatter,
     anger_groan, pebbles_shift, monster_growl, monster_hiss, drool_drip, rock_whoosh, rock_bonk, body_thud,
     tail_grab, drag, crunching,
     armor_scrape,
