@@ -89,6 +89,25 @@ def sane(a, what=""):
         raise RuntimeError(f"corrupted audio after {what}: saturated={sat:.3f} crest={rms/(np.abs(a).max()+1e-9):.2f}")
     return a
 
+def trim_to_frication(a, sr=SR):
+    """Kokoro sometimes voices a short schwa before a sentence-initial /f/ ("Fear" -> "a fear").
+    Cut to where the /f/ hiss starts (high band dominates the low band)."""
+    lo = sosfilt(butter(4, [150, 1000], "band", fs=sr, output="sos"), a)
+    hi = sosfilt(butter(4, 3000, "high", fs=sr, output="sos"), a)
+    w = int(sr * 0.005)
+    n = int(0.3 * sr / w)
+    L = np.array([np.sqrt(np.mean(lo[i * w:(i + 1) * w] ** 2)) for i in range(n)])
+    Hh = np.array([np.sqrt(np.mean(hi[i * w:(i + 1) * w] ** 2)) for i in range(n)])
+    thr = 0.35 * Hh.max()
+    for i in range(4, n - 2):
+        if Hh[i] > thr and Hh[i] > 1.6 * L[i] and Hh[i + 1] > 1.6 * L[i + 1]:
+            cut = max(0, (i - 1) * w)
+            b = a[cut:].copy()
+            f = int(0.004 * sr)
+            b[:f] *= np.linspace(0, 1, f)
+            return b
+    return a
+
 def fade(a, sr, fi=0.01, fo=0.04):
     a = a.copy()
     ni, no = int(fi * sr), int(fo * sr)
@@ -137,8 +156,14 @@ def synth_line(tts, beat):
     # character processing
     chain = []
     tempo = cfg.get("tempo", 1.0) * (0.94 if has(d, "slow", "halting", "measured") else 1.0)
-    if cfg["pitch"] != 1.0 or tempo != 1.0:
-        chain.append(f"rubberband=tempo={tempo:.3f}:pitch={cfg['pitch']}:formant={'shifted' if cfg['pitch'] != 1.0 else 'preserved'}:pitchq=quality")
+    # WSOLA time-stretch (atempo) + resample pitch shift. (rubberband's phase vocoder smeared word onsets
+    # into an audible "uh" pre-echo, e.g. "Fear" heard as "a fear".) asetrate shifts formants with pitch,
+    # which is what we want for Fear's smaller voice.
+    pitch = cfg["pitch"]
+    if pitch != 1.0:
+        chain.append(f"asetrate={int(SR * pitch)},aresample={SR},atempo={tempo / pitch:.4f}")
+    elif tempo != 1.0:
+        chain.append(f"atempo={tempo:.4f}")
     shaky = has(d, "trembl", "shak", "cry", "sob", "crack", "tearful", "tears", "quiver", "wobbl")
     if shaky:
         depth = 0.18 if has(d, "cry", "sob") else 0.12
@@ -151,15 +176,19 @@ def synth_line(tts, beat):
     # one ffmpeg pass per effect: chaining rubberband with vibrato in a single graph corrupts the output
     for af in chain:
         a = sane(ffmpeg_filter(a, SR, af), af)
+    if re.match(r"^\W*fear\b", beat["text"], re.I):
+        a = trim_to_frication(a)
     a = a * (10 ** (cfg["gain_db"] / 20))
     peak = np.max(np.abs(a)) + 1e-9
     a = a / peak * 0.85
     return fade(a.astype(np.float32), SR)
 
-def align(asr, a):
-    a16 = resample_poly(a, 160, 441).astype(np.float32)
+def align(asr, a, pad=0.3):
+    # leading silence: whisper mis-hears a word that starts at sample 0 ("Fear" -> "Vere")
+    a16 = resample_poly(np.concatenate([np.zeros(int(pad * SR), np.float32), a]), 160, 441).astype(np.float32)
     segs, _ = asr.transcribe(a16, word_timestamps=True, language="en", beam_size=5)
-    return [{"w": w.word.strip(), "start": round(w.start, 3), "end": round(w.end, 3), "p": round(w.probability, 3)} for s in segs for w in s.words]
+    return [{"w": w.word.strip(), "start": round(max(0.0, w.start - pad), 3), "end": round(max(0.0, w.end - pad), 3),
+             "p": round(w.probability, 3)} for s in segs for w in s.words]
 
 def norm_words(t):
     return re.findall(r"[a-z']+", t.lower().replace("’", "'"))

@@ -1,0 +1,137 @@
+[
+ {
+  "scene": "s02",
+  "time": 18.9,
+  "severity": "low",
+  "category": "continuity / prop",
+  "problem": "The screen of consciousness (s02, and again in s11 and s15) shows the notebook open to a 'my feelings' page with five emoji faces. In s01 and s20, SELF is reading a different spread: 'Inside my head there is a control room\u2026' with the Fear and hooded-Void drawing ('Why does it just stand there??'). The memory doesn't visibly continue from the page SELF is reading.",
+  "fix": "Put the same Fear/Void spread on the screen's notebook (mirrored correctly for SELF's POV), or briefly turn to the 'my feelings' page in s01 before the push into the eye.",
+  "lens": 1
+ },
+ {
+  "scene": "s14",
+  "time": 231.5,
+  "severity": "medium",
+  "category": "compression-detail-loss",
+  "problem": "The cosmos reveal is the film's emotional peak, but the encoder gives it only about 258 kbps (s02 gets 462). In the compressed film the faint star field thins badly: at 231.5 s local-peak star count drops from 2774 (master) to 1643 (final), about 40% of the stars gone. At 240 s (wide two-shot) the drop is roughly 21.9k to 7.9k peaks. Galaxy arms smear and the 'twinkling' reads as sparse dots on a phone. At 224.92 s a 10 s GOP keyframe makes the galaxy and stars visibly snap sharper and then soften again.",
+  "fix": "In tools/encode.sh add x264 zones that move bits to the reveal, e.g. -x264-params ...:zones=5158,6163,b=1.6/6400,6800,b=1.4 (s14 and the s16 hood shot), and take them from s02/s05/s07 (e.g. 408,860,b=0.85). Set -g 480 (or keyint=720 with scenecut kept) so the static cosmos shot has no mid-shot I-frame. Optionally give the smallest star stamps a minimum 2 px core so they survive 4:2:0 and quantization.",
+  "lens": 2
+ },
+ {
+  "scene": "s14",
+  "time": 228.125,
+  "severity": "medium",
+  "category": "glitch-pop",
+  "problem": "In the full-screen cosmos, all nebulae jump in size and brightness in a single frame during an otherwise glacial drift. At 225.50 s mean luma steps -1.4, and at 228.125 s +1.75 (about 5% on a dark frame; frame difference 3.1 against a 0.2 neighbourhood). It lands on 'galaxies, and nebulae\u2026', so the nebulae visibly 'breathe' or pop instead of drifting.",
+  "fix": "In src/fx/cosmos.mjs, fieldCanvas is rebuilt whenever qsize(w) or qsize(h) crosses a 2^(1/4) bucket, and w and h snap independently, which changes the aspect and the nebula sizing (S = min(rx, ry)). For s14, build the deep field once at the largest size used (or key the cache by one scale bucket with a fixed aspect) and only scale it with drawImage. Alternatively, crossfade between the old and new bucket canvases over 12 frames.",
+  "lens": 2
+ },
+ {
+  "scene": "s20",
+  "time": 330.9,
+  "severity": "medium",
+  "category": "compression-detail-loss",
+  "problem": "The last emotional beat ('I may have shed a tear or two myself') depends on the tear, but in the compressed film the tear streaks almost vanish. At 330.9 s the right-cheek streak is nearly invisible and the left one is faint; only the drop survives. The same happens to Fear's tear streaks at 170.0 s (s12) and 240 s (s14, 'tears in its eyes'). They are thin, low-contrast translucent lines that 4:2:0 chroma and quantization wipe out.",
+  "fix": "In face.mjs, render tear streaks about 1.5x wider with higher alpha and a 1 px bright specular edge (near-white, luma-contrasted rather than only blue-tinted) so they survive luma quantization. Also add an x264 zone boost for s20 (frames 7747\u20138137, b=1.3).",
+  "lens": 2
+ },
+ {
+  "scene": "global",
+  "time": 0,
+  "severity": "medium",
+  "category": "color-encoding",
+  "problem": "Both master and final are untagged YUV (color_space, primaries and transfer all 'unknown'). The RGBA-to-YUV conversion used ffmpeg's default BT.601 matrix. Most browsers and iOS/Android players assume BT.709 for untagged 720x1280 video, so viewers see shifted colors that the QA sheets (decoded as 601) never show. Simulated: the alarm red at 92.4 s goes from 154,34,54 to 164,46,53, skin tones on the first frame get warmer (226,180,143 to 231,181,141), and the teal sweater darkens. Up to 16 levels per channel across the whole film, including the preview still.",
+  "fix": "In tools/encode.sh add -vf \"scale=in_color_matrix=bt601:out_color_matrix=bt709:in_range=tv:out_range=tv,format=yuv420p\" -colorspace bt709 -color_primaries bt709 -color_trc bt709 -color_range tv. The minimum alternative is to tag the existing matrix honestly with -colorspace smpte170m -color_primaries bt709 -color_trc bt709. Verify with ffprobe that the tags are written.",
+  "lens": 2
+ },
+ {
+  "scene": "global",
+  "time": 0,
+  "severity": "low",
+  "category": "file-size",
+  "problem": "out/final.mp4 is 15,152,438 bytes, which is over the brief's '< 15 MB' when MB means 10^6 bytes. encode.sh defaults to 14.5 MB, so the last encode was apparently run with a higher target.",
+  "fix": "Re-run tools/encode.sh 14.3 64 (or lower), ideally after adding the zones and color tags above, and confirm with ls -l that the file is under 15,000,000 bytes.",
+  "lens": 2
+ },
+ {
+  "scene": "s01",
+  "time": 16.8,
+  "severity": "low",
+  "category": "banding",
+  "problem": "Large smooth gradients are already 8-bit stepped in the master (visible concentric rings), and the encoder turns them into blocky contours: the warm whiteout glow from s01 to s02 (about 15.8\u201317.4 s), the Void's 'pure darkness' hood interior in s03 (about 49 s) and at the start of s14. The hood's inner rim and robe fold strokes also smear away. This is mild at normal brightness but visible as blotches and rings on bright OLED phones.",
+  "fix": "Add \u00b11 LSB blue-noise or ordered dither to the big radial gradients (vignette, glow, hood interior) at render time in engine.mjs, so the master has no flat 8-bit steps. In the encode, use aq-strength=1.0 and keep deblock at -1. Optionally darken the hood interior to a flat 0\u20132 so it is truly black rather than a 3\u20138 gradient.",
+  "lens": 2
+ },
+ {
+  "scene": "global",
+  "time": 224.92,
+  "severity": "low",
+  "category": "compression-keyframe-pulse",
+  "problem": "With -g 240, x264 inserts I-frames every 10 s inside long static shots (138.88, 190.46, 213.33, 224.92, 304.33, 332.71 s). PSNR jumps 2\u20133.5 dB on that frame and decays over the next frames, giving a periodic detail 'snap'. It is most visible on the cosmos at 224.92 s (galaxy and stars) and on SELF's face at 332.71 s.",
+  "fix": "Use -g 600 (keyint=600:keyint_min=24, scenecut stays on) and add ipratio=1.2:pbratio=1.2 (or qcomp=0.7) so I-frames are not much sharper than the P/B frames that follow.",
+  "lens": 2
+ },
+ {
+  "scene": "s02",
+  "time": 31.84,
+  "severity": "medium",
+  "category": "dialogue clarity / TTS artifact",
+  "problem": "Every time Consciousness says the name \"Fear\", the TTS clip starts with a short voiced \"uh\" (0.04 to 0.13 s into the clip, strong 150 Hz to 1 kHz energy) before the F sound. Whisper run on the FINAL mix hears s02b04 (31.80) as \"Avira, what are you looking at?\", and hears s07b02 (107.27) and s17b03 (290.08) as \"a fear\". s02b04 is the CEO's first spoken line in the film, so the name doesn't come through. s01b03 (10.82) has a similar 90 ms breathy burst at 0.03 to 0.12 s, and its opening \"And\" is heard as \"Can the more I read...\". When I trimmed the onsets in a scratch copy, the ASR read \"Fear\" and \"And\" correctly in all four clips.",
+  "fix": "Trim the clip starts with a 10 ms fade-in: audio/wav/s02b04.wav at 0.14 s, s07b02.wav at 0.12 s, s17b03.wav at 0.13 s, s01b03.wav at 0.12 s. Either add the same amounts to those beats' start times in the timeline, or keep the starts and re-run lipsync.py so the mouth opens on the F. Better still, add an onset-trim pass to tts.py for lines that start with a voiced vowel before a fricative.",
+  "lens": 3
+ },
+ {
+  "scene": "s13",
+  "time": 203.73,
+  "severity": "medium",
+  "category": "music sync",
+  "problem": "The reveal_wonder cue's sting (timpani, low piano D1/D2, strings, celesta) lands at s13b04+0.4 = 203.73, on the word \"then\" as the sleeve first starts to open. The Void's fingertips actually reach Fear's shoulder 2.3 s later: the flinch is at s13b04+2.72 = 206.04, on \"on its shoulder\" (\"on\" at 206.02). At the touch, which is the film's turning point, the music doesn't change: the notes show nothing new between 203.75 and the harp at 215.83. The screenplay asks for \"a single warm chord on the hand\".",
+  "fix": "In data/music_plan.json, in the s13b04 to s14.end reveal_wonder cue, move hit {\"at\":\"s13b04+0.4\",\"type\":\"sting\"} to \"s13b04+2.72\". Optionally change the cue's \"from\" to \"s13b04+1.2\" (the hand is fully out of the sleeve) so \"But then, my fear felt\" stays in the hush. Re-render with audio/music.py data/music_plan.json out/music.wav, then remix.",
+  "lens": 3
+ },
+ {
+  "scene": "s13",
+  "time": 194.17,
+  "severity": "medium",
+  "category": "mix / phone playback",
+  "problem": "The heartbeat file has 77% of its energy below 80 Hz and 0.3% above 300 Hz. rumble_low has 85% below 80 Hz, and footsteps has 92% between 80 and 150 Hz. With a simulated phone-speaker high-pass, the heartbeat and rumble drop 15 dB (200 Hz) to 21 dB (300 Hz), and footsteps drop 13 to 15 dB, while the narration drops only 1.6 to 2.7 dB. On the target device, the heartbeat that is meant to be \"slow and loud in the silence\" (194.17 to 209.9) almost disappears, and the music is deliberately silent from 194.29 to 203.32. The same applies to Fear's racing heart in s04 (50.64 to 60.7), the Void rumbles (35.9, 40.96, 45.56, 135.7, 189.29) and all the carefully synced footsteps.",
+  "fix": "In audio/sfx.py, add audible upper content and regenerate audio/sfx/*.wav. Heartbeat: a 150 to 400 Hz body thump plus a faint 1 to 2 kHz valve tick, or parallel soft-clip saturation mixed in at about -8 dB to create 2nd and 3rd harmonics. rumble_low: a 200 to 600 Hz bowed or airy noise band. footsteps: a 1 to 3 kHz heel/scuff transient at about -10 dB per step. Then re-run audio/mix.py and check through a 250 Hz high-pass.",
+  "lens": 3
+ },
+ {
+  "scene": "s11",
+  "time": 152.89,
+  "severity": "low",
+  "category": "music mood",
+  "problem": "Music cue 9 (void_presence, 132.60 to 157.79) is one unchanging D\u2013A drone for 25 s: darkpad and low strings D2/A2 with glass A4/E5. It runs unchanged through the dream image and the Void unlocking the cage, the first act of kindness. The shackle pop at 152.89 is in sync with lock_click, but the music doesn't mark it. The screenplay asks for \"hushed, mysterious, warming by a hair\".",
+  "fix": "Split the plan cue: void_presence from s10 to s11b01+3.2 (146.64, the dream shimmer), then {\"from\":\"s11b01+3.2\",\"to\":\"s11.end\",\"mood\":\"stillness\",\"intensity\":0.2,\"tone\":\"high\",\"hits\":[{\"at\":\"s11b02+3.8\",\"type\":\"resolve\"}]}. That puts a single warm low piano chord on the unlock. Don't use a sting in void_presence: the dark sting is a b9 cluster, the wrong colour here.",
+  "lens": 3
+ },
+ {
+  "scene": "s14",
+  "time": 244.66,
+  "severity": "low",
+  "category": "music shape",
+  "problem": "After the drop at s14b07 (244.66), the reveal cue has no further hits, so the music sits at about -45 to -50 dB for 12 s. That covers the question, the Void lifting its hand away, the hood turning back (s14b09) and \"And the Void stared into the screen of my consciousness\" (252.21 to 256.34). The music then jumps in on the s15 cut at 256.84. The Void's turn toward the screen, which leads into the emotions looking back, has no musical bridge.",
+  "fix": "Add {\"at\":\"s14b09+1.4\",\"type\":\"resolve\"} (250.21, as the hood turns back to the distance) to the reveal_wonder cue. This brings the level back up after the drop and hands over warmly to s15's belonging cue.",
+  "lens": 3
+ },
+ {
+  "scene": "s12",
+  "time": 163.4,
+  "severity": "low",
+  "category": "dialogue clarity",
+  "problem": "\"This is a trick.\" (s12b03): whisper hears \"trek\" (p 0.41) on the clip and \"track\" (p 0.73) in the final mix. The vowel may be coming out as 'e', which would change the meaning of a key line of Fear's.",
+  "fix": "Listen to s12b03.wav. If the vowel isn't a clear short 'i', regenerate it with tools/tts (another seed or speed, or a phoneme override for \"trick\"), then re-run lipsync.",
+  "lens": 3
+ },
+ {
+  "scene": "global",
+  "time": 0,
+  "severity": "low",
+  "category": "mastering",
+  "problem": "mix.wav is at -1.5 dBTP, but the 64 kbps AAC encode in final.mp4 measures +0.1 dBTP (sample peak -0.24 dBFS). Samples go above -1 dBFS at 40.2, 44.7, 58.0, 98.4, 107.3, 123.7, 159.0 and 304.0, which risks inter-sample clipping on phone decoders. In addition, final.mp4 is 15,152,438 bytes, which is 15.15 MB in decimal units and so over the \"< 15 MB\" target if that is read in decimal MB; the audio track uses about 2.7 MB of it.",
+  "fix": "In audio/mix.py, change loudnorm TP=-1.5 to TP=-2.5, or add an alimiter at -2 dBTP before the AAC encode in tools/encode.sh. Run encode.sh with a target of 14.2, or AAC at 48 kbps, to land clearly under 15 MB.",
+  "lens": 3
+ }
+]

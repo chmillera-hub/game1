@@ -390,8 +390,8 @@ function drawStage(g, t, S, camera, opts = {}) {
     g.save();
     applyCamera(g, camera);
     starlight(g, fx + 25 * fs, fy - 250 * fs, 190 * fs, opts.starK ?? cosmos);
-    if (vp.handL.show > 0.001) drawVoidHand(g, ...VOID_B, vp, 'L');
-    drawHQForeground(g, 'backOfMind', st);
+    if (vp.handL.show > 0.001 && !process.env.NOHAND) { drawVoidHand(g, ...VOID_B, vp, "L"); if (process.env.HAND2) drawVoidHand(g, ...VOID_B, vp, "L"); }
+    if (!process.env.NOFG) drawHQForeground(g, 'backOfMind', st);
     g.restore();
   } else {
     g.save(); applyCamera(g, camera); drawHQForeground(g, 'backOfMind', st); g.restore();

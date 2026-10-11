@@ -96,7 +96,14 @@
    "mood": "void_presence",
    "intensity": 0.2,
    "fade_in": 2.0,
-   "fade_out": 1.5
+   "fade_out": 1.5,
+   "hits": [
+    {
+     "at": "s11b02+1.5",
+     "type": "swell",
+     "len": 4
+    }
+   ]
   },
   {
    "from": "s12",
@@ -144,7 +151,7 @@
    "open_at": "s14b01+1.2",
    "hits": [
     {
-     "at": "s13b04+0.4",
+     "at": "s13b04+2.7",
      "type": "sting"
     },
     {
@@ -155,6 +162,11 @@
     {
      "at": "s14b07",
      "type": "drop"
+    },
+    {
+     "at": "s14b09+0.4",
+     "type": "swell",
+     "len": 4
     }
    ]
   },

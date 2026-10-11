@@ -1,6 +1,6 @@
 // s08 · the_cage · backOfMind (wide → padlock insert → close) → front (two planes)
 // "So I put my fear into a cage." / FEAR: "Please don't leave me with it." / silent walk-away.
-import { clamp, lerp, ease, fbm, blinkAt, applyCamera, drift, vignette, TAU } from '../engine.mjs';
+import { clamp, lerp, ease, fbm, noise1, blinkAt, applyCamera, drift, vignette, TAU } from '../engine.mjs';
 import { EXPR, withSpeech } from '../face.mjs';
 import { drawFear } from '../chars/fear.mjs';
 import { drawSelf, SELF_EXPR, selfLocal, WALK_ADVANCE } from '../chars/self.mjs';
@@ -376,10 +376,13 @@ function shotClose(g, t, S, T) {
 // ---------------------------------------------------------------- shot 4: front view, two planes
 function shotFront(g, t, S, T) {
   g.save();
-  // two planes: start on the CEO at the cage (staging {330,740,1.6} reframed tighter and lower so the CEO
-  // comes INTO the foreground at the stop, face lower-left third, Fear's face behind at upper right)
-  cam(g, S.k(t, [['s08b03', { x: 266, y: 796, zoom: 1.9 }], ['s08b03+1.2', { x: 268, y: 800, zoom: 1.9 }, 'sine'],
-    ['s08b03+2.6', { x: 268, y: 806, zoom: 1.98 }, 'sine'], ['scene.end', { x: 268, y: 814, zoom: 1.96 }, 'sine']]), t, 2.5);
+  // two planes: start on the CEO at the cage (staging {330,740,1.6} reframed tighter), then the CEO walks INTO a
+  // medium close for the stop (face ≈ 26 % of the frame width, lower-left; Fear's face behind at upper right, never
+  // overlapping). The push rides the two steps, so the CEO's own walk does most of the work; a slow creep through the
+  // stop; the CEO walks on toward camera (the cut to s09 lands mid-stride at (190,1170)).
+  cam(g, S.k(t, [['s08b03', { x: 266, y: 796, zoom: 1.9 }], ['s08b03+0.35', { x: 266, y: 797, zoom: 1.9 }],
+    ['s08b03+1.55', { x: 252, y: 828, zoom: 2.62 }, 'inOut'], ['s08b03+2.6', { x: 253, y: 830, zoom: 2.7 }, 'sine'],
+    ['scene.end', { x: 250, y: 838, zoom: 2.7 }, 'sine']]), t, 2.2);
   // the EXIT door starts to open behind the CEO as the shot ends: the emotions are coming back (s09 opens on it at 0.6)
   const st = { t, ...SET_F, doorOpen: S.k(t, [['scene.end-1.1', 0], ['scene.end', 0.6, 'inOut']]) };
   drawHQ(g, 'front', st);
@@ -409,10 +412,11 @@ function shotFront(g, t, S, T) {
 
   // ---- the CEO: hand off the bars, turns, two steps, stops (holding it in), walks on toward camera
   const b = S.T('s08b03');
-  // (215,912) at the bars → two steps toward camera → stop (198,1090) → walks on, leaving at (190,1170) = s09's start
+  // (215,912) at the bars → two steps toward camera → stop (196,1118), close to the lens → walks on, at (190,1170) on
+  // the cut = s09's start
   const pos = S.k(t, [
     ['s08b03', { x: 215, y: 912 }], ['s08b03+0.58', { x: 215, y: 912 }],
-    ['s08b03+1.35', { x: 198, y: 1090 }, 'sine'], ['s08b03+2.6', { x: 198, y: 1090 }],
+    ['s08b03+1.35', { x: 196, y: 1118 }, 'sine'], ['s08b03+2.6', { x: 196, y: 1118 }],
     ['scene.end', { x: 190, y: 1170 }, 'in'],
   ]);
   const cs = hqScaleAt('front', pos.y);
@@ -434,9 +438,17 @@ function shotFront(g, t, S, T) {
   let flinch = 0;
   for (const r of rattles) { const d = t - r; if (d > 0.04 && d < 0.4) flinch = Math.max(flinch, Math.sin(((d - 0.04) / 0.36) * Math.PI)); }
   const clench = (t > b + 1.4 && t < b + 1.75) || (t > b + 2.05 && t < b + 2.45) || t > b + 2.75;
+  // In the medium close the lips must visibly tremble: the rig's own lip tremble is ~1 px at this size, so the mouth
+  // corners also quiver (smile/wide noise) once the face is toward us. The eyes are wet (full glossy rims) and a tear
+  // brims on the right lower lid during the stop without falling (it falls in s09, on 'sadness'). Each rattle makes
+  // the eye corners flinch: lower lids jump up, upper lids drop, brows pinch.
+  const qK = sstep(b + 0.9, b + 1.45, t);
+  const quiver = noise1((t - b) * 9, 31) * 0.6 + noise1((t - b) * 17, 37) * 0.4;
   const face = {
-    ...SELF_EXPR.holdingBackTears, tears: 0.85, lookY: 0.15 + 0.15 * swallow, lookX: back ? -0.3 : lerp(-0.35, -0.08, bodyK),
-    lidL: 0.32 + 0.35 * flinch, lidU: 0.24 + 0.2 * flinch, pressed: 0.95, tremble: 0.55,
+    ...SELF_EXPR.holdingBackTears, tears: lerp(0.85, 1, qK), lookY: 0.15 + 0.15 * swallow, lookX: back ? -0.3 : lerp(-0.35, -0.08, bodyK),
+    lidL: 0.3 + 0.5 * flinch, lidU: 0.24 + 0.26 * flinch, browSquish: 0.3 + 0.4 * flinch, browIn: 1 + 0.12 * flinch,
+    pressed: 0.95, tremble: lerp(0.55, 1, qK), smile: -0.42 + 0.13 * qK * quiver - 0.08 * flinch, wide: -0.06 + 0.1 * qK * quiver,
+    tearR: S.k(t, [['s08b03+1.2', 0], ['s08b03+2.2', 0.03, 'sine']]),
     blink: Math.max(blinkAt(t, b + 1.36, 0.32), blinkAt(t, b + 0.5, 0.16)),
   };
   let armL, armR;
@@ -455,7 +467,7 @@ function shotFront(g, t, S, T) {
     headTurn: back ? -0.5 * headK - 0.3 * overK : lerp(-0.62, 0, bodyK) + 0.03 * flinch,
     bodyTurn: back ? 0 : lerp(-0.55, 0, bodyK),
     walk: moving ? { phase } : null,
-    shrug: 0.55 * breathIn + 0.12 * flinch, headDY: 3 * swallow - 2 * breathIn,
+    shrug: 0.55 * breathIn + 0.12 * flinch, headDY: 3 * swallow - 2 * breathIn + 1.5 * flinch,
     lean: -0.02 * breathIn,
     face, armL, armR,
   });

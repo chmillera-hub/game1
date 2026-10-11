@@ -16,8 +16,8 @@ import { drawRealRoom, drawRealRoomForeground, drawLitByRoom, REALROOM } from '.
 export const id = 's20';
 
 export const sfx = [
-  // the sweater sleeve wipes the cheek (swishes at 0.0 / 0.28)
-  { at: 's20b03+2.45', name: 'cloth_rustle', gain: -18 },
+  // the sweater sleeve wipes the cheek (swishes at 0.0 / 0.28: the arm rising / the stroke over the drop)
+  { at: 's20b03+2.8', name: 'cloth_rustle', gain: -18 },
   // the notebook closes: the cover is lifted (+0.8), stands up (+1.45) and is laid down (+2.0); swish peak at 0.5
   { at: 's20b04+0.85', name: 'paper_rustle', gain: -16 },
   // reaching over to the lamp (+1.5 → +2.25)
@@ -34,7 +34,9 @@ const NBK = REALROOM.anchors.notebook;                   // 430, 984, 0.6
 const NB_ROT = -0.05;
 const CAM_DESK = REALROOM.cameras.desk;                  // {424,760,1.5}
 const CAM_OPEN = REALROOM.cameras.opening;               // {420,655,1.12}
-const CAM_CLOSE = { x: 424, y: 690, zoom: 2.1 };
+// the tear close-up: the face fills ~43 % of the width (centre ≈ screen y 660), so the welling, the drop and its wet
+// trail survive the encoder (at the old 2.1 the streak vanished in the compressed film)
+const CAM_CLOSE = { x: 428, y: 702, zoom: 2.5 };
 const LEAF_RISE = 220 * 0.866;                           // a standing cover's height on screen (page units)
 const HAND_S = 1.42;
 const PENCIL_LEN = 52;
@@ -69,6 +71,13 @@ function tracks(t, S) {
     open: k([['s20b04+0.8', 1], ['s20b04+1.45', 0.5, 'inOut'], ['s20b04+2.0', 0, 'inOut']]),
     star: k([['s20b01+0.8', 0], ['s20b01+2.4', 1, 'linear']]),
     lampOff,
+    // THE tear (drawn locally, bigger than the rig's, on the lamp-lit near cheek — screen-left): a bead gathers on the
+    // lower lid while the eyes well (b02 → b03), squeezes out with the slow blink and spills on 'tear' (+0.86); it slides
+    // slowly with one stutter, stops on the cheek (+2.2) and hangs there at face size until the sleeve takes it (+3.15)
+    bead: k([['s20b02+0.6', 0], ['s20b03+0.5', 0.8, 'sine'], ['s20b03+0.85', 1, 'inOut']]),
+    drop: k([['s20b03+0.85', 0], ['s20b03+1.45', 0.42, 'inOut'], ['s20b03+1.65', 0.47], ['s20b03+2.25', 1, 'inOut']]),
+    wiped: k([['s20b03+3.05', 0], ['s20b03+3.25', 1, 'inOut']]),
+    trailOff: k([['s20b03+3.1', 0], ['s20b03+3.4', 0.7], ['s20b04+1.0', 1]]),
   };
 }
 
@@ -242,14 +251,16 @@ function armLeft(t, S, pose, tr) {
   const restPalm = [356, 962];
   const rest = { target: wristForPalm(restPalm, 1.25), bend: -1, front: true, hand: 'flat', handAngle: 1.25, thumb: 1 };
   rest.reach1 = rest.reach2 = foreshorten(pose, rest.target, -1).reach1;
-  const wipe = S.k(t, [['s20b03+2.3', 0], ['s20b03+2.75', 1, 'inOut'], ['s20b03+3.15', 1], ['s20b04-0.02', 0, 'inOut']]);
-  if (t < T('s20b04')) {
+  // after the hold on the hanging drop: up to the cheek, one stroke over the drop, back down to the page just before
+  // the hand takes the cover (b04+0.5)
+  const wipe = S.k(t, [['s20b03+2.65', 0], ['s20b03+3.05', 1, 'inOut'], ['s20b03+3.4', 1], ['s20b04+0.38', 0, 'inOut']]);
+  if (t < T('s20b04+0.5')) {
     if (wipe <= 0) return rest;
     // the sweater-paw knuckle under the lamp-side eye (self.mjs wipeTear geometry), one small stroke outward
     const ref = selfPoseAnchors(SX, SY, SS, pose);
     const hc = ref.headCenter, ht = ref.headTop;
     const rot = Math.atan2(ht[0] - hc[0], -(ht[1] - hc[1]));
-    const stroke = S.k(t, [['s20b03+2.6', 0], ['s20b03+3.1', 1, 'inOut']]);
+    const stroke = S.k(t, [['s20b03+2.95', 0], ['s20b03+3.35', 1, 'inOut']]);
     const hx = lerp(-34, -44, stroke), hy = lerp(44, 50, stroke);
     const c = Math.cos(rot), sn = Math.sin(rot);
     const wT = selfLocal(SX, SY, SS, 1, hc[0] + hx * c - hy * sn, hc[1] + hx * sn + hy * c);
@@ -376,11 +387,13 @@ function selfPose(t, S, tr) {
   const T = (a) => S.T(a);
   // gaze: the drawing (follows the pencil) → the star → (b02/b03) soft, inward → the page → the closing book →
   // the lamp → up to the window
+  // (during the tear the gaze stays soft and inward, a little down-right — the eyes stay open on the camera's side;
+  // after the wipe they come back down to the page)
   const lookX = k([['scene.start', 0.42], ['s20b01+0.8', 0.5], ['s20b01+2.4', 0.55], ['s20b02', 0.5], ['s20b02+1.0', 0.3],
-    ['s20b03+1.6', 0.2], ['s20b03.end', 0.4], ['s20b04+0.4', 0.3], ['s20b04+0.75', -0.15], ['s20b04+1.25', 0.05],
+    ['s20b03+1.6', 0.2], ['s20b03+2.9', 0.24], ['s20b03+3.45', 0.4], ['s20b04+0.4', 0.3], ['s20b04+0.75', -0.15], ['s20b04+1.25', 0.05],
     ['s20b04+1.55', -0.75], ['s20b04+2.5', -0.75], ['s20b04+2.9', 0.0], ['s20b04+3.5', 0.55]]) + fbm(t * 0.4, 61) * 0.03;
   const lookY = k([['scene.start', 0.66], ['s20b01+2.4', 0.62], ['s20b02', 0.55], ['s20b02+1.0', 0.4], ['s20b03+1.6', 0.34],
-    ['s20b03.end', 0.62], ['s20b04+0.75', 0.7], ['s20b04+1.25', 0.5], ['s20b04+1.55', 0.15], ['s20b04+2.5', 0.15], ['s20b04+2.9', -0.4],
+    ['s20b03+2.9', 0.38], ['s20b03+3.45', 0.62], ['s20b04+0.75', 0.7], ['s20b04+1.25', 0.5], ['s20b04+1.55', 0.15], ['s20b04+2.5', 0.15], ['s20b04+2.9', -0.4],
     ['s20b04+3.6', -1.0]]) + fbm(t * 0.37, 62) * 0.025;
   // brows inner-up (moved) → softening as they laugh at themselves → raised gently at the stars
   const browIn = k([['scene.start', 0.55], ['s20b02', 0.62], ['s20b03+0.9', 0.75], ['s20b03+2.0', 0.45], ['s20b03.end', 0.35],
@@ -401,11 +414,12 @@ function selfPose(t, S, tr) {
     ['s20b03.end', 0.5], ['s20b04+2.6', 0.42], ['s20b04+4.0', 0.5]]);
   const pressed = k([['scene.start', 0.2], ['s20b02+0.6', 0.26], ['s20b02+1.4', 0.42], ['s20b03+0.9', 0.7], ['s20b03+1.9', 0.6], ['s20b03+2.2', 0.1], ['s20b03.end', 0.2],
     ['s20b04+2.6', 0.25], ['s20b04+3.6', 0.05]]);
-  // tears: glistening → welling on 'After that,' → the drop spills on 'tear' (+0.86) → wiped → dry-ish
-  const tears = k([['scene.start', 0.42], ['s20b02', 0.45], ['s20b02+1.4', 0.95], ['s20b03+0.9', 1], ['s20b03+2.7', 0.55],
-    ['s20b03+3.2', 0.3], ['s20b04+2.6', 0.28], ['s20b04+4', 0.4]]);
-  const tearL = k([['s20b03+0.95', 0], ['s20b03+2.5', 0.92, 'inOut'], ['s20b03+2.75', 0.98], ['s20b03+2.9', 0]]);
-  const stream = k([['s20b03+1.3', 0], ['s20b03+2.4', 0.45], ['s20b03+2.9', 0.1], ['s20b04+0.6', 0]]);
+  // tears: glistening → welling on 'After that,' (the rig's band + drawWetEyes' bright water line) → the drop (drawn
+  // locally, tracks.drop) spills on 'tear' (+0.86) → the eyes stay wet through the hold → wiped → dry-ish
+  const tears = k([['scene.start', 0.42], ['s20b02', 0.45], ['s20b02+1.2', 0.9], ['s20b03+0.8', 1], ['s20b03+2.9', 0.85],
+    ['s20b03+3.35', 0.45], ['s20b04+0.4', 0.3], ['s20b04+2.6', 0.28], ['s20b04+4', 0.4]]);
+  // the rig's symmetric streaks stay faint: the one tear on the near cheek carries its own wet trail (drawWetEyes)
+  const stream = k([['s20b03+1.3', 0], ['s20b03+2.4', 0.22], ['s20b03+3.2', 0.1], ['s20b04+0.6', 0]]);
   const tremble = k([['s20b02+0.8', 0], ['s20b03+0.6', 0.18], ['s20b03+1.9', 0.12], ['s20b03+2.2', 0]]);
   const sparkle = k([['s20b04+2.7', 0], ['s20b04+3.8', 0.75]]);
   // deliberate blinks (auto-blink off: an intimate held portrait)
@@ -413,12 +427,12 @@ function selfPose(t, S, tr) {
     blinkAt(t, T('s20b01+1.0'), 0.2),          // concentrating
     blinkAt(t, T('s20b01+2.55'), 0.32),         // looks at the finished star
     blinkAt(t, T('s20b02+0.15'), 0.48),         // the slow blink on 'After that,'
-    blinkAt(t, T('s20b03+0.35'), 0.28),
+    blinkAt(t, T('s20b03+0.5'), 0.42),          // a slow squeeze: the tear spills as the eyes reopen (+0.85)
     blinkAt(t, T('s20b04+0.9'), 0.22),
     blinkAt(t, T('s20b04+2.75'), 0.25),         // as the room goes blue
     blinkAt(t, T('s20b04+5.1'), 0.62),          // one slow, contented blink
   ) + laugh * 0.25;
-  const face = { ...SELF_EXPR.tenderSmile, lookX, lookY, browIn, browUp, lidU, lidL, smile, pressed, tears, tearL, stream,
+  const face = { ...SELF_EXPR.tenderSmile, lookX, lookY, browIn, browUp, lidU, lidL, smile, pressed, tears, stream,
     tremble, sparkle, blink, noAutoBlink: true, blush: 0.28, pupil: 1 + sparkle * 0.15, open: laugh * 0.08 };
   // head: inclined toward the page; on the laugh a soft double bob; the chin lifts to the window at the end
   const up = k([['s20b04+2.7', 0], ['s20b04+3.8', 1, 'inOut']]);
@@ -470,6 +484,124 @@ function drawEyeStars(g, pose, k, t) {
   }
 }
 
+// ---- the tear (drawn over the lit body pass, under the wiping sleeve). The rig's welling band sits under SELF's raised
+// lower lids and its drop is small, so after the encoder only the drop survived: here the water pools ON the lower lid
+// (a bright line with a specular stripe and a catch-light on the iris), a bead gathers at the near eye's outer corner,
+// spills as a large slow drop with a bright highlight and a wet trail, and hangs on the cheek until the wipe.
+// Geometry mirrors face.mjs drawEye (SELF_FACE: eyeSpacing 27, eyeY 2, eyeRx 16, eyeRy 12.6, restLid 0.15).
+function eyeGeom(pose, side) {
+  const f = pose.face, turn = clamp(pose.headTurn ?? 0, -1, 1), at = Math.abs(turn);
+  const squeeze = side * turn > 0 ? 1 - at * 0.38 : 1 + at * 0.06;
+  const rx = 16 * squeeze, ry = 12.6, cx = side * 27 * (1 - at * 0.3) + turn * 27 * 0.55, cy = 2;
+  const rest = 0.15, lidU = f.lidU || 0, blink = clamp(f.blink || 0);
+  let up = clamp(rest + lidU * (lidU < 0 ? 0.3 : 1) + blink * (1 - (rest + lidU)), -0.25, 1);
+  if (lidU < 0) up = clamp(rest + lidU * 0.3 + blink * (1 - rest), -0.25, 1);
+  const low = clamp(f.lidL || 0) * (1 - clamp(up, 0, 1) * 0.5);
+  const bnd = (dx) => ry * Math.sqrt(clamp(1 - (dx * dx) / (rx * rx)));
+  const lowY = (dx) => cy + lerp(bnd(dx) + ry * 0.05, -ry * 0.05 + (dx * dx) / (rx * rx) * ry * 0.25, low * 0.75);
+  const upY = (dx) => {
+    const k = clamp(up, -0.25, 1), tilt = f.lidTilt || 0, outer = (dx * side) / rx;
+    return cy + lerp(-bnd(dx) - ry * 0.05, ry * 0.3 - (dx * dx) / (rx * rx) * ry * 0.1, Math.max(0, k)) + (k < 0 ? k * ry * 0.35 : 0) +
+      tilt * outer * ry * 0.38 * Math.min(1, Math.max(0, k) + 0.6);
+  };
+  const ix = cx + clamp(f.lookX || 0, -1, 1) * rx * 0.42, iy = cy + clamp(f.lookY || 0, -1, 1) * ry * 0.36 + ry * 0.04;
+  return { cx, cy, rx, ry, up, lowY, upY, ix, iy, irisR: rx * 0.6 };
+}
+function teardrop(g, x, y, sz, stretch, a) {
+  // soft contact shadow on the skin (volume), the drop, a bright highlight with a glow that survives compression
+  g.fillStyle = `rgba(110,50,35,${0.16 * a})`;
+  g.beginPath(); g.ellipse(x + sz * 0.3, y + sz * 0.55, sz * 1.0, sz * 0.75, 0, 0, TAU); g.fill();
+  const top = sz * (1.9 + stretch);
+  g.fillStyle = `rgba(214,238,255,${0.94 * a})`;
+  g.strokeStyle = `rgba(86,138,198,${0.85 * a})`;
+  g.lineWidth = 1.3;
+  g.beginPath();
+  g.moveTo(x, y - top);
+  g.bezierCurveTo(x + sz * 1.12, y - sz * 0.25, x + sz * 1.02, y + sz, x, y + sz);
+  g.bezierCurveTo(x - sz * 1.02, y + sz, x - sz * 1.12, y - sz * 0.25, x, y - top);
+  g.fill(); g.stroke();
+  // a cooler belly (refraction) and the lamp's highlight on the upper-left
+  g.fillStyle = `rgba(150,195,240,${0.45 * a})`;
+  g.beginPath(); g.ellipse(x + sz * 0.15, y + sz * 0.45, sz * 0.62, sz * 0.38, 0, 0, TAU); g.fill();
+  const hx = x - sz * 0.36, hy = y - sz * 0.15;
+  const gl = g.createRadialGradient(hx, hy, 0, hx, hy, sz * 1.15);
+  gl.addColorStop(0, `rgba(255,255,250,${0.55 * a})`); gl.addColorStop(1, 'rgba(255,255,250,0)');
+  g.fillStyle = gl; g.fillRect(hx - sz * 1.2, hy - sz * 1.2, sz * 2.4, sz * 2.4);
+  g.fillStyle = `rgba(255,255,255,${a})`;
+  g.beginPath(); g.ellipse(hx, hy, sz * 0.3, sz * 0.38, -0.3, 0, TAU); g.fill();
+  g.fillStyle = `rgba(255,255,255,${0.7 * a})`;
+  g.beginPath(); g.arc(x + sz * 0.42, y + sz * 0.5, sz * 0.13, 0, TAU); g.fill();
+}
+function drawWetEyes(g, pose, tr, well) {
+  const drop = tr.drop, alive = 1 - tr.wiped, trailA = 1 - tr.trailOff;
+  if (well <= 0.01 && (drop <= 0 || trailA <= 0.01)) return;
+  const a = selfPoseAnchors(SX, SY, SS, pose);
+  const hc = a.headCenter, ht = a.headTop;
+  const rot = Math.atan2(ht[0] - hc[0], -(ht[1] - hc[1]));
+  g.save();
+  g.translate(hc[0], hc[1]); g.rotate(rot); g.scale(SS, SS);
+  g.lineCap = 'round'; g.lineJoin = 'round';
+  for (const side of [-1, 1]) {
+    const e = eyeGeom(pose, side);
+    const open = clamp(1 - e.up) / 0.85;
+    // water pooled on the lower lid: a glossy band just above the lash line, a white specular stripe on it
+    if (well > 0.01) {
+      const line = (from, to, off) => {
+        g.beginPath();
+        for (let i = 0; i <= 10; i++) {
+          const dx = lerp(from, to, i / 10) * e.rx;
+          const y = e.lowY(dx) + off;
+          if (i === 0) g.moveTo(e.cx + dx, y); else g.lineTo(e.cx + dx, y);
+        }
+      };
+      g.strokeStyle = `rgba(196,230,255,${0.6 * well})`; g.lineWidth = 2.8;
+      line(-0.8, 0.8, -1.1); g.stroke();
+      g.strokeStyle = `rgba(255,255,255,${0.92 * well})`; g.lineWidth = 1.3;
+      line(side > 0 ? -0.5 : -0.1, side > 0 ? 0.1 : 0.5, -1.5); g.stroke();
+      // the bright catch-light on the wet iris (the lamp), only where the upper lid leaves the iris open
+      const hx = e.ix - e.irisR * 0.36, hy = e.iy - e.irisR * 0.38;
+      const vis = clamp((hy - e.upY(hx - e.cx) - 1.5) / 2.5) * open;
+      if (vis > 0.01) {
+        const ka = well * vis;
+        const gl = g.createRadialGradient(hx, hy, 0, hx, hy, e.irisR * 0.62);
+        gl.addColorStop(0, `rgba(255,255,255,${0.5 * ka})`); gl.addColorStop(1, 'rgba(255,255,255,0)');
+        g.fillStyle = gl; g.fillRect(hx - e.irisR, hy - e.irisR, e.irisR * 2, e.irisR * 2);
+        g.fillStyle = `rgba(255,255,255,${ka})`;
+        g.beginPath(); g.arc(hx, hy, e.irisR * 0.27, 0, TAU); g.fill();
+        g.fillStyle = `rgba(255,255,255,${0.8 * ka})`;
+        g.beginPath(); g.arc(e.ix + e.irisR * 0.34, e.iy + e.irisR * 0.3, e.irisR * 0.12, 0, TAU); g.fill();
+      }
+    }
+    if (side > 0) continue;
+    // ---- the near eye's tear: bead on the lid → spill → slow slide (one stutter) → hangs on the cheek → wiped
+    const dx0 = side * e.rx * 0.5, x0 = e.cx + dx0, y0 = e.lowY(dx0) + 1.2;
+    const bead = tr.bead * (drop > 0 ? 0 : 1);
+    if (bead > 0.01 && well > 0.01) {
+      const r = lerp(1.6, 4.2, bead);
+      teardrop(g, x0, y0 + r * 0.55, r, -0.9 * (1 - bead), Math.min(1, bead * 1.6) * alive);
+    }
+    if (drop <= 0) continue;
+    const L = 31;                                         // lid → the cheek beside the mouth corner
+    const px = (p) => x0 + side * (Math.sin(p * Math.PI) * 2.6 + p * 1.4), py = (p) => y0 + 3 + p * L;
+    const tx = px(drop), ty = py(drop);
+    const sz = lerp(4.6, 6.6, clamp(drop * 3)) + 0.5 * clamp((drop - 0.9) * 10);
+    const moving = clamp(Math.abs(drop - 0.47) > 0.03 && drop < 0.99 ? 1 : 0);
+    // the wet trail it leaves (a wide glossy body, a specular stripe on the lamp side)
+    if (trailA > 0.01 && drop > 0.04) {
+      const path = () => {
+        g.beginPath(); g.moveTo(px(0), py(0) - 2);
+        for (let i = 1; i <= 8; i++) { const p = drop * i / 8; g.lineTo(px(p), py(p) - (i === 8 ? sz * 1.5 : 0)); }
+      };
+      g.strokeStyle = `rgba(198,232,255,${0.5 * trailA})`; g.lineWidth = 3.6; path(); g.stroke();
+      g.save(); g.translate(-1.1, 0);
+      g.strokeStyle = `rgba(255,255,255,${0.62 * trailA})`; g.lineWidth = 1.2; path(); g.stroke();
+      g.restore();
+    }
+    if (alive > 0.01) teardrop(g, tx, ty, sz, 0.35 * moving, alive);
+  }
+  g.restore();
+}
+
 // the lit layer only needs to cover what each pass draws (seated: nothing of the torso below the desk line)
 const BOX_BODY = [150, 470, 560, 470], BOX_FRONT = [140, 600, 570, 490];   // front: the sleeve wipe reaches the cheek
 // SELF lit like the room (+ the window-blue rim on the far cheek while the lamp is on)
@@ -498,10 +630,12 @@ export function render(g, t, S) {
   const tr = tracks(t, S);
   // camera
   let cam;
-  const tPullA = S.T('s20b03.end+0.3'), tPullB = S.T('s20b04+2.6');
+  // the push arrives as the drop comes to rest on the cheek (+2.25); a held close-up on the hanging drop and the wipe;
+  // the pull-back starts once the sleeve has left the face
+  const tPullA = S.T('s20b03+3.3'), tPullB = S.T('s20b04+2.6');
   if (t < S.T('s20b02')) cam = { ...CAM_DESK };
   else if (t < tPullA) {
-    const p = S.k(t, [['s20b02', 0], ['s20b03.end', 1, 'sine']]);
+    const p = S.k(t, [['s20b02', 0], ['s20b03+2.3', 1, 'inOut']]);
     cam = { x: lerp(CAM_DESK.x, CAM_CLOSE.x, p), y: lerp(CAM_DESK.y, CAM_CLOSE.y, p), zoom: Math.exp(lerp(Math.log(CAM_DESK.zoom), Math.log(CAM_CLOSE.zoom), p)) };
   } else {
     // the pull-back to the opening composition starts in the pause after the line and arcs through the desk framing
@@ -534,6 +668,8 @@ export function render(g, t, S) {
   applyCamera(g, cam);
   drawRealRoom(g, st);
   drawSelfLit(g, st, pose, 'body');
+  // the wet eyes and THE tear (b02 → the wipe), unlit on top: they catch the lamp
+  drawWetEyes(g, pose, tr, clamp((pose.face.tears - 0.5) / 0.4) * (1 - tr.lampOff));
   drawEyeStars(g, pose, pose.face.sparkle, t);
   drawRealRoomForeground(g, st);
   const dim = 0.5 * tr.lampOff;
