@@ -5676,3 +5676,357 @@ def shaft_lower(ctx, t=0.0, layer="bg", power=0.0, lit=None, parts=None):
             vx0, vy0, vx1, vy1 = ctx.clip_extents()
             ctx.rectangle(vx0, vy0, vx1 - vx0, vy1 - vy0)
             core.fill(ctx, core.alpha(DARK, a))
+
+
+# ============================================================================
+# 15. SERVICE TUNNEL (Episode 2 s04-s06): quiet concrete HushCorp corridor
+# ============================================================================
+TUNNEL_W, TUNNEL_H = 2400, 1920
+_TN_X0, _TN_X1, _TN_Y0, _TN_Y1 = -700, 3100, -700, 2620
+_TN_CEIL, _TN_WALL, _TN_FEET = 300, 1300, 1500
+_TN_MOUTH = (90, 560, 420)                # depth-tunnel opening: x, top, w (bottom = wall base)
+_TN_VP = (300, 1010)                      # its vanishing point
+_TN_LAMPS = [(700, 520), (1330, 520), (1960, 520)]
+_TN_SEAT = (1080, 150)                    # crate centre x, crate height (seat top = feet - h)
+_TN_DOOR = (1990, 520, 340, 780)          # keycard door x, top, w, h (bottom = wall base)
+_TN_READER = (2400, 960)
+_TN_DRIP = (860, 1570)                    # puddle on the floor (drip falls from the pipe joint above)
+
+
+def tunnel_depth(k, lane=0.0):
+    """Walk path into the dark side tunnel: k = 0 at the mouth's floor in
+    front (feet on the corridor line) .. 1 deep inside (tiny, near the
+    vanishing point). Returns (x, y_feet, scale_factor): multiply the
+    character's s by scale_factor. lane -1..1 = left..right wall."""
+    k = clamp(k)
+    mx, mt, mw = _TN_MOUTH
+    cx0, fy0 = mx + mw / 2 + lane * mw * 0.3, _TN_FEET
+    f = 1.0 / (1.0 + 5.0 * k)
+    x = _TN_VP[0] + (cx0 - _TN_VP[0]) * f
+    y = _TN_VP[1] + (fy0 - _TN_VP[1]) * f
+    return (x, y, f)
+
+
+TUNNEL_MARKS = {
+    "size": (TUNNEL_W, TUNNEL_H),
+    "drawable": (_TN_X0, _TN_Y0, _TN_X1, _TN_Y1),
+    "char_scale": 0.75,
+    "ceiling_y": _TN_CEIL,
+    "wall_y": _TN_WALL,
+    "feet_y": _TN_FEET,
+    "seat": (_TN_SEAT[0], _TN_FEET - _TN_SEAT[1]),     # hips point on the crate (use ground_from_seat)
+    "seat_feet": (_TN_SEAT[0], _TN_FEET),
+    "seat_crate": (_TN_SEAT[0] - 180, _TN_FEET - _TN_SEAT[1], 360, _TN_SEAT[1]),
+    "beside_seat": (_TN_SEAT[0] + 300, _TN_FEET),       # Curiosity tugging his sleeve
+    "lamps": _TN_LAMPS,
+    "mouth": (_TN_MOUTH[0], _TN_MOUTH[1], _TN_MOUTH[2], _TN_WALL - _TN_MOUTH[1]),
+    "mouth_feet": (_TN_MOUTH[0] + _TN_MOUTH[2] / 2, _TN_FEET),
+    "far_end": _TN_VP,               # vanishing point deep in the dark tunnel
+    "far_path": [tunnel_depth(k) for k in (0.0, 0.25, 0.5, 0.75, 1.0)],
+    "junction_sign": (330, 430),
+    "door": _TN_DOOR,
+    "door_feet": (_TN_DOOR[0] + _TN_DOOR[2] / 2, _TN_FEET),
+    "doorway_feet": (_TN_DOOR[0] + _TN_DOOR[2] / 2, _TN_WALL + 20),   # someone stepping through
+    "reader": _TN_READER,            # keycard reader slot centre
+    "reader_feet": (_TN_READER[0] - 150, _TN_FEET),
+    "drip": _TN_DRIP,
+    "cam": {
+        "wide": (1200, 1020, 0.62),
+        "sit": (1130, 1160, 1.6),
+        "sit_close": (1080, 1160, 2.5),
+        "leave": (560, 1150, 1.15),       # Curiosity walks off into the dark side tunnel
+        "junction": (520, 1130, 1.4),
+        "alone": (980, 1150, 1.25),
+        "door": (2170, 1050, 1.15),
+        "reader": (2360, 1000, 2.6),
+    },
+}
+
+
+def _tn_mouth_path(c, inset=0.0):
+    mx, mt, mw = _TN_MOUTH
+    c.move_to(mx + inset, _TN_WALL)
+    c.line_to(mx + inset, mt + 110)
+    c.curve_to(mx + inset, mt + inset, mx + mw - inset, mt + inset, mx + mw - inset, mt + 110)
+    c.line_to(mx + mw - inset, _TN_WALL)
+    c.close_path()
+
+
+def _tn_mouth(c):
+    """The side tunnel receding into darkness (one-point perspective)."""
+    mx, mt, mw = _TN_MOUTH
+    vx, vy = _TN_VP
+    c.save()
+    _tn_mouth_path(c)
+    c.clip()
+    c.rectangle(mx - 10, mt - 10, mw + 20, _TN_WALL - mt + 220)
+    core.fill(c, "#2a2b31")
+    # receding frames (ribs) getting darker toward the vanishing point
+    for k in range(1, 9):
+        f = 1.0 / (1.0 + 0.62 * k)
+        x0, x1 = vx + (mx - vx) * f, vx + (mx + mw - vx) * f
+        yt, yb = vy + (mt - vy) * f, vy + (_TN_FEET + 60 - vy) * f
+        dk = clamp(0.25 + k * 0.1)
+        core.rrect(c, x0, yt, x1 - x0, yb - yt, (x1 - x0) * 0.3)
+        fs(c, mixc("#3a3a40", "#050608", dk), 3, sc=mixc("#2a2a30", "#050608", dk))
+    # floor of the side tunnel
+    core.poly(c, [(mx, _TN_FEET + 80), (mx + mw, _TN_FEET + 80), (vx + 18, vy + 22), (vx - 18, vy + 22)])
+    core.fill(c, (0.05, 0.05, 0.06, 0.55))
+    core.radial_glow(c, vx, vy, 160, "#000000", 0.9)
+    c.restore()
+    _tn_mouth_path(c)
+    core.stroke(c, INK, 6)
+    _tn_mouth_path(c, -26)
+    core.stroke(c, "#5a5a62", 18)
+    _tn_mouth_path(c, -26)
+    core.stroke(c, INK, 4)
+
+
+def _tn_door_frame(c):
+    dx, dt, dw, dh = _TN_DOOR
+    rect(c, dx - 46, dt - 46, dw + 92, dh + 46, "#3b4757", 6)
+    props.hazard_band(c, dx - 46, dt - 46, dw + 92, 26, step=40, lw=4)
+    rect(c, dx, dt, dw, dh, "#0b1016", 4)
+    rect(c, dx + dw / 2 - 110, dt - 128, 220, 60, PAL["hush_dk"], 4.5, r=8)
+    spaced_text(c, "CONTROL", dx + dw / 2, dt - 86, 32, "#ffffff", "ui", 0.18)
+    rect(c, dx - 10, dt + dh * 0.32, 22, 90, "#2a3440", 0)
+    # reader on the wall
+    rx, ry = _TN_READER
+    rect(c, rx - 40, ry - 80, 80, 150, "#2a3240", 5, r=12)
+    rect(c, rx - 24, ry - 60, 48, 30, "#121820", 3, r=4)
+    rect(c, rx - 28, ry + 6, 56, 8, "#0b0f15", 0, r=3)
+    core.text(c, "LVL 9", rx, ry + 50, 19, "#9fb3c4", "mono")
+
+
+def _tn_back(c):
+    """Seen through the open CONTROL door: the dark control room, monitor glow."""
+    dx, dt, dw, dh = _TN_DOOR
+    c.rectangle(dx - 4, dt - 4, dw + 8, dh + 8)
+    core.fill(c, "#0a1420")
+    core.radial_glow(c, dx + dw / 2, dt + dh * 0.45, dw * 1.1, "#5fd8ff", 0.35)
+    for i in range(3):
+        for j in range(2):
+            rect(c, dx + 30 + i * 100, dt + 120 + j * 110, 84, 80, mixc("#1d4f66", "#7fe8ff", 0.35 + 0.2 * ((i + j) % 2)),
+                 3, r=4)
+    rect(c, dx - 4, dt + dh - 120, dw + 8, 124, "#0c1720", 0)
+    # the tall chair's back, silhouetted
+    rect(c, dx + dw * 0.5 - 50, dt + 300, 100, 380, "#06090e", 0, r=34)
+    rect(c, dx + dw * 0.5 - 12, dt + 680, 24, 70, "#06090e", 0)
+    line(c, [(dx + dw * 0.5 - 48, dt + 320), (dx + dw * 0.5 - 48, dt + 640)], core.alpha("#7fe8ff", 0.5), 4)
+
+
+def _tn_door_panels(ctx, opening):
+    dx, dt, dw, dh = _TN_DOOR
+    o = clamp(opening) * (dw / 2 - 4)
+    ctx.save()
+    ctx.rectangle(dx, dt, dw, dh)
+    ctx.clip()
+    for side in (-1, 1):
+        px = dx + (0 if side < 0 else dw / 2) + side * o
+        rect(ctx, px, dt, dw / 2, dh, "#8794a2", 5)
+        rect(ctx, px + 14, dt + 14, dw / 2 - 28, dh - 28, None, 3.5, sc="#6f7d8c")
+        props.hazard_band(ctx, px + (dw / 2 - 30 if side < 0 else 0), dt, 30, dh, step=36, lw=3, slant=0.8)
+        rect(ctx, px + 30, dt + 120, dw / 2 - 60, 120, "#5a6878", 3.5, r=6)
+        core.text(ctx, "LVL 9", px + dw / 4, dt + 196, 30, "#e9eef2", "ui")
+    ctx.restore()
+
+
+def _tn_reader_light(ctx, light):
+    rx, ry = _TN_READER
+    col = {"green": PAL["safe"], "red": PAL["danger"]}.get(light)
+    if col:
+        core.radial_glow(ctx, rx, ry - 45, 70, col, 0.6)
+        rect(ctx, rx - 24, ry - 60, 48, 30, col, 3, r=4)
+        rect(ctx, rx - 16, ry - 54, 18, 6, (1, 1, 1, 0.6), 0, r=2)
+
+
+def _tn_static(c):
+    x0, x1, y0, y1 = _TN_X0, _TN_X1, _TN_Y0, _TN_Y1
+    # ceiling
+    c.rectangle(x0, y0, x1 - x0, _TN_CEIL - y0 + 2)
+    core.fill(c, "#26262c")
+    for (yy, r_, col) in ((150, 40, "#4a5458"), (232, 30, "#5a5148"), (80, 24, "#3e4648")):
+        rect(c, x0, yy - r_, x1 - x0, 2 * r_, col, 4.5)
+        line(c, [(x0, yy - r_ * 0.45), (x1, yy - r_ * 0.45)], mixc(col, "#ffffff", 0.18), r_ * 0.3)
+        for k in range(int((x1 - x0) / 460) + 1):
+            fx = x0 + 200 + k * 460 + r_ * 3
+            rect(c, fx - 10, yy - r_ - 8, 20, 2 * r_ + 16, "#33383c", 4, r=4)
+    rect(c, x0, _TN_CEIL - 16, x1 - x0, 20, "#3b3b42", 4)
+    # concrete wall: lower panel, upper panel, form-tie dots, stains
+    c.rectangle(x0, _TN_CEIL, x1 - x0, _TN_WALL - _TN_CEIL)
+    core.fill(c, "#5b5b62")
+    c.rectangle(x0, 960, x1 - x0, _TN_WALL - 960)
+    core.fill(c, "#52525a")
+    rect(c, x0, 940, x1 - x0, 22, PAL["hush_dk"], 0)
+    for xx in range(int(x0), int(x1), 300):
+        line(c, [(xx, _TN_CEIL), (xx, _TN_WALL)], "#4c4c53", 4)
+        for yy in (420, 640, 860, 1120):
+            core.circle(c, xx + 75, yy, 5)
+            core.circle(c, xx + 225, yy, 5)
+    core.fill(c, "#47474e")
+    for k in range(9):
+        sx = x0 + hash01(k, 71) * (x1 - x0)
+        polyf(c, [(sx - 16, 330 + 200 * hash01(k, 72)), (sx + 16, 330 + 200 * hash01(k, 72)),
+                  (sx + 24, _TN_WALL), (sx - 24, _TN_WALL)], (0.2, 0.2, 0.24, 0.35), 0)
+    # section stencils
+    for (sx, txt) in ((1020, "S-14"), (1640, "S-15")):
+        core.text(c, txt, sx, 860, 64, core.alpha("#3a3a42", 0.9), "black")
+    # vertical pipe + conduit + junction box
+    rect(c, 1500, _TN_CEIL - 40, 64, _TN_WALL - _TN_CEIL + 20, "#5a6466", 5)
+    line(c, [(1514, _TN_CEIL), (1514, _TN_WALL - 20)], "#70797b", 8)
+    rect(c, 1488, 700, 88, 26, "#3e4648", 4, r=4)
+    rect(c, 1488, 1180, 88, 26, "#3e4648", 4, r=4)
+    rect(c, 560, 380, 18, 900, "#44484c", 3.5)
+    rect(c, 520, 1060, 100, 130, "#4a4e52", 4.5, r=8)
+    line(c, [(540, 1100), (600, 1100)], "#ffb020", 5)
+    # pipe joint over the puddle (the drip)
+    dxp = _TN_DRIP[0]
+    rect(c, dxp - 22, 150 - 52, 44, 104, "#3e4648", 4, r=5)
+    # side tunnel + junction sign
+    _tn_mouth(c)
+    sx, sy = TUNNEL_MARKS["junction_sign"]
+    rect(c, sx - 160, sy - 60, 320, 120, "#2c3e4a", 4.5, r=10)
+    core.text(c, "SHAFT A", sx - 6, sy - 12, 30, "#cfe9ee", "ui")
+    polyf(c, [(sx - 140, sy - 22), (sx - 112, sy - 40), (sx - 112, sy - 4)], "#cfe9ee", 0)
+    core.text(c, "CONTROL", sx - 10, sy + 40, 30, PAL["hush"], "ui")
+    polyf(c, [(sx + 140, sy + 30), (sx + 112, sy + 12), (sx + 112, sy + 48)], PAL["hush"], 0)
+    # CONTROL door frame + reader
+    _tn_door_frame(c)
+    # floor: concrete slabs, drain channel, puddle
+    c.rectangle(x0, _TN_WALL, x1 - x0, y1 - _TN_WALL)
+    core.fill(c, "#47474d")
+    c.rectangle(x0, _TN_WALL, x1 - x0, 26)
+    core.fill(c, core.alpha(INK, 0.4))
+    rect(c, x0, _TN_WALL - 34, x1 - x0, 34, "#3f3f46", 4)
+    for k in range(-10, 24):
+        xx = k * 220
+        line(c, [(xx, _TN_WALL), (1200 + (xx - 1200) * 2.5, y1)], "#3e3e44", 4)
+    for yy in (1400, 1530, 1720, 2000):
+        line(c, [(x0, yy), (x1, yy)], "#3e3e44", 4)
+    rect(c, x0, 1395, x1 - x0, 20, "#36363c", 3)
+    for k in range(int((x1 - x0) / 60)):
+        line(c, [(x0 + k * 60, 1397), (x0 + k * 60 + 30, 1413)], "#2a2a30", 3)
+    ell(c, _TN_DRIP[0], _TN_DRIP[1], 120, 18, "#3a3e48", 0)
+    ell(c, _TN_DRIP[0] - 30, _TN_DRIP[1] - 4, 50, 5, (0.6, 0.65, 0.75, 0.35), 0)
+    # the crate he sits on (+ a bigger one behind it)
+    props.crate(c, _TN_SEAT[0] + 330, _TN_FEET - 40, 1.0, w=320, h=300, kind="wood", stencil="HC", seed=3)
+    props.crate(c, _TN_SEAT[0], _TN_FEET, 1.0, w=360, h=_TN_SEAT[1], kind="wood", stencil=None, seed=4)
+    # lamps (off; the lit bulbs + pools are in the light pass)
+    for (lx, ly) in _TN_LAMPS:
+        props.cage_lamp(c, lx, ly, 0.9, on=0.0, halo=False)
+    # clear the door opening so the "back" layer shows through
+    dx, dt, dw, dh = _TN_DOOR
+    c.save()
+    c.set_operator(cairo.OPERATOR_CLEAR)
+    c.rectangle(dx, dt, dw, dh)
+    c.fill()
+    c.restore()
+
+
+def _tn_light(c):
+    """Warm emergency lamps (static pools) + the falloff into darkness."""
+    x0, x1, y0, y1 = _TN_X0, _TN_X1, _TN_Y0, _TN_Y1
+    # overall dim
+    c.rectangle(x0, y0, x1 - x0, y1 - y0)
+    core.fill(c, core.alpha("#0b0b12", 0.42))
+    for (lx, ly) in _TN_LAMPS:
+        props.cage_lamp(c, lx, ly, 0.9, on=1.0, color="#ffb35a", halo=False)
+        by = ly + 92 * 0.9
+        core.radial_glow(c, lx, by, 420, "#ffa64a", 0.42)
+        core.radial_glow(c, lx, by, 140, "#ffd9a0", 0.55)
+        ell(c, lx, _TN_FEET + 40, 420, 90, core.alpha("#ff9a40", 0.16), 0)
+        ell(c, lx, _TN_FEET + 40, 250, 50, core.alpha("#ffb35a", 0.14), 0)
+    # darkness toward the left end and the far right
+    for (xa, xb, a) in ((x0, 640, 0.75), (x1, 2500, 0.55)):
+        g = cairo.LinearGradient(xa, 0, xb, 0)
+        g.add_color_stop_rgba(0, 0.02, 0.02, 0.04, a)
+        g.add_color_stop_rgba(1, 0.02, 0.02, 0.04, 0.0)
+        c.rectangle(min(xa, xb), y0, abs(xb - xa), y1 - y0)
+        c.set_source(g)
+        c.fill()
+    g = cairo.LinearGradient(0, y0, 0, _TN_CEIL + 60)
+    g.add_color_stop_rgba(0, 0.02, 0.02, 0.04, 0.7)
+    g.add_color_stop_rgba(1, 0.02, 0.02, 0.04, 0.0)
+    c.rectangle(x0, y0, x1 - x0, _TN_CEIL + 60 - y0)
+    c.set_source(g)
+    c.fill()
+
+
+def _tn_room(c):
+    _tn_static(c)
+    _tn_light(c)
+
+
+def service_tunnel(ctx, t=0.0, layer="bg", door_open=0.0, reader="red", drip=True, parts=None):
+    """Quiet concrete HushCorp service corridor, side-on (world 2400 x
+    1920, people at s=0.75; drawable x -700..3100). See TUNNEL_MARKS.
+
+    Left to right: a dark side tunnel receding into blackness (the "far
+    end" a glowing creature walks off into: tunnel_depth(k) gives the
+    path + scale) with a junction sign (SHAFT A / CONTROL), dim warm-orange
+    emergency lamps in cages (static light pools), ceiling pipes, a drip
+    into a puddle, the low crate he sits on (TUNNEL_MARKS["seat"]) and a
+    bigger one behind it, and the heavy CONTROL keycard door (LVL 9) with
+    its reader.
+
+    door_open 0..1 slides the door panels apart (the dark control room with
+    its monitor glow shows through: layer "back"); reader "red" | "green" |
+    None lights the card reader. drip: one slow drip + ripple (s04).
+    layer "bg" | "back" (only the room seen through the door) | "room" (bg
+    without back: back -> person in the doorway -> room) | "fg" (parts:
+    "crate" = the seat crate over someone behind it) | "shade" (warm lamp
+    light + the dark ends for characters: sets.shaded()).
+    """
+    x0, y0, x1, y1 = _TN_X0, _TN_Y0, _TN_X1, _TN_Y1
+    dx, dt, dw, dh = _TN_DOOR
+    if layer in ("bg", "back"):
+        sprite(ctx, "tunnel_back", dx - 6, dt - 6, dw + 12, dh + 12, _tn_back)
+        if layer == "back":
+            return
+    if layer in ("bg", "room"):
+        _overscan(ctx, x0, y0, x1, y1, "#141418", "#28282d", "#141418", "#202024")
+        layer_blit(ctx, "tunnel_room", x0, y0, x1 - x0, y1 - y0, _tn_room)
+        dim = 0.42
+        dim_sprite(ctx, ("tunnel_door", round(clamp(door_open), 3)), (dx - 2, dt - 2, dw + 4, dh + 4), dim,
+                   lambda c: _tn_door_panels(c, door_open))
+        if door_open > 0.02:
+            o = clamp(door_open)
+            gw_ = dw * o
+            core.poly(ctx, [(dx + dw / 2 - gw_ / 2, _TN_WALL), (dx + dw / 2 + gw_ / 2, _TN_WALL),
+                            (dx + dw / 2 + gw_ * 0.9, _TN_FEET + 160), (dx + dw / 2 - gw_ * 0.9, _TN_FEET + 160)])
+            core.fill(ctx, core.alpha("#7fe8ff", 0.16 * o))
+        _tn_reader_light(ctx, reader)
+        if drip:
+            px_, py_ = _TN_DRIP
+            ph = (t % 2.6) / 2.6
+            if ph < 0.7:
+                yy = 196 + (py_ - 196) * (ph / 0.7) ** 2
+                ell(ctx, px_, yy, 5, 8, "#c9d3e0", 2)
+            else:
+                k = (ph - 0.7) / 0.3
+                ell(ctx, px_, py_, 18 + 60 * k, 4 + 8 * k, None, 3, sc=core.alpha("#c9d3e0", 1 - k))
+        return
+    if layer == "fg":
+        parts = parts or ()
+        if "crate" in parts:
+            sprite(ctx, "tunnel_seat_crate", _TN_SEAT[0] - 200, _TN_FEET - _TN_SEAT[1] - 50, 430, _TN_SEAT[1] + 60,
+                   lambda c: _dim_into(c, (_TN_SEAT[0] - 200, _TN_FEET - _TN_SEAT[1] - 50, 430, _TN_SEAT[1] + 60), 0.42,
+                                       lambda cc: props.crate(cc, _TN_SEAT[0], _TN_FEET, 1.0, w=360, h=_TN_SEAT[1],
+                                                              kind="wood", stencil=None, seed=4)))
+    elif layer == "shade":
+        sprite(ctx, "tunnel_shade", x0, y0 + 600, x1 - x0, 2000, _tn_shade, max_mp=12.0)
+
+
+def _tn_shade(c):
+    x0, x1 = _TN_X0, _TN_X1
+    c.rectangle(x0, _TN_Y0 + 600, x1 - x0, 2000)
+    core.fill(c, core.alpha("#0b0b12", 0.30))
+    for (lx, ly) in _TN_LAMPS:
+        core.radial_glow(c, lx, ly + 300, 520, "#ff9a40", 0.22)
+    for (xa, xb, a) in ((x0, 640, 0.75), (x1, 2500, 0.5)):
+        g = cairo.LinearGradient(xa, 0, xb, 0)
+        g.add_color_stop_rgba(0, 0.02, 0.02, 0.04, a)
+        g.add_color_stop_rgba(1, 0.02, 0.02, 0.04, 0.0)
+        c.rectangle(min(xa, xb), _TN_Y0 + 600, abs(xb - xa), 2000)
+        c.set_source(g)
+        c.fill()
