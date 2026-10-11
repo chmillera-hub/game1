@@ -506,6 +506,10 @@ def _tired(t, T, info, paws=None):
     for (b0, hold) in ((T["l01e"] + 0.05, 0.15), (T["l02e"] + 0.1, 0.2), (T["w03_wrong"] + 0.55, 0.1)):
         if b0 - 0.05 <= t <= b0 + 0.75 + hold:
             blink = _slow_blink(t, b0, hold)
+    if T["w03_family"] - 0.15 <= t < T["w03_wrong"] + 0.5:     # eyes on it through "...is wrong"
+        blink = 0.0
+    if T["w4b_me"] - 0.4 <= t < T["w4b_I"]:                   # and through "Maybe me."
+        blink = 0.0
     if T["rub0"] + 0.1 <= t <= T["rub_end"] + 0.4:
         blink = _tw(t, [(T["rub0"] + 0.1, 0.0), (T["rub1"] - 0.05, 1.0), (T["rub_end"], 1.0),
                         (T["rub_end"] + 0.4, 0.0)])

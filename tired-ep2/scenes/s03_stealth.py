@@ -588,8 +588,9 @@ def _draw_guard(ctx, t, info, g, dark, T=None):
         bw = g.get("belt_w", 0.0)
         if bw > 0.001:
             phi = math.radians(49.0) * g["turn"]
-            bx = a0["hip"][0] + KEY_W * (s / SC) * math.sin(phi) - 20 * s
-            reach["l"] = (bx, a0["hip"][1] + 14 * s, bw, math.pi / 2 + 0.25)
+            # the front of his near hip (well clear of the buckle and of the keys)
+            bx = a0["hip"][0] + KEY_W * (s / SC) * math.sin(phi - math.radians(52))
+            reach["l"] = (bx, a0["hip"][1] + 2 * s, bw, 1.25)
 
     def hold(c, side, x, y, a_):
         if side == "l":
@@ -918,7 +919,7 @@ def _union(a, b):
 
 
 STAIR_Z = 1.8
-TROLL_CAM = (1735, 1150, 1.75)
+TROLL_CAM = (1718, 1150, 1.75)
 
 
 def _stair_cam(t, T):
@@ -953,7 +954,7 @@ def _cam(name, t, t0, t1, T):
         return c + (_view(*c),)
     if name == "sulk":
         # same framing as the troll shot; a slow push-in once he starts turning round
-        a, b = TROLL_CAM, (1728, 1140, 1.88)
+        a, b = TROLL_CAM, (1716, 1140, 1.88)
         k = ease_in_out(seg(t, T["turn"], t1))
         return (lerp(a[0], b[0], k), lerp(a[1], b[1], k), lerp(a[2], b[2], k), _union(_view(*a), _view(*b)))
     if name == "pipes":

@@ -620,7 +620,6 @@ def K(info):
     k["k_take"] = k["k_take0"] + 0.36
     k["k_back"] = k["k_take"] + 0.12
     # ---- Curiosity comes out after the click
-    k["c_out0"] = k["smile"] - 1.2 if k["smile"] - 1.2 > k["l6e"] else k["l6e"]
     k["c_out0"] = k["wink"] + 0.5
     k["c_out1"] = k["c_out0"] + 1.0
     # ---- the end
@@ -1393,8 +1392,7 @@ def _flash_cb(state, lens_out):
         ca, sa = math.cos(ang), math.sin(ang)
         fx_, fy_ = x - 8 * sc * ca, y - 8 * sc * sa          # fist centre (a touch toward the wrist)
         ox, oy = fx_ + 50 * k * ca, fy_ + 50 * k * sa          # torch origin: its knurl in the fist
-        flip_y = -1.0 if math.cos(ang) < 0 else 1.0           # keep the knuckles below the barrel
-        with core.saved(c, ox, oy, (k, k * flip_y), ang):
+        with core.saved(c, ox, oy, k, ang):
             # behind the barrel: the palm / heel of the hand and the thumb (tip over the top edge)
             ell(c, -64, 22, 48, 27, skin_sh, lw)
             c.set_line_cap(cairo.LINE_CAP_ROUND)
@@ -1407,7 +1405,7 @@ def _flash_cb(state, lens_out):
         r = props.flashlight(c, ox, oy, k, rot=ang, on=1.0)
         lens_out["lens"] = r["lens"]
         lens_out["angle"] = ang
-        with core.saved(c, ox, oy, (k, k * flip_y), ang):
+        with core.saved(c, ox, oy, k, ang):
             # in front: four fingers wrapping round the barrel, knuckles below it
             for i_, fxx in enumerate((-86, -68, -50, -32)):
                 rect(c, fxx - 9.5, -15, 19, 50, skin if i_ % 2 == 0 else core.mixc(skin, skin_sh, 0.35), lw * 0.75,
@@ -1475,7 +1473,6 @@ def draw_B(ctx, t, k, cam, shot_name, info):
     # characters: Curiosity's group (lighter: it glows) and the people's group
     ctx.push_group()
     draw_cur()
-    pat_c_holes = []
     ctx.push_group()
     draw_emb()
     draw_tired()
@@ -1621,7 +1618,7 @@ def draw_A(ctx, t, k, info):
     T = a_tired_state(t, k)
     Cs = a_cur_state(t, k)
     cxs, cys = ap(A_CX, 0, A_CD)
-    s_c = 0.987 * AF / A_CD * (SC / 0.74) * 0.74
+    s_c = (SC / S) * AF / A_CD
     # Curiosity's glow on the floor and walls around it
     ctx.save()
     ctx.set_operator(cairo.OPERATOR_ADD)
@@ -1674,8 +1671,6 @@ def draw_rec_insert(ctx, t, k, info):
     core.vgradient(ctx, "#15161c", "#07080b")
     core.radial_glow(ctx, 900, 1500, 900, "#ffcf8a", 0.10)         # the torch pool, off right/below
     core.radial_glow(ctx, 200, 500, 700, "#dfe6ee", 0.05)          # his lab coat, out of focus
-    ctx.rectangle(0, 0, core.W, core.H)
-    core.fill(ctx, core.alpha("#000000", 0.0))
     rec = t < k["led_off"]
     led = (1.0 if (t % 1.0) < 0.45 else 0.15) if rec else 0.0
     lvl = 0.0

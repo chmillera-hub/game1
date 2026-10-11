@@ -782,7 +782,7 @@ def cur_state(t, k):
             st["expr"] = "eyeroll"                 # very sassy: lids drop, roll, a head toss
             st["pose_t"] = t - k.roll0
             ru = seg(t, k.roll0, k.roll0 + CR.EYEROLL_DUR)
-            st["rot"] = -0.07 * bump(ru, 0.12, 0.85) + 0.03 * bump(ru, 0.75, 1.0)
+            st["rot"] = -0.11 * bump(ru, 0.1, 0.85) + 0.05 * bump(ru, 0.75, 1.0)   # a head toss
             st["sy"] *= 1.0 - 0.04 * bump(ru, 0.7, 1.0)          # the "hmph" shoulder drop
         elif k.roll0 + CR.EYEROLL_DUR + 0.15 <= t < k.HOOD:
             st["expr"] = "annoyed"
@@ -1003,10 +1003,10 @@ def _shots(k):
     add(s1_end, k.cut_fit, "climb",
         lambda t: (lerp(955, 1030, smoothstep(seg(t, k.hop1, k.hop2 + 0.5))), 1060, 1.85))
     add(k.cut_fit, k.cut_roll, "fit", lambda t: (1040, lerp(1000, 994, seg(t, k.cut_fit, k.cut_roll)), 2.3))
-    add(k.cut_roll, k.HOOD, "roll", lambda t: (CUR_HEAD[0] + 10, CUR_HEAD[1] + 55, 3.0))
+    add(k.cut_roll, k.HOOD, "roll", lambda t: (CUR_HEAD[0] + 10, CUR_HEAD[1] - 44, 3.0))   # plate text cropped
     add(k.HOOD, k.cut_oh, "hood",
-        lambda t: (1050, 1000, lerp(2.4, 2.5, smoothstep(seg(t, k.HOOD, k.pk0)))))
-    add(k.cut_oh, k.cut_nod, "oh", lambda t: (1080, 945, 3.0))
+        lambda t: (1050, 968, lerp(2.4, 2.5, smoothstep(seg(t, k.HOOD, k.pk0)))))
+    add(k.cut_oh, k.cut_nod, "oh", lambda t: (1045, 960, 2.7))
     add(k.cut_nod, k.PING, "nod", lambda t: (1040, 1060, 1.6))
 
     def ping_cam(t):
@@ -1237,8 +1237,8 @@ def render(ctx, t, info):
             else:
                 # its open eyes light the faces; shut, only its soft teal halo is left
                 L += [(b["eye_l"][0], b["eye_l"][1], 30, eo), (b["eye_r"][0], b["eye_r"][1], 30, eo),
-                      (ce[0], ce[1], 250, lerp(0.3, 0.62, eo))]
-                Tn.append((ce[0], ce[1], 330, lerp(0.1, 0.2, eo)))
+                      (ce[0], ce[1], 250, lerp(0.5, 0.62, eo))]
+                Tn.append((ce[0], ce[1], 330, lerp(0.16, 0.2, eo)))
             hood = tst["hood"]
             if hood < 0.6 and name != "dark":
                 for e in ("eye_l", "eye_r"):          # his teal irises glow (not the skin around)

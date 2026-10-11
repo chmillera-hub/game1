@@ -169,7 +169,7 @@ def TT(info):
     T["stand2"] = T["plates"] + 0.4             # he stands up off-screen during the pan
     # S8 + the camera
     T["look_up"] = T["camera"] + 0.65           # his pupils slide up to the camera
-    T["c10"] = T["l04"] - 0.65
+    T["c10"] = T["l04"] - 0.95                  # room to settle on her face before the line
     T["c12"] = T["click"] - 0.2
     T["c13"] = T["click"] + 0.55
     # lights out
@@ -811,10 +811,16 @@ def control_shot(ctx, t, T, info, cam, feed=True):
     return a
 
 
+BOSS_CAM_Y0 = 760          # the big monitor (CCTV) fills the upper frame, her chair below
+BOSS_CAM_Y1 = 1061         # her face at screen y ~830, chin ~970: well clear of the caption band
+
+
 def shot_control(ctx, t, T, info):
-    k = ease_in_out(seg(t, T["c10"] + 0.3, T["c10"] + 1.05))
-    cam = (lerp(1700, 1660, k), lerp(540, 935, k), 1.9)
-    cam = (cam[0], cam[1] + 12 * seg(t, T["c10"] + 1.05, T["reach"]), cam[2])
+    # start on the monitor, tilt down to her; settled before "Right on time." begins
+    t_end = T["l04"] - 0.05
+    k = ease_in_out(seg(t, min(T["c10"] + 0.35, t_end - 0.45), t_end))
+    k2 = seg(t, t_end, T["reach"])
+    cam = (lerp(1700, 1660, k), lerp(BOSS_CAM_Y0, BOSS_CAM_Y1, k) - 6 * k2, 1.9 + 0.05 * k2)
     control_shot(ctx, t, T, info, cam)
 
 

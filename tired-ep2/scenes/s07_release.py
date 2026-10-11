@@ -704,17 +704,19 @@ def boss_state(T, info, t):
                            (tb1 + 0.2, B_MON), (tb1 + 0.45, B_AWAY),               # during the blink
                            (tg, B_AWAY), (tg + 0.22, B_MON),
                            (T.L3b.end + 0.55, B_MON), (T.L3b.end + 0.95, (0.1, 0.4))])
-    # the head follows the pupils ~0.15 s later
-    f["head_turn"] = tween(t, [(T.watch + 0.4, 0.0), (T.watch + 0.7, 0.16),
-                               (tb1 + 0.35, 0.16), (tb1 + 0.7, 0.02),
-                               (tg + 0.15, 0.02), (tg + 0.45, 0.14),
-                               (T.L3b.end + 0.7, 0.14), (T.L3b.end + 1.2, 0.04)])
-    f["head_nod"] = tween(t, [(T.watch + 0.4, 0.0), (T.watch + 0.7, -0.07),
-                              (tb1 + 0.35, -0.07), (tb1 + 0.7, 0.07),
-                              (tg + 0.15, 0.07), (tg + 0.45, -0.04),
-                              (T.L3b.end + 0.7, -0.04), (T.L3b.end + 1.2, 0.08)])
-    heavy = (0.20 + 0.06 * smoothstep(seg(t, T.L3.end, T.L3.end + 0.6))
-             + 0.06 * smoothstep(seg(t, tb2 + 0.4, tb2 + 1.0)))
+    # the head follows the pupils ~0.15 s later (chin up a little toward the screen)
+    f["head_turn"] = tween(t, [(T.watch + 0.4, 0.0), (T.watch + 0.7, 0.2),
+                               (tb1 + 0.35, 0.2), (tb1 + 0.7, 0.02),
+                               (tg + 0.15, 0.02), (tg + 0.45, 0.18),
+                               (T.L3b.end + 0.7, 0.18), (T.L3b.end + 1.2, 0.04)])
+    f["head_nod"] = tween(t, [(T.watch + 0.4, 0.0), (T.watch + 0.7, -0.14),
+                              (tb1 + 0.35, -0.14), (tb1 + 0.7, 0.07),
+                              (tg + 0.15, 0.07), (tg + 0.45, -0.12),
+                              (T.L3b.end + 0.7, -0.12), (T.L3b.end + 1.2, 0.08)])
+    # lids: heavy on the screen, heavier when she looks away into nothing
+    away = tween(t, [(tb1 + 0.3, 0.0), (tb1 + 0.6, 1.0), (tg, 1.0), (tg + 0.2, 0.0),
+                     (T.L3b.end + 0.7, 0.0), (T.L3b.end + 1.1, 1.0)])
+    heavy = 0.17 + 0.09 * away + 0.04 * smoothstep(seg(t, tb2 + 0.4, tb2 + 1.0))
     f.update(lid=heavy, lid_ang=0.22, brow=-0.04, brow_ang=0.16, curve=-0.07, frown=0.1,
              press=0.0, smirk=0.0, width=-0.04)
     # unfocused while she stares at nothing
@@ -1131,7 +1133,7 @@ def _mon_slab(ctx, x0, y0, w, hfull, sh, lw=1.2):
     hh = hfull * sh
     ctx.rectangle(x0, y0, w, hh)
     core.fill(ctx, STEEL)
-    hz = min(hfull * 0.2, hh)
+    hz = min(max(3.0, hfull * 0.09), hh)
     props.hazard_band(ctx, x0, y0 + hh - hz, w, hz, step=max(4.0, hz * 1.5), lw=0)
     ctx.rectangle(x0, y0, w, hh)
     core.stroke(ctx, props.INK, lw)
@@ -1654,10 +1656,10 @@ def camera_at(T, t):
         cx, cy, z = 1700.0, 900.0, 2.0
     elif t < T.wcut2:                                  # S11b the Boss MCU: "You too, Embarrassment."
         k = seg(t, T.wcut, T.wcut2)
-        cx, cy, z = lerp(1752, 1750, k), lerp(1017, 1012, k), lerp(2.9, 2.98, k)
+        cx, cy, z = lerp(1761, 1759, k), lerp(1026, 1022, k), lerp(3.25, 3.35, k)
     else:                                              # S11c her + the monitor: numb
         k = smoothstep(seg(t, T.wcut2, T.end))
-        cx, cy, z = lerp(1846, 1834, k), lerp(908, 930, k), lerp(1.98, 2.2, k)
+        cx, cy, z = lerp(1834, 1828, k), lerp(972, 984, k), lerp(2.1, 2.26, k)
     return cx, cy, z, dx, dy
 
 
