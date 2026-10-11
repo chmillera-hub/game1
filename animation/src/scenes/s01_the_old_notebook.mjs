@@ -1,6 +1,6 @@
 // s01 · the_old_notebook · REAL_ROOM · first frame of the film (the thumbnail)
 // Shots (data/staging.md §3 s01):
-//   A  0 → s01b02+3.04 ('the first story')  OPENING still {420,655,1.12} → 1.142, title fades out over b02 → +1.5
+//   A  0 → s01b02+3.04 ('the first story')  OPENING still {420,655,1.12} → 1.142, title fades out over b02−1.1 → b02−0.12 (before the first caption)
 //   B  → s01b03                              INSERT on the open notebook (SELF's POV over the shoulder), hand smooths
 //                                            the dog-eared corner, the eyes (camera) travel from Fear up to the hood
 //   C  s01b03 → S.end+0.9                    EYE PUSH from the face close-up into the lamp-side eye → amber glow
@@ -206,8 +206,10 @@ function shotA(g, t, S) {
   drawRealRoomForeground(g, st);
   drawNotebook(g, NBK[0], NBK[1], NBK[2], { open: 1, flat: 1, rot: NB_ROT });
   drawSelfLit(g, st, pose, 'front');
-  // TITLE (world units under the camera): opaque on frame 1, fades out over b02 → +1.5
-  const ta = 1 - S.k(t, [['s01b02', 0], ['s01b02+1.5', 1, 'sine']]);
+  // TITLE (world units under the camera): opaque on frame 1 (the thumbnail), fades out over the last second of the
+  // silent beat so it is gone just before the first burned-in caption fades in (play 3.52 = story 3.52, the
+  // time-warp is the identity before s01b02): the two text layers never share the screen
+  const ta = 1 - S.k(t, [['s01b02-1.1', 0], ['s01b02-0.12', 1, 'sine']]);
   if (ta > 0.003) drawTitle(g, ta);
   g.restore();
   vignette(g, 0.25);

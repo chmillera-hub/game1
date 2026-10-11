@@ -177,6 +177,12 @@ function placeSubs() {
   let prevPos = 'low', prevScene = null;
   const counts = {};
   for (const c of caps) {
+    if (c.pos_override) { // manual placement (data/subtitle_overrides.json) wins and sets the scene's running position
+      c.pos = c.pos_override; c.pos_overlap = 0;
+      counts[c.pos] = (counts[c.pos] || 0) + 1;
+      prevPos = c.pos; prevScene = c.scene;
+      continue;
+    }
     const n = Math.max(3, Math.ceil((c.end - c.start) / 0.45) + 1);
     const faces = [];
     for (let i = 0; i < n; i++) {

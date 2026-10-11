@@ -1,0 +1,239 @@
+[
+ {
+  "caption_overrides": [],
+  "issues": [
+   {
+    "scene": "s03 / s12 / s14 / s02 / s10 / s11",
+    "time": 39.88,
+    "severity": "medium",
+    "category": "pacing",
+    "problem": "The v2 rule says silent beats and pauses keep their length, but pauses inside a line's own audio were sped up 15% along with the speech. Because the picture is warped over the whole line, the acting holds inside those pauses are shorter too. Several of these are the film's deliberate dramatic holds. 'Huge. \u2026 Unmoving.' (s03b03): pause starts at 39.88 and drops from 1.78 s to 1.55 s while the camera holds on the Void. 'And the Void did not move. \u2026 It stood there.' (s12b11): starts at 172.08, 1.64 s to 1.43 s. 'my fear wasn't afraid. \u2026 It felt wonder' (s14b06): starts at 222.35, 1.82 s to 1.59 s, which is Fear's slow change to wonder. 'Fear? \u2026 What are you looking at?' (s02b04): starts at 28.96, 1.20 s to 1.05 s. 'stone-faced, \u2026 its shadow' (s10b01): 126.73, 0.94 s to 0.82 s. 'when I wasn't looking, \u2026 I had an image' (s11b01): 135.31, 0.84 s to 0.73 s. Each hold loses about 0.1\u20130.23 s, and those are the moments the creator asked to leave room for.",
+    "fix": "In tools/speed_dialogue.py, split each line at word gaps of 0.35 s or more (taken from data/lines.json words). Apply atempo=1.15 only to the voiced chunks, keep each gap chunk at 1.0x, and concatenate. Emit two extra knots per gap, (story gap start, play gap start) and (story gap end, play gap end), so the picture runs at slope 1 through the pause. Then re-run lipsync.py, build_subtitles.py, render.mjs --place-subs, collect_sfx.mjs, resolve_music.py and mix.py, and re-render. Net cost is about +1.2 s of runtime."
+   },
+   {
+    "scene": "s04 / s12 / s13 / s19 / s20",
+    "time": 57.63,
+    "severity": "low",
+    "category": "caption-pacing",
+    "problem": "Speeding up the speech shortened the captions too. Some now pass at 17\u201319 characters per second even when free screen time follows, so they disappear before a phone viewer has read them. 'You don't know that.' is on screen 57.63\u201358.71 (1.08 s, 18.5 cps) and is followed by a 3 s silent beat. 'Why are you just standing there?' 162.80\u2013164.66 (17.1 cps). 'Are you just here to scare me forever?' 165.32\u2013167.38 (18.5 cps), while the shot holds until the cut at 168.04. 'My fear thought the Void had had enough' 182.81\u2013184.92 (18.6 cps). 'And the Void, standing in the background.' 294.41\u2013296.57 (19 cps), with the next caption not until 297.11. 'I may have shed a tear or two myself.' 308.99\u2013311.11 (17.5 cps), the last line of the film, with about 8 s of silence after it.",
+    "fix": "In tools/build_subtitles.py, after timing each caption, extend its end to min(next caption start \u2212 0.1, end + 1.0) whenever its rate is above 15 cps. Concretely: s04b05 to 59.6, s12b08 to 165.2, s12b09 to 168.0, s19b02 to 297.0, s20b03 to 312.3. Also move the s13b03 split one word later ('\u2026had had enough of' / 'its complaining\u2026') to balance the two halves. Regenerate out/subtitles.srt."
+   },
+   {
+    "scene": "s08",
+    "time": 106.39,
+    "severity": "low",
+    "category": "sfx-sync",
+    "problem": "A sound sample that contains several hits keeps its real-time rhythm when it starts inside a sped-up line, while the picture runs 15% faster. The CEO's guiding footsteps are one 4-step sample (at 105.03, rate 1.17, contacts about every 0.47 s) that runs under the narration 'So I put my fear into a cage.' (105.50\u2013107.83). The visible steps, now about 0.42 s apart, pull ahead of the sound. The heard contacts at 105.59 / 106.06 / 106.52 trail the visible contacts at about 105.57 / 105.98 / 106.39, so by the 4th step the sound is about 130 ms (3 frames) late. s09's footsteps (114.93) drift less, about 90 ms by the 3rd step.",
+    "fix": "Either split these into one event per step, as s02 already does (each contact anchored separately, so collect_sfx.mjs warps each one), or in tools/collect_sfx.mjs multiply e.rate by the local warp slope (story length / play length of the line, about 1.146) for any event whose span overlaps a line beat. Re-run collect_sfx.mjs and mix.py."
+   },
+   {
+    "scene": "s08",
+    "time": 109.24,
+    "severity": "low",
+    "category": "lip-sync-readability",
+    "problem": "'Please don't leave me with it.' (109.03\u2013110.88) is Fear's only line spoken through the bars. In the close-up, the cage's centre bar runs straight down the middle of Fear's mouth. The opening shows on both sides, so the sync data is correct, but the mouth shapes ('Please', 'leave') read as two broken slivers at phone size. All of Fear's other on-screen lines read cleanly.",
+    "fix": "In s08_the_cage.mjs, nudge Fear's close-up framing (or the bar phase of the close-up cage) about 25\u201330 px sideways so the mouth sits between two bars, with the bars framing the face rather than splitting it. Keep the bar over one eye if the 'behind bars' read is wanted."
+   }
+  ],
+  "verdict": "Sync holds up well after the 15% speed-up: I found no lip-sync, reaction, cut, music or sound-effect timing that the speed-up broke. The one sync drift is a minor footsteps lag in s08 (item 3). Every scene is evaluated at story time through one shared warp, and the voice, sound effects, music and captions are all placed in play time through that same warp. What I checked: (1) Voice placement: cross-correlating all 63 sped-up line WAVs against the audio in out/final.mp4 gives a 0 ms offset for every line. Audio and video streams both start at 0, and the 80 shot changes fall on identical frames in master_video.mp4 and final.mp4. (2) Lip-sync: I rendered close-up strips at each word's loudest frame, at every word gap and just after each line ends, for every on-screen speaking line (s02b04, s04b01\u2013b05, s05b01/b02, s06b03/b05/b07, s07b03, s08b02, s12b01\u2013b09, s14b08, s17b03/b04). Mouths open on syllables and close in gaps ('Fear? | What\u2026', 'I can't. | I'm sorry', 'That's what scares me. | It's not safe'). The inner line s13b02 and the voice-over lines keep mouths still. (3) Gestures and cuts keyed to words still land: hand on the shoulder on 'hand' (75.71), Fear's hands-off and handle spring-back on 'Fear,' (98.78), the push on 'push' (256.33), the s15/s16 cuts on 'smiled', 'moment', 'galaxies' and 'facade', and the tear welling on 'tear' (309.82). The emotions' smiles in s15 happen in the silent beat and hold about 1.6\u20132 s. (4) Sound effects match the actions: alarm pulls at 20.32, 62.37 and 93.41 meet the handle drop; the cage clang at 107.57 matches the gate shutting in the insert; the key turn and lock click at 141.61 and 142.27 match the Void unlocking; the lamp click at 314.57 comes just before the light fades. (5) Music hits land on their moments: the sting before 'The Void.' (36.57), the drop on 'My fear refused' (94.66), silence on 'This is it.' (181.24), the sting as the hand touches (191.67), the swell with the first star (201.54), and the resolve after the final line (311.89). (6) The six dissolves all fall in silent stretches, so their length is unchanged, and they look clean. (7) Frame 0 is the titled desk still with no caption; the title fades as the first caption arrives at 3.52. The ending (tear, wipe, smile, lamp off, a 4.5 s hold, music fading to silence at 319) still plays fully. Measured camera and walking speed changes at line boundaries are too small to see. Remaining problems, all minor: the pauses inside lines were sped up even though the rule says pauses are unchanged; a few captions now read too fast; one footsteps sample drifts about 130 ms in s08; and a cage bar splits Fear's mouth in s08. No caption hides anything I needed to see, so caption_overrides is empty."
+ },
+ {
+  "caption_overrides": [
+   {
+    "beat": "s04b03",
+    "idx": 0,
+    "pos_override": "low",
+    "reason": "In the over-the-shoulder shot (51.25-55.37), 'top' puts the box on the CEO's brow, with its left edge about 10 px from the CEO's eye (full-size check at 52.0). Sitting next to the CEO's face also makes Fear's line look like the CEO's. 'low' is clean: it covers only Fear's belly and legs, and s04b01/b02 are already low. The start must also move to the cut at 51.25. At 51.15-51.25 the frame is still the CEO close-up, where a low box covers Fear's eye (sim at 51.2)."
+   },
+   {
+    "beat": "s04b03",
+    "idx": 1,
+    "pos_override": "low",
+    "reason": "Same shot as idx 0. 'top' sits against the CEO's brow and eye and covers the sticky note. 'low' is clean (sim at 54.0) and keeps both halves of the line in one place."
+   },
+   {
+    "beat": "s04b04",
+    "idx": 0,
+    "pos_override": "low",
+    "reason": "Two-shot, 55.37-57.75. 'top' is squeezed between the bottom of the Void's hood and the CEO's hair. 'low' only covers Fear's legs and the CEO's shin (sim at 56.2 and 57.7). With idx 0/1 and b05 also moved to low, all of s04 stays low. Without this change the placement would go low, low, top, low."
+   },
+   {
+    "beat": "s04b05",
+    "idx": 0,
+    "pos_override": "low",
+    "reason": "At 57.8-58.7 the 'top' box covers the inner end of the CEO's brow, about 20 px from the eye, and the line reads as the CEO's. 'low' sits under the speaker, Fear, and covers nothing (sim at 58.2 and in the pre-cut frame at 57.7)."
+   },
+   {
+    "beat": "s06b07",
+    "idx": 0,
+    "pos_override": "top",
+    "reason": "Same Fear close-up setup as s06b04 and s06b05, which are both top, so this is a needless switch to upper. 'upper' sits on the tip of Fear's tuft (91.3). 'top' is clean between the sticky note and the tuft for the whole span, including the pre-cut frames at 90.05 (sims at 90.1, 91.3 and 92.4)."
+   },
+   {
+    "beat": "s12b03",
+    "idx": 0,
+    "pos_override": "upper",
+    "reason": "At 151.87-152.91, 'top' puts the caption inside the black, violet-rimmed opening of the Void's sleeve above the cage. It looks like a speech balloon coming from the Void while Fear is the one speaking. 'upper' sits on the plain dark wall between the sleeve and the cage dome for the whole span (sims at 151.9 and 152.85), and matches s12b01."
+   },
+   {
+    "beat": "s17b04",
+    "idx": 0,
+    "pos_override": "low",
+    "reason": "At 273.8-274.7 the 'top' box touches the CEO's cheek at mouth height, so Fear's turning-point line 'Can I help?' looks like the CEO's. 'low' sits on the console front just under Fear, covering no face or hands (sim at 274.2 and 274.65). The start should also move to the cut at 273.79, because the pre-cut frame at 273.72 puts the low box near Fear's chin."
+   }
+  ],
+  "issues": [
+   {
+    "scene": "subs",
+    "time": 107.46,
+    "severity": "medium",
+    "category": "timing/placement",
+    "problem": "s08b01 'So I put my fear into a cage.' (top) runs about 3 frames past the hard cut to the cage close-up. At 107.458, 107.5 and 107.54 the fading box sits directly on Fear's eye and upper lid. Confirmed in out/final.mp4 at 107.50 and in renders (out/qa/v2_s08cut.png).",
+    "fix": "End s08b01 at the cut: end 107.566 -> 107.44. The caption has been on screen for 2.0 s by then, and only the last 0.36 s of 'cage' is left. Don't move it to low, because low covers the CEO walking Fear into the cage in the wide."
+   },
+   {
+    "scene": "subs",
+    "time": 25.64,
+    "severity": "medium",
+    "category": "timing",
+    "problem": "25 captions start 0.08-0.15 s (2-3 frames) before a hard cut. They begin 0.08 s before the first word, and the shots cut on the word. When the new position differs from the outgoing shot, the caption appears in the wrong shot: 25.64 'looking around to see why.' jumps from mid to top over the EXIT sign in the wide, 4 frames before the cut at 25.79 (confirmed in final.mp4); 83.18 'It's causing turmoil.' fades in over the CEO's hair in the CEO close-up before the cut at 83.29; 51.15 s04b03 over the CEO close-up; 119.95 s09b02 top over the Void's hood in the wide before 120.04. Other cases: 9.86, 55.26, 57.63, 64.68, 90.05, 94.58, 98.47, 99.90, 108.95, 181.16, 182.81, 189.24, 254.57, 258.02, 272.24, 273.67, 294.41.",
+    "fix": "In tools/build_subtitles.py, after timing: if a cut falls in (start, start+0.20], set start = the cut. Cuts are at beat starts and scene starts; the ones measured from the master are 9.958, 25.792, 51.25, 55.375, 57.75, 64.792, 83.292, 90.167, 94.667, 98.583, 100.0, 109.042, 120.042, 181.25, 182.917, 189.333, 254.667, 258.125, 272.333, 273.792 and 294.5. Similarly, if a cut falls in [end-0.35, end) and the next shot needs a different position, set end = the cut."
+   },
+   {
+    "scene": "subs",
+    "time": 5.36,
+    "severity": "medium",
+    "category": "timing",
+    "problem": "Second halves of split lines show up early, and the first halves cut off the last word. Whisper folded the comma pause into the next word: 'of' runs 1.84-2.63 and 'in' 3.03-3.93. From the wav energy: s01b02.1 'of the first story...' shows at 5.36, while 'memory' is heard until 5.61 and 'of' starts at 6.17. s02b03.1 'looking around to see why.' shows at 25.64, while 'mind' runs until 25.84 and 'looking' starts at 26.38. s19b03.1 'in the back of my mind.' shows at 300.13, while 'anymore' runs until 300.56 and 'in' starts at 301.04. s04b03.1 'It's not safe here.' shows at 52.96, but speech resumes at 53.38.",
+    "fix": "s01b02: idx0 end 5.324 -> 6.21, idx1 start 5.364 -> 6.25 (the insert cut). s02b03: idx0 end 25.60 -> 25.75, idx1 start 25.64 -> 25.79 (cut). s19b03: idx0 end 300.09 -> 300.62, idx1 start 300.13 -> 300.98. s04b03: idx0 end 52.92 -> 53.26, idx1 start 52.96 -> 53.30. In general, take chunk start and end times from the wav's energy onsets and offsets, or clamp any short word whose Whisper duration is over 0.45 s to its last 0.2 s."
+   },
+   {
+    "scene": "subs",
+    "time": 39.4,
+    "severity": "medium",
+    "category": "timing/readability",
+    "problem": "s03b03 'Huge. Unmoving. And its face was pure darkness.' is one caption held for 6.6 s. The narration is spread out: 39.40-40.25, 41.51-42.46 and 43.73-46.14. So 'its face was pure darkness' can be read 4.3 s before the narrator says it, which spoils the reveal. The line break 'Huge. Unmoving. And its / face was pure darkness.' also splits 'its face'.",
+    "fix": "Split into two captions: 'Huge. Unmoving.' from 39.32 to 42.70, and 'And its face was pure darkness.' from 43.65 to 46.45. The second fits on one line at 499 px. Keep both low."
+   },
+   {
+    "scene": "subs",
+    "time": 311.11,
+    "severity": "medium",
+    "category": "timing",
+    "problem": "Captions end before the voice does. The fade-out also starts 0.12 s before the end time, so the word is still audible after the text has gone. Worst cases: s19b03.0 ends 300.09 against speech to 300.56; s14b10 239.36 against 239.63 ('consciousness'); s02b03.0 25.60 against 25.84; s05b04 71.97 against 72.16 ('chaos'); s06b09 95.98 against 96.12; s06b07 92.52 against 92.64; s19b02 296.57 against 296.69; s03b03 46.03 against 46.14; s04b02 50.33 against 50.44. The film's final spoken line, s20b03 'I may have shed a tear or two myself.', vanishes at 311.11 while 'myself' runs to about 311.3, and the frame after it is silent.",
+    "fix": "Set end = max(whisper_end + 0.30, wav_energy_end + 0.25), clipped to next_start - 0.04 and to the next cut. Whisper's final-word ends run 0.1-0.3 s early on the time-compressed clips. Hold the last caption s20b03 until about 312.2, the start of the silent beat s20b04, so the closing line can be read. Optionally hold s17b04 'Can I help?' to the cut at 275.08."
+   },
+   {
+    "scene": "subs",
+    "time": 74.6,
+    "severity": "low",
+    "category": "placement",
+    "problem": "s06b01 'Then one day, I put my / hand on my fear's shoulder.' is low for 73.60-77.93. In the first shot, the console seen from the front (73.6-75.71), the top edge of the two-line box covers the chins and mouths of Sadness and Joy. Joy's mouth is hidden at about 75.0-75.7 while the emotions watch the CEO walk to Fear (out/qa/v2_s06open.png). No single position is clean in both shots: top and upper hit the CEO's eye or mouth in the second shot (sim out/qa/v2_sim_s06b01.png).",
+    "fix": "Split at the comma and snap to the cut. 'Then one day,' from 73.60 to 75.71 at top, which is clean dark curtain in the console shot. 'I put my hand on my fear's shoulder.' from 75.71 to 77.93 at low, which is clean in the alarm two-shot and keeps the hand on the shoulder visible."
+   },
+   {
+    "scene": "subs",
+    "time": 28.65,
+    "severity": "low",
+    "category": "timing",
+    "problem": "s02b04 'Fear? What are you looking at?' merges two sentences separated by a 1.1 s pause ('Fear?' 28.73-28.96, 'What' at about 30.27). It also spans the cut at 29.875 from the CEO close-up to the two-shot, so 'What are you looking at?' can be read early.",
+    "fix": "Split at the cut: 'Fear?' from 28.65 to 29.875, and 'What are you looking at?' from 29.875 to 31.58. Both stay top."
+   },
+   {
+    "scene": "subs",
+    "time": 126.97,
+    "severity": "low",
+    "category": "timing",
+    "problem": "s10b01 'And the Void stood there, stone-faced,' / 'its shadow filling half the room.' blinks off for 0.5 s (126.97-127.47) in the middle of a sentence. It is the same shot and the same upper position. The builder only bridges gaps under 0.35 s.",
+    "fix": "Extend s10b01 idx0 end to 127.43, or raise the bridging threshold in build_subtitles.py to 0.6 s when the next caption is the same beat and the same shot."
+   },
+   {
+    "scene": "subs",
+    "time": 199.1,
+    "severity": "low",
+    "category": "placement/timing",
+    "problem": "s13b06 'And it looked up, into / the face of the Void.' (upper) is fine until the tilt-up arrives. From about 199.10 to 199.37 the top of the box covers the bottom of the Void's face opening, the focal point of the cut to the cosmos (out/qa/v2_s13tilt.png). Mid and top are worse: they cover Fear's face, the Void's hand or the TIME-OUT sign earlier in the span (out/qa/v2_sim_b.png).",
+    "fix": "Keep upper and end the caption at 199.15 instead of 199.37, so it has faded before the hood is centred. The words have been readable for 2.9 s by then."
+   },
+   {
+    "scene": "subs",
+    "time": 213.6,
+    "severity": "low",
+    "category": "placement",
+    "problem": "s14b04 'The Void, filled with bits / and pieces of meaning.' (low, 212.11-215.08) hides the music-note meaning glyph: only its dot shows under the box (out/qa/v2_s14glyph.png). This happens on the very line about 'bits and pieces of meaning'. Mid would hide the little Fear-figure glyph and the spiral galaxy instead, and upper the big galaxy and the sun (out/qa/v2_sim_s14.png).",
+    "fix": "Keep the caption low. In s14, move the music-note glyph about 90 px lower and/or right, below y\u22481085 or to the right of x\u2248560, so it clears the caption box at x 147-553 and y 972-1072."
+   },
+   {
+    "scene": "subs",
+    "time": 124.37,
+    "severity": "low",
+    "category": "readability",
+    "problem": "Line breaks split phrases or leave a function word dangling at the end of a line, because layout() uses pure width balance and the punctuation bonus is only -40. Examples: 'And the Void stood / there, stone-faced,' (124.4); 'Are you just here to / scare me forever?' (165.3); 'My fear thought the / Void had had enough' (182.8); 'And for once, my / fear wasn't afraid.' (219.9); 'And instead of darkness, my / fear saw...' (203.3); 'And the Void stared into the / screen of...' (236.0); 'Then my fear felt the / gentle push...' (254.6); 'I could barely see that / rusty cage anymore,' (297.1); 'I told myself it was the / responsible...' (115.2); 'Then one day, I put my / hand on...' (73.6); 'I may have shed a / tear or two myself.' (309.0).",
+    "fix": "In src/subtitles.mjs layout(), use about -90 for a break after , . ? ! and add +70 when line 1 ends in a/the/my/its/to/of/that/into. That gives, for example, 'Are you just here / to scare me forever?', 'My fear thought / the Void had had enough', 'And for once, / my fear wasn't afraid.', 'And the Void stared into / the screen of my consciousness.' (509 px), 'I may have shed / a tear or two myself.' and 'And the Void stood there, / stone-faced,'. Keep the existing x1 \u2264 630 limit; every caption currently stays at or under 622."
+   },
+   {
+    "scene": "subs",
+    "time": 83.29,
+    "severity": "low",
+    "category": "readability",
+    "problem": "Speaker tints are nearly the same at phone size: CONSCIOUSNESS #fff0d4, FEAR #ded4ff and NARRATOR #ffffff (italic). The CEO speaks off-screen over Fear-only shots, in 'It's causing turmoil.' (83.29-84.63) and 'Fear,' (98.58-99.47). With the sound off, these read as Fear's own lines, because the warm-white versus lavender-white difference is invisible over the dark box.",
+    "fix": "Strengthen the tints, for example FEAR #c3b0ff and CONSCIOUSNESS #ffd98c. Or prefix lines from off-screen speakers with an em dash, which can be computed from the shot. Keep NARRATOR white italic."
+   }
+  ],
+  "verdict": "Checked all 71 captions. I rendered the start, middle and end of each one (out/qa/v2_cap_<scene>_*.png), compared them with frames from out/final.mp4, and tested alternative positions on caption-free renders. Most of it holds up. The text matches what is spoken in all 71: the ASR differences ('A huge', 'and after that', 'imagine') are Whisper artifacts, confirmed by re-transcribing the clipped audio. out/subtitles.srt matches the JSON exactly. No caption enters the bottom 15% (lowest edge y=1072) or the button column (rightmost edge x=622). None is on screen for less than 1.0 s, and none covers the cage-unlocking beat, which plays with no captions. Contrast is fine at phone size: the inner-thought lavender over Fear's face measures about 5:1. Placement problems needing an override: in s04's over-the-shoulder shot, Fear's lines sit at top against the CEO's brow and eye and read as the CEO's, so move all of s04 to low. s06b07 jumps to upper for no reason, onto Fear's tuft (back to top). s12b03 sits inside the Void's sleeve and looks like the Void's speech balloon (move to upper). s17b04 'Can I help?' touches the CEO's cheek (move to low). The main timing problems: s08b01 runs into the cage close-up and covers Fear's eye for 3 frames. Captions systematically start 2-3 frames before hard cuts, sometimes in the wrong shot and position; snap starts to cuts. The second halves of three split lines appear 0.7-0.9 s early because Whisper absorbed the pauses into the next word. s03b03 shows 'its face was pure darkness' 4 s before it is said. Many captions, including the film's last line, disappear before the final word finishes. s06b01's opening shot grazes the emotions' mouths. Line breaks often leave 'the', 'my', 'a' or 'to' dangling. All fixes are small data or builder changes; nothing needs to be re-animated except an optional nudge of the music-note glyph in s14."
+ },
+ {
+  "verdict": "TECHNICAL PASS with fixable caption-timing and audio-peak issues. Verified: out/final.mp4 = 14,501,889 B (< 15,000,000). H.264 High@4.0 yuv420p 720x1280 24/1, +faststart (moov before mdat). Tags bt709/bt709/bt709/tv, and the 601\u2192709 conversion is correct: decoded frame 0 matches the RGB render within 2\u20133 levels per channel. Video 7660 frames = 319.167 s, AAC 319.185 s, timeline_play 319.185 s (video is 18 ms, under one frame, short because -shortest dropped master frame 7661; harmless). AAC vs mix.wav cross-correlation lag = 0 samples at 5/100/300 s. Integrated loudness -16.1 LUFS, LRA 6.5 LU, but true peak -0.4 dBTP after AAC (see issue). Frame 0 is the finished bright title still with no caption. The last frame (319.125) is clean: no caption, scene fully drawn, audio decays to -77 dB. Captions survive compression crisply: text edges, the 0.64 dark box and the FEAR lavender, CONSCIOUSNESS cream and JOY yellow tints all hold in final.mp4 vs master (checked 16 captions at midpoint and at onset+0.16 s, including the s05/s02 0.85-bitrate zones, dark s03/s11, cosmos s14 and the s01 whiteout). No banding in the whiteout. Mean Y-PSNR vs master is 37.5 dB; the worst (33.6 dB, 28.1 s) only looks softer. Time-warp: knots are strictly monotonic and C0 continuous. Story\u2192play mapping of every scene and beat matches timeline_play exactly. Lip-sync arrays match play-time beat lengths, and their envelope correlation shows a lag of 0 to -1 frame. Global and 10x10-block frame-difference scans over all 7660 master frames find no pose jump at any line start or end. Every spike was a shot cut, a blink, scripted acting (e.g. the dry swallow at 179.29) or a caption fade. Render-segment joins at frames 1916/3832/5748 are seamless. SRT matches subtitles.json for all 71 captions. The problems are in caption timing logic (box blinks, flashes before cuts), AAC overshoot, and a stale root deliverable.",
+  "issues": [
+   {
+    "scene": "s01/s02/s04/s05/s13/s16/s19",
+    "time": 5.33,
+    "severity": "medium",
+    "category": "subtitles-flicker",
+    "problem": "Back-to-back caption chunks blink. build_subtitles.py leaves a 0.04 s gap between chunks, and drawSubtitles fades every caption out and in over 0.12 s regardless of what follows. So the box dims for 2 frames, vanishes for 1 frame and fades back in, mid-sentence, roughly 6 frames in all. Verified in final.mp4 at frames 127-129 (5.29-5.38 s; frame 128 has no box), 1269-1272 (52.88-53.00 s) and 6232-6235 (259.67-259.79 s). All occurrences: 5.344, 25.621 (also jumps mid\u2192top), 28.631, 52.938, 64.664, 66.084 (top\u2192low), 70.710, 184.936, 259.762, 300.114.",
+    "fix": "In src/subtitles.mjs drawSubtitles: when the next caption starts within 0.1 s of c.end, skip c's fade-out and the next caption's fade-in. Treat t in the gap as still showing c and hold the box at alpha 1, swapping only the text (or crossfading the text over 2 frames). Alternatively set end = next.start in build_subtitles.py and mark the pair 'joined'. Where the position changes (25.62, 66.08), keep the fade."
+   },
+   {
+    "scene": "multiple",
+    "time": 51.15,
+    "severity": "medium",
+    "category": "subtitles-shot-change",
+    "problem": "Captions start 2-4 frames before a hard cut, because LEAD 0.08 s puts the caption ahead of a line-start cut. Each new caption fades in over the outgoing shot, then the picture cuts. Example: at frames 1228-1229 (51.17-51.21 s) 'That's what scares me.' appears semi-transparent at top over the CEO/Void close-up (crossing the hood) before the cut at 51.250. Also 'The Void.' at 36.889 before the cut at 37.000. Caption start \u2192 cut: 9.857\u21929.958, 25.641\u219225.792, 36.889\u219237.000, 51.147\u219251.250, 55.261\u219255.375, 57.632\u219257.750, 64.684\u219264.792, 83.179\u219283.292, 90.048\u219290.167, 94.582\u219294.667, 98.473\u219298.583, 99.897\u2192100.000, 108.948\u2192109.042, 119.950\u2192120.042, 181.157\u2192181.250, 182.814\u2192182.917, 189.236\u2192189.333, 254.575\u2192254.667, 258.019\u2192258.125, 259.782\u2192259.958, 272.239\u2192272.333, 273.671\u2192273.792, 294.411\u2192294.500. Captions that spill 5-7 frames past a cut: #3 (cut 20.750, ends 21.055), #9 (48.375/48.611), #27 (107.458/107.566), #41 (167.125/167.377).",
+    "fix": "Add shot-change snapping in tools/build_subtitles.py, using cut times from the scene modules' shot lists or from a frame-difference pass over master_video. If a cut falls within (start, start+0.3], set start = cut. If a cut falls within [end-0.3, end), set end = cut, unless that leaves less than MIN_DUR, in which case extend the end at least 0.5 s past the cut. Then re-run --place-subs."
+   },
+   {
+    "scene": "whole film",
+    "time": 199,
+    "severity": "medium",
+    "category": "audio-true-peak",
+    "problem": "The AAC track measures -0.37 dBTP. mix.wav is limited to -2.46 dBTP, and the 64 kbps AAC encode overshoots by about +2.1 dB. The hottest decoded windows: 199.0 s (-0.37), 309.0 (-0.42), 170.0 (-0.57), 127.5 (-0.60), 100.0 (-0.73), 90.0 (-0.92), 197.5 (-0.84). That exceeds the usual \u2264 -1 dBTP delivery target, and social platforms' re-encodes can clip these peaks.",
+    "fix": "Lower the true-peak ceiling of the final limiter in audio/mix.py to -4.0 dBTP, keeping -16 LUFS integrated (LRA 6.5 allows it). Alternatively, apply a -1.5 dB gain plus a true-peak limiter on the mix before the AAC pass. Re-encode and confirm with `ffmpeg -i out/final.mp4 -af ebur128=peak=true` that the AAC reads \u2264 -1.0 dBTP."
+   },
+   {
+    "scene": "s13",
+    "time": 199.2,
+    "severity": "low",
+    "category": "subtitles-placement",
+    "problem": "Caption #48 s13b06 'And it looked up, into the face of the Void.' is at 'upper'. As the tilt brings the hood in, the box sits on the bottom of the Void's face opening from 199.1 to 199.37 (place-subs logged pos_overlap 15781). The overlap comes from the 0.3 s TAIL alone: the last word 'void.' ends at about 199.09. Every other position collides with Fear's face during 196.7-197.9, so a position change does not help.",
+    "fix": "Keep 'upper' and set the caption's end to 199.05, cutting the tail after 'Void.', so the box is gone before the hood opening reaches it. In build_subtitles.py, add a per-caption end override that survives rebuilds, like pos_override."
+   },
+   {
+    "scene": "s01",
+    "time": 3.52,
+    "severity": "low",
+    "category": "subtitles-title-overlap",
+    "problem": "The first caption 'So, I was having a memory,' fades in at 3.52 while the title 'The Void and My Fear' is still fully opaque (still full at 3.7 s, half at 4.5 s, gone by about 5.5 s). Two text layers compete for about 2 s on the opening shot.",
+    "fix": "Shift the s01 title fade-out (story time) to about 2.4\u21923.5 s so the title is gone when the first caption lands. Frame 0 is unaffected. Alternatively delay the first caption's fade-in to after the title clears."
+   },
+   {
+    "scene": "deliverable",
+    "time": 0,
+    "severity": "low",
+    "category": "delivery",
+    "problem": "The root deliverable The_Void_and_My_Fear.mp4 is still v1: 344.761 s, 14,541,820 B, no burned-in captions, original-speed dialogue. README.md still says '~5\u00be minutes' and lists only that file. Only out/final.mp4 (319.185 s) is v2. thumbnail.png still matches v2 frame 0, so it can stay.",
+    "fix": "After the fixes above, copy out/final.mp4 over The_Void_and_My_Fear.mp4, ship out/subtitles.srt next to it, and update the README duration to 5:19 and mention the captions and SRT."
+   }
+  ],
+  "caption_overrides": []
+ }
+]

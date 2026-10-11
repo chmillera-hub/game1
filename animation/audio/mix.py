@@ -133,11 +133,11 @@ def main():
     tmp = os.path.join(ROOT, "out/mix_raw.wav")
     sf.write(tmp, mix, SR, subtype="FLOAT")
     # two-pass loudnorm to -16 LUFS / -1.5 dBTP
-    r = subprocess.run(["ffmpeg", "-hide_banner", "-i", tmp, "-af", "loudnorm=I=-16:TP=-2.5:LRA=11:print_format=json", "-f", "null", "-"],
+    r = subprocess.run(["ffmpeg", "-hide_banner", "-i", tmp, "-af", "loudnorm=I=-16:TP=-4.0:LRA=11:print_format=json", "-f", "null", "-"],
                        capture_output=True, text=True)
     js = r.stderr[r.stderr.rfind("{"): r.stderr.rfind("}") + 1]
     m = json.loads(js)
-    af = (f"loudnorm=I=-16:TP=-2.5:LRA=11:measured_I={m['input_i']}:measured_TP={m['input_tp']}:"
+    af = (f"loudnorm=I=-16:TP=-4.0:LRA=11:measured_I={m['input_i']}:measured_TP={m['input_tp']}:"
           f"measured_LRA={m['input_lra']}:measured_thresh={m['input_thresh']}:offset={m['target_offset']}:linear=true")
     subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", tmp, "-af", af, "-ar", str(SR), os.path.join(ROOT, "out/mix.wav")], check=True)
     print(f"mix: {len(mix)/SR:.1f}s, input loudness {m['input_i']} LUFS -> -16; {len(events)} sfx events")

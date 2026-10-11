@@ -13,7 +13,7 @@ const FILE = path.join(ROOT, 'data/subtitles.json');
 export const SUB_STYLE = {
   size: 32, lineH: 42, padX: 18, padY: 11, maxW: 520, cx: 350, radius: 16,
   box: 'rgba(13,10,28,0.64)', edge: 'rgba(255,255,255,0.10)',
-  colors: { NARRATOR: '#ffffff', CONSCIOUSNESS: '#fff0d4', FEAR: '#ded4ff', JOY: '#ffe39a', SADNESS: '#d4e7ff', ANGER: '#ffcfc4', CALM: '#cff3e2' },
+  colors: { NARRATOR: '#ffffff', CONSCIOUSNESS: '#ffd98c', FEAR: '#c7b5ff', JOY: '#ffe39a', SADNESS: '#d4e7ff', ANGER: '#ffcfc4', CALM: '#cff3e2' },
 };
 // vertical centre of the caption block for each placement
 export const SUB_POS = { low: 1022, mid: 868, upper: 372, top: 214 };
@@ -43,7 +43,10 @@ export function layout(g, c) {
     for (let i = 1; i < words.length; i++) {
       const a = width(words.slice(0, i)), b = width(words.slice(i));
       if (a > SUB_STYLE.maxW || b > SUB_STYLE.maxW) continue;
-      const score = Math.max(a, b) + (/[,.?!]$/.test(words[i - 1]) ? -40 : 0);
+      // balanced lines; prefer breaking after punctuation, never leave a function word dangling
+      const prevW = words[i - 1].toLowerCase();
+      const score = Math.max(a, b) + (/[,.?!]$/.test(prevW) ? -90 : 0) +
+        (/^(a|an|the|my|its|to|of|that|into|and|i|in|on|with|is|was|are|you)$/.test(prevW) ? 70 : 0);
       if (!best || score < best.score) best = { score, i };
     }
     if (best) lines = [words.slice(0, best.i).join(' '), words.slice(best.i).join(' ')];
@@ -71,14 +74,21 @@ export function captionRect(g, c, pos) {
 }
 
 export function activeCaption(t) {
-  for (const c of captions()) if (t >= c.start && t < c.end) return c;
-  return null;
+  const cs = captions();
+  for (let i = 0; i < cs.length; i++) if (t >= cs[i].start && t < cs[i].end) return i;
+  return -1;
 }
 
+const FADE = 0.12, JOIN = 0.2; // captions closer than JOIN swap instantly (no blink between them)
+
 export function drawSubtitles(g, t) {
-  const c = activeCaption(t);
-  if (!c) return;
-  const a = clamp(Math.min((t - c.start) / 0.12, (c.end - t) / 0.12));
+  const cs = captions();
+  const i = activeCaption(t);
+  if (i < 0) return;
+  const c = cs[i];
+  const joinedIn = i > 0 && c.start - cs[i - 1].end < JOIN;
+  const joinedOut = i + 1 < cs.length && cs[i + 1].start - c.end < JOIN;
+  const a = clamp(Math.min(joinedIn ? 1 : (t - c.start) / FADE, joinedOut ? 1 : (c.end - t) / FADE));
   if (a <= 0) return;
   const L = layout(g, c);
   const r = captionRect(g, c, c.pos_override || c.pos || 'low');

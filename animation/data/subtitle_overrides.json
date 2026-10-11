@@ -1,0 +1,23 @@
+{
+ "_doc": "Manual caption overrides applied by tools/build_subtitles.py. pos: 'beat:idx' -> low|mid|upper|top (idx after splits). split_after: beat -> tokens after which to start a new caption. end_max: 'beat:idx' -> latest play-time end.",
+ "split_after": {
+  "s06b01": [
+   "day,"
+  ]
+ },
+ "pos": {
+  "s04b03:0": "low",
+  "s04b03:1": "low",
+  "s04b04:0": "low",
+  "s04b05:0": "low",
+  "s06b07:0": "top",
+  "s12b03:0": "upper",
+  "s17b04:0": "low",
+  "s06b01:0": "top",
+  "s06b01:1": "low"
+ },
+ "end_max": {
+  "s13b06:0": 199.05,
+  "s08b01:0": 107.44
+ }
+}
