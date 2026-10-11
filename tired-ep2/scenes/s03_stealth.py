@@ -113,6 +113,7 @@ def _T(info):
     T["jump"] = c("jump", T["l2e"] + 0.45)
     S, TR = T["sneak"], T["troll"]
     T["c1"], T["c2"] = 0.35, 0.6                     # flashlight clicks
+    T["duck"] = T["c2"] + 0.55                       # a beam sweeps toward them: they duck (in the wide)
     T["tj"] = T["l2e"] + 0.1                         # the rookie jumps at his shadow
     T["g1a"], T["g1b"] = S - 0.3, TR - 0.42          # gruff guard walks right over their heads
     T["g2a"] = S - 0.28                              # the rookie hurries on, out ahead
@@ -286,7 +287,8 @@ def _g1(t, T):
                     (T["fr1"] + 0.15, 0.35), (T["g1b"], 0.45), (TR + 0.1, 0.55), (TR + 1.1, 0.4),
                     (TR + 2.1, 0.62), (U + 0.4, 0.45), (ML - 0.05, 1.45), (T["land"], math.pi - 0.08),
                     (T["land"] + 0.7, math.pi + 0.26), (T["land"] + 1.4, math.pi + 0.02),
-                    (T["g1off"], math.pi + 0.04), (T["g1off"] + 0.45, 0.35)])
+                    (T["shrug"] - 0.05, math.pi + 0.04), (T["shrug"] + 0.3, 1.5), (T["g1off"], 1.35),
+                    (T["g1off"] + 0.45, 0.4)])
     # walk / stand / shrug
     v = human.cycle_speed("guard", "walk", turn) * SC
     pose = ("stand", "walk", kw) if kw > 0.001 else "stand"
@@ -295,7 +297,8 @@ def _g1(t, T):
     reach_w = 1.0
     if ks > 0.001:
         pose = ("stand", "shrug", ks)
-        reach_w = 1 - ks
+        # one-handed shrug: the free hand palm-up + shoulders + head; the flashlight hand
+        # stays on its IK target (held low at his side) so it never jumps
     # face
     look = (0.6 * math.cos(ang), 0.5 * math.sin(ang))
     face = {}
@@ -359,8 +362,8 @@ def _g2(t, T):
     v0 = (865.0 - 420.0) / (T["l1s"] - 0.2 - 0.11)
     vw = lambda tn: human.cycle_speed("guard", "walk", tn, _RK[1]) * SC2
     moves = [(-0.6, T["l1s"] - 0.2, 420.0 - 0.6 * v0, 865.0, vw(0.8)),
-             (T["l1s"] - 0.2, T["hide"] - 0.1, 865.0, 1010.0, vw(0.5)),
-             (T["hide"] - 0.1, T["l2s"] - 0.05, 1010.0, 1400.0, vw(0.5)),
+             (T["l1s"] - 0.2, T["l1s"] + 1.0, 865.0, 1160.0, vw(0.9)),
+             (T["l1s"] + 1.0, T["l2s"] - 0.05, 1160.0, 1400.0, vw(0.3)),
              (T["g2a"], T["g2a"] + 3.3, 1400.0, 2400.0, vw(1.0))]
     x, d, kw = _path(t, moves)
     y = _lane_y(x)
@@ -447,14 +450,15 @@ def _cone(ctx, t, lens, g, key, rect, clip_shadow=True, length=980, spread=0.56,
         _clip_out(ctx, [SHADOW_A])
     fx.flashlight(ctx, lens[0], lens[1], lens[2], length, spread, t, LIT, key=key, rect=rect,
                   power=g["power"], flicker=g["flicker"], seed=g["seed"] + 1, lens=False, s=SC,
-                  haze=0.04, exact=exact)
+                  haze=0.04, exact=exact, hotspot=1.0 - 0.7 * max(0.0, math.sin(lens[2])))
     ctx.restore()
 
 
 def _lens_glow(ctx, lens, g):
     if lens is None or g["power"] <= 0.01:
         return
-    p = g["power"]
+    # the bright lens face only shows when the torch points sideways / up, not at the floor
+    p = g["power"] * (1.0 - 0.75 * max(0.0, math.sin(lens[2])))
     ctx.save()
     if g["lane"] == "back":
         _clip_out(ctx, [OCC_A, OCC_B])
@@ -478,7 +482,8 @@ def _tired(t, T):
     v = human.cycle_speed("tired", "sneak", 0.8, "sewer") * SC
     pt = d / max(1.0, v)
     # duck (a quick drop), hide, sneak (freezing mid-step), hide again, rise at the end
-    kd = smoothstep(seg(t, hide + 0.02, hide + 0.3))
+    duck = T["duck"]
+    kd = smoothstep(seg(t, duck, duck + 0.28))
     if t < sn0 - 0.3:
         pose = ("stand", HIDE, kd) if kd < 1 else HIDE
         turn = lerp(0.15, 0.25, kd)
@@ -501,14 +506,14 @@ def _tired(t, T):
     expr = "bored"
     face = {"press": 0.15}
     # head acting under the hood (he 'looks' with the sense)
-    if t < hide:
+    if t < duck:
         k = smoothstep(seg(t, T["c1"] + 0.15, T["c1"] + 0.45))
         face = {"head_turn": -0.35 * k, "head_nod": -0.12 * k, "brow": 0.8 * k, "press": 0.2,
                 "open": 0.08 * k}
         expr = ("bored", "alarmed", 0.35 * k)
     elif t < S + 0.3:
         # the beams pass over the crate: the hood tracks them, lips pressed
-        k = smoothstep(seg(t, hide + 0.3, hide + 0.6))
+        k = smoothstep(seg(t, duck + 0.3, duck + 0.6))
         ht = -0.3 + 0.45 * smoothstep(seg(t, hide + 0.8, T["l2s"] - 0.6))
         face = {"head_turn": ht * k, "head_nod": -0.22 * k, "press": 0.6, "brow": 0.4}
         expr = "annoyed"
@@ -563,14 +568,15 @@ def _curio(t, T):
     hide, S, TR, ML, R = T["hide"], T["sneak"], T["troll"], T["melt"], T["reform"]
     sn0, fr0, fr1 = T["sn0"], T["fr0"], T["fr1"]
     kw = dict(form=1.0, glow=0.6, flip=False)
-    if t < hide:
+    duck = T["duck"]
+    if t < duck:
         k = ease_out_back(seg(t, T["c1"] + 0.1, T["c1"] + 0.3))
         kw.update(pose="stand", expr="surprised_soft" if t > T["c1"] + 0.1 else "calm",
                   ears=lerp(0.5, 1.0, k), face=lerp(1.0, -0.6, smoothstep(seg(t, T["c1"] + 0.1, T["c1"] + 0.4))),
                   look=(-0.5 * k, -0.4 * k))
         return CX0, FY + 12, kw
     if t < sn0 - 0.2:
-        km = smoothstep(seg(t, hide + 0.02, hide + 0.32))
+        km = smoothstep(seg(t, duck + 0.02, duck + 0.32))
         kw.update(pose="perch", pose_from="stand", pose_mix=km, expr="wide", ears=lerp(1.0, 0.12, km),
                   glow=lerp(0.6, 0.4, km), look=(-0.45 + 0.7 * smoothstep(seg(t, hide + 0.8, T["l2s"] - 0.5)),
                                                   -0.7))
@@ -872,7 +878,7 @@ def SFX(info):
                 gn = gain if g["x"] < 2000 else gain - 6
                 ev.append((tt, "footstep", gn, pan if g["x"] < 1200 else 0.25))
             prev = ph
-    ev.append((T["hide"] + 0.04, "cloth_rustle", -3, 0.0))
+    ev.append((T["duck"] + 0.04, "cloth_rustle", -3, 0.0))
     ev.append((T["hide"] + 0.6, "sonar_ping_small", -6, 0.0))
     ev.append((T["hide"] + 1.45, "sonar_ping_small", -9, 0.0))
     # the shadow jump: scuffle, landing, a nervous cloth shuffle

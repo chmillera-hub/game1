@@ -717,10 +717,12 @@ def deep_dark(t, k, name):
     return 0.4
 
 
-def dark_set(c, t, k, deep):
+def dark_set(c, t, k, deep, rail=False):
     # the pipe shivers after the bonk (it has died out by the cut to the close-up)
     sets.catwalk(c, t, power=0.0, cam_led=1.0, pipe_wobble=1.0 if 0.0 <= t - k.BONK < 1.25 else 0.0,
                  pipe_wobble_t0=k.BONK, **SET_KW)
+    if rail:     # in sense shots the deck rail sits in the dark world (the echo reveals it)
+        sets.catwalk(c, t, layer="fg", power=0.0, parts=("rail",))
     if deep > 0.005:
         c.set_source_rgba(*DARK_RGB, deep)
         c.paint()
@@ -741,11 +743,14 @@ def render(ctx, t, info):
     ta = tired_anchors(t, k, info, tst)            # where his head is (Curiosity's gaze, bbox)
     cst = _resolve_look(cur_state(t, k), ta)
     deep = deep_dark(t, k, name)
+    post = 0.0
+    if name == "dark":           # as in s01: one near-black wash over set, characters and rail
+        post, deep = deep, 0.0
     core.bg(ctx, "#03070b")
     with core.camera(ctx, cx, cy, zoom):
         # ---- the world: darkness + the sense
         if sense and fx.sense_active(t, pings, s=SW):
-            fx.sense_reveal(ctx, t, pings, lit_set, lambda c: dark_set(c, t, k, deep), key=("s02", name),
+            fx.sense_reveal(ctx, t, pings, lit_set, lambda c: dark_set(c, t, k, deep, True), key=("s02", name),
                             rect=shot_rect(k, sh), s=SW)
         else:
             dark_set(ctx, t, k, deep)
@@ -802,15 +807,20 @@ def render(ctx, t, info):
                     Tn.append((sx_, sy_, 480, 0.22 * sa))
             return L, Tn
 
-        res = light_chars(ctx, draw_chars, lights_fn, base=0.94 if name == "dark" else 0.9,
+        res = light_chars(ctx, draw_chars, lights_fn, base=0.86 if name == "dark" else 0.9,
                           bbox=char_bbox(tst, cst, ta))
-        # foreground stair stringer + handrail over legs on the stair (dark)
+        # foreground: the deck rail in front of them (no-ping shots, as in s01) and the
+        # stair stringer + handrail over legs on the stair
+        if not sense:
+            sets.catwalk(ctx, t, layer="fg", power=0.0, parts=("rail",))
+        elif not fx.sense_active(t, pings, s=SW):
+            sets.catwalk(ctx, t, layer="fg", power=0.0, parts=("rail",))
         if name in ("walk", "giggle"):
             sets.catwalk(ctx, t, layer="fg", power=0.0, parts=("stair",))
         # the opening: the same near-black wash as s01's last frame, then the two pairs of eyes
         if name == "dark":
             a, b = res["t"], res["c"]
-            ctx.set_source_rgba(*DARK_RGB, deep * 0.6)
+            ctx.set_source_rgba(*DARK_RGB, post)
             ctx.paint()
             te = mid(a["eye_l"], a["eye_r"])
             tdist = math.hypot(a["eye_r"][0] - a["eye_l"][0], a["eye_r"][1] - a["eye_l"][1])

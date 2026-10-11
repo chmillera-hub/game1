@@ -33,11 +33,16 @@ S_C = 0.6                     # Curiosity
 S_B = 0.58                    # baby Joy
 BED_Y = M["bed_top_y"]        # 1165
 HIP_X = 1455                  # lying: hips here puts his head on the pillow
+HIP_Y = 1117                  # pelvis height lying: chest, hips and thighs sunk ~20 px into the bed
+LEG_REST = (-1.2, -1.32)      # knee bend: thighs on the mattress, knees at the footboard, shins hang off
+LIE = {"base": "lie_front", "plant": 0, "hip_h": 0, "ll_p": 0.22, "lr_p": 0.14,
+       "ll_k": LEG_REST[0], "lr_k": LEG_REST[1], "ll_a": -0.6, "lr_a": -0.6}
+CHAIR_DX = 320                # the gaming chair pushed back to the desk, away from the foot of the bed
 STAND = (1505, 1470)          # where he stands before the flop (feet)
 DOOR_FEET = (305, 1336)       # in the doorway
 CUR_FLOOR = (1628, 1542)      # Curiosity sits at his heels, at the foot of the bed
-PERCH = (1395, 1080)          # Curiosity's perch base on his back
-BABY_BACK = (1294, 1062)      # baby sitting on his upper back
+PERCH = (1395, 1102)          # Curiosity's perch base on his back
+BABY_BACK = (1294, 1084)      # baby sitting on his upper back
 G_CUR, G_BABY = 1.4, 1.7      # rim/eye glow: keeps the dark creatures readable on his navy hoodie
 PHONE = M["phone"]            # (985, 1112)
 PHONE_S = 0.42
@@ -114,7 +119,7 @@ def _fall_pose(k):
     k = round(clamp(k) * 50) / 50
     if k < 0.5:
         return (_ANTIC, "flop", k * 2), k
-    return ("flop", "lie_front", (k - 0.5) * 2), k
+    return ("flop", LIE, (k - 0.5) * 2), k
 
 
 # ----------------------------------------------------------------------------
@@ -202,9 +207,8 @@ def _tired(t, T, info):
         turn = 0.8 * (1 - min(1.0, 2 * kq))
         o = _offs(pose, ("fall", kq), turn)
         o0 = _offs(_ANTIC, "antic", 0.8)
-        oL = _offs("lie_front", "lie", 0.0)
         h0 = (STAND[0] + o0["hip"][0], STAND[1] + o0["hip"][1])
-        h1 = (HIP_X + oL["hip"][0], BED_Y + oL["hip"][1])
+        h1 = (HIP_X, HIP_Y)
         hx = lerp(h0[0], h1[0], kq)
         hy = lerp(h0[1], h1[1], kq) - 34 * math.sin(math.pi * kq)
         face.update(squash=-0.08 * kq, lid=0.1)
@@ -212,10 +216,12 @@ def _tired(t, T, info):
         return hx - o["hip"][0], hy - o["hip"][1], kw
 
     # ---- lying on the bed from here on
-    y = BED_Y + 19 * sq - lift
-    kick = tween(t - T.I, [(0.0, 0.0), (0.16, 1.0), (0.32, 0.55), (0.5, 0.0)], ease_in_out)
-    pose = {"base": "lie_front", "ll_k": 1.25 * kick, "lr_k": 1.45 * kick, "ll_a": -0.5 * kick,
-            "lr_a": -0.5 * kick}
+    y = HIP_Y + 19 * sq - lift
+    # follow-through: the dangling shins swing up off the end of the bed and settle
+    u = max(0.0, t - T.I)
+    sw = 0.75 * math.exp(-u / 0.32) * math.sin(u * 2 * math.pi * 1.5) if u < 2.0 else 0.0
+    pose = dict(LIE, ll_k=LEG_REST[0] + sw, lr_k=LEG_REST[1] + 0.85 * sw, ll_a=-0.6 + 0.3 * sw,
+                lr_a=-0.6 + 0.3 * sw)
     if t < T.OPEN:
         mash = tween(t - T.I, [(0.0, 0.0), (0.06, 1.0), (0.3, 0.55), (0.9, 0.35)])
         face.update(squash=0.16 * mash, cheek=0.5 * mash, press=0.35 * mash, jaw=-0.15 * mash)
@@ -468,7 +474,8 @@ def _set_state(t, T):
         buzz = 1.0 if (u < 0.48 or 0.62 <= u < 1.1) else 0.0
     sr = smoothstep(seg(t, T.Z, T.TT + 1.8))
     return dict(light="dawn", phone_fn=props.phone_chat_screen(msgs) if on else None, phone_on=on,
-                phone_buzz=buzz, bed_squash=_bed_squash(t, T), sunrise=sr)
+                phone_buzz=buzz, bed_squash=_bed_squash(t, T), sunrise=sr, chair_dx=CHAIR_DX,
+                chair_empty=True)
 
 
 def _shade(ctx, t, st):
@@ -509,6 +516,45 @@ def _shot_door(ctx, t, T, info):
             sets.bedroom(ctx, t, layer="fg", door_open=op, parts=("door",), light="dawn")
 
 
+def _blanket_lip(ctx, t, T, st):
+    """The duvet hugging his underside: a strip of blanket drawn over his lower edge
+    from the chest to the knees, with dent creases under the hips, so he lies IN the
+    bed instead of on top of it. Graded with the set's own dawn light; it moves with
+    the mattress squash and forms on impact."""
+    if t < T.I - 0.01:
+        return
+    k = smoothstep(seg(t, T.I - 0.01, T.I + 0.08))
+    sq = st["bed_squash"]
+    dy = 19 * sq
+    rise = 10 * k                                   # how far the duvet puffs up around him
+    top = [(1262, 1196), (1300, 1190), (1350, 1188), (1405, 1190), (1455, 1194), (1505, 1189),
+           (1548, 1180), (1578, 1172), (1596, 1175)]
+    top = [(x, y + dy - rise * (0.7 + 0.3 * math.sin(x * 0.045))) for x, y in top]
+    bot = 1212 + dy
+    C = sets.C
+    INK_ = core.PAL["ink"]
+
+    def draw(c):
+        core.smooth_path(c, [(1250, bot)] + top + [(1600, top[-1][1] + 18), (1598, bot)])
+        c.close_path()
+        core.fill(c, C["blanket"])
+        core.smooth_path(c, [(1255, top[0][1] + 6)] + top[1:])
+        core.stroke(c, INK_, 5)
+        core.smooth_path(c, [(p[0], p[1] + 9) for p in top[1:-1]])
+        core.stroke(c, core.alpha(C["blanket_hi"], 0.55 * k), 5)
+        # dent creases fanning out from under the hips (and a small one under the chest)
+        for (x0, x1, y1) in ((1438, 1398, 1207), (1474, 1516, 1206), (1318, 1290, 1208)):
+            c.move_to(x0, 1196 + dy - rise * 0.4)
+            c.curve_to(x0 + (x1 - x0) * 0.3, 1200 + dy, x1 - (x1 - x0) * 0.2, y1 + dy - 4, x1, y1 + dy)
+            core.stroke(c, core.alpha(C["blanket_sh"], k), 5)
+
+    kq = round(clamp(st["sunrise"]) * 10) / 10
+    try:
+        sets._bd_graded(ctx, True, kq, draw)        # the bed's own dawn grade (cool dim + sun beams)
+    except AttributeError:                          # (fallback if the private helper ever moves)
+        draw(ctx)
+
+
 def _warm(t, T):
     """the sunbeam warming his back once they curl up (grows with the sunrise)."""
     return 0.3 * smoothstep(seg(t, T.C3, T.C3 + 1.2)) + 0.12 * smoothstep(seg(t, T.Z, T.TT + 1.5))
@@ -522,6 +568,7 @@ def _shot_bed(ctx, t, T, info, cam, birds=None):
             _birds(ctx, t, birds)
         with _shade(ctx, t, st):
             ta = _draw_tired(ctx, t, T, info)
+        _blanket_lip(ctx, t, T, st)
         wa = _warm(t, T)
         if wa > 0.005:
             core.radial_glow(ctx, PERCH[0], PERCH[1] - 40, 200, "#ffcf9a", wa)
