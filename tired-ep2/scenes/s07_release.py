@@ -59,7 +59,7 @@ POD_TEXT, POD_SUB = "THING 38", "SPECIMEN 038"
 
 SMASH_X = M["smash_feet"][0]   # 855
 HAUL_X = 1015.0                # close enough that both hands reach the T-handle UP
-GRIP = 30.0                    # the two fists sit +-GRIP px from the T-bar centre (bar shows between)
+GRIP = 42.0                    # the two fists sit +-GRIP px from the T-bar centre (bar shows between)
 TIRED_X1 = 640.0               # stepped back from the console to see the window
 CUR_X0 = 590.0
 TIRED_X2 = 1012.0              # where he scoops the baby up

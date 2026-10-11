@@ -292,7 +292,7 @@ def _tired_walk_speed():
 
 
 def _probe_person(x, y, t, kw):
-    kw = {k: v for k, v in kw.items() if k not in ("reach", "mouth")}
+    kw = {k: v for k, v in kw.items() if k not in ("reach", "mouth", "x", "y")}
     return human.draw_person(_probe_ctx(), "tired", x, y, S, t, **kw)
 
 
@@ -346,7 +346,7 @@ def _tired(t, T, info, paws=None):
     x = SEAT_X
     turn = -0.6
     # head carriage (sit_crate base: nod .34, lean .5, hunch .65)
-    nod = _tw(t, [(T["land"] + 0.5, 0.34), (T["l01"] - 0.1, 0.3), (T["w01_now"], 0.3),
+    nod = _tw(t, [(T["land"] + 0.3, 0.34), (T["l01"] - 0.1, 0.3), (T["w01_now"], 0.3),
                   (T["w01_now"] + 0.4, 0.38),
                   (T["slump"] + 0.05, 0.38), (T["slump"] + 0.55, 0.62),       # head hangs
                   (T["l02"] - 0.1, 0.6), (T["l02"] + 0.3, 0.52),              # talks into his hand
@@ -419,7 +419,7 @@ def _tired(t, T, info, paws=None):
 
     # --- eyes (pupils lead, the head follows ~0.15 s later via head_turn)
     look = _tw(t, [
-        (T["land"] + 0.5, (-0.3, 0.6)), (T["l01"] - 0.3, (-0.5, 0.6)),             # at it
+        (T["land"] + 0.1, (-0.3, 0.6)), (T["l01"] - 0.3, (-0.5, 0.6)),             # at it
         (T["w01_right"], (-0.5, 0.6)), (T["w01_right"] + 0.25, (-0.15, 0.85)),     # eyes drop
         (T["l01e"] + 0.3, (-0.1, 0.8)),
         (T["l02"], (0.05, 0.75)), (T["w02_im"], (0.05, 0.75)), (T["w02_im"] + 0.2, (-0.5, 0.5)),
@@ -663,7 +663,7 @@ def _cur_hold(t, T, d):
     if abs(t - tw_ - 0.3) < 0.12:
         d["blink"] = _tw(t, [(tw_ + 0.2, 0.0), (tw_ + 0.27, 1.0), (tw_ + 0.33, 1.0), (tw_ + 0.42, 0.0)])
     d["tail_curl"] = _tw(t, [(tw_ + 0.15, 0.0), (tw_ + 0.6, 0.28), (T["beat"] + 0.5, 0.28),
-                             (T["beat"] + 1.2, 0.06), (T["s6"], 0.0)])
+                             (T["s6"] - 0.1, 0.06), (T["s6"] + 0.2, 0.0)])
     d["tilt"] = _tw(t, [(T["beat"] + 0.4, 0.0), (T["beat"] + 0.9, -0.07), (T["s6"], -0.05)])
     d["look"] = _tw(t, [(T["grab"], (0.5, -0.55)), (T["beat"] + 0.25, (0.5, -0.55)),
                         (T["beat"] + 0.6, (0.6, -0.48))])

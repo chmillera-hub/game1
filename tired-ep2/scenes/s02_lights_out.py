@@ -71,6 +71,7 @@ except Exception:                          # palette moved: fall back to the mea
 ARM_PEEK = {"ar_h": "point", "ar_layer": "front"}
 FINGER = 25.0                              # grip point -> index fingertip (px at s=1)
 FINGER_ANG = -2.3                          # finger direction in the eye-line frame (up-left)
+PEEK_FX = 0.62                             # fingertip: this many eye-spacings outside the eye centre
 
 
 def _sleeper(c, x, y, s, t, seed):
@@ -472,7 +473,7 @@ def peek_frame(t, st, p):
     yB = _loc(O, ux, uy, b["hood_rim"])[1] + 2.6 * S
     hmax = max(0.0, yA - (yB + 5.0 * S))
     h = hmax * clamp(p / 1.25, 0.0, 1.0)
-    Fx = 0.62 * ed
+    Fx = PEEK_FX * ed
     fx_, fy_ = Fx, yA - h - 4.0 * S                          # fingertip, tucked just under the hem
     gl = (fx_ - FINGER * S * math.cos(FINGER_ANG), fy_ - FINGER * S * math.sin(FINGER_ANG))
     grip = (O[0] + gl[0] * ux - gl[1] * uy, O[1] + gl[0] * uy + gl[1] * ux)
