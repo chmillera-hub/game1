@@ -296,7 +296,7 @@
     },
     {
      "t": "pause",
-     "dur": 4.0,
+     "dur": 4.5,
      "cue": "sneak"
     },
     {
@@ -331,6 +331,11 @@
      "text": "Huh. Just pipes.",
      "pre": 0.1,
      "post": 0.45
+    },
+    {
+     "t": "pause",
+     "dur": 0.6,
+     "cue": "walkoff"
     },
     {
      "t": "pause",

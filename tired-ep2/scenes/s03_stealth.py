@@ -77,7 +77,7 @@ if _RK not in human.OUTFITS:
 HIDE = {"base": "crouch", "ar_ik": 1.0, "ar_tx": 0.2, "ar_ty": 0.02, "ar_tz": 0.05, "ar_h": "flat",
         "al_ik": 1.0, "al_tx": 0.2, "al_ty": 0.02, "al_tz": 0.05, "al_h": "flat", "lean": 0.4}
 # the rookie's little wave at his own shadow (free l hand, bent elbow, palm out)
-G2_WAVE = {"base": "stand", "period": 0.6, "al_p": 0.25, "al_o": 0.6, "al_e": 2.15,
+G2_WAVE = {"base": "stand", "period": 0.6, "al_p": 0.9, "al_o": 0.5, "al_e": 2.3,
            "al_eo": human.W(-0.5, 0.32, 0.0), "al_w": human.W(0.0, 0.2, 0.1), "al_h": "open",
            "al_tf": -1.0, "hunch": 0.35}
 G2_ANTIC = {"base": "stand", "hunch": 1.2, "lean": -0.06, "nod": -0.05}
@@ -116,20 +116,21 @@ def _T(info):
     T["tj"] = T["l2e"] + 0.1                         # the rookie jumps at his shadow
     T["g1a"], T["g1b"] = S - 0.3, TR - 0.42          # gruff guard walks right over their heads
     T["g2a"] = S - 0.28                              # the rookie hurries on, out ahead
-    T["sn0"] = S + 0.97                              # our two start sneaking after him
-    T["fr0"], T["fr1"] = S + 1.77, S + 2.42          # freeze: he glances back, beam over the crate
+    T["sn0"] = S + 1.25                              # our two start sneaking after him
+    T["fr0"], T["fr1"] = S + 2.0, S + 2.65           # freeze: he glances back, beam over the crate
     T["sn1"] = TR - 0.6                              # sneak ends
     T["hop0"], T["hop1"], T["hop2"] = TR - 0.62, TR - 0.4, TR - 0.12   # crouch / take off / land
     T["wave0"] = TR + 0.12
     T["hear"] = T["l3s"] + 0.35                      # the guard hears the whisper
     T["land"] = T["melt"] + 0.55                     # beam lands where Curiosity was
-    T["shrug"] = T["l4e"] - 0.12
-    T["g1off"] = T["l4e"] + 0.5
-    T["rise0"] = T["reform"] + 0.75                  # Tiredness straightens up
+    T["shrug"] = T["l4e"] - 0.2
+    T["g1off"] = T["shrug"] + 0.75
+    T["rf0"] = T["reform"] + 0.4                     # the puddle starts rising (in the two-shot)
+    T["rise0"] = T["reform"] + 0.6                   # Tiredness straightens up
     T["shots"] = [("est", 0.0), ("stair", T["l1s"] - 0.05), ("hide", T["hide"] - 0.05),
                   ("shadow", T["l2s"] - 0.25), ("sneak", S), ("troll", TR),
                   ("react", TR + 1.75), ("turn", T["l3e"] + 0.35), ("pipes", T["l4s"] - 0.4),
-                  ("reform", T["reform"] + 0.4)]
+                  ("reform", T["reform"] + 0.3)]
     _TC.clear()
     _TC[key] = T
     return T
@@ -167,15 +168,20 @@ def _ramp(t, t0, t1, x0, x1, r=0.22):
 
 
 def _path(t, moves, r=0.22):
-    """moves [(t0, t1, x0, x1)] in time order -> (x, travelled distance, walking 0..1)."""
+    """moves [(t0, t1, x0, x1[, v])] in time order -> (x, cycle time, walking 0..1).
+    The cycle time is the travelled distance / each move's own planted-foot speed v
+    (px/s), so the stride phase only advances with real travel (no foot sliding, no
+    phase jumps when the facing changes)."""
     x, d, k = moves[0][2], 0.0, 0.0
-    for (t0, t1, a, b) in moves:
+    for mv in moves:
+        t0, t1, a, b = mv[:4]
+        v = mv[4] if len(mv) > 4 else 1.0
         if t >= t1:
             x = b
-            d += abs(b - a)
+            d += abs(b - a) / v
         elif t > t0:
             x = _ramp(t, t0, t1, a, b, r)
-            d += abs(x - a)
+            d += abs(x - a) / v
             rr = min(r, (t1 - t0) / 2)
             k = smoothstep(seg(t, t0, t0 + rr)) * (1 - smoothstep(seg(t, t1 - rr, t1)))
             break
@@ -260,18 +266,19 @@ def _g1(t, T):
     # down the stair (talking), a stop on the lower steps to sweep the room, then the lane
     tst = T["l1e"] + 0.05
     v0 = (700.0 - 120.0) / (tst - 0.11)
-    moves = [(-0.6, tst, 120.0 - 0.6 * v0, 700.0), (hide + 1.15, T["l2s"] + 0.35, 700.0, 1000.0),
-             (T["g1a"], T["fr0"] - 0.08, 1000.0, 1560.0), (T["fr1"] + 0.05, T["g1b"], 1560.0, 1860.0),
-             (T["g1off"], T["g1off"] + 3.2, 1860.0, 2750.0)]
+    vw = lambda tn: human.cycle_speed("guard", "walk", tn) * SC
+    moves = [(-0.6, tst, 120.0 - 0.6 * v0, 700.0, vw(0.62)), (hide + 1.15, T["l2s"] + 0.2, 700.0, 820.0, vw(0.8)),
+             (T["g1a"], T["fr0"] - 0.08, 820.0, 1480.0, vw(1.0)), (T["fr1"] + 0.05, T["g1b"], 1480.0, 1860.0, vw(1.0)),
+             (T["g1off"], T["g1off"] + 3.2, 1860.0, 2750.0, vw(0.9))]
     x, d, kw = _path(t, moves)
     y = _lane_y(x)
     turn = tween(t, [(0.0, 0.62), (tst, 0.62), (tst + 0.4, 0.3), (hide + 0.9, 0.3), (hide + 1.3, 0.85),
                      (T["l2s"] + 0.1, 0.85), (T["l2s"] + 0.5, 0.5), (T["g1a"] - 0.15, 0.5), (T["g1a"] + 0.2, 1.0),
                      (T["fr0"] - 0.1, 1.0), (T["fr0"] + 0.22, -0.3), (T["fr1"] - 0.15, -0.3), (T["fr1"] + 0.12, 1.0),
                      (T["g1b"] - 0.2, 1.0), (T["g1b"] + 0.25, 0.7),
-                     (U + 0.35, 0.7), (ML + 0.3, -0.75),
-                     (T["shrug"] - 0.1, -0.75), (T["shrug"] + 0.25, -0.12), (T["shrug"] + 0.8, -0.12),
-                     (T["g1off"] + 0.05, -0.6), (T["g1off"] + 0.4, 0.9)])
+                     (U + 0.45, 0.7), (ML + 0.45, -0.75),
+                     (T["shrug"] - 0.1, -0.75), (T["shrug"] + 0.25, -0.12), (T["shrug"] + 0.6, -0.12),
+                     (T["g1off"] + 0.3, 0.9)])
     ang = tween(t, [(0.0, 0.95), (1.1, 0.45), (2.2, 0.8), (3.3, 0.3), (tst + 0.2, 0.55),
                     (tst + 0.9, 1.25), (hide + 0.9, 0.75), (hide + 1.6, 0.1), (T["l2s"] + 0.2, -0.32),
                     (T["tj"] + 0.9, -0.3),
@@ -283,8 +290,8 @@ def _g1(t, T):
     # walk / stand / shrug
     v = human.cycle_speed("guard", "walk", turn) * SC
     pose = ("stand", "walk", kw) if kw > 0.001 else "stand"
-    ks = smoothstep(seg(t, T["shrug"], T["shrug"] + 0.28)) * (1 - smoothstep(seg(t, T["shrug"] + 0.8,
-                                                                                    T["shrug"] + 1.1)))
+    ks = smoothstep(seg(t, T["shrug"], T["shrug"] + 0.25)) * (1 - smoothstep(seg(t, T["shrug"] + 0.6,
+                                                                                    T["shrug"] + 0.85)))
     reach_w = 1.0
     if ks > 0.001:
         pose = ("stand", "shrug", ks)
@@ -317,9 +324,12 @@ def _g1(t, T):
         face["brow_r"] = 0.1 * k
         face["head_turn"] = lerp(face.get("head_turn", 0.0), -0.1, k)
     if t >= U:
-        k = smoothstep(seg(t, U + 0.05, U + 0.45)) * (1 - smoothstep(seg(t, ML + 0.1, ML + 0.5)))
-        face["head_turn"] = lerp(-0.1, -0.55, k)     # the head leads the body round
-        look = (-0.9, 0.1)
+        # the head leads the body round, but his eyes follow the beam down on the floor;
+        # they only come up to the crate top once the beam gets there (after the melt)
+        k = smoothstep(seg(t, U + 0.1, ML + 0.1)) * (1 - smoothstep(seg(t, ML + 0.3, ML + 0.6)))
+        face["head_turn"] = lerp(-0.1, -0.4, k)
+        face["head_nod"] = 0.12 * k
+        look = (-0.55, 0.75)
         expr = "curious"
     if t >= T["land"] - 0.25:
         expr = "squint"
@@ -337,7 +347,7 @@ def _g1(t, T):
         look = (0.6, 0.1)
         face = {}
     power = smoothstep(seg(t, T["c1"], T["c1"] + 0.08))
-    return dict(who="guard", x=x, y=y, s=SC, turn=turn, pose=pose, pose_t=d / max(1.0, v), expr=expr,
+    return dict(who="guard", x=x, y=y, s=SC, turn=turn, pose=pose, pose_t=d, expr=expr,
                 look=look, face=face, ang=ang, power=power, flicker=0.0, seed=0, outfit="default",
                 mouth="guard", reach_w=reach_w, lane="stair" if x < 900 else "back")
 
@@ -347,9 +357,11 @@ def _g2(t, T):
     S, tj = T["sneak"], T["tj"]
     fr0, fr1 = T["fr0"], T["fr1"]
     v0 = (865.0 - 420.0) / (T["l1s"] - 0.2 - 0.11)
-    moves = [(-0.6, T["l1s"] - 0.2, 420.0 - 0.6 * v0, 865.0), (T["l1s"] - 0.2, T["l1s"] + 1.3, 865.0, 1150.0),
-             (T["l1s"] + 1.3, T["l2s"] - 0.05, 1150.0, 1400.0),
-             (T["g2a"], T["g2a"] + 3.3, 1400.0, 2400.0)]
+    vw = lambda tn: human.cycle_speed("guard", "walk", tn, _RK[1]) * SC2
+    moves = [(-0.6, T["l1s"] - 0.2, 420.0 - 0.6 * v0, 865.0, vw(0.8)),
+             (T["l1s"] - 0.2, T["l1s"] + 1.3, 865.0, 1150.0, vw(0.6)),
+             (T["l1s"] + 1.3, T["l2s"] - 0.05, 1150.0, 1400.0, vw(0.45)),
+             (T["g2a"], T["g2a"] + 3.3, 1400.0, 2400.0, vw(1.0))]
     x, d, kw = _path(t, moves)
     y = _lane_y(x)
     turn = tween(t, [(0.0, 0.8), (T["l1s"] + 0.3, 0.8), (T["l1s"] + 0.8, 0.5), (T["l2s"] - 0.3, 0.5),
@@ -396,7 +408,7 @@ def _g2(t, T):
         expr = "relieved"
         look = (0.6, 0.1)
     power = smoothstep(seg(t, T["c2"], T["c2"] + 0.08))
-    return dict(who="guard", x=x, y=y + dy, s=SC2, turn=turn, pose=pose, pose_t=d / max(1.0, v), expr=expr,
+    return dict(who="guard", x=x, y=y + dy, s=SC2, turn=turn, pose=pose, pose_t=d, expr=expr,
                 look=look, face=face, ang=ang, power=power, flicker=0.6, seed=3, outfit=_RK[1],
                 mouth="guard2", reach_w=reach_w, lane="stair" if x < 900 else "back", sweat=0.35)
 
@@ -592,7 +604,8 @@ def _curio(t, T):
         x1, y1 = SEAT[0], SEAT[1] - 110
         bx = lerp(x0, x1, u)
         by = lerp(y0, y1, u) - 210 * 4 * u * (1 - u)
-        kw.update(pose="leap", expr="wide", ears=0.85, look=(0.4, -0.2), tilt=lerp(-0.5, 0.2, u))
+        kw.update(pose="leap", expr="wide", ears=0.85, look=(0.4, -0.6), tilt=lerp(-0.3, 0.2, u))
+        kw["_rot"] = lerp(-0.85, 0.15, ease_in_out(u))
         return bx, by, kw
     # sitting on the lid
     land = smoothstep(seg(t, T["hop2"], T["hop2"] + 0.2))
@@ -613,14 +626,15 @@ def _curio(t, T):
                   tail_curl=0.35, glow=0.6)
         return SEAT[0], SEAT[1], kw
     # re-form: rises back up (springy over-stretch), smug, happy wiggle, then looks down at him
-    melt = tween(t, [(R, 0.9), (R + 0.7, -0.15), (R + 0.95, 0.0)], ease_in_out)
-    kw.update(pose="sit", melt=melt, expr="proud" if t > R + 0.35 else "calm", glow=0.6,
-              tail_curl=tween(t, [(R + 0.7, 0.2), (R + 1.2, 0.75)]),
-              ears=tween(t, [(R + 0.6, 0.5), (R + 0.9, 0.8)], ease_out_back))
-    wig = seg(t, R + 0.95, R + 1.85)
+    R0 = T["rf0"]
+    melt = tween(t, [(R0, 0.9), (R0 + 0.7, -0.15), (R0 + 0.95, 0.0)], ease_in_out)
+    kw.update(pose="sit", melt=melt, expr="proud" if t > R0 + 0.35 else "calm", glow=0.6,
+              tail_curl=tween(t, [(R0 + 0.7, 0.2), (R0 + 1.2, 0.75)]),
+              ears=tween(t, [(R0 + 0.6, 0.5), (R0 + 0.9, 0.8)], ease_out_back))
+    wig = seg(t, R0 + 0.95, R0 + 1.85)
     if 0 < wig < 1:
         kw["tilt"] = 0.09 * math.sin(wig * 2 * math.pi * 3) * math.sin(math.pi * wig)
-    if t >= R + 2.1:
+    if t >= R0 + 2.1:
         kw.update(expr="troll", look=(-0.7, 0.55), ears=0.75, face=0.5, tail_curl=0.7)
     return SEAT[0], SEAT[1], kw
 
@@ -628,14 +642,17 @@ def _curio(t, T):
 def _draw_curio(ctx, t, x, y, kw):
     kw = dict(kw)
     sq = kw.pop("_squash", 0.0)
-    if sq:
-        ctx.save()
+    rot = kw.pop("_rot", 0.0)
+    ctx.save()
+    if sq or rot:
         ctx.translate(x, y)
-        ctx.scale(1 + sq, 1 - sq)
+        if rot:
+            ctx.rotate(rot)
+        if sq:
+            ctx.scale(1 + sq, 1 - sq)
         ctx.translate(-x, -y)
     a = CR.draw_specimen(ctx, x, y, SC, t, **kw)
-    if sq:
-        ctx.restore()
+    ctx.restore()
     return a
 
 
@@ -693,7 +710,7 @@ def _cam(name, t, t0, t1, T):
         a, b = (1745, 920, 1.65), (1735, 910, 1.8)
         return (lerp(a[0], b[0], k), lerp(a[1], b[1], k), lerp(a[2], b[2], k), _union(_view(*a), _view(*b)))
     if name == "pipes":
-        c = (1830, 900, 1.85)
+        c = (1800, 920, 1.6)
         return c + (_view(*c),)
     # reform: slow push-in
     k = ease_in_out(seg(t, t0, t1))
@@ -717,7 +734,7 @@ def _shadow_gag(ctx, t, T, g1lens, g2, g2pat_fn):
     if g1lens is None:
         return
     Lx, Ly, ang = g1lens
-    k = 1.9
+    k = 1.8
     a = 0.86 * smoothstep(seg(t, T["l2s"] + 0.3, T["l2s"] + 0.9)) * (1 - smoothstep(seg(t, T["g2a"] - 0.1,
                                                                                          T["g2a"] + 0.35)))
     if a <= 0.01:
@@ -804,10 +821,12 @@ def render(ctx, t, info):
         occ = [OCC_A, OCC_B]
         if show_g2:
             _paint(ctx, pats.get("g2"), occ if g2["lane"] == "back" else None)
+        on_crate = t >= T["hop2"] - 0.25 and show_c
+        if on_crate and name == "pipes":
+            _paint(ctx, pats.get("c"))
         if show_g1:
             _paint(ctx, pats.get("g1"), occ if g1["lane"] == "back" else None)
-        on_crate = t >= T["hop2"] - 0.25 and show_c
-        if on_crate:
+        if on_crate and name != "pipes":
             _paint(ctx, pats.get("c"))
         if show_us:
             _paint(ctx, pats.get("t"))
@@ -843,7 +862,9 @@ def SFX(info):
         for i in range(int(info.dur * 24)):
             tt = i / 24.0
             g = fn(tt, T)
-            if g["pose"] == "stand" or not isinstance(g["pose"], tuple):
+            p = g["pose"]
+            walking = isinstance(p, tuple) and p[1] == "walk" and p[2] > 0.3
+            if not walking:
                 prev = None
                 continue
             ph = int(g["pose_t"] * 2.0)          # two contacts per 1 s walk cycle
@@ -865,7 +886,7 @@ def SFX(info):
     ev.append((T["turn"] + 0.35, "cloth_rustle", -6, 0.25))
     ev.append((T["melt"], "creature_melt", 1, 0.1))
     ev.append((T["shrug"], "cloth_rustle", -5, 0.25))
-    ev.append((T["reform"] - 0.13, "creature_reform", 1, 0.1))
-    ev.append((T["reform"] + 0.95, "ears_perk", 0, 0.1))
+    ev.append((T["rf0"] - 0.38, "creature_reform", 1, 0.1))     # its pop (~1.08 s in) = the over-stretch
+    ev.append((T["rf0"] + 0.92, "ears_perk", 0, 0.1))
     ev.append((T["rise0"] - 0.1, "sigh", 1, -0.1))
     return ev

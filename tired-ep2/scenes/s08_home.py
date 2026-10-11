@@ -1,14 +1,14 @@
 """s08 — home (Episode 2 ending). Dawn, his bedroom.
 
-Shot list (all times come from cues; see SHOTS in render()):
-  S1  dawn   door side, slow drift: the quiet dawn room; the door swings open on
-             the three of them (filthy Tiredness, baby Joy asleep on his shoulder,
-             Curiosity peeking from behind his legs). He looks at the bed, sighs,
-             trudges in.
+Shot list (all times derive from cues / line timing; see _T and _render()):
+  S1  dawn   wide on the quiet dawn room (a bird past the window), slow dolly toward
+             the door: the latch, the door swings in on the three of them (filthy
+             Tiredness, baby Joy dozing on his shoulder, Curiosity peeking from behind
+             his legs). He looks over at the bed, sighs, trudges in; Curiosity at his heels.
   S2  flop   at the bed, head end of the frame: he turns to the pillow, a slow
              blink, a breath in (anticipation), falls like a plank, the mattress
              bounces (springs), his feet kick up and settle. The baby is flung off
-             his shoulder, tumbles and lands on his back, giggling. Slow push-in
+             his shoulder, hangs a beat, tumbles onto his back and giggles on the bounce. Slow push-in
              on his face for "Worst. Day. Ever." (muffled into the pillow).
   S3  pile   Curiosity looks up, crouches, hops onto his back, settles into a curl;
              the baby clambers on top of Curiosity and curls up.
@@ -37,7 +37,7 @@ STAND = (1505, 1470)          # where he stands before the flop (feet)
 DOOR_FEET = (305, 1336)       # in the doorway
 CUR_FLOOR = (1628, 1542)      # Curiosity sits at his heels, at the foot of the bed
 PERCH = (1395, 1080)          # Curiosity's perch base on his back
-BABY_BACK = (1258, 1064)      # baby sitting on his upper back
+BABY_BACK = (1294, 1062)      # baby sitting on his upper back
 G_CUR, G_BABY = 1.4, 1.7      # rim/eye glow: keeps the dark creatures readable on his navy hoodie
 PHONE = M["phone"]            # (985, 1112)
 PHONE_S = 0.42
@@ -67,7 +67,7 @@ class _T:
         self.words = [info.word_time("s08_l01", k) for k in range(3)]
         # S1 door / walk
         self.D0 = 0.42                      # latch
-        self.D1 = self.D0 + 0.6             # door fully open
+        self.D1 = self.D0 + 0.65            # door open enough to see him (swings flat by D1 + 0.3)
         self.W0 = max(self.D1 + 0.55, self.F - 1.25)   # first step
         # S2 flop
         self.A0 = self.F + 0.55             # breath in (anticipation)
@@ -294,8 +294,8 @@ def _draw_tired(ctx, t, T, info):
 # ----------------------------------------------------------------------------
 # Curiosity
 # ----------------------------------------------------------------------------
-def _cur(t, T, ta=None):
-    """-> (x, y, kwargs) world. ta = Tiredness's anchors this frame (S1 follow)."""
+def _cur(t, T):
+    """-> (x, y, kwargs) in bedroom world coordinates."""
     if t < T.F:
         # S1: peeking from behind his legs, then trotting at his heels
         tw = T.W0 + 0.25
@@ -355,8 +355,8 @@ def _cur(t, T, ta=None):
     return x, y, kw
 
 
-def _draw_cur(ctx, t, T, ta=None):
-    x, y, kw = _cur(t, T, ta)
+def _draw_cur(ctx, t, T):
+    x, y, kw = _cur(t, T)
     rot = kw.pop("_rot", 0.0)
     st = kw.pop("_stretch", 1.0)
     sq = kw.pop("_squash", 0.0)
@@ -484,7 +484,8 @@ def _cam_lerp(a, b, k):
 # ----------------------------------------------------------------------------
 def _shot_door(ctx, t, T, info):
     st = _set_state(t, T)
-    op = ease_out(seg(t, T.D0 + 0.03, T.D1))
+    # the latch gives, the door cracks open, then swings in and settles flat
+    op = tween(t, [(T.D0 + 0.03, 0.0), (T.D0 + 0.2, 0.14), (T.D1, 0.62), (T.D1 + 0.3, 1.0)])
     cam = _cam_lerp((800, 1060, 0.82), (650, 1015, 1.0), ease_in_out(seg(t, 0.3, T.F + 0.3)))
     inside = t >= T.W0 + 0.12
     with core.camera(ctx, *cam):
@@ -725,12 +726,15 @@ def SFX(info):
         n += 1
     ev.append((T.W0 + 0.08, "footstep", -9.0, -0.35))     # the first heavy shuffle
     # S2: the flop
+    ev.append((T.F + 0.03, "footstep", -8.0, 0.1))         # arrives at the bed
     ev.append((T.A0, "cloth_rustle", -4.0, 0.15))
+    ev.append((T.A1 + 0.04, "critter_squeak", -7.0, 0.2))  # the baby, left hanging
     ev.append((T.I - 0.03, "bed_flop", 0.0, 0.1))
     ev.append((T.I + 0.28, "baby_giggle", -3.0, -0.1))
     ev.append((T.L1 + 0.1, "sigh", -2.0, -0.1))
     # S3: the pile
     ev.append((T.P + 0.2, "ears_perk", 0.0, 0.2))
+    ev.append((T.C1 - 0.03, "scratch_wood", -6.0, 0.3))    # paws push off the floor
     ev.append((T.C2 - 0.02, "cloth_rustle", -2.0, 0.0))
     ev.append((T.C3 + 0.3, "creature_purr", 2.0, 0.1))
     ev.append((T.B1, "baby_coo", -4.0, -0.1))

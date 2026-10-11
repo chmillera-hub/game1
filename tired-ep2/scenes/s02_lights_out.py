@@ -1,23 +1,25 @@
 """s02 -- "Close your eyes" (TIREDNESS Ep2: Lights Out).
 
-Pitch dark on the shaft catwalk. Tiredness gives up and sits on the plinth of
-Curiosity's empty pod; Curiosity hops up beside him and tugs his hood over his
-eyes. Eyes closed, his new sense pings the world into teal. Smug, he strides
-off down the stair... and walks face-first into a low pipe.
+Pitch dark on the shaft catwalk (continues s01's last frame: Curiosity's big
+eyes low-left at its empty pod, Tiredness's faint eyes high-right). He gives up
+and sits on the plinth of the empty pod; Curiosity hops up beside him and tugs
+his hood over his eyes. Eyes closed, his new sense pings the world into teal.
+Smug, he strides off down the stair... and walks face-first into a low pipe.
 
 All timing comes from info.cue()/info.line(); nothing is hard-coded to the
 audio. Shots (scene-local):
-  S1 dark two-shot ......... eyes in the dark, l01, he sits down
-  S2 climb two-shot ........ Curiosity hops up beside him, reaches, l02
-  S3 hood close-up ......... the hood comes up over his eyes, annoyance, sigh
-  S4 ping wide ............. silence, whoom: the first rings reveal the catwalk
-  S5 "Oh." / look .......... brows lift under the hood, head turns L / R
-  S6 l04 / nod two-shot .... "So I just... close my eyes?" -- Curiosity nods
-  S7 stand / l05 ........... he stands up proud: "Finally. A superpower..."
-  S8 eye-roll CU ........... Curiosity's slow sassy eye-roll
-  S9 walk tracking ......... confident stride, pings, stair -> BONK
-  S10 bonk close ........... held beat, dazed, "...Mostly good at."
-  S11 giggle CU ............ Curiosity on the stair hides its smile
+  S1  dark ....... two pairs of eyes, l01, he sits down (eyes drop)
+  S2  climb ...... Curiosity hops up beside him on hind legs, reaches; l02
+  S3  hood ....... CU: the hood comes up and over his eyes; annoyance; sigh
+  S4  ping ....... wide: silence, whoom, the first rings reveal the catwalk
+  S5  look ....... "Oh." (brows lift under the hood); head turns L / R, pings follow
+  S6  nod ........ "So I just... close my eyes?" -- Curiosity nods, revealed by a ping
+  S7  stand ...... he stands up proud on "Finally."
+  S7b smug ....... CU "A superpower I'm actually good at." (+ a proud ping)
+  S8  roll ....... CU Curiosity's slow sassy eye-roll
+  S9  walk ....... tracking: confident stride, pings, down the stair -> BONK
+  S10 bonk ....... CU held beat, dazed: "...Mostly good at."
+  S11 giggle ..... CU Curiosity on the stair hides its smile behind a paw
 """
 import math
 
@@ -32,10 +34,12 @@ M = sets.CATWALK_MARKS
 S = 0.75                                   # character scale on the catwalk
 SW = 0.8                                   # sense scale (world px), shared by every ping
 PLINTH_Y = 1280                            # top of the pod plinths (base caps)
-T_X = 880                                  # Tiredness: stands / sits here (Curiosity's pod)
+T_X0 = 1240                                # Tiredness where s01 leaves him (right of the pod)
+T_X = 1090                                 # ... sits here on the empty pod's plinth
 T_GSEAT = PLINTH_Y + human.CRATE_H["tired"] * S      # ground y for sit_crate on the plinth
-C_X0 = 1200                                # Curiosity on the deck at the start (faces left)
-C_XP = 1112                                # Curiosity on the plinth (faces left, at his right)
+C_X0 = 750                                 # Curiosity where s01 leaves it (left of its pod, faces right)
+C_XP = 935                                 # ... hops up onto the plinth here (at his left, faces right)
+C_XS = 872                                 # ... and sits back on it here once it lets go of the hood
 FEET = M["feet_y"]                         # 1500
 LAND = M["landing_feet_y"]                 # 1770
 BONK_X = M["bonk_feet"][0]                 # -44: feet x when his face meets the pipe
@@ -44,11 +48,20 @@ ST_TOP_X, ST_RUN, ST_RISE = 640, 86, 45
 STEP_C = 2                                 # the stair tread Curiosity stops on (giggle)
 DARK_RGB = (0.012, 0.027, 0.043)
 TEAL = (0.247, 0.949, 0.878)
+S01_DARK_CAM = (1010, 1105, 1.35)          # s01's last framing (lights out, two pairs of eyes)
 
-SLEEPER_FNS = {"JOY": lambda c, x, y, s, t, sd: CR.draw_specimen_pod_sleeper(c, x, y, s * 1.6, t, sd,
-                                                                              baby=True)}
-SET_KW = dict(sleeper_fn=CR.draw_specimen_pod_sleeper, sleeper_fns=SLEEPER_FNS,
-              sleeper_key="s02_sleepers", cam_face=1.0, cam_angle=0.25)
+
+def _sleeper(c, x, y, s, t, seed):
+    CR.draw_specimen_pod_sleeper(c, x, y, s, t, seed=seed)
+
+
+def _baby(c, x, y, s, t, seed):
+    CR.draw_specimen_pod_sleeper(c, x, y, s * 1.6, t, seed=seed, baby=True)
+
+
+# same set state as the end of s01: plate wiped clean, camera swivelled to them, LED on
+SET_KW = dict(sleeper_fn=_sleeper, sleeper_fns={"JOY": _baby}, sleeper_key="s02_sleepers",
+              cam_face=1.0, cam_angle=0.37, plate_dust=1.0, plate_wipe=1.0)
 
 
 def kf(t, keys, ease=ease_in_out):
@@ -88,41 +101,45 @@ def timing(info):
     k.BONK = c("bonk")
     k.L6, k.L6e = L("s02_l06").start, L("s02_l06").end
     k.END = info.dur
-    # the "look" head turns (left, hold, right, hold), pings follow the head
+
+    def word(lid, i, default):
+        try:
+            if len(info.line(lid).caption.split()) > abs(i):
+                return info.word_time(lid, i)
+        except Exception:
+            pass
+        return default
+    # "look": head left, hold, right, hold (the pings follow the head)
     k.lk1 = k.L3e + 0.95
     k.lk2 = k.lk1 + 0.3
     k.lk3 = k.lk2 + 0.8
-    # Tiredness sits down right after l01
+    # Tiredness sits down right after l01 (a step back onto the plinth)
     k.sit0 = k.L1e + 0.12
-    k.sit1 = k.sit0 + 0.75
+    k.sit1 = k.sit0 + 0.85
     # Curiosity hops up onto the plinth beside him
-    k.hop0 = max(k.sit1 + 0.15, k.NUDGE + 0.35)      # anticipation crouch starts
+    k.hop0 = max(k.sit1 + 0.12, k.NUDGE + 0.35)      # anticipation crouch starts
     k.hop1 = k.hop0 + 0.22                            # take-off
     k.hop2 = k.hop1 + 0.30                            # lands on its hind legs
     # the hood pull
     k.hd0 = k.HOOD + 0.12
     k.hd1 = k.hd0 + 0.85                              # hood fully over his eyes
     k.sigh = k.hd1 + 0.55
-    # he stands up into l05
+    # he stands up into l05; the CU cut on "A superpower..."
     k.stand0 = k.L5 - 0.35
     k.stand1 = k.stand0 + 0.75
-    try:
-        k.smug_cu = max(k.stand1 + 0.3, info.word_time("s02_l05", 1) - 0.08)
-    except Exception:
-        k.smug_cu = k.stand1 + 0.4
-    # the walk: constant confident stride, timed so the face meets the pipe at BONK
+    k.smug_cu = max(k.stand1 + 0.3, word("s02_l05", 1, k.stand1 + 0.4) - 0.08)
+    k.w_super = word("s02_l05", 2, k.L5 + 1.2)
+    k.w_actually = word("s02_l05", 4, k.L5 + 1.8)
+    # the walk: one constant confident stride, timed so the face meets the pipe at BONK
     k.v = abs(human.cycle_speed("tired", "walk_eyes_closed", -1.0)) * S
     k.tgo = k.BONK - (T_X - BONK_X) / k.v
-    k.turn0 = min(k.WALK + 0.05, k.tgo - 0.45)
-    # Curiosity follows (hops down, trots)
-    k.chop0 = k.tgo + 0.35
+    k.turn0 = max(k.WALK + 0.05, k.tgo - 0.5)
+    # Curiosity follows once he has passed it (hops down, trots)
+    k.chop0 = k.tgo + (T_X - (C_XS - 150)) / k.v
     k.chop1 = k.chop0 + 0.36
     k.cv = 2.2 * CR.SPEC_WALK_SPEED * S
     # post-bonk
     k.giggle0 = k.L6e + 0.25
-    # pings
-    k.pings = _pings(k)
-    # shots
     k.shots = _shots(k)
     _KC.clear()
     _KC[key] = k
@@ -152,71 +169,70 @@ def sit_pose(t, k):
     ping_lift = kf(t, [(k.PING + 0.5, 0.0), (k.PING + 0.9, 0.25), (k.PING + 1.6, 0.25),
                        (k.PING + 2.0, 0.45)])
     a = max(lift2, ping_lift * (1 - up))
-    lean = lerp(0.5, 0.36, a)
-    lean = lerp(lean, 0.22, up)
-    nod = lerp(0.34, 0.12, a)
-    nod = lerp(nod, 0.0, up)
+    lean = lerp(lerp(0.5, 0.36, a), 0.22, up)
+    nod = lerp(lerp(0.34, 0.12, a), 0.0, up)
     neck = lerp(0.32, 0.2, max(a, up))
-    # sigh: shoulders drop
-    sg = math.sin(math.pi * seg(t, k.sigh - 0.1, k.sigh + 0.9))
-    hunch = 0.65 + 0.2 * sg
+    sg = math.sin(math.pi * seg(t, k.sigh - 0.1, k.sigh + 0.9))     # sigh: shoulders drop
     return {"base": "sit_crate", "lean": lean + 0.05 * sg, "nod": nod + 0.06 * sg, "neck": neck,
-            "hunch": hunch}
+            "hunch": 0.65 + 0.2 * sg}
 
 
 PROUD = {"base": "stand", "chest": -0.1, "nod": -0.12, "neck": -0.08, "posture": 0.4, "hunch": 0.1}
 
 
 def tired_state(t, k, info):
-    st = dict(x=T_X, y=FEET, pose="stand", pose_t=None, turn=0.2, expr="bored", face={},
+    st = dict(x=T_X, y=FEET, pose="stand", pose_t=None, turn=0.25, expr="bored", face={},
               look=(0.0, 0.0), blink=None, hood=0.0, mouth=info.mouth("tired", t))
     f = st["face"]
-    # ---------------- standing in the dark, l01, sits down
+    # ---------------- standing in the dark (where s01 left him), l01, sits down
     if t < k.sit1:
-        st["look"] = kf(t, [(0.0, (0.15, 0.1)), (0.5, (0.15, 0.1)), (0.85, (-0.5, 0.0)), (1.25, (-0.5, 0.0)),
-                            (1.55, (0.35, -0.05)), (2.0, (0.2, 0.0)),
+        st["x"] = T_X0
+        st["turn"] = -0.15
+        st["look"] = kf(t, [(0.0, (-0.55, 0.3)), (0.5, (-0.55, 0.3)), (0.85, (-0.1, 0.0)), (1.25, (-0.1, 0.0)),
+                            (1.55, (0.45, -0.05)), (2.0, (0.2, 0.0)),
                             (k.L1 + 1.1, (0.2, 0.0)), (k.L1 + 1.4, (-0.6, 0.0)), (k.L1 + 1.75, (-0.6, 0.0)),
                             (k.L1 + 2.05, (0.55, -0.05)), (k.L1e - 0.05, (0.55, -0.05)),
                             (k.sit0 + 0.2, (0.0, 0.45)), (k.sit1, (0.1, 0.2))])
-        b0 = k.L1 + 0.45
+        b0 = k.L1 + 0.45                                   # the slow, flat blink on "Great."
         bl = max(math.sin(math.pi * seg(t, 1.05, 1.25)), math.sin(math.pi * seg(t, k.L1e - 0.35, k.L1e - 0.15)))
         st["blink"] = max(bl, kf(t, [(b0, 0.0), (b0 + 0.25, 1.0), (b0 + 0.55, 1.0), (b0 + 0.9, 0.0)]))
         if t >= k.sit0:
             kk = seg(t, k.sit0, k.sit1)
-            st["pose"] = ("stand", sit_pose(t, k), smoothstep(seg(kk, 0.1, 0.85)))
-            st["y"] = lerp(FEET, T_GSEAT, ease_in_out(seg(kk, 0.0, 0.8)))
-            st["x"] = T_X
+            st["pose"] = ("stand", sit_pose(t, k), smoothstep(seg(kk, 0.15, 0.85)))
+            st["x"] = lerp(T_X0, T_X, ease_in_out(seg(kk, 0.0, 0.55)))      # a step back onto the plinth
+            st["y"] = lerp(FEET, T_GSEAT, ease_in_out(seg(kk, 0.05, 0.8)))
+            st["turn"] = lerp(-0.15, 0.25, smoothstep(seg(kk, 0.1, 0.8)))
             st["expr"] = "sigh"
-            # the plop: a little settle bounce
-            f["squash"] = 0.06 * math.sin(math.pi * seg(kk, 0.78, 1.0))
+            f["squash"] = 0.06 * math.sin(math.pi * seg(kk, 0.78, 1.0))      # the plop
         return st
     # ---------------- seated on the plinth
     if t < k.stand0:
         st["y"] = T_GSEAT
         st["pose"] = sit_pose(t, k)
-        st["turn"] = kf(t, [(k.L3e + 0.35, 0.25), (k.lk1 + 0.1, -0.25), (k.lk2, -0.25),
-                            (k.lk3 + 0.1, 0.62), (k.L4, 0.62), (k.L4 + 0.6, 0.3)])
+        # (body turn stays > -0.2: below that the clasped hands swap draw order)
+        st["turn"] = kf(t, [(k.L3e + 0.35, 0.25), (k.lk1 + 0.1, -0.1), (k.lk2, -0.1),
+                            (k.lk3 + 0.1, 0.62), (k.L4, 0.62), (k.L4 + 0.6, 0.15)])
         st["expr"] = state_at(t, [(0.0, "bored"), (k.L2 - 0.1, "annoyed"), (k.hd0 + 0.25, "annoyed"),
                                   (k.sigh - 0.1, "sigh"), (k.sigh + 0.9, "bored"), (k.PING + 1.9, "neutral"),
                                   (k.L3 - 0.1, "surprised"), (k.L3e + 0.35, "neutral"),
                                   (k.L4 - 0.15, "curious"), (k.L4e + 0.2, "neutral")], 0.25)
-        # eyes (before the hood): Curiosity hops up on his right -> pupils lead, head follows
-        st["look"] = kf(t, [(k.sit1, (0.1, 0.2)), (k.hop2 - 0.05, (0.1, 0.15)), (k.hop2 + 0.15, (0.85, -0.1)),
-                            (k.L2 + 0.6, (0.85, -0.15)), (k.L2e, (0.75, -0.3)),
-                            (k.hd0 - 0.05, (0.7, -0.3)), (k.hd0 + 0.25, (0.25, -0.9))])
-        ht = kf(t, [(k.hop2 + 0.15, 0.0), (k.hop2 + 0.45, 0.32), (k.HOOD, 0.32), (k.hd0 + 0.3, 0.1),
-                    (k.hd1 + 0.2, 0.0), (k.PING + 1.0, 0.0), (k.PING + 1.4, 0.12),
-                    # look: slowly left ... slowly right ... back to Curiosity
-                    (k.L3e + 0.3, 0.12), (k.lk1, -0.8), (k.lk2, -0.8),
-                    (k.lk3, 0.75), (k.L4 - 0.05, 0.75), (k.L4 + 0.55, 0.35)])
-        f["head_turn"] = ht
-        f["head_tilt"] = kf(t, [(k.L2, 0.0), (k.L2 + 0.4, -0.06), (k.L2e, -0.06), (k.HOOD, 0.0),
+        # eyes (before the hood): Curiosity lands on his LEFT -> pupils lead, head follows ~0.15 s later
+        st["look"] = kf(t, [(k.sit1, (0.1, 0.2)), (k.hop2 - 0.05, (0.1, 0.15)), (k.hop2 + 0.15, (-0.85, -0.1)),
+                            (k.L2 + 0.6, (-0.85, -0.15)), (k.L2e, (-0.75, -0.3)),
+                            (k.hd0 - 0.05, (-0.7, -0.3)), (k.hd0 + 0.25, (-0.25, -0.9))])
+        f["head_turn"] = kf(t, [(k.hop2 + 0.15, 0.0), (k.hop2 + 0.45, -0.42), (k.HOOD, -0.42),
+                                (k.hd0 + 0.3, -0.12), (k.hd1 + 0.2, 0.0), (k.PING + 1.0, 0.0),
+                                (k.PING + 1.4, -0.1),
+                                (k.L3e + 0.3, -0.1), (k.lk1, -0.8), (k.lk2, -0.8),       # look left ...
+                                (k.lk3, 0.75), (k.L4 - 0.05, 0.75),                      # ... and right
+                                (k.L4 + 0.55, -0.45), (k.L5, -0.4)])                     # back to it
+        f["head_tilt"] = kf(t, [(k.L2, 0.0), (k.L2 + 0.4, 0.06), (k.L2e, 0.06), (k.HOOD, 0.0),
                                 (k.L3e + 0.3, 0.0), (k.lk1, 0.08), (k.lk2, 0.08),
                                 (k.lk3, -0.08), (k.L4 + 0.5, 0.0),
-                                (k.L4 + 0.9, 0.0), (k.L4 + 1.3, 0.1), (k.L4e + 0.6, 0.1), (k.NOD + 1.2, 0.03)])
-        f["brow_r"] = kf(t, [(k.L2 + 0.2, 0.0), (k.L2 + 0.5, 0.25), (k.hd0, 0.25), (k.hd0 + 0.3, 0.0)])
-        # hood pull: the tug nods his head forward a hair at the end
+                                (k.L4 + 0.9, 0.0), (k.L4 + 1.3, -0.1), (k.L4e + 0.6, -0.1), (k.NOD + 1.2, -0.03)])
+        f["brow_l"] = kf(t, [(k.L2 + 0.2, 0.0), (k.L2 + 0.5, 0.25), (k.hd0, 0.25), (k.hd0 + 0.3, 0.0)])
         st["hood"] = kf(t, [(k.hd0, 0.0), (k.hd0 + 0.38, 0.45), (k.hd1, 1.0)])
+        # the yank nods his head forward; he lifts it a hair at the first ping; settles after "Oh."
         f["head_nod"] = (0.2 * math.sin(math.pi * seg(t, k.hd1 - 0.3, k.hd1 + 0.4))
                          - 0.06 * smoothstep(seg(t, k.PING + 0.6, k.PING + 1.0))
                          + 0.06 * smoothstep(seg(t, k.L3e + 0.3, k.L3e + 0.8)))
@@ -225,53 +241,47 @@ def tired_state(t, k, info):
                             (k.PING + 0.7, 0.0), (k.L4e + 0.3, 0.0), (k.L4e + 0.6, 0.25), (k.L5, 0.25)])
         f["open"] = kf(t, [(k.PING + 0.55, 0.0), (k.PING + 0.8, 0.12), (k.PING + 1.65, 0.12),
                            (k.PING + 1.9, 0.22), (k.L3 - 0.1, 0.22), (k.L3, 0.0),
-                           (k.L3e + 0.1, 0.0), (k.L3e + 0.3, 0.12), (k.LOOK + 1.9, 0.12), (k.L4 - 0.1, 0.0)])
+                           (k.L3e + 0.1, 0.0), (k.L3e + 0.3, 0.12), (k.lk3 + 0.2, 0.12), (k.L4 - 0.1, 0.0)])
         f["frown"] = kf(t, [(k.hd0 + 0.1, 0.0), (k.hd0 + 0.4, 0.35), (k.sigh, 0.35), (k.sigh + 0.5, 0.1),
                             (k.PING + 0.5, 0.1), (k.PING + 0.8, 0.0)])
-        f["smirk"] = kf(t, [(k.NOD + 1.0, 0.0), (k.NOD + 1.35, 0.18)])
+        f["smirk"] = kf(t, [(k.NOD + 1.0, 0.0), (k.NOD + 1.35, 0.18)])    # "hm." -- he got the nod
         return st
-    # ---------------- stands up (l05), proud, then turns and walks
+    # ---------------- stands up into l05, proud; then turns and walks
     st["hood"] = 1.0
     if t < k.turn0:
         st["y"] = T_GSEAT
         kk = seg(t, k.stand0, k.stand1)
-        # anticipation (lean forward) is the sit pose's lean; rise with a tiny overshoot
         sp = sit_pose(t, k)
-        sp = dict(sp, lean=sp["lean"] + 0.18 * math.sin(math.pi * seg(kk, 0.0, 0.45)))
-        f["smirk"] = 0.18
+        sp = dict(sp, lean=sp["lean"] + 0.18 * math.sin(math.pi * seg(kk, 0.0, 0.45)))   # lean in, push up
         st["pose"] = (sp, PROUD, smoothstep(seg(kk, 0.25, 1.0)))
-        st["turn"] = lerp(0.25, 0.15, smoothstep(kk))
-        f["head_turn"] = lerp(0.3, 0.25, kk)
+        st["turn"] = lerp(0.15, 0.1, smoothstep(kk))
+        f["head_turn"] = lerp(-0.4, 0.12, smoothstep(seg(kk, 0.2, 1.0)))       # chin up, away from it
         st["expr"] = "deadpan"
-        ga = info.word_time("s02_l05", 4) if len(info.line("s02_l05").caption.split()) > 4 else k.L5 + 1.8
-        sm = smoothstep(seg(t, ga - 0.1, ga + 0.5))
+        sm = smoothstep(seg(t, k.w_actually - 0.1, k.w_actually + 0.5))
         f["smirk"] = 0.18 + 0.32 * sm
         f["curve"] = 0.15 * sm
-        f["head_tilt"] = kf(t, [(k.stand1, 0.0), (k.stand1 + 0.4, -0.05)])
+        f["head_tilt"] = kf(t, [(k.stand1, 0.0), (k.stand1 + 0.4, 0.05)])
         f["head_nod"] = -0.04 * smoothstep(seg(t, k.L5 + 0.4, k.L5 + 0.9))
         return st
-    # turn on the spot to face left, then the confident stride
-    sm_face = {"smirk": 0.4, "curve": 0.12}
-    f.update(sm_face)
+    f.update({"smirk": 0.4, "curve": 0.12})
     st["expr"] = "deadpan"
-    if t < k.tgo:
+    if t < k.tgo:                                       # turns on the spot to face left
         kk = seg(t, k.turn0, k.tgo)
         st["y"] = T_GSEAT
         st["pose"] = PROUD
-        st["turn"] = lerp(0.15, -1.0, ease_in_out(kk))
+        st["turn"] = lerp(0.1, -1.0, ease_in_out(kk))
         f["head_nod"] = -0.04
         return st
-    if t < k.BONK:
+    if t < k.BONK:                                      # the confident stride
         x = T_X - k.v * (t - k.tgo)
         st["x"], st["y"] = x, walk_y(x)
         st["pose"] = "walk_eyes_closed"
         st["pose_t"] = t - k.tgo
         st["turn"] = -1.0
         return st
-    # ---------------- BONK: no anticipation; the head snaps back, the body rocks back, settles
+    # ---------------- BONK: no anticipation; whiplash back, a stunned hold, slow settle
     tb = t - k.BONK
     st["turn"] = -1.0
-    # impulse: peak at 0.07 s, held stunned 0.07-0.7 s, settles by 1.5 s
     snap = ease_out(seg(tb, 0.0, 0.07))
     peak = snap * (1 - smoothstep(seg(tb, 0.07, 0.35)))          # the whiplash
     held = snap * (1 - smoothstep(seg(tb, 0.7, 1.5)))            # the stunned hold
@@ -289,9 +299,7 @@ def tired_state(t, k, info):
     st["pose"] = ("walk_eyes_closed", recoil, smoothstep(seg(tb, 0.0, 0.05)))
     st["pose_t"] = k.BONK - k.tgo
     f["squash"] = 0.22 * math.sin(math.pi * seg(tb, 0.0, 0.12)) - 0.06 * math.sin(math.pi * seg(tb, 0.1, 0.3))
-    # dazed little wobble, then deadpan
-    wob = math.sin(tb * 5.0) * 0.07 * (1 - seg(tb, 0.6, 2.4)) * seg(tb, 0.2, 0.4)
-    f["head_tilt"] = wob
+    f["head_tilt"] = math.sin(tb * 5.0) * 0.07 * (1 - seg(tb, 0.6, 2.4)) * seg(tb, 0.2, 0.4)   # dazed wobble
     st["expr"] = state_at(t, [(k.BONK, "pain"), (k.BONK + 0.45, "dazed"), (k.L6 - 0.35, "deadpan")], 0.2)
     f.update({"smirk": 0.0, "curve": 0.0})
     f["wobble"] = 0.4 * (1 - seg(tb, 0.5, 1.2)) * seg(tb, 0.3, 0.45)
@@ -310,51 +318,48 @@ def draw_tired(ctx, t, st):
 _DUMMY = None
 
 
-def tired_anchors(t, k, info):
-    """Anchors of Tiredness at time t without drawing to the frame (ping origins)."""
+def tired_anchors(t, k, info, st=None):
+    """Anchors of Tiredness at time t without drawing to the frame."""
     global _DUMMY
     if _DUMMY is None:
         surf = cairo.ImageSurface(cairo.FORMAT_ARGB32, 4, 4)
         _DUMMY = cairo.Context(surf)
         _DUMMY.scale(0.002, 0.002)
-    return draw_tired(_DUMMY, t, tired_state(t, k, info))
+    return draw_tired(_DUMMY, t, st or tired_state(t, k, info))
 
 
 # ---------------------------------------------------------------------------
 # Curiosity
 # ---------------------------------------------------------------------------
-def cur_state(t, k, tst=None):
-    st = dict(x=C_X0, y=FEET, pose="sit", flip=True, expr="calm", look=(-0.55, -0.6), face=None,
-              tilt=0.0, ears=0.55, tail_curl=0.0, reach=0.0, pose_t=None, glow=1.0, blink=None,
-              sy=1.0, pose_from=None, pose_mix=1.0)
-    # ---------------- on the deck, watching him in the dark
+def cur_state(t, k):
+    st = dict(x=C_X0, y=FEET, pose="sit", flip=False, expr="calm", look=(0.6, -0.55), face=None,
+              tilt=0.0, ears=0.6, tail_curl=0.0, reach=0.0, pose_t=None, glow=1.0, blink=None,
+              sy=1.0, pose_from=None, pose_mix=1.0, look_target=None)
+    # ---------------- on the deck, watching him in the dark (s01 ends on "wide")
     if t < k.hop0:
-        st["look"] = kf(t, [(0.0, (-0.6, -0.65)), (k.L1 + 1.2, (-0.6, -0.65)), (k.L1 + 1.5, (-0.45, -0.75)),
-                            (k.sit0, (-0.45, -0.75)), (k.sit0 + 0.4, (-0.7, -0.35))])
-        if t > k.L1 + 1.0:
-            st["expr"] = "curious"
-        st["ears"] = kf(t, [(0.0, 0.55), (k.L1 + 1.0, 0.55), (k.L1 + 1.3, 0.62)])
+        st["look_target"] = "eyes"
+        st["expr"] = "wide" if t < 0.6 else ("calm" if t < k.L1 + 1.0 else "curious")
+        st["ears"] = kf(t, [(0.0, 0.9), (0.6, 0.9), (1.0, 0.62), (k.L1 + 1.0, 0.62), (k.L1 + 1.3, 0.68)])
         return st
-    # ---------------- the hop up onto the plinth
+    # ---------------- the hop up onto the plinth: crouch, jump straight up, land on its hind legs
     if t < k.hop2:
-        if t < k.hop1:                                     # anticipation crouch
+        if t < k.hop1:
             kk = seg(t, k.hop0, k.hop1)
             st["pose"] = "crouch"
             st["pose_from"], st["pose_mix"] = "sit", smoothstep(kk / 0.6)
             st["sy"] = 1.0 - 0.12 * smoothstep(kk)
-            st["look"] = (-0.3, -0.7)
+            st["look"] = (0.3, -0.7)
             st["ears"] = 0.7
             return st
-        kk = seg(t, k.hop1, k.hop2)                        # airborne: upright, stretched, paws tucked
+        kk = seg(t, k.hop1, k.hop2)
         st["pose"] = "reach_up"
-        st["reach"] = 0.0
         st["x"] = lerp(C_X0, C_XP, kk)
         st["y"] = lerp(FEET, PLINTH_Y, ease_out(kk)) - 70 * math.sin(math.pi * kk)
         st["sy"] = 1.0 + 0.14 * math.sin(math.pi * min(1.0, kk * 1.4))
-        st["look"] = (-0.4, -0.6)
+        st["look"] = (0.4, -0.6)
         st["ears"] = 0.85
         return st
-    # ---------------- up on its hind legs beside him
+    # ---------------- up on its hind legs beside him: reaches, pokes his hair, yanks the hood
     st["x"], st["y"] = C_XP, PLINTH_Y
     if t < k.PING:
         st["pose"] = "reach_up"
@@ -367,7 +372,7 @@ def cur_state(t, k, tst=None):
                    (k.hd0 + 0.25, 1.0), (k.hd0 + 0.4, 1.0), (k.hd1, 0.42), (k.hd1 + 0.25, 0.5),
                    (k.hd1 + 0.6, 0.12)])
         st["reach"] = clamp(r + poke)
-        st["x"] = C_XP + kf(t, [(k.hd0 + 0.35, 4.0), (k.hd1, -34.0), (k.hd1 + 0.6, 0.0)])
+        st["x"] = C_XP + kf(t, [(k.hd0 + 0.35, -4.0), (k.hd1, 30.0), (k.hd1 + 0.6, 0.0)])
         st["tilt"] = kf(t, [(k.hd0 + 0.3, -0.1), (k.hd1 - 0.1, 0.22), (k.hd1 + 0.5, 0.0)])
         st["ears"] = kf(t, [(k.hop2, 0.85), (k.hop2 + 0.6, 0.75), (k.L2, 0.75), (k.L2 + 0.15, 0.6),
                             (k.L2e, 0.65), (k.hd0, 0.75), (k.hd1 + 0.6, 0.78)])
@@ -382,6 +387,7 @@ def cur_state(t, k, tst=None):
         st["look_target"] = "hood" if t < k.L2 else ("eyes" if t < k.hd0 else "hood")
         return st
     # ---------------- sitting on the plinth beside him
+    st["x"] = C_XS
     st["pose"] = "sit"
     st["look_target"] = "eyes"
     st["ears"] = kf(t, [(k.PING, 0.72), (k.L3, 0.72), (k.L3 + 0.2, 0.88), (k.LOOK + 0.5, 0.8),
@@ -395,57 +401,55 @@ def cur_state(t, k, tst=None):
     if k.NOD - 0.05 <= t < k.L5 + 0.5:
         st["expr"] = "hopeful"
     if k.L5e - 0.9 <= t < k.SMUG:
-        st["expr"] = "annoyed"
-    # the nod (revealed by a ping)
-    n0 = k.NOD + 0.3
-    st["tilt"] = kf(t, [(n0, 0.0), (n0 + 0.28, 0.48), (n0 + 0.56, -0.06), (n0 + 0.84, 0.38), (n0 + 1.15, 0.0)])
+        st["expr"] = "annoyed"            # his smugness wears thin
+    n0 = k.NOD + 0.3                      # the nod (revealed by a ping): two firm dips + a bob
+    st["tilt"] = kf(t, [(n0, 0.0), (n0 + 0.3, 0.72), (n0 + 0.6, -0.08), (n0 + 0.9, 0.58), (n0 + 1.25, 0.0)])
+    st["sy"] = 1.0 - 0.035 * max(0.0, st["tilt"])
     if t < k.SMUG:
         return st
-    if t < k.tgo + 0.3:
+    if t < k.tgo + 0.2:
         st["expr"] = "eyeroll"
         st["pose_t"] = t - (k.SMUG + 0.12)
-        st["look_target"] = "eyes"
         st["ears"] = 0.48
         return st
-    # ---------------- follows him: hops down, trots after him
+    # ---------------- follows him: watches him pass, hops down, trots after him
     st["expr"] = "calm"
-    st["look_target"] = None
     if t < k.chop0:
-        st["look"] = (-0.9, -0.1)
+        st["look_target"] = "eyes"
         return st
+    st["look_target"] = None
+    st["flip"] = True
     if t < k.chop1:
         kk = seg(t, k.chop0, k.chop1)
         st["pose"] = "stand"
-        st["x"] = lerp(C_XP, C_XP - 120, kk)
+        st["x"] = lerp(C_XS, C_XS - 90, kk)
         st["y"] = lerp(PLINTH_Y, FEET, ease_in(kk)) - 60 * math.sin(math.pi * kk)
         st["sy"] = 1.0 + 0.1 * math.sin(math.pi * kk)
         st["look"] = (-0.8, 0.2)
         return st
-    # trotting (walk cycle at 2.2x: feet planted at this speed)
-    tw = t - k.chop1
+    tw = t - k.chop1                      # trotting: walk cycle at 2.2x (feet planted at this speed)
     x_stop = M["stair_steps"][STEP_C][0]
-    x = max(x_stop, C_XP - 120 - k.cv * tw)
-    t_stop = k.chop1 + (C_XP - 120 - x_stop) / k.cv
+    x0 = C_XS - 90
+    x = max(x_stop, x0 - k.cv * tw)
+    t_stop = k.chop1 + (x0 - x_stop) / k.cv
     st["x"] = x
-    st["y"] = stair_y(x) if x < 700 else FEET
-    if t >= t_stop:
-        st["y"] = M["stair_steps"][STEP_C][1]
+    st["y"] = (stair_y(x) if x < 700 else FEET) if t < t_stop else M["stair_steps"][STEP_C][1]
     if t < t_stop:
         st["pose"] = "walk"
         st["pose_t"] = tw * 2.2
         st["look"] = (-0.8, 0.15)
-        st["ears"] = 0.7
+        st["ears"] = kf(t, [(k.BONK, 0.7), (k.BONK + 0.12, 0.95), (k.BONK + 1.0, 0.8)])
         return st
     st["pose"] = "sit"
     st["pose_from"], st["pose_mix"] = "stand", smoothstep(seg(t, t_stop, t_stop + 0.4))
     st["look"] = (-0.8, 0.3)
-    st["ears"] = kf(t, [(k.BONK, 0.7), (k.BONK + 0.12, 0.95), (k.BONK + 1.0, 0.8)])
-    st["expr"] = "surprised_soft" if t < k.BONK + 1.2 else "calm"
+    st["ears"] = 0.8
+    st["expr"] = "calm"
     if t >= k.giggle0 - 0.35:
         st["pose"] = "cover_mouth"
         st["pose_t"] = t - (k.giggle0 - 0.35)
         st["pose_from"] = None
-        st["expr"] = "calm"           # cover_mouth + calm = giggle
+        st["expr"] = "calm"               # cover_mouth + calm = the stifled giggle
         st["ears"] = 0.7
         st["tail_curl"] = 0.6
     return st
@@ -459,7 +463,7 @@ def draw_cur(ctx, t, st, hold=None):
     if hold is not None:
         def hold_fn(c, a):
             c.save()
-            c.set_matrix(m0)
+            c.set_matrix(m0)              # never squash what the callback draws (him)
             hold(c, a)
             c.restore()
     if sy != 1.0:
@@ -478,30 +482,40 @@ def draw_cur(ctx, t, st, hold=None):
     return a
 
 
+def _resolve_look(cst, ta):
+    """Curiosity's screen-space gaze at his hood / eyes (from his real anchors)."""
+    lt = cst.get("look_target")
+    if lt is None:
+        return cst
+    st = dict(cst)
+    hx, hy = ta["head"]
+    if lt == "hood":
+        hx, hy = ta["top"][0], (ta["top"][1] + hy) / 2
+    ex = st["x"] + (-55 if st["flip"] else 55)
+    ey = st["y"] - {"reach_up": 250, "sit": 180}.get(st["pose"], 150)
+    base = aim((ex, ey), (hx, hy), 0.85)
+    if st["expr"] == "eyeroll":
+        base = (base[0] * 0.5, base[1] * 0.5)
+    st["look"] = base
+    return st
+
+
 # ---------------------------------------------------------------------------
 # the sense: pings from his head
 # ---------------------------------------------------------------------------
-def _pings(k):
-    return []      # filled lazily (needs anchors) by pings_for()
-
-
 _PC = {}
 
 
 def pings_for(k, info):
-    key = id(k)
-    p = _PC.get(key)
+    p = _PC.get(id(k))
     if p is not None:
         return p
-    times = [(k.PING + 0.45, 1.0), (k.PING + 1.6, 0.85),
-             (k.lk1 - 0.1, 0.8), (k.lk3 - 0.05, 0.8),
-             (k.NOD + 0.05, 0.75)]
-    try:
-        tw = info.word_time("s02_l05", 2)
-    except Exception:
-        tw = k.L5 + 1.2
-    times.append((tw, 0.9))
-    times += [(k.tgo + 0.12, 0.55), (k.tgo + 1.12, 0.55), (k.BONK + 0.42, 0.6)]
+    times = [(k.PING + 0.45, 1.0), (k.PING + 1.6, 0.85),        # the first whoom, a second
+             (k.lk1 - 0.1, 0.8), (k.lk3 - 0.05, 0.8),           # following his head L / R
+             (k.NOD + 0.05, 0.75),                              # reveals the nod
+             (k.w_super, 0.9),                                  # "superpower": a proud ping
+             (k.tgo + 0.12, 0.55), (k.tgo + 1.12, 0.55),        # small ones guiding his steps
+             (k.BONK + 0.42, 0.6)]                              # dazed, too late: there's the pipe
     out = []
     for (t0, kk) in times:
         a = tired_anchors(t0, k, info)
@@ -509,8 +523,21 @@ def pings_for(k, info):
         tx, ty = a["top"]
         out.append((t0, (hx + tx) / 2, (hy * 0.6 + ty * 0.4), kk))
     _PC.clear()
-    _PC[key] = out
+    _PC[id(k)] = out
     return out
+
+
+def ping_flash(ctx, t, pings):
+    """The ping flash at the source, on top of his hood (the fx one sits behind him)."""
+    for (t0, px, py, kk) in pings:
+        pc = (t - t0) / 0.5
+        if not (0 <= pc < 1):
+            continue
+        g = 0.5 + 0.5 * kk
+        a = (1 - pc) ** 1.5
+        core.radial_glow(ctx, px, py, 150 * SW * g, TEAL, 0.5 * a)
+        core.circle(ctx, px, py, (40 + 110 * ease_out(pc)) * SW * g)
+        core.stroke(ctx, (0.75, 1.0, 0.97, 0.7 * a), 4 * SW * (1 - pc) + 1.5)
 
 
 # ---------------------------------------------------------------------------
@@ -523,23 +550,27 @@ def _shots(k):
     def add(t0, t1, name, cam, sense=True):
         T.append((t0, t1, name, cam, sense))
     s1_end = k.hop0 - 0.05
-    add(0.0, s1_end, "dark", lambda t: (1000, 1170, lerp(1.28, 1.36, smoothstep(seg(t, 0.0, s1_end)))), False)
-    add(s1_end, k.HOOD, "climb", lambda t: (1035, 1070, 1.85), False)
-    add(k.HOOD, k.PING, "hood", lambda t: (1000, 1000, lerp(2.4, 2.55, smoothstep(seg(t, k.HOOD, k.PING)))),
+    c0 = S01_DARK_CAM
+    add(0.0, s1_end, "dark", lambda t: (lerp(c0[0], 1030, smoothstep(seg(t, 0.0, s1_end))),
+                                        lerp(c0[1], 1110, smoothstep(seg(t, 0.0, s1_end))),
+                                        lerp(c0[2], 1.43, smoothstep(seg(t, 0.0, s1_end)))), False)
+    add(s1_end, k.HOOD, "climb", lambda t: (lerp(955, 1035, smoothstep(seg(t, k.hop1, k.hop2 + 0.5))), 1060, 1.85),
         False)
-    add(k.PING, k.L3 - 0.15, "ping", lambda t: (930, 900, 1.15))
-    add(k.L3 - 0.15, k.L4 - 0.1, "look", lambda t: (935, 1020, 1.75))
-    add(k.L4 - 0.1, k.stand0 - 0.05, "nod", lambda t: (1010, 1060, 1.6))
+    add(k.HOOD, k.PING, "hood", lambda t: (1050, 1000, lerp(2.4, 2.55, smoothstep(seg(t, k.HOOD, k.PING)))),
+        False)
+    add(k.PING, k.L3 - 0.15, "ping", lambda t: (990, 900, 1.15))
+    add(k.L3 - 0.15, k.L4 - 0.1, "look", lambda t: (1095, 1020, 1.75))
+    add(k.L4 - 0.1, k.stand0 - 0.05, "nod", lambda t: (1040, 1060, 1.6))
     add(k.stand0 - 0.05, k.smug_cu, "stand",
-        lambda t: (960, lerp(1060, 990, smoothstep(seg(t, k.stand0, k.stand1 + 0.2))), 1.4))
-    add(k.smug_cu, k.SMUG, "smug", lambda t: (T_X - 95, lerp(800, 785, seg(t, k.smug_cu, k.SMUG)), 2.35))
-    add(k.SMUG, k.WALK, "roll", lambda t: (C_XP - 50, 1090, 2.5))
+        lambda t: (1045, lerp(1060, 990, smoothstep(seg(t, k.stand0, k.stand1 + 0.2))), 1.4))
+    add(k.smug_cu, k.SMUG, "smug", lambda t: (T_X + 130, lerp(800, 785, seg(t, k.smug_cu, k.SMUG)), 2.35))
+    add(k.SMUG, k.WALK, "roll", lambda t: (C_XS + 60, 1090, 2.5))
     walk_end = k.BONK + 1.25
 
     def walk_cam(t):
         # lead room: the camera runs a little ahead of him, so the pipe comes into view
         x = T_X - k.v * clamp(t - k.tgo, 0.0, k.BONK - k.tgo)
-        cx = lerp(T_X + 60, x - 90, smoothstep(seg(t, k.tgo - 0.3, k.tgo + 0.9)))
+        cx = lerp(T_X - 60, x - 90, smoothstep(seg(t, k.tgo - 0.3, k.tgo + 0.9)))
         cx = max(cx, -124.0)
         cy = lerp(1000, 1260, smoothstep(seg(x, 760, 60)))
         dx, dy = core.shake(t, k.BONK, 0.5, 14, seed=5)
@@ -617,7 +648,7 @@ def _radial(c, x, y, r, rgb, a, mid_=0.62):
 def light_chars(ctx, draw_fn, lights_fn, base=0.9, bbox=None):
     """Draw the characters into a group, darken them ATOP with a mask that
     has soft holes at the light sources, then tint teal near them. `bbox`
-    (world rect) clips every group: the cost scales with its area."""
+    (world rect) clips the group: the cost scales with its area."""
     if bbox is not None:
         ctx.save()
         ctx.rectangle(*bbox)
@@ -655,12 +686,10 @@ def light_chars(ctx, draw_fn, lights_fn, base=0.9, bbox=None):
 
 
 def char_bbox(tst, cst, ta):
-    """World rect around both characters (for clipping the light groups)."""
+    """World rect around both characters (clips the light groups)."""
     tx, ty = tst["x"], tst["y"]
     top = ta["top"][1]
-    rects = [(tx - 300, top - 120, 600, ty - top + 200)]
-    cx_, cy_ = cst["x"], cst["y"]
-    rects.append((cx_ - 330, cy_ - 520, 660, 600))
+    rects = [(tx - 300, top - 120, 600, ty - top + 200), (cst["x"] - 330, cst["y"] - 520, 660, 600)]
     x0 = min(r[0] for r in rects)
     y0 = min(r[1] for r in rects)
     x1 = max(r[0] + r[2] for r in rects)
@@ -678,27 +707,23 @@ def aim(src, dst, mag=0.85):
     return (dx / d * mag, dy / d * mag)
 
 
-def ping_flash(ctx, t, pings):
-    """The ping flash at the source, on top of his hood (the fx one sits behind him)."""
-    for (t0, px, py, kk) in pings:
-        pc = (t - t0) / 0.5
-        if not (0 <= pc < 1):
-            continue
-        g = 0.5 + 0.5 * kk
-        a = (1 - pc) ** 1.5
-        core.radial_glow(ctx, px, py, 150 * SW * g, TEAL, 0.5 * a)
-        core.circle(ctx, px, py, (40 + 110 * ease_out(pc)) * SW * g)
-        core.stroke(ctx, (0.75, 1.0, 0.97, 0.7 * a), 4 * SW * (1 - pc) + 1.5)
-
-
 # ---------------------------------------------------------------------------
 # render
 # ---------------------------------------------------------------------------
-def dark_set(c, t, k):
+def deep_dark(t, k, name):
+    """Extra darkness over the set (s01 ends under a 0.62 wash; our eyes adjust a little)."""
+    if name == "dark":
+        return lerp(0.62, 0.45, smoothstep(seg(t, 0.4, k.hop0)))
+    return 0.4
+
+
+def dark_set(c, t, k, deep):
     # the pipe shivers after the bonk (it has died out by the cut to the close-up)
-    sets.catwalk(c, t, power=0.0, pod_glow=0.03, cam_led=1.0,
-                 pipe_wobble=1.0 if 0.0 <= t - k.BONK < 1.25 else 0.0,
+    sets.catwalk(c, t, power=0.0, cam_led=1.0, pipe_wobble=1.0 if 0.0 <= t - k.BONK < 1.25 else 0.0,
                  pipe_wobble_t0=k.BONK, **SET_KW)
+    if deep > 0.005:
+        c.set_source_rgba(*DARK_RGB, deep)
+        c.paint()
 
 
 def lit_set(c):
@@ -713,18 +738,20 @@ def render(ctx, t, info):
     t0, t1, name, cam, sense = sh
     cx, cy, zoom = cam(t)
     tst = tired_state(t, k, info)
-    ta = tired_anchors(t, k, info)                 # where his head is (Curiosity's gaze)
-    cst = _resolve_look(cur_state(t, k, tst), ta)
+    ta = tired_anchors(t, k, info, tst)            # where his head is (Curiosity's gaze, bbox)
+    cst = _resolve_look(cur_state(t, k), ta)
+    deep = deep_dark(t, k, name)
     core.bg(ctx, "#03070b")
     with core.camera(ctx, cx, cy, zoom):
         # ---- the world: darkness + the sense
         if sense and fx.sense_active(t, pings, s=SW):
-            fx.sense_reveal(ctx, t, pings, lit_set, lambda c: dark_set(c, t, k), key=("s02", name),
+            fx.sense_reveal(ctx, t, pings, lit_set, lambda c: dark_set(c, t, k, deep), key=("s02", name),
                             rect=shot_rect(k, sh), s=SW)
         else:
-            dark_set(ctx, t, k)
+            dark_set(ctx, t, k, deep)
 
-        # ---- characters (lit by Curiosity's eyes, his glow, the pings)
+        # ---- characters: Curiosity behind (on the plinth / following), him in front;
+        #      in reach_up he is drawn inside its pose so its near paw lands on his hood
         def draw_chars(c):
             res = {}
             if cst["pose"] == "reach_up":
@@ -733,12 +760,9 @@ def render(ctx, t, info):
                 res["c"] = draw_cur(c, t, cst, hold=hold)
                 if "t" not in res:
                     res["t"] = draw_tired(c, t, tst)
-            elif cst["x"] > tst["x"] - 40 or t < k.WALK:
-                res["c"] = draw_cur(c, t, cst)
-                res["t"] = draw_tired(c, t, tst)
             else:
-                res["t"] = draw_tired(c, t, tst)
                 res["c"] = draw_cur(c, t, cst)
+                res["t"] = draw_tired(c, t, tst)
             return res
 
         close = name in ("hood", "look", "smug", "bonk")
@@ -748,21 +772,22 @@ def render(ctx, t, info):
             L, Tn = [], []
             ce = mid(b["eye_l"], b["eye_r"])
             if name == "dark":
-                L += [(ce[0], ce[1], 90, 0.35)]
+                L.append((ce[0], ce[1], 90, 0.3))
             else:
                 L += [(b["eye_l"][0], b["eye_l"][1], 30, 1.0), (b["eye_r"][0], b["eye_r"][1], 30, 1.0),
                       (ce[0], ce[1], 250, 0.62)]
                 Tn.append((ce[0], ce[1], 330, 0.2))
             hood = tst["hood"]
             if hood < 0.6 and name != "dark":
-                for e in ("eye_l", "eye_r"):
-                    L.append((a[e][0], a[e][1], 22, 0.7 * (1 - hood / 0.6)))
+                for e in ("eye_l", "eye_r"):          # his teal irises glow (not the skin around)
+                    L.append((a[e][0], a[e][1], 15, 0.75 * (1 - hood / 0.6)))
+                    Tn.append((a[e][0], a[e][1], 26, 0.3 * (1 - hood / 0.6)))
             if a.get("hood_rim") and hood > 0.5:
                 hx, hy = a["hood_rim"]
                 hk = seg(hood, 0.5, 1.0)
                 L.append((hx, hy + 14, 115 if close else 85, (0.55 if close else 0.42) * hk))
                 Tn.append((hx, hy + 10, 130, 0.25 * hk))
-            # the BONK! burst flashes light on him for a moment (so the hit reads in the dark)
+            # the BONK! burst flashes light on him for a moment (the hit reads in the dark)
             if 0.0 <= t - k.BONK < 0.6:
                 fl = 1 - seg(t, k.BONK, k.BONK + 0.6)
                 L.append((PIPE[0] + 20, PIPE[1] + 60, 520, 0.75 * fl))
@@ -779,21 +804,26 @@ def render(ctx, t, info):
 
         res = light_chars(ctx, draw_chars, lights_fn, base=0.94 if name == "dark" else 0.9,
                           bbox=char_bbox(tst, cst, ta))
-        # foreground stair stringer + handrail over his legs on the stair (dark)
+        # foreground stair stringer + handrail over legs on the stair (dark)
         if name in ("walk", "giggle"):
             sets.catwalk(ctx, t, layer="fg", power=0.0, parts=("stair",))
-        # the eyes in the dark (opening shot): matches the end of s01
+        # the opening: the same near-black wash as s01's last frame, then the two pairs of eyes
         if name == "dark":
             a, b = res["t"], res["c"]
-            em = mid(a["eye_l"], a["eye_r"])
+            ctx.set_source_rgba(*DARK_RGB, deep * 0.6)
+            ctx.paint()
+            te = mid(a["eye_l"], a["eye_r"])
+            tdist = math.hypot(a["eye_r"][0] - a["eye_l"][0], a["eye_r"][1] - a["eye_l"][1])
+            ts_ = S * 1.25
             bt = tst["blink"] if tst["blink"] is not None else a.get("blink", 0.0)
-            fx.eyes_in_dark(ctx, em[0], em[1] + 2, 0.95, t, "tired", blink=bt,
-                            look=(tst["look"][0] * 0.6, tst["look"][1] * 0.5))
+            fx.eyes_in_dark(ctx, te[0], te[1], ts_, t, "tired", blink=bt, gap=tdist / ts_,
+                            look=(tst["look"][0] * 0.5, tst["look"][1] * 0.5), amount=0.9, seed=5)
             ce = mid(b["eye_l"], b["eye_r"])
-            lk = cst["look"] or (-0.4, -0.5)
-            fx.eyes_in_dark(ctx, ce[0] - 4, ce[1], 0.52, t, "curiosity",
-                            look=(lk[0] * 0.6, lk[1] * 0.6), tilt=-0.12 if cst["expr"] == "curious" else 0.0,
-                            seed=3)
+            cdist = math.hypot(b["eye_r"][0] - b["eye_l"][0], b["eye_r"][1] - b["eye_l"][1])
+            cs = S * 0.95
+            lk = cst["look"] or (0.5, -0.5)
+            fx.eyes_in_dark(ctx, ce[0], ce[1], cs, t, "curiosity", look=(lk[0] * 0.6, lk[1] * 0.6),
+                            gap=cdist / cs, tilt=-0.12 if cst["expr"] == "curious" else 0.0, seed=3)
         if sense:
             ping_flash(ctx, t, pings)
         # ---- the bonk
@@ -804,56 +834,37 @@ def render(ctx, t, info):
             fx.dizzy_stars(ctx, hx + 8, hy + 6, 0.55, t, t0=k.BONK + 0.3, dur=2.2)
 
 
-def _resolve_look(cst, ta):
-    """Curiosity's screen-space gaze at his hood / eyes (from his real anchors)."""
-    lt = cst.get("look_target")
-    if lt is None:
-        return cst
-    st = dict(cst)
-    hx, hy = ta["head"]
-    if lt == "hood":
-        hx, hy = ta["top"][0], (ta["top"][1] + hy) / 2
-    # Curiosity's eye line relative to its ground point (facing left)
-    ex = st["x"] - 55
-    ey = st["y"] - {"reach_up": 250, "sit": 180}.get(st["pose"], 150)
-    base = aim((ex, ey), (hx, hy), 0.85)
-    if st["expr"] == "eyeroll":
-        base = (base[0] * 0.5, base[1] * 0.5)
-    st["look"] = base
-    return st
-
-
 # ---------------------------------------------------------------------------
 # sound
 # ---------------------------------------------------------------------------
 def SFX(info):
     k = timing(info)
     ev = []
-    # he sits down on the plinth (cloth + a soft bump)
-    ev.append((k.sit0 + 0.15, "cloth_rustle", 0, 0.0))
-    ev.append((k.sit0 + 0.6, "body_thud", -12, 0.0))
-    # Curiosity hops up: claws on metal
-    ev.append((k.hop1 - 0.02, "scratch_wood", -4, 0.25))
-    ev.append((k.hop2, "footstep", -9, 0.25))
-    ev.append((k.hop2 + 0.7, "creature_chitter", -6, 0.25))
+    # he steps back and sits on the plinth (cloth + a soft bump)
+    ev.append((k.sit0 + 0.15, "cloth_rustle", 0, 0.1))
+    ev.append((k.sit0 + 0.7, "body_thud", -12, 0.1))
+    # Curiosity hops up: claws, a soft landing, a curious chitter as it reaches for his head
+    ev.append((k.hop1 - 0.02, "scratch_wood", -4, -0.25))
+    ev.append((k.hop2, "footstep", -9, -0.2))
+    ev.append((k.hop2 + 0.7, "creature_chitter", -6, -0.2))
     # the hood: cloth, then his sigh
-    ev.append((k.hd0, "cloth_rustle", 2, 0.1))
-    ev.append((k.sigh - 0.05, "sigh", 1, 0.0))
+    ev.append((k.hd0, "cloth_rustle", 2, 0.0))
+    ev.append((k.sigh - 0.05, "sigh", 1, 0.1))
     # the sense
     pings = pings_for(k, info)
     for i, (t0, x, y, kk) in enumerate(pings):
         if kk >= 0.75:
             ev.append((t0, "sonar_ping", 0 if i < 2 else -3, 0.0))
         else:
-            ev.append((t0, "sonar_ping_small", -4, 0.0))
-    # "Oh." -> ears perk; the nod
-    ev.append((k.L3 + 0.18, "ears_perk", 0, 0.2))
-    ev.append((k.NOD + 0.35, "ears_perk", 2, 0.2))
+            ev.append((t0, "sonar_ping_small", -4 if t0 < k.BONK else -2, 0.0))
+    # "Oh." -> its ears perk; the nod
+    ev.append((k.L3 + 0.18, "ears_perk", 0, -0.2))
+    ev.append((k.NOD + 0.35, "ears_perk", 2, -0.2))
     # stands up
-    ev.append((k.stand0 + 0.2, "cloth_rustle", -2, 0.0))
-    # the confident stride: one step per foot contact (two per cycle)
+    ev.append((k.stand0 + 0.2, "cloth_rustle", -2, 0.1))
+    # the confident stride: one step per heel strike of walk_eyes_closed (pose_t 0.17 + n * 0.525)
     per = 1.05 / 2
-    tt = k.tgo + 0.17                       # first heel strike of walk_eyes_closed (pose_t 0.17)
+    tt = k.tgo + 0.17
     i = 0
     while tt < k.BONK - 0.05:
         ev.append((tt, "footstep", -3 if i % 2 else -5, -0.1))
@@ -864,6 +875,6 @@ def SFX(info):
     ev.append((k.chop1 + 0.1, "scurry", -12, 0.3))
     # BONK
     ev.append((k.BONK, "pipe_bonk", 2, -0.15))
-    # stifled giggle behind its paw
+    # the stifled giggle behind its paw
     ev.append((k.giggle0 + 0.05, "creature_chitter", -5, 0.2))
     return ev

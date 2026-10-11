@@ -59,13 +59,14 @@ DUCK = dict(P(L("l", 1.05, 0.1, 1.75, 0.2), L("r", 0.7, 0.1, 1.45, 0.3),
               A("l", 0.6, 0.2, 0.9), A("r", 0.6, 0.2, 0.9)), lean=0.55, neck=0.3, nod=0.2, hunch=0.7)
 DUCK_DEEP = dict(P(L("l", 1.25, 0.1, 2.05, 0.2), L("r", 0.9, 0.1, 1.75, 0.3),
                    A("l", 0.6, 0.2, 0.9), A("r", 0.6, 0.2, 0.9)), lean=0.62, neck=0.32, nod=0.22, hunch=0.8)
-_CRAD = P(IK("r", -0.02, 0.50, 0.17, "cup", layer="mid", tf=-1.0, wa=0.0, wabs=0.5),
-          IK("l", 0.02, 0.60, 0.19, "relaxed", layer="front", wa=0.6, wabs=0.5))
+# carrying the baby: it sits on his forearms in front of his chest (drawn over the arms)
+_CRAD = P(IK("r", -0.02, 0.42, 0.24, "cup", layer="mid", tf=-1.0, wa=0.0, wabs=0.5),
+          IK("l", 0.02, 0.50, 0.26, "relaxed", layer="front", wa=0.6, wabs=0.5))
 RUN_CRADLE = {"base": "run", **_CRAD, "hold": 2.0, "lean": 0.16}
-CRADLE = {"base": "cradle", "nod": 0.22, "tilt": 0.03}
+CRADLE = {"base": "stand", **_CRAD, "hold": 2.0, "nod": 0.18, "hunch": 0.3}
 DUCK_CRADLE = dict(DUCK)
-DUCK_CRADLE.update(P(IK("r", -0.02, 0.40, 0.2, "cup", layer="mid", tf=-1.0, wa=0.0, wabs=0.5),
-                     IK("l", 0.02, 0.48, 0.22, "relaxed", layer="front", wa=0.6, wabs=0.5)))
+DUCK_CRADLE.update(P(IK("r", -0.02, 0.34, 0.26, "cup", layer="mid", tf=-1.0, wa=0.0, wabs=0.5),
+                     IK("l", 0.02, 0.41, 0.28, "relaxed", layer="front", wa=0.6, wabs=0.5)))
 DUCK_CRADLE["hold"] = 2.0
 HAUL_FOLLOW = {"base": "haul", "lean": -0.72, "hunch": 0.95, "nod": 0.28}
 CROUCH = {"base": "crouch", "lean": 0.45, "neck": 0.05, "nod": 0.1}
@@ -958,11 +959,11 @@ def _draw_tired(ctx, T, info, t, st, baby_st):
         if not baby_st["held"]:
             return
         if side == "both":
-            bx, by = hx + 4, hy - 40 * SB
+            bx, by, fc = hx + 4, hy - 65 * SB, 0.3
         else:
-            bx, by = hx + 4, hy - 12 * SB
+            bx, by, fc = hx + 4, hy - 12 * SB, 0.8
         CR.draw_specimen(c, bx, by, SB, t, baby=True, pose="held", expr=baby_st["expr"], flip=True,
-                         tail_curl=baby_st["tail_curl"], look=(-0.3, 0.2), glow=1.7)
+                         tail_curl=baby_st["tail_curl"], look=(-0.2, 0.1), glow=1.7, face=fc)
     kw = dict(pose=st["pose"], pose_t=st["pose_t"], turn=st["turn"], expr=st["expr"], face=st["face"],
               look=st["look"], blink=st["blink"], power=st["power"], outfit="sewer", bandage=True,
               headphones=None, hood=0.0, reach=st["reach"], mouth=info.mouth("tired", t))
@@ -970,6 +971,8 @@ def _draw_tired(ctx, T, info, t, st, baby_st):
         kw["hold"] = hold
         if st["hold_mode"] == "r":
             kw["hold_sides"] = "r"
+        else:
+            kw["hold_layer"] = "front"
     return human.draw_person(ctx, "tired", st["x"], st["y"], SP, t, **kw)
 
 

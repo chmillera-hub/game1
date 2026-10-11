@@ -40,9 +40,7 @@ import math
 import cairocffi as cairo
 
 from engine import core, human, creatures, sets, fx, props
-from engine.core import (tween, seg, clamp, lerp, smoothstep, ease_in_out, ease_out, ease_in,
-                         ease_out_back, state_at)
-from audio import sfx
+from engine.core import seg, clamp, lerp, smoothstep, ease_in_out, ease_out, ease_out_back, state_at
 
 M = sets.TUNNEL_MARKS
 S = 0.75                 # people (the set's char_scale)
@@ -235,6 +233,24 @@ def shot_at(t, k):
 def view_rect(cam, pad=60):
     cx, cy, z = cam
     return (cx - 540 / z - pad, cy - 960 / z - pad, 1080 / z + 2 * pad, 1920 / z + 2 * pad)
+
+
+_SR = {}
+
+
+def shade_rect(k, name):
+    """World rect covering a shot's whole framing (camera start .. end)."""
+    key = (round(k["dur"], 4), name)
+    if key not in _SR:
+        sh = shots(k)
+        i = [s_[0] for s_ in sh].index(name)
+        t0 = sh[i][1]
+        t1 = sh[i + 1][1] - 0.01 if i + 1 < len(sh) else k["dur"]
+        rs = [view_rect(sh[i][2](tt), pad=40) for tt in (t0, (t0 + t1) / 2, t1)]
+        x0 = min(r[0] for r in rs); y0 = min(r[1] for r in rs)
+        x1 = max(r[0] + r[2] for r in rs); y1 = max(r[1] + r[3] for r in rs)
+        _SR[key] = (x0, y0, x1 - x0, y1 - y0)
+    return _SR[key]
 
 
 # --------------------------------------------------------------------------- Tiredness
@@ -548,10 +564,10 @@ def embar_state(t, k):
     look = (0.9, -0.05)
     if t < k["l1e"] + 0.3:
         look = tw(t, [(k["e1"], (0.6, 0.2)), (k["swing0"], (0.8, 0.35)), (k["swing1"], (0.95, -0.1)),
-                      (k["l1_down"] - 0.12, (0.95, -0.05)), (k["l1_down"], (-1.1, 0.05)),
-                      (k["l1_down"] + 0.42, (-1.1, 0.05)), (k["l1_down"] + 0.6, (0.95, -0.05))])
+                      (k["l1_down"] - 0.12, (0.95, -0.05)), (k["l1_down"], (-1.25, 0.1)),
+                      (k["l1_down"] + 0.42, (-1.25, 0.1)), (k["l1_down"] + 0.6, (0.95, -0.05))])
         f.update(fk(t, {
-            "head_turn": [(k["l1_down"] + 0.05, 0.0), (k["l1_down"] + 0.2, -0.4), (k["l1_down"] + 0.5, -0.4),
+            "head_turn": [(k["l1_down"] + 0.05, 0.0), (k["l1_down"] + 0.2, -0.75), (k["l1_down"] + 0.5, -0.75),
                           (k["l1_down"] + 0.72, 0.0)],
             "brow": [(jt, 0.0), (jt + 0.1, 0.35), (k["l1e"], 0.25), (k["l1e"] + 0.5, 0.1)],
             "brow_ang": [(jt, 0.0), (jt + 0.2, 0.25), (k["l1e"] + 0.5, 0.25)],
@@ -887,13 +903,15 @@ def draw_world(ctx, t, k, cam, shot_name, exact=True):
     # ---- characters into groups lit by the tunnel shade (+ the torch), then the cone.
     # Curiosity (always behind Tiredness in this staging) gets only half the shade: the
     # indigo body would otherwise sink into the dim tunnel.
+    srect = shade_rect(k, shot_name)
+
     def shade(a):
+        # the set's static "shade" layer, cached per shot over the shot's framing (the
+        # set's own sprite is drawn live in close-ups: it is bigger than its cache limit)
         ctx.save()
-        ctx.push_group()
-        sets.service_tunnel(ctx, t, "shade")
-        ctx.pop_group_to_source()
         ctx.set_operator(cairo.OPERATOR_ATOP)
-        ctx.paint_with_alpha(a)
+        sets.sprite(ctx, ("s05_shade", shot_name), *srect,
+                    lambda c: sets.service_tunnel(c, 0.0, "shade"), alpha=a)
         ctx.restore()
     ctx.push_group()
     draw_cur()
@@ -902,10 +920,7 @@ def draw_world(ctx, t, k, cam, shot_name, exact=True):
     ctx.push_group()
     draw_emb()
     draw_tired()
-    ctx.save()
-    ctx.set_operator(cairo.OPERATOR_ATOP)
-    sets.service_tunnel(ctx, t, "shade")
-    ctx.restore()
+    shade(1.0)
     beam = None
     if "lens" in lens and E["aim"] is not None:
         lx, ly = lens["lens"]
@@ -1115,7 +1130,7 @@ def SFX(info):
     # off toward CONTROL
     gw = k["go_walk"]
     for i in range(3):
-        if gw + 0.5 * i < info.dur:
+        if gw + 0.5 * i < info.dur - 0.1:
             ev.append((gw + 0.5 * i, "footstep", -11 - 2 * i, 0.35))
     # the tunnel drip (same drip as s04, synced to the visual landing: 2.6 s cycle, lands at 70 %)
     tt = 0.7 * 2.6
