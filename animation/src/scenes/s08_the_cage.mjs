@@ -158,6 +158,24 @@ function fearWalk(t, S) {
 }
 const fearScaleB = (y) => (y >= 1642 ? hqScaleAt('backOfMind', y) : lerp(0.952, hqScaleAt('backOfMind', 1642), clamp((y - 1630) / 12)));
 
+// Fear's plea at the bars (s08b02): a small lean toward the CEO's hand and a pleading head-cock the other way
+// (clockwise; the eyes stay up-left on the CEO). It starts after the lock click, as the CEO's hand slides away in the
+// insert, so the cut to the close lands mid-move. The head is placed so the midpoint between the eyes stays on the door's
+// centre bar while the face rotates: the mouth (44 local px below the eye line along the head axis) then sits ≈25 screen
+// px left of the bar, so the lip shapes of Fear's only line through the bars read whole. (A plain x shift cannot do
+// this: the face is ≈1.8 bar spacings wide, so any shift that clears the mouth puts the next bar through an eye.)
+// `roll`/`turn` = the extra tilt / headTurn of the look up at the Void on 'with it' (kept on the bar too).
+const PLEA_TILT = 0.24, PLEA_LEAN = -0.05;
+const pleaK = (t, S) => S.k(t, [['s08b02-0.15', 0], ['s08b02+0.4', 1, 'inOut']]);
+function pleaHead(plea, roll = 0, turn = 0) {
+  const tot = PLEA_TILT * plea + roll;              // the face's total rotation on screen
+  const lean = PLEA_LEAN * plea;
+  // eye midpoint, Fear-local x: neck 148 above the feet, eyes 64 above the neck along the head axis, headTurn
+  // slides the features 0.55·eyeSpacing(32)·turn
+  const eyeX = 148 * Math.sin(lean) + 64 * Math.sin(tot) + 17.6 * turn * Math.cos(tot);
+  return { lean, headTilt: tot - lean, headDX: -eyeX / Math.cos(lean) };
+}
+
 // ---------------------------------------------------------------- render
 export function render(g, t, S) {
   const T = times(S);
@@ -285,6 +303,7 @@ function shotInsert(g, t, S, T) {
   const fs = CAGE_B[2];
   const fp = fearPoseB(t, S, T, cst, fx, fy, fs);
   fp.walk = null;
+  Object.assign(fp, pleaHead(pleaK(t, S)));         // (crane is 0 here: fearPoseB's own headTilt has settled)
   drawFear(g, fx, fy, fs, fp);
   drawCage(g, ...CAGE_B, { ...cst, layer: 'front', grips: ['gripL', 'gripR'] });
 
@@ -352,8 +371,10 @@ function shotClose(g, t, S, T) {
   const hitch = sobHitch(t, 1.9, 0.4) * (t > S.T('s08b02.end') ? 1 : 0.35);
   // on 'with it' the head follows the eyes a touch up toward the hood (so the look reads at phone size), then back
   const roll = S.k(t, [['s08b02+1.45', 0], ['s08b02+1.7', 1], ['s08b02+1.98', 1], ['s08b02+2.3', 0]]);
+  const ph = pleaHead(pleaK(t, S), 0.08 * roll, 0.12 * roll);
   drawFear(g, fx, fy, fs, {
-    t, facing: 1, tremble: 0.6, lean: -0.02 * pull, headDY: -2 * hitch + 1.5 - 4 * roll, headTurn: 0.12 * roll, headTilt: 0.08 * roll,
+    t, facing: 1, tremble: 0.6, lean: ph.lean - 0.02 * pull, headDY: -2 * hitch + 1.5 - 4 * roll, headDX: ph.headDX,
+    headTurn: 0.12 * roll, headTilt: ph.headTilt,
     breathe: 1.4, breathRate: 0.85,
     face,
     armL: { target: [gl[0], gl[1] + 3 * pull], bend: 1, front: true, hand: 'grip' },

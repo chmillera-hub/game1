@@ -85,7 +85,7 @@
   "loop": false,
   "pan": -0.33290000000000003,
   "fade": 0.12,
-  "rate": 1
+  "rate": 1.1474
  },
  {
   "scene": "s02",
@@ -96,7 +96,7 @@
   "loop": false,
   "pan": -0.2933,
   "fade": 0.12,
-  "rate": 1
+  "rate": 1.1474
  },
  {
   "scene": "s02",
@@ -107,7 +107,7 @@
   "loop": false,
   "pan": -0.2558,
   "fade": 0.12,
-  "rate": 1
+  "rate": 1.1474
  },
  {
   "scene": "s02",
@@ -118,7 +118,7 @@
   "loop": false,
   "pan": -0.21630000000000002,
   "fade": 0.12,
-  "rate": 1
+  "rate": 1.1474
  },
  {
   "scene": "s02",
@@ -140,7 +140,7 @@
   "loop": false,
   "pan": -0.1808,
   "fade": 0.12,
-  "rate": 1
+  "rate": 1.1474
  },
  {
   "scene": "s02",
@@ -162,7 +162,7 @@
   "loop": false,
   "pan": 0.00039999999999995595,
   "fade": 0.12,
-  "rate": 1
+  "rate": 1.1474
  },
  {
   "scene": "s02",
@@ -173,7 +173,7 @@
   "loop": false,
   "pan": 0.04630000000000001,
   "fade": 0.12,
-  "rate": 1
+  "rate": 1.1474
  },
  {
   "scene": "s02",
@@ -184,7 +184,7 @@
   "loop": false,
   "pan": 0.09210000000000002,
   "fade": 0.12,
-  "rate": 1
+  "rate": 1.1474
  },
  {
   "scene": "s02",
@@ -195,7 +195,7 @@
   "loop": false,
   "pan": 0.14,
   "fade": 0.12,
-  "rate": 1
+  "rate": 1.1474
  },
  {
   "scene": "s02",
@@ -206,7 +206,7 @@
   "loop": false,
   "pan": 0.18579999999999997,
   "fade": 0.12,
-  "rate": 1
+  "rate": 1.1474
  },
  {
   "scene": "s02",
@@ -217,7 +217,7 @@
   "loop": false,
   "pan": 0.2421000000000001,
   "fade": 0.12,
-  "rate": 1
+  "rate": 1.1474
  },
  {
   "scene": "s02",
@@ -393,7 +393,7 @@
   "loop": false,
   "pan": 0,
   "fade": 0.3,
-  "rate": 1.9
+  "rate": 2.1739
  },
  {
   "scene": "s05",
@@ -437,7 +437,7 @@
   "loop": false,
   "pan": 0,
   "fade": 0.3,
-  "rate": 1.8
+  "rate": 2.0595
  },
  {
   "scene": "s05",
@@ -459,7 +459,7 @@
   "loop": false,
   "pan": 0,
   "fade": 0.3,
-  "rate": 1.2
+  "rate": 1.3588
  },
  {
   "scene": "s05",
@@ -481,7 +481,7 @@
   "loop": true,
   "pan": 0,
   "fade": 0.5,
-  "rate": 2
+  "rate": 2.2944
  },
  {
   "scene": "s05",
@@ -767,7 +767,7 @@
   "loop": false,
   "pan": 0.15,
   "fade": 0.15,
-  "rate": 1.9
+  "rate": 1.9306
  },
  {
   "scene": "s08",
@@ -1009,7 +1009,7 @@
   "loop": false,
   "pan": -0.7,
   "fade": 0.12,
-  "rate": 1.4
+  "rate": 1.4701
  },
  {
   "scene": "s09",
@@ -1218,7 +1218,7 @@
   "loop": false,
   "pan": 0,
   "fade": 0.12,
-  "rate": 1.31
+  "rate": 1.5045
  },
  {
   "scene": "s12",
@@ -1240,7 +1240,7 @@
   "loop": false,
   "pan": 0,
   "fade": 0.12,
-  "rate": 1
+  "rate": 1.1506
  },
  {
   "scene": "s12",
@@ -1251,7 +1251,7 @@
   "loop": false,
   "pan": 0,
   "fade": 0.08,
-  "rate": 1
+  "rate": 1.1427
  },
  {
   "scene": "s12",
@@ -1262,7 +1262,7 @@
   "loop": false,
   "pan": 0,
   "fade": 0.1,
-  "rate": 1
+  "rate": 1.1427
  },
  {
   "scene": "s12",
@@ -1339,7 +1339,7 @@
   "loop": true,
   "pan": 0,
   "fade": 0.5,
-  "rate": 1.3
+  "rate": 1.4175
  },
  {
   "scene": "s13",
@@ -1361,7 +1361,7 @@
   "loop": true,
   "pan": 0,
   "fade": 0.4,
-  "rate": 1.65
+  "rate": 1.8949
  },
  {
   "scene": "s13",
@@ -1405,7 +1405,7 @@
   "loop": true,
   "pan": 0,
   "fade": 1.6,
-  "rate": 1.2
+  "rate": 1.3767
  },
  {
   "scene": "s13",
@@ -1526,7 +1526,7 @@
   "loop": false,
   "pan": 0,
   "fade": 0.15,
-  "rate": 1
+  "rate": 1.1487
  },
  {
   "scene": "s15",
@@ -1559,7 +1559,7 @@
   "loop": false,
   "pan": -0.5,
   "fade": 0.3,
-  "rate": 1
+  "rate": 1.1474
  },
  {
   "scene": "s15",
@@ -1570,7 +1570,7 @@
   "loop": false,
   "pan": 0.5,
   "fade": 0.3,
-  "rate": 0.9
+  "rate": 0.9674
  },
  {
   "scene": "s16",
@@ -1636,7 +1636,7 @@
   "loop": false,
   "pan": 0,
   "fade": 0.3,
-  "rate": 1.35
+  "rate": 1.5467
  },
  {
   "scene": "s16",
@@ -1647,7 +1647,7 @@
   "loop": false,
   "pan": 0,
   "fade": 0.3,
-  "rate": 1.35
+  "rate": 1.5467
  },
  {
   "scene": "s16",
@@ -1834,7 +1834,7 @@
   "loop": false,
   "pan": 0,
   "fade": 0.3,
-  "rate": 1
+  "rate": 1.1466
  },
  {
   "scene": "s19",
@@ -1845,7 +1845,7 @@
   "loop": false,
   "pan": 0,
   "fade": 0.3,
-  "rate": 1
+  "rate": 1.1466
  },
  {
   "scene": "s19",
@@ -1867,7 +1867,7 @@
   "loop": false,
   "pan": 0,
   "fade": 0.3,
-  "rate": 1
+  "rate": 1.0933
  },
  {
   "scene": "s19",
@@ -1878,7 +1878,7 @@
   "loop": false,
   "pan": 0,
   "fade": 0.3,
-  "rate": 1
+  "rate": 1.038
  },
  {
   "scene": "s19",
@@ -1889,7 +1889,7 @@
   "loop": false,
   "pan": 0,
   "fade": 0.3,
-  "rate": 1
+  "rate": 1.1182
  },
  {
   "scene": "s19",
@@ -1900,7 +1900,7 @@
   "loop": false,
   "pan": 0,
   "fade": 0.3,
-  "rate": 1
+  "rate": 1.149
  },
  {
   "scene": "s19",

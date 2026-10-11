@@ -11,7 +11,7 @@ import { W, H, clamp, lerp, ease, smoothstep, blinkAt, applyCamera, drift, vigne
 import { withSpeech, star } from '../face.mjs';
 import { drawFear } from '../chars/fear.mjs';
 import { drawVoid, drawVoidGlow, drawVoidArm, drawVoidHand, toVoidLocal, voidRig, VOID_HANDS } from '../chars/void.mjs';
-import { drawCosmos, vfbm } from '../fx/cosmos.mjs';
+import { drawCosmos, drawCosmosGlyph, vfbm, hrand } from '../fx/cosmos.mjs';
 import { drawHQ, drawHQForeground } from '../sets/hq.mjs';
 import { drawCage } from '../sets/props.mjs';
 
@@ -565,6 +565,51 @@ function hoodPOV(g, t, S, cosmos) {
   drawStage(g, t, S, cam(679, 336, z, t, 1.5), { cosmos, fear: false });
 }
 
+// The full-screen shot's "bits and pieces of meaning", laid out here instead of by drawCosmos (called with
+// glyphs 0): the same table, order, fade-in, drift, pulse and sprites as src/fx/cosmos.mjs's glyph layer, with ONE
+// change — the music note moves from (0.4, 0.62), where it drifted under the b04 caption box (play-time captions
+// at y ≈ 972–1072, x ≈ 147–553; only its dot showed below the box, on the very line about meaning), to the open
+// violet haze right of the heart, between the pencil, the key and the lower galaxy (screen ≈ (498,647) → (483,609)).
+const FULL_GLYPHS = [
+  { name: 'heart', col: '#ff9fc6', nx: -0.06, ny: 0.2, sz: 1.12 },
+  { name: 'sun', col: '#ffd57a', nx: 0.55, ny: -0.28, sz: 1.15 },
+  { name: 'fear', col: '#cdbdf5', nx: -0.42, ny: 0.34, sz: 1.2 },
+  { name: 'note', col: '#9fe8ff', nx: 0.36, ny: 0.02, sz: 0.95 },        // cosmos.mjs: (0.4, 0.62)
+  { name: 'house', col: '#ffcf8a', nx: -0.6, ny: -0.6, sz: 1.0 },
+  { name: 'handprint', col: '#ffc6a8', nx: 0.6, ny: -0.74, sz: 0.85 },
+  { name: 'speech', col: '#e9e3ff', nx: -0.18, ny: -0.5, sz: 0.85 },
+  { name: 'key', col: '#ffd36b', nx: 0.68, ny: 0.06, sz: 0.78 },
+  { name: 'notebook', col: '#ffe9b8', nx: -0.72, ny: -0.02, sz: 0.9 },
+  { name: 'leaf', col: '#9ff0b5', nx: -0.3, ny: 0.76, sz: 0.8 },
+  { name: 'pencil', col: '#ffe3a3', nx: 0.14, ny: -0.16, sz: 0.72 },
+];
+function cosmosGlyphsFull(g, cx, cy, rx, ry, t, reveal, amt, seed = 7) {
+  const gk0 = smoothstep(0.58, 0.98, reveal) * amt;
+  if (!(gk0 > 0.003)) return;
+  const m = g.getTransform();
+  const S0 = Math.min(rx, ry), R = S0 * (Math.sqrt(Math.abs(m.a * m.d - m.b * m.c)) || 1);
+  const N = FULL_GLYPHS.length;
+  const small = clamp((260 - R) / 200);
+  const nGf = clamp(4 + R / 38, 5, N), nG = Math.min(N, Math.ceil(nGf + 0.5));
+  const gsz = S0 * lerp(0.09, 0.115, small);
+  g.save();
+  g.beginPath(); g.rect(cx - rx, cy - ry, rx * 2, ry * 2); g.clip();
+  g.globalCompositeOperation = 'source-over';
+  for (let i = 0; i < nG; i++) {
+    const G = FULL_GLYPHS[i];
+    const ga = smoothstep(i * 0.04, i * 0.04 + 0.55, gk0) * clamp(nGf + 0.5 - i);
+    if (ga <= 0.003) continue;
+    const sd = seed * 13 + i * 17;
+    const x = cx + (G.nx + vfbm(t * 0.045 + i * 2.3, sd) * 0.07 + Math.sin(t * 0.07 + i) * 0.025) * rx;
+    const y = cy + (G.ny + vfbm(t * 0.04 + i * 3.7, sd + 1) * 0.06 + Math.cos(t * 0.06 + i * 1.7) * 0.02) * ry;
+    const rot = vfbm(t * 0.05 + i, sd + 2) * 0.35;
+    const pulse = 0.85 + 0.15 * Math.sin(t * (0.6 + hrand(i, seed) * 0.5) + i * 1.3);
+    const depth = lerp(0.68, 1, clamp((G.sz - 0.7) / 0.5));
+    drawCosmosGlyph(g, G.name, x, y, gsz * G.sz, G.col, { alpha: ga * pulse * depth, rot });
+  }
+  g.restore();
+}
+
 function cosmosFull(g, t, S, cosmos) {
   // full-screen universe: a slow drift (≈0.3 px/frame) and a 1.00 → 1.06 scale over b02–b04
   const u = S.k(t, [['s14b02-0.5', 0], ['s14b05', 1]], 'linear');
@@ -575,7 +620,8 @@ function cosmosFull(g, t, S, cosmos) {
   // the glyphs are b04's discovery ("bits and pieces of meaning"): they arrive with the line, full by 'meaning'
   const glyphs = S.k(t, [['s14b04-0.4', 0], ['s14b04+2.72', 1, 'inOut']]);
   const rx = 410 * sc, ry = 700 * sc;
-  drawCosmos(g, cx, cy, rx, ry, t, { reveal: cosmos, seed: 7, glyphs });
+  drawCosmos(g, cx, cy, rx, ry, t, { reveal: cosmos, seed: 7, glyphs: 0 });
+  cosmosGlyphsFull(g, cx, cy, rx, ry, t, cosmos, glyphs);
   // on 'meaning' the heart (the cosmos module's glyph 0, near the centre) glows briefly brighter
   const pulse = S.k(t, [['s14b04+2.62', 0], ['s14b04+3.0', 1, 'out'], ['s14b04+4.6', 0, 'sine']]);
   if (pulse > 0.002) {
