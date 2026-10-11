@@ -1,0 +1,228 @@
+[
+ {
+  "overall": "I reviewed the facial acting against the screenplay's acting notes, using contact sheets and about 25 extra renders cropped to the faces (phone size and full size), with word timings from lines.json. The face system is capable, and several moments work well:\n- Fear's \"You don't know that\" heavy-lidded look (s04, 63.8).\n- The hand-on-shoulder flinch and the \"I can't. I'm sorry\" squeeze and tear (s06).\n- The hand over the mouth plus a tear on \"And I felt sadness\" (s09).\n- The peek through the fingers (s13, 208).\n- The \"This is it\" extreme close-up (s13, 195.5).\n- The stars in Fear's irises and the smile on \"wonder\" (s14).\n- The shy smile and blush after the push (s16, 282\u2013284).\n- The final tear, laugh and sleeve-wipe (s20, 329\u2013333).\n\nLip-sync is present on every on-screen line I checked, and the mouths stay closed during voice-over (s06b09, s09, s20).\n\nThe main problem is shot size and staging, not the face rig. Several of the creator's key peaks are played in wide or medium shots, or with characters seen from behind. At phone size the faces are 20\u201345 px, and the expressions written in the code merge into Fear's default \"big eyes up, worried brows\" look:\n- **Worst:** s12 \"Why are you doing this?\" and s15 \"My other emotions were looking back\", where the emotions are seen from behind and in profile.\n- **Next:** the wonder smile in s14, which lasts about 1.2 s before cutting to a wide.\n\nFear's eyeline is also a recurring problem. It looks up or toward the camera when it should look at the Void behind it (s12, s16) or follow the Void's gaze to the console (s14b10, s15). As a result, story beat 19, where Fear looks where the Void is looking, never reads.\n\nReactions to the time-out (s07) and to \"Can I help?\" (s17) are cut off after about 1.2 s, which works against the slow pacing the creator asked for. Compression did not damage any faces in the enc_ frames I checked.",
+  "findings": [
+   {
+    "scene": "s15",
+    "time": 260.4,
+    "severity": "high",
+    "category": "facial-acting/staging",
+    "problem": "Story beat 19 ('My other emotions were looking back\u2026 They smiled') does not read. In the 'pov' shot (257.3\u2013259.2) and the 'drift' shot (260.4\u2013263.8) the four emotions stand at the console with their backs to camera and only turn their heads to profile. Their faces are about 40\u201370 px at full resolution (about 20\u201335 px on a phone). Nobody looks back toward Fear or the lens. Joy's wave and smile, Sadness's wet smile, Anger's mouth-corner twitch and Calm's closed smile cannot be made out, and Joy is half cut off at the left edge at about 261.5\u2013261.8.",
+    "fix": "Restage both shots (s15_looking_back.mjs, backCam). Have the emotions turn fully on their stools to a 3/4-front pose with eyes to the lens, so they are looking back at Fear. Raise the drift zoom from 1.3 to about 2.4 so each face is at least 35% of frame width while it is centred. Hold each SMILE_AT pose for at least 0.8 s, roughly Joy 260.8, Sadness 261.7, Anger 262.5, Calm 263.2. If needed, lengthen the s15b02 silence from 2.8 s to about 4 s."
+   },
+   {
+    "scene": "s12",
+    "time": 158.3,
+    "severity": "high",
+    "category": "facial-acting/shot-size",
+    "problem": "Fear's whole confrontation (158.2\u2013180.4) is played in wide and medium shots. 'Why are you doing this?' (158.24\u2013159.84) is in the 0.8-zoom wide: Fear's face is about 45 px, behind cage bars with a gate stile across it, facing the camera with its back to the Void it is talking to. The 'close' shots (zoom 2.0\u20132.2 at 161\u2013162.8, 164.8\u2013166.2 and 175\u2013180) still frame Fear full-length, so the face is about 20% of frame width. At phone size the separately coded SUSPECT, CONFUSED, FURY, SHOUT and PLEA expressions all read as the same wide-eyed, worried look-up, so 20 s of accusation turning into pleading plays as one held face. 'This is a trick' (163.0\u2013164.2) is in a zoom-1.3 shot with the gate bars over the face, so the squint is invisible. The 'cheat' cage in the close shots also shows no open gate or lock, so 'eyes flick to the open gate' has nothing to look at.",
+    "fix": "For s12b01, use the scripted low angle from behind Fear (tuft and shoulders carrying the line), or cut to a head-and-shoulders close of Fear (zoom about 4, head at least 45% of frame width) looking up and back toward the Void. Make b02, b04, b08 and b09 true face close-ups (zoom 3.5\u20134.5, centred on the face, cage bars only at the frame edges), and push the expressions further:\n- SUSPECT: lidL 1.0, brows down-in, eyes sideways.\n- CONFUSED: browUpL 0.9 / browUpR -0.5.\n- SHOUT: open 0.6, brows in a hard V.\n- PLEA: chin crumple plus streaming tears.\nKeep the gate edge and lock visible in the close frames."
+   },
+   {
+    "scene": "s14",
+    "time": 242.9,
+    "severity": "high",
+    "category": "emotional-peak/timing",
+    "problem": "The turn from terror to wonder is the film's emotional turning point. Fear's smile on 'wonder' (241.69) appears at about 242.0, with a hand lift and a blush, while the camera is already pulling back. At 242.96 (s14b06+6.35) it cuts to the side two-shot, where Fear's face is about 45 px. The smile is on screen for about 1 s at a shrinking size, and 'amazement' plays over a wide.",
+    "fix": "In s14_the_universe_inside.mjs, move the cut from 's14b06+6.35' to about 's14b06.end+0.6' (about 244.8). Keep zoom at 2.6 or more through 'amazement' so the smile, blush and lifted hand hold at face size for at least 2.5 s. Then cut to the two-shot. If the stars should also be seen, lengthen s14b07 by about 1 s."
+   },
+   {
+    "scene": "s07",
+    "time": 111.4,
+    "severity": "medium",
+    "category": "reaction-timing",
+    "problem": "Fear's reaction to 'we need to put you in a time-out' gets only about 1.2 s (111.4 to the cut at 112.6) before s08. It is Fear's default worried face with an open mouth and hands flicking up. The scripted betrayed disbelief (brows up and apart, lower lids up, one slow head shake) never forms, so a key peak passes almost unnoticed despite the brief's call for slow pacing.",
+    "fix": "Extend s07 by about 1.5\u20132 s of silence. Key a distinct BETRAYED face: browUp about 1, browIn about 0, lidL 0.4, open 0.35, eyes level on Consciousness rather than rolled up. Add one slow head shake over about 0.8 s, then let the hands drop before the cut."
+   },
+   {
+    "scene": "s14",
+    "time": 253,
+    "severity": "medium",
+    "category": "eyeline",
+    "problem": "Fear never follows the Void's gaze. In s14b10 (252.2\u2013256.8) Fear faces the camera with its eyes up while the screen-of-consciousness glow is behind it; the eyes narrow and widen, but the head never turns. In the s15 reverse close-ups (259.2\u2013260.4 and 263.8\u2013265.9) Fear still looks up and to the right, as if at the Void's hood, although the emotions are far down the room at eye level. Story beat 19 ('Fear looked where the Void was pointing') is therefore not visible.",
+    "fix": "In s14b10, add a head turn (headTurn about 0.6 toward the glow) with the eyes leading by about 0.2 s, ending in a 3/4 rear view. In s15 fearA and fearB, set lookY to about 0 to -0.1 and lookX toward the console side, so Fear is clearly looking out and down the room at the others, not up."
+   },
+   {
+    "scene": "s16",
+    "time": 278.5,
+    "severity": "medium",
+    "category": "staging/expression",
+    "problem": "For 'Fear looks over its shoulder at the Void' (277.8\u2013281.4), Fear faces the camera at the left frame edge with half its face cropped, looking up and right at a Void that stands behind it. It is not an over-the-shoulder look. Its expression is still the old worried face (inner-up brows, flat mouth) for the whole 3.6 s. The galaxies in the hood are a few 2\u20133 px specks, so 'galaxies twinkling in its dark facade' does not register.",
+    "fix": "Turn Fear's body away from camera toward the console, with the head turned back over the scarf in a 3/4 rear view, and centre the face in the lower third. Begin relaxing the brows and add eye glisten here, so the smile at 282 is the end of a visible change. Enlarge or brighten the hood cosmos: frame the hood at 30% or more of frame width, or raise star alpha and size."
+   },
+   {
+    "scene": "s13",
+    "time": 192.5,
+    "severity": "medium",
+    "category": "shot-size",
+    "problem": "During the Turn (189.1\u2013194.3), Fear's frozen terror (eyes going huge, trembling stopping, breath held, a dry swallow) plays inside the 0.8-zoom wide, where Fear is about 45 px inside the cage. The screenplay calls for Fear's head and shoulders in the foreground. Only the hood's slow turn reads; Fear's reaction, half of the beat, is lost until the extreme close-up at 194.3.",
+    "fix": "Put Fear in the foreground at the bottom of frame (scale about 2.5\u00d7, head and shoulders) for the locked-off low angle. Alternatively, intercut a 1.5 s close on Fear at about 192.3\u2013193.8 as the hood arrives, with pupils at pinpoint and lips parting."
+   },
+   {
+    "scene": "s02",
+    "time": 33.5,
+    "severity": "medium",
+    "category": "eyeline",
+    "problem": "During 'Fear? What are you looking at?' (31.8\u201335.8), Fear's pupils sit up and to the right, toward the alarm bell. From 34.8 its pointing arm aims up and left, past Consciousness's shoulder; at 21.4 it had looked up and left into the dark. The answer to the question is Fear's gaze, and the eyes and finger contradict each other. Consciousness also has only about 0.6 s after the line before the cut; at 35.75 their eyes have not turned to follow the point.",
+    "fix": "Set Fear's lookX negative (up-left, matching the finger) from s02b04 onward. Extend the s02 tail by about 1 s so Consciousness's eyes, then head, visibly turn over their shoulder before the cut to the Void."
+   },
+   {
+    "scene": "s17",
+    "time": 293.4,
+    "severity": "medium",
+    "category": "reaction-timing",
+    "problem": "Consciousness's answer to 'Can I help?' is a closed half-smile with a slow blink, held about 1.2 s in a medium shot (293.2\u2013294.4). It then cuts to a wide in which every face is about 30 px. The scripted response does not land: eyes welling, a smile breaking across the whole face, a laugh-breath, a nod.",
+    "fix": "Hold a close on Consciousness for 2.5\u20133 s from about 293.0. Use tears about 0.6 welling on the lower lids, a broad open smile (smile about 0.9, lidL 0.4 for smiling eyes) and one nod. Then cut to the wide for the step-stool business. Extend s17b05 if needed."
+   },
+   {
+    "scene": "s08",
+    "time": 121.5,
+    "severity": "medium",
+    "category": "shot-size",
+    "problem": "As Consciousness walks away from the cage (119.5\u2013123.1), their face is about 55 px at full resolution and Fear, crying behind, is about 25 px. The screenplay calls this the narrator's hardest moment: they stop, do not look back, eyes wet, lips pressed and trembling, eyes flinching at each rattle. At phone size it reads only as a small 'sad' figure walking.",
+    "fix": "Let Consciousness walk into a medium close (face at least 25% of frame width) for the stop at about 121.5. Add visible tear shine, a lip tremble and an eye-corner flinch on each cage_creak or rattle. Keep Fear soft but readable in the background."
+   },
+   {
+    "scene": "s11",
+    "time": 155,
+    "severity": "medium",
+    "category": "occlusion/shot-size",
+    "problem": "When Fear discovers the open gate (154.1\u2013157.8), the gate swings across the front of the cage and a gate stile crosses Fear's face from 154.5 to 155.4. The tilt-up then shrinks Fear to about 40 px by 156.9. The frozen stare and the hanging tear that finally falls are not visible.",
+    "fix": "Hinge the gate on the side so it opens beside Fear, not across its face. Hold the close on Fear's face until its eyes reach the hood (about 156.5), with a large, catch-lit tear, before the tilt. Or end the tilt on a close of Fear's upturned face rather than a wide."
+   },
+   {
+    "scene": "s02",
+    "time": 29.5,
+    "severity": "low",
+    "category": "shot-size",
+    "problem": "Consciousness's introduction (23.7\u201331.4) and the alone-in-the-chaos beat in s05 (73\u201379.3) play only in wides where their face is about 30\u201335 px. The flicker of performed confidence, the softening when they see Fear, the hands over the ears and the long shaky exhale cannot be read.",
+    "fix": "Add a 1.5\u20132 s medium close on Consciousness at about 29.5, when their eyes land on Fear and the brows soften, and at about 78.0, when the hands lower and the shoulders sag while they stare at the empty console."
+   },
+   {
+    "scene": "s06",
+    "time": 94.8,
+    "severity": "low",
+    "category": "facial-detail",
+    "problem": "During 'I'm only trying to keep us safe' (93.54\u201395.72), no tears well on the lower lids; the first tear appears at 98.4. Fear blinks at 94.6 and again at 95.4, and on 'us' (94.84) it looks straight at the camera rather than off-left toward Consciousness, softening the 'I was protecting you too' look.",
+    "fix": "Bring tears up to about 0.5 from s06b05 start, so they glisten on the lower lids. Drop the blink at 94.6. Shift lookX toward Consciousness, off-left, from about 94.7 to 95.3."
+   },
+   {
+    "scene": "s14",
+    "time": 250,
+    "severity": "low",
+    "category": "shot-size",
+    "problem": "Fear's reaction to the Void's hand leaving its shoulder (248.8\u2013252.2) plays in the wide two-shot, where Fear is about 40 px: a lean after the hand, brows dipping, a glance at its own shoulder. It is invisible.",
+    "fix": "Add a 1\u20131.5 s insert close on Fear's shoulder and face as the hand lifts, or frame the two-shot tighter on Fear's half."
+   }
+  ]
+ },
+ {
+  "findings": [
+   {
+    "scene": "s14",
+    "time": 250.5,
+    "severity": "high",
+    "category": "story-clarity / framing",
+    "problem": "Beat 18 ('the Void lifts its hand, turns, stares into the distance, toward the screen of consciousness') never reads on screen. In the s14b09 two-shot (cam TWO = [560,965,0.8]) the head goes from LOOK_FEAR back to STARE_B between 250.2 and 252.2 s. As it does, the hood rises into the top edge of the frame and is cropped: at 251.8 the face opening, with its cosmos, touches the frame line. Then at 252.3 the film cuts to the OTS shot ([330,1160,1.2]), which shows only the empty sleeve cuff, the cage and the far glow. For the whole line 'And the Void stared into the screen of my consciousness' (252.21\u2013256.34) the Void's head is off-screen. The Void speaks only through head turns, and this one is the turn that sends Fear's eyes to the emotions, so a first-time viewer gets the gaze from the narration alone.",
+    "fix": "For s14b09, raise the camera or widen it (e.g. TWO \u2192 [560,900,0.75], or key it up 60\u201380 world px while the head lifts) so the whole hood stays in frame through the turn. Hold that wide 1.5\u20132 s into s14b10, with the hood visibly turned toward the lower-left glow and the cosmos visible, before cutting. Then reframe OTS so the hood's edge stays in the top of frame pointing at the glow (e.g. [470,950,0.9]), or cut from Fear looking up to a reverse that has both the hood and the glow in it."
+   },
+   {
+    "scene": "s14",
+    "time": 238,
+    "severity": "medium",
+    "category": "emotional-peak",
+    "problem": "Under 'And for once, my fear wasn't afraid. It felt wonder, and amazement.' (236.6\u2013244.2) Fear's body keeps the fear pose: arms crossed in a self-hug, hands gripping the scarf, mouth a flat line or a slight frown. Only the eyes change (stars reflected in them, a tear). Two slow half-lid blinks at about 238.0 and 240.0 read as sleepy or underwhelmed. The turn from fear to wonder, the film's emotional peak, is told by the narrator but not acted by the body or mouth.",
+    "fix": "On 'wonder', loosen the self-hug: arms slide down, hands open or rise slightly toward the light. Let the mouth part into a soft 'o' that becomes a small trembling smile by 'amazement'. Lift the brows (inner and outer), keep the upper lids high, and replace the two slow blinks with a single quick blink. Add a faint cool starlight rim or flicker on Fear's face and eyes so the cosmos visibly lights it."
+   },
+   {
+    "scene": "s15",
+    "time": 263.6,
+    "severity": "medium",
+    "category": "story-clarity / beat 19",
+    "problem": "'They smiled, just for a moment, then went back to helping me' starts at 263.16, but the film cuts to Fear's close-up at about 263.4 and stays there until about 265.9. When the shot returns at 266.0 the emotions are already back at work. The emotions' smiles only appear earlier, during the slow pan from 260.8 to 263.2, as small three-quarter-profile heads. JOY waving reads; ANGER's face stays flat and SADNESS's smile does not register. The acceptance beat (the others smiling at Fear) plays with them off-screen.",
+    "fix": "Hold the emotions' shot, or cut back to it, through the first half of the line (about 263.2\u2013264.6). Push in tighter (zoom about 1.5\u20131.7 on the row) so each smile reads: ANGER's mouth-corner twitch and nod, SADNESS's soft smile. Then cut to Fear's answering smile on 'just for a moment', and to the wide back-to-work shot on 'then went back to helping me'."
+   },
+   {
+    "scene": "s10",
+    "time": 135.5,
+    "severity": "medium",
+    "category": "framing / beat 10",
+    "problem": "During 'And the Void stood there, stone-faced, its shadow filling half the room' (133.5\u2013139.8), the camera starts at {560,1000,0.9}, which crops the hood. The face opening is cut off by the top edge until about 139.5 s, so on 'stone-faced' the viewer sees robe, not the face of darkness. The extra shadow (shadowPour and shadowSpread) barely changes the near-black floor, so 'its shadow filling half the room' is not visible either.",
+    "fix": "Start s10 at the locked framing {545,958,0.8}, or at about {555,930,0.82}, so the whole hood is in frame on 'stone-faced' (about 135.5\u2013137). Make the shadow readable: let it visibly swallow the glowing floor lines from right to left until it reaches the cage, raise shadowPour to about 0.8 alpha, and have it cross Fear in the cage, dimming Fear's rim light."
+   },
+   {
+    "scene": "s05",
+    "time": 73.7,
+    "severity": "medium",
+    "category": "story-clarity / beat 6",
+    "problem": "'Panic attacks, forcing every emotion out of my mind' (71.87\u201376.72) and 'Causing chaos' (77.12\u201378.71) play over a static wide where Fear is about 120 px tall at the right edge of the frame. The panic attack the narrator names (the hyperventilating and squeezed eyes in the s05b03 acting notes) can't be read at that size. The 'chaos' is a quiet empty room with a few papers on the floor.",
+    "fix": "Under 'Panic attacks', insert a 2\u20133 s close or medium of Fear clinging to the handle: fast shoulder rise and fall, eyes squeezed shut, tuft vibrating, a soft red pulse. Return to the wide on 'forcing every emotion out of my mind' and stay there for 'Causing chaos', with the CEO's hands over the ears."
+   },
+   {
+    "scene": "s06",
+    "time": 79.7,
+    "severity": "low",
+    "category": "continuity / dissolve",
+    "problem": "The 'one day' dissolve from s05 to s06 blends the same front-view set from two different cameras ({500,860,1.3} \u2192 {560,960,1.05}). For about 0.8 s the frame shows two cages, two Fears side by side at the alarm, and the CEO facing camera on top of the CEO walking away. It reads like a doubled-image glitch rather than time passing.",
+    "fix": "Match the framing across the dissolve so the set doesn't double: end s05 on s06's opening camera, or start s06 on s05's closing camera and move it after the dissolve. Alternatively, dissolve with a brief dim or soft blur, or keep the old CEO and Fear out of the overlap (for example, have the CEO already turned away in s05's last second)."
+   },
+   {
+    "scene": "s03",
+    "time": 38.9,
+    "severity": "low",
+    "category": "design-continuity",
+    "problem": "The drifting dust mote (mote(), s03b01+1.5 \u2192 +3.0) comes to rest exactly at the centre of the hood's face opening. At about 38.6\u201339.2 it reads as a single glowing pupil or eye inside the hood, just before the narrator says 'The Void\u2026 its face was pure darkness'. The bible says the face has no eyes, and the glint pre-empts the s14 cosmos reveal.",
+    "fix": "End the mote's path off-centre, near the hood rim (e.g. FACE[0]+20, FACE[1]-25), and fade it out before it enters the opening, or cut the mote."
+   },
+   {
+    "scene": "s14",
+    "time": 241.5,
+    "severity": "low",
+    "category": "layering",
+    "problem": "In the s13b04\u2013s14b08 shoulder shots (about 206\u2013248 s; most visible in the 15 s Fear close-up at 233\u2013248), the open padlock on the cage's right jamb is drawn on top of the Void's fingers. The hand then reads as reaching behind the jamb, through the bars, while its sleeve is outside the cage.",
+    "fix": "In these shots, draw the padlock and lock jamb before the Void's hand pass (move them into the cage's back layer), or angle lockHang about 0.15 rad so the lock hangs clear of the fingers."
+   },
+   {
+    "scene": "s13",
+    "time": 191.5,
+    "severity": "low",
+    "category": "readability / beat 15",
+    "problem": "The Void's turn toward Fear, its first movement in the film, plays in a wide shot where the hood is about one fifth of the frame width and the opening shifts only about 20 px between 189.1 and 194.3. On a phone it is easy to miss until Fear's close-up (with the hood reflected in its eyes) at 194.3.",
+    "fix": "During s13b01, push in slowly on the hood while it turns (e.g. to zoom 1.0 centred on the hood), or add a slow rim-light swell along the turning edge so the movement registers before 'This is it.'"
+   },
+   {
+    "scene": "s19",
+    "time": 310,
+    "severity": "low",
+    "category": "beat 23",
+    "problem": "Beat 23 asks for the emotions pressing buttons on the console. In s19 (front view) their hands stay hidden below the console rim and no button press can be seen; they sit and react to each other. The Void and the faint rusty cage do read in the wide.",
+    "fix": "In s19b01, show presses: arms rising and dipping at the rim, each matched to a coloured button-light pulse on that character's face and the rim, plus soft console_beeps. Alternatively, use a 1.5 s back-view insert of hands on the buttons, matching the s15 back-to-work shot."
+   },
+   {
+    "scene": "s16",
+    "time": 279.5,
+    "severity": "low",
+    "category": "readability / beat 21",
+    "problem": "Under 'The Void stood there, with galaxies twinkling in its dark facade' (275.1\u2013281.1), the over-the-shoulder shot shows the hood's cosmos (COSMOS_RESIDUE 0.5) as a few faint stars and a dim nebula about 50 px wide. No galaxy can be read, which undersells the image Fear turns back to see.",
+    "fix": "For s16b03 only, raise the cosmos to about 0.7\u20130.8 and let one small spiral galaxy drift across the opening; or push in slowly on the hood during the line (zoom +15%)."
+   },
+   {
+    "scene": "s02",
+    "time": 18.9,
+    "severity": "low",
+    "category": "continuity / prop",
+    "problem": "The screen of consciousness (s02, and again in s11 and s15) shows the notebook open to a 'my feelings' page with five emoji faces. In s01 and s20, SELF is reading a different spread: 'Inside my head there is a control room\u2026' with the Fear and hooded-Void drawing ('Why does it just stand there??'). The memory doesn't visibly continue from the page SELF is reading.",
+    "fix": "Put the same Fear/Void spread on the screen's notebook (mirrored correctly for SELF's POV), or briefly turn to the 'my feelings' page in s01 before the push into the eye."
+   },
+   {
+    "scene": "s01",
+    "time": 0,
+    "severity": "low",
+    "category": "thumbnail",
+    "problem": "The first frame is a finished, inviting still with the title, which meets the brief. But SELF's screen-left hand covers part of the Fear/Void doodle on the right page. That doodle is the only hint of the two title characters in the preview, and at feed size it disappears.",
+    "fix": "On frame 0, move that hand to the page's lower outer corner (or to the left page) so the Fear-and-hood doodle is unobstructed. Optionally scale the notebook up about 10% so the doodle reads in a feed thumbnail."
+   }
+  ],
+  "overall": "A first-time viewer can follow all 24 required story beats in order from the images and narration. The cuts are strong: the s02\u2192s03 match on action, the matched cuts across s11\u2192s12\u2192s13, the clean exit and entrance that bridge s16\u2192s17, the cage always screen-left of the Void with its padlock on the right jamb, and the console order (CALM/ANGER/SADNESS/JOY from the front, mirrored from the back). Rust only appears after the s18 time dissolve, the cosmos residue carries from s14 through s19, and the emotions' comings and goings stay consistent. The opening frame is a finished, inviting title still with no fade, and the ending lands: tear, the book closed, lamp off, a star-hood constellation, and a last frame that mirrors the first.\n\nThe main weakness is in the climax, where the Void's own gestures and the payoff reactions are under-framed:\n- **Beat 18 (high):** the Void's turn back into the distance gets cropped at the top of the frame, and its 'stares into the screen' line plays with its head off-screen.\n- **Beat 17:** the shift to wonder is carried only by the eyes, while Fear's body stays in a self-hug.\n- **Beat 19:** the line 'They smiled' plays over Fear's close-up instead of the emotions.\n- **s10:** 'stone-faced' plays over a cropped hood.\n- **s05:** the panic attack happens on a tiny figure at the edge of a wide.\n\nThe remaining notes are polish: a double-image dissolve in s06, a mote that reads as an eye in s03, the padlock drawn over the Void's hand, the console button-pressing in s19, the notebook page on the screen of consciousness, and the thumbnail doodle hidden under SELF's hand. Evidence frames are in /tmp/claude-0/-home-user-game1/431c6cf3-9061-55b0-82f1-1947bb12410c/scratchpad/sc/ (g1\u2013g15) and /tmp/claude-0/-home-user-game1/431c6cf3-9061-55b0-82f1-1947bb12410c/scratchpad/cuts/pair_00\u201306.png."
+ }
+]
