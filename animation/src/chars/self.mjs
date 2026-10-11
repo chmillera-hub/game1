@@ -1645,12 +1645,12 @@ function drawCoverArt(g, cx, cy, s, t, pencil) {
   g.scale(s, s);
   // crayon title (handwriting font if the renderer registered one; plain fallback otherwise)
   g.fillStyle = pencil ? 'rgba(70,70,90,0.75)' : '#d0584a';
-  g.font = 'bold 15px Caveat, "Patrick Hand", sans-serif';
+  g.font = 'bold 13px Caveat, "Patrick Hand", sans-serif';
   g.textAlign = 'center';
   g.textBaseline = 'alphabetic';
   g.save();
   g.rotate(-0.06);
-  g.fillText('My Story', 0, -31);
+  g.fillText('My Feelings', 0, -31);
   g.restore();
   g.textAlign = 'start';
   // tall dark hooded figure
