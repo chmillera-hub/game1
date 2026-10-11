@@ -77,6 +77,11 @@ function drawTitle(t) {
   if (t > endT + 0.4) a = clamp((t - endT - 0.4) / 0.8, 0, 1);
   if (a <= 0) return;
   ctx.globalAlpha = a;
+  // soft dark band so the title reads over bright backgrounds too
+  const band = ctx.createLinearGradient(0, 200, 0, 520);
+  band.addColorStop(0, 'rgba(12,10,24,0)'); band.addColorStop(0.3, 'rgba(12,10,24,0.42)');
+  band.addColorStop(0.7, 'rgba(12,10,24,0.42)'); band.addColorStop(1, 'rgba(12,10,24,0)');
+  ctx.fillStyle = band; ctx.fillRect(0, 200, 1080, 320);
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   ctx.font = '104px Inter-ExtraBold';
   ctx.fillStyle = 'rgba(10,8,20,0.55)';
