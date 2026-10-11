@@ -448,7 +448,7 @@ def embar_state(t, k):
         d["look"] = tw(t, [(k["e0"], (0.15, 0.5)), (k["e0"] + 0.7, (0.4, 0.45)), (k["e1"], (0.6, 0.2))])
         d["face"] = {"brow_ang": 0.25, "press": 0.2}
         sc = d["s"]
-        d["reach"] = {"r": (x + 80 * sc / S, y - 412 * sc / S, 1.0)}
+        d["reach"] = {"r": (x + 92 * sc / S, y - 335 * sc / S, 1.0)}
         sweep = 0.16 * math.sin((t - k["e0"]) * 4.2)
         d["aim_ang"] = 1.05 + sweep
         return d
@@ -481,7 +481,7 @@ def embar_state(t, k):
     if 0 <= j < 0.6:
         aim = (aim[0], aim[1] + 34 * math.sin(j * 30) * (1 - j / 0.6) ** 2)
     d["aim"] = aim
-    hand_r = tw(t, [(k["e1"], (XE + 80, 1088)), (k["swing0"], (XE + 82, 1090)), (k["swing1"], (XE + 112, 1022)),
+    hand_r = tw(t, [(k["e1"], (XE + 92, 1165)), (k["swing0"], (XE + 95, 1150)), (k["swing1"], (XE + 112, 1022)),
                     (nt + 0.12, (XE + 112, 1022)), (k["c_found"], (XE + 105, 1070)),
                     (k["l4"] + 0.05, (XE + 105, 1070)), (k["l4"] + 0.65, (XE + 98, 1118)),
                     (cf, (XE + 98, 1118)), (cf + 0.35, (XE + 90, 1130))])
