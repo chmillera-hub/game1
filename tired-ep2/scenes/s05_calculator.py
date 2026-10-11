@@ -139,9 +139,9 @@ def K(info):
     k["swing0"], k["swing1"] = k["e1"] + 0.1, k["e1"] + 0.38
     k["jolt"] = k["swing1"] + 0.05
     # Curiosity scramble
-    k["c_up"] = st + 0.5
-    k["c_mv0"], k["c_mv1"] = st + 0.62, st + 1.22
-    k["c_sit"] = st + 1.22
+    k["c_up"] = st + 0.42
+    k["c_mv0"], k["c_mv1"] = st + 0.54, st + 1.0
+    k["c_sit"] = st + 1.0
     k["c_found"] = k["notice"] + 0.72      # the beam lands on it
     # the recorder
     cf = k["conflict"]
@@ -214,9 +214,9 @@ def shots(k):
         ("S8", k["S8"], lambda t: (450, 905, 2.6)),
         ("S9", k["S9"], lambda t: (562, 1108, 1.7)),
         ("S10", k["S10"], lambda t: tw(t, [(k["S10"], (392, 925, 2.75)), (k["S11"], (388, 922, 3.0))])),
-        ("S11", k["S11"], lambda t: (575, 1185, 1.55)),
+        ("S11", k["S11"], lambda t: (555, 1185, 1.75)),
         ("S12", k["S12"], lambda t: (758, 1150, 1.85)),
-        ("S13", k["S13"], lambda t: (570, 1195, 1.6)),
+        ("S13", k["S13"], lambda t: (570, 1230, 1.6)),
         ("S14", k["S14"], None),
         ("S15", k["S15"], lambda t: (450, 905, 2.6)),
         ("S16", k["S16"], lambda t: tw(t, [(k["S16"], (580, 1170, 1.5)), (k["dur"], (598, 1166, 1.56))])),
@@ -401,7 +401,7 @@ def tired_state(t, k):
         look = tw(t, [(k["nod"] - 0.2, (-0.9, 0.05)), (k["go_turn"] - 0.05, (-0.9, 0.1)),
                       (k["go_turn"] + 0.15, (0.6, 0.0))])
         f = addf(f, fk(t, {
-            "head_nod": [(n0, 0.0), (n0 + 0.22, 0.17), (n0 + 0.6, 0.02)],
+            "head_nod": [(n0, 0.0), (n0 + 0.24, 0.24), (n0 + 0.66, 0.02)],
             "curve": [(n0 + 0.3, 0.0), (n0 + 0.6, 0.12)],
         }))
     d["look"] = look
@@ -448,7 +448,7 @@ def embar_state(t, k):
         d["look"] = tw(t, [(k["e0"], (0.15, 0.5)), (k["e0"] + 0.7, (0.4, 0.45)), (k["e1"], (0.6, 0.2))])
         d["face"] = {"brow_ang": 0.25, "press": 0.2}
         sc = d["s"]
-        d["reach"] = {"r": (x + 46 * sc / S, y - 455 * sc / S, 1.0)}
+        d["reach"] = {"r": (x + 80 * sc / S, y - 412 * sc / S, 1.0)}
         sweep = 0.16 * math.sin((t - k["e0"]) * 4.2)
         d["aim_ang"] = 1.05 + sweep
         return d
@@ -481,7 +481,7 @@ def embar_state(t, k):
     if 0 <= j < 0.6:
         aim = (aim[0], aim[1] + 34 * math.sin(j * 30) * (1 - j / 0.6) ** 2)
     d["aim"] = aim
-    hand_r = tw(t, [(k["e1"], (XE + 62, 1110)), (k["swing0"], (XE + 70, 1095)), (k["swing1"], (XE + 112, 1022)),
+    hand_r = tw(t, [(k["e1"], (XE + 80, 1088)), (k["swing0"], (XE + 82, 1090)), (k["swing1"], (XE + 112, 1022)),
                     (nt + 0.12, (XE + 112, 1022)), (k["c_found"], (XE + 105, 1070)),
                     (k["l4"] + 0.05, (XE + 105, 1070)), (k["l4"] + 0.65, (XE + 98, 1118)),
                     (cf, (XE + 98, 1118)), (cf + 0.35, (XE + 90, 1130))])
@@ -648,7 +648,7 @@ def embar_state(t, k):
 def cur_state(t, k):
     st = k["steps"]
     d = dict(x=C0, pose="sit", pose_from=None, pose_mix=1.0, pose_t=None, face=1.0, expr="sad",
-             ears=0.15, look=(-0.85, -0.1), tilt=0.0, tail_curl=0.0, blink=None, glow=0.8, glint=None)
+             ears=0.15, look=(-0.85, -0.1), tilt=0.0, tail_curl=0.0, blink=None, glow=0.95, glint=None)
     ts = k["t_stop"]
     # ---- alone, hears him, looks back: surprised -> hopeful; then the footsteps
     if t < k["c_up"]:
@@ -660,7 +660,7 @@ def cur_state(t, k):
         d["look"] = tw(t, [(0.0, (-0.85, -0.1)), (0.78, (-0.8, -0.1)), (1.05, (0.4, -0.75)),
                            (ts + 0.4, (0.45, -0.85)), (st + 0.12, (0.45, -0.85)), (st + 0.3, (-0.9, 0.0))])
         d["tilt"] = tw(t, [(1.1, 0.0), (1.5, 0.08), (st, 0.08), (st + 0.2, -0.04)])
-        d["blink"] = 0.0 if 0.9 < t < 1.6 else None
+        d["blink"] = 0.0 if (t < 0.7 or 0.9 < t < 1.6) else None
         return d
     # ---- the scramble backwards behind his legs
     if t < k["c_sit"] + 0.3:
@@ -694,7 +694,7 @@ def cur_state(t, k):
     d["tilt"] = tw(t, [(k["led"] + 0.95, 0.0), (k["led"] + 1.15, -0.1)])
     if cf - 0.05 <= t < k["l3e"] + 0.2:
         d["blink"] = 0.0
-    d["glow"] = tw(t, [(cf - 0.1, 0.8), (cf + 0.05, 1.15), (cf + 0.8, 0.95)])
+    d["glow"] = tw(t, [(cf - 0.1, 0.9), (cf + 0.05, 1.2), (cf + 0.8, 1.0)])
     if t >= cf:
         d["glint"] = cf
     # ---- after the click: creeps out to his front foot, sits; then the grin
@@ -724,6 +724,8 @@ def cur_state(t, k):
         d["look"] = tw(t, [(s12, (-0.6, -0.6)), (s12 + 0.15, (-0.6, -0.6)), (s12 + 0.32, (0.55, -0.85))])
         d["tilt"] = 0.0
         grin = s12 + 0.62
+        if t < grin + 0.3:
+            d["blink"] = 0.0
         d["expr"] = "proud" if t >= grin else "hopeful"
         d["ears"] = tw(t, [(k["S12"], 0.66), (grin, 0.66), (grin + 0.22, 0.86, ease_out_back)])
         d["tail_curl"] = tw(t, [(grin, 0.0), (grin + 0.5, 0.75)])
@@ -882,9 +884,22 @@ def draw_world(ctx, t, k, cam, shot_name, exact=True):
             hx, hy, _ = anchors["tired"]["hand_r"]
             props.keycard(ctx, hx - 6, hy - 6, 0.19, rot=tw(t, [(k["k_take"], 0.08), (k["k_take"] + 0.45, -0.18)]))
 
-    # ---- characters into one group (lit by the tunnel shade + the torch), then the cone
+    # ---- characters into groups lit by the tunnel shade (+ the torch), then the cone.
+    # Curiosity (always behind Tiredness in this staging) gets only half the shade: the
+    # indigo body would otherwise sink into the dim tunnel.
+    def shade(a):
+        ctx.save()
+        ctx.push_group()
+        sets.service_tunnel(ctx, t, "shade")
+        ctx.pop_group_to_source()
+        ctx.set_operator(cairo.OPERATOR_ATOP)
+        ctx.paint_with_alpha(a)
+        ctx.restore()
     ctx.push_group()
     draw_cur()
+    shade(0.5)
+    pat_c = ctx.pop_group()
+    ctx.push_group()
     draw_emb()
     draw_tired()
     ctx.save()
@@ -900,6 +915,13 @@ def draw_world(ctx, t, k, cam, shot_name, exact=True):
         beam = (lx, ly, lens["angle"], L, 0.5, pw)
         _beam_on_chars(ctx, (lx, ly), lens["angle"], L, 0.56, pw)
     pat = ctx.pop_group()
+    if beam is not None:
+        # the torch on Curiosity too (it lands on it at "notice")
+        ctx.push_group()
+        ctx.set_source(pat_c)
+        ctx.paint()
+        _beam_on_chars(ctx, beam[:2], beam[2], beam[3], 0.56, beam[5])
+        pat_c = ctx.pop_group()
     # torch light on the set
     if E["visible"] and t < k["e1"] + 0.15 and "lens" in lens:
         a_in = 1 - smoothstep(seg(t, k["e1"] - 0.02, k["e1"] + 0.15))
@@ -912,6 +934,8 @@ def draw_world(ctx, t, k, cam, shot_name, exact=True):
         lx, ly, ang, L, sp, pw = beam
         fx.flashlight(ctx, lx, ly, ang, L, sp, t, lit_tunnel, key=("s05_lit", shot_name),
                       rect=view_rect(cam), power=pw, warm=0.35, haze=0.05, lens=False, exact=exact)
+    ctx.set_source(pat_c)
+    ctx.paint()
     ctx.set_source(pat)
     ctx.paint()
     # ---- emissive bits on top: the pocket LED, Curiosity's eyeshine
@@ -994,7 +1018,7 @@ def draw_insert(ctx, t, k):
     t0 = k["S14"]
     u = seg(t, t0, k["S15"])
     with core.camera(ctx, 820, 1000, 3.1 + 0.15 * u):
-        sets.service_tunnel(ctx, t, "bg")
+        sets.service_tunnel(ctx, t, "bg", drip=False)
     ctx.rectangle(0, 0, core.W, core.H)
     core.fill(ctx, core.alpha("#0b0b12", 0.5))
     fx.vignette(ctx, 0.75, inner=0.35)
@@ -1032,7 +1056,7 @@ def draw_insert(ctx, t, k):
     props.keycard(ctx, cx, cy, cs, rot=rot, glint=smoothstep(seg(t, t0 + 0.35, t0 + 1.05)))
     # ---- in front: the thumb pressing on the card face
     with core.saved(ctx, cx, cy, 1.0, rot):
-        base, tip = (372, 200), (226, 92)
+        base, tip = (402, 262), (276, 158)
         _capsule(ctx, base, tip, 74, skin, ink, lw)
         core.ellipse(ctx, tip[0] + 6, tip[1] + 4, 24, 17, math.atan2(tip[1] - base[1], tip[0] - base[0]))
         core.fill_stroke(ctx, core.mixc(skin, "#ffffff", 0.38), core.alpha(ink, 0.6), 3)
@@ -1066,20 +1090,17 @@ def SFX(info):
         if tt >= 0.0:
             ev.append((tt, "footstep", -10 + (0 if n == 0 else -2), 0.25))
     ev.append((0.58, "ears_perk", -4, -0.1))
-    ev.append((1.05, "creature_chitter", -9, -0.1))
+    ev.append((1.22, "creature_chitter", -9, -0.1))
     # footsteps out of the side tunnel (echoing, getting closer)
     e0, e1 = k["e0"], k["e1"]
-    n = 0
-    tt = e0 + 0.1
+    tt = e0                     # his walk contacts (pose_t multiples of 0.5 s)
     while tt < e1 + 0.05:
         g = lerp(-18, -7, seg(tt, e0, e1))
         ev.append((tt, "footstep", g, -0.55))
         tt += 0.5
-        n += 1
     ev.append((st + 0.22, "ears_perk", -2, -0.2))
     ev.append((k["c_mv0"] + 0.05, "scurry", -10, 0.1))
     ev.append((k["jolt"], "cloth_rustle", -6, -0.4))
-    ev.append((k["jolt"] + 0.02, "flashlight_click", -14, -0.4))
     # the beam finds it
     ev.append((k["c_found"] + 0.02, "critter_squeak", -12, 0.05))
     # recorder: out of the pocket, the decision, the click
@@ -1091,7 +1112,6 @@ def SFX(info):
     ev.append((k["S12"] + 0.62, "creature_chitter", -6, 0.0))
     # keycard out of the coat, handed over
     ev.append((k["k_reach"] + 0.1, "cloth_rustle", -9, -0.3))
-    ev.append((k["k_take"], "tap_tap", -10, 0.1))
     # off toward CONTROL
     gw = k["go_walk"]
     for i in range(3):

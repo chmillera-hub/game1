@@ -181,6 +181,7 @@ def _times(info):
     T["grab"] = T["grab0"] + 0.3                   # sleeve in its teeth
     # --- hurt (S7)
     T["rel0"] = T["leave"] - 1.2                   # lets go of the sleeve
+    T["rel_cut"] = T["rel0"] + 0.21                # jaws open (the rig unclamps at pose_mix .5)
     # --- leave (S8)
     t8 = T["s8"]
     T["lv_walk"] = t8 + 0.55
@@ -433,6 +434,9 @@ def _cur_s1_s3(t, T, d):
     d["tilt"] = _tw(t, [(T["land"] + 0.2, 0.0), (T["land"] + 0.5, -0.12), (T["l01"], -0.12),
                         (T["w_done"], 0.0), (T["w_done"] + 0.4, 0.06), (T["slump"] + 0.6, 0.08)])
     d["ears"] = _tw(t, [(T["land"], 0.55), (T["w_done"], 0.55), (T["w_done"] + 0.5, 0.44)])
+    if t >= T["s2"]:                   # switched off screen (S2 is on him): soft, worried listening
+        d["expr"] = "hopeful"
+        d["look"] = (0.45, -0.4)
     # S3: "go home" -> the ears shoot up; "sleep" -> worried, pleading; eyes slide to the tunnel
     if t >= T["w_home"] - 0.05:
         d["ears"] = lerp(0.44, 0.92, core.ease_out_back(seg(t, T["w_home"] - 0.05, T["w_home"] + 0.2)))
@@ -524,8 +528,8 @@ def _cur_hold(t, T, d):
         d["pose_mix"] = 0.38 * smoothstep(seg(t, T["s7"] + 0.3, T["rel0"]))
     if t >= T["rel0"]:
         d["pose_from"], d["pose"] = "tug_sleeve", "sit"
-        d["pose_mix"] = lerp(0.38, 1.0, seg(t, T["rel0"], T["rel0"] + 0.45))
-        d["sleeve"] = d["pose_mix"] < 0.48
+        d["pose_mix"] = lerp(0.38, 1.0, ease_in_out(seg(t, T["rel0"], T["rel0"] + 0.6)))
+        d["sleeve"] = t < T["rel_cut"]
     return d
 
 
@@ -671,9 +675,9 @@ def _draw_cur(ctx, t, c, arm=None):
     return out
 
 
-def _cur_mouth(t, c):
-    """Curiosity's mouth anchor (world) for this frame, from a probe draw."""
-    if not c["sleeve"]:
+def _cur_mouth(t, T, c):
+    """Curiosity's mouth anchor (world) while it holds (or just let go of) his sleeve."""
+    if not (T["grab0"] <= t <= T["rel0"] + 0.55):
         return None
     a = _draw_cur(_probe_ctx(), t, dict(c, sleeve=False, clip=False, alpha=1.0, dark=0.0))
     return a.get("mouth")
@@ -734,7 +738,8 @@ def render(ctx, t, info):
     T = _T(info)
     shot, cx, cy, zoom = _cam(t, T)
     c = _cur(t, T)
-    p = _tired(t, T, info, _cur_mouth(t, c))
+    cm = _cur_mouth(t, T, c)
+    p = _tired(t, T, info, cm)
     drip = t >= T["s8"] - 0.5
     t_set = t + ((1.82 - (T["s9"] + 0.5)) % 2.6)     # a drip lands just after the "alone" cut
     bandage_amt = 0.0
@@ -745,9 +750,20 @@ def render(ctx, t, info):
     with core.camera(ctx, cx, cy, zoom):
         sets.service_tunnel(ctx, t_set, drip=drip)
         with sets.shaded(ctx, sets.service_tunnel, t_set, layer="shade"):
+            behind = c["y"] < FEET_Y - 20          # Curiosity deep in the side tunnel: behind him
+            if behind:
+                _draw_cur(ctx, t, c)
             pk = {k: v for k, v in p.items() if k not in ("x", "y")}
             a = human.draw_person(ctx, "tired", p["x"], p["y"], S, t, **pk)
-            _draw_cur(ctx, t, c, arm=(a["wrist_l"][:2], a["elbow_l"][:2]))
+            arm = (a["wrist_l"][:2], a["elbow_l"][:2])
+            if cm is not None and T["rel_cut"] <= t < T["rel_cut"] + 0.13:
+                # the released cuff slips out of its jaws toward his wrist (behind its head)
+                k = smoothstep(seg(t, T["rel_cut"], T["rel_cut"] + 0.13))
+                wx, wy = arm[0]
+                _sleeve_cuff(arm)(ctx, {"mouth": (lerp(cm[0], wx, 0.6 * k), lerp(cm[1], wy, 0.6 * k)),
+                                        "s": S * (1.0 - 0.8 * k)})
+            if not behind:
+                _draw_cur(ctx, t, c, arm=arm)
         if bandage_amt > 0:
             _bandage_glow(ctx, a, bandage_amt)
     fx.vignette(ctx, 0.3, inner=0.62)

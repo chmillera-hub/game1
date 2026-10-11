@@ -42,12 +42,13 @@ POD_FLOOR = POD_Y - 122 * POD_S          # interior floor (world y) where the ba
 
 SMASH_X = M["smash_feet"][0]   # 855
 HAUL_X = M["haul_feet"][0]     # 940
-TIRED_X1 = 700.0               # stepped back from the console to see the window
+TIRED_X1 = 640.0               # stepped back from the console to see the window
 CUR_X0 = 590.0
 TIRED_X2 = 1012.0              # where he scoops the baby up
 HATCH = M["hatch"]             # (40, 700, 290, 600)
 HATCH_FEET = 1330.0            # threshold line for someone ducking through
-EMB_X = 430.0                  # Emb standing beside the hatch
+EMB_X = -45.0                  # Emb standing left of the hatch (in front of its open panel)
+HATCH_CX = HATCH[0] + HATCH[2] / 2
 
 H_UP = M["release_handle_up"]
 H_DN = M["release_handle_down"]
@@ -120,12 +121,12 @@ def times(info):
     # alarm: he dashes to the baby and scoops it up; the hatch bursts open
     T.al0 = T.alarm
     vr = abs(human.cycle_speed("tired", "run", 0.9) * SP)
-    T.dash0 = T.al0 + 0.42
+    T.dash0 = T.al0 + 0.3
     T.dash1 = T.dash0 + (TIRED_X2 - TIRED_X1) / vr
     T.scoop1 = T.dash1 + 0.34                # baby in his hand
     T.cradle1 = T.scoop1 + 0.34              # up, baby against his chest
-    T.burst = T.L2.start - 0.5
-    T.emb_out0, T.emb_out1 = T.burst + 0.12, T.burst + 0.58
+    T.burst = T.L2.start - 0.35
+    T.emb_out0, T.emb_out1 = T.burst + 0.1, T.burst + 0.52
     # run
     T.run0 = T.run + 0.22
     T.cur_run0 = T.run + 0.0
@@ -160,7 +161,7 @@ def _tired_duck_t(T):
 def tired_state(T, info, t):
     st = dict(x=SMASH_X, y=FEET, pose="stand", pose_t=None, turn=1.0, expr="determined",
               face={"lid": 0.15}, look=(0.0, 0.0), blink=None, power=0.68, reach=None,
-              hold_mode=None, clip=None, visible=True, aura=0.0)
+              hold_mode=None, clip=None, visible=True, aura=0.0, depth=0.0)
     f = st["face"]
     if t < T.pull:
         # ---- the smash
@@ -246,7 +247,7 @@ def tired_state(T, info, t):
         k = smoothstep(seg(t, T.pod, T.pod + 0.6))
         st["expr"] = "determined"
         f.update(lid=lerp(0.2, 0.3, k), brow=0.15 * k, brow_ang=0.5 * k, press=0.55 * k,
-                 frown=0.3 * k, head_nod=-0.1)
+                 frown=0.3 * k, head_nod=-0.22)
         st["look"] = (0.4, -0.75)
         st["power"] = 0.68
         if t > T.pod + 0.55:          # a slow, heavy blink
@@ -301,11 +302,12 @@ def tired_state(T, info, t):
         st["pose"] = (RUN_CRADLE, DUCK_CRADLE, k)
         st["pose_t"] = t - T.run0
         st["turn"] = -1.0
-        st["x"] = lerp(x_d, 205, k) - 900 * max(0.0, t - td - 0.26)
+        st["x"] = lerp(x_d, HATCH_CX + 10, k)
         st["y"] = lerp(FEET + 6, HATCH_FEET, k)
         st["look"] = (-0.9, 0.2)
-        st["clip"] = "hatch" if st["x"] < 255 else None
-        if st["x"] < -200:
+        st["clip"] = "hatch" if k > 0.8 else None
+        st["depth"] = smoothstep(seg(t, td + 0.24, td + 0.62))
+        if st["depth"] >= 1:
             st["visible"] = False
     if t < td:
         st["y"] = FEET + 6
@@ -331,6 +333,8 @@ def _tired_scoop(T, t, st, f):
         st["pose"] = ("run", "pick_up", k)
         st["pose_t"] = T.dash1 - T.dash0
         st["turn"] = lerp(0.9, 0.7, k)
+        bx = baby_rest_x(T) - CR.BABY_WALK_SPEED * SB * (T.wob1 - T.wob0)
+        st["reach"] = {"r": (bx - 6, BABY_Y - 38, smoothstep(seg(t, T.dash1 + 0.04, T.scoop1)))}
         st["look"] = (0.7, 0.85)
         st["hold_mode"] = "r"
         f.update(lid=0.14, brow=0.1, head_nod=0.12)
@@ -338,6 +342,8 @@ def _tired_scoop(T, t, st, f):
     if t < T.cradle1:
         k = smoothstep(seg(t, T.scoop1, T.cradle1))
         st["pose"] = ("pick_up", CRADLE, k)
+        bx = baby_rest_x(T) - CR.BABY_WALK_SPEED * SB * (T.wob1 - T.wob0)
+        st["reach"] = {"r": (bx - 6, BABY_Y - 38, 1 - smoothstep(seg(t, T.scoop1, T.scoop1 + 0.2)))}
         st["turn"] = lerp(0.7, -0.9, smoothstep(seg(t, T.scoop1 + 0.06, T.cradle1)))
         st["look"] = tween(t, [(T.scoop1, (0.5, 0.7)), (T.cradle1, (-0.6, 0.3))])
         st["hold_mode"] = "r" if k < 0.5 else "both"
@@ -384,7 +390,7 @@ def _bound(t, t0, x0, x1, n, dur, gy, s=SC):
 def cur_state(T, info, t):
     st = dict(x=CUR_X0, y=CUR_Y, pose="sit", expr="hopeful", look=(0.3, -0.6), ears=None, tilt=0.0,
               face=None, flip=False, tail_curl=0.0, pose_t=None, blink=None, clip=None, visible=True,
-              pose_from=None, pose_mix=1.0, airborne=False)
+              pose_from=None, pose_mix=1.0, airborne=False, depth=0.0)
     if t < T.pull:
         if t < T.hit:
             st["expr"] = "curious"
@@ -464,14 +470,15 @@ def cur_state(T, info, t):
         x, y, pose, air = _bound(t, T.cur_run0, x_from, 300, 3, t_dive - T.cur_run0, CUR_Y)
         st.update(x=x, y=y, pose=pose, airborne=air)
         return st
-    # the dive: up onto the threshold and into the crawlway
+    # the dive: up onto the threshold and away up the crawlway
     k = seg(t, t_dive, t_dive + 0.3)
     st["pose"] = "leap"
     st["airborne"] = True
-    st["x"] = lerp(300, 150, k) - 1100 * max(0.0, t - t_dive - 0.3)
+    st["x"] = lerp(300, HATCH_CX - 10, k)
     st["y"] = lerp(CUR_Y, HATCH_FEET, k) - 112 * SC - 90 * SC * math.sin(math.pi * k)
-    st["clip"] = "hatch" if k > 0.45 else None
-    if st["x"] < -260:
+    st["clip"] = "hatch" if k > 0.6 else None
+    st["depth"] = smoothstep(seg(t, t_dive + 0.25, t_dive + 0.6))
+    if st["depth"] >= 1:
         st["visible"] = False
     return st
 
@@ -531,34 +538,36 @@ def baby_state(T, info, t):
         st["flip"] = True
         st["held"] = True
         st["pose"] = "held"
-        st["expr"] = "giggle"
+        st["expr"] = "calm" if t < T.run0 - 0.1 else "giggle"
         st["tail_curl"] = 0.5
     return st
 
 
 def emb_state(T, info, t):
-    st = dict(x=185, y=HATCH_FEET, pose=DUCK_DEEP, pose_t=None, turn=0.6, expr="alarmed", face={},
-              look=(0.8, 0.0), reach=None, visible=False, clip="hatch", blush=0.25, sweat=0.25)
-    if t < T.burst + 0.05 or t >= T.emb_gone:
+    st = dict(x=HATCH_CX, y=HATCH_FEET, pose=DUCK_DEEP, pose_t=None, turn=0.6, expr="alarmed", face={},
+              look=(0.8, 0.0), reach=None, visible=False, clip="hatch", depth=0.0, blush=0.25,
+              sweat=0.25, front_of_panel=False)
+    if t < T.burst + 0.02 or t >= T.emb_gone:
         return st
     st["visible"] = True
     f = st["face"]
     if t < T.emb_out0:
-        st["x"] = lerp(120, 185, smoothstep(seg(t, T.burst, T.emb_out0)))
+        # coming up the crawlway toward us
+        st["depth"] = 1.0 - smoothstep(seg(t, T.burst, T.emb_out0))
         return st
     if t < T.emb_out1:
+        # steps out and aside (left of the opening, in front of the open panel)
         k = smoothstep(seg(t, T.emb_out0, T.emb_out1))
-        st["x"] = lerp(185, EMB_X, k)
-        st["y"] = lerp(HATCH_FEET, FEET - 8, k)
+        st["x"] = lerp(HATCH_CX, EMB_X, k)
+        st["y"] = lerp(HATCH_FEET, FEET - 6, k)
         st["pose"] = (DUCK_DEEP, "stand", k)
-        st["clip"] = None
+        st["clip"] = "hatch" if k < 0.12 else None
+        st["front_of_panel"] = k > 0.5
         return st
     st["clip"] = None
-    st["x"], st["y"] = EMB_X, FEET - 8
-    hold = M["hatch_hold"]
+    st["front_of_panel"] = True
+    st["x"], st["y"] = EMB_X, FEET - 6
     if t < T.emb_duck0:
-        kr = smoothstep(seg(t, T.emb_out1 - 0.1, T.emb_out1 + 0.25))
-        st["reach"] = {"l": (hold[0], hold[1], kr)}
         wave_on = T.emb_out1 - 0.05
         wave_off = T.run + 0.3
         if t < wave_on:
@@ -572,28 +581,34 @@ def emb_state(T, info, t):
         st["expr"] = "alarmed" if t < T.L2.start else "determined"
         f.update(brow=0.25, brow_ang=0.35)
         st["mouth"] = info.mouth("embar", t)
-        # watching the others: right (the group) -> follows Tiredness past him -> a nervous
-        # glance back at the Boss -> into the hatch
+        # on "This way!" his head tips toward the hatch
+        tw = info.word_time("s07_l02", 2)
+        f["head_turn"] = tween(t, [(tw - 0.05, 0.0), (tw + 0.1, -0.25), (T.L2.end, -0.25),
+                                   (T.L2.end + 0.2, 0.0)])
+        # watching them come -> into the hatch past him -> a nervous glance back at the Boss
         tdk = _tired_duck_t(T)
-        st["look"] = tween(t, [(T.emb_out1, (0.9, 0.0)), (T.run + 0.4, (0.9, 0.05)),
-                               (tdk - 0.05, (-0.6, 0.1)), (tdk + 0.12, (-0.6, 0.1)),
+        st["look"] = tween(t, [(T.emb_out1, (0.9, 0.0)), (tw - 0.05, (0.9, 0.0)), (tw + 0.08, (0.5, 0.1)),
+                               (T.L2.end, (0.5, 0.1)), (T.L2.end + 0.15, (0.9, 0.05)),
+                               (tdk - 0.05, (0.4, 0.1)), (tdk + 0.12, (0.4, 0.1)),
                                (tdk + 0.24, (0.95, -0.05)), (T.emb_duck0 - 0.05, (0.95, -0.05)),
-                               (T.emb_duck0, (-0.8, 0.0))])
-        f["head_turn"] = tween(t, [(tdk + 0.24, 0.0), (tdk + 0.4, 0.25), (T.emb_duck0 - 0.1, 0.25),
-                                   (T.emb_duck0, 0.0)])
+                               (T.emb_duck0, (0.6, 0.1))])
         if t > tdk + 0.24:
+            f["head_turn"] = tween(t, [(tdk + 0.24, 0.0), (tdk + 0.4, 0.22), (T.emb_duck0 - 0.1, 0.22),
+                                       (T.emb_duck0, 0.0)])
             st["expr"] = "alarmed"
             st["sweat"] = 0.45
         return st
-    # ducks in after them
+    # ducks in after them, then away up the crawlway
     k = smoothstep(seg(t, T.emb_duck0, T.emb_duck1))
     st["pose"] = ("stand", DUCK_DEEP, k)
-    st["turn"] = lerp(0.6, -1.0, smoothstep(seg(t, T.emb_duck0, T.emb_duck0 + 0.2)))
-    st["x"] = lerp(EMB_X, 200, k) - 1000 * max(0.0, t - T.emb_duck1)
-    st["y"] = lerp(FEET - 8, HATCH_FEET, k)
-    st["look"] = (-0.9, 0.1)
+    st["turn"] = lerp(0.6, 0.9, k)
+    st["x"] = lerp(EMB_X, HATCH_CX, k)
+    st["y"] = lerp(FEET - 6, HATCH_FEET, k)
+    st["look"] = (0.4, 0.1)
     st["expr"] = "determined"
-    st["clip"] = "hatch" if st["x"] < 250 else None
+    st["front_of_panel"] = k < 0.55
+    st["clip"] = "hatch" if k > 0.85 else None
+    st["depth"] = smoothstep(seg(t, T.emb_duck1, T.emb_gone))
     return st
 
 
@@ -780,21 +795,40 @@ def window_fn_for(T):
             sh = _row_shutter(T, t, ri)
             if sh >= 0.999:
                 continue
+            gap = ph_ * 0.24 * op
             for (px, py) in pts:
-                core.rrect(ctx, px - pw_ / 2, py - ph_ / 2, pw_, ph_, pw_ / 2)
+                r_ = pw_ / 2
+                sy = py - ph_ * 0.16                      # the seam
+                top, bot = py - ph_ / 2, py + ph_ / 2
+                if gap < 0.3:
+                    core.rrect(ctx, px - r_, top, pw_, ph_, r_)
+                    continue
+                # body (below the seam)
+                ctx.move_to(px - r_, sy)
+                ctx.line_to(px - r_, bot - r_)
+                ctx.arc_negative(px, bot - r_, r_, math.pi, 0.0)
+                ctx.line_to(px + r_, sy)
+                ctx.close_path()
+                # lid (lifted off)
+                ctx.move_to(px - r_, sy - gap)
+                ctx.line_to(px - r_, top + r_ - gap)
+                ctx.arc(px, top + r_ - gap, r_, math.pi, 2 * math.pi)
+                ctx.line_to(px + r_, sy - gap)
+                ctx.close_path()
             core.fill(ctx, core.mixc(core.mixc("#1b6f72", "#3ff2e0", 0.45 + 0.1 * ri), "#e8fffb",
-                                     0.35 * op))
-        core.radial_glow(ctx, cx, y + h * 0.7, w * 0.6, core.PAL["power"], 0.22 + 0.15 * op)
-        # the pods begin to open: the lids crack apart (a bright seam that widens)
+                                     0.25 * op))
+        core.radial_glow(ctx, cx, y + h * 0.7, w * 0.6, core.PAL["power"], 0.22 + 0.2 * op)
+        # light pouring out of the opened seams
         if op > 0.01:
             for ri, (pts, pw_, ph_) in enumerate(rows):
                 if _row_shutter(T, t, ri) > 0.5:
                     continue
+                gap = ph_ * 0.24 * op
                 for (px, py) in pts:
-                    yy = py - ph_ * 0.18
-                    ctx.move_to(px - pw_ * 0.48, yy)
-                    ctx.line_to(px + pw_ * 0.48, yy)
-            core.stroke(ctx, (1.0, 1.0, 1.0, 0.9), 1.2 + 3.2 * op, cap="butt")
+                    yy = py - ph_ * 0.16 - gap / 2
+                    ctx.move_to(px - pw_ * 0.75, yy)
+                    ctx.line_to(px + pw_ * 0.75, yy)
+                core.stroke(ctx, (1.0, 1.0, 0.96, 0.95), max(1.0, gap * 0.8), cap="round")
         # shutters slam down, tier by tier
         for ri, (pts, pw_, ph_) in enumerate(rows):
             sh = _row_shutter(T, t, ri)
@@ -901,10 +935,22 @@ def hatch_open(T, t):
 # ============================================================================
 # drawing the world
 # ============================================================================
-def _clip_hatch(ctx, feet_y):
+def _clip_hatch(ctx, feet_y, depth=0.0):
     hx, ht, hw, hh = HATCH
-    ctx.rectangle(hx, ht, hw, max(hh, feet_y + 40 - ht))
+    y1 = lerp(max(ht + hh, feet_y + 40), ht + hh, smoothstep(clamp(depth * 3)))
+    ctx.rectangle(hx, ht, hw, y1 - ht)
     ctx.clip()
+
+
+def _deep(st):
+    """Someone receding up the crawlway: smaller, higher, toward the centre."""
+    d = st.get("depth", 0.0)
+    if d <= 0:
+        return st, 1.0
+    q = dict(st)
+    q["x"] = lerp(st["x"], HATCH_CX, d)
+    q["y"] = lerp(st["y"], HATCH[1] + HATCH[3] - 60, d)
+    return q, lerp(1.0, 0.5, d)
 
 
 def _draw_tired(ctx, T, info, t, st, baby_st):
@@ -914,9 +960,9 @@ def _draw_tired(ctx, T, info, t, st, baby_st):
         if side == "both":
             bx, by = hx + 4, hy - 40 * SB
         else:
-            bx, by = hx - 10, hy - 52 * SB
+            bx, by = hx + 4, hy - 12 * SB
         CR.draw_specimen(c, bx, by, SB, t, baby=True, pose="held", expr=baby_st["expr"], flip=True,
-                         tail_curl=baby_st["tail_curl"], look=(-0.3, 0.2))
+                         tail_curl=baby_st["tail_curl"], look=(-0.3, 0.2), glow=1.7)
     kw = dict(pose=st["pose"], pose_t=st["pose_t"], turn=st["turn"], expr=st["expr"], face=st["face"],
               look=st["look"], blink=st["blink"], power=st["power"], outfit="sewer", bandage=True,
               headphones=None, hood=0.0, reach=st["reach"], mouth=info.mouth("tired", t))
@@ -988,7 +1034,7 @@ def _char_shade(c, t, al, pod_glow):
     core.radial_glow(c, 1700, 640, 900, "#5fd8ff", 0.20 * (1 - 0.5 * al))
     core.radial_glow(c, 1105, 820, 620, core.PAL["power"], 0.14 * (1 - 0.6 * al))
     if pod_glow > 0:
-        core.radial_glow(c, POD_X, POD_Y - 150, 520, core.PAL["power"], 0.26 * pod_glow)
+        core.radial_glow(c, POD_X - 60, POD_Y - 120, 600, core.PAL["power"], 0.24 * pod_glow)
     if al > 0.003:
         c.rectangle(vx0, vy0, vx1 - vx0, vy1 - vy0)
         core.fill(c, core.alpha("#c0142a", al * (0.16 + 0.07 * _alarm_p(t))))
@@ -1028,14 +1074,27 @@ def draw_world(ctx, T, info, t, cam):
 
     # someone in the hatch opening (clipped to it; the open panel goes over them)
     def hatch_people():
-        for who, st in (("emb", es), ("cur", cs), ("tired", ts)):
-            if st.get("clip") == "hatch" and st["visible"]:
+        for who, st0 in (("emb", es), ("cur", cs), ("tired", ts)):
+            if st0.get("clip") == "hatch" and st0["visible"]:
+                st, k = _deep(st0)
                 ctx.save()
-                _clip_hatch(ctx, st["y"])
-                sets.dimmed(ctx, (HATCH[0] - 10, HATCH[1] - 10, HATCH[2] + 20, 900), 0.45,
-                            lambda c, who=who, st=st: (_draw_emb(c, info, t, st) if who == "emb" else
-                                                       _draw_cur(c, t, st) if who == "cur" else
-                                                       _draw_tired(c, T, info, t, st, bb)))
+                _clip_hatch(ctx, st0["y"], st0.get("depth", 0.0))
+
+                def fn(c, who=who, st=st, k=k):
+                    ox, oy = st["x"], st["y"]
+                    c.save()
+                    c.translate(ox, oy)
+                    c.scale(k, k)
+                    c.translate(-ox, -oy)
+                    if who == "emb":
+                        _draw_emb(c, info, t, st)
+                    elif who == "cur":
+                        _draw_cur(c, t, st)
+                    else:
+                        _draw_tired(c, T, info, t, st, bb)
+                    c.restore()
+                sets.dimmed(ctx, (HATCH[0] - 10, HATCH[1] - 10, HATCH[2] + 20, 900),
+                            lerp(0.4, 0.92, st0.get("depth", 0.0)), fn)
                 ctx.restore()
 
     hatch_people()
@@ -1056,7 +1115,8 @@ def draw_world(ctx, T, info, t, cam):
     with sets.shaded(ctx, _char_shade, t, al, pod_glow):
         if _visible_x(view, 1450, 1950):
             _draw_boss(ctx, info, t, bs)
-        if es["visible"] and es.get("clip") != "hatch" and _visible_x(view, es["x"] - 200, es["x"] + 200):
+        if es["visible"] and es.get("clip") != "hatch" and not es["front_of_panel"] and \
+                _visible_x(view, es["x"] - 200, es["x"] + 200):
             _draw_emb(ctx, info, t, es)
         order = []
         if ts["visible"] and ts.get("clip") != "hatch":
@@ -1084,6 +1144,9 @@ def draw_world(ctx, T, info, t, cam):
         _alarm_tint(ctx, t, al)
         ctx.pop_group_to_source()
         ctx.paint()
+    if es["visible"] and es.get("clip") != "hatch" and es["front_of_panel"]:
+        with sets.shaded(ctx, _char_shade, t, al, 0.0):
+            _draw_emb(ctx, info, t, es)
     # ---- world fx
     if t >= T.hit:
         props.shards(ctx, t, T.hit, IMPACT[0] + 10, IMPACT[1], seed=4, n=9, s=SP, floor_y=FEET + 20,
@@ -1109,15 +1172,15 @@ def camera_at(T, t):
     """(cx, cy, zoom, dx, dy) for the shot at time t."""
     dx = dy = 0.0
     if t < T.pull:                                     # S1 the smash
-        z = lerp(1.56, 1.64, seg(t, 0.0, T.pull))
-        cx, cy = 990.0, 1100.0
+        z = lerp(1.46, 1.54, seg(t, 0.0, T.pull))
+        cx, cy = 945.0, 1105.0
         dx, dy = _shake(t, T.hit, 0.32, 12)
     elif t < T.button:                                 # S2 the haul: close on face + hands
         k = smoothstep(seg(t, T.pull, T.give))
         cx, cy, z = lerp(985, 992, k), lerp(985, 965, k), lerp(1.98, 2.12, k)
         if t >= T.give - 0.05:                         # it gives: pull back with it
             kk = ease_out(seg(t, T.give - 0.05, T.clunk + 0.3))
-            cx, cy, z = lerp(992, 1000, kk), lerp(965, 1085, kk), lerp(2.12, 1.52, kk)
+            cx, cy, z = lerp(992, 948, kk), lerp(965, 1085, kk), lerp(2.12, 1.52, kk)
         dx, dy = _shake(t, T.clunk, 0.45, 14)
     elif t < T.shut:                                   # S3 the Boss presses LOCKDOWN
         k = seg(t, T.button, T.shut)
@@ -1132,35 +1195,35 @@ def camera_at(T, t):
             dy += sy
     elif t < T.pan0:                                   # S5a their faces fall
         k = seg(t, T.pod, T.pan0)
-        cx, cy, z = lerp(700, 704, k), 1195.0, lerp(1.7, 1.76, k)
+        cx, cy, z = lerp(642, 646, k), 1195.0, lerp(1.7, 1.76, k)
     elif t < T.baby:                                   # S5b pan to the pod
         k = ease_in_out(seg(t, T.pan0, T.pan1))
-        cx, cy, z = lerp(704, 1240, k), lerp(1195, 1395, k), lerp(1.76, 2.3, k)
+        cx, cy, z = lerp(646, 1240, k), lerp(1195, 1395, k), lerp(1.76, 2.3, k)
     elif t < T.al0:                                    # S6 the baby
         k = ease_in_out(seg(t, T.baby + 0.35, T.cur_land))
-        cx, cy, z = lerp(1240, 1040, k), lerp(1395, 1335, k), lerp(2.3, 2.12, k)
+        cx, cy, z = lerp(1240, 1005, k), lerp(1395, 1430, k), lerp(2.3, 2.4, k)
     elif t < T.burst - 0.12:                           # S7 alarm: he swoops in for the baby
         k = seg(t, T.al0, T.burst)
         cx, cy, z = lerp(905, 915, k), lerp(1175, 1160, k), lerp(1.3, 1.36, k)
     elif t < T.run:                                    # S8 the hatch bursts: Emb
         k = seg(t, T.burst - 0.12, T.run)
-        cx, cy, z = 335.0, lerp(1060, 1050, k), lerp(1.5, 1.56, k)
+        cx, cy, z = 195.0, lerp(1060, 1050, k), lerp(1.5, 1.56, k)
     elif t < T.hatch:                                  # S9 the run (tracking left)
         tx = tired_x_for_cam(T, t)
-        cx = clamp(tx - 110, 335, 900)
-        cy = lerp(1110, 1060, seg(900 - cx, 0, 565))
+        cx = clamp(tx - 110, 215, 900)
+        cy = lerp(1110, 1060, seg(900 - cx, 0, 685))
         z = 1.42
     elif t < T.watch:                                  # S10 the shut hatch
         k = seg(t, T.hatch, T.watch)
-        cx, cy, z = 335.0, 1060.0, lerp(1.42, 1.3, smoothstep(k))
+        cx, cy, z = 215.0, 1060.0, lerp(1.42, 1.3, smoothstep(k))
         sx, sy = _shake(t, T.hatch, 0.55, 12)
         dx, dy = sx, sy
     else:                                              # S11 the Boss: watch -> "Let them run."
         k = ease_in_out(seg(t, T.watch + 0.2, T.L3.start + 0.25))
         cx = lerp(1700, 1705, k)
         cy = lerp(800, 945, k)
-        z = lerp(1.28, 2.15, k)
-        z += 0.06 * seg(t, T.L3.start + 0.25, T.end)
+        z = lerp(1.28, 2.3, k)
+        z += 0.15 * seg(t, T.L3.start + 0.25, T.end)
     return cx, cy, z, dx, dy
 
 

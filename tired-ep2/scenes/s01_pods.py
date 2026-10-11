@@ -548,8 +548,10 @@ def _trapezoid(u, ramp=0.22):
 
 
 def shot_plates(ctx, t, T, info):
-    u = seg(t, T["plates"] + 0.35, T["frown"] - 0.3)
-    x = lerp(1520, 3440, _trapezoid(u))
+    u = seg(t, T["plates"] + 0.3, T["frown"] - 0.25)
+    xl = lerp(1500, 3460, _trapezoid(u))
+    # his gaze settles on each plate in turn (the pan slows over every plate, glides between)
+    x = xl - 50 * math.sin(2 * math.pi * (xl - 1500) / 490)
     cam = (x, 1150, 1.35)
     st = cw_state(t, T)
     with core.camera(ctx, *cam):
@@ -562,8 +564,8 @@ def shot_plates(ctx, t, T, info):
 # ----------------------------------------------------------------------------
 def _feed(ctx, x, y, w, h, t, T=None, info=None):
     """SHAFT CAM 03: the two of them at the empty pod, looking up into the lens."""
-    zz = w / 760.0
-    with core.camera(ctx, 1005, 1112, zz, sx=x + w / 2, sy=y + h / 2):
+    zz = w / 880.0
+    with core.camera(ctx, 1000, 1080, zz, sx=x + w / 2, sy=y + h / 2):
         sets.catwalk(ctx, 1.0, plate_dust=0.0, plate_wipe=1.0, cam_led=1.0, cam_face=1.0, **SLEEP)
         CR.draw_specimen(ctx, CUR_X, FEET, S, t, pose="sit", expr="calm", look=(0.5, -0.85), ears=0.8,
                          face=0.62, tail_curl=0.4)
@@ -662,7 +664,11 @@ DARK_CAM1 = (1010, 1105, 1.35)
 def shot_dark(ctx, t, T, info):
     k = ease_in_out(seg(t, T["push0"], T["push1"]))
     z = DARK_CAM0[2] * (DARK_CAM1[2] / DARK_CAM0[2]) ** k
-    cam = (lerp(DARK_CAM0[0], DARK_CAM1[0], k), lerp(DARK_CAM0[1], DARK_CAM1[1], k), z)
+    cuts = sets.shaft_power_times(T["casc"], 4, 0.55)
+    # the heavy near relays jolt the catwalk a little (short, decaying)
+    dx, dy = core.shake(t, cuts[2], 0.45, 4, seed=11)
+    dx2, dy2 = core.shake(t, cuts[3], 0.6, 7, seed=12)
+    cam = (lerp(DARK_CAM0[0], DARK_CAM1[0], k) + (dx + dx2) / z, lerp(DARK_CAM0[1], DARK_CAM1[1], k) + (dy + dy2) / z, z)
     ps = sets.shaft_power_sections(t, T["casc"], 4, 0.55)
     with core.cache_steps(1):
         an = catwalk_shot(ctx, t, T, info, cam, rail=True)
@@ -712,13 +718,13 @@ def render(ctx, t, info):
         # and in with him as he crouches
         k0 = ease_in_out(seg(t, T["wstop"], T["wstop"] + 1.0))
         k1 = ease_in_out(seg(t, T["cr0"] - 0.2, T["touch"] - 0.1))
-        cam = (lerp(lerp(975, 990, k0), 962, k1), lerp(lerp(1120, 1100, k0), 1212, k1),
+        cam = (lerp(lerp(975, 990, k0), 962, k1), lerp(lerp(1185, 1195, k0), 1212, k1),
                lerp(lerp(1.3, 1.48, k0), 1.92, k1))
         catwalk_shot(ctx, t, T, info, cam, rail=False)
     elif t < T["plate"]:
         # S3: Curiosity close-up, the nod
         k = seg(t, T["touch"], T["plate"])
-        cam = (860, 1290, 3.0 + 0.08 * k)
+        cam = (835, 1292, 3.0 + 0.08 * k)
         catwalk_shot(ctx, t, T, info, cam, rail=False)
     elif t < T["c5"]:
         shot_plate(ctx, t, T, info)
@@ -731,7 +737,7 @@ def render(ctx, t, info):
         g0 = T["perk"] + 0.08
         if g0 <= t <= g0 + 0.45 and "cur" in an:
             ex, ey = _to_screen(cam, an["cur"]["eye_r"])
-            fx.eye_glint(ctx, ex + 8, ey - 12, 0.9, t, g0, dur=0.45)
+            fx.eye_glint(ctx, ex + 14, ey - 20, 1.5, t, g0, dur=0.45)
     elif t < T["plates"]:
         k = seg(t, T["grin"], T["plates"])
         cam = (792, 1312, 2.35 + 0.08 * k)

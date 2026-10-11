@@ -501,7 +501,7 @@ def pings_for(k, info):
     except Exception:
         tw = k.L5 + 1.2
     times.append((tw, 0.9))
-    times += [(k.tgo + 0.12, 0.55), (k.tgo + 1.12, 0.55), (k.BONK + 0.55, 0.6)]
+    times += [(k.tgo + 0.12, 0.55), (k.tgo + 1.12, 0.55), (k.BONK + 0.42, 0.6)]
     out = []
     for (t0, kk) in times:
         a = tired_anchors(t0, k, info)
@@ -547,7 +547,7 @@ def _shots(k):
     add(k.WALK, walk_end, "walk", walk_cam)
     add(walk_end, k.giggle0, "bonk", lambda t: (-70, lerp(1205, 1195, seg(t, walk_end, k.giggle0)), 2.2))
     sx_, sy_ = M["stair_steps"][STEP_C]
-    add(k.giggle0, k.END + 1.0, "giggle", lambda t: (sx_ + 25, sy_ - 170, lerp(2.3, 2.4, seg(t, k.giggle0, k.END))))
+    add(k.giggle0, k.END + 1.0, "giggle", lambda t: (sx_ + 25, sy_ - 170, 2.35))
     return T
 
 
@@ -624,7 +624,6 @@ def light_chars(ctx, draw_fn, lights_fn, base=0.9, bbox=None):
         ctx.clip()
     ctx.push_group()
     info = draw_fn(ctx)
-    chars = ctx.pop_group()
     lights, tints = lights_fn(info)
     bb = bbox or (-2000, -2000, 8000, 8000)
 
@@ -642,9 +641,6 @@ def light_chars(ctx, draw_fn, lights_fn, base=0.9, bbox=None):
                 _radial(c, x, y, r, TEAL, a, 0.5)
     mask = _lowres(ctx, bb, mask_fn)
     tint = _lowres(ctx, bb, tint_fn) if any(a > 0.01 for (_, _, _, a) in tints) else None
-    ctx.push_group()
-    ctx.set_source(chars)
-    ctx.paint()
     ctx.set_operator(cairo.OPERATOR_ATOP)
     ctx.set_source_rgba(*DARK_RGB, 1.0)
     ctx.mask(mask)
@@ -699,7 +695,9 @@ def ping_flash(ctx, t, pings):
 # render
 # ---------------------------------------------------------------------------
 def dark_set(c, t, k):
-    sets.catwalk(c, t, power=0.0, pod_glow=0.03, cam_led=1.0, pipe_wobble=1.0 if t >= k.BONK else 0.0,
+    # the pipe shivers after the bonk (it has died out by the cut to the close-up)
+    sets.catwalk(c, t, power=0.0, pod_glow=0.03, cam_led=1.0,
+                 pipe_wobble=1.0 if 0.0 <= t - k.BONK < 1.25 else 0.0,
                  pipe_wobble_t0=k.BONK, **SET_KW)
 
 
@@ -720,7 +718,7 @@ def render(ctx, t, info):
     core.bg(ctx, "#03070b")
     with core.camera(ctx, cx, cy, zoom):
         # ---- the world: darkness + the sense
-        if sense and any(-0.1 <= t - p[0] <= 3.4 for p in pings):
+        if sense and fx.sense_active(t, pings, s=SW):
             fx.sense_reveal(ctx, t, pings, lit_set, lambda c: dark_set(c, t, k), key=("s02", name),
                             rect=shot_rect(k, sh), s=SW)
         else:
@@ -764,6 +762,11 @@ def render(ctx, t, info):
                 hk = seg(hood, 0.5, 1.0)
                 L.append((hx, hy + 14, 115 if close else 85, (0.55 if close else 0.42) * hk))
                 Tn.append((hx, hy + 10, 130, 0.25 * hk))
+            # the BONK! burst flashes light on him for a moment (so the hit reads in the dark)
+            if 0.0 <= t - k.BONK < 0.6:
+                fl = 1 - seg(t, k.BONK, k.BONK + 0.6)
+                L.append((PIPE[0] + 20, PIPE[1] + 60, 520, 0.75 * fl))
+                Tn.append((PIPE[0] + 20, PIPE[1] + 60, 300, 0.12 * fl))
             # the pings light whoever the band passes
             for an, cxy in ((a, a["hip"]), (b, b["center"])):
                 hx, hy = an["head"]

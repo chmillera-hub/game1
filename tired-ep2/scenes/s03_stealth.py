@@ -81,6 +81,7 @@ G2_WAVE = {"base": "stand", "period": 0.6, "al_p": 0.25, "al_o": 0.6, "al_e": 2.
            "al_eo": human.W(-0.5, 0.32, 0.0), "al_w": human.W(0.0, 0.2, 0.1), "al_h": "open",
            "al_tf": -1.0, "hunch": 0.35}
 G2_ANTIC = {"base": "stand", "hunch": 1.2, "lean": -0.06, "nod": -0.05}
+G2_LEAP = {"base": "leap_scared", "ar_h": "grip"}     # keeps hold of his flashlight
 
 
 def LIT(c):
@@ -113,15 +114,15 @@ def _T(info):
     S, TR = T["sneak"], T["troll"]
     T["c1"], T["c2"] = 0.35, 0.6                     # flashlight clicks
     T["tj"] = T["l2e"] + 0.1                         # the rookie jumps at his shadow
-    T["g1a"], T["g1b"] = S - 0.3, TR - 0.55          # gruff guard walks right over their heads
-    T["g2a"] = S - 0.28                              # the rookie hurries on
-    T["sn0"] = S + 1.05                              # our two start sneaking
-    T["fr0"], T["fr1"] = S + 1.5, S + 2.1            # freeze: the rookie's beam swings back
-    T["sn1"] = TR - 0.55                             # sneak ends
+    T["g1a"], T["g1b"] = S - 0.3, TR - 0.42          # gruff guard walks right over their heads
+    T["g2a"] = S - 0.28                              # the rookie hurries on, out ahead
+    T["sn0"] = S + 0.97                              # our two start sneaking after him
+    T["fr0"], T["fr1"] = S + 1.77, S + 2.42          # freeze: he glances back, beam over the crate
+    T["sn1"] = TR - 0.6                              # sneak ends
     T["hop0"], T["hop1"], T["hop2"] = TR - 0.62, TR - 0.4, TR - 0.12   # crouch / take off / land
     T["wave0"] = TR + 0.12
     T["hear"] = T["l3s"] + 0.35                      # the guard hears the whisper
-    T["land"] = T["melt"] + 0.45                     # beam lands where Curiosity was
+    T["land"] = T["melt"] + 0.55                     # beam lands where Curiosity was
     T["shrug"] = T["l4e"] - 0.12
     T["g1off"] = T["l4e"] + 0.5
     T["rise0"] = T["reform"] + 0.75                  # Tiredness straightens up
@@ -241,10 +242,13 @@ def _wave(t, f, amp, seed=0):
 
 
 def _hand_target(x, y, s, ang, turn):
-    """Where a guard holds his flashlight for a beam angle: chest high, forward."""
-    sx, sy = x + 18 * s * math.copysign(1, turn if abs(turn) > 0.05 else 1), y - 700 * s
+    """Where a guard holds his flashlight (r hand) for a beam angle: chest high and
+    forward; pointing down it is held low at the screen-right side, never centred."""
+    sx, sy = x + 10 * s, y - 700 * s
     L = 175 * s
-    return (sx + L * math.cos(ang), sy + L * (0.55 + 0.6 * math.sin(ang)))
+    ca, sa = math.cos(ang), math.sin(ang)
+    side = 0.6 * L * max(0.0, sa) * (1 - abs(ca))
+    return (sx + L * ca + side, sy + L * (0.55 + 0.5 * sa))
 
 
 # ============================================================================
@@ -257,21 +261,23 @@ def _g1(t, T):
     tst = T["l1e"] + 0.05
     v0 = (700.0 - 120.0) / (tst - 0.11)
     moves = [(-0.6, tst, 120.0 - 0.6 * v0, 700.0), (hide + 1.15, T["l2s"] + 0.35, 700.0, 1000.0),
-             (T["g1a"], T["g1b"], 1000.0, 1860.0),
+             (T["g1a"], T["fr0"] - 0.08, 1000.0, 1560.0), (T["fr1"] + 0.05, T["g1b"], 1560.0, 1860.0),
              (T["g1off"], T["g1off"] + 3.2, 1860.0, 2750.0)]
     x, d, kw = _path(t, moves)
     y = _lane_y(x)
     turn = tween(t, [(0.0, 0.62), (tst, 0.62), (tst + 0.4, 0.3), (hide + 0.9, 0.3), (hide + 1.3, 0.85),
-                     (T["l2s"] + 0.1, 0.85), (T["l2s"] + 0.5, 0.5), (T["g1a"] - 0.15, 0.5), (T["g1a"] + 0.2, 0.9),
-                     (T["g1b"] - 0.2, 0.9), (T["g1b"] + 0.25, 0.7),
+                     (T["l2s"] + 0.1, 0.85), (T["l2s"] + 0.5, 0.5), (T["g1a"] - 0.15, 0.5), (T["g1a"] + 0.2, 1.0),
+                     (T["fr0"] - 0.1, 1.0), (T["fr0"] + 0.22, -0.3), (T["fr1"] - 0.15, -0.3), (T["fr1"] + 0.12, 1.0),
+                     (T["g1b"] - 0.2, 1.0), (T["g1b"] + 0.25, 0.7),
                      (U + 0.35, 0.7), (ML + 0.3, -0.75),
-                     (T["shrug"] - 0.1, -0.75), (T["shrug"] + 0.25, -0.25), (T["shrug"] + 0.8, -0.25),
+                     (T["shrug"] - 0.1, -0.75), (T["shrug"] + 0.25, -0.12), (T["shrug"] + 0.8, -0.12),
                      (T["g1off"] + 0.05, -0.6), (T["g1off"] + 0.4, 0.9)])
     ang = tween(t, [(0.0, 0.95), (1.1, 0.45), (2.2, 0.8), (3.3, 0.3), (tst + 0.2, 0.55),
                     (tst + 0.9, 1.25), (hide + 0.9, 0.75), (hide + 1.6, 0.1), (T["l2s"] + 0.2, -0.32),
                     (T["tj"] + 0.9, -0.3),
-                    (T["g1a"] + 0.3, 0.25), (T["g1b"], 0.45), (TR + 0.1, 0.55), (TR + 1.1, 0.4),
-                    (TR + 2.1, 0.62), (U + 0.4, 0.45), (T["land"], math.pi - 0.08),
+                    (T["g1a"] + 0.3, 0.25), (T["fr0"], 0.3), (T["fr0"] + 0.3, math.pi - 0.1), (T["fr1"] - 0.15, math.pi - 0.2),
+                    (T["fr1"] + 0.15, 0.35), (T["g1b"], 0.45), (TR + 0.1, 0.55), (TR + 1.1, 0.4),
+                    (TR + 2.1, 0.62), (U + 0.4, 0.45), (ML - 0.05, 1.45), (T["land"], math.pi - 0.08),
                     (T["land"] + 0.7, math.pi + 0.26), (T["land"] + 1.4, math.pi + 0.02),
                     (T["g1off"], math.pi + 0.04), (T["g1off"] + 0.45, 0.35)])
     # walk / stand / shrug
@@ -282,7 +288,7 @@ def _g1(t, T):
     reach_w = 1.0
     if ks > 0.001:
         pose = ("stand", "shrug", ks)
-        reach_w = 1 - 0.6 * ks
+        reach_w = 1 - ks
     # face
     look = (0.6 * math.cos(ang), 0.5 * math.sin(ang))
     face = {}
@@ -294,6 +300,11 @@ def _g1(t, T):
         look = (0.55, -0.25)
     if t >= T["g1a"]:
         look = (0.6, 0.15)
+    if T["fr0"] <= t < T["fr1"]:
+        k = smoothstep(seg(t, T["fr0"], T["fr0"] + 0.2))
+        look = (lerp(0.6, -0.85, k), 0.35 * k)
+        expr = "squint"
+        face = {"head_turn": -0.35 * k}
     if t >= TR - 0.5:
         expr = "bored"
         look = (0.7 + _wave(t, 0.7, 0.15, 3), 0.05)
@@ -338,15 +349,14 @@ def _g2(t, T):
     v0 = (865.0 - 420.0) / (T["l1s"] - 0.2 - 0.11)
     moves = [(-0.6, T["l1s"] - 0.2, 420.0 - 0.6 * v0, 865.0), (T["l1s"] - 0.2, T["l1s"] + 1.3, 865.0, 1150.0),
              (T["l1s"] + 1.3, T["l2s"] - 0.05, 1150.0, 1400.0),
-             (T["g2a"], fr0 - 0.1, 1400.0, 1800.0), (fr1 + 0.05, fr1 + 4.4, 1800.0, 2620.0)]
+             (T["g2a"], T["g2a"] + 3.3, 1400.0, 2400.0)]
     x, d, kw = _path(t, moves)
     y = _lane_y(x)
     turn = tween(t, [(0.0, 0.8), (T["l1s"] + 0.3, 0.8), (T["l1s"] + 0.8, 0.5), (T["l2s"] - 0.3, 0.5),
-                     (T["l2s"], 0.35), (T["g2a"] - 0.2, 0.35), (T["g2a"] + 0.15, 0.95),
-                     (fr0 - 0.1, 0.95), (fr0 + 0.25, -0.35), (fr1 - 0.1, -0.35), (fr1 + 0.15, 0.95)])
+                     (T["l2s"], 0.35), (T["g2a"] - 0.2, 0.35), (T["g2a"] + 0.15, 1.0)])
     ang = tween(t, [(0.0, 0.6), (0.9, 1.05), (1.7, 0.45), (2.6, 0.9), (3.4, 0.3), (4.3, 0.55),
                     (5.2, 0.2), (6.0, 0.5), (T["l2s"], 0.62), (tj, 0.6), (T["g2a"], 0.45),
-                    (fr0, 0.35), (fr0 + 0.3, 2.5), (fr1 - 0.15, 2.62), (fr1 + 0.2, 0.45)])
+                    (T["g2a"] + 1.0, 0.3), (T["g2a"] + 2.0, 0.6)])
     v = human.cycle_speed("guard", "walk", turn, _RK[1]) * SC2
     pose = ("stand", "walk", kw) if kw > 0.001 else "stand"
     reach_w = 1.0
@@ -356,11 +366,11 @@ def _g2(t, T):
         if t < tj:
             pose = ("stand", G2_ANTIC, smoothstep(seg(t, tj - 0.12, tj)))
         elif t < tj + 0.36:
-            pose = (G2_ANTIC, "leap_scared", smoothstep(seg(t, tj, tj + 0.07)))
-            reach_w = 1 - smoothstep(seg(t, tj, tj + 0.07))
+            pose = (G2_ANTIC, G2_LEAP, smoothstep(seg(t, tj, tj + 0.08)))
+            reach_w = 1 - 0.75 * smoothstep(seg(t, tj, tj + 0.12))
         elif t < tj + 0.5:
             k = smoothstep(seg(t, tj + 0.36, tj + 0.46))
-            pose = ("leap_scared", G2_ANTIC, k)
+            pose = (G2_LEAP, G2_ANTIC, k)
             reach_w = k
             dy = 10 * math.sin(math.pi * seg(t, tj + 0.4, tj + 0.56))
         else:
@@ -385,10 +395,6 @@ def _g2(t, T):
     elif tj + 1.1 <= t < tj + 1.6:
         expr = "relieved"
         look = (0.6, 0.1)
-    if fr0 - 0.1 <= t < fr1:
-        expr = "neutral"
-        face = {"brow_ang": 0.8, "brow": 0.3, "press": 0.4}
-        look = (-0.8, 0.2)
     power = smoothstep(seg(t, T["c2"], T["c2"] + 0.08))
     return dict(who="guard", x=x, y=y + dy, s=SC2, turn=turn, pose=pose, pose_t=d / max(1.0, v), expr=expr,
                 look=look, face=face, ang=ang, power=power, flicker=0.6, seed=3, outfit=_RK[1],
@@ -403,7 +409,8 @@ def _draw_guard(ctx, t, info, g, dark):
 
     def light(c, side, x, y, a_):
         w = g["reach_w"]
-        rot = g["ang"] if w > 0.98 else a_
+        da = (a_ - g["ang"] + math.pi) % (2 * math.pi) - math.pi
+        rot = g["ang"] + da * (1 - w)
         flip = math.cos(rot) < 0
         props.flashlight(c, x, y, s, (math.pi - rot) if flip else rot, on=g["power"], glow=0.0,
                          flip=flip)
@@ -420,7 +427,7 @@ def _draw_guard(ctx, t, info, g, dark):
     return pat, a, rec.get("lens")
 
 
-def _cone(ctx, t, lens, g, key, rect, clip_shadow=True, length=980, spread=0.56):
+def _cone(ctx, t, lens, g, key, rect, clip_shadow=True, length=980, spread=0.56, exact=True):
     if lens is None or g["power"] <= 0.01:
         return
     ctx.save()
@@ -428,7 +435,7 @@ def _cone(ctx, t, lens, g, key, rect, clip_shadow=True, length=980, spread=0.56)
         _clip_out(ctx, [SHADOW_A])
     fx.flashlight(ctx, lens[0], lens[1], lens[2], length, spread, t, LIT, key=key, rect=rect,
                   power=g["power"], flicker=g["flicker"], seed=g["seed"] + 1, lens=False, s=SC,
-                  haze=0.04)
+                  haze=0.04, exact=exact)
     ctx.restore()
 
 
@@ -533,8 +540,8 @@ def _tired(t, T):
             expr = ("alarmed", "unamused", kx)
             if t >= T["rise0"] + 1.2:
                 ks = smoothstep(seg(t, T["rise0"] + 1.2, T["rise0"] + 1.6))
-                face = {"press": 0.6, "head_turn": lerp(0.45, 0.5, ks), "head_nod": -0.38,
-                        "head_tilt": -0.06 * ks, "brow": -0.2, "curve": -0.1}
+                face = {"press": 0.6, "head_turn": lerp(0.45, 0.55, ks), "head_nod": lerp(-0.38, -0.46, ks),
+                        "head_tilt": -0.07 * ks, "brow": -0.2, "curve": -0.1}
                 expr = "unamused"
     return dict(x=x, y=FY, turn=turn, pose=pose, pose_t=pt, expr=expr, face=face)
 
@@ -594,7 +601,7 @@ def _curio(t, T):
         kw["_squash"] = 0.12 * math.sin(math.pi * seg(t, T["hop2"], T["hop2"] + 0.22))
         return SEAT[0], SEAT[1], kw
     if t < R:
-        melt = tween(t, [(ML, 0.0), (ML + 0.45, 1.0)], ease_in)
+        melt = tween(t, [(ML, 0.0), (ML + 0.45, 1.0)], smoothstep)
         if t > T["l4e"] + 0.1:
             melt = tween(t, [(T["l4e"] + 0.1, 1.0), (T["l4e"] + 0.4, 0.9)])
         look = None
@@ -681,14 +688,16 @@ def _cam(name, t, t0, t1, T):
         c = (1335, 1240, 2.5)
         return c + (_view(*c),)
     if name == "turn":
-        c = (1745, 920, 1.65)
-        return c + (_view(*c),)
+        # a slow push-in while he turns round
+        k = ease_in_out(seg(t, t0, t1))
+        a, b = (1745, 920, 1.65), (1735, 910, 1.8)
+        return (lerp(a[0], b[0], k), lerp(a[1], b[1], k), lerp(a[2], b[2], k), _union(_view(*a), _view(*b)))
     if name == "pipes":
-        c = (1790, 900, 2.0)
+        c = (1830, 900, 1.85)
         return c + (_view(*c),)
     # reform: slow push-in
     k = ease_in_out(seg(t, t0, t1))
-    a, b = (1470, 1080, 1.45), (1480, 1060, 1.55)
+    a, b = (1455, 1010, 1.75), (1460, 990, 1.85)
     return (lerp(a[0], b[0], k), lerp(a[1], b[1], k), lerp(a[2], b[2], k), _union(_view(*a), _view(*b)))
 
 
@@ -750,8 +759,8 @@ def render(ctx, t, info):
         # --- characters into groups first (we need the lens positions for the cones)
         pats = {}
         lenses = {}
-        d1 = 0.5
-        d2 = 0.5
+        d1 = 0.42
+        d2 = 0.42
         if name == "shadow":
             d2 = 0.22          # lit from behind by the gruff guard's beam
         if show_g2:
@@ -760,7 +769,7 @@ def render(ctx, t, info):
             pats["g1"], _, lenses["g1"] = _draw_guard(ctx, t, info, g1, d1)
         ta = None
         if show_us:
-            dt = 0.52 if name != "reform" else 0.46
+            dt = 0.46 if name != "reform" else 0.4
 
             def fT():
                 return human.draw_person(ctx, "tired", ts["x"], ts["y"], SC, t, pose=ts["pose"],
@@ -783,7 +792,7 @@ def render(ctx, t, info):
             _cone(ctx, t, lenses.get("g2"), g2, ("s03_lit", name), rect)
         if show_g1:
             _cone(ctx, t, lenses.get("g1"), g1, ("s03_lit", name), rect,
-                  spread=0.64 if name == "shadow" else 0.56)
+                  spread=0.64 if name == "shadow" else 0.56, exact=(name != "turn"))
         if name == "shadow" and show_g2:
             def g2shape():
                 human.draw_person(ctx, "guard", g2["x"], g2["y"], g2["s"], t, pose=g2["pose"],
@@ -810,6 +819,10 @@ def render(ctx, t, info):
         if ta is not None and ta.get("hood_rim"):
             hx, hy = ta["hood_rim"]
             core.radial_glow(ctx, hx, hy, 34, TEAL, 0.32)
+        if ta is not None and name == "react":
+            # horror under the hood: a big anime sweat drop on the side of the hood
+            hx, hy = ta["head"][:2]
+            fx.emote(ctx, "sweatdrop", hx - 92, hy - 70, 0.45, t, T["troll"] + 2.0, dur=T["l3s"] - T["troll"] - 1.7)
         if show_g2:
             _lens_glow(ctx, lenses.get("g2"), g2)
         if show_g1:
