@@ -528,17 +528,17 @@ def anger_pose(t, force_torch=False):
 FLOOR_CRACKS = [
     ([(1062.0, 1112.0), (1030.0, 1126.0), (1004.0, 1121.0), (972.0, 1138.0), (941.0, 1143.0), (913.0, 1158.0),
       (884.0, 1160.0), (858.0, 1174.0), (829.0, 1170.0), (801.0, 1166.0), (776.0, 1173.0), (750.0, 1186.0),
-      (724.0, 1190.0)], (0.0, 0.62), 2.5),
-    ([(941.0, 1143.0), (953.0, 1162.0), (944.0, 1180.0), (962.0, 1198.0), (958.0, 1214.0)], (0.3, 0.75), 1.6),
-    ([(884.0, 1160.0), (872.0, 1146.0), (849.0, 1142.0), (826.0, 1131.0), (803.0, 1134.0)], (0.45, 0.9), 1.3),
-    ([(905.0, 1100.0), (933.0, 1092.0), (957.0, 1099.0), (990.0, 1086.0), (1012.0, 1090.0)], (0.12, 0.55), 1.4),
+      (724.0, 1190.0)], (0.0, 0.62), 3.8),
+    ([(941.0, 1143.0), (953.0, 1162.0), (944.0, 1180.0), (962.0, 1198.0), (958.0, 1214.0)], (0.3, 0.75), 2.4),
+    ([(884.0, 1160.0), (872.0, 1146.0), (849.0, 1142.0), (826.0, 1131.0), (803.0, 1134.0)], (0.45, 0.9), 2.0),
+    ([(905.0, 1100.0), (933.0, 1092.0), (957.0, 1099.0), (990.0, 1086.0), (1012.0, 1090.0)], (0.12, 0.55), 2.1),
 ]
 CRACK_ZONE = (700.0, 1080.0, 1080.0, 1220.0)           # bounding box of all cracks (x0, y0, x1, y1)
 
 
 def crack_growth(t):
     """0..1: the cracks start spreading a little before cracks_seen and are complete at wrong_rock."""
-    return clamp((t - (CRACKS_SEEN - 0.9)) / (WRONG_ROCK - CRACKS_SEEN + 0.9))
+    return clamp((t - (CRACKS_SEEN - 1.8)) / (WRONG_ROCK - CRACKS_SEEN + 1.8))   # rev 2b: a bit earlier
 
 
 def draw_floor_cracks(canvas, t, growth=None, alpha=1.0):
@@ -579,8 +579,8 @@ def draw_floor_cracks(canvas, t, growth=None, alpha=1.0):
             core.setStrokeWidth(max(0.7, 1.15 * w))
             core.setAlphaf(0.88 * alpha)
             canvas.drawLine(a[0], a[1], bx, by, core)
-            lip.setStrokeWidth(max(0.5, 0.45 * w))
-            lip.setAlphaf(0.4 * alpha)
+            lip.setStrokeWidth(max(0.6, 0.5 * w))
+            lip.setAlphaf(0.62 * alpha)
             canvas.drawLine(a[0], a[1] - 0.9 * w - 0.6, bx, by - 0.9 * w - 0.6, lip)
             acc += L
         # grit: a few specks kicked up along the crack (only where it has already spread)
