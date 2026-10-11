@@ -20,7 +20,7 @@ const CAGE_B = [430, 1630, 0.952];
 const CEO_B_DOOR = [300, 1730, 1.12];                // staging value (kept for reference)
 const CEO_KNEEL = [255, 1730, 1.12];                 // s08 only: 45 px left of CEO_B_DOOR so the kneeling CEO's head
                                                      //   clears Fear's face in the wide; the hand still reaches the lock
-const CEO_B_BARS = [108, 1735, 1.12];                // staging 140 assumed the close at x 430; this close sits at x 414,
+const CEO_B_BARS = [96, 1735, 1.12];                 // staging 140 assumed the close at x 430; this close sits at x 414,
                                                      //   where the kneeling CEO's hair and raised knee peeked in at frame-left
 
 // ---- light (§4.2)
@@ -33,6 +33,7 @@ export const sfx = [
   { at: 'scene.start-0.02', name: 'footsteps', gain: -14, rate: 1.17, until: 's08b01+1.3', fade: 0.15 },
   { at: 'scene.start+0.1', name: 'footsteps', gain: -22, rate: 1.9, until: 's08b01+1.6', fade: 0.15, pan: 0.15 },
   { at: 's08b01+1.15', name: 'cloth_rustle', gain: -16 },                 // goes down on one knee
+  { at: 's08b01+1.65', name: 'cage_creak', gain: -21, until: 's08b01+2.4', fade: 0.05 },   // the gate swinging round
   { at: 's08b01+2.37', name: 'cage_close', gain: -8 },                    // clang at +2.4 (sync 0.03)
   { at: 's08b02-0.88', name: 'key_turn', gain: -10 },                     // bolt (0.68) lands on the lock at b02-0.2
   { at: 's08b02-0.22', name: 'lock_click', gain: -10 },
@@ -122,7 +123,7 @@ function times(S) {
 // The cage state (shared by all shots)
 function cageState(t, S) {
   // it swings out from behind the kneeling CEO (1 → 0.62, out of sight), the CEO's hand pulls it shut (→ 0)
-  const door = S.k(t, [['s08b01+1.8', 1], ['s08b01+2.06', 0.62, 'in'], ['s08b01+2.4', 0, 'out']]);
+  const door = S.k(t, [['s08b01+1.8', 1], ['s08b01+2.06', 0.62, 'in'], ['s08b01+2.4', 0, 'inOut']]);
   const locked = S.k(t, [['s08b02-0.2', 0], ['s08b02-0.14', 1, 'linear']]);
   return { t, door, locked };
 }
@@ -317,9 +318,10 @@ function shotInsert(g, t, S, T) {
 // ---------------------------------------------------------------- shot 3: close on Fear behind the bars
 function shotClose(g, t, S, T) {
   g.save();
-  // close (staging {430,1430,2.2}), nudged left so the leftmost bar + the CEO's hand read inside the frame;
-  // a slow push through the line
-  cam(g, S.k(t, [['s08b02', { x: 414, y: 1432, zoom: 2.12 }], ['s08b03', { x: 420, y: 1428, zoom: 2.28 }, 'linear']]), t, 2);
+  // close (staging {430,1430,2.2}), pushed in so Fear's face fills ~half the frame width (at 2.2 the whole cage and
+  // plinth were in frame: a medium) and nudged left so the leftmost bar + the CEO's hand sit at the frame edge;
+  // the TIME-OUT sign stays in at the top. A slow push through the line.
+  cam(g, S.k(t, [['s08b02', { x: 404, y: 1440, zoom: 2.35 }], ['s08b03', { x: 405, y: 1436, zoom: 2.52 }, 'linear']]), t, 2);
   const st = { t, ...SET_B };
   drawHQ(g, 'backOfMind', st);
   drawVoid(g, ...VOID_B, { t, ...STARE_B, idle: 0, shadowSpread: 0.7 });

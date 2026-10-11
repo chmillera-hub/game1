@@ -157,7 +157,7 @@ function renderAlarm(g, t, S) {
 
 // ================================================================= B–E · the console (front view)
 function frontCam(t, S, shot) {
-  if (shot === 'B') return cam(t, { x: 485, y: 1150, zoom: 1.32 + 0.04 * seg(t, S.T('s17b02'), S.T('s17b03')) }, 2);
+  if (shot === 'B') return cam(t, { x: 500, y: 1150, zoom: 1.32 + 0.04 * seg(t, S.T('s17b02'), S.T('s17b03')) }, 2);
   if (shot === 'C') return cam(t, { x: 452, y: 1010, zoom: 2.4 + 0.08 * seg(t, S.T('s17b03'), S.T('s17b04')) }, 1.6);
   // E1: back on the CEO (the C framing) for the reaction to "Can I help?": eyes well, the smile, the laugh-breath, the nod
   if (shot === 'E1') return cam(t, { x: 452, y: 1010, zoom: 2.48 + 0.07 * seg(t, S.T('s17b05'), S.T('s17b05+1.15')) }, 1.6);

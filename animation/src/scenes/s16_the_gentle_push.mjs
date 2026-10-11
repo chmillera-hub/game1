@@ -328,7 +328,10 @@ function foregroundFear(g, t, S, fp) {
   const glisten = S.k(t, [['s16b03+2.6', 0.45], ['s16b04', 0.85]]);
   drawFear(c, x, y, s, {
     t, facing: 1, headTurn: 0.5, headTilt: -0.08, breathe: 0.6, shadow: false,
-    face: { ...fp.face, lookX: 0.55, lookY: -0.85, tears: glisten, sparkle: 0.5, lidU: 0.02, lidL: 0.08, smile: 0.05, open: 0.04, browIn: 0.35, browUp: 0.2, blink: 0 },
+    // alive while it looks: one slow blink after "galaxies twinkling", the water rising on the lower lids
+    face: { ...fp.face, lookX: 0.55 + fbm(t * 0.35, 65) * 0.05, lookY: -0.85, tears: glisten, sparkle: 0.5 + 0.2 * glisten, lidU: 0.02,
+      lidL: 0.08 + 0.1 * glisten, smile: 0.05, open: 0.04, browIn: 0.35 + 0.1 * glisten, browUp: 0.2,
+      blink: blinkAt(t, S.T('s16b03+4.25'), 0.42), noAutoBlink: true },
     armL: { target: [-30, -80], bend: 1 }, armR: { target: [30, -80], bend: -1 },
   });
   // backlit: darken toward the camera side, starlight on the cheek turned to the hood

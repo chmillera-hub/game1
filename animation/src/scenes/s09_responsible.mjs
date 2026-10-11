@@ -27,6 +27,7 @@ export const sfx = [
   { at: 'scene.start+0.05', name: 'footsteps', gain: -15, rate: 1.1, until: 'scene.start+1.75', fade: 0.15, pan: -0.3 },
   { at: 'scene.start+0.2', name: 'footsteps', gain: -24, rate: 1.4, until: 'scene.start+1.3', fade: 0.12, pan: -0.7 },
   { at: 'scene.start+1.55', name: 'paper_rustle', gain: -15 },                    // picks up the clipboard (swish ≈ +2.05)
+  { at: 's09b01.end+0.05', name: 'paper_rustle', gain: -24 },                   // the clipboard lowered back to the console
   { at: 's09b02-0.05', name: 'cloth_rustle', gain: -17 },                        // hand up to the mouth
   { at: 's09b02+1.05', name: 'cloth_rustle', gain: -22, pan: 0.3 },              // SADNESS's hand on the sleeve
 ];
