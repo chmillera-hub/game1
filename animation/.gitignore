@@ -1,0 +1,8 @@
+node_modules/
+models
+out/
+audio/wav/
+audio/cache/
+*.wav
+*.raw
+__pycache__/

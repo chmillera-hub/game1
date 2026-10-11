@@ -1,0 +1,1862 @@
+{
+  "title": "The Void and My Fear",
+  "logline": "Inside a young storyteller's mind, a tiny, terrified Fear keeps pulling the fire alarm because of the enormous silent Void in the back of the room, until the Void, without a single word, opens Fear's time-out cage and shows it the stars inside its face.",
+  "voice_notes": {
+    "NARRATOR": "Same actor and voice as CONSCIOUSNESS, but older in feeling: the storyteller remembering, past tense, gentle, close to the mic, unhurried. Never performs the emotions again, remembers them. A small smile on the light lines; a held-back catch on 'sadness' and on the final line. Leave air between sentences.",
+    "CONSCIOUSNESS": "Same voice as NARRATOR, but living it in the present: a kind, tired young adult wearing a job slightly too big for them. Two registers that fight each other: the steady, lower 'CEO' voice of responsibility, and a softer, breathier voice when compassion wins. The time-out lines cost them something you can hear. Never harsh.",
+    "FEAR": "Small, breathy, high, quick to crack. Words come in little rushes and then stall. Completely sincere, never comic or whiny: its terror is a protective love that has nowhere to go. Whispers near the Void. The 'why' lines escalate from a frozen whisper to open crying. 'Can I help?' at the end is tiny, steady and brave.",
+    "JOY": "Bright and warm, a little frayed by all the evacuations; keeps trying to lift the room.",
+    "SADNESS": "Soft, low, slow, slightly wounded; every word lands gently.",
+    "ANGER": "Gruff, clipped, more exhausted than mean; frustration aimed at the situation, not at Fear.",
+    "CALM": "Low, even, unhurried; the shepherd of the room, practiced at evacuations."
+  },
+  "scenes": [
+    {
+      "id": "s01",
+      "slug": "first_story",
+      "location": "REAL_ROOM",
+      "purpose": "A warm, inviting doorway into a remembered story: the storyteller, their old notebook, and a childlike drawing of a tiny Fear beside a tall dark shape full of stars.",
+      "music": {
+        "mood": "tender, nostalgic, curious",
+        "instrumentation": "felt piano, warm pad, faint music-box",
+        "intensity": 0.25
+      },
+      "transition_in": "cut",
+      "beats": [
+        {
+          "id": "s01b01",
+          "kind": "silent",
+          "duration": 4.0,
+          "pause_after": 0.0,
+          "shot": "FIRST FRAME IS THE PREVIEW STILL: fully lit and finished on frame 1, no fade. Portrait medium shot from slightly above and beside the desk. SELF in the lower half, three-quarter profile, bathed in the amber lamp pool at left; tall window at upper right filled with soft blue night and a handful of gentle stars. The old notebook lies open toward camera: a childlike crayon drawing of a small lavender bean with huge eyes and a knitted scarf, standing beside a tall dark hooded shape dotted with tiny gold stars. Title 'The Void and My Fear' in soft cream hand-lettering across the night sky of the window; holds 2.5s, then fades out over 1.5s. A very slow push-in begins.",
+          "acting": {
+            "SELF": "Already mid-moment on frame 1: head bowed toward the notebook, eyes lowered and soft, upper lids at half, a faint closed-mouth smile. Right fingertip resting on the crayon Fear. One slow breath: shoulders rise and settle. At 2.5s a slow full blink, then the fingertip begins to trace the outline of the drawn Void."
+          },
+          "sfx": [
+            "paper_rustle"
+          ]
+        },
+        {
+          "id": "s01b02",
+          "kind": "line",
+          "speaker": "NARRATOR",
+          "inner": false,
+          "text": "I was remembering the first story I ever wrote about my emotions.",
+          "delivery": "soft, close, unhurried; a small fond smile in the voice on 'first story'",
+          "pause_after": 0.7,
+          "shot": "Slow push-in continues toward SELF and the notebook; lamp glow blooms gently.",
+          "acting": {
+            "SELF": "Voice-over, no lip-sync. Eyes move slowly along the page as if rereading; brows lift a little, fond; the smile deepens at the corners; thumb smooths the dog-eared page corner; one slow blink on 'emotions'."
+          },
+          "sfx": []
+        },
+        {
+          "id": "s01b03",
+          "kind": "line",
+          "speaker": "NARRATOR",
+          "inner": false,
+          "text": "I was inside my mind, where my feelings went to work.",
+          "delivery": "dreamy, drifting, the pace slowing as we go inside",
+          "pause_after": 0.5,
+          "shot": "Push continues past SELF's shoulder into the page until the crayon drawing fills frame; the crayon lines glow and redraw themselves into clean shapes: a console, a big screen, small figures. Begin dissolve to MIND_HQ.",
+          "acting": {
+            "SELF": "Head tilts a few degrees; eyes half-close dreamily; slow inhale, shoulders lift; fingers relax on the page as the dissolve takes over."
+          },
+          "sfx": []
+        }
+      ]
+    },
+    {
+      "id": "s02",
+      "slug": "the_alarm",
+      "location": "MIND_HQ",
+      "purpose": "Establish headquarters, the four emotions at work, and tiny trembling Fear pulling the alarm again and again while staring at something in the dark back of the mind.",
+      "music": {
+        "mood": "uneasy, ticking",
+        "instrumentation": "pizzicato strings, muted piano ostinato, low pad",
+        "intensity": 0.35
+      },
+      "transition_in": "dissolve",
+      "beats": [
+        {
+          "id": "s02b01",
+          "kind": "silent",
+          "duration": 2.0,
+          "pause_after": 0.0,
+          "shot": "Wide portrait of MIND_HQ as the dissolve settles. Bottom third: the CONSOLE with JOY, SADNESS, ANGER and CALM at work, soft button glow on their faces; above them the SCREEN OF CONSCIOUSNESS shows a hazy view of a desk and lamp. Right wall: the red FIRE ALARM. Beneath it, tiny FEAR. Upper background: the cavernous dim back of the mind, fading to black; nothing visible in it yet.",
+          "acting": {
+            "JOY": "Presses a button with a little bounce, star tuft bobbing, humming silently.",
+            "SADNESS": "Chin propped on one hand, slowly turning a dial, heavy-lidded.",
+            "ANGER": "Taps two buttons hard, then folds arms; brow set but not furious.",
+            "CALM": "Long fingers slide a lever; slow, contented blinks.",
+            "FEAR": "Stands under the alarm clutching its scarf in both fists, whole body trembling at a fine high frequency. Huge eyes fixed up and past camera into the dark back of the mind; upper lids pulled high, irises shrunken; thin brows pinched inner-up; mouth a small tight 'o'; tuft quivering."
+          },
+          "sfx": [
+            "console_beeps"
+          ]
+        },
+        {
+          "id": "s02b02",
+          "kind": "silent",
+          "duration": 2.0,
+          "pause_after": 0.0,
+          "shot": "Cut to low-angle medium close on FEAR at the alarm so the red box looms above it.",
+          "acting": {
+            "FEAR": "Eyes never leave the dark. Quick shallow breaths, shoulders jerking with each inhale. One hand reaches up blindly, finds the handle, grips. A tiny swallow. Both hands pull down with its whole weight; eyes squeeze shut on the pull; red light washes softly over its face."
+          },
+          "sfx": [
+            "alarm_pull",
+            "alarm_bell"
+          ]
+        },
+        {
+          "id": "s02b03",
+          "kind": "line",
+          "speaker": "ANGER",
+          "inner": false,
+          "text": "Again?",
+          "delivery": "gruff, flat, more weary than cruel",
+          "pause_after": 0.6,
+          "shot": "Cut to the console; a soft partial red pulse washes across the four emotions.",
+          "acting": {
+            "ANGER": "Drops head back, eyes roll up to the ceiling, nostrils flare, then a long exhale through the nose.",
+            "JOY": "Smile freezes; eyes dart toward the alarm; then a forced, brighter smile.",
+            "SADNESS": "Lower lids lift, head sinks slowly into its shoulders.",
+            "CALM": "Closes eyes for one long blink, hand already resting on the evacuation lever."
+          },
+          "sfx": [
+            "alarm_bell"
+          ]
+        },
+        {
+          "id": "s02b04",
+          "kind": "line",
+          "speaker": "NARRATOR",
+          "inner": false,
+          "text": "My Fear kept pulling the fire alarm. Again, and again.",
+          "delivery": "gentle, a little rueful, the repetition slowing down",
+          "pause_after": 0.7,
+          "shot": "Two soft dissolves, each slightly closer on FEAR at the alarm; behind it the screen of consciousness changes from morning light to rain to night.",
+          "acting": {
+            "FEAR": "Each pull identical: eyes locked on the dark, lower lip trembling, eyes squeezed shut on the pull. On the last one its knees buckle and it hangs from the handle for a moment, feet dangling, before sliding down."
+          },
+          "sfx": [
+            "alarm_pull",
+            "alarm_bell"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "s03",
+      "slug": "the_ceo",
+      "location": "MIND_HQ",
+      "purpose": "The storyteller steps in as Consciousness, the slightly overwhelmed CEO, looks for the reason, and notices Fear is staring at something behind them.",
+      "music": {
+        "mood": "wry, warm, a little lost",
+        "instrumentation": "felt piano, light clarinet, soft pad",
+        "intensity": 0.3
+      },
+      "transition_in": "cut",
+      "beats": [
+        {
+          "id": "s03b01",
+          "kind": "line",
+          "speaker": "NARRATOR",
+          "inner": false,
+          "text": "So I imagined myself as the CEO of my mind, looking around to see why.",
+          "delivery": "warm, a hint of self-deprecating amusement on 'CEO', then curious and slower",
+          "pause_after": 0.5,
+          "shot": "Medium-wide on the side door; it slides open and CONSCIOUSNESS steps through into the soft red pulse; gentle pan follows it across the room, the four emotions in soft focus at the console.",
+          "acting": {
+            "CONSCIOUSNESS": "Enters with the clipboard hugged to its chest, charcoal blazer a size too big, sleeves over its knuckles, small gold CEO badge. Squares its shoulders and lifts its chin, a performance of confidence; the eyes give it away with two quick blinks. On 'looking around' it tugs a too-long sleeve up off the clipboard; it slides straight back down. Eyes scan left to the console, right to the alarm; brows lift and knit, searching.",
+            "JOY": "Gives Consciousness a hopeful little wave, then nods meaningfully toward the alarm.",
+            "ANGER": "Jerks a thumb toward the alarm without looking."
+          },
+          "sfx": [
+            "door_whoosh",
+            "footsteps"
+          ]
+        },
+        {
+          "id": "s03b02",
+          "kind": "silent",
+          "duration": 1.5,
+          "pause_after": 0.0,
+          "shot": "Two-shot, CONSCIOUSNESS in the foreground left looking down, FEAR small at the alarm on the right. The bell winds down to silence.",
+          "acting": {
+            "CONSCIOUSNESS": "Eyes land on Fear; the performed confidence drops out of its face; brows soften inner-up; it crouches halfway, clipboard lowering.",
+            "FEAR": "Still clinging to the handle, trembling; does not look at Consciousness at all; eyes locked past camera on the dark."
+          },
+          "sfx": []
+        },
+        {
+          "id": "s03b03",
+          "kind": "line",
+          "speaker": "CONSCIOUSNESS",
+          "inner": false,
+          "text": "Fear? What are you looking at?",
+          "delivery": "gentle, half a whisper, a real question; small pause after 'Fear'",
+          "pause_after": 0.4,
+          "shot": "Hold the two-shot; at the end of the line rack focus toward the dark background.",
+          "acting": {
+            "CONSCIOUSNESS": "Lip-synced. Head tilts to find Fear's eyes. On the silence after the line, follows Fear's pointing finger; its eyes go first, then its head turns slowly over its shoulder.",
+            "FEAR": "No answer. Without moving its eyes, it lifts one thin trembling arm and points past Consciousness's shoulder, finger shaking."
+          },
+          "sfx": []
+        }
+      ]
+    },
+    {
+      "id": "s04",
+      "slug": "the_void",
+      "location": "MIND_HQ_BACK",
+      "purpose": "The Void revealed: enormous, unmoving, its face pure darkness. The viewer should feel the dread in their own body before a word is said.",
+      "music": {
+        "mood": "vast, ominous, motionless",
+        "instrumentation": "low drone, bowed bass, distant wordless choir pad, no rhythm",
+        "intensity": 0.4
+      },
+      "transition_in": "push",
+      "beats": [
+        {
+          "id": "s04b01",
+          "kind": "silent",
+          "duration": 3.5,
+          "pause_after": 0.0,
+          "shot": "Over CONSCIOUSNESS's shoulder, slow tilt up: a pool of shadow on the floor, the hem of an enormous cloak, up the deep blue-black folds with a faint violet rim light, to the hood near the top of frame: an opening of PURE DARKNESS. The Void fills about 75 percent of frame height. Absolutely still.",
+          "acting": {
+            "VOID": "Completely motionless. No breathing, no sway. Only the violet rim light breathes, almost imperceptibly.",
+            "CONSCIOUSNESS": "Head tips back slowly with the tilt; mouth falls slightly open; clipboard drops to its hip; upper lids lift, brows rise and hold; a visible swallow."
+          },
+          "sfx": [
+            "rumble_low"
+          ]
+        },
+        {
+          "id": "s04b02",
+          "kind": "line",
+          "speaker": "NARRATOR",
+          "inner": false,
+          "text": "In the back of my mind stood the Void.",
+          "delivery": "hushed, slow, the voice lowered as if it might hear",
+          "pause_after": 0.8,
+          "shot": "Locked-off wide: tiny CONSCIOUSNESS and tinier FEAR at the bottom edge, the Void towering over everything.",
+          "acting": {
+            "VOID": "Still.",
+            "CONSCIOUSNESS": "Takes a half step back without meaning to; one hand drifts behind it, reaching for Fear.",
+            "FEAR": "Scurries in and presses against Consciousness's leg, half hidden behind it."
+          },
+          "sfx": []
+        },
+        {
+          "id": "s04b03",
+          "kind": "line",
+          "speaker": "NARRATOR",
+          "inner": false,
+          "text": "Huge. Unmoving. Its face was pure darkness.",
+          "delivery": "each word set down on its own; a long breath before 'pure darkness'",
+          "pause_after": 1.0,
+          "shot": "Very slow push into the hood until the darkness fills the upper half of frame.",
+          "acting": {
+            "VOID": "Still. The darkness in the hood is flat and total; nothing moves in it.",
+            "FEAR": "Only one huge eye visible around Consciousness's leg; lids high, iris tiny, unblinking."
+          },
+          "sfx": []
+        }
+      ]
+    },
+    {
+      "id": "s05",
+      "slug": "not_safe",
+      "location": "MIND_HQ",
+      "purpose": "Fear says what it believes: the presence will harm it, it is not safe. Consciousness wants to reassure it but cannot honestly promise safety, and Fear sees that. (Staged at the alarm wall, the back of the mind looming behind them.)",
+      "music": {
+        "mood": "hushed, anxious, intimate",
+        "instrumentation": "solo cello long tones, soft heartbeat-like low pulse",
+        "intensity": 0.3
+      },
+      "transition_in": "cut",
+      "beats": [
+        {
+          "id": "s05b01",
+          "kind": "line",
+          "speaker": "FEAR",
+          "inner": false,
+          "text": "It's going to hurt me.",
+          "delivery": "barely a whisper, quick, breath catching on 'hurt'",
+          "pause_after": 0.8,
+          "shot": "Low two-shot: CONSCIOUSNESS crouched, FEAR pressed against its leg, the Void's lower cloak and shadow out of focus behind; slow push to a close on FEAR.",
+          "acting": {
+            "FEAR": "Grips a fistful of Consciousness's trouser leg; the trembling travels up into Consciousness's hand. Lips barely move; eyes never leave the hood; tuft flattens against its head; shoulders up by its ears.",
+            "CONSCIOUSNESS": "Looks down at the small hand on its leg, then up at the hood; swallows; settles its own hand over Fear's back and leans closer to match the whisper."
+          },
+          "sfx": [
+            "heartbeat"
+          ]
+        },
+        {
+          "id": "s05b02",
+          "kind": "line",
+          "speaker": "CONSCIOUSNESS",
+          "inner": false,
+          "text": "It hasn't moved.",
+          "delivery": "soft and reasonable, trying to reassure, not fully convinced",
+          "pause_after": 0.8,
+          "shot": "Close on CONSCIOUSNESS, three-quarter, the hood out of focus above; it leans close to Fear's level.",
+          "acting": {
+            "CONSCIOUSNESS": "Lip-synced. Small encouraging half-smile that doesn't reach the eyes; brows inner-up; a quick glance up at the Void mid-line.",
+            "FEAR": "Off-frame: whispered breathing, shaky."
+          },
+          "sfx": []
+        },
+        {
+          "id": "s05b03",
+          "kind": "line",
+          "speaker": "FEAR",
+          "inner": false,
+          "text": "That's what scares me. It's not safe here.",
+          "delivery": "small, flat with dread; the second sentence nearly swallowed",
+          "pause_after": 0.8,
+          "shot": "Close on FEAR; it finally turns to look at Consciousness.",
+          "acting": {
+            "FEAR": "Turns its eyes to Consciousness for the first time: huge, wet, pupils wide; inner brows high; mouth pulled down at the corners; chin dimpling. On 'not safe here' its eyes slide back to the hood and it pulls its scarf up over its mouth; trembling surges.",
+            "CONSCIOUSNESS": "In the over-shoulder edge of frame: mouth opens to answer, closes. A slow blink; its hand tightens protectively on Fear's back."
+          },
+          "sfx": [
+            "breath_shaky"
+          ]
+        },
+        {
+          "id": "s05b04",
+          "kind": "line",
+          "speaker": "CONSCIOUSNESS",
+          "inner": false,
+          "text": "Nothing is going to hurt you.",
+          "delivery": "firm and gentle, the CEO voice, a beat too quick to be fully true",
+          "pause_after": 0.8,
+          "shot": "Two-shot again, slightly tighter.",
+          "acting": {
+            "CONSCIOUSNESS": "Lip-synced. Chin lifts, brows level, a reassuring nod; but its eyes flick up to the Void on 'nothing'.",
+            "FEAR": "Watches that eye-flick. Its own eyes narrow slightly; lower lids rise; it has seen the doubt."
+          },
+          "sfx": []
+        },
+        {
+          "id": "s05b05",
+          "kind": "line",
+          "speaker": "FEAR",
+          "inner": false,
+          "text": "You don't know that.",
+          "delivery": "very quiet; not defiant, simply true; almost kind",
+          "pause_after": 0.4,
+          "shot": "Close on FEAR.",
+          "acting": {
+            "FEAR": "Holds Consciousness's gaze; a single slow blink; lower lip trembles; shoulders drop in a tiny defeated shrug.",
+            "CONSCIOUSNESS": "Off-frame."
+          },
+          "sfx": []
+        },
+        {
+          "id": "s05b06",
+          "kind": "silent",
+          "duration": 2.0,
+          "pause_after": 0.0,
+          "shot": "Close on CONSCIOUSNESS; the out-of-focus hood looms behind its head.",
+          "acting": {
+            "CONSCIOUSNESS": "Draws a breath to answer; the breath goes nowhere. Eyes drift up to the Void and stay there. Brows knit; jaw tightens; lips press together. It cannot promise.",
+            "FEAR": "At the bottom edge of frame, watching Consciousness fail to answer; eyes slide back to the hood.",
+            "VOID": "Unchanged."
+          },
+          "sfx": []
+        }
+      ]
+    },
+    {
+      "id": "s06",
+      "slug": "chaos",
+      "location": "MIND_HQ",
+      "purpose": "Panic as a pattern: Fear's attacks force every emotion out of the mind and leave Consciousness alone in the noise.",
+      "music": {
+        "mood": "panic, churning but soft-edged",
+        "instrumentation": "pulsing low synth, tremolo strings, heartbeat kick, two-note alarm motif",
+        "intensity": 0.6
+      },
+      "transition_in": "cut",
+      "beats": [
+        {
+          "id": "s06b01",
+          "kind": "silent",
+          "duration": 1.5,
+          "pause_after": 0.0,
+          "shot": "Handheld-gentle medium: FEAR bolts out of frame; whip-soft pan to the alarm.",
+          "acting": {
+            "FEAR": "Breath turns into fast shallow gasps, shoulders heaving; eyes ricochet between the Void and the alarm; it bolts on knobbly legs and yanks the handle with its whole body.",
+            "CONSCIOUSNESS": "Reaches out a beat too late; mouth shapes a silent 'wait'."
+          },
+          "sfx": [
+            "heartbeat",
+            "breath_shaky",
+            "alarm_pull",
+            "alarm_bell"
+          ]
+        },
+        {
+          "id": "s06b02",
+          "kind": "line",
+          "speaker": "NARRATOR",
+          "inner": false,
+          "text": "Panic attack, after panic attack.",
+          "delivery": "steady but tired, slowing on the second 'panic attack'",
+          "pause_after": 0.4,
+          "shot": "Wide on the console side of the room, the back of the mind out of frame: soft red pulses sweep the walls; the emotions stand up from the console; FEAR at the alarm on the right edge.",
+          "acting": {
+            "FEAR": "Clinging to the alarm, hyperventilating, eyes squeezed shut, tuft vibrating.",
+            "CALM": "Rises, already guiding with open palms toward the exit.",
+            "JOY": "Grabs a notebook off the console, hugging it.",
+            "SADNESS": "Slowly lifts its hands off a half-turned dial, looking back at it.",
+            "ANGER": "Stomps toward the door, fists balled."
+          },
+          "sfx": [
+            "crowd_murmur"
+          ]
+        },
+        {
+          "id": "s06b03",
+          "kind": "line",
+          "speaker": "CALM",
+          "inner": false,
+          "text": "Everyone, toward the exit, please.",
+          "delivery": "level, slow, practiced",
+          "pause_after": 0.2,
+          "shot": "Medium on the EXIT door as the emotions file toward it.",
+          "acting": {
+            "CALM": "Lip-synced. Slow nod, palms open, eyes soft but tired; glances back at Fear.",
+            "JOY": "Passes through the door."
+          },
+          "sfx": [
+            "door_whoosh"
+          ]
+        },
+        {
+          "id": "s06b04",
+          "kind": "line",
+          "speaker": "JOY",
+          "inner": false,
+          "text": "We always come back.",
+          "delivery": "bright on top, frayed underneath; half to herself",
+          "pause_after": 0.6,
+          "shot": "Close on JOY in the doorway, red pulse on one cheek.",
+          "acting": {
+            "JOY": "Lip-synced. A big smile that thins as she says it; eyes flick back to Fear at the alarm; brows tilt inner-up.",
+            "SADNESS": "Being guided out by Calm's hand at its elbow, looking back over its shoulder at its half-turned dial; lids droop.",
+            "ANGER": "Stomps past behind Joy, fists balled, jaw clenched, a short furious head shake at the alarm as it goes out the door."
+          },
+          "sfx": [
+            "door_whoosh"
+          ]
+        },
+        {
+          "id": "s06b05",
+          "kind": "silent",
+          "duration": 1.5,
+          "pause_after": 0.0,
+          "shot": "Wide from behind the empty console: CONSCIOUSNESS alone in the middle of the room; the screen of consciousness above has blurred to grey haze; soft red pulse; FEAR at the alarm at right; the Void dim and huge in the back.",
+          "acting": {
+            "CONSCIOUSNESS": "Clipboard hanging at its side; turns a slow half circle looking at the empty seats; presses the heels of both hands over its ears; eyes squeezed shut.",
+            "FEAR": "Slumped beneath the alarm, still holding the handle, gasping.",
+            "VOID": "Still."
+          },
+          "sfx": [
+            "alarm_bell",
+            "heartbeat"
+          ]
+        },
+        {
+          "id": "s06b06",
+          "kind": "line",
+          "speaker": "NARRATOR",
+          "inner": false,
+          "text": "And nobody was left to help me think.",
+          "delivery": "quiet, honest, a small ache on 'nobody'",
+          "pause_after": 1.0,
+          "shot": "Slow push in on CONSCIOUSNESS alone; the alarm bell fades under the line.",
+          "acting": {
+            "CONSCIOUSNESS": "Lowers hands from ears; shoulders sag; stares at the blurred screen; a long, shaky exhale."
+          },
+          "sfx": []
+        }
+      ]
+    },
+    {
+      "id": "s07",
+      "slug": "hand_on_shoulder",
+      "location": "MIND_HQ",
+      "purpose": "The first real conversation. Consciousness comes with compassion and a hard request; Fear reveals its alarm is an attempt to protect. Both are right, and it hurts.",
+      "music": {
+        "mood": "tender, fragile, after-the-storm quiet",
+        "instrumentation": "felt piano single notes, soft pad, near silence",
+        "intensity": 0.2
+      },
+      "transition_in": "dissolve",
+      "beats": [
+        {
+          "id": "s07b01",
+          "kind": "line",
+          "speaker": "NARRATOR",
+          "inner": false,
+          "text": "And then, one day,",
+          "delivery": "soft turn of the page; let it hang",
+          "pause_after": 0.3,
+          "shot": "Wide, quiet: the room after an alarm, red light off. FEAR sits slumped under the alarm. CONSCIOUSNESS stands at the far side of the room.",
+          "acting": {
+            "FEAR": "Sitting with its back to the wall, one hand still raised to the handle; small continuous trembling; eyes on the dark.",
+            "CONSCIOUSNESS": "Looks across at Fear; sets the clipboard down on the console."
+          },
+          "sfx": []
+        },
+        {
+          "id": "s07b02",
+          "kind": "silent",
+          "duration": 3.0,
+          "pause_after": 0.0,
+          "shot": "Medium, slow drift in as CONSCIOUSNESS crosses and kneels beside FEAR.",
+          "acting": {
+            "CONSCIOUSNESS": "Walks slowly, kneels to Fear's height. Its hand hovers above Fear's shoulder, hesitates a full second, fingers curling, then rests there gently.",
+            "FEAR": "Flinches hard at the touch; eyes snap wide; then goes still. The trembling continues and passes visibly into Consciousness's hand and sleeve."
+          },
+          "sfx": [
+            "footsteps",
+            "breath_shaky"
+          ]
+        },
+        {
+          "id": "s07b03",
+          "kind": "line",
+          "speaker": "CONSCIOUSNESS",
+          "inner": false,
+          "text": "Hey.",
+          "delivery": "barely voiced; the softest word in the film so far",
+          "pause_after": 1.0,
+          "shot": "Close two-shot, faces at the same height.",
+          "acting": {
+            "CONSCIOUSNESS": "Lip-synced. Head tilted, eyes soft and tired, half smile that is mostly sympathy.",
+            "FEAR": "Slowly turns its head from the dark toward Consciousness; upper lids lower from wide to half; eyes glassy."
+          },
+          "sfx": []
+        },
+        {
+          "id": "s07b04",
+          "kind": "line",
+          "speaker": "CONSCIOUSNESS",
+          "inner": false,
+          "text": "You need to stop pulling the fire alarm.",
+          "delivery": "gentle but firm; each word placed carefully, like setting down something heavy",
+          "pause_after": 0.8,
+          "shot": "Over Fear's shoulder onto CONSCIOUSNESS.",
+          "acting": {
+            "CONSCIOUSNESS": "Lip-synced. Holds eye contact; brows level, steady; thumb moves once on Fear's shoulder.",
+            "FEAR": "Back of head and tuft visible; tuft droops on 'stop'."
+          },
+          "sfx": []
+        },
+        {
+          "id": "s07b05",
+          "kind": "line",
+          "speaker": "CONSCIOUSNESS",
+          "inner": false,
+          "text": "It's causing turmoil.",
+          "delivery": "quieter, tired; the truth of it lands on the speaker too",
+          "pause_after": 1.0,
+          "shot": "Hold, slow push.",
+          "acting": {
+            "CONSCIOUSNESS": "Lip-synced. Eyes drop on 'turmoil'; a small exhale through the nose; shoulders sink a little.",
+            "FEAR": "Shrinks into its scarf."
+          },
+          "sfx": []
+        },
+        {
+          "id": "s07b06",
+          "kind": "line",
+          "speaker": "FEAR",
+          "inner": false,
+          "text": "But it's still there.",
+          "delivery": "small, urgent whisper",
+          "pause_after": 0.6,
+          "shot": "Reverse: close on FEAR over Consciousness's shoulder.",
+          "acting": {
+            "FEAR": "Lip-synced. Eyes flick toward the back of the mind on 'there' and back; brows inner-up; the words tumble.",
+            "CONSCIOUSNESS": "Foreground shoulder; hand still on Fear."
+          },
+          "sfx": []
+        },
+        {
+          "id": "s07b07",
+          "kind": "line",
+          "speaker": "CONSCIOUSNESS",
+          "inner": false,
+          "text": "I know.",
+          "delivery": "soft, immediate, no argument",
+          "pause_after": 0.8,
+          "shot": "Close on CONSCIOUSNESS.",
+          "acting": {
+            "CONSCIOUSNESS": "Lip-synced. Small nod; doesn't look back at the Void, on purpose; eyes stay on Fear.",
+            "FEAR": "Off-frame."
+          },
+          "sfx": []
+        },
+        {
+          "id": "s07b08",
+          "kind": "line",
+          "speaker": "FEAR",
+          "inner": false,
+          "text": "Then why aren't you scared?",
+          "delivery": "pleading, genuinely confused, voice cracking on 'scared'",
+          "pause_after": 1.0,
+          "shot": "Close on FEAR.",
+          "acting": {
+            "FEAR": "Lip-synced. Eyes search Consciousness's face, darting between its eyes; brows high and tilted; mouth stays open slightly after the line, waiting.",
+            "CONSCIOUSNESS": "Off-frame."
+          },
+          "sfx": []
+        },
+        {
+          "id": "s07b09",
+          "kind": "line",
+          "speaker": "CONSCIOUSNESS",
+          "inner": false,
+          "text": "I am. I just can't let you run everything.",
+          "delivery": "the first sentence an admission, almost a laugh with no humor in it; the second kind, but it lands like a verdict, and regret arrives as it is spoken",
+          "pause_after": 1.0,
+          "shot": "Close on CONSCIOUSNESS, slight push.",
+          "acting": {
+            "CONSCIOUSNESS": "Lip-synced. On 'I am' a tiny breath-laugh, eyes drop, a one-sided smile that collapses. On the second sentence it looks back up and holds Fear's eyes; a slight wince at 'run everything', as if hearing how it sounds.",
+            "FEAR": "In soft focus at frame edge, recoils a few millimeters."
+          },
+          "sfx": []
+        },
+        {
+          "id": "s07b10",
+          "kind": "line",
+          "speaker": "FEAR",
+          "inner": false,
+          "text": "I'm only trying to keep us safe.",
+          "delivery": "hurt, quiet, wet; not arguing, explaining",
+          "pause_after": 0.4,
+          "shot": "Close on FEAR.",
+          "acting": {
+            "FEAR": "Lip-synced. Tears well along the lower lids; chin crumples; hands twist the scarf; on 'us' its eyes go to Consciousness, it was protecting them too.",
+            "CONSCIOUSNESS": "Off-frame."
+          },
+          "sfx": []
+        },
+        {
+          "id": "s07b11",
+          "kind": "silent",
+          "duration": 2.0,
+          "pause_after": 0.0,
+          "shot": "Close two-shot, very still.",
+          "acting": {
+            "CONSCIOUSNESS": "Eyes fill; lips press together; a slow nod that means 'I know you are'; thumb strokes Fear's shoulder once. Nothing it can say will fix this.",
+            "FEAR": "Watches the nod; a single sniff; a tear sits on its lower lid without falling."
+          },
+          "sfx": []
+        }
+      ]
+    },
+    {
+      "id": "s08",
+      "slug": "refusal",
+      "location": "MIND_HQ",
+      "purpose": "Fear refuses, not out of defiance but because it cannot stop. Consciousness's patience runs out of road.",
+      "music": {
+        "mood": "strain, the heartbeat returns",
+        "instrumentation": "low pulse, cello tremolo",
+        "intensity": 0.4
+      },
+      "transition_in": "cut",
+      "beats": [
+        {
+          "id": "s08b01",
+          "kind": "silent",
+          "duration": 2.0,
+          "pause_after": 0.0,
+          "shot": "Close on FEAR; rack focus from Fear's face to the dark Void far behind Consciousness's shoulder, and back.",
+          "acting": {
+            "FEAR": "Eyes slide past Consciousness's shoulder to the Void. Breath quickens; nostrils pinch; a tiny slow head shake begins.",
+            "VOID": "Unchanged, distant, dark.",
+            "CONSCIOUSNESS": "Sees where Fear is looking; its face falls."
+          },
+          "sfx": [
+            "heartbeat"
+          ]
+        },
+        {
+          "id": "s08b02",
+          "kind": "line",
+          "speaker": "FEAR",
+          "inner": false,
+          "text": "I can't. I'm sorry.",
+          "delivery": "tiny, broken, the apology sincere",
+          "pause_after": 0.4,
+          "shot": "Hold close on FEAR.",
+          "acting": {
+            "FEAR": "Lip-synced. Eyes squeeze shut on 'can't'; on 'sorry' they open and meet Consciousness's for one heartbeat, full of apology.",
+            "CONSCIOUSNESS": "Off-frame hand tightens slightly on Fear's shoulder."
+          },
+          "sfx": []
+        },
+        {
+          "id": "s08b03",
+          "kind": "silent",
+          "duration": 2.0,
+          "pause_after": 0.0,
+          "shot": "Medium: FEAR slips out from under the hand; the alarm.",
+          "acting": {
+            "FEAR": "Twists free, reaches up, pulls the alarm with both hands, eyes shut.",
+            "CONSCIOUSNESS": "Its hand is left hanging in the air where the shoulder was. Eyes close; the hand slowly closes into a loose fist and lowers to its knee."
+          },
+          "sfx": [
+            "alarm_pull",
+            "alarm_bell"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "s09",
+      "slug": "time_out",
+      "location": "MIND_HQ",
+      "purpose": "The hardest choice: Consciousness puts the CEO back on and tells Fear it needs a time-out. It costs them both.",
+      "music": {
+        "mood": "heavy, sorrowful, restrained",
+        "instrumentation": "solo cello, low piano, soft pad",
+        "intensity": 0.35
+      },
+      "transition_in": "cut",
+      "beats": [
+        {
+          "id": "s09b01",
+          "kind": "silent",
+          "duration": 1.5,
+          "pause_after": 0.0,
+          "shot": "Low angle on CONSCIOUSNESS standing up, red pulse fading behind it.",
+          "acting": {
+            "CONSCIOUSNESS": "Rises slowly; a long exhale; tugs the blazer straight and lifts its chin, putting the CEO back on. The face hardens only slightly; the eyes stay wet.",
+            "FEAR": "At the alarm, peeking over its shoulder at Consciousness, sensing something has changed; trembling stops for one frozen moment."
+          },
+          "sfx": []
+        },
+        {
+          "id": "s09b02",
+          "kind": "line",
+          "speaker": "CONSCIOUSNESS",
+          "inner": false,
+          "text": "Fear.",
+          "delivery": "low, steady, the CEO voice; it costs something",
+          "pause_after": 1.0,
+          "shot": "Over CONSCIOUSNESS's shoulder down onto tiny FEAR.",
+          "acting": {
+            "CONSCIOUSNESS": "Lip-synced. Not loud. Jaw set.",
+            "FEAR": "Turns around fully; hands come off the handle; eyes go wide; tuft stands up."
+          },
+          "sfx": []
+        },
+        {
+          "id": "s09b03",
+          "kind": "line",
+          "speaker": "CONSCIOUSNESS",
+          "inner": false,
+          "text": "We need to put you in a time-out.",
+          "delivery": "measured, quiet, every word deliberate; a tremor under 'time-out'",
+          "pause_after": 0.9,
+          "shot": "Close on CONSCIOUSNESS.",
+          "acting": {
+            "CONSCIOUSNESS": "Lip-synced. Eyes hold steady on Fear until 'time-out', then flick down and away for a fraction of a second.",
+            "FEAR": "Off-frame gasp."
+          },
+          "sfx": []
+        },
+        {
+          "id": "s09b04",
+          "kind": "line",
+          "speaker": "FEAR",
+          "inner": false,
+          "text": "No. No, please.",
+          "delivery": "first 'no' just breath and disbelief; then pleading",
+          "pause_after": 0.6,
+          "shot": "Close on FEAR.",
+          "acting": {
+            "FEAR": "Lip-synced. Mouth open in a gasp; brows shoot inner-up; head shakes small and fast; hands up, palms out."
+          },
+          "sfx": [
+            "breath_shaky"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "s10",
+      "slug": "the_cage",
+      "location": "MIND_HQ_BACK",
+      "purpose": "Fear is caged at the very feet of the thing it fears most, crying and pulling at the bars; Consciousness walks away without turning around.",
+      "music": {
+        "mood": "sorrowful, aching",
+        "instrumentation": "solo cello line over low piano, soft pad",
+        "intensity": 0.35
+      },
+      "transition_in": "cut",
+      "beats": [
+        {
+          "id": "s10b01",
+          "kind": "silent",
+          "duration": 2.5,
+          "pause_after": 0.0,
+          "shot": "Wide in the back of the mind: CONSCIOUSNESS guides FEAR to the small birdcage-like TIME-OUT CAGE at the foot of the Void. The Void towers out of the top of frame.",
+          "acting": {
+            "CONSCIOUSNESS": "One hand flat on Fear's back, steering gently; doesn't look up at the Void; opens the gate, guides Fear in, closes it, turns the latch; fingers linger on the bars a moment.",
+            "FEAR": "Walks stiff-legged, head craned all the way back, staring up at the Void as it passes beneath it; steps into the cage without resisting, which is worse.",
+            "VOID": "Still."
+          },
+          "sfx": [
+            "footsteps",
+            "cage_close",
+            "lock_click"
+          ]
+        },
+        {
+          "id": "s10b02",
+          "kind": "line",
+          "speaker": "CONSCIOUSNESS",
+          "inner": false,
+          "text": "It's just for a little while.",
+          "delivery": "trying for steady; wobbles on 'little'",
+          "pause_after": 0.6,
+          "shot": "Through the bars, from inside the cage, onto CONSCIOUSNESS.",
+          "acting": {
+            "CONSCIOUSNESS": "Lip-synced. Forces a small reassuring smile; it trembles at one corner; eyes glisten.",
+            "FEAR": "Small hands wrap around two bars in the foreground."
+          },
+          "sfx": []
+        },
+        {
+          "id": "s10b03",
+          "kind": "line",
+          "speaker": "FEAR",
+          "inner": false,
+          "text": "Please don't leave me with it.",
+          "delivery": "crying, rushed, high and breaking; 'with it' barely a whisper",
+          "pause_after": 0.8,
+          "shot": "Reverse: close on FEAR behind the bars, the dark cloak of the Void filling the background.",
+          "acting": {
+            "FEAR": "Lip-synced. Tears spill in two streams; face pressed between the bars; on 'with it' its eyes roll up toward the Void looming behind it.",
+            "CONSCIOUSNESS": "Off-frame."
+          },
+          "sfx": [
+            "sob"
+          ]
+        },
+        {
+          "id": "s10b04",
+          "kind": "silent",
+          "duration": 2.0,
+          "pause_after": 0.0,
+          "shot": "Wide: CONSCIOUSNESS walking away toward the console in the foreground; FEAR in the cage in the background, small and shaking, at the Void's feet.",
+          "acting": {
+            "CONSCIOUSNESS": "Walks away; stops halfway; shoulders rise on an in-breath; does not turn around; walks on.",
+            "FEAR": "Crying, shaking, pulling at the bars with both hands, whole body rocking.",
+            "VOID": "Still."
+          },
+          "sfx": [
+            "footsteps",
+            "sob",
+            "cage_creak"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "s11",
+      "slug": "sadness",
+      "location": "MIND_HQ",
+      "purpose": "Back at the console, the narrator admits the interior truth: it was the 'responsible' choice, and it felt like sadness.",
+      "music": {
+        "mood": "grief, held in",
+        "instrumentation": "cello fading into a single held piano note",
+        "intensity": 0.25
+      },
+      "transition_in": "cut",
+      "beats": [
+        {
+          "id": "s11b01",
+          "kind": "line",
+          "speaker": "NARRATOR",
+          "inner": false,
+          "text": "I told myself it was the responsible thing to do.",
+          "delivery": "quiet, careful, not quite convinced even now",
+          "pause_after": 0.8,
+          "shot": "Medium on CONSCIOUSNESS at the console, back to the cage. The emotions have filed back in.",
+          "acting": {
+            "CONSCIOUSNESS": "Picks up the clipboard, stares at it without reading; pen still.",
+            "JOY": "Returns to the console, glances toward the back, then at Consciousness; smile uncertain.",
+            "SADNESS": "Stands next to Consciousness, looking back toward the cage."
+          },
+          "sfx": [
+            "sob"
+          ]
+        },
+        {
+          "id": "s11b02",
+          "kind": "line",
+          "speaker": "NARRATOR",
+          "inner": false,
+          "text": "And I felt sadness.",
+          "delivery": "a catch in the throat, held back; the line almost stops before 'sadness'",
+          "pause_after": 0.8,
+          "shot": "Close on CONSCIOUSNESS; SADNESS at its elbow.",
+          "acting": {
+            "CONSCIOUSNESS": "A hand comes up and presses over its mouth; eyes close; one tear.",
+            "SADNESS": "Looks up at Consciousness, then quietly rests a small blue hand on its sleeve."
+          },
+          "sfx": []
+        }
+      ]
+    },
+    {
+      "id": "s12",
+      "slug": "stone_faced",
+      "location": "MIND_HQ_BACK",
+      "purpose": "The Void, unchanged and unreadable, towering over the cage; its shadow owns the room.",
+      "music": {
+        "mood": "still, enormous",
+        "instrumentation": "low drone, a single distant bell tone",
+        "intensity": 0.3
+      },
+      "transition_in": "dissolve",
+      "beats": [
+        {
+          "id": "s12b01",
+          "kind": "silent",
+          "duration": 2.5,
+          "pause_after": 0.0,
+          "shot": "Locked-off wide, deep portrait composition: the Void fills the upper three quarters; its shadow pours down across the floor, over the little cage, over half the room. FEAR, a tiny lavender shape inside the cage, is the only warm color.",
+          "acting": {
+            "VOID": "Stone still. Hood angled slightly away, toward the distance.",
+            "FEAR": "Curled against the bars, knees up, face hidden in its knees; shoulders hitching with quiet sobs."
+          },
+          "sfx": [
+            "rumble_low"
+          ]
+        },
+        {
+          "id": "s12b02",
+          "kind": "line",
+          "speaker": "NARRATOR",
+          "inner": false,
+          "text": "And the Void stood there, stone-faced, its dark shadow taking up half the room.",
+          "delivery": "low, slow, plain; a little hushed on the second half, letting the image spread",
+          "pause_after": 1.0,
+          "shot": "Hold the wide, then a very slow pull-out revealing how far the shadow reaches toward the console.",
+          "acting": {
+            "VOID": "Still.",
+            "FEAR": "A small sob shakes it; then it stays curled, small."
+          },
+          "sfx": []
+        }
+      ]
+    },
+    {
+      "id": "s13",
+      "slug": "unlocked",
+      "location": "MIND_HQ_BACK",
+      "purpose": "A private image the narrator almost missed: the Void's huge, gentle hand unlocks the cage.",
+      "music": {
+        "mood": "mysterious, suspended, the first hint of warmth",
+        "instrumentation": "celesta single notes over the low drone, soft pad",
+        "intensity": 0.25
+      },
+      "transition_in": "cut",
+      "beats": [
+        {
+          "id": "s13b01",
+          "kind": "line",
+          "speaker": "NARRATOR",
+          "inner": false,
+          "text": "And then, when I wasn't looking, I had an image in my mind.",
+          "delivery": "intimate, almost confiding; a small pause after 'looking'",
+          "pause_after": 0.5,
+          "shot": "Start on CONSCIOUSNESS at the console, back turned to the cage, head bowed over the clipboard; slow dissolve back to the cage.",
+          "acting": {
+            "CONSCIOUSNESS": "Back to camera, head bowed, motionless except a slow breath.",
+            "FEAR": "In the cage after the dissolve: face in knees."
+          },
+          "sfx": []
+        },
+        {
+          "id": "s13b02",
+          "kind": "silent",
+          "duration": 4.0,
+          "pause_after": 0.0,
+          "shot": "Medium on the cage, the Void's cloak filling the background. From within the folds an enormous hand emerges for the first time, slowly: long, gentle fingers, deep blue-black edged in violet. It descends to the cage. One fingertip touches the lock.",
+          "acting": {
+            "VOID": "Only the hand moves, very slowly and carefully, like someone not wanting to wake a sleeper. The hood above does not move at all.",
+            "FEAR": "Doesn't see; face buried in its knees; the sobs have quieted to hitching breaths."
+          },
+          "sfx": [
+            "key_turn",
+            "lock_click"
+          ]
+        },
+        {
+          "id": "s13b03",
+          "kind": "silent",
+          "duration": 2.5,
+          "pause_after": 0.0,
+          "shot": "Close on FEAR as the gate swings open past it; then tilt up following its gaze.",
+          "acting": {
+            "FEAR": "At the creak the sobbing stops dead. Lifts its head; sees the open gate; freezes. Eyes travel slowly up from the gate, up the withdrawing hand, up the cloak, to the hood. Mouth slightly open; no breath.",
+            "VOID": "The hand withdraws into the cloak; the Void returns to complete stillness."
+          },
+          "sfx": [
+            "cage_creak"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "s14",
+      "slug": "why",
+      "location": "MIND_HQ_BACK",
+      "purpose": "Fear confronts the Void directly. Its terror is sincere; an open gate makes no sense in its world.",
+      "music": {
+        "mood": "trembling, exposed",
+        "instrumentation": "high violin harmonics, soft low pulse",
+        "intensity": 0.3
+      },
+      "transition_in": "cut",
+      "beats": [
+        {
+          "id": "s14b01",
+          "kind": "line",
+          "speaker": "FEAR",
+          "inner": false,
+          "text": "Why are you doing this?",
+          "delivery": "frozen whisper, never looking away from the hood",
+          "pause_after": 1.0,
+          "shot": "Extreme low angle from behind FEAR in the open gate up to the hood; Fear small at the bottom of frame.",
+          "acting": {
+            "FEAR": "Lip-synced, barely moving lips. Stands very slowly; does not step out; hands on the gate frame; eyes unblinking.",
+            "VOID": "Still. Hood angled away."
+          },
+          "sfx": []
+        },
+        {
+          "id": "s14b02",
+          "kind": "line",
+          "speaker": "FEAR",
+          "inner": false,
+          "text": "You're going to hurt me. This is a trick. This can't be right.",
+          "delivery": "gathering speed, convincing itself; each sentence higher; the last one breaks",
+          "pause_after": 0.4,
+          "shot": "Close on FEAR's face, the dark mass of the Void behind.",
+          "acting": {
+            "FEAR": "Lip-synced. Eyes dart: hood, gate, hood, hand-shaped fold in the cloak. Brows climb and pinch tighter with each sentence; on 'trick' it takes a step back into the cage; on 'can't be right' the lower lip goes.",
+            "VOID": "Still."
+          },
+          "sfx": [
+            "breath_shaky"
+          ]
+        },
+        {
+          "id": "s14b03",
+          "kind": "silent",
+          "duration": 3.0,
+          "pause_after": 0.0,
+          "shot": "Wide: the open cage, tiny FEAR, the Void looking off into the distance. Nothing happens.",
+          "acting": {
+            "VOID": "Does not move. The hood stays turned away, staring off into the distance.",
+            "FEAR": "Waits. Eyes dart. Leans forward a hair, braced; leans back. Swallows. Nothing comes; its brows twist with confusion."
+          },
+          "sfx": []
+        }
+      ]
+    },
+    {
+      "id": "s15",
+      "slug": "forever",
+      "location": "MIND_HQ_BACK",
+      "purpose": "Fear breaks: waiting to be hurt is worse than being hurt. The Void's stillness is its whole answer.",
+      "music": {
+        "mood": "aching, slowly building",
+        "instrumentation": "swelling strings, cello line, low pulse",
+        "intensity": 0.4
+      },
+      "transition_in": "cut",
+      "beats": [
+        {
+          "id": "s15b01",
+          "kind": "line",
+          "speaker": "FEAR",
+          "inner": false,
+          "text": "This doesn't make any sense. You're supposed to hurt me.",
+          "delivery": "crying now, words wobbling; the second sentence almost begging",
+          "pause_after": 0.8,
+          "shot": "Close on FEAR, slight high angle so the Void's darkness frames it.",
+          "acting": {
+            "FEAR": "Lip-synced. Tears stream; hands open and shake at its sides; on 'supposed to' it takes one small step out of the cage toward the Void.",
+            "VOID": "Still."
+          },
+          "sfx": [
+            "breath_shaky"
+          ]
+        },
+        {
+          "id": "s15b02",
+          "kind": "line",
+          "speaker": "FEAR",
+          "inner": false,
+          "text": "Why are you just standing there?",
+          "delivery": "louder, cracking, the closest Fear comes to shouting",
+          "pause_after": 0.9,
+          "shot": "Low wide from Fear's height up the length of the Void.",
+          "acting": {
+            "FEAR": "Lip-synced. Fists clenched at its sides, whole body leaning up at the hood, tuft bristling.",
+            "VOID": "Still."
+          },
+          "sfx": []
+        },
+        {
+          "id": "s15b03",
+          "kind": "line",
+          "speaker": "FEAR",
+          "inner": false,
+          "text": "Are you just here to scare me forever?",
+          "delivery": "the anger drains out mid-line; collapses into a sob on 'forever'",
+          "pause_after": 0.5,
+          "shot": "Close on FEAR.",
+          "acting": {
+            "FEAR": "Lip-synced. Fists loosen; shoulders crumple; face folds on 'forever'; it sinks to sit on the cage threshold, half in and half out.",
+            "VOID": "Still."
+          },
+          "sfx": [
+            "sob"
+          ]
+        },
+        {
+          "id": "s15b04",
+          "kind": "silent",
+          "duration": 3.0,
+          "pause_after": 0.0,
+          "shot": "Locked-off wide. Let the silence do the work.",
+          "acting": {
+            "VOID": "Does not move. It stands there.",
+            "FEAR": "Sitting on the threshold, shoulders heaving, wiping its nose on its scarf; looks up once, sees nothing has changed, looks down."
+          },
+          "sfx": []
+        }
+      ]
+    },
+    {
+      "id": "s16",
+      "slug": "the_gaze",
+      "location": "MIND_HQ_BACK",
+      "purpose": "The Void moves its head for the first time. Fear is sure this is the end.",
+      "music": {
+        "mood": "dread cresting, then a hush",
+        "instrumentation": "low swell dropping to near silence, heartbeat",
+        "intensity": 0.35
+      },
+      "transition_in": "cut",
+      "beats": [
+        {
+          "id": "s16b01",
+          "kind": "silent",
+          "duration": 3.0,
+          "pause_after": 0.0,
+          "shot": "Low angle on the hood. It turns, slowly, downward, until its pure darkness faces Fear and the camera.",
+          "acting": {
+            "VOID": "For the first time, the head moves: a slow, heavy, deliberate turn downward. The body does not move at all.",
+            "FEAR": "At the bottom of frame: goes rigid, breath stops, eyes huge."
+          },
+          "sfx": [
+            "rumble_low"
+          ]
+        },
+        {
+          "id": "s16b02",
+          "kind": "line",
+          "speaker": "FEAR",
+          "inner": true,
+          "text": "This is it. It's had enough of me.",
+          "delivery": "inner voice, a trembling breath, resigned",
+          "pause_after": 0.5,
+          "shot": "Close on FEAR from above, framed by the darkness.",
+          "acting": {
+            "FEAR": "No lip-sync (inner). Lips pressed shut; chin trembling; eyes fill; a tiny nod to itself, accepting."
+          },
+          "sfx": [
+            "heartbeat"
+          ]
+        },
+        {
+          "id": "s16b03",
+          "kind": "silent",
+          "duration": 1.5,
+          "pause_after": 0.0,
+          "shot": "Hold close on FEAR.",
+          "acting": {
+            "FEAR": "Hides its head in its hands; curls small; trembling hard; tuft flattened."
+          },
+          "sfx": [
+            "heartbeat"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "s17",
+      "slug": "the_touch",
+      "location": "MIND_HQ_BACK",
+      "purpose": "Fear braces for the end and instead feels a hand on its shoulder: careful, weightless, kind.",
+      "music": {
+        "mood": "breath held, then release",
+        "instrumentation": "near silence, a slowing heartbeat, one warm sustained string note entering",
+        "intensity": 0.2
+      },
+      "transition_in": "cut",
+      "beats": [
+        {
+          "id": "s17b01",
+          "kind": "silent",
+          "duration": 3.0,
+          "pause_after": 0.0,
+          "shot": "Medium on FEAR, head in hands. The enormous hand enters from the top of frame and settles, gently, on its shoulder, covering nearly all of its back.",
+          "acting": {
+            "VOID": "The hand lowers slowly and rests; fingers curve around Fear's shoulder with great care; no pressure.",
+            "FEAR": "Jolts at the contact. Then the trembling slows, and slows, and stops. Its shoulders come down."
+          },
+          "sfx": [
+            "cloth_rustle"
+          ]
+        },
+        {
+          "id": "s17b02",
+          "kind": "silent",
+          "duration": 2.5,
+          "pause_after": 0.0,
+          "shot": "Close on FEAR's hands over its face; then low angle from behind Fear looking up the Void to the hood.",
+          "acting": {
+            "FEAR": "One huge eye peeks between two fingers; blinks; the hands slowly lower; it looks up, chin lifting, mouth open.",
+            "VOID": "Hood facing down at Fear, darkness."
+          },
+          "sfx": []
+        }
+      ]
+    },
+    {
+      "id": "s18",
+      "slug": "cosmos",
+      "location": "VOID_FACE",
+      "purpose": "The turn of the film: inside the Void's face is not darkness but a cosmos: stars, galaxies, nebulae, and drifting bits and pieces of meaning.",
+      "music": {
+        "mood": "wonder blooming",
+        "instrumentation": "music box and celesta, warm strings swelling, choir pad, shimmering high pad",
+        "intensity": 0.5
+      },
+      "transition_in": "cut",
+      "beats": [
+        {
+          "id": "s18b01",
+          "kind": "silent",
+          "duration": 2.5,
+          "pause_after": 0.0,
+          "shot": "VOID_FACE: the hood's darkness fills the frame. A single point of light. Another. Then a slow bloom: a galaxy spirals open, a violet and teal nebula unfurls, stars twinkle into being.",
+          "acting": {
+            "VOID": "The cosmos appears inside its face, slowly, from the center outward; the hood itself does not move."
+          },
+          "sfx": [
+            "twinkle",
+            "shimmer"
+          ]
+        },
+        {
+          "id": "s18b02",
+          "kind": "line",
+          "speaker": "NARRATOR",
+          "inner": false,
+          "text": "Instead of pure darkness, my Fear saw lights.",
+          "delivery": "hushed wonder, the voice opening up",
+          "pause_after": 0.6,
+          "shot": "Slow drift through the cosmos in the hood.",
+          "acting": {
+            "VOID": "Stars twinkle; a galaxy turns slowly.",
+            "FEAR": "Starlight falls on its upturned face; eyes widen gently, not in fear."
+          },
+          "sfx": [
+            "twinkle"
+          ]
+        },
+        {
+          "id": "s18b03",
+          "kind": "line",
+          "speaker": "NARRATOR",
+          "inner": false,
+          "text": "Twinkling, like galaxies, and nebulae, and stars.",
+          "delivery": "slow, savoring each word",
+          "pause_after": 0.6,
+          "shot": "Drift continues; nebula colors wash softly across frame.",
+          "acting": {
+            "VOID": "The nebula breathes; stars pulse softly."
+          },
+          "sfx": [
+            "shimmer"
+          ]
+        },
+        {
+          "id": "s18b04",
+          "kind": "line",
+          "speaker": "NARRATOR",
+          "inner": false,
+          "text": "A void, filled with little bits and pieces of meaning.",
+          "delivery": "tender, a little amazed; a gentle lift on 'filled', as if the word surprises the speaker",
+          "pause_after": 0.4,
+          "shot": "Tiny glowing glyphs drift through the starfield: a little sun, a house, a heart, a music note, a pencil, a handprint.",
+          "acting": {
+            "VOID": "Glyphs float and turn slowly among the stars, each glowing briefly brighter as it passes."
+          },
+          "sfx": [
+            "twinkle"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "s19",
+      "slug": "wonder",
+      "location": "MIND_HQ_BACK",
+      "purpose": "Tears, then wonder replacing dread. Fear asks the Void a real question, and the Void answers by looking somewhere.",
+      "music": {
+        "mood": "awe, hushed",
+        "instrumentation": "sustained strings, celesta, soft choir",
+        "intensity": 0.4
+      },
+      "transition_in": "cut",
+      "beats": [
+        {
+          "id": "s19b01",
+          "kind": "silent",
+          "duration": 2.5,
+          "pause_after": 0.0,
+          "shot": "Extreme close on FEAR's eyes, the stars and glyphs reflected in its huge irises.",
+          "acting": {
+            "FEAR": "Upper lids fully open and soft; brows lifted and relaxed; tears well along the lower lids, glittering with reflected starlight; a single tear spills."
+          },
+          "sfx": []
+        },
+        {
+          "id": "s19b02",
+          "kind": "line",
+          "speaker": "NARRATOR",
+          "inner": false,
+          "text": "And for once, my Fear wasn't afraid. It felt wonder.",
+          "delivery": "warm, quietly amazed; a small smile on 'for once'",
+          "pause_after": 0.8,
+          "shot": "Two-shot from the side: tiny FEAR looking up, the Void's starlit face bowed toward it.",
+          "acting": {
+            "FEAR": "Mouth softly open in awe; brows high and relaxed; a breath of a laugh escapes; trembling completely gone.",
+            "VOID": "Galaxies turn slowly inside the hood."
+          },
+          "sfx": []
+        },
+        {
+          "id": "s19b03",
+          "kind": "line",
+          "speaker": "FEAR",
+          "inner": false,
+          "text": "Why are you showing me this?",
+          "delivery": "a hushed, open whisper; no fear in it now, only astonishment",
+          "pause_after": 0.5,
+          "shot": "Close on FEAR, starlight on its face.",
+          "acting": {
+            "FEAR": "Lip-synced. Eyes searching the cosmos as if for an answer; head tilts; one hand rises a little toward the Void's face and stops.",
+            "VOID": "Hand on Fear's shoulder, still."
+          },
+          "sfx": []
+        },
+        {
+          "id": "s19b04",
+          "kind": "silent",
+          "duration": 3.0,
+          "pause_after": 0.0,
+          "shot": "Wide, low: the Void lifts its hand away and turns its head toward the front of the mind, toward the glowing screen of consciousness.",
+          "acting": {
+            "VOID": "Lifts the hand off Fear's shoulder, slowly, and draws it back into the cloak. Then the hood turns away and stares into the distance, toward the screen of consciousness. The stars still glimmer at the hood's edge.",
+            "FEAR": "As the hand leaves, a flicker of loss: brows dip, it glances at its own shoulder. Then it looks up at the Void, then follows the Void's gaze, head turning slowly toward the front of the room."
+          },
+          "sfx": [
+            "cloth_rustle"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "s20",
+      "slug": "looking_back",
+      "location": "MIND_HQ",
+      "purpose": "What the Void was pointing to: the other emotions, looking back at Fear, welcoming it with a brief smile before returning to work.",
+      "music": {
+        "mood": "warm, gentle welcome",
+        "instrumentation": "felt piano theme, warm strings",
+        "intensity": 0.35
+      },
+      "transition_in": "cut",
+      "beats": [
+        {
+          "id": "s20b01",
+          "kind": "silent",
+          "duration": 3.0,
+          "pause_after": 0.0,
+          "shot": "Fear's POV across the room: past the long shadow, the console, the soft glowing screen of consciousness. At the console, JOY, SADNESS, ANGER and CALM have turned around and are looking back. CONSCIOUSNESS stands among them, still facing the screen. Brief reverse on FEAR at the end.",
+          "acting": {
+            "JOY": "Turned on her stool, eyes wide and hopeful; then a brief, real smile and a small wave with just her fingers.",
+            "SADNESS": "Peeking around Joy, eyes wet; a soft, wobbly smile and a slow blink.",
+            "ANGER": "Arms folded, but looking; brows unknot; a grudging small nod, one corner of the mouth lifting.",
+            "CALM": "A slow, warm blink and a smile.",
+            "CONSCIOUSNESS": "Back to us, clipboard in hand, pen paused mid-stroke; its head turns a few degrees, as if it heard something behind it.",
+            "FEAR": "Seen in a brief reverse at the end: small in the distance under the Void, hands clasped against its scarf, eyes wide and glistening, a tiny uncertain lift of the brows."
+          },
+          "sfx": []
+        },
+        {
+          "id": "s20b02",
+          "kind": "line",
+          "speaker": "NARRATOR",
+          "inner": false,
+          "text": "My other emotions were looking back. They smiled briefly, and went back to helping me.",
+          "delivery": "warm, unhurried, the smile audible; a small breath between the sentences",
+          "pause_after": 0.5,
+          "shot": "Hold; the emotions turn back to the console.",
+          "acting": {
+            "JOY": "Turns back and presses a button.",
+            "SADNESS": "Returns to its dial.",
+            "ANGER": "Back to tapping buttons, but lighter.",
+            "CALM": "Slides a lever.",
+            "CONSCIOUSNESS": "Pen moves again; it nods at something Calm points out."
+          },
+          "sfx": [
+            "console_beeps"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "s21",
+      "slug": "the_push",
+      "location": "MIND_HQ_BACK",
+      "purpose": "The Void's kindness, shown not told: a gentle push. Fear looks back, sees the stars in its dark facade, and smiles.",
+      "music": {
+        "mood": "warm, rising tenderness",
+        "instrumentation": "felt piano, strings, celesta twinkles",
+        "intensity": 0.4
+      },
+      "transition_in": "cut",
+      "beats": [
+        {
+          "id": "s21b01",
+          "kind": "silent",
+          "duration": 2.0,
+          "pause_after": 0.0,
+          "shot": "Medium close on FEAR.",
+          "acting": {
+            "FEAR": "Wipes its tears with the end of its knitted scarf, one eye then the other; a sniff; a shaky breath out that ends almost as a laugh."
+          },
+          "sfx": [
+            "breath_shaky"
+          ]
+        },
+        {
+          "id": "s21b02",
+          "kind": "silent",
+          "duration": 2.0,
+          "pause_after": 0.0,
+          "shot": "Side wide: the Void's hand reappears and rests flat against Fear's back.",
+          "acting": {
+            "VOID": "The hand gives the gentlest push, the way you nudge a child toward a playground; then hovers.",
+            "FEAR": "Takes one stumbling step forward, then a second, surprised; stops."
+          },
+          "sfx": [
+            "cloth_rustle"
+          ]
+        },
+        {
+          "id": "s21b03",
+          "kind": "silent",
+          "duration": 3.0,
+          "pause_after": 0.0,
+          "shot": "Over FEAR's shoulder, looking back up at the Void: standing still, galaxies twinkling inside its dark facade.",
+          "acting": {
+            "FEAR": "Looks back over its shoulder; eyes travel up to the hood; brows lift; the corners of its mouth begin to curl.",
+            "VOID": "Still, gazing into the distance; stars twinkle softly in the hood."
+          },
+          "sfx": [
+            "twinkle"
+          ]
+        },
+        {
+          "id": "s21b04",
+          "kind": "line",
+          "speaker": "NARRATOR",
+          "inner": false,
+          "text": "And my Fear smiled.",
+          "delivery": "soft and glowing, almost a whisper",
+          "pause_after": 0.6,
+          "shot": "Close on FEAR's face, looking back.",
+          "acting": {
+            "FEAR": "A full, shy smile; cheeks blush; eyes crinkle; a tiny nod up at the Void.",
+            "VOID": "Unmoving. A single star brightens and fades."
+          },
+          "sfx": []
+        }
+      ]
+    },
+    {
+      "id": "s22",
+      "slug": "can_i_help",
+      "location": "MIND_HQ",
+      "purpose": "Reconciliation at the console. Consciousness apologizes; Fear, changed, asks to help. Responsibility and compassion finally point the same way.",
+      "music": {
+        "mood": "tender resolution",
+        "instrumentation": "felt piano, cello harmony, soft pad",
+        "intensity": 0.3
+      },
+      "transition_in": "cut",
+      "beats": [
+        {
+          "id": "s22b01",
+          "kind": "silent",
+          "duration": 2.0,
+          "pause_after": 0.0,
+          "shot": "Tracking alongside FEAR as it walks toward the console and passes beneath the red fire alarm.",
+          "acting": {
+            "FEAR": "Walks; slows beneath the alarm; looks up at the red handle; one hand lifts a few centimeters, then lowers. It keeps walking, a little lighter."
+          },
+          "sfx": [
+            "footsteps"
+          ]
+        },
+        {
+          "id": "s22b02",
+          "kind": "silent",
+          "duration": 1.5,
+          "pause_after": 0.0,
+          "shot": "Medium at the console: CONSCIOUSNESS working; FEAR arrives at its knee.",
+          "acting": {
+            "CONSCIOUSNESS": "Senses something, looks down; sees Fear; the pen stops; eyes widen; breath catches.",
+            "FEAR": "Looks up, hands clasped in front of it, shy."
+          },
+          "sfx": []
+        },
+        {
+          "id": "s22b03",
+          "kind": "line",
+          "speaker": "CONSCIOUSNESS",
+          "inner": false,
+          "text": "Fear.",
+          "delivery": "soft surprise; the same word as the time-out, now with all the weight gone out of it",
+          "pause_after": 0.9,
+          "shot": "Close on CONSCIOUSNESS looking down.",
+          "acting": {
+            "CONSCIOUSNESS": "Lip-synced. Eyes flick past Fear toward the back of the mind, the open cage, the Void, then back to Fear; brows rise and soften.",
+            "FEAR": "Off-frame."
+          },
+          "sfx": []
+        },
+        {
+          "id": "s22b04",
+          "kind": "line",
+          "speaker": "CONSCIOUSNESS",
+          "inner": false,
+          "text": "I'm sorry. About the cage.",
+          "delivery": "quiet, direct, a little ashamed",
+          "pause_after": 0.9,
+          "shot": "Two-shot as CONSCIOUSNESS kneels to Fear's height.",
+          "acting": {
+            "CONSCIOUSNESS": "Lip-synced. Kneels, sets the clipboard down on the floor; eyes lower on 'sorry', come back up on 'cage'.",
+            "FEAR": "Listens; a small head tilt; no blame in its face."
+          },
+          "sfx": []
+        },
+        {
+          "id": "s22b05",
+          "kind": "line",
+          "speaker": "FEAR",
+          "inner": false,
+          "text": "I think I just needed to see something.",
+          "delivery": "quiet, thoughtful, a little shy; a small wonder still in it",
+          "pause_after": 0.9,
+          "shot": "Close on FEAR.",
+          "acting": {
+            "FEAR": "Lip-synced. Glances back over its shoulder toward the Void on 'see something', then back to Consciousness; a small smile.",
+            "CONSCIOUSNESS": "In soft focus, follows Fear's glance to the Void; something unspoken passes over its face."
+          },
+          "sfx": []
+        },
+        {
+          "id": "s22b06",
+          "kind": "line",
+          "speaker": "FEAR",
+          "inner": false,
+          "text": "Can I help?",
+          "delivery": "tiny, steady, brave",
+          "pause_after": 0.9,
+          "shot": "Hold close on FEAR, console lights reflecting in its eyes.",
+          "acting": {
+            "FEAR": "Lip-synced. Looks at the glowing buttons, then up at Consciousness; brows lifted, hopeful; holds its breath after asking.",
+            "CONSCIOUSNESS": "Off-frame."
+          },
+          "sfx": []
+        },
+        {
+          "id": "s22b07",
+          "kind": "silent",
+          "duration": 1.5,
+          "pause_after": 0.0,
+          "shot": "Close on CONSCIOUSNESS.",
+          "acting": {
+            "CONSCIOUSNESS": "Eyes well up; a smile breaks slowly across its whole face; a short laugh-breath through the nose."
+          },
+          "sfx": []
+        },
+        {
+          "id": "s22b08",
+          "kind": "line",
+          "speaker": "CONSCIOUSNESS",
+          "inner": false,
+          "text": "I'd like that.",
+          "delivery": "warm, thick with feeling, barely steady",
+          "pause_after": 0.5,
+          "shot": "Wide at the console, framed on the front of the room (the back of the mind out of frame), as everyone makes room.",
+          "acting": {
+            "CONSCIOUSNESS": "Lip-synced. Stands and steps aside, gesturing Fear to the console.",
+            "JOY": "Scoots over on her stool, patting the space beside her.",
+            "CALM": "Lowers a small step-stool to the floor with one long arm.",
+            "ANGER": "Shifts aside with a gruff, pleased grunt-face.",
+            "SADNESS": "Smiles with wet eyes.",
+            "FEAR": "Climbs up beside them, small and proud."
+          },
+          "sfx": [
+            "console_beeps"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "s23",
+      "slug": "rusted_gate",
+      "location": "MIND_HQ_BACK",
+      "purpose": "Time passes: the cage, rusted and hanging open. Noticed, then let go.",
+      "music": {
+        "mood": "quiet, reflective, a little bittersweet",
+        "instrumentation": "solo felt piano, faint drone",
+        "intensity": 0.2
+      },
+      "transition_in": "dissolve",
+      "beats": [
+        {
+          "id": "s23b01",
+          "kind": "silent",
+          "duration": 1.5,
+          "pause_after": 0.0,
+          "shot": "Slow lateral drift past the TIME-OUT CAGE in the dim back of the mind; the gate rusted orange-brown and hanging open, the little TIME-OUT sign tilted on one string.",
+          "acting": {
+            "VOID": "Only the hem of the cloak is visible behind the cage, still."
+          },
+          "sfx": [
+            "rust_creak"
+          ]
+        },
+        {
+          "id": "s23b02",
+          "kind": "line",
+          "speaker": "NARRATOR",
+          "inner": false,
+          "text": "The old cage was rusted, its gate hanging open.",
+          "delivery": "plain, observational, a little wistful",
+          "pause_after": 0.8,
+          "shot": "Drift continues; the gate sways a few degrees in some unfelt draft.",
+          "acting": {
+            "VOID": "Still, in the background."
+          },
+          "sfx": []
+        },
+        {
+          "id": "s23b03",
+          "kind": "line",
+          "speaker": "NARRATOR",
+          "inner": false,
+          "text": "But that was just a small detail.",
+          "delivery": "lighter, letting it go",
+          "pause_after": 0.6,
+          "shot": "The camera drifts on past the cage and away toward the front of the mind.",
+          "acting": {
+            "VOID": "Still."
+          },
+          "sfx": []
+        }
+      ]
+    },
+    {
+      "id": "s24",
+      "slug": "together",
+      "location": "MIND_HQ",
+      "purpose": "The new normal: everyone at the console, the Void a quiet presence in the background, the cage nearly invisible.",
+      "music": {
+        "mood": "hopeful, full, gentle",
+        "instrumentation": "felt piano main theme, warm strings, celesta twinkles",
+        "intensity": 0.45
+      },
+      "transition_in": "dissolve",
+      "beats": [
+        {
+          "id": "s24b01",
+          "kind": "line",
+          "speaker": "NARRATOR",
+          "inner": false,
+          "text": "Because the scene changed.",
+          "delivery": "a gentle lift, like turning to a new page",
+          "pause_after": 0.5,
+          "shot": "Dissolve to a bright wide of the console from the side.",
+          "acting": {
+            "JOY": "Pressing buttons, humming.",
+            "FEAR": "Arrives at the console on its step-stool."
+          },
+          "sfx": []
+        },
+        {
+          "id": "s24b02",
+          "kind": "silent",
+          "duration": 2.0,
+          "pause_after": 0.0,
+          "shot": "Medium on the console from the side, the back of the mind out of frame: all five emotions working together under the soft glow; CONSCIOUSNESS behind them with the clipboard tucked under one arm.",
+          "acting": {
+            "FEAR": "Standing on tiptoe, presses a button carefully with one finger; it lights up; Fear's eyes light up with it.",
+            "JOY": "Bumps Fear gently with her shoulder; Fear giggles silently, hand over mouth.",
+            "ANGER": "Pretends not to smile.",
+            "SADNESS": "Turns its dial, content.",
+            "CALM": "Guides Fear's hand to the next button.",
+            "CONSCIOUSNESS": "Watches them, a quiet, tired, happy smile; a hand resting on the back of Joy's chair."
+          },
+          "sfx": [
+            "console_beeps"
+          ]
+        },
+        {
+          "id": "s24b03",
+          "kind": "line",
+          "speaker": "NARRATOR",
+          "inner": false,
+          "text": "My emotions were pressing buttons, and the Void stood in the background.",
+          "delivery": "warm, content, unhurried; a soft pause after the comma",
+          "pause_after": 0.8,
+          "shot": "Consciousness's point of view from the front of the room by the screen, looking back: the five emotions at the console in the lower frame, faces lit by the buttons; far behind them, up in the deep back of the mind, the Void standing, a faint glimmer of stars in its hood. Slow pull-back.",
+          "acting": {
+            "VOID": "Standing, still, as always; faint starlight inside the hood.",
+            "FEAR": "On tiptoe at the console, pressing buttons with the others.",
+            "JOY": "Pressing buttons, humming.",
+            "ANGER": "Pressing buttons, trying not to smile.",
+            "SADNESS": "Turning its dial, content.",
+            "CALM": "Sliding a lever."
+          },
+          "sfx": []
+        },
+        {
+          "id": "s24b04",
+          "kind": "line",
+          "speaker": "NARRATOR",
+          "inner": false,
+          "text": "And I could barely see the rusty time-out cage anymore, in the back of my mind.",
+          "delivery": "softer, fading, a smile in it",
+          "pause_after": 1.0,
+          "shot": "Same point of view; the pull-back continues until the whole mind fits in frame; the little rusty cage is just a speck of orange-brown in the shadows at the Void's feet. Hold; the screen's warm glow spills over the console; a single star twinkles in the hood; begin dissolve back to the notebook page.",
+          "acting": {
+            "VOID": "Still; a single star twinkles in the hood at the end.",
+            "FEAR": "Small at the console among the others; presses a button, then leans its head briefly against Calm's arm.",
+            "JOY": "Glances up toward camera (toward Consciousness) and smiles.",
+            "CALM": "Lets Fear lean on its arm, slow blink."
+          },
+          "sfx": [
+            "twinkle"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "s25",
+      "slug": "a_tear",
+      "location": "REAL_ROOM",
+      "purpose": "Back to the storyteller, moved by their own story. The stars in the window echo the stars in the Void.",
+      "music": {
+        "mood": "tender, resolved",
+        "instrumentation": "felt piano solo, a final music-box note",
+        "intensity": 0.25
+      },
+      "transition_in": "dissolve",
+      "beats": [
+        {
+          "id": "s25b01",
+          "kind": "silent",
+          "duration": 1.5,
+          "pause_after": 0.0,
+          "shot": "The notebook page with the crayon drawing; pull back to reveal SELF at the desk in the lamp light, as in the first shot.",
+          "acting": {
+            "SELF": "Looking down at the drawing; eyes glistening; lower lip pressed in, holding something back."
+          },
+          "sfx": []
+        },
+        {
+          "id": "s25b02",
+          "kind": "line",
+          "speaker": "NARRATOR",
+          "inner": false,
+          "text": "After that,",
+          "delivery": "soft, a breath, a long pause after",
+          "pause_after": 1.0,
+          "shot": "Slow push in toward SELF's face.",
+          "acting": {
+            "SELF": "Voice-over, no lip-sync. A slow blink; tears gather on the lower lids."
+          },
+          "sfx": []
+        },
+        {
+          "id": "s25b03",
+          "kind": "line",
+          "speaker": "NARRATOR",
+          "inner": false,
+          "text": "I may have shed a tear or two myself.",
+          "delivery": "smiling through it, a little embarrassed, very gentle",
+          "pause_after": 0.5,
+          "shot": "Close on SELF.",
+          "acting": {
+            "SELF": "Voice-over, no lip-sync. A tear slips down one cheek; a small laugh-breath; the smile spreads; wipes the cheek with the sweater sleeve."
+          },
+          "sfx": []
+        },
+        {
+          "id": "s25b04",
+          "kind": "silent",
+          "duration": 4.5,
+          "pause_after": 0.0,
+          "shot": "Medium wide, matching the first frame. SELF closes the notebook, rests a hand on its cover, clicks off the lamp. The room goes soft blue; the stars in the window are now the brightest thing in frame, and one of them twinkles. Hold, then end.",
+          "acting": {
+            "SELF": "Closes the notebook gently; palm rests flat on the cover for a breath; clicks off the lamp; turns toward the window and looks up at the stars, a quiet, peaceful smile; a slow, contented blink."
+          },
+          "sfx": [
+            "paper_rustle",
+            "lamp_click",
+            "twinkle"
+          ]
+        }
+      ]
+    }
+  ]
+}

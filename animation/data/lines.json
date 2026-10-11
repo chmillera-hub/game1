@@ -1,0 +1,3842 @@
+{
+ "s01b02": {
+  "speaker": "NARRATOR",
+  "text": "So, I was having a memory.",
+  "inner": false,
+  "file": "audio/wav/s01b02.wav",
+  "dur": 2.311,
+  "words": [
+   {
+    "w": "So,",
+    "start": 0.0,
+    "end": 0.34,
+    "p": 0.819
+   },
+   {
+    "w": "I",
+    "start": 0.7,
+    "end": 0.8,
+    "p": 0.989
+   },
+   {
+    "w": "was",
+    "start": 0.8,
+    "end": 0.94,
+    "p": 0.999
+   },
+   {
+    "w": "having",
+    "start": 0.94,
+    "end": 1.32,
+    "p": 0.989
+   },
+   {
+    "w": "a",
+    "start": 1.32,
+    "end": 1.56,
+    "p": 0.994
+   },
+   {
+    "w": "memory.",
+    "start": 1.56,
+    "end": 1.78,
+    "p": 0.992
+   }
+  ],
+  "asr_match": 1.0
+ },
+ "s01b03": {
+  "speaker": "NARRATOR",
+  "text": "About the first story I ever wrote about my emotions.",
+  "inner": false,
+  "file": "audio/wav/s01b03.wav",
+  "dur": 4.04,
+  "words": [
+   {
+    "w": "About",
+    "start": 0.0,
+    "end": 0.22,
+    "p": 0.623
+   },
+   {
+    "w": "the",
+    "start": 0.22,
+    "end": 0.38,
+    "p": 0.98
+   },
+   {
+    "w": "first",
+    "start": 0.38,
+    "end": 0.68,
+    "p": 0.974
+   },
+   {
+    "w": "story,",
+    "start": 0.68,
+    "end": 1.2,
+    "p": 0.997
+   },
+   {
+    "w": "I",
+    "start": 1.72,
+    "end": 1.9,
+    "p": 0.994
+   },
+   {
+    "w": "ever",
+    "start": 1.9,
+    "end": 2.24,
+    "p": 0.988
+   },
+   {
+    "w": "wrote",
+    "start": 2.24,
+    "end": 2.48,
+    "p": 0.994
+   },
+   {
+    "w": "about",
+    "start": 2.48,
+    "end": 2.76,
+    "p": 0.995
+   },
+   {
+    "w": "my",
+    "start": 2.76,
+    "end": 2.98,
+    "p": 0.995
+   },
+   {
+    "w": "emotions.",
+    "start": 2.98,
+    "end": 3.5,
+    "p": 0.999
+   }
+  ],
+  "asr_match": 1.0
+ },
+ "s02b01": {
+  "speaker": "NARRATOR",
+  "text": "And I was inside my mind.",
+  "inner": false,
+  "file": "audio/wav/s02b01.wav",
+  "dur": 2.08,
+  "words": [
+   {
+    "w": "And",
+    "start": 0.0,
+    "end": 0.14,
+    "p": 0.498
+   },
+   {
+    "w": "I",
+    "start": 0.14,
+    "end": 0.3,
+    "p": 0.976
+   },
+   {
+    "w": "was",
+    "start": 0.3,
+    "end": 0.48,
+    "p": 0.999
+   },
+   {
+    "w": "inside",
+    "start": 0.48,
+    "end": 0.74,
+    "p": 0.994
+   },
+   {
+    "w": "my",
+    "start": 0.74,
+    "end": 1.3,
+    "p": 0.996
+   },
+   {
+    "w": "mind.",
+    "start": 1.3,
+    "end": 1.76,
+    "p": 0.999
+   }
+  ],
+  "asr_match": 1.0
+ },
+ "s02b03": {
+  "speaker": "NARRATOR",
+  "text": "And my fear kept pulling the fire alarm.",
+  "inner": false,
+  "file": "audio/wav/s02b03.wav",
+  "dur": 2.78,
+  "words": [
+   {
+    "w": "and",
+    "start": 0.0,
+    "end": 0.12,
+    "p": 0.729
+   },
+   {
+    "w": "my",
+    "start": 0.12,
+    "end": 0.26,
+    "p": 0.997
+   },
+   {
+    "w": "fear",
+    "start": 0.26,
+    "end": 0.66,
+    "p": 0.998
+   },
+   {
+    "w": "kept",
+    "start": 0.66,
+    "end": 1.02,
+    "p": 0.996
+   },
+   {
+    "w": "pulling",
+    "start": 1.02,
+    "end": 1.4,
+    "p": 0.999
+   },
+   {
+    "w": "the",
+    "start": 1.4,
+    "end": 1.62,
+    "p": 0.995
+   },
+   {
+    "w": "fire",
+    "start": 1.62,
+    "end": 1.92,
+    "p": 0.995
+   },
+   {
+    "w": "alarm.",
+    "start": 1.92,
+    "end": 2.42,
+    "p": 0.991
+   }
+  ],
+  "asr_match": 1.0
+ },
+ "s03b01": {
+  "speaker": "NARRATOR",
+  "text": "So I imagined myself as the CEO of my mind.",
+  "inner": false,
+  "file": "audio/wav/s03b01.wav",
+  "dur": 3.51,
+  "words": [
+   {
+    "w": "So",
+    "start": 0.0,
+    "end": 0.14,
+    "p": 0.753
+   },
+   {
+    "w": "I",
+    "start": 0.14,
+    "end": 0.3,
+    "p": 0.835
+   },
+   {
+    "w": "imagine",
+    "start": 0.3,
+    "end": 0.72,
+    "p": 0.896
+   },
+   {
+    "w": "myself",
+    "start": 0.72,
+    "end": 1.28,
+    "p": 0.996
+   },
+   {
+    "w": "as",
+    "start": 1.28,
+    "end": 1.74,
+    "p": 0.956
+   },
+   {
+    "w": "the",
+    "start": 1.74,
+    "end": 1.9,
+    "p": 0.995
+   },
+   {
+    "w": "CEO",
+    "start": 1.9,
+    "end": 2.32,
+    "p": 0.995
+   },
+   {
+    "w": "of",
+    "start": 2.32,
+    "end": 2.74,
+    "p": 0.998
+   },
+   {
+    "w": "my",
+    "start": 2.74,
+    "end": 2.88,
+    "p": 0.83
+   },
+   {
+    "w": "mind.",
+    "start": 2.88,
+    "end": 3.24,
+    "p": 0.99
+   }
+  ],
+  "asr_match": 0.9
+ },
+ "s03b02": {
+  "speaker": "NARRATOR",
+  "text": "Looking around, to see why.",
+  "inner": false,
+  "file": "audio/wav/s03b02.wav",
+  "dur": 2.05,
+  "words": [
+   {
+    "w": "looking",
+    "start": 0.0,
+    "end": 0.34,
+    "p": 0.445
+   },
+   {
+    "w": "around",
+    "start": 0.34,
+    "end": 0.72,
+    "p": 0.996
+   },
+   {
+    "w": "to",
+    "start": 0.72,
+    "end": 1.18,
+    "p": 0.996
+   },
+   {
+    "w": "see",
+    "start": 1.18,
+    "end": 1.38,
+    "p": 0.999
+   },
+   {
+    "w": "why.",
+    "start": 1.38,
+    "end": 1.78,
+    "p": 0.997
+   }
+  ],
+  "asr_match": 1.0
+ },
+ "s04b01": {
+  "speaker": "NARRATOR",
+  "text": "It turned out it was the void.",
+  "inner": false,
+  "file": "audio/wav/s04b01.wav",
+  "dur": 1.77,
+  "words": [
+   {
+    "w": "It",
+    "start": 0.0,
+    "end": 0.14,
+    "p": 0.767
+   },
+   {
+    "w": "turned",
+    "start": 0.14,
+    "end": 0.42,
+    "p": 0.99
+   },
+   {
+    "w": "out",
+    "start": 0.42,
+    "end": 0.68,
+    "p": 0.997
+   },
+   {
+    "w": "it",
+    "start": 0.68,
+    "end": 0.84,
+    "p": 0.979
+   },
+   {
+    "w": "was",
+    "start": 0.84,
+    "end": 0.96,
+    "p": 0.998
+   },
+   {
+    "w": "the",
+    "start": 0.96,
+    "end": 1.12,
+    "p": 0.923
+   },
+   {
+    "w": "void.",
+    "start": 1.12,
+    "end": 1.32,
+    "p": 0.89
+   }
+  ],
+  "asr_match": 1.0
+ },
+ "s04b02": {
+  "speaker": "NARRATOR",
+  "text": "A huge, intimidating presence, standing in the back of my mind.",
+  "inner": false,
+  "file": "audio/wav/s04b02.wav",
+  "dur": 5.19,
+  "words": [
+   {
+    "w": "a",
+    "start": 0.0,
+    "end": 0.12,
+    "p": 0.516
+   },
+   {
+    "w": "huge,",
+    "start": 0.12,
+    "end": 0.58,
+    "p": 0.955
+   },
+   {
+    "w": "intimidating",
+    "start": 0.94,
+    "end": 1.58,
+    "p": 0.998
+   },
+   {
+    "w": "presence,",
+    "start": 1.58,
+    "end": 2.38,
+    "p": 0.991
+   },
+   {
+    "w": "standing",
+    "start": 2.94,
+    "end": 3.4,
+    "p": 0.997
+   },
+   {
+    "w": "in",
+    "start": 3.4,
+    "end": 3.74,
+    "p": 0.993
+   },
+   {
+    "w": "the",
+    "start": 3.74,
+    "end": 3.84,
+    "p": 0.998
+   },
+   {
+    "w": "back",
+    "start": 3.84,
+    "end": 4.08,
+    "p": 0.999
+   },
+   {
+    "w": "of",
+    "start": 4.08,
+    "end": 4.28,
+    "p": 0.998
+   },
+   {
+    "w": "my",
+    "start": 4.28,
+    "end": 4.46,
+    "p": 0.994
+   },
+   {
+    "w": "mind.",
+    "start": 4.46,
+    "end": 4.96,
+    "p": 0.999
+   }
+  ],
+  "asr_match": 1.0
+ },
+ "s04b03": {
+  "speaker": "NARRATOR",
+  "text": "Unmoving.",
+  "inner": false,
+  "file": "audio/wav/s04b03.wav",
+  "dur": 0.96,
+  "words": [
+   {
+    "w": "unmoving.",
+    "start": 0.0,
+    "end": 0.66,
+    "p": 0.808
+   }
+  ],
+  "asr_match": 1.0
+ },
+ "s04b04": {
+  "speaker": "NARRATOR",
+  "text": "And its face was pure darkness.",
+  "inner": false,
+  "file": "audio/wav/s04b04.wav",
+  "dur": 2.41,
+  "words": [
+   {
+    "w": "and",
+    "start": 0.0,
+    "end": 0.16,
+    "p": 0.616
+   },
+   {
+    "w": "its",
+    "start": 0.16,
+    "end": 0.3,
+    "p": 0.906
+   },
+   {
+    "w": "face",
+    "start": 0.3,
+    "end": 0.62,
+    "p": 0.998
+   },
+   {
+    "w": "was",
+    "start": 0.62,
+    "end": 1.02,
+    "p": 0.981
+   },
+   {
+    "w": "pure",
+    "start": 1.02,
+    "end": 1.4,
+    "p": 0.996
+   },
+   {
+    "w": "darkness.",
+    "start": 1.4,
+    "end": 1.98,
+    "p": 0.989
+   }
+  ],
+  "asr_match": 1.0
+ },
+ "s05b02": {
+  "speaker": "FEAR",
+  "text": "It's going to hurt me.",
+  "inner": true,
+  "file": "audio/wav/s05b02.wav",
+  "dur": 1.46,
+  "words": [
+   {
+    "w": "It's",
+    "start": 0.0,
+    "end": 0.2,
+    "p": 0.869
+   },
+   {
+    "w": "going",
+    "start": 0.2,
+    "end": 0.44,
+    "p": 0.997
+   },
+   {
+    "w": "to",
+    "start": 0.44,
+    "end": 0.72,
+    "p": 0.999
+   },
+   {
+    "w": "hurt",
+    "start": 0.72,
+    "end": 0.92,
+    "p": 0.998
+   },
+   {
+    "w": "me.",
+    "start": 0.92,
+    "end": 1.18,
+    "p": 0.999
+   }
+  ],
+  "asr_match": 1.0
+ },
+ "s05b03": {
+  "speaker": "FEAR",
+  "text": "It's not safe.",
+  "inner": true,
+  "file": "audio/wav/s05b03.wav",
+  "dur": 1.08,
+  "words": [
+   {
+    "w": "It's",
+    "start": 0.0,
+    "end": 0.18,
+    "p": 0.907
+   },
+   {
+    "w": "not",
+    "start": 0.18,
+    "end": 0.32,
+    "p": 0.98
+   },
+   {
+    "w": "safe.",
+    "start": 0.32,
+    "end": 0.64,
+    "p": 0.985
+   }
+  ],
+  "asr_match": 1.0
+ },
+ "s06b01": {
+  "speaker": "NARRATOR",
+  "text": "So it kept pulling the alarm, having panic attacks.",
+  "inner": false,
+  "file": "audio/wav/s06b01.wav",
+  "dur": 3.21,
+  "words": [
+   {
+    "w": "So",
+    "start": 0.0,
+    "end": 0.14,
+    "p": 0.478
+   },
+   {
+    "w": "it",
+    "start": 0.14,
+    "end": 0.24,
+    "p": 0.97
+   },
+   {
+    "w": "kept",
+    "start": 0.24,
+    "end": 0.38,
+    "p": 0.996
+   },
+   {
+    "w": "pulling",
+    "start": 0.38,
+    "end": 0.72,
+    "p": 0.999
+   },
+   {
+    "w": "the",
+    "start": 0.72,
+    "end": 0.94,
+    "p": 0.998
+   },
+   {
+    "w": "alarm,",
+    "start": 0.94,
+    "end": 1.26,
+    "p": 0.997
+   },
+   {
+    "w": "having",
+    "start": 1.8,
+    "end": 2.02,
+    "p": 0.999
+   },
+   {
+    "w": "panic",
+    "start": 2.02,
+    "end": 2.28,
+    "p": 0.959
+   },
+   {
+    "w": "attacks.",
+    "start": 2.28,
+    "end": 2.84,
+    "p": 0.997
+   }
+  ],
+  "asr_match": 1.0
+ },
+ "s06b03": {
+  "speaker": "ANGER",
+  "text": "Every single time!",
+  "inner": false,
+  "file": "audio/wav/s06b03.wav",
+  "dur": 1.09,
+  "words": [
+   {
+    "w": "Every",
+    "start": 0.0,
+    "end": 0.2,
+    "p": 0.581
+   },
+   {
+    "w": "single",
+    "start": 0.2,
+    "end": 0.48,
+    "p": 0.973
+   },
+   {
+    "w": "time.",
+    "start": 0.48,
+    "end": 0.86,
+    "p": 0.997
+   }
+  ],
+  "asr_match": 1.0
+ },
+ "s06b06": {
+  "speaker": "NARRATOR",
+  "text": "Forcing all the emotions out of my mind.",
+  "inner": false,
+  "file": "audio/wav/s06b06.wav",
+  "dur": 2.81,
+  "words": [
+   {
+    "w": "forcing",
+    "start": 0.0,
+    "end": 0.4,
+    "p": 0.549
+   },
+   {
+    "w": "all",
+    "start": 0.4,
+    "end": 0.78,
+    "p": 0.995
+   },
+   {
+    "w": "the",
+    "start": 0.78,
+    "end": 1.04,
+    "p": 0.978
+   },
+   {
+    "w": "emotions",
+    "start": 1.04,
+    "end": 1.46,
+    "p": 0.997
+   },
+   {
+    "w": "out",
+    "start": 1.46,
+    "end": 1.92,
+    "p": 0.999
+   },
+   {
+    "w": "of",
+    "start": 1.92,
+    "end": 2.04,
+    "p": 0.997
+   },
+   {
+    "w": "my",
+    "start": 2.04,
+    "end": 2.18,
+    "p": 0.996
+   },
+   {
+    "w": "mind.",
+    "start": 2.18,
+    "end": 2.58,
+    "p": 0.999
+   }
+  ],
+  "asr_match": 1.0
+ },
+ "s06b07": {
+  "speaker": "NARRATOR",
+  "text": "Causing chaos.",
+  "inner": false,
+  "file": "audio/wav/s06b07.wav",
+  "dur": 1.41,
+  "words": [
+   {
+    "w": "Causing",
+    "start": 0.0,
+    "end": 0.46,
+    "p": 0.798
+   },
+   {
+    "w": "chaos.",
+    "start": 0.46,
+    "end": 0.88,
+    "p": 0.862
+   }
+  ],
+  "asr_match": 1.0
+ },
+ "s07b01": {
+  "speaker": "NARRATOR",
+  "text": "Then one day, I put my hand on my fear's shoulder.",
+  "inner": false,
+  "file": "audio/wav/s07b01.wav",
+  "dur": 3.8,
+  "words": [
+   {
+    "w": "Then",
+    "start": 0.0,
+    "end": 0.2,
+    "p": 0.831
+   },
+   {
+    "w": "one",
+    "start": 0.2,
+    "end": 0.46,
+    "p": 0.966
+   },
+   {
+    "w": "day,",
+    "start": 0.46,
+    "end": 0.82,
+    "p": 1.0
+   },
+   {
+    "w": "I",
+    "start": 1.14,
+    "end": 1.46,
+    "p": 0.997
+   },
+   {
+    "w": "put",
+    "start": 1.46,
+    "end": 1.68,
+    "p": 0.999
+   },
+   {
+    "w": "my",
+    "start": 1.68,
+    "end": 1.88,
+    "p": 0.998
+   },
+   {
+    "w": "hand",
+    "start": 1.88,
+    "end": 2.3,
+    "p": 0.984
+   },
+   {
+    "w": "on",
+    "start": 2.3,
+    "end": 2.5,
+    "p": 0.997
+   },
+   {
+    "w": "my",
+    "start": 2.5,
+    "end": 2.64,
+    "p": 0.999
+   },
+   {
+    "w": "fear's",
+    "start": 2.64,
+    "end": 3.22,
+    "p": 0.833
+   },
+   {
+    "w": "shoulder.",
+    "start": 3.22,
+    "end": 3.56,
+    "p": 0.995
+   }
+  ],
+  "asr_match": 1.0
+ },
+ "s07b02": {
+  "speaker": "NARRATOR",
+  "text": "It was shaking.",
+  "inner": false,
+  "file": "audio/wav/s07b02.wav",
+  "dur": 1.17,
+  "words": [
+   {
+    "w": "It",
+    "start": 0.0,
+    "end": 0.12,
+    "p": 0.633
+   },
+   {
+    "w": "was",
+    "start": 0.12,
+    "end": 0.28,
+    "p": 0.996
+   },
+   {
+    "w": "shaking.",
+    "start": 0.28,
+    "end": 0.64,
+    "p": 0.987
+   }
+  ],
+  "asr_match": 1.0
+ },
+ "s07b03": {
+  "speaker": "CONSCIOUSNESS",
+  "text": "Fear.",
+  "inner": false,
+  "file": "audio/wav/s07b03.wav",
+  "dur": 0.711,
+  "words": [
+   {
+    "w": "A",
+    "start": 0.0,
+    "end": 0.08,
+    "p": 0.111
+   },
+   {
+    "w": "fear.",
+    "start": 0.08,
+    "end": 0.3,
+    "p": 0.342
+   }
+  ],
+  "asr_match": 0.667
+ },
+ "s07b04": {
+  "speaker": "CONSCIOUSNESS",
+  "text": "You need to stop pulling the fire alarm.",
+  "inner": false,
+  "file": "audio/wav/s07b04.wav",
+  "dur": 2.32,
+  "words": [
+   {
+    "w": "You",
+    "start": 0.0,
+    "end": 0.12,
+    "p": 0.786
+   },
+   {
+    "w": "need",
+    "start": 0.12,
+    "end": 0.3,
+    "p": 0.997
+   },
+   {
+    "w": "to",
+    "start": 0.3,
+    "end": 0.46,
+    "p": 0.999
+   },
+   {
+    "w": "stop",
+    "start": 0.46,
+    "end": 0.72,
+    "p": 0.998
+   },
+   {
+    "w": "pulling",
+    "start": 0.72,
+    "end": 1.06,
+    "p": 0.999
+   },
+   {
+    "w": "the",
+    "start": 1.06,
+    "end": 1.3,
+    "p": 0.997
+   },
+   {
+    "w": "fire",
+    "start": 1.3,
+    "end": 1.58,
+    "p": 0.981
+   },
+   {
+    "w": "alarm.",
+    "start": 1.58,
+    "end": 2.0,
+    "p": 0.998
+   }
+  ],
+  "asr_match": 1.0
+ },
+ "s07b05": {
+  "speaker": "CONSCIOUSNESS",
+  "text": "It's causing turmoil.",
+  "inner": false,
+  "file": "audio/wav/s07b05.wav",
+  "dur": 1.36,
+  "words": [
+   {
+    "w": "It's",
+    "start": 0.0,
+    "end": 0.22,
+    "p": 0.928
+   },
+   {
+    "w": "causing",
+    "start": 0.22,
+    "end": 0.42,
+    "p": 0.988
+   },
+   {
+    "w": "turmoil.",
+    "start": 0.42,
+    "end": 0.86,
+    "p": 0.97
+   }
+  ],
+  "asr_match": 1.0
+ },
+ "s08b01": {
+  "speaker": "FEAR",
+  "text": "No. I can't.",
+  "inner": false,
+  "file": "audio/wav/s08b01.wav",
+  "dur": 1.602,
+  "words": [
+   {
+    "w": "No,",
+    "start": 0.0,
+    "end": 0.24,
+    "p": 0.722
+   },
+   {
+    "w": "I",
+    "start": 0.78,
+    "end": 1.02,
+    "p": 0.973
+   },
+   {
+    "w": "can't.",
+    "start": 1.02,
+    "end": 1.5,
+    "p": 0.986
+   }
+  ],
+  "asr_match": 1.0
+ },
+ "s08b02": {
+  "speaker": "NARRATOR",
+  "text": "And my fear refused.",
+  "inner": false,
+  "file": "audio/wav/s08b02.wav",
+  "dur": 1.5,
+  "words": [
+   {
+    "w": "and",
+    "start": 0.0,
+    "end": 0.12,
+    "p": 0.632
+   },
+   {
+    "w": "my",
+    "start": 0.12,
+    "end": 0.24,
+    "p": 0.993
+   },
+   {
+    "w": "fear",
+    "start": 0.24,
+    "end": 0.5,
+    "p": 0.996
+   },
+   {
+    "w": "refused.",
+    "start": 0.5,
+    "end": 0.96,
+    "p": 0.988
+   }
+  ],
+  "asr_match": 1.0
+ },
+ "s09b02": {
+  "speaker": "CONSCIOUSNESS",
+  "text": "Fear, we need to put you in a time-out.",
+  "inner": false,
+  "file": "audio/wav/s09b02.wav",
+  "dur": 2.33,
+  "words": [
+   {
+    "w": "Fear",
+    "start": 0.0,
+    "end": 0.36,
+    "p": 0.845
+   },
+   {
+    "w": "we",
+    "start": 0.36,
+    "end": 0.74,
+    "p": 0.517
+   },
+   {
+    "w": "need",
+    "start": 0.74,
+    "end": 0.86,
+    "p": 0.997
+   },
+   {
+    "w": "to",
+    "start": 0.86,
+    "end": 0.98,
+    "p": 0.997
+   },
+   {
+    "w": "put",
+    "start": 0.98,
+    "end": 1.14,
+    "p": 0.998
+   },
+   {
+    "w": "you",
+    "start": 1.14,
+    "end": 1.3,
+    "p": 0.996
+   },
+   {
+    "w": "in",
+    "start": 1.3,
+    "end": 1.42,
+    "p": 0.992
+   },
+   {
+    "w": "a",
+    "start": 1.42,
+    "end": 1.46,
+    "p": 0.993
+   },
+   {
+    "w": "timeout.",
+    "start": 1.46,
+    "end": 1.78,
+    "p": 0.534
+   }
+  ],
+  "asr_match": 0.842
+ },
+ "s09b03": {
+  "speaker": "NARRATOR",
+  "text": "So, I put my fear into a cage.",
+  "inner": false,
+  "file": "audio/wav/s09b03.wav",
+  "dur": 2.56,
+  "words": [
+   {
+    "w": "So,",
+    "start": 0.0,
+    "end": 0.26,
+    "p": 0.884
+   },
+   {
+    "w": "I",
+    "start": 0.52,
+    "end": 0.6,
+    "p": 0.99
+   },
+   {
+    "w": "put",
+    "start": 0.6,
+    "end": 0.74,
+    "p": 0.999
+   },
+   {
+    "w": "my",
+    "start": 0.74,
+    "end": 0.92,
+    "p": 0.998
+   },
+   {
+    "w": "fear",
+    "start": 0.92,
+    "end": 1.26,
+    "p": 0.996
+   },
+   {
+    "w": "into",
+    "start": 1.26,
+    "end": 1.64,
+    "p": 0.991
+   },
+   {
+    "w": "a",
+    "start": 1.64,
+    "end": 1.78,
+    "p": 0.997
+   },
+   {
+    "w": "cage.",
+    "start": 1.78,
+    "end": 2.0,
+    "p": 0.998
+   }
+  ],
+  "asr_match": 1.0
+ },
+ "s09b04": {
+  "speaker": "NARRATOR",
+  "text": "And it cried, and shook, and pulled at the bars.",
+  "inner": false,
+  "file": "audio/wav/s09b04.wav",
+  "dur": 3.33,
+  "words": [
+   {
+    "w": "and",
+    "start": 0.0,
+    "end": 0.14,
+    "p": 0.369
+   },
+   {
+    "w": "it",
+    "start": 0.14,
+    "end": 0.26,
+    "p": 0.993
+   },
+   {
+    "w": "cried",
+    "start": 0.26,
+    "end": 0.56,
+    "p": 0.993
+   },
+   {
+    "w": "and",
+    "start": 0.56,
+    "end": 1.0,
+    "p": 0.976
+   },
+   {
+    "w": "shook",
+    "start": 1.0,
+    "end": 1.3,
+    "p": 1.0
+   },
+   {
+    "w": "and",
+    "start": 1.3,
+    "end": 1.96,
+    "p": 0.905
+   },
+   {
+    "w": "pulled",
+    "start": 1.96,
+    "end": 2.24,
+    "p": 0.991
+   },
+   {
+    "w": "at",
+    "start": 2.24,
+    "end": 2.46,
+    "p": 0.988
+   },
+   {
+    "w": "the",
+    "start": 2.46,
+    "end": 2.56,
+    "p": 0.998
+   },
+   {
+    "w": "bars.",
+    "start": 2.56,
+    "end": 2.84,
+    "p": 0.992
+   }
+  ],
+  "asr_match": 1.0
+ },
+ "s09b06": {
+  "speaker": "NARRATOR",
+  "text": "And I felt sadness.",
+  "inner": false,
+  "file": "audio/wav/s09b06.wav",
+  "dur": 1.52,
+  "words": [
+   {
+    "w": "and",
+    "start": 0.0,
+    "end": 0.18,
+    "p": 0.513
+   },
+   {
+    "w": "I",
+    "start": 0.18,
+    "end": 0.28,
+    "p": 0.958
+   },
+   {
+    "w": "felt",
+    "start": 0.28,
+    "end": 0.5,
+    "p": 0.996
+   },
+   {
+    "w": "sadness.",
+    "start": 0.5,
+    "end": 1.1,
+    "p": 0.989
+   }
+  ],
+  "asr_match": 1.0
+ },
+ "s10b01": {
+  "speaker": "NARRATOR",
+  "text": "And the void stood there. Stone-faced.",
+  "inner": false,
+  "file": "audio/wav/s10b01.wav",
+  "dur": 3.792,
+  "words": [
+   {
+    "w": "and",
+    "start": 0.0,
+    "end": 0.14,
+    "p": 0.631
+   },
+   {
+    "w": "the",
+    "start": 0.14,
+    "end": 0.22,
+    "p": 0.983
+   },
+   {
+    "w": "void",
+    "start": 0.22,
+    "end": 0.5,
+    "p": 0.95
+   },
+   {
+    "w": "stood",
+    "start": 0.5,
+    "end": 0.94,
+    "p": 0.967
+   },
+   {
+    "w": "there,",
+    "start": 0.94,
+    "end": 1.38,
+    "p": 0.998
+   },
+   {
+    "w": "a",
+    "start": 1.98,
+    "end": 2.68,
+    "p": 0.95
+   },
+   {
+    "w": "stone",
+    "start": 2.68,
+    "end": 2.96,
+    "p": 0.994
+   },
+   {
+    "w": "faced.",
+    "start": 2.96,
+    "end": 3.4,
+    "p": 0.819
+   }
+  ],
+  "asr_match": 0.933
+ },
+ "s10b02": {
+  "speaker": "NARRATOR",
+  "text": "Its dark shadow, filling so much of the room.",
+  "inner": false,
+  "file": "audio/wav/s10b02.wav",
+  "dur": 3.31,
+  "words": [
+   {
+    "w": "It's",
+    "start": 0.0,
+    "end": 0.26,
+    "p": 0.908
+   },
+   {
+    "w": "dark",
+    "start": 0.26,
+    "end": 0.46,
+    "p": 0.979
+   },
+   {
+    "w": "shadow,",
+    "start": 0.46,
+    "end": 1.06,
+    "p": 0.994
+   },
+   {
+    "w": "filling",
+    "start": 1.44,
+    "end": 1.74,
+    "p": 0.974
+   },
+   {
+    "w": "so",
+    "start": 1.74,
+    "end": 2.14,
+    "p": 0.998
+   },
+   {
+    "w": "much",
+    "start": 2.14,
+    "end": 2.44,
+    "p": 1.0
+   },
+   {
+    "w": "of",
+    "start": 2.44,
+    "end": 2.62,
+    "p": 0.992
+   },
+   {
+    "w": "the",
+    "start": 2.62,
+    "end": 2.74,
+    "p": 0.996
+   },
+   {
+    "w": "room.",
+    "start": 2.74,
+    "end": 3.0,
+    "p": 1.0
+   }
+  ],
+  "asr_match": 0.889
+ },
+ "s11b01": {
+  "speaker": "NARRATOR",
+  "text": "Then, when I wasn't looking, I had an image in my mind.",
+  "inner": false,
+  "file": "audio/wav/s11b01.wav",
+  "dur": 3.78,
+  "words": [
+   {
+    "w": "Then,",
+    "start": 0.0,
+    "end": 0.22,
+    "p": 0.902
+   },
+   {
+    "w": "when",
+    "start": 0.42,
+    "end": 0.56,
+    "p": 0.998
+   },
+   {
+    "w": "I",
+    "start": 0.56,
+    "end": 0.68,
+    "p": 0.994
+   },
+   {
+    "w": "wasn't",
+    "start": 0.68,
+    "end": 1.04,
+    "p": 0.992
+   },
+   {
+    "w": "looking,",
+    "start": 1.04,
+    "end": 1.34,
+    "p": 0.998
+   },
+   {
+    "w": "I",
+    "start": 1.96,
+    "end": 2.02,
+    "p": 0.998
+   },
+   {
+    "w": "had",
+    "start": 2.02,
+    "end": 2.22,
+    "p": 0.999
+   },
+   {
+    "w": "an",
+    "start": 2.22,
+    "end": 2.32,
+    "p": 0.993
+   },
+   {
+    "w": "image",
+    "start": 2.32,
+    "end": 2.64,
+    "p": 0.999
+   },
+   {
+    "w": "in",
+    "start": 2.64,
+    "end": 2.92,
+    "p": 0.997
+   },
+   {
+    "w": "my",
+    "start": 2.92,
+    "end": 3.06,
+    "p": 0.998
+   },
+   {
+    "w": "mind.",
+    "start": 3.06,
+    "end": 3.56,
+    "p": 0.999
+   }
+  ],
+  "asr_match": 1.0
+ },
+ "s11b02": {
+  "speaker": "NARRATOR",
+  "text": "Of the void, taking its hand, and unlocking the cage.",
+  "inner": false,
+  "file": "audio/wav/s11b02.wav",
+  "dur": 4.13,
+  "words": [
+   {
+    "w": "of",
+    "start": 0.0,
+    "end": 0.16,
+    "p": 0.927
+   },
+   {
+    "w": "the",
+    "start": 0.16,
+    "end": 0.28,
+    "p": 0.971
+   },
+   {
+    "w": "void",
+    "start": 0.28,
+    "end": 0.68,
+    "p": 0.923
+   },
+   {
+    "w": "taking",
+    "start": 0.68,
+    "end": 1.16,
+    "p": 0.871
+   },
+   {
+    "w": "its",
+    "start": 1.16,
+    "end": 1.48,
+    "p": 0.952
+   },
+   {
+    "w": "hand",
+    "start": 1.48,
+    "end": 1.9,
+    "p": 0.997
+   },
+   {
+    "w": "and",
+    "start": 1.9,
+    "end": 2.48,
+    "p": 0.882
+   },
+   {
+    "w": "unlocking",
+    "start": 2.48,
+    "end": 2.94,
+    "p": 0.992
+   },
+   {
+    "w": "the",
+    "start": 2.94,
+    "end": 3.4,
+    "p": 0.997
+   },
+   {
+    "w": "cage.",
+    "start": 3.4,
+    "end": 3.72,
+    "p": 0.997
+   }
+  ],
+  "asr_match": 1.0
+ },
+ "s12b01": {
+  "speaker": "NARRATOR",
+  "text": "When my fear saw the open cage, it froze.",
+  "inner": false,
+  "file": "audio/wav/s12b01.wav",
+  "dur": 3.26,
+  "words": [
+   {
+    "w": "When",
+    "start": 0.0,
+    "end": 0.12,
+    "p": 0.863
+   },
+   {
+    "w": "my",
+    "start": 0.12,
+    "end": 0.28,
+    "p": 0.996
+   },
+   {
+    "w": "fear",
+    "start": 0.28,
+    "end": 0.6,
+    "p": 0.993
+   },
+   {
+    "w": "saw",
+    "start": 0.6,
+    "end": 0.98,
+    "p": 0.996
+   },
+   {
+    "w": "the",
+    "start": 0.98,
+    "end": 1.14,
+    "p": 0.995
+   },
+   {
+    "w": "open",
+    "start": 1.14,
+    "end": 1.46,
+    "p": 0.989
+   },
+   {
+    "w": "cage,",
+    "start": 1.46,
+    "end": 1.9,
+    "p": 0.996
+   },
+   {
+    "w": "it",
+    "start": 2.38,
+    "end": 2.44,
+    "p": 0.996
+   },
+   {
+    "w": "froze.",
+    "start": 2.44,
+    "end": 2.74,
+    "p": 0.997
+   }
+  ],
+  "asr_match": 1.0
+ },
+ "s12b03": {
+  "speaker": "FEAR",
+  "text": "Why are you doing this?",
+  "inner": false,
+  "file": "audio/wav/s12b03.wav",
+  "dur": 1.28,
+  "words": [
+   {
+    "w": "Why",
+    "start": 0.0,
+    "end": 0.18,
+    "p": 0.735
+   },
+   {
+    "w": "are",
+    "start": 0.18,
+    "end": 0.32,
+    "p": 0.982
+   },
+   {
+    "w": "you",
+    "start": 0.32,
+    "end": 0.46,
+    "p": 0.993
+   },
+   {
+    "w": "doing",
+    "start": 0.46,
+    "end": 0.72,
+    "p": 0.995
+   },
+   {
+    "w": "this?",
+    "start": 0.72,
+    "end": 1.0,
+    "p": 0.997
+   }
+  ],
+  "asr_match": 1.0
+ },
+ "s12b04": {
+  "speaker": "FEAR",
+  "text": "You're going to hurt me.",
+  "inner": false,
+  "file": "audio/wav/s12b04.wav",
+  "dur": 1.535,
+  "words": [
+   {
+    "w": "You're",
+    "start": 0.0,
+    "end": 0.16,
+    "p": 0.85
+   },
+   {
+    "w": "going",
+    "start": 0.16,
+    "end": 0.46,
+    "p": 0.993
+   },
+   {
+    "w": "to",
+    "start": 0.46,
+    "end": 0.76,
+    "p": 0.999
+   },
+   {
+    "w": "hurt",
+    "start": 0.76,
+    "end": 1.02,
+    "p": 0.997
+   },
+   {
+    "w": "me.",
+    "start": 1.02,
+    "end": 1.3,
+    "p": 0.999
+   }
+  ],
+  "asr_match": 1.0
+ },
+ "s12b05": {
+  "speaker": "FEAR",
+  "text": "This is a trick. This can't be right.",
+  "inner": false,
+  "file": "audio/wav/s12b05.wav",
+  "dur": 2.594,
+  "words": [
+   {
+    "w": "This",
+    "start": 0.0,
+    "end": 0.18,
+    "p": 0.782
+   },
+   {
+    "w": "is",
+    "start": 0.18,
+    "end": 0.34,
+    "p": 0.957
+   },
+   {
+    "w": "a",
+    "start": 0.34,
+    "end": 0.48,
+    "p": 0.996
+   },
+   {
+    "w": "trek.",
+    "start": 0.48,
+    "end": 0.78,
+    "p": 0.569
+   },
+   {
+    "w": "This",
+    "start": 1.32,
+    "end": 1.58,
+    "p": 0.978
+   },
+   {
+    "w": "can't",
+    "start": 1.58,
+    "end": 2.0,
+    "p": 0.988
+   },
+   {
+    "w": "be",
+    "start": 2.0,
+    "end": 2.08,
+    "p": 0.999
+   },
+   {
+    "w": "right.",
+    "start": 2.08,
+    "end": 2.34,
+    "p": 0.998
+   }
+  ],
+  "asr_match": 0.875
+ },
+ "s12b07": {
+  "speaker": "NARRATOR",
+  "text": "But the void just stared, off into the distance.",
+  "inner": false,
+  "file": "audio/wav/s12b07.wav",
+  "dur": 3.34,
+  "words": [
+   {
+    "w": "But",
+    "start": 0.0,
+    "end": 0.14,
+    "p": 0.724
+   },
+   {
+    "w": "the",
+    "start": 0.14,
+    "end": 0.24,
+    "p": 0.986
+   },
+   {
+    "w": "void",
+    "start": 0.24,
+    "end": 0.56,
+    "p": 0.921
+   },
+   {
+    "w": "just",
+    "start": 0.56,
+    "end": 0.88,
+    "p": 0.996
+   },
+   {
+    "w": "stared",
+    "start": 0.88,
+    "end": 1.32,
+    "p": 0.978
+   },
+   {
+    "w": "off",
+    "start": 1.32,
+    "end": 2.16,
+    "p": 0.724
+   },
+   {
+    "w": "into",
+    "start": 2.16,
+    "end": 2.42,
+    "p": 0.992
+   },
+   {
+    "w": "the",
+    "start": 2.42,
+    "end": 2.54,
+    "p": 0.995
+   },
+   {
+    "w": "distance.",
+    "start": 2.54,
+    "end": 2.9,
+    "p": 0.998
+   }
+  ],
+  "asr_match": 1.0
+ },
+ "s13b01": {
+  "speaker": "FEAR",
+  "text": "This doesn't make any sense.",
+  "inner": false,
+  "file": "audio/wav/s13b01.wav",
+  "dur": 1.48,
+  "words": [
+   {
+    "w": "This",
+    "start": 0.0,
+    "end": 0.16,
+    "p": 0.732
+   },
+   {
+    "w": "doesn't",
+    "start": 0.16,
+    "end": 0.58,
+    "p": 0.991
+   },
+   {
+    "w": "make",
+    "start": 0.58,
+    "end": 0.68,
+    "p": 0.999
+   },
+   {
+    "w": "any",
+    "start": 0.68,
+    "end": 0.86,
+    "p": 0.991
+   },
+   {
+    "w": "sense.",
+    "start": 0.86,
+    "end": 1.16,
+    "p": 0.999
+   }
+  ],
+  "asr_match": 1.0
+ },
+ "s13b02": {
+  "speaker": "FEAR",
+  "text": "You're supposed to hurt me.",
+  "inner": false,
+  "file": "audio/wav/s13b02.wav",
+  "dur": 1.36,
+  "words": [
+   {
+    "w": "You're",
+    "start": 0.0,
+    "end": 0.12,
+    "p": 0.783
+   },
+   {
+    "w": "supposed",
+    "start": 0.12,
+    "end": 0.34,
+    "p": 0.983
+   },
+   {
+    "w": "to",
+    "start": 0.34,
+    "end": 0.76,
+    "p": 0.999
+   },
+   {
+    "w": "hurt",
+    "start": 0.76,
+    "end": 0.94,
+    "p": 0.995
+   },
+   {
+    "w": "me.",
+    "start": 0.94,
+    "end": 1.18,
+    "p": 1.0
+   }
+  ],
+  "asr_match": 1.0
+ },
+ "s13b03": {
+  "speaker": "FEAR",
+  "text": "Why are you just standing there?",
+  "inner": false,
+  "file": "audio/wav/s13b03.wav",
+  "dur": 1.58,
+  "words": [
+   {
+    "w": "Why",
+    "start": 0.0,
+    "end": 0.16,
+    "p": 0.836
+   },
+   {
+    "w": "are",
+    "start": 0.16,
+    "end": 0.3,
+    "p": 0.992
+   },
+   {
+    "w": "you",
+    "start": 0.3,
+    "end": 0.46,
+    "p": 0.994
+   },
+   {
+    "w": "just",
+    "start": 0.46,
+    "end": 0.68,
+    "p": 0.987
+   },
+   {
+    "w": "standing",
+    "start": 0.68,
+    "end": 1.02,
+    "p": 0.997
+   },
+   {
+    "w": "there?",
+    "start": 1.02,
+    "end": 1.38,
+    "p": 0.997
+   }
+  ],
+  "asr_match": 1.0
+ },
+ "s13b04": {
+  "speaker": "FEAR",
+  "text": "Are you just here to scare me forever?",
+  "inner": false,
+  "file": "audio/wav/s13b04.wav",
+  "dur": 2.01,
+  "words": [
+   {
+    "w": "You",
+    "start": 0.0,
+    "end": 0.24,
+    "p": 0.018
+   }
+  ],
+  "asr_match": 0.222
+ },
+ "s13b06": {
+  "speaker": "NARRATOR",
+  "text": "And the void did not move. It stood there.",
+  "inner": false,
+  "file": "audio/wav/s13b06.wav",
+  "dur": 4.052,
+  "words": [
+   {
+    "w": "and",
+    "start": 0.0,
+    "end": 0.14,
+    "p": 0.583
+   },
+   {
+    "w": "the",
+    "start": 0.14,
+    "end": 0.22,
+    "p": 0.99
+   },
+   {
+    "w": "void",
+    "start": 0.22,
+    "end": 0.54,
+    "p": 0.904
+   },
+   {
+    "w": "did",
+    "start": 0.54,
+    "end": 0.84,
+    "p": 0.981
+   },
+   {
+    "w": "not",
+    "start": 0.84,
+    "end": 1.08,
+    "p": 0.999
+   },
+   {
+    "w": "move.",
+    "start": 1.08,
+    "end": 1.54,
+    "p": 0.999
+   },
+   {
+    "w": "It",
+    "start": 2.9,
+    "end": 3.08,
+    "p": 0.967
+   },
+   {
+    "w": "stood",
+    "start": 3.08,
+    "end": 3.38,
+    "p": 0.997
+   },
+   {
+    "w": "there.",
+    "start": 3.38,
+    "end": 3.82,
+    "p": 0.998
+   }
+  ],
+  "asr_match": 1.0
+ },
+ "s14b01": {
+  "speaker": "NARRATOR",
+  "text": "But then, the void turned its gaze toward my fear.",
+  "inner": false,
+  "file": "audio/wav/s14b01.wav",
+  "dur": 3.48,
+  "words": [
+   {
+    "w": "But",
+    "start": 0.0,
+    "end": 0.12,
+    "p": 0.776
+   },
+   {
+    "w": "then,",
+    "start": 0.12,
+    "end": 0.42,
+    "p": 0.989
+   },
+   {
+    "w": "the",
+    "start": 0.72,
+    "end": 0.86,
+    "p": 0.993
+   },
+   {
+    "w": "void",
+    "start": 0.86,
+    "end": 1.18,
+    "p": 0.931
+   },
+   {
+    "w": "turned",
+    "start": 1.18,
+    "end": 1.52,
+    "p": 0.995
+   },
+   {
+    "w": "its",
+    "start": 1.52,
+    "end": 1.7,
+    "p": 0.953
+   },
+   {
+    "w": "gaze",
+    "start": 1.7,
+    "end": 1.98,
+    "p": 0.997
+   },
+   {
+    "w": "toward",
+    "start": 1.98,
+    "end": 2.58,
+    "p": 0.959
+   },
+   {
+    "w": "my",
+    "start": 2.58,
+    "end": 2.8,
+    "p": 0.998
+   },
+   {
+    "w": "fear.",
+    "start": 2.8,
+    "end": 3.16,
+    "p": 0.995
+   }
+  ],
+  "asr_match": 1.0
+ },
+ "s14b02": {
+  "speaker": "FEAR",
+  "text": "This is it.",
+  "inner": true,
+  "file": "audio/wav/s14b02.wav",
+  "dur": 0.93,
+  "words": [
+   {
+    "w": "This",
+    "start": 0.0,
+    "end": 0.24,
+    "p": 0.827
+   },
+   {
+    "w": "is",
+    "start": 0.24,
+    "end": 0.42,
+    "p": 0.915
+   },
+   {
+    "w": "it.",
+    "start": 0.42,
+    "end": 0.72,
+    "p": 0.995
+   }
+  ],
+  "asr_match": 1.0
+ },
+ "s14b03": {
+  "speaker": "NARRATOR",
+  "text": "It thought the void had had enough of its complaining, and would destroy it.",
+  "inner": false,
+  "file": "audio/wav/s14b03.wav",
+  "dur": 4.73,
+  "words": [
+   {
+    "w": "It",
+    "start": 0.0,
+    "end": 0.14,
+    "p": 0.817
+   },
+   {
+    "w": "thought",
+    "start": 0.14,
+    "end": 0.4,
+    "p": 0.976
+   },
+   {
+    "w": "the",
+    "start": 0.4,
+    "end": 0.62,
+    "p": 0.951
+   },
+   {
+    "w": "void",
+    "start": 0.62,
+    "end": 0.96,
+    "p": 0.928
+   },
+   {
+    "w": "had",
+    "start": 0.96,
+    "end": 1.2,
+    "p": 0.997
+   },
+   {
+    "w": "had",
+    "start": 1.2,
+    "end": 1.36,
+    "p": 0.93
+   },
+   {
+    "w": "enough",
+    "start": 1.36,
+    "end": 1.66,
+    "p": 0.989
+   },
+   {
+    "w": "of",
+    "start": 1.66,
+    "end": 1.84,
+    "p": 0.998
+   },
+   {
+    "w": "its",
+    "start": 1.84,
+    "end": 2.02,
+    "p": 0.952
+   },
+   {
+    "w": "complaining",
+    "start": 2.02,
+    "end": 2.44,
+    "p": 0.99
+   },
+   {
+    "w": "and",
+    "start": 2.44,
+    "end": 3.52,
+    "p": 0.749
+   },
+   {
+    "w": "would",
+    "start": 3.52,
+    "end": 3.66,
+    "p": 0.998
+   },
+   {
+    "w": "destroy",
+    "start": 3.66,
+    "end": 4.14,
+    "p": 0.971
+   },
+   {
+    "w": "it.",
+    "start": 4.14,
+    "end": 4.56,
+    "p": 0.999
+   }
+  ],
+  "asr_match": 1.0
+ },
+ "s14b04": {
+  "speaker": "NARRATOR",
+  "text": "So it hid its head in its hands.",
+  "inner": false,
+  "file": "audio/wav/s14b04.wav",
+  "dur": 1.93,
+  "words": [
+   {
+    "w": "So",
+    "start": 0.0,
+    "end": 0.16,
+    "p": 0.6
+   },
+   {
+    "w": "it",
+    "start": 0.16,
+    "end": 0.26,
+    "p": 0.938
+   },
+   {
+    "w": "hit",
+    "start": 0.26,
+    "end": 0.42,
+    "p": 0.579
+   },
+   {
+    "w": "its",
+    "start": 0.42,
+    "end": 0.58,
+    "p": 0.911
+   },
+   {
+    "w": "head",
+    "start": 0.58,
+    "end": 0.86,
+    "p": 0.997
+   },
+   {
+    "w": "in",
+    "start": 0.86,
+    "end": 1.08,
+    "p": 0.595
+   },
+   {
+    "w": "its",
+    "start": 1.08,
+    "end": 1.2,
+    "p": 0.952
+   },
+   {
+    "w": "hands.",
+    "start": 1.2,
+    "end": 1.56,
+    "p": 0.972
+   }
+  ],
+  "asr_match": 0.875
+ },
+ "s15b01": {
+  "speaker": "NARRATOR",
+  "text": "But then, my fear felt a hand on its shoulder.",
+  "inner": false,
+  "file": "audio/wav/s15b01.wav",
+  "dur": 3.18,
+  "words": [
+   {
+    "w": "But",
+    "start": 0.0,
+    "end": 0.1,
+    "p": 0.753
+   },
+   {
+    "w": "then,",
+    "start": 0.1,
+    "end": 0.38,
+    "p": 0.99
+   },
+   {
+    "w": "my",
+    "start": 0.64,
+    "end": 0.92,
+    "p": 0.993
+   },
+   {
+    "w": "fear",
+    "start": 0.92,
+    "end": 1.34,
+    "p": 0.996
+   },
+   {
+    "w": "felt",
+    "start": 1.34,
+    "end": 1.64,
+    "p": 0.824
+   },
+   {
+    "w": "a",
+    "start": 1.64,
+    "end": 1.82,
+    "p": 0.998
+   },
+   {
+    "w": "hand",
+    "start": 1.82,
+    "end": 2.12,
+    "p": 0.998
+   },
+   {
+    "w": "on",
+    "start": 2.12,
+    "end": 2.34,
+    "p": 0.998
+   },
+   {
+    "w": "its",
+    "start": 2.34,
+    "end": 2.46,
+    "p": 0.944
+   },
+   {
+    "w": "shoulder.",
+    "start": 2.46,
+    "end": 2.78,
+    "p": 0.992
+   }
+  ],
+  "asr_match": 1.0
+ },
+ "s15b03": {
+  "speaker": "NARRATOR",
+  "text": "And it looked up, into the face of the void.",
+  "inner": false,
+  "file": "audio/wav/s15b03.wav",
+  "dur": 2.97,
+  "words": [
+   {
+    "w": "and",
+    "start": 0.0,
+    "end": 0.2,
+    "p": 0.768
+   },
+   {
+    "w": "it",
+    "start": 0.2,
+    "end": 0.3,
+    "p": 0.984
+   },
+   {
+    "w": "looked",
+    "start": 0.3,
+    "end": 0.54,
+    "p": 0.99
+   },
+   {
+    "w": "up",
+    "start": 0.54,
+    "end": 0.88,
+    "p": 0.999
+   },
+   {
+    "w": "into",
+    "start": 0.88,
+    "end": 1.38,
+    "p": 0.977
+   },
+   {
+    "w": "the",
+    "start": 1.38,
+    "end": 1.64,
+    "p": 0.997
+   },
+   {
+    "w": "face",
+    "start": 1.64,
+    "end": 1.96,
+    "p": 0.999
+   },
+   {
+    "w": "of",
+    "start": 1.96,
+    "end": 2.22,
+    "p": 0.999
+   },
+   {
+    "w": "the",
+    "start": 2.22,
+    "end": 2.34,
+    "p": 0.993
+   },
+   {
+    "w": "void.",
+    "start": 2.34,
+    "end": 2.66,
+    "p": 0.973
+   }
+  ],
+  "asr_match": 1.0
+ },
+ "s16b01": {
+  "speaker": "NARRATOR",
+  "text": "And instead of pure darkness, it saw the twinkling of lights.",
+  "inner": false,
+  "file": "audio/wav/s16b01.wav",
+  "dur": 3.92,
+  "words": [
+   {
+    "w": "and",
+    "start": 0.0,
+    "end": 0.14,
+    "p": 0.595
+   },
+   {
+    "w": "instead",
+    "start": 0.14,
+    "end": 0.46,
+    "p": 0.991
+   },
+   {
+    "w": "of",
+    "start": 0.46,
+    "end": 0.68,
+    "p": 0.998
+   },
+   {
+    "w": "pure",
+    "start": 0.68,
+    "end": 0.94,
+    "p": 0.995
+   },
+   {
+    "w": "darkness,",
+    "start": 0.94,
+    "end": 1.48,
+    "p": 0.996
+   },
+   {
+    "w": "it",
+    "start": 2.06,
+    "end": 2.26,
+    "p": 0.995
+   },
+   {
+    "w": "saw",
+    "start": 2.26,
+    "end": 2.48,
+    "p": 0.998
+   },
+   {
+    "w": "the",
+    "start": 2.48,
+    "end": 2.64,
+    "p": 0.997
+   },
+   {
+    "w": "twinkling",
+    "start": 2.64,
+    "end": 3.1,
+    "p": 0.991
+   },
+   {
+    "w": "of",
+    "start": 3.1,
+    "end": 3.28,
+    "p": 0.998
+   },
+   {
+    "w": "lights.",
+    "start": 3.28,
+    "end": 3.54,
+    "p": 0.977
+   }
+  ],
+  "asr_match": 1.0
+ },
+ "s16b02": {
+  "speaker": "NARRATOR",
+  "text": "Like galaxies, and nebulae, and stars of the universe.",
+  "inner": false,
+  "file": "audio/wav/s16b02.wav",
+  "dur": 4.36,
+  "words": [
+   {
+    "w": "like",
+    "start": 0.0,
+    "end": 0.24,
+    "p": 0.725
+   },
+   {
+    "w": "galaxies",
+    "start": 0.24,
+    "end": 0.94,
+    "p": 0.958
+   },
+   {
+    "w": "and",
+    "start": 0.94,
+    "end": 1.44,
+    "p": 0.941
+   },
+   {
+    "w": "nebulae,",
+    "start": 1.44,
+    "end": 2.16,
+    "p": 0.953
+   },
+   {
+    "w": "and",
+    "start": 2.3,
+    "end": 2.62,
+    "p": 0.991
+   },
+   {
+    "w": "stars",
+    "start": 2.62,
+    "end": 2.96,
+    "p": 0.994
+   },
+   {
+    "w": "of",
+    "start": 2.96,
+    "end": 3.42,
+    "p": 0.998
+   },
+   {
+    "w": "the",
+    "start": 3.42,
+    "end": 3.54,
+    "p": 0.995
+   },
+   {
+    "w": "universe.",
+    "start": 3.54,
+    "end": 3.88,
+    "p": 0.908
+   }
+  ],
+  "asr_match": 1.0
+ },
+ "s16b03": {
+  "speaker": "NARRATOR",
+  "text": "The void, filled with bits and pieces of meaning.",
+  "inner": false,
+  "file": "audio/wav/s16b03.wav",
+  "dur": 3.32,
+  "words": [
+   {
+    "w": "The",
+    "start": 0.0,
+    "end": 0.14,
+    "p": 0.698
+   },
+   {
+    "w": "void",
+    "start": 0.14,
+    "end": 0.54,
+    "p": 0.95
+   },
+   {
+    "w": "filled",
+    "start": 0.54,
+    "end": 1.08,
+    "p": 0.829
+   },
+   {
+    "w": "with",
+    "start": 1.08,
+    "end": 1.46,
+    "p": 0.999
+   },
+   {
+    "w": "bits",
+    "start": 1.46,
+    "end": 1.76,
+    "p": 0.994
+   },
+   {
+    "w": "and",
+    "start": 1.76,
+    "end": 2.04,
+    "p": 0.997
+   },
+   {
+    "w": "pieces",
+    "start": 2.04,
+    "end": 2.34,
+    "p": 0.999
+   },
+   {
+    "w": "of",
+    "start": 2.34,
+    "end": 2.68,
+    "p": 0.999
+   },
+   {
+    "w": "meaning.",
+    "start": 2.68,
+    "end": 2.98,
+    "p": 0.998
+   }
+  ],
+  "asr_match": 1.0
+ },
+ "s16b05": {
+  "speaker": "NARRATOR",
+  "text": "And my fear had tears in its eyes.",
+  "inner": false,
+  "file": "audio/wav/s16b05.wav",
+  "dur": 2.37,
+  "words": [
+   {
+    "w": "and",
+    "start": 0.0,
+    "end": 0.12,
+    "p": 0.622
+   },
+   {
+    "w": "my",
+    "start": 0.12,
+    "end": 0.24,
+    "p": 0.991
+   },
+   {
+    "w": "fear",
+    "start": 0.24,
+    "end": 0.6,
+    "p": 0.997
+   },
+   {
+    "w": "had",
+    "start": 0.6,
+    "end": 0.88,
+    "p": 0.995
+   },
+   {
+    "w": "tears",
+    "start": 0.88,
+    "end": 1.22,
+    "p": 0.999
+   },
+   {
+    "w": "in",
+    "start": 1.22,
+    "end": 1.56,
+    "p": 0.989
+   },
+   {
+    "w": "its",
+    "start": 1.56,
+    "end": 1.68,
+    "p": 0.908
+   },
+   {
+    "w": "eyes.",
+    "start": 1.68,
+    "end": 2.0,
+    "p": 0.993
+   }
+  ],
+  "asr_match": 1.0
+ },
+ "s17b01": {
+  "speaker": "NARRATOR",
+  "text": "Instead of feeling like it would get hurt, it felt wonder, and amazement.",
+  "inner": false,
+  "file": "audio/wav/s17b01.wav",
+  "dur": 5.08,
+  "words": [
+   {
+    "w": "Instead",
+    "start": 0.0,
+    "end": 0.42,
+    "p": 0.722
+   },
+   {
+    "w": "of",
+    "start": 0.42,
+    "end": 0.6,
+    "p": 0.993
+   },
+   {
+    "w": "feeling",
+    "start": 0.6,
+    "end": 0.94,
+    "p": 0.997
+   },
+   {
+    "w": "like",
+    "start": 0.94,
+    "end": 1.28,
+    "p": 0.997
+   },
+   {
+    "w": "it",
+    "start": 1.28,
+    "end": 1.38,
+    "p": 0.999
+   },
+   {
+    "w": "would",
+    "start": 1.38,
+    "end": 1.48,
+    "p": 0.993
+   },
+   {
+    "w": "get",
+    "start": 1.48,
+    "end": 1.64,
+    "p": 0.998
+   },
+   {
+    "w": "hurt,",
+    "start": 1.64,
+    "end": 2.02,
+    "p": 0.998
+   },
+   {
+    "w": "it",
+    "start": 2.5,
+    "end": 2.78,
+    "p": 0.995
+   },
+   {
+    "w": "felt",
+    "start": 2.78,
+    "end": 3.0,
+    "p": 0.999
+   },
+   {
+    "w": "wonder",
+    "start": 3.0,
+    "end": 3.44,
+    "p": 0.994
+   },
+   {
+    "w": "and",
+    "start": 3.44,
+    "end": 4.08,
+    "p": 0.983
+   },
+   {
+    "w": "amazement.",
+    "start": 4.08,
+    "end": 4.82,
+    "p": 0.995
+   }
+  ],
+  "asr_match": 1.0
+ },
+ "s17b02": {
+  "speaker": "FEAR",
+  "text": "Why are you showing me this?",
+  "inner": false,
+  "file": "audio/wav/s17b02.wav",
+  "dur": 1.55,
+  "words": [
+   {
+    "w": "You",
+    "start": 0.0,
+    "end": 0.24,
+    "p": 0.017
+   }
+  ],
+  "asr_match": 0.286
+ },
+ "s17b04": {
+  "speaker": "NARRATOR",
+  "text": "The void took its hand away, and stared into the screen of my consciousness.",
+  "inner": false,
+  "file": "audio/wav/s17b04.wav",
+  "dur": 5.48,
+  "words": [
+   {
+    "w": "The",
+    "start": 0.0,
+    "end": 0.12,
+    "p": 0.872
+   },
+   {
+    "w": "void",
+    "start": 0.12,
+    "end": 0.46,
+    "p": 0.847
+   },
+   {
+    "w": "took",
+    "start": 0.46,
+    "end": 0.76,
+    "p": 0.999
+   },
+   {
+    "w": "its",
+    "start": 0.76,
+    "end": 0.94,
+    "p": 0.957
+   },
+   {
+    "w": "hand",
+    "start": 0.94,
+    "end": 1.24,
+    "p": 0.995
+   },
+   {
+    "w": "away",
+    "start": 1.24,
+    "end": 1.64,
+    "p": 0.998
+   },
+   {
+    "w": "and",
+    "start": 1.64,
+    "end": 2.44,
+    "p": 0.8
+   },
+   {
+    "w": "stared",
+    "start": 2.44,
+    "end": 2.76,
+    "p": 0.971
+   },
+   {
+    "w": "into",
+    "start": 2.76,
+    "end": 3.2,
+    "p": 0.993
+   },
+   {
+    "w": "the",
+    "start": 3.2,
+    "end": 3.36,
+    "p": 0.996
+   },
+   {
+    "w": "screen",
+    "start": 3.36,
+    "end": 3.72,
+    "p": 0.95
+   },
+   {
+    "w": "of",
+    "start": 3.72,
+    "end": 4.12,
+    "p": 0.999
+   },
+   {
+    "w": "my",
+    "start": 4.12,
+    "end": 4.3,
+    "p": 0.969
+   },
+   {
+    "w": "consciousness.",
+    "start": 4.3,
+    "end": 4.9,
+    "p": 0.993
+   }
+  ],
+  "asr_match": 1.0
+ },
+ "s18b01": {
+  "speaker": "NARRATOR",
+  "text": "And when my fear looked there too, my other emotions were looking back.",
+  "inner": false,
+  "file": "audio/wav/s18b01.wav",
+  "dur": 4.7,
+  "words": [
+   {
+    "w": "And",
+    "start": 0.0,
+    "end": 0.14,
+    "p": 0.659
+   },
+   {
+    "w": "when",
+    "start": 0.14,
+    "end": 0.3,
+    "p": 0.981
+   },
+   {
+    "w": "my",
+    "start": 0.3,
+    "end": 0.54,
+    "p": 0.998
+   },
+   {
+    "w": "fear",
+    "start": 0.54,
+    "end": 0.9,
+    "p": 0.997
+   },
+   {
+    "w": "looked",
+    "start": 0.9,
+    "end": 1.2,
+    "p": 0.985
+   },
+   {
+    "w": "there",
+    "start": 1.2,
+    "end": 1.42,
+    "p": 0.983
+   },
+   {
+    "w": "too,",
+    "start": 1.42,
+    "end": 1.72,
+    "p": 0.651
+   },
+   {
+    "w": "my",
+    "start": 2.34,
+    "end": 2.54,
+    "p": 0.993
+   },
+   {
+    "w": "other",
+    "start": 2.54,
+    "end": 2.86,
+    "p": 0.993
+   },
+   {
+    "w": "emotions",
+    "start": 2.86,
+    "end": 3.38,
+    "p": 0.999
+   },
+   {
+    "w": "were",
+    "start": 3.38,
+    "end": 3.76,
+    "p": 0.997
+   },
+   {
+    "w": "looking",
+    "start": 3.76,
+    "end": 3.96,
+    "p": 0.998
+   },
+   {
+    "w": "back.",
+    "start": 3.96,
+    "end": 4.38,
+    "p": 0.999
+   }
+  ],
+  "asr_match": 1.0
+ },
+ "s18b04": {
+  "speaker": "NARRATOR",
+  "text": "They smiled, just briefly, then went back to work, helping my consciousness.",
+  "inner": false,
+  "file": "audio/wav/s18b04.wav",
+  "dur": 5.27,
+  "words": [
+   {
+    "w": "They",
+    "start": 0.0,
+    "end": 0.16,
+    "p": 0.925
+   },
+   {
+    "w": "smiled",
+    "start": 0.16,
+    "end": 0.48,
+    "p": 0.996
+   },
+   {
+    "w": "just",
+    "start": 0.48,
+    "end": 1.06,
+    "p": 0.955
+   },
+   {
+    "w": "briefly,",
+    "start": 1.06,
+    "end": 1.4,
+    "p": 0.999
+   },
+   {
+    "w": "then",
+    "start": 2.28,
+    "end": 2.38,
+    "p": 0.996
+   },
+   {
+    "w": "went",
+    "start": 2.38,
+    "end": 2.56,
+    "p": 0.999
+   },
+   {
+    "w": "back",
+    "start": 2.56,
+    "end": 2.78,
+    "p": 0.999
+   },
+   {
+    "w": "to",
+    "start": 2.78,
+    "end": 3.02,
+    "p": 0.999
+   },
+   {
+    "w": "work,",
+    "start": 3.02,
+    "end": 3.28,
+    "p": 0.999
+   },
+   {
+    "w": "helping",
+    "start": 3.66,
+    "end": 3.92,
+    "p": 0.997
+   },
+   {
+    "w": "my",
+    "start": 3.92,
+    "end": 4.22,
+    "p": 0.986
+   },
+   {
+    "w": "consciousness.",
+    "start": 4.22,
+    "end": 4.76,
+    "p": 0.992
+   }
+  ],
+  "asr_match": 1.0
+ },
+ "s19b01": {
+  "speaker": "NARRATOR",
+  "text": "And my fear wiped the tears from its eyes.",
+  "inner": false,
+  "file": "audio/wav/s19b01.wav",
+  "dur": 2.83,
+  "words": [
+   {
+    "w": "and",
+    "start": 0.0,
+    "end": 0.12,
+    "p": 0.691
+   },
+   {
+    "w": "my",
+    "start": 0.12,
+    "end": 0.26,
+    "p": 0.975
+   },
+   {
+    "w": "fear",
+    "start": 0.26,
+    "end": 0.66,
+    "p": 0.997
+   },
+   {
+    "w": "wiped",
+    "start": 0.66,
+    "end": 1.1,
+    "p": 0.955
+   },
+   {
+    "w": "the",
+    "start": 1.1,
+    "end": 1.38,
+    "p": 0.993
+   },
+   {
+    "w": "tears",
+    "start": 1.38,
+    "end": 1.66,
+    "p": 0.997
+   },
+   {
+    "w": "from",
+    "start": 1.66,
+    "end": 2.0,
+    "p": 0.996
+   },
+   {
+    "w": "its",
+    "start": 2.0,
+    "end": 2.14,
+    "p": 0.943
+   },
+   {
+    "w": "eyes.",
+    "start": 2.14,
+    "end": 2.46,
+    "p": 0.995
+   }
+  ],
+  "asr_match": 1.0
+ },
+ "s19b02": {
+  "speaker": "NARRATOR",
+  "text": "Then it felt a gentle push, toward my emotions.",
+  "inner": false,
+  "file": "audio/wav/s19b02.wav",
+  "dur": 3.44,
+  "words": [
+   {
+    "w": "Then",
+    "start": 0.0,
+    "end": 0.22,
+    "p": 0.785
+   },
+   {
+    "w": "it",
+    "start": 0.22,
+    "end": 0.36,
+    "p": 0.948
+   },
+   {
+    "w": "felt",
+    "start": 0.36,
+    "end": 0.56,
+    "p": 0.985
+   },
+   {
+    "w": "a",
+    "start": 0.56,
+    "end": 0.74,
+    "p": 0.998
+   },
+   {
+    "w": "gentle",
+    "start": 0.74,
+    "end": 1.02,
+    "p": 0.998
+   },
+   {
+    "w": "push",
+    "start": 1.02,
+    "end": 1.48,
+    "p": 0.999
+   },
+   {
+    "w": "toward",
+    "start": 1.48,
+    "end": 2.14,
+    "p": 0.94
+   },
+   {
+    "w": "my",
+    "start": 2.14,
+    "end": 2.48,
+    "p": 0.995
+   },
+   {
+    "w": "emotions.",
+    "start": 2.48,
+    "end": 2.96,
+    "p": 0.999
+   }
+  ],
+  "asr_match": 1.0
+ },
+ "s20b01": {
+  "speaker": "NARRATOR",
+  "text": "And fear looked over its shoulder, at the void.",
+  "inner": false,
+  "file": "audio/wav/s20b01.wav",
+  "dur": 3.02,
+  "words": [
+   {
+    "w": "and",
+    "start": 0.0,
+    "end": 0.16,
+    "p": 0.871
+   },
+   {
+    "w": "fear",
+    "start": 0.16,
+    "end": 0.5,
+    "p": 0.956
+   },
+   {
+    "w": "looked",
+    "start": 0.5,
+    "end": 0.8,
+    "p": 0.975
+   },
+   {
+    "w": "over",
+    "start": 0.8,
+    "end": 1.14,
+    "p": 0.999
+   },
+   {
+    "w": "its",
+    "start": 1.14,
+    "end": 1.26,
+    "p": 0.967
+   },
+   {
+    "w": "shoulder",
+    "start": 1.26,
+    "end": 1.54,
+    "p": 0.994
+   },
+   {
+    "w": "at",
+    "start": 1.54,
+    "end": 2.22,
+    "p": 0.937
+   },
+   {
+    "w": "the",
+    "start": 2.22,
+    "end": 2.34,
+    "p": 0.995
+   },
+   {
+    "w": "void.",
+    "start": 2.34,
+    "end": 2.54,
+    "p": 0.084
+   }
+  ],
+  "asr_match": 1.0
+ },
+ "s20b02": {
+  "speaker": "NARRATOR",
+  "text": "The void stood there, with galaxies twinkling in its dark facade.",
+  "inner": false,
+  "file": "audio/wav/s20b02.wav",
+  "dur": 4.17,
+  "words": [
+   {
+    "w": "The",
+    "start": 0.0,
+    "end": 0.1,
+    "p": 0.961
+   },
+   {
+    "w": "void",
+    "start": 0.1,
+    "end": 0.28,
+    "p": 0.842
+   },
+   {
+    "w": "stood",
+    "start": 0.28,
+    "end": 0.66,
+    "p": 0.996
+   },
+   {
+    "w": "there,",
+    "start": 0.66,
+    "end": 1.02,
+    "p": 0.998
+   },
+   {
+    "w": "with",
+    "start": 1.54,
+    "end": 1.58,
+    "p": 0.998
+   },
+   {
+    "w": "galaxies",
+    "start": 1.58,
+    "end": 1.94,
+    "p": 0.998
+   },
+   {
+    "w": "twinkling",
+    "start": 1.94,
+    "end": 2.8,
+    "p": 0.995
+   },
+   {
+    "w": "in",
+    "start": 2.8,
+    "end": 2.98,
+    "p": 0.986
+   },
+   {
+    "w": "its",
+    "start": 2.98,
+    "end": 3.1,
+    "p": 0.982
+   },
+   {
+    "w": "dark",
+    "start": 3.1,
+    "end": 3.28,
+    "p": 0.996
+   },
+   {
+    "w": "facade.",
+    "start": 3.28,
+    "end": 3.94,
+    "p": 0.612
+   }
+  ],
+  "asr_match": 1.0
+ },
+ "s20b04": {
+  "speaker": "NARRATOR",
+  "text": "And my fear smiled.",
+  "inner": false,
+  "file": "audio/wav/s20b04.wav",
+  "dur": 1.58,
+  "words": [
+   {
+    "w": "and",
+    "start": 0.0,
+    "end": 0.12,
+    "p": 0.584
+   },
+   {
+    "w": "my",
+    "start": 0.12,
+    "end": 0.26,
+    "p": 0.995
+   },
+   {
+    "w": "fear",
+    "start": 0.26,
+    "end": 0.56,
+    "p": 0.92
+   },
+   {
+    "w": "smiled.",
+    "start": 0.56,
+    "end": 0.96,
+    "p": 0.987
+   }
+  ],
+  "asr_match": 1.0
+ },
+ "s20b05": {
+  "speaker": "NARRATOR",
+  "text": "And went back to my other emotions, to help me.",
+  "inner": false,
+  "file": "audio/wav/s20b05.wav",
+  "dur": 3.37,
+  "words": [
+   {
+    "w": "and",
+    "start": 0.0,
+    "end": 0.16,
+    "p": 0.946
+   },
+   {
+    "w": "went",
+    "start": 0.16,
+    "end": 0.32,
+    "p": 0.993
+   },
+   {
+    "w": "back",
+    "start": 0.32,
+    "end": 0.6,
+    "p": 0.999
+   },
+   {
+    "w": "to",
+    "start": 0.6,
+    "end": 0.9,
+    "p": 0.998
+   },
+   {
+    "w": "my",
+    "start": 0.9,
+    "end": 1.06,
+    "p": 0.995
+   },
+   {
+    "w": "other",
+    "start": 1.06,
+    "end": 1.34,
+    "p": 0.996
+   },
+   {
+    "w": "emotions",
+    "start": 1.34,
+    "end": 1.96,
+    "p": 0.997
+   },
+   {
+    "w": "to",
+    "start": 1.96,
+    "end": 2.66,
+    "p": 0.919
+   },
+   {
+    "w": "help",
+    "start": 2.66,
+    "end": 2.9,
+    "p": 0.999
+   },
+   {
+    "w": "me.",
+    "start": 2.9,
+    "end": 3.18,
+    "p": 0.999
+   }
+  ],
+  "asr_match": 1.0
+ },
+ "s21b01": {
+  "speaker": "NARRATOR",
+  "text": "Then I saw the old cage.",
+  "inner": false,
+  "file": "audio/wav/s21b01.wav",
+  "dur": 1.9,
+  "words": [
+   {
+    "w": "Then",
+    "start": 0.0,
+    "end": 0.24,
+    "p": 0.849
+   },
+   {
+    "w": "I",
+    "start": 0.24,
+    "end": 0.42,
+    "p": 0.906
+   },
+   {
+    "w": "saw",
+    "start": 0.42,
+    "end": 0.68,
+    "p": 0.997
+   },
+   {
+    "w": "the",
+    "start": 0.68,
+    "end": 0.8,
+    "p": 0.996
+   },
+   {
+    "w": "old",
+    "start": 0.8,
+    "end": 1.04,
+    "p": 0.997
+   },
+   {
+    "w": "cage.",
+    "start": 1.04,
+    "end": 1.34,
+    "p": 0.987
+   }
+  ],
+  "asr_match": 1.0
+ },
+ "s21b02": {
+  "speaker": "NARRATOR",
+  "text": "The gate was rusted, and hanging open.",
+  "inner": false,
+  "file": "audio/wav/s21b02.wav",
+  "dur": 2.77,
+  "words": [
+   {
+    "w": "The",
+    "start": 0.0,
+    "end": 0.16,
+    "p": 0.889
+   },
+   {
+    "w": "gate",
+    "start": 0.16,
+    "end": 0.4,
+    "p": 0.974
+   },
+   {
+    "w": "was",
+    "start": 0.4,
+    "end": 0.66,
+    "p": 0.999
+   },
+   {
+    "w": "rusted",
+    "start": 0.66,
+    "end": 1.18,
+    "p": 0.988
+   },
+   {
+    "w": "and",
+    "start": 1.18,
+    "end": 1.66,
+    "p": 0.934
+   },
+   {
+    "w": "hanging",
+    "start": 1.66,
+    "end": 2.0,
+    "p": 0.996
+   },
+   {
+    "w": "open.",
+    "start": 2.0,
+    "end": 2.5,
+    "p": 0.999
+   }
+  ],
+  "asr_match": 1.0
+ },
+ "s21b03": {
+  "speaker": "NARRATOR",
+  "text": "But that was just a small detail.",
+  "inner": false,
+  "file": "audio/wav/s21b03.wav",
+  "dur": 2.11,
+  "words": [
+   {
+    "w": "But",
+    "start": 0.0,
+    "end": 0.08,
+    "p": 0.755
+   },
+   {
+    "w": "that",
+    "start": 0.08,
+    "end": 0.28,
+    "p": 0.986
+   },
+   {
+    "w": "was",
+    "start": 0.28,
+    "end": 0.46,
+    "p": 0.997
+   },
+   {
+    "w": "just",
+    "start": 0.46,
+    "end": 0.72,
+    "p": 0.991
+   },
+   {
+    "w": "a",
+    "start": 0.72,
+    "end": 0.86,
+    "p": 0.998
+   },
+   {
+    "w": "small",
+    "start": 0.86,
+    "end": 1.18,
+    "p": 0.995
+   },
+   {
+    "w": "detail.",
+    "start": 1.18,
+    "end": 1.6,
+    "p": 0.995
+   }
+  ],
+  "asr_match": 1.0
+ },
+ "s22b01": {
+  "speaker": "NARRATOR",
+  "text": "Because the scene changed, to my emotions pressing the console buttons.",
+  "inner": false,
+  "file": "audio/wav/s22b01.wav",
+  "dur": 4.59,
+  "words": [
+   {
+    "w": "Because",
+    "start": 0.0,
+    "end": 0.22,
+    "p": 0.546
+   },
+   {
+    "w": "the",
+    "start": 0.22,
+    "end": 0.4,
+    "p": 0.996
+   },
+   {
+    "w": "scene",
+    "start": 0.4,
+    "end": 0.68,
+    "p": 0.996
+   },
+   {
+    "w": "changed,",
+    "start": 0.68,
+    "end": 1.3,
+    "p": 0.997
+   },
+   {
+    "w": "to",
+    "start": 1.8,
+    "end": 1.98,
+    "p": 0.992
+   },
+   {
+    "w": "my",
+    "start": 1.98,
+    "end": 2.12,
+    "p": 0.998
+   },
+   {
+    "w": "emotions",
+    "start": 2.12,
+    "end": 2.62,
+    "p": 0.998
+   },
+   {
+    "w": "pressing",
+    "start": 2.62,
+    "end": 3.06,
+    "p": 0.995
+   },
+   {
+    "w": "the",
+    "start": 3.06,
+    "end": 3.38,
+    "p": 0.998
+   },
+   {
+    "w": "console",
+    "start": 3.38,
+    "end": 3.62,
+    "p": 0.994
+   },
+   {
+    "w": "buttons.",
+    "start": 3.62,
+    "end": 4.16,
+    "p": 0.963
+   }
+  ],
+  "asr_match": 1.0
+ },
+ "s22b02": {
+  "speaker": "NARRATOR",
+  "text": "And the void, standing in the background.",
+  "inner": false,
+  "file": "audio/wav/s22b02.wav",
+  "dur": 2.66,
+  "words": [
+   {
+    "w": "and",
+    "start": 0.0,
+    "end": 0.16,
+    "p": 0.901
+   },
+   {
+    "w": "the",
+    "start": 0.16,
+    "end": 0.26,
+    "p": 0.962
+   },
+   {
+    "w": "void",
+    "start": 0.26,
+    "end": 0.68,
+    "p": 0.939
+   },
+   {
+    "w": "standing",
+    "start": 0.68,
+    "end": 1.24,
+    "p": 0.861
+   },
+   {
+    "w": "in",
+    "start": 1.24,
+    "end": 1.64,
+    "p": 0.998
+   },
+   {
+    "w": "the",
+    "start": 1.64,
+    "end": 1.74,
+    "p": 0.997
+   },
+   {
+    "w": "background.",
+    "start": 1.74,
+    "end": 2.14,
+    "p": 0.991
+   }
+  ],
+  "asr_match": 1.0
+ },
+ "s22b03": {
+  "speaker": "NARRATOR",
+  "text": "And the rusty time-out cage, barely visible, in the back of my mind.",
+  "inner": false,
+  "file": "audio/wav/s22b03.wav",
+  "dur": 5.53,
+  "words": [
+   {
+    "w": "and",
+    "start": 0.0,
+    "end": 0.18,
+    "p": 0.785
+   },
+   {
+    "w": "the",
+    "start": 0.18,
+    "end": 0.28,
+    "p": 0.978
+   },
+   {
+    "w": "rusty",
+    "start": 0.28,
+    "end": 0.66,
+    "p": 0.988
+   },
+   {
+    "w": "timeout",
+    "start": 0.66,
+    "end": 1.3,
+    "p": 0.535
+   },
+   {
+    "w": "cage",
+    "start": 1.3,
+    "end": 1.84,
+    "p": 0.993
+   },
+   {
+    "w": "barely",
+    "start": 1.84,
+    "end": 2.9,
+    "p": 0.691
+   },
+   {
+    "w": "visible",
+    "start": 2.9,
+    "end": 3.5,
+    "p": 0.999
+   },
+   {
+    "w": "in",
+    "start": 3.5,
+    "end": 4.06,
+    "p": 0.992
+   },
+   {
+    "w": "the",
+    "start": 4.06,
+    "end": 4.16,
+    "p": 0.994
+   },
+   {
+    "w": "back",
+    "start": 4.16,
+    "end": 4.42,
+    "p": 0.998
+   },
+   {
+    "w": "of",
+    "start": 4.42,
+    "end": 4.6,
+    "p": 0.998
+   },
+   {
+    "w": "my",
+    "start": 4.6,
+    "end": 4.78,
+    "p": 0.992
+   },
+   {
+    "w": "mind.",
+    "start": 4.78,
+    "end": 5.28,
+    "p": 0.999
+   }
+  ],
+  "asr_match": 0.889
+ },
+ "s23b02": {
+  "speaker": "NARRATOR",
+  "text": "After that, I may have shed a tear or two myself.",
+  "inner": false,
+  "file": "audio/wav/s23b02.wav",
+  "dur": 3.37,
+  "words": [
+   {
+    "w": "After",
+    "start": 0.0,
+    "end": 0.34,
+    "p": 0.926
+   },
+   {
+    "w": "that,",
+    "start": 0.34,
+    "end": 0.74,
+    "p": 0.999
+   },
+   {
+    "w": "I",
+    "start": 1.08,
+    "end": 1.14,
+    "p": 0.995
+   },
+   {
+    "w": "may",
+    "start": 1.14,
+    "end": 1.26,
+    "p": 0.998
+   },
+   {
+    "w": "have",
+    "start": 1.26,
+    "end": 1.36,
+    "p": 0.992
+   },
+   {
+    "w": "shed",
+    "start": 1.36,
+    "end": 1.58,
+    "p": 0.998
+   },
+   {
+    "w": "a",
+    "start": 1.58,
+    "end": 1.72,
+    "p": 0.998
+   },
+   {
+    "w": "tear",
+    "start": 1.72,
+    "end": 2.04,
+    "p": 0.979
+   },
+   {
+    "w": "or",
+    "start": 2.04,
+    "end": 2.32,
+    "p": 0.97
+   },
+   {
+    "w": "two",
+    "start": 2.32,
+    "end": 2.5,
+    "p": 0.872
+   },
+   {
+    "w": "myself.",
+    "start": 2.5,
+    "end": 2.76,
+    "p": 0.989
+   }
+  ],
+  "asr_match": 1.0
+ }
+}
