@@ -166,8 +166,11 @@ function fearState(t, S) {
     // follows the Void's gaze (QA r2: the old 0.25 → −0.7 turn, started 0.35 s after the cut, didn't read): a held
     // beat still on the hood after the cut, then the eyes lead (b10+1.95), the head comes round 0.2 s later to a
     // clear 3/4 toward the far glow — the way the hood turned (screen-left and up) — and the body turns under it
-    // (facing flips at +2.52 inside a blink)
-    ['s14b10+2.15', 0.25], ['s14b10+3.0', -1.0, 'inOut'],
+    // (facing flips at +2.52 inside a blink). QA r3: at −1.0 the rig's 3/4 view (narrow far eye, big near eye on
+    // the right) read at phone size as looking up-RIGHT, back at the sleeve; −0.45 with the pupils hard left keeps
+    // both eyes open and the look unmistakably up-left at the glow. (headTurn/lookX are screen-space: fear.mjs
+    // un-mirrors the face, so they need no sign change across the flip.)
+    ['s14b10+2.15', 0.25], ['s14b10+3.0', -0.45, 'inOut'],
   ]);
   const tiltScreen = K([
     ['s14b05', -0.15],
@@ -329,7 +332,7 @@ function fearState(t, S) {
     ['s14b09+1.0', GZ(0.8, 0.4)], ['s14b09+1.3', GZ(0.62, -0.7)],             // up the withdrawing arm
     ['s14b09+1.7', GZ(0.5, -0.9)], ['s14b09+3.4', GZ(0.32, -1)],              // to the hood as it turns
     ['s14b10+1.95', GZ(0.32, -1)], ['s14b10+2.2', GZ(-0.72, -0.58)],         // eyes lead to where it looks
-    ['s14b10+3.0', GZ(-0.55, -0.6)],                                         // the head has come round
+    ['s14b10+3.0', GZ(-0.8, -0.64)],                                         // the head has come round
   ]);
   const searching = S.talking('FEAR', t) * 0.05;
   const micro = (s) => fbm(t * 0.45, s) * (0.05 + searching);

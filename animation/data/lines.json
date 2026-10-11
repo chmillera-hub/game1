@@ -1656,34 +1656,34 @@
   "text": "This is a trick.",
   "inner": false,
   "file": "audio/wav/s12b03.wav",
-  "dur": 1.181,
+  "dur": 1.307,
   "words": [
    {
     "w": "This",
     "start": 0.0,
-    "end": 0.18,
-    "p": 0.9
+    "end": 0.16,
+    "p": 0.876
    },
    {
     "w": "is",
-    "start": 0.18,
-    "end": 0.42,
-    "p": 0.994
+    "start": 0.16,
+    "end": 0.34,
+    "p": 0.993
    },
    {
     "w": "a",
-    "start": 0.42,
-    "end": 0.58,
-    "p": 0.996
+    "start": 0.34,
+    "end": 0.48,
+    "p": 0.995
    },
    {
-    "w": "trek.",
-    "start": 0.58,
-    "end": 0.84,
-    "p": 0.534
+    "w": "trick.",
+    "start": 0.48,
+    "end": 0.76,
+    "p": 0.726
    }
   ],
-  "asr_match": 0.75
+  "asr_match": 1.0
  },
  "s12b04": {
   "speaker": "FEAR",

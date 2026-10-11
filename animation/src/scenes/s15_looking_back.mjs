@@ -109,7 +109,15 @@ const SMILE_AT = { JOY: 's15b02+0.15', SADNESS: 's15b02+0.6', ANGER: 's15b02+2.4
 const BACK_AT = { ANGER: BW(3.16), CALM: BW(3.4), SADNESS: BW(3.6), JOY: BW(3.9) };
 const add = (a, s) => a.replace(/([+-][0-9.]+)?$/, (m) => `+${(+(m || 0) + s).toFixed(3)}`);
 
-function emotionPose(name, t, S) {
+// the close two-shots are Fear's eyes: there the four have swivelled right round, backs to the console, and look
+// straight into the lens with both eyes (QA r3: the back-view 3/4 look-back only showed one eye in profile, turned
+// to the centre of the row, so it read as smiling at the CEO). A slight 3/4 toward the middle of the row (where
+// Fear stands, behind the camera), the pupils counter-turned onto the lens. The wides keep the back-view look-back.
+const TURN_F = { JOY: 0.2, SADNESS: 0.12, ANGER: -0.12, CALM: -0.2 };
+const FRONT_LOOKX = -0.55;                                          // pupils × turn: back onto the lens
+
+function emotionPose(name, t, S, shot) {
+  const front = shot === 'closeA' || shot === 'closeB';
   const te = t + OFF[name];
   const side = SIDE[name];
   const sm = S.k(t, [[SMILE_AT[name], 0], [add(SMILE_AT[name], 0.55), 1, 'sine']]);
@@ -185,7 +193,41 @@ function emotionPose(name, t, S) {
     if (work > 0.5) pose.armR = { preset: 'pressButton', dy: 9 * lever, dx: -3 * lever };
   }
   pose.face = { ...face, lookX: (face.lookX || 0) + gaze.lookX * (1 - work * 0.5), lookY: (face.lookY || 0) + gaze.lookY };
+  if (front) frontPose(name, t, S, pose, te, sm);
   return pose;
+}
+
+// swivelled round to face Fear (the lens): both eyes on camera, hands off the console
+function frontPose(name, t, S, pose, te, sm) {
+  const turn = TURN_F[name] + fbm(te * 0.23, 27) * 0.04;
+  pose.view = 'front';
+  delete pose.lookBack; delete pose.lookSide;
+  pose.headTurn = turn;
+  pose.face = { ...pose.face, lookX: pose.face.lookX * 0.6 + FRONT_LOOKX * turn };
+  if (name === 'JOY') {
+    // the little wave is FOR Fear: palm to the lens beside the face, fingers waggling
+    const wave = S.k(t, [['s15b02+0.3', 0], ['s15b02+0.55', 1, 'sine'], ['s15b02+1.3', 1], ['s15b02+1.6', 0, 'sine']]);
+    // full face on: the beam opens a touch wider and the cheeks push the lower lids up
+    const f = pose.face;
+    pose.face = { ...f, open: f.open + 0.08 * sm, teeth: f.teeth + 0.2 * sm, lidL: f.lidL + 0.12 * sm, browUp: f.browUp - 0.06 * sm };
+    pose.armL = 'rest';
+    pose.armR = 'rest';
+    if (wave > 0.01) {
+      const w = Math.sin((t - S.T('s15b02+0.3')) * Math.PI * 2 * 2.2) * 0.3 * wave;
+      // the hand turns up out of the hanging rest (fingers down → out → up) as the arm rises, instead of flipping
+      // in one frame at the start and end of the wave
+      const up = clamp(wave * 1.6);
+      pose.armR = { target: [lerp(64, 112, wave), lerp(-119, -268, wave)], bend: -1, hand: up < 0.4 ? 'open' : 'palm',
+        handAng: lerp(Math.PI / 2 - 0.1, -Math.PI / 2 + 0.15, up) + w };
+    }
+  } else if (name === 'SADNESS') {
+    pose.armL = { preset: 'clasp', dy: -10 }; pose.armR = { preset: 'clasp', dy: -10 };   // sweater paws at the chest
+    pose.lean = 0;
+  } else if (name === 'ANGER') {
+    pose.armL = 'hugSelf'; pose.armR = 'hugSelf';                                       // arms folded, but looking
+  } else {
+    pose.armL = { preset: 'clasp', dy: 16 }; pose.armR = { preset: 'clasp', dy: 16 };   // hands loosely folded, low
+  }
 }
 
 function ceoPose(t, S) {
@@ -225,9 +267,9 @@ function renderBack(g, t, S, shot) {
   }
   // emotions + CEO by y (all on the same row: left → right)
   const SLOT = { JOY: 'consoleBack1', SADNESS: 'consoleBack2', ANGER: 'consoleBack3', CALM: 'consoleBack4' };
-  for (const name of ['JOY', 'SADNESS']) if (seen(BK[SLOT[name]][0])) drawEmotion(g, name, ...BK[SLOT[name]], emotionPose(name, t, S));
+  for (const name of ['JOY', 'SADNESS']) if (seen(BK[SLOT[name]][0])) drawEmotion(g, name, ...BK[SLOT[name]], emotionPose(name, t, S, shot));
   if (seen(BK.consoleBackMid[0])) drawSelf(g, ...BK.consoleBackMid, ceoPose(t, S));
-  for (const name of ['CALM', 'ANGER']) if (seen(BK[SLOT[name]][0])) drawEmotion(g, name, ...BK[SLOT[name]], emotionPose(name, t, S));
+  for (const name of ['CALM', 'ANGER']) if (seen(BK[SLOT[name]][0])) drawEmotion(g, name, ...BK[SLOT[name]], emotionPose(name, t, S, shot));
   drawHQForeground(g, 'back', st);
   g.restore();
   grade(g, 0, 0.2);
