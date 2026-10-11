@@ -6030,3 +6030,511 @@ def _tn_shade(c):
         c.rectangle(min(xa, xb), _TN_Y0 + 600, abs(xb - xa), 2000)
         c.set_source(g)
         c.fill()
+
+
+# ============================================================================
+# 16. CONTROL ROOM (Episode 2 s01, s06, s07): dark, lit by a wall of monitors
+# ============================================================================
+CONTROL_W, CONTROL_H = 2100, 1920
+_CR2_X0, _CR2_X1, _CR2_Y0, _CR2_Y1 = -700, 2800, -700, 2620
+_CR2_CEIL, _CR2_WALL, _CR2_FEET = 260, 1300, 1500
+_CR2_HATCH = (70, 1060, 200, 240)          # x, top, w, h (bottom = wall base)
+_CR2_DOORS = (330, 480, 360, 820)          # x, top, w, h
+_CR2_READER = (740, 940)
+_CR2_WIN = (800, 380, 450, 420)            # observation window onto the shaft
+_CR2_RELEASE = (1025, _CR2_FEET)           # release_console floor anchor (s 0.75)
+_CR2_CHAIR = (1700, _CR2_FEET)             # boss_chair floor anchor (s 0.75)
+_CR2_PED = (1450, 1140)                    # LOCKDOWN pedestal: centre x, top surface y
+_CR2_DESK = (1320, 1110, 740)              # console desk x, top y, w
+_CR2_MAIN = (1500, 380, 400, 280)
+_CR2_MONS = ([(1340, 380 + r * 120, 130, 100) for r in range(3)] +
+             [_CR2_MAIN] +
+             [(1930, 380 + r * 120, 130, 100) for r in range(3)] +
+             [(1340 + i * 182, 720, 170, 100) for i in range(4)])
+_CR2_BEACONS = [(240, _CR2_CEIL + 40), (1030, _CR2_CEIL + 40), (1830, _CR2_CEIL + 40)]
+_CR2_S = 0.75
+
+
+CONTROL_MARKS = {
+    "size": (CONTROL_W, CONTROL_H),
+    "drawable": (_CR2_X0, _CR2_Y0, _CR2_X1, _CR2_Y1),
+    "char_scale": _CR2_S,
+    "ceiling_y": _CR2_CEIL,
+    "wall_y": _CR2_WALL,
+    "feet_y": _CR2_FEET,
+    "monitors": list(_CR2_MONS),      # rects; index 3 = the big main monitor
+    "monitor_main": 3,
+    "window": _CR2_WIN,               # window_fn(ctx, x, y, w, h, t) draws the shaft view into it
+    "doors": _CR2_DOORS,
+    "doorway_feet": (_CR2_DOORS[0] + _CR2_DOORS[2] / 2, _CR2_WALL + 30),
+    "door_feet": (_CR2_DOORS[0] + _CR2_DOORS[2] / 2, _CR2_FEET),
+    "reader": _CR2_READER,
+    "hatch": _CR2_HATCH,
+    "hatch_feet": (_CR2_HATCH[0] + _CR2_HATCH[2] / 2, _CR2_FEET),     # Emb holding it open (beside: +170)
+    "hatch_hold": (_CR2_HATCH[0] + _CR2_HATCH[2] + 20, _CR2_HATCH[1] + 60),
+    "release": _CR2_RELEASE,          # props.release_console(x, y, 0.75, ...)
+    "release_handle_up": props.release_console_handle(*_CR2_RELEASE, _CR2_S, 0.0),
+    "release_handle_down": props.release_console_handle(*_CR2_RELEASE, _CR2_S, 1.0),
+    "release_impact": props.release_console_impact(*_CR2_RELEASE, _CR2_S),
+    "release_floor_y": _CR2_FEET,     # shards land here
+    "smash_feet": (_CR2_RELEASE[0] + 250, _CR2_FEET),    # Tiredness right of the case, facing LEFT
+    "haul_feet": (_CR2_RELEASE[0] + 170, _CR2_FEET),
+    "chair": _CR2_CHAIR,              # props.boss_chair(x, y, 0.75, turn)
+    "boss_seat": (_CR2_CHAIR[0], _CR2_FEET - props.BOSS_CHAIR_SEAT * _CR2_S),
+    "pedestal": _CR2_PED,
+    "lockdown": (_CR2_PED[0] + 30, _CR2_PED[1]),
+    "power_switch": (_CR2_PED[0] - 40, _CR2_PED[1] + 150),
+    "beacons": _CR2_BEACONS,
+    "cam": {
+        "wide": (1050, 1000, 0.55),
+        "s01_boss": (1640, 960, 1.15),      # the Boss's chair back against the monitors
+        "monitor_main": (1700, 520, 2.6),
+        "switch": (1420, 1260, 3.0),
+        "doors": (510, 1000, 0.95),
+        "chair": (1640, 1060, 1.35),
+        "release": (1080, 1000, 1.45),
+        "release_close": (1025, 900, 2.6),
+        "button": (1470, 1110, 2.8),
+        "hatch": (260, 1150, 1.3),
+        "two_shot": (1350, 1060, 0.85),
+    },
+}
+
+
+def _cr2_feed(c, x, y, w, h, kind, label):
+    """Default security feed (flat, static) in a monitor rect."""
+    c.save()
+    c.rectangle(x, y, w, h)
+    c.clip()
+    if kind == "pods":
+        c.rectangle(x, y, w, h)
+        core.fill(c, "#0c2f38")
+        for r in range(3):
+            for k in range(6):
+                px = x + w * (0.1 + 0.17 * k) + (w * 0.08 if r % 2 else 0)
+                py = y + h * (0.2 + 0.3 * r)
+                core.rrect(c, px - w * 0.04, py - h * 0.1, w * 0.08, h * 0.2, w * 0.04)
+        core.fill(c, "#3ff2e0")
+    elif kind == "catwalk":
+        c.rectangle(x, y, w, h)
+        core.fill(c, "#0d3640")
+        for k in range(5):
+            px = x + w * (0.12 + 0.2 * k)
+            core.rrect(c, px - w * 0.06, y + h * 0.18, w * 0.12, h * 0.5, w * 0.06)
+        core.fill(c, "#43e8d8")
+        rect(c, x, y + h * 0.72, w, h * 0.06, "#7fa0ac", 0)
+        rect(c, x, y + h * 0.78, w, h * 0.22, "#24404c", 0)
+    elif kind == "tunnel":
+        c.rectangle(x, y, w, h)
+        core.fill(c, "#2a2a30")
+        core.radial_glow(c, x + w * 0.4, y + h * 0.3, w * 0.5, "#ffa64a", 0.6)
+        rect(c, x, y + h * 0.7, w, h * 0.3, "#3a3a40", 0)
+        core.rrect(c, x + w * 0.7, y + h * 0.25, w * 0.18, h * 0.45, w * 0.06)
+        core.fill(c, "#0b0b10")
+    elif kind == "graph":
+        c.rectangle(x, y, w, h)
+        core.fill(c, "#0b1d26")
+        pts = [(x + w * k / 9, y + h * (0.75 - 0.5 * hash01(k, 31))) for k in range(10)]
+        line(c, pts, "#3ff2e0", 3)
+        for k in range(5):
+            rect(c, x + w * (0.1 + k * 0.17), y + h * 0.82, w * 0.1, h * 0.1, "#2a6a70", 0)
+    elif kind == "logo":
+        c.rectangle(x, y, w, h)
+        core.fill(c, "#0b1d26")
+        hush_logo(c, x + w / 2, y + h * 0.45, min(w, h) * 0.28, color=PAL["hush_dk"], hole="#0b1d26", lw=0)
+    elif kind == "door":
+        c.rectangle(x, y, w, h)
+        core.fill(c, "#1b2430")
+        rect(c, x + w * 0.3, y + h * 0.15, w * 0.4, h * 0.7, "#5a6878", 0)
+        line(c, [(x + w * 0.5, y + h * 0.15), (x + w * 0.5, y + h * 0.85)], "#ffb020", 3)
+    else:
+        c.rectangle(x, y, w, h)
+        core.fill(c, "#0f2a33")
+    rect(c, x, y, w, h, (0.6, 1.0, 1.0, 0.08), 0)
+    core.text(c, label, x + 8, y + 18, 13, "#bfe9f0", "mono", "left")
+    core.circle(c, x + w - 14, y + 13, 5)
+    core.fill(c, "#ff3b5c")
+    c.restore()
+
+
+_CR2_FEEDS = [("catwalk", "CAM 02"), ("tunnel", "CAM 14"), ("graph", "PWR"), ("catwalk", "CAM 01  SHAFT A"),
+              ("pods", "CAM 05"), ("logo", ""), ("door", "CAM 09"), ("pods", "CAM 03"), ("graph", "B3"),
+              ("tunnel", "CAM 15"), ("pods", "CAM 06")]
+
+
+def _cr2_window_view(c, x, y, w, h, shutters=0.0, joy_open=True):
+    """Default view through the observation window: down into the shaft."""
+    c.save()
+    c.rectangle(x, y, w, h)
+    c.clip()
+    g = cairo.LinearGradient(0, y, 0, y + h)
+    g.add_color_stop_rgba(0, *hexc("#071820"))
+    g.add_color_stop_rgba(1, *hexc("#0f3a40"))
+    c.rectangle(x, y, w, h)
+    c.set_source(g)
+    c.fill()
+    cx = x + w / 2
+    sh = clamp(shutters)
+    for r in range(7):
+        yy = y + h * (0.12 + 0.13 * r)
+        rr = w * (0.7 - 0.06 * r)
+        n = 9 - r // 2
+        for k in range(n):
+            a = math.pi * (0.12 + 0.76 * k / (n - 1))
+            px = cx - math.cos(a) * rr
+            py = yy + math.sin(a) * h * 0.06
+            pw_, ph_ = w * (0.05 - 0.003 * r), h * (0.075 - 0.004 * r)
+            core.rrect(c, px - pw_ / 2, py - ph_ / 2, pw_, ph_, pw_ / 2)
+        core.fill(c, mixc("#1b6f72", "#3ff2e0", 0.8 - 0.07 * r))
+    core.radial_glow(c, cx, y + h * 0.65, w * 0.6, PAL["power"], 0.25)
+    if sh > 0:
+        for r in range(7):
+            yy = y + h * (0.12 + 0.13 * r)
+            rr = w * (0.7 - 0.06 * r)
+            n = 9 - r // 2
+            for k in range(n):
+                if joy_open and r == 6 and k == n // 2:
+                    continue
+                a = math.pi * (0.12 + 0.76 * k / (n - 1))
+                px = cx - math.cos(a) * rr
+                py = yy + math.sin(a) * h * 0.06
+                pw_, ph_ = w * (0.05 - 0.003 * r) * 1.3, h * (0.075 - 0.004 * r) * 1.2
+                c.rectangle(px - pw_ / 2, py - ph_ / 2, pw_, ph_ * sh)
+        core.fill(c, "#56646f")
+    c.restore()
+
+
+def _cr2_static(c):
+    x0, x1, y0, y1 = _CR2_X0, _CR2_X1, _CR2_Y0, _CR2_Y1
+    # ceiling + back wall (dark navy panels)
+    c.rectangle(x0, y0, x1 - x0, _CR2_CEIL - y0 + 2)
+    core.fill(c, "#0a0f17")
+    for k in range(-2, 9):
+        rect(c, k * 320 + 40, _CR2_CEIL - 50, 220, 14, "#141c28", 3, sc="#0a0f17", r=5)
+    c.rectangle(x0, _CR2_CEIL, x1 - x0, _CR2_WALL - _CR2_CEIL)
+    core.fill(c, "#121b27")
+    for xx in range(int(x0), int(x1), 210):
+        line(c, [(xx, _CR2_CEIL), (xx, _CR2_WALL)], "#0e1620", 4)
+    rect(c, x0, 1000, x1 - x0, 12, PAL["hush_dk"], 0)
+    rect(c, x0, _CR2_CEIL, x1 - x0, 22, "#1a2432", 4)
+    # monitor wall housing
+    mx0, mx1 = 1320, 2075
+    rect(c, mx0 - 20, 355, mx1 - mx0 + 40, 485, "#0b1119", 5, r=8)
+    for (mx, my, mw, mh) in _CR2_MONS:
+        rect(c, mx - 6, my - 6, mw + 12, mh + 12, "#1b2430", 4, r=5)
+    for i, (mx, my, mw, mh) in enumerate(_CR2_MONS):
+        kind, label = _CR2_FEEDS[i % len(_CR2_FEEDS)]
+        _cr2_feed(c, mx, my, mw, mh, kind, label)
+        rect(c, mx, my, mw, mh, None, 3)
+    # observation window frame (the view is drawn live / sprite-cached)
+    wx, wy, ww, wh = _CR2_WIN
+    rect(c, wx - 28, wy - 28, ww + 56, wh + 56, "#1f2a38", 5, r=10)
+    rect(c, wx - 40, wy + wh + 20, ww + 80, 26, "#2a3646", 4, r=6)
+    # console desk under the monitors
+    dx, dty, dw = _CR2_DESK
+    polyf(c, [(dx, dty), (dx + dw, dty), (dx + dw + 20, dty + 40), (dx - 20, dty + 40)], "#2a3646", 5)
+    rect(c, dx - 20, dty + 40, dw + 40, _CR2_WALL + 20 - dty - 40, "#18212d", 5)
+    for k in range(9):
+        core.circle(c, dx + 40 + k * 80, dty + 18, 7)
+        core.fill(c, [PAL["hush"], "#7fb2e8", PAL["warn"]][k % 3])
+    for k in range(3):
+        rect(c, dx + 60 + k * 240, dty + 90, 170, 60, "#0f1620", 3.5, r=6)
+        line(c, [(dx + 76 + k * 240, dty + 110), (dx + 190 + k * 240, dty + 110)], PAL["hush_dk"], 4)
+    # door frame + reader
+    ddx, ddt, ddw, ddh = _CR2_DOORS
+    rect(c, ddx - 40, ddt - 40, ddw + 80, ddh + 40, "#2a3646", 6)
+    props.hazard_band(c, ddx - 40, ddt - 40, ddw + 80, 22, step=40, lw=4)
+    rect(c, ddx, ddt, ddw, ddh, "#05080c", 4)
+    rx, ry = _CR2_READER
+    rect(c, rx - 34, ry - 70, 68, 130, "#1f2834", 5, r=10)
+    rect(c, rx - 20, ry - 52, 40, 26, "#0b0f15", 3, r=4)
+    rect(c, rx - 24, ry + 6, 48, 7, "#05080c", 0, r=3)
+    # side hatch frame
+    hx, ht, hw, hh = _CR2_HATCH
+    rect(c, hx - 24, ht - 24, hw + 48, hh + 24, "#2a3646", 5, r=10)
+    props.hazard_band(c, hx - 24, ht - 50, hw + 48, 18, step=30, lw=3)
+    rect(c, hx, ht, hw, hh, "#05080c", 4, r=6)
+    core.text(c, "MAINT.", hx + hw / 2, ht - 62, 22, "#8a96a4", "mono")
+    # floor: dark, glossy, with monitor reflections
+    c.rectangle(x0, _CR2_WALL, x1 - x0, y1 - _CR2_WALL)
+    core.fill(c, "#0d131c")
+    for k in range(-8, 22):
+        xx = k * 170
+        line(c, [(xx, _CR2_WALL), (1050 + (xx - 1050) * 2.4, y1)], "#121a26", 3)
+    for yy in (1390, 1500, 1660, 1900):
+        line(c, [(x0, yy), (x1, yy)], "#121a26", 3)
+    c.rectangle(x0, _CR2_WALL, x1 - x0, 22)
+    core.fill(c, core.alpha("#000000", 0.4))
+    c.save()
+    c.rectangle(x0, _CR2_WALL + 4, x1 - x0, y1 - _CR2_WALL)
+    c.clip()
+    rect(c, mx0 - 10, _CR2_WALL + 30, mx1 - mx0 + 20, 260, (0.35, 0.85, 1.0, 0.10), 0)
+    rect(c, wx, _CR2_WALL + 30, ww, 220, (0.25, 0.95, 0.88, 0.08), 0)
+    c.restore()
+    # LOCKDOWN pedestal (button + switch are live)
+    px, pt = _CR2_PED
+    polyf(c, [(px - 110, _CR2_FEET), (px + 110, _CR2_FEET), (px + 90, pt + 20), (px - 90, pt + 20)], "#1f2834", 5)
+    polyf(c, [(px - 120, pt + 26), (px + 120, pt + 26), (px + 104, pt - 6), (px - 104, pt - 6)], "#2a3646", 5)
+    ell(c, px, _CR2_FEET, 130, 12, core.alpha("#000000", 0.4), 0)
+
+
+def _cr2_glow(c):
+    """Monitor glow lighting the room (cool blue-teal) + window glow."""
+    wx, wy, ww, wh = _CR2_WIN
+    mx, my, mw, mh = _CR2_MAIN
+    core.radial_glow(c, 1700, 560, 900, "#5fd8ff", 0.22)
+    core.radial_glow(c, 1700, 560, 420, "#9fefff", 0.18)
+    core.radial_glow(c, wx + ww / 2, wy + wh / 2, 520, PAL["power"], 0.18)
+    g = cairo.LinearGradient(0, _CR2_WALL, 0, _CR2_WALL + 500)
+    g.add_color_stop_rgba(0, 0.37, 0.85, 1.0, 0.16)
+    g.add_color_stop_rgba(1, 0.37, 0.85, 1.0, 0.0)
+    c.rectangle(1260, _CR2_WALL, 860, 500)
+    c.set_source(g)
+    c.fill()
+    dx, dty, dw = _CR2_DESK
+    line(c, [(dx - 16, dty + 2), (dx + dw + 16, dty + 2)], (0.6, 0.95, 1.0, 0.7), 4)
+    # dark corners
+    for (xa, xb) in ((_CR2_X0, 300), (_CR2_X1, 2200)):
+        gg = cairo.LinearGradient(xa, 0, xb, 0)
+        gg.add_color_stop_rgba(0, 0.0, 0.0, 0.02, 0.6)
+        gg.add_color_stop_rgba(1, 0.0, 0.0, 0.02, 0.0)
+        c.rectangle(min(xa, xb), _CR2_Y0, abs(xb - xa), _CR2_Y1 - _CR2_Y0)
+        c.set_source(gg)
+        c.fill()
+
+
+def _cr2_room(c):
+    _cr2_static(c)
+    _cr2_glow(c)
+    # clear the door + hatch openings (layer "back" shows through)
+    c.save()
+    c.set_operator(cairo.OPERATOR_CLEAR)
+    c.rectangle(*_CR2_DOORS)
+    c.fill()
+    hx, ht, hw, hh = _CR2_HATCH
+    core.rrect(c, hx, ht, hw, hh, 6)
+    c.fill()
+    c.restore()
+
+
+def _cr2_back(c):
+    """Behind the doors (service tunnel, warm) and the hatch (crawlway)."""
+    ddx, ddt, ddw, ddh = _CR2_DOORS
+    c.rectangle(ddx - 6, ddt - 6, ddw + 12, ddh + 12)
+    core.fill(c, "#3b3a40")
+    core.radial_glow(c, ddx + ddw * 0.3, ddt + 160, 300, "#ffa64a", 0.45)
+    rect(c, ddx - 6, ddt + ddh - 160, ddw + 12, 166, "#2c2c32", 0)
+    rect(c, ddx - 6, ddt + 420, ddw + 12, 16, PAL["hush_dk"], 0)
+    hx, ht, hw, hh = _CR2_HATCH
+    c.rectangle(hx - 4, ht - 4, hw + 8, hh + 8)
+    core.fill(c, "#121418")
+    core.radial_glow(c, hx + hw / 2, ht + hh * 0.4, hw * 0.8, "#ff9a40", 0.35)
+    for k in range(3):
+        f = 1 - 0.22 * (k + 1)
+        rect(c, hx + hw / 2 - hw / 2 * f, ht + hh / 2 - hh / 2 * f, hw * f, hh * f, None, 3, sc="#2a2c32", r=6)
+
+
+def _cr2_doors(ctx, opening):
+    ddx, ddt, ddw, ddh = _CR2_DOORS
+    o = clamp(opening) * (ddw / 2 - 4)
+    ctx.save()
+    ctx.rectangle(ddx, ddt, ddw, ddh)
+    ctx.clip()
+    for side in (-1, 1):
+        px = ddx + (0 if side < 0 else ddw / 2) + side * o
+        rect(ctx, px, ddt, ddw / 2, ddh, "#4a5868", 5)
+        rect(ctx, px + 14, ddt + 14, ddw / 2 - 28, ddh - 28, None, 3.5, sc="#3b4757")
+        props.hazard_band(ctx, px + (ddw / 2 - 26 if side < 0 else 0), ddt, 26, ddh, step=34, lw=3, slant=0.8)
+        rect(ctx, px + 26, ddt + 300, ddw / 2 - 52, 70, "#2f3a48", 3, r=6)
+    ctx.restore()
+
+
+def _cr2_hatch_panel(ctx, opening):
+    hx, ht, hw, hh = _CR2_HATCH
+    q = door_quad(hx, ht, ht + hh, hw, opening, (1050, 900), D=2200.0, toward=True, hinge_left=True)
+    polyf(ctx, q, "#5a6878", 5)
+
+    def P(u, v):
+        top = (lerp(q[0][0], q[1][0], u), lerp(q[0][1], q[1][1], u))
+        bot = (lerp(q[3][0], q[2][0], u), lerp(q[3][1], q[2][1], u))
+        return (lerp(top[0], bot[0], v), lerp(top[1], bot[1], v))
+    polyf(ctx, [P(0.12, 0.12), P(0.88, 0.12), P(0.88, 0.88), P(0.12, 0.88)], None, 3.5, sc="#3b4757")
+    wx, wy = P(0.5, 0.5)
+    rr = hw * 0.22 * max(0.25, math.cos(clamp(opening) * math.radians(95)) ** 0.5 if opening < 1 else 0.25)
+    core.ellipse(ctx, wx, wy, max(4, rr), hw * 0.22)
+    core.stroke(ctx, INK, 12)
+    core.ellipse(ctx, wx, wy, max(4, rr), hw * 0.22)
+    core.stroke(ctx, PAL["warn"], 7)
+    for v in (0.2, 0.8):
+        hxx, hyy = P(0.0, v)
+        rect(ctx, hxx - 8, hyy - 14, 16, 28, "#3b4757", 3, r=3)
+    return q
+
+
+def _cr2_reader_light(ctx, light):
+    rx, ry = _CR2_READER
+    col = {"green": PAL["safe"], "red": PAL["danger"]}.get(light)
+    if col:
+        core.radial_glow(ctx, rx, ry - 40, 60, col, 0.6)
+        rect(ctx, rx - 20, ry - 52, 40, 26, col, 3, r=4)
+
+
+def _cr2_beacons(ctx, t, alarm):
+    p = 0.5 + 0.5 * math.sin(t * TAU / 1.2)
+    for i, (bx, by) in enumerate(_CR2_BEACONS):
+        a = t * TAU / 1.6 + i * 1.9
+        face = 0.5 + 0.5 * math.cos(a)
+        ang = math.pi / 2 - 1.2 * math.sin(a)
+        if face > 0.06:
+            for (wk, al) in ((0.36, 0.13), (0.2, 0.13)):
+                ctx.move_to(bx, by)
+                ctx.line_to(bx + 1200 * math.cos(ang - wk), by + 1200 * math.sin(ang - wk))
+                ctx.line_to(bx + 1200 * math.cos(ang + wk), by + 1200 * math.sin(ang + wk))
+                ctx.close_path()
+                core.fill(ctx, core.alpha("#ff4a5e", al * alarm * face))
+        core.radial_glow(ctx, bx, by + 20, 120, PAL["danger"], 0.55 * alarm * (0.6 + 0.4 * p))
+        rect(ctx, bx - 30, by - 30, 60, 22, "#2a3646", 4, r=4)
+        ell(ctx, bx, by + 6, 26, 22, mixc("#5a1020", "#ff3b5c", alarm * (0.6 + 0.4 * p)), 4)
+
+
+def control_room(ctx, t=0.0, layer="bg", doors_open=0.0, reader="red", hatch_open=0.0,
+                 case_broken=0.0, lever=0.0, pressed=0.0, switch=1.0, alarm=0.0, alarm_tint=True,
+                 monitor_fns=None, window_fn=None, window_shutters=0.0, chair=True, chair_turn=0.0,
+                 parts=None):
+    """The HushCorp control room (world 2100 x 1920, people at s=0.75;
+    drawable x -700..2800). Dark, lit cool blue-teal by a wall of monitors.
+    See CONTROL_MARKS.
+
+    Left to right: the small side HATCH (MAINT., low in the wall:
+    hatch_open 0..1 swings toward the viewer, hinge left), the heavy sliding
+    entrance doors (doors_open 0..1) + keycard reader (reader "red" |
+    "green" | None), the observation window onto the shaft
+    (window_fn(ctx, x, y, w, h, t) or the default view; window_shutters 0..1
+    slams shutters over its pods, except the tiny JOY pod), the MASTER
+    RELEASE console in front of it (case_broken 0..1, lever 0..1: see
+    props.release_console; throw props.shards from
+    CONTROL_MARKS["release_impact"] to floor_y), the LOCKDOWN pedestal
+    (pressed 0..1) with the SHAFT POWER switch (switch 1 = on .. 0 = off),
+    the Boss's tall chair (chair=True draws props.boss_chair at
+    CONTROL_MARKS["chair"] with chair_turn 0 = facing the monitors .. 1 =
+    facing camera; the Boss sits at "boss_seat") and the monitor wall
+    (monitor_fns {index: fn(ctx, x, y, w, h, t)} draw feeds into
+    CONTROL_MARKS["monitors"] rects, clipped; index 3 = the big main one).
+
+    alarm 0..1: three red ceiling beacons sweep + (alarm_tint=True) the same
+    deep-red tint as fx.alarm_wash (#9a0c1c, 1.2 s pulse); if the scene
+    also calls fx.alarm_wash, pass alarm_tint=False.
+    Layers: "bg", "back" (the tunnel behind the doors + the crawlway behind
+    the hatch), "room" (bg without back: back -> someone in the doorway /
+    hatch -> room), "fg" (parts: "chair" = the chair pieces in front of the
+    sitter (default), "hatch" = the open hatch panel (in front of someone
+    going through), "release" = the case's glass/teeth + frame over hands),
+    "shade" (characters lit by the monitors: sets.shaded()).
+    """
+    x0, y0, x1, y1 = _CR2_X0, _CR2_Y0, _CR2_X1, _CR2_Y1
+    if layer in ("bg", "back"):
+        bb = (_CR2_HATCH[0] - 10, _CR2_DOORS[1] - 10, _CR2_DOORS[0] + _CR2_DOORS[2] - _CR2_HATCH[0] + 20,
+              _CR2_WALL - _CR2_DOORS[1] + 20)
+        sprite(ctx, "control_back", *bb, _cr2_back)
+        if layer == "back":
+            return
+    if layer in ("bg", "room"):
+        _overscan(ctx, x0, y0, x1, y1, "#0a0f17", "#0d131c", "#06090e", "#06090e")
+        layer_blit(ctx, "control_room", x0, y0, x1 - x0, y1 - y0, _cr2_room)
+        wx, wy, ww, wh = _CR2_WIN
+        ctx.save()
+        ctx.rectangle(wx, wy, ww, wh)
+        ctx.clip()
+        if window_fn is not None:
+            window_fn(ctx, wx, wy, ww, wh, t)
+        else:
+            ws = round(clamp(window_shutters), 3)
+            sprite(ctx, ("control_window", ws), wx, wy, ww, wh, lambda c: _cr2_window_view(c, wx, wy, ww, wh, ws))
+        ctx.restore()
+        rect(ctx, wx, wy, ww, wh, (0.7, 0.95, 1.0, 0.06), 4)
+        core.poly(ctx, [(wx + 40, wy), (wx + 110, wy), (wx + 30, wy + wh), (wx - 40 + 1, wy + wh)])
+        core.fill(ctx, (1, 1, 1, 0.06))
+        if monitor_fns:
+            for i, fn in monitor_fns.items():
+                mx, my, mw, mh = _CR2_MONS[i]
+                if not _visible(ctx, mx, my, mw, mh):
+                    continue
+                ctx.save()
+                ctx.rectangle(mx, my, mw, mh)
+                ctx.clip()
+                fn(ctx, mx, my, mw, mh, t)
+                ctx.restore()
+        dimv = 0.35
+        dim_sprite(ctx, ("control_doors", round(clamp(doors_open), 3)), (_CR2_DOORS[0] - 2, _CR2_DOORS[1] - 2,
+                                                                        _CR2_DOORS[2] + 4, _CR2_DOORS[3] + 4),
+                   dimv, lambda c: _cr2_doors(c, doors_open))
+        if doors_open > 0.02:
+            o = clamp(doors_open)
+            ddx, ddt, ddw, ddh = _CR2_DOORS
+            gw_ = ddw * o
+            core.poly(ctx, [(ddx + ddw / 2 - gw_ / 2, _CR2_WALL), (ddx + ddw / 2 + gw_ / 2, _CR2_WALL),
+                            (ddx + ddw / 2 + gw_ * 1.0, _CR2_FEET + 200), (ddx + ddw / 2 - gw_ * 1.0, _CR2_FEET + 200)])
+            core.fill(ctx, core.alpha("#ffa64a", 0.14 * o))
+        _cr2_reader_light(ctx, reader)
+        if hatch_open <= 0.02:
+            dim_sprite(ctx, "control_hatch0", (_CR2_HATCH[0] - 4, _CR2_HATCH[1] - 4, _CR2_HATCH[2] + 8,
+                                               _CR2_HATCH[3] + 8), dimv, lambda c: _cr2_hatch_panel(c, 0.0))
+        # MASTER RELEASE console + LOCKDOWN pedestal
+        rxx, ryy = _CR2_RELEASE
+        rkey = ("control_release", round(clamp(case_broken), 3), round(clamp(lever), 3), round(alarm, 2))
+        dim_sprite(ctx, rkey, (rxx - 160, ryy - 1060 * _CR2_S, 320, 1080 * _CR2_S), 0.2,
+                   lambda c: props.release_console(c, rxx, ryy, _CR2_S, 0.0, case_broken, lever, alarm))
+        px, pt = _CR2_PED
+        dim_sprite(ctx, ("control_ped", round(clamp(pressed), 3), round(clamp(switch), 3)),
+                   (px - 130, pt - 140, 260, 400), 0.15,
+                   lambda c: (props.power_switch(c, px - 40, pt + 150, 0.55, on=switch),
+                              props.lockdown_button(c, px + 30, pt, 0.55, pressed=pressed, glow=0.0)))
+        if pressed > 0.5:
+            core.radial_glow(ctx, px + 30, pt - 30, 120, PAL["danger"], 0.35 * (pressed - 0.5) * 2)
+        if chair:
+            cx_, cy_ = _CR2_CHAIR
+            ct = round(clamp(chair_turn), 3)
+            dim_sprite(ctx, ("control_chair_b", ct), (cx_ - 330, cy_ - 1080 * _CR2_S, 660, 1100 * _CR2_S), 0.0,
+                       lambda c: props.boss_chair(c, cx_, cy_, _CR2_S, ct, part="behind"))
+        if alarm > 0.003:
+            if alarm_tint:
+                p = 0.5 + 0.5 * math.sin(TAU * t / 1.2)
+                vx0, vy0, vx1, vy1 = ctx.clip_extents()
+                ctx.rectangle(vx0, vy0, vx1 - vx0, vy1 - vy0)
+                core.fill(ctx, core.alpha("#9a0c1c", clamp(alarm) * (0.34 + 0.14 * p)))
+            _cr2_beacons(ctx, t, clamp(alarm))
+        return
+    if layer == "fg":
+        parts = parts or ("chair",)
+        if "chair" in parts and chair:
+            cx_, cy_ = _CR2_CHAIR
+            ct = round(clamp(chair_turn), 3)
+            dim_sprite(ctx, ("control_chair_f", ct), (cx_ - 330, cy_ - 1080 * _CR2_S, 660, 1100 * _CR2_S), 0.0,
+                       lambda c: props.boss_chair(c, cx_, cy_, _CR2_S, ct, part="front"))
+        if "hatch" in parts and hatch_open > 0.02:
+            dimmed(ctx, (_CR2_HATCH[0] - 60, _CR2_HATCH[1] - 120, _CR2_HATCH[2] + 220, _CR2_HATCH[3] + 260), 0.35,
+                   lambda c: _cr2_hatch_panel(c, hatch_open))
+        if "release" in parts:
+            rxx, ryy = _CR2_RELEASE
+            props.release_console(ctx, rxx, ryy, _CR2_S, 0.0, case_broken, lever, alarm, part="front")
+        if alarm > 0.003 and alarm_tint:
+            p = 0.5 + 0.5 * math.sin(TAU * t / 1.2)
+            vx0, vy0, vx1, vy1 = ctx.clip_extents()
+            ctx.rectangle(vx0, vy0, vx1 - vx0, vy1 - vy0)
+            core.fill(ctx, core.alpha("#9a0c1c", clamp(alarm) * (0.10 + 0.04 * p)))
+    elif layer == "shade":
+        sprite(ctx, "control_shade", x0, y0 + 500, x1 - x0, 2400, _cr2_shade, max_mp=14.0)
+        if alarm > 0.003:
+            p = 0.5 + 0.5 * math.sin(TAU * t / 1.2)
+            vx0, vy0, vx1, vy1 = ctx.clip_extents()
+            ctx.rectangle(vx0, vy0, vx1 - vx0, vy1 - vy0)
+            core.fill(ctx, core.alpha("#9a0c1c", clamp(alarm) * (0.30 + 0.12 * p)))
+
+
+def _cr2_shade(c):
+    x0, x1 = _CR2_X0, _CR2_X1
+    c.rectangle(x0, _CR2_Y0 + 500, x1 - x0, 2400)
+    core.fill(c, core.alpha("#04070d", 0.45))
+    core.radial_glow(c, 1700, 620, 1000, "#5fd8ff", 0.26)
+    wx, wy, ww, wh = _CR2_WIN
+    core.radial_glow(c, wx + ww / 2, wy + wh, 650, PAL["power"], 0.18)
