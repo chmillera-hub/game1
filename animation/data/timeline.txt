@@ -1,132 +1,131 @@
 
-=== s01 memory [0.0 - 12.5] REAL_ROOM (cut)
-     1.60-   5.10 s01b01   --silent--      
-     5.10-   7.09 s01b02   NARRATOR        So, I was having a memory.
-     7.69-  11.73 s01b03   NARRATOR        About the first story I ever wrote about my emotions.
+=== s01 the_old_notebook [0.0 - 17.0] REAL_ROOM (cut)
+     1.60-   3.60 s01b01   --silent--      
+     3.60-  10.32 s01b02   NARRATOR        So, I was having a memory, of the first story I wrote about my emotions.
+    10.82-  16.50 s01b03   NARRATOR        And the more I read, the more I was back inside my mind.
 
-=== s02 headquarters_alarm [12.5 - 20.6] MIND_HQ (dissolve)
-    13.43-  15.51 s02b01   NARRATOR        And I was inside my mind.
-    16.01-  18.79 s02b03   NARRATOR        And my fear kept pulling the fire alarm.
-    19.09-  20.59 s02b04   --silent--      
+=== s02 headquarters_and_alarm [17.0 - 35.8] MIND_HQ (dissolve)
+    17.90-  19.90 s02b01   --silent--      
+    19.90-  23.24 s02b02   NARRATOR        And my fear kept pulling the fire alarm.
+    23.74-  31.40 s02b03   NARRATOR        So I imagined myself as the CEO of my mind, looking around to see why.
+    31.80-  35.17 s02b04   CONSCIOUSNESS   Fear? What are you looking at?
 
-=== s03 the_ceo [20.6 - 27.6] MIND_HQ (cut)
-    21.04-  24.55 s03b01   NARRATOR        So I imagined myself as the CEO of my mind.
-    25.05-  27.10 s03b02   NARRATOR        Looking around, to see why.
+=== s03 the_void [35.8 - 50.6] MIND_HQ_BACK (cut)
+    36.22-  39.62 s03b01   --silent--      
+    39.62-  40.66 s03b02   NARRATOR        The Void.
+    42.16-  49.99 s03b03   NARRATOR        Huge. Unmoving. And its face was pure darkness.
 
-=== s04 the_void [27.6 - 41.5] MIND_HQ_BACK (cut)
-    28.05-  29.82 s04b01   NARRATOR        It turned out it was the void.
-    30.62-  35.81 s04b02   NARRATOR        A huge, intimidating presence, standing in the back of my mind.
-    36.31-  37.27 s04b03   NARRATOR        Unmoving.
-    38.07-  40.48 s04b04   NARRATOR        And its face was pure darkness.
+=== s04 not_safe [50.6 - 66.9] MIND_HQ (cut)
+    51.04-  52.54 s04b01   FEAR            It's going to hurt me.
+    53.34-  54.77 s04b02   CONSCIOUSNESS   It hasn't moved.
+    55.47-  59.41 s04b03   FEAR            That's what scares me. It's not safe here.
+    60.12-  62.04 s04b04   CONSCIOUSNESS   Nothing is going to hurt you.
+    62.74-  63.94 s04b05   FEAR            You don't know that.
+    64.14-  66.94 s04b06   --silent--      
 
-=== s05 not_safe [41.5 - 46.3] MIND_HQ (cut)
-    41.93-  42.93 s05b01   --silent--      
-    42.93-  44.28 s05b02   FEAR(inner)     It's going to hurt me.
-    44.68-  45.76 s05b03   FEAR(inner)     It's not safe.
+=== s05 chaos [66.9 - 79.3] MIND_HQ (cut)
+    67.39-  70.00 s05b01   FEAR            Out! Everybody out!
+    70.30-  71.47 s05b02   JOY             We always come back.
+    71.87-  76.72 s05b03   NARRATOR        Panic attacks, forcing every emotion out of my mind.
+    77.12-  78.71 s05b04   NARRATOR        Causing chaos.
 
-=== s06 chaos [46.3 - 56.4] MIND_HQ (cut)
-    46.71-  49.92 s06b01   NARRATOR        So it kept pulling the alarm, having panic attacks.
-    50.22-  51.31 s06b03   ANGER           Every single time!
-    51.51-  54.32 s06b06   NARRATOR        Forcing all the emotions out of my mind.
-    54.62-  56.03 s06b07   NARRATOR        Causing chaos.
+=== s06 a_hand_on_the_shoulder [79.3 - 105.4] MIND_HQ (dissolve)
+    80.21-  84.94 s06b01   NARRATOR        Then one day, I put my hand on my fear's shoulder.
+    85.14-  87.14 s06b02   --silent--      
+    87.14-  90.11 s06b03   CONSCIOUSNESS   You need to stop pulling the fire alarm.
+    90.81-  92.64 s06b04   CONSCIOUSNESS   It's causing turmoil.
+    93.54-  95.72 s06b05   FEAR            I'm only trying to keep us safe.
+    96.02-  98.22 s06b06   --silent--      
+    98.22- 101.14 s06b07   FEAR            I can't. I'm sorry.
+   101.34- 103.14 s06b08   --silent--      
+   103.14- 104.92 s06b09   NARRATOR        My fear refused.
 
-=== s07 hand_on_shoulder [56.4 - 70.7] MIND_HQ (dissolve)
-    57.33-  61.13 s07b01   NARRATOR        Then one day, I put my hand on my fear's shoulder.
-    61.63-  62.80 s07b02   NARRATOR        It was shaking.
-    63.40-  64.01 s07b03   CONSCIOUSNESS   Fear.
-    64.51-  66.83 s07b04   CONSCIOUSNESS   You need to stop pulling the fire alarm.
-    67.33-  68.69 s07b05   CONSCIOUSNESS   It's causing turmoil.
-    69.19-  70.69 s07b06   --silent--      
+=== s07 time_out [105.4 - 112.6] MIND_HQ (cut)
+   105.87- 107.27 s07b01   --silent--      
+   107.27- 108.00 s07b02   CONSCIOUSNESS   Fear,
+   108.89- 111.31 s07b03   CONSCIOUSNESS   we need to put you in a time-out.
 
-=== s08 refusal [70.7 - 74.9] MIND_HQ (cut)
-    71.14-  72.74 s08b01   FEAR            No. I can't.
-    72.94-  74.44 s08b02   NARRATOR        And my fear refused.
+=== s08 the_cage [112.6 - 123.1] MIND_HQ_BACK (cut)
+   113.06- 115.73 s08b01   NARRATOR        So I put my fear into a cage.
+   116.93- 119.07 s08b02   FEAR            Please don't leave me with it.
+   119.47- 123.07 s08b03   --silent--      
 
-=== s09 time_out [74.9 - 89.4] MIND_HQ_BACK (cut)
-    75.39-  76.89 s09b01   --silent--      
-    76.89-  79.22 s09b02   CONSCIOUSNESS   Fear, we need to put you in a time-out.
-    80.22-  82.78 s09b03   NARRATOR        So, I put my fear into a cage.
-    83.18-  86.51 s09b04   NARRATOR        And it cried, and shook, and pulled at the bars.
-    86.91-  88.43 s09b06   NARRATOR        And I felt sadness.
+=== s09 responsible [123.1 - 132.6] MIND_HQ (cut)
+   123.52- 128.24 s09b01   NARRATOR        I told myself it was the responsible thing to do.
+   128.84- 130.60 s09b02   NARRATOR        And I felt sadness.
 
-=== s10 stone_faced [89.4 - 98.0] MIND_HQ_BACK (cut)
-    89.88-  93.67 s10b01   NARRATOR        And the void stood there. Stone-faced.
-    94.17-  97.48 s10b02   NARRATOR        Its dark shadow, filling so much of the room.
+=== s10 stone_faced [132.6 - 143.0] MIND_HQ_BACK (dissolve)
+   133.50- 139.79 s10b01   NARRATOR        And the Void stood there, stone-faced, its shadow filling half the room.
+   140.19- 142.99 s10b02   --silent--      
 
-=== s11 the_unlocking [98.0 - 107.1] MIND_HQ_BACK (cut)
-    98.43- 102.21 s11b01   NARRATOR        Then, when I wasn't looking, I had an image in my mind.
-   102.71- 106.84 s11b02   NARRATOR        Of the void, taking its hand, and unlocking the cage.
+=== s11 the_unlocking [143.0 - 157.8] MIND_HQ_BACK (cut)
+   143.44- 148.89 s11b01   NARRATOR        And then, when I wasn't looking, I had an image in my mind.
+   149.09- 154.09 s11b02   --silent--      
+   154.09- 157.79 s11b03   --silent--      
 
-=== s12 why [107.1 - 127.0] MIND_HQ_BACK (cut)
-   107.59- 110.85 s12b01   NARRATOR        When my fear saw the open cage, it froze.
-   111.15- 113.65 s12b02   --silent--      
-   113.65- 114.93 s12b03   FEAR            Why are you doing this?
-   115.73- 116.93 s12b04   FEAR            You're going to hurt me.
-   117.73- 120.33 s12b05   FEAR            This is a trick. This can't be right.
-   120.83- 122.83 s12b06   --silent--      
-   122.83- 126.17 s12b07   NARRATOR        But the void just stared, off into the distance.
+=== s12 why_are_you_doing_this [157.8 - 188.6] MIND_HQ_BACK (cut)
+   158.24- 159.84 s12b01   FEAR            Why are you doing this?
+   160.74- 162.28 s12b02   FEAR            You're going to hurt me.
+   162.98- 164.19 s12b03   FEAR            This is a trick.
+   164.79- 166.18 s12b04   FEAR            This can't be right.
+   166.48- 169.48 s12b05   --silent--      
+   169.48- 171.48 s12b06   FEAR            This doesn't make any sense.
+   172.28- 173.97 s12b07   FEAR            You're supposed to hurt me.
+   174.67- 176.67 s12b08   FEAR            Why are you just standing there?
+   177.47- 179.82 s12b09   FEAR            Are you just here to scare me forever?
+   180.42- 182.82 s12b10   --silent--      
+   182.82- 187.94 s12b11   NARRATOR        And the Void did not move. It stood there.
 
-=== s13 scare_me_forever [127.0 - 144.5] MIND_HQ_BACK (cut)
-   127.42- 128.90 s13b01   FEAR            This doesn't make any sense.
-   129.40- 130.76 s13b02   FEAR            You're supposed to hurt me.
-   131.56- 133.14 s13b03   FEAR            Why are you just standing there?
-   133.94- 135.95 s13b04   FEAR            Are you just here to scare me forever?
-   136.45- 139.45 s13b05   --silent--      
-   139.45- 143.50 s13b06   NARRATOR        And the void did not move. It stood there.
+=== s13 the_turn [188.6 - 214.9] MIND_HQ_BACK (cut)
+   189.09- 194.29 s13b01   --silent--      
+   194.29- 195.51 s13b02   FEAR(inner)     This is it.
+   196.11- 202.12 s13b03   NARRATOR        My fear thought the Void had had enough of its complaining, and would destroy it.
+   203.32- 207.32 s13b04   NARRATOR        But then, my fear felt a hand on its shoulder.
+   207.52- 210.82 s13b05   --silent--      
+   210.82- 214.40 s13b06   NARRATOR        And it looked up, into the face of the Void.
 
-=== s14 the_gaze [144.5 - 159.0] MIND_HQ_BACK (cut)
-   144.95- 148.43 s14b01   NARRATOR        But then, the void turned its gaze toward my fear.
-   148.73- 149.66 s14b02   FEAR(inner)     This is it.
-   150.16- 154.89 s14b03   NARRATOR        It thought the void had had enough of its complaining, and would destroy it.
-   155.29- 157.22 s14b04   NARRATOR        So it hid its head in its hands.
-   157.52- 159.02 s14b05   --silent--      
+=== s14 the_universe_inside [214.9 - 256.8] VOID_FACE (cut)
+   215.35- 218.35 s14b01   --silent--      
+   218.35- 223.24 s14b02   NARRATOR        And instead of darkness, my fear saw the twinkling of lights.
+   223.74- 227.92 s14b03   NARRATOR        Like galaxies, and nebulae, and stars of the universe.
+   228.42- 231.81 s14b04   NARRATOR        The Void, filled with bits and pieces of meaning.
+   232.21- 236.61 s14b05   --silent--      
+   236.61- 244.16 s14b06   NARRATOR        And for once, my fear wasn't afraid. It felt wonder, and amazement.
+   244.66- 246.26 s14b07   --silent--      
+   246.26- 248.21 s14b08   FEAR            Why are you showing me this?
+   248.81- 252.21 s14b09   --silent--      
+   252.21- 256.34 s14b10   NARRATOR        And the Void stared into the screen of my consciousness.
 
-=== s15 a_hand [159.0 - 168.6] MIND_HQ_BACK (cut)
-   159.47- 162.65 s15b01   NARRATOR        But then, my fear felt a hand on its shoulder.
-   163.15- 165.15 s15b02   --silent--      
-   165.15- 168.12 s15b03   NARRATOR        And it looked up, into the face of the void.
+=== s15 looking_back [256.8 - 268.7] MIND_HQ (cut)
+   257.29- 260.06 s15b01   NARRATOR        My other emotions were looking back.
+   260.36- 263.16 s15b02   --silent--      
+   263.16- 268.24 s15b03   NARRATOR        They smiled, just for a moment, then went back to helping me.
 
-=== s16 the_cosmos [168.6 - 188.3] VOID_FACE (dissolve)
-   169.52- 173.44 s16b01   NARRATOR        And instead of pure darkness, it saw the twinkling of lights.
-   173.94- 178.30 s16b02   NARRATOR        Like galaxies, and nebulae, and stars of the universe.
-   178.80- 182.12 s16b03   NARRATOR        The void, filled with bits and pieces of meaning.
-   182.62- 185.12 s16b04   --silent--      
-   185.12- 187.49 s16b05   NARRATOR        And my fear had tears in its eyes.
+=== s16 the_gentle_push [268.7 - 285.6] MIND_HQ_BACK (cut)
+   269.19- 271.19 s16b01   --silent--      
+   271.19- 274.58 s16b02   NARRATOR        Then my fear felt the gentle push of the Void.
+   275.08- 281.13 s16b03   NARRATOR        The Void stood there, with galaxies twinkling in its dark facade.
+   281.43- 285.63 s16b04   --silent--      
 
-=== s17 wonder [188.3 - 204.2] MIND_HQ_BACK (cut)
-   188.74- 193.82 s17b01   NARRATOR        Instead of feeling like it would get hurt, it felt wonder, and amazement.
-   194.32- 195.87 s17b02   FEAR            Why are you showing me this?
-   196.67- 198.17 s17b03   --silent--      
-   198.17- 203.65 s17b04   NARRATOR        The void took its hand away, and stared into the screen of my consciousness.
+=== s17 can_i_help [285.6 - 296.8] MIND_HQ (cut)
+   286.08- 288.48 s17b01   --silent--      
+   288.48- 290.08 s17b02   --silent--      
+   290.08- 290.81 s17b03   CONSCIOUSNESS   Fear.
+   291.71- 292.77 s17b04   FEAR            Can I help?
+   293.17- 296.77 s17b05   --silent--      
 
-=== s18 looking_back [204.2 - 218.0] MIND_HQ (cut)
-   204.60- 209.30 s18b01   NARRATOR        And when my fear looked there too, my other emotions were looking back.
-   209.70- 212.20 s18b03   --silent--      
-   212.20- 217.47 s18b04   NARRATOR        They smiled, just briefly, then went back to work, helping my consciousness.
+=== s18 the_rusted_cage [296.8 - 307.1] MIND_HQ_BACK (dissolve)
+   297.67- 298.97 s18b01   --silent--      
+   298.97- 303.45 s18b02   NARRATOR        The old cage had rusted, its gate hanging open.
+   303.95- 306.61 s18b03   NARRATOR        But that was just a small detail.
 
-=== s19 the_push [218.0 - 225.3] MIND_HQ_BACK (cut)
-   218.42- 221.25 s19b01   NARRATOR        And my fear wiped the tears from its eyes.
-   221.55- 224.99 s19b02   NARRATOR        Then it felt a gentle push, toward my emotions.
+=== s19 the_scene_changed [307.1 - 322.8] MIND_HQ (dissolve)
+   308.01- 312.28 s19b01   NARRATOR        Because the scene changed, to my emotions at the console.
+   312.68- 315.34 s19b02   NARRATOR        And the Void, standing in the background.
+   315.74- 322.01 s19b03   NARRATOR        I could barely see that rusty cage anymore, in the back of my mind.
 
-=== s20 over_the_shoulder [225.3 - 242.1] MIND_HQ (cut)
-   225.74- 228.76 s20b01   NARRATOR        And fear looked over its shoulder, at the void.
-   229.06- 233.23 s20b02   NARRATOR        The void stood there, with galaxies twinkling in its dark facade.
-   233.73- 236.23 s20b03   --silent--      
-   236.23- 237.81 s20b04   NARRATOR        And my fear smiled.
-   238.21- 241.58 s20b05   NARRATOR        And went back to my other emotions, to help me.
-
-=== s21 rusted_gate [242.1 - 250.6] MIND_HQ_BACK (cut)
-   242.53- 244.43 s21b01   NARRATOR        Then I saw the old cage.
-   244.73- 247.50 s21b02   NARRATOR        The gate was rusted, and hanging open.
-   248.00- 250.11 s21b03   NARRATOR        But that was just a small detail.
-
-=== s22 the_console [250.6 - 267.6] MIND_HQ (dissolve)
-   251.51- 256.10 s22b01   NARRATOR        Because the scene changed, to my emotions pressing the console buttons.
-   256.50- 259.16 s22b02   NARRATOR        And the void, standing in the background.
-   259.56- 265.09 s22b03   NARRATOR        And the rusty time-out cage, barely visible, in the back of my mind.
-   265.59- 267.59 s22b04   --silent--      
-
-=== s23 a_tear_or_two [267.6 - 280.7] REAL_ROOM (dissolve)
-   268.49- 269.99 s23b01   --silent--      
-   269.99- 273.36 s23b02   NARRATOR        After that, I may have shed a tear or two myself.
-   274.16- 277.66 s23b03   --silent--      
+=== s20 a_tear_or_two [322.8 - 339.1] REAL_ROOM (dissolve)
+   323.71- 326.51 s20b01   --silent--      
+   326.51- 327.70 s20b02   NARRATOR        After that,
+   328.60- 331.27 s20b03   NARRATOR        I may have shed a tear or two myself.
+   332.07- 336.07 s20b04   --silent--      

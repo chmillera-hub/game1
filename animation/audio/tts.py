@@ -80,6 +80,15 @@ def ffmpeg_filter(a, sr, af):
         b, _ = sf.read(o, dtype="float32")
     return b
 
+def sane(a, what=""):
+    a = np.nan_to_num(a.astype(np.float32), nan=0.0, posinf=0.0, neginf=0.0)
+    a = a - np.mean(a)
+    sat = float((np.abs(a) > 0.995).mean())
+    rms = float(np.sqrt(np.mean(a ** 2)) + 1e-9)
+    if sat > 0.01 or rms / (np.abs(a).max() + 1e-9) > 0.6:
+        raise RuntimeError(f"corrupted audio after {what}: saturated={sat:.3f} crest={rms/(np.abs(a).max()+1e-9):.2f}")
+    return a
+
 def fade(a, sr, fi=0.01, fo=0.04):
     a = a.copy()
     ni, no = int(fi * sr), int(fo * sr)
@@ -139,8 +148,9 @@ def synth_line(tts, beat):
         chain.append("highpass=f=180,lowpass=f=7000,volume=-3dB")
     if beat.get("inner"):
         chain.append("highpass=f=220,lowpass=f=6500,aecho=0.6:0.5:35|70:0.25|0.15")
-    if chain:
-        a = ffmpeg_filter(a, SR, ",".join(chain))
+    # one ffmpeg pass per effect: chaining rubberband with vibrato in a single graph corrupts the output
+    for af in chain:
+        a = sane(ffmpeg_filter(a, SR, af), af)
     a = a * (10 ** (cfg["gain_db"] / 20))
     peak = np.max(np.abs(a)) + 1e-9
     a = a / peak * 0.85
