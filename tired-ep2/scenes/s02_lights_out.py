@@ -551,16 +551,23 @@ def _window_path(ctx, g, arch, xs, local=True):
 def _hand_over(ctx, t, st, a, g=None, arch=None, xs=None):
     """Redraw only his r hand over the head: a front-layer copy clipped to a disc at the hand
     (inside the lifted-rim window the copy is the lifted-rim one, so no hood patch shows)."""
+    al = smoothstep(clamp((st.get("arm", 0.0) - 0.5) / 0.4))     # eases on as the hand nears the hood
+    if al <= 0.0:
+        return
     if g is None:
         ctx.save()
         _hand_disc(ctx, a)
         ctx.clip()
+        ctx.push_group()
         _draw_person(ctx, t, st, pose=st["pose_front"])
+        ctx.pop_group_to_source()
+        ctx.paint_with_alpha(al)
         ctx.restore()
         return
     ctx.save()
     _hand_disc(ctx, a)
     ctx.clip()
+    ctx.push_group()
     ctx.save()
     hx, hy = a["hand_r"][:2]
     ctx.rectangle(hx - 400, hy - 400, 800, 800)
@@ -569,15 +576,19 @@ def _hand_over(ctx, t, st, a, g=None, arch=None, xs=None):
     ctx.clip()
     _draw_person(ctx, t, st, pose=st["pose_front"])
     ctx.restore()
+    ctx.save()
     _window_path(ctx, g, arch, xs, local=False)
     ctx.clip()
     _draw_person(ctx, t, st, pose=st["pose_front"], **_bface_kw(st))
+    ctx.restore()
+    ctx.pop_group_to_source()
+    ctx.paint_with_alpha(al)
     ctx.restore()
 
 
 def draw_tired(ctx, t, st):
     a = _draw_person(ctx, t, st)
-    hand = st.get("arm", 0.0) > 0.35 and st.get("pose_front")
+    hand = st.get("arm", 0.0) > 0.5 and st.get("pose_front")
     p = st.get("peek", 0.0)
     g = st.get("peek_geo")
     if g is not None and p > 0.005 and a.get("hood_rim"):
