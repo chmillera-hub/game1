@@ -4,7 +4,8 @@
 //   1  scene.start   → s05b01+1.3   `alarm` medium: Fear lunges, yanks the handle, darts a look at the back of the
 //                                    room and scurries off right; the CEO (still kneeling, as s04 ended) reaches out
 //                                    too late, a silent "wait", starts to rise
-//   2  s05b01+1.3    → s05b02       `front` console: Fear on tiptoe behind the row shooing; JOY pops and windmills,
+//   2  s05b01+1.3    → s05b02       `front` console: Fear picked up mid-dash in front of its post (the CEO's eyes
+//                                    follow it), up on tiptoe behind the row shooing; JOY pops and windmills,
 //                                    ANGER throws his hands up and stomps off, SADNESS slides off slowly, CALM rises
 //                                    and goes to her; the CEO in the background finishes rising
 //   3  s05b02        → s05b03       `front` door: CALM guiding SADNESS out, ANGER's glance back, JOY last ("We always
@@ -423,11 +424,16 @@ function drawRedCheek(g, e, t, A) {
 function fearFrontState(t, S) {
   const k = (keys, e) => S.k(t, keys, e);
   if (t < S.T(CUT23)) {
-    // on tiptoe behind the console row (FEAR_TIPTOE_F depth): pops up behind JOY from the right, stands its ground in
-    // the clear spot JOY has just vacated for "…body out!", flapping its arms at the others, a darting glance up at
-    // the Void (up-left of it in this view), then scurries left after them
-    const x = k([['s05b01+1.3', 822], ['s05b01+1.52', 754, 'out'], ['s05b01+2.3', 748], ['s05b02', 664, 'in']]);
-    const run = t < S.T('s05b01+1.52') || t > S.T('s05b01+2.32');
+    // the wide picks Fear up mid-dash (it left the alarm wall frame-right a moment ago, toward the console): on the
+    // floor just in front of its post, beside the rising CEO, scurrying down-screen toward the console row; it ducks
+    // in behind JOY as she hops away and comes up on tiptoe (FEAR_TIPTOE_F depth) in the clear spot she has just
+    // vacated for "…out!", flapping its arms at the others, a darting glance up at the Void (up-left of it in this
+    // view), then scurries left after them
+    const ARRIVE = 's05b01+1.72';
+    const y = k([['s05b01+1.3', 1040], ['s05b01+1.58', 1292], [ARRIVE, 1350, 'out']]);
+    const x = k([['s05b01+1.3', 776], ['s05b01+1.58', 772], [ARRIVE, 754, 'out'], ['s05b01+2.3', 748], ['s05b02', 664, 'in']]);
+    const s = hqScaleAt('front', y) * (0.8 / hqScaleAt('front', 1350));
+    const run = t < S.T(ARRIVE) || t > S.T('s05b01+2.32');
     const ph = t * TAU * 4;
     const face = withSpeech({ browIn: 0.5, browUp: 1, lidU: -0.4, pupil: 0.52, open: 0.2, wide: 0.6, smile: -0.5, tremble: 0.7,
       lookX: k([['s05b01+1.3', -0.85], ['s05b01+1.96', -0.85], ['s05b01+2.03', -0.5], ['s05b01+2.17', -0.5], ['s05b01+2.24', -0.85]]),
@@ -436,7 +442,7 @@ function fearFrontState(t, S) {
     // arms flap high, above the console rim, shooing the others left
     const shoo = (side) => ({ target: [side * 70 + 10 * Math.sin(ph * 0.5 + side), -188 - 30 * Math.sin(ph * 0.5 + side * 1.4)],
       bend: -side, hand: 'open', front: side < 0 });
-    return { x, y: 1350, s: 0.8, pose: { t, facing: -1, face, tremble: 0.6, lean: 0.06, headTurn: -0.2,
+    return { x, y, s, pose: { t, facing: -1, face, tremble: 0.6, lean: 0.06, headTurn: -0.2,
       armL: shoo(-1), armR: shoo(1), walk: run ? { phase: ph } : null, breathRate: 1.5, breathe: 1.3 } };
   }
   // back at the alarm (off-screen during the door shot), clinging → sliding down, hugging itself
@@ -469,11 +475,16 @@ function mixFlat(a, b, k) {
 function ceoFrontState(t, S) {
   const k = (keys, e) => S.k(t, keys, e);
   if (t < S.T(CUT23)) {
-    // background: finishing the rise beside the alarm, turning to watch the others go
+    // background: finishing the rise beside the alarm; the eyes (then the head) follow Fear's dash down past its
+    // right side toward the console (as they followed it off the alarm wall in shot 1), then turn to watch the
+    // others go
     const [x, y, s] = CEO_AT_ALARM_F;
-    const face = { ...SELF_EXPR.worried, browUp: 0.45, lidU: -0.1, open: 0.08, lookX: -0.7, lookY: 0.35 };
+    const face = { ...SELF_EXPR.worried, browUp: 0.45, lidU: -0.1, open: 0.08,
+      lookX: k([['s05b01+1.3', 0.4], ['s05b01+1.5', 0.3], ['s05b01+1.74', -0.7, 'inOut']]),
+      lookY: k([['s05b01+1.3', 0.5], ['s05b01+1.5', 0.72], ['s05b01+1.74', 0.35, 'inOut']]) };
     return { x, y, s, pose: { t, outfit: 'ceo', facing: -1, kneel: k([['s05b01+1.3', 0.4], ['s05b01+2.0', 0, 'inOut']]),
-      bodyTurn: -0.25, headTurn: -0.45, face, clipboard: true, armL: 'rest',
+      bodyTurn: -0.25, headTurn: k([['s05b01+1.3', -0.12], ['s05b01+1.56', -0.12], ['s05b01+1.86', -0.45, 'inOut']]),
+      face, clipboard: true, armL: 'rest',
       armR: { preset: 'palmOut' } } };
   }
   if (t < S.T(CUT3P)) {

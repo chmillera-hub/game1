@@ -24,13 +24,19 @@ const UNLOCK_ANGLE = 2.3;
 const SLEEVE_CLIP_Y = 1100;
 const FS = CAGE_B[2];                       // Fear inside the cage uses the cage scale
 const OCC_SIDE = [363, 1619];               // cagePoint('occupantSide', ...CAGE_B)
-// Fear stands 21 px left of occupantSide in this scene. Its eyes (~48 px wide each, ~16 px apart) are wider than the
-// gaps between the bars, so some bar always crosses an eye; at x 342 with the head turned to the gate, the bars at rest
-// (fixed 303, hinge stile 353, the gate's centre stile at 393 once the gate is at 0.3) fall on the eye rims, clear of
-// the pupils. The gate's swing (its centre stile sweeps 430 → 393, across the right eye) now happens in the last half
-// second of b02 while Fear's eyes are still squeezed shut, and is done by the time they snap open. s12 opens on a wide
-// with Fear at occupantSide (363): 21 world px = 17 screen px, across a close → wide cut.
-const FEAR_X = 342;
+// The gate swings WIDE (door 0 → 0.9, folded out to the left beside the cage, as in s12b07+) instead of stopping ajar
+// at 0.3: ajar, its leaf stood toward the lens across the doorway, and with the bars 41–69 px apart and Fear's eye pair
+// ~97 px wide, some stile (the double hinge stile at 354, the centre stile 395, the free edge 464) always split the
+// face in the discovery close and the "open" cage still read as closed. Now the doorway (hinge 354 → lock jamb 505)
+// is clear: Fear's face sits in it, the hinge stile beside its left cheek, the popped padlock and the empty doorway
+// to its right.
+// Blocking: Fear's feet are at x 392 (in the doorway half), both hands on the hinge jamb (355) to its left. Crying it
+// leans its head onto that bar (head ≈ x 382: right of it the Void's descending hand stays clear of the head, as with
+// the old x 342 + lean-back). At the creak the head jerks up/right, away from the swinging leaf (face ≈ 420); as it
+// lets go and turns (+1.6 → +2.3) it shuffles one small step right (STEP_X) so the face stays put in the doorway.
+// s12 opens on a wide with Fear at FEAR_X + STEP_X (= s12's OCC_SIDE).
+const FEAR_X = 392;
+const STEP_X = 23;
 const OFF = { JOY: 1.3, SADNESS: 2.9, ANGER: 4.1, CALM: 5.7 };
 
 const sleeveFront = (g, pose) => {
@@ -45,7 +51,7 @@ export const sfx = [
   { at: 's11b02+2.0', name: 'sob', gain: -20 },                        // weaker sob, eyes still shut
   { at: 's11b02+3.12', name: 'key_turn', gain: -11 },                  // fingertip turns the lock (bolt 0.68 → +3.80)
   { at: 's11b02+3.78', name: 'lock_click', gain: -10 },                // shackle pops at +3.80
-  { at: 's11b03-0.6', name: 'cage_creak', gain: -12 },                 // the gate drifts open 0 → 0.3 (b03−0.5 → +0.7); swell peak +0.1
+  { at: 's11b03-1.1', name: 'cage_creak', gain: -12 },                 // the gate swings wide 0 → 0.9 (b03−1.05 → +0.95); swell peak b03−0.4
   { at: 's11b03+1.75', name: 'cloth_rustle', gain: -22 },              // the hand draws back into the sleeve (+1.7 → +2.85)
 ];
 
@@ -173,7 +179,8 @@ function drawBoM(g, t, S) {
     // look. (The old tilt-out to {560,900,0.8} shrank Fear to ~40 px before the tear fell.)
     const k = ease.sine(clamp((t - tB3 - 0.9) / (S.end + 0.2 - tB3 - 0.9)));
     const z = Math.exp(lerp(Math.log(2.2), Math.log(2.55), k));
-    cam = withDrift({ x: FEAR_X + 75 / z, y: 1416 - 22 / z, zoom: z }, t, 2);
+    // (the face sits at ≈ FEAR_X + 28 in the close: framed at screen x ≈ 285 as before)
+    cam = withDrift({ x: FEAR_X + 28 + 75 / z, y: 1416 - 22 / z, zoom: z }, t, 2);
   }
 
   // ---------------- the Void's hand (staging §1.5 unlock recipe)
@@ -186,9 +193,11 @@ function drawBoM(g, t, S) {
   const wobble = 0.08 * turnW * Math.sin((t - T('s11b02+3.4')) * Math.PI * 2 / 0.5);
   const locked = t < T('s11b02+3.8') ? 1 : 0;
   const clickAge = t - T('s11b02+3.8');
-  // the gate drifts open on its own weight from the end of b02 (the creak starts in the wider unlock shot and carries
-  // across the cut); by the time Fear's eyes snap open (+0.12) it is at 0.27 and it settles at 0.3 by +0.7
-  const door = S.k(t, [['s11b03-0.5', 0], ['s11b03+0.7', 0.3, 'outCubic']]);
+  // the gate swings wide on its own weight, starting 0.2 s after the click (the creak starts in the wider unlock shot
+  // and carries across the cut): the leaf sweeps left across Fear's crying face while its eyes are still shut (it is
+  // edge-on, beside the hinge, at 0.59 when they snap open at +0.12, and clears the face as the head jerks away) and folds out to the left beside the cage, 0.9 by
+  // +1.0 (s12 keeps 0.9). Wide open, the doorway in front of Fear's face is empty: no stile on the face.
+  const door = S.k(t, [['s11b03-1.05', 0], ['s11b03+0.95', 0.9, 'inOut']]);
 
   // Fear pulls at the bars (dream / b02): cage rattles with each pull
   const pulls = [T('s11b01+3.0'), T('s11b01+3.9'), T('s11b01+4.7'), T('s11b02+0.7'), T('s11b02+2.15')];
@@ -308,16 +317,21 @@ function fearPose(t, S, pull) {
 
   // hands on the hinge-jamb bar (gripL) until they let go at +1.6; then they come in to the chest
   const release = S.k(t, [['s11b03+1.55', 0], ['s11b03+1.95', 1, 'sine']]);
-  // lean back pulling on the bar; straightens as it lets go
-  const lean = lerp(-0.07 - 0.04 * pull - 0.012 * hitch, 0, release) * (crying ? 1 : 1);
-  // at the creak the head recoils away from the gate (screen-left) while the eyes go to it, and holds there until the
-  // hands let go: with the eyes looking right (lookX 0.72 + the head turn) the right pupil sat exactly behind the
-  // gate's centre stile (x 393) for the whole frozen look (+0.4 → +1.6); recoiled 14 px it sits left of the stile
-  // (the stile on the iris's outer edge) and the left eye keeps the hinge stile on its inner rim
-  const headDX = lerp(S.k(t, [['s11b03+0.12', -15], ['s11b03+0.55', 14, 'out']]), 0, release);
-  const x = FEAR_X, y = OCC_SIDE[1];
+  // crying, the head rests against the bar it clings to (leaning screen-left, toward the hinge jamb); each pull leans it
+  // back. At the creak it jerks up and away from the swinging leaf (screen-right: lean and headDX flip, ~30 px) and holds
+  // there until the hands let go; facing −1, a positive headDX / lean moves the head screen-LEFT.
+  const startle = S.k(t, [['s11b03+0.12', 0], ['s11b03+0.55', 1, 'out']]);
+  const lean = lerp(lerp(0.025 - 0.1 * pull - 0.012 * hitch, -0.02, startle), 0, release);
+  const headDX = lerp(lerp(5, -18, startle), 0, release);
+  // as it lets go and turns to the Void it shuffles one small step right, so the face stays in the clear doorway
+  // (letting go straightens the lean and centres the head, which alone would bring the hinge stile back onto the eye)
+  const stepK = S.k(t, [['s11b03+1.7', 0], ['s11b03+2.3', 1, 'inOut']]);
+  const x = FEAR_X + STEP_X * stepK, y = OCC_SIDE[1];
+  const walk = stepK > 0 && stepK < 1 ? stepK * Math.PI : 0;
 
-  const gA = [355, 1497], gB = [356, 1532];   // chest level: the fists stay clear of the mouth
+  // the near hand low on the bar (the near shoulder is right next to the jamb: a grip at shoulder height folded that
+  // arm into a spike), the far hand crosses the chest higher; both stay clear of the mouth
+  const gA = [355, 1550], gB = [356, 1508];
   const tremble = S.k(t, [['s11b03', 0.6], ['s11b03+0.25', 0, 'out']]);
   let armL, armR, grips;
   if (release < 0.999) {
@@ -363,9 +377,9 @@ function fearPose(t, S, pull) {
   const crouch = crying ? 0.08 + 0.1 * clamp(hitch) : S.k(t, [['s11b03+0.12', 0.08], ['s11b03+0.3', 0, 'out']]);
   const breathe = crying ? 1.5 : 0.12;
 
-  // headDX is local (mirrors with facing): −15 with facing −1 moves the face screen-right
+  // headDX is local (mirrors with facing): −18 with facing −1 moves the face screen-right
   const pose = { t, facing, lean, headDX, headDY, headTilt, headTurn, crouch, tremble,
-    breathe, breathRate: crying ? 0.5 : 0.2, face, armL, armR };
+    breathe, breathRate: crying ? 0.5 : 0.2, face, armL, armR, walk: walk ? { phase: walk } : undefined };
   return { x, y, pose, grips, squash };
 }
 

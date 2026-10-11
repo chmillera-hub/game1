@@ -61,9 +61,13 @@ const CAM = {
 const BD = {
   two: { bg: { x: 519, y: 552, zoom: 1.6 }, haze: 0.16, fg: { x: 400, y: 950, zoom: 0.75 } },
   twoT: { bg: { x: 495, y: 565, zoom: 1.75 }, haze: 0.18, fg: { x: 360, y: 940, zoom: 0.95 } },   // hood clear above the CEO's hair
-  ceoC: { bg: { x: 550, y: 477, zoom: 1.9 }, haze: 0.2, fg: { x: 250, y: 652, zoom: 1.5 } },
-  ceoG0: { bg: { x: 550, y: 477, zoom: 1.9 }, haze: 0.2, fg: { x: 256, y: 660, zoom: 1.5 } },
-  ceoG1: { fg: { x: 263, y: 668, zoom: 1.6 } },
+  // CEO closes: Fear's near eye must sit clear of the phone UI (caption band + right-hand buttons), at <= 80 % of
+  // the frame height and well inside the right edge. The fg camera rides 60 world px lower (the CEO 90 px higher on
+  // screen; the backdrop follows by 15 so the hood keeps its air above the hair) and Fear is cheated 31 left / 77 up
+  // in these two closes only (an invisible close-up cheat: it never shares a frame with its true spot)
+  ceoC: { bg: { x: 550, y: 492, zoom: 1.9 }, haze: 0.2, fg: { x: 250, y: 712, zoom: 1.5 }, fearOff: [-31, -77] },
+  ceoG0: { bg: { x: 550, y: 492, zoom: 1.9 }, haze: 0.2, fg: { x: 256, y: 720, zoom: 1.5 }, fearOff: [-31, -77] },
+  ceoG1: { fg: { x: 263, y: 728, zoom: 1.6 } },
 };
 
 // ---------------------------------------------------------------- helpers
@@ -255,11 +259,11 @@ function drawScarfUp(g, x, y, s, p) {
   g.restore();
 }
 
-function drawFearNow(g, t, S, opts = {}) {
+function drawFearNow(g, t, S, [ox, oy] = [0, 0]) {
   const p = fearPose(t, S);
-  drawFear(g, FX, FY, FS, { ...p, shadow: true, ...opts });
-  drawKnuckles(g, FX, FY, FS, p);
-  drawScarfUp(g, FX, FY, FS, p);
+  drawFear(g, FX + ox, FY + oy, FS, { ...p, shadow: true });
+  drawKnuckles(g, FX + ox, FY + oy, FS, p);
+  drawScarfUp(g, FX + ox, FY + oy, FS, p);
 }
 
 // --------------------------------------------------------------- CONSCIOUSNESS (alarm coords, kneeling, facing 1)
@@ -353,8 +357,8 @@ function drawClipboardOnFloor(g) {
 }
 
 // characters in alarm-view coordinates (camera already applied)
-function drawPeople(g, t, S, { ceoAlpha = 1 } = {}) {
-  drawFearNow(g, t, S);
+function drawPeople(g, t, S, { ceoAlpha = 1, fearOff } = {}) {
+  drawFearNow(g, t, S, fearOff);
   drawClipboardOnFloor(g);
   drawSelf(g, CX, CY, CS, { ...ceoPose(t, S), alpha: ceoAlpha < 1 ? ceoAlpha : undefined });
 }
@@ -413,7 +417,7 @@ function renderBackdropShot(g, t, S, bd, fg) {
   g.save();
   applyCamera(g, liveCam(fg, t, 2.2));
   drawAlarmStation(g, HX, HY, 1.8, { t, alarm: 0, alarmPulled: 0 });
-  drawPeople(g, t, S);
+  drawPeople(g, t, S, { fearOff: bd.fearOff });
   drawHQForeground(g, 'alarm', { ...SET, t, lightsDim: 0 });
   g.restore();
 }

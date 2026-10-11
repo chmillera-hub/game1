@@ -6,7 +6,7 @@ import { makeExpr, withSpeech } from '../face.mjs';
 import { drawFear } from '../chars/fear.mjs';
 import { drawVoid } from '../chars/void.mjs';
 import { drawHQ, drawHQForeground } from '../sets/hq.mjs';
-import { drawCage, cagePoint } from '../sets/props.mjs';
+import { drawCage } from '../sets/props.mjs';
 import { createCanvas } from '@napi-rs/canvas';
 
 export const id = 's12';
@@ -18,23 +18,29 @@ const CAGE_B = [430, 1630, 0.952];
 const VOID_ARM_B = { bend: 1 };
 const THRESH = [440, 1648, 0.97];
 const FS = CAGE_B[2];
-// occupantBack / occupantFront nudged +22 px right: with the gate ajar (0.3) its stiles stand at x 395 / 464 and the lock
-// jamb at 505; from x 452 the near eye sits in the 395–464 gap and the far eye between 464 and 505, so no bar
-// crosses an iris in the full-cage shots (b03, b06). Centred at 430 a stile ran through each eye.
-const OCC_SIDE = [363, 1619], OCC_BACK = [452, 1598], OCC_FRONT = [452, 1630];
+// The gate stands WIDE OPEN (door 0.9, folded out to the left beside the cage) for the whole scene: s11 now swings it
+// wide (the ajar 0.3 leaf stood across the doorway and put a stile through Fear's face in s11's close and in b06).
+// The doorway runs from the hinge stile (x 354) to the lock jamb (505) with nothing in front of it.
+// OCC_SIDE = where s11 leaves Fear (its FEAR_X 392 + the step 23). occupantBack keeps its old +22 nudge (452: the
+// closes are framed on it, the lock jamb beside the far eye in b02/b04). In b06 Fear steps into the middle of the open
+// doorway (432): from 452 the lock jamb grazed its far eye in the medium; at 432 both eyes are clear of the hinge
+// stile and the jamb.
+const OCC_SIDE = [415, 1619], OCC_BACK = [452, 1598], OCC_FRONT = [432, 1630];
+const DOOR_OPEN = 0.9;
 const DOORWAY_Y = 1642;
 // Fear's rig (src/chars/fear.mjs): neck pivot and head centre (local), face origin = head centre + 8
 const NECK_Y = -148, HEAD_CY = -66, HEAD_RX = 74, HEAD_RY = 68;
 // the inside-cage closes keep ONE piece of the front layer: the right (lock) jamb with the popped padlock, so the
-// glances at "the open gate" have something to land on. Bars left of this x (the ajar door's stiles at 353/395/464)
+// glances at "the open gate" have something to land on. Bars left of this x (the hinge stile at 354, the back bars)
 // would cross the face; the jamb bar (x≈505) runs just right of the far eye and is masked out behind the head.
 const LOCK_STRIP_X = 497;
+// b06: the right hand on the lock jamb (cage x +79 local) at shoulder height, above the padlock's staple (510,1516)
+const JAMB_GRIP = [505, 1478];
 
 export const sfx = [
   { at: 'scene.start+0.564', name: 'footsteps', gain: -19, rate: 1.31, until: 'scene.start+1.25', fade: 0.12 }, // two tiny shuffles back: steps land on the contacts (+0.63, +1.05)
   { at: 's12b05+0.35', name: 'breath_shaky', gain: -14 },                                          // breath held … the exhale (file 1.45) leaks out at +1.8 with the body
   { at: 's12b06+0.32', name: 'footsteps', gain: -18, until: 's12b06+1.15', fade: 0.12 },           // the step to the gate
-  { at: 's12b07-0.05', name: 'cage_creak', gain: -15, rate: 1.5 },                                 // the gate pushed wide
   { at: 's12b07+0.5', name: 'footsteps', gain: -18, until: 's12b07+0.75', fade: 0.08 },            // stepping out: foot lands at +0.58
   { at: 's12b07+0.88', name: 'footsteps', gain: -11, until: 's12b07+1.25', fade: 0.1 },            // the tiny furious stamp on 'hurt'
   { at: 's12b09+1.9', name: 'sob', gain: -14 },                                                    // 'forever' breaks into a sob
@@ -133,7 +139,7 @@ function lockStrip(g, cst, F, t) {
 // ---------------------------------------------------------------- shots
 // cage: 'full' | 'cheat' (inside-cage close: back layer only, §1.7-10) | 'cheatLock' (cheat + the lock jamb)
 // The closes frame Fear's FACE (QA: the old 2.0–2.2 "closes" were full-length figures): b01 a big close-up with the
-// darkness above it, b02/b04 true face close-ups inside the cage, b03 a medium-close through the ajar gate with the
+// darkness above it, b02/b04 true face close-ups inside the cage, b03 a medium-close (inside-cage cheat) with the
 // fold of the sleeve above, b08/b09 a face close-up on the threshold. The wides (b05, b10) are unchanged.
 function shot(t, S, F) {
   const T = (a) => S.T(a);
@@ -387,12 +393,13 @@ function fearState(t, S) {
   // the stamp: the fists jab down with the foot
   if (stampHit > 0) { armL.target = [armL.target[0], armL.target[1] + 7 * stampHit]; armR.target = [armR.target[0], armR.target[1] + 7 * stampHit]; }
 
-  // b06/b07: the right hand finds the gate's free edge, holds it, pushes it wide, lets go
+  // b06/b07: "one step to the open gate; a small hand grips its edge": the right hand finds the edge of the open doorway
+  // (the lock jamb, just above the dangling padlock), holds it through the line, lets go as Fear steps out (b07)
   let grips;
-  const door = S.k(t, [['s12b07+0.02', 0.3], ['s12b07+0.62', 0.9, 'outCubic']]);
+  const door = DOOR_OPEN;
   const reachK = S.k(t, [['s12b06+0.85', 0], ['s12b06+1.4', 1, 'inOut'], ['s12b07+0.22', 1], ['s12b07+0.45', 0, 'sine']]);
   if (reachK > 0) {
-    const h = cagePoint('doorHandle', ...CAGE_B, { door, locked: 0 });
+    const h = JAMB_GRIP;
     const loc = [(h[0] - pos[0]) / scale, (h[1] - pos[1]) / scale];
     armR = { target: P(armR.target, loc, reachK), bend: -1, front: true, hand: reachK > 0.85 ? 'grip' : 'open' };
     if (reachK > 0.85 && t < T('s12b07+0.3')) grips = [[(h[0] - CAGE_B[0]) / FS, (h[1] - CAGE_B[1]) / FS]];
@@ -436,7 +443,7 @@ function drawBaked(g, spec, build) {
 export function render(g, t, S) {
   const F = fearState(t, S);
   const { cam, cage, bake } = shot(t, S, F);
-  const cst = { t, door: F.door, locked: 0, shake: 0.12 * bump(t, S.T('s12b07+0.62'), 0.2) };
+  const cst = { t, door: F.door, locked: 0, shake: 0 };
   const vpose = { t, ...STARE_B, idle: 0, shadowSpread: 1, handL: { ...VOID_ARM_B, show: 0, defer: 'hand' } };
   const st = { t, lightsDim: 0.35, mist: 0.6 };
   const inside = F.pos[1] <= DOORWAY_Y;

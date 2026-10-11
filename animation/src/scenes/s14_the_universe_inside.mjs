@@ -154,17 +154,20 @@ function fearState(t, S) {
     ['s14b05', 0.3],
     ['s14b10+0.2', 0.3], ['s14b10+1.2', 0, 'inOut'],                       // straightens up as the Void stares
   ]);
-  const leanScreen = K([['s14b09+0.4', 0], ['s14b09+1.2', 0.09, 'outCubic'], ['s14b09+2.4', 0, 'inOut']]); // leans after the hand
-  const facing = t < S.T('s14b10+2.3') ? 1 : -1;
+  const leanScreen = K([['s14b09+0.4', 0], ['s14b09+1.2', 0.09, 'outCubic'], ['s14b09+2.4', 0, 'inOut'],
+    ['s14b10+2.2', 0], ['s14b10+3.05', -0.035, 'inOut']]);                 // leans after the hand; cranes toward the glow
+  const facing = t < S.T('s14b10+2.52') ? 1 : -1;
   const headTurn = K([
     ['s14b05', 0.25],
     ['s14b06+4.9', 0.25], ['s14b06+5.9', 0.32],                             // 'wonder': turns a touch into the light
     ['s14b07+1.0', 0.25],
     ['s14b09+0.25', 0.25], ['s14b09+0.7', 0.45],                            // glance at its own shoulder
     ['s14b09+1.4', 0.3], ['s14b09+2.2', 0.25],
-    // follows the Void's gaze: the eyes lead (b10+1.75), the head comes round 0.2 s later to a 3/4 toward the
-    // far glow (screen-left and up), the body turns under it (facing flips at +2.3 inside a blink)
-    ['s14b10+1.95', 0.25], ['s14b10+2.8', -0.7, 'inOut'],
+    // follows the Void's gaze (QA r2: the old 0.25 → −0.7 turn, started 0.35 s after the cut, didn't read): a held
+    // beat still on the hood after the cut, then the eyes lead (b10+1.95), the head comes round 0.2 s later to a
+    // clear 3/4 toward the far glow — the way the hood turned (screen-left and up) — and the body turns under it
+    // (facing flips at +2.52 inside a blink)
+    ['s14b10+2.15', 0.25], ['s14b10+3.0', -1.0, 'inOut'],
   ]);
   const tiltScreen = K([
     ['s14b05', -0.15],
@@ -174,14 +177,14 @@ function fearState(t, S) {
     ['s14b08', -0.14], ['s14b08.end', -0.23],                               // tilts a few degrees as it asks
     ['s14b09+0.25', -0.2], ['s14b09+0.8', 0.07],                            // dips toward the shoulder
     ['s14b09+1.6', -0.13],
-    ['s14b10+1.95', -0.14], ['s14b10+2.8', -0.04, 'inOut'],
+    ['s14b10+2.15', -0.14], ['s14b10+3.0', 0.05, 'inOut'],                 // crown tips away: chin up, over its shoulder
   ]) + fbm(t * 0.35, 21) * 0.015;
   const headDY = K([
     ['s14b06+2.75', 0], ['s14b06+2.95', -3], ['s14b06+3.2', -0.5], ['s14b06+3.4', -2.5], ['s14b06+3.7', 0], // breath of a laugh
     ['s14b06+4.9', 0], ['s14b06+5.9', -3], ['s14b07+0.6', -3.4], ['s14b07+1.5', 0],                         // lifts on 'wonder'
     ['s14b07+2.0', 0], ['s14b07+2.12', 3.2], ['s14b07+2.3', 0],             // swallow
     ['s14b07+2.3', 0], ['s14b07+2.5', -1.8], ['s14b07+2.8', 0],             // small breath in, then the question
-    ['s14b10+2.2', 0], ['s14b10+2.3', 2.5], ['s14b10+2.5', 0],              // weight shift on the turn
+    ['s14b10+2.42', 0], ['s14b10+2.52', 2.5], ['s14b10+2.72', 0],           // weight shift on the turn
   ]);
 
   // arms (first seen at b05, 17 s after s13's last view of Fear): the self-hug from s13 relaxes a little; on
@@ -240,9 +243,10 @@ function fearState(t, S) {
     ['s14b09+0.25', BR(0.6, 0.5)],
     ['s14b09+0.7', BR(0.22, 0.72, 0.15)],                                   // dip: missing the hand
     ['s14b09+1.6', BR(0.3, 0.6, 0.1, 0.18, -0.05)],                         // puzzled, watching the hood turn
-    ['s14b10+1.8', BR(0.32, 0.55, 0.1, 0.15, 0)],
-    ['s14b10+2.15', BR(0.5, 0.4)],                                          // the eyes find the glow
-    ['s14b10+2.9', BR(-0.2, 0.05, 0.55)],                                   // narrow to see (peering)
+    ['s14b10+2.0', BR(0.32, 0.55, 0.1, 0.15, 0)],
+    ['s14b10+2.35', BR(0.5, 0.4)],                                          // the eyes find the glow
+    ['s14b10+2.75', BR(0.5, 0.4)],
+    ['s14b10+3.15', BR(-0.2, 0.05, 0.55)],                                  // narrow to see (peering)
     ['s14b10+3.4', BR(-0.2, 0.05, 0.55)],
     ['s14b10+3.85', BR(0.7, 0.45)],                                         // widen: they're looking back
   ]);
@@ -260,8 +264,8 @@ function fearState(t, S) {
     ['s14b09+0.3', LD(-0.08, 0.12, 0.12)],
     ['s14b09+0.7', LD(0.22, 0.1, 0.25)],                                    // eyes drop to the shoulder
     ['s14b09+1.5', LD(-0.02, 0.05, 0.15)],
-    ['s14b10+2.4', LD(-0.04, 0.05, 0.1)],
-    ['s14b10+2.9', LD(0.15, 0.5, -0.12)],                                   // narrow: lower lids rise, peering
+    ['s14b10+2.7', LD(-0.04, 0.05, 0.1)],
+    ['s14b10+3.15', LD(0.15, 0.5, -0.12)],                                  // narrow: lower lids rise, peering
     ['s14b10+3.4', LD(0.15, 0.5, -0.12)],
     ['s14b10+3.85', LD(-0.2, 0.0, 0.1)],                                    // widen
   ]);
@@ -298,8 +302,8 @@ function fearState(t, S) {
     ['s14b09+0.3', MO(0.1, 0.0, 0.15, 0, 0, 0.1)],
     ['s14b09+0.8', MO(0.03, -0.18, 0.0, -0.08, 0.2, 0.05)],                 // missing it
     ['s14b09+1.8', MO(0.07, -0.12, 0.1, 0, 0, 0)],
-    ['s14b10+2.4', MO(0.06, -0.08, 0.1, 0, 0, 0)],
-    ['s14b10+2.9', MO(0.0, -0.05, 0.0, -0.05, 0.3, 0)],                     // squinting
+    ['s14b10+2.7', MO(0.06, -0.08, 0.1, 0, 0, 0)],
+    ['s14b10+3.15', MO(0.0, -0.05, 0.0, -0.05, 0.3, 0)],                    // squinting
     ['s14b10+3.4', MO(0.0, -0.05, 0.0, -0.05, 0.3, 0)],
     ['s14b10+3.85', MO(0.2, 0.0, 0.4, -0.05, 0, 0.1)],                      // widen: a soft "oh"
   ]);
@@ -311,8 +315,8 @@ function fearState(t, S) {
     ['s14b06+5.4', { pupil: 1.45, sparkle: 1 }],                            // 'wonder': the pupils bloom
     ['s14b07+1.2', { pupil: 1.32, sparkle: 1 }],
     ['s14b09+1.0', { pupil: 1.28, sparkle: 1 }],
-    ['s14b10+1.8', { pupil: 1.15, sparkle: 0.85 }],
-    ['s14b10+2.9', { pupil: 0.95, sparkle: 0.45 }],
+    ['s14b10+2.0', { pupil: 1.15, sparkle: 0.85 }],
+    ['s14b10+3.15', { pupil: 0.95, sparkle: 0.45 }],
     ['s14b10+3.85', { pupil: 1.3, sparkle: 0.6 }],
   ]);
   // gaze (with micro-saccades that "search the stars")
@@ -324,8 +328,8 @@ function fearState(t, S) {
     ['s14b09+0.2', GZ(0.38, -0.98)], ['s14b09+0.45', GZ(0.8, 0.4)],          // glance at its own shoulder
     ['s14b09+1.0', GZ(0.8, 0.4)], ['s14b09+1.3', GZ(0.62, -0.7)],             // up the withdrawing arm
     ['s14b09+1.7', GZ(0.5, -0.9)], ['s14b09+3.4', GZ(0.32, -1)],              // to the hood as it turns
-    ['s14b10+1.75', GZ(0.32, -1)], ['s14b10+2.0', GZ(-0.65, -0.62)],          // eyes lead to where it looks
-    ['s14b10+2.8', GZ(-0.3, -0.72)],                                         // the head has come round
+    ['s14b10+1.95', GZ(0.32, -1)], ['s14b10+2.2', GZ(-0.72, -0.58)],         // eyes lead to where it looks
+    ['s14b10+3.0', GZ(-0.55, -0.6)],                                         // the head has come round
   ]);
   const searching = S.talking('FEAR', t) * 0.05;
   const micro = (s) => fbm(t * 0.45, s) * (0.05 + searching);
@@ -349,7 +353,7 @@ function fearState(t, S) {
     blinkAt(t, S.T('s14b08.end+0.2'), 0.3),   // waiting for an answer
     blinkAt(t, S.T('s14b09+1.08'), 0.18),     // gaze shift up the arm
     blinkAt(t, S.T('s14b09+3.05'), 0.18),
-    blinkAt(t, S.T('s14b10+2.2'), 0.22),      // the head comes round: lids shut across the facing flip at +2.3
+    blinkAt(t, S.T('s14b10+2.42'), 0.24),     // the head comes round: lids shut across the facing flip at +2.52
     blinkAt(t, S.T('s14b10+3.42'), 0.17),     // "did I see that right?"
   );
 

@@ -2,6 +2,7 @@
 // "My other emotions were looking back." — Fear's POV down the room: the four emotions turned on their
 // stools, looking straight at Fear; one smile each; then back to work.
 import fs from 'fs';
+import { createCanvas } from '@napi-rs/canvas';
 import { clamp, lerp, mix, fbm, blinkAt, applyCamera, drift, vignette } from '../engine.mjs';
 import { drawHQ, drawHQForeground, HQ_VIEWS } from '../sets/hq.mjs';
 import { drawCage } from '../sets/props.mjs';
@@ -237,10 +238,12 @@ function renderBack(g, t, S, shot) {
 function fearFace(t, S, shot) {
   const gx = fbm(t * 0.4, 41) * 0.06, gy = fbm(t * 0.35, 43) * 0.05;
   if (shot === 'fearA') {
-    // eyes widen; lower lip quivers; brows lift into a hopeful, worried shape; very still
+    // eyes widen; lower lip quivers; brows lift into a hopeful, worried shape; very still. Eyes LEVEL, down the room
+    // at the emotions (QA r2: with the lower lid fully down, the white under the iris made the gaze read high, as if
+    // still on the hood): the iris sits a hair low and the lower lid rises a touch, like fearB's
     const w = S.k(t, [['s15b01+1.95', 0], ['s15b01+2.35', 1, 'outCubic']]);
     return {
-      lookX: -0.42 + gx, lookY: -0.06 + gy,
+      lookX: -0.42 + gx, lookY: 0.06 + gy * 0.6, lidL: 0.13,
       lidU: lerp(0.05, -0.25, w), pupil: lerp(1.1, 1.3, w), browIn: lerp(0.45, 0.75, w), browUp: lerp(0.15, 0.5, w),
       lidTilt: 0.15, smile: -0.12, open: 0.04, tremble: 0.55 * w, tears: 0.55, sparkle: 0.35, blush: 0.1,
     };
@@ -261,17 +264,44 @@ function fearFace(t, S, shot) {
   };
 }
 
+// PERFORMANCE (these closes ran ≈48 ms/frame): the set and the Void behind Fear are still in a 1.2–1.7 s close, so
+// they are rendered once per close into a world-space plate (as in s14's closes) at a FIXED instant (the shot's first
+// frame, so any frame renders identically in any order / render chunk) and blitted under the live camera. The cage
+// stays live (its TIME-OUT sign and the open padlock sway), as do Fear, the starlight and the low mist in front.
+const FEAR_CAM = [440, 1430, 3.0, 3.06];          // x, y, zoom at the cut → after the 2.5 s push-in
+const plates = new Map();
+function bgPlate(key, tb) {
+  let p = plates.get(key);
+  if (p) return p;
+  const [x, y, z0, z1] = FEAR_CAM, m = 14;          // m: screen px of margin for the drift (≤2 px) and its roll
+  const rect = [x - (360 + m) / z0, y - (640 + m) / z0, x + (360 + m) / z0, y + (640 + m) / z0];
+  const ww = rect[2] - rect[0], wh = rect[3] - rect[1];
+  const c = createCanvas(Math.ceil(ww * z1), Math.ceil(wh * z1));
+  const pg = c.getContext('2d');
+  pg.scale(c.width / ww, c.height / wh);
+  pg.translate(-rect[0], -rect[1]);
+  drawFearBack(pg, tb);
+  p = { c, rect };
+  plates.set(key, p);
+  return p;
+}
+function drawFearBack(g, t) {
+  drawHQ(g, 'backOfMind', { t, lightsDim: 0.3, mist: 0.48 });
+  // the hood (face y≈243) is far above this frame, so its cosmos (0.5 from s14b10) is not drawn: saves ≈2 ms
+  const vpose = { t, ...STARE_B, idle: 0.5, cosmos: 0, shadowSpread: 0.7, handL: { bend: 1, show: 0, defer: 'hand' } };
+  drawVoid(g, ...VOID_B, vpose);
+}
+
 function renderFear(g, t, S, shot) {
   const st = { t, lightsDim: 0.3, mist: 0.48 };
   // a breath of push-in on each reverse
   const t0 = S.T(shot === 'fearA' ? 's15b01+1.9' : W('just'));
-  const z = 3.0 + 0.06 * clamp((t - t0) / 2.5);
+  const [cx, cy, z0, z1] = FEAR_CAM;
+  const z = z0 + (z1 - z0) * clamp((t - t0) / 2.5);
   g.save();
-  applyCamera(g, cam(t, { x: 440, y: 1430, zoom: z }, 2));
-  drawHQ(g, 'backOfMind', st);
-  // the hood (face y≈243) is far above this frame, so its cosmos (0.5 from s14b10) is not drawn: saves ≈2 ms
-  const vpose = { t, ...STARE_B, idle: 0.5, cosmos: 0, shadowSpread: 0.7, handL: { bend: 1, show: 0, defer: 'hand' } };
-  drawVoid(g, ...VOID_B, vpose);
+  applyCamera(g, cam(t, { x: cx, y: cy, zoom: z }, 2));
+  const pl = bgPlate(shot, t0);
+  g.drawImage(pl.c, pl.rect[0], pl.rect[1], pl.rect[2] - pl.rect[0], pl.rect[3] - pl.rect[1]);
   const cst = { t, door: 0.9, locked: 0 };
   drawCage(g, ...CAGE_B, { ...cst, layer: 'back' });
   drawCage(g, ...CAGE_B, { ...cst, layer: 'front' });

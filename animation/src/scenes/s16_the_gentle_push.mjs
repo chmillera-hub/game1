@@ -75,9 +75,38 @@ const sleeveFront = (g, pose) => {
   g.save(); g.beginPath(); g.rect(-1e4, SLEEVE_CLIP_Y, 2e4, 2e4); g.clip();
   drawVoidArm(g, ...VOID_B, pose, 'L', 'sleeve'); g.restore();
 };
+// the hand slides out of the cuff while the arm is already swinging, so it is angled off the sleeve's axis: while it
+// is still mostly inside (show < ~0.25) a fingertip would poke through the SIDE of the sleeve. Keep it to the far
+// side of the cuff opening; the cut-off plane recedes up the sleeve as the hand comes out (gone by show 0.7).
+function emergingHand(g, vp) {
+  const show = vp.handL.show;
+  if (show >= 0.999) { drawVoidHand(g, ...VOID_B, vp, 'L'); return; }
+  const A = voidRig(vp).armL, u = [Math.cos(A.fa), Math.sin(A.fa)], n = [-u[1], u[0]];
+  const back = 14 + 400 * ease.inOut(clamp((show - 0.3) / 0.4));
+  const [vx, vy, vs] = VOID_B;
+  const o = [vx + (A.W[0] - u[0] * back) * vs, vy + (A.W[1] - u[1] * back) * vs], R = 1e4;
+  g.save();
+  g.beginPath();
+  g.moveTo(o[0] + n[0] * R, o[1] + n[1] * R); g.lineTo(o[0] - n[0] * R, o[1] - n[1] * R);
+  g.lineTo(o[0] - n[0] * R + u[0] * R, o[1] - n[1] * R + u[1] * R); g.lineTo(o[0] + n[0] * R + u[0] * R, o[1] + n[1] * R + u[1] * R);
+  g.closePath(); g.clip();
+  drawVoidHand(g, ...VOID_B, vp, 'L');
+  g.restore();
+}
 const cam = (t, c, amp = 2.5) => { const d = drift(t, amp); return { ...c, shakeX: d.dx, shakeY: d.dy, rot: d.dr }; };
 const seg = (t, a, b) => clamp((t - a) / (b - a));
 const lerp3 = (p, q, k) => [lerp(p[0], q[0], k), lerp(p[1], q[1], k), lerp(p[2], q[2], k)];
+// blend two of Fear's arm poses (local coords; side −1 = armL, +1 = armR). When the elbow bend or the front/back draw
+// order differ, the arm passes through a straight pose hanging out at the side, where the bend flip is invisible and
+// the arm barely overlaps the body, so neither switch pops
+function armMix(a, b, k, side) {
+  if (k <= 0.001) return a;
+  if (k >= 0.999) return b;
+  const lin = [lerp(a.target[0], b.target[0], k), lerp(a.target[1], b.target[1], k)];
+  if (a.bend === b.bend && !!a.front === !!b.front) return { ...(k < 0.5 ? a : b), target: lin };
+  const s = Math.sin(Math.PI * k), straight = [side * 72, -56];   // shoulder (±27, −134) + 90 at 30° out from vertical
+  return { ...(k < 0.5 ? a : b), target: [lerp(lin[0], straight[0], s), lerp(lin[1], straight[1], s)] };
+}
 
 // the scarf end that Fear wipes its eyes with: a knitted strip from the scarf knot up into the fist (world
 // coords), then the fist redrawn over it so the cloth is held, not stuck on the face
@@ -168,9 +197,10 @@ function fearPose(t, S, shot) {
   const eyesBack = S.k(t, [['s16b03+1.05', 0], ['s16b03+1.25', 1]]);
   const headBack = S.k(t, [['s16b03+1.2', 0], ['s16b03+1.75', 1, 'inOut']]);
   // ---- b04: the smile arrives (eyes first), a last tear, a nod; turns to the light and skips
-  // the change starts as soon as we are back on Fear after the hood: brows ease, the eyes fill and shine (wonder);
-  // the smile at b04 is the end of it
-  const relax = S.k(t, [[W('facade', -0.05), 0], ['s16b04', 0.55, 'sine'], ['s16b04+0.7', 1]]);
+  // back on Fear after the hood the eyes fill and shine (wonder) at once; the worried inner-up brows hold while it
+  // takes in the stars, then from ≈ b04−0.4 they visibly let go (QA: before, the change went unseen until ≈ b04+0.6),
+  // ahead of the smile, which is the end of it
+  const relax = S.k(t, [[W('facade', -0.05), 0], ['s16b04-0.4', 0.1], ['s16b04+0.45', 0.85, 'inOut'], ['s16b04+0.8', 1]]);
   const glisten = S.k(t, [[W('facade', -0.3), 0], [W('facade', 0.6), 1, 'sine'], ['s16b04+0.9', 1], ['scene.end-1.9', 0.5]]);
   const eyeSmile = S.k(t, [['s16b04+0.2', 0], ['s16b04+0.9', 1]]);
   const blush = S.k(t, [['s16b04+0.4', 0], ['s16b04+1.1', 1]]);
@@ -181,11 +211,15 @@ function fearPose(t, S, shot) {
   const eyesFwd = S.k(t, [['scene.end-2.02', 0], ['scene.end-1.88', 1]]);
 
   // head: looking back over the scarf, up at the hood (up-right on screen)
+  // the look back OVER THE SHOULDER (QA: it read square to camera, as a look up): the body stays pointed the way it
+  // was walking (screen-left: see the arms below; it leans a touch into it) while the head turns back toward the
+  // hood and shifts over the right shoulder
   const back = headBack * (1 - turnFwd);
-  pose.headTurn = lerp(-0.12, 0.55, back) - 0.42 * turnFwd;
+  pose.headTurn = lerp(-0.12, 0.74, back) - 0.42 * turnFwd;
+  pose.headDX = -5 * back;
   pose.headTilt = 0.1 * back + 0.04 * Math.sin(Math.PI * nod) - 0.06 * turnFwd;
   pose.headDY = -5 * sniff + 5 * nod;
-  pose.lean = -0.08 * tip + 0.05 * clamp(P.sk * 3) * (1 - P.sk);
+  pose.lean = -0.08 * tip + 0.05 * clamp(P.sk * 3) * (1 - P.sk) + 0.05 * back;
   pose.crouch = 0.12 * S.k(t, [['scene.end-1.86', 0], ['scene.end-1.74', 1], ['scene.end-1.64', 0]]);
   pose.breathe = 1 + 1.4 * sniff;
 
@@ -222,24 +256,31 @@ function fearPose(t, S, shot) {
   face.browIn += 0.25 * clamp(blinkAt(t, S.T('s16b04+0.55'), 0.45) * 2);
   pose.face = face;
 
-  // arms
-  pose.armL = { target: [-14, -118], bend: -1, front: true, hand: 'fist' };   // resting together at the belly
-  pose.armR = { target: [12, -116], bend: 1, front: true, hand: 'fist' };
+  // arms (character-local; facing −1, so local +x is screen-left, the way Fear leaves). armL is the screen-RIGHT arm.
+  const CLASP_L = { target: [-14, -118], bend: -1, front: true, hand: 'fist' };   // resting together at the belly
+  const CLASP_R = { target: [12, -116], bend: 1, front: true, hand: 'fist' };
+  const sw = Math.sin(P.phase) * 10, ssw = Math.sin(P.phase) * 14;
+  const WALK_L = { target: [-36 + sw, -84], bend: 1, hand: 'open' }, WALK_R = { target: [36 + sw, -84], bend: -1, hand: 'open' };
+  const SKIP_L = { target: [-44 + ssw, -96], bend: 1, hand: 'open' }, SKIP_R = { target: [44 + ssw, -96], bend: -1, hand: 'open' };
+  // the look back OVER THE SHOULDER (QA: the frontal clasp read square to camera): the body is turned toward the exit,
+  // so the near (screen-right) arm crosses the belly to its far side and the far arm hangs hidden behind the body
+  const LOOK_L = { target: [8, -114], bend: -1, front: true, hand: 'fist' }, LOOK_R = { target: [26, -92], bend: -1, hand: 'fist' };
+  const walkW = S.k(t, [['s16b02+2.75', 0], ['s16b02+3.3', 1]]);                  // the startled arms settle into the walk
+  const lookW = S.k(t, [['s16b03+0.95', 0], ['s16b03+1.55', 1, 'inOut']]);         // the stop: arms settle as the head turns back
+  const skipW = S.k(t, [['scene.end-1.9', 0], ['scene.end-1.66', 1, 'inOut']]);    // swing out into the skip
+  pose.armL = CLASP_L; pose.armR = CLASP_R;
   if (w1 > 0.01) pose.armR = { target: [lerp(12, 30, w1) + 0.6 * rub('scene.start') * w1, lerp(-116, -198, w1) + 0.5 * rub('scene.start') * w1], bend: -1, front: true, hand: 'fist' };
   if (w2 > 0.01) pose.armL = { target: [lerp(-14, -30, w2) + 0.6 * rub('s16b01+0.55') * w2, lerp(-118, -198, w2) + 0.5 * rub('s16b01+0.55') * w2], bend: 1, front: true, hand: 'fist' };
   if (arms > 0.01) {
-    pose.armL = { target: [lerp(-14, -78, arms), lerp(-118, -112, arms)], bend: 1, hand: 'open' };
-    pose.armR = { target: [lerp(12, 80, arms), lerp(-116, -108, arms)], bend: -1, hand: 'open' };
-  }
-  if (P.walking && arms < 0.01) {
-    const sw = Math.sin(P.phase) * 10;
-    pose.armL = { target: [-36 + sw, -84], bend: 1, hand: 'open' };
-    pose.armR = { target: [36 + sw, -84], bend: -1, hand: 'open' };
-  }
-  if (P.sk > 0) { // skipping: arms swing happily
-    const sw = Math.sin(P.phase) * 14;
-    pose.armL = { target: [-44 + sw, -96], bend: 1, hand: 'open' };
-    pose.armR = { target: [44 + sw, -96], bend: -1, hand: 'open' };
+    // the arms fly out from the clasp and, as they come down, settle toward the walk pose (not back to the clasp, which
+    // flashed for two frames between them)
+    const bL = lerp3([...CLASP_L.target, 0], [...WALK_L.target, 0], walkW), bR = lerp3([...CLASP_R.target, 0], [...WALK_R.target, 0], walkW);
+    pose.armL = { target: [lerp(bL[0], -78, arms), lerp(bL[1], -112, arms)], bend: 1, hand: 'open' };
+    pose.armR = { target: [lerp(bR[0], 80, arms), lerp(bR[1], -108, arms)], bend: -1, hand: 'open' };
+  } else if (walkW > 0) {
+    // walk → (the stop) the look back → the skip, each a blend (the stop used to snap the walk arms into the clasp)
+    pose.armL = armMix(armMix(WALK_L, LOOK_L, lookW, -1), SKIP_L, skipW, -1);
+    pose.armR = armMix(armMix(WALK_R, LOOK_R, lookW, 1), SKIP_R, skipW, 1);
   }
   pose.scarfWind = 0.4 * P.sk;
   return { pose, P, wipe: { w1, w2 } };
@@ -255,9 +296,9 @@ function voidPose(t, S, shot) {
   const back = [fx + 34 * fs, fy - 112 * fs];
   const ap = [back[0] + APPROACH_PUSH[0] * fs, back[1] + APPROACH_PUSH[1] * fs];
   const tgt = [lerp(ap[0], back[0], settle) - 8 * VOID_B[2] * nudge, lerp(ap[1], back[1], settle)];
-  const handL = show > 0.001
-    ? { ...VOID_HANDS.push(toVoidLocal(...VOID_B, ...tgt), -1), ...VOID_ARM_B, elbow: 0.8 * reach, angle: PUSH_ANGLE, show, reach, defer: 'hand' }
-    : { ...VOID_ARM_B, show: 0, defer: 'hand' };
+  // ONE arm config for the whole scene (show only hides the hand): at reach 0 it is exactly the rest sleeve
+  // (wrist at rest, elbow 0, bend 1), so the sleeve starts moving at s16b02 and never jumps when the hand shows
+  const handL = { ...VOID_HANDS.push(toVoidLocal(...VOID_B, ...tgt), -1), ...VOID_ARM_B, elbow: 0.8 * reach, angle: PUSH_ANGLE, show, reach, defer: 'hand' };
   // only shot D frames the hood; elsewhere the cosmos would be drawn off-frame (≈2 ms), so it is skipped
   return { t, ...STARE_B, idle: 0.5, cosmos: shot === 'D' ? COSMOS_HOOD : 0, cosmosOpts: { seed: 7, glyphs: 0 }, shadowSpread: 0.6, handL };
 }
@@ -299,7 +340,8 @@ export function render(g, t, S) {
   const cst = { t, door: 0.9, locked: 0 };
   drawCage(g, ...CAGE_B, { ...cst, layer: 'back' });
   drawCage(g, ...CAGE_B, { ...cst, layer: 'front' });
-  if (vp.handL.show > 0) { sleeveFront(g, vp); drawVoidHand(g, ...VOID_B, vp, 'L'); }
+  if (vp.handL.reach > 0.001 || vp.handL.show > 0) sleeveFront(g, vp);    // the moving sleeve passes in front of the cage
+  if (vp.handL.show > 0) emergingHand(g, vp);
   if (shot === 'D') {
     drawVoidGlow(g, ...VOID_B, { ...vp, glow: 0.6 });
     hoodTwinkles(g, t, S);

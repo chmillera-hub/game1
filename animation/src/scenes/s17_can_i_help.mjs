@@ -377,7 +377,9 @@ function ceoPose(t, S, shot, C) {
   const smile = S.k(t, [['s17b05+0.3', 0], ['s17b05+1.15', 1, 'sine']]);
   const laugh = S.k(t, [['s17b05+1.02', 0], ['s17b05+1.12', 1], ['s17b05+1.3', 0.35], ['s17b05+1.4', 0.8], ['s17b05+1.75', 0]]);
   const nod = S.k(t, [['s17b05+1.75', 0], ['s17b05+1.97', 1, 'inOut'], ['s17b05+2.25', 0, 'inOut']]);
-  const putDown = S.k(t, [['s17b05+1.95', 0], ['s17b05+2.5', 1]]);
+  // ends ON the cut to the wide (same anchor as E1_END): the clipboard, pen and holding arms switch off exactly at the
+  // cut, never on a close-up frame (QA: at +2.5 they vanished one frame before the cut) — the wide never shows them
+  const putDown = S.k(t, [['s17b05+1.95', 0], [E1_END, 1]]);
 
   // gaze: clipboard (down-left) → Fear (down-right) → over the shoulder (back of the mind) → Fear
   let lookX = lerp(-0.1, 0.5, senses), lookY = lerp(0.5, 0.62, senses);
