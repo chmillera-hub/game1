@@ -485,14 +485,17 @@ def peek_frame(t, st, p):
     y down; origin = the screen-right eye), from two cheap solves with the arm down:
     the hood-down rim (yA), the second render's higher rim (yB), the tent peak at the finger."""
     a = _draw_person(_dummy(), t, st, reach=None)
-    b = _draw_person(_dummy(), t, st, hood=HOOD_PEEK, reach=None)
     el, er = a["eye_l"], a["eye_r"]
     ang = math.atan2(er[1] - el[1], er[0] - el[0])
     ux, uy = math.cos(ang), math.sin(ang)
     O = er
     ed = math.hypot(er[0] - el[0], er[1] - el[1])
     yA = _loc(O, ux, uy, a["hood_rim"])[1] + 2.6 * S
-    yB = _loc(O, ux, uy, b["hood_rim"])[1] + 2.6 * S
+    # the second render's rim sits a fixed distance higher (same head): solve it once
+    if "rim_dy" not in _PEEK_CACHE:
+        b = _draw_person(_dummy(), t, st, hood=HOOD_PEEK, reach=None)
+        _PEEK_CACHE["rim_dy"] = yA - (_loc(O, ux, uy, b["hood_rim"])[1] + 2.6 * S)
+    yB = yA - _PEEK_CACHE["rim_dy"]
     hmax = max(0.0, yA - (yB + 5.0 * S))
     h = hmax * clamp(p / 1.25, 0.0, 1.0)
     Fx = PEEK_FX * ed
@@ -500,7 +503,10 @@ def peek_frame(t, st, p):
     gl = (fx_ - FINGER * S * math.cos(FINGER_ANG), fy_ - FINGER * S * math.sin(FINGER_ANG))
     grip = (O[0] + gl[0] * ux - gl[1] * uy, O[1] + gl[0] * uy + gl[1] * ux)
     return dict(O=O, ang=ang, ed=ed, yA=yA, yB=yB, h=h, hmax=hmax, Fx=Fx, xl=-0.85 * ed, xr=Fx + 0.5 * ed,
-                grip=grip, fang=ang + FINGER_ANG, eye_b=b["eye_r"], hand0=a["hand_r"])
+                grip=grip, fang=ang + FINGER_ANG, eye_b=a["eye_r"], hand0=a["hand_r"], a0=a)
+
+
+_PEEK_CACHE = {}
 
 
 def _tent_at_finger(g, a, p):
@@ -560,35 +566,30 @@ def _hand_over(ctx, t, st, a, g=None, arch=None, xs=None):
     al = smoothstep(clamp((st.get("arm", 0.0) - 0.5) / 0.4))     # eases on as the hand nears the hood
     if al <= 0.0:
         return
-    if g is None:
-        ctx.save()
-        _hand_disc(ctx, a)
-        ctx.clip()
-        ctx.push_group()
-        _draw_person(ctx, t, st, pose=st["pose_front"])
-        ctx.pop_group_to_source()
-        ctx.paint_with_alpha(al)
-        ctx.restore()
-        return
     ctx.save()
     _hand_disc(ctx, a)
     ctx.clip()
-    ctx.push_group()
-    ctx.save()
-    hx, hy = a["hand_r"][:2]
-    ctx.rectangle(hx - 400, hy - 400, 800, 800)
-    _window_path(ctx, g, arch, xs, local=False)
-    ctx.set_fill_rule(cairo.FILL_RULE_EVEN_ODD)
-    ctx.clip()
-    _draw_person(ctx, t, st, pose=st["pose_front"])
-    ctx.restore()
-    ctx.save()
-    _window_path(ctx, g, arch, xs, local=False)
-    ctx.clip()
-    _draw_person(ctx, t, st, pose=st["pose_front"], **_bface_kw(st))
-    ctx.restore()
-    ctx.pop_group_to_source()
-    ctx.paint_with_alpha(al)
+    if al < 1.0:
+        ctx.push_group()
+    if g is None:
+        _draw_person(ctx, t, st, pose=st["pose_front"])
+    else:
+        ctx.save()
+        hx, hy = a["hand_r"][:2]
+        ctx.rectangle(hx - 400, hy - 400, 800, 800)
+        _window_path(ctx, g, arch, xs, local=False)
+        ctx.set_fill_rule(cairo.FILL_RULE_EVEN_ODD)
+        ctx.clip()
+        _draw_person(ctx, t, st, pose=st["pose_front"])
+        ctx.restore()
+        ctx.save()
+        _window_path(ctx, g, arch, xs, local=False)
+        ctx.clip()
+        _draw_person(ctx, t, st, pose=st["pose_front"], **_bface_kw(st))
+        ctx.restore()
+    if al < 1.0:
+        ctx.pop_group_to_source()
+        ctx.paint_with_alpha(al)
     ctx.restore()
 
 
@@ -706,6 +707,32 @@ def tired_anchors(t, k, info, st=None):
     """Anchors of Tiredness at time t without drawing to the frame."""
     st = st or tired_state(t, k, info)
     return _draw_person(_dummy(), t, st)
+
+
+_GRID = {}
+GRID_DT = 0.125
+
+
+def tired_head(t, k, info):
+    """His head / crown / eyes for Curiosity's gaze and the light bbox: solved on a fixed
+    0.125 s grid and interpolated (deterministic, a fraction of a full solve per frame)."""
+    i = int(math.floor(t / GRID_DT))
+    out = []
+    for j in (i, i + 1):
+        v = _GRID.get((id(k), j))
+        if v is None:
+            if len(_GRID) > 4000:
+                _GRID.clear()
+            a = tired_anchors(j * GRID_DT, k, info)
+            v = {n: a[n][:2] for n in ("head", "top", "eye_r", "eye_l")}
+            _GRID[(id(k), j)] = v
+        out.append(v)
+    u = (t - i * GRID_DT) / GRID_DT
+    return {n: lerp_pt(out[0][n], out[1][n], u) for n in out[0]}
+
+
+def lerp_pt(a, b, u):
+    return (a[0] + (b[0] - a[0]) * u, a[1] + (b[1] - a[1]) * u)
 
 
 # ---------------------------------------------------------------------------
@@ -1028,7 +1055,7 @@ def _shots(k):
                                         lerp(c0[2], 1.43, smoothstep(seg(t, 0.0, s1_end)))), False)
     add(s1_end, k.cut_fit, "climb",
         lambda t: (lerp(955, 1030, smoothstep(seg(t, k.hop1, k.hop2 + 0.5))), 1060, 1.85))
-    add(k.cut_fit, k.cut_roll, "fit", lambda t: (1040, lerp(1000, 994, seg(t, k.cut_fit, k.cut_roll)), 2.3))
+    add(k.cut_fit, k.cut_roll, "fit", lambda t: (1040, lerp(1000, 994, seg(t, k.cut_fit, k.cut_roll)), 2.2))
     add(k.cut_roll, k.HOOD, "roll", lambda t: (CUR_HEAD[0] + 10, CUR_HEAD[1] - 44, 3.0))   # plate text cropped
     add(k.HOOD, k.cut_oh, "hood",
         lambda t: (lerp(1050, 1070, smoothstep(seg(t, k.hd1, k.pk1))), 968, 2.4))   # pans to keep his hand in
@@ -1219,10 +1246,13 @@ def render(ctx, t, info):
     t0, t1, name, cam, sense = sh
     cx, cy, zoom = cam(t)
     tst = tired_state(t, k, info)
-    ta = tired_anchors(t, k, info, tst)            # where his head is (Curiosity's gaze, bbox)
-    if tst.get("peek_geo"):                        # its gaze needs the peeking eye's real spot
-        ta = dict(ta)
+    if tst.get("peek_geo"):                        # arm-down anchors: head, top, the peeking eye
+        ta = dict(tst["peek_geo"]["a0"])
         ta["peek_eye"] = tst["peek_geo"]["eye_b"]
+    elif t >= k.BONK - 0.1 or (k.sit0 - 0.1 <= t < k.sit1 + 0.1):
+        ta = tired_anchors(t, k, info, tst)        # fast moves: the exact solve
+    else:
+        ta = tired_head(t, k, info)                # where his head is (Curiosity's gaze, bbox)
     cst = _resolve_look(cur_state(t, k), ta)
     deep = deep_dark(t, k, name)
     post = 0.0

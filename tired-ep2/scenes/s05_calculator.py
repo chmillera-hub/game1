@@ -394,40 +394,73 @@ def a_dark(c):
 
 
 # =========================================================================== lighting
-def light_chars(ctx, rect_, base, holes, tints=()):
-    """Darken what is already in the current group (the characters) ATOP: a wash of
-    strength `base` with soft holes [(x, y, r, strength)] where light falls, then
-    coloured tints [(x, y, r, colour, alpha)] (also ATOP)."""
+def soft_layer(rect_, fn, res=(150, 270)):
+    """Render fn(c) (in world coords over rect_) into a small low-res surface and return a
+    bilinear pattern for the current user space: soft light is smooth, so this costs a
+    fraction of full-res gradient fills."""
     x0, y0, w, h = rect_
-    ctx.push_group()
-    ctx.rectangle(x0, y0, w, h)
-    core.fill(ctx, core.alpha(DARKC, base))
-    ctx.set_operator(cairo.OPERATOR_DEST_OUT)
-    for (hx, hy, r, a) in holes:
-        if a <= 0.005:
-            continue
-        g = cairo.RadialGradient(hx, hy, 0, hx, hy, r)
-        g.add_color_stop_rgba(0, 0, 0, 0, a)
-        g.add_color_stop_rgba(0.55, 0, 0, 0, a * 0.55)
-        g.add_color_stop_rgba(1, 0, 0, 0, 0)
-        ctx.set_source(g)
-        core.circle(ctx, hx, hy, r)
-        ctx.fill()
-    pat = ctx.pop_group()
+    mw, mh = res
+    surf = cairo.ImageSurface(cairo.FORMAT_ARGB32, mw, mh)
+    c = cairo.Context(surf)
+    c.scale(mw / w, mh / h)
+    c.translate(-x0, -y0)
+    fn(c)
+    surf.flush()
+    pat = cairo.SurfacePattern(surf)
+    pat.set_matrix(cairo.Matrix(mw / w, 0, 0, mh / h, -x0 * mw / w, -y0 * mh / h))
+    pat.set_filter(cairo.FILTER_BILINEAR)
+    pat.set_extend(cairo.EXTEND_PAD)
+    return pat
+
+
+def light_chars(ctx, rect_, base, holes, tints=(), beam=None):
+    """Light what is already in the current group (the characters), ATOP: a darkness wash
+    of strength `base` with soft holes [(x, y, r, strength)] where light falls, coloured
+    tints [(x, y, r, colour, alpha)] and the warm torch cone (lens, ang, L, spread, amt).
+    All of it is one low-res light map painted once."""
+    x0, y0, w, h = rect_
+
+    def fn(c):
+        c.rectangle(x0, y0, w, h)
+        core.fill(c, core.alpha(DARKC, base))
+        c.set_operator(cairo.OPERATOR_DEST_OUT)
+        for (hx, hy, r, a) in holes:
+            if a <= 0.005:
+                continue
+            g = cairo.RadialGradient(hx, hy, 0, hx, hy, r)
+            g.add_color_stop_rgba(0, 0, 0, 0, a)
+            g.add_color_stop_rgba(0.55, 0, 0, 0, a * 0.55)
+            g.add_color_stop_rgba(1, 0, 0, 0, 0)
+            c.set_source(g)
+            core.circle(c, hx, hy, r)
+            c.fill()
+        c.set_operator(cairo.OPERATOR_OVER)
+        for (hx, hy, r, col, a) in tints:
+            if a <= 0.005:
+                continue
+            c_ = core.hexc(col)
+            g = cairo.RadialGradient(hx, hy, 0, hx, hy, r)
+            g.add_color_stop_rgba(0, c_[0], c_[1], c_[2], a)
+            g.add_color_stop_rgba(1, c_[0], c_[1], c_[2], 0)
+            c.set_source(g)
+            core.circle(c, hx, hy, r)
+            c.fill()
+        if beam is not None and beam[4] > 0.01:
+            (x, y), ang, L, spread, amt = beam
+            col = core.hexc(WARM)
+            for sp, a in ((1.0, 0.07), (0.72, 0.07), (0.45, 0.08)):
+                g = cairo.RadialGradient(x, y, 0, x, y, L)
+                g.add_color_stop_rgba(0.0, col[0], col[1], col[2], a * amt * 1.3)
+                g.add_color_stop_rgba(0.55, col[0], col[1], col[2], a * amt)
+                g.add_color_stop_rgba(1.0, col[0], col[1], col[2], 0.0)
+                _cone_path(c, x, y, ang, L, spread * sp)
+                c.set_source(g)
+                c.fill()
+    pat = soft_layer(rect_, fn)
     ctx.save()
     ctx.set_operator(cairo.OPERATOR_ATOP)
     ctx.set_source(pat)
     ctx.paint()
-    for (hx, hy, r, col, a) in tints:
-        if a <= 0.005:
-            continue
-        c_ = core.hexc(col)
-        g = cairo.RadialGradient(hx, hy, 0, hx, hy, r)
-        g.add_color_stop_rgba(0, c_[0], c_[1], c_[2], a)
-        g.add_color_stop_rgba(1, c_[0], c_[1], c_[2], 0)
-        ctx.set_source(g)
-        core.circle(ctx, hx, hy, r)
-        ctx.fill()
     ctx.restore()
 
 
@@ -670,7 +703,7 @@ def shots(k):
         ("W5", k["W5"], "B", lambda t: (565, 1135, 1.46)),
         ("E6", k["E6"], "B", lambda t: (450, 905, 2.6)),
         ("T7", k["T7"], "B", lambda t: (712, 985, 2.5)),
-        ("W8", k["W8"], "B", lambda t: tw(t, [(k["W8"], (560, 1080, 1.55)), (k["E9"], (548, 1070, 1.6))])),
+        ("W8", k["W8"], "B", lambda t: tw(t, [(k["W8"], (560, 1112, 1.55)), (k["E9"], (548, 1104, 1.6))])),
         ("E9", k["E9"], "B", lambda t: tw(t, [(k["E9"], (436, 860, 2.35)), (k["l5b_what"] - 0.05, (436, 860, 2.35)),
                                               (k["l5b_what"] + 0.12, (430, 852, 2.5), ease_out)])),
         ("T10", k["T10"], "B", lambda t: (712, 975, 2.7)),
@@ -757,7 +790,8 @@ WAVE_MID = {"base": "hands_pockets", "ar_p": 0.25, "ar_o": 1.35, "ar_e": 1.25, "
 CARD_T = {"base": "hands_pockets", "ar_hide": 0.0, "ar_h": "relaxed"}
 # walking off with the far hand still in the pocket
 WALK_T = {"base": "walk", "al_p": 0.32, "al_o": 0.2, "al_e": 0.95, "al_eo": -1.05, "al_w": 0.0,
-          "al_hide": 1.0, "ar_h": "relaxed"}
+          "al_hide": 1.0, "ar_p": 0.32, "ar_o": 0.2, "ar_e": 0.95, "ar_eo": -1.05, "ar_w": 0.0,
+          "ar_hide": 1.0}
 
 
 def shrug_amt(t, k):
@@ -776,7 +810,7 @@ def tired_state(t, k):
     hey = k["l2_hey"]
     keys = [(-1, POCKET_T), (hey - 0.32, WAVE_MID), (hey - 0.14, WAVE_T), (hey + 0.56, WAVE_MID),
             (hey + 0.74, POCKET_T)]
-    keys += [(k["k_take0"] - 0.12, CARD_T)]
+    keys += [(k["k_take0"] - 0.12, CARD_T), (k["go_turn"], POCKET_T)]
     keys += [(k["go_walk"], WALK_T)]
     pose = state_at(t, keys, 0.3)
     if pose[1] in (WAVE_T, WAVE_MID) or pose[0] in (WAVE_T, WAVE_MID):
@@ -805,10 +839,10 @@ def tired_state(t, k):
         elif t < k["go_turn"]:
             p = tw(t, [(kt, (ch[0] + 22, ch[1] - 2)), (kt + 0.45, hold_pt)])
             d["reach"] = {"r": (p[0], p[1], 1.0)}
-        else:
-            w = 1 - smoothstep(seg(t, k["go_turn"], k["go_turn"] + 0.35))
+        else:               # slips the card into his hoodie pocket as he turns to go
+            w = 1 - smoothstep(seg(t, k["go_turn"] - 0.1, k["go_turn"] + 0.2))
             d["reach"] = {"r": (hold_pt[0], hold_pt[1], w)}
-        d["card"] = t >= kt
+        d["card"] = kt <= t < k["go_turn"] + 0.12
     # ---- expression: bored / deadpan all the way (super chill); the faintest smile
     d["expr"] = state_at(t, [(0, "bored"), (k["l2"] - 0.2, "deadpan"), (k["E6"], "bored"),
                              (k["T18"] - 0.05, "soft_smile"), (k["W19"], "bored")], 0.3)
@@ -1057,15 +1091,19 @@ def embar_state(t, k):
     if wl > 0:
         d["reach"]["l"] = (XE + 30, 1012, wl)
     # hands fly to his head; down to the glasses during the blink; push them straight; down
-    glass = (hx0 + 30, hy0 + 2)
+    eyel = head["eye_l"]
+    glass = (eyel[0] - 30, eyel[1] + 14)          # the near side of the frame (not over his face)
     if k["fr_up0"] - 0.05 <= t < k["fr_dn1"] + 0.45:
         hl = (hx0 - 46 + 3 * math.sin(t * 33) * fr, hy0 - 82 + 3 * math.sin(t * 27) * fr)
-        p_ = tw(t, [(k["fr_dn0"], hl), (k["fr_glass"], (glass[0] - 4, glass[1] - 4)),
-                    (k["fr_glass"] + 0.18, (glass[0] - 2, glass[1] - 14)),
-                    (k["fr_dn1"], (glass[0] - 2, glass[1] - 14))])
+        p_ = tw(t, [(k["fr_dn0"], hl), (k["fr_glass"], (glass[0], glass[1] + 6)),
+                    (k["fr_glass"] + 0.18, (glass[0], glass[1] - 4)),
+                    (k["fr_dn1"], (glass[0], glass[1] - 4))])
         w_ = tw(t, [(k["fr_up0"] + 0.02, 0.0), (k["fr_up1"], 1.0, ease_out), (k["fr_dn1"], 1.0),
                     (k["fr_dn1"] + 0.42, 0.0)])
-        d["reach"]["l"] = (p_[0], p_[1], w_)
+        if t >= k["fr_dn0"] + 0.15:
+            d["reach"]["l"] = (p_[0], p_[1], w_, -1.45)
+        else:
+            d["reach"]["l"] = (p_[0], p_[1], w_)
         if t >= k["fr_dn0"] + 0.2:
             d["pose"] = state_at(t, [(-1, EMB_NERV), (k["fr_dn0"] + 0.2, EMB_POINT), (k["fr_dn1"], EMB_BASE)], 0.2)
     if k["r_reach"] - 0.05 <= t < k["r_gone"] + 0.45:
@@ -1434,10 +1472,15 @@ def draw_B(ctx, t, k, cam, shot_name, info):
     vr = view_rect(cam, pad=30)
     # Curiosity's glow on the tunnel around it
     cx_glow = Cr["x"] + (-40 if Cr.get("flip", True) else 40)
+    gl = Cr["glow"]
+
+    def glow_fn(c):
+        core.radial_glow(c, cx_glow, FY - 120, 420, "power", 0.10 * gl)
+        core.radial_glow(c, cx_glow, FY + 10, 240, "power", 0.07 * gl)
     ctx.save()
     ctx.set_operator(cairo.OPERATOR_ADD)
-    core.radial_glow(ctx, cx_glow, FY - 120, 420, "power", 0.10 * Cr["glow"])
-    core.radial_glow(ctx, cx_glow, FY + 10, 240, "power", 0.07 * Cr["glow"])
+    ctx.set_source(soft_layer(vr, glow_fn))
+    ctx.paint()
     ctx.restore()
 
     def draw_cur():
@@ -1499,14 +1542,11 @@ def draw_B(ctx, t, k, cam, shot_name, info):
         holes.append((ax, min(ay, 1460), 520, 0.5 * pw_))
         holes.append((lx, ly, 520, 0.45 * pw_))
     base = 0.6 - 0.1 * pw
-    light_chars(ctx, vr, base, holes, tints=[(Cr["x"] - 30, FY - 140, 380, "power", 0.12)])
-    if beam is not None:
-        beam_on_chars(ctx, beam[:2], beam[2], beam[3], 0.56, beam[5])
+    bm = (beam[:2], beam[2], beam[3], 0.56, beam[5]) if beam is not None else None
+    light_chars(ctx, vr, base, holes, tints=[(Cr["x"] - 30, FY - 140, 380, "power", 0.12)], beam=bm)
     pat = ctx.pop_group()
     # Curiosity: half the darkness (its own glow keeps it readable)
-    light_chars(ctx, vr, base * 0.5, holes)
-    if beam is not None:
-        beam_on_chars(ctx, beam[:2], beam[2], beam[3], 0.56, beam[5])
+    light_chars(ctx, vr, base * 0.5, holes, beam=bm)
     pat_c = ctx.pop_group()
     if beam is not None:
         lx, ly, ang, L, sp, pw_ = beam
@@ -1530,7 +1570,9 @@ def draw_B(ctx, t, k, cam, shot_name, info):
                 ex, ey = a[e_]
                 core.radial_glow(ctx, ex, ey, 30, core.PAL["power"], 0.2 * op)
     if beam is not None:
-        core.radial_glow(ctx, beam[0], beam[1], 46, "#fff0c8", 0.55 * pw)
+        hd_ = anchors["emb"]["head"] if "emb" in anchors else (-9999, -9999)
+        occl = 1.0 - smoothstep(seg(math.hypot(beam[0] - hd_[0], beam[1] - hd_[1]), 70, 120))
+        core.radial_glow(ctx, beam[0], beam[1], 46, "#fff0c8", 0.55 * pw * (1 - occl))
     jt = k["jolt"]
     if jt <= t < jt + 0.8 and "emb" in anchors:
         tx_, ty_ = anchors["emb"]["top"]
@@ -1629,10 +1671,15 @@ def draw_A(ctx, t, k, info):
     cxs, cys = ap(A_CX, 0, A_CD)
     s_c = (SC / S) * AF / A_CD
     # Curiosity's glow on the floor and walls around it
+    ra = (-100, -100, 1280, 2120)
+
+    def glow_fn(c):
+        core.radial_glow(c, cxs, cys - 160, 520, "power", 0.11)
+        core.radial_glow(c, cxs, cys + 10, 300, "power", 0.08)
     ctx.save()
     ctx.set_operator(cairo.OPERATOR_ADD)
-    core.radial_glow(ctx, cxs, cys - 160, 520, "power", 0.11)
-    core.radial_glow(ctx, cxs, cys + 10, 300, "power", 0.08)
+    ctx.set_source(soft_layer(ra, glow_fn))
+    ctx.paint()
     ctx.restore()
     D = T["D"]
     tx, ty = ap(T["X"], 0, D)
@@ -1648,7 +1695,7 @@ def draw_A(ctx, t, k, info):
         blink=Cs["blink"], face=Cs["face"], tilt=Cs["tilt"], ears=Cs["ears"], tail_curl=Cs["tail"])
     # light: dark, a teal pool from Curiosity, a little warm light from the mouth behind him
     mx, my = ap(0, 500, AD_M)
-    light_chars(ctx, (-300, -300, 1680, 2520), 0.62,
+    light_chars(ctx, ra, 0.62,
                 [(cxs + 20, cys - 180, 560, 0.5), (mx, my, 520, 0.3)],
                 tints=[(cxs + 20, cys - 160, 600, "power", 0.14), (mx, my - 100, 420, "#ffb070", 0.12)])
     ctx.pop_group_to_source()
