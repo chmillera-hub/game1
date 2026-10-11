@@ -7,6 +7,7 @@ S = {s["id"]: s for s in tl["scenes"]}
 B = tl["beats"]
 F = lambda t: int(round(t * 24))
 zones = [
+    (S["s01"]["end"] - 1.3, S["s02"]["start"] + 0.6, 1.6),   # bright whiteout bridge: avoid banding rings
     (S["s13"]["start"], S["s13"]["end"], 1.15),
     (S["s14"]["start"], S["s14"]["end"], 1.5),
     (B["s16b02"]["start"], B["s16b04"]["end"], 1.35),

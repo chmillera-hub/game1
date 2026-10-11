@@ -1,0 +1,30 @@
+[
+ {
+  "scene": "s01",
+  "time": 16.8,
+  "severity": "low",
+  "problem": "In the full-screen warm whiteout that bridges s01 to s02 (held at full brightness about 15.8 to 17.0 s), the compressed final shows faint concentric contour rings around the glow centre. The master's dithered gradient is smooth here, so the encoder created the rings. It lasts about 1.2 s on a bright, flat frame and is visible on a bright phone screen.",
+  "fix": "In tools/zones.py, add a bitrate zone for those frames, for example (S['s01']['end']-1.3, S['s02']['start']+0.6, 1.6), and re-encode. Alternatively, raise the render-time dither on the whiteout glow to about \u00b12 LSB (static, not per-frame) so it survives quantization. Check by extracting frame 16.8 s from final.mp4 and comparing it with the master."
+ },
+ {
+  "scene": "s12",
+  "time": 165.4,
+  "severity": "low",
+  "problem": "Earlier finding #49 is still partly open. In \"This is a trick.\" (s12b03, about 164.8\u2013166.0 s), faster-whisper on the final mix hears the key word as \"track\" (p 0.59) when the line is played alone. Only with the surrounding lines does it hear \"trick\", and then with low confidence (p 0.51). The vowel probably sounds closer to 'a' or 'e' than to a short 'i'.",
+  "fix": "Listen to audio/wav/s12b03.wav. If the vowel is not a clear short 'i', regenerate the line with a different seed or speed, or a phoneme override for \"trick\". Then re-run lipsync, remix and re-encode, and confirm that ASR on the isolated line returns \"trick\"."
+ },
+ {
+  "scene": "s14",
+  "time": 259.4,
+  "severity": "medium",
+  "problem": "Fear's look toward where the Void looks turns back the wrong way. This is round-2 finding #4, reported as fixed, but it is not. In the shot from 257.17 to 260.17, Fear's eyes do go up-left toward the far glow (about 257.7 to 258.0). Then, across the blink at the facing flip (s14b10+2.52, about 258.05), the head and pupils swing to screen-right and up, back onto the Void's empty sleeve. Fear holds that until the cut to s15 at 260.17 (see 259.4, 259.6 and 260.0 in the master). The glow is up and to the left of Fear (light at about x 433 vs Fear at about x 533). So the last thing the viewer sees before 'My other emotions were looking back' is Fear looking at the Void again, not at the screen of consciousness. Fear still never visibly follows the Void's gaze.",
+  "fix": "In src/scenes/s14_the_universe_inside.mjs, the post-flip keys (headTurn -1.0 at s14b10+3.0, GZ(-0.55,-0.6)) end up mirrored on screen once facing becomes -1. In src/chars/fear.mjs the face is drawn through the facing scale, so its turn and look come out reversed. Either drop the facing flip in this shot (keep facing 1 and key headTurn to about -0.7 and lookX to about -0.7), or negate headTurn and lookX for t >= s14b10+2.52, so the screen direction stays up-left toward the glow through the cut. Check the frames at 258.5, 259.4 and 260.0: pupils should sit up-left toward the light, with the face turned that way."
+ },
+ {
+  "scene": "s15",
+  "time": 264.3,
+  "severity": "medium",
+  "problem": "This is what remains of HIGH finding #0 and #16. The emotions are now large and their smiles read (Joy's wave, Sadness's soft smile, Anger's mouth-corner, Calm's smile). But nobody actually looks back toward Fear. In the opening wide (260.17-262.5) and in both push-ins (263.67-265.75 Joy/Sadness, 265.75-268.29 Anger/Calm), every emotion only turns its head to profile, one eye showing. Joy and Sadness look screen-right and Anger and Calm look screen-left, which is toward the CEO standing in the middle of the row. Joy even waves sideways at the CEO. Under 'My other emotions were looking back\u2026 They smiled', it reads as the emotions smiling at the CEO or at each other. It does not read as them meeting Fear's eyes, and the intercut Fear close alone has to carry the connection.",
+  "fix": "In src/scenes/s15_looking_back.mjs, turn the heads past profile into a 3/4 over-the-shoulder view toward the camera, with both eyes visible and pupils on the lens (Fear is behind the camera). Do this at least for the two push-in shots (263.67-268.29), and aim Joy's wave at the camera rather than screen-right. Keep the shoulders turned slightly so the back-to-camera staging still reads, and hold each look-and-smile for 0.8 s or more before the cut back to Fear at 268.29."
+ }
+]

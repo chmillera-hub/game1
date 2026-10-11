@@ -30,6 +30,12 @@ VOICES = {
     "CALM":          {"blend": [("bm_george", 1.0)], "speed": 0.85, "pitch": 1.0, "gap": 0.45, "gain_db": -1.0},
 }
 
+# Per-line phoneme overrides (espeak IPA) for words the voice blurs. "trick" came out as "trek" after Fear's
+# formant shift; a tiny release before the /k/ keeps the short /ɪ/ clear.
+PHONEME_OVERRIDES = {
+    "s12b03": "ðɪs ɪz ɐ tɹˈɪ k.",
+}
+
 def has(d, *words):
     d = (d or "").lower()
     return any(w in d for w in words)
@@ -130,6 +136,10 @@ class TTS:
             self.styles[speaker] = st
         return self.styles[speaker]
 
+    def say_phonemes(self, speaker, phonemes, speed):
+        s, sr = self.k.create(phonemes, voice=self.style(speaker), speed=speed, lang="en-us", is_phonemes=True)
+        return resample_poly(s, 147, 80).astype(np.float32)
+
     def say(self, speaker, text, speed):
         s, sr = self.k.create(text, voice=self.style(speaker), speed=speed, lang="en-us")
         return resample_poly(s, 147, 80).astype(np.float32)  # 24k -> 44.1k
@@ -147,8 +157,10 @@ def synth_line(tts, beat):
     if has(d, "whisper", "barely"):
         speed *= 0.95
     pieces = []
-    for phrase, gm in split_phrases(beat["text"]):
-        a = trim(tts.say(spk, phrase, speed))
+    ph = PHONEME_OVERRIDES.get(beat.get("id"))
+    phrases = [(ph, 0.0)] if ph else split_phrases(beat["text"])
+    for phrase, gm in phrases:
+        a = trim(tts.say_phonemes(spk, phrase, speed) if ph else tts.say(spk, phrase, speed))
         pieces.append(a)
         g = gap * (1.0 + 0.4 * gm)
         pieces.append(np.zeros(int(g * SR), dtype=np.float32))
