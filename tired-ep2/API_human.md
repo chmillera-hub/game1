@@ -408,8 +408,14 @@ Each frame the rig decides, for both arms, a layer (`back` = behind the legs and
 * **Blends `(a, b, k)`:** the order is pose a's until one switch point k\*, then pose b's. k\* is chosen once per blend (cached per pose pair and turn), at the k where the elements whose order changes are farthest apart: hand vs hand (forearm and hand clearance), arm vs torso silhouette and thighs, or hand vs head. So the order changes **at most once, and only where the hands are apart**.
 * **Blends where an arm travels from behind the body to in front of it** (`hands_behind_back` and the Boss's `stand` → `plead`, `arms_crossed`, `cradle`...): the arm swings out around the hips mid-blend instead of passing through the torso. It also swings slightly when only the far arm changes layer.
 * **Cycles:** the layers are decided by a majority vote over the whole cycle (no mid-cycle layer pops, e.g. `bang_door`, `walk` at turn ±0.5). The hand-over-hand order can only change at phases where the hands are clearly apart (an arm swinging past the other at the sides is fine).
-* **Verified** by `python3 preview/human_ep2_test.py zorder`: blend sweeps at k = 0, 0.02, …, 1, for tired / embar / guard / boss, at turns 0, ±0.6, ±1, over every pair of `plead cover_eyes arms_crossed facepalm carry_front cradle wring_hands` (and from `stand`), plus 22 cycles at 5 turns. Results: every sweep changes order at most once, and every cycle change is made with the hands apart.
-* **Residual:** the Boss's hands-behind-back `stand` → a front pose seen in pure side view (|turn| ≥ 0.9). The near hand comes out from behind the hip and its single switch happens while it still overlaps the hip by ≈10–45 px·s. Stage those at |turn| ≤ 0.6, or go through `attention` / `stand` dicts first.
+* When choosing k\*, hand-vs-hand clearance comes first, then arm vs body / head.
+* **Verified** by `python3 preview/human_ep2_test.py zorder` and `preview/human_ep2_handcheck.py`. These run blend sweeps at k = 0, 0.02, …, 1, for tired / embar / guard / boss, at turns 0, ±0.6, ±1. The pose set is every pair of `plead cover_eyes arms_crossed facepalm carry_front cradle wring_hands` (and from `stand`), plus extras. 22 cycles are also checked at 5 turns. Results:
+  * every blend sweep changes the order at most once;
+  * every hand-over-hand flip in the brief's pose set happens with the hands clearly apart (0 overlaps in 700 sweeps);
+  * every in-cycle change happens with the hands apart (440 / 440).
+* **Residuals:**
+  * The Boss's hands-behind-back `stand` → a front pose in pure side view (|turn| ≥ 0.9): the arm's single back→front switch happens while the hand still overlaps the hip by ≈10–45 px·s (hand vs body, not hand vs hand). Stage those at |turn| ≤ 0.6.
+  * `hand_out → arms_crossed` and `sit_crate → plead` at turn ≤ −0.6: the hands overlap along the whole path, so their one swap happens while they touch. Blend through `stand` there.
 * If you build a crossing pose by hand, give it explicit `al_layer` / `ar_layer` (as `arms_crossed` does) and blend through it rather than around it.
 
 ## 7. Tips for scene animators
@@ -483,7 +489,7 @@ Each frame the rig decides, for both arms, a layer (`back` = behind the legs and
 | headphones neck→on | `human_ep1suite_headphones.png` |
 
 ## 9. Performance and limitations
-* **Performance:** about 5.1–5.8 ms per full body at s=1 into a 720x1280 surface (`timing` board), and about 6.9 ms with `hood=1` + `power`. An s=2.5 close-up costs about 7 ms, the same as the Episode 1 rig. The cost is mostly cairo rasterisation. Limbs use fill-only outlines, and the curve tolerance is set to 0.3 device px. The z-order logic adds two tiny skeleton solves per blended frame. It caches a 32-phase order table per (character, cycle, turn rounded to 0.05) and a switch point per (blend pair, turn), so the first frame of a new combination costs 1–3 ms more.
+* **Performance:** about 4.6–5.9 ms per full body at s=1 into a 720x1280 surface (`timing` board). `hood=1` + `power` costs about 4.8 ms, because everything the hood hides (eyes, brows, fringe, ears, back hair) is skipped; mid-ramp hood values cost up to ≈6.5 ms. An s=2.5 close-up costs about 7 ms, the same as the Episode 1 rig. The cost is mostly cairo rasterisation. Limbs use fill-only outlines, and the curve tolerance is set to 0.3 device px. The z-order logic adds two tiny skeleton solves per blended frame. It caches a 32-phase order table per (character, cycle, turn rounded to 0.05) and a switch point per (blend pair, turn), so the first frame of a new combination costs 1–3 ms more.
 * **Limitations:**
   * The rig is 2.5D: at full profile (`turn` ±1.6) faces are still a hard 3/4.
   * Poses that reach straight at the camera (`catch`, `lean_in`, `crawl`) read best at turn ±0.6..1.
@@ -503,7 +509,7 @@ Each frame the rig decides, for both arms, a layer (`back` = behind the legs and
 6. **`speed` for dict poses based on a cycle** (was 0). Dict waves now use the base cycle's period.
 7. **`sit_up` / `sit_floor` floating in side-on sets:** the legs are laid on the floor from |turn| ≈ 0.3 to 0.8, so butt and heels share `y`; the floor hands lie flat.
 8. **Pocket behind the far arm:** `pocket_side="near"` (or `"l"` / `"r"`); Embarrassment's drawn pocket follows.
-9. **No butt emphasis:** bent-over, crouched and seated poses flatten the rear. The back depth of the hips and hem shrinks, and the thigh tops slim and start nearer the knee. Hip flexion and torso lean drive it. Nothing protrudes in `crouch`, `pick_up`, `cover_sweater`, `climb`, `crawl`, `sit_*`, `sneak`.
+9. **No butt emphasis:** bent-over, crouched and seated poses flatten the rear. The back depth of the hips and hem shrinks, and the thigh tops slim and start nearer the knee. Hip flexion and torso lean drive it, and only side and 3/4 views are affected (front views keep their silhouette). Nothing protrudes in `crouch`, `pick_up`, `cover_sweater`, `climb`, `crawl`, `sit_*`, `sneak`.
 10. **No hand z-order flicker:** depth ties use a pose preference, blends switch once at the clearest k (with an around-the-body arm path when needed), and cycles use voted layers and sticky hand order (see §6b).
 
 **Other fixes found while testing**

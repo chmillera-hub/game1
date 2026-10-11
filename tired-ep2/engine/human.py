@@ -1189,8 +1189,9 @@ def _solve(C, Q, who, turn, t, fx, headphones, lag_Q=None, reach=None):
     # seat / rear volume reduction for bent, crouched and seated poses (no butt emphasis)
     pmax = max(Q["ll_p"], Q["lr_p"])
     J["seat_flat"] = max(smoothstep((lean - 0.12) / 0.5), 0.75 * smoothstep((pmax - 0.6) / 0.6))
+    side_on = smoothstep((abs(math.sin(phi)) - 0.12) / 0.4)    # the rear only shows from the side
     for g in legs.values():
-        g["sf"] = J["seat_flat"]
+        g["sf"] = J["seat_flat"] * side_on
     # ---- torso nodes
     nodes = dict(hem=pr(hem), pel=pr(P0), wst=pr_w(wst), chs=pr_c(chs), shl=pr_s(shl), nck=pr_s(nck),
                  hpv=pr_s(hpv))
@@ -2918,12 +2919,19 @@ def _draw_head(ctx, C, col, J, F, inkw, t, st):
     out = {}
     xf = st["xf"]
     _enter_head(ctx, xf)
+    # ---- what a raised hood fully hides is not drawn (Ep2 speed-up)
+    hood_hide = dict(ears=False, eyes=False, brows=False, fringe=False)
+    if st.get("hood", 0.0) > 0.0:
+        yr_, v_, cov_ = _hood_rim(C, st["hood"], hg.nod)
+        sk_ = smoothstep((v_ - 0.08) / 0.55)
+        hood_hide = dict(ears=sk_ >= 0.999, eyes=cov_ >= 0.999, brows=yr_ > -18 + hg.nod * 7,
+                         fringe=yr_ > -14 + hg.nod * 6)
     # ---- ears behind / head shape
     ear_bl = clamp((blush - 0.65) / 0.3) * 0.6
     zs = {}
     for sgn in (-1, 1):
         Z = -sgn * 100 * hg.s
-        if Z < 30:
+        if Z < 30 and not hood_hide["ears"]:
             _draw_ear(ctx, C, col, hg, sgn, inkw, ear_bl)
         zs[sgn] = Z
     outl = hg.outline()
@@ -2956,10 +2964,11 @@ def _draw_head(ctx, C, col, J, F, inkw, t, st):
     ctx.restore()
     _smooth(ctx, outl, True, 0.55)
     _stroke(ctx, PAL["ink"], inkw)
-    _draw_nape(ctx, C, col, hg, inkw)
-    for sgn in (-1, 1):
-        if zs[sgn] >= 30:
-            _draw_ear(ctx, C, col, hg, sgn, inkw, ear_bl)
+    if not hood_hide["ears"]:
+        _draw_nape(ctx, C, col, hg, inkw)
+        for sgn in (-1, 1):
+            if zs[sgn] >= 30:
+                _draw_ear(ctx, C, col, hg, sgn, inkw, ear_bl)
     # ---- skin marks
     if hd.get("glasses"):     # freckles
         for sgn in (-1, 1):
@@ -2982,7 +2991,7 @@ def _draw_head(ctx, C, col, J, F, inkw, t, st):
         if E["tears"] > 0:
             E["hl"] += 0.45 * E["tears"]
         out["eye_" + side] = (X, ey)
-        if k > 0.1:
+        if k > 0.1 and not hood_hide["eyes"]:
             _draw_eye(ctx, C, col, X, ey, ew, eh, ew0, sgn, E, inkw, st["power"], 1.0,
                       C.get("sex") == "f")
         st["E_" + side] = (X, ey, ew, eh, k, E)
@@ -3022,14 +3031,15 @@ def _draw_head(ctx, C, col, J, F, inkw, t, st):
                 ellipse(ctx, X, yy, r * 1.4 * k, r)
                 _fill(ctx, (0.25, 0.32, 0.22, 0.35))
     # ---- hair
-    _draw_front_hair(ctx, C, col, hg, F, inkw, t, st.get("wet"))
-    if st.get("wet"):
+    if not hood_hide["fringe"]:
+        _draw_front_hair(ctx, C, col, hg, F, inkw, t, st.get("wet"))
+    if st.get("wet") and not hood_hide["fringe"]:
         X, _, k = hg.proj(-58, -88)
         _bandaid(ctx, X, -88, -0.35, 0.85, inkw)
     # ---- brows (over the fringe)
     for side, sgn in (("l", -1), ("r", 1)):
         X, Y, ew, eh, k, E = st["E_" + side]
-        if k > 0.12:
+        if k > 0.12 and not hood_hide["brows"]:
             ytop = hd["brow_y"] + hg.nod * 7 - (eh - hd["eh"]) * 0.6
             _draw_brow(ctx, X, ytop, hd["ew"] * k, sgn, E["brow"], col["brow"], hd["brow_th"],
                        hd["brow_len"], C["head"]["hair"] in ("bob", "part"), inkw)
@@ -4180,9 +4190,10 @@ def draw_person(ctx, who, x, y, s, t, pose="stand", expr="neutral", look=(0, 0),
                         do_hold("both")
 
     # ---- back hair + headphone band behind
-    _enter_head(ctx, xf)
-    _draw_back_hair(ctx, C, col, hg, F, inkw, st["wet"])
-    ctx.restore()
+    if hood_u < 0.55:                 # a raised hood's back shell covers the back hair
+        _enter_head(ctx, xf)
+        _draw_back_hair(ctx, C, col, hg, F, inkw, st["wet"])
+        ctx.restore()
     if hp is not None and hp < 0.62:
         _draw_hp_band(ctx, C, J, xf, hg, hp, inkw)
     if C["_top"] == "hoodie":
