@@ -58,7 +58,7 @@ PHONE = M["phone"]            # (985, 1112)
 PHONE_S = 0.42
 PHONE_ROT = 0.04
 Z_INS = 580.0 / (props.PHONE_W * PHONE_S)    # insert zoom: docked phone = 580 px wide
-TKW = dict(outfit="sewer", bandage=True, power=0.5, headphones=None, hood=0.0)   # bandage on r (continuity)
+TKW = dict(outfit="sewer_dry", bandage=True, power=0.5, headphones=None, hood=0.0)   # bandage on r (continuity)
 CAD = 0.66                    # trudge: walk cycle played at 66 %
 LEAN = {"base": "walk", "lean": 0.07, "hunch": 0.35, "nod": 0.1}
 _ANTIC = {"base": "stand", "lean": -0.06, "hunch": 0.55, "nod": -0.08}   # the breath in, before the fall
@@ -495,8 +495,8 @@ def _draw_baby_top(ctx, t, T, ca):
 # set helpers
 # ----------------------------------------------------------------------------
 MSG_IN = "you ok bro?"
-EMO = "\U0001F629"            # the tired (weary) face emoji, drawn as a vector (fx.draw_emoji)
-EMO_KEYS = ("\u2764", "\U0001F602", "\U0001F634", EMO)    # the emoji strip in the insert
+EMO = "\U0001F634"            # the sleeping face emoji (with zzz), drawn as a vector, drawn as a vector (fx.draw_emoji)
+EMO_KEYS = ("\u2764", "\U0001F602", "\U0001F629", EMO)    # the emoji strip in the insert
 
 
 def _dock_screen(T):

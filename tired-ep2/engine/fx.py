@@ -1522,12 +1522,12 @@ def black(ctx, a=1.0):
 
 
 # ----------------------------------------------------------------------------
-# HushCorp logo + portrait stand-in (used by the screens)
+# CalmCorp logo + portrait stand-in (used by the screens)
 # ----------------------------------------------------------------------------
 def hush_logo(ctx, x, y, s=1.0, wordmark=True, color="hush", hole="#ffffff",
               text_color="ink", text_size=None):
-    """HushCorp logo: teal circle (r 40*s) with a keyhole, centred at (x, y),
-    plus the wide-tracked 'HUSHCORP' wordmark to its right."""
+    """CalmCorp logo: teal circle (r 40*s) with a keyhole, centred at (x, y),
+    plus the wide-tracked 'CALMCORP' wordmark to its right."""
     R = 40 * s
     circle(ctx, x, y, R)
     _fill(ctx, color)
@@ -1537,7 +1537,7 @@ def hush_logo(ctx, x, y, s=1.0, wordmark=True, color="hush", hole="#ffffff",
     _fill(ctx, hole)
     if wordmark:
         ts = text_size or R * 0.95
-        _tracked(ctx, "HUSHCORP", x + R * 1.45, y + ts * 0.36, ts, text_color, "ui",
+        _tracked(ctx, "CALMCORP", x + R * 1.45, y + ts * 0.36, ts, text_color, "ui",
                  tracking=ts * 0.28)
 
 
@@ -1625,7 +1625,7 @@ UI_TXT = "#2b3142"
 UI_GREY = "#6b7486"
 
 
-def type_times(t_type, query="HUSHCORP", char_dt=0.11):
+def type_times(t_type, query="CALMCORP", char_dt=0.11):
     """Per-character keypress times for search_screen (for typing SFX)."""
     return [t_type + i * char_dt for i in range(len(query))]
 
@@ -1696,10 +1696,10 @@ def _search_home(c, RW, RH):
 
 
 _RESULTS = (
-    ("HushCorp — Official Site", "hushcorp.com", "We keep secrets so you don't have to."),
-    ("Research Campus — Visitor Entrance", "hushcorp.com/campus",
+    ("CalmCorp — Official Site", "calmcorp.com", "We keep secrets so you don't have to."),
+    ("Research Campus — Visitor Entrance", "calmcorp.com/campus",
      "Directions, parking & visitor badges."),
-    ("Is HushCorp hiding something?", "forum.example › threads",
+    ("Is CalmCorp hiding something?", "forum.example › threads",
      "This thread has been removed."),
 )
 
@@ -1739,7 +1739,7 @@ def _site_layout(RH):
 
 
 def _site_page(c, RW, RH):
-    _browser_chrome(c, RW, RH, "HushCorp", "hushcorp.com", "hush")
+    _browser_chrome(c, RW, RH, "CalmCorp", "calmcorp.com", "hush")
     c.rectangle(0, 136, RW, 84)
     _fill(c, "#ffffff")
     hush_logo(c, 62, 178, 0.62, wordmark=True, text_size=30)
@@ -1754,7 +1754,7 @@ def _site_page(c, RW, RH):
     hush_logo(c, RW - 130, hy + hh / 2, hh / 95.0, wordmark=False, color="#1b5560",
               hole="#123a44")
     sz = min(92, hh * 0.36)
-    _tracked(c, "HUSHCORP", 46, hy + 30 + sz * 0.78, sz, "#ffffff", "ui", tracking=sz * 0.12)
+    _tracked(c, "CALMCORP", 46, hy + 30 + sz * 0.78, sz, "#ffffff", "ui", tracking=sz * 0.12)
     ts = min(46, hh * 0.17)
     text(c, "We keep secrets so", 48, hy + 30 + sz * 0.78 + ts * 1.55, ts, "#bff4ee", "ui", "left")
     text(c, "you don't have to.", 48, hy + 30 + sz * 0.78 + ts * 2.75, ts, "#bff4ee", "ui", "left")
@@ -1833,11 +1833,11 @@ def _site_card(c, RW, RH):
         _stroke(c, "#ffffff", fs * 0.16)
 
 
-def search_screen(ctx, x, y, w, h, t, t_type, query="HUSHCORP", t_results=None,
+def search_screen(ctx, x, y, w, h, t, t_type, query="CALMCORP", t_results=None,
                   t_site=None, char_dt=0.11):
     """Browser in rect (x, y, w, h) (designed at 900 px wide; scales). Query
     types one letter every char_dt from t_type, results at t_results
-    (default typing end + 0.35 s), HushCorp site at t_site (default
+    (default typing end + 0.35 s), CalmCorp site at t_site (default
     t_results + 1.3 s) with the campus card sliding up and a map pin drop."""
     RW = 900.0
     sc = w / RW
@@ -2053,7 +2053,7 @@ def _lab_static(c, RW, RH):
     # header
     hs = _fit_size(c, "SPECIMEN ZERO", "ui", 66, RW - 72)
     text(c, "SPECIMEN ZERO", 36, 76, hs, "#ffffff", "ui", "left")
-    text(c, "HUSHCORP · CONTAINMENT", RW - 30, 34, 19, "#6fb7c0", "mono", "right")
+    text(c, "CALMCORP · CONTAINMENT", RW - 30, 34, 19, "#6fb7c0", "mono", "right")
     c.rectangle(36, 92, RW - 72, 3)
     _fill(c, LAB_LINE, 0.6)
     # silhouette panel
@@ -2095,7 +2095,7 @@ def _lab_static(c, RW, RH):
 
 
 def lab_screen(ctx, x, y, w, h, t, t_on, off=False):
-    """HushCorp wall screen in rect (x, y, w, h) (designed at 900 px wide,
+    """CalmCorp wall screen in rect (x, y, w, h) (designed at 900 px wide,
     landscape; a tall rect stacks vertically). Powers on at t_on (CRT open
     0.25 s). 'SPECIMEN ZERO', blinking red 'STATUS: ESCAPED' (1 s period),
     'LAST SEEN: SEWER LINE 7', creature silhouette with a scan bar, sewer map
@@ -3997,9 +3997,10 @@ def draw_emoji(ctx, x, y, size, kind="weary", a=1.0):
                 _stroke(ctx, brown, 0.12)
             ellipse(ctx, 0, 0.46, 0.15, 0.19)
             _fill(ctx, "#5b230b")
-            _z_path(ctx, 0.66, -0.72, 0.46, -0.2)
-            _fill(ctx, "#4f8ef7", preserve=True)
-            _stroke(ctx, "#ffffff", 0.06)
+            for (zx, zy, zs) in ((0.62, -0.62, 0.34), (0.92, -0.98, 0.26), (1.14, -1.28, 0.2)):  # z z z
+                _z_path(ctx, zx, zy, zs, -0.2)
+                _fill(ctx, "#4f8ef7", preserve=True)
+                _stroke(ctx, "#ffffff", 0.05)
         else:   # weary / tired face
             for sd in (-1, 1):
                 # worried brows (inner ends up)
@@ -4351,7 +4352,7 @@ def monitor_feed(ctx, x, y, w, h, t, draw_feed, style="night", label="SHAFT CAM 
     """Security-camera feed in rect (x, y, w, h) (designed at 600 px wide, so
     overlay text scales with w): draw_feed(ctx, x, y, w, h, t) draws the
     scene into the rect (clipped); it is tinted night-vision teal-green
-    (style 'night'; 'teal' = HushCorp teal, 'mono' = grey), blacks lifted,
+    (style 'night'; 'teal' = CalmCorp teal, 'mono' = grey), blacks lifted,
     edges vignetted, with static scanlines, corner brackets, a centre
     crosshair, the camera `label` (top-left), a softly blinking REC dot
     (1 s period) and a running timecode (bottom-left, tc0 + t). With t_on

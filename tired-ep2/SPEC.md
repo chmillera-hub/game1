@@ -3,7 +3,7 @@
 A portrait (9:16) 2D cartoon, **~4:30, HARD MAX 4:50**. It picks up exactly where
 Episode 1 ended.
 
-**Where Episode 1 ended.** Tiredness, bitten by a HushCorp "carrier" critter, now
+**Where Episode 1 ended.** Tiredness, bitten by a CalmCorp "carrier" critter, now
 has strength and a strange new sense. He followed the escaped creature through
 the sewers into an enormous secret shaft, full of glowing containment pods
 holding sleeping creatures like it. "...Is this your family?" It nodded.
@@ -11,7 +11,7 @@ holding sleeping creatures like it. "...Is this your family?" It nodded.
 **Episode 2 in one breath:**
 1. On the catwalk Tiredness finds the creature's empty pod. Its nameplate
    reads **CURIOSITY**, and the other plates read JOY, COURAGE, CALM, WONDER…:
-   HushCorp locks up feelings.
+   CalmCorp locks up feelings.
 2. The Boss, watching on a monitor, says "Right on time" and cuts the lights.
 3. In total darkness Curiosity pulls Tiredness's hood over his eyes. He
    discovers his new sense works when his eyes are CLOSED: "Finally. A
@@ -21,7 +21,7 @@ holding sleeping creatures like it. "...Is this your family?" It nodded.
 5. In a quiet corridor Tiredness gives up ("they're not my problem").
    Curiosity, hurt, walks away alone. Tiredness sits with that, sighs, and
    follows.
-6. Embarrassment, down here on HushCorp business, runs into them. He looks at
+6. Embarrassment, down here on CalmCorp business, runs into them. He looks at
    his red-blinking recorder, switches it off ("My pocket calculator just
    stopped working"), and gives them his keycard.
 7. In the control room the Boss is already waiting. She knew the moment the
@@ -36,7 +36,7 @@ holding sleeping creatures like it. "...Is this your family?" It nodded.
    baby Joy curl up on his back. A tiny smile. He sleeps. End card.
 
 Tone: deadpan comedy, wonder, a real emotional turn in the middle, and a warm
-ending. HushCorp stays mysterious: it knows things it shouldn't, and the Boss
+ending. CalmCorp stays mysterious: it knows things it shouldn't, and the Boss
 lets them go on purpose.
 
 ## 0. LESSONS FROM EPISODE 1 — these are hard rules now
@@ -62,7 +62,7 @@ lets them go on purpose.
      from one frame to the next.
 6. **Mysterious things stay mysterious.**
    * Shadows of creatures are amorphous, not cute silhouettes.
-   * HushCorp's knowledge is unexplained.
+   * CalmCorp's knowledge is unexplained.
 7. **Audible means audible.** Shouts and important off-screen lines are
    clear and loud enough; muffled only when the joke needs it.
 8. **Shakes and impacts are long enough to register**: ≥ 0.6 s with a clear
@@ -122,7 +122,7 @@ Same engine as Episode 1 (read engine/core.py, engine/timeline.py).
 * **shaft / catwalk:** pods with nameplates; `power` 0..1 for lights dying in
   a cascade.
 * **shaft_lower:** pipes, crates, stairs; dark when power=0.
-* **service_tunnel:** a dim concrete HushCorp corridor with emergency lamps
+* **service_tunnel:** a dim concrete CalmCorp corridor with emergency lamps
   and a keycard door.
 * **control_room:** a dark room with a wall of monitors, the Boss's tall chair,
   the glass-cased MASTER RELEASE lever, a LOCKDOWN button and a side hatch.

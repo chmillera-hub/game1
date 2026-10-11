@@ -3,7 +3,7 @@
 The lower level of the shaft, dark. Two guards with flashlights come down the
 stair and search. Our two hide in FRONT of crate A while the guards walk the
 lane BEHIND it (the crate is between them), then sneak after them. The gruff
-guard carries a chunky key ring on his belt (tag "PODS", drawn here, visible
+guard carries a chunky key ring on his belt (tag "TOTALLY NOT THE POD KEYS", drawn here, visible
 from his first appearance). Curiosity spots the keys, creeps up behind him and
 slowly reaches for them; Tiredness whispers "Don't. We'll get caught."; it
 sulks (eye-roll, paws back, flat look at him) and its paw grazes the keys: a
@@ -387,15 +387,19 @@ def _keyring(ctx, x, y, k, swing, rec=None):
     ctx.save()
     ctx.translate(rr * 0.7, rcy + rr * 0.6)
     ctx.rotate(-0.08 + 0.6 * sway2)
-    tw, th = 56 * k, 26 * k
+    tw, th = 120 * k, 58 * k
     ctx.move_to(0, -2 * k)
     ctx.line_to(6 * k, 9 * k)
     core.stroke(ctx, INK, 2.4 * k)
-    core.rrect(ctx, -4 * k, 7 * k, tw, th, 5 * k)
+    core.rrect(ctx, -4 * k, 7 * k, tw, th, 6 * k)
     core.fill_stroke(ctx, "#f6efd8", INK, lw)
-    core.circle(ctx, 6 * k, 12 * k, 2.2 * k)
+    core.circle(ctx, 6 * k, 13 * k, 2.4 * k)
     core.fill(ctx, INK)
-    core.text(ctx, "PODS", tw * 0.5 - 2 * k, 7 * k + th * 0.8, size=20 * k, color="#8a1c1c", font="black")
+    # the gag: a label that protests too much
+    cx_ = tw * 0.5 + 2 * k
+    core.text(ctx, "TOTALLY NOT", cx_, 7 * k + 18 * k, size=12.5 * k, color="#8a1c1c", font="black")
+    core.text(ctx, "THE POD", cx_, 7 * k + 34 * k, size=15 * k, color="#8a1c1c", font="black")
+    core.text(ctx, "KEYS", cx_, 7 * k + 52 * k, size=17 * k, color="#8a1c1c", font="black")
     ctx.restore()
     if rec is not None:
         rec["ring"] = ctx.user_to_device(rr * 0.6, rcy - rr * 0.6)

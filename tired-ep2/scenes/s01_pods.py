@@ -1,6 +1,6 @@
 """s01 - "The empty pod" (TIREDNESS Episode 2: Lights Out).
 
-HushCorp gives the creatures bland, flattening names (SPECIMEN 001 / THING 1 ...); the creature
+CalmCorp gives the creatures bland, flattening names (SPECIMEN 001 / THING 1 ...); the creature
 is anything but a thing: it hears the name and is visibly, intelligently offended.
 
 Shot list (scene-local; every time is derived from info cues / lines / lip data):
@@ -18,7 +18,7 @@ Shot list (scene-local; every time is derived from info cues / lines / lip data)
   S5a [c5, c5b)           Curiosity CU, the plate beside it: a beat of hope (ears up), then it
                           processes the name: a slow contemptuous blink that opens on flat
                           half-lids, ears sagging, chin up, a tiny huff through the nose.
-                          Name tag THING 1 / "according to HushCorp".
+                          Name tag THING 1 / "according to CalmCorp".
   S5b [c5b, c6)           Tiredness CU (crouched), the plate in frame: l03 "Wow. Creative."
                           deadpan, one brow up a hair, a slow judging blink; his eyes slide from
                           the plate to the creature.
@@ -954,7 +954,7 @@ def render(ctx, t, info):
         shot_dark(ctx, t, T, info)
     # overlays (screen space)
     if T["tag_in"] <= t < T["tag_out"] + 0.4:
-        fx.name_tag(ctx, "THING 1", "according to HushCorp", t, T["tag_in"], T["tag_out"],
+        fx.name_tag(ctx, "THING 1", "according to CalmCorp", t, T["tag_in"], T["tag_out"],
                     x=90, y=170, color="curiosity")
 
 

@@ -71,7 +71,7 @@ ink strip tucked under it. The whole tag tilts about 2°.
 * Script cues (Ep1): s01 `name_tag(ctx,"TIREDNESS","just wants to play his game",t,0.3,3.0)`;
   s02 `"EMBARRASSMENT","junior lab scientist", color="embar"`;
   s04 `"IMPULSIVITY","a tripwire that never goes off", color="imp"`;
-  s08 `"THE BOSS","HushCorp", color="boss"`.
+  s08 `"THE BOSS","CalmCorp", color="boss"`.
 * **Ep2 s01 "perk":** `name_tag(ctx, "CURIOSITY", "specimen 00", t, t_in, t_out,
   color="curiosity")`. Checked: "CURIOSITY" at x=90, s=1 spans x ≈ 90–690 (fits easily, no
   auto-shrink); preview `preview/fx_ep2_ui.png` (last two cells).
@@ -183,17 +183,17 @@ legibility, use roughly the design width in the 1080 frame for the readable inse
 screens are clipped to rounded corners and outlined in ink. Static content is cached per
 phase.
 
-### `search_screen(ctx, x, y, w, h, t, t_type, query="HUSHCORP", t_results=None, t_site=None, char_dt=0.11)`
+### `search_screen(ctx, x, y, w, h, t, t_type, query="CALMCORP", t_results=None, t_site=None, char_dt=0.11)`
 Browser (chrome, tab, address bar) with a parody search engine, "seekly".
 * **Home** (until `t_results`): search box with a blinking caret (1 s period). The query
   types one letter every `char_dt` from `t_type` (50 px text), then the box glows on
   "Enter".
-* **Results** at `t_results` (default typing end + 0.35 s): they wipe in. "HushCorp —
+* **Results** at `t_results` (default typing end + 0.35 s): they wipe in. "CalmCorp —
   Official Site / We keep secrets so you don't have to.", "Research Campus — Visitor
-  Entrance", "Is HushCorp hiding something? — This thread has been removed." A mouse
+  Entrance", "Is CalmCorp hiding something? — This thread has been removed." A mouse
   cursor glides to result 1 (+0.35..0.85 s) and clicks (+0.95 s).
-* **Site** at `t_site` (default `t_results` + 1.3 s): a loading bar, then the HushCorp site
-  (logo header, dark-teal hero "HUSHCORP" / "We keep secrets so / you don't have to.").
+* **Site** at `t_site` (default `t_results` + 1.3 s): a loading bar, then the CalmCorp site
+  (logo header, dark-teal hero "CALMCORP" / "We keep secrets so / you don't have to.").
   The "Research Campus — Visitor Entrance" card slides up (+0.45 s), with a mini map and a
   red map pin that drops and bounces (+0.9 s), plus a "Get directions" button.
 * `type_times(t_type, query, char_dt)` → per-key times for typing SFX.
@@ -202,7 +202,7 @@ Browser (chrome, tab, address bar) with a parody search engine, "seekly".
 * s10 "search": `search_screen(ctx, 90, 380, 900, 620, t, info.cue("search")+0.3)`.
 
 ### `lab_screen(ctx, x, y, w, h, t, t_on, off=False)`
-HushCorp wall screen (dark navy, faint teal grid). It powers on at `t_on` like a CRT: a
+CalmCorp wall screen (dark navy, faint teal grid). It powers on at `t_on` like a CRT: a
 bright line opens vertically over 0.25 s, with a brief glare. Content: header **"SPECIMEN
 ZERO"**; a framed panel with a big glowing-outlined creature silhouette (sleek, long fin
 ears swept back, slim legs, long S-curved finned tail, teal eye slit) with a scan bar
@@ -214,7 +214,7 @@ stack vertically. `off=True` draws dark glass before `t_on`; otherwise nothing.
 
 ### `tablet_screen(ctx, x, y, w, h, t, portrait_fn=None, t_on=None, t_check=None, glow=True, bezel=True, portrait_key=None)`
 The Boss's dossier: a charcoal bezel (`bezel`) and a soft cyan glow (`glow`) around an icy
-screen. A dark-teal HushCorp header with "DOSSIER"; a portrait frame; **"SUBJECT:"
+screen. A dark-teal CalmCorp header with "DOSSIER"; a portrait frame; **"SUBJECT:"
 "TIREDNESS"**; three redacted bars; **"KNOWN ASSOCIATE:" "EMBARRASSMENT"** with a teal check
 box whose ✓ is drawn on (stroke animation, small pop) at `t_check`.
 * `t_on=None`: fully on, check drawn.
@@ -256,8 +256,8 @@ shadow, tilted −1.5°.
 * **Cost 0.5 ms.**
 
 ### `hush_logo(ctx, x, y, s=1.0, wordmark=True, color="hush", hole="#ffffff", text_color="ink", text_size=None)`
-The HushCorp logo: a teal circle (r 40·s) with a keyhole, centred at (x, y), plus the
-wide-tracked "HUSHCORP" wordmark (Nunito) to the right. Exposed for convenience (screens
+The CalmCorp logo: a teal circle (r 40·s) with a keyhole, centred at (x, y), plus the
+wide-tracked "CALMCORP" wordmark (Nunito) to the right. Exposed for convenience (screens
 use it).
 
 Previews: `preview/fx_search.png` (all phases), `fx_screens.png` (lab power-on, portrait
@@ -546,7 +546,7 @@ A security-camera feed in rect (x, y, w, h). It is designed at 600 px wide, so t
 text scales with w.
 * **The scene:** `draw_feed(ctx, x, y, w, h, t)` draws into the rect (clipped). It is then
   **night-vision tinted**:
-  * an HSL colour tint: style `"night"` = teal-green, `"teal"` = HushCorp teal, `"mono"` =
+  * an HSL colour tint: style `"night"` = teal-green, `"teal"` = CalmCorp teal, `"mono"` =
     grey;
   * lifted blacks;
   * vignetted edges.

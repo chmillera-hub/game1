@@ -6,7 +6,7 @@ deterministic (no unseeded randomness) and cheap enough to draw live; the
 heavier ones (van body) cache their static parts through core.cached.
 
 The module also holds the small shared drawing helpers used by sets.py
-(fs, rect, ell, polyf, blob, line, spaced_text) and the HushCorp logo.
+(fs, rect, ell, polyf, blob, line, spaced_text) and the CalmCorp logo.
 """
 import math
 import cairocffi as cairo
@@ -90,9 +90,9 @@ def keyhole_path(ctx, x, y, r):
 
 def hush_logo(ctx, x, y, r, color=None, hole="#ffffff", lw=None, wordmark=False,
               word_color=None, word_size=None, ring=True, word_dy=None):
-    """HushCorp logo: teal circle with a stylised keyhole. (x, y) = circle centre.
+    """CalmCorp logo: teal circle with a stylised keyhole. (x, y) = circle centre.
 
-    wordmark=True adds the wide-spaced "HUSHCORP" wordmark below (font "ui").
+    wordmark=True adds the wide-spaced "CALMCORP" wordmark below (font "ui").
     Returns the bottom y of what was drawn.
     """
     color = color or PAL["hush"]
@@ -108,7 +108,7 @@ def hush_logo(ctx, x, y, r, color=None, hole="#ffffff", lw=None, wordmark=False,
     if wordmark:
         ws = word_size or r * 0.55
         wy = y + r + (word_dy if word_dy is not None else ws * 1.35)
-        spaced_text(ctx, "HUSHCORP", x, wy, ws, word_color or PAL["hush_dk"], "ui", 0.55)
+        spaced_text(ctx, "CALMCORP", x, wy, ws, word_color or PAL["hush_dk"], "ui", 0.55)
         bottom = wy
     return bottom
 
@@ -476,7 +476,7 @@ def tablet(ctx, x, y, s=1.0, rot=0.0, t=0.0, screen_fn=None, glow=0.0, portrait=
                 ctx.restore()
             else:
                 hush_logo(ctx, 0, -10, min(sw, sh) * 0.22, lw=0)
-                spaced_text(ctx, "HUSHCORP", 0, sh * 0.32, min(sw, sh) * 0.1, PAL["hush_dk"])
+                spaced_text(ctx, "CALMCORP", 0, sh * 0.32, min(sw, sh) * 0.1, PAL["hush_dk"])
         # glass glint
         ctx.move_to(sx + sw * 0.55, sy)
         ctx.line_to(sx + sw * 0.75, sy)
@@ -658,7 +658,7 @@ def _van_body_static(ctx, tint):
     rect(ctx, x0 + L - 690, -H + 340, 70, 60, "#3a3c4c", 5, r=10)
     # logo on the side (rear panel)
     hush_logo(ctx, x0 + 380, -620, 95, lw=6)
-    spaced_text(ctx, "HUSHCORP", x0 + 380, -470, 58, "#cfeeea", "ui", 0.5)
+    spaced_text(ctx, "CALMCORP", x0 + 380, -470, 58, "#cfeeea", "ui", 0.5)
     # wheel arches
     for wx in (x0 + 470, x0 + L - 560):
         ctx.new_sub_path()
@@ -669,7 +669,7 @@ def _van_body_static(ctx, tint):
 
 def black_van(ctx, x, y, s=1.0, door=0.0, facing=1, tint=0.75, t=0.0, layer="all",
               bounce=0.0):
-    """Black HushCorp van, side view, ~2700 x 1180 at s=1 (use s~0.4-0.5 by the
+    """Black CalmCorp van, side view, ~2700 x 1180 at s=1 (use s~0.4-0.5 by the
     house). ANCHOR = ground point under the middle of the van.
 
     door 0..1 slides the side door toward the rear, opening a dark interior.
@@ -1371,7 +1371,7 @@ def low_pipe(ctx, x, y, s=1.0, r=46, rise=300, span=300, reach=(700, 500), part=
 
 
 # ----------------------------------------------------------------------------
-# HushCorp keycard
+# CalmCorp keycard
 # ----------------------------------------------------------------------------
 def _emb_photo(ctx, x, y, w, h):
     """Tiny ID photo of Embarrassment (light-blue backdrop) in rect x, y, w, h."""
@@ -1413,7 +1413,7 @@ KEYCARD_W, KEYCARD_H = 340, 216
 
 
 def keycard(ctx, x, y, s=1.0, rot=0.0, photo=True, glint=0.0, back=False):
-    """HushCorp keycard "HUSHCORP / LVL 9" with Embarrassment's tiny photo.
+    """CalmCorp keycard "CALMCORP / LVL 9" with Embarrassment's tiny photo.
     ANCHOR = centre. 340 x 216 at s=1 (credit-card shape). Readable in an
     insert at on-screen s >= ~1.4. glint 0..1 sweeps a light streak across
     it; back=True draws the plain back (magnetic stripe)."""
@@ -1424,7 +1424,7 @@ def keycard(ctx, x, y, s=1.0, rot=0.0, photo=True, glint=0.0, back=False):
         if back:
             rect(ctx, x0 + 3, y0 + 30, W_ - 6, 44, "#2a2d3a", 0)
             rect(ctx, x0 + 24, y0 + 100, 170, 30, "#e6ebf0", 2.5, sc="#c9d1d8", r=4)
-            core.text(ctx, "IF FOUND, RETURN TO HUSHCORP", 0, y0 + H_ - 26, 15, "#7f8b98", "mono")
+            core.text(ctx, "IF FOUND, RETURN TO CALMCORP", 0, y0 + H_ - 26, 15, "#7f8b98", "mono")
         else:
             ctx.save()
             core.rrect(ctx, x0, y0, W_, H_, 18)
@@ -1435,7 +1435,7 @@ def keycard(ctx, x, y, s=1.0, rot=0.0, photo=True, glint=0.0, back=False):
             core.fill(ctx, PAL["hush_dk"])
             ctx.restore()
             hush_logo(ctx, x0 + 34, y0 + 29, 19, color="#ffffff", hole=PAL["hush"], lw=0)
-            spaced_text(ctx, "HUSHCORP", x0 + 62, y0 + 39, 25, "#ffffff", "ui", 0.42, align="left")
+            spaced_text(ctx, "CALMCORP", x0 + 62, y0 + 39, 25, "#ffffff", "ui", 0.42, align="left")
             rect(ctx, -26, y0 + 8, 52, 9, "#1f8f88", 0, r=4)
             if photo:
                 _emb_photo(ctx, x0 + 18, y0 + 76, 102, 124)
@@ -1942,7 +1942,7 @@ def boss_chair(ctx, x, y, s=1.0, turn=0.0, part="all", t=0.0, rim=None, dir=1, r
 # ----------------------------------------------------------------------------
 # crate, caged emergency lamp
 # ----------------------------------------------------------------------------
-def crate(ctx, x, y, s=1.0, w=420, h=360, kind="wood", stencil="HUSHCORP", seed=0, top=True,
+def crate(ctx, x, y, s=1.0, w=420, h=360, kind="wood", stencil="CALMCORP", seed=0, top=True,
           light=1.0):
     """Shipping crate, front view with a sliver of lid. ANCHOR = bottom
     centre. Top surface (sit / perch) at y - h*s. kind "wood" | "steel".

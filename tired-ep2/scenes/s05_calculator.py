@@ -34,7 +34,7 @@ Shot list (every time derives from cues / line timings, see shots()):
   E11 .. led              Emb CU: the long slow blink; hands come down, he pushes his glasses straight
   W12 .. conflict+.95     three-shot: the red LED blinks in his pocket; eyes slide down to it one by
                           one; he pinches the recorder out and holds it in his palm
-  R14 .. conflict+2.3     INSERT: the HushCorp recorder in his palm: blinking "REC", running counter,
+  R14 .. conflict+2.3     INSERT: the CalmCorp recorder in his palm: blinking "REC", running counter,
                           mic grille, logo, a little level meter listening
   E15 .. click-.1         Emb CU: at Tiredness, at the recorder; blush; a breath
   R16 .. l06 "Huh."+.12   INSERT: his thumb presses pause: click, "PAUSED", LED off, meter flat
@@ -499,9 +499,9 @@ def rec_counter(t):
 
 def draw_recorder(c, x, y, s, t, rot=0.0, rec=True, led=1.0, level=0.0, button=0.0, frozen=None,
                   detail=True):
-    """HushCorp voice recorder (~240 x 150 at s=1, centre anchor): mic grille, a small LCD
+    """CalmCorp voice recorder (~240 x 150 at s=1, centre anchor): mic grille, a small LCD
     ("REC" + running counter + level meter, or "PAUSED"), three face buttons (rec / pause /
-    stop), the logo + HUSHCORP wordmark, a red LED top-left."""
+    stop), the logo + CALMCORP wordmark, a red LED top-left."""
     with core.saved(c, x, y, s, rot):
         rect(c, -120, -75, 240, 150, "#26242f", 6, r=26)
         rect(c, -110, -66, 220, 132, "#302d3b", 0, r=20)
@@ -554,7 +554,7 @@ def draw_recorder(c, x, y, s, t, rot=0.0, rec=True, led=1.0, level=0.0, button=0
         # logo + wordmark
         props.hush_logo(c, -98, 46, 11, lw=0, ring=False, hole="#26242f")
         if detail:
-            props.spaced_text(c, "HUSHCORP", -44, 51, 10.5, "#2fd1c5", "ui", 0.3)
+            props.spaced_text(c, "CALMCORP", -44, 51, 10.5, "#2fd1c5", "ui", 0.3)
         # LED
         if led > 0.05:
             core.radial_glow(c, -100, -54, 30, core.PAL["danger"], 0.6 * led)

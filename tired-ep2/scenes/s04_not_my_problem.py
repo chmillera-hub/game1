@@ -1,12 +1,12 @@
 """s04 — "Not my problem" (music: lonely).  Revision 2 (honest, caring, overwhelmed).
 
-A quiet HushCorp service tunnel lit by dim emergency lamps. Tiredness trudges out
+A quiet CalmCorp service tunnel lit by dim emergency lamps. Tiredness trudges out
 of the dark side tunnel (the way back to the shaft and the pods), reaches back and
 pulls his hood off in the first light, drops onto a crate. He is not dismissive,
 he is overwhelmed: he tells Curiosity he has no bandwidth, that he fell out of a
 building today, that he has to take care of himself first. Curiosity points back
 toward the pods and takes his sleeve in its paws. He means it when he says what
-HushCorp is doing to its family is wrong (its ears lift with hope), but he can't
+CalmCorp is doing to its family is wrong (its ears lift with hope), but he can't
 see a way to help without somebody getting hurt. "Maybe me." It hears "not right
 now": the ears lower degree by degree, tears, it lets go of his sleeve and walks
 into the dark side tunnel, stops a short way in and looks back once. Alone with a

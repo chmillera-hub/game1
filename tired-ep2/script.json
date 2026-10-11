@@ -39,6 +39,16 @@
    "beats": [
     {
      "t": "pause",
+     "dur": 2.6,
+     "cue": "peer"
+    },
+    {
+     "t": "pause",
+     "dur": 1.6,
+     "cue": "drop"
+    },
+    {
+     "t": "pause",
      "dur": 2.2,
      "cue": "open"
     },
@@ -108,11 +118,11 @@
      "t": "line",
      "id": "s01_l03b",
      "who": "tired",
-     "text": "...They're not things.",
+     "text": "...They're not just things.",
      "pre": 0.3,
      "post": 0.6,
-     "say": "They're not things.",
-     "speed": 0.88
+     "say": "They're not just things.",
+     "speed": 0.86
     },
     {
      "t": "pause",
@@ -206,7 +216,7 @@
     },
     {
      "t": "pause",
-     "dur": 2.3,
+     "dur": 4.0,
      "cue": "peek"
     },
     {
@@ -251,7 +261,7 @@
     },
     {
      "t": "pause",
-     "dur": 1.4,
+     "dur": 2.0,
      "cue": "smug"
     },
     {
@@ -429,6 +439,16 @@
      "speed": 0.98
     },
     {
+     "t": "line",
+     "id": "s04_l02c",
+     "who": "tired",
+     "text": "...But I don't want to abandon you.",
+     "pre": 0.6,
+     "post": 0.5,
+     "say": "But I don't want to abandon you.",
+     "speed": 0.86
+    },
+    {
      "t": "pause",
      "dur": 2.0,
      "cue": "tug"
@@ -459,10 +479,11 @@
      "t": "line",
      "id": "s04_l04b",
      "who": "tired",
-     "text": "Maybe me. ...I need time to think.",
-     "pre": 0.35,
+     "text": "Maybe even me. ...I need time to think.",
+     "pre": 0.5,
      "post": 0.45,
-     "say": "Maybe me. I need time to think."
+     "say": "Maybe even me. I need time to think.",
+     "speed": 0.8
     },
     {
      "t": "pause",
@@ -490,8 +511,57 @@
     },
     {
      "t": "pause",
-     "dur": 2.4,
+     "dur": 0.8,
      "cue": "follow"
+    },
+    {
+     "t": "line",
+     "id": "s04_l06",
+     "who": "tired",
+     "text": "Okay. I'll help. Hell or high water.",
+     "pre": 0.3,
+     "post": 0.5,
+     "speed": 0.86
+    },
+    {
+     "t": "pause",
+     "dur": 1.2,
+     "cue": "glance"
+    },
+    {
+     "t": "line",
+     "id": "s04_l06b",
+     "who": "tired",
+     "text": "...I hope we make it out of this.",
+     "pre": 0.2,
+     "post": 0.5,
+     "say": "I hope we make it out of this.",
+     "speed": 0.84
+    },
+    {
+     "t": "pause",
+     "dur": 0.9,
+     "cue": "hush"
+    },
+    {
+     "t": "line",
+     "id": "s04_l07",
+     "who": "embar",
+     "text": "Oh my God! What IS that thing?!",
+     "pre": 0.0,
+     "post": 0.5,
+     "say": "Oh my God! What is that thing?!",
+     "gain": -2.0
+    },
+    {
+     "t": "pause",
+     "dur": 1.0,
+     "cue": "sighup"
+    },
+    {
+     "t": "pause",
+     "dur": 2.2,
+     "cue": "go"
     }
    ]
   },
@@ -526,9 +596,20 @@
      "t": "line",
      "id": "s05_l02",
      "who": "tired",
-     "text": "Oh. Hey.",
+     "text": "Oh, hey. Yeah. I'm helping my creature take down a massive, horrible corporation that's doing shady things.",
      "pre": 0.3,
-     "post": 0.45
+     "post": 0.45,
+     "say": "Oh, hey. Yeah. I'm helping my creature take down a massive, horrible corporation, that's doing shady things."
+    },
+    {
+     "t": "line",
+     "id": "s05_l02b",
+     "who": "embar",
+     "text": "Ha... ha. Cool. Cool cool cool.",
+     "pre": 0.35,
+     "post": 0.5,
+     "say": "Ha. Ha. Cool. Cool cool cool.",
+     "speed": 0.95
     },
     {
      "t": "pause",
@@ -539,10 +620,33 @@
      "t": "line",
      "id": "s05_l03",
      "who": "embar",
-     "text": "Is that... Thing One?",
+     "text": "Is that one of the creatures from the lab I work at?",
      "pre": 0.2,
-     "post": 0.45,
-     "say": "Is that, Thing One?"
+     "post": 0.45
+    },
+    {
+     "t": "line",
+     "id": "s05_l03b",
+     "who": "embar",
+     "text": "You shouldn't be around that. We should bring it back.",
+     "pre": 0.25,
+     "post": 0.5
+    },
+    {
+     "t": "line",
+     "id": "s05_l03c",
+     "who": "tired",
+     "text": "Buddy. Your company is locking these creatures up. That's not cool.",
+     "pre": 0.45,
+     "post": 0.5
+    },
+    {
+     "t": "line",
+     "id": "s05_l03d",
+     "who": "tired",
+     "text": "We gotta save them. Okay, dude?",
+     "pre": 0.3,
+     "post": 0.5
     },
     {
      "t": "line",
@@ -749,10 +853,10 @@
      "t": "line",
      "id": "s06_l08",
      "who": "tired",
-     "text": "But for once... I'm not tired.",
+     "text": "But right now... I'm not tired.",
      "pre": 0.4,
      "post": 0.45,
-     "say": "But for once, I'm not tired.",
+     "say": "But right now, I'm not tired.",
      "speed": 0.84
     },
     {
@@ -863,7 +967,7 @@
     },
     {
      "t": "pause",
-     "dur": 1.4,
+     "dur": 2.6,
      "cue": "end"
     }
    ],

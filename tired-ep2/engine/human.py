@@ -304,6 +304,9 @@ OUTFITS = {
                                                 shoe=mixc(PAL["t_slipper"], "#5b7a6a", 0.45),
                                                 shoe_dk=_dk(mixc(PAL["t_slipper"], "#5b7a6a", 0.45), 0.25))),
 }
+# home after the sewer: same marks (band-aids, smudges) but dry: no drips, cowlick back up
+OUTFITS[("tired", "sewer_dry")] = dict(OUTFITS[("tired", "sewer")], wet="marks",
+                                       col=dict(OUTFITS[("tired", "sewer")]["col"], hair=PAL["t_hair"]))
 
 # Furniture heights relative to the ground point (px at s=1), per character.
 #   SEAT_H : chair seat surface (sit_chair / sit_game / sit_desk)
@@ -2368,7 +2371,7 @@ def _draw_front_hair(ctx, C, col, hg, F, inkw, t, wet):
         _draw_curtains(ctx, C, col, hg, inkw, "near")
     if "tuft" in st:
         tp = st["tuft"]
-        if wet:   # damp hair: the cowlick droops
+        if wet is True:   # damp hair: the cowlick droops
             tp = [(x + (y + 144) * -0.6, -144 + (y + 144) * 0.25) for x, y in tp]
         _hair_path(ctx, hg, tp, "front", 0.5, dy)
         _fs(ctx, hcol, inkw)
@@ -2415,7 +2418,7 @@ def _draw_front_hair(ctx, C, col, hg, F, inkw, t, wet):
         _stroke(ctx, _dk(hcol, 0.45) if C["head"]["hair"] in ("mop", "bun") else hl, inkw * 0.55)
     if tk:
         ctx.restore()
-    if wet:
+    if wet is True:
         # drips hanging from the fringe
         for i, (x, y) in enumerate(((-40, -70), (30, -66), (78, -52))):
             ph = (t * 0.7 + i * 0.37) % 1.0
@@ -2811,7 +2814,7 @@ def _draw_mouth(ctx, C, col, hg, F, inkw, t, opn, wide):
                 y += wob * 2.6 * math.sin(v * math.pi * 4 + t * 9) * math.sin(v * math.pi)
             pts.append((x, y))
         if lipc:
-            th = 4.5 * (1 - press * 0.6)
+            th = 2.4 * (1 - press * 0.6)      # thin lip line (only the Boss has lip colour)
             up = [(x, y - th * math.sin(math.pi * (j / (n - 1))) ** 0.6) for j, (x, y) in enumerate(pts)]
             dn = [(x, y + th * 1.25 * math.sin(math.pi * (j / (n - 1))) ** 0.6) for j, (x, y) in enumerate(pts)]
             _poly(ctx, up + dn[::-1])
@@ -2897,7 +2900,7 @@ def _draw_mouth(ctx, C, col, hg, F, inkw, t, opn, wide):
     ctx.restore()
     path()
     if lipc:
-        _stroke(ctx, lipc, inkw * 1.6)
+        _stroke(ctx, lipc, inkw * 0.9)
         path()
     _stroke(ctx, ink, inkw * 0.95)
     return (Mx, (up_mid + lo_mid) / 2)
@@ -3151,10 +3154,14 @@ def _draw_head(ctx, C, col, J, F, inkw, t, st):
     # / a stray line off the nose tip. Her sharp nose and jaw carry the look.)
     # ---- outfit marks (sewer)
     if st.get("wet"):
-        for (xf_, yy, ang) in ((-50, 44, 0.5), ):
+        for (xf_, yy, ang) in ((-40, 44, 0.5), ):
             X, _, k = hg.proj(xf_, yy + hg.nod * 8)
-            if k > 0.25:
-                _bandaid(ctx, X, yy + hg.nod * 8, ang, 1.0, inkw)
+            if k > 0.35:      # foreshortened with the turn so it lies flat on the cheek
+                ctx.save()
+                ctx.translate(X, yy + hg.nod * 8)
+                ctx.scale(max(0.45, k), 1.0)
+                _bandaid(ctx, 0, 0, ang, 0.9, inkw)
+                ctx.restore()
         for (xf_, yy, r) in ((55, 50, 9), (-28, -62, 7)):
             X, _, k = hg.proj(xf_, yy)
             if k > 0.25:
@@ -3164,8 +3171,13 @@ def _draw_head(ctx, C, col, J, F, inkw, t, st):
     if not hood_hide["fringe"]:
         _draw_front_hair(ctx, C, col, hg, F, inkw, t, st.get("wet"))
     if st.get("wet") and not hood_hide["fringe"]:
-        X, _, k = hg.proj(-58, -88)
-        _bandaid(ctx, X, -88, -0.35, 0.85, inkw)
+        X, _, k = hg.proj(-50, -88)
+        if k > 0.35:
+            ctx.save()
+            ctx.translate(X, -88)
+            ctx.scale(max(0.45, k), 1.0)
+            _bandaid(ctx, 0, 0, -0.35, 0.8, inkw)
+            ctx.restore()
     # ---- brows (over the fringe)
     for side, sgn in (("l", -1), ("r", 1)):
         X, Y, ew, eh, k, E = st["E_" + side]

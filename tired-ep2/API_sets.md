@@ -48,7 +48,7 @@ with core.camera(ctx, *M["cam"]["s01_open"]):          # (cx, cy, zoom)
   stand-ins in the preview boards).
 * **Teal glow (`power`)** is used only in the shaft pods, `containment_pod`,
   the sewer side-tunnel glow (`teal_glow_end`) and the shaft tunnel mouth.
-  HushCorp branding uses `hush` / `hush_dk` (not glowing).
+  CalmCorp branding uses `hush` / `hush_dk` (not glowing).
 * **Light, darkness and cascades (Episode 2).** Dark sets take `power` 0..1
   (room lights) and, where it matters, `power_sections` (one value per
   horizontal light band, TOP first; `<SET>_MARKS["sections"]` /
@@ -304,7 +304,7 @@ crawl (640, 1320, 1.0), door (1060, 1050, 1.15), door_close (1060, 1150, 1.7).
 ## 6. `office(ctx, t=0, layer="bg", parts=None)` — s09
 
 World **1400 x 1920**, people at **s = 0.75**, staged side-on. Floor-to-
-ceiling glass with a cool city skyline, a white wall with the HushCorp logo
+ceiling glass with a cool city skyline, a white wall with the CalmCorp logo
 + wordmark behind the Boss, a huge minimalist white desk (pedestal right,
 thin steel leg left), the Boss's very tall white chair (she faces LEFT), the
 comically LOW guest chair (Emb faces RIGHT), grey carpet. fg part "desk"
@@ -576,7 +576,7 @@ troll (2190, 1060, 1.9), sneak (1650, 1120, 1.15), exit (2380, 1100, 1.3).
 ## 15. `service_tunnel(ctx, t=0, layer="bg", door_open=0, reader="red", drip=True, parts=None)` — s04, s05, s06 doors
 
 World **2400 x 1920** (drawable x -700..3100), people at **s = 0.75**. A quiet
-concrete HushCorp service corridor, side-on: ceiling pipes, form-tie
+concrete CalmCorp service corridor, side-on: ceiling pipes, form-tie
 concrete with a teal stripe and S-14 / S-15 stencils, **dim warm-orange
 emergency lamps in cages** (x 700, 1330, 1960; static light pools on wall
 and floor), darkness at both ends, a slow **drip** into a puddle (s04
@@ -681,14 +681,14 @@ Board: `preview/sets_props.png`.
 |---|---|---|---|---|
 | **cage** | `cage(ctx, x, y, s=1, t=0, door=0, latch="closed", rattle=0, inside_fn=None, rot=0, empty=None, label=True)` | 300 x 280 (+handle) | **top of the handle** (hands / Impulsivity's teeth) | `door` 0..1 barred front swings open toward the viewer (hinge left); `latch` "open"/"half" (wiggles with t)/"closed"; `rattle` 0..1 shakes about the handle + rattle marks; `inside_fn(ctx)` drawn behind the bars, origin = interior floor centre, interior ~224 x 168 (y negative is up), clipped; `empty=True` shows only bedding |
 | rock | `rock(ctx, x, y, s=1, rot=0, seed=3)` | 92 x 70 | centre | lawn rock: `s=0.6` in the house set |
-| recorder | `recorder(ctx, x, y, s=1, t=0, led=None, glow=0, rot=0, only_led=False, button=0)` | 96 x 58 | centre | black, HushCorp logo, red LED (`led` 0..1 / False = off / True = on, None = 1 Hz blink); `glow` red halo; `only_led=True` = LED + halo only (through the coat pocket); `button` 0..1 pushes the top button down (the off "click", local pos `RECORDER_BUTTON`) |
+| recorder | `recorder(ctx, x, y, s=1, t=0, led=None, glow=0, rot=0, only_led=False, button=0)` | 96 x 58 | centre | black, CalmCorp logo, red LED (`led` 0..1 / False = off / True = on, None = 1 Hz blink); `glow` red halo; `only_led=True` = LED + halo only (through the coat pocket); `button` 0..1 pushes the top button down (the off "click", local pos `RECORDER_BUTTON`) |
 | pink_slip | `pink_slip(ctx, x, y, s=1, rot=0, curl=0)` | 190 x 220 | centre | "TERMINATION NOTICE" in bold ui; readable on a phone at s >= 1.2 on screen |
 | tablet | `tablet(ctx, x, y, s=1, rot=0, t=0, screen_fn=None, glow=0, portrait=False, on=True)` | 300 x 200 | centre | `screen_fn(ctx, sx, sy, sw, sh, t)` into the clipped screen (default logo); `glow` cool halo |
 | clipboard | `clipboard(ctx, x, y, s=1, rot=0)` | 190 x 276 | centre | "WORK ORDER" checklist (printer disguise) |
 | picture_frame | `picture_frame(ctx, x, y, s=1, rot=0, face_down=False, cracked=False, wire=True)` | 120 x 140 | the nail (frame hangs 28 px below) | photo of the two as kids; `face_down` shows the back |
 | plates_stack | `plates_stack(ctx, x, y, s=1, lift=0, n=4, t=0)` | 190 wide | bottom centre | `lift` 0..1 raises the top plate ~70 px with a careful tilt |
 | shards | `shards(ctx, t, t0, x, y, seed=0, n=12, s=1, floor_y=None, dir=1, spread=1, power=1)` | 20-40 px each | burst origin | <= 15 glass shards fly from t0 (gravity, spin), land on `floor_y` (default y + 320 s), tiny settle hop, then rest. `dir` +1 right, -1 left, 0 both |
-| black_van | `black_van(ctx, x, y, s=1, door=0, facing=1, tint=0.75, t=0, layer="all", bounce=0)` | 2700 x 1180 (use s 0.45 by the house) | ground under the middle | side view, HushCorp logo + wordmark, tinted windows (`tint`), sliding door `door` 0..1 rearward; `layer` "interior" (dark opening only) -> person climbing in -> "body"; `facing` -1 flips; body cached |
+| black_van | `black_van(ctx, x, y, s=1, door=0, facing=1, tint=0.75, t=0, layer="all", bounce=0)` | 2700 x 1180 (use s 0.45 by the house) | ground under the middle | side view, CalmCorp logo + wordmark, tinted windows (`tint`), sliding door `door` 0..1 rearward; `layer` "interior" (dark opening only) -> person climbing in -> "body"; `facing` -1 flips; body cached |
 | trash_can | `trash_can(ctx, x, y, s=1, knocked=0, spill=True, dir=1, seed=0, lid_on=True, dent=0)` | 260 x 420 | bottom centre | `knocked` 0..1 tips it over sideways toward `dir` (pivot on the bottom corner; it then lies to that side), lid rolls off, trash spills |
 | streetlight | `streetlight(ctx, x, y, s=1, t=0, broken=0, on=False, lean=None, seed=1)` | ~2700 tall | base centre | `broken` 0..1: shattered head, glass bits, leaning pole, rare short spark flicker (> 0.5); `on` dusk glow |
 | debris | `debris(ctx, x, y, s=1, kind="plank", rot=0, seed=0)` | 80-200 | centre | kinds: plank, brick, paper, can, chunk, shard, bolt |
@@ -702,11 +702,11 @@ Board: `preview/sets_props.png`.
 | sleeper_silhouette | `sleeper_silhouette(ctx, x, y, s=1, t=0, seed=0, color)` | 260 x 240 | centre | default curled creature shape (fin ears, tail), faint breathing |
 | doormat | `doormat(ctx, x, y, s=1, rot=0, bunch=0, text="GO AWAY", t=0)` | 540 x 150 | centre | `bunch` 0..1 rumples it + flips a corner (the s10 trip) |
 | **monitor_game_screen** | `monitor_game_screen(ctx, x, y, w, h, t, speed=1, seed=0, hud=True, scanlines=True)` | any rect | rect | 48 x 30 chunky-pixel platformer: parallax clouds/hills, scrolling ground, ? blocks, spinning coins, a blob enemy, the hero hopping every 1.3 s, score + hearts HUD. ~1 ms. Used by the bedroom monitor; works full-screen for a close-up |
-| hush_logo | `hush_logo(ctx, x, y, r, color=None, hole="#ffffff", lw=None, wordmark=False, word_color=None, word_size=None, ring=True)` | radius r | circle centre | teal circle + keyhole; `wordmark=True` adds the wide-spaced "HUSHCORP" (font ui) below; returns bottom y |
+| hush_logo | `hush_logo(ctx, x, y, r, color=None, hole="#ffffff", lw=None, wordmark=False, word_color=None, word_size=None, ring=True)` | radius r | circle centre | teal circle + keyhole; `wordmark=True` adds the wide-spaced "CALMCORP" (font ui) below; returns bottom y |
 | **nameplate** | `nameplate(ctx, x, y, s=1, text="CURIOSITY", sub="SPECIMEN 00", dust=0, wipe=0, rot=0, seed=0, size=44, light=1)` | ~300 x 100 (width follows the text: `nameplate_size(text, sub)`) | centre | brushed-steel pod plate, rivets, engraved text (sub line small mono, main line big ui). `dust` 0..1 grey-brown film (0.85+ hides the text); `wipe` 0..1 clears it left -> right behind a ragged front with a faint smear (**the thumb-wipe insert**: animate wipe with the thumb's x; s ~3-4 for the insert). Returns its rect |
 | **security_camera** | `security_camera(ctx, x, y, s=1, t=0, cam_angle=0.35, led=None, face=0, flip=False, glow=1, only_led=False)` | ~330 x 200 | wall mount plate | arm out to a pivot; white body + hood + lens; `cam_angle` tilt (rad, + = down), `face` 0..1 swivels the lens toward the viewer (round lens shows), `led` red LED 0..1 (None = 1 Hz blink), `only_led` = LED + halo only. Returns the lens centre |
 | **low_pipe** | `low_pipe(ctx, x, y, s=1, r=46, rise=300, span=300, reach=(700, 500), t=0, wobble=0, wobble_t0=0, hazard=True, sign=True, side=1)` | ~1500 x 400 | **the contact point** (outer side of the descending bend at face height) | a ceiling pipe that DIPS to face height (hazard bands, flanges, hangers, a MIND YOUR HEAD sign beyond the dip). Walking LEFT the face meets (x, y) (`side=-1` mirrors). `wobble` after the bonk: shiver ~1 s, sign swings ~2 s (>= 0.6 s reaction, LESSON 8) |
-| **keycard** | `keycard(ctx, x, y, s=1, rot=0, photo=True, glint=0, back=False)` | 340 x 216 | centre | white card, teal HUSHCORP band + logo, Emb's tiny ID photo (orange tuft, round glasses, blush), "ACCESS LEVEL / **LVL 9** / RESEARCH", barcode. Readable in an insert at on-screen s >= ~1.4. `glint` 0..1 sweeps a light streak; `back` = plain back |
+| **keycard** | `keycard(ctx, x, y, s=1, rot=0, photo=True, glint=0, back=False)` | 340 x 216 | centre | white card, teal CALMCORP band + logo, Emb's tiny ID photo (orange tuft, round glasses, blush), "ACCESS LEVEL / **LVL 9** / RESEARCH", barcode. Readable in an insert at on-screen s >= ~1.4. `glint` 0..1 sweeps a light streak; `back` = plain back |
 | **flashlight** | `flashlight(ctx, x, y, s=1, rot=0, on=True, glow=1, t=0, flip=False)` | 250 x 72 | middle of the grip (the fist) | side view; lens points along +x rotated by rot (`flip` = -x). `on` 0..1: bright lens face + small halo (the beam is fx). Returns `{"lens": (x, y), "angle": a}` (`FLASHLIGHT_LENS` = (116, 0) local) |
 | **phone** | `phone(ctx, x, y, s=1, rot=0, t=0, screen_fn=None, on=True, buzz=0, glow=0)` | 128 x 250 | centre | front view; `screen_fn(ctx, sx, sy, sw, sh, t)` into `PHONE_SCREEN` (-56, -110, 112, 220) local, clipped; default lock screen "6:02"; `buzz` 0..1 shiver + buzz marks; `glow` screen halo |
 | phone_chat_screen | `phone_chat_screen(msgs=(("them", "you ok?", 0.0),), avatar=True, typing=None)` | — | — | returns a screen_fn: header with Emb's little avatar (no name), bubbles that pop in at their times (`"them"` grey left, `"me"` blue right), optional `typing=(t0, t1)` dots. E.g. `[("them", "you ok?", 0), ("me", "zzz", t_reply)]` |
@@ -715,7 +715,7 @@ Board: `preview/sets_props.png`.
 | **lockdown_button** | `lockdown_button(ctx, x, y, s=1, pressed=0, t=0, glow=0, label=True)` | 200 x 150 (+ label) | base centre on its surface | red mushroom button in a hazard collar, "LOCKDOWN" plate; `pressed` 0..1 sinks it; `glow` red halo |
 | **power_switch** | `power_switch(ctx, x, y, s=1, on=1, label="SHAFT POWER", t=0)` | 200 x 280 | panel centre | labelled panel with a big toggle (ON up / OFF down, green / red lamp); `on` animates the flip. Returns the lever tip (fingertip spot) |
 | **boss_chair** | `boss_chair(ctx, x, y, s=1, turn=0, part="all", t=0, rim=None, dir=1, rim_a=0.85)` | ~400 x 1010 | floor under the seat | tall high-backed swivel chair (dark leather, tufted front, embossed logo on the back, disc base). `turn` 0 = facing away (hides a sitter) .. 0.5 profile (screen-right for dir=+1) .. 1 = facing camera; `part` "behind" (before the sitter) / "front" (after); `rim` rim-light colour (None = cool teal, False = none). Seat at `BOSS_CHAIR_SEAT`*s = 240 s, back top `BOSS_CHAIR_TOP`*s |
-| crate | `crate(ctx, x, y, s=1, w=420, h=360, kind="wood", stencil="HUSHCORP", seed=0, top=True, light=1)` | w x h | bottom centre | wood (X braces) or "steel" crate with a lid sliver; returns the top y |
+| crate | `crate(ctx, x, y, s=1, w=420, h=360, kind="wood", stencil="CALMCORP", seed=0, top=True, light=1)` | w x h | bottom centre | wood (X braces) or "steel" crate with a lid sliver; returns the top y |
 | cage_lamp | `cage_lamp(ctx, x, y, s=1, on=1, color="#ffb35a", down=True, halo=True)` | 80 x 180 | wall bracket | caged emergency / work lamp; `on` lights the bulb (+ halo) |
 | hazard_band | `hazard_band(ctx, x, y, w, h, step=None, col1, col2, lw=3, slant=1)` | rect | rect | yellow/ink diagonal stripes |
 

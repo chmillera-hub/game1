@@ -4,7 +4,7 @@ Portrait (9:16) animated short, ~4:51, 720x1280 @ 24 fps, H.264 + AAC,
 **14.4 MB** → `Tiredness_ep2_portrait.mp4` (rev 2: user notes applied).
 
 Picks up where Episode 1 ended, on the shaft catwalk:
-- Tiredness finds the creature's empty pod (HushCorp calls it "THING 1"), and the Boss cuts the lights.
+- Tiredness finds the creature's empty pod (CalmCorp calls it "THING 1"), and the Boss cuts the lights.
 - He learns his new sense works with his eyes closed, and they dodge flashlights.
 - He gives up on Curiosity, then follows it after all.
 - Embarrassment switches off his recorder and hands over his keycard.

@@ -33,14 +33,14 @@ PAL = {
     "blush": "#ff4f6d", "glasses": "#2b2b38",
     # Boss
     "b_skin": "#f2d6c6", "b_hair": "#e6e8ee", "b_suit": "#2a2d3a", "b_suit_dk": "#1b1d27",
-    "b_iris": "#7d8fa3", "b_lip": "#9c3a4a",
+    "b_iris": "#7d8fa3", "b_lip": "#b76a73",
     # guard / receptionist
     "g_uniform": "#33415c", "g_skin": "#8a5a3c", "r_skin": "#e8b98f", "r_top": "#7a5ca8",
     # creatures
     "imp_fur": "#f2a93b", "imp_fur_dk": "#cf7f22", "imp_tongue": "#ff7a9a",
     "thing_fur": "#6a4fa0", "thing_dk": "#3f2d6b",
     "spec_body": "#232a52", "spec_dk": "#141833", "spec_glow": "#3ff2e0", "power": "#3ff2e0",
-    # HushCorp
+    # CalmCorp
     "hush": "#2fd1c5", "hush_dk": "#0f6f6a", "corp_wall": "#dfe6ee", "corp_glass": "#a9c7d8",
     # signals
     "danger": "#ff3b5c", "safe": "#3ddc84", "warn": "#ffb020",

@@ -349,7 +349,7 @@ Eye keys also accept `_l` / `_r` (one eye only, e.g. `lid_r`, `brow_l`). Values 
   * `"sewer"`: hoodie, damp hair (drooping cowlick, drips), two band-aids (forehead, cheek), smudges.
 * **Built in per character:**
   * Embarrassment: round glasses, freckles, lab coat with pens in the breast pocket. The coat tails lag behind the legs and trail when running.
-  * Boss: teal HushCorp pin, sharp silver bob (its side curtains are 3D at 3/4, see "Boss face at 3/4" in the Episode 2 notes). The old cheekbone strokes are gone.
+  * Boss: teal CalmCorp pin, sharp silver bob (its side curtains are 3D at 3/4, see "Boss face at 3/4" in the Episode 2 notes). The old cheekbone strokes are gone.
   * Guard: cap with badge, mustache, shoulder radio, chest badge, belt.
   * Receptionist: headset with mic, name badge, and the counter (`counter=False` if the set draws its own; its top is `DESK_H`).
 

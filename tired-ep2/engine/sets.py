@@ -55,7 +55,7 @@ C = {
     "door_red": "#c0453f", "door_red_sh": "#9a3330",
     "fence": "#fbf7ee", "fence_sh": "#d7d3cc",
     "walk": "#d9d2c3", "walk_sh": "#bfb6a4",
-    # hushcorp
+    # calmcorp
     "hc_wall": "#e9eff4", "hc_wall_sh": "#cdd7e0", "hc_floor": "#d5dee6", "hc_floor_sh": "#b9c6d2",
     "hc_steel": "#9aa8b6", "hc_steel_dk": "#6f7f90", "hc_slate": "#3b4757", "hc_glass": "#bcd6e4",
     "hc_glass_dk": "#8fb2c6", "hc_white": "#f7fafc",
@@ -2745,7 +2745,7 @@ def hallway_upstairs(ctx, t=0.0, layer="bg", door_open=0.0, burst=0.0, parts=Non
 
 
 # ============================================================================
-# HushCorp shared bits
+# CalmCorp shared bits
 # ============================================================================
 def _city_skyline(c, x0, y0, w, h, seed=0, lw=3.5, sky=("#bfdcf0", "#eef7ff"), dusk=False):
     """Cool daytime (or dusk) skyline filling (x0, y0, w, h). Static."""
@@ -2786,7 +2786,7 @@ def _corp_panels(c, x0, y0, w, h, step=180, base=None, seam=None):
 
 
 # ============================================================================
-# 6. HUSHCORP OFFICE (s09)
+# 6. CALMCORP OFFICE (s09)
 # ============================================================================
 OFFICE_W, OFFICE_H = 1400, 1920
 _OF_CEIL, _OF_FLOOR = 250, 1300
@@ -2841,7 +2841,7 @@ def _of_static(c):
     lx, ly = OFFICE_MARKS["logo"]
     _glow(c, lx, ly, 260, "#ffffff", 0.6)
     hush_logo(c, lx, ly, 112, lw=7)
-    spaced_text(c, "HUSHCORP", lx, ly + 172, 40, PAL["hush_dk"], "ui", 0.55)
+    spaced_text(c, "CALMCORP", lx, ly + 172, 40, PAL["hush_dk"], "ui", 0.55)
     line(c, [(lx - 110, ly + 196), (lx + 110, ly + 196)], PAL["hush"], 4)
     # floor: grey carpet + glass-wall base
     c.rectangle(x0, FLOOR, x1 - x0, y1 - FLOOR)
@@ -2894,7 +2894,7 @@ def _of_desk(c):
 
 
 def office(ctx, t=0.0, layer="bg", parts=None):
-    """Cold glass HushCorp office (world 1400 x 1920, people at s=0.75).
+    """Cold glass CalmCorp office (world 1400 x 1920, people at s=0.75).
 
     Side-on staging: Emb in the comically low chair on the LEFT (faces
     right), the Boss in her tall chair on the RIGHT behind the huge desk
@@ -2917,7 +2917,7 @@ def office(ctx, t=0.0, layer="bg", parts=None):
 
 
 # ============================================================================
-# 7. HUSHCORP LOBBY (s11)
+# 7. CALMCORP LOBBY (s11)
 # ============================================================================
 LOBBY_W, LOBBY_H = 1800, 1920
 _LB_CEIL, _LB_FLOOR = 250, 1300
@@ -2972,7 +2972,7 @@ def _lb_static(c):
     _glow(c, lx, ly, 340, "#ffffff", 0.9)
     _glow(c, lx, ly, 220, "#dff6f4", 0.6)
     hush_logo(c, lx, ly, 140, lw=8)
-    spaced_text(c, "HUSHCORP", lx, ly + 205, 50, PAL["hush_dk"], "ui", 0.55)
+    spaced_text(c, "CALMCORP", lx, ly + 205, 50, PAL["hush_dk"], "ui", 0.55)
     core.text(c, "We keep secrets so you don't have to.", lx, ly + 246, 22, "#7f8b98", "ui")
     # guard post backdrop: a door + security monitors
     rect(c, 1500, 540, 260, 760, "#dfe6ee", 5, r=6)
@@ -3056,7 +3056,7 @@ def _lb_guard_post(c):
 
 
 def lobby(ctx, t=0.0, layer="bg", turnstile_open=0.0, turnstile_light="red", parts=None):
-    """HushCorp lobby (world 1800 x 1920, people at s=0.75).
+    """CalmCorp lobby (world 1800 x 1920, people at s=0.75).
 
     Reception counter (receptionist sits behind it: draw her between bg and
     fg), backlit logo wall, two turnstile lanes (turnstile_open 0..1,
@@ -3088,7 +3088,7 @@ def lobby(ctx, t=0.0, layer="bg", turnstile_open=0.0, turnstile_light="red", par
 
 
 # ============================================================================
-# 8. HUSHCORP LAB (s11)
+# 8. CALMCORP LAB (s11)
 # ============================================================================
 LAB_W, LAB_H = 2400, 1920
 _LA_CEIL, _LA_FLOOR = 250, 1300
@@ -3230,7 +3230,7 @@ def _la_default_screen(c, x, y, w, h, t):
     for k in range(1, 12):
         line(c, [(x + k * w / 12, y), (x + k * w / 12, y + h)], (0.2, 0.5, 0.55, 0.25), 2)
     hush_logo(c, x + w / 2, y + h / 2 - 20, 70, lw=0, color=PAL["hush_dk"], hole="#10242c")
-    spaced_text(c, "HUSHCORP", x + w / 2, y + h / 2 + 100, 32, PAL["hush_dk"], "ui", 0.55)
+    spaced_text(c, "CALMCORP", x + w / 2, y + h / 2 + 100, 32, PAL["hush_dk"], "ui", 0.55)
 
 
 def _la_bubbles(ctx, t):
@@ -3275,7 +3275,7 @@ def _la_door(ctx, opening):
 
 def lab(ctx, t=0.0, layer="bg", alarm=0.0, button_pressed=0.0, critters_fn=None, screen_fn=None,
         door_open=0.0, parts=None):
-    """HushCorp lab (world 2400 x 1920, people at s=0.75).
+    """CalmCorp lab (world 2400 x 1920, people at s=0.75).
 
     Specimen tanks (<= 8 slow bubbles), the critter terrarium + "CARRIER -
     BITE TRANSFERS TRAITS" placard (critters_fn(ctx, x, y, w, h, t) draws
@@ -3325,7 +3325,7 @@ def lab(ctx, t=0.0, layer="bg", alarm=0.0, button_pressed=0.0, critters_fn=None,
 
 
 # ============================================================================
-# 9. HUSHCORP CORRIDOR (s11 chase): one-point perspective
+# 9. CALMCORP CORRIDOR (s11 chase): one-point perspective
 # ============================================================================
 CORRIDOR_W, CORRIDOR_H = 1080, 1920
 _CR_VP = (540, 820)
@@ -3461,7 +3461,7 @@ def _cr_window_damage(ctx, b):
 
 
 def corridor(ctx, t=0.0, layer="bg", alarm=0.0, window_broken=0.0):
-    """Long HushCorp corridor in one-point perspective (world 1080 x 1920,
+    """Long CalmCorp corridor in one-point perspective (world 1080 x 1920,
     fixed camera). Tall dusk window at the end (window_broken 0..1:
     cracks -> shattered). alarm 0..1 as in the lab. Place runners with
     corridor_scale(z, lane); sort them far-to-near."""
@@ -4260,11 +4260,11 @@ def _sh_static(c, sleeper_fn, labels=None):
             x, y, sc, z = _sh_proj(phi, yw)
             pts.append((x, y))
         line(c, pts, (0.30, 0.55, 0.60, 0.55), 5)
-    # giant HushCorp logo on the far wall
+    # giant CalmCorp logo on the far wall
     lx, ly = SHAFT_MARKS["logo"]
     _glow(c, lx, ly, 420, PAL["hush"], 0.18)
     hush_logo(c, lx, ly, 200, color="#1d6f6c", hole="#0b2026", lw=8, ring=True)
-    spaced_text(c, "HUSHCORP", lx, ly + 280, 56, "#2a8a86", "ui", 0.6)
+    spaced_text(c, "CALMCORP", lx, ly + 280, 56, "#2a8a86", "ui", 0.6)
     # pods (culled to this cache tile), batched per depth bin: one path per material
     pods = _SH_PODS
     pw = PAL["power"]
@@ -5783,7 +5783,7 @@ def _sl_stair(c, part="all"):
 def _sl_crates(c, which="all"):
     if which in ("all", "a"):
         cx, w, h = _SL_CRATE_A
-        props.crate(c, cx, _SL_FEET, 1.0, w=w, h=h, kind="wood", stencil="HUSHCORP", seed=1)
+        props.crate(c, cx, _SL_FEET, 1.0, w=w, h=h, kind="wood", stencil="CALMCORP", seed=1)
     if which in ("all", "b"):
         for (cx, w, h, kind) in _SL_CRATE_B[:1]:
             props.crate(c, cx, _SL_FEET, 1.0, w=w, h=h, kind=kind, stencil="HC-07")
@@ -5939,7 +5939,7 @@ def shaft_lower(ctx, t=0.0, layer="bg", power=0.0, lit=None, parts=None):
 
 
 # ============================================================================
-# 15. SERVICE TUNNEL (Episode 2 s04-s06): quiet concrete HushCorp corridor
+# 15. SERVICE TUNNEL (Episode 2 s04-s06): quiet concrete CalmCorp corridor
 # ============================================================================
 TUNNEL_W, TUNNEL_H = 2400, 1920
 _TN_X0, _TN_X1, _TN_Y0, _TN_Y1 = -700, 3100, -700, 2620
@@ -6218,7 +6218,7 @@ def _tn_room(c):
 
 
 def service_tunnel(ctx, t=0.0, layer="bg", door_open=0.0, reader="red", drip=True, parts=None):
-    """Quiet concrete HushCorp service corridor, side-on (world 2400 x
+    """Quiet concrete CalmCorp service corridor, side-on (world 2400 x
     1920, people at s=0.75; drawable x -700..3100). See TUNNEL_MARKS.
 
     Left to right: a dark side tunnel receding into blackness (the "far
@@ -6688,7 +6688,7 @@ def control_room(ctx, t=0.0, layer="bg", doors_open=0.0, reader="red", hatch_ope
                  case_broken=0.0, lever=0.0, pressed=0.0, switch=1.0, alarm=0.0, alarm_tint=True,
                  monitor_fns=None, window_fn=None, window_shutters=0.0, chair=True, chair_turn=0.0,
                  parts=None):
-    """The HushCorp control room (world 2100 x 1920, people at s=0.75;
+    """The CalmCorp control room (world 2100 x 1920, people at s=0.75;
     drawable x -700..2800). Dark, lit cool blue-teal by a wall of monitors.
     See CONTROL_MARKS.
 
