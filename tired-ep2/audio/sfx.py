@@ -11,6 +11,9 @@ Loopable effects ignore the seed (identical content tiles seamlessly): each
 clip is one period plus a LOOP_XF raised-cosine head/tail, so clips placed
 every `period` seconds crossfade with unity gain and no seam.
 All synthesis is numpy/scipy; nothing is sampled from disk. See API_audio.md.
+Episode 2 adds the shaft/control-room/creature/home effects (lights_out, camera_whir,
+door_slide, shutter_slam, pipe_bonk, baby_giggle, birds_dawn, ...) and rebuilds
+sonar_ping, creature_purr and sigh (the Episode 1 versions remain as *_ep1).
 """
 import math
 import os
@@ -1295,9 +1298,9 @@ def _creature_chitter(sr, rng):
     return _room(out, sr, 0.2, 0.9)
 
 
-@fx("creature_purr", trim=-1.0)
+@fx("creature_purr_ep1", trim=-1.0)
 def _creature_purr(sr, rng):
-    """Soft rumbly purr (~1.5 s): ~25 Hz larynx flutter on exhale, then inhale."""
+    """(Episode 1 version) Soft rumbly purr (~1.5 s): ~25 Hz larynx flutter on exhale, then inhale."""
     dur = 1.6
     n = secs(sr, dur)
     t = tvec(n, sr)
@@ -1541,9 +1544,9 @@ def _breath_voice(sr, rng, n, t, F1, F2, f0, breath_env, voice_env, vmix, F3=250
     return br * breath_env + vmix * v * voice_env
 
 
-@fx("sigh", trim=-3.0)
+@fx("sigh_ep1", trim=-3.0)
 def _sigh(sr, rng):
-    """A tired human exhale 'hhhaaah' (~0.8 s) with a hint of voice at the start."""
+    """(Episode 1 version) A tired human exhale 'hhhaaah' (~0.8 s) with a hint of voice at the start."""
     dur = 0.85
     n = secs(sr, dur)
     t = tvec(n, sr)
@@ -1957,9 +1960,9 @@ def _eye_open(sr, rng):
     return fade_edges(out, sr, 0.01, 0.2)
 
 
-@fx("sonar_ping")
+@fx("sonar_ping_ep1")
 def _sonar_ping(sr, rng):
-    """The new sense: deep soft 'whoom', a cool ping with two echoes, glassy shimmer."""
+    """(Episode 1 version) The new sense: deep soft 'whoom', a cool ping with two echoes, glassy shimmer."""
     out = _canvas(sr, 2.4)
     n = secs(sr, 1.6)
     t = tvec(n, sr)
@@ -2010,6 +2013,785 @@ def _sad_chime(sr, rng):
         _place(out, _cut(inst_bell(mm - 12, 1.6, 0.4, sr, kind="fm"), sr, 1.8 - 0.2 * i, 0.4), tt, sr, 0.15,
                0.3 - 0.3 * i)
     return _room(out, sr, 0.35, 1.6)
+
+
+# =============================================================================
+# EPISODE 2: helpers
+# =============================================================================
+def _space(x, sr, mix=0.3, rt60=2.4, predelay=0.03, damp=0.45, seed=23):
+    """A bigger, separately seeded space than _room (the shaft / control room)."""
+    x = stereoize(x)
+    return x + mix * reverb(x, sr, rt60=rt60, predelay=predelay, damp=damp, seed=seed)
+
+
+def _hum_fade(sr, rng, dur, f0, decay, sag=0.2, buzz=0.35):
+    """Transformer hum losing power: f0 family + buzz, the pitch sags as it fades."""
+    n = secs(sr, dur)
+    t = tvec(n, sr)
+    f = f0 * (1 - sag * (1 - np.exp(-t / (decay * 0.9))))
+    ph = TAU * np.cumsum(f) / sr
+    y = np.sin(ph) + 0.7 * np.sin(2 * ph + 0.3) + 0.45 * np.sin(3 * ph + 1.1) + 0.25 * np.sin(4 * ph + 2) \
+        + 0.12 * np.sin(6 * ph + 0.7)
+    y += buzz * 0.3 * np.tanh(4 * np.sin(ph + 0.2))
+    return y * np.clip(t / 0.03, 0, 1) * np.exp(-t / decay)
+
+
+def _metal_hit(sr, rng, dur, f0, ratios, decays, amps, k=1.0, noise=0.6, nlo=300, nhi=5000, ndec=0.006):
+    """Struck metal: inharmonic modes (jittered per seed) + an impact noise burst."""
+    n = secs(sr, dur)
+    t = tvec(n, sr)
+    modes = [(f0 * r * k * rng.uniform(0.985, 1.015), a, d) for r, a, d in zip(ratios, amps, decays)]
+    y = _modes(t, modes, rng.uniform(0, TAU))
+    y += noise * bp(rng.standard_normal(n), nlo, nhi, sr) * np.exp(-t / ndec)
+    return y * np.clip(t / 0.0006, 0, 1)
+
+
+def _env_trap(t, a, b, c, d):
+    """0 -> 1 between a..b (smoothstep), 1 -> 0 between c..d."""
+    u = np.clip((t - a) / max(b - a, 1e-4), 0, 1)
+    v = np.clip((d - t) / max(d - c, 1e-4), 0, 1)
+    return (u * u * (3 - 2 * u)) * (v * v * (3 - 2 * v))
+
+
+# =============================================================================
+# EPISODE 2: shaft power, cameras, doors, control room
+# =============================================================================
+def _relay(sr, rng, far=False):
+    dur = 2.9 if far else 2.5
+    out = _canvas(sr, dur)
+    k = rng.uniform(0.86, 1.14)
+    ph = rng.uniform(0, TAU)
+    n = secs(sr, 0.7)
+    t = tvec(n, sr)
+    thump = _sweep((46 + 85 * np.exp(-t / 0.014)) * k, sr) * np.exp(-t / 0.11)
+    clunk = _modes(t, [(112 * k, 0.8, 0.10), (233 * k * rng.uniform(0.97, 1.03), 0.95, 0.08), (409 * k, 0.9, 0.06),
+                       (655 * k * rng.uniform(0.96, 1.04), 0.7, 0.045), (1030 * k, 0.45, 0.03),
+                       (1580 * k, 0.25, 0.018)], ph)
+    clunk += _norm(bp(rng.standard_normal(n), 250, 2200, sr)) * 0.35 * np.exp(-t / 0.018)   # the 'chunk' consonant
+    snap = _modes(t, [(2650 * k, 0.5, 0.005), (4100 * k, 0.3, 0.0035), (1850 * k, 0.4, 0.007)], ph) \
+        + 0.7 * bp(rng.standard_normal(n), 1500, 9000, sr) * np.exp(-t / 0.0012)
+    y = np.tanh(1.7 * (0.6 * thump + clunk + (0.3 if far else 0.65) * snap) * np.clip(t / 0.0008, 0, 1))
+    y = np.concatenate([np.zeros(secs(sr, 0.022)), y])                  # ... then the CHUNK 22 ms later
+    _place(out, fade_edges(y, sr, 0.0003, 0.08), 0.0, sr)
+    pre = _metal_hit(sr, rng, 0.08, 1700 * k, (1, 2.3), (0.006, 0.004), (1, 0.5), 1.0, 0.5, 1500, 7000, 0.001)
+    _place(out, fade_edges(pre, sr, 0.0002, 0.01), 0.0, sr, 0.25 if not far else 0.12)   # the trip 'ka' ...
+    bounce = np.tanh(1.2 * (0.5 * clunk + 0.6 * snap))[: secs(sr, 0.25)]
+    _place(out, fade_edges(bounce * np.clip(t[: len(bounce)] / 0.0005, 0, 1), sr, 0.0003, 0.04),
+           rng.uniform(0.026, 0.046), sr, 0.28)
+    # the power coasting down: hum sags and fades, a ballast whine drops away
+    hum = _hum_fade(sr, rng, 2.1, 100 * rng.uniform(0.93, 1.07), rng.uniform(0.35, 0.6), rng.uniform(0.15, 0.28))
+    _place(out, fade_edges(hum, sr, 0.005, 0.2), 0.004, sr, 0.30 if not far else 0.22, rng.uniform(-0.2, 0.2))
+    nw = secs(sr, 0.9)
+    tw = tvec(nw, sr)
+    wh = _sweep(2600 * k * (1 - 0.45 * (1 - np.exp(-tw / 0.3))), sr) * np.exp(-tw / 0.22) * np.clip(tw / 0.01, 0, 1)
+    _place(out, fade_edges(wh, sr, 0.001, 0.05), 0.0, sr, 0.035, 0.3)
+    if rng.random() < 0.65:                                  # an electric spit at the contacts
+        tt = 0.0
+        for j in range(int(rng.integers(4, 10))):
+            tt += rng.exponential(0.014)
+            _place(out, _tick(sr, rng, 1500, 8000, rng.uniform(0.0005, 0.0015), 0.01), tt, sr,
+                   0.22 * math.exp(-tt / 0.06), rng.uniform(-0.3, 0.3))
+    if rng.random() < 0.5:                                   # a lamp tube ticking as it cools
+        _place(out, _ping(sr, rng, rng.uniform(3200, 4600), 0.01), rng.uniform(0.6, 1.3), sr, 0.05,
+               rng.uniform(-0.6, 0.6))
+    if far:
+        out = lp(out, 2400, sr, 2)
+        return _space(out, sr, 0.75, 3.2, 0.06, 0.55)
+    return _space(out, sr, 0.32, 2.6, 0.025, 0.45)
+
+
+@fx("lights_out", trim=0.0)
+def _lights_out(sr, rng):
+    """Heavy power-relay 'CHUNK' as a section of the shaft goes dark: contactor slam,
+    armature bounce, the hum sagging and fading, sometimes an electric spit (seeds vary)."""
+    return _relay(sr, rng, False)
+
+
+@fx("lights_out_far", trim=-1.0)
+def _lights_out_far(sr, rng):
+    """The same relay chunk far up the shaft: darker, softer attack, mostly reverb."""
+    return _relay(sr, rng, True)
+
+
+@fx("camera_whir", trim=-3.0)
+def _camera_whir(sr, rng):
+    """Security-camera servo pan (accelerate, whir, stop tick) + a short lens-focus whir."""
+    out = _canvas(sr, 1.6)
+    k = rng.uniform(0.94, 1.06)
+
+    def servo(d, f_lo, f_hi, a, r, gain, t0, p):
+        n = secs(sr, d)
+        t = tvec(n, sr)
+        sp = np.clip(t / a, 0, 1) ** 1.5 * np.clip((d - t) / r, 0, 1) ** 1.2
+        sp = sp * (1 + 0.05 * smooth_noise(n, sr, 9, rng))
+        fg = (f_lo + (f_hi - f_lo) * t / d) * k * (0.35 + 0.65 * sp)
+        ph = TAU * np.cumsum(fg) / sr
+        gear = np.tanh(2.5 * np.sin(ph)) + 0.45 * np.sin(2 * ph + 0.4) + 0.35 * np.sin(3 * ph + 1.0)
+        brush = bp(rng.standard_normal(n), 2500, 8000, sr) * (0.6 + 0.4 * np.sin(ph)) * 0.35
+        y = (0.6 * gear + brush) * sp
+        y = biquad(bp(y, 250, 7000, sr), "peak", 1400, sr, 1.5, 6.0)
+        _place(out, fade_edges(y, sr, 0.003, 0.02), t0, sr, gain, p)
+
+    servo(0.95, 300, 360, 0.12, 0.16, 1.0, 0.0, 0.25)
+    n = secs(sr, 0.06)
+    t = tvec(n, sr)
+    stop = _modes(t, [(1900 * k, 0.6, 0.006), (3300 * k, 0.4, 0.004), (850 * k, 0.4, 0.01)]) \
+        + 0.4 * bp(rng.standard_normal(n), 2000, 7000, sr) * np.exp(-t / 0.001)
+    _place(out, fade_edges(stop * np.clip(t / 0.0003, 0, 1), sr, 0.0002, 0.01), 0.93, sr, 0.5, 0.25)
+    servo(0.24, 820, 1000, 0.05, 0.08, 0.55, 1.12, 0.3)                 # the lens focusing
+    _place(out, fade_edges(stop * np.clip(t / 0.0003, 0, 1), sr, 0.0002, 0.01), 1.35, sr, 0.25, 0.3)
+    return _room(out, sr, 0.2, 0.9)
+
+
+@fx("keycard_beep", trim=-2.0)
+def _keycard_beep(sr, rng):
+    """Keycard accepted: card tap on the reader, a bright rising two-tone chirp, the lock thunking open."""
+    out = _canvas(sr, 0.8)
+    n = secs(sr, 0.04)
+    t = tvec(n, sr)
+    tap = _modes(t, [(2400, 0.5, 0.004), (4200, 0.3, 0.003), (900, 0.35, 0.008)]) \
+        + 0.4 * bp(rng.standard_normal(n), 1500, 7000, sr) * np.exp(-t / 0.0008)
+    _place(out, fade_edges(tap * np.clip(t / 0.0003, 0, 1), sr, 0.0002, 0.008), 0.0, sr, 0.5)
+    for t0, m, d in ((0.06, 91, 0.075), (0.15, 96, 0.12)):          # G6 then C7
+        nb = secs(sr, d + 0.02)
+        tb = tvec(nb, sr)
+        f = hz(m)
+        tone = 0.7 * np.sin(TAU * f * tb) + 0.3 * lp(pulse(f, nb, sr, 0.5), 5000, sr)
+        tone *= env_adsr(nb, sr, 0.003, 1.0, 1.0, 0.012, d, smooth=False)
+        _place(out, tone, t0, sr, 0.42, 0.05)
+    n = secs(sr, 0.3)
+    t = tvec(n, sr)
+    lock = 0.7 * _sweep(120 + 60 * np.exp(-t / 0.01), sr) * np.exp(-t / 0.03) \
+        + _modes(t, [(640, 0.5, 0.025), (1380, 0.4, 0.015), (2900, 0.2, 0.006)]) \
+        + 0.4 * bp(rng.standard_normal(n), 600, 5000, sr) * np.exp(-t / 0.002)
+    _place(out, fade_edges(lock * np.clip(t / 0.0005, 0, 1), sr, 0.0003, 0.05), 0.36 + rng.uniform(-0.03, 0.04), sr,
+           0.55 * rng.uniform(0.8, 1.0), -0.1)
+    return _room(out, sr, 0.15, 0.6)
+
+
+@fx("door_slide", trim=0.0)
+def _door_slide(sr, rng):
+    """Heavy centre-parting sliding doors: lock clunk + pneumatic hiss, motor and
+    rollers rumbling as the leaves part (L / R), a heavy thunk at the end stop."""
+    dur = 2.4
+    out = _canvas(sr, dur)
+    k = rng.uniform(0.94, 1.06)
+    n = secs(sr, 0.45)
+    t = tvec(n, sr)
+    hiss = tv_filter(rng.standard_normal(n), 6000 * np.exp(-t / 0.25) + 1800, sr, "bandpass", q=0.9, stages=1)
+    hiss = _norm(hiss) * np.clip(t / 0.01, 0, 1) * np.exp(-t / 0.12)
+    _place(out, fade_edges(hiss, sr, 0.001, 0.05), 0.0, sr, 0.18, 0.0)
+    _place(out, _metal_hit(sr, rng, 0.3, 150, (1, 2.3, 4.1, 6.7), (0.05, 0.035, 0.02, 0.012),
+                           (1.0, 0.7, 0.4, 0.2), k, 0.5, 300, 4000, 0.003) * 0.5, 0.0, sr, 0.6)
+    d = 1.55
+    n = secs(sr, d)
+    t = tvec(n, sr)
+    sp = _env_trap(t, 0.0, 0.3, d - 0.4, d)
+    for side, p0, p1 in ((0, -0.35, -0.85), (1, 0.35, 0.85)):
+        nz = rng.standard_normal(n)
+        motor = lp(saw((52 + 30 * sp) * k * (1 + 0.01 * side), n, sr, rng.random()), 420, sr, 2)
+        roll = 0.8 * lp(nz, 260, sr, 2) + 0.25 * bp(nz, 300, 1400, sr)
+        joints = _resonate(_stickslip(sr, rng, d, 10 + 22 * sp, sp, 0.3), sr, [(170, 5, 0.8), (430, 6, 0.6), (960, 7, 0.3)])
+        y = (0.5 * _norm(motor) + _norm(roll) * 0.8 + 2.5 * joints) * sp
+        pn = p0 + (p1 - p0) * np.clip(t / d, 0, 1)
+        th = (pn + 1) * math.pi / 4
+        st = np.stack([y * np.cos(th), y * np.sin(th)], 1) * math.sqrt(2)
+        _place(out, fade_edges(st, sr, 0.01, 0.05), 0.12, sr, 0.35)
+    n = secs(sr, 0.7)
+    t = tvec(n, sr)
+    thunk = _thump(sr, 0.7, 52 * k, 110 * k, 0.015, 0.12, 0.5) \
+        + 0.8 * _metal_hit(sr, rng, 0.7, 140, (1, 2.2, 3.9, 6.1, 8.8), (0.12, 0.08, 0.05, 0.03, 0.02),
+                           (1.0, 0.8, 0.5, 0.3, 0.15), k, 0.7, 200, 4000, 0.005)
+    _place(out, fade_edges(np.tanh(1.3 * thunk), sr, 0.0005, 0.1), 0.12 + d - 0.06, sr, 0.75)
+    return _space(out, sr, 0.22, 1.5, 0.02, 0.5)
+
+
+@fx("hatch_slam", trim=0.0)
+def _hatch_slam(sr, rng):
+    """A heavy steel hatch slammed shut: low boom, ringing plate, the bolt clacking home (seeds vary)."""
+    out = _canvas(sr, 1.9)
+    k = rng.uniform(0.9, 1.1)
+    boom = _thump(sr, 0.9, 48 * k, 120 * k, 0.012, 0.13, 0.5)
+    plate = _metal_hit(sr, rng, 1.6, 128, (1, 2.24, 3.66, 5.71, 8.62, 12.1, 16.3),
+                       (0.3, 0.22, 0.17, 0.13, 0.09, 0.06, 0.04), (1.0, 0.85, 0.7, 0.5, 0.35, 0.2, 0.1), k,
+                       1.0, 200, 6000, 0.006)
+    plate += _norm(bp(rng.standard_normal(len(plate)), 150, 1800, sr)) * 0.5 * np.exp(-tvec(len(plate), sr) / 0.03)
+    y = np.zeros(len(plate))
+    y[: len(boom)] += 1.1 * boom
+    y += 0.8 * plate
+    _place(out, fade_edges(np.tanh(1.6 * y), sr, 0.0003, 0.25), 0.0, sr)
+    n = secs(sr, 0.25)
+    t = tvec(n, sr)
+    bolt = _modes(t, [(1350 * k, 0.8, 0.02), (2480 * k, 0.5, 0.012), (3900 * k, 0.25, 0.006)]) \
+        + 0.5 * np.sin(TAU * 260 * t) * np.exp(-t / 0.02) + 0.5 * bp(rng.standard_normal(n), 1000, 7000, sr) * np.exp(-t / 0.0015)
+    _place(out, fade_edges(bolt * np.clip(t / 0.0003, 0, 1), sr, 0.0002, 0.03), rng.uniform(0.08, 0.12), sr, 0.45, 0.1)
+    for j in range(int(rng.integers(3, 6))):
+        tt = 0.15 + rng.gamma(1.5, 0.06)
+        _place(out, _tick(sr, rng, 700, 3000, 0.006, 0.04), tt, sr, 0.1 * math.exp(-tt / 0.3), rng.uniform(-0.5, 0.5))
+    return _space(out, sr, 0.3, 1.4, 0.015, 0.5)
+
+
+@fx("lever_strain", trim=-1.0)
+def _lever_strain(sr, rng):
+    """Metal groaning under load (~1.5 s): stick-slip groans through stiff resonances,
+    a wandering bowed tone, a deep stress rumble and little pops as it gives."""
+    dur = 1.55
+    n = secs(sr, dur)
+    t = tvec(n, sr)
+    out = _canvas(sr, dur + 0.4)
+    env = np.interp(t, [0, 0.12, 0.6, 1.05, 1.35, 1.45, dur], [0, 0.5, 0.7, 0.85, 1.0, 0.6, 0]) \
+        * (1 + 0.25 * smooth_noise(n, sr, 6, rng))
+    rate = (55 + 70 * smooth_noise(n, sr, 2.5, rng) ** 2 + 60 * t / dur) * rng.uniform(0.9, 1.1)
+    x = lp(_stickslip(sr, rng, dur, rate, env, 0.15), 2500, sr, 2)
+    k = rng.uniform(0.92, 1.08)
+    groan = _resonate(x, sr, [(205 * k, 22, 0.9), (468 * k, 28, 0.75), (893 * k, 34, 0.5), (1527 * k, 40, 0.3),
+                              (2410 * k, 45, 0.15)])
+    f0 = 165 * k * (1 + 0.06 * smooth_noise(n, sr, 1.5, rng) + 0.08 * t / dur)
+    ph = TAU * np.cumsum(f0) / sr
+    bow = (np.sin(ph) + 0.5 * np.sin(2.03 * ph + 0.5) + 0.25 * np.sin(3.1 * ph + 1)) \
+        * (0.6 + 0.4 * np.abs(smooth_noise(n, sr, 12, rng)))
+    rumble = _norm(lp(rng.standard_normal(n), 140, sr, 2))
+    y = _norm(groan) * 0.9 + 0.35 * bow + 0.35 * rumble
+    _place(out, fade_edges(y * env, sr, 0.02, 0.06), 0.0, sr)
+    for j in range(int(rng.integers(4, 8))):                     # pops as the metal shifts
+        tt = rng.uniform(0.2, dur - 0.1)
+        _place(out, _metal_hit(sr, rng, 0.12, rng.uniform(900, 1800), (1, 2.4), (0.02, 0.01), (1, 0.4), 1.0,
+                               0.5, 800, 5000, 0.001), tt, sr, 0.12 * float(np.interp(tt, t, env)), rng.uniform(-0.4, 0.4))
+    return _space(out, sr, 0.18, 1.2, 0.015, 0.5)
+
+
+@fx("lever_clunk", trim=0.0)
+def _lever_clunk(sr, rng):
+    """The big lever slamming into its end stop: heavy clunk, short ring, rattle."""
+    out = _canvas(sr, 1.0)
+    k = rng.uniform(0.92, 1.08)
+    y = np.zeros(secs(sr, 0.9))
+    th = _thump(sr, 0.5, 62 * k, 140 * k, 0.01, 0.08, 0.5)
+    y[: len(th)] += th
+    y += _metal_hit(sr, rng, 0.9, 162, (1, 2.1, 3.83, 6.2, 9.4, 14.2), (0.12, 0.09, 0.07, 0.05, 0.12, 0.25),
+                    (1.0, 0.8, 0.6, 0.4, 0.22, 0.1), k, 0.9, 200, 5000, 0.004)
+    _place(out, fade_edges(np.tanh(1.5 * y), sr, 0.0003, 0.15), 0.0, sr)
+    for j in range(2):
+        _place(out, _tick(sr, rng, 900, 4000, 0.004, 0.03), 0.05 + 0.04 * j + rng.uniform(0, 0.02), sr, 0.12,
+               rng.uniform(-0.3, 0.3))
+    return _space(out, sr, 0.22, 1.2, 0.012, 0.5)
+
+
+@fx("shutter_slam", trim=0.0)
+def _shutter_slam(sr, rng):
+    """Heavy metal shutters dropping and slamming (corrugated slats rattling down,
+    a big slam, the curtain settling). Seeds vary length, pitch and weight."""
+    out = _canvas(sr, 2.4)
+    k = rng.uniform(0.88, 1.12)
+    d = rng.uniform(0.22, 0.42)
+    n = secs(sr, d)
+    t = tvec(n, sr)
+    u = t / d
+    drop = tv_filter(rng.standard_normal(n), 500 + 2200 * u, sr, "bandpass", q=0.8, stages=1)
+    _place(out, fade_edges(_norm(drop) * 0.12 * u ** 1.5, sr, 0.005, 0.01), 0.0, sr)
+    tt = 0.0
+    while tt < d:
+        a = 0.3 + 0.7 * (tt / d)
+        _place(out, _metal_hit(sr, rng, 0.08, rng.uniform(700, 1300) * k, (1, 2.6, 4.4), (0.012, 0.008, 0.005),
+                               (1, 0.6, 0.3), 1.0, 0.6, 1000, 6000, 0.0015), tt, sr, 0.16 * a, rng.uniform(-0.6, 0.6))
+        tt += rng.uniform(0.018, 0.034)
+    y = np.zeros(secs(sr, 1.4))
+    boom = _thump(sr, 1.0, 42 * k, 115 * k, 0.015, 0.16, 0.6)
+    y[: len(boom)] += 1.0 * boom
+    y += _metal_hit(sr, rng, 1.4, 96, (1, 1.8, 2.9, 4.3, 6.1, 8.4, 11.6, 15.5),
+                    (0.22, 0.18, 0.14, 0.11, 0.08, 0.06, 0.04, 0.03), (0.9, 1.0, 0.8, 0.7, 0.5, 0.35, 0.2, 0.12), k,
+                    1.2, 200, 7000, 0.01)
+    y += 0.4 * _norm(bp(rng.standard_normal(len(y)), 150, 3000, sr)) * np.exp(-tvec(len(y), sr) / 0.05)
+    _place(out, fade_edges(np.tanh(1.8 * y), sr, 0.0003, 0.3), d, sr, 1.0)
+    for j in range(int(rng.integers(6, 11))):                 # the curtain settling
+        t2 = d + 0.06 + rng.gamma(1.5, 0.07)
+        _place(out, _metal_hit(sr, rng, 0.08, rng.uniform(600, 1100) * k, (1, 2.6), (0.01, 0.006), (1, 0.5), 1.0,
+                               0.5, 800, 5000, 0.001), t2, sr, 0.1 * math.exp(-(t2 - d) / 0.25), rng.uniform(-0.7, 0.7))
+    return _space(out, sr, 0.35, 2.2, 0.03, 0.5)
+
+
+@fx("pod_hiss", trim=-1.0)
+def _pod_hiss(sr, rng):
+    """A containment pod's pneumatic seal opening: latch clack + suction pop,
+    a burst of hissing air with a falling whistle, a soft pressure whoosh."""
+    out = _canvas(sr, 1.9)
+    k = rng.uniform(0.94, 1.06)
+    _place(out, _metal_hit(sr, rng, 0.2, 1250, (1, 2.3, 3.7), (0.015, 0.01, 0.006), (1, 0.6, 0.3), k,
+                           0.6, 1500, 7000, 0.001), 0.0, sr, 0.35)
+    n = secs(sr, 0.15)
+    t = tvec(n, sr)
+    pop = _sweep((320 * np.exp(-t / 0.03) + 70) * k, sr) * np.exp(-t / 0.04) * np.clip(t / 0.002, 0, 1)
+    _place(out, fade_edges(pop, sr, 0.0005, 0.02), 0.015, sr, 0.45)
+    d = 1.5
+    n = secs(sr, d)
+    t = tvec(n, sr)
+    nz = rng.standard_normal(n)
+    dk = rng.uniform(0.8, 1.25)
+    env = np.clip(t / 0.02, 0, 1) * (0.75 * np.exp(-t / (0.18 * dk)) + 0.25 * np.exp(-t / (0.6 * dk))) \
+        * np.clip((d - t) / 0.3, 0, 1) * (1 + 0.15 * smooth_noise(n, sr, 9, rng))
+    hiss = _norm(tv_filter(nz, 7000 * np.exp(-t / 0.5) + 2600, sr, "bandpass", q=0.7, stages=1))
+    whistle = _norm(tv_filter(nz, (3300 * np.exp(-t / 0.7) + 1400) * k, sr, "bandpass", q=9, stages=1)) * 0.25
+    whoosh = _norm(lp(nz, 450, sr, 2)) * 0.35 * np.exp(-t / 0.15)
+    st = np.stack([hiss + whistle + whoosh, _norm(tv_filter(nz[::-1], 6500 * np.exp(-t / 0.5) + 2500, sr, "bandpass",
+                                                            q=0.7, stages=1)) + whistle + whoosh], 1)
+    st = biquad(lp(st, 9000, sr, 2), "highshelf", 5000, sr, 0.7, -4.0)
+    _place(out, fade_edges(st * env[:, None] * 0.5, sr, 0.002, 0.08), 0.02, sr)
+    return _space(out, sr, 0.25, 1.6, 0.02, 0.5)
+
+
+@fx("glass_case_smash", trim=-1.0)
+def _glass_case_smash(sr, rng):
+    """A fist through a small glass case: sharp crack, a tight burst of high shards,
+    a short tinkle on the floor (smaller and sharper than glass_crash_big)."""
+    out = _canvas(sr, 1.4)
+    n = secs(sr, 0.05)
+    t = tvec(n, sr)
+    crack = hp(rng.standard_normal(n), 2500, sr, 2) * np.exp(-t / 0.0025) + 0.6 * np.sin(TAU * 5200 * t) * np.exp(-t / 0.004)
+    _place(out, fade_edges(crack * np.clip(t / 0.0002, 0, 1), sr, 0.0001, 0.01), 0.0, sr, 0.9)
+    _place(out, _thump(sr, 0.2, 105, 190, 0.01, 0.04, 0.4), 0.0, sr, 0.45)
+    g = _glass(sr, rng, 1.35, 0.62)
+    g = hp(g, 900, sr, 2)
+    _place(out, g, 0.004, sr, 0.9)
+    for j in range(10):
+        tt = 0.3 + rng.gamma(1.6, 0.18)
+        if tt < 1.25:
+            _place(out, _ping(sr, rng, rng.uniform(2800, 7500), rng.uniform(0.01, 0.03)), tt, sr,
+                   0.18 * math.exp(-(tt - 0.3) / 0.5), rng.uniform(-0.7, 0.7))
+    return _space(out, sr, 0.2, 1.3, 0.012, 0.4)
+
+
+@fx("alarm_soft", trim=-7.0, loop=2.0)
+def _alarm_soft(sr, rng):
+    """A quieter facility alarm (loop 2 s): a soft hi-lo two-tone (G5 / Eb5), rounded
+    and roomy, low-passed so it sits under dialogue."""
+    P = 2.0
+    nP = secs(sr, P)
+    t = tvec(nP, sr)
+    y = np.zeros(nP)
+    for t0, m in ((0.0, 79), (0.5, 75), (1.0, 79), (1.5, 75)):
+        f = hz(m)
+        e = _env_trap(t, t0, t0 + 0.03, t0 + 0.4, t0 + 0.47)
+        src = 0.6 * np.sin(TAU * f * t) + 0.25 * np.sin(TAU * 2 * f * t + 0.3) + 0.12 * pulse(f, nP, sr, 0.3)
+        y += src * e
+    y = _circ(lambda z: lp(biquad(z, "peak", 900, sr, 0.8, 3.0), 1900, sr, 2), y)
+    st = stereoize(y)
+    return _circ(lambda z: z + 0.45 * reverb(z, sr, rt60=1.6, predelay=0.03, damp=0.55, seed=29), st)
+
+
+# =============================================================================
+# EPISODE 2: the bonk, creatures (Curiosity, baby Joy)
+# =============================================================================
+@fx("pipe_bonk", trim=1.0)
+def _pipe_bonk(sr, rng):
+    """Head into a low metal pipe: hollow ringing clang with a wobble + the cartoon
+    'bonk' (tonk with a pitch drop) + a little head thud."""
+    out = _canvas(sr, 1.6)
+    k = rng.uniform(0.94, 1.06)
+    n = secs(sr, 1.5)
+    t = tvec(n, sr)
+    f0 = 410 * k
+    ring = _modes(t, [(f0, 1.0, 0.5), (f0 * 2.76, 0.55, 0.3), (f0 * 5.40, 0.3, 0.16), (f0 * 8.93, 0.14, 0.09)],
+                  rng.uniform(0, TAU))
+    ring *= 1 + 0.25 * np.exp(-t / 0.5) * np.sin(TAU * 6.5 * t)                 # the pipe wobbling
+    air = np.sin(TAU * 250 * k * t) * np.exp(-t / 0.06) * 0.5                     # hollow 'ong'
+    imp = bp(rng.standard_normal(n), 600, 5000, sr) * np.exp(-t / 0.002) * 0.6
+    _place(out, fade_edges((0.55 * ring + air + imp) * np.clip(t / 0.0005, 0, 1), sr, 0.0003, 0.2), 0.0, sr, 0.8)
+    nb = secs(sr, 0.5)
+    tb = tvec(nb, sr)
+    fb = 590 * k * (0.8 + 0.2 * np.exp(-tb / 0.03)) * (1 + 0.035 * np.exp(-tb / 0.15) * np.sin(TAU * 13 * tb))
+    phb = TAU * np.cumsum(fb) / sr
+    bonk = np.sin(phb) * np.exp(-tb / 0.12) + 0.45 * np.sin(1.48 * phb + 0.5) * np.exp(-tb / 0.05) \
+        + 0.2 * np.sin(2.9 * phb) * np.exp(-tb / 0.02)
+    _place(out, fade_edges(bonk * np.clip(tb / 0.0008, 0, 1), sr, 0.0003, 0.05), 0.002, sr, 1.0)
+    _place(out, _thump(sr, 0.2, 85, 150, 0.01, 0.035, 0.3), 0.0, sr, 0.5)
+    return _room(out, sr, 0.25, 1.1)
+
+
+def _syll(sr, rng, d, f_a, f_b, f_c, breath=0.15, bright=1.0, vib=0.0):
+    """One tiny voiced creature syllable: pitch a -> b -> c, soft attack, breathy onset."""
+    n = secs(sr, d)
+    t = tvec(n, sr)
+    u = t / d
+    f = np.interp(u, [0, 0.3, 1], [f_a, f_b, f_c]) * (1 + vib * np.sin(TAU * 11 * t))
+    ph = TAU * np.cumsum(f) / sr
+    y = np.sin(ph) + 0.35 * bright * np.sin(2 * ph + 0.3) + 0.12 * bright * np.sin(3 * ph + 0.9)
+    env = np.clip(u / 0.18, 0, 1) ** 1.2 * np.clip((1 - u) / 0.35, 0, 1) ** 1.3
+    h = bp(rng.standard_normal(n), 2500, 8000, sr) * np.exp(-t / 0.012) * breath
+    return (y * env + h) * np.clip(t / 0.002, 0, 1)
+
+
+@fx("baby_giggle", trim=-2.0)
+def _baby_giggle(sr, rng):
+    """A tiny creature giggle: 5-8 bright 'hee' chirps tumbling down, a last little
+    upward squeak (seeds vary count, pitch and timing)."""
+    out = _canvas(sr, 1.1)
+    ns = int(rng.integers(5, 9))
+    k = rng.uniform(0.92, 1.1)
+    tt = 0.0
+    for i in range(ns):
+        d = rng.uniform(0.045, 0.07)
+        top = (1500 - 380 * i / max(1, ns - 1)) * k * rng.uniform(0.96, 1.04)
+        _place(out, _syll(sr, rng, d, top * 0.9, top * 1.08, top * 0.86, 0.25), tt, sr,
+               (0.9 - 0.04 * i) * rng.uniform(0.8, 1.0), rng.uniform(-0.15, 0.15))
+        tt += d + rng.uniform(0.028, 0.05)
+    _place(out, _syll(sr, rng, 0.11, 1150 * k, 1350 * k, 1700 * k, 0.2, 0.8, 0.02), tt + 0.03, sr, 0.8, 0.05)
+    return _room(out, sr, 0.15, 0.5)
+
+
+@fx("baby_coo", trim=-3.0)
+def _baby_coo(sr, rng):
+    """A soft baby-creature coo: a round 'ooo' rising and falling with a little quiver."""
+    out = _canvas(sr, 0.8)
+    k = rng.uniform(0.93, 1.07)
+    d = rng.uniform(0.45, 0.6)
+    n = secs(sr, d)
+    t = tvec(n, sr)
+    u = t / d
+    f = np.interp(u, [0, 0.35, 0.8, 1], [690, 940, 820, 760]) * k * (1 + 0.012 * np.clip(u * 2 - 0.3, 0, 1)
+                                                                       * np.sin(TAU * 6.5 * t))
+    ph = TAU * np.cumsum(f) / sr
+    y = lp(np.sin(ph) + 0.18 * np.sin(2 * ph + 0.4) + 0.05 * np.sin(3 * ph), 2500, sr)
+    y += 0.05 * bp(rng.standard_normal(n), 900, 3500, sr)
+    y *= np.clip(u / 0.15, 0, 1) ** 1.3 * np.clip((1 - u) / 0.3, 0, 1) ** 1.2
+    _place(out, y, 0.0, sr, 1.0)
+    return _room(out, sr, 0.18, 0.6)
+
+
+def _melt_dry(sr, rng, d=1.1):
+    n = secs(sr, d)
+    t = tvec(n, sr)
+    u = t / d
+    env = np.sin(np.pi * np.clip(u / 0.95, 0, 1)) ** 1.3 * (0.55 + 0.45 * np.clip(1 - u, 0, 1))
+    out = np.zeros((n, 2))
+    fc = 2600 * (170 / 2600) ** (u ** 0.8)
+    for ch in range(2):
+        nz = rng.standard_normal(n)
+        w = _norm(tv_filter(nz, fc * (1 + 0.04 * ch), sr, "bandpass", q=1.3, stages=1))
+        out[:, ch] = w * 0.5
+    tone_f = 330 * (65 / 330) ** u * (1 + 0.03 * np.sin(TAU * 5 * t))
+    tone = np.sin(TAU * np.cumsum(tone_f) / sr) + 0.3 * np.sin(2 * TAU * np.cumsum(tone_f * 1.003) / sr)
+    out += pan(tone * 0.35, 0)[: n]
+    return out * env[:, None]
+
+
+@fx("creature_melt", trim=-3.0)
+def _creature_melt(sr, rng):
+    """Curiosity melting into a shadow puddle: a soft, dark whoosh falling away with a
+    sinking tone, ending on a tiny low 'vmm' as the puddle settles (not wet)."""
+    out = _canvas(sr, 1.6)
+    _place(out, fade_edges(_melt_dry(sr, rng), sr, 0.01, 0.08), 0.0, sr)
+    n = secs(sr, 0.35)
+    t = tvec(n, sr)
+    settle = _sweep(95 * np.exp(-t / 0.25) + 50, sr) * np.clip(t / 0.02, 0, 1) * np.exp(-t / 0.1)
+    _place(out, fade_edges(settle, sr, 0.001, 0.05), 0.98, sr, 0.35)
+    return _space(out, sr, 0.35, 1.6, 0.02, 0.6)
+
+
+@fx("creature_reform", trim=-3.0)
+def _creature_reform(sr, rng):
+    """The puddle rising back into Curiosity: the melt in reverse (a soft rising
+    shadow-whoosh), finished with a small bright 'pop' of the ears."""
+    out = _canvas(sr, 1.6)
+    dry = _melt_dry(sr, rng)[::-1].copy()
+    _place(out, fade_edges(dry, sr, 0.05, 0.03), 0.0, sr)
+    n = secs(sr, 0.12)
+    t = tvec(n, sr)
+    pop = _sweep(600 + 900 * np.clip(t / 0.04, 0, 1), sr) * np.exp(-t / 0.03) * np.clip(t / 0.002, 0, 1)
+    _place(out, fade_edges(pop, sr, 0.0005, 0.02), 1.08, sr, 0.25, 0.1)
+    return _space(out, sr, 0.3, 1.4, 0.02, 0.6)
+
+
+@fx("ears_perk", trim=-6.0)
+def _ears_perk(sr, rng):
+    """Tiny cartoon tick for ears shooting up: two quick upward 'bwip's (one per ear),
+    a hint of spring wobble. Subtle."""
+    out = _canvas(sr, 0.35)
+    k = rng.uniform(0.93, 1.07)
+    for i, (t0, f0, p) in enumerate(((0.0, 760, -0.25), (0.018, 840, 0.25))):
+        n = secs(sr, 0.2)
+        t = tvec(n, sr)
+        f = (f0 + 1050 * (1 - np.exp(-t / 0.018))) * k * (1 + 0.04 * np.exp(-t / 0.06) * np.sin(TAU * 21 * t))
+        y = np.sin(TAU * np.cumsum(f) / sr) * np.exp(-t / 0.045) * np.clip(t / 0.002, 0, 1)
+        y += 0.2 * bp(rng.standard_normal(n), 2500, 7000, sr) * np.exp(-t / 0.0015)
+        _place(out, fade_edges(y, sr, 0.0003, 0.02), t0, sr, 0.8 if i == 0 else 0.7, p)
+    return _room(out, sr, 0.1, 0.35)
+
+
+# =============================================================================
+# EPISODE 2: people, gadgets, home
+# =============================================================================
+@fx("flashlight_click", trim=4.0)
+def _flashlight_click(sr, rng):
+    """Flashlight tail-switch: a hard plastic press 'tk' and the latch 'click'."""
+    out = _canvas(sr, 0.25)
+    k = rng.uniform(0.92, 1.08)
+    for t0, modes, g in ((0.0, [(3600, 0.6, 0.003), (5400, 0.35, 0.002), (2100, 0.3, 0.004)], 0.6),
+                         (0.028, [(2200, 0.7, 0.006), (3300, 0.4, 0.004), (1300, 0.4, 0.008)], 1.0)):
+        n = secs(sr, 0.06)
+        t = tvec(n, sr)
+        y = _modes(t, [(f * k, a, d) for f, a, d in modes]) + 0.45 * bp(rng.standard_normal(n), 2000, 9000, sr) \
+            * np.exp(-t / 0.0008)
+        y += 0.3 * np.sin(TAU * 420 * k * t) * np.exp(-t / 0.01)
+        _place(out, fade_edges(y * np.clip(t / 0.0002, 0, 1), sr, 0.0001, 0.01), t0 + rng.uniform(0, 0.004), sr, g)
+    return _room(out, sr, 0.1, 0.3)
+
+
+@fx("recorder_click", trim=4.0)
+def _recorder_click(sr, rng):
+    """A small recorder's plastic button (press + release) and a tiny falling power-down blip."""
+    out = _canvas(sr, 0.45)
+    k = rng.uniform(0.94, 1.06)
+    for t0, f, g in ((0.0, 2900, 0.9), (0.06, 2300, 0.45)):
+        n = secs(sr, 0.04)
+        t = tvec(n, sr)
+        y = _modes(t, [(f * k, 0.6, 0.003), (f * 1.7 * k, 0.35, 0.002), (f * 0.45 * k, 0.4, 0.005)]) \
+            + 0.4 * bp(rng.standard_normal(n), 2000, 8000, sr) * np.exp(-t / 0.0006)
+        _place(out, fade_edges(y * np.clip(t / 0.0002, 0, 1), sr, 0.0001, 0.008), t0, sr, g, 0.05)
+    n = secs(sr, 0.2)
+    t = tvec(n, sr)
+    f = 1700 * (480 / 1700) ** np.clip(t / 0.13, 0, 1)
+    blip = (0.7 * np.sin(TAU * np.cumsum(f) / sr) + 0.3 * lp(pulse(f, n, sr, 0.5), 4000, sr)) \
+        * np.clip(t / 0.004, 0, 1) * np.exp(-t / 0.07)
+    _place(out, fade_edges(blip, sr, 0.0005, 0.02), 0.09, sr, 0.18, 0.05)
+    return _room(out, sr, 0.08, 0.3)
+
+
+@fx("phone_buzz", trim=-2.0)
+def _phone_buzz(sr, rng):
+    """A phone vibrating on a wooden nightstand: two buzzes (spin-up, rattle, spin-down)."""
+    out = _canvas(sr, 1.3)
+    k = rng.uniform(0.95, 1.05)
+    for t0, d in ((0.0, 0.42), (0.62, 0.42)):
+        n = secs(sr, d + 0.08)
+        t = tvec(n, sr)
+        spin = np.clip(t / 0.04, 0, 1) * np.clip((d + 0.06 - t) / 0.06, 0, 1)
+        fm = (110 + 70 * np.clip(t / 0.05, 0, 1) - 40 * np.clip((t - d) / 0.06, 0, 1)) * k
+        ph = TAU * np.cumsum(fm) / sr
+        motor = np.tanh(3.0 * np.sin(ph)) + 0.4 * np.sin(2 * ph)
+        rattle = bp(rng.standard_normal(n), 900, 4000, sr) * np.maximum(0, np.sin(ph)) ** 6 * 1.4
+        wood = _resonate(motor * 0.02, sr, [(230, 4, 1.0), (520, 6, 0.8), (1040, 8, 0.5), (1900, 9, 0.3)])
+        y = (0.35 * motor + _norm(wood) * 0.5 + rattle) * spin
+        _place(out, fade_edges(y, sr, 0.002, 0.02), t0, sr, 0.5, -0.1)
+    return _room(out, sr, 0.12, 0.4)
+
+
+@fx("text_send", trim=-4.0)
+def _text_send(sr, rng):
+    """A text being sent: a soft airy upward whoosh with a faint 'fwip'."""
+    out = _canvas(sr, 0.55)
+    d = 0.32
+    n = secs(sr, d)
+    t = tvec(n, sr)
+    u = t / d
+    w = _norm(tv_filter(rng.standard_normal(n), 500 * (3800 / 500) ** u, sr, "bandpass", q=1.4, stages=1))
+    env = np.clip(u / 0.7, 0, 1) ** 1.8 * np.clip((1 - u) / 0.3, 0, 1) ** 1.2
+    tone = np.sin(TAU * np.cumsum(600 * (1500 / 600) ** u) / sr) * 0.12
+    y = (w * 0.5 + tone) * env
+    th = (np.clip(-0.3 + 0.6 * u, -1, 1) + 1) * math.pi / 4
+    st = np.stack([y * np.cos(th), y * np.sin(th)], 1) * math.sqrt(2)
+    _place(out, fade_edges(st, sr, 0.003, 0.02), 0.0, sr)
+    return _room(out, sr, 0.12, 0.4)
+
+
+@fx("bed_flop", trim=0.0)
+def _bed_flop(sr, rng):
+    """Body flopping face-down onto a mattress: a soft heavy 'fwump' and duvet puff,
+    box-spring 'boing' bounces dying away and a frame creak."""
+    out = _canvas(sr, 1.9)
+    k = rng.uniform(0.94, 1.06)
+    n = secs(sr, 0.6)
+    t = tvec(n, sr)
+    fw = _sweep((52 + 45 * np.exp(-t / 0.03)) * k, sr) * np.exp(-t / 0.12) * np.clip(t / 0.008, 0, 1)
+    puff = _norm(lp(rng.standard_normal(n), 900, sr, 2)) * np.clip(t / 0.01, 0, 1) * np.exp(-t / 0.08) * 0.7
+    duvet = _norm(bp(rng.standard_normal(n), 350, 2500, sr)) * np.clip(t / 0.012, 0, 1) * np.exp(-t / 0.1) * 0.5
+    _place(out, fade_edges(np.tanh(1.4 * (fw + puff + duvet)), sr, 0.002, 0.1), 0.0, sr)
+    for i, (t0, a) in enumerate(((0.03, 1.0), (0.33, 0.55), (0.58, 0.3), (0.8, 0.15))):
+        n = secs(sr, 0.45)
+        t = tvec(n, sr)
+        y = np.zeros(n)
+        for j in range(3):                                     # a few coils, slightly different
+            f0 = rng.uniform(260, 520) * k
+            fq = f0 * (1 + 0.12 * np.exp(-t / 0.05) * np.sin(TAU * rng.uniform(16, 24) * t))
+            y += np.sin(TAU * np.cumsum(fq) / sr + j) * np.exp(-t / rng.uniform(0.08, 0.14)) * rng.uniform(0.5, 1.0)
+        y += 0.3 * bp(rng.standard_normal(n), 1500, 5000, sr) * np.exp(-t / 0.004)
+        _place(out, fade_edges(y * np.clip(t / 0.004, 0, 1), sr, 0.001, 0.05), t0, sr, 0.42 * a, rng.uniform(-0.3, 0.3))
+        if i < 2:
+            dd = 0.18
+            cn = secs(sr, dd)
+            ct = tvec(cn, sr)
+            x = _stickslip(sr, rng, dd, 90 + 60 * np.sin(np.pi * ct / dd), np.sin(np.pi * ct / dd) ** 0.8, 0.1)
+            cr = _resonate(x, sr, [(320 * k, 12, 0.7), (710 * k, 16, 0.5), (1350 * k, 20, 0.3)])
+            _place(out, fade_edges(cr, sr, 0.005, 0.02), t0 + 0.05, sr, 1.2 * a, 0.2)
+    return _room(out, sr, 0.15, 0.5)
+
+
+def _bird_note(sr, d, f0, f1, trill=0.0, rate=32.0, curve=1.0, attack=0.15):
+    n = secs(sr, d)
+    t = tvec(n, sr)
+    u = t / d
+    f = (f0 + (f1 - f0) * u ** curve) * (1 + trill * np.sin(TAU * rate * t))
+    ph = TAU * np.cumsum(f) / sr
+    y = np.sin(ph) + 0.06 * np.sin(2 * ph)
+    env = np.clip(u / attack, 0, 1) ** 1.2 * np.clip((1 - u) / 0.3, 0, 1) ** 1.4
+    return y * env
+
+
+@fx("birds_dawn", trim=-7.0, loop=3.0)
+def _birds_dawn(sr, rng):
+    """Gentle morning birdsong outside the window (loop 3 s): a robin-like warble,
+    sparrow chips, a distant 'tee-oo' whistle, a faint dawn hush."""
+    P = 3.0
+    nP = secs(sr, P)
+    y = np.zeros((2 * nP, 2))
+    t = 0.15                                                   # robin warble (near, left)
+    for i in range(7):
+        d = rng.uniform(0.05, 0.12)
+        f0 = rng.uniform(2300, 3800)
+        f1 = f0 * rng.uniform(0.75, 1.3)
+        tr = 0.03 if rng.random() < 0.35 else 0.0
+        _place(y, _bird_note(sr, d, f0, f1, tr, rng.uniform(28, 45)), t, sr, rng.uniform(0.5, 0.9), -0.35)
+        t += d + rng.uniform(0.02, 0.06)
+    for t0 in (1.3, 1.44, 1.56, 2.5, 2.63):                     # sparrow chips (right)
+        _place(y, _bird_note(sr, rng.uniform(0.03, 0.045), rng.uniform(4800, 5400), rng.uniform(3600, 4000),
+                             curve=0.6, attack=0.08), t0, sr, rng.uniform(0.3, 0.45), 0.55)
+    far = np.zeros((2 * nP, 2))                                 # distant 'tee-oo'
+    _place(far, _bird_note(sr, 0.24, 3050, 2950), 2.0, sr, 0.35, 0.15)
+    _place(far, _bird_note(sr, 0.2, 2450, 2200), 2.27, sr, 0.3, 0.15)
+    _place(far, _bird_note(sr, 0.09, 3300, 2700), 0.95, sr, 0.15, -0.7)
+    y = _fold(y, nP)
+    far = _fold(lp(far, 4500, sr, 2), nP)
+    y = y + far
+    hush = np.stack([_pnoise(nP, sr, rng, 200, 2500, -3), _pnoise(nP, sr, rng, 200, 2500, -3)], 1) * 0.004
+    y = _circ(lambda z: lp(z, 7500, sr, 2), y)
+    y = _circ(lambda z: z + 0.25 * reverb(z, sr, rt60=0.9, predelay=0.02, damp=0.6, seed=31), y)
+    return y + hush
+
+
+# =============================================================================
+# EPISODE 2: improved Episode 1 effects (the Ep1 versions stay as *_ep1)
+# =============================================================================
+@fx("creature_purr", trim=1.0)
+def _creature_purr2(sr, rng):
+    """Warm rumbly purr (~1.6 s): ~25 Hz larynx pulses through a warm chest/throat
+    body, a soft voiced core, breath only on top; exhale then a softer inhale."""
+    dur = 1.6
+    n = secs(sr, dur)
+    t = tvec(n, sr)
+    breath = np.interp(t, [0, 0.1, 0.66, 0.8, 0.9, 1.42, dur], [0, 1, 0.9, 0.3, 0.7, 0.6, 0])
+    rate = np.where(t < 0.8, 25.5, 23.0) * rng.uniform(0.95, 1.05) + 1.2 * smooth_noise(n, sr, 3, rng)
+    frac = (np.cumsum(rate) / sr) % 1.0
+    pulse_ = np.exp(-frac / 0.18) * np.clip(frac / 0.03, 0, 1)            # soft muscle twitches
+    voice = _glottal(rate * 2.0, n, sr, rng, 0.03, 500)                    # a low voiced core (~50 Hz)
+    src = 0.6 * lp(rng.standard_normal(n), 900, sr, 2) + 0.8 * voice
+    y = _norm(_formants(src * pulse_, sr, [(120, 1.6, 0.5), (240, 2.2, 1.0), (420, 3.0, 1.0), (780, 3.5, 0.45)]))
+    y += 0.05 * _norm(bp(rng.standard_normal(n), 800, 2200, sr)) * pulse_
+    y = lp(y, 1900, sr, 2)
+    inh = np.clip((t - 0.8) / 0.1, 0, 1)                                   # inhale: softer, a bit higher
+    y = y * (1 - 0.35 * inh) + 0.25 * inh * _norm(_formants(src * pulse_, sr, [(300, 2.5, 1.0), (650, 3, 0.4)]))
+    out = np.stack([y, np.roll(y, 23)], 1) * breath[:, None]
+    return _room(fade_edges(out, sr, 0.01, 0.08), sr, 0.12, 0.5)
+
+
+def _sigh_core(sr, rng, dur, f_start, f_end, v_mix, v_end, peak=0.14):
+    """Exhale: airflow through moving formants (open 'ah' closing to 'h'), breath
+    turbulence, a breathy voiced 'hah' that fades out early."""
+    n = secs(sr, dur)
+    t = tvec(n, sr)
+    F1 = np.interp(t, [0, 0.25 * dur, dur], [700, 640, 480])
+    F2 = np.interp(t, [0, dur], [1180, 980])
+    F3 = np.interp(t, [0, dur], [2550, 2350])
+    flow = np.clip(t / 0.06, 0, 1) ** 1.4 * np.exp(-np.maximum(t - peak, 0) / (0.32 * dur))
+    flow *= 1 + 0.18 * smooth_noise(n, sr, 14, rng)
+    nz = lp(rng.standard_normal(n), 5000, sr, 1)
+    br = _norm(_formants(nz, sr, [(F1, 3.0, 1.0), (F2, 4.0, 0.6), (F3, 5.0, 0.25), (4200, 3.0, 0.08)]))
+    br = br * (1 - 0.35 * t / dur) + 0.12 * _norm(lp(nz, 400, sr, 2))     # chest air
+    f0 = np.interp(t, [0, 0.3 * dur, dur], [f_start, f_start * 0.9, f_end]) * rng.uniform(0.95, 1.05)
+    v = _norm(_formants(_glottal(f0, n, sr, rng, 0.02, 900, rough=0.15, rough_rate=30), sr,
+                        [(F1, 5.0, 1.0), (F2, 7.0, 0.4), (F3, 9.0, 0.1)]))
+    venv = np.clip(t / 0.04, 0, 1) * np.clip((v_end - t) / (0.5 * v_end), 0, 1)
+    return (br + v_mix * v * venv) * flow
+
+
+@fx("sigh", trim=-3.0)
+def _sigh2(sr, rng):
+    """A tired human exhale 'hhhaaah' (~1 s) starting at t=0: breath through moving
+    formants with a soft voiced 'hah' at the front, trailing off."""
+    y = _sigh_core(sr, rng, 1.0, 112, 82, 0.22, 0.42)
+    return _room(pan(fade_edges(lp(y, 6500, sr), sr, 0.005, 0.12), 0), sr, 0.1, 0.4)
+
+
+@fx("sigh_deep", trim=-3.0)
+def _sigh_deep(sr, rng):
+    """A long resigned sigh: a soft nasal inhale (~0.45 s), then a long voiced exhale
+    from ~0.55 s ('...Ugh' / 'sits with that')."""
+    out = _canvas(sr, 1.95)
+    n = secs(sr, 0.45)
+    t = tvec(n, sr)
+    inh = _norm(_formants(rng.standard_normal(n), sr, [(1700, 3.0, 0.7), (2900, 4.0, 0.6), (900, 3.0, 0.3)]))
+    inh *= np.clip(t / 0.2, 0, 1) ** 1.5 * np.clip((0.45 - t) / 0.08, 0, 1) * 0.35
+    _place(out, fade_edges(lp(inh, 6000, sr), sr, 0.005, 0.02), 0.0, sr)
+    ex = _sigh_core(sr, rng, 1.35, 118, 78, 0.32, 0.6, 0.2)
+    _place(out, fade_edges(lp(ex, 6500, sr), sr, 0.005, 0.15), 0.55, sr)
+    return _room(out, sr, 0.1, 0.4)
+
+
+def _sense_ping(sr, rng, small=False):
+    dur = 3.4 if not small else 1.9
+    out = _canvas(sr, dur)
+    k = rng.uniform(0.97, 1.03)
+    # 1) the whoom: a soft low pressure swell (harmonics so phones hear it)
+    d = 1.4 if not small else 0.7
+    n = secs(sr, d)
+    t = tvec(n, sr)
+    f = 62 * k * (1 + 0.25 * np.exp(-t / 0.18))
+    ph = TAU * np.cumsum(f) / sr
+    env = (1 - np.exp(-t / 0.035)) ** 2 * np.exp(-t / (0.38 if not small else 0.2))
+    whoom = np.sin(ph) + 0.55 * np.sin(2 * ph) + 0.3 * np.sin(3 * ph + 0.4) + 0.14 * np.sin(4 * ph + 1.0)
+    air = _norm(tv_filter(rng.standard_normal(n), 250 + 1100 * np.exp(-t / 0.07), sr, "lowpass", q=0.8, block=128))
+    air *= np.clip(t / 0.02, 0, 1) * np.exp(-t / 0.16) * 0.22
+    _place(out, fade_edges((whoom * env + air), sr, 0.002, 0.15), 0.0, sr, 0.75 if not small else 0.45)
+    # 2) the ping: a soft glassy E6 with a slow chorus shimmer (the Ep1 note, kept)
+    fp = 1318.5 * 2 ** (rng.normal(0, 6) / 1200)
+    nb = secs(sr, 1.8 if not small else 1.0)
+    tb = tvec(nb, sr)
+    pe = np.clip(tb / 0.006, 0, 1) * (0.55 * np.exp(-tb / 0.12) + 0.45 * np.exp(-tb / (0.8 if not small else 0.4)))
+    pg = np.sin(TAU * fp * tb) + 0.7 * np.sin(TAU * fp * 1.0026 * tb + 1.0) \
+        + 0.16 * np.sin(TAU * 2 * fp * tb + 0.4) * np.exp(-tb / 0.25) + 0.05 * np.sin(TAU * 2.76 * fp * tb) * np.exp(-tb / 0.05)
+    pg = fade_edges(pg * pe, sr, 0.001, 0.1)
+    _place(out, pg, 0.05, sr, 0.36 if not small else 0.26, rng.uniform(-0.1, 0.1))
+    # 3) returns: the ping coming back darker and wider (sonar echoes)
+    for i, (dt, g, p) in enumerate(((0.36, 0.42, -0.55), (0.74, 0.2, 0.6))[: 1 if small else 2]):
+        _place(out, lp(pg, 3000 - 900 * i, sr, 1), 0.05 + dt * rng.uniform(0.95, 1.05), sr, 0.30 * g, p)
+    # 4) the teal shimmer: a cloud of high partials swelling and fading, drifting up a hair
+    pool = [1760.0, 2349.3, 2637.0, 3520.0, 4698.6, 5274.0]
+    for j, fq in enumerate(sorted(rng.choice(pool, 4 if not small else 2, replace=False))):
+        t0 = 0.08 + rng.uniform(0.0, 0.35)
+        ln = (rng.uniform(1.6, 2.3) if not small else rng.uniform(0.8, 1.1))
+        ns = secs(sr, ln)
+        ts = tvec(ns, sr)
+        fs = fq * (1 + 0.004 * ts / ln) * (1 + 0.0015 * np.sin(TAU * rng.uniform(4, 7) * ts))
+        sh = np.sin(TAU * np.cumsum(fs) / sr) * np.sin(np.pi * np.clip(ts / ln, 0, 1)) ** 2 * np.exp(-ts / ln)
+        _place(out, sh, t0, sr, 0.11 / (1 + 0.25 * j), -0.7 + 1.4 * j / 3)
+    ns = secs(sr, 1.5 if not small else 0.8)
+    ts = tvec(ns, sr)
+    sp = bp(rng.standard_normal(ns), 5000, 9500, sr) * np.sin(np.pi * np.clip(ts / ts[-1], 0, 1)) ** 2 * 0.02
+    _place(out, np.stack([sp, np.roll(sp, 97)], 1), 0.1, sr)
+    return out + (0.45 if not small else 0.3) * reverb(out, sr, rt60=2.6 if not small else 1.6, predelay=0.03,
+                                                       damp=0.3, seed=37)
+
+
+@fx("sonar_ping", trim=0.0)
+def _sonar_ping2(sr, rng):
+    """The sense (signature sound): a deep soft 'whoom', a glassy E6 ping with a slow
+    shimmer, two darker returns panning out, and a teal shimmer tail of high partials
+    (A6 D7 E7 A7 ... chosen per seed) in a long bright space. Seeds vary a little."""
+    return _sense_ping(sr, rng, False)
+
+
+@fx("sonar_ping_small", trim=-3.0)
+def _sonar_ping_small(sr, rng):
+    """A small, quick sense ping (hiding behind a crate): lighter whoom, one return, short shimmer."""
+    return _sense_ping(sr, rng, True)
 
 
 NAMES = sorted(_FX)
@@ -2069,6 +2851,36 @@ _NEW_ALIASES = {   # TIREDNESS (never overrides an alias above)
     "machine_hum": "pod_hum", "sad_ding": "sad_chime", "chime_sad": "sad_chime",
 }
 for _k, _v in _NEW_ALIASES.items():
+    if _k not in ALIASES and _k not in _FX:
+        ALIASES[_k] = _v
+_EP2_ALIASES = {   # Episode 2 (never overrides an alias above)
+    "power_cut": "lights_out", "power_off": "lights_out", "relay": "lights_out", "chunk": "lights_out",
+    "lights_off": "lights_out", "breaker": "lights_out", "blackout": "lights_out",
+    "chunk_far": "lights_out_far", "relay_far": "lights_out_far", "lights_out_distant": "lights_out_far",
+    "camera": "camera_whir", "servo": "camera_whir", "cctv": "camera_whir", "camera_pan": "camera_whir",
+    "keycard": "keycard_beep", "card_beep": "keycard_beep", "card_swipe": "keycard_beep",
+    "access_granted": "keycard_beep", "doors": "door_slide", "sliding_doors": "door_slide",
+    "doors_open": "door_slide", "blast_door": "door_slide", "hatch": "hatch_slam", "hatch_close": "hatch_slam",
+    "metal_door_slam": "hatch_slam", "strain": "lever_strain", "metal_groan": "lever_strain",
+    "groan": "lever_strain", "lever": "lever_clunk", "clunk": "lever_clunk", "lever_stop": "lever_clunk",
+    "shutter": "shutter_slam", "shutters": "shutter_slam", "shutter_down": "shutter_slam",
+    "seal_hiss": "pod_hiss", "pneumatic": "pod_hiss", "pod_open": "pod_hiss", "airlock": "pod_hiss",
+    "pipe": "pipe_bonk", "pipe_hit": "pipe_bonk", "head_pipe": "pipe_bonk", "giggle": "baby_giggle",
+    "baby_laugh": "baby_giggle", "tiny_giggle": "baby_giggle", "baby": "baby_coo", "joy_coo": "baby_coo",
+    "melt": "creature_melt", "shadow_melt": "creature_melt", "puddle": "creature_melt",
+    "reform": "creature_reform", "unmelt": "creature_reform", "flashlight": "flashlight_click",
+    "torch": "flashlight_click", "torch_click": "flashlight_click", "buzz": "phone_buzz",
+    "vibrate": "phone_buzz", "phone_vibrate": "phone_buzz", "phone": "phone_buzz", "text": "text_send",
+    "sms_send": "text_send", "reply": "text_send", "flop": "bed_flop", "bed": "bed_flop",
+    "mattress": "bed_flop", "bed_springs": "bed_flop", "birds": "birds_dawn", "birdsong": "birds_dawn",
+    "dawn": "birds_dawn", "morning": "birds_dawn", "bird_chirp": "birds_dawn", "case_smash": "glass_case_smash",
+    "glass_case": "glass_case_smash", "punch_glass": "glass_case_smash", "alarm_quiet": "alarm_soft",
+    "siren_soft": "alarm_soft", "soft_alarm": "alarm_soft", "perk": "ears_perk", "ear_perk": "ears_perk",
+    "ears_up": "ears_perk", "recorder": "recorder_click", "recorder_off": "recorder_click",
+    "button_click": "recorder_click", "ping_small": "sonar_ping_small", "sonar_small": "sonar_ping_small",
+    "sense_small": "sonar_ping_small", "deep_sigh": "sigh_deep", "sigh_long": "sigh_deep",
+}
+for _k, _v in _EP2_ALIASES.items():
     if _k not in ALIASES and _k not in _FX:
         ALIASES[_k] = _v
 

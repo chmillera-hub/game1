@@ -17,6 +17,9 @@ Rules every function here follows (see API_fx.md for the full reference):
 * Static parts are rasterised once into fx's own layer cache (same 1/8-octave
   scale quantisation as core.cached, but a separate LRU so fx never evicts
   set/background layers, and blits can carry an alpha).
+* Episode 2 (section 6): the sense / flashlight reveal a callback-drawn lit
+  world that is baked ONCE per key (numpy pixel treatment, separate LRU) and
+  composited per frame through aliased clip shapes (pixel copies).
 """
 import math
 from collections import OrderedDict
@@ -26,7 +29,7 @@ import cairocffi as cairo
 from .core import (W, H, FPS, PAL, hexc, mixc, clamp, lerp, seg, smoothstep,
                    ease_in, ease_out, ease_in_out, ease_out_back, ease_out_bounce, hash01,
                    fill, stroke, rrect, ellipse, circle, poly, smooth_path,
-                   text, set_font, saved, radial_glow)
+                   text, set_font, saved, radial_glow, wobble, blink_amount)
 
 INK = PAL["ink"]
 TAU = 2 * math.pi
@@ -38,11 +41,13 @@ TAG_COLORS = {
     "embar": "#ff8ab4",   # blush pink
     "imp": "#f7b33a",     # impulsivity gold
     "boss": "#5fdcc2",    # cold mint / teal (NOT the special power teal)
+    "curiosity": "#26d9c9",  # Ep2: Curiosity's own teal (a deeper cut of the power teal)
 }
 _TAG_ALIAS = {"tiredness": "tired", "periwinkle": "tired",
               "embarrassment": "embar", "pink": "embar",
               "impulsivity": "imp", "gold": "imp",
-              "the boss": "boss", "mint": "boss", "teal": "boss"}
+              "the boss": "boss", "mint": "boss", "teal": "boss",
+              "cur": "curiosity", "specimen": "curiosity"}
 
 # misc effect colours
 STAR_YELLOW = "#ffe066"
@@ -51,6 +56,8 @@ HEAT_RED = "#ff5f7e"
 DUST = "#efe6d8"
 HOLO = "#9feeff"        # hologram cyan (bluer than the power teal)
 LINK_BLUE = "#2a5bd7"
+SENSE_TEAL = PAL["power"]   # Ep2: the sense / glowing eyes ("#3ff2e0")
+DARK = "#04080b"            # Ep2: default "almost black" darkness
 
 
 # ----------------------------------------------------------------------------
@@ -2537,14 +2544,19 @@ END_SAG_STEPS = 14
 
 
 def end_card(ctx, t, t0, title="TIREDNESS", cx=468, baseline=730, size=168, t_tbc=None,
-             tbc="to be continued\u2026", t_out=None):
+             tbc="to be continued\u2026", t_out=None, subtitle=None, t_sub=None):
     """End title (screen space). Letters pop in staggered (0-0.7 s), then the
     word nods off -- later letters sink and tip forward (0.75-1.75 s); a
     little 'z' drifts up off the last S (from +1.1 s, 1.6 s loop), and
     'to be continued...' fades in under it at t_tbc (default t0 + 1.5).
     Title ~840 px wide, letters ~130 px tall; occupies x ~50-930,
     y ~480-890 (z's included). Holds
-    until the caller stops; optional 0.4 s fade-out from t_out."""
+    until the caller stops; optional 0.4 s fade-out from t_out.
+
+    subtitle (e.g. "Episode 2: Lights Out") adds an ink ribbon between the
+    title and 'to be continued...' that wipes in at t_sub (default t0 + 1.15);
+    the text before a ':' is teal, the rest white. With a subtitle the tbc
+    line moves down ~85 px and defaults to t0 + 2.0 (card spans y ~480-975)."""
     if t < t0:
         return
     if t_out is not None and t > t_out + 0.4:
@@ -2591,19 +2603,1683 @@ def end_card(ctx, t, t0, title="TIREDNESS", cx=468, baseline=730, size=168, t_tb
             _z_path(ctx, zx, zy, zs, -0.2)
             _stroke(ctx, INK, zs * 0.22, a, preserve=True)
             _fill(ctx, "#ffffff", a)
+    # episode subtitle ribbon (optional)
+    tbc_y = baseline + size * 0.82
+    if subtitle:
+        t_sub = t0 + 1.15 if t_sub is None else t_sub
+        _end_subtitle(ctx, t, t_sub, subtitle, cx, baseline + size * 0.7, size, fade)
+        tbc_y = baseline + size * 1.34
     # to be continued...
-    t_tbc = t0 + 1.5 if t_tbc is None else t_tbc
+    if t_tbc is None:
+        t_tbc = t0 + (2.0 if subtitle else 1.5)
     tk = smoothstep(seg(t, t_tbc, t_tbc + 0.6))
     if tk > 0.01:
         ts = 54 * size / 150
 
         def draw_tbc(c):
-            text(c, tbc, cx, baseline + size * 0.82, ts, "#ffffff", "round", "center",
+            text(c, tbc, cx, tbc_y, ts, "#ffffff", "round", "center",
                  outline=INK, outline_w=ts * 0.2, shadow=(0, ts * 0.08, INK))
         tw_ = _tw(ctx, tbc, "round", ts)
         ctx.save()
         ctx.translate(0, round((1 - tk) * 12))
-        _layer(ctx, ("tbc", tbc, round(ts, 1), cx, baseline), cx - tw_ / 2 - 20,
-               baseline + size * 0.82 - ts * 1.1, tw_ + 40, ts * 1.6, draw_tbc, a=tk * fade,
+        _layer(ctx, ("tbc", tbc, round(ts, 1), cx, round(tbc_y, 1)), cx - tw_ / 2 - 20,
+               tbc_y - ts * 1.1, tw_ + 40, ts * 1.6, draw_tbc, a=tk * fade,
                exact=True)
         ctx.restore()
+
+
+def _end_subtitle(ctx, t, t_sub, subtitle, cx, yc, size, fade):
+    """Skewed ink ribbon with the episode subtitle, wiping in left->right."""
+    if t < t_sub:
+        return
+    k = size / 150
+    rv = ease_out(seg(t, t_sub, t_sub + 0.42))
+    if rv <= 0.01:
+        return
+    ts = 44 * k
+    if ":" in subtitle:
+        head, tail = subtitle.split(":", 1)
+        head += ":"
+    else:
+        head, tail = "", subtitle
+    hw = _tw(ctx, head, "round", ts) if head else 0.0
+    tw_ = _tw(ctx, tail, "round", ts)
+    tot = hw + tw_
+    sk = 0.22
+    rh = ts * 1.5
+    rw = tot + 56 * k
+    x0, y0 = cx - rw / 2 - sk * rh / 2, yc - rh / 2
+
+    def draw(c):
+        pts = [(x0 + sk * rh, y0), (x0 + sk * rh + rw, y0), (x0 + rw, y0 + rh), (x0, y0 + rh)]
+        poly(c, [(p[0] + 6 * k, p[1] + 7 * k) for p in pts])
+        _fill(c, INK, 0.45)
+        poly(c, pts)
+        _fill(c, INK, preserve=True)
+        _stroke(c, "#2b2340", 3 * k)
+        c.rectangle(x0 + sk * rh, y0 + 5 * k, rw - 10 * k, 3 * k)
+        _fill(c, SENSE_TEAL, 0.5)
+        bx = cx - tot / 2
+        by = yc + ts * 0.36
+        if head:
+            text(c, head, bx, by, ts, SENSE_TEAL, "round", "left")
+        text(c, tail, bx + hw, by, ts, "#ffffff", "round", "left")
+    ctx.save()
+    ctx.rectangle(x0 - 10, y0 - 10, (rw + sk * rh + 20 * k) * rv + 10, rh + 30 * k)
+    ctx.clip()
+    _layer(ctx, ("endSub", subtitle, round(size, 1), round(cx, 1), round(yc, 1)), x0 - 4,
+           y0 - 4, rw + sk * rh + 20 * k, rh + 20 * k, draw, a=fade, exact=True)
+    ctx.restore()
+
+
+# ============================================================================
+# 6. Episode 2: darkness, the sense, flashlights, lights out, eyes, dreams,
+#    phone, security feed, small marks
+# ============================================================================
+# --- baked "lit world" bitmaps ------------------------------------------------
+# The lit world is rasterised ONCE per key at the device scale, its pixels are
+# treated (teal echo / edge-only outline / warm flashlight) with numpy, and the
+# result is cached in a small separate LRU (these are frame-sized bitmaps).
+# Per frame only cheap clipped blits of that bitmap are composited.
+_SB = OrderedDict()
+_SB_MAX = 14
+
+
+def _np():
+    import numpy as np  # lazy: only the bake needs it
+    return np
+
+
+def _box(img, r):
+    """Separable box blur (edges clamped) of a 2-D float32 array, radius r px."""
+    np = _np()
+    r = int(r)
+    if r < 1:
+        return img
+    k = 1.0 / (2 * r + 1)
+    p = np.pad(img, ((r + 1, r), (0, 0)), mode="edge")
+    c = np.cumsum(p, axis=0, dtype=np.float32)
+    v = (c[2 * r + 1:] - c[:-2 * r - 1]) * k
+    p = np.pad(v, ((0, 0), (r + 1, r)), mode="edge")
+    c = np.cumsum(p, axis=1, dtype=np.float32)
+    return (c[:, 2 * r + 1:] - c[:, :-2 * r - 1]) * k
+
+
+def _px_view(surf):
+    """(h, w, 4) uint8 view (B, G, R, A premultiplied) of an ARGB32 surface."""
+    np = _np()
+    h, w, st = surf.get_height(), surf.get_width(), surf.get_stride()
+    return np.frombuffer(surf.get_data(), np.uint8).reshape(h, st // 4, 4)[:, :w]
+
+
+def _sense_lines(np, lum, q):
+    """Edge lines (0..1) + their bloom from a luminance image at q px/unit."""
+    rl = max(2, int(round(2.4 * q)))
+    hp = lum - _box(_box(lum, rl), rl)              # high-pass: lines & edges
+    dark = np.clip((-hp - 0.018) * 7.5, 0, 1)       # ink lines (darker than around)
+    light = np.clip((hp - 0.03) * 5.0, 0, 1)        # light details / edge rims
+    line = np.clip(dark + 0.55 * light, 0, 1)
+    line = line * line * (3 - 2 * line)
+    # bloom around the lines, computed at half resolution (it is soft anyway)
+    h, w = line.shape
+    if h >= 8 and w >= 8:
+        hh, ww = h // 2 * 2, w // 2 * 2
+        l2 = line[:hh, :ww]
+        sm = (l2[0::2, 0::2] + l2[1::2, 0::2] + l2[0::2, 1::2] + l2[1::2, 1::2]) * np.float32(0.25)
+        rg = max(1, int(round(3 * q)))
+        g2 = _box(_box(sm, rg), rg)
+        glow = np.repeat(np.repeat(g2, 2, axis=0), 2, axis=1)
+        if hh != h or ww != w:
+            glow = np.pad(glow, ((0, h - hh), (0, w - ww)), mode="edge")
+    else:
+        rg = max(2, int(round(6 * q)))
+        glow = _box(_box(line, rg), rg)
+    return line, glow
+
+
+def _u8(np, x, out):
+    """float plane 0..1 -> uint8 channel view `out` (in place)."""
+    np.multiply(x, np.float32(255.0), out=x)
+    np.add(x, np.float32(0.5), out=x)
+    np.clip(x, 0, 255, out=x)
+    out[...] = x.astype(np.uint8)
+
+
+def _treat_modes(surf, q, modes, color=SENSE_TEAL, gain=1.0, dark=DARK, hint=0.05):
+    """Pixel treatments of a baked ARGB32 render (q = px per unit). Returns
+    {mode: surface}; the first mode is written into `surf` itself.
+
+    'echo'    teal echo image: bright teal edge lines with a soft bloom over
+              dark teal fills whose brightness follows the scene's luminance.
+    'outline' the lines + bloom only (transparent elsewhere).
+    'flare'   white-hot lines only (the wavefront flash, composited OVER).
+    'dark'    opaque darkness `dark` with the outline at opacity `hint`.
+    'warm'    the lit world multiplied toward `color` by `gain` (flashlight).
+    All planes are contiguous float32 2-D arrays (fast)."""
+    np = _np()
+    f32 = np.float32
+    surf.flush()
+    v = _px_view(surf)
+    B8, G8, R8, A8 = (np.ascontiguousarray(v[..., i]) for i in range(4))
+    k255 = f32(1.0 / 255)
+    A = A8.astype(f32) * k255
+    res = {}
+    tr, tg, tb, _ = (f32(c) for c in hexc(color))
+    line = glow = lum = None
+    one = f32(1.0)
+    for i, mode in enumerate(modes):
+        dst = surf if i == 0 else cairo.ImageSurface(cairo.FORMAT_ARGB32, surf.get_width(),
+                                                     surf.get_height())
+        dv = _px_view(dst)
+        if mode == "warm":
+            wr, wg, wb, _ = hexc(color)
+            k = clamp(gain)
+            r = R8.astype(f32) * k255
+            g = G8.astype(f32) * k255
+            b = B8.astype(f32) * k255
+            _u8(np, r * f32(lerp(1.0, wr, k)) + (A - r) * f32(0.035 * k), dv[..., 2])
+            _u8(np, g * f32(lerp(1.0, wg, k)) + (A - g) * f32(0.02 * k), dv[..., 1])
+            _u8(np, b * f32(lerp(1.0, wb, k)), dv[..., 0])
+            dv[..., 3] = A8
+        else:
+            if line is None:
+                lum = R8.astype(f32) * f32(0.2126 / 255)
+                lum += G8.astype(f32) * f32(0.7152 / 255)
+                lum += B8.astype(f32) * f32(0.0722 / 255)
+                line, glow = _sense_lines(np, lum, q)
+                if gain != 1.0:
+                    line = np.clip(line * f32(gain), 0, 1)
+            if mode == "echo":
+                sub = lum[::4, ::4][A[::4, ::4] > 0.5]
+                lo, hi = (np.percentile(sub, (4, 97)) if sub.size > 16 else (0.0, 1.0))
+                fn = np.clip((lum - f32(lo) * A) * f32(1.0 / max(0.05, float(hi - lo))), 0, 1)
+                em = (f32(0.07) + f32(0.30) * fn) * A * (one - line) + f32(0.92) * line \
+                    + f32(0.6) * glow
+                wht = f32(0.42) * line * line
+                alpha = np.maximum(A, np.minimum(one, np.maximum(line, glow * f32(1.6))))
+            elif mode == "flare":
+                em = line + f32(0.35) * glow
+                wht = f32(0.8) * line * line
+                alpha = np.minimum(one, np.maximum(line, glow * f32(0.7)))
+            else:   # outline / dark
+                em = f32(0.92) * line + f32(0.6) * glow
+                wht = f32(0.42) * line * line
+                alpha = np.minimum(one, np.maximum(line, glow * f32(1.6)))
+            chans = []
+            for tc in (tb, tg, tr):
+                c_ = tc * em + (one - tc) * wht
+                np.minimum(c_, alpha, out=c_)
+                chans.append(c_)
+            if mode == "dark":
+                hk = f32(clamp(hint))
+                dcol = hexc(dark)
+                for j, dc in zip(range(3), (dcol[2], dcol[1], dcol[0])):
+                    chans[j] = chans[j] * hk + f32(dc) * (one - alpha * hk)
+                dv[..., 3] = 255
+            else:
+                _u8(np, alpha.copy(), dv[..., 3])
+            for j in range(3):
+                _u8(np, chans[j], dv[..., j])
+        dst.mark_dirty()
+        res[mode] = dst
+    return res
+
+
+def _bake_q(ctx, exact):
+    m = ctx.get_matrix()
+    axis = abs(m.xy) < 1e-9 and abs(m.yx) < 1e-9 and abs(m.xx - m.yy) < 1e-9 and m.xx > 0
+    return m.xx if (exact and axis) else _qscale(ctx)
+
+
+def _bakes(ctx, modes, key, rect, draw_fn, exact=True, **treat):
+    """Rasterise draw_fn ONCE over rect (x0, y0, w, h, user coords) at the
+    device scale, derive every missing treated `modes` bitmap from it and
+    cache them under key (key None = no caching: baked every call).
+    Returns {mode: (surf, q)}."""
+    q = _bake_q(ctx, exact)
+    if q <= 0:
+        return None
+    x0, y0, w, h = rect
+    base = None
+    got, miss = {}, []
+    if key is not None:
+        base = (key, round(q, 5), round(x0, 2), round(y0, 2), round(w, 2), round(h, 2))
+        for m in modes:
+            tk = tuple(sorted(treat.items())) if m in ("warm", "dark") else \
+                tuple(sorted((a, b) for a, b in treat.items() if a in ("color", "gain")))
+            k = (m,) + base + (tk,)
+            e = _SB.get(k)
+            if e is not None:
+                _SB.move_to_end(k)
+                got[m] = e
+            else:
+                miss.append((m, k))
+        if not miss:
+            return got
+    else:
+        miss = [(m, None) for m in modes]
+    sw, sh = max(1, int(math.ceil(w * q))), max(1, int(math.ceil(h * q)))
+    surf = cairo.ImageSurface(cairo.FORMAT_ARGB32, sw, sh)
+    c = cairo.Context(surf)
+    c.scale(q, q)
+    c.translate(-x0, -y0)
+    draw_fn(c)
+    surf.flush()
+    ms = [m for m, _ in miss]
+    if ms == ["lit"]:
+        res = {"lit": surf}
+    else:
+        res = _treat_modes(surf, q, ms, **treat)
+    for m, k in miss:
+        e = (res[m], q)
+        got[m] = e
+        if k is not None:
+            _SB[k] = e
+    while len(_SB) > _SB_MAX:
+        _SB.popitem(last=False)
+    return got
+
+
+def _bake(ctx, kind, key, rect, draw_fn, exact=True, **treat):
+    """Single-mode convenience wrapper of _bakes. Returns (surf, q)."""
+    r = _bakes(ctx, (kind,), key, rect, draw_fn, exact, **treat)
+    return None if r is None else r[kind]
+
+
+def _bake_pattern(ctx, e, rect):
+    """Source for a baked bitmap placed at rect in user space -> (pattern,
+    dev). When the CTM has the bake's scale (no rotation) the pattern lives
+    in DEVICE space with a whole-pixel offset (dev=True; a <= 0.5 px snap is
+    invisible) so every blit is a plain pixel copy, even under a panning
+    camera; otherwise a bilinear user-space pattern. Set it with _use_src."""
+    surf, q = e
+    x0, y0 = rect[0], rect[1]
+    pat = cairo.SurfacePattern(surf)
+    m = ctx.get_matrix()
+    if abs(m.xy) < 1e-9 and abs(m.yx) < 1e-9 and abs(m.xx - q) < 1e-6 and abs(m.yy - q) < 1e-6:
+        ox, oy = round(m.x0 + x0 * q), round(m.y0 + y0 * q)
+        pat.set_matrix(cairo.Matrix(1, 0, 0, 1, -ox, -oy))
+        pat.set_filter(cairo.FILTER_NEAREST)
+        return (pat, True)
+    pat.set_matrix(cairo.Matrix(q, 0, 0, q, -x0 * q, -y0 * q))
+    pat.set_filter(cairo.FILTER_BILINEAR)
+    return (pat, False)
+
+
+def _use_src(ctx, src):
+    """Set a _bake_pattern source. A device-space one resets the CTM to
+    identity, so call it inside save/restore AFTER building paths/clips."""
+    pat, dev = src
+    if dev:
+        ctx.identity_matrix()
+    ctx.set_source(pat)
+
+
+def clear_bakes():
+    """Drop the baked lit-world bitmaps (sense / flashlight / outline)."""
+    _SB.clear()
+
+
+def _user_bounds(ctx):
+    return ctx.clip_extents()
+
+
+def _isect(a, b):
+    x0, y0 = max(a[0], b[0]), max(a[1], b[1])
+    x1, y1 = min(a[2], b[2]), min(a[3], b[3])
+    return (x0, y0, x1, y1) if (x1 > x0 and y1 > y0) else None
+
+
+def _ring_visible(cx, cy, ro, ri, bx):
+    """Does the annulus ri..ro around (cx, cy) touch the box (x0, y0, x1, y1)?"""
+    x0, y0, x1, y1 = bx
+    dx = max(x0 - cx, 0.0, cx - x1)
+    dy = max(y0 - cy, 0.0, cy - y1)
+    dmin = math.hypot(dx, dy)
+    dmax = math.hypot(max(abs(cx - x0), abs(cx - x1)), max(abs(cy - y0), abs(cy - y1)))
+    return ro > dmin and ri < dmax
+
+
+def _annuli_blit(ctx, pat, cx, cy, steps, box, op=None):
+    """Composite `pat` through stepped annuli [(r_out, r_in, alpha), ...]
+    clipped to box. Aliased clips tile exactly (no seams) and are the fast
+    path; the alpha steps are small so the steps read as a soft falloff."""
+    ctx.save()
+    ctx.new_path()
+    ctx.rectangle(box[0], box[1], box[2] - box[0], box[3] - box[1])
+    ctx.clip()
+    ctx.set_antialias(cairo.ANTIALIAS_NONE)
+    ctx.set_fill_rule(cairo.FILL_RULE_EVEN_ODD)
+    if op is not None:
+        ctx.set_operator(op)
+    for (ro, ri, a) in steps:
+        if a < 0.012 or not _ring_visible(cx, cy, ro, ri, box):
+            continue
+        ctx.save()
+        ctx.new_path()
+        ctx.arc(cx, cy, ro, 0, TAU)
+        ctx.close_path()
+        if ri > 0.5:
+            ctx.new_sub_path()
+            ctx.arc(cx, cy, ri, 0, TAU)
+            ctx.close_path()
+        ctx.clip()
+        _use_src(ctx, pat)
+        ctx.paint_with_alpha(min(1.0, a))
+        ctx.restore()
+    ctx.restore()
+
+
+# --- the sense --------------------------------------------------------------
+SENSE = dict(speed=820.0, band=300.0, soft=80.0, fade=0.85, max_r=1500.0)
+_SENSE_STEPS = tuple((-1.0 + i / 6, -1.0 + (i + 1) / 6) for i in range(6))   # front, x soft
+
+
+def _sense_par(s, speed, band, soft, fade, max_r):
+    D = SENSE
+    sp = (D["speed"] if speed is None else speed) * s
+    bd = (D["band"] if band is None else band) * s
+    so = (D["soft"] if soft is None else soft) * s
+    fd = D["fade"] if fade is None else fade
+    mr = (D["max_r"] if max_r is None else max_r) * s
+    return sp, bd, so, fd * sp, mr, fd
+
+
+def _ping(p):
+    if isinstance(p, dict):
+        return p["t0"], p["x"], p["y"], p.get("k", 1.0)
+    return p[0], p[1], p[2], (p[3] if len(p) > 3 else 1.0)
+
+
+def _sense_profile(u, band, soft, tail):
+    """Reveal alpha at distance u behind the ring front (u < 0 = ahead)."""
+    if u < -soft or u > band + tail:
+        return 0.0
+    if u < 0:
+        return smoothstep((u + soft) / soft)
+    if u <= band:
+        return 1.0 - 0.36 * (u / band)
+    v = (u - band) / tail
+    return 0.64 * (1 - v) ** 2
+
+
+def _sense_env(d, R):
+    """Strength of the ping when it reaches distance d (fades toward R)."""
+    return 1.0 - smoothstep(seg(d, 0.5 * R, R))
+
+
+def _ping_life(sp, bd, so, tail, R):
+    return (R + so + bd + tail) / sp
+
+
+def _ping_steps(tau, k, sp, bd, so, tail, R):
+    rf = sp * tau
+    Rk = R * clamp(k, 0.1, 2.0)
+    gain = 0.55 + 0.45 * clamp(k)
+    us = [(so * a, so * b) for a, b in _SENSE_STEPS]
+    us += [(bd * i / 3, bd * (i + 1) / 3) for i in range(3)]
+    nt = 9
+    us += [(bd + tail * i / nt, bd + tail * (i + 1) / nt) for i in range(nt)]
+    steps = []
+    for ua, ub in us:
+        ro = rf - ua
+        if ro <= 0.5:
+            continue
+        ri = max(0.0, rf - ub)
+        um = 0.5 * (ua + ub)
+        dm = max(0.0, rf - um)
+        a = _sense_profile(um, bd, so, tail) * _sense_env(dm, Rk) * gain
+        if a > 0.012:
+            steps.append((ro, ri, a))
+    return rf, Rk, gain, steps
+
+
+def _merge_steps(lists, tol=0.015):
+    """Union of several concentric stepped profiles [(r_out, r_in, a), ...]
+    as ONE profile (alpha = 1 - prod(1 - a_i), i.e. what OVER-compositing them
+    one after another gives), with near-equal neighbours merged. Concentric
+    rings then cost one pass instead of one per ring."""
+    lists = [l for l in lists if l]
+    if len(lists) == 1:
+        return lists[0]
+    edges = sorted({r for l in lists for (ro, ri, a) in l for r in (ro, ri)}, reverse=True)
+    out = []
+    for r0, r1 in zip(edges, edges[1:]):
+        rm = 0.5 * (r0 + r1)
+        keep = 1.0
+        for l in lists:
+            for (ro, ri, a) in l:
+                if ri <= rm < ro:
+                    keep *= 1 - min(1.0, a)
+                    break
+        a = 1 - keep
+        if out and abs(out[-1][2] - a) < tol and out[-1][1] == r0:
+            ro_, ri_, a_ = out[-1]
+            w0, w1 = ro_ - ri_, r0 - r1
+            out[-1] = (ro_, r1, (a_ * w0 + a * w1) / max(1e-6, w0 + w1))
+        elif a > 0.012:
+            out.append((r0, r1, a))
+    return out
+
+
+def _groups(act):
+    """Group active pings by (nearly) shared centre -> [(x, y, [entries])]."""
+    gs = []
+    for e in act:
+        for g in gs:
+            if abs(g[0] - e[1]) < 1.0 and abs(g[1] - e[2]) < 1.0:
+                g[2].append(e)
+                break
+        else:
+            gs.append((e[1], e[2], [e]))
+    return gs
+
+
+def _flare_steps(rf, Rk, gain, bd, so, flare):
+    """Additive wavefront flare: the leading edge of the band re-adds the
+    echo so lines flash brighter as the wave passes over them."""
+    ef = _sense_env(rf, Rk) * gain * flare
+    if ef < 0.02:
+        return []
+    return [(rf + so * 0.1, rf - bd * 0.08, 0.85 * ef), (rf - bd * 0.08, rf - bd * 0.2, 0.5 * ef),
+            (rf - bd * 0.2, rf - bd * 0.34, 0.22 * ef)]
+
+
+def sense_at(t, pings, x, y, s=1.0, speed=None, band=None, soft=None, fade=None, max_r=None):
+    """0..1: how strongly the sense currently reveals the point (x, y) (max
+    over all pings). Use it to light live things by hand (e.g. fade in a
+    character's teal rim as the band passes)."""
+    sp, bd, so, tail, R, _ = _sense_par(s, speed, band, soft, fade, max_r)
+    best = 0.0
+    for p in pings:
+        t0, px, py, k = _ping(p)
+        tau = t - t0
+        if tau < 0 or tau > _ping_life(sp, bd, so, tail, R * k):
+            continue
+        d = math.hypot(x - px, y - py)
+        u = sp * tau - d
+        a = _sense_profile(u, bd, so, tail) * _sense_env(d, R * clamp(k, 0.1, 2.0)) \
+            * (0.55 + 0.45 * clamp(k))
+        best = max(best, a)
+    return min(1.0, best)
+
+
+def sense_active(t, pings, s=1.0, speed=None, band=None, soft=None, fade=None, max_r=None):
+    """True while any ping is still visible (front, band or afterglow)."""
+    sp, bd, so, tail, R, _ = _sense_par(s, speed, band, soft, fade, max_r)
+    for p in pings:
+        t0, _, _, k = _ping(p)
+        if 0 <= t - t0 <= _ping_life(sp, bd, so, tail, R * k):
+            return True
+    return False
+
+
+def sense_reveal(ctx, t, pings, draw_lit, draw_dark=None, key=None, rect=None, s=1.0,
+                 speed=None, band=None, soft=None, fade=None, max_r=None, color="power",
+                 dark=DARK, hint=None, rings=True, live=None, live_rect=None, exact=True,
+                 flare=0.6, live_key=None):
+    """THE SENSE. Draws the whole frame: darkness, then for every ping
+    (t0, x, y[, k]) an expanding sonar ring whose band reveals the lit world
+    as a teal echo image (bright edges, dark fills), fading behind the ring
+    to an afterglow of lines, then darkness.
+
+    draw_lit(ctx)  draws the normally lit world in the current user space
+                   over `rect` (default the 1080x1920 frame). It is baked
+                   ONCE per `key` (key=None re-bakes every frame: slow).
+    draw_dark(ctx) draws the dark frame (default: paint `dark` plus a faint
+                   `hint` of the outline so shapes stay barely readable).
+    live(ctx)      optional animated content (a character) baked per frame
+                   inside live_rect (x0, y0, w, h) and revealed the same way
+                   (only while a band touches the rect). live_key caches it
+                   (e.g. ("cur", int(t * 12)) = 12 fps updates, or a pose name
+                   for a still pose).
+    Inside a core.camera block pass world coords for pings AND a fixed world
+    `rect` covering the whole shot. k (default 1) scales a ping's reach and
+    brightness (0.4 = a small quiet ping)."""
+    rect = rect or (0.0, 0.0, float(W), float(H))
+    rbox = (rect[0], rect[1], rect[0] + rect[2], rect[1] + rect[3])
+    if hint is None:
+        hint = 0.0 if draw_dark is not None else 0.05
+    hint = round(clamp(hint) * 100) / 100.0
+    col = hexc(color)
+    colh = _lighten(color, 0.55)
+    sp, bd, so, tail, R, fd = _sense_par(s, speed, band, soft, fade, max_r)
+    act = []
+    for p in pings:
+        t0, px, py, k = _ping(p)
+        tau = t - t0
+        if tau < 0 or tau > _ping_life(sp, bd, so, tail, R * k):
+            continue
+        rf, Rk, gain, steps = _ping_steps(tau, k, sp, bd, so, tail, R)
+        act.append((tau, px, py, k, rf, Rk, gain, steps))
+    vis = _user_bounds(ctx)
+    box = _isect(vis, rbox)
+    dark_bake = draw_dark is None and hint > 0
+    if key is not None:     # one render bakes the whole family
+        modes = ["echo", "flare"] + (["dark"] if dark_bake else [])
+    else:
+        modes = (["echo"] + (["flare"] if flare > 0 else [])) if (act and box) else []
+        modes += ["dark"] if dark_bake else []
+    B = _bakes(ctx, modes, key, rect, draw_lit, exact, color=color, dark=dark,
+               hint=hint) if (modes and box is not None) else {}
+    # --- darkness
+    if draw_dark is not None:
+        draw_dark(ctx)
+    else:
+        if not (dark_bake and box is not None and box == vis):
+            _rgba(ctx, dark)
+            ctx.paint()
+        if dark_bake and "dark" in B:
+            ctx.save()
+            ctx.rectangle(box[0], box[1], box[2] - box[0], box[3] - box[1])
+            ctx.clip()
+            ctx.set_operator(cairo.OPERATOR_SOURCE)
+            _use_src(ctx, _bake_pattern(ctx, B["dark"], rect))
+            ctx.paint()
+            ctx.restore()
+    if not act:
+        return
+    # --- the reveal: echo through the stepped band + afterglow, then the
+    #     white-hot wavefront flare (lines flash as the wave passes)
+    groups = _groups(act)
+    if "echo" in B:
+        pat = _bake_pattern(ctx, B["echo"], rect)
+        for (gx, gy, es) in groups:
+            _annuli_blit(ctx, pat, gx, gy, _merge_steps([e[7] for e in es]), box)
+        if flare > 0 and "flare" in B:
+            patf = _bake_pattern(ctx, B["flare"], rect)
+            for (gx, gy, es) in groups:
+                fl = _merge_steps([_flare_steps(e[4], e[5], e[6], bd, so, flare) for e in es])
+                _annuli_blit(ctx, patf, gx, gy, fl, box)
+    if live is not None and live_rect is not None:
+        lb = _isect(vis, (live_rect[0], live_rect[1], live_rect[0] + live_rect[2],
+                          live_rect[1] + live_rect[3]))
+        hit = lb is not None and any(
+            any(_ring_visible(px, py, ro, ri, lb) for (ro, ri, a) in steps)
+            for (tau, px, py, k, rf, Rk, gain, steps) in act)
+        if hit:
+            L = _bakes(ctx, ["echo", "flare"] if flare > 0 else ["echo"],
+                       None if live_key is None else ("live", live_key), live_rect, live,
+                       True, color=color)
+            if L:
+                patl = _bake_pattern(ctx, L["echo"], live_rect)
+                patlf = _bake_pattern(ctx, L["flare"], live_rect) if "flare" in L else None
+                for (gx, gy, es) in groups:
+                    _annuli_blit(ctx, patl, gx, gy, _merge_steps([e[7] for e in es]), lb)
+                    if patlf is not None:
+                        fl = _merge_steps([_flare_steps(e[4], e[5], e[6], bd, so, flare)
+                                           for e in es])
+                        _annuli_blit(ctx, patlf, gx, gy, fl, lb)
+    if not rings:
+        return
+    # --- the visible sonar: flat halo bands + a crisp leading line, a whisper
+    #     line at the back of the band, and the ping flash at the source
+    ctx.save()
+    ctx.set_antialias(cairo.ANTIALIAS_NONE)
+    ctx.set_fill_rule(cairo.FILL_RULE_EVEN_ODD)
+    for (tau, px, py, k, rf, Rk, gain, steps) in act:
+        ef = _sense_env(rf, Rk) * gain
+        if ef <= 0.02 or rf <= 20 * s:
+            continue
+        for (hw, ha) in ((16 * s, 0.10), (6.5 * s, 0.2)):
+            if not _ring_visible(px, py, rf + hw, rf - hw, vis):
+                continue
+            ctx.new_path()
+            ctx.arc(px, py, rf + hw, 0, TAU)
+            ctx.close_path()
+            ctx.new_sub_path()
+            ctx.arc(px, py, rf - hw, 0, TAU)
+            ctx.close_path()
+            ctx.set_source_rgba(col[0], col[1], col[2], ha * ef)
+            ctx.fill()
+    ctx.restore()
+    for (tau, px, py, k, rf, Rk, gain, steps) in act:
+        ef = _sense_env(rf, Rk) * gain
+        if ef > 0.02 and rf > 4 and _ring_visible(px, py, rf + 4, rf - 4, vis):
+            circle(ctx, px, py, rf)
+            _stroke(ctx, colh, 4.0 * s, 0.9 * ef)
+            rb = rf - bd * 0.9
+            if rb > 6 and _ring_visible(px, py, rb + 2, rb - 2, vis):
+                circle(ctx, px, py, rb)
+                _stroke(ctx, color, 2.2 * s, 0.22 * ef)
+        pc = seg(tau, 0.0, 0.45)
+        if pc < 1:
+            kk = 0.5 + 0.5 * clamp(k)
+            circle(ctx, px, py, (26 + 70 * ease_out(pc)) * s * kk)
+            _stroke(ctx, colh, 5 * s * (1 - pc), (1 - pc) * gain)
+            radial_glow(ctx, px, py, 120 * s * kk, color, 0.55 * (1 - pc) * gain)
+            circle(ctx, px, py, (14 - 8 * pc) * s * kk)
+            _fill(ctx, "#ffffff", (1 - pc) * gain)
+
+
+def sense_outline(ctx, draw_lit, key=None, rect=None, a=1.0, fill=False, color="power",
+                  exact=True):
+    """The teal edge-only look of draw_lit's drawing (bright lines + bloom on
+    transparent; fill=True gives the full echo image with dark teal fills),
+    baked once per key and blitted at opacity `a`. Good for a held 'sensed'
+    frame, an afterglow, or a sense-POV insert."""
+    if a <= 0.003:
+        return
+    rect = rect or (0.0, 0.0, float(W), float(H))
+    e = _bake(ctx, "echo" if fill else "outline", key, rect, draw_lit, exact, color=color)
+    if e is None:
+        return
+    ctx.save()
+    ctx.rectangle(*rect)
+    ctx.clip()
+    _use_src(ctx, _bake_pattern(ctx, e, rect))
+    ctx.paint_with_alpha(clamp(a))
+    ctx.restore()
+
+
+# --- flashlights ------------------------------------------------------------
+FLASH_WARM = "#ffdcaa"
+
+
+def _cone_path(ctx, x, y, ang, L, h, lw):
+    ux, uy = math.cos(ang), math.sin(ang)
+    nx, ny = -uy, ux
+    ctx.move_to(x - nx * lw, y - ny * lw)
+    ctx.arc(x, y, L, ang - h, ang + h)
+    ctx.line_to(x + nx * lw, y + ny * lw)
+    ctx.close_path()
+
+
+def flashlight(ctx, x, y, angle, length, spread, t, draw_lit, key=None, rect=None, power=1.0,
+               warm=0.3, soft=0.5, haze=0.035, hotspot=1.0, lens=True, s=1.0, flicker=0.0,
+               seed=0, exact=True, warm_color=FLASH_WARM):
+    """A flashlight cone from the lens at (x, y) pointing along `angle`
+    (radians, 0 = right, pi/2 = down) that reveals the NORMALLY LIT world
+    (draw_lit, baked once per key like sense_reveal) inside the cone over
+    the dark frame already drawn: soft sides and far end, a slight warm
+    tint, a faint beam haze, a bright hotspot near the lens and a lens glow.
+    `spread` = full cone angle (radians, ~0.45-0.7 reads as a torch);
+    `length` = reach in px. Call once per cone (2 cones = 2 calls; they
+    share the bake). power 0..1 dims/switches it; flicker 0..1 adds a gentle
+    irregular dimming (a nervous guard), never a strobe."""
+    if power <= 0.01 or length <= 2:
+        return
+    if flicker > 0:
+        power *= 1 - 0.3 * clamp(flicker) * max(0.0, wobble(t, 3.0, 1.0, seed + 5))
+    rect = rect or (0.0, 0.0, float(W), float(H))
+    h = spread / 2
+    lw0 = 15 * s
+    N = 8
+    vis = _user_bounds(ctx)
+    box = _isect(vis, (rect[0], rect[1], rect[0] + rect[2], rect[1] + rect[3]))
+    if box is not None:
+        e = _bake(ctx, "warm", key, rect, draw_lit, exact, color=warm_color, gain=warm)
+        if e is not None:
+            pat = _bake_pattern(ctx, e, rect)
+            ctx.save()
+            ctx.new_path()
+            ctx.rectangle(box[0], box[1], box[2] - box[0], box[3] - box[1])
+            ctx.clip()
+            ctx.set_antialias(cairo.ANTIALIAS_NONE)
+            ctx.set_fill_rule(cairo.FILL_RULE_EVEN_ODD)
+
+            def shape(kk):
+                f = kk / N
+                _cone_path(ctx, x, y, angle, length * (1.06 - 0.36 * f),
+                           h * (1 + soft * (0.5 - f)), lw0 * (1.0 - 0.4 * f))
+            for kk in range(N + 1):
+                ctx.save()
+                ctx.new_path()
+                shape(kk)
+                if kk < N:
+                    shape(kk + 1)
+                ctx.clip()
+                _use_src(ctx, pat)
+                a = power * (smoothstep((kk + 0.7) / (N + 0.7)) if kk < N else 1.0)
+                ctx.paint_with_alpha(a)
+                ctx.restore()
+            ctx.restore()
+    # beam haze (lit dust in the air): one flat soft fill of the whole cone
+    if haze > 0:
+        _cone_path(ctx, x, y, angle, length * 1.02, h * (1 + soft * 0.35), lw0)
+        _fill(ctx, warm_color, haze * power)
+    # hotspot near the lens + lens glow
+    ux, uy = math.cos(angle), math.sin(angle)
+    if hotspot > 0:
+        hx, hy = x + ux * length * 0.06, y + uy * length * 0.06
+        hr = length * 0.3
+        g = cairo.RadialGradient(hx, hy, 0, hx, hy, hr)
+        wc = hexc("#fff6e0")
+        g.add_color_stop_rgba(0, wc[0], wc[1], wc[2], 0.36 * hotspot * power)
+        g.add_color_stop_rgba(0.4, wc[0], wc[1], wc[2], 0.1 * hotspot * power)
+        g.add_color_stop_rgba(1, wc[0], wc[1], wc[2], 0.0)
+        _cone_path(ctx, x, y, angle, hr * 1.1, h * (1 + soft * 0.2), lw0)
+        ctx.set_source(g)
+        ctx.fill()
+    if lens:
+        radial_glow(ctx, x, y, 64 * s, "#fff0c8", 0.6 * power)
+        ellipse(ctx, x, y, 6 * s, 13 * s, angle)
+        _fill(ctx, "#fffdf3", min(1.0, 0.4 + power))
+
+
+def flashlights(ctx, t, cones, draw_lit, key=None, rect=None, **kw):
+    """Several cones sharing one bake: cones = [(x, y, angle, length, spread),
+    ...] or dicts with those keys plus per-cone extras (power, flicker...)."""
+    for c in cones:
+        if isinstance(c, dict):
+            d = dict(kw)
+            d.update({k: v for k, v in c.items() if k not in ("x", "y", "angle", "length",
+                                                              "spread")})
+            flashlight(ctx, c["x"], c["y"], c["angle"], c["length"], c["spread"], t, draw_lit,
+                       key, rect, **d)
+        else:
+            flashlight(ctx, c[0], c[1], c[2], c[3], c[4], t, draw_lit, key, rect, **kw)
+
+
+# --- lights out ---------------------------------------------------------------
+def lights_out_times(t0, sections=6, gap=0.38, flicker=0.4):
+    """Die ('chunk' SFX) time of each section: t0 + flicker + i * gap."""
+    n = sections if isinstance(sections, int) else len(sections)
+    return [t0 + flicker + i * gap for i in range(n)]
+
+
+def _dip(p, a, b):
+    """Soft 0..1..0 bump over [a, b]."""
+    if p <= a or p >= b:
+        return 0.0
+    return math.sin(math.pi * (p - a) / (b - a)) ** 2
+
+
+def lights_out_power(t, t0, i, gap=0.38, flicker=0.4, floor=0.0, ember=0.16, seed=0):
+    """Power 0..1 of section i (0 = the first to die). Full until its flicker
+    starts (t0 + i*gap), two soft dips over `flicker` s (>= 0.3, no strobe),
+    then a CHUNK down to an ember that cools to `floor` over ~0.5 s."""
+    flicker = max(0.3, flicker)
+    ts = t0 + i * gap
+    td = ts + flicker
+    if t < ts:
+        return 1.0
+    if t < td:
+        p = (t - ts) / flicker
+        j = hash01(i, seed + 3)
+        d1 = 0.42 + 0.16 * j
+        return 1.0 - d1 * _dip(p, 0.08, 0.40) - 0.68 * _dip(p, 0.55, 0.92)
+    return floor + (ember - floor) * math.exp(-(t - td) / 0.18) if ember > floor else floor
+
+
+def lights_out(ctx, t, t0, sections=6, gap=0.38, flicker=0.4, rect=(0, 0, W, H), dark=0.9,
+               color="#020509", floor=0.0, order="top", draw=True, seed=0):
+    """The lights dying section by section: heavy 'chunk' darkening bands.
+    sections = an int (equal horizontal bands over rect) or a list of
+    (y0, y1) bands; order 'top' (first band dies first), 'bottom', or a list
+    of band indices in dying order. Each section flickers gently for
+    `flicker` s and then chunks to dark; the overlay alpha is
+    dark * (1 - power). Returns the per-section power list (in band order,
+    top to bottom) for the set to dim its own lamps/pods; draw=False only
+    computes it. Nothing is drawn before t0. Screen space (or pass a world
+    rect inside a camera)."""
+    x0, y0, w, h = rect
+    if isinstance(sections, int):
+        n = max(1, sections)
+        bands = [(y0 + h * i / n, y0 + h * (i + 1) / n) for i in range(n)]
+    else:
+        bands = list(sections)
+        n = len(bands)
+    if order == "top":
+        seq = list(range(n))
+    elif order == "bottom":
+        seq = list(range(n - 1, -1, -1))
+    else:
+        seq = list(order)
+    rank = {b: r for r, b in enumerate(seq)}
+    pw = [lights_out_power(t, t0, rank.get(i, i), gap, flicker, floor, seed=seed)
+          for i in range(n)]
+    if not draw or t < t0:
+        return pw
+    for i, (ya, yb) in enumerate(bands):
+        a = dark * (1 - pw[i])
+        if a < 0.004:
+            continue
+        ctx.rectangle(x0, ya, w, yb - ya + (0.6 if i < n - 1 else 0))
+        _fill(ctx, color, a)
+    return pw
+
+
+# --- glowing eyes in the dark -------------------------------------------------
+EYE_KINDS = {
+    #             eye rx/ry, pair gap, lid, pupil, halo r, halo a, brightness, blink rate/dur
+    "curiosity": dict(rx=31.0, ry=35.0, gap=112.0, lid=0.10, pr=12.5, halo=105.0, ha=0.42,
+                      br=1.0, rate=0.22, dur=0.2, tilt=0.06),
+    "tired": dict(rx=15.0, ry=11.5, gap=66.0, lid=0.46, pr=4.6, halo=44.0, ha=0.17,
+                  br=0.58, rate=0.18, dur=0.24, tilt=-0.14),
+}
+
+
+def eyes_in_dark(ctx, x, y, s, t, kind="curiosity", blink=None, look=(0.0, 0.0), amount=1.0,
+                 gap=None, tilt=0.0, seed=0, lid=None, color="power", glow=True):
+    """A pair of glowing teal eyes in darkness, centred at (x, y) (between
+    the eyes). kind 'curiosity' = big, bright, round with dark pupils and
+    catchlights (eyes ~62x70 px at s=1, 112 px apart); 'tired' = small,
+    faint, heavy-lidded (lid 46%) half-moons (30x23, 66 apart).
+    blink None = automatic natural blinks (seeded), or pass 0..1 (1 = shut).
+    look (-1..1, -1..1) slides the pupils; tilt rotates the pair; amount
+    0..1 fades everything (glow included); lid overrides the resting lid."""
+    if amount <= 0.01:
+        return
+    P = EYE_KINDS.get(kind, EYE_KINDS["curiosity"])
+    if blink is None:
+        b = blink_amount(t, seed + (17 if kind == "tired" else 3), P["rate"], P["dur"])
+    else:
+        b = clamp(blink)
+    lid0 = P["lid"] if lid is None else clamp(lid)
+    cover = lid0 + (1 - lid0) * b
+    openk = clamp((1 - cover) / max(0.05, 1 - lid0))
+    rx, ry, pr = P["rx"], P["ry"], P["pr"]
+    gp = P["gap"] if gap is None else gap
+    br = P["br"] * amount
+    c_eye = mixc(color, "#ffffff", 0.12 if kind == "curiosity" else 0.0)
+    c_core = mixc(color, "#ffffff", 0.62)
+    c_pupil = "#04201f"
+    lx, ly = look
+    ctx.save()
+    ctx.translate(x, y)
+    if tilt:
+        ctx.rotate(tilt)
+    ctx.scale(s, s)
+    for sd in (-1, 1):
+        ex = sd * gp / 2
+        if glow:
+            hr = P["halo"]
+            ha = P["ha"] * amount * (0.3 + 0.7 * openk)
+
+            def draw_halo(c, hr=hr):
+                g = cairo.RadialGradient(0, 0, 0, 0, 0, hr)
+                cc = hexc(color)
+                g.add_color_stop_rgba(0, cc[0], cc[1], cc[2], 1.0)
+                g.add_color_stop_rgba(0.35, cc[0], cc[1], cc[2], 0.45)
+                g.add_color_stop_rgba(1, cc[0], cc[1], cc[2], 0.0)
+                c.set_source(g)
+                circle(c, 0, 0, hr)
+                c.fill()
+            ctx.save()
+            ctx.translate(ex, ry * 0.15)
+            _layer(ctx, ("eyehalo", round(hr, 1), str(color)), -hr, -hr, 2 * hr, 2 * hr,
+                   draw_halo, a=ha, pad=2)
+            ctx.restore()
+        if cover >= 0.985:
+            # shut: only a faint lash glint line
+            ctx.move_to(ex - rx * 0.8, ry * 0.55)
+            ctx.curve_to(ex - rx * 0.3, ry * 0.75, ex + rx * 0.3, ry * 0.75, ex + rx * 0.8,
+                         ry * 0.55)
+            _stroke(ctx, color, max(1.5, ry * 0.12), 0.35 * br)
+            continue
+        # visible part = eye ellipse below the lid edge (outer corner droops)
+        lt = P["tilt"] * sd
+        yl = -ry + 2 * ry * cover
+        y_in = yl + (-lt if sd > 0 else lt) * ry * 0.5
+        y_out = yl + (lt if sd > 0 else -lt) * ry * 0.5
+        xl, xr = ex - rx - 4, ex + rx + 4
+        ya, yb = (y_in, y_out) if sd > 0 else (y_out, y_in)
+
+        def lid_edge():
+            ctx.move_to(xl, ya)
+            ctx.curve_to(ex - rx * 0.4, ya + ry * 0.12, ex + rx * 0.4, yb + ry * 0.12, xr, yb)
+        ctx.save()
+        ellipse(ctx, ex, 0, rx, ry)
+        ctx.clip()
+        ctx.new_path()
+        lid_edge()
+        ctx.line_to(xr, ry + 6)
+        ctx.line_to(xl, ry + 6)
+        ctx.close_path()
+        ctx.clip()
+        ellipse(ctx, ex, 0, rx, ry)
+        _fill(ctx, c_eye, br)
+        ox = ex + lx * (rx - pr * 1.25)
+        oy = ly * (ry - pr * 1.25) + ry * 0.06
+        ellipse(ctx, ox, oy, pr * 1.75, pr * 1.75)
+        _fill(ctx, c_core, 0.55 * br)
+        if kind == "curiosity":
+            ellipse(ctx, ox, oy, pr, pr * 1.08)
+            _fill(ctx, c_pupil, min(1.0, 0.92 * amount))
+            circle(ctx, ox - pr * 0.42, oy - pr * 0.45, pr * 0.4)
+            circle(ctx, ox + pr * 0.5, oy + pr * 0.42, pr * 0.16)
+            _fill(ctx, "#ffffff", 0.95 * amount)
+        else:
+            circle(ctx, ox, oy, pr)
+            _fill(ctx, c_pupil, 0.75 * amount)
+            circle(ctx, ox - pr * 0.4, oy - pr * 0.4, pr * 0.32)
+            _fill(ctx, "#ffffff", 0.5 * amount)
+        ctx.restore()
+        # bright lid rim (only inside the eye): reads as a heavy lid
+        if cover > 0.04:
+            ctx.save()
+            ellipse(ctx, ex, 0, rx + 1, ry + 1)
+            ctx.clip()
+            ctx.new_path()
+            lid_edge()
+            _stroke(ctx, c_core, max(1.4, ry * 0.11), 0.6 * br)
+            ctx.restore()
+    ctx.restore()
+
+
+# --- daydream bubble ----------------------------------------------------------
+DREAM_FILL = "#f7f2ff"
+DREAM_IN = 0.85    # pop-in length (dots + puff) in s
+DREAM_OUT = 0.8    # dissolve length after t1
+
+
+def _dream_lobes(seed):
+    out = []
+    n = 11
+    for i in range(n):
+        a = TAU * i / n + 0.15
+        r = 66 + 22 * hash01(i, seed + 3)
+        out.append((250 * 0.84 * math.cos(a), 172 * 0.84 * math.sin(a), r, a))
+    return out
+
+
+def daydream(ctx, x, y, s, t, t0, t1, draw_content, tail=None, seed=0, fill=DREAM_FILL,
+             glow=True):
+    """Soft thought bubble centred at (x, y): three trailing dots pop out from
+    `tail` (default lower-left of the bubble, i.e. put it near the dreamer's
+    head), then the cloud puffs in (t0 .. t0+0.85), holds with a gentle
+    breathing, and dissolves from t1 (gone by t1 + 0.8). The cloud is
+    ~600 x 440 px at s=1; draw_content(ctx, s, t) is drawn with the origin at
+    the bubble centre and clipped inside it (content area ~ 470 x 330 px at
+    s=1). Ready-made content: dream_bed."""
+    if t < t0 or t > t1 + DREAM_OUT:
+        return
+    tau = t - t0
+    d = seg(t, t1, t1 + DREAM_OUT)
+    alpha = 1.0 - smoothstep(d)
+    if alpha <= 0.01:
+        return
+    tx, ty = tail if tail is not None else (x - 250 * s, y + 300 * s)
+    grow = 1.0 + 0.07 * ease_out(d)
+    drift = 30 * ease_out(d)
+    bob = 5 * math.sin(TAU * tau / 3.1)
+    lobes = _dream_lobes(seed)
+    kb = ease_out_back(seg(tau, 0.3, 0.78), 1.4)
+    use_group = alpha < 0.999
+    if use_group:
+        ctx.save()
+        ctx.rectangle(min(x - 340 * s, tx - 40 * s), y - 260 * s, max(680 * s, x + 340 * s - tx +
+                                                                       40 * s),
+                      max(520 * s, ty - y + 300 * s))
+        ctx.clip()
+        ctx.push_group()
+    # trailing dots (small near the head, bigger toward the cloud)
+    ex, ey = x - 200 * s, y + 150 * s     # where the dots meet the cloud
+    for i, (u, r) in enumerate(((0.0, 11), (0.42, 17), (0.78, 25))):
+        kd = ease_out_back(seg(tau, 0.08 * i, 0.08 * i + 0.22), 2.2)
+        if d > 0:
+            kd *= 1 - smoothstep(seg(d, 0.0 + 0.12 * (2 - i), 0.45 + 0.12 * (2 - i)))
+        if kd < 0.02:
+            continue
+        cx_, cy_ = lerp(tx, ex, u), lerp(ty, ey, u) + 3 * math.sin(TAU * (tau / 2.4 + u))
+        if glow:
+            circle(ctx, cx_, cy_, (r + 9) * s * kd)
+            _fill(ctx, "#ffffff", 0.18)
+        circle(ctx, cx_, cy_, (r + 2.5) * s * kd)
+        _fill(ctx, INK)
+        circle(ctx, cx_, cy_, (r - 2.5) * s * kd)
+        _fill(ctx, fill)
+    if kb > 0.01:
+        ctx.save()
+        ctx.translate(x, y + bob * s)
+        ctx.scale(s * grow, s * grow)
+        circ = []
+        for i, (lx_, ly_, r, a) in enumerate(lobes):
+            kl = ease_out_back(seg(tau, 0.3 + 0.012 * i, 0.72 + 0.012 * i), 1.8)
+            br = 1 + 0.035 * math.sin(TAU * (tau / 2.7 + i / len(lobes)))
+            ox, oy = math.cos(a) * drift, math.sin(a) * drift
+            circ.append((lx_ * kb + ox, ly_ * kb + oy, r * kl * br * (1 - 0.25 * d)))
+        core_rx, core_ry = 228 * kb, 158 * kb
+        ow = 6.0
+
+        def union(grow_px):
+            for (cx_, cy_, r) in circ:
+                if r + grow_px > 0.5:
+                    circle(ctx, cx_, cy_, r + grow_px)
+            ellipse(ctx, 0, 0, max(1, core_rx + grow_px), max(1, core_ry + grow_px))
+        if glow:
+            union(16)
+            _fill(ctx, "#ffffff", 0.16)
+        union(ow / 2)
+        _fill(ctx, INK)
+        union(-ow / 2)
+        _fill(ctx, fill)
+        # content, clipped inside a margin of the cloud
+        ctx.save()
+        ctx.new_path()
+        union(-ow / 2 - 9)
+        ctx.clip()
+        draw_content(ctx, 1.0 * kb if kb < 1 else 1.0, t)
+        ctx.restore()
+        # soft lavender shade on the lower lobes (flat, graphic)
+        ctx.save()
+        ctx.new_path()
+        union(-ow / 2)
+        ctx.clip()
+        ctx.new_path()
+        for (cx_, cy_, r) in circ:
+            if cy_ > 60:
+                ctx.new_sub_path()
+                ctx.arc(cx_, cy_, r - ow / 2, 0.15 * math.pi, 0.85 * math.pi)
+        _stroke(ctx, "#cfc3ef", 7, 0.9)
+        ctx.restore()
+        ctx.restore()
+    if use_group:
+        ctx.pop_group_to_source()
+        ctx.paint_with_alpha(alpha)
+        ctx.restore()
+
+
+def _dream_bed_static(c):
+    # dreamy dusk backdrop with a warm golden glow
+    g = cairo.LinearGradient(0, -230, 0, 230)
+    g.add_color_stop_rgba(0, *hexc("#3b3478"))
+    g.add_color_stop_rgba(1, *hexc("#6c5aa6"))
+    c.rectangle(-320, -240, 640, 480)
+    c.set_source(g)
+    c.fill()
+    radial_glow(c, -30, 30, 300, "#ffcf6e", 0.75)
+    radial_glow(c, -30, 30, 150, "#fff0b8", 0.5)
+    for i, (sx, sy, r) in enumerate(((-200, -120, 13), (190, -150, 10), (120, -70, 7),
+                                     (-110, -165, 8), (225, -40, 6))):
+        _twinkle_path(c, sx, sy, r, 0.22)
+        _fill(c, "#fff6cc", 0.9)
+    c.save()
+    c.translate(14, 6)
+    c.scale(0.93, 0.93)
+    _dream_bed_shape(c)
+    c.restore()
+
+
+def _dream_bed_shape(c):
+    # bed (side view): legs, frame, footboard, headboard
+    wood, wood_dk, wood_lt = "#b8743f", "#8a5228", "#d99a5e"
+    for lx_ in (-196, 182):
+        c.rectangle(lx_, 92, 16, 34)
+        fill(c, wood_dk, preserve=True)
+        stroke(c, INK, 5)
+    rrect(c, -205, 52, 410, 46, 10)
+    fill(c, wood, preserve=True)
+    stroke(c, INK, 6)
+    rrect(c, 168, -20, 42, 118, 18)
+    fill(c, wood, preserve=True)
+    stroke(c, INK, 6)
+    rrect(c, -232, -118, 50, 216, 24)
+    fill(c, wood, preserve=True)
+    stroke(c, INK, 6)
+    rrect(c, -222, -96, 14, 150, 7)
+    fill(c, wood_lt)
+    # mattress
+    rrect(c, -190, 14, 372, 48, 18)
+    fill(c, "#fbf6ec", preserve=True)
+    stroke(c, INK, 6)
+    # quilt draped over the side, with a turned-down fold
+    c.move_to(-70, 4)
+    c.curve_to(10, -14, 110, -12, 176, 2)
+    c.curve_to(186, 30, 186, 64, 178, 92)
+    c.curve_to(90, 104, -10, 104, -82, 94)
+    c.curve_to(-92, 62, -86, 30, -70, 4)
+    c.close_path()
+    fill(c, "#8fa3f2", preserve=True)
+    stroke(c, INK, 6)
+    for k_ in range(3):
+        xx = -20 + k_ * 62
+        c.move_to(xx, 14 + k_ * 2)
+        c.curve_to(xx + 6, 40, xx + 2, 70, xx - 4, 96)
+        stroke(c, "#7186d8", 4)
+    c.move_to(-70, 4)
+    c.curve_to(-40, -4, -14, -6, 6, -4)
+    c.curve_to(0, 30, -8, 70, -18, 98)
+    c.curve_to(-46, 98, -66, 96, -82, 94)
+    c.curve_to(-92, 62, -86, 30, -70, 4)
+    c.close_path()
+    fill(c, "#b9c6ff", preserve=True)
+    stroke(c, INK, 5)
+    # the fluffy pillow
+    pts = [(-178, 8), (-186, -22), (-170, -50), (-130, -58), (-92, -60), (-62, -50), (-50, -24),
+           (-56, 6), (-92, 14), (-140, 14)]
+    smooth_path(c, pts, closed=True)
+    fill(c, "#fffaf0", preserve=True)
+    stroke(c, INK, 6)
+    c.move_to(-150, -16)
+    c.curve_to(-128, -4, -100, -6, -80, -20)
+    stroke(c, "#e6dcc6", 5)
+    c.move_to(-162, -40)
+    c.curve_to(-150, -48, -132, -50, -118, -46)
+    stroke(c, "#ffffff", 5)
+
+
+def dream_bed(ctx, s=1.0, t=0.0):
+    """Daydream content: a cosy bed (side view) with a fluffy pillow and a
+    periwinkle quilt, a soft golden glow, a few stars, and three little z's
+    floating up from the pillow (2.4 s loop). Drawn centred at the origin,
+    ~470 x 330 px at s=1 (fills the daydream bubble)."""
+    ctx.save()
+    ctx.scale(s, s)
+    _layer(ctx, "dream_bed", -320, -240, 640, 480, _dream_bed_static, pad=0)
+    for j in range(3):
+        ph = _frac(t / 2.4 + j / 3)
+        zx = -70 + 70 * ph + 10 * math.sin(TAU * ph)
+        zy = -62 - 92 * ph
+        zs = 20 + 16 * ph
+        a = smoothstep(seg(ph, 0, 0.15)) * (1 - smoothstep(seg(ph, 0.62, 1.0)))
+        if a < 0.03:
+            continue
+        _z_path(ctx, zx, zy, zs, -0.18)
+        _stroke(ctx, INK, 5, a, preserve=True)
+        _fill(ctx, "#ffffff", a)
+    ctx.restore()
+
+
+# --- phone --------------------------------------------------------------------
+PHONE_BLUE = "#3d7cf0"
+PHONE_W = 500.0
+
+
+def _phone_msgs(messages):
+    out = []
+    for m in messages or ():
+        if isinstance(m, dict):
+            out.append((m["t"], m.get("side", "in"), m["text"]))
+        else:
+            out.append((m[0], m[1], m[2]))
+    return sorted(out, key=lambda m: m[0])
+
+
+def _phone_typing(typing):
+    if typing is None:
+        return None
+    if isinstance(typing, dict):
+        t0, txt = typing["t"], typing["text"]
+        dt = typing.get("char_dt", 0.24)
+        ts = typing.get("t_send")
+    else:
+        t0, txt = typing[0], typing[1]
+        dt = typing[2] if len(typing) > 2 else 0.24
+        ts = typing[3] if len(typing) > 3 else None
+    keys = [t0 + i * dt for i in range(len(txt))]
+    if ts is None:
+        ts = (keys[-1] if keys else t0) + 0.5
+    return t0, txt, dt, keys, ts
+
+
+def phone_times(messages, typing=None):
+    """Key times for SFX: {'buzz': [incoming message times], 'keys': [one
+    per typed letter], 'send': send-whoosh time or None}."""
+    ms = _phone_msgs(messages)
+    ty = _phone_typing(typing)
+    return {"buzz": [m[0] for m in ms if m[1] == "in"],
+            "keys": ty[3] if ty else [], "send": ty[4] if ty else None}
+
+
+def _phone_body(c, RW, RH):
+    rrect(c, -6, -6, RW + 12, RH + 12, 70)
+    _fill(c, INK)
+    rrect(c, 0, 0, RW, RH, 64)
+    _fill(c, "#262a38")
+    rrect(c, 4, 4, RW - 8, RH - 8, 60)
+    _stroke(c, "#3a4054", 3)
+    for (bx, by, bh) in ((-10, 210, 70), (-10, 300, 70), (RW + 3, 250, 110)):
+        rrect(c, bx, by, 7, bh, 3)
+        _fill(c, INK)
+
+
+def _phone_ui_static(c, RW, RH, contact, clock):
+    sx, sy, sw, sh = 16, 16, RW - 32, RH - 32
+    rrect(c, sx, sy, sw, sh, 50)
+    _fill(c, "#f2f4f9")
+    c.save()
+    rrect(c, sx, sy, sw, sh, 50)
+    c.clip()
+    # header band
+    c.rectangle(sx, sy, sw, 196)
+    _fill(c, "#ffffff")
+    c.rectangle(sx, sy + 196, sw, 2.5)
+    _fill(c, "#d9dee8")
+    # status bar
+    text(c, clock, 62, 70, 26, UI_TXT, "ui", "left")
+    for i in range(4):
+        c.rectangle(RW - 150 + i * 11, 66 - 6 - i * 4, 7, 6 + i * 4)
+    _fill(c, UI_TXT)
+    rrect(c, RW - 96, 50, 42, 21, 5)
+    _stroke(c, UI_TXT, 2.5)
+    rrect(c, RW - 92, 54, 24, 13, 3)
+    _fill(c, UI_TXT)
+    c.rectangle(RW - 53, 56, 4, 9)
+    _fill(c, UI_TXT)
+    # header: back chevron, avatar, name
+    c.move_to(62, 128)
+    c.line_to(46, 146)
+    c.line_to(62, 164)
+    _stroke(c, PHONE_BLUE, 6)
+    circle(c, 116, 146, 36)
+    _fill(c, TAG_COLORS["embar"], preserve=True)
+    _stroke(c, INK, 3)
+    # tiny Embarrassment avatar: hair tuft + glasses
+    circle(c, 116, 150, 20)
+    _fill(c, PAL["e_skin"])
+    c.move_to(97, 140)
+    c.curve_to(100, 120, 132, 118, 136, 140)
+    c.curve_to(124, 132, 108, 132, 97, 140)
+    _fill(c, PAL["e_hair"])
+    for gx in (108, 124):
+        circle(c, gx, 151, 6.5)
+        _stroke(c, PAL["glasses"], 2.6)
+    ns = _fit_size(c, contact, "ui", 34, RW - 190)
+    text(c, contact, 166, 145, ns, INK, "ui", "left")
+    text(c, "mobile", 166, 175, 21, UI_GREY, "ui", "left")
+    # day stamp
+    text(c, "Today 6:12 AM", RW / 2, 240, 21, UI_GREY, "ui", "center")
+    # input bar
+    c.rectangle(sx, RH - 150, sw, 2)
+    _fill(c, "#d9dee8")
+    c.restore()
+    rrect(c, 36, RH - 126, RW - 150, 70, 35)
+    _fill(c, "#ffffff", preserve=True)
+    _stroke(c, "#c9cfdb", 2.5)
+    # notch
+    rrect(c, RW / 2 - 56, 28, 112, 30, 15)
+    _fill(c, INK)
+
+
+def _bubble_geom(c, text_, side, RW, y, size=52):
+    tw_ = _tw(c, text_, "ui", size)
+    bw = tw_ + 54
+    bh = size * 1.25 + 34
+    bx = 40 if side == "in" else RW - 40 - bw
+    return bx, y, bw, bh
+
+
+def _bubble(c, text_, side, bx, by, bw, bh, size=52, a=1.0):
+    col = "#e4e8f1" if side == "in" else PHONE_BLUE
+    tcol = INK if side == "in" else "#ffffff"
+    rrect(c, bx, by, bw, bh, 30)
+    _fill(c, col, a)
+    # tail
+    if side == "in":
+        c.move_to(bx + 8, by + bh - 26)
+        c.curve_to(bx + 2, by + bh - 4, bx - 8, by + bh + 2, bx - 12, by + bh + 2)
+        c.curve_to(bx + 6, by + bh + 4, bx + 20, by + bh - 2, bx + 30, by + bh - 8)
+    else:
+        c.move_to(bx + bw - 8, by + bh - 26)
+        c.curve_to(bx + bw - 2, by + bh - 4, bx + bw + 8, by + bh + 2, bx + bw + 12, by + bh + 2)
+        c.curve_to(bx + bw - 6, by + bh + 4, bx + bw - 20, by + bh - 2, bx + bw - 30, by + bh - 8)
+    c.close_path()
+    _fill(c, col, a)
+    set_font(c, "ui", size)
+    c.move_to(bx + 27, by + bh / 2 + size * 0.36)
+    c.text_path(text_)
+    _fill(c, tcol, a)
+
+
+def phone_screen(ctx, x, y, w, h, t, messages, typing=None, contact="Embarrassment",
+                 t_on=None, clock="6:12", buzz=True, body=True):
+    """A phone (body + messaging app) in rect (x, y, w, h) = the whole device
+    (designed at 500 x 1000, so text scales with w; w >= ~520 in the 1080
+    frame keeps the bubbles readable on a phone).
+    messages = [(t, 'in'|'out', text), ...]: an incoming bubble pops in at
+    its t with a BUZZ (0.7 s decaying shake + buzz marks; buzz=False to
+    skip). typing = (t_start, text[, char_dt=0.24[, t_send]]): the reply is
+    typed letter by letter into the input bar (blinking caret, send button
+    turns blue), then at t_send (default last key + 0.5) it WHOOSHES up into
+    the thread as an outgoing bubble with speed streaks, then 'Delivered'.
+    The screen is dark before t_on (default: the first incoming message),
+    waking over 0.2 s. Use phone_times() for SFX."""
+    RW = PHONE_W
+    sc = w / RW
+    RH = h / sc
+    ms = _phone_msgs(messages)
+    ty = _phone_typing(typing)
+    if t_on is None:
+        t_on = ms[0][0] if ms else -1e9
+    # buzz shake
+    dx = rot = 0.0
+    bz_k = 0.0
+    if buzz:
+        for (tm, side, _) in ms:
+            if side == "in" and tm <= t <= tm + 0.7:
+                tau = t - tm
+                env = (1 - tau / 0.7) ** 1.2 * smoothstep(seg(tau, 0, 0.05))
+                f = int(t * FPS + 1e-4)
+                dx += (hash01(f, 41) - 0.5) * 2 * 10 * env
+                rot += (hash01(f, 43) - 0.5) * 2 * 0.022 * env
+                bz_k = max(bz_k, env)
+    ctx.save()
+    ctx.translate(x + w / 2 + dx * sc, y + h / 2)
+    if rot:
+        ctx.rotate(rot)
+    ctx.scale(sc, sc)
+    ctx.translate(-RW / 2, -RH / 2)
+    if body:
+        _layer(ctx, ("phone_body", round(RH, 1)), -20, -20, RW + 40, RH + 40,
+               lambda c: _phone_body(c, RW, RH))
+    wake = smoothstep(seg(t, t_on, t_on + 0.2))
+    if wake < 1:
+        rrect(ctx, 16, 16, RW - 32, RH - 32, 50)
+        _fill(ctx, "#0c0f16")
+        ctx.move_to(60, 16)
+        ctx.line_to(220, 16)
+        ctx.line_to(16, 420)
+        ctx.line_to(16, 160)
+        ctx.close_path()
+        _fill(ctx, "#ffffff", 0.05)
+        rrect(ctx, RW / 2 - 56, 28, 112, 30, 15)
+        _fill(ctx, INK)
+    if wake > 0.01:
+        _layer(ctx, ("phone_ui", round(RH, 1), contact, clock), 0, 0, RW, RH,
+               lambda c: _phone_ui_static(c, RW, RH, contact, clock), a=wake, pad=2)
+        ctx.save()
+        rrect(ctx, 16, 16, RW - 32, RH - 32, 50)
+        ctx.clip()
+        # thread
+        yy = 272.0
+        thread = [(tm, side, tx_) for (tm, side, tx_) in ms if t >= tm]
+        sent = ty is not None and t >= ty[4]
+        if ty is not None:
+            thread.append((ty[4], "out", ty[1]))
+            thread.sort(key=lambda m: m[0])
+        for (tm, side, tx_) in thread:
+            bx, by, bw, bh = _bubble_geom(ctx, tx_, side, RW, yy)
+            if tm > t:
+                break
+            if ty is not None and side == "out" and tm == ty[4] and tx_ == ty[1]:
+                # the whoosh from the input bar up into place
+                p = ease_out(seg(t, tm, tm + 0.3))
+                fy = lerp(RH - 122, by, p)
+                fx_ = lerp(48, bx, p)
+                if p < 1:
+                    for i in range(3):
+                        ly_ = fy + bh * (0.25 + 0.25 * i)
+                        ll = (1 - p) * (120 + 50 * i)
+                        _taper(ctx, fx_ + bw * 0.2 + 30 * i, ly_ + ll * 0.9, fx_ + bw * 0.2 + 30 * i,
+                               ly_ + 10, 4, 9)
+                        _fill(ctx, PHONE_BLUE, 0.55 * (1 - p))
+                with saved(ctx, fx_ + bw, fy + bh, lerp(0.85, 1.0, p)):
+                    _bubble(ctx, tx_, side, -bw, -bh, bw, bh)
+                dl = smoothstep(seg(t, tm + 0.5, tm + 0.8))
+                if dl > 0.01:
+                    text(ctx, "Delivered", bx + bw, by + bh + 34, 21, UI_GREY, "ui", "right")
+                    ctx.new_path()
+            else:
+                k = ease_out_back(seg(t, tm, tm + 0.28), 1.8)
+                ax = bx if side == "in" else bx + bw
+                with saved(ctx, ax, by + bh, max(0.01, k)):
+                    _bubble(ctx, tx_, side, bx - ax, -bh, bw, bh)
+            yy += bh + (54 if side == "out" else 30)
+        # input field: typed letters + caret, send button
+        typed = ""
+        if ty is not None and not sent:
+            typed = ty[1][:sum(1 for kt in ty[3] if t >= kt)]
+        fy0 = RH - 126
+        if typed:
+            text(ctx, typed, 66, fy0 + 51, 44, INK, "ui", "left")
+            cx_ = 66 + _tw(ctx, typed, "ui", 44) + 4
+        else:
+            text(ctx, "Message", 66, fy0 + 47, 32, "#a3abbb", "ui", "left")
+            cx_ = 64
+        caret = ty is not None and ty[0] - 0.6 <= t < ty[4]
+        if caret and _frac(t) < 0.55:
+            ctx.rectangle(cx_, fy0 + 16, 3.5, 40)
+            _fill(ctx, PHONE_BLUE)
+        bxc, byc = RW - 78, RH - 91
+        active = bool(typed)
+        circle(ctx, bxc, byc, 34)
+        _fill(ctx, PHONE_BLUE if active else "#c9cfdb")
+        if ty is not None:
+            pk = seg(t, ty[4], ty[4] + 0.35)
+            if 0 < pk < 1:
+                circle(ctx, bxc, byc, 34 + 30 * ease_out(pk))
+                _stroke(ctx, PHONE_BLUE, 5 * (1 - pk), 1 - pk)
+        ctx.move_to(bxc, byc + 16)
+        ctx.line_to(bxc, byc - 14)
+        ctx.move_to(bxc - 13, byc - 1)
+        ctx.line_to(bxc, byc - 15)
+        ctx.line_to(bxc + 13, byc - 1)
+        _stroke(ctx, "#ffffff", 6)
+        ctx.restore()
+        if wake < 1:
+            rrect(ctx, 16, 16, RW - 32, RH - 32, 50)
+            _fill(ctx, "#0c0f16", 1 - wake)
+    ctx.restore()
+    # buzz marks beside the phone (screen-aligned, outside the body)
+    if bz_k > 0.02:
+        f = int(t * FPS + 1e-4)
+        for sd in (-1, 1):
+            for j in range(2):
+                ox = x + w / 2 + sd * (w / 2 + (22 + 26 * j) * sc)
+                oy = y + h * (0.32 + 0.08 * ((f + j) % 2))
+                ctx.move_to(ox, oy - (40 + 16 * j) * sc)
+                ctx.curve_to(ox + sd * 18 * sc, oy - 14 * sc, ox + sd * 18 * sc, oy + 14 * sc,
+                             ox, oy + (40 + 16 * j) * sc)
+                _stroke(ctx, INK, 7 * sc, bz_k)
+
+
+# --- security camera feed ----------------------------------------------------
+FEED_STYLES = {
+    # tint (HSL colour), black lift (screen), overlay text colour, vignette colour
+    "night": ("#5dffb8", "#0a3a28", "#c9ffe2", "#01140c"),
+    "teal": ("#56f4ff", "#0a3040", "#c9fbff", "#011218"),
+    "mono": ("#d0d6dc", "#1a1e24", "#eef2f6", "#05070a"),
+}
+
+
+def _feed_overlay(c, RW, RH, label, tcol):
+    # static scanlines
+    for yy in range(0, int(RH), 6):
+        c.rectangle(0, yy, RW, 2)
+    _fill(c, "#000000", 0.2)
+    # corner brackets
+    L, m = 46, 18
+    for (cx, cy, dx, dy) in ((m, m, 1, 1), (RW - m, m, -1, 1), (m, RH - m, 1, -1),
+                             (RW - m, RH - m, -1, -1)):
+        c.move_to(cx, cy + dy * L)
+        c.line_to(cx, cy)
+        c.line_to(cx + dx * L, cy)
+        _stroke(c, tcol, 5, 0.9, cap=cairo.LINE_CAP_SQUARE, join=cairo.LINE_JOIN_MITER)
+    # centre crosshair ticks
+    for (dx, dy) in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+        c.move_to(RW / 2 + dx * 12, RH / 2 + dy * 12)
+        c.line_to(RW / 2 + dx * 26, RH / 2 + dy * 26)
+    _stroke(c, tcol, 3, 0.5)
+    if label:
+        ls = _fit_size(c, label, "mono", 26, RW * 0.55)
+        text(c, label, 40, 62, ls, tcol, "mono", "left")
+    text(c, "REC", RW - 40, 62, 26, tcol, "mono", "right")
+
+
+def _timecode(sec):
+    sec = max(0.0, sec)
+    f = int(round(sec * FPS))
+    return "%02d:%02d:%02d:%02d" % (f // (FPS * 3600), (f // (FPS * 60)) % 60, (f // FPS) % 60,
+                                    f % FPS)
+
+
+def monitor_feed(ctx, x, y, w, h, t, draw_feed, style="night", label="SHAFT CAM 03",
+                 t_on=None, rec=True, tc0=2 * 3600 + 13 * 60 + 47.0, cache_key=None,
+                 vignette_=0.65, res=0.5):
+    """Security-camera feed in rect (x, y, w, h) (designed at 600 px wide, so
+    overlay text scales with w): draw_feed(ctx, x, y, w, h, t) draws the
+    scene into the rect (clipped); it is tinted night-vision teal-green
+    (style 'night'; 'teal' = HushCorp teal, 'mono' = grey), blacks lifted,
+    edges vignetted, with static scanlines, corner brackets, a centre
+    crosshair, the camera `label` (top-left), a softly blinking REC dot
+    (1 s period) and a running timecode (bottom-left, tc0 + t). With t_on
+    the feed powers on like a CRT (0.25 s); nothing before t_on.
+    cache_key caches the tinted feed (static feeds: much cheaper). A live
+    feed is rendered at `res` x the device resolution (0.5 = soft CCTV
+    image, 4x fewer pixels to tint) and scaled up; res=1 for full detail."""
+    if t_on is not None and t < t_on:
+        return
+    tint, lift, tcol, vcol = FEED_STYLES.get(style, FEED_STYLES["night"])
+    RW = 600.0
+    sc = w / RW
+    RH = h / sc
+    on = 1.0 if t_on is None else ease_out(seg(t, t_on, t_on + 0.25))
+
+    def tint_ops(c):
+        c.set_operator(cairo.OPERATOR_HSL_COLOR)
+        _rgba(c, tint)
+        c.paint()
+        c.set_operator(cairo.OPERATOR_SCREEN)
+        _rgba(c, lift)
+        c.paint()
+        c.set_operator(cairo.OPERATOR_OVER)
+
+    def draw_tinted(c):
+        c.save()
+        c.rectangle(x, y, w, h)
+        c.clip()
+        c.push_group()
+        _rgba(c, "#050807")
+        c.paint()
+        draw_feed(c, x, y, w, h, t)
+        tint_ops(c)
+        c.pop_group_to_source()
+        c.paint()
+        c.restore()
+
+    def draw_lowres(c):
+        q = _bake_q(c, False) * clamp(res, 0.1, 1.0)
+        sw, sh = max(1, int(math.ceil(w * q))), max(1, int(math.ceil(h * q)))
+        surf = cairo.ImageSurface(cairo.FORMAT_RGB24, sw, sh)
+        cc = cairo.Context(surf)
+        _rgba(cc, "#050807")
+        cc.paint()
+        cc.scale(q, q)
+        cc.translate(-x, -y)
+        cc.rectangle(x, y, w, h)
+        cc.clip()
+        draw_feed(cc, x, y, w, h, t)
+        tint_ops(cc)
+        surf.flush()
+        c.save()
+        c.translate(x, y)
+        c.scale(w / sw, h / sh)
+        c.set_source_surface(surf, 0, 0)
+        c.get_source().set_filter(cairo.FILTER_BILINEAR)
+        c.rectangle(0, 0, sw, sh)
+        c.fill()
+        c.restore()
+    ctx.save()
+    rrect(ctx, x, y, w, h, 8 * sc)
+    ctx.clip()
+    if on < 1:
+        # CRT power-on: a bright line opening vertically
+        ctx.rectangle(x, y, w, h)
+        _fill(ctx, "#020403")
+        oh = h * on
+        ctx.rectangle(x, y + (h - oh) / 2, w, oh)
+        ctx.clip()
+    if cache_key is not None:
+        _layer(ctx, ("feed", cache_key, style, round(w, 1), round(h, 1)), x, y, w, h, draw_tinted,
+               pad=0)
+    elif res < 0.999:
+        draw_lowres(ctx)
+    else:
+        draw_tinted(ctx)
+    if vignette_ > 0:
+        # own scale-quantised layer (vignette() is exact-scale: it would
+        # re-raster every frame under a zooming camera)
+        ctx.save()
+        ctx.translate(x, y)
+        _layer(ctx, ("feed_vig", str(vcol), round(w, 1), round(h, 1)), 0, 0, w, h,
+               lambda c: _vig_draw(c, vcol, 0.45, 0, 0, w, h), a=clamp(vignette_), pad=0)
+        ctx.restore()
+    ctx.save()
+    ctx.translate(x, y)
+    ctx.scale(sc, sc)
+    _layer(ctx, ("feed_ovl", round(RH, 1), label, style), 0, 0, RW, RH,
+           lambda c: _feed_overlay(c, RW, RH, label, tcol), pad=0)
+    if rec:
+        rb = 0.5 + 0.5 * math.cos(TAU * t)     # 1 s, smooth (no strobe)
+        cx_ = RW - 40 - _tw(ctx, "REC", "mono", 26) - 22
+        circle(ctx, cx_, 53, 11)
+        _fill(ctx, "#ff3b5c", 0.25 + 0.75 * rb)
+        radial_glow(ctx, cx_, 53, 26, "#ff3b5c", 0.35 * rb)
+    tc = _timecode(tc0 + t)
+    text(ctx, tc, 40, RH - 40, 24, tcol, "mono", "left")
+    text(ctx, "IR", RW - 40, RH - 40, 24, tcol, "mono", "right")
+    ctx.restore()
+    if on < 1:
+        g = 1 - on
+        ctx.rectangle(x, y + h / 2 - 3, w, 6)
+        _fill(ctx, "#eafff4", g)
+    ctx.restore()
+
+
+# --- small marks -------------------------------------------------------------
+def bonk_star(ctx, x, y, s, t, t0, dur=0.7, word="BONK!", **kw):
+    """impact_star with Episode 2 defaults: a 0.7 s hold (>= 0.6 s so the hit
+    registers) and the 'BONK!' word (s02 pipe bonk). Same look/kwargs."""
+    impact_star(ctx, x, y, s, t, t0, dur=dur, word=word, **kw)
+
+
+def sparks(ctx, x, y, t, t0, seed=0, s=1.0, n=10, angle=-math.pi / 2, spread=2.6, dur=0.8,
+           speed=950.0, gravity=2300.0, color="#ffc23a", flash_=True):
+    """Shower of <= 12 hot sparks from (x, y) at t0 (lockdown shutters, a
+    torn lever): short tapered streaks flying out around `angle` (+-spread/2)
+    on ballistic arcs, orange with white-hot cores, shrinking and fading;
+    plus a tiny white burst at the source for 0.12 s. Gone by t0+dur."""
+    if t < t0 or t > t0 + dur:
+        return
+    n = max(1, min(int(n), 12))
+    tau = t - t0
+    g = gravity * s
+    for i in range(n):
+        h1, h2, h3, h4 = (hash01(i, seed + 61), hash01(i, seed + 62), hash01(i, seed + 63),
+                          hash01(i, seed + 64))
+        delay = h1 * 0.07
+        tt = tau - delay
+        life = (dur - delay) * (0.5 + 0.5 * h2)
+        if tt <= 0 or tt >= life:
+            continue
+        a = angle + (h3 - 0.5) * spread
+        v = speed * s * (0.45 + 0.55 * h4)
+        vx, vy = v * math.cos(a), v * math.sin(a) + g * tt
+        px = x + v * math.cos(a) * tt
+        py = y + v * math.sin(a) * tt + 0.5 * g * tt * tt
+        sp = math.hypot(vx, vy)
+        k = 1 - tt / life
+        L = min(120 * s, 0.075 * sp) * (0.35 + 0.65 * k)
+        ux, uy = vx / max(sp, 1e-3), vy / max(sp, 1e-3)
+        qx, qy = px - ux * L, py - uy * L
+        a = min(1.0, 0.2 + 1.2 * k)
+        w = 13 * s * (0.45 + 0.55 * k)
+        _taper(ctx, qx, qy, px, py, 2 * s, w * 1.9)
+        _fill(ctx, "#ff7a1a", 0.35 * a)
+        _taper(ctx, qx, qy, px, py, 2 * s, w)
+        _fill(ctx, color, a)
+        _taper(ctx, qx + ux * L * 0.35, qy + uy * L * 0.35, px, py, 1.5 * s, w * 0.45)
+        _fill(ctx, "#fffbe6", a)
+    if flash_ and tau < 0.14:
+        p = tau / 0.14
+        radial_glow(ctx, x, y, 110 * s, color, 0.75 * (1 - p))
+        _twinkle_path(ctx, x, y, 58 * s * (1 - 0.5 * p), 0.2, 0.3)
+        _fill(ctx, "#ffffff", 1 - p)
+
+
+def tear_drop(ctx, x, y, s, t, t0, dur=2.2, side=1, length=120, color="#bfe8ff"):
+    """A single tear: wells up on the lower lid at (x, y) (0-0.6 s, grows to
+    r ~10 px at s=1), clings, then rolls down the cheek `length` px with a
+    slight curve toward `side` (+1 right / -1 left), leaving a faint wet
+    trail; fades out by t0+dur."""
+    if t < t0 or t > t0 + dur:
+        return
+    tau = t - t0
+    well = ease_out(seg(tau, 0.0, 0.6))
+    roll = ease_in_out(seg(tau, 0.8, dur * 0.85))
+    fade = 1 - smoothstep(seg(tau, dur * 0.72, dur))
+    if fade < 0.02 or well < 0.02:
+        return
+    L = length * s
+
+    def at(u):
+        return x + side * 10 * s * math.sin(math.pi * 0.8 * u), y + L * u
+    px, py = at(roll)
+    if roll > 0.02:
+        pts = [at(roll * i / 6) for i in range(7)]
+        smooth_path(ctx, pts)
+        _stroke(ctx, "#e8f8ff", 4 * s, 0.45 * fade)
+    r = 10 * s * (0.35 + 0.65 * well) * (1 - 0.2 * roll)
+    _drop(ctx, px, py + r * 0.4, r, -math.pi / 2, color, fade, ow=max(1.5, 2.6 * s))

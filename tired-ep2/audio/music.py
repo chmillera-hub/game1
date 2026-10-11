@@ -4,9 +4,12 @@
         -> np.ndarray float32, shape (n, 2), n = round(dur * sr), values in [-1, 1]
 
 Cues (see CUES and API_audio.md): chill, panic, sneaky, awkward, chaos, tension,
-corporate, ominous (+ ominous_dark / ominous_warm), bond, reveal, and the older
-doom, ai_calm, beg, heart, resolve. A name may carry options after a colon,
-e.g. "ominous:turn=0.7" or "reveal:awe=0.58,sad=0.7,sting=3".
+corporate, ominous (+ ominous_dark / ominous_warm), bond, reveal, the Episode 2
+cues lonely and lullaby, and the older doom, ai_calm, beg, heart, resolve. A name
+may carry options after a colon, e.g. "ominous:turn=0.7",
+"reveal:awe=0.58,sad=0.7,sting=3", and (Episode 2) "lonely:follow=0.76",
+"lullaby:resolve=0.86", "bond:cold=0.68,out=0.89", "chaos:stop=0.74",
+"chill:sting=3.6". Without options every Episode 1 cue renders bit-identically.
 Looping cues are 4/8-bar compositions re-generated for the requested duration
 (no audio splicing, so every "loop point" is just the next bar) with small
 per-pass variations; arc cues (ominous's warm turn, reveal) place their
@@ -30,7 +33,7 @@ from scipy import signal as sps
 SR = 48000
 TARGET_LUFS = -18.0
 CUES = ["none", "chill", "panic", "sneaky", "awkward", "chaos", "tension", "corporate", "ominous",
-        "ominous_dark", "ominous_warm", "bond", "reveal",
+        "ominous_dark", "ominous_warm", "bond", "reveal", "lonely", "lullaby",
         # inherited from the previous film (still available)
         "doom", "ai_calm", "beg", "heart", "resolve"]
 SQ2 = math.sqrt(2.0)
@@ -1150,6 +1153,8 @@ class Score:
         self.level_db = 0.0   # cue loudness offset vs TARGET_LUFS ("very light" cues < 0)
         self.opts = {}        # cue options parsed from "name:key=val,..."
         self.ceiling_db = None  # optional transparent peak limiter after normalization
+        self.stop_at = None   # optional 'tape stop' (power dies): pitch dives to silence from here
+        self.stop_len = 0.5
         self.set_tempo(100)
 
     def set_tempo(self, bpm, beats_per_bar=4):
@@ -1198,6 +1203,8 @@ class Score:
         if self.wet.any():
             out = out + self.wet_gain * reverb(self.wet, sr, **self.rev)
         out = out[: self.n]
+        if self.stop_at is not None and 0.0 <= self.stop_at < self.dur:
+            out = _tape_stop(out, sr, self.stop_at, self.stop_len)
         out = hp(out, 28, sr, 2)
         out = biquad(out, "highshelf", 9000, sr, 0.7, -3.0)   # keep the top end polite
         if normalize and np.abs(out).max() > 1e-6:
@@ -1215,6 +1222,28 @@ class Score:
         if fo > 1:
             out[n - fo:] *= np.cos(np.linspace(0, np.pi / 2, fo))[:, None]
         return out.astype(np.float32)
+
+
+def _tape_stop(x, sr, t0, length=0.5):
+    """From t0 the playback 'loses power': speed falls 1 -> 0 over `length` s
+    (pitch dives, like a turntable switched off), then silence. Click-free."""
+    x = np.asarray(x, dtype=float)
+    i0 = int(round(t0 * sr))
+    L = max(2, int(length * sr))
+    if i0 >= len(x):
+        return x
+    u = np.arange(L) / L
+    speed = (1.0 - u) ** 1.6
+    pos = i0 + np.concatenate([[0.0], np.cumsum(speed[:-1])])
+    src = np.arange(len(x))
+    out = x.copy()
+    e = min(len(x), i0 + L)
+    for ch in range(x.shape[1]):
+        out[i0:e, ch] = np.interp(pos[: e - i0], src, x[:, ch])
+    fade = (1.0 - u[: e - i0]) ** 0.7                         # level sinks with the speed
+    out[i0:e] *= fade[:, None]
+    out[e:] = 0.0
+    return out
 
 
 def _peak_limit(x, sr, ceiling_db=-3.5, look=0.004, release=0.03):
@@ -1760,13 +1789,38 @@ def _cue_chill(S):
     lo, sr, rng = S.lo, S.sr, S.rng
     prog = ["Bbmaj9", "Am7|D7b9", "Gm9", "C9sus4|C7b9"]
     SW = 0.6
+    # Episode 2 option sting=N: the groove stops N s before the end and a soft warm
+    # Fmaj9 'button' (the hook's F-A-C on vibe) rings out for the end card. The tempo
+    # is nudged (<= 8 %) so the button lands on a bar line, after a V (C7b9) turnaround.
+    sting = float(S.opts.get("sting", 0.0))
+    t_sting = S.dur + 60.0
+    pre_bar = None
+    if 0.5 <= sting < S.dur - 1.0:
+        t_sting = S.dur - sting
+        k = max(1, int(round(t_sting / S.bar)))
+        bpm = 240.0 * k / t_sting
+        if 72.0 <= bpm <= 84.5:
+            S.set_tempo(bpm)
+            pre_bar = k - 1
+        S.nbars = int(math.ceil(t_sting / S.bar - 1e-6))
+
+    def prog_at(b):
+        sym = prog[b % 4]
+        if b == pre_bar and not sym.startswith("C9sus4"):
+            return sym.split("|")[0] + "|C7b9"            # turnaround into the button
+        return sym
+
     keys = np.zeros_like(S.dry)          # e-piano + vibe + pad -> lo-fi bus (wow, warm)
     prev = None
     bass_seq = []
     for b in range(S.nbars):
         tb = b * S.bar
-        for th, span, ch, hs in _halves(S, tb, prog[b % 4]):
-            bass_seq.append((th, span, ch))
+        for th, span, ch, hs in _halves(S, tb, prog_at(b)):
+            if th < t_sting - 0.05:
+                bass_seq.append((th, span, ch))
+    def clip(t, d):                      # notes are damped at the button
+        return min(d, max(0.06, t_sting - t - 0.02))
+
     for i, (th, span, ch) in enumerate(bass_seq):
         b = int(th // S.bar + 1e-6)
         cyc, sec = b // 8, (b % 8) // 4           # 8-bar cycle: A (hook) / B (answer)
@@ -1779,14 +1833,19 @@ def _cue_chill(S):
         hits = [(0.0, 0.62, 1.7)] + ([(2.5, 0.42, 0.9)] if whole else [(1.5, 0.34, 0.45)])
         for pos, vel, ln in hits:
             t0 = th + _sw(pos, SW) * S.beat
+            if t0 >= t_sting - 0.05:
+                continue
             for j, m in enumerate(v):
                 tt = S.ht(t0 + 0.018 * j, 0.004)
-                _put(keys, inst_epiano(m, ln * S.beat, S.hv(vel * (0.9 if j else 1.0)), sr), tt, sr, 0.30)
+                _put(keys, inst_epiano(m, clip(tt, ln * S.beat), S.hv(vel * (0.9 if j else 1.0)), sr), tt, sr, 0.30)
                 S.ev(tt, "ep", m)
-        _put(keys, S.up(inst_pad(v, span + 0.1, lo, rng, cutoff=900, attack=0.8, release=1.0, detune=7)),
+        _put(keys, S.up(inst_pad(v, clip(th, span + 0.1), lo, rng, cutoff=900, attack=0.8, release=1.0, detune=7)),
              th, sr, 0.07)
         # warm sub: root, swung pick-up, approach note into the next chord
-        nxt = bass_seq[(i + 1) % len(bass_seq)][2].bass_note(36, 47)
+        if i + 1 == len(bass_seq) and t_sting < S.dur:
+            nxt = 41                                   # into the F button
+        else:
+            nxt = bass_seq[(i + 1) % len(bass_seq)][2].bass_note(36, 47)
         pat = [(0.0, bn, 1.3, 0.75)]
         if whole:
             pat += [(1.5, bn + 12 if bn < 41 else bn - 5, 0.4, 0.45), (2.5, bn, 0.8, 0.6)]
@@ -1796,7 +1855,9 @@ def _cue_chill(S):
             pat.append((1.5, _approach(bn, nxt, 34, 50) if nxt != bn else bn + 7, 0.4, 0.45))
         for pos, m, ln, vel in pat:
             tt = S.ht(th + _sw(pos, SW) * S.beat, 0.004)
-            S.add(S.up(inst_sub(m, ln * S.beat, lo, 0.012, 0.12, 0.45)), tt, 0.30 * S.hv(vel), 0, 0)
+            if tt >= t_sting - 0.05:
+                continue
+            S.add(S.up(inst_sub(m, clip(tt, ln * S.beat), lo, 0.012, 0.12, 0.45)), tt, 0.30 * S.hv(vel), 0, 0)
             S.ev(tt, "bass", m)
     # hook / answer (vibraphone), whole bars
     for b in range(S.nbars):
@@ -1808,30 +1869,72 @@ def _cue_chill(S):
                 phrase = _mel("0:G5:1:.7 1:F5:.5:.55 1.5:D5:.5:.55 2:E5:1:.6 3:C5:1:.55")
         else:
             phrase, g = CHILL_ANSWER[b % 4], 0.17
+        if b == pre_bar:                          # leave air before the button
+            phrase = [n for n in phrase if n[0] < 2.0]
         for beat, m, ln, vel in phrase:
             tt = S.ht(tb + _sw(beat, SW) * S.beat, 0.005)
-            _put(keys, inst_vibe(m, ln * S.beat, S.hv(vel), sr), tt, sr, g, 0.12)
+            if tt >= t_sting - 0.1:
+                continue
+            _put(keys, inst_vibe(m, clip(tt, ln * S.beat), S.hv(vel), sr), tt, sr, g, 0.12)
             S.ev(tt, "vibe", m)
     # brushes (from bar 2 so the cue opens on keys + bass)
     d0 = 1 if S.nbars > 2 else 0
     for b in range(d0, S.nbars):
         tb = b * S.bar
         kicks = [0.0, 2.5] + ([1.75] if b % 4 == 3 else [])
-        for pos in kicks:
-            S.add(dr_kick(sr, rng, S.hv(0.8 if pos == 0 else 0.6), soft=1.0, decay=0.2),
-                  S.ht(tb + _sw(pos, SW) * S.beat, 0.004), 0.28)
+        for pos in kicks:              # (signal first, then time: same RNG order as before)
+            sig = dr_kick(sr, rng, S.hv(0.8 if pos == 0 else 0.6), soft=1.0, decay=0.2)
+            tt = S.ht(tb + _sw(pos, SW) * S.beat, 0.004)
+            if tt < t_sting - 0.05:
+                S.add(sig, tt, 0.28)
         for pos in (1, 3):
-            S.add(dr_brush(sr, rng, S.hv(0.85)), S.ht(tb + pos * S.beat + 0.018, 0.004), 0.30, 0.1, 0.25)
+            sig = dr_brush(sr, rng, S.hv(0.85))
+            tt = S.ht(tb + pos * S.beat + 0.018, 0.004)
+            if tt < t_sting - 0.05:
+                S.add(sig, tt, 0.30, 0.1, 0.25)
         if b % 2 == 1:
-            S.add(dr_brush(sr, rng, 0.35), S.ht(tb + _sw(3.75, SW) * S.beat), 0.2, 0.15, 0.2)
+            sig = dr_brush(sr, rng, 0.35)
+            tt = S.ht(tb + _sw(3.75, SW) * S.beat)
+            if tt < t_sting - 0.05:
+                S.add(sig, tt, 0.2, 0.15, 0.2)
         for q in range(4):
-            S.add(dr_brush(sr, rng, S.hv(0.5), "sweep"), tb + (q + 0.05) * S.beat, 0.14, -0.35 if q % 2 else 0.35, 0.2)
+            sig = dr_brush(sr, rng, S.hv(0.5), "sweep")
+            tt = tb + (q + 0.05) * S.beat
+            if tt < t_sting - 0.05:
+                S.add(sig, tt, 0.14, -0.35 if q % 2 else 0.35, 0.2)
         for k in range(8):
-            S.add(dr_hat(sr, rng, S.hv(0.55 if k % 2 else 0.35)), S.ht(tb + _sw(k * 0.5, SW) * S.beat, 0.004),
-                  0.035, -0.3, 0.05)
+            sig = dr_hat(sr, rng, S.hv(0.55 if k % 2 else 0.35))
+            tt = S.ht(tb + _sw(k * 0.5, SW) * S.beat, 0.004)
+            if tt < t_sting - 0.05:
+                S.add(sig, tt, 0.035, -0.3, 0.05)
+    if t_sting < S.dur:
+        _chill_button(S, keys, t_sting)
     keys = wow(keys, sr, 1.1, 0.55)
     keys = np.tanh(1.3 * lp(keys, 3800, sr, 2)) / 1.3
     S.add(keys, 0.0, 1.0, 0, 0.35)
+
+
+def _chill_button(S, keys, t0):
+    """Soft warm Fmaj9 end-card button: rolled e-piano, the hook's F-A-C on vibe,
+    a held warm sub, one soft kick + brush swish. Rings to the end."""
+    lo, sr, rng = S.lo, S.sr, S.rng
+    ln = S.dur - t0 + 0.5
+    v = [57, 60, 64, 67, 69]                              # A3 C4 E4 G4 A4 over F
+    S.chord(t0, "Fmaj9", [41] + v)
+    for j, m in enumerate(v):
+        _put(keys, inst_epiano(m, ln, 0.42 * (0.9 if j else 1.0), sr, release=0.8), t0 + 0.035 * j, sr, 0.24)
+        S.ev(t0 + 0.035 * j, "ep", m)
+    _put(keys, S.up(inst_pad([53, 57, 60, 64], ln, lo, rng, cutoff=1100, attack=0.6, release=1.5, detune=7)),
+         t0, sr, 0.10)
+    for k, m in enumerate((77, 81, 84)):                  # F5 A5 C6: the hook, slowly
+        tt = t0 + 0.12 + k * 0.42 * S.beat
+        _put(keys, inst_vibe(m, ln - (tt - t0), 0.62 - 0.05 * k, sr, trem=4.2, depth=0.22), tt, sr, 0.22, 0.12)
+        S.ev(tt, "vibe", m)
+    S.add(S.up(inst_sub(29, ln, lo, 0.02, 1.0, 0.5)), t0, 0.22)
+    S.add(S.up(inst_sub(41, ln * 0.7, lo, 0.02, 1.0, 0.3)), t0, 0.10)
+    S.add(dr_kick(sr, rng, 0.7, soft=1.0, decay=0.25), t0, 0.2)
+    S.add(dr_brush(sr, rng, 0.55, "sweep"), t0 + 0.02, 0.18, 0.3, 0.4)
+    S.add(inst_bell(96, 1.5, 0.35, sr), t0 + 0.9, 0.035, 0.4, 0.8)        # a tiny glint (C7)
 
 
 # --- panic --------------------------------------------------------------------
@@ -2004,6 +2107,39 @@ def _cue_chaos(S):
     prog = ["Dm", "Bb", "Gm", "A7", "Dm", "Bb", "Eb|Gm", "A7"]
     s16 = S.beat / 4
     prev = None
+    # Episode 2 option stop=f: at that fraction the band hits one last tutti (the
+    # hatch slams) and an icy pedal holds under the Boss ("Let them run.")
+    stop = float(S.opts.get("stop", 1.0))
+    t_stop = stop * S.dur if stop < 0.98 else None
+    if t_stop is not None:
+        real_add, real_ev = S.add, S.ev
+
+        def gated_add(sig, t, gain=1.0, pan_=0.0, rev=0.0):
+            if t < t_stop - 0.03:
+                real_add(sig, t, gain, pan_, rev)
+
+        def gated_ev(t, inst, m):
+            if t < t_stop - 0.03:
+                real_ev(t, inst, m)
+        S.add, S.ev = gated_add, gated_ev
+    _chaos_body(S, prog, s16, prev, lo, sr, rng)
+    if t_stop is not None:
+        S.add, S.ev = real_add, real_ev
+        v = [62, 65, 69, 74]                                  # the final Dm hit
+        S.chord(t_stop, "Dm", [38, 50] + v)
+        S.add(S.up(inst_brass([50] + v, 0.5, lo, rng, peak_fc=3000, base_fc=600, attack=0.006, release=1.1,
+                              fc_attack=0.03)), t_stop, 0.30, 0, 0.45)
+        S.add(S.up(inst_strings_sect([38, 50, 57], 0.7, lo, rng, cutoff=1800, attack=0.01, release=1.0)),
+              t_stop, 0.22, 0, 0.4)
+        S.add(dr_timpani(sr, rng, 38, 1.0, 2.4), t_stop, 0.24, 0, 0.35)
+        S.add(dr_boom(sr, rng, 0.9, 2.2), t_stop, 0.18, 0, 0.3)
+        S.add(dr_crash(sr, rng, 1.0, 2.2), t_stop, 0.12, -0.2, 0.4)
+        S.add(dr_kick(sr, rng, 1.0, soft=0.2, decay=0.25), t_stop, 0.25)
+        S.add(dr_snare(sr, rng, 1.0), t_stop, 0.16, 0.05, 0.3)
+        _cold_pedal(S, t_stop + 0.9, S.dur - t_stop - 0.9, root=38, gain=0.8)
+
+
+def _chaos_body(S, prog, s16, prev, lo, sr, rng):
     for b, tb, sym, pass_ in _bars(S, prog):
         bb = b % 8
         hs = _halves(S, tb, sym)
@@ -2243,22 +2379,35 @@ def _cue_bond(S):
     S.rev = dict(rt60=2.6, predelay=0.03, damp=0.5)
     S.wet_gain = 0.45
     lo, sr, rng = S.lo, S.sr, S.rng
+    D = S.dur
+    # Episode 2 options: cold=f (from that fraction the lullaby stops and an icy
+    # pedal holds: the camera / the Boss), out=f (tape-stop: the music dies with the lights)
+    cold = float(S.opts.get("cold", 1.0))
+    t_cold = round(cold * D / S.beat) * S.beat if cold < 0.98 else D + 60.0
+    out = float(S.opts.get("out", 1.0))
+    if out < 0.99:
+        S.stop_at, S.stop_len = out * D, 0.55
     prog = ["Dadd9", "A/C#", "Bm7", "Gmaj7", "D/F#", "Em7", "Gmaj7", "Asus4|A"]
     prev = None
     lead = []
     for b, tb, sym, pass_ in _bars(S, prog):
         for th, span, ch, h in _halves(S, tb, sym):
+            if th >= t_cold - 0.05:
+                continue
             v = voicing(ch, prev, 4, 54, 71)
             prev = v
             bn = ch.bass_note(38, 49)
             S.chord(th, h, [bn] + v)
-            S.add(S.up(inst_strings_sect(v, span + 0.2, lo, rng, cutoff=2000, attack=0.7, release=1.4)),
+            sp = min(span, t_cold - th + 0.6)
+            S.add(S.up(inst_strings_sect(v, sp + 0.2, lo, rng, cutoff=2000, attack=0.7, release=1.4)),
                   th, 0.24, 0, 0.5)
-            S.add(S.up(inst_sub(bn, span * 0.95, lo, 0.15, 0.4, 0.4)), th, 0.16)
+            S.add(S.up(inst_sub(bn, sp * 0.95, lo, 0.15, 0.4, 0.4)), th, 0.16)
             arp = [bn + 12, v[0], v[1], v[2]]
             for k in range(int(round(span / (S.beat / 2)))):
                 if b == 0 and k < 2:
                     continue
+                if th + k * S.beat / 2 >= t_cold - 0.05:
+                    break
                 m = arp[[0, 1, 2, 3, 2, 1][k % 6]]
                 tt = S.ht(th + k * S.beat / 2, 0.006)
                 S.add(inst_pluck(m, 0.5, sr, S.hv(0.42 if k % 2 else 0.55), 0.65, 2.2, 0.6, k), tt, 0.13,
@@ -2266,14 +2415,34 @@ def _cue_bond(S):
         oct_ = 12 if pass_ % 2 == 1 else 0
         for beat, m, ln, vel in BOND_MEL[b % 8]:
             tt = S.ht(tb + beat * S.beat, 0.006)
+            if tt >= t_cold - 0.05:
+                continue
             S.add(inst_mallet(m + oct_, S.hv(vel), sr, "celesta"), tt, 0.20 if not oct_ else 0.15, 0.1, 0.5)
             S.ev(tt, "celesta", m + oct_)
             if pass_ >= 1:
-                lead.append((tt, m, ln * S.beat, vel * 0.8))
+                lead.append((tt, m, min(ln * S.beat, max(0.2, t_cold - tt)), vel * 0.8))
     if lead:
         line = legato_line(lead, S.dur, lo, rng, glide=0.08, vib_depth=0.005, vib_rate=5.4, vib_delay=0.3,
                            attack=0.25, release=0.6, cutoff=2600, voices=3, detune=6)
         S.add(S.up(line), 0.0, 0.16, 0.05, 0.5)
+    if t_cold < D:
+        _cold_pedal(S, t_cold, D - t_cold, root=38)
+
+
+def _cold_pedal(S, t0, ln, root=38, gain=1.0):
+    """Icy held pedal for 'someone is watching' moments: low string pedal on the
+    root + fifth, a chilly glass cluster (5th + b6 rub, high), a faint bowed-metal
+    whine. Fades in over ~1.5 s."""
+    lo, sr, rng = S.lo, S.sr, S.rng
+    ln = max(ln, 0.8)
+    S.chord(t0, "cold", [root, root + 7, root + 43, root + 44])
+    S.add(S.up(inst_strings_sect([root, root + 7], ln + 0.4, lo, rng, cutoff=520, attack=min(1.6, ln * 0.5),
+                                 release=1.6)), t0, 0.26 * gain, 0, 0.4)
+    S.add(inst_glass([root + 31, root + 43, root + 44], ln + 0.4, sr, rng, attack=min(1.8, ln * 0.6), release=2.0,
+                     bright=0.15, drift=0.002), t0, 0.075 * gain, 0, 0.7)
+    S.add(S.up(inst_sub(root - 12 if root >= 36 else root, ln, lo, 1.2, 1.0, 0.25)), t0, 0.12 * gain)
+    S.add(inst_metal(hz(root + 44) * 0.5, min(4.0, ln + 0.5), sr, rng, bowed=True, bright=0.3),
+          t0 + min(0.8, ln * 0.3), 0.02 * gain, 0.4, 1.0)
 
 
 # --- reveal -------------------------------------------------------------------
@@ -2410,11 +2579,328 @@ def _cue_reveal(S):
     S.add(S.up(line), 0.0, 0.30, 0.1, 0.5)
 
 
+# =============================================================================
+# Episode 2 instruments
+# =============================================================================
+@lru_cache(maxsize=2048)
+def _mbox(c100, nsamp, velq, sr):
+    """One music-box tine (cantilever comb: partials 1 : 6.27 : 17.55, a touch of
+    2nd harmonic from the box, a tiny pin 'tick'). c100 = pitch in MIDI cents."""
+    vel = velq / 8.0
+    f = hz(c100 / 100.0)
+    t = tvec(nsamp, sr)
+    k = float(np.clip((1000.0 / f) ** 0.6, 0.45, 2.2))          # low tines ring longer
+    y = np.sin(TAU * f * t) * (0.72 * np.exp(-t / (1.55 * k)) + 0.28 * np.exp(-t / (0.2 * k)))
+    y += 0.05 * np.sin(TAU * 2 * f * t + 0.5) * np.exp(-t / (0.35 * k))
+    for r, a, d in ((6.27, 0.30, 0.05), (17.55, 0.10, 0.014)):
+        if f * r < 0.42 * sr:
+            y += a * vel * np.sin(TAU * f * r * t + r) * np.exp(-t / (d * k))
+    rng = np.random.default_rng(c100 * 3 + velq)
+    y += 0.10 * vel * bp(rng.standard_normal(nsamp), 3500, 11000, sr) * np.exp(-t / 0.0008)
+    y *= np.clip(t / 0.0005, 0, 1)
+    q = int(0.006 * sr)
+    y[-q:] *= np.linspace(1, 0, q)
+    y.flags.writeable = False
+    return y
+
+
+def inst_musicbox(m, vel, sr, cents=0.0, length=None, double=3.5):
+    """Music-box note (mono): two slightly detuned tines (slow shimmer beating).
+    m may be fractional; `cents` detunes the note."""
+    f = hz(m)
+    L = length or float(np.clip(2.6 * (700.0 / f) ** 0.5, 1.1, 3.2))
+    n = secs(sr, L)
+    velq = int(np.clip(round(vel * 8), 1, 10))
+    c = int(round(m * 100 + cents))
+    y = np.array(_mbox(c, n, velq, sr)) + 0.55 * np.array(_mbox(c + int(round(double)), n, velq, sr))
+    return y * (0.45 + 0.55 * vel) / 1.55
+
+
+def _warp(t_w0, wind, slow=0.55, horizon=None):
+    """Nominal -> actual time for a 'spring running down' ritardando: speed falls
+    from 1 to (1 - slow) over `wind` s starting at t_w0 (identity before)."""
+    dt = 0.002
+    ta = np.arange(0.0, (horizon or t_w0 + wind) + 4 * wind + 8.0, dt)
+    u = np.clip((ta - t_w0) / max(wind, 1e-3), 0, 1)
+    sp = 1.0 - slow * u ** 1.4
+    N = np.concatenate([[0.0], np.cumsum(sp[:-1]) * dt])
+    return lambda tn: float(np.interp(tn, N, ta))
+
+
+def _soft_piano(m, dur, vel, sr):
+    """Intimate felt-ish piano note: the additive piano, softened (no hard top)."""
+    y = inst_piano(m, dur, vel, sr)
+    return lp(y, 2600 + 1800 * vel, sr, 1)
+
+
+# --- lonely (s04) ---------------------------------------------------------------
+LONELY_PROG = ["Dmadd9", "Bbmaj7", "Gm", "A7sus4|A7", "Dm", "F/C", "Bbmaj7", "Asus4|A"]
+LONELY_RH = [   # the aching motif (minor-6th / minor-7th leaps, falling steps) with long silences
+    "0.5:A4:1:.4 1.5:F5:1.5:.48 3:E5:1:.36",
+    "0:D5:3:.4",
+    "2.75:E5:.5:.28 3.25:F5:.75:.32",          # a small rising 'question'
+    "0:C#5:1.5:.3",
+    "3:A4:1:.38",
+    "0:G5:1.5:.5 1.5:F5:.5:.4 2:E5:1:.42 3:D5:1:.38",   # the ache: falling degree by degree
+    "",
+    "1.5:A4:.5:.28 2:C#5:2:.3",
+]
+LONELY_LH = [   # (beat, midi, held beats, vel); bar 6 is (almost) silence
+    [(0, 38, 4, .36), (0.02, 45, 4, .26), (2, 53, 2, .2)],
+    [(0, 34, 4, .34), (0.02, 41, 4, .24)],
+    [(0, 43, 4, .32), (0.02, 50, 4, .22)],
+    [(0, 33, 4, .32), (0.02, 40, 4, .22), (2, 49, 2, .18)],
+    [(0, 38, 4, .34), (0.02, 45, 4, .24)],
+    [(0, 36, 4, .32), (0.02, 41, 4, .22), (2, 48, 2, .18)],
+    [],
+    [(0, 33, 4, .3), (0.02, 40, 4, .2)],
+]
+LONELY_FOLLOW = [   # after he decides to follow: strings + the motif turning upward
+    ("Bbmaj7", "1:A4:1:.38 2:F5:1.5:.44 3.5:E5:.5:.34", [(0, 34, 4, .3), (0.02, 41, 4, .22)]),
+    ("F/A", "1:F5:1:.4 2:G5:.5:.36 2.5:A5:1.5:.42", [(0, 33, 4, .3), (0.02, 41, 4, .2), (2, 48, 2, .16)]),
+    ("Gm7", "1:Bb4:1:.36 2:D5:1:.38 3:F5:1:.38", [(0, 31, 4, .3), (0.02, 38, 4, .2)]),
+    ("Bb/C", "0:E5:2:.36 2:C5:2:.32", [(0, 36, 4, .3), (0.02, 46, 4, .2)]),
+    ("Fadd9", "1:A4:1:.34 2:C5:1:.34 3:G5:1:.36", [(0, 29, 4, .3), (0.02, 41, 4, .2)]),
+    ("Dm", "0:F5:3:.36", [(0, 38, 4, .3), (0.02, 45, 4, .2)]),
+]
+
+
+def _cue_lonely(S):
+    """s04 'not my problem': sparse, sad solo piano in D minor (a minor-6th 'ache'
+    motif, long silences, soft room), and a low string pad from `follow`
+    (fraction of the render, default 0.76: when he decides to follow) where the
+    motif turns upward (Bbmaj7 - F/A ...). The tempo (~56 BPM) is fitted so the
+    follow point lands on a bar line. Very quiet: level -1.5 dB."""
+    D = S.dur
+    f = float(S.opts.get("follow", 0.76))
+    t_f = f * D if f < 0.98 else None
+    nb = 240.0 / 57.0
+    if t_f is not None and t_f > 2.0:
+        k = max(1, int(round(t_f / nb)))
+        bpm = float(np.clip(240.0 * k / t_f, 50.0, 66.0))
+        S.set_tempo(bpm)
+        t_f = k * S.bar
+    else:
+        S.set_tempo(57)
+    S.level_db = -1.5
+    S.rev = dict(rt60=1.6, predelay=0.014, damp=0.62)
+    S.wet_gain = 0.42
+    lo, sr, rng = S.lo, S.sr, S.rng
+    pno = np.zeros_like(S.dry)
+
+    def play(t, m, beats, vel, pan_=0.0):
+        d = beats * S.beat * 1.15                  # a touch of sustain pedal
+        x = S.up(_soft_piano(m, d, S.hv(vel, 0.05), lo))
+        _put(pno, x, t, sr, 0.5, pan_)
+        S.ev(t, "piano", m)
+
+    nb_f = int(round(t_f / S.bar)) if t_f is not None else S.nbars
+    for b in range(S.nbars):
+        tb = b * S.bar
+        if t_f is not None and b >= nb_f:
+            j = b - nb_f
+            sym, rh, lh = LONELY_FOLLOW[j % len(LONELY_FOLLOW)]
+        else:
+            sym, rh, lh = LONELY_PROG[b % 8], LONELY_RH[b % 8], LONELY_LH[b % 8]
+        notes = _mel(rh) if rh else []
+        if b >= 8 and (t_f is None or b < nb_f):    # second time round: softer, the reply delayed
+            notes = [(bt + (0.5 if bt >= 2 else 0.0), m, ln, vel * 0.85) for bt, m, ln, vel in notes if bt + 0.5 < 4]
+        for th, span, ch, h in _halves(S, tb, sym):
+            S.chord(th, h, [ch.bass_note(29, 40)] + ch.tones(50, 62)[:3])
+        for beat, m, ln, vel in notes:
+            late = 0.04 if beat >= 3 else 0.0      # rubato: phrase ends lean back
+            play(S.ht(tb + (beat + late) * S.beat, 0.012), m, ln, vel, 0.12)
+        for beat, m, ln, vel in lh:
+            play(S.ht(tb + beat * S.beat, 0.008), m, ln, vel * 0.75, -0.15)
+    pno = biquad(pno, "lowshelf", 150, sr, 0.7, -6.0)     # an upright's light bass: the RH carries it
+    S.add(pno, 0.0, 1.0, 0, 0.42)
+    # a faint room tone + low string pad once he decides to follow
+    if t_f is not None and t_f < D - 0.5:
+        prev = None
+        for b in range(nb_f, S.nbars):
+            j = b - nb_f
+            sym = LONELY_FOLLOW[j % len(LONELY_FOLLOW)][0]
+            for th, span, ch, h in _halves(S, b * S.bar, sym):
+                v = voicing(ch, prev, 3, 45, 60)
+                prev = v
+                bn = ch.bass_note(29, 40)
+                first = j == 0
+                ln = span + 0.4
+                S.add(S.up(inst_strings_sect([bn + 12] + v, ln, lo, rng, cutoff=900 if first else 1100,
+                                             attack=min(3.2, span * 0.8) if first else 1.0, release=2.2)),
+                      th, 0.16 if first else 0.18, 0, 0.45)
+                S.add(S.up(inst_sub(bn, ln, lo, 2.0 if first else 0.6, 1.2, 0.2)), th, 0.07)
+
+
+# --- lullaby (s06) --------------------------------------------------------------
+LULL_PROG = ["Am", "AmM7/G#", "Am7/G", "Am6/F#", "Fmaj7", "Dm6", "Eaug", "E7b9"]
+LULL_PROG_B = {6: "Bbmaj7#11", 7: "Eaug"}           # second cycle: a Neapolitan shadow
+LULL_MEL = [
+    "0:A5:1.5:.7 1.5:B5:.5:.5 2:C6:1:.6",
+    "0:B5:2:.65 2:G#5:1:.5",
+    "0:A5:1.5:.62 1.5:G5:.5:.45 2:E5:1:.55",
+    "0:F#5:2:.55 2:A5:1:.5",
+    "0:C6:1.5:.7 1.5:B5:.5:.5 2:A5:1:.6",
+    "0:B5:1:.6 1:A5:1:.5 2:F5:1:.55",
+    "0:G#5:1.5:.6 1.5:A5:.5:.5 2:C6:1:.6",
+    "0:B5:1.5:.55 1.5:G#5:.5:.45 2:E5:1:.5",
+]
+LULL_MEL_B = {
+    4: "0:A5:1:.6 1:C6:1:.6 2:E6:1:.66",
+    5: "0:D6:2:.62 2:B5:1:.5",
+    6: "0:D6:1.5:.6 1.5:E6:.5:.5 2:D6:1:.52",
+    7: "0:C6:2:.55 2:B5:1:.45",
+}
+
+
+def _cue_lullaby(S):
+    """s06 'the offer': an eerie music-box lullaby. A sweet slow 3/4 melody (A
+    minor, 69 BPM) on a slightly detuned, warbling music box over a cold glass
+    pad and a dark breathing drone (minor-major 7th, augmented and Neapolitan
+    colours, a reversed-tine swell into each phrase, a faint bowed whine). The box
+    enters after an intro bar or two, grows sweeter (a soft 'oo' choir: the pull
+    of sleep) and, before `resolve`, runs down like a spring. From `resolve`
+    (fraction of the render, default 0.86; 1 = never) the strings swell on F and
+    bloom into a brave, warm A major (horns, choir, timpani, harp, the motif in
+    tune) `rise` s later (default 0.42 of the remaining time, 0.8-3.2 s)."""
+    S.set_tempo(69, 3)
+    S.rev = dict(rt60=2.8, predelay=0.03, damp=0.4)
+    S.wet_gain = 0.42
+    S.ceiling_db = -3.5
+    lo, sr, rng = S.lo, S.sr, S.rng
+    D = S.dur
+    r = float(S.opts.get("resolve", 0.86))
+    t_res = r * D if r < 0.98 else D + 60.0
+    W = max(0.0, D - t_res)
+    rise = float(S.opts.get("rise", np.clip(0.42 * W, 0.8, 3.2))) if W > 0 else 0.0
+    rise = min(rise, max(0.3, W - 0.5)) if W > 0 else 0.0
+    t_arr = t_res + rise
+    wind = min(2 * S.bar, 0.25 * t_res) if t_res < D else 0.0
+    t_w0 = t_res - wind
+    warp = _warp(t_w0, wind, 0.55, D) if wind > 0 else (lambda tn: tn)
+    t_end = min(D, t_res)
+    b_box = max(1, int(round(0.14 * D / S.bar)))
+    t_box = b_box * S.bar
+    t_full = max(t_box + S.bar, 0.6 * min(D, t_res))
+    det = {m: float(rng.normal(0, 5.0)) for m in range(48, 100)}     # a slightly mistuned comb
+    box = np.zeros_like(S.dry)
+
+    def intensity(t):
+        return 0.55 + 0.45 * float(np.clip((t - t_box) / max(0.5, t_full - t_box), 0, 1))
+
+    def droop(t):
+        return -28.0 * float(np.clip((t - t_w0) / max(wind, 1e-3), 0, 1)) ** 2 if wind else 0.0
+
+    prev = None
+    b = 0
+    while warp(b * S.bar) < t_end - 0.05:
+        tb = warp(b * S.bar)
+        te = min(warp((b + 1) * S.bar), t_end + 0.6)
+        cyc, bb = (b - b_box) // 8, (b - b_box) % 8     # intro bars sit on the dominant (Eaug, E7b9)
+        sym = LULL_PROG_B.get(bb, LULL_PROG[bb]) if cyc % 2 == 1 else LULL_PROG[bb]
+        ch = Chord(sym)
+        bn = ch.bass_note(33, 44)
+        v = voicing(ch, prev, 3, 64, 79)
+        prev = v
+        S.chord(tb, sym, [bn] + v)
+        ln = te - tb + 0.25
+        # cold glass pad + a dark low string pad (+ the breathing drone below)
+        pg = 1.9 if b < b_box else 1.0              # the intro (doors, the chair turning) is pad alone
+        S.add(inst_glass(v, ln, sr, rng, attack=1.0, release=1.8, bright=0.25, drift=0.0025), tb, 0.07 * pg, 0, 0.6)
+        S.add(S.up(inst_strings_sect([bn + 12, bn + 19], ln, lo, rng, cutoff=520, attack=0.9, release=1.6)),
+              tb, 0.12 * pg, 0, 0.35)
+        # the music box
+        if b >= b_box:
+            mel = LULL_MEL_B.get(bb, LULL_MEL[bb]) if cyc % 2 == 1 else LULL_MEL[bb]
+            for beat, m, l_, vel in _mel(mel):
+                t = warp(S.ht(b * S.bar + beat * S.beat, 0.012))
+                if t >= t_end - 0.04:
+                    continue
+                g = intensity(t)
+                _put(box, inst_musicbox(m, S.hv(vel), sr, det.get(m, 0.0) + droop(t)), t, sr, 0.52 * g,
+                     float(rng.uniform(-0.15, 0.25)))
+                S.ev(t, "box", m)
+            if b >= b_box + 4:                     # the box's own waltz bass: 'oom ... pah'
+                for beat, m, vel in ((0, bn + 24 if bn + 24 <= 68 else bn + 12, 0.45),
+                                     (1, v[0], 0.28), (2, v[1], 0.22 if b % 2 else 0.0)):
+                    if vel <= 0:
+                        continue
+                    t = warp(S.ht(b * S.bar + beat * S.beat, 0.01))
+                    if t < t_end - 0.04:
+                        _put(box, inst_musicbox(m, vel, sr, det.get(m, 0.0) + droop(t)), t, sr,
+                             0.30 * intensity(t), -0.2)
+            if (b - b_box) % 4 == 3 and warp((b + 1) * S.bar) < t_end - 0.3:     # reversed tine into the phrase
+                nb_, nc_ = (bb + 1) % 8, (b + 1 - b_box) // 8
+                nmel = LULL_MEL_B.get(nb_, LULL_MEL[nb_]) if nc_ % 2 == 1 else LULL_MEL[nb_]
+                nxt = _mel(nmel)[0][1] + 12
+                rv = inst_musicbox(nxt, 0.6, sr, det.get(nxt - 12, 0.0), length=1.3)[::-1].copy()
+                rv = fade_edges(rv, sr, 0.01, 0.025)
+                S.add(rv, warp((b + 1) * S.bar) - len(rv) / sr + 0.01, 0.06, 0.35, 0.9)
+        if b % 4 == 2:                              # faint bowed-metal whine (the undertone)
+            S.add(inst_metal(rng.choice([622.3, 659.3, 698.5]), 3.2, sr, rng, bowed=True, bright=0.35),
+                  tb + rng.uniform(0.2, 1.2), 0.018, float(rng.uniform(-0.7, 0.7)), 1.0)
+        b += 1
+    # the box bus: spring warble + a slightly worn top, into the cold room
+    box = wow(box, sr, 3.2, 0.31, 0.06, seed=5)            # ~7 cents slow warble, a hint of flutter
+    box = biquad(lp(box, 7500, sr, 2), "peak", 1200, sr, 0.8, -1.5)
+    S.add(box, 0.0, 1.0, 0, 0.5)
+    # breathing drone (A, slow 0.16 Hz swell) and the lulling 'oo' choir
+    n_lo = secs(lo, t_end + 2.0)
+    tl = tvec(n_lo, lo)
+    dr = saw(hz(33), n_lo, lo, 0.2) + saw(hz(33) * 1.004, n_lo, lo, 0.7) + 0.5 * saw(hz(40) * 0.998, n_lo, lo, 0.4)
+    dr = tv_filter(dr, 190 * (1 + 0.35 * np.sin(TAU * 0.16 * tl)), lo, q=1.1, block=512)
+    dr += 0.5 * sine(hz(33), n_lo, lo)
+    dr *= np.clip(tl / 2.5, 0, 1) * np.clip((t_end + 1.4 - tl) / 1.4, 0, 1) * (0.8 + 0.2 * np.sin(TAU * 0.16 * tl))
+    S.add(S.up(dr), 0.0, 0.08, 0, 0.2)
+    t_ch = max(t_box + S.bar, 0.48 * min(D, t_res))
+    if t_ch < t_end - 2.0:
+        cv = [57, 60, 64]
+        S.add(S.up(inst_choir(cv, t_end - t_ch, lo, rng, "oo", attack=2.5, release=2.0)), t_ch, 0.07, 0, 0.6)
+    if t_res >= D:
+        return
+    # ---------------- the resolve: swell on F, bloom into A major ----------------
+    if rise >= 0.6:
+        sv = [41, 48, 53, 57, 60, 67]                              # F2 C3 F3 A3 C4 G4 (Fadd9)
+        S.chord(t_res, "Fadd9", sv)
+        S.add(S.up(inst_strings_sect(sv, rise + 0.5, lo, rng, cutoff=1800, attack=rise * 0.95, release=1.0)),
+              t_res, 0.50, 0, 0.5)
+        S.add(S.up(inst_choir([57, 60, 65], rise + 0.4, lo, rng, "oh", attack=rise * 0.9, release=0.8)),
+              t_res, 0.24, 0, 0.6)
+        S.add(S.up(inst_brass([53, 57, 60], rise + 0.2, lo, rng, peak_fc=1300, base_fc=300, attack=rise * 0.8,
+                              release=0.6, fc_attack=rise * 0.6)), t_res, 0.20, 0, 0.5)
+        S.add(S.up(inst_sub(29, rise + 0.3, lo, rise * 0.7, 0.5, 0.3)), t_res, 0.18)
+        S.add(dr_swell(sr, rng, rise, 1500, 7000), t_res, 0.10, 0, 0.4)
+        roll0 = t_arr - min(1.6, rise * 0.8)
+        t = roll0
+        while t < t_arr - 0.04:
+            fr = (t - roll0) / max(1e-3, t_arr - roll0)
+            S.add(dr_timpani(sr, rng, 41, 0.15 + 0.5 * fr, 0.8), t, 0.32, 0, 0.3)
+            t += 0.065 + 0.01 * rng.random()
+    al = D - t_arr + 1.0
+    av = [45, 52, 57, 61, 64, 71]                                  # A2 E3 A3 C#4 E4 B4 (Aadd9)
+    S.chord(t_arr, "Aadd9", [33] + av)
+    S.add(S.up(inst_strings_sect(av, al, lo, rng, cutoff=2600, attack=0.25, release=2.0)), t_arr, 0.60, 0, 0.55)
+    S.add(S.up(inst_strings_sect([33, 45], al, lo, rng, cutoff=900, attack=0.2, release=2.0)), t_arr, 0.38, 0, 0.4)
+    S.add(S.up(inst_brass([57, 61, 64], al, lo, rng, peak_fc=1500, base_fc=380, attack=0.16, release=1.2,
+                          fc_attack=0.35)), t_arr, 0.30, 0, 0.5)
+    S.add(S.up(inst_choir([57, 61, 64, 69], al, lo, rng, "ah", attack=0.5, release=2.0)), t_arr, 0.28, 0, 0.65)
+    S.add(S.up(inst_sub(33, al, lo, 0.05, 1.0, 0.4)), t_arr, 0.26)
+    S.add(dr_timpani(sr, rng, 45, 0.9, 2.4), t_arr, 0.42, 0, 0.35)
+    S.add(dr_boom(sr, rng, 0.55, 2.4), t_arr, 0.26, 0, 0.3)
+    for k, m in enumerate(sorted(set(Chord("A").tones(57, 93)))):              # harp up
+        S.add(inst_pluck(m, 0.6, sr, 0.42 + 0.02 * k, 0.75, 1.8, 0.5, k), t_arr - 0.02 + k * 0.035, 0.18,
+              -0.6 + 0.08 * k, 0.6)
+    for k, m in enumerate((81, 85, 88, 93)):                    # the motif, now in tune and warm
+        S.add(inst_mallet(m, 0.62 - 0.05 * k, sr, "celesta"), t_arr + 0.35 + 0.3 * k, 0.26, -0.2 + 0.15 * k, 0.6)
+        S.ev(t_arr + 0.35 + 0.3 * k, "celesta", m)
+
+
 _CUE_FN = {"doom": _cue_doom, "sneaky": _cue_sneaky, "ai_calm": _cue_ai_calm,
            "tension": _cue_tension, "beg": _cue_beg, "heart": _cue_heart, "resolve": _cue_resolve,
            "chill": _cue_chill, "panic": _cue_panic, "awkward": _cue_awkward, "chaos": _cue_chaos,
            "corporate": _cue_corporate, "ominous": _cue_ominous, "ominous_dark": _cue_ominous_dark,
-           "ominous_warm": _cue_ominous_warm, "bond": _cue_bond, "reveal": _cue_reveal}
+           "ominous_warm": _cue_ominous_warm, "bond": _cue_bond, "reveal": _cue_reveal,
+           "lonely": _cue_lonely, "lullaby": _cue_lullaby}
 
 
 def parse_cue(name):

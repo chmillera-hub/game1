@@ -492,6 +492,29 @@ def W(base, amp=0.0, ph=0.0, a2=0.0, ph2=0.0, r=0):
     return ("~", base, amp, ph, a2, ph2, r)
 
 
+def K(*keys):
+    """Keyframed value for cycle tables: K((phase, value), ...) with phases 0..1, eased
+    between keys (smoothstep), wrapping from the last key back to the first.  Use it for
+    asymmetric cycles (a punch: slow wind-up, fast strike)."""
+    return ("k", tuple(sorted(keys)))
+
+
+def _keyval(keys, p):
+    n = len(keys)
+    if p < keys[0][0]:
+        p += 1.0
+    for i in range(n):
+        p0, v0 = keys[i]
+        p1, v1 = keys[(i + 1) % n]
+        if i == n - 1:
+            p1 += 1.0
+        if p0 <= p <= p1:
+            if p1 - p0 < 1e-9:
+                return v1
+            return v0 + (v1 - v0) * smoothstep((p - p0) / (p1 - p0))
+    return keys[-1][1]
+
+
 def A(side, p=None, o=None, e=None, eo=None, w=None, h=None, **kw):
     d = {}
     for k, v in (("p", p), ("o", o), ("e", e), ("eo", eo), ("w", w), ("h", h)):
@@ -542,6 +565,7 @@ POSE_DEFAULTS = dict(
     lean=0.0, chest=0.0, side=0.0, twist=0.0, hip_roll=0.0, hunch=0.0, neck=0.0, nod=0.0,
     tilt=0.0, head_yaw=0.0, breath=1.0, sway=1.0, posture=1.0, coat_trail=0.0,
     hold=0.0, hold_order=0.0, controller=0.0, counter=0.0,
+    hand_top=0.0, head_face=0.0, hold_hand=1.0, pillow=0.0,
 )
 for _s in "lr":
     POSE_DEFAULTS.update({f"a{_s}_p": 0.05, f"a{_s}_o": 0.1, f"a{_s}_e": 0.2, f"a{_s}_eo": 0.0,
@@ -588,8 +612,9 @@ POSES = {
               hunch=0.7, nod=0.08, neck=0.1),
     "facepalm": P(HK("r", -6, -28, "flat", layer="front", wa=-1.9, wabs=0.8),
                   A("l", 0.02, 0.06, 0.15), nod=0.22, tilt=-0.1, hunch=0.4, neck=0.2),
-    "shrug": P(A("l", 0.05, 0.2, 1.75, 0.45, -0.25, h="open", tf=-1.0),
-               A("r", 0.05, 0.2, 1.75, 0.45, -0.25, h="open", tf=-1.0), hunch=1.0, tilt=0.12),
+    "shrug": P(A("l", 0.1, 0.3, 1.6, 0.8, -0.3, h="open", tf=-1.0),
+               A("r", 0.1, 0.3, 1.6, 0.8, -0.3, h="open", tf=-1.0), hunch=1.5, tilt=0.13, nod=0.04,
+               neck=-0.04),
     "point": P(A("r", 0.3, 1.3, 0.06, 0.0, 0.0, h="point", tf=1.0), A("l", 0.02, 0.06, 0.15),
                side=-0.03, turn=0.25),
     "hold_arm": P(A("l", 0.12, -0.1, 0.95, -1.0, 0.0, h="relaxed"),
@@ -769,11 +794,121 @@ CYCLES = {
                                  nod=W(0.05, 0.01, 0.0))),
 }
 
+# ---------------------------------------------------------------------------
+# Episode 2 poses
+# ---------------------------------------------------------------------------
+# punches use the l arm: the NEAR arm when turn > 0 (use flip=True to face left)
+_PUNCH_WIND = P(A("l", -0.8, 0.18, 2.15, -0.1, 0.2, h="fist", tf=1.0),
+                A("r", 0.75, 0.3, 1.5, -0.6, -0.1, h="fist", tf=1.0),
+                L("r", 0.34, 0.1, 0.32, -0.02), L("l", -0.26, 0.1, 0.5, 0.3),
+                twist=-0.5, lean=-0.12, side=0.05, hunch=0.6, nod=0.12, neck=0.05, sway=0.2)
+_PUNCH = P(A("l", 1.52, 0.04, 0.03, -0.04, 0.0, h="fist", tf=1.0),
+           A("r", 0.45, 0.3, 1.75, -0.6, -0.2, h="fist", tf=1.0),
+           L("r", 0.44, 0.1, 0.42, -0.02), L("l", -0.32, 0.1, 0.12, 0.3),
+           twist=0.42, lean=0.26, chest=0.06, side=-0.04, hunch=0.35, nod=0.06, neck=0.1, sway=0.2)
+_GUARD = P(A("l", 0.4, 0.22, 1.8, -0.5, -0.2, h="fist", tf=1.0),
+           A("r", 0.5, 0.22, 1.7, -0.5, -0.2, h="fist", tf=1.0),
+           L("r", 0.3, 0.1, 0.3, -0.02), L("l", -0.26, 0.1, 0.32, 0.3),
+           lean=0.06, hunch=0.5, nod=0.06, sway=0.4)
+_CRATE_LEGS = P(L("l", 1.78, 0.2, 1.3, -0.46), L("r", 1.72, 0.14, 1.24, -0.46))
+_LIE_F = dict(plant=1.0, plant_all=1.0, turn=1.45, rot=math.pi / 2, head_face=1.0, tilt=0.0, nod=0.0,
+              neck=-0.6, lean=0.0, chest=-0.12, hunch=0.15, sway=0.0, breath=0.55, posture=0.0, pillow=48.0)
+POSES.update({
+    "sit_crate": P(_CRATE_LEGS,
+                   A("l", 0.3, 0.16, 1.05, -0.5, -0.75, h="relaxed"),
+                   A("r", 0.28, 0.16, 1.1, -0.5, -0.8, h="relaxed"), plant=1.0,
+                   lean=0.5, chest=0.16, hunch=0.65, neck=0.32, nod=0.34, tilt=0.04, sway=0.4, breath=0.8,
+                   ),
+    "punch_wind": _PUNCH_WIND,
+    "punch": _PUNCH,
+    "guard_fists": _GUARD,
+    "haul": P(IK("l", 0.035, 0.94, 0.47, "grip", wa=-1.0, wabs=0.45, bend=1.0),
+              IK("r", 0.035, 0.96, 0.48, "grip", wa=-1.0, wabs=0.45, bend=1.0),
+              L("l", 0.62, 0.16, 0.2, -0.3), L("r", -0.38, 0.12, 0.7, 0.35),
+              lean=-0.55, chest=-0.05, hunch=0.9, neck=0.18, nod=0.2, tilt=0.05, side=0.02,
+              sway=0.0, posture=0.3),
+    "lie_front": P(_LIE_F,
+                   A("l", 2.8, 0.3, 0.95, -0.25, 0.3, h="relaxed", layer="mid"),
+                   A("r", 2.9, 0.3, 0.75, -0.2, 0.2, h="relaxed", layer="back"),
+                   L("l", 0.02, 0.06, 0.1, -1.25), L("r", -0.06, 0.09, 0.22, -1.25)),
+    "flop": P(plant=1.0, turn=1.45, rot=0.78, head_face=0.55, lean=0.04, chest=-0.04, hunch=0.3,
+              neck=-0.25, nod=-0.1, tilt=0.0, sway=0.0, posture=0.1, pillow=24.0,
+              **A("l", 2.0, 0.3, 0.3, -0.1, 0.0, h="open", layer="mid"),
+              **A("r", 2.15, 0.3, 0.35, -0.1, 0.0, h="open", layer="back"),
+              **L("l", 0.05, 0.06, 0.1, -0.35), **L("r", -0.4, 0.08, 0.35, -0.6)),
+    "hand_out": P(A("r", 0.92, 0.16, 0.42, -0.12, -0.12, h="cup", tf=-1.0),
+                  A("l", 0.02, 0.06, 0.18), hold=1.0, hold_order=1.0, lean=0.1, nod=0.04, tilt=0.03,
+                  hunch=0.3, **L("r", 0.12, k=0.08)),
+})
+
+
+def _keyed_cycle(period, base, keyposes, const=None):
+    """Cycle table from static pose tables keyed at phases: [(phase, table), ...]."""
+    tabs = [(ph, dict(POSE_DEFAULTS, **tb)) for ph, tb in keyposes]
+    out = {}
+    for k in tabs[0][1]:
+        vals = [(ph, tb[k]) for ph, tb in tabs]
+        if isinstance(vals[0][1], str):
+            out[k] = vals[0][1]
+        elif any(abs(v - vals[0][1]) > 1e-9 for _, v in vals):
+            out[k] = K(*vals)
+        else:
+            out[k] = vals[0][1]
+    out.update(const or {})
+    return (period, base, out)
+
+
+CYCLES.update({
+    # upright crouch sneak: knees bent, torso upright, arms close (NOT butt-up)
+    "sneak": (1.3, "stand", P(L("l", W(0.34, 0.3, 0.0), 0.1, W(0.74, 0.55, 0.22, r=1), W(0.4, 0.3, 0.5)),
+                              L("r", W(0.34, 0.3, 0.5), 0.1, W(0.74, 0.55, 0.72, r=1), W(0.4, 0.3, 0.0)),
+                              A("l", W(0.12, 0.07, 0.5), 0.08, 1.35, -0.45, -0.55, h="relaxed"),
+                              A("r", W(0.12, 0.07, 0.0), 0.08, 1.35, -0.45, -0.55, h="relaxed"),
+                              lean=0.1, chest=0.0, hunch=0.6, neck=0.12, nod=-0.04, lift=W(0, 0, 0, 4, 0.1),
+                              twist=W(0, 0.05, 0.5), sway=0.0)),
+    # one-shot style punch: guard -> wind-up (0.40) -> strike lands at phase 0.52 -> recover
+    "punch_cycle": _keyed_cycle(1.2, "stand", [(0.0, _GUARD), (0.4, _PUNCH_WIND), (0.52, _PUNCH),
+                                               (0.75, _PUNCH)], {"sway": 0.0}),
+    # straining on the lever: small trembles on top of "haul"
+    "haul_strain": (0.36, "haul", P(lean=W(-0.3, 0.02, 0.0), tilt=W(0.05, 0.025, 0.25), dx=W(0, 2.0, 0.5),
+                                    hunch=W(0.85, 0.05, 0.1), nod=W(0.12, 0.02, 0.4))),
+    # small bent-elbow wave at chest height (palm out)
+    "wave_small": (0.7, "stand", P(A("r", 0.3, 0.52, 1.55, W(-0.5, 0.28, 0.0), W(0.0, 0.25, 0.1),
+                                     h="open", tf=-1.0),
+                                   A("l", 0.02, 0.06, 0.18), tilt=W(0.05, 0.02, 0.0), hunch=0.3,
+                                   side=-0.02)),
+    # thumbing a phone held in both hands, seated (chair / bed edge height SEAT_H)
+    "phone_thumb": (0.42, "sit_chair", P(IK("l", 0.06, "seat+0.2", 0.22, "grip", layer="front", wa=-1.3,
+                                            wabs=0.7),
+                                         IK("r", 0.06, "seat+0.2", 0.22, "grip", layer="front", wa=-1.3,
+                                            wabs=0.7),
+                                         {"al_thumb": W(0, 0.25, 0.0), "ar_thumb": W(0, 0.25, 0.43)},
+                                         lean=0.28, chest=0.08, hunch=0.6, neck=0.42, nod=0.18, hold=2.0)),
+    # lying face-down, near hand out by the face thumbing a phone (hold "l" = near hand)
+    "phone_thumb_lie": (0.42, "lie_front", P(A("l", 2.85, 0.35, 1.25, -0.3, 0.0, h="grip", layer="mid"),
+                                             {"al_thumb": W(0, 0.3, 0.0)}, hold=1.0, hold_hand=-1.0)),
+    # confident stride (hood over the eyes): chin up, chest out, loose bigger arm swing
+    "walk_eyes_closed": (1.05, "stand", P(L("l", W(0.0, 0.47, 0.0), 0.04, W(0.06, 0.82, 0.22, r=1),
+                                            W(0.02, 0.28, 0.02)),
+                                          L("r", W(0.0, 0.47, 0.5), 0.04, W(0.06, 0.82, 0.72, r=1),
+                                            W(0.02, 0.28, 0.52)),
+                                          A("l", W(0.04, 0.44, 0.5), 0.12, W(0.32, 0.16, 0.5)),
+                                          A("r", W(0.04, 0.44, 0.0), 0.12, W(0.32, 0.16, 0.0)),
+                                          twist=W(0.0, 0.1, 0.5), hip_roll=W(0.0, 0.0, 0.0, 0.04, 0.0),
+                                          lean=0.0, chest=-0.07, nod=W(-0.14, 0.0, 0.0, 0.03, 0.1),
+                                          neck=-0.05, posture=0.35, sway=0.0, coat_trail=0.2)),
+})
+
 # Per-character pose tweaks: (who, pose) -> overrides merged on top.
 POSE_WHO = {
     ("tired", "hands_pockets"): P(A("l", 0.32, 0.2, 0.95, -1.05, hide=1.0),
                                   A("r", 0.32, 0.2, 0.95, -1.05, hide=1.0), hunch=0.6),
     ("boss", "stand"): P(_HANDS_BACK),
+    # Episode 2: the Boss walks with her hands still clasped behind her back (no arm swing);
+    # in other cycles the clasp no longer leaks in (it made hands flip behind her back)
+    **{("boss", c): P(_HANDS_BACK) for c in ("walk", "walk_eyes_closed", "sneak", "tiptoe")},
+    **{("boss", c): {"al_eo": 0.0, "ar_eo": 0.0, "al_layer": "", "ar_layer": ""}
+       for c in ("run", "run_panic", "scream_run", "crawl", "stumble", "shake_arms")},
     ("guard", "stand"): P(A("l", 0.05, 0.16, 0.25), A("r", 0.05, 0.16, 0.25)),
 }
 
@@ -792,8 +927,11 @@ _STR_KEYS = ("al_layer", "ar_layer")
 
 
 def _eval(v, phase):
-    if isinstance(v, tuple) and v and v[0] == "~":
-        return _wave(phase, *v[1:])
+    if isinstance(v, tuple) and v:
+        if v[0] == "~":
+            return _wave(phase, *v[1:])
+        if v[0] == "k":
+            return _keyval(v[1], phase)
     return v
 
 
@@ -804,16 +942,31 @@ def _overlay(d, table, phase):
         d[k] = _eval(v, phase)
 
 
+def _ik_layer_reset(d, table):
+    """An arm the table drives by IK forgets a layer inherited from its base (e.g. the
+    Boss's hands-behind-back stand leaking 'back' into wring_hands); Episode 2 fix."""
+    for s_ in "lr":
+        if f"a{s_}_ik" in table and f"a{s_}_layer" not in table:
+            d[f"a{s_}_layer"] = ""
+
+
 def _pose_raw(spec, who, pt):
     """Resolve one pose spec (name / dict) into a flat dict (hand names kept)."""
     if isinstance(spec, dict):
         d = _pose_raw(spec.get("base", "stand"), who, pt)
-        _overlay(d, spec, (pt / spec.get("period", STATIC_PERIOD)) % 1.0)
+        _ik_layer_reset(d, spec)
+        # waves in a dict use its own "period", else the base cycle's period (Episode 2),
+        # else STATIC_PERIOD
+        per = spec.get("period", d.get("_cycle", STATIC_PERIOD))
+        _overlay(d, spec, (pt / per) % 1.0)
+        if "period" in spec and "_cycle" not in d:
+            d["_cycle"] = spec["period"]
         return d
     name = spec
     if name in CYCLES:
         period, base, table = CYCLES[name]
         d = _pose_raw(base, who, pt)
+        _ik_layer_reset(d, table)
         _overlay(d, table, (pt / period) % 1.0)
         d["_cycle"] = period
     else:
@@ -937,8 +1090,54 @@ def _ang_lerp(a, b, k):
     return a + d * k
 
 
-def _solve(C, Q, who, turn, t, fx, headphones, lag_Q=None):
-    """Skeleton in rig-local 2D (ground origin, y down). Returns dict J."""
+def _leg_low(C, Q, s_, sgn, p):
+    """Lowest foot/knee point (body y, down) of one leg for thigh pitch p, hip at the pelvis."""
+    k, o = Q[f"l{s_}_k"], Q[f"l{s_}_o"]
+    kn = _dir(p, o, sgn)
+    kn_y = kn[1] * C["thigh"]
+    q = p - k
+    an_y = kn_y + _dir(q, o + Q[f"l{s_}_ko"], sgn)[1] * C["shin"]
+    fp = q + Q[f"l{s_}_a"]
+    so_y = an_y + math.cos(fp) * C["foot_h"]
+    toe_y = so_y - math.sin(fp) * C["foot_len"] * 0.72
+    heel_y = so_y + math.sin(fp) * C["foot_len"] * 0.28
+    return max(so_y, toe_y, heel_y, kn_y + C["leg_r"][1])
+
+
+def _floor_legs(C, Q, phi):
+    """Side-on floor sits (plant_butt): raise the legs so heels and butt share the floor line.
+
+    In front views the feet stay lower than the butt (the floor recedes toward camera, the
+    Episode 1 look); from |turn| ~0.3 up to ~0.8 the legs are progressively laid on the floor."""
+    pb = Q["plant_butt"]
+    if pb <= 0.01:
+        return
+    fl = pb * smoothstep((abs(math.sin(phi)) - 0.2) / 0.42)
+    if fl <= 0.01:
+        return
+    target = C["leg_r"][0] * 0.95
+    for s_, sgn in (("l", -1), ("r", 1)):
+        p0 = Q[f"l{s_}_p"]
+        if _leg_low(C, Q, s_, sgn, p0) <= target:
+            continue
+        lo, hi = p0, p0 + 1.3
+        if _leg_low(C, Q, s_, sgn, hi) > target:
+            p1 = hi
+        else:
+            for _ in range(14):
+                mid = (lo + hi) * 0.5
+                if _leg_low(C, Q, s_, sgn, mid) > target:
+                    lo = mid
+                else:
+                    hi = mid
+            p1 = hi
+        Q[f"l{s_}_p"] = lerp(p0, p1, fl)
+
+
+def _solve(C, Q, who, turn, t, fx, headphones, lag_Q=None, reach=None):
+    """Skeleton in rig-local 2D (ground origin, y down). Returns dict J.
+
+    reach: {side: (x, y, w, ang|None)} rig-local world-space hand targets (Episode 2)."""
     H = C["height"]
     sp = C["spine"]
     leglen = C["thigh"] + C["shin"] + C["foot_h"]
@@ -949,6 +1148,7 @@ def _solve(C, Q, who, turn, t, fx, headphones, lag_Q=None):
     seed = C["seed"]
     br = Q["breath"] * math.sin(TAU * t / 3.7 + seed)
     lean, chest, side, hunch = Q["lean"], Q["chest"], Q["side"], Q["hunch"]
+    _floor_legs(C, Q, phi)
 
     # ---- spine (body frame, pelvis at origin)
     P0 = (0.0, 0.0, 0.0)
@@ -986,6 +1186,11 @@ def _solve(C, Q, who, turn, t, fx, headphones, lag_Q=None):
                  fp=fp)
         legs[s_] = g
         lowest = max(lowest, g["sole"][1], g["toe"][1], g["heel"][1], g["knee"][1] + C["leg_r"][1])
+    # seat / rear volume reduction for bent, crouched and seated poses (no butt emphasis)
+    pmax = max(Q["ll_p"], Q["lr_p"])
+    J["seat_flat"] = max(smoothstep((lean - 0.12) / 0.5), 0.75 * smoothstep((pmax - 0.6) / 0.6))
+    for g in legs.values():
+        g["sf"] = J["seat_flat"]
     # ---- torso nodes
     nodes = dict(hem=pr(hem), pel=pr(P0), wst=pr_w(wst), chs=pr_c(chs), shl=pr_s(shl), nck=pr_s(nck),
                  hpv=pr_s(hpv))
@@ -1014,8 +1219,13 @@ def _solve(C, Q, who, turn, t, fx, headphones, lag_Q=None):
     if Q["plant_all"] > 0:
         hc = _rot(0.0, -C["head"]["chin"] * C["head"]["pivot"], rot)
         hp2 = nodes["hpv"]
-        lowest = max(lowest, hp2[1] + hc[1] + 105, nodes["pel"][1] + C["tw"]["hip"][0] * 0.9,
-                     nodes["shl"][1] + C["tw"]["shoulder"][0] * 0.9)
+        cph, sph = abs(math.cos(phi)), abs(math.sin(phi))
+
+        def thick(k):    # projected half-thickness of the torso (profile-aware)
+            a_, f_, b_ = C["tw"][k]
+            return math.hypot(a_ * 0.9 * cph, max(f_, b_) * 0.95 * sph)
+        lowest = max(lowest, hp2[1] + hc[1] + 105 - Q["pillow"], nodes["pel"][1] + thick("hip"),
+                     nodes["shl"][1] + thick("shoulder"))
 
     # ---- ground lock
     lock_dy = -lowest
@@ -1042,7 +1252,10 @@ def _solve(C, Q, who, turn, t, fx, headphones, lag_Q=None):
     fdir = 1.0 if tq >= -0.001 else -1.0
     J["fdir"] = fdir
     hd = C["head"]
-    psi = clamp(tq + tw / TURN_RAD + Q["head_yaw"] + fx["head_turn"], -1.6, 1.6) * HEAD_TURN_RAD
+    psi = clamp(tq + tw / TURN_RAD + Q["head_yaw"] + fx["head_turn"], -1.6, 1.6)
+    if Q["head_face"] > 0:      # face the camera regardless of the body turn (lie_front, flop)
+        psi = lerp(psi, clamp(fx["head_turn"], -1.6, 1.6), clamp(Q["head_face"]))
+    psi *= HEAD_TURN_RAD
     tilt = (Q["tilt"] + fx["head_tilt"] + rot + side * 0.5
             + (lean + chest + Q["neck"]) * math.sin(phi) * 0.35
             + Q["sway"] * 0.022 * noise1(t * 0.27, seed + 3))
@@ -1104,6 +1317,9 @@ def _solve(C, Q, who, turn, t, fx, headphones, lag_Q=None):
             Ei, Wi = _ik3(S3, T3, C["arm"][0], C["arm"][1], pole)
             E3 = _lerp3(E3, Ei, ik)
             W3 = _lerp3(W3, Wi, ik)
+        rc_ = reach.get(s_) if reach else None
+        if rc_ is not None and rc_[2] > 0.001:
+            E3, W3 = _reach_ik(C, Q, s_, sgn, S3, E3, W3, rc_, proj, lift)
         Ep, Wp = proj(E3), proj(W3)
         if ik > 0.001:
             dxp, dyp = Wp[0] - Ep[0], Wp[1] - Ep[1]
@@ -1115,11 +1331,57 @@ def _solve(C, Q, who, turn, t, fx, headphones, lag_Q=None):
             wa = Q[f"a{s_}_wa"]
             abs_ang = wa if fdir > 0 else math.pi - wa
             ang = _ang_lerp(ang, abs_ang, wabs)
+        if rc_ is not None and rc_[2] > 0.001:
+            if rc_[3] is not None:
+                r_ang = rc_[3]
+            else:
+                r_ang = math.atan2(Wp[1] - Ep[1], Wp[0] - Ep[0])
+            ang = _ang_lerp(ang, r_ang, rc_[2])
         a["E3f"], a["W3f"] = E3, W3
         a["E2"], a["W2"], a["ang"], a["zE"], a["zW"] = (Ep[0], Ep[1]), (Wp[0], Wp[1]), ang, Ep[2], Wp[2]
     J["Q"] = Q
     J["lag"] = lag_Q
     return J
+
+
+def _reach_ik(C, Q, s_, sgn, S3, E3, W3, rc, proj, lift):
+    """World-space reach: put the hand's GRIP point on the rig-local 2D target (x, y).
+
+    The depth is kept near the pose's own hand depth (clamped so the arm can reach), the
+    target is clamped to the arm length, elbows bend naturally via the pose's `bend` pole."""
+    tx, ty, w, rang = rc
+    L1, L2 = C["arm"]
+    Lmax = (L1 + L2) * 0.985
+    Sp = proj(S3)
+    Wp0 = proj(W3)
+    hv = Q[f"a{s_}_h"]
+    hs = C["hand"]
+    ys = (-1.0 if s_ == "l" else 1.0) * (1.0 if Q[f"a{s_}_tf"] >= 0 else -1.0)
+    gx_, gy_ = hv[2] * hv[0] * hs, ys * hv[3] * hs      # grip offset in the hand frame
+    bend = Q[f"a{s_}_bend"]
+    pole = (sgn * 0.6 * bend, 0.75, -0.5 + 0.4 * max(0.0, -bend))
+    dx, dy = tx - Sp[0], ty - Sp[1]
+    a0 = rang if rang is not None else math.atan2(dy, dx)
+    wx = tx - (math.cos(a0) * gx_ - math.sin(a0) * gy_)
+    wy = ty - (math.sin(a0) * gx_ + math.cos(a0) * gy_)
+    Ei = Wi = None
+    for _ in range(2):
+        ddx, ddy = wx - Sp[0], wy - Sp[1]
+        dd = math.hypot(ddx, ddy)
+        if dd > Lmax:
+            wx, wy = Sp[0] + ddx * Lmax / dd, Sp[1] + ddy * Lmax / dd
+            zt = Sp[2]
+        else:
+            rem = math.sqrt(Lmax * Lmax - dd * dd)
+            zt = Sp[2] + clamp(Wp0[2] - Sp[2], -0.7 * rem, 0.7 * rem)
+        Ei, Wi = _ik3(S3, lift(wx, wy, zt), L1, L2, pole)
+        if rang is not None:
+            break
+        Ep_, Wp_ = proj(Ei), proj(Wi)
+        a1 = math.atan2(Wp_[1] - Ep_[1], Wp_[0] - Ep_[0])
+        wx = tx - (math.cos(a1) * gx_ - math.sin(a1) * gy_)
+        wy = ty - (math.sin(a1) * gx_ + math.cos(a1) * gy_)
+    return _lerp3(E3, Ei, w), _lerp3(W3, Wi, w)
 
 
 def _cup_positions(C, J, hp):
@@ -1338,12 +1600,15 @@ def _draw_leg(ctx, C, col, g, inkw, other=None, k0=0.0):
     _draw_shoe(ctx, C, col, g, inkw)
     rr = C["leg_r"]
     pk = clamp(1.0 + g["knee"][2] * 0.0012, 0.9, 1.25)
-    rr = (rr[0], rr[1] * pk, rr[2] * clamp(1.0 + g["ankle"][2] * 0.0012, 0.9, 1.2))
+    sf = g.get("sf", 0.0)
+    rr = (rr[0] * (1.0 - 0.16 * sf), rr[1] * pk, rr[2] * clamp(1.0 + g["ankle"][2] * 0.0012, 0.9, 1.2))
+    rp = rr[0] * (1.05 - 0.12 * sf)
+
     def build(d):
         _leg_path(ctx, C, g, rr, k0, d)
         if other is not None:    # pelvis piece joins this (near) leg with the hips
             h0, h1 = g["hip"], other["hip"]
-            _capsule(ctx, h0[0], h0[1] - 6, rr[0] * 1.05 + d, h1[0], h1[1] - 6, rr[0] * 1.05 + d)
+            _capsule(ctx, h0[0], h0[1] - 6, rp + d, h1[0], h1[1] - 6, rp + d)
     _ink_fill(ctx, build, col["pants"], inkw)
     # cuff band at the ankle (sweatpants elastic / trousers hem)
     kn, an = g["knee"], g["ankle"]
@@ -1454,9 +1719,12 @@ def _torso_geom(C, J):
             up_from, up_to = nd["hem"], nd["pel"]
         tx, ty = _norm(up_to[0] - up_from[0], up_to[1] - up_from[1])
         nx, ny = -ty, tx
-        if ny > 0.9 or (abs(nx) < 1e-6 and abs(ny) < 1e-6):
+        if abs(nx) < 1e-6 and abs(ny) < 1e-6:     # (Ep2 fix: a horizontal spine is valid)
             nx, ny = 1.0, 0.0
         a, f, b = tw[wk]
+        sf = J.get("seat_flat", 0.0)
+        if sf > 0 and wk in ("hem", "hip", "waist"):
+            b *= 1.0 - {"hem": 0.4, "hip": 0.36, "waist": 0.15}[wk] * sf
         if wk == "chest":
             a += J["Q"]["breath"] * 1.2 * math.sin(TAU * J["t"] / 3.7 + C["seed"])
         fr = f if s >= 0 else b
@@ -1566,6 +1834,8 @@ def _coat_tails(ctx, C, col, J, inkw, part):
         dy = d3[1]
         dx = dx * 0.8 - fd * trail * 0.55
         dx, dy = _norm(dx, max(0.35, dy))
+        if J["rot"]:                # tails follow the body roll (lying / tipping poses)
+            dx, dy = _rot(dx, dy, J["rot"])
         top_o = _pt(lv, "hem", u, 2)
         top_i = _front(lv, "hem", sgn * C["tw"]["hem"][0] * 0.16, 2)
         out[s_] = (top_o, top_i, (dx, dy))
@@ -1630,7 +1900,8 @@ def _torso_details(ctx, C, col, J, lv, top, inkw, t):
     ink = PAL["ink"]
     thin = inkw * 0.7
     aw = C["tw"]["waist"][0]
-    pocket = _front(lv, "chest", C["tw"]["chest"][0] * 0.5, 22)
+    ps = J.get("_pocket_sgn", 1.0)      # chest pocket side: +1 screen-right (default), -1 left
+    pocket = _front(lv, "chest", ps * C["tw"]["chest"][0] * 0.5, 22)
     if top == "hoodie":
         # hem band
         _shape(ctx, [_pt(lv, "hem", -1.2, -4), _pt(lv, "hem", 1.2, -4), _pt(lv, "hem", 1.2, 20),
@@ -1647,7 +1918,7 @@ def _torso_details(ctx, C, col, J, lv, top, inkw, t):
             ctx.move_to(*a0)
             _qcurve(ctx, a0, c0, a1)
             _stroke(ctx, ink, thin)
-        pocket = _front(lv, "chest", C["tw"]["chest"][0] * 0.45, 26)
+        pocket = _front(lv, "chest", ps * C["tw"]["chest"][0] * 0.45, 26)
     elif top == "polo":
         # placket + buttons
         a0, a1 = _front(lv, "shoulder", -9, 8), _front(lv, "chest", -9, -8)
@@ -1683,7 +1954,7 @@ def _torso_details(ctx, C, col, J, lv, top, inkw, t):
             c = _front(lv, "chest", sgn * g_top * 0.95, -16)
             _shape(ctx, [a, b, c], col["top_dk"] if sgn > 0 else col["top"], thin)
         # breast pocket (wearer's left = screen right) with pens
-        pc = _front(lv, "chest", aw * 0.66, 4)
+        pc = _front(lv, "chest", ps * aw * 0.66, 4)
         pw, ph = 22, 24
         n, tt = lv["chest"]["n"], lv["chest"]["t"]
 
@@ -1718,7 +1989,7 @@ def _torso_details(ctx, C, col, J, lv, top, inkw, t):
         ctx.move_to(*btn)
         ctx.line_to(h0[0] - 6, h0[1] + 6)
         _stroke(ctx, ink, thin)
-        pocket = _front(lv, "chest", C["tw"]["chest"][0] * 0.5, 14)
+        pocket = _front(lv, "chest", ps * C["tw"]["chest"][0] * 0.5, 14)
     elif top == "uniform":
         # placket
         a0, a1 = _front(lv, "shoulder", 0, 10), _front(lv, "hem", 0, 0)
@@ -1740,7 +2011,7 @@ def _torso_details(ctx, C, col, J, lv, top, inkw, t):
         bk = _front(lv, "hem", 0, 24)
         ctx.rectangle(bk[0] - 11, bk[1] - 8, 22, 16)
         _fs(ctx, "#c9ced8", 2.5)
-        pocket = _front(lv, "chest", 46, 22)
+        pocket = _front(lv, "chest", ps * 46, 22)
     elif top == "cardigan":
         g_top = C["neck_r"] * 1.0
         L0, R0 = _front(lv, "shoulder", -g_top, 14), _front(lv, "shoulder", g_top, 14)
@@ -1756,7 +2027,7 @@ def _torso_details(ctx, C, col, J, lv, top, inkw, t):
         bc = _front(lv, "chest", 44, 18)
         ctx.rectangle(bc[0] - 15, bc[1] - 7, 30, 14)
         _fs(ctx, "#ffffff", 2.5)
-        pocket = bc
+        pocket = bc if ps > 0 else _front(lv, "chest", -44, 18)
     return {"pocket": pocket}
 
 
@@ -2159,6 +2430,13 @@ def _draw_eye(ctx, C, col, cx, cy, ew, eh, ew0, sgn, E, inkw, power, hs, lashes)
         ctx.fill()
     if gap < 1.2:
         # closed: one lash line along the lid
+        if power > 0.02:     # sensing with the eyes closed: teal light along the lash line
+            ctx.move_to(xs[1], cy + low[1] + inkw * 0.75)
+            for i in range(2, 8):
+                ctx.line_to(xs[i], cy + low[i] + inkw * 0.75)
+            _set(ctx, alpha_ink(mixc(PAL["power"], "#ffffff", 0.3), 0.9 * clamp(power * 1.4)))
+            ctx.set_line_width(inkw * 0.75)
+            ctx.stroke()
         ctx.move_to(xs[0], cy + low[0])
         for i in range(1, 9):
             ctx.line_to(xs[i], cy + low[i])
@@ -2188,7 +2466,19 @@ def _draw_eye(ctx, C, col, cx, cy, ew, eh, ew0, sgn, E, inkw, power, hs, lashes)
     ri = r0 * E["iris"]
     kx = clamp(ew / max(1.0, ew0), 0.3, 1.0)
     ix = cx + E["lx"] * ew * 0.52 + E["yaw"] * ew0 * 0.12
-    iy = cy + E["ly"] * eh * (0.58 if E["ly"] > 0 else 0.42)
+    # Heavy lids (Episode 2): the iris settles toward the middle of the VISIBLE aperture so a
+    # level gaze reads as looking straight ahead (not down), and a down gaze keeps the pupil.
+    lo_ = E.get("lid_open", L)
+    heavy = smoothstep((lo_ - 0.22) / 0.4)
+    ly_ = E["ly"]
+    if heavy > 0.001:
+        edge = tops[4] + (bots[4] - tops[4]) * clamp(lo_)
+        lowc = bots[4] - (bots[4] - tops[4]) * clamp(lo) * 0.75
+        vis_mid = (edge + lowc) * 0.5
+        iy = cy + vis_mid * 0.42 * heavy
+        iy += ly_ * eh * ((0.58 * (1 - 0.45 * heavy)) if ly_ > 0 else 0.42)
+    else:
+        iy = cy + ly_ * eh * (0.58 if ly_ > 0 else 0.42)
     icol = col["iris"]
     if power > 0:
         icol = mixc(icol, PAL["power"], clamp(power * 1.3))
@@ -2224,6 +2514,17 @@ def _draw_eye(ctx, C, col, cx, cy, ew, eh, ew0, sgn, E, inkw, power, hs, lashes)
         ctx.fill()
         circle(ctx, ix + r0 * 0.3 * kx, iy + r0 * 0.3, max(1.0, hr * 0.42))
         ctx.fill()
+    tr = E.get("tears", 0.0)
+    if tr > 0.01:            # wet glisten pooling on the lower lid
+        ctx.move_to(xs[1], cy + low[1] - 1.5)
+        for i in range(2, 8):
+            ctx.line_to(xs[i], cy + low[i] - eh * 0.1 - 1.0)
+        _set(ctx, (0.86, 0.97, 1.0, 0.85 * clamp(tr * 1.5)))
+        ctx.set_line_width(max(2.0, eh * 0.2))
+        ctx.stroke()
+        circle(ctx, xs[5], cy + low[5] - eh * 0.16, max(1.4, eh * 0.09))
+        _set(ctx, (1, 1, 1, clamp(tr * 2)))
+        ctx.fill()
     ctx.restore()
     # lash line + lower line
     ctx.move_to(xs[0], cy + up[0])
@@ -2250,6 +2551,22 @@ def _draw_eye(ctx, C, col, cx, cy, ew, eh, ew0, sgn, E, inkw, power, hs, lashes)
         _set(ctx, alpha_ink(ink, 0.75))
         ctx.set_line_width(inkw * 0.55)
         ctx.stroke()
+
+
+def _draw_tear(ctx, Ev, sgn, k, inkw):
+    """A single tear: wells at the outer lower lid, then rolls down the cheek (k 0..1)."""
+    X, Y, ew, eh, kk, E = Ev
+    k = clamp(k)
+    x0 = X + sgn * ew * 0.55
+    y0 = Y + eh * 0.85
+    yy = y0 + smoothstep(clamp((k - 0.25) / 0.75)) * eh * 2.6
+    xx = x0 + sgn * (yy - y0) * 0.08
+    r = eh * (0.16 + 0.12 * smoothstep(k / 0.4))
+    if yy - y0 > 2:           # wet trail
+        ctx.move_to(x0, y0)
+        _qcurve(ctx, (x0, y0), (x0 + sgn * 1.5, (y0 + yy) / 2), (xx, yy - r))
+        _stroke(ctx, (0.86, 0.96, 1.0, 0.75), max(1.6, r * 0.6))
+    _drop(ctx, xx, yy, r, "#cdeeff", inkw * 0.8)
 
 
 def _draw_brow(ctx, cx, ytop, ew, sgn, B, color, th, blen, outline, inkw):
@@ -2532,7 +2849,14 @@ def resolve_face(who, expr="neutral", face=None):
     return F
 
 
-def _eye_params(F, side, blink, look, drift):
+# Gaze-driven lid follow (Episode 2 fix): looking down drops the upper lids, but the
+# droop is capped so heavy-lidded characters keep their irises visible.
+#   who -> (down gain, up gain, closure cap for the down droop)
+GAZE_LID = {"tired": (0.22, 0.22, 0.6), "boss": (0.2, 0.26, 0.64)}
+GAZE_LID_DEFAULT = (0.22, 0.3, 0.66)
+
+
+def _eye_params(F, side, blink, look, drift, who=None):
     g = lambda k: F.get(k, 0.0) + F.get(k + "_" + side, 0.0)
     lx = look[0] + g("look_x") + drift[0]
     ly = look[1] + g("look_y") + drift[1]
@@ -2541,15 +2865,25 @@ def _eye_params(F, side, blink, look, drift):
         lx += lk[0]
         ly += lk[1]
     lx, ly = clamp(lx, -1.25, 1.25), clamp(ly, -1.25, 1.25)
-    lid = g("lid") + 0.22 * max(0.0, ly) - 0.3 * max(0.0, -ly)
+    dn_gain, up_gain, cap = GAZE_LID.get(who, GAZE_LID_DEFAULT)
+    lid0 = g("lid")
+    droop = dn_gain * max(0.0, ly)
+    room = max(0.0, cap - max(0.0, lid0))
+    if room > 1e-4:        # soft cap: approaches `cap`, never passes it
+        droop = room * math.tanh(droop / room)
+    else:
+        droop = 0.0
+    lid = lid0 + droop - up_gain * max(0.0, -ly)
     wide = max(0.0, -lid)
     lid = clamp(lid)
+    lid_open = lid                      # lid without the blink (for iris placement)
     lid = lid + (1 - lid) * blink
-    return dict(lid=lid, wide=wide * (1 - blink), lid_ang=g("lid_ang"), lower=clamp(g("lower")),
+    return dict(lid=lid, lid_open=lid_open, wide=wide * (1 - blink), lid_ang=g("lid_ang"),
+                lower=clamp(g("lower")),
                 pupil=max(0.15, g("pupil")), iris=max(0.0, g("iris")), hl=max(0.0, g("hl")),
                 eye_size=max(0.5, g("eye_size")), lx=lx, ly=ly, focus=clamp(F["focus"]),
                 brow=(g("brow"), g("brow_ang"), g("brow_in"), g("brow_out")),
-                lidshade=F["lidshade"], bags=F["bags"])
+                lidshade=F["lidshade"], bags=F["bags"], blink=blink)
 
 
 def _head_xf(J, C, F):
@@ -2642,17 +2976,24 @@ def _draw_head(ctx, C, col, J, F, inkw, t, st):
     ey = hg.nod * 8
     look, drift, blink = st["look"], st["drift"], st["blink"]
     for side, sgn in (("l", -1), ("r", 1)):
-        E = _eye_params(F, side, blink, look, drift)
+        E = _eye_params(F, side, blink, look, drift, C.get("_who"))
         X, Z, k = hg.proj(sgn * hd["ex"], ey)
         ew0 = hd["ew"] * E["eye_size"]
         eh = hd["eh"] * E["eye_size"] * (1 + 0.42 * E["wide"])
         ew = ew0 * k * (1 + 0.12 * E["wide"])
         E["yaw"] = hg.s
+        E["tears"] = st.get("tears", 0.0)
+        if E["tears"] > 0:
+            E["hl"] += 0.45 * E["tears"]
         out["eye_" + side] = (X, ey)
         if k > 0.1:
             _draw_eye(ctx, C, col, X, ey, ew, eh, ew0, sgn, E, inkw, st["power"], 1.0,
                       C.get("sex") == "f")
         st["E_" + side] = (X, ey, ew, eh, k, E)
+    st["brow_lift"] = (max(0.0, st["E_l"][5]["brow"][0]), max(0.0, st["E_r"][5]["brow"][0]))
+    if st.get("tears", 0.0) > 0.7:
+        side = "l" if st["E_l"][4] > st["E_r"][4] else "r"
+        _draw_tear(ctx, st["E_" + side], -1 if side == "l" else 1, (st["tears"] - 0.7) / 0.3, inkw)
     # ---- nose, mouth, mustache
     out["nose"] = _draw_nose(ctx, C, col, hg, F, inkw)
     out["mouth"] = _draw_mouth(ctx, C, col, hg, F, inkw, t, opn, st["wide"])
@@ -2703,6 +3044,8 @@ def _draw_head(ctx, C, col, J, F, inkw, t, st):
         _draw_cap(ctx, C, col, hg, inkw)
     if hd["hair"] == "bun":
         _draw_headset(ctx, C, hg, inkw, out)
+    if st.get("hood", 0.0) > 0.0:
+        _hood_front(ctx, C, col, hg, st, inkw)
     # ---- sweat / heat
     if st["sweat"] > 0.01:
         _draw_sweat(ctx, C, hg, st["sweat"], t, inkw)
@@ -2759,27 +3102,50 @@ def _draw_glasses(ctx, C, hg, st, inkw, t):
         X, Y, ew, eh, k, E = st["E_" + side]
         rx = R * clamp(k * 1.05, 0.12, 1.0)
         lens[side] = (X, Y, rx, R, k)
-    # temples to the ears (only the visible near/side pieces)
+    # askew glasses (Episode 2): rotate the frame about the bridge, sag a little, offset.
+    gt = st.get("gtilt", 0.0)
+    gdx, gdy = st.get("gdx", 0.0), st.get("gdy", 0.0) + 12.0 * abs(gt)
+    (Xl0, Yl0, _, _, _), (Xr0, Yr0, _, _, _) = lens["l"], lens["r"]
+    pvx, pvy = (Xl0 + Xr0) / 2, (Yl0 + Yr0) / 2
+    cg, sg = math.cos(gt), math.sin(gt)
+
+    def G(x, y):
+        dx_, dy_ = x - pvx, y - pvy
+        return (pvx + dx_ * cg - dy_ * sg + gdx, pvy + dx_ * sg + dy_ * cg + gdy)
+    if gt or gdx or gdy:
+        for side in ("l", "r"):
+            X, Y, rx, R_, k = lens[side]
+            X, Y = G(X, Y)
+            lens[side] = (X, Y, rx, R_, k)
+    # temples to the ears (only the visible near/side pieces); the ear end stays put
     for side, sgn in (("l", -1), ("r", 1)):
         X, Y, rx, R_, k = lens[side]
         a, f, b = hg.abf(0)
         ex = sgn * a * hg.c - 0.12 * a * hg.s
         Z = -sgn * a * hg.s
         if Z > -60:
-            ctx.move_to(X + sgn * rx * 0.95, Y - R_ * 0.25)
+            ctx.move_to(X + sgn * rx * 0.95 * cg + R_ * 0.25 * sg, Y - R_ * 0.25 * cg + sgn * rx * 0.95 * sg)
             ctx.line_to(ex, -4)
             _stroke(ctx, gcol, inkw * 0.9)
     # bridge
     (Xl, Yl, rxl, _, _), (Xr, Yr, rxr, _, _) = lens["l"], lens["r"]
     bx = (Xl + rxl + Xr - rxr) / 2
-    ctx.move_to(Xl + rxl * 0.96, Yl - R * 0.2)
-    _qcurve(ctx, (Xl + rxl * 0.96, Yl - R * 0.2), (bx, Yl - R * 0.5), (Xr - rxr * 0.96, Yr - R * 0.2))
+    by_ = (Yl + Yr) / 2
+    p0 = (Xl + rxl * 0.96 * cg + R * 0.2 * sg, Yl - R * 0.2 * cg + rxl * 0.96 * sg)
+    p1 = (Xr - rxr * 0.96 * cg + R * 0.2 * sg, Yr - R * 0.2 * cg - rxr * 0.96 * sg)
+    ctx.move_to(*p0)
+    _qcurve(ctx, p0, (bx + R * 0.5 * sg, by_ - R * 0.5 * cg), p1)
     _stroke(ctx, gcol, inkw * 1.05)
     glint = st.get("glint", 0.0)
     for side in ("l", "r"):
         X, Y, rx, R_, k = lens[side]
         if k < 0.1:
             continue
+        if gt:
+            ctx.save()
+            ctx.translate(X, Y)
+            ctx.rotate(gt)
+            ctx.translate(-X, -Y)
         ellipse(ctx, X, Y, rx, R_)
         _set(ctx, (0.82, 0.92, 1.0, 0.16))
         ctx.fill_preserve()
@@ -2795,6 +3161,232 @@ def _draw_glasses(ctx, C, hg, st, inkw, t):
             ellipse(ctx, X, Y, rx, R_)
             _set(ctx, (1, 1, 1, 0.6 * glint))
             ctx.fill()
+        if gt:
+            ctx.restore()
+
+
+# ---------------------------------------------------------------------------
+# Tiredness's hood (Episode 2): hood 0 = down behind the neck, 1 = up and low over the eyes
+# ---------------------------------------------------------------------------
+# Front-view outline of the raised hood (head-local, right half, bottom -> crown).
+_HOOD_OUT = ((84, 118), (101, 84), (117, 44), (128, 0), (134, -46), (132, -92), (118, -134), (90, -168),
+             (48, -191), (0, -200))
+# Back shell (behind the head) in the lump's point order, see _hood_back.
+_HOOD_BACK = ((-100, 86), (-133, 0), (-134, -92), (-94, -170), (0, -205), (94, -170), (134, -92),
+              (133, 0), (100, 86), (62, 130), (0, 142), (-62, 130))
+
+
+def _hood_map(hg, x, y, dz=0.0, hang=False):
+    """Front-view hood point -> turned head-local point (like hg.warp, true widths below the
+    eye line unless hang=True: the hood's sides hang straight from the cheeks)."""
+    yy = min(y, 0.0) if hang else y
+    a, f, b = hg.abf(clamp(yy, hg.lv[0][0] + 2, hg.lv[-1][0]))
+    a = max(a, 40.0)
+    el, er = hg.ext(a, f, b)
+    u = x / a
+    side = er if u >= 0 else -el
+    if abs(u) >= 1.0:
+        return (u * side, y)
+    Xi = a * u * hg.c + (f * math.sqrt(1 - u * u) + dz) * hg.s
+    w = smoothstep((abs(u) - 0.55) / 0.45)
+    return (Xi + (u * side - Xi) * w, y)
+
+
+def _hood_scale(C):
+    return C["head"]["levels"][4][1] / 101.0
+
+
+def _hood_rim(C, u, nod):
+    """Rim centre y (head-local) and the eye-cover amount for hood state u."""
+    v = clamp((u - 0.4) / 0.6)
+    hd = C["head"]
+    end = hd["eh"] * 0.86 + 9 + nod * 8
+    yr = lerp(-152.0 * _hood_scale(C), end, smoothstep(v))
+    eye_top = nod * 8 - hd["eh"] * 1.1
+    cover = clamp((yr - eye_top) / (end - eye_top)) if v > 0 else 0.0
+    return yr, v, cover
+
+
+def _cr_mid(p0, p1, p2, p3, tension=0.55):
+    """Point halfway along the smooth_path bezier segment p1 -> p2."""
+    c1 = (p1[0] + (p2[0] - p0[0]) * tension / 3, p1[1] + (p2[1] - p0[1]) * tension / 3)
+    c2 = (p2[0] - (p3[0] - p1[0]) * tension / 3, p2[1] - (p3[1] - p1[1]) * tension / 3)
+    return ((p1[0] + 3 * c1[0] + 3 * c2[0] + p2[0]) / 8, (p1[1] + 3 * c1[1] + 3 * c2[1] + p2[1]) / 8)
+
+
+def _hinv(xf, X, Y):
+    """Rig-local point -> head-local (inverse of _hmap)."""
+    cx, cy, tl, sx, sy, yc = xf
+    rx, ry = _rot(X - cx, Y - cy, -tl)
+    return (rx / sx, yc + (ry - yc) / sy)
+
+
+def _lump_pts(C, J):
+    nk = J["nodes"]["nck"]
+    lv = J["_lv"]
+    n, t = lv["shoulder"]["n"], lv["shoulder"]["t"]
+    s = math.sin(J["phi"])
+    cx = nk[0] - n[0] * s * 22
+    cy = nk[1] - n[1] * s * 22
+    w = C["neck_r"] * 2.5
+    return [(cx - n[0] * w + t[0] * -14, cy - n[1] * w - t[1] * 14),
+            (cx - n[0] * w * 0.8 + t[0] * 26, cy - n[1] * w * 0.8 + t[1] * 26),
+            (cx + t[0] * 36, cy + t[1] * 36),
+            (cx + n[0] * w * 0.8 + t[0] * 26, cy + n[1] * w * 0.8 + t[1] * 26),
+            (cx + n[0] * w + t[0] * -14, cy + n[1] * w - t[1] * 14),
+            (cx, cy - t[1] * 10)]
+
+
+def _hood_back(ctx, C, col, J, xf, hg, u, inkw):
+    """Hood behind the head: grows from the neck lump (u=0) to a shell around the skull."""
+    lp = _lump_pts(C, J)
+    n = len(lp)
+    lump12 = []
+    for i in range(n):
+        lump12.append(lp[i])
+        lump12.append(_cr_mid(lp[i - 1], lp[i], lp[(i + 1) % n], lp[(i + 2) % n]))
+    lump12 = [_hinv(xf, *p) for p in lump12]
+    e = smoothstep(u / 0.5)
+    sc = _hood_scale(C)
+    bulk = -hg.s * 26.0
+    pts = []
+    for (lx, ly), (bx, by) in zip(lump12, _HOOD_BACK):
+        X, Y = _hood_map(hg, bx * sc, by * sc, hang=True)
+        back = (bx * hg.s < 0)
+        if back:
+            X += bulk * smoothstep((90 - by) / 120.0)
+        pts.append((lx + (X - lx) * e, ly + (Y - ly) * e))
+    _enter_head(ctx, xf)
+    _smooth(ctx, pts, True, 0.55)
+    _fs(ctx, col["top_dk"], lerp(inkw * 2, inkw, e))
+    ctx.restore()
+
+
+def _hood_front(ctx, C, col, hg, st, inkw):
+    """Raised hood over the head (head-local ctx). Hides hair/brows/eyes under the rim."""
+    u = st["hood"]
+    yr, v, cover = _hood_rim(C, u, hg.nod)
+    st["hood_rim"] = yr
+    st["hood_cover"] = cover
+    if v <= 0.0:
+        return
+    sc = _hood_scale(C)
+    side_k = smoothstep((v - 0.08) / 0.55)
+    bulk = -hg.s * 26.0
+    outer_r = [(x * sc, y * sc) for x, y in _HOOD_OUT]
+
+    def outer_w(y):
+        pts = outer_r
+        if y >= pts[0][1]:
+            return pts[0][0]
+        for i in range(1, len(pts)):
+            if y >= pts[i][1]:
+                y0, y1 = pts[i - 1][1], pts[i][1]
+                k = (y - y0) / (y1 - y0)
+                return pts[i - 1][0] + (pts[i][0] - pts[i - 1][0]) * k
+        return 0.0
+
+    def inner_w(y):
+        a, f, b = hg.abf(clamp(y, hg.lv[0][0] + 2, hg.lv[-1][0]))
+        if y > 100 * sc:
+            return 70 * sc
+        return max(a - 15 * sc, 54 * sc)
+
+    def ow(y):
+        return lerp(outer_w(y) - 1.5, min(inner_w(y), outer_w(y) - 1.5), side_k)
+
+    def MO(x, y):
+        X, Y = _hood_map(hg, x, y, hang=True)
+        if x * hg.s < 0:
+            X += bulk * smoothstep((90 - y) / 120.0)
+        return (X, Y)
+
+    def MI(x, y):
+        return _hood_map(hg, x, y, dz=6.0)
+    # ---- outer contour: right bottom -> crown -> left bottom
+    outer = [MO(x, y) for x, y in outer_r] + [MO(-x, y) for x, y in reversed(outer_r[:-1])]
+    # ---- opening: left bottom -> up -> rim -> right -> down
+    ycorner = yr + 12 * sc
+    ys = [y * sc for y in (118, 92, 66, 40, 14, -12, -40, -70, -100)]
+    ys = [y for y in ys if y > ycorner + 6]
+    droop = 5 * sc * smoothstep((v - 0.5) / 0.5)
+    brl = st.get("brow_lift", (0.0, 0.0))
+    rim = []
+    wc = ow(ycorner)
+    hd = C["head"]
+    for j in range(9):
+        q = -1 + 2 * j / 8.0
+        xx = q * wc * 0.96
+        yy = yr + droop * (1 - q * q) + (ycorner - yr) * q ** 4
+        # the rim lifts a hair over a raised brow (reads through the fabric)
+        for sgn, bl in ((-1, brl[0]), (1, brl[1])):
+            if bl > 0:
+                yy -= bl * 7 * sc * math.exp(-((xx - sgn * hd["ex"]) / (hd["ew"] * 1.2)) ** 2) * cover
+        rim.append((xx, yy))
+    inner = [MI(-ow(y), y) for y in ys] + [MI(x, y) for x, y in rim] + [MI(ow(y), y) for y in reversed(ys)]
+    shell = outer + inner
+    # ---- shadow over the upper face (inside the opening, under the rim)
+    if v > 0.25:
+        ctx.save()
+        _smooth(ctx, hg.outline(), True, 0.55)
+        ctx.clip()
+        k = smoothstep((v - 0.25) / 0.5)
+        g = cairo.LinearGradient(0, yr - 4, 0, yr + 70 * sc)
+        g.add_color_stop_rgba(0, 0.07, 0.06, 0.13, 0.62 * k)
+        g.add_color_stop_rgba(0.45, 0.07, 0.06, 0.13, 0.2 * k)
+        g.add_color_stop_rgba(1, 0.07, 0.06, 0.13, 0.0)
+        ctx.set_source(g)
+        ctx.paint()
+        ctx.set_source_rgba(0.07, 0.06, 0.13, 0.1 * k)
+        ctx.paint()
+        ctx.restore()
+    # ---- the shell
+    ctx.save()
+    _smooth(ctx, shell, True, 0.45)
+    ctx.clip_preserve()
+    _set(ctx, col["top"])
+    ctx.fill()
+    # soft fabric shading: darker toward the opening / far side, lighter crown
+    ctx.translate(10, 10)
+    _smooth(ctx, [MO(x * 0.9, y * 0.97 - 4) for x, y in outer_r[3:]] +
+            [MO(-x * 0.9, y * 0.97 - 4) for x, y in reversed(outer_r[3:-1])], True, 0.5)
+    _set(ctx, _lt(col["top"], 0.07))
+    ctx.fill()
+    ctx.translate(-10, -10)
+    # rolled hem along the opening
+    _smooth(ctx, inner, False, 0.45)
+    _set(ctx, col["top_dk"])
+    ctx.set_line_width(22 * sc)
+    ctx.stroke()
+    # centre seam from the crown to the rim
+    sp = [MI(0, y) for y in (-198 * sc, lerp(-198 * sc, yr, 0.5), yr - 10 * sc)] if yr > -150 * sc else []
+    if sp:
+        ctx.move_to(*sp[0])
+        _qcurve(ctx, sp[0], sp[1], sp[2])
+        _stroke(ctx, alpha_ink(PAL["ink"], 0.32), inkw * 0.55)
+    ctx.restore()
+    _smooth(ctx, shell, True, 0.45)
+    _stroke(ctx, PAL["ink"], inkw)
+    # inner hem line
+    _smooth(ctx, inner, False, 0.45)
+    _stroke(ctx, alpha_ink(PAL["ink"], 0.55), inkw * 0.5)
+    # sense glow leaking under the rim (power with the eyes covered)
+    pw = st["power"]
+    if pw > 0.01 and cover > 0.05:
+        for side, sgn in (("l", -1), ("r", 1)):
+            X, Y, ew, eh, kk, E = st["E_" + side]
+            if kk < 0.15:
+                continue
+            seg = []
+            for j in range(7):
+                xx = X + (j / 6.0 - 0.5) * ew * 2.1
+                ux = xx  # rim y at this screen x (rim is defined in front-view x; approximate)
+                q = clamp(ux / max(1.0, wc), -1, 1)
+                seg.append((xx, yr + droop * (1 - q * q) + 4.5 * sc))
+            ctx.move_to(*seg[0])
+            for q in seg[1:]:
+                ctx.line_to(*q)
+            _stroke(ctx, alpha_ink(mixc(PAL["power"], "#ffffff", 0.35), 0.85 * pw * cover), 3.2 * sc)
 
 
 def _draw_cap(ctx, C, col, hg, inkw):
@@ -3030,6 +3622,7 @@ def _char(who, outfit):
         c["_sleeve"] = ov.get("sleeve", base["sleeve"])
         c["_shoe"] = ov.get("shoe", base["shoe"])
         c["_pants"] = ov.get("pants", base["pants"])
+        c["_who"] = who
         _CHAR_CACHE[key] = c
     return c
 
@@ -3044,6 +3637,239 @@ def _arm_layer(Q, a, J, side):
     if a["zW"] > J["head"]["z"] + 30 and a["W2"][1] < J["head"]["pivot"][1] + 20:
         return "front"
     return "mid"
+
+
+# ---------------------------------------------------------------------------
+# Draw-order signatures (Episode 2: no hand z-order flicker)
+# ---------------------------------------------------------------------------
+# A signature is (layer_l, layer_r, top): the layer of each arm and which arm is drawn
+# last when both share a layer.  Within a layer, depth decides only when the hands are
+# clearly at different depths (ZTIE); near-equal depths use the pose's preference
+# (`hand_top`, default "r"), so tiny depth changes (breathing, IK rounding) never flip it.
+# In a blend (a, b, k) the order is pose a's until a switch point k* and pose b's after
+# it; k* is picked once per blend (cached) where the elements whose order changes are
+# farthest apart, so the order changes at most once and never while they overlap.
+_LAYER_IX = {"back": 0, "mid": 1, "front": 2}
+ZTIE = 24.0
+_SWITCH_CACHE = {}
+_SWITCH_KS = tuple(0.05 * i for i in range(1, 20))
+
+
+def _arm_sig(Q, J):
+    arms = J["arms"]
+    ll = _arm_layer(Q, arms["l"], J, "l")
+    lr = _arm_layer(Q, arms["r"], J, "r")
+    dz = arms["r"]["zW"] - arms["l"]["zW"]
+    if abs(dz) < ZTIE:      # near-equal depths: the pose's preference (default l on top,
+        top = "r" if Q.get("hand_top", 0.0) > 0.5 else "l"     # like arms_crossed / cradle)
+    else:
+        top = "r" if dz > 0 else "l"
+    return (ll, lr, top)
+
+
+def _sig_ranks(sig):
+    ll, lr, top = sig
+    rl, rr = _LAYER_IX[ll] * 2, _LAYER_IX[lr] * 2
+    if ll == lr:
+        if top == "l":
+            rl += 1
+        else:
+            rr += 1
+    return rl, rr
+
+
+def _seg_dist(a, b, c, d):
+    """Distance between 2D segments ab and cd."""
+    def pd(p, q0, q1):
+        vx, vy = q1[0] - q0[0], q1[1] - q0[1]
+        L2 = vx * vx + vy * vy
+        u = 0.0 if L2 < 1e-9 else clamp(((p[0] - q0[0]) * vx + (p[1] - q0[1]) * vy) / L2)
+        return math.hypot(p[0] - q0[0] - vx * u, p[1] - q0[1] - vy * u)
+    return min(pd(a, c, d), pd(b, c, d), pd(c, a, b), pd(d, a, b))
+
+
+def _hand_tip(C, a):
+    ca, sa = math.cos(a["ang"]), math.sin(a["ang"])
+    W = a["W2"]
+    return (W[0] + ca * C["hand"] * 1.15, W[1] + sa * C["hand"] * 1.15)
+
+
+def _sig_separation(C, J, sa, sb):
+    """Smallest clearance (px) among the element pairs whose order differs between sa, sb."""
+    arms = J["arms"]
+    ra, rb = _sig_ranks(sa), _sig_ranks(sb)
+    rad = C["arm_r"][2] + C["hand"] * 0.38
+    seps = []
+    if (ra[0] < ra[1]) != (rb[0] < rb[1]):
+        al, ar = arms["l"], arms["r"]
+        d = _seg_dist(al["E2"], _hand_tip(C, al), ar["E2"], _hand_tip(C, ar))
+        seps.append(d - 2 * rad)
+    hh = J["head"]
+    hr = C["head"]["levels"][4][1]
+    poly = None
+    for i, s_ in enumerate("lr"):
+        a = arms[s_]
+        pts = (a["E2"], _lerp2(a["E2"], a["W2"], 0.5), a["W2"], _lerp2(a["W2"], _hand_tip(C, a), 0.6))
+        if (sa[i] == "back") != (sb[i] == "back"):      # arm vs torso silhouette / thighs
+            if poly is None:
+                J.setdefault("t", 0.0)
+                poly = _torso_pts(C, J, _torso_geom(C, J))
+            best = 1e9
+            for p in pts[1:]:
+                dt = _poly_sdist(p, poly)
+                for g in J["legs"].values():
+                    dt = min(dt, _seg_dist(p, p, g["hip"][:2], g["knee"][:2]) - C["leg_r"][0])
+                best = min(best, dt)
+            seps.append(best - rad)
+        if (sa[i] == "front") != (sb[i] == "front"):    # arm vs head
+            best = min(math.hypot(p[0] - hh["cx"], p[1] - hh["cy"]) for p in pts[2:]) - hr
+            seps.append(best - rad)
+    return min(seps) if seps else 1e9
+
+
+def _poly_sdist(p, poly):
+    """Signed distance from p to a closed polygon (negative inside)."""
+    inside = False
+    best = 1e18
+    n = len(poly)
+    x, y = p
+    for i in range(n):
+        a, b = poly[i], poly[(i + 1) % n]
+        if (a[1] > y) != (b[1] > y):
+            xc = a[0] + (y - a[1]) * (b[0] - a[0]) / (b[1] - a[1])
+            if xc > x:
+                inside = not inside
+        best = min(best, _seg_dist(p, p, a, b))
+    return -best if inside else best
+
+
+def _detour(Q, sa, sb, k):
+    """Blend path tweak: an arm that goes between behind-the-body and in-front swings out
+    around the hips/torso instead of passing through them (bell-shaped in k)."""
+    w = 4.0 * k * (1.0 - k)
+    if w <= 0.0:
+        return
+    for i, s_ in enumerate("lr"):
+        if (sa[i] == "back") != (sb[i] == "back"):
+            Q[f"a{s_}_o"] += 0.45 * w
+            Q[f"a{s_}_eo"] += 0.25 * w
+            Q[f"a{s_}_tx"] += 0.08 * w
+
+
+_CYCLE_ORDER = {}
+_CYC_N = 48
+
+
+def _cycle_sig(pose, who, C, pt, turn, hp, period):
+    """Draw-order signature of a cycle at phase pt, from a cached per-cycle table:
+    layers are a majority vote over the cycle (no mid-cycle layer pops), and the
+    hand-over-hand order only changes at phases where the hands are clearly apart."""
+    tb = round(turn * 20) / 20
+    key = (C["_who"], id(C), _pose_key(pose), tb, round(hp, 2))
+    tab = _CYCLE_ORDER.get(key)
+    if tab is None:
+        fx0 = {"head_turn": 0.0, "head_tilt": 0.0, "head_nod": 0.0}
+        rad = C["arm_r"][2] + C["hand"] * 0.38
+        votes = {"l": {}, "r": {}}
+        raw = []
+        for i in range(_CYC_N):
+            Q = resolve_pose(pose, who, period * i / _CYC_N)
+            for kk, v in C["posture"].items():
+                Q[kk] = Q[kk] + v * Q["posture"]
+            Q["sway"] = 0.0
+            Q["breath"] = 0.0
+            J = _solve(C, Q, who, tb, 0.0, fx0, hp)
+            sg = _arm_sig(Q, J)
+            al, ar = J["arms"]["l"], J["arms"]["r"]
+            sep = _seg_dist(al["E2"], _hand_tip(C, al), ar["E2"], _hand_tip(C, ar)) - 2 * rad
+            for j, s_ in enumerate("lr"):
+                votes[s_][sg[j]] = votes[s_].get(sg[j], 0) + 1
+            raw.append((sg[2], sep))
+        lay = tuple(max(votes[s_].items(), key=lambda kv: (kv[1], _LAYER_IX[kv[0]]))[0] for s_ in "lr")
+        clear = [i for i in range(_CYC_N) if raw[i][1] > 6.0]
+        tops = [raw[i][0] for i in range(_CYC_N)]
+        if clear:
+            start = clear[0]
+            cur = raw[start][0]
+            for j in range(_CYC_N):
+                i = (start + j) % _CYC_N
+                if raw[i][1] > 6.0:
+                    cur = raw[i][0]
+                tops[i] = cur
+        else:       # hands always together: one fixed order for the whole cycle
+            cnt = {}
+            for t_, _ in raw:
+                cnt[t_] = cnt.get(t_, 0) + 1
+            only = max(cnt.items(), key=lambda kv: kv[1])[0]
+            tops = [only] * _CYC_N
+        tab = [(lay[0], lay[1], tp) for tp in tops]
+        if len(_CYCLE_ORDER) > 2000:
+            _CYCLE_ORDER.clear()
+        _CYCLE_ORDER[key] = tab
+    i = int(round((pt / period) % 1.0 * _CYC_N)) % _CYC_N
+    return tab[i]
+
+
+def _pose_key(p):
+    return p if isinstance(p, str) else repr(p)
+
+
+def _is_blend(pose):
+    return isinstance(pose, (tuple, list)) and len(pose) == 3 and not isinstance(pose[0], (int, float))
+
+
+def _sig_detail(pose, who, C, pt, turn, fx, hp):
+    """Blend pose -> (signature, (sa, sb, k) for the detour or None)."""
+    a, b, k = pose
+    k = clamp(float(k))
+    sa = _sig_for(a, who, C, pt, turn, fx, hp)
+    if k <= 0.0:
+        return sa, None
+    sb = _sig_for(b, who, C, pt, turn, fx, hp)
+    if k >= 1.0:
+        return sb, None
+    if sa == sb:
+        return sa, None
+    return (sa if k < _switch_k(who, C, a, b, turn, hp, sa, sb) else sb), (sa, sb, k)
+
+
+def _sig_for(pose, who, C, pt, turn, fx, hp, reach=None):
+    """Draw-order signature of a pose (name | dict | blend) at this moment."""
+    if _is_blend(pose):
+        return _sig_detail(pose, who, C, pt, turn, fx, hp)[0]
+    per = _pose_period(pose)
+    if per:
+        return _cycle_sig(pose, who, C, pt, turn, hp, per)
+    Q = resolve_pose(pose, who, pt)
+    for kk, v in C["posture"].items():
+        Q[kk] = Q[kk] + v * Q["posture"]
+    J = _solve(C, Q, who, turn, 0.0, fx, hp, None, reach)
+    return _arm_sig(Q, J)
+
+
+def _switch_k(who, C, a, b, turn, hp, sa, sb):
+    key = (C["_who"], id(C), _pose_key(a), _pose_key(b), round(turn * 20) / 20, sa, sb)
+    ks = _SWITCH_CACHE.get(key)
+    if ks is not None:
+        return ks
+    fx0 = {"head_turn": 0.0, "head_tilt": 0.0, "head_nod": 0.0}
+    tq = round(turn * 20) / 20
+    best, ks = -1e18, 0.5
+    for k in _SWITCH_KS:
+        Q = resolve_pose((a, b, k), who, 0.0)
+        for kk, v in C["posture"].items():
+            Q[kk] = Q[kk] + v * Q["posture"]
+        Q["breath"] = 0.0
+        Q["sway"] = 0.0
+        _detour(Q, sa, sb, k)
+        J = _solve(C, Q, who, tq, 0.0, fx0, hp)
+        score = min(_sig_separation(C, J, sa, sb), 60.0) - 40.0 * abs(k - 0.5)
+        if score > best + 1e-6:
+            best, ks = score, k
+    if len(_SWITCH_CACHE) > 2000:
+        _SWITCH_CACHE.clear()
+    _SWITCH_CACHE[key] = ks
+    return ks
 
 
 def _drift(t, seed):
@@ -3070,7 +3896,7 @@ def cycle_speed(who, pose, turn=1.0, outfit="default"):
     if key in _SPEED_CACHE:
         return _SPEED_CACHE[key] * math.sin(tq)
     C = _char(who, outfit)
-    period = CYCLES[pose][0] if isinstance(pose, str) and pose in CYCLES else None
+    period = _pose_period(pose)
     if period is None:
         _SPEED_CACHE[key] = 0.0
         return 0.0
@@ -3100,7 +3926,30 @@ def cycle_speed(who, pose, turn=1.0, outfit="default"):
     return v * math.sin(tq)
 
 
+def _pose_period(pose):
+    """Cycle period of a pose name or dict pose (dicts inherit their base cycle's period)."""
+    if isinstance(pose, str):
+        return CYCLES[pose][0] if pose in CYCLES else None
+    if isinstance(pose, dict):
+        bp = _pose_period(pose.get("base", "stand"))
+        if bp is not None:
+            return pose.get("period", bp)
+        return pose.get("period")
+    return None
+
+
+_LEG_KEYS = ("ll_", "lr_", "hip_roll", "plant", "hip_h", "turn")
+
+
 def _pose_speed(who, pose, turn, outfit):
+    if isinstance(pose, dict):     # dicts based on a cycle get a real speed (Episode 2 fix)
+        if _pose_period(pose) is None:
+            return 0.0
+        if "period" not in pose and not any(k.startswith(_LEG_KEYS) for k in pose):
+            return _pose_speed(who, pose.get("base", "stand"), turn, outfit)   # legs untouched
+        if len(_SPEED_CACHE) > 4000:
+            _SPEED_CACHE.clear()
+        return cycle_speed(who, pose, turn, outfit)
     if isinstance(pose, str):
         return cycle_speed(who, pose, turn, outfit)
     if isinstance(pose, (tuple, list)) and len(pose) == 3:
@@ -3109,10 +3958,27 @@ def _pose_speed(who, pose, turn, outfit):
     return 0.0
 
 
+def _hold_sides(hold_sides, hold_mode, hand1="r"):
+    """Normalise hold_sides -> list of 'l' / 'r' / 'both' entries."""
+    if hold_sides is None:          # Episode 1 behaviour: the pose decides
+        return {1: [hand1], 2: ["both"]}.get(hold_mode, [])
+    if isinstance(hold_sides, str):
+        if hold_sides == "both":
+            return ["both"]
+        return [c for c in ("l", "r") if c in hold_sides]
+    out = []
+    for q in hold_sides:
+        if q in ("l", "r", "both") and q not in out:
+            out.append(q)
+    return out
+
+
 def draw_person(ctx, who, x, y, s, t, pose="stand", expr="neutral", look=(0, 0), mouth=(0, 0),
                 face=None, turn=0.0, flip=False, blink=None, blush=None, sweat=0.0, power=0.0,
                 outfit="default", headphones=None, bandage=False, hold=None, pose_t=None, seed=0,
-                counter=None, glint=0.0, shadow=True, drift=True):
+                counter=None, glint=0.0, shadow=True, drift=True, hood=0.0, tears=0.0,
+                glasses_tilt=0.0, glasses_dx=0.0, glasses_dy=0.0, hold_sides=None, hold_layer=None,
+                reach=None, pocket_side=None):
     """Draw a person. Returns anchors in the CALLER's ctx coordinates (see API_human.md)."""
     C = _char(who, outfit)
     col = C["col"]
@@ -3124,11 +3990,36 @@ def draw_person(ctx, who, x, y, s, t, pose="stand", expr="neutral", look=(0, 0),
     F = resolve_face(who, expr, face)
     fx = {"head_turn": F["head_turn"], "head_tilt": F["head_tilt"], "head_nod": F["head_nod"]}
     hp = _hp_state(headphones)
+    hp0 = hp if hp is not None else 0.0
+    sgnf = -1.0 if flip else 1.0
+    # world-space reach targets -> rig-local (x, y, weight, hand angle)
+    reach_l = None
+    if reach:
+        reach_l = {}
+        for side_, v in reach.items():
+            if v is None or side_ not in ("l", "r"):
+                continue
+            w_ = clamp(float(v[2])) if len(v) > 2 and v[2] is not None else 1.0
+            ang_ = v[3] if len(v) > 3 else None
+            if ang_ is not None and flip:
+                ang_ = math.pi - ang_
+            reach_l[side_] = ((v[0] - x) / (s * sgnf), (v[1] - y) / s, w_, ang_)
     lagQ = resolve_pose(pose, who, pt - 0.09) if C["_top"] == "labcoat" else None
-    J = _solve(C, Q, who, turn, t, fx, hp if hp is not None else 0.0, lagQ)
+    sig = None
+    if _is_blend(pose):     # draw order through blends: see _sig_for / _switch_k
+        sig, det = _sig_detail(pose, who, C, pt, turn, fx, hp0)
+        if det is not None:
+            _detour(Q, *det)
+    J = _solve(C, Q, who, turn, t, fx, hp0, lagQ, reach_l)
     J["t"] = t
     J["_lv"] = _torso_geom(C, J)
     J["_bandage"] = None if not bandage else ("r" if bandage is True else bandage)
+    if pocket_side in (None, "r", "right"):
+        J["_pocket_sgn"] = 1.0
+    elif pocket_side in ("l", "left"):
+        J["_pocket_sgn"] = -1.0
+    else:   # "near": the side toward the camera for this facing
+        J["_pocket_sgn"] = -1.0 if J["turn"] > 0.02 else 1.0
     inkw = INK_W
     # ---- runtime face state
     lip_o, lip_w = (mouth or (0.0, 0.0))
@@ -3138,14 +4029,16 @@ def draw_person(ctx, who, x, y, s, t, pose="stand", expr="neutral", look=(0, 0),
     rate, dur = BLINK.get(who, (0.25, 0.16))
     bl = blink_amount(t, C["seed"] + seed * 31, rate, dur) if blink is None else clamp(blink)
     bval = F["blush"] if blush is None else blush
+    hood_u = clamp(hood) if C["_top"] == "hoodie" else 0.0
     st = dict(open=opn, wide=clamp(lip_w, -1, 1), blush=clamp(bval), look=look,
               drift=_drift(t, C["seed"] + seed) if drift else (0.0, 0.0), blink=bl,
-              power=clamp(power), sweat=clamp(sweat), wet=C.get("wet", False), glint=glint)
+              power=clamp(power), sweat=clamp(sweat), wet=C.get("wet", False), glint=glint,
+              hood=hood_u, tears=clamp(tears + F.get("tear", 0.0)), gtilt=glasses_tilt,
+              gdx=glasses_dx, gdy=glasses_dy)
     xf = _head_xf(J, C, F)
     st["xf"] = xf
     hg = _HG(C, J, F, opn)
     bside = None if not bandage else ("r" if bandage is True else bandage)
-    sgnf = -1.0 if flip else 1.0
     phase = (pt / Q.get("_cycle", 1.0)) % 1.0
 
     ctx.save()
@@ -3163,28 +4056,33 @@ def draw_person(ctx, who, x, y, s, t, pose="stand", expr="neutral", look=(0, 0),
         _set(ctx, (0.11, 0.08, 0.15, 0.16 * sk))
         ctx.fill()
     arms = J["arms"]
-    layers = {s_: _arm_layer(Q, arms[s_], J, s_) for s_ in "lr"}
+    # ---- draw order (continuous through blends and cycles: see _sig_for / _cycle_sig)
+    if sig is None:
+        per = _pose_period(pose) if not reach_l else None
+        sig = _cycle_sig(pose, who, C, pt, turn, hp0, per) if per else _arm_sig(Q, J)
+    layers = {"l": sig[0], "r": sig[1]}
+    top_arm = sig[2]
+    ranks = _sig_ranks(sig)
+    arm_seq = ["l", "r"] if ranks[0] < ranks[1] else ["r", "l"]
+    # ---- held props
     hold_mode = int(round(Q["hold"]))
-    holders = {1: ("r",), 2: ("l", "r")}.get(hold_mode, ())
-    order = {"back": 0, "mid": 1, "front": 2}
-    hold_slot = None
-    if hold and holders:
-        if Q["hold_order"] > 0.5:
-            hold_slot = ("after", max(holders, key=lambda q: order[layers[q]]))
+    entries = []
+    if hold:
+        if hold_layer in (None, "auto"):
+            slot = "after" if Q["hold_order"] > 0.5 else "before"
         else:
-            hold_slot = ("before", max(order[layers[q]] for q in holders))
+            slot = {"front": "after", "back": "before", "top": "top"}.get(hold_layer, "before")
+        for sd in _hold_sides(hold_sides, hold_mode, "l" if Q["hold_hand"] < 0 else "r"):
+            entries.append((sd, slot))
+    both_last = arm_seq[-1]
     anchors_local = {}
 
-    def do_hold():
-        if not hold:
-            return
-        if hold_mode == 2:
+    def do_hold(side):
+        if side == "both":
             a, b = arms["l"]["hold_pt"], arms["r"]["hold_pt"]
             hx, hy = (a[0] + b[0]) / 2, (a[1] + b[1]) / 2
             ang = math.atan2(b[1] - a[1], b[0] - a[0])
-            side = "both"
         else:
-            side = holders[0] if holders else "r"
             hx, hy = arms[side]["hold_pt"]
             ang = arms[side]["ang"]
         sx_, sy_ = x + s * sgnf * hx, y + s * hy
@@ -3211,14 +4109,23 @@ def draw_person(ctx, who, x, y, s, t, pose="stand", expr="neutral", look=(0, 0),
                         a["W2"][1] + (sa * hv[2] * hv[0] + ca * ys * hv[3]) * hs)
 
     def layer_pass(lname):
-        lv_ = order[lname]
-        if hold_slot and hold_slot[0] == "before" and hold_slot[1] == lv_:
-            do_hold()
-        for s_ in sorted("lr", key=lambda q: arms[q]["zW"]):
-            if layers[s_] == lname:
-                draw_arm(s_)
-                if hold_slot and hold_slot[0] == "after" and hold_slot[1] == s_:
-                    do_hold()
+        here = [q for q in arm_seq if layers[q] == lname]
+        if layers[both_last] == lname:
+            for sd, sl in entries:
+                if sd == "both" and sl == "before":
+                    do_hold("both")
+        for s_ in here:
+            for sd, sl in entries:
+                if sd == s_ and sl == "before":
+                    do_hold(s_)
+            draw_arm(s_)
+            for sd, sl in entries:
+                if sd == s_ and sl == "after":
+                    do_hold(s_)
+            if s_ == both_last:
+                for sd, sl in entries:
+                    if sd == "both" and sl == "after":
+                        do_hold("both")
 
     # ---- back hair + headphone band behind
     _enter_head(ctx, xf)
@@ -3227,7 +4134,10 @@ def draw_person(ctx, who, x, y, s, t, pose="stand", expr="neutral", look=(0, 0),
     if hp is not None and hp < 0.62:
         _draw_hp_band(ctx, C, J, xf, hg, hp, inkw)
     if C["_top"] == "hoodie":
-        _draw_hood(ctx, C, col, J, inkw)
+        if hood_u > 0.0:
+            _hood_back(ctx, C, col, J, xf, hg, hood_u, inkw)
+        else:
+            _draw_hood(ctx, C, col, J, inkw)
     if C["_top"] == "labcoat":
         _coat_tails(ctx, C, col, J, inkw, "back")
     layer_pass("back")
@@ -3260,18 +4170,32 @@ def draw_person(ctx, who, x, y, s, t, pose="stand", expr="neutral", look=(0, 0),
     if st["power"] > 0.01:
         ctx.save()
         ctx.set_operator(cairo.OPERATOR_SCREEN)
+        cover = st.get("hood_cover", 0.0)
+        pwr = st["power"]
         for side in ("l", "r"):
             X, Y, ew, eh, k, E = st["E_" + side]
-            if k > 0.12 and E["lid"] < 0.97:
+            if k <= 0.12:
+                continue
+            if E["lid"] < 0.97 and cover < 0.99:
                 px_, py_ = _hmap(xf, X, Y)
-                op = 1 - E["lid"] * 0.6
-                radial_glow(ctx, px_, py_, C["head"]["ew"] * 2.4, PAL["power"], 0.62 * st["power"] * op)
-                radial_glow(ctx, px_, py_, C["head"]["ew"] * 1.05, "#d9fffb", 0.35 * st["power"] * op)
+                op = (1 - E["lid"] * 0.6) * (1 - cover)
+                radial_glow(ctx, px_, py_, C["head"]["ew"] * 2.4, PAL["power"], 0.62 * pwr * op)
+                radial_glow(ctx, px_, py_, C["head"]["ew"] * 1.05, "#d9fffb", 0.35 * pwr * op)
+            closed = smoothstep((E["lid"] - 0.82) / 0.15) * (1 - cover)
+            if closed > 0.01:       # eyes closed: a faint glow along the lash line
+                px_, py_ = _hmap(xf, X, Y + eh * 0.62)
+                radial_glow(ctx, px_, py_, C["head"]["ew"] * 1.55, PAL["power"], 0.34 * pwr * closed)
+            if cover > 0.01:        # hood over the eyes: light leaking under the rim
+                px_, py_ = _hmap(xf, X, st.get("hood_rim", Y) + 9)
+                radial_glow(ctx, px_, py_, C["head"]["ew"] * 1.7, PAL["power"], 0.4 * pwr * cover)
         ctx.restore()
     layer_pass("front")
     if Q["controller"] > 0.5:
         _draw_controller(ctx, arms["l"]["hold_pt"], arms["r"]["hold_pt"], inkw,
                          (Q["al_thumb"], Q["ar_thumb"]), col["skin"])
+    for sd, sl in entries:
+        if sl == "top":
+            do_hold(sd)
     if counter is None:
         counter = (who == "recep")
     if counter:
@@ -3292,12 +4216,16 @@ def draw_person(ctx, who, x, y, s, t, pose="stand", expr="neutral", look=(0, 0),
         "mouth": S(hd["mouth"]), "nose": S(hd["nose"]), "top": S(hd["top"]),
         "hand_l": SA(arms["l"]["hold_pt"], arms["l"]["ang"]), "hand_r": SA(arms["r"]["hold_pt"], arms["r"]["ang"]),
         "wrist_l": S(arms["l"]["W2"]), "wrist_r": S(arms["r"]["W2"]),
+        "elbow_l": S(arms["l"]["E2"]), "elbow_r": S(arms["r"]["E2"]),
         "pocket": S(anchors_local["pocket"]), "shoulder_l": S(J["shj"]["l"]), "shoulder_r": S(J["shj"]["r"]),
         "hip": S(J["nodes"]["pel"]), "neck": S(J["nodes"]["nck"]),
         "foot_l": S(J["legs"]["l"]["sole"]), "foot_r": S(J["legs"]["r"]["sole"]),
+        "knee_l": S(J["legs"]["l"]["knee"]), "knee_r": S(J["legs"]["r"]["knee"]),
         "ground": (x, y), "seat": (x, y - s * SEAT_H[who]), "desk": (x, y - s * DESK_H[who]),
-        "sill": (x, y - s * SILL_H[who]), "blink": bl, "cycle": Q.get("_cycle"),
-        "speed": _pose_speed(who, pose, turn, outfit) * s * sgnf,
+        "sill": (x, y - s * SILL_H[who]), "crate": (x, y - s * CRATE_H[who]), "blink": bl,
+        "cycle": Q.get("_cycle"), "speed": _pose_speed(who, pose, turn, outfit) * s * sgnf,
+        "order": tuple(arm_seq), "layers": (layers["l"], layers["r"]),
+        "hood_rim": S(_hmap(xf, 0.0, st["hood_rim"])) if "hood_rim" in st else None,
     }
     return out
 
@@ -3329,3 +4257,20 @@ draw_tired, draw_embar, draw_boss, draw_guard, draw_recep = (_alias(w) for w in
                                                              ("tired", "embar", "boss", "guard", "recep"))
 POSE_NAMES = tuple(POSES) + tuple(CYCLES)
 EXPR_NAMES = tuple(EXPR)
+
+
+def _crate_heights():
+    """Low-box seat height (sit_crate) per character, measured from the pose's own legs."""
+    out = {}
+    fx = {"head_turn": 0.0, "head_tilt": 0.0, "head_nod": 0.0}
+    for who in CHARS:
+        C = _char(who, "default")
+        Q = resolve_pose("sit_crate", who, 0.0)
+        Q["sway"] = 0.0
+        J = _solve(C, Q, who, 0.0, 0.0, fx, 0.0)
+        out[who] = int(-J["nodes"]["pel"][1] - C["leg_r"][0] * 0.8)
+    return out
+
+
+# CRATE_H : top of the low box Tiredness sits on in `sit_crate` (px above the ground at s=1)
+CRATE_H = _crate_heights()

@@ -3977,10 +3977,34 @@ def _sh_pods():
     return out
 
 
-_SH_PODS = None
+_SH_PODS = _sh_pods()
+_SH_INDEX = {(round(p[0], 1), round(p[1], 1)): i for i, p in enumerate(_SH_PODS)}
+_SH_BANDS = [(-1e9, 600), (600, 1200), (1200, 1800), (1800, 2300), (2300, 2900), (2900, 1e9)]
 
 
-def _sh_static(c, sleeper_fn):
+def _sh_nearest(x, y, wmin=0):
+    best, bi = 1e18, None
+    for i, p in enumerate(_SH_PODS):
+        if p[2] < wmin:
+            continue
+        d = (p[0] - x) ** 2 + (p[1] - y) ** 2
+        if d < best:
+            best, bi = d, i
+    return bi
+
+
+_SH_JOY = _sh_nearest(540, 2960, wmin=8)
+_SH_DEFAULT_LABELS = {_SH_JOY: "JOY"}
+SHAFT_MARKS["pods"] = [(p[0], p[1], p[2], p[3]) for p in _SH_PODS]   # (x, y, w, h) per index
+_SH_PULSE = [[[(p[0], p[1], p[2], p[3]) for p in _SH_PODS
+               if p[6] == g and p[2] >= 3 and b0 <= p[1] < b1] for g in range(3)] for (b0, b1) in _SH_BANDS]
+SHAFT_MARKS["pods_near"] = [i for i, p in enumerate(_SH_PODS) if p[2] > 90]
+SHAFT_MARKS["joy_pod"] = _SH_JOY
+SHAFT_MARKS["n_sections"] = len(_SH_BANDS)
+SHAFT_MARKS["sections"] = [(max(a, -200), min(b, SHAFT_H + 200)) for a, b in _SH_BANDS]
+
+
+def _sh_static(c, sleeper_fn, labels=None):
     W, H = SHAFT_W, SHAFT_H
     x0, x1 = _SH_X0, _SH_X1
     g = cairo.LinearGradient(0, -200, 0, H + 200)
@@ -4064,6 +4088,23 @@ def _sh_static(c, sleeper_fn):
             core.rrect(c, x - w * 0.62, y - h / 2 - h * 0.1, w * 1.24, h * 0.14, w * 0.1)
             core.rrect(c, x - w * 0.62, y + h / 2 - h * 0.04, w * 1.24, h * 0.14, w * 0.1)
         fs(c, "#2a4654", lw)
+        # nameplates on the bottom caps (readable text on the near pods)
+        plated = [p for p in grp if p[2] > 26]
+        for (x, y, w, h, z, seed, g) in plated:
+            core.rrect(c, x - w * 0.44, y + h / 2 - h * 0.005, w * 0.88, h * 0.075, w * 0.04)
+        if plated:
+            fs(c, "#b9c3cc", max(1.0, lw * 0.6))
+        for (x, y, w, h, z, seed, g) in plated:
+            idx = _SH_INDEX.get((round(x, 1), round(y, 1)))
+            txt = (labels or {}).get(idx) or _SH_DEFAULT_LABELS.get(idx)
+            if txt is None:
+                txt = f"SPECIMEN {(idx or 0) % 100:02d}" if w > 90 else None
+            if txt and (w > 44 or (idx in (labels or {}) or idx in _SH_DEFAULT_LABELS) and w > 18):
+                fsz = min(h * 0.055, w * 1.5 / max(4, len(txt)))
+                core.text(c, txt, x, y + h / 2 + h * 0.055, fsz, "#1f2a33", "ui")
+            elif w > 26:
+                line(c, [(x - w * 0.25, y + h / 2 + h * 0.035), (x + w * 0.25, y + h / 2 + h * 0.035)],
+                     "#6b7a8c", max(1.0, h * 0.02))
     # light beams from far above + haze bands
     for (bx, bw, ang) in ((300, 160, 0.10), (720, 220, -0.06), (520, 90, 0.02)):
         gb = cairo.LinearGradient(0, -200, 0, 2600)
@@ -4127,7 +4168,9 @@ def _sh_catwalk(c, deck=True):
     line(c, [(x1, y + 4), (x1, y - rail_h)], INK, 10)
 
 
-def shaft(ctx, t=0.0, layer="bg", sleeper_fn=None, sleeper_key=None, pulse=True, glow=1.0):
+def shaft(ctx, t=0.0, layer="bg", sleeper_fn=None, sleeper_key=None, pulse=True, glow=1.0,
+          power=1.0, power_sections=None, pod_glow=None, lit=None, labels=None, shutters=None,
+          shutters_except=None):
     """The containment shaft (world 1080 x 3600; drawable x -700..1780 so
     the camera can pull out to zoom ~0.56). Tiers of teal pods ring the
     curved wall (near pods big, far pods small), tier ledges, a bridge,
@@ -4139,34 +4182,1497 @@ def shaft(ctx, t=0.0, layer="bg", sleeper_fn=None, sleeper_key=None, pulse=True,
     the cache knows the drawing). Per frame only a cheap shared glow pulse
     (3 phase groups, ~0.25 Hz) is drawn over visible pods.
     layer "fg" = the catwalk front railing (draw over the characters).
+
+    Episode 2 (all optional, defaults = Episode 1 look):
+    * power 0..1 / power_sections (6 bands, top first: SHAFT_MARKS
+      ["sections"], use shaft_power_sections(t, t0, n=6)): lights out by
+      section = darkness wash (DARK_A) per band; the pulse fades with it.
+    * pod_glow 0..1 (None = follows power, EMBER when dark): what the pods
+      keep glowing in dark sections (batched live fill).
+    * lit True / False forces the lit / dark look (fx sense reveal).
+    * labels {pod index: "TEXT"}: nameplates on the bottom caps (near pods
+      show "SPECIMEN nn" by default; the tiny JOY pod at the bottom centre
+      is SHAFT_MARKS["joy_pod"]). Baked: changing labels re-renders.
+    * shutters 0..1 (or a list per section): steel shutters slide down over
+      every pod (s07 lockdown); shutters_except = pod indices left open
+      (e.g. [SHAFT_MARKS["joy_pod"]]).
+    layer "shade": darkness for characters (use with sets.shaded()).
     """
-    global _SH_PODS
-    if _SH_PODS is None:
-        _SH_PODS = _sh_pods()
+    n = len(_SH_BANDS)
+    ps = _section_powers(power, power_sections, n, lit)
+    bands = SHAFT_MARKS["sections"]
     if layer == "bg":
-        key = ("shaft", sleeper_key or (getattr(sleeper_fn, "__qualname__", None) if sleeper_fn else None))
+        lk = tuple(sorted((labels or {}).items()))
+        key = ("shaft", sleeper_key or (getattr(sleeper_fn, "__qualname__", None) if sleeper_fn else None), lk)
         _overscan(ctx, _SH_X0, -200, _SH_X1, SHAFT_H + 200, "#06121a", "#0f3a40", "#0f2d38", "#0f2d38")
         static_layer(ctx, key, _SH_X0, -200, _SH_X1 - _SH_X0, SHAFT_H + 400,
-                     lambda c: _sh_static(c, sleeper_fn), max_mp=2.5, tile_px=1100)
+                     lambda c: _sh_static(c, sleeper_fn, labels), max_mp=2.5, tile_px=1100)
+        vx0, vy0, vx1, vy1 = ctx.clip_extents()
         if pulse and glow > 0:
-            vx0, vy0, vx1, vy1 = ctx.clip_extents()
             amps = [0.5 + 0.5 * math.sin(t * TAU * 0.25 + g * 2.1) for g in range(3)]
             pw = hexc(PAL["power"])
-            for gi in range(3):
-                a = 0.16 * glow * amps[gi]
-                if a < 0.01:
+            for bi, (by0, by1) in enumerate(bands):
+                pk = ps[bi]
+                if pk <= 0.02 or by1 < vy0 or by0 > vy1:
                     continue
-                ctx.set_source_rgba(pw[0], pw[1], pw[2], a)
-                n = 0
+                for gi in range(3):
+                    a = 0.16 * glow * amps[gi] * pk
+                    if a < 0.01:
+                        continue
+                    m = 0
+                    for (x, y, w, h) in _SH_PULSE[bi][gi]:
+                        if x + w < vx0 or x - w > vx1 or y + h < vy0 or y - h > vy1:
+                            continue
+                        # capsule-ish octagon (no arcs: ~5x cheaper to rasterise)
+                        hw, hh, cw_ = w * 0.55, h * 0.55, w * 0.24
+                        ctx.move_to(x - hw + cw_, y - hh)
+                        ctx.line_to(x + hw - cw_, y - hh)
+                        ctx.line_to(x + hw, y - hh + cw_ * 1.6)
+                        ctx.line_to(x + hw, y + hh - cw_ * 1.6)
+                        ctx.line_to(x + hw - cw_, y + hh)
+                        ctx.line_to(x - hw + cw_, y + hh)
+                        ctx.line_to(x - hw, y + hh - cw_ * 1.6)
+                        ctx.line_to(x - hw, y - hh + cw_ * 1.6)
+                        ctx.close_path()
+                        m += 1
+                    if m:
+                        ctx.set_source_rgba(pw[0], pw[1], pw[2], a)
+                        ctx.fill()
+        if lit is not True and min(ps) < 0.999:
+            _wash_bands(ctx, bands, ps)
+            # what the pods keep glowing in the dark sections
+            for bi, (by0, by1) in enumerate(bands):
+                pk = ps[bi]
+                if pk >= 0.999 or by1 < vy0 or by0 > vy1:
+                    continue
+                res = 1 - DARK_A * (1 - pk)                 # glow left in the washed bake
+                want = lerp(EMBER, 1.0, pk) if pod_glow is None else clamp(float(pod_glow))
+                diff = want - res
+                if abs(diff) < 0.01:
+                    continue
+                col = PAL["power"] if diff > 0 else DARK
+                al = min(0.9, abs(diff) * (0.75 if diff > 0 else 1.0 / max(0.05, res) * 0.6))
+                m = 0
                 for (x, y, w, h, z, seed, grp) in _SH_PODS:
-                    if grp != gi or w < 3:
+                    if w < 2 or y < by0 or y >= by1:
                         continue
                     if x + w < vx0 or x - w > vx1 or y + h < vy0 or y - h > vy1:
                         continue
-                    core.rrect(ctx, x - w * 0.55, y - h * 0.55, w * 1.1, h * 1.1, w * 0.55)
-                    n += 1
-                if n:
-                    ctx.fill()
+                    core.rrect(ctx, x - w / 2, y - h / 2, w, h, w / 2)
+                    m += 1
+                if m:
+                    core.fill(ctx, core.alpha(col, al))
+        if shutters is not None:
+            shs = shutters if isinstance(shutters, (list, tuple)) else [shutters] * n
+            skip = set(shutters_except or ())
+            for bi, (by0, by1) in enumerate(bands):
+                f = clamp(float(shs[min(bi, len(shs) - 1)]))
+                if f <= 0.01 or by1 < vy0 or by0 > vy1:
+                    continue
+                dk = 0.0 if lit is True else DARK_A * (1 - ps[bi])
+                m = 0
+                for i, (x, y, w, h, z, seed, grp) in enumerate(_SH_PODS):
+                    if w < 2 or y < by0 or y >= by1 or i in skip:
+                        continue
+                    if x + w < vx0 or x - w > vx1 or y + h < vy0 or y - h > vy1:
+                        continue
+                    ctx.rectangle(x - w * 0.62, y - h * 0.62, w * 1.24, h * 1.24 * f)
+                    m += 1
+                if m:
+                    core.fill(ctx, mixc("#56646f", DARK, dk), preserve=True)
+                    core.stroke(ctx, INK, 2.5)
+                    for i, (x, y, w, h, z, seed, grp) in enumerate(_SH_PODS):
+                        if w < 14 or y < by0 or y >= by1 or i in skip:
+                            continue
+                        if x + w < vx0 or x - w > vx1 or y + h < vy0 or y - h > vy1:
+                            continue
+                        yy = y - h * 0.62 + h * 1.24 * f
+                        ctx.move_to(x - w * 0.62, yy - h * 0.06)
+                        ctx.line_to(x + w * 0.62, yy - h * 0.06)
+                    core.stroke(ctx, mixc(PAL["warn"], DARK, dk), 3)
     elif layer == "fg":
-        cached_or_live(ctx, "shaft_rail", _SH_X0, _SH_CAT_Y - 140, 660 - _SH_X0 + 20, 160,
-                    lambda c: _sh_catwalk(c, deck=False))
+        d4 = 0.0 if lit is True else DARK_A * (1 - ps[4])
+        dimmed(ctx, (_SH_X0, _SH_CAT_Y - 140, 660 - _SH_X0 + 20, 160), d4,
+               lambda c: cached_or_live(c, "shaft_rail", _SH_X0, _SH_CAT_Y - 140, 660 - _SH_X0 + 20, 160,
+                                        lambda cc: _sh_catwalk(cc, deck=False)))
+    elif layer == "shade":
+        _wash_bands(ctx, bands, ps, a=DARK_A * 0.94)
+
+
+# ============================================================================
+# EPISODE 2 INFRASTRUCTURE: alpha blits, translucent tiles, light sections,
+# darkness and character shading
+# ============================================================================
+DARK = "#03070b"      # the darkness wash colour (near-black blue)
+DARK_A = 0.86         # wash strength at power 0: "almost black but readable"
+EMBER = 0.14          # pod glow left once the lights are out (pod_glow=None)
+
+
+def _q_of(ctx):
+    m = ctx.get_matrix()
+    sc = math.hypot(m.xx, m.yx)
+    if sc <= 0:
+        return 0.0
+    n = core._Q_STEPS[-1]
+    return 2 ** (math.ceil(math.log2(sc) * n - 1e-6) / n)
+
+
+def blit(ctx, key, x0, y0, w, h, draw_fn, alpha=1.0, pad=4, clip=None):
+    """core.cached() with an opacity and an optional exact clip rect.
+
+    Shares core's LRU and scale quantisation (same cache entry as
+    core.cached for the same key). The cache key ignores x0/y0, so a
+    position-independent drawing (drawn around a translated origin) is a
+    reusable sprite.
+    """
+    if alpha <= 0.003:
+        return
+    q = _q_of(ctx)
+    if q <= 0:
+        return
+    k = (key, round(q, 5), w, h)
+    surf = core._LAYERS.get(k)
+    if surf is None:
+        sw, sh = int(math.ceil((w + 2 * pad) * q)), int(math.ceil((h + 2 * pad) * q))
+        surf = cairo.ImageSurface(cairo.FORMAT_ARGB32, max(1, sw), max(1, sh))
+        c = cairo.Context(surf)
+        c.scale(q, q)
+        c.translate(-(x0 - pad), -(y0 - pad))
+        draw_fn(c)
+        surf.flush()
+        core._LAYERS[k] = surf
+        while len(core._LAYERS) > core._LAYERS_MAX:
+            core._LAYERS.popitem(last=False)
+    else:
+        core._LAYERS.move_to_end(k)
+    ctx.save()
+    if clip is not None:
+        ctx.rectangle(*clip)
+        ctx.clip()
+    ctx.translate(x0 - pad, y0 - pad)
+    ctx.scale(1 / q, 1 / q)
+    ctx.set_source_surface(surf, 0, 0)
+    ctx.get_source().set_filter(cairo.FILTER_GOOD)
+    ctx.rectangle(0, 0, surf.get_width(), surf.get_height())
+    if alpha >= 0.997:
+        ctx.fill()
+    else:
+        ctx.clip()
+        ctx.paint_with_alpha(alpha)
+    ctx.restore()
+
+
+def layer_blit(ctx, key, x0, y0, w, h, draw_fn, alpha=1.0, clip=None, max_mp=None, tile_px=2040):
+    """Big cached layer with opacity, for OPAQUE or TRANSLUCENT drawings.
+
+    One bitmap when small; above max_mp (default MAX_LAYER_MP) it is split
+    into ~tile_px tiles, and each tile is blitted clipped exactly to its own
+    rect, so translucent layers have no seams. clip = optional (x, y, w, h)
+    to restrict the blit (e.g. a light section band). Only visible tiles
+    are rendered / blitted.
+    """
+    if alpha <= 0.003:
+        return
+    if clip is not None:
+        cx0, cy0 = max(x0, clip[0]), max(y0, clip[1])
+        cx1, cy1 = min(x0 + w, clip[0] + clip[2]), min(y0 + h, clip[1] + clip[3])
+        if cx1 <= cx0 or cy1 <= cy0:
+            return
+        clip = (cx0, cy0, cx1 - cx0, cy1 - cy0)
+    if not _visible(ctx, *(clip or (x0, y0, w, h))):
+        return
+    q = _q_of(ctx)
+    if q <= 0:
+        return
+    if w * h * q * q <= (MAX_LAYER_MP if max_mp is None else max_mp) * 1e6:
+        blit(ctx, key, x0, y0, w, h, draw_fn, alpha, clip=clip)
+        return
+    T = max(160, int(tile_px / q) // 32 * 32)
+    vx0, vy0, vx1, vy1 = ctx.clip_extents()
+    if clip is not None:
+        vx0, vy0 = max(vx0, clip[0]), max(vy0, clip[1])
+        vx1, vy1 = min(vx1, clip[0] + clip[2]), min(vy1, clip[1] + clip[3])
+    nx, ny = int(math.ceil(w / T)), int(math.ceil(h / T))
+    for j in range(ny):
+        ty = y0 + j * T
+        th = min(T, y0 + h - ty)
+        if ty + th <= vy0 or ty >= vy1:
+            continue
+        for i in range(nx):
+            tx = x0 + i * T
+            tw = min(T, x0 + w - tx)
+            if tx + tw <= vx0 or tx >= vx1:
+                continue
+            ex0, ey0 = max(tx, vx0), max(ty, vy0)
+            ex1, ey1 = min(tx + tw, vx1), min(ty + th, vy1)
+            blit(ctx, (key, "tile", i, j, T), tx, ty, tw, th, draw_fn, alpha,
+                 clip=(ex0, ey0, ex1 - ex0, ey1 - ey0))
+
+
+def dimmed(ctx, bbox, dim, draw_fn, col=DARK):
+    """Draw draw_fn(ctx) darkened by `dim` (0..1, the darkness-wash
+    strength), like the cached dark sets. The wash is applied ATOP the
+    drawing inside a small group clipped to bbox (x, y, w, h), so only the
+    drawing darkens."""
+    if dim <= 0.003:
+        draw_fn(ctx)
+        return
+    if not _visible(ctx, *bbox):
+        return
+    ctx.save()
+    ctx.rectangle(*bbox)
+    ctx.clip()
+    ctx.push_group()
+    draw_fn(ctx)
+    ctx.set_operator(cairo.OPERATOR_ATOP)
+    ctx.rectangle(*bbox)
+    core.fill(ctx, core.alpha(col, dim))
+    ctx.pop_group_to_source()
+    ctx.paint()
+    ctx.restore()
+
+
+from collections import OrderedDict as _OD2
+_SPR = _OD2()
+_SPR_MAX = 64
+
+
+def sprite(ctx, key, x0, y0, w, h, draw_fn, alpha=1.0, max_mp=4.0, pad=4):
+    """Small cached drawing in its OWN LRU (64 entries), separate from
+    core's set-layer cache, so animated live pieces (doors, plates, the
+    security camera...) can cache per state without evicting big tiles.
+    Draws live when the bitmap would exceed max_mp."""
+    if alpha <= 0.003 or not _visible(ctx, x0, y0, w, h):
+        return
+    q = _q_of(ctx)
+    if q <= 0:
+        return
+    if w * h * q * q > max_mp * 1e6:
+        if alpha >= 0.997:
+            draw_fn(ctx)
+        else:
+            ctx.push_group()
+            draw_fn(ctx)
+            ctx.pop_group_to_source()
+            ctx.paint_with_alpha(alpha)
+        return
+    k = (key, round(q, 5), w, h)
+    surf = _SPR.get(k)
+    if surf is None:
+        sw, sh = int(math.ceil((w + 2 * pad) * q)), int(math.ceil((h + 2 * pad) * q))
+        surf = cairo.ImageSurface(cairo.FORMAT_ARGB32, max(1, sw), max(1, sh))
+        c = cairo.Context(surf)
+        c.scale(q, q)
+        c.translate(-(x0 - pad), -(y0 - pad))
+        draw_fn(c)
+        surf.flush()
+        _SPR[k] = surf
+        while len(_SPR) > _SPR_MAX:
+            _SPR.popitem(last=False)
+    else:
+        _SPR.move_to_end(k)
+    ctx.save()
+    ctx.translate(x0 - pad, y0 - pad)
+    ctx.scale(1 / q, 1 / q)
+    ctx.set_source_surface(surf, 0, 0)
+    ctx.get_source().set_filter(cairo.FILTER_GOOD)
+    ctx.rectangle(0, 0, surf.get_width(), surf.get_height())
+    if alpha >= 0.997:
+        ctx.fill()
+    else:
+        ctx.clip()
+        ctx.paint_with_alpha(alpha)
+    ctx.restore()
+
+
+def _dim_into(c, bbox, dim, draw_fn, col=DARK):
+    """(for bakes) draw_fn darkened by dim inside bbox, ATOP."""
+    if dim <= 0.003:
+        draw_fn(c)
+        return
+    c.save()
+    c.rectangle(*bbox)
+    c.clip()
+    c.push_group()
+    draw_fn(c)
+    c.set_operator(cairo.OPERATOR_ATOP)
+    c.rectangle(*bbox)
+    core.fill(c, core.alpha(col, dim))
+    c.pop_group_to_source()
+    c.paint()
+    c.restore()
+
+
+def dim_sprite(ctx, key, bbox, dim, draw_fn):
+    """A live piece darkened by dim, cached in the sprite LRU per
+    (key, dim): pass a key that changes with the piece's state."""
+    sprite(ctx, (key, round(dim, 3)), *bbox, lambda c: _dim_into(c, bbox, dim, draw_fn))
+
+
+def _steady(vals):
+    return all(v == 0.0 or v == 1.0 for v in vals)
+
+
+def shaft_power_at(section, t, t0, step=0.55, dur=0.16):
+    """Lights-out cascade: the power 0..1 of light `section` (0 = the top)
+    at scene time t, when the cascade starts at t0. Section k cuts out at
+    t0 + k*step with one heavy "chunk" (dip to 0.25, a brief catch at 0.5,
+    then off, all within `dur`; no strobing)."""
+    ts = t0 + section * step
+    if t < ts:
+        return 1.0
+    k = (t - ts) / max(1e-6, dur)
+    if k >= 1:
+        return 0.0
+    if k < 0.3:
+        return lerp(1.0, 0.25, k / 0.3)
+    if k < 0.55:
+        return lerp(0.25, 0.5, (k - 0.3) / 0.25)
+    return lerp(0.5, 0.0, (k - 0.55) / 0.45)
+
+
+def shaft_power_sections(t, t0, n=4, step=0.55, dur=0.16):
+    """[shaft_power_at(k, t, t0, step, dur) for k in range(n)]: pass it as
+    power_sections= to catwalk / shaft (n = <SET>_MARKS["n_sections"])."""
+    return [shaft_power_at(k, t, t0, step, dur) for k in range(n)]
+
+
+def shaft_power_times(t0, n=4, step=0.55):
+    """The cut-out ("chunk" SFX) time of each section, top first."""
+    return [t0 + k * step for k in range(n)]
+
+
+def _section_powers(power, power_sections, n, lit=None):
+    if lit is True:
+        return [1.0] * n
+    if lit is False:
+        return [0.0] * n
+    p = clamp(float(power))
+    if power_sections is None:
+        return [p] * n
+    ps = list(power_sections) + [power_sections[-1]] * max(0, n - len(power_sections))
+    return [p * clamp(float(v)) for v in ps[:n]]
+
+
+def _wash_bands(ctx, bands, powers, a=DARK_A, col=DARK, x0=None, x1=None):
+    """Darkness wash over each horizontal band (y0, y1) at a*(1-power)."""
+    vx0, vy0, vx1, vy1 = ctx.clip_extents()
+    if x0 is not None:
+        vx0, vx1 = max(vx0, x0), min(vx1, x1)
+    for (by0, by1), p in zip(bands, powers):
+        al = a * (1 - p)
+        if al <= 0.002:
+            continue
+        y0, y1 = max(vy0, by0), min(vy1, by1)
+        if y1 <= y0:
+            continue
+        ctx.rectangle(vx0 - 2, y0, vx1 - vx0 + 4, y1 - y0)
+        core.fill(ctx, core.alpha(col, al))
+
+
+def _band_of(bands, y):
+    for i, (y0, y1) in enumerate(bands):
+        if y0 <= y < y1:
+            return i
+    return len(bands) - 1
+
+
+class shaded:
+    """Light the characters like the set they stand in.
+
+        with sets.shaded(ctx, sets.catwalk, t, layer="shade", power=p):
+            human.draw_tired(ctx, ...)
+            creatures.draw_specimen(ctx, ...)
+
+    Everything drawn inside the block goes into a group; the set's "shade"
+    layer (darkness wash per light section + coloured light from pods /
+    monitors / lamps) is then composited ATOP it (only where the
+    characters are), and the group is painted. So characters darken with
+    the lights without darkening the background twice. Cost: one
+    frame-sized group (~1-2 ms at 720p).
+    """
+    def __init__(self, ctx, set_fn, *args, **kw):
+        self.ctx, self.fn, self.args, self.kw = ctx, set_fn, args, kw
+
+    def __enter__(self):
+        self.ctx.push_group()
+        return self.ctx
+
+    def __exit__(self, *exc):
+        c = self.ctx
+        c.save()
+        c.set_operator(cairo.OPERATOR_ATOP)
+        self.fn(c, *self.args, **self.kw)
+        c.restore()
+        c.pop_group_to_source()
+        c.paint()
+
+
+# ============================================================================
+# 13. SHAFT CATWALK (Episode 2 s01-s02): side-on, human scale
+# ============================================================================
+CATWALK_W, CATWALK_H = 3600, 1920
+_CW_X0, _CW_X1, _CW_Y0, _CW_Y1 = -800, 4400, -1400, 2720
+_CW_WALL, _CW_FEET, _CW_FRONT = 1380, 1500, 1720
+_CW_LEDGE, _CW_LEDGE2 = 560, -320
+_CW_ST_TOP, _CW_ST_N, _CW_ST_RISE, _CW_ST_RUN = 640, 6, 45, 86
+_CW_ST_BOT = _CW_ST_TOP - _CW_ST_N * _CW_ST_RUN               # 124
+_CW_LAND_FEET = _CW_FEET + _CW_ST_N * _CW_ST_RISE               # 1770
+_CW_LAND_WALL, _CW_LAND_FRONT = _CW_LAND_FEET - 120, _CW_LAND_FEET + 220
+_CW_VP = (1800, 900)
+_CW_PIPE = (-90, 1150)         # low pipe contact point (the bonk), s = 0.75
+_CW_CAM = (1250, 650)          # security camera wall mount
+_CW_BANDS = [(-1e9, _CW_LEDGE2 + 40), (_CW_LEDGE2 + 40, _CW_LEDGE + 40), (_CW_LEDGE + 40, _CW_WALL),
+             (_CW_WALL, 1e9)]
+_CW_MAIN = [(1000, "CURIOSITY", "SPECIMEN 00", "empty"), (1500, "JOY", "SPECIMEN 01", "tiny"),
+            (1990, "COURAGE", "SPECIMEN 02", "pod"), (2480, "CALM", "SPECIMEN 03", "pod"),
+            (2970, "WONDER", "SPECIMEN 04", "pod"), (3460, "HOPE", "SPECIMEN 05", "pod"),
+            (3950, "TRUST", "SPECIMEN 06", "pod")]
+_CW_UP = [760 + 490 * k for k in range(8)]
+_CW_TOP = [1000 + 490 * k for k in range(-1, 8)]
+_CW_LAMPS = [760, 1745, 2725, 3705]
+_CW_LAMPS2 = [1005, 1985, 2965, 3945]
+_CW_PLATE_S = 0.74
+
+
+def _cw_pod_geo(x, kind, base_y=_CW_WALL, sc=1.0):
+    """Glass rect, cap rects, ground point for a pod standing on base_y."""
+    if kind == "tiny":
+        gw, gh, bh, cw_, th = 200, 320, 100, 300, 64
+    else:
+        gw, gh, bh, cw_, th = 330, 560, 100, 410, 80
+    gw, gh, bh, cw_, th = gw * sc, gh * sc, bh * sc, cw_ * sc, th * sc
+    gb = base_y - bh
+    gt = gb - gh
+    return {"glass": (x - gw / 2, gt, gw, gh), "base": (x - cw_ / 2, gb, cw_, bh),
+            "top": (x - cw_ / 2 * 0.98, gt - th, cw_ * 0.98, th), "ground": (x, gb - 26 * sc),
+            "plate_c": (x, gb + bh / 2), "s": sc * (0.45 if kind == "tiny" else 0.75)}
+
+
+def _cw_labels(labels):
+    out = []
+    for i, (x, text, sub, kind) in enumerate(_CW_MAIN):
+        v = None
+        if callable(labels):
+            v = labels(i, (text, sub))
+        elif labels:
+            v = labels.get(i, labels.get(text))
+        if v is not None:
+            if isinstance(v, (tuple, list)):
+                text, sub = v[0], (v[1] if len(v) > 1 else sub)
+            else:
+                text = v
+        out.append((x, text, sub, kind))
+    return out
+
+
+CATWALK_MARKS = {
+    "size": (CATWALK_W, CATWALK_H),
+    "drawable": (_CW_X0, _CW_Y0, _CW_X1, _CW_Y1),
+    "char_scale": 0.75,
+    "feet_y": _CW_FEET,              # walk line on the main deck (x 640 .. 4400)
+    "wall_y": _CW_WALL,              # where the deck meets the pod wall
+    "front_y": _CW_FRONT,            # deck front edge (railing, fg)
+    "deck_x": (_CW_ST_TOP, _CW_X1),
+    "stair_top": (_CW_ST_TOP, _CW_FEET),
+    "stair_steps": [(_CW_ST_TOP - (i + 0.5) * _CW_ST_RUN, _CW_FEET + (i + 1) * _CW_ST_RISE)
+                    for i in range(_CW_ST_N)],
+    "stair_bottom": (_CW_ST_BOT, _CW_LAND_FEET),
+    "landing_feet_y": _CW_LAND_FEET,  # lower walkway (x -800 .. 124)
+    "landing_x": (_CW_X0, _CW_ST_BOT),
+    "bonk_pipe": _CW_PIPE,           # props.low_pipe anchor = contact point (s 0.75)
+    "bonk_face": _CW_PIPE,           # the face touches here walking LEFT
+    "bonk_feet": (_CW_PIPE[0] + 46, _CW_LAND_FEET),
+    "sec_cam": _CW_CAM,
+    "lamps": [(x, _CW_LEDGE + 40) for x in _CW_LAMPS],
+    "n_sections": len(_CW_BANDS),
+    "sections": [(max(a, _CW_Y0), min(b, _CW_Y1)) for a, b in _CW_BANDS],   # top -> bottom
+    "pods": [],                      # filled below
+    "cam": {
+        "pod_close": (1170, 1290, 3.0),     # Curiosity's face at its empty pod (feet 1235, 1500)
+        "pod_two": (1290, 1140, 1.75),      # Curiosity at the pod + Tiredness walking up
+        "plate": (1000, 1330, 4.2),         # the empty pod's nameplate (or use props.nameplate)
+        "plates_pan_a": (1500, 1180, 1.6),  # pan right along JOY .. HOPE (cy keeps plates < y 1300)
+        "plates_pan_b": (3460, 1180, 1.6),
+        "cam_up": (1250, 760, 2.4),         # the security camera swivelling
+        "wide": (1700, 900, 0.62),
+        "cascade": (1500, 640, 0.56),       # whole wall, lights die top -> down
+        "eyes_dark": (1180, 1180, 1.8),
+        "stair": (400, 1360, 1.25),
+        "bonk": (-20, 1300, 1.7),
+    },
+}
+for _i, (_x, _t, _sb, _k) in enumerate(_CW_MAIN):
+    _g = _cw_pod_geo(_x, _k)
+    _pw, _ph = 0, 0
+    CATWALK_MARKS["pods"].append({
+        "x": _x, "label": _t, "sub": _sb, "kind": _k, "glass": _g["glass"], "ground": _g["ground"],
+        "plate_c": _g["plate_c"], "sleeper_s": _g["s"]})
+_E = CATWALK_MARKS["pods"][0]
+CATWALK_MARKS["empty_pod"] = 0
+CATWALK_MARKS["empty_glass"] = _E["glass"]
+CATWALK_MARKS["paw_spot"] = (_E["x"] + 120, 1236)          # on the glass at creature paw height
+CATWALK_MARKS["creature_at_pod"] = (_E["x"] + 235, _CW_FEET)  # feet; faces LEFT to the glass
+CATWALK_MARKS["tired_at_pod"] = (_E["x"] + 560, _CW_FEET)
+CATWALK_MARKS["fog_spot"] = (_E["x"] + 70, 1170)
+
+
+def _cw_plate_rect(text, sub, cx, cy):
+    w, h = props.nameplate_size(text, sub)
+    s = _CW_PLATE_S
+    return (cx - w * s / 2, cy - h * s / 2, w * s, h * s)
+
+
+for _p in CATWALK_MARKS["pods"]:
+    _p["plate"] = _cw_plate_rect(_p["label"], _p["sub"], *_p["plate_c"])
+CATWALK_MARKS["empty_plate"] = CATWALK_MARKS["pods"][0]["plate"]
+
+
+def _capsule(c, x, y, w, h):
+    core.rrect(c, x, y, w, h, w / 2)
+
+
+def _cw_ledge(c, y, x0, x1, base_col="#2c4a56"):
+    rect(c, x0, y, x1 - x0, 40, base_col, 5)
+    rect(c, x0, y - 12, x1 - x0, 14, "#45656f", 4)
+    rect(c, x0, y + 40, x1 - x0, 12, "#33505a", 4)       # strip light housing (lit in the lamps layer)
+    for k in range(int((x1 - x0) / 150) + 1):
+        px = x0 + k * 150
+        line(c, [(px, y - 12), (px, y - 110)], "#46666f", 5)
+    line(c, [(x0, y - 110), (x1, y - 110)], INK, 10)
+    line(c, [(x0, y - 110), (x1, y - 110)], "#5d7f8c", 6)
+    line(c, [(x0, y - 60), (x1, y - 60)], "#46666f", 4)
+
+
+def _cw_pod_shell(c, x, kind, sc=1.0, base_y=_CW_WALL, plate=None, tubes_to=None):
+    """Unlit pod: caps, tubes, dark glass, plate (base layer)."""
+    g = _cw_pod_geo(x, kind, base_y, sc)
+    gx, gy, gw, gh = g["glass"]
+    bx, by, bw, bh = g["base"]
+    tx, ty, tw, th = g["top"]
+    if tubes_to is not None:
+        for side in (-1, 1):
+            px = x + side * tw * 0.28
+            line(c, [(px, ty + 6), (px, tubes_to)], INK, 20 * sc)
+            line(c, [(px, ty + 6), (px, tubes_to)], "#3b4757", 11 * sc)
+    _capsule(c, gx - 10 * sc, gy - 10 * sc, gw + 20 * sc, gh + 20 * sc)
+    fs(c, "#2a3a46", 5)
+    _capsule(c, gx, gy, gw, gh)
+    fs(c, "#0a1d23", 4)
+    rect(c, tx, ty, tw, th, "#4a5868", 5, r=22 * sc)
+    line(c, [(tx + 20 * sc, ty + th * 0.5), (tx + tw - 20 * sc, ty + th * 0.5)], "#6b7a8c", 5 * sc)
+    rect(c, bx, by, bw, bh, "#4a5868", 5, r=16 * sc)
+    rect(c, bx + 8 * sc, by + 6 * sc, bw - 16 * sc, 8 * sc, "#6b7a8c", 0, r=4)
+    if plate:
+        text, sub = plate
+        props.nameplate(c, x, by + bh / 2, _CW_PLATE_S * sc, text=text, sub=sub, seed=int(x) % 97)
+    return g
+
+
+def _cw_empty_interior(c, g, lit):
+    """Inside of Curiosity's empty pod (behind its glass door)."""
+    gx, gy, gw, gh = g["glass"]
+    c.save()
+    _capsule(c, gx, gy, gw, gh)
+    c.clip()
+    if lit:
+        core.vgradient(c, mixc("#0b3a40", PAL["power"], 0.70), mixc("#0b3a40", PAL["power"], 0.40), gx, gy, gw, gh)
+        core.radial_glow(c, gx + gw / 2, gy + 70, gw * 0.9, "#e9fffd", 0.55)
+        sc_col = mixc("#0b3a40", PAL["power"], 0.22)
+        drip = mixc("#0b3a40", PAL["power"], 0.85)
+    else:
+        c.rectangle(gx, gy, gw, gh)
+        core.fill(c, "#0c2228")
+        sc_col = "#081619"
+        drip = "#12303a"
+    # back-wall ribs of the capsule
+    for k in (0.3, 0.7):
+        line(c, [(gx + gw * k, gy), (gx + gw * k, gy + gh)], core.alpha(sc_col, 0.5), 5)
+    # claw scratches (it got out on its own)
+    for k in range(3):
+        curve(c, [(gx + gw * 0.52 + k * 16, gy + gh * 0.48), (gx + gw * 0.58 + k * 16, gy + gh * 0.58),
+                  (gx + gw * 0.56 + k * 16, gy + gh * 0.70)], sc_col, 5)
+    # drained: drip lines + a puddle on the floor grate
+    for k in range(4):
+        xx = gx + gw * (0.18 + 0.2 * k)
+        line(c, [(xx, gy + gh * (0.25 + 0.1 * hash01(k, 4))), (xx, gy + gh * (0.45 + 0.2 * hash01(k, 5)))],
+             drip, 4)
+    ell(c, gx + gw / 2, gy + gh - 26, gw * 0.42, 16, drip, 0)
+    for k in range(5):
+        line(c, [(gx + gw * (0.22 + k * 0.14), gy + gh - 40), (gx + gw * (0.22 + k * 0.14), gy + gh - 12)],
+             sc_col, 4)
+    c.restore()
+
+
+def _cw_glass_lit(c, g, seed, sleeper_fn, t=0.0):
+    """Lit glass content of an occupied pod (pods layer)."""
+    gx, gy, gw, gh = g["glass"]
+    pw = PAL["power"]
+    c.save()
+    _capsule(c, gx, gy, gw, gh)
+    c.clip()
+    core.vgradient(c, mixc("#0b3a40", pw, 0.52), mixc("#0b3a40", pw, 0.70), gx, gy, gw, gh)
+    core.radial_glow(c, gx + gw / 2, gy + gh * 0.6, gw * 0.85, "#e9fffd", 0.30)
+    gxx, gyy = g["ground"]
+    if sleeper_fn is not None:
+        sleeper_fn(c, gxx, gyy, g["s"], t, seed)
+    else:
+        props.sleeper_silhouette(c, gxx, gyy - 110 * g["s"], g["s"], 0.0, seed, color="#0f3640")
+    for k in range(4):
+        bx = gx + gw * (0.2 + 0.6 * hash01(k, seed + 3))
+        byy = gy + gh * (0.15 + 0.5 * hash01(k, seed + 4))
+        core.circle(c, bx, byy, (5 + 5 * hash01(k, seed + 5)) * gw / 330)
+        core.stroke(c, (0.85, 1.0, 0.98, 0.6), 2.5)
+    line(c, [(gx, gy + 44 * gh / 560), (gx + gw, gy + 44 * gh / 560)], (0.9, 1.0, 1.0, 0.5), 4)
+    core.poly(c, [(gx + gw * 0.16, gy + 30), (gx + gw * 0.30, gy + 20), (gx + gw * 0.30, gy + gh - 30),
+                  (gx + gw * 0.16, gy + gh - 40)])
+    core.fill(c, (1, 1, 1, 0.16))
+    c.restore()
+    _capsule(c, gx, gy, gw, gh)
+    core.stroke(c, INK, 4)
+
+
+def _cw_pod_glow(c, g, kind):
+    gx, gy, gw, gh = g["glass"]
+    cx, cy = gx + gw / 2, gy + gh / 2
+    core.radial_glow(c, cx, cy, gw * 1.7, PAL["power"], 0.34)
+    bx, by, bw, bh = g["base"]
+    core.radial_glow(c, cx, by + bh + 60, gw * 1.1, PAL["power"], 0.22)
+    tx, ty, tw, th = g["top"]
+    for k in range(3):
+        core.circle(c, cx - tw * 0.18 + k * tw * 0.18, ty + th * 0.5, 7 * gw / 330)
+    core.fill(c, PAL["power"])
+
+
+def _cw_base(c, lab=None):
+    lab = lab or _CW_MAIN
+    x0, x1, y0, y1 = _CW_X0, _CW_X1, _CW_Y0, _CW_Y1
+    g = cairo.LinearGradient(0, y0, 0, _CW_WALL)
+    g.add_color_stop_rgba(0, *hexc("#0b222a"))
+    g.add_color_stop_rgba(1, *hexc("#16363f"))
+    c.rectangle(x0, y0, x1 - x0, _CW_LAND_WALL - y0 + 4)
+    c.set_source(g)
+    c.fill()
+    # wall panels + seams + ribs
+    for yy in range(int(y0) + 120, _CW_LAND_WALL, 230):
+        line(c, [(x0, yy), (x1, yy)], "#123038", 4)
+    ribs = sorted(set(_CW_UP + [_CW_ST_TOP - 60]))
+    for rx in ribs:
+        rect(c, rx - 34, y0, 68, _CW_LAND_WALL - y0, "#1b414c", 4)
+        line(c, [(rx - 18, y0), (rx - 18, _CW_LAND_WALL)], "#24525e", 5)
+        for yy in range(int(y0) + 60, _CW_LAND_WALL, 230):
+            core.circle(c, rx, yy, 6)
+        core.fill(c, "#0f2a32")
+    # conduits behind the pods
+    for (yy, col, w) in ((664, "#24505c", 26), (706, "#1f4652", 18), (1200, "#1f4652", 22)):
+        rect(c, x0, yy, x1 - x0, w, col, 4)
+    for k in range(14):
+        cx = _CW_ST_TOP + 60 + k * 270
+        line(c, [(cx, 664), (cx, 706 + 18)], "#173a44", 6)
+    # hazard stripe along the wall base
+    ctx = c
+    for (wy, xa, xb) in ((_CW_WALL, _CW_ST_TOP, x1), (_CW_LAND_WALL, x0, _CW_ST_TOP)):
+        props.hazard_band(ctx, xa, wy - 34, xb - xa, 22, step=40, col1="#9c8530", col2="#1a2a30", lw=3)
+    # signage by the stair
+    rect(c, 300, 1050, 250, 120, "#24404c", 4.5, r=10)
+    core.text(c, "LEVEL B2", 425, 1102, 34, "#cfe9ee", "ui")
+    core.text(c, "SHAFT A  ▼", 425, 1146, 28, PAL["hush"], "ui")
+    # top darkness
+    gt = cairo.LinearGradient(0, y0, 0, -200)
+    gt.add_color_stop_rgba(0, 0.01, 0.04, 0.06, 0.92)
+    gt.add_color_stop_rgba(1, 0.01, 0.04, 0.06, 0.0)
+    # third tier (top) + its ledge
+    for i, x in enumerate(_CW_TOP):
+        _cw_pod_shell(c, x, "pod", 0.86, base_y=_CW_LEDGE2, tubes_to=_CW_LEDGE2 - 900)
+    _cw_ledge(c, _CW_LEDGE2, x0, x1)
+    # upper tier + ledge
+    for i, x in enumerate(_CW_UP):
+        _cw_pod_shell(c, x, "pod", 0.86, base_y=_CW_LEDGE, plate=(f"SPECIMEN {i + 12:02d}", None),
+                      tubes_to=_CW_LEDGE2 + 52)
+    _cw_ledge(c, _CW_LEDGE, _CW_ST_TOP - 120, x1)
+    c.rectangle(x0, y0, x1 - x0, -200 - y0)
+    c.set_source(gt)
+    c.fill()
+    # main tier pods (plates; the empty pod's plate + door are live)
+    for i, (x, text, sub, kind) in enumerate(lab):
+        g_ = _cw_pod_shell(c, x, kind, 1.0, plate=None if kind == "empty" else (text, sub),
+                           tubes_to=_CW_LEDGE + 52)
+        if kind == "empty":
+            _cw_empty_interior(c, g_, False)
+    # lamps (off) + camera mount area
+    for x in _CW_LAMPS:
+        props.cage_lamp(c, x, _CW_LEDGE + 64, 0.8, on=0.0, halo=False)
+    for x in _CW_LAMPS2:
+        props.cage_lamp(c, x, _CW_LEDGE2 + 64, 0.7, on=0.0, halo=False)
+    # main deck
+    dx0 = _CW_ST_TOP
+    c.rectangle(dx0, _CW_WALL, x1 - dx0, _CW_FRONT - _CW_WALL)
+    fs(c, "#36545f", 5)
+    for k in range(int((x1 - dx0) / 44) + 1):
+        xx = dx0 + k * 44
+        line(c, [(xx, _CW_WALL + 6), (xx - 30, _CW_FRONT - 6)], "#2c4853", 4)
+    for yy in (_CW_WALL + 70, _CW_WALL + 170, _CW_WALL + 270):
+        line(c, [(dx0, yy), (x1, yy)], "#2c4853", 3)
+    c.rectangle(dx0, _CW_WALL, x1 - dx0, 22)
+    core.fill(c, core.alpha(INK, 0.35))
+    rect(c, dx0, _CW_FRONT, x1 - dx0, 50, "#24404c", 5)
+    for k in range(int((x1 - dx0) / 120) + 1):
+        core.circle(c, dx0 + 30 + k * 120, _CW_FRONT + 25, 5)
+    core.fill(c, "#3b5a66")
+    # landing (lower walkway, left)
+    lx1 = _CW_ST_BOT + 40
+    c.rectangle(x0, _CW_LAND_WALL, lx1 - x0, _CW_LAND_FRONT - _CW_LAND_WALL)
+    fs(c, "#36545f", 5)
+    for k in range(int((lx1 - x0) / 44) + 1):
+        xx = x0 + k * 44
+        line(c, [(xx, _CW_LAND_WALL + 6), (xx - 30, _CW_LAND_FRONT - 6)], "#2c4853", 4)
+    c.rectangle(x0, _CW_LAND_WALL, lx1 - x0, 22)
+    core.fill(c, core.alpha(INK, 0.35))
+    rect(c, x0, _CW_LAND_FRONT, lx1 - x0, 50, "#24404c", 5)
+    # the void below (dark teal haze; distant pods glow in the pods layer)
+    gv = cairo.LinearGradient(0, _CW_FRONT + 50, 0, y1)
+    gv.add_color_stop_rgba(0, *hexc("#0d2a33"))
+    gv.add_color_stop_rgba(1, *hexc("#04121a"))
+    core.poly(c, [(dx0, _CW_FRONT + 50), (x1, _CW_FRONT + 50), (x1, y1), (x0, y1), (x0, _CW_LAND_FRONT + 50),
+                  (lx1, _CW_LAND_FRONT + 50), (lx1, _CW_LAND_WALL), (dx0, _CW_WALL)])
+    c.set_source(gv)
+    c.fill()
+    for k in range(40):
+        vx = x0 + 120 * k + 60 * (k % 3)
+        vy = 2050 + 160 * (k % 4) + 30 * hash01(k, 3)
+        if vy < _CW_LAND_FRONT + 120 and vx < lx1 + 60:
+            continue
+        core.rrect(c, vx, vy, 20, 34, 10)
+    core.fill(c, "#0f3138")
+    # deck supports
+    for sx in range(int(dx0) + 200, int(x1), 600):
+        line(c, [(sx, _CW_FRONT + 50), (sx - 140, _CW_FRONT + 320)], "#1b3540", 14)
+    # stair: open steel treads between two stringers
+    _cw_stair(c, "back")
+    _cw_stair(c, "treads")
+
+
+def _cw_stair(c, part):
+    top, n, rise, run = _CW_ST_TOP, _CW_ST_N, _CW_ST_RISE, _CW_ST_RUN
+    bx, by = _CW_ST_BOT, _CW_LAND_FEET
+    if part == "back":
+        # back stringer + handrail along the wall
+        polyf(c, [(top + 20, _CW_FEET - 40), (top + 20, _CW_FEET + 10), (bx - 40, by + 10), (bx - 40, by - 40)],
+              "#24404c", 4.5)
+        line(c, [(top + 20, _CW_FEET - 330), (bx - 40, by - 330)], INK, 10)
+        line(c, [(top + 20, _CW_FEET - 330), (bx - 40, by - 330)], "#5d7f8c", 6)
+        for k in range(4):
+            px = lerp(top, bx, k / 3)
+            py = lerp(_CW_FEET, by, k / 3)
+            line(c, [(px, py - 330), (px, py - 30)], "#46666f", 5)
+    elif part == "treads":
+        for i in range(n):
+            xr = top - i * run
+            yt = _CW_FEET + (i + 1) * rise
+            rect(c, xr - run - 6, yt - 4, run + 12, 20, "#4f6f7b", 4, r=3)
+            line(c, [(xr - run, yt + 1), (xr, yt + 1)], "#7fa0ac", 3)
+        # top / bottom plates
+        rect(c, top - 8, _CW_FEET - 6, 30, 26, "#4f6f7b", 4)
+    elif part == "front":
+        polyf(c, [(top + 30, _CW_FEET + 20), (top + 30, _CW_FEET + 80), (bx - 30, by + 80), (bx - 30, by + 20)],
+              "#2c4a56", 5)
+        line(c, [(top + 30, _CW_FEET - 260), (bx - 30, by - 260)], INK, 12)
+        line(c, [(top + 30, _CW_FEET - 260), (bx - 30, by - 260)], "#7fa0ac", 7)
+        for k in range(3):
+            px = lerp(top + 30, bx - 30, k / 2)
+            py = lerp(_CW_FEET, by, k / 2)
+            line(c, [(px, py - 260), (px, py + 30)], "#5d7f8c", 6)
+
+
+def _cw_lamps(c):
+    """Room lights (lamps layer, faded by section power)."""
+    x0, x1 = _CW_X0, _CW_X1
+    col = "#d8fbff"
+    for (ly, xs, sc) in ((_CW_LEDGE + 64, _CW_LAMPS, 0.8), (_CW_LEDGE2 + 64, _CW_LAMPS2, 0.7)):
+        for x in xs:
+            by = ly + 92 * sc
+            props.cage_lamp(c, x, ly, sc, on=1.0, color="#cff8ff", halo=False)
+            core.radial_glow(c, x, by, 260, col, 0.45)
+            fl = (_CW_WALL if ly > 0 else _CW_LEDGE) - 10
+            gb = cairo.LinearGradient(0, by, 0, fl + 100)
+            gb.add_color_stop_rgba(0, 0.85, 0.98, 1.0, 0.20)
+            gb.add_color_stop_rgba(1, 0.85, 0.98, 1.0, 0.03)
+            core.poly(c, [(x - 30, by), (x + 30, by), (x + 300, fl + 100), (x - 300, fl + 100)])
+            c.set_source(gb)
+            c.fill()
+            ell(c, x, fl + 110, 320, 60, core.alpha(col, 0.18), 0)
+    for (yy, xa) in ((_CW_LEDGE + 40, _CW_ST_TOP - 120), (_CW_LEDGE2 + 40, x0)):
+        rect(c, xa + 10, yy + 2, x1 - xa - 20, 9, "#e9fdff", 0, r=4)
+        gs = cairo.LinearGradient(0, yy + 10, 0, yy + 200)
+        gs.add_color_stop_rgba(0, 0.85, 0.98, 1.0, 0.30)
+        gs.add_color_stop_rgba(1, 0.85, 0.98, 1.0, 0.0)
+        c.rectangle(xa, yy + 10, x1 - xa, 190)
+        c.set_source(gs)
+        c.fill()
+    # a soft light beam from far above + bright deck edge
+    for (bx, bw) in ((1500, 260), (2900, 200)):
+        gb = cairo.LinearGradient(0, _CW_Y0, 0, _CW_LEDGE2)
+        gb.add_color_stop_rgba(0, 0.85, 1.0, 0.98, 0.16)
+        gb.add_color_stop_rgba(1, 0.85, 1.0, 0.98, 0.0)
+        core.poly(c, [(bx, _CW_Y0), (bx + bw, _CW_Y0), (bx + bw * 1.6, _CW_LEDGE2), (bx - bw * 0.5, _CW_LEDGE2)])
+        c.set_source(gb)
+        c.fill()
+    line(c, [(_CW_ST_TOP, _CW_FRONT + 3), (x1, _CW_FRONT + 3)], (0.8, 0.96, 1.0, 0.5), 4)
+
+
+def _cw_pods_lit(c, sleeper_fn, sleeper_fns, lab=None):
+    """Pod glow + lit glass content (pods layer, faded by pod_glow)."""
+    lab = lab or _CW_MAIN
+    for i, x in enumerate(_CW_TOP):
+        g = _cw_pod_geo(x, "pod", _CW_LEDGE2, 0.86)
+        _cw_pod_glow(c, g, "pod")
+        _cw_glass_lit(c, g, 300 + i, sleeper_fn)
+    for i, x in enumerate(_CW_UP):
+        g = _cw_pod_geo(x, "pod", _CW_LEDGE, 0.86)
+        _cw_pod_glow(c, g, "pod")
+        _cw_glass_lit(c, g, 200 + i, sleeper_fn)
+    for i, (x, text, sub, kind) in enumerate(lab):
+        g = _cw_pod_geo(x, kind)
+        _cw_pod_glow(c, g, kind)
+        if kind == "empty":
+            _cw_empty_interior(c, g, True)
+            gx, gy, gw, gh = g["glass"]
+            _capsule(c, gx, gy, gw, gh)
+            core.stroke(c, INK, 4)
+        else:
+            fn = (sleeper_fns or {}).get(i, (sleeper_fns or {}).get(text, sleeper_fn))
+            _cw_glass_lit(c, g, 100 + i, fn)
+    # distant pods across the shaft, far below
+    lx1 = _CW_ST_BOT + 40
+    for k in range(40):
+        vx = _CW_X0 + 120 * k + 60 * (k % 3)
+        vy = 2050 + 160 * (k % 4) + 30 * hash01(k, 3)
+        if vy < _CW_LAND_FRONT + 120 and vx < lx1 + 60:
+            continue
+        core.rrect(c, vx, vy, 20, 34, 10)
+    core.fill(c, core.alpha(PAL["power"], 0.55))
+    gh_ = cairo.LinearGradient(0, _CW_FRONT + 60, 0, _CW_Y1)
+    gh_.add_color_stop_rgba(0, 0.25, 0.95, 0.88, 0.0)
+    gh_.add_color_stop_rgba(0.5, 0.25, 0.95, 0.88, 0.10)
+    gh_.add_color_stop_rgba(1, 0.25, 0.95, 0.88, 0.02)
+    c.rectangle(_CW_X0, _CW_FRONT + 60, _CW_X1 - _CW_X0, _CW_Y1 - _CW_FRONT - 60)
+    c.set_source(gh_)
+    c.fill()
+
+
+def _cw_empty_door(ctx, opening, lit_g):
+    """Curiosity's pod door (glass pane, hinge on the RIGHT), live."""
+    g = _cw_pod_geo(_CW_MAIN[0][0], "empty")
+    gx, gy, gw, gh = g["glass"]
+    q = door_quad(gx + gw, gy, gy + gh, gw, opening, _CW_VP, D=2600.0, toward=True, hinge_left=False)
+    # q: hinge_top, free_top, free_bottom, hinge_bottom
+    def P(u, v):  # u: 0 = free edge, 1 = hinge
+        top = (lerp(q[1][0], q[0][0], u), lerp(q[1][1], q[0][1], u))
+        bot = (lerp(q[2][0], q[3][0], u), lerp(q[2][1], q[3][1], u))
+        return (lerp(top[0], bot[0], v), lerp(top[1], bot[1], v))
+    rv = (gw / 2) / gh
+    pts = []
+    for k in range(13):
+        th = math.pi - k * math.pi / 12
+        pts.append(P(0.5 + 0.5 * math.cos(th), rv - rv * math.sin(th)))
+    for k in range(13):
+        th = k * math.pi / 12
+        pts.append(P(0.5 + 0.5 * math.cos(th), 1 - rv + rv * math.sin(th)))
+    core.poly(ctx, pts)
+    core.fill(ctx, (0.75, 0.96, 1.0, 0.10 + 0.08 * lit_g))
+    for (u0, u1) in ((0.18, 0.30), (0.38, 0.44)):
+        core.poly(ctx, [P(u0, 0.08), P(u1, 0.06), P(u1 - 0.04, 0.9), P(u0 - 0.04, 0.92)])
+        core.fill(ctx, (1, 1, 1, 0.20))
+    core.poly(ctx, pts)
+    core.stroke(ctx, "#5d7f8c", 10)
+    core.poly(ctx, pts)
+    core.stroke(ctx, INK, 4)
+    for v in (0.22, 0.78):
+        hx, hy = P(1.0, v)
+        rect(ctx, hx - 8, hy - 18, 22, 36, "#4a5868", 3.5, r=4)
+    # the unlatched latch, hanging down on the free edge
+    lx, ly = P(0.0, 0.5)
+    with core.saved(ctx, lx, ly, 1.0, 0.9):
+        rect(ctx, -10, -8, 50, 16, "#8a96a2", 3.5, r=5)
+    core.circle(ctx, lx, ly, 8)
+    fs(ctx, "#4a5868", 3)
+    return pts
+
+
+def _band_blits(ctx, key, rect, fn, bands, alphas):
+    x0, y0, w, h = rect
+    if len(set(alphas)) == 1:
+        layer_blit(ctx, key, x0, y0, w, h, fn, alpha=alphas[0])
+        return
+    for (by0, by1), a in zip(bands, alphas):
+        if a > 0.003:
+            layer_blit(ctx, key, x0, y0, w, h, fn, alpha=a,
+                       clip=(x0, max(y0, by0), w, min(y0 + h, by1) - max(y0, by0)))
+
+
+def _band_paint(c, bands, alphas, fn):
+    """(for bakes) fn drawn per band at each band's opacity."""
+    vx0, vy0, vx1, vy1 = c.clip_extents()
+    for (by0, by1), a in zip(bands, alphas):
+        if a <= 0.003 or by1 <= vy0 or by0 >= vy1:
+            continue
+        c.save()
+        c.rectangle(vx0, max(vy0, by0), vx1 - vx0, min(vy1, by1) - max(vy0, by0))
+        c.clip()
+        if a >= 0.997:
+            fn(c)
+        else:
+            c.push_group()
+            fn(c)
+            c.pop_group_to_source()
+            c.paint_with_alpha(a)
+        c.restore()
+
+
+def _cw_compose(c, lab, pods_fn, ps, gs, lamps_on, wash_on, bands):
+    _cw_base(c, lab)
+    if lamps_on:
+        _band_paint(c, bands, ps, _cw_lamps)
+    if wash_on:
+        _wash_bands(c, bands, ps)
+    _band_paint(c, bands, gs, pods_fn)
+
+
+def catwalk(ctx, t=0.0, layer="bg", power=1.0, power_sections=None, pod_glow=None, lit=None,
+            labels=None, sleeper_fn=None, sleeper_fns=None, sleeper_key=None, door_open=0.12,
+            plate_dust=0.85, plate_wipe=0.0, cam_angle=0.25, cam_face=0.0, cam_led=0.0,
+            pipe_wobble=0.0, pipe_wobble_t0=0.0, pulse=True, bubbles=True, parts=None):
+    """The shaft catwalk, side-on at human scale (world 3600 x 1920, people
+    at s=0.75; drawable x -800..4400, y -1400..2720). See CATWALK_MARKS.
+
+    The pod wall: a main tier of pods standing on the deck, each with a
+    readable nameplate (CURIOSITY = Curiosity's EMPTY pod, door ajar and a
+    dusty plate; then JOY (a tiny pod), COURAGE, CALM, WONDER, HOPE, TRUST),
+    two more tiers above on ledges, caged lamps and strip lights, a wall
+    security camera (red LED), the grated deck with the void below, and a
+    short stair down to a lower walkway on the left where a LOW PIPE
+    crosses at head height (the bonk).
+
+    Light: power 0..1 (room lights) and power_sections (per section, top
+    first; CATWALK_MARKS["n_sections"], see shaft_power_sections()), pod_glow
+    0..1 (None = follows power: full .. EMBER), lit True = surfaces lit /
+    False = dark regardless of power (fx: draw lit=True inside a sense
+    ring). Three cached layers (surfaces, lamps, pod glow) are mixed by
+    opacity, so any power value is cheap.
+
+    labels: {index or default text: "TEXT" | ("TEXT", "SUB")} or a callable
+    (i, (text, sub)) -> ... renames main-tier plates. sleeper_fn(ctx, x, y,
+    s, t, seed) draws each sleeper at its ground point (x, y) on the pod
+    floor (s 0.75, tiny pod 0.45); sleeper_fns {index or label: fn}
+    overrides per pod (e.g. {"JOY": baby}). Sleepers are baked: pass
+    sleeper_key (hashable) when you pass sleeper_fn(s).
+    Live state: door_open (Curiosity's pod door, 0.12 = ajar), plate_dust /
+    plate_wipe (its nameplate), cam_angle / cam_face / cam_led (None =
+    blink), pipe_wobble (+ pipe_wobble_t0) after the bonk.
+    layer "bg" | "fg" (parts: "rail" = deck front railing, "stair" = stair
+    front stringer + handrail (default both); "pipe" = also draw the low pipe
+    over the characters) | "shade" (character light: use with
+    sets.shaded()).
+    """
+    n = len(_CW_BANDS)
+    ps = _section_powers(power, power_sections, n, lit)
+    if pod_glow is None:
+        gs = [lerp(EMBER, 1.0, p) for p in _section_powers(power, power_sections, n)]
+    else:
+        gs = [clamp(float(pod_glow))] * n
+    gsp = gs
+    bands = CATWALK_MARKS["sections"]
+    x0, y0, x1, y1 = _CW_X0, _CW_Y0, _CW_X1, _CW_Y1
+    lab = tuple(_cw_labels(labels))
+    if layer == "bg":
+        _overscan(ctx, x0, y0, x1, y1, "#06141a", "#04121a", "#0b222a", "#0b222a")
+        sk = sleeper_key or (getattr(sleeper_fn, "__qualname__", None) if sleeper_fn else None)
+        pods_fn = lambda c: _cw_pods_lit(c, sleeper_fn, sleeper_fns, lab)
+        lamps_on = lit is None
+        wash_on = lit is not True
+        if _steady(ps) and all(abs(g - round(g, 2)) < 1e-9 for g in gs):
+            # a discrete light state: one precomposed bake (cheap to hold)
+            st = (tuple(ps), tuple(round(g, 2) for g in gs), lamps_on, wash_on)
+            layer_blit(ctx, ("catwalk_comp", lab, sk, st), x0, y0, x1 - x0, y1 - y0,
+                       lambda c: _cw_compose(c, lab, pods_fn, ps, gs, lamps_on, wash_on, bands))
+        else:
+            # in transition: mix the three cached layers by opacity
+            layer_blit(ctx, ("catwalk_base", lab), x0, y0, x1 - x0, y1 - y0, lambda c: _cw_base(c, lab))
+            if lamps_on:
+                _band_blits(ctx, "catwalk_lamps", (x0, y0, x1 - x0, y1 - y0), _cw_lamps, bands, ps)
+            if wash_on:
+                _wash_bands(ctx, bands, ps)
+            _band_blits(ctx, ("catwalk_pods", lab, sk), (x0, y0, x1 - x0, y1 - y0), pods_fn, bands, gs)
+        if pulse:
+            # slow shared breathing glow over the main-tier glass (cheap fills)
+            a = 0.10 * (0.5 + 0.5 * math.sin(t * TAU * 0.25)) * gs[2]
+            if a > 0.01:
+                for (x, text, sub, kind) in lab:
+                    if kind != "empty":
+                        gx, gy, gw, gh = _cw_pod_geo(x, kind)["glass"]
+                        _capsule(ctx, gx, gy, gw, gh)
+                core.fill(ctx, core.alpha(PAL["power"], a))
+        dk = [0.0 if lit is True else DARK_A * (1 - p) for p in ps]
+        dmain = dk[2]
+        g2 = gsp[2]
+        # live: bubbles in the main-tier pods
+        if bubbles and g2 > 0.05:
+            vx0, vy0, vx1, vy1 = ctx.clip_extents()
+            for i, (x, text, sub, kind) in enumerate(_CW_MAIN):
+                if kind == "empty" or x + 200 < vx0 or x - 200 > vx1:
+                    continue
+                gx, gy, gw, gh = _cw_pod_geo(x, kind)["glass"]
+                for k in range(2):
+                    ph = (t * 0.11 + hash01(k + i * 3, 9)) % 1.0
+                    bx = gx + gw * (0.25 + 0.5 * hash01(k + i * 3, 10)) + 6 * math.sin(t * 1.7 + k + i)
+                    byy = gy + gh - 40 - ph * (gh - 90)
+                    core.circle(ctx, bx, byy, 6 + 4 * hash01(k + i, 11))
+                    core.stroke(ctx, (0.88, 1.0, 0.98, 0.7 * g2 * math.sin(ph * math.pi)), 2.5)
+        # live (sprite-cached per state): Curiosity's pod door + dusty plate
+        g_e = _cw_pod_geo(lab[0][0], "empty")
+        gx, gy, gw, gh = g_e["glass"]
+        dop = round(float(door_open), 3)
+        dim_sprite(ctx, ("cw_door", dop, round(g2, 2)), (gx - 260, gy - 80, gw + 520, gh + 160), dmain,
+                   lambda c: _cw_empty_door(c, dop, g2))
+        pcx, pcy = g_e["plate_c"]
+        pr = _cw_plate_rect(lab[0][1], lab[0][2], pcx, pcy)
+        pd, pwp = round(float(plate_dust), 3), round(float(plate_wipe), 3)
+        dim_sprite(ctx, ("cw_plate", lab[0][1], lab[0][2], pd, pwp), (pr[0] - 6, pr[1] - 6, pr[2] + 12, pr[3] + 12),
+                   dmain, lambda c: props.nameplate(c, pcx, pcy, _CW_PLATE_S, text=lab[0][1], sub=lab[0][2],
+                                                    dust=pd, wipe=pwp, seed=5))
+        # security camera (its red LED stays bright in the dark)
+        cx_, cy_ = _CW_CAM
+        ca_, cf_ = round(float(cam_angle), 3), round(float(cam_face), 3)
+        dim_sprite(ctx, ("cw_cam", ca_, cf_), (cx_ - 60, cy_ - 80, 420, 420), dmain,
+                   lambda c: props.security_camera(c, cx_, cy_, 0.8, 0.0, ca_, 0.0, cf_, glow=0))
+        if cam_led is None or cam_led > 0:
+            props.security_camera(ctx, cx_, cy_, 0.8, t, cam_angle, cam_led, cam_face, only_led=True)
+        # the low pipe (live only while it wobbles)
+        px_, py_ = _CW_PIPE
+        kk = t - pipe_wobble_t0
+        wob = pipe_wobble > 0 and 0 <= kk < 2.4
+        pk = ("cw_pipe", round(kk, 3) if wob else None)
+        dim_sprite(ctx, pk, (px_ - 900, py_ - 560, 1500, 680), dk[3],
+                   lambda c: props.low_pipe(c, px_, py_, 0.75, t=t if wob else 0.0,
+                                            wobble=pipe_wobble if wob else 0.0, wobble_t0=pipe_wobble_t0))
+    elif layer == "fg":
+        parts = parts or ("rail", "stair")
+        d3 = 0.0 if lit is True else DARK_A * (1 - ps[3])
+        if "stair" in parts:
+            sb = (_CW_ST_BOT - 60, _CW_FEET - 300, _CW_ST_TOP - _CW_ST_BOT + 140, 700)
+            dim_sprite(ctx, "cw_stair_fg", sb, d3, lambda c: _cw_stair(c, "front"))
+        if "pipe" in parts:     # optional: the low pipe OVER the characters
+            px_, py_ = _CW_PIPE
+            dimmed(ctx, (px_ - 900, py_ - 560, 1500, 680), d3,
+                   lambda c: props.low_pipe(c, px_, py_, 0.75, t=t, wobble=pipe_wobble,
+                                            wobble_t0=pipe_wobble_t0))
+        if "rail" in parts:
+            vx0, vy0, vx1, vy1 = ctx.clip_extents()
+            for (xa, xb, fy) in ((_CW_ST_TOP + 30, x1, _CW_FRONT), (x0, _CW_ST_BOT + 10, _CW_LAND_FRONT)):
+                if fy + 20 < vy0 or fy - 300 > vy1:
+                    continue
+                k0 = max(0, int((vx0 - xa) // 900) - 1)
+                k1 = int((min(vx1, xb) - xa) // 900) + 1
+                for k in range(k0, k1 + 1):
+                    tx = xa + k * 900
+                    if tx >= xb:
+                        break
+                    ctx.save()
+                    if tx + 900 > xb:
+                        ctx.rectangle(tx - 12, fy - 310, xb - tx + 14, 340)
+                        ctx.clip()
+                    ctx.translate(tx, fy)
+                    dim_sprite(ctx, "cw_rail_tile", (-12, -300, 924, 320), d3, _cw_rail_tile)
+                    ctx.restore()
+    elif layer == "shade":
+        _wash_bands(ctx, bands, ps, a=DARK_A * 0.94)
+        vx0, vy0, vx1, vy1 = ctx.clip_extents()
+        for i, (x, text, sub, kind) in enumerate(_CW_MAIN):
+            if x + 600 < vx0 or x - 600 > vx1:
+                continue
+            gx, gy, gw, gh = _cw_pod_geo(x, kind)["glass"]
+            core.radial_glow(ctx, x, gy + gh * 0.7, 560, PAL["power"], 0.30 * gsp[2])
+
+
+def _cw_rail_tile(c):
+    """900-px repeat of the deck front railing (local: x 0..900, deck edge y 0)."""
+    h = 280
+    for k in range(5):
+        px = k * 180
+        line(c, [(px, 6), (px, -h)], INK, 11)
+        line(c, [(px, 6), (px, -h)], "#5d7f8c", 6)
+    for (yy, w, col) in ((-h, 12, "#7fa0ac"), (-h * 0.5, 9, "#5d7f8c")):
+        line(c, [(-12, yy), (912, yy)], INK, w + 6, cap="butt")
+        line(c, [(-12, yy), (912, yy)], col, w, cap="butt")
+
+
+def _cw_rail(c, xa, xb, fy):
+    h = 280
+    for k in range(int((xb - xa) / 180) + 1):
+        px = xa + k * 180
+        line(c, [(px, fy + 6), (px, fy - h)], INK, 11)
+        line(c, [(px, fy + 6), (px, fy - h)], "#5d7f8c", 6)
+    for (yy, w, col) in ((fy - h, 12, "#7fa0ac"), (fy - h * 0.5, 9, "#5d7f8c")):
+        line(c, [(xa, yy), (xb, yy)], INK, w + 6)
+        line(c, [(xa, yy), (xb, yy)], col, w)
+
+
+# ============================================================================
+# 14. SHAFT LOWER LEVEL (Episode 2 s03): pipes, crates, stair, floor grates
+# ============================================================================
+SHAFT_LOWER_W, SHAFT_LOWER_H = 2600, 1920
+_SL_X0, _SL_X1, _SL_Y0, _SL_Y1 = -900, 3300, -1000, 2620
+_SL_WALL, _SL_FEET = 1300, 1500
+_SL_ST = dict(x_top=-150, y_top=420, n=15, rise=72, run=70)
+_SL_CRATE_A = (1400, 560, 470)            # centre x, w, h (bottom on the feet line)
+_SL_CRATE_B = [(2290, 460, 400, "steel"), (2210, 300, 220, "wood")]
+_SL_GRATES = [(260, 420), (1700, 380)]    # x, w (floor grates, glowing from below)
+_SL_EXIT = (2470, 640, 300)               # doorway x, top y, w
+_SL_LAMPS = [(330, 560), (1980, 560)]
+
+
+def _sl_stair_steps():
+    st = _SL_ST
+    return [(st["x_top"] + (i + 0.5) * st["run"], st["y_top"] + (i + 1) * st["rise"]) for i in range(st["n"])]
+
+
+SHAFT_LOWER_MARKS = {
+    "size": (SHAFT_LOWER_W, SHAFT_LOWER_H),
+    "drawable": (_SL_X0, _SL_Y0, _SL_X1, _SL_Y1),
+    "char_scale": 0.75,
+    "feet_y": _SL_FEET,
+    "wall_y": _SL_WALL,
+    "stair_top": (_SL_ST["x_top"], _SL_ST["y_top"]),        # platform up-left (x < -150)
+    "stair_steps": _sl_stair_steps(),                        # tread centres, top first (descend right)
+    "stair_bottom": (_SL_ST["x_top"] + _SL_ST["n"] * _SL_ST["run"], _SL_FEET),
+    "crate_a": (_SL_CRATE_A[0] - _SL_CRATE_A[1] / 2, _SL_FEET - _SL_CRATE_A[2], _SL_CRATE_A[1], _SL_CRATE_A[2]),
+    "hide_feet": (_SL_CRATE_A[0] - _SL_CRATE_A[1] / 2 - 140, _SL_FEET),   # crouched left of crate A
+    "hide_feet2": (_SL_CRATE_A[0] - _SL_CRATE_A[1] / 2 - 330, _SL_FEET),
+    "crate_b": (_SL_CRATE_B[0][0] - _SL_CRATE_B[0][1] / 2, _SL_FEET - _SL_CRATE_B[0][2], _SL_CRATE_B[0][1],
+                _SL_CRATE_B[0][2]),
+    "perch": (_SL_CRATE_B[0][0] + 110, _SL_FEET - _SL_CRATE_B[0][2]),    # sit on the lower crate (behind a guard)
+    "guard_a": (2120, _SL_FEET),     # gruff guard in front of the crate stack
+    "guard_b": (1830, _SL_FEET),
+    "puddle": (2150, _SL_FEET + 6),  # floor spot for the shadow puddle
+    "grates": [(x, _SL_FEET - 40, w, 110) for (x, w) in _SL_GRATES],
+    "exit": (_SL_EXIT[0], _SL_EXIT[1], _SL_EXIT[2], _SL_WALL - _SL_EXIT[1]),
+    "exit_feet": (_SL_EXIT[0] + _SL_EXIT[2] / 2, _SL_WALL + 40),
+    "pipes": [(-900, 760, 4200, 95), (-900, 985, 4200, 70)],     # x, centre y, length, radius
+    "lamps": _SL_LAMPS,
+    "cam": {
+        "wide": (1300, 1000, 0.6),
+        "stair": (420, 1000, 0.95),
+        "hide": (1180, 1170, 1.7),
+        "troll": (2190, 1060, 1.9),
+        "sneak": (1650, 1120, 1.15),
+        "exit": (2380, 1100, 1.3),
+    },
+}
+
+
+def _sl_wall(c):
+    x0, x1, y0, y1 = _SL_X0, _SL_X1, _SL_Y0, _SL_Y1
+    g = cairo.LinearGradient(0, y0, 0, _SL_WALL)
+    g.add_color_stop_rgba(0, *hexc("#0a1d24"))
+    g.add_color_stop_rgba(0.55, *hexc("#1a3a42"))
+    g.add_color_stop_rgba(1, *hexc("#24464d"))
+    c.rectangle(x0, y0, x1 - x0, _SL_WALL - y0 + 2)
+    c.set_source(g)
+    c.fill()
+    # curved concrete bands of the shaft wall + panel joints
+    for k, yy in enumerate(range(260, _SL_WALL, 170)):
+        line(c, [(x0, yy), (x1, yy)], "#163238", 5)
+        for xx in range(int(x0) + (k % 2) * 210, int(x1), 420):
+            line(c, [(xx, yy), (xx, yy + 170)], "#163238", 4)
+    for k in range(10):
+        sx = hash01(k, 61) * (x1 - x0) + x0
+        polyf(c, [(sx - 20, 300 + 400 * hash01(k, 62)), (sx + 20, 300 + 400 * hash01(k, 62)),
+                  (sx + 26, _SL_WALL), (sx - 26, _SL_WALL)], (0.05, 0.13, 0.15, 0.35), 0)
+    # big level stencil
+    core.text(c, "B3", 1720, 610, 220, core.alpha("#0f262c", 0.85), "black")
+    rect(c, 1620, 640, 230, 12, core.alpha("#c9a227", 0.55), 0)
+    # girders overhead (underside of the catwalks) + darkness above
+    for (yy, h) in ((40, 70), (-300, 50)):
+        rect(c, x0, yy, x1 - x0, h, "#1b2f36", 5)
+        rect(c, x0, yy + h, x1 - x0, 14, "#14252b", 3)
+        for k in range(int((x1 - x0) / 260)):
+            bx = x0 + k * 260
+            line(c, [(bx, yy + h), (bx + 130, yy + h + 140)], "#1b2f36", 12)
+            line(c, [(bx + 260, yy + h), (bx + 130, yy + h + 140)], "#1b2f36", 12)
+    gt = cairo.LinearGradient(0, y0, 0, 300)
+    gt.add_color_stop_rgba(0, 0.01, 0.04, 0.06, 0.95)
+    gt.add_color_stop_rgba(1, 0.01, 0.04, 0.06, 0.0)
+    c.rectangle(x0, y0, x1 - x0, 300 - y0)
+    c.set_source(gt)
+    c.fill()
+
+
+def _sl_pipes(c):
+    x0, x1 = _SL_X0, _SL_X1
+    for (px, py, L, r) in SHAFT_LOWER_MARKS["pipes"]:
+        col = "#3f6670" if r > 80 else "#4a6a62"
+        rect(c, px, py - r, L, 2 * r, col, 6)
+        line(c, [(px, py - r * 0.55), (px + L, py - r * 0.55)], mixc(col, "#ffffff", 0.22), r * 0.22)
+        line(c, [(px, py + r * 0.6), (px + L, py + r * 0.6)], mixc(col, INK, 0.3), r * 0.25)
+        for k in range(int(L / 520) + 1):
+            fx = px + 260 + k * 520 + (60 if r < 80 else 0)
+            rect(c, fx - 18, py - r - 12, 36, 2 * r + 24, "#2f4a52", 5, r=6)
+            for yy in (py - r * 0.7, py, py + r * 0.7):
+                core.circle(c, fx, yy, 5)
+            core.fill(c, "#1d3037")
+    # pipe brackets to the wall
+    for k in range(9):
+        bx = x0 + 300 + k * 480
+        rect(c, bx - 14, 870, 28, 50, "#1f363d", 4)
+    # vertical riser into the floor with an elbow
+    vx, vr = 1080, 80
+    rect(c, vx - vr, -400, 2 * vr, _SL_WALL - 60 + 400, "#3f6670", 6)
+    line(c, [(vx - vr * 0.5, -400), (vx - vr * 0.5, _SL_WALL - 70)], "#5d838c", 14)
+    rect(c, vx - vr - 14, _SL_WALL - 90, 2 * vr + 28, 40, "#2f4a52", 5, r=6)
+    rect(c, vx - vr - 14, 600, 2 * vr + 28, 30, "#2f4a52", 5, r=6)
+    # twin risers on the right
+    for (vx2, vr2) in ((2020, 46), (2130, 46)):
+        rect(c, vx2 - vr2, -400, 2 * vr2, _SL_WALL - 30 + 400, "#4a6a62", 5)
+        line(c, [(vx2 - vr2 * 0.4, -400), (vx2 - vr2 * 0.4, _SL_WALL - 40)], "#64867c", 8)
+    # big red valve wheel + gauge on the main pipe
+    wx, wy = 1560, 760
+    core.circle(c, wx, wy, 86)
+    core.stroke(c, INK, 20)
+    core.circle(c, wx, wy, 86)
+    core.stroke(c, "#b5544a", 12)
+    for a in range(4):
+        an = a * math.pi / 4
+        line(c, [(wx - math.cos(an) * 86, wy - math.sin(an) * 86), (wx + math.cos(an) * 86, wy + math.sin(an) * 86)],
+             "#b5544a", 9)
+    core.circle(c, wx, wy, 18)
+    fs(c, "#7a2f2a", 4)
+    core.circle(c, 760, 985 - 120, 44)
+    fs(c, "#e9eef2", 5)
+    line(c, [(760, 865), (782, 840)], INK, 4)
+    line(c, [(760, 985 - 70), (760, 985 - 76)], INK, 6)
+    # junction box + cable tray
+    rect(c, 560, 1060, 220, 160, "#34505a", 5, r=8)
+    rect(c, 580, 1080, 180, 26, "#24404a", 0, r=4)
+    for k in range(3):
+        core.circle(c, 610 + k * 40, 1160, 8)
+        fs(c, ["#2a5a40", "#5a2a2a", "#2a5a40"][k], 3)
+    rect(c, x0, 1150, 400 - x0, 18, "#2a434b", 4)
+
+
+def _sl_floor(c):
+    x0, x1, y1 = _SL_X0, _SL_X1, _SL_Y1
+    c.rectangle(x0, _SL_WALL, x1 - x0, y1 - _SL_WALL)
+    core.fill(c, "#2c4248")
+    props.hazard_band(c, x0, _SL_WALL - 30, x1 - x0, 24, step=44, col1="#9c8530", col2="#1a2a30", lw=3)
+    c.rectangle(x0, _SL_WALL, x1 - x0, 24)
+    core.fill(c, core.alpha(INK, 0.4))
+    # floor plates (perspective seams toward a low VP)
+    vpx = 1300
+    for k in range(-14, 26):
+        xx = k * 180
+        line(c, [(xx, _SL_WALL), (vpx + (xx - vpx) * 2.6, y1)], "#24383e", 4)
+    for yy in (1380, 1480, 1620, 1820, 2100):
+        line(c, [(x0, yy), (x1, yy)], "#24383e", 4)
+    # grates (dark slots; the teal glow from below is in the glow pass)
+    for (gx, gw) in _SL_GRATES:
+        polyf(c, [(gx, _SL_FEET - 40), (gx + gw, _SL_FEET - 40), (gx + gw + 40, _SL_FEET + 70), (gx - 40, _SL_FEET + 70)],
+              "#1a2a2f", 5)
+        for k in range(1, 9):
+            u = k / 9
+            line(c, [(gx + gw * u, _SL_FEET - 36), (gx - 40 + (gw + 80) * u, _SL_FEET + 66)], "#3b545b", 6)
+    # puddle + oil stain
+    ell(c, 2150, 1560, 160, 22, "#24383e", 0)
+    ell(c, 640, 1640, 120, 18, "#22343a", 0)
+
+
+def _sl_grate_glow(c):
+    for (gx, gw) in _SL_GRATES:
+        core.radial_glow(c, gx + gw / 2, _SL_FEET + 20, gw * 0.8, PAL["power"], 0.30)
+        c.save()
+        core.poly(c, [(gx, _SL_FEET - 40), (gx + gw, _SL_FEET - 40), (gx + gw + 40, _SL_FEET + 70), (gx - 40, _SL_FEET + 70)])
+        c.clip()
+        for k in range(9):
+            u = (k + 0.5) / 9
+            line(c, [(gx + gw * u, _SL_FEET - 36), (gx - 40 + (gw + 80) * u, _SL_FEET + 66)],
+                 core.alpha(PAL["power"], 0.55), 12)
+        c.restore()
+
+
+def _sl_stair(c, part="all"):
+    st = _SL_ST
+    xt, yt, n, rise, run = st["x_top"], st["y_top"], st["n"], st["rise"], st["run"]
+    xb, yb = xt + n * run, yt + n * rise
+    if part in ("all", "back"):
+        # landing platform (top left) + back stringer + rail
+        rect(c, _SL_X0, yt, xt - _SL_X0 + 20, 46, "#36545f", 5)
+        rect(c, _SL_X0, yt + 46, xt - _SL_X0 + 20, 24, "#24404c", 4)
+        polyf(c, [(xt, yt - 30), (xt, yt + 20), (xb, yb + 20), (xb, yb - 30)], "#24404c", 4.5)
+        line(c, [(xt, yt - 330), (xb, yb - 330)], INK, 10)
+        line(c, [(xt, yt - 330), (xb, yb - 330)], "#5d7f8c", 6)
+        for k in range(6):
+            px, py = lerp(xt, xb, k / 5), lerp(yt, yb, k / 5)
+            line(c, [(px, py - 330), (px, py - 30)], "#46666f", 5)
+        for i in range(n):
+            xr = xt + (i + 1) * run
+            ytr = yt + (i + 1) * rise
+            rect(c, xr - run - 6, ytr - 4, run + 12, 20, "#4f6f7b", 4, r=3)
+            line(c, [(xr - run, ytr + 1), (xr, ytr + 1)], "#7fa0ac", 3)
+        # support column under the stair
+        rect(c, xb - 360, yb - 330, 30, 330, "#24404c", 4)
+    if part in ("all", "front"):
+        polyf(c, [(xt + 10, yt + 30), (xt + 10, yt + 90), (xb - 10, yb + 90), (xb - 10, yb + 30)], "#2c4a56", 5)
+        line(c, [(xt + 10, yt - 260), (xb - 10, yb - 260)], INK, 12)
+        line(c, [(xt + 10, yt - 260), (xb - 10, yb - 260)], "#7fa0ac", 7)
+        for k in range(4):
+            px, py = lerp(xt + 10, xb - 10, k / 3), lerp(yt, yb, k / 3)
+            line(c, [(px, py - 260), (px, py + 40)], "#5d7f8c", 6)
+
+
+def _sl_crates(c, which="all"):
+    if which in ("all", "a"):
+        cx, w, h = _SL_CRATE_A
+        props.crate(c, cx, _SL_FEET, 1.0, w=w, h=h, kind="wood", stencil="HUSHCORP", seed=1)
+    if which in ("all", "b"):
+        for (cx, w, h, kind) in _SL_CRATE_B[:1]:
+            props.crate(c, cx, _SL_FEET, 1.0, w=w, h=h, kind=kind, stencil="HC-07")
+        cx, w, h, kind = _SL_CRATE_B[1]
+        props.crate(c, cx, _SL_FEET - _SL_CRATE_B[0][2] - 4, 1.0, w=w, h=h, kind=kind, stencil=None)
+    if which == "all":
+        # clutter: a barrel and a small crate under the stair
+        bx = 920
+        rect(c, bx - 60, _SL_FEET - 220, 120, 220, "#5a6f4a", 5, r=14)
+        for yy in (_SL_FEET - 170, _SL_FEET - 60):
+            line(c, [(bx - 60, yy), (bx + 60, yy)], "#43553a", 6)
+        props.crate(c, 470, _SL_FEET - 10, 1.0, w=220, h=170, kind="steel", stencil=None)
+
+
+def _sl_exit(c, lit_sign=False):
+    ex, et, ew = _SL_EXIT
+    rect(c, ex - 30, et - 30, ew + 60, _SL_WALL - et + 30, "#3b4757", 5)
+    c.move_to(ex, _SL_WALL)
+    c.line_to(ex, et + 60)
+    c.curve_to(ex, et, ex + ew, et, ex + ew, et + 60)
+    c.line_to(ex + ew, _SL_WALL)
+    c.close_path()
+    fs(c, "#081418", 4)
+    rect(c, ex + 20, et - 110, ew - 40, 60, "#24404c", 4, r=8)
+    core.text(c, "SERVICE TUNNEL", ex + ew / 2 - 14, et - 70, 26, "#cfe9ee", "ui")
+    polyf(c, [(ex + ew - 40, et - 92), (ex + ew - 26, et - 80), (ex + ew - 40, et - 68)], "#cfe9ee", 0)
+
+
+def _sl_lamps(c, on):
+    for (lx, ly) in _SL_LAMPS:
+        props.cage_lamp(c, lx, ly, 0.9, on=on, color="#ffe9b0", halo=False)
+        if on:
+            by = ly + 92 * 0.9
+            core.radial_glow(c, lx, by, 320, "#fff3d0", 0.45)
+            gb = cairo.LinearGradient(0, by, 0, _SL_FEET + 60)
+            gb.add_color_stop_rgba(0, 1.0, 0.96, 0.85, 0.22)
+            gb.add_color_stop_rgba(1, 1.0, 0.96, 0.85, 0.04)
+            core.poly(c, [(lx - 30, by), (lx + 30, by), (lx + 380, _SL_FEET + 60), (lx - 380, _SL_FEET + 60)])
+            c.set_source(gb)
+            c.fill()
+            ell(c, lx, _SL_FEET + 60, 400, 70, core.alpha("#fff3d0", 0.16), 0)
+
+
+def _sl_base(c):
+    _sl_wall(c)
+    _sl_pipes(c)
+    _sl_exit(c)
+    _sl_lamps(c, 0.0)
+    _sl_floor(c)
+    _sl_stair(c, "back")
+    _sl_crates(c, "all")
+
+
+def _sl_emissive(c):
+    """What still reads in the dark: grate glow, exit sign, box LEDs."""
+    _sl_grate_glow(c)
+    ex, et, ew = _SL_EXIT
+    core.radial_glow(c, ex + ew / 2, et - 80, 200, "#5fffb0", 0.18)
+    core.text(c, "SERVICE TUNNEL", ex + ew / 2 - 14, et - 70, 26, core.alpha("#7dffc0", 0.55), "ui")
+    for k in range(3):
+        core.circle(c, 610 + k * 40, 1160, 7)
+        core.fill(c, ["#3ddc84", "#ff3b5c", "#3ddc84"][k])
+
+
+def _sl_compose(c, state):
+    """state: "lit" (surfaces under neutral light: the flashlight-cone
+    version), "dark", or "on" (work lamps on)."""
+    _sl_base(c)
+    if state == "on":
+        _sl_lamps(c, 1.0)
+        _sl_grate_glow(c)
+    elif state == "dark":
+        x0, y0, x1, y1 = c.clip_extents()
+        c.rectangle(x0, y0, x1 - x0, y1 - y0)
+        core.fill(c, core.alpha(DARK, DARK_A))
+        _sl_emissive(c)
+    else:
+        _sl_grate_glow(c)
+
+
+def _sl_fg(c, parts):
+    if "stair" in parts:
+        _sl_stair(c, "front")
+    if "crate" in parts:
+        _sl_crates(c, "a")
+
+
+def shaft_lower(ctx, t=0.0, layer="bg", power=0.0, lit=None, parts=None):
+    """The lower level of the shaft (world 2600 x 1920, people at s=0.75;
+    drawable x -900..3300, y -1000..2620). See SHAFT_LOWER_MARKS.
+
+    A long steel stair comes down from the catwalk platform (top left) to
+    the floor; big horizontal pipes with flanges and a red valve wheel, a
+    vertical riser, a big crate to hide beside (crate_a), a crate stack to
+    perch on behind a guard (crate_b / perch), a barrel, floor grates
+    glowing faint teal from below, and the SERVICE TUNNEL doorway (right).
+
+    power 0..1: work lamps (default 0: it is dark in s03). lit: True =
+    surfaces as if lit, lamps off: draw it inside a flashlight cone (clip to
+    the cone, then call with lit=True); False = the dark version (what is
+    outside the cones; same as power=0). Every state is one cached bake;
+    power in (0, 1) mixes two of them.
+    layer "bg" | "fg" (parts: "stair" = front stringer + handrail
+    (default), "crate" = crate A again over someone standing BEHIND it in
+    depth) | "shade" (character darkness, sets.shaded()). fg pieces
+    follow the same power / lit.
+    """
+    x0, y0, x1, y1 = _SL_X0, _SL_Y0, _SL_X1, _SL_Y1
+    p = clamp(float(power))
+    if lit is True:
+        states = [("lit", 1.0)]
+    elif lit is False or p <= 0.0:
+        states = [("dark", 1.0)]
+    elif p >= 1.0:
+        states = [("on", 1.0)]
+    else:
+        states = [("dark", 1.0), ("on", p)]
+    if layer == "bg":
+        _overscan(ctx, x0, y0, x1, y1, "#03080b", "#0e171a", "#0a1d24", "#0a1d24")
+        for st, a in states:
+            layer_blit(ctx, ("shaft_lower", st), x0, y0, x1 - x0, y1 - y0, lambda c, st=st: _sl_compose(c, st),
+                       alpha=a)
+    elif layer == "fg":
+        parts = tuple(parts or ("stair",))
+        cxa, cwa, cha = _SL_CRATE_A
+        boxes = {"stair": (x0, 80, 1100 - x0, 1580),
+                 "crate": (cxa - cwa / 2 - 12, _SL_FEET - cha - 44, cwa + 50, cha + 56)}
+        for part in parts:
+            bb = boxes.get(part)
+            if bb is None:
+                continue
+            for st, a in states:
+                dim = DARK_A if st == "dark" else 0.0
+                sprite(ctx, ("sl_fg", part, st), *bb,
+                       lambda c, part=part, dim=dim, bb=bb: _dim_into(c, bb, dim, lambda cc: _sl_fg(cc, (part,))),
+                       alpha=a)
+    elif layer == "shade":
+        if lit is True:
+            return
+        a = DARK_A * 0.94 * (1 - (p if lit is None else 0.0))
+        if a > 0.003:
+            vx0, vy0, vx1, vy1 = ctx.clip_extents()
+            ctx.rectangle(vx0, vy0, vx1 - vx0, vy1 - vy0)
+            core.fill(ctx, core.alpha(DARK, a))

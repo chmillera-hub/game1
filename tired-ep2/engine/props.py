@@ -397,18 +397,27 @@ def rock(ctx, x, y, s=1.0, rot=0.0, seed=3):
         core.fill(ctx, "#6b677a")
 
 
-def recorder(ctx, x, y, s=1.0, t=0.0, led=None, glow=0.0, rot=0.0, only_led=False):
+RECORDER_BUTTON = (-22, -29)   # top button (local, s=1): where a thumb presses
+
+
+def recorder(ctx, x, y, s=1.0, t=0.0, led=None, glow=0.0, rot=0.0, only_led=False, button=0.0):
     """Tiny black recording device (~96 x 58 at s=1). ANCHOR = centre.
 
-    led: LED brightness 0..1 (None -> blinks with t, 1 Hz). glow 0..1 adds a
-    red halo. only_led=True draws just the LED + halo (for "blinking
-    through his coat pocket").
+    led: LED brightness 0..1 (None -> blinks with t, 1 Hz; False/0 = off,
+    True/1 = steady on). glow 0..1 adds a red halo. only_led=True draws just
+    the LED + halo (for "blinking through his coat pocket"). button 0..1
+    pushes the small top button down (the off "click"; RECORDER_BUTTON is
+    its local position).
     """
     if led is None:
         led = 1.0 if (t % 1.0) < 0.45 else 0.15
+    led = float(led)
     with core.saved(ctx, x, y, s, rot):
         lx, ly = 30, -12
         if not only_led:
+            bx, by = RECORDER_BUTTON
+            bh = 12 - 8 * clamp(button)
+            rect(ctx, bx - 13, by - bh, 26, bh + 6, "#3a3746", 3.5, r=4)
             rect(ctx, -48, -29, 96, 58, "#26242f", 4.5, r=14)
             rect(ctx, -40, -22, 80, 10, "#3a3746", 0, r=4)
             for k in range(4):
@@ -1095,3 +1104,902 @@ def doormat(ctx, x, y, s=1.0, rot=0.0, bunch=0.0, text="GO AWAY", t=0.0):
         if b > 0.05:
             polyf(ctx, [(-270, 70), (-270 + 90 * b, 70 + 10 * b), (-250 + 70 * b, 30 - 40 * b)],
                   "#a07038", 4)
+
+
+# ============================================================================
+# Episode 2 props: shaft / tunnel / control room / bedroom-at-dawn
+# ============================================================================
+STEEL, STEEL_SH, STEEL_DK, STEEL_HI = "#aab6c0", "#7f8d99", "#4a5868", "#d3dbe1"
+HAZ_Y = "#ffc93c"
+
+
+def _spaced_w(ctx, s, size, font="ui", spacing=0.45):
+    core.set_font(ctx, font, size)
+    advs = [ctx.text_extents(ch)[4] for ch in s]
+    return sum(advs) + spacing * size * (len(s) - 1)
+
+
+def hazard_band(ctx, x, y, w, h, step=None, col1=HAZ_Y, col2=INK, lw=3.0, slant=1.0):
+    """Yellow/ink diagonal hazard stripes filling the rect (x, y, w, h)."""
+    step = step or max(12.0, h * 1.1)
+    ctx.save()
+    ctx.rectangle(x, y, w, h)
+    ctx.clip()
+    ctx.rectangle(x, y, w, h)
+    core.fill(ctx, col1)
+    xx = x - h * slant - step
+    while xx < x + w + step:
+        core.poly(ctx, [(xx, y + h), (xx + step * 0.5, y + h), (xx + step * 0.5 + h * slant, y),
+                        (xx + h * slant, y)])
+        xx += step
+    core.fill(ctx, col2)
+    ctx.restore()
+    if lw:
+        ctx.rectangle(x, y, w, h)
+        core.stroke(ctx, INK, lw)
+
+
+# ----------------------------------------------------------------------------
+# pod nameplate (dusty, thumb-wipe reveal)
+# ----------------------------------------------------------------------------
+def nameplate_size(text="CURIOSITY", sub="SPECIMEN 00", size=44):
+    """(w, h) of a nameplate at s=1 (needs a font context; cheap)."""
+    surf = cairo.ImageSurface(cairo.FORMAT_ARGB32, 1, 1)
+    c = cairo.Context(surf)
+    tw = _spaced_w(c, text, size, "ui", 0.12)
+    sw = _spaced_w(c, sub, size * 0.45, "mono", 0.25) if sub else 0
+    w = max(220.0, tw + 64, sw + 64)
+    h = size * 2.25 if sub else size * 1.6
+    return w, h
+
+
+def nameplate(ctx, x, y, s=1.0, text="CURIOSITY", sub="SPECIMEN 00", dust=0.0, wipe=0.0,
+              rot=0.0, seed=0, size=44, light=1.0):
+    """Brushed-steel pod nameplate with engraved text. ANCHOR = centre.
+
+    ~300 x 100 at s=1 (the width follows the text; nameplate_size()).
+    sub = small top line (None = one line). dust 0..1 lays a grey-brown film
+    over it (0.85+ hides the text). wipe 0..1 clears the dust from left to
+    right behind a ragged front (the thumb-wipe insert: animate wipe with
+    the thumb's x), leaving a faint smear. light < 1 darkens it (dark sets).
+    """
+    w, h = nameplate_size(text, sub, size)
+    with core.saved(ctx, x, y, s, rot):
+        x0, y0 = -w / 2, -h / 2
+        rect(ctx, x0, y0, w, h, "#c4ccd3", 4.5, r=10)
+        rect(ctx, x0 + 6, y0 + 5, w - 12, 5, "#e4eaee", 0, r=2)
+        rect(ctx, x0 + 6, y0 + h - 10, w - 12, 5, "#9aa6b0", 0, r=2)
+        for k in range(3):
+            yy = y0 + h * (0.3 + 0.22 * k)
+            line(ctx, [(x0 + 18, yy), (x0 + w * (0.5 + 0.3 * hash01(k, seed + 3)), yy)],
+                 (1, 1, 1, 0.22), 2)
+        for (rx, ry) in ((x0 + 14, y0 + 14), (x0 + w - 14, y0 + 14),
+                         (x0 + 14, y0 + h - 14), (x0 + w - 14, y0 + h - 14)):
+            core.circle(ctx, rx, ry, 5.5)
+            fs(ctx, "#8d99a3", 2)
+        if sub:
+            spaced_text(ctx, sub, 0, y0 + size * 0.78, size * 0.45, "#4a5868", "mono", 0.25)
+            spaced_text(ctx, text, 0, y0 + h - size * 0.42, size, "#1f2a33", "ui", 0.12)
+        else:
+            spaced_text(ctx, text, 0, size * 0.36, size, "#1f2a33", "ui", 0.12)
+        d = clamp(dust)
+        if d > 0.01:
+            ctx.save()
+            core.rrect(ctx, x0, y0, w, h, 10)
+            ctx.clip()
+            wf = clamp(wipe)
+            xw = x0 - 30 + (w + 60) * wf
+            if wf > 0:
+                # ragged wipe front; dust remains to the right of it
+                pts = [(x0 + w + 40, y0 - 10)]
+                n = 9
+                for i in range(n + 1):
+                    yy = y0 - 10 + (h + 20) * i / n
+                    pts.append((xw + (hash01(i, seed + 11) - 0.5) * 22, yy))
+                pts.append((x0 + w + 40, y0 + h + 10))
+                core.poly(ctx, [pts[0]] + pts[1:-1][::1] + [pts[-1]])
+                ctx.clip()
+            ctx.rectangle(x0 - 4, y0 - 4, w + 8, h + 8)
+            core.fill(ctx, core.alpha("#8f8676", 0.9 * d))
+            for i in range(6):
+                bx = x0 + w * hash01(i, seed + 20)
+                by = y0 + h * hash01(i, seed + 21)
+                ell(ctx, bx, by, 30 + 40 * hash01(i, seed + 22), 10 + 14 * hash01(i, seed + 23),
+                    core.alpha("#776f61", 0.55 * d), 0, rot=hash01(i, seed + 24) - 0.5)
+            for i in range(14):
+                core.circle(ctx, x0 + w * hash01(i, seed + 30), y0 + h * hash01(i, seed + 31),
+                            1.5 + 2.5 * hash01(i, seed + 32))
+            core.fill(ctx, core.alpha("#5e574b", 0.8 * d))
+            for i in range(4):
+                yy = y0 + h * (0.2 + 0.2 * i)
+                line(ctx, [(x0 + w * hash01(i, seed + 40), yy),
+                           (x0 + w * hash01(i, seed + 40) + 60, yy + 3)], core.alpha("#b8b0a0", 0.5 * d), 3)
+            if wf > 0:
+                # dust heaped at the wipe front
+                curve(ctx, [(xw + 4, y0 - 4), (xw + 10, y0 + h * 0.5), (xw + 2, y0 + h + 4)],
+                      core.alpha("#6e6657", 0.8 * d), 7)
+            ctx.restore()
+            if wf > 0:
+                # faint thumb smear left behind
+                ctx.save()
+                core.rrect(ctx, x0, y0, w, h, 10)
+                ctx.clip()
+                for i in range(3):
+                    yy = y0 + h * (0.3 + 0.2 * i)
+                    line(ctx, [(x0 + 10, yy), (min(xw, x0 + w) - 10, yy + 2 * (i - 1))],
+                         core.alpha("#8f8676", 0.16 * d), 10)
+                ctx.restore()
+        if light < 1:
+            core.rrect(ctx, x0, y0, w, h, 10)
+            core.fill(ctx, core.alpha("#03070b", 0.85 * (1 - clamp(light))))
+    return (x - w * s / 2, y - h * s / 2, w * s, h * s)
+
+
+# ----------------------------------------------------------------------------
+# security camera (wall mount, red LED)
+# ----------------------------------------------------------------------------
+def security_camera(ctx, x, y, s=1.0, t=0.0, cam_angle=0.35, led=None, face=0.0, flip=False,
+                    glow=1.0, only_led=False):
+    """Wall security camera. ANCHOR = the wall mount plate.
+
+    The arm reaches ~110 px out (to the right; flip=True mirrors it) to a
+    pivot; the body (~200 x 80) hangs from the pivot and rotates by
+    cam_angle (radians, 0 = lens pointing out level, + = tilting down,
+    ~1.2 = looking down steeply). face 0..1 swivels the lens toward the
+    viewer (the body foreshortens, the round lens shows). led 0..1 (None =
+    1 Hz blink); glow scales the LED halo. only_led=True draws just the LED
+    + halo (on top of a darkened camera). Returns the lens centre (caller
+    coordinates) so a glint / whir can be placed.
+    """
+    if led is None:
+        led = 1.0 if (t % 1.0) < 0.5 else 0.12
+    led = clamp(float(led))
+    sx = -1 if flip else 1
+    fc = clamp(face)
+    L = 210 * (1 - 0.55 * fc)
+    with core.saved(ctx, x, y, (s * sx, s)):
+        if not only_led:
+            rect(ctx, -26, -46, 52, 92, STEEL_DK, 4, r=8)
+            for by in (-30, 30):
+                core.circle(ctx, 0, by, 5)
+                fs(ctx, STEEL_SH, 2)
+            line(ctx, [(0, 0), (90, 6), (110, 40)], INK, 20)
+            line(ctx, [(0, 0), (90, 6), (110, 40)], "#8693a0", 11)
+        with core.saved(ctx, 110, 44, 1.0, cam_angle):
+            bx0, bx1 = -64, -64 + L
+            if not only_led:
+                polyf(ctx, [(bx0 - 12, -12), (bx1 + 22, -12), (bx1 + 30, -2), (bx0 - 12, -2)], "#c9d1d8", 4)
+                rect(ctx, bx0, -4, L, 70, "#e6ebef", 4.5, r=14)
+                rect(ctx, bx0 + 8, 42, L - 16, 16, "#b9c3cc", 0, r=6)
+                rect(ctx, bx0 + 12, 8, 46, 8, "#c9d1d8", 0, r=3)
+                lx = bx1 + 2
+                rx = 9 + 31 * fc
+                ell(ctx, lx, 31, rx + 6, 34, "#3b4757", 4.5)
+                ell(ctx, lx + 2 * (1 - fc), 31, rx, 26, "#121a24", 3)
+                ell(ctx, lx + 2 * (1 - fc), 31, rx * 0.5, 13, "#24425a", 0)
+                ell(ctx, lx - rx * 0.3, 22, max(2.0, rx * 0.25), 6, (1, 1, 1, 0.55), 0)
+            lex, ley = bx1 - 26, 12
+            if led > 0.2 and glow > 0:
+                core.radial_glow(ctx, lex, ley, 46 * glow, PAL["danger"], 0.6 * led)
+            core.circle(ctx, lex, ley, 7)
+            fs(ctx, mixc("#4a1620", "#ff3b5c", led), 2.5)
+            if led > 0.5:
+                core.circle(ctx, lex - 2, ley - 2, 2.2)
+                core.fill(ctx, "#ffd0d8")
+    ca, sa = math.cos(cam_angle), math.sin(cam_angle)
+    lx_l, ly_l = -64 + L + 2, 31
+    px = 110 + lx_l * ca - ly_l * sa
+    py = 44 + lx_l * sa + ly_l * ca
+    return (x + px * s * sx, y + py * s)
+
+
+# ----------------------------------------------------------------------------
+# low pipe (the bonk)
+# ----------------------------------------------------------------------------
+def low_pipe(ctx, x, y, s=1.0, r=46, rise=300, span=300, reach=(700, 500), part="all", t=0.0,
+             wobble=0.0, wobble_t0=0.0, hazard=True, sign=True, color="#6f8792", side=1):
+    """A ceiling pipe that DIPS to face height (low clearance): it runs
+    level `rise` above the face, bends down, runs low for `span`, and bends
+    back up. ANCHOR = the contact point: the outer side of the descending
+    bend at face height, i.e. where the face of someone walking LEFT hits it
+    (side=-1 mirrors: walking right). reach = (right, left) lengths of the
+    high runs. hazard: yellow/black bands on the dip; sign: a hanging MIND
+    YOUR HEAD sign over the high run. wobble 0..1 after a bonk at
+    wobble_t0: the dip shivers (~1 s decay) and the sign swings (~2 s).
+    part is accepted for symmetry ("all"/"bg" draw it, "fg" draws nothing).
+    Returns the contact point.
+    """
+    if part == "fg":
+        return (x, y)
+    k = t - wobble_t0
+    jx = jy = sw = 0.0
+    if wobble > 0 and 0 <= k < 2.4:
+        a_ = wobble * math.exp(-3.2 * k)
+        jx = a_ * 8 * math.sin(k * 38)
+        jy = a_ * 4 * math.sin(k * 29 + 1)
+        sw = wobble * 0.30 * math.sin(k * 7.5) * math.exp(-1.6 * k)
+    R = 90
+    with core.saved(ctx, x, y, (s * side, s)):
+        xd = -r                                  # descending section centre line
+        yt = -rise                               # high run
+        yb = r * 0.4                             # low run (just below the face)
+        dk = mixc(color, INK, 0.35)
+        hi = mixc(color, "#ffffff", 0.32)
+
+        def path(dx=0.0, dy=0.0):
+            ctx.move_to(xd + reach[0], yt)
+            ctx.line_to(xd + R, yt)
+            ctx.curve_to(xd + R * 0.45, yt, xd, yt + R * 0.45, xd, yt + R)
+            ctx.line_to(xd + dx, yb - R + dy)
+            ctx.curve_to(xd + dx, yb - R * 0.45 + dy, xd - R * 0.45 + dx, yb + dy, xd - R + dx, yb + dy)
+            ctx.line_to(xd - span + R + dx, yb + dy)
+            ctx.curve_to(xd - span + R * 0.45 + dx, yb + dy, xd - span + dx, yb - R * 0.45 + dy,
+                         xd - span + dx, yb - R + dy)
+            ctx.line_to(xd - span, yt + R)
+            ctx.curve_to(xd - span, yt + R * 0.45, xd - span - R * 0.45, yt, xd - span - R, yt)
+            ctx.line_to(xd - span - reach[1], yt)
+        path(jx, jy)
+        core.stroke(ctx, INK, 2 * r + 10, cap="butt")
+        path(jx, jy)
+        core.stroke(ctx, color, 2 * r, cap="butt")
+        ctx.save()
+        ctx.translate(-r * 0.35, -r * 0.35)
+        path(jx, jy)
+        core.stroke(ctx, hi, r * 0.35, cap="butt")
+        ctx.restore()
+        # flanges + hangers on the high runs
+        for fx in (xd + reach[0] * 0.55, xd - span - reach[1] * 0.5):
+            rect(ctx, fx - 11, yt - r - 7, 22, 2 * r + 14, "#4a5868", 4, r=4)
+            line(ctx, [(fx + 60, yt - r), (fx + 60, yt - r - 260)], "#4a5868", 7)
+        rect(ctx, xd - r - 8 + jx, yb - R - 16 + jy, 2 * r + 16, 20, "#4a5868", 4, r=4)
+        if hazard:
+            hazard_band(ctx, xd - r + jx, yt + R + 30, 2 * r, max(20, yb - R - 46 - (yt + R + 30)), step=34,
+                        lw=3.5)
+            hazard_band(ctx, xd - span + R + 10 + jx, yb - r + jy, span - 2 * R - 20, 2 * r, step=40, lw=3.5)
+        if sign:
+            sx_, sy_ = xd - span - R - 40, yt + r
+            line(ctx, [(sx_, sy_), (sx_, sy_ + 26)], "#5a6470", 3)
+            with core.saved(ctx, sx_, sy_ + 26, (side, 1.0), sw):
+                rect(ctx, -86, 0, 172, 78, HAZ_Y, 4.5, r=8)
+                core.text(ctx, "MIND", 0, 32, 26, INK, "ui")
+                core.text(ctx, "YOUR HEAD", 0, 62, 24, INK, "ui")
+    return (x, y)
+
+
+# ----------------------------------------------------------------------------
+# HushCorp keycard
+# ----------------------------------------------------------------------------
+def _emb_photo(ctx, x, y, w, h):
+    """Tiny ID photo of Embarrassment (light-blue backdrop) in rect x, y, w, h."""
+    ctx.save()
+    core.rrect(ctx, x, y, w, h, 6)
+    ctx.clip()
+    ctx.rectangle(x, y, w, h)
+    core.fill(ctx, "#cfe6f5")
+    cx = x + w / 2
+    # shoulders: lab coat + teal vest
+    blob(ctx, [(cx - w * 0.55, y + h + 10), (cx - w * 0.42, y + h * 0.80), (cx, y + h * 0.74),
+               (cx + w * 0.42, y + h * 0.80), (cx + w * 0.55, y + h + 10)], PAL["e_coat"], 2.5)
+    polyf(ctx, [(cx - w * 0.14, y + h * 0.76), (cx + w * 0.14, y + h * 0.76), (cx + w * 0.1, y + h + 4),
+                (cx - w * 0.1, y + h + 4)], PAL["e_vest"], 2)
+    rect(ctx, cx - w * 0.07, y + h * 0.62, w * 0.14, h * 0.16, PAL["e_skin_sh"], 0)
+    # head
+    ell(ctx, cx, y + h * 0.46, w * 0.27, h * 0.24, PAL["e_skin"], 2.5)
+    # hair with a tuft
+    blob(ctx, [(cx - w * 0.29, y + h * 0.42), (cx - w * 0.26, y + h * 0.22), (cx - w * 0.06, y + h * 0.14),
+               (cx + w * 0.08, y + h * 0.04), (cx + w * 0.12, y + h * 0.15), (cx + w * 0.28, y + h * 0.24),
+               (cx + w * 0.29, y + h * 0.40), (cx + w * 0.10, y + h * 0.30), (cx - w * 0.12, y + h * 0.31)],
+         PAL["e_hair"], 2.5)
+    # glasses + eyes + a nervous little mouth
+    for sx in (-1, 1):
+        core.circle(ctx, cx + sx * w * 0.12, y + h * 0.48, w * 0.095)
+        core.stroke(ctx, PAL["glasses"], 2.2)
+        core.circle(ctx, cx + sx * w * 0.12, y + h * 0.485, w * 0.03)
+        core.fill(ctx, INK)
+    line(ctx, [(cx - w * 0.025, y + h * 0.48), (cx + w * 0.025, y + h * 0.48)], PAL["glasses"], 2)
+    curve(ctx, [(cx - w * 0.07, y + h * 0.60), (cx, y + h * 0.585), (cx + w * 0.07, y + h * 0.60)], INK, 2)
+    ell(ctx, cx - w * 0.2, y + h * 0.57, w * 0.05, h * 0.02, core.alpha(PAL["blush"], 0.5), 0)
+    ell(ctx, cx + w * 0.2, y + h * 0.57, w * 0.05, h * 0.02, core.alpha(PAL["blush"], 0.5), 0)
+    ctx.restore()
+    core.rrect(ctx, x, y, w, h, 6)
+    core.stroke(ctx, INK, 3)
+
+
+KEYCARD_W, KEYCARD_H = 340, 216
+
+
+def keycard(ctx, x, y, s=1.0, rot=0.0, photo=True, glint=0.0, back=False):
+    """HushCorp keycard "HUSHCORP / LVL 9" with Embarrassment's tiny photo.
+    ANCHOR = centre. 340 x 216 at s=1 (credit-card shape). Readable in an
+    insert at on-screen s >= ~1.4. glint 0..1 sweeps a light streak across
+    it; back=True draws the plain back (magnetic stripe)."""
+    W_, H_ = KEYCARD_W, KEYCARD_H
+    with core.saved(ctx, x, y, s, rot):
+        x0, y0 = -W_ / 2, -H_ / 2
+        rect(ctx, x0, y0, W_, H_, "#f7fafc", 5, r=18)
+        if back:
+            rect(ctx, x0 + 3, y0 + 30, W_ - 6, 44, "#2a2d3a", 0)
+            rect(ctx, x0 + 24, y0 + 100, 170, 30, "#e6ebf0", 2.5, sc="#c9d1d8", r=4)
+            core.text(ctx, "IF FOUND, RETURN TO HUSHCORP", 0, y0 + H_ - 26, 15, "#7f8b98", "mono")
+        else:
+            ctx.save()
+            core.rrect(ctx, x0, y0, W_, H_, 18)
+            ctx.clip()
+            ctx.rectangle(x0, y0, W_, 58)
+            core.fill(ctx, PAL["hush"])
+            ctx.rectangle(x0, y0 + 58, W_, 6)
+            core.fill(ctx, PAL["hush_dk"])
+            ctx.restore()
+            hush_logo(ctx, x0 + 34, y0 + 29, 19, color="#ffffff", hole=PAL["hush"], lw=0)
+            spaced_text(ctx, "HUSHCORP", x0 + 62, y0 + 39, 25, "#ffffff", "ui", 0.42, align="left")
+            rect(ctx, -26, y0 + 8, 52, 9, "#1f8f88", 0, r=4)
+            if photo:
+                _emb_photo(ctx, x0 + 18, y0 + 76, 102, 124)
+            core.text(ctx, "ACCESS LEVEL", x0 + 236, y0 + 94, 17, "#6b7a8c", "mono")
+            core.text(ctx, "LVL 9", x0 + 236, y0 + 150, 58, "#1f2a44", "ui")
+            core.text(ctx, "RESEARCH", x0 + 236, y0 + 176, 18, PAL["hush_dk"], "mono")
+            for i in range(26):
+                bw = 2 + 3 * hash01(i, 77)
+                rect(ctx, x0 + 140 + i * 7.2, y0 + 186, bw, 18, "#2a2d3a", 0)
+        if glint > 0:
+            ctx.save()
+            core.rrect(ctx, x0, y0, W_, H_, 18)
+            ctx.clip()
+            gx = x0 - 80 + (W_ + 160) * clamp(glint)
+            core.poly(ctx, [(gx, y0), (gx + 46, y0), (gx - 30, y0 + H_), (gx - 76, y0 + H_)])
+            core.fill(ctx, (1, 1, 1, 0.45 * math.sin(clamp(glint) * math.pi)))
+            ctx.restore()
+        core.rrect(ctx, x0, y0, W_, H_, 18)
+        core.stroke(ctx, INK, 5)
+
+
+# ----------------------------------------------------------------------------
+# flashlight
+# ----------------------------------------------------------------------------
+FLASHLIGHT_LENS = (116, 0)   # local lens centre (s=1); the beam leaves along +x
+
+
+def flashlight(ctx, x, y, s=1.0, rot=0.0, on=True, glow=1.0, t=0.0, flip=False):
+    """Handheld flashlight, side view. ANCHOR = middle of the grip (where the
+    fist goes); the lens points along +x rotated by rot (flip=True points
+    -x). ~250 x 72 at s=1. on: the lens face glows (bright disc + small
+    halo); the beam itself is an fx job. Returns {"lens": (x, y), "angle":
+    beam direction in radians} in caller coordinates."""
+    on = float(on)
+    sx = -1 if flip else 1
+    with core.saved(ctx, x, y, (s * sx, s), rot * sx):
+        rect(ctx, -122, -18, 26, 36, "#262a35", 4, r=8)
+        rect(ctx, -100, -20, 140, 40, "#353b4a", 4.5, r=8)
+        for k in range(6):
+            line(ctx, [(-86 + k * 14, -16), (-86 + k * 14, 16)], "#252a36", 4)
+        rect(ctx, 6, -27, 26, 10, "#ff6f61", 3, r=4)
+        polyf(ctx, [(38, -22), (78, -34), (102, -34), (102, 34), (78, 34), (38, 22)], "#3f4656", 4.5)
+        line(ctx, [(46, -18), (96, -28)], "#5b6375", 4)
+        rect(ctx, 100, -37, 12, 74, STEEL_HI, 4, r=4)
+        lc = mixc("#5a6070", "#fff6d6", on)
+        ell(ctx, 115, 0, 9, 32, lc, 3.5)
+        if on > 0.05 and glow > 0:
+            core.radial_glow(ctx, 118, 0, 80 * glow, "#fff3c4", 0.55 * on)
+            ell(ctx, 116, 0, 5, 22, (1, 1, 1, 0.9 * on), 0)
+    lx, ly = FLASHLIGHT_LENS
+    ang = rot if not flip else math.pi - rot
+    ca, sa = math.cos(rot * sx), math.sin(rot * sx)
+    px = (lx * ca - ly * sa) * sx
+    py = lx * sa + ly * ca
+    return {"lens": (x + px * s, y + py * s), "angle": ang}
+
+
+# ----------------------------------------------------------------------------
+# phone (+ a chat screen helper)
+# ----------------------------------------------------------------------------
+PHONE_W, PHONE_H = 128, 250
+PHONE_SCREEN = (-56, -110, 112, 220)   # local screen rect at s=1
+
+
+def _phone_lock(ctx, x, y, w, h, t):
+    core.vgradient(ctx, "#3a3f78", "#e58aa0", x, y, w, h)
+    core.text(ctx, "6:02", x + w / 2, y + h * 0.3, w * 0.34, "#ffffff", "ui")
+    core.text(ctx, "SAT", x + w / 2, y + h * 0.39, w * 0.11, (1, 1, 1, 0.8), "ui")
+
+
+def phone_chat_screen(msgs=(("them", "you ok?", 0.0),), avatar=True, typing=None):
+    """Build a screen_fn for props.phone(): a tiny chat. msgs = [(side,
+    text, t_show)], side "them" (grey, left) or "me" (blue, right); each
+    bubble pops in at t_show. typing = (t0, t1) shows a "..." bubble on
+    "me"'s side. avatar: a little orange-haired face in the header (no
+    name)."""
+    def fn(ctx, x, y, w, h, t):
+        ctx.rectangle(x, y, w, h)
+        core.fill(ctx, "#f4f6fb")
+        ctx.rectangle(x, y, w, h * 0.16)
+        core.fill(ctx, "#dfe4ee")
+        if avatar:
+            ax, ay, ar = x + w * 0.5, y + h * 0.08, h * 0.055
+            core.circle(ctx, ax, ay, ar)
+            fs(ctx, PAL["e_skin"], 1.5)
+            blob(ctx, [(ax - ar, ay - ar * 0.1), (ax - ar * 0.6, ay - ar * 1.0), (ax + ar * 0.2, ay - ar * 1.25),
+                       (ax + ar, ay - ar * 0.3), (ax, ay - ar * 0.55)], PAL["e_hair"], 1.2)
+            for sx_ in (-1, 1):
+                core.circle(ctx, ax + sx_ * ar * 0.42, ay + ar * 0.1, ar * 0.3)
+                core.stroke(ctx, PAL["glasses"], 1.2)
+        yy = y + h * 0.22
+        fsz = w * 0.14
+        for side, txt, ts in msgs:
+            if t < ts:
+                continue
+            k = core.ease_out_back(core.seg(t, ts, ts + 0.25))
+            tw = text_w = _spaced_w(ctx, txt, fsz, "ui", 0.0)
+            bw, bh = text_w + fsz * 1.2, fsz * 1.7
+            bx = x + w * 0.06 if side == "them" else x + w * 0.94 - bw
+            with core.saved(ctx, bx + (0 if side == "them" else bw), yy + bh / 2, k):
+                ox = 0 if side == "them" else -bw
+                rect(ctx, ox, -bh / 2, bw, bh, "#d9dde6" if side == "them" else "#4f8ef7", 0, r=bh / 2)
+                core.text(ctx, txt, ox + bw / 2, fsz * 0.36, fsz, INK if side == "them" else "#ffffff", "ui")
+            yy += bh + h * 0.04
+            del tw
+        if typing and typing[0] <= t < typing[1]:
+            bw, bh = w * 0.34, fsz * 1.7
+            bx = x + w * 0.94 - bw
+            rect(ctx, bx, yy, bw, bh, "#4f8ef7", 0, r=bh / 2)
+            for i in range(3):
+                ph = 0.5 + 0.5 * math.sin(t * 7 - i * 0.9)
+                core.circle(ctx, bx + bw * (0.3 + 0.2 * i), yy + bh / 2, fsz * (0.16 + 0.06 * ph))
+            core.fill(ctx, "#ffffff")
+    return fn
+
+
+def phone(ctx, x, y, s=1.0, rot=0.0, t=0.0, screen_fn=None, on=True, buzz=0.0, glow=0.0):
+    """Smartphone, front (screen) view, portrait. ANCHOR = centre.
+    128 x 250 at s=1; PHONE_SCREEN is the local screen rect.
+    screen_fn(ctx, sx, sy, sw, sh, t) draws the clipped screen (default: a
+    lock screen "6:02"; see phone_chat_screen()). on=False = black glass.
+    buzz 0..1: a vibration shiver (20 Hz, a few px) + small buzz arcs.
+    glow 0..1: soft screen halo (dark rooms)."""
+    jit = 0.0
+    if buzz > 0:
+        jit = buzz * 0.035 * math.sin(t * TAU * 20)
+    with core.saved(ctx, x, y, s, rot + jit):
+        if glow > 0 and on:
+            core.radial_glow(ctx, 0, 0, 230, "#cfe4ff", 0.35 * glow)
+        rect(ctx, -PHONE_W / 2, -PHONE_H / 2, PHONE_W, PHONE_H, "#22252f", 5, r=22)
+        sx, sy, sw, sh = PHONE_SCREEN
+        if on:
+            ctx.save()
+            core.rrect(ctx, sx, sy, sw, sh, 12)
+            ctx.clip()
+            (screen_fn or _phone_lock)(ctx, sx, sy, sw, sh, t)
+            ctx.restore()
+        else:
+            rect(ctx, sx, sy, sw, sh, "#0e1016", 0, r=12)
+        rect(ctx, -16, -PHONE_H / 2 + 6, 32, 8, "#0e1016", 0, r=4)
+        core.poly(ctx, [(sx + sw * 0.55, sy), (sx + sw * 0.8, sy), (sx + sw * 0.3, sy + sh),
+                        (sx + sw * 0.05, sy + sh)])
+        core.fill(ctx, (1, 1, 1, 0.07))
+    if buzz > 0.05:
+        a = clamp(buzz)
+        for side in (-1, 1):
+            for k in range(2):
+                ox = x + side * (PHONE_W / 2 + 18 + k * 16) * s
+                line(ctx, [(ox, y - (30 - k * 4) * s), (ox + side * 7 * s, y), (ox, y + (30 - k * 4) * s)],
+                     core.alpha(INK, a), 3.5 * s)
+
+
+# ----------------------------------------------------------------------------
+# MASTER RELEASE lever in a glass case (+ its pedestal console)
+# ----------------------------------------------------------------------------
+_RC_PIVOT = (0, -196)
+_RC_ARM = 116
+_RC_IMPACT = (-14, -236)
+
+
+def release_handle(x, y, s=1.0, lever=0.0):
+    """Centre of the MASTER RELEASE T-handle (caller coords) for a case
+    anchored at (x, y) with scale s, at lever 0..1 (for hand IK)."""
+    a = math.pi * core.ease_in_out(clamp(lever))
+    return (x + _RC_PIVOT[0] * s, y + (_RC_PIVOT[1] - _RC_ARM * math.cos(a)) * s)
+
+
+def release_impact(x, y, s=1.0):
+    """Where the fist hits the glass (the shard burst origin)."""
+    return (x + _RC_IMPACT[0] * s, y + _RC_IMPACT[1] * s)
+
+
+def _rc_glass_rect():
+    return (-112, -372, 224, 330)
+
+
+def release_case(ctx, x, y, s=1.0, t=0.0, case_broken=0.0, lever=0.0, label=True, glow=1.0,
+                 part="all", seed=0, light=1.0):
+    """MASTER RELEASE lever in a glass case. ANCHOR = bottom centre of the
+    base plate (it sits on a console). ~260 x 470 at s=1 (incl. the label).
+
+    case_broken: 0 intact; (0, 1) cracks spread from the impact point
+    (release_impact()); 1 smashed: only jagged teeth stay in the frame and a
+    few bits lie on the base (throw props.shards from release_impact at the
+    smash). lever 0 = UP (locked) .. 1 = DOWN (released): the arm swings
+    toward the viewer through the open front (the T-handle grows a little
+    mid-swing); release_handle() gives the grip point.
+    part: "back" (panel + lever) and "front" (glass/teeth + frame) so hands
+    can go between; "all".
+    """
+    b = clamp(case_broken)
+    lv = clamp(lever)
+    a = math.pi * core.ease_in_out(lv)
+    gx, gy, gw, gh = _rc_glass_rect()
+    with core.saved(ctx, x, y, s):
+        def lever_draw():
+            pvx, pvy = _RC_PIVOT
+            hx, hy = pvx, pvy - _RC_ARM * math.cos(a)
+            k = 1 + 0.4 * math.sin(a)
+            line(ctx, [(pvx, pvy), (hx, hy)], INK, 26 * k)
+            line(ctx, [(pvx, pvy), (hx, hy)], "#c9d1d8", 15 * k)
+            core.circle(ctx, pvx, pvy, 24)
+            fs(ctx, STEEL, 4.5)
+            core.circle(ctx, pvx, pvy, 9)
+            fs(ctx, STEEL_DK, 2.5)
+            hw, hh = 150 * k, 36 * k
+            rect(ctx, hx - hw / 2, hy - hh / 2, hw, hh, "#e8323f", 5, r=hh / 2)
+            rect(ctx, hx - hw * 0.4, hy - hh * 0.32, hw * 0.5, hh * 0.22, "#ff8a94", 0, r=4)
+        if part in ("back", "all"):
+            rect(ctx, -132, -40, 264, 40, STEEL_DK, 4.5, r=6)
+            for bx in (-112, 112):
+                core.circle(ctx, bx, -20, 6)
+                fs(ctx, STEEL_SH, 2)
+            rect(ctx, -104, -364, 208, 324, "#1c2430", 4.5, r=8)
+            rect(ctx, -14, -330, 28, 268, "#0b0f15", 3, r=12)
+            core.text(ctx, "LOCK", 62, -300, 20, "#ff6f7a", "mono")
+            core.text(ctx, "RELEASE", 58, -84, 18, "#7cf2b0", "mono")
+            line(ctx, [(28, -306), (40, -306)], "#ff6f7a", 4)
+            line(ctx, [(28, -90), (40, -90)], "#7cf2b0", 4)
+            if b < 1:
+                lever_draw()
+        if part in ("front", "all"):
+            # case frame
+            rect(ctx, gx - 10, gy - 10, gw + 20, gh + 20, None, 0)
+            if b < 1:
+                rect(ctx, gx, gy, gw, gh, (0.80, 0.92, 0.98, 0.26), 0)
+                core.poly(ctx, [(gx + 26, gy + 8), (gx + 66, gy + 8), (gx + 20, gy + gh - 8), (gx - 4, gy + gh - 8)])
+                core.fill(ctx, (1, 1, 1, 0.28))
+                core.poly(ctx, [(gx + 86, gy + 8), (gx + 100, gy + 8), (gx + 54, gy + gh - 8), (gx + 40, gy + gh - 8)])
+                core.fill(ctx, (1, 1, 1, 0.18))
+                if b > 0:
+                    ix, iy = _RC_IMPACT
+                    for i in range(9):
+                        an = i / 9 * TAU + hash01(i, seed + 3)
+                        L = (50 + 110 * hash01(i, seed + 4)) * min(1.0, b * 1.6)
+                        mx = ix + math.cos(an) * L * 0.5 + (hash01(i, seed + 5) - 0.5) * 14
+                        my = iy + math.sin(an) * L * 0.5
+                        line(ctx, [(ix, iy), (mx, my), (ix + math.cos(an + 0.15) * L, iy + math.sin(an + 0.15) * L)],
+                             (1, 1, 1, 0.95), 3)
+                    if b > 0.35:
+                        for rr in (26, 58):
+                            ctx.new_sub_path()
+                            ctx.arc(ix, iy, rr * min(1.0, b * 1.4), 0.3, 2.4)
+                            core.stroke(ctx, (1, 1, 1, 0.85), 2.5)
+                    core.circle(ctx, ix, iy, 8)
+                    core.fill(ctx, (1, 1, 1, 0.9))
+            else:
+                # smashed: jagged teeth along the frame + bits on the base
+                teeth = []
+                for i in range(7):
+                    u = (i + 0.5) / 7
+                    L = 24 + 40 * hash01(i, seed + 7)
+                    teeth.append([(gx + gw * (u - 0.07), gy), (gx + gw * (u + 0.07), gy),
+                                  (gx + gw * (u + 0.02 * (hash01(i, seed + 8) - 0.5)), gy + L)])
+                    L2 = 16 + 30 * hash01(i, seed + 9)
+                    teeth.append([(gx + gw * (u - 0.06), gy + gh), (gx + gw * (u + 0.06), gy + gh),
+                                  (gx + gw * u, gy + gh - L2)])
+                for i in range(6):
+                    v = (i + 0.5) / 6
+                    for (ex, sgn) in ((gx, 1), (gx + gw, -1)):
+                        L = 18 + 36 * hash01(i * 2 + (sgn > 0), seed + 10)
+                        teeth.append([(ex, gy + gh * (v - 0.07)), (ex, gy + gh * (v + 0.07)),
+                                      (ex + sgn * L, gy + gh * v)])
+                for tp in teeth:
+                    core.poly(ctx, tp)
+                core.fill(ctx, (0.82, 0.93, 0.99, 0.55))
+                for tp in teeth:
+                    core.poly(ctx, tp)
+                core.stroke(ctx, (1, 1, 1, 0.9), 2)
+                for i in range(5):
+                    with core.saved(ctx, -90 + 45 * i + 10 * hash01(i, seed + 12), -46, 0.8, hash01(i, seed + 13) * 3):
+                        polyf(ctx, [(0, -10), (10, 6), (-8, 7)], "#dff3ff", 2)
+                lever_draw()
+            # steel frame
+            ctx.rectangle(gx - 12, gy - 12, gw + 24, gh + 24)
+            ctx.rectangle(gx + gw, gy, -gw, gh)
+            core.fill(ctx, STEEL)
+            rect(ctx, gx - 12, gy - 12, gw + 24, gh + 24, None, 4.5)
+            rect(ctx, gx, gy, gw, gh, None, 3)
+            for (cx_, cy_) in ((gx - 4, gy - 4), (gx + gw + 4, gy - 4), (gx - 4, gy + gh + 4), (gx + gw + 4, gy + gh + 4)):
+                core.circle(ctx, cx_, cy_, 4)
+                core.fill(ctx, STEEL_DK)
+            if label:
+                rect(ctx, -134, gy - 74, 268, 54, "#c2253c", 4.5, r=8)
+                core.text(ctx, "MASTER RELEASE", 0, gy - 37, 27, "#ffffff", "ui")
+        if light < 1:
+            ctx.rectangle(-140, -460, 280, 460)
+            core.fill(ctx, core.alpha("#03070b", 0.85 * (1 - clamp(light))))
+
+
+def release_console(ctx, x, y, s=1.0, t=0.0, case_broken=0.0, lever=0.0, alarm=0.0, part="all",
+                    seed=0):
+    """Pedestal console carrying the MASTER RELEASE case. ANCHOR = floor
+    point under its middle. ~380 x 1010 at s=1: pedestal top (= case
+    anchor) at y - 540 s, so the T-handle is at shoulder height of an adult
+    when UP and at the waist when DOWN. part "back" / "front" / "all" as in
+    release_case (the pedestal is drawn with "back"). alarm 0..1 turns the
+    status lamps red."""
+    with core.saved(ctx, x, y, s):
+        if part in ("back", "all"):
+            polyf(ctx, [(-176, 0), (176, 0), (150, -520), (-150, -520)], "#2f3846", 6)
+            polyf(ctx, [(60, 0), (176, 0), (150, -520), (50, -520)], "#262e3a", 0)
+            polyf(ctx, [(-176, 0), (176, 0), (150, -520), (-150, -520)], None, 6)
+            hazard_band(ctx, -146, -506, 292, 30, step=36, lw=3.5)
+            rect(ctx, -164, -546, 328, 30, STEEL, 5, r=6)
+            rect(ctx, -110, -440, 220, 120, "#1b222c", 4, r=10)
+            for k in range(4):
+                col = PAL["safe"] if (k < 2 and lever < 0.9) else PAL["warn"]
+                if lever >= 0.9:
+                    col = PAL["safe"]
+                if alarm > 0:
+                    col = mixc(col, PAL["danger"], clamp(alarm))
+                core.circle(ctx, -66 + k * 44, -400, 12)
+                fs(ctx, col, 3)
+            for k in range(3):
+                line(ctx, [(-90, -360 + k * 14), (-90 + 90 + 60 * hash01(k, 5), -360 + k * 14)], PAL["hush"], 4)
+            rect(ctx, -120, -110, 240, 60, "#232b36", 4, r=8)
+            core.text(ctx, "SHAFT A — ALL PODS", 0, -72, 19, "#9fb3c4", "mono")
+            ell(ctx, 0, 0, 190, 16, core.alpha(INK, 0.35), 0)
+    release_case(ctx, x, y - 540 * s, s, t, case_broken, lever, part=part, seed=seed)
+
+
+def release_console_handle(x, y, s=1.0, lever=0.0):
+    """T-handle centre for a release_console anchored at floor (x, y)."""
+    return release_handle(x, y - 540 * s, s, lever)
+
+
+def release_console_impact(x, y, s=1.0):
+    return release_impact(x, y - 540 * s, s)
+
+
+# ----------------------------------------------------------------------------
+# LOCKDOWN button, SHAFT POWER switch
+# ----------------------------------------------------------------------------
+def lockdown_button(ctx, x, y, s=1.0, pressed=0.0, t=0.0, glow=0.0, label=True):
+    """Big red LOCKDOWN mushroom button in a hazard-striped collar.
+    ANCHOR = base centre on its surface. ~200 x 150 at s=1 (+ the label
+    plate below the base). pressed 0..1 sinks the cap; glow 0..1 red halo
+    (lit after the press)."""
+    p = clamp(pressed)
+    with core.saved(ctx, x, y, s):
+        if glow > 0:
+            core.radial_glow(ctx, 0, -50, 170, PAL["danger"], 0.45 * glow)
+        ell(ctx, 0, 0, 100, 28, "#2a3240", 5)
+        ctx.save()
+        core.ellipse(ctx, 0, -10, 92, 26)
+        ctx.clip()
+        hazard_band(ctx, -100, -40, 200, 60, step=30, lw=0)
+        ctx.restore()
+        core.ellipse(ctx, 0, -10, 92, 26)
+        core.stroke(ctx, INK, 4.5)
+        rect(ctx, -54, -40 + 14 * p, 108, 34, "#3a4250", 4.5, r=8)
+        top = -40 - 66 * (1 - 0.8 * p) + 14 * p
+        ctx.move_to(-74, -34 + 14 * p)
+        ctx.curve_to(-80, top - 10, 80, top - 10, 74, -34 + 14 * p)
+        ctx.curve_to(40, -22 + 14 * p, -40, -22 + 14 * p, -74, -34 + 14 * p)
+        fs(ctx, "#e8263c", 5)
+        ell(ctx, -22, top + 18, 24, 9, "#ff8a94", 0, rot=-0.2)
+        if label:
+            rect(ctx, -96, 22, 192, 44, "#1b1d27", 4, r=6)
+            spaced_text(ctx, "LOCKDOWN", 0, 54, 26, HAZ_Y, "ui", 0.12)
+
+
+def power_switch(ctx, x, y, s=1.0, on=1.0, label="SHAFT POWER", t=0.0):
+    """Wall/console panel with a big toggle switch. ANCHOR = panel centre.
+    ~200 x 280 at s=1. on 1 = lever UP (ON, green lamp) .. 0 = DOWN (OFF,
+    red lamp); animate on for the flip. Returns the lever tip (where a
+    fingertip rests) in caller coordinates."""
+    o = clamp(on)
+    a = math.pi * (1 - core.ease_in_out(o))
+    with core.saved(ctx, x, y, s):
+        rect(ctx, -100, -140, 200, 280, "#2a3240", 5, r=12)
+        rect(ctx, -86, -128, 172, 48, "#d9dee3", 3.5, r=6)
+        tsz = min(25.0, 25.0 * 150 / max(1.0, _spaced_w(ctx, label, 25, "ui", 0.0)))
+        core.text(ctx, label, 0, -95, tsz, "#1b1d27", "ui")
+        core.text(ctx, "ON", 52, -46, 18, "#7cf2b0", "mono")
+        core.text(ctx, "OFF", 52, 74, 18, "#ff6f7a", "mono")
+        rect(ctx, -34, -40, 68, 120, "#1b222c", 4, r=10)
+        bx, by = 0, 20
+        tx, ty = bx, by - 64 * math.cos(a)
+        k = 1 + 0.3 * math.sin(a)
+        line(ctx, [(bx, by), (tx, ty)], INK, 22 * k)
+        line(ctx, [(bx, by), (tx, ty)], STEEL_HI, 12 * k)
+        core.circle(ctx, tx, ty, 13 * k)
+        fs(ctx, "#f4f6f8", 4)
+        core.circle(ctx, bx, by, 16)
+        fs(ctx, STEEL, 4)
+        lamp = mixc(PAL["danger"], PAL["safe"], o)
+        core.radial_glow(ctx, -60, 104, 34, lamp, 0.6)
+        core.circle(ctx, -60, 104, 11)
+        fs(ctx, lamp, 3)
+    return (x + tx * s, y + ty * s)
+
+
+# ----------------------------------------------------------------------------
+# the Boss's tall high-backed swivel chair
+# ----------------------------------------------------------------------------
+BOSS_CHAIR_SEAT = 240     # seat top above the floor at s=1 (Boss SEAT_H 233)
+BOSS_CHAIR_TOP = 1010     # back top above the floor at s=1
+
+
+def boss_chair(ctx, x, y, s=1.0, turn=0.0, part="all", t=0.0, rim=None, dir=1, rim_a=0.85):
+    """The Boss's very tall high-backed swivel chair. ANCHOR = floor point
+    under the seat centre.
+
+    turn 0 = facing AWAY (we see the tall back: it hides a sitter
+    completely), 0.5 = profile (facing screen-right for dir=+1, left for
+    -1), 1 = facing the camera. Seat top at BOSS_CHAIR_SEAT*s, back top at
+    BOSS_CHAIR_TOP*s. part "behind" (draw before the sitter) / "front"
+    (after the sitter) / "all": whichever pieces are nearer the camera at
+    this turn go in "front". rim = rim-light colour along the edges (the
+    monitor glow behind it; None = cool teal, False = none).
+    """
+    psi = math.pi * (1 - clamp(turn))       # 0 = facing camera
+    sp, cp = math.sin(psi) * dir, math.cos(psi)
+    rimc = "#7fe8ff" if rim is None else rim
+    leather, leather_sh, leather_hi = "#2a2e3c", "#20232e", "#3b4154"
+    d = 120.0
+    bw = 380.0
+    th = 84.0
+    back_x = -d * sp
+    back_depth = -d * cp                   # > 0: back is nearer the camera than the sitter
+    vis_w = max(th, bw * abs(cp) + th * abs(sp))
+    seat_y = -BOSS_CHAIR_SEAT
+    top = -BOSS_CHAIR_TOP
+    show_front_face = cp > 0.0             # cushion side toward us
+
+    def rim_stroke(path_fn, w=10):
+        if rimc:
+            path_fn()
+            core.stroke(ctx, core.alpha(rimc, rim_a), w)
+
+    def draw_base():
+        rect(ctx, -16, seat_y + 30, 32, BOSS_CHAIR_SEAT - 60, "#4a5060", 4)
+        ell(ctx, 0, -14, 160, 26, "#1b1d27", 5)
+        ell(ctx, 0, -20, 120, 16, "#2f3442", 0)
+        rim_stroke(lambda: core.ellipse(ctx, 0, -14, 160, 26), 6)
+        ell(ctx, 0, -14, 160, 26, None, 4)
+
+    def draw_seat():
+        sw = 160 + 30 * abs(cp)
+        ell(ctx, 0, seat_y + 18, sw, 40, leather_sh, 5)
+        ell(ctx, 0, seat_y, sw - 6, 34, leather, 4.5)
+        ell(ctx, 0, seat_y - 6, sw - 50, 14, leather_hi, 0)
+
+    def back_path():
+        bx0 = back_x - vis_w / 2
+        h = BOSS_CHAIR_TOP - BOSS_CHAIR_SEAT + 30
+        r = min(70, vis_w / 2)
+        core.rrect(ctx, bx0, top, vis_w, h, r)
+
+    def draw_back():
+        back_path()
+        fs(ctx, leather if show_front_face or abs(cp) < 0.2 else leather_sh, 6)
+        bx0 = back_x - vis_w / 2
+        if abs(cp) > 0.2:
+            if show_front_face:
+                # tufted cushion
+                rect(ctx, bx0 + vis_w * 0.12, top + 60, vis_w * 0.76, BOSS_CHAIR_TOP - BOSS_CHAIR_SEAT - 110,
+                     leather_hi, 4, r=40 * abs(cp))
+                for i in range(3):
+                    for j in range(5):
+                        core.circle(ctx, back_x + (i - 1) * vis_w * 0.24, top + 150 + j * 150, 6)
+                core.fill(ctx, leather_sh)
+            else:
+                for i in (-1, 0, 1):
+                    line(ctx, [(back_x + i * vis_w * 0.26, top + 70), (back_x + i * vis_w * 0.26,
+                                                                       seat_y - 40)], "#30343f", 6)
+                hush_logo(ctx, back_x, top + 170, 34 * abs(cp), color="#30343f", hole=leather_sh, lw=0,
+                          ring=False)
+        else:
+            line(ctx, [(back_x, top + 50), (back_x, seat_y - 30)], leather_hi, 5)
+        rim_stroke(back_path, 10)
+        back_path()
+        core.stroke(ctx, INK, 5)
+        # headrest wings
+        rect(ctx, back_x - vis_w * 0.42, top + 6, vis_w * 0.84, 46, leather_sh, 4, r=20)
+
+    def draw_arms(near):
+        for side in (-1, 1):
+            depth = side * sp                # > 0: this armrest is nearer the camera
+            is_near = depth > 0.3
+            if near != is_near:
+                continue
+            axx = side * 175 * abs(cp) - sp * 20
+            w = 70 + 150 * abs(sp)
+            rect(ctx, axx - w / 2, seat_y - 120, w, 30, leather_sh, 4.5, r=14)
+            rect(ctx, axx - 9, seat_y - 92, 18, 76, "#4a5060", 4)
+
+    with core.saved(ctx, x, y, s):
+        back_in_front = back_depth > 1.0
+        if part in ("behind", "all"):
+            draw_base()
+            if not back_in_front:
+                draw_back()
+            draw_seat()
+            draw_arms(near=False)
+        if part in ("front", "all"):
+            if back_in_front:
+                draw_back()
+            draw_arms(near=True)
+
+
+# ----------------------------------------------------------------------------
+# crate, caged emergency lamp
+# ----------------------------------------------------------------------------
+def crate(ctx, x, y, s=1.0, w=420, h=360, kind="wood", stencil="HUSHCORP", seed=0, top=True,
+          light=1.0):
+    """Shipping crate, front view with a sliver of lid. ANCHOR = bottom
+    centre. Top surface (sit / perch) at y - h*s. kind "wood" | "steel".
+    stencil text (None = none)."""
+    with core.saved(ctx, x, y, s):
+        x0, y0 = -w / 2, -h
+        if kind == "steel":
+            base, sh, hi = "#4f6274", "#3d4e5e", "#6a7f92"
+        else:
+            base, sh, hi = "#9a7650", "#7d5d3c", "#b8946a"
+        if top:
+            polyf(ctx, [(x0, y0), (x0 + 26, y0 - 30), (x0 + w + 26, y0 - 30), (x0 + w, y0)], hi, 4.5)
+            polyf(ctx, [(x0 + w, y0), (x0 + w + 26, y0 - 30), (x0 + w + 26, -30), (x0 + w, 0)], sh, 4.5)
+        rect(ctx, x0, y0, w, h, base, 5)
+        if kind == "steel":
+            for k in range(1, 4):
+                line(ctx, [(x0 + w * k / 4, y0 + 10), (x0 + w * k / 4, -10)], sh, 8)
+            rect(ctx, x0, y0, w, 28, sh, 4)
+            rect(ctx, x0, -28, w, 28, sh, 4)
+        else:
+            for k in range(1, 4):
+                line(ctx, [(x0 + 8, y0 + h * k / 4), (x0 + w - 8, y0 + h * k / 4)], sh, 3.5)
+            for (ax, ay, bx_, by_) in ((x0, y0, x0 + w, 0), (x0 + w, y0, x0, 0)):
+                line(ctx, [(ax + (24 if ax < bx_ else -24), ay + 24), (bx_ + (-24 if ax < bx_ else 24), by_ - 24)],
+                     INK, 30)
+                line(ctx, [(ax + (24 if ax < bx_ else -24), ay + 24), (bx_ + (-24 if ax < bx_ else 24), by_ - 24)],
+                     hi, 20)
+            for (rx_, ry_, rw_, rh_) in ((x0, y0, w, 30), (x0, -30, w, 30), (x0, y0, 30, h), (x0 + w - 30, y0, 30, h)):
+                rect(ctx, rx_, ry_, rw_, rh_, hi, 4)
+        if stencil:
+            sz = min(46, w * 0.11)
+            ctx.save()
+            core.text(ctx, stencil, 0, y0 + h * 0.56, sz, core.alpha("#1d1626", 0.55), "black")
+            ctx.restore()
+        if light < 1:
+            ctx.rectangle(x0 - 2, y0 - 34, w + 32, h + 36)
+            core.fill(ctx, core.alpha("#03070b", 0.85 * (1 - clamp(light))))
+    return y - h * s
+
+
+def cage_lamp(ctx, x, y, s=1.0, on=1.0, color="#ffb35a", down=True, halo=True):
+    """Caged emergency/work lamp on a wall bracket. ANCHOR = the bracket on
+    the wall; the lamp hangs below it (down=True) or sits above it. on 0..1
+    lights the bulb (+ a small halo if halo=True; sets bake the big light
+    pools)."""
+    on = clamp(float(on))
+    sg = 1 if down else -1
+    with core.saved(ctx, x, y, s):
+        rect(ctx, -22, -14, 44, 28, STEEL_DK, 4, r=6)
+        line(ctx, [(0, 0), (0, sg * 40)], INK, 12)
+        line(ctx, [(0, 0), (0, sg * 40)], STEEL_SH, 6)
+        cy = sg * 92
+        if halo and on > 0.02:
+            core.radial_glow(ctx, 0, cy, 120, color, 0.55 * on)
+        rect(ctx, -34, sg * 40 - (0 if down else 16), 68, 16, STEEL_DK, 4, r=4)
+        bulb = mixc("#5b5048", "#fff1c9", on)
+        ell(ctx, 0, cy, 30, 40, bulb, 3.5)
+        if on > 0.3:
+            ell(ctx, 0, cy, 16, 24, core.alpha("#ffffff", 0.85 * on), 0)
+        for k in (-1, 0, 1):
+            curve(ctx, [(k * 14 - 22 * (k != 0) * k, sg * 50), (k * 40, cy), (k * 12, cy + sg * 46)], "#3a3f4a", 4.5)
+        ell(ctx, 0, cy, 38, 46, None, 4.5, sc="#3a3f4a")
+        core.circle(ctx, 0, cy + sg * 48, 7)
+        fs(ctx, STEEL_DK, 3)
