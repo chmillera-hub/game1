@@ -98,6 +98,7 @@ if _RK not in human.OUTFITS:
 # Tiredness: crouched with his back to the crate, hands braced low
 HIDE = {"base": "crouch", "ar_ik": 1.0, "ar_tx": 0.2, "ar_ty": 0.02, "ar_tz": 0.05, "ar_h": "flat",
         "al_ik": 1.0, "al_tx": 0.2, "al_ty": 0.02, "al_tz": 0.05, "al_h": "flat", "lean": 0.4}
+HIDE_H = dict(HIDE, hunch=0.75)   # the same, shoulders up round his ears (holding his breath)
 # the rookie's little wave at his own shadow (free l hand, bent elbow, palm out)
 G2_WAVE = {"base": "stand", "period": 0.6, "al_p": 0.9, "al_o": 0.5, "al_e": 2.3,
            "al_eo": human.W(-0.5, 0.32, 0.0), "al_w": human.W(0.0, 0.2, 0.1), "al_h": "open",
@@ -686,6 +687,11 @@ def _tired(t, T):
         k = smoothstep(seg(t, sn1, sn1 + 0.35))
         pose = ("sneak", HIDE, k) if k < 1 else HIDE
         turn = lerp(0.8, 0.3, k)
+        # horror: the shoulders creep up round his ears (held breath), drop as he exhales
+        kh = smoothstep(seg(t, T["react"] - 0.15, T["react"] + 0.35)) * \
+            (1 - smoothstep(seg(t, T["rise0"] - 0.3, T["rise0"] + 0.2)))
+        if kh > 0.001 and k >= 1:
+            pose = (HIDE, HIDE_H, kh)
         kr = ease_in_out(seg(t, T["rise0"], T["rise0"] + 1.1))
         if kr > 0:
             pose = (HIDE, "stand", kr) if kr < 1 else "stand"
@@ -722,9 +728,10 @@ def _tired(t, T):
         # up (nudging the hood rim), the head turned toward it
         R0 = T["react"]
         k = smoothstep(seg(t, R0 - 0.1, R0 + 0.12))
-        face = {"press": lerp(0.75, 1.0, k), "width": lerp(0.0, 0.14, k), "brow": lerp(0.7, 1.0, k),
-                "head_turn": 0.4, "head_nod": -0.12 - 0.04 * k, "squash": -0.06 * k * (1 - seg(t, R0 + 0.12, R0 + 0.4)),
-                "frown": 0.2 * k}
+        # an "eek" grimace: teeth clenched, mouth stretched wide and tight
+        face = {"press": 0.25, "teeth": 0.75 * k, "open": 0.1 * k, "width": 0.32 * k, "lip_up": 0.15 * k,
+                "frown": 0.3 * k, "brow": lerp(0.7, 1.0, k), "head_turn": 0.4, "head_nod": -0.12 - 0.04 * k,
+                "squash": -0.06 * k * (1 - seg(t, R0 + 0.12, R0 + 0.4))}
         expr = ("annoyed", "alarmed", k)
         if t >= T["l3s"] - 0.08:
             # the whisper: lips stay tight, worried; a tiny "no" head shake on "Don't."
@@ -737,8 +744,8 @@ def _tired(t, T):
             expr = ("alarmed", "annoyed", 0.4)
         if t >= T["l3e"] + 0.05:
             k2 = smoothstep(seg(t, T["l3e"] + 0.05, T["l3e"] + 0.3))
-            face = {"press": lerp(0.5, 0.95, k2), "width": 0.1 * k2, "brow": 0.9, "frown": 0.25,
-                    "head_turn": 0.4, "head_nod": -0.08, "cheek": 0.2 * k2}
+            face = {"press": 0.3, "teeth": 0.7 * k2, "open": 0.08 * k2, "width": 0.28 * k2, "frown": 0.3,
+                    "brow": 0.9, "head_turn": 0.4, "head_nod": -0.08}
             expr = "alarmed"
         if t >= T["reform"] + 0.2:
             # slow exhale: cheeks puff, then release; lips pressed; then a deadpan look
