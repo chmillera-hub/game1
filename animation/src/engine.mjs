@@ -46,8 +46,11 @@ export const ease = {
 
 // ---------- deterministic noise ----------
 function hash(n) {
+  // integer hash (32-bit math via Math.imul; plain * overflows double precision and degenerates)
+  n = n | 0;
   n = (n << 13) ^ n;
-  return 1.0 - ((n * (n * n * 15731 + 789221) + 1376312589) & 0x7fffffff) / 1073741824.0;
+  const m = (Math.imul(n, (Math.imul(Math.imul(n, n), 15731) + 789221) | 0) + 1376312589) | 0;
+  return 1.0 - (m & 0x7fffffff) / 1073741824.0;
 }
 export const rand = (i, seed = 0) => (hash((i | 0) * 7919 + (seed | 0) * 104729) + 1) / 2; // 0..1
 /** smooth value noise in [-1,1] */

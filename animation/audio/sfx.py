@@ -377,25 +377,37 @@ def crowd_murmur():
 
 
 def heartbeat():
-    """One heartbeat cycle, 1.3 s (loop-seamless): 'lub' (deeper, longer) then 'dub' 0.28 s later."""
+    """One heartbeat cycle, 1.3 s (loop-seamless): 'lub' (deeper, longer) then 'dub' 0.28 s later.
+    Sub thump (felt on headphones) + a damped 90–250 Hz body knock and a faint valve tick, so the
+    beat still reads on phone speakers (which reproduce little below ~150 Hz)."""
     n = N(1.3)
     x = np.zeros(n)
 
-    def thump(at, f0, dec, amp):
+    def thump(at, f0, dec, amp, body_f, body_amp, tick_amp, seed):
         m = N(0.35)
         tl = np.arange(m) / SR
         f = f0 * (1 + 0.6 * np.exp(-tl / 0.015))
         s = np.sin(2 * np.pi * np.cumsum(f) / SR)
         e = np.exp(-tl / dec) * (1 - np.exp(-tl / 0.004))
+        y = s * e + 0.25 * lp(white(m, seed), 220) * e
+        # body knock: a soft (5 ms raised-cosine) push into damped low-mid tissue resonances
+        q = N(0.005)
+        exc = np.zeros(m)
+        exc[:q] = 0.5 - 0.5 * np.cos(2 * np.pi * np.arange(q) / q)
+        body = modal(exc, [(body_f, 1.0, 0.032), (body_f * 1.62, 0.55, 0.024), (body_f * 2.45, 0.25, 0.016)])
+        y += body_amp * body / (np.max(np.abs(body)) + 1e-9)
+        # valve tick: a breath of band-limited noise, 15 ms
+        te = np.exp(-tl / 0.006) * (1 - np.exp(-tl / 0.0015))
+        tick = bandn(white(m, seed + 1), 280, 1100) * te
+        y += tick_amp * tick / (np.max(np.abs(tick)) + 1e-9)
         k = N(at)
-        x[k:k + m] += amp * (s * e)[: max(0, min(m, n - k))]
-        x[k:k + m] += amp * 0.25 * (lp(white(m, int(at * 1000)), 220) * e)[: max(0, min(m, n - k))]
+        x[k:k + m] += amp * y[: max(0, min(m, n - k))]
 
-    thump(0.06, 52, 0.075, 1.0)
-    thump(0.34, 64, 0.055, 0.72)
-    # a little soft saturation adds harmonics (audible on phone speakers) without clicks
-    x = np.tanh(2.2 * x) / np.tanh(2.2)
-    x = lp(x, 900)
+    thump(0.06, 52, 0.075, 1.0, 118, 0.85, 0.10, 61)
+    thump(0.34, 64, 0.055, 0.72, 150, 0.9, 0.14, 63)
+    # a little soft saturation adds harmonics without clicks
+    x = np.tanh(1.8 * x) / np.tanh(1.8)
+    x = lp(x, 1400)
     return finish(np.stack([x, x], axis=1), fin=0.002, fout=0.05)
 
 
@@ -429,16 +441,25 @@ def sob():
         e = np.sin(np.pi * np.linspace(0, 1, m)) ** 0.8 * (0.7 + 0.15 * i)
         k = N(a)
         x[k:k + m] += b * e
-    # whimper: voiced, wavering pitch, through an 'u/uh' mouth, very soft
-    a0, d0 = 0.56, 0.5
-    m = N(d0)
-    tl = np.arange(m) / SR
-    f0 = 330 * (1 + 0.06 * np.exp(-tl / 0.08)) * (1 - 0.12 * tl / d0) * (1 + 0.018 * np.sin(2 * np.pi * 9 * tl))
-    v = glottal(f0, 420, n_harm=14, tilt=1.6) * 0.7 + 0.5 * white(m, 421)
-    v = 0.6 * formant(v, "u", 1.15) + 0.4 * formant(v, "uh", 1.15)
-    ev = smooth_env([(0, 0), (0.06, 1), (0.3, 0.7), (d0, 0)], m) * (1 + 0.25 * np.sin(2 * np.pi * 8 * tl))
-    k = N(a0)
-    x[k:k + m] += 0.55 * v * ev / (np.max(np.abs(v)) + 1e-9) * np.max(np.abs(x[:k])) * 1.6
+    # whimper: two small breathy voiced catches ("hn-hnn"), irregular pitch, through an 'u/uh' mouth.
+    # Mostly breath with a little voice — a steady tone reads as a synth, so pitch wobbles and the
+    # voicing comes and goes.
+    ref = np.max(np.abs(x[:N(0.56)]))
+    for j, (a0, d0, fstart, fend, gain) in enumerate([(0.56, 0.22, 360, 395, 0.85), (0.83, 0.34, 405, 330, 1.0)]):
+        m = N(d0)
+        tl = np.arange(m) / SR
+        glide = fstart + (fend - fstart) * np.sin(0.5 * np.pi * tl / d0)
+        f0 = glide * (1 + 0.035 * slow_noise(m, 14, 422 + j)) * (1 + 0.012 * np.sin(2 * np.pi * 7.3 * tl))
+        voiced = glottal(f0, 420 + j, n_harm=14, tilt=1.7, jitter=0.03)
+        voiced *= 0.6 + 0.4 * np.clip(slow_noise(m, 18, 430 + j) + 0.6, 0, 1)  # voicing flickers
+        breath = bandn(pink(m, 440 + j), 500, 5000)
+        v = 0.4 * voiced / (np.max(np.abs(voiced)) + 1e-9) + 0.6 * breath / (np.max(np.abs(breath)) + 1e-9)
+        # mouth half-open ('uh'/'eh'): F1 sits well above f0, so no formant locks onto the fundamental
+        v = 0.55 * formant(v, "uh", 1.12) + 0.45 * formant(v, "eh", 1.12)
+        v = A.low_shelf(v, 480, -7.0).astype(np.float64)  # tame the fundamental: breathy, not a pure tone
+        ev = smooth_env([(0, 0), (0.04, 1), (0.6 * d0, 0.75), (d0, 0)], m) * (1 + 0.2 * slow_noise(m, 20, 450 + j))
+        k = N(a0)
+        x[k:k + m] += gain * 0.75 * v * ev / (np.max(np.abs(v)) + 1e-9) * ref
     # trembling exhale
     m = N(0.75)
     tl = np.arange(m) / SR
@@ -573,18 +594,23 @@ def key_turn():
 
 
 def rumble_low():
-    """Sub-bass swell: a 41 Hz tone with slow wobble + low brown noise, rising 2.6 s then fading. ~5 s."""
+    """Sub-bass swell: a 41 Hz tone with slow wobble + low brown noise, rising 2.6 s then fading, with a
+    low-mid (70–350 Hz) rumble layer and the tone's harmonics so it still reads on phone speakers. ~5 s."""
     n = N(5.0)
     t = tt(n)
     f = 41 * (1 + 0.02 * np.sin(2 * np.pi * 0.37 * t))
-    tone = np.sin(2 * np.pi * np.cumsum(f) / SR) + 0.35 * np.sin(2 * np.pi * np.cumsum(f * 1.5) / SR)
+    ph = 2 * np.pi * np.cumsum(f) / SR
+    tone = np.sin(ph) + 0.35 * np.sin(1.5 * ph)
     nz = lp(brown(n, 900), 110, 4)
-    y = 0.8 * tone + 0.9 * nz / (np.std(nz) + 1e-9) * 0.35
+    sub = 0.8 * tone + 0.9 * nz / (np.std(nz) + 1e-9) * 0.35
+    sub = np.tanh(1.6 * sub / (np.max(np.abs(sub)) + 1e-9)) * 0.9
+    # low-mid body: the 2nd-4th harmonics of the tone + a slowly churning band of brown noise
+    harm = 0.5 * np.sin(2 * ph + 0.3) + 0.3 * np.sin(3 * ph + 1.1) + 0.15 * np.sin(4 * ph + 2.0)
+    churn = bandn(brown(n, 901), 70, 350)
+    churn = churn / (np.std(churn) + 1e-9) * (0.75 + 0.25 * slow_noise(n, 1.8, 902))
+    mid = 0.22 * harm * (1 + 0.3 * slow_noise(n, 0.9, 903)) + 0.2 * churn
     env = smooth_env([(0, 0), (2.6, 1.0), (3.4, 0.85), (5.0, 0)], n)
-    y = y * env
-    # gentle harmonics so it reads on small speakers
-    y = np.tanh(1.6 * y / (np.max(np.abs(y)) + 1e-9)) * 0.9
-    y = lp(y, 260, 2)
+    y = (lp(sub, 260, 2) + lp(mid, 420, 2)) * env
     out = stereo(y, width=0.25, seed=5)
     return finish(out, fin=0.05, fout=0.3)
 

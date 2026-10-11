@@ -10,15 +10,18 @@
 //   voidRig(pose)                          live local anchors (face centre/radii, shoulders, hands) for staging
 //   toVoidLocal(x, y, scale, wx, wy)       world point → Void-local coords (for hand targets)
 //
-// PERFORMANCE: the cloak body and the mantle+hood shell are rendered once into cached sprites at the
-// current on-screen resolution (keyed by quantized scale / head pose) and redrawn with drawImage; the face
-// (abyss/cosmos), moving arms, hands, glint and shimmer are live. First use of a new scale/head pose
-// costs one sprite build (~5-30 ms). pose.cache = false forces fully live vector drawing.
+// PERFORMANCE: the cloak body, the mantle and the hood shell are rendered once into cached sprites at the
+// current on-screen resolution and redrawn with drawImage (body: keyed by quantized scale; mantle: by scale
+// only — a bow just translates it; hood: by scale + quantized head pose). The face (abyss/cosmos), moving
+// arms, hands, glint, shimmer and hem drift are live. A new head pose costs one hood build (~2 ms at scale
+// 0.55, ~4 ms at 1, ~16 ms at 2.3), a new scale ~5-30 ms once. pose.cache = false forces live vector drawing.
 //
 // POSE (all optional)
-//   t            seconds — idle life: barely perceptible hem drift + rim shimmer
+//   t            seconds — idle life: barely perceptible hem drift + rim shimmer + a slow travelling glint
+//   idle         0..1    (default 1) scales all idle cloak motion; 0 = perfectly frozen (rim light steady)
 //   headTurn     -1..1   hood yaw. + = looks toward screen-right (+x), - = screen-left. 0 = facing camera/distance
-//   headDown     0..1    hood bows to look at someone small at its feet (shoulders hunch slightly)
+//                        (the rim light migrates to the back edge of the hood as it turns)
+//   headDown     0..1    hood bows to look at someone small at its feet (the mantle settles; shoulders fixed)
 //   headTilt     radians extra hood roll
 //   lean         radians whole-body lean, pivot at the hem centre on the floor
 //   cosmos       0..1    0 = pure darkness; ~0.3 a few stars kindle; 1 = the full universe
@@ -27,12 +30,15 @@
 //   silhouette   bool    cloak nearly invisible: only rim light + face read
 //   alpha        0..1    overall opacity (composited through an offscreen layer, so overlaps don't show)
 //   shadow       false to skip the floor shadow (draw it yourself earlier with drawVoidShadow)
+//   foldStar     0..1    a single faint star glinting in a fold of the cloth near the hem
+//   layer        false = with alpha < 1, skip the offscreen layer (cheaper; overlaps show through)
 //   shadowSpread 0..1    0 = contact shadow under the hem; 1 = dark shadow spilling across the room floor
 //   handR, handL { show 0..1  hand emerges from inside the sleeve (0 = hidden)
 //                  target [x,y] local coords (origin = hem centre on floor, y negative up). Where the PALM
-//                         centre goes (or the middle fingertip if tip:true). Omit = arm hangs at rest.
+//                         centre goes (or the fingertip if tip:true: middle → index as point → 1). Omit = rest.
 //                  reach 0..1 (default 1) blend the arm from its rest position toward target
 //                  open 0..1 relaxed → fingers spread;  gentle 0..1 palm softly curved (resting on a shoulder)
+//                  point 0..1 index finger extended, the others folded (tip target slides to the index fingertip)
 //                  angle radians: hand direction override (0 = fingers point +x, PI/2 = down)
 //                  curl +1/-1 which side the fingers curl toward (default: the downward side)
 //                  bend +1/-1 elbow side (default: outward); elbow 0..1 how bent (default 0.3 when reaching, 0 at rest)
@@ -79,11 +85,17 @@ export const VOID_HANDS = {
   hidden: () => ({ show: 0 }),
   out: () => ({ show: 1 }),
   // side: +1 when the touched character stands to the Void's screen-right (fingers drape down-right), -1 left
-  shoulder: (target, side = 1) => ({ show: 1, target, tip: true, open: 0.12, gentle: 0.9, angle: side > 0 ? 0.5 : Math.PI - 0.5 }),
-  unlock: (target) => ({ show: 1, target, open: 0.08, gentle: 0.35, tip: true }),
-  // side: +1 pushes toward screen-right (hand sits on the pushed character's left/back), -1 toward screen-left
-  push: (target, side = 1) => ({ show: 1, target, open: 0.32, gentle: 0.3, angle: side > 0 ? 0.8 : Math.PI - 0.8 }),
-  offer: (target) => ({ show: 1, target, open: 0.75, gentle: 0.45 }),
+  shoulder: (target, side = 1) => ({ show: 1, target, tip: true, open: 0.12, gentle: 0.9, angle: side > 0 ? 0.38 : Math.PI - 0.38 }),
+  // one fingertip (index, extended; the other fingers tucked) on the latch — "turns the tiny lock"
+  unlock: (target) => ({ show: 1, target, tip: true, point: 1, open: 0.1, gentle: 0.4 }),
+  // two fingertips nudge between the shoulder blades; the hand stays open behind the character.
+  // side: +1 pushes toward screen-right (hand at the pushed character's left/back), -1 toward screen-left.
+  // Draw the hand BEHIND the character (no defer) so the fingertips meet its back edge.
+  push: (target, side = 1) => ({ show: 1, target, tip: true, open: 0.4, gentle: 0.2, angle: side > 0 ? 0.12 : Math.PI - 0.12 }),
+  // open, softly curved hand held out to the side, fingers forward (side: +1 screen-right hand)
+  offer: (target, side = 1) => ({ show: 1, target, open: 0.75, gentle: 0.45, angle: side > 0 ? -0.15 : Math.PI + 0.15 }),
+  // index finger extended toward `target` (fingertip contact if it is within reach)
+  point: (target) => ({ show: 1, target, tip: true, point: 1, open: 0.05, gentle: 0.2 }),
 };
 
 /** Head presets (spread into pose). */
@@ -126,7 +138,10 @@ export function voidRig(pose = {}) {
   const H = hoodGeom(turn, down);
   const fl = rot([H.ox, H.oy], hoodRot);
   const face = rot([pivot[0] + fl[0], pivot[1] + hoodDy + fl[1]], lean);
-  const shoulderR = rot([SH_X, SH_Y + hunch], lean), shoulderL = rot([-SH_X, SH_Y + hunch], lean);
+  // the shoulder JOINTS never move with a bow (only the mantle settles over them): "the shoulders do not
+  // move, only the head" — and it keeps the baked rest sleeves identical to the live ones (no pop when a
+  // hand starts to emerge while the hood is bowed)
+  const shoulderR = rot([SH_X, SH_Y], lean), shoulderL = rot([-SH_X, SH_Y], lean);
   const r = { turn, down, lean, hunch, pivot, hoodDy, hoodRot, H, face, faceRx: H.rw, faceRy: H.rh, shoulderL, shoulderR };
   r.armR = armRig(1, pose.handR || {}, r);
   r.armL = armRig(-1, pose.handL || {}, r);
@@ -141,14 +156,15 @@ export function voidRig(pose = {}) {
 
 function armRig(side, hp, r) {
   const S = side > 0 ? r.shoulderR : r.shoulderL;
-  const rest = rot([side * REST[0], REST[1] + r.hunch * 0.6], r.lean);
+  const rest = rot([side * REST[0], REST[1]], r.lean);
   const restA = Math.PI / 2 - side * 0.05;
   const show = clamp(hp.show ?? 0);
   let ha, W;
   if (hp.target) {
     const reach = clamp(hp.reach ?? 1);
     const a0 = Math.atan2(hp.target[1] - S[1], hp.target[0] - S[0]);
-    const haT = hp.angle ?? lerpAngle(a0, Math.PI / 2, 0.3);
+    // relaxed hands droop 30% toward the floor; a pointing hand follows the arm line
+    const haT = hp.angle ?? lerpAngle(a0, Math.PI / 2, 0.3 * (1 - 0.75 * clamp(hp.point ?? 0)));
     const lp = handLocal(hp, side, haT, !!hp.tip);       // contact point in hand-local coords
     const off = rot([lp[0], lp[1] * side], haT);
     const Wt = [hp.target[0] - off[0], hp.target[1] - off[1]];
@@ -165,7 +181,7 @@ function armRig(side, hp, r) {
   // elbow softness: nearly straight at rest, a gentle organic bend while reaching (hp.elbow 0..1 overrides)
   const elbow = clamp(hp.elbow ?? (hp.target ? 0.3 * clamp(hp.reach ?? 1) : 0));
   const ratio = lerp(0.992, 0.88, elbow);
-  let l = Math.max(L1 * 0.62, Math.min(L1, d / (2 * ratio)));
+  let l = Math.max(L1 * 0.42, Math.min(L1, d / (2 * ratio))); // near targets: the sleeve bunches up instead of folding sharply
   if (d > Ls * ratio) l = L1 * Math.min(1.3, d / (Ls * ratio));
   const bend = hp.bend ?? side;
   const { a1, a2 } = ik(S[0], S[1], W[0], W[1], l, l, bend);
@@ -180,7 +196,7 @@ export function drawVoidShadow(g, x, y, scale = 1, pose = {}) {
   const t = pose.t || 0;
   const spread = Math.round(clamp(pose.shadowSpread ?? 0.3) * 20) / 20;
   const spr = shadowSprite(spread);
-  const br = 1 + vfbm(t * 0.08, 41) * 0.025 * spread; // the spill breathes, very slowly
+  const br = 1 + vfbm(t * 0.08, 41) * 0.025 * spread * clamp(pose.idle ?? 1); // the spill breathes, very slowly
   g.save();
   if (pose.alpha != null) g.globalAlpha *= clamp(pose.alpha);
   g.translate(x, y);
@@ -308,35 +324,56 @@ export function drawVoid(g, x, y, scale = 1, pose = {}) {
   const rimK = clamp(pose.rim ?? 1);
   const sil = !!pose.silhouette;
   const bodyA = sil ? 0.1 : 1;
+  const idle = clamp(pose.idle ?? 1);
   const R = voidRig(pose);
+  const directA = alpha < 0.997 ? alpha : 1; // only when pose.layer === false (overlaps then show)
 
-  if (pose.shadow !== false && !sil) drawVoidShadow(g, x, y, scale, { ...pose, alpha: undefined });
+  if (pose.shadow !== false && !sil) drawVoidShadow(g, x, y, scale, { ...pose, alpha: directA < 1 ? directA : undefined });
 
   g.save();
+  if (directA < 1) g.globalAlpha *= directA;
   g.translate(x, y);
   g.scale(scale, scale);
   g.lineCap = 'round'; g.lineJoin = 'round';
   const k = devScale(g);
-  const ctx = mkCtx(R, t, rimK, bodyA, k, sil);
+  const ctx = mkCtx(R, t, rimK, bodyA, k, sil, idle);
+  // hem drift: the bottom of the skirt (below HEM_CUT) sways a few units at the floor — a shear anchored at
+  // HEM_CUT, applied to a separate slice of the cached body sprite. Barely perceptible; pose.idle = 0 freezes it.
+  const sway = useCacheFor(pose) ? idle * 3 * vfbm(t * 0.07 + 2.3, 33) / -HEM_CUT : 0;
 
   const arms = [R.armL, R.armR];
   for (const A of arms) if (A.hp.front === false && A.hp.defer !== true) drawArm(g, A, ctx, A.hp.defer === 'hand' ? 'sleeve' : 'all');
 
   // cloak body (+ arms hanging at rest): cached sprite at the current on-screen resolution in wide/medium
   // shots — the Void's stillness is its character, so the big static silhouette is rendered once.
-  const useCache = pose.cache !== false;                        // body sprite (res capped at 1.6)
-  const useHeadCache = pose.cache !== false;                    // mantle + hood shell sprite (res capped at 2.4)
+  const useCache = useCacheFor(pose);                           // body sprite (res capped at 1.6)
+  const useHeadCache = useCacheFor(pose);                       // mantle + hood shell sprites (res capped at 2.4)
   const rest = arms.map((A) => useCache && isRest(A.hp));
   g.save();
   g.rotate(R.lean);
+  const hemShear = () => g.transform(1, 0, sway, 1, -sway * HEM_CUT, 0);
   if (useCache) {
     // beyond 1.6x the cloak is only seen in close-ups (lower foreground) where a softer upscale reads fine
     const kq = Math.min(1.6, 2 ** (Math.round(Math.log2(k) * 6) / 6));
     const spr = bodySprite(kq, sil, Math.round(rimK * 20) / 20, rest[0], rest[1]);
-    g.drawImage(spr, CB.x0, CB.y0, spr.width / kq, spr.height / kq);
+    if (Math.abs(sway) > 1e-5) {
+      // upper part axis-aligned (fast blit); lower slice sheared. The upper part overlaps the slice by a few
+      // px (opaque cloth there) so no seam can open between them.
+      const sy = Math.round((HEM_CUT - CB.y0) * kq), ov = Math.ceil(3 * kq);
+      g.drawImage(spr, 0, 0, spr.width, sy + ov, CB.x0, CB.y0, spr.width / kq, (sy + ov) / kq);
+      g.save();
+      hemShear();
+      g.drawImage(spr, 0, sy, spr.width, spr.height - sy, CB.x0, CB.y0 + sy / kq, spr.width / kq, (spr.height - sy) / kq);
+      if (pose.foldStar > 0.005 && !sil) drawFoldStar(g, ctx, clamp(pose.foldStar));
+      g.restore();
+    } else {
+      g.drawImage(spr, CB.x0, CB.y0, spr.width / kq, spr.height / kq);
+      if (pose.foldStar > 0.005 && !sil) drawFoldStar(g, ctx, clamp(pose.foldStar));
+    }
     drawBodyGlint(g, ctx);
   } else {
     drawBody(g, ctx);
+    if (pose.foldStar > 0.005 && !sil) drawFoldStar(g, ctx, clamp(pose.foldStar));
   }
   g.restore();
 
@@ -345,13 +382,17 @@ export function drawVoid(g, x, y, scale = 1, pose = {}) {
   g.save();
   g.rotate(R.lean);
   if (useHeadCache) {
-    // mantle + hood shell: cached per (resolution, quantized head pose); the face is drawn live on top
+    // mantle sprite (pose-independent: a bow only translates it down by the hunch) + hood shell sprite
+    // cached per (resolution, quantized head pose); the face is drawn live between them
     const q = (v, n) => Math.round(v * n) / n;
     const Rq = voidRig({ headTurn: q(R.turn, 64), headDown: q(R.down, 64), headTilt: q(pose.headTilt || 0, 256) });
     const kq = Math.min(2.4, 2 ** (Math.round(Math.log2(k) * 6) / 6)); // soft fabric: upscaling beyond 2.4x is fine
-    const spr = headSprite(kq, Rq, sil, Math.round(rimK * 20) / 20);
-    const Xq = mkCtx(Rq, t, rimK, bodyA, k, sil);
-    // the sprite has a soft hole where the face is: paint the abyss (+ cosmos) first, unclipped, and let
+    const rimQ = Math.round(rimK * 20) / 20;
+    const msp = mantleSprite(kq, sil, rimQ);
+    g.drawImage(msp, MB.x0, MB.y0 + Rq.hunch, msp.width / kq, msp.height / kq);
+    const spr = headSprite(kq, Rq, sil, rimQ);
+    const Xq = mkCtx(Rq, t, rimK, bodyA, k, sil, idle);
+    // the hood sprite has a soft hole where the face is: paint the abyss (+ cosmos) first, unclipped, and let
     // the hood's inner wall (baked, fading into the hole) frame and recess it — no per-frame clip masks
     if (!sil) drawFaceUnder(g, Xq, pose);
     g.drawImage(spr, HB.x0, HB.y0, spr.width / kq, spr.height / kq);
@@ -367,7 +408,26 @@ export function drawVoid(g, x, y, scale = 1, pose = {}) {
   g.restore();
 }
 
-const HB = { x0: -360, y0: -1800, w: 720, h: 840 }; // mantle+hood sprite bounds (local units)
+const HB = { x0: -340, y0: -1790, w: 680, h: 640 }; // hood shell sprite bounds (local units, any head pose)
+const MB = { x0: -370, y0: -1490, w: 740, h: 520 }; // mantle sprite bounds at hunch 0 (drawn offset by hunch)
+const mantleCache = new Map();
+function mantleSprite(kq, sil, rimQ) {
+  const key = `${kq.toFixed(4)}|${sil ? 1 : 0}|${rimQ}`;
+  let c = mantleCache.get(key);
+  if (c) { mantleCache.delete(key); mantleCache.set(key, c); return c; }
+  c = createCanvas(Math.ceil(MB.w * kq), Math.ceil(MB.h * kq));
+  const x = c.getContext('2d');
+  x.scale(kq, kq);
+  x.translate(-MB.x0, -MB.y0);
+  x.lineCap = 'round'; x.lineJoin = 'round';
+  const X = mkCtx({ hunch: 0 }, 0, rimQ, sil ? 0.1 : 1, kq, sil);
+  X.shim = () => rimQ * 0.94;
+  X.glint = -1;
+  drawMantle(x, X);
+  mantleCache.set(key, c);
+  evict(mantleCache, 8e6);
+  return c;
+}
 const headCache = new Map();
 function headSprite(kq, Rq, sil, rimQ) {
   const key = `${kq.toFixed(4)}|${Rq.turn}|${Rq.down}|${Rq.hoodRot.toFixed(4)}|${sil ? 1 : 0}|${rimQ}`;
@@ -381,17 +441,16 @@ function headSprite(kq, Rq, sil, rimQ) {
   const X = mkCtx(Rq, 0, rimQ, sil ? 0.1 : 1, kq, sil);
   X.shim = () => rimQ * 0.94;
   X.glint = -1;
-  drawMantle(x, X);
   drawHood(x, X, {}, 'shell');
   if (!sil) {
     // cut a soft hole through the inner hood wall where the abyss is (its fading edge = the recess)
     const R = Rq, H = R.H;
-    const { ax, ay, aw, ah } = abyssGeom(R);
+    const { hx, hy, aw, ah } = holeGeom(R);
     x.save();
     x.translate(R.pivot[0], R.pivot[1] + R.hoodDy);
     x.rotate(R.hoodRot);
     x.globalCompositeOperation = 'destination-out';
-    x.translate(ax, ay + ah * (0.2 + 0.1 * R.down));
+    x.translate(hx, hy);
     x.scale(aw / ah, 1);
     const gr = x.createRadialGradient(0, 0, 0, 0, 0, ah * 1.12);
     gr.addColorStop(0, 'rgba(0,0,0,1)');
@@ -414,20 +473,40 @@ function abyssGeom(R) {
     aw: H.rw * (1 - 0.18 * Math.abs(R.turn)) - 7, ah: H.rh * (1 - 0.1 * R.down) - 7,
   };
 }
-/** abyss backdrop + cosmos, painted under the hood sprite (which frames it through its soft hole) */
+/** y of the hood shell's lower edge at hood-local x (the quadratic closing hoodOuterPath) */
+function hoodBottomAt(H, x) {
+  const x0 = H.xr + 62, x2 = H.xl - 62;
+  let a = 0, b = 1;
+  for (let i = 0; i < 20; i++) { const m = (a + b) / 2; if ((1 - m) * (1 - m) * x0 + m * m * x2 > x) a = m; else b = m; }
+  const u = (a + b) / 2;
+  return 26 * (1 - u) * (1 - u) + 2 * u * (1 - u) * 74 + 26 * u * u;
+}
+/** the soft hole cut through the hood sprite's inner wall (hood-local): the abyss must cover exactly this */
+function holeGeom(R) {
+  const { ax, ay, aw, ah } = abyssGeom(R);
+  return { hx: ax, hy: ay + ah * (0.2 + 0.1 * R.down), hrx: aw * 1.14, hry: ah * 1.14, ax, ay, aw, ah };
+}
+/** abyss backdrop + cosmos, painted under the hood sprite (which frames it through its soft hole). Painted
+ *  only inside the hole ellipse, so nothing can show on the mantle or past the hood edge at extreme poses. */
 function drawFaceUnder(g, X, pose) {
   const { R, t } = X;
   const H = R.H;
   const cosmos = clamp(pose.cosmos ?? 0);
-  const { ax, ay, aw, ah } = abyssGeom(R);
+  const { hx, hy, hrx, hry, ax, ay, aw, ah } = holeGeom(R);
   g.save();
   g.translate(R.pivot[0], R.pivot[1] + R.hoodDy);
   g.rotate(R.hoodRot);
-  // cover the whole opening (the sprite is opaque beyond it)
-  const ex = H.rw + 10, ey = H.rh + 16;
+  g.beginPath();
+  g.ellipse(hx, hy, hrx, hry, 0, 0, TAU);
   if (cosmos > 0.002) {
+    g.fillStyle = C.abyss;
+    g.fill();
+    // cosmos rect = the hole's bounding box, its bottom kept above the hood's lower edge so no corner can
+    // show below the hood (no clip mask: clipping every star stamp costs 5-10 ms in close-ups)
+    const top = hy - hry;
+    const bot = Math.min(hy + hry, hoodBottomAt(H, hx - hrx) - 2, hoodBottomAt(H, hx + hrx) - 2);
     const co = pose.cosmosOpts || {};
-    drawCosmos(g, H.ox, H.oy, ex, ey, t, { reveal: cosmos, clip: 'none', seed: co.seed ?? 7, glyphs: co.glyphs ?? 1, drift: co.drift ?? 1 });
+    drawCosmos(g, hx, (top + bot) / 2, hrx, (bot - top) / 2, t, { reveal: cosmos, clip: 'none', seed: co.seed ?? 7, glyphs: co.glyphs ?? 1, drift: co.drift ?? 1 });
   } else {
     // pure darkness: an abyss a shade darker than the cloak, with a subtle depth gradient
     g.save();
@@ -438,7 +517,7 @@ function drawFaceUnder(g, X, pose) {
     ga.addColorStop(0.6, '#030209');
     ga.addColorStop(1, '#070614');
     g.fillStyle = ga;
-    g.fillRect(-ex * ah / aw - 20, -ey - 20, (ex * ah / aw + 20) * 2, (ey + 20) * 2);
+    g.fill(); // the path was built in hood space; the gradient is read in this scaled space (elliptical)
     g.restore();
   }
   g.restore();
@@ -452,11 +531,11 @@ function drawBrimLight(g, X, cosmos) {
   g.translate(R.pivot[0], R.pivot[1] + R.hoodDy);
   g.rotate(R.hoodRot);
   g.globalCompositeOperation = 'screen';
-  openingPath(g, ox, oy, rw + 5, rh + 5, R.turn);
+  openingPath(g, ox, oy, rw + 2, rh + 2, R.turn); // glow on the same inner edge as the rim (no extra ring)
   const gl = g.createLinearGradient(ox - rw, oy - rh, ox + rw, oy + rh);
-  gl.addColorStop(0, rgba('#9f86ff', 0.22 * cosmos));
-  gl.addColorStop(1, rgba('#4fc6e6', 0.12 * cosmos));
-  g.strokeStyle = gl; g.lineWidth = 6; g.stroke();
+  gl.addColorStop(0, rgba('#9f86ff', 0.2 * cosmos));
+  gl.addColorStop(1, rgba('#4fc6e6', 0.11 * cosmos));
+  g.strokeStyle = gl; g.lineWidth = 9; g.stroke();
   const gsp = g.createRadialGradient(ox, oy + rh * 0.6, 0, ox, oy + rh * 0.6, 190);
   gsp.addColorStop(0, rgba('#8a74ff', 0.14 * cosmos));
   gsp.addColorStop(1, rgba('#8a74ff', 0));
@@ -473,7 +552,7 @@ function drawHeadShimmer(g, X) {
   g.translate(R.pivot[0], R.pivot[1] + R.hoodDy);
   g.rotate(R.hoodRot);
   for (const side of [-1, 1]) {
-    const a = 0.22 * rimK * clamp(0.5 + vfbm(t * 0.35 + side * 3.7, 77 + side));
+    const a = 0.22 * rimK * rimTurn(R.turn, side) * clamp(0.5 + X.idle * vfbm(t * 0.35 + side * 3.7, 77 + side));
     if (a < 0.01) continue;
     const gr = g.createLinearGradient(0, H.top, 0, 30);
     gr.addColorStop(0, `rgba(225,215,255,${a})`); gr.addColorStop(1, 'rgba(225,215,255,0)');
@@ -495,6 +574,8 @@ function evict(cache, maxPx) {
 }
 const isRest = (hp) => !hp.target && (hp.show ?? 0) <= 0.001 && hp.front !== false && !hp.defer && hp.angle == null && hp.elbow == null && hp.bend == null;
 const CB = { x0: -520, y0: -1480, w: 1040, h: 1560 }; // body sprite bounds (local units)
+const HEM_CUT = -330;                                    // hem drift slice: the cloak below this sways
+const useCacheFor = (pose) => pose.cache !== false;
 const bodyCache = new Map();
 function bodySprite(kq, sil, rimQ, restL, restR) {
   const key = `${kq.toFixed(4)}|${sil ? 1 : 0}|${rimQ}|${restL ? 1 : 0}${restR ? 1 : 0}`;
@@ -527,7 +608,7 @@ function drawBodyGlint(g, X) {
   for (const side of [-1, 1]) {
     const gr = g.createLinearGradient(0, -1400, 0, 10);
     gr.addColorStop(clamp(pc - 0.08), 'rgba(230,221,255,0)');
-    gr.addColorStop(pc, `rgba(230,221,255,${0.4 * X.shim(side)})`);
+    gr.addColorStop(pc, `rgba(230,221,255,${0.4 * X.shim(side) * X.glintA})`);
     gr.addColorStop(clamp(pc + 0.08), 'rgba(230,221,255,0)');
     g.strokeStyle = gr; g.lineWidth = 6;
     g.beginPath(); bodySide(g, side, 0); g.stroke();
@@ -535,13 +616,34 @@ function drawBodyGlint(g, X) {
   g.restore();
 }
 
-function mkCtx(R, t, rimK, bodyA, k, sil) {
+function mkCtx(R, t, rimK, bodyA, k, sil, idle = 1) {
   return {
-    R, t, rimK, bodyA, k, sil,
-    // rim shimmer: slow breathing per side + a faint glint that travels down the edges every ~25 s
-    shim: (side) => rimK * (0.88 + 0.12 * vfbm(t * 0.3 + side * 5, 71 + side)),
-    glint: ((t * 0.04 + 0.15) % 1.25) - 0.1,
+    R, t, rimK, bodyA, k, sil, idle,
+    // rim shimmer: slow breathing per side (centred on the baked sprite's 0.94) + a faint glint that
+    // travels down the edges every ~30 s. idle scales both (0 = rim light perfectly steady).
+    shim: (side) => rimK * (0.94 + 0.08 * idle * vfbm(t * 0.3 + side * 5, 71 + side)),
+    glint: idle > 0.01 ? ((t * 0.04 + 0.15) % 1.25) - 0.1 : -1,
+    glintA: idle,
   };
+}
+/** "a single faint star glints in a fold of the cloth" (pose.foldStar 0..1) — live, tiny, slow twinkle */
+function drawFoldStar(g, X, amt) {
+  const [x, y] = [-127, -236];
+  const tw = 0.6 + 0.4 * Math.sin(X.t * 1.7 + 0.8);
+  const a = amt * tw;
+  g.save();
+  g.globalCompositeOperation = 'lighter';
+  const gr = g.createRadialGradient(x, y, 0, x, y, 40);
+  gr.addColorStop(0, `rgba(200,190,255,${0.35 * a})`); gr.addColorStop(0.3, `rgba(138,108,255,${0.12 * a})`); gr.addColorStop(1, 'rgba(138,108,255,0)');
+  g.fillStyle = gr; g.fillRect(x - 40, y - 40, 80, 80);
+  g.fillStyle = `rgba(240,236,255,${0.9 * a})`;
+  const L = 16 + 8 * tw, w = 2.2;
+  g.beginPath();
+  g.moveTo(x - L, y); g.lineTo(x, y - w); g.lineTo(x + L, y); g.lineTo(x, y + w); g.closePath();
+  g.moveTo(x, y - L); g.lineTo(x + w, y); g.lineTo(x, y + L); g.lineTo(x - w, y); g.closePath();
+  g.fill();
+  g.beginPath(); g.arc(x, y, 3, 0, TAU); g.fill();
+  g.restore();
 }
 
 /**
@@ -559,7 +661,7 @@ export function drawVoidArm(g, x, y, scale = 1, pose = {}, side = 'R', part = 'a
   g.translate(x, y);
   g.scale(scale, scale);
   g.lineCap = 'round'; g.lineJoin = 'round';
-  drawArm(g, A, mkCtx(R, pose.t || 0, clamp(pose.rim ?? 1), pose.silhouette ? 0.1 : 1, devScale(g), !!pose.silhouette), part);
+  drawArm(g, A, mkCtx(R, pose.t || 0, clamp(pose.rim ?? 1), pose.silhouette ? 0.1 : 1, devScale(g), !!pose.silhouette, clamp(pose.idle ?? 1)), part);
   g.restore();
 }
 /**
@@ -576,7 +678,7 @@ export function drawVoidHand(g, x, y, scale = 1, pose = {}, side = 'R') {
 // ------------------------------------------------------------------ rim light
 /** Soft rim along an open edge path (call while clipped to the shape → inner rim only).
  *  side -1 = violet, +1 = violet with a cyan hint. */
-function rimEdge(g, pathFn, side, k, glint, strength = 1, yTop = -1700, yBot = 0) {
+function rimEdge(g, pathFn, side, k, glint, strength = 1, yTop = -1700, yBot = 0, glintA = 1) {
   if (k <= 0.005) return;
   const base = side > 0 ? mixColor(C.rim, C.rimCyan, 0.4) : C.rim;
   const hi = side > 0 ? mixColor(C.rimSoft, C.rimCyan, 0.3) : C.rimSoft;
@@ -595,7 +697,7 @@ function rimEdge(g, pathFn, side, k, glint, strength = 1, yTop = -1700, yBot = 0
     const gr = g.createLinearGradient(0, yTop, 0, yBot);
     const p = clamp(glint, 0, 1);
     gr.addColorStop(clamp(p - 0.08), rgba(hi, 0));
-    gr.addColorStop(p, rgba('#e6ddff', 0.45 * k * strength));
+    gr.addColorStop(p, rgba('#e6ddff', 0.45 * k * strength * glintA));
     gr.addColorStop(clamp(p + 0.08), rgba(hi, 0));
     g.strokeStyle = gr; g.lineWidth = 6; g.stroke();
   }
@@ -693,7 +795,7 @@ function drawBody(g, X) {
     g.fillStyle = gf;
     g.fillRect(-500, -150, 1000, 200);
   }
-  for (const side of [-1, 1]) rimEdge(g, () => { g.beginPath(); bodySide(g, side, h); }, side, X.shim(side), X.glint, 1.0, -1400, 10);
+  for (const side of [-1, 1]) rimEdge(g, () => { g.beginPath(); bodySide(g, side, h); }, side, X.shim(side), X.glint, 1.0, -1400, 10, X.glintA);
   // faint rim on the hem lip
   if (rimK > 0.01) {
     g.strokeStyle = rgba(C.rim, 0.13 * rimK); g.lineWidth = 4;
@@ -704,19 +806,24 @@ function drawBody(g, X) {
 }
 
 // ------------------------------------------------------------------ mantle (cowl drape over the shoulders)
+// the mantle is a little wider than the sleeves' shoulder caps so the sleeves emerge from UNDER it
+// (no sleeve top ever pokes out beside the shoulders, at rest or reaching)
 function mantleSide(g, side, h) {
   const s = side;
-  g.bezierCurveTo(s * 200, -1420 + h, s * 244, -1360 + h, s * 252, -1290 + h);
-  g.quadraticCurveTo(s * 260, -1232 + h, s * 252, -1190 + h);
+  g.bezierCurveTo(s * 214, -1426 + h, s * 282, -1374 + h, s * 298, -1292 + h);
+  g.quadraticCurveTo(s * 310, -1236 + h, s * 300, -1186 + h);
+}
+function mantleHem(g, h) {
+  g.bezierCurveTo(-226, -1144 + h, -76, -1110 + h, 0, -1102 + h);
+  g.bezierCurveTo(76, -1110 + h, 226, -1144 + h, 300, -1186 + h);
 }
 function mantlePath(g, h, begin = true) {
   if (begin) g.beginPath();
   g.moveTo(-140, -1452 + h);
   mantleSide(g, -1, h);
-  g.bezierCurveTo(-190, -1150 + h, -70, -1112 + h, 0, -1104 + h);
-  g.bezierCurveTo(70, -1112 + h, 190, -1150 + h, 252, -1190 + h);
-  g.quadraticCurveTo(260, -1232 + h, 252, -1290 + h);
-  g.bezierCurveTo(244, -1360 + h, 200, -1420 + h, 140, -1452 + h);
+  mantleHem(g, h);
+  g.quadraticCurveTo(310, -1236 + h, 298, -1292 + h);
+  g.bezierCurveTo(282, -1374 + h, 214, -1426 + h, 140, -1452 + h);
   g.closePath();
 }
 function drawMantle(g, X) {
@@ -752,9 +859,7 @@ function drawMantle(g, X) {
     }
     // lower hem of the mantle catches a whisper of light (layer separation)
     g.strokeStyle = rgba(C.rim, 0.12 * rimK); g.lineWidth = 4;
-    g.beginPath(); g.moveTo(-252, -1190 + h);
-    g.bezierCurveTo(-190, -1150 + h, -70, -1112 + h, 0, -1104 + h);
-    g.bezierCurveTo(70, -1112 + h, 190, -1150 + h, 252, -1190 + h);
+    g.beginPath(); g.moveTo(-300, -1186 + h); mantleHem(g, h);
     g.stroke();
   }
   g.restore();
@@ -767,10 +872,12 @@ function hoodGeom(turn, down) {
   const px = -turn * 30;
   const xr = 168 + 30 * Math.max(0, -turn) - 12 * Math.max(0, turn);
   const xl = -(168 + 30 * Math.max(0, turn) - 12 * Math.max(0, -turn));
-  const ox = turn * 62, oy = FACE_DY + down * 52;
-  const rw = FACE_RX * (1 - 0.32 * at), rh = FACE_RY * (1 - 0.3 * down);
+  const ox = turn * 72, oy = FACE_DY + down * 52;
+  const rw = FACE_RX * (1 - 0.4 * at), rh = FACE_RY * (1 - 0.3 * down);
   return { top, px, xr, xl, ox, oy, rw, rh, down, turn };
 }
+/** per-side hood rim weight: the edge on the far side from where the hood looks catches more light */
+const rimTurn = (turn, side) => 1 - 0.38 * turn * side;
 function hoodSide(g, H, side) {
   const xs = side > 0 ? H.xr : H.xl;
   const wy = -150 + H.down * 26;
@@ -841,7 +948,8 @@ function drawHood(g, X, pose, part = 'all') {
     g.strokeStyle = rgba(C.bodyLight, 0.5); g.lineWidth = 12;
     g.beginPath(); g.moveTo(fx - fs * 14, H.oy - H.rh * 0.5); g.quadraticCurveTo(fx + fs * 2, H.oy + 10, fx - fs * 22, 30); g.stroke();
   }
-  for (const side of [-1, 1]) rimEdge(g, crown(side), side, X.shim(side), X.glint, 1.15, H.top, 30);
+  // the rim light migrates to the BACK edge of the hood as it turns (the face side falls into shadow)
+  for (const side of [-1, 1]) rimEdge(g, crown(side), side, X.shim(side), X.glint, 1.15 * rimTurn(R.turn, side), H.top, 30, X.glintA);
   g.restore();
   }
 
@@ -868,10 +976,14 @@ function drawHood(g, X, pose, part = 'all') {
     gr.addColorStop(0, a0); gr.addColorStop(1, a1);
     return gr;
   };
-  openingPath(g, ox, lipY, rw + 12, lipH + 12, R.turn);
-  g.strokeStyle = dirGrad(rgba('#28234f', 0.8 * bodyA), rgba('#100e24', 0.45 * bodyA)); g.lineWidth = 28; g.stroke();
+  // one soft roll of fabric (stacked strokes → soft outer falloff, no hard outer contour)
+  openingPath(g, ox, lipY, rw + 14, lipH + 14, R.turn);
+  for (const [w, a] of [[46, 0.26], [30, 0.45], [15, 0.6]]) {
+    g.strokeStyle = dirGrad(rgba('#28234f', a * bodyA), rgba('#100e24', a * 0.55 * bodyA)); g.lineWidth = w; g.stroke();
+  }
   if (rimK > 0.01) {
-    openingPath(g, ox, lipY, rw + 10, lipH + 10, R.turn);
+    // a single lit edge where the fabric turns inward (the only crisp line around the opening)
+    openingPath(g, ox, oy, rw + 2, rh + 2, R.turn);
     g.strokeStyle = dirGrad(rgba(C.rimSoft, 0.34 * rimK), rgba(C.rimCyan, 0.06 * rimK)); g.lineWidth = 3;
     g.stroke();
   }
@@ -921,11 +1033,11 @@ function drawHood(g, X, pose, part = 'all') {
   if (cosmos > 0.01) {
     g.save();
     g.globalCompositeOperation = 'screen';
-    openingPath(g, ox, oy, rw + 5, rh + 5, R.turn);
+    openingPath(g, ox, oy, rw + 2, rh + 2, R.turn);
     const gl = g.createLinearGradient(ox - rw, oy - rh, ox + rw, oy + rh);
-    gl.addColorStop(0, rgba('#9f86ff', 0.22 * cosmos));
-    gl.addColorStop(1, rgba('#4fc6e6', 0.12 * cosmos));
-    g.strokeStyle = gl; g.lineWidth = 6; g.stroke();
+    gl.addColorStop(0, rgba('#9f86ff', 0.2 * cosmos));
+    gl.addColorStop(1, rgba('#4fc6e6', 0.11 * cosmos));
+    g.strokeStyle = gl; g.lineWidth = 9; g.stroke();
     const gsp = g.createRadialGradient(ox, oy + rh * 0.6, 0, ox, oy + rh * 0.6, 190);
     gsp.addColorStop(0, rgba('#8a74ff', 0.14 * cosmos));
     gsp.addColorStop(1, rgba('#8a74ff', 0));
@@ -1047,7 +1159,7 @@ function drawArm(g, A, X, part = 'all') {
     const strong = s === outerSign;
     if (!strong && sil) continue;
     rimEdge(g, () => sleeveEdge(g, sg, s), side, X.shim(side) * (strong ? 1 : 0.4), strong ? X.glint : -1, 0.95,
-      Math.min(e.A[1], e.C[1]) - 60, Math.max(e.A[1], e.C[1]) + 60);
+      Math.min(e.A[1], e.C[1]) - 60, Math.max(e.A[1], e.C[1]) + 60, X.glintA ?? 1);
   }
   g.restore();
 
@@ -1092,17 +1204,33 @@ function drawArm(g, A, X, part = 'all') {
 /** local (x along hand, y toward thumb) position of the palm centre or the middle fingertip for a hand pose */
 function handLocal(hp, side, ang, tip) {
   if (!tip) return [PALM_C, 2];
-  const { curl, fore, open } = handParams(hp, side, ang);
-  const [bx, by, ba, sp, lens] = FINGERS[2];
-  const pts = fingerChain(bx, by, ba + sp * open, lens, curl, fore);
-  return pts[pts.length - 1];
+  // contact = middle fingertip, sliding to the index fingertip as the hand points (continuous in `point`)
+  const { fingers, point } = handShape(hp, side, ang);
+  const m = fingers[2].pts.at(-1), ix = fingers[3].pts.at(-1);
+  return [lerp(m[0], ix[0], point), lerp(m[1], ix[1], point)];
 }
 function handParams(hp, side, ang) {
-  const open = clamp(hp.open ?? 0.15), gentle = clamp(hp.gentle ?? 0.2);
+  const open = clamp(hp.open ?? 0.15), gentle = clamp(hp.gentle ?? 0.2), point = clamp(hp.point ?? 0);
   // fingers curl toward whichever side faces down (they drape with gravity) unless specified
   const lyY = Math.cos(ang) * side; // screen-y of local +y
   const curlDir = hp.curl ?? (lyY < -0.25 ? -1 : 1);
-  return { open, gentle, curl: curlDir * (0.06 + 0.26 * gentle), fore: 0.16 * gentle };
+  return { open, gentle, point, curlDir, curl: curlDir * (0.06 + 0.26 * gentle), fore: 0.16 * gentle };
+}
+/** finger + thumb chains for a hand pose (hand-local: x toward the fingertips, thumb on +y) */
+function handShape(hp, side, ang) {
+  const P = handParams(hp, side, ang);
+  const { open, curl, fore, point, gentle } = P;
+  const fingers = FINGERS.map(([bx, by, ba, sp, lens, ws], i) => {
+    if (i === 3) {
+      // index: straightens and reaches a touch further as the hand points
+      return { pts: fingerChain(bx, by, ba + sp * open * (1 - point) + 0.04 * point, lens, curl * (1 - point), fore * (1 - point)), ws };
+    }
+    // pinky/ring/middle: fold away under the palm (foreshortened knuckles, bent away from the index)
+    const c = lerp(curl, -0.42 + (i - 1) * 0.05, point);
+    return { pts: fingerChain(bx - point * 6, by, ba + sp * open * (1 - point) - 0.1 * point, lens, c, lerp(fore, 0.72, point)), ws };
+  });
+  const thumb = { pts: fingerChain(24, 28, 0.6 + 0.5 * open * (1 - point) - 0.22 * gentle - 0.25 * point, [38, 30, 24], (curl * 0.5 + 0.1) * (1 - point) - 0.12 * point, lerp(fore * 0.5, 0.35, point)), ws: [21, 16.5, 12.5] };
+  return { ...P, fingers, thumb };
 }
 
 // fingers: [baseX, baseY, baseAngle, spread(open), lengths, widths] — local: x toward the fingertips, thumb on +y
@@ -1141,14 +1269,11 @@ function fingerOutline(g, pts, ws, grow) {
   g.closePath();
 }
 function drawHand(g, wpos, ang, side, hp, rimK, k) {
-  const { open, curl, fore } = handParams(hp, side, ang);
+  const { fingers, thumb } = handShape(hp, side, ang);
   g.save();
   g.translate(wpos[0], wpos[1]);
   g.rotate(ang);
   g.scale(1, side);
-  const fingers = FINGERS.map(([bx, by, ba, sp, lens, ws]) => ({ pts: fingerChain(bx, by, ba + sp * open, lens, curl, fore), ws }));
-  const gentle = clamp(hp.gentle ?? 0.2);
-  const thumb = { pts: fingerChain(24, 28, 0.6 + 0.5 * open - 0.22 * gentle, [38, 30, 24], curl * 0.5 + 0.1, fore * 0.5), ws: [21, 16.5, 12.5] };
   const all = [thumb, ...fingers];
   const palm = () => {
     g.moveTo(-8, -22);

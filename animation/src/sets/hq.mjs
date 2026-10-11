@@ -9,7 +9,8 @@
 //   drawAlarmStation(g, x, y, scale, state)     pull station + bell + strobe (x,y = handle rest centre)
 //   HQ_VIEWS[view] = { width, height, anchors: { name: [x, y, charScale] }, cams: { name: {x,y,zoom} } }
 //   hqScaleAt(view, y)                perspective character scale for a floor point at world y
-//   HQ_PRESETS (state bundles), ALARM_REACH (FEAR arm target for the handle), consoleButtonPos(), HQ_COLORS
+//   HQ_PRESETS (state bundles), ALARM_REACH (FEAR arm target for the handle), consoleButtonPos(), HQ_COLORS,
+//   HQ_STATIONS (which emotion works which console station, and its anchor in the front / back views)
 //
 // Every view is its own world-coordinate stage. Static artwork is cached per view and per resolution level
 // (the level is picked from the current transform, so camera push-ins stay crisp).
@@ -62,6 +63,7 @@ const ALARM_FRONT = { lam: 1.42, yup: 180 * GEO.front.charK, cheat: 0.5 };
 export const ALARM_REACH = [108, -176];
 const ALARM_CLOSE = { x: 692, y: 1089, s: 1.8 };
 const ALARM_SCONCE = [330, 600];
+const ALARM_NOTE = [488, 700];
 
 function frontAlarmHandle() {
   const G = GEO.front, P = proj(G);
@@ -105,7 +107,7 @@ export const HQ_VIEWS = {
     cams: {
       wide: { x: 500, y: 800, zoom: 0.8 },
       medium: { x: 445, y: 960, zoom: 1.0 },
-      twoShot: { x: 430, y: 1075, zoom: 1.2 },
+      twoShot: { x: 430, y: 1065, zoom: 1.2 },
       pull: { x: 630, y: 1000, zoom: 1.45 },
       bell: { x: 660, y: 640, zoom: 1.6 },
     },
@@ -117,7 +119,7 @@ export const HQ_VIEWS = {
       wide: { x: 500, y: 889, zoom: 0.72 },
       ground: { x: 500, y: 1138, zoom: 1.0 },
       cage: { x: 360, y: 1335, zoom: 1.45 },
-      hood: { x: 670, y: 420, zoom: 1.1 },
+      hood: { x: 675, y: 520, zoom: 1.25 },
       distance: { x: 360, y: 1040, zoom: 1.6 },
     },
   },
@@ -684,19 +686,22 @@ function paintConsoleControls(g, w, s, dk = 1) {
   }
 }
 
+/** outline path of the console hull seen from the screen side (origin = base centre) */
+function consoleBackHull(g, w, s) {
+  const H = 210 * s, hw = w / 2;
+  g.beginPath();
+  g.moveTo(-hw, 0);
+  g.lineTo(-hw, -H + 50 * s);
+  g.quadraticCurveTo(-hw, -H - 4 * s, -hw + 60 * s, -H - 4 * s);
+  g.quadraticCurveTo(0, -H - 22 * s, hw - 60 * s, -H - 4 * s);
+  g.quadraticCurveTo(hw, -H - 4 * s, hw, -H + 50 * s);
+  g.lineTo(hw, 0);
+  g.closePath();
+}
 function paintConsoleBack(g, w, s) {
   // seen from the screen side: rounded padded hull, warm rim from the buttons beyond. origin = base centre
   const H = 210 * s, hw = w / 2;
-  const hull = () => {
-    g.beginPath();
-    g.moveTo(-hw, 0);
-    g.lineTo(-hw, -H + 50 * s);
-    g.quadraticCurveTo(-hw, -H - 4 * s, -hw + 60 * s, -H - 4 * s);
-    g.quadraticCurveTo(0, -H - 22 * s, hw - 60 * s, -H - 4 * s);
-    g.quadraticCurveTo(hw, -H - 4 * s, hw, -H + 50 * s);
-    g.lineTo(hw, 0);
-    g.closePath();
-  };
+  const hull = () => consoleBackHull(g, w, s);
   hull();
   g.fillStyle = linGrad(g, 0, -H - 20 * s, 0, 0, [[0, '#4a3e86'], [0.12, '#3a3172'], [0.4, '#28224e'], [1, '#110e22']]);
   g.fill();
@@ -772,7 +777,12 @@ function _drawConsole(g, x, y, w, scale = 1, state = {}) {
   const res = resLevel(g);
   const paint = (cg) => (side === 'back' ? paintConsoleBack(cg, w, s) : paintConsoleControls(cg, w, s, dk));
   blit(g, ckey, x0, y0, w + pad * 2, ch, paint, res);
-  if (st.lightsDim > 0.002) {
+  if (st.lightsDim > 0.002 && side === 'back') {
+    // dimming the plain hull: just fill its outline (cheaper than a second full-size blit)
+    g.fillStyle = `rgba(6,5,14,${st.lightsDim * 0.55})`;
+    consoleBackHull(g, w, s);
+    g.fill();
+  } else if (st.lightsDim > 0.002) {
     // dimming = a cached dark silhouette of the same art laid over it (a per-frame filter costs ~4 ms)
     const a0 = g.globalAlpha;
     g.globalAlpha = a0 * st.lightsDim * 0.55;
@@ -862,7 +872,7 @@ function _drawConsole(g, x, y, w, scale = 1, state = {}) {
 // ================================================================= ALARM STATION
 /**
  * Pull station + conduit + bell + strobe beacon. (x, y) = rest centre of the handle; scale 1 = sized to
- * FEAR at scale 1 (box 92x148, bell r=42 at y-250, beacon at y-345). state: t, alarm, alarmPulled.
+ * FEAR at scale 1 (box 84x148, bell r=42 at y-250, beacon dome at y-352). state: t, alarm, alarmPulled.
  * state.bell === false hides bell + beacon. Returns { handle:[x,y], bell:[x,y], beacon:[x,y] } in the
  * current coordinate space (before any transform you applied outside).
  */
@@ -1512,9 +1522,9 @@ function paintAlarm(g) {
   g.restore();
   // sconce (warm practical, upper left)
   sconce(g, ALARM_SCONCE[0], ALARM_SCONCE[1], 1.8);
-  // sticky note: a little joke from the past
+  // sticky note: a little joke from the past (left of the niche, level with the bell, above FEAR's head)
   g.save();
-  g.translate(nx + 158, 880); g.rotate(0.06);
+  g.translate(ALARM_NOTE[0], ALARM_NOTE[1]); g.rotate(-0.06);
   g.fillStyle = 'rgba(0,0,0,0.25)'; g.fillRect(-58, -48, 120, 108);
   g.fillStyle = '#ffe68a'; g.fillRect(-62, -54, 120, 108);
   g.fillStyle = 'rgba(255,255,255,0.35)'; g.fillRect(-30, -62, 56, 16);
@@ -1726,11 +1736,14 @@ const BEACON = {
   alarm: () => [ALARM_CLOSE.x, ALARM_CLOSE.y - 352 * ALARM_CLOSE.s, 1.6],
   backOfMind: () => [BOM.lx, BOM.ly - 10, 0.6],
 };
-const WASH_REACH = { front: 1150, back: 1150, alarm: 1500, backOfMind: 950 };
+// x0 -> x1: the wash ramps from nothing (x0) to full (x1) and stays full beyond x1 (a horizontal ramp is
+// ~3x cheaper than a full-frame radial multiply); r: a radial wash of that radius around the beacon instead
+const WASH = { front: { x0: 260, x1: 720 }, back: { x0: 640, x1: 120 }, alarm: { x0: 40, x1: 560 }, backOfMind: { r: 480 } };
 
 /**
  * Soft red alarm light, drawn AFTER characters (world coords, same camera). Uses state.alarm (0..1)
- * and state.t. A rotating beacon sweep + a gentle red wash pulsing at 1.2 Hz (max alpha ~0.3).
+ * and state.t. A rotating beacon sweep + a gentle red wash pulsing at 1.2 Hz (max alpha ~0.3) that covers
+ * only the alarm's side of the room (partial, never a full-frame flash).
  */
 function _drawAlarmLight(g, view = 'front', state = {}) {
   const st = norm(state);
@@ -1741,19 +1754,27 @@ function _drawAlarmLight(g, view = 'front', state = {}) {
   const t = st.t;
   const pulse = 0.5 + 0.5 * Math.sin(t * TAU * 1.2 - Math.PI / 2);
   g.save();
-  // gentle red wash: multiply, max alpha 0.3 at the beacon's side, fading to nothing across the room
+  // gentle red wash (multiply, max alpha 0.3) on the alarm's side of the room only, fading out across it
   const wash = A * (0.2 + 0.2 * pulse) * 0.75;
-  const R = WASH_REACH[view] || 1150;
-  const wg = g.createRadialGradient(bx, by, 0, bx, by, R);
-  wg.addColorStop(0, rgba('#ff6472', wash));
-  wg.addColorStop(0.45, rgba('#ff6472', wash * 0.75));
-  wg.addColorStop(1, rgba('#ff6472', 0));
+  const WS = WASH[view] || WASH.front, WCOL = '#ff6472';
   g.globalCompositeOperation = 'multiply';
-  g.fillStyle = wg;
-  const rx0 = Math.max(-200, bx - R), ry0 = Math.max(-200, by - R);
-  g.fillRect(rx0, ry0, Math.min(G.W + 200, bx + R) - rx0, Math.min(G.H + 200, by + R) - ry0);
+  if (WS.r) {
+    const wg = g.createRadialGradient(bx, by, 0, bx, by, WS.r);
+    wg.addColorStop(0, rgba(WCOL, wash)); wg.addColorStop(0.45, rgba(WCOL, wash * 0.75)); wg.addColorStop(1, rgba(WCOL, 0));
+    g.fillStyle = wg;
+    g.fillRect(bx - WS.r, by - WS.r, WS.r * 2, WS.r * 2);
+  } else {
+    const xa = Math.min(WS.x0, WS.x1), xb = Math.max(WS.x0, WS.x1);
+    const wg = g.createLinearGradient(WS.x0, 0, WS.x1, 0);
+    wg.addColorStop(0, rgba(WCOL, 0)); wg.addColorStop(0.55, rgba(WCOL, wash * 0.7)); wg.addColorStop(1, rgba(WCOL, wash));
+    g.fillStyle = wg;
+    g.fillRect(xa, -200, xb - xa, G.H + 400);
+    g.fillStyle = rgba(WCOL, wash);
+    if (WS.x1 > WS.x0) g.fillRect(xb, -200, G.W + 200 - xb, G.H + 400);
+    else g.fillRect(-200, -200, xa + 200, G.H + 400);
+  }
   g.globalCompositeOperation = 'lighter';
-  const gr2 = 520 * Math.max(1, bs);
+  const gr2 = 520 * Math.max(1, bs * 0.8);
   glow(g, bx, by + gr2 * 0.3, gr2, C.red, A * (0.07 + 0.12 * pulse));
   g.globalCompositeOperation = 'source-over';
   // rotating beacon sweep (two opposite beams)

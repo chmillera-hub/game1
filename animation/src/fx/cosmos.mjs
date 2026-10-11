@@ -5,8 +5,9 @@
 //     rx, ry  : half-extents of the region to fill (rect by default; see opts.clip)
 //     t       : seconds (drift, twinkle, galaxy spin)
 //     opts    : {
-//       reveal  0..1  (default 1)  0 = pure abyss; stars kindle first (~0.05-0.6),
-//                                   nebulae bloom (~0.25-0.75), then galaxies + glyphs (~0.5-1)
+//       reveal  0..1  (default 1)  0 = pure abyss; a single first star (~0.02-0.09), then stars kindle
+//                                   from the CENTRE OUTWARD (~0.05-0.62), nebulae bloom (~0.25-0.75),
+//                                   then galaxies + glyphs (~0.5-1)
 //       glyphs  0..1  (default 1)  visibility of the drifting "bits and pieces of meaning"
 //       seed    int   (default 7)  star layout + drift phases
 //       drift   num   (default 1)  speed multiplier for parallax drift, spin and glyph float
@@ -521,7 +522,9 @@ export function drawCosmos(g, cx, cy, rx, ry, t = 0, opts = {}) {
   const data = starData(seed);
   const area = 4 * rx * ry * k * k;
   const sizeMul = clamp(Math.pow(R / 420, 0.25), 0.72, 1.3);
-  const kindle = smoothstep(0.03, 0.62, reveal) * 1.08; // star kindle front (0..~1.08)
+  // star kindle front (0..1.16). Each star's threshold mixes its own random rank with its distance from
+  // the centre, so the sky lights up from the CENTRE OUTWARD: one point of light, another, then hundreds.
+  const kindle = smoothstep(0.03, 0.62, reveal) * 1.16;
   const ox = cx - rx, oy = cy - ry, W2 = rx * 2, H2 = ry * 2;
   const indiv = [];
   const spr = starSprites();
@@ -533,10 +536,13 @@ export function drawCosmos(g, cx, cy, rx, ry, t = 0, opts = {}) {
     const bins = [[], [], [], [], []];
     for (let i = 0; i < n; i++) {
       const st = arr[i];
-      const ka = clamp((kindle - st.thr) / 0.07);
-      if (ka <= 0) continue;
+      if (kindle - st.thr * 0.5 <= 0) continue;              // cheap early-out (radial term ≥ 0)
       const u = st.u + offU, v = st.v + offV;
-      const x = ox + (u - Math.floor(u)) * W2, y = oy + (v - Math.floor(v)) * H2;
+      const fu = u - Math.floor(u), fv = v - Math.floor(v);
+      const rr = Math.min(1, Math.hypot(fu - 0.5, fv - 0.5) * 1.5); // 0 centre … 1 edges/corners
+      const ka = clamp((kindle - (st.thr * 0.5 + rr * 0.58)) / 0.07);
+      if (ka <= 0) continue;
+      const x = ox + fu * W2, y = oy + fv * H2;
       const rd = (L.r0 + (L.r1 - L.r0) * st.sz) * sizeMul; // device px
       const r = rd / k;
       if (ka < 1 || st.tw || rd >= 1.05 || (li === 2 && st.sz > 0.45)) indiv.push([x, y, r, st, L, li, ka]);
@@ -552,6 +558,22 @@ export function drawCosmos(g, cx, cy, rx, ry, t = 0, opts = {}) {
     }
   });
   const spikes = R > 140;
+  // the FIRST star: a single point of light just off-centre that kindles before all others
+  const fs = smoothstep(0.015, 0.09, reveal);
+  if (fs > 0.003) {
+    const tw = 0.85 + 0.15 * Math.sin(t * 1.3 + 0.7);
+    const x = cx + (0.07 + fbm(T * 0.01, seed + 70) * 0.01) * rx, y = cy - (0.11 + fbm(T * 0.01, seed + 71) * 0.01) * ry;
+    const r = (2.1 * sizeMul) / k;
+    g.globalAlpha = baseA * fs * tw;
+    const D = r * 11;
+    g.drawImage(spr.bright[0], x - D / 2, y - D / 2, D, D);
+    if (spikes) {
+      const sl = r * (4 + 2.5 * tw);
+      g.strokeStyle = rgba('#ffffff', 0.6);
+      g.lineWidth = Math.max(0.6 / k, r * 0.3);
+      g.beginPath(); g.moveTo(x - sl, y); g.lineTo(x + sl, y); g.moveTo(x, y - sl); g.lineTo(x, y + sl); g.stroke();
+    }
+  }
   for (const [x, y, r, st, L, li, ka] of indiv) {
     const tw = st.tw ? 0.62 + 0.38 * Math.sin(t * st.w + st.ph) : 1;
     const a = L.a * ka * tw;
@@ -578,7 +600,7 @@ export function drawCosmos(g, cx, cy, rx, ry, t = 0, opts = {}) {
   if (gk0 > 0.003) {
     const small = clamp((260 - R) / 200);
     const nG = Math.round(clamp(4 + R / 38, 5, GLYPHS.length));
-    const gsz = S * lerp(0.07, 0.115, small);
+    const gsz = S * lerp(0.09, 0.115, small); // full screen: ~50-80 px glyphs (legible on a phone)
     g.globalCompositeOperation = 'source-over';
     for (let i = 0; i < nG; i++) {
       const G = GLYPHS[i];

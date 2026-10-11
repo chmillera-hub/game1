@@ -35,8 +35,14 @@ if (!PH) {
 }
 
 // ---------------------------------------------------------------- characters (real or placeholder)
+// other agents edit their modules in parallel: if a real module throws, fall back to the placeholder
+const failed = new Set();
+function tryReal(k, fn) {
+  if (!real[k] || failed.has(k)) return false;
+  try { fn(); return true; } catch (e) { failed.add(k); console.error(`(real ${k} threw, using placeholder: ${e.message.split('\n')[0]})`); return false; }
+}
 function drawVoidAt(g, x, y, s, opt = {}) {
-  if (real.void) return real.void.drawVoid(g, x, y, s, { t: 1.3, headTurn: opt.headTurn ?? 0 });
+  if (tryReal('void', () => { g.save(); try { real.void.drawVoid(g, x, y, s, { t: 1.3, headTurn: opt.headTurn ?? 0 }); } finally { g.restore(); } })) return;
   const h = 1700 * s, w = 640 * s;
   g.save(); g.translate(x, y);
   g.beginPath();
@@ -55,7 +61,7 @@ function drawVoidAt(g, x, y, s, opt = {}) {
 const EMO_COL = { JOY: '#ffc94a', SADNESS: '#6fa8e8', ANGER: '#f0634f', CALM: '#7fd6b0' };
 const EMO_H = { JOY: 457, SADNESS: 419, ANGER: 394, CALM: 523 };
 function drawEmo(g, name, x, y, s, pose = {}) {
-  if (real.emo) return real.emo.drawEmotion(g, name, x, y, s, { t: 1.3, ...pose });
+  if (tryReal('emo', () => { g.save(); try { real.emo.drawEmotion(g, name, x, y, s, { t: 1.3, ...pose }); } finally { g.restore(); } })) return;
   const back = pose.view === 'back';
   const h = EMO_H[name] * s, w = 190 * s;
   g.save(); g.translate(x, y);
@@ -73,7 +79,7 @@ function drawEmo(g, name, x, y, s, pose = {}) {
   g.restore();
 }
 function drawCEO(g, x, y, s, pose = {}) {
-  if (real.self) return real.self.drawSelf(g, x, y, s, { t: 1.3, outfit: 'ceo', ...pose });
+  if (tryReal('self', () => { g.save(); try { real.self.drawSelf(g, x, y, s, { t: 1.3, outfit: 'ceo', ...pose }); } finally { g.restore(); } })) return;
   const back = pose.view === 'back';
   const h = 600 * s * (pose.kneel ? 0.72 : 1);
   g.save(); g.translate(x, y);
@@ -85,7 +91,7 @@ function drawCEO(g, x, y, s, pose = {}) {
   g.restore();
 }
 function drawCageAt(g, x, y, s, layer = 'all', state = {}) {
-  if (real.cage) return real.cage.drawCage(g, x, y, s, { t: 1.3, layer, ...state });
+  if (tryReal('cage', () => { g.save(); try { real.cage.drawCage(g, x, y, s, { t: 1.3, layer, ...state }); } finally { g.restore(); } })) return;
   if (layer === 'back') return;
   const h = 400 * s, w = 250 * s;
   g.save(); g.translate(x, y);
@@ -182,7 +188,7 @@ const castAlarm = (opt = {}) => (g, st) => {
     const [cx, cy, cs] = A.ceoKneel;
     fear(g, A.fearAtAlarm, { face: { ...EXPR.crying, lookX: -0.7, lookY: -0.2 }, tremble: 0.7, headTurn: -0.3, armR: pullArm(0) });
     const shoulder = [fx - 36 * fs, fy - 131 * fs];
-    const tgt = real.self ? real.self.selfLocal(cx, cy, cs, 1, shoulder[0], shoulder[1]) : null;
+    const tgt = real.self && !failed.has('self') ? real.self.selfLocal(cx, cy, cs, 1, shoulder[0], shoulder[1]) : null;
     drawCEO(g, cx, cy, cs, { kneel: 1, face: { ...EXPR.tender, lookX: 0.7, lookY: 0.45 }, headTilt: 0.1, armR: tgt ? { preset: 'onShoulder', target: tgt } : undefined });
     return;
   }
@@ -221,7 +227,7 @@ const cells = [
   ['back · console cam, press 0 + 9', 'back', { t: T, screenMode: 'calm', consolePress: { 0: 1, 9: 1 } }, B.console, castBack({ cage: false, ceo: false, void: false })],
   ['alarm · quiet (wide)', 'alarm', { t: T }, AL.wide, castAlarm()],
   ['alarm · ringing, pulled (medium)', 'alarm', { t: T, alarm: 1, alarmPulled: 1 }, AL.medium, castAlarm()],
-  ['alarm · hand on shoulder (ceoKneel, twoShot)', 'alarm', { t: T }, AL.twoShot, castAlarm({ kneel: true })],
+  ['alarm · ceoKneel, hand on shoulder', 'alarm', { t: T }, AL.twoShot, castAlarm({ kneel: true })],
   ['front · door open, dim, evacuation', 'front', { t: T, ...HQ_PRESETS.chaos }, F.door, castExit],
   ['backOfMind · wide', 'backOfMind', { t: T, mist: 0.5 }, BM.wide, castBOM()],
   ['backOfMind · voidShadow=1 (ground)', 'backOfMind', { t: T, voidShadow: 1, mist: 0.7 }, BM.ground, castBOM()],

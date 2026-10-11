@@ -339,7 +339,7 @@ def make_reverb_ir(decay=2.4, predelay=0.02, damping=0.5, size=0.6, cross=0.3, s
 
 def reverb_wet(x, decay=2.4, predelay=0.02, damping=0.5, size=0.6, cross=0.3, width=1.0, seed=7, sr=SR):
     """Wet-only stereo reverb signal (length = len(x) + IR length). For noise-like input its RMS ≈ input RMS."""
-    xs = to_stereo(x).astype(np.float64)
+    xs = to_stereo(x).astype(np.float32)
     ir = make_reverb_ir(round(float(decay), 3), round(float(predelay), 4), round(float(damping), 3),
                         round(float(size), 3), round(float(cross), 3), int(seed), int(sr))
     n = len(xs) + len(ir) - 1
@@ -347,8 +347,10 @@ def reverb_wet(x, decay=2.4, predelay=0.02, damping=0.5, size=0.6, cross=0.3, wi
     for i in range(2):
         if not np.any(xs[:, i]):
             continue
+        xi = np.ascontiguousarray(xs[:, i])
         for o in range(2):
-            y[:, o] += signal.oaconvolve(xs[:, i], ir[:, i, o].astype(np.float64))
+            # float32 FFT convolution: ~2x faster, error floor far below -100 dB
+            y[:, o] += signal.oaconvolve(xi, np.ascontiguousarray(ir[:, i, o]))
     if width != 1.0:
         m = 0.5 * (y[:, 0] + y[:, 1])
         s = 0.5 * (y[:, 0] - y[:, 1]) * width
@@ -547,15 +549,20 @@ def _k_weighting_sos(sr):
 def loudness(x, sr=SR):
     """Integrated loudness in LUFS (BS.1770-4: K-weighting, 400 ms blocks / 75 % overlap,
     absolute gate -70 LUFS, relative gate -10 LU). Returns -inf for silence."""
-    x = to_stereo(x).astype(np.float64)
+    x = to_stereo(x)
     if len(x) < int(0.4 * sr):
-        x = np.concatenate([x, np.zeros((int(0.4 * sr) - len(x), 2))])
-    y = signal.sosfilt(_k_weighting_sos(sr), x, axis=0)
+        x = np.concatenate([x, np.zeros((int(0.4 * sr) - len(x), 2), np.float32)])
+    sos = _k_weighting_sos(sr)
+    # per channel on contiguous 1-D data (much faster than filtering/cumsumming along axis 0);
+    # L and R have weight 1, so their K-weighted powers are simply summed
+    p = np.zeros(len(x))
+    for c in range(2):
+        yc = signal.sosfilt(sos, np.ascontiguousarray(x[:, c], dtype=np.float64))
+        p += yc * yc
     blk, step = int(0.4 * sr), int(0.1 * sr)
-    cs = np.concatenate([np.zeros((1, 2)), np.cumsum(y ** 2, axis=0)])
-    starts = np.arange(0, len(y) - blk + 1, step)
-    z = (cs[starts + blk] - cs[starts]) / blk  # (nblocks, 2)
-    zs = z.sum(axis=1)
+    cs = np.concatenate([[0.0], np.cumsum(p)])
+    starts = np.arange(0, len(p) - blk + 1, step)
+    zs = (cs[starts + blk] - cs[starts]) / blk  # (nblocks,) channel-summed mean square
     lj = -0.691 + 10 * np.log10(zs + 1e-20)
     g1 = lj > -70.0
     if not np.any(g1):
@@ -572,24 +579,73 @@ def normalize_loudness(x, target_lufs=-16.0, sr=SR):
     return gain_db(x, target_lufs - L)
 
 
+def _tp_envelope(x, ref, oversample=4, margin_db=6.0, blk=8192):
+    """Per-sample true-peak magnitude (max over channels and `oversample` interpolated phases).
+
+    Only blocks whose *sample* peak comes within `margin_db` of `ref` are oversampled — inter-sample
+    overs on real audio stay well under +6 dB, so everything else cannot reach `ref`; elsewhere the
+    sample peak is returned. This keeps limiting / true-peak metering of a 6-minute film at ~1 s."""
+    xs = np.asarray(x, dtype=np.float64)
+    xa = _absmax_ch(xs)
+    pk = xa.copy()
+    n = len(xa)
+    if n == 0 or ref <= 0:
+        return pk
+    thr = ref * 10 ** (-margin_db / 20.0)
+    starts = np.arange(0, n, blk)
+    cand = np.nonzero(np.maximum.reduceat(xa, starts) > thr)[0]
+    if len(cand) == 0:
+        return pk
+    # merge consecutive candidate blocks into runs (≤ 64 blocks each) and oversample each run once
+    runs, r0, prev = [], cand[0], cand[0]
+    for b in cand[1:]:
+        if b != prev + 1 or b - r0 >= 64:
+            runs.append((r0, prev))
+            r0 = b
+        prev = b
+    runs.append((r0, prev))
+    pad = 64
+    for b0, b1 in runs:
+        a0, a1 = b0 * blk, min(n, (b1 + 1) * blk)
+        s0, s1 = max(0, a0 - pad), min(n, a1 + pad)
+        up = _absmax_ch(signal.resample_poly(xs[s0:s1], oversample, 1, axis=0))
+        ph = up[: (s1 - s0) * oversample].reshape(s1 - s0, oversample)
+        u = ph[:, 0].copy()
+        for k in range(1, oversample):  # (np.maximum on columns: far faster than .max(axis=1))
+            np.maximum(u, ph[:, k], out=u)
+        pk[a0:a1] = np.maximum(pk[a0:a1], u[a0 - s0: a1 - s0])
+    return pk
+
+
+def _absmax_ch(x):
+    """max(|x|) across channels per sample (1-D in → |x|)."""
+    if x.ndim == 1:
+        return np.abs(x)
+    out = np.abs(x[:, 0])
+    for c in range(1, x.shape[1]):
+        np.maximum(out, np.abs(x[:, c]), out=out)
+    return out
+
+
 def true_peak(x, sr=SR, oversample=4):
     """Estimated true peak in dBTP (4x polyphase oversampling, BS.1770 Annex 2 style)."""
     xs = np.asarray(x, dtype=np.float64)
-    up = signal.resample_poly(xs, oversample, 1, axis=0)
-    return float(lin2db(np.max(np.abs(up)) if len(up) else 0.0))
+    if xs.size == 0:
+        return -200.0
+    ref = float(np.max(np.abs(xs)))
+    return float(lin2db(_tp_envelope(xs, ref, oversample).max()))
 
 
 def limit(x, ceiling_db=-1.0, lookahead=0.005, release=0.08, sr=SR, oversample=4):
     """Look-ahead brick-wall limiter with true-peak detection. Gain is smooth (no clicks):
     required gain → sliding min over the look-ahead window → moving average (reaches the target
-    exactly at the peak) → release smoothing. Output true peak ≤ ceiling (verified, re-run if needed)."""
+    exactly at the peak) → exponential release of the gain-reduction depth. Output true peak ≤ ceiling
+    (verified, re-run if needed)."""
     x = to_stereo(x).astype(np.float64)
     ceil = float(db2lin(ceiling_db))
     from scipy.ndimage import minimum_filter1d, uniform_filter1d
-    for _ in range(3):
-        up = signal.resample_poly(x, oversample, 1, axis=0)
-        pk = np.abs(up).max(axis=1)
-        pk = pk[: len(x) * oversample].reshape(len(x), oversample).max(axis=1)
+    for _ in range(4):
+        pk = _tp_envelope(x, ceil, oversample)
         req = np.minimum(1.0, ceil / np.maximum(pk, 1e-12))
         if req.min() >= 1.0:
             break
@@ -598,17 +654,18 @@ def limit(x, ceiling_db=-1.0, lookahead=0.005, release=0.08, sr=SR, oversample=4
         # and ramps down smoothly over ~L samples before each peak.
         m = minimum_filter1d(req, size=2 * L + 1, mode="nearest")
         a = np.minimum(uniform_filter1d(m, size=L + 1, mode="nearest"), req)
-        # release: block-wise smoothing upward
+        # release, block-wise and vectorised: depth d_i = max_j r_j·rc^(i-j)  (peak hold + exponential
+        # decay of the gain reduction), computed in the log domain with a running maximum.
         blk = 16
         nb = int(math.ceil(len(a) / blk))
         pad = np.concatenate([a, np.full(nb * blk - len(a), 1.0)])
-        bm = pad.reshape(nb, blk).min(axis=1)
-        rc = math.exp(-blk / (release * sr))
-        out = np.empty(nb)
-        g = 1.0
-        for i, v in enumerate(bm):
-            g = v if v < g else v + (g - v) * rc
-            out[i] = g
+        r = 1.0 - pad.reshape(nb, blk).min(axis=1)
+        lrc = -blk / (release * sr)
+        j = np.arange(nb, dtype=np.float64)
+        with np.errstate(divide="ignore"):
+            lr = np.log(np.maximum(r, 0.0))
+        d = np.exp(np.maximum.accumulate(lr - j * lrc) + j * lrc)
+        out = 1.0 - d
         gs = np.interp(np.arange(len(a)), np.arange(nb) * blk + blk / 2, out)
         gs = np.minimum(gs, a)
         x = x * gs[:, None]
@@ -616,8 +673,17 @@ def limit(x, ceiling_db=-1.0, lookahead=0.005, release=0.08, sr=SR, oversample=4
 
 
 def master(x, target_lufs=-16.0, ceiling_db=-1.0, sr=SR):
-    """Loudness-normalise then true-peak limit."""
-    return limit(normalize_loudness(x, target_lufs, sr), ceiling_db, sr=sr)
+    """Loudness-normalise, true-peak limit, then re-trim (≤ 2 passes) so the limited result really
+    lands on `target_lufs` (limiting otherwise leaves it a few tenths of a dB short)."""
+    y = normalize_loudness(x, target_lufs, sr)
+    out = limit(y, ceiling_db, sr=sr)
+    for _ in range(2):
+        L = loudness(out, sr)
+        if not np.isfinite(L) or abs(L - target_lufs) < 0.05:
+            break
+        y = gain_db(y, target_lufs - L)
+        out = limit(y, ceiling_db, sr=sr)
+    return out
 
 
 # --------------------------------------------------------------------------------------------
@@ -632,8 +698,8 @@ def analyze(x, sr=SR):
     xs = np.nan_to_num(xs)
     d = np.diff(xs, axis=0)
     # click detector: second difference compared with local signal slope scale
-    dd = np.abs(np.diff(xs, n=2, axis=0)).max(axis=1) if len(xs) > 3 else np.zeros(1)
-    loc = np.convolve(np.abs(d).max(axis=1), np.ones(64) / 64, mode="same")[1:] if len(d) > 64 else np.ones_like(dd)
+    dd = _absmax_ch(np.diff(xs, n=2, axis=0)) if len(xs) > 3 else np.zeros(1)
+    loc = np.convolve(_absmax_ch(d), np.ones(64) / 64, mode="same")[1:] if len(d) > 64 else np.ones_like(dd)
     ratio = dd / (loc[: len(dd)] + 1e-4)
     return {
         "seconds": round(len(xs) / sr, 3),

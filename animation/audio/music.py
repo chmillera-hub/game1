@@ -4,30 +4,38 @@
     python3 audio/music.py data/music_cues.json out/music.wav [--lufs -18] [--seed 0] [--quiet]
                                                               [--cue-dir out/cues]   # also write each cue (debug)
 
-CUE SHEET (all times ABSOLUTE film seconds)
+CUE SHEET (times are seconds OR timeline anchors: 's05b03', 's05b03.end-0.4', 's07', 'film.end' ...)
 {
-  "duration": 280.66,                         # output length (s)
-  "speech_from": "data/timeline.json",        # optional: dialogue intervals (beats with kind == "line")
+  "timeline": "data/timeline.json",           # optional: anchors + dialogue (default data/timeline.json)
+  "speech_from": "data/timeline.json",        # optional: dialogue = beats with kind == "line". DEFAULT: the
+                                              #   timeline above, so melodies avoid dialogue even when omitted;
+                                              #   false disables
   "speech": [[5.1, 7.09], ...],               # optional: extra dialogue intervals
+  "duration": "film.end",                     # output length (s or anchor; default: timeline duration)
   "cues": [
-    {"start": 0.0, "end": 13.6, "mood": "tender_memory", "intensity": 0.3,
+    {"start": 0.0, "end": 13.6, "mood": "tender_memory", "intensity": 0.3,     # (or "from"/"to")
      "key": "D",          # optional tonic (C, C#, Db ... B). Mode comes from the mood. Default D.
      "bpm": 66,           # optional tempo override (moods default to 60-72)
      "fade_in": 0.8, "fade_out": 2.0,          # equal-power fades inside [start, end]
-     "hits": [{"t": 9.0, "type": "swell", "len": 4.5}]}
+     "open_at": "s14b01", # reveal_wonder only: void sonority until here, then it opens
+     "hits": [{"t": 9.0, "type": "swell", "len": 4.5}]}                        # (or "at")
   ]
 }
+data/music_plan.json (tools/resolve_music.py's input) can be rendered directly.
 Moods: tender_memory, curious_unease, alarm_chaos, void_presence, confrontation, sorrow, stillness,
        dread, reveal_wonder, belonging, resolution, outro.
 Hits:  swell   gentle crescendo over `len` s (default 4.5, 3..6): adds a strings (+choir/horns) swell layer,
                raises the cue level ~+3 dB and the local intensity (+0.25) for the rest of the cue
-       sting   a soft-but-sudden accent chord (timpani + low strings + low piano), music continues
+       sting   a soft-but-sudden accent, music continues: dark moods = timpani + low strings b9 cluster +
+               low piano; bright moods = the current chord, warm (timpani on its root, strings, piano, a glint)
        drop    music falls to near silence (-26 dB) in 0.35 s; no new notes until the next hit
        silence holds nothing: fades to zero in 0.2 s; no notes until the next hit (reverb tail rings out)
        resolve cadence on the tonic exactly at t (dominant/plagal before it; a melodic phrase that ENDS
-               on the tonic is placed if the dialogue leaves room); after t the tonic is held
-Melodic phrases (leitmotifs) are only placed in dialogue gaps; under speech the moods keep to pads,
-low strings and occasional very soft high piano notes.
+               on the tonic is placed if the dialogue leaves room); after t the tonic is held. Brings the
+               level back up (0.3 s) after a drop/silence.
+Melodic phrases (leitmotifs) are only placed in dialogue gaps, outside the cue's fades, never over another
+cue's phrase and never more than ~12 % faster than the cue tempo; under speech the moods keep to pads, low
+strings and occasional very soft high piano notes.
 """
 import argparse
 import json
@@ -282,16 +290,31 @@ class Anchors:
         return base + (float(off) if off else 0.0)
 
 
+def _field(d, *names):
+    for k in names:
+        if k in d:
+            return d[k]
+    raise SystemExit(f"[music] missing field {names[0]!r} in {d}")
+
+
 def resolve_sheet(sheet, anchors):
-    """Copy of the cue sheet with every time field resolved to absolute seconds."""
+    """Copy of the cue sheet with every time field resolved to absolute seconds.
+    Accepts the plan spelling too (data/music_plan.json): cue `from`/`to` for `start`/`end`, hit `at` for `t`."""
     out = dict(sheet)
-    out["duration"] = anchors(sheet["duration"]) if "duration" in sheet else float(anchors.duration)
+    if "duration" in sheet:
+        out["duration"] = anchors(sheet["duration"])
+    elif anchors.duration is not None:
+        out["duration"] = float(anchors.duration)
+    else:
+        raise SystemExit("[music] the cue sheet needs a 'duration' (or a timeline to take it from)")
     cues = []
     for c in sheet["cues"]:
         c2 = dict(c)
-        c2["start"] = max(0.0, anchors(c["start"]))
-        c2["end"] = min(out["duration"], anchors(c["end"]))
-        c2["hits"] = [dict(h, t=anchors(h["t"])) for h in c.get("hits", [])]
+        c2["start"] = max(0.0, anchors(_field(c, "start", "from")))
+        c2["end"] = min(out["duration"], anchors(_field(c, "end", "to")))
+        c2["hits"] = [dict(h, t=anchors(_field(h, "t", "at"))) for h in c.get("hits", [])]
+        if c.get("open_at") is not None:
+            c2["open_at"] = anchors(c["open_at"])
         cues.append(c2)
     out["cues"] = cues
     return out
@@ -382,6 +405,11 @@ class Cue:
         self.rng = np.random.default_rng(1009 * (idx + 1) + 7919 * seed + sum(map(ord, self.mood)))
         self.muted = []      # (a, b) local: no new note-ons
         self.phrase_iv = []  # (a, b) local: where a melodic phrase is sounding
+        self.blocked = []    # (a, b) local: phrases of other (overlapping) cues — no melody here
+        # reveal_wonder: the void sonority holds until open_at, then opens (local seconds)
+        oa = spec.get("open_at")
+        self.open_at = (float(oa) - self.start) if oa is not None and 0.5 < float(oa) - self.start < self.D else None
+        self.phrase_from = 0.0  # no melodic phrase starts before this (local s)
         self.swells = [(t, float(h.get("len", 4.5))) for t, ty, h in self.hits if ty == "swell"]
         self.resolves = [t for t, ty, h in self.hits if ty == "resolve"]
         # melodic material (cue may override the mood's defaults)
@@ -419,11 +447,14 @@ class Cue:
         return float(min(1.0, v))
 
     def gaps(self, lead=0.9, tail=0.7, pre=0.3, post=0.2):
-        """Speech-free, unmuted intervals inside the cue (local seconds)."""
-        lo, hi = lead, self.D - tail
+        """Speech-free, unmuted intervals inside the cue (local seconds). Melodies also stay out of the
+        cue's fade-in / fade-out (where a neighbouring cue is crossfading) and away from other cues' phrases."""
+        lo = max(lead, 0.7 * self.fade_in, self.phrase_from)
+        hi = self.D - max(tail, self.fade_out)
         if hi <= lo:
             return []
-        blocks = [(a - pre, b + post) for a, b in self.speech] + list(self.muted)
+        blocks = ([(a - pre, b + post) for a, b in self.speech] + list(self.muted)
+                  + [(a - pre, b + 0.3) for a, b in self.blocked])
         blocks.sort()
         out, cur = [], lo
         for a, b in blocks:
@@ -477,6 +508,9 @@ class Writer:
 def build_form(cue):
     M = cue.M
     bounds = [(0.0, "start", {})] + [(t, ty, h) for t, ty, h in cue.hits]
+    if cue.open_at is not None:  # reveal: the progression starts afresh (on a downbeat) where the void opens
+        bounds.append((cue.open_at, "open", {}))
+        bounds.sort(key=lambda b: b[0])
     segs = []
     for i, (t, ty, h) in enumerate(bounds):
         t1 = bounds[i + 1][0] if i + 1 < len(bounds) else cue.D
@@ -497,6 +531,8 @@ def build_form(cue):
             last = harm[-1][2] if harm else M["tonic"][0][0]
             harm.append([t0, t1, last])
             continue
+        if kind == "open":
+            pi = 0
         L = t1 - t0
         nb = max(1, int(round(L / (bar_beats * cue.beat))))
         beat = L / (nb * bar_beats)
@@ -624,7 +660,8 @@ def pad_layer(w, harm, stem, src="p", vel=40, octave=0, sel=None, overlap=0.15, 
 
 
 def pattern_layer(w, grid, harm, stem, pattern, src="a", vel=40, dur=2.0, octave=0, speech="thin", thin=(0,),
-                  min_I=0.0, every=1, skip_phrase=False, vel_lo=0.55, vel_hi=0.9, max_t=None, resolve_rest=2.0):
+                  min_I=0.0, every=1, skip_phrase=False, vel_lo=0.55, vel_hi=0.9, max_t=None, resolve_rest=2.0,
+                  min_t=None):
     """Grid-based figure: each event picks the chord sounding at its time.
     speech: 'keep' (always), 'thin' (only positions in `thin`, softer), 'gap' (never under speech)."""
     cue = w.cue
@@ -636,7 +673,7 @@ def pattern_layer(w, grid, harm, stem, pattern, src="a", vel=40, dur=2.0, octave
             if pos >= nbeats:
                 continue
             t = t0 + pos * beat
-            if max_t is not None and t > max_t:
+            if (max_t is not None and t > max_t) or (min_t is not None and t < min_t - 1e-6):
                 continue
             if cue.I_at(t) < min_I or cue.after_resolve(t, resolve_rest * beat):
                 continue
@@ -740,8 +777,10 @@ def place_phrases(w, harm, grid, stem=None, octave=None, vel=50, doubles=(), min
                 t = max(pb for pa, pb in cue.phrase_iv if pa - 0.3 < t < pb) + 0.3
                 continue
             room = b - t
-            nxt_phrase = min([pa for pa, pb in cue.phrase_iv if pa > t] + [1e9])
-            room = min(room, nxt_phrase - t - 0.3)
+            # the next phrase (this cue's, e.g. a resolve phrase, or another cue's): the whole phrase,
+            # held last note included, must be over before it starts
+            nxt_phrase = min([pa for pa, pb in cue.phrase_iv + cue.blocked if pa > t] + [1e9])
+            room_span = nxt_phrase - t - 0.25
             # the local beat of the bar grid (so melody and accompaniment share one pulse)
             gbar = next(((g0, gb, nbt) for g0, gb, nbt, _k in grid if g0 <= t < g0 + nbt * gb), None)
             gbeat = gbar[1] if gbar else cue.beat
@@ -761,8 +800,9 @@ def place_phrases(w, harm, grid, stem=None, octave=None, vel=50, doubles=(), min
             for nm in names:
                 P = PHRASES[nm]
                 last_on = max(o for o, _, _ in P["n"])
-                sc = min(1.0, (room - 0.15) / max(last_on * gbeat, 1e-6))
-                if sc >= 0.88:
+                span = max(o + d for o, d, _ in P["n"])
+                sc = min(1.0, (room - 0.15) / max(last_on * gbeat, 1e-6), room_span / max(span * gbeat, 1e-6))
+                if gbeat * sc >= 0.88 * cue.beat:  # never more than ~12 % faster than the cue's tempo
                     chosen = (nm, gbeat * sc)
                     break
             if not chosen:
@@ -789,7 +829,9 @@ def resolve_hits(w, harm, stem=None, octave=None, vel=52, doubles=(), chord_stem
             last_on = max(o for o, _, _ in P["n"])
             for sc in (1.0, 0.94, 0.88):
                 st = t - last_on * cue.beat * sc
-                if st > 0.3 and not cue.speech_in(st - 0.1, t - 0.2) and not any(a < t and b > st for a, b in cue.muted):
+                if (st > max(0.3, cue.phrase_from) and not cue.speech_in(st - 0.1, t - 0.2)
+                        and not any(a < t and b > st for a, b in cue.muted)
+                        and not any(a < t + 1.0 and b > st - 0.3 for a, b in cue.blocked + cue.phrase_iv)):
                     place_phrase(w, harm, rp, st, cue.beat * sc, stem, octave, w.vel(vel, st), doubles)
                     break
         tonic = M["tonic"][0][0]
@@ -821,17 +863,38 @@ def swell_layers(w, harm, stems=("strings",), src="p", vel=44, octave=0):
             w.auto[key] = pts
 
 
+DARK_MOODS = {"curious_unease", "alarm_chaos", "void_presence", "confrontation", "sorrow", "stillness", "dread"}
+
+
 def stings(w, harm):
+    """Soft-but-sudden accent at each `sting` hit. Dark moods: timpani + low strings on a b9 cluster over
+    the tonic pedal (a jolt). Bright moods: the chord sounding at t, voiced warm (timpani on its root,
+    low strings, piano octave, one celesta glint) — an accent, not a scare."""
     cue = w.cue
     for t, ty, h in cue.hits:
         if ty != "sting":
             continue
-        w.add("timpani", t, 2.5, midi("D2"), 62, jitter=0, force=True)
-        w.add("timpani", t + 0.02, 2.5, midi("A1"), 40, jitter=0, force=True)
-        for k, v in (("D2", 54), ("A2", 46), ("Eb3", 40), ("D3", 38)):
-            w.add("strfast", t, 1.4, midi(k), v, jitter=0.003, force=True)
-        for k, v in (("D1", 50), ("D2", 44)):
-            w.add("piano", t, 3.0, midi(k), v, jitter=0, force=True)
+        if cue.mood in DARK_MOODS:
+            w.add("timpani", t, 2.5, midi("D2"), 62, jitter=0, force=True)
+            w.add("timpani", t + 0.02, 2.5, midi("A1"), 40, jitter=0, force=True)
+            for k, v in (("D2", 54), ("A2", 46), ("Eb3", 40), ("D3", 38)):
+                w.add("strfast", t, 1.4, midi(k), v, jitter=0.003, force=True)
+            for k, v in (("D1", 50), ("D2", 44)):
+                w.add("piano", t, 3.0, midi(k), v, jitter=0, force=True)
+            continue
+        c = CH[chord_at(harm, t + 0.01) or cue.M["tonic"][0][0]]
+        root = c["b"][0]
+        tk = root
+        while tk < 36:
+            tk += 12
+        while tk > 47:
+            tk -= 12
+        w.add("timpani", t, 2.5, tk, 50, jitter=0, force=True)
+        for j, (k, v) in enumerate(((root, 50), (root + 12, 44), (c["p"][0], 38), (c["p"][-1], 36))):
+            w.add("strfast", t + 0.004 * j, 1.6, k, v, jitter=0, force=True)
+        for k, v in ((root, 48), (root + 12, 42)):
+            w.add("piano", t, 3.0, k, v, jitter=0, force=True)
+        w.add("celesta", t + 0.03, 2.0, c["u"][-1] + 12, 30, jitter=0, force=True)
 
 
 # ============================================================================================
@@ -849,6 +912,7 @@ def mood_tender_memory(w, cue, harm, grid):
         sparkles(w, harm, "celesta", vel=26, per_gap=2, min_gap=1.4)
     pad_layer(w, harm, "lowstr", src="b", vel=30, octave=1, min_I=0.4)
     pad_layer(w, harm, "strings", src="p", vel=26, min_I=0.55)
+    stings(w, harm)
     swell_layers(w, harm, ("strings",))
 
 
@@ -861,10 +925,12 @@ def mood_curious_unease(w, cue, harm, grid):
     pad_layer(w, harm, "glass", src=lambda c: [c["u"][-1] + 12], vel=16, min_I=0.25)
     pings(w, grid, harm, "piano", vel=20, every=2, pos=3.0, src="u")
     pad_layer(w, harm, "lowstr", src="b", vel=26, octave=1, min_I=0.45)
+    stings(w, harm)
     swell_layers(w, harm, ("strings",))
 
 
 def mood_alarm_chaos(w, cue, harm, grid):
+    resolve_hits(w, harm)  # a resolve lands the pedal on a plain D-minor chord (the ostinato rests 2 beats)
     place_phrases(w, harm, grid, vel=50)  # only if the cue asks for phrases (none by default: no melody)
     # pulsing low-string ostinato (3+3+2 accents) on a D pedal; held tremolo dissonance; NO melody
     pattern_layer(w, grid, harm, "strfast", "osti", src=lambda c: [c["b"][0], c["b"][0] + 12], vel=58, dur=0.32,
@@ -1000,23 +1066,50 @@ def mood_dread(w, cue, harm, grid):
 
 
 def mood_reveal_wonder(w, cue, harm, grid):
+    ot = cue.open_at
+    if ot is not None:
+        # THE VOID OPENS. Until `open_at` the void sonority holds (low open fifths D–A on dark pad + low
+        # strings, a bowed-glass fifth A–E far above); at `open_at` a harp glissando rises into the
+        # downbeat and the same fifths become the root of a luminous Dmaj9 / E/D (lydian) cluster:
+        # strings + choir bloom in, celesta and harp sparkle. The D–A drone stays underneath (the
+        # cosmos is *inside* the void), slowly receding.
+        patch_harmony(harm, 0.0, ot, [(0.0, "V5")])
+        cue.phrase_from = ot
+        whole = [[0.0, cue.D, "V5"]]
+        pad_layer(w, whole, "darkpad#void", src="p", vel=48)
+        pad_layer(w, whole, "lowstr#void", src=lambda c: [c["b"][0] + 12, c["a"][1]], vel=38)
+        pad_layer(w, [[0.0, min(cue.D, ot + 9.0), "V5"]], "glass#void", src="u", vel=22)
+        w.auto["darkpad#void"] = [(0.0, 0.0), (ot, 0.0), (ot + 10.0, -9.0)]
+        w.auto["lowstr#void"] = [(0.0, 0.0), (ot + 2.0, 0.0), (ot + 12.0, -6.0)]
+        w.auto["glass#void"] = [(0.0, 0.0), (ot, 0.0), (ot + 8.5, -14.0)]
+        # the glissando: a rising Dmaj9 sweep that lands on the opening downbeat
+        sweep = ["D3", "A3", "C#4", "E4", "F#4", "A4", "C#5", "E5", "F#5", "A5"]
+        for j, nm in enumerate(sweep):
+            w.add("harp", ot - 0.72 + 0.08 * j, 3.0, midi(nm), 30 + 2.2 * j, jitter=0.004, force=True)
+        w.add("celesta", ot + 0.02, 2.5, midi("A6"), 34, jitter=0, force=True)
+        # bright layers fade in over the first seconds of the opening (no hard entry)
+        w.auto["strings"] = [(ot - 0.01, -16.0), (ot + 3.5, 0.0)]
+        w.auto["choir"] = [(ot - 0.01, -20.0), (ot + 5.0, 0.0)]
     resolve_hits(w, harm, stem="celesta")
     place_phrases(w, harm, grid, vel=58, doubles=(("harp", -12, 0.55),))
-    pad_layer(w, harm, "strings", src="p", vel=40)
-    pad_layer(w, harm, "lowstr", src="b", vel=34, octave=1)
-    pad_layer(w, harm, "choir", src="u", vel=30, min_I=0.35)
-    pad_layer(w, harm, "glass", src=lambda c: [c["u"][-1] + 12], vel=16, min_I=0.3)
+    # (after the phrases: they re-harmonise their span)
+    lit = harm if ot is None else [[max(a, ot), b, c] for a, b, c in harm if b > ot + 1e-3]
+    pad_layer(w, lit, "strings", src="p", vel=40)
+    pad_layer(w, lit, "lowstr", src="b", vel=34, octave=1)
+    pad_layer(w, lit, "choir", src="u", vel=30, min_I=0.35)
+    pad_layer(w, lit, "glass", src=lambda c: [c["u"][-1] + 12], vel=16, min_I=0.3)
     # celesta cascades: rising 16ths over the upper chord tones (gaps), a light 3-note figure under speech
     casc = [(0, 0, 1.0), (.25, 1, .8), (.5, 2, .85), (.75, 3, .75), (1, 4, .8), (1.25, 5, .7), (1.5, 6, .62)]
     pattern_layer(w, grid, harm, "celesta", casc, src="u", vel=34, dur=2.0, octave=1, speech="thin",
-                  thin=(0, .5, 1), min_I=0.3, skip_phrase=True)
+                  thin=(0, .5, 1), min_I=0.3, skip_phrase=True, min_t=ot)
     # harp: an upward arpeggio at each bar, from the bass up
     harp = [(2 + i * 0.125, i, 0.9 - 0.04 * i) for i in range(8)]
-    pattern_layer(w, grid, harm, "harp", harp, src="a", vel=40, dur=3.0, speech="gap", min_I=0.4, skip_phrase=True)
+    pattern_layer(w, grid, harm, "harp", harp, src="a", vel=40, dur=3.0, speech="gap", min_I=0.4, skip_phrase=True,
+                  min_t=ot)
     pattern_layer(w, grid, harm, "harp", [(0, 0, 1.0), (0.12, 1, .8)], src="a", vel=32, dur=3.0, speech="keep",
-                  min_I=0.4)
+                  min_I=0.4, min_t=(ot + 0.5) if ot is not None else None)
     stings(w, harm)
-    swell_layers(w, harm, ("strings",), src="u", vel=40)
+    swell_layers(w, lit, ("strings",), src="u", vel=40)
 
 
 def mood_belonging(w, cue, harm, grid):
@@ -1061,8 +1154,10 @@ def mood_outro(w, cue, harm, grid):
     place_phrases(w, harm, grid, vel=46)
     pattern_layer(w, grid, harm, "piano", "arp_q", src="a", vel=28, dur=3.0, speech="thin", thin=(0,),
                   resolve_rest=99.0)
-    pad_layer(w, harm, "pad", vel=26, min_I=0.25)
+    # solo piano: the soft pad bed only joins at intensity ≥ 0.4
+    pad_layer(w, harm, "pad", vel=26, min_I=0.4)
     pings(w, grid, harm, "piano", vel=20, every=2, pos=2.0)
+    stings(w, harm)
     swell_layers(w, harm, ("strings",), vel=30)
 
 
@@ -1099,7 +1194,9 @@ def cue_envelope(cue, n):
         elif ty == "swell":
             target, ramp = 3.0, float(h.get("len", 4.5))
         elif ty in ("resolve", "sting"):
-            target, ramp = 0.0, 0.06
+            # back to full level after a drop/silence (never lower: a cadence after a swell keeps its glow);
+            # a resolve comes up over 0.3 s so notes held through a drop don't jump, a sting is immediate
+            target, ramp = max(level, 0.0), (0.3 if ty == "resolve" else 0.06)
         else:
             continue
         f = _smooth((tt[sel] - t) / max(ramp, 1e-3)) if ty == "swell" else np.clip((tt[sel] - t) / max(ramp, 1e-3), 0, 1)
@@ -1200,21 +1297,36 @@ REVERBS = {
 }
 
 
-def load_speech(sheet, sheet_dir):
+def load_speech(sheet, sheet_dir, verbose=False):
+    """Dialogue intervals (absolute s): the sheet's `speech` list + every `kind: "line"` beat of the
+    timeline named by `speech_from`. When `speech_from` is absent the timeline used for anchors
+    (default data/timeline.json) is read, so melodies stay out of the dialogue even for cue sheets
+    written without it (e.g. tools/resolve_music.py output). `"speech_from": false` disables it."""
     iv = [tuple(map(float, s)) for s in sheet.get("speech", [])]
-    src = sheet.get("speech_from")
-    if src:
+    src = sheet.get("speech_from", "__default__")
+    tl, label = None, None
+    if src == "__default__":
+        tl = find_timeline(sheet, sheet_dir)
+        label = sheet.get("timeline") or "data/timeline.json"
+        if tl is None and verbose:
+            print("[music] no timeline found: melodies are NOT kept out of the dialogue", file=sys.stderr)
+    elif src:
         cands = [src, os.path.join(sheet_dir, src), os.path.join(ROOT, src)]
         path = next((p for p in cands if os.path.exists(p)), None)
         if path is None:
             print(f"[music] speech_from not found: {src}", file=sys.stderr)
         else:
-            tl = json.load(open(path))
-            beats = tl.get("beats", {})
-            recs = beats.values() if isinstance(beats, dict) else [b[1] if isinstance(b, list) else b for b in beats]
-            for r in recs:
-                if r.get("kind") == "line" and "start" in r and "end" in r:
-                    iv.append((float(r["start"]), float(r["end"])))
+            tl, label = json.load(open(path)), src
+    if tl is not None:
+        beats = tl.get("beats", {})
+        recs = beats.values() if isinstance(beats, dict) else [b[1] if isinstance(b, list) else b for b in beats]
+        nl = 0
+        for r in recs:
+            if r.get("kind") == "line" and "start" in r and "end" in r:
+                iv.append((float(r["start"]), float(r["end"])))
+                nl += 1
+        if verbose:
+            print(f"[music] dialogue: {nl} lines from {label}", file=sys.stderr)
     iv.sort()
     merged = []
     for a, b in iv:
@@ -1240,14 +1352,17 @@ def find_timeline(sheet, sheet_dir):
 def render_sheet(sheet, sheet_dir=".", lufs=-18.0, seed=0, verbose=True, cue_dir=None):
     sheet = resolve_sheet(sheet, Anchors(find_timeline(sheet, sheet_dir)))
     dur = float(sheet["duration"])
-    speech = load_speech(sheet, sheet_dir)
+    speech = load_speech(sheet, sheet_dir, verbose)
     N = int(round(dur * SR))
     syn = Synth()
     dry = np.zeros((N, 2), np.float32)
     buses = {b: np.zeros((N, 2), np.float32) for b in REVERBS}
     cues = [Cue(c, i, speech, seed) for i, c in enumerate(sheet["cues"])]
+    melody = []  # absolute intervals of every placed phrase: overlapping cues never sing at once
     for cue in cues:
+        cue.blocked = [(a - cue.start, b - cue.start) for a, b in melody if b > cue.start and a < cue.end]
         d, sends = render_cue(syn, cue, verbose)
+        melody += [(cue.start + a, cue.start + b) for a, b in cue.phrase_iv]
         s0 = int(round(cue.start * SR))
         m = min(len(d), N - s0)
         if m <= 0:
@@ -1264,10 +1379,8 @@ def render_sheet(sheet, sheet_dir=".", lufs=-18.0, seed=0, verbose=True, cue_dir
             mix += p["ret"] * wet[:N]
     mix = A.highpass(mix, 28, order=2)
     mix = A.compress(mix, threshold_db=-26, ratio=1.7, attack=0.04, release=0.5, knee_db=10)
-    if lufs is not None:
-        mix = A.normalize_loudness(mix, lufs)
-    mix = A.limit(mix, -1.0)
-    mix = A.fade_out(mix, 0.05)
+    mix = A.master(mix, lufs, -1.0) if lufs is not None else A.limit(mix, -1.0)
+    mix = A.fade_out(mix, 0.6)  # the reverb tail still rings at the film's end: fade it, don't cut it
     return mix, cues
 
 

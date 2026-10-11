@@ -4,7 +4,7 @@ import { createCanvas, GlobalFonts } from '@napi-rs/canvas';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { drawVoid, drawVoidGlow, drawVoidShadow, drawVoidArm, drawVoidHand, voidRig, VOID_HANDS, VOID_POSES, HEIGHT } from '../src/chars/void.mjs';
+import { drawVoid, drawVoidGlow, drawVoidShadow, drawVoidArm, drawVoidHand, voidRig, toVoidLocal, VOID_HANDS, VOID_POSES, HEIGHT } from '../src/chars/void.mjs';
 import { drawCosmos, preloadCosmos } from '../src/fx/cosmos.mjs';
 import { drawFear } from '../src/chars/fear.mjs';
 import { EXPR } from '../src/face.mjs';
@@ -47,17 +47,20 @@ const cells = [
   ['head down · hand on Fear', (g, cx, fy, t) => {
     const vx = cx - 100, fx = cx + 130, ffy = fy + 40;
     // Fear's near (screen-left) shoulder, in Void-local coords (Fear scale 1, Void scale VS)
-    const sh = [(fx - 30 - vx) / VS, (ffy - 118 - fy) / VS];
+    const sh = toVoidLocal(vx, fy, VS, fx - 34, ffy - 114);
     const pose = { t, ...VOID_POSES.lookDownRight, cosmos: 0, shadowSpread: 0.5, handR: { ...VOID_HANDS.shoulder(sh, 1), defer: 'hand' } };
     drawVoid(g, vx, fy, VS, pose);
     drawFear(g, fx, ffy, 1.0, { t, face: { ...EXPR.wonder, lookX: -0.55, lookY: -0.9, tears: 0.7, noAutoBlink: true }, headTurn: -0.3, headTilt: -0.12, tremble: 0.1, armL: 'chest', armR: 'rest' });
     drawVoidHand(g, vx, fy, VS, pose, 'R');
   }],
-  ['hand unlocking cage', (g, cx, fy, t) => {
-    const vx = cx + 60;
-    const latch = cage(g, cx - 140, fy + 30, 0.8);
-    const tgt = [(latch[0] - vx) / VS, (latch[1] - fy) / VS];
-    drawVoid(g, vx, fy, VS, { t, headTurn: -0.15, headDown: 0.1, shadowSpread: 0.5, handL: VOID_HANDS.unlock(tgt) });
+  ['unlock · one fingertip', (g, cx, fy, t) => {
+    // the cage stands in FRONT of the Void: body first (arm deferred), then the cage, then the arm on top
+    const vx = cx + 60, cgx = cx - 140, cgy = fy + 30;
+    const latch = [cgx - 52 * 0.8, cgy - 125 * 0.8];
+    const pose = { t, headTurn: -0.15, headDown: 0.1, shadowSpread: 0.5, handL: { ...VOID_HANDS.unlock(toVoidLocal(vx, fy, VS, ...latch)), defer: true } };
+    drawVoid(g, vx, fy, VS, pose);
+    cage(g, cgx, cgy, 0.8);
+    drawVoidArm(g, vx, fy, VS, pose, 'L');
   }],
   ['cosmos 0.3', (g, cx, fy, t) => { drawVoid(g, cx, fy, VS, { t, headDown: 0.1, cosmos: 0.3, shadowSpread: 0.35 }); drawVoidGlow(g, cx, fy, VS, { t, headDown: 0.1, cosmos: 0.3 }); }],
   ['cosmos 1', (g, cx, fy, t) => { drawVoid(g, cx, fy, VS, { t, headDown: 0.1, cosmos: 1, shadowSpread: 0.35 }); drawVoidGlow(g, cx, fy, VS, { t, headDown: 0.1, cosmos: 1 }); }],
@@ -70,18 +73,28 @@ const cells = [
     drawVoid(g, cx - r.face[0] * s, oy - r.face[1] * s, s, { ...pose, shadow: false });
     drawVoidGlow(g, cx - r.face[0] * s, oy - r.face[1] * s, s, pose);
   }],
-  ['lean · gentle push', (g, cx, fy, t) => {
+  ['gentle push (hand behind Fear)', (g, cx, fy, t) => {
+    // fingertips meet Fear's back edge; the hand is drawn BEHIND Fear (no defer)
     const vx = cx - 110, fx = cx + 150, ffy = fy + 30;
-    const back = [(fx - 34 - vx) / VS, (ffy - 112 - fy) / VS];
-    const pose = { t, headTurn: 0.55, headDown: 0.6, lean: 0.04, shadowSpread: 0.4, cosmos: 0.8, handR: { ...VOID_HANDS.push(back, 1) } };
-    drawVoid(g, vx, fy, VS, { ...pose, handR: { ...pose.handR, defer: 'hand' } });
+    const back = toVoidLocal(vx, fy, VS, fx - 34, ffy - 112);
+    const pose = { t, headTurn: -0.2, headDown: 0.05, lean: 0.03, shadowSpread: 0.4, cosmos: 0.35, handR: VOID_HANDS.push(back, 1) };
+    drawVoid(g, vx, fy, VS, pose);
     drawFear(g, fx, ffy, 1.0, { t, facing: 1, face: { ...EXPR.softSmile, lookX: -0.7, lookY: -0.5, tears: 0.4, noAutoBlink: true }, headTurn: -0.6, walk: { phase: 0.6 } });
     drawVoidGlow(g, vx, fy, VS, pose);
-    drawVoidHand(g, vx, fy, VS, pose, 'R');
   }],
   ['hand emerging (show 0.5)', (g, cx, fy, t) => { drawVoid(g, cx, fy, VS, { t, handL: { show: 0.5 }, handR: { show: 1, open: 0.6, gentle: 0.4 } }); }],
-  ['alpha 0.5 · offer', (g, cx, fy, t) => { drawVoid(g, cx, fy, VS, { t, alpha: 0.5, headDown: 0.4, handR: VOID_HANDS.offer([230, -620]) }); }],
+  ['alpha 0.5 · offer', (g, cx, fy, t) => { drawVoid(g, cx - 60, fy, VS, { t, alpha: 0.5, headDown: 0.4, headTurn: 0.3, handR: VOID_HANDS.offer([420, -680], 1) }); }],
   ['turn right · cosmos 0.6', (g, cx, fy, t) => { const p = { t, ...VOID_POSES.turnRight, cosmos: 0.6, shadowSpread: 0.35 }; drawVoid(g, cx, fy, VS, p); drawVoidGlow(g, cx, fy, VS, p); }],
+  ['near profile (turn -1) · idle 0', (g, cx, fy, t) => { drawVoid(g, cx, fy, VS, { t, headTurn: -1, headDown: 0.15, idle: 0, shadowSpread: 0.6 }); }],
+  ['push-in: hood darkness (scale 4)', (g, cx, fy, t) => {
+    const pose = { t, ...VOID_POSES.distance, idle: 0 };
+    const r = voidRig(pose), s = 4;
+    drawVoid(g, cx - r.face[0] * s, fy - FLOOR + 560 - r.face[1] * s, s, { ...pose, shadow: false });
+  }],
+  ['hem close-up · foldStar 1', (g, cx, fy, t) => { drawVoid(g, cx + 60, fy - 60, 1.6, { t, foldStar: 1, shadowSpread: 0.6 }); }],
+  ['point · offer · cosmos 0.12 (scale 0.4)', (g, cx, fy, t) => {
+    drawVoid(g, cx + 70, fy, 0.4, { t, headTurn: -0.5, cosmos: 0.12, handL: VOID_HANDS.point([-720, -820]), handR: VOID_HANDS.offer([420, -700], 1) });
+  }],
 ];
 
 const cols = 4, rows = Math.ceil(cells.length / cols);
@@ -101,9 +114,9 @@ fs.writeFileSync(out('sheet_void.png'), c.toBuffer('image/png'));
 
 // --- cosmos close-ups (full 720x1280 frames)
 preloadCosmos();
-const cc = createCanvas(720 * 2 + 20, 1280), gc = cc.getContext('2d');
+const cc = createCanvas(720 * 3 + 40, 1280), gc = cc.getContext('2d');
 gc.fillStyle = '#000'; gc.fillRect(0, 0, cc.width, cc.height);
-[[1, 'reveal 1'], [0.4, 'reveal 0.4']].forEach(([rv, label], i) => {
+[[1, 'reveal 1'], [0.4, 'reveal 0.4'], [0.12, 'reveal 0.12 (kindles from the centre)']].forEach(([rv, label], i) => {
   gc.save();
   gc.translate(i * 740, 0);
   gc.beginPath(); gc.rect(0, 0, 720, 1280); gc.clip();
@@ -113,6 +126,7 @@ gc.fillStyle = '#000'; gc.fillRect(0, 0, cc.width, cc.height);
 });
 fs.writeFileSync(out('sheet_cosmos.png'), cc.toBuffer('image/png'));
 
+if (process.env.NO_TIMING) process.exit(0);
 // --- timing. NOTE: @napi-rs/canvas records draw calls lazily and rasterizes on readback, so every
 // sample includes a full-frame getImageData (as the renderer does) and the clear+readback baseline is
 // subtracted. Min and median of 40 frames are reported (other processes add noise to the median).
@@ -143,6 +157,8 @@ time('drawVoid 0.55 cosmos 1 + two hands', (t) => drawVoid(tg, 360, 1150, 0.55, 
 time('drawVoid 1.0 (towering, cropped) cosmos 1', (t) => drawVoid(tg, 360, 1700, 1.0, { t, cosmos: 1 }));
 time('drawVoid hood close-up 2.3 cosmos 1', (t) => drawVoid(tg, 360, 640 + 1500 * 2.3, 2.3, { t, cosmos: 1, shadow: false }));
 time('drawVoid face fills frame 4.5 cosmos 1', (t) => drawVoid(tg, 360, 640 + 1500 * 4.5, 4.5, { t, cosmos: 1, shadow: false }));
+time('drawVoid hood push-in 4.0 darkness', (t) => drawVoid(tg, 360, 640 + 1500 * 4.0, 4.0, { t, shadow: false }));
+time('drawVoid hem close-up 1.6 + foldStar', (t) => drawVoid(tg, 420, 1100, 1.6, { t, foldStar: 1, shadowSpread: 0.6 }));
 time('drawVoid 0.55 alpha 0.6 (layer)', (t) => drawVoid(tg, 360, 1150, 0.55, { t, alpha: 0.6 }));
 time('drawVoidGlow 0.55', (t) => drawVoidGlow(tg, 360, 1150, 0.55, { t, cosmos: 1, headDown: 0.6 }));
 time('drawCosmos full screen reveal 1', (t) => drawCosmos(tg, 360, 640, 380, 660, t, { reveal: 1 }));
