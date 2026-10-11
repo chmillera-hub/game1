@@ -1,0 +1,58 @@
+[
+ {
+  "scene": "s16",
+  "time": 276.04,
+  "severity": "medium",
+  "problem": "The Void's sleeve jumps in a single frame (276.000 to 276.042, frames 6624 to 6625). It drops and rotates about 80-110 px at full resolution, and a sliver of fingertip appears at the cuff edge. This happens in the held wide shot B, on the narration 'Then my fear felt the gentle push of the Void', and is visible in both master and final.mp4. After the jump the sleeve moves smoothly at about 10 px per frame. The film's one 'gentle' Void movement therefore starts with a jerk. Cause, in src/scenes/s16_the_gentle_push.mjs voidPose(): `reach` starts ramping at 's16b02', but `show` only goes above 0 at 's16b02+0.35'. Until then handL is the rest-arm object {...VOID_ARM_B, show:0}. On the first frame with show>0 it switches to the push config with elbow = 0.8*reach, and reach is already about 0.2, so the sleeve snaps.",
+  "fix": "Make the arm geometry continuous. Either start reach at the same moment the hand shows (reach keys [['s16b02+0.35',0],['s16b02+1.4',1,'inOut'],...]), or build handL from the push config (VOID_HANDS.push + elbow 0.8*reach) for all of shot B and let show=0 only hide the hand. Re-render 275.9-276.4 and confirm the frame-to-frame difference has no spike at 276.04."
+ },
+ {
+  "scene": "s17",
+  "time": 300,
+  "severity": "low",
+  "problem": "One-frame prop pop just before the cut. On the last frame of the held CEO close E1 (frame 7200, t=300.000), the clipboard, the pen and both forearms disappear and the blazer redraws closed. The next frame cuts to the wide. It reads as a flicker on the cut. Cause: putDown reaches 1 at 's17b05+2.5' (299.965), and the `putDown < 1` branch then switches the arms to 'rest' with no clipboard, while shot E1 runs until E1_END = 's17b05+2.55' (300.015).",
+  "fix": "In src/scenes/s17_can_i_help.mjs, move the putDown end key past E1_END (for example ['s17b05+2.6',1]) or set E1_END to 's17b05+2.48', so the clipboard switch happens on the wide shot. Check frames 7198-7201."
+ },
+ {
+  "scene": "s04",
+  "time": 55.5,
+  "severity": "low",
+  "problem": "Part of the earlier MEDIUM safe-area finding (#32) is still open; the s16 and s17 parts are fixed. In the CEO close-ups at about 54.7-56.2 s ('It hasn't moved') and 64.8-67.6 s (the silent end beat), Fear is only one eye and the top of its head in the bottom-right corner. The eye sits at about 94% of frame height and about 30 px from the right edge, so on Reels/TikTok/Shorts it falls under the caption band and the right-hand action buttons, and the shot loses its CEO-looking-at-Fear link.",
+  "fix": "In s04's CEO-close camera, move the camera y down about 100-150 px or bring Fear up and left, so Fear's eye is at about 80% of frame height or higher and at least 90 px from the right edge. Alternatively, frame Fear out completely."
+ },
+ {
+  "scene": "s11",
+  "time": 156,
+  "severity": "medium",
+  "problem": "Earlier finding #10 is only half fixed. The camera no longer tilts up into a wide, so the close on Fear now holds until the cut. But the open gate still swings toward the camera across the front of the cage. For the whole discovery close (156.0\u2013159.67, s11b03) its thick double-bar stile runs straight down the middle of Fear's face, between or over the eyes. The frozen stare and the hanging tear are split by a bar, and because the gate sits in front of Fear, the 'open' cage still reads as closed. The same stile crosses Fear's left eye again in the s12b06 medium (171.17\u2013173.75, 'This doesn't make any sense').",
+  "fix": "Hinge or rotate the gate so it opens to the side, out of frame or beside Fear, not toward the lens. Or shift these two cameras by about 60\u201390 px in x so the stile sits beside the face. Keep a clear gap of open doorway visible next to Fear so 'the cage is open' reads in the close."
+ },
+ {
+  "scene": "s14",
+  "time": 257.2,
+  "severity": "medium",
+  "problem": "Earlier finding #4 is still largely open: Fear never visibly follows the Void's gaze (beat 19). The Void's head turn now reads in the wide (252.83\u2013257.17), so that part is fixed. But in the next shot (257.17\u2013260.17, under 'stared into the screen of my consciousness') Fear faces the camera with its eyes up on the sleeve above. Its head never turns toward the glow behind it. In the first s15 reverse close (262.5\u2013263.67) Fear's pupils are still high, as if on the Void's hood, while the emotions are at eye level down the room. Only the second close (268.29\u2013270.0) has level eyes. The handoff 'the Void looks, then Fear looks, then the emotions look back' rests on the cut alone.",
+  "fix": "In s14b10's shot from behind Fear (257.2\u2013260.1), add a head turn of about 0.6 toward the glow, with the eyes leading by about 0.2 s and ending in a 3/4 rear view. In s15, use the same eye setting for the first Fear close (the 'fearA' shot) as for the second ('fearB'): lookY about 0 to -0.1, lookX toward the console."
+ },
+ {
+  "scene": "s05",
+  "time": 69.33,
+  "severity": "low",
+  "problem": "New: a continuity jump during 'Out! Everybody out!' (68.01\u201370.60). Through 69.29 Fear is at the fire alarm beside the kneeling CEO (a start of an exit to the right at 69.1). On the very next frame, in the wide, Fear is half hidden behind Joy at the front console and the CEO stands alone by the alarm at the back. Fear crosses half the room in zero frames, mid-line, and at phone size it reads as Fear popping to a new spot.",
+  "fix": "Start the wide with Fear still running from the alarm toward the console (or keep Fear at the alarm shouting at the emotions). Or let the medium hold until Fear has clearly left the frame before cutting."
+ },
+ {
+  "scene": "s16",
+  "time": 284.3,
+  "severity": "low",
+  "problem": "What is left of earlier finding #5. The hood insert now shows the galaxies, and Fear's smile at about 287 lands well. But beat 21's 'Fear looks over its shoulder at the Void' is still played with Fear square to the camera in both shots (279.54\u2013281.67 and 284.29\u2013288.8), eyes up and to the right. Its brows stay in the old worried inner-up shape until about 286.5, so it reads as Fear looking up at the Void, not turning back while walking away.",
+  "fix": "In the 284.29 shot, turn Fear's body toward screen-left (the way it exits at 288.8) and turn the head back over the scarf in a 3/4 view. Start relaxing the brows at about 285.5 so the change into the smile is visible."
+ },
+ {
+  "scene": "s04",
+  "time": 65,
+  "severity": "low",
+  "problem": "What is left of earlier finding #32 in this lens (the s16 and s17 parts are fixed). In the CEO close that ends s04 (64.79\u201367.58), Fear is only one eye in the bottom-right corner, at about 87% of frame height and cut by the right edge. It sits inside the caption and UI band, so Fear's silent reaction after 'You don't know that' is lost or covered on social players.",
+  "fix": "Move the camera target down by about 100 px (camera y +100) so Fear's eye and brow clear the bottom 15%. Or keep Fear fully out of this close."
+ }
+]
