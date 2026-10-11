@@ -872,7 +872,7 @@ def _draw_eye(c, H, F, slot, emit):
     if F.warm > 0.02:
         # a hint of crow's feet: three fine lines fanning out of the outer corner, the cheek pushed up under the eye
         y0 = 0.5 * (UL[-1] + L[-1])
-        for dy0, sl_, ln, a_ in ((-1.6, -0.42, 5.0, 0.32), (0.6, -0.08, 6.0, 0.38), (2.8, 0.3, 4.6, 0.3)):
+        for dy0, sl_, ln, a_ in ((-1.4, -0.42, 4.0, 0.22), (0.6, -0.1, 4.8, 0.27), (2.6, 0.28, 3.6, 0.2)):
             q0 = (cx + sd * (EW + 2.4), y0 + dy0)
             q1 = (cx + sd * (EW + 2.4 + 0.55 * ln), y0 + dy0 + 0.55 * ln * sl_ - 0.35)
             q2 = (cx + sd * (EW + 2.4 + ln), y0 + dy0 + ln * sl_)
