@@ -137,7 +137,7 @@ function drawCuBackground(g, S, st) {
 
 // THE TURN's rim-light swell (QA: the turn, the Void's first movement, was easy to miss on a phone). The hood's own
 // rim light is doubled — the same rim, drawn again from a silhouette pass, screen-blended and kept to the hood — so
-// as the hood turns, the light visibly slides along its edge. It swells with the turn and ebbs after the bow.
+// as the hood turns, the light visibly slides along its edge. It swells with the turn and holds through the bow.
 let rimLayer = null, povBG = null;
 function rimSwell(g, cam, vpose, k) {
   if (k <= 0.01) return;
@@ -159,15 +159,14 @@ function rimSwell(g, cam, vpose, k) {
   drawVoid(c, ...VOID_B, { ...vpose, silhouette: true, handL: { ...VOID_ARM_B, show: 0, defer: 'hand' } });
   c.restore();
   // keep the hood's crown and sides only: in the silhouette pass the rims hidden under the mantle (the sleeve tops)
-  // show through, from ~65 below the opening's centre — fade out above them. (Applied without the clip: a
-  // destination-in fill under a clip wiped the whole layer in @napi-rs/canvas.)
+  // show through — fade out above them. (Done in device space with no clip:
+  // in @napi-rs/canvas a destination-in fill under a clip or a scaled transform wiped the whole layer.)
   c.save();
-  c.scale(0.5, 0.5);
-  applyCamera(c, cam);
+  c.setTransform(1, 0, 0, 1, 0, 0);
   c.globalCompositeOperation = 'destination-in';
-  const gr = c.createLinearGradient(0, fy + 15, 0, fy + 58);
+  const gr = c.createLinearGradient(0, sy(272) / 2, 0, sy(316) / 2);       // world y: the sleeve tops sit at ≈325 (the mantle barely moves in the bow)
   gr.addColorStop(0, 'rgba(0,0,0,1)'); gr.addColorStop(1, 'rgba(0,0,0,0)');
-  c.fillStyle = gr; c.fillRect(fx - 400, fy - 400, 800, 800);
+  c.fillStyle = gr; c.fillRect(X0, Y0, X1 - X0, Y1 - Y0);
   c.restore();
   g.save(); g.setTransform(1, 0, 0, 1, 0, 0);
   g.globalCompositeOperation = 'screen'; g.globalAlpha = clamp(k);
@@ -590,7 +589,8 @@ export function render(g, t, S) {
   if (handOut) drawVoidHand(g, ...VOID_B, vpose, 'L');
   drawHQForeground(g, 'backOfMind', st);
   g.restore();
-  if (t < B.b02 + 0.6 && !cu) rimSwell(g, cam, vpose, S.k(t, [['s13b01+0.3', 0], ['s13b01+2.4', 1, 'sine'], ['s13b01+5.0', 1], ['s13b02+0.5', 0, 'sine']]));
+  // the rim swell: in the wide (rising with the turn) and in the POV on the hood (held through the bow); the ECU cuts away
+  if (t < B.b02 && !cu) rimSwell(g, cam, vpose, S.k(t, [['s13b01+0.3', 0], ['s13b01+2.4', 1, 'sine']]));
 
   // hood POV: we look out of the darkness of the hood — a soft dark oval closes in from the edges
   if (t >= B.b03 && t < B.b04) {

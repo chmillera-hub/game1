@@ -162,6 +162,15 @@ drawVoid(g, vx, vy, vs, pose);  drawCage(...);  drawVoidArm(g, vx, vy, vs, pose,
   notebook, leaf, pencil — ~50–80 px tall at full screen. Small cosmos shows the first 5. `drawCosmosGlyph(g, name, x, y, size, color, {alpha, rot})`
   draws one (baked glowing sprite; `vector:true` for live strokes) — e.g. to float a glyph out of the face.
 - Motion is slow and compression-friendly: parallax ≤ 3 px/s at full screen, small twinkles, no flicker.
+- **Continuity**: animating `rx`/`ry`/`reveal` never pops (measured: no mean-luma step > 0.3 per frame over
+  the s14 drift, where the old cache stepped 0.7–1.6). The nebula layer is cached per resolution bucket at the
+  caller's exact aspect (a bucket change only resamples the same picture), the background glow is a live
+  gradient, the translucent fade uses Skia's float pipeline (8-bit translucent draws of dark images round
+  coherently: +1/255 alpha could darken the whole frame ~0.7 luma), the star count, glyph count, star glints
+  and the glyph line weight all fade in/crossfade with size instead of switching.
+- **Stars survive the encoder**: every star stamp has a ≥ 2 device-px bright core (the tiniest keep their
+  faintness through alpha, the far layer is ~15 % sparser so the sky is not busier). At 280 kbps x264 the share
+  of stars keeping ≥ 50 % of their contrast went 83 → 95 % (mid) and 93 → 100 % (bright).
 - `preloadCosmos()` builds textures (~0.2 s) — call once at startup to keep the first frame fast.
 - Suggested beats: hood `cosmos` 0 → 0.3 over ~2 s ("a few stars kindle"), hold, 0.3 → 1 over 4–6 s
   (`ease inOut`). For the reveal close-up either push the camera into the hood (`voidRig(pose).face`)

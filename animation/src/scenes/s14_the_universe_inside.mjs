@@ -2,9 +2,9 @@
 // The revelation: Fear's POV pushes into the dark hood, the cosmos kindles, a long drift through the stars,
 // then the change happens on Fear's face (close): the fear lets go of its body on 'wasn't afraid', a soft "o"
 // on 'wonder' that becomes a small trembling smile by 'amazement' (held at face size), the two-shot under the
-// starry hood, "Why are you showing me this?", an insert as the hand slides off its shoulder, a raised wide
-// that keeps the whole hood in frame while it turns back to the distance, and Fear turning to look where the
-// Void looks.
+// starry hood, "Why are you showing me this?" and the hand sliding off its shoulder in the same close, a raised
+// wide that keeps the whole hood in frame while it turns back to the distance, and Fear turning (eyes, then head,
+// then body) to look where the Void looks.
 
 import { createCanvas } from '@napi-rs/canvas';
 import { W, H, clamp, lerp, ease, smoothstep, blinkAt, applyCamera, drift, vignette, fbm } from '../engine.mjs';
@@ -94,7 +94,7 @@ function offscreen() {
 // ---------------------------------------------------------------- shot boundaries (cuts)
 const CUT_TWO = 's14b07+0.35';    // close (the smile held at face size) → two-shot under the starry hood
 const CUT_CLOSE = 's14b07+1.7';  // two-shot → close (the swallow, the question)
-const CUT_WIDE = 's14b09+1.5';   // insert (the hand leaves the shoulder) → raised wide (the hood turns)
+const CUT_WIDE = 's14b09+1.5';   // close (the hand leaves the shoulder) → raised wide (the hood turns)
 const CUT_MED = 's14b10+1.6';    // raised wide → Fear turns to look where the Void looks
 
 // ---------------------------------------------------------------- tracks
@@ -115,10 +115,12 @@ function voidPose(t, S, cosmos, fear) {
   // withdrawal = s13's approach in reverse: the fingertips slide off the shoulder (settle), the hand rises
   // beside the cage's right bars to s13's waypoint (ascend) while it slips back into the sleeve (show), and
   // only then the empty sleeve swings back to rest (reach) — the hand never passes over the TIME-OUT sign.
-  const settle = S.k(t, [['s14b09+0.1', 1], ['s14b09+0.7', 0, 'inOut']]);
-  const ascend = S.k(t, [['s14b09+0.6', 0], ['s14b09+1.7', 1, 'inOut']]);
-  const show = S.k(t, [['s14b09+1.35', 1], ['s14b09+2.1', 0, 'inOut']]);
-  const reach = S.k(t, [['s14b09+2.0', 1], ['s14b09+3.0', 0, 'inOut']]);
+  // (verify pass: the slide-off now plays in the close at zoom ≈3, where s13's 0.6 s settle crossed ≈400 screen px
+  // in 0.4 s — a flick; 1.0 s keeps the giant hand gentle and lets Fear's eyes follow it to the frame edge)
+  const settle = S.k(t, [['s14b09+0.1', 1], ['s14b09+1.1', 0, 'inOut']]);
+  const ascend = S.k(t, [['s14b09+0.8', 0], ['s14b09+1.95', 1, 'inOut']]);
+  const show = S.k(t, [['s14b09+1.6', 1], ['s14b09+2.35', 0, 'inOut']]);
+  const reach = S.k(t, [['s14b09+2.25', 1], ['s14b09+3.25', 0, 'inOut']]);
   const [fx, fy, fs] = THRESH;
   // Fear's near (right) shoulder, following crouch and lean (staging §1.5), nudged onto its top (SH_NUDGE)
   let sh = [fx + (36 + SH_NUDGE[0]) * fs, fy - (130 - 20 * fear.crouch - SH_NUDGE[1]) * fs];
@@ -152,7 +154,7 @@ function fearState(t, S) {
     ['s14b05', 0.3],
     ['s14b10+0.2', 0.3], ['s14b10+1.2', 0, 'inOut'],                       // straightens up as the Void stares
   ]);
-  const leanScreen = K([['s14b09+0.35', 0], ['s14b09+1.0', 0.09, 'outCubic'], ['s14b09+2.3', 0, 'inOut']]); // leans after the hand
+  const leanScreen = K([['s14b09+0.4', 0], ['s14b09+1.2', 0.09, 'outCubic'], ['s14b09+2.4', 0, 'inOut']]); // leans after the hand
   const facing = t < S.T('s14b10+2.3') ? 1 : -1;
   const headTurn = K([
     ['s14b05', 0.25],
@@ -185,22 +187,22 @@ function fearState(t, S) {
   // arms (first seen at b05, 17 s after s13's last view of Fear): the self-hug from s13 relaxes a little; on
   // 'wasn't afraid' the arms uncross and drop, hanging loose; on 'wonder' they open out from the sides, palms out,
   // and rise a little more on 'amazement' (held through the cut); for the question the hands meet low in front.
-  // At the end the hands clasp at the scarf (= s15). Until the question the bends stay those of the hug (elbows
-  // toward the body: with the hands out to the sides that is the natural elbow-down); they switch to elbows-out
-  // only while both arms hang dead straight (b07+1.05, in the two-shot), so no elbow ever flips on screen.
+  // At the end the hands clasp at the scarf (= s15). The elbow sides (IK bends) change only while both arms hang
+  // dead straight (b06+3.1, and b07+1.05 in the two-shot), so no elbow ever flips on screen: the hug keeps s13's
+  // bends, the open arms have both elbows down, the hands-in-front pose has both elbows out.
   // (The padlock hangs at Fear-local ≈ (72,−106): the right hand stays clear of it.)
   const A = K([
     ['s14b05', AR(-20, -106, 14, -118)],
     ['s14b05+3.8', AR(-24, -100, 19, -103)],
     ['s14b06+1.5', AR(-24, -100, 19, -103)],
-    ['s14b06+3.1', AR(-39, -43, 37, -43)],                                  // 'wasn't afraid': uncross, drop loose
-    ['s14b06+4.9', AR(-39, -44, 37, -44)],
+    ['s14b06+3.1', AR(-39, -36, 37, -36)],                                  // 'wasn't afraid': uncross, drop loose
+    ['s14b06+4.9', AR(-39, -37, 37, -37)],
     // (the right one opens less: its side is under the Void's hand, and its palm must stay below the padlock)
     ['s14b06+5.9', AR(-68, -80, 50, -56), 'inOut'],                         // 'wonder': arms open out, palms out
     ['s14b06+6.4', AR(-69, -81, 51, -57)],
     ['s14b06+7.2', AR(-73, -91, 55, -63)],                                  // 'amazement': they rise a little
     ['s14b07+0.6', AR(-74, -93, 56, -64)],
-    ['s14b07+1.05', AR(-39, -43, 37, -43), 'inOut'],                        // (two-shot) down, straight: the elbows
+    ['s14b07+1.05', AR(-39, -36, 37, -36), 'inOut'],                        // (two-shot) down, straight: the elbows
     ['s14b07+1.6', AR(-12, -67, 12, -67), 'inOut'],                         // switch sides; the hands meet low in front
     ['s14b09+0.5', AR(-12, -67, 12, -67)],
     ['s14b09+1.1', AR(-16, -69, 20, -70), 'inOut'],                         // part a little as it leans after the hand
@@ -210,9 +212,11 @@ function fearState(t, S) {
   const palm = K([['s14b06+5.0', 0], ['s14b06+5.5', 1], ['s14b07+0.9', 1], ['s14b07+1.2', 0]]) > 0.5;
   let armL, armR;
   if (facing > 0) {
+    // elbow sides switch only at the two instants when both arms hang dead straight (b06+3.1, b07+1.05)
+    const open = t >= S.T('s14b06+3.1') && t < S.T('s14b07+1.05');
     const out = t >= S.T('s14b07+1.05');
     armL = { target: [A.lx, A.ly], bend: out ? -1 : 1, front: true, hand: palm ? 'palm' : 'open' };
-    armR = { target: [A.rx, A.ry], bend: out ? 1 : -1, front: true, hand: palm ? 'palm' : 'open' };
+    armR = { target: [A.rx, A.ry], bend: open ? -1 : 1, front: true, hand: palm ? 'palm' : 'open' };
   } else {
     armL = { target: [lerp(-12, -7, clasp), lerp(-67, -127, clasp)], bend: -1, front: true, hand: clasp > 0.5 ? 'fist' : 'open' };
     armR = { target: [lerp(12, 7, clasp), lerp(-67, -124, clasp)], bend: 1, front: true, hand: clasp > 0.5 ? 'fist' : 'open' };
@@ -421,13 +425,6 @@ function headPath(g, fx, fy, fs, p, grow = 0, shift = [0, 0]) {
   g.restore();
 }
 
-/** The Void's fingers rest on the shoulder BEHIND Fear's big head: redraw Fear clipped to its head. */
-function headOver(g, fx, fy, fs, pose) {
-  g.save();
-  g.beginPath(); headPath(g, fx, fy, fs, pose, 1.2); g.clip();
-  drawFear(g, fx, fy, fs, { ...pose, shadow: false });
-  g.restore();
-}
 
 /** A faint cool rim of cosmos light on the hood side (upper right) of Fear's head: a crescent inside the head. */
 function fearRim(g, fx, fy, fs, pose, k) {
@@ -450,9 +447,14 @@ function fearRim(g, fx, fy, fs, pose, k) {
  *  middle finger (placed along the wrist → fingertip line, well inside the silhouette, so no clip is needed). */
 const HAND_STARS = [[0.24, -0.1, 2.6, 0.0], [0.38, 0.13, 2.0, 1.7], [0.5, -0.05, 2.8, 3.1], [0.66, 0.02, 1.9, 4.4],
   [0.84, 0.0, 1.7, 5.6], [0.3, 0.02, 1.6, 2.4]];
-function drawHandSoft(g, camera, vp, t, cosmos) {
+function drawHandSoft(g, camera, vp, t, cosmos, fearPose) {
   g.save();
   applyCamera(g, camera);
+  if (fearPose) {
+    // the fingers rest on the shoulder BEHIND Fear's big head: the hand is clipped out of the head (grown by
+    // half the head's 3.2-unit outline, so the outline stays whole and no gap opens)
+    g.beginPath(); g.rect(-1e4, -1e4, 3e4, 3e4); headPath(g, ...THRESH, fearPose, 1.6); g.clip('evenodd');
+  }
   drawVoidHand(g, ...VOID_B, vp, 'L');
   const k = clamp((cosmos - 0.55) / 0.45) * clamp((vp.handL.show - 0.85) / 0.15);
   if (k > 0.02) {
@@ -517,11 +519,8 @@ function drawStage(g, t, S, camera, opts = {}) {
   g.restore();
   if (opts.fear !== false) {
     const [fx, fy, fs] = THRESH;
-    // the hand on the shoulder, then Fear's head over its fingers; the glow and the starlight fall on both
-    if (vp.handL.show > 0.001) {
-      drawHandSoft(g, camera, vp, t, cosmos);
-      g.save(); applyCamera(g, camera); headOver(g, fx, fy, fs, fear.pose); g.restore();
-    }
+    // the hand on the shoulder, behind Fear's head; the glow and the starlight fall on both
+    if (vp.handL.show > 0.001) drawHandSoft(g, camera, vp, t, cosmos, fear.pose);
     glowLowRes(g, camera, vp);
     g.save();
     applyCamera(g, camera);
@@ -542,8 +541,9 @@ const CLOSE = [445, 1500, 3.3];
 // the two-shot from the side after 'amazement' (b07). Staging gives {560,1000,0.85}, which crops the bowed hood
 // at the frame top; a little higher and wider keeps the whole starry hood above tiny Fear
 const TWO_A = [556, 935, 0.83], TWO_B = [560, 922, 0.8];
-// insert as the hand leaves the shoulder (b09): Fear's face, its right shoulder and the space the hand rises into
-const INSERT = [470, 1532, 2.65];
+// the close eases back to this as the hand leaves the shoulder (b09): Fear's face, its right shoulder and the
+// space it leans into
+const CLOSE_OUT = [462, 1502, 2.95];
 // the raised wide for the hood's turn (b09–b10): the whole hood stays in frame from LOOK_FEAR to STARE_B
 // (peak y≈56 in STARE_B), the far glow screen-left, Fear's face above the bottom 15 %
 const WIDE = [560, 868, 0.75];
@@ -663,17 +663,19 @@ export function render(g, t, S) {
     const c = cam(lerp(TWO_A[0], TWO_B[0], k), lerp(TWO_A[1], TWO_B[1], k), zoomExp(TWO_A[2], TWO_B[2], k), t, 2);
     drawStage(g, t, S, c, { cosmos });
     hoodShimmer(g, c, S.k(t, [[CUT_TWO, 0], [CUT_CLOSE, 1, 'linear']]));
-  } else if (t < T('s14b09')) {
-    // 5. close on Fear: lips part, the swallow, the breath, "Why are you showing me this?" (b07–b08)
-    const z = CLOSE[2] * S.k(t, [[CUT_CLOSE, 1], ['s14b09', 1.05]]);
-    const plate = { key: 'b07', rect: frameRect(CLOSE[0], CLOSE[1] - 4, CLOSE[2]), res: CLOSE[2] * 1.05, tb: T(CUT_CLOSE) };
-    drawStage(g, t, S, cam(CLOSE[0], CLOSE[1] - 4, z, t, 2), { cosmos, plate });
   } else if (t < T(CUT_WIDE)) {
-    // 6a. insert: the fingertips slide off Fear's shoulder and the hand rises away out of frame; Fear's eyes drop
-    // to its shoulder, it leans after the hand, its own hand goes to where the Void's was (live: the sleeve moves)
-    // plate: set + Void without its left arm + cage, frozen at b09 (frame top y ≈ 1290: hood and mantle far above)
-    const plate = { key: 'ins', rect: frameRect(INSERT[0], INSERT[1], INSERT[2]), res: INSERT[2], tb: T('s14b09'), noArm: true };
-    drawStage(g, t, S, cam(INSERT[0], INSERT[1], INSERT[2], t, 2), { cosmos, hoodOff: true, plate });
+    // 5. close on Fear: the swallow, the breath, "Why are you showing me this?" (b07–b08); then the same close
+    // carries the hand leaving (b09, QA: the reaction played in a wide at ≈ 40 px): the fingertips slide off its
+    // shoulder and out of frame, its eyes drop to the shoulder, it leans after the hand, the brows dip — while the
+    // camera eases back and right a little to give the lean room. Plate without the Void's left arm (it moves
+    // from b09): the frame top is y ≥ 1300, so the whole visible sleeve lies in front of the cage (drawn live).
+    const k1 = S.k(t, [[CUT_CLOSE, 0], ['s14b09', 1]]);
+    const k2 = S.k(t, [['s14b09+0.2', 0], [CUT_WIDE, 1, 'sine']]);
+    const z = lerp(CLOSE[2] * lerp(1, 1.05, k1), CLOSE_OUT[2], k2);
+    const cx = lerp(CLOSE[0], CLOSE_OUT[0], k2), cy = lerp(CLOSE[1] - 4, CLOSE_OUT[1], k2);
+    const plate = { key: 'b07', rect: unionRect(frameRect(CLOSE[0], CLOSE[1] - 4, CLOSE[2]), frameRect(...CLOSE_OUT)),
+      res: CLOSE[2] * 1.05, tb: T(CUT_CLOSE), noArm: true };
+    drawStage(g, t, S, cam(cx, cy, z, t, 2), { cosmos, hoodOff: true, plate });
   } else if (t < T(CUT_MED)) {
     // 6b. raised wide: the empty sleeve returns to rest and the hood turns from Fear back to the distance — the
     // whole hood in frame, the cosmos in it, the far glow screen-left — held into b10 ("And the Void stared…")

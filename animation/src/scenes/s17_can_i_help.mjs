@@ -85,7 +85,7 @@ function drawPen(g, x, y, s, facing, wrist, wob) {
   g.restore();
 }
 
-// The welling in E1. The rig's own \`tears\` band sits on the lower half of SELF's small eyes and is hidden by the
+// The welling in E1. The rig's own `tears` band sits on the lower half of SELF's small eyes and is hidden by the
 // smile's raised lower lids, so at phone size it did not read. This overlay (same recipe as s20's drawWetEyes, so the
 // welling here foreshadows the narrator's tear there) draws a glossy water line on each lower lid and a bright
 // catch-light on the wet iris. No drop falls: the tear is s20's.
@@ -99,7 +99,15 @@ function eyeGeom(pose, side) {
   if (lidU < 0) up = clamp(rest + lidU * 0.3 + blink * (1 - rest), -0.25, 1);
   const low = clamp(f.lidL || 0) * (1 - clamp(up, 0, 1) * 0.5);
   const bnd = (dx) => ry * Math.sqrt(clamp(1 - (dx * dx) / (rx * rx)));
-  const lowY = (dx) => cy + lerp(bnd(dx) + ry * 0.05, -ry * 0.05 + (dx * dx) / (rx * rx) * ry * 0.25, low * 0.75);
+  const lidY = (dx) => cy + lerp(bnd(dx) + ry * 0.05, -ry * 0.05 + (dx * dx) / (rx * rx) * ry * 0.25, low * 0.75);
+  // SELF's eyes are almond-shaped: their lower edge (face.mjs eyePath) sits well above the ellipse bound the lid formula
+  // starts from, so with the lower lid down the water line would float on the cheek. Sample the almond's lower bezier
+  // and keep the line on whichever edge is higher (the lid's or the eye's).
+  const inner = -side, outer = side, P0 = [inner * rx, -ry * 0.05], P1 = [inner * rx * 0.75, ry * 0.95], P2 = [outer * rx * 0.55, ry * 0.9], P3 = [outer * rx, -ry * 0.12];
+  const bez = []; for (let i = 0; i <= 24; i++) { const u = i / 24, v = 1 - u; bez.push([0, 1].map((j) => v * v * v * P0[j] + 3 * v * v * u * P1[j] + 3 * v * u * u * P2[j] + u * u * u * P3[j])); }
+  bez.sort((p, q) => p[0] - q[0]);
+  const almond = (dx) => { let i = 1; while (i < bez.length - 1 && bez[i][0] < dx) i++; const [a0, b0] = [bez[i - 1], bez[i]]; return lerp(a0[1], b0[1], clamp((dx - a0[0]) / ((b0[0] - a0[0]) || 1))); };
+  const lowY = (dx) => Math.min(lidY(dx), cy + almond(dx));
   const upY = (dx) => {
     const k = clamp(up, -0.25, 1), tilt = f.lidTilt || 0, outer = (dx * side) / rx;
     return cy + lerp(-bnd(dx) - ry * 0.05, ry * 0.3 - (dx * dx) / (rx * rx) * ry * 0.1, Math.max(0, k)) + (k < 0 ? k * ry * 0.35 : 0) +
@@ -233,8 +241,9 @@ function frontCam(t, S, shot) {
   if (shot === 'C') { const z = 2.4 + 0.08 * seg(t, S.T('s17b03'), S.T('s17b04')); return cam(t, { x: 452, y: 1181 - 262 / z, zoom: z }, 1.6); }
   // E1: back on the CEO (a touch closer) for the answer to "Can I help?", held 2.55 s: eyes well, the smile breaks,
   // a laugh-breath, one nod; a slow push
-  // (zoom 2.6 → 2.85: the CEO's face ≈ 40 % of the frame width, eyes at ≈ 31 %; Fear's eyes held at ≈ 72 %)
-  if (shot === 'E1') { const k = ease.inOut(seg(t, S.T('s17b05'), S.T(E1_END))), z = lerp(2.6, 2.85, k); return cam(t, { x: lerp(464, 470, k), y: 1181 - 280 / z, zoom: z }, 1.4); }
+  // (zoom 2.8 → 3.0: the CEO's face ≈ 43 % of the frame width, eyes at ≈ 30 %; Fear's eyes held at ≈ 72 %, its hands
+  // above the 85 % line; from 2.78 up the robe hem / cage feet are above the frame, so they are not drawn: ≈ 2 ms saved)
+  if (shot === 'E1') { const k = ease.inOut(seg(t, S.T('s17b05'), S.T(E1_END))), z = lerp(2.8, 3.0, k); return cam(t, { x: lerp(464, 470, k), y: 1181 - 280 / z, zoom: z }, 1.4); }
   if (shot === 'D') return cam(t, { x: 528, y: 1166, zoom: 2.85 + 0.06 * seg(t, S.T('s17b04'), S.T('s17b05')) }, 1.6);
   // wide at the console: all five in frame as they make room; then a slow push toward Fear for its first button
   const k = ease.inOut(seg(t, S.T(BIZ(2.0)), S.T('scene.end+0.9')));
@@ -364,8 +373,8 @@ function ceoPose(t, S, shot, C) {
   // b05 opens on the CEO (E1, held until +2.55): the eyes well up on the lower lids, the smile breaks across the
   // whole face (open, teeth, cheeks up), a laugh-breath out (two little pulses), one nod (no words), the clipboard
   // goes down behind the rim; then (wide) they step aside
-  const well = S.k(t, [['s17b04+0.6', 0], ['s17b05+0.3', 0.4], ['s17b05+1.2', 1, 'sine']]);
-  const smile = S.k(t, [['s17b05+0.25', 0], ['s17b05+1.15', 1, 'sine']]);
+  const well = S.k(t, [['s17b04+0.6', 0], ['s17b05+0.1', 0.45], ['s17b05+0.75', 1, 'sine']]);   // welling leads the smile
+  const smile = S.k(t, [['s17b05+0.3', 0], ['s17b05+1.15', 1, 'sine']]);
   const laugh = S.k(t, [['s17b05+1.02', 0], ['s17b05+1.12', 1], ['s17b05+1.3', 0.35], ['s17b05+1.4', 0.8], ['s17b05+1.75', 0]]);
   const nod = S.k(t, [['s17b05+1.75', 0], ['s17b05+1.97', 1, 'inOut'], ['s17b05+2.25', 0, 'inOut']]);
   const putDown = S.k(t, [['s17b05+1.95', 0], ['s17b05+2.5', 1]]);
@@ -381,7 +390,8 @@ function ceoPose(t, S, shot, C) {
   // stunned: no blink from the moment it sees Fear until the glance back (which carries the blink)
   face.noAutoBlink = t > S.T('s17b02+0.95') && t < S.T('s17b03+1.3');
   // (no slow blink as the answer lands — the eyes stay open on Fear while they fill; one quick blink after the nod)
-  face.blink = blinkAt(t, S.T('s17b03+0.9'), 0.2) + blinkAt(t, S.T('s17b05+2.32'), 0.24);
+  // (the post-nod blink sits at the bottom of the nod, so E1 ends on open eyes, not mid-blink at the cut)
+  face.blink = blinkAt(t, S.T('s17b03+0.9'), 0.2) + blinkAt(t, S.T('s17b05+1.96'), 0.24);
   face = withSpeech(face, S.lip('CONSCIOUSNESS', t));
   if (shot === 'D') { // soft at the frame edge: lips parted, eyes glistening, breath held
     face = { ...face, open: 0.12, tears: 0.45 + 0.2 * well, browIn: 0.45, browUp: 0.3, lookX: 0.45, lookY: 0.7, lidU: 0.05 };
@@ -389,8 +399,8 @@ function ceoPose(t, S, shot, C) {
   if (shot === 'E' || shot === 'E1') {
     // tears 0.6 welling on the lower lids; the broad open smile (0.9, lidL 0.4); tender inner brows that stay up
     face = { ...face, tears: 0.6 * well, sparkle: 0.2 + 0.35 * well, browIn: 0.55 - 0.2 * smile, browUp: 0.22 + 0.15 * laugh,
-      smile: 0.95 * smile, wide: 0.35 * smile, lidL: 0.4 * smile + 0.15 * laugh, lidU: 0.04 + 0.12 * laugh,
-      open: 0.2 * smile + 0.14 * laugh, teeth: 0.75 * smile, blush: 0.35 * smile, pressed: 0, noAutoBlink: shot === 'E1',
+      smile: 0.95 * smile, wide: 0.42 * smile, lidL: 0.4 * smile + 0.15 * laugh, lidU: 0.04 + 0.12 * laugh,
+      open: 0.27 * smile + 0.14 * laugh, teeth: 0.8 * smile, blush: 0.35 * smile, pressed: 0, noAutoBlink: shot === 'E1',
       lookY: face.lookY - 0.08 * smile };
   }
   const writeWob = [Math.sin(t * 9) * 2.5 * write, Math.sin(t * 13.7) * 1.5 * write];

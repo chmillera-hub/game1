@@ -310,9 +310,11 @@ function fearPose(t, S, pull) {
   const release = S.k(t, [['s11b03+1.55', 0], ['s11b03+1.95', 1, 'sine']]);
   // lean back pulling on the bar; straightens as it lets go
   const lean = lerp(-0.07 - 0.04 * pull - 0.012 * hitch, 0, release) * (crying ? 1 : 1);
-  // at the creak the head recoils a little away from the gate (left) before it turns to it, so the face settles with
-  // the hinge stile between the eyes and the moving centre stile clear of the right eye
-  const headDX = lerp(S.k(t, [['s11b03+0.12', -15], ['s11b03+0.45', 0, 'out']]), 0, release);
+  // at the creak the head recoils away from the gate (screen-left) while the eyes go to it, and holds there until the
+  // hands let go: with the eyes looking right (lookX 0.72 + the head turn) the right pupil sat exactly behind the
+  // gate's centre stile (x 393) for the whole frozen look (+0.4 → +1.6); recoiled 14 px it sits left of the stile
+  // (the stile on the iris's outer edge) and the left eye keeps the hinge stile on its inner rim
+  const headDX = lerp(S.k(t, [['s11b03+0.12', -15], ['s11b03+0.55', 14, 'out']]), 0, release);
   const x = FEAR_X, y = OCC_SIDE[1];
 
   const gA = [355, 1497], gB = [356, 1532];   // chest level: the fists stay clear of the mouth

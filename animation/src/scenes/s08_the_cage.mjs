@@ -385,10 +385,12 @@ function shotFront(g, t, S, T) {
   g.save();
   // two planes: start on the CEO at the cage (staging {330,740,1.6} reframed tighter), then the CEO walks INTO a
   // medium close for the stop (face ≈ 26 % of the frame width, lower-left; Fear's face behind at upper right, never
-  // overlapping). The push rides the two steps, so the CEO's own walk does most of the work; a slow creep through the
-  // stop; the CEO walks on toward camera (the cut to s09 lands mid-stride at (190,1170)).
-  cam(g, S.k(t, [['s08b03', { x: 266, y: 796, zoom: 1.9 }], ['s08b03+0.35', { x: 266, y: 797, zoom: 1.9 }],
-    ['s08b03+1.55', { x: 252, y: 828, zoom: 2.62 }, 'inOut'], ['s08b03+2.6', { x: 253, y: 830, zoom: 2.7 }, 'sine'],
+  // overlapping). The CEO's own walk does most of the work; the push starts creeping in on the turn and eases through
+  // the two steps into the stop (spread over 1.6 s with a sine ease: squeezed into the steps alone it peaked at
+  // ~300 px/s at the frame edges, a rush in the film's slowest moment); a slow creep through the stop; the CEO walks
+  // on toward camera (the cut to s09 lands mid-stride at (190,1170)).
+  cam(g, S.k(t, [['s08b03', { x: 266, y: 797, zoom: 2.0 }],
+    ['s08b03+1.6', { x: 252, y: 828, zoom: 2.62 }, 'sine'], ['s08b03+2.6', { x: 253, y: 830, zoom: 2.7 }, 'sine'],
     ['scene.end', { x: 250, y: 838, zoom: 2.7 }, 'sine']]), t, 2.2);
   // the EXIT door starts to open behind the CEO as the shot ends: the emotions are coming back (s09 opens on it at 0.6)
   const st = { t, ...SET_F, doorOpen: S.k(t, [['scene.end-1.1', 0], ['scene.end', 0.6, 'inOut']]) };

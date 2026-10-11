@@ -19,6 +19,7 @@
 import { createCanvas, GlobalFonts } from '@napi-rs/canvas';
 import { fileURLToPath } from 'url';
 import { clamp, lerp, TAU, fbm, noise1, rand, rgba, shade, mixColor, ellipse, circle, roundRect, glow } from '../engine.mjs';
+import { drawNotebook } from './props.mjs';
 
 // ---------------------------------------------------------------- fonts
 try {
@@ -362,6 +363,49 @@ function sconce(g, x, y, s) {
 // ================================================================= SCREEN CONTENT
 const SCREEN_MODES = ['room', 'calm', 'alarm'];
 
+// The real-room notebook (drawNotebook, open, cover 'gold' palette) rendered flat once, then keystone-warped
+// onto the desk of the screen's POV painting (strip warp with perspective-correct rows). The screen painting is
+// itself cached per size bucket, so this runs once per bucket.
+let nbSpread = null;
+function notebookSpread() {
+  if (nbSpread) return nbSpread;
+  const S = 2.4, NW = 220, NH = 290;                       // props.mjs NB_W / NB_H
+  const x0 = -NW - 8, y0 = -NH / 2 - 6, sw = 2 * NW + 16, sh = NH + 13;
+  const c = createCanvas(Math.round(sw * S), Math.round(sh * S)), x = c.getContext('2d');
+  x.scale(S, S); x.translate(-x0, -y0);
+  drawNotebook(x, 0, 0, 1, { open: 1, flat: 0, shadow: false });
+  nbSpread = c;
+  return c;
+}
+function drawDeskNotebook(g, w, h) {
+  const img = notebookSpread();
+  const cx = w * 0.5, yt = h * 0.645, yb = h * 0.985;     // page block on the desk: far edge → near edge
+  const hwt = w * 0.215, hwb = w * 0.275;                  // half widths (far edge narrower: perspective)
+  const r = hwt / hwb;                                      // 1/z at the far edge (near edge = 1)
+  g.save();
+  g.translate(cx, (yt + yb) / 2); g.rotate(-0.022); g.translate(-cx, -(yt + yb) / 2);
+  // soft contact shadow on the desk
+  g.fillStyle = 'rgba(30,15,10,0.32)';
+  poly(g, [[cx - hwt - w * 0.006, yt + h * 0.012], [cx + hwt + w * 0.014, yt + h * 0.012], [cx + hwb + w * 0.022, yb + h * 0.012], [cx - hwb + w * 0.004, yb + h * 0.012]]);
+  g.fill();
+  const N = 90, IW = img.width, IH = img.height;
+  let vPrev = 0, yPrev = yt;
+  for (let i = 1; i <= N; i++) {
+    const sN = i / N;
+    const v = sN / lerp(r, 1, sN);                         // perspective-correct texture row
+    const y = lerp(yt, yb, sN), sm = (i - 0.5) / N, hw = lerp(hwt, hwb, sm);
+    const sy = vPrev * IH, shh = Math.max(0.5, (v - vPrev) * IH);
+    g.drawImage(img, 0, sy, IW, shh, cx - hw, yPrev, hw * 2, y - yPrev + 0.6); // +0.6: no seams between strips
+    vPrev = v; yPrev = y;
+  }
+  // the lamp (right) warms the pages; the far edge falls a touch into shadow
+  g.globalCompositeOperation = 'multiply';
+  g.fillStyle = linGrad(g, cx - hwb, 0, cx + hwb, 0, [[0, '#d8c8c0'], [0.6, '#fff1dc'], [1, '#ffe2bc']]);
+  poly(g, [[cx - hwt, yt], [cx + hwt, yt], [cx + hwb, yb], [cx - hwb, yb]]); g.fill();
+  g.globalCompositeOperation = 'source-over';
+  g.restore();
+}
+
 function paintRoomPOV(g, w, h, tint = 0) {
   // the narrator's desk at night, seen through their eyes
   g.fillStyle = linGrad(g, 0, 0, 0, h, [[0, '#262c52'], [0.5, '#363458'], [0.58, '#2f2b4a']]);
@@ -419,52 +463,10 @@ function paintRoomPOV(g, w, h, tint = 0) {
   g.fillStyle = '#c56b5a'; roundRect(g, w * 0.13, h * 0.66, w * 0.07, h * 0.1, w * 0.012); g.fill();
   g.strokeStyle = '#c56b5a'; g.lineWidth = w * 0.01; g.beginPath(); g.arc(w * 0.2, h * 0.71, w * 0.018, -1.2, 1.2); g.stroke();
   g.fillStyle = '#4a2a24'; ellipse(g, w * 0.165, h * 0.663, w * 0.033, h * 0.01); g.fill();
-  // open notebook (the first story) — pages in gentle perspective
-  const nb = [[w * 0.3, h * 0.66], [w * 0.7, h * 0.65], [w * 0.76, h * 0.97], [w * 0.24, h * 0.99]];
-  g.fillStyle = '#e8875f'; // childlike orange cover peeking out
-  poly(g, [[nb[0][0] - w * 0.012, nb[0][1] - h * 0.012], [nb[1][0] + w * 0.012, nb[1][1] - h * 0.012], [nb[2][0] + w * 0.016, nb[2][1] + h * 0.012], [nb[3][0] - w * 0.016, nb[3][1] + h * 0.012]]); g.fill();
-  const mid0 = [(nb[0][0] + nb[1][0]) / 2, (nb[0][1] + nb[1][1]) / 2 + h * 0.012], mid1 = [(nb[3][0] + nb[2][0]) / 2, (nb[3][1] + nb[2][1]) / 2 + h * 0.01];
-  g.fillStyle = '#fbf3e2'; poly(g, [nb[0], mid0, mid1, nb[3]]); g.fill();
-  g.fillStyle = '#f4ead4'; poly(g, [mid0, nb[1], nb[2], mid1]); g.fill();
-  g.strokeStyle = 'rgba(120,90,70,0.35)'; g.lineWidth = Math.max(1, w * 0.003);
-  g.beginPath(); g.moveTo(mid0[0], mid0[1]); g.lineTo(mid1[0], mid1[1]); g.stroke();
-  // ruled lines + childlike scribbles on the right page
-  for (let i = 0; i < 7; i++) {
-    const v = 0.12 + i * 0.12;
-    const a = [lerp(mid0[0], mid1[0], v) + w * 0.015, lerp(mid0[1], mid1[1], v)];
-    const b = [lerp(nb[1][0], nb[2][0], v) - w * 0.015, lerp(nb[1][1], nb[2][1], v)];
-    g.strokeStyle = 'rgba(140,170,210,0.45)'; g.lineWidth = Math.max(0.8, w * 0.002);
-    g.beginPath(); g.moveTo(a[0], a[1]); g.lineTo(b[0], b[1]); g.stroke();
-    if (i < 6) {
-      g.strokeStyle = 'rgba(70,60,110,0.75)'; g.lineWidth = Math.max(1, w * 0.004);
-      g.beginPath();
-      const len = 0.55 + 0.4 * rand(i, 7);
-      for (let k = 0; k <= 12; k++) {
-        const u = (k / 12) * len;
-        const x = lerp(a[0], b[0], u), y = lerp(a[1], b[1], u) - h * 0.012 + Math.sin(k * 2.1 + i) * h * 0.005;
-        if (k === 0) g.moveTo(x, y); else g.lineTo(x, y);
-      }
-      g.stroke();
-    }
-  }
-  // left page: title + crayon doodles of little emotions
-  g.save();
-  g.translate(lerp(nb[0][0], mid0[0], 0.5), lerp(nb[0][1], nb[3][1], 0.2));
-  g.rotate(-0.03);
-  g.fillStyle = '#5a4a8a';
-  g.font = `${Math.round(w * 0.04)}px Caveat`;
-  g.textAlign = 'center';
-  g.fillText('my feelings', 0, 0);
-  g.restore();
-  const dl = (u, v) => [lerp(lerp(nb[0][0], mid0[0], u), lerp(nb[3][0], mid1[0], u), v), lerp(lerp(nb[0][1], mid0[1], u), lerp(nb[3][1], mid1[1], u), v)];
-  const doodles = [[0.3, 0.55, '#b9a6ea'], [0.55, 0.5, '#ffc94a'], [0.75, 0.58, '#6fa8e8'], [0.42, 0.78, '#f0634f'], [0.66, 0.8, '#7fd6b0']];
-  for (const [u, v, col] of doodles) {
-    const [x, y] = dl(u, v);
-    g.fillStyle = col; circle(g, x, y, w * 0.022); g.fill();
-    g.fillStyle = '#2a2040';
-    circle(g, x - w * 0.007, y - h * 0.004, Math.max(0.8, w * 0.004)); g.fill();
-    circle(g, x + w * 0.007, y - h * 0.004, Math.max(0.8, w * 0.004)); g.fill();
-  }
+  // the open notebook — the SAME book the narrator reads in the real room (props.mjs drawNotebook: the
+  // story page + the crayon drawing of Fear pulling the alarm and the dark hooded one), lying on the desk in
+  // gentle perspective, so the screen literally shows what the narrator sees
+  drawDeskNotebook(g, w, h);
   // pencil
   g.save(); g.translate(w * 0.79, h * 0.9); g.rotate(-0.5);
   g.fillStyle = '#f2c14e'; g.fillRect(-w * 0.07, -h * 0.008, w * 0.12, h * 0.016);

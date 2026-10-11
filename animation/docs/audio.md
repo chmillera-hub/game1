@@ -35,17 +35,17 @@ subtract it: `{ at: 's08b01+0.40-0.03', name: 'cage_close' }` puts the clang at 
 |---|---|---|---|---|---|
 | alarm_bell | 3.00 | **seamless** | continuous from 0 | electric fire bell: 22 Hz striker on inharmonic gong partials 1.2–5.6 kHz, "rrrring" | -18 |
 | alarm_pull | 0.60 | – | scrape 0.00, **clack 0.055**, latch 0.14 | plastic/metal pull-station lever | -6 |
-| footsteps | 2.50 | – | steps at 0.08, 0.64, 1.20, 1.76 (alt. L/R) | 4 soft steps, heel + scuff | -9 |
+| footsteps | 2.50 | – | steps at 0.08, 0.64, 1.20, 1.76 (alt. L/R) | 4 soft steps: 95 Hz heel thump (+ its saturated harmonics), 200–800 Hz floor knock, soft contact tick, scuff. ~42 % of the energy above 200 Hz (reads on phones) | -9 |
 | door_whoosh | 1.30 | – | swell peak 0.43, soft thud 1.00 | swinging door, moves L→R | -13 |
 | crowd_murmur | 4.00 | – | fades in 0–0.35, out 3.4–4.0 | indistinct worried walla, 8 voices, distant | -14 |
-| heartbeat | 1.30 | **seamless** | lub 0.06, dub 0.34 | one cycle (46 bpm); loop it; `rate` 1.3 ≈ 60 bpm. Sub thump + 90–250 Hz body knock + faint valve tick (reads on phone speakers) | -12 |
+| heartbeat | 1.30 | **seamless** | lub 0.06, dub 0.34 | one cycle (46 bpm); loop it; `rate` 1.3 ≈ 60 bpm. Sub thump + 130–500 Hz body knock + the thump's saturated harmonics (180–700 Hz) + valve tick + a soft 1–3.5 kHz onset click. ~29 % of the energy above 200 Hz (reads on phone speakers); ~2 dB louder (LUFS) than the old sub-only version | -12 |
 | breath_shaky | 2.90 | – | inhale 0.0–1.3 (catches at 0.45, 0.85), exhale 1.45–2.85 | trembling breath | -13 |
 | sob | 1.90 | – | 3 hitches 0.05/0.21/0.35, two breathy whimper catches 0.56 / 0.83 (to ~1.15), exhale 1.1–1.85 | small, soft hitched sob | -12 |
 | cage_close | 2.60 | – | **clang 0.03**, rattles to 0.4, latch 0.45, ring to ~2.3 | metal gate shutting | -5 |
 | lock_click | 0.32 | – | clicks 0.02, 0.058 | spring latch / padlock | -10 |
 | cage_creak | 2.20 | – | swell 0.15–1.9 (peak ~0.7) | slow hinge creak (stick-slip) | -12 |
 | key_turn | 0.95 | – | pin ticks 0.05–0.21, grind 0.45–0.65, **bolt 0.68** | key in, turn, clunk | -9 |
-| rumble_low | 5.00 | – | rises 0–2.6, peak 2.6, fades to 5.0 | sub-bass swell (41 Hz) + a 70–350 Hz churn/harmonic layer so it is not silent on phones | -14 |
+| rumble_low | 5.00 | – | rises 0–2.6, peak 2.6, fades to 5.0 | sub-bass swell (41 Hz) + a 70–350 Hz churn/harmonic layer + the tone's 5th–12th harmonics (soft clipper) and a dark 180–700 Hz grit band. ~25 % of the energy above 200 Hz, so it reads on phones | -14 |
 | shimmer | 3.00 | – | swells in 0–1.0, sparkles 0.1–2.6 | bowed-glass + celesta wash, D lydian (matches the score) | -15 |
 | twinkle | 1.90 | – | notes 0.02 (A6), 0.20 (E7), 0.42 (F#6) | three celesta notes, D major | -18 |
 | console_beeps | 1.00 | – | blips 0.02, 0.13, 0.24, 0.48 | soft friendly UI blips (E6 A6 C#7, F#6) | -24 |
@@ -71,8 +71,10 @@ reverb in the scene. The bell is meant to sit *under* the narration (-16…-20 d
 Only `alarm_bell` and `heartbeat` are made to loop: `audio/mix.py` butt-joins repeats with no crossfade, so a
 looped one-shot (e.g. `crowd_murmur`) would pulse with its own fades — place several overlapping copies instead
 (`audiolib.render_sfx_events` crossfades 40 ms, which is smoother but still not seamless).
-Phone speakers reproduce little below ~150 Hz: `rumble_low` and `heartbeat` carry low-mid content for that, but
-their weight is still mostly sub-bass — on phones they read as soft thuds/rumbles, not as big hits.
+Phone speakers reproduce little below ~150–200 Hz: `heartbeat`, `rumble_low` and `footsteps` therefore carry a
+harmonic/body layer above 200 Hz (energy share above 200 Hz: heartbeat 1.5 → 29 %, rumble_low 1.6 → 25 %,
+footsteps 4.4 → 42 %; level through a 250 Hz high-pass +8…+12 dB vs. the old files). Their weight on
+headphones is still sub-bass — on phones they read as soft knocks/rumbles, not as big hits.
 
 ## 2. Music (`audio/music.py`)
 

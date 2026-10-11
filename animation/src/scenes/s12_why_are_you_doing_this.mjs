@@ -148,9 +148,9 @@ function shot(t, S, F) {
   }
   if (t < T('s12b02-0.3')) {
     // b01 close-up: the face low-left, looking up and back into the dark of the robe; the chin tips up on 'this'
-    const z = push('s12b01+0.8', 's12b02-0.3', 2.95, 3.05);
-    const c = frame('s12b01+1.0', 2.95, 318, 770);
-    return { cam: withDrift(frame('s12b01+1.0', z, 318, 770), t, 2), cage: 'cheat', bake: { key: 'b01', x: c.x, y: c.y, zMin: 2.95, zMax: 3.05, m: 1.12, at: 's12b01+1.0' } };
+    const z = push('s12b01+0.8', 's12b02-0.3', 2.6, 2.7);
+    const c = frame('s12b01+1.0', 2.6, 318, 770);
+    return { cam: withDrift(frame('s12b01+1.0', z, 318, 770), t, 2), cage: 'cheat', bake: { key: 'b01', x: c.x, y: c.y, zMin: 2.6, zMax: 2.7, m: 1.12, at: 's12b01+1.0' } };
   }
   if (t < T('s12b03-0.25')) {
     const z = push('s12b02-0.3', 's12b03-0.25', 3.95, 4.1);

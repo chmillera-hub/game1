@@ -279,23 +279,36 @@ def alarm_pull():
 
 
 def footsteps():
-    """Four soft steps (heel thump + sole scuff), alternating feet, ~0.56 s apart."""
+    """Four soft steps (heel thump + floor knock + sole scuff), alternating feet, ~0.56 s apart.
+    The 95 Hz heel thump carries the weight on headphones; a damped 200–800 Hz floor knock, the thump's
+    saturated harmonics, a soft contact tick and the scuff make the steps read on phone speakers."""
     n = N(2.5)
     out = np.zeros((n, 2))
     for i in range(4):
         t0 = 0.08 + i * 0.56 + 0.012 * math.sin(i * 1.7)
         g = (0.8, 1.0, 0.85, 0.95)[i]
         x = np.zeros(n)
-        # heel: low damped thump with slight pitch drop
+        # heel: low damped thump with slight pitch drop (+ gentle saturation: harmonics at 190/285/380 Hz)
         m = N(0.12)
         tl = np.arange(m) / SR
         f = 95 * (1 + 0.25 * np.exp(-tl / 0.02)) * (1 + 0.04 * i % 2)
         th = np.sin(2 * np.pi * np.cumsum(f) / SR) * np.exp(-tl / 0.028) * (1 - np.exp(-tl / 0.002))
+        th_h = bandn(np.tanh(4.0 * th), 170, 700)
         k = N(t0)
-        x[k:k + m] += 0.9 * th
+        x[k:k + m] += 0.85 * th + 0.6 * th_h / (np.max(np.abs(th_h)) + 1e-9)
         x += burst(n, t0, 0.07, 40 + i, 150, 1600, shape=1.2, amp=0.5)
+        # floor knock: a soft 3 ms push into damped wood/floor modes (the body that phones can play)
+        q = N(0.003)
+        exc = np.zeros(m)
+        exc[:q] = 0.5 - 0.5 * np.cos(2 * np.pi * np.arange(q) / q)
+        knock = modal(exc, [(205 + 9 * (i % 2), 1.0, 0.026), (330, 0.75, 0.02), (510, 0.45, 0.014), (790, 0.22, 0.009)])
+        x[k:k + m] += 0.85 * knock / (np.max(np.abs(knock)) + 1e-9)
+        # contact tick (very short, soft)
+        x += burst(n, t0 + 0.002, 0.012, 80 + i, 1800, 5500, shape=2.5, amp=0.14)
         # sole roll / scuff
-        x += burst(n, t0 + 0.07 + 0.01 * (i % 2), 0.12, 60 + i, 700, 4000, shape=0.9, amp=0.16)
+        x += burst(n, t0 + 0.07 + 0.01 * (i % 2), 0.12, 60 + i, 700, 4000, shape=0.9, amp=0.28)
+        # soft saturation tames the stacked onset peak (more body for the same -3 dBFS peak)
+        x = np.tanh(1.3 * x) / 1.3
         out += stereo(x * g, pan=-0.12 if i % 2 == 0 else 0.12)
     out = lp(out.T, 5000).T
     out = room(out, wet=0.14, decay=0.5, size=0.25, seed=6)
@@ -378,36 +391,46 @@ def crowd_murmur():
 
 def heartbeat():
     """One heartbeat cycle, 1.3 s (loop-seamless): 'lub' (deeper, longer) then 'dub' 0.28 s later.
-    Sub thump (felt on headphones) + a damped 90–250 Hz body knock and a faint valve tick, so the
-    beat still reads on phone speakers (which reproduce little below ~150 Hz)."""
+    Sub thump (felt on headphones) + a damped 120–500 Hz body knock, the thump's saturated harmonics
+    (150–600 Hz: implies the fundamental on small speakers) and a soft valve click, so the beat reads on
+    phone speakers (which reproduce little below ~150–200 Hz) while staying deep and soft on headphones."""
     n = N(1.3)
     x = np.zeros(n)
 
-    def thump(at, f0, dec, amp, body_f, body_amp, tick_amp, seed):
+    def thump(at, f0, dec, amp, body_f, body_amp, tick_amp, harm_amp, click_amp, seed):
         m = N(0.35)
         tl = np.arange(m) / SR
         f = f0 * (1 + 0.6 * np.exp(-tl / 0.015))
         s = np.sin(2 * np.pi * np.cumsum(f) / SR)
         e = np.exp(-tl / dec) * (1 - np.exp(-tl / 0.004))
         y = s * e + 0.25 * lp(white(m, seed), 220) * e
+        # harmonic layer: the thump driven hard into a soft clipper, keeping only 150–600 Hz (shorter decay)
+        eh = np.exp(-tl / (dec * 0.6)) * (1 - np.exp(-tl / 0.003))
+        h = bandn(np.tanh(6.0 * s * eh), 180, 700)
+        y += harm_amp * h / (np.max(np.abs(h)) + 1e-9)
         # body knock: a soft (5 ms raised-cosine) push into damped low-mid tissue resonances
         q = N(0.005)
         exc = np.zeros(m)
         exc[:q] = 0.5 - 0.5 * np.cos(2 * np.pi * np.arange(q) / q)
-        body = modal(exc, [(body_f, 1.0, 0.032), (body_f * 1.62, 0.55, 0.024), (body_f * 2.45, 0.25, 0.016)])
+        body = modal(exc, [(body_f, 0.8, 0.032), (body_f * 1.62, 0.9, 0.028), (body_f * 2.45, 0.75, 0.022),
+                           (body_f * 3.3, 0.45, 0.016)])
         y += body_amp * body / (np.max(np.abs(body)) + 1e-9)
         # valve tick: a breath of band-limited noise, 15 ms
         te = np.exp(-tl / 0.006) * (1 - np.exp(-tl / 0.0015))
         tick = bandn(white(m, seed + 1), 280, 1100) * te
         y += tick_amp * tick / (np.max(np.abs(tick)) + 1e-9)
+        # soft click on the onset (3 ms, 1–3.5 kHz): the attack phones need to place the beat in time
+        ce = np.exp(-tl / 0.0018) * (1 - np.exp(-tl / 0.0004))
+        click = bandn(white(m, seed + 2), 1000, 3500) * ce
+        y += click_amp * click / (np.max(np.abs(click)) + 1e-9)
         k = N(at)
         x[k:k + m] += amp * y[: max(0, min(m, n - k))]
 
-    thump(0.06, 52, 0.075, 1.0, 118, 0.85, 0.10, 61)
-    thump(0.34, 64, 0.055, 0.72, 150, 0.9, 0.14, 63)
+    thump(0.06, 52, 0.075, 1.0, 128, 1.6, 0.22, 1.5, 0.14, 61)
+    thump(0.34, 64, 0.055, 0.72, 156, 1.6, 0.26, 1.4, 0.11, 63)
     # a little soft saturation adds harmonics without clicks
     x = np.tanh(1.8 * x) / np.tanh(1.8)
-    x = lp(x, 1400)
+    x = lp(x, 3200)
     return finish(np.stack([x, x], axis=1), fin=0.002, fout=0.05)
 
 
@@ -595,7 +618,8 @@ def key_turn():
 
 def rumble_low():
     """Sub-bass swell: a 41 Hz tone with slow wobble + low brown noise, rising 2.6 s then fading, with a
-    low-mid (70–350 Hz) rumble layer and the tone's harmonics so it still reads on phone speakers. ~5 s."""
+    low-mid (70–350 Hz) rumble layer, the tone's upper harmonics (5th–12th, 200–500 Hz, from a soft
+    clipper) and a dark 180–700 Hz grit band, so it still reads as a rumble on phone speakers. ~5 s."""
     n = N(5.0)
     t = tt(n)
     f = 41 * (1 + 0.02 * np.sin(2 * np.pi * 0.37 * t))
@@ -609,8 +633,14 @@ def rumble_low():
     churn = bandn(brown(n, 901), 70, 350)
     churn = churn / (np.std(churn) + 1e-9) * (0.75 + 0.25 * slow_noise(n, 1.8, 902))
     mid = 0.22 * harm * (1 + 0.3 * slow_noise(n, 0.9, 903)) + 0.2 * churn
+    # upper layer: the tone (with its wobble) through a soft clipper, keeping the 5th-12th harmonics, plus a
+    # dark grit band of brown noise; both breathe slowly so it churns rather than hums
+    sat = bandn(np.tanh(5.0 * (np.sin(ph) + 0.5 * churn / (np.max(np.abs(churn)) + 1e-9))), 190, 520, 3)
+    grit = bandn(brown(n, 904), 180, 700)
+    upper = (0.5 * sat / (np.std(sat) + 1e-9) * (0.8 + 0.2 * slow_noise(n, 0.7, 905))
+             + 0.6 * grit / (np.std(grit) + 1e-9) * (0.7 + 0.3 * slow_noise(n, 2.3, 906)))
     env = smooth_env([(0, 0), (2.6, 1.0), (3.4, 0.85), (5.0, 0)], n)
-    y = (lp(sub, 260, 2) + lp(mid, 420, 2)) * env
+    y = (lp(sub, 260, 2) + lp(mid, 420, 2) + 0.55 * lp(upper, 800, 2)) * env
     out = stereo(y, width=0.25, seed=5)
     return finish(out, fin=0.05, fout=0.3)
 

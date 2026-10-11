@@ -21,7 +21,7 @@
 //   iris           scale   iris size multiplier
 //   tears          0..1    tears welling along the lower lids (glossy)
 //   tearL, tearR   0..1    progress of a tear drop running down that cheek (0 = none, 0.01..1 = falling)
-//   stream         0..1    wet tear-streak opacity down both cheeks
+//   stream         0..1    wet tear-streak opacity down both cheeks (wide wet body + specular edge; reads after compression)
 //   blush          0..1
 //   sparkle        0..1    starry reflections in the eyes (wonder)
 //   sweat          0..1    a nervous sweat drop
@@ -61,6 +61,12 @@ export const EXPR = {
   suspicious: { lidU: 0.35, lidL: 0.3, browUpL: -0.3, browUpR: 0.3, smile: -0.15, wide: -0.2 },
 };
 
+// device px per local unit (current transform)
+function devScale(g) {
+  const m = g.getTransform();
+  return Math.sqrt(Math.abs(m.a * m.d - m.b * m.c)) || 1;
+}
+
 export function makeExpr(...parts) {
   return Object.assign({}, DEFAULT_EXPR, ...parts);
 }
@@ -94,19 +100,47 @@ export function drawFace(g, style, exprIn) {
     }
   }
 
-  // tear streaks (under eyes, over skin)
+  // tear streaks (under eyes, over skin). Built to survive the compressed film (4:2:0 chroma + quantisation
+  // used to erase a thin translucent blue line): a wide wet body that brightens the skin, a soft darker fringe
+  // on the shadow side, and a crisp near-white specular edge on the light (upper-left) side, so the streak
+  // reads in LUMA, not only as a tint. Opacity rises a little faster than `stream` at the low end.
   if (e.stream > 0.01) {
+    const sa = Math.pow(clamp(e.stream), 0.8);
+    const k = devScale(g);
+    const bw = Math.max(3, s.eyeRx * 0.24);                       // body width (1.5× the old streak)
+    const sw = Math.max(1 / k, bw * 0.2);                         // specular edge: ≥ 1 device px
+    g.save();
+    g.lineCap = 'round'; g.lineJoin = 'round';
     for (const side of [-1, 1]) {
       const ex = side * s.eyeSpacing * (1 - Math.abs(turn) * 0.3) + shiftX;
       const x0 = ex + side * s.eyeRx * 0.35, y0 = s.eyeY + s.eyeRy * 0.85;
-      g.strokeStyle = `rgba(190,225,255,${0.45 * e.stream})`;
-      g.lineWidth = Math.max(2, s.eyeRx * 0.16);
-      g.lineCap = 'round';
-      g.beginPath();
-      g.moveTo(x0, y0);
-      g.bezierCurveTo(x0 + side * 3, y0 + s.eyeRy * 0.8, x0 - side * 2, y0 + s.eyeRy * 1.4, x0 + side * 2, y0 + s.eyeRy * 2.1);
-      g.stroke();
+      const path = (dx) => {
+        g.beginPath();
+        g.moveTo(x0 + dx, y0);
+        g.bezierCurveTo(x0 + dx + side * 3, y0 + s.eyeRy * 0.8, x0 + dx - side * 2, y0 + s.eyeRy * 1.4, x0 + dx + side * 2, y0 + s.eyeRy * 2.1);
+      };
+      // each layer thins out toward the tail (the trail dries / runs off the cheek)
+      const y1 = y0 + s.eyeRy * 2.1;
+      const fade = (rgb, a) => {
+        const gr = g.createLinearGradient(0, y0, 0, y1);
+        gr.addColorStop(0, `rgba(${rgb},${a})`); gr.addColorStop(0.55, `rgba(${rgb},${a})`);
+        gr.addColorStop(1, `rgba(${rgb},${a * 0.12})`);
+        return gr;
+      };
+      // shadow-side fringe (a hair of refraction shadow gives the wet line an edge on pale skin)
+      g.strokeStyle = fade('70,95,150', 0.16 * sa);
+      g.lineWidth = bw * 0.45;
+      path(bw * 0.42); g.stroke();
+      // the wet body
+      g.strokeStyle = fade('200,232,255', 0.62 * sa);
+      g.lineWidth = bw;
+      path(0); g.stroke();
+      // specular edge
+      g.strokeStyle = fade('255,255,255', 0.88 * sa);
+      g.lineWidth = sw;
+      path(-(bw - sw) * 0.36); g.stroke();
     }
+    g.restore();
   }
 
   // eyes
@@ -320,17 +354,27 @@ function drawEye(g, s, e, cx, cy, rx, ry, side) {
     const ty = cy + ry * 0.9 + k * ry * 2.6;
     const a = k < 0.85 ? 1 : 1 - (k - 0.85) / 0.15;
     const sz = rx * 0.17 * (0.7 + 0.5 * Math.min(1, k * 4));
-    g.fillStyle = `rgba(205,236,255,${0.92 * a})`;
-    g.strokeStyle = `rgba(120,170,220,${0.7 * a})`;
+    g.save();
+    g.fillStyle = `rgba(212,240,255,${0.95 * a})`;
+    g.strokeStyle = `rgba(110,160,215,${0.75 * a})`;
     g.lineWidth = 1.2;
     g.beginPath();
     g.moveTo(tx, ty - sz * 1.9);
     g.bezierCurveTo(tx + sz * 1.1, ty - sz * 0.2, tx + sz, ty + sz, tx, ty + sz);
     g.bezierCurveTo(tx - sz, ty + sz, tx - sz * 1.1, ty - sz * 0.2, tx, ty - sz * 1.9);
     g.fill(); g.stroke();
-    g.fillStyle = `rgba(255,255,255,${0.9 * a})`;
+    // bright rim on the light (left) side, just inside the outline: the drop reads as glass in luma
+    g.strokeStyle = `rgba(255,255,255,${0.85 * a})`;
+    g.lineWidth = Math.max(1 / devScale(g), sz * 0.16);
+    g.lineCap = 'round';
+    g.beginPath();
+    g.moveTo(tx - sz * 0.12, ty - sz * 1.45);
+    g.bezierCurveTo(tx - sz * 0.75, ty - sz * 0.3, tx - sz * 0.82, ty + sz * 0.45, tx - sz * 0.3, ty + sz * 0.78);
+    g.stroke();
+    g.fillStyle = `rgba(255,255,255,${0.95 * a})`;
     circle(g, tx - sz * 0.35, ty, sz * 0.3);
     g.fill();
+    g.restore();
   }
 }
 

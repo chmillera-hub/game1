@@ -44,9 +44,11 @@ function hiccup(t, times, dur = 0.32) {
 // ---- the shadow filling half the room (world coords, backOfMind)
 // On the near-black cavern floor the Void's own spill barely registers, so the shadow is staged as a dark tide on
 // the floor plane: a wedge whose edge is a floor line through the vanishing point (the far glow), swinging from the
-// Void's hem (right) across the glowing pathways, over the cage and Fear, to stop left of the cage. What stays lit is
-// the left wedge of floor leading to the far HQ (where Consciousness went) — "half the room". It fades out toward the
-// horizon, so the far glow and the converging tips of the pathways are untouched.
+// Void's hem (right) across the cage and Fear and on over the fan of glowing pathways left of the cage (the only lit
+// floor in frame: right of the cage the floor is already near-black, so a tide that stopped at the cage changed
+// almost nothing but Fear). What stays lit is a thin strip along the horizon leading to the far HQ (where
+// Consciousness went). It fades out toward the horizon, so the far glow and the converging tips of the pathways are
+// untouched. The sweep is keyed by the edge's angle (uniform angular speed), converted to its x at the cage floor.
 const VP = [380, 1040];                  // vanishing point = the far glow on the floor horizon
 const EDGE_Y = 1630;                     // edge parameterised by its x at the cage's floor line
 const edgeX = (xe, y) => VP[0] + (xe - VP[0]) * (y - VP[1]) / (EDGE_Y - VP[1]);
@@ -113,9 +115,11 @@ export function render(g, t, S) {
   const st = { t, ...SET };
   drawHQ(g, 'backOfMind', st);
   const shadowSpread = S.k(t, [['scene.start', 0.4], ['s10b02', 1.0, 'out']]);
-  // the tide: from under the robe (hidden) across the pathways on 'its shadow', over the cage and Fear on 'half', and
-  // to its rest left of the cage on 'room' (+3.56 'its' … +5.98 'room'); it stays there through b02
-  const xe = S.k(t, [['s10b01+3.4', 900], ['s10b01+6.2', 205, 'inOut']]);
+  // the tide: from under the robe (hidden) on 'its shadow', over the cage and Fear on 'filling half' (+4.73 → +4.97),
+  // then across the lit fan of pathways left of the cage on 'the room' (+3.56 'its' … +5.98 'room'); it stays there
+  // through b02. Edge angle 40° (down-right) → 152° (nearly level, pointing left).
+  const phi = S.k(t, [['s10b01+3.4', 40], ['s10b01+6.4', 152, 'inOut']]) * Math.PI / 180;
+  const xe = VP[0] + (EDGE_Y - VP[1]) * Math.cos(phi) / Math.sin(phi);
   const shA = S.k(t, [['s10b01+3.2', 0.55], ['s10b01+4.6', 0.82]]);
   floorShadow(g, cam, xe, shA);
   drawVoid(g, ...VOID_B, { t, ...STARE_B, idle: 0, shadowSpread });
