@@ -310,7 +310,8 @@ def tired_kw(t, T, info):
     k_up = _ramp(t, T["look_up"] + 0.27, T["look_up"] + 0.55)
     face["head_nod"] += -0.12 * k_up
     face["head_tilt"] = 0.04 * k_up
-    face["lid"] += -0.06 * _ramp(t, T["look_up"] + 0.15, T["look_up"] + 0.35)
+    # (looking up lifts his heavy lids by itself; hold them near rest: only s06 opens them)
+    face["lid"] += 0.05 * _ramp(t, T["look_up"] + 0.15, T["look_up"] + 0.35)
     # the dark: brows up, lids lift a hair as the lights die
     k_dk = _ramp(t, T["casc"], T["casc"] + 0.5)
     face["brow"] = 0.15 * k_dk
@@ -778,9 +779,9 @@ def boss_kw(t, T, info):
     face["lid"] += 0.05 * _ramp(t, T["l05"], T["l05e"])
     # she barely blinks: one slow blink after each line
     blink = 0.0
-    for b0 in (T["l04e"] + 0.25, T["l05e"] - 0.05):
-        if b0 <= t <= b0 + 0.85:
-            blink = tween(t, [(b0, 0.0), (b0 + 0.3, 1.0), (b0 + 0.45, 1.0), (b0 + 0.8, 0.0)])
+    for b0 in (min(T["l04v"] + 0.15, T["reach"] - 0.75), T["l05v"] + 0.1):
+        if b0 <= t <= b0 + 0.7:
+            blink = tween(t, [(b0, 0.0), (b0 + 0.25, 1.0), (b0 + 0.37, 1.0), (b0 + 0.66, 0.0)])
     # the reach: hand to the toggle tip, rests, then pushes it down with the toggle
     tip = _switch_tip(_switch_on(t, T))
     kr = ease_in_out(seg(t, T["reach"] + 0.22, T["reach"] + 0.85))

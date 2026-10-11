@@ -59,7 +59,7 @@ POD_TEXT, POD_SUB = "THING 38", "SPECIMEN 038"
 
 SMASH_X = M["smash_feet"][0]   # 855
 HAUL_X = 1015.0                # close enough that both hands reach the T-handle UP
-GRIP = 26.0                    # the two fists sit +-GRIP px from the T-bar centre
+GRIP = 30.0                    # the two fists sit +-GRIP px from the T-bar centre (bar shows between)
 TIRED_X1 = 640.0               # stepped back from the console to see the window
 CUR_X0 = 590.0
 TIRED_X2 = 1012.0              # where he scoops the baby up
@@ -89,13 +89,13 @@ DUCK_CRADLE["hold"] = 2.0
 # the haul: both fists closed on the T-handle ("grip" hands, world-space reach).
 # The lean is limited while the handle is UP (shoulder height) so both hands
 # really reach it; he hangs back further only as the lever comes down.
-_HAUL_ARMS = {"al_h": "grip", "ar_h": "grip", "al_layer": "front", "ar_layer": "back"}
-HAUL_GRIP = {"base": "haul", "lean": -0.22, "neck": -0.2, "nod": -0.2, "head_face": 0.25, **_HAUL_ARMS}
-HAUL_STRAIN = {"base": "haul_strain", "lean": W(-0.28, 0.02, 0.0), "neck": -0.3, "nod": W(-0.3, 0.02, 0.4),
-               "head_face": 0.25, **_HAUL_ARMS}
+_HAUL_ARMS = {"al_h": "grip", "ar_h": "grip", "al_layer": "mid", "ar_layer": "back"}   # head over the near arm
+HAUL_GRIP = {"base": "haul", "lean": -0.22, "neck": -0.22, "nod": -0.26, "head_face": 0.35, **_HAUL_ARMS}
+HAUL_STRAIN = {"base": "haul_strain", "lean": W(-0.28, 0.02, 0.0), "neck": -0.3, "nod": W(-0.34, 0.02, 0.4),
+               "head_face": 0.35, **_HAUL_ARMS}
 HAUL_FOLLOW = {"base": "haul", "lean": -0.8, "hunch": 0.95, "nod": 0.05, "neck": -0.2, "head_face": 0.3,
                **_HAUL_ARMS}
-GUARD_IN = {"base": "guard_fists", "al_layer": "front", "ar_layer": "back"}   # same layers as the haul
+GUARD_IN = {"base": "guard_fists", "al_layer": "mid", "ar_layer": "back"}   # same layers as the haul
 CROUCH = {"base": "crouch", "lean": 0.45, "neck": 0.05, "nod": 0.1}
 
 

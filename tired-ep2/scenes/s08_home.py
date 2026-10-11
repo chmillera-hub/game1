@@ -7,7 +7,9 @@ Shot list (all times derive from cues / line timing; see _T and _render()):
              his legs). He looks over at the bed, sighs, trudges in; Curiosity at his heels.
   S2  flop   at the bed, head end of the frame: he turns to the pillow, a slow
              blink, a breath in (anticipation), falls like a plank, the mattress
-             bounces (springs), his feet kick up and settle. The baby is flung off
+             bounces (springs), his feet kick up and settle, his near arm swings down
+             over the edge of the bed and hangs limp (never up past his head; the far
+             arm lies along the pillow under his cheek). The baby is flung off
              his shoulder, hangs a beat, tumbles onto his back and giggles on the bounce. Slow push-in
              on his face for "Worst. Day. Ever." (muffled into the pillow).
   S3  pile   Curiosity looks up, crouches, hops onto his back, settles into a curl;
@@ -649,7 +651,7 @@ def _smile_zs(ctx, t, T, ta):
             continue
         x = x0 + 8 * i + 44 * k + 7 * math.sin(2 * math.pi * k)
         y = y0 - 118 * k
-        sz = 19 + 15 * k + 3 * i
+        sz = 23 + 17 * k + 3 * i
         ctx.save()
         ctx.translate(x, y)
         ctx.rotate(-0.18 + 0.12 * math.sin(2 * math.pi * k + i))
