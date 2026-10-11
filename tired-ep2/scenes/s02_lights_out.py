@@ -333,8 +333,10 @@ def tired_state(t, k, info):
         st_k = kf(t, [(k.dm_pulse - 0.02, 0.0), (k.dm_pulse + 0.08, 1.0), (k.dm_pulse + 0.6, 0.85),
                       (k.dm_pulse + 1.3, 0.25), (k.L2, 0.25), (k.dm_pulse2, 0.25), (k.dm_pulse2 + 0.08, 0.7),
                       (k.dm_pulse2 + 0.7, 0.3), (k.L2e + 0.3, 0.2), (k.roll0 + 0.6, 0.0)])
-        f["lid"] = -0.12 * st_k
-        f["pupil"] = -0.3 * st_k
+        ok_k = kf(t, [(k.w_okay - 0.1, 0.0), (k.w_okay + 0.2, 1.0), (k.L2e + 0.2, 1.0), (k.roll0 + 0.5, 0.0)])
+        f["lid"] = -0.12 * st_k - 0.05 * ok_k
+        f["lid_ang"] = 0.3 * ok_k                  # softer, worried eyes
+        f["pupil"] = -0.3 * st_k + 0.15 * ok_k
         f["squash"] = -0.06 * bump(t, k.dm_pulse - 0.02, k.dm_pulse + 0.3)
         f["frown"] = kf(t, [(k.L2 - 0.2, 0.0), (k.L2 + 0.1, 0.18), (k.w_okay, 0.12), (k.L2e, 0.1),
                             (k.roll0 + 0.3, 0.1), (k.hd0 + 0.1, 0.1), (k.hd0 + 0.4, 0.35), (k.sigh, 0.35),
@@ -780,6 +782,9 @@ def cur_state(t, k):
                             (k.pk_pulse + 0.1, 1.0), (k.L3, 0.85), (k.L3 + 0.3, 0.92)])
         st["expr"] = "calm"
         st["look_target"] = "eyes"
+        if k.dm_close + 0.3 <= t < k.dm_open:
+            st["expr"] = "content"                 # eyes shut (closed arcs), purring: "watch this"
+            st["blink"] = None
         if k.dm_open <= t < k.roll0:
             st["expr"] = "annoyed"                 # opens its eyes: a flat look at him
         elif k.roll0 <= t < k.roll0 + CR.EYEROLL_DUR + 0.15:
@@ -1026,12 +1031,13 @@ def _shots(k):
     add(k.cut_fit, k.cut_roll, "fit", lambda t: (1040, lerp(1000, 994, seg(t, k.cut_fit, k.cut_roll)), 2.3))
     add(k.cut_roll, k.HOOD, "roll", lambda t: (CUR_HEAD[0] + 10, CUR_HEAD[1] - 44, 3.0))   # plate text cropped
     add(k.HOOD, k.cut_oh, "hood",
-        lambda t: (1050, 968, lerp(2.4, 2.5, smoothstep(seg(t, k.HOOD, k.pk0)))))
-    add(k.cut_oh, k.cut_nod, "oh", lambda t: (1045, 960, 2.7))
+        lambda t: (lerp(1050, 1070, smoothstep(seg(t, k.hd1, k.pk1))), 968, 2.4))   # pans to keep his hand in
+    add(k.cut_oh, k.cut_nod, "oh", lambda t: (1072, 960, 2.55))
     add(k.cut_nod, k.PING, "nod", lambda t: (1040, 1060, 1.6))
 
     def ping_cam(t):
-        return (990, lerp(900, 870, smoothstep(seg(t, k.stand0, k.stand1 + 0.2))), 1.15)
+        # (the lit pod plate stays just above the caption band)
+        return (990, lerp(1030, 1000, smoothstep(seg(t, k.stand0, k.stand1 + 0.2))), 1.15)
     add(k.PING, k.smug_cu, "ping", ping_cam)
     add(k.smug_cu, k.SMUG, "smug", lambda t: (T_X + 130, lerp(800, 785, seg(t, k.smug_cu, k.SMUG)), 2.35))
     add(k.SMUG, k.WALK, "roll2", lambda t: (C_XS2 + 60, 1090, 2.5))
@@ -1342,7 +1348,7 @@ def SFX(info):
     ev.append((k.hop2 + 0.45, "creature_chitter", -7, -0.2))
     # the demo: a concentrating purr under the tremble, then its own (smaller) pulses
     ev.append((k.dm_charge - 0.25, "creature_purr", -7, -0.2))
-    ev.append((k.dm_charge2 - 0.2, "creature_purr", -10, -0.2))
+    ev.append((k.dm_charge2 - 0.2, "creature_purr", -13, -0.2))
     # the eye-roll: ears flick, then the hood: cloth, his sigh
     ev.append((k.roll0 + 0.7, "ears_perk", -6, -0.2))
     ev.append((k.hd0, "cloth_rustle", 2, 0.0))
@@ -1351,11 +1357,12 @@ def SFX(info):
     ev.append((k.pk1 - 0.05, "cloth_rustle", -9, 0.1))
     ev.append((k.pk_see + 0.05, "ears_perk", -3, -0.2))
     ev.append((k.dr0, "cloth_rustle", -7, 0.1))
+    ev.append((k.c_sit1 - 0.02, "footstep", -13, -0.25))         # it hops down onto its haunches
     # the sense: its pulses small, his first ones the big signature whoom
     pings = pings_for(k, info)
     for i, (t0, x, y, kk) in enumerate(pings):
         if i < 3:
-            ev.append((t0, "sonar_ping_small", -1 if i != 1 else -4, -0.15))
+            ev.append((t0, "sonar_ping_small", -1 if i != 1 else -7, -0.15))
         elif kk >= 0.75:
             ev.append((t0, "sonar_ping", 0 if i == 3 else -3, 0.0))
         else:
@@ -1365,6 +1372,7 @@ def SFX(info):
     ev.append((k.n0 + 0.25, "ears_perk", 2, -0.2))
     # stands up
     ev.append((k.stand0 + 0.2, "cloth_rustle", -2, 0.1))
+    ev.append((k.stand0 + 0.42, "footstep", -15, -0.25))         # it shuffles back a step
     # the confident stride: one step per heel strike of walk_eyes_closed (pose_t 0.17 + n * 0.525)
     per = 1.05 / 2
     tt = k.tgo + 0.17

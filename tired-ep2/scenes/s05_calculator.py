@@ -466,71 +466,69 @@ def rec_counter(t):
 
 def draw_recorder(c, x, y, s, t, rot=0.0, rec=True, led=1.0, level=0.0, button=0.0, frozen=None,
                   detail=True):
-    """HushCorp voice recorder (~220 x 130 at s=1, centre anchor): mic grille, a small LCD
-    ("● REC" + running counter + level meter, or "❚❚ PAUSED"), three face buttons
-    (rec / pause / stop), the logo + wordmark, a red LED top-left."""
+    """HushCorp voice recorder (~240 x 150 at s=1, centre anchor): mic grille, a small LCD
+    ("REC" + running counter + level meter, or "PAUSED"), three face buttons (rec / pause /
+    stop), the logo + HUSHCORP wordmark, a red LED top-left."""
     with core.saved(c, x, y, s, rot):
-        rect(c, -110, -65, 220, 130, "#26242f", 6, r=24)
-        rect(c, -100, -56, 200, 112, "#302d3b", 0, r=18)
-        line(c, [(-96, -50), (96, -50)], "#46425a", 3)
+        rect(c, -120, -75, 240, 150, "#26242f", 6, r=26)
+        rect(c, -110, -66, 220, 132, "#302d3b", 0, r=20)
+        line(c, [(-104, -60), (104, -60)], "#46425a", 3)
         # mic grille
-        core.circle(c, -66, -8, 34)
+        core.circle(c, -70, -14, 36)
         fs(c, "#1c1a24", 4)
         if detail:
             for i_ in range(-2, 3):
                 for j in range(-2, 3):
                     if i_ * i_ + j * j <= 5:
-                        core.circle(c, -66 + i_ * 11, -8 + j * 11, 3.4)
+                        core.circle(c, -70 + i_ * 11.5, -14 + j * 11.5, 3.6)
             core.fill(c, "#57536a")
         # LCD screen
         lcd = "#1b2a26" if rec else "#18201e"
-        rect(c, -22, -48, 120, 62, lcd, 4, r=8)
+        rect(c, -22, -56, 128, 70, lcd, 4, r=8)
         if detail:
             if rec:
                 on = (t % 1.0) < 0.6
-                core.circle(c, -8, -32, 6.5)
+                core.circle(c, -6, -38, 7)
                 core.fill(c, "#ff3b5c" if on else "#5a2430")
-                core.text(c, "REC", 20, -25, 19, "#ff6f86" if on else "#8a3a48", "ui")
-                core.text(c, rec_counter(t), 38, -5, 15, "#8ff5d0", "mono")
-                # level meter: 9 bars along the bottom of the screen
-                for i_ in range(9):
-                    hgt = 2 + 10 * clamp(level * (1.0 - 0.07 * i_) + 0.12 * core.noise1(t * 7 + i_ * 1.7, 5) *
-                                         (0.4 + level))
-                    lit = hgt > 4
-                    rect(c, -14 + i_ * 12.5, 10 - hgt, 9, hgt, "#5fe8b0" if lit else "#2e4a40", 0, r=1.5)
+                core.text(c, "REC", 24, -30, 21, "#ff6f86" if on else "#8a3a48", "ui")
+                core.text(c, rec_counter(t), 42, -9, 16, "#8ff5d0", "mono")
+                # level meter: 10 bars along the bottom of the screen
+                for i_ in range(10):
+                    v_ = level * (1.0 - 0.06 * i_) + 0.22 * core.noise1(t * 8 + i_ * 1.7, 5) * (0.3 + level)
+                    hgt = 3 + 15 * clamp(v_)
+                    rect(c, -14 + i_ * 12, 10 - hgt, 9, hgt, "#5fe8b0" if hgt > 5 else "#3b5e52", 0, r=1.5)
+                core.radial_glow(c, 42, -22, 100, "#8ff5d0", 0.10)
             else:
-                rect(c, -10, -36, 6, 18, "#8ff5d0", 0, r=1)
-                rect(c, 0, -36, 6, 18, "#8ff5d0", 0, r=1)
-                core.text(c, "PAUSED", 52, -21, 17, "#8ff5d0", "ui")
-                core.text(c, frozen or rec_counter(t), 38, -2, 13, "#5f9c86", "mono")
-                for i_ in range(9):
-                    rect(c, -14 + i_ * 12.5, 8, 9, 2, "#2e4a40", 0, r=1)
-            if rec:
-                core.radial_glow(c, 38, -17, 90, "#8ff5d0", 0.10)
+                rect(c, -10, -46, 7, 22, "#8ff5d0", 0, r=1)
+                rect(c, 2, -46, 7, 22, "#8ff5d0", 0, r=1)
+                core.text(c, "PAUSED", 58, -27, 19, "#8ff5d0", "ui")
+                core.text(c, frozen or rec_counter(t), 42, -5, 14, "#5f9c86", "mono")
+                for i_ in range(10):
+                    rect(c, -14 + i_ * 12, 7, 9, 3, "#2e4a40", 0, r=1)
         # face buttons: rec / pause / stop
-        for bx, kind in ((-2, "rec"), (36, "pause"), (74, "stop")):
+        for bx, kind in ((22, "rec"), (58, "pause"), (94, "stop")):
             dy = 3.0 * button if kind == "pause" else 0.0
-            core.circle(c, bx, 36 + dy, 13)
+            core.circle(c, bx, 44 + dy, 13)
             fs(c, "#3d394c" if kind != "rec" else "#4a2a36", 3.5)
             if kind == "rec":
-                core.circle(c, bx, 36, 5)
+                core.circle(c, bx, 44, 5)
                 core.fill(c, "#ff4f6d")
             elif kind == "pause":
-                rect(c, bx - 6, 30 + dy, 4, 12, "#c9c6d4", 0)
-                rect(c, bx + 2, 30 + dy, 4, 12, "#c9c6d4", 0)
+                rect(c, bx - 6, 38 + dy, 4, 12, "#c9c6d4", 0)
+                rect(c, bx + 2, 38 + dy, 4, 12, "#c9c6d4", 0)
             else:
-                rect(c, bx - 5, 31, 10, 10, "#c9c6d4", 0, r=1.5)
+                rect(c, bx - 5, 39, 10, 10, "#c9c6d4", 0, r=1.5)
         # logo + wordmark
-        props.hush_logo(c, -88, 44, 10, lw=0, ring=False, hole="#26242f")
+        props.hush_logo(c, -98, 46, 11, lw=0, ring=False, hole="#26242f")
         if detail:
-            props.spaced_text(c, "HUSHCORP", -46, 49, 11, "#2fd1c5", "ui", 0.35)
+            props.spaced_text(c, "HUSHCORP", -44, 51, 10.5, "#2fd1c5", "ui", 0.3)
         # LED
         if led > 0.05:
-            core.radial_glow(c, -92, -44, 30, core.PAL["danger"], 0.6 * led)
-        core.circle(c, -92, -44, 5.5)
+            core.radial_glow(c, -100, -54, 30, core.PAL["danger"], 0.6 * led)
+        core.circle(c, -100, -54, 5.5)
         core.fill(c, core.mixc("#4a1620", "#ff3b5c", led))
         if led > 0.5:
-            core.circle(c, -94, -46, 1.8)
+            core.circle(c, -102, -56, 1.8)
             core.fill(c, "#ffd0d8")
 
 
@@ -664,7 +662,8 @@ def keys_for(info):
 # =========================================================================== shots / cameras
 def shots(k):
     return [
-        ("A1", 0.0, "A", lambda t: tw(t, [(0.0, (540, 960, 1.0)), (k["B2"], (556, 1004, 1.07))])),
+        ("A1", 0.0, "A", lambda t: tw(t, [(0.0, (540, 960, 1.0)), (k["a_stop"] + 0.3, (566, 990, 1.14)),
+                                          (k["B2"], (578, 1006, 1.2))])),
         ("B2", k["B2"], "B", lambda t: tw(t, [(k["B2"], (505, 1090, 1.22)), (k["E3"], (515, 1092, 1.27))])),
         ("E3", k["E3"], "B", lambda t: (470, 950, 2.3)),
         ("T4", k["T4"], "B", lambda t: (735, 1010, 2.3)),
@@ -681,7 +680,7 @@ def shots(k):
         ("E15", k["E15"], "B", lambda t: tw(t, [(k["E15"], (410, 900, 2.7)), (k["R16"], (405, 895, 2.85))])),
         ("R16", k["R16"], "R", None),
         ("E17", k["E17"], "B", lambda t: tw(t, [(k["E17"], (420, 905, 2.55)), (k["wk0"] - 0.2, (395, 865, 2.9))])),
-        ("T18", k["T18"], "B", lambda t: (718, 1112, 2.05)),
+        ("T18", k["T18"], "B", lambda t: (712, 1095, 2.3)),
         ("W19", k["W19"], "B", lambda t: (570, 1230, 1.6)),
         ("K20", k["K20"], "K", None),
         ("E21", k["E21"], "B", lambda t: (450, 905, 2.6)),
@@ -741,9 +740,8 @@ POCKET_T = "hands_pockets"
 def shrug_pose(a):
     """A lazy, nonchalant shrug with his hands staying in the hoodie pocket: shoulders up,
     elbows out a little, head tilt (a = 0..1)."""
-    return {"base": "hands_pockets", "hunch": 0.6 + 0.4 * a, "neck": -0.3 * a, "tilt": 0.11 * a,
-            "lift": 8 * a, "al_o": 0.2 + 0.32 * a, "ar_o": 0.2 + 0.32 * a, "al_e": 0.95 + 0.1 * a,
-            "ar_e": 0.95 + 0.1 * a}
+    return {"base": "hands_pockets", "hunch": 0.6 + 0.8 * a, "neck": -0.5 * a, "tilt": 0.12 * a,
+            "lift": 8 * a, "al_o": 0.2 + 0.04 * a, "ar_o": 0.2 + 0.3 * a}
 
 
 # a lazy hello: the near hand comes out of the hoodie pocket for one small bent-elbow wave,
@@ -891,9 +889,10 @@ def tired_state(t, k):
     s18 = k["T18"]
     if t >= s18 - 0.6:
         f = addf(f, fk(t, {
-            "curve": [(s18 - 0.6, -0.15), (s18 + 0.05, -0.15), (s18 + 0.5, 0.05)],
-            "smirk": [(s18 + 0.05, 0.0), (s18 + 0.45, -0.3), (k["W19"], -0.24), (k["W19"] + 0.4, 0.0)],
-            "lid": [(s18, 0.0), (s18 + 0.5, 0.05)],
+            "curve": [(s18 - 0.6, -0.15), (s18 + 0.05, -0.15), (s18 + 0.5, 0.12)],
+            "smirk": [(s18 + 0.05, 0.0), (s18 + 0.45, -0.4), (k["W19"], -0.3), (k["W19"] + 0.4, 0.0)],
+            "lower": [(s18 + 0.1, 0.0), (s18 + 0.5, 0.12), (k["W19"], 0.08), (k["W19"] + 0.4, 0.0)],
+            "lid": [(s18, 0.0), (s18 + 0.5, 0.04)],
         }))
         if t < k["W19"]:
             look = tw(t, [(s18 - 0.6, (-0.9, 0.05)), (s18 + 0.8, (-0.9, 0.05)),
@@ -1209,19 +1208,22 @@ def embar_state(t, k):
                       (ju - 0.1, (0.55, 0.6)), (ju + 0.05, (1.0, -0.06))])
         wk = k["wk0"]
         f.update(fk(t, {
-            "brow_l": [(pk - 0.1, 0.0), (pk + 0.15, 0.32), (ju, 0.3), (k["l6e"], 0.12), (wk, 0.2), (wk + 0.5, 0.1)],
-            "smirk": [(k["l6_stop"], 0.0), (k["l6e"], 0.22), (wk - 0.1, 0.3), (wk + 0.12, 0.5), (wk + 0.9, 0.42)],
-            "curve": [(wk - 0.1, 0.0), (wk + 0.12, 0.18), (wk + 0.9, 0.14)],
+            "brow_l": [(pk - 0.1, 0.0), (pk + 0.15, 0.32), (ju, 0.3), (k["l6e"], 0.12), (wk - 0.1, 0.06)],
+            "smirk": [(k["l6_stop"], 0.0), (k["l6e"], 0.25), (wk - 0.1, 0.32), (wk + 0.12, 0.62), (wk + 0.9, 0.5)],
+            "curve": [(wk - 0.1, 0.04), (wk + 0.12, 0.3), (wk + 0.9, 0.22)],
+            "head_turn": [(wk - 0.15, 0.0), (wk + 0.05, -0.16), (wk + 0.8, -0.1)],
             "lid": [(k["E17"], 0.08), (k["l6e"], 0.1), (wk - 0.1, 0.04)],
             "head_tilt": [(ca, 0.0), (k["l6_stop"], 0.05), (wk - 0.05, 0.05), (wk + 0.1, 0.1), (wk + 0.6, 0.06)],
             "head_nod": [(wk - 0.05, 0.0), (wk + 0.1, 0.07), (wk + 0.5, 0.02)],
         }))
-        # the wink: the eye toward Tiredness (screen-right) shuts, the other stays open
-        if wk <= t < wk + 0.62:
-            ww = tw(t, [(wk, 0.0), (wk + 0.1, 1.0), (wk + 0.38, 1.0), (wk + 0.58, 0.0)])
-            f["lid_r"] = f.get("lid_r", 0.0) + 1.1 * ww
-            f["lower_r"] = f.get("lower_r", 0.0) + 0.5 * ww
-            f["brow_r"] = f.get("brow_r", 0.0) - 0.22 * ww
+        # the wink: the near eye (the big one we see) shuts, the cheek pushes up, the other
+        # eye stays open on Tiredness
+        if wk <= t < wk + 0.7:
+            ww = tw(t, [(wk, 0.0), (wk + 0.1, 1.0), (wk + 0.44, 1.0), (wk + 0.66, 0.0)])
+            f["lid_l"] = f.get("lid_l", 0.0) + 1.15 * ww
+            f["lower_l"] = f.get("lower_l", 0.0) + 0.55 * ww
+            f["brow_l"] = f.get("brow_l", 0.0) - 0.3 * ww
+            f["brow_r"] = f.get("brow_r", 0.0) + 0.12 * ww
             d["blink"] = 0.0
         if wk - 0.6 <= t < wk + 0.62:
             d["blink"] = 0.0
@@ -1469,7 +1471,7 @@ def draw_B(ctx, t, k, cam, shot_name, info):
             props.keycard(ctx, hx - 6, hy - 6, 0.19, rot=tw(t, [(k["k_take"], 0.08), (k["k_take"] + 0.45, -0.18)]))
 
     # torch state
-    pw = smoothstep(seg(t, k["e0"] - 0.5, k["e0"] + 0.2)) if E["visible"] else 0.0
+    pw = smoothstep(seg(t, k["steps"], k["steps"] + 0.5)) if E["visible"] else 0.0
     # characters: Curiosity's group (lighter: it glows) and the people's group
     ctx.push_group()
     draw_cur()
@@ -1488,7 +1490,7 @@ def draw_B(ctx, t, k, cam, shot_name, info):
         lx, ly, ang, L, sp, pw_ = beam
         ax, ay = E["aim"]
         holes.append((ax, min(ay, 1460), 520, 0.5 * pw_))
-        holes.append((lx, ly, 330, 0.42 * pw_))
+        holes.append((lx, ly, 520, 0.45 * pw_))
     base = 0.6 - 0.1 * pw
     light_chars(ctx, vr, base, holes, tints=[(Cr["x"] - 30, FY - 140, 380, "power", 0.12)])
     if beam is not None:
@@ -1549,7 +1551,7 @@ def _thumb(ctx, hx, hy, r, t, k):
                 (k["press"] + 0.5, 0.0)])
     rs = REC_S
     rot = r["rot"]
-    bx, by = 36, 36
+    bx, by = 58, 44
     cx, cy = hx + 2, hy - 10
     ca, sa = math.cos(rot), math.sin(rot)
 
@@ -1678,42 +1680,49 @@ def draw_rec_insert(ctx, t, k, info):
         lvl = 0.12 + 0.18 * max(0.0, core.noise1(t * 3.1, 9)) + 0.9 * mouth_amt(info, t)
     btn = tw(t, [(k["press"], 0.0), (k["press"] + 0.08, 1.0, ease_out), (k["press"] + 0.32, 1.0),
                  (k["press"] + 0.5, 0.3)])
-    cx, cy = 520 + 10 * u, 800 - 8 * u
-    s_ = 3.3 + 0.12 * u
+    cx, cy = 482 + 10 * u, 790 - 8 * u
+    s_ = 3.2 + 0.12 * u
     rot = -0.07
     skin, skin_sh = core.PAL["e_skin"], core.PAL["e_skin_sh"]
     ink = INK
-    # behind: his coat sleeve + the palm under the device
-    with core.saved(ctx, cx, cy, 1.0, rot):
-        _capsule(ctx, (-560, 520), (-250, 230), 240, core.PAL["e_coat"], ink, 6)
-        _capsule(ctx, (-300, 280), (-150, 160), 170, skin, ink, 6)
-        core.ellipse(ctx, 40, 140, 330, 120, 0.0)
-        core.fill_stroke(ctx, skin_sh, ink, 6)
+    lwl = 6.0 / s_
+    # behind: his coat sleeve, the wrist, the palm under the device
+    with core.saved(ctx, cx, cy, s_, rot):
+        _capsule(ctx, (-230, 230), (-128, 112), 92, core.PAL["e_coat"], ink, lwl)
+        _capsule(ctx, (-140, 120), (-70, 72), 62, skin, ink, lwl)
+        core.ellipse(ctx, 0, 62, 118, 40, 0.0)
+        core.fill_stroke(ctx, skin_sh, ink, lwl)
     frozen = rec_counter(k["led_off"])
     draw_recorder(ctx, cx, cy, s_, t, rot=rot, rec=rec, led=led, level=lvl, button=btn, frozen=frozen)
-    # LED / screen light on the hand
-    with core.saved(ctx, cx, cy, 1.0, rot):
+    with core.saved(ctx, cx, cy, s_, rot):
         # fingertips curled over the right edge (in front)
-        for i_, fy_ in enumerate((-150, -70, 10, 90)):
-            core.ellipse(ctx, 352, fy_, 54, 36, 0.25)
-            core.fill_stroke(ctx, skin if i_ % 2 == 0 else core.mixc(skin, skin_sh, 0.3), ink, 5)
-            ctx.move_to(330, fy_ - 6)
-            ctx.line_to(372, fy_ + 2)
-            core.stroke(ctx, core.alpha(skin_sh, 0.9), 3)
-    # the thumb: comes over the PAUSE button and presses it
-    if name == "R16":
-        p0 = k["R16"] + 0.05
-        uu = tw(t, [(p0, 0.0), (k["press"] - 0.04, 1.0), (k["press"] + 0.55, 1.0), (k["press"] + 0.95, 0.35)])
-        dn = tw(t, [(k["press"] - 0.04, 0.0), (k["press"] + 0.05, 1.0, ease_out), (k["press"] + 0.32, 1.0),
-                    (k["press"] + 0.5, 0.0)])
-        with core.saved(ctx, cx, cy, s_, rot):
-            tip = (36 + 4, 30 + 6 * dn)
-            base = (-170, 150)
-            tx_, ty_ = lerp(-150, tip[0], uu), lerp(130, tip[1], uu)
-            sh = 1.0 - 0.06 * dn
-            _capsule(ctx, base, (tx_, ty_), 30 * sh, skin, ink, 2.0)
-            core.ellipse(ctx, tx_ + 2, ty_ - 1, 9, 7, math.atan2(ty_ - base[1], tx_ - base[0]))
-            core.fill_stroke(ctx, core.mixc(skin, "#ffffff", 0.4), core.alpha(ink, 0.6), 1.0)
+        for i_, fy_ in enumerate((-50, -24, 2, 28)):
+            core.ellipse(ctx, 124, fy_, 17, 11.5, 0.25)
+            core.fill_stroke(ctx, skin if i_ % 2 == 0 else core.mixc(skin, skin_sh, 0.3), ink, lwl * 0.85)
+            ctx.move_to(118, fy_ - 2)
+            ctx.line_to(131, fy_ + 1)
+            core.stroke(ctx, core.alpha(skin_sh, 0.9), 1.0)
+        # the thumb: resting along the bottom-left edge; in R16 it comes over the PAUSE button
+        uu, dn = 0.0, 0.0
+        if name == "R16":
+            p0 = k["R16"] + 0.05
+            uu = tw(t, [(p0, 0.0), (k["press"] - 0.04, 1.0), (k["press"] + 0.55, 1.0), (k["press"] + 0.95, 0.45)])
+            dn = tw(t, [(k["press"] - 0.04, 0.0), (k["press"] + 0.05, 1.0, ease_out), (k["press"] + 0.32, 1.0),
+                        (k["press"] + 0.5, 0.0)])
+        root = (-98, 66)
+        tip = (lerp(-46, 58, uu), lerp(70, 41 + 3 * dn, uu))
+        knk = (lerp(root[0], tip[0], 0.48), lerp(root[1], tip[1], 0.48) + 6 * uu)
+        core.ellipse(ctx, root[0] - 4, root[1] + 6, 30, 24, 0.3)            # the ball of the thumb
+        core.fill_stroke(ctx, skin, ink, lwl * 0.85)
+        _capsule(ctx, root, knk, 30, skin, ink, lwl * 0.85)
+        _capsule(ctx, knk, tip, 25 - 2 * dn, skin, ink, lwl * 0.85)
+        _capsule(ctx, (root[0] + 2, root[1]), knk, 27, skin, skin, 0.0)
+        core.ellipse(ctx, root[0] - 4, root[1] + 6, 27, 21, 0.3)
+        core.fill(ctx, skin)
+        ang_ = math.atan2(tip[1] - knk[1], tip[0] - knk[0])
+        ex_, ey_ = tip[0] - 4 * math.cos(ang_), tip[1] - 4 * math.sin(ang_) - 2
+        core.ellipse(ctx, ex_, ey_, 8, 6, ang_)
+        core.fill_stroke(ctx, core.mixc(skin, "#ffffff", 0.45), core.alpha(ink, 0.55), 0.5)
     # the LED's red light spill + a click flash on the button
     fx.vignette(ctx, 0.7, inner=0.4)
 

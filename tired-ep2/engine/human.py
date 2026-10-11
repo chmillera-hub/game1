@@ -2138,10 +2138,25 @@ HAIR = {
         front=[(-104, -10), (-109, -56), (-95, -100), (-62, -131), (-14, -147), (36, -143), (76, -123),
                (100, -91), (108, -50), (104, -14), (95, -40), (80, -72), (56, -98), (42, -103), (16, -88),
                (-18, -70), (-54, -54), (-84, -38), (-100, -16)],
-        sides=[[(-100, -40), (-112, 0), (-112, 46), (-104, 84), (-72, 101), (-80, 60), (-86, 16), (-90, -24)],
-               [(100, -50), (112, -6), (112, 42), (102, 80), (68, 99), (78, 58), (84, 14), (88, -30)]],
+        # side curtains in 3D: (x, y, z, wrap[, x34]). z = depth (+ toward the face front, 0 = ear
+        # plane); the front edge is yawed rigidly (X = x cos + z sin), so it keeps its front-view
+        # clearance from the eyes / nose / mouth at any turn; `wrap` points follow the back-of-head
+        # silhouette on the near side (so the curtain joins the back hair; x34 = the x they widen to
+        # at 3/4, matching the back hair); "fringe" points ride just above the fringe's lower edge
+        # (mapped like the fringe) so the curtain starts right under the part. The FAR curtain is
+        # drawn BEHIND the face (rigid, its jaw end receding; only what pokes past the cheek shows).
+        # Points above y = -40 tuck under the fringe in the front view, which is unchanged.
+        sides=[[(-100, -40, -14, 1.0, -114), (-112, 0, -18, 1.0), (-112, 46, -18, 1.0), (-104, 84, -18, 1.0),
+                (-72, 101, 6, 0.0), (-80, 60, 16, 0.0), (-86, 16, 20, 0.0), (-90, -24, 16, 0.0),
+                (-90, -96, 10, 0.0), (-94, -90, -10, 1.0, -97)],
+               [(100, -50, -14, 1.0, 114), (112, -6, -18, 1.0), (112, 42, -18, 1.0), (102, 80, -18, 1.0),
+                (68, 99, 6, 0.0), (78, 58, 16, 0.0), (84, 14, 20, 0.0), (88, -30, 16, 0.0),
+                (86, -104, 10, 0.0), (50, -106, 0, "fringe"), (94, -90, -10, 1.0, 97)]],
+        side_strands=[[(-104, -6, -14), (-104, 40, -14), (-94, 78, -6)],
+                      [(104, -10, -14), (104, 38, -14), (94, 76, -6)]],
         strands=[[(-16, -128), (-50, -102), (-80, -64)], [(30, -132), (2, -112), (-30, -88)],
-                 [(-104, -6), (-104, 40), (-94, 78)], [(104, -10), (104, 38), (94, 76)], [(62, -126), (82, -98)]],
+                 [(62, -126), (82, -98)]],
+        far_tuck=1.0,       # the fringe tucks behind the far temple at 3/4 (see _HG.warp)
         tension=0.36),
     "cap": dict(
         back=[(-102, -60), (-104, -20), (-100, 6), (-92, 10), (-90, -40), (90, -40), (92, 10), (100, 6),
@@ -2225,14 +2240,36 @@ class _HG:
         pts = [(0.0 + self.s * 6, y0)] + right + [(fch * self.s * 0.9, self.chin)] + left[::-1]
         return pts
 
-    def warp(self, x, y, mode="front", dz=0.0):
-        """Map a front-view hair/accessory point onto the turned head."""
-        a, f, b = self.abf(clamp(min(y, 0.0), self.lv[0][0] + 2, self.lv[-1][0]))
+    def warp(self, x, y, mode="front", dz=0.0, tuck=0.0, recede=0.0):
+        """Map a front-view hair/accessory point onto the turned head.
+
+        tuck (front mode, 0..1): on the FAR side (the side the face turns toward) the part of the
+        hair below the crown stops overshooting the silhouette (which there is the face profile)
+        and lifts off the far temple, so it never hangs past the brow / eye / nose.
+        recede (back mode, 0..1): far-side back hair below the crown is yawed rigidly (it slides
+        behind the face) instead of being stretched with the face-side silhouette."""
+        ylo, yhi = self.lv[0][0] + 2, self.lv[-1][0]
+        a, f, b = self.abf(clamp(min(y, 0.0), ylo, yhi))
         a = max(a, 40.0)
-        el, er = self.ext(a, f, b)
         u = x / a
+        if tuck and mode != "back" and u * self.s > 0.0:
+            fk = tuck * smoothstep(abs(self.s) / 0.6) * smoothstep((y + 105.0) / 45.0)
+            if fk > 0.0:
+                lw = fk * smoothstep((abs(u) - 0.5) / 0.4)
+                if y > -60.0 and lw > 0.0:
+                    y = lerp(y, -60.0 + (y + 60.0) * 0.2, lw)
+                    a, f, b = self.abf(clamp(min(y, 0.0), ylo, yhi))
+                    a = max(a, 40.0)
+                    u = x / a
+                if abs(u) > 1.0:
+                    u = math.copysign(1.0 + (abs(u) - 1.0) * (1.0 - fk), u)
+        el, er = self.ext(a, f, b)
         side = er if u >= 0 else -el
         if mode == "back":
+            if recede and u * self.s > 0.0:
+                w = recede * smoothstep((y + 100.0) / 50.0)
+                if w > 0.0:
+                    return (lerp(u * side, x * self.c - 18.0 * self.s, w), y)
             return (u * side, y)
         if abs(u) >= 1.0:
             X = u * side
@@ -2243,10 +2280,68 @@ class _HG:
         return (X, y)
 
 
-def _hair_path(ctx, hg, pts, mode, tension, dy=0.0):
-    wp = [hg.warp(x, y + (dy if y > -110 else dy * 0.5), mode) for x, y in pts]
+def _hair_path(ctx, hg, pts, mode, tension, dy=0.0, tuck=0.0, recede=0.0):
+    wp = [hg.warp(x, y + (dy if y > -110 else dy * 0.5), mode, tuck=tuck, recede=recede) for x, y in pts]
     _smooth(ctx, wp, True, tension)
     return wp
+
+
+def _far_curtain(hg):
+    """Index of the far side curtain (0 = screen-left one), None near the front view."""
+    return None if abs(hg.s) <= 0.02 else (0 if hg.s < 0 else 1)
+
+
+def _curtain_pts(hg, sd, is_far):
+    c, s = hg.c, hg.s
+    dy = hg.nod * 6
+    k34 = smoothstep(abs(s) / 0.5)
+    kfar = smoothstep(abs(s) / 0.6) if is_far else 0.0
+    pts = []
+    for p in sd:
+        x, y, z, wrap = p[:4]
+        if wrap == "fringe":
+            X, Y = hg.warp(x, y + dy, "front", tuck=1.0)
+            pts.append((X, Y))
+            continue
+        if kfar:    # the far bob tip slides behind the jaw (no thin spike past the chin at 3/4)
+            z -= 40.0 * kfar * smoothstep((y - 40.0) / 50.0)
+        X = x * c + z * s
+        if wrap and not is_far:
+            xw = lerp(x, p[4], k34) if len(p) > 4 else x
+            X = lerp(X, hg.warp(xw, y, "back")[0], wrap)
+        pts.append((X, y + (dy if y > -110 else dy * 0.5)))
+    return pts
+
+
+def _draw_curtains(ctx, C, col, hg, inkw, which):
+    """The bob's side curtains, yawed in 3D (points are (x, y, z, wrap[, x34]), see HAIR["bob"]).
+
+    which="far": the curtain on the side the face turns toward, drawn BEFORE the face fill so the
+    face silhouette hides it (only a sliver past the cheek / jaw shows at mild turns).
+    which="near": the other one (both near the front view), drawn with the front hair. It frames
+    the cheek and covers the ear; being rigidly yawed with the head it keeps its front-view
+    clearance from the eyes, nose and mouth at every turn."""
+    st = HAIR[C["head"]["hair"]]
+    sides = st.get("sides")
+    if not sides:
+        return
+    c, s = hg.c, hg.s
+    far = _far_curtain(hg)
+    dy = hg.nod * 6
+    hcol = col["hair"]
+    hl = _lt(hcol, 0.28) if C["head"]["hair"] != "bob" else "#aeb4c3"
+    strands = st.get("side_strands", ())
+    for i, sd in enumerate(sides):
+        if (which == "far") != (i == far):
+            continue
+        _smooth(ctx, _curtain_pts(hg, sd, i == far), True, st["tension"])
+        _fs(ctx, hcol, inkw)
+        if i < len(strands):
+            ln = strands[i]
+            ctx.move_to(ln[0][0] * c + ln[0][2] * s, ln[0][1] + dy)
+            for x, y, z in ln[1:]:
+                ctx.line_to(x * c + z * s, y + dy)
+            _stroke(ctx, hl, inkw * 0.55)
 
 
 def _draw_back_hair(ctx, C, col, hg, F, inkw, wet):
@@ -2260,7 +2355,7 @@ def _draw_back_hair(ctx, C, col, hg, F, inkw, wet):
         ctx.move_to(X - br * 0.5, by - br * 0.3)
         _qcurve(ctx, (X - br * 0.5, by - br * 0.3), (X, by - br * 0.8), (X + br * 0.55, by - br * 0.1))
         _stroke(ctx, _dk(hcol, 0.4), inkw * 0.5)
-    _hair_path(ctx, hg, st["back"], "back", st["tension"])
+    _hair_path(ctx, hg, st["back"], "back", st["tension"], recede=st.get("far_tuck", 0.0))
     _fs(ctx, _dk(hcol, 0.12), inkw)
 
 
@@ -2268,29 +2363,58 @@ def _draw_front_hair(ctx, C, col, hg, F, inkw, t, wet):
     st = HAIR[C["head"]["hair"]]
     hcol = col["hair"]
     dy = hg.nod * 6
+    tk = st.get("far_tuck", 0.0)
     if "sides" in st:
-        for sd in st["sides"]:
-            _hair_path(ctx, hg, sd, "front", st["tension"], dy)
-            _fs(ctx, hcol, inkw)
+        _draw_curtains(ctx, C, col, hg, inkw, "near")
     if "tuft" in st:
         tp = st["tuft"]
         if wet:   # damp hair: the cowlick droops
             tp = [(x + (y + 144) * -0.6, -144 + (y + 144) * 0.25) for x, y in tp]
         _hair_path(ctx, hg, tp, "front", 0.5, dy)
         _fs(ctx, hcol, inkw)
-    _hair_path(ctx, hg, st["front"], "front", st["tension"], dy)
+    fwp = _hair_path(ctx, hg, st["front"], "front", st["tension"], dy, tuck=tk)
     _fs(ctx, hcol, inkw)
     if "front2" in st:
         _hair_path(ctx, hg, st["front2"], "front", st["tension"], dy)
         _fs(ctx, hcol, inkw)
+    if tk and "sides" in st and abs(hg.s) > 0.2:
+        # 3/4: where the fringe lies over the near curtain they are one hair mass, so its ink
+        # edge (which would run round the side of the head like a helmet rim) is painted out. The
+        # erased zone sweeps in from the back of the head as the turn grows (soft 6 px edge, no
+        # ghost lines); the hairline against skin always stays inked; front views are unchanged.
+        k = smoothstep((abs(hg.s) - 0.2) / 0.35)
+        sg = 1.0 if hg.s < 0 else -1.0                  # screen side of the near curtain
+        x_in = sg * 88 * hg.c + 16 * hg.s                # its rigid front edge (eye level)
+        x_cut = lerp(sg * 132.0, x_in - sg * 10.0, k)
+        near = 1 - _far_curtain(hg)
+        r_, g_, b_ = hexc(hcol)[:3]
+        grad = cairo.LinearGradient(x_cut - sg * 3.0, 0, x_cut + sg * 3.0, 0)
+        grad.add_color_stop_rgba(0, r_, g_, b_, 0)
+        grad.add_color_stop_rgba(1, r_, g_, b_, 1)
+        ctx.save()
+        _smooth(ctx, _curtain_pts(hg, st["sides"][near], False), True, st["tension"])
+        ctx.clip()
+        # the fringe inside is already hair coloured: re-stroking its edge in hair colour erases it
+        _smooth(ctx, fwp, True, st["tension"])
+        ctx.set_source(grad)
+        ddx, ddy = ctx.device_to_user_distance(3.0, 0.0)    # + 1.5 device px a side: no AA residue
+        ctx.set_line_width(inkw + math.hypot(ddx, ddy))
+        ctx.stroke()
+        ctx.restore()
+    if tk:      # keep the sheen strands on the fringe (they could float past it at strong turns)
+        ctx.save()
+        _smooth(ctx, fwp, True, st["tension"])
+        ctx.clip()
     # strands / sheen
     hl = _lt(hcol, 0.28) if C["head"]["hair"] != "bob" else "#aeb4c3"
     for sline in st["strands"]:
-        wp = [hg.warp(x, y + dy, "front") for x, y in sline]
+        wp = [hg.warp(x, y + dy, "front", tuck=tk) for x, y in sline]
         ctx.move_to(*wp[0])
         for q in wp[1:]:
             ctx.line_to(*q)
         _stroke(ctx, _dk(hcol, 0.45) if C["head"]["hair"] in ("mop", "bun") else hl, inkw * 0.55)
+    if tk:
+        ctx.restore()
     if wet:
         # drips hanging from the fringe
         for i, (x, y) in enumerate(((-40, -70), (30, -66), (78, -52))):
@@ -2305,9 +2429,17 @@ NAPE_Y = {"mop": 48, "part": 30, "cap": 22, "bun": 34, "bob": 74}
 
 def _draw_nape(ctx, C, col, hg, inkw):
     """Hair over the back of the skull in 3/4 views (the back hair sits under the head fill)."""
+    pts = _nape_pts(C, hg)
+    if pts is None:
+        return
+    _smooth(ctx, pts, True, 0.45)
+    _fs(ctx, _dk(col["hair"], 0.05), inkw)
+
+
+def _nape_pts(C, hg):
     ny = NAPE_Y.get(C["head"]["hair"])
     if ny is None or abs(hg.s) < 0.06:
-        return
+        return None
     sb = -1.0 if hg.s > 0 else 1.0
     c, s = hg.c, hg.s
     cd, sd = math.cos(0.16), math.sin(0.16)
@@ -2322,9 +2454,7 @@ def _draw_nape(ctx, C, col, hg, inkw):
         inner.append((a * sb * cd * c - b * sd * s, y))
     mess = C["head"]["hair"] == "mop"
     bot = [(lerp(outer[-1][0], inner[-1][0], 0.5) + sb * (4 if mess else 0), ny + (12 if mess else 6))]
-    pts = outer + bot + inner[::-1]
-    _smooth(ctx, pts, True, 0.45)
-    _fs(ctx, _dk(col["hair"], 0.05), inkw)
+    return outer + bot + inner[::-1]
 
 
 def _draw_ear(ctx, C, col, hg, sgn, inkw, blush_ear):
@@ -2936,6 +3066,8 @@ def _draw_head(ctx, C, col, J, F, inkw, t, st):
         zs[sgn] = Z
     outl = hg.outline()
     skin = col["skin"]
+    if not hood_hide["fringe"] and "sides" in HAIR[hd["hair"]]:
+        _draw_curtains(ctx, C, col, hg, inkw, "far")     # behind the face: the silhouette clips it
     ctx.save()
     _smooth(ctx, outl, True, 0.55)
     ctx.clip_preserve()
@@ -2965,7 +3097,10 @@ def _draw_head(ctx, C, col, J, F, inkw, t, st):
     _smooth(ctx, outl, True, 0.55)
     _stroke(ctx, PAL["ink"], inkw)
     if not hood_hide["ears"]:
-        _draw_nape(ctx, C, col, hg, inkw)
+        # (the bob's near curtain, drawn with the front hair, wraps the whole side of the skull, so
+        # its nape would only peek out in front of the curtain's edge)
+        if "sides" not in HAIR[hd["hair"]] or hood_hide["fringe"]:
+            _draw_nape(ctx, C, col, hg, inkw)
         for sgn in (-1, 1):
             if zs[sgn] >= 30:
                 _draw_ear(ctx, C, col, hg, sgn, inkw, ear_bl)
@@ -3011,14 +3146,9 @@ def _draw_head(ctx, C, col, J, F, inkw, t, st):
             pts.append((X, my + yy))
         _smooth(ctx, pts, True, 0.5)
         _fs(ctx, col["hair"], inkw * 0.7)
-    if hd["nose"] == "sharp":      # cheekbone shading lines
-        for sgn in (-1, 1):
-            X0, _, k0 = hg.proj(sgn * 62, 30 + hg.nod * 8)
-            X1, _, k1 = hg.proj(sgn * 76, 46 + hg.nod * 8)
-            if min(k0, k1) > 0.3:
-                ctx.move_to(X0, 30 + hg.nod * 8)
-                ctx.line_to(X1, 46 + hg.nod * 8)
-                _stroke(ctx, alpha_ink(col["skin_sh"], 0.9), inkw * 0.55)
+    # (Ep2 fix: the Boss's "cheekbone" strokes are gone. They were straight lines at nose-tip
+    # height that only showed at 3/4, running from the nose toward the ear: they read as a scratch
+    # / a stray line off the nose tip. Her sharp nose and jaw carry the look.)
     # ---- outfit marks (sewer)
     if st.get("wet"):
         for (xf_, yy, ang) in ((-50, 44, 0.5), ):

@@ -99,6 +99,44 @@ GUARD_IN = {"base": "guard_fists", "al_layer": "mid", "ar_layer": "back"}   # sa
 CROUCH = {"base": "crouch", "lean": 0.45, "neck": 0.05, "nod": 0.1}
 
 
+
+# ----------------------------------------------------------------------------
+# cheap soft glows: a cached radial-gradient bitmap, scaled (same falloff as
+# core.radial_glow, much cheaper when the glow is big on screen)
+# ----------------------------------------------------------------------------
+_GLOW_IMG = {}
+_GLOW_N = 128
+
+
+def _glow_img(col):
+    import cairocffi as cairo
+    img = _GLOW_IMG.get(col)
+    if img is None:
+        img = cairo.ImageSurface(cairo.FORMAT_ARGB32, _GLOW_N, _GLOW_N)
+        c = cairo.Context(img)
+        core.radial_glow(c, _GLOW_N / 2, _GLOW_N / 2, _GLOW_N / 2, col, 1.0)
+        img.flush()
+        _GLOW_IMG[col] = img
+    return img
+
+
+def _glow(ctx, x, y, r, col, a=0.5):
+    if a <= 0.002 or r <= 0:
+        return
+    import cairocffi as cairo
+    img = _glow_img(col)
+    k = 2.0 * r / _GLOW_N
+    ctx.save()
+    ctx.translate(x - r, y - r)
+    ctx.scale(k, k)
+    ctx.rectangle(0, 0, _GLOW_N, _GLOW_N)
+    ctx.clip()
+    ctx.set_source_surface(img, 0, 0)
+    ctx.get_source().set_filter(cairo.FILTER_BILINEAR)
+    ctx.paint_with_alpha(min(1.0, a))
+    ctx.restore()
+
+
 # ============================================================================
 # timing (all derived from the timeline)
 # ============================================================================
@@ -752,7 +790,7 @@ def draw_joy_pod(ctx, T, t, inside_fn=None):
     # floor light pool + halo (behind)
     core.ellipse(ctx, POD_X, POD_Y + 4, 230 * s * (1 + 0.7 * op), 36 * s)
     core.fill(ctx, core.alpha(pw, 0.12 + 0.14 * op))
-    core.radial_glow(ctx, POD_X, POD_Y - 360 * s, 520 * s, pw, 0.22 * g)
+    _glow(ctx, POD_X, POD_Y - 360 * s, 520 * s, pw, 0.22 * g)
     with core.saved(ctx, POD_X, POD_Y, s):
         # tubes up into the wall
         for sd in (-1, 1):
@@ -764,7 +802,7 @@ def draw_joy_pod(ctx, T, t, inside_fn=None):
         ctx.save()
         core.rrect(ctx, -135, -600, 270, 480, 135)
         ctx.clip()
-        core.radial_glow(ctx, 0, -200 - 100 * (1 - op), 300, pw, 0.5 * g)
+        _glow(ctx, 0, -200 - 100 * (1 - op), 300, pw, 0.5 * g)
         if op > 0.01:      # inner back wall shading + ribs (it is open now)
             core.rrect(ctx, -105, -570, 210, 430, 105)
             core.stroke(ctx, core.alpha("#062026", 0.6 * op), 10)
@@ -910,7 +948,7 @@ def _win_static(c):
     for i in range(9):
         xx = x + w * (0.06 + 0.11 * i)
         props.line(c, [(xx, y), (xx, y + h)], (0.3, 0.6, 0.65, 0.10), 6)
-    core.radial_glow(c, x + w / 2, y + h * 0.72, w * 0.62, core.PAL["power"], 0.20)
+    _glow(c, x + w / 2, y + h * 0.72, w * 0.62, core.PAL["power"], 0.20)
     # the LOCKDOWN sign's housing (unlit)
     bx, by, bw, bh = x + 52, y + 9, w - 104, 36
     props.rect(c, bx - 4, by - 4, bw + 8, bh + 8, "#232b33", 2.5, r=6)
@@ -1004,7 +1042,7 @@ def _draw_banner(ctx, T, t, lit_scale=1.0):
     p = 0.5 + 0.5 * math.cos(math.tau * (t - T.lock_on) / 0.9)       # smooth 0.9 s flash (no strobe)
     a = on * (0.45 + 0.55 * p) * lit_scale
     props.rect(ctx, bx + 30, by + 3, bw - 60, bh - 6, core.mixc("#2a0a10", "#c4142c", a), 1.5, r=3)
-    core.radial_glow(ctx, x + w / 2, by + bh / 2, 150, core.PAL["danger"], 0.45 * a)
+    _glow(ctx, x + w / 2, by + bh / 2, 150, core.PAL["danger"], 0.45 * a)
     core.text(ctx, "LOCKDOWN", x + w / 2, by + bh * 0.5 + 9, 25, core.mixc("#5a1a22", "#fff1f2", a), "black")
 
 
@@ -1055,7 +1093,7 @@ def window_fn_for(T):
                 continue
             cx_, cy_, pose, flip, air, s = cr
             bcy = cy_ if air else cy_ - 150 * s
-            core.radial_glow(ctx, cx_, bcy, 330 * s, "#bffff6", 0.35)
+            _glow(ctx, cx_, bcy, 330 * s, "#bffff6", 0.35)
             if t > _esc_times(T, who) + 0.42:
                 fx.motion_lines(ctx, cx_ - d * 160 * s, bcy, 0.0 if d > 0 else math.pi, 260 * s, t,
                                 intensity=0.8, color="#d9fffb", width=12 * s * 3, seed=r)
@@ -1096,7 +1134,7 @@ def window_fn_for(T):
                 for lx in (g_["x0"] + 6, g_["x1"] - 6):
                     core.circle(ctx, lx, g_["yt"] + g_["hh"] * 0.5, 2.6 + 0.6 * r)
                     core.fill(ctx, core.mixc("#3a0d14", "#ff3b5c", la))
-                    core.radial_glow(ctx, lx, g_["yt"] + g_["hh"] * 0.5, 14 + 3 * r, core.PAL["danger"], 0.5 * la)
+                    _glow(ctx, lx, g_["yt"] + g_["hh"] * 0.5, 14 + 3 * r, core.PAL["danger"], 0.5 * la)
         # sparks where each shutter lands (<= 2 tiers alive: <= 20 streaks)
         for g_ in _TIERS:
             t1 = T.rows[g_["r"]]
@@ -1426,10 +1464,10 @@ def _char_shade(c, t, al, pod_glow):
     vx0, vy0, vx1, vy1 = c.clip_extents()
     c.rectangle(vx0, vy0, vx1 - vx0, vy1 - vy0)
     core.fill(c, core.alpha("#04070d", 0.30 + 0.06 * al))
-    core.radial_glow(c, 1700, 640, 900, "#5fd8ff", 0.20 * (1 - 0.5 * al))
-    core.radial_glow(c, 1105, 820, 620, core.PAL["power"], 0.14 * (1 - 0.6 * al))
+    _glow(c, 1700, 640, 900, "#5fd8ff", 0.20 * (1 - 0.5 * al))
+    _glow(c, 1105, 820, 620, core.PAL["power"], 0.14 * (1 - 0.6 * al))
     if pod_glow > 0:
-        core.radial_glow(c, POD_X - 60, POD_Y - 120, 600, core.PAL["power"], 0.13 * pod_glow)
+        _glow(c, POD_X - 60, POD_Y - 120, 600, core.PAL["power"], 0.13 * pod_glow)
     if al > 0.003:
         c.rectangle(vx0, vy0, vx1 - vx0, vy1 - vy0)
         core.fill(c, core.alpha("#c0142a", al * (0.16 + 0.07 * _alarm_p(t))))
@@ -1439,7 +1477,7 @@ def _boss_feed_light(c, t, k):
     """The green CCTV light from the monitor beside her on her face (ending)."""
     if k > 0:
         mx, my, mw, mh = M["monitors"][HATCH_MON]
-        core.radial_glow(c, mx + mw * 0.3, my + mh * 0.6, 420, "#7dffb0", 0.16 * k)
+        _glow(c, mx + mw * 0.3, my + mh * 0.6, 420, "#7dffb0", 0.16 * k)
 
 
 def _alarm_tint(ctx, t, al, a0=0.20, a1=0.08):
@@ -1511,8 +1549,8 @@ def draw_world(ctx, T, info, t, cam):
     # the haul: his strength glows teal around him (soft, behind)
     if ts["aura"] > 0.01 and ts["visible"]:
         a = ts["aura"] * (0.85 + 0.15 * math.sin(t * 9.0))
-        core.radial_glow(ctx, ts["x"] + 70, ts["y"] - 560, 330, core.PAL["power"], 0.30 * a)
-        core.radial_glow(ctx, H_UP[0] - 20, lerp(H_UP[1], H_DN[1], lever) + 10, 170, "#bffff8", 0.30 * a)
+        _glow(ctx, ts["x"] + 70, ts["y"] - 560, 330, core.PAL["power"], 0.30 * a)
+        _glow(ctx, H_UP[0] - 20, lerp(H_UP[1], H_DN[1], lever) + 10, 170, "#bffff8", 0.30 * a)
     pod_glow = 0.0 if not _visible_x(view, POD_X - 600, POD_X + 600) else 1.0
     with sets.shaded(ctx, _char_shade, t, al, pod_glow):
         if _visible_x(view, 1450, 1950):
@@ -1580,7 +1618,7 @@ def draw_insert(ctx, T, info, t):
         props.rect(ctx, rx - 18, ry - 18, rw + 36, rh + 36, "#1a2028", 4, r=10)
         ctx.rectangle(rx, ry, rw, rh)
         core.fill(ctx, col)
-    core.radial_glow(ctx, x + w / 2, y + h / 2, 760, "#7dffb0", 0.10)
+    _glow(ctx, x + w / 2, y + h / 2, 760, "#7dffb0", 0.10)
     # the bezel
     props.rect(ctx, x - 30, y - 30, w + 60, h + 60, "#1c232c", 6, r=16)
     props.rect(ctx, x - 10, y - 10, w + 20, h + 20, "#0b0f14", 3, r=10)
