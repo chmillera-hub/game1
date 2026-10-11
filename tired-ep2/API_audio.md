@@ -93,8 +93,9 @@ recommended strings; voice/music = processed dialogue vs. the ducked bed in 1-4 
 | `chaos:stop=0.74` (s07) | 24.72 | 1.7 | -18.1 | -3.5 | 49/27/22/2 | body -18, hit -14, pedal -21 | 0 | 20.5 / 16.1 |
 | `chill:sting=3.6` (s08) | 19.91 | 1.1 | -18.1 | -6.4 | 48/23/29/0 | groove -18, button -17 | 0 | 21.2 / 20.1 |
 
-Lengths 10/12/20/33/40/60 s all render seamlessly (no clicks, ±0.4 LU): lonely 0.7-3.8 s, lullaby 1.3-8.3 s
-(60 s = 4.2 s per 30 s). Option edge cases (follow 0.2-1, resolve 0.2-1, cold/out 0.1-0.7, stop 0.1-0.97,
+Lengths 10/12/20/33/40/60 s all render seamlessly (no clicks, ±0.4 LU): lonely 0.7-3.8 s, lullaby 1.3-8.3 s.
+Per 30 s of music: lullaby 3.9 s cold / 2.8 s warm (the slowest), lonely 2.1, chill:sting 2.2, chaos:stop 1.8,
+bond:cold/out 1.3. (The inherited, unused `resolve` cue shows 5 click candidates; it is unchanged from Episode 1.) Option edge cases (follow 0.2-1, resolve 0.2-1, cold/out 0.1-0.7, stop 0.1-0.97,
 sting 1-25 s) render cleanly. All Episode 1 cues without options are **bit-identical** to Episode 1.
 
 **Suggested `music_gain`** (Episode 1 scene numbers; for Episode 2 see the table at the top) (per scene; it cannot change mid-scene): s01 0, s02–s03 -1, s06/s10 0, s07 0…+1, s09 0, s12 0, s13 0. Use `music_xfade` 0.05–0.2 for

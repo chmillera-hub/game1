@@ -2388,9 +2388,10 @@ def _draw_eye(ctx, C, col, cx, cy, ew, eh, ew0, sgn, E, inkw, power, hs, lashes)
     xs = [cx + sgn * u * ew for u in _EU]
     up, low = [], []
     gap = 0.0
+    la_k = 1.0 - smoothstep((L - 0.86) / 0.13)     # a fully closed lid stays closed (Ep2 fix)
     for i, u in enumerate(_EU):
         t_, b_ = tops[i], bots[i]
-        Lu = clamp(L + la * 0.35 * u)
+        Lu = clamp(L + la * 0.35 * u * la_k)
         Lo = clamp(lo * (1 - 0.2 * u * u))
         yu = t_ + (b_ - t_) * Lu
         yl = b_ - (b_ - t_) * Lo * 0.75
@@ -3169,11 +3170,11 @@ def _draw_glasses(ctx, C, hg, st, inkw, t):
 # Tiredness's hood (Episode 2): hood 0 = down behind the neck, 1 = up and low over the eyes
 # ---------------------------------------------------------------------------
 # Front-view outline of the raised hood (head-local, right half, bottom -> crown).
-_HOOD_OUT = ((84, 118), (101, 84), (117, 44), (128, 0), (134, -46), (132, -92), (118, -134), (90, -168),
-             (48, -191), (0, -200))
+_HOOD_OUT = ((84, 118), (101, 84), (117, 44), (127, 0), (132, -46), (129, -90), (115, -130), (88, -162),
+             (47, -183), (0, -191))
 # Back shell (behind the head) in the lump's point order, see _hood_back.
-_HOOD_BACK = ((-100, 86), (-133, 0), (-134, -92), (-94, -170), (0, -205), (94, -170), (134, -92),
-              (133, 0), (100, 86), (62, 130), (0, 142), (-62, 130))
+_HOOD_BACK = ((-100, 86), (-132, 0), (-132, -90), (-92, -163), (0, -196), (92, -163), (132, -90),
+              (132, 0), (100, 86), (62, 130), (0, 142), (-62, 130))
 
 
 def _hood_map(hg, x, y, dz=0.0, hang=False):
@@ -3200,7 +3201,7 @@ def _hood_rim(C, u, nod):
     """Rim centre y (head-local) and the eye-cover amount for hood state u."""
     v = clamp((u - 0.4) / 0.6)
     hd = C["head"]
-    end = hd["eh"] * 0.86 + 9 + nod * 8
+    end = hd["eh"] * 0.86 + 4.5 + nod * 8
     yr = lerp(-152.0 * _hood_scale(C), end, smoothstep(v))
     eye_top = nod * 8 - hd["eh"] * 1.1
     cover = clamp((yr - eye_top) / (end - eye_top)) if v > 0 else 0.0
@@ -3290,7 +3291,7 @@ def _hood_front(ctx, C, col, hg, st, inkw):
         a, f, b = hg.abf(clamp(y, hg.lv[0][0] + 2, hg.lv[-1][0]))
         if y > 100 * sc:
             return 70 * sc
-        return max(a - 15 * sc, 54 * sc)
+        return max(a - 9 * sc, 56 * sc)
 
     def ow(y):
         return lerp(outer_w(y) - 1.5, min(inner_w(y), outer_w(y) - 1.5), side_k)
@@ -3309,7 +3310,7 @@ def _hood_front(ctx, C, col, hg, st, inkw):
     ycorner = yr + 12 * sc
     ys = [y * sc for y in (118, 92, 66, 40, 14, -12, -40, -70, -100)]
     ys = [y for y in ys if y > ycorner + 6]
-    droop = 5 * sc * smoothstep((v - 0.5) / 0.5)
+    droop = 3.5 * sc * smoothstep((v - 0.5) / 0.5)
     brl = st.get("brow_lift", (0.0, 0.0))
     rim = []
     wc = ow(ycorner)
@@ -3340,19 +3341,35 @@ def _hood_front(ctx, C, col, hg, st, inkw):
         ctx.set_source_rgba(0.07, 0.06, 0.13, 0.1 * k)
         ctx.paint()
         ctx.restore()
-    # ---- the shell
+    # ---- the shell (rig-style shading: a darker crescent on the lower-right edges)
     ctx.save()
     _smooth(ctx, shell, True, 0.45)
     ctx.clip_preserve()
+    _set(ctx, col["top_dk"])
+    ctx.fill()
+    ctx.translate(-11, -9)
+    _smooth(ctx, shell, True, 0.45)
     _set(ctx, col["top"])
     ctx.fill()
-    # soft fabric shading: darker toward the opening / far side, lighter crown
-    ctx.translate(10, 10)
-    _smooth(ctx, [MO(x * 0.9, y * 0.97 - 4) for x, y in outer_r[3:]] +
-            [MO(-x * 0.9, y * 0.97 - 4) for x, y in reversed(outer_r[3:-1])], True, 0.5)
-    _set(ctx, _lt(col["top"], 0.07))
-    ctx.fill()
-    ctx.translate(-10, -10)
+    ctx.translate(11, 9)
+    # fabric creases where the hood bunches beside the face
+    if side_k > 0.3:
+        ka = alpha_ink(PAL["ink"], 0.4 * smoothstep((side_k - 0.3) / 0.5))
+        for sgn in (-1, 1):
+            yb = max(ycorner + 14 * sc, 30 * sc)
+            w0 = ow(yb)
+            p0 = MO(sgn * (w0 + 14 * sc), yb - 4 * sc)
+            p1 = MO(sgn * (w0 + 26 * sc), yb + 24 * sc)
+            p2 = MO(sgn * (w0 + 20 * sc), yb + 52 * sc)
+            ctx.move_to(*p0)
+            _qcurve(ctx, p0, p1, p2)
+            _stroke(ctx, ka, inkw * 0.5)
+            q0 = MO(sgn * (wc * 0.55), ycorner - 22 * sc)
+            q1 = MO(sgn * (wc * 0.85), ycorner - 30 * sc)
+            q2 = MO(sgn * (wc * 1.02), ycorner - 16 * sc)
+            ctx.move_to(*q0)
+            _qcurve(ctx, q0, q1, q2)
+            _stroke(ctx, ka, inkw * 0.45)
     # rolled hem along the opening
     _smooth(ctx, inner, False, 0.45)
     _set(ctx, col["top_dk"])
@@ -4186,8 +4203,8 @@ def draw_person(ctx, who, x, y, s, t, pose="stand", expr="neutral", look=(0, 0),
                 px_, py_ = _hmap(xf, X, Y + eh * 0.62)
                 radial_glow(ctx, px_, py_, C["head"]["ew"] * 1.55, PAL["power"], 0.34 * pwr * closed)
             if cover > 0.01:        # hood over the eyes: light leaking under the rim
-                px_, py_ = _hmap(xf, X, st.get("hood_rim", Y) + 9)
-                radial_glow(ctx, px_, py_, C["head"]["ew"] * 1.7, PAL["power"], 0.4 * pwr * cover)
+                px_, py_ = _hmap(xf, X, st.get("hood_rim", Y) + 16)
+                radial_glow(ctx, px_, py_, C["head"]["ew"] * 1.35, PAL["power"], 0.42 * pwr * cover)
         ctx.restore()
     layer_pass("front")
     if Q["controller"] > 0.5:
@@ -4225,7 +4242,7 @@ def draw_person(ctx, who, x, y, s, t, pose="stand", expr="neutral", look=(0, 0),
         "sill": (x, y - s * SILL_H[who]), "crate": (x, y - s * CRATE_H[who]), "blink": bl,
         "cycle": Q.get("_cycle"), "speed": _pose_speed(who, pose, turn, outfit) * s * sgnf,
         "order": tuple(arm_seq), "layers": (layers["l"], layers["r"]),
-        "hood_rim": S(_hmap(xf, 0.0, st["hood_rim"])) if "hood_rim" in st else None,
+        "hood_rim": S(_hmap(xf, *_hood_map(hg, 0.0, st["hood_rim"], 6.0))) if "hood_rim" in st else None,
     }
     return out
 
