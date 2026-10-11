@@ -9,11 +9,20 @@ Public API
                                    the same canvas transform (camera) as draw().
     head_pos(pose, t=0.0)          stage point between the (near) eyes
     mouth_pos(pose, t=0.0)         stage point at the front of the mouth opening (between the jaw tips)
-    tail_tip(pose, t=0.0)          stage point of the tail tip (where the glove grabs it)
+    tail_tip(pose, t=0.0)          stage point of the tail tip
+    tail_point(pose, frac, t=0.0)  stage point on the tail `frac` of its length back from the tip (0 = tip): where the
+                                   glove should close to hold the tail's MEAT (e.g. 0.4), not the whip-thin tip
+    tail_radius(pose, frac)        stage half-thickness of the tail there (-> draw_glove(tail_r=...))
     eye_points(pose, t=0.0)        [(x, y, r, openness, glow)] of the 4 eyes in stage units (glow already scaled)
     drool_drops(pose, t)           [(x, y)] stage points of drool drops currently falling (for splat sfx/fx)
-    draw_glove(canvas, x, y, scale=1.0, grip=0.0, angle=0.0, alpha=1.0, layer="all")
-                                   the hermit's leather work glove + ragged sleeve fading into darkness
+    draw_glove(canvas, x, y, scale=1.0, grip=0.0, angle=0.0, alpha=1.0, layer="all", sleeve_len=520,
+               tail_r=None, squeeze=None, tug=0.0)
+                                   the hermit's leather work glove + ragged sleeve fading into darkness. Closed, the
+                                   fist wraps AROUND the held tail (running through (x, y) along the reach direction):
+                                   knuckles riding on top, four fingers wrapped over its near side with the tips dug in
+                                   underneath, the thumb clamped across them. tail_r = the held thickness (stage, the
+                                   fist is sized to it), squeeze 0..1 (default = grip: knuckles bulge, leather
+                                   stretches), tug 0..1 (strained wrist dragged toward the load, tendons, cuff creases)
     glove_grip_point(x, y, scale=1.0, angle=0.0)   == (x, y): the grip axis passes through it (documented anchor)
     HEIGHT    top of the hunched spine (creep) at scale 1, ridge plates not included (255; plates add ~25)
     LENGTH    snout to tail tip in "creep" (945)
@@ -41,6 +50,11 @@ pose.extra keys
             "snarl" and "lunge" = the head looming at the camera, "ko")
     jaw 0..1, drool 0..1, eye_glow 0..1, tongue 0..1   (None / missing = the state's default)
     tail_to   (x, y) STAGE point the tail tip is pulled to in "dragged" (the glove); default behind and up
+    tail_grab 0..0.6 "dragged": the fraction of the tail (from the tip) that sticks out past the fist - tail_to then
+              holds that point (use tail_point(ko_pose, frac) as the glove's target and pass the same frac here);
+              default 0 = the tip is held (old behaviour)
+    tail_squeeze 0..1 "dragged": the fist pinches the tail (thin under it, bulging either side); default 1 when
+              tail_grab > 0 with a tail_to, else 0
     bump      0..1 size of the KO bump (default 1 in ko / dragged)
     body_alpha  silhouette opacity in "lurk" (default 0.55 of a near-black shape)
     twitch    0..1 small involuntary leg twitches in ko (default 1)
@@ -328,8 +342,28 @@ def _tail_chain(base, h0, curl, amp, freq, t, phase_k=0.42, ground=True, n=TAIL_
     return pts
 
 
-def _tail_to(base, target, t, sag_k=1.0, n=TAIL_N, seg=TAIL_SEG):
-    """Tail from base to a target point; sags when slack, wiggles a little with the drag."""
+def _tail_to(base, target, t, sag_k=1.0, n=TAIL_N, seg=TAIL_SEG, grab=0.0):
+    """Tail from base to a target point; sags when slack, wiggles a little with the drag. grab > 0: the target holds
+    the point that fraction of the length from the tip (the glove's fist); the rest pokes out past the fist and
+    droops."""
+    if grab > 0.004:
+        gi = (1.0 - grab) * (n - 1)
+        nh = max(2, int(math.floor(gi)))
+        head = _tail_to(base, target, t, sag_k, nh + 1, seg * gi / nh)
+        tx, ty = _norm(head[-1][0] - head[-2][0], head[-1][1] - head[-2][1])
+        a = math.atan2(ty, tx)
+        p = head[-1]
+        out = list(head)
+        for j in range(n - 1 - nh):
+            u = (j + 1) / max(1, n - 1 - nh)
+            # out of the far side of the fist, then hanging limp (turning toward down) with a lazy curl
+            da = (0.5 * math.pi - a + math.pi) % (2.0 * math.pi) - math.pi
+            a = a + da * (0.16 + 0.22 * u) + 0.05 * noise1(t * 2.0 + j, 43)
+            p = (p[0] + seg * math.cos(a), p[1] + seg * math.sin(a))
+            if p[1] > -4.0:
+                p = (p[0], -4.0)
+            out.append(p)
+        return out
     L = seg * (n - 1)
     dx, dy = target[0] - base[0], target[1] - base[1]
     d = math.hypot(dx, dy)
@@ -361,6 +395,8 @@ def _side_skel(state, ph, t, ex):
     S["bump"] = 1.0 if state in ("ko", "dragged") else 0.0
     S["flat"] = 0.0
     S["tongue_mode"] = 0.0      # 0 hang from the jaw tip, 1 loll out of the side onto the ground
+    S["grab"] = 0.0             # dragged: fraction of the tail (from the tip) beyond the glove's fist
+    S["squeeze"] = 0.0          # dragged: the fist pinches the tail (narrow under it, bulging either side)
     S["snarl_lip"] = 1.0 if state in ("snarl", "lunge") else 0.25
     legs = [None] * 4           # near front, far front, near hind, far hind
     claws = [0.0] * 4
@@ -461,7 +497,11 @@ def _side_skel(state, ph, t, ex):
             S["ha"] = 10.0 + 5.0 * noise1(t * 3.0, 23)
             base = (P[0] - 26, P[1] + 10)
             tgt = tt if tt is not None else (-640.0, -150.0)
-            S["tail"] = _tail_to(base, tgt, t)
+            gf = clamp(float(ex.get("tail_grab", 0.0) or 0.0), 0.0, 0.6)
+            S["tail"] = _tail_to(base, tgt, t, grab=gf)
+            S["grab"] = gf
+            sq = ex.get("tail_squeeze")
+            S["squeeze"] = clamp(sq if sq is not None else (1.0 if (tt is not None and gf > 0.0) else 0.0))
             # legs trail forward (toward the head) and splay
             fa = [(20.0, 5.0, -5.0), (30.0, 12.0, 0.0), (-6.0, 15.0, 5.0), (8.0, 25.0, 15.0)]
         else:
@@ -934,8 +974,15 @@ def _draw_ridges(c, R, top, tail):
     _stroke(c, hi, C_RIDGE_HI, 1.4, 0.6)
 
 
-def _tail_widths(n=TAIL_N):
-    return [max(3.0, 40.0 * (1.0 - i / (n - 1)) ** 0.85) for i in range(n)]
+def _tail_widths(n=TAIL_N, grab=0.0, squeeze=0.0):
+    w = [max(3.0, 40.0 * (1.0 - i / (n - 1)) ** 0.85) for i in range(n)]
+    if squeeze > 0.0 and grab > 0.0:
+        # the fist pinches the tail: thinner right under it, the meat bulging out on either side
+        gi = (1.0 - grab) * (n - 1)
+        for i in range(n):
+            d = abs(i - gi)
+            w[i] *= 1.0 - 0.3 * squeeze * math.exp(-d * d / 0.5) + 0.2 * squeeze * math.exp(-(d - 1.6) ** 2 / 0.6)
+    return w
 
 
 def _draw_side(c, R, pose, t):
@@ -948,9 +995,10 @@ def _draw_side(c, R, pose, t):
         _draw_leg(c, legs[i], specs[i], claws[i], False, rim)
     # tail
     tail = R["tail"]
-    tpath = _ribbon(tail, _tail_widths())
+    tw = _tail_widths(grab=R.get("grab", 0.0), squeeze=R.get("squeeze", 0.0))
+    tpath = _ribbon(tail, tw)
     _cel(c, tpath, C_SKIN, C_SKIN_SH, 2.0, -6.0, rim=rim)
-    g = _curve([(x, y - w * 0.28) for (x, y), w in zip(tail[1:12], _tail_widths()[1:12])])
+    g = _curve([(x, y - w * 0.28) for (x, y), w in zip(tail[1:12], tw[1:12])])
     _stroke(c, g, C_GLOSS, 2.4, 0.35, blur=1.0)
     # body (near upper limbs: contour underlay first so they merge with the body)
     body, top, bot = _body_outline(R)
@@ -1739,6 +1787,31 @@ def tail_tip(pose: Pose, t: float = 0.0):
     return _to_stage(pose, R["tail"][-1])
 
 
+def tail_point(pose: Pose, frac: float = 0.0, t: float = 0.0):
+    """Stage point on the tail centre line `frac` of its length back from the tip (0 = the tip, 1 = the root),
+    side views. Where a glove should close to grab the tail's meat (e.g. frac 0.3; pass the same value as
+    extra["tail_grab"] in "dragged" so that point stays in the fist)."""
+    ex = pose.extra or {}
+    st = ex.get("state", "creep")
+    view = "front" if st == "lurk" else ex.get("view", "side")
+    if view == "front":
+        return _to_stage(pose, (260.0, -40.0))
+    tail = _resolve(pose, t)["tail"]
+    gi = (1.0 - clamp(frac)) * (len(tail) - 1)
+    i = min(len(tail) - 2, int(gi))
+    u = gi - i
+    a, b = tail[i], tail[i + 1]
+    return _to_stage(pose, (a[0] + (b[0] - a[0]) * u, a[1] + (b[1] - a[1]) * u))
+
+
+def tail_radius(pose: Pose, frac: float = 0.0):
+    """Stage half-thickness of the tail `frac` of its length back from the tip (pass to draw_glove(tail_r=...))."""
+    w = _tail_widths()
+    gi = (1.0 - clamp(frac)) * (len(w) - 1)
+    i = min(len(w) - 2, int(gi))
+    return 0.5 * lerp(w[i], w[i + 1], gi - i) * pose.scale
+
+
 def drool_drops(pose: Pose, t: float):
     """Stage points of drool drops currently falling (side view, approximate)."""
     ex = pose.extra or {}
@@ -1798,16 +1871,25 @@ def glove_grip_point(x, y, scale=1.0, angle=0.0):
     return (x, y)
 
 
-def draw_glove(canvas, x, y, scale=1.0, grip=0.0, angle=0.0, alpha=1.0, layer="all", sleeve_len=520.0):
+def draw_glove(canvas, x, y, scale=1.0, grip=0.0, angle=0.0, alpha=1.0, layer="all", sleeve_len=520.0,
+               tail_r=None, squeeze=None, tug=0.0):
     """The hermit's weathered leather work glove with a ragged sleeve emerging from darkness.
 
     (x, y) is the grip point (palm centre when open; the axis of whatever the fist holds when closed).
     angle: direction the arm reaches, degrees (0 = reaching to screen-right, the forearm coming from the left;
-    90 = reaching down). grip 0 = open, reaching; 1 = fist closed around a tail (the held object passes through
-    (x, y) roughly perpendicular to the forearm). The sleeve fades out over its last ~45% (into the dark).
+    90 = reaching down). grip 0 = open, reaching; 1 = fist closed AROUND the tail: the held tail runs through
+    (x, y) along the reach direction; the back of the hand and the knuckles ride on top of it, the four fingers wrap
+    down over its near side with the fingertips dug in underneath, the thumb clamps across them.
+    tail_r: stage half-thickness of what is held (C.tail_radius(pose, frac)); the fist is sized to it (default:
+    a thin tail, ~6.6). squeeze 0..1: how hard (knuckles bulge, the leather stretches and creases; default = grip).
+    tug 0..1: the strained pull (the wrist is dragged toward the load, tendons / creases on the back of the hand).
+    The sleeve fades out over its last ~45% (into the dark).
     layer: "all" | "back" (sleeve, cuff, palm - draw before the held tail) | "front" (fingers + thumb - after)."""
     c = canvas
     g = clamp(grip)
+    sq = clamp(g if squeeze is None else squeeze) * g
+    tg = clamp(float(tug)) * g
+    r = clamp((tail_r if tail_r is not None else 6.6) / max(scale, 1e-3), 3.0, 26.0)
     c.save()
     c.translate(x, y)
     c.rotate(angle)
@@ -1816,17 +1898,86 @@ def draw_glove(canvas, x, y, scale=1.0, grip=0.0, angle=0.0, alpha=1.0, layer="a
         c.saveLayerAlpha(None, int(255 * clamp(alpha)))
     back = layer in ("all", "back")
     front = layer in ("all", "front")
-    # hand frame: wrist at (-58, 0); knuckle line x ~ +6; grip axis at the origin.
-    hand_dx = lerp(-12.0, -4.0, g)        # the hand shifts as the fist closes so (0,0) is inside the fist
-    hand_dy = lerp(0.0, -16.0, g)
+    H = _glove_hand(g, r, sq, tg)
     if back:
         _glove_sleeve(c, sleeve_len)
-        _glove_cuff_palm(c, g, hand_dx, hand_dy)
+        _glove_cuff_palm(c, H)
     if front:
-        _glove_fingers(c, g, hand_dx, hand_dy)
+        _glove_fingers(c, H)
     if alpha < 0.999:
         c.restore()
     c.restore()
+
+
+def _glove_hand(g, r, sq, tg):
+    """Hand-local geometry of the glove at grip g around a held tail of radius r (hand units): palm outline, finger
+    chains (4 points each, pinky -> index), thumb chain, knuckle points. Open = the old reaching hand; closed = the
+    fist wrapped around the tail (lerped point by point)."""
+    e = ease_in_out(g)
+    H = {"g": g, "e": e, "r": r, "sq": sq, "tug": tg}
+    # ---- open hand (reaching): fingers fanned forward from a vertical knuckle line
+    hdx, hdy = -12.0, 0.0
+    op_fingers = []
+    for i, (base, segs, w, a_open, a_closed, dk) in enumerate(_FINGERS):
+        angs = list(a_open)
+        angs[0] += (i - 1.5) * 7.0
+        op_fingers.append(_finger_chain((base[0] + hdx, base[1] + hdy), segs, angs))
+    op_thumb = _finger_chain((-30.0 + hdx, -24.0 + hdy), (30.0, 24.0, 18.0), (-30.0, 14.0, 10.0))
+    op_palm = [(-64.0 + hdx * 0.5, -32.0 + hdy * 0.5), (-20.0 + hdx, -34.0 + hdy), (14.0 + hdx, -26.0 + hdy),
+               (22.0 + hdx, -6.0 + hdy), (19.0 + hdx, 20.0 + hdy), (-4.0 + hdx, 30.0 + hdy * 0.6),
+               (-40.0 + hdx * 0.5, 34.0 + hdy * 0.4), (-62.0 + hdx * 0.5, 30.0 + hdy * 0.4)]
+    # ---- closed fist around the tail (axis y = 0): knuckles ride on top, fingers wrap its near side
+    ky = -(r + 8.0 + 1.5 * sq)
+    tight = 1.5 * sq
+    cl_fingers = []
+    for i, xk in enumerate((31.0, 15.0, -1.0, -17.0)):          # pinky (toward the load) -> index
+        lo = r + (4.5 if i else 2.0) + (1.0 if i == 2 else 0.0)
+        k0 = (xk, ky)
+        k1 = (xk + 6.0, ky + 0.55 * (lo - ky) - 1.0)
+        k2 = (xk + 3.0 - tight, lo)
+        k3 = (xk - 5.0 - tight, lo - 2.5 - 0.25 * r)              # the fingertip digs in under the tail
+        cl_fingers.append([k0, k1, k2, k3])
+    cl_thumb = [(-40.0, ky + 6.0), (-26.0, -0.25 * r), (-11.0, 0.35 * r + 3.0), (2.0 - tight, 0.3 * r + 2.0)]
+    top = ky - 9.0 - 1.0 * sq
+    cl_palm = [(-66.0, -30.0), (-44.0, top - 1.0), (-24.0, top - 2.5), (-14.0, top - 3.0), (-6.0, top - 1.5),
+               (2.0, top - 3.5), (10.0, top - 1.5), (18.0, top - 3.0), (26.0, top - 1.0), (34.0, top - 1.5),
+               (41.0, ky + 1.0), (40.0, r * 0.5), (20.0, r + 9.0), (-14.0, r + 11.0), (-44.0, r + 10.0),
+               (-64.0, 28.0)]
+    H["fingers"] = [[_lerp2(a, b, e) for a, b in zip(fo, fc)] for fo, fc in zip(op_fingers, cl_fingers)]
+    H["thumb"] = [_lerp2(a, b, e) for a, b in zip(op_thumb, cl_thumb)]
+    npts = max(len(op_palm), len(cl_palm))
+    H["palm"] = [_lerp2(a, b, e) for a, b in zip(_resample(op_palm, npts), _resample(cl_palm, npts))]
+    H["knuckles"] = [f[0] for f in cl_fingers]
+    H["ky"] = ky
+    return H
+
+
+def _lerp2(a, b, u):
+    return (a[0] + (b[0] - a[0]) * u, a[1] + (b[1] - a[1]) * u)
+
+
+def _resample(pts, n):
+    """Closed polygon -> n points evenly spaced along its perimeter (so two outlines can be lerped)."""
+    ring = list(pts) + [pts[0]]
+    seg = [math.hypot(b[0] - a[0], b[1] - a[1]) for a, b in zip(ring, ring[1:])]
+    tot = sum(seg)
+    out = []
+    for k in range(n):
+        d = tot * k / n
+        for (a, b), L in zip(zip(ring, ring[1:]), seg):
+            if d <= L or L == seg[-1]:
+                u = d / L if L > 0 else 0.0
+                out.append(_lerp2(a, b, min(1.0, u)))
+                break
+            d -= L
+    return out
+
+
+def _hand_xf(c, H):
+    """The strained tug: the fist is dragged toward the load about the wrist (a few degrees) + a tiny shiver."""
+    tg = H["tug"]
+    if tg > 0.0:
+        c.rotate(5.0 * tg, -58.0, 0.0)
 
 
 def _glove_sleeve(c, L):
@@ -1902,41 +2053,62 @@ def _glove_sleeve(c, L):
     c.restore()
 
 
-def _glove_cuff_palm(c, g, hdx, hdy):
-    # cuff (flared gauntlet) - behind the sleeve hem? The hem overlaps it: draw the cuff then re-draw nothing.
-    cuff = smooth_path([(-132.0, -50.0), (-60.0 + hdx * 0.5, -38.0 + hdy * 0.5), (-56.0 + hdx * 0.5, 36.0 + hdy * 0.3),
-                        (-132.0, 50.0), (-142.0, 0.0)], closed=True, tension=0.45)
-    # palm / back of hand
-    hx, hy = hdx, hdy
-    palm_pts = [(-64.0 + hx * 0.5, -32.0 + hy * 0.5), (-20.0 + hx, -34.0 + hy), (14.0 + hx, -26.0 + hy),
-                (22.0 + hx, -6.0 + hy), (19.0 + hx, 20.0 + hy), (-4.0 + hx, 30.0 + hy * 0.6),
-                (-40.0 + hx * 0.5, 34.0 + hy * 0.4), (-62.0 + hx * 0.5, 30.0 + hy * 0.4)]
-    palm = smooth_path(palm_pts, closed=True, tension=0.5)
+def _glove_cuff_palm(c, H):
+    g, sq, tg = H["g"], H["sq"], H["tug"]
+    cuff = smooth_path([(-132.0, -50.0), (-62.0, -38.0 - 4.0 * g), (-58.0, 36.0), (-132.0, 50.0), (-142.0, 0.0)],
+                       closed=True, tension=0.45)
+    # palm / back of the hand (closed: the back of the fist riding on top of the tail, the heel behind it)
+    c.save()
+    _hand_xf(c, H)
+    palm = smooth_path(H["palm"], closed=True, tension=0.5)
     _cel(c, palm, C_GLOVE, C_GLOVE_SH, -2.0, -7.0, line=C_GLOVE_LINE, line_w=1.3)
     c.save()
     c.clipPath(palm, doAntiAlias=True)
-    # worn scuffs + seam stitches on the back of the hand
-    for k, (sx, sy, r) in enumerate(((-30.0, -18.0, 9.0), (2.0, -22.0, 6.0), (-12.0, 10.0, 7.0))):
-        c.drawOval(skia.Rect(sx + hx - r * 1.4, sy + hy - r * 0.7, sx + hx + r * 1.4, sy + hy + r * 0.7),
+    ky = H["ky"]
+    e = H["e"]
+    # worn scuffs + the seam stitches on the back of the hand
+    for k, (sx, sy, rr) in enumerate(((-30.0, -18.0, 9.0), (2.0, -22.0, 6.0), (-12.0, 10.0, 7.0))):
+        sx2, sy2 = lerp(sx - 12.0, sx * 0.8, e), lerp(sy, ky - 6.0 + 0.3 * sy, e)
+        c.drawOval(skia.Rect(sx2 - rr * 1.4, sy2 - rr * 0.7, sx2 + rr * 1.4, sy2 + rr * 0.7),
                    _core_paint(C_GLOVE_HI, 0.45, blur=2.5))
     st = skia.Path()
-    st.moveTo(-58.0 + hx * 0.5, -22.0 + hy)
-    st.quadTo(-20.0 + hx, -30.0 + hy, 14.0 + hx, -22.0 + hy)
+    st.moveTo(-64.0, lerp(-22.0, ky - 4.0, e))
+    st.quadTo(-24.0, lerp(-30.0, ky - 12.0, e), lerp(2.0, 30.0, e), lerp(-22.0, ky - 9.0, e))
     sp = _core_paint(C_STITCH, 0.8, stroke=1.4)
     sp.setPathEffect(skia.DashPathEffect.Make([4.0, 3.5], 0.0))
     c.drawPath(st, sp)
+    # the heel of the hand behind the tail is in its shadow
+    if e > 0.01:
+        c.drawOval(skia.Rect(-60.0, -H["r"] - 4.0, 44.0, H["r"] + 16.0), _core_paint(C_GLOVE_DK, 0.55 * e, blur=6.0))
+    # strain: tendons standing out on the back of the hand, leather creased toward the knuckles
+    k = max(sq * 0.6, tg)
+    if k > 0.02:
+        for j, xk in enumerate((31.0, 15.0, -1.0, -17.0)):
+            tdn = skia.Path()
+            tdn.moveTo(-52.0, ky - 6.0 + 2.0 * j)
+            tdn.quadTo((xk - 52.0) * 0.5, ky - 10.0 - 1.5 * (j % 2), xk - 4.0, ky - 4.0)
+            c.drawPath(tdn, _core_paint(C_GLOVE_HI, 0.35 * k, stroke=2.2, blur=0.8))
+            c.drawPath(tdn, _core_paint(C_GLOVE_DK, 0.3 * k, stroke=1.0))
     c.restore()
-    # cuff over the wrist end of the palm
+    c.restore()
+    # cuff over the wrist end of the palm (creased when tugging)
     _cel(c, cuff, C_GLOVE_SH, C_GLOVE_DK, -2.0, -6.0, line=C_GLOVE_LINE, line_w=1.3)
     c.save()
     c.clipPath(cuff, doAntiAlias=True)
     cs = skia.Path()
-    cs.moveTo(-66.0 + hdx * 0.5, -36.0)
-    cs.lineTo(-62.0 + hdx * 0.5, 34.0)
+    cs.moveTo(-68.0, -36.0)
+    cs.lineTo(-64.0, 34.0)
     sp2 = _core_paint(C_STITCH, 0.7, stroke=1.3)
     sp2.setPathEffect(skia.DashPathEffect.Make([4.0, 3.5], 0.0))
     c.drawPath(cs, sp2)
     c.drawOval(skia.Rect(-120.0, -30.0, -90.0, -12.0), _core_paint(C_GLOVE_HI, 0.35, blur=3.0))
+    if tg > 0.02:
+        for j in range(3):
+            cr = skia.Path()
+            x0 = -100.0 + 13.0 * j
+            cr.moveTo(x0, -40.0 + 6.0 * j)
+            cr.quadTo(x0 + 9.0, -6.0, x0 + 2.0, 26.0 - 4.0 * j)
+            c.drawPath(cr, _core_paint(C_GLOVE_LINE, 0.55 * tg, stroke=1.4))
     c.restore()
     # torn sleeve hem lies over the cuff end: a few ragged flaps
     flap = skia.Path()
@@ -1952,25 +2124,34 @@ def _glove_cuff_palm(c, g, hdx, hdy):
     c.drawPath(flap, _core_paint(C_SLEEVE))
 
 
-def _glove_fingers(c, g, hdx, hdy):
-    knuckle = (hdx, hdy)
-    for i, (base, segs, w, a_open, a_closed, dk) in enumerate(_FINGERS):
-        angs = [lerp(a, b, ease_in_out(g)) for a, b in zip(a_open, a_closed)]
-        # reaching open hand spreads a little (fan)
-        fan = (i - 1.5) * 7.0 * (1.0 - g)
-        angs[0] += fan
-        b = (base[0] + knuckle[0], base[1] + knuckle[1])
-        pts = _finger_chain(b, segs, angs)
-        widths = [w, w * 0.95, w * 0.88, w * 0.8]
+def _glove_fingers(c, H):
+    e, sq = H["e"], H["sq"]
+    c.save()
+    _hand_xf(c, H)
+    c.save()
+    if e > 0.5:
+        # closed: the bands start under the back of the hand (no round finger tops above the knuckle line)
+        cut = skia.Path()
+        cut.addRect(skia.Rect(-400.0, H["ky"] - 1.0 - 12.0 * (1.0 - e), 400.0, 400.0))
+        c.clipPath(cut, doAntiAlias=True)
+    for i, (spec, pts) in enumerate(zip(_FINGERS, H["fingers"])):
+        base, segs, w, a_open, a_closed, dk0 = spec
+        # closed: all four bands are on the near side of the tail (lit alike); open: the back ones darker
+        dk = lerp(dk0, 0.08 * (i % 2), e)
+        w = w * (1.0 + 0.08 * sq)
+        widths = [w, w * 0.95, w * 0.9, w * lerp(0.8, 0.86, e)]
         base_c = mix_col("glove", "#1A0F08", 0.15 + dk * 0.6)
         shade_c = mix_col("glove", "#1A0F08", 0.5 + dk * 0.3)
         path = skia.Path()
         for k in range(3):
-            pth = _capsule(pts[k], pts[k + 1], widths[k] * 0.5, widths[k + 1] * 0.5)
-            path.addPath(pth)
+            path.addPath(_capsule(pts[k], pts[k + 1], widths[k] * 0.5, widths[k + 1] * 0.5))
         path.setFillType(skia.PathFillType.kWinding)
         _cel(c, path, base_c, shade_c, -1.5, -4.0, line=C_GLOVE_LINE, line_w=1.2)
-        # joint creases (worn leather)
+        if e > 0.3:
+            # the fingertip dug in under the tail: in shadow
+            tip = _capsule(pts[2], pts[3], widths[2] * 0.5, widths[3] * 0.5)
+            c.drawPath(tip, _core_paint(C_GLOVE_DK, 0.55 * e))
+        # joint creases (worn leather; deeper when squeezing)
         for k in (1, 2):
             p = pts[k]
             dx, dy = _norm(pts[k + 1][0] - pts[k - 1][0], pts[k + 1][1] - pts[k - 1][1])
@@ -1979,24 +2160,43 @@ def _glove_fingers(c, g, hdx, hdy):
             ww = widths[k] * 0.42
             cr.moveTo(p[0] - nx * ww, p[1] - ny * ww)
             cr.quadTo(p[0] + dx * 3.0, p[1] + dy * 3.0, p[0] + nx * ww * 0.3, p[1] + ny * ww * 0.3)
-            c.drawPath(cr, _core_paint(C_GLOVE_DK, 0.8, stroke=1.4))
+            c.drawPath(cr, _core_paint(C_GLOVE_DK, 0.8, stroke=1.4 + 0.6 * sq))
         # worn shine on the knuckle
         c.drawCircle(pts[1][0] - 1.0, pts[1][1] - widths[1] * 0.25, widths[1] * 0.18, _core_paint(C_GLOVE_HI, 0.55,
                                                                                                     blur=1.5))
-    # thumb: from the side of the palm, wrapping over the fingers when closed
-    tb = (-30.0 + hdx, -24.0 + hdy)
-    t_open = (-30.0, 14.0, 10.0)
-    t_closed = (8.0, 60.0, 40.0)
-    angs = [lerp(a, b, ease_in_out(g)) for a, b in zip(t_open, t_closed)]
-    pts = _finger_chain(tb, (30.0, 24.0, 18.0), angs)
+    c.restore()
+    # knuckles bulging along the top of the fist (the leather stretched shiny over them)
+    if e > 0.05:
+        ridge = skia.Path()
+        kn = H["knuckles"]
+        ridge.moveTo(kn[0][0] + 9.0, kn[0][1] + 1.0)
+        for (kx, ky) in kn:
+            ridge.lineTo(kx, ky - 1.5 - 1.2 * sq)
+        ridge.lineTo(kn[-1][0] - 10.0, kn[-1][1] + 0.5)
+        c.drawPath(ridge, _core_paint(C_GLOVE_LINE, 0.55 * e, stroke=1.3))
+        for i, (kx, ky) in enumerate(kn):
+            w = _FINGERS[i][2]
+            c.drawOval(skia.Rect(kx - w * 0.34, ky - 3.5 - 1.2 * sq, kx + w * 0.16, ky + 1.5),
+                       _core_paint(C_GLOVE_HI, (0.3 + 0.4 * sq) * e, blur=1.4))
+    # thumb: from the side of the palm; closed, it clamps across the first two fingers
+    pts = H["thumb"]
     path = skia.Path()
     ws = (24.0, 20.0, 17.0, 15.0)
+    ws = [v * (1.0 + 0.06 * sq) for v in ws]
     for k in range(3):
         path.addPath(_capsule(pts[k], pts[k + 1], ws[k] * 0.5, ws[k + 1] * 0.5))
+    path.setFillType(skia.PathFillType.kWinding)
     _cel(c, path, C_GLOVE, C_GLOVE_SH, -1.5, -4.5, line=C_GLOVE_LINE, line_w=1.2)
-    c.drawCircle(pts[2][0], pts[2][1] - 3.0, 3.0, _core_paint(C_GLOVE_HI, 0.5, blur=1.5))
+    c.drawCircle(pts[2][0], pts[2][1] - 3.0, 3.0, _core_paint(C_GLOVE_HI, 0.5 + 0.3 * sq, blur=1.5))
+    # the thumb pressing down: a crease where it bears on the fingers
+    if e > 0.3:
+        pr = skia.Path()
+        pr.moveTo(pts[2][0] - 4.0, pts[2][1] + ws[2] * 0.5 + 0.5)
+        pr.quadTo(pts[3][0], pts[3][1] + ws[3] * 0.62, pts[3][0] + ws[3] * 0.55, pts[3][1] + 2.0)
+        c.drawPath(pr, _core_paint(C_GLOVE_LINE, 0.6 * e, stroke=1.6))
     # a split seam at the thumb tip (weathered)
     sp = skia.Path()
     sp.moveTo(pts[3][0] - 3.0, pts[3][1] - 4.0)
     sp.lineTo(pts[3][0] + 2.0, pts[3][1] + 1.0)
     c.drawPath(sp, _core_paint(C_GLOVE_DK, 0.9, stroke=1.4))
+    c.restore()

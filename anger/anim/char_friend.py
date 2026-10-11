@@ -2,7 +2,9 @@
 
 Original design: a huge pear-shaped body of shaggy warm-brown fur (no face mask - the face is fur like the rest),
 a cream belly patch, mossy clumps growing in the fur, two small curled horn nubs, tiny round ears, tiny beady
-black eyes with a catch-light, a wide dumb grin with big flat teeth, a long pink tongue that hangs out and drips,
+black eyes with a catch-light, a wide dumb grin with big flat teeth, a pink tongue that hangs out and drips (a normal
+tongue: it comes off the floor of the mouth, behind the teeth, over the lower lip and hangs in a relaxed arch, almost
+even width with a gently rounded tip and a soft centre crease - no bulb),
 short stubby arms (they *can* cross over the belly - barely), stubby legs with big round feet.
 
 Public API
@@ -12,7 +14,10 @@ Public API
     head_center(pose, t=0.0)           stage point between the eyes
     hand_pos(pose, side, t=0.0)        stage point at the centre of the paw, side "l" (+x local) / "r"
     mouth_pos(pose, t=0.0)             stage point at the centre of the mouth
-    tongue_tip(pose, t=0.0)            stage point of the tongue tip (None when the tongue is in)
+    tongue_tip(pose, t=0.0)            stage point on the tongue's centre line TIP_INSET (30) local units inside its
+                                       rounded end - the end itself is ~tongue_tip + 30 * scale along the tip (straight
+                                       down when looming); None when the tongue is in
+    tongue_end(pose, t=0.0)            stage point of the very end of the rounded tip (where the rig's drop forms)
     drip_pos(pose, t=0.0)              stage point of the saliva drop (forming at the tip, then falling) or None
     foot_pos(pose, side, t=0.0)        stage point under the centre of a foot (its sole)
     stomp_offset(pose)                 local x travel already applied by "stomp" (scaled, signed, stage units)
@@ -42,7 +47,8 @@ pose.extra keys
     phase   cycles for stomp / foot_tap (1 cycle = one stomp, alternating feet; one tap); also "wave" uses t
     stomp_step  local units of backward travel per stomp (default STOMP_STEP; 0 = in place). Backward = -x local
             (away from where it is facing). pose.x stays the START point; the rig moves the body itself.
-    tongue  0..1 how far the tongue hangs out (0 = in); drip 0..1 saliva drop: 0..0.6 forming at the tip,
+    tongue  0..1 how far the tongue hangs out (0 = in; 1 = ~365 local units from the root inside the mouth, about a
+            quarter shorter than the old design); drip 0..1 saliva drop: 0..0.6 forming at the tip,
             0.6..1 falling drip_fall local units (default 520); drip_pos() reports it
     lean_down 0..1 looming toward the camera over someone lying below: the head comes ~330*scale down and grows
             x1.42, the face slides down the head and the eyes look down (look_y += 0.75*lean_down); the tongue
@@ -1209,31 +1215,24 @@ def _draw_mouth(c, R):
         _fill(c, mouth, C_MOUTH)
         c.save()
         c.clipPath(mouth, doAntiAlias=True)
-        # tongue (inside)
+        # tongue (inside): a low, broad, flat-topped dome on the floor of the mouth with a soft centre crease
         tc = g["loc"]
-        tong = skia.Path()
-        tong.addOval(skia.Rect(tc[0] - g["W"] * 0.55, tc[1] - 48.0 - 30.0 * op, tc[0] + g["W"] * 0.55, tc[1] + 30.0))
+        Wt, hy, tong = _tongue_dome(R, g)
+        _fill(c, tong, C_TONGUE_SH)
+        c.save()
+        c.clipPath(tong, doAntiAlias=True)
+        c.translate(-6.0 * R.fac, 5.0)
         _fill(c, tong, C_TONGUE)
-        _fill(c, tong, C_TONGUE_SH, 0.0)
+        c.restore()
         tl = skia.Path()
-        tl.moveTo(tc[0], tc[1] - 40.0 - 22.0 * op)
-        tl.lineTo(tc[0], tc[1] - 8.0)
-        _stroke(c, tl, C_TONGUE_SH, 3.0, 0.7)
-        c.drawOval(skia.Rect(tc[0] - 46.0, tc[1] - 40.0 - 26.0 * op, tc[0] - 12.0, tc[1] - 28.0 - 22.0 * op),
-                   paint(C_TONGUE_HI, 0.5, blur=2.0))
+        tl.moveTo(tc[0], tc[1] - hy * 0.86)
+        tl.quadTo(tc[0] + 2.0, tc[1] - hy * 0.4, tc[0], tc[1] - 4.0)
+        _stroke(c, tl, C_TONGUE_SH, 6.0, 0.3, blur=2.0)
+        _stroke(c, tl, C_TONGUE_SH, 2.4, 0.5)
+        c.drawOval(skia.Rect(tc[0] - Wt * 0.5, tc[1] - hy * 0.86, tc[0] - Wt * 0.14, tc[1] - hy * 0.62),
+                   paint(C_TONGUE_HI, 0.4, blur=3.0))
         # big flat teeth hanging from the upper lip
-        teeth = skia.Path()
-        xs = (-1.5, -0.5, 0.5, 1.5)
-        tw = 47.0
-        for i, u in enumerate(xs):
-            x0 = u * (tw + 4.0) - tw * 0.5 + R.smirk * 8.0
-            x1 = x0 + tw
-            xm = (x0 + x1) * 0.5
-            ytop = _curve_y(up, xm) - 6.0
-            h = 54.0 if abs(u) < 1 else 46.0
-            tooth = smooth_path([(x0, ytop), (x1, ytop), (x1, ytop + h - 10.0), (x1 - 6.0, ytop + h),
-                                 (x0 + 6.0, ytop + h), (x0, ytop + h - 10.0)], closed=True, tension=0.25)
-            teeth.addPath(tooth)
+        teeth = _teeth_path(R, g)
         c.drawPath(teeth, paint(C_LINE, 0.8, stroke=4.0))
         _fill(c, teeth, C_TOOTH_SH)
         c.save()
@@ -1252,6 +1251,34 @@ def _draw_mouth(c, R):
         dp.moveTo(crn[0] - sg * 4.0, crn[1] - 10.0)
         dp.quadTo(crn[0] + sg * 12.0, crn[1] - 2.0, crn[0] + sg * 2.0, crn[1] + 12.0)
         _stroke(c, dp, C_LINE, 4.0, 0.75)
+
+
+def _teeth_path(R, g):
+    up = g["up"]
+    teeth = skia.Path()
+    tw = 47.0
+    for u in (-1.5, -0.5, 0.5, 1.5):
+        x0 = u * (tw + 4.0) - tw * 0.5 + R.smirk * 8.0
+        x1 = x0 + tw
+        xm = (x0 + x1) * 0.5
+        ytop = _curve_y(up, xm) - 6.0
+        h = 54.0 if abs(u) < 1 else 46.0
+        tooth = smooth_path([(x0, ytop), (x1, ytop), (x1, ytop + h - 10.0), (x1 - 6.0, ytop + h),
+                             (x0 + 6.0, ytop + h), (x0, ytop + h - 10.0)], closed=True, tension=0.25)
+        teeth.addPath(tooth)
+    return teeth
+
+
+def _tongue_dome(R, g):
+    """The tongue lying on the floor of the open mouth (face coords): half width, height, path."""
+    tc = g["loc"]
+    Wt = g["W"] * 0.62
+    hy = 34.0 + 16.0 * R.mouth_open
+    tong = smooth_path([(tc[0] - Wt, tc[1] + 30.0), (tc[0] - Wt * 0.86, tc[1] - hy * 0.55),
+                        (tc[0] - Wt * 0.5, tc[1] - hy * 0.92), (tc[0], tc[1] - hy),
+                        (tc[0] + Wt * 0.5, tc[1] - hy * 0.92), (tc[0] + Wt * 0.86, tc[1] - hy * 0.55),
+                        (tc[0] + Wt, tc[1] + 30.0)], closed=True, tension=0.45)
+    return Wt, hy, tong
 
 
 def _curve_y(pts, x):
@@ -1289,29 +1316,68 @@ def _draw_puff(c, R):
 
 
 # --------------------------------------------------------------------------- tongue + drip
+TONGUE_CAP = 1.0          # semicircular tip (the old one was a swollen 1.15 bulb)
+TIP_INSET = 30.0          # tongue_tip() sits this far (local units) inside the rounded end: end = tip + 30 * scale
+
+
 def _tongue_geom(R, t):
+    """Centre line (body-local), widths and local scale of the hanging tongue. A normal tongue: it starts on the
+    floor of the mouth (the root is hidden in the mouth), comes out over the lower lip and hangs in a relaxed arch
+    (curling a little toward the facing side, then back under), almost even width, gently rounded tip. lean_down:
+    gravity pulls it straighter."""
     tg = R.tongue
     if tg <= 0.02:
         return None
     g = _mouth_geom(R)
-    root = _map(R.face, (g["loc"][0], g["loc"][1] - 26.0))
+    root = _map(R.face, (g["loc"][0], g["loc"][1] - 52.0))
     k = _mscale(R.face)
-    L = (70.0 + 420.0 * tg) * k
-    n = 10
+    L = (100.0 + 265.0 * tg) * k
+    n = 12
     pts = [root]
+    ld = R.ld
     ang = 90.0 - R.lean * 0.5
-    sway = 7.0 * math.sin(2 * math.pi * 0.55 * t) + 3.0 * math.sin(2 * math.pi * 1.3 * t + 1.0)
+    sway = 6.0 * math.sin(2 * math.pi * 0.55 * t) + 2.5 * math.sin(2 * math.pi * 1.3 * t + 1.0)
+    arch = 40.0 * (1.0 - 0.7 * ld)          # degrees the direction turns along the length: a constant-curvature arc
     for i in range(1, n + 1):
-        u = i / n
-        a = (ang + sway * u * u + 9.0 * math.sin(u * math.pi * 1.6) * (1.0 - 0.6 * R.ld)) * D2R
+        u = (i - 0.5) / n
+        a = (ang - 0.55 * arch + arch * u + sway * u * u) * D2R
         p = pts[-1]
         pts.append((p[0] + math.cos(a) * L / n, p[1] + math.sin(a) * L / n))
     widths = []
     for i in range(n + 1):
         u = i / n
-        w = 124.0 - 34.0 * math.sin(min(1.0, u * 1.25) * math.pi * 0.5) + 30.0 * smoothstep((u - 0.72) / 0.28)
+        w = 116.0 - 20.0 * u + 7.0 * math.sin(u * math.pi)      # a hair fuller in the middle, no bulb
         widths.append(w * k)
     return pts, widths, k
+
+
+def _tongue_end(pts, widths):
+    """The very end of the rounded tip (where drops form) and the tip direction."""
+    tx, ty = _norm(pts[-1][0] - pts[-2][0], pts[-1][1] - pts[-2][1])
+    e = 0.4875 * widths[-1] * TONGUE_CAP
+    return (pts[-1][0] + tx * e, pts[-1][1] + ty * e), (tx, ty)
+
+
+def _mouth_clip(R):
+    """Body-local clip for the tongue: the open mouth + everything below the lower lip (the root stays inside)."""
+    g = _mouth_geom(R)
+    up, lo = g["up"], g["lo"]
+    m = skia.Path()
+    _cr(m, up)
+    _cr(m, lo[::-1], move=False)
+    m.close()
+    inside = skia.Op(m, _tongue_dome(R, g)[2], skia.PathOp.kIntersect_PathOp) or m
+    inside = skia.Op(inside, _teeth_path(R, g), skia.PathOp.kDifference_PathOp) or inside
+    below = skia.Path()
+    lo2 = [(lo[0][0] - 400.0, lo[0][1] + 40.0)] + [(x, y - 1.5) for x, y in lo] + [(lo[-1][0] + 400.0, lo[-1][1] + 40.0)]
+    _cr(below, lo2)
+    below.lineTo(lo2[-1][0], lo2[-1][1] + 6000.0)
+    below.lineTo(lo2[0][0], lo2[0][1] + 6000.0)
+    below.close()
+    below = skia.Op(below, _teeth_path(R, g), skia.PathOp.kDifference_PathOp) or below
+    clip = skia.Op(inside, below, skia.PathOp.kUnion_PathOp) or below
+    clip.transform(R.face)
+    return clip
 
 
 def _draw_tongue(c, R, t, drip=True):
@@ -1319,22 +1385,35 @@ def _draw_tongue(c, R, t, drip=True):
     if tgm is None:
         return
     pts, widths, k = tgm
-    tp = _ribbon(pts, widths, cap=1.15)
-    _cel(c, tp, C_TONGUE, C_TONGUE_SH, -10.0 * k * R.fac, -6.0 * k, line_w=2.0 * k)
-    # centre groove + wet shine
-    _stroke(c, _curve(pts[1:-1]), C_TONGUE_SH, 4.0 * k, 0.8)
-    shine = [(x - 26.0 * k * R.fac, y) for x, y in pts[2:-2]]
-    if len(shine) >= 2:
-        _stroke(c, _curve(shine), C_TONGUE_HI, 5.0 * k, 0.7)
-        c.drawCircle(shine[-1][0], shine[-1][1] + 16.0 * k, 5.0 * k, paint(WHITE, 0.7))
-    # the lower lip lies over the tongue root
+    tp = _ribbon(pts, widths, cap=TONGUE_CAP)
     c.save()
-    c.concat(R.face)
+    c.clipPath(_mouth_clip(R), doAntiAlias=True)
+    _cel(c, tp, C_TONGUE, C_TONGUE_SH, -9.0 * k * R.fac, -5.0 * k, line_w=1.9 * k)
+    c.save()
+    c.clipPath(tp, doAntiAlias=True)
+    # the root goes back into the dark of the mouth
     g = _mouth_geom(R)
-    lo = g["lo"]
-    lip = skia.Path()
-    _cr(lip, [(x, y - 4.0) for x, y in lo[1:-1]])
-    _stroke(c, lip, C_LINE, 4.0, 0.85)
+    a0 = _map(R.face, (g["loc"][0], g["loc"][1] - 44.0))
+    a1 = _map(R.face, (g["loc"][0], g["loc"][1] + 2.0))
+    sh = skia.GradientShader.MakeLinear([skia.Point(*a0), skia.Point(*a1)],
+                                        [col("#3A1418", 0.55), col("#3A1418", 0.0)])
+    c.drawPaint(paint(None, 1.0, shader=sh))
+    # the arch over the lower lip: a soft lit band across the bend, a soft shade just under it
+    nb = max(2, len(pts) // 4)
+    bx, by = pts[nb]
+    c.drawOval(skia.Rect(bx - widths[nb] * 0.42, by - 9.0 * k, bx + widths[nb] * 0.42, by + 9.0 * k),
+               paint(C_TONGUE_HI, 0.28, blur=7.0 * k))
+    # soft centre crease, fading out before the tip
+    crease = pts[2:-2]
+    _stroke(c, _curve(crease), C_TONGUE_SH, 7.0 * k, 0.28, blur=2.5 * k)
+    _stroke(c, _curve(crease[:-1]), C_TONGUE_SH, 2.6 * k, 0.45, blur=0.6 * k)
+    # wet shine down one side + a tip glint
+    shine = [(x - 27.0 * k * R.fac, y) for x, y in pts[3:-2]]
+    if len(shine) >= 2:
+        _stroke(c, _curve(shine), C_TONGUE_HI, 4.5 * k, 0.55, blur=0.8 * k)
+    end, (tx, ty) = _tongue_end(pts, widths)
+    c.drawCircle(end[0] - tx * 22.0 * k - 18.0 * k * R.fac, end[1] - ty * 22.0 * k, 4.5 * k, paint(WHITE, 0.6))
+    c.restore()
     c.restore()
     if drip:
         _draw_drip(c, R, t, pts, widths, k)
@@ -1344,9 +1423,8 @@ def _drip_state(R, pts, widths, k, ex):
     d = ex.get("drip", None)
     if d is None or d <= 0.0:
         return None
-    tip = pts[-1]
-    tx, ty = _norm(pts[-1][0] - pts[-2][0], pts[-1][1] - pts[-2][1])
-    tip = (tip[0] + tx * widths[-1] * 0.55, tip[1] + ty * widths[-1] * 0.55)
+    tip, _ = _tongue_end(pts, widths)
+    tip = (tip[0], tip[1] - 3.0 * k)            # the drop hangs from just under the rounded end
     fall_d = ex.get("drip_fall", DRIP_FALL)
     if d < 0.6:
         g = d / 0.6
@@ -1567,11 +1645,24 @@ def hand_pos(pose: Pose, side: str, t: float = 0.0):
 
 
 def tongue_tip(pose: Pose, t: float = 0.0):
+    """Stage point on the tongue's centre line TIP_INSET local units (x scale) inside its rounded end, i.e. the end
+    is about tongue_tip + 30 * scale along the tip direction (straight down when looming): what S6 hangs its drops
+    from. None when the tongue is in."""
     R = _solve(pose, t)
     tg = _tongue_geom(R, t)
     if tg is None:
         return None
-    return _stage(pose, R, tg[0][-1])
+    end, (tx, ty) = _tongue_end(tg[0], tg[1])
+    return _stage(pose, R, (end[0] - tx * TIP_INSET, end[1] - ty * TIP_INSET))
+
+
+def tongue_end(pose: Pose, t: float = 0.0):
+    """Stage point of the very end of the rounded tongue tip (where the rig's own drop forms), or None."""
+    R = _solve(pose, t)
+    tg = _tongue_geom(R, t)
+    if tg is None:
+        return None
+    return _stage(pose, R, _tongue_end(tg[0], tg[1])[0])
 
 
 def drip_pos(pose: Pose, t: float = 0.0):

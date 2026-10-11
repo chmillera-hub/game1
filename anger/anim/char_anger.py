@@ -69,7 +69,10 @@ pose.extra keys (all optional)
                  stumble: slip_foot ("r"); hang: hang_hand ("l"), swing (deg, 5), kick 0..1, slip 0..1;
                  fall: tumble (deg), fall_speed (900, drives the cloth); sword_drag: sword_tilt (8 deg, tip down),
                  embed (0.78), shake (1); prop_sit / sleep: knee_up 0..1 (0.55); sleep: sleep_tilt (deg, 15)
-    reach_l / reach_r = (x, y) stage point (+ reach_l_w 0..1): IK that hand's palm onto a point
+    reach_l / reach_r = (x, y) stage point (+ reach_l_w 0..1): IK that hand's palm onto a point. Reach IK (also the
+                 door ring and the two-handed grip) bends the elbow anatomically: out (the arm's own side) / down /
+                 back, the forearm folding toward the biceps - never hyper-extended or flipped up across the chest;
+                 overhead (e.g. the hilt over the shoulder) it flares out; the weight fades it in from the free arm
     key_dir      cel-shading light direction (screen angle deg toward the light, or (x, y)); default: from the held
                  torch when lit, else from the front-above
     rim_dir / rim_pos   rim light direction (screen angle deg toward the light: 0 = from the right, -90 = from above;
@@ -80,10 +83,15 @@ chest), lid_l/lid_r (None = heavy auto blink), look_x/look_y, pupil, squint, eye
 brow_furrow, mouth_open/mouth_round (lip-sync; the beard follows the jaw), smile, smirk (> 0 = the corner nearer the
 camera), mouth_tremble, arm_l/arm_r (ArmPose), shoulders_up, bounce, walk, light/tint/tint_amt (colour filter on every
 paint), rim/rim_color. Not used: back, sit, seat_y, kneel, foot_tap, mug, tears, blush, glow, process, sniffle.
+smirk: the tiny smile reaches his eyes (it saturates by |smirk| ~0.32): lower lids lift, cheeks rise, a hint of crow's
+feet, the brows relax (the default scowl un-knots) and the other corner lifts a hair - warm, not a sneer;
+smirk_suppress takes it away again (blends stay smooth, no extra keys needed).
 
 Conventions
     * l / r are Anger's TRUE sides (sword in the right hand, torch in the left, scar through the LEFT eyebrow) for both
       facings: facing -1 is not a pure mirror. With facing +1 his right side is nearer the camera (near_side()).
+      The scar is a short pale slash on / through that brow only: clamped above the upper-lid crease in every
+      expression / turn / nod / blink (SCAR_CLEAR).
       torch_high suits the FAR hand (facing +1 with the torch in the left hand); with the torch in the near hand
       use torch_up (straight up) or torch_near, otherwise the raised arm crosses his face.
     * (pose.x, pose.y) = the floor point under the pelvis (stand, walk, run, actions, fall: the body rotates / tumbles
@@ -1881,7 +1889,10 @@ def _elbow_side(R, A, W, k):
     # flexion weight (turned views): it decides alone (> any pole term) unless the hand is well above the shoulder,
     # so a hand that sweeps around the shoulder at or below its height never flips the elbow; overhead / behind the
     # head the pole takes over and the elbow flares OUT; none in the stylised front view (arms swing to the sides)
-    kf = clamp(A.ax, -1.0, 1.0) * R.wf * (0.25 + 0.95 * smoothstep((dy / dl + 0.9) / 0.4))
+    # (a hand planted up-and-BEHIND the shoulder, e.g. pushing up off the floor while lying back, stays on the flexion
+    # side until it is nearly straight overhead)
+    t0 = 0.9 + 0.4 * smoothstep((-dx / dl - 0.2) / 0.3)
+    kf = clamp(A.ax, -1.0, 1.0) * R.wf * (0.25 + 0.95 * smoothstep((dy / dl + t0) / 0.4))
     pole = (nx * px + ny * py) / pl + kf
     s_pole = clamp(pole / 0.15, -1.0, 1.0)
     if k >= 1.0:
