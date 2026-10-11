@@ -1,40 +1,73 @@
 {
-  "_comment": "Example score for 'The Void and My Fear' — every mood, in story order, aligned to data/timeline.json (absolute seconds). Render: python3 audio/music.py data/music_cues.example.json out/music_example.wav",
-  "duration": 280.66,
+  "_comment": "Example score for 'The Void and My Fear': every mood, in story order. Times are timeline ANCHORS (beat/scene ids from data/timeline.json, same syntax as src/timeline.mjs) so the score follows re-timed dialogue. Render: python3 audio/music.py data/music_cues.example.json out/music_example.wav",
+  "timeline": "data/timeline.json",
   "speech_from": "data/timeline.json",
+  "duration": "film.end",
   "cues": [
-    {"_scene": "s01 memory",            "start": 0.0,   "end": 13.4,  "mood": "tender_memory",  "intensity": 0.3,  "key": "D", "fade_in": 0.4, "fade_out": 1.6},
-    {"_scene": "s02 HQ, alarm pulled",  "start": 12.4,  "end": 17.2,  "mood": "curious_unease", "intensity": 0.3,  "fade_in": 1.0, "fade_out": 0.6,
-     "hits": [{"t": 16.45, "type": "drop"}]},
-    {"_scene": "s02 the bell rings",    "start": 16.3,  "end": 21.2,  "mood": "alarm_chaos",    "intensity": 0.4,  "fade_in": 0.6, "fade_out": 1.2},
-    {"_scene": "s03 the CEO looks",     "start": 20.5,  "end": 28.2,  "mood": "curious_unease", "intensity": 0.25, "fade_in": 1.2, "fade_out": 1.0},
-    {"_scene": "s04 the void",          "start": 27.5,  "end": 41.8,  "mood": "void_presence",  "intensity": 0.35, "fade_in": 1.5, "fade_out": 1.2,
-     "hits": [{"t": 30.6, "type": "swell", "len": 5.0}]},
-    {"_scene": "s05 not safe",          "start": 41.4,  "end": 46.6,  "mood": "dread",          "intensity": 0.3,  "fade_in": 0.8, "fade_out": 0.8},
-    {"_scene": "s06 chaos",             "start": 46.3,  "end": 56.9,  "mood": "alarm_chaos",    "intensity": 0.55, "fade_in": 0.3, "fade_out": 1.5,
-     "hits": [{"t": 46.75, "type": "sting"}]},
-    {"_scene": "s07 hand on shoulder",  "start": 56.4,  "end": 73.5,  "mood": "confrontation",  "intensity": 0.25, "fade_in": 2.0, "fade_out": 0.6,
-     "hits": [{"t": 72.95, "type": "sting"}]},
-    {"_scene": "s08 refusal",           "start": 72.9,  "end": 75.8,  "mood": "alarm_chaos",    "intensity": 0.45, "fade_in": 0.3, "fade_out": 1.2},
-    {"_scene": "s09 time-out",          "start": 74.6,  "end": 89.8,  "mood": "sorrow",         "intensity": 0.35, "fade_in": 1.2, "fade_out": 1.0},
-    {"_scene": "s10 stone-faced",       "start": 89.5,  "end": 98.3,  "mood": "void_presence",  "intensity": 0.3,  "fade_in": 1.5, "fade_out": 1.0},
-    {"_scene": "s11 the unlocking",     "start": 97.9,  "end": 107.4, "mood": "curious_unease", "intensity": 0.2,  "fade_in": 1.5, "fade_out": 1.2},
-    {"_scene": "s12 why",               "start": 107.0, "end": 127.3, "mood": "stillness",      "intensity": 0.15, "bpm": 66, "fade_in": 1.5, "fade_out": 1.2,
-     "phrase_seq": ["fear_minor", "fear_question"], "phrase_stem": "piano"},
-    {"_scene": "s13 scare me forever",  "start": 126.9, "end": 142.6, "mood": "sorrow",         "intensity": 0.35, "fade_in": 1.0, "fade_out": 3.2,
-     "hits": [{"t": 131.5, "type": "swell", "len": 4.0}]},
-    {"_scene": "s14 the gaze",          "start": 144.2, "end": 159.3, "mood": "dread",          "intensity": 0.4,  "fade_in": 1.5, "fade_out": 0.3,
-     "hits": [{"t": 148.7, "type": "swell", "len": 6.0}, {"t": 157.5, "type": "drop"}]},
-    {"_scene": "s15 a hand",            "start": 159.0, "end": 168.9, "mood": "stillness",      "intensity": 0.1,  "fade_in": 0.1, "fade_out": 1.2,
-     "hits": [{"t": 159.0, "type": "silence"}, {"t": 163.15, "type": "resolve"}]},
-    {"_scene": "s16 the cosmos",        "start": 168.0, "end": 189.2, "mood": "reveal_wonder",  "intensity": 0.55, "fade_in": 2.5, "fade_out": 1.5,
-     "hits": [{"t": 169.5, "type": "swell", "len": 5.0}]},
-    {"_scene": "s17 wonder",            "start": 188.4, "end": 204.6, "mood": "reveal_wonder",  "intensity": 0.4,  "fade_in": 1.5, "fade_out": 1.5},
-    {"_scene": "s18-s20 belonging",     "start": 204.0, "end": 242.4, "mood": "belonging",      "intensity": 0.38, "fade_in": 1.5, "fade_out": 1.5,
-     "hits": [{"t": 228.0, "type": "swell", "len": 5.0}]},
-    {"_scene": "s21-s22 resolution",    "start": 242.0, "end": 268.0, "mood": "resolution",     "intensity": 0.3,  "fade_in": 1.5, "fade_out": 1.5,
-     "hits": [{"t": 250.6, "type": "swell", "len": 4.0}]},
-    {"_scene": "s23 a tear or two",     "start": 267.4, "end": 280.66, "mood": "outro",         "intensity": 0.3,  "fade_in": 1.5, "fade_out": 1.6,
-     "hits": [{"t": 278.2, "type": "resolve"}]}
+    {"_scene": "s01 the old notebook: memory theme in the opening silence",
+     "start": 0, "end": "s02b01+1.0", "mood": "tender_memory", "intensity": 0.28, "key": "D", "fade_in": 0.4, "fade_out": 2.2},
+
+    {"_scene": "s02 HQ: curiosity, cut short when the alarm is pulled",
+     "start": "s02", "end": "s02b02+1.0", "mood": "curious_unease", "intensity": 0.28, "fade_in": 1.5, "fade_out": 0.5,
+     "hits": [{"t": "s02b02+0.3", "type": "drop"}]},
+    {"_scene": "s02 the bell rings (pulsing low strings under the alarm SFX)",
+     "start": "s02b02+0.2", "end": "s02b03.end+0.4", "mood": "alarm_chaos", "intensity": 0.38, "fade_in": 0.6, "fade_out": 1.6},
+    {"_scene": "s02 'Fear? What are you looking at?'",
+     "start": "s02b03.end-1.0", "end": "s03+1.2", "mood": "curious_unease", "intensity": 0.22, "fade_in": 1.2, "fade_out": 1.2},
+
+    {"_scene": "s03 the Void: open fifths, a distant roll, a slow swell",
+     "start": "s03-0.3", "end": "s03.end+0.6", "mood": "void_presence", "intensity": 0.35, "fade_in": 1.5, "fade_out": 1.2,
+     "hits": [{"t": "s03b01+0.4", "type": "swell", "len": 5.0}]},
+
+    {"_scene": "s04 not safe: held dissonance, slowing heartbeat; Fear's fragile motif after 'You don't know that.'",
+     "start": "s04-0.4", "end": "s05+0.4", "mood": "dread", "intensity": 0.28, "fade_in": 1.0, "fade_out": 0.6,
+     "phrases": ["fear_minor", "fear_minor_short"], "phrase_stem": "piano"},
+
+    {"_scene": "s05 chaos",
+     "start": "s05", "end": "s05.end+0.6", "mood": "alarm_chaos", "intensity": 0.5, "fade_in": 0.3, "fade_out": 1.6,
+     "hits": [{"t": "s05b01", "type": "sting"}]},
+
+    {"_scene": "s06 a hand on the shoulder: gentle but firm; the questioning motif after 'I'm only trying to keep us safe.'",
+     "start": "s06-0.4", "end": "s07+0.8", "mood": "confrontation", "intensity": 0.28, "fade_in": 2.0, "fade_out": 1.4},
+
+    {"_scene": "s07-s09 time-out, the cage, 'the responsible thing': the cello lament after 'Please don't leave me with it.'",
+     "start": "s07-0.2", "end": "s09.end+0.6", "mood": "sorrow", "intensity": 0.32, "fade_in": 1.4, "fade_out": 1.6},
+
+    {"_scene": "s10 stone-faced",
+     "start": "s10-0.5", "end": "s10.end+0.6", "mood": "void_presence", "intensity": 0.22, "fade_in": 1.8, "fade_out": 1.2},
+
+    {"_scene": "s11 the unlocking: music-box motif, reaching (warming by a hair)",
+     "start": "s11-0.4", "end": "s11.end+0.6", "mood": "curious_unease", "intensity": 0.2, "fade_in": 1.5, "fade_out": 1.2,
+     "phrases": ["fear_question", "fear_question_short"]},
+
+    {"_scene": "s12 'Why are you doing this?': almost silence, a held high tone; motif fragments in the two pauses",
+     "start": "s12-0.4", "end": "s12.end+0.4", "mood": "stillness", "intensity": 0.18, "bpm": 66, "fade_in": 1.5, "fade_out": 1.0,
+     "phrase_seq": ["fear_question", "fear_minor"], "phrase_stem": "piano"},
+
+    {"_scene": "s13 the Void turns its gaze: dread swells, then drops at 'This is it.'",
+     "start": "s13-0.6", "end": "s13b02+0.6", "mood": "dread", "intensity": 0.32, "fade_in": 1.2, "fade_out": 0.5,
+     "hits": [{"t": "s13b01+0.3", "type": "swell", "len": 4.5}, {"t": "s13b02", "type": "drop"}]},
+    {"_scene": "s13 one low held note, then a single warm chord on the hand",
+     "start": "s13b02", "end": "s14+1.2", "mood": "stillness", "intensity": 0.2, "tone": "low", "fade_in": 1.5, "fade_out": 1.5,
+     "hits": [{"t": "s13b05", "type": "resolve"}]},
+
+    {"_scene": "s14 the universe inside: the void sonority opens (lydian, celesta, harp, choir); full wonder motif in the pause",
+     "start": "s14-0.6", "end": "s14b06.end+1.5", "mood": "reveal_wonder", "intensity": 0.5, "fade_in": 2.5, "fade_out": 2.5,
+     "hits": [{"t": "s14b01+0.3", "type": "swell", "len": 5.0}]},
+    {"_scene": "s14 hush: 'Why are you showing me this?'",
+     "start": "s14b06.end-1.0", "end": "s14.end+0.8", "mood": "reveal_wonder", "intensity": 0.25, "fade_in": 2.0, "fade_out": 1.6},
+
+    {"_scene": "s15-s17 looking back, the gentle push, 'Can I help?': warm strings, hopeful motif, rising",
+     "start": "s15-0.4", "end": "s17.end+0.6", "mood": "belonging", "intensity": 0.34, "fade_in": 1.6, "fade_out": 1.6,
+     "hits": [{"t": "s16", "type": "swell", "len": 6.0}],
+     "phrase_seq": ["fear_hope", "fear_hope", "fear_hope", "fear_resolved"]},
+
+    {"_scene": "s18-s19 the rusted cage, the console: resolution",
+     "start": "s18-0.4", "end": "s19.end+0.6", "mood": "resolution", "intensity": 0.28, "fade_in": 1.6, "fade_out": 1.6,
+     "hits": [{"t": "s19", "type": "swell", "len": 5.0}]},
+
+    {"_scene": "s20 a tear or two: solo piano, the motif resolved home on the last chord",
+     "start": "s20-0.6", "end": "film.end", "mood": "outro", "intensity": 0.28, "fade_in": 1.6, "fade_out": 1.4,
+     "hits": [{"t": "s20b04.end+0.3", "type": "resolve"}]}
   ]
 }

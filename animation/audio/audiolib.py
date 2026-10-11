@@ -500,15 +500,21 @@ def render_sfx_events(events, duration, sfx_dir=None, sr=SR):
         fade = float(e.get("fade", 0.3) or 0.0)
         if e.get("loop") and until is not None:
             need = int((float(until) - at) * sr) + 1
-            xf = min(int(0.04 * sr), len(clip) // 4)
             body = clip.copy()
-            out = body.copy()
-            ramp = np.linspace(0, 1, xf, dtype=np.float32)[:, None]
-            while len(out) < need:
-                head = out[:-xf] if xf else out
-                joint = out[-xf:] * (1 - ramp) + body[:xf] * ramp if xf else np.zeros((0, 2), np.float32)
-                out = np.concatenate([head, joint, body[xf:]])
-            clip = out[:need]
+            typ = float(np.median(np.abs(np.diff(body[: min(len(body), 4000)], axis=0)))) if len(body) > 2 else 0.0
+            seamless = float(np.max(np.abs(body[0] - body[-1]))) <= 3.0 * typ + 1e-4
+            if seamless:  # files rendered as exact loops (alarm_bell, heartbeat): butt-join
+                reps = int(math.ceil(need / len(body)))
+                out = np.concatenate([body] * max(1, reps))
+            else:  # anything else: 40 ms equal-gain crossfade at each repeat
+                xf = min(int(0.04 * sr), len(clip) // 4)
+                out = body.copy()
+                ramp = np.linspace(0, 1, xf, dtype=np.float32)[:, None]
+                while len(out) < need:
+                    head = out[:-xf] if xf else out
+                    joint = out[-xf:] * (1 - ramp) + body[:xf] * ramp if xf else np.zeros((0, 2), np.float32)
+                    out = np.concatenate([head, joint, body[xf:]])
+            clip = fade_in(out[:need], 0.006, sr=sr)
             clip = fade_out(clip, max(fade, 0.02), sr=sr)
         elif until is not None:
             need = int((float(until) - at) * sr)
@@ -732,12 +738,13 @@ def spectrogram_png(x, path, sr=SR, max_hz=8000, width=1400, height=420, db_rang
 # --------------------------------------------------------------------------------------------
 # film mix
 
-# recommended event gains (dB, applied to the -3 dBFS-peak files in audio/sfx) — used when an event has no gain
+# recommended event gains (dB) for a dialogue stem at -18 LUFS (files in audio/sfx peak at -3 dBFS);
+# used by sfx_events_from_timeline. Scene sfx entries should start from these values.
 SFX_GAIN = {
-    "alarm_bell": -17, "alarm_pull": -6, "footsteps": -12, "door_whoosh": -10, "crowd_murmur": -14,
-    "heartbeat": -9, "breath_shaky": -12, "sob": -10, "cage_close": -7, "lock_click": -9, "cage_creak": -12,
-    "key_turn": -9, "rumble_low": -8, "shimmer": -11, "twinkle": -12, "console_beeps": -13,
-    "paper_rustle": -11, "lamp_click": -10, "cloth_rustle": -14, "rust_creak": -12,
+    "alarm_bell": -18, "alarm_pull": -6, "footsteps": -9, "door_whoosh": -13, "crowd_murmur": -14,
+    "heartbeat": -12, "breath_shaky": -13, "sob": -12, "cage_close": -5, "lock_click": -10, "cage_creak": -12,
+    "key_turn": -9, "rumble_low": -14, "shimmer": -15, "twinkle": -18, "console_beeps": -24,
+    "paper_rustle": -12, "lamp_click": -8, "cloth_rustle": -15, "rust_creak": -17,
 }
 
 

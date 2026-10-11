@@ -11,8 +11,8 @@
 // POSE fields (same names/semantics as fear.mjs, plus view/lookBack/lookSide/heat)
 //   t            seconds (idle life: breathing, tuft sway, blinking, wave/flail motion)
 //   view         'front' (default) | 'back' (seen from behind, e.g. working at the console)
-//   lookBack     0..1  (back view only) turn the head over the shoulder toward the camera;
-//                at 1 a 3/4 face is visible (one eye, brow, part of the mouth)
+//   lookBack     0..1  (back view only) turn the head over the shoulder toward the camera: the features come
+//                round the head like on a turning sphere; at 1 a 3/4 face (one eye + brow, smile, far cheek)
 //   lookSide     +1 (default) face appears on the screen-right side, -1 screen-left
 //   face         expression object for drawFace (EXPR presets work). Auto-blink unless face.noAutoBlink.
 //                A small per-character base expression is ADDED (pose.noBase = true to disable).
@@ -20,8 +20,8 @@
 //   headTilt     radians;  headTurn -1..1 yaw (screen space, passed to the face as turn)
 //   headDX, headDY  head offset px;  lean radians;  crouch 0..1;  tremble 0..1
 //   breathe      amplitude (default 1);  breathRate Hz
-//   armL, armR   preset name | {preset, dx, dy, atY, hand, bend, layer, fore, handAng}
-//                | {target:[x,y], bend, hand, layer|front, fore, handAng}   (armL = screen-left at facing 1, both views)
+//   armL, armR   preset name | {preset, dx, dy, atY, hand, bend, layer, fore, boneK, handAng}
+//                | {target:[x,y], bend, hand, layer|front, fore, boneK, handAng}   (armL = screen-left at facing 1, both views)
 //   walk         { phase } radians
 //   heat         0..1 (ANGER only) heat-wisp intensity (default 0.2)
 //   shadow       false to skip the ground shadow;  alpha 0..1
@@ -933,8 +933,9 @@ function drawLookBackFace(g, S, c, ox, cy, L) {
     if (aM < 0.999) g.globalAlpha *= aM;
     g.translate(s * S.hw(yM) * Math.sin(pM), fy);
     g.scale(fm, 1);
+    // (this pass's eyes sit far off-canvas; blink:1 makes them a single cheap stroke each)
     drawFace(g, { ...F, eyeY: -1e4, browY: -1e4, blushColor: null, mouthW: F.mouthW * 1.15 },
-      { ...e, turn: 0, tears: 0, stream: 0, tearL: 0, tearR: 0, sweat: 0 });
+      { ...e, turn: 0, tears: 0, stream: 0, tearL: 0, tearR: 0, sweat: 0, blink: 1 });
     g.restore();
   }
   g.restore();
@@ -956,6 +957,8 @@ export function drawEmotion(g, name, x, y, scale = 1, pose = {}) {
   const k = back ? clamp(pose.lookBack || 0) : 0;
   const s = (pose.lookSide ?? 1) < 0 ? -1 : 1;
 
+  // @napi-rs/canvas does not restore fillStyle/strokeStyle on restore(): keep them ourselves so nothing leaks
+  const fill0 = g.fillStyle, stroke0 = g.strokeStyle;
   g.save();
   if (pose.alpha != null) g.globalAlpha *= clamp(pose.alpha);
   g.translate(x, y);
@@ -989,4 +992,5 @@ export function drawEmotion(g, name, x, y, scale = 1, pose = {}) {
   if (S.neckwear) S.neckwear(g, c);
   for (let i = 0; i < 2; i++) if (!early(arms[i])) drawArm(g, S, i ? 1 : -1, arms[i], c);
   g.restore();
+  g.fillStyle = fill0; g.strokeStyle = stroke0;
 }

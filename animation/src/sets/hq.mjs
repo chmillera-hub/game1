@@ -9,6 +9,7 @@
 //   drawAlarmStation(g, x, y, scale, state)     pull station + bell + strobe (x,y = handle rest centre)
 //   HQ_VIEWS[view] = { width, height, anchors: { name: [x, y, charScale] }, cams: { name: {x,y,zoom} } }
 //   hqScaleAt(view, y)                perspective character scale for a floor point at world y
+//   HQ_PRESETS (state bundles), ALARM_REACH (FEAR arm target for the handle), consoleButtonPos(), HQ_COLORS
 //
 // Every view is its own world-coordinate stage. Static artwork is cached per view and per resolution level
 // (the level is picked from the current transform, so camera push-ins stay crisp).
@@ -48,16 +49,19 @@ const C = HQ_COLORS;
 const GEO = {
   front: { W: 900, H: 1600, vx: 450, vy: 520, eye: 320, hw: 232, spring: 450, f: 900, charK: 0.296 },
   back: { W: 900, H: 1600, vx: 450, vy: 430, eye: 330, hw: 340, spring: 520, f: 900, charK: 0.362 },
-  alarm: { W: 900, H: 1600, vx: 450, vy: 700, wallBase: 1360, charK: 1.8 / 740 },
+  alarm: { W: 1000, H: 1600, vx: 500, vy: 700, wallBase: 1360, charK: 1.8 / 706 },
   backOfMind: { W: 1000, H: 1778, vx: 330, vy: 1040, eye: 620, charK: 1 / 620 },
 };
 const proj = (G) => (X, Y, l) => [G.vx + l * X, G.vy + l * (G.eye - Y)];
 
+// front-view console: base y (off-stage) — its top rim sits at y ~1247 (centre) .. 1268 (ends)
+const FRONT_CONSOLE_Y = 1760;
 // alarm station placements (handle rest centre, world) per view
 const ALARM_FRONT = { lam: 1.42, yup: 180 * GEO.front.charK, cheat: 0.5 };
 // FEAR's arm target (character-local) that lands its hand on the handle from the fear*/Alarm anchors
 export const ALARM_REACH = [108, -176];
-const ALARM_CLOSE = { x: 592, y: 1089, s: 1.8 };
+const ALARM_CLOSE = { x: 692, y: 1089, s: 1.8 };
+const ALARM_SCONCE = [330, 600];
 
 function frontAlarmHandle() {
   const G = GEO.front, P = proj(G);
@@ -78,11 +82,11 @@ export const HQ_VIEWS = {
     anchors: {},
     cams: {
       wide: { x: 450, y: 800, zoom: 0.8 },
-      establish: { x: 450, y: 820, zoom: 1.0 },
-      console: { x: 450, y: 1150, zoom: 1.35 },
+      establish: { x: 450, y: 800, zoom: 0.9 },
+      console: { x: 450, y: 1120, zoom: 1.35 },
       alarm: { x: 700, y: 880, zoom: 1.9 },
       void: { x: 450, y: 560, zoom: 1.25 },
-      door: { x: 200, y: 820, zoom: 1.7 },
+      door: { x: 215, y: 820, zoom: 1.7 },
     },
   },
   back: {
@@ -90,19 +94,20 @@ export const HQ_VIEWS = {
     anchors: {},
     cams: {
       wide: { x: 450, y: 800, zoom: 0.8 },
-      screen: { x: 450, y: 520, zoom: 1.0 },
+      screen: { x: 450, y: 640, zoom: 1.0 },
       console: { x: 450, y: 760, zoom: 1.5 },
-      foreground: { x: 450, y: 1080, zoom: 1.0 },
+      foreground: { x: 450, y: 960, zoom: 1.0 },
     },
   },
   alarm: {
-    width: 900, height: 1600,
+    width: 1000, height: 1600,
     anchors: {},
     cams: {
-      wide: { x: 450, y: 800, zoom: 0.8 },
-      medium: { x: 450, y: 960, zoom: 1.0 },
-      pull: { x: 540, y: 1000, zoom: 1.45 },
-      bell: { x: 560, y: 640, zoom: 1.6 },
+      wide: { x: 500, y: 800, zoom: 0.8 },
+      medium: { x: 445, y: 960, zoom: 1.0 },
+      twoShot: { x: 430, y: 1075, zoom: 1.2 },
+      pull: { x: 630, y: 1000, zoom: 1.45 },
+      bell: { x: 660, y: 640, zoom: 1.6 },
     },
   },
   backOfMind: {
@@ -110,9 +115,9 @@ export const HQ_VIEWS = {
     anchors: {},
     cams: {
       wide: { x: 500, y: 889, zoom: 0.72 },
-      ground: { x: 500, y: 1140, zoom: 1.0 },
-      cage: { x: 360, y: 1360, zoom: 1.45 },
-      hood: { x: 680, y: 420, zoom: 1.1 },
+      ground: { x: 500, y: 1138, zoom: 1.0 },
+      cage: { x: 360, y: 1335, zoom: 1.45 },
+      hood: { x: 670, y: 420, zoom: 1.1 },
       distance: { x: 360, y: 1040, zoom: 1.6 },
     },
   },
@@ -126,7 +131,11 @@ export const HQ_VIEWS = {
   const fs = +(k * ALARM_FRONT.lam).toFixed(3);
   HQ_VIEWS.front.anchors = {
     consoleSlot1: at(165, 2.7), consoleSlot2: at(355, 2.7), consoleSlot3: at(545, 2.7), consoleSlot4: at(735, 2.7),
-    consoleFear: at(450, 2.7),
+    // the middle of the console (between stations 2 and 3) on the floor: CONSCIOUSNESS at work there
+    consoleMid: at(450, 2.7),
+    // FEAR at the console on its step-stool (feet raised 70 px at scale 1, hidden by the console) so its
+    // scarf and shoulders clear the rim like the others; same scale as the console slots
+    consoleFear: [450, Math.round(P(0, 0, 2.7)[1] - 70 * k * 2.7), +(k * 2.7).toFixed(3)],
     fearSpot: [Math.round(hx - ALARM_REACH[0] * fs), Math.round(hy - ALARM_REACH[1] * fs), fs],
     alarm: [Math.round(hx), Math.round(hy), fs],
     exitDoor: [Math.round(P(-205, 0, 1.3)[0]), Math.round(P(0, 0, 1.3)[1]), +(k * 1.3).toFixed(3)],
@@ -139,23 +148,42 @@ export const HQ_VIEWS = {
   const G = GEO.back, P = proj(G), k = G.charK;
   const at = (x, lam) => [Math.round(x), Math.round(P(0, 0, lam)[1]), +(k * lam).toFixed(3)];
   HQ_VIEWS.back.anchors = {
-    consoleBack1: at(P(-222, 0, 1.48)[0], 1.48), consoleBack2: at(P(-74, 0, 1.48)[0], 1.48),
-    consoleBack3: at(P(74, 0, 1.48)[0], 1.48), consoleBack4: at(P(222, 0, 1.48)[0], 1.48),
-    fearSpot: at(340, 2.85),
-    cageSpot: at(140, 3.1),
-    ceoSpot: at(560, 2.75),
-    voidEdge: [870, 1575, 0.88],
+    consoleBack1: at(P(-206, 0, 1.5)[0], 1.5), consoleBack2: at(P(-69, 0, 1.5)[0], 1.5),
+    consoleBack3: at(P(69, 0, 1.5)[0], 1.5), consoleBack4: at(P(206, 0, 1.5)[0], 1.5),
+    // the middle of the console, between stations 2 and 3: CONSCIOUSNESS at work, or FEAR on its stool
+    consoleBackMid: at(450, 1.5),
+    fearSpot: at(420, 2.85),
+    cageSpot: at(150, 3.1),
+    ceoSpot: at(640, 2.6),
+    voidEdge: [1080, 1600, 0.9],
   };
 }
+
+/**
+ * Which emotion works which console station, and where that station is in each view. Station i is the
+ * i-th from the LEFT in the 'back' view (the operators' own left to right) and its button colour matches
+ * the emotion. The 'front' view looks the other way, so the order is mirrored there:
+ * front consoleSlot1..4 = CALM, ANGER, SADNESS, JOY.  buttons = consolePress indices of that station.
+ */
+export const HQ_STATIONS = {
+  JOY: { station: 0, front: 'consoleSlot4', back: 'consoleBack1', buttons: [0, 1, 2, 3] },
+  SADNESS: { station: 1, front: 'consoleSlot3', back: 'consoleBack2', buttons: [4, 5, 6, 7] },
+  ANGER: { station: 2, front: 'consoleSlot2', back: 'consoleBack3', buttons: [8, 9, 10, 11] },
+  CALM: { station: 3, front: 'consoleSlot1', back: 'consoleBack4', buttons: [12, 13, 14, 15] },
+};
 {
   const A = ALARM_CLOSE;
   const fs = 1.8;
   HQ_VIEWS.alarm.anchors = {
     fearAtAlarm: [Math.round(A.x - ALARM_REACH[0] * fs), Math.round(A.y - ALARM_REACH[1] * fs), fs],
     handle: [A.x, A.y, fs],
-    ceoBeside: [205, 1475, +(hqScaleAt('alarm', 1475)).toFixed(3)],
+    // CONSCIOUSNESS standing beside FEAR (a little nearer the camera; draw it after FEAR)
+    ceoBeside: [238, 1475, +(hqScaleAt('alarm', 1475)).toFixed(3)],
+    // CONSCIOUSNESS kneeling (kneel: 1, facing 1) in the foreground left: its raised knee stays clear of FEAR's
+    // body and armR {preset:'onShoulder'} reaches FEAR's near shoulder at a gentle downward angle
+    ceoKneel: [135, 1520, +(hqScaleAt('alarm', 1520)).toFixed(3)],
     bell: [A.x, Math.round(A.y - 250 * A.s), 0],
-    beacon: [A.x, Math.round(A.y - 345 * A.s), 0],
+    beacon: [A.x, Math.round(A.y - 352 * A.s), 0],
   };
 }
 {
@@ -170,6 +198,14 @@ export const HQ_VIEWS = {
 }
 
 // ---------------------------------------------------------------- state
+/** Ready-made state bundles: drawHQ(g, view, { ...HQ_PRESETS.alarm, t }) */
+export const HQ_PRESETS = {
+  calm: { alarm: 0, alarmPulled: 0, lightsDim: 0, screenMode: 'room', consoleGlow: 1, mist: 0.35, voidShadow: 0, doorOpen: 0 },
+  alarm: { alarm: 1, alarmPulled: 1, lightsDim: 0.15, screenMode: 'alarm', consoleGlow: 0.8, mist: 0.35 },
+  chaos: { alarm: 1, alarmPulled: 1, lightsDim: 0.3, screenMode: 'alarm', consoleGlow: 0.6, mist: 0.5, doorOpen: 1 },
+  shadow: { alarm: 0, voidShadow: 1, lightsDim: 0.35, mist: 0.6, consoleGlow: 0.7, screenMode: 'room' },
+  dawn: { alarm: 0, voidShadow: 0, lightsDim: 0, mist: 0.25, consoleGlow: 1.15, screenMode: 'calm' },
+};
 function norm(s = {}) {
   return {
     t: s.t || 0,
@@ -223,6 +259,11 @@ function blit(g, key, x0, y0, w, h, paint, res = resLevel(g)) {
 }
 
 // ---------------------------------------------------------------- small helpers
+// @napi-rs/canvas's restore() does not bring back fillStyle/strokeStyle, so public entry points restore them.
+function keepStyles(g) {
+  const f = g.fillStyle, s = g.strokeStyle;
+  return () => { g.fillStyle = f; g.strokeStyle = s; };
+}
 function poly(g, pts) {
   g.beginPath();
   g.moveTo(pts[0][0], pts[0][1]);
@@ -489,7 +530,7 @@ function warningIcon(g, x, y, r, a) {
  * Draw what the screen of consciousness shows into the rect (x, y, w, h). Clipped to a rounded rect.
  * mode: 'room' (night desk with lamp + notebook, POV) | 'calm' (soft sunrise) | 'alarm' (red warning)
  */
-export function drawScreenContent(g, x, y, w, h, t = 0, mode = 'room') {
+function _drawScreenContent(g, x, y, w, h, t = 0, mode = 'room', radius = Math.min(w, h) * 0.05) {
   if (!SCREEN_MODES.includes(mode)) mode = 'room';
   // cache at a canonical size (aspect bucket x pixel-size bucket) so animated rects reuse it
   const m = g.getTransform();
@@ -500,7 +541,7 @@ export function drawScreenContent(g, x, y, w, h, t = 0, mode = 'room') {
   const painter = mode === 'calm' ? paintSunrise : mode === 'alarm' ? paintAlarmScreen : paintRoomPOV;
   const c = layer(`screen:${mode}:${cw}x${ch}`, 0, 0, cw, ch, 1, (cg) => painter(cg, cw, ch));
   g.save();
-  roundRect(g, x, y, w, h, Math.min(w, h) * 0.05);
+  roundRect(g, x, y, w, h, radius);
   g.clip();
   g.drawImage(c, x, y, w, h);
   g.translate(x, y);
@@ -528,11 +569,11 @@ function screenLightColor(st) {
   if (st.screenModeB && st.screenBlend > 0) return mixColor(a, SCREEN_LIGHT[st.screenModeB] || a, st.screenBlend);
   return a;
 }
-function drawScreenBlend(g, x, y, w, h, st) {
-  drawScreenContent(g, x, y, w, h, st.t, st.screenMode);
+function drawScreenBlend(g, x, y, w, h, st, r) {
+  drawScreenContent(g, x, y, w, h, st.t, st.screenMode, r);
   if (st.screenModeB && st.screenBlend > 0.001) {
     g.save(); g.globalAlpha = st.screenBlend;
-    drawScreenContent(g, x, y, w, h, st.t, st.screenModeB);
+    drawScreenContent(g, x, y, w, h, st.t, st.screenModeB, r);
     g.restore();
   }
 }
@@ -714,7 +755,7 @@ function paintConsoleBack(g, w, s) {
  * 'back' (seen from the screen: plain back panel, warm light spilling over the top).
  * Uses state.t, consoleGlow, consolePress {index: 0..1}, lightsDim, alarm.
  */
-export function drawConsole(g, x, y, w, scale = 1, state = {}) {
+function _drawConsole(g, x, y, w, scale = 1, state = {}) {
   const st = norm(state);
   const side = state.consoleSide || 'controls';
   const dk = state.consoleDeck || 1;
@@ -729,13 +770,19 @@ export function drawConsole(g, x, y, w, scale = 1, state = {}) {
   const ch = state._clipY != null ? Math.max(1, Math.min(H + pad * 2, state._clipY - y - y0)) : H + pad * 2;
   const ckey = key + (state._clipY != null ? `:c${Math.round(ch)}` : '');
   const res = resLevel(g);
-  blit(g, ckey, x0, y0, w + pad * 2, ch, (cg) => (side === 'back' ? paintConsoleBack(cg, w, s) : paintConsoleControls(cg, w, s, dk)), res);
-  if (st.lightsDim > 0) {
-    g.globalAlpha = st.lightsDim * 0.55;
-    g.filter = 'brightness(0)';
-    blit(g, ckey, x0, y0, w + pad * 2, ch, null, res);
-    g.filter = 'none';
-    g.globalAlpha = 1;
+  const paint = (cg) => (side === 'back' ? paintConsoleBack(cg, w, s) : paintConsoleControls(cg, w, s, dk));
+  blit(g, ckey, x0, y0, w + pad * 2, ch, paint, res);
+  if (st.lightsDim > 0.002) {
+    // dimming = a cached dark silhouette of the same art laid over it (a per-frame filter costs ~4 ms)
+    const a0 = g.globalAlpha;
+    g.globalAlpha = a0 * st.lightsDim * 0.55;
+    blit(g, ckey + ':sil', x0, y0, w + pad * 2, ch, (cg) => {
+      paint(cg);
+      cg.globalCompositeOperation = 'source-in';
+      cg.fillStyle = '#06050e';
+      cg.fillRect(x0, y0, w + pad * 2, ch);
+    }, res);
+    g.globalAlpha = a0;
   }
   const glowK = st.consoleGlow * (1 - st.lightsDim * 0.35);
   if (side === 'controls') {
@@ -747,7 +794,14 @@ export function drawConsole(g, x, y, w, scale = 1, state = {}) {
     g.fillStyle = rgba(C.amber, 0.35 * glowK);
     roundRect(g, -w / 2 + 10 * s, -H1 + 9 * s, w - 20 * s, 3.5 * s, 2 * s); g.fill();
     g.restore();
-    // ridge indicator lights: a slow gentle chase
+    // ridge indicator lights: a slow gentle chase, with a soft warm halo along each station's light well
+    g.save();
+    g.globalCompositeOperation = 'lighter';
+    for (let i = 0; i < 4; i++) {
+      const sw = w / 4;
+      softEllipse(g, (-0.375 + i * 0.25) * w, -H1 - D - R * 0.41, sw * 0.42, 16 * s, C.amber, 0.16 * clamp(glowK), 0.5);
+    }
+    g.restore();
     for (let i = 0; i < 4; i++) {
       const cx = (-0.375 + i * 0.25) * w, sw = w / 4;
       for (let k = 0; k < 7; k++) {
@@ -755,7 +809,7 @@ export function drawConsole(g, x, y, w, scale = 1, state = {}) {
         const on = 0.35 + 0.65 * Math.max(0, Math.sin(st.t * 1.4 - k * 0.7 - i * 1.3));
         const col = k % 3 === 0 ? STATION_COL[i] : C.amber;
         g.fillStyle = rgba(shade(col, 0.3), (0.45 + 0.55 * on) * clamp(glowK));
-        circle(g, lx, ly, 2.6 * s); g.fill();
+        circle(g, lx, ly, 3.2 * s); g.fill();
       }
     }
     for (const b of consoleButtons(w)) {
@@ -767,7 +821,7 @@ export function drawConsole(g, x, y, w, scale = 1, state = {}) {
       const col = st.alarm > 0.5 && b.big ? mixColor(b.col, C.red, (st.alarm - 0.5) * 2 * 0.7) : b.col;
       g.save();
       g.globalCompositeOperation = 'lighter';
-      glow(g, bx, by, r * (3.4 + press * 1.6), col, 0.32 * lit);
+      glow(g, bx, by, r * ((b.big ? 3.4 : 4.2) + press * 1.6), col, (b.big ? 0.32 : 0.4) * lit);
       g.restore();
       const dy = press * r * 0.35;
       g.fillStyle = shade(col, -0.45);
@@ -791,7 +845,8 @@ export function drawConsole(g, x, y, w, scale = 1, state = {}) {
     for (let i = 0; i < 4; i++) {
       let press = 0;
       for (let k = 0; k < 4; k++) press = Math.max(press, clamp(st.consolePress[4 * i + k] || 0));
-      if (press > 0.01) softEllipse(g, (-0.375 + i * 0.25) * w, -H0 - 10 * s, 110 * s, 34 * s, C.amber, 0.2 * glowK * press, 0.5);
+      // seen from the back, station 0 is on the right
+      if (press > 0.01) softEllipse(g, (0.375 - i * 0.25) * w, -H0 - 10 * s, 110 * s, 34 * s, C.amber, 0.2 * glowK * press, 0.5);
     }
     g.fillStyle = rgba(C.amberHot, 0.5 * glowK);
     g.beginPath();
@@ -811,7 +866,7 @@ export function drawConsole(g, x, y, w, scale = 1, state = {}) {
  * state.bell === false hides bell + beacon. Returns { handle:[x,y], bell:[x,y], beacon:[x,y] } in the
  * current coordinate space (before any transform you applied outside).
  */
-export function drawAlarmStation(g, x, y, scale = 1, state = {}) {
+function _drawAlarmStation(g, x, y, scale = 1, state = {}) {
   const st = norm(state);
   const s = scale, t = st.t, A = st.alarm;
   const pull = st.alarmPulled;
@@ -1008,7 +1063,7 @@ const SHADOW = {
   },
   alarm: {
     apex: [-60, 1460],
-    pts: () => [[-60, 1250], [300, 1300], [640, 1380], [820, 1600], [-60, 1620]],
+    pts: () => [[-60, 1250], [340, 1300], [700, 1380], [900, 1600], [-60, 1620]],
     clip: null,
   },
   backOfMind: {
@@ -1064,13 +1119,13 @@ function drawVoidShadow(g, view, st) {
 const MIST = {
   front: [[450, 800, 300, 46, '#3b3274', 0.5], [330, 850, 220, 34, '#3b3274', 0.35], [600, 850, 240, 30, '#3b3274', 0.35], [450, 900, 420, 50, '#2c2558', 0.2]],
   back: [[200, 1480, 380, 70, '#2a2350', 0.4], [700, 1520, 420, 80, '#2a2350', 0.4], [450, 1380, 500, 60, '#2a2350', 0.2]],
-  alarm: [[150, 1450, 380, 70, '#2c2558', 0.4], [600, 1520, 460, 80, '#2c2558', 0.3]],
+  alarm: [[220, 1450, 400, 70, '#2c2558', 0.4], [700, 1520, 480, 80, '#2c2558', 0.3]],
   backOfMind: [[330, 1060, 520, 46, '#4a3d86', 0.38], [700, 1180, 520, 60, '#2e2660', 0.4], [200, 1300, 420, 70, '#2e2660', 0.35], [620, 1450, 600, 90, '#272052', 0.35]],
 };
 const MIST_FG = {
   front: [],
   back: [[300, 1600, 520, 90, '#1c1838', 0.5], [780, 1600, 420, 80, '#1c1838', 0.45]],
-  alarm: [[250, 1600, 500, 80, '#231d44', 0.45], [700, 1600, 420, 80, '#231d44', 0.4]],
+  alarm: [[300, 1600, 520, 80, '#231d44', 0.45], [780, 1600, 440, 80, '#231d44', 0.4]],
   backOfMind: [[250, 1740, 520, 90, '#2a2352', 0.5], [760, 1760, 560, 100, '#2a2352', 0.45], [500, 1690, 420, 50, '#3a3070', 0.25]],
 };
 function drawMist(g, list, st, salt = 0) {
@@ -1260,7 +1315,7 @@ function drawFront(g, st) {
     if (st.lightsDim > 0.01) {
       // the outside light is not dimmed: redraw the doorway over the dimmed room
       g.save();
-      g.globalAlpha = clamp(st.doorOpen * 1.5) * st.lightsDim;
+      g.globalAlpha = clamp(st.doorOpen * 1.5);
       wallXform(g, G, -1, 1.3, 0, 0.12);
       drawExitDoor(g, st.doorOpen, st.t);
       g.restore();
@@ -1269,7 +1324,7 @@ function drawFront(g, st) {
   // NOTE: the console (nearest object to the camera) is drawn by drawHQForeground('front').
 }
 function drawFrontConsole(g, st) {
-  drawConsole(g, 450, 1700, 980, 2.3, { ...st, consoleSide: 'back', _clipY: GEO.front.H + 4 });
+  drawConsole(g, 450, FRONT_CONSOLE_Y, 980, 2.3, { ...st, consoleSide: 'back', _clipY: GEO.front.H + 4 });
 }
 function wallXform(g, G, side, lam, yup, cheat = 0) {
   const P = proj(G);
@@ -1366,11 +1421,13 @@ function drawBack(g, st) {
   const lc = screenLightColor(st);
   // light from the screen onto the wall, ceiling and floor
   g.save();
+  // skip the pixels the opaque screen will cover anyway (gradient fills are the main per-frame cost)
+  g.beginPath(); g.rect(-50, -50, G.W + 100, G.H + 100); g.rect(R.x + 4, R.y + 4, R.w - 8, R.h - 8);
+  g.clip('evenodd');
   g.globalCompositeOperation = 'lighter';
-  softEllipse(g, R.x + R.w / 2, R.y + R.h / 2, R.w * 0.85, R.h * 0.95, lc, 0.18, 0.45);
-  softEllipse(g, 450, P(0, 0, 1.15)[1] + 30, 420, 90, lc, 0.12, 0.5);
+  softEllipse(g, R.x + R.w / 2, R.y + R.h / 2 + 30, R.w * 0.82, R.h * 1.0, lc, 0.18, 0.45);
   g.restore();
-  drawScreenBlend(g, R.x, R.y, R.w, R.h, st);
+  drawScreenBlend(g, R.x, R.y, R.w, R.h, st, R.r);
   // glass sheen
   g.save();
   roundRect(g, R.x, R.y, R.w, R.h, R.r); g.clip();
@@ -1383,10 +1440,18 @@ function drawBack(g, st) {
   // console (controls side) in the midground
   drawBackConsole(g, st);
 }
-const BACK_CONSOLE = { x: 450, lam: 1.3, w: 780, size: 1.3, deck: 1.7 };
+const BACK_CONSOLE = { x: 450, lam: 1.42, w: 800, size: 1.0, deck: 1.7 };
 function drawBackConsole(g, st) {
   const G = GEO.back, P = proj(G);
   const [, y] = P(0, 0, BACK_CONSOLE.lam);
+  // the console's warm light on the wall under the screen (reads even where the operators hide the buttons)
+  const glowK = st.consoleGlow * (1 - st.lightsDim * 0.35);
+  if (glowK > 0.01) {
+    g.save();
+    g.globalCompositeOperation = 'lighter';
+    softEllipse(g, BACK_CONSOLE.x, y - 150, BACK_CONSOLE.w * 0.56, 70, C.amber, 0.1 * glowK, 0.55);
+    g.restore();
+  }
   drawConsole(g, BACK_CONSOLE.x, y, BACK_CONSOLE.w, G.charK * BACK_CONSOLE.lam * BACK_CONSOLE.size, { ...st, consoleSide: 'controls', consoleDeck: BACK_CONSOLE.deck });
 }
 
@@ -1418,7 +1483,7 @@ function paintAlarm(g) {
   g.fillStyle = 'rgba(200,180,255,0.3)'; g.fillRect(0, 1093, W, 3);
   g.fillStyle = 'rgba(8,6,18,0.45)'; g.fillRect(0, 1110, W, 6);
   for (let i = 0; i < 4; i++) {
-    const px = 40 + i * 215;
+    const px = 95 + i * 210;
     roundRect(g, px, 1140, 175, 170, 22);
     g.fillStyle = 'rgba(12,9,26,0.22)'; g.fill();
     g.strokeStyle = 'rgba(160,140,230,0.16)'; g.lineWidth = 2.5; g.stroke();
@@ -1427,7 +1492,7 @@ function paintAlarm(g) {
   g.fillStyle = '#17132e'; g.fillRect(0, base - 26, W, 26);
   g.fillStyle = 'rgba(190,170,255,0.18)'; g.fillRect(0, base - 26, W, 2);
   // pilasters (vault ribs coming down)
-  for (const px of [36, 864]) {
+  for (const px of [36, W - 36]) {
     g.fillStyle = linGrad(g, px - 40, 0, px + 40, 0, [[0, '#1d1838'], [0.35, '#463b80'], [0.7, '#3a3170'], [1, '#191530']]);
     g.fillRect(px - 40, 0, 80, base);
     g.strokeStyle = 'rgba(8,6,18,0.55)'; g.lineWidth = 3;
@@ -1439,14 +1504,14 @@ function paintAlarm(g) {
   g.save();
   g.lineCap = 'butt';
   g.strokeStyle = 'rgba(8,6,18,0.5)'; g.lineWidth = 64;
-  g.beginPath(); g.arc(450, 980, 860, Math.PI * 1.2, Math.PI * 1.8); g.stroke();
+  g.beginPath(); g.arc(G.vx, 980, 900, Math.PI * 1.2, Math.PI * 1.8); g.stroke();
   g.strokeStyle = '#3a3170'; g.lineWidth = 46;
-  g.beginPath(); g.arc(450, 980, 860, Math.PI * 1.2, Math.PI * 1.8); g.stroke();
+  g.beginPath(); g.arc(G.vx, 980, 900, Math.PI * 1.2, Math.PI * 1.8); g.stroke();
   g.strokeStyle = 'rgba(200,180,255,0.3)'; g.lineWidth = 3;
-  g.beginPath(); g.arc(450, 980, 838, Math.PI * 1.2, Math.PI * 1.8); g.stroke();
+  g.beginPath(); g.arc(G.vx, 980, 878, Math.PI * 1.2, Math.PI * 1.8); g.stroke();
   g.restore();
   // sconce (warm practical, upper left)
-  sconce(g, 250, 600, 1.8);
+  sconce(g, ALARM_SCONCE[0], ALARM_SCONCE[1], 1.8);
   // sticky note: a little joke from the past
   g.save();
   g.translate(nx + 158, 880); g.rotate(0.06);
@@ -1471,7 +1536,7 @@ function paintAlarm(g) {
   }
   // reflections: the alarm red on the floor, sconce warm
   g.globalCompositeOperation = 'lighter';
-  softEllipse(g, 250, base + 50, 150, 30, '#ffb35c', 0.1);
+  softEllipse(g, ALARM_SCONCE[0], base + 50, 150, 30, '#ffb35c', 0.1);
   softEllipse(g, ALARM_CLOSE.x, base + 40, 110, 22, '#ff4d5e', 0.07);
   g.restore();
 }
@@ -1610,16 +1675,23 @@ function drawBackOfMind(g, st) {
 /** Draw the set for a view. state: see docs/hq.md. */
 export function drawHQ(g, view = 'front', state = {}) {
   const st = norm(state);
+  const back = keepStyles(g);
   g.save();
+  // paint a dark margin around the stage so a camera that strays outside never shows stale pixels
+  const G = GEO[view] || GEO.front, M = 3000;
+  g.fillStyle = view === 'backOfMind' ? '#07060e' : '#120f24';
+  g.fillRect(-M, -M, G.W + 2 * M, M); g.fillRect(-M, G.H, G.W + 2 * M, M);
+  g.fillRect(-M, 0, M, G.H); g.fillRect(G.W, 0, M, G.H);
   if (view === 'back') drawBack(g, st);
   else if (view === 'alarm') drawAlarmView(g, st);
   else if (view === 'backOfMind') drawBackOfMind(g, st);
   else drawFront(g, st);
   g.restore();
+  back();
 }
 
 /** Layers in front of characters: console front panel (front view), low foreground mist (others). */
-export function drawHQForeground(g, view = 'front', state = {}) {
+function _drawHQForeground(g, view = 'front', state = {}) {
   const st = norm(state);
   g.save();
   if (view === 'front') {
@@ -1627,12 +1699,13 @@ export function drawHQForeground(g, view = 'front', state = {}) {
     // amber light rising from the console onto the operators (additive, soft)
     const glowK = st.consoleGlow * (1 - st.lightsDim * 0.35);
     g.globalCompositeOperation = 'lighter';
-    softEllipse(g, 450, 1235, 430, 150, C.amber, 0.085 * glowK, 0.6);
+    softEllipse(g, 450, 1285, 430, 150, C.amber, 0.085 * glowK, 0.6);
     for (let i = 0; i < 4; i++) {
-      const [x] = HQ_VIEWS.front.anchors[`consoleSlot${i + 1}`];
+      // station i is mirrored in this view: station 0 (JOY) works at consoleSlot4 (see HQ_STATIONS)
+      const [x] = HQ_VIEWS.front.anchors[`consoleSlot${4 - i}`];
       let press = 0;
       for (let k = 0; k < 4; k++) press = Math.max(press, clamp(st.consolePress[4 * i + k] || 0));
-      if (press > 0.01) softEllipse(g, x, 1225, 100, 140, C.amber, 0.08 * glowK * press, 0.5);
+      if (press > 0.01) softEllipse(g, x, 1275, 100, 140, C.amber, 0.08 * glowK * press, 0.5);
     }
   } else {
     drawMist(g, MIST_FG[view] || [], st, 5);
@@ -1640,6 +1713,8 @@ export function drawHQForeground(g, view = 'front', state = {}) {
   g.restore();
 }
 
+// beacon position + beam size per view, and the reach of the red wash around it (the wash is partial:
+// strongest on the alarm's side of the room, fading out across the frame)
 const BEACON = {
   front: () => {
     const G = GEO.front, P = proj(G);
@@ -1651,12 +1726,13 @@ const BEACON = {
   alarm: () => [ALARM_CLOSE.x, ALARM_CLOSE.y - 352 * ALARM_CLOSE.s, 1.6],
   backOfMind: () => [BOM.lx, BOM.ly - 10, 0.6],
 };
+const WASH_REACH = { front: 1150, back: 1150, alarm: 1500, backOfMind: 950 };
 
 /**
  * Soft red alarm light, drawn AFTER characters (world coords, same camera). Uses state.alarm (0..1)
  * and state.t. A rotating beacon sweep + a gentle red wash pulsing at 1.2 Hz (max alpha ~0.3).
  */
-export function drawAlarmLight(g, view = 'front', state = {}) {
+function _drawAlarmLight(g, view = 'front', state = {}) {
   const st = norm(state);
   const A = st.alarm;
   if (A <= 0.002) return;
@@ -1665,11 +1741,17 @@ export function drawAlarmLight(g, view = 'front', state = {}) {
   const t = st.t;
   const pulse = 0.5 + 0.5 * Math.sin(t * TAU * 1.2 - Math.PI / 2);
   g.save();
-  // gentle wash (strongest near the beacon)
-  const wash = A * (0.2 + 0.2 * pulse);
+  // gentle red wash: multiply, max alpha 0.3 at the beacon's side, fading to nothing across the room
+  const wash = A * (0.2 + 0.2 * pulse) * 0.75;
+  const R = WASH_REACH[view] || 1150;
+  const wg = g.createRadialGradient(bx, by, 0, bx, by, R);
+  wg.addColorStop(0, rgba('#ff6472', wash));
+  wg.addColorStop(0.45, rgba('#ff6472', wash * 0.75));
+  wg.addColorStop(1, rgba('#ff6472', 0));
   g.globalCompositeOperation = 'multiply';
-  g.fillStyle = rgba('#ff6472', wash * 0.85);
-  g.fillRect(-200, -200, G.W + 400, G.H + 400);
+  g.fillStyle = wg;
+  const rx0 = Math.max(-200, bx - R), ry0 = Math.max(-200, by - R);
+  g.fillRect(rx0, ry0, Math.min(G.W + 200, bx + R) - rx0, Math.min(G.H + 200, by + R) - ry0);
   g.globalCompositeOperation = 'lighter';
   const gr2 = 520 * Math.max(1, bs);
   glow(g, bx, by + gr2 * 0.3, gr2, C.red, A * (0.07 + 0.12 * pulse));
@@ -1715,3 +1797,11 @@ export function drawAlarmLight(g, view = 'front', state = {}) {
     HQ_VIEWS.back.anchors[`button${i + 1}`] = [Math.round(bx), Math.round(by), 0];
   }
 }
+
+// ---- public wrappers (restore fill/stroke styles, see keepStyles)
+const wrap = (fn) => function (g, ...a) { const r = keepStyles(g); try { return fn(g, ...a); } finally { r(); } };
+export const drawScreenContent = wrap(_drawScreenContent);
+export const drawConsole = wrap(_drawConsole);
+export const drawAlarmStation = wrap(_drawAlarmStation);
+export const drawHQForeground = wrap(_drawHQForeground);
+export const drawAlarmLight = wrap(_drawAlarmLight);

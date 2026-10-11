@@ -4,7 +4,7 @@ import { createCanvas, GlobalFonts } from '@napi-rs/canvas';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { drawEmotion, EMOTION_EXPR, EMOTION_HEIGHTS, LOOKBACK_SMILE, PANIC_FACE } from '../src/chars/emotions.mjs';
+import { drawEmotion, EMOTION_EXPR, EMOTION_HEIGHTS, EMOTION_ANCHORS, LOOKBACK_SMILE, PANIC_FACE } from '../src/chars/emotions.mjs';
 import { drawFear } from '../src/chars/fear.mjs';
 import { EXPR } from '../src/face.mjs';
 
@@ -46,7 +46,15 @@ NAMES.forEach((n, r) => {
     g.fillStyle = 'rgba(255,255,255,0.04)'; g.fillRect(x, y + ch - 34, cw, 34);
     const pose = { t: 1.7 + col * 0.53 + r * 0.31, ...fn(n) };
     pose.face = { ...(pose.face || {}), noAutoBlink: true };
-    drawEmotion(g, n, x + cw / 2, y + ch - 34, SC, pose);
+    const gx = x + cw / 2, gy = y + ch - 34, A = EMOTION_ANCHORS[n];
+    // mock console for the press cells (back view: deck behind them, drawn first; front view: panel in front)
+    const consoleMock = (top, bottom, a) => {
+      g.fillStyle = `rgba(118,98,190,${a})`; g.fillRect(x + 14, top, cw - 28, bottom - top);
+      g.fillStyle = 'rgba(255,207,122,0.55)'; g.fillRect(x + 14, top, cw - 28, 3);
+    };
+    if (label === 'pressButton back') consoleMock(gy + (A.pressBackR[1] - 14) * SC, gy + (A.pressBackR[1] + 60) * SC, 0.5);
+    drawEmotion(g, n, gx, gy, SC, pose);
+    if (label === 'pressButton front') consoleMock(gy + (A.pressFrontR[1] + 20) * SC, gy - 40 * SC, 0.95);
     g.fillStyle = '#fff'; g.font = '22px "Patrick Hand"';
     g.fillText(`${n} · ${label}`, x + 10, y + 26);
   });
@@ -103,8 +111,8 @@ if (process.argv.includes('--extra')) {
     ['handsOnHips', { armL: 'handsOnHips', armR: 'handsOnHips', face: EXPR.stern }], ['hugSelf', { armL: 'hugSelf', armR: 'hugSelf', face: EXPR.worried }],
     ['pointing', { armR: 'pointing', face: EXPR.surprised }], ['wipeEye', { armL: 'wipeEye', face: EXPR.crying }],
     ['walk', { walk: { phase: 1.2 }, face: EXPR.smile }], ['headTurn -0.7', { headTurn: -0.7, face: { lookX: -0.8 } }],
-    ['back wave', { view: 'back', armR: 'wave' }], ['lookBack 0.4', { view: 'back', lookBack: 0.4, face: LOOKBACK_SMILE }],
-    ['lookBack 0.7', { view: 'back', lookBack: 0.7, face: LOOKBACK_SMILE }], ['lookBack 1 L', { view: 'back', lookBack: 1, lookSide: -1, face: LOOKBACK_SMILE }],
+    ['back wave', { view: 'back', armR: 'wave' }], ['lookBack 0.45', { view: 'back', lookBack: 0.45, face: LOOKBACK_SMILE, armL: 'pressButton', armR: 'pressButton' }],
+    ['lookBack 0.7', { view: 'back', lookBack: 0.7, face: LOOKBACK_SMILE, armL: 'pressButton', armR: 'pressButton' }], ['lookBack 1 L', { view: 'back', lookBack: 1, lookSide: -1, face: LOOKBACK_SMILE }],
     ['facing -1 back look', { view: 'back', facing: -1, lookBack: 1, face: LOOKBACK_SMILE, armL: 'pressButton', armR: 'pressButton' }],
   ];
   const cw2 = 260, ch2 = 520;

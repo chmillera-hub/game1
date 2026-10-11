@@ -27,11 +27,11 @@ function desk(g, x, y, w, s) {
   g.fillRect(x - w / 2, y + 70 * s, w, 400);
 }
 
-const bust = (name, face, pose = {}) => ({
+const bust = (name, face, pose = {}, dy = 0) => ({
   name, w: 300, h: 330,
   draw(g, cx, top, w, h, t) {
-    const s = BUST;
-    drawSelf(g, cx, top + 212 + 488 * s, s, { t, face: { ...face, noAutoBlink: true }, ...pose });
+    const s = dy ? 1.2 : BUST;
+    drawSelf(g, cx, top + 212 + dy + 488 * s, s, { t, face: { ...face, noAutoBlink: true }, ...pose });
   },
 });
 const full = (name, pose, opts = {}) => ({
@@ -53,12 +53,12 @@ const cells = [
   bust('wonder', { ...E.wonder, t: 2 }, { outfit: 'sweater', headDY: -3 }),
   bust('3/4 turn + look', { ...E.calm, lookX: 0.5 }, { outfit: 'ceo', headTurn: 0.55, bodyTurn: 0.3 }),
   bust('wipeTear (sweater paw)', { ...E.singleTear, tearR: 0, tears: 0.5, lidU: 0.45 }, { outfit: 'sweater', armR: 'wipeTear', headTilt: 0.1 }),
-  bust('rubNeck sheepish', E.sheepish, { outfit: 'ceo', armR: 'rubNeck', headTilt: 0.08 }),
-  bust('handOnHeart', E.tenderSmile, { outfit: 'sweater', armL: 'handOnHeart', headTilt: -0.06 }),
+  bust('rubNeck sheepish', E.sheepish, { outfit: 'ceo', armR: 'rubNeck', headTilt: 0.08 }, -50),
+  bust('handOnHeart', E.tenderSmile, { outfit: 'sweater', armL: 'handOnHeart', headTilt: -0.06 }, -120),
   full('sweater stand', { outfit: 'sweater', face: E.calm }),
   full('CEO + clipboard', { outfit: 'ceo', clipboard: true, face: { ...E.focused, lookY: 0.5, lookX: -0.3 }, headTilt: 0.08 }),
-  full('CEO walk 0', { outfit: 'ceo', clipboard: true, walk: { phase: 0.6 }, face: E.calm }),
-  full('CEO walk 1', { outfit: 'ceo', clipboard: true, walk: { phase: 0.6 + Math.PI / 2 }, face: E.calm }),
+  full('CEO walk: contact', { outfit: 'ceo', clipboard: true, walk: { phase: 0 }, face: E.calm }),
+  full('CEO walk: passing', { outfit: 'ceo', clipboard: true, walk: { phase: Math.PI / 2 }, face: E.calm }),
   {
     name: 'CEO kneel: hand on Fear-height shoulder (Fear at true relative scale)', w: 600, h: 440,
     draw(g, cx, top, w, h, t) {
@@ -83,16 +83,25 @@ const cells = [
   full('seated: chinInHand', { outfit: 'sweater', seated: true, armR: 'chinInHand', armL: 'handsOnDesk', face: { ...E.tired, lookX: -0.4 }, headTilt: 0.14, lean: 0.06 }, {
     s: 0.95, h: 440, lift: 86, pre: (g, cx, top, w, h) => desk(g, cx, top + h - 110, w, 0.95),
   }),
-  full('back view (CEO at console)', { outfit: 'ceo', view: 'back', face: E.neutral }),
+  full('back view (CEO at console)', { outfit: 'ceo', view: 'back', face: E.neutral, headTilt: 0.04 }),
   full('back view, over shoulder', { outfit: 'ceo', view: 'back', headTurn: 0.85, face: { ...E.worried, lookX: 1 } }),
   full('seated: showNotebook cover', { outfit: 'sweater', seated: true, armL: 'showNotebook', armR: 'showNotebook', face: { ...E.tenderSmile, lookY: 0.6 }, headTilt: 0.1, headTurn: -0.25, bodyTurn: -0.2 }, {
     s: 0.95, h: 440, lift: 86, pre: (g, cx, top, w, h) => desk(g, cx, top + h - 110, w, 0.95),
   }),
-  full('sweater back view, rubEyes', { outfit: 'sweater', view: 'back', armL: 'rubEyes', armR: 'rubEyes', headTilt: 0.12 }),
+  full('back view, rubEyes + shrug', { outfit: 'ceo', view: 'back', armL: 'rubEyes', armR: 'rubEyes', shrug: 0.4, headTilt: 0.12 }),
   full('facing -1, 3/4 walk', { outfit: 'sweater', facing: -1, walk: { phase: 2.2 }, face: E.tenderSmile }),
+  full('dread crouch, clasped', { outfit: 'ceo', crouch: 0.5, tremble: 0.3, armL: 'clasped', armR: 'clasped', face: E.dread }),
+  full('wipeTear (CEO), headTilt', { outfit: 'ceo', armL: 'wipeTear', face: { ...E.singleTear, tearR: 0.7, tearL: 0 }, headTilt: -0.08 }),
+  full('CEO clipboard at side, facing -1', { outfit: 'ceo', facing: -1, clipboard: true, armL: 'rest', armR: 'pointing', face: { ...E.calm, lookX: -0.5 } }),
+  full('coverMouth, laughSoft', { outfit: 'sweater', armR: 'coverMouth', face: E.laughSoft, headTilt: -0.08 }),
   full('handsOnDesk, focused', { outfit: 'ceo', seated: true, face: E.focused, headTilt: 0.12 }, {
     s: 0.95, h: 440, lift: 86, pre: (g, cx, top, w, h) => desk(g, cx, top + h - 110, w, 0.95),
   }),
+  full('seated: wonder, looking up', { outfit: 'sweater', seated: true, face: { ...E.wonder, t: 3 }, headTilt: -0.06, headDY: -4 }, {
+    s: 0.95, h: 440, lift: 86, pre: (g, cx, top, w, h) => desk(g, cx, top + h - 110, w, 0.95),
+  }),
+  full('over shoulder (left), tender', { outfit: 'ceo', view: 'back', headTurn: -0.85, face: { ...E.tenderSmile, lookX: -0.9 } }),
+  full('tremble, holdingBackTears', { outfit: 'ceo', tremble: 0.5, armR: 'handOnHeart', face: E.holdingBackTears, headTilt: 0.06 }),
 ];
 
 // pack rows of total width 1200
@@ -140,10 +149,20 @@ for (const [name, pose] of [
   ['seated notebook', { outfit: 'sweater', seated: true, armL: 'holdNotebook', armR: 'holdNotebook', face: E.tenderSmile }],
   ['back over shoulder', { outfit: 'ceo', view: 'back', headTurn: 0.8, face: E.worried }],
 ]) {
-  for (let j = 0; j < 5; j++) drawSelf(tg, 360, 1200, 1.8, { t: j * 0.1, ...pose });
-  const N = 50, t0 = process.hrtime.bigint();
-  for (let j = 0; j < N; j++) drawSelf(tg, 360, 1200, 1.8, { t: j * 0.04, ...pose });
-  timings[name] = Number(process.hrtime.bigint() - t0) / 1e6 / N;
+  // @napi-rs/canvas records commands and rasterises lazily: flush (1-px readback) inside the timed region,
+  // otherwise only the cheap recording is measured and the real cost lands in a multi-second flush later
+  const flush = () => tg.getImageData(0, 0, 1, 1);
+  for (let j = 0; j < 5; j++) { drawSelf(tg, 360, 1200, 1.8, { t: j * 0.1, ...pose }); flush(); }
+  const ts = [];
+  for (let j = 0; j < 40; j++) {
+    tg.fillStyle = '#222'; tg.fillRect(0, 0, 720, 1280); flush();
+    const t0 = process.hrtime.bigint();
+    drawSelf(tg, 360, 1200, 1.8, { t: j * 0.04, ...pose });
+    flush();
+    ts.push(Number(process.hrtime.bigint() - t0) / 1e6);
+  }
+  ts.sort((a, b) => a - b);
+  timings[name] = ts[20];
 }
-console.log('ms per draw:', Object.entries(timings).map(([k, v]) => `${k}=${v.toFixed(2)}`).join('  '));
+console.log('median ms per draw incl. raster @1.8x:', Object.entries(timings).map(([k, v]) => `${k}=${v.toFixed(2)}`).join('  '));
 console.log('anchors standing headCenter', selfPoseAnchors(0, 0, 1, {}).headCenter, 'HEIGHT', HEIGHT);

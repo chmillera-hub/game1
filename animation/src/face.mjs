@@ -82,7 +82,7 @@ export function drawFace(g, style, exprIn) {
   // blush first (under features)
   if (e.blush > 0.01 && s.blushColor) {
     for (const side of [-1, 1]) {
-      const far = side * turn < 0 ? 1 - Math.abs(turn) * 0.45 : 1;
+      const far = side * turn > 0 ? 1 - Math.abs(turn) * 0.45 : 1;
       const bx = side * (s.blushX ?? s.eyeSpacing * 1.05) * (1 - Math.abs(turn) * 0.25) + shiftX;
       const r = (s.blushR ?? s.eyeRx * 0.9);
       const gr = g.createRadialGradient(bx, s.blushY ?? s.eyeY + s.eyeRy * 1.4, 0, bx, s.blushY ?? s.eyeY + s.eyeRy * 1.4, r * far);
@@ -111,7 +111,7 @@ export function drawFace(g, style, exprIn) {
 
   // eyes
   for (const side of [-1, 1]) {
-    const farSide = side * turn < 0; // eye on the far side when head turns
+    const farSide = side * turn > 0; // eye on the side the head turns toward rotates toward the silhouette edge and foreshortens
     const squeeze = farSide ? 1 - Math.abs(turn) * 0.38 : 1 + Math.abs(turn) * 0.06;
     const ex = side * s.eyeSpacing * (1 - Math.abs(turn) * 0.3) + shiftX;
     drawEye(g, s, e, ex, s.eyeY, s.eyeRx * squeeze, s.eyeRy, side);
@@ -119,7 +119,7 @@ export function drawFace(g, style, exprIn) {
 
   // brows
   for (const side of [-1, 1]) {
-    const farSide = side * turn < 0;
+    const farSide = side * turn > 0;
     const squeeze = farSide ? 1 - Math.abs(turn) * 0.35 : 1;
     const bx = side * s.eyeSpacing * (1 - Math.abs(turn) * 0.3) + shiftX;
     drawBrow(g, s, e, bx, side, squeeze);

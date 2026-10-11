@@ -7,7 +7,8 @@ import { fileURLToPath } from 'url';
 import { drawCage, drawNotebook, drawDeskLamp, CAGE_ANCHORS, cagePoint } from '../src/sets/props.mjs';
 import { drawFear } from '../src/chars/fear.mjs';
 import { EXPR } from '../src/face.mjs';
-import { drawRealRoom, drawRealRoomForeground, REALROOM } from '../src/sets/realroom.mjs';
+import { drawRealRoom, drawRealRoomForeground, drawLitByRoom, REALROOM } from '../src/sets/realroom.mjs';
+import { applyCamera } from '../src/engine.mjs';
 let SELF = null; // the real narrator if the self module is available, else a placeholder silhouette
 if (!process.argv.includes('--placeholder')) { try { SELF = await import('../src/chars/self.mjs'); } catch (e) { console.warn('self.mjs unavailable:', e.message); } }
 
@@ -95,7 +96,7 @@ const HQ_BG = ['#1d1936', '#0d0b1c'];
 const cs = 0.92;
 cell(0, 0, CW, CH, 'cage: closed + locked', HQ_BG, (x, y, w, h) => drawCage(g, x + w / 2, y + h - 60, cs, { t: 1 }));
 cell(CW, 0, CW, CH, 'cage: door 0.5, unlocked', HQ_BG, (x, y, w, h) => drawCage(g, x + w / 2 + 20, y + h - 60, cs, { t: 1, door: 0.5, locked: 0 }));
-cell(CW * 2, 0, CW, CH, 'cage: rust 1, door 1 (hanging open)', HQ_BG, (x, y, w, h) => drawCage(g, x + w / 2 + 40, y + h - 60, cs, { t: 1, door: 1, locked: 0, rust: 1 }));
+cell(CW * 2, 0, CW, CH, 'cage: rust 1, door 1 (+ falling flake)', HQ_BG, (x, y, w, h) => drawCage(g, x + w / 2 + 40, y + h - 60, cs, { t: 1, door: 1, locked: 0, rust: 1, flake: 0.45 }));
 cell(0, CH, CW, CH, 'Fear inside: back/Fear/front, shake .8', HQ_BG, (x, y, w, h) => fearInCage(g, x + w / 2, y + h - 60, cs, 2.37));
 cell(CW, CH, CW, CH, 'cage: rust .5, door .25, dim .55', HQ_BG, (x, y, w, h) => drawCage(g, x + w / 2, y + h - 60, cs, { t: 1, door: 0.25, locked: 0, rust: 0.5, dim: 0.55 }));
 cell(CW * 2, CH, CW, CH, 'lamp: on 1 / on 0 (facing -1)', ['#3a2a3a', '#20182a'], (x, y, w, h) => {
@@ -107,34 +108,47 @@ cell(0, CH * 2, CW, NBH, 'notebook: closed (open 0)', nbBG, (x, y, w, h) => draw
 cell(CW, CH * 2, CW, NBH, 'notebook: open .35 (cover lifting)', nbBG, (x, y, w, h) => drawNotebook(g, x + w / 2 + 20, y + h / 2 + 10, 0.8, { open: 0.35 }));
 cell(CW * 2, CH * 2, CW, NBH, 'notebook: open .7', nbBG, (x, y, w, h) => drawNotebook(g, x + w / 2, y + h / 2 + 10, 0.8, { open: 0.7 }));
 cell(0, CH * 2 + NBH, CW * 2, NBH, 'notebook: open 1 (spread) scale 1.35', nbBG, (x, y, w, h) => drawNotebook(g, x + w / 2, y + h / 2 + 12, 1.35, { open: 1 }));
-cell(CW * 2, CH * 2 + NBH, CW, NBH, 'flat 1: open 1 / closed blue + gold palette', nbBG, (x, y, w, h) => {
+cell(CW * 2, CH * 2 + NBH, CW, NBH, 'flat 1: open 1 / closed gold (default) + blue', nbBG, (x, y, w, h) => {
   drawNotebook(g, x + w / 2, y + 140, 0.75, { open: 1, flat: 1 });
   drawNotebook(g, x + w / 2 - 90, y + 320, 0.6, { open: 0, flat: 1, rot: -0.12 });
-  drawNotebook(g, x + w / 2 + 90, y + 320, 0.6, { open: 0, flat: 1, rot: 0.08, palette: 'gold' });
+  drawNotebook(g, x + w / 2 + 90, y + 320, 0.6, { open: 0, flat: 1, rot: 0.08, palette: 'blue' });
 });
 // ---- the real room (full 720x1280)
-const RS = { t: 2, lamp: 1, moon: 1, dusk: 0 };
-cell(leftW, 0, roomW, 1280, 'REAL_ROOM (default camera x420) + self + notebook', ['#000', '#000'], (x, y) => {
-  g.save(); g.translate(x, y); g.translate(360 - REALROOM.camera.x, 640 - REALROOM.camera.y);
-  drawRealRoom(g, RS);
+function roomFrame(st, cam, nb) {
+  applyCamera(g, cam);
+  drawRealRoom(g, st);
   const [sx, sy, ss] = REALROOM.anchors.selfSeated;
-  placeholderSelf(g, sx, sy, ss, 'body');
-  drawRealRoomForeground(g, RS);
-  placeholderSelf(g, sx, sy, ss, 'front');
+  drawLitByRoom(g, st, (c) => placeholderSelf(c, sx, sy, ss, 'body', st.t));
+  drawRealRoomForeground(g, st);
+  drawLitByRoom(g, st, (c) => placeholderSelf(c, sx, sy, ss, 'front', st.t));
   const [nx, ny, ns] = REALROOM.anchors.notebook;
-  drawNotebook(g, nx, ny, ns, { open: 0, flat: 1, rot: -0.06 });
+  if (nb) drawNotebook(g, nx, ny, ns, nb);
+}
+const RS = { t: 2, lamp: 1, moon: 1, dusk: 0 };
+cell(leftW, 0, roomW, 1280, 'REAL_ROOM full camera, notebook open on the desk', ['#000', '#000'], (x, y) => {
+  g.save(); g.translate(x, y);
+  roomFrame(RS, REALROOM.cameras.full, { open: 1, flat: 1, rot: -0.04 });
   g.restore();
 });
-cell(leftW, 1280, roomW / 2, SH - 1280, 'room: lamp 0, moon 1', ['#000', '#000'], (x, y, w, h) => {
-  g.save(); g.translate(x, y); g.scale(0.5, 0.5); g.translate(360 - REALROOM.camera.x, -200);
-  const s = { t: 2, lamp: 0, moon: 1 };
-  drawRealRoom(g, s); placeholderSelf(g, ...REALROOM.anchors.selfSeated, 'body'); drawRealRoomForeground(g, s); placeholderSelf(g, ...REALROOM.anchors.selfSeated, 'front');
+cell(leftW, 1280, roomW / 2, SH - 1280, 'opening cam + titleBox, thirds', ['#000', '#000'], (x, y, w, h) => {
+  g.save(); g.translate(x, y + 90); g.scale(0.5, 0.5);
+  g.save(); g.beginPath(); g.rect(0, 0, 720, 1280); g.clip();
+  roomFrame(RS, REALROOM.cameras.opening, { open: 1, flat: 1, rot: -0.04 });
+  const T = REALROOM.titleBox;
+  g.fillStyle = '#fff3dc'; g.textAlign = 'center'; g.font = '600 52px "Caveat"';
+  g.fillText('The Void', T.x + T.w / 2, T.y + T.h * 0.42);
+  g.fillText('and My Fear', T.x + T.w / 2, T.y + T.h * 0.78);
+  g.textAlign = 'start';
+  g.strokeStyle = 'rgba(255,90,90,0.7)'; g.lineWidth = 2; g.strokeRect(T.x, T.y, T.w, T.h);
+  g.restore();
+  g.strokeStyle = 'rgba(120,255,140,0.6)'; g.lineWidth = 2;
+  for (const yy of [427, 853, 1088]) { g.beginPath(); g.moveTo(0, yy); g.lineTo(720, yy); g.stroke(); }
   g.restore();
 });
-cell(leftW + roomW / 2, 1280, roomW / 2, SH - 1280, 'room: dusk 1, lamp .6', ['#000', '#000'], (x, y, w, h) => {
-  g.save(); g.translate(x, y); g.scale(0.5, 0.5); g.translate(360 - REALROOM.camera.x, -200);
-  const s = { t: 2, lamp: 0.6, moon: 0.5, dusk: 1 };
-  drawRealRoom(g, s); placeholderSelf(g, ...REALROOM.anchors.selfSeated, 'body'); drawRealRoomForeground(g, s); placeholderSelf(g, ...REALROOM.anchors.selfSeated, 'front');
+cell(leftW + roomW / 2, 1280, roomW / 2, SH - 1280, 'ending: lamp 0, starHood .9, wink', ['#000', '#000'], (x, y, w, h) => {
+  g.save(); g.translate(x, y + 90); g.scale(0.5, 0.5);
+  g.beginPath(); g.rect(0, 0, 720, 1280); g.clip();
+  roomFrame({ t: 7, lamp: 0, moon: 1, fairy: 0.3, starHood: 0.9, starWink: 0.8 }, REALROOM.cameras.full, { open: 0, flat: 1, rot: -0.06 });
   g.restore();
 });
 fs.writeFileSync(outPath, c.toBuffer('image/png'));
@@ -156,5 +170,10 @@ if (args.includes('--time')) {
   time('drawRealRoom zoom1.8', (i) => drawRealRoom(tg, { t: i * 0.04, lamp: 1, moon: 1 }));
   time('drawRealRoomForeground zoom1.8', (i) => drawRealRoomForeground(tg, { t: i * 0.04, lamp: 1, moon: 1 }));
   tg.restore();
+  tg.save(); applyCamera(tg, REALROOM.cameras.opening);
+  time('room opening cam (both layers + notebook)', (i) => { drawRealRoom(tg, { t: i * 0.04 }); drawRealRoomForeground(tg, { t: i * 0.04 }); drawNotebook(tg, ...REALROOM.anchors.notebook, { open: 1, flat: 1 }); });
+  tg.restore();
+  time('drawLitByRoom (empty pass, overhead only)', (i) => drawLitByRoom(tg, { t: i * 0.04, lamp: 0.5 }, () => {}));
+  time('room ending (lamp 0, starHood, wink)', (i) => { drawRealRoom(tg, { t: i * 0.04, lamp: 0, starHood: 1, starWink: 0.5 }); drawRealRoomForeground(tg, { t: i * 0.04, lamp: 0 }); });
   time('room lamp fading (crossfade)', (i) => { drawRealRoom(tg, { t: i * 0.04, lamp: (i % 50) / 50, moon: 1 }); drawRealRoomForeground(tg, { t: i * 0.04, lamp: (i % 50) / 50, moon: 1 }); });
 }

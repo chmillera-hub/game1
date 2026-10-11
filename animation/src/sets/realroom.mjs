@@ -4,9 +4,11 @@
 //                                      shelf, plants, and the desk top surface
 //   drawRealRoomForeground(g, state)   desk top (again, over the narrator's waist), desk front, lamp,
 //                                      mug + steam, books, crayons, dust motes in the lamp light
-//   REALROOM = { width, height, anchors: { name: [x, y, scale] }, deskY, deskNearY, titleBox, ... }
+//   drawLitByRoom(g, state, drawFn, box?)  draws a character lit like the room (warm lamp key / night blue)
+//   REALROOM = { width, height, camera, cameras, anchors: { name: [x, y, scale] }, deskY, deskNearY, titleBox, ... }
 //
-// state: { t, lamp 0..1, moon 0..1, dusk 0..1, fairy 0..1, deskTop bool, motes bool, steam bool }
+// state: { t, lamp 0..1, moon 0..1, dusk 0..1, fairy 0..1, starHood 0..1, starWink 0..1, deskTop bool, motes bool,
+//          steam bool }
 // Static art is cached once per (lamp on/off, moon, dusk, resolution) in offscreen canvases;
 // the lamp fades by cross-dissolving the "off" and "on" caches. Full API: docs/props.md.
 
@@ -28,6 +30,15 @@ export const REALROOM = {
   width: RW,
   height: RH,
   camera: { x: 420, y: 640, zoom: 1 }, // default full-room framing (shows world x 60..780)
+  // verified framings (pass to applyCamera). opening = the screenplay's first frame / thumbnail: title box fully
+  // in the upper third, face in the middle third, notebook on the desk in the lower third above the bottom 15 %.
+  cameras: {
+    full: { x: 420, y: 640, zoom: 1 },
+    opening: { x: 420, y: 655, zoom: 1.12 },   // push-in target for the 2 % creep: zoom 1.142
+    desk: { x: 424, y: 760, zoom: 1.5 },        // SELF + notebook + lamp pool ("close on SELF at the desk")
+    face: { x: 424, y: 680, zoom: 2.2 },        // face close-up (lamp glints in the eyes come from SELF's module)
+    window: { x: 432, y: 450, zoom: 1.45 },     // the window / stars / star-hood (ending)
+  },
   anchors: {
     selfSeated: [420, DESK_Y, 1.0],   // drawSelf seated origin: body meets the desk top's far edge
     notebook: [430, 984, 0.6],        // notebook lying flat on the desk (use flat: 1)
@@ -39,6 +50,7 @@ export const REALROOM = {
     window: [WIN.cx, (WIN.y0 + WIN.y1) / 2, 1],
     moon: [MOON[0], MOON[1], 1],
     faceCloseUp: [424, 680, 1],       // camera target for a close-up on the seated narrator's face (scale 1 self)
+    starWink: [412, 196, 1],          // the star that twinkles inside the star-hood's opening (state.starWink)
   },
   deskY: DESK_Y,
   deskNearY: DESK_NEAR,
@@ -70,9 +82,13 @@ const litCol = (c, x, y, L, nightK = 0.62, boost = 1) => mixColor(nightOf(c, nig
 
 // ------------------------------------------------------------------ cache plumbing
 const layers = new Map();
+// cache resolution follows the on-screen pixel scale in 0.5 steps (1, 1.5, 2, 2.5, 3), so the opening still at
+// zoom ~1.1 is rendered sharp instead of a 1x bitmap stretched; a 2% push-in never changes the step.
 function curRes(g) {
-  try { const m = g.getTransform(); const s = Math.hypot(m.a, m.b); return s > 1.25 ? 2 : 1; } catch { return 1; }
+  try { const m = g.getTransform(); const s = Math.hypot(m.a, m.b); return clamp(Math.ceil(s * 2 - 0.1) / 2, 1, 3); } catch { return 1; }
 }
+const LAYER_PX_BUDGET = 30e6; // ≈ 120 MB of cached bitmaps max (LRU)
+let layerPx = 0;
 function layer(key, x, y, w, h, res, build) {
   const k = `${key}@${res}`;
   let L = layers.get(k);
@@ -85,7 +101,12 @@ function layer(key, x, y, w, h, res, build) {
     build(g);
     L = { c, x, y, w, h };
     layers.set(k, L);
-    while (layers.size > 10) layers.delete(layers.keys().next().value); // bounded memory (2x layers are ~17 MB)
+    layerPx += c.width * c.height;
+    while (layers.size > 2 && (layerPx > LAYER_PX_BUDGET || layers.size > 12)) { // bounded memory, LRU
+      const k0 = layers.keys().next().value, c0 = layers.get(k0).c;
+      layerPx -= c0.width * c0.height;
+      layers.delete(k0);
+    }
   }
   return L;
 }
@@ -102,6 +123,8 @@ function norm(state) {
     moon: clamp(state.moon ?? 1),
     dusk: clamp(state.dusk ?? 0),
     fairy: clamp(state.fairy ?? 1),
+    starHood: clamp(state.starHood ?? 0),
+    starWink: clamp(state.starWink ?? 0),
   };
 }
 
@@ -114,6 +137,7 @@ export function drawRealRoom(g, state = {}) {
   g.save();
   if (s.lamp < 0.998) blit(g, bg(0));
   if (s.lamp > 0.002) blit(g, bg(1), s.lamp);
+  drawStarHood(g, s);
   drawStars(g, s);
   drawFairyBulbs(g, s);
   g.restore();
@@ -134,6 +158,70 @@ export function drawRealRoomForeground(g, state = {}) {
   if (s.lamp > 0.002) blit(g, rest(1), s.lamp);
   if (state.steam !== false) drawSteam(g, s);
   if (state.motes !== false && s.lamp > 0.02) drawMotes(g, s);
+  g.restore();
+}
+
+// ======================================================================== CHARACTER LIGHT
+// drawLitByRoom(g, state, drawFn): draws a character (drawFn(ctx) in the SAME world coords as g) on an offscreen
+// layer, lights it like the room, and composites it onto g:
+//   lamp on  → warm amber light from the lamp side (below-left), the far side stays cooler (screenplay s01)
+//   lamp off → the character sinks into the same soft night blue as the room (s20 ending)
+//   moon     → (lamp dimming only) a faint cool wash from the window behind / above on hair and shoulders
+// Call it once per character pass (e.g. Self 'body' and Self 'front').
+// box = [x, y, w, h] WORLD rect that contains the character (default: the seated narrator); only that region is
+// processed, so the cost is ≈ 2–4 ms per call at the full camera (more when the box fills the frame in close-ups).
+const LIT_BOX = [150, 470, 560, 620]; // seated SELF incl. hair, elbows and hands on the desk
+let litLayer = null;
+export function drawLitByRoom(g, state, drawFn, box = LIT_BOX) {
+  const s = norm(state);
+  const cw = (g.canvas && g.canvas.width) || 720, ch = (g.canvas && g.canvas.height) || 1280;
+  const m = g.getTransform();
+  // device-space rect of the box
+  const [bx, by, bw, bh] = box;
+  const xs = [], ys = [];
+  for (const [px, py] of [[bx, by], [bx + bw, by], [bx, by + bh], [bx + bw, by + bh]]) { xs.push(m.a * px + m.c * py + m.e); ys.push(m.b * px + m.d * py + m.f); }
+  const dx = Math.max(0, Math.floor(Math.min(...xs))), dy = Math.max(0, Math.floor(Math.min(...ys)));
+  const dw = Math.min(cw, Math.ceil(Math.max(...xs))) - dx, dh = Math.min(ch, Math.ceil(Math.max(...ys))) - dy;
+  if (dw <= 0 || dh <= 0) return;
+  // offscreen sized to the box (rounded up to 64 px so a moving camera rarely reallocates); copying a small
+  // canvas back is what keeps this cheap
+  const lw = Math.ceil(dw / 64) * 64, lh = Math.ceil(dh / 64) * 64;
+  if (!litLayer || litLayer.width !== lw || litLayer.height !== lh) litLayer = createCanvas(lw, lh);
+  const lg = litLayer.getContext('2d');
+  lg.setTransform(1, 0, 0, 1, 0, 0);
+  lg.globalCompositeOperation = 'source-over';
+  lg.globalAlpha = 1;
+  lg.clearRect(0, 0, lw, lh);
+  lg.save();
+  lg.beginPath(); lg.rect(0, 0, dw, dh); lg.clip();
+  lg.setTransform(m.a, m.b, m.c, m.d, m.e - dx, m.f - dy);
+  lg.save();
+  drawFn(lg);
+  lg.restore();
+  lg.globalCompositeOperation = 'source-atop';
+  // night: the room's blue swallows the figure as the lamp goes off
+  const night = 1 - s.lamp;
+  if (night > 0.004) { lg.fillStyle = rgba(NIGHT_TINT, 0.42 * night); lg.fillRect(bx, by, bw, bh); }
+  // warm lamp key from below-left
+  if (s.lamp > 0.004) {
+    const [mx, my] = LAMP_MOUTH;
+    const gl = lg.createRadialGradient(mx + 40, my + 20, 10, mx + 40, my + 20, 470);
+    gl.addColorStop(0, `rgba(255,186,110,${0.2 * s.lamp})`);
+    gl.addColorStop(0.5, `rgba(255,170,100,${0.06 * s.lamp})`);
+    gl.addColorStop(1, 'rgba(255,160,100,0)');
+    lg.fillStyle = gl; lg.fillRect(bx, by, bw, bh);
+  }
+  // cool window light from behind / above (only once the lamp dims: keeps the lit face clean and saturated)
+  if (s.moon > 0.01 && night > 0.004) {
+    const gm = lg.createRadialGradient(WIN.cx + 60, WIN.y1 - 40, 20, WIN.cx + 60, WIN.y1 - 40, 360);
+    gm.addColorStop(0, `rgba(150,180,255,${0.16 * night * s.moon})`);
+    gm.addColorStop(1, 'rgba(130,160,255,0)');
+    lg.fillStyle = gm; lg.fillRect(bx, by, bw, bh);
+  }
+  lg.restore(); // clip + composite op
+  g.save();
+  g.setTransform(1, 0, 0, 1, 0, 0);
+  g.drawImage(litLayer, 0, 0, dw, dh, dx, dy, dw, dh);
   g.restore();
 }
 
@@ -382,20 +470,92 @@ function drawFairyBulbs(g, s) {
 }
 
 // stars (few, small, gentle twinkle) — drawn over the cached sky
-const STARS = [[284, 146, 2.6], [352, 132, 2], [408, 196, 1.8], [470, 140, 2.4], [560, 160, 2.6], [590, 230, 1.8], [500, 262, 1.6], [300, 236, 1.9], [586, 322, 2], [372, 318, 1.6], [278, 330, 1.7], [452, 300, 1.4], [300, 404, 1.5], [394, 392, 1.3], [490, 384, 1.2]];
+// (all positions verified to sit on open glass: clear of both curtains and the sash bars)
+const STARS = [[318, 150, 2.6], [352, 132, 2], [408, 196, 1.8], [470, 140, 2.4], [546, 170, 2.6], [558, 228, 1.8], [500, 262, 1.6], [300, 236, 1.9], [566, 316, 2], [372, 318, 1.6], [298, 334, 1.7], [452, 300, 1.4], [300, 404, 1.5], [394, 392, 1.3], [490, 384, 1.2]];
 function drawStars(g, s) {
   const a0 = 1 - s.dusk * 0.6;
+  const night = 1 - s.lamp; // eyes adjust once the lamp is off: the stars brighten and grow a touch
   for (let i = 0; i < STARS.length; i++) {
     const [x, y, r] = STARS[i];
     const tw = 0.6 + 0.4 * Math.sin(s.t * (0.7 + (i % 4) * 0.23) + i * 1.9);
-    g.fillStyle = `rgba(255,248,225,${0.85 * tw * a0})`;
-    const rr = r * (0.85 + 0.3 * tw);
+    g.fillStyle = `rgba(255,248,225,${Math.min(1, (0.85 + 0.15 * night) * tw * a0)})`;
+    const rr = r * (0.85 + 0.3 * tw) * (1 + 0.25 * night);
     g.beginPath();
     g.moveTo(x, y - rr * 2); g.quadraticCurveTo(x, y, x + rr * 2, y); g.quadraticCurveTo(x, y, x, y + rr * 2); g.quadraticCurveTo(x, y, x - rr * 2, y); g.quadraticCurveTo(x, y, x, y - rr * 2);
     g.fill();
-    g.fillStyle = `rgba(200,215,255,${0.18 * tw * a0})`;
+    g.fillStyle = `rgba(200,215,255,${(0.18 + 0.1 * night) * tw * a0})`;
     circle(g, x, y, rr * 3); g.fill();
   }
+}
+
+// ---- s20 ending: "a faint hooded shape made of stars seems to stand among them; one star twinkles"
+// Star points of a tall hood standing on the far hills (world coords, in the window glass).
+const HOOD_STARS = [[412, 150, 2.2], [389, 163, 1.6], [377, 190, 1.8], [380, 222, 1.5], [435, 163, 1.6], [447, 190, 1.8], [444, 222, 1.5],
+  [340, 252, 2], [484, 252, 2], [324, 340, 1.7], [500, 340, 1.7], [316, 436, 1.9], [412, 446, 1.5], [508, 434, 1.9]];
+// polylines through HOOD_STARS: left edge (peak → hood → shoulder → hem), right edge, hem
+const HOOD_LINES = [[0, 1, 2, 3, 7, 9, 11], [0, 4, 5, 6, 8, 10, 13], [11, 12, 13]];
+const HOOD_FACE = [412, 196, 12, 17]; // the dark hood opening; its centre star is the one that twinkles
+function hoodOutline(g) {
+  const P = HOOD_STARS;
+  g.beginPath();
+  g.moveTo(P[0][0], P[0][1]);
+  for (const i of [1, 2, 3, 7, 9, 11, 12, 13, 10, 8, 6, 5, 4]) g.lineTo(P[i][0], P[i][1]);
+  g.closePath();
+}
+function glassClip(g) {
+  const { x0, x1, y0, y1, rail, cx } = WIN;
+  g.beginPath();
+  g.rect(x0, y0, x1 - x0, rail - 8 - y0);
+  g.rect(x0, rail + 8, cx - 5 - x0, y1 - rail - 8);
+  g.rect(cx + 5, rail + 8, x1 - cx - 5, y1 - rail - 8);
+  g.clip();
+}
+function drawStarHood(g, s) {
+  const k = s.starHood, wink = s.starWink;
+  if (k <= 0.005 && wink <= 0.005) return;
+  g.save();
+  glassClip(g);
+  if (k > 0.005) {
+    // a whisper of the Void's violet filling the silhouette, the face opening darker
+    hoodOutline(g);
+    g.fillStyle = `rgba(138,108,255,${0.07 * k})`; g.fill();
+    const [fx, fy, fr, fh] = HOOD_FACE;
+    const gf = g.createRadialGradient(fx, fy, 2, fx, fy, fh * 1.3);
+    gf.addColorStop(0, `rgba(4,6,24,${0.45 * k})`); gf.addColorStop(1, 'rgba(4,6,24,0)');
+    g.fillStyle = gf; ellipse(g, fx, fy, fr * 1.3, fh * 1.3); g.fill();
+    // constellation lines
+    g.strokeStyle = `rgba(190,205,255,${0.2 * k})`; g.lineWidth = 1.1; g.lineJoin = 'round';
+    for (const L of HOOD_LINES) {
+      g.beginPath();
+      L.forEach((i, j) => (j ? g.lineTo(HOOD_STARS[i][0], HOOD_STARS[i][1]) : g.moveTo(HOOD_STARS[i][0], HOOD_STARS[i][1])));
+      g.stroke();
+    }
+    g.strokeStyle = `rgba(190,205,255,${0.12 * k})`;
+    ellipse(g, fx, fy, fr, fh); g.stroke();
+    // the stars of the shape
+    for (let i = 0; i < HOOD_STARS.length; i++) {
+      const [x, y, r] = HOOD_STARS[i];
+      const tw = 0.75 + 0.25 * Math.sin(s.t * (0.6 + (i % 3) * 0.2) + i * 2.3);
+      g.fillStyle = `rgba(200,215,255,${0.22 * k * tw})`; circle(g, x, y, r * 3.2); g.fill();
+      g.fillStyle = `rgba(255,250,235,${0.95 * k * tw})`; sparkle(g, x, y, r * 1.9);
+    }
+  }
+  if (wink > 0.005) {
+    // the single twinkle, inside the dark hood opening
+    const [fx, fy] = HOOD_FACE;
+    const R = 3 + 11 * wink;
+    const gw = g.createRadialGradient(fx, fy, 0, fx, fy, R * 1.6);
+    gw.addColorStop(0, `rgba(235,240,255,${0.5 * wink})`); gw.addColorStop(1, 'rgba(200,215,255,0)');
+    g.fillStyle = gw; g.fillRect(fx - R * 1.6, fy - R * 1.6, R * 3.2, R * 3.2);
+    g.fillStyle = `rgba(255,252,240,${Math.min(1, 0.4 + wink)})`;
+    sparkle(g, fx, fy, R);
+  }
+  g.restore();
+}
+function sparkle(g, x, y, r) {
+  g.beginPath();
+  g.moveTo(x, y - r); g.quadraticCurveTo(x, y, x + r, y); g.quadraticCurveTo(x, y, x, y + r); g.quadraticCurveTo(x, y, x - r, y); g.quadraticCurveTo(x, y, x, y - r);
+  g.fill();
 }
 
 function drawShelf(g, L) {
@@ -577,7 +737,7 @@ function buildForeground(g, L) {
   // mug
   drawMug(g, L, MUG[0], MUG[1]);
   // lamp (with light cone + halo when lit)
-  drawDeskLamp(g, LAMP_POS[0], LAMP_POS[1], LAMP_POS[2], { on: L, t: 0, cone: 0.45 });
+  drawDeskLamp(g, LAMP_POS[0], LAMP_POS[1], LAMP_POS[2], { on: L, t: 0, cone: 0.45, night: L ? 0 : 0.85, nightColor: NIGHT_TINT });
   // warm light kissing the lip near the lamp
   if (L) {
     g.save(); g.translate(260, DESK_NEAR + 6); g.scale(1, 0.12);
@@ -682,8 +842,9 @@ function drawMotes(g, s) {
     const along = 40 + u * 190 + fbm(s.t * 0.07 + i, 303) * 30;
     const across = (v - 0.5) * (40 + along * 0.7) + fbm(s.t * 0.09 + i * 3, 304) * 18;
     const dx = 0.58, dy = 0.81; // lamp direction (facing right)
-    const x = mx + dx * along - dy * across, y = my + dy * along + dx * across - ((s.t * 3 + i * 17) % 40);
-    const tw = 0.5 + 0.5 * Math.sin(s.t * 1.1 + i * 2.3);
+    const rise = ((s.t * 3 + i * 17) % 40) / 40;   // slow rise, faded in/out so the wrap never pops
+    const x = mx + dx * along - dy * across, y = my + dy * along + dx * across - rise * 40;
+    const tw = (0.5 + 0.5 * Math.sin(s.t * 1.1 + i * 2.3)) * Math.sin(Math.PI * rise);
     g.fillStyle = `rgba(255,236,190,${0.32 * s.lamp * tw})`;
     circle(g, x, y, 1.3 + (i % 3) * 0.5); g.fill();
   }

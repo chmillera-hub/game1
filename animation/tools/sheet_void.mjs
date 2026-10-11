@@ -113,18 +113,38 @@ gc.fillStyle = '#000'; gc.fillRect(0, 0, cc.width, cc.height);
 });
 fs.writeFileSync(out('sheet_cosmos.png'), cc.toBuffer('image/png'));
 
-// --- timing
+// --- timing. NOTE: @napi-rs/canvas records draw calls lazily and rasterizes on readback, so every
+// sample includes a full-frame getImageData (as the renderer does) and the clear+readback baseline is
+// subtracted. Min and median of 40 frames are reported (other processes add noise to the median).
 const tc = createCanvas(720, 1280), tg = tc.getContext('2d');
-const time = (label, fn, n = 50) => {
-  fn(0); const t0 = performance.now();
-  for (let i = 0; i < n; i++) fn(i / 24);
-  console.log(`${label.padEnd(44)} ${((performance.now() - t0) / n).toFixed(2)} ms`);
+const frame = (fn, t) => {
+  const t0 = performance.now();
+  tg.fillStyle = '#16132b'; tg.fillRect(0, 0, 720, 1280);
+  fn(t);
+  tg.getImageData(0, 0, 720, 1280);
+  return performance.now() - t0;
 };
-time('drawVoid scale 0.55 (wide)', (t) => drawVoid(tg, 360, 1150, 0.55, { t, shadowSpread: 0.5 }));
-time('drawVoid scale 0.55 cosmos 1 + hands', (t) => drawVoid(tg, 360, 1150, 0.55, { t, cosmos: 1, handR: VOID_HANDS.shoulder([300, -250]), handL: VOID_HANDS.unlock([-350, -300]) }));
-time('drawVoid scale 1.0 (towering, cropped)', (t) => drawVoid(tg, 360, 1700, 1.0, { t, cosmos: 1 }));
-time('drawVoid hood close-up scale 2.3 cosmos 1', (t) => drawVoid(tg, 360, 4000, 2.3, { t, cosmos: 1, shadow: false }));
-time('drawVoidGlow', (t) => drawVoidGlow(tg, 360, 1150, 0.55, { t, cosmos: 1 }));
+const time = (label, fn) => {
+  // baseline (clear + readback) frames are interleaved with the measured frames
+  const a = [], b = [];
+  for (let i = 0; i < 50; i++) {
+    const tb = frame(() => {}, 0), ta = frame(fn, i / 24);
+    if (i >= 5) { a.push(ta); b.push(tb); }
+  }
+  a.sort((x, y) => x - y); b.sort((x, y) => x - y);
+  const med = (v) => v[v.length >> 1];
+  console.log(`${label.padEnd(46)} min ${(a[0] - b[0]).toFixed(2).padStart(6)} ms   median ${(med(a) - med(b)).toFixed(2).padStart(6)} ms`);
+};
+time('Fear (reference)', (t) => drawFear(tg, 360, 1100, 1, { t }));
+time('drawVoid 0.55 (wide, dark)', (t) => drawVoid(tg, 360, 1150, 0.55, { t, shadowSpread: 0.5 }));
+time('drawVoid 0.55 cosmos 1', (t) => drawVoid(tg, 360, 1150, 0.55, { t, cosmos: 1, shadowSpread: 0.5 }));
+time('drawVoid 0.55 cosmos 1 + one hand + glow', (t) => { const p = { t, cosmos: 1, headDown: 0.6, headTurn: 0.4, handR: VOID_HANDS.shoulder([300, -250]) }; drawVoid(tg, 360, 1150, 0.55, p); drawVoidGlow(tg, 360, 1150, 0.55, p); });
+time('drawVoid 0.55 cosmos 1 + two hands', (t) => drawVoid(tg, 360, 1150, 0.55, { t, cosmos: 1, handR: VOID_HANDS.shoulder([300, -250]), handL: VOID_HANDS.unlock([-350, -300]) }));
+time('drawVoid 1.0 (towering, cropped) cosmos 1', (t) => drawVoid(tg, 360, 1700, 1.0, { t, cosmos: 1 }));
+time('drawVoid hood close-up 2.3 cosmos 1', (t) => drawVoid(tg, 360, 640 + 1500 * 2.3, 2.3, { t, cosmos: 1, shadow: false }));
+time('drawVoid face fills frame 4.5 cosmos 1', (t) => drawVoid(tg, 360, 640 + 1500 * 4.5, 4.5, { t, cosmos: 1, shadow: false }));
+time('drawVoid 0.55 alpha 0.6 (layer)', (t) => drawVoid(tg, 360, 1150, 0.55, { t, alpha: 0.6 }));
+time('drawVoidGlow 0.55', (t) => drawVoidGlow(tg, 360, 1150, 0.55, { t, cosmos: 1, headDown: 0.6 }));
 time('drawCosmos full screen reveal 1', (t) => drawCosmos(tg, 360, 640, 380, 660, t, { reveal: 1 }));
 time('drawCosmos full screen reveal 0.4', (t) => drawCosmos(tg, 360, 640, 380, 660, t, { reveal: 0.4 }));
-console.log('HEIGHT', HEIGHT);
+time('drawCosmos small (hood, rx 48)', (t) => drawCosmos(tg, 360, 640, 48, 64, t, { reveal: 1, clip: 'ellipse' }));

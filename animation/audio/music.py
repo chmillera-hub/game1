@@ -245,6 +245,59 @@ MOODS = {
 }
 
 # ============================================================================================
+# time anchors (same syntax as src/timeline.mjs): 12.5 | 's05b03' | 's05b03.end' | 's05b03.mid' |
+# 's05b03+1.2' | 's05b03.end-0.4' | 's07' (scene start) | 's07.end' | 'film.end'
+import re  # noqa: E402
+
+_ANCHOR = re.compile(r"^([A-Za-z0-9_]+)(\.(start|end|mid))?([+-][0-9.]+)?$")
+
+
+class Anchors:
+    def __init__(self, timeline=None):
+        self.beats, self.scenes, self.duration = {}, {}, None
+        if timeline:
+            beats = timeline.get("beats", {})
+            items = beats.items() if isinstance(beats, dict) else [(b[0], b[1]) if isinstance(b, list) else (b.get("id"), b) for b in beats]
+            self.beats = {k: v for k, v in items}
+            self.scenes = {sc["id"]: sc for sc in timeline.get("scenes", [])}
+            self.duration = timeline.get("duration")
+
+    def __call__(self, v):
+        if isinstance(v, (int, float)):
+            return float(v)
+        m = _ANCHOR.match(str(v).strip())
+        if not m:
+            raise SystemExit(f"[music] bad time/anchor: {v!r}")
+        bid, which, off = m.group(1), m.group(3) or "start", m.group(4)
+        if bid == "film":
+            if self.duration is None:
+                raise SystemExit("[music] 'film' anchor needs a timeline")
+            rec = {"start": 0.0, "end": float(self.duration)}
+        else:
+            rec = self.beats.get(bid) or self.scenes.get(bid)
+        if rec is None:
+            raise SystemExit(f"[music] unknown anchor id {bid!r} in {v!r} (not a beat/scene of the timeline)")
+        a, b = float(rec["start"]), float(rec["end"])
+        base = b if which == "end" else (a + b) / 2 if which == "mid" else a
+        return base + (float(off) if off else 0.0)
+
+
+def resolve_sheet(sheet, anchors):
+    """Copy of the cue sheet with every time field resolved to absolute seconds."""
+    out = dict(sheet)
+    out["duration"] = anchors(sheet["duration"]) if "duration" in sheet else float(anchors.duration)
+    cues = []
+    for c in sheet["cues"]:
+        c2 = dict(c)
+        c2["start"] = max(0.0, anchors(c["start"]))
+        c2["end"] = min(out["duration"], anchors(c["end"]))
+        c2["hits"] = [dict(h, t=anchors(h["t"])) for h in c.get("hits", [])]
+        cues.append(c2)
+    out["cues"] = cues
+    return out
+
+
+# ============================================================================================
 # synth engine
 
 
@@ -673,14 +726,15 @@ def place_phrases(w, harm, grid, stem=None, octave=None, vel=50, doubles=(), min
     octave = cue.phrase_oct if octave is None else octave
     count = 0
     all_names = names
+    seq_i = 0
     for gi, (a, b) in enumerate(cue.gaps()):
-        if cue.phrase_seq:
-            nm0 = cue.phrase_seq[gi % len(cue.phrase_seq)]
-            names = [nm0] + ([nm0 + "_short"] if nm0 + "_short" in PHRASES else [])
-        else:
-            names = all_names
         t = a
         while t < b - 0.6 and count < max_count:
+            if cue.phrase_seq:
+                nm0 = cue.phrase_seq[seq_i % len(cue.phrase_seq)]
+                names = [nm0] + ([nm0 + "_short"] if nm0 + "_short" in PHRASES else [])
+            else:
+                names = all_names
             # skip if a phrase already sounds here (e.g. a resolve phrase)
             if any(pa - 0.3 < t < pb for pa, pb in cue.phrase_iv):
                 t = max(pb for pa, pb in cue.phrase_iv if pa - 0.3 < t < pb) + 0.3
@@ -716,9 +770,8 @@ def place_phrases(w, harm, grid, stem=None, octave=None, vel=50, doubles=(), min
             nm, bt = chosen
             end = place_phrase(w, harm, nm, t, bt, stem, octave, w.vel(vel, t), doubles)
             count += 1
+            seq_i += 1
             t = end + rest_beats * cue.beat
-            if not (cue.has_speech_info is False):
-                break  # with dialogue info: one phrase per gap
 
 
 def resolve_hits(w, harm, stem=None, octave=None, vel=52, doubles=(), chord_stem="piano", roll=True,
@@ -812,6 +865,7 @@ def mood_curious_unease(w, cue, harm, grid):
 
 
 def mood_alarm_chaos(w, cue, harm, grid):
+    place_phrases(w, harm, grid, vel=50)  # only if the cue asks for phrases (none by default: no melody)
     # pulsing low-string ostinato (3+3+2 accents) on a D pedal; held tremolo dissonance; NO melody
     pattern_layer(w, grid, harm, "strfast", "osti", src=lambda c: [c["b"][0], c["b"][0] + 12], vel=58, dur=0.32,
                   speech="keep")
@@ -825,6 +879,7 @@ def mood_alarm_chaos(w, cue, harm, grid):
 
 
 def mood_void_presence(w, cue, harm, grid):
+    place_phrases(w, harm, grid, vel=44)  # only if the cue asks for phrases
     # still and immense: low open fifths, a dark pad, a bowed-glass fifth far above that slowly breathes
     pad_layer(w, harm, "lowstr", src=lambda c: [c["b"][0] + 12] + c["a"], vel=40)
     pad_layer(w, harm, "darkpad", src="p", vel=50)
@@ -896,14 +951,18 @@ def mood_sorrow(w, cue, harm, grid):
 def mood_stillness(w, cue, harm, grid):
     place_phrases(w, harm, grid, vel=44)
     # almost nothing: one held high tone (strings harmonics + glass), a faint low D if intensity allows
+    tone = cue.spec.get("tone", "high")  # 'high' (A5 harmonic), 'low' (D2), 'both'
     playing = [(s["t0"], s["t1"]) for s in w.segs if s["kind"] in ("start", "swell", "sting")]
     for a, b in playing:
         if b - a < 0.5:
             continue
-        w.add("strings", a + 0.05, b - a, midi("A5"), w.vel(26, a), jitter=0)
-        w.add("glass", a + 0.4, b - a - 0.3, midi("A5"), w.vel(14, a), jitter=0)
-        if cue.I >= 0.2:
-            w.add("darkpad", a + 0.2, b - a, midi("D2"), w.vel(34, a), jitter=0)
+        if tone in ("high", "both"):
+            w.add("strings", a + 0.05, b - a, midi("A5"), w.vel(26, a), jitter=0)
+            w.add("glass", a + 0.4, b - a - 0.3, midi("A5"), w.vel(14, a), jitter=0)
+        if tone in ("low", "both") or cue.I >= 0.2:
+            w.add("darkpad", a + 0.2, b - a, midi("D2"), w.vel(34 if tone == "high" else 30, a), jitter=0)
+        if tone in ("low", "both"):
+            w.add("lowstr", a + 0.1, b - a, midi("D2"), w.vel(20, a), jitter=0)
     # resolve: "a single warm low piano chord" + pad
     for t, ty, h in cue.hits:
         if ty == "resolve":
@@ -918,6 +977,7 @@ def mood_stillness(w, cue, harm, grid):
 
 
 def mood_dread(w, cue, harm, grid):
+    place_phrases(w, harm, grid, vel=44)  # only if the cue asks for phrases
     pad_layer(w, harm, "lowstr", src="p", vel=32)
     pad_layer(w, harm, "darkpad", src="b", vel=40, octave=1)
     pad_layer(w, harm, "glass", src="u", vel=12, min_I=0.35)
@@ -1014,7 +1074,7 @@ MOOD_FN = {
 }
 # mix level of each mood (dB) before the cue's own intensity scaling
 MOOD_DB = {"tender_memory": 0, "curious_unease": -1, "alarm_chaos": -2, "void_presence": -5, "confrontation": -1,
-           "sorrow": 0, "stillness": 3, "dread": -1, "reveal_wonder": -5.5, "belonging": 0, "resolution": -1,
+           "sorrow": 0, "stillness": 3, "dread": -1, "reveal_wonder": -5.5, "belonging": -1.5, "resolution": -1,
            "outro": 1.5}
 
 
@@ -1165,7 +1225,20 @@ def load_speech(sheet, sheet_dir):
     return [tuple(m) for m in merged]
 
 
+def find_timeline(sheet, sheet_dir):
+    src = sheet.get("timeline") or sheet.get("speech_from")
+    cands = []
+    if src:
+        cands = [src, os.path.join(sheet_dir, src), os.path.join(ROOT, src)]
+    cands.append(os.path.join(ROOT, "data", "timeline.json"))
+    for p in cands:
+        if os.path.exists(p):
+            return json.load(open(p))
+    return None
+
+
 def render_sheet(sheet, sheet_dir=".", lufs=-18.0, seed=0, verbose=True, cue_dir=None):
+    sheet = resolve_sheet(sheet, Anchors(find_timeline(sheet, sheet_dir)))
     dur = float(sheet["duration"])
     speech = load_speech(sheet, sheet_dir)
     N = int(round(dur * SR))
@@ -1296,7 +1369,7 @@ def main():
     if not a.quiet:
         report(mix, cues)
     if a.roll:
-        piano_roll(cues, load_speech(sheet, sdir), a.roll, title=os.path.basename(a.out))
+        piano_roll(cues, load_speech(sheet, sdir), a.roll, title=os.path.basename(a.out), t1=len(mix) / SR)
     if a.notes:
         with open(a.notes, "w") as f:
             for c in cues:

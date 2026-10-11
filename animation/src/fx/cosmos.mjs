@@ -8,7 +8,7 @@
 //       reveal  0..1  (default 1)  0 = pure abyss; stars kindle first (~0.05-0.6),
 //                                   nebulae bloom (~0.25-0.75), then galaxies + glyphs (~0.5-1)
 //       glyphs  0..1  (default 1)  visibility of the drifting "bits and pieces of meaning"
-//       seed    int   (default 7)  star layout / glyph arrangement
+//       seed    int   (default 7)  star layout + drift phases
 //       drift   num   (default 1)  speed multiplier for parallax drift, spin and glyph float
 //       clip    'rect' (default) | 'ellipse' | 'none'   ('none' = caller already clipped)
 //       bg      bool  (default true) paint the deep-space background (false = transparent overlay)
@@ -17,7 +17,10 @@
 //
 // Works at any size: content density / line widths / mip levels adapt to the effective on-screen
 // size (it reads g.getTransform()), so it looks right both tiny inside a hood (rx≈40-120 px) and
-// as a full-screen close-up (rx≥420). Nebula + galaxy textures are generated once and cached.
+// as a full-screen close-up (rx≥420). Nebula, galaxy, glyph and star-stamp textures are generated once
+// and cached; background+nebulae are composited into one cached "deep field" per size bucket.
+// Cost (rasterized): full-screen ~6-9 ms, hood-sized ~1 ms. Deterministic in t (no Math.random).
+// Also exported: hrand(i, seed) 0..1, vnoise(x, seed) / vfbm(x, seed) -1..1 — integer-safe hash noise.
 
 import { createCanvas } from '@napi-rs/canvas';
 import { clamp, lerp, TAU, smoothstep, rgba, mixColor } from '../engine.mjs';
@@ -481,8 +484,7 @@ export function drawCosmos(g, cx, cy, rx, ry, t = 0, opts = {}) {
     g.fillStyle = CC.abyss;
     g.fillRect(cx - rx, cy - ry, rx * 2, ry * 2);
   }
-  const SK = opts.__skip || {};
-  if (fk > 0.003 && !SK.field) {
+  if (fk > 0.003) {
     const wDev = 2 * rx * k, hDev = 2 * ry * k;
     const f = Math.max(wDev, hDev) > 420 ? 0.5 : 1;
     const field = fieldCanvas(qsize(wDev * f), qsize(hDev * f), opts.bg !== false);
@@ -497,7 +499,7 @@ export function drawCosmos(g, cx, cy, rx, ry, t = 0, opts = {}) {
 
   // --- galaxies (cached sprites, rotated per frame)
   g.globalCompositeOperation = 'lighter';
-  if (!SK.gal) GALAXIES.forEach((G, i) => {
+  GALAXIES.forEach((G, i) => {
     const gk = smoothstep(0.48 + G.ro, 0.86 + G.ro, reveal);
     if (gk <= 0.003) return;
     const x = cx + (G.nx + fbm(T * 0.01 + i * 7.7, seed + 40 + i) * 0.03) * rx;
@@ -524,7 +526,7 @@ export function drawCosmos(g, cx, cy, rx, ry, t = 0, opts = {}) {
   const indiv = [];
   const spr = starSprites();
   g.globalCompositeOperation = 'lighter';
-  if (!SK.stars) LAYERS.forEach((L, li) => {
+  LAYERS.forEach((L, li) => {
     const n = Math.round(clamp(area * L.dens, L.min, L.max));
     const arr = data[li];
     const offU = T * L.vx, offV = T * L.vy;
@@ -573,7 +575,7 @@ export function drawCosmos(g, cx, cy, rx, ry, t = 0, opts = {}) {
 
   // --- glyphs: bits and pieces of meaning, drifting slowly
   const gk0 = smoothstep(0.58, 0.98, reveal) * glyphAmt;
-  if (gk0 > 0.003 && !SK.glyphs) {
+  if (gk0 > 0.003) {
     const small = clamp((260 - R) / 200);
     const nG = Math.round(clamp(4 + R / 38, 5, GLYPHS.length));
     const gsz = S * lerp(0.07, 0.115, small);
@@ -595,5 +597,4 @@ export function drawCosmos(g, cx, cy, rx, ry, t = 0, opts = {}) {
 }
 
 /** warm-up caches (call once at startup if you want the first frame to be fast) */
-export function _cosmosSprites() { return { neb: nebulae(), warm: galaxy('warm'), cool: galaxy('cool') }; }
 export function preloadCosmos() { nebulae(); galaxy('warm'); galaxy('cool'); starData(7); starSprites(); }

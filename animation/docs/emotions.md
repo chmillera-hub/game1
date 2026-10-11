@@ -24,11 +24,13 @@ drawEmotion(g, 'JOY', x, y, scale, { t, view: 'back', lookBack: k, face: LOOKBAC
 `drawEmotion(g, name, x, y, scale = 1, pose = {})`
 - `name` is one of `'JOY' | 'SADNESS' | 'ANGER' | 'CALM'`. Any other value throws.
 - `(x, y)` is the world point on the ground between the feet. `scale` 1 gives the heights below.
-- The function does its own `save`/`restore`, so it never leaks transform, alpha, composite, filter or shadow. Note that
-  @napi-rs/canvas does not restore `fillStyle`/`strokeStyle` across `restore()` (the same is true for drawFear).
-  Always set your styles before you fill.
-- It is deterministic in `pose.t` and costs about 2.5–5.5 ms per call at scale 1 (rasterised). Four emotions plus Fear
-  come to roughly 15–20 ms.
+- The function does its own `save`/`restore`, so it never leaks transform, alpha, composite, filter or shadow. It also
+  puts back `fillStyle`/`strokeStyle` itself, because @napi-rs/canvas's `restore()` does not restore them. (drawFear
+  *does* leak them, so after Fear set your styles before you fill.)
+- It is deterministic in `pose.t`. Measured cost per call, rasterised (`node tools/sheet_emotions.mjs` prints it):
+  front about 3–4.7 ms at scale 1; back view with `lookBack` about 4.5–5 ms at scale 1 and about 3.4 ms at the HQ
+  console scale (0.54). The look-back face needs two `drawFace` passes. Four emotions plus Fear come to roughly
+  15–22 ms.
 
 ## Sizes at scale 1 (local coords: origin = feet, +x = screen right at facing 1, y negative = up)
 
@@ -47,7 +49,7 @@ drawEmotion(g, 'JOY', x, y, scale, { t, view: 'back', lookBack: k, face: LOOKBAC
 | body half-width | 55 | 72 | 62 | 40 |
 | arm reach (L1+L2) | 106 | 100 | 98 | 128 |
 | pressFront hand (±x, y) | ±42, −147 | ±50, −160 | ±58, −138 | ±38, −201 |
-| pressBack hand (±x, y) | ±52, −188 | ±68, −189 | ±59, −172 | ±38, −249 |
+| pressBack hand (±x, y) | ±55, −201 | ±72, −206 | ±62, −186 | ±40, −265 |
 
 For reference, FEAR is about 330 tall and CONSCIOUSNESS about 600. All of these values are also exported as
 `EMOTION_ANCHORS[name]`: `height, headCenter, headTop, headRx, headRy, faceCenter, eyeL, eyeR, mouth, neck, shoulderL,
@@ -62,7 +64,7 @@ values. Crouch moves the upper body down by `crouch × (30 | 26 | 24 | 32)` for 
 |---|---|---|
 | `t` | seconds | Drives idle life: breathing, tuft sway, auto-blink, wave/flail motion, steam. Always pass it. |
 | `view` | `'front'` \| `'back'` | `'back'` means seen from behind (at the console). There is no face unless `lookBack` > 0. |
-| `lookBack` | 0..1 | **Back view only.** Turns the head over the shoulder toward the camera. At 0 you see the back of the head. Around 0.5 the eye is peeking past the silhouette edge. At 1 you get a 3/4 face: one eye, its brow, a cheek bulge and the near part of the mouth. The head also tilts a little and the body leans about 1.7°. |
+| `lookBack` | 0..1 | **Back view only.** Turns the head over the shoulder toward the camera. At 0 you see the back of the head. The features come round the head like on a turning sphere: around 0.3–0.5 a narrow, foreshortened eye slides in from the silhouette edge and fades in. By 0.7 the eye, brow and mouth corner show. At 1 you get a 3/4 face: one eye with its brow, a near-cheek blush, a smile set well inside the head, and the smiling far cheek gently pushing the outline. The far eye stays just hidden. The head also tilts a little and the body leans about 1.7°. Any value reads, so you can hold mid-turn. |
 | `lookSide` | +1 \| −1 | Which side the face appears on, in **screen space**, independent of `facing`. The default is +1 (screen right). Point it toward whoever they are looking at. |
 | `face` | expr object | A `drawFace` expression (EXPR presets work; see face.mjs). The emotion's small **base expression is added** (see below). Auto-blinks unless `face.noAutoBlink`. In lookBack, `face.lookX` is **relative to looking straight at the camera**. |
 | `noBase` | bool | Turns off the additive base expression. |
@@ -76,7 +78,7 @@ values. Crouch moves the upper body down by `crouch × (30 | 26 | 24 | 32)` for 
 | `breathe` | 0..2 | Breath amplitude, default 1. `breathRate` (Hz) overrides each character's own rate (JOY 0.32, SAD 0.22, ANGER 0.36, CALM 0.2). |
 | `armL`, `armR` | see below | `armL` is the arm on screen-left at facing 1, **in both views**. |
 | `walk` | `{ phase }` | Walk cycle: advance `phase` by about `t × 2π × 1.1`. Legs swing and the body bobs. Move `x` yourself. |
-| `heat` | 0..1 | ANGER only, default 0.2. The heat curl grows and wiggles faster. Above 0.35 small steam curls rise, and above 0.75 there are three. |
+| `heat` | 0..1 | ANGER only, default 0.2. The heat curl grows and wiggles faster. Above 0.35 small steam curls rise, and above 0.75 there are three. At 1 the top of the silhouette, steam included, is about 430 instead of 394. |
 | `shadow` | bool | Set it to `false` to skip the ground shadow (radius 76/86/84/62 px). |
 | `alpha` | 0..1 | Multiplies the current globalAlpha. |
 
@@ -104,12 +106,14 @@ un-grumpy ANGER.
 
 `armL` / `armR` accept any of the following:
 1. A **preset name**: `'pressButton'`.
-2. A **preset with tweaks**: `{ preset:'pressButton', dx, dy, atY, hand, bend, layer, fore, handAng }`.
+2. A **preset with tweaks**: `{ preset:'pressButton', dx, dy, atY, hand, bend, layer, fore, boneK, handAng }`.
    - `dx` moves the hand **outward** (positive = away from the body's centre line, on both sides).
    - `dy` moves it down in px (positive = down). Use it for taps: animate `dy` 0 → 7 → 0 over about 0.25 s.
    - `atY` sets the hand's local y absolutely, for example to put the hand exactly on your console's top surface.
-3. A **raw IK target**: `{ target:[x, y], bend, hand, layer | front, fore, handAng }`, where `[x, y]` is in local
-   coordinates. Raw targets do not follow crouch or breathing; preset targets do.
+     For front-view `pressButton`, raising the hands with `atY` also spreads them outward by half the lift so they
+     clear the face. Above the shoulder, the hand turns fingertip-down onto the edge.
+3. A **raw IK target**: `{ target:[x, y], bend, hand, layer | front, fore, boneK, handAng }`, where `[x, y]` is in
+   local coordinates. Raw targets do not follow crouch or breathing; preset targets do.
 
 Other fields:
 - `bend` (±1) chooses the elbow side. For both arms, `bend = side` puts the elbow outward/down when the hand is below
@@ -118,6 +122,8 @@ Other fields:
   `'point'` (index finger along the forearm).
 - `handAng` is an absolute hand angle in radians in local coordinates; `−π/2` points the fingers up.
 - `fore` (0..1) foreshortens the bones for arms pointing into depth, toward or away from the camera.
+- `boneK: [upper, lower]` sets explicit bone-length multipliers and overrides `fore`. For example, back-view
+  `pressButton` uses `[0.95, 0.45]`: a forearm pointing straight away from the camera.
 - `layer` controls draw order:
   - `'back'` (the default): behind the body in both views.
   - `'front'` (or `front:true`): over the chest in front view, drawn after the head. In back view it is behind the
@@ -131,7 +137,7 @@ of JOY at scale 1:
 |---|---|---|---|---|
 | `rest` | 64, −119 | back | open | Hangs just outside the body, elbow slightly out. |
 | `pressButton` (front) | 42, −147 | front | point | Down and forward onto a console in front of them, elbows out. `fore` .8. |
-| `pressButton` (back) | 52, −188 | front (hidden) | open | Forward onto a console beyond them. From behind, the elbows tuck in and the hands show just beside the body at console-top height. `fore` 1. |
+| `pressButton` (back) | 55, −201 | front (behind body) | open | Forward onto a console beyond them. From behind, the elbow drops just outside the torso and the foreshortened forearm (`boneK [.95, .45]`) rises to the hand. The hand shows beside the collar, fingers pointing away from the camera (`handAng −π/2 ± .25`). |
 | `coverEars` | 90, −270 | over | palm | Palms on the sides of the head, fingers up. Pair with `PANIC_FACE`, `tremble`, `crouch` .3. |
 | `wave` | 87, −291 | back | palm | Oscillates by itself at 1.4 Hz from `t`. |
 | `flail` | 121, −294 (moving) | back | open | Panic arms driven by noise at about 4–5 Hz. Use it on both arms. |
@@ -153,28 +159,40 @@ In back view: shadow, legs (heels first), back and front arms, body back, head (
 neckwear, then over arms.
 
 **Console, front view** (they face camera behind the console): draw the emotion **first** and the console after it as a
-foreground layer. Put the console's top edge about 20 px (local) **below** the `pressFront` wrist, so the fist shows
-and the pointing fingertip dips behind the edge: world `consoleTopY ≈ y + (pressFrontY + 20) * scale`. If the console
-top is higher or lower than this, set `atY = (consoleTopY − y) / scale − 20` for the arm.
+foreground layer. For a generic console, put its top edge about 20 px (local) **below** the `pressFront` wrist, so the
+fist shows and the pointing fingertip dips behind the edge: world `consoleTopY ≈ y + (pressFrontY + 20) * scale`. If
+the console top is higher or lower than this, set `atY = (consoleTopY − y) / scale − 20` for the arm.
+
+*With the real HQ set* (`drawHQ(g,'front')`, characters at `HQ_VIEWS.front.anchors.consoleSlot1..4`, scale ≈ 0.8):
+`drawHQForeground` puts the console top at about local y **−246**, above every emotion's shoulders except CALM's. Only
+the heads show, and the default `pressFront` hands are hidden behind the panel. That reads fine: animate small `dy`
+taps and the shoulders move. If you want hands visible on the edge, use `atY: -266`. The hands then spread outward
+past the head and rest fingertip-down on the rim. CALM at slot 4 is half off-frame in the `console` cam.
 
 **Console, back view** (they face the Screen of Consciousness): draw the console **first**, behind them, then the
-emotions. Hands show beside the body at `pressBack` y. The console's top surface should sit at or just below that y on
-screen.
+emotions. The default hands show beside the collar at `pressBack` y, with the elbows dropping outside the torso. Place
+the console's front panel or deck so that it sits around that y on screen, or move the hands with `atY`.
+*With the real HQ set* (`drawHQ(g,'back')`, characters at `HQ_VIEWS.back.anchors.consoleBack1..4`, scale ≈ 0.54, cam
+`console`), the default hands land on the console's front panel, which reads well. HQ's `button1..4` anchors sit at
+about local y −325, behind the heads. To reach one, use a raw target there; the hand is hidden by the head.
 
 **Story beat: they look back at Fear, smile, then return to work.** Use `view:'back'`, arms on `pressButton`, and set
 `lookSide` toward Fear. Key `lookBack` as `0 → 1` over 0.45–0.6 s (`ease.cubic`). Lead with the eyes: blend the face
-from neutral to `LOOKBACK_SMILE` starting about 0.2 s after the turn begins. Hold for 1.0–1.5 s with a blink, then
-return `lookBack` `1 → 0` over about 0.6 s and resume `dy` taps. Stagger the four emotions by 0.15–0.3 s so they don't
-move in unison.
+from neutral to `LOOKBACK_SMILE` starting about 0.2 s after the turn begins (`mix({}, LOOKBACK_SMILE, k)` works). Hold
+for 1.0–1.5 s with a blink, then return `lookBack` `1 → 0` over about 0.6 s and resume `dy` taps. Stagger the four
+emotions by 0.15–0.3 s so they don't move in unison. At the HQ back-view `console` cam the one-eye smile reads clearly.
+In the `wide` cam the faces are small, so push in or cut closer for the smile.
 
 Shoulder-touch, comforting or hugging contacts: use `EMOTION_ANCHORS[name].shoulderTouch` × scale.
 
 ## Gotchas
 - `lookBack` does nothing in front view. In front view, turn the head with `headTurn` (up to about ±0.7).
-- While `lookBack` is between about 0.3 and 0.7, the eye is cut off by the head's silhouette (it peeks around).
-  That reads well in motion, but don't hold a still there. Hold at 0 or between 0.85 and 1.
+- The look-back face is drawn with `drawFace` in two passes, one for the near eye and brow and one for the mouth,
+  placed on the measured head silhouette. All expression fields still work, including lip-sync, tears, blush and
+  blinks. `browUpL/R` keep their screen-side meaning. The rig's `sweat` drop and `turn` are not used in look-back.
 - In lookBack, `face.lookX` is an offset from "looking at the camera". The default already aims the iris toward the
   viewer. To look at Fear standing off-camera, nudge it by ±0.2–0.4.
+- On ANGER's square head the cheek push is halved, so the 3/4 face reads a little flatter than on the round heads.
 - In back view, tufts are mirrored so they stay on the same side anatomically. For example, SADNESS's raindrop lock
   hangs screen-right from the front and screen-left from behind.
 - `armL`/`armR` are always the screen-left and screen-right arms at `facing 1`, in both views. They swap sides with

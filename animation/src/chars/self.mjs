@@ -52,8 +52,8 @@ export const SELF_FACE = {
   white: '#fffaf4', irisColor: C.iris, irisColor2: C.iris2, irisR: 0.6, pupilColor: '#24130d',
   skin: '#d9a07c', line: '#3f2421', lineW: 2.3, lash: 0.9, restLid: 0.15, eyeOutline: 0.55,
   browY: -19, browLen: 23, browThick: 6.2, browColor: '#33242f', browArch: 0.42,
-  mouthY: 37, mouthW: 14, mouthColor: '#6b2631', tongue: '#d8707a', teethColor: '#fffaf2',
-  lipLine: '#74342f', mouthLine: 2.6,
+  mouthY: 37, mouthW: 16, mouthColor: '#6b2631', tongue: '#d8707a', teethColor: '#fffaf2',
+  lipLine: '#74342f', mouthLine: 2.8,
   blushColor: C.blush, blushX: 39, blushY: 24, blushR: 14,
   nose: drawNose,
 };
@@ -63,16 +63,17 @@ export const SELF_EXPR = {
   neutral: { lidU: 0.04, smile: 0.04 },
   calm: { lidU: 0.16, smile: 0.14, browIn: 0.1 },
   worried: { browIn: 0.85, browUp: 0.12, browSquish: 0.25, lidTilt: 0.32, lidU: 0.06, smile: -0.25 },
-  sternKind: { browIn: -0.45, browSquish: 0.5, browUp: -0.05, lidU: 0.22, lidL: 0.16, lidTilt: -0.1, pressed: 0.3, smile: 0.1 },
+  // firm brows, but open soft eyes (no squint — half-lids read smug when looking down) and a level mouth
+  sternKind: { browIn: -0.4, browSquish: 0.55, browUp: -0.05, lidU: 0.1, lidL: 0.06, lidTilt: 0.06, pressed: 0.28, smile: 0.04 },
   holdingBackTears: { browIn: 1, browUp: 0.12, browSquish: 0.3, lidTilt: 0.5, lidU: 0.26, lidL: 0.22, pressed: 0.85, smile: -0.4, tremble: 0.45, tears: 0.75 },
   singleTear: { browIn: 0.8, browUp: 0.1, lidTilt: 0.45, lidU: 0.3, lidL: 0.18, pressed: 0.45, smile: -0.12, tears: 0.85, tearR: 0.55, tremble: 0.15 },
   tenderSmile: { smile: 0.6, lidL: 0.4, lidU: 0.18, browIn: 0.35, lidTilt: 0.15, blush: 0.25 },
   tired: { lidU: 0.5, lidTilt: 0.28, browIn: 0.3, browUp: -0.12, smile: -0.12, lookY: 0.12 },
-  wonder: { browUp: 0.75, browIn: 0.3, lidU: -0.22, open: 0.22, round: 0.55, pupil: 1.3, sparkle: 0.85, lookY: -0.25 },
+  wonder: { browUp: 0.75, browIn: 0.3, lidU: -0.22, open: 0.3, round: 0.6, pupil: 1.3, sparkle: 0.85, lookY: -0.25 },
   sad: { browIn: 0.9, lidTilt: 0.6, lidU: 0.32, smile: -0.45, lookY: 0.3 },
   smile: { smile: 0.8, lidL: 0.42, browUp: 0.15, blush: 0.15 },
   laughSoft: { smile: 0.85, open: 0.2, teeth: 0.6, lidL: 0.55, lidU: 0.3, browIn: 0.25, blush: 0.3 },
-  surprised: { browUp: 0.85, lidU: -0.3, open: 0.32, round: 0.55, pupil: 0.9 },
+  surprised: { browUp: 0.85, lidU: -0.3, open: 0.42, round: 0.6, pupil: 0.9 },
   focused: { lidU: 0.3, browIn: -0.15, browSquish: 0.35, lookY: 0.45, smile: -0.05 },
   sheepish: { browIn: 0.55, browUp: 0.2, lidU: 0.15, smile: 0.35, wide: -0.1, lookX: -0.4, lookY: 0.2, blush: 0.4 },
   resolve: { browIn: -0.25, browSquish: 0.3, lidU: 0.12, pressed: 0.55, smile: -0.05 },
@@ -103,7 +104,8 @@ function skeleton(pose) {
   let hip;
   if (seated) hip = [0, SEAT_HIP];
   else {
-    const bob = walk ? -Math.cos(2 * ph) * 4 : 0;
+    // walk: hips lowest at contact (feet apart, ph = 0, π), highest at passing
+    const bob = walk ? Math.cos(2 * ph) * 5 : 0;
     hip = [lerp(0, KNEEL_HIP[0], kE), lerp(HIP_Y + bob + crouch * 36, KNEEL_HIP[1], kE)];
   }
   const sway = seated ? fbm(t * 0.17, 31) * 0.006 : fbm(t * 0.19, 31) * 0.01;
@@ -123,12 +125,18 @@ function skeleton(pose) {
   }
   const neck = tp(fshift * 0.5, NECK_REL - br * 1.4 - shrug * 6);
   const piv = tp(fshift * 0.55, PIVOT_REL - br * 1.5 - shrug * 8);
-  piv[0] += pose.headDX || 0;
-  piv[1] += pose.headDY || 0;
+  // head yaw (screen space) and its mirrored-space value; default follows bodyTurn when the body is turned
+  const defTurn = pose.bodyTurn != null || walk || kE > 0 ? btScreen * 0.5 : 0;
+  const turnScreen = clamp(pose.headTurn ?? defTurn, -1, 1);
+  const u = turnScreen * facing;
+  // back view looking over the shoulder: the head swings toward that shoulder and dips a little
+  const over = back ? sstep(0.56, 0.68, Math.abs(u)) : 0;
+  piv[0] += (pose.headDX || 0) + (u >= 0 ? 1 : -1) * 15 * over;
+  piv[1] += (pose.headDY || 0) + 5 * over;
   const headRot = lean * 0.45 + (pose.headTilt || 0) + kE * 0.08 + trem * noise1(t * 26, 6) * 0.012;
   const hc = [piv[0] + Math.sin(headRot) * HEAD_UP, piv[1] - Math.cos(headRot) * HEAD_UP];
   const hp = (x, y) => { const [rx, ry] = rotP(x, y, headRot); return [hc[0] + rx, hc[1] + ry]; };
-  return { t, facing, seated, back, kneel, kE, walk, ph, bt, th, trem, br, hip, lean, tp, sh, shY, neck, piv, headRot, hc, hp, fshift, crouch, shiver };
+  return { t, facing, seated, back, kneel, kE, walk, ph, bt, th, trem, br, hip, lean, tp, sh, shY, neck, piv, headRot, hc, hp, fshift, crouch, shiver, turnScreen, u, over };
 }
 
 let DEFAULT_SK = null;
@@ -140,13 +148,16 @@ const defSk = () => (DEFAULT_SK ||= skeleton({}));
 // spec: { target:[x,y] (WRIST, character-local), bend, front, layer, hand, handAngle, wrist, thumb,
 //         prop, board, palm, reach1, reach2, shake }
 export const SELF_ARMS = {
-  rest: (side, k = defSk()) => ({ target: [k.sh[side].x + side * 12, k.sh[side].y + 184], bend: side, hand: 'open' }),
+  rest: (side, k = defSk()) => ({ target: [k.sh[side].x + side * 12, k.sh[side].y + 184], bend: side, hand: 'rest' }),
   onShoulder: (side, k = defSk()) => ({ target: [k.sh[side].x + side * 110, k.sh[side].y + 130], bend: -side, front: true, hand: 'drape', palm: true, wrist: side * 0.75, thumb: -side }),
   handOnHeart: (side, k = defSk()) => {
-    const p = k.tp(12 + k.fshift, -96);
-    return { target: [p[0] - side * 4 - 6, p[1] + 20], bend: side, front: true, hand: 'flat', handAngle: side > 0 ? -2.25 : -0.95, thumb: -1, reach2: 0.85 };
+    // flat hand over the heart (wearer's left chest = local +x), fingers toward the opposite shoulder
+    const h = k.tp(k.fshift + 18, -86);
+    const w = side < 0 ? [h[0] - 40, h[1] + 14] : [h[0] + 30, h[1] + 24];
+    return { target: w, bend: side, front: true, hand: 'flat', handAngle: k.lean + (side < 0 ? -0.42 : -2.3), thumb: -1, reach2: 0.8 };
   },
-  palmOut: (side, k = defSk()) => ({ target: [k.sh[side].x + side * 92, k.sh[side].y + 100], bend: -side, front: true, hand: 'palm', handAngle: -Math.PI / 2 + side * 0.22, thumb: -side }),
+  // gentle "wait": elbow stays low by the body, forearm comes up and out, palm toward whoever is in front
+  palmOut: (side, k = defSk()) => ({ target: [k.sh[side].x + side * 78, k.sh[side].y + 70], bend: -side, front: true, hand: 'palm', handAngle: -Math.PI / 2 + side * 0.3, thumb: -side }),
   reachOut: (side, k = defSk()) => ({ target: [k.sh[side].x + side * 150, k.sh[side].y + 112], bend: -side, front: true, hand: 'open', wrist: -side * 0.25, thumb: -side }),
   holdClipboard: (side, k = defSk()) => {
     const p = k.tp(side * 40 + k.fshift, -40);
@@ -158,8 +169,9 @@ export const SELF_ARMS = {
     return { target: p, bend: -side, layer: 'side', hand: 'open', handAngle: side > 0 ? Math.PI + 0.9 : -0.9, thumb: 1 };
   },
   wipeTear: (side, k = defSk()) => {
-    const e = k.hp(side * 30, 28);
-    return { target: [e[0] + side * 8, e[1] + 22], bend: side, front: true, hand: 'fist', handAngle: side > 0 ? -2.05 : -1.09, thumb: -side };
+    // elbow tucked in front of the chest (upper arm foreshortened toward camera), knuckle under the same-side eye
+    const w = k.hp(side * 40, 46);
+    return { target: w, bend: side, front: true, hand: 'fist', handAngle: k.headRot - Math.PI / 2 - side * 0.32, thumb: -side, reach1: 0.45 };
   },
   rubEyes: (side, k = defSk()) => {
     const e = k.hp(side * 28, 22);
@@ -171,8 +183,9 @@ export const SELF_ARMS = {
     return { target: p, bend: side, front: true, hand: 'open', handAngle: side > 0 ? 2.4 : 0.74, thumb: 1, reach2: 0.8 };
   },
   coverMouth: (side, k = defSk()) => {
-    const m = k.hp(side * 6, 62);
-    return { target: [m[0] + side * 16, m[1] + 22], bend: side, front: true, hand: 'flat', handAngle: side > 0 ? -2.3 : -0.84, thumb: -1 };
+    // fingers laid across the lips (gasp / giggle)
+    const w = k.hp(side * 34, 47);
+    return { target: w, bend: side, front: true, hand: 'flat', handAngle: k.headRot + (side > 0 ? -2.95 : -0.19), thumb: -1, reach1: 0.45 };
   },
   // ---- seated (desk line = local y 0, the desk surface extends toward the viewer, y > 0)
   handsOnDesk: (side, k = defSk()) => ({ target: [side * 42 + (k.fshift || 0), 30], bend: side, front: true, hand: 'flat', handAngle: side > 0 ? Math.PI - 0.32 : 0.32, thumb: -1, reach2: 0.52 }),
@@ -259,13 +272,26 @@ export function drawSelf(g, x, y, scale = 1, pose = {}) {
     for (const side of [-1, 1]) {
       const a = arms[side < 0 ? 0 : 1];
       if (a.name === 'rest' && !a.noSwing) {
-        const sw = side * Math.sin(k.ph);
+        // each arm swings opposite its leg (leg -1 is forward at phase 0)
+        const sw = side * Math.cos(k.ph);
         a.target = [a.target[0] + sw * 30, a.target[1] - Math.abs(sw) * 6];
       }
     }
   }
   if (pose.clipboard && !arms[0].prop) arms[0].prop = 'clipboard';
-  const geo = arms.map((a, i) => armGeom(a, i ? 1 : -1, k));
+  const geo = arms.map((a, i) => {
+    const side = i ? 1 : -1;
+    if (back && a.front && a.target[1] < k.sh[side].y + 24) {
+      // from behind, a hand raised to the face is hidden by the head, but the elbow swings out to the side
+      // and the forearm rises beside the head — pick the outward elbow and drop the front-view foreshortening
+      const b = { ...a, reach1: 0.95, reach2: 0.72 }; // forearm angled away from camera toward the face
+      const g1 = armGeom({ ...b, bend: side }, side, k), g2 = armGeom({ ...b, bend: -side }, side, k);
+      const q = (g1.ex - g1.sx) * side > (g2.ex - g2.sx) * side ? g1 : g2;
+      q.raisedBack = true;
+      return q;
+    }
+    return armGeom(a, side, k);
+  });
   // layer per arm: 'back' (behind torso), 'side' (after torso, before head), 'front' (after head)
   const lay = geo.map((q) => {
     const a = q.a;
@@ -283,9 +309,9 @@ export function drawSelf(g, x, y, scale = 1, pose = {}) {
       g.beginPath();
       g.rect(-600, Math.min(k.sh[-1].y, k.sh[1].y) - 6, 1200, 1200);
       g.clip();
-      drawArmGroup(g, geo.filter((_, i) => lay[i] === 'back' && arms[i].front), ctx, false);
+      drawArmGroup(g, geo.filter((q, i) => lay[i] === 'back' && arms[i].front && !q.raisedBack), ctx, false);
       g.restore();
-      drawArmGroup(g, geo.filter((_, i) => lay[i] === 'back' && !arms[i].front), ctx, false);
+      drawArmGroup(g, geo.filter((q, i) => lay[i] === 'back' && (!arms[i].front || q.raisedBack)), ctx, false);
     } else drawArmGroup(g, geo.filter((_, i) => lay[i] === 'back'), ctx, false);
     if (!k.seated) drawLegs(g, k, outfit);
     withDeskClip(g, k, () => {
@@ -427,21 +453,23 @@ function sweaterDetails(g, F, S, shY, back) {
   g.clip();
   g.strokeStyle = rgba(C.sweaterLine, 0.25);
   g.lineWidth = 1.6;
+  g.beginPath();
   for (let i = -6; i <= 6; i++) {
     const xx = S(i * 10.5);
-    g.beginPath(); g.moveTo(xx, -8); g.lineTo(xx, 20); g.stroke();
+    g.moveTo(xx, -8); g.lineTo(xx, 20);
   }
+  g.stroke();
   g.restore();
   // soft folds where the oversized knit bunches above the hem
   g.strokeStyle = rgba(C.sweaterLine, 0.32);
   g.lineWidth = 2.2;
+  g.beginPath();
   for (const s of [-1, 1]) {
-    g.beginPath(); g.moveTo(S(s * 62), -34); g.quadraticCurveTo(S(s * 50), -22, S(s * 40), -14); g.stroke();
-    g.beginPath(); g.moveTo(S(s * 70), -66); g.quadraticCurveTo(S(s * 62), -54, S(s * 58), -42); g.stroke();
+    g.moveTo(S(s * 62), -34); g.quadraticCurveTo(S(s * 50), -22, S(s * 40), -14);
+    g.moveTo(S(s * 70), -66); g.quadraticCurveTo(S(s * 62), -54, S(s * 58), -42);
   }
-  if (!back) {
-    g.beginPath(); g.moveTo(F(-8), -40); g.quadraticCurveTo(F(0), -30, F(10), -24); g.stroke();
-  }
+  if (!back) { g.moveTo(F(-8), -40); g.quadraticCurveTo(F(0), -30, F(10), -24); }
+  g.stroke();
 }
 
 function backCollar(g, F, shY, outfit) {
@@ -491,21 +519,24 @@ function blazerBody(g, k, F, S, shY, back) {
   if (back) {
     g.strokeStyle = rgba(C.blazerLine, 0.7);
     g.lineWidth = 2;
-    g.beginPath(); g.moveTo(F(0), shY - 8); g.quadraticCurveTo(F(2), -60, F(0), 33); g.stroke();
-    g.beginPath(); g.moveTo(F(5), -2); g.lineTo(F(5), 32); g.stroke();
+    g.beginPath(); g.moveTo(F(0), shY - 8); g.quadraticCurveTo(F(2), -60, F(0), 33); g.moveTo(F(5), -2); g.lineTo(F(5), 32); g.stroke();
     g.strokeStyle = rgba(C.blazerLine, 0.35);
-    for (const s of [-1, 1]) { g.beginPath(); g.moveTo(F(s * 56), shY + 42); g.quadraticCurveTo(F(s * 42), shY + 54, F(s * 26), shY + 52); g.stroke(); }
+    g.beginPath();
+    for (const s of [-1, 1]) { g.moveTo(F(s * 56), shY + 42); g.quadraticCurveTo(F(s * 42), shY + 54, F(s * 26), shY + 52); }
+    g.stroke();
     return;
   }
   // opening edges
   g.strokeStyle = C.blazerLine;
   g.lineWidth = 2.6;
-  g.beginPath(); g.moveTo(F(0), V_BOTTOM); g.lineTo(F(12), -6); g.quadraticCurveTo(F(19), 14, F(26), 33); g.stroke();
-  g.beginPath(); g.moveTo(F(-8), -6); g.quadraticCurveTo(F(-13), 14, F(-20), 33); g.stroke();
+  g.beginPath(); g.moveTo(F(0), V_BOTTOM); g.lineTo(F(12), -6); g.quadraticCurveTo(F(19), 14, F(26), 33);
+  g.moveTo(F(-8), -6); g.quadraticCurveTo(F(-13), 14, F(-20), 33); g.stroke();
   // pocket flaps + a fold
   g.strokeStyle = rgba(C.blazerLine, 0.85);
   g.lineWidth = 2.2;
-  for (const s of [-1, 1]) { g.beginPath(); g.moveTo(F(s * 32), -6); g.lineTo(F(s * 60), -8); g.stroke(); }
+  g.beginPath();
+  for (const s of [-1, 1]) { g.moveTo(F(s * 32), -6); g.lineTo(F(s * 60), -8); }
+  g.stroke();
   g.strokeStyle = rgba(C.blazerLine, 0.35);
   g.beginPath(); g.moveTo(F(-62), shY + 66); g.quadraticCurveTo(F(-54), shY + 78, F(-42), shY + 82); g.stroke();
 }
@@ -530,10 +561,12 @@ function drawTorsoFront(g, ctx) {
   g.fill(); g.stroke();
   g.strokeStyle = rgba(C.sweaterLine, 0.3);
   g.lineWidth = 1.4;
+  g.beginPath();
   for (let i = -3; i <= 3; i++) {
     const x0 = F(i * 7.5), y0 = shY - 19 + Math.abs(i) * -1.2 + (3 - Math.abs(i)) * 3.2;
-    g.beginPath(); g.moveTo(x0, y0 - 3); g.lineTo(x0 * 1.06, y0 + 4); g.stroke();
+    g.moveTo(x0, y0 - 3); g.lineTo(x0 * 1.06, y0 + 4);
   }
+  g.stroke();
   if (outfit === 'ceo') {
     g.strokeStyle = C.blazerLine;
     g.lineWidth = 2.6;
@@ -590,7 +623,8 @@ function drawNeck(g, k, back) {
   const [cx, cy] = k.hp(0, 58);
   g.strokeStyle = C.skinLine;
   const nb = back ? 6 : -8; // front: keep the rounded neck end inside the collar opening
-  g.lineWidth = 36;
+  const wn = back ? 10 : 0;  // seen from behind the neck reads wider (nape + trapezius)
+  g.lineWidth = 36 + wn;
   g.beginPath(); g.moveTo(nx, ny + nb); g.lineTo(px, py - 8); g.stroke();
   // jaw shadow falls on the upper neck
   const gr = g.createLinearGradient(cx, cy, nx, ny);
@@ -598,18 +632,43 @@ function drawNeck(g, k, back) {
   gr.addColorStop(0.55, back ? shade(C.skin, -0.08) : shade(C.skin, -0.03));
   gr.addColorStop(1, shade(C.skin, -0.1));
   g.strokeStyle = gr;
-  g.lineWidth = 31;
+  g.lineWidth = 31 + wn;
   g.beginPath(); g.moveTo(nx, ny + nb); g.lineTo(px, py - 8); g.stroke();
 }
 
 // ---------------------------------------------------------------- legs
+// walk: horizontal stride half-length (px, scale 1) when the legs are side-on. The planted foot slides back at a constant
+// rate, so the feet stay put on the ground if x advances WALK_ADVANCE * scale px per 2π of phase toward `facing`.
+const STRIDE = 44;
+export const WALK_ADVANCE = 4 * STRIDE;
+
+/** one leg of the walk cycle: f = foot position (+1 forward .. -1 back), lift (px), roll (rad, + = toe down) */
+function walkLeg(ph, side) {
+  const q = ((((ph + (side < 0 ? 0 : Math.PI)) / TAU) % 1) + 1) % 1;
+  if (q < 0.5) {
+    // stance: heel strike at q=0 (toe up), flat, heel peels off before toe-off
+    const s = q / 0.5;
+    const heel = sstep(0.7, 1, s);
+    return { f: 1 - 2 * s, lift: heel * 10, roll: -0.16 * (1 - sstep(0, 0.2, s)) + 0.26 * heel };
+  }
+  const s = (q - 0.5) / 0.5; // swing: foot passes under the body, lifted
+  return { f: -1 + 2 * sstep(0, 1, s), lift: Math.sin(Math.PI * s) * 20 + 10 * (1 - s) * (1 - s), roll: lerp(0.26, -0.16, sstep(0, 1, s)) };
+}
+
 function drawLegs(g, k, outfit) {
   const { hip, kE, walk, ph, th } = k;
   const legs = [];
   const fwd = th >= 0 ? 1 : -1;
-  const turnAmt = Math.min(1, Math.abs(Math.sin(th)) * 1.6 + (walk ? 0.45 : 0) + kE);
+  // walking reads best with the legs side-on (a profile stride under a 3/4 torso: the sweater hem hides the hip
+  // cheat). A near-frontal walk (|bodyTurn| < ~0.1) strides toward the camera instead.
+  const prof = walk ? sstep(0.06, 0.3, Math.abs(th)) : 0;
+  const legTh = walk ? fwd * Math.max(Math.abs(th), 1.25 * prof) : th;
+  const turnAmt = Math.min(1, Math.abs(Math.sin(legTh)) * 1.6 + (walk ? 0.45 : 0) + kE);
+  // knees that bend toward the camera (front view crouch, frontal walk) foreshorten instead of splaying sideways
+  const fs = 0.75 * (1 - clamp(Math.abs(Math.sin(legTh)) * 1.6 + kE));
+  const kn = k.kneel;
   for (const side of [-1, 1]) {
-    const phi = side * Math.PI / 2 + th;
+    const phi = side * Math.PI / 2 + legTh;
     const hx = hip[0] + HIP_W * Math.sin(phi), hy = hip[1] + 4;
     const z = Math.cos(phi);
     // standing: ankle placed so the leg is just short of straight
@@ -618,38 +677,46 @@ function drawLegs(g, k, outfit) {
     let kneeDir = Math.abs(th) > 0.05 ? fwd : side;
     let shoeRot = 0;
     if (walk) {
-      const st = (side < 0 ? 1 : -1) * Math.sin(ph);
-      const lift = Math.max(0, (side < 0 ? 1 : -1) * Math.cos(ph));
-      ax = hx * 1.15 + st * 38 * fwd;
-      ay = ANKLE_Y - lift * 22;
+      const w = walkLeg(ph, side);
+      ax = hx + w.f * STRIDE * prof * fwd;
+      ay = ANKLE_Y - w.lift + w.f * 8 * (1 - prof); // frontal walk: the forward foot is nearer the camera
       kneeDir = fwd;
-      shoeRot = -st * 0.14 * fwd - lift * 0.18 * fwd;
+      shoeRot = w.roll * fwd * prof;
     }
-    if (kE > 0) {
-      // the leg on the facing side plants its foot forward (knee up); the other kneels (knee on the ground)
+    if (kn > 0) {
+      // the leg on the facing side steps forward first (knee up); the other then folds back onto its knee
       const front = side === fwd;
-      const kx = front ? hip[0] + 108 * fwd : hip[0] - 100 * fwd;
+      const kk = front ? sstep(0, 0.6, kn) : sstep(0.1, 0.85, kn);
+      const kx = KNEEL_HIP[0] + (front ? 108 : -100) * fwd;
       const ky = front ? ANKLE_Y : -40;
-      ax = lerp(ax, kx, kE);
-      ay = lerp(ay, ky, kE);
+      ax = lerp(ax, kx, kk);
+      ay = lerp(ay, ky, kk) - (front ? Math.sin(Math.PI * kk) * 16 : 0);
       kneeDir = fwd;
-      if (!front) shoeRot = lerp(0, fwd * 1.75, kE);
+      if (!front) shoeRot = lerp(0, fwd * 1.75, kk);
     }
-    legs.push({ side, hx, hy, ax, ay, kneeDir, z, shoeRot });
+    legs.push({ side, hx, hy, ax, ay, kneeDir, z, shoeRot, fs });
   }
   legs.sort((a, b) => a.z - b.z);
-  for (const L of legs) drawLeg(g, L, outfit, turnAmt, fwd, legs.indexOf(L) === 0 && Math.abs(th) > 0.05);
+  for (const L of legs) drawLeg(g, L, outfit, turnAmt, fwd, legs.indexOf(L) === 0 && Math.abs(legTh) > 0.05);
 }
 
 function drawLeg(g, L, outfit, turnAmt, fwd, far) {
   const { a1, a2 } = ik(L.hx, L.hy, L.ax, L.ay, THIGH, SHIN, L.kneeDir);
-  const kx = L.hx + Math.cos(a1) * THIGH, ky = L.hy + Math.sin(a1) * THIGH;
+  let kx = L.hx + Math.cos(a1) * THIGH, ky = L.hy + Math.sin(a1) * THIGH;
   const ax = kx + Math.cos(a1 + a2) * SHIN, ay = ky + Math.sin(a1 + a2) * SHIN;
+  if (L.fs > 0) {
+    // knee pointing at the camera: squash its sideways offset from the hip-ankle line
+    const dx = ax - L.hx, dy = ay - L.hy, u = ((kx - L.hx) * dx + (ky - L.hy) * dy) / (dx * dx + dy * dy || 1);
+    const px = L.hx + dx * u, py = L.hy + dy * u;
+    kx = px + (kx - px) * (1 - L.fs);
+    ky = py + (ky - py) * (1 - L.fs);
+  }
   let pants = outfit === 'ceo' ? C.pantsCeo : C.pants;
   if (far) pants = shade(pants, -0.12);
   const W1 = 50, W2 = 44;
   drawShoe(g, ax, ay, L.side, turnAmt, fwd, L.shoeRot, far);
-  const ux = Math.cos(a1 + a2), uy = Math.sin(a1 + a2);
+  const sl = Math.hypot(ax - kx, ay - ky) || 1;
+  const ux = (ax - kx) / sl, uy = (ay - ky) / sl;
   const cx = ax - ux * 1, cy = ay - uy * 1; // trouser hem: a flat edge at the ankle, over the shoe top
   g.strokeStyle = C.pantsLine;
   g.lineCap = 'butt';
@@ -679,11 +746,14 @@ function drawLeg(g, L, outfit, turnAmt, fwd, far) {
   const o1 = off(L.hx, L.hy + 14, kx, ky, W1 * 0.26), o2 = off(kx, ky, cx, cy - 4, W2 * 0.26);
   g.beginPath(); g.moveTo(o1[0], o1[1]); g.lineTo(o1[2], o1[3]); g.lineTo(o2[2], o2[3]); g.stroke();
   // knee crease when bent
+  const t1 = Math.atan2(ky - L.hy, kx - L.hx), t2 = Math.atan2(uy, ux);
+  let b2 = t2 - t1;
+  if (b2 > Math.PI) b2 -= TAU; else if (b2 < -Math.PI) b2 += TAU;
   const bendAmt = Math.abs(a2);
   if (bendAmt > 0.3) {
     g.strokeStyle = rgba(C.pantsLine, Math.min(0.55, bendAmt * 0.45));
     g.lineWidth = 2.4;
-    const n = a1 + a2 / 2 + (a2 > 0 ? Math.PI / 2 : -Math.PI / 2);
+    const n = Math.abs(b2) > 0.15 ? t1 + b2 / 2 + (b2 > 0 ? Math.PI / 2 : -Math.PI / 2) : t1 - Math.PI / 2; // foreshortened: crease across the knee
     g.beginPath();
     g.arc(kx + Math.cos(n) * 4, ky + Math.sin(n) * 4, 13, n + Math.PI - 0.6, n + Math.PI + 0.6);
     g.stroke();
@@ -736,10 +806,8 @@ function drawShoe(g, ax, ay, side, turnAmt, fwd, rot, far) {
 // ---------------------------------------------------------------- head
 function drawHead(g, k, pose, back) {
   const t = k.t, facing = k.facing;
-  const btScreen = pose.bodyTurn ?? (k.walk ? 0.4 : k.kE * 0.45) * facing;
-  const defTurn = pose.bodyTurn != null || k.walk || k.kE > 0 ? btScreen * 0.5 : 0;
-  const turnScreen = clamp(pose.headTurn ?? defTurn, -1, 1);
-  const u = turnScreen * facing; // geometric (mirrored-space) turn
+  const turnScreen = k.turnScreen;
+  const u = k.u; // geometric (mirrored-space) turn
   const sway = fbm(t * 0.55, 21) * 0.16 - (pose.headTilt || 0) * 0.7 - k.lean * 0.5 + (pose.hairWind || 0) * 0.5 +
     (k.walk ? Math.sin(k.ph * 2) * 0.12 : 0) + k.trem * noise1(t * 22, 9) * 0.2;
   g.save();
@@ -748,11 +816,11 @@ function drawHead(g, k, pose, back) {
   if (back) {
     // back view: 0..~0.55 = back of head with an emerging lost profile;
     // beyond that the head swings into a 3/4 "looking back over the shoulder" face (short crossfade)
-    const m = sstep(0.56, 0.68, Math.abs(u));
+    const m = k.over;
     if (m < 1) drawHeadBack(g, k, pose, u, sway);
     if (m > 0) {
       const s = u >= 0 ? 1 : -1;
-      const uf = s * (0.62 + 0.3 * sstep(0.6, 1, Math.abs(u)));
+      const uf = s * (0.74 + 0.2 * sstep(0.68, 1, Math.abs(u)));
       if (m < 1) { g.save(); g.globalAlpha *= m; }
       drawHeadFront(g, k, pose, uf, sway, uf * facing, true);
       if (m < 1) g.restore();
@@ -764,13 +832,13 @@ function drawHead(g, k, pose, back) {
 function headPath(g, u) {
   const kx = (x) => x * (x * u > 0 ? 1 + 0.04 * Math.abs(u) : 1 - 0.08 * Math.abs(u)) + u * 3;
   g.beginPath();
-  g.moveTo(kx(0) + u * 8, 61);
-  g.bezierCurveTo(kx(-28) + u * 5, 62, kx(-50), 50, kx(-57), 26);
+  g.moveTo(kx(0) + u * 12, 61);
+  g.bezierCurveTo(kx(-28) + u * 8, 62, kx(-50), 50, kx(-57), 26);
   g.bezierCurveTo(kx(-62), 6, kx(-62), -36, kx(-55), -58);
   g.bezierCurveTo(kx(-46), -82, kx(-24), -90, kx(0), -90);
   g.bezierCurveTo(kx(24), -90, kx(46), -82, kx(55), -58);
   g.bezierCurveTo(kx(62), -36, kx(62), 6, kx(57), 26);
-  g.bezierCurveTo(kx(50), 50, kx(28) + u * 5, 62, kx(0) + u * 8, 61);
+  g.bezierCurveTo(kx(50), 50, kx(28) + u * 8, 62, kx(0) + u * 12, 61);
   g.closePath();
 }
 
@@ -842,6 +910,17 @@ function drawHeadFront(g, k, pose, u, sway, turnScreen, overShoulder) {
   g.lineWidth = 3;
   ellipse(g, u * 4, -62, 64, 44);
   g.fill(); g.stroke();
+  if (overShoulder) {
+    // looking back over the shoulder: the back of the skull bulges out behind the far ear and the nape hair
+    // shows below it, so the head reads as turned around rather than as a front view
+    const s = u >= 0 ? 1 : -1;
+    hairMass(g, () => {
+      g.ellipse(-s * 18, -46, 62, 58, -s * 0.15, 0, TAU);
+      lock(g, -s * 70, -18, -s * 66, 30, 26, s * 0.08);
+      lock(g, -s * 54, 0, -s * 48, 50, 26, s * 0.06);
+      lock(g, -s * 34, 10, -s * 30, 58, 22, s * 0.04);
+    }, hairGrad(g, lx - s * 20));
+  }
 
   const ears = [-1, 1].map((s) => ({ s, ...earPos(s, yaw) }));
   for (const e of ears) if (e.z < 0.05) drawEar(g, e.x, e.s, e.w, false);
@@ -876,7 +955,12 @@ function drawHeadFront(g, k, pose, u, sway, turnScreen, overShoulder) {
   face.turn = turnScreen;
   face.browUp *= BROW_GAIN; face.browIn *= BROW_GAIN; face.browUpL *= BROW_GAIN; face.browUpR *= BROW_GAIN;
   if (!face.noAutoBlink) face.blink = clamp((face.blink || 0) + autoBlink(t, 23, 0.26 + k.trem * 0.2));
+  // falling tear drops are drawn by drawSelfTear (bigger than the shared rig's, which is sized for Fear's huge eyes)
+  const tears = [face.tearL, face.tearR];
+  face.tearL = face.tearR = 0;
   drawFace(g, SELF_FACE, face);
+  if (tears[0] > 0.001) drawSelfTear(g, face.turn, -1, tears[0]);
+  if (tears[1] > 0.001) drawSelfTear(g, face.turn, 1, tears[1]);
   g.restore();
 
   drawFrontHair(g, u, lx, sway);
@@ -914,18 +998,20 @@ function drawFrontHair(g, u, lx, sway) {
   // lock separations
   g.strokeStyle = rgba(C.hairLine, 0.75);
   g.lineWidth = 2.2;
-  g.beginPath(); g.moveTo(30 + p, -88); g.quadraticCurveTo(22 + p, -62, 18 + p, -44); g.stroke();
-  g.beginPath(); g.moveTo(12 + p, -94); g.quadraticCurveTo(0 + p, -66, -10 + p, -46); g.stroke();
-  g.beginPath(); g.moveTo(-6 + p, -92); g.quadraticCurveTo(-24 + p, -66, -34 + p, -42); g.stroke();
-  g.beginPath(); g.moveTo(-26 + p, -86); g.quadraticCurveTo(-46 + p, -60, -54 + p, -34); g.stroke();
-  g.beginPath(); g.moveTo(40 + p, -82); g.quadraticCurveTo(50 + p, -60, 50 + p * 0.6, -40); g.stroke();
+  g.beginPath();
+  g.moveTo(30 + p, -88); g.quadraticCurveTo(22 + p, -62, 18 + p, -44);
+  g.moveTo(12 + p, -94); g.quadraticCurveTo(0 + p, -66, -10 + p, -46);
+  g.moveTo(-6 + p, -92); g.quadraticCurveTo(-24 + p, -66, -34 + p, -42);
+  g.moveTo(-26 + p, -86); g.quadraticCurveTo(-46 + p, -60, -54 + p, -34);
+  g.moveTo(40 + p, -82); g.quadraticCurveTo(50 + p, -60, 50 + p * 0.6, -40);
+  g.stroke();
   // sheen
   g.strokeStyle = rgba(C.hairLight, 0.6);
   g.lineWidth = 5;
   g.beginPath(); g.moveTo(-46 + o, -82); g.quadraticCurveTo(-26 + o, -100, 8 + o, -100); g.stroke();
   g.lineWidth = 3.4;
-  g.beginPath(); g.moveTo(-8 + p, -80); g.quadraticCurveTo(-18 + p, -66, -24 + p, -54); g.stroke();
-  g.beginPath(); g.moveTo(14 + p, -84); g.quadraticCurveTo(10 + p, -72, 6 + p, -60); g.stroke();
+  g.beginPath(); g.moveTo(-8 + p, -80); g.quadraticCurveTo(-18 + p, -66, -24 + p, -54);
+  g.moveTo(14 + p, -84); g.quadraticCurveTo(10 + p, -72, 6 + p, -60); g.stroke();
 
   // loose strands (secondary motion)
   strand(g, 22 + p, -60, sw * 1.3, [[-10, 12], [-4, 28]], 5);
@@ -971,6 +1057,15 @@ function backSkullPath(g) {
   g.closePath();
 }
 
+/** back of the neck (head-local), wound like backSkullPath so a nonzero fill unions them */
+function backNeckPath(g) {
+  g.moveTo(-20, 6);
+  g.lineTo(-23.5, 76);
+  g.lineTo(23.5, 76);
+  g.lineTo(20, 6);
+  g.closePath();
+}
+
 function drawHeadBack(g, k, pose, u, sway) {
   const t = k.t, facing = k.facing;
   const yawB = u * 1.25;            // in back view, headTurn turns the face toward that screen side
@@ -986,7 +1081,7 @@ function drawHeadBack(g, k, pose, u, sway) {
   const shapes = (pass) => {
     g.beginPath();
     backSkullPath(g);
-    g.rect(-15.5, 10, 31, 66); // top of the neck, merged so no seam shows under the hair
+    backNeckPath(g); // top of the neck, merged so no seam shows under the hair
     if (lp > 0.01) {
       // cheek + jaw sweeping toward the (hidden) chin on the turned side
       const o = lp * 10;
@@ -1007,6 +1102,17 @@ function drawHeadBack(g, k, pose, u, sway) {
   gr.addColorStop(1, C.skinShade);
   g.fillStyle = gr;
   shapes(() => g.fill('nonzero'));
+  // soft shadow on the nape just under the hair
+  g.save();
+  g.beginPath();
+  backNeckPath(g);
+  g.clip();
+  const gs = g.createLinearGradient(0, 30, 0, 62);
+  gs.addColorStop(0, rgba(C.skinLine, 0.38));
+  gs.addColorStop(1, rgba(C.skinLine, 0));
+  g.fillStyle = gs;
+  g.fillRect(-30, 8, 60, 56);
+  g.restore();
 
   // lost-profile eyelash + brow peeking past the cheek
   if (lp > 0.3) {
@@ -1051,13 +1157,18 @@ function drawHeadBack(g, k, pose, u, sway) {
     lock(g, -44, -84, -70 + sway * 4, -78, 22, 0.1);
   }, hairGrad(g, lx));
   // whorl + lock lines
-  g.strokeStyle = rgba(C.hairLine, 0.65);
-  g.lineWidth = 2.2;
+  // a few locks swirling out of the crown (all sweeping the same way, stopping short of the edge)
+  g.strokeStyle = rgba(C.hairLine, 0.5);
+  g.lineWidth = 2.1;
   const wx = 6, wy = -76;
-  for (const [ex, ey, cx2] of [[-40, 16, -30], [-14, 30, -10], [16, 30, 12], [40, 16, 32], [-58, -24, -46], [58, -24, 50]]) {
-    g.beginPath(); g.moveTo(wx + ex * 0.12, wy + 6); g.quadraticCurveTo(cx2, (wy + ey) / 2 - 10, ex, ey); g.stroke();
+  g.beginPath();
+  for (const [ex, ey] of [[-44, 4], [-20, 22], [8, 26], [34, 12], [-58, -30]]) {
+    const sx = wx + ex * 0.16, sy = wy + 8 + Math.abs(ex) * 0.04;
+    g.moveTo(sx, sy); g.quadraticCurveTo(ex * 0.55 + 14, (sy + ey) / 2, ex, ey);
   }
-  g.beginPath(); g.arc(wx, wy - 2, 7, 0.3, 4.4); g.stroke();
+  g.moveTo(wx + Math.cos(0.6) * 6.5, wy - 2 + Math.sin(0.6) * 6.5);
+  g.arc(wx, wy - 2, 6.5, 0.6, 4.2);
+  g.stroke();
   g.strokeStyle = rgba(C.hairLight, 0.55);
   g.lineWidth = 5;
   g.beginPath(); g.moveTo(-50, -66); g.quadraticCurveTo(-34, -96, 0, -100); g.stroke();
@@ -1068,7 +1179,40 @@ function drawHeadBack(g, k, pose, u, sway) {
 
   strand(g, -2, -106, sway * 0.8 - 0.1, [[4, -14], [14, -22]], 5);
   strand(g, 10, -104, sway * 0.9 + 0.2, [[10, -10], [22, -8]], 3.8);
-  strand(g, -2, 36, -sway * 0.6, [[-2, 6], [2, 12]], 3.4);
+}
+
+/** one falling tear (face-local, screen orientation): prog 0..1 runs from the lower lid down the cheek */
+function drawSelfTear(g, turn, side, prog) {
+  const S = SELF_FACE, at = Math.abs(turn);
+  const squeeze = side * turn < 0 ? 1 - at * 0.38 : 1 + at * 0.06;
+  const ex = side * S.eyeSpacing * (1 - at * 0.3) + turn * S.eyeSpacing * 0.55;
+  const rx = S.eyeRx * squeeze, ry = S.eyeRy;
+  const k = clamp(prog);
+  const x0 = ex + side * rx * 0.42, y0 = S.eyeY + ry * 0.8;
+  const tx = x0 + side * Math.sin(k * 3) * 2.5, ty = y0 + k * ry * 3.3;
+  const a = k < 0.85 ? 1 : 1 - (k - 0.85) / 0.15;
+  const sz = 5.4 * (0.62 + 0.38 * Math.min(1, k * 4));
+  // wet trail on the cheek behind the drop
+  if (k > 0.05) {
+    g.strokeStyle = `rgba(200,232,255,${0.4 * a})`;
+    g.lineWidth = 2.2;
+    g.lineCap = 'round';
+    g.beginPath();
+    g.moveTo(x0, y0 + 2);
+    g.quadraticCurveTo(x0 + side * 3, (y0 + ty) / 2, tx, ty - sz * 1.4);
+    g.stroke();
+  }
+  g.fillStyle = `rgba(205,236,255,${0.95 * a})`;
+  g.strokeStyle = `rgba(110,160,215,${0.8 * a})`;
+  g.lineWidth = 1.4;
+  g.beginPath();
+  g.moveTo(tx, ty - sz * 1.9);
+  g.bezierCurveTo(tx + sz * 1.1, ty - sz * 0.2, tx + sz, ty + sz, tx, ty + sz);
+  g.bezierCurveTo(tx - sz, ty + sz, tx - sz * 1.1, ty - sz * 0.2, tx, ty - sz * 1.9);
+  g.fill(); g.stroke();
+  g.fillStyle = `rgba(255,255,255,${0.95 * a})`;
+  circle(g, tx - sz * 0.35, ty, sz * 0.32);
+  g.fill();
 }
 
 // ---------------------------------------------------------------- nose (face style hook)
@@ -1263,20 +1407,20 @@ function cuff(g, x0, y0, x1, y1, w, col, line, ribs) {
   if (ribs) {
     g.strokeStyle = rgba(line, 0.3);
     g.lineWidth = 1.5;
+    g.beginPath();
     for (let i = -2; i <= 2; i++) {
       const o = i * hw * 0.36;
-      g.beginPath();
       g.moveTo(x0 + nx * o + ux * 2, y0 + ny * o + uy * 2);
       g.lineTo(x1 + nx * o - ux * 2, y1 + ny * o - uy * 2);
-      g.stroke();
     }
+    g.stroke();
   }
 }
 
 // hand shapes: fingers [baseY, len, curl], spread (rad across the fan), thumb [angle, len]
 const HANDS = {
   open: { f: [[5.2, 14, 0.4], [1.7, 15.5, 0.32], [-1.8, 14.5, 0.36], [-5.2, 12, 0.45]], spread: 0.08, thumb: [0.85, 12.5] },
-  rest: { f: [[5.2, 15, 0.6], [1.7, 16, 0.55], [-1.8, 15, 0.6], [-5.2, 12.5, 0.65]], spread: 0.05, thumb: [0.6, 12.5] },
+  rest: { f: [[5.2, 15, 0.6], [1.7, 16, 0.55], [-1.8, 15, 0.6], [-5.2, 12.5, 0.65]], spread: 0.05, thumb: [0.3, 12] },
   drape: { f: [[5, 16, 0.22], [1.7, 17.5, 0.18], [-1.7, 16.5, 0.2], [-5, 13.5, 0.26]], spread: 0.05, thumb: [0.45, 12.5] },
   palm: { f: [[5.4, 15, 0.02], [1.8, 17, 0], [-1.9, 16, 0], [-5.4, 13, 0.05]], spread: 0.24, thumb: [1.15, 13] },
   flat: { f: [[5, 15.5, 0.05], [1.7, 17, 0.04], [-1.7, 16, 0.05], [-5, 13, 0.08]], spread: 0.04, thumb: [0.55, 12.5] },
@@ -1335,11 +1479,13 @@ function drawHand(g, q) {
   // finger separations
   g.strokeStyle = rgba(C.skinLine, 0.5);
   g.lineWidth = 1.3;
+  g.beginPath();
   for (let i = 0; i < fingers.length - 1; i++) {
     const f0 = fingers[i], f1 = fingers[i + 1];
     const mx = (f0[2] + f1[2]) / 2, my = (f0[3] + f1[3]) / 2;
-    g.beginPath(); g.moveTo((f0[0] + f1[0]) / 2 + 3, (f0[1] + f1[1]) / 2); g.lineTo(mx, my); g.stroke();
+    g.moveTo((f0[0] + f1[0]) / 2 + 3, (f0[1] + f1[1]) / 2); g.lineTo(mx, my);
   }
+  g.stroke();
   // thumb (in front)
   const [ta, tl] = H.thumb;
   const t0x = 7, t0y = 6.5, t1x = t0x + Math.cos(ta) * tl, t1y = t0y + Math.sin(ta) * tl;

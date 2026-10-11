@@ -287,34 +287,42 @@ function domeBarPts(th) {
 /**
  * Draw the TIME-OUT cage. See docs/props.md.
  * state: { layer:'back'|'front'|'all', door 0..1, locked 0..1, rust 0..1, shake 0..1, dim 0..1, t,
- *          flip 1|-1, shadow bool, grips:[[x,y]|name...], gripColor, gripLine, gripScale, rim, darkColor }
+ *          flip 1|-1, shadow bool, grips:[[x,y]|name...], gripColor, gripLine, gripScale, rim, darkColor,
+ *          flake 0..1|[...] (falling rust flake progress) }
  */
 export function drawCage(g, x, y, scale = 1, state = {}) {
   const layer = state.layer || 'all';
   const st = normCage(state);
   const flip = state.flip === -1 ? -1 : 1;
-  const P = cagePal(st.rust, st.dim, state.darkColor || '#0d0b1c', state.rim);
+  const dark = state.darkColor || '#0d0b1c';
+  const P = cagePal(st.rust, st.dim, dark, state.rim);
   const jx = st.shake * 1.1 * vnoise(st.t * 21, 41), jy = st.shake * 0.5 * vnoise(st.t * 23, 42);
-  // pixel scale of the cached static layers (quantised so slow camera moves rarely rebuild them)
+  // pixel scale of the cached static layers (quantised so slow camera moves rarely rebuild them;
+  // up to 4x so an insert on the padlock stays crisp)
   const ps = Math.abs(scale) * pScale(g);
-  const res = Math.max(0.25, Math.min(3, Math.round(ps * 8) / 8));
+  const res = Math.max(0.25, Math.min(4, Math.round(ps * 8) / 8));
   const rq = Math.round(st.rust * 20) / 20, dq = Math.round(st.dim * 20) / 20;
-  const ckey = `${rq}|${dq}|${res}|${state.darkColor || ''}|${state.rim || ''}`;
+  // cached layers are built ONLY from the quantised values, so a cache entry is identical no matter which
+  // frame built it (frames can be rendered in any order / in parallel and stay bit-identical)
+  const PQ = cagePal(rq, dq, dark, state.rim);
+  const ckey = `${rq}|${dq}|${res}|${dark}|${state.rim || ''}`;
   g.save();
   g.translate(x + jx * scale, y + jy * scale);
   g.scale(scale * flip, scale);
   if (P.alpha < 1) g.globalAlpha *= P.alpha;
   if (layer !== 'front') {
     if (state.shadow !== false) groundShadow(g, 0, 6, PLINTH_R * 1.22, 0.42 * (1 - st.dim * 0.5), PLINTH_R * 0.3);
-    blitCage(g, cageCache(`back|${ckey}`, res, (cg) => cageBack(cg, { ...st, rust: rq, dim: dq }, P)));
+    blitCage(g, cageCache(`back|${ckey}`, res, (cg) => cageBack(cg, { ...st, rust: rq, dim: dq }, PQ)));
   }
-  if (layer !== 'back') cageFront(g, st, P, state, flip, ckey, res, rq, dq);
+  if (layer !== 'back') cageFront(g, st, P, PQ, state, flip, ckey, res, rq, dq);
   g.restore();
 }
 
 // ---- static-layer bitmap cache (cage-local box, rendered at the current pixel scale)
 const CBOX = { x: -230, y: -(APEX_Y + 46), w: 460, h: APEX_Y + 46 + 60 };
 const cageBmp = new Map();
+const CAGE_PX_BUDGET = 24e6; // ≈ 96 MB of cached bitmaps, then least-recently-used entries are dropped
+let cagePx = 0;
 function cageCache(key, res, build) {
   let c = cageBmp.get(key);
   if (c) { cageBmp.delete(key); cageBmp.set(key, c); return c; } // LRU touch
@@ -324,7 +332,12 @@ function cageCache(key, res, build) {
   cg.translate(-CBOX.x, -CBOX.y);
   build(cg);
   cageBmp.set(key, c);
-  while (cageBmp.size > 28) cageBmp.delete(cageBmp.keys().next().value);
+  cagePx += c.width * c.height;
+  while (cageBmp.size > 2 && (cagePx > CAGE_PX_BUDGET || cageBmp.size > 28)) {
+    const k0 = cageBmp.keys().next().value, c0 = cageBmp.get(k0);
+    cagePx -= c0.width * c0.height;
+    cageBmp.delete(k0);
+  }
   return c;
 }
 const blitCage = (g, c) => g.drawImage(c, CBOX.x, CBOX.y, CBOX.w, CBOX.h);
@@ -418,11 +431,11 @@ function frontStatic(g, st, P, withBars) {
   g.beginPath(); g.ellipse(sx - 1, sy - 1, 5.5, 7, 0, 0, TAU); g.stroke();
 }
 
-function cageFront(g, st, P, state, flip, ckey, res, rq, dq) {
+function cageFront(g, st, P, PQ, state, flip, ckey, res, rq, dq) {
   const live = st.shake > 0.001;
   const sst = { ...st, rust: rq, dim: dq };
   if (live) frontBodyBars(g, st, P, true);
-  blitCage(g, cageCache(`front${live ? '' : '+bars'}|${ckey}`, res, (cg) => frontStatic(cg, sst, P, !live)));
+  blitCage(g, cageCache(`front${live ? '' : '+bars'}|${ckey}`, res, (cg) => frontStatic(cg, sst, PQ, !live)));
   // the door
   const dp = doorParams(st);
   drawDoor(g, st, P, dp);
@@ -431,7 +444,34 @@ function cageFront(g, st, P, state, flip, ckey, res, rq, dq) {
   // occupant's fingers wrapped around the bars
   if (state.grips && state.grips.length) drawGrips(g, st, state, P, dp, flip);
   // sign
-  drawSign(g, st, P, flip);
+  drawSign(g, st, PQ, flip);
+  // rust flakes drifting down from the gate (s17: "a flake of rust drifts down")
+  if (state.flake != null) drawRustFlakes(g, st, P, dp, state.flake);
+}
+
+/** state.flake: progress 0..1 of one falling flake, or an array of progresses (one per flake). */
+function drawRustFlakes(g, st, P, dp, flake) {
+  const list = Array.isArray(flake) ? flake : [flake];
+  list.forEach((k0, i) => {
+    const k = clamp(k0);
+    if (k <= 0 || k >= 1) return;
+    const s = 0.25 + 0.6 * hrand(i, 91);
+    const Y = DOOR_TOP + DOOR_ARCH * Math.sin(Math.PI * s) - 6;
+    const [sx, sy] = doorPt(dp, s, Y);
+    const gy = 12 + 18 * hrand(i, 92);            // lands just in front of the cage, on the ground
+    const y = lerp(sy, gy, k);
+    const x = sx + 16 * k + 7 * Math.sin(k * 9 + i) * Math.min(1, k * 4);
+    const a = clamp(Math.min(k * 8, (1 - k) * 6));
+    g.save();
+    g.translate(x, y);
+    g.rotate(k * 8 + i);
+    g.scale(1, 0.45 + 0.55 * Math.abs(Math.cos(k * 11 + i))); // tumbling
+    g.globalAlpha *= a;
+    g.fillStyle = P.flake; g.strokeStyle = P.pit; g.lineWidth = 0.8;
+    g.beginPath(); g.moveTo(-5, -1.7); g.lineTo(1.1, -3.6); g.lineTo(5.3, 0.6); g.lineTo(-0.8, 3.4); g.closePath();
+    g.fill(); g.stroke();
+    g.restore();
+  });
 }
 
 function drawHinges(g, st, P) {
@@ -578,7 +618,7 @@ function signBitmap(P, rustQ, dimQ) {
   const key = `${rustQ}|${dimQ}|${P.wood}`;
   let c = signCache.get(key);
   if (c) return c;
-  const S = 2, pad = 10;
+  const S = 3, pad = 10; // 3x: stays crisp for a close insert on the sign
   c = createCanvas((SIGN_W + pad * 2) * S, (SIGN_H + pad * 2) * S);
   const g = c.getContext('2d');
   g.scale(S, S);
@@ -627,6 +667,22 @@ function signBitmap(P, rustQ, dimQ) {
   g.rotate(-0.025);
   g.fillText('TIME-OUT', 1, 4);
   g.restore();
+  if (rust > 0.3) {
+    // weathered paint: chips flaked out of the lettering, bare wood showing through
+    const k = clamp((rust - 0.3) / 0.6);
+    g.save();
+    g.beginPath(); g.rect(-w + 8, -h + 14, SIGN_W - 16, SIGN_H - 22); g.clip();
+    for (let i = 0; i < 16; i++) {
+      if (hrand(i, 141) > k) continue;
+      const cx = -w + 16 + hrand(i, 142) * (SIGN_W - 32), cy = -10 + hrand(i, 143) * 26;
+      const r = 1.6 + 2.8 * hrand(i, 144);
+      g.fillStyle = rgba(mixColor(P.wood, P.woodHi, hrand(i, 145)), 0.95);
+      g.beginPath();
+      g.moveTo(cx - r, cy); g.lineTo(cx - r * 0.2, cy - r * 0.8); g.lineTo(cx + r, cy - r * 0.2); g.lineTo(cx + r * 0.3, cy + r * 0.7);
+      g.closePath(); g.fill();
+    }
+    g.restore();
+  }
   if (dimQ > 0) {
     g.globalCompositeOperation = 'source-atop';
     g.fillStyle = rgba('#0d0b1c', dimQ / 10 * 0.82);
@@ -684,13 +740,14 @@ const NB_W = 220, NB_H = 290, NB_RES = 2.5;
 const nbCache = {};
 
 const NB_PALETTES = {
-  // default: faded sky-blue board with a red cloth spine (reads well on the warm desk)
-  blue: { cover: '#79a6d2', coverDk: '#4f7aa8', coverHi: '#a9cdf0', tape: '#c4574a', line: '#2a3350' },
-  // matches the small held notebook drawn by src/chars/self.mjs (drawSelfNotebook)
+  // DEFAULT: cream-gold board + tan spine = the same notebook SELF holds in src/chars/self.mjs (drawSelfNotebook),
+  // so cuts between SELF's held notebook and this prop keep continuity
   gold: { cover: '#f2d488', coverDk: '#d9b464', coverHi: '#fbe9b4', tape: '#c99d4e', line: '#6a4a2a' },
+  // alternative: faded sky-blue board with a red cloth spine (more contrast on the warm desk; NOT what SELF holds)
+  blue: { cover: '#79a6d2', coverDk: '#4f7aa8', coverHi: '#a9cdf0', tape: '#c4574a', line: '#2a3350' },
 };
 const NB = {
-  ...NB_PALETTES.blue,
+  ...NB_PALETTES.gold,
   label: '#fbf3dc', paper: '#f8f0dc', paperDk: '#e6d8b8', rule: '#9fbfe0', margin: '#e88a8a',
   pencil: '#3b4470', ink: '#2c3566',
 };
@@ -775,6 +832,24 @@ function crayonFear(g, cx, cy, s, seed, armTo = null) {
   }
   // worried mouth
   crayonLine(g, [[cx - 8 * s, cy - 16 * s], [cx, cy - 20 * s], [cx + 8 * s, cy - 16 * s]], '#2a2050', 2 * s, seed + 4, 2, 0.9);
+  // the little knitted scarf (coral crayon): a band under the head + one dangling end
+  const scarf = () => {
+    g.beginPath();
+    g.moveTo(cx - 19 * s, cy - 9 * s);
+    g.quadraticCurveTo(cx, cy - 3 * s, cx + 19 * s, cy - 9 * s);
+    g.lineTo(cx + 18 * s, cy - 1 * s);
+    g.quadraticCurveTo(cx, cy + 5 * s, cx - 18 * s, cy - 1 * s);
+    g.closePath();
+    g.moveTo(cx + 6 * s, cy);
+    g.lineTo(cx + 13 * s, cy + 15 * s);
+    g.lineTo(cx + 20 * s, cy + 12 * s);
+    g.lineTo(cx + 14 * s, cy - 2 * s);
+    g.closePath();
+  };
+  crayonFill(g, scarf, '#ef6f5e', [cx - 20 * s, cy - 12 * s, cx + 21 * s, cy + 16 * s], seed + 11, 2.8 * s, 1.1, 0.85, 2.2 * s);
+  crayonLine(g, [[cx - 19 * s, cy - 9 * s], [cx, cy - 3 * s], [cx + 19 * s, cy - 9 * s]], '#b8392f', 1.6 * s, seed + 12, 1, 0.85);
+  crayonLine(g, [[cx - 18 * s, cy - 1 * s], [cx, cy + 5 * s], [cx + 18 * s, cy - 1 * s]], '#b8392f', 1.6 * s, seed + 13, 1, 0.85);
+  crayonLine(g, [[cx + 7 * s, cy + 1 * s], [cx + 13 * s, cy + 15 * s], [cx + 20 * s, cy + 12 * s], [cx + 14 * s, cy - 1 * s]], '#b8392f', 1.5 * s, seed + 14, 1, 0.85);
   // legs
   crayonLine(g, [[cx - 8 * s, cy + 18 * s], [cx - 9 * s, cy + 36 * s]], '#5b3fa8', 2.6 * s, seed + 5, 2, 0.85);
   crayonLine(g, [[cx + 8 * s, cy + 18 * s], [cx + 9 * s, cy + 36 * s]], '#5b3fa8', 2.6 * s, seed + 6, 2, 0.85);
@@ -939,7 +1014,10 @@ function buildRightPage() {
   const [c, g] = nbCanvas();
   const W = NB_W, H = NB_H;
   linedPage(g, W, H, false);
-  // the drawing: a crayon control room
+  // the drawing (a crayon control room) fills the upper page; big pencil handwriting runs under it
+  // (screenplay s01: "big pencil handwriting runs under the crayon drawing")
+  g.save();
+  g.translate(119, 16); g.scale(0.8, 0.8); g.translate(-119, -16);
   // back wall wash
   crayonFill(g, () => { g.beginPath(); g.rect(30, 26, 178, 196); }, '#8f86c9', [30, 26, 208, 222], 51, 7, 0.25, 0.28, 3);
   // floor line
@@ -968,15 +1046,19 @@ function buildRightPage() {
   crayonText(g, 'FEAR', 24, 204, 19, '#5b3fa8', -0.06);
   crayonLine(g, [[58, 196], [66, 192], [74, 190]], '#5b3fa8', 1.6, 61, 1, 0.8);
   crayonText(g, 'AAAA!!', 84, 66, 23, '#e0303a', -0.08, 'Caveat', '700');
+  g.restore();
+  // the caption, in big pencil handwriting on the ruled lines under the drawing
+  crayonText(g, 'Why does it just', 30, 232, 25, NB.pencil, -0.012, 'Caveat', '600');
+  crayonText(g, 'stand there??', 34, 259, 25, NB.pencil, 0.01, 'Caveat', '600');
   // gold star sticker
-  g.fillStyle = '#f2c53d'; starPath(g, 196, 32, 13); g.fill();
+  g.fillStyle = '#f2c53d'; starPath(g, 197, 30, 13); g.fill();
   g.strokeStyle = rgba('#a8780f', 0.85); g.lineWidth = 1.4; g.stroke();
   return c;
 }
 
 const NB_BASE = () => NB;
 function notebookBitmaps(palette) {
-  const pal = NB_PALETTES[palette] ? palette : 'blue';
+  const pal = NB_PALETTES[palette] ? palette : 'gold';
   if (!nbCache.left) {
     ensureFonts();
     nbCache.left = buildLeftPage();
@@ -989,7 +1071,7 @@ function notebookBitmaps(palette) {
 /**
  * Old childlike notebook "My Feelings".
  * state: { open 0..1, flat 0..1 (0 = facing camera, 1 = lying on the desk), rot (rad), dim 0..1, shadow bool,
- *          palette 'blue' (default) | 'gold' (matches self.mjs's held notebook), t }
+ *          palette 'gold' (default; matches self.mjs's held notebook) | 'blue', t }
  */
 export function drawNotebook(g, x, y, scale = 1, state = {}) {
   const B = notebookBitmaps(state.palette);
@@ -1067,7 +1149,7 @@ export function drawNotebook(g, x, y, scale = 1, state = {}) {
 //                                       THE DESK LAMP
 // =====================================================================================
 // An enamel articulated desk lamp. Origin = centre of the base where it sits on the desk.
-// facing 1: shade points down-right; -1: down-left. Height ~265 at scale 1.
+// facing 1: shade points down-right; -1: down-left. Height ~238 at scale 1 (silhouette 198 wide).
 const LAMP_C = { enamel: '#d39a3c', enamelHi: '#f6cf7a', enamelDk: '#8a5a22', line: '#3a2414', metal: '#6b5a4a', metalHi: '#cdb89a', bulb: '#fff6d8', inner: '#f9e2a8' };
 const LAMP_GEO = { pivot: [0, -36], elbow: [-34, -168], head: [58, -224], headAng: 0.95, shadeLen: 84, mouthR: 46 };
 const lampMouth = () => {
@@ -1075,16 +1157,33 @@ const lampMouth = () => {
   return [hx + Math.cos(a) * LAMP_GEO.shadeLen, hy + Math.sin(a) * LAMP_GEO.shadeLen];
 };
 /** lamp-local anchors (facing 1, scale 1; mirror x for facing -1) */
-export const LAMP_ANCHORS = { base: [0, 0], head: LAMP_GEO.head, bulb: lampMouth(), lightDir: [Math.cos(LAMP_GEO.headAng), Math.sin(LAMP_GEO.headAng)], top: [0, -265] };
+export const LAMP_ANCHORS = { base: [0, 0], head: LAMP_GEO.head, bulb: lampMouth(), lightDir: [Math.cos(LAMP_GEO.headAng), Math.sin(LAMP_GEO.headAng)], top: [58, -238],
+  bbox: [-52, -238, 146, 7] }; // measured silhouette bounds [x0, y0, x1, y1] (light cone + halo extend further)
 
+const lampPalCache = new Map();
+function lampPal(night, nightColor) {
+  if (night <= 0.001) return LAMP_C;
+  const key = `${Math.round(night * 40)}|${nightColor}`;
+  let P = lampPalCache.get(key);
+  if (!P) {
+    P = {};
+    for (const k in LAMP_C) P[k] = mixColor(LAMP_C[k], nightColor, Math.round(night * 40) / 40 * 0.62);
+    if (lampPalCache.size > 100) lampPalCache.clear();
+    lampPalCache.set(key, P);
+  }
+  return P;
+}
 /**
- * state: { on 0..1, facing 1|-1, cone bool|0..1 (light-cone strength, default 1), glow bool (halo, default true), t }
+ * state: { on 0..1, facing 1|-1, cone bool|0..1 (light-cone strength, default 1), glow bool (halo, default true),
+ *          night 0..1 (tint the lamp body toward nightColor, default '#141331', for a dark room), t }
  */
 export function drawDeskLamp(g, x, y, scale = 1, state = {}) {
   const on = clamp(state.on ?? 1);
   const facing = state.facing === -1 ? -1 : 1;
   const t = state.t || 0;
-  const C = LAMP_C;
+  const night = clamp(state.night ?? 0);
+  const C = lampPal(night, state.nightColor || '#141331');
+  const nt = (c) => (night > 0.001 ? mixColor(c, state.nightColor || '#141331', night * 0.62) : c);
   const flick = on > 0 ? 1 + 0.012 * vnoise(t * 3.1, 81) : 1;
   g.save();
   g.translate(x, y);
@@ -1174,17 +1273,18 @@ export function drawDeskLamp(g, x, y, scale = 1, state = {}) {
   // top cap
   g.fillStyle = C.enamelDk; ellipse(g, -2, 0, 9, 13); g.fill(); g.stroke();
   // highlight streak
-  g.strokeStyle = rgba('#fff3cf', 0.7); g.lineWidth = 3; g.lineCap = 'round';
+  g.strokeStyle = rgba('#fff3cf', 0.7 * (1 - night * 0.6)); g.lineWidth = 3; g.lineCap = 'round';
   g.beginPath(); g.moveTo(26, -14); g.lineTo(L - 8, -R + 9); g.stroke();
   // mouth rim
   const gm = g.createRadialGradient(L, 0, 2, L, 0, R);
-  gm.addColorStop(0, mixColor(C.inner, '#fffdf2', on));
-  gm.addColorStop(1, mixColor('#7a5a3a', C.inner, on * 0.9));
+  // off: the inside of the shade is in shadow (reads clearly as "clicked off"); on: hot cream
+  gm.addColorStop(0, on < 0.5 ? mixColor(nt('#8f7759'), C.inner, on * 2) : mixColor(C.inner, '#fffdf2', on * 2 - 1));
+  gm.addColorStop(1, mixColor(nt('#5e4430'), C.inner, on * 0.9));
   g.fillStyle = gm;
   ellipse(g, L, 0, 12, R); g.fill();
   g.strokeStyle = C.line; g.lineWidth = 3; g.stroke();
   // bulb peeking out
-  g.fillStyle = mixColor('#d8cfb8', C.bulb, on);
+  g.fillStyle = mixColor(nt('#b3a88f'), C.bulb, on);
   ellipse(g, L + 4, 0, 9, 18); g.fill();
   g.restore();
   // halo around the mouth
