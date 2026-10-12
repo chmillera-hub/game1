@@ -1,14 +1,17 @@
 # TIREDNESS — Episode 2: Lights Out
 
-Portrait (9:16) animated short, ~4:51, 720x1280 @ 24 fps, H.264 + AAC,
-**14.4 MB** → `Tiredness_ep2_portrait.mp4` (rev 2: user notes applied).
+Portrait (9:16) animated short, ~5:43, 720x1280 @ 24 fps, H.264 + AAC (rev 3: user notes applied, no length cap).
+- `Tiredness_ep2_portrait.mp4`: about 16.9 MB, the same quality per second as rev 2.
+- `Tiredness_ep2_portrait_under15MB.mp4`: about 14.4 MB, a lower bitrate for upload limits.
 
 Picks up where Episode 1 ended, on the shaft catwalk:
-- Tiredness finds the creature's empty pod (CalmCorp calls it "THING 1"), and the Boss cuts the lights.
+- Thing 1 gazes at its sleeping sibling in a pod.
+- Tiredness finds Thing 1's empty pod (CalmCorp calls it "THING 1"), and the Boss cuts the lights.
 - He learns his new sense works with his eyes closed, and they dodge flashlights.
-- He gives up on Curiosity, then follows it after all.
-- Embarrassment switches off his recorder and hands over his keycard.
-- Tiredness refuses the Boss's offer of endless sleep ("for once... I'm not tired"), frees baby Joy, and escapes.
+- He is overwhelmed and doesn't want to abandon it, but he's scared.
+- He commits: "Hell or high water."
+- Embarrassment (who works for CalmCorp) is talked round. He switches off his recorder and hands over his keycard.
+- Tiredness refuses the Boss's offer of endless sleep ("But right now... I'm not tired"), frees baby Joy, and escapes.
 - He gets home at dawn.
 
 Everything is procedural: Python + cairo drawings, Kokoro TTS voices,
@@ -19,7 +22,7 @@ numpy-synthesized music and sound effects.
 python3 build.py tts          # voices + lip-sync + timeline (cached per line)
 python3 build.py video        # render all 8 scene segments
 python3 build.py audio        # voices + music + SFX mix (-14 LUFS)
-python3 build.py final --mb 13.7   # 2-pass encode sized to fit (MiB)
+python3 build.py final --mb 16.15  # 2-pass encode sized to fit (MiB); --out <name.mp4> for a second size
 ```
 The Kokoro model (`model.onnx`, `voices.npz`) comes from
 huggingface.co/onnx-community/Kokoro-82M-v1.0-ONNX; point `KOKORO_DIR` at it.
