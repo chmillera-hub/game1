@@ -38,35 +38,35 @@ SHOTS = []
 # Gesture vocabulary: wrist targets (x, y, z) in body units from the neck base,
 # z toward the camera. Hands follow the forearm with a natural wrist bend.
 # ---------------------------------------------------------------------------
-G_REACH_R = dict(target=(4.6, 2.5, 0.8), hand="open", view="palm", wrist=8)       # full shots: arm out toward the crowd
-G_REACH_M = dict(target=(3.3, 1.9, 1.8), hand="open", view="palm", wrist=8)       # medium shots: forearm out, palm to them
-G_TEACH_M = dict(target=(2.7, 3.3, 2.0), hand="open", view="palm", wrist=14)      # medium shots: explaining, palm up
-G_OFFER_R = dict(target=(3.5, 2.8, 1.5), hand="open", view="palm", wrist=12)      # arm extended toward them, palm open
-G_TEACH_R = dict(target=(3.7, 3.4, 1.0), hand="open", view="palm", wrist=12)      # full shots: explaining, palm up
-G_UP_R = dict(target=(3.5, -1.3, 0.8), hand="open", view="palm", wrist=5)         # full shots: toward heaven
-G_UP_M = dict(target=(3.4, 0.3, 1.3), hand="open", view="palm", wrist=5, pole=(0.35, 1.0, -0.5))
-G_HEART_L = dict(target=(0.1, 2.5, 1.1), hand="flat", view="back", wrist=12, still=True)
-G_FIRM_R = dict(target=(1.2, 2.7, 1.4), hand="fist", view="back", wrist=0)
-G_BREAD_R = dict(target=(0.95, 4.3, 1.3), hand="hold", view="back", wrist=20, still=True)
-G_BREAD_L = dict(target=(-0.75, 4.4, 1.3), hand="hold", view="back", wrist=20, still=True)
-G_GIVE_R = dict(target=(3.9, 3.3, 1.2), hand="hold", view="palm", wrist=10, still=True)
-G_PRAY_L = dict(target=(-0.2, 3.0, 1.4), hand="hold", view="back", wrist=25, still=True)
-P_CHIN_R = dict(target=(0.5, 0.3, 1.5), hand="relaxed", view="back", wrist=-10, layer="front", still=True)
-P_SCRATCH_R = dict(target=(1.5, -1.5, 0.3), hand="relaxed", view="back", still=True)
-P_POINT_L = dict(target=(-3.5, 1.0, 0.8), hand="point", view="palm", wrist=0, tilt=52)
-P_ASK_R = dict(target=(2.8, 2.1, 2.0), hand="open", view="palm", wrist=12)
-P_RECEIVE_L = dict(target=(-3.4, 3.5, 1.2), hand="cup", view="palm", wrist=10, still=True)
-E_CROSS_R = dict(target=(-1.2, 3.0, 1.15), hand="relaxed", view="back", wrist=10, still=True, pole=(0.6, 1.0, -0.15))
-E_CROSS_L = dict(target=(1.15, 3.2, 0.95), hand="relaxed", view="back", wrist=10, still=True, pole=(0.6, 1.0, -0.15))
-E_POINT_R = dict(target=(1.5, 1.1, 1.6), hand="point", view="palm", wrist=-5)     # index finger raised: making a point
-E_TOWARD_L = dict(target=(-2.4, 1.9, 1.8), hand="open", view="palm", wrist=8)
-E_OUTBURST_L = dict(target=(-2.6, 1.6, 1.6), hand="open", view="palm", wrist=6)
-E_BOATS_L0 = dict(target=(-1.5, 1.8, 2.0), hand="open", view="palm", wrist=8)     # "every boat..." sweep start
-E_BOATS_L = dict(target=(-2.9, 1.7, 1.6), hand="open", view="palm", wrist=6)      # ...sweeping out toward the shore
-E_PALMS_R = dict(target=(1.6, 2.6, 2.3), hand="open", view="palm", wrist=16)      # "how is that possible?"
-E_PALMS_L = dict(target=(-1.6, 2.6, 2.3), hand="open", view="palm", wrist=16)
-M_CLUTCH_L = dict(target=(-0.3, 2.0, 1.1), hand="hold", view="back", wrist=15, still=True)
-M_MOUTH_L = dict(target=(-0.25, 0.45, 1.4), hand="cup", view="back", layer="front", still=True)
+G_REACH_R = dict(target=(4.6, 2.5, 0.8), hand="open", palm=(0.25, -0.85, 0.45), wrist=8)  # full shots: arm out toward the crowd
+G_REACH_M = dict(target=(3.3, 1.9, 1.8), hand="open", palm=(0.35, -0.15, 1.0), wrist=8)  # medium shots: forearm out, palm to them
+G_TEACH_M = dict(target=(2.9, 3.0, 1.4), hand="open", palm=(-0.1, 1.0, 0.1), wrist=4)  # medium shots: explaining, palm down, back of the hand out
+G_OFFER_R = dict(target=(2.7, 2.9, 1.6), hand="open", palm=(0.15, -1.0, 0.2), wrist=10)  # open palm offered in front of him
+G_TEACH_R = dict(target=(3.7, 3.4, 1.0), hand="open", palm=(0.1, -1.0, 0.1), wrist=12)  # full shots: explaining, palm up
+G_UP_R = dict(target=(3.5, -1.3, 0.8), hand="open", palm=(0.15, -0.6, 0.8), wrist=5)  # full shots: toward heaven
+G_UP_M = dict(target=(3.4, 0.3, 1.3), hand="open", palm=(0.2, -0.3, 1.0), wrist=5)
+G_HEART_L = dict(target=(0.1, 2.5, 1.1), hand="flat", palm=(0.0, 0.0, -1.0), wrist=12, still=True)
+G_FIRM_R = dict(target=(1.2, 2.7, 1.4), hand="fist", palm=(-0.3, 0.2, -1.0), wrist=0)
+G_BREAD_R = dict(target=(0.95, 4.3, 1.3), hand="hold", palm=(-0.8, -0.5, 0.15), wrist=20, still=True)
+G_BREAD_L = dict(target=(-0.75, 4.4, 1.3), hand="hold", palm=(-0.8, -0.5, 0.15), wrist=20, still=True)
+G_GIVE_R = dict(target=(3.9, 3.3, 1.2), hand="hold", palm=(0.1, -1.0, 0.25), wrist=10, still=True)
+G_PRAY_L = dict(target=(-0.2, 3.0, 1.4), hand="hold", palm=(-0.2, -1.0, 0.2), wrist=25, still=True)
+P_CHIN_R = dict(target=(0.5, 0.3, 1.5), hand="relaxed", palm=(-0.4, 0.0, -1.0), wrist=-10, layer="front", still=True)
+P_SCRATCH_R = dict(target=(1.5, -1.5, 0.3), hand="relaxed", still=True, palm=(-1.0, 0.3, -0.4))
+P_SCRATCH_MID = dict(target=(2.7, 0.7, 1.5), hand="relaxed", still=True, palm=(-0.6, 0.3, -0.7))  # on the way up, in front of the shoulder
+P_ASK_R = dict(target=(3.1, 2.4, 1.5), hand="open", palm=(0.2, -1.0, 0.3), wrist=10)
+P_RECEIVE_L = dict(target=(-3.4, 3.5, 1.2), hand="cup", palm=(0.0, -1.0, 0.3), wrist=10, still=True)
+E_CROSS_R = dict(target=(-1.2, 3.0, 1.15), hand="relaxed", palm=(0.0, 0.2, -1.0), wrist=10, still=True, pole=(0.6, 1.0, -0.15))
+E_CROSS_L = dict(target=(1.15, 3.2, 0.95), hand="relaxed", palm=(0.0, 0.2, -1.0), wrist=10, still=True, pole=(0.6, 1.0, -0.15))
+E_POINT_R = dict(target=(1.5, 1.1, 1.6), hand="point", palm=(-0.5, 0.0, 0.85), wrist=-5, layer="front")  # index finger raised, in front of his head cloth
+E_TOWARD_L = dict(target=(-2.4, 1.9, 1.8), hand="open", palm=(0.5, -0.1, 0.85), wrist=8)
+E_OUTBURST_L = dict(target=(-2.6, 1.6, 1.6), hand="open", palm=(0.5, -0.1, 0.85), wrist=6)
+E_BOATS_L0 = dict(target=(-1.5, 1.8, 2.0), hand="open", palm=(0.1, 1.0, 0.25), wrist=8)  # "every boat..." sweep start
+E_BOATS_L = dict(target=(-2.5, 1.9, 1.6), hand="open", palm=(0.1, 1.0, 0.25), wrist=6)  # ...sweeping out toward the shore
+E_PALMS_R = dict(target=(2.0, 2.6, 1.8), hand="open", palm=(0.3, -1.0, 0.45), wrist=10)  # "how is that possible?"
+E_PALMS_L = dict(target=(-2.0, 2.6, 1.8), hand="open", palm=(0.3, -1.0, 0.45), wrist=10)
+M_CLUTCH_L = dict(target=(-0.3, 2.0, 1.1), hand="hold", palm=(0.0, 0.0, -1.0), wrist=15, still=True)
+M_MOUTH_L = dict(target=(-0.25, 0.45, 1.4), hand="cup", layer="front", still=True, palm=(0.0, 0.0, -1.0))
 
 def shot(t0, name, plate, pcam, chars, blur=0.0, cam=None, light=None, fx=(), grade="morning",
          trans=None, crowd=None, title=None):
@@ -116,10 +116,10 @@ shot(0.0, "open_cu_jesus", "lake_morning", (0.42, 0.40, 1.0),
 shot(6.0, "wide_boats", "wide_morning", (0.50, 0.47, 0.82),
      [], blur=0, cam=dict(z0=1.0, z1=1.04, fx=360, fy=560), light=L_J_MORN,
      fx=["boats_moving", "water_sparkle", "god_rays"])
-# full figures on the sand: Jesus and Peter waiting as the boats come in
-shot(11.4, "fs_jesus_peter", "beach_morning", (0.46, 0.55, 1.0),
-     [stand("peter", 255, 1150, 41), stand("jesus", 485, 1180, 44)], blur=1.0,
-     cam=dict(z0=1.0, z1=1.04, fx=360, fy=760), light=L_J_MORN, fx=["sun_glow", "water_sparkle"],
+# a full figure on the sand: Jesus alone as the boats come in - no one saw how he came
+shot(11.4, "fs_jesus_alone", "beach_morning", (0.46, 0.55, 1.0),
+     [stand("jesus", 330, 1190, 46)], blur=1.0,
+     cam=dict(z0=1.0, z1=1.05, fx=340, fy=760), light=L_J_MORN, fx=["sun_glow", "water_sparkle"],
      crowd=[crowd(BEACH_FAR, mood="listen", focus=-1, blur=0.8, z=1)])
 shot(T("L03") - 1.15, "mcu_eli_arrives", "land_morning", (0.5, 0.42, 1.0),
      [place("miriam", 185, 480, 74, blur=3.0), place("eli", 440, 455, 118)], blur=6,
@@ -156,7 +156,7 @@ shot(T("L06") - 0.25, "cu_jesus_l06", "lake_morning", (0.38, 0.40, 1.0),
      [place("jesus", 340, 430, 160)], blur=8, cam=dict(z0=1.02, z1=1.06, fx=340, fy=430),
      light=L_J_MORN, fx=["sun_glow", "bokeh_water", "god_rays"])
 shot(T("L07") - 0.6, "mcu_peter_l07", "lake_morning", (0.36, 0.42, 1.0),
-     [place("jesus", 700, 470, 120, blur=3.5), place("peter", 250, 455, 118)], blur=6,
+     [place("jesus", 700, 470, 120, blur=3.5, z=60), place("peter", 250, 455, 118)], blur=6,
      light=L_J_MORN, fx=["bokeh_water"], cam=dict(z0=1.0, z1=1.03, fx=250, fy=455))
 shot(T("L08") - 0.4, "cu_jesus_l08", "lake_morning", (0.48, 0.40, 1.0),
      [place("jesus", 380, 430, 158)], blur=8, light=L_J_MORN, fx=["sun_glow", "bokeh_water"],
@@ -192,7 +192,7 @@ shot(T("L14", seg=1) - 0.25, "cu_miriam_tear", "land_morning", (0.46, 0.42, 1.08
      [place("miriam", 370, 455, 165)], blur=9, light=L_C_MORN, fx=["bokeh_land"],
      cam=dict(z0=1.02, z1=1.05, fx=370, fy=455))
 shot(T("L14", "end") - 1.2, "ms_two_shot_end1", "lake_morning", (0.45, 0.43, 0.95),
-     [place("miriam", 615, 430, 80), place("jesus", 185, 390, 90)], blur=4,
+     [place("miriam", 640, 430, 80), place("jesus", 165, 390, 90)], blur=4,
      light=L_J_MORN, fx=["sun_glow", "bokeh_water", "god_rays"], cam=dict(z0=1.0, z1=1.04, fx=360, fy=440))
 
 # =============================================================================
@@ -341,14 +341,12 @@ def build_perfs():
     J.hold_eyes(0.0, 1.4)
     J.blink(2.2)
     J.look(3.6, 0.15, 0.05, 0.3).expr(3.4, "peace", 1.4, eo_l=0.9, eo_r=0.9)
-    # full shot on the sand: Jesus calm, Peter notices the boats coming in
-    J.pose(11.4, 0.01, yaw=18, pitch=0, roll=0).look(11.4, 0.3, 0.0).expr(11.4, "peace", 0.01)
+    # alone on the sand as the boats come in: calm, watching them arrive, a faint knowing smile
+    J.pose(11.4, 0.01, yaw=18, pitch=0, roll=0).look(11.4, 0.36, 0.02).expr(11.4, "peace", 0.01)
     P.pose(0.0, 0.01, yaw=14, pitch=0).look(0.0, 0.4, 0.0).expr(0.0, "neutral", 0.01)
-    P.expr(12.6, "surprised", 0.4, m_open=0.1).look(12.6, -0.5, -0.08, 0.15).pose(12.4, 0.6, yaw=-24, pitch=-3)
-    P.arm(12.9, "l", P_POINT_L, 0.6)                                         # points out at the boats
-    P.arm(14.4, "l", None, 0.8)
-    P.look(14.7, 0.45, 0.05, 0.2).pose(14.5, 0.7, yaw=16).expr(14.7, "knowing", 0.6)
-    J.look(14.9, -0.25, 0.0, 0.2).expr(15.0, "knowing", 0.6, m_smile=0.22)
+    J.expr(13.2, "knowing", 1.2, m_smile=0.2)
+    J.nod(13.9, 1.8, 0.8)
+    J.look(15.0, 0.22, 0.08, 0.4).pose(14.9, 1.2, yaw=12, pitch=2)
     # Eli arrives: out of breath, astonished, specific
     t3 = T("L03") - 1.15
     E.pose(0.0, 0.01, yaw=-20, pitch=-2).look(0.0, -0.3, 0.0).expr(0.0, "anxious", 0.01)
@@ -419,8 +417,10 @@ def build_perfs():
     # L07 Peter: practical, sincere
     t7 = T("L07") - 0.6
     P.pose(t7, 0.01, yaw=20, pitch=0, roll=0).look(t7, 0.45, 0.0).expr(t7, "confused", 0.01, bfur=0.15)
-    P.arm(T("L07") - 0.2, "r", P_SCRATCH_R, 0.6)                             # scratches the back of his head
-    P.arm(T("L07", seg=1), "r", P_ASK_R, 0.7)
+    P.arm(T("L07") - 0.55, "r", P_SCRATCH_MID, 0.45)                          # hand comes up in front...
+    P.arm(T("L07") - 0.15, "r", P_SCRATCH_R, 0.55)                            # ...and scratches the back of his head
+    P.arm(T("L07", seg=1) - 0.1, "r", P_SCRATCH_MID, 0.35)
+    P.arm(T("L07", seg=1) + 0.2, "r", P_ASK_R, 0.6)
     P.expr(T("L07", seg=1), "anxious", 0.6, bi_l=0.35, bi_r=0.35)
     P.arm(T("L07", "end") + 0.8, "r", None, 0.8)
     J.pose(t7, 0.01, yaw=-8).look(t7, -0.3, 0.0).expr(t7, "gentle", 0.01)
@@ -559,7 +559,8 @@ def build_perfs():
     J.pose(T("L22", "end") - 0.3, 0.01, yaw=18, pitch=0, roll=0).look(T("L22", "end") - 0.3, 0.33, 0.05)
     # L23 "This bread is my flesh" - grave, knowing
     J.expr(T("L23") - 0.3, "compassion", 0.8)
-    J.expr(T("L23", seg=1) - 0.2, "sorrow", 1.2, wet=0.35, m_smile=0.0)
+    J.expr(T("L23", seg=1) - 0.2, "sorrow", 1.2, wet=0.8, m_smile=0.0)
+    J.tear("l", T("L23", seg=1) + 0.35, T("L23", seg=1) + 2.6, dry=T("L23", "end") + 0.6)
     J.look(T("L23", seg=1) - 0.1, 0.2, 0.3, 0.4).pose(T("L23", seg=1) - 0.2, 1.0, pitch=6, roll=2)
     tp23 = T("L23", "end") - 0.25
     P.pose(tp23, 0.01, yaw=18, pitch=0, roll=3).look(tp23, 0.45, 0.0).expr(tp23, "anxious", 0.01, bi_l=0.6, bi_r=0.6, wet=0.4)
@@ -588,9 +589,10 @@ def build_perfs():
     M.arm(tmg, "l", M_MOUTH_L, 0.35)                                        # hand to mouth
     M.expr(tmg + 0.4, "anxious", 0.6, eo_l=1.15, eo_r=1.15)
     tps = T("L25", "end") + 1.45
-    P.pose(tps, 0.01, yaw=18, pitch=1, roll=0).look(tps, 0.45, 0.0).expr(tps, "confused", 0.01, bfur=0.4)
-    P.expr(tps + 0.6, "resolute", 0.8, bfur=0.3)
-    P.nod(tps + 0.8, 1.5, 0.8)
+    P.pose(tps, 0.01, yaw=18, pitch=1, roll=0).look(tps, 0.45, 0.0).expr(tps, "confused", 0.01, bfur=0.35, br_l=1.0, br_r=-0.15, bi_l=0.35, eo_l=1.08, eo_r=0.88)
+    P.pose(tps + 0.2, 1.4, roll=-3, pitch=-1)
+    P.expr(tps + 1.9, "resolute", 0.7, bfur=0.3)
+    P.nod(tps + 2.15, 1.5, 0.8)
     M.arm(T("L26"), "l", None, 1.0)
     # L26/L27 strong, steady
     t26 = T("L26") + 0.3
@@ -609,7 +611,7 @@ def build_perfs():
     t29 = T("L29") - 0.45
     J.pose(t29, 0.01, yaw=16, pitch=0, roll=0).look(t29, 0.33, 0.05).expr(t29, "warm", 0.01)
     J.look(T("L29") - 0.05, 0.12, -0.7, 0.35).pose(T("L29") - 0.1, 1.0, pitch=-14, roll=-2)
-    J.expr(T("L29"), "peace", 0.8, m_smile=0.3, bi_l=0.2, bi_r=0.2, br_l=0.25, br_r=0.25)
+    J.expr(T("L29"), "peace", 0.8, m_smile=0.3, bi_l=0.2, bi_r=0.2, br_l=0.25, br_r=0.25, glint=1.0)
     J.look(T("L29", word="and") - 0.15, 0.35, 0.05, 0.35).pose(T("L29", word="and") - 0.3, 1.1, pitch=0, roll=0)
     J.expr(T("L29", word="and"), "warm", 0.9)
     te29 = T("L29", seg=1) - 0.1

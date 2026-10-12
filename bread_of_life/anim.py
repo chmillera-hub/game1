@@ -12,13 +12,13 @@ import numpy as np
 import soundfile as sf
 
 from config import FPS, WORK
-from body import DEFAULT_POLE
+from body import REST_PALM, palm_vec
 from rig import DEFAULT_P
 
 NUM_PARAMS = [k for k, v in DEFAULT_P.items() if isinstance(v, float)]
 
 EXPR_KEYS = ["eo_l", "eo_r", "lo_l", "lo_r", "br_l", "br_r", "bi_l", "bi_r", "bfur", "m_smile", "m_smirk",
-             "m_press", "m_open", "m_wide", "m_round", "m_teeth", "pupil", "wet", "blush", "shrug"]
+             "m_press", "m_open", "m_wide", "m_round", "m_teeth", "pupil", "wet", "blush", "shrug", "glint"]
 
 EXPR = {
     "neutral": {},
@@ -137,8 +137,9 @@ class Perf:
         self.akeys["arm_" + side].append((t, spec, dur))
         return self
 
-    def tear(self, side, t0, t1):
-        self.tears.append((side, t0, t1))
+    def tear(self, side, t0, t1, dry=None):
+        """A tear forms at t0 and runs down the cheek by t1; with `dry` it fades away from then on."""
+        self.tears.append((side, t0, t1, dry))
         return self
 
     def nod(self, t, amount=4.0, dur=0.6):
@@ -251,10 +252,16 @@ class Perf:
         out["eo_l"] = out["eo_l"] * mult
         out["eo_r"] = out["eo_r"] * mult
         # tears
-        for side, t0, t1 in self.tears:
+        for side, t0, t1, dry in self.tears:
             k = "tear_l" if side == "l" else "tear_r"
+            dk = "tear_dry_l" if side == "l" else "tear_dry_r"
             prog = np.clip((t - t0) / max(t1 - t0, 1e-3), 0, None)
-            out[k] = np.maximum(out[k], np.where(t >= t0, np.minimum(prog * 1.4, 1.6), 0.0))
+            val = np.where(t >= t0, np.minimum(prog * 1.4, 1.6), 0.0)
+            if dry is not None:
+                dr = np.clip((t - dry) / 1.2, 0.0, 1.0)
+                val = np.where(t >= dry + 1.2, 0.0, val)
+                out[dk] = np.maximum(out[dk], np.where(val > 0, dr, 0.0))
+            out[k] = np.maximum(out[k], val)
         # wind
         wt = sorted(self.wind)
         out["wind"] = np.interp(t, [w[0] for w in wt] + [t[-1] + 1], [w[1] for w in wt] + [wt[-1][1]])
@@ -455,6 +462,40 @@ def _lerp3(p, q, x):
     return tuple(a + (b - a) * x for a, b in zip(p, q))
 
 
+def _slerp3(p, q, x):
+    """Rotate direction p toward q (constant angular speed, no pass through zero)."""
+    p = np.asarray(p, float)
+    q = np.asarray(q, float)
+    p = p / (np.linalg.norm(p) + 1e-9)
+    q = q / (np.linalg.norm(q) + 1e-9)
+    d = float(np.clip(np.dot(p, q), -1.0, 1.0))
+    if d > 0.9995:
+        r = p + (q - p) * x
+    else:
+        if d < -0.98:
+            # nearly opposite: turn through a direction facing the viewer
+            mid = np.array([0.0, 0.0, 1.0]) - np.dot(np.array([0.0, 0.0, 1.0]), p) * p
+            if np.linalg.norm(mid) < 1e-3:
+                mid = np.array([0.0, -1.0, 0.0]) - np.dot(np.array([0.0, -1.0, 0.0]), p) * p
+            mid = mid / np.linalg.norm(mid)
+            return tuple(_slerp3(p, mid, x * 2) if x < 0.5 else _slerp3(mid, q, x * 2 - 1))
+        th = math.acos(d)
+        r = (math.sin((1 - x) * th) * p + math.sin(x * th) * q) / math.sin(th)
+    return tuple(r / (np.linalg.norm(r) + 1e-9))
+
+
+def _mix_pole(spec, pa, pb, x):
+    """Explicit elbow poles blend with the rig's natural pole (None) at draw time.
+    A finished blend keeps the target's own pole so the next transition starts from it."""
+    spec.pop("pole", None)
+    spec.pop("pole_mix", None)
+    if x >= 1.0:
+        if pb is not None:
+            spec["pole"] = pb
+    elif pa is not None or pb is not None:
+        spec["pole_mix"] = (pa, pb, float(x))
+
+
 def _blend_arm(a, b, x):
     """Blend between two gesture specs; None means the arm hangs at rest."""
     if b is None and a is None:
@@ -466,7 +507,8 @@ def _blend_arm(a, b, x):
         spec["rest_blend"] = float(x)
         spec["tilt"] = a.get("tilt", 0.0) * (1.0 - x)
         spec["wrist"] = a.get("wrist", 8.0) + (8.0 - a.get("wrist", 8.0)) * x
-        spec["pole"] = _lerp3(a.get("pole") or DEFAULT_POLE, DEFAULT_POLE, x)
+        _mix_pole(spec, a.get("pole"), None, x)
+        spec["palm"] = _slerp3(palm_vec(a.get("palm")), REST_PALM, x)
         if a.get("hand", "relaxed") != "relaxed":
             spec["hand"] = a.get("hand", "relaxed")
             spec["hand_b"] = "relaxed"
@@ -477,7 +519,8 @@ def _blend_arm(a, b, x):
         spec["rest_blend"] = float(1.0 - x)
         spec["tilt"] = b.get("tilt", 0.0) * x
         spec["wrist"] = 8.0 + (b.get("wrist", 8.0) - 8.0) * x
-        spec["pole"] = _lerp3(DEFAULT_POLE, b.get("pole") or DEFAULT_POLE, x)
+        _mix_pole(spec, None, b.get("pole"), x)
+        spec["palm"] = _slerp3(REST_PALM, palm_vec(b.get("palm")), x)
         if x < 1.0:
             spec["hand"] = "relaxed"
             spec["hand_b"] = b.get("hand", "relaxed")
@@ -489,7 +532,8 @@ def _blend_arm(a, b, x):
     wa, wb = a.get("wrist", 8.0), b.get("wrist", 8.0)
     spec["wrist"] = wa + (wb - wa) * x
     spec["tilt"] = a.get("tilt", 0.0) + (b.get("tilt", 0.0) - a.get("tilt", 0.0)) * x
-    spec["pole"] = _lerp3(a.get("pole") or DEFAULT_POLE, b.get("pole") or DEFAULT_POLE, x)
+    _mix_pole(spec, a.get("pole"), b.get("pole"), x)
+    spec["palm"] = _slerp3(palm_vec(a.get("palm")), palm_vec(b.get("palm")), x)
     if x < 1.0 and a.get("hand") != b.get("hand"):
         spec["hand"] = a.get("hand", "relaxed")
         spec["hand_b"] = b.get("hand", "relaxed")

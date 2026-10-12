@@ -39,8 +39,9 @@ def rest_target(st, P, side):
     return np.array([S[0] + side * 0.22 + sway, S[1] + (l1 + l2) * 0.955, 0.45])
 
 
-def ik3(S, T, l1, l2, pole):
-    """Two-bone IK in 3D. Elbow bends toward `pole` (a direction)."""
+def ik3(S, T, l1, l2, pole, fallback=(1.0, 0.3, -0.3)):
+    """Two-bone IK in 3D. The elbow bends toward `pole` (a direction); when the pole lines up with
+    the reach direction the bend direction eases over to `fallback`, so the elbow never flips."""
     D = T - S
     d = float(np.linalg.norm(D))
     d = min(max(d, abs(l1 - l2) + 1e-3), l1 + l2 - 1e-3)
@@ -48,12 +49,17 @@ def ik3(S, T, l1, l2, pole):
     a = (l1 * l1 + d * d - l2 * l2) / (2 * d)
     h = math.sqrt(max(l1 * l1 - a * a, 0.0))
     p = np.asarray(pole, float)
+    p = p / (np.linalg.norm(p) + 1e-9)
     v = p - np.dot(p, u) * u
-    nv = np.linalg.norm(v)
-    if nv < 1e-6:
-        v = np.array([0.0, 1.0, 0.0]) - u[1] * u
-        nv = np.linalg.norm(v) + 1e-9
-    v /= nv
+    nv = float(np.linalg.norm(v))
+    q = np.asarray(fallback, float)
+    q = q / (np.linalg.norm(q) + 1e-9)
+    v2 = q - np.dot(q, u) * u
+    nv2 = float(np.linalg.norm(v2))
+    w = min(1.0, max(0.0, (nv - 0.08) / 0.3))
+    w = w * w * (3 - 2 * w)
+    v = (v / (nv + 1e-9)) * w + (v2 / (nv2 + 1e-9)) * (1 - w)
+    v = v / (np.linalg.norm(v) + 1e-9)
     E = S + a * u + h * v
     W = S + d * u
     return E, W
@@ -93,7 +99,7 @@ def _capsule_chain(pts, w0, w1):
 
 
 def draw_hand(cv, st, pose, x, y, ang_deg, length, thumb_side=1, view="back", pose_b=None, pose_t=0.0,
-              squash=1.0, foreshorten=1.0, light_x=-0.7):
+              squash=1.0, foreshorten=1.0, light_x=-0.7, thumb_front=None):
     """Hand with the wrist at (x, y) pointing along ang_deg (0 = down, +90 = screen-left).
 
     length: wrist to middle fingertip in body units. thumb_side: +1 thumb toward +x of
@@ -147,11 +153,14 @@ def draw_hand(cv, st, pose, x, y, ang_deg, length, thumb_side=1, view="back", po
     # draw order: back view hides folded fingers behind the palm; palm view shows them over it
     back_parts = [p for p in finger_parts if not p[1]]
     folded_parts = [p for p in finger_parts if p[1]]
-    order = []
+    # the thumb sits on the palm side: in front when the palm faces us, behind when we see the back
+    if thumb_front is None:
+        thumb_front = view == "palm"
     if view == "back":
-        order = [("finger", p) for p in folded_parts] + [("palm", palm)] + [("finger", p) for p in back_parts] + [("thumb", thumb)]
+        order = [("finger", p) for p in folded_parts] + [("palm", palm)] + [("finger", p) for p in back_parts]
     else:
-        order = [("thumb", thumb), ("palm", palm)] + [("finger", p) for p in back_parts + folded_parts]
+        order = [("palm", palm)] + [("finger", p) for p in back_parts + folded_parts]
+    order = order + [("thumb", thumb)] if thumb_front else [("thumb", thumb)] + order
     paths = [o[1][0] if o[0] == "finger" else o[1] for o in order]
     # outline underlay -> single clean silhouette
     for p in paths:
@@ -211,43 +220,130 @@ def draw_hand(cv, st, pose, x, y, ang_deg, length, thumb_side=1, view="back", po
 # Arms
 # ---------------------------------------------------------------------------
 
+def _smooth(x):
+    x = min(1.0, max(0.0, x))
+    return x * x * (3 - 2 * x)
+
+
+def natural_pole(S, T, side):
+    """Outward-relative elbow direction that suits where the hand is: the elbow hangs down and a
+    little back for hands below the shoulder, and swings out to the side as the hand rises toward
+    the head (scratching the head, raising a hand)."""
+    rise = S[1] - T[1]  # > 0 when the hand is above the shoulder (y points down)
+    h = _smooth((rise + 1.2) / 3.4)
+    down = np.array(DEFAULT_POLE)
+    out = np.array([1.0, 0.2, -0.25])
+    return down * (1 - h) + out * h
+
+
+def resolve_pole(spec, S, T, side):
+    """Absolute pole vector for the IK, blending explicit and natural poles during transitions."""
+    nat = natural_pole(S, T, side)
+    spec = spec or {}
+    pm = spec.get("pole_mix")
+    if pm is not None:
+        pa, pb, x = pm
+        pa = nat if pa is None else np.array(pa, float)
+        pb = nat if pb is None else np.array(pb, float)
+        p = pa + (pb - pa) * x
+    elif spec.get("pole") is not None:
+        p = np.array(spec["pole"], float)
+    else:
+        p = nat
+    return np.array([side * p[0], p[1], p[2]])
+
+
+def arm_target(st, P, side, spec):
+    rest = rest_target(st, P, side)
+    if spec is None:
+        return rest
+    tx, ty = spec["target"][:2]
+    tz = spec["target"][2] if len(spec["target"]) > 2 else spec.get("z", 0.6)
+    T = np.array([tx, ty, tz])
+    rb = spec.get("rest_blend", 0.0)
+    if rb > 0:
+        T = T + (rest - T) * rb
+    # small "talking" motion while a gesture is held
+    beat = spec.get("beat", 0.0)
+    if beat > 0:
+        t = P["t"]
+        T = T + beat * np.array([0.10 * math.sin(t * 2.3 + side), 0.08 * math.sin(t * 3.1), 0.06 * math.sin(t * 1.7)])
+    return T
+
+
 def arm_geometry(st, P, side, spec):
     S = shoulder_pt(st, P, side)
     l1, l2 = arm_dims(st)
-    rest = rest_target(st, P, side)
-    if spec is None:
-        T = rest
-    else:
-        tx, ty = spec["target"][:2]
-        tz = spec["target"][2] if len(spec["target"]) > 2 else spec.get("z", 0.6)
-        T = np.array([tx, ty, tz])
-        rb = spec.get("rest_blend", 0.0)
-        if rb > 0:
-            T = T + (rest - T) * rb
-        # small "talking" motion while a gesture is held
-        beat = spec.get("beat", 0.0)
-        if beat > 0:
-            t = P["t"]
-            T = T + beat * np.array([0.10 * math.sin(t * 2.3 + side), 0.08 * math.sin(t * 3.1), 0.06 * math.sin(t * 1.7)])
-    px, py, pz = (spec or {}).get("pole") or DEFAULT_POLE
-    E, W = ik3(S, T, l1, l2, (side * px, py, pz))
+    T = arm_target(st, P, side, spec)
+    # a hand moving between poses travels in front of the body, never through the shoulder joint
+    r_min = 0.32 * (l1 + l2)
+    gap = r_min - float(np.linalg.norm(T - S))
+    if gap > 0:
+        T = T + np.array([0.0, 0.0, 1.2 * gap])
+    pole = resolve_pole(spec, S, T, side)
+    E, W = ik3(S, T, l1, l2, pole, fallback=(side * 1.0, 0.3, -0.3))
     return S, E, W
 
 
-def hand_direction(E, W, spec, side):
-    """3D hand direction: forearm direction with a natural wrist bend (never hyperextended)."""
+# Direction from a body toward the camera (slightly above the hands, looking a little down).
+CAM_DIR = np.array([0.0, -0.26, 0.966])
+
+# Palm orientation hints (outward-relative x: + away from the body's midline; y: + down;
+# z: + toward the viewer). A relaxed hanging hand faces the thigh, turned partly backward.
+REST_PALM = (-0.7, 0.0, -0.7)
+PALM_HINTS = {"up": (0.0, -1.0, 0.0), "down": (0.0, 1.0, 0.0), "fwd": (0.0, 0.0, 1.0), "body": (0.0, 0.0, -1.0),
+              "in": (-1.0, 0.0, 0.0), "out": (1.0, 0.0, 0.0)}
+
+
+def palm_vec(h):
+    if h is None:
+        return REST_PALM
+    if isinstance(h, str):
+        return PALM_HINTS[h]
+    return tuple(h)
+
+
+def palm_hint_abs(spec, side):
+    h = palm_vec((spec or {}).get("palm"))
+    return np.array([side * h[0], h[1], h[2]], float)
+
+
+def _perp(v, f):
+    v = v - np.dot(v, f) * f
+    n = np.linalg.norm(v)
+    return v / n if n > 1e-6 else None
+
+
+def hand_direction(E, W, spec, side, use_override=True):
+    """3D hand direction. The hand lies across its palm direction (a palm turned toward someone
+    with the forearm pointing at them means the wrist bends back and the fingers rise), as close to
+    the forearm line as a wrist allows; the gesture's wrist angle then curls it toward the palm."""
+    if use_override and (spec or {}).get("hand_dir") is not None:
+        d = np.asarray(spec["hand_dir"], float)
+        return d / (np.linalg.norm(d) + 1e-9)
     f = W - E
     f = f / (np.linalg.norm(f) + 1e-9)
+    nh = palm_hint_abs(spec, side)
+    nh = nh / (np.linalg.norm(nh) + 1e-9)
+    # partial projection: the hand turns into its palm plane without ever flipping sides
+    d0 = f - 0.88 * np.dot(f, nh) * nh
+    nd = float(np.linalg.norm(d0))
+    up = np.array([0.0, -1.0, 0.0]) - np.dot(np.array([0.0, -1.0, 0.0]), nh) * nh
+    up = up / (np.linalg.norm(up) + 1e-9)
+    w = _smooth((nd - 0.12) / 0.4)  # forearm nearly along the palm direction: fingers rise
+    d = (d0 / (nd + 1e-9)) * w + up * (1 - w)
+    d = d / (np.linalg.norm(d) + 1e-9)
+    # a wrist bends at most ~80 degrees away from the forearm line
+    cosb = float(np.dot(d, f))
+    lim = math.cos(math.radians(80))
+    if cosb < lim:
+        perp = d - cosb * f
+        perp = perp / (np.linalg.norm(perp) + 1e-9)
+        d = f * lim + perp * math.sin(math.radians(80))
     bend = math.radians((spec or {}).get("wrist", 8.0))
-    # bend toward the body's "palm side": rotate within the plane spanned by f and down/in
-    ref = np.array([-side * 0.3, 0.2, 1.0])
-    ref = ref - np.dot(ref, f) * f
-    nr = np.linalg.norm(ref)
-    if nr < 1e-6:
-        return f
-    ref /= nr
-    d = f * math.cos(bend) + ref * math.sin(bend)
-    # optional in-plane tilt of the hand outward (e.g. a pointing finger aimed at the horizon)
+    ref = _perp(nh, d)
+    if ref is not None and bend:
+        d = d * math.cos(bend) + ref * math.sin(bend)
     tilt = math.radians(side * (spec or {}).get("tilt", 0.0))
     if tilt:
         c, s = math.cos(tilt), math.sin(tilt)
@@ -255,8 +351,89 @@ def hand_direction(E, W, spec, side):
     return d / (np.linalg.norm(d) + 1e-9)
 
 
+def hand_screen_dir(hd):
+    """Direction and length of a 3D hand direction as seen by the slightly raised camera:
+    a hand pointing at the viewer appears to point a little downward, foreshortened."""
+    x = float(hd[0])
+    y = float(hd[1]) * CAM_DIR[2] - float(hd[2]) * CAM_DIR[1]
+    L = math.hypot(x, y)
+    if L < 1e-6:
+        return 0.0, 1.0, 0.0
+    return x / L, y / L, min(1.0, L)
+
+
+def hand_frame(hd, spec, side):
+    """Palm normal and thumb direction for a hand pointing along hd.
+
+    side -1 is the screen-left arm, which is the character's anatomical right arm (they face us).
+    Palm up -> the thumb points away from the body; palm down or toward someone -> it points
+    toward the body's midline."""
+    n = _perp(palm_hint_abs(spec, side), hd)
+    if n is None:
+        n = _perp(np.array([-side * 1.0, 0.0, -0.35]), hd)
+    if n is None:
+        n = np.array([0.0, 0.0, -1.0])
+    # cross products in a right-handed frame (flip y, which points down in body units)
+    dR = np.array([hd[0], -hd[1], hd[2]])
+    nR = np.array([n[0], -n[1], n[2]])
+    tR = np.cross(dR, nR) if side < 0 else np.cross(nR, dR)
+    t = np.array([tR[0], -tR[1], tR[2]])
+    return n, t / (np.linalg.norm(t) + 1e-9)
+
+
+def _seg_shape(a, b, wa, wb, round_a=1.0, round_b=1.0, bulge=0.0, n=9):
+    """Tapered limb segment a->b. Returns (closed fill path, outline without the a-end cap)."""
+    a, b = np.asarray(a, float), np.asarray(b, float)
+    d = b - a
+    L = float(np.linalg.norm(d))
+    if L < 1e-6:
+        d = np.array([0.0, 1.0])
+        L = 1e-6
+    d = d / L
+    nrm = np.array([-d[1], d[0]])
+    ts = np.linspace(0.0, 1.0, n)
+    w = wa + (wb - wa) * ts + bulge * np.sin(np.pi * ts)
+    mids = a[None, :] + ts[:, None] * (b - a)[None, :]
+    left = mids + nrm * (w[:, None] / 2)
+    right = mids - nrm * (w[:, None] / 2)
+
+    def cap(c, axis, r, k):
+        # half-ellipse from +nrm side around `axis` to the -nrm side
+        out = []
+        for ang in np.linspace(0.0, math.pi, 7)[1:-1]:
+            out.append(c + nrm * (r * math.cos(ang)) + axis * (r * k * math.sin(ang)))
+        return out
+
+    cap_b = cap(b, d, wb / 2, round_b)
+    # the a-end cap runs from the right side back round to the left side
+    cap_a_pts = [a - nrm * (wa / 2 * math.cos(ang)) - d * (wa / 2 * round_a * math.sin(ang)) for ang in np.linspace(0.0, math.pi, 7)[1:-1]]
+    ring = list(left) + cap_b + list(right[::-1]) + cap_a_pts
+    closed = spline([tuple(p) for p in ring], closed=True, tension=0.5)
+    open_pts = list(left) + cap_b + list(right[::-1])
+    outline = spline([tuple(p) for p in open_pts], closed=False, tension=0.5)
+    return closed, outline, left, right
+
+
+def _shade_segment(cv, path, a, b, w, ssh, lx):
+    """Cel shadow along the side of a sleeve segment away from the key light."""
+    a, b = np.asarray(a, float), np.asarray(b, float)
+    d = b - a
+    L = float(np.linalg.norm(d)) + 1e-9
+    d = d / L
+    nrm = np.array([-d[1], d[0]])
+    # the side whose normal points away from the light gets the shadow
+    side_sign = 1.0 if nrm[0] * lx > 0 else -1.0
+    off = nrm * side_sign * w * 0.42
+    band = [tuple(a + off), tuple(b + off)]
+    cv.save()
+    cv.clipPath(path, skia.ClipOp.kIntersect, True)
+    cv.drawPath(tapered(sample_spline(band, n=6), w * 0.75, w * 0.75), fill(ssh, alpha=0.75))
+    cv.restore()
+
+
 def draw_arm(cv, st, P, side, spec, sty):
-    """Sleeved arm from shoulder to wrist plus the hand."""
+    """Sleeved arm (upper arm and forearm drawn in depth order, so the nearer part hides the
+    one behind it) plus an anatomically oriented hand."""
     S, E, W = arm_geometry(st, P, side, spec)
     lc = st.get("line", "#2a1a14")
     scol = sty.get("sleeve", st.get("sleeve", "#efe5d3"))
@@ -264,57 +441,72 @@ def draw_arm(cv, st, P, side, spec, sty):
     k = st.get("body_scale", 1.0)
     w_up, w_el, w_cuff = st.get("sleeve_w", (0.95, 0.9, 1.05))
     w_up, w_el, w_cuff = w_up * k, w_el * k, w_cuff * k
-    s2, e2, w2 = (float(S[0]), float(S[1])), (float(E[0]), float(E[1])), (float(W[0]), float(W[1]))
+    s2, e2, w2 = np.array(S[:2]), np.array(E[:2]), np.array(W[:2])
     hd = hand_direction(E, W, spec, side)
-    hang = math.degrees(math.atan2(-hd[0], hd[1]))
-    fore = math.hypot(hd[0], hd[1])
+    sx, sy, fore = hand_screen_dir(hd)
+    hang = math.degrees(math.atan2(-sx, sy))
     hand_len = st.get("hand_len", 2.15) * (spec or {}).get("hand_scale", 1.0) * k
     pose = (spec or {}).get("hand", "relaxed")
     show_hand = pose != "none" and (spec or {}).get("hand_b") != "none" and hand_len > 0.05
-    thumb = (spec or {}).get("thumb", -side)
-    view = (spec or {}).get("view", "back")
+    # palm and thumb from the 3D hand frame, seen by a camera at about eye height (so hands
+    # below the face are seen a little from above)
+    n, t = hand_frame(hd, spec, side)
+    view = "palm" if float(np.dot(n, CAM_DIR)) > 0.0 else "back"
+    ca, sa = math.cos(math.radians(hang)), math.sin(math.radians(hang))
+    t_img = (t[0], t[1] * CAM_DIR[2] + t[2] * -CAM_DIR[1])  # apparent thumb direction in the picture
+    ts = t_img[0] * ca + t_img[1] * sa  # thumb direction across the hand in the picture
+    thumb = 1 if ts >= 0 else -1
+    # a hand seen edge-on still shows its thickness and thumb, so it never thins to a blade
+    squash = (0.62 + 0.38 * min(1.0, abs(ts))) * (spec or {}).get("squash", 1.0)
+    thumb_front = view == "palm"
+    lx = P["light_x"]
     # wrist sits a little inside the cuff
-    wrist = (w2[0] - hd[0] * 0.25, w2[1] - hd[1] * 0.25)
+    wrist = (w2[0] - sx * fore * 0.25, w2[1] - sy * fore * 0.25)
 
     def hand():
         if show_hand:
             draw_hand(cv, st, pose, wrist[0], wrist[1], hang, hand_len, thumb_side=thumb, view=view,
                       pose_b=(spec or {}).get("hand_b"), pose_t=(spec or {}).get("hand_t", 0.0),
-                      squash=(spec or {}).get("squash", 1.0), foreshorten=fore, light_x=P["light_x"])
+                      squash=squash, foreshorten=fore, light_x=lx, thumb_front=thumb_front)
 
+    up_closed, up_open, _, _ = _seg_shape(s2, e2, w_up, w_el, round_a=0.55, round_b=1.0, bulge=0.04 * k)
+    fo_closed, fo_open, _, _ = _seg_shape(e2, w2, w_el, w_cuff, round_a=1.0, round_b=0.25, bulge=0.03 * k)
+    # the forearm's elbow end is its "a" end; the upper arm's elbow end is its "b" end
+    up_open_noelbow = _seg_shape(e2, s2, w_el, w_up, round_a=1.0, round_b=0.55, bulge=0.04 * k)[1]
+    forearm_front = W[2] >= S[2]
     hand_behind = (spec or {}).get("hand_under", False) or (hd[2] < -0.45)
     if hand_behind:
         hand()
-    # one continuous sleeve from shoulder through the elbow to the cuff (cloth bends smoothly)
-    pts = sample_spline([s2, e2, w2], n=20)
-    sleeve = tapered(pts, w_up, w_cuff, wmid=w_el)
-    lx = P["light_x"]
-    cv.drawPath(sleeve, stroke(lc, 0.05))
-    cv.drawPath(sleeve, fill(scol))
-    cv.save()
-    cv.clipPath(sleeve, skia.ClipOp.kIntersect, True)
-    off = 0.3 if lx < 0 else -0.3
-    sh_pts = []
-    for i in range(len(pts)):
-        p0 = pts[max(i - 1, 0)]
-        p1 = pts[min(i + 1, len(pts) - 1)]
-        dx, dy = p1[0] - p0[0], p1[1] - p0[1]
-        n = math.hypot(dx, dy) + 1e-9
-        sh_pts.append((pts[i][0] - dy / n * off * w_el * 1.3, pts[i][1] + dx / n * off * w_el * 1.3))
-    cv.drawPath(tapered(sh_pts, w_up * 0.7, w_cuff * 0.7, wmid=w_el * 0.7), fill(ssh, alpha=0.75))
-    # folds gathering at the elbow
-    for t_ in (-0.18, 0.0, 0.18):
-        cv.drawPath(spline([(e2[0] + t_ - 0.12, e2[1] - 0.35), (e2[0] + t_ * 0.5, e2[1]), (e2[0] + t_ + 0.1, e2[1] + 0.35)], closed=False),
-                    stroke(ssh, 0.035, alpha=0.8))
-    cv.restore()
-    cv.drawPath(sleeve, stroke(lc, 0.022, alpha=0.9))
+    if forearm_front:
+        layers = [(up_closed, up_closed, s2, e2, w_el), (fo_closed, fo_open, e2, w2, w_el)]
+    else:
+        layers = [(fo_closed, fo_closed, e2, w2, w_el), (up_closed, up_open_noelbow, s2, e2, w_el)]
+    for closed, outline, a, b_, w in layers:
+        cv.drawPath(outline, stroke(lc, 0.05))
+        cv.drawPath(closed, fill(scol))
+        _shade_segment(cv, closed, a, b_, w, ssh, lx)
+        cv.drawPath(outline, stroke(lc, 0.022, alpha=0.9))
+    # folds gathering on the inside of a bent elbow (on the nearer segment)
+    v1, v2 = s2 - e2, w2 - e2
+    cosang = float(np.dot(v1, v2) / (np.linalg.norm(v1) * np.linalg.norm(v2) + 1e-9))
+    if cosang > -0.85:
+        inner = (v1 / (np.linalg.norm(v1) + 1e-9) + v2 / (np.linalg.norm(v2) + 1e-9))
+        inner = inner / (np.linalg.norm(inner) + 1e-9)
+        cv.save()
+        cv.clipPath(layers[1][0], skia.ClipOp.kIntersect, True)
+        for t_ in (-0.16, 0.0, 0.16):
+            base = e2 + inner * (0.18 + t_)
+            perp = np.array([-inner[1], inner[0]])
+            pts = [tuple(base - perp * 0.28), tuple(base + inner * 0.06), tuple(base + perp * 0.28)]
+            cv.drawPath(spline(pts, closed=False), stroke(ssh, 0.035, alpha=0.75))
+        cv.restore()
     # cuff opening (dark inside)
     dx, dy = w2[0] - e2[0], w2[1] - e2[1]
-    n = math.hypot(dx, dy) + 1e-9
-    nx_, ny_ = -dy / n, dx / n
+    nn = math.hypot(dx, dy) + 1e-9
+    nx_, ny_ = -dy / nn, dx / nn
     cw = w_cuff * 0.5
-    cuff = spline([(w2[0] + nx_ * cw, w2[1] + ny_ * cw), (w2[0] + dx / n * 0.10, w2[1] + dy / n * 0.10), (w2[0] - nx_ * cw, w2[1] - ny_ * cw),
-                   (w2[0] - dx / n * 0.06, w2[1] - dy / n * 0.06)], closed=True)
+    cuff = spline([(w2[0] + nx_ * cw, w2[1] + ny_ * cw), (w2[0] + dx / nn * 0.10, w2[1] + dy / nn * 0.10), (w2[0] - nx_ * cw, w2[1] - ny_ * cw),
+                   (w2[0] - dx / nn * 0.06, w2[1] - dy / nn * 0.06)], closed=True)
     cv.drawPath(cuff, fill(mix(ssh, "#000000", 0.35), alpha=0.85))
     cv.drawPath(cuff, stroke(lc, 0.02, alpha=0.8))
     if not hand_behind:
@@ -323,20 +515,20 @@ def draw_arm(cv, st, P, side, spec, sty):
 
 
 def make_arms(arm_style=None):
-    """Arms painter for Character.draw; P['arm_l'] / P['arm_r'] hold gesture specs (None = at rest)."""
+    """Arms painter for Character.draw; P['arm_l'] / P['arm_r'] hold gesture specs (None = at rest).
+    Within a layer the arm whose forearm is further from the viewer is drawn first."""
     arm_style = arm_style or {}
 
     def arms(cv, st, P, layer):
-        order = ((-1, "arm_l"), (1, "arm_r"))
-        # draw the arm that is further back first (crossed arms etc.)
-        specs = {k: P.get(k) for _, k in order}
-        if specs["arm_r"] and specs["arm_r"].get("under", False):
-            order = ((1, "arm_r"), (-1, "arm_l"))
-        for side, key in order:
-            spec = specs[key]
-            sp_layer = (spec or {}).get("layer", "body")
-            if sp_layer != layer:
+        items = []
+        for side, key in ((-1, "arm_l"), (1, "arm_r")):
+            spec = P.get(key)
+            if (spec or {}).get("layer", "body") != layer:
                 continue
+            _, E, W = arm_geometry(st, P, side, spec)
+            depth = float(E[2] + W[2]) + (5.0 if (spec or {}).get("over") else 0.0)
+            items.append((depth, side, spec))
+        for _, side, spec in sorted(items, key=lambda it: it[0]):
             draw_arm(cv, st, P, side, spec, arm_style.get(side, {}))
 
     return arms

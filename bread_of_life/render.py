@@ -42,7 +42,48 @@ class Renderer:
         self.chars["man2"] = extras.make_extra(77, female=False)
         self.cues = subs.build_cues(T)
         self.shot_t = [s["t0"] for s in SHOTS]
+        self.hand_dirs = {who: self._smooth_hands(who) for who in self.perfs}
         print(f"renderer ready in {time.time() - t0:.1f}s", file=sys.stderr)
+
+    def _smooth_hands(self, who):
+        """Per-frame hand directions, smoothed so a hand never snaps round between frames
+        (resets where a pose changes instantly, as at a cut)."""
+        st = self.chars[who].st
+        tr = self.tracks[who]
+        out = {}
+        for side, key in ((-1, "arm_l"), (1, "arm_r")):
+            dirs = np.zeros((N_FRAMES, 3))
+            wrists = np.zeros((N_FRAMES, 3))
+            valid = np.zeros(N_FRAMES, bool)
+            for f in range(N_FRAMES):
+                spec = self.arms[who][key][f]
+                if spec is None:
+                    continue
+                P = dict(DEFAULT_P)
+                P.update({k: float(v[f]) for k, v in tr.items() if k in DEFAULT_P})
+                _, E, Wr = body.arm_geometry(st, P, side, spec)
+                dirs[f] = body.hand_direction(E, Wr, spec, side)
+                wrists[f] = Wr
+                valid[f] = True
+            sm = dirs.copy()
+            f = 0
+            while f < N_FRAMES:
+                if not valid[f]:
+                    f += 1
+                    continue
+                g = f + 1
+                while g < N_FRAMES and valid[g] and np.linalg.norm(wrists[g] - wrists[g - 1]) < 1.5:
+                    g += 1
+                seg = dirs[f:g].copy()
+                for rng_ in (range(1, len(seg)), range(len(seg) - 2, -1, -1)):
+                    for i in rng_:
+                        j = i - 1 if rng_.step == 1 else i + 1
+                        seg[i] = seg[i] * 0.55 + seg[j] * 0.45
+                        seg[i] /= np.linalg.norm(seg[i]) + 1e-9
+                sm[f:g] = seg
+                f = g
+            out[key] = (sm, valid)
+        return out
 
     def shot_index(self, t):
         i = 0
@@ -61,6 +102,9 @@ class Renderer:
             # a held gesture keeps moving a little with the rhythm of speech
             if a is not None and not a.get("still") and speak > 0.01:
                 a = dict(a, beat=0.75 * speak)
+            hd = self.hand_dirs.get(who, {}).get(k) if hasattr(self, "hand_dirs") else None
+            if a is not None and hd is not None and hd[1][f]:
+                a = dict(a, hand_dir=tuple(hd[0][f]))
             P[k] = a
         P.update(shot["light"])
         if extra:
@@ -105,7 +149,7 @@ class Renderer:
         if "leaving" in effects:
             fx.leaving(cv, W, H, t, t0, pcam)
         # --- crowd groups and characters, far to near
-        layers = [(c["S"], 1, k) for k, c in enumerate(shot["chars"])]
+        layers = [(c.get("z", c["S"]), 1, k) for k, c in enumerate(shot["chars"])]
         layers += [(g["z"], 0, k) for k, g in enumerate(shot["crowd"])]
         for depth, kind, k in sorted(layers):
             if kind == 0:
@@ -154,14 +198,13 @@ class Renderer:
             side = -side
         spec = Q["arm_l" if side < 0 else "arm_r"]
         _, E, Wr = body.arm_geometry(st, Q, side, spec)
-        hd = body.hand_direction(E, Wr, spec, side)
+        hd = body.hand_direction(E, Wr, spec, side, use_override=True)
         k = st.get("body_scale", 1.0)
         length = st.get("hand_len", 2.15) * k * (spec or {}).get("hand_scale", 1.0)
-        fore = math.hypot(hd[0], hd[1])
-        reach = length * (0.62 + 0.38 * min(fore, 1.0))
-        d = (hd[0] / (fore + 1e-9), hd[1] / (fore + 1e-9))
-        px = Wr[0] - hd[0] * 0.25 + d[0] * reach * 0.42
-        py = Wr[1] - hd[1] * 0.25 + d[1] * reach * 0.42
+        sx, sy, fore = body.hand_screen_dir(hd)
+        reach = length * (0.62 + 0.38 * fore)
+        px = Wr[0] - sx * fore * 0.25 + sx * reach * 0.42
+        py = Wr[1] - sy * fore * 0.25 + sy * reach * 0.42
         lean = math.radians(Q["blean"])
         bx = px * math.cos(lean) - py * math.sin(lean) + Q["bx"]
         by = px * math.sin(lean) + py * math.cos(lean)

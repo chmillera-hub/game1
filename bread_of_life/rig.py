@@ -12,14 +12,14 @@ import numpy as np
 import skia
 
 from body import draw_legs
-from gfx import (c4, ellipse, fill, hexc, lin_grad, mix, rad_grad, sample_spline,
+from gfx import (c4, ellipse, fill, hexc, lin_grad, mix, poly, rad_grad, sample_spline,
                  spline, stroke, tapered)
 
 DEFAULT_P = dict(
     yaw=0.0, pitch=0.0, roll=0.0, hx=0.0, hy=0.0,
     byaw=0.0, blean=0.0, bx=0.0, breath=0.0, shrug=0.0,
     eo_l=1.0, eo_r=1.0, lo_l=0.0, lo_r=0.0, gx=0.0, gy=0.0, pupil=1.0,
-    wet=0.0, tear_l=0.0, tear_r=0.0,
+    wet=0.0, tear_l=0.0, tear_r=0.0, tear_dry_l=0.0, tear_dry_r=0.0, glint=0.0,
     br_l=0.0, br_r=0.0, bi_l=0.0, bi_r=0.0, bfur=0.0,
     m_open=0.0, m_wide=0.0, m_round=0.0, m_smile=0.0, m_smirk=0.0, m_press=0.0,
     m_teeth=0.0, m_tongue=0.0,
@@ -206,6 +206,19 @@ def draw_eye(cv, H, st, P, side):
         cv.drawPath(ellipse(icx, icy - ri_y * 0.05, ri_x * 0.42 * ps, ri_y * 0.46 * ps), fill(st.get("pupil_col", "#160c08")))
         # iris ring
         cv.drawPath(iris, stroke(dark, 0.010, alpha=0.9))
+        # a tiny twinkle of light in the pupil
+        g = P.get("glint", 0.0)
+        if g > 0.01:
+            tw = 0.72 + 0.28 * math.sin(P["t"] * 6.5 + side * 1.3)
+            rr = ri_x * 0.58 * g * tw
+            cv.save()
+            cv.translate(icx, icy - ri_y * 0.05)
+            cv.rotate(12 + 14 * math.sin(P["t"] * 0.9))
+            cv.drawCircle(0, 0, rr * 0.9, fill("#fff6d8", alpha=0.35 * g, blur=rr * 0.5))
+            star = [(0, -rr), (rr * 0.16, -rr * 0.16), (rr, 0), (rr * 0.16, rr * 0.16), (0, rr), (-rr * 0.16, rr * 0.16),
+                    (-rr, 0), (-rr * 0.16, -rr * 0.16)]
+            cv.drawPath(poly(star), fill("#fffdf2", alpha=0.95 * g))
+            cv.restore()
         # lid shadow across top of eye
         shadow = spline([(U[0][0], U[0][1] - 0.05)] + U + [(U[-1][0], U[-1][1] - 0.05)], closed=False)
         sp = skia.Path(shadow)
@@ -272,23 +285,25 @@ def draw_eye(cv, H, st, P, side):
 
     # tears
     tear = P["tear_l"] if side < 0 else P["tear_r"]
-    if tear > 0.001:
-        draw_tear(cv, H, st, cx, cy, f, side, tear, P)
+    dry = P["tear_dry_l"] if side < 0 else P["tear_dry_r"]
+    if tear > 0.001 and dry < 0.999:
+        draw_tear(cv, H, st, cx, cy, f, side, tear, P, fade=1.0 - dry)
 
 
-def draw_tear(cv, H, st, cx, cy, f, side, k, P):
-    # a drop that forms at the lower lid and runs down the cheek
+def draw_tear(cv, H, st, cx, cy, f, side, k, P, fade=1.0):
+    # a drop that forms at the lower lid and runs down the cheek; `fade` < 1 as it dries
     start = (cx + side * 0.05 * f, cy + 0.08)
     run = min(1.0, k) * 0.42
     x0, y0 = start
     path_pts = [(x0, y0), (x0 + side * 0.012, y0 + run * 0.5), (x0 + side * 0.02, y0 + run)]
     if run > 0.02:
-        cv.drawPath(tapered(sample_spline(path_pts, n=10), 0.008, 0.018), fill("#d8f0ff", alpha=0.55))
-        cv.drawPath(tapered(sample_spline(path_pts, n=10), 0.003, 0.007), fill("#ffffff", alpha=0.7))
+        cv.drawPath(tapered(sample_spline(path_pts, n=10), 0.008, 0.018), fill("#d8f0ff", alpha=0.55 * fade))
+        cv.drawPath(tapered(sample_spline(path_pts, n=10), 0.003, 0.007), fill("#ffffff", alpha=0.7 * fade))
     dx, dy = path_pts[-1]
     r = 0.018 + 0.008 * min(1, k)
-    cv.drawPath(ellipse(dx, dy, r * 0.8, r), fill("#cfeaff", alpha=0.75))
-    cv.drawPath(ellipse(dx - 0.005, dy - 0.006, r * 0.3, r * 0.35), fill("#ffffff", alpha=0.9))
+    drop = fade * fade  # the drop itself falls away first
+    cv.drawPath(ellipse(dx, dy, r * 0.8, r), fill("#cfeaff", alpha=0.75 * drop))
+    cv.drawPath(ellipse(dx - 0.005, dy - 0.006, r * 0.3, r * 0.35), fill("#ffffff", alpha=0.9 * drop))
 
 
 def draw_brow(cv, H, st, P, side):
@@ -569,6 +584,7 @@ def flip_params(P):
     P["br_l"], P["br_r"] = P["br_r"], P["br_l"]
     P["bi_l"], P["bi_r"] = P["bi_r"], P["bi_l"]
     P["tear_l"], P["tear_r"] = P["tear_r"], P["tear_l"]
+    P["tear_dry_l"], P["tear_dry_r"] = P["tear_dry_r"], P["tear_dry_l"]
     P["m_smirk"] = -P["m_smirk"]
     P["arm_l"], P["arm_r"] = P["arm_r"], P["arm_l"]
     for k in ("arm_l", "arm_r"):

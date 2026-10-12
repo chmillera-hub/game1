@@ -75,19 +75,21 @@ def far_margin(H, side, base=0.07):
     return base - 0.10 * min(1.0, far / 14.0)
 
 
-def clamp_inner(pts, H, side, margin, y_from=-0.7):
-    """Keep an inner hair edge from covering more than `margin` of the face silhouette."""
-    ys = [p[1] for p in pts]
+def clamp_inner(pts, H, side, margin, y_from=-0.7, ramp=0.25):
+    """Keep an inner hair edge from covering more than `margin` of the face silhouette.
+
+    The clamp fades in over `ramp` around y_from, so a point drifting across that
+    height as the head nods moves smoothly instead of jumping."""
     R, L = extents(H, list(np.linspace(-1.2, 1.15, 16)), 0.0)
     edge = R if side > 0 else L
     out = []
     for x, y in pts:
-        if y >= y_from:
+        u = min(1.0, max(0.0, (y - (y_from - ramp / 2)) / ramp))
+        w = u * u * (3 - 2 * u)
+        if w > 0:
             fx = interp_x(edge, y)
-            if side > 0:
-                x = max(x, fx - margin)
-            else:
-                x = min(x, fx + margin)
+            cx = max(x, fx - margin) if side > 0 else min(x, fx + margin)
+            x = x + (cx - x) * w
         out.append((x, y))
     return out
 

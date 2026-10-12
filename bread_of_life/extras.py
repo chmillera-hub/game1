@@ -177,7 +177,7 @@ class Behavior:
                     x = (t - g) / 1.6
                     amt = math.sin(math.pi * x)
                     side = 1 if (self.seed % 2) else -1
-                    P["arm_r" if side > 0 else "arm_l"] = dict(target=(side * 3.4, 2.4, 1.4), hand="open", view="palm",
+                    P["arm_r" if side > 0 else "arm_l"] = dict(target=(side * 3.4, 2.4, 1.4), hand="open", palm=(0.2, -1.0, 0.4),
                                                                rest_blend=1 - amt, beat=0.8)
                     break
         elif cur[4]:

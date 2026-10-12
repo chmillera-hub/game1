@@ -168,7 +168,7 @@ SCENES = [
             L("L26", "JESUS", [
                 ("Whoever eats my flesh and drinks my blood / has eternal life,", 0.3),
                 ("and I will raise them up at the last day.", 0.4),
-            ], gap=2.4),
+            ], gap=3.6),
             L("L27", "JESUS", [
                 ("For my flesh is real food, / and my blood is real drink.", 0.2),
             ], gap=0.4),
@@ -221,7 +221,7 @@ SCENES = [
                 ("I am giving them what you sent me to give.", 0.45, {"speed": 0.66}),
                 ("In your holy name, / I glorify you.", 0.5, {"speed": 0.66}),
                 ("And even if they leave me...", 0.45, {"speed": 0.64}),
-                ("I believe they have left / with a part of you too.", 0.2, {"speed": 0.64}),
+                ("I believe they have left / with a part of me in them.", 0.2, {"speed": 0.64}),
             ], gap=4.6),
         ],
         "tail": 5.0,  # closing image after the last line

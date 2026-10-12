@@ -238,18 +238,13 @@ def leaving(cv, W, H, t, t0, pcam=(0.5, 0.47, 0.82)):
         x, y = screen_pt(px + lane * bg.PW * (1.2 - s), py, pcam, W, H)
         depth = max(y - hz, 2.0)
         items.append((y, x, depth * 0.032, u * 1.4 + k * 0.37))
-    # Eli: near the camera, walks away, stops and looks back, then goes on
-    if u < 2.4:
-        s = 0.02 + 0.03 * u
-    elif u < 4.4:
-        s = 0.02 + 0.03 * 2.4
-    else:
-        s = 0.02 + 0.03 * 2.4 + 0.03 * (u - 4.4)
+    # Eli: nearest the camera, walking away up the beach like the others; he glances back
+    # once over his shoulder without stopping
+    s = 0.13 + 0.026 * u
     px, py = _beach_path(s)
     ex, ey = screen_pt(px - 0.05 * bg.PW, py, pcam, W, H)
-    ey = min(ey, H * 0.96)
-    walk = (min(u, 2.4) + max(0.0, u - 4.4)) * 1.4
-    look_back = 1 if 2.6 < u < 4.3 else -1
+    walk = u * 1.4
+    look_back = 1 if 2.8 < u < 3.9 else -1
     items.append((ey, ex, (ey - hz) * 0.034, walk, look_back))
     for it in sorted(items, key=lambda i: i[0]):
         if len(it) == 4:
