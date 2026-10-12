@@ -2418,13 +2418,8 @@ def _draw_front_hair(ctx, C, col, hg, F, inkw, t, wet):
         _stroke(ctx, _dk(hcol, 0.45) if C["head"]["hair"] in ("mop", "bun") else hl, inkw * 0.55)
     if tk:
         ctx.restore()
-    if wet is True:
-        # drips hanging from the fringe
-        for i, (x, y) in enumerate(((-40, -70), (30, -66), (78, -52))):
-            ph = (t * 0.7 + i * 0.37) % 1.0
-            X, Y = hg.warp(x, y + dy + 10 + ph * 24, "front")
-            ctx.new_path()
-            _drop(ctx, X, Y, 4.0 * (1 - ph * 0.3), "#a9dff0", inkw * 0.8)
+    # (rev 4: the drips that hung from his damp fringe are gone. On screen they read as SWEAT,
+    # and he's not doing anything physically intense. The damp cowlick droop stays.)
 
 
 NAPE_Y = {"mop": 48, "part": 30, "cap": 22, "bun": 34, "bob": 74}
