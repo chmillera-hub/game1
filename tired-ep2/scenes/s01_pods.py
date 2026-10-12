@@ -4,7 +4,19 @@ CalmCorp gives the creatures bland, flattening names (SPECIMEN 001 / THING 1 ...
 is anything but a thing: it hears the name and is visibly, intelligently offended.
 
 Shot list (scene-local; every time is derived from info cues / lines / lip data):
-  S1  [0, pod)            POD POV thumbnail: Curiosity's face through its empty pod's glass,
+  S0a [peer, drop)        THUMBNAIL (frame 0, bright): close on the glowing THING 2 pod (the
+                          neighbour two pods along, past the tiny THING 7 pod). Thing 1 perches
+                          on the pod's base cap, face close to the glass, looking in at its
+                          SMALLER sibling curled asleep inside (draw_specimen perch, s 0.5,
+                          breathing). A soft yearning look (lids soften, head tilts, its paw
+                          rises to the glass, breath fog), held; then a small decisive set
+                          (lids/brow slant firm up, ears lift, a breath in and a tiny nod),
+                          held; its paw comes off the glass and its eyes go down to the deck.
+  S0b [drop, open)        medium: the pod and the deck. It hops down: anticipation squash, a
+                          small arcing hop, a landing squash on the grating (thump), ears
+                          follow through; it looks back left along the deck (toward its own
+                          pod, where it waits in S1).
+  S1  [open, pod)         POD POV: Curiosity's face through its empty pod's glass,
                           paw pressed to the glass, breath fog blooms and fades; slow push-in.
   S2  [pod, touch)        catwalk medium-wide: the camera tracks Tiredness walking in along the
                           pods (right -> left) and settles on the empty pod where Curiosity sits;
@@ -28,8 +40,10 @@ Shot list (scene-local; every time is derived from info cues / lines / lip data)
   S7  [plates, frown)     his POV: slow pan from NOTHING TO SEE HERE over THING 2 / THING 3 to
                           the next NOTHING TO SEE HERE over THING 4 / THING 5, sleepers inside.
   S8  [frown, c10)        Tiredness CU (standing) under the wall camera: inner brows up, a lip
-                          press, silence; l03b "...They're not things." quiet, to the creature
-                          below (glassy eyes); a press after it. At "camera" the red LED blinks
+                          press, silence; l03b "...They're not just things." quiet, to the
+                          creature below (glassy eyes); "just" gets a small stress (brows knit a
+                          hair more, a tiny head shake, his eyes hold on it), the lids sink on
+                          "things"; a press after it. At "camera" the red LED blinks
                           on, the lens whirs and swivels to them; his pupils slide up, head follows.
   S10 [c10, reach)        control room: start on the big monitor (CCTV of the two looking up),
                           tilt down to the Boss in her chair, turned 3/4 to us, face clear; l04
@@ -42,6 +56,7 @@ Shot list (scene-local; every time is derived from info cues / lines / lip data)
 """
 import math
 
+import cairocffi as cairo
 
 from engine import core, sets, props, fx
 from engine import human as H
@@ -94,7 +109,55 @@ def _baby(c, x, y, s, t, seed):
     CR.draw_specimen_pod_sleeper(c, x, y, s * 1.6, t, seed=seed, baby=True)
 
 
-SLEEP = dict(sleeper_fn=_sleeper, sleeper_fns={"THING 7": _baby}, sleeper_key="s01_sleepers_v3")
+# ---- the opening: Thing 1's smaller sibling asleep in the THING 2 pod -------------------
+P2 = next(p for p in CW["pods"] if p["label"] == "THING 2")
+P2_GLASS = P2["glass"]
+SIB_S = 0.5                    # the sibling: a smaller adult of the species (not baby Joy)
+SIB_DX = -20                   # its ground point vs the pod floor point (head on the right,
+SIB_TINT = 0.12                # toward Thing 1); teal liquid tint over it
+
+
+def _sibling(c, x, y, s, t, seed=0, pulse=0.0):
+    """Thing 1's little sibling curled asleep (draw_specimen perch, eyes shut), a gentle
+    breathing bob; (x, y) = the pod's floor point (sleeper_fn signature). Tinted by the
+    pod's liquid so it sits behind the glass. Clipped to the capsule by the caller (the set)
+    or by _sibling_live."""
+    gx, gy = x + SIB_DX * s / 0.75, y + 2
+    br = math.sin(t * math.tau / 4.2)                  # in phase with the rig's own breath
+    c.push_group()
+    c.save()
+    c.translate(gx, gy)
+    c.scale(1.0 - 0.006 * br, 1.0 + 0.022 * br)
+    c.translate(-gx, -gy)
+    CR.draw_specimen(c, gx, gy, SIB_S * s / 0.75, t, pose="perch", expr="calm", flip=False,
+                     glow=0.85, ears=0.3)
+    c.restore()
+    c.set_operator(cairo.OPERATOR_ATOP)
+    c.rectangle(gx - 200, gy - 200, 400, 260)
+    core.fill(c, core.alpha(core.PAL["power"], SIB_TINT + pulse))
+    c.pop_group_to_source()
+    c.paint()
+
+
+def _sibling_live(c, t):
+    """The sibling drawn live (breathing) over a bake whose THING 2 pod is empty."""
+    gx, gy, gw, gh = P2_GLASS
+    c.save()
+    core.rrect(c, gx, gy, gw, gh, gw / 2)
+    c.clip()
+    pulse = 0.10 * (0.5 + 0.5 * math.sin(t * math.tau * 0.25))    # = the set's pod pulse
+    _sibling(c, P2["ground"][0], P2["ground"][1], P2["sleeper_s"], t, pulse=pulse)
+    c.restore()
+
+
+def _no_sleeper(*a, **k):
+    pass
+
+
+SLEEP = dict(sleeper_fn=_sleeper, sleeper_fns={"THING 7": _baby, "THING 2": _sibling},
+             sleeper_key="s01_sleepers_v4")
+SLEEP_LIVE = dict(sleeper_fn=_sleeper, sleeper_fns={"THING 7": _baby, "THING 2": _no_sleeper},
+                  sleeper_key="s01_sleepers_v4_live")
 
 
 # ----------------------------------------------------------------------------
@@ -131,8 +194,24 @@ def TT(info):
     if k in _TC:
         return _TC[k]
     c = info.cue
-    T = {n: c(n) for n in ("pod", "touch", "plate", "perk", "grin", "plates", "frown", "camera",
-                           "reach", "click", "dark", "end")}
+    T = {n: c(n) for n in ("peer", "drop", "open", "pod", "touch", "plate", "perk", "grin", "plates",
+                           "frown", "camera", "reach", "click", "dark", "end")}
+    # ---- the opening (S0a peer / S0b drop) ----------------------------------------------
+    pd = T["drop"] - T["peer"]
+    T["p_soft0"] = T["peer"] + 0.22                 # lids soften, head tilts (pupils already on it)
+    T["p_soft1"] = T["p_soft0"] + 0.45
+    T["p_paw0"] = T["peer"] + 0.42                  # its paw rises to the glass
+    T["p_paw1"] = T["p_paw0"] + 0.55
+    T["p_fog"] = T["p_paw1"] - 0.1                  # a soft breath fogs the glass
+    T["p_set0"] = T["peer"] + max(1.42, 0.55 * pd)  # the decisive set: lids / slant firm up,
+    T["p_set1"] = T["p_set0"] + 0.32                # ears lift, a breath in
+    T["p_nod"] = T["p_set1"] + 0.02                 # ... and a tiny nod
+    T["p_down"] = T["drop"] - 0.34                  # paw off the glass, eyes to the deck
+    T["d_head"] = T["drop"] + 0.06                  # (S0b) the head follows the eyes down
+    T["d_ant0"] = T["drop"] + 0.34                  # anticipation squash
+    T["d_jump"] = T["d_ant0"] + 0.3                 # launch
+    T["d_land"] = T["d_jump"] + 0.42                # contact on the grating
+    T["d_look"] = T["d_land"] + 0.45                # it looks off along the deck (left)
     for lid, nm, who in (("s01_l01", "l01", "tired"), ("s01_l02", "l02", "tired"),
                          ("s01_l03", "l03", "tired"), ("s01_l03b", "l03b", "tired"),
                          ("s01_l04", "l04", "boss"), ("s01_l05", "l05", "boss")):
@@ -142,6 +221,9 @@ def TT(info):
     T["kept"] = info.word_time("s01_l01", -2)
     T["wow"] = info.word_time("s01_l03", 0)
     T["creative"] = info.word_time("s01_l03", -1)
+    T["not"] = info.word_time("s01_l03b", 1)        # "...They're not just things."
+    T["just"] = info.word_time("s01_l03b", 2)
+    T["things"] = info.word_time("s01_l03b", -1)
     # walk-in: starts a little before the cut, four steps, stops on a contact
     T["w0"] = T["pod"] - 0.5
     T["wstop"] = T["w0"] + 2.0
@@ -305,7 +387,20 @@ def tired_kw(t, T, info):
     face["head_turn"] += -0.12 * k_dn
     face["head_nod"] += 0.07 * k_dn
     face["lid"] += 0.04 * k_dn
-    kw["tears"] = 0.22 * _ramp(t, T["l03b"], T["l03bv"] + 0.2) * (1 - _ramp(t, T["look_up"], T["look_up"] + 0.6))
+    # rev 3: "...They're not JUST things." -- the stress lands on "just": the brows knit a
+    # hair more (held through "things"), one tiny head shake across "not just"; on
+    # "things" the lids sink a little more and the eyes get a touch glassier
+    k_ou = 1 - _ramp(t, T["look_up"], T["look_up"] + 0.5)
+    k_just = _ramp(t, T["just"] - 0.1, T["just"] + 0.14) * k_ou
+    face["brow_in"] += 0.06 * k_just * k_fr_out
+    face["brow_ang"] += 0.06 * k_just * k_fr_out
+    face["head_turn"] += 0.03 * math.sin(math.tau * seg(t, T["not"] - 0.05, T["just"] + 0.3)) * \
+        _pulse(t, T["not"] - 0.05, T["just"] + 0.3)
+    k_th = _ramp(t, T["things"], T["things"] + 0.35) * k_ou
+    face["lid"] += 0.025 * k_th
+    face["head_nod"] += 0.03 * k_th
+    kw["tears"] = (0.22 + 0.08 * k_th) * _ramp(t, T["l03b"], T["l03bv"] + 0.2) * \
+        (1 - _ramp(t, T["look_up"], T["look_up"] + 0.6))
     # camera: pupils lead, the head follows 0.15 s later; lids lift a little
     k_up = _ramp(t, T["look_up"] + 0.27, T["look_up"] + 0.55)
     face["head_nod"] += -0.12 * k_up
@@ -548,6 +643,233 @@ def catwalk_shot(ctx, t, T, info, cam, chars=True, rail=True, light=None, draw_t
 
 
 # ----------------------------------------------------------------------------
+# S0a / S0b: the new opening (Thing 1 peers in at its little sibling, then hops down)
+# ----------------------------------------------------------------------------
+# Scene-local faces for the peer (the rig switches expressions instantly, so the opening
+# blends between these through quantised in-between dicts, see _xmix):
+#   pa  frame 0: big open soft eyes, looking in (hopeful, small open mouth)
+#   pb  the yearning: softened lids, inner corners raised, wet eyes, mouth closes softly
+#   pc  the decisive set: lid slant firms (the "brows" of this rig), a slight squint from
+#       below, smaller pupils, a firm closed mouth
+CR._SPX.setdefault("s01_pa", dict(CR._SPX["hopeful"], es=1.13, up=0.05, upt=-0.24, lo=0.02, pr=0.72,
+                                  wet=0.6, tilt=0.0, look=(0, 0), mouth="hope"))
+CR._SPX.setdefault("s01_pb", dict(CR._SPX["hopeful"], es=1.12, up=0.27, upt=-0.46, lo=0.10, pr=0.80,
+                                  wet=0.95, tilt=0.0, look=(0, 0), mouth="small"))
+CR._SPX.setdefault("s01_pc", dict(CR._SPX["hopeful"], es=1.05, up=0.12, upt=0.15, lo=0.17, pr=0.60,
+                                  wet=0.4, tilt=0.0, look=(0, 0), mouth="flat"))
+_XNUM = ("es", "up", "upt", "lo", "pr", "pw", "ears", "split", "tilt", "wet")
+
+
+def _xmix(a, b, k, steps=16):
+    """Name of a registered in-between of scene expressions a -> b at k (quantised)."""
+    q = int(round(clamp(k) * steps))
+    if q == 0:
+        return a
+    if q == steps:
+        return b
+    name = f"s01m_{a}_{b}_{q:02d}"
+    if name not in CR._SPX:
+        A, B = CR._SPX[a], CR._SPX[b]
+        u = q / steps
+        d = dict(A if u < 0.5 else B)
+        for kk in _XNUM:
+            d[kk] = lerp(A.get(kk, 0.0), B.get(kk, 0.0), u)
+        d["look"] = (lerp(A["look"][0], B["look"][0], u), lerp(A["look"][1], B["look"][1], u))
+        CR._SPX[name] = d
+    return name
+
+
+PERCH = (2165, 1284)           # Thing 1 sits on THING 2's base cap (right of the glass, facing left)
+LAND = (1905, 1500)            # where it lands on the deck (front-left of the pod)
+PAW_UP = 0.294                 # wave pose_t: paw fully up with no swing (sin(2pi*1.7*t) = 0)
+LOOK_SIB = (-0.5, 0.68)        # from its eyes down-left to the sibling's sleeping face
+LOOK_DECK = (-0.55, 0.83)      # down to the deck where it will land
+FOG_XY = (2078, 1128)          # its breath on the glass, just in front of the nose
+PEER_CAM = ((2066, 1178, 2.82), (2066, 1172, 2.94))
+DROP_CAM = (2000, 1192, 1.75)
+FACE_LIGHT = (2050, 1112)      # the glass right in front of its face (pod light on it)
+PEER_BOX = (1880, 820, 560, 560)   # world rects holding the creature (shade-group clip)
+DROP_BOX = (1560, 840, 900, 760)
+
+
+def peer_kw(t, T):
+    """Thing 1 at the THING 2 glass (S0a): soft yearning, then the decisive set."""
+    k_ab = smoothstep(seg(t, T["p_soft0"], T["p_soft1"]))
+    k_bc = smoothstep(seg(t, T["p_set0"] + 0.08, T["p_set0"] + 0.3))   # behind the blink
+    expr = _xmix("s01_pa", "s01_pb", k_ab) if k_bc <= 0.0 else _xmix("s01_pb", "s01_pc", k_bc)
+    # eyes on the sibling the whole time; at the end they go down to the deck (planning)
+    look = tween(t, [(T["peer"], LOOK_SIB), (T["p_down"], LOOK_SIB), (T["p_down"] + 0.2, LOOK_DECK)],
+                 ease_in_out)
+    # the head: a soft yearning tilt toward it (follows the softening), the chin lifts a
+    # hair with the resolve, a tiny nod, then it follows the eyes down
+    tilt = 0.12 * k_ab
+    tilt += -0.05 * smoothstep(seg(t, T["p_set0"] + 0.25, T["p_set0"] + 0.55))
+    tilt += 0.075 * _pulse(t, T["p_set0"] + 0.55, T["p_set0"] + 0.9)
+    tilt += 0.1 * _ramp(t, T["p_down"] + 0.14, T["p_down"] + 0.4)
+    # ears: lowered a little with the longing, then they lift with the decision
+    ears = lerp(0.44, 0.33, smoothstep(seg(t, T["p_soft0"], T["p_soft1"] + 0.2)))
+    ears += (0.76 - 0.33) * ease_out_back(seg(t, T["p_set0"] + 0.22, T["p_set0"] + 0.55), 1.4)
+    # the paw rises softly to the glass, rests, and comes off it at the end
+    paw = tween(t, [(T["p_paw0"], 0.0), (T["p_paw1"], 1.0), (T["p_down"], 1.0), (T["p_down"] + 0.3, 0.0)],
+                ease_in_out)
+    # lids: frame 0 open; the thought changes on a slow blink (soft lids close, firm ones open)
+    b0 = T["p_set0"]
+    blink = tween(t, [(b0, 0.0), (b0 + 0.17, 1.0), (b0 + 0.24, 1.0), (b0 + 0.5, 0.0)]) \
+        if b0 <= t <= b0 + 0.5 else 0.0
+    return dict(pose="wave", pose_t=PAW_UP * paw, expr=expr, look=look, tilt=tilt, ears=ears,
+                face=0.5, blink=blink, glow=1.0, flip=True)
+
+
+def _breath(t, T):
+    """(sx, sy) about the feet: the breath in with the decision (S0a)."""
+    k = tween(t, [(T["p_set0"] + 0.1, 0.0), (T["p_set0"] + 0.55, 1.0), (T["p_set0"] + 1.15, 0.4)], ease_in_out)
+    return 1.0 - 0.008 * k, 1.0 + 0.028 * k
+
+
+def _scaled_about(ctx, x, y, sx, sy, fn):
+    if sx == 1.0 and sy == 1.0:
+        return fn()
+    ctx.save()
+    ctx.translate(x, y)
+    ctx.scale(sx, sy)
+    ctx.translate(-x, -y)
+    a = fn()
+    ctx.restore()
+    return a
+
+
+class _shaded_box:
+    """= sets.shaded(ctx, sets.catwalk, t, layer="shade") at full power, for a creature inside
+    `box` (world rect): the (static) shade light is cached as a bitmap for the box instead of
+    re-filling three frame-sized radial gradients every frame (perf, same look)."""
+    def __init__(self, ctx, box, key):
+        self.ctx, self.box, self.key = ctx, box, key
+
+    def __enter__(self):
+        c = self.ctx
+        c.save()
+        c.rectangle(*self.box)
+        c.clip()
+        c.push_group()
+        return c
+
+    def __exit__(self, *exc):
+        c = self.ctx
+        c.save()
+        c.set_operator(cairo.OPERATOR_ATOP)
+        core.cached(c, ("s01_cwshade", self.key), *self.box, lambda cc: sets.catwalk(cc, 0.0, layer="shade"))
+        c.restore()
+        c.pop_group_to_source()
+        c.paint()
+        c.restore()
+
+
+def shot_peer(ctx, t, T, info):
+    k = ease_in_out(seg(t, T["peer"], T["drop"]))
+    cam = _cam_lerp(PEER_CAM, k)
+    fog = tween(t, [(T["p_fog"], 0.0), (T["p_fog"] + 0.35, 0.55), (T["p_fog"] + 0.6, 0.5),
+                    (T["p_fog"] + 1.5, 0.0)])
+    with core.camera(ctx, *cam):
+        sets.catwalk(ctx, t, plate_dust=1.0, **SLEEP_LIVE)
+        _sibling_live(ctx, t)
+        with _shaded_box(ctx, PEER_BOX, "peer"):
+            kw = peer_kw(t, T)
+            sx, sy = _breath(t, T)
+            _scaled_about(ctx, PERCH[0], PERCH[1], sx, sy,
+                          lambda: CR.draw_specimen(ctx, PERCH[0], PERCH[1], S, t, **kw))
+            # the pod's glow on the side of its face turned to the glass (ATOP: only on it)
+            ctx.set_operator(cairo.OPERATOR_ATOP)
+            core.radial_glow(ctx, FACE_LIGHT[0], FACE_LIGHT[1], 170, "#e9fffd", 0.2)
+            ctx.set_operator(cairo.OPERATOR_OVER)
+            if fog > 0.003:
+                # its breath on the glass, behind its snout (drawn under the creature)
+                ctx.set_operator(cairo.OPERATOR_DEST_OVER)
+                core.radial_glow(ctx, FOG_XY[0], FOG_XY[1], 46, "#f2fffd", 0.75 * fog)
+                ctx.set_operator(cairo.OPERATOR_OVER)
+
+
+def drop_kw(t, T):
+    """Thing 1 hops down from the pod cap to the deck (S0b). -> (x, y, sx, sy, kw)."""
+    j, ld = T["d_jump"], T["d_land"]
+    dur = ld - j
+    if t < j:
+        x, y = PERCH
+        pose, pose_from, mix = "sit", None, 1.0
+    elif t < ld:
+        u = (t - j) / dur
+        h = 82.0                                    # a small hop up, then the fall (parabola)
+        x = lerp(PERCH[0], LAND[0], u)
+        y = PERCH[1] + (LAND[1] - PERCH[1]) * u - 4 * h * u * (1 - u)
+        pose, pose_from, mix = "stand", "sit", smoothstep(seg(t, j, j + 0.24))
+    else:
+        x, y = LAND
+        pose, pose_from, mix = "stand", None, 1.0
+    # squash & stretch about the ground point
+    ka = ease_in_out(seg(t, T["d_ant0"], j))
+    sx, sy = 1.0 + 0.07 * ka, 1.0 - 0.13 * ka                          # anticipation squash
+    if j <= t < ld:
+        u = (t - j) / dur
+        st = tween(u, [(0.0, -0.13), (0.18, 0.12), (0.45, 0.03), (0.9, 0.08), (1.0, 0.08)])
+        sx, sy = 1.0 - 0.55 * st, 1.0 + st                             # launch stretch .. fall
+    elif t >= ld:
+        q = tween(t, [(ld, 0.08), (ld + 0.07, -0.16), (ld + 0.2, 0.035), (ld + 0.34, -0.01),
+                      (ld + 0.44, 0.0)], ease_in_out)
+        sx, sy = 1.0 - 0.6 * q, 1.0 + q                                # landing squash, settle
+    # ears: pinned a little for the jump, they stream up in the fall, flop on the landing and
+    # spring back
+    ears = tween(t, [(T["drop"], 0.76), (T["d_ant0"], 0.76), (j, 0.6), (j + 0.16, 0.7),
+                     (ld - 0.02, 0.95), (ld + 0.09, 0.42), (ld + 0.42, 0.7)], ease_in_out)
+    look = tween(t, [(T["drop"], LOOK_DECK), (j - 0.05, LOOK_DECK), (j + 0.2, (-0.4, 0.7)),
+                     (ld + 0.12, (-0.4, 0.7)), (ld + 0.3, (-0.3, 0.1)),
+                     (T["d_look"], (-0.3, 0.1)), (T["d_look"] + 0.16, (-0.95, -0.1))], ease_in_out)
+    # head: follows the eyes down, a dip on the impact; then it looks off along the deck
+    # (left: toward its own pod), the head following the pupils
+    tilt = 0.1 + 0.1 * _ramp(t, T["d_head"], T["d_head"] + 0.25)
+    tilt -= 0.14 * _ramp(t, j - 0.08, j + 0.2)
+    tilt += 0.05 * _pulse(t, ld, ld + 0.3)
+    tilt -= 0.1 * _ramp(t, T["d_look"] + 0.15, T["d_look"] + 0.45)
+    face = lerp(0.5, 0.8, _ramp(t, j, j + 0.25))
+    face = lerp(face, 1.0, _ramp(t, T["d_look"] + 0.15, T["d_look"] + 0.45))
+    blink = 0.0
+    if ld <= t <= ld + 0.3:
+        blink = tween(t, [(ld, 0.0), (ld + 0.06, 0.55), (ld + 0.12, 0.55), (ld + 0.28, 0.0)])
+    # body pitch in the hop: nose up a hair at the launch, nose down in the fall (it faces
+    # left, so nose-down is counter-clockwise), level on the landing
+    rot = 0.0
+    if j <= t < ld:
+        u = (t - j) / dur
+        rot = -tween(u, [(0.0, -0.08), (0.35, 0.02), (0.85, 0.2), (1.0, 0.2)], ease_in_out)
+    elif t >= ld:
+        rot = -0.2 * (1.0 - ease_out(seg(t, ld - 0.02, ld + 0.08)))
+    kw = dict(pose=pose, pose_from=pose_from, pose_mix=mix, expr="s01_pc", look=look, tilt=tilt,
+              ears=ears, face=face, blink=blink, glow=1.0, flip=True)
+    return x, y, sx, sy, rot, kw
+
+
+def shot_drop(ctx, t, T, info):
+    # follow the fall down a little
+    k = ease_in_out(seg(t, T["d_jump"] - 0.05, T["d_land"] + 0.35))
+    cam = (DROP_CAM[0] - 14 * k, DROP_CAM[1] + 40 * k, DROP_CAM[2])
+    x, y, sx, sy, rot, kw = drop_kw(t, T)
+    with core.camera(ctx, *cam):
+        sets.catwalk(ctx, t, plate_dust=1.0, **SLEEP_LIVE)
+        _sibling_live(ctx, t)
+        # its contact shadow on the grating grows as it comes down
+        ks = smoothstep(seg(t, T["d_jump"] + 0.05, T["d_land"]))
+        if ks > 0.0:
+            core.ellipse(ctx, LAND[0] + 4, LAND[1] + 4, 120 * lerp(0.55, 1.0, ks), 16 * lerp(0.55, 1.0, ks))
+            core.fill(ctx, core.alpha(core.PAL["ink"], 0.32 * ks))
+        with _shaded_box(ctx, DROP_BOX, "drop"):
+            ctx.save()
+            if rot:
+                ctx.translate(x, y - 120 * S)          # pitch about the body centre
+                ctx.rotate(rot)
+                ctx.translate(-x, -(y - 120 * S))
+            _scaled_about(ctx, x, y, sx, sy, lambda: CR.draw_specimen(ctx, x, y, S, t, **kw))
+            ctx.restore()
+
+
+# ----------------------------------------------------------------------------
 # S1: the thumbnail (looking out of the empty pod)
 # ----------------------------------------------------------------------------
 POV_X, POV_Y, POV_S = 404, 1585, 2.9   # creature ground point / scale: face at ~(540, 875)
@@ -566,8 +888,11 @@ def _paw_print(ctx, x, y, s, k=1.0):
 
 
 def shot_pov(ctx, t, T, info):
-    k = ease_in_out(seg(t, 0.0, T["pod"]))
-    q = T["pod"] / 2.4                    # beats authored for a 2.4 s hold; keyed to the cue
+    # rev 3: this shot now follows the new opening ([open, pod)); it plays exactly as before
+    # on its own clock (t = time since "open")
+    dur = T["pod"] - T["open"]
+    k = ease_in_out(seg(t, 0.0, dur))
+    q = dur / 2.4                         # beats authored for a 2.4 s hold; keyed to the cue
     cam = (lerp(540, 552, k), lerp(960, 918, k), lerp(1.0, 1.08, k))
     fog = tween(t, [(0.45 * q, 0.0), (0.95 * q, 0.72), (1.25 * q, 0.66), (2.35 * q, 0.0)])
     ears = tween(t, [(0.0, 0.45), (2.4 * q, 0.38)])
@@ -902,8 +1227,12 @@ def _cam_lerp(pair, k):
 
 def render(ctx, t, info):
     T = TT(info)
-    if t < T["pod"]:
-        shot_pov(ctx, t, T, info)
+    if t < T["drop"]:
+        shot_peer(ctx, t, T, info)
+    elif t < T["open"]:
+        shot_drop(ctx, t, T, info)
+    elif t < T["pod"]:
+        shot_pov(ctx, t - T["open"], T, info)
     elif t < T["touch"]:
         # S2: walk in, l01, crouch on "kept you"; the camera eases in as he arrives, then down
         # and in with him as he crouches
@@ -967,6 +1296,12 @@ def SFX(info):
     # shaft room tone (pods), not in the control room
     ev += sfx.loop_events("pod_hum", 0.0, T["c10"] + 0.1, -8)
     ev += sfx.loop_events("pod_hum", T["c13"], T["casc"] + 1.2, -8)
+    # the opening: a soft longing coo with its paw on the glass; the ears lift with the
+    # decision; the hop and the landing on the grating
+    ev.append((T["p_paw1"] + 0.12, "creature_chirp_sad", -13, 0.2))
+    ev.append((T["p_set0"] + 0.26, "ears_perk", -5, 0.2))
+    ev.append((T["d_jump"] - 0.02, "whoosh", -17, 0.0))
+    ev.append((T["d_land"] - 0.01, "body_thud", -9, -0.25))
     # his footsteps on the grating (walk contacts every 0.5 s)
     for k in range(1, 5):
         tt = T["w0"] + 0.5 * k

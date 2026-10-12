@@ -5,9 +5,10 @@ eyes low-left at its empty pod, Tiredness's faint eyes high-right). He gives up
 and sits on the plinth of the empty pod; Curiosity hops up beside him and SHOWS
 him the sense first: eyes shut, a little tremble, a teal pulse. He thinks it is
 having a fit. It rolls its eyes and pulls his hood over his eyes; he peeks out
-from under the rim with one eye; it pointedly shuts its eyes and pulses again.
+from under the rim with one eye; it SQUEEZES its eyes shut (hard, held) and pulses again.
 "Oh." He lets the hood drop, it nods, and his own first ping lights the world.
-Smug, he strides off down the stair... and walks face-first into a low pipe.
+Smug, he brags; it sighs with relief (at least he's learning), and he strides off down the
+stair... and walks face-first into a low pipe.
 
 All timing comes from info.cue()/info.line(); nothing is hard-coded to the
 audio. Shots (scene-local):
@@ -18,13 +19,14 @@ audio. Shots (scene-local):
                    second pulse on "doing?"; it opens its eyes, flat, on "okay?")
   S4  roll ....... CU Curiosity: a very sassy eye-roll with a head toss
   S5  hood ....... two-shot CU: it yanks the hood over his eyes; annoyance, a sigh; PEEK:
-                   a finger lifts the rim, one eye peeks; it shuts its eyes, pulses again
+                   a finger lifts the rim, one eye peeks; the camera pushes in as it SQUEEZES
+                   its eyes shut (crease lines, scrunched brow), holds it, lets go: pulse
   S6  oh ......... CU on him: "Oh." (the peeking eye widens), LOOK: the eye wanders the dark
   S7  nod ........ two-shot: "So I just... close my eyes?" -- the rim drops; it nods
   S8  ping ....... wide: HIS first ping (eyes closed under the hood) reveals the catwalk;
                    a second one follows his head; he stands up proud on "Finally."
   S9  smug ....... CU "A superpower I'm actually good at." (+ a proud ping)
-  S10 roll2 ...... CU Curiosity's slow eye-roll at his smugness
+  S10 relief ..... CU Curiosity: a sigh of relief (breath in, exhale, soft half-closed eyes)
   S11 walk ....... tracking: confident stride, pings, down the stair -> BONK
   S12 bonk ....... CU held beat, dazed: "...Mostly good at."
   S13 giggle ..... CU Curiosity on the stair hides its smile behind a paw
@@ -170,8 +172,11 @@ def timing(info):
     k.pk1 = k.pk0 + 0.5                               # fingertip under the rim
     k.pk2 = k.pk1 + 0.3                               # rim lifted
     k.pk_see = k.pk2 + 0.2                            # Curiosity spots the eye ...
-    k.pk_close = k.pk_see + 0.32                      # ... and pointedly shuts its own
-    k.pk_pulse = min(k.pk_close + 0.42, k.L3 - 0.55)  # and pulses
+    k.pk_close = k.pk_see + 0.32                      # ... and FORCEFULLY squeezes its own shut
+    k.sq1 = k.pk_close + 0.07 + 0.16                  # the squeeze at full (crease lines, scrunch)
+    # it HOLDS the squeeze 1.2-1.8 s (a tiny tremble of effort), then lets go WITH the pulse;
+    # ~1 s is left for the ring to pass and his eye to follow it before "Oh."
+    k.pk_pulse = min(k.sq1 + clamp(k.L3 - 1.05 - k.sq1, 1.2, 1.8), k.L3 - 0.55)
     # "look": the one eye wanders the dark, then back to it
     k.lk1 = k.LOOK + 0.05
     k.lk2 = k.lk1 + 0.65
@@ -190,6 +195,12 @@ def timing(info):
     k.smug_cu = max(k.stand1 + 0.3, word("s02_l05", 1, k.stand1 + 0.4) - 0.08)
     k.w_super = word("s02_l05", 2, k.L5 + 1.2)
     k.w_actually = word("s02_l05", 4, k.L5 + 1.8)
+    # SMUG (CU Curiosity): a SIGH OF RELIEF ("...at least he's learning"): breath in, a beat,
+    # the exhale, then it settles (soft content half-close, a tiny smile)
+    k.sg0 = k.SMUG + 0.1
+    k.sg1 = k.sg0 + 0.5
+    k.sg2 = k.sg1 + 0.1
+    k.sg3 = k.sg2 + 0.7
     # the walk: one constant confident stride, timed so the face meets the pipe at BONK
     k.v = abs(human.cycle_speed("tired", "walk_eyes_closed", -1.0)) * S
     k.tgo = k.BONK - (T_X - BONK_X) / k.v
@@ -373,9 +384,12 @@ def tired_state(t, k, info, noarm=False):
             wide = kf(t, [(k.L3 - 0.1, 0.0), (k.L3 + 0.12, 1.0), (k.L3e + 0.5, 1.0), (k.lk1, 0.55),
                           (k.lk3, 0.4)])
             skept = kf(t, [(k.pk2, 1.0), (k.pk_pulse, 1.0), (k.pk_pulse + 0.4, 0.4), (k.L3, 0.0)])
+            # its squeeze is INTENSE: his one eye opens a hair (brow up) at it, then back to skeptical
+            hh = kf(t, [(k.sq1 - 0.05, 0.0), (k.sq1 + 0.25, 1.0), (k.pk_pulse - 0.35, 1.0),
+                        (k.pk_pulse + 0.05, 0.0)])
             bf = dict(f)
-            bf.update({"lid": 0.04 * skept - 0.2 * wide, "pupil": 0.18 * wide - 0.1 * skept,
-                       "brow_r": 0.4 * wide - 0.15 * skept, "hl": 0.25 * wide})
+            bf.update({"lid": 0.04 * skept - 0.2 * wide - 0.08 * hh, "pupil": 0.18 * wide - 0.1 * skept,
+                       "brow_r": 0.4 * wide - 0.15 * skept + 0.25 * hh, "hl": 0.25 * wide})
             st["bface"] = bf
             st["blook"] = lk
             # lets the eye close as the rim drops ("close my eyes?")
@@ -760,10 +774,38 @@ def lerp_pt(a, b, u):
 # ---------------------------------------------------------------------------
 # Curiosity
 # ---------------------------------------------------------------------------
+def squeeze_amount(t, k):
+    """Its FORCEFUL eye squeeze in the peek beat (CR eye_squeeze 0..1): snaps on just after
+    the lids shut, held, let go with the pulse."""
+    if t < k.pk_close + 0.07 or t >= k.pk_pulse + 0.2:
+        return 0.0
+    on = 0.35 + 0.65 * ease_out(seg(t, k.pk_close + 0.07, k.sq1))
+    return on * (1.0 - smoothstep(seg(t, k.pk_pulse - 0.02, k.pk_pulse + 0.2)))
+
+
+def sigh_relief(t, k, st):
+    """The SMUG beat: a breath in (body rises, ears lift), a beat, a visible exhale; it settles
+    (shoulders and ears relax and droop a little, lids lower to a soft content half-close over
+    the small smile), and perks back up as he turns to walk off."""
+    inh = smoothstep(seg(t, k.sg0, k.sg1))
+    exh = ease_in_out(seg(t, k.sg2, k.sg3))
+    back = smoothstep(seg(t, k.tgo - 0.1, k.tgo + 0.5))
+    rise = inh * (1.0 - exh)
+    relax = exh * (1.0 - back)
+    st["sy"] = st["sy"] * (1.0 + 0.04 * rise - 0.025 * relax)
+    e = lerp(lerp(0.5, 0.72, inh), 0.36, exh)
+    st["ears"] = lerp(e, 0.5, back)
+    lid = lerp(lerp(0.15, 0.0, inh), 0.4, exh)
+    st["blink"] = lerp(lid, 0.0, back)
+    st["tilt"] = st["tilt"] - 0.05 * rise + 0.08 * relax
+    st["look_soft"] = relax                      # the gaze softens down a little (under the lids)
+    st["tail_curl"] = st["tail_curl"] + 0.15 * relax
+
+
 def cur_state(t, k):
     st = dict(x=C_X0, y=FEET, pose="sit", flip=False, expr="calm", look=(0.6, -0.55), face=None,
               tilt=0.0, ears=0.6, tail_curl=0.0, reach=0.0, pose_t=None, glow=1.0, blink=None,
-              sy=1.0, rot=0.0, pose_from=None, pose_mix=1.0, look_target=None, eyes=1.0)
+              sy=1.0, rot=0.0, pose_from=None, pose_mix=1.0, look_target=None, eyes=1.0, squeeze=0.0)
     # ---------------- on the deck, watching him in the dark (s01 ends on "wide")
     if t < k.hop0:
         st["look_target"] = "eyes"
@@ -799,13 +841,14 @@ def cur_state(t, k):
         ch = smoothstep(seg(t, k.dm_charge, k.dm_pulse)) * (1 - smoothstep(seg(t, k.dm_pulse, k.dm_pulse + 0.06)))
         ch2 = smoothstep(seg(t, k.dm_charge2, k.dm_pulse2)) * (1 - smoothstep(seg(t, k.dm_pulse2, k.dm_pulse2 + 0.06)))
         ch3 = smoothstep(seg(t, k.pk_pulse - 0.3, k.pk_pulse)) * (1 - smoothstep(seg(t, k.pk_pulse, k.pk_pulse + 0.06)))
-        chg = max(ch, 0.7 * ch2, 0.5 * ch3)
+        sq = squeeze_amount(t, k)
+        chg = max(ch, 0.7 * ch2, 0.5 * ch3, 0.22 * sq)     # (the squeeze: a tiny tremble of effort)
         pop = 0.0
         for (tp, g) in ((k.dm_pulse, 1.0), (k.dm_pulse2, 0.7), (k.pk_pulse, 0.6)):
             u = seg(t, tp, tp + 0.5)
             if 0 < u < 1:
                 pop = max(pop, g * math.sin(math.pi * u) * (1 - u) * 1.6)
-        st["sy"] = sy - 0.05 * chg + 0.08 * pop
+        st["sy"] = sy - 0.05 * chg + 0.08 * pop - 0.02 * sq
         trem = chg * (3.0 * math.sin(t * 2 * math.pi * 17.0) + 1.5 * math.sin(t * 2 * math.pi * 23.0 + 1.0))
         rr = kf(t, [(k.hop2, 0.0), (k.hop2 + 0.3, 0.06), (k.dm_pulse - 0.05, 0.02),
                     (k.dm_pulse + 0.12, 0.3), (k.dm_pulse + 0.7, 0.08), (k.dm_pulse2 - 0.05, 0.04),
@@ -828,6 +871,7 @@ def cur_state(t, k):
                             (k.dm_open + 0.25, 0.55), (k.roll0, 0.55), (k.roll0 + 0.2, 0.62),
                             (k.roll0 + 0.7, 0.36), (k.roll0 + 1.3, 0.42), (k.hd0, 0.75), (k.hd1 + 0.6, 0.78),
                             (k.pk_see - 0.05, 0.7), (k.pk_see + 0.12, 0.95), (k.pk_close, 0.9),
+                            (k.sq1, 0.78), (k.pk_pulse - 0.05, 0.76),           # tensed back (squeeze)
                             (k.pk_pulse + 0.1, 1.0), (k.L3, 0.85), (k.L3 + 0.3, 0.92)])
         st["expr"] = "calm"
         st["look_target"] = "eyes"
@@ -856,11 +900,27 @@ def cur_state(t, k):
             st["look_target"] = "peek" if t >= k.pk2 - 0.1 else "hood"
             if k.pk_see <= t < k.pk_close:
                 st["expr"] = "annoyed"             # caught him peeking: a flat look at the eye
-            elif k.pk_close <= t < k.L3 + 0.2:
-                st["expr"] = "proud"               # pointedly shuts its eyes, chin up, and pulses
+            elif k.pk_close <= t < k.pk_pulse:
+                # "you gotta close your eyes, bro": the lids snap shut, then a FORCEFUL squeeze
+                # (crease lines, scrunched brow, face compressed), held; the mouth pressed flat
+                st["expr"] = "annoyed"
+                st["eyes"] = 0.0
+                if t < k.pk_close + 0.07:
+                    st["blink"] = seg(t, k.pk_close, k.pk_close + 0.07)
+            elif k.pk_pulse <= t < k.L3 + 0.2:
+                st["expr"] = "proud"               # lets go WITH the pulse: chin up, "see?"
                 st["eyes"] = 0.0
             elif t >= k.L3 + 0.2:
                 st["expr"] = "hopeful"             # he gets it
+            st["squeeze"] = sq
+            # concentrating: its rim glow charges up through the hold, spent by the pulse
+            st["glow"] = 1.0 + 0.45 * sq * smoothstep(seg(t, k.sq1, k.pk_pulse))
+            # a little chin-tuck into the squeeze; on the release the chin lifts into proud's
+            # chin-up over 0.35 s (instead of popping)
+            st["tilt"] += (0.05 * smoothstep(seg(t, k.pk_close, k.sq1))
+                           * (1.0 - smoothstep(seg(t, k.pk_pulse - 0.02, k.pk_pulse + 0.3))))
+            if k.pk_pulse <= t < k.L3 + 0.2:
+                st["tilt"] += 0.22 * (1.0 - smoothstep(seg(t, k.pk_pulse, k.pk_pulse + 0.35)))
         st["tail_curl"] = kf(t, [(k.hd1 + 0.4, 0.0), (k.hd1 + 0.9, 0.55), (k.pk_see, 0.55), (k.pk_see + 0.2, 0.2),
                                  (k.L3 + 0.2, 0.2), (k.L3 + 0.7, 0.7)])
         if k.dm_close <= t < k.dm_open:
@@ -904,16 +964,15 @@ def cur_state(t, k):
     st["sy"] = st["sy"] - 0.035 * max(0.0, st["tilt"])
     if t < k.SMUG:
         return st
-    if t < k.tgo + 0.2:
-        st["expr"] = "eyeroll"
-        st["pose_t"] = t - (k.SMUG + 0.12)
-        st["ears"] = 0.48
-        return st
-    # ---------------- follows him: watches him pass, hops down, trots after him
+    # ---------------- SMUG: a sigh of relief ("...at least he's learning"); watches him go
+    #                  (hopeful: soft eyes with raised inner corners, a small open smile)
     st["expr"] = "calm"
     if t < k.chop0:
+        st["expr"] = "hopeful"
         st["look_target"] = "eyes"
+        sigh_relief(t, k, st)
         return st
+    # ---------------- follows him: hops down, trots after him
     st["look_target"] = None
     st["flip"] = True
     if t < k.chop1:
@@ -974,7 +1033,8 @@ def draw_cur(ctx, t, st, hold=None):
     a = CR.draw_specimen(ctx, x, y, S, t, form=1.0, pose=st["pose"], expr=st["expr"], look=st["look"],
                          glow=st["glow"], flip=st["flip"], pose_t=st["pose_t"], face=st["face"],
                          tilt=st["tilt"], ears=st["ears"], tail_curl=st["tail_curl"], reach=st["reach"],
-                         blink=st["blink"], hold=hold_fn, pose_from=st["pose_from"], pose_mix=st["pose_mix"])
+                         blink=st["blink"], hold=hold_fn, pose_from=st["pose_from"], pose_mix=st["pose_mix"],
+                         eye_squeeze=st.get("squeeze", 0.0))
     if xf:
         ctx.restore()
         cr, sr = math.cos(rot), math.sin(rot)
@@ -1008,6 +1068,9 @@ def _resolve_look(cst, ta):
     base = aim((ex, ey), (hx, hy), 0.85)
     if st["expr"] == "eyeroll":
         base = (base[0] * 0.5, base[1] * 0.5)
+    ls = st.get("look_soft", 0.0)
+    if ls > 0.0:
+        base = (base[0] * (1.0 - 0.3 * ls), base[1] * (1.0 - 0.6 * ls) + 0.18 * ls)
     st["look"] = base
     return st
 
@@ -1079,8 +1142,14 @@ def _shots(k):
         lambda t: (lerp(955, 1030, smoothstep(seg(t, k.hop1, k.hop2 + 0.5))), 1060, 1.85))
     add(k.cut_fit, k.cut_roll, "fit", lambda t: (1040, lerp(1000, 994, seg(t, k.cut_fit, k.cut_roll)), 2.2))
     add(k.cut_roll, k.HOOD, "roll", lambda t: (CUR_HEAD[0] + 10, CUR_HEAD[1] - 44, 3.0))   # plate text cropped
-    add(k.HOOD, k.cut_oh, "hood",
-        lambda t: (lerp(1050, 1070, smoothstep(seg(t, k.hd1, k.pk1))), 968, 2.4))   # pans to keep his hand in
+    def hood_cam(t):
+        x = lerp(1050, 1070, smoothstep(seg(t, k.hd1, k.pk1)))      # pans to keep his hand in
+        # the squeeze: a slow push-in on both faces (its squeeze, his one peeking eye); it
+        # breathes back out with the pulse's ring, so the cut to "Oh." matches as before
+        u = (ease_in_out(seg(t, k.pk_see - 0.1, k.sq1 + 0.9))
+             * (1.0 - ease_in_out(seg(t, k.pk_pulse + 0.05, k.cut_oh))))
+        return (lerp(x, 1032, u), lerp(968, 990, u), lerp(2.4, 2.75, u))
+    add(k.HOOD, k.cut_oh, "hood", hood_cam)
     add(k.cut_oh, k.cut_nod, "oh", lambda t: (1065, 955, 2.35))
     add(k.cut_nod, k.PING, "nod", lambda t: (1040, 1060, 1.6))
 
@@ -1089,7 +1158,7 @@ def _shots(k):
         return (990, lerp(1030, 1000, smoothstep(seg(t, k.stand0, k.stand1 + 0.2))), 1.15)
     add(k.PING, k.smug_cu, "ping", ping_cam)
     add(k.smug_cu, k.SMUG, "smug", lambda t: (T_X + 130, lerp(800, 785, seg(t, k.smug_cu, k.SMUG)), 2.35))
-    add(k.SMUG, k.WALK, "roll2", lambda t: (C_XS2 + 60, 1090, 2.5))
+    add(k.SMUG, k.WALK, "relief", lambda t: (C_XS2 + 60, 1090, 2.5))
     walk_end = k.BONK + 1.25
 
     def walk_cam(t):
@@ -1290,8 +1359,10 @@ def render(ctx, t, info):
     with core.camera(ctx, cx, cy, zoom):
         # ---- the world: darkness + the sense
         if sense and fx.sense_active(t, pings, s=SW):
+            # (the hood shot zooms back out while its ring runs: bake on 1/8-octave steps,
+            #  not at the exact scale every frame)
             fx.sense_reveal(ctx, t, pings, lit_set, lambda c: dark_set(c, t, k, deep, True), key=("s02", name),
-                            rect=shot_rect(k, sh), s=SW)
+                            rect=shot_rect(k, sh), s=SW, exact=name != "hood")
         else:
             dark_set(ctx, t, k, deep, rect=None if name in ("walk", "bonk") else shot_rect(k, sh))
 
@@ -1324,6 +1395,11 @@ def render(ctx, t, info):
                 L += [(b["eye_l"][0], b["eye_l"][1], 30, eo), (b["eye_r"][0], b["eye_r"][1], 30, eo),
                       (ce[0], ce[1], 250, lerp(0.5, 0.62, eo))]
                 Tn.append((ce[0], ce[1], 330, lerp(0.16, 0.2, eo)))
+                sq = cst.get("squeeze", 0.0)
+                if sq > 0.0:      # the squeeze: its charging glow keeps the scrunched face readable
+                    ch = sq * (0.6 + 0.4 * smoothstep(seg(t, k.sq1, k.pk_pulse)))
+                    L.append((ce[0], ce[1] - 4, 135, 0.8 * ch))
+                    Tn.append((ce[0], ce[1], 170, 0.2 * ch))
             hood = tst["hood"]
             if hood < 0.6 and name != "dark":
                 for e in ("eye_l", "eye_r"):          # his teal irises glow (not the skin around)
@@ -1414,6 +1490,7 @@ def SFX(info):
     # the peek: the rim lifted, caught (its ears), the rim dropping again
     ev.append((k.pk1 - 0.05, "cloth_rustle", -9, 0.1))
     ev.append((k.pk_see + 0.05, "ears_perk", -3, -0.2))
+    ev.append((k.pk_close + 0.05, "creature_purr", -13, -0.2))   # straining through the squeeze
     ev.append((k.dr0, "cloth_rustle", -7, 0.1))
     ev.append((k.c_sit1 - 0.02, "footstep", -13, -0.25))         # it hops down onto its haunches
     # the sense: its pulses small, his first ones the big signature whoom
@@ -1430,6 +1507,9 @@ def SFX(info):
     ev.append((k.n0 + 0.25, "ears_perk", 2, -0.2))
     # stands up
     ev.append((k.stand0 + 0.2, "cloth_rustle", -2, 0.1))
+    # its sigh of relief: no creature sigh in the library, so the small breathy sigh (a faint
+    # inhale, then a barely voiced exhale from 0.4 s), low, with its exhale on the visible one
+    ev.append((k.sg2 - 0.4, "sigh_small_f", -4, -0.2))
     ev.append((k.stand0 + 0.42, "footstep", -15, -0.25))         # it shuffles back a step
     # the confident stride: one step per heel strike of walk_eyes_closed (pose_t 0.17 + n * 0.525)
     per = 1.05 / 2

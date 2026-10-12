@@ -2011,6 +2011,61 @@ def _squeeze_eye(ctx, cx, cy, rx, ry, lw):
     _s(ctx, INK, lw * 0.7)
 
 
+def _force_squeeze_eye(ctx, cx, cy, rx, ry, lw, d, q):
+    """FORCEFUL squeeze (eye_squeeze=q 0..1): the lids pressed shut into a > / < with its
+    point at the inner corner; d = +1 when the outer corner is toward +x (else -1)."""
+    sp = ry * lerp(0.08, 0.36, q)
+    ox, ix = cx + d * rx * 0.92, cx - d * rx * 0.74
+    ctx.move_to(ox, cy - sp)
+    ctx.curve_to(lerp(ox, ix, 0.4), cy - sp * 0.95, lerp(ox, ix, 0.75), cy - sp * 0.45, ix, cy + ry * 0.04)
+    ctx.curve_to(lerp(ox, ix, 0.75), cy + sp * 0.5, lerp(ox, ix, 0.4), cy + sp * 0.95, ox, cy + sp * 0.9)
+    _s(ctx, INK, lw * 1.7)
+
+
+def _force_squeeze_lines(ctx, eyes, mx, lw, q, clip):
+    """eye_squeeze extras: crow's-feet creases at the outer corners, the brows pulled down
+    and in (scrunched), furrows between them, wrinkles on top of the muzzle."""
+    ink = _a(INK, smoothstep(seg(q, 0.0, 0.35)))
+    ctx.save()
+    clip(ctx)
+    ctx.clip()
+    for i, (cx, cy, rx, ry, ut, nm, up) in enumerate(eyes):
+        d = -1.0 if i == 0 else 1.0
+        ox, oy = cx + d * rx * 0.9, cy + ry * 0.02
+        for a, ln in ((-0.6, 0.85), (0.0, 1.0), (0.6, 0.85)):
+            L = rx * lerp(0.15, 0.62, q) * ln
+            r0 = rx * 0.14
+            ca, sa = _cos(a), _sin(a)
+            x0, y0 = ox + d * r0 * ca, oy + r0 * sa
+            x1, y1 = ox + d * (r0 + L) * ca, oy + (r0 + L) * sa
+            ctx.move_to(x0, y0)
+            ctx.curve_to(lerp(x0, x1, 0.5), lerp(y0, y1, 0.5) - 0.12 * L * (1 if a <= 0 else -1),
+                         x1, y1, x1, y1)
+            _s(ctx, ink, lw * 1.05)
+    ctx.restore()
+    pull = lerp(0.0, 0.46, q)
+    brow_col = mixc(SP, SCLERA, 0.42)
+    for i, (cx, cy, rx, ry, ut, nm, up) in enumerate(eyes):
+        d = -1.0 if i == 0 else 1.0
+        xo, yo = cx + d * rx * 0.9, cy - ry * 1.08
+        xi, yi = cx - d * rx * 0.62, cy - ry * (1.0 - pull)
+        for col_, w_ in ((INK, 10.0), (brow_col, 4.5)):
+            ctx.move_to(xo, yo)
+            ctx.curve_to(lerp(xo, xi, 0.35), yo - 7.0, lerp(xo, xi, 0.7), yi - 5.0, xi, yi)
+            _s(ctx, _a(col_, ink[3]), w_ * lerp(0.7, 1.0, q))
+    bx = (eyes[0][0] + eyes[1][0]) * 0.5 + 2.0
+    by = (eyes[0][1] + eyes[1][1]) * 0.5 - eyes[0][3] * 0.62
+    fl = 13.0 * q
+    for dx in (-4.5, 4.5):
+        ctx.move_to(bx + dx, by - fl * 0.5)
+        ctx.curve_to(bx + dx * 1.4, by - fl * 0.1, bx + dx * 1.4, by + fl * 0.2, bx + dx * 0.8, by + fl * 0.5)
+    _s(ctx, ink, lw * 0.55)
+    for yy in (3.0, 9.5):
+        ctx.move_to(mx + 3, yy + 1)
+        ctx.curve_to(mx + 9, yy - 3.5 * q, mx + 15, yy - 3.5 * q, mx + 21, yy + 1)
+    _s(ctx, ink, lw * 0.5)
+
+
 def _tear(ctx, x, y, r, drop, lw, ink):
     """A welling tear bead hanging under a lid at (x, y); drop 0..1 lets it run."""
     if r < 0.4:
@@ -2129,12 +2184,17 @@ def _spec_head(ctx, A, t, R, M, E, look, bl, yaw, mirror, lw, mouth_mode=None, h
     eyes = ((exn, -4.0, 29 * es, 32 * es, upt, "eA", ups[0]),
             (exf, -6.0, 29 * es * fsq, 31 * es, -upt, "eB", ups[1]))
     g = M["glow"]
+    fq = E.get("force_sq", 0.0)
     for (cx, cy, rx, ry, ut, nm, up) in eyes:
         A.put(nm, cx, cy)
         if g > 0.01:
-            radial_glow(ctx, cx, cy, ry * 2.0, GLOW, 0.26 * g * (1.0 - 0.7 * float(closed)))
+            cl_ = float(closed) if fq <= 0.0 else max(float(closed), fq)
+            radial_glow(ctx, cx, cy, ry * 2.0, GLOW, 0.26 * g * (1.0 - 0.7 * cl_))
     lcurve = E.get("lcurve", 0.0)
-    for (cx, cy, rx, ry, ut, nm, up) in eyes:
+    for i_, (cx, cy, rx, ry, ut, nm, up) in enumerate(eyes):
+        if fq > 0.0 and k > 0.5:
+            _force_squeeze_eye(ctx, cx, cy, rx * 0.9, ry * 0.85, lw, -1.0 if i_ == 0 else 1.0, fq)
+            continue
         if closed and k > 0.5:
             if E.get("squeeze"):
                 _squeeze_eye(ctx, cx, cy, rx * 0.86, ry * 0.8, lw)
@@ -2158,6 +2218,8 @@ def _spec_head(ctx, A, t, R, M, E, look, bl, yaw, mirror, lw, mouth_mode=None, h
             ctx.move_to(cx - rx * 0.92, top - 2)
             ctx.curve_to(cx - rx * 0.55, top - 16, cx + rx * 0.1, top - 19, cx + rx * 0.7, top - 9)
             _s(ctx, col_, w_)
+    if extras and fq > 0.0:
+        _force_squeeze_lines(ctx, eyes, mx, lw, fq, parts)
     tr = E.get("tears", 0.0)
     if extras and tr > 0.01 and not closed and M["melt"] < 0.15:
         wl = smoothstep(seg(tr, 0.0, 0.35))
@@ -2479,7 +2541,8 @@ def _melt_params(mk, t):
 def draw_specimen(ctx, x, y, s, t, form=1.0, pose="crouch", expr="calm", look=None, glow=1.0,
                   writhe=0.0, sleeping=False, blink=None, flip=False, pose_t=None, face=None,
                   point_angle=0.0, hold=None, tilt=0.0, ears=None, tail_curl=0.0, tears=None,
-                  melt=None, reach=1.0, baby=False, roll=None, pose_from=None, pose_mix=1.0):
+                  melt=None, reach=1.0, baby=False, roll=None, pose_from=None, pose_mix=1.0,
+                  eye_squeeze=0.0):
     """Curiosity (Specimen Zero). See API_creatures.md. Returns anchors (screen coords)."""
     if baby:
         return _draw_baby(ctx, x, y, s, t, pose=pose, expr=expr, look=look, glow=glow,
@@ -2526,6 +2589,8 @@ def draw_specimen(ctx, x, y, s, t, form=1.0, pose="crouch", expr="calm", look=No
         E["ear_tw"] = smoothstep(seg(ears, 0.1, 0.5))
     if tears is not None:
         E["tears"] = clamp(tears)
+    if eye_squeeze and eye_squeeze > 0.0:
+        E["force_sq"] = clamp(eye_squeeze)
     if mk > 0.0:
         ke_ = smoothstep(seg(mk, 0.0, 0.5))
         E["ears"] = lerp(E["ears"], 1.3, ke_)
@@ -2772,6 +2837,8 @@ def _spec_body(ctx, A, R, M, E, t, lw, lk, bl, fc, hx, hy, hr_total, hold, pose,
     ctx.rotate(hr_total)
     if R["head_scale"] != 1.0:
         ctx.scale(R["head_scale"], R["head_scale"])
+    if E.get("force_sq", 0.0) > 0.0:          # eye_squeeze: the face scrunches a little
+        ctx.scale(1.0 + 0.035 * E["force_sq"], 1.0 - 0.065 * E["force_sq"])
     _spec_head(ctx, A, t, R, M, E, lk, bl, yaw, fc < 0, lw, R.get("mouth_mode"), hold)
     if pose == "nuzzle":
         A.put("rub", 30, -62)       # top-front of the head: where it presses

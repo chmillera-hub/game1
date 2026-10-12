@@ -146,6 +146,7 @@ rim and huge eyes with glowing teal irises.
 | `tears` | 0..1, on any expression: 0–0.35 a glisten line brightens along both lower lids, ~0.3 a tear bead starts welling at the near eye, 0.6 a full bead, 0.8–1 it runs a little way down the cheek. `None` = the expression's default (`teary` = 0.6, others 0). |
 | `melt` | 0..1 melts the **current pose** into a flat shadow puddle (§3.4); -0.3..0 = springy over-stretch for the re-form pop. `None` = 0 (`pose="puddle"` defaults to 1). |
 | `reach` | 0..1 for `reach_up`: 0 = paws held at the chest (begging), 1 = full stretch up and forward. |
+| `eye_squeeze` | kwarg, default 0 = off (pixel-identical). 0..1 **FORCEFUL** squeeze on any `expr` (the mouth stays the expr's; `annoyed` = pressed flat): eyes pressed shut into `> <`, crow's-feet crease lines at the outer corners, brows pulled down and in with furrows, muzzle wrinkles, the head compressed ~6% (s02 "peek"). |
 | `pose_from`, `pose_mix` | optional skeleton blend from `pose_from` (mix 0) to `pose` (mix 1, eased). §3.8. |
 | `baby` | `True` draws baby Joy instead (§4). `roll` is the baby's tumble angle. |
 

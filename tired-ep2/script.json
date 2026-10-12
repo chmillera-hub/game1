@@ -39,12 +39,12 @@
    "beats": [
     {
      "t": "pause",
-     "dur": 2.6,
+     "dur": 3.0,
      "cue": "peer"
     },
     {
      "t": "pause",
-     "dur": 1.6,
+     "dur": 2.1,
      "cue": "drop"
     },
     {
@@ -487,6 +487,11 @@
     },
     {
      "t": "pause",
+     "dur": 0.7,
+     "cue": "scared"
+    },
+    {
+     "t": "pause",
      "dur": 3.0,
      "cue": "hurt"
     },
@@ -540,7 +545,7 @@
     },
     {
      "t": "pause",
-     "dur": 0.9,
+     "dur": 1.5,
      "cue": "hush"
     },
     {
@@ -555,7 +560,7 @@
     },
     {
      "t": "pause",
-     "dur": 1.0,
+     "dur": 1.6,
      "cue": "sighup"
     },
     {
@@ -695,7 +700,7 @@
     },
     {
      "t": "pause",
-     "dur": 3.3,
+     "dur": 4.0,
      "cue": "conflict"
     },
     {
