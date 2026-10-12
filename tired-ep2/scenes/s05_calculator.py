@@ -82,8 +82,8 @@ XT = 790                 # Tiredness (facing left, toward the deep end) from his
 XT0 = 845                # where he first stops after walking in
 T_WALK = 1.25            # his walk-in (s; ends on a contact)
 XE = 325                 # Embarrassment (facing right)
-XW, YW, SW = 300, 1345, 0.62     # Embarrassment backed flat against the far wall (catch)
-CC = 585                 # Curiosity crouched in the beam (catch)
+XW, YW, SW = 372, 1345, 0.62     # Embarrassment backed flat against the far wall, on a rib (catch)
+CC = 600                 # Curiosity crouched in the beam (catch)
 CS = 712                 # sitting by his leg (l02)
 CH = 785                 # pressed behind his legs (head peeks out on the left)
 C1 = 640                 # out again, sitting by his front foot (after the click)
@@ -1103,7 +1103,7 @@ EMB_CUP = _ep(al_h="cup", al_tf=-1)
 EMB_CUPB = _ep(al_h="cup", al_tf=-1, hunch=0.22)
 EMB_POINT = _ep(al_h="point")
 # rev 3
-EMB_WALL = _ep(al_h="flat", lean=-0.09, chest=-0.08, hunch=0.95)          # backed flat against the wall
+EMB_WALL = _ep(al_h="splay", lean=-0.14, chest=-0.12, neck=-0.1, hunch=0.95)   # backed flat against the wall
 EMB_WJOLT = _ep(al_h="splay", lean=-0.13, chest=-0.1, hunch=1.15, lift=12)
 # "Ha... ha. Cool.": the near hand behind his head, elbow out, scratching (forearm in front of
 # the shoulder, the hand itself behind the head: layer mid = under the head)
@@ -1265,7 +1265,7 @@ def embar_state(t, k):
     if t < k["e_exhale"] + 0.6:
         wl = 1.0 - smoothstep(seg(t, k["e_exhale"] + 0.05, k["e_exhale"] + 0.5))
         hop = 14 * bump(t, jt, jt + 0.35)
-        d["reach"]["l"] = (d["x"] - 58 * sc, y - 380 * sc - hop, wl, 1.75)
+        d["reach"]["l"] = (d["x"] - 92 * sc, y - 455 * sc - hop, wl, 2.2)
     if k["gl0"] - 0.05 <= t < k["gl1"] + 0.45:
         lp = emb_probe("lean", EMB_LEAN, 0.7)
         el_ = lp["eye_l"]
@@ -1866,6 +1866,22 @@ def draw_B(ctx, t, k, cam, shot_name, info):
     lens = {}
     anchors = {}
     vr = view_rect(cam, pad=30)
+    # the torch's spill on the wall right behind him while he is backed against it (the wall reads)
+    wl = 1.0 - smoothstep(seg(t, k["e_step0"], k["e_step1"] - 0.2))
+    if wl > 0.01:
+        wx_, wy_, wr_ = XW + 10, YW - 330, 330
+        ctx.save()
+        ctx.push_group()
+        sets.layer_blit(ctx, "s05_tunB_lit", BX0, BY0, BX1 - BX0, BY1 - BY0, b_static,
+                        clip=(wx_ - wr_, wy_ - wr_, 2 * wr_, 2 * wr_))
+        ctx.pop_group_to_source()
+        g = cairo.RadialGradient(wx_, wy_, 0, wx_, wy_, wr_)
+        g.add_color_stop_rgba(0.0, 0, 0, 0, 0.42 * wl)
+        g.add_color_stop_rgba(0.5, 0, 0, 0, 0.2 * wl)
+        g.add_color_stop_rgba(1.0, 0, 0, 0, 0.0)
+        ctx.mask(g)
+        ctx.restore()
+        core.radial_glow(ctx, wx_, wy_ + 40, wr_, WARM, 0.07 * wl)
     # Curiosity's glow on the tunnel around it
     cx_glow = Cr["x"] + (-40 if Cr.get("flip", True) else 40)
     gl = Cr["glow"]
