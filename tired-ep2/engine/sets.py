@@ -5107,7 +5107,12 @@ def _cw_base(c, lab=None):
     # signage by the stair
     rect(c, 300, 1050, 250, 120, "#24404c", 4.5, r=10)
     core.text(c, "LEVEL B2", 425, 1102, 34, "#cfe9ee", "ui")
-    core.text(c, "SHAFT A  ▼", 425, 1146, 28, PAL["hush"], "ui")
+    # (rev 4: the ui font has no U+25BC, so "SHAFT A  \u25bc" showed a missing-glyph box. Keep the
+    # text where it was and draw the arrow as a shape.)
+    adv = core.text_width(c, "SHAFT A  \u25bc", "ui", 28)
+    core.text(c, "SHAFT A", 425 - adv / 2, 1146, 28, PAL["hush"], "ui", align="left")
+    core.poly(c, [(486.5, 1131), (501.5, 1131), (494, 1145)])
+    core.fill(c, PAL["hush"])
     # top darkness
     gt = cairo.LinearGradient(0, y0, 0, -200)
     gt.add_color_stop_rgba(0, 0.01, 0.04, 0.06, 0.92)

@@ -79,6 +79,7 @@ from engine import creatures as CR
 from engine.core import (seg, tween, lerp, clamp, smoothstep, ease_in_out, ease_out, ease_in,
                          ease_out_back, state_at)
 from audio import sfx
+from engine.timeline import LIP_RATE
 
 W, HGT = core.W, core.H
 CW = sets.CATWALK_MARKS
@@ -1368,7 +1369,8 @@ class _ShLine:
     def __init__(self, L, d):
         self.id, self.who, self.text, self.caption = L.id, L.who, L.text, L.caption
         self.meta, self.nocap = L.meta, L.nocap
-        self.start, self.end = L.start - d, L.end - d
+        # (engine.timeline rounds line times to 4 decimals: this gives rev 3's exact floats)
+        self.start, self.end = round(L.start - d, 4), round(L.end - d, 4)
 
     @property
     def dur(self):
@@ -1378,13 +1380,22 @@ class _ShLine:
 class _Rev3View:
     """The live timeline as rev 3 saw it: the cues and lines after the entrance moved back by
     d, and 'open' = 'trot'. TT(view) is rev 3's T, so every later beat is rendered on rev 3's
-    clock: frame t of this cut is rev 3's frame t - d (pixel-identical)."""
+    clock: frame f of this cut is rev 3's frame f - 24 d (pixel-identical).
+    Bit-exactness: d is snapped to whole frames, line times are rebuilt the way the timeline
+    rounds them, lip samples are looked up the way rev 3 indexed them, and a T value that
+    lands exactly on a frame (the first light cut, casc) is nudged up one ulp: rev 3's float
+    cue sums put it just after its frame (see _view)."""
     def __init__(self, info):
         self._i = info
         self.id = info.id
         self.tr = info.cue("trot") if "trot" in info.cues else info.cue("open")
-        self.d = info.cue("pod") - self.tr - REV3_OPEN
-        self.dur = info.dur - self.d
+        d = info.cue("pod") - self.tr - REV3_OPEN
+        if abs(d * core.FPS - round(d * core.FPS)) < 1e-6:
+            d = round(d * core.FPS) / core.FPS
+        self.d = d
+        self.dur = info.dur - d
+        self._lines = [_ShLine(L, d) for L in info.lines]
+        self._by_id = {L.id: L for L in self._lines}
 
     def _sh(self, v):
         return v - self.d if v > self.tr + 1e-6 else v
@@ -1395,13 +1406,25 @@ class _Rev3View:
         return self._sh(self._i.cue(name, default))
 
     def line(self, lid):
-        return _ShLine(self._i.line(lid), self.d)
+        return self._by_id[lid]
 
     def mouth(self, who, t):
-        return self._i.mouth(who, t + self.d if t > self.tr else t)
+        for L in self._lines:
+            if L.who == who and L.start <= t < L.end:
+                i = int((t - L.start) * LIP_RATE)          # = rev 3's sample index
+                Ln = self._i.line(L.id)
+                return self._i.mouth(who, min(Ln.start + (i + 0.5) / LIP_RATE, Ln.end - 1e-6))
+        return (0.0, 0.0)
 
     def word_time(self, lid, k):
-        return self._sh(self._i.word_time(lid, k))
+        Ln = self._i.line(lid)          # (the lip-sync word starts are stored to 3 decimals)
+        return self._by_id[lid].start + round(self._i.word_time(lid, k) - Ln.start, 6)
+
+    def snap(self, t):
+        """rev 3's frame time for t - d (exact float)."""
+        tp = t - self.d
+        f = round(tp * core.FPS)
+        return f / core.FPS if abs(tp * core.FPS - f) < 1e-6 else tp
 
 
 _VIEWS = {}
@@ -1411,6 +1434,10 @@ def _view(info):
     v = _VIEWS.get(id(info))
     if v is None or v._i is not info or abs(v.dur + v.d - info.dur) > 1e-9:
         v = _VIEWS[id(info)] = _Rev3View(info)
+        T = TT(v)
+        for k_, val in T.items():          # frame-coincident thresholds: as rev 3's floats had them
+            if val > v.tr + 1e-6 and abs(val * core.FPS - round(val * core.FPS)) < 1e-9:
+                T[k_] = math.nextafter(val, math.inf)
     return v
 
 
@@ -1461,7 +1488,7 @@ BOX_A = (1560, 840, 1340, 760)               # shade box for the trot off (DROP_
 # ---- shot B (S1) ----------------------------------------------------------------------
 B_CAM0 = (520, 1290, 1.25)                   # the stair (left) + its pod (right): it waits screen-right
 B_CAM1 = (528, 1284, 1.27)                   # slow push while it waits
-B_X0 = -80                                   # it trots in along the landing (off frame left)
+B_X0 = -10                                   # it trots in along the landing (its head in frame at the cut)
 B_TAKE1 = 142                                # first bound from the landing
 B_HOPS = (((ST[3][0], ST[3][1]), 0.25, 50.0), ((ST[1][0], ST[1][1]), 0.24, 48.0),
           ((CUR_X, FEET), 0.32, 62.0))       # (landing point, air time, apex height)
@@ -1733,6 +1760,13 @@ def meet_cur_kw(t, T, N, V):
         blink = max(blink, tween(t, [(ld, 0.0), (ld + 0.06, 0.5), (ld + 0.12, 0.5), (ld + 0.28, 0.0)]))
     if not sat or N["back0"] - 0.05 <= t <= N["back1"] + 0.1:
         blink = 0.0 if not (ld <= t <= ld + 0.3) else blink
+    # eyes open for the meeting (he tops the stair, they look at each other), then a soft slow
+    # blink as he passes and it turns to follow him
+    if N["top"] - 0.45 <= t <= N["near"] + 0.35:
+        blink = 0.0
+    b1 = N["pass"] + 0.1
+    if b1 <= t <= b1 + 0.45:
+        blink = max(blink, tween(t, [(b1, 0.0), (b1 + 0.15, 1.0), (b1 + 0.25, 1.0), (b1 + 0.45, 0.0)]))
     kw = dict(pose=p["pose"], pose_from=p["pose_from"], pose_mix=p["mix"], pose_t=p["pose_t"], glow=1.0,
               expr="hopeful", look=look, ears=ears, tilt=tilt, blink=blink, face=face, tail_curl=tail)
     if wb > 0.0:
@@ -1774,6 +1808,8 @@ def meet_tired_kw(t, T, N, V):
     face = dict(R["face"])
     face["head_nod"] = face.get("head_nod", 0.0) + 0.06 * _pulse(t, N["top"] - 0.05, N["near"] + 0.45)
     kw.update(x=x, pose=pose, turn=turn, pose_t=ph, reach=None, look=look, face=face)
+    if N["top"] - 0.45 <= t <= N["near"] + 0.35:
+        kw["blink"] = 0.0                  # eyes open while he looks down at it (the meeting)
     return kw, y
 
 
@@ -1801,7 +1837,7 @@ def _meet_cam(t, T, N, V):
 def _sign_glyph_fix(ctx):
     """sets.catwalk's LEVEL B2 sign draws "SHAFT A  ▼" but the ui font has no U+25BC, so a tofu
     box shows. This shot frames the sign: paint the box over and draw the arrow."""
-    core.rrect(ctx, 485.5, 1124, 17, 29, 2)
+    core.rrect(ctx, 483.5, 1121, 22, 35, 3)
     core.fill(ctx, "#24434f")
     core.poly(ctx, [(486.5, 1131), (501.5, 1131), (494, 1145)])
     core.fill(ctx, "#2fd1c5")
@@ -1850,7 +1886,7 @@ def render(ctx, t, info):
     elif t < N["join"]:
         shot_meet(ctx, t, T, N, V)
     else:
-        _render_rev3(ctx, t - N["d"], V)         # rev 3 from 0.6 s after his stop, frame for frame
+        _render_rev3(ctx, V.snap(t), V)          # rev 3 from 0.6 s after his stop, frame for frame
 
 
 # ----------------------------------------------------------------------------
@@ -1918,8 +1954,8 @@ def SFX(info):
     ev.append((N["perk"], "ears_perk", -6, 0.25))
     # his steps: off screen along the landing (quieter), then up the stair and along the deck
     for (tt, x) in N["steps"]:
-        if tt >= N["wstop"]:
+        if tt > N["wstop"] + 1e-6:
             continue
-        g = lerp(-9, 0, smoothstep(seg(x, -450, 0)))
+        g = lerp(-9, 0, smoothstep(seg(x, -300, 60))) + (1 if tt > N["wstop"] - 0.05 else 0)
         ev.append((tt, "footstep", g, clamp((x - 600) / 900, -0.6, 0.3)))
     return ev
