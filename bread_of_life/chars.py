@@ -18,6 +18,20 @@ def _fold(cv, pts, dark, light, w=0.05, alpha=0.7):
     cv.drawPath(tapered(hl, 0.003, 0.003, wmid=w * 0.6), fill(light, alpha=alpha * 0.35))
 
 
+def _cut_neckline(robe, nk):
+    """The robe with its neckline opening removed (one clean contour running up from the
+    neckline curve). PathOps can reject near-degenerate input, so retry with a tiny nudge and
+    fall back to the uncut robe rather than fail a frame."""
+    for eps in (0.0, 1e-3, -1.7e-3, 3.1e-3):
+        pts = [(nk[0][0] - eps, -3.0)] + [(x, y + eps) for x, y in nk] + [(nk[-1][0] + eps, -3.0)]
+        opening = spline(pts, closed=True, corners=[0, 1, len(pts) - 2, len(pts) - 1])
+        try:
+            return skia.Op(robe, opening, skia.PathOp.kDifference_PathOp)
+        except RuntimeError:
+            continue
+    return robe
+
+
 def tunic_outfit(base, base_sh, trim=None, neckline="v", mantle=None, belt=None, scarf=None, sash=None, clavi=None):
     """Full-length tunic (shoulders to hem) with folds, belt and optional mantle."""
 
@@ -35,9 +49,8 @@ def tunic_outfit(base, base_sh, trim=None, neckline="v", mantle=None, belt=None,
         else:
             nk = [(ncx - 0.52, -0.1), (ncx - 0.4, 0.3), (ncx, 0.45), (ncx + 0.4, 0.3), (ncx + 0.52, -0.1)]
         npath = spline(nk, closed=True, corners=[0, 4])
-        opening = skia.Path(npath)
-        opening.addRect(skia.Rect.MakeLTRB(nk[0][0], -3.0, nk[-1][0], -0.1 + 1e-3))
-        body = skia.Op(spline(pts, closed=True, corners=HEM_CORNERS, tension=0.45), opening, skia.PathOp.kDifference_PathOp)
+        robe = spline(pts, closed=True, corners=HEM_CORNERS, tension=0.45)
+        body = _cut_neckline(robe, nk)
         hi = mix(base, "#ffffff", 0.35)
         cv.drawPath(body, fill(base, shader=lin_grad((0, -0.2), (0, hem), [mix(base, "#ffffff", 0.12), base, mix(base, base_sh, 0.45)], [0.0, 0.35, 1.0])))
         cv.drawPath(body, stroke(lc, 0.024))

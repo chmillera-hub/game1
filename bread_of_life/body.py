@@ -226,7 +226,23 @@ def _capsule2d(a, b, ra, rb):
 def _union(paths):
     out = None
     for p in paths:
-        out = p if out is None else (skia.Op(out, p, skia.PathOp.kUnion_PathOp) or out)
+        if out is None:
+            out = p
+            continue
+        merged = None
+        for eps in (0.0, 1e-4, -2.3e-4):
+            q = skia.Path(p)
+            if eps:
+                q.offset(eps, eps * 0.7)
+            try:
+                merged = skia.Op(out, q, skia.PathOp.kUnion_PathOp)
+                break
+            except RuntimeError:
+                continue
+        if merged is None:  # PathOps gave up: overlapping contours still fill the same shape
+            merged = skia.Path(out)
+            merged.addPath(p)
+        out = merged
     return out if out is not None else skia.Path()
 
 
