@@ -537,7 +537,7 @@ def K(info):
     k["g_down"] = k["l3c_thats"] + 0.12
     k["g_away"] = k["l3c_cool"] + 0.45
     k["oh0"] = k["l3d"] - 0.15
-    k["oh1"] = k["l3de"] + 0.15
+    k["oh1"] = k["l3d_okay"] + 0.3
     k["gulp"] = k["l3de"] + 0.08
     # ---- l05 escalation / l05b freak-out / blink recovery
     k["fr_up0"] = k["l5_see"] - 0.35          # anticipation dip, then hands fly to his head
@@ -621,13 +621,13 @@ def shots(k):
     return [
         ("C1", 0.0, "B", lambda t: tw(t, [(0.0, (452, 1150, 1.48)), (k["B2"], (446, 1140, 1.58))])),
         ("B2", k["B2"], "B", lambda t: tw(t, [(k["B2"], (560, 1110, 1.2)), (k["E3"], (556, 1106, 1.24))])),
-        ("E3", k["E3"], "B", lambda t: tw(t, [(k["e_step0"], (438, 922, 2.2)), (k["e_step1"] + 0.2, (470, 950, 2.3))])),
+        ("E3", k["E3"], "B", lambda t: tw(t, [(k["e_step0"], (448, 862, 2.42)), (k["e_step1"] + 0.2, (470, 882, 2.5))])),
         ("T4", k["T4"], "B", lambda t: (790, 1010, 2.3)),
         ("W5", k["W5"], "B", lambda t: tw(t, [(k["W5"], (606, 1140, 1.42)), (k["T5b"], (612, 1134, 1.47))])),
         ("T5b", k["T5b"], "B", lambda t: tw(t, [(k["T5b"], (767, 985, 2.45)), (k["E5c"], (767, 980, 2.56))])),
         ("E5c", k["E5c"], "B", lambda t: (405, 880, 2.3)),
-        ("W5d", k["W5d"], "B", lambda t: tw(t, [(k["W5d"], (585, 1140, 1.45)), (k["l3e"], (500, 1030, 1.9))])),
-        ("W5e", k["W5e"], "B", lambda t: (598, 1140, 1.42)),
+        ("W5d", k["W5d"], "B", lambda t: tw(t, [(k["W5d"], (585, 1140, 1.45)), (k["l3e"], (455, 1040, 1.9))])),
+        ("W5e", k["W5e"], "B", lambda t: (548, 1140, 1.36)),
         ("T5f", k["T5f"], "B", lambda t: (735, 1010, 2.3)),
         ("E5g", k["E5g"], "B", lambda t: (445, 890, 2.5)),
         ("W5h", k["W5h"], "B", lambda t: (572, 1138, 1.46)),
@@ -862,6 +862,10 @@ def tired_state(t, k):
     if sa > 0.001 and pose[1] is POCK and pose[2] >= 1.0:
         pose = shrug_pose(sa)
     d["pose"] = pose
+    # the open hand goes out toward Emb, palm up
+    if OPEN_T in (pose[0], pose[1]) if isinstance(pose, tuple) else pose is OPEN_T:
+        wo = 1.0 - pocket_w(pose, "r")
+        d["reach"] = {"r": (d["x"] - 178, 1112 + 6 * math.sin(t * 2.2), wo, math.pi - 0.12)}
     # ---- leaving at the end: turn toward CONTROL (the mouth, screen-right), set off
     if t >= k["go_turn"]:
         d["turn"] = tw(t, [(k["go_turn"], -0.7), (k["go_walk"], 0.85)])
@@ -1113,7 +1117,7 @@ EMB_HBH = _ep(**dict(human.HK("l", 95, -50, "claw", layer="mid", bend=1.0, wa=-2
 EMB_LEAN = _ep(lean=0.13, neck=0.08, hunch=0.3)                          # leaning in, squinting
 EMB_LEANP = _ep(lean=0.13, neck=0.08, hunch=0.3, al_h="point")           # ... pushing his glasses up
 # "We should bring it back.": points back down the tunnel (screen-left), thumb up, arm out sideways
-EMB_PTB = _ep(al_p=0.32, al_o=1.3, al_e=0.12, al_eo=0.0, al_w=0.0, al_h="point", al_tf=1.0, twist=-0.12,
+EMB_PTB = _ep(al_p=0.4, al_o=1.15, al_e=0.42, al_eo=0.0, al_w=0.0, al_h="point", al_tf=1.0, twist=-0.12,
               hunch=0.3)
 EMB_GUILT = _ep(hunch=0.5, nod=0.05)
 
@@ -1507,6 +1511,10 @@ def embar_opening(t, k, d):
     if t < k["e_exhale"]:
         f["head_tilt"] = 0.015 * math.sin(t * 19.0)
         f["wobble"] = 0.35
+        tf_ = 1.0 - smoothstep(seg(t, jt, jt + 0.3))
+        f["pupil"] = -0.32 * tf_
+        f["eye_size"] = 0.1 * tf_
+        f["open"] = 0.12 * tf_
         f["head_nod"] = f.get("head_nod", 0.0) + 0.012 * math.sin(t * 2 * math.pi * 2.6)
     # ---- l01: "Tiredness?!" ... relief ... "What are you doing down here?" (glance back on "down")
     if k["l1"] - 0.1 <= t < k["l2"]:
@@ -1658,7 +1666,7 @@ def cur_opening(t, k, d):
     if t < k["T4"]:
         # ---- crouched low facing Emb (left), ears flat, eyes wide: wary, not aggressive
         d["flip"] = True
-        cr_mix = 0.8 + 0.12 * bump(t, 0.9, 1.9)                 # shrinks a little lower as the beam jitters
+        cr_mix = 0.55 + 0.1 * bump(t, 0.9, 1.9)                 # shrinks a little lower as the beam jitters
         d.update(pose="crouch", pose_from="stand", pose_mix=cr_mix, expr="wide", tilt=0.1)
         d["ears"] = tw(t, [(0.0, 0.04), (k["c_ear"], 0.04), (k["c_ear"] + 0.16, 0.32, ease_out_back),
                            (k["c_relief"], 0.32), (k["c_relief"] + 0.3, 0.66, ease_out_back)])
@@ -1882,6 +1890,15 @@ def draw_B(ctx, t, k, cam, shot_name, info):
         ctx.mask(g)
         ctx.restore()
         core.radial_glow(ctx, wx_, wy_ + 40, wr_, WARM, 0.07 * wl)
+        # his shadow on the wall right behind him (light from the creature / the torch pool, low right)
+        ctx.push_group()
+        human.draw_person(ctx, "embar", E["x"] - 30, E["y"] - 16, E["s"] * 1.03, t, pose=E["pose"],
+                          expr=E["expr"], look=E["look"], face=E["face"], turn=E["turn"], blink=0.0,
+                          reach={kk: ((v[0] - 30, v[1] - 16) + tuple(v[2:])) for kk, v in E["reach"].items()},
+                          drift=False, pose_t=E["pose_t"], shadow=False, pocket_side="near")
+        sh_ = ctx.pop_group()
+        ctx.set_source_rgba(0.0, 0.0, 0.02, 0.5 * wl)
+        ctx.mask(sh_)
     # Curiosity's glow on the tunnel around it
     cx_glow = Cr["x"] + (-40 if Cr.get("flip", True) else 40)
     gl = Cr["glow"]
@@ -1926,10 +1943,13 @@ def draw_B(ctx, t, k, cam, shot_name, info):
     reach_t = dict(T["reach"] or {})
     if pk is not None:
         for side, tg in pk["targets"].items():
-            if side in reach_t:          # the card reach on a hand leaving the pocket: blend the two
+            if side in reach_t:          # a card / gesture reach on a hand leaving the pocket: blend the two
                 cx_, cy_, cw_ = reach_t[side][:3]
                 u_ = cw_ / max(1e-6, cw_ + tg[2])
-                reach_t[side] = (lerp(tg[0], cx_, u_), lerp(tg[1], cy_, u_), max(cw_, tg[2]))
+                rt_ = (lerp(tg[0], cx_, u_), lerp(tg[1], cy_, u_), max(cw_, tg[2]))
+                if len(reach_t[side]) > 3:
+                    rt_ += (reach_t[side][3],)
+                reach_t[side] = rt_
             else:
                 reach_t[side] = tg
 

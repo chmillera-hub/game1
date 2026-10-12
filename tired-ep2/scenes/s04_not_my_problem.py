@@ -1,58 +1,60 @@
-"""s04 — "Not my problem" (music: lonely).  Revision 2 (honest, caring, overwhelmed).
+"""s04 — "Not my problem" (music: lonely).  Revision 3 (honest, caring, overwhelmed; he commits).
 
 A quiet CalmCorp service tunnel lit by dim emergency lamps. Tiredness trudges out
 of the dark side tunnel (the way back to the shaft and the pods), reaches back and
 pulls his hood off in the first light, drops onto a crate. He is not dismissive,
-he is overwhelmed: he tells Curiosity he has no bandwidth, that he fell out of a
-building today, that he has to take care of himself first. Curiosity points back
-toward the pods and takes his sleeve in its paws. He means it when he says what
-CalmCorp is doing to its family is wrong (its ears lift with hope), but he can't
-see a way to help without somebody getting hurt. "Maybe me." It hears "not right
-now": the ears lower degree by degree, tears, it lets go of his sleeve and walks
-into the dark side tunnel, stops a short way in and looks back once. Alone with a
-drip, he looks at his bandage (a faint teal glow), groans, and follows; its two
-teal eyes are still glowing a little way down the tunnel. It waited.
+he is overwhelmed: no bandwidth, he fell out of a building today, he has to take
+care of himself first ... "But I don't want to abandon you." (its ears lift: a
+flicker of hope). Curiosity points back toward the pods and takes his sleeve in its
+paws. He means it when he says what CalmCorp is doing is wrong, but he can't see a
+way without somebody getting hurt. "Maybe even me." (a scared inward look, a
+swallow, his hand tightens). It hears "not right now": the ears lower degree by
+degree, it lets go and walks into the dark side tunnel, stops, looks back once.
+Alone with a drip, he looks at his bandage (a faint teal glow), groans ... and lifts
+his head: its two teal eyes glow a little way down the tunnel. It waited. "Okay.
+I'll help. Hell or high water." A sad glance at his hands. "...I hope we make it out
+of this." The eyes answer with a slow blink and drift closer. Then Emb, off screen,
+deeper in that tunnel: "Oh my God! What IS that thing?!" (a shaky flashlight deep in
+the dark; his head snaps round, its eyes whip to the voice). He sighs, gets up and
+walks into the dark tunnel after the voice. The creature stays in there (eyes only).
 
 All timing comes from info.cue(...) / info.line(...) / info.word_time(...).
 World = sets.service_tunnel (people and creature at s=0.75).
 
 Shots (see _times / _cam)
-  S1  arrive   0 .. l01.end+.3      wide on the side-tunnel mouth, pan + push-in: he
-                                    walks out of the dark, reaches BEHIND his head and
-                                    pulls the hood back (arm stays behind the head),
-                                    drops onto the crate; Curiosity follows and sits,
-                                    looking up hopefully; l01 to it (head tilt at
-                                    "bandwidth", eyes drop on "right now")
-  S2  slump    .. l02b-.2           his medium: head hangs, the NEAR (bandaged) hand
-                                    comes up to rub his eyes (elbow low, only the hand
-                                    on the face), stays on his brow through "I fell out
-                                    of a building today", drops on "I'm overwhelmed"
-  S3  me       .. "before"-.12      two-shot: "I have to take care of me first..."
-                                    (near hand to his chest on "me")
-  S3b listen   .. l02b.end+.1       Curiosity CU: "...anyone else" -> its eyes and head
-                                    go to the tunnel (its family), ears lift
-  S4  point    .. l03-.15           two-shot: points down the tunnel, looks back at him,
-                                    hop-turns up onto its hind legs and takes his
-                                    sleeve cuff in BOTH PAWS (his hand hangs below
-                                    them), one gentle tug that stops at "Look."
-  S5  wrong    .. l04-.15           closer two-shot: he looks at it and means it; firm
-                                    little nod on "wrong"; its ears lift with hope;
-                                    beat: his eyes slide away, the head follows
-  S6  hurt-who .. l04b.end+.35      his CU, not looking at it ("...somebody getting
-                                    hurt"); realisation; slow push-in on "Maybe me.
-                                    ...I need time to think." (quiet fear, eyes close)
+  S1  arrive   0 .. l01.end+.3      wide on the side-tunnel mouth, pan + push-in: walks
+                                    out of the dark, pulls the hood back, drops onto the
+                                    crate; Curiosity follows and sits; l01
+  S2  slump    .. l02b-.2           his medium: head hangs, the near hand rubs his eyes
+  S3  me       .. "before"-.12      two-shot: near hand to his chest on "me"
+  S3b listen   .. l02b.end+.1       Curiosity CU: "...anyone else" -> eyes to the tunnel
+  S3c abandon  .. l02c.end+.1       two-shot, slow push-in: his eyes drop away; on "But"
+                                    pupils lead back to it, the head follows; quiet. Its
+                                    eyes come back to him, ears dip ... "abandon you":
+                                    ears lift (hope). Then its eyes go to the tunnel
+  S4  point    .. l03-.15           two-shot: points down the tunnel, hop-turns up and
+                                    takes his sleeve cuff in both paws, one gentle tug
+  S5  wrong    .. l04-.15           closer two-shot: "...is wrong"; ears up with hope
+  S6  hurt-who .. hurt-.1           his CU: "...somebody getting hurt"; "Maybe even me.":
+                                    the camera eases down to take in his near hand; eyes
+                                    drop + unfocus, ("scared" pause:) a swallow, the
+                                    hand tightens into a fist on his knee, hold
   S7  hurt     .. leave+.1          Curiosity CU: ears lower degree by degree, tears,
-                                    the gaze sinks, it lets go (paws back to its chest),
-                                    his hand slides out of frame; it turns its head away
-  S8a leave    .. at the mouth      wide: it walks away alone; he never looks up
-  S8b back     .. look-back+.45     the mouth: it walks in, stops a short way in, looks
-                                    back once, turns and goes on into the dark
-  S9  alone    .. l05.end+.1        his medium: drip; lifts the bandaged forearm, a
-                                    faint teal glow, lip press, looks down the tunnel;
-                                    "...Ugh." with his eyes shut
-  S10 follow   .. end               stands up and trudges after it; the camera drifts
-                                    to the tunnel: two teal eyes glowing in the dark a
-                                    little way down (fx.eyes_in_dark). It waited.
+                                    it lets go, turns its head away
+  S8a leave / S8b back              it walks into the side tunnel, stops, looks back once
+  S9  alone    .. l05.end+.1        his medium: drip; bandage glow; "...Ugh." eyes shut
+  S10 follow   .. "I'll"-.12        two-plane wide: the head hangs, then lifts to its two
+                                    teal eyes in the dark (fx.eyes_in_dark): "Okay."
+  S11 commit   .. l06b.end-.1       his medium, slow push-in: "I'll help. Hell or high
+                                    water."; 'glance' at his hands and back; l06b
+  S12 answer   .. l07-.95           the eyes in the dark: a slow blink, drifting closer
+  S13 hush     .. sigh-.15          two-plane: the shared look; Emb's yell from deeper in
+                                    the tunnel (a shaky torch deep in the dark), his head
+                                    snaps round, its eyes whip to the voice
+  S14 sighup   .. standing          his medium (rises with him): a visible sigh (shoulders
+                                    up, then drop), lean forward, hands on knees, push up
+  S15 go       .. end               wide, panning left: he walks to the side tunnel and a
+                                    few steps into the dark (its eyes stay, to his left)
 """
 import math
 import os
@@ -461,8 +463,8 @@ def _tired(t, T, info, paws=None):
                     (T["lift"] + 0.6, 0.66), (T["w06_help"], 0.6), (T["l06e"], 0.62),
                     (T["gl0"] + 0.4, 0.68), (T["l06b"] + 0.3, 0.72), (T["s13"], 0.68),
                     (T["snap"], 0.68), (T["snap"] + 0.12, 0.8), (T["snap"] + 0.45, 0.74),
-                    (T["inh"], 0.74), (T["exh"], 0.95),                         # sigh: shoulders up ...
-                    (T["exh1"], 0.42),                                          # ... and they drop
+                    (T["inh"], 0.74), (T["exh"], 1.0),                          # sigh: shoulders up ...
+                    (T["exh1"], 0.36),                                          # ... and they drop
                     (T["up_b"], 0.5)])
     pose = _sitp(nod=nod, lean=lean, hunch=hunch)
     # "...I need time to think.": the near (bandaged, r) hand tightens into a fist on his knee
@@ -648,7 +650,10 @@ def _tired(t, T, info, paws=None):
          "focus": -0.6 * _ramp(t, T["drop4b"], T["drop4b"] + 0.45) * (1 - _ramp(t, T["s7"] + 0.6, T["s8"]))},
         # the swallow: chin dips and bobs back, lips pressed, the brows twitch up
         {"head_nod": _bump(t, sw, sw + 0.3, 0.06) - _bump(t, sw + 0.22, sw + 0.55, 0.015)
-         - 0.13 * _ramp(t, T["snap"], T["snap"] + 0.1) * (1 - _ramp(t, T["l07e"], T["exh1"])),
+         - 0.13 * _ramp(t, T["snap"], T["snap"] + 0.1) * (1 - _ramp(t, T["l07e"], T["exh1"]))
+         # after the groan the head hangs; on 'follow' he lifts it to the eyes in the dark
+         + _tw(t, [(T["l05e"] + 0.05, 0.0), (T["l05e"] + 0.5, 0.15), (T["lift"] + 0.12, 0.15),
+                   (T["lift"] + 0.6, -0.03), (T["gl0"] + 0.1, -0.03), (T["gl0"] + 0.4, 0.0)]),
          "squash": -0.06 * _bump(t, T["snap"] - 0.02, T["snap"] + 0.3),
          "brow_ang": _bump(t, sw - 0.05, sw + 0.5, 0.07)},
         # "is wrong": a firm little knit (he means it)
@@ -684,8 +689,8 @@ def _tired(t, T, info, paws=None):
     if T["w4b_me"] - 0.4 <= t < T["s7"]:                       # "Maybe even me. ...": held stare
         blink = 0.0
         b0 = T["w4b_time"]
-        if b0 <= t <= b0 + 0.6:                                # (one slow blink inside it)
-            blink = _tw(t, [(b0, 0.0), (b0 + 0.22, 1.0), (b0 + 0.28, 1.0), (b0 + 0.58, 0.0)])
+        if b0 <= t <= b0 + 0.26:                               # (one plain blink keeps it alive)
+            blink = _tw(t, [(b0, 0.0), (b0 + 0.08, 1.0), (b0 + 0.12, 1.0), (b0 + 0.26, 0.0)])
     if T["rub0"] + 0.1 <= t <= T["rub_end"] + 0.4:
         blink = _tw(t, [(T["rub0"] + 0.1, 0.0), (T["rub1"] - 0.05, 1.0), (T["rub_end"], 1.0),
                         (T["rub_end"] + 0.4, 0.0)])
