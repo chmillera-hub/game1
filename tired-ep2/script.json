@@ -31,7 +31,7 @@
   {
    "id": "s01",
    "module": "s01_pods",
-   "music": "bond:cold=0.739,out=0.913",
+   "music": "bond:cold=0.777,out=0.926",
    "head": 0.0,
    "tail": 0.5,
    "min_dur": 0,
@@ -166,7 +166,7 @@
   {
    "id": "s02",
    "module": "s02_lights_out",
-   "music": "ominous:turn=0.663",
+   "music": "ominous:turn=0.666",
    "head": 0.0,
    "tail": 0.5,
    "min_dur": 0,
@@ -396,7 +396,7 @@
   {
    "id": "s04",
    "module": "s04_not_my_problem",
-   "music": "lonely:follow=0.657",
+   "music": "lonely:follow=0.601",
    "head": 0.0,
    "tail": 0.5,
    "min_dur": 0,
@@ -766,7 +766,7 @@
   {
    "id": "s06",
    "module": "s06_the_offer",
-   "music": "lullaby:resolve=0.892,rise=2.1",
+   "music": "lullaby:resolve=0.809,rise=2.1",
    "head": 0.0,
    "tail": 0.5,
    "min_dur": 0,
@@ -895,7 +895,7 @@
   {
    "id": "s07",
    "module": "s07_release",
-   "music": "chaos:stop=0.643",
+   "music": "chaos:stop=0.473",
    "head": 0.0,
    "tail": 0.5,
    "min_dur": 0,
