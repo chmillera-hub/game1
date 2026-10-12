@@ -6,7 +6,11 @@ online trolls who block after attacking and workplace managers who dismiss you
 while being "too busy" to talk. It ends with 15 practical "lenses" for keeping
 your dignity without putting your job or safety at risk.
 
-**Output:** `output/hit-and-hide-explainer.mp4` (about 8 minutes, 30 fps, H.264 + AAC)
+**Output:**
+- `output/hit-and-hide-explainer.mp4`: full quality, 1080×1920, about 72 MB
+- `output/hit-and-hide-explainer-small.mp4`: 720×1280, about 14 MB, for upload size limits
+
+Both are about 8 minutes long at 30 fps (H.264 video, AAC audio).
 
 Everything is generated from code: the characters, lip sync, voices, music and
 sound effects. The first frame is the title card over the animated scene, not a
@@ -61,6 +65,17 @@ curl -L -o build/models/voices-v1.0.bin  https://github.com/thewh1teagle/kokoro-
 # The Fredoka font (Google Fonts, OFL) must be installed for the titles and captions
 python3 build.py                 # full build, about 10 minutes on 4 cores
 python3 render.py still 12.5     # render a single frame at t=12.5s into build/
+```
+
+To make the small copy for upload limits (two-pass encode to about 14 MB):
+
+```bash
+cd build
+for p in 1 2; do ffmpeg -y -i ../output/hit-and-hide-explainer.mp4 -i mix.wav -map 0:v -map 1:a \
+  -vf scale=720:1280:flags=lanczos -c:v libx264 -preset veryslow -tune animation -b:v 170k \
+  -maxrate 510k -bufsize 1020k -g 300 -pass $p \
+  -af "loudnorm=I=-16:TP=-4:LRA=11,alimiter=limit=0.6:level=false" -c:a aac -b:a 56k \
+  -shortest -movflags +faststart ../output/hit-and-hide-explainer-small.mp4; done
 ```
 
 To change the wording, edit `script.py` and rebuild. Voice clips are cached, so
