@@ -504,7 +504,62 @@ def build_cues():
     c.ramp("choir", hb, hb + 5, 40, 100)
     melody(c, "oboe", [(76, 1), (73, 1), (74, 3)], c.b(T("L37", "end") + 0.4 - c.start), vel=54)
     C.append(c)
+    # 18 accents: a few deep notes under the weightiest words, and high swells where Jesus lifts
+    # his eyes to the Father (used sparingly, on top of the cues above)
+    C += accents()
     return C
+
+
+def deep(name, t, root=26, dur=4.5, vel=74, timp=True, gain=1.0):
+    """A low, swelling note (contrabass + celli an octave up), with a soft timpani roll."""
+    c = Cue(name, t - 0.25, t + dur, bpm=60, gain=gain, fade_in=0.2, fade_out=2.2)
+    c.inst("bass", 2, 105)
+    c.inst("cello", 6, 92)
+    c.note("bass", 0.25, dur, root, vel)
+    c.note("cello", 0.25, dur, root + 12, vel - 12)
+    c.ramp("bass", 0.0, 1.3, 64, 124)
+    c.ramp("bass", 1.3, dur, 124, 70)
+    c.ramp("cello", 0.0, 1.3, 50, 110)
+    c.ramp("cello", 1.3, dur, 110, 60)
+    if timp:
+        c.inst("timp", 5, 92)
+        tp = root + 12 if root + 12 >= 38 else root + 24
+        k = 0.0
+        while k < 1.7:
+            c.note("timp", 0.25 + k, 0.12, tp, 20 + 42 * np.sin(np.pi * k / 1.7))
+            k += 0.09
+    return c
+
+
+def swell(name, t, pitches, dur=4.2, peak=1.7, gain=1.0, choir=True):
+    """High strings (and choir an octave down) rising to a peak and settling."""
+    c = Cue(name, t - 0.3, t + dur, bpm=60, gain=gain, fade_in=0.3, fade_out=2.0)
+    c.inst("strings", 1, 104)
+    for p in pitches:
+        c.note("strings", 0.3, dur, p, 60)
+    c.ramp("strings", 0.3, 0.3 + peak, 18, 120)
+    c.ramp("strings", 0.3 + peak, dur, 120, 46)
+    if choir:
+        c.inst("choir", 3, 92)
+        for p in pitches[:-1]:
+            c.note("choir", 0.5, dur - 0.2, p - 12, 52)
+        c.ramp("choir", 0.3, 0.3 + peak, 12, 108)
+        c.ramp("choir", 0.3 + peak, dur, 108, 36)
+    return c
+
+
+def accents():
+    return [
+        deep("deep_l13", T("L13") - 0.05, root=26, gain=0.6),                          # "I am the bread of life"
+        deep("deep_l23", T("L23", word="flesh"), root=31, gain=0.82),                    # "This bread is my flesh"
+        swell("swell_l23", T("L23", word="life") - 0.4, [67, 70, 74, 79], gain=0.45),    # "...for the life of the world"
+        deep("deep_l25", T("L25", seg=2), root=26, dur=5.0, gain=0.36),                 # "you have no life in you"
+        swell("swell_l29", T("L29") + 0.15, [62, 69, 74, 81], dur=4.6, peak=2.0, gain=0.4),       # eyes to heaven: "the living Father"
+        deep("deep_l34", T("L34") - 0.2, root=26, timp=False, vel=64, gain=0.32),        # "You do not want to leave too?"
+        swell("swell_l37a", T("L37") - 0.2, [62, 66, 69, 74, 78], dur=4.0, gain=0.36),  # "Father..."
+        swell("swell_l37b", T("L37", word="with") - 0.2, [74, 78, 81, 86], dur=4.4, gain=0.4),  # "...with a part of me in them"
+        deep("deep_l37", T("L37", word="them#1") - 0.1, root=26, timp=False, vel=62, gain=0.6),
+    ]
 
 
 def hall_ir(sr, rt60=2.6, pre=0.02, seed=1):

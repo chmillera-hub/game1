@@ -228,7 +228,7 @@ def ambience():
     # dusk: softer waves, crickets, footsteps of those who leave, bread crackle
     amb += crickets(N, s2 + 2.0, gain=0.012) * env_curve([(0, 0), (s2, 0), (s2 + 3, 1), (s3, 1)], N)[:, None]
     amb += footsteps(N, T("L33") - 0.3, T("L33", "end") + 1.0, gain=0.05)
-    amb += crackle(N, T("L36", "end") + 1.85, gain=0.12)  # the loaf splits on screen at +1.88 s
+    amb += crackle(N, T("L36", "end") + 2.11, gain=0.12)  # the loaf splits on screen at +2.14 s
     return amb
 
 

@@ -75,12 +75,16 @@ def draw_cue(cv, W, H, cue, t):
         x = (W - w) / 2
         y = y0 + i * lh
         blob = skia.TextBlob(ln, fnt)
-        sh = skia.Paint(AntiAlias=True, Color4f=skia.Color4f(0, 0, 0, 0.55 * alpha))
-        sh.setMaskFilter(skia.MaskFilter.MakeBlur(skia.kNormal_BlurStyle, 4))
-        cv.drawTextBlob(blob, x + 1, y + 3, sh)
-        st = skia.Paint(AntiAlias=True, Color4f=skia.Color4f(0.05, 0.03, 0.02, 0.9 * alpha))
+        # soft dark halo, then a thick solid outline: readable even over white robes and bright sky
+        halo = skia.Paint(AntiAlias=True, Color4f=skia.Color4f(0.03, 0.02, 0.01, 0.5 * alpha))
+        halo.setStyle(skia.Paint.kStroke_Style)
+        halo.setStrokeWidth(14)
+        halo.setStrokeJoin(skia.Paint.kRound_Join)
+        halo.setMaskFilter(skia.MaskFilter.MakeBlur(skia.kNormal_BlurStyle, 5))
+        cv.drawTextBlob(blob, x + 1, y + 2, halo)
+        st = skia.Paint(AntiAlias=True, Color4f=skia.Color4f(0.05, 0.03, 0.02, alpha))
         st.setStyle(skia.Paint.kStroke_Style)
-        st.setStrokeWidth(5)
+        st.setStrokeWidth(8)
         st.setStrokeJoin(skia.Paint.kRound_Join)
         cv.drawTextBlob(blob, x, y, st)
         fp = skia.Paint(AntiAlias=True, Color4f=skia.Color4f(col[0], col[1], col[2], alpha))

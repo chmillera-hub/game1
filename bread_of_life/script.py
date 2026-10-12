@@ -97,7 +97,7 @@ SCENES = [
             L("L09", "ELI", [
                 ("Then what sign will you give us, / so that we may see it and believe you?", 0.4),
                 ("Our ancestors ate the manna in the wilderness.", 0.25),
-                ("As it is written: / 'He gave them bread from heaven to eat.'", 0.2),
+                ("As it is written: / 'He blessed them with bread from heaven to eat.'", 0.2),
             ], gap=1.0),
             L("L10", "JESUS", [
                 ("Very truly I tell you,", 0.25),
@@ -110,7 +110,7 @@ SCENES = [
             ], gap=0.5),
             L("L12", "MIRIAM", [
                 ("Sir...", 0.7, {"speed": 0.78}),
-                ("always give us this bread.", 0.2),
+                ("how do we get this bread?", 0.2),
             ], gap=1.8),
             L("L13", "JESUS", [
                 ("I am the bread of life.", 0.7, {"speed": 0.60}),
@@ -224,7 +224,7 @@ SCENES = [
                 ("In your holy name, / I glorify you.", 0.5, {"speed": 0.66}),
                 ("And even if they leave me...", 0.45, {"speed": 0.64}),
                 ("I believe they have left / with a part of me in them.", 0.2, {"speed": 0.64}),
-            ], gap=4.6),
+            ], gap=5.6),
         ],
         "tail": 5.0,  # closing image after the last line
     },

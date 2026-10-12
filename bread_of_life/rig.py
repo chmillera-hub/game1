@@ -337,6 +337,14 @@ def draw_brow(cv, H, st, P, side):
         a = min(1.0, (fu - 0.15) / 0.6)
         x0 = inner * s + s * 0.02
         cv.drawPath(spline([(x0 - s * 0.03, -0.02), (x0 - s * 0.05, 0.05)], closed=False), stroke(st.get("crease_col", "#8a5b48"), 0.008, alpha=0.5 * a))
+    if r > 0.75:
+        # a strongly raised brow wrinkles the forehead above it
+        a = min(1.0, (r - 0.75) / 0.6)
+        for k, (yy, ww) in enumerate(((-0.17, 0.17), (-0.225, 0.13))):
+            yy -= r * 0.05
+            xm = (inner + outer) * 0.5 * s
+            cv.drawPath(spline([(xm - s * ww * 0.9, yy + 0.012), (xm, yy - 0.006), (xm + s * ww, yy + 0.01)], closed=False),
+                        stroke(st.get("crease_col", "#8a5b48"), 0.009, alpha=0.55 * a * (1.0 - 0.3 * k)))
     cv.restore()
 
 
@@ -345,34 +353,64 @@ def draw_brow(cv, H, st, P, side):
 # ----------------------------------------------------------------------------
 
 def draw_nose(cv, H, st, P):
+    """Nose with a shaded side plane, a rounded tip, nostril wings and nostrils, and a soft
+    shadow under it (drawn about 13% larger than the original minimal anime nose)."""
+    k = st.get("nose_scale", 1.13)
     ny = st.get("nose_y", 0.40)
-    tipz = H.surf_z(0, ny) + st.get("nose_len", 0.2)
-    tip = H.pt(0, ny, tipz)
-    bridge = H.pt(0, ny - 0.28, H.surf_z(0, ny - 0.28) + 0.06)
-    base = H.pt(0, ny + 0.05, H.surf_z(0, ny + 0.05) + 0.03)
+    nl = st.get("nose_len", 0.2) * k
+    w = st.get("nose_w", 0.05) * 1.15 * k
     yaw = H.yaw
     side = 1.0 if yaw >= 0 else -1.0
     ay = min(1.0, abs(yaw) / 0.6)
     lc = st.get("line", "#2a1a14")
+    skin = st["skin"]
     sh = st.get("skin_sh", "#c98f6c")
-    # side shadow (toward the far side / away from light)
+    sh2 = st.get("skin_sh2", sh)
     lx = P["light_x"]
-    sd = -1.0 if lx > 0 else 1.0
+    sd = -1.0 if lx > 0 else 1.0  # shaded side in a front view
     if abs(yaw) > 0.05:
         sd = side
-    sh_path = spline([bridge, (tip[0] + sd * 0.06, tip[1] - 0.02), (tip[0] + sd * 0.01, tip[1] + 0.03), (tip[0] - sd * 0.02, tip[1] - 0.06)], closed=True)
-    cv.drawPath(sh_path, fill(sh, alpha=0.55, blur=0.012))
-    # bridge line on the far side in 3/4 view
+
+    def at(x, dy, dz):
+        y = ny + dy
+        return H.pt(x, y, H.surf_z(x, y) + dz)
+
+    tip = at(0.0, 0.0, nl)
+    top = at(0.0, -0.34 * k, 0.025)
+    mid = at(0.0, -0.17 * k, nl * 0.42)
+    # side plane of the nose on the shaded side, from the brow down to the nostril wing
+    plane = [top, at(sd * 0.05 * k, -0.17 * k, nl * 0.3), at(sd * w * 2.0, 0.01, nl * 0.32), at(sd * w * 1.2, 0.035, nl * 0.5),
+             (tip[0] + sd * 0.012, tip[1] + 0.012), mid]
+    cv.drawPath(spline(plane, closed=True), fill(sh, alpha=0.42, blur=0.018))
+    # soft shadow cast under the nose onto the upper lip
+    base = at(0.0, 0.07 * k, nl * 0.35)
+    cv.drawPath(ellipse(base[0] + sd * 0.012, base[1] + 0.012, w * 2.2, 0.034 * k), fill(sh, alpha=0.38, blur=0.022))
+    # bridge line on the far side in a 3/4 view
     if ay > 0.1:
-        bl = [(bridge[0] + side * 0.02, bridge[1] + 0.08), (tip[0] + side * 0.035, tip[1] - 0.03)]
-        cv.drawPath(tapered(bl, 0.002, 0.009), fill(lc, alpha=0.35 * ay))
-    # nostril / tip tick
-    w = st.get("nose_w", 0.05)
-    tick = [(tip[0] - w * (1 - 0.5 * ay) - side * 0.01 * ay, tip[1] + 0.025), (tip[0] + side * 0.01, tip[1] + 0.04), (tip[0] + w * 0.8 * (1 - 0.6 * ay) + side * 0.02 * ay, tip[1] + 0.022)]
-    cv.drawPath(tapered(sample_spline(tick, n=10), 0.004, 0.006, wmid=0.016), fill(lc, alpha=0.75))
-    # tiny highlight
+        bl = [(top[0] + side * 0.015, top[1] + 0.06), (mid[0] + side * 0.03, mid[1]), (tip[0] + side * 0.04, tip[1] - 0.025)]
+        cv.drawPath(tapered(sample_spline(bl, n=10), 0.002, 0.009), fill(lc, alpha=0.32 * ay))
+    # nostril wings: little curves around each side of the tip (the far one hides behind the tip)
+    for s in (-1.0, 1.0):
+        vis = 1.0 if s * side >= 0 else (1.0 - ay) ** 1.5
+        if vis < 0.05:
+            continue
+        a0 = at(s * w * 1.05, -0.035, nl * 0.5)
+        a1 = at(s * w * 1.85, 0.008, nl * 0.32)
+        a2 = at(s * w * 1.25, 0.045, nl * 0.4)
+        cv.drawPath(tapered(sample_spline([a0, a1, a2], n=10), 0.003, 0.004, wmid=0.011), fill(sh2, alpha=0.62 * vis))
+        # nostril
+        nx_, ny_ = at(s * w * 0.72, 0.042, nl * 0.5)
+        cv.drawPath(ellipse(nx_, ny_, w * 0.42 * (0.55 + 0.45 * vis), 0.011 * k, rot_deg=-s * 12), fill(mix(lc, sh2, 0.35), alpha=0.7 * vis))
+    # underside of the tip (columella), a soft line rather than a tick
+    w0 = at(-w * 1.05, 0.03, nl * 0.55)
+    w1 = at(w * 1.05, 0.03, nl * 0.55)
+    cb = (tip[0] + side * 0.006 * ay, tip[1] + 0.048)
+    cv.drawPath(tapered(sample_spline([w0, cb, w1], n=12), 0.003, 0.003, wmid=0.010), fill(lc, alpha=0.5))
+    # light on the tip and down the lit side of the bridge
     lxs = -1 if lx < 0 else 1
-    cv.drawPath(ellipse(tip[0] + lxs * 0.012, tip[1] - 0.025, 0.012, 0.009), fill("#ffffff", alpha=0.35))
+    cv.drawPath(ellipse(tip[0] + lxs * 0.01, tip[1] - 0.018, 0.018 * k, 0.012 * k), fill("#ffffff", alpha=0.22, blur=0.006))
+    hl = [(top[0] - sd * 0.018, top[1] + 0.12), (mid[0] - sd * 0.022, mid[1] + 0.02), (tip[0] - sd * 0.016, tip[1] - 0.045)]
+    cv.drawPath(tapered(sample_spline(hl, n=8), 0.004, 0.008, wmid=0.026), fill(mix(skin, "#ffffff", 0.45), alpha=0.16, blur=0.012))
 
 
 def mouth_shape(H, st, P):
@@ -587,6 +625,7 @@ def flip_params(P):
     P["tear_dry_l"], P["tear_dry_r"] = P["tear_dry_r"], P["tear_dry_l"]
     P["m_smirk"] = -P["m_smirk"]
     P["arm_l"], P["arm_r"] = P["arm_r"], P["arm_l"]
+    P["prop_l"], P["prop_r"] = P.get("prop_r"), P.get("prop_l")
     for k in ("arm_l", "arm_r"):
         if P[k]:
             a = dict(P[k])
@@ -595,6 +634,8 @@ def flip_params(P):
             a["target"] = tuple(tg)
             if a.get("thumb") is not None:
                 a["thumb"] = -a["thumb"]
+            if a.get("hand_dir") is not None:
+                a["hand_dir"] = (-a["hand_dir"][0], a["hand_dir"][1], a["hand_dir"][2])
             P[k] = a
     return P
 
@@ -664,11 +705,15 @@ class Character:
         nt = hoy + st.get("neck_top", 0.75)
         neck = spline([(-nw * 1.12, 0.45), (hox * 0.8 - nw * 0.92, nt), (hox * 0.8 + nw * 0.92, nt), (nw * 1.12, 0.45)],
                       closed=True, corners=[0, 1, 2, 3], tension=0.3)
-        cv.drawPath(neck, fill(st["skin"]))
+        lc = st.get("line", "#2a1a14")
+        # the neck sits in the shadow of the head: a touch deeper than the face, with outlined sides
+        # so it reads as solid against a bright sky
+        cv.drawPath(neck, stroke(lc, 0.05))
+        cv.drawPath(neck, fill(mix(st["skin"], st["skin_sh"], 0.22)))
         cv.save()
         cv.clipPath(neck, skia.ClipOp.kIntersect, True)
         lxs = 1.0 if P["light_x"] < 0 else -1.0
-        cv.drawPath(spline([(lxs * nw * 0.35, nt - 0.2), (lxs * nw * 1.4, nt - 0.2), (lxs * nw * 1.4, 0.6), (lxs * nw * 0.5, 0.6)], closed=True), fill(st["skin_sh"], alpha=0.7))
+        cv.drawPath(spline([(lxs * nw * 0.35, nt - 0.2), (lxs * nw * 1.4, nt - 0.2), (lxs * nw * 1.4, 0.6), (lxs * nw * 0.5, 0.6)], closed=True), fill(st["skin_sh"], alpha=0.75))
         cv.concat(head_matrix())
         jaw_sh = H.face_path()
         m = skia.Matrix()
@@ -676,6 +721,9 @@ class Character:
         jaw_sh.transform(m)
         cv.drawPath(jaw_sh, fill(st.get("skin_sh2", st["skin_sh"]), alpha=0.9))
         cv.restore()
+        for s_ in (-1, 1):
+            edge = [(s_ * nw * 1.12, 0.45), (hox * 0.8 + s_ * nw * 0.92, nt)]
+            cv.drawPath(spline(edge, closed=False), stroke(lc, 0.022, alpha=0.9))
 
         # --- body
         if arms:

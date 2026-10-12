@@ -40,22 +40,24 @@ SHOTS = []
 # ---------------------------------------------------------------------------
 G_REACH_R = dict(target=(4.6, 2.5, 0.8), hand="open", palm=(0.25, -0.85, 0.45), wrist=8)  # full shots: arm out toward the crowd
 G_REACH_M = dict(target=(3.3, 1.9, 1.8), hand="open", palm=(0.35, -0.15, 1.0), wrist=8)  # medium shots: forearm out, palm to them
-G_TEACH_M = dict(target=(2.9, 3.0, 1.4), hand="open", palm=(-0.1, 1.0, 0.1), wrist=4)  # medium shots: explaining, palm down, back of the hand out
+G_TEACH_M = dict(target=(2.65, 1.6, 1.8), hand="open", palm=(-0.45, -0.5, 0.75), wrist=-10)  # medium shots: explaining, hand raised with the fingers up, palm to them
 G_OFFER_R = dict(target=(2.7, 2.9, 1.6), hand="open", palm=(0.15, -1.0, 0.2), wrist=10)  # open palm offered in front of him
 G_TEACH_R = dict(target=(3.7, 3.4, 1.0), hand="open", palm=(0.1, -1.0, 0.1), wrist=12)  # full shots: explaining, palm up
 G_UP_R = dict(target=(3.5, -1.3, 0.8), hand="open", palm=(0.15, -0.6, 0.8), wrist=5)  # full shots: toward heaven
 G_UP_M = dict(target=(3.4, 0.3, 1.3), hand="open", palm=(0.2, -0.3, 1.0), wrist=5)
 G_HEART_L = dict(target=(0.1, 2.5, 1.1), hand="flat", palm=(0.0, 0.0, -1.0), wrist=12, still=True)
-G_FIRM_R = dict(target=(1.2, 2.7, 1.4), hand="fist", palm=(-0.3, 0.2, -1.0), wrist=0)
+G_SELF_R = dict(target=(0.85, 2.45, 1.15), hand="soft", palm=(-0.1, 0.05, -1.0), wrist=8, still=True)  # "my flesh": hand laid on his chest
 G_BREAD_R = dict(target=(0.95, 4.3, 1.3), hand="hold", palm=(-0.8, -0.5, 0.15), wrist=20, still=True)
 G_BREAD_L = dict(target=(-0.75, 4.4, 1.3), hand="hold", palm=(-0.8, -0.5, 0.15), wrist=20, still=True)
-G_GIVE_R = dict(target=(3.9, 3.3, 1.2), hand="hold", palm=(0.1, -1.0, 0.25), wrist=10, still=True)
-G_PRAY_L = dict(target=(-0.2, 3.0, 1.4), hand="hold", palm=(-0.2, -1.0, 0.2), wrist=25, still=True)
+G_GIVE_R = dict(target=(2.59, 3.48, 1.6), hand="hold", palm=(1.0, 0.0, 0.25), wrist=10, still=True)  # holds the half out to Peter, thumb over it
+G_PRAY_L = dict(target=(-0.2, 3.0, 1.4), hand="hold", palm=(0.0, -1.0, 0.0), hand_dir=(0.85, -0.15, -0.5), still=True)  # bread cradled across the palm, thumb over it
 P_CHIN_R = dict(target=(0.5, 0.3, 1.5), hand="relaxed", palm=(-0.4, 0.0, -1.0), wrist=-10, layer="front", still=True)
 P_SCRATCH_R = dict(target=(1.5, -1.5, 0.3), hand="relaxed", still=True, palm=(-1.0, 0.3, -0.4))
 P_SCRATCH_MID = dict(target=(2.7, 0.7, 1.5), hand="relaxed", still=True, palm=(-0.6, 0.3, -0.7))  # on the way up, in front of the shoulder
 P_ASK_R = dict(target=(3.1, 2.4, 1.5), hand="open", palm=(0.2, -1.0, 0.3), wrist=10)
 P_RECEIVE_L = dict(target=(-3.4, 3.5, 1.2), hand="cup", palm=(0.0, -1.0, 0.3), wrist=10, still=True)
+P_TAKE_L = dict(target=(-3.31, 3.96, 1.5), hand="cup", palm=(0.0, -1.0, 0.3), wrist=10, still=True)  # cupped palm right under the bread
+P_KEEP_L = dict(target=(-1.1, 3.6, 1.6), hand="hold", palm=(0.25, -1.0, 0.35), wrist=12, still=True)  # draws the bread close
 E_CROSS_R = dict(target=(-1.2, 3.0, 1.15), hand="relaxed", palm=(0.0, 0.2, -1.0), wrist=10, still=True, pole=(0.6, 1.0, -0.15))
 E_CROSS_L = dict(target=(1.15, 3.2, 0.95), hand="relaxed", palm=(0.0, 0.2, -1.0), wrist=10, still=True, pole=(0.6, 1.0, -0.15))
 E_POINT_R = dict(target=(1.5, 1.1, 1.6), hand="point", palm=(-0.5, 0.0, 0.85), wrist=-5, layer="front")  # index finger raised, in front of his head cloth
@@ -65,14 +67,14 @@ E_BOATS_L0 = dict(target=(-1.5, 1.8, 2.0), hand="open", palm=(0.1, 1.0, 0.25), w
 E_BOATS_L = dict(target=(-2.5, 1.9, 1.6), hand="open", palm=(0.1, 1.0, 0.25), wrist=6)  # ...sweeping out toward the shore
 E_PALMS_R = dict(target=(2.0, 2.6, 1.8), hand="open", palm=(0.3, -1.0, 0.45), wrist=10)  # "how is that possible?"
 E_PALMS_L = dict(target=(-2.0, 2.6, 1.8), hand="open", palm=(0.3, -1.0, 0.45), wrist=10)
-M_CLUTCH_L = dict(target=(-0.3, 2.0, 1.1), hand="hold", palm=(0.0, 0.0, -1.0), wrist=15, still=True)
+M_CLUTCH_L = dict(target=(-0.15, 2.3, 1.05), hand="soft", palm=(0.0, 0.0, -1.0), wrist=10, still=True)  # hand pressed over her heart
 M_MOUTH_L = dict(target=(-0.25, 0.45, 1.4), hand="cup", layer="front", still=True, palm=(0.0, 0.0, -1.0))
 
 def shot(t0, name, plate, pcam, chars, blur=0.0, cam=None, light=None, fx=(), grade="morning",
-         trans=None, crowd=None, title=None):
+         trans=None, crowd=None, title=None, handoff=None):
     SHOTS.append(dict(t0=t0, name=name, plate=plate, pcam=pcam, chars=chars, blur=blur,
                       cam=cam or {}, light=light or {}, fx=list(fx), grade=grade, trans=trans,
-                      crowd=crowd or [], title=title))
+                      crowd=crowd or [], title=title, handoff=handoff))
 
 
 # Lighting presets ------------------------------------------------------------
@@ -304,10 +306,13 @@ shot(T("L36") + 1.6, "dusk_cu_peter2", "land_dusk", (0.4, 0.42, 1.05),
      [place("peter", 380, 445, 160)], blur=9, light=L_DUSK_C, fx=["bokeh_dusk"], grade="dusk",
      cam=dict(z0=1.02, z1=1.06, fx=380, fy=445))
 # the bread is broken and shared on the beach
-shot(T("L36", "end") + 0.5, "dusk_bread", "beach_dusk", (0.55, 0.5, 1.0),
-     [stand("miriam", 640, 1185, 40, blur=1.0), stand("peter", 520, 1205, 43), stand("jesus", 230, 1215, 44, bread="both")],
+TF = T("L36", "end") + 0.5   # Jesus breaks the bread and places half in Peter's hand
+shot(TF, "dusk_bread", "beach_dusk", (0.55, 0.5, 1.0),
+     [stand("miriam", 640, 1185, 40, blur=1.0), stand("peter", 520, 1205, 43, bread=[(TF + 3.05, [("l", 1)])]),
+      stand("jesus", 230, 1215, 44, bread=[(0.0, "both"), (TF + 3.05, [("l", -1)])])],
      blur=2.0, light=L_DUSK_J, fx=["sun_glow_dusk"], grade="dusk",
-     cam=dict(z0=1.0, z1=1.05, fx=380, fy=760))
+     cam=dict(z0=1.0, z1=1.05, fx=380, fy=760),
+     handoff=dict(t0=TF + 2.85, t1=TF + 3.25, giver=("jesus", "r"), taker=("peter", "l")))
 # Jesus prays over his half of the bread
 shot(T("L37") - 0.45, "dusk_prayer", "lake_dusk", (0.62, 0.40, 1.05),
      [place("jesus", 330, 460, 132, bread=[("l", -1)])], blur=8, light=dict(L_DUSK_J, rim=0.85), fx=["sun_glow_dusk", "bokeh_dusk"],
@@ -419,8 +424,8 @@ def build_perfs():
     P.pose(t7, 0.01, yaw=20, pitch=0, roll=0).look(t7, 0.45, 0.0).expr(t7, "confused", 0.01, bfur=0.15)
     P.arm(T("L07") - 0.55, "r", P_SCRATCH_MID, 0.45)                          # hand comes up in front...
     P.arm(T("L07") - 0.15, "r", P_SCRATCH_R, 0.55)                            # ...and scratches the back of his head
-    P.arm(T("L07", seg=1) - 0.1, "r", P_SCRATCH_MID, 0.35)
-    P.arm(T("L07", seg=1) + 0.2, "r", P_ASK_R, 0.6)
+    P.arm(T("L07", seg=1) - 0.2, "r", P_SCRATCH_MID, 0.5)
+    P.arm(T("L07", seg=1) + 0.3, "r", P_ASK_R, 0.85)
     P.expr(T("L07", seg=1), "anxious", 0.6, bi_l=0.35, bi_r=0.35)
     P.arm(T("L07", "end") + 0.8, "r", None, 0.8)
     J.pose(t7, 0.01, yaw=-8).look(t7, -0.3, 0.0).expr(t7, "gentle", 0.01)
@@ -524,8 +529,12 @@ def build_perfs():
     t19 = T("L19") - 0.9
     J.pose(t19, 0.01, yaw=8, pitch=0, roll=0).look(t19, 0.1, 0.0).expr(t19, "gentle", 0.01)
     J.pose(t19 + 0.3, 0.7, yaw=22).look(t19 + 0.3, 0.4, 0.05, 0.2)
-    J.expr(T("L19"), "firm", 0.4)
-    J.expr(T("L19", "end") + 0.3, "compassion", 1.0)
+    J.expr(T("L19") - 0.15, "intense", 0.35, bi_l=-0.5, bi_r=-0.5, bfur=0.75, eo_l=0.86, eo_r=0.86, lo_l=0.12, lo_r=0.12,
+           m_smile=-0.3, m_press=0.2)                                      # irritated: brows down, eyes narrowed
+    J.pose(T("L19") - 0.1, 0.35, pitch=3, roll=-1).nod(T("L19", word="among") - 0.05, 2.5, 0.35)
+    J.expr(T("L19", "end") + 0.15, "firm", 0.5)
+    J.pose(T("L19", "end") + 0.2, 0.8, pitch=0, roll=0)
+    J.expr(T("L19", "end") + 0.75, "compassion", 0.9)
     # L20
     t20 = T("L20") - 0.6
     J.pose(t20, 0.01, yaw=17, pitch=0, roll=0).look(t20, 0.35, 0.05).expr(t20, "compassion", 0.01)
@@ -556,6 +565,7 @@ def build_perfs():
     te22 = T("L22", seg=1) + 0.2
     E.pose(te22, 0.01, yaw=-18, pitch=2, roll=0).look(te22, -0.35, 0.0).expr(te22, "suspicious", 0.01)
     E.expr(te22 + 0.6, "grumble", 0.6).pose(te22 + 0.6, 0.7, roll=-4, pitch=-2)
+    E.mime(te22 + 0.75, te22 + 2.1, 0.32)                                  # mutters something under his breath
     J.pose(T("L22", "end") - 0.3, 0.01, yaw=18, pitch=0, roll=0).look(T("L22", "end") - 0.3, 0.33, 0.05)
     # L23 "This bread is my flesh" - grave, knowing
     J.expr(T("L23") - 0.3, "compassion", 0.8)
@@ -589,8 +599,9 @@ def build_perfs():
     M.arm(tmg, "l", M_MOUTH_L, 0.35)                                        # hand to mouth
     M.expr(tmg + 0.4, "anxious", 0.6, eo_l=1.15, eo_r=1.15)
     tps = T("L25", "end") + 1.45
-    P.pose(tps, 0.01, yaw=18, pitch=1, roll=0).look(tps, 0.45, 0.0).expr(tps, "confused", 0.01, bfur=0.35, br_l=1.0, br_r=-0.15, bi_l=0.35, eo_l=1.08, eo_r=0.88)
-    P.pose(tps + 0.2, 1.4, roll=-3, pitch=-1)
+    P.pose(tps, 0.01, yaw=18, pitch=1, roll=0).look(tps, 0.45, 0.0).expr(tps, "confused", 0.01, bfur=0.2, br_l=0.2, br_r=0.0, bi_l=0.1, eo_l=1.0, eo_r=0.95)
+    P.expr(tps + 0.25, "confused", 0.45, bfur=0.45, br_l=1.65, br_r=-0.45, bi_l=0.3, bi_r=-0.35, eo_l=1.16, eo_r=0.8, m_smirk=-0.3)
+    P.pose(tps + 0.2, 1.0, roll=-5, pitch=-1)
     P.expr(tps + 1.9, "resolute", 0.7, bfur=0.3)
     P.nod(tps + 2.15, 1.5, 0.8)
     M.arm(T("L26"), "l", None, 1.0)
@@ -598,7 +609,7 @@ def build_perfs():
     t26 = T("L26") + 0.3
     J.pose(t26, 0.01, yaw=16, pitch=0, roll=0, hx=0.0).look(t26, 0.35, 0.05).expr(t26, "resolute", 0.01)
     J.arm(T("L26", seg=1) - 0.2, "r", G_REACH_M, 0.9)
-    J.arm(T("L27") - 0.3, "r", G_FIRM_R, 0.8)
+    J.arm(T("L27") - 0.3, "r", G_SELF_R, 0.8)
     J.expr(T("L27"), "firm", 0.6, m_press=0.0)
     J.arm(T("L27", "end") + 0.4, "r", None, 0.9)
     # L28 intimate
@@ -615,12 +626,17 @@ def build_perfs():
     J.look(T("L29", word="and") - 0.15, 0.35, 0.05, 0.35).pose(T("L29", word="and") - 0.3, 1.1, pitch=0, roll=0)
     J.expr(T("L29", word="and"), "warm", 0.9)
     te29 = T("L29", seg=1) - 0.1
-    E.pose(te29, 0.01, yaw=-18, pitch=3, roll=0).look(te29, -0.35, 0.05).expr(te29, "hurt", 0.01)
-    E.look(te29 + 1.0, 0.3, 0.3, 0.25).pose(te29 + 0.9, 0.9, yaw=-6, pitch=7).expr(te29 + 1.0, "guilty", 0.8)
+    E.pose(te29, 0.01, yaw=-18, pitch=1, roll=0).look(te29, -0.35, 0.0).expr(te29, "suspicious", 0.01)
+    E.expr(te29 + 0.3, "anxious", 0.7, eo_l=1.12, eo_r=1.12, bfur=0.35, m_press=0.45, m_smile=-0.25)  # unsettled, staring
+    E.shake(te29 + 0.9, amp=2.2, dur=1.0, cycles=1.5)                      # a small "no" to himself
+    E.pose(te29 + 1.0, 0.8, pitch=-2, roll=2)
     # Eli at "Your ancestors ate manna, and died..."
     te30 = T("L30", seg=1) - 0.15
     E.pose(te30, 0.01, yaw=-18, pitch=2, roll=0).look(te30, -0.35, 0.0).expr(te30, "suspicious", 0.01)
-    E.expr(te30 + 0.8, "guilty", 0.9).look(te30 + 1.0, 0.1, 0.45, 0.35).pose(te30 + 0.9, 1.0, yaw=-6, pitch=8)
+    E.expr(te30 + 0.35, "indignant", 0.35, m_open=0.16, br_l=0.35, br_r=0.35, bfur=0.4)   # draws breath to object
+    E.pose(te30 + 0.3, 0.4, pitch=-4)
+    E.expr(te30 + 1.25, "hurt", 0.8, m_open=0.0, m_press=0.5, wet=0.55, bi_l=0.55, bi_r=0.55, lo_l=0.2, lo_r=0.2)  # ...and says nothing
+    E.pose(te30 + 1.2, 1.0, yaw=-12, pitch=3).look(te30 + 1.3, -0.45, 0.05, 0.3)
     # L30 final, warm and certain
     t30 = T("L30") - 0.6
     J.pose(t30, 0.01, yaw=18, pitch=1, roll=1).look(t30, 0.35, 0.05).expr(t30, "compassion", 0.01, wet=0.2)
@@ -659,14 +675,18 @@ def build_perfs():
     P.pose(tp2, 0.01, yaw=18, pitch=0, roll=0).look(tp2, 0.4, 0.05).expr(tp2, "resolute", 0.01, wet=0.8, bi_l=0.4, bi_r=0.4)
     P.expr(T("L36", seg=1) + 0.3, "moved", 0.8, m_smile=0.4, wet=0.9)
     # bread: Jesus smiles, breaks it and gives half to Peter
-    tf = T("L36", "end") + 0.5
+    tf = TF
     J.pose(tf, 0.01, yaw=18, pitch=2, roll=0).look(tf, 0.35, 0.05).expr(tf, "warm", 0.01, m_smile=0.45, wet=0.0)
     J.arm(tf, "r", G_BREAD_R, 0.01)
     J.arm(tf, "l", G_BREAD_L, 0.01)
-    J.arm(tf + 1.2, "r", G_GIVE_R, 1.2)
-    J.look(tf + 0.2, 0.15, 0.45, 0.3).look(tf + 1.4, 0.4, 0.05, 0.3)
+    J.arm(tf + 1.2, "r", G_GIVE_R, 1.4)                                       # breaks it and holds half out
+    J.look(tf + 0.2, 0.15, 0.45, 0.3).look(tf + 1.5, 0.4, 0.05, 0.3)
+    J.arm(tf + 3.3, "r", None, 1.2)                                           # lets go
     P.pose(tf, 0.01, yaw=-18, pitch=2).look(tf, -0.35, 0.05).expr(tf, "moved", 0.01, m_smile=0.45, wet=0.8)
-    P.arm(tf + 1.6, "l", P_RECEIVE_L, 1.0)
+    P.arm(tf + 1.7, "l", P_TAKE_L, 1.1)                                       # cupped hand under it
+    P.look(tf + 1.9, -0.3, 0.4, 0.3).pose(tf + 1.9, 0.8, pitch=6)            # looks down at the bread
+    P.arm(tf + 3.35, "l", P_KEEP_L, 0.9)                                      # and draws it close
+    P.look(tf + 3.5, -0.38, 0.05, 0.35).pose(tf + 3.4, 0.9, pitch=2).expr(tf + 3.5, "moved", 0.8, m_smile=0.55, wet=0.9)
     M.pose(tf, 0.01, yaw=-20, pitch=0).look(tf, -0.4, 0.05).expr(tf, "joy", 0.01, wet=0.6)
     # L37 the prayer: eyes lifted, holding his half of the bread
     tpr = T("L37") - 0.45

@@ -11,12 +11,12 @@ G = {
     "reach": dict(target=(4.6, 2.5, 0.8), hand="open", palm=(0.25, -0.85, 0.45), wrist=8),
     "heart": dict(target=(0.1, 2.5, 1.1), hand="flat", palm=(0.0, 0.0, -1.0), wrist=12),
     "up": dict(target=(3.5, -1.3, 0.8), hand="open", palm=(0.15, -0.6, 0.8), wrist=5),
-    "firm": dict(target=(1.2, 2.7, 1.4), hand="fist", palm=(-0.3, 0.2, -1.0), wrist=0),
+    "self": dict(target=(0.85, 2.45, 1.15), hand="soft", palm=(-0.1, 0.05, -1.0), wrist=8),
     "point": dict(target=(1.5, 1.1, 1.6), hand="point", palm=(-0.5, 0.0, 0.85), wrist=-5),
     "cross_r": dict(target=(-1.2, 3.0, 1.15), hand="relaxed", palm=(0.0, 0.2, -1.0), wrist=10, pole=(0.6, 1.0, -0.15)),
     "cross_l": dict(target=(1.15, 3.2, 0.95), hand="relaxed", palm=(0.0, 0.2, -1.0), wrist=10, pole=(0.6, 1.0, -0.15)),
     "scratch": dict(target=(1.5, -1.5, 0.3), hand="relaxed", palm=(-1.0, 0.3, -0.4)),
-    "clutch": dict(target=(-0.3, 2.0, 1.1), hand="hold", palm=(0.0, 0.0, -1.0), wrist=15),
+    "clutch": dict(target=(-0.15, 2.3, 1.05), hand="soft", palm=(0.0, 0.0, -1.0), wrist=10),
     "mouth": dict(target=(-0.25, 0.45, 1.4), hand="cup", palm=(0.0, 0.0, -1.0), layer="front"),
 }
 

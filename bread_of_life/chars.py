@@ -203,6 +203,8 @@ JESUS = Character(
 
 
 # ---------------------------------------------------------------------------
+PETER_HAIR = hair.ShortCurly()
+
 # Simon Peter: broad fisherman, short curly black hair, full beard
 # ---------------------------------------------------------------------------
 PETER_ST = dict(JESUS_ST)
@@ -234,7 +236,7 @@ def peter_outfit():
 PETER = Character(
     "peter", PETER_ST, outfit=peter_outfit(),
     beard=hair.CurlyBeard(vol=0.06, chin=0.14, inner=[(0.98, 0.0), (0.95, 0.28), (0.85, 0.47), (0.66, 0.58), (0.42, 0.64), (0.26, 0.70), (0.13, 0.76), (0.0, 0.78)]),
-    headwear_front=hair.ShortCurly(), ears=True,
+    headwear_front=PETER_HAIR, headwear_back=PETER_HAIR.back, ears=True,
     arms=make_arms({-1: dict(sleeve="#8a6744", sleeve_sh="#634529"), 1: dict(sleeve="#8a6744", sleeve_sh="#634529")}),
 )
 

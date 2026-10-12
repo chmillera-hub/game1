@@ -249,6 +249,8 @@ class LongHair:
         cv.drawPath(path, fill(st["skin_sh"], alpha=0.9))
 
     def draw_back(self, cv, H, st, P):
+        """The hair falling behind the shoulders: soft locks with strand texture, lighter where it
+        catches the light at the sides, shadowed behind the neck, ending in uneven wavy tips."""
         ys = list(np.linspace(-1.66, self.y_hang, 14))
         R, L = extents(H, ys, lambda y: self.vol(y) + 0.05)
         top = top_point(H, self.vol_top + 0.04)
@@ -258,19 +260,62 @@ class LongHair:
             u = (y - self.y_hang) / (self.tip_y - self.y_hang)
             rb.append((R[-1][0] + 0.16 * math.sin(u * 2.4) + 0.14 + dx, y + dy))
             lb.append((L[-1][0] - 0.16 * math.sin(u * 2.4) - 0.14 + dx, y + dy))
+        # uneven locks along the bottom: each tip a slightly different length, curling outward
         bottom = []
         xr, xl = rb[-1][0], lb[-1][0]
-        for k in range(9):
-            u = k / 8
-            x = xr + (xl - xr) * u
-            y = self.tip_y + (0.18 if k % 2 == 0 else -0.05) + 0.06 * math.sin(u * math.pi)
-            dx, dy = sway_offset(P, y, k=0.22)
-            bottom.append((x + dx, y + dy))
+        n_tips = 7
+        lens = [0.16, 0.30, 0.10, 0.24, 0.12, 0.28, 0.18]
+        for k in range(n_tips):
+            for half in (0, 1):
+                u = (k + 0.5 * half + 0.25) / n_tips
+                x = xr + (xl - xr) * u
+                if half == 0:
+                    y = self.tip_y + lens[k] + 0.04 * math.sin(u * math.pi)
+                    x += 0.05 * (1 if x > 0 else -1)
+                else:
+                    y = self.tip_y - 0.06 + 0.04 * math.sin(u * math.pi)
+                dx, dy = sway_offset(P, y, k=0.22)
+                bottom.append((x + dx, y + dy))
         pts = [top] + R[1:] + rb + bottom + lb[::-1] + L[::-1][1:-1]
-        corners = list(range(1 + len(R) - 1 + len(rb), 1 + len(R) - 1 + len(rb) + len(bottom)))
+        corners = list(range(1 + len(R) - 1 + len(rb), 1 + len(R) - 1 + len(rb) + len(bottom), 2))
         path = spline(pts, closed=True, corners=corners, tension=0.5)
-        cv.drawPath(path, fill(st["hair_sh"]))
-        cv.drawPath(path, stroke(st.get("hair_line", "#1e1009"), 0.02))
+        lc = st.get("hair_line", "#1e1009")
+        cv.drawPath(path, fill(mix(st["hair"], st["hair_sh"], 0.55)))
+        cv.save()
+        cv.clipPath(path, skia.ClipOp.kIntersect, True)
+        # volume: the outer sides catch light, the hair right behind the neck sits in soft shadow
+        for side, pts_ in ((1, R[4:] + rb), (-1, L[4:] + lb)):
+            cv.drawPath(tapered(sample_spline(pts_, n=24), 0.10, 0.22, wmid=0.30), fill(st["hair"], alpha=0.55, blur=0.06))
+        cv.drawPath(ellipse(0.0, self.y_hang + 0.9, 0.55, 1.2), fill("#000000", alpha=0.16, blur=0.25))
+        # locks hanging straight down behind the neck, from below the ears
+        for side in (1, -1):
+            for k in range(5):
+                x0 = side * (0.42 + 0.11 * k)
+                y0 = 0.15 + 0.05 * k
+                dx, dy = sway_offset(P, self.tip_y, k=0.22)
+                lock = sample_spline([(x0, y0), (x0 + side * 0.04, (y0 + self.tip_y) / 2), (x0 + side * 0.10 + dx, self.tip_y - 0.1 * (k % 2))], n=12)
+                light = k % 2 == 0
+                cv.drawPath(tapered(lock, 0.005, 0.0, wmid=0.02 if light else 0.016),
+                            fill(st["hair_hl"] if light else lc, alpha=0.32 if light else 0.5))
+        # strands flowing from the crown down to the tips
+        for side, edge, hang in ((1, R, rb), (-1, L, lb)):
+            for k in range(9):
+                f = (k + 0.5) / 9
+                i0 = 2 + int(f * (len(edge) - 4))
+                a = edge[i0]
+                ex = hang[min(len(hang) - 1, 1 + int(f * 3))]
+                y_end = self.tip_y + 0.05 - 0.12 * (k % 3)
+                inward = 0.25 + 0.5 * f
+                b = (a[0] - side * (0.10 + 0.05 * k % 2), (a[1] + y_end) * 0.45)
+                c = (ex[0] - side * inward, y_end)
+                dx, dy = sway_offset(P, y_end, k=0.22)
+                c = (c[0] + dx, c[1] + dy)
+                strand = sample_spline([a, b, c], n=14)
+                col = lc if k % 3 != 1 else st["hair_hl"]
+                cv.drawPath(tapered(strand, 0.004, 0.0, wmid=0.016 if k % 3 != 1 else 0.012),
+                            fill(col, alpha=0.5 if k % 3 != 1 else 0.3))
+        cv.restore()
+        cv.drawPath(path, stroke(lc, 0.02))
 
 
 class Beard:
@@ -401,8 +446,10 @@ class ShortCurly:
         top = top_point(H, self.vol)
         hl_r = surf_pts(H, self.hairline, dz=0.04)
         hl_l = surf_pts(H, [(-x, y) for x, y in self.hairline], dz=0.04)
-        hl_r = clamp_inner(hl_r, H, 1, far_margin(H, 1, 0.03))
-        hl_l = clamp_inner(hl_l, H, -1, far_margin(H, -1, 0.03))
+        # short hair hugs the head: its edge always overlaps the face a little, even on the side
+        # turned away (there is no hair behind it to fill a gap)
+        hl_r = clamp_inner(hl_r, H, 1, max(0.03, far_margin(H, 1, 0.03)))
+        hl_l = clamp_inner(hl_l, H, -1, max(0.03, far_margin(H, -1, 0.03)))
         hl_r = [(min(x, interp_x(R, y) - 0.04), y) for x, y in hl_r]
         hl_l = [(max(x, interp_x(L, y) + 0.04), y) for x, y in hl_l]
         return top, R, L, hl_r, hl_l
@@ -458,6 +505,13 @@ class ShortCurly:
                 arc2.addArc(skia.Rect.MakeXYWH(p[0] - 0.04, p[1] - 0.05, 0.08, 0.07), 200, 90)
                 cv.drawPath(arc2, stroke(hl, 0.012, alpha=0.6))
         cv.restore()
+
+    def back(self, cv, H, st, P):
+        """Solid hair mass behind the head, so no background shows between the curls and the face."""
+        top, R, L, hl_r, hl_l = self.geometry(H, P)
+        r = self.curl_r * 0.8
+        pts = [top] + [(x - r, y) for x, y in R[1:]] + [(x + r, y) for x, y in L[1:]][::-1]
+        cv.drawPath(spline(pts, closed=True, tension=0.5), fill(st["hair"]))
 
     def cast_shadow(self, cv, H, st, P):
         g = self.geometry(H, P)

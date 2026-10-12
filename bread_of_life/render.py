@@ -145,10 +145,11 @@ class Renderer:
         if "bokeh_dusk" in effects:
             fx.bokeh(cv, W, H, t, 9, ["#ffb070", "#ffd49a", "#ff8a6a"], n=16, region=(0.0, 0.3, 1.0, 1.0), alpha=0.22)
         if "dusk_figures" in effects:
-            fx.dusk_figures(cv, W, H, t, pcam)
+            fx.dusk_figures(cv, W, H, t, pcam, t0=t0)
         if "leaving" in effects:
             fx.leaving(cv, W, H, t, t0, pcam)
         # --- crowd groups and characters, far to near
+        cam_m = cv.getTotalMatrix()
         layers = [(c.get("z", c["S"]), 1, k) for k, c in enumerate(shot["chars"])]
         layers += [(g["z"], 0, k) for k, g in enumerate(shot["crowd"])]
         for depth, kind, k in sorted(layers):
@@ -162,18 +163,16 @@ class Renderer:
             who = c["who"]
             P = self.params(who, f, shot, c.get("P"))
             ch = self.chars[who]
+            loaf = self.setup_bread(shot, c, P, f, cam_m) if c.get("bread") else None
             if c.get("blur", 0) > 0:
                 p = skia.Paint()
                 p.setImageFilter(skia.ImageFilters.Blur(c["blur"], c["blur"], skia.TileMode.kDecal))
                 cv.saveLayer(None, p)
-                ch.draw(cv, P, c["x"], c["y"], c["S"], flip=c.get("flip", False))
-                if c.get("bread"):
-                    self.draw_bread(cv, c, P)
+            ch.draw(cv, P, c["x"], c["y"], c["S"], flip=c.get("flip", False))
+            if loaf is not None:
+                fx.bread(cv, loaf[0], loaf[1], 0.72 * c["S"])
+            if c.get("blur", 0) > 0:
                 cv.restore()
-            else:
-                ch.draw(cv, P, c["x"], c["y"], c["S"], flip=c.get("flip", False))
-                if c.get("bread"):
-                    self.draw_bread(cv, c, P)
         # --- foreground light
         if "god_rays" in effects:
             fx.god_rays(cv, W, H, t, info, pcam, 0.9)
@@ -188,7 +187,8 @@ class Renderer:
         return shot
 
     def palm(self, c, P, side):
-        """Screen position of the palm centre of one hand (side -1 = left arm, +1 = right arm)."""
+        """Screen position of the grip point of one hand (side -1 = left arm, +1 = right arm):
+        where a held object sits, computed from the same 3D hand that draw_arm draws."""
         st = self.chars[c["who"]].st
         Q = dict(DEFAULT_P)
         Q.update(P)
@@ -197,39 +197,69 @@ class Renderer:
             Q = flip_params(Q)
             side = -side
         spec = Q["arm_l" if side < 0 else "arm_r"]
-        _, E, Wr = body.arm_geometry(st, Q, side, spec)
-        hd = body.hand_direction(E, Wr, spec, side, use_override=True)
-        k = st.get("body_scale", 1.0)
-        length = st.get("hand_len", 2.15) * k * (spec or {}).get("hand_scale", 1.0)
-        sx, sy, fore = body.hand_screen_dir(hd)
-        reach = length * (0.62 + 0.38 * fore)
-        px = Wr[0] - sx * fore * 0.25 + sx * reach * 0.42
-        py = Wr[1] - sy * fore * 0.25 + sy * reach * 0.42
+        px, py = body.hand_anchor(st, Q, side, spec)
         lean = math.radians(Q["blean"])
         bx = px * math.cos(lean) - py * math.sin(lean) + Q["bx"]
         by = px * math.sin(lean) + py * math.cos(lean)
         return c["x"] + (-bx if flip else bx) * c["S"], c["y"] + by * c["S"]
 
-    def draw_bread(self, cv, c, P):
-        """c["bread"] = "both" (a loaf held in both hands that breaks as they part)
-        or a list of (hand, half) with hand "l"/"r" and half -1 (left half) / +1 (right half)."""
+    @staticmethod
+    def bread_spec(c, t):
+        """c["bread"]: "both", a list of (hand, half), or keyframes [(t_from, spec), ...]."""
+        spec = c.get("bread")
+        if isinstance(spec, list) and spec and isinstance(spec[0][0], (int, float)):
+            cur = None
+            for t_from, s in spec:
+                if t >= t_from:
+                    cur = s
+            return cur
+        return spec
+
+    def setup_bread(self, shot, c, P, f, cam_m):
+        """This frame's bread for one character. Halves become props held in the hands (drawn
+        inside the hand, so fingers and thumb can close over them); a whole loaf between both
+        palms is returned to be drawn after the character."""
+        t = f / FPS
+        spec = self.bread_spec(c, t)
+        if not spec:
+            return None
         S = c["S"]
-        s = 0.72 * S
-        spec = c["bread"]
         if spec == "both":
             lx, ly = self.palm(c, P, -1)
             rx, ry = self.palm(c, P, 1)
-            spread = math.hypot(rx - lx, ry - ly) / S
-            if spread < BREAD_SPLIT:
-                fx.bread(cv, (rx + lx) / 2, (ry + ly) / 2 - 0.1 * S, s)
-                return
+            if math.hypot(rx - lx, ry - ly) / S < BREAD_SPLIT:
+                return ((lx + rx) / 2, (ly + ry) / 2 - 0.1 * S)
             spec = [("l", -1), ("r", 1)]
+        ho = shot.get("handoff")
         for hand, half in spec:
-            x, y = self.palm(c, P, -1 if hand == "l" else 1)
+            pos = None
+            if ho and ho["t0"] <= t <= ho["t1"] and (c["who"], hand) in (ho["giver"], ho["taker"]):
+                pts = []
+                for who, hd_ in (ho["giver"], ho["taker"]):
+                    c2 = next(ch for ch in shot["chars"] if ch["who"] == who)
+                    P2 = P if c2 is c else self.params(who, f, shot, c2.get("P"))
+                    pts.append(self.palm(c2, P2, -1 if hd_ == "l" else 1))
+                u = ease_io((t - ho["t0"]) / (ho["t1"] - ho["t0"]))
+                pos = (pts[0][0] + (pts[1][0] - pts[0][0]) * u, pts[0][1] + (pts[1][1] - pts[0][1]) * u)
+            P["prop_" + hand] = dict(draw=self._half_drawer(c, half, pos, cam_m))
+        return None
+
+    @staticmethod
+    def _half_drawer(c, half, pos, cam_m):
+        S = c["S"]
+
+        def draw(cv, x, y):
             cv.save()
-            cv.translate(x - half * 0.5 * s, y - 0.1 * S)
-            fx.bread(cv, 0, 0, s, broken=1.0, side_only=half)
+            if pos is None:
+                h = -half if c.get("flip") else half
+                cv.translate(x - h * 0.5 * 0.72, y - 0.1)
+                fx.bread(cv, 0, 0, 0.72, broken=1.0, side_only=h)
+            else:
+                cv.setMatrix(cam_m)
+                cv.translate(pos[0] - half * 0.5 * 0.72 * S, pos[1] - 0.1 * S)
+                fx.bread(cv, 0, 0, 0.72 * S, broken=1.0, side_only=half)
             cv.restore()
+        return draw
 
     def render(self, f):
         t = f / FPS

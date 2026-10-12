@@ -138,9 +138,12 @@ def dust(cv, W, H, t, n=36, seed=5):
         cv.drawCircle(x, y, r, p)
 
 
-def silhouette(cv, x, y, s, col="#2a1f2e", head_cloth=True, walk=0.0, rim="#ff9a5a", rim_side=1, facing=1, walking=True):
+def silhouette(cv, x, y, s, col="#2a1f2e", head_cloth=True, walk=0.0, rim="#ff9a5a", rim_side=1, facing=1, walking=True,
+               gesture=(0.0, 0.0), head_turn=0.0, lean=0.0):
     """Backlit robed figure with arms and legs (feet at x,y; height ~ 7.4s).
-    `walk` is the stride phase; facing -1 = seen from behind (walking away), +1 = turned toward us."""
+    `walk` is the stride phase; facing -1 = seen from behind (walking away), +1 = turned toward us.
+    gesture: how far each forearm is raised (left, right; 0..1); head_turn: -1..1; lean: upper-body
+    shift in figure units."""
     ph = walk * math.pi
     stride = math.sin(ph) if walking else 0.0
     bob = abs(math.sin(ph)) * 0.10 * s if walking else 0.0
@@ -156,21 +159,23 @@ def silhouette(cv, x, y, s, col="#2a1f2e", head_cloth=True, walk=0.0, rim="#ff9a
         leg = tapered([knee, ((knee[0] + foot[0]) / 2, (knee[1] + foot[1]) / 2), foot], 0.30 * s, 0.17 * s)
         parts.append(leg)
         parts.append(ellipse(foot[0] + side * 0.05 * s, foot[1], 0.24 * s, 0.09 * s))
-    # robe
-    robe = spline([(x - 0.72 * s, sh_y + 0.05 * s), (x - 0.62 * s, y - 4.0 * s - bob), (x - 0.78 * s + 0.08 * s * stride, y - 1.45 * s),
-                   (x, y - 1.35 * s), (x + 0.78 * s + 0.08 * s * stride, y - 1.45 * s), (x + 0.62 * s, y - 4.0 * s - bob),
-                   (x + 0.72 * s, sh_y + 0.05 * s), (x, sh_y - 0.25 * s)], closed=True, corners=[2, 4])
+    # robe (the upper body may lean a little while the feet stay planted)
+    ux = x + lean * s
+    robe = spline([(ux - 0.72 * s, sh_y + 0.05 * s), (x + lean * 0.6 * s - 0.62 * s, y - 4.0 * s - bob), (x - 0.78 * s + 0.08 * s * stride, y - 1.45 * s),
+                   (x, y - 1.35 * s), (x + 0.78 * s + 0.08 * s * stride, y - 1.45 * s), (x + lean * 0.6 * s + 0.62 * s, y - 4.0 * s - bob),
+                   (ux + 0.72 * s, sh_y + 0.05 * s), (ux, sh_y - 0.25 * s)], closed=True, corners=[2, 4])
     parts.append(robe)
-    # arms swinging opposite to the legs
+    # arms swinging opposite to the legs, or raised in a gesture while talking
     for side in (-1, 1):
         swing = -side * stride * 0.45 * s if walking else 0.0
-        sh = (x + side * 0.66 * s, sh_y + 0.2 * s)
-        el = (x + side * 0.82 * s, y - 4.35 * s - bob + abs(swing) * 0.1)
-        wr = (x + side * 0.86 * s + swing * 0.25, y - 3.45 * s - bob - abs(swing) * 0.35)
+        g = gesture[0] if side < 0 else gesture[1]
+        sh = (ux + side * 0.66 * s, sh_y + 0.2 * s)
+        el = (ux + side * (0.82 + 0.12 * g) * s, y - 4.35 * s - bob + abs(swing) * 0.1 + 0.15 * g * s)
+        wr = (ux + side * (0.86 + 0.32 * g) * s + swing * 0.25, y - 3.45 * s - bob - abs(swing) * 0.35 - 1.55 * g * s)
         parts.append(tapered(sample_spline([sh, el, wr], n=10), 0.36 * s, 0.30 * s, wmid=0.32 * s))
-        parts.append(ellipse(wr[0], wr[1] + 0.22 * s, 0.13 * s, 0.24 * s))
+        parts.append(ellipse(wr[0], wr[1] + 0.22 * s * (1 - 1.6 * g), 0.13 * s, 0.24 * s))
     # head + cloth
-    hx = x + facing * 0.05 * s
+    hx = ux + facing * 0.05 * s + head_turn * 0.13 * s
     parts.append(ellipse(hx, top - 0.55 * s, 0.42 * s, 0.5 * s))
     if head_cloth:
         parts.append(spline([(hx - 0.62 * s, top - 0.2 * s), (hx - 0.5 * s, top - 1.0 * s), (hx, top - 1.25 * s), (hx + 0.5 * s, top - 1.0 * s),
@@ -192,22 +197,58 @@ def silhouette(cv, x, y, s, col="#2a1f2e", head_cloth=True, walk=0.0, rim="#ff9a
     cv.drawPath(ellipse(x, y + 0.05 * s, 0.9 * s, 0.14 * s), fill("#000000", alpha=0.25, blur=0.2 * s))
 
 
-def dusk_figures(cv, W, H, t, pcam=(0.5, 0.47, 0.82)):
-    """Groups of disciples standing and talking on the beach, backlit by the sunset."""
+def _pulse(t, period, width, phase):
+    """Smooth 0..1 bumps recurring every `period` seconds, each `width` seconds long."""
+    u = ((t + phase) % period) / width
+    if u >= 1.0:
+        return 0.0
+    return math.sin(math.pi * u) ** 2
+
+
+def dusk_figures(cv, W, H, t, pcam=(0.5, 0.47, 0.82), t0=0.0):
+    """Groups of disciples on the beach, backlit by the sunset: they shift their weight, turn to
+    one another, talk with their hands and now and then take a step; one strolls between groups."""
     _, hz = screen_pt(0, bg.PH * 0.47, pcam, W, H)
     rng = np.random.default_rng(29)
     items = []
     for g, (u0, n) in enumerate([(0.22, 3), (0.40, 4), (0.58, 3), (0.74, 2)]):
         for i in range(n):
-            u = u0 + rng.uniform(-0.03, 0.03)
+            k = g * 3 + i
+            # a loose circle: spread across the beach and a little in depth
+            ang = (i + 0.5) / n * math.pi
+            u = u0 + 0.018 * math.sin(ang) + rng.uniform(-0.006, 0.006)
+            lane = 0.024 * math.cos(ang) * (1.0 + 0.4 * (n > 3)) + rng.uniform(-0.004, 0.004)
+            ph = rng.uniform(0, 6.28)
+            # a small step to one side and back now and then
+            step_t = (t + ph * 1.3) % 9.0
+            step = 0.0
+            stepping = 0.0
+            if step_t < 1.2 and k % 3 != 1:
+                step = 0.5 - 0.5 * math.cos(math.pi * step_t / 1.2)
+                stepping = step_t / 1.2 * 2.0
+            lane += (0.006 if k % 2 else -0.006) * step
             px, py = _beach_path(u)
-            lane = (i - n / 2) * 0.012 + rng.uniform(-0.006, 0.006)
             sx, sy = screen_pt(px + lane * bg.PW * (1.3 - u), py, pcam, W, H)
             depth = max(sy - hz, 2.0)
-            items.append((sy, sx, depth * 0.032, g * 3 + i))
-    for sy, sx, s_, k in sorted(items):
-        sway = 0.08 * math.sin(t * 0.6 + k)
-        silhouette(cv, sx + sway * s_, sy, max(s_, 1.6), col="#2a1f2e", walking=False, facing=(1 if k % 2 else -1))
+            # facing the middle of the group, turning the head toward whoever is speaking
+            mid = (n - 1) / 2
+            facing = 1 if i < mid else -1
+            head = 0.7 * math.sin(t * 0.45 + ph) + 0.6 * facing * _pulse(t, 5.0, 2.2, ph)
+            talk = _pulse(t, 4.0 + (k % 3), 2.0, ph * 1.7)
+            gest = (0.0, 0.0)
+            if k % 2 == 0:
+                beat = 0.75 + 0.25 * math.sin(t * 5.0 + ph)
+                gest = (talk * beat, 0.0) if facing > 0 else (0.0, talk * beat)
+            lean = 0.10 * math.sin(t * (0.35 + 0.05 * (k % 4)) + ph) + 0.12 * talk * facing
+            items.append((sy, sx, depth * 0.032, k, dict(walk=stepping, walking=stepping > 0, facing=facing,
+                                                         head_turn=max(-1.0, min(1.0, head)), gesture=gest, lean=lean)))
+    # one figure strolls from the second group toward the third
+    u = 0.43 + 0.017 * (t - t0)
+    px, py = _beach_path(u)
+    sx, sy = screen_pt(px + 0.02 * bg.PW, py, pcam, W, H)
+    items.append((sy, sx, max(sy - hz, 2.0) * 0.032, 99, dict(walk=t * 1.1, walking=True, facing=-1, head_turn=0.4 * math.sin(t * 0.7))))
+    for sy, sx, s_, k, kw in sorted(items, key=lambda it: it[0]):
+        silhouette(cv, sx, sy, max(s_, 1.6), col="#2a1f2e", **kw)
 
 
 def _beach_path(u):
