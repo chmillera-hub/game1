@@ -769,6 +769,9 @@ def boss_state(T, info, t):
             f["lid"] = 0.0
         return st
     # ---- the ending: bored, sad, numb. Half-lidded, flat mouth, no smirk.
+    if t >= T.getup:
+        # rev 4: she gets up (starts from exactly the face she ends the sigh with)
+        return _boss_rise(T, info, t, boss_state(T, info, T.getup - 1e-3))
     st["expr"] = "bored"
     tb1 = T.wcut2 + 0.12                  # slow blink in the numb beat: eyes leave the monitor
     tg = T.L3b.start + (info.word_time("s07_l03b", 2) - T.L3b.start) - 0.12   # back up on "I'll"
@@ -1740,10 +1743,25 @@ def camera_at(T, t):
     elif t < T.wcut2:                                  # S11b the Boss MCU: "You too, Embarrassment."
         k = seg(t, T.wcut, T.wcut2)
         cx, cy, z = lerp(1761, 1759, k), lerp(1026, 1022, k), lerp(3.25, 3.35, k)
-    else:                                              # S11c her + the monitor: numb
-        k = smoothstep(seg(t, T.wcut2, T.end))
+    elif t < T.getup:                                  # S11c her + the monitor: numb
+        k = smoothstep(seg(t, T.wcut2, T.s11c_end))
         cx, cy, z = lerp(1834, 1828, k), lerp(972, 984, k), lerp(2.1, 2.26, k)
+    elif t < T.empty:                                  # S12 getup / crack, S13 shuffle
+        cx, cy, z = _cam_rise(T, t)
+    else:                                              # S14 the empty chair
+        k = smoothstep(seg(t, T.empty, T.end))
+        cx, cy, z = lerp(1794, 1790, k), lerp(1012, 1006, k), lerp(2.0, 2.08, k)
     return cx, cy, z, dx, dy
+
+
+def _cam_rise(T, t):
+    """S12: a medium 3/4-front shot on her and the chair that tilts up a little as she
+    stands; S13: from the shuffle on it widens slowly onto the big empty room (its
+    right edge stays inside the room, x <= 2100)."""
+    ku = smoothstep(seg(t, T.push0 + 0.2, T.crack + 1.0))
+    c0 = (lerp(1752, 1770, ku), lerp(1118, 1060, ku), lerp(1.6, 1.66, smoothstep(seg(t, T.getup, T.shuffle))))
+    kw = ease_in_out(seg(t, T.shuffle + 0.25, T.shuffle + 3.2))
+    return lerp(c0[0], 1590, kw), lerp(c0[1], 995, kw), lerp(c0[2], 1.12, kw)
 
 
 def tired_x_for_cam(T, t):
