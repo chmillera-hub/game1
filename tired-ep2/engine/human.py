@@ -2488,7 +2488,7 @@ EYE_SHAPES = {
 }
 _EU = (-1.0, -0.93, -0.72, -0.4, 0.0, 0.4, 0.72, 0.93, 1.0)
 SCLERA = "#fbfaf7"
-MOUTH_IN = "#4a1a2e"
+MOUTH_IN = "#86394a"   # rev 4: brighter (was #4a1a2e, read as a dark blob), so speech reads
 TONGUE = "#e8667e"
 
 
@@ -2809,7 +2809,7 @@ def _draw_mouth(ctx, C, col, hg, F, inkw, t, opn, wide):
                 y += wob * 2.6 * math.sin(v * math.pi * 4 + t * 9) * math.sin(v * math.pi)
             pts.append((x, y))
         if lipc:
-            th = 2.4 * (1 - press * 0.6)      # thin lip line (only the Boss has lip colour)
+            th = 1.6 * (1 - press * 0.6)      # thin lip line (only the Boss has lip colour)
             up = [(x, y - th * math.sin(math.pi * (j / (n - 1))) ** 0.6) for j, (x, y) in enumerate(pts)]
             dn = [(x, y + th * 1.25 * math.sin(math.pi * (j / (n - 1))) ** 0.6) for j, (x, y) in enumerate(pts)]
             _poly(ctx, up + dn[::-1])
@@ -2818,7 +2818,7 @@ def _draw_mouth(ctx, C, col, hg, F, inkw, t, opn, wide):
         for q in pts[1:]:
             ctx.line_to(*q)
         _set(ctx, ink)
-        ctx.set_line_width(inkw * (1.0 + 0.1 * press))
+        ctx.set_line_width(inkw * (1.0 + 0.1 * press) * (0.62 if lipc else 1.0))   # rev 4: the Boss's line thinner
         ctx.stroke()
         # corner ticks: smile dimples / press tension
         for sgn, (cx_, cy_) in ((-1, pts[0]), (1, pts[-1])):
@@ -2868,8 +2868,9 @@ def _draw_mouth(ctx, C, col, hg, F, inkw, t, opn, wide):
     _set(ctx, MOUTH_IN)
     ctx.fill_preserve()
     ctx.clip()
-    if F["tongue"] > 0.02 and not grin:
-        ellipse(ctx, Mx + jaw * 0.4, lo_mid - 2, (Rx - Lx) * 0.3, max(4.0, (lo_mid - up_mid) * 0.38 * F["tongue"]))
+    tongue = max(F["tongue"], 0.55 * clamp((o - 0.12) / 0.25))   # rev 4: a soft tongue gives the open mouth shape
+    if tongue > 0.02 and not grin:
+        ellipse(ctx, Mx + jaw * 0.4, lo_mid - 2, (Rx - Lx) * 0.3, max(4.0, (lo_mid - up_mid) * 0.38 * tongue))
         _fill(ctx, TONGUE)
     if teeth > 0.02:
         if grin:
@@ -2895,9 +2896,13 @@ def _draw_mouth(ctx, C, col, hg, F, inkw, t, opn, wide):
     ctx.restore()
     path()
     if lipc:
-        _stroke(ctx, lipc, inkw * 0.9)
+        # rev 4: the Boss's open mouth: a soft lip-colour rim under a THIN ink line (the old
+        # 0.95 ink outline read as heavy black lipstick and hid the mouth shapes)
+        _stroke(ctx, lipc, inkw * 0.85)
         path()
-    _stroke(ctx, ink, inkw * 0.95)
+        _stroke(ctx, ink, inkw * 0.45)
+    else:
+        _stroke(ctx, ink, inkw * 0.95)
     return (Mx, (up_mid + lo_mid) / 2)
 
 
