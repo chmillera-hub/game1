@@ -1,51 +1,70 @@
-"""s05 -- the pocket calculator ("awkward").
+"""s05 -- the pocket calculator ("awkward").  Revision 3.
 
-Continues s04: Curiosity walked off into the dark side tunnel (to SHAFT A) and WAITED there;
-Tiredness follows it in. The whole scene plays INSIDE that dark side tunnel, lit only by
-Curiosity's glow, his teal eyes, a little warm spill from the corridor mouth (screen-right)
-and, once he arrives, Embarrassment's flashlight. Embarrassment comes up the tunnel from the
-dark (screen-left, from the shaft). Two custom views of the tunnel (drawn here):
-  * A: the reverse view from inside, looking back out at the bright arched mouth (the same
-       arch we saw in s04) -- the opening shot;
-  * B: the tunnel interior side-on (ribbed concrete vault, SHAFT A <- stencil), mouth off right.
+Continues s04: the creature waited for him a little way down the dark side tunnel (to SHAFT A);
+Embarrassment, coming up the tunnel from the other end, ran into it and yelled ("Oh my God! What
+IS that thing?!"); Tiredness sighed, got up and walked in after the voice. The whole scene plays
+INSIDE that dark side tunnel (set B, drawn here: ribbed concrete vault side-on, SHAFT A <- stencil,
+the corridor mouth off screen-right), lit only by Curiosity's glow, his teal eyes, a little warm
+spill from the mouth and Embarrassment's flashlight.
 
-Shot list (every time derives from cues / line timings, see shots()):
-  A1  0 .. steps          reverse view, slow push: Curiosity sits alone in the dark, ears low, its
-                          glow the only light; Tiredness steps in through the bright arch and walks
-                          up to it; it hears him, looks back, hopeful; he stops, glances down at
-                          it: a tiny "fine" (lid drop, small nod, exhale). It perks a notch.
-  B2  .. l01 "What"       side-on wide: echoing footsteps from the dark: ears shoot up, both look
-                          left; torchlight bobs in; Curiosity scrambles behind his legs; Emb walks
-                          in with the flashlight, stops, the beam swings up onto Tiredness's face:
-                          jolt (blush 0.5). "Tiredness?!"
-  E3  .. l01.end+.4       Emb medium: "What are you doing down here?" (whisper-shout, glance back)
-  T4  .. l02.end+.35      Tiredness medium in the beam, squinting, hands in the pocket: "Oh. Hey."
-                          (flat; one lazy little wave)
-  W5  .. l03.end+.1       two-shot: the beam drifts down and finds one big eye peeking out; Emb
-                          freezes. "Is that... Thing One?"
-  E6  .. l04 "glowing"    Emb close: eyes climb from the creature to Tiredness's eyes
-  T7  .. l05 "I"          Tiredness close, SUPER chill (hands in pocket, flat, lazy pocket shrug):
-                          "Oh, yeah. A critter bit me,"
-  W8  .. l05.end+.25      two-shot: "...I fell out of a building, and now I can see in the dark."
-                          he stays flat; Emb escalates: eyes, jaw, glasses slip, hands to his head
-  E9  .. l05b.end+.3      Emb CU FREAKING OUT: hands on his head, blush 0.9, glasses askew, sweat
-                          flying: "You fell out of a WHAT?!"
-  T10 .. l05c.end+.3      Tiredness CU: a beat, "It's been a day." lazy shrug, slow blink
-  E11 .. led              Emb CU: the long slow blink; hands come down, he pushes his glasses straight
-  W12 .. conflict+.95     three-shot: the red LED blinks in his pocket; eyes slide down to it one by
-                          one; he pinches the recorder out and holds it in his palm
-  R14 .. conflict+2.3     INSERT: the CalmCorp recorder in his palm: blinking "REC", running counter,
-                          mic grille, logo, a little level meter listening
-  E15 .. click-.1         Emb CU: at Tiredness, at the recorder; blush; a breath
-  R16 .. l06 "Huh."+.12   INSERT: his thumb presses pause: click, "PAUSED", LED off, meter flat
-  E17 .. wink+.62         Emb close: "Huh. My "pocket calculator"... just stopped working." -- dry,
-                          knowing; then the WINK with a small knowing smile (slow push-in)
-  T18 .. l07-.25          Tiredness + Curiosity: his faintest smile back; it looks up and grins
-  W19 .. l07.end          two-shot: "The control room is on level nine. Take my keycard." handoff
-  K20 .. l08              insert: the keycard (LVL 9) in his bandaged hand, a glint
-  E21 .. l08.end+.35      Emb close: "And Tiredness? Be careful." sincere, slow
-  W22 .. end              two-shot: a small nod; he turns toward CONTROL (the mouth) and sets off,
-                          Curiosity trots after him; Emb watches them go
+Shot list (every time derives from cues / line timings, see K() / shots()):
+  C1  catch .. steps       two-shot: Emb backed flat against the tunnel wall, terrified, his beam
+                           shaking on the creature; it is crouched low, ears flat, wary (not
+                           aggressive). Slow push-in.
+  B2  steps .. l01 "What"  wide: footsteps from the dark (right); ears twitch, it looks back over its
+                           shoulder; Tiredness walks in (hands in the hoodie pocket); the beam swings
+                           onto his face (squint); it is him: Emb's jolt, "Tiredness?!"; the creature
+                           relaxes (ears up, hopeful) and rises.
+  E3  .. l01.end+.4        Emb medium: "What are you doing down here?": relief (exhale, shoulders
+                           drop), he peels off the wall and steps up to him; glance back on "down".
+  T4  .. "I'm"-.15         Tiredness medium in the beam, squinting: "Oh, hey. Yeah." (one lazy wave)
+  W5  .. "horrible"-.1     two-shot: "I'm helping my creature take down a massive..." the creature
+                           trots over and sits by his leg (the beam follows it); a little shrug; a
+                           glance down at it on "my creature"; Emb's eyes follow it, baffled
+  T5b .. l02.end+.2        Tiredness close: "...horrible corporation that's doing shady things."
+                           matter-of-fact; a flat look on "shady things"; lip press
+  E5c .. notice+.5         Emb CU: "oh no, that's MY company": frozen, blush + sweat rise; "Ha... ha.
+                           Cool. Cool cool cool." hand behind his head (scratch), strained grin, eyes
+                           darting, sliding down to the recorder in his pocket; notice: his eyes go
+                           to the creature
+  W5d .. l03.end+.35       two-shot push-in: the beam drifts onto the creature; "Is that one of the
+                           creatures from the lab I work at?" he leans in, squints, pushes his glasses
+                           up; its ears sink on "lab"; Tiredness's brow lifts a hair on "I work at"
+  W5e .. l03c "Your"-.15   two-shot: "You shouldn't be around that. We should bring it back." points
+                           back down the tunnel (thumb up); it presses behind Tiredness's leg; he
+                           steps half in front of it; "Buddy."
+  T5f .. l03c "That's"-.15 Tiredness medium: "Your company is locking these creatures up." calm, firm
+  E5g .. l03d-.17          Emb CU: "That's not cool." guilt: eyes down, then away
+  W5h .. l03d "dude"+.35   two-shot: "We gotta save them. Okay, dude?" his open hand; Emb conflicted
+  E6  .. l04 "glowing"     Emb close: a small swallow, eyes down at it; then up to Tiredness's eyes:
+                           "And why are your eyes glowing?!"
+  T7  .. l05 "I"           Tiredness close, SUPER chill (hands in pocket, flat, lazy pocket shrug):
+                           "Oh, yeah. A critter bit me,"
+  W8  .. l05.end+.25       two-shot: "...I fell out of a building, and now I can see in the dark."
+                           he stays flat; Emb escalates: eyes, jaw, glasses slip, hands to his head
+  E9  .. l05b.end+.3       Emb CU FREAKING OUT: hands on his head, blush 0.9, glasses askew, sweat
+                           flying: "You fell out of a WHAT?!"
+  T10 .. l05c.end+.3       Tiredness CU: a beat, "It's been a day." lazy shrug, slow blink
+  E11 .. led               Emb CU: the long slow blink; hands come down, he pushes his glasses straight
+  W12 .. conflict+.95      three-shot: the red LED blinks in his pocket; eyes slide down to it one by
+                           one; he pinches the recorder out and holds it in his palm
+  R14 .. conflict+2.3      INSERT: the CalmCorp recorder in his palm: blinking "REC", running counter,
+                           mic grille, logo, a little level meter listening
+  E15 .. click-.1          Emb CU: at Tiredness, down at the creature behind his legs, back at the
+                           recorder; blush; a breath
+  R16 .. l06 "Huh."+.12    INSERT: his thumb presses pause: click, "PAUSED", LED off, meter flat
+  E17 .. wink+.62          Emb close: "Huh. My "pocket calculator"... just stopped working." -- dry,
+                           knowing; then the WINK with a small knowing smile (slow push-in)
+  T18 .. l07-.25           Tiredness + Curiosity: his faintest smile back; it looks up and grins
+  W19 .. l07.end           two-shot: "The control room is on level nine. Take my keycard." handoff
+  K20 .. l08               insert: the keycard (LVL 9) in his bandaged hand, a glint
+  E21 .. l08.end+.35       Emb close: "And Tiredness? Be careful." sincere, slow
+  W22 .. end               two-shot: a small nod; he turns toward CONTROL (the mouth) and sets off,
+                           Curiosity trots after him; Emb watches them go
+
+Hands: Tiredness keeps his hands IN the hoodie's kangaroo pocket (rig reach targets on the pocket
+plus a redraw of the pocket's front panel over the wrists, see tired_pocket()/pocket_overlay()), so
+no frame shows an arm ending in nothing.
 """
 import math
 
@@ -59,13 +78,16 @@ INK = core.PAL["ink"]
 S = 0.75                 # people in the tunnel world (same as s04's service tunnel)
 SC = 0.74                # Curiosity
 FY = 1500                # feet line
-XT = 790                 # Tiredness (facing left, toward the deep end)
+XT = 790                 # Tiredness (facing left, toward the deep end) from his protective half-step on
+XT0 = 845                # where he first stops after walking in
+T_WALK = 1.25            # his walk-in (s; ends on a contact)
 XE = 325                 # Embarrassment (facing right)
-C0 = 610                 # Curiosity at the start (beside him, a little ahead)
-CH = 785                 # hiding behind his legs (head peeks out on the left)
-C1 = 640                 # out again, sitting by his front foot
+XW, YW, SW = 300, 1345, 0.62     # Embarrassment backed flat against the far wall (catch)
+CC = 585                 # Curiosity crouched in the beam (catch)
+CS = 712                 # sitting by his leg (l02)
+CH = 785                 # pressed behind his legs (head peeks out on the left)
+C1 = 640                 # out again, sitting by his front foot (after the click)
 TK = dict(outfit="sewer", bandage=True, headphones=None, hood=0.0, power=0.6)
-T_FACE = (XT - 64, 912)          # Tiredness's face (beam target)
 CUR_EYE = (CH - 82, 1318)        # Curiosity's peeking (visible) eye
 FLASH_S = 0.5
 REC_S = 0.25                     # the recorder in his hand
@@ -254,145 +276,6 @@ def b_bg(ctx):
     sets.layer_blit(ctx, "s05_tunB_dark", BX0, BY0, BX1 - BX0, BY1 - BY0, b_dark)
 
 
-# =========================================================================== set A: reverse view
-AF = 1853.0          # focal length (px per unit at depth 1)
-AHY = 760.0          # horizon (camera height) on screen
-ACX = 540.0
-AZC = 680.0          # camera height (units; a person is ~955)
-AW2 = 330.0          # tunnel half width
-AH = 990.0           # tunnel height
-AR = 280.0           # top corner radius
-AD_M = 3380.0        # the mouth
-AD_C = 4500.0        # the corridor's far wall
-A_RIBS = [3380.0, 2930.0, 2480.0, 2030.0, 1580.0, 1130.0]
-A_TD0, A_TD1, A_TX0, A_TX1 = 3000.0, 2180.0, 60.0, 112.0   # his walk: depth / lateral
-A_CD, A_CX = 1850.0, -150.0                                 # Curiosity sits here
-
-
-def ap(X, Z, D):
-    return (ACX + AF * X / D, AHY - AF * (Z - AZC) / D)
-
-
-def a_section(c, D, w2=AW2, h=AH, r=AR, inset=0.0, closed=True):
-    w2 -= inset
-    h -= inset
-    r = max(1.0, r - inset)
-    x0, y0 = ap(-w2, 0, D)
-    x1, _ = ap(w2, 0, D)
-    _, yt = ap(0, h, D)
-    rr = AF * r / D
-    c.move_to(x0, y0)
-    c.line_to(x0, yt + rr)
-    c.curve_to(x0, yt + rr * 0.45, x0 + rr * 0.45, yt, x0 + rr, yt)
-    c.line_to(x1 - rr, yt)
-    c.curve_to(x1 - rr * 0.45, yt, x1, yt + rr * 0.45, x1, yt + rr)
-    c.line_to(x1, y0)
-    if closed:
-        c.close_path()
-
-
-def a_static(c):
-    W, H = 1080, 1920
-    g = cairo.RadialGradient(ACX, 640, 150, ACX, 900, 1500)
-    g.add_color_stop_rgb(0, *core.hexc("#5a5a62")[:3])
-    g.add_color_stop_rgb(1, *core.hexc("#3c3c44")[:3])
-    c.rectangle(-300, -300, W + 600, H + 600)
-    c.set_source(g)
-    c.fill()
-    for sgn in (-1, 1):
-        a1, a2 = ap(sgn * AW2, 480, AD_M), ap(sgn * AW2, 510, AD_M)
-        b1, b2 = ap(sgn * AW2, 480, 400), ap(sgn * AW2, 510, 400)
-        polyf(c, [a1, a2, b2, b1], "#0f6f6a", 0)
-        for Z in (700, 300):
-            line(c, [ap(sgn * AW2, Z, AD_M), ap(sgn * AW2, Z, 500)], "#4a4a52", 3)
-    line(c, [ap(-AW2 + 40, AH - 60, AD_M), ap(-AW2 + 40, AH - 60, 400)], INK, 20)
-    line(c, [ap(-AW2 + 40, AH - 60, AD_M), ap(-AW2 + 40, AH - 60, 400)], "#5e666a", 13)
-    W3 = AW2 + 30
-    polyf(c, [ap(-W3, 0, AD_M), ap(W3, 0, AD_M), ap(W3, 0, 300), ap(-W3, 0, 300)], "#43434a", 0)
-    for X in (-AW2 * 0.45, AW2 * 0.45):
-        line(c, [ap(X, 0, AD_M), ap(X, 0, 400)], "#38383e", 3.5)
-    for D in (3100, 2700, 2300, 1900, 1500, 1100):
-        line(c, [ap(-AW2, 0, D), ap(AW2, 0, D)], "#38383e", 3.5)
-    for sgn in (-1, 1):
-        polyf(c, [ap(sgn * W3, 0, AD_M), ap(sgn * (AW2 - 40), 0, AD_M), ap(sgn * (AW2 - 40), 0, 400),
-                  ap(sgn * W3, 0, 400)], "#36363c", 0)
-        line(c, [ap(sgn * (AW2 - 40), 0, AD_M), ap(sgn * (AW2 - 40), 0, 400)], "#2c2c32", 3)
-    ell(c, *ap(-120, 0, 2600), 70, 9, "#3a3d46", 0)
-    # beyond the mouth: the corridor's far wall (warm lamp light) + its floor
-    c.save()
-    a_section(c, AD_M)
-    c.clip()
-    wx0, wy0 = ap(-2400, 1500, AD_C)
-    wx1, wb = ap(2400, 0, AD_C)
-    c.rectangle(wx0, wy0, wx1 - wx0, wb - wy0)
-    core.fill(c, "#7d7468")
-    _, ys = ap(0, 480, AD_C)
-    _, ys2 = ap(0, 510, AD_C)
-    c.rectangle(wx0, ys2, wx1 - wx0, ys - ys2)
-    core.fill(c, "#2a8a80")
-    for X in (-900, -500, -100, 300, 700):
-        xa, ya = ap(X, 0, AD_C)
-        _, yb = ap(X, 1400, AD_C)
-        line(c, [(xa, ya), (xa, yb)], "#6f675c", 3)
-    lx, ly = ap(-150, 1100, AD_C)
-    core.radial_glow(c, lx, ly, 420, "#ffcf8a", 0.55)
-    fx0, fy0 = ap(-2400, 0, AD_C)
-    c.rectangle(fx0, fy0, 3000, 600)
-    core.fill(c, "#6a6258")
-    line(c, [ap(-2400, 0, AD_C), ap(2400, 0, AD_C)], "#4e483f", 4)
-    c.restore()
-    for i_, D in enumerate(A_RIBS):
-        k = i_ / (len(A_RIBS) - 1)
-        lw = AF * 60 / D
-        a_section(c, D, inset=-30, closed=False)
-        core.stroke(c, INK, lw + 6, cap="butt")
-        a_section(c, D, inset=-30, closed=False)
-        core.stroke(c, mixc_("#6a6a72", "#4a4a52", k), lw, cap="butt")
-        a_section(c, D, inset=-4, closed=False)
-        core.stroke(c, core.alpha("#7a7a84", 0.5), lw * 0.18, cap="butt")
-    a_section(c, AD_M, inset=-8, closed=False)
-    core.stroke(c, INK, 8, cap="butt")
-
-
-def mixc_(a, b, k):
-    return core.mixc(a, b, k)
-
-
-def a_dark(c):
-    a_static(c)
-    W, H = 1080, 1920
-    c.save()
-    c.push_group()
-    c.rectangle(-300, -300, W + 600, H + 600)
-    core.fill(c, core.alpha(DARKC, 0.87))
-    c.set_operator(cairo.OPERATOR_DEST_OUT)
-    a_section(c, AD_M)
-    core.fill(c, (0, 0, 0, 0.92))
-    mx, my = ap(0, 300, AD_M)
-    g = cairo.RadialGradient(mx, my + 120, 0, mx, my + 120, 620)
-    g.add_color_stop_rgba(0, 0, 0, 0, 0.5)
-    g.add_color_stop_rgba(0.5, 0, 0, 0, 0.2)
-    g.add_color_stop_rgba(1, 0, 0, 0, 0.0)
-    c.rectangle(-300, -300, W + 600, H + 600)
-    c.set_source(g)
-    c.fill()
-    c.pop_group_to_source()
-    c.paint()
-    c.restore()
-    p0, p1 = ap(-AW2, 0, AD_M), ap(AW2, 0, AD_M)
-    q0, q1 = ap(-AW2 * 1.4, 0, 1900), ap(AW2 * 1.4, 0, 1900)
-    g = cairo.LinearGradient(0, p0[1], 0, q0[1])
-    g.add_color_stop_rgba(0, 1.0, 0.7, 0.42, 0.26)
-    g.add_color_stop_rgba(1, 1.0, 0.7, 0.42, 0.0)
-    c.move_to(*p0)
-    c.line_to(*p1)
-    c.line_to(*q1)
-    c.line_to(*q0)
-    c.close_path()
-    c.set_source(g)
-    c.fill()
-
-
 # =========================================================================== lighting
 def soft_layer(rect_, fn, res=(150, 270)):
     """Render fn(c) (in world coords over rect_) into a small low-res surface and return a
@@ -571,18 +454,29 @@ def K(info):
     L = info.line
     w = info.word_time
     k = dict(dur=info.dur)
-    for n in ("steps", "notice", "blink", "led", "conflict", "click", "wink", "smile", "card", "nod"):
+    for n in ("catch", "steps", "notice", "blink", "led", "conflict", "click", "wink", "smile", "card", "nod"):
         k[n] = c(n)
-    for tag, lid in (("l1", "s05_l01"), ("l2", "s05_l02"), ("l3", "s05_l03"), ("l4", "s05_l04"),
+    for tag, lid in (("l1", "s05_l01"), ("l2", "s05_l02"), ("l2b", "s05_l02b"), ("l3", "s05_l03"),
+                     ("l3b", "s05_l03b"), ("l3c", "s05_l03c"), ("l3d", "s05_l03d"), ("l4", "s05_l04"),
                      ("l5", "s05_l05"), ("l5b", "s05_l05b"), ("l5c", "s05_l05c"), ("l6", "s05_l06"),
                      ("l7", "s05_l07"), ("l8", "s05_l08")):
         ln = L(lid)
         k[tag], k[tag + "e"] = ln.start, ln.end
     k["l1_what"] = w("s05_l01", 1)
     k["l1_down"] = w("s05_l01", 5)
-    k["l2_oh"] = w("s05_l02", 0)
-    k["l2_hey"] = w("s05_l02", 1)
-    k["l3_thing"] = w("s05_l03", 2)
+    for name, i in (("oh", 0), ("hey", 1), ("yeah", 2), ("im", 3), ("my", 5), ("creature", 6), ("take", 7),
+                    ("massive", 10), ("horrible", 11), ("corp", 12), ("shady", 15), ("things", 16)):
+        k["l2_" + name] = w("s05_l02", i)
+    for name, i in (("ha", 0), ("ha2", 1), ("cool", 2), ("cool2", 3), ("cool3", 4), ("cool4", 5)):
+        k["l2b_" + name] = w("s05_l02b", i)
+    for name, i in (("one", 2), ("creat", 5), ("lab", 8), ("work", 10)):
+        k["l3_" + name] = w("s05_l03", i)
+    for name, i in (("that", 4), ("we", 5), ("bring", 7), ("back", 9)):
+        k["l3b_" + name] = w("s05_l03b", i)
+    for name, i in (("buddy", 0), ("your", 1), ("locking", 4), ("up", 7), ("thats", 8), ("cool", 10)):
+        k["l3c_" + name] = w("s05_l03c", i)
+    for name, i in (("save", 2), ("okay", 4), ("dude", 5)):
+        k["l3d_" + name] = w("s05_l03d", i)
     k["l4_eyes"] = w("s05_l04", 4)
     k["l4_glow"] = w("s05_l04", 5)
     k["l5_yeah"] = w("s05_l05", 1)
@@ -606,24 +500,45 @@ def K(info):
     k["l7_card"] = w("s05_l07", 9)
     k["l8_be"] = w("s05_l08", 2)
     st = k["steps"]
-    # ---- A: the walk-in and the "fine" glance
-    k["a_stop"] = st - 1.15
-    k["a_look"] = k["a_stop"] + 0.12
-    k["a_fine"] = k["a_stop"] + 0.5
-    k["a_away"] = st - 0.22
-    k["c_hear"] = 0.35
-    k["c_turn"] = 0.62
-    k["c_hope"] = 0.95
-    # ---- B: Embarrassment walks up the tunnel out of the dark
-    k["e0"] = st + 0.15
-    k["e1"] = st + 1.45
-    k["e_turn"] = k["e1"] - 0.05
-    k["swing0"], k["swing1"] = k["e1"] + 0.1, k["e1"] + 0.38
-    k["jolt"] = k["swing1"] + 0.05
-    k["c_up"] = st + 0.42
-    k["c_mv0"], k["c_mv1"] = st + 0.54, st + 1.0
-    k["c_sit"] = st + 1.0
-    k["c_found"] = k["notice"] + 0.72
+    # ---- catch / steps: Emb against the wall; Tiredness walks in from the dark (right)
+    k["vT"] = abs(human.cycle_speed("tired", "walk", -0.7, "sewer")) * S
+    k["t_in0"] = st + 0.05
+    k["t_stop"] = k["t_in0"] + T_WALK
+    k["swing0"], k["swing1"] = st + 0.62, st + 0.98          # the beam swings off it, onto his face
+    k["jolt"] = st + 1.6                                      # it's HIM: Emb's take
+    k["c_ear"], k["c_look"] = st + 0.12, st + 0.3             # the creature hears him, looks back
+    k["c_relief"] = k["t_stop"]                               # ...it's him: ears up, hopeful
+    k["c_rise"] = k["c_relief"] + 0.4
+    # ---- l01 relief: Emb peels off the wall and steps up to his mark
+    k["e_exhale"] = k["l1_what"] - 0.14
+    k["e_step0"] = k["l1_what"] + 0.1
+    k["e_step1"] = k["e_step0"] + 1.0
+    # ---- l02: the creature trots over and sits by his leg; the beam follows it
+    k["c_trot0"] = k["l2_im"] + 0.05
+    k["c_trot1"] = k["c_trot0"] + 0.85
+    k["c_emb"] = k["c_trot1"] + 0.9                           # it looks back at Emb
+    # ---- l02b: hand behind his head
+    k["hbh0"] = k["l2b"] - 0.3
+    k["hbh1"] = k["notice"] + 0.12
+    # ---- notice / l03: the beam back on it; lean in, squint, push the glasses up
+    k["c_found"] = k["notice"] + 0.62
+    k["lean0"] = k["l3"] - 0.05
+    k["gl0"] = k["l3_creat"] - 0.12
+    k["gl_push"] = k["gl0"] + 0.32
+    k["gl1"] = k["gl_push"] + 0.4
+    # ---- l03b: the point back down the tunnel; it presses behind his leg; his half-step
+    k["pt0"] = k["l3b_bring"] - 0.28
+    k["pt1"] = k["l3b_back"] + 0.75
+    k["c_back0"] = k["l3b_bring"] + 0.1
+    k["c_back1"] = k["c_back0"] + 0.7
+    k["t_step0"] = k["l3be"] + 0.15
+    k["t_step1"] = k["t_step0"] + 0.55
+    # ---- l03c guilt, l03d open hand, the swallow
+    k["g_down"] = k["l3c_thats"] + 0.12
+    k["g_away"] = k["l3c_cool"] + 0.45
+    k["oh0"] = k["l3d"] - 0.15
+    k["oh1"] = k["l3de"] + 0.15
+    k["gulp"] = k["l3de"] + 0.08
     # ---- l05 escalation / l05b freak-out / blink recovery
     k["fr_up0"] = k["l5_see"] - 0.35          # anticipation dip, then hands fly to his head
     k["fr_up1"] = k["fr_up0"] + 0.3
@@ -636,8 +551,9 @@ def K(info):
     k["r_grab"] = cf + 0.45
     k["r_up"] = cf + 0.85
     k["r_look_t"] = cf + 2.42                  # eyes to Tiredness
-    k["r_look_b"] = cf + 2.88                  # back to the recorder
-    k["r_breath"] = cf + 2.95
+    k["r_look_c"] = cf + 2.95                  # down to the creature behind his legs
+    k["r_look_b"] = cf + 3.5                   # back to the recorder
+    k["r_breath"] = cf + 3.57
     k["press"] = k["click"] + 0.22
     k["led_off"] = k["press"] + 0.05
     k["r_pocket"] = k["smile"] + 0.25
@@ -658,11 +574,19 @@ def K(info):
     k["go_turn"] = k["nod"] + 1.0
     k["go_walk"] = k["go_turn"] + 0.32
     # ---- shots
+    k["C1"] = 0.0
     k["B2"] = st + 0.05
     k["E3"] = k["l1_what"] - 0.07
     k["T4"] = k["l1e"] + 0.4
-    k["W5"] = k["l2e"] + 0.35
-    k["E6"] = k["l3e"] + 0.1
+    k["W5"] = k["l2_im"] - 0.15
+    k["T5b"] = k["l2_horrible"] - 0.1
+    k["E5c"] = k["l2e"] + 0.2
+    k["W5d"] = k["notice"] + 0.5
+    k["W5e"] = k["l3e"] + 0.35
+    k["T5f"] = k["l3c_your"] - 0.15
+    k["E5g"] = k["l3c_thats"] - 0.15
+    k["W5h"] = k["l3d"] - 0.17
+    k["E6"] = k["l3d_dude"] + 0.35
     k["T7"] = k["l4_glow"] - 0.05
     k["W8"] = k["l5_I"] - 0.1
     k["E9"] = k["l5e"] + 0.25
@@ -695,12 +619,18 @@ def keys_for(info):
 # =========================================================================== shots / cameras
 def shots(k):
     return [
-        ("A1", 0.0, "A", lambda t: tw(t, [(0.0, (540, 960, 1.0)), (k["a_stop"] + 0.3, (566, 990, 1.14)),
-                                          (k["B2"], (578, 1006, 1.2))])),
-        ("B2", k["B2"], "B", lambda t: tw(t, [(k["B2"], (505, 1090, 1.22)), (k["E3"], (515, 1092, 1.27))])),
-        ("E3", k["E3"], "B", lambda t: (470, 950, 2.3)),
-        ("T4", k["T4"], "B", lambda t: (735, 1010, 2.3)),
-        ("W5", k["W5"], "B", lambda t: (565, 1135, 1.46)),
+        ("C1", 0.0, "B", lambda t: tw(t, [(0.0, (452, 1150, 1.48)), (k["B2"], (446, 1140, 1.58))])),
+        ("B2", k["B2"], "B", lambda t: tw(t, [(k["B2"], (560, 1110, 1.2)), (k["E3"], (556, 1106, 1.24))])),
+        ("E3", k["E3"], "B", lambda t: tw(t, [(k["e_step0"], (438, 922, 2.2)), (k["e_step1"] + 0.2, (470, 950, 2.3))])),
+        ("T4", k["T4"], "B", lambda t: (790, 1010, 2.3)),
+        ("W5", k["W5"], "B", lambda t: tw(t, [(k["W5"], (606, 1140, 1.42)), (k["T5b"], (612, 1134, 1.47))])),
+        ("T5b", k["T5b"], "B", lambda t: tw(t, [(k["T5b"], (767, 985, 2.45)), (k["E5c"], (767, 980, 2.56))])),
+        ("E5c", k["E5c"], "B", lambda t: (405, 880, 2.3)),
+        ("W5d", k["W5d"], "B", lambda t: tw(t, [(k["W5d"], (585, 1140, 1.45)), (k["l3e"], (500, 1030, 1.9))])),
+        ("W5e", k["W5e"], "B", lambda t: (598, 1140, 1.42)),
+        ("T5f", k["T5f"], "B", lambda t: (735, 1010, 2.3)),
+        ("E5g", k["E5g"], "B", lambda t: (445, 890, 2.5)),
+        ("W5h", k["W5h"], "B", lambda t: (572, 1138, 1.46)),
         ("E6", k["E6"], "B", lambda t: (450, 905, 2.6)),
         ("T7", k["T7"], "B", lambda t: (712, 985, 2.5)),
         ("W8", k["W8"], "B", lambda t: tw(t, [(k["W8"], (560, 1112, 1.55)), (k["E9"], (548, 1104, 1.6))])),
@@ -767,59 +697,169 @@ def shot_rect(k, name):
 
 
 # =========================================================================== Tiredness (B)
-POCKET_T = "hands_pockets"
+class PD(dict):
+    """A pose dict that also says which of Tiredness's hands are in the hoodie pocket (`pk`)."""
+    pk = ""
+
+
+def pdict(pk, **kw):
+    d = PD(kw)
+    d.pk = pk
+    return d
+
+
+HIDE_PK = 0.53    # a pocketed hand is hidden only while (almost) all the way in (blend k < 0.06)
+_FIST = dict(al_h="fist", ar_h="fist", al_hide=HIDE_PK, ar_hide=HIDE_PK)
+
+# both hands in the kangaroo pocket (the reach targets + panel overlay put them really IN it)
+POCK = pdict("lr", base="hands_pockets", **_FIST)
+POCKET_T = POCK
+# walking with both hands in the pocket (the walk-in and the exit)
+WALK_PK = pdict("lr", base="walk", **_FIST)
+# a lazy hello: the near hand comes out of the hoodie pocket for one small bent-elbow wave,
+# the other hand stays in the pocket (wave_small's arm on top of hands_pockets)
+WAVE_T = pdict("l", base="hands_pockets", period=0.7, ar_p=0.35, ar_o=1.2, ar_e=2.3,
+               ar_eo=human.W(-1.1, 0.12, 0.0), ar_w=human.W(0.0, 0.16, 0.1), ar_h="open",
+               ar_tf=-1.0, ar_hide=0.0, hunch=0.3, al_h="fist", al_hide=HIDE_PK)
+WAVE_MID = pdict("l", base="hands_pockets", ar_p=0.25, ar_o=1.35, ar_e=1.25, ar_eo=-0.6,
+                 ar_h="open", ar_tf=-1.0, ar_hide=0.0, hunch=0.3, al_h="fist", al_hide=HIDE_PK)
+# "We gotta save them.": the near hand comes out, open palm up toward Emb (soft appeal)
+OPEN_T = pdict("l", base="hands_pockets", ar_p=0.8, ar_o=0.22, ar_e=0.62, ar_eo=-0.1, ar_w=-0.1,
+               ar_h="open", ar_tf=-1.0, ar_hide=0.0, lean=0.04, hunch=0.35, al_h="fist", al_hide=HIDE_PK)
+# taking the keycard: only the near hand comes out of the pocket (the other stays in: chill)
+CARD_T = pdict("l", base="hands_pockets", ar_hide=0.0, ar_h="relaxed", al_h="fist", al_hide=HIDE_PK)
 
 
 def shrug_pose(a):
     """A lazy, nonchalant shrug with his hands staying in the hoodie pocket: shoulders up,
     elbows out a little, head tilt (a = 0..1)."""
-    return {"base": "hands_pockets", "hunch": 0.6 + 0.8 * a, "neck": -0.5 * a, "tilt": 0.12 * a,
-            "lift": 8 * a}
+    return pdict("lr", base="hands_pockets", hunch=0.6 + 0.8 * a, neck=-0.5 * a, tilt=0.12 * a,
+                 lift=8 * a, **_FIST)
 
 
-# a lazy hello: the near hand comes out of the hoodie pocket for one small bent-elbow wave,
-# the other hand stays in the pocket (wave_small's arm on top of hands_pockets)
-WAVE_T = {"base": "hands_pockets", "period": 0.7, "ar_p": 0.35, "ar_o": 1.2, "ar_e": 2.3,
-          "ar_eo": human.W(-1.1, 0.12, 0.0), "ar_w": human.W(0.0, 0.16, 0.1), "ar_h": "open",
-          "ar_tf": -1.0, "ar_hide": 0.0, "hunch": 0.3}
-WAVE_MID = {"base": "hands_pockets", "ar_p": 0.25, "ar_o": 1.35, "ar_e": 1.25, "ar_eo": -0.6,
-            "ar_h": "open", "ar_tf": -1.0, "ar_hide": 0.0, "hunch": 0.3}
+def pocket_w(pose, side):
+    """0..1: how far `side`'s hand is in the hoodie pocket for this pose / blend."""
+    def one(p):
+        return 1.0 if isinstance(p, PD) and side in p.pk else 0.0
+    if isinstance(pose, tuple):
+        return lerp(one(pose[0]), one(pose[1]), pose[2])
+    return one(pose)
 
 
-# taking the keycard: only the near hand comes out of the pocket (the other stays in: chill)
-CARD_T = {"base": "hands_pockets", "ar_hide": 0.0, "ar_h": "relaxed"}
-# walking off with the far hand still in the pocket
-WALK_T = {"base": "walk", "al_p": 0.32, "al_o": 0.2, "al_e": 0.95, "al_eo": -1.05, "al_w": 0.0,
-          "al_hide": 1.0, "ar_p": 0.32, "ar_o": 0.2, "ar_e": 0.95, "ar_eo": -1.05, "ar_w": 0.0,
-          "ar_hide": 1.0}
+def tired_pocket(T, t):
+    """Pocket geometry for this frame (rig-local, from the rig's own torso solve): the hand
+    targets inside the kangaroo pocket and what pocket_overlay() needs. None = no hand in it."""
+    pose = T["pose"]
+    w = {s_: pocket_w(pose, s_) for s_ in "lr"}
+    if max(w.values()) < 0.01:
+        return None
+    C = human._char("tired", "sewer")
+    pt = t if T["pose_t"] is None else T["pose_t"]
+    Q = human.resolve_pose(pose, "tired", pt)
+    pw_ = Q["posture"]
+    for key, v in C["posture"].items():
+        Q[key] = Q[key] + v * pw_
+    J = human._solve(C, Q, "tired", T["turn"], t, {"head_turn": 0.0, "head_tilt": 0.0, "head_nod": 0.0},
+                     0.0, None, None)
+    J["t"] = t
+    lv = human._torso_geom(C, J)
+    aw = C["tw"]["waist"][0]
+    x, y, s = T["x"], T["y"], S
+    turn = T["turn"]
+    targets = {}
+    for side, sgn in (("l", -1.0), ("r", 1.0)):
+        if w[side] < 0.01:
+            continue
+        far = smoothstep((-sgn * turn - 0.1) / 0.4)          # this hand is on the far side
+        inx = lerp(0.22, 0.04, far)
+        g = human._front(lv, "hem", sgn * aw * inx, 56)
+        e = human._front(lv, "hem", sgn * aw * 0.7, 62)
+        targets[side] = (x + s * g[0], y + s * g[1], w[side], math.atan2(g[1] - e[1], g[0] - e[0]))
+    return dict(C=C, J=J, lv=lv, w=w, targets=targets)
+
+
+def pocket_overlay(ctx, T, pk, a):
+    """Redraw the kangaroo pocket's front panel over the pocketed hands (clipped to the torso
+    and to small discs round those hands), so the wrists go INTO the pocket."""
+    C, J, lv = pk["C"], pk["J"], pk["lv"]
+    aw = C["tw"]["waist"][0]
+    x, y, s = T["x"], T["y"], S
+    discs = []
+    for side in "lr":
+        if pk["w"][side] > 0.01:
+            for key in ("hand_", "wrist_"):
+                px, py = a[key + side][:2]
+                discs.append(((px - x) / s, (py - y) / s))
+    if not discs:
+        return
+    ctx.save()
+    ctx.translate(x, y)
+    ctx.scale(s, s)
+    human._smooth(ctx, human._torso_pts(C, J, lv), True, 0.5)
+    ctx.clip()
+    for (px, py) in discs:
+        ctx.new_sub_path()
+        ctx.arc(px, py, 58, 0, 2 * math.pi)
+    ctx.clip()
+    p = [human._front(lv, "hem", -aw * 0.62, 20), human._front(lv, "hem", aw * 0.62, 20),
+         human._front(lv, "hem", aw * 0.44, 88), human._front(lv, "hem", -aw * 0.44, 88)]
+    human._shape(ctx, p, human._dk(C["col"]["top"], 0.08), human.INK_W * 0.7, 0.0)
+    ctx.restore()
 
 
 def shrug_amt(t, k):
-    """0..1 lazy shrugs: on "Oh, yeah.", on "...in the dark." and on "It's been a day."."""
+    """0..1 lazy shrugs: a little one on "I'm helping", on "Oh, yeah.", on "...in the dark." and on
+    "It's been a day."."""
     a = 0.0
-    for t0, amp in ((k["l5"] - 0.08, 1.0), (k["l5_dark"] - 0.1, 0.65), (k["l5c_day"] - 0.12, 1.0)):
+    for t0, amp in ((k["l2_im"] - 0.1, 0.6), (k["l5"] - 0.08, 1.0), (k["l5_dark"] - 0.1, 0.65),
+                    (k["l5c_day"] - 0.12, 1.0)):
         a = max(a, amp * tw(t, [(t0, 0.0), (t0 + 0.38, 1.0), (t0 + 0.72, 1.0), (t0 + 1.25, 0.0)]))
     return a
 
 
+def t_x(t, k):
+    """Tiredness's x: walks in from the dark (right) to XT0, half a step in front of it to XT."""
+    if t < k["t_stop"]:
+        return XT0 + k["vT"] * (k["t_stop"] - max(t, k["t_in0"]))
+    if t < k["t_step0"]:
+        return XT0
+    return lerp(XT0, XT, smoothstep(seg(t, k["t_step0"], k["t_step1"])))
+
+
+def t_face(t, k):
+    """His face (the beam's target)."""
+    return (t_x(t, k) - 64, 912)
+
+
 def tired_state(t, k):
     st = k["steps"]
-    d = dict(x=XT, y=FY, turn=-0.7, pose=POCKET_T, pose_t=None, expr="bored", look=(0, 0),
+    d = dict(x=t_x(t, k), y=FY, turn=-0.7, pose=POCK, pose_t=None, expr="bored", look=(0, 0),
              blink=None, face={}, reach=None, drift=True, card=False, squint=0.0)
     # ---- body poses
     hey = k["l2_hey"]
-    keys = [(-1, POCKET_T), (hey - 0.32, WAVE_MID), (hey - 0.14, WAVE_T), (hey + 0.56, WAVE_MID),
-            (hey + 0.74, POCKET_T)]
-    keys += [(k["k_take0"] - 0.12, CARD_T), (k["go_turn"], POCKET_T)]
-    keys += [(k["go_walk"], WALK_T)]
+    tst = k["t_stop"]
+    keys = [(-1, WALK_PK), (tst - 0.05, POCK),
+            (hey - 0.32, WAVE_MID), (hey - 0.14, WAVE_T), (hey + 0.56, WAVE_MID), (hey + 0.74, POCK),
+            (k["oh0"], OPEN_T), (k["oh1"], POCK)]
+    keys += [(k["k_take0"] - 0.12, CARD_T), (k["go_turn"], POCK)]
+    keys += [(k["go_walk"], WALK_PK)]
     pose = state_at(t, keys, 0.3)
     if pose[1] in (WAVE_T, WAVE_MID) or pose[0] in (WAVE_T, WAVE_MID):
         pose = state_at(t, keys, 0.18)
         d["pose_t"] = max(0.0, t - (hey - 0.14))
-    elif pose[1] is WALK_T and t >= k["go_walk"]:
+    elif t < tst + 0.4:
+        d["pose_t"] = min(t, tst) - k["t_in0"] + 0.25          # the walk-in ends on a contact
+    elif pose[1] is WALK_PK and t >= k["go_walk"]:
         d["pose_t"] = t - k["go_walk"]
+    if pose[1] is OPEN_T or pose[0] is OPEN_T:
+        pose = state_at(t, keys, 0.4)
+    # the protective half-step (l03b -> l03c): half a walk stride, feet kept planted
+    if k["t_step0"] <= t < k["t_step1"]:
+        u = seg(t, k["t_step0"], k["t_step1"])
+        pose = (POCK, WALK_PK, math.sin(math.pi * u) ** 2)
+        d["pose_t"] = 0.5 + (XT0 - XT) / k["vT"] * smoothstep(u)
     sa = shrug_amt(t, k)
-    if sa > 0.001 and pose[1] == POCKET_T and pose[2] >= 1.0:
+    if sa > 0.001 and pose[1] is POCK and pose[2] >= 1.0:
         pose = shrug_pose(sa)
     d["pose"] = pose
     # ---- leaving at the end: turn toward CONTROL (the mouth, screen-right), set off
@@ -844,22 +884,37 @@ def tired_state(t, k):
             d["reach"] = {"r": (hold_pt[0], hold_pt[1], w)}
         d["card"] = kt <= t < k["go_turn"] + 0.12
     # ---- expression: bored / deadpan all the way (super chill); the faintest smile
-    d["expr"] = state_at(t, [(0, "bored"), (k["l2"] - 0.2, "deadpan"), (k["E6"], "bored"),
-                             (k["T18"] - 0.05, "soft_smile"), (k["W19"], "bored")], 0.3)
+    d["expr"] = state_at(t, [(0, "bored"), (k["l2"] - 0.2, "deadpan"), (k["l3d"] - 0.3, "bored"),
+                             (k["E6"], "bored"), (k["T18"] - 0.05, "soft_smile"), (k["W19"], "bored")], 0.3)
+    if t < k["l4"] - 0.2:
+        look, f = tired_opening(t, k, d)
+    else:
+        # what the opening leaves on his face from here on (the rev-2 values at l04)
+        look = (-0.85, 0.05)
+        f = {"head_turn": -0.15, "lid": 0.02, "press": 0.12, "brow_r": 0.05}
+        look, f = tired_rest(t, k, d, look, f)
+    d["look"] = look
+    d["face"] = f
+    return d
+
+
+def tired_opening(t, k, d):
+    """catch .. l03d: walks in chill, squints in the beam, "Oh, hey. Yeah. I'm helping my
+    creature...", a brow at "the lab I work at", protective half-step, calm/firm, soft appeal."""
+    st = k["steps"]
+    tst = k["t_stop"]
     f = {}
-    # B start: still on Curiosity, then the footsteps: to the tunnel (left)
-    look = tw(t, [(st, (-0.55, 0.8)), (st + 0.18, (-0.55, 0.8)), (st + 0.32, (-1.0, 0.0)),
-                  (st + 0.75, (-0.95, 0.05)), (st + 0.9, (-0.3, 0.9)),            # glance down: it hides
-                  (st + 1.15, (-0.35, 0.9)), (st + 1.3, (-0.95, 0.0)),
-                  (k["jolt"] - 0.1, (-0.95, -0.05)), (k["jolt"] + 0.1, (-0.8, 0.2))])
+    # walk-in: eyes on the two of them (left), then the beam: squint, head away a touch
+    look = tw(t, [(st, (-0.9, 0.1)), (k["swing0"], (-0.9, 0.1)), (k["swing1"] + 0.1, (-0.95, -0.05)),
+                  (tst + 0.3, (-0.95, -0.1)), (k["jolt"] + 0.1, (-0.9, -0.05))])
     f.update(fk(t, {
-        "head_turn": [(st + 0.4, -0.05), (st + 0.6, -0.15)],
-        "head_nod": [(st, 0.1), (st + 0.4, 0.0)],
-        "lid": [(st + 0.2, 0.0), (st + 0.35, -0.06), (st + 1.0, -0.03)],
+        "head_turn": [(tst - 0.2, -0.05), (tst + 0.25, -0.15)],
+        "head_nod": [(st, 0.05), (tst, 0.0)],
+        "lid": [(tst, 0.0), (tst + 0.4, -0.03)],
     }))
-    # the beam in his face: squint, flinch, head away (until the beam drifts down)
-    b_on = smoothstep(seg(t, k["swing1"] - 0.08, k["swing1"] + 0.1)) * \
-        (1 - smoothstep(seg(t, k["notice"] + 0.25, k["notice"] + 0.65)))
+    # the beam in his face (swing .. it follows the creature on "I'm helping"): squint, flinch
+    b_on = smoothstep(seg(t, k["swing1"] - 0.08, k["swing1"] + 0.12)) * \
+        (1 - smoothstep(seg(t, k["c_trot0"] + 0.05, k["c_trot0"] + 0.45)))
     d["squint"] = b_on
     if b_on > 0:
         f["lower"] = f.get("lower", 0) + 0.24 * b_on
@@ -867,28 +922,92 @@ def tired_state(t, k):
         f["brow"] = f.get("brow", 0) - 0.18 * b_on
         f["head_turn"] = f.get("head_turn", 0) + 0.12 * b_on
         f["head_nod"] = f.get("head_nod", 0) + 0.04 * b_on
-    if t >= k["jolt"]:
-        look = (-0.75, 0.15)
-    # l02 "Oh. Hey.": flat; a chin lift on "Hey.", lip press after
+    # l01: Emb steps off the wall toward him: his eyes follow, unbothered
+    if t >= k["l1"]:
+        look = tw(t, [(k["l1"], (-0.9, -0.05)), (k["e_step1"], (-0.8, 0.1)), (k["l2"], (-0.75, 0.15))])
+    # l02 "Oh, hey. Yeah.": flat; a chin lift on "hey", a tiny nod on "Yeah"
+    hey = k["l2_hey"]
     if t >= k["l2"] - 0.3:
-        look = tw(t, [(k["l2"] - 0.3, (-0.75, 0.15)), (k["l2e"] + 0.2, (-0.8, 0.1))])
         f = addf(f, fk(t, {
-            "head_nod": [(hey - 0.05, 0.0), (hey + 0.12, -0.1), (hey + 0.5, 0.0)],
+            "head_nod": [(hey - 0.05, 0.0), (hey + 0.12, -0.1), (hey + 0.5, 0.0),
+                         (k["l2_yeah"] - 0.02, 0.0), (k["l2_yeah"] + 0.14, 0.06), (k["l2_yeah"] + 0.4, 0.0)],
             "lid": [(k["l2"], 0.0), (k["l2"] + 0.3, 0.05)],
-            "press": [(k["l2e"], 0.0), (k["l2e"] + 0.25, 0.3), (k["W5"] + 0.4, 0.12)],
         }))
-    # notice: follows the beam down to it, back up at Emb: "uh-oh"
+        # "...my creature": a glance down at it (it is trotting up to his leg), back to Emb
+        my = k["l2_my"]
+        look = tw(t, [(k["l2"] - 0.3, (-0.75, 0.15)), (my - 0.08, (-0.8, 0.1)), (my + 0.1, (-0.4, 0.85)),
+                      (k["l2_take"] + 0.1, (-0.4, 0.85)), (k["l2_take"] + 0.28, (-0.85, 0.05))])
+        f = addf(f, fk(t, {"head_nod": [(my, 0.0), (my + 0.22, 0.1), (k["l2_take"] + 0.12, 0.1),
+                                        (k["l2_take"] + 0.35, 0.0)]}))
+        sa_ = shrug_amt(t, k)
+        f = addf(f, {"brow": 0.18 * sa_, "frown": 0.22 * sa_, "head_tilt": 0.05 * sa_})
+        # "...doing shady things.": a flat look (lid drop, brows flatten, chin down a hair); lip press
+        sh = k["l2_shady"]
+        f = addf(f, fk(t, {
+            "lid": [(sh - 0.12, 0.0), (sh + 0.18, 0.07), (k["l2e"] + 0.6, 0.05)],
+            "brow": [(sh - 0.12, 0.0), (sh + 0.18, -0.07), (k["l2e"] + 0.6, -0.03)],
+            "head_nod": [(sh - 0.1, 0.0), (sh + 0.2, 0.04), (k["l2e"] + 0.5, 0.02)],
+            "press": [(k["l2e"], 0.0), (k["l2e"] + 0.25, 0.3), (k["notice"], 0.15)],
+        }))
+    # notice / l03: the beam back on it: a glance down; a brow lifts a hair at "the lab I work at"
     nt = k["notice"]
     if t >= nt:
-        th = k["l3_thing"]
-        look = tw(t, [(nt, (-0.8, 0.1)), (nt + 0.35, (-0.75, 0.3)), (nt + 0.75, (-0.15, 1.0)),
-                      (nt + 1.25, (-0.15, 1.0)), (nt + 1.45, (-0.85, 0.05)),
-                      (th, (-0.85, 0.05)), (th + 0.15, (-0.15, 0.95)),
-                      (th + 0.55, (-0.15, 0.95)), (th + 0.7, (-0.85, 0.05))])
+        cf_ = k["c_found"]
+        look = tw(t, [(nt, (-0.85, 0.05)), (cf_ - 0.1, (-0.85, 0.05)), (cf_ + 0.08, (-0.45, 0.85)),
+                      (cf_ + 0.55, (-0.45, 0.85)), (cf_ + 0.72, (-0.9, 0.0))])
+        lw = k["l3_work"]
         f = addf(f, fk(t, {
-            "head_nod": [(nt + 0.45, 0.0), (nt + 0.8, 0.12), (nt + 1.3, 0.12), (nt + 1.6, 0.0)],
-            "brow_r": [(nt + 1.3, 0.0), (nt + 1.6, 0.14), (k["l4"], 0.05)],
+            "head_nod": [(cf_, 0.0), (cf_ + 0.2, 0.08), (cf_ + 0.55, 0.08), (cf_ + 0.8, 0.0)],
+            "brow_r": [(lw - 0.15, 0.0), (lw + 0.15, 0.2), (k["l3e"] + 0.5, 0.12), (k["l3b"] + 0.6, 0.05)],
+            "lid": [(lw - 0.1, 0.0), (lw + 0.2, 0.04), (k["l3b"], 0.02)],
         }))
+    # l03b: it presses behind his leg: he looks down at it, back up at Emb; the half-step
+    if t >= k["l3b"]:
+        cb0 = k["c_back0"]
+        look = tw(t, [(k["l3b"], (-0.9, 0.0)), (k["l3b_that"], (-0.9, 0.0)), (k["l3b_that"] + 0.15, (-0.9, 0.12)),
+                      (cb0 + 0.12, (-0.9, 0.12)), (cb0 + 0.3, (-0.25, 0.9)), (k["t_step0"] - 0.05, (-0.25, 0.9)),
+                      (k["t_step0"] + 0.15, (-0.9, 0.03))])
+        f = addf(f, fk(t, {
+            "head_nod": [(cb0 + 0.25, 0.0), (cb0 + 0.45, 0.08), (k["t_step0"], 0.08), (k["t_step0"] + 0.3, 0.0)],
+            "head_turn": [(cb0 + 0.25, 0.0), (cb0 + 0.45, 0.05), (k["t_step0"], 0.05), (k["t_step0"] + 0.3, 0.0)],
+        }))
+    # l03c: calm and firm, a steady look at Emb (no blinks through the line), lips set after
+    if t >= k["l3c"] - 0.3:
+        c0 = k["l3c"]
+        f = addf(f, fk(t, {
+            "brow": [(c0 - 0.3, 0.0), (c0, -0.07), (k["l3ce"] + 0.3, -0.06), (k["l3d"], 0.0)],
+            "brow_ang": [(c0 - 0.3, 0.0), (c0, -0.08), (k["l3ce"] + 0.3, -0.06), (k["l3d"], 0.0)],
+            "lid": [(c0 - 0.3, 0.0), (c0, -0.03), (k["l3ce"], -0.03), (k["l3d"], 0.0)],
+            "head_nod": [(k["l3c_locking"] - 0.05, 0.0), (k["l3c_locking"] + 0.15, 0.05),
+                         (k["l3c_locking"] + 0.45, 0.0), (k["l3c_cool"] - 0.05, 0.0),
+                         (k["l3c_cool"] + 0.15, 0.05), (k["l3c_cool"] + 0.5, 0.0)],
+        }))
+        if c0 <= t < k["l3c_thats"]:
+            d["blink"] = 0.0
+            d["drift"] = False
+    # l03d: softer: brows ease up, a small head tilt, the open hand (pose); eyes on Emb's face
+    if t >= k["l3d"] - 0.3:
+        d0 = k["l3d"]
+        f = addf(f, fk(t, {
+            "brow_ang": [(d0 - 0.3, 0.0), (d0 + 0.1, 0.16), (k["l3de"] + 0.3, 0.1), (k["l4"] - 0.3, 0.0)],
+            "head_tilt": [(d0 - 0.3, 0.0), (d0 + 0.2, 0.05), (k["l3de"] + 0.3, 0.03), (k["l4"] - 0.3, 0.0)],
+            "lid": [(d0 - 0.3, 0.0), (d0 + 0.2, 0.03), (k["l4"] - 0.3, 0.02)],
+            "curve": [(k["l3d_okay"], 0.0), (k["l3d_okay"] + 0.25, 0.06), (k["l3de"] + 0.4, 0.0)],
+            "press": [(k["l3de"], 0.0), (k["l3de"] + 0.3, 0.12)],
+        }))
+        look = tw(t, [(d0 - 0.3, (-0.9, 0.03)), (k["l4"] - 0.3, (-0.85, 0.05))])
+    # converge onto the rev-2 face for l04 (head_turn -0.15, lid .02, press .12, brow_r .05)
+    if t >= k["E6"]:
+        u = smoothstep(seg(t, k["E6"], k["l4"] - 0.2))
+        tgt = {"head_turn": -0.15, "lid": 0.02, "press": 0.12, "brow_r": 0.05}
+        for key in set(f) | set(tgt):
+            f[key] = lerp(f.get(key, 0.0), tgt.get(key, 0.0), u)
+        look = (lerp(look[0], -0.85, u), lerp(look[1], 0.05, u))
+    return look, f
+
+
+def tired_rest(t, k, d, look, f):
+    """l04 .. end: the rev-2 acting, unchanged."""
     # l04 / l05: unbothered, steady on Emb; lazy shrug; "critter" -> a glance down at it
     if t >= k["l4"] - 0.2:
         cr = k["l5_critter"]
@@ -958,9 +1077,7 @@ def tired_state(t, k):
             "head_nod": [(n0, 0.0), (n0 + 0.24, 0.24), (n0 + 0.66, 0.02)],
             "curve": [(n0 + 0.3, 0.0), (n0 + 0.6, 0.1)],
         }))
-    d["look"] = look
-    d["face"] = f
-    return d
+    return look, f
 
 
 # =========================================================================== Embarrassment (B)
@@ -985,6 +1102,20 @@ EMB_PINCH = _ep(al_h="pinch")
 EMB_CUP = _ep(al_h="cup", al_tf=-1)
 EMB_CUPB = _ep(al_h="cup", al_tf=-1, hunch=0.22)
 EMB_POINT = _ep(al_h="point")
+# rev 3
+EMB_WALL = _ep(al_h="flat", lean=-0.09, chest=-0.08, hunch=0.95)          # backed flat against the wall
+EMB_WJOLT = _ep(al_h="splay", lean=-0.13, chest=-0.1, hunch=1.15, lift=12)
+# "Ha... ha. Cool.": the near hand behind his head, elbow out, scratching (forearm in front of
+# the shoulder, the hand itself behind the head: layer mid = under the head)
+EMB_HBH = _ep(**dict(human.HK("l", 95, -50, "claw", layer="mid", bend=1.0, wa=-2.0, wabs=0.7),
+                     al_hy=human.W(-50.0, 5.0, 0.0), al_fing=human.W(0.3, 0.45, 0.15)),
+              hunch=0.7, tilt=-0.1, period=0.42)
+EMB_LEAN = _ep(lean=0.13, neck=0.08, hunch=0.3)                          # leaning in, squinting
+EMB_LEANP = _ep(lean=0.13, neck=0.08, hunch=0.3, al_h="point")           # ... pushing his glasses up
+# "We should bring it back.": points back down the tunnel (screen-left), thumb up, arm out sideways
+EMB_PTB = _ep(al_p=0.32, al_o=1.3, al_e=0.12, al_eo=0.0, al_w=0.0, al_h="point", al_tf=1.0, twist=-0.12,
+              hunch=0.3)
+EMB_GUILT = _ep(hunch=0.5, nod=0.05)
 
 _PROBE = [None]
 _PC = {}
@@ -1013,31 +1144,59 @@ def mouth_amt(info, t):
     return m
 
 
+def e_pos(t, k):
+    """Embarrassment's ground point and scale: flat against the far wall, then (relief) two
+    steps forward to his mark."""
+    u = smoothstep(seg(t, k["e_step0"], k["e_step1"]))
+    return lerp(XW, XE, u), lerp(YW, FY, u), lerp(SW, S, u)
+
+
+def emb_aim_open(t, k):
+    """Where the beam points, catch .. l03c (then the rev-2 keys take over)."""
+    cr_x = cur_x(t, k)
+    # shaking on the creature (his hands tremble); calmer once it's Tiredness
+    tr = 1.0 - 0.75 * smoothstep(seg(t, k["e_exhale"], k["e_exhale"] + 0.6))
+    shake = (22 * tr * core.noise1(t * 6.5, 31), 16 * tr * core.noise1(t * 7.3, 32))
+    cre = (CC + 5 + shake[0], 1405 + shake[1])
+    face = t_face(t, k)
+    if t < k["swing0"]:
+        return cre
+    if t < k["swing1"]:
+        return tuple(lerp(a, b, ease_in_out(seg(t, k["swing0"], k["swing1"]))) for a, b in zip(cre, face))
+    face = (face[0] + shake[0] * 0.3, face[1] + shake[1] * 0.3)
+    if t < k["c_trot0"]:
+        return face
+    if t < k["l2b"]:                 # follows the creature as it trots over to his leg
+        p = (cr_x + 10, 1412)
+        return tuple(lerp(a, b, smoothstep(seg(t, k["c_trot0"], k["c_trot0"] + 0.4))) for a, b in zip(face, p))
+    if t < k["notice"]:              # distracted (hand behind his head): it droops to the floor
+        return tw(t, [(k["l2b"], (CS + 10, 1412)), (k["l2b"] + 0.5, (CS - 110, 1478))])
+    if t < k["c_back0"]:             # notice: onto it again
+        return tw(t, [(k["notice"], (CS - 110, 1478)), (k["c_found"], (CS - 72, 1330))])
+    if t < k["l3c_thats"]:           # it presses behind his leg: the beam follows its eye
+        return tw(t, [(k["c_back0"], (CS - 72, 1330)), (k["c_back1"], (CUR_EYE[0] + 8, CUR_EYE[1] + 8))])
+    return tw(t, [(k["l3c_thats"], (CUR_EYE[0] + 8, CUR_EYE[1] + 8)), (k["g_down"] + 0.4, (610, 1478))])
+
+
 def embar_state(t, k):
     st = k["steps"]
-    d = dict(x=XE, y=FY, s=S, turn=0.7, pose=EMB_BASE, pose_t=None, expr="neutral", look=(0.9, 0.0),
+    x, y, s = e_pos(t, k)
+    d = dict(x=x, y=y, s=s, turn=0.7, pose=EMB_BASE, pose_t=None, expr="neutral", look=(0.9, 0.0),
              blink=None, blush=0.1, face={}, reach={}, drift=True, glasses_dy=0.0, glasses_tilt=0.0,
              visible=True, aim=None, rec=None, card=None, led=None, led_glow=0.55, sweat=0.0, aim_ang=0.0)
-    v = abs(human.cycle_speed("embar", "walk", 0.75)) * S
-    # ---- walking up the tunnel out of the dark (screen-left), torch forward-down
-    if t < k["e1"]:
-        x = XE - v * (k["e1"] - max(t, k["e0"]))
-        d.update(x=x, turn=0.75, pose=EMB_WALK, pose_t=max(0.0, t - k["e0"]))
-        d["look"] = tw(t, [(k["e0"], (0.7, 0.4)), (k["e0"] + 0.8, (0.8, 0.35)), (k["e1"], (0.7, 0.2))])
-        d["face"] = {"brow_ang": 0.25, "press": 0.2}
-        bob = 6 * math.sin((t - k["e0"]) * 2 * math.pi)
-        gx, gy = x + 98, 1135 + bob
-        aim = (x + 420, 1480 + 20 * math.sin((t - k["e0"]) * 3.1))
-        ang = math.atan2(aim[1] - gy, aim[0] - gx)
-        d["reach"] = {"r": (gx, gy, 1.0, ang)}
-        d["aim"] = aim
-        d["aim_ang"] = ang
-        d["visible"] = t >= k["e0"] - 0.6
-        return d
+    sc = s / S
+    # terrified tremble against the wall (eases off with the relief)
+    trem = 1.0 - smoothstep(seg(t, k["e_exhale"], k["e_exhale"] + 0.5))
+    if trem > 0:
+        d["x"] = x + 1.3 * trem * math.sin(t * 43.0)
     # ---- body poses
     jt = k["jolt"]
-    pose_keys = [(-1, EMB_WALK), (k["e1"], EMB_BASE), (jt, EMB_JOLT), (jt + 0.16, EMB_NERV),
-                 (k["l1e"] + 0.3, EMB_BASE),
+    pose_keys = [(-1, EMB_WALL), (jt, EMB_WJOLT), (jt + 0.16, EMB_WALL),
+                 (k["e_step0"] - 0.12, EMB_WALK), (k["e_step1"], EMB_BASE),
+                 (k["hbh0"], EMB_HBH), (k["hbh1"], EMB_BASE),
+                 (k["lean0"], EMB_LEAN), (k["gl0"], EMB_LEANP), (k["gl1"], EMB_LEAN), (k["l3e"] + 0.1, EMB_BASE),
+                 (k["pt0"], EMB_PTB), (k["pt1"], EMB_NERV),
+                 (k["l3c_locking"], EMB_GUILT), (k["l3d"] + 0.3, EMB_NERV), (k["l4"] - 0.3, EMB_BASE),
                  (k["l5_fell"], EMB_WIDE), (k["fr_up0"], EMB_HEAD), (k["fr_dn0"], EMB_NERV),
                  (k["fr_dn1"], EMB_BASE)]
     cf = k["conflict"]
@@ -1046,35 +1205,51 @@ def embar_state(t, k):
                   (k["r_pocket"], EMB_PINCH), (k["r_gone"] + 0.1, EMB_BASE),
                   (k["k_reach"], EMB_PINCH), (k["k_have"] + 0.1, EMB_CUP), (k["k_back"], EMB_BASE)]
     p = state_at(t, pose_keys, 0.22)
-    if t < jt + 0.3 and (p[1] is EMB_JOLT or p[0] is EMB_JOLT):
-        p = (p[0], p[1], smoothstep(seg(t, jt, jt + 0.07)) if p[1] is EMB_JOLT else p[2])
-    if p[0] is EMB_WALK:
-        d["pose_t"] = 0.0            # walk frozen on a contact while it blends out
+    if t < jt + 0.3 and (p[1] is EMB_WJOLT or p[0] is EMB_WJOLT):
+        p = (p[0], p[1], smoothstep(seg(t, jt, jt + 0.07)) if p[1] is EMB_WJOLT else p[2])
+    if p[0] is EMB_WALL and p[1] is EMB_WALK:
+        p = (p[0], p[1], smoothstep(seg(t, k["e_step0"] - 0.12, k["e_step0"] + 0.15)))
+    if p[1] is EMB_HBH or p[0] is EMB_HBH:
+        p = state_at(t, pose_keys, 0.3)
+    if p[1] is EMB_PTB or p[0] is EMB_PTB:
+        p = state_at(t, pose_keys, 0.26)
+    if EMB_WALK in (p[0], p[1]):
+        d["pose_t"] = max(0.0, min(t, k["e_step1"]) - k["e_step0"])     # two steps, then stands
     d["pose"] = p
-    d["turn"] = tw(t, [(k["e_turn"], 0.75), (k["e_turn"] + 0.3, 0.7), (cf, 0.7), (cf + 0.35, 0.55),
+    d["turn"] = tw(t, [(0.0, 0.36), (k["e_step0"], 0.4), (k["e_step1"], 0.7),
+                       (cf, 0.7), (cf + 0.35, 0.55),
                        (k["press"] + 0.45, 0.55), (k["press"] + 0.75, 0.7)])
     # ---- the flashlight (far hand) and where the beam points
-    face_aim = T_FACE
     floor_aim = (610, 1478)
-    nt = k["notice"]
-    aim = tw(t, [(k["swing0"], (560, 1420)), (k["swing1"], face_aim), (nt + 0.12, face_aim),
-                 (k["c_found"], CUR_EYE), (k["l4"] + 0.05, CUR_EYE), (k["l4"] + 0.65, floor_aim),
-                 (k["fr_up0"], floor_aim), (k["fr_up1"], (140, 330), ease_out), (k["fr_dn0"], (150, 340)),
-                 (k["fr_dn1"], floor_aim),
-                 (cf, floor_aim), (cf + 0.35, (520, 1495)), (k["press"] + 0.5, (520, 1495)),
-                 (k["press"] + 0.8, (470, 1498))])
+    gdn = k["g_down"] + 0.4
+    if t < gdn:
+        aim = emb_aim_open(t, k)
+    else:
+        aim = tw(t, [(gdn, floor_aim), (k["fr_up0"], floor_aim), (k["fr_up1"], (140, 330), ease_out),
+                     (k["fr_dn0"], (150, 340)), (k["fr_dn1"], floor_aim),
+                     (cf, floor_aim), (cf + 0.35, (520, 1495)), (k["press"] + 0.5, (520, 1495)),
+                     (k["press"] + 0.8, (470, 1498))])
     j = t - jt
     if 0 <= j < 0.6:
         aim = (aim[0], aim[1] + 34 * math.sin(j * 30) * (1 - j / 0.6) ** 2)
     head = emb_probe("head", EMB_HEAD, 0.7)
     hx0, hy0 = head["head"]
-    hand_r = tw(t, [(k["e1"], (XE + 92, 1165)), (k["swing0"], (XE + 95, 1150)), (k["swing1"], (XE + 112, 1022)),
-                    (nt + 0.12, (XE + 112, 1022)), (k["c_found"], (XE + 105, 1070)),
-                    (k["l4"] + 0.05, (XE + 105, 1070)), (k["l4"] + 0.65, (XE + 98, 1118)),
-                    (k["fr_up0"], (XE + 100, 1125)), (k["fr_up1"], (hx0 + 62, hy0 - 112), ease_out),
-                    (k["fr_dn0"], (hx0 + 62, hy0 - 112)), (k["fr_dn1"], (XE + 98, 1118)),
-                    (cf, (XE + 98, 1118)), (cf + 0.35, (XE + 90, 1130))])
+    if t < k["l4"]:
+        # body-relative (S units), so it follows him off the wall
+        ox, oy = tw(t, [(0.0, (100, -385)), (k["swing0"], (100, -385)), (k["swing1"], (112, -470)),
+                        (k["e_step1"], (112, -478)), (k["c_trot0"], (112, -478)), (k["c_trot1"], (100, -400)),
+                        (k["l2b"], (100, -400)), (k["l2b"] + 0.5, (96, -385)), (k["notice"], (96, -385)),
+                        (k["c_found"], (104, -420)), (k["l3c_thats"], (104, -422)), (gdn, (98, -382))])
+        hand_r = (x + ox * sc, y + oy * sc)
+    else:
+        hand_r = tw(t, [(k["l4"], (XE + 98, 1118)),
+                        (k["fr_up0"], (XE + 100, 1125)), (k["fr_up1"], (hx0 + 62, hy0 - 112), ease_out),
+                        (k["fr_dn0"], (hx0 + 62, hy0 - 112)), (k["fr_dn1"], (XE + 98, 1118)),
+                        (cf, (XE + 98, 1118)), (cf + 0.35, (XE + 90, 1130))])
     gx, gy = hand_r
+    if trem > 0:
+        gx += 2.5 * trem * math.sin(t * 37)
+        gy += 2.0 * trem * math.sin(t * 29 + 1)
     # freak-out tremble (hands on his head)
     fr = smoothstep(seg(t, k["fr_up0"], k["fr_up1"])) * (1 - smoothstep(seg(t, k["fr_dn0"], k["fr_dn0"] + 0.3)))
     if fr > 0:
@@ -1085,11 +1260,20 @@ def embar_state(t, k):
     d["aim"] = aim
     d["aim_ang"] = ang
     d["reach"] = {"r": (gx, gy, 1.0, ang)}
-    # ---- near hand: jolt to the chest, on his head, glasses, the recorder, the keycard
+    # ---- near hand: flat on the wall; glasses; (rev 2:) on his head, glasses, recorder, keycard
     pocket = (XE - 15 + 4, FY - 502 + 6)
-    wl = tw(t, [(jt, 0.0), (jt + 0.1, 1.0, ease_out), (jt + 0.5, 1.0), (jt + 0.9, 0.0)])
-    if wl > 0:
-        d["reach"]["l"] = (XE + 30, 1012, wl)
+    if t < k["e_exhale"] + 0.6:
+        wl = 1.0 - smoothstep(seg(t, k["e_exhale"] + 0.05, k["e_exhale"] + 0.5))
+        hop = 14 * bump(t, jt, jt + 0.35)
+        d["reach"]["l"] = (d["x"] - 58 * sc, y - 380 * sc - hop, wl, 1.75)
+    if k["gl0"] - 0.05 <= t < k["gl1"] + 0.45:
+        lp = emb_probe("lean", EMB_LEAN, 0.7)
+        el_ = lp["eye_l"]
+        gl = (el_[0] - 30, el_[1] + 14)
+        p_ = tw(t, [(k["gl0"], (gl[0], gl[1] + 12)), (k["gl_push"], (gl[0], gl[1] + 6)),
+                    (k["gl_push"] + 0.18, (gl[0], gl[1] - 4), ease_out), (k["gl1"], (gl[0], gl[1] - 4))])
+        w_ = tw(t, [(k["gl0"], 0.0), (k["gl0"] + 0.3, 1.0, ease_out), (k["gl1"], 1.0), (k["gl1"] + 0.42, 0.0)])
+        d["reach"]["l"] = (p_[0], p_[1], w_, -1.45)
     # hands fly to his head; down to the glasses during the blink; push them straight; down
     eyel = head["eye_l"]
     glass = (eyel[0] - 30, eyel[1] + 14)          # the near side of the frame (not over his face)
@@ -1137,56 +1321,52 @@ def embar_state(t, k):
         d["led_glow"] = 0.55 + 0.9 * hot
         d["led_s"] = 0.9 + 0.3 * hot
     # ---- expression, blush, sweat, glasses
-    d["expr"] = state_at(t, [(0, "neutral"), (jt, "surprised"), (k["l1e"] + 0.3, "neutral"),
-                             (k["c_found"] + 0.02, "frozen_shock"), (k["l3"] - 0.08, "awe"),
-                             (k["l4"] - 0.05, "curious"), (k["l5"] + 0.3, "neutral"),
+    d["expr"] = state_at(t, [(0, "terrified"), (jt, "surprised"), (k["e_exhale"], "relieved"),
+                             (k["l1_down"] - 0.2, "neutral"), (k["l2_my"] - 0.15, "surprised"),
+                             (k["l2_take"] + 0.3, "neutral"), (k["l2_corp"] + 0.25, "alarmed"),
+                             (k["E5c"], "frozen_shock"), (k["l2b_ha"] - 0.12, "nervous_smile"),
+                             (k["notice"] + 0.1, "neutral"), (k["lean0"] + 0.1, "squint"),
+                             (k["l3_lab"] - 0.05, "alarmed"), (k["l3e"] + 0.1, "neutral"),
+                             (k["l3c_locking"], "guilty"), (k["l3d_save"], "sad"),
+                             (k["E6"] + 0.1, "neutral"), (k["l4"] - 0.05, "curious"),
+                             (k["l5"] + 0.3, "neutral"),
                              (k["l5_fell"], "surprised"), (k["l5_build"], "alarmed"),
                              (k["fr_up0"] + 0.1, "panic"), (k["l5b_what"] - 0.04, "scream"),
                              (k["l5be"] + 0.15, "frozen_shock"), (k["blink"], "deadpan"),
                              (k["led"], "neutral"), (k["led_off"] + 0.35, "deadpan"),
                              (k["l6e"] + 0.2, "neutral"), (k["E21"], "neutral"), (k["nod0"] + 0.4, "soft_smile")],
                          0.18)
-    if k["c_found"] <= t < k["l3"] - 0.08:
+    if k["E5c"] <= t < k["l2b_ha"] - 0.12:
         d["expr"] = "frozen_shock"
-    d["blush"] = tw(t, [(jt, 0.12), (jt + 0.35, 0.5), (k["l1e"] + 0.4, 0.45), (k["l2e"], 0.35),
-                        (k["c_found"], 0.35), (k["l3e"], 0.42), (k["l5"], 0.3),
+    d["blush"] = tw(t, [(0.0, 0.12), (jt, 0.12), (jt + 0.35, 0.45), (k["l1e"] + 0.4, 0.32),
+                        (k["l2_corp"], 0.3), (k["E5c"], 0.38), (k["l2b_ha"], 0.62), (k["l2b_cool"], 0.74),
+                        (k["l2be"], 0.72), (k["notice"] + 0.4, 0.5), (k["l3_lab"], 0.45), (k["l3e"], 0.42),
+                        (k["l3b"], 0.36), (k["l3c_locking"], 0.42), (k["g_away"], 0.6), (k["l3d"], 0.5),
+                        (k["l4"], 0.42), (k["l5"], 0.3),
                         (k["l5_build"], 0.55), (k["fr_up1"], 0.8), (k["l5b_what"], 0.92), (k["l5be"] + 0.3, 0.9),
                         (k["blink"], 0.75), (k["led"], 0.3),
                         (k["r_look_t"], 0.25), (k["r_look_t"] + 0.4, 0.6), (k["r_look_b"] + 0.2, 0.58),
                         (k["press"], 0.3), (k["l6"], 0.12), (k["E21"], 0.12)])
-    d["sweat"] = tw(t, [(k["c_found"], 0.0), (k["c_found"] + 0.4, 0.25), (k["l4e"], 0.15), (k["l5_build"], 0.3),
+    d["sweat"] = tw(t, [(0.0, 0.7), (jt, 0.6), (k["l1e"], 0.15), (k["l2_corp"], 0.15), (k["E5c"] + 0.25, 0.55),
+                        (k["l2b_cool"], 0.75), (k["notice"], 0.5), (k["l3e"], 0.3), (k["l3c_thats"], 0.3),
+                        (k["g_away"], 0.45), (k["l4"], 0.22),
+                        (k["l4e"], 0.15), (k["l5_build"], 0.3),
                         (k["fr_up1"], 0.8), (k["l5b_what"], 1.0), (k["blink"] + 0.4, 0.6), (k["led"] + 0.6, 0.0)])
-    d["glasses_dy"] = tw(t, [(jt, 0.0), (jt + 0.06, 7.0), (jt + 0.45, 2.0), (k["l1e"], 0.0),
+    d["glasses_dy"] = tw(t, [(0.0, 3.0), (jt, 3.0), (jt + 0.06, 8.0), (jt + 0.45, 4.0), (k["l1e"], 0.0),
+                             (k["lean0"], 0.0), (k["lean0"] + 0.4, 5.0), (k["gl_push"], 5.0),
+                             (k["gl_push"] + 0.18, 0.0),
                              (k["l5_build"], 0.0), (k["l5_build"] + 0.12, 4.0), (k["fr_up1"], 7.0),
                              (k["l5b_what"] + 0.08, 11.0), (k["fr_glass"], 11.0), (k["fr_glass"] + 0.18, 0.0)])
-    d["glasses_tilt"] = tw(t, [(k["l5_build"], 0.0), (k["l5_build"] + 0.12, 0.12, ease_out),
+    d["glasses_tilt"] = tw(t, [(0.0, 0.06), (jt, 0.06), (jt + 0.06, 0.1), (k["l1e"], 0.0),
+                               (k["lean0"], 0.0), (k["lean0"] + 0.4, 0.05), (k["gl_push"], 0.05),
+                               (k["gl_push"] + 0.18, 0.0),
+                               (k["l5_build"], 0.0), (k["l5_build"] + 0.12, 0.12, ease_out),
                                (k["fr_up1"], 0.2), (k["l5b_what"] + 0.08, 0.3, ease_out),
                                (k["fr_glass"], 0.3), (k["fr_glass"] + 0.18, 0.0)])
     f = {}
     look = (0.9, -0.05)
-    if t < k["l1e"] + 0.3:
-        look = tw(t, [(k["e1"], (0.6, 0.2)), (k["swing0"], (0.8, 0.35)), (k["swing1"], (0.95, -0.1)),
-                      (k["l1_down"] - 0.12, (0.95, -0.05)), (k["l1_down"], (-1.25, 0.1)),
-                      (k["l1_down"] + 0.42, (-1.25, 0.1)), (k["l1_down"] + 0.6, (0.95, -0.05))])
-        f.update(fk(t, {
-            "head_turn": [(k["l1_down"] + 0.05, 0.0), (k["l1_down"] + 0.2, -0.75), (k["l1_down"] + 0.5, -0.75),
-                          (k["l1_down"] + 0.72, 0.0)],
-            "brow": [(jt, 0.0), (jt + 0.1, 0.35), (k["l1e"], 0.25), (k["l1e"] + 0.5, 0.1)],
-            "brow_ang": [(jt, 0.0), (jt + 0.2, 0.25), (k["l1e"] + 0.5, 0.25)],
-            "squash": [(jt, 0.0), (jt + 0.06, -0.08), (jt + 0.3, 0.0)],
-            "head_nod": [(k["l1_what"] - 0.1, 0.0), (k["l1_what"] + 0.2, 0.06), (k["l1e"], 0.04)],
-        }))
-    nt = k["notice"]
-    if k["l1e"] + 0.3 <= t < k["l4"]:
-        look = tw(t, [(k["l1e"] + 0.3, (0.95, -0.05)), (nt + 0.05, (0.95, -0.05)),
-                      (nt + 0.3, (0.8, 0.55)), (k["c_found"], (0.75, 0.95)), (k["l4"], (0.75, 0.95))])
-        f.update(fk(t, {
-            "brow_r": [(k["l2_hey"], 0.0), (k["l2_hey"] + 0.3, 0.3), (nt, 0.25), (nt + 0.3, 0.0)],
-            "press": [(k["l2e"], 0.0), (k["l2e"] + 0.25, 0.3), (nt, 0.25), (nt + 0.3, 0.0)],
-            "brow_ang": [(k["l1e"] + 0.3, 0.25), (k["l2"], 0.1)],
-            "head_nod": [(nt + 0.15, 0.0), (nt + 0.45, 0.14), (k["l3"], 0.14), (k["l3e"], 0.18)],
-            "head_turn": [(nt + 0.15, 0.0), (nt + 0.45, 0.1)],
-        }))
+    if t < k["l4"]:
+        look, f = embar_opening(t, k, d)
     if k["l4"] <= t < k["l5b"]:
         cr = k["l5_critter"]
         look = tw(t, [(k["l4"], (0.75, 0.95)), (k["l4"] + 0.12, (0.75, 0.95)), (k["l4"] + 0.32, (0.95, -0.12)),
@@ -1226,19 +1406,24 @@ def embar_state(t, k):
             d["drift"] = False
     led = k["led"]
     if led <= t < k["E17"]:
+        lc = k["r_look_c"]
         look = tw(t, [(led, (0.9, -0.05)), (led + 0.25, (0.9, -0.05)), (led + 0.42, (-0.2, 1.15)),
                       (k["r_up"] - 0.1, (-0.1, 1.1)), (k["r_up"] + 0.15, (0.25, 1.05)),
                       (k["r_look_t"], (0.25, 1.05)), (k["r_look_t"] + 0.15, (1.0, -0.05)),
-                      (k["r_look_b"], (1.0, -0.05)), (k["r_look_b"] + 0.15, (0.25, 1.05)),
+                      (lc - 0.02, (1.0, -0.05)), (lc + 0.17, (0.62, 0.95)),          # down at the creature
+                      (k["r_look_b"], (0.62, 0.95)), (k["r_look_b"] + 0.15, (0.25, 1.05)),
                       (k["press"] + 0.4, (0.25, 1.05)), (k["press"] + 0.58, (1.0, -0.05))])
         f.update(fk(t, {
             "head_nod": [(led + 0.3, 0.0), (led + 0.55, 0.2), (k["r_look_t"] + 0.1, 0.2),
-                         (k["r_look_t"] + 0.3, 0.02), (k["r_look_b"] + 0.1, 0.02), (k["r_look_b"] + 0.3, 0.18),
+                         (k["r_look_t"] + 0.3, 0.02), (lc + 0.1, 0.02), (lc + 0.32, 0.14),
+                         (k["r_look_b"] + 0.1, 0.14), (k["r_look_b"] + 0.3, 0.18),
                          (k["press"] + 0.5, 0.18), (k["press"] + 0.75, 0.0)],
             "head_turn": [(k["r_look_t"] + 0.1, 0.0), (k["r_look_t"] + 0.3, 0.15),
-                          (k["r_look_b"] + 0.1, 0.15), (k["r_look_b"] + 0.3, 0.0)],
+                          (lc + 0.1, 0.15), (lc + 0.32, 0.08),
+                          (k["r_look_b"] + 0.1, 0.08), (k["r_look_b"] + 0.3, 0.0)],
             "brow_ang": [(k["r_up"], 0.0), (k["r_up"] + 0.4, 0.3), (k["r_look_t"] + 0.3, 0.45),
-                         (k["r_breath"], 0.35), (k["r_breath"] + 0.5, 0.05), (k["press"] + 0.5, 0.0)],
+                         (lc + 0.32, 0.56), (k["r_breath"], 0.42),
+                         (k["r_breath"] + 0.5, 0.05), (k["press"] + 0.5, 0.0)],
             "press": [(k["r_look_b"] + 0.1, 0.0), (k["r_look_b"] + 0.3, 0.45), (k["press"] - 0.1, 0.45),
                       (k["press"] + 0.3, 0.0)],
             "brow": [(k["r_breath"], 0.0), (k["r_breath"] + 0.3, 0.12), (k["press"] + 0.4, 0.0)],
@@ -1294,73 +1479,281 @@ def embar_state(t, k):
             sb = k["l8e"] + 0.25
             if sb <= t < sb + 1.0:
                 d["blink"] = tw(t, [(sb, 0.0), (sb + 0.3, 1.0), (sb + 0.5, 1.0), (sb + 0.85, 0.0)])
-    # the freeze: no blinks, no saccades
-    if k["c_found"] <= t < k["l3"] + 0.2:
-        d["blink"] = 0.0
-        d["drift"] = False
     d["look"] = look
     d["face"] = f
     return d
 
 
-# =========================================================================== Curiosity (B)
-def cur_state(t, k):
+def embar_opening(t, k, d):
+    """catch .. l04: terrified at the wall; footsteps; it's Tiredness: surprise, relief; the
+    creature goes over to him; "oh no, that's MY company" laugh; recognition; the company man;
+    guilt; conflicted swallow. Returns (look, face deltas)."""
     st = k["steps"]
-    d = dict(x=C0, pose="sit", pose_from=None, pose_mix=1.0, pose_t=None, face=-1.0, expr="hopeful",
-             ears=0.76, look=(0.45, -0.85), tilt=0.06, tail_curl=0.3, blink=None, glow=0.95, glint=None)
-    # ---- B start: still looking back up at him; the footsteps: ears shoot up, looks left
-    if t < k["c_up"]:
-        d["face"] = tw(t, [(st + 0.1, -1.0), (st + 0.3, 1.0, ease_out)])
-        d["expr"] = "hopeful" if t < st + 0.2 else "wide"
-        d["ears"] = tw(t, [(st + 0.08, 0.76), (st + 0.24, 1.0, ease_out_back)])
-        d["look"] = tw(t, [(st + 0.05, (0.45, -0.85)), (st + 0.25, (-0.9, 0.0))])
-        d["tilt"] = tw(t, [(st, 0.06), (st + 0.2, -0.04)])
-        d["tail_curl"] = tw(t, [(st, 0.3), (st + 0.3, 0.0)])
-        d["blink"] = 0.0
-        return d
-    # ---- the scramble backwards behind his legs
-    if t < k["c_sit"] + 0.3:
-        mv0, mv1 = k["c_mv0"], k["c_mv1"]
-        rate = (CH - C0) / (mv1 - mv0) / (creatures.SPEC_WALK_SPEED * SC)
-        d["expr"] = "wide"
+    jt = k["jolt"]
+    f = {}
+    # ---- catch: eyes locked on the creature (down-right), shallow fast breaths
+    look = tw(t, [(0.0, (0.82, 0.55)), (st + 0.18, (0.82, 0.55)), (st + 0.32, (1.15, -0.05)),     # the steps!
+                  (k["swing0"], (1.15, -0.05)), (k["swing1"], (1.05, -0.12)), (jt, (1.0, -0.1)),
+                  (k["l1"], (0.95, -0.08))])
+    f.update(fk(t, {
+        "head_turn": [(0.0, 0.25), (st + 0.4, 0.25), (st + 0.6, 0.4), (jt + 0.2, 0.4), (k["e_step0"], 0.25),
+                      (k["e_step1"], 0.0)],
+        "head_nod": [(0.0, -0.06), (jt, -0.06), (k["e_exhale"], -0.04), (k["e_exhale"] + 0.25, 0.08),
+                     (k["e_exhale"] + 0.6, 0.02)],
+        "squash": [(jt, 0.0), (jt + 0.06, -0.08), (jt + 0.3, 0.0)],
+        "brow": [(jt, 0.0), (jt + 0.1, 0.35), (k["l1e"], 0.25), (k["l1e"] + 0.5, 0.1)],
+        "brow_ang": [(jt, 0.2), (jt + 0.2, 0.25), (k["l1e"] + 0.5, 0.25), (k["l2"], 0.1)],
+    }))
+    if t < k["e_exhale"]:
+        f["head_tilt"] = 0.015 * math.sin(t * 19.0)
+        f["wobble"] = 0.35
+        f["head_nod"] = f.get("head_nod", 0.0) + 0.012 * math.sin(t * 2 * math.pi * 2.6)
+    # ---- l01: "Tiredness?!" ... relief ... "What are you doing down here?" (glance back on "down")
+    if k["l1"] - 0.1 <= t < k["l2"]:
+        look = tw(t, [(k["l1"] - 0.1, (0.95, -0.08)), (k["l1_down"] - 0.12, (0.95, -0.05)),
+                      (k["l1_down"], (-1.25, 0.1)), (k["l1_down"] + 0.42, (-1.25, 0.1)),
+                      (k["l1_down"] + 0.6, (0.95, -0.05))])
+        f = addf(f, fk(t, {
+            "head_turn": [(k["l1_down"] + 0.05, 0.0), (k["l1_down"] + 0.2, -0.75), (k["l1_down"] + 0.5, -0.75),
+                          (k["l1_down"] + 0.72, 0.0)],
+            "head_nod": [(k["l1_what"] - 0.1, 0.0), (k["l1_what"] + 0.2, 0.06), (k["l1e"], 0.04),
+                         (k["l2"], 0.0)],
+        }))
+    # ---- l02: the creature trots over to Tiredness and sits by his leg: his eyes follow it, baffled
+    if k["l2"] <= t < k["E5c"]:
+        tr0, tr1 = k["c_trot0"], k["c_trot1"]
+        look = tw(t, [(k["l2"], (0.95, -0.05)), (tr0 - 0.05, (0.95, -0.05)), (tr0 + 0.12, (0.7, 0.55)),
+                      (tr1, (0.85, 0.6)), (k["l2_take"] + 0.3, (0.85, 0.6)), (k["l2_take"] + 0.48, (0.95, -0.06)),
+                      (k["l2_corp"], (0.95, -0.06)), (k["l2_corp"] + 0.2, (0.92, 0.0))])
+        f = addf(f, fk(t, {
+            "brow": [(k["l2"], 0.1), (tr0 + 0.1, 0.1), (tr0 + 0.35, 0.28), (k["l2_take"] + 0.5, 0.12)],
+            "brow_ang": [(k["l2"], 0.1), (k["l2_corp"], 0.12), (k["l2_corp"] + 0.3, 0.35)],
+            "head_nod": [(tr0, 0.0), (tr0 + 0.3, 0.08), (k["l2_take"] + 0.4, 0.08), (k["l2_take"] + 0.65, 0.0)],
+            "head_turn": [(tr0, 0.0), (tr0 + 0.3, 0.08), (k["l2_take"] + 0.4, 0.08), (k["l2_take"] + 0.65, 0.0)],
+            "pupil": [(k["l2_corp"], 0.0), (k["l2_corp"] + 0.3, -0.2)],
+        }))
+    # ---- l02b: frozen ("oh no, that's MY company"), then the awkward laugh, hand behind his head,
+    #      eyes darting; on "Cool." they slide down to the recorder in his pocket
+    if k["E5c"] <= t < k["notice"] + 0.1:
+        ha, ha2, c1, c2, c3, c4 = (k["l2b_ha"], k["l2b_ha2"], k["l2b_cool"], k["l2b_cool2"], k["l2b_cool3"],
+                                   k["l2b_cool4"])
+        look = tw(t, [(k["E5c"], (0.92, 0.0)), (ha - 0.1, (0.92, 0.0)), (ha + 0.04, (0.15, -0.15)),
+                      (ha2 - 0.08, (0.15, -0.15)), (ha2 + 0.04, (1.0, -0.06)), (c1 - 0.1, (1.0, -0.06)),
+                      (c1 + 0.08, (-0.3, 1.12)), (c1 + 0.5, (-0.3, 1.12)),                  # the recorder
+                      (c2 + 0.08, (1.0, -0.06)), (c3 + 0.05, (0.3, -0.2)), (c4 + 0.05, (1.0, -0.06)),
+                      (k["l2be"] + 0.25, (1.0, -0.06)), (k["l2be"] + 0.38, (-0.15, 0.25)),
+                      (k["l2be"] + 0.75, (-0.15, 0.25)), (k["l2be"] + 0.88, (1.0, -0.06)),
+                      (k["notice"], (1.0, -0.06))])
+        bob = 0.0
+        for tt in (c2, c3, c4):
+            bob += 0.06 * bump(t, tt - 0.03, tt + 0.2)
+        f = addf(f, fk(t, {
+            "eye_size": [(k["E5c"], 0.06), (ha - 0.1, 0.06), (ha + 0.1, 0.02)],
+            "head_nod": [(k["E5c"], 0.0), (ha - 0.15, 0.0), (ha, -0.06), (ha2 + 0.3, 0.0),
+                         (c1 + 0.08, 0.12), (c1 + 0.5, 0.12), (c2 + 0.08, 0.0)],
+            "head_tilt": [(ha - 0.2, 0.0), (ha + 0.1, -0.05), (k["l2be"], -0.05), (k["notice"], 0.0)],
+            "brow_ang": [(k["E5c"], 0.35), (ha, 0.5), (k["notice"], 0.4)],
+        }))
+        f["head_nod"] = f.get("head_nod", 0.0) + bob
+        if k["E5c"] <= t < ha - 0.1:
+            d["blink"] = 0.0
+            d["drift"] = False
+    # ---- notice / l03: eyes to the creature again (connecting the dots); leans in, squints,
+    #      pushes his glasses up; "...the lab I work at?" it sinks in
+    if k["notice"] <= t < k["l3e"] + 0.35:
+        nt = k["notice"]
+        look = tw(t, [(nt, (1.0, -0.06)), (nt + 0.12, (1.0, -0.06)), (nt + 0.32, (0.78, 0.85)),
+                      (k["l3_lab"], (0.78, 0.85)), (k["l3_work"] + 0.15, (0.78, 0.85)),
+                      (k["l3_work"] + 0.32, (1.0, -0.05)), (k["l3e"] + 0.35, (1.0, -0.05))])
+        lw = k["l3_lab"]
+        f = addf(f, fk(t, {
+            "brow_ang": [(nt, 0.4), (nt + 0.3, 0.05), (lw, 0.05), (lw + 0.25, 0.4)],
+            "brow": [(nt, 0.0), (nt + 0.35, -0.08), (k["lean0"] + 0.3, -0.12), (lw, -0.1), (lw + 0.25, 0.18),
+                     (k["l3e"] + 0.3, 0.1)],
+            "lid": [(nt + 0.2, 0.0), (nt + 0.5, 0.08), (lw, 0.08), (lw + 0.2, -0.04)],
+            "head_nod": [(nt + 0.2, 0.0), (nt + 0.5, 0.12), (lw + 0.1, 0.12), (k["l3e"] + 0.3, 0.02)],
+            "head_turn": [(nt + 0.2, 0.0), (nt + 0.5, 0.08), (lw + 0.1, 0.08), (k["l3e"] + 0.3, 0.0)],
+            "eye_size": [(lw, 0.0), (lw + 0.2, 0.06), (k["l3e"] + 0.3, 0.02)],
+        }))
+    # ---- l03b: nervous, well-meaning company man: a glance at it on "that"; points back down
+    #      the tunnel (looks that way); Tiredness's half-step in front of it
+    if k["l3e"] + 0.35 <= t < k["l3c_your"]:
+        th, p0, p1 = k["l3b_that"], k["pt0"], k["pt1"]
+        look = tw(t, [(k["l3e"] + 0.35, (1.0, -0.05)), (th - 0.1, (1.0, -0.05)), (th + 0.05, (0.78, 0.85)),
+                      (th + 0.35, (0.78, 0.85)), (th + 0.5, (1.0, -0.05)), (p0 + 0.05, (1.0, -0.05)),
+                      (p0 + 0.2, (-1.2, 0.05)), (p0 + 0.7, (-1.2, 0.05)), (p0 + 0.88, (1.0, -0.04)),
+                      (k["t_step0"], (1.0, -0.04)), (k["t_step0"] + 0.2, (0.85, 0.3)),
+                      (k["t_step1"] + 0.15, (1.0, -0.05))])
+        f = addf(f, fk(t, {
+            "brow_ang": [(k["l3b"] - 0.3, 0.1), (k["l3b"], 0.45), (k["l3be"], 0.4), (k["l3c_buddy"], 0.3)],
+            "curve": [(k["l3b"] - 0.3, 0.0), (k["l3b"], 0.08), (k["l3be"], 0.06), (k["t_step0"], 0.0)],
+            "head_turn": [(p0 + 0.1, 0.0), (p0 + 0.3, -0.4), (p0 + 0.75, -0.4), (p0 + 0.95, 0.0)],
+            "head_nod": [(th - 0.05, 0.0), (th + 0.15, 0.08), (th + 0.45, 0.0)],
+            "brow": [(k["t_step0"], 0.0), (k["t_step0"] + 0.25, 0.15), (k["l3c_buddy"] + 0.2, 0.18),
+                     (k["l3c_your"], 0.1)],
+        }))
+    # ---- l03c: "...Your company is locking these creatures up. That's not cool." guilt: eyes
+    #      down, then away (expr guilty)
+    if k["l3c_your"] <= t < k["l3d"] - 0.2:
+        gd, ga = k["g_down"], k["g_away"]
+        look = tw(t, [(k["l3c_your"], (1.0, -0.05)), (k["l3c_locking"], (1.0, -0.05)),
+                      (k["l3c_locking"] + 0.3, (0.9, 0.12)),
+                      (gd - 0.05, (0.9, 0.12)), (gd + 0.15, (0.45, 1.0)), (ga - 0.05, (0.45, 1.0)),
+                      (ga + 0.18, (-0.75, 0.45)), (k["l3d"] - 0.2, (-0.75, 0.45))])
+        f = addf(f, fk(t, {
+            "head_nod": [(gd, 0.0), (gd + 0.25, 0.1), (ga, 0.1), (ga + 0.3, 0.06)],
+            "head_turn": [(ga, 0.0), (ga + 0.3, -0.16)],
+            "press": [(gd, 0.0), (gd + 0.3, 0.35), (k["l3d"], 0.3)],
+            "brow_ang": [(k["l3c_locking"], 0.2), (gd + 0.3, 0.42)],
+        }))
+    # ---- l03d: back to Tiredness, to his open hand, his face again: conflicted
+    if k["l3d"] - 0.2 <= t < k["l4"]:
+        d0 = k["l3d"]
+        look = tw(t, [(d0 - 0.2, (-0.75, 0.45)), (d0 + 0.05, (1.0, -0.04)), (k["oh0"] + 0.45, (1.0, -0.04)),
+                      (k["oh0"] + 0.6, (0.92, 0.32)), (k["l3d_okay"] - 0.1, (0.92, 0.32)),
+                      (k["l3d_okay"] + 0.05, (1.0, -0.05)), (k["gulp"] + 0.3, (1.0, -0.05)),
+                      (k["gulp"] + 0.48, (0.75, 0.95)), (k["l4"], (0.75, 0.95))])
+        gp = k["gulp"]
+        f = addf(f, fk(t, {
+            "head_turn": [(d0 - 0.2, -0.16), (d0 + 0.1, 0.0), (gp + 0.35, 0.0), (gp + 0.6, 0.1)],
+            "head_nod": [(d0 - 0.2, 0.06), (d0 + 0.1, 0.02), (gp - 0.05, 0.02), (gp + 0.12, 0.08),
+                         (gp + 0.32, 0.02), (gp + 0.6, 0.18)],
+            "press": [(d0 - 0.2, 0.3), (k["l3d_okay"], 0.42), (gp - 0.05, 0.5), (gp + 0.15, 0.1),
+                      (gp + 0.5, 0.25), (k["l4"], 0.0)],
+            "squash": [(gp - 0.05, 0.0), (gp + 0.1, 0.03), (gp + 0.3, 0.0)],
+            "brow_ang": [(d0 - 0.2, 0.42), (k["l3d_okay"], 0.5), (gp + 0.4, 0.45), (k["l4"], 0.2)],
+            "wobble": [(k["l3d_okay"], 0.0), (k["l3d_okay"] + 0.3, 0.25), (gp, 0.25), (gp + 0.3, 0.0)],
+        }))
+    # converge onto the rev-2 face at l04 (eyes down at it, chin down 0.18, head turned 0.1)
+    u = smoothstep(seg(t, k["l4"] - 0.45, k["l4"]))
+    if u > 0:
+        tgt = {"head_nod": 0.18, "head_turn": 0.1}
+        for key in set(f) | set(tgt):
+            f[key] = lerp(f.get(key, 0.0), tgt.get(key, 0.0), u)
+    return look, f
+
+
+# =========================================================================== Curiosity (B)
+def cur_x(t, k):
+    """Curiosity's x through the opening (crouched in the beam -> by his leg -> behind it)."""
+    if t < k["c_trot0"]:
+        return CC
+    if t < k["c_trot1"]:
+        return lerp(CC, CS, seg(t, k["c_trot0"], k["c_trot1"]))
+    if t < k["c_back0"]:
+        return CS
+    if t < k["c_back1"]:
+        return lerp(CS, CH, seg(t, k["c_back0"], k["c_back1"]))
+    return CH
+
+
+def cur_opening(t, k, d):
+    """catch .. E6: crouched and wary in Emb's beam; hears Tiredness, looks back, relief; trots
+    over and sits by his leg ("my creature"); the beam finds it again; "the lab": ears sink;
+    "bring it back": presses behind his leg; comforted a little by "Buddy..." / "save them"."""
+    st = k["steps"]
+    d["x"] = cur_x(t, k)
+    d["tail_curl"] = 0.0
+    d["glow"] = 0.95
+    if t < k["T4"]:
+        # ---- crouched low facing Emb (left), ears flat, eyes wide: wary, not aggressive
+        d["flip"] = True
+        cr_mix = 0.8 + 0.12 * bump(t, 0.9, 1.9)                 # shrinks a little lower as the beam jitters
+        d.update(pose="crouch", pose_from="stand", pose_mix=cr_mix, expr="wide", tilt=0.1)
+        d["ears"] = tw(t, [(0.0, 0.04), (k["c_ear"], 0.04), (k["c_ear"] + 0.16, 0.32, ease_out_back),
+                           (k["c_relief"], 0.32), (k["c_relief"] + 0.3, 0.66, ease_out_back)])
+        if t < k["c_ear"]:
+            d["ears"] += 0.015 * math.sin(t * 23.0)                # a nervous quiver
+        d["face"] = tw(t, [(k["c_look"], 1.0), (k["c_look"] + 0.3, -1.0)])
+        d["look"] = tw(t, [(0.0, (-0.85, -0.4)), (k["c_look"], (-0.85, -0.4)), (k["c_look"] + 0.2, (0.85, -0.25)),
+                           (k["c_relief"], (0.8, -0.45))])
+        if t >= k["c_relief"]:
+            d["expr"] = "hopeful"
+            d["tilt"] = tw(t, [(k["c_relief"], 0.1), (k["c_relief"] + 0.3, 0.0)])
+            d["tail_curl"] = tw(t, [(k["c_relief"], 0.0), (k["c_relief"] + 0.5, 0.3)])
+        if t >= k["c_rise"]:
+            d.update(pose="stand", pose_from="crouch", pose_mix=seg(t, k["c_rise"], k["c_rise"] + 0.4))
+        return
+    # ---- T4 cut: it has turned to him (faces right), standing, hopeful; trots to his leg, sits
+    if t < k["W5d"]:
+        d["flip"] = False
+        d["expr"] = "hopeful"
         d["face"] = 1.0
-        d["tail_curl"] = 0.0
         d["tilt"] = 0.0
-        d["ears"] = tw(t, [(k["c_up"], 1.0), (k["c_up"] + 0.4, 0.3)])
-        d["look"] = (-0.9, -0.1)
-        if t < mv0:
-            d.update(pose="stand", pose_from="sit", pose_mix=seg(t, k["c_up"], mv0))
-        elif t < mv1:
-            d.update(pose="walk", pose_from="stand", pose_mix=seg(t, mv0, mv0 + 0.08),
-                     pose_t=-(t - mv0) * rate)
-            d["x"] = C0 + (CH - C0) * seg(t, mv0, mv1)
+        tr0, tr1 = k["c_trot0"], k["c_trot1"]
+        rate = (CS - CC) / (tr1 - tr0) / (creatures.SPEC_WALK_SPEED * SC)
+        if t < tr0:
+            d.update(pose="stand")
+        elif t < tr1:
+            d.update(pose="walk", pose_from="stand", pose_mix=seg(t, tr0, tr0 + 0.1), pose_t=(t - tr0) * rate)
         else:
-            d.update(x=CH, pose="sit", pose_from="walk", pose_mix=seg(t, mv1, mv1 + 0.28),
-                     pose_t=-(mv1 - mv0) * rate)
+            d.update(pose="sit", pose_from="walk", pose_mix=seg(t, tr1, tr1 + 0.3), pose_t=(tr1 - tr0) * rate)
+        d["ears"] = tw(t, [(k["T4"], 0.66), (tr1, 0.7), (tr1 + 0.25, 0.8, ease_out_back), (k["c_emb"], 0.8),
+                           (k["c_emb"] + 0.3, 0.55)])
+        d["tail_curl"] = tw(t, [(k["T4"], 0.3), (tr1, 0.3), (tr1 + 0.5, 0.55), (k["c_emb"], 0.55),
+                                (k["c_emb"] + 0.5, 0.3)])
+        d["look"] = tw(t, [(k["T4"], (0.5, -0.8)), (tr0, (0.6, -0.4)), (tr1, (0.55, -0.85))])
+        if tr1 + 0.15 <= t < k["c_emb"]:
+            d["expr"] = "proud"                                    # "...my creature": that's me
+        if t >= k["c_emb"]:                                        # looks back over its shoulder at Emb
+            d["expr"] = "curious"
+            d["face"] = tw(t, [(k["c_emb"], 1.0), (k["c_emb"] + 0.3, -1.0)])
+            d["look"] = tw(t, [(k["c_emb"], (0.55, -0.85)), (k["c_emb"] + 0.2, (-0.9, -0.35))])
+        return
+    # ---- W5d cut: sitting by his leg facing Emb; the beam finds it; "the lab": ears sink;
+    #      "bring it back": backs up behind his leg; comforted a little later
+    d["flip"] = True
+    d["face"] = 1.0
+    cf = k["c_found"]
+    cb0, cb1 = k["c_back0"], k["c_back1"]
+    d["expr"] = "wide" if t < k["l3c_locking"] else "curious"
+    d["ears"] = tw(t, [(k["W5d"], 0.55), (cf, 0.55), (cf + 0.25, 0.36, ease_out), (k["l3_lab"], 0.36),
+                       (k["l3_lab"] + 0.25, 0.15, ease_out), (k["l3b_bring"], 0.15),
+                       (k["l3b_bring"] + 0.15, 0.04, ease_out), (k["t_step1"], 0.04), (k["l3c_up"], 0.22),
+                       (k["l3d"], 0.25), (k["l3d_save"] + 0.3, 0.45)])
+    d["look"] = tw(t, [(k["W5d"], (-0.88, -0.42)), (k["l3c_locking"], (-0.88, -0.42)),
+                       (k["l3c_locking"] + 0.2, (0.3, -1.0)), (k["l3c_up"] + 0.35, (0.3, -1.0)),
+                       (k["l3c_up"] + 0.55, (-0.88, -0.45))])
+    d["tilt"] = tw(t, [(k["l3_lab"], 0.0), (k["l3_lab"] + 0.3, 0.08), (cb0, 0.08), (cb1, 0.04),
+                       (k["l3d"], 0.0)])
+    d["glow"] = tw(t, [(cf - 0.1, 0.95), (cf + 0.05, 1.2), (cf + 0.8, 1.0)])
+    if t >= cf:
+        d["glint"] = cf
+    rate = (CH - CS) / (cb1 - cb0) / (creatures.SPEC_WALK_SPEED * SC)
+    if t < cb0:
+        d.update(pose="sit")
+    elif t < cb1:                                                 # backs away, still facing Emb
+        if t < cb0 + 0.12:
+            d.update(pose="stand", pose_from="sit", pose_mix=seg(t, cb0 - 0.04, cb0 + 0.12))
+        else:
+            d.update(pose="walk", pose_from="stand", pose_mix=seg(t, cb0 + 0.12, cb0 + 0.2),
+                     pose_t=-(t - cb0 - 0.12) * rate * (cb1 - cb0) / (cb1 - cb0 - 0.12))
+    else:
+        d.update(pose="sit", pose_from="walk", pose_mix=seg(t, cb1, cb1 + 0.28),
+                 pose_t=-(cb1 - cb0 - 0.12) * rate * (cb1 - cb0) / (cb1 - cb0 - 0.12))
+
+
+def cur_state(t, k):
+    d = dict(x=CH, pose="sit", pose_from=None, pose_mix=1.0, pose_t=None, face=1.0, expr="curious",
+             ears=0.45, look=(-0.85, -0.45), tilt=0.0, tail_curl=0.0, blink=None, glow=1.0, glint=None)
+    if t < k["E6"]:
+        cur_opening(t, k, d)
         return d
-    # ---- hiding (peeking left at Emb), found by the beam, watching
+    # ---- hiding behind his legs (peeking left at Emb), watching (rev 2 from here on)
     d["x"] = CH
     d["face"] = 1.0
     d["tail_curl"] = 0.0
-    d["expr"] = "wide" if t < k["E6"] else "curious"
-    cf = k["c_found"]
-    d["ears"] = tw(t, [(k["c_sit"], 0.3), (cf, 0.32), (cf + 0.25, 0.06, ease_out), (k["E6"], 0.1),
-                       (k["E6"] + 0.01, 0.45), (k["l5b_what"], 0.45), (k["l5b_what"] + 0.12, 0.2, ease_out),
+    d["expr"] = "curious"
+    d["ears"] = tw(t, [(k["E6"], 0.45), (k["l5b_what"], 0.45), (k["l5b_what"] + 0.12, 0.2, ease_out),
                        (k["press"] + 0.15, 0.3), (k["press"] + 0.4, 0.62, ease_out_back)])
     cr = k["l5_critter"]
-    d["look"] = tw(t, [(k["c_sit"], (-0.9, -0.2)), (cf - 0.2, (-0.9, -0.25)), (cf, (-0.85, -0.45)),
-                       (k["l3_thing"] + 0.15, (-0.85, -0.45)), (k["l3_thing"] + 0.32, (0.3, -1.0)),
-                       (k["l3e"] - 0.05, (0.3, -1.0)), (k["l3e"] + 0.12, (-0.85, -0.45)),
+    d["look"] = tw(t, [(k["E6"], (-0.85, -0.45)),
                        (cr, (-0.85, -0.45)), (cr + 0.2, (0.3, -1.0)),            # "a critter": me?
                        (cr + 0.9, (0.3, -1.0)), (cr + 1.1, (-0.85, -0.4)),
                        (k["led"] + 0.95, (-0.85, -0.4)), (k["led"] + 1.1, (-0.95, -0.55))])
     d["tilt"] = tw(t, [(cr + 0.15, 0.0), (cr + 0.35, -0.12), (cr + 0.9, -0.12), (cr + 1.1, 0.0),
                        (k["led"] + 1.05, 0.0), (k["led"] + 1.25, -0.1)])
-    if cf - 0.05 <= t < k["l3e"] + 0.2:
-        d["blink"] = 0.0
-    d["glow"] = tw(t, [(cf - 0.1, 0.9), (cf + 0.05, 1.2), (cf + 0.8, 1.0)])
-    if t >= cf:
-        d["glint"] = cf
+    d["glint"] = k["c_found"]
     # ---- after the click: creeps out to his front foot, sits; then the grin
     o0, o1 = k["c_out0"], k["c_out1"]
     if t >= k["press"] + 0.3:
@@ -1462,6 +1855,9 @@ def _flash_cb(state, lens_out):
 
 
 # =========================================================================== drawing (B)
+MOVING = ("C1", "B2", "E3", "W5", "T5b", "W5d", "W8", "E9", "E15", "E17", "W22")     # camera moves
+
+
 def draw_B(ctx, t, k, cam, shot_name, info):
     T = tired_state(t, k)
     E = embar_state(t, k)
@@ -1510,18 +1906,31 @@ def draw_B(ctx, t, k, cam, shot_name, info):
         if E["card"] is not None:
             props.keycard(ctx, hx + 4, hy - 7, E["card"]["s"], rot=E["card"]["rot"])
 
+    pk = tired_pocket(T, t)
+    reach_t = dict(T["reach"] or {})
+    if pk is not None:
+        for side, tg in pk["targets"].items():
+            if side in reach_t:          # the card reach on a hand leaving the pocket: blend the two
+                cx_, cy_, cw_ = reach_t[side][:3]
+                u_ = cw_ / max(1e-6, cw_ + tg[2])
+                reach_t[side] = (lerp(tg[0], cx_, u_), lerp(tg[1], cy_, u_), max(cw_, tg[2]))
+            else:
+                reach_t[side] = tg
+
     def draw_tired():
         with _no_fringe_drips():
             anchors["tired"] = human.draw_person(
                 ctx, "tired", T["x"], T["y"], S, t, pose=T["pose"], expr=T["expr"], look=T["look"],
                 mouth=info.mouth("tired", t), face=T["face"], turn=T["turn"], blink=T["blink"],
-                pose_t=T["pose_t"], reach=T["reach"], drift=T["drift"], **TK)
+                pose_t=T["pose_t"], reach=reach_t, drift=T["drift"], **TK)
+        if pk is not None:
+            pocket_overlay(ctx, T, pk, anchors["tired"])
         if T["card"]:
             hx, hy, _ = anchors["tired"]["hand_r"]
             props.keycard(ctx, hx - 6, hy - 6, 0.19, rot=tw(t, [(k["k_take"], 0.08), (k["k_take"] + 0.45, -0.18)]))
 
     # torch state
-    pw = smoothstep(seg(t, k["steps"], k["steps"] + 0.5)) if E["visible"] else 0.0
+    pw = 1.0 if E["visible"] else 0.0
     # characters: Curiosity's group (lighter: it glows) and the people's group
     ctx.push_group()
     draw_cur()
@@ -1552,7 +1961,7 @@ def draw_B(ctx, t, k, cam, shot_name, info):
         lx, ly, ang, L, sp, pw_ = beam
         fx.flashlight(ctx, lx, ly, ang, L, sp, t, b_static, key=("s05_litB", shot_name),
                       rect=shot_rect(k, shot_name), power=pw_, warm=0.35, haze=0.05, lens=False,
-                      exact=shot_name not in ("B2", "W8", "E9", "E15", "E17", "W22"))
+                      exact=shot_name not in MOVING)
     ctx.set_source(pat_c)
     ctx.paint()
     ctx.set_source(pat)
@@ -1618,93 +2027,6 @@ def _thumb(ctx, hx, hy, r, t, k):
         ctx.set_line_width(w)
         ctx.stroke()
     ctx.restore()
-
-
-# =========================================================================== drawing (A)
-def a_tired_state(t, k):
-    stop = k["a_stop"]
-    v = 590.0
-    D = A_TD1 + v * max(0.0, stop - t)
-    u = clamp((A_TD0 - D) / (A_TD0 - A_TD1))
-    X = lerp(A_TX0, A_TX1, smoothstep(u))
-    kpk = smoothstep(seg(t, stop + 0.2, stop + 0.55))
-    pose = ("walk", "stand", smoothstep(seg(t, stop - 0.02, stop + 0.3)))
-    if t >= stop + 0.2:
-        pose = ("stand", POCKET_T, kpk)
-    al = k["a_look"]
-    fi = k["a_fine"]
-    aw = k["a_away"]
-    look = tw(t, [(0.0, (0.0, 0.25)), (stop - 0.3, (-0.1, 0.3)), (al, (-0.25, 0.4)),
-                  (al + 0.16, (-0.85, 0.85)), (aw, (-0.85, 0.85)), (aw + 0.18, (0.15, 0.1))])
-    face = fk(t, {
-        "head_turn": [(al + 0.12, 0.0), (al + 0.32, -0.32), (aw + 0.1, -0.32), (aw + 0.35, -0.08)],
-        "head_nod": [(al + 0.12, 0.05), (al + 0.32, 0.14), (fi, 0.14), (fi + 0.18, 0.22), (fi + 0.45, 0.12),
-                     (aw + 0.1, 0.12), (aw + 0.35, 0.04)],
-        "lid": [(fi - 0.05, 0.0), (fi + 0.2, 0.12), (fi + 0.6, 0.06), (aw + 0.2, 0.0)],
-        "press": [(fi, 0.0), (fi + 0.2, 0.32), (aw + 0.2, 0.18)],
-        "smirk": [(fi + 0.1, 0.0), (fi + 0.35, -0.1), (aw + 0.2, -0.04)],
-        "brow_ang": [(al + 0.2, 0.0), (al + 0.45, 0.12), (fi + 0.4, 0.04)],
-    })
-    turn = tw(t, [(stop - 0.1, 0.1), (stop + 0.35, -0.25)])
-    return dict(D=D, X=X, pose=pose, pose_t=t * 1.0 + 0.25, look=look, face=face, turn=turn)
-
-
-def a_cur_state(t, k):
-    ch, ct, cho = k["c_hear"], k["c_turn"], k["c_hope"]
-    fi = k["a_fine"]
-    face = tw(t, [(ct, 0.15), (ct + 0.32, 1.0)])
-    look = tw(t, [(0.0, (-0.2, 0.55)), (ch, (-0.15, 0.55)), (ch + 0.12, (0.35, 0.2)),
-                  (ct + 0.2, (0.6, -0.55)), (k["a_stop"], (0.55, -0.8))])
-    ears = tw(t, [(0.0, 0.1), (ch, 0.1), (ch + 0.12, 0.24, ease_out), (cho, 0.26),
-                  (cho + 0.28, 0.62, ease_out_back), (fi + 0.2, 0.62), (fi + 0.45, 0.78, ease_out_back)])
-    tilt = tw(t, [(0.0, 0.14), (ct, 0.12), (ct + 0.3, 0.02), (fi + 0.2, 0.02), (fi + 0.5, 0.08)])
-    expr = "sad" if t < cho else "hopeful"
-    tail = tw(t, [(fi + 0.2, 0.0), (fi + 0.7, 0.32)])
-    blink = 0.0 if (cho - 0.2 < t < cho + 0.6) else None
-    return dict(face=face, look=look, ears=ears, tilt=tilt, expr=expr, tail=tail, blink=blink)
-
-
-def draw_A(ctx, t, k, info):
-    core.cached(ctx, "s05_tunA_dark", -300, -300, 1680, 2520, a_dark)
-    T = a_tired_state(t, k)
-    Cs = a_cur_state(t, k)
-    cxs, cys = ap(A_CX, 0, A_CD)
-    s_c = (SC / S) * AF / A_CD
-    # Curiosity's glow on the floor and walls around it
-    ra = (-100, -100, 1280, 2120)
-
-    def glow_fn(c):
-        core.radial_glow(c, cxs, cys - 160, 520, "power", 0.11)
-        core.radial_glow(c, cxs, cys + 10, 300, "power", 0.08)
-    ctx.save()
-    ctx.set_operator(cairo.OPERATOR_ADD)
-    ctx.set_source(soft_layer(ra, glow_fn))
-    ctx.paint()
-    ctx.restore()
-    D = T["D"]
-    tx, ty = ap(T["X"], 0, D)
-    s_t = AF / D
-    anchors = {}
-    ctx.push_group()
-    with _no_fringe_drips():
-        anchors["tired"] = human.draw_person(
-            ctx, "tired", tx, ty, s_t, t, pose=T["pose"], pose_t=T["pose_t"], expr="bored", look=T["look"],
-            face=T["face"], turn=T["turn"], mouth=(0.0, 0.0), **TK)
-    anchors["cur"] = creatures.draw_specimen(
-        ctx, cxs, cys, s_c, t, form=1.0, pose="sit", expr=Cs["expr"], look=Cs["look"], glow=1.0,
-        blink=Cs["blink"], face=Cs["face"], tilt=Cs["tilt"], ears=Cs["ears"], tail_curl=Cs["tail"])
-    # light: dark, a teal pool from Curiosity, a little warm light from the mouth behind him
-    mx, my = ap(0, 500, AD_M)
-    light_chars(ctx, ra, 0.62,
-                [(cxs + 20, cys - 180, 560, 0.5), (mx, my, 520, 0.3)],
-                tints=[(cxs + 20, cys - 160, 600, "power", 0.14), (mx, my - 100, 420, "#ffb070", 0.12)])
-    ctx.pop_group_to_source()
-    ctx.paint()
-    a = anchors["tired"]
-    for e_ in ("eye_l", "eye_r"):
-        ex, ey = a[e_]
-        core.radial_glow(ctx, ex, ey, 34 * s_t / 0.85, core.PAL["power"], 0.2 * (1 - a["blink"]))
-    return anchors
 
 
 # =========================================================================== inserts
@@ -1847,10 +2169,7 @@ def render(ctx, t, info):
         return
     cam = camf(t)
     with core.camera(ctx, *cam):
-        if kind == "A":
-            draw_A(ctx, t, k, info)
-        else:
-            draw_B(ctx, t, k, cam, name, info)
+        draw_B(ctx, t, k, cam, name, info)
     fx.vignette(ctx, 0.35, inner=0.6)
 
 
@@ -1859,32 +2178,33 @@ def SFX(info):
     k = keys_for(info)
     ev = []
     st = k["steps"]
-    # A: his slippers on the tunnel floor (walk contacts every 0.5 s), stop; the "fine" exhale
-    pt0 = 0.25
-    n = 0
-    while True:
-        tt = (0.5 * n + 0.27) - pt0
-        n += 1
-        if tt < 0:
-            continue
-        if tt > k["a_stop"] + 0.05:
-            break
-        ev.append((tt, "footstep", -11, 0.1))
-    ev.append((k["a_stop"] + 0.25, "footstep", -15, 0.1))
-    ev.append((k["c_hear"], "ears_perk", -9, -0.2))
-    ev.append((k["c_hope"] + 0.05, "creature_chitter", -14, -0.2))
-    ev.append((k["a_fine"] + 0.05, "sigh", -12, 0.05))
-    # B: his footsteps coming up the dark tunnel (echoing, getting closer), from the left
-    e0, e1 = k["e0"], k["e1"]
-    tt = st - 0.05
-    while tt < e1 + 0.05:
-        g = lerp(-20, -8, seg(tt, st - 0.05, e1))
-        ev.append((tt, "footstep", g, -0.6))
-        tt += 0.5
-    ev.append((st + 0.2, "ears_perk", -3, -0.2))
-    ev.append((k["c_mv0"] + 0.05, "scurry", -10, 0.1))
+    # catch: pressed against the wall
+    ev.append((0.12, "cloth_rustle", -13, -0.4))
+    # steps: his slippers coming up the dark tunnel from the mouth (right), walk contacts every 0.5 s
+    for i, g in enumerate((-17, -14, -12)):
+        tt = k["t_in0"] + 0.25 + 0.5 * i
+        ev.append((tt, "footstep", g, 0.55 - 0.15 * i))
+    ev.append((k["c_ear"], "ears_perk", -6, -0.1))
     ev.append((k["jolt"], "cloth_rustle", -6, -0.4))
+    # l01: Emb steps off the wall (two steps)
+    for i in range(2):
+        ev.append((k["e_step0"] + 0.25 + 0.5 * i, "footstep", -15, -0.35))
+    # l02: it trots over to his leg, a happy little chitter
+    ev.append((k["c_trot0"] + 0.05, "scurry", -16, 0.1))
+    ev.append((k["c_trot1"] + 0.25, "creature_chitter", -14, 0.15))
+    # l02b: hand up behind his head
+    ev.append((k["hbh0"] + 0.08, "cloth_rustle", -13, -0.4))
+    # notice / l03: the beam finds it; the glasses
     ev.append((k["c_found"] + 0.02, "critter_squeak", -12, 0.05))
+    ev.append((k["gl_push"] + 0.05, "latch_click", -26, -0.4))
+    # l03b: the point; it scurries behind his leg; his half-step
+    ev.append((k["pt0"] + 0.1, "cloth_rustle", -12, -0.4))
+    ev.append((k["c_back0"] + 0.02, "creature_chirp_sad", -15, 0.2))
+    ev.append((k["c_back0"] + 0.1, "scurry", -19, 0.2))
+    ev.append((k["t_step0"] + 0.3, "footstep", -15, 0.3))
+    # l03d: his hand out of the pocket; Emb's swallow
+    ev.append((k["oh0"] + 0.08, "cloth_rustle", -15, 0.3))
+    ev.append((k["gulp"] + 0.04, "gulp", -9, -0.3))
     # the freak-out: hands to his head, the sweat
     ev.append((k["fr_up0"] + 0.05, "cloth_rustle", -7, -0.4))
     ev.append((k["l5b_what"] - 0.05, "cloth_rustle", -12, -0.4))

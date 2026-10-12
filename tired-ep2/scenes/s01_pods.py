@@ -742,8 +742,9 @@ class _shaded_box:
     """= sets.shaded(ctx, sets.catwalk, t, layer="shade") at full power, for a creature inside
     `box` (world rect): the (static) shade light is cached as a bitmap for the box instead of
     re-filling three frame-sized radial gradients every frame (perf, same look)."""
-    def __init__(self, ctx, box, key):
+    def __init__(self, ctx, box, key, light=None):
         self.ctx, self.box, self.key = ctx, box, key
+        self.light = light or (lambda cc: sets.catwalk(cc, 0.0, layer="shade"))
 
     def __enter__(self):
         c = self.ctx
@@ -757,11 +758,81 @@ class _shaded_box:
         c = self.ctx
         c.save()
         c.set_operator(cairo.OPERATOR_ATOP)
-        core.cached(c, ("s01_cwshade", self.key), *self.box, lambda cc: sets.catwalk(cc, 0.0, layer="shade"))
+        core.cached(c, ("s01_cwshade", self.key), *self.box, self.light)
         c.restore()
         c.pop_group_to_source()
         c.paint()
         c.restore()
+
+
+# ---- rev 3b: Thing 1 is OUTSIDE the glass, the sibling INSIDE ----------------------
+# The THING 2 glass gets a visible front surface (cooler tint + curved sheen streaks) drawn
+# over the sibling and the bubbles but UNDER Thing 1, so its silhouette cuts the sheen.
+# Thing 1 is no longer washed with the catwalk's uniform teal shade: it keeps its own solid
+# indigo, lit from the front by the glass (teal-white falloff from the pod; the far side
+# stays dark indigo), with its teal rim. Its paw leaves a soft contact smudge on the glass.
+PAW_XY = (2040, 1108)          # where the raised paw meets the glass (rig anchor at full raise)
+GLASS_LIGHT = (2000, 1060)     # the pod glass, as the light source on Thing 1
+
+
+def _glass_front(c):
+    """THING 2's glass front surface (world coords; draw after the sibling, before Thing 1)."""
+    gx, gy, gw, gh = P2_GLASS
+    c.save()
+    core.rrect(c, gx, gy, gw, gh, gw / 2)
+    c.clip()
+    c.rectangle(gx, gy, gw, gh)
+    core.fill(c, (0.03, 0.16, 0.22, 0.13))            # a touch cooler / darker over the inside
+    # curved sheen streaks: a long one from the upper right over the bubbles to the sleeper's
+    # back, and a second one that runs BEHIND Thing 1's head and paw (its silhouette cuts it)
+    for (pts, bands) in (
+            ([(gx + gw * 0.95, gy + gh * 0.10), (gx + gw * 0.62, gy + gh * 0.42),
+              (gx + gw * 0.30, gy + gh * 0.74), (gx + gw * 0.04, gy + gh * 0.98)],
+             ((0, 64, 0.08), (-6, 13, 0.26))),
+            ([(gx + gw * 1.02, gy + gh * 0.40), (gx + gw * 0.80, gy + gh * 0.60),
+              (gx + gw * 0.50, gy + gh * 0.79), (gx + gw * 0.12, gy + gh * 1.04)],
+             ((0, 54, 0.09), (-4, 11, 0.30), (26, 5, 0.22)))):
+        for (dx, w_, a_) in bands:
+            c.move_to(pts[0][0] + dx, pts[0][1])
+            c.curve_to(pts[1][0] + dx, pts[1][1], pts[2][0] + dx, pts[2][1], pts[3][0] + dx, pts[3][1])
+            core.stroke(c, (1.0, 1.0, 1.0, a_), w_, cap="round")
+    c.restore()
+    # the glass edge catching the light (left rim)
+    c.new_sub_path()
+    c.arc(gx + gw / 2, gy + gw / 2, gw / 2 - 7, math.pi * 1.05, math.pi * 1.45)
+    core.stroke(c, (0.92, 1.0, 1.0, 0.45), 4, cap="round")
+
+
+def _glass_lit(c):
+    """Thing 1's light (painted ATOP it, cached): the glass in front of it lights its near
+    side teal-white; the far side keeps its own dark indigo."""
+    core.radial_glow(c, GLASS_LIGHT[0], GLASS_LIGHT[1], 330, "#bdfcf3", 0.5)
+    core.radial_glow(c, FACE_LIGHT[0], FACE_LIGHT[1], 170, "#e9fffd", 0.18)
+
+
+def _contact(c, k_paw, k_print):
+    """On the glass, under Thing 1: a soft glow where the paw presses, and the paw print it
+    leaves when it lifts off (fading)."""
+    if k_paw > 0.003:
+        core.radial_glow(c, PAW_XY[0], PAW_XY[1], 58, "#e6fffb", 0.28 * k_paw)     # fog smudge
+        core.radial_glow(c, PAW_XY[0], PAW_XY[1], 38, "#f6fffd", 0.62 * k_paw)     # contact glow
+    if k_print > 0.003:
+        _paw_print(c, PAW_XY[0] - 2, PAW_XY[1] + 2, 0.82, k_print)
+
+
+def _ledge_shadow(c, x, y, k):
+    if k > 0.003:
+        core.ellipse(c, x + 18, y + 2, 112, 10)
+        core.fill(c, core.alpha(core.PAL["ink"], 0.34 * k))
+
+
+def _contact_k(t, T):
+    """(paw pressing, paw print) amounts on the THING 2 glass."""
+    k_paw = tween(t, [(T["p_paw1"] - 0.08, 0.0), (T["p_paw1"] + 0.06, 1.0), (T["p_down"], 1.0),
+                      (T["p_down"] + 0.12, 0.0)])
+    k_print = tween(t, [(T["p_paw1"] - 0.05, 0.0), (T["p_paw1"] + 0.15, 0.85), (T["p_down"] + 0.1, 0.85),
+                        (T["p_down"] + 0.2, 0.75), (T["drop"] + 0.9, 0.0)])
+    return k_paw, k_print
 
 
 def shot_peer(ctx, t, T, info):
@@ -772,15 +843,14 @@ def shot_peer(ctx, t, T, info):
     with core.camera(ctx, *cam):
         sets.catwalk(ctx, t, plate_dust=1.0, **SLEEP_LIVE)
         _sibling_live(ctx, t)
-        with _shaded_box(ctx, PEER_BOX, "peer"):
+        _glass_front(ctx)
+        _contact(ctx, *_contact_k(t, T))
+        _ledge_shadow(ctx, PERCH[0], PERCH[1], 1.0)
+        with _shaded_box(ctx, PEER_BOX, "peer_lit", light=_glass_lit):
             kw = peer_kw(t, T)
             sx, sy = _breath(t, T)
             _scaled_about(ctx, PERCH[0], PERCH[1], sx, sy,
                           lambda: CR.draw_specimen(ctx, PERCH[0], PERCH[1], S, t, **kw))
-            # the pod's glow on the side of its face turned to the glass (ATOP: only on it)
-            ctx.set_operator(cairo.OPERATOR_ATOP)
-            core.radial_glow(ctx, FACE_LIGHT[0], FACE_LIGHT[1], 170, "#e9fffd", 0.2)
-            ctx.set_operator(cairo.OPERATOR_OVER)
             if fog > 0.003:
                 # its breath on the glass, behind its snout (drawn under the creature)
                 ctx.set_operator(cairo.OPERATOR_DEST_OVER)
@@ -854,12 +924,15 @@ def shot_drop(ctx, t, T, info):
     with core.camera(ctx, *cam):
         sets.catwalk(ctx, t, plate_dust=1.0, **SLEEP_LIVE)
         _sibling_live(ctx, t)
+        _glass_front(ctx)
+        _contact(ctx, *_contact_k(t, T))
+        _ledge_shadow(ctx, PERCH[0], PERCH[1], 1.0 - smoothstep(seg(t, T["d_jump"] - 0.02, T["d_jump"] + 0.12)))
         # its contact shadow on the grating grows as it comes down
         ks = smoothstep(seg(t, T["d_jump"] + 0.05, T["d_land"]))
         if ks > 0.0:
             core.ellipse(ctx, LAND[0] + 4, LAND[1] + 4, 120 * lerp(0.55, 1.0, ks), 16 * lerp(0.55, 1.0, ks))
             core.fill(ctx, core.alpha(core.PAL["ink"], 0.32 * ks))
-        with _shaded_box(ctx, DROP_BOX, "drop"):
+        with _shaded_box(ctx, DROP_BOX, "drop_lit", light=_glass_lit):
             ctx.save()
             if rot:
                 ctx.translate(x, y - 120 * S)          # pitch about the body centre

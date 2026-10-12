@@ -325,7 +325,7 @@ def _times(info):
     T["exh"] = T["inh"] + 0.3                      # ... the exhale (shoulders drop)
     T["exh1"] = min(T["exh"] + 0.55, T["up_a"] - 0.02)
     T["s14"] = T["inh"] - 0.15
-    T["walk0"] = T["up_c"] + 0.05
+    T["walk0"] = T["up_c"] + 0.2                   # (turns to the tunnel first, then walks)
     T["s15"] = T["up_c"] - 0.12
     return T
 
@@ -523,7 +523,7 @@ def _tired(t, T, info, paws=None):
             kx, ky = pb["knee_" + sd][:2]
             reach[sd] = (kx + KNEE_OFF[sd][0], ky + KNEE_OFF[sd][1], hw)
     if t >= T["up_c"]:
-        turn = lerp(-0.6, -1.0, _ramp(t, T["up_c"] - 0.05, T["walk0"] + 0.4))
+        turn = lerp(-0.6, -1.0, _ramp(t, T["up_c"] - 0.02, T["walk0"] + 0.05))
         x_st = SEAT_X - _foot_shift(1.0)
         if t >= T["walk0"]:
             pose = _pose_of(("stand", _GOP, _ramp(t, T["walk0"], T["walk0"] + 0.3)))
@@ -1233,7 +1233,7 @@ def _cam(t, T):
         return 12, 385, lerp(1132, 1142, k), lerp(2.6, 2.7, k)
     if t < T["s14"]:      # S13 two-plane: hush ... Emb's yell from deeper in the tunnel
         k = smoothstep(seg(t, T["s13"], T["s14"]))
-        return 13, lerp(684, 678, k), 1125, lerp(1.22, 1.25, k)
+        return 13, lerp(672, 668, k), 1125, lerp(1.16, 1.19, k)
     if t < T["s15"]:      # S14 his medium: the sigh, the get-up (the camera rises with him)
         k = ease_in_out(seg(t, T["up_b"] - 0.1, T["up_c"] + 0.1))
         return 14, lerp(1012, 1000, k), lerp(1140, 1062, k), 1.95
@@ -1279,16 +1279,16 @@ def _beam(ctx, t, T):
     sweep = (fast * math.sin(u * 2 * math.pi * 1.15) + (1 - fast) * 0.35 * math.sin(u * 2 * math.pi * 0.3))
     shake = 0.05 * math.sin(u * 29.0) + 0.035 * math.sin(u * 47.0 + 1.3)
     ang = 1.1 * sweep + shake                                  # 0 = straight down the tunnel at us
-    sx, sy = VP[0] + 4, VP[1] - 14                              # the torch: deep, out of sight
+    sx, sy = VP[0] + 22, VP[1] - 14                             # the torch: deep, out of sight
     ctx.save()
     _mouth_path(ctx)
     ctx.clip()
     ctx.set_operator(cairo.OPERATOR_ADD)
-    px, py = sx + 34 * math.sin(ang), sy + 16 + 8 * math.cos(ang)   # where it hits the far walls
-    core.radial_glow(ctx, px, py, 36, "#ffcf8a", 0.42 * amt)
-    core.radial_glow(ctx, sx, sy + 6, 95, "#ffb866", 0.08 * amt)    # faint spill in the depth
-    L = 64.0
-    for spread, al in ((0.42, 0.03), (0.3, 0.035), (0.19, 0.045), (0.09, 0.06)):
+    px, py = sx + 46 * math.sin(ang), sy + 16 + 8 * math.cos(ang)   # where it hits the far walls
+    core.radial_glow(ctx, px, py, 46, "#ffcf8a", 0.6 * amt)
+    core.radial_glow(ctx, sx, sy + 6, 130, "#ffb866", 0.11 * amt)   # faint spill in the depth
+    L = 74.0
+    for spread, al in ((0.42, 0.04), (0.3, 0.05), (0.19, 0.06), (0.09, 0.08)):
         g = cairo.RadialGradient(sx, sy, 0, sx, sy, L)
         g.add_color_stop_rgba(0.0, 1.0, 0.87, 0.65, al * amt)
         g.add_color_stop_rgba(1.0, 1.0, 0.87, 0.65, 0.0)
