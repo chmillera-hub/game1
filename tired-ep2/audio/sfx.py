@@ -2692,14 +2692,15 @@ def _creature_purr2(sr, rng):
     return _room(fade_edges(out, sr, 0.01, 0.08), sr, 0.12, 0.5)
 
 
-def _sigh_core(sr, rng, dur, f_start, f_end, v_mix, v_end, peak=0.14):
+def _sigh_core(sr, rng, dur, f_start, f_end, v_mix, v_end, peak=0.14, fs=1.0):
     """Exhale: airflow through moving formants (open 'ah' closing to 'h'), breath
-    turbulence, a breathy voiced 'hah' that fades out early."""
+    turbulence, a breathy voiced 'hah' that fades out early. fs scales the formants
+    (~1.15 for a female voice)."""
     n = secs(sr, dur)
     t = tvec(n, sr)
-    F1 = np.interp(t, [0, 0.25 * dur, dur], [700, 640, 480])
-    F2 = np.interp(t, [0, dur], [1180, 980])
-    F3 = np.interp(t, [0, dur], [2550, 2350])
+    F1 = np.interp(t, [0, 0.25 * dur, dur], [700, 640, 480]) * fs
+    F2 = np.interp(t, [0, dur], [1180, 980]) * fs
+    F3 = np.interp(t, [0, dur], [2550, 2350]) * fs
     flow = np.clip(t / 0.06, 0, 1) ** 1.4 * np.exp(-np.maximum(t - peak, 0) / (0.32 * dur))
     flow *= 1 + 0.18 * smooth_noise(n, sr, 14, rng)
     nz = lp(rng.standard_normal(n), 5000, sr, 1)
@@ -2718,6 +2719,21 @@ def _sigh2(sr, rng):
     formants with a soft voiced 'hah' at the front, trailing off."""
     y = _sigh_core(sr, rng, 1.0, 112, 82, 0.22, 0.42)
     return _room(pan(fade_edges(lp(y, 6500, sr), sr, 0.005, 0.12), 0), sr, 0.1, 0.4)
+
+
+@fx("sigh_small_f", trim=-3.0)
+def _sigh_small_f(sr, rng):
+    """A small, quiet female sigh (the Boss): a faint nasal inhale (~0.35 s), then a
+    soft breathy exhale from ~0.4 s, barely voiced."""
+    out = _canvas(sr, 1.4)
+    n = secs(sr, 0.35)
+    t = tvec(n, sr)
+    inh = _norm(_formants(rng.standard_normal(n), sr, [(1900, 3.0, 0.7), (3200, 4.0, 0.6), (1000, 3.0, 0.3)]))
+    inh *= np.clip(t / 0.16, 0, 1) ** 1.5 * np.clip((0.35 - t) / 0.07, 0, 1) * 0.25
+    _place(out, fade_edges(lp(inh, 6500, sr), sr, 0.005, 0.02), 0.0, sr)
+    ex = _sigh_core(sr, rng, 0.9, 205, 168, 0.14, 0.38, 0.12, fs=1.16)
+    _place(out, fade_edges(lp(ex, 7000, sr), sr, 0.005, 0.15), 0.4, sr)
+    return _room(out, sr, 0.1, 0.4)
 
 
 @fx("sigh_deep", trim=-3.0)

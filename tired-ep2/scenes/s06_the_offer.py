@@ -3,7 +3,7 @@
 The keycard opens the control room. The tall chair turns: the Boss was
 waiting. She knew the moment it bit him, and she offers him the one thing he
 wants: go home, sleep, never be bothered again. He is tempted (a daydream of
-his bed). He looks down at Curiosity, its ears droop... "But for once... I'm
+his bed). He looks down at Curiosity, its ears droop... "But right now... I'm
 not tired." He says the whole line slumped, lids heavy. Only AFTER it, in the
 eyes_open beat, do his lids slowly open FULLY (~1.8 s) for the first time in
 both episodes, and the teal glow comes up with them. Then her lids narrow.
@@ -101,7 +101,7 @@ def _timing(info):
     k.droop = c("droop")
     k.l08, k.l08e = L("s06_l08").start, L("s06_l08").end
     k.w_but = info.word_time("s06_l08", 0)
-    k.w_once = info.word_time("s06_l08", 2)
+    k.w_once = info.word_time("s06_l08", 2)   # "now"
     k.w_im = info.word_time("s06_l08", 3)
     k.w_not = info.word_time("s06_l08", 4)
     k.w_tired = info.word_time("s06_l08", 5)
@@ -292,7 +292,7 @@ def tired_kw(t, k, info):
         pose = {"base": "stand", "rot": 0.028 * sway_amt * math.sin(2 * math.pi * ph),
                 "side": 0.02 * sway_amt * math.sin(2 * math.pi * ph + 0.6),
                 "hunch": 0.18 * sigh_k, "nod": 0.05 * sigh_k}
-    # "But for once... I'm not tired." is said SLUMPED: he sinks a hair deeper
+    # "But right now... I'm not tired." is said SLUMPED: he sinks a hair deeper
     # into his slouch through the line. Only after it, as the eyes open, does
     # a held breath lift his shoulders and the slump ease a little.
     op = _open_k(t, k)
@@ -384,7 +384,7 @@ def tired_kw(t, k, info):
     if t >= k.w_but - 0.3:
         blink = 0.0                       # he holds her gaze; no random blinks through the payoff
     for b0, cl, ho, opn in ((k.w_sleep + 0.85, 0.35, 0.3, 0.5), (k.tempt + 1.0, 0.4, 0.4, 0.5),
-                            (k.blink08, 0.2, 0.08, 0.32)):   # the heavy blink in "for once..."
+                            (k.blink08, 0.2, 0.08, 0.32)):   # the heavy blink in "right now..."
         v = slow_blink(t, b0, cl, ho, opn)
         if v is not None:
             blink = v

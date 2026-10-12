@@ -741,7 +741,7 @@ def boss_state(T, info, t):
     st["look"] = tween(t, [(T.watch + 0.1, B_REST), (T.watch + 0.3, B_MON),          # (offscreen)
                            (tb1 + 0.2, B_MON), (tb1 + 0.45, B_AWAY),               # during the blink
                            (tg, B_AWAY), (tg + 0.22, B_MON),
-                           (T.L3b.end + 0.55, B_MON), (T.L3b.end + 0.95, (0.1, 0.4))])
+                           (T.L3b.end + 0.55, B_MON), (T.L3b.end + 0.95, (0.06, 0.7))])   # eyes drop
     # the head follows the pupils ~0.15 s later (chin up a little toward the screen)
     f["head_turn"] = tween(t, [(T.watch + 0.4, 0.0), (T.watch + 0.7, 0.2),
                                (tb1 + 0.35, 0.2), (tb1 + 0.7, 0.02),
@@ -754,7 +754,12 @@ def boss_state(T, info, t):
     # lids: heavy on the screen, heavier when she looks away into nothing
     away = tween(t, [(tb1 + 0.3, 0.0), (tb1 + 0.6, 1.0), (tg, 1.0), (tg + 0.2, 0.0),
                      (T.L3b.end + 0.7, 0.0), (T.L3b.end + 1.1, 1.0)])
-    heavy = 0.17 + 0.09 * away + 0.04 * smoothstep(seg(t, tb2 + 0.4, tb2 + 1.0))
+    # rev 3: after the line her eyes drop, the lids sink to mostly closed, and a small sigh
+    si = T.L3b.end + 1.25                 # the sigh: a small breath in, then out from si + 0.4
+    rise = smoothstep(seg(t, si, si + 0.35)) * (1 - smoothstep(seg(t, si + 0.4, si + 1.2)))
+    fall = smoothstep(seg(t, si + 0.4, si + 1.3))
+    heavy = 0.17 + 0.09 * away + 0.11 * smoothstep(seg(t, T.L3b.end + 0.6, T.L3b.end + 1.2)) \
+        - 0.03 * rise + 0.01 * fall
     f.update(lid=heavy, lid_ang=0.22, brow=-0.04, brow_ang=0.16, curve=-0.07, frown=0.1,
              press=0.0, smirk=0.0, width=-0.04)
     # unfocused while she stares at nothing
@@ -766,10 +771,15 @@ def boss_state(T, info, t):
     elif t < tb2 - 0.2:
         st["blink"] = tween(t, [(tb1, 0.0), (tb1 + 0.38, 1.0), (tb1 + 0.52, 1.0), (tb1 + 0.95, 0.0)])
     else:
-        st["blink"] = tween(t, [(tb2, 0.0), (tb2 + 0.45, 1.0), (tb2 + 0.65, 1.0), (tb2 + 1.15, 0.0)])
+        st["blink"] = 0.0                 # lids stay low through the sigh (no second blink)
+    if t >= si + 0.38:
+        # the exhale: lips part a hair, then close
+        st["mouth"] = (0.1 * smoothstep(seg(t, si + 0.38, si + 0.55)) * (1 - smoothstep(seg(t, si + 1.0, si + 1.3))), 0.0)
+    f["head_nod"] += -0.03 * rise + 0.05 * fall
     # a faint breath out in the numb beat (shoulders sink a hair)
     sink = smoothstep(seg(t, T.L3.end + 0.1, T.L3.end + 0.8))
-    st["pose"] = {"base": "sit_chair", "hunch": 0.12 * (1 - sink), "nod": 0.03 * sink}
+    st["pose"] = {"base": "sit_chair", "hunch": 0.12 * (1 - sink) - 0.04 * rise + 0.07 * fall,
+                  "nod": 0.03 * sink}
     return st
 
 
@@ -1793,4 +1803,6 @@ def SFX(info):
     ev.append((T.watch + 0.05, "chair_creak", -10, 0.2))
     ev.append((T.rew0, "smear_zip", -12, 0.1))
     ev.append((T.rew1, "mouse_click", -4, 0.1))
+    # rev 3: her small sigh after "No matter. I'll catch you." (breath in at si, out at si + 0.4)
+    ev.append((T.L3b.end + 1.25, "sigh_small_f", -4, 0.1))
     return ev
