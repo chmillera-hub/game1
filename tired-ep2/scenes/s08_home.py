@@ -519,7 +519,7 @@ def _dock_screen(T):
         if t >= T.SEND:
             es = w * 0.34
             k = max(0.01, ease_out_back(seg(t, T.SEND, T.SEND + 0.3)))
-            fx.draw_emoji(ctx, x + w * 0.92 - es / 2, yy + es / 2, es * k, EMO)
+            fx.draw_emoji(ctx, x + w * 0.92 - es * 0.85, yy + es / 2, es * k, EMO)   # left room for the z's
     return fn
 
 

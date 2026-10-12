@@ -3997,10 +3997,10 @@ def draw_emoji(ctx, x, y, size, kind="weary", a=1.0):
                 _stroke(ctx, brown, 0.12)
             ellipse(ctx, 0, 0.46, 0.15, 0.19)
             _fill(ctx, "#5b230b")
-            for (zx, zy, zs) in ((0.62, -0.62, 0.34), (0.92, -0.98, 0.26), (1.14, -1.28, 0.2)):  # z z z
+            for (zx, zy, zs) in ((0.6, -0.72, 0.44), (0.96, -1.12, 0.35), (1.24, -1.46, 0.27)):  # z z z
                 _z_path(ctx, zx, zy, zs, -0.2)
                 _fill(ctx, "#4f8ef7", preserve=True)
-                _stroke(ctx, "#ffffff", 0.05)
+                _stroke(ctx, "#ffffff", 0.06)
         else:   # weary / tired face
             for sd in (-1, 1):
                 # worried brows (inner ends up)
