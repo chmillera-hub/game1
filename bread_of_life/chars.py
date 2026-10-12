@@ -26,8 +26,18 @@ def tunic_outfit(base, base_sh, trim=None, neckline="v", mantle=None, belt=None,
         by = P["byaw"] / 60.0
         k = st.get("body_scale", 1.0)
         hem = st.get("hem_y", 13.0) * k
-        body = spline(pts, closed=True, corners=HEM_CORNERS, tension=0.45)
         lc = st.get("line", "#2a1a14")
+        # the neckline is an opening in the robe: the throat and chest show through it, and the
+        # robe's outline follows the neckline instead of running across the neck
+        ncx = by * 0.55 + ho[0] * 0.3
+        if neckline == "v":
+            nk = [(ncx - 0.42, -0.1), (ncx - 0.24, 0.28), (ncx, 0.62 + 0.04 * P["breath"]), (ncx + 0.24, 0.28), (ncx + 0.42, -0.1)]
+        else:
+            nk = [(ncx - 0.52, -0.1), (ncx - 0.4, 0.3), (ncx, 0.45), (ncx + 0.4, 0.3), (ncx + 0.52, -0.1)]
+        npath = spline(nk, closed=True, corners=[0, 4])
+        opening = skia.Path(npath)
+        opening.addRect(skia.Rect.MakeLTRB(nk[0][0], -3.0, nk[-1][0], -0.1 + 1e-3))
+        body = skia.Op(spline(pts, closed=True, corners=HEM_CORNERS, tension=0.45), opening, skia.PathOp.kDifference_PathOp)
         hi = mix(base, "#ffffff", 0.35)
         cv.drawPath(body, fill(base, shader=lin_grad((0, -0.2), (0, hem), [mix(base, "#ffffff", 0.12), base, mix(base, base_sh, 0.45)], [0.0, 0.35, 1.0])))
         cv.drawPath(body, stroke(lc, 0.024))
@@ -54,20 +64,6 @@ def tunic_outfit(base, base_sh, trim=None, neckline="v", mantle=None, belt=None,
             x0 = u * sw * 0.78 + by * 0.4
             x1 = u * sw * 0.92 + by * 0.4 + 0.05 * math.sin(P["t"] * 0.8 + j)
             _fold(cv, [(x0, 4.9 * k), (x0 * 0.98 + (x1 - x0) * 0.5, (4.9 * k + hem) / 2), (x1, hem - 0.15)], base_sh, hi, w=0.08, alpha=0.55)
-        # neckline
-        ncx = by * 0.55 + ho[0] * 0.3
-        if neckline == "v":
-            nk = [(ncx - 0.42, -0.1), (ncx - 0.24, 0.28), (ncx, 0.62 + 0.04 * P["breath"]), (ncx + 0.24, 0.28), (ncx + 0.42, -0.1)]
-        else:
-            nk = [(ncx - 0.52, -0.1), (ncx - 0.4, 0.3), (ncx, 0.45), (ncx + 0.4, 0.3), (ncx + 0.52, -0.1)]
-        npath = spline(nk, closed=True, corners=[0, 4])
-        cv.drawPath(npath, fill(st["skin"]))
-        cv.drawPath(npath, fill(st["skin_sh"], alpha=0.45))
-        cv.drawPath(spline([(ncx - 0.3, 0.12), (ncx - 0.12, 0.2)], closed=False), stroke(st.get("skin_sh2", st["skin_sh"]), 0.016, alpha=0.5))
-        cv.drawPath(spline([(ncx + 0.3, 0.12), (ncx + 0.12, 0.2)], closed=False), stroke(st.get("skin_sh2", st["skin_sh"]), 0.016, alpha=0.5))
-        cv.drawPath(spline(nk[0:], closed=False), stroke(lc, 0.02))
-        cv.drawPath(spline(nk, closed=False), stroke(trim or base_sh, 0.07, alpha=0.75))
-        cv.drawPath(spline(nk, closed=False), stroke(lc, 0.018, alpha=0.9))
         # hem band
         cv.drawPath(spline([(-sw * 1.2, hem - 0.25), (0, hem - 0.18), (sw * 1.2, hem - 0.25)], closed=False), stroke(trim or base_sh, 0.12, alpha=0.6))
         if sash:
@@ -77,6 +73,17 @@ def tunic_outfit(base, base_sh, trim=None, neckline="v", mantle=None, belt=None,
             cv.drawPath(band, fill(sc))
             cv.drawPath(band, stroke(lc, 0.02))
         cv.restore()
+        # chest seen through the neckline: collarbones, and the soft shadow of the robe's edge
+        cv.save()
+        cv.clipPath(npath, skia.ClipOp.kIntersect, True)
+        sh2 = st.get("skin_sh2", st["skin_sh"])
+        cv.drawPath(spline([(ncx - 0.34, 0.1), (ncx - 0.2, 0.14), (ncx - 0.08, 0.2)], closed=False), stroke(sh2, 0.016, alpha=0.45))
+        cv.drawPath(spline([(ncx + 0.34, 0.1), (ncx + 0.2, 0.14), (ncx + 0.08, 0.2)], closed=False), stroke(sh2, 0.016, alpha=0.45))
+        cv.drawPath(spline(nk, closed=False), stroke(st["skin_sh"], 0.14, alpha=0.4, blur=0.04))
+        cv.restore()
+        # collar band along the neckline
+        cv.drawPath(spline(nk, closed=False), stroke(trim or base_sh, 0.07, alpha=0.75))
+        cv.drawPath(spline(nk, closed=False), stroke(lc, 0.02, alpha=0.95))
         if belt:
             bc, bsh = belt
             yb = 4.45 * k
@@ -167,8 +174,8 @@ def mantle_painter(col, col_sh, side=1, lining=None):
 # Jesus
 # ---------------------------------------------------------------------------
 JESUS_ST = dict(
-    skin="#90725a", skin_sh="#7d553f", skin_sh2="#67412f", blush_col="#8e5346", blush_base=0.07,
-    line="#3a2016", lash="#26140d", brow_col="#3a2216", lower_col="#533225", crease_col="#714938",
+    skin="#ba976c", skin_sh="#a0764c", skin_sh2="#845b38", blush_col="#b76e57", blush_base=0.07,
+    line="#3a2016", lash="#26140d", brow_col="#3a2216", lower_col="#6b442d", crease_col="#926646",
     iris=("#2a170a", "#80501f", "#e2b26a"), lid_shadow="#5a3020",
     hair="#432a1a", hair_sh="#28170d", hair_hl="#82593c", hair_line="#1e1009", hair_rim="#d39a63",
     beard="#4a2e1d", beard_sh="#2c180e",

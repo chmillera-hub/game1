@@ -700,20 +700,23 @@ class Character:
         if self.legs:
             draw_legs(cv, st, P, st.get("hem_y", 13.0) * st.get("body_scale", 1.0), self.leg_style)
 
-        # --- neck (before clothes so collars overlap it)
+        # --- neck and upper chest, one continuous piece of skin drawn before the clothes; the
+        # robe's neckline opening frames it, so the throat flows down into the chest
         nw = st.get("neck_w", 0.40)
         nt = hoy + st.get("neck_top", 0.75)
-        neck = spline([(-nw * 1.12, 0.45), (hox * 0.8 - nw * 0.92, nt), (hox * 0.8 + nw * 0.92, nt), (nw * 1.12, 0.45)],
-                      closed=True, corners=[0, 1, 2, 3], tension=0.3)
         lc = st.get("line", "#2a1a14")
-        # the neck sits in the shadow of the head: a touch deeper than the face, with outlined sides
-        # so it reads as solid against a bright sky
-        cv.drawPath(neck, stroke(lc, 0.05))
-        cv.drawPath(neck, fill(mix(st["skin"], st["skin_sh"], 0.22)))
+        top_l, top_r = (hox * 0.8 - nw * 0.92, nt), (hox * 0.8 + nw * 0.92, nt)
+        skin_shape = spline([top_l, (-nw * 1.0, -0.5), (-nw * 1.12, -0.16), (-nw * 1.5, 0.06), (-1.0, 0.3), (-1.0, 1.4),
+                             (1.0, 1.4), (1.0, 0.3), (nw * 1.5, 0.06), (nw * 1.12, -0.16), (nw * 1.0, -0.5), top_r],
+                            closed=True, corners=[0, 5, 6, 11], tension=0.4)
+        # the throat sits in the shadow of the head and the chest catches the light
+        cv.drawPath(skin_shape, fill(st["skin"], shader=lin_grad((0, nt), (0, 0.75), [
+            mix(st["skin"], st["skin_sh"], 0.32), mix(st["skin"], st["skin_sh"], 0.18), st["skin"]], [0.0, 0.6, 1.0])))
         cv.save()
-        cv.clipPath(neck, skia.ClipOp.kIntersect, True)
+        cv.clipPath(skin_shape, skia.ClipOp.kIntersect, True)
         lxs = 1.0 if P["light_x"] < 0 else -1.0
-        cv.drawPath(spline([(lxs * nw * 0.35, nt - 0.2), (lxs * nw * 1.4, nt - 0.2), (lxs * nw * 1.4, 0.6), (lxs * nw * 0.5, 0.6)], closed=True), fill(st["skin_sh"], alpha=0.75))
+        cv.drawPath(spline([(lxs * nw * 0.35, nt - 0.2), (lxs * nw * 1.4, nt - 0.2), (lxs * nw * 1.5, -0.05), (lxs * nw * 0.55, -0.2)], closed=True),
+                    fill(st["skin_sh"], alpha=0.7, blur=0.03))
         cv.concat(head_matrix())
         jaw_sh = H.face_path()
         m = skia.Matrix()
@@ -721,9 +724,10 @@ class Character:
         jaw_sh.transform(m)
         cv.drawPath(jaw_sh, fill(st.get("skin_sh2", st["skin_sh"]), alpha=0.9))
         cv.restore()
+        # outlines down the sides of the throat only, easing out toward the shoulders
         for s_ in (-1, 1):
-            edge = [(s_ * nw * 1.12, 0.45), (hox * 0.8 + s_ * nw * 0.92, nt)]
-            cv.drawPath(spline(edge, closed=False), stroke(lc, 0.022, alpha=0.9))
+            edge = [(hox * 0.8 + s_ * nw * 0.92, nt), (s_ * nw * 1.0, -0.5), (s_ * nw * 1.1, -0.2), (s_ * (nw * 1.12 + 0.14), -0.04)]
+            cv.drawPath(tapered(sample_spline(edge, n=14), 0.024, 0.006, wmid=0.024), fill(lc, alpha=0.9))
 
         # --- body
         if arms:
