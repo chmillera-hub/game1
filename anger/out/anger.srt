@@ -41,17 +41,16 @@
 <i>Only in open ones.</i>
 
 10
-00:00:41,650 --> 00:00:44,890
-<i>Beyond the door lay</i>
-<i>a cavern so vast,</i>
+00:00:41,400 --> 00:00:45,990
+<i>Beyond the door lay a hall of</i>
+<i>stone pillars and glowing fungus,</i>
 
 11
-00:00:44,890 --> 00:00:48,190
-<i>his torchlight could</i>
-<i>not find its walls.</i>
+00:00:45,990 --> 00:00:49,011
+<i>with a still, black pool at its heart.</i>
 
 12
-00:00:48,250 --> 00:00:52,555
+00:00:49,050 --> 00:00:53,355
 <i>It was dark, and cold,</i>
 <i>and very, very quiet.</i>
 
