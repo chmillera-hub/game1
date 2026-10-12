@@ -12,6 +12,7 @@ import numpy as np
 import soundfile as sf
 
 from config import FPS, WORK
+from body import DEFAULT_POLE
 from rig import DEFAULT_P
 
 NUM_PARAMS = [k for k, v in DEFAULT_P.items() if isinstance(v, float)]
@@ -107,6 +108,8 @@ class Perf:
         self.tears = []  # (side, t0, t1)
         self.fixed = []  # (t0, t1, dict) hard overrides
         self.nods = []  # (t, amount, dur)
+        self.shakes = []  # (t, amp, dur, cycles)
+        self.mimes = []  # (t0, t1, amount): talking we see but do not hear (under narration)
         self.blink_rate = [(0.0, 1.0)]
         self.extra_blinks = []
         self.no_blink = []  # (t0, t1)
@@ -140,6 +143,15 @@ class Perf:
 
     def nod(self, t, amount=4.0, dur=0.6):
         self.nods.append((t, amount, dur))
+        return self
+
+    def shake(self, t, amp=4.0, dur=1.0, cycles=2):
+        """A slow, slight side-to-side shake of the head (a wordless "no")."""
+        self.shakes.append((t, amp, dur, cycles))
+        return self
+
+    def mime(self, t0, t1, amount=0.35):
+        self.mimes.append((t0, t1, amount))
         return self
 
     def blink(self, t):
@@ -192,6 +204,13 @@ class Perf:
         # speech emphasis: nods + brow raises on stressed words
         for (t0, amount, d) in self.nods:
             out["pitch"] += amount * bump(t, t0 + d / 2, d)
+        for (t0, sa, d, cyc) in self.shakes:
+            x = np.clip((t - t0) / d, 0.0, 1.0)
+            env = np.sin(np.pi * x) ** 1.5
+            dy = sa * env * np.sin(2 * np.pi * cyc * x)
+            out["yaw"] += dy
+            out["roll"] += 0.18 * sa * env * np.sin(2 * np.pi * cyc * x - 0.6)
+            out["gx"] -= 0.012 * dy  # the eyes stay on the listener while the head turns
         out["pitch"] += lip["nod"]
         out["br_l"] += lip["brow"]
         out["br_r"] += lip["brow"]
@@ -205,6 +224,11 @@ class Perf:
         out["m_teeth"] = np.maximum(out["m_teeth"] * (1 - s), lip["teeth"])
         out["m_smile"] = out["m_smile"] * (1 - 0.45 * lip["round"]) * (1 - 0.25 * s)
         out["m_press"] = out["m_press"] * (1 - s)
+        for (t0, t1, amount) in self.mimes:
+            env = np.clip((t - t0) / 0.3, 0, 1) * np.clip((t1 - t) / 0.3, 0, 1)
+            syl = np.maximum(0.0, np.sin(t * 8.7 + self.seed) * np.sin(t * 2.1 + 0.7 * self.seed))
+            out["m_open"] += amount * env * syl
+            out["pitch"] += 1.5 * env * np.sin(t * 3.3 + self.seed)
         # saccades when not speaking
         sac_x = np.zeros(n_frames)
         sac_y = np.zeros(n_frames)
@@ -423,43 +447,51 @@ class Perf:
         return res
 
 
+def _t3(t):
+    return (t[0], t[1], t[2] if len(t) > 2 else 0.6)
+
+
+def _lerp3(p, q, x):
+    return tuple(a + (b - a) * x for a, b in zip(p, q))
+
+
 def _blend_arm(a, b, x):
+    """Blend between two gesture specs; None means the arm hangs at rest."""
     if b is None and a is None:
         return None
     if b is None:
-        # lower the arm back to the hanging sleeve, hand retracting into the cuff
         if x >= 1.0:
             return None
         spec = dict(a)
-        tx, ty = a["target"]
-        side = a.get("side_hint", 1 if tx >= 0 else -1)
-        rest = (side * 1.85, 4.15)
-        spec["target"] = (tx + (rest[0] - tx) * x, ty + (rest[1] - ty) * x)
-        spec["hand_scale"] = a.get("hand_scale", 1.0) * float(np.clip((1.0 - x) / 0.35, 0.0, 1.0))
+        spec["rest_blend"] = float(x)
+        spec["tilt"] = a.get("tilt", 0.0) * (1.0 - x)
+        spec["wrist"] = a.get("wrist", 8.0) + (8.0 - a.get("wrist", 8.0)) * x
+        spec["pole"] = _lerp3(a.get("pole") or DEFAULT_POLE, DEFAULT_POLE, x)
+        if a.get("hand", "relaxed") != "relaxed":
+            spec["hand"] = a.get("hand", "relaxed")
+            spec["hand_b"] = "relaxed"
+            spec["hand_t"] = float(x)
         return spec
     if a is None:
-        # raise from rest: start where the hanging sleeve is, hand grows in as it leaves the cuff
         spec = dict(b)
-        tx, ty = b["target"]
-        side = spec.get("side_hint", 1 if tx >= 0 else -1)
-        rest = (side * 1.85, 4.15)
-        spec["target"] = (rest[0] + (tx - rest[0]) * x, rest[1] + (ty - rest[1]) * x)
+        spec["rest_blend"] = float(1.0 - x)
+        spec["tilt"] = b.get("tilt", 0.0) * x
+        spec["wrist"] = 8.0 + (b.get("wrist", 8.0) - 8.0) * x
+        spec["pole"] = _lerp3(DEFAULT_POLE, b.get("pole") or DEFAULT_POLE, x)
         if x < 1.0:
-            spec["hand_b"] = b.get("hand", "relaxed")
             spec["hand"] = "relaxed"
-            spec["hand_t"] = x
-            spec["hand_scale"] = b.get("hand_scale", 1.0) * float(np.clip(x / 0.35, 0.0, 1.0))
+            spec["hand_b"] = b.get("hand", "relaxed")
+            spec["hand_t"] = float(x)
         return spec
     spec = dict(b)
-    ax, ay = a["target"]
-    bx, by = b["target"]
-    spec["target"] = (ax + (bx - ax) * x, ay + (by - ay) * x)
-    ha = a.get("hand_ang")
-    hb = b.get("hand_ang")
-    if ha is not None and hb is not None:
-        spec["hand_ang"] = ha + (hb - ha) * x
+    ta, tb = _t3(a["target"]), _t3(b["target"])
+    spec["target"] = tuple(p + (q - p) * x for p, q in zip(ta, tb))
+    wa, wb = a.get("wrist", 8.0), b.get("wrist", 8.0)
+    spec["wrist"] = wa + (wb - wa) * x
+    spec["tilt"] = a.get("tilt", 0.0) + (b.get("tilt", 0.0) - a.get("tilt", 0.0)) * x
+    spec["pole"] = _lerp3(a.get("pole") or DEFAULT_POLE, b.get("pole") or DEFAULT_POLE, x)
     if x < 1.0 and a.get("hand") != b.get("hand"):
         spec["hand"] = a.get("hand", "relaxed")
         spec["hand_b"] = b.get("hand", "relaxed")
-        spec["hand_t"] = x
+        spec["hand_t"] = float(x)
     return spec

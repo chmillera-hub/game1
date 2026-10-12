@@ -6,8 +6,7 @@ import numpy as np
 import skia
 
 import bg
-import extras
-from gfx import ellipse, fill, hexc, lin_grad, poly, rad_grad, spline, stroke, tapered
+from gfx import ellipse, fill, hexc, lin_grad, poly, rad_grad, sample_spline, spline, stroke, tapered
 
 
 def screen_pt(px, py, pcam, W, H):
@@ -139,78 +138,76 @@ def dust(cv, W, H, t, n=36, seed=5):
         cv.drawCircle(x, y, r, p)
 
 
-def crowd_sprites(cv, t, layout, blur=0.0, S=40, sway=True, alpha=1.0):
-    for k, (seed, x, y, sc, yaw) in enumerate(layout):
-        spr = extras.sprite(seed, yaw=yaw, S=S, blur=blur)
-        dy = 1.2 * math.sin(t * 0.8 + k) if sway else 0
-        dx = 1.0 * math.sin(t * 0.37 + k * 2) if sway else 0
-        extras.draw_sprite(cv, spr, x + dx, y + dy, sc, alpha)
-
-
-def syn_crowd_wide(cv, W, H, t):
-    rows = [(0.80, 0.55, 30, 1.0), (0.88, 0.62, 34, 1.0)]
-    k = 0
-    for (yy, sc, S, a) in rows:
-        for i in range(6):
-            seed = 400 + k
-            x = W * (0.38 + i * 0.12)
-            spr = extras.sprite(seed, yaw=-22, S=S, blur=0.6)
-            extras.draw_sprite(cv, spr, x + 1.0 * math.sin(t * 0.5 + k), H * yy, 1.0)
-            k += 1
-
-
-def syn_crowd_argue(cv, W, H, t, t0):
-    # listeners turning to each other: alternate sprite yaw over time
-    k = 0
-    for row, (yy, S) in enumerate([(0.62, 44), (0.74, 52), (0.88, 62)]):
-        for i in range(4 + row):
-            seed = 500 + k
-            phase = math.sin((t - t0) * 1.6 + k * 1.3)
-            yaw = int(round(24 * phase / 6.0)) * 6
-            x = W * (0.08 + i * (0.85 / (3.5 + row))) + (row % 2) * 30
-            spr = extras.sprite(seed, yaw=yaw, S=S, blur=1.2 if row < 2 else 0.0,
-                                expr=dict(m_open=0.25 if (int((t - t0) * 6 + k) % 3 == 0) else 0.0, bfur=0.5, bi_l=-0.3, bi_r=-0.3))
-            extras.draw_sprite(cv, spr, x + 2 * math.sin(t * 3 + k), H * yy + 1.5 * math.sin(t * 4 + k), 1.0)
-            k += 1
-
-
-def silhouette(cv, x, y, s, col="#2a1f2e", head_cloth=True, walk=0.0, rim="#ff9a5a", rim_side=1, facing=1):
-    """Robed figure silhouette (feet at x,y; height ~ 7.4s) with a warm rim light."""
-    bob = abs(math.sin(walk * math.pi)) * 0.12 * s
-    sway = math.sin(walk * math.pi) * 0.25 * s
-    top = y - 5.0 * s - bob
-    robe = [(x - 1.25 * s + sway * 0.3, y), (x - 1.05 * s, y - 2.2 * s - bob), (x - 1.2 * s, top + 0.9 * s),
-            (x - 0.85 * s, top + 0.15 * s), (x, top - 0.05 * s), (x + 0.85 * s, top + 0.15 * s),
-            (x + 1.2 * s, top + 0.9 * s), (x + 1.05 * s, y - 2.2 * s - bob), (x + 1.25 * s + sway * 0.3, y)]
-    body = spline(robe, closed=True, corners=[0, 8])
-    head = ellipse(x + facing * 0.08 * s, top - 0.75 * s, 0.62 * s, 0.75 * s)
-    cloth = spline([(x - 0.95 * s, top + 0.5 * s), (x - 0.75 * s, top - 1.25 * s), (x, top - 1.6 * s),
-                    (x + 0.75 * s, top - 1.25 * s), (x + 0.95 * s, top + 0.5 * s), (x, top + 0.2 * s)], closed=True)
-    shape = skia.Path(body)
-    shape.addPath(head)
+def silhouette(cv, x, y, s, col="#2a1f2e", head_cloth=True, walk=0.0, rim="#ff9a5a", rim_side=1, facing=1, walking=True):
+    """Backlit robed figure with arms and legs (feet at x,y; height ~ 7.4s).
+    `walk` is the stride phase; facing -1 = seen from behind (walking away), +1 = turned toward us."""
+    ph = walk * math.pi
+    stride = math.sin(ph) if walking else 0.0
+    bob = abs(math.sin(ph)) * 0.10 * s if walking else 0.0
+    top = y - 6.2 * s - bob
+    sh_y = y - 5.75 * s - bob
+    parts = []
+    # legs (lower legs below a calf-length robe), alternating steps
+    for side in (-1, 1):
+        lift = max(0.0, side * stride) * 0.45 * s
+        fx_ = x + side * 0.22 * s + side * stride * 0.10 * s
+        knee = (x + side * 0.24 * s, y - 2.2 * s - bob)
+        foot = (fx_, y - lift)
+        leg = tapered([knee, ((knee[0] + foot[0]) / 2, (knee[1] + foot[1]) / 2), foot], 0.30 * s, 0.17 * s)
+        parts.append(leg)
+        parts.append(ellipse(foot[0] + side * 0.05 * s, foot[1], 0.24 * s, 0.09 * s))
+    # robe
+    robe = spline([(x - 0.72 * s, sh_y + 0.05 * s), (x - 0.62 * s, y - 4.0 * s - bob), (x - 0.78 * s + 0.08 * s * stride, y - 1.45 * s),
+                   (x, y - 1.35 * s), (x + 0.78 * s + 0.08 * s * stride, y - 1.45 * s), (x + 0.62 * s, y - 4.0 * s - bob),
+                   (x + 0.72 * s, sh_y + 0.05 * s), (x, sh_y - 0.25 * s)], closed=True, corners=[2, 4])
+    parts.append(robe)
+    # arms swinging opposite to the legs
+    for side in (-1, 1):
+        swing = -side * stride * 0.45 * s if walking else 0.0
+        sh = (x + side * 0.66 * s, sh_y + 0.2 * s)
+        el = (x + side * 0.82 * s, y - 4.35 * s - bob + abs(swing) * 0.1)
+        wr = (x + side * 0.86 * s + swing * 0.25, y - 3.45 * s - bob - abs(swing) * 0.35)
+        parts.append(tapered(sample_spline([sh, el, wr], n=10), 0.36 * s, 0.30 * s, wmid=0.32 * s))
+        parts.append(ellipse(wr[0], wr[1] + 0.22 * s, 0.13 * s, 0.24 * s))
+    # head + cloth
+    hx = x + facing * 0.05 * s
+    parts.append(ellipse(hx, top - 0.55 * s, 0.42 * s, 0.5 * s))
     if head_cloth:
-        shape.addPath(cloth)
+        parts.append(spline([(hx - 0.62 * s, top - 0.2 * s), (hx - 0.5 * s, top - 1.0 * s), (hx, top - 1.25 * s), (hx + 0.5 * s, top - 1.0 * s),
+                             (hx + 0.62 * s, top - 0.2 * s), (hx + 0.7 * s, sh_y + 0.3 * s), (hx - 0.7 * s, sh_y + 0.3 * s)], closed=True))
+    shape = skia.Path()
+    for p in parts:
+        shape.addPath(p)
+    shape.setFillType(skia.PathFillType.kWinding)
     cv.drawPath(shape, fill(col))
-    # warm rim light on the sun side
     cv.save()
     cv.clipPath(shape, skia.ClipOp.kIntersect, True)
     m = skia.Matrix()
-    m.setTranslate(-rim_side * 0.22 * s, 0)
+    m.setTranslate(-rim_side * 0.18 * s, 0)
     inner = skia.Path(shape)
     inner.transform(m)
     inner.setFillType(skia.PathFillType.kInverseWinding)
     cv.drawPath(inner, fill(rim, alpha=0.55))
     cv.restore()
-    # feet hint
-    for k in (-1, 1):
-        fx_ = x + k * 0.45 * s + (sway if k > 0 else -sway) * 0.4
-        cv.drawPath(ellipse(fx_, y, 0.35 * s, 0.12 * s), fill(col))
+    cv.drawPath(ellipse(x, y + 0.05 * s, 0.9 * s, 0.14 * s), fill("#000000", alpha=0.25, blur=0.2 * s))
 
 
-def dusk_figures(cv, W, H, t):
-    groups = [(0.70, 0.66, 9), (0.74, 0.67, 9.5), (0.80, 0.70, 10.5), (0.86, 0.72, 11), (0.62, 0.62, 7.5), (0.66, 0.625, 7.5)]
-    for k, (gx, gy, s) in enumerate(groups):
-        silhouette(cv, W * gx + 1.0 * math.sin(t * 0.4 + k), H * gy, s * 0.9)
+def dusk_figures(cv, W, H, t, pcam=(0.5, 0.47, 0.82)):
+    """Groups of disciples standing and talking on the beach, backlit by the sunset."""
+    _, hz = screen_pt(0, bg.PH * 0.47, pcam, W, H)
+    rng = np.random.default_rng(29)
+    items = []
+    for g, (u0, n) in enumerate([(0.22, 3), (0.40, 4), (0.58, 3), (0.74, 2)]):
+        for i in range(n):
+            u = u0 + rng.uniform(-0.03, 0.03)
+            px, py = _beach_path(u)
+            lane = (i - n / 2) * 0.012 + rng.uniform(-0.006, 0.006)
+            sx, sy = screen_pt(px + lane * bg.PW * (1.3 - u), py, pcam, W, H)
+            depth = max(sy - hz, 2.0)
+            items.append((sy, sx, depth * 0.032, g * 3 + i))
+    for sy, sx, s_, k in sorted(items):
+        sway = 0.08 * math.sin(t * 0.6 + k)
+        silhouette(cv, sx + sway * s_, sy, max(s_, 1.6), col="#2a1f2e", walking=False, facing=(1 if k % 2 else -1))
 
 
 def _beach_path(u):

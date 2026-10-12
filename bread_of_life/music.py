@@ -3,6 +3,7 @@ convolution hall reverb, then placed on the film timeline with crossfades.
 
 Musical plan (D minor / Dorian, with brief Hijaz colour for tension):
   opening      harp + slow strings + ney-like pan flute theme
+  mystery      choir over a D pedal for "I am here because my Father has willed it"
   teaching1    soft strings under Jesus' first words
   exchange     cello ostinato, oud plucks with Hijaz colour under Eli's challenge
   father       strings rising, choir enters on "my Father"
@@ -17,7 +18,8 @@ Musical plan (D minor / Dorian, with brief Hijaz colour for tension):
   final        warm swell resolving on "will live forever"
   lament       solo flute over a thin pad as many walk away
   question     one held string note under "You do not want to leave too?"
-  confession   hope rising into D major on "the Holy One of God", theme to the end
+  confession   hope rising into D major on "the Holy One of God", a theme phrase as the bread is broken
+  prayer       a still D-major bed under Jesus' prayer, the theme's cadence under the end title
 """
 import os
 import subprocess
@@ -236,7 +238,7 @@ def shift(notes, semis):
 def build_cues():
     C = []
     # 1 opening ------------------------------------------------------------
-    c = Cue("opening", 0.0, T("L04") - 0.3, bpm=66, gain=0.9, fade_in=0.02, fade_out=3.0)
+    c = Cue("opening", 0.0, T("L03b") - 1.0, bpm=66, gain=0.9, fade_in=0.02, fade_out=2.6)
     c.inst("harp", 0, 95, pan=50)
     c.inst("strings", 1, 80)
     c.inst("cello", 2, 80, pan=58)
@@ -247,6 +249,23 @@ def build_cues():
     c.ramp("strings", 0, 6, 70, 100)
     bass_line(c, "cello", ch * 2, 0, 4, vel=48, octave=38)
     melody(c, "panflute", shift(THEME_MIN, -12), 16, vel=62)
+    C.append(c)
+    # 1b mystery: "I am here because my Father has willed it" ---------------
+    c = Cue("mystery", T("L03b") - 1.4, T("L04") - 0.3, bpm=54, gain=2.2, fade_in=2.2, fade_out=1.8)
+    c.inst("strings", 1, 72)
+    c.inst("cello", 2, 70)
+    c.inst("choir", 3, 72)
+    c.inst("harp", 0, 70, pan=58)
+    ch = ["Dm", "Bb/D", "Gm/D", "A/D", "Dm", "Bb/D", "Gm/D", "Dsus2"]
+    e = c.beats / len(ch)
+    pad_chords(c, "strings", ch, 0, e, vel=34, lo=55, hi=74, n=3)
+    pad_chords(c, "choir", ch, 0, e, vel=40, lo=62, hi=79, n=3)
+    fb = c.b(T("L03b", seg=1) - c.start)
+    c.ramp("choir", 0, fb, 30, 70)
+    c.ramp("choir", fb, fb + 6, 70, 105)
+    c.note("cello", 0, c.beats, 38, 40)  # low D pedal
+    for k, b in enumerate(range(2, int(c.beats) - 2, 5)):
+        c.note("harp", b, 3.0, [74, 81, 76, 69][k % 4], 34)
     C.append(c)
     # 2 teaching1 ----------------------------------------------------------
     c = Cue("teaching1", T("L04") - 0.8, T("L07") - 0.2, bpm=60, gain=1.5)
@@ -444,7 +463,7 @@ def build_cues():
     c.note("strings", 0, c.beats, 62, 26)
     C.append(c)
     # 16 confession -> end ---------------------------------------------------
-    c = Cue("confession", T("L35") - 0.8, T.total + 0.5, bpm=60, gain=0.85, fade_in=2.0, fade_out=4.5)
+    c = Cue("confession", T("L35") - 0.8, T("L37") - 0.1, bpm=60, gain=0.85, fade_in=2.0, fade_out=1.8)
     c.inst("harp", 0, 85)
     c.inst("strings", 1, 92)
     c.inst("cello", 2, 80)
@@ -465,7 +484,25 @@ def build_cues():
     c.ramp("choir", b_holy, b_holy + 3, 40, 110)
     bass_line(c, "cello", ch2, b_holy, e2, vel=50, octave=38)
     harp_arps(c, "harp", ch2, b_holy, e2, vel=40, step=0.5, pattern=(0, 2, 4, 5, 4, 2))
-    melody(c, "oboe", THEME_MAJ, b_holy + c.b(T("L36", "end") - T("L36", seg=1)) + 0.5, vel=56)
+    melody(c, "oboe", [(69, 1), (74, 0.5), (76, 0.5), (78, 2.5)], b_holy + c.b(T("L36", "end") - T("L36", seg=1)) + 0.1, vel=56)
+    C.append(c)
+    # 17 prayer -> end: a still bed under "Father...", the theme's cadence as the title holds
+    c = Cue("prayer", T("L37") - 1.5, T.total + 0.5, bpm=52, gain=1.3, fade_in=2.5, fade_out=4.0)
+    c.inst("harp", 0, 78)
+    c.inst("strings", 1, 88)
+    c.inst("cello", 2, 76)
+    c.inst("choir", 3, 80)
+    c.inst("oboe", 4, 70, pan=70)
+    ch = ["D", "G/D", "D", "Bm", "G", "Em", "A", "D", "D"]
+    e = c.beats / len(ch)
+    pad_chords(c, "strings", ch, 0, e, vel=38, lo=57, hi=78)
+    bass_line(c, "cello", ch, 0, e, vel=40, octave=38)
+    harp_arps(c, "harp", ch, 0, e, vel=30, step=1.0, pattern=(0, 2, 4, 2))
+    hb = c.b(T("L37", seg=2) - c.start)
+    pad_chords(c, "choir", ch, 0, e, vel=44, lo=60, hi=79, n=3)
+    c.ramp("choir", 0, hb, 0, 40)
+    c.ramp("choir", hb, hb + 5, 40, 100)
+    melody(c, "oboe", [(76, 1), (73, 1), (74, 3)], c.b(T("L37", "end") + 0.4 - c.start), vel=54)
     C.append(c)
     return C
 

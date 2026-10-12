@@ -228,7 +228,7 @@ def ambience():
     # dusk: softer waves, crickets, footsteps of those who leave, bread crackle
     amb += crickets(N, s2 + 2.0, gain=0.012) * env_curve([(0, 0), (s2, 0), (s2 + 3, 1), (s3, 1)], N)[:, None]
     amb += footsteps(N, T("L33") - 0.3, T("L33", "end") + 1.0, gain=0.05)
-    amb += crackle(N, T("L36", "end") + 2.05, gain=0.12)
+    amb += crackle(N, T("L36", "end") + 1.85, gain=0.12)  # the loaf splits on screen at +1.88 s
     return amb
 
 
@@ -236,7 +236,7 @@ def ambience():
 # dialogue
 # --------------------------------------------------------------------------
 LINE_LUFS = {"NARRATOR": -21.0, "JESUS": -20.0, "PETER": -20.0, "ELI": -20.0, "MIRIAM": -21.5, "MAN2": -21.0}
-LINE_ADJ = {"L12": -1.0, "L24": +1.5, "L19": +0.5, "L34": -1.5, "L17": -1.0, "L16": -1.0, "L18": -0.5}
+LINE_ADJ = {"L12": -1.0, "L24": +1.5, "L19": +0.5, "L34": -1.5, "L17": -1.0, "L16": -1.0, "L18": -0.5, "L37": -1.0}
 
 
 def dialogue():
@@ -329,6 +329,10 @@ def build():
     loud = meter.integrated_loudness(mix)
     mix = mix * db(-16.0 - loud)
     mix = limiter(mix, -1.2)
+    # the sound fades out with the picture (the last second fades to black)
+    i0, i1 = int((T.total - 1.8) * SR), int(T.total * SR)
+    mix[i0:i1] *= np.linspace(1.0, 0.0, i1 - i0)[:, None] ** 1.5
+    mix[i1:] = 0.0
     print("integrated loudness:", round(meter.integrated_loudness(mix), 2), "peak:", round(20 * np.log10(np.max(np.abs(mix))), 2))
     sf.write(os.path.join(OUT, "mix.wav"), mix.astype(np.float32), SR)
     sf.write(os.path.join(OUT, "dialogue.wav"), dia.astype(np.float32), SR)

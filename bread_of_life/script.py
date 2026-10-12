@@ -60,14 +60,21 @@ SCENES = [
             ], gap=0.5),
             L("L03", "ELI", [
                 ("Rabbi!", 0.45),
-                ("When did you get here?", 0.4),
-                ("There was only one boat... / and you weren't on it.", 0.2),
+                ("When did you get here?", 0.45),
+                ("We watched every boat come ashore... / and you were not on any of them.", 0.45),
+                ("Yet here you are! / How is that possible?", 0.2),
             ], gap=1.6),
+            L("L03b", "JESUS", [
+                ("I am here...", 0.5, {"speed": 0.66}),
+                ("because my Father has willed it.", 0.6, {"speed": 0.68}),
+                ("He has sent me to tell you something important...", 0.35),
+                ("and that is why I stand before you.", 0.2),
+            ], gap=2.6),
             L("L04", "JESUS", [
                 ("Very truly I tell you, / you are looking for me,", 0.3),
                 ("not because you saw the signs I performed,", 0.25),
                 ("but because you ate the loaves / and had your fill.", 0.3),
-            ], gap=2.6),
+            ], gap=1.9),
             L("L05", "JESUS", [
                 ("Do not work for food that spoils,", 0.45),
                 ("but for food that endures to eternal life,", 0.3),
@@ -82,7 +89,8 @@ SCENES = [
             ], gap=1.3),
             L("L08", "JESUS", [
                 ("The work of God is this:", 0.3),
-                ("to believe in the one he has sent.", 0.2),
+                ("to believe in the one he has sent,", 0.3),
+                ("so that we may glorify Him, / and the Son.", 0.2),
             ], gap=0.9),
             L("L09", "ELI", [
                 ("Then what sign will you give us, / so that we may see it and believe you?", 0.4),
@@ -160,7 +168,7 @@ SCENES = [
             L("L26", "JESUS", [
                 ("Whoever eats my flesh and drinks my blood / has eternal life,", 0.3),
                 ("and I will raise them up at the last day.", 0.4),
-            ], gap=1.4),
+            ], gap=2.4),
             L("L27", "JESUS", [
                 ("For my flesh is real food, / and my blood is real drink.", 0.2),
             ], gap=0.4),
@@ -208,8 +216,15 @@ SCENES = [
                 ("We have come to believe, / and to know,", 0.35),
                 ("that you are the Holy One of God.", 0.2, {"speed": 0.68}),
             ], gap=0.8),
+            L("L37", "JESUS", [
+                ("Father...", 0.6, {"speed": 0.62}),
+                ("I am giving them what you sent me to give.", 0.45, {"speed": 0.66}),
+                ("In your holy name, / I glorify you.", 0.5, {"speed": 0.66}),
+                ("And even if they leave me...", 0.45, {"speed": 0.64}),
+                ("I believe they have left / with a part of you too.", 0.2, {"speed": 0.64}),
+            ], gap=4.6),
         ],
-        "tail": 7.5,  # closing image after the last line
+        "tail": 5.0,  # closing image after the last line
     },
 ]
 

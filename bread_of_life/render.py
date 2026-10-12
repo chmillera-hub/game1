@@ -15,6 +15,7 @@ import numpy as np
 import skia
 
 import bg
+import body
 import chars
 import extras
 import fx
@@ -22,10 +23,11 @@ import subs
 from config import FPS, H, W, WORK
 from direction import SHOTS, T, build_perfs
 from gfx import ease_io, fill
-from rig import DEFAULT_P
+from rig import DEFAULT_P, flip_params
 
 VOICE = os.path.join(WORK, "voice")
 N_FRAMES = int(math.ceil(T.total * FPS))
+BREAD_SPLIT = 1.0  # palm distance (body units) at which the loaf comes apart
 
 
 class Renderer:
@@ -53,8 +55,13 @@ class Renderer:
         tr = self.tracks[who]
         f = min(f, N_FRAMES - 1)
         P = {k: float(v[f]) for k, v in tr.items() if k in DEFAULT_P}
-        P["arm_l"] = self.arms[who]["arm_l"][f]
-        P["arm_r"] = self.arms[who]["arm_r"][f]
+        speak = float(tr["speak"][f])
+        for k in ("arm_l", "arm_r"):
+            a = self.arms[who][k][f]
+            # a held gesture keeps moving a little with the rhythm of speech
+            if a is not None and not a.get("still") and speak > 0.01:
+                a = dict(a, beat=0.75 * speak)
+            P[k] = a
         P.update(shot["light"])
         if extra:
             P.update(extra)
@@ -94,17 +101,20 @@ class Renderer:
         if "bokeh_dusk" in effects:
             fx.bokeh(cv, W, H, t, 9, ["#ffb070", "#ffd49a", "#ff8a6a"], n=16, region=(0.0, 0.3, 1.0, 1.0), alpha=0.22)
         if "dusk_figures" in effects:
-            fx.dusk_figures(cv, W, H, t)
+            fx.dusk_figures(cv, W, H, t, pcam)
         if "leaving" in effects:
             fx.leaving(cv, W, H, t, t0, pcam)
-        if "syn_crowd_wide" in effects:
-            fx.syn_crowd_wide(cv, W, H, t)
-        if "syn_crowd_argue" in effects:
-            fx.syn_crowd_argue(cv, W, H, t, t0)
-        if shot["extras"]:
-            fx.crowd_sprites(cv, t, shot["extras"], blur=2.5, S=34)
-        # --- characters, far to near
-        for c in sorted(shot["chars"], key=lambda c: c["S"]):
+        # --- crowd groups and characters, far to near
+        layers = [(c["S"], 1, k) for k, c in enumerate(shot["chars"])]
+        layers += [(g["z"], 0, k) for k, g in enumerate(shot["crowd"])]
+        for depth, kind, k in sorted(layers):
+            if kind == 0:
+                g = shot["crowd"][k]
+                light = dict(shot["light"])
+                light.update(g["light"])
+                extras.draw_crowd(cv, t, g["members"], g["mood"], g["focus"], g["t0"], light=light, blur=g["blur"])
+                continue
+            c = shot["chars"][k]
             who = c["who"]
             P = self.params(who, f, shot, c.get("P"))
             ch = self.chars[who]
@@ -113,11 +123,13 @@ class Renderer:
                 p.setImageFilter(skia.ImageFilters.Blur(c["blur"], c["blur"], skia.TileMode.kDecal))
                 cv.saveLayer(None, p)
                 ch.draw(cv, P, c["x"], c["y"], c["S"], flip=c.get("flip", False))
+                if c.get("bread"):
+                    self.draw_bread(cv, c, P)
                 cv.restore()
             else:
                 ch.draw(cv, P, c["x"], c["y"], c["S"], flip=c.get("flip", False))
-            if "bread" in effects and who == "jesus":
-                self.draw_bread(cv, c, P, t)
+                if c.get("bread"):
+                    self.draw_bread(cv, c, P)
         # --- foreground light
         if "god_rays" in effects:
             fx.god_rays(cv, W, H, t, info, pcam, 0.9)
@@ -131,26 +143,49 @@ class Renderer:
         fx.grade(cv, W, H, shot["grade"])
         return shot
 
-    def draw_bread(self, cv, c, P, t):
+    def palm(self, c, P, side):
+        """Screen position of the palm centre of one hand (side -1 = left arm, +1 = right arm)."""
+        st = self.chars[c["who"]].st
+        Q = dict(DEFAULT_P)
+        Q.update(P)
+        flip = c.get("flip", False)
+        if flip:
+            Q = flip_params(Q)
+            side = -side
+        spec = Q["arm_l" if side < 0 else "arm_r"]
+        _, E, Wr = body.arm_geometry(st, Q, side, spec)
+        hd = body.hand_direction(E, Wr, spec, side)
+        k = st.get("body_scale", 1.0)
+        length = st.get("hand_len", 2.15) * k * (spec or {}).get("hand_scale", 1.0)
+        fore = math.hypot(hd[0], hd[1])
+        reach = length * (0.62 + 0.38 * min(fore, 1.0))
+        d = (hd[0] / (fore + 1e-9), hd[1] / (fore + 1e-9))
+        px = Wr[0] - hd[0] * 0.25 + d[0] * reach * 0.42
+        py = Wr[1] - hd[1] * 0.25 + d[1] * reach * 0.42
+        lean = math.radians(Q["blean"])
+        bx = px * math.cos(lean) - py * math.sin(lean) + Q["bx"]
+        by = px * math.sin(lean) + py * math.cos(lean)
+        return c["x"] + (-bx if flip else bx) * c["S"], c["y"] + by * c["S"]
+
+    def draw_bread(self, cv, c, P):
+        """c["bread"] = "both" (a loaf held in both hands that breaks as they part)
+        or a list of (hand, half) with hand "l"/"r" and half -1 (left half) / +1 (right half)."""
         S = c["S"]
-        ar, al = P.get("arm_r"), P.get("arm_l")
-        if not ar or not al:
-            return
-        rx, ry = c["x"] + ar["target"][0] * S, c["y"] + ar["target"][1] * S
-        lx, ly = c["x"] + al["target"][0] * S, c["y"] + al["target"][1] * S
-        spread = math.hypot(rx - lx, ry - ly)
-        broken = max(0.0, min(1.0, (spread - 1.15 * S) / (0.25 * S)))
-        s = 0.58 * S
-        if broken <= 0:
-            fx.bread(cv, (rx + lx) / 2, (ry + ly) / 2 - 0.15 * S, s)
-        else:
+        s = 0.72 * S
+        spec = c["bread"]
+        if spec == "both":
+            lx, ly = self.palm(c, P, -1)
+            rx, ry = self.palm(c, P, 1)
+            spread = math.hypot(rx - lx, ry - ly) / S
+            if spread < BREAD_SPLIT:
+                fx.bread(cv, (rx + lx) / 2, (ry + ly) / 2 - 0.1 * S, s)
+                return
+            spec = [("l", -1), ("r", 1)]
+        for hand, half in spec:
+            x, y = self.palm(c, P, -1 if hand == "l" else 1)
             cv.save()
-            cv.translate(lx + 0.35 * S, ly - 0.15 * S)
-            fx.bread(cv, 0, 0, s, broken=1.0, side_only=-1)
-            cv.restore()
-            cv.save()
-            cv.translate(rx - 0.35 * S, ry - 0.15 * S)
-            fx.bread(cv, 0, 0, s, broken=1.0, side_only=1)
+            cv.translate(x - half * 0.5 * s, y - 0.1 * S)
+            fx.bread(cv, 0, 0, s, broken=1.0, side_only=half)
             cv.restore()
 
     def render(self, f):
@@ -174,7 +209,7 @@ class Renderer:
             a = 1.0 if t < 3.6 else max(0.0, 1 - (t - 3.6) / 1.2)
             subs.title(cv, W, H, shot["title"], "John 6", a)
         if shot.get("title") and i == len(SHOTS) - 1:
-            a = min(1.0, max(0.0, (t - (T.total - 4.2)) / 1.2))
+            a = ease_io(min(1.0, max(0.0, (t - shot["t0"] - 0.8) / 2.2)))
             subs.title(cv, W, H, "The Bread of Life", "John 6:24-69", a, y=210)
         subs.draw_subs(cv, W, H, self.cues, t)
         # fade to black at the very end

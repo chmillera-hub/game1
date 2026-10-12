@@ -11,6 +11,7 @@ import math
 import numpy as np
 import skia
 
+from body import draw_legs
 from gfx import (c4, ellipse, fill, hexc, lin_grad, mix, rad_grad, sample_spline,
                  spline, stroke, tapered)
 
@@ -24,7 +25,7 @@ DEFAULT_P = dict(
     m_teeth=0.0, m_tongue=0.0,
     blush=0.0, wind=0.0, hair_dx=0.0, hair_dy=0.0, t=0.0,
     light_x=-0.7, light_y=-0.6, rim=0.0, rim_x=1.0,
-    arm_l=None, arm_r=None,
+    arm_l=None, arm_r=None, walk=0.0, walk_phase=0.0,
 )
 
 # Default head slices: (y, half_width, half_depth, center_z)
@@ -165,6 +166,8 @@ def draw_eye(cv, H, st, P, side):
     f = H.fore(ex * 0.9, 1.0)
     o = P["eo_l"] if side < 0 else P["eo_r"]
     lo = P["lo_l"] if side < 0 else P["lo_r"]
+    # the upper lid follows the eyes: it lifts when looking up and drops when looking down
+    o = o * (1.0 - 0.32 * min(max(P["gy"], -0.8), 0.8))
     upper, lower = eye_curves(st, o, lo, s)
     eh = st.get("eye_h", 0.13)
     ew = st.get("eye_w", 0.21)
@@ -192,7 +195,7 @@ def draw_eye(cv, H, st, P, side):
         ri_x = st.get("iris_rx", 0.098)
         ri_y = st.get("iris_ry", 0.118)
         icx = gx * ew * 0.55 * (1.0 if True else 1.0)
-        icy = 0.006 + gy * 0.05 + st.get("iris_dy", 0.0)
+        icy = 0.006 + gy * 0.07 + st.get("iris_dy", 0.0)
         iris = ellipse(icx, icy, ri_x, ri_y)
         dark, mid, light = st["iris"]
         cv.drawPath(iris, fill(mid, shader=lin_grad((0, icy - ri_y), (0, icy + ri_y), [dark, mid, light], [0.0, 0.55, 1.0])))
@@ -485,30 +488,44 @@ def draw_shape(cv, H, P, shape, st):
 # ----------------------------------------------------------------------------
 
 def body_pts(st, P):
-    """Torso outline in body units (origin = neck base): rounded shoulders, slight taper."""
-    sw = st.get("shoulder_w", 1.75)
+    """Full robe outline in body units (origin = neck base): shoulders, waist, hips, hem."""
+    sw = st.get("shoulder_w", 2.1)
+    k = st.get("body_scale", 1.0)
+    hem = st.get("hem_y", 13.0) * k
     by = P["byaw"] / 60.0
     br = P["breath"]
     up = -0.05 * br - 0.12 * P["shrug"]
     far = 1 - 0.18 * abs(by)
     l = -sw * (far if by > 0 else 1.0)
     r = sw * (far if by < 0 else 1.0)
+    ww, hw, hm = st.get("waist_w", 0.80), st.get("hip_w", 0.86), st.get("hem_w", 0.93)
+    sway = 0.06 * math.sin(P["t"] * 0.8)
     return [
         (l * 0.30, -0.06 + up * 0.3),
-        (l * 0.68, 0.10 + up),
-        (l * 0.95, 0.36 + up),
-        (l * 1.04, 0.80),
-        (l * 0.90, 1.50),
-        (l * 0.86, 3.0),
-        (l * 0.88, 5.2),
-        (r * 0.88, 5.2),
-        (r * 0.86, 3.0),
-        (r * 0.90, 1.50),
-        (r * 1.04, 0.80),
-        (r * 0.95, 0.36 + up),
-        (r * 0.68, 0.10 + up),
+        (l * 0.66, 0.10 + up),
+        (l * 0.93, 0.36 + up),
+        (l * 1.02, 0.85),
+        (l * 0.93, 1.75),
+        (l * ww, 4.4 * k),
+        (l * hw, 6.6 * k),
+        (l * (hw + 0.02), 9.6 * k),
+        (l * hm + sway, hem),
+        (l * 0.45 + sway, hem + 0.14),
+        (0.0 + sway, hem + 0.06),
+        (r * 0.45 + sway, hem + 0.14),
+        (r * hm + sway, hem),
+        (r * (hw + 0.02), 9.6 * k),
+        (r * hw, 6.6 * k),
+        (r * ww, 4.4 * k),
+        (r * 0.93, 1.75),
+        (r * 1.02, 0.85),
+        (r * 0.93, 0.36 + up),
+        (r * 0.66, 0.10 + up),
         (r * 0.30, -0.06 + up * 0.3),
     ]
+
+
+HEM_CORNERS = [8, 12]
 
 
 def draw_neck(cv, st, P, head_origin, H):
@@ -535,9 +552,41 @@ def draw_body(cv, st, P, outfit):
 # Character
 # ----------------------------------------------------------------------------
 
+def flip_params(P):
+    """Mirror a parameter set left-right (for characters drawn flipped)."""
+    P = dict(P)
+    P["yaw"] = -P["yaw"]
+    P["byaw"] = -P["byaw"]
+    P["gx"] = -P["gx"]
+    P["roll"] = -P["roll"]
+    P["hx"] = -P["hx"]
+    P["bx"] = -P["bx"]
+    P["light_x"] = -P["light_x"]
+    P["rim_x"] = -P["rim_x"]
+    P["hair_dx"] = -P["hair_dx"]
+    P["eo_l"], P["eo_r"] = P["eo_r"], P["eo_l"]
+    P["lo_l"], P["lo_r"] = P["lo_r"], P["lo_l"]
+    P["br_l"], P["br_r"] = P["br_r"], P["br_l"]
+    P["bi_l"], P["bi_r"] = P["bi_r"], P["bi_l"]
+    P["tear_l"], P["tear_r"] = P["tear_r"], P["tear_l"]
+    P["m_smirk"] = -P["m_smirk"]
+    P["arm_l"], P["arm_r"] = P["arm_r"], P["arm_l"]
+    for k in ("arm_l", "arm_r"):
+        if P[k]:
+            a = dict(P[k])
+            tg = list(a["target"])
+            tg[0] = -tg[0]
+            a["target"] = tuple(tg)
+            if a.get("thumb") is not None:
+                a["thumb"] = -a["thumb"]
+            P[k] = a
+    return P
+
+
 class Character:
     def __init__(self, name, style, hair_back=(), hair_front=(), outfit=None, beard=None,
-                 headwear_back=None, headwear_front=None, extra_face=None, ears=False, arms=None):
+                 headwear_back=None, headwear_front=None, extra_face=None, ears=False, arms=None,
+                 legs=True, leg_style=None):
         self.name = name
         self.st = style
         self.hair_back = hair_back
@@ -549,6 +598,8 @@ class Character:
         self.extra_face = extra_face
         self.ears = ears
         self.arms = arms
+        self.legs = legs
+        self.leg_style = leg_style or {}
 
     def draw(self, cv, P, x, y, S, flip=False, light=None, arms=None):
         """Draw with neck-base at screen (x, y); S = pixels per head unit."""
@@ -560,32 +611,7 @@ class Character:
         cv.translate(x, y)
         cv.scale(-S if flip else S, S)
         if flip:
-            P = dict(P)
-            P["yaw"] = -P["yaw"]
-            P["byaw"] = -P["byaw"]
-            P["gx"] = -P["gx"]
-            P["roll"] = -P["roll"]
-            P["hx"] = -P["hx"]
-            P["bx"] = -P["bx"]
-            P["light_x"] = -P["light_x"]
-            P["rim_x"] = -P["rim_x"]
-            P["hair_dx"] = -P["hair_dx"]
-            P["eo_l"], P["eo_r"] = P["eo_r"], P["eo_l"]
-            P["lo_l"], P["lo_r"] = P["lo_r"], P["lo_l"]
-            P["br_l"], P["br_r"] = P["br_r"], P["br_l"]
-            P["bi_l"], P["bi_r"] = P["bi_r"], P["bi_l"]
-            P["tear_l"], P["tear_r"] = P["tear_r"], P["tear_l"]
-            P["m_smirk"] = -P["m_smirk"]
-            P["arm_l"], P["arm_r"] = P["arm_r"], P["arm_l"]
-            for k in ("arm_l", "arm_r"):
-                if P[k]:
-                    a = dict(P[k])
-                    a["target"] = (-a["target"][0], a["target"][1])
-                    if a.get("hand_ang") is not None:
-                        a["hand_ang"] = -a["hand_ang"]
-                    if a.get("thumb") is not None:
-                        a["thumb"] = -a["thumb"]
-                    P[k] = a
+            P = flip_params(P)
         if arms is None:
             arms = self.arms
         lean = P["blean"]
@@ -613,6 +639,10 @@ class Character:
             self.headwear_back(cv, H, st, P)
         cv.restore()
 
+        # --- legs and feet (behind the robe hem)
+        if self.legs:
+            draw_legs(cv, st, P, st.get("hem_y", 13.0) * st.get("body_scale", 1.0), self.leg_style)
+
         # --- neck (before clothes so collars overlap it)
         nw = st.get("neck_w", 0.40)
         nt = hoy + st.get("neck_top", 0.75)
@@ -637,7 +667,7 @@ class Character:
         if self.outfit:
             self.outfit(cv, st, P, H, (hox, hoy))
         if arms:
-            arms(cv, st, P, "rest")
+            arms(cv, st, P, "body")
         if self.outfit and hasattr(self.outfit, "collar"):
             self.outfit.collar(cv, st, P, H, (hox, hoy))
 

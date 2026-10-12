@@ -215,8 +215,9 @@ def shore_wide(cv, W, H, tod="morning"):
     info = shore_lake(cv, W, H, tod)
     hz = info["horizon"]
     morning = tod == "morning"
-    grass = "#a4a874" if morning else "#5e4a5c"
-    sand = "#dccb9f" if morning else "#8a6a6a"
+    # at dusk the land must read as land, not as more lake: warm olive-brown against the violet water
+    grass = "#a4a874" if morning else "#5a4f37"
+    sand = "#dccb9f" if morning else "#a88470"
     # distant hills behind the town on the right
     hills = ridge(rng, W * 0.45, W + 20, hz - H * 0.035, H * 0.012, n=24)
     cv.drawPath(poly(hills + [(W + 20, hz + 2), (W * 0.45, hz + 2)]), fill("#8f9a78" if morning else "#4f3d5e"))
@@ -225,11 +226,23 @@ def shore_wide(cv, W, H, tod="morning"):
              (W * 0.75, hz + H * 0.36), (W * 0.78, H + 10)]
     land = spline(coast + [(W + 10, H + 10), (W + 10, hz - 2), (W * 0.7, hz - 2)], closed=True, corners=[5, 6, 7])
     cv.drawPath(land, fill(grass, shader=lin_grad((0, hz), (0, H), [mix(grass, "#ffffff", 0.15), grass, mix(grass, "#000000", 0.18)], [0.0, 0.4, 1.0])))
+    # scrub and rocks on the land
+    cv.save()
+    cv.clipPath(land, skia.ClipOp.kIntersect, True)
+    for k in range(70):
+        u = rng.uniform() ** 0.7
+        y = hz + (H - hz) * u
+        x = W * (0.6 + 0.4 * rng.uniform()) + W * 0.2 * u
+        r = 2.0 + 16.0 * u * rng.uniform(0.5, 1.0)
+        col = mix(grass, "#1c2410" if morning else "#2a2418", rng.uniform(0.35, 0.6))
+        cv.drawPath(ellipse(x, y, r * 1.6, r * 0.8), fill(col, alpha=0.8))
+        cv.drawPath(ellipse(x - r * 0.3, y - r * 0.3, r * 0.9, r * 0.4), fill(mix(grass, "#ffffff" if morning else "#e0a070", 0.25), alpha=0.5))
+    cv.restore()
     # wet sand + dry sand bands along the water
     beach = spline(coast + [(W * 0.94, H + 10), (W * 0.88, hz + H * 0.36), (W * 0.8, hz + H * 0.19), (W * 0.72, hz + H * 0.08), (W * 0.62, hz + H * 0.02)], closed=True, corners=[5, 6])
     cv.drawPath(beach, fill(sand))
     wet = spline(coast + [(W * 0.82, H + 10), (W * 0.79, hz + H * 0.36), (W * 0.74, hz + H * 0.2), (W * 0.68, hz + H * 0.09), (W * 0.6, hz + H * 0.03)], closed=True, corners=[5, 6])
-    cv.drawPath(wet, fill("#b9a682" if morning else "#6e5258", alpha=0.8))
+    cv.drawPath(wet, fill("#b9a682" if morning else "#7c5e5a", alpha=0.8))
     cv.drawPath(spline(coast, closed=False), stroke("#ffffff", 2.0, alpha=0.5))
     # town: houses at increasing size toward the viewer
     for k in range(12):
@@ -295,6 +308,38 @@ def synagogue(cv, W, H, view="front"):
     return dict(windows=[(0.22, 0.08), (0.62, 0.08)] if view == "front" else [(0.35, 0.08), (0.8, 0.08)])
 
 
+def beach_fore(cv, W, H, tod="morning", y0=0.70):
+    """Foreground beach (sand, wet edge, pebbles, a beached boat) over a lake view."""
+    rng = np.random.default_rng(41 if tod == "morning" else 43)
+    morning = tod == "morning"
+    sand = "#d7c29a" if morning else "#8c6a68"
+    wet = "#b19d78" if morning else "#6a5060"
+    top = H * y0
+    edge = [(-20, top + 18)]
+    for k in range(1, 12):
+        edge.append((W * k / 11, top + 14 * math.sin(k * 1.3) + 10 * math.sin(k * 0.6 + 1)))
+    edge.append((W + 20, top + 6))
+    land = edge + [(W + 20, H + 20), (-20, H + 20)]
+    # foam line + wet sand
+    cv.drawPath(spline([(x, y - 6) for x, y in edge], closed=False), stroke("#ffffff" if morning else "#ffd8b0", 5, alpha=0.6, blur=1.5))
+    cv.drawPath(spline(land, closed=True, corners=[len(edge) - 1, len(edge), len(edge) + 1]), fill(wet))
+    dry = [(x, y + 26 + 8 * math.sin(x * 0.01)) for x, y in edge]
+    cv.drawPath(spline(dry + [(W + 20, H + 20), (-20, H + 20)], closed=True), fill(sand, shader=lin_grad((0, top), (0, H), [mix(sand, "#ffffff", 0.08), sand, mix(sand, "#000000", 0.12)], [0.0, 0.5, 1.0])))
+    for k in range(120):
+        y = top + 40 + (H - top - 40) * rng.uniform(0, 1) ** 1.3
+        x = rng.uniform(0, W)
+        r = 2 + 9 * (y - top) / (H - top)
+        cv.drawPath(ellipse(x, y, r * 1.4, r * 0.7), fill("#4a4440" if morning else "#2e2630", alpha=0.6))
+    boat(cv, W * 0.86, top + H * 0.06, 85, dark=not morning, sail=False)
+    return dict()
+
+
+def beach_view(cv, W, H, tod="morning"):
+    info = shore_lake(cv, W, H, tod)
+    beach_fore(cv, W, H, tod)
+    return info
+
+
 PLATES = {
     "lake_morning": lambda cv, W, H: shore_lake(cv, W, H, "morning"),
     "land_morning": lambda cv, W, H: shore_land(cv, W, H, "morning"),
@@ -304,6 +349,8 @@ PLATES = {
     "lake_dusk": lambda cv, W, H: shore_lake(cv, W, H, "dusk"),
     "land_dusk": lambda cv, W, H: shore_land(cv, W, H, "dusk"),
     "wide_dusk": lambda cv, W, H: shore_wide(cv, W, H, "dusk"),
+    "beach_morning": lambda cv, W, H: beach_view(cv, W, H, "morning"),
+    "beach_dusk": lambda cv, W, H: beach_view(cv, W, H, "dusk"),
 }
 
 _cache = {}
