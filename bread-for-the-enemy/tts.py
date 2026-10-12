@@ -1,5 +1,5 @@
 """
-Voice acting for BREAD FOR THE ENEMY.
+Voice acting for A NEW COMMANDMENT.
 
 Uses Kokoro-82M (ONNX, timestamped export) which reports per-phoneme durations,
 so every line comes with phoneme timings that drive the lip-sync.
@@ -13,7 +13,9 @@ Casting (Kokoro voice ids):
   yosef     bm_fable    gentle, warm father
   phoebe    bf_emma     warm, clear reader of Paul's letter in Rome
   guard     am_onyx     gruff and low
-  child     af_heart    clear voice shifted up into a child's register
+  child     a blend of af_heart and am_puck, lifted into a boy's register (F0 about 230 Hz)
+            with only a small formant lift, so it sounds young rather than sped-up
+  epic      am_michael  the closing voice: Jesus' voice made deeper and larger
 """
 import hashlib
 import json
@@ -38,7 +40,8 @@ CAST = {
     "yosef": dict(voice="bm_fable"),
     "phoebe": dict(voice="bf_emma"),
     "guard": dict(voice="am_onyx", pitch=0.97),
-    "child": dict(voice="af_heart", pitch=1.18, formant=True, speed_mul=1.04),
+    "child": dict(voice="af_heart*0.55+am_puck*0.45", pitch=1.35, formant=1.08, speed_mul=0.92),
+    "epic": dict(voice="am_michael", pitch=0.78, formant=0.9),
 }
 
 _kokoro = None
@@ -91,7 +94,12 @@ def synth(who, text, speed=1.0, fx=None):
         return x, [tuple(t) for t in json.load(open(js_p))]
 
     k = kokoro()
-    audio, sr, spoken = k.create_timed(text, voice=cast["voice"], speed=sp, lang="en-us",
+    voice = cast["voice"]
+    if "+" in voice:
+        # weighted blend of voice styles, e.g. "af_heart*0.55+am_puck*0.45"
+        parts = [v.split("*") for v in voice.split("+")]
+        voice = sum(float(w) * k.get_voice_style(name) for name, w in parts).astype(np.float32)
+    audio, sr, spoken = k.create_timed(text, voice=voice, speed=sp, lang="en-us",
                                        sentence_pause=0.22, clause_pause=0.08)
     assert sr == SR
     x = np.asarray(audio, dtype=np.float32)
@@ -99,9 +107,20 @@ def synth(who, text, speed=1.0, fx=None):
 
     pitch = cast.get("pitch")
     if pitch:
-        formant = "shifted" if cast.get("formant") else "preserved"
-        x = _ffmpeg_filter(x, f"rubberband=pitch={pitch}:formant={formant}:transients=smooth")
+        # formant: factor for the vocal-tract resonances (1 = keep the voice's own size).
+        # Shift everything by the formant factor first, then move only the pitch the rest of the way.
+        form = cast.get("formant", 1.0)
+        if abs(form - 1.0) > 1e-3:
+            x = _ffmpeg_filter(x, f"rubberband=pitch={form}:formant=shifted:transients=smooth")
+        rest = pitch / form
+        if abs(rest - 1.0) > 1e-3:
+            x = _ffmpeg_filter(x, f"rubberband=pitch={rest}:formant=preserved:transients=smooth")
 
+    if fx == "epic":
+        # a faint voice an octave below, for weight (kept low so it never sounds artificial)
+        low = _ffmpeg_filter(x, "rubberband=pitch=0.5:formant=preserved:transients=smooth")
+        n = min(len(x), len(low))
+        x = x[:n] + 0.14 * low[:n]
     if fx == "tremble":
         # held-back tears: slow pitch waver + slight amplitude flutter
         x = _ffmpeg_filter(x, "vibrato=f=5.2:d=0.06,tremolo=f=4.6:d=0.12")

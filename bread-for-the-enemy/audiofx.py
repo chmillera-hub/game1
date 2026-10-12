@@ -69,10 +69,14 @@ ENV = {
     "room_warm": dict(wet=0.20, rt60=0.7, predelay=0.008, damp=5000, early=((0.011, 0.5), (0.019, 0.35))),
     "street": dict(wet=0.16, rt60=0.9, predelay=0.02, damp=5000, early=((0.045, 0.45), (0.09, 0.25))),
     "cell": dict(wet=0.30, rt60=1.05, predelay=0.006, damp=4200, early=((0.007, 0.6), (0.013, 0.5), (0.021, 0.35))),
-    "memory": dict(wet=0.42, rt60=1.8, predelay=0.03, damp=3500),
+    "memory": dict(wet=0.32, rt60=1.6, predelay=0.03, damp=3800),
     "desert": dict(wet=0.10, rt60=0.5, predelay=0.03, damp=6000),
-    "divine": dict(wet=0.55, rt60=3.6, predelay=0.045, damp=6000, width=1.3),
-    "soft_divine": dict(wet=0.40, rt60=2.6, predelay=0.03, damp=6500, width=1.2),
+    # the voice of Jesus: a spacious but clear room. A long pre-delay keeps the words in front
+    # of the reverb, and the tail is kept low so nothing smears the consonants.
+    "divine": dict(wet=0.2, rt60=2.0, predelay=0.075, damp=5200, width=1.2),
+    "soft_divine": dict(wet=0.15, rt60=1.7, predelay=0.06, damp=5600, width=1.15),
+    # the closing voice: a large hall, still with the words clearly in front
+    "epic": dict(wet=0.24, rt60=2.8, predelay=0.09, damp=4200, width=1.3),
     "outdoor": dict(wet=0.12, rt60=0.8, predelay=0.03, damp=6000),
 }
 
@@ -85,9 +89,10 @@ def place_voice(x, sr, env, fx=None):
         x = butter(x, sr, "bandpass", (260, 4200))
         kw = dict(ENV["memory"]); wet = kw.pop("wet")
         x = x * 0.8
-    if fx in ("divine", "soft_divine"):
+    if fx in ("divine", "soft_divine", "epic"):
         kw = dict(ENV[fx]); wet = kw.pop("wet")
-        # gentle doubling for a sense of presence
-        d = int(0.018 * sr)
-        x = x + 0.25 * np.concatenate([np.zeros(d), x[:-d]])
+        # presence lift (2-4 kHz) for intelligibility, and a little body in the low mids
+        x = x + 0.35 * butter(x, sr, "bandpass", (1900, 4200))
+        if fx == "epic":
+            x = x + 0.3 * butter(x, sr, "lowpass", 220)
     return reverb(x, sr, wet=wet, **kw)

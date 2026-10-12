@@ -31,6 +31,23 @@ const lwOf = (pr, Lt) => (Lt.lineW || 1) * pr.s * 0.02;
 // lit/shadow variants of a colour under the shot light
 function lit(c, Lt) { return L.mul(c, Lt.key || '#ffffff'); }
 function shd(c, Lt) { return L.mul(shade(c, 0.62), Lt.amb || '#ffffff'); }
+// hair and beards: the shadow side is the same colour, only a little darker, with a soft edge,
+// so a white beard reads as one white beard in light and shadow (never two colours)
+function softShade(ctx, pr, Lt, col, k = 0.5) {
+  const { P, s, H } = pr;
+  const side = Lt.side || -1;
+  const xt = FACE.terminatorX(H, Lt);
+  const a = P(xt + side * 0.25, 0.6, 0.9), b = P(xt - side * 0.75, 0.6, 0.9);
+  const dark = mix(lit(col, Lt), shd(col, Lt), 0.55);
+  const g = ctx.createLinearGradient(a[0], a[1], b[0], b[1]);
+  g.addColorStop(0, rgba(dark, 0)); g.addColorStop(1, rgba(dark, k));
+  ctx.fillStyle = g;
+  ctx.fillRect(H.x - s * 4, H.y - s * 4, s * 8, s * 9);
+  // a little occlusion under the jaw line and toward the bottom of the beard
+  const c = P(0, 1.55, 0.6);
+  ctx.fillStyle = L.radial(ctx, c[0], c[1] + s * 0.4, s * 0.2, s * 1.3, [[0, rgba(dark, 0.0)], [1, rgba(dark, k * 0.35)]]);
+  ctx.fillRect(H.x - s * 4, H.y - s * 2, s * 8, s * 7);
+}
 
 
 // ------------------------------------------------------------ full hair cap
@@ -63,7 +80,7 @@ function hairCap(ctx, pr, st, Lt, hairline, opt = {}) {
   ctx.rect(c[0] - R * 2, c[1] - R * 2, R * 4, R * 4);
   L.crPath(ctx, face, true, 0.4);
   ctx.clip('evenodd');
-  FACE.shadowSide(ctx, pr, Lt, shd(col, Lt), -0.15);
+  softShade(ctx, pr, Lt, col, 0.65);
   ctx.fillStyle = L.radial(ctx, c[0], c[1] - R * 0.6, R * 0.2, R * 1.4, [[0, rgba('#000000', 0)], [1, rgba('#000000', 0.28)]]);
   ctx.fillRect(c[0] - R * 2, c[1] - R * 2, R * 4, R * 4);
   if (opt.inner) opt.inner(ctx);
@@ -146,7 +163,7 @@ function jesusHairFront(ctx, pr, st, F, Lt, extra) {
       q([sd * 1.3, 0.2, -0.05]), q([sd * 1.22, -0.55, 0.05]), q([sd * 0.98, -1.08, 0.1]), q([sd * 0.5, -1.4, 0.15]),
     ];
     const isShadow = sd === -side; // side away from light
-    shape(ctx, pts, isShadow ? shd(c, Lt) : lit(c, Lt), st.hairLine, lw);
+    shape(ctx, pts, isShadow ? mix(lit(c, Lt), shd(c, Lt), 0.5) : lit(c, Lt), st.hairLine, lw);
     // inner shadow along face edge
     ctx.save();
     ctx.beginPath(); L.crPath(ctx, pts, true); ctx.clip();
@@ -182,30 +199,32 @@ function beardFull(opts) {
     const side = Lt.side || -1;
     if (layer === 'base') {
       const outer = [
-        [-1.0, ch, 0.15], [-0.98, 0.6, 0.15], [-0.78, 0.98 + jd * 0.5, 0.25], [-0.5, 1.28 + jd, 0.45],
+        [-0.97, ch, 0.15], [-0.95, 0.6, 0.17], [-0.76, 0.98 + jd * 0.5, 0.27], [-0.5, 1.28 + jd, 0.45],
         [-0.22, 1.42 + len + jd, 0.62], [0, 1.47 + len + jd, 0.68], [0.22, 1.42 + len + jd, 0.62],
-        [0.5, 1.28 + jd, 0.45], [0.78, 0.98 + jd * 0.5, 0.25], [0.98, 0.6, 0.15], [1.0, ch, 0.15],
+        [0.5, 1.28 + jd, 0.45], [0.76, 0.98 + jd * 0.5, 0.27], [0.95, 0.6, 0.17], [0.97, ch, 0.15],
       ];
+      const qo = (p) => pr.Pc(p[0], p[1], p[2]);
       const my = G.mouthY;
       const inner = [
         [0.9, ch + 0.05, 0.3], [0.66, 0.58 * thick + 0.15, 0.62], [0.42, my - 0.02, 0.82], [0.3, my + 0.12 + jd * 0.6, 0.86],
         [0.14, my + 0.24 + jd, 0.9], [0, my + 0.21 + jd, 0.92], [-0.14, my + 0.24 + jd, 0.9],
         [-0.3, my + 0.12 + jd * 0.6, 0.86], [-0.42, my - 0.02, 0.82], [-0.66, 0.58 * thick + 0.15, 0.62], [-0.9, ch + 0.05, 0.3],
       ];
-      const P = [...outer.map((p) => q(p)), ...inner.map((p) => q(p))];
       // build path: outer smooth then inner smooth back
-      ctx.beginPath();
-      L.crPath(ctx, outer.map((p) => q(p)), false);
       const inn = inner.map((p) => q(p));
-      ctx.lineTo(inn[0][0], inn[0][1]);
-      L.crPath({ moveTo: () => {}, bezierCurveTo: (...a) => ctx.bezierCurveTo(...a), closePath() {} }, inn, false);
-      ctx.closePath();
+      const beardPath = () => {
+        ctx.beginPath();
+        L.crPath(ctx, outer.map((p) => qo(p)), false);
+        ctx.lineTo(inn[0][0], inn[0][1]);
+        L.crPath({ moveTo: () => {}, bezierCurveTo: (...a) => ctx.bezierCurveTo(...a), closePath() {} }, inn, false);
+        ctx.closePath();
+      };
+      beardPath();
       ctx.fillStyle = lit(col, Lt);
       ctx.fill();
       ctx.save();
       ctx.clip();
-      // shadow half
-      FACE.shadowSide(ctx, pr, Lt, shd(col, Lt));
+      softShade(ctx, pr, Lt, col, 0.55);
       // hair texture strokes
       for (let i = 0; i < 9; i++) {
         const x = -0.8 + i * 0.2;
@@ -214,15 +233,16 @@ function beardFull(opts) {
         L.strokeSmooth(ctx, [a, b], rgba(shade(col, 0.5), 0.45), lw * 0.6);
       }
       ctx.restore();
+      beardPath(); // the strands replaced the current path; outline the beard itself
       ctx.strokeStyle = st.hairLine; ctx.lineWidth = lw * 0.8; ctx.stroke();
     } else {
-      // mustache
+      // mustache: one colour; the side away from the light only slightly darker
       const my = G.mouthY;
       const sm = F.mouthSmile * 0.04;
       for (const sd of [-1, 1]) {
         const pts = [q([sd * 0.02, my - 0.17, 0.98]), q([sd * 0.2, my - 0.15 - sm, 0.94]), q([sd * 0.36, my - 0.02 - sm, 0.85]),
           q([sd * 0.42, my + 0.1, 0.8]), q([sd * 0.3, my - 0.05 - sm, 0.88]), q([sd * 0.12, my - 0.08, 0.95]), q([sd * 0.02, my - 0.09, 0.97])];
-        shape(ctx, pts, sd === -side ? shd(col, Lt) : lit(col, Lt), st.hairLine, lw * 0.7);
+        shape(ctx, pts, sd === -side ? mix(lit(col, Lt), shd(col, Lt), 0.22) : lit(col, Lt), st.hairLine, lw * 0.7);
       }
     }
   };
@@ -248,7 +268,7 @@ function paulHairFront(ctx, pr, st, F, Lt, extra) {
     // wispy fringe above/behind the ear
     const pts = [q([sd * 0.86, -0.72, 0.18]), q([sd * 1.02, -0.5, 0.08]), q([sd * 1.1, -0.15, 0.0]), q([sd * 1.06, 0.12, -0.02]),
       q([sd * 1.17, -0.05, -0.12]), q([sd * 1.18, -0.4, -0.1]), q([sd * 1.08, -0.68, -0.05])];
-    shape(ctx, pts, sd === -side ? shd(c, Lt) : lit(c, Lt), st.hairLine, lw * 0.8);
+    shape(ctx, pts, sd === -side ? mix(lit(c, Lt), shd(c, Lt), 0.3) : lit(c, Lt), st.hairLine, lw * 0.8);
     strands(ctx, [[q([sd * 0.95, -0.6, 0.1]), q([sd * 1.1, -0.2, 0.0]), q([sd * 1.1, 0.05, -0.05])]], rgba(st.hairLine, 0.4), lw * 0.5);
   }
   // scalp shine
@@ -266,27 +286,31 @@ function paulBeard(ctx, pr, st, F, Lt, layer, G) {
   const my = G.mouthY;
   if (layer === 'base') {
     // long flowing beard: attached along the jaw, hanging to chest
+    const qo = (p) => pr.Pc(p[0], p[1], p[2]);
     const outer = [
-      q([-1.02, 0.22, 0.12]), q([-1.0, 0.65, 0.12]), q([-0.86, 1.1 + jd * 0.5, 0.2]),
+      qo([-0.98, 0.22, 0.14]), qo([-0.96, 0.65, 0.15]), qo([-0.84, 1.1 + jd * 0.5, 0.22]),
       q({ a: [-0.6, 1.3, 0.4], d: [-0.05, 0.55 + jd], k: 0.4 }), q({ a: [-0.3, 1.4, 0.55], d: [0.0, 0.95 + jd], k: 0.6 }),
       q({ a: [0, 1.45, 0.6], d: [0.0, 1.12 + jd], k: 0.7 }), q({ a: [0.3, 1.4, 0.55], d: [0.0, 0.95 + jd], k: 0.6 }),
-      q({ a: [0.6, 1.3, 0.4], d: [0.05, 0.55 + jd], k: 0.4 }), q([0.86, 1.1 + jd * 0.5, 0.2]), q([1.0, 0.65, 0.12]), q([1.02, 0.22, 0.12]),
+      q({ a: [0.6, 1.3, 0.4], d: [0.05, 0.55 + jd], k: 0.4 }), qo([0.84, 1.1 + jd * 0.5, 0.22]), qo([0.96, 0.65, 0.15]), qo([0.98, 0.22, 0.14]),
     ];
     const inner = [
       q([0.86, 0.28, 0.32]), q([0.66, 0.66, 0.62]), q([0.42, my, 0.82]), q([0.3, my + 0.14 + jd * 0.6, 0.86]),
       q([0.12, my + 0.25 + jd, 0.9]), q([0, my + 0.22 + jd, 0.92]), q([-0.12, my + 0.25 + jd, 0.9]),
       q([-0.3, my + 0.14 + jd * 0.6, 0.86]), q([-0.42, my, 0.82]), q([-0.66, 0.66, 0.62]), q([-0.86, 0.28, 0.32]),
     ];
-    ctx.beginPath();
-    L.crPath(ctx, outer, false);
-    ctx.lineTo(inner[0][0], inner[0][1]);
-    L.crPath({ moveTo: () => {}, bezierCurveTo: (...a) => ctx.bezierCurveTo(...a), closePath() {} }, inner, false);
-    ctx.closePath();
+    const beardPath = () => {
+      ctx.beginPath();
+      L.crPath(ctx, outer, false);
+      ctx.lineTo(inner[0][0], inner[0][1]);
+      L.crPath({ moveTo: () => {}, bezierCurveTo: (...a) => ctx.bezierCurveTo(...a), closePath() {} }, inner, false);
+      ctx.closePath();
+    };
+    beardPath();
     ctx.fillStyle = lit(col, Lt);
     ctx.fill();
     ctx.save();
     ctx.clip();
-    FACE.shadowSide(ctx, pr, Lt, shd(col, Lt));
+    softShade(ctx, pr, Lt, col, 0.5);
     // wavy strands
     for (let i = 0; i < 11; i++) {
       const x = -0.85 + i * 0.17;
@@ -296,13 +320,14 @@ function paulBeard(ctx, pr, st, F, Lt, layer, G) {
       L.strokeSmooth(ctx, [a, m, b], rgba(shade(col, 0.55), 0.5), lw * 0.6);
     }
     ctx.restore();
+    beardPath();
     ctx.strokeStyle = st.hairLine; ctx.lineWidth = lw * 0.8; ctx.stroke();
   } else {
     const sm = F.mouthSmile * 0.04;
     for (const sd of [-1, 1]) {
       const pts = [q([sd * 0.02, my - 0.18, 0.98]), q([sd * 0.22, my - 0.16 - sm, 0.94]), q([sd * 0.4, my + 0.0 - sm, 0.84]),
         q([sd * 0.46, my + 0.2, 0.78]), q([sd * 0.33, my + 0.02 - sm, 0.86]), q([sd * 0.12, my - 0.07, 0.95]), q([sd * 0.02, my - 0.08, 0.97])];
-      shape(ctx, pts, sd === -side ? shd(col, Lt) : lit(col, Lt), st.hairLine, lw * 0.7);
+      shape(ctx, pts, sd === -side ? mix(lit(col, Lt), shd(col, Lt), 0.2) : lit(col, Lt), st.hairLine, lw * 0.7);
     }
   }
 }
@@ -372,7 +397,8 @@ function headCloth(opts) {
         q({ a: [0, 0.6, -0.5], d: [0, 2.5], k: 0.6 }),
         q({ a: [-1.2, 0.6, -0.3], d: [-0.55, 2.4], k: 0.9 }), q({ a: [-1.2, 0.6, -0.3], d: [-0.35, 1.3], k: 0.6 }),
         q([-1.32, 0.0, -0.3]), q([-1.15, -1.0, -0.2])];
-      shape(ctx, pts, shd(c, Lt), st.hairLine, lwOf(pr, Lt));
+      // the inside of the hood: in shadow, but still the same cloth
+      shape(ctx, pts, mix(lit(c, Lt), shd(c, Lt), 0.68), st.hairLine, lwOf(pr, Lt));
     },
     front(ctx, pr, st, F, Lt, extra) {
       const q = mk(pr, extra);
@@ -384,7 +410,8 @@ function headCloth(opts) {
           q({ a: [sd * 1.1, 0.7, 0.1], d: [sd * 0.25, 1.6], k: 0.9 }), q({ a: [sd * 1.1, 0.7, 0.1], d: [sd * 0.65, 1.5], k: 0.9 }),
           q({ a: [sd * 1.1, 0.7, 0.1], d: [sd * 0.55, 0.6], k: 0.6 }), q([sd * 1.38, 0.0, -0.05]), q([sd * 1.3, -0.8, 0.0]),
           q([sd * 0.8, -1.5, 0.1]), q([0, -1.68, 0.05])];
-        shape(ctx, pts, sd === -side ? shd(c, Lt) : lit(c, Lt), st.hairLine, lw);
+        // one cloth: the side away from the light is a softer shade of the same colour
+        shape(ctx, pts, sd === -side ? mix(lit(c, Lt), shd(c, Lt), 0.42) : lit(c, Lt), st.hairLine, lw);
         // stripes
         if (opts.stripe) {
           ctx.save();
@@ -446,6 +473,7 @@ function helmet() {
       const hl = [q([side * 0.55, -1.25, 0.5]), q([side * 0.25, -1.4, 0.6]), q([side * -0.1, -1.42, 0.6])];
       L.strokeSmooth(ctx, hl, rgba('#ffffff', 0.55), pr.s * 0.06);
       ctx.restore();
+      ctx.beginPath(); L.crPath(ctx, [...dome, ...rim], true);
       ctx.strokeStyle = st.hairLine; ctx.lineWidth = lw; ctx.stroke();
       // brow guard ridge
       const br = [q([-1.15, -0.62, 0.3]), q([-0.6, -0.86, 0.9]), q([0, -0.93, 1.05]), q([0.6, -0.86, 0.9]), q([1.15, -0.62, 0.3])];
@@ -489,7 +517,7 @@ C.jesus = {
   geo: { chinY: 1.36, jawW: 0.66, mouthW: 0.21 },
   hairBack: jesusHairBack, hairFront: jesusHairFront, hairShadow: jesusHairShadow, beard: beardFull({ len: 0.12, cheek: 0.25 }),
   beardHidesFolds: true,
-  cloth: { tunic: '#efe5d3', mantle: '#8e2b2e', trim: '#c9a050', neck: 'v' },
+  cloth: { tunic: '#efe5d3', mantle: '#8e2b2e', trim: '#c9a050', neck: 'v', looseSleeves: 1 },
 };
 C.paul = {
   name: 'paul', skin: '#dfae8a', skinShadow: '#a9725a', line: '#3a221a', iris: '#4e3a2c', browColor: '#c9c1b6',
@@ -523,7 +551,7 @@ C.saul = {
   geo: { chinY: 1.32, jawW: 0.72, mouthW: 0.22 },
   hairBack: saulCap.back, hairFront: saulCap.front, hairShadow: saulCap.shadow, beard: beardFull({ len: 0.16, cheek: 0.28 }),
   beardHidesFolds: true,
-  cloth: { tunic: '#2c2838', mantle: '#d8d2c2', trim: '#2d4f8a', neck: 'round' },
+  cloth: { tunic: '#2c2838', mantle: '#d8d2c2', trim: '#2d4f8a', neck: 'round', skirt: '#cbc4b2' },
 };
 const saulTravel = headCloth({ color: '#c8b79a', stripe: '#2d4f8a', band: '#2a2020' });
 C.saul_travel = Object.assign({}, C.saul, { hairBack: saulTravel.back, hairFront: saulTravel.front, hairShadow: saulTravel.shadow });
@@ -542,6 +570,16 @@ C.guard = {
   geo: { chinY: 1.36, jawW: 0.76, mouthW: 0.22 },
   hairBack: gh.back, hairFront: gh.front, hairShadow: gh.shadow, beard: stubble,
   cloth: { tunic: '#8a2a22', mantle: '#5a3a2a', trim: '#8a8d92', neck: 'round', armor: true },
+};
+// the temple guards who arrested Yosef: dark head cloth, leather-banded tunic
+const tgCloth = headCloth({ color: '#3a3430', stripe: '#7a2a22', band: '#1e1a16' });
+C.temple_guard = {
+  name: 'temple_guard', skin: '#d6a07c', skinShadow: '#9a6650', line: '#2a1a14', iris: '#3a2a20', browColor: '#1e1612',
+  hair: '#1e1612', hairLine: '#0e0806', beardColor: '#241a14', metal: '#7a5a3a', age: 0.35, browW: 0.095,
+  geo: { chinY: 1.36, jawW: 0.76, mouthW: 0.22 },
+  hairBack: tgCloth.back, hairFront: tgCloth.front, hairShadow: tgCloth.shadow, beard: beardFull({ len: 0.08, cheek: 0.32 }),
+  beardHidesFolds: true,
+  cloth: { tunic: '#5a2a24', mantle: '#3a2e24', trim: '#2a2018', neck: 'round', armor: true },
 };
 const elderCloth = headCloth({ color: '#eee6d6', stripe: '#2f3a66', band: null });
 C.elder = {
@@ -567,4 +605,4 @@ C.phoebe = {
   cloth: { tunic: '#b49a72', mantle: '#3f6f86', trim: '#e8d9b4', neck: 'round' },
 };
 
-module.exports = { C, mk, shape, lit, shd, lwOf, hairCap };
+module.exports = { C, mk, shape, lit, shd, lwOf, hairCap, softShade };

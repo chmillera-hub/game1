@@ -1,11 +1,15 @@
 """
-Original score for BREAD FOR THE ENEMY, written as MIDI events on an absolute
+Original score for A NEW COMMANDMENT, written as MIDI events on an absolute
 clock (seconds) and rendered with FluidSynth + the FluidR3 General MIDI soundfont.
 
 Central idea: one hymn-like "love motif" (D major) that travels through the film:
   flute at the supper -> English horn in D minor under Paul's guilt -> French horn
   when Jesus appears on the Damascus road -> oboe when Asher breaks the bread ->
   full orchestra and choir at the Romans 8 climax -> flute at dawn.
+
+Under the heaviest moments (what Paul did, the arrest, "He never came home", "the worst of
+sinners", the sentence, "sheep to be slaughtered", "the old man was no more") deep swells of
+low strings and tuba rise and fall, rendered as a separate layer and mixed under the score.
 """
 import json
 import os
@@ -85,12 +89,12 @@ class Score:
         for ch in PROG:
             self.ev.append((t, 0, mido.Message("control_change", channel=ch, control=123, value=0)))
 
-    def write(self, path, end):
+    def write(self, path, end, progs=None):
         mid = mido.MidiFile(ticks_per_beat=TPS)
         tr = mido.MidiTrack()
         mid.tracks.append(tr)
         tr.append(mido.MetaMessage("set_tempo", tempo=1_000_000, time=0))
-        for ch, pg in PROG.items():
+        for ch, pg in (progs or PROG).items():
             tr.append(mido.Message("program_change", channel=ch, program=pg, time=0))
             tr.append(mido.Message("control_change", channel=ch, control=7, value=100, time=0))
             tr.append(mido.Message("control_change", channel=ch, control=11, value=100, time=0))
@@ -165,7 +169,7 @@ def compose(tl):
     s.chord(0, ["E3", "B3", "D4", "G4"], nbar * bar, bar * 0.5, 44)
     s.chord(0, CH["A"], (nbar + 0.5) * bar, max(0.5, pro_end - (nbar + 0.5) * bar), 42)
     # flute answers after Jesus speaks; English horn under His sorrowful look at the door
-    s.melody(6, [("A4", 0.5), ("D5", 1.5), ("C#5", 0.5), ("B4", 0.5), ("A4", 2)], LN("jesus", "Love each other", True) + 0.05, 60 / 72, vel=48)
+    s.melody(6, [("A4", 0.5), ("D5", 1.5), ("C#5", 0.5), ("B4", 0.5), ("A4", 2)], LN("jesus", "Love one another", True) + 0.05, 60 / 72, vel=48)
     s.melody(14, [("G4", 1.5), ("F#4", 0.5), ("E4", 1), ("D4", 1), ("E4", 3)], SH("upper_jesus_door") + 0.2, 60 / 72, vel=50)
 
     # ------------------------------------------------------------- STREET (D minor, dark)
@@ -240,7 +244,7 @@ def compose(tl):
     for k in range(int(5.4 / beat)):
         s.note(11, "D2", t0 + k * beat, 0.3, 74 - k * 3)
     s.chord(2, ["D2", "A2"], SH("jer_child"), 2.0, 70)
-    t_y = LN("yosef", "Asher, my love")
+    t_y = LN("yosef", "Asher, my son")
     s.chord(1, ["D3", "F#3", "A3", "D4"], t_y - 0.4, LN("saul", "Take him") - t_y + 0.3, 44)
     s.ramp(1, 40, 80, t_y - 0.4, t_y + 2)
     s.melody(14, [("F#4", 1.5), ("G4", 0.5), ("A4", 2), ("B4", 1), ("A4", 1), ("F#4", 2)], t_y + 3.2, 0.9, vel=44)
@@ -329,7 +333,7 @@ def compose(tl):
     for k, p in enumerate(["D3", "F3", "E3", "A2"]):
         s.note(2, p, t_ha + 0.4 + k * 3.0, 3.1, 36)
     t_kn2 = LN("paul", "I know.")
-    for name, a, b in spread(["F", "C", "Dm", "Bb"], t_kn2, LN("paul", "But the Lord is patient", True)):
+    for name, a, b in spread(["F", "C", "Dm", "Bb", "F", "C", "Gm", "A"], t_kn2, LN("paul", "But the Lord is patient", True)):
         s.chord(1, CH[name], a, b - a + 0.2, 30)
     s.note(1, "A5", LN("asher", "I brought the bread") - 0.2, 2.6, 30)
 
@@ -389,8 +393,8 @@ def compose(tl):
     t_ang = LN("paul", "neither angels")
     t_hei = LN("paul", "neither height")
     t_fin = LN("paul", "will be able to separate")
-    t_last = LN("paul", "that is in Christ Jesus our Lord")
-    t_last_end = LN("paul", "that is in Christ Jesus our Lord", True)
+    t_last = LN("paul", "that is in Christ Jesus")
+    t_last_end = LN("paul", "that is in Christ Jesus", True)
     mid = lambda x, y, f: x + (y - x) * f
     major = [("D", t_no), ("G", mid(t_no, t_thr, 0.55)), ("A", t_thr), ("D", t_conv), ("A", mid(t_conv, t_ang, 0.5)), ("Bm", t_ang),
              ("G", mid(t_ang, t_hei, 0.45)), ("DF", t_hei), ("Em", mid(t_hei, t_fin, 0.4)), ("A", mid(t_hei, t_fin, 0.75)), ("D", t_fin)]
@@ -448,11 +452,79 @@ def compose(tl):
     return s
 
 
+# --------------------------------------------------------------------------- deep swells
+SWELL_PROG = {0: 43, 1: 42, 2: 48, 3: 58, 4: 47, 5: 43, 6: 42, 7: 48, 8: 58, 10: 47}
+
+
+def compose_swells(tl):
+    """Slow crescendo-decrescendo of low strings, tuba and a soft timpani roll under the heaviest
+    lines. Two channel sets alternate so neighbouring swells never fight over the same controls."""
+    s = Score()
+    lines = tl["lines"]
+
+    def LN(who, prefix, end=False):
+        for ln in lines:
+            if ln["who"] == who and ln["text"].startswith(prefix):
+                return ln["end"] if end else ln["start"]
+        raise KeyError(f"{who}: {prefix}")
+
+    # (who, line prefix, root, peak position within the line 0..1, strength 0..1)
+    cues = [
+        ("narrator", "His name is Paul", "D", 0.75, 0.7),
+        ("narrator", "When he was a boy", "Bb", 0.8, 0.75),
+        ("phoebe", "If your enemy", "D", 0.6, 0.6),
+        ("asher", "You dragged a man", "D", 1.0, 0.8),
+        ("asher", "He never came home", "A", 0.6, 0.9),
+        ("child", "Father! Don't go", "D", 0.6, 0.85),
+        ("asher", "You don't get to remember", "D", 0.7, 0.8),
+        ("asher", "but you weren't acting like a saint", "Bb", 0.8, 0.8),
+        ("paul", "I was a blasphemer", "D", 0.9, 0.85),
+        ("asher", "And my father was just", "D", 0.85, 0.85),
+        ("paul", "of whom I am the worst", "A", 0.7, 0.75),
+        ("asher", "but I don't think I will ever love you", "D", 0.8, 0.75),
+        ("asher", "I am not your brother", "Bb", 0.7, 0.75),
+        ("guard", "And you, old man", "D", 0.75, 1.0),
+        ("paul", "we are considered as sheep", "D", 0.8, 0.9),
+        ("narrator", "At first light, the old man", "D", 0.75, 1.0),
+    ]
+    sets = [(0, 1, 2, 3, 4), (5, 6, 7, 8, 10)]
+    for i, (who, pre, root, pk, k) in enumerate(cues):
+        a, b = LN(who, pre), LN(who, pre, True)
+        t0 = a - 1.6
+        tp = a + (b - a) * pk
+        t1 = b + 3.2
+        cb, cc, cs, ct, cti = sets[i % 2]
+        r1, r2 = P(root + "1"), P(root + "2")
+        fifth = r2 + 7
+        for ch in (cb, cc, cs, ct):
+            s.cc(ch, 11, 0, t0 - 0.05)
+            s.ramp(ch, 10, int(60 + 50 * k), t0, tp)
+            s.ramp(ch, int(60 + 50 * k), 0, tp, t1)
+        s.note(cb, r1, t0, t1 - t0, 96)
+        s.note(cb, r2, t0, t1 - t0, 80)
+        s.chord(cc, [r2, fifth], t0, t1 - t0, 84)
+        s.chord(cs, [r2, r2 + 12], t0, t1 - t0, 70)
+        s.note(ct, r2, t0 + 0.4, t1 - t0 - 0.4, 62)
+        # soft timpani roll into the peak
+        n = int(1.8 / 0.09)
+        for j in range(n):
+            tt = tp - 1.8 + j * 0.09
+            s.note(cti, r2, tt, 0.08, int(25 + 55 * k * (j / n)))
+    return s
+
+
 def render(work):
     tl = json.load(open(os.path.join(work, "timeline.json")))
     s = compose(tl)
     mid = os.path.join(work, "music.mid")
     s.write(mid, tl["duration"] + 3)
+    sw = compose_swells(tl)
+    mid2 = os.path.join(work, "swells.mid")
+    sw.write(mid2, tl["duration"] + 3, progs=SWELL_PROG)
+    raw2 = os.path.join(work, "swells_raw.wav")
+    subprocess.run(["fluidsynth", "-ni", "-q", "-g", "0.7", "-r", "48000", "-o", "synth.reverb.active=1",
+                    "-o", "synth.reverb.room-size=0.7", "-o", "synth.reverb.level=0.35", "-o", "synth.chorus.active=0",
+                    "-F", raw2, SF2, mid2], check=True)
     raw = os.path.join(work, "music_raw.wav")
     subprocess.run(["fluidsynth", "-ni", "-q", "-g", "0.55", "-r", "48000", "-o", "synth.reverb.active=1",
                     "-o", "synth.reverb.room-size=0.82", "-o", "synth.reverb.damp=0.35", "-o", "synth.reverb.width=0.9",
@@ -464,6 +536,14 @@ def render(work):
     out = np.zeros((n, 2))
     m = min(n, len(wet))
     out[:m] = wet[:m]
+    # the deep swells, mixed under the score (kept clear of the voice band, felt more than heard)
+    y, sr2 = sf.read(raw2, dtype="float64")
+    y = audiofx.butter(y, sr2, "lowpass", 900)
+    pk_s = np.max(np.abs(y)) + 1e-9
+    pk_m = np.max(np.abs(out)) + 1e-9
+    m2 = min(n, len(y))
+    out[:m2] += y[:m2] * (0.55 * pk_m / pk_s)
+    os.remove(raw2)
     pk = np.max(np.abs(out))
     out *= 0.9 / max(pk, 1e-6)
     sf.write(os.path.join(work, "music.wav"), out.astype(np.float32), sr)

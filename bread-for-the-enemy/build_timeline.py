@@ -80,6 +80,7 @@ def build():
                 mouth[w] = dict(offset=off, **mc)
             line = dict(who=who, start=round(start, 4), end=round(start + dur, 4), text=ev.get("sub", ev["text"]),
                         vo=bool(ev.get("vo", False)), fx=fx, vol=ev.get("vol", 1.0), mouth=mouth,
+                        nosub=bool(ev.get("nosub", False)),
                         env=cur_shot["env"] if cur_shot else "dry", shot=cur_shot["id"] if cur_shot else None,
                         clips={w: dict(off=c[2]) for w, c in clips.items()},
                         _audio={w: c for w, c in clips.items()})
@@ -120,7 +121,7 @@ def mix_voice(tl, path):
             if ln["vo"] and ln["who"] == "paul" and ln["env"] in ("desert", "memory"):
                 env = "narr"  # old Paul narrating over his memory
             y = audiofx.resample(x.astype(np.float64), tts.SR, OUT_SR)
-            fx = ln["fx"] if ln["fx"] in ("memory", "divine", "soft_divine") else None
+            fx = ln["fx"] if ln["fx"] in ("memory", "divine", "soft_divine", "epic") else None
             st = audiofx.place_voice(y, OUT_SR, env, fx)
             gain = ln["vol"] * (0.62 if (ln["who"] == "both" and w == "asher") else 1.0)
             i0 = int((ln["start"] + off) * OUT_SR)
@@ -146,7 +147,7 @@ def main():
         h = int(t // 3600); m = int(t % 3600 // 60); s = t % 60
         return f"{h:02d}:{m:02d}:{int(s):02d},{int(round((s - int(s)) * 1000)):03d}"
     names = dict(narrator="Narrator", jesus="Jesus", paul="Paul", saul="Paul", asher="Asher", yosef="Yosef",
-                 phoebe="Phoebe", guard="Guard", child="Young Asher", both="Paul & Asher")
+                 phoebe="Phoebe", guard="Guard", child="Young Asher", both="Paul & Asher", epic="Jesus")
     with open(os.path.join(work, "subtitles.srt"), "w") as f:
         lines = tl["lines"]
         for i, ln in enumerate(lines, 1):

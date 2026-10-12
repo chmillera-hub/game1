@@ -7,27 +7,50 @@ const lit = (c, Lt) => L.mul(c, Lt.key || '#ffffff');
 const shd = (c, Lt) => L.mul(shade(c, 0.6), Lt.amb || '#ffffff');
 
 // ---------------------------------------------------------------- torso
-// B: neck base (screen). by: body yaw (-0.6..0.6), lean: tilt radians, sh: shoulder raise (units)
+// B: neck base (screen). by: body yaw (-0.6..0.6), sh: shoulder raise (units)
+// X() follows the curved front of the chest; Xc() is a flatter projection used for the collar,
+// the neck base and the joints inside the body, so the neck always sits in the neck hole.
 function torsoPts(B, s, by, sh, len = 9) {
   const c = Math.cos(by), sn = Math.sin(by);
   const X = (x, y) => {
     const z = 0.9 * Math.sqrt(Math.max(0, 1 - Math.pow(x / 2.6, 2)));
     return [B[0] + (x * c + z * sn) * s, B[1] + y * s];
   };
-  const R = [[0.55, -0.18], [1.3, 0.18 - sh * 0.5], [1.92, 0.62 - sh], [2.0, 1.35 - sh * 0.6], [1.86, 2.3], [1.66, 3.7], [1.8, 4.9], [2.05, len]];
-  const right = R.map(([x, y]) => X(x, y));
-  const left = R.map(([x, y]) => X(-x, y));
-  return { X, right, left };
+  const Xc = (x, y, z = 0.5) => [B[0] + (x * c + z * sn) * s, B[1] + y * s];
+  const R = [[1.3, 0.16 - sh * 0.5], [1.9, 0.6 - sh], [2.02, 1.3 - sh * 0.6], [1.88, 2.3], [1.68, 3.7], [1.8, 4.9], [2.05, len]];
+  const right = [Xc(0.62, -0.22), ...R.map(([x, y]) => X(x, y))];
+  const left = [Xc(-0.62, -0.22), ...R.map(([x, y]) => X(-x, y))];
+  return { X, Xc, right, left };
 }
+// the opening of the neckline (screen points, clockwise from the left collar corner)
+function collarPts(B, s, by, kind) {
+  const c = Math.cos(by), sn = Math.sin(by);
+  const Xc = (x, y) => [B[0] + (x * c + 0.5 * sn) * s, B[1] + y * s];
+  if (kind === 'v') return [Xc(-0.62, -0.22), Xc(-0.36, 0.55), Xc(0, 1.55), Xc(0.36, 0.55), Xc(0.62, -0.22)];
+  return [Xc(-0.62, -0.22), Xc(-0.5, 0.2), Xc(0, 0.46), Xc(0.5, 0.2), Xc(0.62, -0.22)];
+}
+function neckBase(B, s, by) { return [B[0] + 0.5 * Math.sin(by) * s, B[1]]; }
+
+const clothShadow = (c, Lt) => mix(lit(c, Lt), shd(c, Lt), 0.78);
 
 function drawTorso(ctx, B, s, st, Lt, o) {
   const by = o.by || 0, sh = o.shoulder || 0, len = o.len || 9;
   const cl = st.cloth;
-  const { X, right, left } = torsoPts(B, s, by, sh, len);
+  const { X, Xc, right, left } = torsoPts(B, s, by, sh, len);
   const lw = (Lt.lineW || 1) * s * 0.02;
   const side = Lt.side || -1;
   const outline = [...left.slice().reverse(), ...right];
-  // body base
+  const collar = collarPts(B, s, by, cl.neck);
+  // the neck hole is cut out of the cloth (the neck and chest drawn underneath show through it);
+  // the hole reaches up past the collar corners so no sliver of cloth can cross the neck
+  const PathC = require('@napi-rs/canvas').Path2D;
+  const hole = new PathC();
+  hole.rect(-1e5, -1e5, 2e5, 2e5);
+  const up = [Xc(0.8, -1.6), Xc(-0.8, -1.6)];
+  L.crPath(hole, collar, false, 0.5);
+  hole.lineTo(up[0][0], up[0][1]); hole.lineTo(up[1][0], up[1][1]); hole.closePath();
+  ctx.save();
+  ctx.clip(hole, 'evenodd');
   ctx.save();
   ctx.beginPath();
   L.crPath(ctx, outline, false, 0.45);
@@ -35,32 +58,16 @@ function drawTorso(ctx, B, s, st, Lt, o) {
   ctx.fillStyle = lit(cl.tunic, Lt);
   ctx.fill();
   ctx.clip();
-  // shadow side
-  const mid = X(-side * 1.25, 0);
-  const g = ctx.createLinearGradient(mid[0] + side * s * 0.5, 0, mid[0] - side * s * 0.1, 0);
-  g.addColorStop(0, rgba(shd(cl.tunic, Lt), 0));
-  g.addColorStop(1, rgba(shd(cl.tunic, Lt), 0.92));
+  // shadow side: a soft form shadow, not a second colour
+  const mid = X(-side * 1.1, 0);
+  const g = ctx.createLinearGradient(mid[0] + side * s * 0.4, 0, mid[0] - side * s * 1.4, 0);
+  g.addColorStop(0, rgba(clothShadow(cl.tunic, Lt), 0));
+  g.addColorStop(1, rgba(clothShadow(cl.tunic, Lt), 0.82));
   ctx.fillStyle = g;
   ctx.fillRect(B[0] - 20 * s, B[1] - 4 * s, 40 * s, 30 * s);
-  // chin/head shadow on chest
-  ctx.fillStyle = L.radial(ctx, B[0], B[1] + s * 0.3, 0, s * 1.6, [[0, rgba(shd(cl.tunic, Lt), 0.9)], [1, rgba(shd(cl.tunic, Lt), 0)]]);
-  ctx.fillRect(B[0] - s * 2, B[1] - s, s * 4, s * 3);
-  // neckline
-  const skin = lit(st.skin, Lt), skinSh = L.mul(st.skinShadow, Lt.amb || '#fff');
-  if (cl.neck === 'v') {
-    const p = [X(-0.62, -0.3), X(0, 1.7), X(0.62, -0.3)];
-    ctx.beginPath(); ctx.moveTo(...p[0]); ctx.lineTo(...p[1]); ctx.lineTo(...p[2]); ctx.closePath();
-    ctx.fillStyle = skinSh; ctx.fill();
-    L.strokeSmooth(ctx, [X(-0.75, -0.25), X(-0.05, 1.8)], rgba(st.line, 0.9), lw);
-    L.strokeSmooth(ctx, [X(0.75, -0.25), X(0.05, 1.8)], rgba(st.line, 0.9), lw);
-    // collarbone hint
-    L.strokeSmooth(ctx, [X(-0.5, 0.35), X(-0.15, 0.55)], rgba(st.line, 0.35), lw * 0.7);
-  } else {
-    const p = [X(-0.7, -0.3), X(-0.45, 0.35), X(0, 0.5), X(0.45, 0.35), X(0.7, -0.3)];
-    ctx.beginPath(); L.crPath(ctx, p, false); ctx.closePath(); ctx.fillStyle = skinSh; ctx.fill();
-    L.strokeSmooth(ctx, p, rgba(st.line, 0.9), lw);
-    L.strokeSmooth(ctx, [X(-0.82, -0.25), X(-0.55, 0.48), X(0, 0.66), X(0.55, 0.48), X(0.82, -0.25)], rgba(shade(cl.tunic, 0.5), 0.8), lw * 1.6);
-  }
+  // chin/head shadow on the chest
+  ctx.fillStyle = L.radial(ctx, Xc(0, 0.2)[0], B[1] + s * 0.25, 0, s * 1.5, [[0, rgba(clothShadow(cl.tunic, Lt), 0.7)], [1, rgba(clothShadow(cl.tunic, Lt), 0)]]);
+  ctx.fillRect(B[0] - s * 2.5, B[1] - s, s * 5, s * 3);
   // armor (guard)
   if (cl.armor) {
     const m = st.metal || '#8a8d92';
@@ -72,38 +79,35 @@ function drawTorso(ctx, B, s, st, Lt, o) {
       ctx.fillStyle = i % 2 ? lit(m, Lt) : lit(shade(m, 0.85), Lt); ctx.fill();
       ctx.strokeStyle = rgba(st.line, 0.8); ctx.lineWidth = lw * 0.8; ctx.stroke();
     }
-    const sp = [X(-2.3, 0.55), X(-1.6, 0.2), X(-1.0, 0.25), X(-1.4, 1.2), X(-2.4, 1.3)];
-    for (const mirror of [1, -1]) {
-      const pts = sp.map((p, i) => mirror > 0 ? p : X(-[[-2.3, 0.55], [-1.6, 0.2], [-1.0, 0.25], [-1.4, 1.2], [-2.4, 1.3]][i][0], [[-2.3, 0.55], [-1.6, 0.2], [-1.0, 0.25], [-1.4, 1.2], [-2.4, 1.3]][i][1]));
-      ctx.beginPath(); L.crPath(ctx, pts, true); ctx.fillStyle = lit(shade(m, 1.1), Lt); ctx.fill(); ctx.strokeStyle = rgba(st.line, 0.8); ctx.stroke();
-    }
   }
   // mantle draped over one shoulder (screen side o.mantleSide)
   if (cl.mantle && !cl.armor) {
     const ms = o.mantleSide || 1;
-    const pts = [X(ms * 0.8, -0.3), X(ms * 1.7, 0.15), X(ms * 2.45, 0.8), X(ms * 2.5, 2.4), X(ms * 2.2, 5.0), X(ms * 1.2, 6.2),
-      X(-ms * 0.4, 6.0), X(-ms * 1.2, 5.2), X(-ms * 1.9, 4.6), X(-ms * 1.0, 3.6), X(ms * 0.2, 2.2), X(ms * 0.6, 0.6)];
+    const pts = [Xc(ms * 0.66, -0.2), X(ms * 1.7, 0.15), X(ms * 2.45, 0.8), X(ms * 2.5, 2.4), X(ms * 2.2, 5.0), X(ms * 1.2, 6.2),
+      X(-ms * 0.4, 6.0), X(-ms * 1.2, 5.2), X(-ms * 1.9, 4.6), X(-ms * 1.0, 3.6), X(ms * 0.2, 2.2), Xc(ms * 0.55, 0.45)];
     ctx.beginPath(); L.crPath(ctx, pts, true, 0.45);
     ctx.fillStyle = lit(cl.mantle, Lt); ctx.fill();
     ctx.save(); ctx.clip();
-    ctx.fillStyle = shd(cl.mantle, Lt);
-    if (side < 0) ctx.fillRect(X(ms * 1.4, 0)[0] - (ms > 0 ? 0 : 0), B[1] - 4 * s, 20 * s, 30 * s); else ctx.fillRect(X(ms * 1.4, 0)[0] - 20 * s, B[1] - 4 * s, 20 * s, 30 * s);
+    const gm = ctx.createLinearGradient(X(0, 0)[0] + side * s * 0.6, 0, X(0, 0)[0] - side * s * 2.2, 0);
+    gm.addColorStop(0, rgba(clothShadow(cl.mantle, Lt), 0)); gm.addColorStop(1, rgba(clothShadow(cl.mantle, Lt), 0.85));
+    ctx.fillStyle = gm; ctx.fillRect(B[0] - 20 * s, B[1] - 4 * s, 40 * s, 30 * s);
     // fold lines
     for (let i = 0; i < 4; i++) {
       const a = X(ms * (0.9 + i * 0.35), 0.5 + i * 0.3), b = X(ms * (0.2 - i * 0.5), 3.4 + i * 0.6), m2 = X(ms * (0.9 - i * 0.1), 2.0 + i * 0.4);
-      L.strokeSmooth(ctx, [a, m2, b], rgba(shade(cl.mantle, 0.45), 0.7), lw * 0.8);
+      L.strokeSmooth(ctx, [a, m2, b], rgba(shade(cl.mantle, 0.45), 0.6), lw * 0.8);
     }
     ctx.restore();
+    ctx.beginPath(); L.crPath(ctx, pts, true, 0.45); // the folds replaced the path: outline the mantle itself
     ctx.strokeStyle = st.line; ctx.lineWidth = lw; ctx.stroke();
     if (cl.trim) {
-      L.strokeSmooth(ctx, [X(ms * 0.62, 0.55), X(ms * 0.25, 2.2), X(-ms * 0.9, 3.6), X(-ms * 1.85, 4.55)], lit(cl.trim, Lt), s * 0.1);
+      L.strokeSmooth(ctx, [Xc(ms * 0.58, 0.5), X(ms * 0.25, 2.2), X(-ms * 0.9, 3.6), X(-ms * 1.85, 4.55)], lit(cl.trim, Lt), s * 0.1);
     }
   }
   // tunic folds
   for (let i = 0; i < 5; i++) {
     const x = -1.6 + i * 0.8;
     const a = X(x * 0.6, 1.2 + (i % 2) * 0.4), b = X(x, 4.5 + (i % 3) * 0.6);
-    L.strokeSmooth(ctx, [a, b], rgba(shade(cl.tunic, 0.5), 0.45), lw * 0.7);
+    L.strokeSmooth(ctx, [a, b], rgba(shade(cl.tunic, 0.5), 0.4), lw * 0.7);
   }
   // belt
   if (o.belt !== false && len > 4.5) {
@@ -111,10 +115,15 @@ function drawTorso(ctx, B, s, st, Lt, o) {
     L.strokeSmooth(ctx, bp, lit(cl.trim || '#3a2a20', Lt), s * 0.32);
   }
   ctx.restore();
-  // outline
-  ctx.beginPath();
-  L.crPath(ctx, outline, false, 0.45);
-  ctx.strokeStyle = st.line; ctx.lineWidth = lw * 1.1; ctx.lineJoin = 'round'; ctx.stroke();
+  ctx.restore();
+  // collar: a soft fabric edge around the neck hole (the neck sits inside it)
+  L.strokeSmooth(ctx, collar, rgba(clothShadow(cl.tunic, Lt), 0.95), lw * 2.6);
+  L.strokeSmooth(ctx, collar, st.line, lw * 1.0);
+  // outline of the sides and shoulders only (never across the neck)
+  ctx.lineJoin = 'round';
+  ctx.beginPath(); L.crPath(ctx, left, false, 0.45);
+  ctx.strokeStyle = st.line; ctx.lineWidth = lw * 1.1; ctx.stroke();
+  ctx.beginPath(); L.crPath(ctx, right, false, 0.45); ctx.stroke();
   // rim light on body
   if (Lt.rim && (Lt.rimA || 0) > 0) {
     const pts = Lt.rimSide > 0 ? right : left;
@@ -122,7 +131,14 @@ function drawTorso(ctx, B, s, st, Lt, o) {
     L.strokeSmooth(ctx, pts.slice(1, 6), rgba(Lt.rim, Lt.rimA * 0.8), s * 0.06);
     ctx.restore();
   }
-  return { X, right, left, shoulderR: X(1.68, 0.85 - sh), shoulderL: X(-1.68, 0.85 - sh) };
+  const poly = outline.concat([left[0]]);
+  return { X, Xc, right, left, poly, collar };
+}
+// shoulder joints sit inside the body (no curved-front offset), so the far arm tucks behind the chest
+function shoulderJoints(B, s, by, sh) {
+  const c = Math.cos(by), sn = Math.sin(by);
+  const J = (x, y) => [B[0] + (x * c + 0.25 * sn) * s, B[1] + y * s];
+  return { L: J(-1.52, 0.98 - sh), R: J(1.52, 0.98 - sh) };
 }
 
 // ---------------------------------------------------------------- arms
@@ -161,86 +177,137 @@ function armJoint(S, W, l1, l2, side, out = 0) {
   return { E: [lerp(E[0], sol.E[0], w), lerp(E[1], sol.E[1], w)], W: sol.W };
 }
 
-function drawArm(ctx, S, W, s, st, Lt, o) {
+// sleeve geometry: shoulder cap + upper arm + elbow + forearm, as one union of round shapes
+function armGeom(S, Wt, s, o = {}) {
   const l1 = 2.85 * s, l2 = 2.5 * s;
-  const { E, W: W2 } = armJoint(S, W, l1, l2, o.bend || 1, o.out || 0);
+  const { E, W } = armJoint(S, Wt, l1, l2, o.bend || 1, o.out || 0);
+  const u = [W[0] - E[0], W[1] - E[1]], ul = Math.hypot(u[0], u[1]) || 1;
+  const dir = [u[0] / ul, u[1] / ul];
+  const loose = o.loose || 0;
+  const rS = 0.5 * s, rE = 0.42 * s, rC = (0.37 + 0.16 * loose) * s;
+  // the cuff stops just short of the wrist
+  const C = [W[0] - dir[0] * s * 0.16, W[1] - dir[1] * s * 0.16];
+  return { S, E, W, C, dir, rS, rE, rC, cap: 0.56 * s, s, ang: Math.atan2(dir[1], dir[0]), loose };
+}
+function sleevePath(g, part) {
+  const p = new (require('@napi-rs/canvas').Path2D)();
+  const H = require('./hands');
+  if (part !== 'lower') {
+    p.moveTo(g.S[0] + g.cap, g.S[1]); p.arc(g.S[0], g.S[1], g.cap, 0, L.TAU, false);
+    H.capsule(p, g.S, g.rS, g.E, g.rE);
+  }
+  if (part !== 'upper') {
+    H.capsule(p, g.E, g.rE, g.C, g.rC);
+    if (part === 'lower') { p.moveTo(g.E[0] + g.rE, g.E[1]); p.arc(g.E[0], g.E[1], g.rE, 0, L.TAU, false); }
+  }
+  return p;
+}
+// o: { part: 'all'|'upper'|'lower', torso: polygon (screen) for blending the shoulder, far: bool, sleeve }
+function drawSleeve(ctx, g, st, Lt, o = {}) {
+  const s = g.s;
   const col = o.sleeve || st.cloth.tunic;
   const lw = (Lt.lineW || 1) * s * 0.02;
-  // sleeve polygon along S->E->W with widths
-  const seg = (A, B2, wa, wb) => {
-    const dx = B2[0] - A[0], dy = B2[1] - A[1], d = Math.hypot(dx, dy) || 1;
-    const nx = -dy / d, ny = dx / d;
-    return [[A[0] + nx * wa, A[1] + ny * wa], [B2[0] + nx * wb, B2[1] + ny * wb], [B2[0] - nx * wb, B2[1] - ny * wb], [A[0] - nx * wa, A[1] - ny * wa]];
-  };
-  const wS = 0.55 * s, wE = 0.44 * s, wW = (o.loose == null ? 0.56 : o.loose) * s;
-  const a = seg(S, E, wS, wE), b = seg(E, W2, wE, wW);
-  const poly = [a[0], a[1], b[1], b[2], a[2], a[3]];
-  ctx.beginPath();
-  L.crPath(ctx, poly, true, 0.25);
-  ctx.fillStyle = o.dark ? shd(col, Lt) : lit(col, Lt);
-  ctx.fill();
-  ctx.save(); ctx.clip();
-  // shading strip on the lower side
-  ctx.strokeStyle = rgba(shd(col, Lt), 0.55);
-  ctx.lineWidth = s * 0.3;
-  ctx.beginPath(); ctx.moveTo(a[3][0], a[3][1]); ctx.lineTo(E[0], E[1]); ctx.lineTo(b[2][0], b[2][1]); ctx.stroke();
-  // elbow folds
-  L.strokeSmooth(ctx, [[E[0] - s * 0.25, E[1] - s * 0.1], [E[0], E[1] + s * 0.05], [E[0] + s * 0.25, E[1] - s * 0.05]], rgba(shade(col, 0.45), 0.7), lw * 0.8);
+  const part = o.part || 'all';
+  const path = sleevePath(g, part);
+  const PathC = require('@napi-rs/canvas').Path2D;
+  // outline (stroked under the fill). Around the shoulder only where the arm leaves the body,
+  // so the sleeve grows out of the shoulder instead of sitting on it like a pad.
+  ctx.save();
+  ctx.lineJoin = 'round'; ctx.strokeStyle = st.line; ctx.lineWidth = lw * 2.1;
+  const zone = new PathC(); zone.rect(-1e5, -1e5, 2e5, 2e5);
+  zone.moveTo(g.S[0] + g.cap * 1.25, g.S[1]); zone.arc(g.S[0], g.S[1], g.cap * 1.25, 0, L.TAU, true);
+  ctx.save(); ctx.clip(zone, 'evenodd'); ctx.stroke(path); ctx.restore();
+  if (o.torso && part !== 'lower') {
+    const inZone = new PathC(); inZone.moveTo(g.S[0] + g.cap * 1.25, g.S[1]); inZone.arc(g.S[0], g.S[1], g.cap * 1.25, 0, L.TAU, false);
+    const outTorso = new PathC(); outTorso.rect(-1e5, -1e5, 2e5, 2e5);
+    L.crPath(outTorso, o.torso, true, 0.45);
+    ctx.save(); ctx.clip(inZone); ctx.clip(outTorso, 'evenodd'); ctx.stroke(path); ctx.restore();
+  } else if (part === 'lower' || !o.torso) {
+    ctx.save();
+    const inZone = new PathC(); inZone.moveTo(g.S[0] + g.cap * 1.25, g.S[1]); inZone.arc(g.S[0], g.S[1], g.cap * 1.25, 0, L.TAU, false);
+    ctx.clip(inZone); if (part === 'lower') ctx.stroke(path); ctx.restore();
+  }
   ctx.restore();
-  ctx.strokeStyle = st.line; ctx.lineWidth = lw; ctx.lineJoin = 'round'; ctx.stroke();
-  // cuff edge
-  const ang = Math.atan2(W2[1] - E[1], W2[0] - E[0]);
-  ctx.strokeStyle = rgba(shd(shade(col, 0.7), Lt), 0.9);
-  ctx.lineWidth = s * 0.12;
-  ctx.beginPath(); ctx.moveTo(b[1][0], b[1][1]); ctx.lineTo(b[2][0], b[2][1]); ctx.stroke();
-  if (o.hand !== false) drawHand(ctx, W2, ang + (o.handRot || 0), s, st, Lt, o.hand || 'relax', o.mirror || 1);
-  if (o.shackle) drawShackle(ctx, W2, ang, s, Lt);
-  return { E, W: W2, ang };
+  // fill: the same lit cloth colour on both arms; the far arm only sits a little deeper in shadow
+  ctx.fillStyle = lit(col, Lt);
+  ctx.fill(path, 'nonzero');
+  ctx.save();
+  ctx.clip(path, 'nonzero');
+  const side = Lt.side || -1;
+  const shadowC = clothShadow(col, Lt);
+  if (o.far) { ctx.fillStyle = rgba(shadowC, 0.35); ctx.fillRect(g.S[0] - 8 * s, g.S[1] - 4 * s, 16 * s, 14 * s); }
+  // form shadow on the side of each segment that faces away from the light
+  const band = (A, B2, r) => {
+    let nx = -(B2[1] - A[1]), ny = B2[0] - A[0];
+    const l = Math.hypot(nx, ny) || 1; nx /= l; ny /= l;
+    if (nx * -side < 0) { nx = -nx; ny = -ny; } // n points toward the light
+    const m = [(A[0] + B2[0]) / 2, (A[1] + B2[1]) / 2];
+    const gr = ctx.createLinearGradient(m[0] + nx * r * 0.2, m[1] + ny * r * 0.2, m[0] - nx * r * 1.05, m[1] - ny * r * 1.05);
+    gr.addColorStop(0, rgba(shadowC, 0)); gr.addColorStop(1, rgba(shadowC, 0.72));
+    ctx.fillStyle = gr;
+    const q = new PathC(); require('./hands').capsule(q, A, r * 1.02, B2, r * 1.02);
+    ctx.fill(q);
+  };
+  if (part !== 'lower') band(g.S, g.E, g.rS);
+  if (part !== 'upper') band(g.E, g.C, g.rC);
+  // occlusion where the upper arm meets the body
+  if (part !== 'lower') {
+    ctx.fillStyle = L.radial(ctx, g.S[0], g.S[1] + s * 0.7, 0, s * 1.0, [[0, rgba(shadowC, 0.35)], [1, rgba(shadowC, 0)]]);
+    ctx.fillRect(g.S[0] - s * 1.2, g.S[1] - s * 0.4, s * 2.4, s * 2.4);
+  }
+  // cloth folds at the inner elbow
+  if (part !== 'upper') {
+    const a = [g.E[0] - g.dir[0] * s * 0.1, g.E[1] - g.dir[1] * s * 0.1];
+    const nx = -g.dir[1], ny = g.dir[0];
+    for (const k of [-0.25, 0.1]) {
+      L.strokeSmooth(ctx, [[a[0] + nx * g.rE * 0.8 + g.dir[0] * s * k, a[1] + ny * g.rE * 0.8 + g.dir[1] * s * k],
+        [a[0] + g.dir[0] * s * (k + 0.18), a[1] + g.dir[1] * s * (k + 0.18)],
+        [a[0] - nx * g.rE * 0.5 + g.dir[0] * s * (k + 0.05), a[1] - ny * g.rE * 0.5 + g.dir[1] * s * (k + 0.05)]], rgba(shade(col, 0.45), 0.5), lw * 0.8);
+    }
+  }
+  // rim light along the outer edge on the rim side
+  if (Lt.rim && (Lt.rimA || 0) > 0.05 && part !== 'upper') {
+    ctx.globalCompositeOperation = 'lighter';
+    const rs = Lt.rimSide || 1;
+    const nx = -g.dir[1], ny = g.dir[0];
+    const sg = nx * rs > 0 ? 1 : -1;
+    L.strokeSmooth(ctx, [[g.E[0] + nx * g.rE * 0.92 * sg, g.E[1] + ny * g.rE * 0.92 * sg], [g.C[0] + nx * g.rC * 0.92 * sg, g.C[1] + ny * g.rC * 0.92 * sg]], rgba(Lt.rim, Lt.rimA * 0.45), s * 0.05);
+    ctx.globalCompositeOperation = 'source-over';
+  }
+  ctx.restore();
+  // cuff: the opening of the sleeve around the wrist
+  if (part !== 'upper') {
+    const nx = -g.dir[1], ny = g.dir[0];
+    ctx.strokeStyle = rgba(shade(shadowC, 0.8), 0.9); ctx.lineWidth = s * 0.08; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(g.C[0] + nx * g.rC * 0.9, g.C[1] + ny * g.rC * 0.9); ctx.quadraticCurveTo(g.C[0] + g.dir[0] * s * 0.08, g.C[1] + g.dir[1] * s * 0.08, g.C[0] - nx * g.rC * 0.9, g.C[1] - ny * g.rC * 0.9); ctx.stroke();
+  }
 }
 
-// stylised anime hand drawn as a clean silhouette. ang: forearm direction.
-// pose: relax/open/offer/hold/fist/grip/point/cup/knock
-const HANDS = {
-  open: { sil: [[0, -0.34], [0.35, -0.4], [0.5, -0.5], [0.92, -0.8], [1.04, -0.7], [0.78, -0.4], [1.62, -0.36], [1.78, -0.24], [1.86, -0.04], [1.8, 0.15], [1.58, 0.32], [1.44, 0.4], [0.82, 0.42], [0, 0.36]],
-    lines: [[[0.98, -0.2], [1.72, -0.2]], [[1.0, -0.02], [1.8, 0.0]], [[0.98, 0.18], [1.62, 0.2]]] },
-  relax: { sil: [[0, -0.34], [0.62, -0.42], [1.08, -0.38], [1.38, -0.2], [1.46, 0.04], [1.36, 0.26], [1.12, 0.4], [0.62, 0.42], [0, 0.36]],
-    lines: [[[0.95, -0.24], [1.3, -0.12], [1.36, 0.02]], [[0.98, -0.04], [1.28, 0.08], [1.3, 0.2]], [[0.95, 0.16], [1.16, 0.28]]],
-    thumb: [[0.3, -0.36], [0.7, -0.52], [0.98, -0.42]] },
-  fist: { sil: [[0, -0.36], [0.55, -0.44], [0.98, -0.42], [1.2, -0.28], [1.26, -0.04], [1.22, 0.2], [1.08, 0.38], [0.72, 0.44], [0, 0.38]],
-    lines: [[[1.02, -0.3], [1.14, -0.16]], [[1.06, -0.08], [1.16, 0.06]], [[1.02, 0.12], [1.1, 0.26]]],
-    thumb: [[0.32, -0.4], [0.78, -0.36], [1.02, -0.12]] },
-};
-HANDS.hold = HANDS.fist; HANDS.grip = HANDS.fist; HANDS.knock = HANDS.fist; HANDS.point = HANDS.relax;
-HANDS.offer = HANDS.open; HANDS.cup = HANDS.relax;
+// compatibility wrapper: a whole arm with its hand (used by simple callers)
+function drawArm(ctx, S, W, s, st, Lt, o) {
+  const g = armGeom(S, W, s, o);
+  const H = require('./hands');
+  H.drawWrist(ctx, g.W, g.dir, s, st, Lt);
+  drawSleeve(ctx, g, st, Lt, o);
+  if (o.handSpec) H.drawHand3D(ctx, g.W, s, st, Lt, o.handSpec);
+  if (o.shackle) drawShackle(ctx, g.W, g.ang, s, Lt);
+  return { E: g.E, W: g.W, ang: g.ang, g };
+}
+
+// hand without an arm (legacy name kept for callers): forearm direction ang, mirror picks the hand
 function drawHand(ctx, W, ang, s, st, Lt, pose, mirror = 1) {
-  const skin = lit(st.skin, Lt), skinSh = L.mul(st.skinShadow, Lt.amb || '#fff');
-  const lw = (Lt.lineW || 1) * s * 0.02;
-  const h = HANDS[pose] || HANDS.relax;
-  ctx.save();
-  ctx.translate(W[0], W[1]);
-  ctx.rotate(ang);
-  ctx.scale(s * 0.8, s * 0.8 * mirror);
-  ctx.lineJoin = 'round'; ctx.lineCap = 'round';
-  ctx.beginPath(); L.crPath(ctx, h.sil, true, 0.45);
-  ctx.fillStyle = skin; ctx.fill();
-  ctx.save(); ctx.clip();
-  ctx.fillStyle = rgba(skinSh, 0.55);
-  ctx.beginPath(); ctx.ellipse(0.6, 0.42, 1.2, 0.2, 0, 0, L.TAU); ctx.fill();
-  ctx.restore();
-  ctx.beginPath(); L.crPath(ctx, h.sil, true, 0.45);
-  ctx.lineWidth = lw / s * 0.95; ctx.strokeStyle = st.line; ctx.stroke();
-  for (const ln of h.lines) { ctx.beginPath(); L.crPath(ctx, ln, false); ctx.strokeStyle = rgba(st.line, 0.6); ctx.lineWidth = lw / s * 0.7; ctx.stroke(); }
-  if (h.thumb) { ctx.beginPath(); L.crPath(ctx, h.thumb, false); ctx.strokeStyle = rgba(st.line, 0.85); ctx.lineWidth = lw / s * 0.85; ctx.stroke(); }
-  ctx.restore();
+  const H = require('./hands');
+  const f = [Math.cos(ang), -Math.sin(ang), 0];
+  return H.drawHand3D(ctx, W, s, st, Lt, { f, n: [0, 0, 1], right: mirror > 0, shape: H.preset(pose) });
 }
 function drawShackle(ctx, W, ang, s, Lt) {
   const c = lit('#5d5a58', Lt);
   ctx.save();
   ctx.translate(W[0], W[1]); ctx.rotate(ang);
   ctx.fillStyle = c; ctx.strokeStyle = '#1a1614'; ctx.lineWidth = s * 0.04;
-  ctx.beginPath(); ctx.ellipse(-s * 0.15, 0, s * 0.22, s * 0.58, 0, 0, L.TAU); ctx.fill(); ctx.stroke();
+  ctx.beginPath(); ctx.ellipse(-s * 0.2, 0, s * 0.2, s * 0.5, 0, 0, L.TAU); ctx.fill(); ctx.stroke();
   ctx.fillStyle = rgba('#ffffff', 0.25);
-  ctx.beginPath(); ctx.ellipse(-s * 0.2, -s * 0.3, s * 0.07, s * 0.16, 0, 0, L.TAU); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(-s * 0.25, -s * 0.26, s * 0.06, s * 0.14, 0, 0, L.TAU); ctx.fill();
   ctx.restore();
 }
 
@@ -451,4 +518,4 @@ function drawCup(ctx, x, y, h, Lt) {
   ctx.restore();
 }
 
-module.exports = { armJoint, drawTorso, drawArm, drawHand, drawBread, drawHalfBread, drawJar, drawChain, drawScroll, drawTorch, drawFlame, drawCup, drawShackle, ik, torsoPts };
+module.exports = { armJoint, armGeom, drawSleeve, drawTorso, drawArm, drawHand, drawBread, drawHalfBread, drawJar, drawChain, drawScroll, drawTorch, drawFlame, drawCup, drawShackle, ik, torsoPts, collarPts, neckBase, shoulderJoints, clothShadow };

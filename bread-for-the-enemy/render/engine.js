@@ -71,6 +71,17 @@ const EMO = {
   anguish: { shoulder: 0.1, browInner: 1, browFurrow: 0.6, lid: 0.75, lidLower: 0.4, mouthSmile: -0.6, mouthWide: 0.3, tears: 0.8, tearFlow: 0.5, tremble: 0.3, breath: 1.9 },
   peace: { mouthSmile: 0.3, lid: 0.7, browInner: 0.1 },
   sad: { mouthSmile: -0.35, browInner: 0.7, browOuter: -0.3, lid: 0.66, lidTilt: -0.4, pitchOff: 0.08, shoulder: -0.1 },
+  // Asher keeping his distance: half-lidded, one brow up, mouth pulled to one side
+  dismissive: { browHL: 0.32, browInnerR: -0.18, browFurrow: 0.25, lid: 0.6, lidLower: 0.28, mouthAsym: 0.42, mouthSmile: -0.12, mouthPress: 0.3, pitchOff: -0.05, rollOff: -0.05, saccade: 0.6, blinkRate: 0.7 },
+  skeptical: { browHL: 0.45, browInnerR: -0.25, browFurrow: 0.3, lid: 0.7, lidLower: 0.3, mouthAsym: 0.3, mouthPress: 0.4, mouthSmile: -0.08, pitchOff: -0.03, rollOff: 0.05 },
+  annoyed: { browFurrow: 0.7, browInner: -0.35, lid: 0.64, lidLower: 0.32, mouthPress: 0.6, mouthSmile: -0.28, mouthAsym: 0.2, pitchOff: 0.03, breath: 1.3 },
+  sad_hurt: { browInner: 0.85, browFurrow: 0.15, lid: 0.64, lidTilt: -0.3, mouthSmile: -0.35, mouthPress: 0.3, tears: 0.35, pitchOff: 0.06, shoulder: -0.08 },
+  sorrow_kind: { rollOff: 0.04, browInner: 0.6, lid: 0.66, lidTilt: -0.2, mouthSmile: 0.05, tears: 0.25, pitchOff: 0.05, blinkRate: 0.7 },
+  // young Paul giving the order he will regret: anger on the brow, pain around the eyes
+  torn_order: { shoulder: 0.1, browFurrow: 0.65, browInner: 0.5, lid: 0.82, lidLower: 0.38, lidTilt: 0.1, mouthSmile: -0.5, mouthPress: 0.25, pale: 0.12, breath: 1.5, blinkRate: 1.3 },
+  torn_sad: { shoulder: -0.08, browInner: 0.85, browFurrow: 0.35, lid: 0.6, lidTilt: -0.35, mouthSmile: -0.45, mouthTremble: 0.2, tears: 0.35, pitchOff: 0.1, breath: 1.3 },
+  second_guess: { browInner: 0.75, browFurrow: 0.3, lid: 0.86, mouthSmile: -0.32, mouthBase: 0.05, saccade: 1.6, tears: 0.35 },
+  resign_order: { browInner: 0.55, browFurrow: 0.5, lid: 0.62, mouthPress: 0.6, mouthSmile: -0.3, tears: 0.25, pitchOff: 0.07, shoulder: -0.06 },
 };
 // per-character emotion overrides could go here
 const NUM = Object.keys(D);
@@ -78,35 +89,59 @@ const NUM = Object.keys(D);
 // ------------------------------------------------------------- pose library
 // Wrist targets in body units relative to neck base, character facing screen-right.
 // n = near arm (screen-left when facing right), f = far arm.
+// hand: shape preset (render/hands.js). palm: which way the palm faces, in body terms
+// (fwd/back/up/down/in = toward the body's midline/out). fdir: optional finger direction in body
+// terms, blended with the forearm direction (fk). The thumb side then follows from anatomy.
+const HANG = { in: 1, back: 0.3 };
+const LAP = { down: 0.75, in: 0.55 };
+const LAPDIR = { fwd: 0.7, in: 0.45, down: 0.45 };
 const POSES = {
-  default: { n: { w: [-2.02, 5.38], hand: 'relax' }, f: { w: [1.93, 5.38], hand: 'relax' } },
-  rest: { n: { w: [-0.84, 4.87], hand: 'relax' }, f: { w: [1.01, 4.96], hand: 'relax' }, front: true },
-  hold_bread: { n: { w: [-1.3, 2.75], hand: 'cup', rot: -0.5 }, f: { w: [1.35, 2.75], hand: 'cup', rot: 0.5, mirror: -1 }, front: true, bread: { at: [0.02, 2.45], r: 1.15 } },
-  break_bread: { n: { w: [-1.85, 2.85], hand: 'hold', rot: -0.3 }, f: { w: [1.9, 2.8], hand: 'hold', rot: 0.3, mirror: -1 }, front: true, halves: { l: [-1.45, 2.55], r: [1.5, 2.5], r0: 1.0 } },
-  give_bread: { n: { w: [-1.01, 4.70], hand: 'relax' }, f: { w: [2.94, 2.52], hand: 'offer' }, front: true },
-  reach: { n: { w: [-1.85, 5.21], hand: 'relax' }, f: { w: [3.02, 3.02], hand: 'open' }, front: true },
-  open_arms: { n: { w: [-3.86, 2.69], hand: 'open' }, f: { w: [3.86, 2.69], hand: 'open', mirror: -1 }, front: true },
-  hold: { n: { w: [-1.68, 5.04], hand: 'hold' }, f: { w: [0.67, 3.28], hand: 'hold', mirror: -1 }, front: true, jar: { arm: 'n', h: 1.9 }, bread: { at: [0.50, 2.94], r: 1.05 } },
-  hold_nervous: { n: { w: [-1.68, 5.04], hand: 'hold' }, f: { w: [0.6, 3.6], hand: 'hold', mirror: -1 }, front: true, jar: { arm: 'n', h: 1.9 },
-    bread: { arm: 'f', r: 1.0 }, fidget: { arm: 'f', amp: [0.12, 0.42], period: 3.4, pats: 2 }, sway: 0.025 },
-  hold_half: { n: { w: [-1.85, 5.12], hand: 'relax' }, f: { w: [0.84, 3.70], hand: 'hold', mirror: -1 }, front: true, half: { at: [0.92, 3.44], r: 0.95 } },
-  knock: { n: { w: [-1.93, 5.21], hand: 'relax' }, f: { w: [3.36, 1.18], hand: 'fist' }, front: true },
-  empty: { n: { w: [-1.8, 5.2], hand: 'relax' }, f: { w: [1.9, 5.2], hand: 'relax' }, front: false },
-  drop_bread: { n: { w: [-1.93, 5.21], hand: 'open' }, f: { w: [1.34, 5.04], hand: 'open' }, front: true },
-  kneel: { n: { w: [-1.34, 4.45], hand: 'relax' }, f: { w: [1.51, 4.37], hand: 'relax' }, front: true },
-  kneel_offer: { n: { w: [-1.18, 4.20], hand: 'hold' }, f: { w: [3.53, 3.02], hand: 'offer' }, front: true, half: { arm: 'f', r: 0.95 }, half2: { arm: 'n', r: 0.9 } },
-  kneel_eat: { n: { w: [-1.01, 3.86], hand: 'hold' }, f: { w: [0.84, 2.52], hand: 'hold' }, front: true, half: { arm: 'f', r: 0.85 } },
-  write: { n: { w: [-0.50, 4.54], hand: 'hold' }, f: { w: [1.34, 4.20], hand: 'point' }, front: true, shackles: true },
-  lean: { n: { w: [-0.50, 4.37], hand: 'relax' }, f: { w: [1.51, 4.20], hand: 'relax' }, front: true, shackles: true, lean: 0.12 },
-  take_bread: { n: { w: [-0.34, 4.20], hand: 'relax' }, f: { w: [2.18, 3.28], hand: 'hold' }, front: true, shackles: true, half: { arm: 'f', r: 0.95 } },
-  eat: { n: { w: [-0.50, 4.20], hand: 'relax' }, f: { w: [1.01, 2.27], hand: 'hold' }, front: true, shackles: true, half: { arm: 'f', r: 0.85 } },
-  grip: { n: { w: [-0.34, 4.20], hand: 'relax' }, f: { w: [2.52, 3.53], hand: 'grip' }, front: true, shackles: true },
-  bound: { n: { w: [-0.84, 4.54], hand: 'fist' }, f: { w: [0.50, 4.54], hand: 'fist' }, front: false },
-  scroll: { n: { w: [-1.85, 5.04], hand: 'relax' }, f: { w: [2.18, 3.02], hand: 'hold' }, front: true, scroll: true },
-  walk: { n: { w: [-1.85, 5.21], hand: 'relax' }, f: { w: [2.02, 5.04], hand: 'relax' } },
-  kneel_shield: { n: { w: [-0.25, -0.17], hand: 'open' }, f: { w: [2.18, 4.70], hand: 'open' }, front: true },
-  kneel_up: { n: { w: [-1.68, 3.86], hand: 'open' }, f: { w: [2.02, 3.70], hand: 'open' }, front: true },
-  peek: { n: { w: [-1.85, 5.21], hand: 'relax' }, f: { w: [1.85, 5.21], hand: 'relax' } },
+  default: { n: { w: [-2.02, 5.38], hand: 'relax', palm: HANG }, f: { w: [1.93, 5.38], hand: 'relax', palm: HANG } },
+  rest: { n: { w: [-0.9, 4.85], hand: 'relax', palm: LAP, fdir: LAPDIR }, f: { w: [1.05, 4.95], hand: 'relax', palm: LAP, fdir: LAPDIR }, front: true },
+  hold_bread: { n: { w: [-1.3, 2.85], hand: 'cup', palm: { up: 0.65, in: 0.75 }, fdir: { in: 0.5, fwd: 0.6, up: 0.4 } },
+    f: { w: [1.35, 2.85], hand: 'cup', palm: { up: 0.65, in: 0.75 }, fdir: { in: 0.5, fwd: 0.6, up: 0.4 } }, front: true, bread: { at: [0.02, 2.4], r: 1.1 } },
+  break_bread: { n: { w: [-1.85, 2.9], hand: 'hold', palm: { in: 0.8, up: 0.35 }, fdir: { fwd: 0.6, in: 0.5, up: 0.3 } },
+    f: { w: [1.9, 2.85], hand: 'hold', palm: { in: 0.8, up: 0.35 }, fdir: { fwd: 0.6, in: 0.5, up: 0.3 } }, front: true, halves: { r0: 0.95 } },
+  give_bread: { n: { w: [-1.01, 4.70], hand: 'relax', palm: HANG }, f: { w: [2.94, 2.52], hand: 'pinch', palm: { up: 1 }, fdir: { fwd: 0.7, in: 0.4 } }, front: true },
+  reach: { n: { w: [-1.85, 5.21], hand: 'relax', palm: HANG }, f: { w: [3.02, 3.02], hand: 'open', palm: { up: 0.8, fwd: 0.5 } }, front: true },
+  // the classic open stance: both arms out from the body, palms up, offering
+  open_palms: { n: { w: [-2.5, 3.95], hand: 'offer', palm: { up: 0.85, fwd: 0.35 }, fdir: { fwd: 0.75, out: 0.4, down: 0.25 }, fk: 0.6 },
+    f: { w: [2.5, 3.95], hand: 'offer', palm: { up: 0.85, fwd: 0.35 }, fdir: { fwd: 0.75, out: 0.4, down: 0.25 }, fk: 0.6 }, front: true },
+  open_arms: { n: { w: [-2.6, 4.15], hand: 'offer', palm: { up: 0.8, fwd: 0.4 }, fdir: { fwd: 0.7, out: 0.45, down: 0.25 }, fk: 0.6 },
+    f: { w: [2.6, 4.15], hand: 'offer', palm: { up: 0.8, fwd: 0.4 }, fdir: { fwd: 0.7, out: 0.45, down: 0.25 }, fk: 0.6 }, front: true },
+  open_low: { n: { w: [-2.3, 4.55], hand: 'offer', palm: { up: 0.75, fwd: 0.5 }, fdir: { out: 0.4, fwd: 0.7, down: 0.3 }, fk: 0.6 },
+    f: { w: [2.3, 4.55], hand: 'offer', palm: { up: 0.75, fwd: 0.5 }, fdir: { out: 0.4, fwd: 0.7, down: 0.3 }, fk: 0.6 }, front: true },
+  hold: { n: { w: [-1.68, 5.04], hand: 'grip', palm: HANG }, f: { w: [0.7, 3.25], hand: 'cup', palm: { up: 0.75, in: 0.6 }, fdir: { in: 0.8, fwd: 0.35 } }, front: true,
+    jar: { arm: 'n', h: 1.9 }, bread: { arm: 'f', r: 1.0 } },
+  hold_nervous: { n: { w: [-1.68, 5.04], hand: 'grip', palm: HANG }, f: { w: [0.62, 3.55], hand: 'cup', palm: { up: 0.75, in: 0.6 }, fdir: { in: 0.8, fwd: 0.35 } }, front: true,
+    jar: { arm: 'n', h: 1.9 }, bread: { arm: 'f', r: 0.95 }, fidget: { arm: 'f', amp: [0.1, 0.3], period: 3.4, pats: 2 }, sway: 0.02 },
+  hold_half: { n: { w: [-1.85, 5.12], hand: 'relax', palm: HANG }, f: { w: [0.85, 3.7], hand: 'cup', palm: { in: 0.75, up: 0.55, back: 0.1 }, fdir: { in: 0.75, fwd: 0.4 } }, front: true,
+    half: { arm: 'f', r: 0.9 } },
+  knock: { n: { w: [-1.93, 5.21], hand: 'relax', palm: HANG }, f: { w: [3.36, 1.18], hand: 'fist', palm: { in: 0.6, down: 0.5 }, fdir: { fwd: 1, up: 0.3 } }, front: true },
+  empty: { n: { w: [-1.8, 5.2], hand: 'relax', palm: HANG }, f: { w: [1.9, 5.2], hand: 'relax', palm: HANG }, front: false },
+  drop_bread: { n: { w: [-1.93, 5.21], hand: 'open', palm: HANG }, f: { w: [1.34, 5.04], hand: 'open', palm: { in: 0.8, back: 0.4 } }, front: true },
+  kneel: { n: { w: [-1.25, 4.4], hand: 'relax', palm: LAP, fdir: LAPDIR }, f: { w: [1.45, 4.35], hand: 'relax', palm: LAP, fdir: LAPDIR }, front: true },
+  kneel_offer: { n: { w: [-1.15, 4.15], hand: 'cup', palm: { up: 0.65, in: 0.6 }, fdir: { in: 0.6, fwd: 0.5 } },
+    f: { w: [3.45, 3.05], hand: 'offer', palm: { up: 1.0, fwd: 0.15 }, fdir: { fwd: 0.85, in: 0.35 }, fk: 0.5 }, front: true, half: { arm: 'f', r: 0.9 }, half2: { arm: 'n', r: 0.85 } },
+  kneel_eat: { n: { w: [-1.0, 3.9], hand: 'cup', palm: { up: 0.65, in: 0.6 }, fdir: { in: 0.6, fwd: 0.5 } },
+    f: { w: [0.9, 2.55], hand: 'hold', palm: { in: 0.6, back: 0.45, up: 0.2 }, fdir: { up: 0.65, in: 0.45, fwd: 0.2 } }, front: true, half: { arm: 'f', r: 0.8 }, half2: { arm: 'n', r: 0.8 } },
+  write: { n: { w: [-0.55, 4.55], hand: 'relax', palm: { down: 1 }, fdir: LAPDIR }, f: { w: [1.3, 4.2], hand: 'pen', palm: { down: 0.6, in: 0.6 }, fdir: { fwd: 0.6, in: 0.5 } },
+    front: true, shackles: true, parchment: true },
+  lean: { n: { w: [-0.55, 4.4], hand: 'relax', palm: LAP, fdir: LAPDIR }, f: { w: [1.5, 4.2], hand: 'relax', palm: LAP, fdir: LAPDIR }, front: true, shackles: true, lean: 0.12 },
+  take_bread: { n: { w: [-0.4, 4.25], hand: 'relax', palm: LAP, fdir: LAPDIR }, f: { w: [2.1, 3.35], hand: 'cup', palm: { up: 0.75, in: 0.5 }, fdir: { fwd: 0.6, in: 0.5 } },
+    front: true, shackles: true, half: { arm: 'f', r: 0.88 } },
+  eat: { n: { w: [-0.5, 4.25], hand: 'relax', palm: LAP, fdir: LAPDIR }, f: { w: [1.0, 2.35], hand: 'hold', palm: { in: 0.6, back: 0.45, up: 0.2 }, fdir: { up: 0.65, in: 0.45, fwd: 0.2 } },
+    front: true, shackles: true, half: { arm: 'f', r: 0.8 } },
+  grip: { n: { w: [-0.4, 4.25], hand: 'relax', palm: LAP, fdir: LAPDIR }, f: { w: [2.5, 3.55], hand: 'grip', palm: { down: 0.6, in: 0.5, fwd: 0.2 }, fdir: { fwd: 0.8, in: 0.3 } }, front: true, shackles: true },
+  bound: { n: { w: [-0.45, 4.55], hand: 'fist', palm: { in: 1 }, fdir: { down: 0.7, fwd: 0.4 } }, f: { w: [0.35, 4.55], hand: 'fist', palm: { in: 1 }, fdir: { down: 0.7, fwd: 0.4 } }, front: true, rope: true },
+  scroll: { n: { w: [-1.85, 5.04], hand: 'relax', palm: HANG }, f: { w: [2.1, 3.1], hand: 'grip', palm: { in: 0.8, up: 0.35 }, fdir: { fwd: 0.6, up: 0.45 } }, front: true, scroll: true },
+  walk: { n: { w: [-1.85, 5.21], hand: 'relax', palm: HANG }, f: { w: [2.02, 5.04], hand: 'relax', palm: HANG } },
+  kneel_shield: { n: { w: [-1.05, -0.55], hand: 'open', palm: { fwd: 0.75, up: 0.45, out: 0.2 }, fdir: { up: 0.8, in: 0.45 } },
+    f: { w: [2.15, 4.75], hand: 'open', palm: { down: 1 }, fdir: { fwd: 0.85, out: 0.25 }, fk: 0.7 }, front: true },
+  kneel_up: { n: { w: [-1.75, 3.9], hand: 'offer', palm: { up: 0.85, fwd: 0.4 }, fdir: { fwd: 0.6, out: 0.45 } }, f: { w: [2.05, 3.75], hand: 'offer', palm: { up: 0.85, fwd: 0.4 }, fdir: { fwd: 0.6, out: 0.45 } }, front: true },
+  peek: { n: { w: [-1.85, 5.21], hand: 'relax', palm: HANG }, f: { w: [1.85, 5.21], hand: 'relax', palm: HANG } },
+  // a guard holding a spear in the near hand
+  guard_spear: { n: { w: [-1.6, 4.4], hand: 'grip', palm: { in: 0.9, fwd: 0.3 }, fdir: { fwd: 0.8, in: 0.3 } }, f: { w: [1.9, 5.2], hand: 'relax', palm: HANG }, front: true, spear: { arm: 'n' } },
 };
 
 // ------------------------------------------------------------- state engine
@@ -128,9 +163,29 @@ class Actor {
     }
     this.blinks.sort((a, b) => a - b);
     this.nods = this.kfs.filter((k) => k.state.nod).map((k) => k.t);
+    this.dry = null;
+  }
+  // Tears appear as fast as the acting asks, but once the crying stops they dry slowly
+  // (streaks fade over ~7 s, wet eyes over ~5 s) instead of vanishing or lingering forever.
+  dried(t, raw) {
+    if (!this.dry) {
+      const dt = 0.05, n = Math.ceil((this.duration || 900) / dt) + 2;
+      const tf = new Float32Array(n), te = new Float32Array(n);
+      let a = 0, b = 0;
+      for (let i = 0; i < n; i++) {
+        const v = this.eval(i * dt, null, true);
+        a = Math.max(v.tearFlow, a - dt / 7.0);
+        b = Math.max(v.tears, b - dt / 5.0);
+        tf[i] = a; te[i] = b;
+      }
+      this.dry = { dt, tf, te };
+    }
+    const d = this.dry, x = clamp(t / d.dt, 0, d.tf.length - 1.001), i = Math.floor(x), f = x - i;
+    raw.tearFlow = lerp(d.tf[i], d.tf[i + 1], f);
+    raw.tears = lerp(d.te[i], d.te[i + 1], f);
   }
   // evaluate numeric channels + discrete look/pose with blend info
-  eval(t, lookMap) {
+  eval(t, lookMap, rawOnly) {
     const cur = {};
     for (const k of NUM) cur[k] = { from: D[k], to: D[k], t0: -1e9, dur: 0.001 };
     const ease = (x) => smooth(x);
@@ -161,6 +216,7 @@ class Actor {
     }
     const out = { emo: emoName };
     for (const n of NUM) out[n] = val(cur[n], t);
+    if (!rawOnly) this.dried(t, out);
     out.lookFrom = look.from; out.lookTo = look.to; out.lookK = look.dur <= 0.002 ? 1 : ease((t - look.t0) / look.dur);
     out.poseFrom = pose.from; out.poseTo = pose.to; out.poseK = pose.dur <= 0.002 ? 1 : ease((t - pose.t0) / pose.dur);
     return out;
@@ -194,7 +250,11 @@ class World {
     let seed = 1;
     for (const who of ['jesus', 'paul', 'asher', 'yosef', 'saul', 'child', 'guard', 'phoebe']) {
       this.actors[who] = new Actor(who, tl.acts[who], seed++);
+      this.actors[who].duration = (tl.duration || 900) + 2;
     }
+    // line starts per speaker (for the breath before each line)
+    this.starts = {};
+    for (const ln of tl.lines) for (const w of Object.keys(ln.mouth || {})) (this.starts[w] = this.starts[w] || []).push(ln.start);
     // lines by speaker
     this.lines = tl.lines;
   }
@@ -243,6 +303,7 @@ class World {
     F.gazeX = lerp(a.gx, b.gx, ke);
     F.gazeY = lerp(a.gy, b.gy, ke);
     F.yaw = lerp(a.yaw || 0, b.yaw || 0, kh) + F.yawOff;
+    F.yawLook = F.yaw;
     F.pitch = lerp(a.pitch || 0, b.pitch || 0, kh) + F.pitchOff;
     F.roll = F.rollOff + lerp(a.roll || 0, b.roll || 0, kh);
     // saccades
@@ -258,11 +319,17 @@ class World {
     }
     // speech (+ an inhale just before a line, a lip press just after one)
     const near = this.nearLine(who, t);
+    let inh = 0;
+    for (const st0 of this.starts[who] || []) {
+      const d = t - st0;
+      if (d > -0.45 && d < 0) inh = Math.max(inh, L.smooth((d + 0.45) / 0.45));
+      else if (d >= 0 && d < 0.8) inh = Math.max(inh, 1 - L.smooth(d / 0.8));
+    }
+    F.breathInhale = inh * 0.7;
     if (near) {
       if (near.before > 0 && near.before < 0.4) {
         const k = Math.sin(clamp(1 - near.before / 0.4) * Math.PI * 0.5);
         F.mouthBase = Math.max(F.mouthBase, 0.09 * k);
-        F.breathInhale = k;
       }
       if (near.after > 0 && near.after < 0.7) {
         const k = Math.sin(clamp(near.after / 0.7) * Math.PI);
@@ -276,8 +343,8 @@ class World {
       F.mouthWide = lerp(F.mouthWide, sp.wide, 0.75);
       F.mouthPress *= 0.2;
       // nods & brows on emphasis
-      F.pitch += 0.05 * (sp.loud - sp.emph) + 0.012 * Math.sin(t * 5.1 + A.seed);
-      F.yaw += 0.015 * Math.sin(t * 2.3 + A.seed);
+      F.pitch += 0.03 * (sp.emph - 0.5) + 0.008 * Math.sin(t * 2.6 + A.seed);
+      F.yaw += 0.012 * Math.sin(t * 1.7 + A.seed);
       F.browHeight += 0.18 * clamp(sp.emph - 0.55, 0, 1);
       F.speaking = 1;
     } else F.speaking = 0;
@@ -293,14 +360,14 @@ class World {
     F.lid = F.lid * (1 - bl) * (1 - 0.32 * lookDown) + (F.lid < 0.1 ? 0 : 0);
     // tremble & breathing
     const tr = F.tremble;
-    F.headDX = tr * 0.035 * L.noise1(t * 9, A.seed + 11);
-    F.headDY = tr * 0.03 * L.noise1(t * 8, A.seed + 23);
-    F.roll += tr * 0.025 * L.noise1(t * 7, A.seed + 5);
+    F.headDX = tr * 0.025 * L.noise1(t * 2.6, A.seed + 11);
+    F.headDY = tr * 0.02 * L.noise1(t * 2.2, A.seed + 23);
+    F.roll += tr * 0.018 * L.noise1(t * 1.9, A.seed + 5);
     const br = F.breath;
     const bphase = t * (0.26 * br) * L.TAU + A.seed;
     F.breathV = Math.sin(bphase) * (0.5 + 0.5 * clamp(br - 1)) + (F.breathInhale || 0) * 0.8;
-    F._trem = L.noise1(t * 16, A.seed + 41) * 1.0;
-    F._irisShake = F.tears * L.noise1(t * 22, A.seed + 3);
+    F._trem = L.noise1(t * 6.5, A.seed + 41) * 1.0;
+    F._irisShake = F.tears * L.noise1(t * 3.0, A.seed + 3);
     // hair sway from head motion: compare with a slightly earlier state
     F.pose = e.poseTo; F.poseTo = e.poseTo; F.poseFrom = e.poseFrom; F.poseK = e.poseK;
     F.emo = e.emo;

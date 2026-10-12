@@ -230,9 +230,99 @@ function silhouettes(ctx, list, color, rim, rimA = 0.4) {
 }
 
 // =================================================================== CELL
+// rough, filthy prison masonry: uneven blocks, chipped edges, damp streaks, mould, soot, cracks
+function grimyStones(ctx, x0, y0, x1, y1, o) {
+  const r = L.rng(o.seed || 7);
+  const bh = o.bh || 110;
+  // dark mortar bed
+  ctx.fillStyle = '#0a0c0e'; ctx.fillRect(x0, y0, x1 - x0, y1 - y0);
+  let y = y0, row = 0;
+  while (y < y1) {
+    const h = bh * (0.75 + r() * 0.5);
+    let x = x0 - (row % 2 ? bh * 0.7 : 0) - r() * bh;
+    while (x < x1) {
+      const w = bh * (1.1 + r() * 1.4);
+      const c = mix(o.base, o.var, r());
+      // irregular block outline (no neat rounded rectangles)
+      const pts = [];
+      const g = 5 + r() * 6;
+      const corners = [[x + g, y + g], [x + w - g, y + g], [x + w - g, y + h - g], [x + g, y + h - g]];
+      for (let k = 0; k < 4; k++) {
+        const a = corners[k], b = corners[(k + 1) % 4];
+        for (let j = 0; j < 4; j++) {
+          const t = j / 4;
+          pts.push([lerp(a[0], b[0], t) + (r() - 0.5) * 7, lerp(a[1], b[1], t) + (r() - 0.5) * 7]);
+        }
+      }
+      ctx.beginPath(); L.crPath(ctx, pts, true, 0.25);
+      ctx.fillStyle = c; ctx.fill();
+      ctx.save(); ctx.clip();
+      // pitted surface
+      for (let k = 0; k < 26; k++) {
+        ctx.fillStyle = r() < 0.5 ? rgba('#000000', 0.08 + r() * 0.12) : rgba('#ffffff', 0.03 + r() * 0.04);
+        ctx.beginPath(); ctx.arc(x + r() * w, y + r() * h, 1.5 + r() * 5, 0, L.TAU); ctx.fill();
+      }
+      // grime gathers along the bottom of each block; a dull top edge
+      ctx.fillStyle = L.linear(ctx, 0, y, 0, y + h, [[0, rgba('#ffffff', 0.05)], [0.18, rgba('#ffffff', 0)], [0.7, rgba('#000000', 0)], [1, rgba('#000000', 0.32)]]);
+      ctx.fillRect(x, y, w, h);
+      // chipped corner
+      if (r() < 0.35) { ctx.fillStyle = rgba('#05060a', 0.7); ctx.beginPath(); ctx.moveTo(x + w - g, y + g); ctx.lineTo(x + w - g - 14 - r() * 18, y + g); ctx.lineTo(x + w - g, y + g + 12 + r() * 16); ctx.fill(); }
+      ctx.restore();
+      x += w;
+    }
+    y += h;
+    row++;
+  }
+  // damp streaks running down from the joints and the window
+  for (let i = 0; i < 70; i++) {
+    const sx = x0 + r() * (x1 - x0), sy = y0 + r() * (y1 - y0) * 0.75, len = 160 + r() * 700, wd = 8 + r() * 30;
+    const gr = ctx.createLinearGradient(0, sy, 0, sy + len);
+    const dirt = r() < 0.4 ? '#1a120a' : '#05070a';
+    gr.addColorStop(0, rgba(dirt, 0.55)); gr.addColorStop(0.6, rgba(dirt, 0.3)); gr.addColorStop(1, rgba(dirt, 0));
+    ctx.fillStyle = gr;
+    ctx.beginPath(); ctx.moveTo(sx - wd / 2, sy); ctx.bezierCurveTo(sx - wd, sy + len * 0.4, sx + wd * 0.3, sy + len * 0.7, sx, sy + len); ctx.bezierCurveTo(sx + wd * 0.6, sy + len * 0.6, sx + wd, sy + len * 0.3, sx + wd / 2, sy); ctx.fill();
+  }
+  // mould and slime, thickest near the floor and in the corners
+  for (let i = 0; i < 110; i++) {
+    const mx = x0 + r() * (x1 - x0), my = lerp(y0, y1, Math.pow(r(), 0.4));
+    const rr = 24 + r() * 110;
+    ctx.fillStyle = L.radial(ctx, mx, my, 0, rr, [[0, rgba(r() < 0.5 ? '#16220e' : '#2a1e10', 0.55)], [0.6, rgba('#16220e', 0.2)], [1, rgba('#16220e', 0)]]);
+    ctx.fillRect(mx - rr, my - rr, rr * 2, rr * 2);
+  }
+  // cracks
+  ctx.strokeStyle = rgba('#020304', 0.85); ctx.lineCap = 'round';
+  for (let i = 0; i < 18; i++) {
+    let cx = x0 + r() * (x1 - x0), cy = y0 + r() * (y1 - y0);
+    ctx.lineWidth = 1.5 + r() * 2.5;
+    ctx.beginPath(); ctx.moveTo(cx, cy);
+    for (let k = 0; k < 7; k++) { cx += (r() - 0.5) * 60; cy += 18 + r() * 40; ctx.lineTo(cx, cy); }
+    ctx.stroke();
+  }
+  // fine grain over everything
+  for (let i = 0; i < 1400; i++) {
+    ctx.fillStyle = rgba(r() < 0.6 ? '#000000' : '#c8c8c0', 0.05 + r() * 0.07);
+    ctx.fillRect(x0 + r() * (x1 - x0), y0 + r() * (y1 - y0), 1 + r() * 2.2, 1 + r() * 2.2);
+  }
+}
+
 function cell(ctx, o = {}) {
   fillGrad(ctx, [[0, '#0e1218'], [0.5, '#1a2028'], [1, '#0c0f14']]);
-  stones(ctx, -60, 0, VW + 60, 1500, { base: '#2e3640', var: '#3a424c', bh: 130, seed: 5 });
+  grimyStones(ctx, -60, 0, VW + 60, 1500, { base: '#262a2c', var: '#383630', bh: 130, seed: 5 });
+  // overall dinginess: a brown-black wash that is heavier toward the floor
+  ctx.fillStyle = L.linear(ctx, 0, 0, 0, 1500, [[0, rgba('#120c06', 0.15)], [1, rgba('#120c06', 0.45)]]);
+  ctx.fillRect(0, 0, VW, 1500);
+  // soot stain above the lamp niche, and rust bleeding from the chain ring
+  if (o.lamp !== false) {
+    const lx = o.lampX || 880, ly = o.lampY || 1050;
+    ctx.fillStyle = L.radial(ctx, lx, ly - 260, 20, 300, [[0, rgba('#020202', 0.55)], [1, rgba('#020202', 0)]]);
+    ctx.fillRect(lx - 320, ly - 600, 640, 640);
+  }
+  {
+    const rx = o.ringX || 150, ry = o.ringY || 1150;
+    const gr = ctx.createLinearGradient(0, ry, 0, ry + 260);
+    gr.addColorStop(0, rgba('#5a2a12', 0.5)); gr.addColorStop(1, rgba('#5a2a12', 0));
+    ctx.fillStyle = gr; ctx.fillRect(rx - 26, ry, 52, 260);
+  }
   // ambient falloff
   ctx.fillStyle = L.radial(ctx, o.lightX || 330, o.lightY || 900, 100, 1300, [[0, rgba('#000000', 0)], [1, rgba('#000000', 0.6)]]);
   ctx.fillRect(0, 0, VW, VH);
@@ -240,6 +330,16 @@ function cell(ctx, o = {}) {
   ctx.fillStyle = L.linear(ctx, 0, 1480, 0, VH, [[0, '#2a2620'], [1, '#14120e']]);
   ctx.fillRect(0, 1480, VW, VH - 1480);
   ctx.fillStyle = rgba('#000000', 0.45); ctx.fillRect(0, 1470, VW, 26);
+  // filth on the floor: damp patches and grit
+  for (let i = 0; i < 40; i++) {
+    const x = L.hash01(i * 17 + 3) * VW, y = 1490 + L.hash01(i * 29 + 7) * 420, rr = 20 + 60 * L.hash01(i * 13);
+    ctx.fillStyle = L.radial(ctx, x, y, 0, rr, [[0, rgba(i % 3 ? '#0a0806' : '#1a1e14', 0.45)], [1, rgba('#0a0806', 0)]]);
+    ctx.save(); ctx.translate(x, y); ctx.scale(1, 0.35); ctx.translate(-x, -y); ctx.fillRect(x - rr, y - rr, rr * 2, rr * 2); ctx.restore();
+  }
+  for (let i = 0; i < 500; i++) {
+    ctx.fillStyle = rgba(i % 2 ? '#000000' : '#8a7a5a', 0.12);
+    ctx.fillRect(L.hash01(i * 7 + 1) * VW, 1490 + L.hash01(i * 3 + 5) * 430, 2, 2);
+  }
   // straw
   ctx.strokeStyle = rgba('#a68a4a', 0.55); ctx.lineWidth = 3;
   for (let i = 0; i < 140; i++) {

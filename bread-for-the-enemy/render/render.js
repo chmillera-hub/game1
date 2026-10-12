@@ -109,8 +109,9 @@ function drawTexts(ctx, t, heads = {}) {
       ctx.font = `700 84px Cinzel`;
       ctx.shadowColor = 'rgba(0,0,0,0.85)'; ctx.shadowBlur = 18;
       ctx.fillStyle = L.linear(ctx, 0, 260, 0, 360, [[0, '#fff3cf'], [0.5, '#f0c868'], [1, '#c8902e']]);
-      spaced(ctx, 'BREAD FOR', 540, 300, 6);
-      spaced(ctx, 'THE ENEMY', 540, 398, 6);
+      const words = (tx.text || '').toUpperCase().split(' ');
+      spaced(ctx, words.slice(0, -1).join(' '), 540, 300, 6);
+      spaced(ctx, words[words.length - 1], 540, 398, 6);
       ctx.shadowBlur = 10;
       ctx.font = `500 27px Cinzel`;
       ctx.fillStyle = '#f2e6cc';
@@ -119,6 +120,9 @@ function drawTexts(ctx, t, heads = {}) {
       ctx.beginPath(); ctx.moveTo(300, 430); ctx.lineTo(780, 430); ctx.stroke();
     } else if (tx.style === 'place') {
       ctx.globalAlpha = Math.min(smooth(lt / 0.7), 1 - smooth((lt - (tx.dur - 0.8)) / 0.8));
+      // a soft dark band keeps the caption readable on bright skies
+      ctx.fillStyle = L.linear(ctx, 0, 170, 0, 310, [[0, rgba('#000000', 0)], [0.5, rgba('#000000', 0.38)], [1, rgba('#000000', 0)]]);
+      ctx.fillRect(0, 170, VW, 140);
       ctx.font = `600 38px Cinzel`;
       ctx.shadowColor = 'rgba(0,0,0,0.9)'; ctx.shadowBlur = 14;
       ctx.fillStyle = '#efe4cc';
@@ -130,7 +134,19 @@ function drawTexts(ctx, t, heads = {}) {
       ctx.fillStyle = '#fff6e4';
       const lines = tx.text.split('\n').flatMap((part) => wrap(ctx, part.trim(), 860));
       const y0 = 700 - (lines.length - 1) * 44;
-      lines.forEach((ln, i) => { ctx.textAlign = 'center'; ctx.fillText(ln, 540, y0 + i * 88); });
+      // each line comes up as the closing voice speaks it (the last voice line carries the last two)
+      const ep = tl.lines.filter((l) => l.who === 'epic' && l.start >= tx.t - 0.5);
+      const startOf = (i) => {
+        if (!ep.length) return tx.t;
+        if (i < ep.length - 1) return ep[i].start;
+        const e = ep[ep.length - 1], extra = i - (ep.length - 1);
+        return e.start + (e.end - e.start) * 0.5 * Math.min(1, extra);
+      };
+      const base = ctx.globalAlpha;
+      lines.forEach((ln, i) => {
+        ctx.globalAlpha = base * (ep.length ? smooth((t - startOf(i) + 0.4) / 0.8) : 1);
+        ctx.textAlign = 'center'; ctx.fillText(ln, 540, y0 + i * 88);
+      });
     } else if (tx.style === 'name') {
       const hp = heads[tx.who];
       if (hp) {
@@ -200,7 +216,7 @@ function subStyle(who) {
 }
 // the speaker's name leads a subtitle whenever a different character starts talking
 const SPEAKER = { narrator: 'NARRATOR', jesus: 'JESUS', paul: 'PAUL', saul: 'PAUL', asher: 'ASHER', child: 'YOUNG ASHER',
-  yosef: 'YOSEF', phoebe: 'PHOEBE', guard: 'GUARD', both: 'PAUL & ASHER' };
+  yosef: 'YOSEF', phoebe: 'PHOEBE', guard: 'GUARD', both: 'PAUL & ASHER', epic: 'JESUS' };
 const NAME_FONT = (sz) => `800 ${Math.round(sz * 0.82)}px ${SANS}`;
 function layoutSub(ctx, prefix, text, st, size, maxW) {
   ctx.font = NAME_FONT(size);
@@ -223,6 +239,7 @@ function drawSubs(ctx, t) {
     const next = lines[i + 1];
     const endT = Math.min(ln.end + 0.35, next ? next.start - 0.02 : 1e9);
     if (t < ln.start - 0.04 || t > endT) continue;
+    if (ln.nosub) continue; // the same words are already on screen (end card)
     const a = Math.min(clamp((t - (ln.start - 0.04)) / 0.08), clamp((endT - t) / 0.1));
     const st = subStyle(ln.who);
     const prev = lines[i - 1];

@@ -94,15 +94,20 @@ function drawHead(ctx, H, st, F, Lt, extra = {}) {
   if (st.hairBack) st.hairBack(ctx, pr, st, F, Lt, extra);
 
   // ---------------- neck, then the body/clothes over the neck base
-  if (!extra.noNeck) drawNeck(ctx, pr, st, F, Lt, skin, skinSh, line, lw, G);
+  if (!extra.noNeck) drawNeck(ctx, pr, st, F, Lt, skin, skinSh, line, lw, G, extra);
   if (extra.drawBody) extra.drawBody(pr);
 
   // ---------------- ears
   drawEars(ctx, pr, st, skin, skinSh, line, lw);
 
-  // ---------------- skin
+  // ---------------- skin, with the head's silhouette outlined as ONE shape (face + skull), so no
+  // part of the face contour can ever show as a stray line across the temple, cheek or scalp
   ctx.save();
   faceClip();
+  if (!st.noFaceLine) {
+    ctx.strokeStyle = line; ctx.lineWidth = lw * 2.2; ctx.lineJoin = 'round';
+    ctx.stroke();
+  }
   ctx.fillStyle = skin;
   ctx.fill('nonzero');
   ctx.restore();
@@ -140,17 +145,6 @@ function drawHead(ctx, H, st, F, Lt, extra = {}) {
   // ---------------- age lines and expression lines
   drawLines(ctx, pr, G, st, F, skinSh, line, lw);
 
-  // ---------------- face outline: drawn BEFORE the beard so beards cover the jaw line
-  ctx.save();
-  ctx.beginPath();
-  L.crPath(ctx, [...lowerL, chinP, ...lowerR.slice().reverse()], false, 0.5);
-  ctx.strokeStyle = line;
-  ctx.lineWidth = lw * 1.1;
-  ctx.lineCap = 'round';
-  ctx.lineJoin = 'round';
-  if (!st.noFaceLine) ctx.stroke();
-  ctx.restore();
-  if (st.bald) drawCraniumLine(ctx, pr, G, line, lw);
 
   // ---------------- beard base (under mouth)
   if (st.beard) st.beard(ctx, pr, st, F, Lt, 'base', G);
@@ -181,53 +175,74 @@ function drawHead(ctx, H, st, F, Lt, extra = {}) {
 }
 
 function drawCraniumLine(ctx, pr, G, line, lw) {
-  const { P, s } = pr;
-  const pts = [];
-  for (let a = -1.6; a <= 1.6; a += 0.2) {
-    pts.push(P(Math.sin(a) * G.craniumR * 0.995, G.craniumY - Math.cos(a) * G.craniumR, 0.0 + Math.cos(a) * 0.1));
-  }
-  L.strokeSmooth(ctx, pts, line, lw * 1.0);
+  // the outline of a bald head follows the same skull ellipse that is filled for the scalp, from
+  // temple to temple over the top (never across the face, whatever the head turn)
+  const { P, s, H } = pr;
+  const c = P(0, G.craniumY, -0.1);
+  const R = G.craniumR * s;
+  const a = Math.asin(clamp((-0.62 - G.craniumY) / (G.craniumR * 1.02), -1, 1));
+  ctx.save();
+  ctx.strokeStyle = line; ctx.lineWidth = lw * 1.0; ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.ellipse(c[0], c[1], R, R * 1.02, H.roll, Math.PI - a, L.TAU + a, false);
+  ctx.stroke();
+  ctx.restore();
 }
 
-function drawNeck(ctx, pr, st, F, Lt, skin, skinSh, line, lw, G) {
+function drawNeck(ctx, pr, st, F, Lt, skin, skinSh, line, lw, G, extra = {}) {
   const { P, s, H } = pr;
-  // neck is mostly vertical in screen space regardless of head pitch/yaw
+  // neck is mostly vertical in screen space regardless of head pitch/yaw; its base sits in the
+  // middle of the collar opening of the clothes
   const top = P(0, 0.95, -0.25);
   const nw = (G.neckW) * s;
-  const base = [H.x + (H.neckDX || 0), H.y + s * 2.25];
+  const base = extra.neckBase || [H.x + (H.neckDX || 0), H.y + s * 2.25];
+  const side = -(Lt.side || -1);
+  const shape = new (require('@napi-rs/canvas').Path2D)();
+  shape.moveTo(top[0] - nw * 0.95, top[1] - s * 0.3);
+  shape.lineTo(base[0] - nw * 1.06, base[1] - s * 0.25);
+  shape.lineTo(base[0] - nw * 1.3, base[1] + s * 0.7);
+  shape.lineTo(base[0] + nw * 1.3, base[1] + s * 0.7);
+  shape.lineTo(base[0] + nw * 1.06, base[1] - s * 0.25);
+  shape.lineTo(top[0] + nw * 0.95, top[1] - s * 0.3);
+  shape.closePath();
+  if (extra.collar) {
+    // the chest skin visible inside the neck hole (slightly larger than the hole, under its edge)
+    const c = extra.collar, cx = (c[0][0] + c[c.length - 1][0]) / 2;
+    const grown = c.map(([x, y]) => [cx + (x - cx) * 1.12, y + s * 0.06]);
+    L.crPath(shape, grown, false, 0.5);
+    shape.closePath();
+  }
   ctx.save();
-  ctx.beginPath();
-  ctx.moveTo(top[0] - nw * 0.95, top[1] - s * 0.3);
-  ctx.lineTo(base[0] - nw * 1.12, base[1]);
-  ctx.lineTo(base[0] + nw * 1.12, base[1]);
-  ctx.lineTo(top[0] + nw * 0.95, top[1] - s * 0.3);
-  ctx.closePath();
   ctx.fillStyle = skin;
-  ctx.fill();
-  ctx.clip();
-  // jaw shadow on neck
+  ctx.fill(shape, 'nonzero');
+  ctx.clip(shape, 'nonzero');
+  // jaw shadow on the neck
   const ch = P(0, 1.2, 0.3);
   ctx.fillStyle = rgba(skinSh, 0.95);
   ctx.beginPath();
   ctx.ellipse(ch[0], ch[1] + s * 0.05, nw * 1.4, s * 0.55, 0, 0, L.TAU);
   ctx.fill();
-  // side shadow
-  const side = -(Lt.side || -1);
-  ctx.fillStyle = rgba(skinSh, 0.8);
-  ctx.fillRect(top[0] + side * nw * 0.35 - (side < 0 ? nw * 1.2 : 0), top[1], nw * 1.2, s * 3);
+  // side shadow down the neck and onto the chest
+  const g = ctx.createLinearGradient(base[0] - side * nw * 0.1, 0, base[0] + side * nw * 1.0, 0);
+  g.addColorStop(0, rgba(skinSh, 0)); g.addColorStop(0.35, rgba(skinSh, 0.75)); g.addColorStop(1, rgba(skinSh, 0.85));
+  ctx.fillStyle = g;
+  ctx.fillRect(base[0] - nw * 3, top[1] - s * 0.5, nw * 6, s * 4);
+  // soft shading where the neck meets the chest (the notch between the collarbones)
+  ctx.fillStyle = L.radial(ctx, base[0], base[1] + s * 0.22, 0, s * 0.42, [[0, rgba(skinSh, 0.5)], [1, rgba(skinSh, 0)]]);
+  ctx.fillRect(base[0] - s, base[1] - s * 0.3, s * 2, s);
   ctx.restore();
-  // neck lines
+  // neck lines (stop at the collar)
   ctx.strokeStyle = line;
   ctx.lineWidth = lw * 0.9;
   ctx.lineCap = 'round';
   ctx.beginPath();
   ctx.moveTo(top[0] - nw * 0.92, top[1] + s * 0.05);
-  ctx.quadraticCurveTo(top[0] - nw * 0.98, (top[1] + base[1]) / 2, base[0] - nw * 1.1, base[1] - s * 0.1);
+  ctx.quadraticCurveTo(lerp(top[0], base[0], 0.55) - nw * 0.98, (top[1] + base[1]) / 2, base[0] - nw * 1.05, base[1] - s * 0.22);
   ctx.moveTo(top[0] + nw * 0.92, top[1] + s * 0.05);
-  ctx.quadraticCurveTo(top[0] + nw * 0.98, (top[1] + base[1]) / 2, base[0] + nw * 1.1, base[1] - s * 0.1);
+  ctx.quadraticCurveTo(lerp(top[0], base[0], 0.55) + nw * 0.98, (top[1] + base[1]) / 2, base[0] + nw * 1.05, base[1] - s * 0.22);
   ctx.stroke();
   if (st.adamsApple !== false && !st.child) {
-    const a = P(0, 1.55, 0.2);
+    const a = [lerp(top[0], base[0], 0.45), lerp(top[1], base[1], 0.45)];
     ctx.globalAlpha = 0.5;
     ctx.beginPath();
     ctx.moveTo(a[0] - s * 0.04, a[1]);
