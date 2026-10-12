@@ -480,7 +480,7 @@ def K(info):
     k["l4_eyes"] = w("s05_l04", 4)
     k["l4_glow"] = w("s05_l04", 5)
     k["l5_yeah"] = w("s05_l05", 1)
-    k["l5_critter"] = w("s05_l05", 3)
+    k["l5_critter"] = w("s05_l05", 3)   # "creature"
     k["l5_I"] = w("s05_l05", 6)
     k["l5_fell"] = w("s05_l05", 7)
     k["l5_build"] = w("s05_l05", 11)
@@ -490,11 +490,12 @@ def K(info):
     k["l5b_fell"] = w("s05_l05b", 1)
     k["l5b_what"] = w("s05_l05b", 5)
     k["l5c_day"] = w("s05_l05c", 3)
-    k["l6_huh"] = w("s05_l06", 0)
-    k["l6_pocket"] = w("s05_l06", 2)
-    k["l6_calc"] = w("s05_l06", 3)
-    k["l6_just"] = w("s05_l06", 4)
-    k["l6_stop"] = w("s05_l06", 5)
+    # rev 4 line: "Oh, look at that. My recorder just stopped working." (keys keep their old names)
+    k["l6_huh"] = w("s05_l06", 0)        # "Oh"
+    k["l6_pocket"] = w("s05_l06", 4)     # "My"
+    k["l6_calc"] = w("s05_l06", 5)       # "recorder"
+    k["l6_just"] = w("s05_l06", 6)
+    k["l6_stop"] = w("s05_l06", 7)
     k["l7_nine"] = w("s05_l07", 6)
     k["l7_take"] = w("s05_l07", 7)
     k["l7_card"] = w("s05_l07", 9)

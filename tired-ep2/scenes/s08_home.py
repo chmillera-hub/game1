@@ -64,7 +64,7 @@ LEAN = {"base": "walk", "lean": 0.07, "hunch": 0.35, "nod": 0.1}
 _ANTIC = {"base": "stand", "lean": -0.06, "hunch": 0.55, "nod": -0.08}   # the breath in, before the fall
 R_REST = (1057, 1114)         # lying: the far (r) hand's resting place on the pillow, by his face
 R_PHONE = (1020, 1122)        # ... reaching the docked phone (clamped at arm's length: the fingers on its edge)
-SMIRK = 0.8                   # the subtlest smile: one corner of his mouth curls up (dimple)
+SMIRK = 0.0                   # rev 4: NO smile (user: he is too exhausted to smile; the lightness is the emoji)
 ARM_W = 44                    # sleeve + ink width of his hanging arm (world px), for the duvet strip
 
 
@@ -217,7 +217,7 @@ def _tired(t, T, info):
         look = tween(t, [(T.F, (-0.2, 0.1)), (T.F + 0.12, (-0.95, 0.35))])
         blink = tween(t, [(T.F + 0.5, 0.0), (T.F + 0.85, 1.0)], ease_in_out) if t > T.F + 0.5 else None
         face["lid"] = 0.06
-        face["curve"] = 0.12 * smoothstep(seg(t, T.F + 0.6, T.A1))     # "finally"
+        face["curve"] = 0.0                                             # rev 4: no "finally" smile
         kw.update(pose=pose, turn=turn, expr="bored", look=_lk(*look, flip), blink=blink, face=face)
         return STAND[0], STAND[1], kw
     if t < T.I:
@@ -279,7 +279,7 @@ def _tired(t, T, info):
         sink = smoothstep(seg(t, T.SC0, T.SC1))
         sm = smoothstep(seg(t, T.SM, T.SM + 0.45))
         face.update(cheek=0.25, jaw=-0.06, lid=0.07, brow=-0.05 * sink, press=0.12 * (1 - sink),
-                    smirk=SMIRK * sm, curve=0.15 * sm)
+                    smirk=SMIRK * sm, curve=0.0 * sm)
         look = tween(t, [(T.S, (0.1, 0.0)), (T.SC0, (0.0, 0.14))])
         if t > T.SC0:
             blink = tween(t, [(T.SC0, 0.0), (T.SC0 + 0.45, 0.7), (T.SC0 + 0.56, 0.62), (T.SC1, 1.0)],
@@ -292,10 +292,10 @@ def _tired(t, T, info):
         gone = smoothstep(seg(t, T.MSG, T.MSG + 0.2))
         eff = smoothstep(seg(t, T.GROPE, T.GROPE + 0.25)) * (1 - smoothstep(seg(t, T.TOUCH, T.TOUCH + 0.3)))
         face.update(cheek=0.25, jaw=-0.06, lid=0.07, brow=-0.05 - 0.15 * pin, brow_in=0.5 * pin,
-                    press=0.4 * pin + 0.2 * eff, smirk=SMIRK * (1 - gone), curve=0.15 * (1 - gone))
+                    press=0.4 * pin + 0.2 * eff, smirk=SMIRK * (1 - gone), curve=0.0 * (1 - gone))
         if t >= T.Z:
             back = smoothstep(seg(t, T.Z + 0.5, T.Z + 1.1))
-            face.update(smirk=SMIRK * back, curve=0.15 * back, press=0.0, brow=-0.05, brow_in=0.0,
+            face.update(smirk=SMIRK * back, curve=0.0 * back, press=0.0, brow=-0.05, brow_in=0.0,
                         open=0.05 * smoothstep(seg(t, T.Z + 1.2, T.Z + 1.8)))
         # the far (r) hand slides off the pillow, pats the nightstand (a miss), finds the
         # phone, taps (in the insert), then slides back to the pillow
