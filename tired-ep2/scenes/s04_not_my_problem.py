@@ -1,4 +1,4 @@
-"""s04 — "Not my problem" (music: lonely).  Revision 3 (honest, caring, overwhelmed; he commits).
+"""s04 — "Not my problem" (music: lonely).  Revision 4 (rev 3 + a new end: it walks on alone; Emb).
 
 A quiet CalmCorp service tunnel lit by dim emergency lamps. Tiredness trudges out
 of the dark side tunnel (the way back to the shaft and the pods), reaches back and
@@ -11,12 +11,17 @@ way without somebody getting hurt. "Maybe even me." (a scared inward look, a
 swallow, his hand tightens). It hears "not right now": the ears lower degree by
 degree, it lets go and walks into the dark side tunnel, stops, looks back once.
 Alone with a drip, he looks at his bandage (a faint teal glow), groans ... and lifts
-his head: its two teal eyes glow a little way down the tunnel. It waited. "Okay.
-I'll help. Hell or high water." A sad glance at his hands. "...I hope we make it out
-of this." The eyes answer with a slow blink and drift closer. Then Emb, off screen,
-deeper in that tunnel: "Oh my God! What IS that thing?!" (a shaky flashlight deep in
-the dark; his head snaps round, its eyes whip to the voice). He sighs, gets up and
-walks into the dark tunnel after the voice. The creature stays in there (eyes only).
+his head: its two teal eyes glow a little way down the tunnel. (rev 4:) Its gaze drops
+away and it turns and walks on down the tunnel alone, to free its family without him
+(gently visible in the dark: soft eye glow, the teal rim catching a little light),
+glances back over its shoulder once, goes on deeper. He watches it go: "Okay. I'll
+help. Hell or high water." A sad glance at his hands. "...I hope we make it out of
+this." A light moves down the tunnel; he notices. Down the tunnel Emb comes the other
+way with his torch; the beam swings and lands on it: it stops in the beam, ears up,
+tilts its head, takes a curious step toward him; Emb jolts back into the wall, the
+beam shaking: "Oh my God! What IS that thing?!" (it crouches low, ears flat, wary in
+his beam, as s05 opens). His head snaps toward it; he sighs, gets up and walks into
+the tunnel toward them.
 
 All timing comes from info.cue(...) / info.line(...) / info.word_time(...).
 World = sets.service_tunnel (people and creature at s=0.75).
@@ -43,25 +48,35 @@ Shots (see _times / _cam)
                                     it lets go, turns its head away
   S8a leave / S8b back              it walks into the side tunnel, stops, looks back once
   S9  alone    .. l05.end+.1        his medium: drip; bandage glow; "...Ugh." eyes shut
-  S10 follow   .. "I'll"-.12        two-plane wide: the head hangs, then lifts to its two
-                                    teal eyes in the dark (fx.eyes_in_dark): "Okay."
-  S11 commit   .. l06b.end-.1       his medium, slow push-in: "I'll help. Hell or high
-                                    water."; 'glance' at his hands and back; l06b
-  S12 answer   .. l07-.95           the eyes in the dark: a slow blink, drifting closer
-  S13 hush     .. sigh-.15          two-plane: the shared look; Emb's yell from deeper in
-                                    the tunnel (a shaky torch deep in the dark), his head
-                                    snaps round, its eyes whip to the voice
-  S14 sighup   .. standing          his medium (rises with him): a visible sigh (shoulders
-                                    up, then drop), lean forward, hands on knees, push up
+  S10 follow   .. walkoff+.42       two-plane wide: the head hangs, then lifts to its two
+                                    teal eyes in the dark (fx.eyes_in_dark); on 'walkoff'
+                                    its gaze drops away, the pair turns away (cut on it)
+  S10b walkoff .. walkoff+2.55      closer down the side tunnel: it walks on alone (dark,
+                                    rim + eye glow), glances back over its shoulder, on
+  S10c watch   .. "I'll"-.12        two-plane: he watches it go (it is small, deeper,
+                                    still walking): brows up; "Okay."
+  S11 commit   .. hush+1.0          his medium, slow push-in (rev 3): "I'll help. Hell or
+                                    high water."; 'glance' at his hands and back; l06b;
+                                    the after-beat; a warm light flickers in from the
+                                    tunnel: he notices (pupils, head turns, lids lift a hair)
+  S12 meet     .. "What"-.1         down the side tunnel (medium-far): Emb comes up it with
+                                    his torch, stops; the beam swings onto it: it stops in
+                                    the beam, ears up, curious tilt, a curious step; Emb
+                                    jolts back into the wall (push in), "Oh my God!", it
+                                    crouches low, ears flat (wary)
+  S14 sighup   .. standing          his medium (rises with him): "What IS that thing?!":
+                                    the head snaps toward it; a visible sigh, lean
+                                    forward, hands on knees, push up
   S15 go       .. end               wide, panning left: he walks to the side tunnel and a
-                                    few steps into the dark (its eyes stay, to his left)
+                                    few steps into it; deep inside, Emb against the wall,
+                                    his beam on it crouched
 """
 import math
 import os
 
 import cairocffi as cairo
 
-from engine import core, sets, human, fx
+from engine import core, sets, human, fx, props
 from engine import creatures as CR
 from engine.core import clamp, lerp, seg, smoothstep, ease_in_out, ease_out, ease_in, tween
 
@@ -81,7 +96,6 @@ CUR_V = CR.SPEC_WALK_SPEED * S  # its foot-locked speed at cycle rate 1
 LEAVE_RATE = 1.55              # its walk-away cycle rate
 K_STOP = 0.09                  # a short way into the side tunnel: it stops and looks back
 K_WAIT = 0.32                  # a little further down: it sits in the dark and waits
-K_DRIFT = 0.07                 # ... and drifts this much closer at "...I hope we make it out"
 
 # sit_crate with longer shins so his soles reach the floor in front of the set's crate.
 # Arm layers are pinned (no per-frame layer decisions while hands reach).
@@ -185,7 +199,7 @@ def _times(info):
         tug=c("tug"), l03=c("s04_l03"), l03e=c("s04_l03.end"), beat=c("beat"),
         l04=c("s04_l04"), l04e=c("s04_l04.end"), l04b=c("s04_l04b"), l04be=c("s04_l04b.end"),
         hurt=c("hurt"), leave=c("leave"), alone=c("alone"),
-        l05=c("s04_l05"), l05e=c("s04_l05.end"), follow=c("follow"),
+        l05=c("s04_l05"), l05e=c("s04_l05.end"), follow=c("follow"), walkoff=c("walkoff"),
         l06=c("s04_l06"), l06e=c("s04_l06.end"), glance=c("glance"),
         l06b=c("s04_l06b"), l06be=c("s04_l06b.end"), hush=c("hush"),
         l07=c("s04_l07"), l07e=c("s04_l07.end"), sighup=c("sighup"), go=c("go"), end=c("end"),
@@ -236,8 +250,9 @@ def _times(info):
     T["w6b_hope"] = wt("s04_l06b", 1)
     T["w6b_this"] = wt("s04_l06b", -1)
     T["q6b"] = _quiet(info, "s04_l06b", "tired")
-    # (Emb, off screen) "Oh my God! What IS that thing?!"
+    # (Emb, on screen in the tunnel) "Oh my God! What IS that thing?!"
     T["w07_god"] = wt("s04_l07", 2)
+    T["w07_what"] = wt("s04_l07", 3)
     T["w07_is"] = wt("s04_l07", 4)
     # --- arrival (S1): walk ends at the crate, turn, drop
     T["stop"] = min(1.9, T["l01"] - 1.3)
@@ -309,16 +324,46 @@ def _times(info):
     T["press"] = t9 + 1.1
     T["arm1"] = min(t9 + 1.4, T["l05"] - 0.65)
     T["look_tn"] = min(t9 + 1.6, T["l05"] - 0.5)
-    # --- follow (S10 two-plane) .. l06 / glance / l06b (S11 his medium) .. the eyes answer (S12)
-    # .. hush + Emb's yell (S13 two-plane) .. sigh + get up (S14) .. go (S15 wide)
+    # --- follow (S10 two-plane) .. walkoff (S10b closer on the side tunnel: it walks on down the
+    # tunnel alone, glances back once; S10c two-plane: he watches it go, "Okay.") .. l06 / glance /
+    # l06b (S11 his medium) .. hush: he notices a light (S11) .. the encounter down the tunnel
+    # (S12: Emb's beam finds it, it is curious, Emb jolts back, "Oh my God!") .. "What IS that
+    # thing?!" (S14 his medium: the snap, the sigh, the get-up) .. go (S15 wide)
     T["lift"] = T["follow"] + 0.05                 # pupils to the tunnel, the head lifts after
+    # rev 3's S10 drift ran to its cut at "I'll": keyed the same way from 'follow' (so 'follow'
+    # is untouched), the walkoff cut comes before it ends
+    T["s10cam1"] = T["follow"] + 1.1 + (T["w06_ill"] - T["l06"]) - 0.12
+    W = T["walkoff"]
+    T["wo_d"] = T["l06"] - T["follow"] - 1.1        # the time 'walkoff' inserted before l06
+    T["wo_turn"] = W + 0.08                        # its gaze drops, the pair turns away (two-plane)
+    T["s10b"] = W + 0.42                           # cut on the turn: closer on the side tunnel
+    T["wo_walk"] = T["s10b"]                       # standing, turned away, first step deeper
+    T["wo_back"] = W + 1.3                         # glance back over its shoulder ...
+    T["wo_fwd"] = W + 2.15                         # ... and on, deeper
+    T["s10c"] = W + 2.55                           # two-plane: he watches it go
     T["s11"] = T["w06_ill"] - 0.12
     T["gl0"] = T["glance"] + 0.08                  # sad glance down at his hands ...
-    T["gl1"] = T["gl0"] + 0.75                     # ... and back to the eyes in the dark
-    T["s12"] = max(T["l06be"] - 0.1, T["q6b"] + 0.3)
-    T["ans"] = T["s12"] + 0.25                     # its slow blink + drift closer
-    T["s13"] = max(T["l07"] - 0.95, T["ans"] + 1.0)
-    T["snap"] = T["l07"] + 0.05                    # his head snaps / its eyes whip to the voice
+    T["gl1"] = T["gl0"] + 0.75                     # ... and back to it, going away down the tunnel
+    T["s11e"] = max(T["l06be"] - 0.1, T["q6b"] + 0.3)    # end of rev 3's S11 push-in (then held)
+    H = T["hush"]
+    T["e_on"] = H + 0.2                            # Emb's torch comes along the tunnel, deep down
+    T["light"] = H + 0.3                           # ... its light reaches the corridor
+    T["notice"] = H + 0.42                         # he notices (pupils, lids, head forward)
+    # rev 3's old S13 cut (two-plane) after l06b: his after-beat eased toward it; kept up to the light
+    T["s13_r3"] = max(T["l06be"] + 2.0 - 0.95, T["s11e"] + 1.25)
+    T["s12"] = H + 1.0                             # cut: down the tunnel, the encounter
+    T["e_stop"] = H + 1.6                          # Emb stops (two eyes in the dark?)
+    T["bm_sw"] = H + 1.62                          # the beam swings ...
+    T["bm_on"] = H + 2.0                           # ... and lands on it
+    T["c_stop"] = T["bm_on"] + 0.05                # it stops in the beam, ears up
+    T["c_tilt"] = T["bm_on"] + 0.5                 # a curious head tilt
+    T["c_step"] = T["bm_on"] + 1.0                 # a curious step toward him
+    T["c_step1"] = T["c_step"] + 0.42
+    T["e_jolt"] = max(T["c_step1"] + 0.15, T["l07"] - 0.7)    # Emb jolts back, the beam shaking
+    T["e_back1"] = T["e_jolt"] + 0.55              # ... backs into the wall
+    T["c_flat"] = T["l07"] + 0.08                  # the yell: ears flat, it crouches (wary)
+    T["s14"] = T["w07_what"] - 0.1                 # cut: Tiredness, "What IS that thing?!"
+    T["snap"] = T["s14"] + 0.08                    # his head snaps toward it
     sg = T["sighup"]
     T["up_c"] = max(T["go"] + 0.15, sg + 1.7)      # standing (he starts to walk on 'go')
     T["up_b"] = T["up_c"] - 0.75                   # push up off his knees
@@ -326,10 +371,23 @@ def _times(info):
     T["inh"] = max(T["l07e"] + 0.25, sg - 0.2)     # inhale (shoulders up) ...
     T["exh"] = T["inh"] + 0.3                      # ... the exhale (shoulders drop)
     T["exh1"] = min(T["exh"] + 0.55, T["up_a"] - 0.02)
-    T["s14"] = T["inh"] - 0.15
     T["walk0"] = T["up_c"] + 0.2                   # (turns to the tunnel first, then walks)
     T["s15"] = T["up_c"] - 0.12
     return T
+
+
+def _r3v(T, k0, v0, v1, dt=0.0):
+    """rev 3 eased this value from (k0, v0) toward v1 at its old S13 cut (+dt) after l06b. Its
+    value at the light (T["notice"]), where the rev-4 keys take over."""
+    return _tw(T["notice"], [(k0, v0), (T["s13_r3"] + dt, v1)])
+
+
+def _r3c(t, T, val, k0, v0, v1, dt=0.0, until=0.0):
+    """... and rev 3's own curve from k0 up to the light (+until), so the after-beat of l06b
+    plays exactly as it did."""
+    if k0 <= t < T["notice"] + until:
+        return _tw(min(t, T["notice"]), [(k0, v0), (T["s13_r3"] + dt, v1)])
+    return val
 
 
 def _quiet(info, lid, who):
@@ -440,19 +498,25 @@ def _tired(t, T, info, paws=None):
                   (T["l05"], 0.22), (T["l05"] + 0.35, 0.08), (T["l05e"], 0.3),     # groan: head back
                   (T["l05e"] + 0.45, 0.42),                                         # ... and it drops
                   (T["lift"] + 0.12, 0.42), (T["lift"] + 0.55, 0.24),               # lifts it: the eyes
+                  (T["walkoff"] + 0.3, 0.24), (T["walkoff"] + 1.2, 0.28),             # it goes: sinks a hair
+                  (T["s10c"] + 0.1, 0.28),                                          # ... lifts it again
                   (T["w06_okay"] - 0.02, 0.24), (T["w06_okay"] + 0.18, 0.3), (T["w06_okay"] + 0.45, 0.25),
                   (T["w06_help"], 0.25), (T["w06_help"] + 0.15, 0.31), (T["w06_help"] + 0.45, 0.25),
                   (T["w06_water"], 0.25), (T["w06_water"] + 0.2, 0.3), (T["l06e"], 0.26),
                   (T["gl0"] + 0.12, 0.26), (T["gl0"] + 0.4, 0.38),                # glance down ...
                   (T["gl1"], 0.38), (T["gl1"] + 0.3, 0.27),                         # ... and back
-                  (T["l06b"] + 0.2, 0.28), (T["l06be"], 0.33), (T["s13"], 0.36),
-                  (T["snap"], 0.36), (T["snap"] + 0.12, 0.15), (T["snap"] + 0.3, 0.2),   # the snap
+                  (T["l06b"] + 0.2, 0.28), (T["l06be"], 0.33),
+                  (T["notice"] + 0.08, _r3v(T, T["l06be"], 0.33, 0.36)),
+                  (T["notice"] + 0.42, 0.25),                                       # a light: head lifts
+                  (T["snap"], 0.25), (T["snap"] + 0.12, 0.15), (T["snap"] + 0.3, 0.2),   # the snap
                   (T["l07e"], 0.21),
                   (T["inh"], 0.21), (T["exh"], 0.16), (T["exh1"], 0.42),            # sigh: head sinks
                   (T["up_a"] + 0.05, 0.42), (T["up_b"], 0.24)])                     # looks ahead, rises
+    nod = _r3c(t, T, nod, T["l06be"], 0.33, 0.36, until=0.08)
     lean = _tw(t, [(T["slump"] + 0.05, 0.5), (T["slump"] + 0.55, 0.58), (T["hand_dn"], 0.58),
                    (T["hand_dn1"], 0.5),
-                   (T["snap"], 0.5), (T["snap"] + 0.1, 0.4), (T["snap"] + 0.45, 0.46),   # jolt back
+                   (T["notice"], 0.5), (T["notice"] + 0.4, 0.53),                       # peers at it
+                   (T["snap"], 0.53), (T["snap"] + 0.1, 0.4), (T["snap"] + 0.45, 0.46),   # jolt back
                    (T["inh"], 0.46), (T["exh"], 0.43), (T["exh1"], 0.56),
                    (T["up_a"], 0.56), (T["up_b"], 0.84)])                        # anticipation
     hunch = _tw(t, [(T["l01e"], 0.65), (T["slump"] + 0.55, 0.75), (T["hand_dn1"], 0.65),
@@ -460,12 +524,15 @@ def _tired(t, T, info, paws=None):
                     (T["drop4b"] + 0.4, 0.77), (T["fist0"], 0.76), (T["fist1"], 0.81),
                     (T["s7"] + 0.4, 0.72), (T["s8"], 0.68),
                     (T["l05"], 0.65), (T["l05"] + 0.4, 0.5), (T["l05e"] + 0.1, 0.72),
-                    (T["lift"] + 0.6, 0.66), (T["w06_help"], 0.6), (T["l06e"], 0.62),
-                    (T["gl0"] + 0.4, 0.68), (T["l06b"] + 0.3, 0.72), (T["s13"], 0.68),
+                    (T["lift"] + 0.6, 0.66), (T["lift"] + 0.6 + T["wo_d"], 0.66),     # (held through walkoff)
+                    (T["w06_help"], 0.6), (T["l06e"], 0.62),
+                    (T["gl0"] + 0.4, 0.68), (T["l06b"] + 0.3, 0.72),
+                    (T["notice"], _r3v(T, T["l06b"] + 0.3, 0.72, 0.68)), (T["notice"] + 0.35, 0.68),
                     (T["snap"], 0.68), (T["snap"] + 0.12, 0.8), (T["snap"] + 0.45, 0.74),
                     (T["inh"], 0.74), (T["exh"], 1.0),                          # sigh: shoulders up ...
                     (T["exh1"], 0.36),                                          # ... and they drop
                     (T["up_b"], 0.5)])
+    hunch = _r3c(t, T, hunch, T["l06b"] + 0.3, 0.72, 0.68)
     pose = _sitp(nod=nod, lean=lean, hunch=hunch)
     # "...I need time to think.": the near (bandaged, r) hand tightens into a fist on his knee
     kf = _ramp(t, T["fist0"], T["fist1"]) * (1 - _ramp(t, T["s8"] - 0.6, T["s8"]))
@@ -565,11 +632,13 @@ def _tired(t, T, info, paws=None):
         (T["lift"], (-0.55, 0.6)), (T["lift"] + 0.17, (-1.0, 0.03)),
         (T["gl0"], (-1.0, 0.03)), (T["gl0"] + 0.2, (-0.15, 0.9)),                  # glance: his hands
         (T["gl1"] - 0.05, (-0.15, 0.9)), (T["gl1"] + 0.15, (-1.0, 0.04)),           # ... back to it
-        (T["s13"], (-1.0, 0.05)),
-        (T["snap"] - 0.02, (-1.0, 0.05)), (T["snap"] + 0.07, (-1.1, -0.14)),        # the voice
+        (T["notice"], _r3v(T, T["gl1"] + 0.15, (-1.0, 0.04), (-1.0, 0.05))),
+        (T["notice"] + 0.12, (-1.1, -0.12)),                                        # the light, deeper
+        (T["snap"] - 0.02, (-1.1, -0.12)), (T["snap"] + 0.07, (-1.1, -0.14)),      # the voice
         (T["l07e"], (-1.05, -0.08)),
         (T["exh"], (-0.95, 0.1)), (T["exh1"], (-0.8, 0.45)),                       # sigh: eyes drop
         (T["up_a"] + 0.1, (-0.8, 0.45)), (T["up_a"] + 0.3, (-1.0, 0.0))])           # then ahead
+    look = _r3c(t, T, look, T["gl1"] + 0.15, (-1.0, 0.04), (-1.0, 0.05))
     # small honest head shakes: "...right now" and "I don't see a way"
     shake = (0.06 * math.sin((t - T["w01_right"]) * 2 * math.pi * 1.25)
              * _bump(t, T["w01_right"] - 0.1, T["l01e"] + 0.15)
@@ -585,15 +654,20 @@ def _tired(t, T, info, paws=None):
                         (T["lift"] + 0.15, -0.15), (T["lift"] + 0.5, -0.32),       # head follows the eyes
                         (T["gl0"] + 0.15, -0.32), (T["gl0"] + 0.45, -0.12),
                         (T["gl1"] + 0.1, -0.12), (T["gl1"] + 0.4, -0.3),
-                        (T["s13"], -0.24),
-                        (T["snap"], -0.24), (T["snap"] + 0.1, -0.7), (T["snap"] + 0.25, -0.62),
+                        (T["notice"] + 0.12, _r3v(T, T["gl1"] + 0.4, -0.3, -0.24)),
+                        (T["notice"] + 0.45, -0.42),
+                        (T["snap"], -0.42), (T["snap"] + 0.1, -0.7), (T["snap"] + 0.25, -0.62),
                         (T["l07e"], -0.58),
-                        (T["exh1"], -0.4), (T["up_b"], -0.3), (T["up_c"], -0.15)]) + shake
+                        (T["exh1"], -0.4), (T["up_b"], -0.3), (T["up_c"], -0.15)])
+    head_turn = _r3c(t, T, head_turn, T["gl1"] + 0.4, -0.3, -0.24, until=0.12) + shake
     head_tilt = _tw(t, [(T["lk"] + 0.15, 0.0), (T["lk"] + 0.55, -0.045), (T["q2c"] + 0.2, -0.045),
                         (T["pt_up"] + 0.4, 0.0),
                         (T["l03"] - 0.2, 0.0), (T["l03"] + 0.3, -0.05), (T["l03e"] + 0.3, -0.03),
                         (T["beat"] + 0.4, 0.0),
-                        (T["l06b"], 0.0), (T["l06b"] + 0.5, -0.04), (T["s13"], -0.03), (T["snap"], 0.0)])
+                        (T["l06b"], 0.0), (T["l06b"] + 0.5, -0.04),
+                        (T["notice"], _r3v(T, T["l06b"] + 0.5, -0.04, -0.03)),
+                        (T["notice"] + 0.4, -0.015), (T["snap"], 0.0)])
+    head_tilt = _r3c(t, T, head_tilt, T["l06b"] + 0.5, -0.04, -0.03)
 
     # --- expressions: honest and overwhelmed, never dismissive
     expr = _track(t, [
@@ -612,14 +686,16 @@ def _tired(t, T, info, paws=None):
     fear = _tw(t, [(T["l04e"] + 0.15, 0.0), (T["l04e"] + 0.5, 0.22), (T["w4b_me"] + 0.3, 0.28),
                    (T["w4b_think"], 0.22), (T["fist1"], 0.2), (T["s7"] + 0.4, 0.0),
                    (T["l06b"] - 0.1, 0.0), (T["w6b_hope"], 0.14), (T["w6b_this"], 0.2),
-                   (T["q6b"] + 0.4, 0.15), (T["s13"] + 0.4, 0.0)])
+                   (T["q6b"] + 0.4, 0.15), (T["notice"], _r3v(T, T["q6b"] + 0.4, 0.15, 0.0, 0.4)),
+                   (T["notice"] + 0.35, 0.0)])
+    fear = _r3c(t, T, fear, T["q6b"] + 0.4, 0.15, 0.0, dt=0.4)
     if fear > 0.005 and ex_ == "sad":
         ex_ = ("sad", "terrified", fear)
     sw = T["swal"]
     face = _addf(
         {"head_turn": head_turn, "head_tilt": head_tilt},
         # inner brows up: overwhelmed / sincere / worried
-        {"brow_ang": _tw(t, [(T["l01"] - 0.3, 0.0), (T["l01"] + 0.1, 0.16), (T["l01e"] + 0.3, 0.1),
+        {"brow_ang": _r3c(t, T, _tw(t, [(T["l01"] - 0.3, 0.0), (T["l01"] + 0.1, 0.16), (T["l01e"] + 0.3, 0.1),
                              (T["slump"], 0.0), (T["w02_im"] - 0.1, 0.0), (T["w02_im"] + 0.2, 0.24),
                              (T["l02e"] + 0.4, 0.16), (T["l02b"], 0.22), (T["l02be"] + 0.2, 0.16),
                              (T["lk"], 0.17), (T["w2c_dont"], 0.28), (T["w2c_abandon"] + 0.1, 0.33),
@@ -631,11 +707,16 @@ def _tired(t, T, info, paws=None):
                              (T["fist1"], 0.34),
                              (T["s8"], 0.15), (T["s9"], 0.0),
                              (T["lift"] + 0.2, 0.0), (T["lift"] + 0.6, 0.16),
+                             (T["walkoff"] + 0.15, 0.16), (T["walkoff"] + 0.9, 0.27),    # it goes alone
+                             (T["s10c"] + 0.1, 0.27),
                              (T["w06_okay"], 0.14), (T["w06_help"], 0.07), (T["l06e"], 0.08),
                              (T["gl0"] + 0.25, 0.24), (T["gl1"] + 0.3, 0.18),
                              (T["l06b"] + 0.2, 0.3), (T["w6b_this"], 0.34), (T["q6b"] + 0.5, 0.24),
-                             (T["s13"] + 0.3, 0.2), (T["snap"], 0.2), (T["snap"] + 0.15, 0.1),
+                             (T["notice"], _r3v(T, T["q6b"] + 0.5, 0.24, 0.2, 0.3)),
+                             (T["notice"] + 0.3, 0.17),
+                             (T["snap"], 0.17), (T["snap"] + 0.15, 0.1),
                              (T["exh1"], 0.12), (T["up_c"], 0.08)]),
+                          T["q6b"] + 0.5, 0.24, 0.2, dt=0.3),
          "lid": _tw(t, [(T["l01e"], 0.0), (T["l01e"] + 0.3, 0.05), (T["slump"], 0.05), (T["l02"], 0.0),
                         (T["lk"], 0.0), (T["w2c_dont"], 0.04), (T["q2c"] + 0.3, 0.04), (T["pt_up"] + 0.4, 0.0),
                         (T["beat"] + 0.5, 0.0), (T["l04"] + 0.2, 0.06),
@@ -643,8 +724,8 @@ def _tired(t, T, info, paws=None):
                         (T["w4b_me"] + 0.2, -0.05), (T["drop4b"] + 0.4, 0.04),      # ... then drop
                         (T["fist1"], 0.06), (T["s8"] + 0.2, 0.06), (T["s9"], 0.0),
                         (T["w06_okay"], 0.0), (T["w06_help"], 0.04), (T["gl1"] + 0.3, 0.03),
-                        (T["s13"], 0.03),
-                        (T["snap"], 0.03), (T["snap"] + 0.1, -0.1), (T["l07e"], -0.06),   # small start
+                        (T["notice"], 0.03), (T["notice"] + 0.15, -0.08),               # the light
+                        (T["snap"], -0.08), (T["snap"] + 0.1, -0.1), (T["l07e"], -0.06),  # small start
                         (T["exh"], 0.0)]),
          # "Maybe even me. ...": the eyes go unfocused (inward)
          "focus": -0.6 * _ramp(t, T["drop4b"], T["drop4b"] + 0.45) * (1 - _ramp(t, T["s7"] + 0.6, T["s8"]))},
@@ -666,13 +747,15 @@ def _tired(t, T, info, paws=None):
          + _bump(t, T["away0"] + 0.05, T["lk"] + 0.15, 0.35) + _bump(t, T["q2c"] + 0.03, T["q2c"] + 0.65, 0.3)
          + _bump(t, T["press"], T["press"] + 0.75, 0.55) + _bump(t, T["slump"] - 0.3, T["slump"] + 0.2, 0.3)
          + _bump(t, T["w06_okay"] + 0.3, T["w06_ill"] - 0.02, 0.3) + _bump(t, T["q06"] + 0.02, T["q06"] + 0.7, 0.4)
-         + _bump(t, T["gl0"] + 0.1, T["gl1"] + 0.3, 0.35) + _bump(t, T["q6b"] + 0.03, T["q6b"] + 0.8, 0.45)},
+         + _bump(t, T["gl0"] + 0.1, T["gl1"] + 0.3, 0.35) + _bump(t, T["q6b"] + 0.03, T["q6b"] + 0.8, 0.45)
+         + _bump(t, T["walkoff"] + 0.05, T["walkoff"] + 0.9, 0.3)},
         # the sigh: a visible exhale ("hah")
         {"open": _bump(t, T["exh"] - 0.05, T["exh1"], 0.24)},
         # alone: inner brows up a hair at the glow
         {"brow_ang": _bump(t, T["glow"] - 0.1, T["arm1"] + 0.6, 0.22)},
-        # Emb's yell: brows jump up (a small start)
-        {"brow": _bump(t, T["snap"], T["l07e"] + 0.3, 0.3)},
+        # Emb's yell: brows jump up (a small start); before it, a light down the tunnel: a hair up
+        {"brow": _bump(t, T["snap"], T["l07e"] + 0.3, 0.3)
+         + 0.16 * _ramp(t, T["notice"], T["notice"] + 0.3) * (1 - _ramp(t, T["snap"], T["snap"] + 0.3))},
     )
     # slow blinks on judgement beats; eyes shut while rubbing and through the groan
     blink = None
@@ -702,7 +785,12 @@ def _tired(t, T, info, paws=None):
     if T["w06_okay"] + 0.3 <= t < T["w06_okay"] + 0.95:       # "Okay." -> a slow, accepting blink
         b0 = T["w06_okay"] + 0.3
         blink = _tw(t, [(b0, 0.0), (b0 + 0.25, 1.0), (b0 + 0.33, 1.0), (b0 + 0.65, 0.0)])
+    if T["walkoff"] + 1.7 <= t < T["walkoff"] + 1.98:         # (one plain blink while it goes)
+        b0 = T["walkoff"] + 1.7
+        blink = _tw(t, [(b0, 0.0), (b0 + 0.08, 1.0), (b0 + 0.12, 1.0), (b0 + 0.28, 0.0)])
     if T["gl1"] + 0.1 <= t < T["q6b"] + 0.5:                   # held on it through l06b
+        blink = 0.0
+    if T["notice"] - 0.05 <= t < T["s12"]:                     # eyes on the light
         blink = 0.0
     if T["snap"] - 0.1 <= t < T["l07e"] + 0.2:                 # alert through the yell
         blink = 0.0
@@ -803,7 +891,7 @@ def _cur_base(t):
                 look=(0.45, -0.55), ears=0.5, tears=None, tilt=0.0, tail_curl=0.0, glow=1.0,
                 pose_t=None, pose_from=None, pose_mix=1.0, point_angle=0.0, blink=None,
                 sq=(1.0, 1.0), lift=0.0, rot=0.0, alpha=1.0, clip=False, dark=0.0, reach=1.0,
-                wait=False)
+                wait=False, free=False, warm=0.0, halo=0.0)
 
 
 def _cur(t, T):
@@ -817,7 +905,9 @@ def _cur(t, T):
         return _cur_hold(t, T, d)
     if t < T["s9"]:
         return _cur_leave(t, T, d)
-    return _cur_wait(t, T, d)
+    if t < T["s10b"]:
+        return _cur_wait(t, T, d)
+    return _cur_go(t, T, d)
 
 
 def _cur_s1_s3(t, T, d):
@@ -1060,39 +1150,150 @@ def _cur_leave(t, T, d):
 
 def _cur_wait(t, T, d):
     """It never really left: sitting in the dark a little way down the side tunnel, turned
-    toward the mouth, waiting (only its eyes really show: fx.eyes_in_dark over a dark body).
-    After "...I hope we make it out of this." it drifts a little closer (comfort)."""
-    k = K_WAIT - K_DRIFT * ease_in_out(seg(t, T["ans"] - 0.1, T["ans"] + 1.05))
-    x, y, f = _depth(k)
+    toward the mouth, waiting (only its eyes really show: fx.eyes_in_dark over a dark body)."""
+    x, y, f = _depth(K_WAIT)
     d.update(x=x, y=y, s=S * f, pose="sit", flip=False, face=0.15, expr="sad", ears=0.18,
              look=(0.35, -0.1), tilt=0.06, glow=0.4, dark=0.86, clip=True, wait=True, blink=1.0)
     return d
 
 
 def _wait_eyes(t, T):
-    """(look, lid, blink, gap_k, dx) of its eyes in the dark: they meet his look (a little
-    hope), answer "...I hope we make it out" with a slow blink, whip away toward Emb's yell
-    (the pair turns: narrower, nudged toward the voice), and glance back once as he comes."""
-    sn = T["snap"] + 0.02
-    gb = T["walk0"] + 1.1                          # it glances back at him as he comes
+    """(look, lid, blink, gap_k, dx) of its eyes in the dark (S10 two-plane): they meet his look
+    (a little hope) ... then on 'walkoff' its gaze drops away down the tunnel, the lids sink and
+    the pair turns away (narrower, sliding deeper): it is going on alone (cut on the turn)."""
+    W = T["walkoff"]
     look = _tw(t, [(T["s10"], (0.25, 0.05)), (T["lift"] + 0.3, (0.25, 0.05)),
-                   (T["lift"] + 0.5, (0.35, 0.0)), (T["ans"] + 1.0, (0.38, 0.03)),
-                   (sn, (0.4, 0.02)), (sn + 0.1, (-0.72, -0.34)), (T["l07e"], (-0.66, -0.3)),
-                   (gb, (-0.66, -0.3)), (gb + 0.14, (0.45, 0.06)), (gb + 0.7, (0.45, 0.06)),
-                   (gb + 0.85, (-0.66, -0.3))])
-    lid = _tw(t, [(T["lift"] + 0.45, 0.36), (T["lift"] + 0.8, 0.28),
-                  (T["w06_help"] + 0.1, 0.28), (T["w06_help"] + 0.5, 0.21),
-                  (T["ans"] + 1.0, 0.24),
-                  (sn, 0.24), (sn + 0.08, 0.08), (T["l07e"] + 0.3, 0.14), (T["walk0"], 0.17)])
-    b0 = T["ans"]
-    bn = T["l07e"] + 0.45                          # one nervous blink after the yell
-    blink = _tw(t, [(b0, 0.0), (b0 + 0.32, 1.0), (b0 + 0.47, 1.0), (b0 + 0.85, 0.0),
-                    (bn, 0.0), (bn + 0.07, 1.0), (bn + 0.1, 1.0), (bn + 0.2, 0.0)])
-    gap_k = _tw(t, [(sn, 1.0), (sn + 0.1, 0.84), (gb, 0.84), (gb + 0.14, 0.95), (gb + 0.7, 0.95),
-                    (gb + 0.85, 0.85)])
-    dx = _tw(t, [(sn, 0.0), (sn + 0.1, -16.0), (gb, -16.0), (gb + 0.14, 2.0), (gb + 0.7, 2.0),
-                 (gb + 0.85, -16.0)])
+                   (T["lift"] + 0.5, (0.35, 0.0)), (W, (0.36, 0.0)), (W + 0.22, (-0.4, 0.3))])
+    lid = _tw(t, [(T["lift"] + 0.45, 0.36), (T["lift"] + 0.8, 0.28), (W + 0.1, 0.28), (W + 0.35, 0.42)])
+    blink = 0.0
+    gap_k = _tw(t, [(W + 0.12, 1.0), (T["s10b"], 0.76)])
+    dx = _tw(t, [(W + 0.12, 0.0), (T["s10b"], -14.0)])
     return look, lid, blink, gap_k, dx
+
+
+# ---- walkoff .. the end: it walks on down the side tunnel alone, then meets Emb ------------
+K_WO = 0.045                   # depth it gains per second of steps (cycle rate 1) walking away
+X_WO = 60.0                    # ... and how far across (mouth-floor px) it drifts per second of steps
+X1A, X1B, X1C = 500.0, 455.0, 432.0     # its lane (mouth-floor x) as it crosses toward Emb (S12) ...
+K1A, K1B, K1C = 0.485, 0.5, 0.507       # ... and its depth there (stops in the beam / the step)
+EX0, EXW = 175.0, 138.0        # Emb's lane coming up the tunnel, and backed against its (left) wall
+KE0, KE1, KE2 = 1.15, 0.95, 1.0     # Emb's depth: out of the deep dark -> stops -> backs up
+EMB_FLASH_S = 0.5              # his torch prop at S (as in s05)
+
+
+def _integ(t, keys):
+    """Integral up to t of a piecewise-linear rate [(t, r), ...] (0 before, held after)."""
+    acc = 0.0
+    for (a, ra), (b, rb) in zip(keys, keys[1:]):
+        if t <= a:
+            return acc
+        if t < b:
+            u = t - a
+            return acc + (ra + 0.5 * (rb - ra) * u / (b - a)) * u
+        acc += 0.5 * (ra + rb) * (b - a)
+    return acc + keys[-1][1] * max(0.0, t - keys[-1][0])
+
+
+def _wo_rate(T):
+    return [(T["s10b"], 0.0), (T["s10b"] + 0.25, 0.72), (T["wo_back"], 0.72), (T["wo_back"] + 0.25, 0.45),
+            (T["wo_fwd"], 0.45), (T["wo_fwd"] + 0.3, 0.7)]
+
+
+def _c1_pos(t, T):
+    """(x0, k) of its walk across the tunnel toward Emb (S12), then the curious step, the recoil."""
+    x0 = _tw(t, [(T["s12"], X1A), (T["c_stop"] + 0.2, X1B)], ease_out)
+    k = _tw(t, [(T["s12"], K1A), (T["c_stop"] + 0.2, K1B)], ease_out)
+    if t > T["c_step"]:
+        u = ease_in_out(seg(t, T["c_step"], T["c_step1"]))
+        x0, k = lerp(X1B, X1C, u), lerp(K1B, K1C, u)
+    if t > T["c_flat"]:
+        x0 += 9.0 * ease_out(seg(t, T["c_flat"], T["c_flat"] + 0.3))      # flinches back a hair
+    return x0, k
+
+
+def _cur_go(t, T, d):
+    """walkoff: standing, turned away, it walks on down the dark side tunnel alone (gently
+    visible: soft eye glow, the teal rim catching a little light), glances back over its
+    shoulder once, goes on deeper; through his lines it keeps going (slower). hush (S12): it
+    crosses toward a light coming up the tunnel; Emb's beam lands on it: it stops in the beam,
+    ears up, a curious head tilt, a curious step toward him; Emb jolts back; the yell: ears
+    flat, it crouches low, wary, in his beam (as s05 opens)."""
+    W = T["walkoff"]
+    d.update(flip=True, expr="sad", ears=0.18, glow=0.9, dark=0.58, clip=True, free=True, halo=0.09,
+             face=0.55, look=(-0.4, 0.3), tilt=0.08, pose="walk")
+    ph = _integ(t, _wo_rate(T))
+    if t < T["s12"]:
+        # deeper, and a little across toward the middle of the tunnel (its side-on steps carry it)
+        k = K_WAIT + K_WO * ph
+        x0 = MOUTH_X0 - X_WO * ph
+        if t >= T["s11"]:              # (off screen through his lines: on, slower, to where S12 finds it)
+            ph1 = _integ(T["s11"], _wo_rate(T))
+            u = seg(t, T["s11"], T["s12"])
+            k, x0 = lerp(K_WAIT + K_WO * ph1, K1A, u), lerp(MOUTH_X0 - X_WO * ph1, X1A, u)
+        x, y, f = _depth(k, x0)
+        d.update(x=x, y=y, s=S * f, pose_t=ph)
+        if t < T["s10b"] + 0.3:        # first step out of the stand
+            d["pose_from"], d["pose_mix"] = "stand", seg(t, T["s10b"], T["s10b"] + 0.3)
+        # the glance back over its shoulder (pupils first, then the head), then on
+        b0, b1 = T["wo_back"], T["wo_fwd"]
+        d["face"] = _tw(t, [(b0 + 0.08, 0.55), (b0 + 0.38, -1.0), (b1, -1.0), (b1 + 0.3, 0.55)])
+        d["look"] = _tw(t, [(b0, (-0.4, 0.3)), (b0 + 0.18, (0.75, -0.2)), (b1 - 0.05, (0.72, -0.16)),
+                            (b1 + 0.15, (-0.4, 0.3))])
+        d["ears"] = _tw(t, [(b0 + 0.2, 0.18), (b0 + 0.5, 0.27), (b1 - 0.1, 0.24), (b1 + 0.4, 0.14)])
+        d["tilt"] = _tw(t, [(b0 + 0.1, 0.08), (b0 + 0.4, 0.02), (b1, 0.02), (b1 + 0.35, 0.13)])
+        if b0 - 0.2 < t < b1 + 0.3:
+            d["blink"] = 0.0
+        if t >= T["s10c"] - 0.2:
+            d["dark"] = 0.62
+            d["glow"] = 0.85
+        return d
+    # ---- S12: across toward the light; the beam lands; stops; curious; the step; wary crouch
+    x0, k = _c1_pos(t, T)
+    x, y, f = _depth(k, x0)
+    xs0 = _depth(K1A, X1A)[0]
+    d.update(x=x, y=y, s=S * f, pose_t=(xs0 - x) / (CUR_V * f))     # foot-locked to its travel
+    on, cs = T["bm_on"], T["c_stop"]
+    lit = ease_out(seg(t, on - 0.04, on + 0.14))
+    d["dark"] = lerp(0.62, 0.12, lit)
+    d["warm"] = 0.16 * lit
+    d["halo"] = 0.09 * (1.0 - lit)
+    d["glow"] = lerp(0.85, 0.95, lit)
+    if t >= cs:
+        d["pose_from"], d["pose"], d["pose_mix"] = "walk", "stand", seg(t, cs, cs + 0.25)
+    if T["c_step"] < t < T["c_step1"] + 0.2:                  # the curious step
+        d["pose_from"], d["pose"] = "stand", "walk"
+        d["pose_mix"] = 0.85 * _bump(t, T["c_step"] - 0.05, T["c_step1"] + 0.2)
+    cf = T["c_flat"]
+    if t >= cf:                                               # the yell: it crouches low, wary
+        d["pose_from"], d["pose"] = "stand", "crouch"
+        d["pose_mix"] = 0.55 * ease_out(seg(t, cf, cf + 0.25)) + 0.08 * _bump(t, cf + 0.9, cf + 2.2)
+    # face: head turned toward him (forward = screen-left, up the tunnel)
+    d["face"] = _tw(t, [(cs, 0.55), (cs + 0.3, 0.9), (cf, 0.95), (cf + 0.2, 1.0)])
+    d["look"] = _tw(t, [(on, (-0.4, 0.3)), (on + 0.12, (-0.6, -0.45)), (cf, (-0.62, -0.45)),
+                        (cf + 0.12, (-0.85, -0.4))])
+    tl, ts = T["c_tilt"], T["c_step"]
+    ears = _tw(t, [(on, 0.18), (on + 0.3, 0.84)], ease_out)
+    if t >= T["e_jolt"]:
+        ears = _tw(t, [(T["e_jolt"], 0.84), (T["e_jolt"] + 0.15, 0.7)])
+    if t >= cf:
+        ears = _tw(t, [(cf, 0.7), (cf + 0.22, 0.04)]) + (0.015 * math.sin(t * 23.0) if t > cf + 0.3 else 0.0)
+    d["ears"] = ears
+    if t >= on + 0.05:
+        d["expr"] = "surprised_soft"
+    if t >= tl:
+        d["expr"] = "curious"
+    if t >= T["e_jolt"] + 0.1:
+        d["expr"] = "wide"
+    d["tilt"] = _tw(t, [(tl, 0.0), (tl + 0.3, -0.08), (ts + 0.2, -0.08), (ts + 0.5, -0.03),
+                        (T["e_jolt"] + 0.1, 0.0), (cf, 0.0), (cf + 0.25, 0.1)])
+    d["tail_curl"] = _tw(t, [(tl + 0.1, 0.0), (tl + 0.5, 0.22), (T["e_jolt"], 0.22), (T["e_jolt"] + 0.2, 0.0)])
+    # a blink at the glare; eyes locked wide on him once he yells
+    b = on + 0.14
+    if b <= t < b + 0.2:
+        d["blink"] = _tw(t, [(b, 0.0), (b + 0.07, 1.0), (b + 0.1, 1.0), (b + 0.2, 0.0)])
+    if t >= T["e_jolt"]:
+        d["blink"] = 0.0
+    return d
 
 
 # ----------------------------------------------------------------------------
@@ -1136,7 +1337,9 @@ def _draw_cur(ctx, t, c):
         ctx.save()
         _mouth_path(ctx)
         ctx.clip()
-    grouped = c["alpha"] < 0.999 or c["dark"] > 0.01
+    if c["halo"] > 0.005:        # (rev 4) a soft teal shine around it in the dark
+        core.radial_glow(ctx, c["x"] - 30 * c["s"], c["y"] - 150 * c["s"], 330 * c["s"], "power", c["halo"])
+    grouped = c["alpha"] < 0.999 or c["dark"] > 0.01 or c["warm"] > 0.01
     if grouped:
         ctx.push_group()
     with core.saved(ctx, c["x"], c["y"] - c["lift"], c["sq"], c["rot"]) as cx:
@@ -1147,6 +1350,12 @@ def _draw_cur(ctx, t, c):
             ctx.save()
             ctx.set_operator(cairo.OPERATOR_ATOP)
             ctx.set_source_rgba(0.01, 0.015, 0.03, c["dark"])
+            ctx.paint()
+            ctx.restore()
+        if c["warm"] > 0.01:     # (rev 4) in Emb's torch beam: a warm tint
+            ctx.save()
+            ctx.set_operator(cairo.OPERATOR_ATOP)
+            core.set_color(ctx, core.alpha("#ffcf8a", c["warm"]))
             ctx.paint()
             ctx.restore()
         ctx.pop_group_to_source()
@@ -1227,18 +1436,23 @@ def _cam(t, T):
     if t < T["s10"]:
         k = smoothstep(seg(t, T["s9"], T["s10"]))
         return 9, 1000, 1150, lerp(2.25, 2.4, k)
-    if t < T["s11"]:      # S10 two-plane: him on the crate, its eyes in the dark side tunnel
-        k = smoothstep(seg(t, T["s10"], T["s11"]))
+    if t < T["s10b"]:     # S10 two-plane: him on the crate, its eyes in the dark side tunnel
+        k = smoothstep(seg(t, T["s10"], T["s10cam1"]))
         return 10, lerp(690, 684, k), 1140, lerp(1.19, 1.22, k)
-    if t < T["s12"]:      # S11 his medium: "Okay. I'll help...", the glance, "...I hope..."
-        k = ease_in_out(seg(t, T["s11"], T["s12"]))
+    if t < T["s10c"]:     # S10b closer down the side tunnel: it walks on alone, glances back once
+        k = ease_in_out(seg(t, T["s10b"], T["s10c"]))
+        return 101, lerp(352, 348, k), lerp(1136, 1128, k), lerp(3.0, 3.15, k)
+    if t < T["s11"]:      # S10c two-plane: he watches it go ... "Okay."
+        k = smoothstep(seg(t, T["s10c"], T["s11"]))
+        return 102, lerp(684, 680, k), 1140, lerp(1.22, 1.24, k)
+    if t < T["s12"]:      # S11 his medium: "I'll help...", the glance, "...I hope...", a light
+        k = ease_in_out(seg(t, T["s11"], T["s11e"]))
         return 11, lerp(975, 985, k), lerp(1160, 1140, k), lerp(2.35, 2.7, k)
-    if t < T["s13"]:      # S12 the eyes in the dark answer (slow blink, drift closer)
-        k = smoothstep(seg(t, T["s12"], T["s13"]))
-        return 12, 385, lerp(1132, 1142, k), lerp(2.6, 2.7, k)
-    if t < T["s14"]:      # S13 two-plane: hush ... Emb's yell from deeper in the tunnel
-        k = smoothstep(seg(t, T["s13"], T["s14"]))
-        return 13, lerp(672, 668, k), 1125, lerp(1.16, 1.19, k)
+    if t < T["s14"]:      # S12 down the side tunnel: the encounter; Emb's jolt: a push in on "Oh my God!"
+        k = ease_in_out(seg(t, T["s12"], T["e_jolt"]))
+        k2 = ease_out(seg(t, T["e_jolt"], T["e_jolt"] + 0.6))
+        return (12, lerp(lerp(320, 315, k), 306, k2), lerp(lerp(1076, 1069, k), 1052, k2),
+                lerp(lerp(3.6, 3.9, k), 4.45, k2))
     if t < T["s15"]:      # S14 his medium: the sigh, the get-up (the camera rises with him)
         k = ease_in_out(seg(t, T["up_b"] - 0.1, T["up_c"] + 0.1))
         return 14, lerp(1012, 1000, k), lerp(1140, 1062, k), 1.95
@@ -1265,45 +1479,208 @@ def _draw_tired(ctx, t, p):
     return a
 
 
-def _beam_amt(t, T):
-    """Emb's shaky flashlight deep in the side tunnel: it flicks on with the stumble, sweeps
-    across the depth through the yell, then stays, faint and wavering, where he is."""
-    on = T["l07"] - 0.3
-    return (_ramp(t, on, on + 0.12) * (1.0 - 0.6 * _ramp(t, T["l07e"] - 0.2, T["l07e"] + 0.6))
-            * (0.85 + 0.15 * math.sin(t * 23.0) * math.sin(t * 7.3)))
+# ----------------------------------------------------------------------------
+# rev 4: Embarrassment coming up the side tunnel with his torch (the encounter)
+# ----------------------------------------------------------------------------
+def _depth_p(k, x0, y0=FEET_Y):
+    """Side-tunnel depth k on lane x0 (mouth-floor x) -> (x, y, scale) for a person."""
+    f = 1.0 / (1.0 + 5.0 * k)
+    return VP[0] + (x0 - VP[0]) * f, VP[1] + (y0 - VP[1]) * f, f
 
 
-def _beam(ctx, t, T):
-    amt = _beam_amt(t, T)
-    if amt <= 0.01:
+_E_GRIP = {"ar_h": "grip", "ar_layer": "front", "al_layer": "mid"}     # (arm layers pinned: no flicker)
+_EMB_WALK = dict(_E_GRIP, base="walk")
+_EMB_STAND = dict(_E_GRIP, base="stand", al_h="relaxed")
+_EMB_FROZEN = dict(_E_GRIP, base="stand", al_h="splay", hunch=0.5, lean=-0.04)
+_EMB_JOLT = dict(_E_GRIP, base="stand", al_h="splay", hunch=0.9, lean=-0.14, lift=16)
+_EMB_WALL = dict(_E_GRIP, base="stand", al_h="splay", lean=-0.14, chest=-0.12, neck=-0.1, hunch=0.95)
+
+
+def _emb(t, T, c):
+    """Embarrassment's state (world), or None before he comes up the tunnel. c = the creature
+    (his beam finds it and stays on it)."""
+    if t < T["e_on"]:
+        return None
+    on, st, sw, bm, jt, b1 = T["e_on"], T["e_stop"], T["bm_sw"], T["bm_on"], T["e_jolt"], T["e_back1"]
+    u = seg(t, on, st)
+    k = lerp(KE0, KE1, 1.0 - (1.0 - u) ** 1.6)            # walks up the tunnel, slowing to a stop
+    x0 = EX0
+    if t > jt:                                             # jolts back, shuffles back into the wall
+        v = ease_in_out(seg(t, jt + 0.06, b1))
+        k, x0 = lerp(KE1, KE2, v), lerp(EX0, EXW, v)
+    x, y, f = _depth_p(k, x0)
+    sE = S * f
+    pt = (t - on) * 0.95
+    # body
+    if t < st:
+        pose = _EMB_WALK
+    elif t < bm + 0.1:
+        pose = _pose_of((_EMB_WALK, _EMB_STAND, smoothstep(seg(t, st, st + 0.3))))
+    elif t < jt:
+        pose = _pose_of((_EMB_STAND, _EMB_FROZEN, smoothstep(seg(t, bm + 0.1, bm + 0.4))))
+    elif t < jt + 0.12:
+        pose = _pose_of((_EMB_FROZEN, _EMB_JOLT, ease_out(seg(t, jt, jt + 0.12))))
+    else:
+        pose = _pose_of((_EMB_JOLT, _EMB_WALL, smoothstep(seg(t, jt + 0.2, b1))))
+        pose = dict(pose) if isinstance(pose, dict) else pose
+    bob = 0.0
+    if jt + 0.12 < t < b1:                                 # two shuffling steps back
+        bob = 9.0 * abs(math.sin(math.pi * 2.0 * seg(t, jt + 0.12, b1)))
+    turn = _tw(t, [(st, 0.05), (st + 0.35, 0.3), (jt, 0.3), (jt + 0.15, 0.42), (b1, 0.45)])
+    # face
+    expr = "neutral"
+    if t >= bm + 0.08:
+        expr = "frozen_shock"
+    if t >= jt:
+        expr = "terrified"
+    look = _tw(t, [(on, (0.1, 0.5)), (st - 0.1, (0.1, 0.5)), (st + 0.05, (0.45, 0.42)),
+                   (bm, (0.5, 0.55)), (bm + 0.1, (0.55, 0.62))])
+    face = {"brow_ang": _tw(t, [(on, 0.22), (st, 0.22), (st + 0.2, 0.3)]),
+            "brow": 0.2 * _ramp(t, st, st + 0.2)}
+    if t >= jt:
+        face.update(head_tilt=0.015 * math.sin(t * 19.0), wobble=0.35,
+                    squash=-0.07 * _bump(t, jt, jt + 0.3))
+    blink = None
+    if bm - 0.05 <= t < T["l07e"] + 0.4:
+        blink = 0.0
+    # the torch hand (world reach target) and the near hand
+    if t < st:
+        hr = (x + 70 * sE, y - (520 + 10 * math.sin(pt * 2 * math.pi)) * sE)
+    elif t < jt:
+        hr = (x + lerp(70, 92, _ramp(t, st, bm)) * sE, y - lerp(520, 585, _ramp(t, st, bm)) * sE)
+    else:
+        hr = (x + lerp(92, 80, _ramp(t, jt, jt + 0.15)) * sE, y - lerp(585, 640, _ramp(t, jt, jt + 0.15)) * sE)
+    reach = {"r": hr}
+    if t >= jt:
+        w = _ramp(t, jt, jt + 0.12)
+        reach["l"] = (lerp(x - 55 * sE, x - 95 * sE, _ramp(t, jt + 0.2, b1)),
+                      lerp(y - 660 * sE, y - 520 * sE, _ramp(t, jt + 0.2, b1)), w)
+    # the beam: down at the floor ahead as he walks, then it swings and lands on the creature
+    tx, ty = c["x"] - 30 * c["s"], c["y"] - 125 * c["s"]
+    lx0, ly0 = hr
+    a_t = math.atan2(ty - ly0, tx - lx0)
+    a_w = 1.74 + 0.05 * math.sin(pt * 2 * math.pi)
+    if t < sw:
+        aim = a_w
+    else:
+        aim = lerp(a_w, a_t, core.ease_out_back(seg(t, sw, bm), 1.4))
+    if t >= jt:                                            # his hands shake
+        tr = 1.0 - 0.45 * _ramp(t, T["l07e"], T["l07e"] + 1.0)
+        aim += tr * (0.07 * math.sin(t * 31.0) + 0.045 * math.sin(t * 47.0 + 1.3) * _bump(t, jt, jt + 0.6, 1.5)
+                     + 0.03 * math.sin(t * 13.0 + 0.4))
+    reach_len = math.hypot(tx - lx0, ty - ly0)
+    L = lerp(64.0, max(90.0, reach_len * 1.5), smoothstep(seg(t, sw, bm)))
+    spread = lerp(0.75, 0.72, smoothstep(seg(t, sw, bm)))
+    pw = _ramp(t, on, on + 0.3)
+    return dict(x=x, y=y - bob * sE, s=sE, pose=pose, pose_t=pt, turn=turn, expr=expr, look=look, face=face,
+                blink=blink, reach=reach, aim=aim, L=L, spread=spread, power=pw,
+                glasses_tilt=0.07 * _ramp(t, jt, jt + 0.15), drift=t < bm, flicker=0.3 * _ramp(t, jt, jt + 0.2))
+
+
+def _draw_emb(ctx, t, E, info):
+    """Emb (darkened, lit by his own torch spill) -> (anchors, lens, angle)."""
+    sE = E["s"]
+    ks = sE / S
+    out = {}
+
+    def hold(c, side, hx, hy, ang):
+        if side != "r":
+            return
+        r = props.flashlight(c, hx, hy, EMB_FLASH_S * ks, rot=E["aim"], on=1.0)
+        out["lens"] = r["lens"]
+
+    ctx.push_group()
+    a = human.draw_person(ctx, "embar", E["x"], E["y"], sE, t, pose=E["pose"], pose_t=E["pose_t"],
+                          turn=E["turn"], expr=E["expr"], look=E["look"], face=E["face"], blink=E["blink"],
+                          mouth=info.mouth("embar", t), blush=0.1, hold=hold, hold_sides="r",
+                          hold_layer="front", reach=E["reach"], pocket_side="near", drift=E["drift"],
+                          glasses_tilt=E["glasses_tilt"], shadow=False)
+    lx, ly = out.get("lens", a["hand_r"][:2])
+    # the dark of the tunnel on him, lifted near his torch (its spill lights his front)
+    g = cairo.RadialGradient(lx, ly, 0, lx, ly, 950 * sE)
+    g.add_color_stop_rgba(0.0, 0.01, 0.015, 0.03, 0.18)
+    g.add_color_stop_rgba(0.5, 0.01, 0.015, 0.03, 0.46)
+    g.add_color_stop_rgba(1.0, 0.01, 0.015, 0.03, 0.7)
+    ctx.save()
+    ctx.set_operator(cairo.OPERATOR_ATOP)
+    ctx.set_source(g)
+    ctx.paint()
+    g2 = cairo.RadialGradient(lx, ly, 0, lx, ly, 520 * sE)
+    g2.add_color_stop_rgba(0.0, 1.0, 0.8, 0.55, 0.2 * E["power"])
+    g2.add_color_stop_rgba(1.0, 1.0, 0.8, 0.55, 0.0)
+    ctx.set_source(g2)
+    ctx.paint()
+    ctx.restore()
+    pat = ctx.pop_group()
+    return a, pat, (lx, ly)
+
+
+def _beam_cone(ctx, lx, ly, ang, L, spread, power):
+    """His torch beam in the dark side tunnel: a soft warm cone from the lens (smooth radial
+    falloff, soft sides) and the pool of light where it hits the floor."""
+    if power <= 0.01:
         return
-    u = t - (T["l07"] - 0.3)
-    # it flicks across the far tunnel section (fast, shaky swings through the yell), then
-    # wavers slowly
-    fast = 1.0 - _ramp(t, T["l07e"] - 0.3, T["l07e"] + 0.5)
-    sweep = (fast * math.sin(u * 2 * math.pi * 1.15) + (1 - fast) * 0.35 * math.sin(u * 2 * math.pi * 0.3))
-    shake = 0.05 * math.sin(u * 29.0) + 0.035 * math.sin(u * 47.0 + 1.3)
-    ang = 1.1 * sweep + shake                                  # 0 = straight down the tunnel at us
-    sx, sy = VP[0] + 22, VP[1] - 14                             # the torch: deep, out of sight
+    ca, sa = math.cos(ang), math.sin(ang)
+    ctx.save()
+    ctx.set_operator(cairo.OPERATOR_ADD)
+    for sp, al in ((1.0, 0.035), (0.8, 0.045), (0.6, 0.055), (0.4, 0.06), (0.22, 0.06)):
+        h = 0.5 * spread * sp
+        ctx.move_to(lx - sa * 1.5, ly + ca * 1.5)
+        ctx.arc(lx, ly, L, ang - h, ang + h)
+        ctx.line_to(lx + sa * 1.5, ly - ca * 1.5)
+        ctx.close_path()
+        g = cairo.RadialGradient(lx, ly, 0, lx, ly, L)
+        g.add_color_stop_rgba(0.0, 1.0, 0.9, 0.72, 2.2 * al * power)
+        g.add_color_stop_rgba(0.35, 1.0, 0.86, 0.62, 1.1 * al * power)
+        g.add_color_stop_rgba(0.8, 1.0, 0.83, 0.58, 0.6 * al * power)
+        g.add_color_stop_rgba(1.0, 1.0, 0.83, 0.58, 0.0)
+        ctx.set_source(g)
+        ctx.fill()
+    # the pool on the floor where it lands
+    px, py = lx + ca * L * 0.84, ly + sa * L * 0.84
+    ctx.save()
+    ctx.translate(px, py)
+    ctx.scale(1.0, 0.3)
+    g = cairo.RadialGradient(0, 0, 0, 0, 0, 0.5 * L)
+    g.add_color_stop_rgba(0.0, 1.0, 0.85, 0.6, 0.16 * power)
+    g.add_color_stop_rgba(0.6, 1.0, 0.85, 0.6, 0.06 * power)
+    g.add_color_stop_rgba(1.0, 1.0, 0.85, 0.6, 0.0)
+    ctx.arc(0, 0, 0.5 * L, 0, 2 * math.pi)
+    ctx.set_source(g)
+    ctx.fill()
+    ctx.restore()
+    ctx.restore()
+
+
+def _tunnel_end(ctx, t, T, info, c, E):
+    """rev 4, walkoff .. end: (the side tunnel) Emb + his beam, then the creature in front."""
     ctx.save()
     _mouth_path(ctx)
     ctx.clip()
+    if E is not None and E["power"] > 0.01:
+        ea, pat, (lx, ly) = _draw_emb(ctx, t, E, info)
+        pw = E["power"] * (1.0 - 0.25 * E["flicker"] * (0.5 + 0.5 * math.sin(t * 9.0) * math.sin(t * 3.7)))
+        _beam_cone(ctx, lx, ly, E["aim"], E["L"], E["spread"], pw)
+        ctx.set_source(pat)
+        ctx.paint()
+        ks = E["s"] / S
+        px, py = ea["pocket"][:2]
+        props.recorder(ctx, px + 6 * ks, py + 10 * ks, 0.9 * ks, t, led=None, glow=0.55, only_led=True)
+        core.radial_glow(ctx, lx, ly, 46 * ks, "#fff0c8", 0.6 * E["power"])
+    ctx.restore()
+    return _draw_cur(ctx, t, c)
+
+
+def _corridor_light(ctx, t, T):
+    """S11: his torch light coming up the side tunnel reaches the corridor (he notices it)."""
+    a = _ramp(t, T["light"], T["light"] + 0.3) * (1.0 - _ramp(t, T["bm_sw"] - 0.1, T["bm_sw"] + 0.2))
+    if a <= 0.005:
+        return
+    a *= 0.85 + 0.15 * math.sin((t - T["e_on"]) * 2 * math.pi * 0.95)
+    ctx.save()
     ctx.set_operator(cairo.OPERATOR_ADD)
-    px, py = sx + 46 * math.sin(ang), sy + 16 + 8 * math.cos(ang)   # where it hits the far walls
-    core.radial_glow(ctx, px, py, 46, "#ffcf8a", 0.6 * amt)
-    core.radial_glow(ctx, sx, sy + 6, 130, "#ffb866", 0.11 * amt)   # faint spill in the depth
-    L = 74.0
-    for spread, al in ((0.42, 0.04), (0.3, 0.05), (0.19, 0.06), (0.09, 0.08)):
-        g = cairo.RadialGradient(sx, sy, 0, sx, sy, L)
-        g.add_color_stop_rgba(0.0, 1.0, 0.87, 0.65, al * amt)
-        g.add_color_stop_rgba(1.0, 1.0, 0.87, 0.65, 0.0)
-        ctx.move_to(sx, sy)
-        for i in range(7):
-            aa = ang - spread + 2 * spread * i / 6
-            ctx.line_to(sx + L * math.sin(aa), sy + L * 0.6 * math.cos(aa))
-        ctx.close_path()
-        ctx.set_source(g)
-        ctx.fill()
+    core.radial_glow(ctx, 700 + 30 * math.sin(t * 1.7), 1060, 460, "#ffcf8a", 0.24 * a)
+    core.radial_glow(ctx, 760, 1180, 260, "#ffcf8a", 0.08 * a)
     ctx.restore()
 
 
@@ -1322,35 +1699,50 @@ def render(ctx, t, info):
 
     with core.camera(ctx, cx, cy, zoom):
         sets.service_tunnel(ctx, t_set, drip=drip)
-        _beam(ctx, t, T)
-        behind = c["y"] < FEET_Y - 20              # Curiosity deep in the side tunnel: behind him
-        split = c["wait"]                          # its glowing eyes go between it and him
-        with sets.shaded(ctx, sets.service_tunnel, t_set, layer="shade"):
-            ca = {}
-            if behind:
-                ca = _draw_cur(ctx, t, c)
-            if not split:
-                a = _draw_tired(ctx, t, p)
-                if not behind:
-                    ca = _draw_cur(ctx, t, c)
-        if split:
-            if "eye_l" in ca and "eye_r" in ca:
-                # its two teal eyes, still glowing in the dark down the side tunnel
-                (x1, y1), (x2, y2) = ca["eye_l"][:2], ca["eye_r"][:2]
-                se = c["s"] * 1.25
-                look, lid, blink, gap_k, dx = _wait_eyes(t, T)
-                gap = max(95.0, math.hypot(x2 - x1, y2 - y1) / se) * gap_k
-                ctx.save()
-                _mouth_path(ctx)
-                ctx.clip()
-                fx.eyes_in_dark(ctx, (x1 + x2) / 2 + dx * se, (y1 + y2) / 2, se, t, kind="curiosity",
-                                blink=blink, look=look, gap=gap, lid=lid, tilt=0.05)
-                ctx.restore()
+        if c["free"]:
+            # (rev 4) walkoff .. end: it walks on down the side tunnel; Emb comes up it
+            E = _emb(t, T, c) if shot not in (11, 14) else None
+            ca = _tunnel_end(ctx, t, T, info, c, E)
             with sets.shaded(ctx, sets.service_tunnel, t_set, layer="shade"):
                 a = _draw_tired(ctx, t, p)
-        if bandage_amt > 0:
-            _bandage_glow(ctx, a, bandage_amt)
+            if shot == 11:
+                _corridor_light(ctx, t, T)
+            if bandage_amt > 0:
+                _bandage_glow(ctx, a, bandage_amt)
+        else:
+            _render_rev3(ctx, t, T, c, p, t_set, bandage_amt)
     fx.vignette(ctx, 0.3, inner=0.62)
+
+
+def _render_rev3(ctx, t, T, c, p, t_set, bandage_amt):
+    """Everything up to the walkoff cut (as in rev 3)."""
+    behind = c["y"] < FEET_Y - 20              # Curiosity deep in the side tunnel: behind him
+    split = c["wait"]                          # its glowing eyes go between it and him
+    with sets.shaded(ctx, sets.service_tunnel, t_set, layer="shade"):
+        ca = {}
+        if behind:
+            ca = _draw_cur(ctx, t, c)
+        if not split:
+            a = _draw_tired(ctx, t, p)
+            if not behind:
+                ca = _draw_cur(ctx, t, c)
+    if split:
+        if "eye_l" in ca and "eye_r" in ca:
+            # its two teal eyes, still glowing in the dark down the side tunnel
+            (x1, y1), (x2, y2) = ca["eye_l"][:2], ca["eye_r"][:2]
+            se = c["s"] * 1.25
+            look, lid, blink, gap_k, dx = _wait_eyes(t, T)
+            gap = max(95.0, math.hypot(x2 - x1, y2 - y1) / se) * gap_k
+            ctx.save()
+            _mouth_path(ctx)
+            ctx.clip()
+            fx.eyes_in_dark(ctx, (x1 + x2) / 2 + dx * se, (y1 + y2) / 2, se, t, kind="curiosity",
+                            blink=blink, look=look, gap=gap, lid=lid, tilt=0.05)
+            ctx.restore()
+        with sets.shaded(ctx, sets.service_tunnel, t_set, layer="shade"):
+            a = _draw_tired(ctx, t, p)
+    if bandage_amt > 0:
+        _bandage_glow(ctx, a, bandage_amt)
 
 
 # ----------------------------------------------------------------------------
@@ -1393,12 +1785,22 @@ def SFX(info):
     ev.append((T["glow"] + 0.05, "sonar_ping_small", -11.0, 0.1))
     # "Maybe even me. ...": the swallow
     ev.append((T["swal"] + 0.04, "gulp", -12.0, 0.05))
-    # the eyes' answer: a faint purr from the dark (comfort at a distance)
-    ev.append((T["ans"] + 0.15, "creature_purr", -2.0, -0.45))
-    # Emb stumbles on it far down the side tunnel (just before the yell)
-    ev.append((T["l07"] - 0.42, "footstep", -15.0, -0.6))
-    ev.append((T["l07"] - 0.3, "footstep", -13.0, -0.6))
-    ev.append((T["l07"] - 0.22, "body_thud", -21.0, -0.6))
+    # (rev 4) hush: Emb's steps coming up the side tunnel (deep, to the left), he stops, the beam
+    # swings onto it (its ears perk, a curious little chitter), his jolt: shoes scuff back, his
+    # back bumps the wall; the yell: it flinches down low
+    n = 0
+    while T["e_on"] + (0.2 + 0.5 * n) / 0.95 < T["e_stop"] - 0.15:       # his walk's heel strikes
+        ev.append((T["e_on"] + (0.2 + 0.5 * n) / 0.95, "footstep", -21.0 + 1.2 * n, -0.4))
+        n += 1
+    ev.append((T["e_stop"] - 0.02, "footstep", -17.0, -0.35))
+    ev.append((T["bm_sw"] + 0.05, "cloth_rustle", -16.0, -0.3))
+    ev.append((T["c_stop"] + 0.08, "ears_perk", -9.0, 0.1))
+    ev.append((T["c_tilt"] + 0.05, "creature_chitter", -14.0, 0.1))
+    ev.append((T["e_jolt"], "cloth_rustle", -10.0, -0.3))
+    ev.append((T["e_jolt"] + 0.2, "footstep", -14.0, -0.35))
+    ev.append((T["e_jolt"] + 0.42, "footstep", -15.0, -0.35))
+    ev.append((T["e_back1"] - 0.03, "body_thud", -17.0, -0.35))
+    ev.append((T["c_flat"] + 0.04, "scurry", -19.0, 0.05))
     # the sigh, then up off the crate
     ev.append((T["exh"] - 0.03, "sigh", 1.0, 0.05))
     ev.append((T["up_a"] + 0.05, "cloth_rustle", -9.0, 0.05))

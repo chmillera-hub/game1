@@ -521,7 +521,7 @@
     },
     {
      "t": "pause",
-     "dur": 3.0,
+     "dur": 3.3,
      "cue": "walkoff"
     },
     {
@@ -550,7 +550,7 @@
     },
     {
      "t": "pause",
-     "dur": 3.8,
+     "dur": 4.3,
      "cue": "hush"
     },
     {
@@ -1011,17 +1011,17 @@
     },
     {
      "t": "pause",
-     "dur": 1.2,
+     "dur": 2.6,
      "cue": "crack"
     },
     {
      "t": "pause",
-     "dur": 3.4,
+     "dur": 4.4,
      "cue": "shuffle"
     },
     {
      "t": "pause",
-     "dur": 1.4,
+     "dur": 1.8,
      "cue": "empty"
     }
    ],

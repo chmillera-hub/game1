@@ -243,7 +243,7 @@ def times(info):
     T.cr = T.crack + 0.06                    # the knees crack
     T.back0, T.back1 = T.crack + 0.4, T.crack + 1.3     # near hand on the small of her back
     T.exh = T.crack + 1.05                   # a tiny exhale
-    T.blk = T.crack + 1.55                   # slow blink in the held standing face
+    T.blk = T.exh + 0.05                     # a slow blink as she breathes out
     T.turn0 = T.shuffle + 0.2                # she turns toward her way out
     T.walk0 = T.shuffle + 0.4                # first shuffling step
     T.swivel = T.walk0 + 0.15                # her leg nudges the chair: it turns a hair
@@ -818,6 +818,261 @@ def boss_state(T, info, t):
     sink = smoothstep(seg(t, T.L3.end + 0.1, T.L3.end + 0.8))
     st["pose"] = {"base": "sit_chair", "hunch": 0.12 * (1 - sink) - 0.04 * rise + 0.07 * fall,
                   "nod": 0.03 * sink}
+    return st
+
+
+# ============================================================================
+# rev 4: after the sigh she gets up -- slowly, tiredly -- and shuffles off
+# ============================================================================
+# Every pose blend below runs between FIXED dicts (the rig caches its z-order switch
+# point per pose pair), her arms are always auto-layered (never the Boss stand's
+# hands-behind-back clasp: she is too tired to hold her composure), and her x is
+# foot-locked (_boss_x): the planted feet never slide, from the seat through the
+# stand and the turn into every shuffling step.
+B_X0 = float(M["chair"][0])                  # the floor point below her hips in the chair
+_HANG = P(A("l", 0.03, 0.1, 0.18, 0.0, 0.0, h="relaxed"), A("r", 0.03, 0.1, 0.18, 0.0, 0.0, h="relaxed"),
+          al_layer="mid", ar_layer="back")      # near arm over her, far arm behind her
+_SIT_LEGS = (1.45, 0.1, 1.45, 0.0)           # sit_chair's legs (p, o, k, a)
+_STAND_LEGS = {"l": (-0.09, 0.05, 0.05, 0.0), "r": (0.09, 0.05, 0.05, 0.0)}   # a small stagger:
+#                                            # the feet keep the seated spread (no sliding)
+
+
+def _legs(u):
+    """Legs a fraction u of the way from the seat to the (staggered) stand."""
+    d = {}
+    for s_ in "lr":
+        a, b = _SIT_LEGS, _STAND_LEGS[s_]
+        d.update(L(s_, *(lerp(a[i], b[i], u) for i in range(4))))
+    return d
+
+
+KM = 0.42                                    # rise fraction at the effort peak ("Oof.")
+B_SIT0 = {"base": "sit_chair", "hunch": 0.07, "nod": 0.03,            # = the end beat's pose,
+          "al_layer": "mid", "ar_layer": "back"}                       # far arm behind (on the cut)
+B_SIT_LEAN = {"base": "sit_chair", "hunch": 0.2, "nod": 0.08, "neck": 0.1, "lean": 0.4,
+              "al_h": "grip", "ar_h": "grip", "al_layer": "mid", "ar_layer": "back"}
+# (explicit layers all through the get-up: no layer change, so no blend detour or pop;
+# the far arm's only change, to 'back', falls on the cut into S12)
+B_RISE = dict(_legs(KM), base="stand", lean=0.5, hunch=0.45, neck=0.25, nod=0.08, posture=0.3,
+              **A("l", 0.12, 0.12, 0.35, -0.1, 0.1, h="grip"), **A("r", -0.06, 0.12, 0.3, -0.1, 0.1, h="grip"),
+              al_layer="mid", ar_layer="back")
+# standing, slumped: no composure left (posture 0), shoulders rounded, head forward and down
+B_STAND = dict(_legs(1.0), base="stand", lean=0.14, chest=0.1, hunch=0.7, neck=0.42, nod=0.1, posture=0.0,
+               **_HANG)
+# straightening up, the near hand on the small of her back (behind her: the rig's blend
+# detour swings the hand out around the hip, clear of the body, where its layer changes)
+B_ARCH = dict(B_STAND, lean=-0.07, chest=-0.07, hunch=0.3, neck=0.14, nod=0.0,
+              **A("l", -0.55, 0.32, 1.45, -0.85, 0.25, h="flat"), al_layer="back")
+# the shuffle: small slow steps, arms hanging, shoulders slumped, head down
+SHUF_PER = 1.5
+B_SHUFFLE = dict(_HANG, base="walk", period=SHUF_PER,
+                 ll_p=W(0.0, 0.15, 0.0), lr_p=W(0.0, 0.15, 0.5), ll_o=0.04, lr_o=0.04,
+                 ll_k=W(0.05, 0.36, 0.22, r=1), lr_k=W(0.05, 0.36, 0.72, r=1),
+                 ll_a=W(0.02, 0.12, 0.02), lr_a=W(0.02, 0.12, 0.52),
+                 al_p=W(0.03, 0.06, 0.5), ar_p=W(0.03, 0.06, 0.0),
+                 lean=0.12, chest=0.08, hunch=0.65, neck=0.4, nod=W(0.1, 0.0, 0.0, 0.02, 0.1),
+                 posture=0.0, twist=W(0.0, 0.03, 0.5), hip_roll=W(0.0, 0.0, 0.0, 0.03, 0.0),
+                 coat_trail=0.1)                 # (every wave of "walk" re-timed to SHUF_PER)
+SHUF_PH0 = 0.85                              # cycle phase of the first step (l = back foot lifts)
+B_EXIT_X = 2250.0                            # well out of the S13 frame (its right edge < 2110)
+
+
+def _mono(t, keys):
+    """Monotone cubic through [(time, value), ...] (no overshoot, eases in and out)."""
+    if t <= keys[0][0]:
+        return keys[0][1]
+    if t >= keys[-1][0]:
+        return keys[-1][1]
+    xs = [k[0] for k in keys]
+    ys = [k[1] for k in keys]
+    n = len(keys)
+    h = [xs[i + 1] - xs[i] for i in range(n - 1)]
+    d = [(ys[i + 1] - ys[i]) / h[i] for i in range(n - 1)]
+    m = [0.0] * n
+    for i in range(1, n - 1):
+        if d[i - 1] * d[i] > 0:
+            w1, w2 = 2 * h[i] + h[i - 1], h[i] + 2 * h[i - 1]
+            m[i] = (w1 + w2) / (w1 / d[i - 1] + w2 / d[i])
+    i = max(j for j in range(n - 1) if xs[j] <= t)
+    u = (t - xs[i]) / h[i]
+    return ((2 * u ** 3 - 3 * u ** 2 + 1) * ys[i] + (u ** 3 - 2 * u ** 2 + u) * h[i] * m[i] +
+            (-2 * u ** 3 + 3 * u ** 2) * ys[i + 1] + (u ** 3 - u ** 2) * h[i] * m[i + 1])
+
+
+def _rise_k(T, t):
+    """0 = seated (leaning forward) .. 1 = standing: sluggish first push, the effort
+    peak on "Oof.", slower, the knees straighten (crack)."""
+    return _mono(t, [(T.push0, 0.0), (T.L4.start + 0.02, 0.1), (T.L4.start + 0.5, KM),
+                     (T.release + 0.1, 0.62), (T.crack + 0.1, 0.82), (T.crack + 0.42, 1.0)])
+
+
+def _arch_k(T, t):
+    return smoothstep(seg(t, T.back0 + 0.1, T.back0 + 0.6)) * (1 - smoothstep(seg(t, T.back1, T.back1 + 0.5)))
+
+
+def _boss_body(T, t):
+    """(pose, pose_t, turn) from the getup on: everything that moves her feet."""
+    turn = 0.7 + 0.25 * smoothstep(seg(t, T.turn0, T.turn0 + 0.55))
+    if t < T.push0:
+        return (B_SIT0, B_SIT_LEAN, smoothstep(seg(t, T.lean0, T.push0))), None, turn
+    k = _rise_k(T, t)
+    if k < KM:
+        return (B_SIT_LEAN, B_RISE, k / KM), None, turn
+    if k < 1.0:
+        return (B_RISE, B_STAND, (k - KM) / (1 - KM)), None, turn
+    if t < T.walk0:
+        return (B_STAND, B_ARCH, _arch_k(T, t)), None, turn
+    kw = smoothstep(seg(t, T.walk0, T.walk0 + 0.45))
+    return (B_STAND, B_SHUFFLE, kw), t - T.walk0 + SHUF_PH0 * SHUF_PER, turn
+
+
+_BTAB = {}
+
+
+def _boss_tab(T):
+    """Foot-locked x of the Boss from the getup on, sampled at 48 Hz (a dry run of the
+    rig at x = 0). A foot bears weight while it moves backward relative to her body
+    (she faces right): those feet stay put in the world (both share the lock while
+    they move together: the seat -> stand). Also the shuffle's footfalls (SFX)."""
+    tab = _BTAB.get(id(T))
+    if tab is not None:
+        return tab
+    import cairocffi as cairo
+    surf = cairo.ImageSurface(cairo.FORMAT_RGB24, 2, 2)
+    c = cairo.Context(surf)
+    dt = 1.0 / 48
+    n = int(math.ceil((T.empty - T.getup) / dt)) + 2
+    xs, steps = [], []
+    x, prev, vel, wprev = B_X0, None, 0.0, None
+    for i in range(n):
+        t = T.getup + i * dt
+        pose, pt, turn = _boss_body(T, t)
+        a = human.draw_person(c, "boss", 0.0, 0.0, SP, t, pose=pose, pose_t=pt, turn=turn,
+                              shadow=False, drift=False)
+        feet = (a["foot_l"][0], a["foot_r"][0])
+        if prev is not None:
+            ds = [f - p_ for f, p_ in zip(feet, prev)]
+            ws = [smoothstep(clamp(-d / 0.6)) for d in ds]
+            if sum(ws) > 1e-3:
+                vel = -sum(w * d for w, d in zip(ws, ds)) / sum(ws)
+            x += vel
+            if t > T.walk0 + 0.1 and wprev is not None:
+                for w0, w1 in zip(wprev, ws):
+                    if w0 < 0.5 <= w1 and (not steps or t - steps[-1] > 0.3):
+                        steps.append(t)              # a foot comes down and takes weight
+            wprev = ws
+        prev = feet
+        xs.append(x)
+        if x > B_EXIT_X:
+            break
+    tab = (T.getup, dt, xs, steps)
+    _BTAB[id(T)] = tab
+    return tab
+
+
+def _boss_x(T, t):
+    t0, dt, xs, _ = _boss_tab(T)
+    u = (t - t0) / dt
+    i = int(math.floor(u))
+    if i < 0:
+        return xs[0]
+    if i >= len(xs) - 1:
+        return xs[-1] + (xs[-1] - xs[-2]) / dt * (t - t0 - (len(xs) - 1) * dt) if len(xs) > 1 else xs[-1]
+    return lerp(xs[i], xs[i + 1], u - i)
+
+
+def chair_turn_late(T, t):
+    """After she leaves, the empty chair keeps turning a hair (a slow damped swivel)."""
+    if t < T.swivel:
+        return 0.8
+    return 0.8 - 0.06 * (1 - math.exp(-(t - T.swivel) / 1.8)) * smoothstep(seg(t, T.swivel, T.swivel + 0.5))
+
+
+def _armrest_tops(ct):
+    """World (x, y) of the two armrest pad tops of props.boss_chair at chair_turn ct
+    (l = screen-left pad, drawn behind her; r = screen-right pad, drawn over her lap)."""
+    psi = math.pi * (1 - ct)
+    sp, cp = math.sin(psi), math.cos(psi)
+    cx_, fy = M["chair"]
+    ys = fy - SP * (props.BOSS_CHAIR_SEAT + 120)
+    return {s_: (cx_ + SP * (sd * 175 * abs(cp) - sp * 20), ys) for s_, sd in (("l", -1), ("r", 1))}
+
+
+_ARCH_HIP = []
+
+
+def _arch_hip():
+    """Her hip anchor relative to (x, FEET) when straightened up (B_ARCH, turn 0.7)."""
+    if not _ARCH_HIP:
+        import cairocffi as cairo
+        c = cairo.Context(cairo.ImageSurface(cairo.FORMAT_RGB24, 2, 2))
+        a = human.draw_person(c, "boss", 0.0, 0.0, SP, 0.0, pose=B_ARCH, turn=0.7, shadow=False, drift=False)
+        _ARCH_HIP.append(a["hip"][:2])
+    return _ARCH_HIP[0]
+
+
+_ARM_TOPS = _armrest_tops(0.8)
+GRIP_L = (_ARM_TOPS["l"][0] + 22, _ARM_TOPS["l"][1] + 3)       # her fists on the pad tops
+GRIP_R = (_ARM_TOPS["r"][0] - 28, _ARM_TOPS["r"][1] + 3)
+
+
+def _boss_rise(T, info, t, st0):
+    """The Boss from the 'getup' cue on: weary and resigned, never comic."""
+    st = dict(st0)
+    f = st["face"] = dict(st0["face"])
+    pose, pt, turn = _boss_body(T, t)
+    x = _boss_x(T, t)
+    st.update(pose=pose, pose_t=pt, turn=turn, x=x, y=FEET, chair_turn=chair_turn_late(T, t),
+              front_a=1.0 - smoothstep(seg(t, T.walk0 + 0.05, T.walk0 + 0.5)),
+              visible=t < T.empty and x < B_EXIT_X, mouth=info.mouth("boss", t), reach=None, blink=0.0)
+    G0, Lo, Le, C, S = T.getup, T.L4.start, T.oof_end, T.crack, T.shuffle
+    # her hands slide from her knees onto the armrest tops, push, and let go as she rises
+    # (both let go before the far arm's layer switch in the rise blend, so it happens with
+    # that hand clear of her body: no z-order pop)
+    wr = smoothstep(seg(t, G0 + 0.15, G0 + 0.7)) * (1 - smoothstep(seg(t, T.release, T.release + 0.3)))
+    if wr > 0.0:
+        st["reach"] = {"l": (GRIP_L[0], GRIP_L[1], wr), "r": (GRIP_R[0], GRIP_R[1], wr)}
+    # straightening up: the near hand settles on the small of her back (the reach only
+    # takes over once the arm is behind her, past the blend's layer switch)
+    if T.back0 < t < T.walk0:
+        wb = smoothstep(seg(_arch_k(T, t), 0.6, 1.0))
+        if wb > 0.0:
+            hx, hy = _arch_hip()
+            st["reach"] = {"l": (x + hx - 52, FEET + hy - 42, wb, 0.25)}
+    # face: from the stare back to a decision (eyes on her hands); effort squeezes on the
+    # push and "Oof."; a small wince at the crack; heavy lids throughout
+    f["focus"] = tween(t, [(G0 + 0.05, -0.35), (G0 + 0.45, -0.12)])
+    f["lid"] = tween(t, [(G0 + 0.05, f["lid"]), (G0 + 0.45, 0.35), (T.push0, 0.35), (Lo + 0.05, 0.39),
+                         (Lo + 0.3, 0.4), (Le + 0.2, 0.36), (C + 0.06, 0.36), (C + 0.16, 0.48),
+                         (C + 0.5, 0.37), (C + 1.05, 0.37), (C + 1.5, 0.4), (S + 0.3, 0.4),
+                         (S + 0.8, 0.37)])
+    f["lower"] = tween(t, [(T.push0, 0.0), (Lo + 0.05, 0.08), (Lo + 0.3, 0.13), (Le + 0.25, 0.04),
+                           (C + 0.06, 0.04), (C + 0.16, 0.28), (C + 0.55, 0.03)])
+    f["brow"] = tween(t, [(T.lean0, f["brow"]), (T.push0 + 0.2, -0.08), (Lo + 0.3, -0.12), (Le + 0.3, -0.06),
+                          (C + 0.06, -0.06), (C + 0.16, -0.1), (C + 0.6, -0.05)])
+    f["brow_ang"] = tween(t, [(G0 + 0.1, f["brow_ang"]), (T.push0, 0.24), (Lo + 0.3, 0.32), (Le + 0.3, 0.22),
+                              (C + 0.06, 0.22), (C + 0.16, 0.36), (C + 0.6, 0.24), (C + 1.5, 0.26)])
+    f["press"] = tween(t, [(T.lean0, 0.0), (T.push0, 0.25), (Lo - 0.02, 0.32), (Lo + 0.05, 0.0),
+                           (Le + 0.2, 0.0), (Le + 0.4, 0.12), (C + 0.06, 0.12), (C + 0.16, 0.3),
+                           (C + 0.6, 0.1), (T.exh - 0.05, 0.1), (T.exh + 0.05, 0.0)])
+    f["frown"] = tween(t, [(G0, f["frown"]), (Le + 0.4, 0.14)])
+    f["head_nod"] = tween(t, [(G0 + 0.15, f["head_nod"]), (G0 + 0.5, 0.18), (T.push0, 0.2), (Lo + 0.3, 0.22),
+                              (C + 0.1, 0.16), (C + 0.5, 0.16), (C + 0.95, 0.05), (T.back1, 0.06),
+                              (T.back1 + 0.5, 0.15), (S + 0.4, 0.15), (S + 0.9, 0.12)])
+    f["head_turn"] = tween(t, [(S + 0.1, f["head_turn"]), (S + 0.45, 0.14), (S + 1.0, 0.08)])
+    f["head_tilt"] = 0.035 * math.sin(math.pi * seg(t, C + 0.06, C + 0.5))     # a tiny flinch on the crack
+    st["look"] = tween(t, [(G0 + 0.05, st0["look"]), (G0 + 0.3, (-0.05, 0.8)), (T.push0, (-0.05, 0.8)),
+                           (C + 0.4, (0.05, 0.75)), (C + 0.9, (0.12, 0.58)), (C + 1.6, (0.1, 0.7)),
+                           (S, (0.1, 0.7)), (S + 0.15, (0.62, 0.45)), (S + 1.0, (0.55, 0.55))])
+    # one slow blink with the exhale (then the held weary face); one ordinary blink on the way out
+    if t < S + 1.0:
+        st["blink"] = tween(t, [(T.blk, 0.0), (T.blk + 0.35, 1.0), (T.blk + 0.47, 1.0), (T.blk + 0.87, 0.0)])
+    else:
+        st["blink"] = tween(t, [(S + 1.6, 0.0), (S + 1.72, 1.0), (S + 1.8, 1.0), (S + 1.95, 0.0)])
+    # the tiny exhale: lips part a hair
+    if T.exh <= t < T.exh + 0.6:
+        k = smoothstep(seg(t, T.exh, T.exh + 0.15)) * (1 - smoothstep(seg(t, T.exh + 0.3, T.exh + 0.6)))
+        st["mouth"] = (max(st["mouth"][0], 0.08 * k), 0.0)
     return st
 
 
@@ -1475,10 +1730,25 @@ def _draw_emb(ctx, info, t, st):
 
 
 def _draw_boss(ctx, info, t, st):
-    gy = FEET
-    return human.draw_person(ctx, "boss", M["chair"][0], gy, SP, t, pose=st["pose"], turn=st["turn"],
+    gy = st.get("y", FEET)
+    return human.draw_person(ctx, "boss", st.get("x", M["chair"][0]), gy, SP, t, pose=st["pose"],
+                             pose_t=st.get("pose_t"), turn=st["turn"],
                              expr=st["expr"], face=st["face"], look=st["look"], reach=st["reach"],
                              mouth=st["mouth"], blink=st["blink"])
+
+
+def _chair_front(ctx, t, bs, al, alpha=1.0):
+    """The chair pieces nearer the camera than its sitter (at this turn: the screen-right
+    armrest), optionally faded."""
+    if alpha <= 0.003:
+        return
+    if alpha >= 0.997:
+        sets.control_room(ctx, t, "fg", chair_turn=bs["chair_turn"], alarm=al, alarm_tint=False, parts=("chair",))
+        return
+    ctx.push_group()
+    sets.control_room(ctx, t, "fg", chair_turn=bs["chair_turn"], alarm=al, alarm_tint=False, parts=("chair",))
+    ctx.pop_group_to_source()
+    ctx.paint_with_alpha(alpha)
 
 
 def _door_leaks(ctx, T, t):
@@ -1599,11 +1869,15 @@ def draw_world(ctx, T, info, t, cam):
         a = ts["aura"] * (0.85 + 0.15 * math.sin(t * 9.0))
         _glow(ctx, ts["x"] + 70, ts["y"] - 560, 330, core.PAL["power"], 0.30 * a)
         _glow(ctx, H_UP[0] - 20, lerp(H_UP[1], H_DN[1], lever) + 10, 170, "#bffff8", 0.30 * a)
+    front_a = bs.get("front_a", 1.0)
+    if front_a < 1.0 and _visible_x(view, 1450, 1950):
+        _chair_front(ctx, t, bs, al)      # rev 4: she steps out in front of the chair
     pod_glow = 0.0 if not _visible_x(view, POD_X - 600, POD_X + 600) else 1.0
     with sets.shaded(ctx, _char_shade, t, al, pod_glow):
         if _visible_x(view, 1450, 1950):
             _boss_feed_light(ctx, t, smoothstep(seg(t, T.hatch - 0.3, T.hatch)))
-            _draw_boss(ctx, info, t, bs)
+            if bs.get("visible", True):
+                _draw_boss(ctx, info, t, bs)
         if es["visible"] and es.get("clip") != "hatch" and not es["front_of_panel"] and \
                 _visible_x(view, es["x"] - 200, es["x"] + 200):
             _draw_emb(ctx, info, t, es)
@@ -1622,8 +1896,7 @@ def draw_world(ctx, T, info, t, cam):
             elif who == "baby":
                 _draw_baby(ctx, t, bb)
     if _visible_x(view, 1450, 1950):
-        sets.control_room(ctx, t, "fg", chair_turn=bs["chair_turn"], alarm=al, alarm_tint=False,
-                          parts=("chair",))
+        _chair_front(ctx, t, bs, al, front_a)
     if hop > 0.02 and _visible_x(view, -100, 600):
         # the open hatch panel (over whoever goes through), tinted by the alarm
         import cairocffi as cairo
@@ -1750,7 +2023,7 @@ def camera_at(T, t):
         cx, cy, z = _cam_rise(T, t)
     else:                                              # S14 the empty chair
         k = smoothstep(seg(t, T.empty, T.end))
-        cx, cy, z = lerp(1794, 1790, k), lerp(1012, 1006, k), lerp(2.0, 2.08, k)
+        cx, cy, z = lerp(1762, 1760, k), lerp(1050, 1040, k), lerp(1.75, 1.84, k)
     return cx, cy, z, dx, dy
 
 
@@ -1760,7 +2033,7 @@ def _cam_rise(T, t):
     right edge stays inside the room, x <= 2100)."""
     ku = smoothstep(seg(t, T.push0 + 0.2, T.crack + 1.0))
     c0 = (lerp(1752, 1770, ku), lerp(1118, 1060, ku), lerp(1.6, 1.66, smoothstep(seg(t, T.getup, T.shuffle))))
-    kw = ease_in_out(seg(t, T.shuffle + 0.25, T.shuffle + 3.2))
+    kw = ease_in_out(seg(t, T.shuffle + 0.5, T.shuffle + 3.9))
     return lerp(c0[0], 1590, kw), lerp(c0[1], 995, kw), lerp(c0[2], 1.12, kw)
 
 
@@ -1858,4 +2131,14 @@ def SFX(info):
     ev.append((T.rew1, "mouse_click", -4, 0.1))
     # rev 3: her small sigh after "No matter. I'll catch you." (breath in at si, out at si + 0.4)
     ev.append((T.L3b.end + 1.25, "sigh_small_f", -4, 0.1))
+    # rev 4: she gets up (cloth, the chair, her knees) and shuffles off (soft steps)
+    ev.append((T.getup + 0.2, "cloth_rustle", -12, 0.25))         # hands onto the armrests
+    ev.append((T.push0 + 0.05, "chair_creak", -13, 0.2))          # the first sluggish push
+    ev.append((T.L4.start + 0.08, "chair_creak", -9, 0.2))        # the effort peak
+    ev.append((T.cr, "knee_crack", -1, 0.2))
+    ev.append((T.back0 + 0.1, "cloth_rustle", -14, 0.2))          # hand to the small of her back
+    for ts_ in _boss_tab(T)[3]:
+        x = _boss_x(T, ts_)
+        ev.append((ts_, "footstep", -15 - 5 * clamp((x - 2050) / 200), clamp((x - 1500) / 900, 0.1, 0.8)))
+    ev.append((T.swivel + 0.05, "chair_creak", -16, 0.25))        # the empty chair turns a hair
     return ev
