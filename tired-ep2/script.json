@@ -181,7 +181,7 @@
      "t": "line",
      "id": "s02_l01",
      "who": "tired",
-     "text": "Great. Now I can't see anything.",
+     "text": "Great. Now I'm having trouble seeing.",
      "pre": 0.2,
      "post": 0.45
     },
@@ -665,10 +665,10 @@
      "t": "line",
      "id": "s05_l05",
      "who": "tired",
-     "text": "Oh, yeah. A critter bit me, I fell out of a building, and now I can see in the dark.",
+     "text": "Oh, yeah. A creature bit me, I fell out of a building, and now I can see in the dark.",
      "pre": 0.3,
      "post": 0.45,
-     "say": "Oh, yeah. A critter bit me, I fell out of a building, and now I can see in the dark.",
+     "say": "Oh, yeah. A creature bit me, I fell out of a building, and now I can see in the dark.",
      "speed": 1.0
     },
     {
@@ -712,11 +712,11 @@
      "t": "line",
      "id": "s05_l06",
      "who": "embar",
-     "text": "Huh. My \"pocket calculator\"... just stopped working.",
+     "text": "Oh, look at that. My recorder just stopped working.",
      "pre": 0.3,
      "post": 0.45,
      "speed": 0.86,
-     "say": "Huh. My pocket calculator, just stopped working."
+     "say": "Oh, look at that. My recorder, just stopped working."
     },
     {
      "t": "pause",
@@ -858,11 +858,26 @@
      "t": "line",
      "id": "s06_l08",
      "who": "tired",
-     "text": "But right now... I'm not tired.",
+     "text": "But... I'm not...",
      "pre": 0.4,
-     "post": 0.45,
-     "say": "But right now, I'm not tired.",
+     "post": 0.1,
+     "say": "But. I'm not.",
      "speed": 0.84
+    },
+    {
+     "t": "pause",
+     "dur": 0.9,
+     "cue": "notquite"
+    },
+    {
+     "t": "line",
+     "id": "s06_l08b",
+     "who": "tired",
+     "text": "...really all that tired right now.",
+     "pre": 0.0,
+     "post": 0.45,
+     "say": "Really all that tired right now.",
+     "speed": 0.9
     },
     {
      "t": "pause",
@@ -974,6 +989,35 @@
      "t": "pause",
      "dur": 2.6,
      "cue": "end"
+    },
+    {
+     "t": "pause",
+     "dur": 1.6,
+     "cue": "getup"
+    },
+    {
+     "t": "line",
+     "id": "s07_l04",
+     "who": "boss",
+     "text": "Oof.",
+     "pre": 0.0,
+     "post": 0.3,
+     "speed": 0.85
+    },
+    {
+     "t": "pause",
+     "dur": 1.2,
+     "cue": "crack"
+    },
+    {
+     "t": "pause",
+     "dur": 3.4,
+     "cue": "shuffle"
+    },
+    {
+     "t": "pause",
+     "dur": 1.4,
+     "cue": "empty"
     }
    ],
    "music_xfade": 0.05

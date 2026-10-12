@@ -2721,6 +2721,28 @@ def _sigh2(sr, rng):
     return _room(pan(fade_edges(lp(y, 6500, sr), sr, 0.005, 0.12), 0), sr, 0.1, 0.4)
 
 
+@fx("knee_crack", trim=-2.0)
+def _knee_crack(sr, rng):
+    """Creaky knees standing up: two or three small dry joint pops (~35-60 ms apart),
+    with a soft low knock each, plus a faint cloth shift."""
+    out = _canvas(sr, 0.5)
+    tt = 0.0
+    for i, g in enumerate((1.0, 0.75, 0.55)):
+        n = secs(sr, 0.05)
+        t = tvec(n, sr)
+        f = rng.uniform(0.9, 1.15)
+        pop = _modes(t, [(1650 * f, 0.6, 0.004), (2900 * f, 0.35, 0.0025), (700 * f, 0.5, 0.006)]) \
+            + 0.5 * bp(rng.standard_normal(n), 1500, 7000, sr) * np.exp(-t / 0.0006) \
+            + 0.4 * np.sin(TAU * 180 * t) * np.exp(-t / 0.008)
+        _place(out, fade_edges(pop * np.clip(t / 0.0002, 0, 1), sr, 0.0001, 0.01), tt, sr, g)
+        tt += rng.uniform(0.035, 0.06)
+    n = secs(sr, 0.35)
+    t = tvec(n, sr)
+    cloth = bp(rng.standard_normal(n), 1200, 5000, sr) * np.sin(np.pi * t / 0.35) ** 2 * 0.05
+    _place(out, cloth, 0.02, sr)
+    return _room(out, sr, 0.12, 0.45)
+
+
 @fx("sigh_small_f", trim=-3.0)
 def _sigh_small_f(sr, rng):
     """A small, quiet female sigh (the Boss): a faint nasal inhale (~0.35 s), then a
