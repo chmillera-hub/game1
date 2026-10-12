@@ -1,0 +1,4 @@
+node_modules/
+.bfe_work/
+__pycache__/
+*.pyc
