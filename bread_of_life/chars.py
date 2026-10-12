@@ -167,8 +167,8 @@ def mantle_painter(col, col_sh, side=1, lining=None):
 # Jesus
 # ---------------------------------------------------------------------------
 JESUS_ST = dict(
-    skin="#b48e70", skin_sh="#9c6a4f", skin_sh2="#81513b", blush_col="#b16857", blush_base=0.07,
-    line="#3a2016", lash="#26140d", brow_col="#3a2216", lower_col="#683f2e", crease_col="#8d5b46",
+    skin="#90725a", skin_sh="#7d553f", skin_sh2="#67412f", blush_col="#8e5346", blush_base=0.07,
+    line="#3a2016", lash="#26140d", brow_col="#3a2216", lower_col="#533225", crease_col="#714938",
     iris=("#2a170a", "#80501f", "#e2b26a"), lid_shadow="#5a3020",
     hair="#432a1a", hair_sh="#28170d", hair_hl="#82593c", hair_line="#1e1009", hair_rim="#d39a63",
     beard="#4a2e1d", beard_sh="#2c180e",

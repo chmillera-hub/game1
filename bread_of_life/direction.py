@@ -268,7 +268,7 @@ shot(T("L29") - 0.45, "syn_mcu_jesus_l29", "syn_front", (0.5, 0.42, 1.0),
 shot(T("L29", seg=1) - 0.1, "syn_cu_eli_unsettled", "syn_side", (0.6, 0.45, 1.05),
      [place("eli", 380, 440, 150)], blur=8, light=L_SYN_C, fx=["beams", "dust"], grade="synagogue",
      crowd=[crowd(SYN_BACK, mood="worried", focus=-1, blur=3.5, z=1, light=L_SYN_C)])
-shot(T("L29", seg=1) + 2.4, "syn_mcu_jesus_l29b", "syn_front", (0.5, 0.42, 1.0),
+shot(T("L29", seg=1) + 1.8, "syn_mcu_jesus_l29b", "syn_front", (0.5, 0.42, 1.0),
      [place("jesus", 240, 460, 118)], blur=6, light=L_SYN_J, fx=["beams", "dust"], grade="synagogue")
 shot(T("L30") - 0.6, "syn_cu_jesus_l30", "syn_front", (0.46, 0.40, 1.05),
      [place("jesus", 340, 440, 165)], blur=9, light=dict(L_SYN_J, rim=0.8), fx=["beams_strong", "dust"],

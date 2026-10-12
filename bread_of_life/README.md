@@ -3,7 +3,7 @@
 A portrait (720×1280, 24 fps) animated short with voice acting, a music score, ambience and
 burned-in subtitles. Everything in it, including the voices, is generated from code in this folder.
 
-**Output:** `bread_of_life.mp4`. It runs about 5:35 and is under 15 MB (H.264 + AAC). The first frame is a full image, with no fade from black.
+**Output:** `bread_of_life.mp4`. It runs about 4:54 and is under 15 MB (H.264 + AAC). The first frame is a full image, with no fade from black.
 
 ## Story
 

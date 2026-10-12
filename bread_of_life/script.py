@@ -14,9 +14,11 @@ subtitle should break (the voice is not interrupted there).
 """
 
 # Voice casting. Values are Kokoro voice ids or {voice: weight} blends.
+# `rate` scales a speaker's whole delivery: every segment's speed, and the pauses between
+# segments inside a line (gaps between lines, which hold the reactions, are not scaled).
 VOICES = {
     "NARRATOR": {"voice": "bm_george", "lang": "en-gb", "speed": 0.86},
-    "JESUS": {"voice": "am_michael", "lang": "en-us", "speed": 0.72},
+    "JESUS": {"voice": "am_michael", "lang": "en-us", "speed": 0.72, "rate": 1.2},
     "PETER": {"voice": {"am_fenrir": 0.5, "am_onyx": 0.5}, "lang": "en-us", "speed": 0.78},
     "ELI": {"voice": {"am_puck": 0.55, "bm_george": 0.45}, "lang": "en-us", "speed": 0.84},
     "MIRIAM": {"voice": "af_heart", "lang": "en-us", "speed": 0.84},

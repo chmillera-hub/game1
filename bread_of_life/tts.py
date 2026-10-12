@@ -134,9 +134,10 @@ def build_line(ln):
     seg_meta = []
     phon = []
     t0 = 0.0
+    rate = vc.get("rate", 1.0)
     for seg in ln["segments"]:
         text_tts = seg["text"].replace(" / ", " ").replace("/", " ")
-        speed = seg.get("speed", vc["speed"])
+        speed = round(seg.get("speed", vc["speed"]) * rate, 4)
         audio, ph, times = synth(text_tts, vc["voice"], vc["lang"], speed)
         audio, times = trim(audio, times)
         dur = len(audio) / TTS_SR
@@ -148,7 +149,7 @@ def build_line(ln):
             phon.append({"p": c, "s": round(t0 + float(a), 4), "e": round(t0 + float(b), 4)})
         seg_meta.append({"text": seg["text"].replace(" / ", " ").replace("/", " "), "start": t0, "end": t0 + dur, "subs": chunks})
         pieces.append(audio)
-        pause = seg["pause"]
+        pause = seg["pause"] / rate
         pieces.append(np.zeros(int(pause * TTS_SR), dtype=np.float32))
         t0 += dur + pause
     # drop the trailing pause from the audio but remember it as tail
