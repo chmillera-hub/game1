@@ -20,9 +20,12 @@ because Paul's own letter said: *if your enemy is hungry, feed him.*
 
 ## Outputs
 
-- `output/bread_for_the_enemy.mp4`: the main delivery (H.264/AAC, 720×1280, under 15 MB)
-- `output/bread_for_the_enemy_hevc.mp4`: a sharper HEVC (H.265) version at the same size, for iPhones and recent Android phones
+- `output/bread_for_the_enemy.mp4`: the film (H.264 High + AAC stereo, 720×1280, 24 fps, 7:44, 14.7 MB)
 - `output/bread_for_the_enemy.srt`: a subtitle sidecar (the subtitles are also burned into the video)
+
+Compression: 2-pass x264 (`veryslow`, `tune animation`) at about 184 kbps video plus 64 kbps AAC.
+Against the near-lossless master it scores SSIM 0.989. An HEVC encode at the same size scored the same,
+so the more compatible H.264 file is the only delivery.
 
 The first frame is a fully lit shot of Jesus holding the bread with the title on it,
 so previews on social media are never black.
