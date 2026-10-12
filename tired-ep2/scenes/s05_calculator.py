@@ -84,7 +84,7 @@ T_WALK = 1.25            # his walk-in (s; ends on a contact)
 XE = 325                 # Embarrassment (facing right)
 XW, YW, SW = 372, 1345, 0.62     # Embarrassment backed flat against the far wall, on a rib (catch)
 CC = 600                 # Curiosity crouched in the beam (catch)
-CS = 712                 # sitting by his leg (l02)
+CS = 668                 # sitting by his (front) leg (l02)
 CH = 785                 # pressed behind his legs (head peeks out on the left)
 C1 = 640                 # out again, sitting by his front foot (after the click)
 TK = dict(outfit="sewer", bandage=True, headphones=None, hood=0.0, power=0.6)
@@ -625,9 +625,9 @@ def shots(k):
         ("T4", k["T4"], "B", lambda t: (790, 1010, 2.3)),
         ("W5", k["W5"], "B", lambda t: tw(t, [(k["W5"], (606, 1140, 1.42)), (k["T5b"], (612, 1134, 1.47))])),
         ("T5b", k["T5b"], "B", lambda t: tw(t, [(k["T5b"], (767, 985, 2.45)), (k["E5c"], (767, 980, 2.56))])),
-        ("E5c", k["E5c"], "B", lambda t: (405, 880, 2.3)),
+        ("E5c", k["E5c"], "B", lambda t: (392, 880, 2.3)),
         ("W5d", k["W5d"], "B", lambda t: tw(t, [(k["W5d"], (585, 1140, 1.45)), (k["l3e"], (455, 1040, 1.9))])),
-        ("W5e", k["W5e"], "B", lambda t: (548, 1140, 1.36)),
+        ("W5e", k["W5e"], "B", lambda t: tw(t, [(k["W5e"], (522, 1150, 1.24)), (k["T5f"], (530, 1146, 1.28))])),
         ("T5f", k["T5f"], "B", lambda t: (735, 1010, 2.3)),
         ("E5g", k["E5g"], "B", lambda t: (445, 890, 2.5)),
         ("W5h", k["W5h"], "B", lambda t: (572, 1138, 1.46)),
@@ -709,32 +709,39 @@ def pdict(pk, **kw):
 
 
 HIDE_PK = 0.53    # a pocketed hand is hidden only while (almost) all the way in (blend k < 0.06)
-_FIST = dict(al_h="fist", ar_h="fist", al_hide=HIDE_PK, ar_hide=HIDE_PK)
+# facing left (turn -0.7) the far (l) arm stays BEHIND the body all the time (no layer pops)
+_FIST = dict(al_h="fist", ar_h="fist", al_hide=HIDE_PK, ar_hide=HIDE_PK, al_layer="back")
 
 # both hands in the kangaroo pocket (the reach targets + panel overlay put them really IN it)
-POCK = pdict("lr", base="hands_pockets", **_FIST)
+POCK = pdict("lr", base="hands_pockets", ar_layer="mid", **_FIST)
 POCKET_T = POCK
-# walking with both hands in the pocket (the walk-in and the exit)
-WALK_PK = pdict("lr", base="walk", **_FIST)
+# walking with both hands in the pocket (the walk-in; the exit faces right: the r arm is far)
+WALK_PK = pdict("lr", base="walk", ar_layer="mid", **_FIST)
+POCK_M = pdict("lr", base="hands_pockets", al_h="fist", ar_h="fist", al_hide=HIDE_PK, ar_hide=HIDE_PK,
+               al_layer="mid", ar_layer="mid")
+WALK_PKR = pdict("lr", base="walk", al_h="fist", ar_h="fist", al_hide=HIDE_PK, ar_hide=HIDE_PK,
+                 al_layer="mid", ar_layer="back")
 # a lazy hello: the near hand comes out of the hoodie pocket for one small bent-elbow wave,
 # the other hand stays in the pocket (wave_small's arm on top of hands_pockets)
 WAVE_T = pdict("l", base="hands_pockets", period=0.7, ar_p=0.35, ar_o=1.2, ar_e=2.3,
                ar_eo=human.W(-1.1, 0.12, 0.0), ar_w=human.W(0.0, 0.16, 0.1), ar_h="open",
-               ar_tf=-1.0, ar_hide=0.0, hunch=0.3, al_h="fist", al_hide=HIDE_PK)
-WAVE_MID = pdict("l", base="hands_pockets", ar_p=0.25, ar_o=1.35, ar_e=1.25, ar_eo=-0.6,
-                 ar_h="open", ar_tf=-1.0, ar_hide=0.0, hunch=0.3, al_h="fist", al_hide=HIDE_PK)
+               ar_tf=-1.0, ar_hide=0.0, hunch=0.3, al_h="fist", al_hide=HIDE_PK, al_layer="back")
+WAVE_MID = pdict("l", base="hands_pockets", ar_p=0.25, ar_o=1.0, ar_e=1.4, ar_eo=-0.6,
+                 ar_h="open", ar_tf=-1.0, ar_hide=0.0, hunch=0.3, al_h="fist", al_hide=HIDE_PK, al_layer="back")
 # "We gotta save them.": the near hand comes out, open palm up toward Emb (soft appeal)
 OPEN_T = pdict("l", base="hands_pockets", ar_p=0.8, ar_o=0.22, ar_e=0.62, ar_eo=-0.1, ar_w=-0.1,
-               ar_h="open", ar_tf=-1.0, ar_hide=0.0, lean=0.04, hunch=0.35, al_h="fist", al_hide=HIDE_PK)
+               ar_h="open", ar_tf=-1.0, ar_hide=0.0, lean=0.04, hunch=0.35, al_h="fist", al_hide=HIDE_PK,
+               al_layer="back")
 # taking the keycard: only the near hand comes out of the pocket (the other stays in: chill)
-CARD_T = pdict("l", base="hands_pockets", ar_hide=0.0, ar_h="relaxed", al_h="fist", al_hide=HIDE_PK)
+CARD_T = pdict("l", base="hands_pockets", ar_hide=0.0, ar_h="relaxed", al_h="fist", al_hide=HIDE_PK,
+               al_layer="back")
 
 
 def shrug_pose(a):
     """A lazy, nonchalant shrug with his hands staying in the hoodie pocket: shoulders up,
     elbows out a little, head tilt (a = 0..1)."""
     return pdict("lr", base="hands_pockets", hunch=0.6 + 0.8 * a, neck=-0.5 * a, tilt=0.12 * a,
-                 lift=8 * a, **_FIST)
+                 lift=8 * a, ar_layer="mid", **_FIST)
 
 
 def pocket_w(pose, side):
@@ -841,15 +848,15 @@ def tired_state(t, k):
     keys = [(-1, WALK_PK), (tst - 0.05, POCK),
             (hey - 0.32, WAVE_MID), (hey - 0.14, WAVE_T), (hey + 0.56, WAVE_MID), (hey + 0.74, POCK),
             (k["oh0"], OPEN_T), (k["oh1"], POCK)]
-    keys += [(k["k_take0"] - 0.12, CARD_T), (k["go_turn"], POCK)]
-    keys += [(k["go_walk"], WALK_PK)]
+    keys += [(k["k_take0"] - 0.12, CARD_T), (k["go_turn"], POCK_M)]
+    keys += [(k["go_walk"], WALK_PKR)]
     pose = state_at(t, keys, 0.3)
     if pose[1] in (WAVE_T, WAVE_MID) or pose[0] in (WAVE_T, WAVE_MID):
         pose = state_at(t, keys, 0.18)
         d["pose_t"] = max(0.0, t - (hey - 0.14))
     elif t < tst + 0.4:
         d["pose_t"] = min(t, tst) - k["t_in0"] + 0.25          # the walk-in ends on a contact
-    elif pose[1] is WALK_PK and t >= k["go_walk"]:
+    elif pose[1] is WALK_PKR and t >= k["go_walk"]:
         d["pose_t"] = t - k["go_walk"]
     if pose[1] is OPEN_T or pose[0] is OPEN_T:
         pose = state_at(t, keys, 0.4)
@@ -1114,6 +1121,9 @@ EMB_WJOLT = _ep(al_h="splay", lean=-0.13, chest=-0.1, hunch=1.15, lift=12)
 EMB_HBH = _ep(**dict(human.HK("l", 95, -50, "claw", layer="mid", bend=1.0, wa=-2.0, wabs=0.7),
                      al_hy=human.W(-50.0, 5.0, 0.0), al_fing=human.W(0.3, 0.45, 0.15)),
               hunch=0.7, tilt=-0.1, period=0.42)
+# on the way up / down: the hand beside the back of his head, elbow out (never across his face)
+# (the near arm one layer down while it travels to / from behind his head: invisible at his side)
+EMB_BASEM = _ep(al_layer="mid")
 EMB_LEAN = _ep(lean=0.13, neck=0.08, hunch=0.3)                          # leaning in, squinting
 EMB_LEANP = _ep(lean=0.13, neck=0.08, hunch=0.3, al_h="point")           # ... pushing his glasses up
 # "We should bring it back.": points back down the tunnel (screen-left), thumb up, arm out sideways
@@ -1197,7 +1207,8 @@ def embar_state(t, k):
     jt = k["jolt"]
     pose_keys = [(-1, EMB_WALL), (jt, EMB_WJOLT), (jt + 0.16, EMB_WALL),
                  (k["e_step0"] - 0.12, EMB_WALK), (k["e_step1"], EMB_BASE),
-                 (k["hbh0"], EMB_HBH), (k["hbh1"], EMB_BASE),
+                 (k["hbh0"] - 0.3, EMB_BASEM), (k["hbh0"], EMB_HBH), (k["hbh1"], EMB_BASEM),
+                 (k["hbh1"] + 0.5, EMB_BASE),
                  (k["lean0"], EMB_LEAN), (k["gl0"], EMB_LEANP), (k["gl1"], EMB_LEAN), (k["l3e"] + 0.1, EMB_BASE),
                  (k["pt0"], EMB_PTB), (k["pt1"], EMB_NERV),
                  (k["l3c_locking"], EMB_GUILT), (k["l3d"] + 0.3, EMB_NERV), (k["l4"] - 0.3, EMB_BASE),
@@ -1213,7 +1224,7 @@ def embar_state(t, k):
         p = (p[0], p[1], smoothstep(seg(t, jt, jt + 0.07)) if p[1] is EMB_WJOLT else p[2])
     if p[0] is EMB_WALL and p[1] is EMB_WALK:
         p = (p[0], p[1], smoothstep(seg(t, k["e_step0"] - 0.12, k["e_step0"] + 0.15)))
-    if p[1] is EMB_HBH or p[0] is EMB_HBH:
+    if p[1] in (EMB_HBH, EMB_BASEM) or p[0] in (EMB_HBH, EMB_BASEM):
         p = state_at(t, pose_keys, 0.3)
     if p[1] is EMB_PTB or p[0] is EMB_PTB:
         p = state_at(t, pose_keys, 0.26)
@@ -1270,6 +1281,25 @@ def embar_state(t, k):
         wl = 1.0 - smoothstep(seg(t, k["e_exhale"] + 0.05, k["e_exhale"] + 0.5))
         hop = 14 * bump(t, jt, jt + 0.35)
         d["reach"]["l"] = (d["x"] - 92 * sc, y - 455 * sc - hop, wl, 2.2)
+    # "We should bring it back.": the point, held to a world spot so it stays in frame
+    if p[1] is EMB_PTB or p[0] is EMB_PTB:
+        wpt = p[2] if p[1] is EMB_PTB else 1.0 - p[2]
+        d["reach"]["l"] = (XE - 168, 1036 + 4 * math.sin(t * 3.0), wpt, math.pi + 0.12)
+    # the hand up to / down from behind his head along an arc out at his side (elbow out, never
+    # across his face or body)
+    for a0, up in ((k["hbh0"], True), (k["hbh1"], False)):
+        if a0 <= t < a0 + 0.34:
+            rest = emb_probe("base", EMB_BASE, 0.7)["hand_l"]
+            hp_ = emb_probe("hbh", EMB_HBH, 0.7)
+            top, hd_ = hp_["hand_l"], hp_["head"]
+            u = smoothstep(seg(t, a0, a0 + 0.3))
+            if not up:
+                u = 1.0 - u
+            p1 = (min(rest[0], top[0]) - 38, hd_[1] + 120)
+            bx = (1 - u) ** 2 * rest[0] + 2 * u * (1 - u) * p1[0] + u * u * top[0]
+            by = (1 - u) ** 2 * rest[1] + 2 * u * (1 - u) * p1[1] + u * u * top[1]
+            d["reach"]["l"] = (bx, by, 1.0 - smoothstep(seg(t, a0 + 0.28, a0 + 0.34)) if up else
+                               smoothstep(seg(t, a0, a0 + 0.06)) * (1.0 - smoothstep(seg(t, a0 + 0.28, a0 + 0.34))))
     if k["gl0"] - 0.05 <= t < k["gl1"] + 0.45:
         lp = emb_probe("lean", EMB_LEAN, 0.7)
         el_ = lp["eye_l"]
@@ -1326,7 +1356,7 @@ def embar_state(t, k):
         d["led_s"] = 0.9 + 0.3 * hot
     # ---- expression, blush, sweat, glasses
     d["expr"] = state_at(t, [(0, "terrified"), (jt, "surprised"), (k["e_exhale"], "relieved"),
-                             (k["l1_down"] - 0.2, "neutral"), (k["l2_my"] - 0.15, "surprised"),
+                             (k["l1_down"] + 0.5, "neutral"), (k["l2_my"] - 0.15, "surprised"),
                              (k["l2_take"] + 0.3, "neutral"), (k["l2_corp"] + 0.25, "alarmed"),
                              (k["E5c"], "frozen_shock"), (k["l2b_ha"] - 0.12, "nervous_smile"),
                              (k["notice"] + 0.1, "neutral"), (k["lean0"] + 0.1, "squint"),
@@ -1672,6 +1702,7 @@ def cur_opening(t, k, d):
                            (k["c_relief"], 0.32), (k["c_relief"] + 0.3, 0.66, ease_out_back)])
         if t < k["c_ear"]:
             d["ears"] += 0.015 * math.sin(t * 23.0)                # a nervous quiver
+            d["blink"] = 0.0                                       # eyes locked wide on him
         d["face"] = tw(t, [(k["c_look"], 1.0), (k["c_look"] + 0.3, -1.0)])
         d["look"] = tw(t, [(0.0, (-0.85, -0.4)), (k["c_look"], (-0.85, -0.4)), (k["c_look"] + 0.2, (0.85, -0.25)),
                            (k["c_relief"], (0.8, -0.45))])
@@ -1863,7 +1894,7 @@ def _flash_cb(state, lens_out):
 
 
 # =========================================================================== drawing (B)
-MOVING = ("C1", "B2", "E3", "W5", "T5b", "W5d", "W8", "E9", "E15", "E17", "W22")     # camera moves
+MOVING = ("C1", "B2", "E3", "W5", "T5b", "W5d", "W5e", "W8", "E9", "E15", "E17", "W22")     # camera moves
 
 
 def draw_B(ctx, t, k, cam, shot_name, info):
@@ -1879,6 +1910,8 @@ def draw_B(ctx, t, k, cam, shot_name, info):
     if wl > 0.01:
         wx_, wy_, wr_ = XW + 10, YW - 330, 330
         ctx.save()
+        ctx.rectangle(wx_ - wr_, wy_ - wr_, 2 * wr_, 2 * wr_)     # (keeps the group small: cheap mask)
+        ctx.clip()
         ctx.push_group()
         sets.layer_blit(ctx, "s05_tunB_lit", BX0, BY0, BX1 - BX0, BY1 - BY0, b_static,
                         clip=(wx_ - wr_, wy_ - wr_, 2 * wr_, 2 * wr_))
@@ -1891,6 +1924,9 @@ def draw_B(ctx, t, k, cam, shot_name, info):
         ctx.restore()
         core.radial_glow(ctx, wx_, wy_ + 40, wr_, WARM, 0.07 * wl)
         # his shadow on the wall right behind him (light from the creature / the torch pool, low right)
+        ctx.save()
+        ctx.rectangle(E["x"] - 280, E["y"] - 1100 * E["s"], 460, 1150 * E["s"])
+        ctx.clip()
         ctx.push_group()
         human.draw_person(ctx, "embar", E["x"] - 30, E["y"] - 16, E["s"] * 1.03, t, pose=E["pose"],
                           expr=E["expr"], look=E["look"], face=E["face"], turn=E["turn"], blink=0.0,
@@ -1899,6 +1935,7 @@ def draw_B(ctx, t, k, cam, shot_name, info):
         sh_ = ctx.pop_group()
         ctx.set_source_rgba(0.0, 0.0, 0.02, 0.5 * wl)
         ctx.mask(sh_)
+        ctx.restore()
     # Curiosity's glow on the tunnel around it
     cx_glow = Cr["x"] + (-40 if Cr.get("flip", True) else 40)
     gl = Cr["glow"]
