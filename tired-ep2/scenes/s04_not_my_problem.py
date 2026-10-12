@@ -335,6 +335,10 @@ def _times(info):
     T["s10cam1"] = T["follow"] + 1.1 + (T["w06_ill"] - T["l06"]) - 0.12
     W = T["walkoff"]
     T["wo_d"] = T["l06"] - T["follow"] - 1.1        # the time 'walkoff' inserted before l06
+    # where rev 3's keys after 'follow' sat (l06 came 1.1 s after 'follow'): its follow beat is
+    # replayed exactly up to 'walkoff', the new keys continue from its values there
+    T["r3_okay"] = T["w06_okay"] - T["wo_d"]
+    T["r3_help"] = T["w06_help"] - T["wo_d"]
     T["wo_turn"] = W + 0.08                        # its gaze drops, the pair turns away (two-plane)
     T["s10b"] = W + 0.42                           # cut on the turn: closer on the side tunnel
     T["wo_walk"] = T["s10b"]                       # standing, turned away, first step deeper
@@ -374,6 +378,11 @@ def _times(info):
     T["walk0"] = T["up_c"] + 0.2                   # (turns to the tunnel first, then walks)
     T["s15"] = T["up_c"] - 0.12
     return T
+
+
+def _r3w(T, k0, v0, k1, v1):
+    """rev 3's value at 'walkoff' of a key pair (k0, v0) -> (k1, v1) that spanned it."""
+    return _tw(T["walkoff"], [(k0, v0), (k1, v1)])
 
 
 def _r3v(T, k0, v0, v1, dt=0.0):
@@ -524,7 +533,8 @@ def _tired(t, T, info, paws=None):
                     (T["drop4b"] + 0.4, 0.77), (T["fist0"], 0.76), (T["fist1"], 0.81),
                     (T["s7"] + 0.4, 0.72), (T["s8"], 0.68),
                     (T["l05"], 0.65), (T["l05"] + 0.4, 0.5), (T["l05e"] + 0.1, 0.72),
-                    (T["lift"] + 0.6, 0.66), (T["lift"] + 0.6 + T["wo_d"], 0.66),     # (held through walkoff)
+                    (T["lift"] + 0.6, 0.66), (T["walkoff"], _r3w(T, T["lift"] + 0.6, 0.66, T["r3_help"], 0.6)),
+                    (T["lift"] + 0.6 + T["wo_d"], 0.66),                              # (back for l06)
                     (T["w06_help"], 0.6), (T["l06e"], 0.62),
                     (T["gl0"] + 0.4, 0.68), (T["l06b"] + 0.3, 0.72),
                     (T["notice"], _r3v(T, T["l06b"] + 0.3, 0.72, 0.68)), (T["notice"] + 0.35, 0.68),
@@ -533,6 +543,8 @@ def _tired(t, T, info, paws=None):
                     (T["exh1"], 0.36),                                          # ... and they drop
                     (T["up_b"], 0.5)])
     hunch = _r3c(t, T, hunch, T["l06b"] + 0.3, 0.72, 0.68)
+    if T["lift"] + 0.6 <= t < T["walkoff"]:          # the follow beat exactly as rev 3
+        hunch = _tw(t, [(T["lift"] + 0.6, 0.66), (T["r3_help"], 0.6)])
     pose = _sitp(nod=nod, lean=lean, hunch=hunch)
     # "...I need time to think.": the near (bandaged, r) hand tightens into a fist on his knee
     kf = _ramp(t, T["fist0"], T["fist1"]) * (1 - _ramp(t, T["s8"] - 0.6, T["s8"]))
@@ -707,7 +719,8 @@ def _tired(t, T, info, paws=None):
                              (T["fist1"], 0.34),
                              (T["s8"], 0.15), (T["s9"], 0.0),
                              (T["lift"] + 0.2, 0.0), (T["lift"] + 0.6, 0.16),
-                             (T["walkoff"] + 0.15, 0.16), (T["walkoff"] + 0.9, 0.27),    # it goes alone
+                             (T["walkoff"], _r3w(T, T["lift"] + 0.6, 0.16, T["r3_okay"], 0.14)),
+                             (T["walkoff"] + 0.9, 0.27),                                   # it goes alone
                              (T["s10c"] + 0.1, 0.27),
                              (T["w06_okay"], 0.14), (T["w06_help"], 0.07), (T["l06e"], 0.08),
                              (T["gl0"] + 0.25, 0.24), (T["gl1"] + 0.3, 0.18),
@@ -716,7 +729,9 @@ def _tired(t, T, info, paws=None):
                              (T["notice"] + 0.3, 0.17),
                              (T["snap"], 0.17), (T["snap"] + 0.15, 0.1),
                              (T["exh1"], 0.12), (T["up_c"], 0.08)]),
-                          T["q6b"] + 0.5, 0.24, 0.2, dt=0.3),
+                          T["q6b"] + 0.5, 0.24, 0.2, dt=0.3)
+                     if not (T["lift"] + 0.6 <= t < T["walkoff"])
+                     else _tw(t, [(T["lift"] + 0.6, 0.16), (T["r3_okay"], 0.14)]),
          "lid": _tw(t, [(T["l01e"], 0.0), (T["l01e"] + 0.3, 0.05), (T["slump"], 0.05), (T["l02"], 0.0),
                         (T["lk"], 0.0), (T["w2c_dont"], 0.04), (T["q2c"] + 0.3, 0.04), (T["pt_up"] + 0.4, 0.0),
                         (T["beat"] + 0.5, 0.0), (T["l04"] + 0.2, 0.06),
@@ -1162,8 +1177,11 @@ def _wait_eyes(t, T):
     (a little hope) ... then on 'walkoff' its gaze drops away down the tunnel, the lids sink and
     the pair turns away (narrower, sliding deeper): it is going on alone (cut on the turn)."""
     W = T["walkoff"]
+    r3 = [(T["lift"] + 0.5, (0.35, 0.0)), (T["s11e"] + 1.25 - T["wo_d"], (0.38, 0.03))]   # rev 3 (follow)
     look = _tw(t, [(T["s10"], (0.25, 0.05)), (T["lift"] + 0.3, (0.25, 0.05)),
-                   (T["lift"] + 0.5, (0.35, 0.0)), (W, (0.36, 0.0)), (W + 0.22, (-0.4, 0.3))])
+                   (T["lift"] + 0.5, (0.35, 0.0)), (W, _tw(W, r3)), (W + 0.22, (-0.4, 0.3))])
+    if T["lift"] + 0.5 <= t < W:
+        look = _tw(t, r3)
     lid = _tw(t, [(T["lift"] + 0.45, 0.36), (T["lift"] + 0.8, 0.28), (W + 0.1, 0.28), (W + 0.35, 0.42)])
     blink = 0.0
     gap_k = _tw(t, [(W + 0.12, 1.0), (T["s10b"], 0.76)])

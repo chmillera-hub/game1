@@ -12,16 +12,29 @@ Shot list (scene-local; every time is derived from info cues / lines / lip data)
                           rises to the glass, breath fog), held; then a small decisive set
                           (lids/brow slant firm up, ears lift, a breath in and a tiny nod),
                           held; its paw comes off the glass and its eyes go down to the deck.
-  S0b [drop, open)        medium: the pod and the deck. It hops down: anticipation squash, a
+  S0b [drop, trot)        medium: the pod and the deck. It hops down: anticipation squash, a
                           small arcing hop, a landing squash on the grating (thump), ears
-                          follow through; it looks back left along the deck (toward its own
-                          pod, where it waits in S1).
-  S1  [open, pod)         POD POV: Curiosity's face through its empty pod's glass,
-                          paw pressed to the glass, breath fog blooms and fades; slow push-in.
-  S2  [pod, touch)        catwalk medium-wide: the camera tracks Tiredness walking in along the
-                          pods (right -> left) and settles on the empty pod where Curiosity sits;
-                          he stops; pupils pod -> creature -> pod (head follows); l01 (soft); on
-                          "kept you" he crouches down to its level (camera eases down/in).
+                          follow through; it glances back left along the deck (the way he
+                          will come).
+  rev 4: the old POV beat (Thing 1 behind the glass of its own empty pod) is gone. Geography:
+  THING 2 lies off to the LEFT, down on the lower walkway; Thing 1's own empty pod (THING 1)
+  stands to the RIGHT, at the top of the short stair (the same stair they go down in s02).
+  S0c [trot, c1)          same framing, no cut: its pupils slide right, the head follows over its
+                          shoulder, ears lift (decided); a little hop-turn (it flips at the apex)
+                          and it trots off screen-RIGHT (walk cycle x3.3 = 300 px/s).
+  S1  [c1, join)          the stair + its pod (it enters screen-LEFT, still trotting): three
+                          bounds up the stair, it lands by its pod, sits, and looks back over its
+                          shoulder down the stair, waiting. His footsteps (off) -> ears perk.
+                          Tiredness walks in from screen-LEFT along the landing and climbs the
+                          stair toward it (his feet behind the stair stringer); it tracks him
+                          up, looks up at him as he tops the stair, he glances down at it, and as
+                          he passes it turns its head to follow him; he walks on to the pod,
+                          stops on its far side and turns back (same end positions as rev 3).
+                          The camera eases from the stair framing into rev 3's S2 framing.
+  S2  [join, touch)       = rev 3 from 0.6 s after his stop: pupils pod -> creature -> pod (head
+                          follows); l01 (soft); on "kept you" he crouches down to its level.
+  Everything from `join` on is rev 3 frame for frame: rendered on rev 3's clock
+  (t - d, with d = the time the new entrance added; see _Rev3View).
   S3  [touch, plate)      Curiosity close-up: slow nod with a slow blink, ears lowering a little;
                           its eyes go to the dusty nameplate (motivates the insert).
   S4  [plate, c5)         insert: the dusty plate; his bandaged hand comes in, the thumb wipes
@@ -37,8 +50,10 @@ Shot list (scene-local; every time is derived from info cues / lines / lip data)
   S6  [c6, plates)        crouched two-shot: it looks up at him, a shared look, it rolls its
                           eyes toward the plate (he follows), then back to him: a small smirk,
                           his faint smirk + tiny nod. They agree. He glances along the row.
-  S7  [plates, frown)     his POV: slow pan from NOTHING TO SEE HERE over THING 2 / THING 3 to
-                          the next NOTHING TO SEE HERE over THING 4 / THING 5, sleepers inside.
+  S7  [plates, frown)     his POV: slow pan from NOTHING TO SEE HERE over THING 3 / THING 4 to
+                          the next NOTHING TO SEE HERE over THING 5 / THING 6, sleepers inside
+                          (rev 4: the pods right of the empty pod are relabelled, SLEEP_R, since
+                          THING 2 now lies to the left).
   S8  [frown, c10)        Tiredness CU (standing) under the wall camera: inner brows up, a lip
                           press, silence; l03b "...They're not just things." quiet, to the
                           creature below (glassy eyes); "just" gets a small stress (brows knit a
@@ -80,7 +95,6 @@ WALK_TURN = -0.55
 # speed). Use the measured no-slide speed instead.
 WALK_FIX = 1.57
 STAND_TURN2 = 0.3              # after he stands up again (looking along the row of pods)
-WAVE_STILL = 1.0 / 1.7         # pose_t for "wave": paw fully raised, no swing
 SWITCH = KM["power_switch"]
 CHAIR_X = KM["chair"][0] - 60          # her chair, near the SHAFT POWER pedestal (drawn by this scene)
 CHAIR_TURN = 0.9                       # props.boss_chair: 1 = facing camera, 0.5 = profile
@@ -158,6 +172,14 @@ SLEEP = dict(sleeper_fn=_sleeper, sleeper_fns={"THING 7": _baby, "THING 2": _sib
              sleeper_key="s01_sleepers_v4")
 SLEEP_LIVE = dict(sleeper_fn=_sleeper, sleeper_fns={"THING 7": _baby, "THING 2": _no_sleeper},
                   sleeper_key="s01_sleepers_v4_live")
+# rev 4: THING 2 (the sibling's pod, the opening) now lies to the LEFT of the empty pod, so the
+# main-tier pods to its right are other THINGs (S7's pan, the S13 wide): relabelled, ordinary
+# sleepers. Only the opening (SLEEP_LIVE: the region around the set's x 1990) shows THING 2.
+LABELS_R = {2: ("THING 3", "SPECIMEN 003"), 3: ("THING 4", "SPECIMEN 004"),
+            4: ("THING 5", "SPECIMEN 005"), 5: ("THING 6", "SPECIMEN 006"),
+            6: ("THING 8", "SPECIMEN 008")}
+SLEEP_R = dict(sleeper_fn=_sleeper, sleeper_fns={"THING 7": _baby}, sleeper_key="s01_sleepers_r4",
+               labels=LABELS_R)
 
 
 # ----------------------------------------------------------------------------
@@ -585,7 +607,7 @@ def _huff_puff(ctx, t, T, nose):
 # catwalk set state
 # ----------------------------------------------------------------------------
 def cw_state(t, T):
-    st = dict(SLEEP)
+    st = dict(SLEEP_R)
     st["plate_dust"] = 1.0
     st["plate_wipe"] = clamp(_wipe_k(t, T))
     # the security camera: off, LED blinks on, swivels toward them
@@ -942,12 +964,6 @@ def shot_drop(ctx, t, T, info):
             ctx.restore()
 
 
-# ----------------------------------------------------------------------------
-# S1: the thumbnail (looking out of the empty pod)
-# ----------------------------------------------------------------------------
-POV_X, POV_Y, POV_S = 404, 1585, 2.9   # creature ground point / scale: face at ~(540, 875)
-
-
 def _paw_print(ctx, x, y, s, k=1.0):
     """The paw pressed flat on the glass: pale flattened pads + a breath of fog."""
     if k <= 0.01:
@@ -958,31 +974,6 @@ def _paw_print(ctx, x, y, s, k=1.0):
     for (dx, dy, r) in ((-15, -10, 6.5), (-4, -19, 7), (9, -18, 6.5), (18, -8, 6)):
         core.circle(ctx, x + dx * s, y + dy * s, r * s)
     core.fill(ctx, (0.85, 1.0, 1.0, 0.42 * k))
-
-
-def shot_pov(ctx, t, T, info):
-    # rev 3: this shot now follows the new opening ([open, pod)); it plays exactly as before
-    # on its own clock (t = time since "open")
-    dur = T["pod"] - T["open"]
-    k = ease_in_out(seg(t, 0.0, dur))
-    q = dur / 2.4                         # beats authored for a 2.4 s hold; keyed to the cue
-    cam = (lerp(540, 552, k), lerp(960, 918, k), lerp(1.0, 1.08, k))
-    fog = tween(t, [(0.45 * q, 0.0), (0.95 * q, 0.72), (1.25 * q, 0.66), (2.35 * q, 0.0)])
-    ears = tween(t, [(0.0, 0.45), (2.4 * q, 0.38)])
-    look = tween(t, [(0.0, (0.0, -0.05)), (1.5 * q, (0.0, -0.05)), (1.75 * q, (-0.18, -0.12)),
-                     (2.4 * q, (-0.18, -0.12))])
-    blink = 0.0 if t < 0.6 * q else tween(t, [(1.2 * q, 0.0), (1.2 * q + 0.22, 1.0), (1.2 * q + 0.35, 1.0),
-                                              (1.2 * q + 0.65, 0.0)])
-    tilt = 0.05 * math.sin(math.pi * seg(t, 0.4 * q, 2.4 * q))
-    with core.camera(ctx, *cam):
-        sets.pod_pov(ctx, t)
-        with sets.shaded(ctx, sets.pod_pov, t, layer="shade"):
-            a = CR.draw_specimen(ctx, POV_X, POV_Y, POV_S, t, pose="wave", pose_t=WAVE_STILL, face=0.0,
-                                 expr="hopeful", ears=ears, look=look, blink=blink, tilt=tilt)
-        px, py = a["paw"]
-        _paw_print(ctx, px - 7, py + 5, POV_S / 2.2)
-        mx, my = a["mouth"]
-        sets.pod_pov(ctx, t, layer="fg", fog=fog, fog_xy=(mx + 10, my + 18))
 
 
 # ----------------------------------------------------------------------------
@@ -1131,7 +1122,7 @@ def _feed(ctx, x, y, w, h, t, T=None, info=None):
     """SHAFT CAM 03: the two of them at the empty pod, looking up into the lens."""
     zz = w / 880.0
     with core.camera(ctx, 1000, 1080, zz, sx=x + w / 2, sy=y + h / 2):
-        sets.catwalk(ctx, 1.0, plate_dust=0.0, plate_wipe=1.0, cam_led=1.0, cam_face=1.0, **SLEEP)
+        sets.catwalk(ctx, 1.0, plate_dust=0.0, plate_wipe=1.0, cam_led=1.0, cam_face=1.0, **SLEEP_R)
         CR.draw_specimen(ctx, CUR_X, FEET, S, t, pose="sit", expr="calm", look=(0.5, -0.85), ears=0.8,
                          face=0.62, tail_curl=0.2)
         H.draw_person(ctx, "tired", TIR_X, FEET, S, t, pose="stand", turn=STAND_TURN2, outfit="sewer",
@@ -1298,25 +1289,30 @@ def _cam_lerp(pair, k):
     return (lerp(a[0], b[0], k), lerp(a[1], b[1], k), lerp(a[2], b[2], k))
 
 
-def render(ctx, t, info):
+def _s2_cam(t, T, info):
+    """rev 3's S2 camera: the camera eases in as he arrives, then down and in with him as he
+    crouches (from wstop + 0.6 it no longer depends on his walk-in)."""
+    xt = tired_kw(t, T, info)["x"]
+    kt = ease_in_out(seg(t, T["wstop"] - 0.9, T["wstop"] + 0.6))
+    cx0 = lerp(xt - 140, 1008, kt)                # track him in, then settle on the pod
+    k0 = ease_in_out(seg(t, T["wstop"], T["wstop"] + 1.0))
+    k1 = ease_in_out(seg(t, T["cr0"] - 0.2, T["touch"] - 0.1))
+    return (lerp(cx0 + 5 * k0, 962, k1), lerp(lerp(1185, 1195, k0), 1212, k1),
+            lerp(lerp(1.3, 1.48, k0), 1.92, k1))
+
+
+def _render_rev3(ctx, t, info):
+    """rev 3's render, unchanged, on rev 3's clock (info = _Rev3View). Used for the opening
+    (t < trot) and for everything from `join` on; the old POV beat and the walk-in are replaced
+    by the new entrance (shot_turn / shot_meet)."""
     T = TT(info)
     if t < T["drop"]:
         shot_peer(ctx, t, T, info)
     elif t < T["open"]:
         shot_drop(ctx, t, T, info)
-    elif t < T["pod"]:
-        shot_pov(ctx, t - T["open"], T, info)
     elif t < T["touch"]:
-        # S2: walk in, l01, crouch on "kept you"; the camera eases in as he arrives, then down
-        # and in with him as he crouches
-        xt = tired_kw(t, T, info)["x"]
-        kt = ease_in_out(seg(t, T["wstop"] - 0.9, T["wstop"] + 0.6))
-        cx0 = lerp(xt - 140, 1008, kt)                # track him in, then settle on the pod
-        k0 = ease_in_out(seg(t, T["wstop"], T["wstop"] + 1.0))
-        k1 = ease_in_out(seg(t, T["cr0"] - 0.2, T["touch"] - 0.1))
-        cam = (lerp(cx0 + 5 * k0, 962, k1), lerp(lerp(1185, 1195, k0), 1212, k1),
-               lerp(lerp(1.3, 1.48, k0), 1.92, k1))
-        catwalk_shot(ctx, t, T, info, cam, rail=False)
+        # S2 (from 0.6 s after his stop): l01, crouch on "kept you"
+        catwalk_shot(ctx, t, T, info, _s2_cam(t, T, info), rail=False)
     elif t < T["plate"]:
         # S3: Curiosity close-up, the nod
         k = seg(t, T["touch"], T["plate"])
@@ -1360,29 +1356,518 @@ def render(ctx, t, info):
                     x=90, y=170, color="curiosity")
 
 
+# ============================================================================
+# rev 4: the new entrance (S0c: it turns and trots off screen-right; S1: up the stair to its
+# own pod, it waits, he climbs up toward it, they meet at the pod)
+# ============================================================================
+REV3_OPEN = 2.2      # rev 3's POV hold ('open' -> 'pod'). The beats after it keep rev 3's
+                     # clock: d = (trot -> pod) - REV3_OPEN is the time the new entrance adds
+
+
+class _ShLine:
+    def __init__(self, L, d):
+        self.id, self.who, self.text, self.caption = L.id, L.who, L.text, L.caption
+        self.meta, self.nocap = L.meta, L.nocap
+        self.start, self.end = L.start - d, L.end - d
+
+    @property
+    def dur(self):
+        return self.end - self.start
+
+
+class _Rev3View:
+    """The live timeline as rev 3 saw it: the cues and lines after the entrance moved back by
+    d, and 'open' = 'trot'. TT(view) is rev 3's T, so every later beat is rendered on rev 3's
+    clock: frame t of this cut is rev 3's frame t - d (pixel-identical)."""
+    def __init__(self, info):
+        self._i = info
+        self.id = info.id
+        self.tr = info.cue("trot") if "trot" in info.cues else info.cue("open")
+        self.d = info.cue("pod") - self.tr - REV3_OPEN
+        self.dur = info.dur - self.d
+
+    def _sh(self, v):
+        return v - self.d if v > self.tr + 1e-6 else v
+
+    def cue(self, name, default=None):
+        if name in ("open", "trot"):
+            return self.tr
+        return self._sh(self._i.cue(name, default))
+
+    def line(self, lid):
+        return _ShLine(self._i.line(lid), self.d)
+
+    def mouth(self, who, t):
+        return self._i.mouth(who, t + self.d if t > self.tr else t)
+
+    def word_time(self, lid, k):
+        return self._sh(self._i.word_time(lid, k))
+
+
+_VIEWS = {}
+
+
+def _view(info):
+    v = _VIEWS.get(id(info))
+    if v is None or v._i is not info or abs(v.dur + v.d - info.dur) > 1e-9:
+        v = _VIEWS[id(info)] = _Rev3View(info)
+    return v
+
+
+# ---- geography -------------------------------------------------------------------------
+ST = CW["stair_steps"]                       # tread centres, top first (rise 45, run 86)
+ST_TOP = CW["stair_top"][0]                  # 640: the deck starts here
+ST_RISE = ST[0][1] - FEET
+ST_RUN = ST[0][0] - ST[1][0]
+LANDY = CW["landing_feet_y"]                 # the lower walkway (1770)
+
+
+def _stair_ramp(x):
+    """The line through the tread centres (deck -> stair -> landing)."""
+    return clamp(FEET + ST_RISE * ((ST_TOP - x) / ST_RUN + 0.5), FEET, LANDY)
+
+
+def _tired_ground(x):
+    """His ground: on the stair it sits 40 px under the treads so his shoes go behind the front
+    stringer (drawn over him) instead of sliding on the open treads; landing / deck exact."""
+    off = 40.0 * smoothstep(seg(x, 175, 255)) * (1.0 - smoothstep(seg(x, 560, 668)))
+    return _stair_ramp(x) + off
+
+
+def _climb_rate(x):
+    """Walk-cycle rate (1 = the flat walk): a slower, heavier step up the stair."""
+    return 1.0 - 0.15 * smoothstep(seg(x, 150, 230)) * (1.0 - smoothstep(seg(x, 600, 680)))
+
+
+def _eyes_tired(x, y):
+    return (x + 48, y - 592)                 # his eye midpoint (walk / stand, turn ~0.55, s 0.75)
+
+
+def _eyes_cur(face):
+    return (CUR_X + lerp(35, 60, (face + 1) / 2), FEET - 180)     # sitting by its pod
+
+
+def _aim(frm, to, ln=1.0):
+    dx, dy = to[0] - frm[0], to[1] - frm[1]
+    n = math.hypot(dx, dy) or 1.0
+    return (ln * dx / n, ln * dy / n)
+
+
+# ---- shot A (S0c) ---------------------------------------------------------------------
+TROT_V = 300.0                               # its trot: the walk cycle at x3.33 (paws planted)
+CUR_STEP = CR.SPEC_WALK_SPEED * S            # 90 px of travel per walk-phase second
+A_EXIT = 2330                                # cut when its head and half its body are out (right)
+BOX_A = (1560, 840, 1340, 760)               # shade box for the trot off (DROP_BOX, wider)
+# ---- shot B (S1) ----------------------------------------------------------------------
+B_CAM0 = (520, 1290, 1.25)                   # the stair (left) + its pod (right): it waits screen-right
+B_CAM1 = (528, 1284, 1.27)                   # slow push while it waits
+B_X0 = -80                                   # it trots in along the landing (off frame left)
+B_TAKE1 = 142                                # first bound from the landing
+B_HOPS = (((ST[3][0], ST[3][1]), 0.25, 50.0), ((ST[1][0], ST[1][1]), 0.24, 48.0),
+          ((CUR_X, FEET), 0.32, 62.0))       # (landing point, air time, apex height)
+B_GROUND = (0.10, 0.12)                      # time on a tread between bounds
+HOP_PITCH = -0.45                            # nose-up along the stair slope while on it
+
+
+def _trot_x(t, go):
+    """x travelled since `go` (speed eases 0 -> TROT_V over 0.3 s)."""
+    u = seg(t, go, go + 0.3)
+    dist = TROT_V * 0.3 * (u ** 3 - 0.5 * u ** 4)
+    if t > go + 0.3:
+        dist = TROT_V * 0.15 + TROT_V * (t - go - 0.3)
+    return dist
+
+
+_NT = {}
+
+
+def NT(info):
+    """Timing of the new entrance (absolute scene seconds; all from the cues)."""
+    k = (id(info), info.dur)
+    if k in _NT:
+        return _NT[k]
+    V = _view(info)
+    T = TT(V)
+    d, tr = V.d, V.tr
+    N = dict(d=d, tr=tr)
+    # ---- shot A: same framing as the landing (no cut)
+    N["a_eye"] = tr + 0.06                   # pupils slide right (behind it: toward its own pod)
+    N["a_head0"] = tr + 0.2                  # the head follows, over its shoulder
+    N["a_head1"] = tr + 0.58
+    N["a_set"] = tr + 0.62                   # ears lift, a tiny nod: that way
+    N["a_ant"] = tr + 0.86                   # anticipation squash
+    N["a_jump"] = tr + 1.0                   # the hop-turn (flips at the apex)
+    N["a_land"] = N["a_jump"] + 0.22
+    N["a_go"] = N["a_land"] + 0.06           # first trot step
+    N["c1"] = N["a_go"] + 0.3 + (A_EXIT - LAND[0] - TROT_V * 0.15) / TROT_V
+    # ---- shot B: it trots in, bounds up the stair, sits, looks back
+    c1 = N["c1"]
+    hops = []
+    take = c1 + (B_TAKE1 - B_X0) / TROT_V
+    p0 = (B_TAKE1, LANDY)
+    for i, (p1, air, h) in enumerate(B_HOPS):
+        hops.append(dict(take=take, land=take + air, p0=p0, p1=p1, h=h))
+        p0 = p1
+        if i < len(B_GROUND):
+            take = take + air + B_GROUND[i]
+    N["hops"] = hops
+    N["sat"] = hops[-1]["land"]              # last bound lands by its pod
+    N["sit0"], N["sit1"] = N["sat"] + 0.1, N["sat"] + 0.45
+    N["back0"] = N["sat"] + 0.6              # pupils go back down the stair...
+    N["back1"] = N["back0"] + 0.52           # ... the head follows over its shoulder
+    # ---- Tiredness: walks in along the landing, up the stair, along the deck to rev 3's stop
+    N["wstop"] = T["wstop"] + d
+    N["P"] = T["pod"] + d
+    N["join"] = N["wstop"] + 0.6             # from here on: rev 3, frame for frame
+    tab = []
+    v0 = _V_WALK
+    tt, x, ph = N["wstop"], TIR_X - 0.15 * v0, T["wstop"] - T["w0"]
+    dt = 1.0 / 480.0
+    while x > -700:
+        tab.append((tt, x, ph))
+        r = _climb_rate(x)
+        tt, x, ph = tt - dt, x - v0 * r * dt, ph - r * dt
+    tab.reverse()
+    N["walk"] = tab
+
+    def t_at_x(xx):
+        for (t0, x0, _) in tab:
+            if x0 >= xx:
+                return t0
+        return tab[-1][0]
+    N["t_x"] = t_at_x
+    N["enter"] = t_at_x(-10)                 # his leading shoulder crosses the frame edge
+    N["climb0"] = t_at_x(167)                # first step up
+    N["top"] = t_at_x(ST_TOP)                # on the deck
+    N["near"] = t_at_x(690)                  # right beside it
+    N["pass"] = t_at_x(900)                  # past it, walking on to the pod
+    # his steps (walk contacts: the phase crosses a multiple of 0.5); the creature hears the
+    # first one that comes after it has looked back
+    steps = []
+    for (a, b) in zip(tab, tab[1:]):
+        if math.floor(a[2] / 0.5) != math.floor(b[2] / 0.5):
+            steps.append((b[0], b[1]))
+    N["steps_all"] = steps
+    N["steps"] = [s for s in steps if s[0] >= N["back1"] + 0.45]
+    N["perk"] = (N["steps"][0][0] if N["steps"] else N["enter"] - 0.4) + 0.1
+    # the camera leaves the stair framing when he starts up the stair
+    N["cam0"] = max(N["climb0"], N["back1"] + 0.3)
+    _NT[k] = N
+    return N
+
+
+def _walk_at(N, t):
+    tab = N["walk"]
+    if t <= tab[0][0]:
+        return tab[0][1], tab[0][2]
+    lo, hi = 0, len(tab) - 1
+    while hi - lo > 1:
+        mid = (lo + hi) // 2
+        if tab[mid][0] <= t:
+            lo = mid
+        else:
+            hi = mid
+    (t0, x0, p0), (t1, x1, p1) = tab[lo], tab[hi]
+    u = (t - t0) / (t1 - t0) if t1 > t0 else 0.0
+    return lerp(x0, x1, u), lerp(p0, p1, u)
+
+
+# ---- shot A: Thing 1 turns toward its pod and trots off screen-right -----------------
+def turn_kw(t, T, N):
+    """S0c, continuing drop_kw (it stands where it landed, facing left, glancing left).
+    -> (x, y, sx, sy, rot, kw)"""
+    x, y, sx, sy, rot, kw = drop_kw(t, T)
+    j, ld, go = N["a_jump"], N["a_land"], N["a_go"]
+    # its pupils slide right (behind it: its own pod is that way), the head follows over its
+    # shoulder; after the hop-turn it faces right and looks ahead
+    look = tween(t, [(N["tr"], (-0.95, -0.1)), (N["a_eye"], (-0.95, -0.1)), (N["a_eye"] + 0.16, (0.95, -0.12)),
+                     (go + 0.1, (0.95, -0.12)), (go + 0.35, (0.9, 0.08))], ease_in_out)
+    face = tween(t, [(N["a_head0"], 1.0), (N["a_head1"], -1.0)], ease_in_out)
+    flip = t < j + 0.11                      # it flips at the apex of the hop-turn
+    if not flip:
+        face = 1.0                           # (flipped: looking right = forward)
+    # a quick blink with the head turn; the decided ears lift, a tiny nod
+    blink = 0.0
+    b0 = N["a_head0"] + 0.04
+    if b0 <= t <= b0 + 0.26:
+        blink = tween(t, [(b0, 0.0), (b0 + 0.08, 1.0), (b0 + 0.12, 1.0), (b0 + 0.26, 0.0)])
+    ears = 0.7 + 0.1 * ease_out_back(seg(t, N["a_set"], N["a_set"] + 0.3), 1.6)
+    ears = tween(t, [(j - 0.05, ears), (j + 0.12, 0.62), (ld - 0.02, 0.86), (ld + 0.08, 0.6),
+                     (go + 0.35, 0.72)]) if t >= j - 0.05 else ears
+    tilt = kw["tilt"] + 0.07 * _pulse(t, N["a_set"], N["a_set"] + 0.32)
+    tilt = lerp(tilt, 0.0, _ramp(t, j, j + 0.2))
+    # the hop-turn: anticipation squash, a small hop in place (flip at the apex), landing squash
+    if t < j:
+        ka = ease_in_out(seg(t, N["a_ant"], j))
+        sx, sy = 1.0 + 0.06 * ka, 1.0 - 0.11 * ka
+    elif t < ld:
+        u = (t - j) / (ld - j)
+        y = LAND[1] - 4 * 38.0 * u * (1 - u)
+        st = tween(u, [(0.0, -0.11), (0.2, 0.09), (0.5, 0.02), (0.85, 0.05), (1.0, 0.05)])
+        sx, sy = 1.0 - 0.55 * st, 1.0 + st
+    else:
+        q = tween(t, [(ld, 0.05), (ld + 0.06, -0.12), (ld + 0.18, 0.02), (ld + 0.3, 0.0)], ease_in_out)
+        sx, sy = 1.0 - 0.6 * q, 1.0 + q
+    # the trot (walk cycle, x3.33): position and phase together, so the paws stay planted
+    pose, pose_from, mix, pose_t = "stand", None, 1.0, None
+    if t >= go:
+        dist = _trot_x(t, go)
+        x = LAND[0] + dist
+        pose, pose_from, mix, pose_t = "walk", "stand", smoothstep(seg(t, go, go + 0.16)), dist / CUR_STEP
+    kw.update(pose=pose, pose_from=pose_from, pose_mix=mix, pose_t=pose_t, look=look, face=face,
+              flip=flip, blink=blink, ears=ears, tilt=tilt)
+    return x, y, sx, sy, 0.0, kw
+
+
+def shot_turn(ctx, t, T, N, info):
+    cam = (DROP_CAM[0] - 14, DROP_CAM[1] + 40, DROP_CAM[2])      # = shot_drop's settled framing
+    x, y, sx, sy, rot, kw = turn_kw(t, T, N)
+    j, ld = N["a_jump"], N["a_land"]
+    with core.camera(ctx, *cam):
+        sets.catwalk(ctx, t, plate_dust=1.0, **SLEEP_LIVE)
+        _sibling_live(ctx, t)
+        _glass_front(ctx)
+        _contact(ctx, *_contact_k(t, T))
+        # its contact shadow (shrinks a little in the hop)
+        hk = 1.0 - 0.3 * (_pulse(t, j, ld) if j <= t <= ld else 0.0)
+        core.ellipse(ctx, x + 4, LAND[1] + 4, 120 * hk, 16 * hk)
+        core.fill(ctx, core.alpha(core.PAL["ink"], 0.32 * hk))
+        box, key = (DROP_BOX, "drop_lit") if t < j else (BOX_A, "trot_lit")
+        with _shaded_box(ctx, box, key, light=_glass_lit):
+            _scaled_about(ctx, x, y, sx, sy, lambda: CR.draw_specimen(ctx, x, y, S, t, **kw))
+
+
+# ---- shot B: up the stair to its pod; he climbs up toward it; they meet ---------------
+def _cur_path(t, N):
+    """Thing 1 in S1 -> dict(x, y, sx, sy, rot, pose, pose_from, mix, pose_t, air)."""
+    c1, hops = N["c1"], N["hops"]
+    o = dict(sx=1.0, sy=1.0, rot=0.0, pose="stand", pose_from=None, mix=1.0, pose_t=None, air=False)
+    h0 = hops[0]
+    if t < h0["take"]:
+        x = B_X0 + TROT_V * (t - c1)
+        ka = ease_in_out(seg(t, h0["take"] - 0.07, h0["take"]))       # running crouch
+        o.update(x=x, y=LANDY, pose="walk", pose_t=(x - B_X0) / CUR_STEP,
+                 sx=1.0 + 0.05 * ka, sy=1.0 - 0.09 * ka)
+        return o
+    take_walk = (h0["p0"][0] - B_X0) / CUR_STEP
+    for i, h in enumerate(hops):
+        nxt = hops[i + 1] if i + 1 < len(hops) else None
+        last = nxt is None
+        if t < h["land"]:
+            u = (t - h["take"]) / (h["land"] - h["take"])
+            (x0, y0), (x1, y1) = h["p0"], h["p1"]
+            x = lerp(x0, x1, u)
+            y = y0 + (y1 - y0) * u - 4 * h["h"] * u * (1 - u)
+            st = tween(u, [(0.0, -0.09), (0.16, 0.10), (0.5, 0.02), (0.85, 0.05), (1.0, 0.05)])
+            r0 = 0.0 if i == 0 else HOP_PITCH
+            r1 = 0.08 if last else HOP_PITCH
+            rot = tween(u, [(0.0, r0 - 0.06), (0.45, -0.26), (1.0, r1)], ease_in_out)
+            o.update(x=x, y=y, sx=1.0 - 0.55 * st, sy=1.0 + st, rot=rot, air=True)
+            if i == 0:
+                o.update(pose_from="walk", mix=smoothstep(seg(t, h["take"] - 0.04, h["take"] + 0.1)),
+                         pose_t=take_walk)
+            return o
+        if last or t < nxt["take"]:
+            (x1, y1) = h["p1"]
+            ld = h["land"]
+            q = tween(t, [(ld, 0.05), (ld + 0.06, -0.13), (ld + 0.16, 0.03), (ld + 0.26, 0.0)], ease_in_out)
+            if not last:
+                ka = ease_in_out(seg(t, nxt["take"] - 0.06, nxt["take"]))
+                q = min(q, -0.09 * ka) if ka > 0 else q
+            rot = HOP_PITCH if not last else 0.08 * (1.0 - ease_out(seg(t, ld - 0.02, ld + 0.1)))
+            o.update(x=x1, y=y1, sx=1.0 - 0.6 * q, sy=1.0 + q, rot=rot)
+            if last:
+                o.update(pose="sit", pose_from="stand", mix=smoothstep(seg(t, N["sit0"], N["sit1"])))
+            return o
+    return o
+
+
+def meet_cur_kw(t, T, N, V):
+    """Thing 1 in S1 (it ends exactly in rev 3's state: sitting by its pod, looking at him)."""
+    tp = t - N["d"]
+    R = cur_kw(tp, T, V)
+    wb = smoothstep(seg(t, N["P"] + 0.45, N["P"] + 1.55))
+    if wb >= 1.0:
+        return R, None
+    p = _cur_path(t, N)
+    off = CR._SPX["hopeful"]["look"]
+    sat = t >= N["sat"]
+    # where its eyes go (true gaze; the expression's own offset is removed below)
+    xt, _ph = _walk_at(N, t)
+    he = _eyes_tired(xt, _tired_ground(xt))
+    if not sat:
+        gaze = (0.75, -0.4) if p["air"] or t > N["hops"][0]["take"] else (0.8, -0.2)   # up the stair
+        face = 1.0
+    else:
+        gaze = tween(t, [(N["sat"], (0.75, -0.3)), (N["sat"] + 0.25, (0.6, -0.1)),
+                         (N["back0"], (0.6, -0.1)), (N["back0"] + 0.16, (-0.85, 0.35)),
+                         (N["perk"] - 0.05, (-0.85, 0.35)), (N["perk"] + 0.12, (-0.92, 0.42))], ease_in_out)
+        # once he is in view its eyes follow his face up the stair
+        k_trk = _ramp(t, N["enter"] - 0.15, N["enter"] + 0.2)
+        if k_trk > 0.0:
+            fc = tween(t, [(N["near"], -1.0), (N["pass"], 0.62)], ease_in_out)
+            ag = _aim(_eyes_cur(fc), he)
+            gaze = (lerp(gaze[0], ag[0], k_trk), lerp(gaze[1], ag[1], k_trk))
+        face = tween(t, [(N["sat"], 1.0), (N["sat"] + 0.3, 0.62), (N["back0"] + 0.12, 0.62),
+                         (N["back1"], -1.0), (N["near"], -1.0), (N["pass"], 0.62)], ease_in_out)
+    look = (gaze[0] - off[0], gaze[1] - off[1])
+    # ears: up in the bounds, flop on the landings; waiting (lower), perk at his steps, a hair up
+    # when he tops the stair
+    ears = 0.62
+    for h in N["hops"]:
+        if h["take"] - 0.05 <= t <= h["land"] + 0.4:
+            ears = tween(t, [(h["take"] - 0.05, 0.62), (h["take"] + 0.1, 0.74), (h["land"] - 0.02, 0.88),
+                             (h["land"] + 0.09, 0.52), (h["land"] + 0.4, 0.64)])
+    if sat:
+        ears = tween(t, [(N["sat"] + 0.4, 0.64), (N["back1"] + 0.2, 0.52), (N["perk"] - 0.02, 0.5),
+                         (N["perk"] + 0.16, 0.72), (N["perk"] + 0.5, 0.62), (N["top"] - 0.3, 0.62),
+                         (N["top"] + 0.1, 0.68)])
+    # head: a little down while it looks down the stair, nose up to his face as he tops it
+    tilt = tween(t, [(N["back0"], 0.0), (N["back1"], 0.03), (N["top"] - 0.6, 0.03), (N["top"], -0.05),
+                     (N["pass"], 0.0)], ease_in_out) if sat else 0.0
+    tail = 0.3 * _ramp(t, N["top"] - 0.2, N["top"] + 0.4)          # its tail tip curls: he came
+    # blinks: its own natural blinks (the rig's, same seed as rev 3), a half-blink on the landing
+    blink = core.blink_amount(tp, seed=23, rate=0.22)
+    ld = N["sat"]
+    if ld <= t <= ld + 0.3:
+        blink = max(blink, tween(t, [(ld, 0.0), (ld + 0.06, 0.5), (ld + 0.12, 0.5), (ld + 0.28, 0.0)]))
+    if not sat or N["back0"] - 0.05 <= t <= N["back1"] + 0.1:
+        blink = 0.0 if not (ld <= t <= ld + 0.3) else blink
+    kw = dict(pose=p["pose"], pose_from=p["pose_from"], pose_mix=p["mix"], pose_t=p["pose_t"], glow=1.0,
+              expr="hopeful", look=look, ears=ears, tilt=tilt, blink=blink, face=face, tail_curl=tail)
+    if wb > 0.0:
+        # settle into rev 3's state (same pose / place by now)
+        kw["look"] = (lerp(look[0], R["look"][0], wb), lerp(look[1], R["look"][1], wb))
+        for nm in ("ears", "tilt", "face", "tail_curl"):
+            kw[nm] = lerp(kw[nm], R[nm], wb)
+        kw.update(pose=R["pose"], pose_from=None, pose_mix=1.0, pose_t=R["pose_t"])
+    return kw, p
+
+
+def meet_tired_kw(t, T, N, V):
+    """Tiredness in S1 -> (kw, ground y); from wstop + 0.45 it is rev 3's tired_kw exactly."""
+    tp = t - N["d"]
+    R = tired_kw(tp, T, V)
+    if tp >= T["wstop"] + 0.45:
+        return R, FEET
+    kw = dict(R)
+    wst = N["wstop"]
+    if t < wst:
+        x, ph = _walk_at(N, t)
+    else:
+        u = seg(t, wst, wst + 0.3)
+        x = TIR_X - 0.15 * _V_WALK + _V_WALK * 0.3 * (u - 0.5 * u * u)    # decelerate into the stop
+        ph = tp - T["w0"]
+    y = _tired_ground(x)
+    pose = state_at(t, [(-99, "walk"), (wst, "stand")], 0.3)
+    turn = lerp(-WALK_TURN, -0.8, smoothstep(seg(t, wst - 0.05, wst + 0.45)))   # turns back to the pod
+    # eyes: up the stair at it, down at it beside him (a tiny nod), ahead to the pod, then they
+    # lead his turn back to it (rev 3's keys take over at wstop + 0.3)
+    ce = _eyes_cur(-1.0)
+    he = _eyes_tired(x, y)
+    at_it = _aim(he, ce, 0.95)
+    look = tween(t, [(N["enter"] - 0.3, (0.7, -0.25)), (N["climb0"] - 0.2, at_it), (N["near"] + 0.1, at_it),
+                     (N["pass"], (0.85, 0.05)), (wst - 0.12, (0.85, 0.05)), (wst + 0.25, (-0.9, 0.05)),
+                     (wst + 0.3, (-0.9, 0.05))], ease_in_out)
+    if t < N["near"] + 0.1:
+        look = _aim(he, ce, 0.95) if t >= N["climb0"] - 0.2 else look
+    face = dict(R["face"])
+    face["head_nod"] = face.get("head_nod", 0.0) + 0.06 * _pulse(t, N["top"] - 0.05, N["near"] + 0.45)
+    kw.update(x=x, pose=pose, turn=turn, pose_t=ph, reach=None, look=look, face=face)
+    return kw, y
+
+
+def _meet_cam(t, T, N, V):
+    """Holds the stair framing (slow push), then eases into rev 3's S2 camera at `join`
+    (position and velocity matched, so the hand-over is invisible)."""
+    c1, t0, t1 = N["c1"], N["cam0"], N["join"]
+    if t < t0:
+        u = seg(t, c1, t0)
+        return tuple(lerp(a, b, u) for a, b in zip(B_CAM0, B_CAM1))
+    d = N["d"]
+    p1 = _s2_cam(t1 - d, T, V)
+    e = 1e-3
+    p1b = _s2_cam(t1 - d + e, T, V)
+    v1 = [(b - a) / e for a, b in zip(p1, p1b)]
+    v0 = [(b - a) / (t0 - c1) for a, b in zip(B_CAM0, B_CAM1)]
+    D = t1 - t0
+    s = clamp((t - t0) / D)
+    h00, h10 = 2 * s ** 3 - 3 * s ** 2 + 1, s ** 3 - 2 * s ** 2 + s
+    h01, h11 = -2 * s ** 3 + 3 * s ** 2, s ** 3 - s ** 2
+    return tuple(h00 * a + h10 * D * va + h01 * b + h11 * D * vb
+                 for a, b, va, vb in zip(B_CAM1, p1, v0, v1))
+
+
+def _sign_glyph_fix(ctx):
+    """sets.catwalk's LEVEL B2 sign draws "SHAFT A  ▼" but the ui font has no U+25BC, so a tofu
+    box shows. This shot frames the sign: paint the box over and draw the arrow."""
+    core.rrect(ctx, 485.5, 1124, 17, 29, 2)
+    core.fill(ctx, "#24434f")
+    core.poly(ctx, [(486.5, 1131), (501.5, 1131), (494, 1145)])
+    core.fill(ctx, "#2fd1c5")
+
+
+def shot_meet(ctx, t, T, N, V):
+    tp = t - N["d"]
+    cam = _meet_cam(t, T, N, V)
+    st = cw_state(tp, T)
+    ckw, p = meet_cur_kw(t, T, N, V)
+    tkw, ty = meet_tired_kw(t, T, N, V)
+    tx = tkw.pop("x")
+    with core.camera(ctx, *cam):
+        sets.catwalk(ctx, tp, **st)
+        _sign_glyph_fix(ctx)
+        with sets.shaded(ctx, sets.catwalk, tp, layer="shade"):
+            if p is None:
+                draw_cur(ctx, tp, T, V)
+            else:
+                x, y = p["x"], p["y"]
+
+                def _c():
+                    return CR.draw_specimen(ctx, x, y, S, tp, **ckw)
+                ctx.save()
+                if p["rot"]:
+                    ctx.translate(x, y - 120 * S)        # pitch about the body centre
+                    ctx.rotate(p["rot"])
+                    ctx.translate(-x, -(y - 120 * S))
+                _scaled_about(ctx, x, y, p["sx"], p["sy"], _c)
+                ctx.restore()
+            H.draw_person(ctx, "tired", tx, ty, S, tp, **tkw)
+        sets.catwalk(ctx, tp, layer="fg", parts=("stair",))
+
+
+# ----------------------------------------------------------------------------
+# render
+# ----------------------------------------------------------------------------
+def render(ctx, t, info):
+    V = _view(info)
+    T = TT(V)
+    N = NT(info)
+    if t < N["tr"]:
+        _render_rev3(ctx, t, V)                  # the opening (peer, drop): untouched
+    elif t < N["c1"]:
+        shot_turn(ctx, t, T, N, V)
+    elif t < N["join"]:
+        shot_meet(ctx, t, T, N, V)
+    else:
+        _render_rev3(ctx, t - N["d"], V)         # rev 3 from 0.6 s after his stop, frame for frame
+
+
 # ----------------------------------------------------------------------------
 # sound
 # ----------------------------------------------------------------------------
-def SFX(info):
+def _sfx_rev3(info):
+    """rev 3's events on rev 3's clock, without the room tone (re-laid on the new clock) and the
+    old walk-in (his steps along the pods, its ear twitch), which the new entrance replaces."""
     T = TT(info)
     ev = []
-    # shaft room tone (pods), not in the control room
-    ev += sfx.loop_events("pod_hum", 0.0, T["c10"] + 0.1, -8)
-    ev += sfx.loop_events("pod_hum", T["c13"], T["casc"] + 1.2, -8)
     # the opening: a soft longing coo with its paw on the glass; the ears lift with the
     # decision; the hop and the landing on the grating
     ev.append((T["p_paw1"] + 0.12, "creature_chirp_sad", -13, 0.2))
     ev.append((T["p_set0"] + 0.26, "ears_perk", -5, 0.2))
     ev.append((T["d_jump"] - 0.02, "whoosh", -17, 0.0))
     ev.append((T["d_land"] - 0.01, "body_thud", -9, -0.25))
-    # his footsteps on the grating (walk contacts every 0.5 s)
-    for k in range(1, 5):
-        tt = T["w0"] + 0.5 * k
-        if tt >= T["pod"] - 0.05:
-            ev.append((tt, "footstep", 0 if k < 4 else 1, 0.25))
     ev.append((T["wstop"] + 0.28, "footstep", -5, 0.22))     # feet come together
-    # Curiosity's ear twitch at the steps
-    ev.append((T["pod"] + 0.2, "ears_perk", -6, -0.3))
     # crouch (cloth)
     ev.append((T["cr0"] + 0.05, "cloth_rustle", -5, 0.2))
     # the nod: a small sad coo
@@ -1409,4 +1894,32 @@ def SFX(info):
     ev.append((cuts[1], "lights_out", -5, 0.3))
     ev.append((cuts[2], "lights_out", -2, -0.2))
     ev.append((cuts[3], "lights_out", 0, 0.0))
+    return ev
+
+
+def SFX(info):
+    V = _view(info)
+    T = TT(V)
+    N = NT(info)
+    d = V.d
+    ev = [(e[0] + d if e[0] > V.tr else e[0],) + tuple(e[1:]) for e in _sfx_rev3(V)]
+    # shaft room tone (pods), not in the control room
+    ev += sfx.loop_events("pod_hum", 0.0, T["c10"] + d + 0.1, -8)
+    ev += sfx.loop_events("pod_hum", T["c13"] + d, T["casc"] + d + 1.2, -8)
+    # S0c: the ears lift (decided), the little hop-turn, the trot off right
+    ev.append((N["a_set"], "ears_perk", -7, -0.1))
+    ev.append((N["a_jump"] - 0.02, "whoosh", -22, 0.0))
+    ev.append((N["a_land"], "foot_tap", -9, 0.0))
+    ev.append((N["a_go"] + 0.02, "scurry", -7, 0.15))
+    # S1: it patters in, three bounds up the stair, the landing by its pod
+    ev.append((N["c1"], "scurry", -9, -0.45))
+    for i, h in enumerate(N["hops"]):
+        ev.append((h["land"], "foot_tap", -8 if i < 2 else -5, lerp(-0.45, 0.25, i / 2)))
+    ev.append((N["perk"], "ears_perk", -6, 0.25))
+    # his steps: off screen along the landing (quieter), then up the stair and along the deck
+    for (tt, x) in N["steps"]:
+        if tt >= N["wstop"]:
+            continue
+        g = lerp(-9, 0, smoothstep(seg(x, -450, 0)))
+        ev.append((tt, "footstep", g, clamp((x - 600) / 900, -0.6, 0.3)))
     return ev
