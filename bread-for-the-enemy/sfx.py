@@ -61,9 +61,9 @@ def crackle(n, density=6.0, amp=0.5):
     times = np.cumsum(rng.exponential(1.0 / density, int(n / SR * density * 2) + 5))
     for tt in times:
         i = int(tt * SR)
-        if i >= n - 400:
-            break
         L = int(SR * (0.002 + 0.01 * rng.random()))
+        if i + L >= n:
+            break
         burst = rng.standard_normal(L) * env_exp(L, 0.002) * amp * (0.3 + rng.random())
         out[i:i + L] += burst
     return hp(out, 900)
@@ -101,15 +101,28 @@ def metal_ping(n, base, decay=0.3, amp=0.3):
     return x * env_exp(n, decay) * amp
 
 
-def s_chains(dur=1.0, count=10):
+def s_chains(dur=1.0, count=6):
+    """Heavy iron chain shifting: low, muffled clanks (no bright jingle)."""
     n = int((dur + 0.6) * SR)
     out = np.zeros(n)
     for k in range(count):
         a = int(rng.random() * dur * SR)
-        L = int(0.4 * SR)
-        p = metal_ping(L, 900 + rng.random() * 1800, 0.06 + rng.random() * 0.08, 0.25 + rng.random() * 0.2)
+        L = int(0.35 * SR)
+        p = metal_ping(L, 180 + rng.random() * 260, 0.05 + rng.random() * 0.05, 0.22 + rng.random() * 0.12)
+        p += lp(noise(L), 600) * env_exp(L, 0.015) * 0.25
         out[a:a + L] += p[: n - a]
-    return out
+    return lp(out, 1600, 4) * 1.2
+
+
+def s_breath_shaky(dur=2.2):
+    """A trembling exhale held back by grief: breathy, unvoiced, with a fine tremor."""
+    n = int(dur * SR)
+    t = np.arange(n) / SR
+    air = bp(noise(n, "pink"), 350, 2600)
+    shape = np.minimum(t / 0.35, 1.0) * np.exp(-np.maximum(t - 0.5, 0) / 0.75)
+    tremor = 1 + 0.45 * np.sin(2 * np.pi * (7.5 + 1.5 * smooth_noise(n, 2)) * t)
+    catch = 1 - 0.7 * np.exp(-((t - 0.95) / 0.08) ** 2)  # a small catch in the breath
+    return air * shape * tremor * catch * 0.5
 
 
 def s_bolt():
@@ -124,16 +137,18 @@ def s_bolt():
 
 
 def s_creak(dur=1.8):
+    """Heavy wooden door swinging on iron hinges: a low, noisy groan with no musical pitch."""
     n = int(dur * SR)
     t = np.arange(n) / SR
-    f = 220 + 160 * smooth_noise(n, 3) + 40 * np.sin(2 * np.pi * 1.3 * t)
-    ph = np.cumsum(2 * np.pi * f / SR)
-    saw = 2 * ((ph / (2 * np.pi)) % 1) - 1
-    stick = (smooth_noise(n, 30) > 0.45).astype(float)
-    stick = lp(stick, 60)
-    x = bp(saw, 300, 2500) * stick * 0.5
-    x *= np.sin(np.pi * np.clip(t / dur, 0, 1)) ** 0.5
-    return x
+    body = lp(noise(n, "brown"), 260, 4) * 1.6
+    grain = bp(noise(n), 500, 1400) * 0.12
+    stick = lp((smooth_noise(n, 22) > 0.55).astype(float), 40)  # irregular stick-slip friction
+    x = (body + grain * stick) * (0.35 + 0.65 * stick)
+    x *= np.sin(np.pi * np.clip(t / dur, 0, 1)) ** 0.7
+    thud = s_thud(60, 0.5, 0.35)
+    a = n - len(thud) - int(0.05 * SR)
+    x[a:a + len(thud)] += thud
+    return x * 0.8
 
 
 def s_thud(freq=70, dur=0.6, amp=1.0):
@@ -264,7 +279,8 @@ def amb_dawn(n):
 AMB = {"lamp_room": amb_room, "room_murmur": amb_room, "street_amb": amb_street, "cell_amb": amb_cell, "jer_amb": amb_jer,
        "desert_amb": amb_desert, "dawn_amb": amb_dawn}
 ONE = {"bread_break": (s_bread_break, 0.9), "knock3": (s_knock3, 1.0), "door_unbolt": (s_bolt, 0.6), "door_creak": (lambda: s_creak(1.8), 0.7),
-       "chain_tremble": (lambda: s_chains(1.4, 12), 0.35), "chains_move": (lambda: s_chains(0.8, 8), 0.4), "bread_thud": (s_bread_thud, 0.8),
+       "chain_tremble": (lambda: s_chains(1.0, 4), 0.35), "chains_move": (lambda: s_chains(0.7, 5), 0.45), "bread_thud": (s_bread_thud, 0.8),
+       "breath_shaky": (s_breath_shaky, 0.55),
        "light_swell": (s_light_swell, 0.8), "divine_rumble": (s_rumble, 0.9), "cloth_kneel": (s_cloth, 0.8), "door_bang": (s_door_bang, 1.0),
        "door_close": (s_door_close, 0.8)}
 

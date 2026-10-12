@@ -26,7 +26,7 @@ const EMO = {
   sad: { mouthSmile: -0.35, browInner: 0.7, browOuter: -0.3, lid: 0.7, lidTilt: -0.4 },
   grief: { shoulder: -0.18, mouthSmile: -0.5, browInner: 0.95, browOuter: -0.35, lid: 0.5, lidTilt: -0.5, mouthTremble: 0.45, tears: 0.7, pitchOff: 0.12, breath: 1.5, blinkRate: 1.4 },
   cry: { shoulder: -0.12, mouthSmile: -0.55, browInner: 1.0, lid: 0.55, lidLower: 0.45, mouthBase: 0.12, mouthTremble: 0.7, tears: 1, tearFlow: 1, browFurrow: 0.35, breath: 1.8, tremble: 0.25, blinkRate: 1.6 },
-  sob_smile: { mouthSmile: 0.32, browInner: 0.9, lid: 0.55, lidLower: 0.5, tears: 1, tearFlow: 1, mouthTremble: 0.6, breath: 1.7, tremble: 0.15, cheekRaise: 0.3 },
+  sob_smile: { mouthSmile: 0.32, browInner: 0.9, lid: 0.55, lidLower: 0.5, tears: 1, tearFlow: 0.8, mouthTremble: 0.6, breath: 1.7, tremble: 0.15, cheekRaise: 0.3 },
   cry_anger: { shoulder: 0.12, browFurrow: 0.8, browInner: -0.15, lid: 0.85, lidLower: 0.45, mouthPress: 0.55, mouthSmile: -0.4, tears: 0.6, mouthTremble: 0.4, breath: 1.6, tremble: 0.2 },
   fury_cry: { shoulder: 0.2, browFurrow: 1, browInner: -0.5, lid: 1.02, lidLower: 0.35, mouthSmile: -0.45, mouthWide: 0.35, tears: 1, tearFlow: 0.8, tremble: 0.4, breath: 2, blinkRate: 0.6 },
   anger: { shoulder: 0.12, browFurrow: 0.85, browInner: -0.65, browOuter: 0.2, lid: 0.9, lidLower: 0.3, lidTilt: 0.4, mouthSmile: -0.32, mouthPress: 0.3, breath: 1.4 },
@@ -65,11 +65,12 @@ const EMO = {
   unsettled: { browInner: 0.5, browFurrow: 0.4, lid: 0.95, mouthSmile: -0.2, saccade: 2.2 },
   uneasy: { browInner: 0.5, lid: 0.72, mouthSmile: -0.15, saccade: 1.5 },
   compassion: { rollOff: 0.05, browInner: 0.55, lid: 0.72, lidLower: 0.2, mouthSmile: 0.15, tears: 0.35, blinkRate: 0.5 },
-  broken_wonder: { browInner: 0.9, lid: 1.0, tears: 1, tearFlow: 1, mouthBase: 0.2, mouthSmile: 0.1, blind: 0.9, blinkRate: 0.3 },
-  laugh_sob: { mouthSmile: 0.3, mouthBase: 0.15, browInner: 0.9, lid: 0.6, lidLower: 0.5, tears: 1, tearFlow: 0.8, tremble: 0.3, breath: 1.8 },
-  broken: { shoulder: -0.22, browInner: 1, lid: 0.55, mouthSmile: -0.5, mouthTremble: 0.6, tears: 1, tearFlow: 1, pitchOff: 0.1, breath: 1.6 },
-  anguish: { shoulder: 0.1, browInner: 1, browFurrow: 0.6, lid: 0.75, lidLower: 0.4, mouthSmile: -0.6, mouthWide: 0.3, tears: 1, tearFlow: 1, tremble: 0.3, breath: 1.9 },
+  broken_wonder: { browInner: 0.9, lid: 1.0, tears: 1, tearFlow: 0.8, mouthBase: 0.2, mouthSmile: 0.1, blind: 0.15, blinkRate: 0.3 },
+  laugh_sob: { mouthSmile: 0.3, mouthBase: 0.15, browInner: 0.9, lid: 0.6, lidLower: 0.5, tears: 0.8, tearFlow: 0.5, tremble: 0.3, breath: 1.8 },
+  broken: { shoulder: -0.22, browInner: 1, lid: 0.55, mouthSmile: -0.5, mouthTremble: 0.6, tears: 0.7, tearFlow: 0.3, pitchOff: 0.1, breath: 1.6 },
+  anguish: { shoulder: 0.1, browInner: 1, browFurrow: 0.6, lid: 0.75, lidLower: 0.4, mouthSmile: -0.6, mouthWide: 0.3, tears: 0.8, tearFlow: 0.5, tremble: 0.3, breath: 1.9 },
   peace: { mouthSmile: 0.3, lid: 0.7, browInner: 0.1 },
+  sad: { mouthSmile: -0.35, browInner: 0.7, browOuter: -0.3, lid: 0.66, lidTilt: -0.4, pitchOff: 0.08, shoulder: -0.1 },
 };
 // per-character emotion overrides could go here
 const NUM = Object.keys(D);
@@ -86,6 +87,8 @@ const POSES = {
   reach: { n: { w: [-1.85, 5.21], hand: 'relax' }, f: { w: [3.02, 3.02], hand: 'open' }, front: true },
   open_arms: { n: { w: [-3.86, 2.69], hand: 'open' }, f: { w: [3.86, 2.69], hand: 'open', mirror: -1 }, front: true },
   hold: { n: { w: [-1.68, 5.04], hand: 'hold' }, f: { w: [0.67, 3.28], hand: 'hold', mirror: -1 }, front: true, jar: { arm: 'n', h: 1.9 }, bread: { at: [0.50, 2.94], r: 1.05 } },
+  hold_nervous: { n: { w: [-1.68, 5.04], hand: 'hold' }, f: { w: [0.6, 3.6], hand: 'hold', mirror: -1 }, front: true, jar: { arm: 'n', h: 1.9 },
+    bread: { arm: 'f', r: 1.0 }, fidget: { arm: 'f', amp: [0.12, 0.42], period: 3.4, pats: 2 }, sway: 0.025 },
   hold_half: { n: { w: [-1.85, 5.12], hand: 'relax' }, f: { w: [0.84, 3.70], hand: 'hold', mirror: -1 }, front: true, half: { at: [0.92, 3.44], r: 0.95 } },
   knock: { n: { w: [-1.93, 5.21], hand: 'relax' }, f: { w: [3.36, 1.18], hand: 'fist' }, front: true },
   empty: { n: { w: [-1.8, 5.2], hand: 'relax' }, f: { w: [1.9, 5.2], hand: 'relax' }, front: false },
@@ -124,6 +127,7 @@ class Actor {
       if (k.state.look) lastLook = k.state.look;
     }
     this.blinks.sort((a, b) => a - b);
+    this.nods = this.kfs.filter((k) => k.state.nod).map((k) => k.t);
   }
   // evaluate numeric channels + discrete look/pose with blend info
   eval(t, lookMap) {
@@ -188,7 +192,7 @@ class World {
     this.tl = tl;
     this.actors = {};
     let seed = 1;
-    for (const who of ['jesus', 'paul', 'asher', 'yosef', 'saul', 'child', 'guard', 'elder']) {
+    for (const who of ['jesus', 'paul', 'asher', 'yosef', 'saul', 'child', 'guard', 'phoebe']) {
       this.actors[who] = new Actor(who, tl.acts[who], seed++);
     }
     // lines by speaker
@@ -277,6 +281,11 @@ class World {
       F.browHeight += 0.18 * clamp(sp.emph - 0.55, 0, 1);
       F.speaking = 1;
     } else F.speaking = 0;
+    // reaction nods (a slow, small down-and-up of the head)
+    for (const tn of A.nods) {
+      const u = (t - tn) / 0.95;
+      if (u > 0 && u < 1) F.pitch += 0.13 * Math.sin(Math.PI * u) * (1 - 0.3 * u);
+    }
     // blink
     const bl = A.blink(t, F.blinkRate);
     const lookDown = clamp(F.gazeY, 0, 1);

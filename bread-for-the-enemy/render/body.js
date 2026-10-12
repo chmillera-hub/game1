@@ -1,7 +1,7 @@
 // Bodies, arms, hands and props. Units: s = head unit (half face width) in px.
 'use strict';
 const L = require('./lib');
-const { clamp, lerp, mix, rgba, shade } = L;
+const { clamp, lerp, mix, rgba, shade, smooth } = L;
 
 const lit = (c, Lt) => L.mul(c, Lt.key || '#ffffff');
 const shd = (c, Lt) => L.mul(shade(c, 0.6), Lt.amb || '#ffffff');
@@ -139,20 +139,26 @@ function ik(S, W, l1, l2, bend) {
 }
 
 function armJoint(S, W, l1, l2, side, out = 0) {
-  // elbows hang near the body; the forearm foreshortens toward the camera
+  // Two solutions blended smoothly: a "hanging elbow" (forearm foreshortens toward the
+  // camera) for hands held near the body, and plain IK for reaching/raised arms.
+  // The blend weight is continuous, so breathing or small target changes never make
+  // the elbow jump between solutions.
   const dx = W[0] - S[0], dy = W[1] - S[1];
   const d = Math.hypot(dx, dy) || 1;
-  if (d > l1 + l2 * 0.55 || dy < -0.2 * l1) return ik(S, W, l1, l2, side);
+  const sol = ik(S, W, l1, l2, side);
   const dir = [dx / d, dy / d];
   let ux = lerp(0, dir[0], 0.42) + side * (0.04 + out), uy = lerp(1, dir[1], 0.42);
   const ul = Math.hypot(ux, uy); ux /= ul; uy /= ul;
   let E = [S[0] + ux * l1 * 0.92, S[1] + uy * l1 * 0.92];
-  const fd = Math.hypot(W[0] - E[0], W[1] - E[1]);
-  if (fd > l2) { // pull elbow toward wrist so the forearm is not stretched
+  const fd = Math.hypot(sol.W[0] - E[0], sol.W[1] - E[1]);
+  if (fd > l2) {
     const k = (fd - l2) / fd;
-    E = [E[0] + (W[0] - E[0]) * k, E[1] + (W[1] - E[1]) * k];
+    E = [E[0] + (sol.W[0] - E[0]) * k, E[1] + (sol.W[1] - E[1]) * k];
   }
-  return { E, W };
+  const wReach = smooth((d - (l1 + l2 * 0.4)) / (l2 * 0.35));
+  const wRaise = smooth((-dy / l1 - 0.05) / 0.3);
+  const w = Math.max(wReach, wRaise);
+  return { E: [lerp(E[0], sol.E[0], w), lerp(E[1], sol.E[1], w)], W: sol.W };
 }
 
 function drawArm(ctx, S, W, s, st, Lt, o) {
@@ -239,54 +245,120 @@ function drawShackle(ctx, W, ang, s, Lt) {
 }
 
 // ---------------------------------------------------------------- props
+// round country loaf: domed crust, three baked score cuts (clipped to the loaf), flour dust
+function loafPath(ctx, r) {
+  ctx.beginPath();
+  ctx.moveTo(-r, r * 0.12);
+  ctx.bezierCurveTo(-r * 1.02, -r * 0.42, -r * 0.55, -r * 0.72, 0, -r * 0.72);
+  ctx.bezierCurveTo(r * 0.55, -r * 0.72, r * 1.02, -r * 0.42, r, r * 0.12);
+  ctx.bezierCurveTo(r * 0.92, r * 0.42, -r * 0.92, r * 0.42, -r, r * 0.12);
+  ctx.closePath();
+}
 function drawBread(ctx, x, y, r, Lt, o = {}) {
-  const crust = lit('#b7742f', Lt), crustD = L.mul(shade('#8a4f1c', 0.8), Lt.amb || '#fff'), top = lit('#d49a52', Lt);
+  const amb = Lt.amb || '#fff';
+  const crustTop = L.mul('#c98a3e', Lt.key || '#fff'), crust = L.mul('#a8642a', Lt.key || '#fff'), crustD = L.mul('#6e3a16', amb);
   ctx.save();
   ctx.translate(x, y); ctx.rotate(o.rot || 0);
-  ctx.fillStyle = crustD;
-  L.ellipse(ctx, 0, r * 0.12, r, r * 0.72); ctx.fill();
-  ctx.fillStyle = crust;
-  L.ellipse(ctx, 0, 0, r, r * 0.66); ctx.fill();
-  ctx.fillStyle = L.radial(ctx, -r * 0.3, -r * 0.3, r * 0.05, r * 1.1, [[0, rgba(shade(top, 1.15), 1)], [0.6, rgba(top, 0.6)], [1, rgba(top, 0)]]);
-  L.ellipse(ctx, 0, 0, r, r * 0.66); ctx.fill();
-  // scoring
-  ctx.strokeStyle = rgba('#f0d6a6', 0.9); ctx.lineWidth = r * 0.07; ctx.lineCap = 'round';
-  for (const k of [-0.35, 0.05, 0.42]) {
-    ctx.beginPath(); ctx.moveTo(-r * 0.55 + k * r * 0.3, -r * 0.3 + k * r); ctx.quadraticCurveTo(0, -r * 0.4 + k * r, r * 0.55, -r * 0.25 + k * r * 0.9); ctx.stroke();
+  // contact shadow
+  ctx.fillStyle = rgba('#000000', 0.25);
+  L.ellipse(ctx, 0, r * 0.36, r * 0.95, r * 0.12); ctx.fill();
+  loafPath(ctx, r);
+  ctx.fillStyle = L.linear(ctx, 0, -r * 0.75, 0, r * 0.4, [[0, crustTop], [0.55, crust], [1, crustD]]);
+  ctx.fill();
+  ctx.save();
+  loafPath(ctx, r);
+  ctx.clip();
+  // soft dome highlight
+  ctx.fillStyle = L.radial(ctx, -r * 0.3, -r * 0.45, r * 0.05, r * 0.9, [[0, rgba('#ffe2a8', 0.55)], [1, rgba('#ffe2a8', 0)]]);
+  ctx.fillRect(-r * 1.2, -r, r * 2.4, r * 1.6);
+  // baked score cuts: torn-open slashes showing paler crumb, with darker scorched lips
+  for (const [cx, cy, ang, len] of [[-0.42, -0.22, -0.55, 0.62], [0.0, -0.32, -0.55, 0.7], [0.42, -0.22, -0.55, 0.62]]) {
+    ctx.save();
+    ctx.translate(cx * r, cy * r);
+    ctx.rotate(ang);
+    const L2 = len * r, W2 = r * 0.075;
+    ctx.fillStyle = L.mul('#f0d39a', Lt.key || '#fff');
+    ctx.beginPath(); ctx.ellipse(0, 0, L2 / 2, W2, 0, 0, L.TAU); ctx.fill();
+    ctx.strokeStyle = rgba(L.mul('#7a4018', amb), 0.85);
+    ctx.lineWidth = r * 0.035;
+    ctx.beginPath(); ctx.ellipse(0, -W2 * 0.35, L2 / 2, W2 * 0.9, 0, Math.PI * 1.05, Math.PI * 1.95); ctx.stroke();
+    ctx.restore();
   }
-  ctx.strokeStyle = '#3a200e'; ctx.lineWidth = r * 0.04;
-  L.ellipse(ctx, 0, 0, r, r * 0.66); ctx.stroke();
+  // flour dusting
+  for (let i = 0; i < 26; i++) {
+    const px = (L.hash01(i * 7 + 3) - 0.5) * 1.6 * r, py = -r * 0.62 + L.hash01(i * 13 + 1) * r * 0.55;
+    ctx.fillStyle = rgba('#fff6e6', 0.28 + 0.25 * L.hash01(i * 5));
+    ctx.beginPath(); ctx.arc(px, py, r * (0.012 + 0.018 * L.hash01(i * 11)), 0, L.TAU); ctx.fill();
+  }
+  ctx.restore();
+  loafPath(ctx, r);
+  ctx.strokeStyle = '#3a1e0c'; ctx.lineWidth = r * 0.035; ctx.stroke();
   ctx.restore();
 }
+// half of a torn loaf: crust shell with a score cut, and a soft, holey crumb face where it tore
 function drawHalfBread(ctx, x, y, r, Lt, o = {}) {
-  // half loaf with torn face showing crumb; o.face = side the break faces (+1 right)
   const f = o.face || 1;
-  const crust = lit('#b7742f', Lt), crumb = lit('#f1dfbd', Lt), crumbD = L.mul('#cdb48a', Lt.amb || '#fff');
+  const amb = Lt.amb || '#fff';
+  const crustTop = L.mul('#c98a3e', Lt.key || '#fff'), crust = L.mul('#a8642a', Lt.key || '#fff'), crustD = L.mul('#6e3a16', amb);
+  const crumb = L.mul('#f2dfb6', Lt.key || '#fff'), crumbD = L.mul('#d2b47e', amb);
   ctx.save();
   ctx.translate(x, y); ctx.rotate(o.rot || 0); ctx.scale(f, 1);
-  // crust dome
-  ctx.beginPath();
-  ctx.ellipse(-r * 0.15, 0, r * 0.8, r * 0.62, 0, Math.PI * 0.5, Math.PI * 1.5);
-  ctx.lineTo(r * 0.1, -r * 0.62);
-  ctx.lineTo(r * 0.1, r * 0.62);
-  ctx.closePath();
-  ctx.fillStyle = crust; ctx.fill();
-  ctx.strokeStyle = '#3a200e'; ctx.lineWidth = r * 0.04; ctx.stroke();
-  // torn crumb face
-  const jag = [];
-  for (let i = 0; i <= 10; i++) {
-    const yy = -r * 0.62 + i * r * 0.124;
-    jag.push([r * 0.1 + (i % 2 ? r * 0.09 : -r * 0.02) + Math.sin(i * 2.3) * r * 0.04, yy]);
+  // irregular torn edge along x ~ 0
+  const tear = [];
+  for (let i = 0; i <= 9; i++) {
+    const t = i / 9;
+    tear.push([r * (0.06 + 0.07 * Math.sin(i * 2.1 + 0.5) + 0.04 * L.hash(i * 17)), -r * 0.68 + t * r * 1.04]);
   }
-  ctx.beginPath();
-  ctx.moveTo(r * 0.05, -r * 0.6);
-  for (const p of jag) ctx.lineTo(p[0], p[1]);
-  ctx.lineTo(r * 0.05, r * 0.6);
-  ctx.quadraticCurveTo(r * 0.32, 0, r * 0.05, -r * 0.6);
-  ctx.fillStyle = crumb; ctx.fill();
-  ctx.fillStyle = rgba(crumbD, 0.6);
-  for (let i = 0; i < 9; i++) { ctx.beginPath(); ctx.arc(r * (0.12 + 0.06 * Math.sin(i * 7)), r * (-0.45 + i * 0.11), r * 0.025, 0, L.TAU); ctx.fill(); }
-  ctx.strokeStyle = '#6a4a2a'; ctx.lineWidth = r * 0.03; ctx.stroke();
+  // crust shell (left half of a dome)
+  const shell = () => {
+    ctx.beginPath();
+    ctx.moveTo(tear[0][0], tear[0][1]);
+    ctx.bezierCurveTo(-r * 0.55, -r * 0.74, -r * 1.02, -r * 0.42, -r, r * 0.12);
+    ctx.bezierCurveTo(-r * 0.92, r * 0.4, -r * 0.3, r * 0.42, tear[tear.length - 1][0], tear[tear.length - 1][1]);
+    for (let i = tear.length - 1; i >= 0; i--) ctx.lineTo(tear[i][0], tear[i][1]);
+    ctx.closePath();
+  };
+  shell();
+  ctx.fillStyle = L.linear(ctx, 0, -r * 0.75, 0, r * 0.4, [[0, crustTop], [0.55, crust], [1, crustD]]);
+  ctx.fill();
+  ctx.save();
+  shell(); ctx.clip();
+  ctx.fillStyle = L.radial(ctx, -r * 0.45, -r * 0.45, r * 0.05, r * 0.8, [[0, rgba('#ffe2a8', 0.5)], [1, rgba('#ffe2a8', 0)]]);
+  ctx.fillRect(-r * 1.2, -r, r * 1.4, r * 1.6);
+  // one score cut on the crust
+  ctx.translate(-r * 0.45, -r * 0.3); ctx.rotate(-0.55);
+  ctx.fillStyle = L.mul('#f0d39a', Lt.key || '#fff');
+  ctx.beginPath(); ctx.ellipse(0, 0, r * 0.3, r * 0.07, 0, 0, L.TAU); ctx.fill();
+  ctx.strokeStyle = rgba(L.mul('#7a4018', amb), 0.85); ctx.lineWidth = r * 0.035;
+  ctx.beginPath(); ctx.ellipse(0, -r * 0.025, r * 0.3, r * 0.065, 0, Math.PI * 1.05, Math.PI * 1.95); ctx.stroke();
+  ctx.restore();
+  shell();
+  ctx.strokeStyle = '#3a1e0c'; ctx.lineWidth = r * 0.035; ctx.stroke();
+  // crumb face, seen slightly from the side: a soft lens bulging out of the tear
+  const face = () => {
+    ctx.beginPath();
+    ctx.moveTo(tear[0][0], tear[0][1]);
+    ctx.bezierCurveTo(r * 0.42, -r * 0.5, r * 0.44, r * 0.18, tear[tear.length - 1][0], tear[tear.length - 1][1]);
+    for (let i = tear.length - 1; i >= 0; i--) ctx.lineTo(tear[i][0], tear[i][1]);
+    ctx.closePath();
+  };
+  face();
+  ctx.fillStyle = L.linear(ctx, 0, -r * 0.6, r * 0.3, r * 0.3, [[0, crumb], [1, crumbD]]);
+  ctx.fill();
+  ctx.save();
+  face(); ctx.clip();
+  // airy crumb holes and torn fibres
+  for (let i = 0; i < 16; i++) {
+    const hx = r * (0.1 + 0.26 * L.hash01(i * 7 + 2)), hy = -r * 0.55 + r * 0.85 * L.hash01(i * 3 + 9);
+    ctx.fillStyle = rgba(L.mul('#b8935a', amb), 0.55);
+    ctx.beginPath(); ctx.ellipse(hx, hy, r * (0.018 + 0.03 * L.hash01(i * 5)), r * (0.012 + 0.02 * L.hash01(i * 9)), 0.4, 0, L.TAU); ctx.fill();
+  }
+  ctx.restore();
+  face();
+  ctx.strokeStyle = rgba('#7a5a30', 0.9); ctx.lineWidth = r * 0.03; ctx.stroke();
+  // thin crust rim visible along the tear
+  ctx.strokeStyle = crustD; ctx.lineWidth = r * 0.045;
+  ctx.beginPath(); ctx.moveTo(tear[0][0], tear[0][1]); for (const p of tear) ctx.lineTo(p[0], p[1]); ctx.stroke();
   ctx.restore();
 }
 function drawJar(ctx, x, y, h, Lt) {

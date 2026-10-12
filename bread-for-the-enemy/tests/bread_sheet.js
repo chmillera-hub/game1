@@ -1,0 +1,11 @@
+const { createCanvas } = require('@napi-rs/canvas');
+const fs = require('fs');
+const B = require('../render/body');
+const c = createCanvas(1200, 420); const x = c.getContext('2d');
+x.fillStyle = '#3a3a44'; x.fillRect(0, 0, 1200, 420);
+const Lt = { key: '#fff4e6', amb: '#a87a62' };
+B.drawBread(x, 200, 210, 150, Lt);
+B.drawHalfBread(x, 560, 210, 140, Lt, { face: 1, rot: -0.1 });
+B.drawHalfBread(x, 820, 210, 140, Lt, { face: -1, rot: 0.1 });
+B.drawBread(x, 1080, 230, 70, Lt);
+fs.writeFileSync(process.argv[2], c.toBuffer('image/png'));

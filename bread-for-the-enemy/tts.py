@@ -11,9 +11,9 @@ Casting (Kokoro voice ids):
   saul      bm_lewis    same man 34 years younger: brighter, faster, harder
   asher     am_fenrir   intense, mid-range
   yosef     bm_fable    gentle, warm father
-  elder     bm_daniel   calm reader
+  phoebe    bf_emma     warm, clear reader of Paul's letter in Rome
   guard     am_onyx     gruff and low
-  child     af_nicole   soft breathy voice, shifted up into a child's register
+  child     af_heart    clear voice shifted up into a child's register
 """
 import hashlib
 import json
@@ -36,9 +36,9 @@ CAST = {
     "saul": dict(voice="bm_lewis", pitch=1.06, speed_mul=1.06),
     "asher": dict(voice="am_fenrir"),
     "yosef": dict(voice="bm_fable"),
-    "elder": dict(voice="bm_daniel"),
+    "phoebe": dict(voice="bf_emma"),
     "guard": dict(voice="am_onyx", pitch=0.97),
-    "child": dict(voice="af_nicole", pitch=1.22, formant=True),
+    "child": dict(voice="af_heart", pitch=1.18, formant=True, speed_mul=1.04),
 }
 
 _kokoro = None

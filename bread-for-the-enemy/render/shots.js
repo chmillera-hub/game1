@@ -66,7 +66,29 @@ function actor(ctx, W, who, t, place, Lt, look, opt = {}) {
   const F = W.state(who, t, look);
   if (opt.mod) opt.mod(F);
   const sway = W.headLag(who, t, look);
-  return drawCharacter(ctx, who, F, place, Lt, t, Object.assign({ sway }, opt));
+  const res = drawCharacter(ctx, who, F, place, Lt, t, Object.assign({ sway }, opt));
+  if (!opt.noTag && res && res.H) {
+    // remember where this character's head landed on screen (for name tags)
+    const m = ctx.getTransform();
+    const R = global.RENDER_SCALE || 1;
+    const X = (m.a * res.H.x + m.c * res.H.y + m.e) / R, Y = (m.b * res.H.x + m.d * res.H.y + m.f) / R;
+    global.HEADPOS = global.HEADPOS || {};
+    global.HEADPOS[who] = { x: X, y: Y, s: res.H.s * Math.hypot(m.a, m.b) / R };
+  }
+  return res;
+}
+// a soft golden halo behind a head: warm glow plus a fine gold ring that reads on light or dark skies
+function halo(ctx, x, y, s, a = 1) {
+  ctx.save();
+  ctx.fillStyle = L.radial(ctx, x, y, s * 1.0, s * 1.75, [[0, rgba('#f2c060', 0.0)], [0.45, rgba('#f2c060', 0.22 * a)], [1, rgba('#f2c060', 0)]]);
+  ctx.beginPath(); ctx.arc(x, y, s * 1.75, 0, L.TAU); ctx.fill();
+  ctx.strokeStyle = rgba('#c98c2a', 0.55 * a);
+  ctx.lineWidth = s * 0.05;
+  ctx.beginPath(); ctx.arc(x, y, s * 1.42, 0, L.TAU); ctx.stroke();
+  ctx.strokeStyle = rgba('#fff0c0', 0.6 * a);
+  ctx.lineWidth = s * 0.018;
+  ctx.beginPath(); ctx.arc(x, y, s * 1.42, 0, L.TAU); ctx.stroke();
+  ctx.restore();
 }
 function camera(ctx, lt, dur, p, focus = [VW / 2, VH * 0.45]) {
   const z = p.zoom ? lerp(p.zoom[0], p.zoom[1], smooth(lt / Math.max(0.01, dur))) : 1;
@@ -198,9 +220,9 @@ S.church_reader = (ctx, W, t, lt, dur, p) => {
   const Lt = LIGHT.church;
   // background listeners
   BG.silhouettes(ctx, [[120, 980, 70], [300, 1010, 64], [980, 990, 72]], '#1a0e08', '#ffb060', 0.35);
-  // the elder reading, 3/4 to the left, scroll in hands
+  // Phoebe reading Paul's letter, scroll in hands
   const lk = looks({ gx: 0.0, gy: 0.75, yaw: 0.25, pitch: 0.22 }, { scroll: { gx: 0.0, gy: 0.8, yaw: 0.25, pitch: 0.24 } });
-  actor(ctx, W, 'elder', t, { x: 560, y: 1140, s: 120, facing: 1, by: 0.3, len: 6 }, Lt, lk, { mod: (F) => { F.pose = 'scroll'; F.poseTo = 'scroll'; F.poseFrom = 'scroll'; F.poseK = 1; } });
+  actor(ctx, W, 'phoebe', t, { x: 560, y: 1140, s: 120, facing: 1, by: 0.3, len: 6 }, Lt, lk, { mod: (F) => { F.pose = 'scroll'; F.poseTo = 'scroll'; F.poseFrom = 'scroll'; F.poseK = 1; } });
   // lamp on table
   B.drawFlame(ctx, 620, 1520, 24, t, 2);
   L.glow(ctx, 620, 1500, 300, '#ffb050', 0.35);
@@ -362,7 +384,7 @@ S.cell_paul_cu = (ctx, W, t, lt, dur, p) => {
   ctx.restore();
   const warm = W.tl && p.warm ? 1 : 0;
   actor(ctx, W, 'paul', t, { x: 500, y: 1300, s: 190, facing: 1, by: 0.3, len: 5 }, LIGHT.cellL, paulLook());
-  BG.dust(ctx, t, { x: 0, y: 0, w: 500, h: 1400 }, 14, '#e8f0ff', 11, 0.35, 3);
+  BG.dust(ctx, t, { x: 0, y: 0, w: 500, h: 1400 }, 8, '#e8f0ff', 11, 0.35, 3);
   BG.vignette(ctx, 0.4, '#020305');
 };
 
@@ -432,15 +454,15 @@ S.cell_memory = (ctx, W, t, lt, dur, p) => {
     const R = global.RENDER_SCALE || 1;
     const c = createCanvas(Math.round(VW * R), Math.round(VH * R));
     const g = c.getContext('2d'); g.scale(R, R);
-    actor(g, W, who, t, { x, y, s, facing: 1, by: 0, len: 4, headOnly: false }, Lt, look);
+    actor(g, W, who, t, { x, y, s, facing: 1, by: 0, len: 4, headOnly: false }, Lt, look, { noTag: true });
     ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.globalAlpha = a * 0.55; ctx.globalCompositeOperation = 'screen'; ctx.filter = `blur(${2 * R}px)`;
     ctx.drawImage(c, 0, 0); ctx.restore();
   };
-  const lineY = W.tl.lines.find((l) => l.who === 'yosef' && l.start > W.tl.shots.find((s) => s.id === 'cell_memory').start - 0.5);
-  const tY = lineY ? lineY.start : 0;
-  ghost('yosef', clamp(Math.min((t - tY + 0.6) / 0.6, (tY + 2.6 - t) / 0.6)), 300, 700, 120, looks({ gx: 0.3, gy: 0.2, yaw: 0.2, pitch: 0.05 }), LIGHT.jer);
-  ghost('jesus', clamp(Math.min((t - tY - 1.6) / 0.8, (tY + 5.4 - t) / 0.9)), 780, 640, 130, looks({ gx: -0.2, gy: 0.2, yaw: -0.15, pitch: 0.05 }), LIGHT.lamp);
+  const sh = W.tl.shots.find((x) => x.id === 'cell_memory');
+  const ln = W.tl.lines.find((l) => l.who === 'jesus' && l.start >= sh.start - 0.1 && l.start < sh.end);
+  const t0 = ln ? ln.start : sh.start, t1 = ln ? ln.end : sh.end;
+  ghost('jesus', clamp(Math.min((t - t0 + 0.8) / 0.8, (t1 + 1.0 - t) / 0.9)), 700, 660, 140, looks({ gx: -0.2, gy: 0.2, yaw: -0.15, pitch: 0.05 }), LIGHT.lamp);
 };
 
 S.cell_kneel = (ctx, W, t, lt, dur, p) => {
@@ -523,13 +545,15 @@ S.cell_hands_grip = (ctx, W, t, lt, dur, p) => {
   drawCached(ctx, cellBG(view, 9));
   cellDynView(ctx, t, view, { shaftA: 0.3 });
   const Lt = LIGHT.cellWarm;
-  const pPaul = { x: 260, y: 1210, s: 150, facing: 1, by: 0.4, len: 4.4 };
-  actor(ctx, W, 'paul', t, pPaul, Lt, paulLook({ asher: { gx: 0.6, gy: 0.0, yaw: 0.4, pitch: 0.0 } }), {
+  const pA = { x: 875, y: 1150, s: 122, facing: -1, by: -0.4, len: 4.2 };
+  const pPaul = { x: 215, y: 1170, s: 128, facing: 1, by: 0.4, len: 4.4 };
+  actor(ctx, W, 'paul', t, pPaul, Lt, paulLook({ asher: { gx: 0.62, gy: 0.0, yaw: 0.42, pitch: 0.0 } }), {
     mod: (F) => { F.poseFrom = 'rest'; F.poseTo = 'grip'; F.poseK = smooth(lt / 1.2); },
+    afterTorso: (o) => seatedLegs(ctx, o.neck, o.s, 1, C.paul, Lt),
   });
-  const pA = { x: 860, y: 1180, s: 140, facing: -1, by: -0.4, len: 4.2 };
-  actor(ctx, W, 'asher', t, pA, Lt, asherLook({ paul: { gx: -0.6, gy: 0.05, yaw: -0.4, pitch: 0.02 } }), {
+  actor(ctx, W, 'asher', t, pA, Lt, asherLook({ paul: { gx: -0.62, gy: 0.05, yaw: -0.42, pitch: 0.02 } }), {
     mod: (F) => { F.poseFrom = 'kneel'; F.poseTo = 'kneel'; F.poseK = 1; },
+    afterTorso: (o) => kneelLegs(ctx, o.neck, o.s, -1, C.asher, Lt),
   });
   BG.vignette(ctx, 0.45, '#020305');
 };
@@ -543,45 +567,81 @@ S.cell_window = (ctx, W, t, lt, dur, p) => {
 };
 
 // ---------------------------------------------------------- JERUSALEM
+function doorPlanks(ctx, x0, x1, t, lit = 1) {
+  // dark wooden door planks with grain, catching torchlight on the edge nearest the gap
+  ctx.fillStyle = L.linear(ctx, x0, 0, x1, 0, [[0, '#1c120c'], [1, '#2e1e12']]);
+  ctx.fillRect(x0, 0, x1 - x0, VH);
+  ctx.strokeStyle = rgba('#120a06', 0.9); ctx.lineWidth = 7;
+  for (let x = x0 + 70; x < x1; x += 120) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x + 6, VH); ctx.stroke(); }
+  ctx.strokeStyle = rgba('#3a2818', 0.6); ctx.lineWidth = 3;
+  for (let i = 0; i < 14; i++) {
+    const x = x0 + 20 + ((i * 53) % Math.max(40, x1 - x0 - 40));
+    ctx.beginPath(); ctx.moveTo(x, 0); ctx.bezierCurveTo(x + 14, VH * 0.3, x - 10, VH * 0.6, x + 8, VH); ctx.stroke();
+  }
+  ctx.fillStyle = '#141416'; // iron band
+  ctx.fillRect(x0, 520, x1 - x0, 36); ctx.fillRect(x0, 1460, x1 - x0, 36);
+}
+function gapGlow(ctx, edgeX, dir, t, a = 1) {
+  const f = 0.8 + 0.2 * L.fbm1(t * 3, 9);
+  ctx.fillStyle = L.linear(ctx, edgeX, 0, edgeX + dir * 90, 0, [[0, rgba('#ff9a50', 0.45 * f * a)], [1, rgba('#ff9a50', 0)]]);
+  ctx.fillRect(Math.min(edgeX, edgeX + dir * 90), 0, 90, VH);
+}
+
 S.jer_crack = (ctx, W, t, lt, dur, p) => {
-  // dark door with a vertical slit view of the street
-  ctx.fillStyle = '#050403'; ctx.fillRect(0, 0, VW, VH);
-  const slitX = 470, slitW = 150;
+  // the child's point of view: peeking through the gap of a half-open door at the torchlit street
+  const gx = 400, gw = 280;
   ctx.save();
-  ctx.beginPath(); ctx.rect(slitX, 0, slitW, VH); ctx.clip();
+  ctx.beginPath(); ctx.rect(gx, 0, gw, VH); ctx.clip();
   drawCached(ctx, cached('jer', (x) => BG.jerusalemNight(x)));
-  BG.jerusalemDyn(ctx, t, { torches: [[560, 760, 1]] });
-  // figures crossing: guards dragging Yosef
-  const sx = lerp(820, 300, smooth(lt / dur));
-  const sil = { side: 1, key: '#3a3040', amb: '#141018', shadow: 0.9, rim: '#ff9a50', rimA: 0.7, rimSide: 1, wrap: 0.2 };
-  actor(ctx, W, 'yosef', t, { x: sx, y: 900, s: 46, facing: -1, by: -0.4, len: 9.5 }, sil, looks({ gx: 0.5, gy: 0, yaw: 0.4, pitch: 0 }));
-  actor(ctx, W, 'saul', t, { x: sx + 170, y: 880, s: 48, facing: -1, by: -0.4, len: 9.5 }, sil, looks({ gx: -0.5, gy: 0, yaw: -0.4, pitch: 0 }));
+  BG.jerusalemDyn(ctx, t, { torches: [[540, 740, 1]] });
+  const sx = lerp(760, 300, smooth(lt / dur));
+  const sil = { side: 1, key: '#9a7a6a', amb: '#3a3048', shadow: 0.8, rim: '#ff9a50', rimA: 0.8, rimSide: 1, wrap: 0.35 };
+  actor(ctx, W, 'yosef', t, { x: sx, y: 930, s: 50, facing: -1, by: -0.4, len: 9.5 }, sil, looks({ gx: 0.5, gy: 0, yaw: 0.4, pitch: 0 }), { noTag: true });
+  actor(ctx, W, 'saul', t, { x: sx + 190, y: 905, s: 52, facing: -1, by: -0.4, len: 9.5 }, sil, looks({ gx: -0.5, gy: 0, yaw: -0.4, pitch: 0 }), { noTag: true });
   ctx.restore();
-  // wood grain
-  ctx.strokeStyle = rgba('#20140c', 0.8); ctx.lineWidth = 6;
-  for (let i = 0; i < 12; i++) { ctx.beginPath(); ctx.moveTo(i * 40, 0); ctx.lineTo(i * 40 + 10, VH); ctx.stroke(); }
-  ctx.fillStyle = L.linear(ctx, slitX - 60, 0, slitX, 0, [[0, rgba('#000000', 0)], [1, rgba('#2a1a10', 0.9)]]);
-  ctx.fillRect(slitX - 60, 0, 60, VH);
+  doorPlanks(ctx, 0, gx, t);
+  doorPlanks(ctx, gx + gw, VW, t);
+  gapGlow(ctx, gx, -1, t);
+  gapGlow(ctx, gx + gw, 1, t);
+  // a small hand gripping the door edge
+  const st = C.child;
+  ctx.save();
+  ctx.translate(gx - 8, 1180);
+  ctx.fillStyle = L.mul(st.skin, '#d8a070');
+  for (let k = 0; k < 4; k++) { ctx.beginPath(); ctx.ellipse(0, k * 46, 34, 20, 0.1, 0, L.TAU); ctx.fill(); }
+  ctx.strokeStyle = st.line; ctx.lineWidth = 3;
+  for (let k = 0; k < 4; k++) { ctx.beginPath(); ctx.ellipse(0, k * 46, 34, 20, 0.1, -1.4, 1.4); ctx.stroke(); }
+  ctx.restore();
+  BG.vignette(ctx, 0.45, '#010205');
 };
 
 S.jer_child = (ctx, W, t, lt, dur, p) => {
-  ctx.fillStyle = '#040302'; ctx.fillRect(0, 0, VW, VH);
-  const slitX = 420, slitW = 300;
+  // the boy behind the door, his face caught in the strip of torchlight from the gap
+  ctx.fillStyle = '#0c0a0e'; ctx.fillRect(0, 0, VW, VH);
+  const gx = 330, gw = 470;
+  const Lt = { side: 1, key: '#ffcc98', amb: '#4a4266', shadow: 0.8, rim: '#ffa060', rimA: 0.5, rimSide: 1, wrap: 0.6 };
   ctx.save();
-  ctx.beginPath(); ctx.rect(slitX, 0, slitW, VH); ctx.clip();
-  // torchlit face in the slit
-  ctx.fillStyle = '#100c10'; ctx.fillRect(0, 0, VW, VH);
-  const Lt = { side: 1, key: '#ffc890', amb: '#3a3456', shadow: 0.85, rim: '#ffa060', rimA: 0.5, rimSide: 1, wrap: 0.55 };
-  actor(ctx, W, 'child', t, { x: 560, y: 1310, s: 205, facing: 1, by: 0.2, len: 5 }, Lt, looks({ gx: 0.5, gy: 0.0, yaw: 0.2, pitch: 0.0 }, { out: { gx: 0.55, gy: 0.05, yaw: 0.22, pitch: 0.02 } }));
+  ctx.beginPath(); ctx.rect(gx, 0, gw, VH); ctx.clip();
+  ctx.fillStyle = L.linear(ctx, gx, 0, gx + gw, 0, [[0, '#2a1c18'], [1, '#14100e']]);
+  ctx.fillRect(gx, 0, gw, VH);
+  actor(ctx, W, 'child', t, { x: 570, y: 1290, s: 190, facing: 1, by: 0.2, len: 5 }, Lt, looks({ gx: 0.5, gy: 0.0, yaw: 0.2, pitch: 0.0 }, { out: { gx: 0.55, gy: 0.05, yaw: 0.22, pitch: 0.02 } }));
   const f = 0.8 + 0.2 * L.fbm1(t * 3, 9);
   ctx.globalCompositeOperation = 'lighter';
-  L.glow(ctx, 900, 700, 600, '#ff8a30', 0.18 * f);
+  L.glow(ctx, 860, 700, 600, '#ff8a30', 0.2 * f);
   ctx.restore();
-  // door edges
-  ctx.fillStyle = L.linear(ctx, slitX - 80, 0, slitX + 10, 0, [[0, '#050403'], [1, rgba('#050403', 0)]]);
-  ctx.fillRect(slitX - 80, 0, 90, VH);
-  ctx.fillStyle = L.linear(ctx, slitX + slitW - 10, 0, slitX + slitW + 80, 0, [[0, rgba('#050403', 0)], [1, '#050403']]);
-  ctx.fillRect(slitX + slitW - 10, 0, 90, VH);
+  doorPlanks(ctx, 0, gx, t);
+  doorPlanks(ctx, gx + gw, VW, t);
+  gapGlow(ctx, gx, -1, t, 0.7);
+  gapGlow(ctx, gx + gw, 1, t, 0.7);
+  // his fingers curled around the door edge
+  ctx.save();
+  ctx.translate(gx + gw + 6, 1150);
+  ctx.fillStyle = L.mul(C.child.skin, '#ffcc98');
+  for (let k = 0; k < 4; k++) { ctx.beginPath(); ctx.ellipse(0, k * 50, 38, 22, -0.1, 0, L.TAU); ctx.fill(); }
+  ctx.strokeStyle = C.child.line; ctx.lineWidth = 3;
+  for (let k = 0; k < 4; k++) { ctx.beginPath(); ctx.ellipse(0, k * 50, 38, 22, -0.1, 1.7, 4.6); ctx.stroke(); }
+  ctx.restore();
+  BG.vignette(ctx, 0.4, '#010205');
 };
 
 S.jer_yosef = (ctx, W, t, lt, dur, p) => {
@@ -617,10 +677,21 @@ S.jer_saul = (ctx, W, t, lt, dur, p) => {
 };
 
 S.jer_yosef_look = (ctx, W, t, lt, dur, p) => {
-  camera(ctx, lt, dur, p, [540, 840]);
+  // over young Paul's shoulder: Yosef, bound, turns and looks at him without hatred
+  camera(ctx, lt, dur, p, [640, 840]);
   drawCached(ctx, bgView('jer', (x) => BG.jerusalemNight(x), { z: 1.8, cx: 700, cy: 800 }, 14));
-  const lk = looks({ gx: 0.0, gy: 0.0, yaw: 0.0, pitch: 0.0 }, { cam: { gx: 0.02, gy: -0.02, yaw: 0.04, pitch: -0.02 } });
-  actor(ctx, W, 'yosef', t, { x: 540, y: 1330, s: 200, facing: 1, by: 0.1, len: 5 }, LIGHT.jer, lk);
+  const lk = looks({ gx: -0.3, gy: 0.05, yaw: -0.16, pitch: 0.02 }, { paul: { gx: -0.32, gy: 0.06, yaw: -0.18, pitch: 0.03 } });
+  actor(ctx, W, 'yosef', t, { x: 660, y: 1330, s: 190, facing: -1, by: -0.15, len: 5 }, LIGHT.jer, lk);
+  // young Paul from behind, out of focus in the foreground (dark curly head, shoulder, torch rim)
+  ctx.save();
+  ctx.filter = 'blur(6px)';
+  ctx.fillStyle = '#0d0a0c';
+  ctx.beginPath(); ctx.ellipse(130, 900, 230, 270, 0.15, 0, L.TAU); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(-200, 1920); ctx.quadraticCurveTo(-120, 1180, 120, 1120); ctx.quadraticCurveTo(420, 1120, 520, 1920); ctx.closePath(); ctx.fill();
+  for (let i = 0; i < 9; i++) { const a = -2.4 + i * 0.32; ctx.beginPath(); ctx.arc(130 + Math.cos(a) * 225, 900 + Math.sin(a) * 262, 34, 0, L.TAU); ctx.fill(); }
+  ctx.strokeStyle = rgba('#ff9a50', 0.55); ctx.lineWidth = 10;
+  ctx.beginPath(); ctx.ellipse(130, 900, 236, 276, 0.15, -1.2, 0.4); ctx.stroke();
+  ctx.restore();
   BG.vignette(ctx, 0.5, '#010205');
 };
 
@@ -698,7 +769,7 @@ S.dam_saul_kneel = (ctx, W, t, lt, dur, p) => {
   pS.x += shake;
   actor(ctx, W, 'saul', t, pS, Lt, looks({ gx: 0, gy: 0.7, yaw: 0.1, pitch: 0.28 }, { down: { gx: 0, gy: 0.8, yaw: 0.1, pitch: 0.3 } }),
     { afterTorso: (o) => kneelLegs(ctx, o.neck, o.s, 1, C.saul, Lt) });
-  BG.dust(ctx, t, { x: 100, y: 900, w: 880, h: 900 }, 40, '#fff4d0', 33, 0.6, 3.5);
+  BG.dust(ctx, t, { x: 100, y: 900, w: 880, h: 900 }, 24, '#fff4d0', 33, 0.6, 3.5);
 };
 
 S.dam_jesus = (ctx, W, t, lt, dur, p) => {
@@ -706,12 +777,13 @@ S.dam_jesus = (ctx, W, t, lt, dur, p) => {
   BG.heavenLight(ctx, t, { x: 540, y: 560 });
   const Lt = LIGHT.divine;
   const lk = looks({ gx: 0, gy: 0.6, yaw: 0.0, pitch: 0.22 }, { down: { gx: 0.0, gy: 0.65, yaw: 0.02, pitch: 0.24 }, cam: { gx: 0, gy: 0.1, yaw: 0, pitch: 0.05 } });
+  halo(ctx, 540, 1150 - 2.2 * 160 - 30, 160, 0.9);
   actor(ctx, W, 'jesus', t, { x: 540, y: 1150, s: 160, facing: 1, by: 0.0, len: 7 }, Lt, lk);
   // radiance over the figure
   ctx.save(); ctx.globalCompositeOperation = 'lighter';
   L.glow(ctx, 540, 600, 700, '#fff6dc', 0.35);
   ctx.restore();
-  BG.dust(ctx, t, { x: 0, y: 0, w: VW, h: VH }, 40, '#ffffff', 17, 0.55, 3);
+  BG.dust(ctx, t, { x: 0, y: 0, w: VW, h: VH }, 22, '#ffffff', 17, 0.55, 3);
 };
 
 S.dam_saul_up = (ctx, W, t, lt, dur, p) => {
@@ -723,7 +795,7 @@ S.dam_saul_up = (ctx, W, t, lt, dur, p) => {
   ctx.restore();
   const lk = looks({ gx: 0, gy: -0.7, yaw: 0.05, pitch: -0.3 }, { up: { gx: 0.0, gy: -0.75, yaw: 0.05, pitch: -0.32 } });
   actor(ctx, W, 'saul', t, { x: 540, y: 1360, s: 190, facing: 1, by: 0.1, len: 5, style: 'saul_travel' }, LIGHT.lightUp, lk);
-  BG.dust(ctx, t, { x: 0, y: 0, w: VW, h: VH }, 26, '#fff4d0', 41, 0.5, 3);
+  BG.dust(ctx, t, { x: 0, y: 0, w: VW, h: VH }, 16, '#fff4d0', 41, 0.5, 3);
 };
 
 S.dam_hands = (ctx, W, t, lt, dur, p) => {
@@ -775,16 +847,17 @@ S.dawn_jesus = (ctx, W, t, lt, dur, p) => {
   ctx.restore();
   const Lt = Object.assign({}, LIGHT.divine, { key: '#fff2dc', amb: '#e8c0a0', rim: '#ffe0a0' });
   const lk = looks({ gx: 0, gy: 0.05, yaw: 0.0, pitch: 0.03 }, { cam: { gx: 0.0, gy: 0.0, yaw: 0.0, pitch: 0.02 } });
+  halo(ctx, 540, 1120 - 2.2 * 150 - 28, 150, 0.85);
   actor(ctx, W, 'jesus', t, { x: 540, y: 1120, s: 150, facing: 1, by: 0.0, len: 7 }, Lt, lk);
-  BG.dust(ctx, t, { x: 0, y: 0, w: VW, h: VH }, 30, '#fff0c0', 51, 0.5, 3);
+  BG.dust(ctx, t, { x: 0, y: 0, w: VW, h: VH }, 18, '#fff0c0', 51, 0.5, 3);
 };
 
 S.end_card = (ctx, W, t, lt, dur, p) => {
   drawCached(ctx, cached('dawnsky2', (x) => { BG.dawnRoad(x, { horizon: 1300 }); }, 26));
   ctx.fillStyle = rgba('#0a0608', 0.35); ctx.fillRect(0, 0, VW, VH);
   BG.dawnDyn(ctx, t, { horizon: 1300 });
-  B.drawHalfBread(ctx, 470, 1300, 110, LIGHT.dawn, { face: 1, rot: -0.1 });
-  B.drawHalfBread(ctx, 610, 1300, 110, LIGHT.dawn, { face: -1, rot: 0.1 });
+  B.drawBread(ctx, 470, 1330, 190, LIGHT.dawn, { rot: -0.04 });
+  B.drawHalfBread(ctx, 760, 1390, 105, LIGHT.dawn, { face: -1, rot: 0.25 });
 };
 
 // ------------------------------------------------------------------ grades

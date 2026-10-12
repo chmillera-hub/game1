@@ -58,7 +58,9 @@ const TRANS = { dissolve: 0.8, memory: 0.7, memory_out: 0.7 };
 function renderFrame(t) {
   const idx = shotAt(t);
   const sh = tl.shots[idx];
+  global.HEADPOS = {};
   drawShot(mctx, idx, t);
+  const heads = Object.assign({}, global.HEADPOS);
   const tr = sh.params && sh.params.trans;
   const lt = t - sh.start;
   if (tr && TRANS[tr] && lt < TRANS[tr] && idx > 0) {
@@ -79,7 +81,7 @@ function renderFrame(t) {
   }
   mctx.save();
   mctx.setTransform(R, 0, 0, R, 0, 0);
-  drawTexts(mctx, t);
+  drawTexts(mctx, t, heads);
   drawSubs(mctx, t);
   mctx.restore();
 }
@@ -93,7 +95,7 @@ function spaced(ctx, text, x, y, spacing) {
   let cx = x - w / 2;
   for (const ch of text) { ctx.fillText(ch, cx, y); cx += ctx.measureText(ch).width + spacing; }
 }
-function drawTexts(ctx, t) {
+function drawTexts(ctx, t, heads = {}) {
   for (const tx of tl.texts) {
     const lt = t - tx.t;
     if (lt < 0 || lt > tx.dur) continue;
@@ -124,19 +126,43 @@ function drawTexts(ctx, t) {
     } else if (tx.style === 'end') {
       ctx.globalAlpha = Math.min(smooth(lt / 1.2), 1);
       ctx.shadowColor = 'rgba(0,0,0,0.8)'; ctx.shadowBlur = 16;
-      ctx.font = `italic 500 60px Lora`;
+      ctx.font = `italic 500 62px Lora`;
       ctx.fillStyle = '#fff6e4';
-      const lines = wrap(ctx, '“' + tx.text + '”', 860);
-      lines.forEach((ln, i) => { ctx.textAlign = 'center'; ctx.fillText(ln, 540, 640 + i * 84); });
-      ctx.font = `600 38px Cinzel`;
-      ctx.fillStyle = '#f0c868';
-      ctx.textAlign = 'left';
-      spaced(ctx, (tx.sub || '').toUpperCase(), 540, 660 + lines.length * 84 + 30, 4);
-      ctx.globalAlpha = Math.min(smooth((lt - 1.5) / 1.2), 1) * 0.8;
-      ctx.font = `400 24px ${SANS}`;
-      ctx.fillStyle = '#e8dcc8';
-      ctx.textAlign = 'center';
-      ctx.fillText('Scripture quotations: New International Version (NIV)', 540, 1780);
+      const lines = tx.text.split('\n').flatMap((part) => wrap(ctx, part.trim(), 860));
+      const y0 = 700 - (lines.length - 1) * 44;
+      lines.forEach((ln, i) => { ctx.textAlign = 'center'; ctx.fillText(ln, 540, y0 + i * 88); });
+    } else if (tx.style === 'name') {
+      const hp = heads[tx.who];
+      if (hp) {
+        const a = Math.min(smooth(lt / 0.45), 1 - smooth((lt - (tx.dur - 0.6)) / 0.6));
+        const [main, ...rest] = tx.text.split('\u00b7').map((q) => q.trim());
+        const sub = rest.join(' \u00b7 ');
+        ctx.globalAlpha = a;
+        ctx.font = `700 40px Cinzel`;
+        let w = 0;
+        for (const ch of main) w += ctx.measureText(ch).width + 5;
+        ctx.font = `600 22px ${SANS}`;
+        const ws = sub ? ctx.measureText(sub.toUpperCase()).width + 10 : 0;
+        const bw = Math.max(w, ws) + 56, bh = sub ? 104 : 72;
+        const x = clamp(hp.x, bw / 2 + 30, VW - bw / 2 - 30);
+        const y = clamp(hp.y - hp.s * 1.95 - bh - 26, 150, VH - 600);
+        ctx.fillStyle = 'rgba(14,10,8,0.62)';
+        ctx.beginPath(); ctx.roundRect(x - bw / 2, y, bw, bh, 18); ctx.fill();
+        ctx.strokeStyle = 'rgba(240,200,104,0.85)'; ctx.lineWidth = 2.5; ctx.stroke();
+        const px = clamp(hp.x, x - bw / 2 + 30, x + bw / 2 - 30);
+        ctx.fillStyle = 'rgba(240,200,104,0.85)';
+        ctx.beginPath(); ctx.moveTo(px - 13, y + bh); ctx.lineTo(px + 13, y + bh); ctx.lineTo(px, y + bh + 16); ctx.closePath(); ctx.fill();
+        ctx.font = `700 40px Cinzel`;
+        ctx.fillStyle = '#f6e7bf';
+        ctx.textAlign = 'left';
+        spaced(ctx, main, x, y + 52, 5);
+        if (sub) {
+          ctx.font = `600 22px ${SANS}`;
+          ctx.fillStyle = '#e6cf9a';
+          ctx.textAlign = 'center';
+          ctx.fillText(sub.toUpperCase(), x, y + 86);
+        }
+      }
     }
     ctx.restore();
   }
@@ -172,6 +198,24 @@ function subStyle(who) {
   if (who === 'jesus') return { font: (sz) => `600 ${sz}px ${SANS}`, color: '#ffe7b0', size: 46 };
   return { font: (sz) => `600 ${sz}px ${SANS}`, color: '#ffffff', size: 46 };
 }
+// the speaker's name leads a subtitle whenever a different character starts talking
+const SPEAKER = { narrator: 'NARRATOR', jesus: 'JESUS', paul: 'PAUL', saul: 'PAUL', asher: 'ASHER', child: 'YOUNG ASHER',
+  yosef: 'YOSEF', phoebe: 'PHOEBE', guard: 'GUARD', both: 'PAUL & ASHER' };
+const NAME_FONT = (sz) => `800 ${Math.round(sz * 0.82)}px ${SANS}`;
+function layoutSub(ctx, prefix, text, st, size, maxW) {
+  ctx.font = NAME_FONT(size);
+  const pw = prefix ? ctx.measureText(prefix).width + size * 0.45 : 0;
+  ctx.font = st.font(size);
+  const words = text.split(/\s+/);
+  const lines = [];
+  let cur = '', avail = maxW - pw;
+  for (const w of words) {
+    const test = cur ? cur + ' ' + w : w;
+    if (ctx.measureText(test).width > avail && cur) { lines.push(cur); cur = w; avail = maxW; } else cur = test;
+  }
+  if (cur) lines.push(cur);
+  return { lines, pw };
+}
 function drawSubs(ctx, t) {
   const lines = tl.lines;
   for (let i = 0; i < lines.length; i++) {
@@ -181,26 +225,42 @@ function drawSubs(ctx, t) {
     if (t < ln.start - 0.04 || t > endT) continue;
     const a = Math.min(clamp((t - (ln.start - 0.04)) / 0.08), clamp((endT - t) / 0.1));
     const st = subStyle(ln.who);
+    const prev = lines[i - 1];
+    const prefix = !prev || SPEAKER[prev.who] !== SPEAKER[ln.who] ? SPEAKER[ln.who] : '';
     let size = st.size;
+    let lay = layoutSub(ctx, prefix, ln.text, st, size, 860);
+    if (lay.lines.length > 2) { size = Math.round(size * 0.86); lay = layoutSub(ctx, prefix, ln.text, st, size, 880); }
+    const lh = size * 1.28;
+    const y0 = 1430 - (lay.lines.length - 1) * lh * 0.5;
     ctx.save();
     ctx.globalAlpha = a;
-    ctx.textAlign = 'center';
     ctx.textBaseline = 'alphabetic';
-    ctx.font = st.font(size);
-    let ls = wrap(ctx, ln.text, 860);
-    if (ls.length > 2) { size = Math.round(size * 0.86); ctx.font = st.font(size); ls = wrap(ctx, ln.text, 880); }
-    const lh = size * 1.28;
-    const y0 = 1430 - (ls.length - 1) * lh * 0.5;
-    ls.forEach((s, k) => {
+    ctx.textAlign = 'left';
+    lay.lines.forEach((txt, k) => {
       const y = y0 + k * lh;
+      ctx.font = st.font(size);
+      const tw = ctx.measureText(txt).width;
+      const pw = k === 0 ? lay.pw : 0;
+      let x = 525 - (tw + pw) / 2;
       ctx.lineJoin = 'round';
+      ctx.shadowColor = 'rgba(0,0,0,0.6)'; ctx.shadowBlur = 10;
+      if (pw) {
+        ctx.font = NAME_FONT(size);
+        ctx.strokeStyle = 'rgba(0,0,0,0.9)'; ctx.lineWidth = size * 0.2;
+        ctx.strokeText(prefix, x, y);
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = '#f0c868';
+        ctx.fillText(prefix, x, y);
+        x += pw;
+        ctx.shadowBlur = 10;
+      }
+      ctx.font = st.font(size);
       ctx.strokeStyle = 'rgba(0,0,0,0.88)';
       ctx.lineWidth = size * 0.2;
-      ctx.shadowColor = 'rgba(0,0,0,0.6)'; ctx.shadowBlur = 10;
-      ctx.strokeText(s, 525, y);
+      ctx.strokeText(txt, x, y);
       ctx.shadowBlur = 0;
       ctx.fillStyle = st.color;
-      ctx.fillText(s, 525, y);
+      ctx.fillText(txt, x, y);
     });
     ctx.restore();
   }

@@ -101,7 +101,7 @@ def build():
         elif k == "text":
             t = resolve(ev)
             texts.append(dict(t=round(t, 4), dur=ev.get("dur", 3.0), style=ev["style"], text=ev["text"],
-                              sub=ev.get("sub")))
+                              sub=ev.get("sub"), who=ev.get("who")))
     if cur_shot:
         cur_shot["end"] = cur
     total = cur
@@ -145,8 +145,8 @@ def main():
     def ts(t):
         h = int(t // 3600); m = int(t % 3600 // 60); s = t % 60
         return f"{h:02d}:{m:02d}:{int(s):02d},{int(round((s - int(s)) * 1000)):03d}"
-    names = dict(narrator="Narrator", jesus="Jesus", paul="Paul", saul="Saul", asher="Asher", yosef="Yosef",
-                 elder="Elder", guard="Guard", child="Young Asher", both="Paul & Asher")
+    names = dict(narrator="Narrator", jesus="Jesus", paul="Paul", saul="Paul", asher="Asher", yosef="Yosef",
+                 phoebe="Phoebe", guard="Guard", child="Young Asher", both="Paul & Asher")
     with open(os.path.join(work, "subtitles.srt"), "w") as f:
         lines = tl["lines"]
         for i, ln in enumerate(lines, 1):

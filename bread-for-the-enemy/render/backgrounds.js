@@ -281,7 +281,7 @@ function cellDyn(ctx, t, o = {}) {
   const wx = o.winX || 250, wy = o.winY || 330;
   const a = (o.shaftA == null ? 0.22 : o.shaftA);
   lightShaft(ctx, [wx + 10, wy], [o.shaftX || 560, o.shaftY || 1750], 170, 480, o.shaftColor || '#cfe0ff', a);
-  dust(ctx, t, { x: wx, y: wy + 60, w: 520, h: 1300 }, 34, '#e8f0ff', 5, 0.5, 2.6);
+  dust(ctx, t, { x: wx, y: wy + 60, w: 520, h: 1300 }, 20, '#e8f0ff', 5, 0.5, 2.6);
   if (o.lamp !== false) {
     const lx = o.lampX || 880, ly = o.lampY || 1050;
     B.drawFlame(ctx, lx, ly - 6, 16, t, 4);
@@ -422,7 +422,7 @@ function dawnDyn(ctx, t, o = {}) {
     ctx.closePath(); ctx.fill();
   }
   ctx.restore();
-  dust(ctx, t, { x: 0, y: 600, w: VW, h: 1100 }, 24, '#ffe0b0', 9, 0.4, 2.5);
+  dust(ctx, t, { x: 0, y: 600, w: VW, h: 1100 }, 14, '#ffe0b0', 9, 0.4, 2.5);
 }
 
 module.exports = {

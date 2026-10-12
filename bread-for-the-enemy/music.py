@@ -133,113 +133,157 @@ def pad(s, ch, prog, t0, bar, vel=52, bass_ch=3, bass_vel=48, harp=None, harp_ve
 
 
 def compose(tl):
+    """Every cue is anchored to story events (shots, lines), never to absolute seconds,
+    so the score follows the film when dialogue or pacing changes."""
     s = Score()
     cue = {m["cue"]: m["t"] for m in tl["music"]}
     lines = tl["lines"]
+    shots = tl["shots"]
 
-    def line_t(who, text_start):
+    def LN(who, prefix, end=False):
         for ln in lines:
-            if ln["who"] == who and ln["text"].startswith(text_start):
-                return ln["start"]
-        raise KeyError(text_start)
+            if ln["who"] == who and ln["text"].startswith(prefix):
+                return ln["end"] if end else ln["start"]
+        raise KeyError(f"{who}: {prefix}")
+
+    def SH(sid, n=0, end=False):
+        hits = [x for x in shots if x["id"] == sid]
+        return hits[n]["end"] if end else hits[n]["start"]
+
+    def spread(names, t0, t1):
+        """evenly spaced chord changes between two anchors"""
+        step = (t1 - t0) / len(names)
+        return [(nm, t0 + i * step, t0 + (i + 1) * step) for i, nm in enumerate(names)]
 
     # ------------------------------------------------------------- PROLOGUE (D major)
     bar = 4 * (60 / 72)
     s.ramp(0, 70, 92, 0, 6)
-    pad(s, 0, ["D", "Bm", "G", "A", "DF", "G"], 0.0, bar, vel=50, harp=bar / 8, harp_vel=40)
-    s.chord(0, ["E3", "B3", "D4", "G4"], 6 * bar, bar * 0.5, 44)
-    s.chord(0, CH["A"], 6.5 * bar, bar * 0.62, 42)
-    # flute answers between the spoken lines
-    s.melody(6, [("A4", 0.5), ("D5", 1.5), ("C#5", 0.5), ("B4", 0.5), ("A4", 2)], 9.75, 60 / 72, vel=48)
-    s.melody(14, [("G4", 1.5), ("F#4", 0.5), ("E4", 1), ("D4", 1), ("E4", 3)], 19.9, 60 / 72, vel=50)
+    pro_end = SH("street_wide")
+    nbar = max(4, int((pro_end - 0.5) / bar) - 1)
+    prog = (["D", "Bm", "G", "A", "DF", "G", "D", "Bm"] * 2)[:nbar]
+    pad(s, 0, prog, 0.0, bar, vel=50, harp=bar / 8, harp_vel=40)
+    s.chord(0, ["E3", "B3", "D4", "G4"], nbar * bar, bar * 0.5, 44)
+    s.chord(0, CH["A"], (nbar + 0.5) * bar, max(0.5, pro_end - (nbar + 0.5) * bar), 42)
+    # flute answers after Jesus speaks; English horn under His sorrowful look at the door
+    s.melody(6, [("A4", 0.5), ("D5", 1.5), ("C#5", 0.5), ("B4", 0.5), ("A4", 2)], LN("jesus", "Love each other", True) + 0.05, 60 / 72, vel=48)
+    s.melody(14, [("G4", 1.5), ("F#4", 0.5), ("E4", 1), ("D4", 1), ("E4", 3)], SH("upper_jesus_door") + 0.2, 60 / 72, vel=50)
 
     # ------------------------------------------------------------- STREET (D minor, dark)
     t0 = cue["street"]
+    t1 = SH("church_reader")
     s.ramp(1, 60, 85, t0, t0 + 8)
+    seg = (t1 - t0) / 3
     for i, (b, c) in enumerate([("D1", ["D2", "A2"]), ("Bb0", ["D2", "F2"]), ("D1", ["D2", "A2"])]):
-        s.note(3, b, t0 + i * 6.1, 6.2, 52)
-        s.chord(1, c, t0 + i * 6.1, 6.2, 42)
-    for k, p in enumerate(["D3", "F3", "A3", "Bb2", "D3", "A2"]):
-        s.note(5, p, t0 + 1.2 + k * 2.9, 3.2, 38)
-    s.melody(2, [("A3", 3), ("Bb3", 2), ("A3", 3)], cue["street"] + 11.9, 1.0, vel=48)
+        s.note(3, b, t0 + i * seg, seg + 0.1, 52)
+        s.chord(1, c, t0 + i * seg, seg + 0.1, 42)
+    for k, p in enumerate(["D3", "F3", "A3", "Bb2", "D3", "A2", "F3"]):
+        tk = t0 + 1.2 + k * 2.9
+        if tk < t1 - 1:
+            s.note(5, p, tk, 3.2, 38)
+    s.melody(2, [("A3", 3), ("Bb3", 2), ("A3", 3)], SH("street_asher_cu") + 0.1, 1.0, vel=48)
+    # sad look to the ground after "This is foolish."
+    s.note(14, "F4", LN("asher", "Why am I even here", True) + 0.3, 2.2, 40)
+    s.note(14, "E4", LN("asher", "Why am I even here", True) + 2.5, 1.5, 36)
+
     # ------------------------------------------------------------- CHURCH (warm minor -> F)
-    t0 = 41.49
+    t0 = SH("church_reader")
+    t1 = SH("street_asher_cu", 1)
     s.ramp(1, 70, 92, t0, t0 + 3)
-    for name, a, b in [("Dm", 41.49, 47.6), ("Bb", 47.6, 53.6), ("F", 53.6, 59.8), ("C", 59.8, 65.2), ("Dm", 65.2, 70.9)]:
+    for name, a, b in spread(["Dm", "Bb", "F", "C", "Dm"], t0, t1):
         s.chord(1, CH[name], a, b - a + 0.2, 46)
         s.note(3, BASS[name], a, b - a, 40)
         s.chord(4, [P(p) + 12 for p in CH[name]], a, 3.0, 40, roll=0.09)
-    s.chord(10, ["F3", "A3", "C4", "F4"], 60.2, 5.0, 40)
-    s.ramp(10, 40, 90, 60.2, 62.5)
-    s.ramp(10, 90, 30, 63.5, 65.3)
-    s.note(2, "Bb2", 65.3, 3.0, 50)
-    s.note(2, "A2", 68.3, 2.6, 46)
-    # street again
-    t0 = 70.86
-    s.note(3, "D1", t0, 4.3, 46)
-    s.chord(1, ["D2", "A2"], t0, 4.3, 40)
+    t_en = LN("phoebe", "If your enemy")
+    s.chord(10, ["F3", "A3", "C4", "F4"], t_en, 5.0, 40)
+    s.ramp(10, 40, 90, t_en, t_en + 2.3)
+    s.ramp(10, 90, 30, t_en + 3.3, t_en + 5.1)
+    t_co = LN("phoebe", "In doing this")
+    s.note(2, "Bb2", t_co, 3.0, 50)
+    s.note(2, "A2", t_co + 3.0, 2.6, 46)
+    # street again, until the knock
+    t0 = SH("street_asher_cu", 1)
+    s.note(3, "D1", t0, SH("street_knock") - t0, 46)
+    s.chord(1, ["D2", "A2"], t0, SH("street_knock") - t0, 40)
 
-    # ------------------------------------------------------------- CELL (sparse, low)
+    # ------------------------------------------------------------- CELL (warm welcome, then the wound opens)
     t0 = cue["cell"]
+    t_rev = LN("asher", "Someone you met")
     s.ramp(1, 40, 70, t0, t0 + 6)
-    s.chord(1, ["D2", "A2", "F3"], t0 + 1.0, 26.0, 36)
-    t_rev = 110.31
-    s.ramp(12, 30, 80, t_rev, 127.0)
-    s.chord(12, ["D3", "Eb3"], t_rev, 17.0, 40)
-    s.note(3, "D1", 118.67, 9.0, 44)
-    s.note(2, "F3", 127.6, 5.4, 52)
-    s.note(2, "E3", 133.0, 3.5, 46)
-    s.chord(0, ["D3", "A3", "F4"], 135.3, 2.4, 32)
-    s.note(5, "A4", 136.2, 2.0, 34)
+    # Paul's welcome: a soft, warm major colour (he believes the best of the stranger)
+    t_w = LN("paul", "Come in, come in")
+    for name, a, b in spread(["D", "G", "D", "A"], t_w, LN("asher", "I'm not Luke")):
+        s.chord(1, CH[name], a, b - a + 0.2, 32)
+    s.chord(1, ["D2", "A2", "F3"], LN("asher", "I'm not Luke"), t_rev - LN("asher", "I'm not Luke"), 32)
+    t_yo = LN("asher", "You dragged a man")
+    s.ramp(12, 30, 80, t_rev, LN("asher", "I was eight"))
+    s.chord(12, ["D3", "Eb3"], t_rev, LN("asher", "I was eight") - t_rev, 40)
+    s.note(3, "D1", t_yo, LN("asher", "I was eight") - t_yo, 44)
+    t8 = LN("asher", "I was eight")
+    t_home = LN("asher", "He never came home")
+    s.note(2, "F3", t8 + 0.1, t_home - t8, 52)
+    s.note(2, "E3", t_home, 3.5, 46)
+    t_sil = LN("asher", "He never came home", True) + 1.2
+    s.chord(0, ["D3", "A3", "F4"], t_sil, 2.4, 32)
+    s.note(5, "A4", t_sil + 0.9, 2.0, 34)
     # English horn: the love motif in D minor, soft, under Paul's memory
-    s.ramp(14, 70, 82, 138.0, 140)
-    s.melody(14, LOVE_A_MIN[:7], 138.6, 1.05, vel=46)
-    s.chord(1, CH["Dm"], 138.6, 6.3, 30)
-    s.chord(1, CH["Gm"], 144.9, 6.0, 30)
+    t_eh = LN("paul", "He looked at me.") + 1.3
+    s.ramp(14, 70, 82, t_eh - 0.6, t_eh + 1.4)
+    s.melody(14, LOVE_A_MIN[:7], t_eh, 1.05, vel=46)
+    s.chord(1, CH["Dm"], t_eh, 6.3, 30)
+    s.chord(1, CH["Gm"], t_eh + 6.3, 6.0, 30)
 
     # ------------------------------------------------------------- JERUSALEM (phrygian, terror)
     t0 = cue["jerusalem"]
     s.ramp(12, 50, 100, t0, t0 + 4)
-    s.chord(12, ["D3", "Eb3", "A3"], t0, 5.0, 56)
+    s.chord(12, ["D3", "Eb3", "A3"], t0, 5.4, 56)
     beat = 60 / 76
-    for k in range(int(5.0 / beat)):
+    for k in range(int(5.4 / beat)):
         s.note(11, "D2", t0 + k * beat, 0.3, 74 - k * 3)
-    s.chord(2, ["D2", "A2"], t0 + 2.6, 2.0, 70)
-    t_y = line_t("yosef", "Asher. Don't")
-    s.chord(1, ["D3", "F#3", "A3", "D4"], t_y - 0.4, 9.5, 44)
+    s.chord(2, ["D2", "A2"], SH("jer_child"), 2.0, 70)
+    t_y = LN("yosef", "Asher, my love")
+    s.chord(1, ["D3", "F#3", "A3", "D4"], t_y - 0.4, LN("saul", "Take him") - t_y + 0.3, 44)
     s.ramp(1, 40, 80, t_y - 0.4, t_y + 2)
     s.melody(14, [("F#4", 1.5), ("G4", 0.5), ("A4", 2), ("B4", 1), ("A4", 1), ("F#4", 2)], t_y + 3.2, 0.9, vel=44)
-    t_s = line_t("saul", "Take him")
+    t_s = LN("saul", "Take him")
     s.silence(t_s - 0.05)
     s.note(11, "D2", t_s, 0.8, 110)
     s.chord(2, ["D2", "D3"], t_s, 0.9, 100)
     s.chord(3, ["D1", "A1"], t_s, 1.2, 100)
     s.chord(8, ["D3", "Eb3", "A3"], t_s, 1.1, 82)
-    s.chord(1, ["A4", "A5"], 168.6, 3.4, 40)
-    s.ramp(1, 30, 70, 168.6, 170.2)
-    s.chord(4, ["A5", "E6"], 168.9, 2.0, 34)
-    s.note(2, "D2", 171.9, 2.0, 44)
+    t_lk = SH("jer_yosef_look")
+    s.chord(1, ["A4", "A5"], t_lk + 0.1, SH("jer_saul", 1) - t_lk, 40)
+    s.ramp(1, 30, 70, t_lk + 0.1, t_lk + 1.7)
+    s.chord(4, ["A5", "E6"], LN("yosef", "May God open"), 2.0, 34)
+    s.note(2, "D2", SH("jer_saul", 1), 2.0, 44)
 
-    # ------------------------------------------------------------- CELL (confession)
-    s.note(3, "D1", 178.3, 14.0, 34)
-    s.chord(1, CH["Bb"], 193.9, 5.0, 34)
-    s.chord(1, CH["F"], 198.9, 4.2, 30)
+    # ------------------------------------------------------------- CELL (Paul answers; the confession)
+    t_rm = LN("paul", "I remember him because")
+    for name, a, b in spread(["Dm", "Bb", "F", "A"], t_rm, LN("paul", "until it reaches", True)):
+        s.chord(1, CH[name], a, b - a + 0.2, 34)
+        s.note(3, BASS[name], a, b - a, 32)
+    s.note(3, "D1", LN("asher", "They read your letter"), 10.0, 30)
+    t_dn = LN("paul", "Then you have done")
+    s.chord(1, CH["Bb"], t_dn, 5.0, 34)
+    s.chord(1, CH["F"], t_dn + 5.0, 4.2, 30)
+    t_kn = LN("paul", "They know.")
     for k, p in enumerate(["D3", "A3", "F4", "E4", "Bb2", "F3", "D4", "C4", "G2", "D3", "Bb3", "A3", "A2", "E3", "C#4", "E4"]):
-        s.note(5, p, 203.3 + k * 0.95, 2.6, 40 if k % 4 == 0 else 32)
-    s.chord(1, ["D2", "A2", "F3"], 208.5, 9.0, 30)
-    s.note(5, "E4", 217.6, 3.0, 30)
-    s.note(5, "Bb2", 217.6, 3.0, 30)
+        s.note(5, p, t_kn + 0.1 + k * 0.95, 2.6, 40 if k % 4 == 0 else 32)
+    s.chord(1, ["D2", "A2", "F3"], LN("paul", "I was a blasphemer"), 9.0, 30)
+    t_hu = LN("paul", "I was hunting Him")
+    s.note(5, "E4", t_hu + 0.2, 3.0, 30)
+    s.note(5, "Bb2", t_hu + 0.2, 3.0, 30)
 
     # ------------------------------------------------------------- DAMASCUS
     t0 = cue["damascus"]
-    s.ramp(1, 30, 100, t0, 229.9)
-    s.chord(1, ["A1", "A2", "E3"], t0, 10.1, 48)
-    s.ramp(12, 30, 110, 225.0, 229.9)
-    s.chord(12, ["A2", "E3", "A3", "C#4"], 225.0, 4.9, 60)
+    t_cu = SH("dam_saul_cu")
+    t_f = SH("dam_flash")
+    s.ramp(1, 30, 100, t0, t_f)
+    s.chord(1, ["A1", "A2", "E3"], t0, t_f - t0, 48)
+    s.ramp(12, 30, 110, t_cu - 2.1, t_f)
+    s.chord(12, ["A2", "E3", "A3", "C#4"], t_cu - 2.1, t_f - t_cu + 2.1, 60)
     for k in range(18):
-        s.note(11, "A1", 226.0 + k * 0.2, 0.18, 40 + k * 3)
-    s.note(13, "C5", 227.4, 2.6, 110)  # reverse cymbal into the flash
-    t_f = 229.94
+        s.note(11, "A1", t_cu - 1.1 + k * 0.2, 0.18, 40 + k * 3)
+    s.note(13, "C5", t_f - 2.55, 2.6, 110)  # reverse cymbal into the flash
     s.ramp(10, 110, 60, t_f, t_f + 8)
     s.chord(10, ["D3", "A3", "D4", "F#4", "A4", "D5"], t_f, 9.0, 96)
     s.chord(0, ["D2", "A2", "D3", "F#3", "A3", "D4", "F#4"], t_f, 6.0, 90)
@@ -247,46 +291,57 @@ def compose(tl):
     s.note(11, "D2", t_f, 1.4, 120)
     s.note(3, "D1", t_f, 9.0, 80)
     s.ramp(0, 100, 60, t_f + 1, t_f + 8)
-    s.chord(4, ["D4", "F#4", "A4", "D5", "F#5", "A5", "D6"], 230.84, 3.5, 56, roll=0.07)
-    s.chord(10, ["B2", "F#3", "B3", "D4"], 239.0, 2.0, 46)
+    s.chord(4, ["D4", "F#4", "A4", "D5", "F#5", "A5", "D6"], SH("dam_saul_kneel"), 3.5, 56, roll=0.07)
+    s.chord(10, ["B2", "F#3", "B3", "D4"], SH("dam_jesus") - 1.6, 2.0, 46)
     # the love motif on French horn as Jesus is revealed
-    t_j = 240.8
+    t_j = SH("dam_jesus") + 0.2
     s.cc(8, 11, 85, t_j)
     beatJ = 0.92
     pad(s, 0, ["D", "Bm", "G", "A", "D", "G", "Em", "A"], t_j, 4 * beatJ, vel=44, bass_vel=40)
     s.melody(8, LOVE_A, t_j, beatJ, vel=62)
     t2 = t_j + 16 * beatJ
     s.melody(6, [("F#5", 1.5), ("G5", 0.5), ("A5", 2), ("D6", 1), ("C#6", 1), ("B5", 2), ("A5", 1), ("G5", 1), ("F#5", 1), ("E5", 1)], t2, beatJ, vel=44)
-    s.chord(0, CH["G"], 262.3, 3.0, 42)
-    s.chord(0, CH["DF"], 265.3, 3.0, 40)
-    s.chord(0, CH["Em"], 268.3, 3.0, 38)
-    s.chord(0, CH["A"], 270.0, 1.6, 36)
-    s.chord(0, CH["D"], 271.5, 2.2, 42)
-    s.chord(4, ["D4", "F#4", "A4", "D5", "F#5"], 271.5, 2.0, 48, roll=0.08)
+    t_h = SH("dam_hands")
+    t_me = LN("paul", "He chose me")
+    for name, a, b in spread(["G", "DF", "Em", "A"], t_h, t_me):
+        s.chord(0, CH[name], a, b - a + 0.1, 40)
+    s.chord(0, CH["D"], t_me, 3.0, 42)
+    s.chord(4, ["D4", "F#4", "A4", "D5", "F#5"], t_me + 0.4, 2.0, 48, roll=0.08)
 
-    # ------------------------------------------------------------- CELL 2 (lament bass)
+    # ------------------------------------------------------------- CELL 2 (lament bass; mercy; hate that remains)
     t0 = cue["cell2"]
-    for k, (b, name) in enumerate([("D3", "Dm"), ("C3", "Am"), ("Bb2", "Gm"), ("A2", "A")]):
-        a = t0 + 0.5 + k * 7.0
-        s.note(2, b, a, 7.0, 44)
+    t_tr = LN("paul", "Here is a trustworthy")
+    lam = [("D3", "Dm"), ("C3", "Am"), ("Bb2", "Gm"), ("A2", "A")]
+    step = (LN("paul", "of whom I am the worst") - t0) / len(lam)
+    for k, (b, name) in enumerate(lam):
+        a = t0 + 0.5 + k * step
+        s.note(2, b, a, step, 44)
         s.chord(5, [P(p) + 12 for p in CH[name][1:]], a + 0.6, 3.2, 30)
-        s.chord(5, [P(p) + 12 for p in CH[name][1:]], a + 4.0, 2.8, 26)
-    s.ramp(1, 30, 70, 301.7, 304.8)
-    for name, a, b in [("D", 304.8, 309.0), ("G", 309.0, 313.6), ("DF", 313.6, 317.0), ("A", 317.0, 320.6)]:
+        s.chord(5, [P(p) + 12 for p in CH[name][1:]], a + step * 0.55, 2.8, 26)
+    t_wo = LN("paul", "of whom I am the worst")
+    t_rs = LN("paul", "But for that very reason")
+    s.ramp(1, 30, 70, t_wo, t_rs)
+    t_el = LN("paul", "as an example", True)
+    for name, a, b in spread(["D", "G", "DF", "A"], t_rs, t_el):
         s.chord(1, CH[name], a, b - a + 0.3, 40)
         s.note(3, BASS[name], a, b - a, 34)
+    t_ha = LN("asher", "I came here to hate you")
     for k, p in enumerate(["D3", "F3", "E3", "A2"]):
-        s.note(2, p, 321.0 + k * 3.0, 3.1, 36)
-    s.note(1, "A5", 333.4, 2.6, 30)
+        s.note(2, p, t_ha + 0.4 + k * 3.0, 3.1, 36)
+    t_kn2 = LN("paul", "I know.")
+    for name, a, b in spread(["F", "C", "Dm", "Bb"], t_kn2, LN("paul", "But the Lord is patient", True)):
+        s.chord(1, CH[name], a, b - a + 0.2, 30)
+    s.note(1, "A5", LN("asher", "I brought the bread") - 0.2, 2.6, 30)
 
     # ------------------------------------------------------------- TURN (the bread)
     t0 = cue["turn"]
-    s.chord(15, ["D4", "E4", "A4", "D5"], t0, 5.0, 44)
+    s.chord(15, ["D4", "E4", "A4", "D5"], t0, SH("cell_kneel") - t0, 44)
     s.ramp(15, 40, 80, t0, t0 + 2)
-    s.ramp(15, 80, 30, t0 + 3, t0 + 5)
-    s.arp(4, [P("D4"), P("A4"), P("D5"), P("F#5")], 340.8, 344.4, 0.47, 34)
-    t_m = 344.6
-    beatM = 0.9375
+    s.ramp(15, 80, 30, SH("cell_kneel") - 2, SH("cell_kneel"))
+    s.arp(4, [P("D4"), P("A4"), P("D5"), P("F#5")], SH("cell_kneel"), SH("cell_break_insert") + 1.0, 0.47, 34)
+    t_m = SH("cell_break_insert") + 1.2
+    t_end = LN("narrator", "but overcome evil") + 1.2
+    beatM = max(0.78, min(1.25, (t_end - t_m) / 24.0))
     s.ramp(0, 60, 96, t_m - 0.5, t_m + 3)
     pad(s, 0, ["D", "Bm", "G", "A"], t_m, 4 * beatM, vel=50, harp=beatM / 2, harp_vel=36)
     s.melody(7, LOVE_A, t_m, beatM, vel=62)
@@ -301,20 +356,24 @@ def compose(tl):
 
     # ------------------------------------------------------------- STOP (door bang)
     s.silence(cue["stop"] - 0.02)
-    t_tom = line_t("asher", "Tomorrow")
-    s.chord(1, ["D2", "A2"], t_tom - 0.3, 10.5, 34)
-    s.ramp(1, 40, 70, t_tom, t_tom + 8)
+    t_tom = LN("asher", "Tomorrow")
+    s.chord(1, ["D2", "A2"], t_tom - 0.3, cue["romans8"] - t_tom + 0.3, 34)
+    s.ramp(1, 40, 70, t_tom, cue["romans8"])
 
     # ------------------------------------------------------------- ROMANS 8 (the build)
     t0 = cue["romans8"]
     s.chord(1, CH["Dm"], t0, 3.6, 40)
     s.note(4, "A4", t0 + 0.5, 2.0, 36)
     beatR = 60 / 76
-    prog_minor = [("Dm", 390.38), ("Bb", 393.5), ("F", 396.6), ("C", 399.7), ("Dm", 402.8), ("Bb", 404.4)]
-    s.ramp(2, 60, 100, 390.4, 406.0)
-    s.ramp(3, 60, 100, 390.4, 406.0)
+    t_sh = LN("paul", "Shall trouble")
+    t_no = LN("paul", "No! In all these")
+    names = ["Dm", "Bb", "F", "C", "Dm", "Bb"]
+    stepm = (t_no - t_sh) / len(names)
+    prog_minor = [(nm, t_sh + i * stepm) for i, nm in enumerate(names)]
+    s.ramp(2, 60, 100, t_sh, t_no)
+    s.ramp(3, 60, 100, t_sh, t_no)
     for i, (name, a) in enumerate(prog_minor):
-        b = prog_minor[i + 1][1] if i + 1 < len(prog_minor) else 406.0
+        b = prog_minor[i + 1][1] if i + 1 < len(prog_minor) else t_no
         s.chord(1, CH[name], a, b - a + 0.2, 42 + i * 3)
         root = P(BASS[name]) + 12
         t = a
@@ -325,15 +384,21 @@ def compose(tl):
             t += beatR / 2
             k += 1
         s.note(11, BASS[name], a, 0.6, 50 + i * 6)
-    # "No! In all these things..." -> D major, horns
-    t_no = 405.99
-    major = [("D", t_no), ("G", 408.9), ("A", 410.2), ("D", 412.49), ("A", 414.2), ("Bm", 415.95), ("G", 418.4), ("DF", 421.7),
-             ("Em", 423.6), ("A", 425.1), ("D", 426.21)]
-    s.ramp(10, 40, 100, 412.5, 426.0)
+    t_thr = LN("paul", "through Him who loved us")
+    t_conv = LN("paul", "For I am convinced")
+    t_ang = LN("paul", "neither angels")
+    t_hei = LN("paul", "neither height")
+    t_fin = LN("paul", "will be able to separate")
+    t_last = LN("paul", "that is in Christ Jesus our Lord")
+    t_last_end = LN("paul", "that is in Christ Jesus our Lord", True)
+    mid = lambda x, y, f: x + (y - x) * f
+    major = [("D", t_no), ("G", mid(t_no, t_thr, 0.55)), ("A", t_thr), ("D", t_conv), ("A", mid(t_conv, t_ang, 0.5)), ("Bm", t_ang),
+             ("G", mid(t_ang, t_hei, 0.45)), ("DF", t_hei), ("Em", mid(t_hei, t_fin, 0.4)), ("A", mid(t_hei, t_fin, 0.75)), ("D", t_fin)]
+    s.ramp(10, 40, 100, t_conv, t_fin)
     for i, (name, a) in enumerate(major[:-1]):
         b = major[i + 1][1]
         s.chord(0, CH[name], a, b - a + 0.15, 58 + i * 2)
-        if a >= 412.4:
+        if a >= t_conv - 0.1:
             s.chord(10, CH[name][1:], a, b - a + 0.1, 48 + i * 2)
         root = P(BASS[name]) + 12
         t = a
@@ -345,36 +410,38 @@ def compose(tl):
             k += 1
         s.note(11, BASS[name], a, 0.5, 62 + i * 3)
     s.melody(8, [("D4", 1), ("F#4", 1), ("A4", 2), ("D5", 3)], t_no + 0.1, beatR, vel=74)
-    s.melody(8, [("A4", 1), ("B4", 1), ("C#5", 1), ("D5", 1), ("E5", 2), ("F#5", 3)], 418.4, beatR, vel=70)
-    for k in range(int(1.0 / 0.08)):
-        s.note(11, "A1", 425.1 + k * 0.08, 0.07, 60 + k * 3)
+    s.melody(8, [("A4", 1), ("B4", 1), ("C#5", 1), ("D5", 1), ("E5", 2), ("F#5", 3)], mid(t_ang, t_hei, 0.45), beatR, vel=70)
+    t_roll = mid(t_hei, t_fin, 0.75)
+    for k in range(int(max(0.4, t_fin - t_roll) / 0.08)):
+        s.note(11, "A1", t_roll + k * 0.08, 0.07, 60 + k * 3)
     # final line: the love motif in full orchestra and choir, resolving on D as the line ends
-    t_fin = 426.21
-    beatF = (432.74 - t_fin) / 7.0
+    beatF = (t_last_end - t_fin) / 7.0
     fin = [("F#4", 1.5), ("G4", 0.5), ("A4", 2), ("B4", 1), ("A4", 1), ("D5", 4)]
     s.melody(8, fin, t_fin, beatF, vel=80)
-    s.melody(10, fin, t_fin, beatF, vel=78, transpose=0)
+    s.melody(10, fin, t_fin, beatF, vel=78)
     s.melody(6, fin, t_fin, beatF, vel=64, transpose=12)
+    t_end8 = cue["dawn"] + 2.5
     for name, a, b in [("D", t_fin, t_fin + 2 * beatF), ("Bm", t_fin + 2 * beatF, t_fin + 4 * beatF), ("G", t_fin + 4 * beatF, t_fin + 5 * beatF),
-                       ("A", t_fin + 5 * beatF, t_fin + 6 * beatF), ("D", t_fin + 6 * beatF, 437.5)]:
+                       ("A", t_fin + 5 * beatF, t_fin + 6 * beatF), ("D", t_fin + 6 * beatF, t_end8)]:
         s.chord(0, CH[name] + [P(CH[name][2]) + 12], a, b - a + 0.1, 74)
         s.note(3, BASS[name], a, b - a, 72)
         s.chord(10, CH[name][1:], a, b - a, 70)
     s.note(11, "D2", t_fin + 6 * beatF, 2.0, 100)
     s.chord(4, ["D3", "A3", "D4", "F#4", "A4", "D5", "F#5", "A5", "D6"], t_fin + 6 * beatF, 4.0, 60, roll=0.05)
-    s.ramp(0, 100, 50, 434.0, 437.5)
-    s.ramp(10, 100, 30, 434.0, 437.5)
+    s.ramp(0, 100, 50, t_end8 - 3.5, t_end8)
+    s.ramp(10, 100, 30, t_end8 - 3.5, t_end8)
 
     # ------------------------------------------------------------- DAWN
     t0 = cue["dawn"]
     beatD = 60 / 66
+    t_card = SH("end_card")
     s.cc(0, 11, 70, t0)
-    pad(s, 1, ["D", "G", "D", "A", "Bm", "G", "D", "A"], t0 + 0.5, 4 * beatD, vel=40, harp=beatD / 2, harp_vel=32, bass_vel=30)
+    nb = max(4, min(8, int((t_card - t0 - 3.5) / (4 * beatD))))
+    pad(s, 1, ["D", "G", "D", "A", "Bm", "G", "D", "A"][:nb], t0 + 0.5, 4 * beatD, vel=40, harp=beatD / 2, harp_vel=32, bass_vel=30)
     s.melody(6, [(p[:-1] + str(int(p[-1]) + 1), b) for p, b in LOVE_A], t0 + 0.5 + 4 * beatD, beatD, vel=46)
-    t_card = 456.44
     s.chord(1, CH["G"], t_card - 3.0, 3.0, 40)
-    s.chord(1, CH["D"] + ["A4", "D5"], t_card, 7.2, 44)
-    s.note(3, "D2", t_card, 7.2, 36)
+    s.chord(1, CH["D"] + ["A4", "D5"], t_card, tl["duration"] - t_card + 0.2, 44)
+    s.note(3, "D2", t_card, tl["duration"] - t_card + 0.2, 36)
     s.chord(4, ["D3", "A3", "D4", "F#4", "A4", "D5"], t_card, 6.0, 44, roll=0.12)
     s.ramp(1, 90, 0, t_card + 3.5, tl["duration"] + 0.3)
     s.ramp(4, 90, 0, t_card + 4.0, tl["duration"] + 0.3)

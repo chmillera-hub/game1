@@ -140,6 +140,18 @@ function drawHead(ctx, H, st, F, Lt, extra = {}) {
   // ---------------- age lines and expression lines
   drawLines(ctx, pr, G, st, F, skinSh, line, lw);
 
+  // ---------------- face outline: drawn BEFORE the beard so beards cover the jaw line
+  ctx.save();
+  ctx.beginPath();
+  L.crPath(ctx, [...lowerL, chinP, ...lowerR.slice().reverse()], false, 0.5);
+  ctx.strokeStyle = line;
+  ctx.lineWidth = lw * 1.1;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  if (!st.noFaceLine) ctx.stroke();
+  ctx.restore();
+  if (st.bald) drawCraniumLine(ctx, pr, G, line, lw);
+
   // ---------------- beard base (under mouth)
   if (st.beard) st.beard(ctx, pr, st, F, Lt, 'base', G);
 
@@ -152,17 +164,6 @@ function drawHead(ctx, H, st, F, Lt, extra = {}) {
   // ---------------- mustache
   if (st.beard) st.beard(ctx, pr, st, F, Lt, 'top', G);
 
-  // ---------------- face outline
-  ctx.save();
-  ctx.beginPath();
-  L.crPath(ctx, [...lowerL, chinP, ...lowerR.slice().reverse()], false, 0.5);
-  ctx.strokeStyle = line;
-  ctx.lineWidth = lw * 1.1;
-  ctx.lineCap = 'round';
-  ctx.lineJoin = 'round';
-  if (!st.noFaceLine) ctx.stroke();
-  ctx.restore();
-  if (st.bald) drawCraniumLine(ctx, pr, G, line, lw);
 
   // ---------------- eyes
   for (const sd of [-1, 1]) drawEye(ctx, pr, G, st, F, Lt, sd, line, lw);
@@ -172,8 +173,6 @@ function drawHead(ctx, H, st, F, Lt, extra = {}) {
   // ---------------- brows
   for (const sd of [-1, 1]) drawBrow(ctx, pr, G, st, F, sd, line, lw);
 
-  // ---------------- rim light (under the hair)
-  if (Lt.rim && (Lt.rimA || 0) > 0) drawRim(ctx, pr, facePoly, crC, crR, Lt, s, st);
 
   // ---------------- front hair, headwear
   if (st.hairFront) st.hairFront(ctx, pr, st, F, Lt, extra);
@@ -434,6 +433,19 @@ function drawMouth(ctx, pr, G, st, F, Lt, skin, skinSh, line, lw) {
   const upR = P(mw * 0.55, upY + 0.01 - smile * 0.03, 0.88);
   const loL = P(-mw * (0.55 + 0.15 * roundness), lerp(my, loY, 0.85), 0.86);
   const loR = P(mw * (0.55 + 0.15 * roundness), lerp(my, loY, 0.85), 0.86);
+  if (st.lips) {
+    // soft lip colour (female characters)
+    const lipC = L.mul(st.lips, Lt.key || '#ffffff');
+    const uT = P(0, my - 0.06 - o * 0.05, 0.93), lB = P(0, my + 0.1 + o * 0.3, 0.9);
+    ctx.save();
+    ctx.globalAlpha = 0.55;
+    ctx.fillStyle = lipC;
+    ctx.beginPath();
+    L.crPath(ctx, [cL, P(-mw * 0.5, my - 0.055 - o * 0.05, 0.9), uT, P(mw * 0.5, my - 0.055 - o * 0.05, 0.9), cR,
+      P(mw * 0.5, my + 0.085 + o * 0.28, 0.88), lB, P(-mw * 0.5, my + 0.085 + o * 0.28, 0.88)], true, 0.5);
+    ctx.fill();
+    ctx.restore();
+  }
   if (o < 0.06) {
     // closed: a single expressive line
     const mid = P(0, my + 0.008 - smile * 0.03 + press * 0.0, 0.93);
