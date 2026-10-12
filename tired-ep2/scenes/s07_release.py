@@ -35,6 +35,18 @@ Shots:
                beside her. A slow blink; her eyes slide off it into nothing;
                "No matter. I'll catch you." -- eyes back to him, no feeling, no
                smirk; eyes drift away, a second slow blink; slow push-in
+               (end) eyes down, lids sink, a small sigh
+  rev 4 -- she gets up, slowly and tiredly, and shuffles off:
+  S12 getup    medium, 3/4 front: her hands go to the armrest tops (world-space
+               reach), she leans forward (anticipation), a first sluggish push;
+               s07_l04 "Oof." is the effort peak: her hips leave the seat
+      crack    her knees crack as she comes up; she straightens slowly, the near
+               hand to the small of her back, a tiny exhale; hold the weary face
+  S13 shuffle  she turns to the right and shuffles off: small slow steps, arms
+               hanging, shoulders slumped (foot-locked, no sliding); the camera
+               widens on the big empty control room; the chair turns a hair
+  S14 empty    the empty chair, still turning a hair, the frozen Emb on the
+               monitor beside it; the quiet end before s08
 """
 import math
 
@@ -212,6 +224,29 @@ def times(info):
     T.rew1 = T.rew0 + 0.55
     T.wcut = info.word_time("s07_l03", 1) - 0.14      # insert -> her face on "You too"
     T.wcut2 = T.L3.end + 0.32                         # -> wider: her + the monitor (numb)
+    # rev 4: the ending beats after the sigh
+    T.getup, T.crack, T.shuffle, T.empty = c("getup"), c("crack"), c("shuffle"), c("empty")
+    T.L4 = info.line("s07_l04")
+    # the S11c push-in keeps its rev-3 speed: it ran to the old scene end, which was
+    # the 'getup' cue + the 0.5 s tail
+    T.s11c_end = T.getup + 0.5
+    # when the "Oof." audio really ends (the line carries trailing quiet)
+    T.oof_end = T.L4.start + 0.25
+    tt = T.L4.start
+    while tt < T.L4.end:
+        if info.mouth("boss", tt)[0] > 0.06:
+            T.oof_end = tt
+        tt += 0.01
+    T.lean0 = T.getup + 0.55                 # anticipation: she leans forward
+    T.push0 = T.L4.start - 0.42              # the first sluggish push
+    T.release = T.oof_end + 0.05             # her hands leave the armrests
+    T.cr = T.crack + 0.06                    # the knees crack
+    T.back0, T.back1 = T.crack + 0.4, T.crack + 1.3     # near hand on the small of her back
+    T.exh = T.crack + 1.05                   # a tiny exhale
+    T.blk = T.crack + 1.55                   # slow blink in the held standing face
+    T.turn0 = T.shuffle + 0.2                # she turns toward her way out
+    T.walk0 = T.shuffle + 0.4                # first shuffling step
+    T.swivel = T.walk0 + 0.15                # her leg nudges the chair: it turns a hair
     _TCACHE[key] = T
     return T
 

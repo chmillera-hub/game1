@@ -520,6 +520,11 @@
      "cue": "follow"
     },
     {
+     "t": "pause",
+     "dur": 3.0,
+     "cue": "walkoff"
+    },
+    {
      "t": "line",
      "id": "s04_l06",
      "who": "tired",
@@ -545,7 +550,7 @@
     },
     {
      "t": "pause",
-     "dur": 1.5,
+     "dur": 3.8,
      "cue": "hush"
     },
     {
