@@ -1,7 +1,7 @@
 # TIREDNESS — Episode 2: Lights Out
 
-Portrait (9:16) animated short, ~5:43, 720x1280 @ 24 fps, H.264 + AAC (rev 3: user notes applied, no length cap).
-- `Tiredness_ep2_portrait.mp4`: about 16.9 MB, the same quality per second as rev 2.
+Portrait (9:16) animated short, ~6:11, 720x1280 @ 24 fps, H.264 + AAC (rev 4: user notes applied, no length cap).
+- `Tiredness_ep2_portrait.mp4`: about 18.3 MB, the same quality per second as rev 2.
 - `Tiredness_ep2_portrait_under15MB.mp4`: about 14.4 MB, a lower bitrate for upload limits.
 
 Picks up where Episode 1 ended, on the shaft catwalk:
@@ -11,7 +11,8 @@ Picks up where Episode 1 ended, on the shaft catwalk:
 - He is overwhelmed and doesn't want to abandon it, but he's scared.
 - He commits: "Hell or high water."
 - Embarrassment (who works for CalmCorp) is talked round. He switches off his recorder and hands over his keycard.
-- Tiredness refuses the Boss's offer of endless sleep ("But right now... I'm not tired"), frees baby Joy, and escapes.
+- Tiredness refuses the Boss's offer of endless sleep ("But... I'm not... really all that tired right now"), frees baby Joy, and escapes.
+- The Boss, alone, sighs and shuffles off.
 - He gets home at dawn.
 
 Everything is procedural: Python + cairo drawings, Kokoro TTS voices,
@@ -22,7 +23,7 @@ numpy-synthesized music and sound effects.
 python3 build.py tts          # voices + lip-sync + timeline (cached per line)
 python3 build.py video        # render all 8 scene segments
 python3 build.py audio        # voices + music + SFX mix (-14 LUFS)
-python3 build.py final --mb 16.15  # 2-pass encode sized to fit (MiB); --out <name.mp4> for a second size
+python3 build.py final --mb 17.45  # 2-pass encode sized to fit (MiB); --out <name.mp4> for a second size
 ```
 The Kokoro model (`model.onnx`, `voices.npz`) comes from
 huggingface.co/onnx-community/Kokoro-82M-v1.0-ONNX; point `KOKORO_DIR` at it.
