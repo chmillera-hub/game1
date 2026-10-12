@@ -243,7 +243,7 @@ def cmd_audio():
     return mix.run()
 
 
-def cmd_final(mb=14.2, audio_kbps=80, res=720):
+def cmd_final(mb=14.2, audio_kbps=80, res=720, out=None):
     """Two-pass x264 sized to fit `mb` megabytes (MiB = 2^20 bytes)."""
     tl = Timeline()
     dur = tl.total
@@ -253,7 +253,7 @@ def cmd_final(mb=14.2, audio_kbps=80, res=720):
     v_kbps = int(total_kbit / dur - audio_kbps - 6)  # 6 kbps container overhead
     print(f"[final] dur {dur:.1f}s -> video {v_kbps} kbps, audio {audio_kbps} kbps",
           file=sys.stderr)
-    final = os.path.join(ROOT, "Tiredness_ep2_portrait.mp4")
+    final = os.path.join(ROOT, out or "Tiredness_ep2_portrait.mp4")
     common = ["-c:v", "libx264", "-preset", "veryslow", "-tune", "animation",
               "-profile:v", "high", "-level", "4.0", "-pix_fmt", "yuv420p",
               "-b:v", f"{v_kbps}k", "-maxrate", f"{int(v_kbps*2.5)}k",
@@ -304,7 +304,7 @@ def main():
     elif a.cmd == "audio":
         cmd_audio()
     elif a.cmd == "final":
-        cmd_final(a.mb, res=a.res)
+        cmd_final(a.mb, res=a.res, out=a.out)
     elif a.cmd == "all":
         cmd_tts()
         cmd_video(a.res)
