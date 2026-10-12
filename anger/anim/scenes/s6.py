@@ -142,6 +142,9 @@ M07, M07E = S("m07"), E("m07")
 M07_STUCK = _ph("m07", 1, M07 + 4.3)                           # "But now it seems you're stuck in here with us."
 M07_HOW = _ph("m07", 2, M07 + 7.5)                             # "How do you feel about that?"
 A06, A06E = S("a06"), E("a06")
+# rev 2b: the fourth-wall glance. "Well," to the dark; in the pause his eyes slide to the LENS and his head squares
+# up to camera; "I guess I'll die then." is delivered straight to us; a short hold, then back before the snort.
+CAM_LOOK = (A06 + 0.55, A06E + 0.42)
 SNORT = beat("snort")
 SNORT_SFX = sfx_time("creature_snort", SNORT - 0.05)           # wet "gk" +0.30, "pff" +0.42..0.75
 GIGGLE = sfx_time("creature_giggle", SNORT)
@@ -653,6 +656,13 @@ SMIRK_T = Track([(SMIRK + 0.02, 0.0), (SMIRK + 0.45, 0.38, "io"), (NOTICE + 0.04
 SUPPRESS = Track([(NOTICE, 0.0), (NOTICE + 0.3, 1.0, "io"), (NOTICE + 0.6, 0.6), (CLEAR + 0.9, 0.0)])
 
 
+def cam_look(t):
+    """(eyes, head) weights 0..1 of the glance at the camera during a06: the eyes lead, the head follows."""
+    w_eye = smoothstep((t - CAM_LOOK[0]) / 0.16) * (1.0 - smoothstep((t - CAM_LOOK[1]) / 0.22))
+    w_head = smoothstep((t - CAM_LOOK[0] - 0.06) / 0.42) * (1.0 - smoothstep((t - CAM_LOOK[1] - 0.04) / 0.4))
+    return w_eye, w_head
+
+
 def anger_pose(t) -> Pose:
     """Anger at absolute time t in S6 (stage coords)."""
     mix = SLEEP_MIX(t)
@@ -676,6 +686,8 @@ def anger_pose(t) -> Pose:
         rx, ry = 0.85 * math.cos(a), -0.97 * math.sin(a)
         w = smoothstep(u / 0.15) * (1.0 - smoothstep((u - 1.0) / 0.6))
         lx, ly = lerp(lx, rx, w), lerp(ly, ry, w)
+    w_eye, w_head = cam_look(t)
+    lx, ly = lerp(lx, 0.0, w_eye), lerp(ly, 0.0, w_eye)
     p.look_x, p.look_y = lx, ly
     lid = LID(t) * blinks(t, BLINKS)
     p.lid_l = p.lid_r = lid
@@ -686,10 +698,11 @@ def anger_pose(t) -> Pose:
     p.eye_wide = EYE_WIDE(t)
     p.pupil = 1.0 - 0.18 * window(t, SEES + 0.3, STARTLED + 1.0, 0.25, 0.5)
     p.head_nod = HEAD_NOD(t) + 0.28 * jolt - 0.1 * hh - 0.14 * hm
-    p.head_turn = HEAD_TURN(t)
+    p.head_turn = HEAD_TURN(t) - 0.28 * w_head      # turn 0.3 -> ~0.02: square to the camera for the glance
     p.head_tilt = (HEAD_TILT(t) - 1.6 * tw1 - 1.2 * tw2 - 2.0 * tw3
                    + 2.5 * window(t, WAVE - 0.3, WAVE + 0.6, 0.2, 0.4))
-    p.brow_raise = 0.85 * pulse(t, STARTLED + 0.02, 0.05, 0.45) + 0.1 * window(t, SIDE, STARTLED, 0.4, 0.05)
+    p.brow_raise = (0.85 * pulse(t, STARTLED + 0.02, 0.05, 0.45) + 0.1 * window(t, SIDE, STARTLED, 0.4, 0.05)
+                    + 0.14 * w_eye)                 # the glance: the faintest "...you see what I'm dealing with" 
     p.brow_furrow = BROW_FURROW(t) + 0.15 * tw1 + 0.25 * tw3
     p.brow_worry = 0.12 * window(t, SIDE, STARTLED, 0.4, 0.05)
     mo, mr = mouth("anger", t)

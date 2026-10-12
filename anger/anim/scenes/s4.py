@@ -479,7 +479,9 @@ def draw_crawler(c, t, p, amb, L):
     hc = C.head_pos(p, t)
     r, g, b = light.light_at(hc[0], hc[1], amb, L)
     m = max(r, g, b, 1e-3)
-    q = p.copy(light=1.1, tint=(int(255 * r / m), int(255 * g / m), int(255 * b / m)), tint_amt=0.12, rim=0.7,
+    # rev 2b: a faint rim only - a strong rim on its dark tail/legs read as a pale "ghost" outline under the body
+    # in the dark; the body is lit a little brighter instead so the creature itself reads solid and clear.
+    q = p.copy(light=1.3, tint=(int(255 * r / m), int(255 * g / m), int(255 * b / m)), tint_amt=0.12, rim=0.18,
                rim_color=s3.RIM_COLD)
     C.draw(c, q, t)
 
