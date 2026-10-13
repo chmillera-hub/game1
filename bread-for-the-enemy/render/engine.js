@@ -188,9 +188,11 @@ const POSES = {
     front: true, shackles: true, half: { arm: 'f', r: 0.8 } },
   grip: { n: { w: [0.55, 4.05], hand: 'relax', palm: { down: 1, in: 0.2 }, fdir: { fwd: 1, down: 0.3 }, fk: 0.8 }, f: { w: [2.5, 3.55], hand: 'grip', palm: { down: 0.6, in: 0.5, fwd: 0.2 }, fdir: { fwd: 0.8, in: 0.3 } }, front: true, shackles: true },
   bound: { n: { w: [-0.45, 4.55], hand: 'fist', palm: { in: 1 }, fdir: { down: 0.7, fwd: 0.4 } }, f: { w: [0.35, 4.55], hand: 'fist', palm: { in: 1 }, fdir: { down: 0.7, fwd: 0.4 } }, front: true, rope: true },
-  // reading aloud from an open scroll held up in both hands, one roller in each fist
-  read_scroll: { n: { w: [-1.2, 2.55], hand: 'grip', palm: { in: 1, back: 0.25 }, fdir: { up: 1, fwd: 0.2 }, fk: 0.55 },
-    f: { w: [2.2, 2.4], hand: 'grip', palm: { in: 1, back: 0.25 }, fdir: { up: 1, fwd: 0.2 }, fk: 0.55 }, front: true, scroll2: { h: 1.55 }, sway: 0.03 },
+  // reading aloud from an open scroll held up in both hands, one roller in each hand: the palm against
+  // the roller's outer side, the four fingers curling round its front (toward us) onto the parchment,
+  // the thumb round the back on her side of it, out of sight
+  read_scroll: { n: { w: [-1.2, 2.55], hand: 'hold', palm: { in: 0.9, fwd: 0.3 }, fdir: { fwd: 0.8, out: 0.3, up: 0.2 }, fk: 0.9 },
+    f: { w: [2.2, 2.4], hand: 'hold', palm: { in: 0.9, fwd: 0.3 }, fdir: { fwd: 0.8, out: 0.3, up: 0.2 }, fk: 0.9 }, front: true, scroll2: { h: 1.55 }, sway: 0.03 },
   scroll: { n: { w: [-1.85, 5.04], hand: 'relax', palm: HANG }, f: { w: [2.1, 3.1], hand: 'grip', palm: { in: 0.8, up: 0.35 }, fdir: { fwd: 0.6, up: 0.45 } }, front: true, scroll: true },
   walk: { n: { w: [-1.85, 5.21], hand: 'relax', palm: HANG }, f: { w: [2.02, 5.04], hand: 'relax', palm: HANG } },
   // on his knees in the blinding light: the near forearm raised before his brow, palm turned toward his

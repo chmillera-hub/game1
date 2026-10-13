@@ -260,13 +260,14 @@ function drawCharacter(ctx, who, F, place, Lt, t, opt = {}) {
       if (rest.length) drawHandsAndProps(rest);
       return;
     }
-    // an open scroll held up in both hands: each hand grips its roller from behind, so the palm and
-    // fingers are behind the parchment and only the thumb lies on its front, beside the roller
+    // an open scroll held up in both hands, the way one holds a sheet open to read it: each thumb is
+    // on the reader's side of the parchment (hidden behind it), and the four fingers wrap round the
+    // roller on our side, so the backs of the fingers, knuckles and nails face the camera
     if (pb.scroll2 && which.length === 2) {
       const notThumb = (q) => q.kind !== 'thumb';
-      arms.hF.draw(ctx, notThumb); arms.hN.draw(ctx, notThumb);
-      B.drawOpenScroll(ctx, arms.hN.gripAt(s * 0.05), arms.hF.gripAt(s * 0.05), s, pb.scroll2, Lt, fc);
       arms.hF.draw(ctx, (q) => q.kind === 'thumb'); arms.hN.draw(ctx, (q) => q.kind === 'thumb');
+      B.drawOpenScroll(ctx, arms.hN.gripAt(s * 0.05), arms.hF.gripAt(s * 0.05), s, pb.scroll2, Lt, fc);
+      arms.hF.draw(ctx, notThumb); arms.hN.draw(ctx, notThumb);
       return;
     }
     const mine = props.filter((p) => (p.arm === null ? which.includes('n') : which.includes(p.arm)));
