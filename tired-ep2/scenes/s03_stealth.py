@@ -848,6 +848,14 @@ def _curio(t, T):
                                                   -0.7))
         if t >= S:
             kw["look"] = (lerp(-0.2, 0.6, smoothstep(seg(t, S, csn0 - 0.3))), -0.75)
+        kf = smoothstep(seg(t, duck, duck + 0.15))
+        if kf < 1:
+            # the head comes round from its look back (face -0.6) over 0.15 s, through the rig's front
+            # view, instead of flipping in one frame to the facing the rig gives this stand -> perch
+            # blend (face None = lerp(1, perch 0.45, smoothstep(pose_mix)), which it hands back to)
+            kb = smoothstep(clamp(km))
+            fdef = 1.0 if kb <= 0.001 else (0.45 if kb >= 0.999 else lerp(1.0, 0.45, kb))
+            kw["face"] = lerp(-0.6, fdef, kf)
         return CX0, FY + 12, kw
     # sneak along the crate front, freeze, then slink on ahead toward the gap behind
     # the gruff guard (angling in toward the crate's base line)

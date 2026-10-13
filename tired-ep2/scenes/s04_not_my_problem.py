@@ -136,6 +136,43 @@ def _tw(t, keys, ease=ease_in_out):
     return tween(t, keys, ease)
 
 
+FRONT_VC = 2.0     # (anatomy pass) Curiosity's face (head yaw) speed, per s, through the front view ...
+FRONT_WP = 0.14    # ... over |face| < FRONT_WP (just past the rig's 0.13 front-view window)
+
+
+def _herm(x, m0, m1):
+    """Cubic Hermite 0 -> 1 on [0, 1] with end slopes m0, m1."""
+    return (3 * x * x - 2 * x ** 3) + m0 * (x ** 3 - 2 * x * x + x) + m1 * (x ** 3 - x * x)
+
+
+def _front_ease(u, v0, v1, d):
+    """(anatomy pass) The eased fraction for a head turn v0 -> v1 (opposite signs) over d s: it
+    eases in, passes face = 0 at the moment the plain ease_in_out did but at a steady FRONT_VC
+    (3+ frames inside the rig's front window, so the face re-centres instead of snapping), then
+    eases out. Same start, end and duration."""
+    r = abs(v1 - v0)
+    c = v0 / (v0 - v1)                                    # fraction of the move where it crosses 0
+    u0 = (c / 4) ** (1 / 3) if c < 0.5 else 1 - (2 * (1 - c)) ** (1 / 3) / 2   # ease_in_out crossed it here
+    s, dl = FRONT_VC * d / r, FRONT_WP / r
+    ua, ub = u0 - dl / s, u0 + dl / s
+    if not (0.0 < ua < ub < 1.0 and dl < c < 1.0 - dl):
+        return ease_in_out(u)
+    if u <= ua:
+        return (c - dl) * _herm(u / ua, 0.0, s * ua / (c - dl))
+    if u >= ub:
+        return c + dl + (1 - c - dl) * _herm((u - ub) / (1 - ub), s * (1 - ub) / (1 - c - dl), 0.0)
+    return c + s * (u - u0)
+
+
+def _twf(t, keys):
+    """(anatomy pass) _tw for Curiosity's `face`: a segment that turns its head through face = 0
+    uses _front_ease; every other segment (and every other time) is exactly _tw."""
+    for (t0, v0), (t1, v1) in zip(keys, keys[1:]):
+        if t0 <= t < t1 and v0 * v1 < 0.0:
+            return v0 + (v1 - v0) * _front_ease(seg(t, t0, t1), v0, v1, t1 - t0)
+    return _tw(t, keys)
+
+
 def _bump(t, t0, t1, amp=1.0):
     """0 -> amp -> 0 smooth bump over [t0, t1]."""
     if t <= t0 or t >= t1:
@@ -982,7 +1019,7 @@ def _cur_s1_s3(t, T, d):
     if t >= T["s3b"]:
         ta_ = T["w2b_anyone"]
         d["look"] = _tw(t, [(ta_ - 0.1, (0.45, -0.6)), (ta_ + 0.15, (-0.85, -0.1))])
-        d["face"] = _tw(t, [(ta_ + 0.05, 1.0), (ta_ + 0.55, -0.6)])
+        d["face"] = _twf(t, [(ta_ + 0.05, 1.0), (ta_ + 0.55, -0.6)])
         d["ears"] = 0.42 + 0.2 * core.ease_out_back(seg(t, ta_ + 0.05, ta_ + 0.4))
         d["tilt"] = _tw(t, [(ta_, 0.1), (ta_ + 0.35, -0.05)])
         if ta_ - 0.3 < t < ta_ + 0.5:
@@ -995,7 +1032,7 @@ def _cur_s1_s3(t, T, d):
         cb, hp, ci = T["c_back"], T["hope"], T["c_idea"]
         d["look"] = _tw(t, [(cb, (-0.85, -0.1)), (cb + 0.16, (0.45, -0.55)),
                             (ci, (0.45, -0.58)), (ci + 0.14, (-0.85, -0.2))])
-        d["face"] = _tw(t, [(cb + 0.1, -0.6), (cb + 0.45, 1.0), (ci + 0.1, 1.0), (ci + 0.38, -0.6)])
+        d["face"] = _twf(t, [(cb + 0.1, -0.6), (cb + 0.45, 1.0), (ci + 0.1, 1.0), (ci + 0.38, -0.6)])
         ears = _tw(t, [(T["s3c"], 0.62), (cb - 0.2, 0.57), (cb + 0.3, 0.49), (hp, 0.49)])
         if t > hp:
             ears = lerp(0.49, 0.68, core.ease_out_back(seg(t, hp, hp + 0.38), 2.2))
@@ -1021,7 +1058,7 @@ def _cur_s4(t, T, d):
             d["pose_from"], d["pose"] = "point", "sit"
             d["pose_mix"] = seg(t, T["pt_down"], T["pt_down"] + 0.18)
         d["point_angle"] = 0.22 - _bump(t, T["pt_look"] + 0.35, T["pt_look"] + 0.6, 0.12)
-        d["face"] = _tw(t, [(T["pt_up"], 0.85), (T["pt_look"], 0.85), (T["pt_look"] + 0.3, -1.0)])
+        d["face"] = _twf(t, [(T["pt_up"], 0.85), (T["pt_look"], 0.85), (T["pt_look"] + 0.3, -1.0)])
         # screen-space look: down the tunnel first, then back up at him
         d["look"] = _tw(t, [(T["pt_up"] + 0.1, (-0.85, -0.2)), (T["pt_look"] - 0.1, (-0.85, -0.2)),
                             (T["pt_look"] + 0.12, (0.6, -0.55))])
@@ -1176,8 +1213,8 @@ def _cur_leave(t, T, d):
     if mix_stand > 0.0:
         d["pose_from"], d["pose"], d["pose_mix"] = "walk", "stand", mix_stand
     # the look back (pupils first, then the head)
-    d["face"] = _tw(t, [(T["lv_back"] + 0.1, 1.0), (T["lv_back"] + 0.45, -1.0), (T["lv_fwd"], -1.0),
-                        (T["lv_fwd"] + 0.3, 1.0)])
+    d["face"] = _twf(t, [(T["lv_back"] + 0.1, 1.0), (T["lv_back"] + 0.45, -1.0), (T["lv_fwd"], -1.0),
+                         (T["lv_fwd"] + 0.3, 1.0)])
     d["look"] = _tw(t, [(T["lv_back"], (-0.2, 0.35)), (T["lv_back"] + 0.2, (0.75, -0.2)),
                         (T["lv_fwd"], (0.7, -0.15)), (T["lv_fwd"] + 0.2, (-0.3, 0.3))])
     d["ears"] = _tw(t, [(T["lv_back"] + 0.2, 0.05), (T["lv_back"] + 0.5, 0.16), (T["lv_fwd"], 0.12),
@@ -1285,7 +1322,7 @@ def _cur_go(t, T, d):
             d["pose_from"], d["pose_mix"] = "stand", seg(t, T["s10b"], T["s10b"] + 0.3)
         # the glance back over its shoulder (pupils first, then the head), then on
         b0, b1 = T["wo_back"], T["wo_fwd"]
-        d["face"] = _tw(t, [(b0 + 0.08, 0.55), (b0 + 0.38, -1.0), (b1, -1.0), (b1 + 0.3, 0.55)])
+        d["face"] = _twf(t, [(b0 + 0.08, 0.55), (b0 + 0.38, -1.0), (b1, -1.0), (b1 + 0.3, 0.55)])
         d["look"] = _tw(t, [(b0, (-0.4, 0.3)), (b0 + 0.18, (0.75, -0.2)), (b1 - 0.05, (0.72, -0.16)),
                             (b1 + 0.15, (-0.4, 0.3))])
         d["ears"] = _tw(t, [(b0 + 0.2, 0.18), (b0 + 0.5, 0.27), (b1 - 0.1, 0.24), (b1 + 0.4, 0.14)])

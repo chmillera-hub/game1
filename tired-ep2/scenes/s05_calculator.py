@@ -1724,7 +1724,9 @@ def cur_opening(t, k, d):
         if t < k["c_ear"]:
             d["ears"] += 0.015 * math.sin(t * 23.0)                # a nervous quiver
             d["blink"] = 0.0                                       # eyes locked wide on him
-        d["face"] = tw(t, [(k["c_look"], 1.0), (k["c_look"] + 0.3, -1.0)])
+        # (the 0.3 s look-back turn passes THROUGH the front view: two eased halves meeting at
+        #  face 0, so 2 frames land in the rig's front window instead of the head jumping it)
+        d["face"] = tw(t, [(k["c_look"], 1.0), (k["c_look"] + 0.15, 0.0), (k["c_look"] + 0.3, -1.0)])
         d["look"] = tw(t, [(0.0, (-0.85, -0.4)), (k["c_look"], (-0.85, -0.4)), (k["c_look"] + 0.2, (0.85, -0.25)),
                            (k["c_relief"], (0.8, -0.45))])
         if t >= k["c_relief"]:
@@ -1760,7 +1762,8 @@ def cur_opening(t, k, d):
             d["expr"] = "proud"                                    # "...my creature": that's me
         if t >= k["c_emb"]:                                        # looks back over its shoulder at Emb
             d["expr"] = "curious"
-            d["face"] = tw(t, [(k["c_emb"], 1.0), (k["c_emb"] + 0.3, -1.0)])
+            d["face"] = tw(t, [(k["c_emb"], 1.0), (k["c_emb"] + 0.15, 0.0),      # via the front view
+                               (k["c_emb"] + 0.3, -1.0)])
             d["look"] = tw(t, [(k["c_emb"], (0.55, -0.85)), (k["c_emb"] + 0.2, (-0.9, -0.35))])
         return
     # ---- W5d cut: sitting by his leg facing Emb; the beam finds it; "the lab": ears sink;
