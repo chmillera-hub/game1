@@ -7,7 +7,8 @@ Reads timeline['subs'] ({t0, t1, text, style 'narr'|'dlg'}), timeline['labels']
 the 540x960 frame. Layout is phone first (app UI covers the bottom ~20 %):
 
   subtitles  centred, side margins 36 px, Inter 31, bottom of the last line at
-             y=656 (68 %), so one line sits at 65-68 % and two at 62-68 %.
+             y=712 (74 %), so one line sits at 71-74 % and two at 68-74 % (below the
+             mouths in the low close-ups of Edith).
              'narr' is cream italic, 'dlg' white regular; soft 2 px outline plus a
              faint shadow, no box. Lines are broken here, at the most natural
              balanced point that fits (sentence ends and commas first).
@@ -37,7 +38,7 @@ FONT_DIR = '/usr/share/fonts/opentype/inter/'
 SIDE = 36
 
 SUB_SIZE = 31
-SUB_BOTTOM = 656
+SUB_BOTTOM = 712
 NARR_COLOUR = '&H00D8E8F2'      # warm cream (ASS colours are &HAABBGGRR)
 DLG_COLOUR = '&H00FFFFFF'
 OUTLINE = '&H30000000'
