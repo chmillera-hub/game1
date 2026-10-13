@@ -127,8 +127,10 @@ def tunic_outfit(base, base_sh, trim=None, neckline="v", mantle=None, belt=None,
             scarf(cv, st, P, H, ho, pts)
 
     def collar(cv, st, P, H, ho):
-        """Drawn after the arms: the part of the sash that lies over the shoulder, on top of the
-        sleeve, so the strap visibly goes over the shoulder."""
+        """Drawn after the arms: the cloth that lies over a shoulder, on top of the sleeve (the
+        sash over Peter's shoulder, the fold of a mantle over its shoulder)."""
+        if mantle is not None and hasattr(mantle, "over"):
+            mantle.over(cv, st, P, H, ho)
         if not sash:
             return
         pts = body_pts(st, P)
@@ -152,8 +154,60 @@ def tunic_outfit(base, base_sh, trim=None, neckline="v", mantle=None, belt=None,
 
 
 def mantle_painter(col, col_sh, side=1, lining=None):
-    """A himation draped over one shoulder (side=+1 screen-right), crossing the chest and
-    hanging to the knees."""
+    """A himation wrapped round the body: over one shoulder (side=+1 screen-right), across the
+    chest and hanging to the knees. The arm on that side keeps its tunic sleeve; the cloth over
+    the shoulder (paint.over, drawn after the arms) lies over the top of that arm and moves with it."""
+
+    def over(cv, st, P, H, ho):
+        import body as _body
+        s = side
+        sw = st.get("shoulder_w", 2.1)
+        k = st.get("body_scale", 1.0)
+        up = -0.05 * P["breath"] - 0.12 * P["shrug"]
+        lc = st.get("line", "#2a1a14")
+        by = P["byaw"] / 60.0
+        ncx = by * 0.55
+        spec = P.get("arm_r" if s > 0 else "arm_l")
+        S, E, W = _body.arm_geometry(st, P, s, spec)
+        s2, e2 = np.array(S[:2]), np.array(E[:2])
+        L = float(np.linalg.norm(e2 - s2)) + 1e-9
+        u = (e2 - s2) / L
+        n = np.array([-u[1], u[0]])
+        if n[0] * s < 0:
+            n = -n  # n points away from the body
+        hw = st.get("sleeve_w", (0.95, 0.9, 1.05))[0] * k * 0.5
+        reach = 0.42 * L
+        drape = [
+            (ncx + s * 0.38, -0.12 + up * 0.3),
+            (s * sw * 0.68, 0.0 + up),
+            tuple(s2 + n * (hw + 0.05) - u * 0.12),
+            tuple(s2 + n * (hw + 0.05) + u * reach * 0.6),
+            tuple(s2 + n * (hw + 0.03) + u * reach),
+            tuple(s2 + u * (reach + 0.12)),
+            tuple(s2 - n * (hw + 0.02) + u * reach * 0.85),
+            (s * sw * 0.52 + by * 0.4, 1.05),
+            (ncx + s * 0.22, 0.75),
+        ]
+        path = spline(drape, closed=True, corners=[4, 6], tension=0.45)
+        hi = mix(col, "#ffffff", 0.3)
+        cv.drawPath(path, fill(col, alpha=0.6, blur=0.05))
+        cv.drawPath(path, fill(col))
+        cv.save()
+        cv.clipPath(path, skia.ClipOp.kIntersect, True)
+        lx = P["light_x"]
+        sx = 1.0 if lx < 0 else -1.0
+        cv.drawPath(spline([(sx * sw * 1.6, -0.5), (sx * sw * 0.65, 0.3), (sx * sw * 0.5, 2.0), (sx * sw * 1.6, 2.0)], closed=True), fill(col_sh, alpha=0.45))
+        # folds curving round the shoulder and over the top of the arm
+        for j in range(4):
+            f = 0.2 + 0.2 * j
+            a_ = s2 - n * (hw * 0.6) + u * reach * f
+            b_ = s2 + u * reach * (f + 0.08)
+            c_ = s2 + n * (hw + 0.05) + u * reach * (f - 0.05)
+            _fold(cv, [tuple(a_), tuple(b_), tuple(c_)], col_sh, hi, w=0.05, alpha=0.65)
+        _fold(cv, [(ncx + s * 0.35, 0.0), (s * sw * 0.45, 0.35), (s * sw * 0.55, 0.85)], col_sh, hi, w=0.05, alpha=0.6)
+        cv.drawPath(tapered(sample_spline([drape[0], drape[1], drape[2]], n=10), 0.01, 0.01, wmid=0.08), fill("#ffffff", alpha=0.14))
+        cv.restore()
+        cv.drawPath(path, stroke(lc, 0.024))
 
     def paint(cv, st, P, H, ho, pts):
         by = P["byaw"] / 60.0
@@ -209,6 +263,7 @@ def mantle_painter(col, col_sh, side=1, lining=None):
             cv.drawPath(tapered(sample_spline([outer[6], outer[7], outer[8]], n=12), 0.06, 0.06), fill(lining))
         cv.drawPath(path, stroke(lc, 0.024))
 
+    paint.over = over
     return paint
 
 
@@ -242,12 +297,12 @@ JESUS_ST = dict(
 
 JESUS = Character(
     "jesus", JESUS_ST,
-    outfit=tunic_outfit("#efe5d3", "#c9b89c", neckline="v", trim="#b89a6a", clavi="#9a5a44", belt=("#8a6a3e", "#5e4426"),
-                        mantle=mantle_painter("#2f557c", "#1f3b5a", side=1, lining="#c8a45a")),
+    outfit=tunic_outfit("#efe5d3", "#c9b89c", neckline="v", trim="#d6c9ae", clavi="#9a5a44", belt=("#8a6a3e", "#5e4426"),
+                        mantle=mantle_painter("#2f557c", "#1f3b5a", side=1)),
     beard=hair.Beard(),
     headwear_back=hair.LongHair(layer="back"),
     headwear_front=hair.LongHair(layer="front"),
-    arms=make_arms({-1: dict(sleeve="#efe5d3", sleeve_sh="#c9b89c"), 1: dict(sleeve="#2f557c", sleeve_sh="#1f3b5a")}),
+    arms=make_arms({-1: dict(sleeve="#efe5d3", sleeve_sh="#c9b89c"), 1: dict(sleeve="#efe5d3", sleeve_sh="#c9b89c")}),
 )
 
 
