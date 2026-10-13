@@ -296,6 +296,29 @@ def _pulse(t, a, b):
     return math.sin(math.pi * seg(t, a, b)) if a <= t <= b else 0.0
 
 
+def _turn_front(t0, v0, t1, v1, a, frac):
+    """anat pass: (tc, a, half) for _front_warp on a head turn tween((t0, v0) -> (t1, v1),
+    ease_in_out) that crosses face = 0; tc = the moment it crosses (cubic ease inverted)."""
+    s = v0 / (v0 - v1)
+    u = (s / 4.0) ** (1.0 / 3.0) if s <= 0.5 else 1.0 - (2.0 * (1.0 - s)) ** (1.0 / 3.0) / 2.0
+    tc = t0 + u * (t1 - t0)
+    return tc, a, frac * min(tc - t0, t1 - tc)
+
+
+def _front_warp(t, tc, a, half):
+    """anat pass: the rig eases Thing 1's face to a centred front view for |face| < 0.13
+    (creatures.FRONT_SY), but these turns stepped over that window in one frame (the nose and
+    muzzle jumped sides). A local time warp around the crossing tc: the turn passes the front
+    view at (1 - a) x its speed, a little faster either side, so it lands 2-3 frames inside the
+    window. Identity outside [tc - half, tc + half] (inside the turn), C1 and monotonic (a < 1):
+    the turn's start, end and values and every other channel keep their timing."""
+    x = t - tc
+    if abs(x) >= half:
+        return t
+    y = x / half
+    return t - a * x * (1.0 - y * y) ** 2
+
+
 # ----------------------------------------------------------------------------
 # Tiredness on the catwalk (one continuous performance used by every catwalk shot)
 # ----------------------------------------------------------------------------
@@ -1624,7 +1647,8 @@ def turn_kw(t, T, N):
     # shoulder; after the hop-turn it faces right and looks ahead
     look = tween(t, [(N["tr"], (-0.95, -0.1)), (N["a_eye"], (-0.95, -0.1)), (N["a_eye"] + 0.16, (0.95, -0.12)),
                      (go + 0.1, (0.95, -0.12)), (go + 0.35, (0.9, 0.08))], ease_in_out)
-    face = tween(t, [(N["a_head0"], 1.0), (N["a_head1"], -1.0)], ease_in_out)
+    tf = _front_warp(t, *_turn_front(N["a_head0"], 1.0, N["a_head1"], -1.0, 0.85, 1.0))   # anat pass
+    face = tween(tf, [(N["a_head0"], 1.0), (N["a_head1"], -1.0)], ease_in_out)
     flip = t < j + 0.11                      # it flips at the apex of the hop-turn
     if not flip:
         face = 1.0                           # (flipped: looking right = forward)
@@ -1750,7 +1774,11 @@ def meet_cur_kw(t, T, N, V):
             fc = tween(t, [(N["near"], -1.0), (N["pass"], 0.62)], ease_in_out)
             ag = _aim(_eyes_cur(fc), he)
             gaze = (lerp(gaze[0], ag[0], k_trk), lerp(gaze[1], ag[1], k_trk))
-        face = tween(t, [(N["sat"], 1.0), (N["sat"] + 0.3, 0.62), (N["back0"] + 0.12, 0.62),
+        # anat pass: both turns through face = 0 (the look back down the stair, and following
+        # him past) pass the rig's front view over 2-3 frames (_front_warp; disjoint spans)
+        tf = _front_warp(t, *_turn_front(N["back0"] + 0.12, 0.62, N["back1"], -1.0, 0.80, 1.0))
+        tf = _front_warp(tf, *_turn_front(N["near"], -1.0, N["pass"], 0.62, 0.75, 0.8))
+        face = tween(tf, [(N["sat"], 1.0), (N["sat"] + 0.3, 0.62), (N["back0"] + 0.12, 0.62),
                          (N["back1"], -1.0), (N["near"], -1.0), (N["pass"], 0.62)], ease_in_out)
     look = (gaze[0] - off[0], gaze[1] - off[1])
     # ears: up in the bounds, flop on the landings; waiting (lower), perk at his steps, a hair up

@@ -2649,7 +2649,10 @@ def draw_specimen(ctx, x, y, s, t, form=1.0, pose="crouch", expr="calm", look=No
         M["melt"] = mk
         bl = max(bl, smoothstep(seg(mk, 0.12, 0.42)))
     edge = M["edge"]
-    sgn = -1.0 if fc < 0 else 1.0
+    # anatomy pass: the head-roll sign eases through the front window too (it used to flip from
+    # +1 to -1 in one frame at face = 0, jerking the tilt by up to ~30 deg). +-1 exactly for
+    # |face| >= 0.13, so all other angles are unchanged.
+    sgn = math.copysign(smoothstep(clamp(_sin(0.45 * abs(fc)) / FRONT_SY)), fc) if fc != 0 else 0.0
     hx, hy, hrot = R["head"]
     if E.get("bounce"):
         hy -= abs(_sin(TAU * 2.6 * t)) * 5.0
