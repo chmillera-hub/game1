@@ -298,16 +298,10 @@ class LongHair:
             cv.drawPath(tapered(sample_spline(rim, n=24), 0.002, 0.002, wmid=0.012), fill(st["hair_hl"], alpha=0.35 * P["rim"], blur=0.006))
         cv.restore()
         cv.drawPath(path, stroke(lc, 0.02))
-        # loose strands over the forehead and outside the silhouette
+        # loose strands outside the silhouette (none across the forehead: thin strands there read as
+        # streaks on the skin, not as hair)
         t = P["t"]
         for s in (1, -1):
-            dx, _ = sway_offset(P, 0.8, k=0.05)
-            a = surf_pts(H, [(s * 0.04, -1.24), (s * 0.20, -0.95), (s * 0.17, -0.72)], dz=0.06)
-            a[2] = (a[2][0] + dx, a[2][1])
-            wisp = sample_spline(a, n=12)
-            cv.drawPath(tapered([(x + 0.01, y + 0.02) for x, y in wisp], 0.03, 0.0, wmid=0.024), fill(st["skin_sh"], alpha=0.35, blur=0.012))
-            cv.drawPath(tapered(wisp, 0.03, 0.0, wmid=0.024), fill(st["hair"]))
-            cv.drawPath(tapered([(x - s * 0.004, y) for x, y in wisp], 0.008, 0.0, wmid=0.006), fill(st["hair_hl"], alpha=0.5))
             side = g["R"] if s > 0 else g["L"]
             p0 = side[4]
             dx2, dy2 = sway_offset(P, 1.0, k=0.25)
