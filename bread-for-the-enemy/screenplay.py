@@ -503,6 +503,7 @@ L("asher", "I don't forgive you. Not yet.", speed=0.86, gap=0.8)
 E("asher", emo="tender_cry", tears=0.8, dur=1.0)
 L("asher", "But my father would have shared his bread with you...", speed=0.84, gap=0.4)
 L("asher", "so I will.", speed=0.8, gap=1.0)
+E("paul", pose="meet_bread", ls=0.1, dur=1.4)
 
 S("cell_paul_cu", zoom=(1.0, 1.05))
 E("paul", emo="sob_smile", tears=1.0, look="bread", dur=0.8)

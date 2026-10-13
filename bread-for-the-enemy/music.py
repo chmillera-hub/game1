@@ -479,10 +479,13 @@ def compose_swells(tl):
         ("asher", "You don't get to remember", "D", 0.7, 0.8),
         ("asher", "but you weren't acting like a saint", "Bb", 0.8, 0.8),
         ("paul", "I was a blasphemer", "D", 0.9, 0.85),
+        ("saul", "Who are you, Lord", "D", 0.8, 0.85),
         ("asher", "And my father was just", "D", 0.85, 0.85),
         ("paul", "of whom I am the worst", "A", 0.7, 0.75),
         ("asher", "but I don't think I will ever love you", "D", 0.8, 0.75),
         ("asher", "I am not your brother", "Bb", 0.7, 0.75),
+        ("asher", "I don't forgive you", "A", 0.7, 0.75),
+        ("paul", "Burning coals", "D", 0.7, 0.7),
         ("guard", "And you, old man", "D", 0.75, 1.0),
         ("paul", "we are considered as sheep", "D", 0.8, 0.9),
         ("narrator", "At first light, the old man", "D", 0.75, 1.0),
@@ -510,6 +513,46 @@ def compose_swells(tl):
         for j in range(n):
             tt = tp - 1.8 + j * 0.09
             s.note(cti, r2, tt, 0.08, int(25 + 55 * k * (j / n)))
+    return s
+
+
+# high swells: violins and a soft choir rising in open fifths over the most hopeful moments
+HIGH_PROG = {0: 49, 1: 52, 2: 48, 3: 49, 4: 52, 5: 48}
+
+
+def compose_high(tl):
+    """A slow rise and fall of high strings (with a quiet choir) at the turning points of grace:
+    the light on the Damascus road, the remembered new commandment, Romans 8, and the dawn prayer.
+    Open fifths only, so they sit over any harmony of the score without clashing."""
+    s = Score()
+    lines = tl["lines"]
+
+    def LN(who, prefix):
+        for ln in lines:
+            if ln["who"] == who and ln["text"].startswith(prefix):
+                return ln["start"], ln["end"]
+        raise KeyError(f"{who}: {prefix}")
+
+    cues = [
+        ("jesus", "Open your heart to me", "D", 0.85, 0.8),
+        ("jesus", "A new commandment I give you: love", "D", 0.75, 0.85),
+        ("paul", "No! In all these things", "D", 0.55, 0.75),
+        ("paul", "will be able to separate us", "D", 0.8, 0.9),
+        ("asher", "Lord... I don't know how to love", "A", 0.7, 0.65),
+    ]
+    sets = [(0, 1, 2), (3, 4, 5)]
+    for i, (who, pre, root, pk, k) in enumerate(cues):
+        a, b = LN(who, pre)
+        t0, tp, t1 = a - 1.2, a + (b - a) * pk, b + 3.6
+        cv, cc, cs = sets[i % 2]
+        r = P(root + "4")
+        for ch in (cv, cc, cs):
+            s.cc(ch, 11, 0, t0 - 0.05)
+            s.ramp(ch, 6, int(52 + 48 * k), t0, tp)
+            s.ramp(ch, int(52 + 48 * k), 0, tp, t1)
+        s.chord(cv, [r + 12, r + 19, r + 24], t0, t1 - t0, 78)
+        s.chord(cc, [r + 7, r + 12], t0 + 0.3, t1 - t0 - 0.3, 64)
+        s.chord(cs, [r, r + 7], t0, t1 - t0, 58)
     return s
 
 
@@ -544,6 +587,20 @@ def render(work):
     m2 = min(n, len(y))
     out[:m2] += y[:m2] * (0.55 * pk_m / pk_s)
     os.remove(raw2)
+    # the high swells: airy, above the voices' warmth (high-passed), softer than the score
+    hi = compose_high(tl)
+    mid3 = os.path.join(work, "high.mid")
+    hi.write(mid3, tl["duration"] + 3, progs=HIGH_PROG)
+    raw3 = os.path.join(work, "high_raw.wav")
+    subprocess.run(["fluidsynth", "-ni", "-q", "-g", "0.6", "-r", "48000", "-o", "synth.reverb.active=1",
+                    "-o", "synth.reverb.room-size=0.85", "-o", "synth.reverb.level=0.55", "-o", "synth.chorus.active=0",
+                    "-F", raw3, SF2, mid3], check=True)
+    z, sr3 = sf.read(raw3, dtype="float64")
+    z = audiofx.butter(z, sr3, "highpass", 260)
+    pk_h = np.max(np.abs(z)) + 1e-9
+    m3 = min(n, len(z))
+    out[:m3] += z[:m3] * (0.36 * pk_m / pk_h)
+    os.remove(raw3)
     pk = np.max(np.abs(out))
     out *= 0.9 / max(pk, 1e-6)
     sf.write(os.path.join(work, "music.wav"), out.astype(np.float32), sr)

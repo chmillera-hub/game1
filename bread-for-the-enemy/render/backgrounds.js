@@ -209,24 +209,47 @@ function houseChurch(ctx, o = {}) {
   for (const ax of [140, 940]) { ctx.beginPath(); ctx.moveTo(ax - 120, 1400); ctx.lineTo(ax - 120, 600); ctx.arc(ax, 600, 120, Math.PI, 0); ctx.lineTo(ax + 120, 1400); ctx.stroke(); }
   vignette(ctx, 0.6);
 }
-function silhouettes(ctx, list, color, rim, rimA = 0.4) {
-  // list: [x, y(top of head), scale]
-  for (const [x, y, s, turn] of list) {
+function silhouettes(ctx, list, color, rim, rimA = 0.4, t = 0) {
+  // listeners seen from behind: head and neck, sloping shoulders, upper arms hanging at the sides.
+  // Each one breathes and now and then turns or tilts the head a little (never frozen).
+  // list: [x, y(top of head), scale, turn]
+  list.forEach(([x, y, s, turn], i) => {
+    const br = Math.sin(t * 1.4 + i * 1.9) * 0.035 * s;
+    const look = L.noise1(t * 0.22 + i * 3.1, 11 + i) * 0.12 + (turn || 0) * 0.15;
+    const nod = Math.max(0, Math.sin(t * 0.5 + i * 2.3) - 0.8) * 0.4 * s;
+    const hx = x + look * s, hy = y + nod;
     ctx.fillStyle = color;
-    ctx.beginPath(); ctx.ellipse(x, y + s * 1.1, s * 0.95, s * 1.15, 0, 0, L.TAU); ctx.fill();
+    // body: neck, trapezius slope, round shoulders, arms down the sides
     ctx.beginPath();
-    ctx.moveTo(x - s * 0.5, y + s * 2.0);
-    ctx.quadraticCurveTo(x - s * 2.6, y + s * 2.4, x - s * 2.8, y + s * 6);
-    ctx.lineTo(x + s * 2.8, y + s * 6);
-    ctx.quadraticCurveTo(x + s * 2.6, y + s * 2.4, x + s * 0.5, y + s * 2.0);
-    ctx.fill();
+    ctx.moveTo(x - s * 0.42, y + s * 1.9);
+    ctx.lineTo(x - s * 0.5, y + s * 2.35 - br);
+    ctx.quadraticCurveTo(x - s * 1.7, y + s * 2.45 - br, x - s * 2.35, y + s * 2.95 - br);
+    ctx.quadraticCurveTo(x - s * 2.85, y + s * 3.3 - br, x - s * 2.8, y + s * 4.1);
+    ctx.lineTo(x - s * 2.95, y + s * 6.2);
+    ctx.lineTo(x + s * 2.95, y + s * 6.2);
+    ctx.lineTo(x + s * 2.8, y + s * 4.1);
+    ctx.quadraticCurveTo(x + s * 2.85, y + s * 3.3 - br, x + s * 2.35, y + s * 2.95 - br);
+    ctx.quadraticCurveTo(x + s * 1.7, y + s * 2.45 - br, x + s * 0.5, y + s * 2.35 - br);
+    ctx.lineTo(x + s * 0.42, y + s * 1.9);
+    ctx.closePath(); ctx.fill();
+    // head (turning a little)
+    ctx.save(); ctx.translate(hx, hy + s * 1.1); ctx.rotate(look * 0.5);
+    ctx.beginPath(); ctx.ellipse(0, 0, s * 0.95, s * 1.15, 0, 0, L.TAU); ctx.fill();
+    ctx.restore();
     if (rim) {
       ctx.save(); ctx.globalCompositeOperation = 'lighter';
       ctx.strokeStyle = rgba(rim, rimA); ctx.lineWidth = s * 0.12;
-      ctx.beginPath(); ctx.ellipse(x, y + s * 1.1, s * 0.95, s * 1.15, 0, -1.9 + (turn || 0), -0.4 + (turn || 0)); ctx.stroke();
+      ctx.beginPath(); ctx.ellipse(hx, hy + s * 1.1, s * 0.95, s * 1.15, look * 0.5, -1.9 + (turn || 0), -0.4 + (turn || 0)); ctx.stroke();
+      // light catching the shoulder and down the arm on the lamp side, and the arm's inner edge
+      const sd = (turn || 0) >= 0 ? 1 : -1;
+      ctx.strokeStyle = rgba(rim, rimA * 0.55); ctx.lineWidth = s * 0.09;
+      ctx.beginPath(); ctx.moveTo(x + sd * s * 1.2, y + s * 2.55 - br);
+      ctx.quadraticCurveTo(x + sd * s * 2.7, y + s * 2.9 - br, x + sd * s * 2.82, y + s * 4.2); ctx.stroke();
+      ctx.strokeStyle = rgba(rim, rimA * 0.25); ctx.lineWidth = s * 0.06;
+      for (const k of [-1, 1]) { ctx.beginPath(); ctx.moveTo(x + k * s * 2.05, y + s * 3.7); ctx.lineTo(x + k * s * 2.12, y + s * 6.2); ctx.stroke(); }
       ctx.restore();
     }
-  }
+  });
 }
 
 // =================================================================== CELL

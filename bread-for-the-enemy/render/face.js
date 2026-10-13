@@ -36,6 +36,20 @@ const GEO = {
   neckW: 0.55,
 };
 
+// Face geometry for a character: the stock head plus its own overrides. Adults then get more lifelike
+// proportions than a stock anime head: fuller cheeks, a broader jaw and chin, a slightly longer lower
+// face (so the forehead reads smaller), smaller eyes and a bigger nose. The child keeps its round face.
+function geoOf(st) {
+  const G = Object.assign({}, GEO, st.geo || {});
+  if (st.child) { G.jawW = Math.min(G.jawW, 0.74); G.cheekLow = 0.9; G.chinW = 0.5; return G; }
+  const fem = st.name === 'phoebe';
+  G.jawW = Math.min(0.82, G.jawW * (fem ? 1.04 : 1.09));
+  G.jawY += 0.04; G.chinY += fem ? 0.03 : 0.06; G.mouthY += fem ? 0.02 : 0.04; G.noseY += 0.02;
+  G.eyeW *= fem ? 0.95 : 0.92; G.noseLen *= fem ? 1.1 : 1.15;
+  G.cheekLow = fem ? 0.9 : 0.93; G.chinW = fem ? 0.45 : 0.48;
+  return G;
+}
+
 function faceContour(G, open) {
   // right side from temple to chin (x>0), then mirrored; z = depth
   const jd = open * 0.13; // jaw drop
@@ -44,10 +58,10 @@ function faceContour(G, open) {
     [0.96 * cw, -0.62, 0.05],
     [0.98 * cw, -0.1, 0.18],
     [0.96 * cw, 0.28, 0.22],
-    [0.88 * cw, 0.6, 0.2],
+    [(G.cheekLow || 0.88) * cw, 0.6, 0.2],
     [G.jawW, G.jawY + jd * 0.5, 0.24],
-    [0.44, G.chinY - 0.2 + jd * 0.9, 0.48],
-    [0.2, G.chinY - 0.04 + jd, 0.64],
+    [G.chinW || 0.44, G.chinY - 0.2 + jd * 0.9, 0.48],
+    [(G.chinW || 0.44) * 0.5, G.chinY - 0.04 + jd, 0.64],
   ];
   const chin = [0, G.chinY + jd, 0.68];
   const left = R.map(([x, y, z]) => [-x, y, z]);
@@ -58,8 +72,9 @@ function faceContour(G, open) {
 function drawHead(ctx, H, st, F, Lt, extra = {}) {
   const pr = makeProj(H);
   const { P, Pc, s } = pr;
-  const G = Object.assign({}, GEO, st.geo || {});
+  const G = geoOf(st);
   const open = F.mouthOpen;
+  pr.t = extra.t || 0;
 
   // colours (lighting)
   const pale = F.pale || 0;
@@ -132,6 +147,16 @@ function drawHead(ctx, H, st, F, Lt, extra = {}) {
       ctx.fillRect(n[0] - s * 0.2, n[1] - s * 0.2, s * 0.4, s * 0.4);
     }
   }
+  // cheekbones: soft light across the lit one, a soft hollow under the other (adults)
+  if (!st.child) {
+    const side = Lt.side || -1;
+    const cb = P(side * 0.6, 0.16, 0.78);
+    ctx.fillStyle = L.radial(ctx, cb[0], cb[1], 0, s * 0.34, [[0, rgba('#fff4ea', 0.13)], [1, rgba('#fff4ea', 0)]]);
+    ctx.fillRect(cb[0] - s * 0.4, cb[1] - s * 0.4, s * 0.8, s * 0.8);
+    const ho = P(-side * 0.66, 0.6, 0.7);
+    ctx.fillStyle = L.radial(ctx, ho[0], ho[1], 0, s * 0.36, [[0, rgba(skinSh, 0.22 + 0.12 * (st.age || 0))], [1, rgba(skinSh, 0)]]);
+    ctx.fillRect(ho[0] - s * 0.4, ho[1] - s * 0.4, s * 0.8, s * 0.8);
+  }
   // ambient occlusion around eye sockets for older/weary faces
   const sock = (st.age || 0) * 0.5 + (F.weary || 0) * 0.3 + 0.12;
   for (const sd of [-1, 1]) {
@@ -163,6 +188,7 @@ function drawHead(ctx, H, st, F, Lt, extra = {}) {
   for (const sd of [-1, 1]) drawEye(ctx, pr, G, st, F, Lt, sd, line, lw);
   // tears on cheeks
   if ((F.tearFlow || 0) > 0.01) drawTears(ctx, pr, G, F, extra.t || 0);
+  if (F.tearDrop != null) drawSingleTear(ctx, pr, G, F);
 
   // ---------------- brows
   for (const sd of [-1, 1]) drawBrow(ctx, pr, G, st, F, sd, line, lw);
@@ -259,7 +285,10 @@ function drawEars(ctx, pr, st, skin, skinSh, line, lw) {
   for (const sd of [-1, 1]) {
     // hide the far ear when turned
     const far = Math.sign(sd) === Math.sign(H.yaw);
-    if (far && Math.abs(H.yaw) > 0.32) continue;
+    const fade = far ? clamp((0.44 - Math.abs(H.yaw)) / 0.18) : 1;
+    if (fade <= 0.01) continue;
+    ctx.save();
+    ctx.globalAlpha *= fade;
     const pts = [[sd * 0.95, -0.02, -0.02], [sd * 1.12, -0.06, -0.12], [sd * 1.16, 0.18, -0.15], [sd * 1.06, 0.42, -0.1], [sd * 0.94, 0.5, -0.02]].map((p) => P(...p));
     ctx.beginPath();
     L.crPath(ctx, pts, false);
@@ -271,6 +300,7 @@ function drawEars(ctx, pr, st, skin, skinSh, line, lw) {
     ctx.stroke();
     const inner = [[sd * 1.03, 0.04, -0.1], [sd * 1.08, 0.2, -0.13], [sd * 1.0, 0.36, -0.08]].map((p) => P(...p));
     L.strokeSmooth(ctx, inner, rgba(line, 0.6), lw * 0.7);
+    ctx.restore();
   }
 }
 
@@ -333,7 +363,8 @@ function drawCelShadow(ctx, pr, G, F, Lt, skinSh, st) {
   ctx.fillStyle = g;
   ctx.fillRect(tm[0] - s * 1.5, tm[1] - s * 2, s * 3, s * 4);
   // nose cast shadow
-  const n0 = P(0, 0.2, 1.0), n1 = P(0, 0.5, 1.1), n2 = P(-side * 0.16, 0.56, 0.96);
+  const nl = G.noseLen;
+  const n0 = P(0, 0.2 * nl, 1.0), n1 = P(0, 0.52 * nl, 1.14), n2 = P(-side * 0.2, 0.6 * nl, 0.96);
   ctx.beginPath();
   ctx.moveTo(n0[0], n0[1]);
   ctx.lineTo(n1[0], n1[1]);
@@ -405,23 +436,49 @@ function drawNose(ctx, pr, G, st, F, Lt, skinSh, line, lw) {
   const { P, s, H } = pr;
   const nl = G.noseLen;
   const side = Lt.side || -1;
-  // bridge line on far/shadow side, more visible when turned
   const turn = clamp(Math.abs(H.yaw) * 2.6);
-  const sd = H.yaw >= 0 ? 1 : -1;
-  const bridge = [P(sd * 0.06, 0.02, 1.0), P(sd * 0.05, 0.25 * nl, 1.06), P(sd * 0.02, 0.44 * nl, 1.12)];
-  if (turn > 0.05) L.strokeSmooth(ctx, bridge, rgba(line, 0.55 * turn), lw * 0.75);
-  // tip + nostril
-  const tip = [P(sd * 0.03, 0.4 * nl, 1.1), P(0, 0.5 * nl, 1.12), P(-sd * 0.07, 0.535 * nl, 1.04)];
-  L.strokeSmooth(ctx, tip, rgba(line, 0.85), lw * 0.85);
-  const nos = P(-sd * 0.09, 0.53 * nl, 1.0);
-  ctx.fillStyle = rgba(line, 0.45);
-  L.ellipse(ctx, nos[0], nos[1], s * 0.022, s * 0.014, H.roll);
+  const sd = H.yaw >= 0 ? 1 : -1; // the side the face turns toward: the profile of the nose shows there
+  const kid = st.child ? 0.7 : 1;
+  ctx.save();
+  ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  // soft form shadow on the shadow side of the lower nose and under the tip
+  const shSide = -side;
+  const sh = P(shSide * 0.11, 0.42 * nl, 1.04);
+  ctx.fillStyle = L.radial(ctx, sh[0], sh[1], 0, s * 0.13, [[0, rgba(skinSh, 0.3 * kid)], [1, rgba(skinSh, 0)]]);
+  ctx.fillRect(sh[0] - s * 0.2, sh[1] - s * 0.2, s * 0.4, s * 0.4);
+  const under = P(0, 0.6 * nl, 1.04);
+  ctx.fillStyle = L.radial(ctx, under[0], under[1], 0, s * 0.13, [[0, rgba(skinSh, 0.38 * kid)], [1, rgba(skinSh, 0)]]);
+  ctx.fillRect(under[0] - s * 0.2, under[1] - s * 0.2, s * 0.4, s * 0.4);
+  // bridge: from the front only a faint line down the lower nose; when the head turns, the profile
+  // line of the whole bridge
+  const bx = turn > 0.05 ? sd : shSide;
+  const y0 = lerp(0.24, -0.02, turn);
+  const bridge = [P(bx * 0.07, y0 * nl, 1.0 + y0 * 0.2), P(bx * 0.065, (0.3 + y0 * 0.2) * nl, 1.08), P(bx * 0.045, 0.45 * nl, 1.14)];
+  L.strokeSmooth(ctx, bridge, rgba(line, (0.2 + 0.45 * turn) * kid), lw * 0.75);
+  // rounded tip: the underside curve from wing to wing (the near half stronger when turned)
+  const tip = [P(-0.075, 0.545 * nl, 1.1), P(-0.03, 0.585 * nl, 1.15), P(0.03, 0.585 * nl, 1.15), P(0.075, 0.545 * nl, 1.1)];
+  L.strokeSmooth(ctx, tip, rgba(line, 0.7), lw * 0.8);
+  // nostril wings: a soft curve round each side of the tip (the far one fades as the head turns)
+  for (const w of [-1, 1]) {
+    const k = w === sd ? 1 - 0.85 * turn : 1;
+    if (k < 0.05) continue;
+    const wing = [P(w * 0.1, 0.43 * nl, 1.02), P(w * 0.14, 0.51 * nl, 1.01), P(w * 0.1, 0.575 * nl, 1.04)];
+    L.strokeSmooth(ctx, wing, rgba(line, 0.5 * k * kid), lw * 0.7);
+    const n = P(w * 0.055, 0.565 * nl, 1.09);
+    ctx.fillStyle = rgba(line, 0.42 * k);
+    L.ellipse(ctx, n[0], n[1], s * 0.026 * kid, s * 0.013 * kid, H.roll + w * 0.35);
+    ctx.fill();
+  }
+  // light on the bridge and the tip
+  const hl = P(side * 0.025, 0.32 * nl, 1.1);
+  ctx.fillStyle = rgba('#ffffff', 0.13);
+  L.ellipse(ctx, hl[0], hl[1], s * 0.02, s * 0.055, H.roll);
   ctx.fill();
-  // nose highlight
-  const hl = P(side * 0.02, 0.32 * nl, 1.1);
-  ctx.fillStyle = rgba('#ffffff', 0.18);
-  L.ellipse(ctx, hl[0], hl[1], s * 0.02, s * 0.06, H.roll);
+  const ht = P(side * 0.02, 0.5 * nl, 1.15);
+  ctx.fillStyle = rgba('#ffffff', 0.2);
+  L.ellipse(ctx, ht[0], ht[1], s * 0.03, s * 0.022, H.roll);
   ctx.fill();
+  ctx.restore();
 }
 
 // ------------------------------------------------------------------ mouth
@@ -618,6 +675,20 @@ function drawEye(ctx, pr, G, st, F, Lt, sd, line, lw) {
     ctx.fillStyle = rgba('#ffffff', 0.8);
     L.ellipse(ctx, ix + 0.22, iy + 0.24, 0.07, 0.06);
     ctx.fill();
+    if (st.twinkle && gy < -0.2) {
+      // looking up (to the Father): a soft star of light in the pupil that gently breathes
+      const k = clamp((-gy - 0.2) / 0.35) * (0.75 + 0.25 * Math.sin((pr.t || 0) * 2.6 + sd));
+      const tx = ix + 0.13, ty = iy - 0.02, r = 0.26 * k;
+      ctx.fillStyle = rgba('#ffffff', 0.9 * k);
+      ctx.beginPath();
+      for (let i = 0; i < 8; i++) {
+        const a = i * Math.PI / 4 + 0.2, rr = i % 2 ? r * 0.22 : r;
+        ctx.lineTo(tx + Math.cos(a) * rr, ty + Math.sin(a) * rr);
+      }
+      ctx.closePath(); ctx.fill();
+      ctx.fillStyle = L.radial(ctx, tx, ty, 0, r * 0.9, [[0, rgba('#ffffff', 0.55 * k)], [1, rgba('#ffffff', 0)]]);
+      ctx.fillRect(tx - r, ty - r, r * 2, r * 2);
+    }
     if ((F.tears || 0) > 0.2) {
       // extra wet sparkles
       ctx.fillStyle = rgba('#ffffff', 0.7 * F.tears);
@@ -705,6 +776,40 @@ function drawTears(ctx, pr, G, F, t) {
   }
 }
 
+// One tear: it wells on the lower lid (tearDrop < 0), rolls down the cheek (0..1) leaving a thin wet
+// trail, and the trail then dries (tearTrail fades to 0). tearSide picks the eye.
+function drawSingleTear(ctx, pr, G, F) {
+  const { P, s } = pr;
+  const sd = F.tearSide || 1, p = F.tearDrop, trail = F.tearTrail == null ? 1 : F.tearTrail;
+  const x0 = sd * (G.eyeX - 0.04);
+  const path = L.sampleCR([P(x0, 0.22, 0.86), P(x0 + sd * 0.03, 0.45, 0.83), P(x0 + sd * 0.06, 0.72, 0.76), P(x0 + sd * 0.04, 0.98, 0.68)], 8);
+  ctx.save();
+  ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  if (p < 0) {
+    // welling on the lid: a growing bead of light
+    const k = clamp(1 + p);
+    const b = path[0];
+    ctx.fillStyle = rgba('#eaf6ff', 0.8 * k);
+    L.ellipse(ctx, b[0], b[1] - s * 0.01, s * 0.02 * k + 0.5, s * 0.016 * k + 0.5); ctx.fill();
+  } else {
+    const n = Math.max(2, Math.round(clamp(p) * (path.length - 1)) + 1);
+    const seg = path.slice(0, n);
+    if (trail > 0.01) {
+      ctx.strokeStyle = rgba('#d6ecff', 0.45 * trail); ctx.lineWidth = s * 0.022;
+      ctx.beginPath(); seg.forEach((q, i) => (i ? ctx.lineTo(q[0], q[1]) : ctx.moveTo(q[0], q[1]))); ctx.stroke();
+      ctx.strokeStyle = rgba('#ffffff', 0.55 * trail); ctx.lineWidth = s * 0.007; ctx.stroke();
+    }
+    if (p < 1) {
+      const q = seg[seg.length - 1];
+      ctx.fillStyle = rgba('#e6f3ff', 0.9);
+      L.ellipse(ctx, q[0], q[1] + s * 0.01, s * 0.022, s * 0.03); ctx.fill();
+      ctx.fillStyle = rgba('#ffffff', 0.95);
+      L.ellipse(ctx, q[0] - s * 0.006, q[1], s * 0.007, s * 0.009); ctx.fill();
+    }
+  }
+  ctx.restore();
+}
+
 // ------------------------------------------------------------------ brows
 function drawBrow(ctx, pr, G, st, F, sd, line, lw) {
   const { P, s } = pr;
@@ -713,10 +818,10 @@ function drawBrow(ctx, pr, G, st, F, sd, line, lw) {
   const outer = (F.browOuter || 0) + (F['browOuter' + side] || 0);
   const hgt = (F.browHeight || 0) + (F['browH' + side] || 0);
   const fur = clamp(F.browFurrow || 0);
-  const by = G.browY - hgt * 0.1;
-  const pIn = [sd * (0.15 - fur * 0.035 - Math.max(0, -inner) * 0.02), by + 0.045 - inner * 0.14 + fur * 0.045, 0.92];
-  const pMid = [sd * 0.43, by - 0.045 - inner * 0.04 - outer * 0.03, 0.9];
-  const pOut = [sd * 0.74, by + 0.03 - outer * 0.1 + inner * 0.03, 0.72];
+  const by = G.browY - hgt * 0.17;
+  const pIn = [sd * (0.15 - fur * 0.035 - Math.max(0, -inner) * 0.02), by + 0.045 - inner * 0.2 + fur * 0.05, 0.92];
+  const pMid = [sd * 0.43, by - 0.045 - inner * 0.06 - outer * 0.05 - hgt * 0.02, 0.9];
+  const pOut = [sd * 0.74, by + 0.03 - outer * 0.15 + inner * 0.04, 0.72];
   const pts = [pIn, pMid, pOut].map((p) => P(...p));
   const bw = (st.browW || G.browW) * s;
   const col = st.browColor || line;
@@ -749,4 +854,4 @@ function drawRim(ctx, pr, facePoly, crC, crR, Lt, s, st) {
   ctx.restore();
 }
 
-module.exports = { drawHead, makeProj, GEO, shadowSide, terminatorX };
+module.exports = { drawHead, makeProj, GEO, geoOf, shadowSide, terminatorX };

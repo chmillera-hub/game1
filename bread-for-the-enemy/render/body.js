@@ -66,8 +66,12 @@ function drawTorso(ctx, B, s, st, Lt, o) {
   ctx.fillStyle = g;
   ctx.fillRect(B[0] - 20 * s, B[1] - 4 * s, 40 * s, 30 * s);
   // chin/head shadow on the chest
-  ctx.fillStyle = L.radial(ctx, Xc(0, 0.2)[0], B[1] + s * 0.25, 0, s * 1.5, [[0, rgba(clothShadow(cl.tunic, Lt), 0.7)], [1, rgba(clothShadow(cl.tunic, Lt), 0)]]);
+  ctx.fillStyle = L.radial(ctx, Xc(0, 0.2)[0], B[1] + s * 0.25, 0, s * 1.3, [[0, rgba(clothShadow(cl.tunic, Lt), 0.5)], [1, rgba(clothShadow(cl.tunic, Lt), 0)]]);
   ctx.fillRect(B[0] - s * 2.5, B[1] - s, s * 5, s * 3);
+  // the chest is full, not sunken: soft light across the lit side of the chest
+  const pc = X(side * 0.95, 1.7);
+  ctx.fillStyle = L.radial(ctx, pc[0], pc[1], 0, s * 1.5, [[0, rgba(shade(lit(cl.tunic, Lt), 1.12), 0.35)], [1, rgba(shade(lit(cl.tunic, Lt), 1.12), 0)]]);
+  ctx.fillRect(pc[0] - s * 1.6, pc[1] - s * 1.6, s * 3.2, s * 3.2);
   // armor (guard)
   if (cl.armor) {
     const m = st.metal || '#8a8d92';
@@ -99,7 +103,7 @@ function drawTorso(ctx, B, s, st, Lt, o) {
     ctx.restore();
     ctx.beginPath(); L.crPath(ctx, pts, true, 0.45); // the folds replaced the path: outline the mantle itself
     ctx.strokeStyle = st.line; ctx.lineWidth = lw; ctx.stroke();
-    if (cl.trim) {
+    if (cl.trim && cl.mantleTrim !== false) {
       L.strokeSmooth(ctx, [Xc(ms * 0.58, 0.5), X(ms * 0.25, 2.2), X(-ms * 0.9, 3.6), X(-ms * 1.85, 4.55)], lit(cl.trim, Lt), s * 0.1);
     }
   }
@@ -117,8 +121,8 @@ function drawTorso(ctx, B, s, st, Lt, o) {
   ctx.restore();
   ctx.restore();
   // collar: a soft fabric edge around the neck hole (the neck sits inside it)
-  L.strokeSmooth(ctx, collar, rgba(clothShadow(cl.tunic, Lt), 0.95), lw * 2.6);
-  L.strokeSmooth(ctx, collar, st.line, lw * 1.0);
+  L.strokeSmooth(ctx, collar, rgba(clothShadow(cl.tunic, Lt), 0.55), lw * 2.4);
+  L.strokeSmooth(ctx, collar, rgba(st.line, 0.85), lw * 0.85);
   // outline of the sides and shoulders only (never across the neck)
   ctx.lineJoin = 'round';
   ctx.beginPath(); L.crPath(ctx, left, false, 0.45);
@@ -189,15 +193,39 @@ function armGeom(S, Wt, s, o = {}) {
   const C = [W[0] - dir[0] * s * 0.16, W[1] - dir[1] * s * 0.16];
   return { S, E, W, C, dir, rS, rE, rC, cap: 0.56 * s, s, ang: Math.atan2(dir[1], dir[0]), loose };
 }
+// A limb segment from A to B whose radius follows prof (radii spaced evenly along it), wound like
+// hands.capsule so several segments union cleanly under nonzero fill.
+function limbPath(p, A, B, prof) {
+  const dx = B[0] - A[0], dy = B[1] - A[1], d = Math.hypot(dx, dy);
+  const rA = prof[0], rB = prof[prof.length - 1];
+  if (d < 1e-3) { const r = Math.max(rA, rB); p.moveTo(A[0] + r, A[1]); p.arc(A[0], A[1], r, 0, L.TAU, false); return; }
+  const nx = -dy / d, ny = dx / d, al = Math.atan2(dy, dx), n = 14;
+  const r = (t) => {
+    const f = t * (prof.length - 1), i = Math.min(prof.length - 2, Math.floor(f)), k = f - i;
+    return lerp(prof[i], prof[i + 1], k * k * (3 - 2 * k));
+  };
+  p.moveTo(A[0] + nx * rA, A[1] + ny * rA);
+  p.arc(A[0], A[1], rA, al + Math.PI / 2, al + Math.PI * 1.5, false);
+  for (let i = 1; i <= n; i++) { const t = i / n, rr = r(t); p.lineTo(A[0] + dx * t - nx * rr, A[1] + dy * t - ny * rr); }
+  p.arc(B[0], B[1], rB, al + Math.PI * 1.5, al + Math.PI * 2.5, false);
+  for (let i = n - 1; i >= 0; i--) { const t = i / n, rr = r(t); p.lineTo(A[0] + dx * t + nx * rr, A[1] + dy * t + ny * rr); }
+  p.closePath();
+}
+// the upper arm swells at the deltoid and narrows to the elbow; the forearm swells just below the
+// elbow and tapers to the wrist (a loose sleeve flares toward the cuff instead)
+function upperProf(g) { return [g.rS, g.rS * 1.07, lerp(g.rS, g.rE, 0.55), g.rE * 0.97, g.rE]; }
+function foreProf(g) {
+  return g.rC > g.rE ? [g.rE, lerp(g.rE, g.rC, 0.35), lerp(g.rE, g.rC, 0.75), g.rC]
+    : [g.rE, g.rE * 1.05, lerp(g.rE, g.rC, 0.55), g.rC * 1.02, g.rC];
+}
 function sleevePath(g, part) {
   const p = new (require('@napi-rs/canvas').Path2D)();
-  const H = require('./hands');
   if (part !== 'lower') {
     p.moveTo(g.S[0] + g.cap, g.S[1]); p.arc(g.S[0], g.S[1], g.cap, 0, L.TAU, false);
-    H.capsule(p, g.S, g.rS, g.E, g.rE);
+    limbPath(p, g.S, g.E, upperProf(g));
   }
   if (part !== 'upper') {
-    H.capsule(p, g.E, g.rE, g.C, g.rC);
+    limbPath(p, g.E, g.C, foreProf(g));
     if (part === 'lower') { p.moveTo(g.E[0] + g.rE, g.E[1]); p.arc(g.E[0], g.E[1], g.rE, 0, L.TAU, false); }
   }
   return p;
@@ -216,7 +244,12 @@ function drawSleeve(ctx, g, st, Lt, o = {}) {
   ctx.lineJoin = 'round'; ctx.strokeStyle = st.line; ctx.lineWidth = lw * 2.1;
   const zone = new PathC(); zone.rect(-1e5, -1e5, 2e5, 2e5);
   zone.moveTo(g.S[0] + g.cap * 1.25, g.S[1]); zone.arc(g.S[0], g.S[1], g.cap * 1.25, 0, L.TAU, true);
-  ctx.save(); ctx.clip(zone, 'evenodd'); ctx.stroke(path); ctx.restore();
+  if (part === 'lower') {
+    // a forearm drawn on its own never outlines its elbow end over its own upper arm (no seam)
+    const notUpper = new PathC(); notUpper.rect(-1e5, -1e5, 2e5, 2e5);
+    limbPath(notUpper, g.S, g.E, upperProf(g).map((r) => r * 0.98));
+    ctx.save(); ctx.clip(zone, 'evenodd'); ctx.clip(notUpper, 'evenodd'); ctx.stroke(path); ctx.restore();
+  } else { ctx.save(); ctx.clip(zone, 'evenodd'); ctx.stroke(path); ctx.restore(); }
   if (o.torso && part !== 'lower') {
     const inZone = new PathC(); inZone.moveTo(g.S[0] + g.cap * 1.25, g.S[1]); inZone.arc(g.S[0], g.S[1], g.cap * 1.25, 0, L.TAU, false);
     const outTorso = new PathC(); outTorso.rect(-1e5, -1e5, 2e5, 2e5);
@@ -237,7 +270,18 @@ function drawSleeve(ctx, g, st, Lt, o = {}) {
   const shadowC = clothShadow(col, Lt);
   if (o.far) { ctx.fillStyle = rgba(shadowC, 0.35); ctx.fillRect(g.S[0] - 8 * s, g.S[1] - 4 * s, 16 * s, 14 * s); }
   // form shadow on the side of each segment that faces away from the light
-  const band = (A, B2, r) => {
+  // each segment's shading stops at the elbow plane, so no round end of it shows as a ball joint
+  const halfPlane = (P0, u, keepAhead) => {
+    const q = new PathC(), k = keepAhead ? 1 : -1, n = [-u[1], u[0]], R = 60 * s;
+    q.moveTo(P0[0] + n[0] * R, P0[1] + n[1] * R);
+    q.lineTo(P0[0] + n[0] * R + u[0] * R * k, P0[1] + n[1] * R + u[1] * R * k);
+    q.lineTo(P0[0] - n[0] * R + u[0] * R * k, P0[1] - n[1] * R + u[1] * R * k);
+    q.lineTo(P0[0] - n[0] * R, P0[1] - n[1] * R);
+    q.closePath();
+    return q;
+  };
+  const band = (A, B2, r, prof, clipQ) => {
+    if (clipQ) { ctx.save(); ctx.clip(clipQ); }
     let nx = -(B2[1] - A[1]), ny = B2[0] - A[0];
     const l = Math.hypot(nx, ny) || 1; nx /= l; ny /= l;
     if (nx * -side < 0) { nx = -nx; ny = -ny; } // n points toward the light
@@ -245,11 +289,18 @@ function drawSleeve(ctx, g, st, Lt, o = {}) {
     const gr = ctx.createLinearGradient(m[0] + nx * r * 0.2, m[1] + ny * r * 0.2, m[0] - nx * r * 1.05, m[1] - ny * r * 1.05);
     gr.addColorStop(0, rgba(shadowC, 0)); gr.addColorStop(1, rgba(shadowC, 0.72));
     ctx.fillStyle = gr;
-    const q = new PathC(); require('./hands').capsule(q, A, r * 1.02, B2, r * 1.02);
+    const q = new PathC(); limbPath(q, A, B2, prof.map((x) => x * 1.03));
     ctx.fill(q);
+    if (clipQ) ctx.restore();
   };
-  if (part !== 'lower') band(g.S, g.E, g.rS);
-  if (part !== 'upper') band(g.E, g.C, g.rC);
+  const u1 = [g.E[0] - g.S[0], g.E[1] - g.S[1]], l1 = Math.hypot(u1[0], u1[1]) || 1;
+  const u2 = [g.C[0] - g.E[0], g.C[1] - g.E[1]], l2 = Math.hypot(u2[0], u2[1]) || 1;
+  // the shading of each segment narrows into the elbow, so neither a round end (a ball joint) nor a
+  // straight cut shows there
+  const taperEnd = (pr) => pr.map((r, i) => r * (i < pr.length - 2 ? 1 : i === pr.length - 2 ? 0.8 : 0.42));
+  const taperStart = (pr) => pr.map((r, i) => r * (i === 0 ? 0.42 : i === 1 ? 0.8 : 1));
+  if (part !== 'lower') band(g.S, g.E, g.rS, taperEnd(upperProf(g)), null);
+  if (part !== 'upper') band(g.E, g.C, Math.max(g.rE, g.rC), taperStart(foreProf(g)), null);
   // occlusion where the upper arm meets the body
   if (part !== 'lower') {
     ctx.fillStyle = L.radial(ctx, g.S[0], g.S[1] + s * 0.7, 0, s * 1.0, [[0, rgba(shadowC, 0.35)], [1, rgba(shadowC, 0)]]);
@@ -518,4 +569,4 @@ function drawCup(ctx, x, y, h, Lt) {
   ctx.restore();
 }
 
-module.exports = { armJoint, armGeom, drawSleeve, drawTorso, drawArm, drawHand, drawBread, drawHalfBread, drawJar, drawChain, drawScroll, drawTorch, drawFlame, drawCup, drawShackle, ik, torsoPts, collarPts, neckBase, shoulderJoints, clothShadow };
+module.exports = { limbPath, armJoint, armGeom, drawSleeve, drawTorso, drawArm, drawHand, drawBread, drawHalfBread, drawJar, drawChain, drawScroll, drawTorch, drawFlame, drawCup, drawShackle, ik, torsoPts, collarPts, neckBase, shoulderJoints, clothShadow };

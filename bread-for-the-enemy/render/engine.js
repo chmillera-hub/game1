@@ -128,6 +128,7 @@ const POSES = {
   write: { n: { w: [-0.55, 4.55], hand: 'relax', palm: { down: 1 }, fdir: LAPDIR }, f: { w: [1.3, 4.2], hand: 'pen', palm: { down: 0.6, in: 0.6 }, fdir: { fwd: 0.6, in: 0.5 } },
     front: true, shackles: true, parchment: true },
   lean: { n: { w: [-0.55, 4.4], hand: 'relax', palm: LAP, fdir: LAPDIR }, f: { w: [1.5, 4.2], hand: 'relax', palm: LAP, fdir: LAPDIR }, front: true, shackles: true, lean: 0.12 },
+  meet_bread: { n: { w: [-0.4, 4.25], hand: 'relax', palm: LAP, fdir: LAPDIR }, f: { w: [0.3, 3.62], hand: 'cup', palm: { up: 0.9, fwd: 0.15 }, fdir: { fwd: 1, up: 0.2 }, fk: 0.85 }, front: true, shackles: true },
   take_bread: { n: { w: [-0.4, 4.25], hand: 'relax', palm: LAP, fdir: LAPDIR }, f: { w: [2.1, 3.35], hand: 'cup', palm: { up: 0.75, in: 0.5 }, fdir: { fwd: 0.6, in: 0.5 } },
     front: true, shackles: true, half: { arm: 'f', r: 0.88 } },
   eat: { n: { w: [-0.5, 4.25], hand: 'relax', palm: LAP, fdir: LAPDIR }, f: { w: [1.0, 2.35], hand: 'hold', palm: { in: 0.6, back: 0.45, up: 0.2 }, fdir: { up: 0.65, in: 0.45, fwd: 0.2 } },
@@ -257,6 +258,26 @@ class World {
     for (const ln of tl.lines) for (const w of Object.keys(ln.mouth || {})) (this.starts[w] = this.starts[w] || []).push(ln.start);
     // lines by speaker
     this.lines = tl.lines;
+    // acting beats found in the words themselves (timed by the word's place in its line):
+    //  - a small shake of the head on a refusal or negation ("No.", "I don't...", "I am not...")
+    //  - a glance up toward heaven when speaking of the Father, of God or of the Lord in prayer
+    this.shakes = {}; this.ups = {};
+    const NEG = /\b(no|not|never|nothing|don't|didn't|won't|can't|cannot|isn't|wasn't|nobody|none)\b/i;
+    const NO_SHAKE = /(no one forgets|not yet saved|not just for you|neither|\bnor\b)/i;
+    const UP = { jesus: /\bmy Father\b/, paul: /(The Lord provides|the Lord\.\.\. the One|not even by God|the Lord our God)/, yosef: /hands of God/, asher: /^Lord\.\.\./ };
+    const at = (ln, idx) => ln.start + 0.1 + (idx / Math.max(1, ln.text.length)) * (ln.end - ln.start - 0.2);
+    for (const ln of tl.lines) {
+      if (ln.vo || !ln.mouth || !ln.mouth[ln.who]) continue;
+      const who = ln.who;
+      const m = ln.text.match(NEG);
+      if (m && !NO_SHAKE.test(ln.text)) {
+        const ts = at(ln, m.index);
+        const list = (this.shakes[who] = this.shakes[who] || []);
+        if (!list.length || ts - list[list.length - 1].t > 2.5) list.push({ t: ts, k: 0.75 + 0.5 * L.hash01(Math.floor(ts * 10)) });
+      }
+      const u = UP[who] && ln.text.match(UP[who]);
+      if (u) (this.ups[who] = this.ups[who] || []).push(at(ln, u.index + u[0].length * 0.5));
+    }
   }
   speaking(who, t) {
     // returns {open, wide, close, loud} if who is voicing a line at t
@@ -348,10 +369,26 @@ class World {
       F.browHeight += 0.18 * clamp(sp.emph - 0.55, 0, 1);
       F.speaking = 1;
     } else F.speaking = 0;
-    // reaction nods (a slow, small down-and-up of the head)
+    // reaction nods (a slow down-and-up of the head), some small, some deeper
     for (const tn of A.nods) {
       const u = (t - tn) / 0.95;
-      if (u > 0 && u < 1) F.pitch += 0.13 * Math.sin(Math.PI * u) * (1 - 0.3 * u);
+      if (u > 0 && u < 1) F.pitch += (0.09 + 0.07 * L.hash01(Math.floor(tn * 7))) * Math.sin(Math.PI * u) * (1 - 0.3 * u);
+    }
+    // a small shake of the head on a negation: two soft turns that die away
+    for (const sh of this.shakes[who] || []) {
+      const u = (t - sh.t) / 0.95;
+      if (u > 0 && u < 1) {
+        const v = 0.075 * sh.k * Math.sin(u * Math.PI * 3) * Math.pow(1 - u, 1.3) * Math.min(1, u * 6);
+        F.yaw += v; F.yawLook = (F.yawLook == null ? F.yaw : F.yawLook);
+      }
+    }
+    // a glance up toward heaven: eyes lead, the head lifts a little, the brows open
+    for (const tu of this.ups[who] || []) {
+      const d = t - tu + 0.15;
+      if (d > 0 && d < 2.3) {
+        const e = Math.min(L.smooth(d / 0.4), 1 - L.smooth((d - 1.5) / 0.8));
+        F.gazeY = lerp(F.gazeY, -0.5, e); F.pitch -= 0.12 * e; F.browHeight += 0.2 * e; F.lid = Math.max(F.lid, 0.95 * e + F.lid * (1 - e));
+      }
     }
     // blink
     const bl = A.blink(t, F.blinkRate);
@@ -371,6 +408,8 @@ class World {
     // hair sway from head motion: compare with a slightly earlier state
     F.pose = e.poseTo; F.poseTo = e.poseTo; F.poseFrom = e.poseFrom; F.poseK = e.poseK;
     F.emo = e.emo;
+    // Christ's sorrow shows in His eyes and brow, not in tears (a single tear is staged by its shot)
+    if (who === 'jesus') { F.tears = 0; F.tearFlow = 0; F._irisShake = 0; }
     return F;
   }
   headLag(who, t, shotLook) {

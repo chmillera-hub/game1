@@ -263,7 +263,7 @@ function drawSubs(ctx, t) {
       ctx.shadowColor = 'rgba(0,0,0,0.6)'; ctx.shadowBlur = 10;
       if (pw) {
         ctx.font = NAME_FONT(size);
-        ctx.strokeStyle = 'rgba(0,0,0,0.9)'; ctx.lineWidth = size * 0.2;
+        ctx.strokeStyle = 'rgba(0,0,0,0.92)'; ctx.lineWidth = size * 0.27;
         ctx.strokeText(prefix, x, y);
         ctx.shadowBlur = 0;
         ctx.fillStyle = '#f0c868';
@@ -272,8 +272,9 @@ function drawSubs(ctx, t) {
         ctx.shadowBlur = 10;
       }
       ctx.font = st.font(size);
-      ctx.strokeStyle = 'rgba(0,0,0,0.88)';
-      ctx.lineWidth = size * 0.2;
+      // a thick, solid outline so every word reads over bright skies and light robes
+      ctx.strokeStyle = 'rgba(0,0,0,0.92)';
+      ctx.lineWidth = size * 0.27;
       ctx.strokeText(txt, x, y);
       ctx.shadowBlur = 0;
       ctx.fillStyle = st.color;
