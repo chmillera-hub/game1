@@ -297,7 +297,7 @@ P(0.4)
 L("yosef", "Asher, my son... don't be afraid for me.", speed=0.84, gap=0.5)
 L("yosef", "I am in the hands of God. He will keep me safe...", speed=0.84, gap=0.3)
 L("yosef", "and He who blesses us all will keep you safe, forever and ever.", speed=0.82, gap=0.4)
-L("yosef", "Keep me in your heart, my son... and I will keep you in mind.", speed=0.82, gap=0.5)
+L("yosef", "Keep me in your heart, my son... while I will keep you in my mind.", speed=0.82, gap=0.5)
 
 S("jer_saul", grade="memory_blue")
 T("name", "PAUL", who="saul", at=0.1, dur=4.4)

@@ -1410,9 +1410,9 @@ S.jer_yosef = (ctx, W, t, lt, dur, p) => {
   BG.jerusalemDyn(ctx, t, { torches: [[220, 700, 1], [900, 640, 2]] });
   const lk = looks({ gx: -0.6, gy: 0.0, yaw: -0.42, pitch: 0.0 }, { back: { gx: -0.75, gy: 0.05, yaw: -0.48, pitch: 0.02 }, away: { gx: 0.4, gy: 0, yaw: 0.3, pitch: 0 } });
   const yp = { x: 560, y: 1110, s: 150, facing: 1, by: 0.55, len: 7 };
-  const gres = guardsBehind(ctx, W, t, yp, LIGHT.jer);
+  // the guards stand close behind him; their inner arms are out of sight behind his back
+  guardsBehind(ctx, W, t, yp, LIGHT.jer);
   actor(ctx, W, 'yosef', t, yp, LIGHT.jer, lk);
-  guardGrips(ctx, gres);
   BG.vignette(ctx, 0.5, '#010205');
 };
 
@@ -1439,9 +1439,8 @@ S.jer_yosef_look = (ctx, W, t, lt, dur, p) => {
   const go = smooth(clamp((t - W._byeEnd - 0.25) / 1.4));
   const dx = -go * 900, bob = Math.abs(Math.sin(go * 9)) * 14 * go;
   const yp = { x: 660 + dx, y: 1330 + bob, s: 190, facing: -1, by: -0.15, len: 5, lean: -0.08 * go };
-  const gres = guardsBehind(ctx, W, t, yp, LIGHT.jer, { spots: [[-2.6, 1, 0.3], [2.5, -1, -0.32]] });
+  guardsBehind(ctx, W, t, yp, LIGHT.jer, { spots: [[-2.6, 1, 0.3], [2.5, -1, -0.32]] });
   actor(ctx, W, 'yosef', t, yp, LIGHT.jer, lk);
-  guardGrips(ctx, gres);
   // young Paul from behind, out of focus in the foreground: his balding head with its dark fringe, the
   // white mantle with its blue stripe over the olive tunic
   ctx.save();
