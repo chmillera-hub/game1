@@ -1,6 +1,6 @@
 # TIREDNESS — Episode 2: Lights Out
 
-Portrait (9:16) animated short, ~6:11, 720x1280 @ 24 fps, H.264 + AAC (rev 4: user notes applied, no length cap).
+Portrait (9:16) animated short, ~6:11, 720x1280 @ 24 fps, H.264 + AAC (rev 4 + the anatomy and glitch pass, see notes/anatomy_pass_fixes.md).
 - `Tiredness_ep2_portrait.mp4`: about 18.3 MB, the same quality per second as rev 2.
 - `Tiredness_ep2_portrait_under15MB.mp4`: about 14.4 MB, a lower bitrate for upload limits.
 

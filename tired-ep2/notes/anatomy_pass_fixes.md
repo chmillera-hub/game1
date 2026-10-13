@@ -13,7 +13,13 @@ HOW IT WAS CHECKED
 
 WHOLE FILM (rig)
 - Walking: the body dropped for one frame on every step (5-12 px at 720p in closer shots). Now each step settles smoothly. Walk speeds are unchanged.
-- Creature head turns through a front view: the eyes, nose, mouth and ear fins used to jump to the other side in one frame. The head now swings through a centred front view, with the far ear coming round. All other head angles are unchanged.
+- Creature head turns through a front view: the eyes, nose, mouth, ear fins and head tilt used to jump to the other side in one frame. The head now swings through a centred front view, with the far ear coming round. All other head angles are unchanged.
+  The 16 turns that crossed the front view in a single frame were also eased so they pass through it smoothly:
+  - s01: 0:05.5, 0:10.4, 0:14.8
+  - s03: 1:34.2
+  - s04: 2:17.2 (close-up), 2:19.5, 2:21.3, 2:22.2, 2:44.1, 2:45.0, 2:51.1, 2:51.9
+  - s05: 3:15.2, 3:23.1
+  Starts, ends and all other acting are unchanged.
 - Creature tears: now light blue instead of white.
 
 S01, opening (0:00-0:50)
@@ -70,6 +76,15 @@ S08, home (5:47-6:11)
 - 5:56.2: Thing 1's tail snapped into a hook and flipped. It now sweeps smoothly.
 - 6:01.6: his hand jumped onto the phone in one frame. It now arcs over.
 - 6:04-6:11: he lay statue-still in the final wide. He now has a gentle sleeping breath.
+
+FINAL RE-SCAN
+After the fixes, every frame was re-scanned. What remains flagged is deliberate:
+- impact camera shakes and Emb's terrified trembles;
+- the bonk;
+- the scared guard's startle jolt;
+- fast runs;
+- one creature hop-turn at the top of a hop;
+- one whole-body turn-around.
 
 CHECKED AND ALREADY FINE
 - Hands: no blobs, and no ovals inside them.
