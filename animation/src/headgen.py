@@ -32,13 +32,13 @@ DEFAULT = dict(
     rx=0.102, ry=0.104, rz_top=0.112, rz_bot=0.094,
     # lower face
     jaw_taper=0.25, jaw_z0=-0.012, jaw_z1=-0.115,
-    muzzle=0.022, muzzle_z=-0.055, muzzle_w=0.06,
+    muzzle=0.015, muzzle_z=-0.055, muzzle_w=0.06,
     chin=0.012, chin_z=-0.100, chin_drop=0.030, chin_w=0.030,
     cheek=0.010, cheek_x=0.055, cheek_z=-0.035, cheek_r=0.035,
     brow_ridge=0.006,
     # mouth
     mouth_elev=-29.0, mouth_halfw=0.27, corner_rest=1.0, mouth_sy0=0.07, mouth_blend=0.42,
-    lip_up=0.0050, lip_lo=0.0065, lip_w=0.15, lip_color=(0.50, 0.21, 0.19),
+    lip_up=0.0042, lip_lo=0.0056, lip_w=0.125, lip_color=None,
     # nose
     nose_z=-0.012, nose_len=0.040, nose_proj=0.022, nose_w=0.017, nose_bulb=0.012,
     nose_bulb_w=0.016, nose_bridge_w=0.010,
@@ -66,7 +66,7 @@ class Head:
         p.update(kw)
         if p['lip_color'] is None:
             sk = np.array(p['skin'])
-            p['lip_color'] = tuple(np.clip(sk * np.array([0.80, 0.55, 0.55]) + np.array([0.03, 0.0, 0.0]), 0, 1))
+            p['lip_color'] = tuple(np.clip(sk * np.array([0.84, 0.58, 0.58]) + np.array([0.02, 0.0, 0.0]), 0, 1))
         self.p = p
         a = np.radians(p['mouth_elev'])
         self.u0 = norm(np.array([0.0, -np.cos(a), np.sin(a)]))
@@ -419,7 +419,7 @@ class Head:
         # ---------------- vertex colours ----------------
         # lip mask (R), blush mask (G), mouth interior (B)
         lip_t = (TH - p['mouth_halfw']) / (p['lip_w'] * 1.05)
-        lipm = smoothstep(1.05, 0.75, lip_t) * (TH < 2.0)
+        lipm = smoothstep(1.0, 0.70, lip_t) * (TH < 2.0)
         lipm *= 1.0 - 0.6 * smoothstep(0.75, 1.0, np.abs(np.sin(PH))) * smoothstep(0.4, 1.0, lip_t)
         bl = np.zeros(nv)
         for side in (1, -1):

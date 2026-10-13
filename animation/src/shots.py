@@ -493,7 +493,7 @@ def s1_3(F):
              keys=[(T, (0.05, y, z), (0.05, FY + 1.0, SZ + 1.0)),
                    (T + 3.0, (0.55, y, z), (0.55, FY + 1.0, SZ + 0.95)),
                    (b2 + 0.1, (0.55, y, z), (0.55, FY + 1.0, SZ + 0.95)),
-                   (b3 + 0.6, (0.95, y + 0.1, z), (0.95, FY + 1.0, SZ + 1.25))],
+                   (b3 + 0.6, (0.95, y + 0.1, SZ + 1.64), ('actor', 'tomas', 'eyes', (0, 0, -0.04)))],
              focus_keys=[(-1e9, -1e9, V(0.0, FY + 0.55, SZ + 1.2)),
                          (T + 2.3, T + 2.9, V(*CARD)),
                          (b2 + 0.1, b2 + 0.9, ('actor', 'tomas', 'head'))])
@@ -852,7 +852,7 @@ def s2_2(F):
 def s2_3(F):
     T = F.begin('2.3', 'The lean, the second peel, the fall')
     O = F.A['oswald']
-    F.camera((1.15, -2.25, 1.5), (1.38, 1.55, 0.72), 33)
+    F.camera((1.25, -1.6, 1.45), (1.38, 1.55, 0.72), 33)
     pos = (1.42, 2.02)
     peel2 = (1.42, 1.74)
     F.peels[1].location = (peel2[0], peel2[1], 0.0)
@@ -985,7 +985,7 @@ OS_FACE = V(KNEEL[0] + 0.02, KNEEL[1] + 0.02, SZ + 0.92)
 SETUP = {
     'A': dict(loc=(4.15, 1.95, SZ + 0.80), target=(2.72, 3.48, SZ + 0.62), lens=32),
     'B': dict(loc=(3.27, 3.93, SZ + 0.84), target=('actor', 'oswald', 'eyes', (0.0, 0.0, -0.10)), lens=36),
-    'C': dict(loc=(2.13, 2.56, SZ + 1.02), target=('actor', 'edith', 'eyes', (0.0, 0.0, -0.05)), lens=55),
+    'C': dict(loc=(2.60, 2.62, SZ + 0.98), target=('actor', 'edith', 'eyes', (0.0, 0.0, -0.05)), lens=48),
     'D': dict(loc=(2.66, 2.66, SZ + 0.80), target=('actor', 'edith', 'eyes', (0.0, 0.0, -0.06)), lens=78),
     'E': dict(loc=(3.55, 3.42, SZ + 0.95), target=('actor', 'oswald', 'eyes', (0.0, 0.0, -0.06)), lens=72),
 }
@@ -1012,7 +1012,7 @@ def edith_lap_loaf(F):
 def s3_1(F):
     T = F.begin('3.1', 'Doorway deep staging: the question')
     O, Te, To, Ed = F.A['oswald'], F.A['teddy'], F.A['tomas'], F.A['edith']
-    F.camera((2.35, 2.80, SZ + 1.30), (DOOR_X + 0.15, FY - 0.38, SZ + 1.10), 50,
+    F.camera((-2.80, 1.60, SZ + 1.40), (-0.37, 3.36, SZ + 1.00), 28,
              focus=('actor', 'oswald', 'head'), fstop=3.5)
     for n in ('plum', 'flatcap', 'paper'):
         far_away(F, n, T)
@@ -1083,7 +1083,7 @@ def s3_1(F):
 def s3_2(F):
     T = F.begin('3.2', "Tomas: It's...")
     To = F.A['tomas']
-    F.camera((0.30, FY - 1.05, SZ + 1.48), ('actor', 'tomas', 'eyes', (0, 0, -0.08)), 62,
+    F.camera((0.0, FY - 0.55, SZ + 1.60), ('actor', 'tomas', 'eyes', (0, 0, -0.08)), 55,
              focus=('actor', 'tomas', 'eyes'), fstop=2.4)
     a, b = F.say('T04', T + 0.3)
     F.music_stop = a + 0.1
@@ -1113,7 +1113,7 @@ def s3_3(F):
 def s3_4(F):
     T = F.begin('3.4', 'Door, Teddy. The bite never happens.')
     O, Te, To = F.A['oswald'], F.A['teddy'], F.A['tomas']
-    F.camera((2.35, 2.80, SZ + 1.30), (DOOR_X + 0.15, FY - 0.38, SZ + 1.10), 50,
+    F.camera((-2.80, 1.60, SZ + 1.40), (-0.37, 3.36, SZ + 1.00), 28,
              focus=('actor', 'oswald', 'head'), fstop=3.5)
     To.look_at(T + 0.2, V(DOOR_X, FY + 1.5, SZ + 1.0), dur=0.5)
     To.expr(T + 0.2, lid_L=0.6, lid_R=0.6, brow_in=0.3, brow=-0.1, smile=-0.25, dur=0.4)
@@ -1931,6 +1931,8 @@ def initial_visibility(F):
 
 def build(voice_dir, out_dir, only=None):
     F = Film(voice_dir)
+    # Edith sits with her head against the brick: looks up are mostly eyes
+    F.A['edith'].look_up_max = 14.0
     setup_props(F)
     lighting(F)
     initial_visibility(F)

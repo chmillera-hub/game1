@@ -681,8 +681,8 @@ def build_set(font_path='/usr/share/fonts/truetype/dejavu/DejaVuSerif-Bold.ttf',
     box(coll, 'crate', (0.5, 0.4, 0.4), (3.85, FACADE_Y - 0.28, SIDEWALK_Z + 0.2), M['wood'], bevel=0.01, rot=(0, 0, 0.1))
     box(coll, 'crate2', (0.45, 0.4, 0.35), (3.9, FACADE_Y - 0.28, SIDEWALK_Z + 0.58), M['wood'], bevel=0.01, rot=(0, 0, -0.15))
     # potted plant by the door
-    cyl(coll, 'pot', 0.18, 0.35, (-1.75, FACADE_Y - 0.3, SIDEWALK_Z + 0.175), M['plaster_r'], verts=16)
-    bpy.ops.mesh.primitive_ico_sphere_add(radius=0.3, subdivisions=2, location=(-1.75, FACADE_Y - 0.3, SIDEWALK_Z + 0.55))
+    cyl(coll, 'pot', 0.18, 0.35, (-2.25, FACADE_Y - 0.3, SIDEWALK_Z + 0.175), M['plaster_r'], verts=16)
+    bpy.ops.mesh.primitive_ico_sphere_add(radius=0.3, subdivisions=2, location=(-2.25, FACADE_Y - 0.3, SIDEWALK_Z + 0.55))
     bush = _obj_from_ops(coll)
     blib.assign(bush, blib.principled('leaf', (0.08, 0.14, 0.05), rough=0.8))
     return dict(coll=coll, M=M, door_hinge=hinge, lamp_light=llo, lamp_mat=M['lampglass'], bakery_light=plo,

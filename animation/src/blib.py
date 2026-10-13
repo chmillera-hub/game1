@@ -174,7 +174,7 @@ def skin_material(name, skin, lip, blush, blush_amt=0.35, interior=(0.22, 0.05, 
 
 
 def lid_material(name, skin, lash=(0.05, 0.03, 0.025)):
-    mat = principled(name, skin, rough=0.5, sss=0.10, sss_scale=0.004, spec=0.4)
+    mat = principled(name, skin, rough=0.66, sss=0.10, sss_scale=0.004, spec=0.28)
     nt, N, L = _nodes(mat)
     b = N['Principled BSDF']
     a = attr_node(N, 'lash')

@@ -122,7 +122,7 @@ BASE = dict(
     shoe_scale=1.0, bowtie=None, buttons=(0.6, 0.5, 0.3), scarf=None, apron=None,
     beard=None, lapels=True,
     sleeve_end=1.0, under_sleeve='shirt', vneck=None, coat_swap=None, gloves=None,
-    freckles=0.0, flour=0.0, towel=None, bun=None, hat_brim=0.0, pompom=None,
+    freckles=0.0, flour=0.0, towel=None, bun=None, hat_brim=0.0, pompom=None, hat_band=None,
     stockings=None, hair_color2=None,
 )
 
@@ -1127,7 +1127,8 @@ class Character:
         n_out = n_out / np.linalg.norm(n_out, axis=1, keepdims=True)
         rings = []
         if kind == 'cloche':
-            for (dz, out) in ((-0.004, 0.006), (-0.010, 0.016), (-0.013, 0.022), (-0.010, 0.024), (0.0, 0.012)):
+            # felt bell: the brim turns down rather than out
+            for (dz, out) in ((-0.003, 0.005), (-0.009, 0.009), (-0.015, 0.012), (-0.016, 0.015), (-0.006, 0.010)):
                 rings.append(bot + n_out * out + np.array([0, 0, dz]))
         else:
             for (dz, out) in ((-0.002, 0.004), (0.002, 0.010), (0.030, 0.011), (0.034, 0.004)):
@@ -1141,7 +1142,24 @@ class Character:
         for k in range(K):
             F.append((last + k, last + (k + 1) % K, top))
         Vv = Vv * hs + self.head_origin
-        m = blib.cloth_material(self.name + '_knit', s['hat_color'], rough=0.95, sheen=0.7, scale=160, bump_str=0.6)
+        if kind == 'cloche':
+            m = blib.cloth_material(self.name + '_felt', s['hat_color'], rough=0.9, sheen=0.12, scale=420, bump_str=0.12)
+        else:
+            m = blib.cloth_material(self.name + '_knit', s['hat_color'], rough=0.95, sheen=0.7, scale=160, bump_str=0.6)
+        if kind == 'cloche' and s['hat_band']:
+            # grosgrain band over the lowest rows of the crown
+            band = dome[1:5].copy()
+            nb = band.copy()
+            nb[..., 2] = 0
+            nb = nb / np.linalg.norm(nb, axis=-1, keepdims=True)
+            band = band + nb * 0.0022
+            Vb = band.reshape(-1, 3) * hs + self.head_origin
+            mb = blib.cloth_material(self.name + '_band', s['hat_band'], rough=0.55, sheen=0.1, scale=900, bump_str=0.05)
+            bo = blib.make_mesh(self.name + '_hatband', Vb, self._grid_faces(band.shape[0], K), coll=self.coll)
+            blib.assign(bo, mb)
+            blib.subsurf(bo, 1)
+            self._rigid(bo, 'head')
+            self.hat_band = bo
         ob = blib.make_mesh(self.name + '_hat', Vv, F, coll=self.coll)
         blib.assign(ob, m)
         blib.subsurf(ob, 1)

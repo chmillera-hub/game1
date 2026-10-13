@@ -527,6 +527,7 @@ class Actor:
         self.fing_w = {sd: Track(0.0) for sd in 'LR'}
         self.look = Track(None, 'obj')
         self.look_w = Track(0.0)
+        self.look_up_max = 35.0    # degrees the head may tip back for a look (eyes do the rest)
         self.head_add = Track(np.zeros(3), 'vec')       # pitch(+down), yaw(+left), roll(+right) degrees
         self.chest_add = Track(np.zeros(3), 'vec')
         self.hips_add = Track(np.zeros(3), 'vec')       # loc offset
@@ -927,7 +928,7 @@ def evaluate(self, t, light=False):
         cur_yaw = math.degrees(math.atan2(fwd.x, -fwd.y))
         cur_pitch = math.degrees(math.atan2(fwd.z, math.hypot(fwd.x, fwd.y)))
         yaw_l = clamp(((yaw_l - cur_yaw + 180) % 360) - 180, -80, 80) * lw
-        pitch_l = clamp(pitch_l - cur_pitch, -40, 35) * lw
+        pitch_l = clamp(pitch_l - cur_pitch, -40, self.look_up_max) * lw
     # distribute (head conventions: +Y yaw left, +X pitch down)
     rots['chest'] = rots['chest'] @ E(0, yaw_l * 0.18, 0)
     rots['neck'] = rots['neck'] @ E(-pitch_l * 0.35, yaw_l * 0.32, 0)
