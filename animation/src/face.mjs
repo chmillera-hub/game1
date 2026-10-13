@@ -20,15 +20,16 @@
 //   pupil          scale   pupil size (0.6 terror ... 1.4 wonder)
 //   iris           scale   iris size multiplier
 //   tears          0..1    tears welling along the lower lids (glossy)
-//   tearL, tearR   0..1    progress of a tear drop running down that cheek (0 = none, 0.01..1 = falling)
-//   stream         0..1    wet tear-streak opacity down both cheeks (wide wet body + specular edge; reads after compression)
+//   tearL, tearR   0..1    progress of ONE tear running down that cheek (0 = none; it gathers on the lid, runs down
+//                          with its short wet trail and fades out as a whole by 1)
+//   stream         0..1    sustained crying: single tears, one at a time, alternating eyes (never a painted streak)
 //   blush          0..1
 //   sparkle        0..1    starry reflections in the eyes (wonder)
 //   sweat          0..1    a nervous sweat drop
 //   turn           -1..1   head yaw: features slide toward the turned side, far eye narrows
 //   t              seconds (drives tremble / sparkle animation)
 
-import { clamp, lerp, TAU, noise1, rgba, shade, ellipse, circle } from './engine.mjs';
+import { clamp, lerp, TAU, noise1, rand, rgba, shade, ellipse, circle } from './engine.mjs';
 
 export const DEFAULT_EXPR = {
   lookX: 0, lookY: 0, lidU: 0, lidL: 0, lidTilt: 0, blink: 0,
@@ -101,56 +102,6 @@ export function drawFace(g, style, exprIn) {
     }
   }
 
-  // tear streaks (under eyes, over skin). Built to survive the compressed film (4:2:0 chroma + quantisation
-  // used to erase a thin translucent blue line): a wide wet body that brightens the skin, a soft darker fringe
-  // on the shadow side, and a crisp near-white specular edge on the light (upper-left) side, so the streak
-  // reads in LUMA, not only as a tint. Opacity rises a little faster than `stream` at the low end.
-  if (e.stream > 0.01) {
-    const sa = Math.pow(clamp(e.stream), 0.8);
-    const k = devScale(g);
-    const bw = Math.max(3, s.eyeRx * 0.24);                       // body width (1.5× the old streak)
-    const sw = Math.max(1 / k, bw * 0.2);                         // specular edge: ≥ 1 device px
-    g.save();
-    g.lineCap = 'round'; g.lineJoin = 'round';
-    // the streak ends on the cheek, never much below the mouth line: on big-eyed round heads (Fear) the old
-    // 2.1·eyeRy run reached past the jaw outline and hung in the air beside the head (very visible once the
-    // streak got its bright edge). Faces whose run already ends above that (Self) are unchanged.
-    const y0 = s.eyeY + s.eyeRy * 0.85;
-    const len0 = s.mouthY != null ? clamp(s.mouthY + s.eyeRy * 0.3 - y0, s.eyeRy, s.eyeRy * 2.1) : s.eyeRy * 2.1;
-    for (const side of [-1, 1]) {
-      const ex = side * s.eyeSpacing * (1 - Math.abs(turn) * 0.3) + shiftX;
-      const x0 = ex + side * s.eyeRx * 0.35;
-      // the features slide toward the side the head turns to, so the jaw is closer there: shorter run
-      const len = len0 * (1 - 0.3 * Math.max(0, side * turn));
-      const path = (dx) => {
-        g.beginPath();
-        g.moveTo(x0 + dx, y0);
-        g.bezierCurveTo(x0 + dx + side * 3, y0 + len * 0.381, x0 + dx - side * 2, y0 + len * 0.667, x0 + dx + side * 2, y0 + len);
-      };
-      // each layer thins out toward the tail (the trail dries / runs off the cheek)
-      const y1 = y0 + len;
-      const fade = (rgb, a) => {
-        const gr = g.createLinearGradient(0, y0, 0, y1);
-        gr.addColorStop(0, `rgba(${rgb},${a})`); gr.addColorStop(0.68, `rgba(${rgb},${a})`);
-        gr.addColorStop(1, `rgba(${rgb},${a * 0.25})`);
-        return gr;
-      };
-      // shadow-side fringe (a hair of refraction shadow gives the wet line an edge on pale skin)
-      g.strokeStyle = fade('70,95,150', 0.16 * sa);
-      g.lineWidth = bw * 0.45;
-      path(bw * 0.42); g.stroke();
-      // the wet body
-      g.strokeStyle = fade('200,232,255', 0.62 * sa);
-      g.lineWidth = bw;
-      path(0); g.stroke();
-      // specular edge
-      g.strokeStyle = fade('255,255,255', 0.88 * sa);
-      g.lineWidth = sw;
-      path(-(bw - sw) * 0.36); g.stroke();
-    }
-    g.restore();
-  }
-
   // eyes
   for (const side of [-1, 1]) {
     const farSide = side * turn > 0; // eye on the side the head turns toward rotates toward the silhouette edge and foreshortens
@@ -170,6 +121,23 @@ export function drawFace(g, style, exprIn) {
   if (s.nose) s.nose(g, e, shiftX);
 
   drawMouth(g, s, e, turn * s.eyeSpacing * 0.45);
+
+  // tears: each is one translucent blue drop with its own short wet trail, running down the cheek and fading out
+  // as a whole (explicit tearL / tearR, plus the single alternating tears of a sustained cry: `stream`)
+  const drops = [];
+  if (e.tearL > 0.001) drops.push([-1, clamp(e.tearL), 1]);
+  if (e.tearR > 0.001) drops.push([1, clamp(e.tearR), 1]);
+  if (e.stream > 0.01) for (const d of streamTears(e)) drops.push(d);
+  for (const [side, k, a] of drops) {
+    const farSide = side * turn > 0;
+    const squeeze = farSide ? 1 - Math.abs(turn) * 0.38 : 1 + Math.abs(turn) * 0.06;
+    const ex = side * s.eyeSpacing * (1 - Math.abs(turn) * 0.3) + shiftX;
+    const rx = s.eyeRx * squeeze, ry = s.eyeRy;
+    const y0 = s.eyeY + ry * 0.82;
+    // the run ends on the cheek, never past the jaw (round heads) — shorter on the side the head turns toward
+    const len = (s.tearRun ?? clamp((s.mouthY ?? s.eyeY + ry * 2.6) + ry * 0.25 - y0, ry * 1.3, ry * 2.4)) * (1 - 0.3 * Math.max(0, side * turn));
+    drawTear(g, ex + side * rx * 0.42, y0, len, k, s.tearSize ?? rx * 0.19, side, a);
+  }
 
   if (e.sweat > 0.01) {
     const sx = -s.eyeSpacing * 1.45 + shiftX, sy = s.eyeY - s.eyeRy * 0.8 + e.sweat * 6;
@@ -354,36 +322,6 @@ function drawEye(g, s, e, cx, cy, rx, ry, side) {
     g.stroke();
   }
 
-  // falling tear drop
-  const prog = side < 0 ? e.tearL : e.tearR;
-  if (prog > 0.001) {
-    const k = clamp(prog);
-    const tx = cx + side * rx * 0.45 + Math.sin(k * 5) * 2;
-    const ty = cy + ry * 0.9 + k * ry * 2.6;
-    const a = k < 0.85 ? 1 : 1 - (k - 0.85) / 0.15;
-    const sz = rx * 0.17 * (0.7 + 0.5 * Math.min(1, k * 4));
-    g.save();
-    g.fillStyle = `rgba(212,240,255,${0.95 * a})`;
-    g.strokeStyle = `rgba(110,160,215,${0.75 * a})`;
-    g.lineWidth = 1.2;
-    g.beginPath();
-    g.moveTo(tx, ty - sz * 1.9);
-    g.bezierCurveTo(tx + sz * 1.1, ty - sz * 0.2, tx + sz, ty + sz, tx, ty + sz);
-    g.bezierCurveTo(tx - sz, ty + sz, tx - sz * 1.1, ty - sz * 0.2, tx, ty - sz * 1.9);
-    g.fill(); g.stroke();
-    // bright rim on the light (left) side, just inside the outline: the drop reads as glass in luma
-    g.strokeStyle = `rgba(255,255,255,${0.85 * a})`;
-    g.lineWidth = Math.max(1 / devScale(g), sz * 0.16);
-    g.lineCap = 'round';
-    g.beginPath();
-    g.moveTo(tx - sz * 0.12, ty - sz * 1.45);
-    g.bezierCurveTo(tx - sz * 0.75, ty - sz * 0.3, tx - sz * 0.82, ty + sz * 0.45, tx - sz * 0.3, ty + sz * 0.78);
-    g.stroke();
-    g.fillStyle = `rgba(255,255,255,${0.95 * a})`;
-    circle(g, tx - sz * 0.35, ty, sz * 0.3);
-    g.fill();
-    g.restore();
-  }
 }
 
 function drawBrow(g, s, e, bx, side, squeeze) {
@@ -531,4 +469,81 @@ function logFace(g, s) {
   const pts = [[-hw, y0], [hw, y0], [-hw, y1], [hw, y1]].map(([x, y]) => [m.a * x + m.c * y + m.e, m.b * x + m.d * y + m.f]);
   const xs = pts.map((p) => p[0]), ys = pts.map((p) => p[1]);
   globalThis.__FACE_LOG.push({ x0: Math.min(...xs), x1: Math.max(...xs), y0: Math.min(...ys), y1: Math.max(...ys) });
+}
+
+/** the single tears of a sustained cry: one at a time, alternating eyes, every ~2-3.4 s; they appear as the cry
+ *  builds (stream ≳ 0.15) and fade with it */
+function streamTears(e) {
+  const P = lerp(3.4, 2.2, clamp((e.stream - 0.2) / 0.8)), D = 1.8;
+  const a = clamp((e.stream - 0.12) / 0.33);
+  const out = [];
+  const i0 = Math.floor(e.t / P) - 1;
+  for (let i = i0; i <= i0 + 1; i++) {
+    const at = i * P + rand(i, 41) * P * 0.3;
+    const k = (e.t - at) / D;
+    if (k > 0 && k < 1) out.push([((i % 2) + 2) % 2 ? 1 : -1, k, a]);
+  }
+  return out;
+}
+
+/**
+ * One tear as a single object: it gathers on the lower lid, runs down the cheek with a short wet trail that belongs
+ * to it, and fades out as a whole over the last part of its run. Translucent and slightly blue, with a soft rim and
+ * a specular highlight so it reads on any skin.
+ *   (x0, y0) lid point, len run length, k 0..1 progress, sz drop radius, side ±1, alpha 0..1
+ */
+export function drawTear(g, x0, y0, len, k, sz, side, alpha = 1) {
+  if (k <= 0 || k >= 1 || alpha <= 0.01) return;
+  const G = 0.16;
+  const run = k < G ? 0 : Math.pow((k - G) / (1 - G), 0.9);
+  const fade = (k < 0.68 ? 1 : 1 - (k - 0.68) / 0.32) * alpha;
+  const grow = Math.min(1, k / G);
+  const r = sz * (0.5 + 0.5 * grow) * (1 - 0.22 * run);
+  const x = x0 + side * Math.sin(run * 2.2) * sz * 0.45, y = y0 + r * 0.6 + run * len;
+  const px = Math.max(0.8, 1 / devScale(g));
+  g.save();
+  g.lineCap = 'round'; g.lineJoin = 'round';
+  // the wet trail it leaves, fading toward the lid; it moves and fades with the drop
+  if (run > 0.03) {
+    const yT = y - r * 1.3;
+    const gr = g.createLinearGradient(0, y0, 0, yT);
+    gr.addColorStop(0, 'rgba(170,212,255,0)');
+    gr.addColorStop(1, `rgba(170,212,255,${0.42 * fade})`);
+    g.strokeStyle = gr;
+    g.lineWidth = Math.max(px, r * 0.62);
+    g.beginPath();
+    g.moveTo(x0, y0 + r * 0.4);
+    g.quadraticCurveTo(x0 + side * sz * 0.35, (y0 + yT) / 2, x, yT);
+    g.stroke();
+    const gs = g.createLinearGradient(0, y0, 0, yT);
+    gs.addColorStop(0, 'rgba(255,255,255,0)');
+    gs.addColorStop(1, `rgba(255,255,255,${0.5 * fade})`);
+    g.strokeStyle = gs;
+    g.lineWidth = Math.max(px * 0.8, r * 0.16);
+    g.beginPath();
+    g.moveTo(x0 - side * r * 0.12, y0 + r * 0.4);
+    g.quadraticCurveTo(x0 + side * sz * 0.35 - r * 0.2, (y0 + yT) / 2, x - r * 0.2, yT);
+    g.stroke();
+  }
+  // the drop: tip up, round below
+  const drop = () => {
+    g.beginPath();
+    g.moveTo(x, y - r * 1.9);
+    g.bezierCurveTo(x + r * 1.1, y - r * 0.2, x + r, y + r, x, y + r);
+    g.bezierCurveTo(x - r, y + r, x - r * 1.1, y - r * 0.2, x, y - r * 1.9);
+  };
+  drop();
+  const gd = g.createLinearGradient(x - r, y - r, x + r, y + r);
+  gd.addColorStop(0, `rgba(210,235,255,${0.62 * fade})`);
+  gd.addColorStop(1, `rgba(120,180,250,${0.66 * fade})`);
+  g.fillStyle = gd;
+  g.fill();
+  g.strokeStyle = `rgba(70,128,212,${0.6 * fade})`;
+  g.lineWidth = Math.max(px, r * 0.13);
+  g.stroke();
+  // highlight
+  g.fillStyle = `rgba(255,255,255,${0.9 * fade})`;
+  circle(g, x - r * 0.36, y - r * 0.05, r * 0.3);
+  g.fill();
+  g.restore();
 }

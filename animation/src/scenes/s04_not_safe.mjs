@@ -19,7 +19,7 @@
 import { createCanvas } from '@napi-rs/canvas';
 import { W, H, TAU, clamp, lerp, noise1, fbm, blinkAt, applyCamera, drift, vignette, ik, limb } from '../engine.mjs';
 import { withSpeech } from '../face.mjs';
-import { drawFear, FEAR_COLORS } from '../chars/fear.mjs';
+import { drawFear, FEAR_COLORS, fearBodySpace, fearHeadSpace, drawFearFrontArms } from '../chars/fear.mjs';
 import { drawSelf, SELF_EXPR, selfLocal, drawClipboard } from '../chars/self.mjs';
 import { drawVoid } from '../chars/void.mjs';
 import { drawHQ, drawHQForeground, drawAlarmStation, HQ_VIEWS } from '../sets/hq.mjs';
@@ -190,44 +190,15 @@ function fearPose(t, S) {
   };
 }
 
-// replicate drawFear's body/head transforms (fear.mjs) so the pulled-up scarf and the arms over it sit exactly
-function fearBodySpace(g, x, y, s, p) {
-  const t = p.t, facing = p.facing || 1, trem = clamp(p.tremble || 0);
-  g.translate(x, y); g.scale(s, s); g.scale(facing, 1);
-  g.translate(trem * noise1(t * 38, 1) * 2.2, trem * noise1(t * 41, 2) * 1.4);
-  g.rotate((p.lean || 0) + trem * noise1(t * 30, 3) * 0.015);
-}
-const fearBreath = (p) => Math.sin(p.t * TAU * (p.breathRate || (0.28 + clamp(p.tremble || 0) * 0.5))) * (p.breathe ?? 1);
-// "knuckles whiten on the scarf": pale knuckles over drawFear's own fists (same IK, same transform)
-function drawKnuckles(g, x, y, s, p) {
-  const w = clamp(p.whiten || 0);
-  if (w <= 0.01 || (p.scarfUp || 0) > 0.01) return;
-  const t = p.t, trem = clamp(p.tremble || 0), crouch = clamp(p.crouch || 0), br = fearBreath(p);
-  g.save();
-  fearBodySpace(g, x, y, s, p);
-  for (const side of [-1, 1]) {
-    const a = side < 0 ? p.armL : p.armR;
-    const sx = side * 27, sy = -134 + crouch * 18 + br;
-    const tx = a.target[0] + trem * noise1(t * 33 + side, 12) * 3, ty = a.target[1] + trem * noise1(t * 29 + side, 13) * 3;
-    const { a1, a2 } = ik(sx, sy, tx, ty, 46, 44, a.bend ?? -side);
-    const hx = sx + Math.cos(a1) * 46 + Math.cos(a1 + a2) * 44, hy = sy + Math.sin(a1) * 46 + Math.sin(a1 + a2) * 44;
-    g.save(); g.translate(hx, hy); g.rotate(a1 + a2);
-    g.fillStyle = `rgba(246,242,255,${0.6 * w})`;
-    g.beginPath(); g.ellipse(9, -1, 4.5, 6.5, 0, 0, TAU); g.fill();
-    g.restore();
-  }
-  g.restore();
-}
+// the pulled-up scarf is drawn in Fear's own body/head frames (fear.mjs), so it sits exactly on the drawn Fear
 function drawScarfUp(g, x, y, s, p) {
   const k = clamp(p.scarfUp || 0);
   if (k <= 0.01) return;
-  const C = FEAR_COLORS, t = p.t, trem = clamp(p.tremble || 0), crouch = clamp(p.crouch || 0);
-  const br = fearBreath(p);
+  const C = FEAR_COLORS;
   g.save();
-  fearBodySpace(g, x, y, s, p);
+  const sh = fearBodySpace(g, x, y, s, p);
   g.save();
-  g.translate(p.headDX || 0, -148 + crouch * 20 + br * 1.2 + (p.headDY || 0));
-  g.rotate((p.headTilt || 0) + trem * noise1(t * 26, 6) * 0.02);
+  fearHeadSpace(g, p, sh);
   // the knitted wrap is stretched up from the neck over the mouth and chin (just under the eyes)
   const top = lerp(2, -31, k), bot = 12, hw = lerp(30, 40, k);
   g.fillStyle = C.scarf; g.strokeStyle = C.line; g.lineWidth = 2.6; g.lineJoin = 'round';
@@ -243,26 +214,15 @@ function drawScarfUp(g, x, y, s, p) {
   for (let q = -hw - 10; q < hw + 10; q += 13) { g.beginPath(); g.moveTo(q - 3, top - 2); g.lineTo(q + 5, bot + 6); g.stroke(); }
   g.restore();
   g.restore();
-  // the arms again, over the band (same geometry as drawFear's own front arms underneath)
-  for (const side of [-1, 1]) {
-    const a = side < 0 ? p.armL : p.armR;
-    const sx = side * 27, sy = -134 + crouch * 18 + br;
-    const tx = a.target[0] + trem * noise1(t * 33 + side, 12) * 3, ty = a.target[1] + trem * noise1(t * 29 + side, 13) * 3;
-    const { a1, a2 } = ik(sx, sy, tx, ty, 46, 44, a.bend ?? -side);
-    const q = limb(g, sx, sy, 46, 44, a1, a2, 8.5, 7, C.bodyShade, C.line);
-    g.save(); g.translate(q.hx, q.hy); g.rotate(a1 + a2);
-    g.fillStyle = C.body; g.strokeStyle = C.line; g.lineWidth = 2.4;
-    g.beginPath(); g.ellipse(4, 0, 10, 9, 0, 0, TAU); g.fill(); g.stroke();
-    g.beginPath(); g.moveTo(6, -5); g.lineTo(10, 5); g.stroke();
-    g.restore();
-  }
   g.restore();
+  // the arms again, over the band (same geometry as drawFear's own front arms underneath)
+  drawFearFrontArms(g, x, y, s, p);
 }
 
 function drawFearNow(g, t, S, [ox, oy] = [0, 0]) {
   const p = fearPose(t, S);
-  drawFear(g, FX + ox, FY + oy, FS, { ...p, shadow: true });
-  drawKnuckles(g, FX + ox, FY + oy, FS, p);
+  // "knuckles whiten on the scarf": the fists' own knuckles pale (p.whiten) while the scarf is down
+  drawFear(g, FX + ox, FY + oy, FS, { ...p, whiten: (p.scarfUp || 0) > 0.01 ? 0 : p.whiten, shadow: true });
   drawScarfUp(g, FX + ox, FY + oy, FS, p);
 }
 

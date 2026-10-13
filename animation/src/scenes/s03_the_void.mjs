@@ -10,6 +10,7 @@
 
 import { clamp, lerp, ease, mix, blinkAt, applyCamera, drift, vignette, noise1, ik, TAU } from '../engine.mjs';
 import { makeExpr } from '../face.mjs';
+import { blendHand } from '../hand.mjs';
 import { drawFear } from '../chars/fear.mjs';
 import { drawSelf, selfLocal, selfPoseAnchors } from '../chars/self.mjs';
 import { drawVoid, voidRig } from '../chars/void.mjs';
@@ -62,31 +63,6 @@ function idleT(S, t) {
   return t >= a && t < b ? a + (t - a) * 0.12 : t;
 }
 
-// ---------------------------------------------------------------- Fear's pointing finger (local helper, as in s02)
-function fearFinger(g, x, y, s, pose, side, alpha = 1) {
-  const a = side < 0 ? pose.armL : pose.armR;
-  if (!a || !a.target || alpha <= 0.01) return;
-  const t = pose.t, trem = clamp(pose.tremble || 0), crouch = clamp(pose.crouch || 0), facing = pose.facing || 1;
-  const br = Math.sin(t * TAU * (pose.breathRate || (0.28 + trem * 0.5))) * (pose.breathe ?? 1);
-  g.save();
-  g.translate(x, y); g.scale(s, s); g.scale(facing, 1);
-  g.translate(trem * noise1(t * 38, 1) * 2.2, trem * noise1(t * 41, 2) * 1.4);
-  g.rotate((pose.lean || 0) + trem * noise1(t * 30, 3) * 0.015);
-  const sx = side * 27, sy = -134 + crouch * 18 + br;
-  const tx = a.target[0] + trem * noise1(t * 33 + side, 12) * 3, ty = a.target[1] + trem * noise1(t * 29 + side, 13) * 3;
-  const { a1, a2 } = ik(sx, sy, tx, ty, 46, 44, a.bend ?? -side);
-  const ex = sx + Math.cos(a1) * 46, ey = sy + Math.sin(a1) * 46;
-  const hx = ex + Math.cos(a1 + a2) * 44, hy = ey + Math.sin(a1 + a2) * 44;
-  g.translate(hx, hy); g.rotate(a1 + a2 + (pose.fingerWobble || 0));
-  g.globalAlpha *= alpha;
-  g.lineCap = 'round';
-  g.strokeStyle = '#3d2c66'; g.lineWidth = 8.6;
-  g.beginPath(); g.moveTo(9, -3); g.lineTo(25, -4.5); g.stroke();
-  g.strokeStyle = '#b9a6ea'; g.lineWidth = 4.4;
-  g.beginPath(); g.moveTo(9, -3); g.lineTo(25, -4.5); g.stroke();
-  g.restore();
-}
-
 // ---------------------------------------------------------------- Fear (front view, at the alarm)
 function fearPose(S, t) {
   const s0 = S.start;
@@ -102,7 +78,9 @@ function fearPose(S, t) {
   if (facing > 0) {
     const p = [lerp(pointT[0], -58, ease.sine(clamp(lower * 1.6))), lerp(pointT[1], -124, ease.sine(clamp(lower * 1.6)))];
     const q = lower > 0.62 ? [lerp(-58, scarf[0], (lower - 0.62) / 0.38), lerp(-124, scarf[1], (lower - 0.62) / 0.38)] : p;
-    armL = { target: q, bend: 1, front: true, hand: 'fist' };
+    // the pointing finger from s02 folds back into the fist as the arm comes down
+    const fingerK = clamp(1 - lower * 2.2);
+    armL = { target: q, bend: 1, front: true, hand: blendHand('fist', 'point', fingerK), wrist: fingerK * Math.sin(t * TAU * 0.85) * 0.05 };
     armR = { target: [10, -122], bend: 1, front: true, hand: 'fist' };
   } else {
     armL = 'hugSelf'; armR = 'hugSelf';
@@ -123,7 +101,7 @@ function fearPose(S, t) {
     lean: facing < 0 ? -0.07 * shrink / 0.6 : 0.0,
     headTilt: facing < 0 ? 0.1 : -0.1, headTurn: facing < 0 ? -0.15 : -0.25,
     headDY: shrink * 6, breathe: 1 - 0.85 * frozen,
-    armL, armR, shadow: true, finger: facing > 0 ? clamp(1 - lower * 2.2) : 0, fingerWobble: Math.sin(t * 23) * 0.06,
+    armL, armR, shadow: true,
   };
 }
 
@@ -185,7 +163,6 @@ export function render(g, t, S) {
     drawCage(g, ...CAGE_F, { t: idleT(S, t), door: 1, locked: 0 });
     const fp = fearPose(S, t);
     drawFear(g, ...FEAR_ALARM_F, fp);
-    fearFinger(g, ...FEAR_ALARM_F, fp, -1, fp.finger);
     const cp = ceoPose(S, t);
     drawSelf(g, ...CEO_AT_ALARM_F, cp);
     drawHQForeground(g, 'front', st);

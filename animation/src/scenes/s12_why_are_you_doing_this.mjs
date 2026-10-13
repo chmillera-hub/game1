@@ -3,7 +3,7 @@
 // changing sizes around a stillness that gives nothing back; Fear does all the moving.
 import { W, H, TAU, clamp, lerp, ease, noise1, blinkAt, applyCamera, drift, vignette, smoothstep } from '../engine.mjs';
 import { makeExpr, withSpeech } from '../face.mjs';
-import { drawFear } from '../chars/fear.mjs';
+import { drawFear, fearShake } from '../chars/fear.mjs';
 import { drawVoid } from '../chars/void.mjs';
 import { drawHQ, drawHQForeground } from '../sets/hq.mjs';
 import { drawCage } from '../sets/props.mjs';
@@ -76,10 +76,11 @@ function faceXform(g, F, t) {
   const trem = clamp(F.tremble || 0), crouch = clamp(F.crouch || 0);
   const br = Math.sin(t * TAU * (F.breathRate || (0.28 + trem * 0.5))) * (F.breathe ?? 1);
   g.translate(F.pos[0], F.pos[1]); g.scale(F.scale, F.scale);
-  g.translate(trem * noise1(t * 38, 1) * 2.2, trem * noise1(t * 41, 2) * 1.4);
-  g.rotate((F.lean || 0) + trem * noise1(t * 30, 3) * 0.015);
+  const sh = fearShake(t, trem);
+  g.translate(sh.x, sh.y);
+  g.rotate((F.lean || 0) + sh.rot);
   g.translate(F.headDX || 0, NECK_Y + crouch * 20 + br * 1.2 + (F.headDY || 0));
-  g.rotate((F.headTilt || 0) + trem * noise1(t * 26, 6) * 0.02);
+  g.rotate((F.headTilt || 0) + sh.head);
   g.translate(0, HEAD_CY + 8);
 }
 // world point of the face origin, smooth (no breath / shiver): used to frame the closes

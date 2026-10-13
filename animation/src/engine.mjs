@@ -64,6 +64,27 @@ export function noise1(x, seed = 0) {
 export const fbm = (x, seed = 0) => noise1(x, seed) * 0.7 + noise1(x * 2.3, seed + 17) * 0.3;
 
 /**
+ * Emotional shaking for every character: smooth and low-amplitude, paced like held breath (~1.2 Hz) with little
+ * sob hitches (~0.8 Hz) — never a per-frame jitter. Values are px / radians at character scale 1 (multiply px by
+ * the character's unit size if it isn't ~1). `seed` de-syncs characters.
+ */
+export function smoothShake(t, trem, seed = 0) {
+  if (!(trem > 0)) return { x: 0, y: 0, rot: 0, head: 0, tuft: 0, scarf: 0, hitch: 0, arm: () => [0, 0] };
+  const ph = seed * 0.73;
+  const hitch = Math.pow(Math.max(0, Math.sin(t * TAU * 0.8 + ph)), 6);   // a short upward catch once per cycle
+  return {
+    x: trem * (Math.sin(t * TAU * 1.15 + ph) * 0.9 + fbm(t * 0.9, 1 + seed) * 0.7),
+    y: trem * (-hitch * 1.6 + Math.sin(t * TAU * 1.15 + 1.3 + ph) * 0.4),
+    rot: trem * (Math.sin(t * TAU * 0.6 + 0.4 + ph) * 0.006 + fbm(t * 0.7, 3 + seed) * 0.004),
+    head: trem * (Math.sin(t * TAU * 0.95 + 2.1 + ph) * 0.012 - hitch * 0.008),
+    tuft: trem * Math.sin(t * TAU * 1.1 + 0.7 + ph) * 0.12,
+    scarf: trem * Math.sin(t * TAU * 0.9 + 1.9 + ph) * 0.06,
+    hitch: trem * hitch,
+    arm: (side) => [trem * Math.sin(t * TAU * 1.25 + side * 1.7 + ph) * 1.4, trem * (Math.sin(t * TAU * 1.05 + side + ph) * 1.2 - hitch * 1.2)],
+  };
+}
+
+/**
  * Natural automatic blinking. Returns lid closure 0..1 (1 = fully closed).
  * rate = average blinks per second. Deterministic per seed.
  */

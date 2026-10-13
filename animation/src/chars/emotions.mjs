@@ -27,7 +27,8 @@
 //   shadow       false to skip the ground shadow;  alpha 0..1
 
 import { Path2D, createCanvas } from '@napi-rs/canvas';
-import { clamp, lerp, TAU, fbm, noise1, autoBlink, ik, limb, ellipse, circle, groundShadow, shade, rgba, smoothstep } from '../engine.mjs';
+import { clamp, lerp, TAU, fbm, noise1, autoBlink, ik, limb, ellipse, circle, groundShadow, shade, rgba, smoothstep, smoothShake } from '../engine.mjs';
+import { drawHand as drawHandShape, makeHandStyle, TOON3 } from '../hand.mjs';
 import { drawFace, makeExpr } from '../face.mjs';
 
 // ---------------------------------------------------------------- helpers
@@ -61,30 +62,37 @@ function band(g, path, w, col, line, lw = 2.2) {
 }
 
 // ---------------------------------------------------------------- hands
-function drawHand(g, S, x, y, ang, type, fill) {
+// The shared articulated hand (hand.mjs): palm, three fingers and a thumb in each character's colours, one outer
+// outline, soft skin-tone separations. Chirality follows the arm (seen from behind the screen-left arm is the
+// LEFT hand); palmDir/roll in the arm spec orient it, else a sensible default for the shape.
+const handStyles = new Map();
+function handStyle(S, fill) {
+  const key = S.name + (fill || '');
+  if (!handStyles.has(key)) {
+    const body = fill || S.col.body;
+    handStyles.set(key, makeHandStyle(TOON3, 27 * S.handS, { skin: body, light: S.col.light, shade: S.col.shade, line: S.col.line }, 2.4));
+  }
+  return handStyles.get(key);
+}
+const HAND_SHAPE = { palm: 'palm', fist: 'fist', grip: 'grip', point: 'point', open: 'open' };
+function defaultPalm(shape, side, ang) {
+  const up = -Math.sin(ang);
+  if (shape === 'palm' || shape === 'wave') return [0, 0, 1];
+  if (shape === 'point') return [0, 0.6, -0.8];
+  if (shape === 'rest' || shape === 'open') return up > 0.5 ? [0, 0, -1] : [-side * 0.9, 0, -0.45];
+  return [-side * 0.5, 0.15, -0.85];
+}
+// seen from behind, the character's "backward" is toward the camera
+const backFlip = (d, back) => (back ? [d[0], d[1], -d[2]] : d);
+function drawHand(g, S, x, y, ang, a, side, back, fill) {
+  const shape = typeof a.hand === 'object' && a.hand ? a.hand : HAND_SHAPE[a.hand] || a.hand || 'open';
+  const chir = back ? -side : side;
   g.save();
   g.translate(x, y);
-  g.rotate(ang);
-  const k = S.handS;
-  g.scale(k, k);
-  g.fillStyle = fill || S.col.body; g.strokeStyle = S.col.line; g.lineWidth = 2.4 / k;
-  g.lineJoin = 'round';
-  if (type === 'palm') {
-    g.beginPath(); g.ellipse(9, 0, 15, 14, 0, 0, TAU); g.fill(); g.stroke();
-    for (const f of [-9, 0, 9]) { g.beginPath(); g.ellipse(25, f * 1.05, 8, 5.2, f * 0.04, 0, TAU); g.fill(); g.stroke(); }
-    g.beginPath(); g.ellipse(6, -15, 7, 5, -0.8, 0, TAU); g.fill(); g.stroke();
-  } else if (type === 'fist' || type === 'grip') {
-    ellipse(g, 4, 0, 10.5, 9.5); g.fill(); g.stroke();
-    g.beginPath(); g.moveTo(6, -5); g.lineTo(10, 5); g.stroke();
-  } else if (type === 'point') {
-    g.beginPath(); g.ellipse(19, -2, 10, 4.2, 0, 0, TAU); g.fill(); g.stroke();
-    ellipse(g, 4, 1, 10.5, 9.5); g.fill(); g.stroke();
-    g.beginPath(); g.moveTo(7, -3); g.lineTo(11, 6); g.stroke();
-  } else {
-    // little three-finger mitten (Fear's)
-    g.beginPath(); g.ellipse(5, 0, 11, 9, 0, 0, TAU); g.fill(); g.stroke();
-    for (const f of [-5, 0, 5]) { g.beginPath(); g.ellipse(15, f, 5, 3.4, f * 0.05, 0, TAU); g.fill(); g.stroke(); }
-  }
+  drawHandShape(g, handStyle(S, fill), {
+    ang, shape, roll: a.roll, chir, curl: a.curl, spread: a.spread, holding: a.holding,
+    palmDir: a.palmDir || (a.roll == null ? backFlip(defaultPalm(typeof shape === 'string' ? shape : 'open', side, ang), back) : null),
+  });
   g.restore();
 }
 
@@ -164,7 +172,7 @@ const JOY = {
   },
   tuft(g, c) { // star-shaped cowlick
     const t = c.t;
-    const sway = fbm(t * 0.7, 23) * 0.14 - c.tilt * 0.7 + Math.sin(t * TAU * 0.33 + 1) * 0.05 + c.trem * noise1(t * 24, 24) * 0.2;
+    const sway = fbm(t * 0.7, 23) * 0.14 - c.tilt * 0.7 + Math.sin(t * TAU * 0.33 + 1) * 0.05 + c.sh.tuft * 1.6;
     g.save();
     g.translate(c.x, c.top + 14);
     g.rotate(sway);
@@ -297,7 +305,7 @@ const SADNESS = {
   },
   tuft(g, c) { // droopy lock: grows from the crown, flops over to one side and hangs like a heavy raindrop
     const t = c.t;
-    const sway = fbm(t * 0.45, 38) * 0.05 - c.tilt * 0.35 + c.trem * noise1(t * 24, 39) * 0.12;
+    const sway = fbm(t * 0.45, 38) * 0.05 - c.tilt * 0.35 + c.sh.tuft;
     const dr = Math.sin(t * TAU * 0.21) * 2 + fbm(t * 0.6, 40) * 1.5;
     g.save();
     g.translate(c.x - 6, c.top + 10);
@@ -332,12 +340,12 @@ const SADNESS = {
     }
   },
   // oversized cozy sleeves with "sweater paws"
-  arm(g, S, sx, sy, a1, a2, a, side, L1, L2, hang) {
+  arm(g, S, sx, sy, a1, a2, a, side, L1, L2, hang, back) {
     const ex = sx + Math.cos(a1) * L1, ey = sy + Math.sin(a1) * L1;
     const ang = a1 + a2, dx = Math.cos(ang), dy = Math.sin(ang), nx = -dy, ny = dx;
     const hx = ex + dx * L2, hy = ey + dy * L2;
     const ha = hang ?? ang;
-    drawHand(g, S, hx + Math.cos(ha) * 2, hy + Math.sin(ha) * 2, ha, a.hand, SC.body);
+    drawHand(g, S, hx + Math.cos(ha) * 2, hy + Math.sin(ha) * 2, ha, a, side, back, SC.body);
     g.lineCap = 'round'; g.lineJoin = 'round';
     g.strokeStyle = SC.line; g.lineWidth = 23;
     g.beginPath(); g.moveTo(sx, sy); g.lineTo(ex, ey); g.stroke();
@@ -463,7 +471,7 @@ const ANGER = {
     const hgt = 1.3 + heat * 0.45;
     g.save();
     g.translate(c.x + 2, c.top + 8);
-    g.rotate(-c.tilt * 0.5 + w * 0.07 + c.trem * noise1(t * 25, 42) * 0.2);
+    g.rotate(-c.tilt * 0.5 + w * 0.07 + c.sh.tuft * 1.6);
     g.scale(hgt, hgt);
     const curl = () => {
       g.beginPath();
@@ -568,7 +576,7 @@ const CALM = {
   },
   tuft(g, c) { // leaf sprout
     const t = c.t;
-    const sway = fbm(t * 0.35, 68) * 0.12 + Math.sin(t * TAU * 0.18) * 0.06 - c.tilt * 0.6 + c.trem * noise1(t * 24, 69) * 0.2;
+    const sway = fbm(t * 0.35, 68) * 0.12 + Math.sin(t * TAU * 0.18) * 0.06 - c.tilt * 0.6 + c.sh.tuft * 1.6;
     g.save();
     g.translate(c.x, c.top + 12);
     g.rotate(sway);
@@ -617,22 +625,23 @@ function makeArms(S) {
   const restX = bw + 9, restDY = Math.sqrt(Math.max(0, (0.93 * R) ** 2 - (restX - sx) ** 2));
   const pf = S.pressFront, pb = S.pressBack;
   return {
-    rest: (side) => ({ target: [side * restX, sy + restDY], bend: side }),
+    // hanging relaxed along the body: fingers down, palms toward the body, thumbs forward
+    rest: (side) => ({ target: [side * restX, sy + restDY], bend: side, hand: 'rest', handAng: Math.PI / 2 - side * 0.2 }),
     pressButton: (side, view) => (view === 'back'
-      ? { target: [side * pb[0], pb[1]], bend: -side, boneK: [0.95, 0.45], layer: 'front', hand: 'open', handAng: -Math.PI / 2 + side * 0.25, follow: false }
-      : { target: [side * pf[0], pf[1]], bend: side, fore: 0.8, layer: 'front', hand: 'point', follow: false }),
-    coverEars: (side) => ({ target: [side * (hrx + (S.earOut || 6)), hcy + hry * 0.42], bend: -side, layer: 'over', hand: 'palm', handAng: -Math.PI / 2 - side * 0.32 }),
-    wave: (side, view, t) => ({ target: [side * (sx + R * (0.5 + 0.16 * Math.sin(t * TAU * 1.4))), sy - R * 0.74], bend: -side, hand: 'palm' }),
+      ? { target: [side * pb[0], pb[1]], bend: -side, boneK: [0.95, 0.45], layer: 'front', hand: 'open', handAng: -Math.PI / 2 + side * 0.25, palmDir: [0, 1, -0.3], follow: false }
+      : { target: [side * pf[0], pf[1]], bend: side, fore: 0.8, layer: 'front', hand: 'point', palmDir: [0, 0.8, -0.6], follow: false }),
+    coverEars: (side) => ({ target: [side * (hrx + (S.earOut || 6)), hcy + hry * 0.42], bend: -side, layer: 'over', hand: 'flat', handAng: -Math.PI / 2 - side * 0.32, palmDir: [-side, 0, -0.3] }),
+    wave: (side, view, t) => ({ target: [side * (sx + R * (0.5 + 0.16 * Math.sin(t * TAU * 1.4))), sy - R * 0.74], bend: -side, hand: 'wave', palmDir: [0, 0, 1] }),
     flail: (side, view, t) => ({
       target: [side * (sx + R * (0.6 + 0.22 * noise1(t * 4.2 + side * 3, 31))), sy - R * (0.42 + 0.34 * noise1(t * 5.1 + side * 5, 32))],
-      bend: -side, hand: 'open',
+      bend: -side, hand: 'open', palmDir: [0, 0, 1],
     }),
-    handsOnHips: (side) => ({ target: [side * (bw + 2), hip - (hip - sy) * 0.3], bend: side, layer: 'over', hand: 'fist' }),
-    hugSelf: (side) => ({ target: [-side * bw * 0.36, sy + R * 0.3], bend: side, layer: 'front', hand: 'open' }),
-    pointing: (side) => ({ target: [side * (sx + R * 0.97), sy - R * 0.14], bend: -side, hand: 'point' }),
-    cheer: (side, view, t) => ({ target: [side * (sx + R * 0.42), sy - R * (0.86 + 0.04 * Math.sin(t * TAU * 1.2 + side))], bend: -side, hand: 'fist' }),
-    wipeEye: (side) => ({ target: [side * S.face.eyeSpacing * 1.1, hcy + S.faceDY + S.face.eyeY + 8], bend: -side, layer: 'front', hand: 'fist' }),
-    clasp: (side) => ({ target: [side * 6, sy + R * 0.42], bend: side, layer: 'front', hand: 'fist' }),
+    handsOnHips: (side) => ({ target: [side * (bw + 2), hip - (hip - sy) * 0.3], bend: side, layer: 'over', hand: 'fist', palmDir: [-side * 0.4, 0, -1] }),
+    hugSelf: (side) => ({ target: [-side * bw * 0.36, sy + R * 0.3], bend: side, layer: 'front', hand: 'drape', palmDir: [0, 0, -1] }),
+    pointing: (side) => ({ target: [side * (sx + R * 0.97), sy - R * 0.14], bend: -side, hand: 'point', palmDir: [0, 1, -0.3] }),
+    cheer: (side, view, t) => ({ target: [side * (sx + R * 0.42), sy - R * (0.86 + 0.04 * Math.sin(t * TAU * 1.2 + side))], bend: -side, hand: 'fist', palmDir: [-side * 0.4, 0, -1] }),
+    wipeEye: (side) => ({ target: [side * S.face.eyeSpacing * 1.1, hcy + S.faceDY + S.face.eyeY + 8], bend: -side, layer: 'front', hand: 'fist', palmDir: [-side * 0.3, 0, -1] }),
+    clasp: (side) => ({ target: [side * 6, sy + R * 0.42], bend: side, layer: 'front', hand: 'cup', palmDir: [-side, 0, -0.3] }),
   };
 }
 
@@ -740,20 +749,21 @@ function resolveArm(S, a, side, back, t) {
 }
 
 function drawArm(g, S, side, a, c) {
-  const { t, trem, u } = c;
+  const { t, u } = c;
   const sx = side * S.shoulderX, sy = c.shY;
   const off = a.follow ? c.shY - S.shoulderY : 0;
-  const tx = a.tx + trem * noise1(t * 33 + side, 12) * 3 * u;
-  const ty = a.ty + off + trem * noise1(t * 29 + side, 13) * 3 * u;
+  const [ox, oy] = c.sh.arm(side);
+  const tx = a.tx + ox * u;
+  const ty = a.ty + off + oy * u;
   // fore 0..1: the arm points into depth (toward/away from camera) -> bones foreshortened
   // boneK [upper, lower] overrides with explicit bone-length multipliers (e.g. a forearm pointing straight away)
   const fore = clamp(a.fore || 0);
   const L1 = S.L1 * (a.boneK ? a.boneK[0] : 1 - 0.32 * fore), L2 = S.L2 * (a.boneK ? a.boneK[1] : 1 - 0.45 * fore);
   const { a1, a2 } = ik(sx, sy, tx, ty, L1, L2, a.bend ?? side);
   const hang = a.handAng != null ? a.handAng : null; // absolute hand angle (local, radians)
-  if (S.arm) { S.arm(g, S, sx, sy, a1, a2, a, side, L1, L2, hang); return; }
+  if (S.arm) { S.arm(g, S, sx, sy, a1, a2, a, side, L1, L2, hang, c.back); return; }
   const p = limb(g, sx, sy, L1, L2, a1, a2, S.armW1, S.armW2, S.col.arm, S.col.line);
-  drawHand(g, S, p.hx, p.hy, hang ?? a1 + a2, a.hand, S.col.body);
+  drawHand(g, S, p.hx, p.hy, hang ?? a1 + a2 + (a.wrist || 0), a, side, c.back);
 }
 
 function drawLegs(g, S, c) {
@@ -769,13 +779,23 @@ function drawLegs(g, S, c) {
     const kneeY = hipY + len * 0.5 - crouch * len * 0.1;
     const footX = hx + Math.sin(sw) * len * 0.45 + side * crouch * len * 0.18;
     const footY = walk ? -Math.max(0, Math.sin(wph + (side > 0 ? 0 : Math.PI))) * len * 0.12 : 0;
+    // feet point where the body faces: front-on a rounded toe cap centred under the leg (seen from behind, the
+    // heel); feetTurn ±1 (default while walking) lengthens them toward the direction of travel (local +x)
+    const ft = back ? 0 : clamp(c.pose.feetTurn ?? (walk ? 0.7 : 0), -1, 1);
     const foot = () => {
+      const af = Math.abs(ft);
+      const rx = S.footRx * (back ? 0.78 : lerp(0.66, 1, af)), ry = S.footRy * (back ? 0.95 : lerp(1.05, 0.95, af));
+      const fx = footX + ft * S.footRx * 0.4, fy = footY - ry * 0.55;
       g.fillStyle = S.footCol; g.strokeStyle = S.col.line; g.lineWidth = 2.4;
-      if (back) ellipse(g, footX, footY - S.footRy * 0.55, S.footRx * 0.78, S.footRy * 0.95);
-      else ellipse(g, footX + side * S.footRx * 0.36, footY - S.footRy * 0.5, S.footRx, S.footRy);
+      ellipse(g, fx, fy, rx, ry);
       g.fill(); g.stroke();
-      g.fillStyle = 'rgba(255,255,255,0.18)';
-      ellipse(g, footX + (back ? 0 : side * S.footRx * 0.2) - 3, footY - S.footRy * 0.85, S.footRx * 0.45, S.footRy * 0.28); g.fill();
+      g.save();
+      ellipse(g, fx, fy, rx, ry); g.clip();
+      g.fillStyle = 'rgba(0,0,0,0.22)';
+      g.fillRect(fx - rx, fy + ry * 0.45, rx * 2, ry);
+      g.fillStyle = 'rgba(255,255,255,0.2)';
+      ellipse(g, fx - rx * 0.2 + ft * rx * 0.3, fy - ry * 0.35, rx * 0.5, ry * 0.3); g.fill();
+      g.restore();
     };
     if (back) foot();
     const leg = () => { g.beginPath(); g.moveTo(hx, hipY); g.quadraticCurveTo(kneeX, kneeY, footX, footY - S.footRy * 0.6); };
@@ -801,7 +821,7 @@ function drawHead(g, S, c) {
   const cy = S.headCY, rx = S.headRx, ry = S.headRy;
   g.save();
   g.translate((pose.headDX || 0) + (back ? sl * rx * 0.06 * c.kb : 0), c.neckY + (pose.headDY || 0) + (back ? ry * 0.05 * c.kb : 0));
-  g.rotate((pose.headTilt || 0) + trem * noise1(t * 26, S.seed + 6) * 0.02 + (back ? -sl * 0.07 * c.kb : 0));
+  g.rotate((pose.headTilt || 0) + c.sh.head + (back ? -sl * 0.07 * c.kb : 0));
   const turnL = clamp(pose.headTurn || 0, -1, 1) * facing;
   const ox = turnL * 3;
   // tuft sits a little forward of the crown: it drifts toward wherever the face points. Seen from the back,
@@ -952,8 +972,7 @@ export function drawEmotion(g, name, x, y, scale = 1, pose = {}) {
   const breathe = pose.breathe ?? 1;
   const u = S.u;
   const br = Math.sin(t * TAU * (pose.breathRate || S.breathRate + trem * 0.5) + S.seed) * breathe;
-  const shiverX = trem * noise1(t * 38, S.seed + 1) * 2.4 * u;
-  const shiverY = trem * noise1(t * 41, S.seed + 2) * 1.5 * u;
+  const sh = smoothShake(t, trem, S.seed);
   const k = back ? clamp(pose.lookBack || 0) : 0;
   const s = (pose.lookSide ?? 1) < 0 ? -1 : 1;
 
@@ -971,7 +990,7 @@ export function drawEmotion(g, name, x, y, scale = 1, pose = {}) {
   const bob = walk ? Math.abs(Math.sin(wph)) * -5 * u : 0;
   const drop = crouch * S.crouchDrop;
   const c = {
-    S, t, u, back, facing, trem, crouch, br, k, kb: Math.min(1, k), s, sl: s * facing, walk, wph, pose,
+    S, t, u, back, facing, trem, crouch, br, k, kb: Math.min(1, k), s, sl: s * facing, walk, wph, pose, sh,
     hipY: S.hipY + drop + bob,
     top: S.neckY + 6 + drop * 0.85 + bob + br * 0.8 * u,
     neckY: S.neckY + drop * 0.92 + bob + br * 1.2 * u,
@@ -981,8 +1000,8 @@ export function drawEmotion(g, name, x, y, scale = 1, pose = {}) {
 
   drawLegs(g, S, c);
 
-  g.translate(shiverX, shiverY);
-  g.rotate((pose.lean || 0) + trem * noise1(t * 30, S.seed + 3) * 0.015 + (back ? c.sl * 0.03 * c.kb : 0));
+  g.translate(sh.x * 1.1 * u, sh.y * u);
+  g.rotate((pose.lean || 0) + sh.rot + (back ? c.sl * 0.03 * c.kb : 0));
 
   const arms = [resolveArm(S, pose.armL, -1, back, t), resolveArm(S, pose.armR, 1, back, t)];
   const early = (a) => a.layer !== 'over' && (back || a.layer !== 'front');

@@ -15,15 +15,19 @@
 //   headDX, headDY   head offset in px (nods, recoils)
 //   lean       body lean radians;  crouch 0..1 (squash down / cower)
 //   tremble    0..1 whole-body shiver;  breathe 0..2 breath amplitude (default 1); breathRate (Hz)
-//   armL, armR { target:[x,y] (character-local, origin at feet, y up is negative), bend:+1/-1, front:bool, hand:'open'|'fist'|'grip' }
+//   armL, armR { target:[x,y] (character-local, origin at feet, y up is negative), bend:+1/-1, front:bool,
+//                hand: 'open'|'rest'|'palm'|'flat'|'drape'|'cup'|'fist'|'grip'|'point'|'pinch' or a pose object (hand.mjs),
+//                palmDir [x,y,z] where the palm faces (z toward camera) or roll, wrist (radians), spread, curl, holding }
 //              or a preset name from FEAR_ARMS
 //   walk       { phase: radians } for a walk cycle (legs swing, body bobs)
+//   feetTurn   -1..1 feet from front-on (0, default standing) to pointing along local +x (default 0.75 walking)
 //   scarfWind  -1..1 scarf ends sway
 //   shadow     true to draw a ground shadow
 //   alpha      overall opacity
 
-import { clamp, lerp, TAU, fbm, noise1, autoBlink, ik, limb, ellipse, circle, groundShadow, shade, rgba } from '../engine.mjs';
+import { clamp, lerp, TAU, fbm, noise1, autoBlink, ik, limb, ellipse, circle, groundShadow, shade, rgba, smoothShake } from '../engine.mjs';
 import { drawFace, makeExpr } from '../face.mjs';
+import { drawHand, makeHandStyle, TOON3 } from '../hand.mjs';
 
 export const FEAR_COLORS = {
   body: '#b9a6ea', bodyShade: '#9883d6', bodyLight: '#d9cdf8', line: '#3d2c66',
@@ -40,6 +44,9 @@ export const FEAR_FACE = {
   blushX: 44, blushY: 22, blushR: 15,
 };
 
+/** Fear's emotional shaking (engine.smoothShake): scenes that overlay things on Fear use the same numbers */
+export const fearShake = (t, trem) => smoothShake(t, trem, 0);
+
 // head geometry (local to neck)
 const HEAD_CY = -66, HEAD_RX = 74, HEAD_RY = 68;
 const NECK_Y = -148; // from feet
@@ -47,15 +54,16 @@ const SHOULDER_Y = -134, SHOULDER_X = 27;
 
 /** arm presets: targets relative to feet origin */
 export const FEAR_ARMS = {
-  rest: (side) => ({ target: [side * 40, -78], bend: -side }),
-  hugSelf: (side) => ({ target: [-side * 14, -118], bend: side, front: true }),
-  wringHands: (side) => ({ target: [side * 4, -104], bend: side, front: true, hand: 'fist' }),
-  handsOnFace: (side) => ({ target: [side * 30, -192], bend: -side, front: true, hand: 'palm' }),
-  peek: (side) => ({ target: [side * 24, -170], bend: -side, front: true, hand: 'palm' }),
-  coverMouth: (side) => ({ target: [side * 10, -164], bend: -side, front: true, hand: 'palm' }),
-  reachUp: (side) => ({ target: [side * 92, -196], bend: side, hand: 'grip', front: true }),
-  wipeEye: (side) => ({ target: [side * 34, -186], bend: -side, front: true, hand: 'fist' }),
-  chest: (side) => ({ target: [side * 8, -128], bend: side, front: true }),
+  // hanging relaxed along the body: fingers down, palm toward the side of the body, thumb forward
+  rest: (side) => ({ target: [side * 39, -80], bend: -side, hand: 'rest', handAng: Math.PI / 2 - side * 0.22 }),
+  hugSelf: (side) => ({ target: [-side * 14, -118], bend: side, front: true, hand: 'drape', palmDir: [0, 0, -1] }),
+  wringHands: (side) => ({ target: [side * 4, -104], bend: side, front: true, hand: 'fist', palmDir: [-side, 0, -0.35] }),
+  handsOnFace: (side) => ({ target: [side * 30, -192], bend: -side, front: true, hand: 'open', palmDir: [0, 0, -1] }),
+  peek: (side) => ({ target: [side * 24, -170], bend: -side, front: true, hand: 'open', spread: 0.34, palmDir: [0, 0, -1] }),
+  coverMouth: (side) => ({ target: [side * 10, -164], bend: -side, front: true, hand: 'flat', palmDir: [0, 0, -1] }),
+  reachUp: (side) => ({ target: [side * 92, -196], bend: side, hand: 'grip', front: true, palmDir: [0, 0, -1] }),
+  wipeEye: (side) => ({ target: [side * 34, -186], bend: -side, front: true, hand: 'fist', palmDir: [-side * 0.3, 0, -1] }),
+  chest: (side) => ({ target: [side * 8, -128], bend: side, front: true, hand: 'flat', palmDir: [0, 0, -1] }),
 };
 
 function resolveArm(a, side) {
@@ -71,8 +79,7 @@ export function drawFear(g, x, y, scale = 1, pose = {}) {
   const crouch = clamp(pose.crouch || 0);
   const breathe = pose.breathe ?? 1;
   const br = Math.sin(t * TAU * (pose.breathRate || (0.28 + trem * 0.5))) * breathe;
-  const shiverX = trem * (noise1(t * 38, 1) * 2.2);
-  const shiverY = trem * (noise1(t * 41, 2) * 1.4);
+  const sh = fearShake(t, trem);
 
   g.save();
   if (pose.alpha != null) g.globalAlpha = clamp(pose.alpha);
@@ -87,7 +94,9 @@ export function drawFear(g, x, y, scale = 1, pose = {}) {
   const bob = walk ? Math.abs(Math.sin(wph)) * -5 : 0;
   const hipY = -76 + crouch * 22 + bob;
 
-  // legs
+  // legs; the feet point where the body faces: toward the camera, or (feetTurn ±1, default while walking) along the
+  // direction of travel (local +x = the facing direction)
+  const ft = clamp(pose.feetTurn ?? (walk ? 0.75 : 0), -1, 1);
   const legSwing = walk ? Math.sin(wph) * 0.42 : 0;
   g.lineCap = 'round';
   for (const side of [-1, 1]) {
@@ -103,19 +112,17 @@ export function drawFear(g, x, y, scale = 1, pose = {}) {
     // knee knob
     g.fillStyle = C.bodyShade; g.strokeStyle = C.line; g.lineWidth = 2.4;
     circle(g, lerp(hx, footX, 0.5) + (kneeX - hx) * 0.3, (hipY + footY) / 2 + 1, 6.2); g.fill(); g.stroke();
-    // foot
-    g.fillStyle = '#6c5a9e';
-    ellipse(g, footX + side * 5, footY - 4, 13, 7.5); g.fill(); g.stroke();
+    drawFoot(g, footX, footY, side, ft);
   }
 
-  g.translate(shiverX, shiverY);
-  g.rotate((pose.lean || 0) + trem * noise1(t * 30, 3) * 0.015);
+  g.translate(sh.x, sh.y);
+  g.rotate((pose.lean || 0) + sh.rot);
 
   const arms = [resolveArm(pose.armL, -1), resolveArm(pose.armR, 1)];
   // back arms (not 'front')
   for (const side of [-1, 1]) {
     const a = arms[side < 0 ? 0 : 1];
-    if (!a.front) drawArm(g, side, a, t, trem, crouch, br);
+    if (!a.front) drawArm(g, side, a, t, sh, crouch, br, pose.whiten);
   }
 
   // body (small pear) + scarf
@@ -133,7 +140,7 @@ export function drawFear(g, x, y, scale = 1, pose = {}) {
   ellipse(g, -4, (bodyTop + hipY) / 2 + 6, 18, 20); g.fill();
 
   // scarf ends (behind head bottom, in front of body)
-  const wind = (pose.scarfWind || 0) + fbm(t * 0.6, 4) * 0.15 + trem * noise1(t * 20, 5) * 0.1;
+  const wind = (pose.scarfWind || 0) + fbm(t * 0.6, 4) * 0.15 + sh.scarf;
   g.fillStyle = C.scarf; g.strokeStyle = C.line; g.lineWidth = 2.5;
   g.beginPath();
   g.moveTo(10, bodyTop + 6);
@@ -148,8 +155,8 @@ export function drawFear(g, x, y, scale = 1, pose = {}) {
   g.save();
   const neckX = 0, neckY = NECK_Y + crouch * 20 + br * 1.2;
   g.translate(neckX + (pose.headDX || 0), neckY + (pose.headDY || 0));
-  g.rotate((pose.headTilt || 0) + trem * noise1(t * 26, 6) * 0.02);
-  drawFearHead(g, pose, t, facing);
+  g.rotate((pose.headTilt || 0) + sh.head);
+  drawFearHead(g, pose, t, facing, sh);
   g.restore();
 
   // scarf wrap (over neck)
@@ -163,12 +170,30 @@ export function drawFear(g, x, y, scale = 1, pose = {}) {
   // front arms
   for (const side of [-1, 1]) {
     const a = arms[side < 0 ? 0 : 1];
-    if (a.front) drawArm(g, side, a, t, trem, crouch, br);
+    if (a.front) drawArm(g, side, a, t, sh, crouch, br, pose.whiten);
   }
   g.restore();
 }
 
-function drawFearHead(g, pose, t, facing) {
+/** a little rounded foot: front-on it is a toe cap under the leg; turned, it lengthens toward the facing side */
+function drawFoot(g, x, y, side, ft) {
+  const a = Math.abs(ft);
+  const rx = lerp(10, 13.5, a), ry = lerp(8.2, 7, a);
+  const cx = x + ft * 6, cy = y - ry * 0.62;
+  g.fillStyle = '#6c5a9e'; g.strokeStyle = C.line; g.lineWidth = 2.4;
+  ellipse(g, cx, cy, rx, ry); g.fill(); g.stroke();
+  // sole edge + toe light (reads as the front of the foot, not a flat disc)
+  g.save();
+  ellipse(g, cx, cy, rx, ry); g.clip();
+  g.fillStyle = 'rgba(40,28,80,0.35)';
+  g.fillRect(cx - rx, cy + ry * 0.45, rx * 2, ry);
+  const gr = g.createRadialGradient(cx - rx * 0.25 + ft * rx * 0.35, cy - ry * 0.35, 0, cx - rx * 0.25 + ft * rx * 0.35, cy - ry * 0.35, rx * 0.8);
+  gr.addColorStop(0, 'rgba(255,255,255,0.28)'); gr.addColorStop(1, 'rgba(255,255,255,0)');
+  g.fillStyle = gr; g.fillRect(cx - rx, cy - ry, rx * 2, ry * 2);
+  g.restore();
+}
+
+function drawFearHead(g, pose, t, facing, sh) {
   const turn = clamp(pose.headTurn ?? 0, -1, 1) * facing;
   // head shape
   const gr = g.createRadialGradient(-20 + turn * 18, HEAD_CY - 26, 10, 0, HEAD_CY, HEAD_RX * 1.1);
@@ -181,7 +206,7 @@ function drawFearHead(g, pose, t, facing) {
   g.fill(); g.stroke();
 
   // tuft (secondary motion: lags behind head tilt and trembles)
-  const sway = fbm(t * 0.7, 8) * 0.25 - (pose.headTilt || 0) * 0.8 + clamp(pose.tremble || 0) * noise1(t * 24, 9) * 0.25;
+  const sway = fbm(t * 0.7, 8) * 0.25 - (pose.headTilt || 0) * 0.8 + sh.tuft;
   g.save();
   g.translate(turn * 14, HEAD_CY - HEAD_RY + 4);
   g.rotate(sway);
@@ -207,36 +232,63 @@ function drawFearHead(g, pose, t, facing) {
   g.restore();
 }
 
-function drawArm(g, side, a, t, trem, crouch, br) {
+/** Fear's transform from the world to its body frame (feet origin, facing, shake, lean) — for things drawn ON Fear
+ *  by a scene (returns the shake, so a head frame can follow: fearHeadSpace) */
+export function fearBodySpace(g, x, y, scale, pose) {
+  const t = pose.t || 0;
+  const sh = fearShake(t, clamp(pose.tremble || 0));
+  g.translate(x, y); g.scale(scale, scale); g.scale(pose.facing || 1, 1);
+  g.translate(sh.x, sh.y);
+  g.rotate((pose.lean || 0) + sh.rot);
+  return sh;
+}
+const fearBreath = (pose) => Math.sin((pose.t || 0) * TAU * (pose.breathRate || (0.28 + clamp(pose.tremble || 0) * 0.5))) * (pose.breathe ?? 1);
+/** from the body frame to the head's neck pivot (same as drawFear) */
+export function fearHeadSpace(g, pose, sh) {
+  const crouch = clamp(pose.crouch || 0);
+  g.translate(pose.headDX || 0, NECK_Y + crouch * 20 + fearBreath(pose) * 1.2 + (pose.headDY || 0));
+  g.rotate((pose.headTilt || 0) + sh.head);
+}
+/** Fear's front arms again, exactly as drawFear draws them (to lay them over something drawn on Fear's body) */
+export function drawFearFrontArms(g, x, y, scale, pose) {
+  g.save();
+  const sh = fearBodySpace(g, x, y, scale, pose);
+  const crouch = clamp(pose.crouch || 0), br = fearBreath(pose);
+  for (const side of [-1, 1]) {
+    const a = resolveArm(side < 0 ? pose.armL : pose.armR, side);
+    if (a.front) drawArm(g, side, a, pose.t || 0, sh, crouch, br, pose.whiten);
+  }
+  g.restore();
+}
+
+export const FEAR_HAND = makeHandStyle(TOON3, 30, { skin: C.body, light: C.bodyLight, shade: C.bodyShade, line: C.line }, 2.4);
+// hand shape per arm spec: hand 'open'|'rest'|'palm'|'fist'|'grip'|'point'|... or a pose object; palmDir/roll
+// orient it (see hand.mjs). Presets name their own; otherwise a relaxed open hand.
+const HAND_ALIAS = { open: 'open', palm: 'palm', fist: 'fist', grip: 'grip' };
+
+function drawArm(g, side, a, t, sh, crouch, br, whiten = 0) {
   const sx = side * SHOULDER_X, sy = SHOULDER_Y + crouch * 18 + br;
   const [tx0, ty0] = a.target;
-  const tx = tx0 + trem * noise1(t * 33 + side, 12) * 3;
-  const ty = ty0 + trem * noise1(t * 29 + side, 13) * 3;
+  const [ox, oy] = sh.arm(side);
+  const tx = tx0 + ox, ty = ty0 + oy;
   const L1 = 46, L2 = 44;
   const { a1, a2 } = ik(sx, sy, tx, ty, L1, L2, a.bend ?? -side);
   const p = limb(g, sx, sy, L1, L2, a1, a2, 8.5, 7, C.bodyShade, C.line);
-  // hand
-  const ang = a1 + a2;
+  // hand (the wrist bends a little toward the gesture; presets give palmDir so the thumb sits where anatomy puts it)
+  const ang = a.handAng != null ? a.handAng : a1 + a2 + (a.wrist || 0);
+  const shape = typeof a.hand === 'object' && a.hand ? a.hand : HAND_ALIAS[a.hand] || a.hand || 'open';
   g.save();
   g.translate(p.hx, p.hy);
-  g.rotate(ang);
-  g.fillStyle = C.body; g.strokeStyle = C.line; g.lineWidth = 2.4;
-  if (a.hand === 'palm') {
-    // open palm facing viewer, fingers along the forearm direction (used to cover face)
-    g.beginPath(); g.ellipse(9, 0, 15, 14, 0, 0, TAU); g.fill(); g.stroke();
-    for (const f of [-9, 0, 9]) { g.beginPath(); g.ellipse(25, f * 1.05, 8, 5.2, f * 0.04, 0, TAU); g.fill(); g.stroke(); }
-    g.beginPath(); g.ellipse(6, -15, 7, 5, -0.8, 0, TAU); g.fill(); g.stroke();
-  } else if (a.hand === 'fist' || a.hand === 'grip') {
-    ellipse(g, 4, 0, 10, 9); g.fill(); g.stroke();
-    g.beginPath(); g.moveTo(6, -5); g.lineTo(10, 5); g.stroke();
-  } else {
-    // little three-finger mitten
-    g.beginPath();
-    g.ellipse(5, 0, 11, 9, 0, 0, TAU);
-    g.fill(); g.stroke();
-    for (const f of [-5, 0, 5]) {
-      g.beginPath(); g.ellipse(15, f, 5, 3.4, f * 0.05, 0, TAU); g.fill(); g.stroke();
-    }
-  }
+  drawHand(g, FEAR_HAND, { ang, shape, roll: a.roll, palmDir: a.palmDir || (a.roll == null ? defaultPalm(shape, side, ang) : null), chir: side, curl: a.curl, spread: a.spread, holding: a.holding, whiten });
   g.restore();
+}
+
+/** where the palm faces when a spec doesn't say: by the hips the palms face the body; raised hands show their
+ *  backs when near the face; fists turn their thumbs up */
+function defaultPalm(shape, side, ang) {
+  const up = -Math.sin(ang); // >0: fingers point upward
+  if (shape === 'palm' || shape === 'wave') return [0, 0, 1];
+  if (shape === 'rest' || shape === 'open') return up > 0.5 ? [0, 0, -1] : [-side * 0.9, 0, -0.45];
+  if (shape === 'fist' || shape === 'grip') return [-side * 0.6, 0.2, -0.8];
+  return [-side * 0.6, 0, -0.8];
 }

@@ -14,7 +14,8 @@
 //   outfit 'sweater'|'ceo', clipboard (bool), view 'front'|'back', bodyTurn -1..1, kneel 0..1,
 //   seated (bool), shrug 0..1, hairWind -1..1, layer 'all'|'body'|'front', notebook {tilt}
 
-import { clamp, lerp, TAU, fbm, noise1, autoBlink, ik, ellipse, circle, groundShadow, rgba, shade } from '../engine.mjs';
+import { clamp, lerp, TAU, fbm, noise1, autoBlink, ik, ellipse, circle, groundShadow, rgba, shade, smoothShake } from '../engine.mjs';
+import { drawHand as drawHandShape, makeHandStyle, HUMAN, handDefaultRoll } from '../hand.mjs';
 import { drawFace, makeExpr } from '../face.mjs';
 
 export const SELF_COLORS = {
@@ -38,7 +39,9 @@ const SH_REL = -132, SX = 58;            // shoulder joints, relative to hip (to
 const NECK_REL = -150, PIVOT_REL = -166; // neck base / head pivot, relative to hip
 const HEAD_UP = 72;                      // pivot -> face centre
 const UPPER = 100, FORE = 92;            // arm bones (wrist = IK target)
-const HAND_S = 1.42;                     // hand drawing scale (hand ≈ 46px long)
+const HAND_S = 1.42;                     // legacy hand unit (palm-landing offsets are in these units)
+const HAND_LEN = 62;                     // wrist → middle fingertip (px at scale 1)
+const SELF_HAND = makeHandStyle(HUMAN, HAND_LEN, { skin: '#d9a27e', light: '#f0c6a6', shade: '#bb7b5c', line: '#6e3b2e' }, 2.5);
 const SEAT_HIP = 40;                     // seated: hip sits 40px below the desk line
 const KNEEL_HIP = [-24, -136];
 const TORSO_D = 30;                      // torso half-depth (for bodyTurn projection)
@@ -55,6 +58,7 @@ export const SELF_FACE = {
   mouthY: 37, mouthW: 16, mouthColor: '#6b2631', tongue: '#d8707a', teethColor: '#fffaf2',
   lipLine: '#74342f', mouthLine: 2.8,
   blushColor: C.blush, blushX: 39, blushY: 24, blushR: 14,
+  tearSize: 4.4, tearRun: 40,   // a tear sized for this face (the shared default suits Fear's huge eyes)
   nose: drawNose,
 };
 
@@ -99,7 +103,8 @@ function skeleton(pose) {
   const trem = clamp(pose.tremble || 0);
   const breathe = pose.breathe ?? 1;
   const br = Math.sin(t * TAU * (pose.breathRate || 0.2 + trem * 0.35)) * breathe;
-  const shiver = [trem * noise1(t * 37, 1) * 1.8, trem * noise1(t * 41, 2) * 1.2];
+  const shk = smoothShake(t, trem, 5);
+  const shiver = [shk.x * 0.9, shk.y * 0.8];
   const crouch = clamp(pose.crouch || 0);
   let hip;
   if (seated) hip = [0, SEAT_HIP];
@@ -109,7 +114,7 @@ function skeleton(pose) {
     hip = [lerp(0, KNEEL_HIP[0], kE), lerp(HIP_Y + bob + crouch * 36, KNEEL_HIP[1], kE)];
   }
   const sway = seated ? fbm(t * 0.17, 31) * 0.006 : fbm(t * 0.19, 31) * 0.01;
-  const lean = (pose.lean || 0) + kE * 0.2 + crouch * 0.12 + (walk ? 0.045 : 0) + sway + trem * noise1(t * 29, 3) * 0.008;
+  const lean = (pose.lean || 0) + kE * 0.2 + crouch * 0.12 + (walk ? 0.045 : 0) + sway + shk.rot * 0.6;
   const tp = (x, y) => {
     const [rx, ry] = rotP(x, y, lean);
     return [hip[0] + rx + shiver[0], hip[1] + ry + shiver[1]];
@@ -133,10 +138,10 @@ function skeleton(pose) {
   const over = back ? sstep(0.56, 0.68, Math.abs(u)) : 0;
   piv[0] += (pose.headDX || 0) + (u >= 0 ? 1 : -1) * 15 * over;
   piv[1] += (pose.headDY || 0) + 5 * over;
-  const headRot = lean * 0.45 + (pose.headTilt || 0) + kE * 0.08 + trem * noise1(t * 26, 6) * 0.012;
+  const headRot = lean * 0.45 + (pose.headTilt || 0) + kE * 0.08 + shk.head * 0.7;
   const hc = [piv[0] + Math.sin(headRot) * HEAD_UP, piv[1] - Math.cos(headRot) * HEAD_UP];
   const hp = (x, y) => { const [rx, ry] = rotP(x, y, headRot); return [hc[0] + rx, hc[1] + ry]; };
-  return { t, facing, seated, back, kneel, kE, walk, ph, bt, th, trem, br, hip, lean, tp, sh, shY, neck, piv, headRot, hc, hp, fshift, crouch, shiver, turnScreen, u, over };
+  return { t, facing, seated, back, kneel, kE, walk, ph, bt, th, trem, br, hip, lean, tp, sh, shY, neck, piv, headRot, hc, hp, fshift, crouch, shiver, shk, turnScreen, u, over };
 }
 
 let DEFAULT_SK = null;
@@ -148,58 +153,61 @@ const defSk = () => (DEFAULT_SK ||= skeleton({}));
 // spec: { target:[x,y] (WRIST, character-local), bend, front, layer, hand, handAngle, wrist, thumb,
 //         prop, board, palm, reach1, reach2, shake }
 export const SELF_ARMS = {
-  rest: (side, k = defSk()) => ({ target: [k.sh[side].x + side * 12, k.sh[side].y + 184], bend: side, hand: 'rest' }),
-  onShoulder: (side, k = defSk()) => ({ target: [k.sh[side].x + side * 110, k.sh[side].y + 130], bend: -side, front: true, hand: 'drape', palm: true, wrist: side * 0.75, thumb: -side }),
+  rest: (side, k = defSk()) => ({ target: [k.sh[side].x + side * 12, k.sh[side].y + 184], bend: side, hand: 'rest', wrist: -side * 0.08 }),
+  onShoulder: (side, k = defSk()) => ({ target: [k.sh[side].x + side * 110, k.sh[side].y + 130], bend: -side, front: true, hand: 'drape', palm: true, wrist: side * 0.75, palmDir: [0, 1, -0.3] }),
   handOnHeart: (side, k = defSk()) => {
     // flat hand over the heart (wearer's left chest = local +x), fingers toward the opposite shoulder
     const h = k.tp(k.fshift + 18, -86);
     const w = side < 0 ? [h[0] - 40, h[1] + 14] : [h[0] + 30, h[1] + 24];
-    return { target: w, bend: side, front: true, hand: 'flat', handAngle: k.lean + (side < 0 ? -0.42 : -2.3), thumb: -1, reach2: 0.8 };
+    return { target: w, bend: side, front: true, hand: 'flat', handAngle: k.lean + (side < 0 ? -0.42 : -2.3), palmDir: [0, 0, -1], reach2: 0.8 };
   },
   // gentle "wait": elbow stays low by the body, forearm comes up and out, palm toward whoever is in front
-  palmOut: (side, k = defSk()) => ({ target: [k.sh[side].x + side * 78, k.sh[side].y + 70], bend: -side, front: true, hand: 'palm', handAngle: -Math.PI / 2 + side * 0.3, thumb: -side }),
-  reachOut: (side, k = defSk()) => ({ target: [k.sh[side].x + side * 150, k.sh[side].y + 112], bend: -side, front: true, hand: 'open', wrist: -side * 0.25, thumb: -side }),
+  palmOut: (side, k = defSk()) => ({ target: [k.sh[side].x + side * 78, k.sh[side].y + 70], bend: -side, front: true, hand: 'palm', handAngle: -Math.PI / 2 + side * 0.3, palmDir: [side * 0.25, 0, 1] }),
+  reachOut: (side, k = defSk()) => ({ target: [k.sh[side].x + side * 150, k.sh[side].y + 112], bend: -side, front: true, hand: 'open', wrist: -side * 0.25, palmDir: [side * 0.2, 0.7, 0.5] }),
   holdClipboard: (side, k = defSk()) => {
     const p = k.tp(side * 40 + k.fshift, -40);
-    return { target: p, bend: side, front: true, hand: 'grip', handAngle: side > 0 ? Math.PI + 0.25 : -0.25, thumb: -1, prop: 'clipboard', board: [-side * 24, -38, -side * 0.12], reach2: 0.55 };
+    // fingers behind the board, the thumb over its front edge
+    return { target: p, bend: side, front: true, hand: 'hold', handAngle: side > 0 ? Math.PI + 0.25 : -0.25, palmDir: [0, 0, 1], prop: 'clipboard', board: [-side * 24, -38, -side * 0.12], reach2: 0.55 };
   },
-  pointing: (side, k = defSk()) => ({ target: [k.sh[side].x + side * 172, k.sh[side].y + 26], bend: -side, front: true, hand: 'point', thumb: -side }),
+  pointing: (side, k = defSk()) => ({ target: [k.sh[side].x + side * 172, k.sh[side].y + 26], bend: -side, front: true, hand: 'point', palmDir: [0, 0.6, -0.8] }),
   rubNeck: (side, k = defSk()) => {
     const p = k.hp(side * 34, 40); // behind the jaw: the hand disappears behind the head
-    return { target: p, bend: -side, layer: 'side', hand: 'open', handAngle: side > 0 ? Math.PI + 0.9 : -0.9, thumb: 1 };
+    return { target: p, bend: -side, layer: 'side', hand: 'open', handAngle: side > 0 ? Math.PI + 0.9 : -0.9, palmDir: [-side, 0, -0.4] };
   },
   wipeTear: (side, k = defSk()) => {
     // elbow tucked in front of the chest (upper arm foreshortened toward camera), knuckle under the same-side eye
     const w = k.hp(side * 40, 46);
-    return { target: w, bend: side, front: true, hand: 'fist', handAngle: k.headRot - Math.PI / 2 - side * 0.32, thumb: -side, reach1: 0.45 };
+    return { target: w, bend: side, front: true, hand: 'fist', curl: 0, handAngle: k.headRot - Math.PI / 2 - side * 0.32, palmDir: [-side * 0.45, 0, -0.9], reach1: 0.45 };
   },
   rubEyes: (side, k = defSk()) => {
     const e = k.hp(side * 28, 22);
     // elbows forward (upper arm foreshortened toward camera), forearms up, heels of the hands on the eyes
-    return { target: [e[0] + side * 8, e[1] + 12], bend: side, front: true, hand: 'fist', handAngle: side > 0 ? -1.85 : -1.29, thumb: -side, reach1: 0.5, reach2: 1.25 };
+    return { target: [e[0] + side * 8, e[1] + 12], bend: side, front: true, hand: 'fist', handAngle: side > 0 ? -1.85 : -1.29, palmDir: [0, 0, -1], reach1: 0.5, reach2: 1.25 };
   },
   clasped: (side, k = defSk()) => {
     const p = k.tp(k.fshift * 0.8 + side * 12, -22);
-    return { target: p, bend: side, front: true, hand: 'open', handAngle: side > 0 ? 2.4 : 0.74, thumb: 1, reach2: 0.8 };
+    return { target: p, bend: side, front: true, hand: 'cup', handAngle: side > 0 ? 2.4 : 0.74, palmDir: [-side, 0, -0.35], reach2: 0.8 };
   },
   coverMouth: (side, k = defSk()) => {
     // fingers laid across the lips (gasp / giggle)
     const w = k.hp(side * 34, 47);
-    return { target: w, bend: side, front: true, hand: 'flat', handAngle: k.headRot + (side > 0 ? -2.95 : -0.19), thumb: -1, reach1: 0.45 };
+    return { target: w, bend: side, front: true, hand: 'flat', handAngle: k.headRot + (side > 0 ? -2.95 : -0.19), palmDir: [0, 0, -1], reach1: 0.45 };
   },
   // ---- seated (desk line = local y 0, the desk surface extends toward the viewer, y > 0)
-  handsOnDesk: (side, k = defSk()) => ({ target: [side * 42 + (k.fshift || 0), 30], bend: side, front: true, hand: 'flat', handAngle: side > 0 ? Math.PI - 0.32 : 0.32, thumb: -1, reach2: 0.52 }),
+  handsOnDesk: (side, k = defSk()) => ({ target: [side * 42 + (k.fshift || 0), 30], bend: side, front: true, hand: 'flat', handAngle: side > 0 ? Math.PI - 0.32 : 0.32, palmDir: [0, 0.7, -0.7], reach2: 0.52 }),
   holdNotebook: (side, k = defSk()) => {
+    // reading: both hands hold the open book's sides — fingers over the outer covers, thumbs on the pages
     const p = k.seated ? [side * 54 + k.fshift, -36] : k.tp(side * 54 + k.fshift, -60);
-    return { target: p, bend: side, front: true, hand: 'grip', handAngle: side > 0 ? -1.8 : -1.34, thumb: -side, prop: 'notebook', reach2: 0.62 };
+    return { target: p, bend: side, front: true, hand: 'edge', handAngle: side > 0 ? -1.82 : -1.32, palmDir: [-side * 0.75, 0, -0.65], prop: 'notebook', reach2: 0.62 };
   },
   showNotebook: (side, k = defSk()) => {
+    // the closed book shown to camera: hands behind it, thumbs over the front edges
     const p = k.seated ? [side * 38 + k.fshift, -14] : k.tp(side * 38 + k.fshift, -40);
-    return { target: p, bend: side, front: true, hand: 'grip', handAngle: side > 0 ? -2.0 : -1.14, thumb: -side, prop: 'notebookCover', reach2: 0.55 };
+    return { target: p, bend: side, front: true, hand: 'hold', handAngle: side > 0 ? -2.0 : -1.14, palmDir: [0, 0, 1], prop: 'notebookCover', reach2: 0.55 };
   },
   chinInHand: (side, k = defSk()) => {
     const c = k.hp(side * 8, 88);
-    return { target: c, bend: side, front: true, hand: 'cup', handAngle: -Math.PI / 2 - side * 0.3, thumb: -side, reach2: 1.22 };
+    return { target: c, bend: side, front: true, hand: 'cup', handAngle: -Math.PI / 2 - side * 0.3, palmDir: [0, -1, -0.2], reach2: 1.22 };
   },
 };
 
@@ -241,7 +249,7 @@ export const ANCHORS = (() => {
     return {
       headTop: r(k.hp(0, -110)), headCenter: r(k.hc), eyes: r(k.hp(0, 2)), mouth: r(k.hp(0, 37)), chin: r(k.hp(0, 62)),
       neck: r(k.neck), shoulderL: r([k.sh[-1].x, k.sh[-1].y]), shoulderR: r([k.sh[1].x, k.sh[1].y]),
-      chest: r(k.tp(k.fshift, -92)), hip: r(k.hip), armReach: UPPER + FORE, handLen: Math.round(34 * HAND_S),
+      chest: r(k.tp(k.fshift, -92)), hip: r(k.hip), armReach: UPPER + FORE, handLen: HAND_LEN,
     };
   };
   return { ...a({}), seated: a({ seated: true }), kneel: a({ kneel: 1 }) };
@@ -634,6 +642,44 @@ function drawNeck(g, k, back) {
   g.strokeStyle = gr;
   g.lineWidth = 31 + wn;
   g.beginPath(); g.moveTo(nx, ny + nb); g.lineTo(px, py - 8); g.stroke();
+  if (!back) neckMuscles(g, k, [nx, ny + nb], [px, py - 8]);
+}
+
+/** subtle sternocleidomastoids: from behind each ear down to the notch between the collarbones — a soft V that
+ *  follows the head's turn (the near muscle stands out as it stretches, the far one shortens) */
+function neckMuscles(g, k, base, top) {
+  const dx = top[0] - base[0], dy = top[1] - base[1], L = Math.hypot(dx, dy) || 1;
+  const u = clamp(k.u, -1, 1);
+  g.save();
+  g.translate(base[0], base[1]);
+  g.rotate(Math.atan2(dx, -dy));             // local -y runs up the neck
+  g.beginPath(); g.rect(-15.5, -L - 30, 31, L + 30); g.clip();
+  g.lineCap = 'round';
+  const col = shade(C.skin, -0.2);
+  for (const s of [-1, 1]) {
+    const near = s * u < 0 ? 1 + Math.abs(u) * 0.6 : 1 - Math.abs(u) * 0.5;
+    const x0 = s * (12.5 - 2 * Math.abs(u)) + u * 5, y0 = -L - 14;   // behind the ear, under the jaw
+    const x1 = s * 3.2 + u * 1.5, y1 = 6;                               // the notch (just inside the collar)
+    const gr = g.createLinearGradient(x0, y0, x1, y1);
+    gr.addColorStop(0, rgba(col, 0));
+    gr.addColorStop(0.3, rgba(col, 0.3 * near));
+    gr.addColorStop(0.75, rgba(col, 0.26 * near));
+    gr.addColorStop(1, rgba(col, 0));
+    g.strokeStyle = gr;
+    g.lineWidth = 2.4;
+    g.beginPath();
+    g.moveTo(x0, y0);
+    g.quadraticCurveTo(s * 9 + u * 3, (y0 + y1) * 0.45, x1, y1);
+    g.stroke();
+    // a little light on the muscle's front edge
+    g.strokeStyle = rgba(C.skinLight, 0.16 * near);
+    g.lineWidth = 2;
+    g.beginPath();
+    g.moveTo(x0 - s * 2.2, y0 + 4);
+    g.quadraticCurveTo(s * 6.6 + u * 3, (y0 + y1) * 0.45, x1 - s * 1.6, y1 - 3);
+    g.stroke();
+  }
+  g.restore();
 }
 
 // ---------------------------------------------------------------- legs
@@ -809,7 +855,7 @@ function drawHead(g, k, pose, back) {
   const turnScreen = k.turnScreen;
   const u = k.u; // geometric (mirrored-space) turn
   const sway = fbm(t * 0.55, 21) * 0.16 - (pose.headTilt || 0) * 0.7 - k.lean * 0.5 + (pose.hairWind || 0) * 0.5 +
-    (k.walk ? Math.sin(k.ph * 2) * 0.12 : 0) + k.trem * noise1(t * 22, 9) * 0.2;
+    (k.walk ? Math.sin(k.ph * 2) * 0.12 : 0) + k.shk.tuft * 1.2;
   g.save();
   g.translate(k.hc[0], k.hc[1]);
   g.rotate(k.headRot);
@@ -955,12 +1001,7 @@ function drawHeadFront(g, k, pose, u, sway, turnScreen, overShoulder) {
   face.turn = turnScreen;
   face.browUp *= BROW_GAIN; face.browIn *= BROW_GAIN; face.browUpL *= BROW_GAIN; face.browUpR *= BROW_GAIN;
   if (!face.noAutoBlink) face.blink = clamp((face.blink || 0) + autoBlink(t, 23, 0.26 + k.trem * 0.2));
-  // falling tear drops are drawn by drawSelfTear (bigger than the shared rig's, which is sized for Fear's huge eyes)
-  const tears = [face.tearL, face.tearR];
-  face.tearL = face.tearR = 0;
   drawFace(g, SELF_FACE, face);
-  if (tears[0] > 0.001) drawSelfTear(g, face.turn, -1, tears[0]);
-  if (tears[1] > 0.001) drawSelfTear(g, face.turn, 1, tears[1]);
   g.restore();
 
   drawFrontHair(g, u, lx, sway);
@@ -1057,11 +1098,19 @@ function backSkullPath(g) {
   g.closePath();
 }
 
-/** back of the neck (head-local), wound like backSkullPath so a nonzero fill unions them */
-function backNeckPath(g) {
+/** back of the neck (head-local), wound like backSkullPath so a nonzero fill unions them. Its base stays on the
+ *  collar line in the TORSO frame, so a tilted head never swings the bottom edge of the neck off the collar. */
+function backNeckPath(g, k) {
+  const base = (x) => {
+    if (!k) return [x, 76];
+    const [bx, by] = rotP(x, -12, k.lean);
+    const dx = k.neck[0] + bx - k.hc[0], dy = k.neck[1] + by - k.hc[1];
+    return rotP(dx, dy, -k.headRot);
+  };
+  const [lx, ly] = base(-23.5), [rx, ry] = base(23.5);
   g.moveTo(-20, 6);
-  g.lineTo(-23.5, 76);
-  g.lineTo(23.5, 76);
+  g.lineTo(lx, ly);
+  g.lineTo(rx, ry);
   g.lineTo(20, 6);
   g.closePath();
 }
@@ -1081,7 +1130,7 @@ function drawHeadBack(g, k, pose, u, sway) {
   const shapes = (pass) => {
     g.beginPath();
     backSkullPath(g);
-    backNeckPath(g); // top of the neck, merged so no seam shows under the hair
+    backNeckPath(g, k); // top of the neck, merged so no seam shows under the hair
     if (lp > 0.01) {
       // cheek + jaw sweeping toward the (hidden) chin on the turned side
       const o = lp * 10;
@@ -1105,7 +1154,7 @@ function drawHeadBack(g, k, pose, u, sway) {
   // soft shadow on the nape just under the hair
   g.save();
   g.beginPath();
-  backNeckPath(g);
+  backNeckPath(g, k);
   g.clip();
   const gs = g.createLinearGradient(0, 30, 0, 62);
   gs.addColorStop(0, rgba(C.skinLine, 0.38));
@@ -1141,35 +1190,53 @@ function drawHeadBack(g, k, pose, u, sway) {
     g.quadraticCurveTo(-74, -78, -24, -106);
     g.quadraticCurveTo(4, -116, 30, -106);
     g.quadraticCurveTo(76, -78, 62 - R(1), 8 - R(1) * 1.5);
-    g.quadraticCurveTo(36, 20, 0, 22);
-    g.quadraticCurveTo(-36, 20, -62 + R(-1), 8 - R(-1) * 1.5);
+    g.quadraticCurveTo(36, 26, 0, 28);
+    g.quadraticCurveTo(-36, 26, -62 + R(-1), 8 - R(-1) * 1.5);
     g.closePath();
-    lock(g, -50 + R(-1), -12, -54 + R(-1) * 0.8, 20 - R(-1), 20, -0.08);
-    lock(g, -32, 6, -34, 32, 22, -0.06);
-    lock(g, -12, 10, -12, 40, 22, -0.02);
-    lock(g, 8, 10, 10, 40, 22, 0.03);
-    lock(g, 28, 6, 32, 32, 22, 0.06);
-    lock(g, 50 - R(1), -12, 54 - R(1) * 0.8, 20 - R(1), 20, 0.08);
+    // nape locks reach down over the top of the neck (the neck below them stays a natural length)
+    lock(g, -50 + R(-1), -12, -54 + R(-1) * 0.8, 24 - R(-1), 20, -0.08);
+    lock(g, -32, 6, -35, 42, 22, -0.06);
+    lock(g, -12, 10, -12, 50, 22, -0.02);
+    lock(g, 8, 10, 10, 50, 22, 0.03);
+    lock(g, 28, 6, 32, 42, 22, 0.06);
+    lock(g, 50 - R(1), -12, 54 - R(1) * 0.8, 24 - R(1), 20, 0.08);
     // tousled top (mirror of the front tufts)
     lock(g, 22, -94, 50 + sway * 6, -112, 26, -0.14);
     lock(g, -22, -98, -46 + sway * 6, -112, 24, 0.12);
     lock(g, 42, -82, 72 + sway * 4, -86, 24, -0.12);
     lock(g, -44, -84, -70 + sway * 4, -78, 22, 0.1);
   }, hairGrad(g, lx));
-  // whorl + lock lines
-  // a few locks swirling out of the crown (all sweeping the same way, stopping short of the edge)
-  g.strokeStyle = rgba(C.hairLine, 0.5);
-  g.lineWidth = 2.1;
-  const wx = 6, wy = -76;
+  // strands flowing out of the crown and down to the nape locks (all sweeping the same way, tapering out short
+  // of the edge): fine dark separations + a few lighter strands catching the light — no flat patch, no whorl dot
+  const wx = 6, wy = -74;
+  g.save();
   g.beginPath();
-  for (const [ex, ey] of [[-44, 4], [-20, 22], [8, 26], [34, 12], [-58, -30]]) {
-    const sx = wx + ex * 0.16, sy = wy + 8 + Math.abs(ex) * 0.04;
-    g.moveTo(sx, sy); g.quadraticCurveTo(ex * 0.55 + 14, (sy + ey) / 2, ex, ey);
+  g.moveTo(-62, 8); g.quadraticCurveTo(-74, -78, -24, -106); g.quadraticCurveTo(4, -116, 30, -106);
+  g.quadraticCurveTo(76, -78, 62, 8); g.quadraticCurveTo(36, 26, 0, 28); g.quadraticCurveTo(-36, 26, -62, 8);
+  g.clip();
+  g.lineCap = 'round';
+  const strandLine = (x0, y0, cx, cy, x1, y1, w, col, a) => {
+    const gr = g.createLinearGradient(x0, y0, x1, y1);
+    gr.addColorStop(0, rgba(col, 0)); gr.addColorStop(0.25, rgba(col, a)); gr.addColorStop(0.8, rgba(col, a * 0.8)); gr.addColorStop(1, rgba(col, 0));
+    g.strokeStyle = gr; g.lineWidth = w;
+    g.beginPath(); g.moveTo(x0, y0); g.quadraticCurveTo(cx, cy, x1, y1); g.stroke();
+  };
+  // the crown: a few short curved strands turning around one point (a natural parting swirl)
+  for (let i = 0; i < 5; i++) {
+    const a0 = -0.6 + i * 1.25, r0 = 3, r1 = 15 + (i % 2) * 5;
+    strandLine(wx + Math.cos(a0) * r0, wy + Math.sin(a0) * r0, wx + Math.cos(a0 + 0.9) * r1 * 0.8, wy + Math.sin(a0 + 0.9) * r1 * 0.8,
+      wx + Math.cos(a0 + 1.5) * r1, wy + Math.sin(a0 + 1.5) * r1, 1.8, C.hairLine, 0.45);
   }
-  g.moveTo(wx + Math.cos(0.6) * 6.5, wy - 2 + Math.sin(0.6) * 6.5);
-  g.arc(wx, wy - 2, 6.5, 0.6, 4.2);
-  g.stroke();
-  g.strokeStyle = rgba(C.hairLight, 0.55);
+  for (const [ex, ey, w] of [[-58, -26, 2.2], [-50, 6, 2], [-38, 30, 2.2], [-22, 40, 2], [-6, 46, 2.2], [10, 46, 2], [26, 40, 2.2], [40, 28, 2], [54, 4, 2.2], [60, -24, 2]]) {
+    const sx = wx + ex * 0.2, sy = wy + 10 + Math.abs(ex) * 0.05;
+    strandLine(sx, sy, ex * 0.62 + 10, (sy + ey) / 2 - 6, ex, ey, w, C.hairLine, 0.42);
+  }
+  for (const [ex, ey] of [[-44, 18], [-16, 40], [18, 40], [46, 18]]) {
+    const sx = wx + ex * 0.25, sy = wy + 16;
+    strandLine(sx, sy, ex * 0.55 + 8, (sy + ey) / 2 - 4, ex, ey, 1.6, C.hairLight, 0.32);
+  }
+  g.restore();
+  g.strokeStyle = rgba(C.hairLight, 0.5);
   g.lineWidth = 5;
   g.beginPath(); g.moveTo(-50, -66); g.quadraticCurveTo(-34, -96, 0, -100); g.stroke();
   g.lineWidth = 3.4;
@@ -1179,40 +1246,6 @@ function drawHeadBack(g, k, pose, u, sway) {
 
   strand(g, -2, -106, sway * 0.8 - 0.1, [[4, -14], [14, -22]], 5);
   strand(g, 10, -104, sway * 0.9 + 0.2, [[10, -10], [22, -8]], 3.8);
-}
-
-/** one falling tear (face-local, screen orientation): prog 0..1 runs from the lower lid down the cheek */
-function drawSelfTear(g, turn, side, prog) {
-  const S = SELF_FACE, at = Math.abs(turn);
-  const squeeze = side * turn < 0 ? 1 - at * 0.38 : 1 + at * 0.06;
-  const ex = side * S.eyeSpacing * (1 - at * 0.3) + turn * S.eyeSpacing * 0.55;
-  const rx = S.eyeRx * squeeze, ry = S.eyeRy;
-  const k = clamp(prog);
-  const x0 = ex + side * rx * 0.42, y0 = S.eyeY + ry * 0.8;
-  const tx = x0 + side * Math.sin(k * 3) * 2.5, ty = y0 + k * ry * 3.3;
-  const a = k < 0.85 ? 1 : 1 - (k - 0.85) / 0.15;
-  const sz = 5.4 * (0.62 + 0.38 * Math.min(1, k * 4));
-  // wet trail on the cheek behind the drop
-  if (k > 0.05) {
-    g.strokeStyle = `rgba(200,232,255,${0.4 * a})`;
-    g.lineWidth = 2.2;
-    g.lineCap = 'round';
-    g.beginPath();
-    g.moveTo(x0, y0 + 2);
-    g.quadraticCurveTo(x0 + side * 3, (y0 + ty) / 2, tx, ty - sz * 1.4);
-    g.stroke();
-  }
-  g.fillStyle = `rgba(205,236,255,${0.95 * a})`;
-  g.strokeStyle = `rgba(110,160,215,${0.8 * a})`;
-  g.lineWidth = 1.4;
-  g.beginPath();
-  g.moveTo(tx, ty - sz * 1.9);
-  g.bezierCurveTo(tx + sz * 1.1, ty - sz * 0.2, tx + sz, ty + sz, tx, ty + sz);
-  g.bezierCurveTo(tx - sz, ty + sz, tx - sz * 1.1, ty - sz * 0.2, tx, ty - sz * 1.9);
-  g.fill(); g.stroke();
-  g.fillStyle = `rgba(255,255,255,${0.95 * a})`;
-  circle(g, tx - sz * 0.35, ty, sz * 0.32);
-  g.fill();
 }
 
 // ---------------------------------------------------------------- nose (face style hook)
@@ -1241,7 +1274,7 @@ function armGeom(a, side, k) {
   const s = k.sh[side];
   let [tx, ty] = a.target;
   const shake = Math.max(k.trem, a.shake || 0);
-  if (shake > 0) { tx += shake * noise1(k.t * 31 + side * 7, 12) * 2.5; ty += shake * noise1(k.t * 27 + side * 5, 13) * 2.5; }
+  if (shake > 0) { const [ox, oy] = smoothShake(k.t, shake, 7).arm(side); tx += ox * 1.6; ty += oy * 1.6; }
   const L1 = UPPER * (a.reach1 || 1), L2 = FORE * (a.reach2 || 1);
   if (a.palm) {
     // target is where the palm should land: pull the wrist back along the approach direction
@@ -1259,41 +1292,37 @@ function armGeom(a, side, k) {
 
 function drawArmGroup(g, geos, ctx, merge) {
   if (!geos.length) return;
-  const { k, pose, outfit } = ctx;
-  // props first (hands grip over them)
+  const { k, pose } = ctx;
+  const back = ctx.back;
+  // held objects: the parts of the hand behind the object first, then the object, then the parts in front.
+  //   open notebook held up to read: palms and thumbs on the page side (away from camera), fingers over the covers
+  //   closed notebook shown to camera: hands behind it, only the thumbs come over the front edges
+  //   clipboard: fingers behind the board, the thumb on its front
   const nb = geos.filter((q) => q.a.prop === 'notebook' || q.a.prop === 'notebookCover');
   const cover = nb.length && nb[0].a.prop === 'notebookCover';
+  const done = new Set();
   if (nb.length) {
     const cx = nb.reduce((s, q) => s + q.wx, 0) / nb.length + (nb.length === 1 ? -nb[0].side * 40 : 0);
     const cy = nb.reduce((s, q) => s + q.wy, 0) / nb.length + (cover ? -24 : -12);
     const tilt = (pose.notebook && pose.notebook.tilt) || 0;
     const sc = cover ? 0.95 : 0.82;
-    // closed book shown to camera: the hands hold it from behind, only the thumbs wrap the front edges
-    if (cover) for (const q of nb) drawHand(g, q);
+    for (const q of nb) drawHand(g, q, back, cover ? ['palm', 'finger'] : ['palm', 'thumb']);
     g.save();
     g.translate(cx, cy);
     g.rotate(tilt);
     g.scale(k.facing, 1); // keep the cover art readable
     drawSelfNotebook(g, 0, 0, sc, { mode: cover ? 'closed' : 'heldOpen', t: k.t });
     g.restore();
-    if (cover) {
-      for (const q of nb) {
-        const ex = cx + q.side * 35 * sc * Math.cos(tilt), ey = q.wy - 12;
-        g.save();
-        g.translate(ex, ey);
-        g.rotate(q.side * 0.25 + tilt);
-        g.fillStyle = C.skin;
-        g.strokeStyle = C.skinLine;
-        g.lineWidth = 2.6;
-        g.beginPath();
-        g.roundRect(-q.side * 9 - 5, -13, 10, 22, 5);
-        g.fill(); g.stroke();
-        g.restore();
-      }
-    }
+    for (const q of nb) { drawHand(g, q, back, cover ? ['thumb'] : ['finger']); done.add(q); }
   }
-  for (const q of geos) if (q.a.prop === 'clipboard') drawClipboardAt(g, q, k);
-  for (const q of geos) if (!(cover && nb.includes(q))) drawHand(g, q);
+  for (const q of geos) {
+    if (q.a.prop !== 'clipboard') continue;
+    drawHand(g, q, back, ['palm', 'finger']);
+    drawClipboardAt(g, q, k);
+    drawHand(g, q, back, ['thumb']);
+    done.add(q);
+  }
+  for (const q of geos) if (!done.has(q)) drawHand(g, q, back);
   for (const q of geos) drawSleeve(g, q, ctx, merge && !ctx.back);
 }
 
@@ -1417,84 +1446,29 @@ function cuff(g, x0, y0, x1, y1, w, col, line, ribs) {
   }
 }
 
-// hand shapes: fingers [baseY, len, curl], spread (rad across the fan), thumb [angle, len]
-const HANDS = {
-  open: { f: [[5.2, 14, 0.4], [1.7, 15.5, 0.32], [-1.8, 14.5, 0.36], [-5.2, 12, 0.45]], spread: 0.08, thumb: [0.85, 12.5] },
-  rest: { f: [[5.2, 15, 0.6], [1.7, 16, 0.55], [-1.8, 15, 0.6], [-5.2, 12.5, 0.65]], spread: 0.05, thumb: [0.3, 12] },
-  drape: { f: [[5, 16, 0.22], [1.7, 17.5, 0.18], [-1.7, 16.5, 0.2], [-5, 13.5, 0.26]], spread: 0.05, thumb: [0.45, 12.5] },
-  palm: { f: [[5.4, 15, 0.02], [1.8, 17, 0], [-1.9, 16, 0], [-5.4, 13, 0.05]], spread: 0.24, thumb: [1.15, 13] },
-  flat: { f: [[5, 15.5, 0.05], [1.7, 17, 0.04], [-1.7, 16, 0.05], [-5, 13, 0.08]], spread: 0.04, thumb: [0.55, 12.5] },
-  cup: { f: [[5, 15, 0.25], [1.7, 16.5, 0.2], [-1.7, 15.5, 0.22], [-5, 13, 0.3]], spread: 0.06, thumb: [1.35, 13.5] },
-  point: { f: [[5, 19, 0], [1.7, 9, 1], [-1.7, 8.5, 1], [-5, 7.5, 1]], spread: 0.02, thumb: [0.55, 10] },
-  fist: { f: [[5, 9, 1], [1.7, 9.5, 1], [-1.7, 9, 1], [-5, 8, 1]], spread: 0, thumb: [0.35, 10.5], fist: true },
-  grip: { f: [[5, 10, 0.9], [1.7, 10.5, 0.9], [-1.7, 10, 0.9], [-5, 9, 0.9]], spread: 0, thumb: [0.12, 13], fist: true },
-};
-
-function drawHand(g, q) {
+// ---- hands: the shared articulated hand (hand.mjs). The arm side gives the chirality (armL at facing 1 is the
+// RIGHT hand; seen from behind, the LEFT); spec.palmDir / spec.roll orient it. Older specs that only say which
+// side the thumb is on (thumb ±1, hand-local y) get the back- or palm-facing view that puts it there.
+function handOrient(q, back) {
   const a = q.a;
-  const H = HANDS[a.hand] || HANDS.open;
-  const th = a.thumb ?? q.side; // thumb on +y (th=1) or -y (th=-1) of the hand frame
+  const chir = back ? -q.side : q.side;
+  const shape = typeof a.hand === 'object' && a.hand ? a.hand : a.hand || 'open';
+  if (a.roll != null) return { chir, shape, roll: a.roll };
+  if (a.palmDir) return { chir, shape, palmDir: back ? [a.palmDir[0], a.palmDir[1], -a.palmDir[2]] : a.palmDir };
+  if (a.thumb != null) {
+    const r0 = Math.min(handDefaultRoll(typeof shape === 'string' ? shape : 'open'), 1.25);
+    return { chir, shape, roll: a.thumb === chir ? r0 : Math.PI - r0 };
+  }
+  const up = -Math.sin(q.handAng);
+  const d = shape === 'palm' ? [0, 0, 1] : up > 0.5 ? [0, 0, -1] : [-q.side * 0.9, 0, -0.45];
+  return { chir, shape, palmDir: back ? [d[0], d[1], -d[2]] : d };
+}
+
+function drawHand(g, q, back = false, only = null) {
+  const o = handOrient(q, back);
   g.save();
   g.translate(q.wx, q.wy);
-  g.rotate(q.handAng);
-  g.scale(HAND_S, HAND_S * th);
-  const OL = 1.9, FW = 6.6;
-  const fingers = H.f.map(([by, len, curl]) => {
-    const ang = (by / 5.4) * H.spread;
-    const l = len * (1 - 0.42 * curl);
-    const x0 = 15, y0 = by * 1.05;
-    const mx = x0 + Math.cos(ang) * l * 0.55, my = y0 + Math.sin(ang) * l * 0.55;
-    const a2 = ang - curl * 1.1;
-    return [x0, y0, mx, my, mx + Math.cos(a2) * l * 0.45, my + Math.sin(a2) * l * 0.45];
-  });
-  const palm = () => {
-    g.beginPath();
-    g.moveTo(-1, -8);
-    g.bezierCurveTo(6, -11, 14, -11, 18, -8.5);
-    g.bezierCurveTo(H.fist ? 26 : 22, -3.5, H.fist ? 26 : 22, 3.5, 18, 8.5);
-    g.bezierCurveTo(13, 11.5, 6, 11, -1, 8.5);
-    g.closePath();
-  };
-  const fingerPaths = () => {
-    g.beginPath();
-    for (const [x0, y0, mx, my, tx, ty] of fingers) { g.moveTo(x0, y0); g.lineTo(mx, my); g.lineTo(tx, ty); }
-  };
-  // pass 1: outlines
-  g.strokeStyle = C.skinLine;
-  g.lineCap = 'round';
-  g.lineJoin = 'round';
-  g.lineWidth = FW + OL * 2;
-  fingerPaths(); g.stroke();
-  g.lineWidth = OL * 2;
-  palm(); g.stroke();
-  // pass 2: fills
-  const gr = g.createLinearGradient(0, -10, 0, 10);
-  gr.addColorStop(0, C.skinLight);
-  gr.addColorStop(1, C.skin);
-  g.fillStyle = gr;
-  palm(); g.fill();
-  g.strokeStyle = C.skin;
-  g.lineWidth = FW;
-  fingerPaths(); g.stroke();
-  // finger separations
-  g.strokeStyle = rgba(C.skinLine, 0.5);
-  g.lineWidth = 1.3;
-  g.beginPath();
-  for (let i = 0; i < fingers.length - 1; i++) {
-    const f0 = fingers[i], f1 = fingers[i + 1];
-    const mx = (f0[2] + f1[2]) / 2, my = (f0[3] + f1[3]) / 2;
-    g.moveTo((f0[0] + f1[0]) / 2 + 3, (f0[1] + f1[1]) / 2); g.lineTo(mx, my);
-  }
-  g.stroke();
-  // thumb (in front)
-  const [ta, tl] = H.thumb;
-  const t0x = 7, t0y = 6.5, t1x = t0x + Math.cos(ta) * tl, t1y = t0y + Math.sin(ta) * tl;
-  g.strokeStyle = C.skinLine;
-  g.lineWidth = 7.4 + OL * 2;
-  g.beginPath(); g.moveTo(t0x, t0y); g.lineTo(t1x, t1y); g.stroke();
-  g.strokeStyle = C.skin;
-  g.lineWidth = 7.4;
-  g.beginPath(); g.moveTo(t0x - 1.5, t0y - 2); g.lineTo(t1x, t1y); g.stroke();
+  drawHandShape(g, SELF_HAND, { ang: q.handAng, ...o, curl: q.a.curl, spread: q.a.spread, holding: !!q.a.prop, only });
   g.restore();
 }
 
