@@ -400,9 +400,10 @@ def tired_state(T, info, t):
             st["look"] = (0.25, -0.9)
             st["power"] = 0.72
             if t >= T.dash0 - 0.12:
-                # (anat pass) the eyes dart to the baby over 2 frames and the head follows over
-                # 3 (both used to jump in one frame: up-left -> down-right, nod -0.12 -> 0.1)
-                kd = smoothstep(seg(t, T.dash0 - 0.12, T.dash0 - 0.04))
+                # (anat pass) the eyes slide to the baby over 3 frames, arriving as he sets off,
+                # and the head follows (both used to jump in one frame: up-left -> down-right,
+                # nod -0.12 -> 0.1)
+                kd = smoothstep(seg(t, T.dash0 - 0.12, T.dash0))
                 st["look"] = (lerp(0.25, 0.9, kd), lerp(-0.9, 0.45, kd))
                 f["head_nod"] = lerp(f["head_nod"], 0.1, smoothstep(seg(t, T.dash0 - 0.1, T.dash0 + 0.04)))
         if t >= T.dash0:
