@@ -265,6 +265,13 @@ function ceoPose(t, S) {
 }
 
 const SCREEN_RIM = { dir: [0.15, -1], color: '#ffdca6', strength: 0.5, width: 3 };
+/** drawLit's work region: the console row as seen (screen px) — the characters stand on y 925 and are ≤ 340 tall here */
+function rowBox(g, camera, half) {
+  const m = g.getTransform(), x0 = camera.x - half - 40, x1 = camera.x + half + 40, y0 = 925 - 380, y1 = 925 + 40;
+  const xs = [], ys = [];
+  for (const [x, y] of [[x0, y0], [x1, y0], [x0, y1], [x1, y1]]) { xs.push(m.a * x + m.c * y + m.e); ys.push(m.b * x + m.d * y + m.f); }
+  return [Math.min(...xs) - 12, Math.min(...ys) - 12, Math.max(...xs) + 12, Math.max(...ys) + 12];
+}
 function renderBack(g, t, S, shot) {
   const glowPress = S.k(t, [[BW(4.45), 0], [BW(4.6), 1, 'outCubic'], ['scene.end', 0.7]]);
   const st = { t, lightsDim: 0.15, consoleGlow: 1.0, mist: 0.3, screenMode: 'room', consolePress: { 0: glowPress, 13: 0.5 * S.k(t, [[BW(4.2), 0], [BW(4.9), 1]]) } };
@@ -293,7 +300,7 @@ function renderBack(g, t, S, shot) {
     for (const name of ['JOY', 'SADNESS']) if (seen(BK[SLOT[name]][0])) drawEmotion(g2, name, ...BK[SLOT[name]], emotionPose(name, t, S, shot));
     if (seen(BK.consoleBackMid[0])) drawSelf(g2, ...BK.consoleBackMid, ceoPose(t, S));
     for (const name of ['CALM', 'ANGER']) if (seen(BK[SLOT[name]][0])) drawEmotion(g2, name, ...BK[SLOT[name]], emotionPose(name, t, S, shot));
-  }, SCREEN_RIM);
+  }, { ...SCREEN_RIM, box: rowBox(g, camera, half) });
   drawHQForeground(g, 'back', st);
   g.restore();
   grade(g, 0, 0.2);

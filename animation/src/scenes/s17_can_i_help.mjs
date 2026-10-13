@@ -454,8 +454,11 @@ function ceoPose(t, S, shot, C) {
     pose.armL = 'rest'; pose.armR = 'rest';
   }
   if (C.step > 0 && C.step < 1) {
-    pose.walk = { phase: (C.x - 450) / (WALK_ADVANCE * C.s) * 2 * Math.PI };
-    pose.bodyTurn = 0.35;
+    // the walk (and the 3/4 turn of the body toward where they go) eases in and out with the step (walk.amt), so the
+    // torso no longer snaps to 3/4 on the first frame of the step and back on the last
+    const amt = ease.inOut(clamp(C.step / 0.25)) * ease.inOut(clamp((1 - C.step) / 0.25));
+    pose.walk = { phase: (C.x - 450) / (WALK_ADVANCE * C.s) * 2 * Math.PI, amt };
+    pose.bodyTurn = 0.35 * amt;
   }
   return { pose, pen: putDown < 1 ? { wob: writeWob } : null };
 }

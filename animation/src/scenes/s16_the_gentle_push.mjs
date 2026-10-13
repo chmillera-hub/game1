@@ -97,6 +97,13 @@ function emergingHand(g, vp) {
   g.restore();
 }
 const cam = (t, c, amp = 2.5) => { const d = drift(t, amp); return { ...c, shakeX: d.dx, shakeY: d.dy, rot: d.dr }; };
+/** screen-px bounding box (+ margin) of a world rect under g's current transform — drawLit's work region */
+function screenBox(g, x0, y0, x1, y1, pad = 14) {
+  const m = g.getTransform();
+  const xs = [], ys = [];
+  for (const [x, y] of [[x0, y0], [x1, y0], [x0, y1], [x1, y1]]) { xs.push(m.a * x + m.c * y + m.e); ys.push(m.b * x + m.d * y + m.f); }
+  return [Math.min(...xs) - pad, Math.min(...ys) - pad, Math.max(...xs) + pad, Math.max(...ys) + pad];
+}
 const seg = (t, a, b) => clamp((t - a) / (b - a));
 const lerp3 = (p, q, k) => [lerp(p[0], q[0], k), lerp(p[1], q[1], k), lerp(p[2], q[2], k)];
 // blend two of Fear's arm poses (local coords; side −1 = armL, +1 = armR). When the elbow bend or the front/back draw
@@ -414,7 +421,8 @@ export function render(g, t, S) {
           drawFearFrontArms(g2, P.x, P.y, fs, { ...fp, armL: wipe.w2 > 0.01 ? fp.armL : { ...fp.armL, front: false },
             armR: wipe.w1 > 0.01 ? fp.armR : { ...fp.armR, front: false } });
         }
-      }, { dir: [BOM_LIGHT[0] - P.x, BOM_LIGHT[1] - (P.y - 210 * fs)], color: '#d9dcff', strength: 0.42, width: 2.6 });
+      }, { dir: [BOM_LIGHT[0] - P.x, BOM_LIGHT[1] - (P.y - 210 * fs)], color: '#d9dcff', strength: 0.42, width: 2.6,
+        box: screenBox(g, P.x - 170 * fs, P.y - 370 * fs, P.x + 170 * fs, P.y + 30 * fs) });
     }
     starlight(g, P.x + 25 * P.s, P.y - 250 * P.s, 190 * P.s, 0.45);
   }
