@@ -122,6 +122,39 @@ def edge_tufts(edge, seed, r_lo, r_hi, step=(0.035, 0.07), jitter=0.015):
     return out
 
 
+def wavy_edge(pts, seed, amp, away_from, n_per=6, outward=True):
+    """Resample a polyline and push it out (or in) along its normal by an irregular, curl-like
+    amount: a natural curly edge drawn as one continuous line."""
+    pts = np.asarray(pts, float)
+    seg = np.linalg.norm(np.diff(pts, axis=0), axis=1)
+    cum = np.concatenate([[0.0], np.cumsum(seg)])
+    total = cum[-1]
+    if total < 1e-6:
+        return [tuple(p) for p in pts]
+    n = max(8, int(total / 0.03))
+    rng = np.random.default_rng(seed)
+    f1, f2 = rng.uniform(55, 75), rng.uniform(120, 160)
+    p1, p2 = rng.uniform(0, 6.28, 2)
+    c = np.asarray(away_from, float)
+    out = []
+    for k in range(n + 1):
+        s = total * k / n
+        i = min(int(np.searchsorted(cum, s, side="right")) - 1, len(seg) - 1)
+        f = (s - cum[i]) / max(seg[i], 1e-9)
+        p = pts[i] + (pts[i + 1] - pts[i]) * f
+        d = (pts[i + 1] - pts[i]) / max(seg[i], 1e-9)
+        nrm = np.array([-d[1], d[0]])
+        if np.dot(nrm, p - c) < 0:
+            nrm = -nrm
+        if not outward:
+            nrm = -nrm
+        u = s / total
+        bump = 0.55 * abs(math.sin(u * f1 + p1)) + 0.45 * abs(math.sin(u * f2 + p2)) ** 2
+        taper = min(1.0, u / 0.04, (1 - u) / 0.04)  # meet the ends exactly
+        out.append(tuple(p + nrm * amp * bump * taper))
+    return out
+
+
 def coil(cx, cy, r, turns=1.15, phase=0.0, squash=0.8):
     """A small tight curl: a spiral that closes in on itself."""
     pts = []
@@ -269,10 +302,12 @@ class LongHair:
         t = P["t"]
         for s in (1, -1):
             dx, _ = sway_offset(P, 0.8, k=0.05)
-            a = surf_pts(H, [(s * 0.04, -1.24), (s * 0.20, -0.95), (s * 0.17, -0.62)], dz=0.06)
+            a = surf_pts(H, [(s * 0.04, -1.24), (s * 0.20, -0.95), (s * 0.17, -0.72)], dz=0.06)
             a[2] = (a[2][0] + dx, a[2][1])
-            cv.drawPath(tapered(sample_spline(a, n=12), 0.016, 0.0, wmid=0.012), fill(st["hair"]))
-            cv.drawPath(spline(a, closed=False), stroke(lc, 0.006, alpha=0.7))
+            wisp = sample_spline(a, n=12)
+            cv.drawPath(tapered([(x + 0.01, y + 0.02) for x, y in wisp], 0.03, 0.0, wmid=0.024), fill(st["skin_sh"], alpha=0.35, blur=0.012))
+            cv.drawPath(tapered(wisp, 0.03, 0.0, wmid=0.024), fill(st["hair"]))
+            cv.drawPath(tapered([(x - s * 0.004, y) for x, y in wisp], 0.008, 0.0, wmid=0.006), fill(st["hair_hl"], alpha=0.5))
             side = g["R"] if s > 0 else g["L"]
             p0 = side[4]
             dx2, dy2 = sway_offset(P, 1.0, k=0.25)
@@ -288,7 +323,7 @@ class LongHair:
         m = skia.Matrix()
         m.setTranslate(-P["light_x"] * 0.03, 0.075)
         path.transform(m)
-        cv.drawPath(path, fill(st["skin_sh"], alpha=0.9))
+        cv.drawPath(path, fill(st["skin_sh"], alpha=0.85, blur=0.016))
 
     def draw_back(self, cv, H, st, P):
         """The hair falling behind the shoulders: soft locks with strand texture, lighter where it
@@ -511,15 +546,13 @@ class ShortCurly:
         r = self.curl_r
         # irregular tufts round the outside and smaller ones along the hairline; outlined only as one
         # silhouette, so the hair reads as a single springy mass rather than a ring of balls
-        outer = R[::-1] + [top] + L[1:]
-        tufts = edge_tufts(outer, 5, r * 0.55, r * 1.15) + edge_tufts(hl_r[::-1] + hl_l[1:], 9, r * 0.35, r * 0.7, step=(0.03, 0.06), jitter=0.01)
-        shapes = [path] + tufts
-        for s_ in shapes:
-            cv.drawPath(s_, stroke(lc, 0.028, alpha=0.9))
-        mass = skia.Path()
-        for s_ in shapes:
-            cv.drawPath(s_, fill(col))
-            mass.addPath(s_)
+        # one irregular curly outline: curls push out round the head and dip onto the forehead
+        face_c = H.pt(0.0, -0.2)
+        outer = wavy_edge(R[::-1] + [top] + L[1:], 5, r * 1.1, face_c)
+        line = wavy_edge(hl_r[::-1] + [((hl_r[0][0] + hl_l[0][0]) / 2, (hl_r[0][1] + hl_l[0][1]) / 2)] + hl_l[1:], 9, r * 0.75, face_c, outward=False)
+        mass = spline(outer + line[::-1], closed=True, corners=[0, len(outer) - 1, len(outer), len(outer) + len(line) - 1], tension=0.4)
+        cv.drawPath(mass, stroke(lc, 0.028, alpha=0.9))
+        cv.drawPath(mass, fill(col))
         cv.save()
         cv.clipPath(mass, skia.ClipOp.kIntersect, True)
         lx = P["light_x"]
@@ -566,9 +599,9 @@ class ShortCurly:
         g = self.geometry(H, P)
         path = self.path(g)
         m = skia.Matrix()
-        m.setTranslate(-P["light_x"] * 0.03, 0.06)
+        m.setTranslate(-P["light_x"] * 0.03, 0.07)
         path.transform(m)
-        cv.drawPath(path, fill(st["skin_sh"], alpha=0.85))
+        cv.drawPath(path, fill(st["skin_sh"], alpha=0.7, blur=0.025))
 
 
 class CurlyBeard(Beard):
@@ -583,14 +616,13 @@ class CurlyBeard(Beard):
         ring = R + [bot] + L[::-1] + IL + IR[::-1][1:]
         n_out = len(R) + 1 + len(L)
         path = spline(ring, closed=True, corners=[0, n_out - 1, n_out], tension=0.5)
-        tufts = edge_tufts(edge, 21, 0.026, 0.05, step=(0.03, 0.055), jitter=0.012)
-        for s_ in [path] + tufts:
-            cv.drawPath(s_, stroke(lc, 0.024, alpha=0.85))
-        cv.drawPath(path, fill(col, alpha=0.5, blur=0.03))
-        mass = skia.Path(path)
-        for s_ in [path] + tufts:
-            cv.drawPath(s_, fill(col))
-            mass.addPath(s_)
+        face_c = H.pt(0.0, 0.2)
+        curly = wavy_edge(edge, 21, 0.05, face_c)
+        inner = IL + IR[::-1][1:]
+        mass = spline([R[0]] + curly + [L[0]] + inner, closed=True, tension=0.45)
+        cv.drawPath(mass, stroke(lc, 0.024, alpha=0.85))
+        cv.drawPath(mass, fill(col, alpha=0.5, blur=0.03))
+        cv.drawPath(mass, fill(col))
         cv.save()
         cv.clipPath(mass, skia.ClipOp.kIntersect, True)
         lx = P["light_x"]

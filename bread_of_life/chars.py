@@ -76,6 +76,14 @@ def tunic_outfit(base, base_sh, trim=None, neckline="v", mantle=None, belt=None,
                  [(-0.15, 2.4), (0.0, 3.1), (-0.1, 4.0)]]
         for f in folds:
             _fold(cv, [(x * sw / 1.8 + by * 0.5, y) for x, y in f], base_sh, hi, w=0.05, alpha=0.6)
+        # the legs under the skirt: light down the front of each thigh and over the knee, shade
+        # between the legs, so the robe has a body inside it rather than reading as a flat slab
+        stance = st.get("stance", 0.72) * k
+        for s_ in (-1, 1):
+            lx_ = s_ * stance * 0.95 + by * 0.4
+            cv.drawPath(ellipse(lx_ - sx * 0.08, 7.4 * k, sw * 0.24, 2.4 * k), fill(mix(base, "#ffffff", 0.22), alpha=0.22, blur=0.3))
+            cv.drawPath(ellipse(lx_ - sx * 0.06, 10.2 * k, sw * 0.16, 0.55 * k), fill(mix(base, "#ffffff", 0.25), alpha=0.18, blur=0.2))
+        cv.drawPath(ellipse(by * 0.4, 8.6 * k, sw * 0.1, 3.4 * k), fill(base_sh, alpha=0.3, blur=0.25))
         # skirt folds from the belt to the hem
         rng = np.random.default_rng(int(sum(map(ord, base))))
         for j in range(7):

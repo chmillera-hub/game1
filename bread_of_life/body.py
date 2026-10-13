@@ -35,8 +35,12 @@ def shoulder_pt(st, P, side):
 def rest_target(st, P, side):
     S = shoulder_pt(st, P, side)
     l1, l2 = arm_dims(st)
-    sway = 0.04 * math.sin(P["t"] * 0.9 + side)
-    return np.array([S[0] + side * 0.22 + sway, S[1] + (l1 + l2) * 0.955, 0.45])
+    t = P["t"]
+    # resting arms hang against the body but are never frozen: they sway a little with the
+    # weight shifts and breathing
+    sway = 0.05 * math.sin(t * 0.9 + side) + 0.03 * math.sin(t * 0.37 + 2.0 * side)
+    swing = 0.06 * math.sin(t * 0.6 + 1.3 * side)
+    return np.array([S[0] + side * 0.22 + sway, S[1] + (l1 + l2) * 0.955 - 0.03 * P["breath"], 0.45 + swing])
 
 
 def ik3(S, T, l1, l2, pole, fallback=(1.0, 0.3, -0.3)):
@@ -416,8 +420,8 @@ def draw_hand3d(cv, st, geo, wrist, T3, D3, B3, L, light_x=-0.7, prop=None):
             n = math.hypot(dx, dy)
             ux, uy = (dx / n, dy / n) if n > 1e-6 else (0.0, 1.0)
             fade = max(br * 2.2, 0.35 * n)
-            ep = stroke(lc, 0.013, alpha=1.0)
-            ep.setShader(lin_grad((bx, by), (bx + ux * fade, by + uy * fade), [mix_a(lc, 0.0), mix_a(lc, 0.5)]))
+            ep = stroke(lc, 0.013, alpha=1.0, blur=0.003)
+            ep.setShader(lin_grad((bx, by), (bx + ux * fade, by + uy * fade), [mix_a(lc, 0.0), mix_a(lc, 0.42)]))
             cv.save()
             cv.clipPath(drawn, skia.ClipOp.kIntersect, True)
             cv.drawPath(p["path"], ep)
@@ -473,7 +477,7 @@ def _part_details(cv, st, geo, p, P2, M, back_vis, L):
                 for off in (-0.012, 0.012):
                     c0 = J[1] + d * off + Dn[0] * R[1] * 0.9
                     pts = [P2(c0 + lat * R[1] * s_ * 0.55 + d * 0.006 * abs(s_))[0] for s_ in (-1, 0, 1)]
-                    cv.drawPath(spline(pts, closed=False), stroke(sh2, 0.006 * L, alpha=0.3 * a))
+                    cv.drawPath(spline(pts, closed=False), stroke(sh2, 0.008 * L, alpha=0.24 * a, blur=0.004 * L))
                 cv.restore()
         if 2 in p["idx"]:
             _nail(cv, st, P2, M, J[2], J[3], R[2], R[3], Dn[2], L, p["path"])
@@ -494,7 +498,7 @@ def _hand_details(cv, st, geo, P2, M, back_vis, L):
                          ([(0.175, 0.305), (0.06, 0.285), (-0.11, 0.25)], 0.42),
                          ([(0.165, 0.33), (0.085, 0.24), (0.07, 0.12), (0.08, 0.035)], 0.42)):
             pts = [P2((x, y, z))[0] for x, y in line]
-            cv.drawPath(spline(pts, closed=False), stroke(sh2, lw, alpha=al * a))
+            cv.drawPath(spline(pts, closed=False), stroke(sh2, lw * 1.3, alpha=al * a * 0.8, blur=lw * 0.5))
 
 
 def _nail(cv, st, P2, M, j0, j1, r0, r1, dorsal, L, clip, wide=1.0):

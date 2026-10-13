@@ -51,8 +51,8 @@ G_UP_R = dict(target=(3.5, -1.3, 0.8), hand="open", palm=(0.15, -0.6, 0.8), wris
 G_UP_M = dict(target=(3.4, 0.3, 1.3), hand="open", palm=(0.2, -0.3, 1.0), wrist=5)
 G_HEART_L = dict(target=(0.1, 2.5, 1.1), hand="flat", palm=(0.0, 0.0, -1.0), wrist=12, still=True)
 G_SELF_R = dict(target=(0.85, 2.45, 1.15), hand="soft", palm=(-0.1, 0.05, -1.0), wrist=8, still=True)  # "my flesh": hand laid on his chest
-G_BREAD_R = dict(target=(0.95, 4.3, 1.3), hand="hold", palm=(-0.8, -0.5, 0.15), wrist=20, still=True)
-G_BREAD_L = dict(target=(-0.75, 4.4, 1.3), hand="hold", palm=(-0.8, -0.5, 0.15), wrist=20, still=True)
+G_BREAD_R = dict(target=(0.95, 3.7, 1.6), hand="hold", palm=(-0.8, -0.5, 0.15), wrist=20, still=True)  # the loaf held up in front of him
+G_BREAD_L = dict(target=(-0.75, 3.8, 1.6), hand="hold", palm=(-0.8, -0.5, 0.15), wrist=20, still=True)
 G_GIVE_R = dict(target=(2.7, 3.5, 1.6), hand="cup", palm=(0.0, -1.0, 0.2), hand_dir=(0.9, 0.0, 0.4), still=True)  # offers the half on his open palm
 G_PRAY_L = dict(target=(-0.2, 3.0, 1.4), hand="hold", palm=(0.0, -1.0, 0.0), hand_dir=(0.95, -0.2, 0.25), still=True)  # bread cradled in the hand, which comes straight out of the sleeve
 P_CHIN_R = dict(target=(0.5, 0.3, 1.5), hand="relaxed", palm=(-0.4, 0.0, -1.0), wrist=-10, layer="front", still=True)
@@ -64,7 +64,7 @@ P_TAKE_L = dict(target=(-3.02, 2.5, 2.1), hand="hold", palm=(0.0, 1.0, 0.3), wri
 P_KEEP_L = dict(target=(-1.1, 3.6, 1.6), hand="hold", palm=(0.25, -1.0, 0.35), wrist=12, still=True)  # draws the bread close
 E_CROSS_R = dict(target=(-1.2, 3.0, 1.15), hand="relaxed", palm=(0.0, 0.2, -1.0), wrist=10, still=True, pole=(0.6, 1.0, -0.15))
 E_CROSS_L = dict(target=(1.15, 3.2, 0.95), hand="relaxed", palm=(0.0, 0.2, -1.0), wrist=10, still=True, pole=(0.6, 1.0, -0.15))
-E_POINT_R = dict(target=(1.5, 1.1, 1.6), hand="point", palm=(-0.5, 0.0, 0.85), wrist=-5, layer="front")  # index finger raised, in front of his head cloth
+E_POINT_R = dict(target=(1.5, 1.0, 1.6), hand="point", palm=(-0.6, 0.1, -0.6), wrist=0, layer="front")  # index finger raised, palm toward his face, in front of his head cloth
 E_TOWARD_L = dict(target=(-2.4, 1.9, 1.8), hand="open", palm=(0.5, -0.1, 0.85), wrist=8)
 E_OUTBURST_L = dict(target=(-2.6, 1.6, 1.6), hand="open", palm=(0.5, -0.1, 0.85), wrist=6)
 E_BOATS_L0 = dict(target=(-1.5, 1.8, 2.0), hand="open", palm=(0.1, 1.0, 0.25), wrist=8)  # "every boat..." sweep start
@@ -72,6 +72,11 @@ E_BOATS_L = dict(target=(-2.5, 1.9, 1.6), hand="open", palm=(0.1, 1.0, 0.25), wr
 E_PALMS_R = dict(target=(2.0, 2.6, 1.8), hand="open", palm=(0.3, -1.0, 0.45), wrist=10)  # "how is that possible?"
 E_PALMS_L = dict(target=(-2.0, 2.6, 1.8), hand="open", palm=(0.3, -1.0, 0.45), wrist=10)
 M_CLUTCH_L = dict(target=(-0.15, 2.3, 1.05), hand="soft", palm=(0.0, 0.0, -1.0), wrist=10, still=True)  # hand pressed over her heart
+CU_OPEN_R = dict(target=(1.7, 2.2, 1.9), hand="open", palm=(0.2, -0.9, 0.4), wrist=8)      # close-ups: a small open palm toward them
+CU_OPEN_L = dict(target=(-1.6, 2.15, 1.9), hand="open", palm=(0.2, -0.9, 0.4), wrist=8)
+CU_NOT_R = dict(target=(1.6, 2.6, 1.9), hand="open", palm=(0.0, 1.0, 0.2), wrist=4)        # a small palm-down "not this"
+CU_RAISE_R = dict(target=(1.7, 2.2, 1.9), hand="open", palm=(0.15, -1.0, 0.35), wrist=8)   # an open palm lifting
+P_HEART_R = dict(target=(0.15, 2.4, 1.1), hand="soft", palm=(-0.1, 0.05, -1.0), wrist=8, still=True)  # Peter's hand on his chest
 M_MOUTH_L = dict(target=(-0.25, 0.45, 1.4), hand="cup", layer="front", still=True, palm=(0.0, 0.0, -1.0))
 
 def shot(t0, name, plate, pcam, chars, blur=0.0, cam=None, light=None, fx=(), grade="morning",
@@ -394,6 +399,8 @@ def build_perfs():
     J.look(T("L03b", seg=2) - 0.1, 0.36, 0.05, 0.3).pose(T("L03b", seg=2) - 0.2, 0.9, pitch=1, roll=0, hx=0.04)
     J.expr(T("L03b", seg=2), "resolute", 0.8, m_smile=0.12)
     J.nod(T("L03b", seg=3) + 0.5, 2.5, 0.7)
+    J.arm(T("L03b", seg=2) - 0.25, "l", G_HEART_L, 0.9)                      # "He has sent me..." - a hand to his chest
+    J.arm(T("L03b", "end") + 0.3, "l", None, 1.0)
     J.blinks(T("L03b"), 0.5)
     J.blinks(T("L03b", "end"), 1.0)
     # Eli puzzled by the answer
@@ -405,6 +412,8 @@ def build_perfs():
     J.expr(T("L04", seg=1), "compassion", 0.8)
     J.expr(T("L04", seg=2), "sad_smile", 1.0)
     J.pose(T("L04", seg=2), 1.0, yaw=19, pitch=3, roll=3)
+    J.arm(T("L04", seg=1) - 0.2, "r", CU_OPEN_R, 0.9)                        # a small open palm toward them
+    J.arm(T("L04", "end") + 0.3, "r", None, 1.0)
     # Eli caught - glances away
     tca = T("L04", word="ate") - 0.35
     E.pose(tca, 0.01, yaw=-20, pitch=0, roll=0).look(tca, -0.35, 0.0).expr(tca, "suspicious", 0.01)
@@ -443,6 +452,8 @@ def build_perfs():
     J.look(T("L08", seg=2), -0.1, -0.5, 0.3).pose(T("L08", seg=2) - 0.1, 0.8, pitch=-7, yaw=-6)
     J.expr(T("L08", seg=2), "peace", 0.6, m_smile=0.35)
     J.look(T("L08", "end") + 0.2, -0.35, 0.0, 0.3).pose(T("L08", "end"), 0.8, pitch=0, yaw=-12)
+    J.arm(T("L08", seg=1) - 0.2, "l", CU_OPEN_L, 0.9)
+    J.arm(T("L08", "end") + 0.2, "l", None, 1.0)
     P.nod(T("L08", seg=1) + 1.4, 3, 0.6)
     # L09 Eli: arms crossed, challenging, then lecturing with a raised finger
     t9 = T("L09") - 0.45
@@ -455,6 +466,8 @@ def build_perfs():
     E.arm(T("L09", seg=2) - 0.3, "r", E_POINT_R, 0.6)                        # index finger raised: making a point
     E.expr(T("L09", seg=2), "skeptical", 0.6, br_l=0.7)
     E.pose(T("L09", seg=2), 0.6, pitch=-6, yaw=-24)
+    E.look(T("L09", word="as") - 0.05, -0.15, 0.4, 0.25)                     # "As it is written..." - recalling the words
+    E.look(T("L09", word="he") - 0.1, -0.38, 0.0, 0.3)                       # ...and back to Jesus as he quotes them
     E.arm(T("L09", "end") + 0.5, "r", None, 0.8)
     M.pose(t9, 0.01, yaw=-14, pitch=2).look(t9, 0.25, 0.0).expr(t9, "anxious", 0.01)
     M.look(T("L09", seg=1), -0.3, 0.0, 0.3)
@@ -465,6 +478,8 @@ def build_perfs():
     # L10 Jesus: steady, then lifts eyes at "my Father"
     J.pose(T("L10") - 0.5, 0.01, yaw=17, pitch=0, roll=0).look(T("L10") - 0.5, 0.35, 0.05).expr(T("L10") - 0.5, "firm", 0.01, m_press=0.1)
     J.expr(T("L10", seg=1), "resolute", 0.8)
+    J.arm(T("L10", seg=1) - 0.15, "r", CU_NOT_R, 0.8)
+    J.arm(T("L10", seg=2) + 0.2, "r", None, 1.0)
     J.look(T("L10", seg=2) + 0.6, 0.15, -0.6, 0.3).pose(T("L10", seg=2) + 0.5, 0.9, pitch=-9, roll=-2)
     J.expr(T("L10", seg=2) + 0.6, "peace", 0.8, m_smile=0.3)
     J.look(T("L10", "end") - 1.0, 0.33, 0.05, 0.3).pose(T("L10", "end") - 1.0, 0.8, pitch=0, roll=1)
@@ -491,7 +506,7 @@ def build_perfs():
     M.pose(t12, 0.01, yaw=-18, pitch=-2, roll=-2).look(t12, -0.4, -0.05).expr(t12, "longing", 0.01, wet=0.9)
     M.arm(t12 + 0.2, "l", M_CLUTCH_L, 0.9)
     M.expr(T("L12"), "pleading", 0.6)
-    M.tear("l", T("L12", seg=1) + 0.2, T("L12", seg=1) + 3.0)
+    # (eyes wet with longing, no tear yet)
     M.hold_eyes(T("L12"), T("L12", "end"))
     # L13/L14 Jesus: "I am the bread of life"
     t13 = T("L13") - 1.2
@@ -507,7 +522,7 @@ def build_perfs():
     # Miriam: tear falls, smile breaks through
     tt = T("L14", seg=1) - 0.25
     M.pose(tt, 0.01, yaw=-18, pitch=-1, roll=-2).look(tt, -0.4, -0.05).expr(tt, "moved", 0.01, wet=1.0, m_smile=0.1)
-    M.tear("r", tt + 0.3, tt + 3.2)
+    M.tear("r", tt + 1.0, tt + 2.9)                                         # one tear, partway into the beat
     M.expr(tt + 1.4, "moved", 1.2, m_smile=0.55)
     M.arm(tt, "l", M_CLUTCH_L, 0.01)
     M.arm(tt + 2.5, "l", None, 1.0)
@@ -551,6 +566,7 @@ def build_perfs():
     t20 = T("L20") - 0.6
     J.pose(t20, 0.01, yaw=17, pitch=0, roll=0).look(t20, 0.35, 0.05).expr(t20, "compassion", 0.01)
     J.expr(T("L20", seg=1), "warm", 1.0)
+    J.arm(T("L20", seg=1) - 0.2, "r", CU_RAISE_R, 0.9)
     te20 = T("L20", seg=1) - 0.1
     E.pose(te20, 0.01, yaw=-18, pitch=2, roll=0).look(te20, -0.35, 0.0).expr(te20, "suspicious", 0.01)
     E.expr(te20 + 1.3, "hurt", 1.2).look(te20 + 1.7, 0.2, 0.35, 0.3).pose(te20 + 1.6, 0.9, yaw=-8, pitch=6)
@@ -669,23 +685,27 @@ def build_perfs():
     J.pose(tj, 0.01, yaw=24, pitch=1, roll=0).look(tj, 0.45, 0.0).expr(tj, "peace", 0.01, m_smile=0.12, wet=0.0)
     J.look(tj + 0.9, 0.2, -0.55, 0.4).pose(tj + 0.8, 1.2, pitch=-9, roll=-2)    # a silent glance to heaven
     J.expr(tj + 1.0, "peace", 0.8, m_smile=0.3, bi_l=0.15, bi_r=0.15)
-    J.look(tj + 2.2, 0.0, 0.0, 0.35).pose(tj + 2.1, 1.1, yaw=-12, pitch=2)   # turns to Peter
+    J.look(tj + 2.2, 0.15, 0.05, 0.35).pose(tj + 2.1, 1.1, yaw=12, pitch=2)   # turns to Peter, who stands to his right
     J.expr(T("L34") - 0.3, "compassion", 0.6, m_smile=0.12, wet=0.0, bi_l=0.25, bi_r=0.25)
-    J.look(T("L34"), -0.35, 0.05, 0.3)
+    J.look(T("L34"), 0.35, 0.05, 0.3)
     J.hold_eyes(T("L34"), T("L34", "end"))
     # Peter's answer: he does not fully understand, but he will not leave
     tp = T("L35") - 0.7
-    P.pose(tp, 0.01, yaw=18, pitch=2, roll=0).look(tp, 0.4, 0.05).expr(tp, "tearful", 0.01, m_smile=-0.2)
+    P.pose(tp, 0.01, yaw=-18, pitch=2, roll=0).look(tp, -0.4, 0.05).expr(tp, "tearful", 0.01, m_smile=-0.2)
     P.expr(T("L35"), "pleading", 0.5, wet=0.9)
-    P.pose(T("L35", seg=1), 0.8, pitch=-2, roll=-3)
+    P.pose(T("L35", seg=1), 0.8, pitch=-2, roll=3)
     P.expr(T("L35", seg=2), "moved", 0.8, m_smile=0.25, wet=1.0)
     P.tear("l", T("L35", seg=1) + 0.4, T("L35", seg=1) + 3.6)
+    P.arm(T("L35", seg=1) - 0.2, "l", CU_OPEN_L, 0.8)
+    P.arm(T("L35", seg=2) + 0.8, "l", None, 1.0)
     tpm = T("L36") - 0.2
     M.pose(tpm, 0.01, yaw=-20, pitch=0, roll=-2).look(tpm, -0.35, 0.0).expr(tpm, "moved", 0.01, m_smile=0.35, wet=1.0)
     M.nod(tpm + 0.5, 3, 0.7).nod(tpm + 1.3, 2.5, 0.7)
     tp2 = T("L36") + 1.6
-    P.pose(tp2, 0.01, yaw=18, pitch=0, roll=0).look(tp2, 0.4, 0.05).expr(tp2, "resolute", 0.01, wet=0.8, bi_l=0.4, bi_r=0.4)
+    P.pose(tp2, 0.01, yaw=-18, pitch=0, roll=0).look(tp2, -0.4, 0.05).expr(tp2, "resolute", 0.01, wet=0.8, bi_l=0.4, bi_r=0.4)
     P.expr(T("L36", seg=1) + 0.3, "moved", 0.8, m_smile=0.4, wet=0.9)
+    P.arm(T("L36") - 0.1, "r", P_HEART_R, 0.9)
+    P.arm(T("L36", "end") + 0.15, "r", None, 0.8)
     # bread: Jesus smiles, breaks it and gives half to Peter
     tf = TF
     J.pose(tf, 0.01, yaw=18, pitch=2, roll=0).look(tf, 0.35, 0.05).expr(tf, "warm", 0.01, m_smile=0.45, wet=0.0)
@@ -718,7 +738,7 @@ def build_perfs():
     J.expr(T("L37", "end") + 0.6, "warm", 1.0, m_smile=0.4, wet=0.0)
     J.blinks(tpr, 0.6)
     P.pose(T("L37", seg=3) - 0.3, 0.01, yaw=-18, pitch=2).look(T("L37", seg=3) - 0.3, -0.35, 0.05).expr(T("L37", seg=3) - 0.3, "peace", 0.01, m_smile=0.35)
-    P.arm(T("L37", seg=3) - 0.3, "l", dict(P_RECEIVE_L, target=(-1.0, 3.9, 1.3)), 0.01)
+    P.arm(T("L37", seg=3) - 0.3, "l", P_KEEP_L, 0.01)                         # still holding the bread he was given
     M.pose(T("L37", seg=3) - 0.3, 0.01, yaw=-20, pitch=0).look(T("L37", seg=3) - 0.3, -0.4, 0.05).expr(T("L37", seg=3) - 0.3, "moved", 0.01, m_smile=0.5, wet=0.5)
     return {"jesus": J, "peter": P, "miriam": M, "eli": E, "man2": X}
 

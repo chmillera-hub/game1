@@ -80,6 +80,19 @@ class Renderer:
                         j = i - 1 if rng_.step == 1 else i + 1
                         seg[i] = seg[i] * 0.55 + seg[j] * 0.45
                         seg[i] /= np.linalg.norm(seg[i]) + 1e-9
+                # a big turn (hand coming up from rest into a gesture) is shared out over the
+                # neighbouring frames so the hand never swings round faster than ~18 degrees a frame
+                for _ in range(80):
+                    if len(seg) < 3:
+                        break
+                    ang = np.degrees(np.arccos(np.clip(np.sum(seg[1:] * seg[:-1], axis=1), -1.0, 1.0)))
+                    bad = np.nonzero(ang > 18.0)[0]
+                    if not len(bad):
+                        break
+                    for i in bad:
+                        for k in range(max(1, i - 2), min(len(seg) - 1, i + 4)):
+                            v = seg[k - 1] + 2.0 * seg[k] + seg[k + 1]
+                            seg[k] = v / (np.linalg.norm(v) + 1e-9)
                 sm[f:g] = seg
                 f = g
             out[key] = (sm, valid)

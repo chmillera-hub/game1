@@ -759,7 +759,7 @@ class Character:
         m = skia.Matrix()
         m.setTranslate(-P["light_x"] * 0.05, 0.22)
         jaw_sh.transform(m)
-        cv.drawPath(jaw_sh, fill(st.get("skin_sh2", st["skin_sh"]), alpha=0.9))
+        cv.drawPath(jaw_sh, fill(st.get("skin_sh2", st["skin_sh"]), alpha=0.85, blur=0.025))
         cv.restore()
         # the two neck muscles (sternocleidomastoids) running from behind the ears down to the notch
         # between the collarbones, in a soft V; shaded, not outlined
@@ -815,7 +815,7 @@ class Character:
         lit = skia.Path(face)
         lit.transform(off)
         lit.setFillType(skia.PathFillType.kInverseWinding)
-        cv.drawPath(lit, fill(st["skin_sh"], alpha=0.75))
+        cv.drawPath(lit, fill(st["skin_sh"], alpha=0.72, blur=0.014))  # the anime shadow shape, with a soft edge
         # soft ambient gradient
         cv.drawRect(skia.Rect.MakeLTRB(-2, -2, 2, 2), fill("#000000", shader=lin_grad((0, -1.2), (0, 1.3), [(1.0, 1.0, 1.0, 0.10), (1.0, 1.0, 1.0, 0.0)])))
         # facial structure, as in more grown-up anime: light on the cheekbones, a soft hollow beneath
@@ -850,7 +850,7 @@ class Character:
                 m = skia.Matrix()
                 m.setTranslate(-lx * 0.03, 0.07)
                 p.transform(m)
-                cv.drawPath(p, fill(st["skin_sh"], alpha=0.85))
+                cv.drawPath(p, fill(st["skin_sh"], alpha=0.8, blur=0.016))
         cv.restore()
         # rim light
         if P["rim"] > 0.01:

@@ -342,10 +342,13 @@ class Perf:
                     times.append(tt + 0.28)
             tt += rng.uniform(2.2, 5.0) / rate
         times += self.extra_blinks
-        # blink on large gaze shifts
+        # blink on large gaze shifts within a shot (a look set at a cut is not a shift)
+        cuts = [kt for kt, _, d in self.hkeys if d <= INSTANT]
         for (kt, gx, gy, d) in self.gkeys:
-            if rng.uniform() < 0.45:
+            if rng.uniform() < 0.45 and not any(abs(kt - c) < 1e-6 for c in cuts):
                 times.append(kt + 0.01)
+        # no shot opens on a blink: keep the first 0.4 s after each cut clear
+        times = [b for b in times if not any(c - 0.25 <= b < c + 0.4 for c in cuts)]
         return sorted(times)
 
     @staticmethod

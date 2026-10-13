@@ -139,7 +139,7 @@ def dust(cv, W, H, t, n=36, seed=5):
 
 
 def silhouette(cv, x, y, s, col="#2a1f2e", head_cloth=True, walk=0.0, rim="#ff9a5a", rim_side=1, facing=1, walking=True,
-               gesture=(0.0, 0.0), head_turn=0.0, lean=0.0):
+               gesture=(0.0, 0.0), head_turn=0.0, lean=0.0, palette=None):
     """Backlit robed figure with arms and legs (feet at x,y; height ~ 7.4s).
     `walk` is the stride phase; facing -1 = seen from behind (walking away), +1 = turned toward us.
     gesture: how far each forearm is raised (left, right; 0..1); head_turn: -1..1; lean: upper-body
@@ -184,7 +184,30 @@ def silhouette(cv, x, y, s, col="#2a1f2e", head_cloth=True, walk=0.0, rim="#ff9a
     for p in parts:
         shape.addPath(p)
     shape.setFillType(skia.PathFillType.kWinding)
-    cv.drawPath(shape, fill(col))
+    # backlit, but readable: muted clothing and skin colours under a soft fill from the sky, with
+    # the sunset rim along the edge (palette: (robe, skin, head cloth) or None for a plain shape)
+    if palette is None:
+        cv.drawPath(shape, fill(col))
+    else:
+        robe_c, skin_c, cloth_c = palette
+        cv.drawPath(shape, fill(robe_c))
+        cv.save()
+        cv.clipPath(shape, skia.ClipOp.kIntersect, True)
+        for side in (-1, 1):  # skin: lower legs, hands
+            fx_ = x + side * 0.22 * s
+            cv.drawPath(skia.Path.Rect(skia.Rect.MakeLTRB(fx_ - 0.3 * s, y - 1.4 * s, fx_ + 0.3 * s, y + 0.2 * s)), fill(skin_c))
+        cv.drawPath(ellipse(hx, top - 0.5 * s, 0.4 * s, 0.48 * s), fill(skin_c))
+        if head_cloth:
+            cv.drawPath(spline([(hx - 0.62 * s, top - 0.2 * s), (hx - 0.5 * s, top - 1.0 * s), (hx, top - 1.25 * s), (hx + 0.5 * s, top - 1.0 * s),
+                                (hx + 0.62 * s, top - 0.2 * s), (hx + 0.7 * s, sh_y + 0.3 * s), (hx - 0.7 * s, sh_y + 0.3 * s)], closed=True)
+                        if facing < 0 else
+                        spline([(hx - 0.62 * s, top - 0.2 * s), (hx - 0.5 * s, top - 1.0 * s), (hx, top - 1.25 * s), (hx + 0.5 * s, top - 1.0 * s),
+                                (hx + 0.62 * s, top - 0.2 * s), (hx + 0.66 * s, sh_y + 0.3 * s), (hx + 0.36 * s, top - 0.15 * s),
+                                (hx - 0.36 * s, top - 0.15 * s), (hx - 0.66 * s, sh_y + 0.3 * s)], closed=True), fill(cloth_c))
+        # soft fill from the sky above, darker toward the feet
+        cv.drawRect(skia.Rect.MakeLTRB(x - 2 * s, top - 1.5 * s, x + 2 * s, y + 0.3 * s),
+                    fill("#000000", shader=lin_grad((0, top - 1.2 * s), (0, y), [(1.0, 0.85, 0.75, 0.12), (0.0, 0.0, 0.0, 0.0), (0.05, 0.02, 0.08, 0.3)], [0.0, 0.45, 1.0])))
+        cv.restore()
     cv.save()
     cv.clipPath(shape, skia.ClipOp.kIntersect, True)
     m = skia.Matrix()
@@ -195,6 +218,11 @@ def silhouette(cv, x, y, s, col="#2a1f2e", head_cloth=True, walk=0.0, rim="#ff9a
     cv.drawPath(inner, fill(rim, alpha=0.55))
     cv.restore()
     cv.drawPath(ellipse(x, y + 0.05 * s, 0.9 * s, 0.14 * s), fill("#000000", alpha=0.25, blur=0.2 * s))
+
+
+# muted, backlit colours for the people seen at a distance at sunset: (robe, skin, head cloth)
+DUSK_PALETTES = [("#5b4a52", "#8a6658", "#6e5e66"), ("#3f4b62", "#7d5d50", "#5e5a6a"), ("#56553f", "#8d6a5a", "#665a4e"),
+                 ("#644a40", "#7a5a4c", "#4f5168"), ("#4b4a5e", "#8f6c5c", "#6b5a52"), ("#5a5148", "#6e5044", "#58506a")]
 
 
 def _pulse(t, period, width, phase):
@@ -263,7 +291,7 @@ def dusk_figures(cv, W, H, t, pcam=(0.5, 0.47, 0.82), t0=0.0):
     sx, sy = screen_pt(px + 0.02 * bg.PW, py, pcam, W, H)
     items.append((sy, sx, max(sy - hz, 2.0) * 0.032, 99, dict(walk=t * 1.1, walking=True, facing=-1, head_turn=0.4 * math.sin(t * 0.7))))
     for sy, sx, s_, k, kw in sorted(items, key=lambda it: it[0]):
-        silhouette(cv, sx, sy, max(s_, 1.6), col="#2a1f2e", **kw)
+        silhouette(cv, sx, sy, max(s_, 1.6), col="#2a1f2e", palette=DUSK_PALETTES[k % len(DUSK_PALETTES)], **kw)
 
 
 def _beach_path(u):
@@ -293,7 +321,7 @@ def leaving(cv, W, H, t, t0, pcam=(0.5, 0.47, 0.82)):
         px, py = _beach_path(s)
         x, y = screen_pt(px + lane * bg.PW * (1.2 - s), py, pcam, W, H)
         depth = max(y - hz, 2.0)
-        items.append((y, x, depth * 0.032, u * 1.4 + k * 0.37))
+        items.append((y, x, depth * 0.032, u * 1.4 + k * 0.37, None, k))
     # Eli: nearest the camera, walking away up the beach like the others; he glances back
     # once over his shoulder without stopping
     s = 0.13 + 0.026 * u
@@ -301,14 +329,12 @@ def leaving(cv, W, H, t, t0, pcam=(0.5, 0.47, 0.82)):
     ex, ey = screen_pt(px - 0.05 * bg.PW, py, pcam, W, H)
     walk = u * 1.4
     look_back = 1 if 2.8 < u < 3.9 else -1
-    items.append((ey, ex, (ey - hz) * 0.034, walk, look_back))
-    for it in sorted(items, key=lambda i: i[0]):
-        if len(it) == 4:
-            y, x, s_, w = it
-            silhouette(cv, x, y, max(s_, 1.6), col="#2a1f2e", walk=w)
+    items.append((ey, ex, (ey - hz) * 0.034, walk, look_back, -1))
+    for y, x, s_, w, fb, k in sorted(items, key=lambda i: i[0]):
+        if k >= 0:
+            silhouette(cv, x, y, max(s_, 1.6), col="#2a1f2e", walk=w, palette=DUSK_PALETTES[k % len(DUSK_PALETTES)])
         else:
-            y, x, s_, w, fb = it
-            silhouette(cv, x, y, s_, col="#221a24", walk=w, facing=fb)
+            silhouette(cv, x, y, s_, col="#221a24", walk=w, facing=fb, palette=("#4f5534", "#8a6a54", "#c9c0aa"))  # Eli: olive robe, pale shawl
 
 
 def bread(cv, x, y, s, broken=0.0, side_only=None):
