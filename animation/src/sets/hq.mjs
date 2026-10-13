@@ -1014,31 +1014,67 @@ function drawExitDoor(g, open, t) {
   g.save(); g.clip();
   g.fillStyle = linGrad(g, 0, -Hs - R, 0, 0, [[0, '#fff3d6'], [1, '#ffd9a0']]);
   g.fillRect(-W2 - 2, -Hs - R - 2, W2 * 2 + 4, Hs + R + 4);
-  // door leaf hinged on the left, swings away
+  // door leaf hinged on the left, swinging away from us on its hinges: the free edge travels toward the hinge and
+  // recedes (perspective: it gets shorter), and the leaf's thickness shows along that edge
   const ang = open * 1.35;
-  const lw = W2 * 2 * Math.cos(ang);
-  if (lw > 1) {
-    g.save();
-    g.translate(-W2, 0);
-    g.scale(lw / (W2 * 2), 1);
-    g.translate(W2, 0);
-    doorPath(0);
+  const cA = Math.cos(ang), sA = Math.sin(ang);
+  const lw = W2 * 2 * cA;
+  const persp = 1 / (1 + sA * 0.22);            // the far (free) edge is further away → smaller
+  if (lw > 0.5) {
     const sh = open * 0.5;
-    g.fillStyle = linGrad(g, -W2, 0, W2, 0, [[0, shade('#5a4290', -sh)], [1, shade('#463370', -sh)]]);
+    // map leaf-local (x from -W2 at the hinge to +W2 at the free edge, y up negative) into the swung leaf
+    const map = (x, y) => {
+      const u = (x + W2) / (W2 * 2);            // 0 hinge … 1 free edge
+      const k = lerp(1, persp, u);
+      const yb = 0, ya = -Hs - R;               // floor line and top of the arch stay anchored at the hinge
+      return [-W2 + u * lw, yb + (y - yb) * k + (1 - k) * (ya * 0.06)];
+    };
+    const leafPath = () => {
+      g.beginPath();
+      const N = 18;
+      let p = map(-W2, 0); g.moveTo(p[0], p[1]);
+      p = map(-W2, -Hs); g.lineTo(p[0], p[1]);
+      for (let i = 0; i <= N; i++) {
+        const a = Math.PI + (i / N) * Math.PI;
+        p = map(Math.cos(a) * W2, -Hs + Math.sin(a) * W2); g.lineTo(p[0], p[1]);
+      }
+      p = map(W2, 0); g.lineTo(p[0], p[1]);
+      g.closePath();
+    };
+    // the leaf's edge (thickness) catches the outside light along the free side
+    const th = 7 * sA;
+    if (th > 0.4) {
+      const a0 = map(W2, 0), a1 = map(W2, -Hs);
+      g.fillStyle = shade('#3a2a60', -sh * 0.6);
+      g.beginPath(); g.moveTo(a0[0], a0[1]); g.lineTo(a1[0], a1[1]); g.lineTo(a1[0] + th, a1[1] - th * 0.15); g.lineTo(a0[0] + th, a0[1]); g.closePath();
+      g.fill();
+      g.strokeStyle = C.line; g.lineWidth = 2; g.stroke();
+    }
+    leafPath();
+    g.fillStyle = linGrad(g, -W2, 0, -W2 + lw, 0, [[0, shade('#5a4290', -sh)], [1, shade('#463370', -sh * 1.2)]]);
     g.fill();
     g.strokeStyle = C.line; g.lineWidth = 2.5; g.stroke();
-    // panels
+    // panels, porthole and knob, carried by the same swing
+    g.save();
+    leafPath(); g.clip();
+    const seg = (pts) => { g.beginPath(); pts.forEach(([x, y], i) => { const q = map(x, y); if (i) g.lineTo(q[0], q[1]); else g.moveTo(q[0], q[1]); }); };
     g.strokeStyle = 'rgba(15,10,30,0.5)'; g.lineWidth = 2.5;
-    g.beginPath(); g.moveTo(0, -Hs - R + 4); g.lineTo(0, 0); g.stroke();
+    seg([[0, -Hs - R + 4], [0, 0]]); g.stroke();
     for (const sx of [-1, 1]) {
-      roundRect(g, sx * 31 - 20, -Hs + 6, 40, 70, 10); g.stroke();
-      roundRect(g, sx * 31 - 20, -64, 40, 50, 10); g.stroke();
+      for (const [y0, h] of [[-Hs + 6, 70], [-64, 50]]) {
+        const x0 = sx * 31 - 20, x1 = x0 + 40;
+        seg([[x0, y0], [x1, y0], [x1, y0 + h], [x0, y0 + h]]); g.closePath(); g.stroke();
+      }
     }
     // porthole
-    g.fillStyle = '#ffe6b0'; circle(g, 0, -Hs - 12, 18); g.fill();
+    const pc = map(0, -Hs - 12), pr = 18 * Math.max(0.15, cA);
+    g.fillStyle = '#ffe6b0';
+    g.beginPath(); g.ellipse(pc[0], pc[1], pr, 18 * lerp(1, persp, 0.5), 0, 0, TAU); g.fill();
     g.strokeStyle = '#2b2255'; g.lineWidth = 4; g.stroke();
-    // knob
-    g.fillStyle = '#e8c25a'; circle(g, W2 - 14, -80, 6); g.fill();
+    // knob on the free side
+    const kc = map(W2 - 14, -80);
+    g.fillStyle = '#e8c25a';
+    g.beginPath(); g.ellipse(kc[0], kc[1], 6 * Math.max(0.3, cA), 6 * persp, 0, 0, TAU); g.fill();
     g.strokeStyle = C.line; g.lineWidth = 1.5; g.stroke();
     g.restore();
   }
