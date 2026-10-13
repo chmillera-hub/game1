@@ -320,7 +320,7 @@ class World {
     this.shakes = {}; this.ups = {};
     const NEG = /\b(no|not|never|nothing|don't|didn't|won't|can't|cannot|isn't|wasn't|nobody|none)\b/i;
     const NO_SHAKE = /(no one forgets|not yet saved|not just for you|neither|\bnor\b)/i;
-    const UP = { jesus: /\bmy Father\b/, paul: /(The Lord provides|the Lord\.\.\. the One|not even by God|the Lord our God)/, yosef: /hands of God/, asher: /^Lord\.\.\./ };
+    const UP = { jesus: /\bmy Father\b/, paul: /(The Lord provides|the Lord\.\.\. the One|blessed be His name|the Lord our God)/, yosef: /hands of God/, asher: /^Lord\.\.\./ };
     const at = (ln, idx) => ln.start + 0.1 + (idx / Math.max(1, ln.text.length)) * (ln.end - ln.start - 0.2);
     for (const ln of tl.lines) {
       if (ln.vo || !ln.mouth || !ln.mouth[ln.who]) continue;

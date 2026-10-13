@@ -8,12 +8,14 @@ It weaves four passages into one story:
 
 | Passage | Where it lands in the film |
 |---|---|
-| John 13:34 / 15:12 – "A new commandment I give you… love one another as I have loved you" | Jesus at the Last Supper (prologue, in full); remembered by Asher before he breaks the bread; the closing card, read by a deep closing voice |
+| John 13:34 / 15:12 – "A new commandment I give you… love one another as I have loved you" | Jesus at the Last Supper (prologue, in full); remembered by Asher before he breaks the bread; the closing card, read by a deep, warm British voice in step with the words on screen |
 | Romans 12:17–21 – "If your enemy is hungry, feed him… overcome evil with good" | Paul's letter read aloud by Phoebe to the believers in Rome; Asher quotes it at Paul; the narrator closes the bread scene with v.21 |
 | 1 Timothy 1:12–16 – "I was once a blasphemer and a persecutor and a violent man… the worst of sinners" | Paul's confession in the cell and his memory of the road to Damascus |
 | Romans 8:35–39 – "Who shall separate us from the love of Christ?" | Paul's answer on the night before his execution, while Asher listens |
 
-**Story.** Rome, about AD 67. Asher was eight when Paul, then a persecutor of the
+**Story.** The prologue is the Last Supper; the narrator then bridges to Rome: just as Judas
+betrayed Jesus by getting Him killed, a man named Paul once betrayed Asher by getting his
+father killed. Rome, about AD 67. Asher was eight when Paul, then a persecutor of the
 church, dragged his father Yosef out of their home in Jerusalem, and his father
 never came home. Thirty-four years later, on the night before Paul's execution, Asher
 brings bread to Paul's cell, because Paul's own letter said: *if your enemy is hungry,
@@ -28,7 +30,7 @@ name whenever a different character starts talking.
 
 ## Outputs
 
-- `output/a_new_commandment_i_give_you.mp4`: the film (H.264 High + AAC stereo, 720×1280, 24 fps, about 10:21, under 15 MB)
+- `output/a_new_commandment_i_give_you.mp4`: the film (H.264 High + AAC stereo, 720×1280, 24 fps, about 11:35, under 15 MB)
 - `output/a_new_commandment_i_give_you.srt`: a subtitle sidecar (the subtitles are also burned into the video)
 
 Compression: 2-pass x264 (`veryslow`, `tune animation`) at about 136 kbps video plus 48 kbps AAC (14.7 MB).
@@ -44,7 +46,7 @@ so previews on social media are never black.
 | Voices | `tts.py`, `build_timeline.py` | Kokoro-82M neural TTS (timestamped ONNX export), one voice per character, with per-phoneme timing for lip-sync and room treatment per scene. Pronunciations are fixed with a `tts=` override, e.g. "red" for past-tense "read" and "liv" for "live" |
 | Animation | `render/*.js` | Procedural 2.5D anime rig in `@napi-rs/canvas`: projected 3D facial features, eyelids, brows, iris and gaze, visemes, tears that dry slowly, and cel shading. Adult faces use lifelike proportions (fuller cheeks and jaw, a full nose with nostril wings, smaller eyes) rather than stock anime ones. Hair caps cover the whole skull; curly hair has an uneven, clumpy edge and fine coils. Blinks, eye saccades, breathing, speech nods, reaction nods, head shakes on spoken negations, glances up to heaven on "my Father" and "God", and nervous fidgeting are procedural |
 | Hands | `render/hands.js` | Each hand is a small 3D skeleton (palm, three-jointed fingers, thumb) posed by how curled the fingers are and which way the palm faces, then projected and drawn with one outline for the palm and the fingers lying over it: soft lines between the fingers, knuckles as light and shade, and arched nails. The thumb side follows from anatomy (right or left hand plus palm direction), so it is correct in every pose, and the wrist stays within its natural range. Held bread sits between the fingers behind it and the fingers in front of it |
-| Bodies | `render/body.js`, `render/shots.js` | Sleeves shaped like arms (shoulder, elbow, forearm), a far forearm that changes between behind and in front of the body only where the hand crosses its edge, sandalled feet with soles, toes and straps, and background figures with arms, legs and a walking stride |
+| Bodies | `render/body.js`, `render/shots.js` | Sleeves shaped like arms (shoulder, elbow, forearm) that cast a soft shadow on the tunic and catch light along their edge, so an arm in front of the body reads even in the tunic's own cloth; a far forearm that changes between behind and in front of the body only where the hand crosses its edge; a mantle that drapes over the shoulder with the arm coming out from under it; elbows that can bend either way or hang low under a raised hand, blending smoothly; a smaller body under a boy's head; seated, kneeling and standing legs with the legs' forms shown under the robe; sandalled feet with soles, toes and straps; and background figures with arms, legs and a walking stride |
 | Score | `music.py` | An original score written as MIDI and rendered with FluidSynth (FluidR3 GM soundfont). Every cue is anchored to a line or shot, so the music follows edits. Deep swells of low strings, tuba and timpani rise under the heaviest lines, and soft high strings with a choir rise at the turning points of grace |
 | Sound design | `sfx.py` | Synthesised ambiences (cell drips, torches, desert wind, dawn birds) and effects (knocks, bolt, a heavy wooden door, muffled chains, a shaky breath, bread breaking…) |
 | Mix | `mix.py` | Dialogue-ducked music, bus compression, two-pass loudness normalisation to -15 LUFS |
@@ -67,7 +69,7 @@ python3 music.py               # music.wav
 python3 sfx.py                 # sfx.wav
 python3 mix.py                 # mix.wav
 python3 render_video.py master # frames -> master.mkv
-python3 render_video.py h264 a_new_commandment_i_give_you.mp4 136 48
+python3 render_video.py h264 a_new_commandment_i_give_you.mp4 118 48
 ```
 
 To get under 15 MB, choose the video kbps as about `14.6e6 * 8 / seconds / 1000 - audio kbps`.

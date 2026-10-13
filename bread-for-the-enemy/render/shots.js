@@ -748,6 +748,7 @@ const paulLook = (ex) => looks({ gx: 0.45, gy: -0.35, yaw: 0.3, pitch: -0.1 }, O
   asher: { gx: 0.5, gy: -0.45, yaw: 0.32, pitch: -0.14 }, bread: { gx: 0.35, gy: 0.75, yaw: 0.25, pitch: 0.22 },
   down: { gx: 0.1, gy: 0.85, yaw: 0.18, pitch: 0.26 }, far: { gx: 0.05, gy: -0.1, yaw: 0.12, pitch: -0.05 },
   hands: { gx: 0.15, gy: 0.95, yaw: 0.12, pitch: 0.3 }, guard: { gx: 0.85, gy: -0.3, yaw: 0.5, pitch: -0.1 },
+  recall: { gx: 0.25, gy: 0.45, yaw: 0.22, pitch: 0.12 },
   away: { gx: -0.5, gy: 0.2, yaw: -0.1, pitch: 0.05 },
 }, ex || {}));
 const asherLook = (ex) => looks({ gx: -0.4, gy: 0.35, yaw: -0.3, pitch: 0.12 }, Object.assign({

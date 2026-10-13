@@ -215,9 +215,9 @@ def compose(tl):
     s.ramp(1, 40, 70, t0, t0 + 6)
     # Paul's welcome: a soft, warm major colour (he believes the best of the stranger)
     t_w = LN("paul", "Come in, come in")
-    for name, a, b in spread(["D", "G", "D", "A"], t_w, LN("asher", "I'm not Luke")):
+    for name, a, b in spread(["D", "G", "D", "A"], t_w, LN("asher", "Look, Paul... I need you")):
         s.chord(1, CH[name], a, b - a + 0.2, 32)
-    s.chord(1, ["D2", "A2", "F3"], LN("asher", "I'm not Luke"), t_rev - LN("asher", "I'm not Luke"), 32)
+    s.chord(1, ["D2", "A2", "F3"], LN("asher", "Look, Paul... I need you"), t_rev - LN("asher", "Look, Paul... I need you"), 32)
     t_yo = LN("asher", "You dragged a man")
     s.ramp(12, 30, 80, t_rev, LN("asher", "I was eight"))
     s.chord(12, ["D3", "Eb3"], t_rev, LN("asher", "I was eight") - t_rev, 40)
@@ -257,7 +257,7 @@ def compose(tl):
     t_lk = SH("jer_yosef_look")
     s.chord(1, ["A4", "A5"], t_lk + 0.1, SH("jer_saul", 1) - t_lk, 40)
     s.ramp(1, 30, 70, t_lk + 0.1, t_lk + 1.7)
-    s.chord(4, ["A5", "E6"], LN("yosef", "May God open"), 2.0, 34)
+    s.chord(4, ["A5", "E6"], LN("yosef", "May God be the light"), 2.0, 34)
     s.note(2, "D2", SH("jer_saul", 1), 2.0, 44)
 
     # ------------------------------------------------------------- CELL (Paul answers; the confession)
@@ -273,7 +273,7 @@ def compose(tl):
     for k, p in enumerate(["D3", "A3", "F4", "E4", "Bb2", "F3", "D4", "C4", "G2", "D3", "Bb3", "A3", "A2", "E3", "C#4", "E4"]):
         s.note(5, p, t_kn + 0.1 + k * 0.95, 2.6, 40 if k % 4 == 0 else 32)
     s.chord(1, ["D2", "A2", "F3"], LN("paul", "I was a blasphemer"), 9.0, 30)
-    t_hu = LN("paul", "I was hunting Him")
+    t_hu = LN("paul", "I was hunting His sheep")
     s.note(5, "E4", t_hu + 0.2, 3.0, 30)
     s.note(5, "Bb2", t_hu + 0.2, 3.0, 30)
 
@@ -316,13 +316,13 @@ def compose(tl):
     t0 = cue["cell2"]
     t_tr = LN("paul", "Here is a trustworthy")
     lam = [("D3", "Dm"), ("C3", "Am"), ("Bb2", "Gm"), ("A2", "A")]
-    step = (LN("paul", "of whom I am the worst") - t0) / len(lam)
+    step = (LN("paul", "of whom I am among the worst") - t0) / len(lam)
     for k, (b, name) in enumerate(lam):
         a = t0 + 0.5 + k * step
         s.note(2, b, a, step, 44)
         s.chord(5, [P(p) + 12 for p in CH[name][1:]], a + 0.6, 3.2, 30)
         s.chord(5, [P(p) + 12 for p in CH[name][1:]], a + step * 0.55, 2.8, 26)
-    t_wo = LN("paul", "of whom I am the worst")
+    t_wo = LN("paul", "of whom I am among the worst")
     t_rs = LN("paul", "But for that very reason")
     s.ramp(1, 30, 70, t_wo, t_rs)
     t_el = LN("paul", "as an example", True)
@@ -333,7 +333,7 @@ def compose(tl):
     for k, p in enumerate(["D3", "F3", "E3", "A2"]):
         s.note(2, p, t_ha + 0.4 + k * 3.0, 3.1, 36)
     t_kn2 = LN("paul", "I know.")
-    for name, a, b in spread(["F", "C", "Dm", "Bb", "F", "C", "Gm", "A"], t_kn2, LN("paul", "But the Lord is patient", True)):
+    for name, a, b in spread(["F", "C", "Dm", "Bb", "F", "C", "Gm", "A"], t_kn2, LN("paul", "I tell you, the Lord has been patient", True)):
         s.chord(1, CH[name], a, b - a + 0.2, 30)
     s.note(1, "A5", LN("asher", "I brought the bread") - 0.2, 2.6, 30)
 
@@ -370,7 +370,7 @@ def compose(tl):
     s.note(4, "A4", t0 + 0.5, 2.0, 36)
     beatR = 60 / 76
     t_sh = LN("paul", "Shall trouble")
-    t_no = LN("paul", "No! In all these")
+    t_no = LN("paul", "No! I say to you")
     names = ["Dm", "Bb", "F", "C", "Dm", "Bb"]
     stepm = (t_no - t_sh) / len(names)
     prog_minor = [(nm, t_sh + i * stepm) for i, nm in enumerate(names)]
@@ -393,8 +393,8 @@ def compose(tl):
     t_ang = LN("paul", "neither angels")
     t_hei = LN("paul", "neither height")
     t_fin = LN("paul", "will be able to separate")
-    t_last = LN("paul", "that is in Christ Jesus")
-    t_last_end = LN("paul", "that is in Christ Jesus", True)
+    t_last = LN("paul", "from Christ Jesus, who saved me")
+    t_last_end = LN("paul", "from Christ Jesus, who saved me", True)
     mid = lambda x, y, f: x + (y - x) * f
     major = [("D", t_no), ("G", mid(t_no, t_thr, 0.55)), ("A", t_thr), ("D", t_conv), ("A", mid(t_conv, t_ang, 0.5)), ("Bm", t_ang),
              ("G", mid(t_ang, t_hei, 0.45)), ("DF", t_hei), ("Em", mid(t_hei, t_fin, 0.4)), ("A", mid(t_hei, t_fin, 0.75)), ("D", t_fin)]
@@ -479,9 +479,9 @@ def compose_swells(tl):
         ("asher", "You don't get to remember", "D", 0.7, 0.8),
         ("asher", "but you weren't acting like a saint", "Bb", 0.8, 0.8),
         ("paul", "I was a blasphemer", "D", 0.9, 0.85),
-        ("saul", "Who are you, Lord", "D", 0.8, 0.85),
-        ("asher", "And my father was just", "D", 0.85, 0.85),
-        ("paul", "of whom I am the worst", "A", 0.7, 0.75),
+        ("saul", "Who is this? Is this the Lord?", "D", 0.8, 0.85),
+        ("asher", "And taking my father out of my life", "D", 0.85, 0.85),
+        ("paul", "of whom I am among the worst", "A", 0.7, 0.75),
         ("asher", "but I don't think I will ever love you", "D", 0.8, 0.75),
         ("asher", "I am not your brother", "Bb", 0.7, 0.75),
         ("asher", "I don't forgive you", "A", 0.7, 0.75),
@@ -491,6 +491,26 @@ def compose_swells(tl):
         ("narrator", "At first light, the old man", "D", 0.75, 1.0),
     ]
     sets = [(0, 1, 2, 3, 4), (5, 6, 7, 8, 10)]
+    # Romans 8: one long deep swell under the whole passage, from "For I am convinced" to the end of
+    # "...the love of the Lord our God", cresting on "neither height nor depth"
+    a8, b8 = LN("paul", "For I am convinced"), LN("paul", "will be able to separate", True)
+    pk8 = LN("paul", "neither height")
+    cb, cc, cs, ct, cti = sets[1]
+    for ch in (cb, cc, cs, ct):
+        s.cc(ch, 11, 0, a8 - 2.05)
+        s.ramp(ch, 10, 112, a8 - 2.0, pk8 + 1.5)
+        s.ramp(ch, 112, 70, pk8 + 1.5, b8)
+        s.ramp(ch, 70, 0, b8, b8 + 3.0)
+    r1, r2 = P("D1"), P("D2")
+    s.note(cb, r1, a8 - 2.0, b8 + 3.0 - (a8 - 2.0), 104)
+    s.note(cb, r2, a8 - 2.0, b8 + 3.0 - (a8 - 2.0), 88)
+    s.chord(cc, [r2, r2 + 7], a8 - 2.0, b8 + 3.0 - (a8 - 2.0), 90)
+    s.chord(cs, [r2, r2 + 12], a8 - 2.0, b8 + 3.0 - (a8 - 2.0), 76)
+    s.note(ct, r2, a8 - 1.5, b8 + 2.5 - (a8 - 1.5), 70)
+    n8 = int(2.6 / 0.08)
+    for j in range(n8):
+        tt = pk8 + 1.5 - 2.6 + j * 0.08
+        s.note(cti, r2, tt, 0.07, int(30 + 70 * (j / n8)))
     for i, (who, pre, root, pk, k) in enumerate(cues):
         a, b = LN(who, pre), LN(who, pre, True)
         t0 = a - 1.6
@@ -535,8 +555,8 @@ def compose_high(tl):
 
     cues = [
         ("jesus", "Open your heart to me", "D", 0.85, 0.8),
-        ("jesus", "A new commandment I give you: love", "D", 0.75, 0.85),
-        ("paul", "No! In all these things", "D", 0.55, 0.75),
+        ("jesus", "Asher, here is a new commandment", "D", 0.75, 0.85),
+        ("paul", "No! I say to you", "D", 0.55, 0.75),
         ("paul", "will be able to separate us", "D", 0.8, 0.9),
         ("asher", "Lord... I don't know how to love", "A", 0.7, 0.65),
     ]
