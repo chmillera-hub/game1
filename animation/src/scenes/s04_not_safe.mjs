@@ -146,7 +146,7 @@ function fearPose(t, S) {
     ['s04b03-0.16', F_HOOD], ['s04b03+0.12', F_CEO, 'cubic'],                 // first look at the CEO
     ['s04b03+2.55', F_CEO], ['s04b03+2.88', F_HOOD, 'cubic'],                 // "…not safe" → back to the hood
     ['s04b04-0.42', F_HOOD], ['s04b04-0.14', F_CEO, 'cubic'],                 // the CEO draws breath: look back
-    ['s04b04+0.2', F_CEO], ['s04b04+0.3', F_FLICK], ['s04b04+0.5', F_FLICK], ['s04b04+0.62', F_CEO],
+    ['s04b04+0.2', F_CEO], ['s04b04+0.33', F_FLICK], ['s04b04+0.5', F_FLICK], ['s04b04+0.64', F_CEO],
     ['s04b06+1.4', F_CEO], ['s04b06+1.88', F_HOOD, 'cubic'],                  // after the CEO's eyes go up
   ]);
   const ex = k([
@@ -264,8 +264,9 @@ function ceoPose(t, S) {
     ['scene.start', C_FEAR],
     ['s04b01+1.38', C_FEAR], ['s04b01+1.58', C_HOOD, 'cubic'],            // from Fear's face up to the hood…
     ['s04b01+1.9', C_HOOD], ['s04b01+2.1', C_FEAR, 'cubic'],               // …and back
-    ['s04b02+0.66', C_FEAR], ['s04b02+0.75', C_HOOD], ['s04b02+0.92', C_HOOD], ['s04b02+1.06', C_FEAR],  // mid-line glance
-    ['s04b04+0.12', C_FEAR], ['s04b04+0.2', C_HOOD], ['s04b04+0.38', C_HOOD], ['s04b04+0.46', C_FEAR],    // the flick on "Nothing"
+    // (the quick glances still ease over 3 frames each way: in 2 frames the irises jumped)
+    ['s04b02+0.64', C_FEAR], ['s04b02+0.77', C_HOOD], ['s04b02+0.92', C_HOOD], ['s04b02+1.08', C_FEAR],  // mid-line glance
+    ['s04b04+0.1', C_FEAR], ['s04b04+0.22', C_HOOD], ['s04b04+0.34', C_HOOD], ['s04b04+0.48', C_FEAR],    // the flick on "Nothing"
     ['s04b06+1.05', C_FEAR], ['s04b06+1.75', C_HOODSTAY, 'sine'],          // eyes drift up and stay
   ]);
   const headTurn = k([

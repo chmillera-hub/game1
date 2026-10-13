@@ -240,7 +240,8 @@ function postTurn(t, S, cst, fx, fy, fs, pull, facing) {
   const up = sstep(b2 + 1.35, b2 + 1.9, t);
   const face = makeExpr(EXPR.crying, {
     browUp: 0.35 + 0.15 * up, lidU: 0.2, lidL: 0.25, open: 0.18 + 0.2 * hitch, tears: 1, stream: 0.5,
-    lookX: -0.15 + fbm(t * 0.6, 23) * 0.04, lookY: lerp(-0.4, -0.85, up),
+    // the eyes rise to the far glow of the console, straight above it on screen (the old -0.15 looked past it, left)
+    lookX: lerp(-0.3, 0.03, up) + fbm(t * 0.6, 23) * 0.04, lookY: lerp(-0.4, -0.85, up),
     // fresh tears well and spill, one from each eye, past the middle of the beat
     tearL: t < S.T('s10b02+1.8') ? 0 : S.k(t, [['s10b02+1.8', 0], ['s10b02+3.3', 1, 'linear']]),
     tearR: t < S.T('s10b02+2.25') ? 0 : S.k(t, [['s10b02+2.25', 0], ['s10b02+3.75', 1, 'linear']]),

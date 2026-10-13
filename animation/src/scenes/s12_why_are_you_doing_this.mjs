@@ -87,8 +87,10 @@ const E = (...p) => makeExpr(...p);
 const bump = (t, c, w) => { const d = Math.abs(t - c) / w; return d >= 1 ? 0 : 0.5 + 0.5 * Math.cos(Math.PI * d); };
 const lerp2 = (a, b, k) => [lerp(a[0], b[0], k), lerp(a[1], b[1], k)];
 // body hitches that follow the sob sfx file (hitches at 0.05 / 0.21 / 0.35, whimper catches 0.56 / 0.83)
-const sobHitch = (t, at, catches = 1) => bump(t, at + 0.07, 0.07) + bump(t, at + 0.23, 0.07) + bump(t, at + 0.37, 0.07)
-  + catches * (0.6 * bump(t, at + 0.58, 0.09) + 0.5 * bump(t, at + 0.85, 0.09));
+// (one smooth swell over the three catches, which ripple on top of it, then two softer whimpers: the three separate
+// 3-frame pulses read as a rapid jitter of the head and shoulders)
+const sobHitch = (t, at, catches = 1) => bump(t, at + 0.22, 0.3) * (0.72 + 0.28 * (bump(t, at + 0.07, 0.1) + bump(t, at + 0.23, 0.1) + bump(t, at + 0.37, 0.1)))
+  + catches * (0.5 * bump(t, at + 0.6, 0.16) + 0.4 * bump(t, at + 0.86, 0.16));
 
 // The rigs breathe sin(t·TAU·breathRate) on ABSOLUTE film time, so a keyed change of the rate jumps the phase: a ramp
 // of the rate at t ≈ 170 s made the breath (head and shoulders) jitter at several Hz for seconds. The keyed rate is
@@ -471,10 +473,12 @@ function fearState(t, S) {
   const hugK = S.k(t, [['s12b09+1.5', 0], ['s12b09+2.4', 1]]);
   const baseHand = blendHand(blendHand('open', 'fist', fistK), 'drape', hugK);
   // in the hug each hand lies over the opposite shoulder, fingers curled round it (pointing outward), not up the
-  // line of the forearm (they read as two hands raised beside the chin)
+  // line of the forearm (they read as two hands raised beside the chin). Late in the narration (b11) the hands slowly
+  // gather the scarf up under the chin — the rig's hugSelf hands, which s13 opens on (the same wide: no jump at the cut)
+  const overK = hugK * (1 - S.k(t, [['s12b11+1.4', 0], ['s12b11+3.2', 1]]));
   const setHand = (a, side) => {
     a.hand = baseHand; a.palmDir = mix3(fearPalm(a, side, crouch, fistK), [0, 0, -1], hugK);
-    a.wrist = wristTo(a, side, crouch, side < 0 ? 0.45 : Math.PI - 0.45, hugK);
+    a.wrist = wristTo(a, side, crouch, side < 0 ? 0.45 : Math.PI - 0.45, overK);
   };
   setHand(armL, -1); setHand(armR, 1);
 
@@ -511,7 +515,7 @@ function fearState(t, S) {
     const a = { target: P(armR.target, [6 + 12 * sweep, -158], wipe), bend: armR.bend, front: true };
     a.hand = blendHand(armR.hand, 'fist', wipe);
     a.palmDir = mix3(armR.palmDir, [-0.6, 0.2, -0.8], wipe);
-    a.wrist = wristTo(a, 1, crouch, Math.PI - 0.45, hugK * (1 - wipe));
+    a.wrist = wristTo(a, 1, crouch, Math.PI - 0.45, overK * (1 - wipe));
     armR = a;
   }
 

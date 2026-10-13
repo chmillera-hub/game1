@@ -385,8 +385,10 @@ function shotC(g, t, S) {
   if (cam.y + 660 / z > SY - 20) {        // the desk is still in frame
     drawRealRoomForeground(g, st);
     drawNotebook(g, NBK[0], NBK[1], NBK[2], { open: 1, flat: 1, rot: NB_ROT });
-    drawSelfLit(g, st, pose, 'front');
   }
+  // the arms run from the shoulders down to the desk: they stay in frame after the desk has left it (skipping them
+  // with the desk popped both sleeves off the shoulders in one frame, play 12.08)
+  drawSelfLit(g, st, pose, 'front');
   // the lamp as a warm point of light in each iris (fades as the lids close)
   const lidOpen = 1 - clamp(pose.face.blink);
   for (const side of [-1, 1]) {

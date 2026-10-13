@@ -321,6 +321,21 @@ function fearPointArm(p, crouch) {
   const r = a < A_BEND ? R : lerp(R, POINT_D, (a - A_BEND) / (POINT_A - A_BEND));
   return { target: [sx + Math.cos(a) * r, sy + Math.sin(a) * r], bend: 1 };
 }
+// the right arm from the scarf clutch (p = 0) to the alarm handle (p = 1): the fist leaves the scarf and drops to a
+// straight arm hanging down-right (bend +1: the elbow flares out at the side), then the straight arm swings up and out
+// to the handle and bends a little under it (bend −1: the elbow below the hand). The elbow side switches while the
+// arm is straight (target beyond reach), so nothing pops. `wav` = angle waver of the blind groping.
+function fearReachArm(p, crouch, handle, clR, wav = 0) {
+  const sx = 27, sy = -134 + 18 * crouch, R = 95, A_DOWN = 0.85;
+  const hx = handle[0] - sx, hy = handle[1] - sy, A_H = Math.atan2(hy, hx), D_H = Math.hypot(hx, hy);
+  if (p < 0.35) {
+    const u = ease.sine(p / 0.35);
+    return { target: [lerp(clR[0], sx + Math.cos(A_DOWN) * R, u), lerp(clR[1], sy + Math.sin(A_DOWN) * R, u)], bend: 1 };
+  }
+  const u = ease.sine((p - 0.35) / 0.65);
+  const a = lerp(A_DOWN, A_H, u) + wav, r = lerp(R, D_H, sstep(0.7, 1, u));
+  return { target: [sx + Math.cos(a) * r, sy + Math.sin(a) * r], bend: -1 };
+}
 // at the alarm (alarm view: fearAtAlarm, scale 1.8 / front view: FEAR_ALARM_F, scale 0.42) — one pose model
 function fearPose(S, t) {
   const st = alarmState(S, t);
@@ -339,10 +354,21 @@ function fearPose(S, t) {
   const clR = [CLUTCH_R[0], CLUTCH_R[1] + 18 * crouch];
   if (t < S.T(`${b2}+1.05`) - 0.0) armR = { target: clR, bend: 1, front: true, hand: 'fist' };
   else {
-    const gx = lerp(clR[0], handle[0], grope) + fumble * 10 * Math.sin((t - pull) * 9);
-    const gy = lerp(clR[1], handle[1], grope) - fumble * 14 * Math.sin((t - pull) * 7 + 1);
-    const on = [lerp(gx, clR[0], letGo), lerp(gy, clR[1], letGo)];
-    armR = { target: on, bend: 1, front: true, hand: grope > 0.97 && letGo < 0.5 ? 'grip' : grope > 0.6 && letGo < 0.5 ? 'open' : 'fist' };
+    // the hand travels between the scarf and the handle (fearReachArm): it drops from the scarf to arm's length at
+    // the side, then the straight arm swings up to the handle with the elbow underneath; the fumble is a waver of
+    // that swing. (A straight line from the scarf to the handle passed a few px under the shoulder, where the folded
+    // arm's elbow whipped round in 1–2 frames, and hung on the handle with the elbow cocked up: play 19.4, 31.0.)
+    // (the return to the scarf takes 0.7 s from the moment the handle springs back: 0.4 s whipped the arm down)
+    const back = S.k(t, [[`${b4}+2.3`, 0], [`${b4}+3.0`, 1, 'inOut']]);
+    const p = grope * (1 - back);
+    const arm = fearReachArm(p, crouch, handle, clR, fumble * 0.12 * Math.sin((t - pull) * 9));
+    // the fist opens as it gropes up, closes round the handle, and closes back into the scarf fist as it lets go —
+    // blended (the shape used to switch in one frame at grope 0.6 / 0.97 and letGo 0.5); the palm turns with it
+    // (fist/grip: the default fist orientation, open: back of the hand to camera, reaching up)
+    const opn = sstep(0.35, 0.75, grope), grp = sstep(0.82, 1.0, grope), rel = sstep(0.05, 0.6, back);
+    const hand = blendHand(blendHand(blendHand('fist', 'open', opn), 'grip', grp), 'fist', rel);
+    const o = opn * (1 - grp) * (1 - rel);
+    armR = { ...arm, front: true, hand, palmDir: [lerp(-0.6, 0, o), lerp(0.2, 0, o), lerp(-0.8, -1, o)] };
   }
   // left hand: scarf clutch → (b04) lets go, drops to the side and lifts to point up-left past the CEO's shoulder,
   // finger shaking (fearPointArm). The clutching fist rides down with the crouch: it stays on the scarf end, under

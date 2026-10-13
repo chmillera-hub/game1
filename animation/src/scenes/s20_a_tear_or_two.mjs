@@ -38,10 +38,10 @@ const CAM_OPEN = REALROOM.cameras.opening;               // {420,655,1.12}
 // the tear close-up: the face fills ~41 % of the width (centre ≈ screen y 655), so the welling, the drop and its wet
 // trail survive the encoder (at the old 2.1 the streak vanished in the compressed film)
 const CAM_CLOSE = { x: 428, y: 704, zoom: 2.4 };
-const LEAF_RISE = 220 * 0.866;
-// the left hand's fingers are under the cover (it is drawn over them) from when they reach its edge until it lets go at
-// vertical
-const LIFT_LAYER = ['s20b04+0.72', 's20b04+1.45'];                           // a standing cover's height on screen (page units)
+const LEAF_RISE = 220 * 0.866;                           // a standing cover's height on screen (page units)
+// while the left hand holds the cover's edge (until it lets go at vertical), the cover is drawn between its thumb (under
+// the edge) and its palm and fingers (on the page side)
+const LIFT_LAYER = ['s20b04+0.72', 's20b04+1.45'];
 const HAND_S = 1.42;
 const PENCIL_LEN = 52;
 const PENCIL_REST = { tip: [574, 1021], ang: -0.12 };   // lying on the desk in front of the mug (ang: tip → eraser)
@@ -173,7 +173,7 @@ const toW = (l) => [SX + l[0] * SS, SY + l[1] * SS];
 const P_DOWN = [0, 0.8, -0.6];                  // flat on the page / desk / cover: the back of the hand to camera
 const P_PENCIL = [-0.5, 0.55, -0.65];          // writing: palm down and in, knuckles to camera
 const P_WIPE = [0.45, 0, -0.9];                 // the knuckle at the cheek: palm toward the face (self.mjs wipeTear)
-const P_EDGE = [0.15, -0.55, 0.8];              // under the cover's edge: palm up against its underside, thumb on top
+const P_COVER = [0.1, 0.75, -0.65];             // lifting the cover: palm down on its page side, the thumb under its edge
 const mixP = (a, b, k) => [lerp(a[0], b[0], k), lerp(a[1], b[1], k), lerp(a[2], b[2], k)];
 const sm = (k) => ease.inOut(clamp(k));
 
@@ -307,19 +307,17 @@ function armLeft(t, S, pose, tr) {
   const press = Math.sin(clamp((t - T('s20b04+2.3')) / 0.2) * Math.PI);
   const back = S.k(t, [['s20b04+2.6', 0], ['s20b04+3.5', 1, 'inOut']]);
   if (take <= 0 || back >= 1) return rest;
-  // the hand at the cover's free edge: it arrives with its fingertips at the edge (+0.72), the fingers slip under the
-  // cover (from here the cover is drawn over them: see render, LIFT_LAYER) and the thumb comes onto the page; it lifts
-  // the cover with the fingers along its back toward the spine, the thumb on the page side; frozen at vertical once
-  // released
+  // the hand slides along the page to the cover's free edge and takes it: palm and fingers on the page side, the thumb
+  // under the edge (from +0.72 the cover is drawn over the hand and the palm and fingers again over the cover, so the
+  // thumb is hidden under it: see render, LIFT_LAYER); it lifts the cover with the fingers along it toward the spine;
+  // frozen at vertical once released
   const nbH = notebookDraw({ ...tr, open: Math.max(tr.open, 0.5) });
-  const under = S.k(t, [['s20b04+0.72', 0], ['s20b04+0.9', 1, 'inOut']]);
   const ax = Math.atan2(NBK[1] - nbH.edge[1], NBK[0] - nbH.edge[0]);   // free edge → spine, along the leaf
   const holdAng = lerp(1.25, ax, take);
-  const inset = lerp(-38, 10, under);  // grip centre: 38 px outside the edge (fingertips at it) → 10 px inside
-  const e = [nbH.edge[0] + Math.cos(ax) * inset, nbH.edge[1] + Math.sin(ax) * inset];
-  const holdP = [lerp(restPalm[0], e[0], take), lerp(restPalm[1], e[1], take) - Math.sin(take * Math.PI) * 8];
+  const e = [nbH.edge[0] + Math.cos(ax) * 24, nbH.edge[1] + Math.sin(ax) * 24];   // grip centre 24 px in from the edge
+  const holdP = [lerp(restPalm[0], e[0], take), lerp(restPalm[1], e[1], take) - Math.sin(take * Math.PI) * 6];
   const hk = sm(take);
-  const holdHand = blendHand('flat', 'hold', hk), holdPalm = mixP(P_DOWN, P_EDGE, sm((take - 0.3) / 0.7));
+  const holdHand = blendHand('flat', 'hold', hk), holdPalm = mixP(P_DOWN, P_COVER, hk);
   if (toLamp <= 0) {
     const target = wristForGrip(holdP, holdAng, hk);
     return { target, bend: -1, front: true, hand: holdHand, palmDir: holdPalm, handAngle: holdAng, ...foreshorten(pose, target, -1) };
@@ -330,18 +328,20 @@ function armLeft(t, S, pose, tr) {
   const lampP = [196, 806 + press * 3];
   const u = toLamp;
   const p = [lerp(from[0], lampP[0], u), lerp(from[1], lampP[1], u) - Math.sin(u * Math.PI) * 14];
-  const ang = lerp(back > 0 ? 1.25 : holdAng, Math.PI - 0.2, u);
+  // (on the way out the wrist turns toward the lamp early, so the hand that held the cover's top edge — fingers down
+  // along it — does not trail drooping behind the rising arm)
+  const ang = lerp(back > 0 ? 1.25 : holdAng, Math.PI - 0.2, back > 0 ? u : sm(u / 0.5));
   const gk = back > 0 ? 0 : 1 - sm(u / 0.35);      // the grip offset fades out as the hand leaves the cover
   const target = gk > 0 ? wristForGrip(p, ang, gk) : wristForPalm(p, ang);
   const hand = back > 0 ? blendHand('flat', 'point', sm((u - 0.5) / 0.4)) : blendHand(blendHand('flat', 'hold', gk), 'point', sm((u - 0.5) / 0.4));
-  const palmDir = back > 0 ? P_DOWN : mixP(P_DOWN, P_EDGE, gk);
+  const palmDir = back > 0 ? P_DOWN : mixP(P_DOWN, P_COVER, gk);
   return { target, bend: -1, front: true, hand, palmDir, handAngle: ang, ...foreshorten(pose, target, -1) };
 }
 
-// the left hand's thumb once more, over the cover it is lifting (the palm and fingers are under the cover's edge).
+// the left hand's palm and fingers once more, over the cover it is lifting (its thumb stays under the cover's edge).
 // Same hand as self.mjs draws (HUMAN, 62 px, SELF colours), at the same wrist (the arm's IK) and orientation.
 const SELF_HAND_STYLE = makeHandStyle(HUMAN, 62, { skin: '#d9a27e', light: '#f0c6a6', shade: '#bb7b5c', line: '#6e3b2e' }, 2.5);
-function drawThumbOver(g, pose, a) {
+function drawFingersOver(g, pose, a) {
   const shW = selfPoseAnchors(SX, SY, SS, pose).shoulderL, sh = [(shW[0] - SX) / SS, (shW[1] - SY) / SS];
   const L1 = 100 * (a.reach1 || 1), L2 = 92 * (a.reach2 || 1);
   const { a1, a2 } = ik(sh[0], sh[1], a.target[0], a.target[1], L1, L2, a.bend ?? -1);
@@ -349,7 +349,7 @@ function drawThumbOver(g, pose, a) {
   g.save();
   g.translate(SX + wx * SS, SY + wy * SS);
   g.scale(SS, SS);
-  drawHand(g, SELF_HAND_STYLE, { ang: a.handAngle, shape: a.hand, palmDir: a.palmDir, chir: -1, only: ['thumb'] });
+  drawHand(g, SELF_HAND_STYLE, { ang: a.handAngle, shape: a.hand, palmDir: a.palmDir, chir: -1, only: ['palm', 'finger'] });
   g.restore();
 }
 
@@ -596,9 +596,9 @@ function drawWetEyes(g, pose, tr, well) {
     if (side > 0 || !tearOn) continue;
     // ---- the near eye's one tear, in the film's tear style (face.mjs drawTear: a translucent, slightly blue drop with
     // its own short trail; gathers on the lid, runs down the cheek, and the whole of it fades with `alive` under the
-    // sleeve). Sized a touch up from the rig's SELF tear for this close-up.
+    // sleeve). Sized up from the rig's SELF tear (×1.3) so it survives the encoder in this close-up.
     const dx0 = side * e.rx * 0.45, x0 = e.cx + dx0, y0 = e.lowY(dx0) + 0.8;
-    drawTear(g, x0, y0, SELF_FACE.tearRun, tear, SELF_FACE.tearSize * 1.15, side, alive);
+    drawTear(g, x0, y0, SELF_FACE.tearRun, tear, SELF_FACE.tearSize * 1.3, side, alive);
   }
   g.restore();
 }
@@ -675,15 +675,16 @@ export function render(g, t, S) {
   drawRealRoomForeground(g, st);
   const dim = 0.5 * tr.lampOff;
   // the star lives on the right page (the cover comes down over it).
-  // While the left hand lifts the cover (from b04+0.8 until it lets go at +1.45) the cover comes between that hand's
-  // palm and fingers (under its edge) and its thumb (over the page): the left arm is drawn before the leaf, its thumb
-  // again after it, and the right arm on top as before. (The whole hand used to sit on top of the page.)
+  // While the left hand lifts the cover (from b04+0.72 until it lets go at +1.45) the cover comes between that hand's
+  // palm and fingers (on its page side) and its thumb (under the edge): the left arm is drawn before the leaf, its palm
+  // and fingers again after it, and the right arm on top as before. (The whole hand, thumb included, used to sit on
+  // top of the page.)
   const lifting = t >= S.T(LIFT_LAYER[0]) && t < S.T(LIFT_LAYER[1]);
   const only = (keep) => ({ ...pose, [keep === 'L' ? 'armR' : 'armL']: { ...(keep === 'L' ? R.arm : L), front: false, layer: 'side' } });
   drawBook(g, tr, dim, () => drawPageStar(g, tr.star, S.k(t, [['s20b01+2.2', 0], ['s20b01+2.6', 1], ['s20b02+1.0', 0.35]])),
     lifting ? () => drawSelfLit(g, st, only('L'), 'front') : null);
   if (lifting) {
-    // the thumb over the cover: only where the cover is (clipped to the leaf), so it never covers the sleeve's cuff
+    // the palm and fingers over the cover: only where the cover is (clipped to the leaf), so they never cover the cuff
     const nb = notebookDraw(tr), h = 0.5 * NBK[2] * 147;
     const vx = -Math.sin(NB_ROT) * h, vy = Math.cos(NB_ROT) * h;
     g.save();
@@ -691,7 +692,7 @@ export function render(g, t, S) {
     g.moveTo(nb.edge[0] - vx, nb.edge[1] - vy); g.lineTo(NBK[0] - vx, NBK[1] - vy);
     g.lineTo(NBK[0] + vx, NBK[1] + vy); g.lineTo(nb.edge[0] + vx, nb.edge[1] + vy);
     g.closePath(); g.clip();
-    drawThumbOver(g, base, L);
+    drawFingersOver(g, base, L);
     g.restore();
   }
   if (R.pencil) drawPencil(g, R.pencil.tip, R.pencil.ang);

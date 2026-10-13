@@ -130,7 +130,7 @@ function drawCEO(g, t, S, c) {
   // fingers behind the console rim. The move starts on the cut (it used to start 0.1 s before it, and for the last
   // frames of the medium the board jumped below the rising hand).
   const close = t >= S.T('s09b02');
-  const toMouth = sstep(S.T('s09b02'), S.T('s09b02+0.5'), t);
+  const toMouth = sstep(S.T('s09b02'), S.T('s09b02+0.6'), t);
   const lower = sstep(S.T('s09b02+2.7'), S.T('s09b02+3.6'), t);
   const k = c.s;
   // face (every key a complete expression: a field missing from the next key used to hold, then drop to 0 in one
@@ -226,7 +226,8 @@ function drawCalm(g, t, S, p, k) {
   const reachK = sstep(0.55, 1, k);
   drawEmotion(g, 'CALM', p[0], p[1], s, {
     t: tt, face, headTurn: S.k(t, [['scene.start+1.3', 0.05], ['scene.start+2.0', 0.22]]), headTilt: S.k(t, [['scene.start+2.0', 0], ['s09b01+1.0', 0.07]]),
-    walk: k < 1 ? { phase: k * 3 * Math.PI } : null,
+    // it comes mostly toward the camera (and a little right): the feet point that way, front-on as it stops
+    walk: k < 1 ? { phase: k * 3 * Math.PI } : null, feetTurn: 0.3 * (1 - sstep(0.6, 1, k)),
     armL: emotionArmBlend('CALM', -1, 'rest', 'pressButton', reachK), armR: emotionArmBlend('CALM', 1, 'rest', 'pressButton', reachK),
   });
 }
@@ -334,7 +335,9 @@ function drawSadness(g, t, S, c) {
   const armL = emotionArmBlend('SADNESS', -1, press, onSleeve, ease.out(touch), 0.5, 0.12);
   drawEmotion(g, 'SADNESS', x, SAD_AT[1], s, {
     // two small shuffle steps that end with the feet together (phase 2π) instead of stopping mid-stride
+    // (the shuffle goes screen-left, toward the CEO: the feet turn that way and back — the walk default pointed them right)
     t: t + OFF.SADNESS, face, headTurn: look.ht, headTilt: close ? -0.06 : 0, walk: walkK < 1 && walkK > 0 ? { phase: walkK * 2 * Math.PI } : null,
+    feetTurn: -0.45 * Math.sin(walkK * Math.PI),
     armL, armR: 'pressButton',
   });
 }

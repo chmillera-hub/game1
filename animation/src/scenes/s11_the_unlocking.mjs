@@ -187,8 +187,11 @@ function drawBack(g, t, S, base = 1) {
 
 // ================================================================ SHOT B — the back of the mind (dream → unlock → reveal)
 // sob / pull events (absolute): hitches follow the sob sfx file (hitches 0.05/0.21/0.35, catches 0.56/0.83)
+// (one smooth swell over the three catches, which ripple on top of it, then two softer whimpers: the three separate
+// 3-frame pulses read as a rapid jitter of the head and shoulders)
 function sobHitch(t, at) {
-  return bump(t, at + 0.07, 0.07) + bump(t, at + 0.23, 0.07) + bump(t, at + 0.37, 0.07) + 0.6 * bump(t, at + 0.58, 0.09) + 0.5 * bump(t, at + 0.85, 0.09);
+  const swell = bump(t, at + 0.22, 0.3), ripple = bump(t, at + 0.07, 0.1) + bump(t, at + 0.23, 0.1) + bump(t, at + 0.37, 0.1);
+  return swell * (0.72 + 0.28 * ripple) + 0.5 * bump(t, at + 0.6, 0.16) + 0.4 * bump(t, at + 0.86, 0.16);
 }
 
 function drawBoM(g, t, S) {

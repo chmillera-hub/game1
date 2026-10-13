@@ -1,13 +1,14 @@
 // s16 · the_gentle_push · backOfMind. Fear wipes its tears; the Void's enormous hand gives the gentlest
 // push; Fear stops, looks back at the stars in the dark hood, smiles for real, and skips off toward the HQ.
 import fs from 'fs';
-import { TAU, clamp, lerp, ease, fbm, blinkAt, applyCamera, drift, vignette } from '../engine.mjs';
+import { TAU, clamp, lerp, ease, fbm, blinkAt, applyCamera, drift, vignette, groundShadow } from '../engine.mjs';
 import { star } from '../face.mjs';
 import { blendHand } from '../hand.mjs';
 import { drawHQ, drawHQForeground, hqScaleAt } from '../sets/hq.mjs';
 import { drawCage } from '../sets/props.mjs';
 import { drawVoid, drawVoidArm, drawVoidHand, drawVoidGlow, voidRig, toVoidLocal, VOID_HANDS } from '../chars/void.mjs';
 import { drawFear, drawFearFrontArms, FEAR_COLORS } from '../chars/fear.mjs';
+import { drawLit } from '../fx/rim.mjs';
 
 export const id = 's16';
 
@@ -55,6 +56,7 @@ const PUSH_ANGLE = Math.PI - 0.55;
 const APPROACH_PUSH = [110, -10];
 const SLEEVE_CLIP_Y = 1100;
 const STEP1 = [390, 1665, 1.01], STEP2 = [330, 1680, 1.035];
+const BOM_LIGHT = [380, 1032];   // the distant corridor light of the back of the mind (sets/hq.mjs BOM)
 const HOOD = (() => { const f = voidRig(STARE_B).face; return [VOID_B[0] + f[0] * VOID_B[2], VOID_B[1] + f[1] * VOID_B[2]]; })();
 
 // ---------------------------------------------------------------- local helpers
@@ -396,17 +398,22 @@ export function render(g, t, S) {
   } else {
     const exited = shot === 'E' && P.sk >= 0.97;                     // fully past the left frame edge: skip the draw
     if (!exited) {
-      drawFear(g, P.x, P.y, P.s, fp);
-      // the scarf end in the wiping fist
       const fs = P.s, f = fp.facing;
-      const hand = (arm) => [P.x + f * arm.target[0] * fs, P.y + arm.target[1] * fs];
-      if (wipe.w1 > 0.01) scarfEnd(g, P.x, P.y, fs, f, hand(fp.armR), clamp(wipe.w1 * 1.5));
-      if (wipe.w2 > 0.01) scarfEnd(g, P.x, P.y, fs, f, hand(fp.armL), clamp(wipe.w2 * 1.5));
-      // the wiping arm again over the cloth: the articulated fist closes on the scarf end (palm to the face)
-      if (wipe.w1 > 0.01 || wipe.w2 > 0.01) {
-        drawFearFrontArms(g, P.x, P.y, fs, { ...fp, armL: wipe.w2 > 0.01 ? fp.armL : { ...fp.armL, front: false },
-          armR: wipe.w1 > 0.01 ? fp.armR : { ...fp.armR, front: false } });
-      }
+      // the distant corridor light (sets/hq.mjs BOM) is behind Fear in every shot here (QA v3, lighting rule): a faint
+      // cool rim on the edges that face it. The ground shadow is drawn first, outside the lit layer (no rim on it).
+      g.save(); g.translate(P.x, P.y); g.scale(fs, fs); groundShadow(g, 0, 0, 62, 0.32); g.restore();
+      drawLit(g, (g2) => {
+        drawFear(g2, P.x, P.y, fs, { ...fp, shadow: false });
+        // the scarf end in the wiping fist
+        const hand = (arm) => [P.x + f * arm.target[0] * fs, P.y + arm.target[1] * fs];
+        if (wipe.w1 > 0.01) scarfEnd(g2, P.x, P.y, fs, f, hand(fp.armR), clamp(wipe.w1 * 1.5));
+        if (wipe.w2 > 0.01) scarfEnd(g2, P.x, P.y, fs, f, hand(fp.armL), clamp(wipe.w2 * 1.5));
+        // the wiping arm again over the cloth: the articulated fist closes on the scarf end (palm to the face)
+        if (wipe.w1 > 0.01 || wipe.w2 > 0.01) {
+          drawFearFrontArms(g2, P.x, P.y, fs, { ...fp, armL: wipe.w2 > 0.01 ? fp.armL : { ...fp.armL, front: false },
+            armR: wipe.w1 > 0.01 ? fp.armR : { ...fp.armR, front: false } });
+        }
+      }, { dir: [BOM_LIGHT[0] - P.x, BOM_LIGHT[1] - (P.y - 210 * fs)], color: '#d9dcff', strength: 0.42, width: 2.6 });
     }
     starlight(g, P.x + 25 * P.s, P.y - 250 * P.s, 190 * P.s, 0.45);
   }

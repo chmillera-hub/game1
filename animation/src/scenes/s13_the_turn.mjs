@@ -17,6 +17,7 @@
 
 import { W, H, TAU, clamp, lerp, ease, fbm, blinkAt, applyCamera, drift, vignette } from '../engine.mjs';
 import { makeExpr } from '../face.mjs';
+import { makeScene } from '../timeline.mjs';
 import { blendHand } from '../hand.mjs';
 import { drawFear, drawFearFrontArms, FEAR_ARMS, FEAR_FACE, fearBodySpace, fearHeadSpace } from '../chars/fear.mjs';
 import { drawVoid, drawVoidArm, drawVoidHand, toVoidLocal, voidRig, VOID_HANDS } from '../chars/void.mjs';
@@ -230,13 +231,26 @@ function voidPose(t, S) {
 
 // Fear's breath is sin(t·2π·breathRate) on ABSOLUTE t, so animating the rate would spin the phase. Integrate
 // the wanted rate instead and hand drawFear the equivalent constant: rate_eff = phase / (2π t).
-// Starts in phase with s12's last frame (0.34 Hz); faster while hiding; slows under the hand.
+// Starts in phase with s12's last frame: s12 integrates its own keyed rate the same way (its breathRateAt, anchored
+// φ = t·rate at s12's start), so its last frame is NOT at t·0.34 (QA v3: a 0.22-cycle breath jump at the cut); its
+// keys are replicated here (keep in sync with s12's fearState). Faster while hiding; slows under the hand.
+const S12_BREATH = [['scene.start', 0.2], ['scene.start+0.6', 0.42], ['s12b05+1.9', 0.42], ['s12b05+2.1', 0.75], ['s12b06+0.5', 0.5], ['s12b10', 0.42], ['s12b11', 0.34]];
+let s12Cycles = null;
+function s12EndCycles() {
+  if (s12Cycles == null) {
+    const P = makeScene('s12'), n = Math.ceil((P.end - P.start) * 96), h = (P.end - P.start) / n;
+    let c = P.start * P.k(P.start, S12_BREATH);
+    for (let i = 0; i < n; i++) c += P.k(P.start + (i + 0.5) * h, S12_BREATH) * h;
+    s12Cycles = c;
+  }
+  return s12Cycles;
+}
 function breathRateFor(t, S) {
   const t0 = S.T('scene.start');
   const r = (u) => S.k(u, [['scene.start', 0.34], ['s13b03+2.3', 0.34], ['s13b03+3.0', 0.75], ['s13b05+0.6', 0.75], ['s13b05+2.6', 0.36]]);
-  if (t <= t0) return 0.34;
+  if (t <= t0) return s12EndCycles() / t0 + 0.34 * (t - t0) / t;
   const n = Math.max(4, Math.ceil((t - t0) * 12)), h = (t - t0) / n;
-  let cyc = t0 * 0.34;
+  let cyc = s12EndCycles();
   for (let i = 0; i < n; i++) cyc += r(t0 + (i + 0.5) * h) * h;
   return cyc / t;
 }

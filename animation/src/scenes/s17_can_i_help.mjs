@@ -196,7 +196,7 @@ function fearCorridor(t, S) {
   else if (t < tStop) { const u = t - t1; x = x1 + v * (u - u * u / (2 * d)); }
   else x = xStop;
   if (t > tOn) { const u = t - tOn, a = 0.35, v2 = 300; x = xStop + (u < a ? v2 * u * u / (2 * a) : v2 * (a / 2 + (u - a))); }
-  return { x, moving: t > t0 && (t < tStop - 0.03 || t > tOn + 0.03) };
+  return { x, xStop, moving: t > t0 && (t < tStop - 0.03 || t > tOn + 0.03) };
 }
 
 function renderAlarm(g, t, S) {
@@ -218,10 +218,15 @@ function renderAlarm(g, t, S) {
     const release = S.k(t, [['s17b01+1.75', 0], ['s17b01+2.15', 1]]);               // a little lighter
     // on the move the eyes (and a touch of the head) look ahead, where it is going, not into the lens
     const ahead = S.k(t, [['scene.start+0.3', 1], ['s17b01+0.7', 1], ['s17b01+0.95', 0], ['s17b01+2.0', 0], ['s17b01+2.35', 1]]);
-    const ph = (F.x / 160) * Math.PI;   // cadence follows speed: ~4 steps/s at the trot
+    // cadence follows speed: ~4 steps/s at the trot. The phase is 0 at the stop under the alarm (legs together, feet
+    // down, no bob: the walk pose there IS the standing pose), so the last step closes as it slows and the first one
+    // opens as it sets off — the old phase (x/160·π) was mid-stride at the stop and the legs, arms and body snapped to
+    // standing in one frame (play 269.29), and back at the restart
+    const ph = ((F.x - F.xStop) / 160) * Math.PI;
+    const mv = clamp(Math.abs(fearCorridor(t + 0.02, S).x - fearCorridor(t - 0.02, S).x) / (0.04 * 300));   // 0 stopped … 1
     const pose = {
       t, facing: 1, tremble: 0,
-      walk: F.moving ? { phase: ph } : undefined,
+      walk: F.moving ? { phase: ph } : undefined, feetTurn: 0.75 * mv,
       headTilt: 0.05 * head - 0.06 * breath, headTurn: 0.22 * head + 0.1 * ahead, headDY: 2 * head - 4 * breath - 4 * release * Math.abs(Math.sin(ph)),
       breathe: 1 + 1.5 * breath,
       face: {
@@ -232,19 +237,18 @@ function renderAlarm(g, t, S) {
         blush: 0.15, noAutoBlink: t > S.T('s17b01+1.2') && t < S.T('s17b01+2.3'),
         blink: S.k(t, [['s17b01+1.5', 0], ['s17b01+1.66', 1], ['s17b01+1.84', 1], ['s17b01+1.98', 0]]),   // a breath, eyes closed: the choice
       },
-      // the hand lifts a few centimetres toward the handle, out of the resting hang (Fear's rest preset at lift 0, so
-      // nothing pops): loosely curled, the fingers toward it, palm down and turned toward it
-      armR: { target: [lerp(39, 58, lift), lerp(-80, -102, lift)], bend: -1, hand: blendHand('rest', 'open', 0.55 * lift),
-        handAng: lerp(Math.PI / 2 - 0.22, 0.15, lift), palmDir: [lerp(-0.9, 0.45, lift), lerp(0, 0.6, lift), lerp(-0.45, -0.65, lift)] },
-      armL: 'rest',
     };
-    if (F.moving) {
-      // the trot's arm swing: relaxed hands, palms to the body (spread open hands read as jazz hands)
-      const sw = Math.sin(ph) * 12;
-      pose.armL = { target: [-38 - sw, -84], bend: 1, hand: blendHand('rest', 'open', 0.3), palmDir: [0.9, 0, -0.45] };
-      if (lift <= 0.01) pose.armR = { target: [38 - sw, -84], bend: -1, hand: blendHand('rest', 'open', 0.3), palmDir: [-0.9, 0, -0.45] };
-    }
-    drawFear(g, F.x, fy - (F.moving ? Math.abs(Math.sin(ph)) * 6 : 0), fs, pose);
+    // the arms: the trot's swing (relaxed hands, palms to the body — spread open hands read as jazz hands) dies out into
+    // Fear's resting hang (its rest preset) as it stops; the right hand then lifts a few centimetres toward the handle
+    // (loosely curled, fingers toward it, palm down and turned toward it) and sinks back. One continuous spec each.
+    const sw = Math.sin(ph) * 12 * mv;
+    const swing = (side) => ({ target: [side * 39 - sw, -80 - 4 * mv], bend: -side, hand: blendHand('rest', 'open', 0.3 * mv),
+      handAng: Math.PI / 2 - side * 0.22 + 0.02 * sw, palmDir: [-side * 0.9, 0, -0.45] });
+    pose.armL = swing(-1);
+    const r = swing(1), mixv = (a, b) => a.map((v, i) => lerp(v, b[i], lift));
+    pose.armR = { target: mixv(r.target, [58, -102]), bend: -1, hand: blendHand(r.hand, blendHand('rest', 'open', 0.55), lift),
+      handAng: lerp(r.handAng, 0.15, lift), palmDir: mixv(r.palmDir, [0.45, 0.6, -0.65]) };
+    drawFear(g, F.x, fy - Math.abs(Math.sin(ph)) * 6 * mv, fs, pose);
   }
   drawHQForeground(g, 'alarm', st);
   g.restore();

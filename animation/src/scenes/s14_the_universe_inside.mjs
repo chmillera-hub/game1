@@ -233,6 +233,7 @@ function fearState(t, S) {
     ['s14b06+4.9', 0], ['s14b06+5.9', -3], ['s14b07+0.6', -3.4], ['s14b07+1.5', 0],                         // lifts on 'wonder'
     ['s14b07+2.0', 0], ['s14b07+2.12', 3.2], ['s14b07+2.3', 0],             // swallow
     ['s14b07+2.3', 0], ['s14b07+2.5', -1.8], ['s14b07+2.8', 0],             // small breath in, then the question
+    ['s14b08+1.4', 0], ['s14b08+1.9', 1.6], ['s14b09+0.3', 1.6], ['s14b09+0.9', 0],   // the head dips a hair with the eyes
     ['s14b10+2.42', 0], ['s14b10+2.52', 2.5], ['s14b10+2.72', 0],           // weight shift on the turn
   ]);
 
@@ -293,8 +294,9 @@ function fearState(t, S) {
     ['s14b07+1.5', BR(0.66, 0.4)],
     ['s14b07+1.95', BR(0.7, 0.5)],                                          // gathering itself to speak
     ['s14b08+0.1', BR(0.55, 0.48)],                                         // gently raised, asking
-    ['s14b08.end', BR(0.6, 0.5)],
-    ['s14b09+0.25', BR(0.6, 0.5)],
+    ['s14b08+1.4', BR(0.6, 0.5)],
+    ['s14b08+1.85', BR(0.4, 0.85, 0.3)],                                    // the eyes drop: the worried knot comes back
+    ['s14b09+0.25', BR(0.4, 0.82, 0.28)],
     ['s14b09+0.7', BR(0.22, 0.72, 0.15)],                                   // dip: missing the hand
     ['s14b09+1.6', BR(0.3, 0.6, 0.1, 0.18, -0.05)],                         // puzzled, watching the hood turn
     ['s14b10+2.0', BR(0.32, 0.55, 0.1, 0.15, 0)],
@@ -318,7 +320,9 @@ function fearState(t, S) {
     ['s14b06+6.5', LD(-0.18, 0.2, 0.04)],                                   // the smile lifts the lower lids; uppers stay high
     ['s14b07+1.2', LD(-0.14, 0.16, 0.05)],
     ['s14b08', LD(-0.08, 0.12, 0.12)],
-    ['s14b09+0.3', LD(-0.08, 0.12, 0.12)],
+    ['s14b08+1.4', LD(-0.08, 0.12, 0.12)],
+    ['s14b08+1.85', LD(0.24, 0.12, 0.3)],                                   // the lids follow the eyes down
+    ['s14b09+0.3', LD(0.22, 0.12, 0.28)],
     ['s14b09+0.7', LD(0.22, 0.1, 0.25)],                                    // eyes drop to the shoulder
     ['s14b09+1.5', LD(-0.02, 0.05, 0.15)],
     ['s14b10+2.7', LD(-0.04, 0.05, 0.1)],
@@ -354,9 +358,9 @@ function fearState(t, S) {
     ['s14b07+2.3', MO(0.04, 0.0, 0.1, 0, 0.1, 0)],
     ['s14b07+2.55', MO(0.12, 0.0, 0.25, 0, 0, 0)],                          // small breath in
     ['s14b08', MO(0.06, 0.06, 0.1, 0, 0, 0.12)],
-    ['s14b08.end', MO(0.06, 0.04, 0.1, 0, 0, 0.12)],
-    ['s14b08.end+0.4', MO(0.1, 0.0, 0.15, 0, 0, 0.1)],                      // lips parted, waiting
-    ['s14b09+0.3', MO(0.1, 0.0, 0.15, 0, 0, 0.1)],
+    ['s14b08+1.5', MO(0.06, 0.04, 0.1, 0, 0, 0.12)],
+    ['s14b08+1.95', MO(0.06, -0.14, 0.06, -0.05, 0.1, 0.3)],               // a small worried mouth, the lip trembling
+    ['s14b09+0.3', MO(0.05, -0.14, 0.05, -0.05, 0.12, 0.25)],
     ['s14b09+0.8', MO(0.03, -0.18, 0.0, -0.08, 0.2, 0.05)],                 // missing it
     ['s14b09+1.8', MO(0.07, -0.12, 0.1, 0, 0, 0)],
     ['s14b10+2.7', MO(0.06, -0.08, 0.1, 0, 0, 0)],
@@ -374,7 +378,9 @@ function fearState(t, S) {
     ['s14b06+4.6', { pupil: 1.32, sparkle: 1 }],
     ['s14b06+5.4', { pupil: 1.45, sparkle: 1 }],                            // 'wonder': the pupils bloom
     ['s14b07+1.2', { pupil: 1.32, sparkle: 1 }],
-    ['s14b09+1.0', { pupil: 1.28, sparkle: 1 }],
+    ['s14b08+1.4', { pupil: 1.32, sparkle: 1 }],
+    ['s14b08+1.85', { pupil: 1.12, sparkle: 0.8 }],                         // the eyes drop from the light
+    ['s14b09+1.0', { pupil: 1.24, sparkle: 0.95 }],
     ['s14b10+2.0', { pupil: 1.15, sparkle: 0.85 }],
     ['s14b10+3.15', { pupil: 0.95, sparkle: 0.45 }],
     ['s14b10+3.85', { pupil: 1.3, sparkle: 0.6 }],
@@ -387,10 +393,11 @@ function fearState(t, S) {
     ['s14b05', GZ(0.35, -1)],
     ['s14b05+0.35', GZ(0.35, -1)], ['s14b05+0.65', GZ(0.1, 0.25), 'inOut'],
     ['s14b05+1.05', GZ(0.13, 0.2)], ['s14b05+1.45', GZ(0.35, -1), 'inOut'],
+    // "Why are you showing me this?": the eyes search the stars (one dart to another), and on 'this?' they drop, with
+    // the worried knot back in the brows — awe mixed with fear (QA v3): it is afraid of the answer
     ['s14b08+0.5', GZ(0.35, -1)], ['s14b08+0.58', GZ(0.5, -0.92)],
-    ['s14b08+1.32', GZ(0.5, -0.92)], ['s14b08+1.4', GZ(0.26, -1)],
-    ['s14b08.end+0.6', GZ(0.26, -1)], ['s14b08.end+0.68', GZ(0.38, -0.98)],
-    ['s14b09+0.2', GZ(0.38, -0.98)], ['s14b09+0.45', GZ(0.8, 0.4)],          // glance at its own shoulder
+    ['s14b08+1.4', GZ(0.5, -0.92)], ['s14b08+1.85', GZ(0.02, 0.3), 'inOut'],
+    ['s14b09+0.2', GZ(0.06, 0.28)], ['s14b09+0.45', GZ(0.8, 0.4)],          // glance at its own shoulder
     ['s14b09+1.0', GZ(0.8, 0.4)], ['s14b09+1.3', GZ(0.62, -0.7)],             // up the withdrawing arm
     ['s14b09+1.7', GZ(0.5, -0.9)], ['s14b09+3.4', GZ(0.32, -1)],              // to the hood as it turns
     ['s14b10+1.95', GZ(0.32, -1)], ['s14b10+2.2', GZ(-0.72, -0.58)],         // eyes lead to where it looks
