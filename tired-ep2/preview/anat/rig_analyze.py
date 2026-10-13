@@ -17,12 +17,14 @@ cutf = set()
 sp = f'{ROOT}/preview/anat/scan_cuts.json'
 if os.path.exists(sp):
     for i in json.load(open(sp)).get(sid, []): cutf.update((i - 1, i, i + 1))
+LINK = float(os.environ.get('LINK', 260))
 ANCH = ('head', 'hand_l', 'hand_r', 'foot_l', 'foot_r', 'hip', 'neck', 'shoulder_l', 'shoulder_r', 'elbow_l', 'elbow_r')
 inst = []
 for recs in fr:
     seen = set(); L = []
     for r in recs:
         if 'head' not in r or r['m'][0] < 0.05: continue
+        if r['m'] == [1.0, 1.0, 0.0, 0.0] and (abs(r['head'][0]) > 2000 or abs(r['head'][1]) > 3000): continue   # off-surface measure pass
         key = (r['k'], r['who'], round(r['head'][2]), round(r['head'][3]))
         if key in seen: continue
         seen.add(key); L.append(r)
@@ -37,7 +39,7 @@ for i, L in enumerate(inst):
             if lr['k'] != r['k'] or lr['who'] != r['who'] or ti in used: continue
             dd = math.dist(lr['head'][:2], r['head'][:2])
             if dd < bd: bd, best = dd, ti
-        if best is not None and bd < 90 and (i - 1) in tracks[best]:
+        if best is not None and bd < LINK and (i - 1) in tracks[best]:
             tracks[best][i] = r; used.add(best); new_active.append(best)
         else:
             tracks.append({i: r}); new_active.append(len(tracks) - 1); used.add(len(tracks) - 1)
