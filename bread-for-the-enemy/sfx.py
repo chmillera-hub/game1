@@ -228,18 +228,9 @@ def amb_street(n):
 
 
 def amb_cell(n):
-    hum = lp(noise(n, "brown"), 120) * 0.04
-    out = hum.copy()
-    t = 0.7
-    while t < n / SR - 1:
-        a = int(t * SR)
-        L = int(0.25 * SR)
-        tt = np.arange(L) / SR
-        f = 1400 + 900 * rng.random()
-        drop = np.sin(2 * np.pi * (f * tt + 3000 * tt ** 2)) * env_exp(L, 0.03) * (0.05 + 0.04 * rng.random())
-        out[a:a + L] += drop
-        t += 2.2 + rng.random() * 3.5
-    return out
+    # only the cell's low, close room hum (no synthesised water drops: their rising chirps read as
+    # electronic beeps rather than water)
+    return lp(noise(n, "brown"), 120) * 0.04
 
 
 def amb_jer(n):
