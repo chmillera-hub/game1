@@ -116,6 +116,27 @@ function drawTorso(ctx, B, s, st, Lt, o) {
     const a = X(x * 0.6, 1.2 + (i % 2) * 0.4), b = X(x, 4.5 + (i % 3) * 0.6);
     L.strokeSmooth(ctx, [a, b], rgba(shade(cl.tunic, 0.5), 0.4), lw * 0.7);
   }
+  // a skirt wrapped from the waist down (e.g. Phoebe's mantle wound round her hips): one colour over
+  // both legs, shaded as cloth over the two thighs, with folds falling from the waist
+  if (cl.wrapSkirt && len > 4.5) {
+    const sk = cl.wrapSkirt, top = 4.0;
+    ctx.beginPath();
+    [X(-2.8, top - 0.06), X(0, top + 0.16), X(2.8, top - 0.06), X(3.0, len + 1.5), X(-3.0, len + 1.5)].forEach((q, i) => (i ? ctx.lineTo(q[0], q[1]) : ctx.moveTo(q[0], q[1])));
+    ctx.closePath();
+    ctx.fillStyle = lit(sk, Lt); ctx.fill();
+    // the shadow side of the body, as on the bodice
+    const gs = ctx.createLinearGradient(mid[0] + side * s * 0.4, 0, mid[0] - side * s * 1.4, 0);
+    gs.addColorStop(0, rgba(clothShadow(sk, Lt), 0)); gs.addColorStop(1, rgba(clothShadow(sk, Lt), 0.75));
+    ctx.fillStyle = gs; ctx.fillRect(B[0] - 20 * s, B[1] + top * s, 40 * s, 30 * s);
+    // the cloth catches the light on the front of each thigh, and falls into shadow between them
+    for (const x of [-0.95, 0.95]) {
+      const c = X(x, top + 1.5);
+      ctx.fillStyle = L.radial(ctx, c[0], c[1], 0, s * 1.1, [[0, rgba(shade(lit(sk, Lt), 1.15), 0.3)], [1, rgba(shade(lit(sk, Lt), 1.15), 0)]]);
+      ctx.fillRect(c[0] - s * 1.2, c[1] - s * 1.2, s * 2.4, s * 2.4);
+    }
+    const folds = [[[0.02, top + 0.35], [0.0, top + 1.8], [0.04, len]], [[-0.95, top + 0.3], [-1.05, top + 1.9], [-1.0, len]], [[0.95, top + 0.3], [1.05, top + 1.9], [1.1, len]], [[-1.7, top + 0.4], [-1.85, len]], [[1.65, top + 0.4], [1.8, len]]];
+    folds.forEach((f, i) => L.strokeSmooth(ctx, f.map((q) => X(...q)), rgba(shade(sk, 0.45), i === 0 ? 0.6 : 0.4), lw * 0.8));
+  }
   // belt
   if (o.belt !== false && len > 4.5) {
     const bp = [X(-1.95, 4.0), X(0, 4.2), X(1.95, 4.0)];

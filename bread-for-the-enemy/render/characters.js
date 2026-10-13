@@ -800,7 +800,8 @@ C.phoebe = {
   },
   hairShadow: phoebeVeil.shadow,
   // her own colours: a plum dress that stands out from the lamplit room, under the teal mantle and veil
-  cloth: { tunic: '#7e4462', mantle: '#3f6f86', trim: '#e8d9b4', neck: 'round' },
+  // the teal mantle is wound round her hips as a skirt, so it covers both legs
+  cloth: { tunic: '#7e4462', mantle: '#3f6f86', trim: '#e8d9b4', neck: 'round', wrapSkirt: '#3f6f86' },
 };
 
 module.exports = { C, mk, shape, lit, shd, lwOf, hairCap, softShade };
