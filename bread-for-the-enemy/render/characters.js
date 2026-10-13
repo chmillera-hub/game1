@@ -432,10 +432,13 @@ function curlyCap(opts) {
     const k = Math.min(1, Math.min(i, a.length - 1 - i) / 3);
     return [x, y + k * (0.022 + 0.022 * Math.sin(i * 2.3 + 0.5) + 0.012 * L.hash(i * 13)), z];
   });
-  const coils = [];
-  for (let i = 0; i < 110; i++) {
-    const u = -1.05 + 2.1 * L.hash01(i * 7 + 1), v = -1.48 + 0.95 * L.hash01(i * 11 + 3);
-    coils.push({ u, v, r: 0.028 + 0.03 * L.hash01(i * 5 + 2), a: L.TAU * L.hash01(i * 3 + 9), sw: 3.2 + 1.6 * L.hash01(i * 17) });
+  // short wavy strands, scattered over the skull, each following the hair's growth out from the crown
+  // with its own twist, length and wave
+  const strands = [];
+  for (let i = 0; i < 150; i++) {
+    const u = -1.05 + 2.1 * L.hash01(i * 7 + 1), v = -1.5 + 1.0 * L.hash01(i * 11 + 3);
+    strands.push({ u, v, len: 0.08 + 0.08 * L.hash01(i * 5 + 2), tw: (L.hash01(i * 3 + 9) - 0.5) * 1.3,
+      amp: 0.01 + 0.012 * L.hash01(i * 17), ph: L.TAU * L.hash01(i * 23 + 4), al: 0.24 + 0.16 * L.hash01(i * 29 + 6), w: 0.5 + 0.35 * L.hash01(i * 31 + 8) });
   }
   return {
     back(ctx, pr, st, F, Lt, extra) {
@@ -465,17 +468,20 @@ function curlyCap(opts) {
             cx.fillStyle = L.radial(cx, p[0], p[1], 0, pr.s * 0.2, [[0, rgba(lt ? hiCol : loCol, lt ? 0.12 : 0.3)], [1, rgba(lt ? hiCol : loCol, 0)]]);
             cx.fillRect(p[0] - pr.s * 0.25, p[1] - pr.s * 0.25, pr.s * 0.5, pr.s * 0.5);
           }
-          // small coils of different sizes and turns
-          cx.lineCap = 'round';
-          for (const k of coils) {
-            const p = q([k.u, k.v, 0.6]);
-            const r = pr.s * k.r;
-            cx.strokeStyle = rgba(loCol, 0.5); cx.lineWidth = lw * 0.55;
-            cx.beginPath(); cx.arc(p[0], p[1], r, k.a, k.a + k.sw); cx.stroke();
-            if (k.u * side > 0.1 && k.v < -0.8) {
-              cx.strokeStyle = rgba(hiCol, 0.28); cx.lineWidth = lw * 0.45;
-              cx.beginPath(); cx.arc(p[0] - r * 0.25, p[1] - r * 0.25, r * 0.7, k.a + 2.4, k.a + 3.9); cx.stroke();
+          // the curl texture: short wavy strands laid on thinly, so they blend into the clumps (open
+          // strokes only, never little rings), with a few catching the light on the lit side
+          cx.lineCap = 'round'; cx.lineJoin = 'round';
+          for (const k of strands) {
+            const du = k.u, dv = k.v + 1.75, d = Math.hypot(du, dv) || 1;
+            const ct = Math.cos(k.tw), sn = Math.sin(k.tw);
+            const fu = (du * ct - dv * sn) / d, fv = (du * sn + dv * ct) / d;
+            const pts = [];
+            for (let j = 0; j <= 6; j++) {
+              const tt = j / 6 - 0.5, w = Math.sin((j / 6) * L.TAU + k.ph) * k.amp;
+              pts.push(q([k.u + fu * tt * k.len - fv * w, k.v + fv * tt * k.len + fu * w, 0.6]));
             }
+            L.strokeSmooth(cx, pts, rgba(loCol, k.al), lw * k.w);
+            if (k.u * side > 0.1 && k.v < -0.8) L.strokeSmooth(cx, pts.slice(1, 4), rgba(hiCol, 0.2), lw * 0.4);
           }
         },
       });

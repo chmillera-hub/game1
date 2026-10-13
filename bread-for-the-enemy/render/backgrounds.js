@@ -264,12 +264,18 @@ function silhouettes(ctx, list, color, rim, rimA = 0.4, t = 0) {
   // listeners seen from behind: head and neck, sloping shoulders, upper arms hanging at the sides.
   // Each one breathes and now and then turns or tilts the head a little (never frozen).
   // list: [x, y(top of head), scale, turn]
+  // backlit by the lamp, but never black: each listener's own cloak and hair still read, dimly, under
+  // the rim of light (the passed colour is the depth of their shadow)
+  const cloaks = ['#4a3424', '#38402c', '#46343e', '#303a4c', '#4e3a22', '#3c3030'];
+  const hairs = ['#24170e', '#30200f', '#1c1612', '#382614', '#2a1c16'];
   list.forEach(([x, y, s, turn], i) => {
     const br = Math.sin(t * 1.4 + i * 1.9) * 0.035 * s;
     const look = L.noise1(t * 0.22 + i * 3.1, 11 + i) * 0.12 + (turn || 0) * 0.15;
     const nod = Math.max(0, Math.sin(t * 0.5 + i * 2.3) - 0.8) * 0.4 * s;
     const hx = x + look * s, hy = y + nod;
-    ctx.fillStyle = color;
+    const cloak = mix(cloaks[(i + Math.round(x)) % cloaks.length], color, 0.45);
+    const hair = mix(hairs[(i * 3 + Math.round(y)) % hairs.length], color, 0.35);
+    ctx.fillStyle = cloak;
     // body: neck, trapezius slope, round shoulders, arms down the sides
     ctx.beginPath();
     ctx.moveTo(x - s * 0.42, y + s * 1.9);
@@ -283,9 +289,21 @@ function silhouettes(ctx, list, color, rim, rimA = 0.4, t = 0) {
     ctx.quadraticCurveTo(x + s * 1.7, y + s * 2.45 - br, x + s * 0.5, y + s * 2.35 - br);
     ctx.lineTo(x + s * 0.42, y + s * 1.9);
     ctx.closePath(); ctx.fill();
-    // head (turning a little)
+    // a soft fold shadow down the back and light toward the lamp side
+    ctx.save(); ctx.clip();
+    const gl = ctx.createLinearGradient(x - s * 3, 0, x + s * 3, 0);
+    const sd0 = (turn || 0) >= 0 ? 1 : -1;
+    gl.addColorStop(sd0 > 0 ? 0 : 1, rgba('#000000', 0.25)); gl.addColorStop(sd0 > 0 ? 1 : 0, rgba(rim || '#ffb060', 0.12));
+    ctx.fillStyle = gl; ctx.fillRect(x - s * 3.2, y, s * 6.4, s * 7);
+    ctx.restore();
+    // head (turning a little): hair seen from behind, the nape and an ear catching a little light
     ctx.save(); ctx.translate(hx, hy + s * 1.1); ctx.rotate(look * 0.5);
+    ctx.fillStyle = mix(hair, '#c89070', 0.25);
+    ctx.beginPath(); ctx.ellipse(sd0 * s * 0.9, s * 0.1, s * 0.16, s * 0.26, 0, 0, L.TAU); ctx.fill();
+    ctx.fillStyle = hair;
     ctx.beginPath(); ctx.ellipse(0, 0, s * 0.95, s * 1.15, 0, 0, L.TAU); ctx.fill();
+    ctx.strokeStyle = rgba('#000000', 0.25); ctx.lineWidth = s * 0.04;
+    for (let k = -2; k <= 2; k++) { ctx.beginPath(); ctx.moveTo(k * s * 0.25, -s * 0.9); ctx.quadraticCurveTo(k * s * 0.32, 0, k * s * 0.22, s * 0.95); ctx.stroke(); }
     ctx.restore();
     if (rim) {
       ctx.save(); ctx.globalCompositeOperation = 'lighter';
@@ -441,24 +459,71 @@ function cell(ctx, o = {}) {
     ctx.fillStyle = '#0a0806'; ctx.beginPath(); ctx.roundRect(lx - 70, ly - 90, 140, 130, [60, 60, 4, 4]); ctx.fill();
     ctx.fillStyle = '#6a3a1e'; ctx.beginPath(); ctx.ellipse(lx, ly + 10, 40, 16, 0, 0, L.TAU); ctx.fill();
   }
-  // door (right side)
+  // door (right side): the dark recess of its frame and the shut plank leaf, the same leaf the shots
+  // swing open on its hinges
   if (o.door !== false) {
-    const dx = o.doorX || 930, dy = o.doorY || 1000;
-    ctx.fillStyle = '#060504'; ctx.fillRect(dx - 150, dy - 520, 300, 1000);
-    ctx.fillStyle = L.linear(ctx, dx - 130, 0, dx + 130, 0, [[0, '#3a2818'], [1, '#22160c']]);
-    ctx.fillRect(dx - 130, dy - 500, 260, 980);
-    for (const by of [dy - 330, dy, dy + 330]) { ctx.fillStyle = '#18181a'; ctx.fillRect(dx - 130, by - 14, 260, 28); }
+    ctx.fillStyle = '#060504'; ctx.fillRect(780, 480, 300, 1000);
+    cellDoorLeaf(ctx, 0);
   }
   vignette(ctx, 0.5, '#020305');
+}
+// The cell's heavy plank door (opening x 800..1060, y 500..1480), hinged on its right-hand post and turned
+// in toward the viewer by angle a (0 = shut). As it swings, its free edge comes nearer, so it grows and
+// slides out from the vanishing point; the planks darken as they turn from the window light, and the
+// leaf's thickness shows along the free edge. P maps background coordinates to the canvas, z is its scale
+// and [vx, vy] the vanishing point, in background coordinates.
+function cellDoorLeaf(ctx, a, P = (x, y) => [x, y], z = 1, vx = 540, vy = 960) {
+  const hx = 1060, y0 = 500, y1 = 1480, wd = 260, ym = (y0 + y1) / 2;
+  const ca = Math.cos(a), sa = Math.sin(a);
+  // a point x across, d nearer the viewer than the wall and y down, in perspective
+  const Q = (x, d, y) => { const f = 1 / Math.max(0.35, 1 - d / 2200); return P(vx + (x - vx) * f, vy + (y - vy) * f); };
+  const M = (u, y) => Q(hx - u * ca, u * sa, y);
+  const k = 1 - 0.5 * sa;
+  const wood = (c) => L.mul(c, mix('#ffffff', '#3a3440', 1 - k));
+  const path = (pts) => { ctx.beginPath(); pts.forEach((q, i) => (i ? ctx.lineTo(q[0], q[1]) : ctx.moveTo(q[0], q[1]))); ctx.closePath(); };
+  const quad = (pts, fill) => { path(pts); ctx.fillStyle = fill; ctx.fill(); };
+  ctx.save();
+  // the leaf's thickness along its free edge, once it turns
+  if (sa > 0.04) {
+    const xf = hx - wd * ca, df = wd * sa, xb = xf - 22 * sa, db = df - 22 * ca;
+    quad([Q(xf, df, y0), Q(xb, db, y0), Q(xb, db, y1), Q(xf, df, y1)], wood('#1a1008'));
+  }
+  const leaf = [M(0, y0), M(wd, y0), M(wd, y1), M(0, y1)];
+  const l0 = M(0, ym), l1 = M(wd, ym);
+  quad(leaf, L.linear(ctx, l1[0], 0, l0[0] + 0.01, 0, [[0, wood('#3a2818')], [1, wood('#22160c')]]));
+  ctx.save(); path(leaf); ctx.clip();
+  // four planks, with the grain running down them
+  ctx.strokeStyle = rgba('#120a04', 0.85); ctx.lineWidth = 4 * z;
+  for (let i = 1; i < 4; i++) { const p0 = M(wd * i / 4, y0), p1 = M(wd * i / 4, y1); ctx.beginPath(); ctx.moveTo(p0[0], p0[1]); ctx.lineTo(p1[0], p1[1]); ctx.stroke(); }
+  const rw = L.rng(57);
+  for (let i = 0; i < 40; i++) {
+    const u = rw() * wd, y = y0 + rw() * (y1 - y0), len = 40 + rw() * 120;
+    const p0 = M(u, y), p1 = M(u + (rw() - 0.5) * 5, y + len);
+    ctx.strokeStyle = rgba(rw() < 0.5 ? '#0e0804' : '#6a4a32', 0.22); ctx.lineWidth = (1 + rw() * 2) * z;
+    ctx.beginPath(); ctx.moveTo(p0[0], p0[1]); ctx.lineTo(p1[0], p1[1]); ctx.stroke();
+  }
+  // three iron straps, studded
+  for (const by of [ym - 330, ym, ym + 330]) {
+    quad([M(0, by - 14), M(wd, by - 14), M(wd, by + 14), M(0, by + 14)], L.mul('#18181a', mix('#ffffff', '#50505a', 1 - k)));
+    for (let i = 0; i < 5; i++) { const c = M(20 + i * (wd - 40) / 4, by); ctx.fillStyle = '#2a2a2e'; ctx.beginPath(); ctx.ellipse(c[0], c[1], 8 * z * Math.max(0.35, Math.abs(ca)), 8 * z, 0, 0, L.TAU); ctx.fill(); }
+  }
+  // grime rising from the floor
+  const g0 = M(0, ym + 200), g1 = M(0, y1);
+  ctx.fillStyle = L.linear(ctx, 0, g0[1], 0, g1[1] + 0.01, [[0, rgba('#0a0604', 0)], [1, rgba('#0a0604', 0.5)]]);
+  ctx.fillRect(-1e4, g0[1], 2e4, g1[1] - g0[1] + 60 * z);
+  ctx.restore();
+  path(leaf); ctx.strokeStyle = rgba('#0a0604', 0.9); ctx.lineWidth = 3 * z; ctx.stroke();
+  ctx.restore();
 }
 function cellDyn(ctx, t, o = {}) {
   const wx = o.winX || 250, wy = o.winY || 330;
   const a = (o.shaftA == null ? 0.22 : o.shaftA);
   lightShaft(ctx, [wx + 10, wy], [o.shaftX || 560, o.shaftY || 1750], 170, 480, o.shaftColor || '#cfe0ff', a);
   dust(ctx, t, { x: wx, y: wy + 60, w: 520, h: 1300 }, 20, '#e8f0ff', 5, 0.5, 2.6);
+  // the warm torchlight from the corridor, through the door and round its edges (its lamp niche is behind
+  // the door, so no flame of its own is drawn)
   if (o.lamp !== false) {
     const lx = o.lampX || 880, ly = o.lampY || 1050;
-    B.drawFlame(ctx, lx, ly - 6, 16, t, 4);
     const f = 0.8 + 0.2 * L.fbm1(t * 3, 8);
     L.glow(ctx, lx, ly - 30, 520, '#ff9a40', 0.22 * f);
   }
@@ -600,6 +665,6 @@ function dawnDyn(ctx, t, o = {}) {
 }
 
 module.exports = {
-  VW, VH, upperRoom, upperRoomDyn, streetNight, streetNightDyn, houseChurch, silhouettes, cell, cellDyn,
+  VW, VH, upperRoom, upperRoomDyn, streetNight, streetNightDyn, houseChurch, silhouettes, cell, cellDyn, cellDoorLeaf,
   jerusalemNight, jerusalemDyn, desert, desertDyn, heavenLight, dawnRoad, dawnDyn, vignette, lightShaft, dust, bokeh, fillGrad, stones,
 };

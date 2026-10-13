@@ -13,19 +13,19 @@ const VW = 1080, VH = 1920;
 
 // ---------------------------------------------------------------- lighting presets
 const LIGHT = {
-  lamp: { side: -1, key: '#ffe2bc', amb: '#a87a62', shadow: 0.68, rim: '#ffb060', rimA: 0.35, rimSide: 1, wrap: 0.75 },
-  lampR: { side: 1, key: '#ffe2bc', amb: '#a87a62', shadow: 0.68, rim: '#ffb060', rimA: 0.3, rimSide: -1, wrap: 0.75 },
-  street: { side: -1, key: '#ffcf9e', amb: '#5a6894', shadow: 0.78, rim: '#a8c0ff', rimA: 0.5, rimSide: 1, wrap: 0.65 },
-  church: { side: 1, key: '#ffdcb0', amb: '#9a6a5a', shadow: 0.7, rim: '#ffb060', rimA: 0.4, rimSide: -1, wrap: 0.7 },
-  cellL: { side: -1, key: '#e4eaff', amb: '#6c6e8c', shadow: 0.72, rim: '#ffa860', rimA: 0.45, rimSide: 1, wrap: 0.7 },
-  cellR: { side: -1, key: '#e8ecff', amb: '#6c6e8c', shadow: 0.72, rim: '#ffa860', rimA: 0.35, rimSide: 1, wrap: 0.8 },
+  lamp: { side: -1, key: '#fff0de', amb: '#987f72', shadow: 0.68, rim: '#ffb060', rimA: 0.35, rimSide: 1, wrap: 0.75 },
+  lampR: { side: 1, key: '#fff0de', amb: '#987f72', shadow: 0.68, rim: '#ffb060', rimA: 0.3, rimSide: -1, wrap: 0.75 },
+  street: { side: -1, key: '#ffe7ce', amb: '#616880', shadow: 0.78, rim: '#a8c0ff', rimA: 0.5, rimSide: 1, wrap: 0.65 },
+  church: { side: 1, key: '#ffeed8', amb: '#8a7067', shadow: 0.7, rim: '#ffb060', rimA: 0.4, rimSide: -1, wrap: 0.7 },
+  cellL: { side: -1, key: '#f2f4ff', amb: '#6e6f80', shadow: 0.72, rim: '#ffa860', rimA: 0.45, rimSide: 1, wrap: 0.7 },
+  cellR: { side: -1, key: '#f4f6ff', amb: '#6e6f80', shadow: 0.72, rim: '#ffa860', rimA: 0.35, rimSide: 1, wrap: 0.8 },
   cellWarm: { side: -1, key: '#fff0dc', amb: '#8a7480', shadow: 0.62, rim: '#ffd090', rimA: 0.5, rimSide: 1, wrap: 0.85 },
-  jer: { side: 1, key: '#ffbf86', amb: '#3e4c7c', shadow: 0.82, rim: '#ff9a50', rimA: 0.45, rimSide: -1, wrap: 0.6 },
-  jerCool: { side: -1, key: '#c8d4ff', amb: '#3a466e', shadow: 0.8, rim: '#ff9a50', rimA: 0.5, rimSide: 1, wrap: 0.6 },
+  jer: { side: 1, key: '#ffdfc2', amb: '#454c67', shadow: 0.82, rim: '#ff9a50', rimA: 0.45, rimSide: -1, wrap: 0.6 },
+  jerCool: { side: -1, key: '#e4eaff', amb: '#40465c', shadow: 0.8, rim: '#ff9a50', rimA: 0.5, rimSide: 1, wrap: 0.6 },
   desert: { side: 1, key: '#fff4e2', amb: '#b88c84', shadow: 0.55, rim: '#ffffff', rimA: 0.25, rimSide: -1, wrap: 0.8 },
   divine: { side: -1, key: '#fffaf0', amb: '#e8cfb0', shadow: 0.32, rim: '#ffffff', rimA: 0.85, rimSide: 1, wrap: 1.0 },
   lightUp: { side: 1, key: '#fff8e8', amb: '#c8a890', shadow: 0.45, rim: '#ffffff', rimA: 0.7, rimSide: -1, wrap: 0.9 },
-  dawn: { side: 1, key: '#ffd6a6', amb: '#7a5a78', shadow: 0.62, rim: '#ffcc80', rimA: 0.65, rimSide: 1, wrap: 0.7 },
+  dawn: { side: 1, key: '#ffead2', amb: '#716070', shadow: 0.62, rim: '#ffcc80', rimA: 0.65, rimSide: 1, wrap: 0.7 },
 };
 
 // ---------------------------------------------------------------- look maps
@@ -255,8 +255,7 @@ function legsBlend(ctx, Bn, s, fc, st, Lt, k, FY, o = {}) {
   const robe = stand.map((q, i) => X(...P(q, kneel[i])));
   // feet: standing, both point out toward us (turned a little the way he faces) under the hem;
   // kneeling, they are behind him with the toes tucked under
-  const f1 = [[-1.55, fy - 0.15], [-2.55, fy - 0.05]], f2 = [[-1.1, fy - 0.23], [-2.05, fy - 0.13]];
-  if (kk > 0.5 && !o.noFeet) { foot(ctx, X, s, st, Lt, f1[0], f1[1], { h: 0.3 }); foot(ctx, X, s, st, Lt, f2[0], f2[1], { h: 0.3 }); }
+  // kneeling, the feet are tucked under behind him and hidden by the robe
   ctx.beginPath(); L.crPath(ctx, robe, true, 0.42);
   ctx.fillStyle = L.mul(col, Lt.key || '#fff'); ctx.fill();
   ctx.save(); ctx.clip();
@@ -319,11 +318,14 @@ function legsBlend(ctx, Bn, s, fc, st, Lt, k, FY, o = {}) {
 function kneelLegs(ctx, Bn, s, fc, st, Lt, o = {}) {
   legsBlend(ctx, Bn, s, fc, st, Lt, 1, Bn[1] + (o.floor || 7.0) * s, o);
 }
+// standing still, turned three-quarters toward us: both feet point the way the body faces (out toward
+// the viewer and a little to the side the figure turns to), the back foot a touch higher and smaller
 function standFeet(ctx, Bn, s, fc, len, Lt, st) {
   const style = st || C.asher;
-  const fy = len + 0.25;
-  foot(ctx, (x, y) => [Bn[0] + x * s * fc, Bn[1] + y * s], s, style, Lt, [-0.9, fy], [0.35, fy + 0.15], { h: 0.34 });
-  foot(ctx, (x, y) => [Bn[0] + x * s * fc, Bn[1] + y * s], s, style, Lt, [0.25, fy + 0.1], [1.45, fy + 0.25], { h: 0.34 });
+  const fy = len + 0.12;
+  const a = [Bn[0] - 0.85 * s * fc, Bn[1] + fy * s], b = [Bn[0] + 0.75 * s * fc, Bn[1] + (fy + 0.14) * s];
+  frontFoot(ctx, a[0], a[1], 0.44 * s, 0.58 * s, style, Lt, 0.45 * fc);
+  frontFoot(ctx, b[0], b[1], 0.48 * s, 0.62 * s, style, Lt, 0.45 * fc);
 }
 // a neutral, quietly alive state for an extra (a background figure with no lines): blinks, breath,
 // a pose, and a look that can drift
@@ -461,7 +463,7 @@ S.street_wide = (ctx, W, t, lt, dur, p) => {
   floorShadow(ctx, x0, 1750, 240, 0.6);
   ctx.save();
   const f = 0.85 + 0.15 * L.fbm1(t * 3.3, 2);
-  const sil = { key: mix('#9a7a6a', '#b08a72', f), amb: '#3a3e5a', side: -1, shadow: 0.8, rim: '#ffb070', rimA: 0.75, rimSide: -1, wrap: 0.45 };
+  const sil = { key: mix('#a8968c', '#bca594', f), amb: '#44465a', side: -1, shadow: 0.78, rim: '#ffb070', rimA: 0.75, rimSide: -1, wrap: 0.45 };
   const lk = looks({ gx: -0.6, gy: -0.1, yaw: -0.55, pitch: -0.05 }, { door: { gx: -0.65, gy: -0.15, yaw: -0.55, pitch: -0.06 } });
   actor(ctx, W, 'asher', t, { x: x0, y: y0, s: 70, facing: -1, by: -0.5, len: 9.2 }, sil, lk);
   standFeet(ctx, [x0, y0], 70, -1, 9.2, sil);
@@ -472,7 +474,7 @@ S.street_asher_cu = (ctx, W, t, lt, dur, p) => {
   camera(ctx, lt, dur, p, [540, 850]);
   drawCached(ctx, bgView('street', (x) => BG.streetNight(x), { z: 1.8, cx: 360, cy: 800 }, 14));
   const f = 0.85 + 0.15 * L.fbm1(t * 3.3, 2);
-  const Lt = Object.assign({}, LIGHT.street, { key: mix('#ffb070', '#ffe0c0', f * 0.6) });
+  const Lt = Object.assign({}, LIGHT.street, { key: mix('#ffd6b0', '#ffeedc', f * 0.6) });
   const lk = looks({ gx: -0.4, gy: -0.15, yaw: -0.3, pitch: -0.08 }, {
     door: { gx: -0.35, gy: -0.25, yaw: -0.26, pitch: -0.1 }, door_low: { gx: -0.2, gy: 0.3, yaw: -0.2, pitch: 0.08 },
     bread: { gx: -0.05, gy: 0.9, yaw: -0.12, pitch: 0.28 }, down: { gx: 0, gy: 0.8, yaw: -0.1, pitch: 0.25 },
@@ -631,7 +633,7 @@ S.street_knock = (ctx, W, t, lt, dur, p) => {
   drawCached(ctx, bgView('streetnd', (x) => BG.streetNight(x, { noDoor: true }), view, 2));
   viewDyn(ctx, view, () => BG.streetNightDyn(ctx, t));
   const f = 0.85 + 0.15 * L.fbm1(t * 3.3, 2);
-  const sil = { side: -1, key: mix('#a8887a', '#c09a82', f), amb: '#3a3e5a', shadow: 0.75, rim: '#ffb070', rimA: 0.7, rimSide: -1, wrap: 0.5 };
+  const sil = { side: -1, key: mix('#b4a094', '#c8b2a2', f), amb: '#44465a', shadow: 0.74, rim: '#ffb070', rimA: 0.7, rimSide: -1, wrap: 0.5 };
   // the door (shuddering under each knock) and, at the end, the guard's eyes in the grille
   const gr = smooth((lt - 3.35) / 0.4);
   ctx.save();
@@ -722,7 +724,7 @@ S.street_door_guard = (ctx, W, t, lt, dur, p) => {
   const f = 0.85 + 0.15 * L.fbm1(t * 3, 6);
   ctx.fillStyle = L.radial(ctx, 760, 1080, 20, 700, [[0, rgba('#ff9a50', 0.45 * f)], [1, rgba('#ff9a50', 0)]]);
   ctx.fillRect(0, 0, VW, VH);
-  const Lt = { side: 1, key: mix('#ffb070', '#ffd8b0', f), amb: '#4a3a5a', shadow: 0.8, rim: '#a8c0ff', rimA: 0.3, rimSide: -1, wrap: 0.6 };
+  const Lt = { side: 1, key: mix('#ffd2a8', '#ffe6cc', f), amb: '#4e4656', shadow: 0.78, rim: '#a8c0ff', rimA: 0.3, rimSide: -1, wrap: 0.6 };
   const step = smooth((lt - 0.25) / 1.5);
   const lk = looks({ gx: 0.4, gy: 0.15, yaw: 0.25, pitch: 0.08 }, { asher: { gx: 0.45, gy: 0.2, yaw: 0.28, pitch: 0.1 } });
   actor(ctx, W, 'guard', t, { x: lerp(560, 520, step), y: lerp(1215, 1250, step), s: lerp(128, 150, step), facing: 1, by: 0.3, len: 5 }, Lt, lk);
@@ -817,25 +819,71 @@ function cellTable(ctx, view, Lt, o = {}) {
   return { top, k, S2 };
 }
 
+// The cell door's leaf (drawn by the background, see BG.cellDoorLeaf) swung in toward us by angle a, seen
+// through a view of the cell: the vanishing point is the middle of the view
+function cellDoorLeaf(ctx, view, a) {
+  const S2 = (x, y) => [(x - view.cx) * view.z + VW / 2, (y - view.cy) * view.z + VH / 2];
+  BG.cellDoorLeaf(ctx, a, S2, view.z, view.cx, view.cy);
+}
+// The open doorway: the dark recess of its frame, the corridor beyond (its far wall of rough stone warm with
+// torchlight, its floor catching the light) and the light it throws into the cell; k fades the light in
+// as the door opens
+function cellDoorway(ctx, view, t, k = 1) {
+  viewDyn(ctx, view, () => {
+    const f = 0.85 + 0.15 * L.fbm1(t * 3, 6);
+    ctx.fillStyle = '#060504'; ctx.fillRect(780, 480, 300, 1000);
+    ctx.fillStyle = '#0c0907'; ctx.fillRect(800, 500, 260, 980);
+    ctx.save(); ctx.beginPath(); ctx.rect(800, 500, 260, 980); ctx.clip();
+    const r = L.rng(91);
+    for (let y = 500, row = 0; y < 1420; y += 76, row++) {
+      for (let x = 770 - (row % 2) * 58; x < 1060; x += 116) {
+        const w = 108 + r() * 8, h = 68 + r() * 4;
+        ctx.fillStyle = rgba(r() < 0.5 ? '#2e2018' : '#261a14', 0.75);
+        ctx.beginPath(); ctx.roundRect(x + 4, y + 4, w - 8, h - 8, 7); ctx.fill();
+        ctx.fillStyle = rgba('#0a0604', 0.35); ctx.fillRect(x + 4, y + h - 12, w - 8, 4);
+      }
+    }
+    ctx.fillStyle = L.linear(ctx, 0, 1400, 0, 1480, [[0, '#1a120c'], [1, '#2a1c12']]); ctx.fillRect(800, 1410, 260, 70);
+    ctx.restore();
+    ctx.fillStyle = L.radial(ctx, 960, 860, 30, 560, [[0, rgba('#ff9a50', (0.3 + 0.2 * k) * f)], [0.6, rgba('#ff8a40', (0.1 + 0.08 * k) * f)], [1, rgba('#ff8a40', 0)]]);
+    ctx.fillRect(800, 500, 260, 980);
+    ctx.save(); ctx.globalCompositeOperation = 'lighter';
+    ctx.fillStyle = L.linear(ctx, 0, 1480, 0, 1900, [[0, rgba('#ff9a50', 0.22 * f * k)], [1, rgba('#ff9a50', 0)]]);
+    ctx.beginPath(); ctx.moveTo(800, 1480); ctx.lineTo(1060, 1480); ctx.lineTo(1080, 1900); ctx.lineTo(620, 1900); ctx.closePath(); ctx.fill();
+    ctx.restore();
+  });
+}
+// the torch on the corridor's far wall, seen through the doorway (smaller: it is further off than the door)
+function doorTorch(ctx, view, t, Lt) {
+  viewDyn(ctx, view, () => B.drawTorch(ctx, 1028, 900, 26, t, Lt, { size: 1.15, seed: 5 }));
+}
+// draw fn clipped to the door opening (it gets the background-to-canvas mapping): whoever stands beyond the
+// threshold is hidden by the wall and the frame around it, and by the door's foot while it is shut
+function inDoorway(ctx, view, fn, foot = 1484) {
+  const S2 = (x, y) => [(x - view.cx) * view.z + VW / 2, (y - view.cy) * view.z + VH / 2];
+  const a = S2(800, 500), b = S2(1060, foot);
+  ctx.save(); ctx.beginPath(); ctx.rect(a[0], a[1], b[0] - a[0], b[1] - a[1]); ctx.clip();
+  fn(S2);
+  ctx.restore();
+}
+
 S.cell_wide = (ctx, W, t, lt, dur, p) => {
   const view = { z: 1.0, cx: 540, cy: 960 };
-  drawCached(ctx, cellBG(view, 0));
-  // door opening light
-  const op = smooth(lt / 1.2);
-  ctx.save(); ctx.globalCompositeOperation = 'lighter';
-  ctx.fillStyle = rgba('#ffb070', 0.35 * op);
-  ctx.beginPath(); ctx.moveTo(800, 500); ctx.lineTo(1080, 500); ctx.lineTo(1080, 1900); ctx.lineTo(600, 1900); ctx.closePath(); ctx.fill();
-  ctx.restore();
+  drawCached(ctx, cellBG(view, 0, { door: false }));
+  // the door swings in on its hinges (the creak), and Asher is standing in the torchlit doorway
+  const op = smooth(lt / 1.3);
+  cellDoorway(ctx, view, t, op);
   BG.cellDyn(ctx, t, {});
   // Asher on the threshold: lit from behind by the corridor torch (a warm rim all down his right side)
   // and dimly from the front by the cell's window and lamp, so his face, clothes and the loaf still read
-  const sil = { side: 1, key: '#a8968e', amb: '#3a3848', shadow: 0.72, rim: '#ffb070', rimA: 0.85 * op, rimSide: 1, wrap: 0.35 };
-  // he stands on the threshold: the robe reaches down to his sandalled feet
-  ctx.save(); ctx.globalAlpha = op;
-  floorShadow(ctx, 905, 1485, 90, 0.5);
-  actor(ctx, W, 'asher', t, { x: 900, y: 700, s: 56, facing: -1, by: -0.4, len: 13.6 }, sil, asherLook(),
-    { afterTorso: (o) => standFeet(ctx, o.neck, o.s, -1, 13.6, sil, C.asher) });
-  ctx.restore();
+  const sil = { side: 1, key: '#a8968e', amb: '#3a3848', shadow: 0.72, rim: '#ffb070', rimA: 0.85, rimSide: 1, wrap: 0.35 };
+  floorShadow(ctx, 905, 1481, 90, 0.5 * op);
+  inDoorway(ctx, view, () => {
+    doorTorch(ctx, view, t, sil);
+    actor(ctx, W, 'asher', t, { x: 900, y: 688, s: 56, facing: -1, by: -0.4, len: 13.6 }, sil, asherLook(),
+      { afterTorso: (o) => standFeet(ctx, o.neck, o.s, -1, 13.6, sil, C.asher) });
+  }, lerp(1480, 1500, op));
+  cellDoorLeaf(ctx, view, 1.5 * op);
   // the table with the jug, then Paul seated on his ledge
   cellTable(ctx, view, LIGHT.cellL, {});
   floorShadow(ctx, 330, 1560, 260, 0.5);
@@ -898,26 +946,22 @@ function shotStart(W, id) {
   if (!(id in W._starts)) { const q = W.tl.shots.find((x) => x.id === id); W._starts[id] = q ? q.start : 1e9; }
   return W._starts[id];
 }
-// After "Time's up" the cell door stands open and the guard waits in it, spear in hand, watching
-// them: torchlight from the corridor behind him. Drawn in the cell's background coordinates.
+// After "Time's up" the cell door stands open and the guard waits in the doorway, spear in hand, watching
+// them: torchlight from the corridor behind him. Drawn through the cell's view.
+const guardInDoor = { side: 1, key: '#9a8a80', amb: '#34303e', shadow: 0.75, rim: '#ffb070', rimA: 0.8, rimSide: 1, wrap: 0.35 };
 function doorwayGuard(ctx, W, t, view) {
-  viewDyn(ctx, view, () => {
-    const f = 0.85 + 0.15 * L.fbm1(t * 3, 6);
-    ctx.fillStyle = '#080605'; ctx.fillRect(780, 480, 300, 1000);
-    ctx.fillStyle = L.radial(ctx, 950, 860, 30, 560, [[0, rgba('#ff9a50', 0.5 * f)], [0.6, rgba('#ff8a40', 0.18 * f)], [1, rgba('#ff8a40', 0)]]);
-    ctx.fillRect(780, 480, 300, 1000);
-    // light spilling across the cell floor from the doorway
-    ctx.save(); ctx.globalCompositeOperation = 'lighter';
-    ctx.fillStyle = L.linear(ctx, 0, 1480, 0, 1900, [[0, rgba('#ff9a50', 0.2 * f)], [1, rgba('#ff9a50', 0)]]);
-    ctx.beginPath(); ctx.moveTo(780, 1480); ctx.lineTo(1080, 1480); ctx.lineTo(1080, 1900); ctx.lineTo(640, 1900); ctx.closePath(); ctx.fill();
-    ctx.restore();
-    const Lg = { side: 1, key: '#9a8a80', amb: '#34303e', shadow: 0.75, rim: '#ffb070', rimA: 0.8, rimSide: 1, wrap: 0.35 };
-    floorShadow(ctx, 905, 1480, 90, 0.5);
+  cellDoorway(ctx, view, t, 1);
+  const Lg = guardInDoor;
+  viewDyn(ctx, view, () => floorShadow(ctx, 922, 1481, 90, 0.5));
+  inDoorway(ctx, view, (S2) => {
+    doorTorch(ctx, view, t, Lg);
+    const g = S2(922, 735);
     const lk = looks({ gx: -0.45, gy: 0.35, yaw: -0.3, pitch: 0.12 });
-    actor(ctx, W, 'guard', t, { x: 900, y: 735, s: 56, facing: -1, by: -0.35, len: 13.4 }, Lg, lk,
+    actor(ctx, W, 'guard', t, { x: g[0], y: g[1], s: 56 * view.z, facing: -1, by: -0.35, len: 13.4 }, Lg, lk,
       { noTag: true, mod: (F) => { F.pose = 'guard_spear'; F.poseTo = 'guard_spear'; F.poseFrom = 'guard_spear'; F.poseK = 1; F.mouthOpen = 0; },
         afterTorso: (o) => standFeet(ctx, o.neck, o.s, -1, 13.4, Lg, C.guard) });
-  });
+  }, 1500);
+  cellDoorLeaf(ctx, view, 1.5);
 }
 // when the loaf leaves Asher's hand (tossed onto the table) and when he takes it up again
 function breadTimes(W) {
@@ -1066,37 +1110,51 @@ S.cell_offer = (ctx, W, t, lt, dur, p) => {
 };
 
 S.cell_door_guard = (ctx, W, t, lt, dur, p) => {
-  const view = { z: 1.7, cx: 900, cy: 900 };
-  drawCached(ctx, cellBG(view, 5));
-  const open = smooth(lt / 0.5);
-  ctx.save(); ctx.globalCompositeOperation = 'lighter';
-  ctx.fillStyle = rgba('#ff9a50', 0.3 * open); ctx.fillRect(250, 0, 600, VH);
-  ctx.restore();
+  // the guard flings the door open from the corridor (the bang) and stands on the threshold, framed by the
+  // doorway and lit from behind by the corridor torch; we push in on him slowly
+  camera(ctx, lt, dur, { zoom: [1.0, 1.12] }, [540, 720]);
+  const view = { z: 2.4, cx: 930, cy: 810 };
+  drawCached(ctx, cellBG(view, 5, { door: false }));
+  // the door swings in fast, knocks against its stop and settles
+  const u = clamp(lt / 0.34);
+  const open = u < 1 ? smooth(u) * 1.62 : 1.62 - 0.12 * Math.sin(Math.min(1, (lt - 0.34) / 0.5) * Math.PI) * Math.exp(-(lt - 0.34) * 3);
+  cellDoorway(ctx, view, t, Math.min(1, open / 0.8));
   const f = 0.85 + 0.15 * L.fbm1(t * 3, 6);
-  const Lt = { side: 1, key: mix('#ffb070', '#ffd8b0', f), amb: '#4a3a5a', shadow: 0.8, rim: '#ffb070', rimA: 0.4, rimSide: -1, wrap: 0.6 };
+  const Lt = Object.assign({}, guardInDoor, { key: mix('#a89a90', '#b8aaa0', f), amb: '#3a3646', shadow: 0.72, rimA: 0.85 });
   const lk = looks({ gx: -0.4, gy: 0.4, yaw: -0.3, pitch: 0.15 }, { paul: { gx: -0.5, gy: 0.5, yaw: -0.32, pitch: 0.18 } });
-  actor(ctx, W, 'guard', t, { x: 540, y: 1250, s: 150, facing: -1, by: -0.3, len: 6 }, Lt, lk);
-  B.drawTorch(ctx, 830, 1100, 40, t, Lt, { size: 1.2, seed: 5 });
+  inDoorway(ctx, view, (S2) => {
+    doorTorch(ctx, view, t, Lt);
+    const g = S2(922, 735);
+    // his free hand has just shoved the door: it comes back down to his side
+    actor(ctx, W, 'guard', t, { x: g[0], y: g[1], s: 56 * view.z, facing: -1, by: -0.35, len: 13.4 }, Lt, lk,
+      { mod: (F) => { F.pose = 'guard_spear'; F.poseFrom = 'guard_push'; F.poseTo = 'guard_spear'; F.poseK = smooth(clamp((lt - 0.3) / 0.9)); } });
+  }, lerp(1480, 1500, Math.min(1, open)));
+  cellDoorLeaf(ctx, view, open);
   BG.vignette(ctx, 0.5, '#020305');
 };
 
 S.cell_hands_grip = (ctx, W, t, lt, dur, p) => {
-  // tight two-shot at eye level: Paul reaches across and grips Asher's hands
+  // tight two-shot at eye level: Paul reaches across and takes Asher's hand; Asher's hand comes up off
+  // his knee to meet it and Paul's closes round it (drawn over it)
   const view = { z: 1.9, cx: 560, cy: 1120 };
   drawCached(ctx, cellBG(view, 9));
   cellDynView(ctx, t, view, { shaftA: 0.3 });
   const Lt = LIGHT.cellWarm;
   const pA = { x: 875, y: 1150, s: 122, facing: -1, by: -0.4, len: 4.2 };
   const pPaul = { x: 215, y: 1170, s: 128, facing: 1, by: 0.4, len: 4.4 };
+  const kP = smooth(clamp(lt / 1.2)), kA = smooth(clamp((lt - 0.25) / 0.95));
+  const meet = [646, 1676];
   stoneBench(ctx, [pPaul.x, pPaul.y], pPaul.s, 1, Lt);
-  actor(ctx, W, 'paul', t, pPaul, Lt, paulLook({ asher: { gx: 0.62, gy: 0.0, yaw: 0.42, pitch: 0.0 } }), {
-    mod: (F) => { F.poseFrom = 'rest'; F.poseTo = 'grip'; F.poseK = smooth(lt / 1.2); },
-    afterTorso: (o) => seatedLegs(ctx, o.neck, o.s, 1, C.paul, Lt),
-  });
-  actor(ctx, W, 'asher', t, pA, Lt, asherLook({ paul: { gx: -0.62, gy: 0.05, yaw: -0.42, pitch: 0.02 } }), {
-    mod: (F) => { F.poseFrom = 'kneel'; F.poseTo = 'kneel'; F.poseK = 1; },
-    afterTorso: (o) => kneelLegs(ctx, o.neck, o.s, -1, C.asher, Lt),
-  });
+  actor(ctx, W, 'asher', t, Object.assign({}, pA, { reach: { f: [meet[0] + 18, meet[1] + 12, 'relax', kA] } }),
+    Lt, asherLook({ paul: { gx: -0.62, gy: 0.05, yaw: -0.42, pitch: 0.02 } }), {
+      mod: (F) => { F.poseFrom = 'kneel'; F.poseTo = 'kneel'; F.poseK = 1; },
+      afterTorso: (o) => kneelLegs(ctx, o.neck, o.s, -1, C.asher, Lt),
+    });
+  actor(ctx, W, 'paul', t, Object.assign({}, pPaul, { reach: { f: [meet[0], meet[1], 'grip', kP] } }),
+    Lt, paulLook({ asher: { gx: 0.62, gy: 0.0, yaw: 0.42, pitch: 0.0 } }), {
+      mod: (F) => { F.poseFrom = 'rest'; F.poseTo = 'grip'; F.poseK = kP; },
+      afterTorso: (o) => seatedLegs(ctx, o.neck, o.s, 1, C.paul, Lt),
+    });
   BG.vignette(ctx, 0.45, '#020305');
 };
 
@@ -1195,12 +1253,12 @@ S.jer_crack = (ctx, W, t, lt, dur, p) => {
   BG.jerusalemDyn(ctx, t, { torches: [[540, 740, 1]] });
   // a guard leading, Yosef with his hands bound being pulled along, Saul following with his warrant:
   // all walking (feet stepping, bodies bobbing and swaying, arms swinging where they are free)
-  const sx = lerp(820, 240, lt / dur);
-  const sil = { side: 1, key: '#9a7a6a', amb: '#3a3048', shadow: 0.8, rim: '#ff9a50', rimA: 0.8, rimSide: 1, wrap: 0.35 };
+  const sx = lerp(760, 200, lt / dur);
+  const sil = { side: 1, key: '#a8968c', amb: '#40384c', shadow: 0.78, rim: '#ff9a50', rimA: 0.8, rimSide: 1, wrap: 0.35 };
   const walker = (who, x, y, s, ph, lk, o = {}) => {
     const bob = Math.abs(Math.cos(ph)) * 0.09 * s;
     const pl = Object.assign({ x, y: y - bob, s, facing: -1, by: -0.4, len: 9.5, swing: o.swing ? [0.25, ph] : null, lean: 0.03 * Math.sin(ph) }, o.place || {});
-    const opt = { noTag: true, afterTorso: (q) => stepFeet(ctx, q.neck, q.s, -1, 9.15, sil, C[o.style || who], ph, 1) };
+    const opt = { noTag: who === 'guard', afterTorso: (q) => stepFeet(ctx, q.neck, q.s, -1, 9.15, sil, C[o.style || who], ph, 1) };
     if (o.F) opt.mod = o.F;
     actor(ctx, W, who, t, pl, sil, lk, opt);
   };
@@ -1223,7 +1281,7 @@ S.jer_child = (ctx, W, t, lt, dur, p) => {
   // the boy behind the door, his face caught in the strip of torchlight from the gap
   ctx.fillStyle = '#0c0a0e'; ctx.fillRect(0, 0, VW, VH);
   const gx = 330, gw = 470;
-  const Lt = { side: 1, key: '#ffcc98', amb: '#4a4266', shadow: 0.8, rim: '#ffa060', rimA: 0.5, rimSide: 1, wrap: 0.6 };
+  const Lt = { side: 1, key: '#ffe0c0', amb: '#4e4a62', shadow: 0.8, rim: '#ffa060', rimA: 0.5, rimSide: 1, wrap: 0.6 };
   ctx.save();
   ctx.beginPath(); ctx.rect(gx, 0, gw, VH); ctx.clip();
   ctx.fillStyle = L.linear(ctx, gx, 0, gx + gw, 0, [[0, '#2a1c18'], [1, '#14100e']]);
@@ -1256,7 +1314,7 @@ S.jer_yosef = (ctx, W, t, lt, dur, p) => {
 S.jer_saul = (ctx, W, t, lt, dur, p) => {
   drawCached(ctx, bgView('jer', (x) => BG.jerusalemNight(x), { z: 1.6, cx: 360, cy: 800 }, 12));
   const f = 0.8 + 0.2 * L.fbm1(t * 3, 3);
-  const Lt = Object.assign({}, LIGHT.jer, { key: mix('#ff9a50', '#ffd0a0', f * 0.6) });
+  const Lt = Object.assign({}, LIGHT.jer, { key: mix('#ffcfa6', '#ffe4c8', f * 0.6) });
   const lk = looks({ gx: 0.45, gy: 0.1, yaw: 0.3, pitch: 0.04 }, {
     yosef: { gx: 0.5, gy: 0.1, yaw: 0.32, pitch: 0.04 }, away_down: { gx: -0.5, gy: 0.6, yaw: -0.15, pitch: 0.2 },
   });
@@ -1282,19 +1340,24 @@ S.jer_yosef_look = (ctx, W, t, lt, dur, p) => {
   // young Paul from behind, out of focus in the foreground: dark curls, white mantle with its blue stripe
   ctx.save();
   ctx.filter = 'blur(5px)';
-  ctx.fillStyle = '#1a1420';
+  ctx.fillStyle = '#9a917e';
   ctx.beginPath(); ctx.moveTo(-220, 1920); ctx.quadraticCurveTo(-140, 1200, 110, 1140); ctx.quadraticCurveTo(400, 1130, 500, 1920); ctx.closePath(); ctx.fill();
-  ctx.fillStyle = '#8a8478';
+  ctx.fillStyle = '#c4bba8';
   ctx.beginPath(); ctx.moveTo(-60, 1920); ctx.quadraticCurveTo(40, 1300, 300, 1180); ctx.quadraticCurveTo(420, 1300, 470, 1920); ctx.closePath(); ctx.fill();
   ctx.strokeStyle = '#2d4f8a'; ctx.lineWidth = 26;
   ctx.beginPath(); ctx.moveTo(40, 1920); ctx.quadraticCurveTo(120, 1420, 300, 1210); ctx.stroke();
-  ctx.fillStyle = '#0d0a0c';
-  ctx.beginPath(); ctx.ellipse(130, 900, 220, 262, 0.15, 0, L.TAU); ctx.fill();
-  for (let i = 0; i < 11; i++) { const a = -2.6 + i * 0.3; ctx.beginPath(); ctx.arc(130 + Math.cos(a) * 214, 900 + Math.sin(a) * 255, 34, 0, L.TAU); ctx.fill(); }
-  ctx.fillStyle = '#a07858';
-  ctx.beginPath(); ctx.ellipse(330, 930, 34, 70, 0.1, 0, L.TAU); ctx.fill();
+  // the back of his head under the light head cloth (blue stripes down its side), the cord round it
+  ctx.fillStyle = '#b8ae9a';
+  ctx.beginPath(); ctx.ellipse(130, 905, 226, 270, 0.15, 0, L.TAU); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(-90, 960); ctx.quadraticCurveTo(130, 1250, 350, 980); ctx.lineTo(380, 1250); ctx.lineTo(-120, 1250); ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = '#2d4f8a'; ctx.lineWidth = 16;
+  ctx.beginPath(); ctx.moveTo(300, 760); ctx.quadraticCurveTo(360, 960, 330, 1180); ctx.stroke();
+  ctx.strokeStyle = '#2a2020'; ctx.lineWidth = 20;
+  ctx.beginPath(); ctx.ellipse(130, 820, 222, 70, 0.12, Math.PI * 0.9, Math.PI * 2.05); ctx.stroke();
+  ctx.fillStyle = rgba('#6a5a48', 0.5);
+  ctx.beginPath(); ctx.ellipse(60, 980, 150, 210, 0.2, 0, L.TAU); ctx.fill();
   ctx.strokeStyle = rgba('#ff9a50', 0.55); ctx.lineWidth = 10;
-  ctx.beginPath(); ctx.ellipse(130, 900, 226, 268, 0.15, -1.2, 0.4); ctx.stroke();
+  ctx.beginPath(); ctx.ellipse(130, 905, 232, 276, 0.15, -1.2, 0.4); ctx.stroke();
   ctx.restore();
   BG.vignette(ctx, 0.5, '#010205');
 };
@@ -1427,7 +1490,7 @@ S.dawn_road = (ctx, W, t, lt, dur, p) => {
     const y = hz + 820 / f.d, h = 330 / f.d * f.hk, x = 600 + f.lat * 260 / f.d;
     const ph = lt * 5.0 + f.i * 1.3;
     const bob = Math.abs(Math.cos(ph)) * h * 0.03;
-    const body = f.paul ? '#3a2a2c' : '#1e1016', rim = rgba('#ffc070', 0.55);
+    const body = f.paul ? '#5a4440' : '#3a2826', rim = rgba('#ffc070', 0.6);
     ctx.fillStyle = body;
     // head (Paul bare-headed and bowed; the soldiers helmeted)
     ctx.beginPath(); ctx.ellipse(x, y - h - bob, h * 0.15, h * 0.18, 0, 0, L.TAU); ctx.fill();
@@ -1585,15 +1648,15 @@ function grade(ctx, name, lt) {
   if (!name) return;
   ctx.save();
   if (name === 'memory_warm') {
-    ctx.globalCompositeOperation = 'color'; ctx.fillStyle = rgba('#b08050', 0.35); ctx.fillRect(0, 0, VW, VH);
-    ctx.globalCompositeOperation = 'soft-light'; ctx.fillStyle = rgba('#ffcc88', 0.35); ctx.fillRect(0, 0, VW, VH);
+    ctx.globalCompositeOperation = 'color'; ctx.fillStyle = rgba('#b08050', 0.13); ctx.fillRect(0, 0, VW, VH);
+    ctx.globalCompositeOperation = 'soft-light'; ctx.fillStyle = rgba('#ffcc88', 0.28); ctx.fillRect(0, 0, VW, VH);
     ctx.globalCompositeOperation = 'source-over'; BG.vignette(ctx, 0.5, '#1a0c04', 0.4);
   } else if (name === 'memory_blue') {
-    ctx.globalCompositeOperation = 'color'; ctx.fillStyle = rgba('#5a6a9a', 0.4); ctx.fillRect(0, 0, VW, VH);
+    ctx.globalCompositeOperation = 'color'; ctx.fillStyle = rgba('#5a6a9a', 0.15); ctx.fillRect(0, 0, VW, VH);
     ctx.globalCompositeOperation = 'source-over'; BG.vignette(ctx, 0.55, '#02040a', 0.38);
     // soft edge haze
     ctx.globalCompositeOperation = 'screen';
-    ctx.fillStyle = L.radial(ctx, VW / 2, VH / 2, VH * 0.35, VH * 0.75, [[0, rgba('#8aa0d0', 0)], [1, rgba('#8aa0d0', 0.18)]]);
+    ctx.fillStyle = L.radial(ctx, VW / 2, VH / 2, VH * 0.35, VH * 0.75, [[0, rgba('#8aa0d0', 0)], [1, rgba('#8aa0d0', 0.12)]]);
     ctx.fillRect(0, 0, VW, VH);
   } else if (name === 'memory_gold') {
     ctx.globalCompositeOperation = 'soft-light'; ctx.fillStyle = rgba('#ffc070', 0.4); ctx.fillRect(0, 0, VW, VH);

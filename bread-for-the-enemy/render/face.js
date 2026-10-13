@@ -366,6 +366,8 @@ function shadowSide(ctx, pr, Lt, color, off = 0) {
     return P(clamp(xt * sk, -1.3, 1.3), y, 0.9);
   });
   const edge = side < 0 ? 4 : -4;
+  ctx.save();
+  ctx.filter = `blur(${(pr.s * 0.06).toFixed(3)}px)`;
   ctx.beginPath();
   L.crPath(ctx, pts, false);
   const e1 = P(edge, 3.5, 0), e2 = P(edge, -2.2, 0);
@@ -374,6 +376,7 @@ function shadowSide(ctx, pr, Lt, color, off = 0) {
   ctx.closePath();
   ctx.fillStyle = color;
   ctx.fill();
+  ctx.restore();
 }
 
 function drawCelShadow(ctx, pr, G, F, Lt, skinSh, st) {
@@ -385,22 +388,27 @@ function drawCelShadow(ctx, pr, G, F, Lt, skinSh, st) {
   // cheekbone and under it, then follows the jaw; wraps toward the crown
   const ys = [-1.45, -1.1, -0.75, -0.42, -0.12, 0.18, 0.42, 0.7, 1.0, 1.3, 1.7];
   const bump = [0.32, 0.16, 0.08, -0.04, -0.2, -0.04, 0.12, -0.06, 0.02, -0.02, -0.08];
-  const term = ys.map((y, i) => {
+  const term = (off) => ys.map((y, i) => {
     const sk = y < -0.75 ? Math.sqrt(clamp(1 - Math.pow((y + 0.38) / 1.15, 2), 0.05, 1)) : 1;
-    const x = (xt + bump[i] * -side * 1.0) * sk + (y < -0.75 ? -side * (1 - sk) * 0.5 : 0);
+    const x = (xt + off + bump[i] * -side * 1.0) * sk + (y < -0.75 ? -side * (1 - sk) * 0.5 : 0);
     // keep a minimum band near the contour so the far cheek always reads as turned
     const lim = side < 0 ? Math.min(x, 0.78) : Math.max(x, -0.78);
     return [clamp(lim, -1.2, 1.2), y, 0.95 * Math.sqrt(Math.max(0, 1 - Math.pow(lim / 1.05, 2))) + 0.05];
   });
   const edge = side < 0 ? 1.6 : -1.6;
-  const poly = [...term.map((p) => P(...p)), P(edge, 1.8, 0), P(edge, -1.6, 0)];
+  // the shadow's edge is soft: the shape is laid down blurred, so the skin fades from light into shade
+  // instead of stopping at a hard line (the face's outline still clips it)
+  const tp = term(0).map((p) => P(...p));
+  ctx.save();
+  ctx.filter = `blur(${(s * 0.07).toFixed(3)}px)`;
   ctx.beginPath();
-  L.crPath(ctx, poly.slice(0, term.length), false);
-  ctx.lineTo(poly[term.length][0], poly[term.length][1]);
-  ctx.lineTo(poly[term.length + 1][0], poly[term.length + 1][1]);
+  L.crPath(ctx, tp, false);
+  const e1 = P(edge, 1.8, 0), e2 = P(edge, -1.6, 0);
+  ctx.lineTo(e1[0], e1[1]); ctx.lineTo(e2[0], e2[1]);
   ctx.closePath();
   ctx.fillStyle = rgba(skinSh, k);
   ctx.fill();
+  ctx.restore();
   // soft core-shadow gradient along the terminator (painterly falloff)
   const tm = P(xt, 0.0, 0.95);
   const g = ctx.createLinearGradient(tm[0] + side * s * 0.3, 0, tm[0] - side * s * 0.02, 0);
@@ -460,7 +468,7 @@ function drawLines(ctx, pr, G, st, F, skinSh, line, lw) {
     }
   }
   // nasolabial folds: age + smile + cry
-  const nl = clamp(age * 0.6 + Math.max(0, F.mouthSmile) * 0.5 + (F.cheekRaise || 0) * 0.4 + (F.tears || 0) * 0.15);
+  const nl = clamp(age * 0.6 + Math.max(0, F.mouthSmile) * 0.5 + (F.cheekRaise || 0) * 0.4 + (F.tears || 0) * 0.15) * (st.child ? 0.3 : 1);
   if (nl > 0.08 && !st.beardHidesFolds) {
     for (const sd of [-1, 1]) {
       const pts = [P(sd * 0.2, 0.42, 0.98), P(sd * 0.33, 0.62, 0.88), P(sd * (0.33 + 0.04 * F.mouthSmile), 0.82, 0.82)];
@@ -539,10 +547,13 @@ function drawMouth(ctx, pr, G, st, F, Lt, skin, skinSh, line, lw) {
   const my = G.mouthY;
   let mw = G.mouthW * (1 + 0.28 * wide + 0.12 * Math.max(0, smile) - 0.12 * press);
   if (wide < 0) mw *= 1 + 0.15 * wide; // rounding narrows
-  const cy = (sd) => my - smile * 0.075 - asym * sd * 0.05 + trem * 0.012 * sd;
+  // talking without smiling: the corners sink as the jaw drops and the upper lip lifts a little, so the
+  // open mouth is an oval and never the flat-topped crescent of a grin
+  const neutral = clamp((0.2 - smile) / 0.4);
+  const cy = (sd) => my - smile * 0.075 - asym * sd * 0.05 + trem * 0.012 * sd + o * 0.07 * neutral;
   const cL = P(-mw, cy(-1), 0.8 - mw * 0.3);
   const cR = P(mw, cy(1), 0.8 - mw * 0.3);
-  const upY = my - o * 0.05 - (wide < 0 ? -wide * o * 0.03 : 0) - smile * 0.02;
+  const upY = my - o * (0.05 + 0.05 * neutral) - (wide < 0 ? -wide * o * 0.03 : 0) - smile * 0.02;
   const loY = my + o * 0.3 + (wide < 0 ? 0.02 * -wide : 0) + trem * 0.02;
   const roundness = wide < 0 ? -wide : 0;
   const upC = P(0, upY, 0.93);

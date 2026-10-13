@@ -132,6 +132,17 @@ function drawCharacter(ctx, who, F, place, Lt, t, opt = {}) {
     arm.w = [arm.w[0] + dx, arm.w[1] + dy];
     arm.shape = Object.assign({}, arm.shape, { curl: arm.shape.curl.map((c, i) => c + 0.12 * Math.max(0, Math.sin(t * 2.1 + i * 0.7))) });
   }
+  // nobody stands like a statue: a slow, small drift of both hands and a little sway of the body
+  // (each character on its own rhythm)
+  {
+    let hsd = 0; for (const ch of who) hsd = (hsd * 31 + ch.charCodeAt(0)) % 997;
+    const amp = opt.still ? 0 : 0.045;
+    for (const [k, o] of [['n', 1.7], ['f', 5.3]]) {
+      const ax = amp * L.noise1(t * 0.17 + o, hsd + o * 3), ay = amp * 0.8 * L.noise1(t * 0.13 + o * 2, hsd * 2 + o);
+      pb[k] = Object.assign({}, pb[k], { w: [pb[k].w[0] + ax, pb[k].w[1] + ay] });
+    }
+    pb.sway = Math.max(pb.sway || 0, opt.still ? 0 : 0.008);
+  }
   const swayLean = pb.sway ? pb.sway * Math.sin(t * 1.3) + pb.sway * 0.6 * L.noise1(t * 0.4, 41) : 0;
   const lean = (place.lean || 0) + pb.lean + (F.lean || 0) + swayLean;
   const breathe = F.breathV || 0;
@@ -148,10 +159,15 @@ function drawCharacter(ctx, who, F, place, Lt, t, opt = {}) {
   const sh = (F.shoulder || 0) + breathe * 0.03;
   const toScreen = (p) => [Bx + p[0] * fc * s, By + p[1] * s];
   // a shot can send a hand to a point on screen (a guard's hand closing on a prisoner's arm)
+  // (r = [x, y, hand shape, how far along the reach is: 0 = the pose's own place .. 1 = there])
   if (place.reach) {
     for (const k of ['n', 'f']) {
       const r = place.reach[k];
-      if (r) pb[k] = Object.assign({}, pb[k], { w: [(r[0] - Bx) / (s * fc), (r[1] - By) / s], shape: H.preset(r[2] || 'grip') });
+      if (!r) continue;
+      const kk = r[3] == null ? 1 : r[3];
+      const tw = [(r[0] - Bx) / (s * fc), (r[1] - By) / s];
+      pb[k] = Object.assign({}, pb[k], { w: [lerp(pb[k].w[0], tw[0], kk), lerp(pb[k].w[1], tw[1], kk)],
+        shape: kk >= 1 ? H.preset(r[2] || 'grip') : H.blendPreset(pb[k].shape || 'relax', r[2] || 'grip', kk) });
     }
   }
   const loose = st.cloth.looseSleeves || 0;

@@ -153,6 +153,14 @@ const POSES = {
     f: { w: [3.0, 1.7], hand: 'offer', palm: { up: 0.75, fwd: 0.4 }, fdir: { fwd: 0.8, out: 0.35, up: 0.25 }, fk: 0.6 }, front: true, shackles: true },
   preach_up: { n: { w: [0.55, 4.05], hand: 'relax', palm: { down: 1, in: 0.2 }, fdir: { fwd: 1, down: 0.3 }, fk: 0.8 },
     f: { w: [3.0, -0.75], hand: 'offer', palm: { fwd: 0.7, in: 0.5 }, fdir: { up: 1, fwd: 0.2, out: 0.2 }, fk: 0.7, flip: 1 }, front: true, shackles: true },
+  // Paul talking in close-up (compact, so the hands stay in frame): an open hand toward Asher, a hand
+  // on his heart, both hands open, and looking down at his own hands (palms up)
+  talk_open: { n: { w: [0.55, 4.05], hand: 'relax', palm: { down: 1, in: 0.2 }, fdir: { fwd: 1, down: 0.3 }, fk: 0.8 },
+    f: { w: [1.95, 2.0], hand: 'offer', palm: { up: 0.75, fwd: 0.45 }, fdir: { fwd: 0.85, up: 0.25 }, fk: 0.6 }, front: true, shackles: true },
+  talk_both: { n: { w: [0.7, 2.25], hand: 'offer', palm: { up: 0.75, fwd: 0.4 }, fdir: { fwd: 0.8, out: 0.25 }, fk: 0.6 },
+    f: { w: [2.05, 2.1], hand: 'offer', palm: { up: 0.75, fwd: 0.4 }, fdir: { fwd: 0.8, out: 0.25 }, fk: 0.6 }, front: true, shackles: true },
+  talk_hands: { n: { w: [0.4, 2.65], hand: 'offer', palm: { up: 0.9, back: 0.2 }, fdir: { fwd: 0.8, up: 0.3 }, fk: 0.6 },
+    f: { w: [2.1, 2.5], hand: 'offer', palm: { up: 0.9, back: 0.2 }, fdir: { fwd: 0.8, up: 0.3 }, fk: 0.6 }, front: true, shackles: true },
   // Asher kneeling, a hand pressed to his chest
   kneel_heart: { n: { w: [-0.15, 2.1], hand: 'relax', palm: { back: 1, in: 0.2 }, fdir: { in: 0.85, up: 0.35 }, fk: 0.75 },
     f: { w: [1.45, 4.35], hand: 'relax', palm: LAP, fdir: LAPDIR }, front: true },
@@ -172,12 +180,14 @@ const POSES = {
   walk: { n: { w: [-1.85, 5.21], hand: 'relax', palm: HANG }, f: { w: [2.02, 5.04], hand: 'relax', palm: HANG } },
   // on his knees in the blinding light: the near forearm raised before his brow, palm turned toward his
   // own face, the elbow low; the other hand pressed flat on the tunic over his thigh
-  kneel_shield: { n: { w: [-1.35, 0.15], hand: 'open', palm: { back: 0.8, in: 0.5 }, fdir: { up: 0.9, in: 0.3 }, fk: 0.75, hang: 1 },
+  kneel_shield: { n: { w: [-1.3, -0.55], hand: 'open', palm: { in: 1, back: 0.6, down: 0.2 }, fdir: { up: 0.9, in: 0.35 }, fk: 0.75, hang: 1 },
     f: { w: [1.35, 4.35], hand: 'relax', palm: { down: 1, in: 0.15 }, fdir: { fwd: 1, down: 0.35 }, fk: 0.8 }, front: true },
   kneel_up: { n: { w: [-1.75, 3.9], hand: 'offer', palm: { up: 0.85, fwd: 0.4 }, fdir: { fwd: 0.6, out: 0.45 } }, f: { w: [2.05, 3.75], hand: 'offer', palm: { up: 0.85, fwd: 0.4 }, fdir: { fwd: 0.6, out: 0.45 } }, front: true },
   peek: { n: { w: [-1.85, 5.21], hand: 'relax', palm: HANG }, f: { w: [1.85, 5.21], hand: 'relax', palm: HANG } },
   // a guard holding a spear in the near hand
   guard_spear: { n: { w: [-1.6, 4.4], hand: 'grip', palm: { in: 0.9, fwd: 0.3 }, fdir: { fwd: 0.8, in: 0.3 } }, f: { w: [1.9, 5.2], hand: 'relax', palm: HANG }, front: true, spear: { arm: 'n' } },
+  // ...and shoving a door open with the other
+  guard_push: { n: { w: [-1.6, 4.4], hand: 'grip', palm: { in: 0.9, fwd: 0.3 }, fdir: { fwd: 0.8, in: 0.3 } }, f: { w: [1.75, 2.0], hand: 'open', palm: { fwd: 0.9, in: 0.25 }, fdir: { up: 0.85, fwd: 0.3 }, fk: 0.7 }, front: true, spear: { arm: 'n' } },
 };
 
 // ------------------------------------------------------------- state engine
@@ -211,10 +221,16 @@ class Actor {
       const dt = 0.05, n = Math.ceil((this.duration || 900) / dt) + 2;
       const tf = new Float32Array(n), te = new Float32Array(n), bc = new Float64Array(n), sc = new Float64Array(n);
       let a = 0, b = 0, cb = 0, cs = 0;
+      // tears well up a moment into the beat (about a second after the cue) and gather slowly; once
+      // they stop, they dry slowly
+      const lag = Math.round(1.0 / dt), rawF = new Float32Array(n), rawT = new Float32Array(n);
       for (let i = 0; i < n; i++) {
         const v = this.eval(i * dt, null, true);
-        a = Math.max(v.tearFlow, a - dt / 7.0);
-        b = Math.max(v.tears, b - dt / 5.0);
+        rawF[i] = v.tearFlow; rawT[i] = v.tears;
+        const j = Math.max(0, i - lag);
+        const tF = Math.min(rawF[j], rawF[i]), tT = Math.min(rawT[j], rawT[i]);
+        a = tF > a ? Math.min(tF, a + dt * 0.7) : Math.max(tF, a - dt / 7.0);
+        b = tT > b ? Math.min(tT, b + dt * 0.6) : Math.max(tT, b - dt / 5.0);
         tf[i] = a; te[i] = b; bc[i] = cb; sc[i] = cs;
         cb += 0.26 * v.breath * dt;
         cs += (0.9 + 0.6 * v.saccade) * dt;
@@ -457,21 +473,24 @@ class World {
     const lookDown = clamp(F.gazeY, 0, 1);
     F.lidL = F.lidR = 1;
     F.lid = F.lid * (1 - bl) * (1 - 0.32 * lookDown) + (F.lid < 0.1 ? 0 : 0);
-    // tremble & breathing
+    // tremble & breathing: emotional shaking is slow and small, paced like sobbing breaths (never a
+    // rapid jitter)
     const tr = F.tremble;
-    F.headDX = tr * 0.025 * L.noise1(t * 2.6, A.seed + 11);
-    F.headDY = tr * 0.02 * L.noise1(t * 2.2, A.seed + 23);
-    F.roll += tr * 0.018 * L.noise1(t * 1.9, A.seed + 5);
+    F.headDX = tr * 0.018 * L.noise1(t * 1.15, A.seed + 11);
+    F.headDY = tr * 0.015 * L.noise1(t * 0.95, A.seed + 23);
+    F.roll += tr * 0.014 * L.noise1(t * 0.8, A.seed + 5);
     const br = F.breath;
     const bphase = A.phase(t).breath * L.TAU + A.seed;
     F.breathV = Math.sin(bphase) * (0.5 + 0.5 * clamp(br - 1)) + (F.breathInhale || 0) * 0.8;
-    F._trem = L.noise1(t * 6.5, A.seed + 41) * 1.0;
-    F._irisShake = F.tears * L.noise1(t * 3.0, A.seed + 3);
+    F._trem = L.noise1(t * 3.2, A.seed + 41) * 1.0;
+    F._irisShake = F.tears * L.noise1(t * 1.6, A.seed + 3);
     // hair sway from head motion: compare with a slightly earlier state
     F.pose = e.poseTo; F.poseTo = e.poseTo; F.poseFrom = e.poseFrom; F.poseK = e.poseK;
     F.emo = e.emo;
     // Christ's sorrow shows in His eyes and brow, not in tears (a single tear is staged by its shot)
     if (who === 'jesus') { F.tears = 0; F.tearFlow = 0; F._irisShake = 0; }
+    // Paul's remorse shows as glistening eyes and, at its deepest, one single tear (never streams)
+    if (who === 'paul') F.tearFlow = 0;
     return F;
   }
   headLag(who, t, shotLook) {
