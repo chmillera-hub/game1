@@ -1372,7 +1372,7 @@ SPEC_WALK_CYCLE = 0.9     # s per stride cycle (pose="walk" / "lead")
 SPEC_WALK_SPEED = 120.0   # ground speed (px/s at s=1) that keeps the walking feet planted
 SPEC_WAVE_HZ = 1.7        # paw wave frequency (pose="wave" / "wave_stand")
 SPEC_RAISE = 0.3          # s for a raised paw to come up (wave / cover_mouth, from pose_t)
-TEAR = hexc("#e4fbff")
+TEAR = hexc("#9fd6ff")   # anatomy pass: a light blue tear (was #e4fbff, read as white)
 
 
 def _eyeroll(pt):

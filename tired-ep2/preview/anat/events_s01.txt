@@ -1,0 +1,2 @@
+s01: 1 events  (frame = scene-local frame, t = scene-local seconds)
+  f  387 t 16.12  tired  track6    pop2,zflip       (('l', 'r'), ('mid', 'mid'))->(('r', 'l'), ('mid', 'mid')),(('r', 'l') max=9.4 n=3

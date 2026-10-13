@@ -104,6 +104,7 @@ _SITP = {"base": "sit_crate", "ll_p": 1.5, "lr_p": 1.48, "ll_k": 1.45, "lr_k": 1
 # the walk with its own voted layers pinned: far (r) arm behind the body, near (l) arm
 # over the torso but UNDER the head (the hood pull happens behind the head)
 _WALKP = {"base": "walk", "al_layer": "mid", "ar_layer": "back"}
+_STAND_WL = {"base": "stand", "al_layer": _WALKP.get("al_layer", ""), "ar_layer": _WALKP.get("ar_layer", "")}   # anatomy pass
 
 _STRICT = bool(os.environ.get("S04_STRICT"))
 
@@ -450,7 +451,7 @@ def _tired(t, T, info, paws=None):
             k1 = _ramp(t, stop, stop + 0.3)
             k2 = _ramp(t, T["sit0"], T["land"], ease_in)
             if k2 <= 0.0:
-                pose = _pose_of((_WALKP, "stand", k1))
+                pose = _pose_of((_WALKP, _STAND_WL, k1))   # same arm layers: no hand jump mid-blend
             else:
                 pose = _pose_of(("stand", _sitp(), k2))
             x = lerp(x_stop, SEAT_X, _ramp(t, stop + 0.05, T["sit0"] + 0.2))

@@ -1,0 +1,4 @@
+s08: 3 events  (frame = scene-local frame, t = scene-local seconds)
+  f   41 t  1.71  tired  track1    pop1             elbow_r,hand_r                                                         max=50.4 n=2
+  f   94 t  3.92  tired  track14   jump,pop1        elbow_r,foot_l,foot_r,hand_r,head,hip,neck,shoulder_l,shoulder_r       max=38.9 n=9
+  f  348 t 14.50  tired  track26   jump             hand_r                                                                 max=57.0 n=1

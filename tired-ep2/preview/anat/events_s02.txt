@@ -1,0 +1,9 @@
+s02: 8 events  (frame = scene-local frame, t = scene-local seconds)
+  f  182 t  7.58  cr     track8    pop2             head                                                                   max=6.8 n=1
+  f  832 t 34.67  tired  track25   pop1             foot_l                                                                 max=13.8 n=1
+  f  844 t 35.17  tired  track25   pop1,pop2        elbow_r,foot_r                                                         max=18.5 n=2
+  f  860 t 35.83  cr     track28   jump             head                                                                   max=30.7 n=1
+  f  895 t 37.29  tired  track25   pop1             foot_r                                                                 max=12.0 n=1
+  f  906 t 37.75  tired  track31   jump             elbow_l,elbow_r,hand_l,hand_r,head,neck,shoulder_l,shoulder_r          max=65.3 n=8
+  f 1015 t 42.29  cr     track34   pop2             head                                                                   max=6.7 n=1
+  f 1020 t 42.50  cr     track34   pop1             head                                                                   max=8.4 n=1
