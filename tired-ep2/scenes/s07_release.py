@@ -289,6 +289,13 @@ def tired_state(T, info, t):
         f["brow"] = -0.25
         f["brow_ang"] = -0.3
         pt = clamp(t - T.p0, 0.0, 1.19)        # lands, holds, then pulls back to guard
+        # (anat pass) rig workaround: right at the wind-up key the fist points almost along the
+        # view axis; for pose_t ~0.4695..0.4825 its projected length drops under the arm
+        # solver's 4 px threshold and the hand angle falls back to pi/2, so the fist flipped
+        # knuckles-down for one frame (f18). The wind-up is at rest there (smoothstep key):
+        # hold the last good phase through that sliver.
+        if 0.465 < pt < 0.487:
+            pt = 0.465
         if t < T.p0:
             st["pose"] = ("stand", "punch_cycle", smoothstep(seg(t, T.p0 - 0.3, T.p0)))
         else:
@@ -393,8 +400,11 @@ def tired_state(T, info, t):
             st["look"] = (0.25, -0.9)
             st["power"] = 0.72
             if t >= T.dash0 - 0.12:
-                st["look"] = (0.9, 0.45)
-                f["head_nod"] = 0.1
+                # (anat pass) the eyes dart to the baby over 2 frames and the head follows over
+                # 3 (both used to jump in one frame: up-left -> down-right, nod -0.12 -> 0.1)
+                kd = smoothstep(seg(t, T.dash0 - 0.12, T.dash0 - 0.04))
+                st["look"] = (lerp(0.25, 0.9, kd), lerp(-0.9, 0.45, kd))
+                f["head_nod"] = lerp(f["head_nod"], 0.1, smoothstep(seg(t, T.dash0 - 0.1, T.dash0 + 0.04)))
         if t >= T.dash0:
             return _tired_scoop(T, t, st, f)
         return st
@@ -562,7 +572,10 @@ def cur_state(T, info, t):
             # head lowered to the baby, rubbing cheek to cheek, tail tip curling
             k = smoothstep(seg(t, T.nuzzle, T.nuzzle + 0.3))
             ph = (t - T.nuzzle) * math.tau / 1.1
-            st.update(expr="content", ears=0.55, tilt=0.55 * k + 0.07 * math.sin(ph) * k,
+            # (anat pass) ears and head tilt now carry on from their pre-nuzzle values over the
+            # same 0.3 s as the head lowering (the ears dropped and the tilt popped back in one
+            # frame, f341)
+            st.update(expr="content", ears=lerp(0.9, 0.55, k), tilt=lerp(0.15, 0.55, k) + 0.07 * math.sin(ph) * k,
                       tail_curl=0.7 * smoothstep(seg(t, T.nuzzle, T.nuzzle + 0.8)),
                       pose="crouch", pose_from="stand", pose_mix=0.7 * k)
             st["x"] = x_to + 7 * math.sin(ph) * k
@@ -699,7 +712,10 @@ def emb_state(T, info, t):
         if t < wave_on:
             st["pose"] = "stand"
         elif t < wave_off:
-            st["pose"] = ("stand", "wave_small", smoothstep(seg(t, wave_on, wave_on + 0.12)))
+            # (anat pass) the arm rises from the first frame he stands clear: the raise was timed
+            # from 0.05 s before this branch begins, so it started half-way up and took 0.12 s
+            # (a one-frame arm whip out to the side, f407). The wave's own phase is unchanged.
+            st["pose"] = ("stand", "wave_small", smoothstep(seg(t, T.emb_out1, T.emb_out1 + 0.2)))
             st["pose_t"] = t - wave_on
         else:
             st["pose"] = ("wave_small", "stand", smoothstep(seg(t, wave_off, wave_off + 0.25)))
@@ -719,8 +735,13 @@ def emb_state(T, info, t):
                                (tdk + 0.24, (0.95, -0.05)), (T.emb_duck0 - 0.05, (0.95, -0.05)),
                                (T.emb_duck0, (0.6, 0.1))])
         if t > tdk + 0.24:
-            f["head_turn"] = tween(t, [(tdk + 0.24, 0.0), (tdk + 0.4, 0.22), (T.emb_duck0 - 0.1, 0.22),
-                                       (T.emb_duck0, 0.0)])
+            # (anat pass) with the current timing the return keys (emb_duck0 - 0.1 ..) came before
+            # the glance's own end key (tdk + 0.4), so the head snapped back in one frame at
+            # emb_duck0; the turn now holds and eases back as he ducks in (below)
+            gk = [(tdk + 0.24, 0.0), (tdk + 0.4, 0.22)]
+            if tdk + 0.4 <= T.emb_duck0 - 0.1:
+                gk += [(T.emb_duck0 - 0.1, 0.22), (T.emb_duck0, 0.0)]
+            f["head_turn"] = tween(t, gk)
             st["expr"] = "alarmed"
             st["sweat"] = 0.45
         return st
@@ -732,6 +753,18 @@ def emb_state(T, info, t):
     st["y"] = lerp(FEET - 6, HATCH_FEET, k)
     st["look"] = (0.4, 0.1)
     st["expr"] = "determined"
+    # (anat pass) ease out of the glance back over 0.2 s: expression, gaze, brows, head turn
+    # and sweat used to snap all at once on the first ducking frame (f480)
+    q = smoothstep(seg(t, T.emb_duck0, T.emb_duck0 + 0.2))
+    if q < 1.0:
+        g = emb_state(T, info, T.emb_duck0 - 1e-4)          # the face he ducks in with
+        if g["expr"] != st["expr"]:
+            st["expr"] = (g["expr"], st["expr"], q)
+        st["look"] = (lerp(g["look"][0], 0.4, q), lerp(g["look"][1], 0.1, q))
+        for key in ("head_turn", "brow", "brow_ang"):
+            if g["face"].get(key, 0.0):
+                f[key] = g["face"][key] * (1 - q)
+        st["sweat"] = lerp(g["sweat"], st["sweat"], q)
     st["front_of_panel"] = k < 0.55
     st["clip"] = "hatch" if k > 0.85 else None
     st["depth"] = smoothstep(seg(t, T.emb_duck1, T.emb_gone))
@@ -1685,6 +1718,54 @@ def _deep(st):
     return q, lerp(1.0, 0.5, d)
 
 
+def _tired_kw(info, t, st):
+    return dict(pose=st["pose"], pose_t=st["pose_t"], turn=st["turn"], expr=st["expr"], face=st["face"],
+                look=st["look"], blink=st["blink"], power=st["power"], outfit="sewer", bandage=True,
+                headphones=None, hood=0.0, reach=st["reach"], mouth=info.mouth("tired", t),
+                sweat=st.get("sweat", 0.0))
+
+
+# (anat pass) the scoop hand-off, f385-f391. The clamped reach stops at the top of the baby's
+# head, so the baby used to jump up into his r hand in one frame (~100 px at 720p) and go under
+# his forearm, then pop in front of it, then jump again to the two-hand cradle spot. Through
+# [scoop1, cradle1 - 0.02) it is now lifted from where it sat (its head stays put on the first
+# frame), settles into his r hand, then moves between both hands, and stays drawn on top of
+# him the whole time (as on the floor, and as in the cradle that follows).
+def _handoff_k(T, t):
+    if not (T.scoop1 <= t < T.cradle1 - 0.02):
+        return None
+    return (smoothstep(seg(t, T.scoop1, T.scoop1 + 0.2)),               # floor -> r hand
+            smoothstep(seg(t, T.scoop1 + 0.12, T.cradle1 - 0.02)))      # r hand -> both hands
+
+
+_HANDOFF = {}
+
+
+def _handoff_from(T, info):
+    """(dx, dy): where the baby sat (head on head) minus where his r hand holds it, at scoop1."""
+    v = _HANDOFF.get(id(T))
+    if v is None:
+        import cairocffi as cairo
+        c = cairo.Context(cairo.ImageSurface(cairo.FORMAT_RGB24, 2, 2))
+        t0 = T.scoop1
+        bs = baby_state(T, info, t0 - 1e-4)                  # still sitting on the floor
+        head_sit = _draw_baby(c, t0 - 1e-4, bs)["head"]
+        b1 = baby_state(T, info, t0)
+        head_rel = CR.draw_specimen(c, 0.0, 0.0, SB, t0, baby=True, pose="held", expr=b1["expr"], flip=True,
+                                    tail_curl=b1["tail_curl"], look=(-0.2, 0.1), glow=1.7, face=0.8)["head"]
+        pts = {}
+
+        def rec(c_, side, hx, hy, ang):
+            pts[side] = (hx, hy)
+        st = tired_state(T, info, t0)
+        kw = _tired_kw(info, t0, st)
+        kw.update(hold=rec, hold_sides="lr", hold_layer="top")
+        human.draw_person(c, "tired", st["x"], st["y"], SP, t0, **kw)
+        v = (head_sit[0] - head_rel[0] - (pts["r"][0] + 4), head_sit[1] - head_rel[1] - (pts["r"][1] - 12 * SB))
+        _HANDOFF[id(T)] = v
+    return v
+
+
 def _draw_tired(ctx, T, info, t, st, baby_st):
     def hold(c, side, hx, hy, ang):
         if not baby_st["held"]:
@@ -1695,11 +1776,24 @@ def _draw_tired(ctx, T, info, t, st, baby_st):
             bx, by, fc = hx + 4, hy - 12 * SB, 0.8
         CR.draw_specimen(c, bx, by, SB, t, baby=True, pose="held", expr=baby_st["expr"], flip=True,
                          tail_curl=baby_st["tail_curl"], look=(-0.2, 0.1), glow=1.7, face=fc)
-    kw = dict(pose=st["pose"], pose_t=st["pose_t"], turn=st["turn"], expr=st["expr"], face=st["face"],
-              look=st["look"], blink=st["blink"], power=st["power"], outfit="sewer", bandage=True,
-              headphones=None, hood=0.0, reach=st["reach"], mouth=info.mouth("tired", t),
-              sweat=st.get("sweat", 0.0))
-    if baby_st["held"]:
+    kw = _tired_kw(info, t, st)
+    ho = _handoff_k(T, t) if baby_st["held"] else None
+    if ho is not None:
+        kf, kb = ho
+        off = _handoff_from(T, info)
+        pts = {}
+
+        def hold_off(c, side, hx, hy, ang):
+            pts[side] = (hx, hy)
+            if side != "r" or "l" not in pts:       # (called l, then r)
+                return
+            (lx, ly), (rx, ry) = pts["l"], pts["r"]
+            bx = lerp(rx, (lx + rx) / 2, kb) + 4 + off[0] * (1 - kf)
+            by = lerp(ry - 12 * SB, (ly + ry) / 2 - 65 * SB, kb) + off[1] * (1 - kf)
+            CR.draw_specimen(c, bx, by, SB, t, baby=True, pose="held", expr=baby_st["expr"], flip=True,
+                             tail_curl=baby_st["tail_curl"], look=(-0.2, 0.1), glow=1.7, face=lerp(0.8, 0.3, kb))
+        kw.update(hold=hold_off, hold_sides="lr", hold_layer="top")
+    elif baby_st["held"]:
         kw["hold"] = hold
         if st["hold_mode"] == "r":
             kw["hold_sides"] = "r"
@@ -1810,8 +1904,42 @@ def _visible_x(view, x0, x1):
     return not (x1 < view[0] or x0 > view[2])
 
 
-def _hatch_people(ctx, T, info, t, es, cs, ts, bb):
-    """Whoever is in the hatch opening (clipped to it; the open panel goes over them)."""
+HATCH_LIGHT_D = 0.6     # crawlway depth over which the room's light gives way to its darkness
+
+
+def _hatch_mouth_lit(ctx, box, dim, w, fn, t, room):
+    """(anat pass) Someone at the hatch mouth, lit like the room (_char_shade: as when they
+    stand in it) and blending into the crawlway's darkness (sets.dimmed's wash, weight w).
+    Before, the light switched in one frame when the hatch clip came on or off (Emb's white
+    coat turned pink, Tiredness's hoodie navy -> purple, Curiosity's body blue -> purple)."""
+    import cairocffi as cairo
+    al, pod_glow = room
+    ctx.save()
+    ctx.rectangle(*box)
+    ctx.clip()
+    ctx.push_group()
+    fn(ctx)
+    ctx.save()
+    ctx.set_operator(cairo.OPERATOR_ATOP)
+    _char_shade(ctx, t, al, pod_glow)
+    ctx.restore()
+    ctx.pop_group_to_source()
+    ctx.paint()
+    if w > 0.0:
+        ctx.push_group()
+        fn(ctx)
+        ctx.set_operator(cairo.OPERATOR_ATOP)
+        ctx.rectangle(*box)
+        core.fill(ctx, core.alpha(sets.DARK, dim))
+        ctx.pop_group_to_source()
+        ctx.paint_with_alpha(w)
+    ctx.restore()
+
+
+def _hatch_people(ctx, T, info, t, es, cs, ts, bb, room=None):
+    """Whoever is in the hatch opening (clipped to it; the open panel goes over them).
+    room = (alarm, pod_glow) in the live room view: at the hatch mouth they keep the room's
+    light (see _hatch_mouth_lit); None (the CCTV feed) = the crawlway darkness only."""
     for who, st0 in (("emb", es), ("cur", cs), ("tired", ts)):
         if st0.get("clip") == "hatch" and st0["visible"]:
             st, k = _deep(st0)
@@ -1831,8 +1959,13 @@ def _hatch_people(ctx, T, info, t, es, cs, ts, bb):
                 else:
                     _draw_tired(c, T, info, t, st, bb)
                 c.restore()
-            sets.dimmed(ctx, (HATCH[0] - 10, HATCH[1] - 10, HATCH[2] + 20, 900),
-                        lerp(0.4, 0.92, st0.get("depth", 0.0)), fn)
+            box = (HATCH[0] - 10, HATCH[1] - 10, HATCH[2] + 20, 900)
+            dim = lerp(0.4, 0.92, st0.get("depth", 0.0))
+            w = 1.0 if room is None else smoothstep(seg(st0.get("depth", 0.0), 0.0, HATCH_LIGHT_D))
+            if w >= 1.0:
+                sets.dimmed(ctx, box, dim, fn)
+            else:
+                _hatch_mouth_lit(ctx, box, dim, w, fn, t, room)
             ctx.restore()
 
 
@@ -1855,7 +1988,8 @@ def draw_world(ctx, T, info, t, cam):
     view = ctx.clip_extents()
     if t > T.al0 + 0.3 and _visible_x(view, 420, 800):
         _door_leaks(ctx, T, t)
-    _hatch_people(ctx, T, info, t, es, cs, ts, bb)
+    pod_glow = 0.0 if not _visible_x(view, POD_X - 600, POD_X + 600) else 1.0
+    _hatch_people(ctx, T, info, t, es, cs, ts, bb, room=(al, pod_glow))
     # the tiny pod (the baby sleeps inside until it tumbles out)
     if _visible_x(view, POD_X - 200, POD_X + 200):
         inside = None
@@ -1872,7 +2006,6 @@ def draw_world(ctx, T, info, t, cam):
     front_a = bs.get("front_a", 1.0)
     if front_a < 1.0 and _visible_x(view, 1450, 1950):
         _chair_front(ctx, t, bs, al)      # rev 4: she steps out in front of the chair
-    pod_glow = 0.0 if not _visible_x(view, POD_X - 600, POD_X + 600) else 1.0
     with sets.shaded(ctx, _char_shade, t, al, pod_glow):
         if _visible_x(view, 1450, 1950):
             _boss_feed_light(ctx, t, smoothstep(seg(t, T.hatch - 0.3, T.hatch)))

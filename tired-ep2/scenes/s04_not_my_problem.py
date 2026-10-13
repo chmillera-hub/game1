@@ -105,6 +105,14 @@ _SITP = {"base": "sit_crate", "ll_p": 1.5, "lr_p": 1.48, "ll_k": 1.45, "lr_k": 1
 # over the torso but UNDER the head (the hood pull happens behind the head)
 _WALKP = {"base": "walk", "al_layer": "mid", "ar_layer": "back"}
 _STAND_WL = {"base": "stand", "al_layer": _WALKP.get("al_layer", ""), "ar_layer": _WALKP.get("ar_layer", "")}   # anatomy pass
+# (anatomy pass) the stand he sits down from, with the crate pose's own arm layers: an auto-layered
+# "stand" switched the far (l) arm to "back" as the turn passed -0.5 mid-blend, and the rig's
+# behind->front detour then flung that arm out sideways and snapped it back onto the knee
+_STAND_SL = {"base": "stand", "al_layer": _SITP["al_layer"], "ar_layer": _SITP["ar_layer"]}
+# (anatomy pass) the get-up: both ends of the rise blend share these layers (seated ones through his
+# medium, the standing ones from the cut to the wide), so the far arm never detours mid-rise
+_RISE_LAY = {"al_layer": _SITP["al_layer"], "ar_layer": _SITP["ar_layer"]}
+_RISE_LAY_WIDE = {"al_layer": "back", "ar_layer": "mid"}     # what the plain stand resolves to there
 
 _STRICT = bool(os.environ.get("S04_STRICT"))
 
@@ -453,7 +461,7 @@ def _tired(t, T, info, paws=None):
             if k2 <= 0.0:
                 pose = _pose_of((_WALKP, _STAND_WL, k1))   # same arm layers: no hand jump mid-blend
             else:
-                pose = _pose_of(("stand", _sitp(), k2))
+                pose = _pose_of((_STAND_SL, _sitp(), k2))   # same arm layers: no arm flung out mid-blend
             x = lerp(x_stop, SEAT_X, _ramp(t, stop + 0.05, T["sit0"] + 0.2))
         turn = _tw(t, [(stop - 0.05, 1.0), (stop + 0.3, 0.15), (T["sit0"] + 0.25, -0.6)])
         hood = _tw(t, [(0.5, 1.0), (1.2, 0.0)])
@@ -597,7 +605,9 @@ def _tired(t, T, info, paws=None):
     hw = _ramp(t, T["up_a"], T["up_a"] + 0.3) * (1 - _ramp(t, T["up_b"] + 0.28, T["up_c"] - 0.08))
     if t >= T["up_b"]:
         k = _trap(seg(t, T["up_b"], T["up_c"]))
-        pose = _pose_of((pose, _rise_pose(k), k))
+        lay = _RISE_LAY if t < T["s15"] else _RISE_LAY_WIDE     # (anatomy pass) matching layers
+        pa = dict(pose, **lay) if isinstance(pose, dict) else pose
+        pose = _pose_of((pa, dict(_rise_pose(k), **lay), k))
         x = SEAT_X - _foot_shift(k)
     if hw > 0.0:
         pb = _probe_person(x, FEET_Y, t, dict(kw, pose=pose, turn=turn))
@@ -1099,6 +1109,23 @@ def _cur_hold(t, T, d):
     return d
 
 
+LV_PRE = 0.2                   # (anatomy pass) it starts curving into the side tunnel this long before the mouth
+
+
+def _lv_turn(t, T):
+    """(anatomy pass) Its floor point from LV_PRE before the side-tunnel mouth to the stop. The
+    corridor walk used to switch onto the tunnel path at that path's top speed (a lurch up into
+    the tunnel, ~5x its walking pace in one frame); now the walk curves into the tunnel with its
+    own speed and arrives where and when it always stopped (K_STOP at lv_stop)."""
+    ta, ls = T["lv_mouth"] - LV_PRE, T["lv_stop"]
+    u, D = seg(t, ta, ls), ls - ta
+    vw = CUR_V * LEAVE_RATE
+    xa = TUG_X - vw * (ta - T["lv_walk"] - 0.125)          # its corridor x at ta (cruising)
+    h00, h10, h01 = 2 * u ** 3 - 3 * u ** 2 + 1, u ** 3 - 2 * u ** 2 + u, 3 * u ** 2 - 2 * u ** 3
+    x0 = h00 * xa + h10 * (-vw * D) + h01 * MOUTH_X0        # lane: leaves at the walk's speed, settles at the mouth
+    return _depth(K_STOP * smoothstep(u), x0)
+
+
 def _cur_leave(t, T, d):
     # S8: (turned away across the cut) walks away alone into the side tunnel, stops a short
     # way in, looks back once, turns and goes on into the dark
@@ -1125,6 +1152,9 @@ def _cur_leave(t, T, d):
         d["pose"] = "walk"
         d["pose_t"] = dist / CUR_V
         d["pose_from"], d["pose_mix"] = "stand", seg(tw_, 0.0, 0.3)
+        if t >= T["lv_mouth"] - LV_PRE:                  # (anatomy pass) already curving in
+            x, y, f = _lv_turn(t, T)
+            d.update(x=x, y=y, s=S * f)
         return d
     # in the side tunnel: k from the mouth into the dark (stop + look back on the way)
     pt0 = corr / CUR_V
@@ -1140,7 +1170,7 @@ def _cur_leave(t, T, d):
         u = seg(t, T["lv_fwd"] + 0.15, T["lv_deep"])
         k = lerp(K_STOP, K_WAIT, smoothstep(u))
         pt = pts + (t - T["lv_fwd"] - 0.15) * 1.0
-    x, y, f = _depth(k)
+    x, y, f = _depth(k) if t >= T["lv_stop"] else _lv_turn(t, T)     # (anatomy pass) smooth turn-in
     d.update(x=x, y=y, s=S * f, pose="walk", pose_t=pt)
     mix_stand = _ramp(t, T["lv_stop"] - 0.3, T["lv_stop"]) * (1 - _ramp(t, T["lv_fwd"], T["lv_fwd"] + 0.3))
     if mix_stand > 0.0:

@@ -78,6 +78,7 @@ HAND_R = 40.0                              # that disc's radius (px at s=1)
 FINGER = 25.0                              # grip point -> index fingertip (px at s=1)
 FINGER_ANG = -2.5                          # finger direction in the eye-line frame (up-left)
 PEEK_FX = 0.72                             # fingertip: this many eye-spacings outside the eye centre
+ROLL_IN = 0.2                              # CR eyeroll: its lids-drop / pupils-slide-right lead-in (s)
 
 
 def _sleeper(c, x, y, s, t, seed):
@@ -457,12 +458,6 @@ def tired_state(t, k, info, noarm=False):
         st["pose"] = PROUD
         st["turn"] = lerp(0.1, -1.0, ease_in_out(kk))
         f["head_nod"] = -0.04
-        # anat fix: the face eases from the stand's (head turn 0.12, tilt, smirk 0.5) through the
-        # turn instead of snapping on its first frame
-        f0 = tired_state(k.turn0 - 1e-6, k, info)["face"]
-        e = ease_in_out(kk)
-        for key in set(f0) | set(f):
-            f[key] = lerp(f0.get(key, 0.0), f.get(key, 0.0), e)
         return st
     if t < k.BONK:                                      # the confident stride
         x = T_X - k.v * (t - k.tgo)
@@ -830,7 +825,20 @@ def sigh_relief(t, k, st):
     st["tail_curl"] = st["tail_curl"] + 0.15 * relax
 
 
-def cur_state(t, k):
+def _sit_hop_offset(k):
+    """reach_up head - sit head (world px) at the hop-down's pose switch (kk = 0.5)."""
+    o = getattr(k, "_sit_hop", None)
+    if o is None:
+        ts = lerp(k.c_sit0, k.c_sit1, 0.5)
+        s = cur_state(ts, k, _raw=True)
+        a_sit = cur_anchors(ts, k, dict(s, pose="sit"))
+        a_ru = cur_anchors(ts, k, dict(s, pose="reach_up"))
+        o = (a_ru["head"][0] - a_sit["head"][0], a_ru["head"][1] - a_sit["head"][1])
+        k._sit_hop = o
+    return o
+
+
+def cur_state(t, k, _raw=False):
     st = dict(x=C_X0, y=FEET, pose="sit", flip=False, expr="calm", look=(0.6, -0.55), face=None,
               tilt=0.0, ears=0.6, tail_curl=0.0, reach=0.0, pose_t=None, glow=1.0, blink=None,
               sy=1.0, rot=0.0, pose_from=None, pose_mix=1.0, look_target=None, eyes=1.0, squeeze=0.0)
@@ -839,6 +847,11 @@ def cur_state(t, k):
         st["look_target"] = "eyes"
         st["expr"] = "wide" if t < 0.6 else ("calm" if t < k.L1 + 1.0 else "curious")
         st["ears"] = kf(t, [(0.0, 0.9), (0.6, 0.9), (1.0, 0.62), (k.L1 + 1.0, 0.62), (k.L1 + 1.3, 0.68)])
+        if t >= k.hop0 - 0.05:
+            # anat fix: the climb shot's first frame (its cut is at hop0 - 0.05) already shows the
+            # hop's start (calm, looking up at the plinth); it was the only frame with the curious
+            # face (14 deg head tilt, wider eyes) before snapping to calm on the next frame
+            st["expr"], st["look_target"], st["look"], st["ears"] = "calm", None, (0.3, -0.7), 0.7
         return st
     # ---------------- the hop up onto the plinth: crouch, jump straight up, land on its hind legs
     if t < k.hop2:
@@ -914,6 +927,19 @@ def cur_state(t, k):
             ru = seg(t, k.roll0, k.roll0 + CR.EYEROLL_DUR)
             st["rot"] = -0.11 * bump(ru, 0.1, 0.85) + 0.05 * bump(ru, 0.75, 1.0)   # a head toss
             st["sy"] *= 1.0 - 0.04 * bump(ru, 0.7, 1.0)          # the "hmph" shoulder drop
+            # anat fix: the eyeroll's first 0.2 s (lids drop to 40 %, pupils slide right) starts
+            # from calm's open lids and centred pupils; coming from "annoyed" (lids at 50 %,
+            # already looking right) the eyes flashed wide open and centred for 2 frames. Hold
+            # annoyed through it, easing onto the roll's own gaze and head tilt, and ease the lid
+            # 50 % -> the roll's after; the roll itself keeps its timing (pose_t from roll0)
+            pr = t - k.roll0
+            if pr < ROLL_IN:
+                st["expr"], st["pose_t"], st["blink"] = "annoyed", None, 0.0
+                st["roll_in"] = pr
+                st["tilt"] += CR._eyeroll(pr)[3]
+            elif pr < 2 * ROLL_IN:
+                up_ = CR._eyeroll(pr)[2]
+                st["blink"] = (1.0 - smoothstep(seg(pr, ROLL_IN, 2 * ROLL_IN))) * max(0.0, 0.5 - up_) / (1.0 - up_)
         elif k.roll0 + CR.EYEROLL_DUR + 0.15 <= t < k.HOOD:
             st["expr"] = "annoyed"
         if k.L2 - 0.5 <= t < k.hd0:
@@ -964,6 +990,14 @@ def cur_state(t, k):
         st["ears"] = 0.9
         st["tail_curl"] = 0.7
         st["look_target"] = "eyes"
+        if kk >= 0.5 and not _raw:
+            # anat fix: reach_up -> sit can't blend (raised paws), and the sit head sits ~85 px
+            # lower: the head dropped ~200 screen px in one frame at the switch. The sit body
+            # starts where its head continues reach_up's, and eases down onto the plinth
+            dxh, dyh = _sit_hop_offset(k)
+            u = 1.0 - smoothstep(seg(kk, 0.5, 1.0))
+            st["x"] += dxh * u
+            st["y"] += dyh * u
         return st
     # ---------------- sitting on the plinth beside him
     st["x"] = C_XS
@@ -1096,6 +1130,11 @@ def _resolve_look(cst, ta):
     base = aim((ex, ey), (hx, hy), 0.85)
     if st["expr"] == "eyeroll":
         base = (base[0] * 0.5, base[1] * 0.5)
+    ri = st.get("roll_in")
+    if ri is not None:                      # (anat fix, see cur_state) onto the roll's start gaze
+        e = ease_in_out(clamp(ri / ROLL_IN))
+        g = CR._eyeroll(ROLL_IN)
+        base = (lerp(base[0], g[0], e), lerp(base[1], g[1], e))
     ls = st.get("look_soft", 0.0)
     if ls > 0.0:
         base = (base[0] * (1.0 - 0.3 * ls), base[1] * (1.0 - 0.6 * ls) + 0.18 * ls)

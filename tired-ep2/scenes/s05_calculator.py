@@ -1278,9 +1278,10 @@ def embar_state(t, k):
     # hands flying up to his head / coming back down: the aim point passes through the torch
     # hand, so the aim->hand angle flipped ~160 deg in one or two frames (torch + beam whipped
     # round). In those moves ease the ANGLE between the two ends instead (same ease as the hand),
-    # the torch tipping up in front of him and back down the same way; the beam length eases too.
-    for a0, a1, ez, sgn in ((k["fr_up0"], k["fr_up1"], ease_out, -1.0),
-                            (k["fr_dn0"], k["fr_dn1"], ease_in_out, 1.0)):
+    # turning the way those flips went (the torch tips back over his shoulder on the way up, and
+    # back round on the way down: that way the arm's elbow also stays smooth); beam length eased.
+    for a0, a1, ez, sgn in ((k["fr_up0"], k["fr_up1"], ease_out, 1.0),
+                            (k["fr_dn0"], k["fr_dn1"], ease_in_out, -1.0)):
         if a0 < t < a1:
             e0, e1 = embar_state(a0, k), embar_state(a1, k)
             g0, g1 = e0["reach"]["r"], e1["reach"]["r"]

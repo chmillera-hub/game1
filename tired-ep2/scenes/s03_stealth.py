@@ -118,6 +118,19 @@ KEY_W = 72.0          # belt half-width at s=0.75
 _DUMMY = cairo.Context(cairo.ImageSurface(cairo.FORMAT_ARGB32, 1, 1))
 
 
+def _knee_rest(turn):
+    """Top of his r knee in the HIDE crouch, as an offset from his ground point (s=SC): where his free r
+    hand rests in the react MCU (the crouch's floor-bracing IK can't reach the floor, so that flat palm
+    floated in mid-air beside the knee)."""
+    a = human.draw_person(_DUMMY, "tired", 0.0, 0.0, SC, 0.0, pose=HIDE, turn=turn, outfit="sewer", hood=1.0,
+                          shadow=False, drift=False)
+    kx, ky = a["knee_r"][:2]
+    return kx, ky - 35.0 * SC          # knee radius (leg_r[1] = 35 px at s=1)
+
+
+_KNEE_R = {0.3: _knee_rest(0.3)}       # precomputed: the react shot's turn
+
+
 def LIT(c):
     sets.shaft_lower(c, 0.0, lit=True)
 
@@ -452,7 +465,15 @@ def _g1(t, T):
     if ks > 0.001:
         # blended over whatever he is doing: the walk-off starts before the shrug has released, and a
         # plain ("stand", shrug) blend there slid his feet, then snapped them into a full stride
-        pose = (pose, G1_SHRUG, ks)
+        if kw > 0.001:
+            # (his turn sweeps past the flashlight arm's front/back switch inside this blend: the same
+            # explicit r-arm layer on every side, so the rig's arm detour can't flick it out for a frame;
+            # it still goes behind him where the auto layer did, once he has turned past ~0.13)
+            lay = "back" if turn > 0.13 else "mid"
+            pose = (({"base": "stand", "ar_layer": lay}, {"base": "walk", "ar_layer": lay}, kw),
+                    dict(G1_SHRUG, ar_layer=lay), ks)
+        else:
+            pose = (pose, G1_SHRUG, ks)
         # one-handed shrug: the free hand palm-up + shoulders + head; the flashlight hand
         # stays on its IK target (held low at his side) so it never jumps
     # face
@@ -569,7 +590,7 @@ def _g2(t, T):
     expr = "neutral"
     face = {"brow_ang": 0.7, "brow": 0.25, "press": 0.35, "wobble": 0.25}
     look = (0.55 * math.cos(ang) + _wave(t, 1.8, 0.35, 11), 0.4 * math.sin(ang))
-    if T["l2s"] - 0.2 <= t < tj:
+    if T["l2s"] - 0.25 <= t < tj:      # from the shadow shot's first frame (was one frame after the cut)
         expr = "sad"
         face = {"brow_ang": 0.8, "brow": 0.3, "wobble": 0.3}
         look = (0.3 + _wave(t, 2.2, 0.3, 5), -0.1)
@@ -734,6 +755,13 @@ def _tired(t, T):
         if t < sn0:     # the guard walks right over their heads
             face["head_turn"] = lerp(-0.2, 0.35, smoothstep(seg(t, S, sn0)))
             face["head_nod"] = -0.3
+        kb = smoothstep(seg(t, S + 0.3, S + 0.55))
+        if kb < 1:
+            # ease out of the beam-tracking hold above (the hood snapped round in one frame at S+0.3)
+            k0 = smoothstep(seg(t, duck + 0.3, duck + 0.6))
+            prev = {"head_turn": (-0.3 + 0.45 * smoothstep(seg(t, hide + 0.8, T["l2s"] - 0.6))) * k0,
+                    "head_nod": -0.22 * k0, "press": 0.6, "brow": 0.4}
+            face = {kk: lerp(prev.get(kk, 0.0), face.get(kk, 0.0), kb) for kk in set(prev) | set(face)}
         if fr0 + 0.05 <= t < fr1:
             face = {"press": 0.9, "head_turn": 0.4, "head_nod": -0.15, "brow": 0.9, "width": -0.1}
         if t >= fr1 + 0.4:
@@ -752,6 +780,17 @@ def _tired(t, T):
                 "frown": 0.3 * k, "brow": lerp(0.7, 1.0, k), "head_turn": 0.4, "head_nod": -0.12 - 0.04 * k,
                 "squash": -0.06 * k * (1 - seg(t, R0 + 0.12, R0 + 0.4))}
         expr = ("annoyed", "alarmed", k)
+        if T["l3s"] - 0.25 <= t < T["l3s"] - 0.08:
+            # ease the eek grimace into the whisper's tight lips below (was a one-frame mouth snap)
+            kb = smoothstep(seg(t, T["l3s"] - 0.25, T["l3s"] - 0.08))
+            w0 = T["l3s"]
+            shake = 0.07 * math.sin(2 * math.pi * 2.6 * (t - w0)) * (1 - seg(t, w0, w0 + 0.6)) \
+                * (t < w0 + 0.6)
+            lean = 0.05 * smoothstep(seg(t, T["l3s"] + 0.45, T["l3s"] + 0.75))
+            wf = {"press": 0.35, "brow": 0.85, "brow_ang": 0.5, "frown": 0.3, "width": -0.05,
+                  "head_turn": 0.4 + shake, "head_nod": -0.12 + lean}
+            face = {kk: lerp(face.get(kk, 0.0), wf.get(kk, 0.0), kb) for kk in set(face) | set(wf)}
+            expr = (expr, ("alarmed", "annoyed", 0.4), kb)
         if t >= T["l3s"] - 0.08:
             # the whisper: lips stay tight, worried; a tiny "no" head shake on "Don't."
             w0 = T["l3s"]
@@ -919,7 +958,9 @@ def _curio(t, T):
     if 0 < wig < 1:
         kw["tilt"] = 0.09 * math.sin(wig * 2 * math.pi * 3) * math.sin(math.pi * wig)
     if t >= R0 + 2.1:
-        kw.update(expr="troll", look=(-0.35, -0.65), ears=0.75, face=0.15, tail_curl=0.7)
+        # the head turns to him over 0.2 s (its yaw jumped 1 -> 0.15 in one frame); the grin is on time
+        kw.update(expr="troll", look=(-0.35, -0.65), ears=0.75, tail_curl=0.7,
+                  face=lerp(1.0, 0.15, smoothstep(seg(t, R0 + 2.1, R0 + 2.3))))
     return x, y, kw
 
 
@@ -1077,12 +1118,20 @@ def render(ctx, t, info):
         ta = None
         if show_us:
             dt = 0.46 if name != "reform" else 0.4
+            treach = None
+            if name == "react":
+                tk = round(ts["turn"], 3)
+                if tk not in _KNEE_R:
+                    _KNEE_R[tk] = _knee_rest(tk)
+                kx, ky = _KNEE_R[tk]
+                treach = {"r": (ts["x"] + kx, ts["y"] + ky, 1.0)}
 
             def fT():
                 return human.draw_person(ctx, "tired", ts["x"], ts["y"], SC, t, pose=ts["pose"],
                                          pose_t=ts["pose_t"], turn=ts["turn"], expr=ts["expr"],
                                          face=ts["face"], mouth=info.mouth("tired", t), outfit="sewer",
-                                         bandage=True, power=POWER, hood=1.0, headphones=None)
+                                         bandage=True, power=POWER, hood=1.0, headphones=None,
+                                         reach=treach)
             pats["t"], ta = _group(ctx, dt, fT)
         ca = None
         if show_c:

@@ -338,11 +338,17 @@ def tired_kw(t, T, info):
     PLT = (-0.42, 0.95)          # the plate (down-left) while crouched
     ROW = (0.75, 0.05)           # along the row of pods (standing)
     DOWN = (-0.55, 0.75)         # down to the creature (standing CU)
+    # anat pass: the glance pod -> creature -> pod only fits when l01 - 0.35 >= wstop + 1.0. With
+    # the current cues it does not (wstop + 1.0 falls after l01 - 0.35), and tween() skipped the
+    # out-of-order keys: the eyes dipped toward the creature for 3 frames and snapped back to the
+    # pod in ONE frame just before l01 (a double look). Without room the glance is left out: the
+    # eyes stay on the pod (only those 4 frames change).
+    glance = T["l01"] - 0.35 >= T["wstop"] + 1.0
     look = tween(t, [
         (T["pod"], (-0.9, 0.05)),
         (T["wstop"] + 0.3, (-0.9, 0.05)), (T["wstop"] + 0.45, POD),     # at the pod
-        (T["wstop"] + 0.85, POD), (T["wstop"] + 1.0, CUR_ST),             # -> the creature
-        (T["l01"] - 0.35, CUR_ST), (T["l01"] - 0.2, POD),                 # -> the pod again
+        *([(T["wstop"] + 0.85, POD), (T["wstop"] + 1.0, CUR_ST),            # -> the creature
+           (T["l01"] - 0.35, CUR_ST), (T["l01"] - 0.2, POD)] if glance else []),   # -> the pod again
         (T["kept"] - 0.1, POD), (T["kept"] + 0.12, CUR_ST),               # "kept YOU": to it
         (T["cr0"] + 0.65, CUR_CR),
         (T["plate"] - 0.25, CUR_CR), (T["plate"] - 0.05, PLT),            # notices the plate
