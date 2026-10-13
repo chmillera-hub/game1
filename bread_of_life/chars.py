@@ -44,10 +44,12 @@ def tunic_outfit(base, base_sh, trim=None, neckline="v", mantle=None, belt=None,
         # the neckline is an opening in the robe: the throat and chest show through it, and the
         # robe's outline follows the neckline instead of running across the neck
         ncx = by * 0.55 + ho[0] * 0.3
+        # the collar sits round the base of the neck, a little wider than it, never cutting into it
+        hw = max(0.5, st.get("neck_w", 0.4) * 1.12 + 0.16)
         if neckline == "v":
-            nk = [(ncx - 0.42, -0.1), (ncx - 0.24, 0.28), (ncx, 0.62 + 0.04 * P["breath"]), (ncx + 0.24, 0.28), (ncx + 0.42, -0.1)]
+            nk = [(ncx - hw, -0.12), (ncx - hw * 0.55, 0.3), (ncx, 0.66 + 0.04 * P["breath"]), (ncx + hw * 0.55, 0.3), (ncx + hw, -0.12)]
         else:
-            nk = [(ncx - 0.52, -0.1), (ncx - 0.4, 0.3), (ncx, 0.45), (ncx + 0.4, 0.3), (ncx + 0.52, -0.1)]
+            nk = [(ncx - hw, -0.12), (ncx - hw * 0.8, 0.3), (ncx, 0.48), (ncx + hw * 0.8, 0.3), (ncx + hw, -0.12)]
         npath = spline(nk, closed=True, corners=[0, 4])
         robe = spline(pts, closed=True, corners=HEM_CORNERS, tension=0.45)
         body = _cut_neckline(robe, nk)
@@ -64,10 +66,13 @@ def tunic_outfit(base, base_sh, trim=None, neckline="v", mantle=None, belt=None,
             for s_ in (-1, 1):
                 x = s_ * sw * 0.40 + by * 0.4
                 cv.drawPath(spline([(x - 0.08, -0.2), (x + 0.08, -0.2), (x + 0.14, hem + 0.5), (x - 0.04, hem + 0.5)], closed=True, corners=[0, 1, 2, 3]), fill(clavi, alpha=0.85))
-        # chest/drape folds
-        folds = [[(-0.95, 0.35), (-0.8, 1.3), (-0.95, 2.6)], [(0.95, 0.35), (0.85, 1.4), (1.0, 2.7)],
-                 [(-0.5, 0.9), (-0.42, 1.8), (-0.6, 3.2)], [(0.55, 1.0), (0.5, 2.0), (0.7, 3.4)],
-                 [(-0.15, 1.6), (0.0, 2.6), (-0.1, 3.9)]]
+        # the chest is full and lifted: light across it, a soft shadow beneath it
+        cv.drawPath(ellipse(by * 0.5 - sx * sw * 0.08, 1.05, sw * 0.62, 0.75), fill(mix(base, "#ffffff", 0.3), alpha=0.32, blur=0.35))
+        cv.drawPath(ellipse(by * 0.5, 2.25, sw * 0.7, 0.32), fill(base_sh, alpha=0.28, blur=0.3))
+        # drape folds, falling from below the chest
+        folds = [[(-1.05, 0.9), (-0.92, 1.8), (-1.0, 2.9)], [(1.05, 0.95), (0.95, 1.9), (1.05, 3.0)],
+                 [(-0.5, 2.0), (-0.45, 2.8), (-0.6, 3.6)], [(0.55, 2.1), (0.5, 2.9), (0.7, 3.8)],
+                 [(-0.15, 2.4), (0.0, 3.1), (-0.1, 4.0)]]
         for f in folds:
             _fold(cv, [(x * sw / 1.8 + by * 0.5, y) for x, y in f], base_sh, hi, w=0.05, alpha=0.6)
         # skirt folds from the belt to the hem
@@ -81,19 +86,21 @@ def tunic_outfit(base, base_sh, trim=None, neckline="v", mantle=None, belt=None,
         cv.drawPath(spline([(-sw * 1.2, hem - 0.25), (0, hem - 0.18), (sw * 1.2, hem - 0.25)], closed=False), stroke(trim or base_sh, 0.12, alpha=0.6))
         if sash:
             sc, ssh2 = sash
-            sp = [(-1.55 * sw / 2.05 + by * 0.3, 0.25), (-1.2 * sw / 2.05 + by * 0.3, 0.2), (1.6 * sw / 2.05 + by * 0.3, 3.9), (1.2 * sw / 2.05 + by * 0.3, 4.2)]
+            sp = [(-1.38 * sw / 2.05 + by * 0.3, -0.6), (-0.98 * sw / 2.05 + by * 0.3, -0.62), (1.6 * sw / 2.05 + by * 0.3, 3.9), (1.2 * sw / 2.05 + by * 0.3, 4.2)]
             band = spline(sp, closed=True, corners=[0, 1, 2, 3])
             cv.drawPath(band, fill(sc))
             cv.drawPath(band, stroke(lc, 0.02))
         cv.restore()
-        # chest seen through the neckline: collarbones, and the soft shadow of the robe's edge
+        # chest seen through the neckline: collarbones and the notch between them
         cv.save()
         cv.clipPath(npath, skia.ClipOp.kIntersect, True)
         sh2 = st.get("skin_sh2", st["skin_sh"])
-        cv.drawPath(spline([(ncx - 0.34, 0.1), (ncx - 0.2, 0.14), (ncx - 0.08, 0.2)], closed=False), stroke(sh2, 0.016, alpha=0.45))
-        cv.drawPath(spline([(ncx + 0.34, 0.1), (ncx + 0.2, 0.14), (ncx + 0.08, 0.2)], closed=False), stroke(sh2, 0.016, alpha=0.45))
-        cv.drawPath(spline(nk, closed=False), stroke(st["skin_sh"], 0.14, alpha=0.4, blur=0.04))
+        for s_ in (-1, 1):
+            cv.drawPath(tapered(sample_spline([(ncx + s_ * hw * 0.85, 0.06), (ncx + s_ * 0.24, 0.14), (ncx + s_ * 0.07, 0.2)], n=10), 0.004, 0.006, wmid=0.016),
+                        fill(sh2, alpha=0.4))
+        cv.drawPath(ellipse(ncx, 0.25, 0.05, 0.035), fill(sh2, alpha=0.25, blur=0.02))
         cv.restore()
+        cv.drawPath(body, stroke(lc, 0.024))  # keep the robe's outline crisp over anything drawn on it
         # collar band along the neckline
         cv.drawPath(spline(nk, closed=False), stroke(trim or base_sh, 0.07, alpha=0.75))
         cv.drawPath(spline(nk, closed=False), stroke(lc, 0.02, alpha=0.95))
@@ -119,6 +126,28 @@ def tunic_outfit(base, base_sh, trim=None, neckline="v", mantle=None, belt=None,
         if scarf:
             scarf(cv, st, P, H, ho, pts)
 
+    def collar(cv, st, P, H, ho):
+        """Drawn after the arms: the part of the sash that lies over the shoulder, on top of the
+        sleeve, so the strap visibly goes over the shoulder."""
+        if not sash:
+            return
+        pts = body_pts(st, P)
+        by = P["byaw"] / 60.0
+        sw = st.get("shoulder_w", 2.1)
+        lc = st.get("line", "#2a1a14")
+        sc, ssh2 = sash
+        sp = [(-1.38 * sw / 2.05 + by * 0.3, -0.6), (-0.98 * sw / 2.05 + by * 0.3, -0.62), (1.6 * sw / 2.05 + by * 0.3, 3.9), (1.2 * sw / 2.05 + by * 0.3, 4.2)]
+        band = spline(sp, closed=True, corners=[0, 1, 2, 3])
+        robe = spline(pts, closed=True, corners=HEM_CORNERS, tension=0.45)
+        cv.save()
+        cv.clipPath(robe, skia.ClipOp.kIntersect, True)
+        cv.clipRect(skia.Rect.MakeLTRB(-sw * 1.3, -1.0, -sw * 0.25 + by * 0.3, 0.75), skia.ClipOp.kIntersect, True)
+        cv.drawPath(band, fill(sc))
+        cv.drawPath(spline([sp[0], sp[3]], closed=False), stroke(ssh2, 0.06, alpha=0.6))
+        cv.drawPath(band, stroke(lc, 0.02))
+        cv.restore()
+
+    outfit.collar = collar
     return outfit
 
 
@@ -187,27 +216,27 @@ def mantle_painter(col, col_sh, side=1, lining=None):
 # Jesus
 # ---------------------------------------------------------------------------
 JESUS_ST = dict(
-    skin="#ba976c", skin_sh="#a0764c", skin_sh2="#845b38", blush_col="#b76e57", blush_base=0.07,
-    line="#3a2016", lash="#26140d", brow_col="#3a2216", lower_col="#6b442d", crease_col="#926646",
+    skin="#bf9b7d", skin_sh="#a47958", skin_sh2="#885d41", blush_col="#b9705c", blush_base=0.07,
+    line="#3a2016", lash="#26140d", brow_col="#3a2216", lower_col="#6c4632", crease_col="#94684f",
     iris=("#2a170a", "#80501f", "#e2b26a"), lid_shadow="#5a3020",
     hair="#432a1a", hair_sh="#28170d", hair_hl="#82593c", hair_line="#1e1009", hair_rim="#d39a63",
     beard="#4a2e1d", beard_sh="#2c180e",
-    eye_x=0.43, eye_y=0.03, eye_w=0.235, eye_h=0.162, eye_low=0.092, eye_tilt=-0.004,
-    iris_rx=0.118, iris_ry=0.140, sclera_shadow="#e3d6d0",
-    lash_in=0.012, lash_out=0.036, lash_mid=0.032, wing=0.018,
-    brow_x=0.43, brow_y=-0.28, brow_in=-0.23, brow_out=0.27, brow_arch=0.055,
-    brow_w0=0.056, brow_wm=0.046, brow_w1=0.014,
-    mouth_w=0.135, mouth_y=0.655, mouth_h=0.21, nose_y=0.37, nose_len=0.18, jaw_drop=0.07,
-    shoulder_w=2.1, neck_w=0.44, neck_len=1.72, neck_top=0.8, face_lw=0.02,
+    head_xscale=0.88, eye_x=0.47, eye_y=0.10, eye_w=0.215, eye_h=0.118, eye_low=0.078, eye_tilt=-0.006,
+    iris_rx=0.098, iris_ry=0.106, sclera_shadow="#e3d6d0",
+    lash_in=0.012, lash_out=0.03, lash_mid=0.026, wing=0.01,
+    brow_x=0.47, brow_y=-0.15, brow_in=-0.23, brow_out=0.27, brow_arch=0.035,
+    brow_w0=0.066, brow_wm=0.056, brow_w1=0.016,
+    mouth_w=0.155, mouth_y=0.75, mouth_h=0.21, nose_y=0.45, nose_len=0.2, jaw_drop=0.07,
+    shoulder_w=2.1, neck_w=0.44, neck_len=1.82, neck_top=0.8, face_lw=0.02,
     hem_y=13.2, waist_w=0.80, hip_w=0.85, hem_w=0.95, upper_arm=3.15, forearm=2.8, hand_len=2.15,
     sleeve_w=(0.95, 0.9, 1.08), stance=0.72,
     rim_col="#ffe1b0",
     slices=[
-        (-1.70, 0.02, 0.10, -0.12), (-1.62, 0.45, 0.50, -0.12), (-1.46, 0.74, 0.78, -0.13),
-        (-1.20, 0.93, 0.95, -0.12), (-0.85, 1.00, 1.00, -0.10), (-0.45, 1.02, 1.01, -0.08),
-        (0.00, 1.00, 0.97, -0.05), (0.28, 0.96, 0.92, -0.01), (0.50, 0.89, 0.83, 0.04),
-        (0.68, 0.78, 0.71, 0.10), (0.83, 0.63, 0.58, 0.18), (0.95, 0.46, 0.44, 0.28),
-        (1.04, 0.29, 0.31, 0.36), (1.10, 0.14, 0.20, 0.42), (1.125, 0.01, 0.10, 0.45),
+        (-1.700, 0.020, 0.100, -0.12), (-1.620, 0.450, 0.500, -0.12), (-1.460, 0.740, 0.780, -0.13),
+        (-1.200, 0.930, 0.950, -0.12), (-0.850, 1.000, 1.000, -0.10), (-0.450, 1.020, 1.010, -0.08),
+        (0.000, 1.000, 0.970, -0.05), (0.314, 1.001, 0.936, -0.01), (0.560, 0.958, 0.856, 0.04),
+        (0.762, 0.858, 0.738, 0.10), (0.930, 0.693, 0.603, 0.18), (1.064, 0.506, 0.458, 0.28),
+        (1.165, 0.319, 0.322, 0.36), (1.232, 0.140, 0.200, 0.42), (1.260, 0.010, 0.100, 0.45),
     ],
 )
 
@@ -234,19 +263,19 @@ PETER_ST.update(
     iris=("#1d1109", "#4d3016", "#9a6a3c"), lid_shadow="#4a2a1a",
     hair="#231a15", hair_sh="#120c08", hair_hl="#5a4636", hair_line="#0d0805",
     beard="#33271f", beard_sh="#1a120d",
-    eye_x=0.44, eye_y=0.03, eye_w=0.225, eye_h=0.140, eye_low=0.085, eye_tilt=-0.01,
-    iris_rx=0.108, iris_ry=0.128, lash_in=0.014, lash_out=0.036, lash_mid=0.032, wing=0.012,
-    brow_x=0.44, brow_y=-0.25, brow_in=-0.25, brow_out=0.28, brow_arch=0.03,
-    brow_w0=0.075, brow_wm=0.065, brow_w1=0.025,
-    mouth_w=0.15, mouth_y=0.67, nose_y=0.38, nose_len=0.22, nose_w=0.07,
-    shoulder_w=2.35, neck_w=0.52, neck_len=1.70, neck_top=0.8, hem_y=12.3, hand_len=2.3,
+    head_xscale=0.9, eye_x=0.48, eye_y=0.10, eye_w=0.21, eye_h=0.105, eye_low=0.072, eye_tilt=-0.012,
+    iris_rx=0.092, iris_ry=0.1, lash_in=0.014, lash_out=0.03, lash_mid=0.028, wing=0.006,
+    brow_x=0.48, brow_y=-0.15, brow_in=-0.25, brow_out=0.28, brow_arch=0.02,
+    brow_w0=0.08, brow_wm=0.07, brow_w1=0.028,
+    mouth_w=0.17, mouth_y=0.76, nose_y=0.46, nose_len=0.24, nose_w=0.075,
+    shoulder_w=2.35, neck_w=0.52, neck_len=1.80, neck_top=0.8, hem_y=12.3, hand_len=2.3,
     upper_arm=3.2, forearm=2.85, stance=0.8,
     slices=[
-        (-1.66, 0.02, 0.10, -0.12), (-1.58, 0.47, 0.50, -0.12), (-1.42, 0.78, 0.80, -0.13),
-        (-1.15, 0.96, 0.96, -0.12), (-0.80, 1.02, 1.00, -0.10), (-0.40, 1.04, 1.01, -0.08),
-        (0.00, 1.03, 0.98, -0.05), (0.28, 1.00, 0.93, -0.01), (0.52, 0.95, 0.85, 0.04),
-        (0.72, 0.85, 0.74, 0.10), (0.88, 0.70, 0.60, 0.18), (1.00, 0.52, 0.46, 0.28),
-        (1.08, 0.33, 0.33, 0.36), (1.13, 0.16, 0.22, 0.42), (1.15, 0.01, 0.10, 0.45),
+        (-1.660, 0.020, 0.100, -0.12), (-1.580, 0.470, 0.500, -0.12), (-1.420, 0.780, 0.800, -0.13),
+        (-1.150, 0.960, 0.960, -0.12), (-0.800, 1.020, 1.000, -0.10), (-0.400, 1.040, 1.010, -0.08),
+        (0.000, 1.030, 0.980, -0.05), (0.314, 1.043, 0.946, -0.01), (0.582, 1.026, 0.877, 0.04),
+        (0.806, 0.935, 0.770, 0.10), (0.986, 0.770, 0.624, 0.18), (1.120, 0.572, 0.478, 0.28),
+        (1.210, 0.363, 0.343, 0.36), (1.266, 0.160, 0.220, 0.42), (1.288, 0.010, 0.100, 0.45),
     ],
 )
 
@@ -255,7 +284,7 @@ def peter_outfit():
 
 PETER = Character(
     "peter", PETER_ST, outfit=peter_outfit(),
-    beard=hair.CurlyBeard(vol=0.06, chin=0.14, inner=[(0.98, 0.0), (0.95, 0.28), (0.85, 0.47), (0.66, 0.58), (0.42, 0.64), (0.26, 0.70), (0.13, 0.76), (0.0, 0.78)]),
+    beard=hair.CurlyBeard(vol=0.06, chin=0.14, inner=[(1.0, 0.09), (0.97, 0.37), (0.88, 0.56), (0.69, 0.67), (0.44, 0.73), (0.27, 0.79), (0.13, 0.85), (0.0, 0.87)]),
     headwear_front=PETER_HAIR, headwear_back=PETER_HAIR.back, ears=True,
     arms=make_arms({-1: dict(sleeve="#8a6744", sleeve_sh="#634529"), 1: dict(sleeve="#8a6744", sleeve_sh="#634529")}),
 )
@@ -270,21 +299,21 @@ MIRIAM_ST.update(
     iris=("#2b160b", "#7c4a1e", "#e8b46e"), lid_shadow="#5a2c20",
     hair="#3a2216", hair_sh="#22130b", hair_hl="#7a5236", hair_line="#1a0c06",
     cloth="#b8654e", cloth_sh="#8a4334",
-    eye_x=0.43, eye_y=0.06, eye_w=0.245, eye_h=0.19, eye_low=0.105, eye_tilt=0.004,
-    iris_rx=0.128, iris_ry=0.158, lash_in=0.016, lash_out=0.05, lash_mid=0.04, wing=0.05,
+    head_xscale=0.9, eye_x=0.46, eye_y=0.11, eye_w=0.225, eye_h=0.14, eye_low=0.088, eye_tilt=0.004,
+    iris_rx=0.106, iris_ry=0.12, lash_in=0.015, lash_out=0.042, lash_mid=0.034, wing=0.035,
     lash_flicks=[(0.82, 0.05), (0.95, 0.06)], lower_lash=True,
-    brow_x=0.43, brow_y=-0.24, brow_in=-0.22, brow_out=0.26, brow_arch=0.05,
-    brow_w0=0.035, brow_wm=0.03, brow_w1=0.008,
-    mouth_w=0.115, mouth_y=0.66, mouth_h=0.17, nose_y=0.38, nose_len=0.15, nose_w=0.04,
-    lip_col="#d06a6a", shoulder_w=1.8, neck_w=0.34, neck_len=1.62, neck_top=0.78,
+    brow_x=0.46, brow_y=-0.14, brow_in=-0.22, brow_out=0.26, brow_arch=0.045,
+    brow_w0=0.038, brow_wm=0.033, brow_w1=0.009,
+    mouth_w=0.135, mouth_y=0.74, mouth_h=0.17, nose_y=0.45, nose_len=0.17, nose_w=0.045,
+    lip_col="#d06a6a", shoulder_w=1.8, neck_w=0.34, neck_len=1.70, neck_top=0.78,
     hem_y=16.0, waist_w=0.74, hip_w=0.9, hem_w=1.0, upper_arm=2.95, forearm=2.6, hand_len=1.85,
     sleeve_w=(0.8, 0.76, 0.92), stance=0.5, body_scale=0.95,
     slices=[
-        (-1.62, 0.02, 0.10, -0.12), (-1.55, 0.44, 0.48, -0.12), (-1.40, 0.74, 0.77, -0.13),
-        (-1.14, 0.93, 0.94, -0.12), (-0.80, 0.99, 0.99, -0.10), (-0.40, 1.00, 1.00, -0.08),
-        (0.00, 0.98, 0.96, -0.05), (0.28, 0.93, 0.90, -0.01), (0.50, 0.84, 0.80, 0.05),
-        (0.66, 0.71, 0.68, 0.12), (0.79, 0.55, 0.54, 0.20), (0.90, 0.37, 0.40, 0.29),
-        (0.98, 0.21, 0.28, 0.37), (1.02, 0.09, 0.18, 0.42), (1.035, 0.01, 0.10, 0.44),
+        (-1.620, 0.020, 0.100, -0.12), (-1.550, 0.440, 0.480, -0.12), (-1.400, 0.740, 0.770, -0.13),
+        (-1.140, 0.930, 0.940, -0.12), (-0.800, 0.990, 0.990, -0.10), (-0.400, 1.000, 1.000, -0.08),
+        (0.000, 0.980, 0.960, -0.05), (0.314, 0.970, 0.916, -0.01), (0.560, 0.905, 0.825, 0.05),
+        (0.739, 0.781, 0.707, 0.12), (0.885, 0.605, 0.562, 0.20), (1.008, 0.407, 0.416, 0.29),
+        (1.098, 0.231, 0.291, 0.37), (1.142, 0.090, 0.180, 0.42), (1.159, 0.010, 0.100, 0.44),
     ],
 )
 
@@ -293,7 +322,7 @@ MIRIAM = Character(
     outfit=tunic_outfit("#6f8197", "#4f6075", neckline="round", belt=("#d9c7a5", "#a8946e")),
     headwear_back=hair.HeadCloth(layer="back", vol=0.22, flare=0.7),
     headwear_front=hair.HeadCloth(layer="front", vol=0.22, flare=0.7, hair_fringe=True,
-                                  edge=[(0.0, -1.20), (0.38, -1.14), (0.70, -0.95), (0.92, -0.62), (1.02, -0.24), (1.04, 0.12), (1.0, 0.40)]),
+                                  edge=[(0.0, -1.04), (0.38, -0.99), (0.70, -0.84), (0.92, -0.56), (1.02, -0.22), (1.04, 0.14), (1.0, 0.44)]),
     arms=make_arms({-1: dict(sleeve="#6f8197", sleeve_sh="#4f6075"), 1: dict(sleeve="#6f8197", sleeve_sh="#4f6075")}),
 )
 
@@ -308,23 +337,23 @@ ELI_ST.update(
     hair="#a19b92", hair_sh="#6e6961", hair_hl="#e2ded6", hair_line="#3a3632",
     beard="#a8a39b", beard_sh="#6d6861",
     cloth="#e8dfca", cloth_sh="#b9ad94",
-    eye_x=0.42, eye_y=0.04, eye_w=0.215, eye_h=0.125, eye_low=0.08, eye_tilt=-0.012,
-    iris_rx=0.1, iris_ry=0.118, lash_in=0.012, lash_out=0.028, lash_mid=0.026, wing=0.0,
-    brow_x=0.42, brow_y=-0.27, brow_in=-0.23, brow_out=0.27, brow_arch=0.04,
+    head_xscale=0.89, eye_x=0.46, eye_y=0.11, eye_w=0.2, eye_h=0.098, eye_low=0.07, eye_tilt=-0.016,
+    iris_rx=0.086, iris_ry=0.094, lash_in=0.012, lash_out=0.026, lash_mid=0.024, wing=0.0,
+    brow_x=0.46, brow_y=-0.15, brow_in=-0.23, brow_out=0.27, brow_arch=0.03,
     brow_w0=0.075, brow_wm=0.06, brow_w1=0.03, brow_out_up=-0.02,
-    mouth_w=0.13, mouth_y=0.68, nose_y=0.40, nose_len=0.24, nose_w=0.065,
-    shoulder_w=2.0, neck_w=0.42, neck_len=1.72, neck_top=0.8, hem_y=15.9, hand_len=2.1,
+    mouth_w=0.15, mouth_y=0.77, nose_y=0.47, nose_len=0.26, nose_w=0.07,
+    shoulder_w=2.0, neck_w=0.42, neck_len=1.82, neck_top=0.8, hem_y=15.9, hand_len=2.1,
 )
 
 ELI = Character(
     "eli", ELI_ST,
     outfit=tunic_outfit("#5d6140", "#40442b", neckline="round", belt=("#3d3a2a", "#25231a")),
     beard=hair.Beard(vol=0.06, chin=0.42, grey=0.6, alpha=0.97, tuft_len=0.05,
-                     inner=[(0.97, 0.0), (0.95, 0.24), (0.86, 0.44), (0.68, 0.56), (0.44, 0.63), (0.27, 0.70), (0.14, 0.77), (0.0, 0.79)]),
+                     inner=[(0.99, 0.09), (0.97, 0.33), (0.89, 0.53), (0.71, 0.65), (0.46, 0.72), (0.28, 0.79), (0.14, 0.86), (0.0, 0.88)]),
     headwear_back=hair.HeadCloth(layer="back", col="cloth", col_sh="cloth_sh", vol=0.2, flare=0.6),
     headwear_front=hair.HeadCloth(layer="front", col="cloth", col_sh="cloth_sh", vol=0.2, flare=0.6,
                                   stripes=[(0.16, 0.22, "#3e5d86"), (0.27, 0.30, "#3e5d86")],
-                                  edge=[(0.0, -0.98), (0.38, -0.95), (0.68, -0.82), (0.90, -0.56), (1.0, -0.22), (1.03, 0.12), (1.0, 0.40)]),
+                                  edge=[(0.0, -0.9), (0.38, -0.87), (0.68, -0.76), (0.90, -0.52), (1.0, -0.2), (1.03, 0.14), (1.0, 0.44)]),
     extra_face=hair.wrinkles,
     arms=make_arms({-1: dict(sleeve="#5d6140", sleeve_sh="#40442b"), 1: dict(sleeve="#5d6140", sleeve_sh="#40442b")}),
 )

@@ -513,6 +513,7 @@ def _blend_arm(a, b, x):
             spec["hand"] = a.get("hand", "relaxed")
             spec["hand_b"] = "relaxed"
             spec["hand_t"] = float(x)
+        _mix_hand_dir(spec, a, None, x)
         return spec
     if a is None:
         spec = dict(b)
@@ -525,6 +526,7 @@ def _blend_arm(a, b, x):
             spec["hand"] = "relaxed"
             spec["hand_b"] = b.get("hand", "relaxed")
             spec["hand_t"] = float(x)
+        _mix_hand_dir(spec, None, b, x)
         return spec
     spec = dict(b)
     ta, tb = _t3(a["target"]), _t3(b["target"])
@@ -538,4 +540,22 @@ def _blend_arm(a, b, x):
         spec["hand"] = a.get("hand", "relaxed")
         spec["hand_b"] = b.get("hand", "relaxed")
         spec["hand_t"] = float(x)
+    _mix_hand_dir(spec, a, b, x)
     return spec
+
+
+def _mix_hand_dir(spec, a, b, x):
+    """An explicit hand direction on either side of a transition is turned into gradually, not
+    snapped to (the other side's natural direction is worked out from the arm in body.py)."""
+    da = (a or {}).get("hand_dir")
+    db = (b or {}).get("hand_dir")
+    spec.pop("hand_dir", None)
+    spec.pop("hand_dir_mix", None)
+    if da is None and db is None:
+        return
+    if x >= 1.0 and db is not None:
+        spec["hand_dir"] = db
+    elif x <= 0.0 and da is not None:
+        spec["hand_dir"] = da
+    else:
+        spec["hand_dir_mix"] = (da, db, float(x))

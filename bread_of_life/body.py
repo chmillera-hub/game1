@@ -10,7 +10,7 @@ import math
 import numpy as np
 import skia
 
-from gfx import ellipse, fill, mix, sample_spline, spline, stroke, tapered
+from gfx import ellipse, fill, hexc, lin_grad, mix, sample_spline, spline, stroke, tapered
 
 ANKLE_Y = 16.3
 SOLE_Y = 16.95
@@ -341,7 +341,6 @@ def draw_hand3d(cv, st, geo, wrist, T3, D3, B3, L, light_x=-0.7, prop=None):
         order.insert(idx, item)
 
     w_out = 0.052
-    w_in = 0.019
     shade_dir = -1.0 if light_x > 0 else 1.0  # screen side of the cel shadow
 
     def underlay(items):
@@ -349,21 +348,49 @@ def draw_hand3d(cv, st, geo, wrist, T3, D3, B3, L, light_x=-0.7, prop=None):
             if p["kind"] != "prop":
                 cv.drawPath(p["path"], stroke(lc, w_out))
 
+    # One clean silhouette line around the whole hand; inside it the hand is modelled with tone,
+    # not lines: no line where a finger or the thumb joins the palm, a soft shadow where one part
+    # lies over another, and a faint edge only along the free side of an overlapping finger.
     underlay(order)
     palm_side_col = mix(skin, "#f3cfb2", 0.16) if back_vis < 0 else skin
+    sh2 = st.get("skin_sh2", sh)
+    drawn = skia.Path()
     for i, p in enumerate(order):
         if p["kind"] == "prop":
             prop["draw"](cv, p["at"][0], p["at"][1])
+            drawn.addPath(_prop_mask(p["at"], L))
             underlay(order[i + 1:])
             continue
-        col = palm_side_col if p["kind"] == "palm" else skin
+        if p["kind"] == "palm":
+            col = palm_side_col
+        elif p["behind"]:
+            col = mix(skin, sh, 0.24)  # fingers curling away behind the palm sit in its shade
+        else:
+            col = skin
+        thenar = p["kind"] == "thumb" and p.get("idx") == [0]
+        if p["kind"] != "palm" and not thenar and not drawn.isEmpty():
+            # soft contact shadow on whatever this part lies over (none round the root of a finger,
+            # which grows out of the hand rather than lying on it)
+            cv.save()
+            cv.clipPath(drawn, skia.ClipOp.kIntersect, True)
+            if p.get("base") is not None:
+                (bx_, by_), br_ = p["base"]
+                root = skia.Path()
+                root.addCircle(bx_, by_, br_ * 1.7)
+                cv.clipPath(root, skia.ClipOp.kDifference, True)
+            sp_ = skia.Path(p["path"])
+            m_ = skia.Matrix()
+            m_.setTranslate(-shade_dir * 0.012 * L, 0.018 * L)
+            sp_.transform(m_)
+            cv.drawPath(sp_, fill(sh2, alpha=0.4, blur=0.03 * L))
+            cv.restore()
         cv.drawPath(p["path"], fill(col))
         cv.save()
         cv.clipPath(p["path"], skia.ClipOp.kIntersect, True)
         if p["kind"] == "palm":
             b = p["path"].getBounds()
             cx = b.centerX() + shade_dir * b.width() * 0.62
-            cv.drawPath(ellipse(cx, b.centerY(), b.width() * 0.42, b.height() * 0.8), fill(sh, alpha=0.38, blur=0.04))
+            cv.drawPath(ellipse(cx, b.centerY(), b.width() * 0.42, b.height() * 0.8), fill(sh, alpha=0.32, blur=0.05))
         else:
             for (a2, b2, ra, rb, _) in p["caps"]:
                 dx, dy = b2[0] - a2[0], b2[1] - a2[1]
@@ -375,39 +402,80 @@ def draw_hand3d(cv, st, geo, wrist, T3, D3, B3, L, light_x=-0.7, prop=None):
                     nx, ny = -nx, -ny
                 r = 0.5 * (ra + rb)
                 cv.drawPath(spline([(a2[0] + nx * r * 0.85, a2[1] + ny * r * 0.85), (b2[0] + nx * r * 0.85, b2[1] + ny * r * 0.85)], closed=False),
-                            stroke(sh, r * 0.9, alpha=0.42))
+                            stroke(sh, r * 0.9, alpha=0.34, blur=r * 0.25))
         cv.restore()
-        # inner outline, open where the part joins its parent
-        cv.save()
-        if p.get("base") is not None:
+        if p["kind"] in ("finger", "thumb") and p.get("base") is not None and not drawn.isEmpty():
+            # a faint edge where this part overlaps the hand behind it, fading out toward its base
             (bx, by), br = p["base"]
-            hole = skia.Path()
-            hole.addCircle(bx, by, br * 1.04)
-            cv.clipPath(hole, skia.ClipOp.kDifference, True)
-        cv.drawPath(p["path"], stroke(lc, w_in, alpha=0.9))
-        cv.restore()
+            a2, b2 = p["caps"][0][0], p["caps"][0][1]
+            dx, dy = b2[0] - a2[0], b2[1] - a2[1]
+            n = math.hypot(dx, dy)
+            ux, uy = (dx / n, dy / n) if n > 1e-6 else (0.0, 1.0)
+            fade = max(br * 2.2, 0.35 * n)
+            ep = stroke(lc, 0.013, alpha=1.0)
+            ep.setShader(lin_grad((bx, by), (bx + ux * fade, by + uy * fade), [mix_a(lc, 0.0), mix_a(lc, 0.5)]))
+            cv.save()
+            cv.clipPath(drawn, skia.ClipOp.kIntersect, True)
+            cv.drawPath(p["path"], ep)
+            cv.restore()
+        drawn.addPath(p["path"])
         # surface detail belonging to this part, drawn with it so anything in front still covers it
         _part_details(cv, st, geo, p, P2, M, back_vis, L)
 
 
+def _prop_mask(at, L):
+    """Rough area a held prop covers (so the parts over it cast their shadow on it too)."""
+    m = skia.Path()
+    m.addOval(skia.Rect.MakeLTRB(at[0] - 0.45 * L, at[1] - 0.3 * L, at[0] + 0.45 * L, at[1] + 0.25 * L))
+    return m
+
+
+def mix_a(col, a):
+    """Colour tuple with alpha."""
+    c = hexc(col) if isinstance(col, str) else col
+    return (c[0], c[1], c[2], a)
+
+
 def _part_details(cv, st, geo, p, P2, M, back_vis, L):
-    skin = st["skin"]
+    skin, sh = st["skin"], st["skin_sh"]
+    sh2 = st.get("skin_sh2", sh)
     if p["kind"] == "palm":
         _hand_details(cv, st, geo, P2, M, back_vis, L)
         return
     if p["kind"] == "finger":
-        fg = geo["fingers"][p["k"]]
+        k = p["k"]
+        fg = geo["fingers"][k]
         J, R, Dn = fg["joints"], fg["radii"], fg["dorsal"]
-        if 0 in p["idx"] and back_vis > 0.15:
-            # knuckle highlight on the back of the hand
-            a = min(1.0, (back_vis - 0.15) / 0.35)
-            (kx, ky), _ = P2(J[0] + np.array([0.0, -0.01, R[0] * 0.8]))
-            cv.drawPath(ellipse(kx, ky, 0.045 * L * 0.5, 0.025 * L * 0.5), fill(mix(skin, "#ffffff", 0.3), alpha=0.45 * a))
+        if 0 in p["idx"] and back_vis > 0.12:
+            # knuckles: a soft rise of light on each knuckle, a little shade in the valley beside it
+            a = min(1.0, (back_vis - 0.12) / 0.35)
+            cv.save()
+            cv.clipPath(p["path"], skia.ClipOp.kIntersect, True)
+            (kx, ky), _ = P2(J[0] + np.array([0.0, 0.0, R[0] * 0.85]))
+            cv.drawPath(ellipse(kx, ky, R[0] * L * 0.7, R[0] * L * 0.45), fill(mix(skin, "#ffffff", 0.35), alpha=0.32 * a, blur=0.012 * L))
+            cv.restore()
+            if k < 3:
+                nxt = geo["fingers"][k + 1]["joints"][0]
+                (vx, vy), _ = P2((J[0] + nxt) / 2 + np.array([0.0, -0.015, R[0] * 0.5]))
+                cv.drawPath(ellipse(vx, vy, R[0] * L * 0.35, R[0] * L * 0.55), fill(sh2, alpha=0.18 * a, blur=0.02 * L))
+            if fg["flex"][1] < 35.0:
+                # fine skin creases over the middle joint of a straightened finger
+                cv.save()
+                cv.clipPath(p["path"], skia.ClipOp.kIntersect, True)
+                d = J[2] - J[1]
+                d = d / (np.linalg.norm(d) + 1e-9)
+                lat = np.cross(d, Dn[1])
+                lat = lat / (np.linalg.norm(lat) + 1e-9)
+                for off in (-0.012, 0.012):
+                    c0 = J[1] + d * off + Dn[0] * R[1] * 0.9
+                    pts = [P2(c0 + lat * R[1] * s_ * 0.55 + d * 0.006 * abs(s_))[0] for s_ in (-1, 0, 1)]
+                    cv.drawPath(spline(pts, closed=False), stroke(sh2, 0.006 * L, alpha=0.3 * a))
+                cv.restore()
         if 2 in p["idx"]:
-            _nail(cv, st, P2, M, J[2], J[3], R[3], Dn[2], L)
+            _nail(cv, st, P2, M, J[2], J[3], R[2], R[3], Dn[2], L, p["path"])
     elif p["kind"] == "thumb" and 2 in p["idx"]:
-        tj, tn = geo["thumb"]["joints"], geo["thumb"]["dorsal"]
-        _nail(cv, st, P2, M, tj[2], tj[3], geo["thumb"]["radii"][3], tn[2], L, wide=1.15)
+        tj, tn, tr = geo["thumb"]["joints"], geo["thumb"]["dorsal"], geo["thumb"]["radii"]
+        _nail(cv, st, P2, M, tj[2], tj[3], tr[2], tr[3], tn[2], L, p["path"], wide=1.1)
 
 
 def _hand_details(cv, st, geo, P2, M, back_vis, L):
@@ -425,30 +493,53 @@ def _hand_details(cv, st, geo, P2, M, back_vis, L):
             cv.drawPath(spline(pts, closed=False), stroke(sh2, lw, alpha=al * a))
 
 
-def _nail(cv, st, P2, M, j0, j1, r, dorsal, L, wide=1.0):
+def _nail(cv, st, P2, M, j0, j1, r0, r1, dorsal, L, clip, wide=1.0):
+    """Fingernail: a plate that spans the width of the fingertip, with an arched cuticle and an
+    arched free edge, wrapping over the curve of the finger (only where its back faces us)."""
     skin, sh = st["skin"], st["skin_sh"]
-    dn = M @ np.asarray(dorsal, float)
+    dorsal = np.asarray(dorsal, float)
+    dn = M @ dorsal
     dn = dn / (np.linalg.norm(dn) + 1e-9)
     v = float(np.dot(dn, CAM_DIR))
-    if v < 0.2:
+    if v < 0.08:
         return
-    d = np.asarray(j1, float) - np.asarray(j0, float)
+    j0, j1 = np.asarray(j0, float), np.asarray(j1, float)
+    d = j1 - j0
     dl = float(np.linalg.norm(d))
     if dl < 1e-6:
         return
     d = d / dl
-    lat = np.cross(d, np.asarray(dorsal, float))
+    lat = np.cross(d, dorsal)
     lat = lat / (np.linalg.norm(lat) + 1e-9)
-    c = np.asarray(j1, float) - d * (dl * 0.32) + np.asarray(dorsal, float) * r * 0.92
-    hw, hl = r * 0.62 * wide, dl * 0.34
+    r = r1
+    ln = dl * 0.62 + r * 0.55          # nail length along the finger
+    tip = j1 + d * r * 0.55            # free edge sits just short of the fingertip
+    hw = r * 0.86 * wide               # it spans almost the whole width of the finger
+
+    def surf(u, s):
+        # point on the top of the finger: u back from the free edge, s across (-1..1)
+        x = s * hw
+        h = math.sqrt(max(r * r - x * x, 0.0))
+        return tip - d * u + lat * x + dorsal * h * 1.01
+
     ring = []
-    for ang in np.linspace(0, 2 * math.pi, 10, endpoint=False):
-        q = c + lat * (hw * math.cos(ang)) + d * (hl * math.sin(ang) * (1.0 if math.sin(ang) < 0 else 0.85))
-        ring.append(P2(q)[0])
-    p = spline(ring, closed=True)
-    a = min(1.0, (v - 0.2) / 0.3)
-    cv.drawPath(p, fill(mix(skin, "#ffffff", 0.32), alpha=0.85 * a))
-    cv.drawPath(p, stroke(sh, 0.012, alpha=0.7 * a))
+    for s in np.linspace(-1, 1, 9):                       # free edge, arching toward the tip
+        ring.append(surf(0.22 * ln * s * s, s))
+    for s in np.linspace(1, -1, 9):                       # cuticle, arching toward the knuckle
+        ring.append(surf(ln - 0.28 * ln * (1 - s * s), s))
+    pts = [P2(q)[0] for q in ring]
+    path = spline(pts, closed=True, corners=[0, 8, 9, 17], tension=0.4)
+    a = min(1.0, (v - 0.08) / 0.3)
+    cv.save()
+    cv.clipPath(clip, skia.ClipOp.kIntersect, True)
+    cv.drawPath(path, fill(mix(skin, "#f2d6c8", 0.5), alpha=0.9 * a))
+    # pale free edge and a soft gloss
+    edge = [P2(surf(0.1 * ln + 0.22 * ln * s * s, s))[0] for s in np.linspace(-0.9, 0.9, 7)]
+    cv.drawPath(spline(edge, closed=False), stroke(mix(skin, "#ffffff", 0.6), 0.008 * L, alpha=0.6 * a))
+    gl = [P2(surf(ln * u_, -0.35))[0] for u_ in (0.3, 0.55, 0.75)]
+    cv.drawPath(spline(gl, closed=False), stroke("#ffffff", 0.007 * L, alpha=0.35 * a))
+    cv.drawPath(path, stroke(sh, 0.007 * L, alpha=0.55 * a))
+    cv.restore()
 
 
 # ---------------------------------------------------------------------------
@@ -555,6 +646,22 @@ def hand_direction(E, W, spec, side, use_override=True):
     the forearm line as a wrist allows; the gesture's wrist angle then curls it toward the palm."""
     if use_override and (spec or {}).get("hand_dir") is not None:
         d = np.asarray(spec["hand_dir"], float)
+        return d / (np.linalg.norm(d) + 1e-9)
+    hm = (spec or {}).get("hand_dir_mix")
+    if hm is not None:
+        da, db, x = hm
+        base = {k: v for k, v in spec.items() if k != "hand_dir_mix"}
+        nat = None
+        if da is None or db is None:
+            nat = hand_direction(E, W, base, side, use_override=False)
+        va = nat if da is None else np.asarray(da, float) / (np.linalg.norm(da) + 1e-9)
+        vb = nat if db is None else np.asarray(db, float) / (np.linalg.norm(db) + 1e-9)
+        c = float(np.clip(np.dot(va, vb), -1.0, 1.0))
+        th = math.acos(c)
+        xs = x * x * (3 - 2 * x)
+        if th < 1e-4:
+            return va
+        d = (math.sin((1 - xs) * th) * va + math.sin(xs * th) * vb) / math.sin(th)
         return d / (np.linalg.norm(d) + 1e-9)
     f = W - E
     f = f / (np.linalg.norm(f) + 1e-9)
@@ -713,21 +820,28 @@ def draw_arm(cv, st, P, side, spec, sty):
 
     up_closed, up_open, _, _ = _seg_shape(s2, e2, w_up, w_el, round_a=0.55, round_b=1.0, bulge=0.04 * k)
     fo_closed, fo_open, _, _ = _seg_shape(e2, w2, w_el, w_cuff, round_a=1.0, round_b=0.25, bulge=0.03 * k)
-    # the forearm's elbow end is its "a" end; the upper arm's elbow end is its "b" end
-    up_open_noelbow = _seg_shape(e2, s2, w_el, w_up, round_a=1.0, round_b=0.55, bulge=0.04 * k)[1]
     forearm_front = W[2] >= S[2]
     hand_behind = (spec or {}).get("hand_under", False) or (hd[2] < -0.45)
     if hand_behind:
         hand()
+    # The sleeve grows out of the robe at the shoulder: the upper arm has no outline round its
+    # shoulder end, and its side lines fade in a little way down, so the shoulder reads as one
+    # piece of cloth with the body rather than a separate tube.
+    fade = (s2, s2 + (e2 - s2) * 0.38)
     if forearm_front:
-        layers = [(up_closed, up_closed, s2, e2, w_el), (fo_closed, fo_open, e2, w2, w_el)]
+        layers = [(up_closed, up_open, s2, e2, w_el, fade), (fo_closed, fo_open, e2, w2, w_el, None)]
     else:
-        layers = [(fo_closed, fo_closed, e2, w2, w_el), (up_closed, up_open_noelbow, s2, e2, w_el)]
-    for closed, outline, a, b_, w in layers:
-        cv.drawPath(outline, stroke(lc, 0.05))
+        layers = [(fo_closed, fo_closed, e2, w2, w_el, None), (up_closed, up_open, s2, e2, w_el, fade)]
+    for closed, outline, a, b_, w, fd in layers:
+        under = stroke(lc, 0.05)
+        line = stroke(lc, 0.022, alpha=0.9)
+        if fd is not None:
+            under.setShader(lin_grad(tuple(fd[0]), tuple(fd[1]), [mix_a(lc, 0.0), mix_a(lc, 1.0)]))
+            line.setShader(lin_grad(tuple(fd[0]), tuple(fd[1]), [mix_a(lc, 0.0), mix_a(lc, 0.9)]))
+        cv.drawPath(outline, under)
         cv.drawPath(closed, fill(scol))
         _shade_segment(cv, closed, a, b_, w, ssh, lx)
-        cv.drawPath(outline, stroke(lc, 0.022, alpha=0.9))
+        cv.drawPath(outline, line)
     # folds gathering on the inside of a bent elbow (on the nearer segment)
     v1, v2 = s2 - e2, w2 - e2
     cosang = float(np.dot(v1, v2) / (np.linalg.norm(v1) * np.linalg.norm(v2) + 1e-9))
@@ -753,6 +867,15 @@ def draw_arm(cv, st, P, side, spec, sty):
     cv.drawPath(cuff, stroke(lc, 0.02, alpha=0.8))
     if not hand_behind:
         hand()
+        if show_hand and hd[2] < 0.35:
+            # the end of the sleeve laps over the wrist, so the hand always comes out of the sleeve
+            c0 = w2 + (e2 - w2) / (np.linalg.norm(e2 - w2) + 1e-9) * 0.42 * k
+            wc0 = w_cuff - (w_cuff - w_el) * 0.42 * k / (np.linalg.norm(w2 - e2) + 1e-9)
+            band, band_open, _, _ = _seg_shape(c0, w2, wc0, w_cuff, round_a=1.0, round_b=0.25, bulge=0.0)
+            cv.drawPath(band_open, stroke(lc, 0.05))
+            cv.drawPath(band, fill(scol))
+            _shade_segment(cv, band, c0, w2, w_cuff, ssh, lx)
+            cv.drawPath(band_open, stroke(lc, 0.022, alpha=0.9))
     return E, W
 
 
@@ -824,23 +947,76 @@ def draw_legs(cv, st, P, hem_y, sty=None):
             sx = 1.0 if P["light_x"] < 0 else -1.0
             cv.drawPath(tapered([(knee[0] + sx * 0.22, knee[1]), (ank[0] + sx * 0.14, ank[1])], 0.3, 0.2), fill(sh, alpha=0.7))
             cv.restore()
-        # foot (seen from the front, slightly turned out), sandal sole and straps
-        toe_dir = side * 0.25
-        foot = [(ank[0] - 0.24 * k, ank[1] - 0.05), (ank[0] + 0.24 * k, ank[1] - 0.05),
-                (ank[0] + (0.34 + toe_dir * 0.4) * k, ank[1] + 0.45 * k), (ank[0] + (0.30 + toe_dir) * k, ank[1] + 0.66 * k),
-                (ank[0] + toe_dir * k, ank[1] + 0.72 * k), (ank[0] - (0.30 - toe_dir) * k, ank[1] + 0.66 * k),
-                (ank[0] - (0.34 - toe_dir * 0.4) * k, ank[1] + 0.45 * k)]
-        fp = spline(foot, closed=True, corners=[0, 1])
-        sole_p = ellipse(ank[0] + toe_dir * 0.6 * k, ank[1] + 0.66 * k, 0.40 * k, 0.12 * k)
-        cv.drawPath(sole_p, fill(sandal))
-        cv.drawPath(fp, stroke(lc, 0.05))
-        cv.drawPath(fp, fill(skin))
-        cv.drawPath(fp, fill(sh, alpha=0.3))
-        # toes
-        for t in range(4):
-            tx = ank[0] + (toe_dir - 0.21 + t * 0.14) * k
-            cv.drawPath(spline([(tx, ank[1] + 0.58 * k), (tx + 0.01, ank[1] + 0.69 * k)], closed=False), stroke(sh, 0.025, alpha=0.7))
-        # straps
-        cv.drawPath(spline([(ank[0] - 0.3 * k, ank[1] + 0.33 * k), (ank[0] + toe_dir * 0.5 * k, ank[1] + 0.40 * k), (ank[0] + 0.32 * k, ank[1] + 0.33 * k)], closed=False), stroke(sandal, 0.09 * k))
-        cv.drawPath(spline([(ank[0] - 0.2 * k, ank[1] + 0.02), (ank[0], ank[1] + 0.06), (ank[0] + 0.2 * k, ank[1] + 0.02)], closed=False), stroke(sandal, 0.08 * k))
-        cv.drawPath(sole_p, stroke(lc, 0.03))
+        _draw_foot(cv, st, ank, side, k, sandal, P["light_x"])
+
+
+def _draw_foot(cv, st, ank, side, k, sandal, light_x):
+    """A sandaled foot seen from the front and a little above: instep, five toes (the big toe on the
+    inside), a leather sole with visible thickness, a toe loop, straps crossing the instep and a
+    tie round the ankle."""
+    lc = st.get("line", "#2a1a14")
+    skin, sh = st["skin"], st["skin_sh"]
+    sh2 = st.get("skin_sh2", sh)
+    ax, ay = ank
+    turn = side * 0.22          # toes turned a little outward
+    inner = -side               # the big toe is on the inner side of each foot
+
+    def P_(u, v):
+        # u across the foot (-1 inner .. +1 outer, mirrored per foot), v down the foot (0 ankle .. 1 toe tips)
+        x = ax + (-inner * u) * (0.20 + 0.13 * v) * k + turn * v * k
+        return (x, ay + v * 0.74 * k)
+
+    # sole: a leather slab a little larger than the foot, its front edge showing its thickness
+    rim = [P_(-1.25, 0.18), P_(-1.3, 0.62), P_(-1.05, 1.06), P_(0.0, 1.13), P_(1.05, 1.04), P_(1.3, 0.6), P_(1.22, 0.18)]
+    sole_top = spline(rim, closed=True, tension=0.5)
+    edge = [(x, y + 0.075 * k) for x, y in rim[1:6]]
+    sole_side = spline(rim[1:6] + edge[::-1], closed=True, corners=[0, 4, 5, 9], tension=0.4)
+    cv.drawPath(sole_side, fill(mix(sandal, "#000000", 0.35)))
+    cv.drawPath(sole_side, stroke(lc, 0.02))
+    cv.drawPath(sole_top, fill(mix(sandal, "#ffffff", 0.18)))
+    cv.drawPath(sole_top, stroke(lc, 0.02))
+    # foot: narrow at the ankle, widening to the ball, with five rounded toes along the front
+    toes = [(-0.74, 0.93, 0.27, 0.085), (-0.26, 0.92, 0.19, 0.07), (0.12, 0.895, 0.17, 0.066), (0.47, 0.865, 0.155, 0.062), (0.80, 0.82, 0.14, 0.058)]
+    body_pts_ = [P_(-0.95, 0.0), P_(-1.0, 0.35), P_(-1.06, 0.7), P_(-0.9, 0.9), P_(0.0, 0.9), P_(0.95, 0.82), P_(1.06, 0.62), P_(1.0, 0.35), P_(0.95, 0.0)]
+    parts = [spline(body_pts_, closed=True, tension=0.45)]
+    for (u, v, w, h) in toes:
+        tx, ty = P_(u, v)
+        parts.append(ellipse(tx, ty, (0.20 + 0.13 * v) * k * w * 1.05, h * k))
+    for p_ in parts:
+        cv.drawPath(p_, stroke(lc, 0.045))
+    foot = skia.Path()
+    for p_ in parts:
+        cv.drawPath(p_, fill(skin))
+        foot.addPath(p_)
+    cv.save()
+    cv.clipPath(foot, skia.ClipOp.kIntersect, True)
+    sx = 1.0 if light_x < 0 else -1.0
+    cv.drawPath(ellipse(ax + sx * 0.28 * k, ay + 0.4 * k, 0.2 * k, 0.6 * k), fill(sh, alpha=0.55, blur=0.06 * k))
+    cv.drawPath(ellipse(ax + turn * 0.4 * k, ay + 0.3 * k, 0.12 * k, 0.28 * k), fill(mix(skin, "#ffffff", 0.3), alpha=0.35, blur=0.05 * k))
+    # soft creases between the toes, and toenails
+    for i in range(4):
+        u = (toes[i][0] + toes[i + 1][0]) / 2
+        v = (toes[i][1] + toes[i + 1][1]) / 2
+        cv.drawPath(spline([P_(u, v - 0.06), P_(u, v + 0.04)], closed=False), stroke(sh2, 0.016 * k, alpha=0.55))
+    for (u, v, w, h) in toes[:4]:
+        nx, ny = P_(u, v + 0.012)
+        cv.drawPath(ellipse(nx, ny, (0.2 + 0.13 * v) * k * w * 0.55, h * k * 0.5), fill(mix(skin, "#f2d6c8", 0.5), alpha=0.8))
+    cv.restore()
+    # straps: a loop round the big toe, two straps crossing the instep, a tie round the ankle
+    sc = sandal
+    hi = mix(sandal, "#ffffff", 0.25)
+
+    def strap(pts, w):
+        path = tapered(sample_spline(pts, n=14), w, w, wmid=w)
+        cv.drawPath(path, stroke(lc, 0.035))
+        cv.drawPath(path, fill(sc))
+        cv.drawPath(spline([(x, y - w * 0.25) for x, y in pts], closed=False), stroke(hi, w * 0.3, alpha=0.6))
+
+    sw_ = 0.07 * k
+    strap([P_(-1.15, 0.62), P_(-0.7, 0.68), P_(-0.45, 0.78)], sw_)            # toe loop
+    strap([P_(-1.05, 0.45), P_(-0.1, 0.36), P_(1.08, 0.18)], sw_)              # across the instep
+    strap([P_(1.08, 0.48), P_(0.1, 0.38), P_(-1.0, 0.16)], sw_)
+    strap([P_(-1.0, 0.0), P_(0.0, 0.06), P_(1.0, 0.0)], sw_ * 1.05)           # round the ankle
+    kx, ky = P_(-0.95, 0.02)
+    cv.drawPath(ellipse(kx, ky, 0.06 * k, 0.05 * k), fill(sc))
+    cv.drawPath(ellipse(kx, ky, 0.06 * k, 0.05 * k), stroke(lc, 0.02))

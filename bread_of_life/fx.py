@@ -212,8 +212,23 @@ def dusk_figures(cv, W, H, t, pcam=(0.5, 0.47, 0.82), t0=0.0):
     rng = np.random.default_rng(29)
     items = []
     for g, (u0, n) in enumerate([(0.22, 3), (0.40, 4), (0.58, 3), (0.74, 2)]):
+        mover = (g * 2 + 1) % n  # one person in each group wanders about while the others stand and talk
         for i in range(n):
             k = g * 3 + i
+            if i == mover:
+                # a slow figure-of-eight round the edge of the group, legs walking all the while
+                ph = 1.7 * g
+                w = 0.5 + 0.06 * g
+                lane = 0.03 * math.sin(w * (t - t0) + ph)
+                du = 0.012 * math.sin(2 * w * (t - t0) + ph)
+                vx = math.cos(w * (t - t0) + ph)
+                px, py = _beach_path(u0 + 0.01 + du)
+                sx, sy = screen_pt(px + lane * bg.PW * (1.3 - u0), py, pcam, W, H)
+                depth = max(sy - hz, 2.0)
+                items.append((sy, sx, depth * 0.032, 50 + k, dict(walk=(t - t0) * 1.5 + ph, walking=True,
+                                                                facing=1 if vx > 0 else -1, head_turn=0.5 * math.sin(t * 0.6 + ph),
+                                                                lean=0.0)))
+                continue
             # a loose circle: spread across the beach and a little in depth
             ang = (i + 0.5) / n * math.pi
             u = u0 + 0.018 * math.sin(ang) + rng.uniform(-0.006, 0.006)

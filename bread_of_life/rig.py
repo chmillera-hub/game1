@@ -73,6 +73,9 @@ class Head:
         sl = st.get("slices", SLICES)
         self.sl = sl
         self.jaw = P["m_open"] * st.get("jaw_drop", 0.07)
+        # the whole head (face, hair, ears, beard) can be drawn a little narrower than it is deep,
+        # for a longer, more grown-up face
+        self.xs = st.get("head_xscale", 1.0)
 
     def surf_z(self, x, y):
         ys = [s[0] for s in self.sl]
@@ -84,7 +87,10 @@ class Head:
 
     def p3(self, pts):
         """3D anchors -> projected 2D (N,2) plus rotated z."""
-        R = rot_points(pts, self.yaw, self.pitch)
+        P3 = np.array(pts, dtype=float)
+        if self.xs != 1.0:
+            P3[:, 0] *= self.xs
+        R = rot_points(P3, self.yaw, self.pitch)
         return R
 
     def pt(self, x, y, z=None, dz=0.0):
@@ -555,9 +561,9 @@ def body_pts(st, P):
     sway = 0.06 * math.sin(P["t"] * 0.8)
     return [
         (l * 0.30, -0.06 + up * 0.3),
-        (l * 0.66, 0.10 + up),
-        (l * 0.93, 0.36 + up),
-        (l * 1.02, 0.85),
+        (l * 0.66, 0.05 + up),
+        (l * 0.95, 0.27 + up),
+        (l * 1.04, 0.85),
         (l * 0.93, 1.75),
         (l * ww, 4.4 * k),
         (l * hw, 6.6 * k),
@@ -571,9 +577,9 @@ def body_pts(st, P):
         (r * hw, 6.6 * k),
         (r * ww, 4.4 * k),
         (r * 0.93, 1.75),
-        (r * 1.02, 0.85),
-        (r * 0.93, 0.36 + up),
-        (r * 0.66, 0.10 + up),
+        (r * 1.04, 0.85),
+        (r * 0.95, 0.27 + up),
+        (r * 0.66, 0.05 + up),
         (r * 0.30, -0.06 + up * 0.3),
     ]
 
@@ -761,11 +767,25 @@ class Character:
         cv.drawPath(lit, fill(st["skin_sh"], alpha=0.75))
         # soft ambient gradient
         cv.drawRect(skia.Rect.MakeLTRB(-2, -2, 2, 2), fill("#000000", shader=lin_grad((0, -1.2), (0, 1.3), [(1.0, 1.0, 1.0, 0.10), (1.0, 1.0, 1.0, 0.0)])))
+        # facial structure, as in more grown-up anime: light on the cheekbones, a soft hollow beneath
+        # them on the shaded side, and shade under the lower lip and along the jaw
+        sxl = 1.0 if lx > 0 else -1.0  # the lit side of the face
+        for sx in (-1, 1):
+            fx_ = H.fore(0.6 * sx, 0.8)
+            cbx, cby = H.pt(0.62 * sx, 0.30)
+            if sx == sxl:
+                cv.drawPath(ellipse(cbx, cby, 0.2 * fx_, 0.07, -12 * sx), fill("#ffffff", alpha=0.07, blur=0.05))
+            else:
+                hx_, hy_ = H.pt(0.60 * sx, 0.52)
+                cv.drawPath(ellipse(hx_, hy_, 0.17 * fx_, 0.11, 20 * sx), fill(st["skin_sh"], alpha=0.32, blur=0.07))
+        my_ = st.get("mouth_y", 0.72)
+        lx_, ly_ = H.pt(0.0, my_ + 0.13)
+        cv.drawPath(ellipse(lx_, ly_, 0.12, 0.04), fill(st["skin_sh"], alpha=0.28, blur=0.035))
         # blush
         b = st.get("blush_base", 0.12) + P["blush"]
         if b > 0.01:
             for sx in (-1, 1):
-                bx, by_ = H.pt(0.55 * sx, 0.36)
+                bx, by_ = H.pt(0.55 * sx, 0.43)
                 cv.drawPath(ellipse(bx, by_, 0.20 * H.fore(0.55 * sx, 0.8), 0.09), fill(st.get("blush_col", "#e88a7a"), alpha=min(0.6, b), blur=0.05))
         if self.extra_face:
             self.extra_face(cv, H, st, P, "skin")

@@ -101,7 +101,7 @@ class Behavior:
                 dur = r.uniform(1.4, 4.2)
             talk = False
             if choice == "focus":
-                gx, gy, yaw = 0.42 * focus, r.uniform(-0.12, 0.05), 20 * focus + r.uniform(-5, 5)
+                gx, gy, yaw = max(-0.6, min(0.6, 0.42 * focus)), r.uniform(-0.12, 0.05), 20 * focus + r.uniform(-5, 5)
             elif choice == "neighbor":
                 d = -1 if r.uniform() < 0.5 else 1
                 gx, gy, yaw = 0.45 * d, r.uniform(-0.05, 0.1), 24 * d
@@ -221,8 +221,8 @@ def draw_crowd(cv, t, members, mood="listen", focus=-1.0, t0=0.0, light=None, bl
     for (seed, x, fy, S, yb) in sorted(members, key=lambda m: m[2]):
         ch = crowd_char(seed)
         P = behavior(seed, mood, focus, t0).params(t)
-        P["yaw"] = P["yaw"] * 0.8 + yb
-        P["byaw"] = 0.6 * (20 * focus + yb)  # the body stays turned toward the speaker
+        P["yaw"] = max(-44.0, min(44.0, P["yaw"] * 0.8 + yb))
+        P["byaw"] = max(-36.0, min(36.0, 0.6 * (20 * focus + yb)))  # the body stays turned toward the speaker
         if light:
             P.update(light)
         y = fy - 16.95 * S * ch.st.get("body_scale", 1.0)

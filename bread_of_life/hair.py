@@ -94,6 +94,46 @@ def clamp_inner(pts, H, side, margin, y_from=-0.7, ramp=0.25):
     return out
 
 
+def edge_tufts(edge, seed, r_lo, r_hi, step=(0.035, 0.07), jitter=0.015):
+    """Irregular tufts of curls along an edge (a polyline): blobs of varying size and spacing at
+    fixed fractions along the edge, so they stay put from frame to frame."""
+    pts = np.asarray(edge, float)
+    if len(pts) < 2:
+        return []
+    seg = np.linalg.norm(np.diff(pts, axis=0), axis=1)
+    cum = np.concatenate([[0.0], np.cumsum(seg)])
+    total = cum[-1]
+    if total < 1e-6:
+        return []
+    rng = np.random.default_rng(seed)
+    out = []
+    t = rng.uniform(0.0, step[0])
+    while t < 1.0:
+        s = t * total
+        i = min(int(np.searchsorted(cum, s, side="right")) - 1, len(seg) - 1)
+        f = (s - cum[i]) / max(seg[i], 1e-9)
+        p = pts[i] + (pts[i + 1] - pts[i]) * f
+        d = (pts[i + 1] - pts[i]) / max(seg[i], 1e-9)
+        n = np.array([-d[1], d[0]])
+        r = rng.uniform(r_lo, r_hi)
+        p = p + n * rng.uniform(-jitter, jitter)
+        out.append(ellipse(float(p[0]), float(p[1]), r, r * rng.uniform(0.72, 0.95), rng.uniform(0, 180)))
+        t += rng.uniform(*step)
+    return out
+
+
+def coil(cx, cy, r, turns=1.15, phase=0.0, squash=0.8):
+    """A small tight curl: a spiral that closes in on itself."""
+    pts = []
+    n = 14
+    for k in range(n):
+        u = k / (n - 1)
+        th = phase + u * turns * 2 * math.pi
+        rr = r * (1.0 - 0.45 * u)
+        pts.append((cx + rr * math.cos(th), cy + rr * math.sin(th) * squash))
+    return spline(pts, closed=False)
+
+
 class LongHair:
     """Center-parted, shoulder-length wavy hair (Jesus)."""
 
@@ -105,8 +145,8 @@ class LongHair:
         self.y_hang = y_hang
         self.tip_y = tip_y
         self.wave = wave
-        self.hairline = hairline or [(0.0, -1.16), (0.17, -1.04), (0.39, -0.90), (0.61, -0.73),
-                                     (0.79, -0.52), (0.90, -0.24), (0.93, 0.08), (0.91, 0.40)]
+        self.hairline = hairline or [(0.0, -0.99), (0.18, -0.91), (0.40, -0.80), (0.62, -0.66),
+                                     (0.80, -0.47), (0.90, -0.22), (0.93, 0.08), (0.91, 0.40)]
 
     def vol(self, y):
         return self.vol_top + (self.vol_side - self.vol_top) * min(1.0, max(0.0, (y + 1.2) / 1.5))
@@ -215,12 +255,13 @@ class LongHair:
                 u = 0.25 + 0.22 * k
                 a = surf_pts(H, [(s * u, -1.66 + 0.30 * u * u)], dz=0.18)[0]
                 cv.drawPath(tapered([a, (a[0] + s * 0.05, a[1] + 0.012), (a[0] + s * 0.10, a[1] + 0.035)], 0.004, 0.0, wmid=0.016), fill("#ffffff", alpha=0.22))
-        # rim light along the outer edge on the backlit side
+        # backlight: only a faint sheen hugging the very edge of the hair (a broad tan band read
+        # as a smear of mud)
         if P["rim"] > 0.01:
             rs = 1 if P["rim_x"] > 0 else -1
             side = g["R"] if rs > 0 else g["L"]
-            rim = [(x - rs * 0.012, y) for x, y in side[1:]]
-            cv.drawPath(tapered(rim, 0.01, 0.03, wmid=0.05), fill(st.get("hair_rim", "#d9a070"), alpha=0.85 * P["rim"]))
+            rim = [(x - rs * 0.006, y) for x, y in side[2:-2]]
+            cv.drawPath(tapered(sample_spline(rim, n=24), 0.002, 0.002, wmid=0.012), fill(st["hair_hl"], alpha=0.35 * P["rim"], blur=0.006))
         cv.restore()
         cv.drawPath(path, stroke(lc, 0.02))
         # loose strands over the forehead and outside the silhouette
@@ -325,8 +366,8 @@ class Beard:
                  alpha=0.92, mustache=True, tuft_len=0.035):
         self.vol_ = vol
         self.chin = chin
-        self.inner = inner or [(0.95, 0.02), (0.93, 0.26), (0.84, 0.45), (0.66, 0.57), (0.42, 0.64),
-                               (0.25, 0.70), (0.13, 0.755), (0.0, 0.77)]
+        self.inner = inner or [(0.97, 0.10), (0.95, 0.35), (0.87, 0.54), (0.69, 0.66), (0.44, 0.73),
+                               (0.26, 0.79), (0.13, 0.845), (0.0, 0.86)]
         self.col = col
         self.col_sh = col_sh
         self.grey = grey
@@ -433,12 +474,12 @@ class Beard:
 class ShortCurly:
     """Short curly hair cap (Peter): scalloped outline made of curls."""
 
-    def __init__(self, vol=0.13, hairline=None, y_side=0.10, curl_r=0.062):
+    def __init__(self, vol=0.13, hairline=None, y_side=0.30, curl_r=0.062):
         self.vol = vol
         self.y_side = y_side
         self.curl_r = curl_r
-        self.hairline = hairline or [(0.0, -1.04), (0.30, -1.02), (0.58, -0.93), (0.80, -0.72),
-                                     (0.93, -0.42), (0.97, -0.12), (0.98, 0.10)]
+        self.hairline = hairline or [(0.0, -0.93), (0.30, -0.91), (0.58, -0.84), (0.80, -0.66),
+                                     (0.93, -0.40), (0.97, -0.10), (0.98, 0.30)]
 
     def geometry(self, H, P):
         ys = list(np.linspace(-1.66, self.y_side, 14))
@@ -467,43 +508,41 @@ class ShortCurly:
         lc = st.get("hair_line", "#120c08")
         col, sh, hl = st["hair"], st["hair_sh"], st["hair_hl"]
         r = self.curl_r
-        # curls along the outer silhouette and hairline (drawn first so the cap's fill merges them)
-        edge_out = [top] + R[1:] + L[1:]
-        curls = []
-        for pts in (R, L):
-            for i in range(1, len(pts), 1):
-                curls.append((pts[i][0], pts[i][1], r * (1.0 + 0.15 * math.sin(i * 2.3))))
-        curls.append((top[0], top[1] + 0.02, r * 1.1))
-        for pts in (hl_r, hl_l):
-            for i in range(0, len(pts)):
-                curls.append((pts[i][0], pts[i][1] + 0.01, r * 0.75))
-        for (x, y, rr) in curls:
-            cv.drawPath(ellipse(x, y, rr, rr * 0.9), stroke(lc, 0.035))
-        for (x, y, rr) in curls:
-            cv.drawPath(ellipse(x, y, rr, rr * 0.9), fill(col))
-        cv.drawPath(path, fill(col))
+        # irregular tufts round the outside and smaller ones along the hairline; outlined only as one
+        # silhouette, so the hair reads as a single springy mass rather than a ring of balls
+        outer = R[::-1] + [top] + L[1:]
+        tufts = edge_tufts(outer, 5, r * 0.55, r * 1.15) + edge_tufts(hl_r[::-1] + hl_l[1:], 9, r * 0.35, r * 0.7, step=(0.03, 0.06), jitter=0.01)
+        shapes = [path] + tufts
+        for s_ in shapes:
+            cv.drawPath(s_, stroke(lc, 0.028, alpha=0.9))
+        mass = skia.Path()
+        for s_ in shapes:
+            cv.drawPath(s_, fill(col))
+            mass.addPath(s_)
         cv.save()
-        clip = skia.Path(path)
-        for (x, y, rr) in curls:
-            clip.addPath(ellipse(x, y, rr, rr * 0.9))
-        cv.clipPath(clip, skia.ClipOp.kIntersect, True)
+        cv.clipPath(mass, skia.ClipOp.kIntersect, True)
         lx = P["light_x"]
         sx = 1.0 if lx < 0 else -1.0
-        cv.drawPath(spline([(sx * 0.1, -2.3), (sx * 2.2, -2.3), (sx * 2.2, 1.0), (sx * 0.7, 1.0), (sx * 0.4, -1.2)], closed=True), fill(sh, alpha=0.55))
-        # curl texture: small arcs over the cap
+        cv.drawPath(spline([(sx * 0.1, -2.3), (sx * 2.2, -2.3), (sx * 2.2, 1.0), (sx * 0.7, 1.0), (sx * 0.4, -1.2)], closed=True), fill(sh, alpha=0.5, blur=0.06))
+        # depth near the face, sheen across the crown
+        for hl_edge in (hl_r, hl_l):
+            cv.drawPath(tapered(sample_spline(hl_edge, n=14), 0.05, 0.08, wmid=0.1), fill(sh, alpha=0.55, blur=0.04))
+        crown = [surf_pts(H, [(u, -1.5 + 0.35 * u * u)], dz=self.vol + 0.03)[0] for u in np.linspace(-0.75, 0.75, 9)]
+        cv.drawPath(tapered(sample_spline(crown, n=20), 0.02, 0.02, wmid=0.12), fill(hl, alpha=0.32, blur=0.05))
+        # the texture of tight curls: small coils, dark in the hollows and catching light on top
         rng = np.random.default_rng(3)
-        for k in range(46):
-            u = rng.uniform(-0.95, 0.95)
-            v = rng.uniform(-1.75, -0.95 + 0.9 * abs(u) ** 2)
+        for k in range(78):
+            u = rng.uniform(-0.98, 0.98)
+            v = rng.uniform(-1.72, -0.9 + 0.95 * abs(u) ** 2)
             p = surf_pts(H, [(u, v)], dz=self.vol + 0.02)[0]
-            a0 = rng.uniform(0, 360)
-            arc = skia.Path()
-            arc.addArc(skia.Rect.MakeXYWH(p[0] - 0.05, p[1] - 0.045, 0.1, 0.09), a0, 220)
-            cv.drawPath(arc, stroke(sh, 0.014, alpha=0.8))
-            if k % 3 == 0:
-                arc2 = skia.Path()
-                arc2.addArc(skia.Rect.MakeXYWH(p[0] - 0.04, p[1] - 0.05, 0.08, 0.07), 200, 90)
-                cv.drawPath(arc2, stroke(hl, 0.012, alpha=0.6))
+            rc = rng.uniform(0.018, 0.034)
+            ph = rng.uniform(0, 6.28)
+            turns = rng.uniform(0.55, 0.95)
+            cv.drawPath(coil(p[0], p[1], rc, turns=turns, phase=ph), stroke(sh, rng.uniform(0.007, 0.012), alpha=0.6))
+            if k % 2 == 0:
+                hp = skia.Path()
+                hp.addArc(skia.Rect.MakeXYWH(p[0] - rc * 0.9, p[1] - rc, rc * 1.8, rc * 1.5), rng.uniform(190, 230), rng.uniform(70, 120))
+                cv.drawPath(hp, stroke(hl, 0.008, alpha=0.45))
         cv.restore()
 
     def back(self, cv, H, st, P):
@@ -523,41 +562,47 @@ class ShortCurly:
 
 
 class CurlyBeard(Beard):
-    """Full curly beard (Peter)."""
+    """Full curly beard (Peter): close and dense on the cheeks, fuller at the chin, with coarse
+    hairs growing downward - a different texture from the curls on his head."""
 
     def __call__(self, cv, H, st, P):
         R, L, bot, IR, IL = self.geometry(H, P)
         col, sh = st[self.col], st[self.col_sh]
         lc = st.get("hair_line", "#120c08")
         edge = R[1:] + [bot] + L[::-1][:-1]
-        rr = 0.058
-        for i, (x, y) in enumerate(edge):
-            cv.drawPath(ellipse(x, y, rr * (1 + 0.2 * math.sin(i * 1.9)), rr), stroke(lc, 0.03))
-        for i, (x, y) in enumerate(edge):
-            cv.drawPath(ellipse(x, y, rr * (1 + 0.2 * math.sin(i * 1.9)), rr), fill(col))
         ring = R + [bot] + L[::-1] + IL + IR[::-1][1:]
         n_out = len(R) + 1 + len(L)
         path = spline(ring, closed=True, corners=[0, n_out - 1, n_out], tension=0.5)
+        tufts = edge_tufts(edge, 21, 0.026, 0.05, step=(0.03, 0.055), jitter=0.012)
+        for s_ in [path] + tufts:
+            cv.drawPath(s_, stroke(lc, 0.024, alpha=0.85))
         cv.drawPath(path, fill(col, alpha=0.5, blur=0.03))
-        cv.drawPath(path, fill(col))
+        mass = skia.Path(path)
+        for s_ in [path] + tufts:
+            cv.drawPath(s_, fill(col))
+            mass.addPath(s_)
         cv.save()
-        clip = skia.Path(path)
-        for i, (x, y) in enumerate(edge):
-            clip.addPath(ellipse(x, y, rr * (1 + 0.2 * math.sin(i * 1.9)), rr))
-        cv.clipPath(clip, skia.ClipOp.kIntersect, True)
+        cv.clipPath(mass, skia.ClipOp.kIntersect, True)
         lx = P["light_x"]
         sx = 1.0 if lx < 0 else -1.0
-        cv.drawPath(spline([(sx * 0.1, 0.2), (sx * 1.6, 0.0), (sx * 1.6, 2.0), (sx * 0.2, 1.8)], closed=True), fill(sh, alpha=0.5))
+        cv.drawPath(spline([(sx * 0.1, 0.2), (sx * 1.6, 0.0), (sx * 1.6, 2.0), (sx * 0.2, 1.8)], closed=True), fill(sh, alpha=0.5, blur=0.05))
         rng = np.random.default_rng(11)
-        for k in range(40):
-            u = rng.uniform(-0.95, 0.95)
-            v = rng.uniform(0.2, 1.35)
+        # coarse hairs growing down and slightly out along the jaw
+        for k in range(70):
+            u = rng.uniform(-0.98, 0.98)
+            v = rng.uniform(0.25, 1.4)
             p = surf_pts(H, [(u, v)], dz=0.08)[0]
-            arc = skia.Path()
-            arc.addArc(skia.Rect.MakeXYWH(p[0] - 0.04, p[1] - 0.035, 0.08, 0.07), rng.uniform(0, 360), 210)
-            cv.drawPath(arc, stroke(sh, 0.012, alpha=0.75))
-            if self.grey > 0 and k % 2 == 0:
-                cv.drawPath(arc, stroke("#d9d4cc", 0.01, alpha=0.6 * self.grey))
+            ln = rng.uniform(0.035, 0.06)
+            ang = math.radians(rng.uniform(-25, 25) + 12 * u)
+            q = (p[0] + math.sin(ang) * ln, p[1] + math.cos(ang) * ln)
+            mid = ((p[0] + q[0]) / 2 + 0.008 * math.cos(ang), (p[1] + q[1]) / 2)
+            cv.drawPath(tapered([p, mid, q], 0.008, 0.002), fill(sh if k % 3 else mix(col, "#ffffff", 0.18), alpha=0.75))
+        # a few tighter curls where the beard is fullest, at the chin
+        for k in range(12):
+            u = rng.uniform(-0.45, 0.45)
+            v = rng.uniform(1.05, 1.42)
+            p = surf_pts(H, [(u, v)], dz=0.1)[0]
+            cv.drawPath(coil(p[0], p[1], rng.uniform(0.018, 0.028), phase=rng.uniform(0, 6.28)), stroke(sh, 0.009, alpha=0.7))
         cv.restore()
 
 
@@ -575,8 +620,8 @@ class HeadCloth:
         self.flare = flare
         self.stripes = stripes
         self.hair_fringe = hair_fringe
-        self.edge = edge or [(0.0, -1.02), (0.36, -0.98), (0.66, -0.84), (0.88, -0.58), (0.98, -0.25),
-                             (1.01, 0.10), (0.98, 0.40)]
+        self.edge = edge or [(0.0, -0.92), (0.36, -0.89), (0.66, -0.77), (0.88, -0.54), (0.98, -0.23),
+                             (1.01, 0.12), (0.98, 0.44)]
 
     def vol(self, y):
         return self.vol_ + 0.06 * min(1.0, max(0.0, (y + 0.6) / 1.0))
@@ -731,16 +776,18 @@ def wrinkles(cv, H, st, P, layer):
     lc = st.get("crease_col", "#8a5b48")
     br = (P["br_l"] + P["br_r"]) * 0.5
     a = 0.45 + 0.35 * max(0.0, br)
+    de = st.get("eye_y", 0.04) - 0.04      # features sit lower on the more lifelike face
+    dm = st.get("mouth_y", 0.68) - 0.68
     for k in range(3):
-        y = -0.62 - 0.11 * k
+        y = -0.62 - 0.11 * k + de * 1.1
         pts = surf_pts(H, [(-0.42 + 0.05 * k, y + 0.02), (0.0, y - 0.025 * br), (0.42 - 0.05 * k, y + 0.02)], dz=0.0)
         cv.drawPath(tapered(sample_spline(pts, n=12), 0.002, 0.002, wmid=0.012), fill(lc, alpha=a * (0.8 - 0.2 * k)))
     for s in (-1, 1):
         ex = 0.43 * s
         for k in range(2):
-            p = surf_pts(H, [(ex + s * 0.27, -0.01 + 0.05 * k), (ex + s * 0.34, -0.03 + 0.08 * k)], dz=0.0)
+            p = surf_pts(H, [(ex + s * 0.27, -0.01 + 0.05 * k + de), (ex + s * 0.34, -0.03 + 0.08 * k + de)], dz=0.0)
             cv.drawPath(tapered(p, 0.008, 0.0), fill(lc, alpha=0.55))
-        bag = surf_pts(H, [(ex - s * 0.12, 0.15), (ex, 0.19), (ex + s * 0.14, 0.15)], dz=0.0)
+        bag = surf_pts(H, [(ex - s * 0.12, 0.13 + de), (ex, 0.165 + de), (ex + s * 0.14, 0.13 + de)], dz=0.0)
         cv.drawPath(tapered(sample_spline(bag, n=10), 0.002, 0.002, wmid=0.01), fill(lc, alpha=0.5))
-        nl = surf_pts(H, [(s * 0.17, 0.44), (s * 0.27, 0.56), (s * 0.30, 0.68)], dz=0.0)
+        nl = surf_pts(H, [(s * 0.17, 0.44 + de), (s * 0.28, 0.56 + dm), (s * 0.31, 0.70 + dm)], dz=0.0)
         cv.drawPath(tapered(sample_spline(nl, n=10), 0.012, 0.002), fill(lc, alpha=0.55 + 0.3 * max(0, P["m_smile"])))

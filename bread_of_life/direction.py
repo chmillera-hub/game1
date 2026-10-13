@@ -11,8 +11,12 @@ from timeline import Timeline
 
 T = Timeline()
 
-NECK = {"jesus": 1.72, "peter": 1.70, "miriam": 1.62, "eli": 1.72, "man2": 1.72}
-EYE_Y = {"jesus": 0.03, "peter": 0.03, "miriam": 0.06, "eli": 0.04, "man2": 0.03}
+import chars  # noqa: E402
+
+NECK = {k: c.st.get("neck_len", 1.72) for k, c in chars.CHARS.items()}
+NECK["man2"] = NECK["jesus"]
+EYE_Y = {k: c.st.get("eye_y", 0.03) for k, c in chars.CHARS.items()}
+EYE_Y["man2"] = EYE_Y["jesus"]
 BODY_K = {"miriam": 0.95}
 SOLE = 16.95
 
@@ -49,14 +53,14 @@ G_HEART_L = dict(target=(0.1, 2.5, 1.1), hand="flat", palm=(0.0, 0.0, -1.0), wri
 G_SELF_R = dict(target=(0.85, 2.45, 1.15), hand="soft", palm=(-0.1, 0.05, -1.0), wrist=8, still=True)  # "my flesh": hand laid on his chest
 G_BREAD_R = dict(target=(0.95, 4.3, 1.3), hand="hold", palm=(-0.8, -0.5, 0.15), wrist=20, still=True)
 G_BREAD_L = dict(target=(-0.75, 4.4, 1.3), hand="hold", palm=(-0.8, -0.5, 0.15), wrist=20, still=True)
-G_GIVE_R = dict(target=(2.59, 3.48, 1.6), hand="hold", palm=(1.0, 0.0, 0.25), wrist=10, still=True)  # holds the half out to Peter, thumb over it
-G_PRAY_L = dict(target=(-0.2, 3.0, 1.4), hand="hold", palm=(0.0, -1.0, 0.0), hand_dir=(0.85, -0.15, -0.5), still=True)  # bread cradled across the palm, thumb over it
+G_GIVE_R = dict(target=(2.7, 3.5, 1.6), hand="cup", palm=(0.0, -1.0, 0.2), hand_dir=(0.9, 0.0, 0.4), still=True)  # offers the half on his open palm
+G_PRAY_L = dict(target=(-0.2, 3.0, 1.4), hand="hold", palm=(0.0, -1.0, 0.0), hand_dir=(0.95, -0.2, 0.25), still=True)  # bread cradled in the hand, which comes straight out of the sleeve
 P_CHIN_R = dict(target=(0.5, 0.3, 1.5), hand="relaxed", palm=(-0.4, 0.0, -1.0), wrist=-10, layer="front", still=True)
 P_SCRATCH_R = dict(target=(1.5, -1.5, 0.3), hand="relaxed", still=True, palm=(-1.0, 0.3, -0.4))
 P_SCRATCH_MID = dict(target=(2.7, 0.7, 1.5), hand="relaxed", still=True, palm=(-0.6, 0.3, -0.7))  # on the way up, in front of the shoulder
 P_ASK_R = dict(target=(3.1, 2.4, 1.5), hand="open", palm=(0.2, -1.0, 0.3), wrist=10)
 P_RECEIVE_L = dict(target=(-3.4, 3.5, 1.2), hand="cup", palm=(0.0, -1.0, 0.3), wrist=10, still=True)
-P_TAKE_L = dict(target=(-3.31, 3.96, 1.5), hand="cup", palm=(0.0, -1.0, 0.3), wrist=10, still=True)  # cupped palm right under the bread
+P_TAKE_L = dict(target=(-3.02, 2.5, 2.1), hand="hold", palm=(0.0, 1.0, 0.3), wrist=10, still=True)  # takes it from his palm, from above
 P_KEEP_L = dict(target=(-1.1, 3.6, 1.6), hand="hold", palm=(0.25, -1.0, 0.35), wrist=12, still=True)  # draws the bread close
 E_CROSS_R = dict(target=(-1.2, 3.0, 1.15), hand="relaxed", palm=(0.0, 0.2, -1.0), wrist=10, still=True, pole=(0.6, 1.0, -0.15))
 E_CROSS_L = dict(target=(1.15, 3.2, 0.95), hand="relaxed", palm=(0.0, 0.2, -1.0), wrist=10, still=True, pole=(0.6, 1.0, -0.15))
@@ -96,9 +100,9 @@ SHORE_BACK = [(201, 70, 815, 15, 0), (202, 205, 800, 13, 0), (203, 610, 830, 16,
 SYN_BACK = [(301, 60, 1090, 24, 0), (302, 205, 1075, 22, 0), (303, 560, 1095, 25, 0), (304, 690, 1080, 23, 0),
             (305, 130, 1040, 19, 0), (306, 640, 1035, 19, 0)]
 # the synagogue crowd stands to Jesus' right (screen-right), turned toward him
-SYN_WIDE = [(401, 400, 925, 26, -10), (402, 505, 920, 25.8, -8), (403, 615, 928, 26.2, -12), (413, 455, 880, 24, -9),
-            (404, 360, 1015, 29.8, -6), (405, 470, 1010, 29.6, -12), (406, 585, 1018, 30, -8), (407, 700, 1012, 29.7, -14),
-            (408, 420, 1150, 35.4, -10), (409, 545, 1145, 35.2, -6), (410, 675, 1152, 35.5, -12)]
+SYN_WIDE = [(401, 400, 925, 26, -24), (402, 505, 920, 25.8, -26), (403, 615, 928, 26.2, -28), (413, 455, 880, 24, -25),
+            (404, 360, 1015, 29.8, -22), (405, 470, 1010, 29.6, -27), (406, 585, 1018, 30, -28), (407, 700, 1012, 29.7, -30),
+            (408, 420, 1150, 35.4, -24), (409, 545, 1145, 35.2, -26), (410, 675, 1152, 35.5, -30)]
 SYN_UPROAR = [(501, 90, 1000, 25, 0), (502, 250, 990, 24, 0), (503, 410, 1005, 25, 0), (504, 570, 995, 24, 0),
               (505, 700, 1000, 25, 0), (506, 160, 1120, 31, 0), (507, 340, 1130, 32, 0), (508, 520, 1115, 31, 0),
               (509, 680, 1125, 32, 0), (510, 70, 1270, 39, 0), (511, 280, 1285, 40, 0), (512, 470, 1275, 39, 0),
@@ -181,18 +185,21 @@ shot(T("L10", seg=1) + 0.9, "cu_eli_l10", "land_morning", (0.52, 0.42, 1.05),
 shot(T("L10", seg=2) - 0.35, "cu_jesus_l10b", "lake_morning", (0.40, 0.40, 1.0),
      [place("jesus", 330, 430, 162)], blur=8, cam=dict(z0=1.02, z1=1.08, fx=330, fy=430),
      light=L_J_MORN, fx=["sun_glow", "bokeh_water", "god_rays"])
+shot(T("L11", word="bread#1") - 0.12, "cu_eli_l11", "land_morning", (0.52, 0.42, 1.05),
+     [place("eli", 385, 440, 152)], blur=8, light=L_C_MORN, fx=["bokeh_land"],
+     cam=dict(z0=1.0, z1=1.03, fx=385, fy=440), crowd=[crowd(SHORE_BACK[:4], mood="awe", focus=-1, blur=3.5, z=1)])
 shot(T("L11", seg=1) - 0.2, "cu_miriam_hope", "land_morning", (0.46, 0.42, 1.05),
      [place("miriam", 380, 450, 158)], blur=8, light=L_C_MORN, fx=["bokeh_land"],
      cam=dict(z0=1.0, z1=1.03, fx=380, fy=450), crowd=[crowd(SHORE_BACK[3:], mood="awe", focus=-1, blur=3.5, z=1)])
 shot(T("L12") - 0.9, "cu_miriam_l12", "land_morning", (0.46, 0.42, 1.08),
      [place("miriam", 370, 455, 165)], blur=9, light=L_C_MORN, fx=["bokeh_land"],
-     cam=dict(z0=1.0, z1=1.06, fx=370, fy=455))
+     cam=dict(z0=1.0, z1=1.06, fx=370, fy=455), crowd=[crowd(SHORE_BACK[3:], mood="awe", focus=-1, blur=3.5, z=1)])
 shot(T("L13") - 1.2, "cu_jesus_l13", "lake_morning", (0.38, 0.40, 1.0),
      [place("jesus", 340, 440, 162)], blur=9, cam=dict(z0=1.0, z1=1.08, fx=340, fy=440),
      light=dict(L_J_MORN, rim=0.85), fx=["sun_glow_strong", "bokeh_water", "god_rays"])
 shot(T("L14", seg=1) - 0.25, "cu_miriam_tear", "land_morning", (0.46, 0.42, 1.08),
      [place("miriam", 370, 455, 165)], blur=9, light=L_C_MORN, fx=["bokeh_land"],
-     cam=dict(z0=1.02, z1=1.05, fx=370, fy=455))
+     cam=dict(z0=1.02, z1=1.05, fx=370, fy=455), crowd=[crowd(SHORE_BACK[3:], mood="awe", focus=-1, blur=3.5, z=1)])
 shot(T("L14", "end") - 1.2, "ms_two_shot_end1", "lake_morning", (0.45, 0.43, 0.95),
      [place("miriam", 640, 430, 80), place("jesus", 165, 390, 90)], blur=4,
      light=L_J_MORN, fx=["sun_glow", "bokeh_water", "god_rays"], cam=dict(z0=1.0, z1=1.04, fx=360, fy=440))
@@ -204,7 +211,7 @@ shot(s1_end + 1.1, "syn_wide", "syn_side", (0.5, 0.48, 0.80),
      [stand("jesus", 150, 900, 25)], blur=0.8, cam=dict(z0=1.0, z1=1.06, fx=260, fy=600),
      light=L_SYN_J, fx=["beams", "dust"], grade="synagogue", trans=("dissolve", 1.6),
      crowd=[crowd(SYN_WIDE, mood=[(s1_end, "listen"), (T("L15", word="murmur") - 0.2, "murmur")],
-                  focus=-1, blur=0.0, z=40, light=L_SYN_C)])
+                  focus=-1.5, blur=0.0, z=40, light=L_SYN_C)])
 shot(T("L16") - 0.6, "syn_eli_grumble", "syn_side", (0.62, 0.45, 1.05),
      [place("man2", 655, 520, 100, blur=2.0), place("eli", 390, 470, 128)], blur=6,
      light=L_SYN_C, fx=["beams", "dust"], grade="synagogue", cam=dict(z0=1.0, z1=1.03, fx=390, fy=470),
@@ -308,7 +315,7 @@ shot(T("L36") + 1.6, "dusk_cu_peter2", "land_dusk", (0.4, 0.42, 1.05),
 # the bread is broken and shared on the beach
 TF = T("L36", "end") + 0.5   # Jesus breaks the bread and places half in Peter's hand
 shot(TF, "dusk_bread", "beach_dusk", (0.55, 0.5, 1.0),
-     [stand("miriam", 640, 1185, 40, blur=1.0), stand("peter", 520, 1205, 43, bread=[(TF + 3.05, [("l", 1)])]),
+     [stand("miriam", 640, 1185, 40, blur=1.0), stand("peter", 520, 1205, 43, bread=[(TF + 3.05, [("l", 1)])], z=45),
       stand("jesus", 230, 1215, 44, bread=[(0.0, "both"), (TF + 3.05, [("l", -1)])])],
      blur=2.0, light=L_DUSK_J, fx=["sun_glow_dusk"], grade="dusk",
      cam=dict(z0=1.0, z1=1.05, fx=380, fy=760),
@@ -468,8 +475,13 @@ def build_perfs():
     te10 = T("L10", seg=1) + 0.9
     E.arm(te10, "r", None, 0.01).arm(te10, "l", None, 0.01)
     E.pose(te10, 0.01, yaw=-20, pitch=0, roll=0).look(te10, -0.35, 0.0).expr(te10, "skeptical", 0.01)
-    E.expr(te10 + 0.4, "surprised", 0.35, m_open=0.08, br_l=0.6, br_r=0.6)
-    E.expr(te10 + 1.3, "confused", 0.8).pose(te10 + 1.2, 0.8, roll=4, pitch=-3)
+    E.expr(te10 + 0.5, "suspicious", 0.6, bfur=0.4).pose(te10 + 0.4, 0.8, roll=3, pitch=-2)   # bristles at "not society"
+    # ...and is struck when the bread of God "comes down from heaven"
+    te11 = T("L11", word="bread#1") - 0.12
+    E.pose(te11, 0.01, yaw=-20, pitch=-1, roll=2).look(te11, -0.35, 0.0).expr(te11, "suspicious", 0.01, bfur=0.3)
+    E.expr(T("L11", word="comes") + 0.05, "surprised", 0.3, m_open=0.12, br_l=0.85, br_r=0.85, eo_l=1.2, eo_r=1.2)
+    E.pose(T("L11", word="comes"), 0.35, pitch=-5, roll=0)
+    E.expr(T("L11", word="heaven") + 0.1, "surprised", 0.5, m_open=0.04, br_l=0.7, br_r=0.7, eo_l=1.12, eo_r=1.12)
     # Miriam: hope rising
     th = T("L11", seg=1) - 0.2
     M.pose(th, 0.01, yaw=-17, pitch=-1, roll=0).look(th, -0.38, -0.05).expr(th, "hopeful", 0.01, wet=0.6)
@@ -573,8 +585,8 @@ def build_perfs():
     J.tear("l", T("L23", seg=1) + 0.35, T("L23", seg=1) + 2.6, dry=T("L23", "end") + 0.6)
     J.look(T("L23", seg=1) - 0.1, 0.2, 0.3, 0.4).pose(T("L23", seg=1) - 0.2, 1.0, pitch=6, roll=2)
     tp23 = T("L23", "end") - 0.25
-    P.pose(tp23, 0.01, yaw=18, pitch=0, roll=3).look(tp23, 0.45, 0.0).expr(tp23, "anxious", 0.01, bi_l=0.6, bi_r=0.6, wet=0.4)
-    P.look(tp23 + 0.5, 0.25, 0.3, 0.3).pose(tp23 + 0.45, 0.8, pitch=6)
+    P.pose(tp23, 0.01, yaw=-18, pitch=0, roll=-3).look(tp23, -0.42, 0.0).expr(tp23, "anxious", 0.01, bi_l=0.6, bi_r=0.6, wet=0.4)
+    P.look(tp23 + 0.5, -0.3, 0.3, 0.3).pose(tp23 + 0.45, 0.8, pitch=6)
     J.look(T("L23", "end") - 0.4, 0.35, 0.05, 0.4).pose(T("L23", "end") - 0.6, 1.0, pitch=1)
     # L24 Eli's outburst
     t24 = T("L24") - 0.35
@@ -599,9 +611,9 @@ def build_perfs():
     M.arm(tmg, "l", M_MOUTH_L, 0.35)                                        # hand to mouth
     M.expr(tmg + 0.4, "anxious", 0.6, eo_l=1.15, eo_r=1.15)
     tps = T("L25", "end") + 1.45
-    P.pose(tps, 0.01, yaw=18, pitch=1, roll=0).look(tps, 0.45, 0.0).expr(tps, "confused", 0.01, bfur=0.2, br_l=0.2, br_r=0.0, bi_l=0.1, eo_l=1.0, eo_r=0.95)
+    P.pose(tps, 0.01, yaw=-18, pitch=1, roll=0).look(tps, -0.42, 0.0).expr(tps, "confused", 0.01, bfur=0.2, br_l=0.2, br_r=0.0, bi_l=0.1, eo_l=1.0, eo_r=0.95)
     P.expr(tps + 0.25, "confused", 0.45, bfur=0.45, br_l=1.65, br_r=-0.45, bi_l=0.3, bi_r=-0.35, eo_l=1.16, eo_r=0.8, m_smirk=-0.3)
-    P.pose(tps + 0.2, 1.0, roll=-5, pitch=-1)
+    P.pose(tps + 0.2, 1.0, roll=5, pitch=-1)
     P.expr(tps + 1.9, "resolute", 0.7, bfur=0.3)
     P.nod(tps + 2.15, 1.5, 0.8)
     M.arm(T("L26"), "l", None, 1.0)
