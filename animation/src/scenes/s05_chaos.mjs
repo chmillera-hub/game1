@@ -22,7 +22,7 @@
 //                                    the "one day" dissolve keeps the set still and only the people change
 
 import { createCanvas } from '@napi-rs/canvas';
-import { W, H, TAU, clamp, lerp, fbm, blinkAt, applyCamera, drift, vignette, shade, circle, roundRect } from '../engine.mjs';
+import { W, H, TAU, clamp, lerp, fbm, blinkAt, applyCamera, drift, vignette, shade, circle, roundRect, continuousRate } from '../engine.mjs';
 import { withSpeech } from '../face.mjs';
 import { drawFear, FEAR_ARMS } from '../chars/fear.mjs';
 import { drawSelf, SELF_EXPR, SELF_ARMS, drawClipboard, selfPoseAnchors, selfLocal } from '../chars/self.mjs';
@@ -543,7 +543,10 @@ function fearFrontState(t, S) {
   }
   return { x: fx + dx * fs, y: fy, s: fs, squash, pose: { t, facing, face, tremble: lerp(0.95, 0.75, open), crouch: slide, headDY: 8 * slide,
     lean, headTurn: facing < 0 ? -0.2 : 0.1, headTilt: facing < 0 ? -0.06 : 0.04, armR, armL,
-    whiten: 0.6 * (1 - rel), breathRate: lerp(1.9, 0.9, open), breathe: lerp(1.7, 1.2, open) } };
+    whiten: 0.6 * (1 - rel), breathe: lerp(1.7, 1.2, open),
+    // panting slows as the eyes open: the rate is integrated so the breath never re-phases (no flutter)
+    breathRate: continuousRate(t, 's05:fearAlarm', (tt) => lerp(1.9, 0.9, S.k(tt, [['s05b04+1.0', 0], ['s05b04+1.45', 1]])),
+      [S.T('s05b04'), S.end + 1], S.T('s05b04')) } };
 }
 function mixFlat(a, b, k) {
   const o = { ...a };
@@ -605,7 +608,9 @@ function ceoFrontState(t, S) {
   const hasBoard = t < S.T('s05b03.end-0.34');
   const pose = { t, outfit: 'ceo', facing: 1, bodyTurn, headTurn, face,
     clipboard: hasBoard, headDY: 6 * sag + 2 * shut, headTilt: 0.05 * sag - 0.03 * shut, lean: 0.035 * sag,
-    shrug: 0.45 * ears - 0.2 * sag, breathe: lerp(1, 1.8, sag), breathRate: lerp(0.24, 0.13, sag) };
+    shrug: 0.45 * ears - 0.2 * sag, breathe: lerp(1, 1.8, sag),
+    breathRate: continuousRate(t, 's05:ceo', (tt) => lerp(0.24, 0.13, S.k(tt, [['s05b04+1.4', 0], ['s05b04+2.2', 1, 'sine']])),
+      [S.start, S.end + 1], S.start) };
   if (ears > 0.01) { pose.armL = earsArm(x, y, s, pose, -1, ears); pose.armR = earsArm(x, y, s, pose, 1, ears); }
   else pose.armL = 'rest';
   return { x, y, s, pose, ears, hasBoard };

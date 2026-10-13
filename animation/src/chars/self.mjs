@@ -154,7 +154,8 @@ const defSk = () => (DEFAULT_SK ||= skeleton({}));
 // ---------------------------------------------------------------- arm presets
 // Each preset is (side, sk) => spec. side -1 = armL (screen-left when facing 1), +1 = armR.
 // sk = skeleton of the current pose, so presets follow lean / kneel / seated / head motion automatically.
-// spec: { target:[x,y] (WRIST, character-local), bend, front, layer, hand, handAngle, wrist, thumb,
+// spec: { target:[x,y] (WRIST, character-local), bend, front, layer, hand, handAngle, wrist, thumb, palmDir, roll,
+//         pitch (fingers toward the camera: a hand lying on a desk seen from the front is foreshortened),
 //         prop, board, palm, reach1, reach2, shake }
 export const SELF_ARMS = {
   // hanging relaxed by the side; kneeling, the arm on the raised-knee side settles onto that knee (no hand dangling
@@ -1519,7 +1520,7 @@ function drawHand(g, q, back = false, only = null) {
   const o = handOrient(q, back);
   g.save();
   g.translate(q.wx, q.wy);
-  drawHandShape(g, SELF_HAND, { ang: q.handAng, ...o, curl: q.a.curl, spread: q.a.spread, holding: !!q.a.prop, only });
+  drawHandShape(g, SELF_HAND, { ang: q.handAng, ...o, pitch: q.a.pitch, curl: q.a.curl, spread: q.a.spread, holding: !!q.a.prop, only });
   g.restore();
 }
 

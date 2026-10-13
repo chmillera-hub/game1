@@ -3,7 +3,7 @@
 // Views: `front` (opening wide), `alarm` (two-shots / closes), BACKDROP (front set + Void behind the alarm pair),
 // an OTS cheat with Fear's crown in the foreground. See data/staging.md §3 s06.
 import { createCanvas } from '@napi-rs/canvas';
-import { W, H, clamp, lerp, ease, fbm, noise1, blinkAt, applyCamera, drift, vignette, TAU } from '../engine.mjs';
+import { W, H, clamp, lerp, ease, fbm, noise1, blinkAt, applyCamera, drift, vignette, TAU, continuousRate, smoothstep } from '../engine.mjs';
 import { EXPR, makeExpr, withSpeech } from '../face.mjs';
 import { drawFear } from '../chars/fear.mjs';
 import { drawSelf, SELF_EXPR, selfLocal, drawClipboard } from '../chars/self.mjs';
@@ -90,6 +90,12 @@ function setState(t, L, extra = {}) {
 }
 
 // ------------------------------------------------------------------ FEAR (alarm-view pose; the front view reuses it)
+// Fear pants in b02 (fast, shallow), otherwise breathes at a frightened ~0.5 Hz: one integrated rate, so the
+// switch between the two never re-phases the breath (the rigs breathe sin(t·TAU·rate) on film time)
+const PANT_KEYS = [['s06b01+4.0', 0], ['s06b01+4.4', 1], ['s06b03+0.6', 1], ['s06b03+1.4', 0.3]];
+const pantW = (p) => smoothstep(0.1, 0.3, p);
+// the CEO's breath slows a touch while the shoulders are up
+const SHRUG_KEYS = [['s06b02+1.6', 0], ['s06b02+1.95', 0.25], ['s06b03+0.2', 0.12], ['s06b08', 0.12], ['s06b08+0.8', 0.35], ['s06b09+0.9', 0.35], ['s06b09+2.2', 0]];
 function fearPose(t, S, L) {
   const lip = S.lip('FEAR', t);
   // flinch at the touch ('shoulder')
@@ -118,7 +124,7 @@ function fearPose(t, S, L) {
   const tremble = clamp(S.k(t, [['s06b01', 0.7], ['s06b06', 0.65], ['s06b07+2.6', 0.65], ['s06b08+0.2', 0.95], ['scene.end', 0.85]]) + fl * 0.4);
 
   // breathing: fast and shallow in b02 (open-mouth panting), a single sniff in b06
-  const pant = S.k(t, [['s06b01+4.0', 0], ['s06b01+4.4', 1], ['s06b03+0.6', 1], ['s06b03+1.4', 0.3]]);
+  const pant = S.k(t, PANT_KEYS);
   const sniffAt = S.T('s06b06+0.85');
   const sniff = t > sniffAt && t < sniffAt + 0.35 ? Math.sin((t - sniffAt) / 0.35 * Math.PI) : 0;
 
@@ -228,7 +234,8 @@ function fearPose(t, S, L) {
   const squash = twist > 0 && twist < 1 ? 1 - 0.22 * Math.sin(twist * Math.PI) : 1;
   return { face, facing, crouch, headDY, headDX, headTilt, headTurn, tremble, armL, armR, lean, squash, dx,
     whiten: facing > 0 ? 0.55 * L.pulled : 0,
-    breathRate: pant > 0.2 ? 1.5 : undefined, breathe: pant > 0.2 ? 1.2 : undefined, fl };
+    breathRate: continuousRate(t, 's06:fear', (tt) => lerp(0.5, 1.5, pantW(S.k(tt, PANT_KEYS))), [S.start, S.end + 1], S.start),
+    breathe: lerp(1, 1.2, pantW(pant)), fl };
 }
 function shoulderPt(crouch) { return [FX - 36 * FS, FY - (131 - 20 * crouch) * FS]; }
 function drawFearAt(g, x, y, s, t, P, extra = {}) {
@@ -339,9 +346,10 @@ function ceoPose(t, S, F) {
   const dip = (a, dur, amp) => { const k = clamp((t - S.T(a)) / dur); return Math.sin(k * Math.PI) * amp; };
   const headDY = dip('s06b02+1.1', 0.6, 4) + dip('s06b03+0.5', 0.45, 6) + dip('s06b06+0.4', 1.2, 11)
     + S.k(t, [['s06b08+0.6', 0], ['s06b08+1.6', 5], ['s06b09+0.9', 5], ['s06b09+2.0', 10]]);
-  const shrug = S.k(t, [['s06b02+1.6', 0], ['s06b02+1.95', 0.25], ['s06b03+0.2', 0.12], ['s06b08', 0.12], ['s06b08+0.8', 0.35], ['s06b09+0.9', 0.35], ['s06b09+2.2', 0]]);
+  const shrug = S.k(t, SHRUG_KEYS);
   const headTilt = S.k(t, [['s06b01', 0.1], ['s06b04', 0.1], ['s06b06', 0.13], ['s06b08+0.5', 0.13], ['s06b09', 0.06]]);
-  return { t, outfit: 'ceo', kneel: 1, facing: 1, face, headDY, headTilt, shrug, armR, armL: 'rest', breathRate: shrug > 0.2 ? 0.16 : 0.2 };
+  return { t, outfit: 'ceo', kneel: 1, facing: 1, face, headDY, headTilt, shrug, armR, armL: 'rest',
+    breathRate: continuousRate(t, 's06:ceo', (tt) => lerp(0.2, 0.16, smoothstep(0.15, 0.25, S.k(tt, SHRUG_KEYS))), [S.start, S.end + 1], S.start) };
 }
 function drawPair(g, t, S, L, opts = {}) {
   const F = fearPose(t, S, L);

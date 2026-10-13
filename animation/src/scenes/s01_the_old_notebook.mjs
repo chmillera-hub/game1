@@ -4,7 +4,7 @@
 //   B  → s01b03                              INSERT on the open notebook (SELF's POV over the shoulder), hand smooths
 //                                            the dog-eared corner, the eyes (camera) travel from Fear up to the hood
 //   C  s01b03 → S.end+0.9                    EYE PUSH from the face close-up into the lamp-side eye → amber glow
-import { W, H, clamp, lerp, ease, fbm, blinkAt, applyCamera, drift, vignette, TAU } from '../engine.mjs';
+import { W, H, clamp, lerp, ease, fbm, blinkAt, applyCamera, drift, vignette, TAU, continuousRate } from '../engine.mjs';
 import { drawSelf, SELF_EXPR, selfPoseAnchors, selfLocal } from '../chars/self.mjs';
 import { drawNotebook } from '../sets/props.mjs';
 import { drawRealRoom, drawRealRoomForeground, drawLitByRoom, REALROOM } from '../sets/realroom.mjs';
@@ -130,7 +130,9 @@ function selfPose(t, S) {
   const headTurn = -0.12 + fbm(t * 0.18, 15) * 0.02;
   // breathing: one visible slow breath in A; slower and deeper in C ("visible in the collar")
   const breathe = S.k(t, [['scene.start', 1.25], ['s01b03', 1.25], ['s01b03+1', 1.5]]);
-  const breathRate = S.k(t, [['scene.start', 0.19], ['s01b03', 0.19], ['s01b03+2', 0.14]]);
+  // (the rate slows in C: integrated so the breath never re-phases — the rigs breathe sin(t·TAU·rate) on film time)
+  const breathRate = continuousRate(t, 's01:self', (tt) => S.k(tt, [['scene.start', 0.19], ['s01b03', 0.19], ['s01b03+2', 0.14]]),
+    [S.start, S.end + 1], S.start);
   return { t, seated: true, outfit: 'sweater', bodyTurn: -0.12, headTurn, headTilt, headDY, face, breathe, breathRate, shrug: 0.05 + laugh * 0.2 };
 }
 
@@ -143,14 +145,12 @@ function foreshorten(t, S, target, side, bentK = 1.1) {
   return { reach1: r, reach2: r };
 }
 
-// the resting flat hand opens/closes into the pointing hand as one smooth blend (it used to switch shape in one frame
-// at reach 0.55 / away 0.45). k = 0 is exactly the old 'flat' spec (thumb 1 ⇒ roll π − 0.1), so frame 1 is unchanged;
-// k = 1 is the old 'point' spec (roll π − 0.95)
+// the resting flat hand opens/closes into the pointing hand as one smooth blend. Hands on the page lie palm DOWN (the
+// back of the hand to camera) and, lying on a desk seen from the front, they are foreshortened toward the camera
 const sstep = (a, b, x) => { const q = clamp((x - a) / (b - a)); return q * q * (3 - 2 * q); };
+const PAGE_PALM = [0, 0.55, -0.83], PAGE_PITCH = 0.8;
 function flatToPoint(k) {
-  if (k <= 0) return { hand: 'flat', thumb: 1 };
-  if (k >= 1) return { hand: 'point', thumb: 1 };
-  return { hand: blendHand('flat', 'point', k), roll: Math.PI - lerp(0.1, 0.95, k) };
+  return { hand: k <= 0 ? 'flat' : k >= 1 ? 'point' : blendHand('flat', 'point', k), palmDir: PAGE_PALM, pitch: lerp(PAGE_PITCH, 0.45, k) };
 }
 
 // arms in shot A: SELF's own right hand (armL, screen-left) has a fingertip on the crayon Fear and slides up to the
@@ -168,7 +168,7 @@ function armsA(t, S) {
   const tip = [lerp(fear[0], hood[0], slide), lerp(fear[1], hood[1], slide) - Math.sin(slide * Math.PI) * 3];
   const ang = lerp(0.3, 0.78, slide) + fbm(t * 0.3, 21) * 0.02;   // on the hood the wrist straightens: the hand lies above crayon Fear, not over it
   let target = wristForTip(tip, ang, 1);
-  let armL = { target, bend: -1, front: true, hand: 'point', handAngle: ang, thumb: 1, ...foreshorten(t, S, target, -1) };
+  let armL = { target, bend: -1, front: true, ...flatToPoint(1), handAngle: ang, ...foreshorten(t, S, target, -1) };
   // the relaxed hand at rest, flat on the outer half of the LEFT page
   const restAng = 1.25;
   const restW = [L_REST_PALM[0] - Math.cos(restAng) * 17 * HAND_S, L_REST_PALM[1] - Math.sin(restAng) * 17 * HAND_S];
@@ -196,7 +196,7 @@ function armsA(t, S) {
   const slideR = S.k(t, [['s01b02+2.3', 0], ['s01b02+2.95', 1, 'inOut']]);
   const rw = [R_CORNER_WRIST[0] - 6 + slideR * 6, R_CORNER_WRIST[1] - 8 + slideR * 8];
   const rest = selfLocal(SX, SY, SS, 1, rw[0], rw[1]);
-  const armR = { target: rest, bend: 1, front: true, hand: 'flat', handAngle: 1.84 - slideR * 0.06, thumb: -1,
+  const armR = { target: rest, bend: 1, front: true, hand: 'flat', handAngle: 1.84 - slideR * 0.06, palmDir: PAGE_PALM, pitch: PAGE_PITCH,
     ...foreshorten(t, S, rest, 1, 1.1) };
   return { armL, armR };
 }
