@@ -7,7 +7,7 @@ Central idea: one hymn-like "love motif" (D major) that travels through the film
   when Jesus appears on the Damascus road -> oboe when Asher breaks the bread ->
   full orchestra and choir at the Romans 8 climax -> flute at dawn.
 
-Under the heaviest moments (what Paul did, the arrest, "He never came home", "the worst of
+Under the heaviest moments (what Paul did, the arrest, "My father never came home", "the worst of
 sinners", the sentence, "sheep to be slaughtered", "the old man was no more") deep swells of
 low strings and tuba rise and fall, rendered as a separate layer and mixed under the score.
 """
@@ -223,10 +223,10 @@ def compose(tl):
     s.chord(12, ["D3", "Eb3"], t_rev, LN("asher", "I was eight") - t_rev, 40)
     s.note(3, "D1", t_yo, LN("asher", "I was eight") - t_yo, 44)
     t8 = LN("asher", "I was eight")
-    t_home = LN("asher", "He never came home")
+    t_home = LN("asher", "My father never came home")
     s.note(2, "F3", t8 + 0.1, t_home - t8, 52)
     s.note(2, "E3", t_home, 3.5, 46)
-    t_sil = LN("asher", "He never came home", True) + 1.2
+    t_sil = LN("asher", "My father never came home", True) + 1.2
     s.chord(0, ["D3", "A3", "F4"], t_sil, 2.4, 32)
     s.note(5, "A4", t_sil + 0.9, 2.0, 34)
     # English horn: the love motif in D minor, soft, under Paul's memory
@@ -479,7 +479,7 @@ def compose_swells(tl):
         ("narrator", "When he was a boy", "Bb", 0.8, 0.75),
         ("phoebe", "If your enemy", "D", 0.6, 0.6),
         ("asher", "You dragged a man", "D", 1.0, 0.8),
-        ("asher", "He never came home", "A", 0.6, 0.9),
+        ("asher", "My father never came home", "A", 0.6, 0.9),
         ("child", "Father! Don't go", "D", 0.6, 0.85),
         ("asher", "You don't get to remember", "D", 0.7, 0.8),
         ("asher", "but you weren't acting like a saint", "Bb", 0.8, 0.8),

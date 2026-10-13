@@ -226,9 +226,18 @@ function drawNeck(ctx, pr, st, F, Lt, skin, skinSh, line, lw, G, extra = {}) {
   const by = extra.neckBase ? extra.neckBase[1] : H.y + s * 2.25;
   const top = P(0, 0.95, -0.25);
   const side = -(Lt.side || -1);
+  // where the neck meets the clothes: never outside the collar's corners (turned, the far corner of the
+  // collar moves in, and a neck edge left outside it would push the skin into the shirt's shoulder)
+  const cc = extra.collar;
+  const baseX = (sd) => {
+    const x = ax + sd * nw * 1.0;
+    if (!cc) return x;
+    const corner = sd > 0 ? Math.max(cc[0][0], cc[cc.length - 1][0]) : Math.min(cc[0][0], cc[cc.length - 1][0]);
+    return sd > 0 ? Math.min(x, corner - s * 0.03) : Math.max(x, corner + s * 0.03);
+  };
   const sideOf = (sd) => {
     const t0 = [top[0] + sd * nw * 0.95, top[1] - s * 0.35];
-    const t1 = [ax + sd * nw * 1.0, by - s * 0.2];
+    const t1 = [baseX(sd), by - s * 0.2];
     return {
       t0, t1,
       c1: [lerp(t0[0], t1[0], 0.35) - sd * nw * 0.05, lerp(t0[1], t1[1], 0.35)],

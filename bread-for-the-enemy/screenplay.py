@@ -252,7 +252,7 @@ S("cell_asher_cu")
 E("asher", emo="cry_anger", tears=0.6, look="paul", dur=0.6)
 L("asher", "I was eight years old. I watched it all... through a crack in the door.", speed=0.9, gap=0.9)
 E("asher", emo="cry", tears=1.0, dur=0.8, at=-0.3)
-L("asher", "He never came home.", speed=0.8, fx="tremble", gap=1.2)
+L("asher", "My father never came home.", speed=0.8, fx="tremble", gap=1.2)
 
 S("cell_paul_cu", zoom=(1.0, 1.05))
 E("paul", emo="grief", look="down", dur=0)
