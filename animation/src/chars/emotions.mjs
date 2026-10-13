@@ -27,7 +27,7 @@
 //   shadow       false to skip the ground shadow;  alpha 0..1
 
 import { Path2D, createCanvas } from '@napi-rs/canvas';
-import { clamp, lerp, TAU, fbm, noise1, autoBlink, ik, limb, ellipse, circle, groundShadow, shade, rgba, smoothstep, smoothShake } from '../engine.mjs';
+import { clamp, lerp, TAU, fbm, noise1, autoBlink, ik, limb, ellipse, circle, groundShadow, shade, rgba, smoothstep, smoothShake, breathWave, autoBlinkGated } from '../engine.mjs';
 import { drawHand as drawHandShape, makeHandStyle, TOON3 } from '../hand.mjs';
 import { drawFace, makeExpr } from '../face.mjs';
 
@@ -79,7 +79,7 @@ function defaultPalm(shape, side, ang) {
   const up = -Math.sin(ang);
   if (shape === 'palm' || shape === 'wave') return [0, 0, 1];
   if (shape === 'point') return [0, 0.6, -0.8];
-  if (shape === 'rest' || shape === 'open') return up > 0.5 ? [0, 0, -1] : [-side * 0.9, 0, -0.45];
+  if (shape === 'rest' || shape === 'open') { const w = smoothstep(0.25, 0.75, up); return [lerp(-side * 0.9, 0, w), 0, lerp(-0.45, -1, w)]; }
   return [-side * 0.5, 0.15, -0.85];
 }
 // seen from behind, the character's "backward" is toward the camera
@@ -637,7 +637,10 @@ function makeArms(S) {
       bend: -side, hand: 'open', palmDir: [0, 0, 1],
     }),
     handsOnHips: (side) => ({ target: [side * (bw + 2), hip - (hip - sy) * 0.3], bend: side, layer: 'over', hand: 'fist', palmDir: [-side * 0.4, 0, -1] }),
-    hugSelf: (side) => ({ target: [-side * bw * 0.36, sy + R * 0.3], bend: side, layer: 'front', hand: 'drape', palmDir: [0, 0, -1] }),
+    // seen from behind, the folded arms' elbows stick out past the body (never armless)
+    hugSelf: (side, view) => (view === 'back'
+      ? { target: [side * bw * 0.56, sy + R * 0.35], bend: side, layer: 'front', hand: 'drape', palmDir: [0, 0, -1] }
+      : { target: [-side * bw * 0.36, sy + R * 0.3], bend: side, layer: 'front', hand: 'drape', palmDir: [0, 0, -1] }),
     pointing: (side) => ({ target: [side * (sx + R * 0.97), sy - R * 0.14], bend: -side, hand: 'point', palmDir: [0, 1, -0.3] }),
     cheer: (side, view, t) => ({ target: [side * (sx + R * 0.42), sy - R * (0.86 + 0.04 * Math.sin(t * TAU * 1.2 + side))], bend: -side, hand: 'fist', palmDir: [-side * 0.4, 0, -1] }),
     wipeEye: (side) => ({ target: [side * S.face.eyeSpacing * 1.1, hcy + S.faceDY + S.face.eyeY + 8], bend: -side, layer: 'front', hand: 'fist', palmDir: [-side * 0.3, 0, -1] }),
@@ -812,7 +815,7 @@ function buildExpr(S, c) {
   const e = makeExpr(f);
   if (!c.pose.noBase && S.baseExpr) for (const k in S.baseExpr) e[k] = clamp((e[k] || 0) + S.baseExpr[k], -1, 1);
   e.t = c.t;
-  if (!f.noAutoBlink) e.blink = clamp((f.blink || 0) + autoBlink(c.t, S.seed, S.blinkRate + c.trem * 0.25));
+  if (!f.noAutoBlink) e.blink = clamp((f.blink || 0) + Math.max(autoBlink(c.t, S.seed, S.blinkRate), autoBlinkGated(c.t, S.seed + 1, 0.25, c.trem * 0.85)));
   return e;
 }
 
@@ -971,7 +974,9 @@ export function drawEmotion(g, name, x, y, scale = 1, pose = {}) {
   const crouch = clamp(pose.crouch || 0);
   const breathe = pose.breathe ?? 1;
   const u = S.u;
-  const br = Math.sin(t * TAU * (pose.breathRate || S.breathRate + trem * 0.5) + S.seed) * breathe;
+  const br = (pose.breathPhase != null ? Math.sin(pose.breathPhase)
+    : pose.breathRate ? Math.sin(t * TAU * pose.breathRate + S.seed)
+      : breathWave(t, S.breathRate, S.breathRate + 0.5, trem, S.seed)) * breathe;
   const sh = smoothShake(t, trem, S.seed);
   const k = back ? clamp(pose.lookBack || 0) : 0;
   const s = (pose.lookSide ?? 1) < 0 ? -1 : 1;

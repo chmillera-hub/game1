@@ -14,7 +14,7 @@
 //   headTurn   -1..1 yaw (also passed to the face as turn)
 //   headDX, headDY   head offset in px (nods, recoils)
 //   lean       body lean radians;  crouch 0..1 (squash down / cower)
-//   tremble    0..1 whole-body shiver;  breathe 0..2 breath amplitude (default 1); breathRate (Hz)
+//   tremble    0..1 whole-body shiver;  breathe 0..2 breath amplitude (default 1); breathRate (Hz) or breathPhase (rad)
 //   armL, armR { target:[x,y] (character-local, origin at feet, y up is negative), bend:+1/-1, front:bool,
 //                hand: 'open'|'rest'|'palm'|'flat'|'drape'|'cup'|'fist'|'grip'|'point'|'pinch' or a pose object (hand.mjs),
 //                palmDir [x,y,z] where the palm faces (z toward camera) or roll, wrist (radians), spread, curl, holding }
@@ -25,7 +25,7 @@
 //   shadow     true to draw a ground shadow
 //   alpha      overall opacity
 
-import { clamp, lerp, TAU, fbm, noise1, autoBlink, ik, limb, ellipse, circle, groundShadow, shade, rgba, smoothShake } from '../engine.mjs';
+import { clamp, lerp, TAU, fbm, noise1, autoBlink, ik, limb, ellipse, circle, groundShadow, shade, rgba, smoothShake, breathWave, autoBlinkGated, smoothstep } from '../engine.mjs';
 import { drawFace, makeExpr } from '../face.mjs';
 import { drawHand, makeHandStyle, TOON3 } from '../hand.mjs';
 
@@ -78,7 +78,7 @@ export function drawFear(g, x, y, scale = 1, pose = {}) {
   const trem = clamp(pose.tremble || 0);
   const crouch = clamp(pose.crouch || 0);
   const breathe = pose.breathe ?? 1;
-  const br = Math.sin(t * TAU * (pose.breathRate || (0.28 + trem * 0.5))) * breathe;
+  const br = fearBreathWave({ ...pose, t }) * breathe;
   const sh = fearShake(t, trem);
 
   g.save();
@@ -227,7 +227,7 @@ function drawFearHead(g, pose, t, facing, sh) {
   const face = makeExpr(pose.face || {});
   face.t = t;
   face.turn = (pose.headTurn ?? 0) + (face.turn || 0) * 0;
-  if (!face.noAutoBlink) face.blink = clamp((face.blink || 0) + autoBlink(t, 11, 0.3 + (pose.tremble || 0) * 0.25));
+  if (!face.noAutoBlink) face.blink = clamp((face.blink || 0) + Math.max(autoBlink(t, 11, 0.3), autoBlinkGated(t, 12, 0.27, clamp(pose.tremble || 0) * 0.85)));
   drawFace(g, FEAR_FACE, face);
   g.restore();
 }
@@ -242,7 +242,15 @@ export function fearBodySpace(g, x, y, scale, pose) {
   g.rotate((pose.lean || 0) + sh.rot);
   return sh;
 }
-const fearBreath = (pose) => Math.sin((pose.t || 0) * TAU * (pose.breathRate || (0.28 + clamp(pose.tremble || 0) * 0.5))) * (pose.breathe ?? 1);
+/** Fear's breath (−1..1 × breathe): pose.breathPhase (radians) or pose.breathRate (Hz) if a scene sets them;
+ *  otherwise a calm 0.28 Hz breath that quickens toward 0.78 Hz with trembling, without ever jumping */
+function fearBreathWave(pose) {
+  const t = pose.t || 0;
+  if (pose.breathPhase != null) return Math.sin(pose.breathPhase);
+  if (pose.breathRate) return Math.sin(t * TAU * pose.breathRate);
+  return breathWave(t, 0.28, 0.78, clamp(pose.tremble || 0));
+}
+const fearBreath = (pose) => fearBreathWave(pose) * (pose.breathe ?? 1);
 /** from the body frame to the head's neck pivot (same as drawFear) */
 export function fearHeadSpace(g, pose, sh) {
   const crouch = clamp(pose.crouch || 0);
@@ -270,8 +278,16 @@ function drawArm(g, side, a, t, sh, crouch, br, whiten = 0) {
   const sx = side * SHOULDER_X, sy = SHOULDER_Y + crouch * 18 + br;
   const [tx0, ty0] = a.target;
   const [ox, oy] = sh.arm(side);
-  const tx = tx0 + ox, ty = ty0 + oy;
+  let tx = tx0 + ox, ty = ty0 + oy;
   const L1 = 46, L2 = 44;
+  // a target right at the shoulder would let the folded elbow swing round with the target's angle (a whip in 1-2
+  // frames): keep it at least ~0.32 of the reach away, along the same direction
+  const dx = tx - sx, dy = ty - sy, dd = Math.hypot(dx, dy), dmin = 0.32 * (L1 + L2);
+  if (dd < dmin) {
+    const ux = dd > 1e-3 ? dx / dd : 0, uy = dd > 1e-3 ? dy / dd : 1;
+    const k = dmin - (dmin - dd) * 0.35;                     // soft floor
+    tx = sx + ux * k; ty = sy + uy * k;
+  }
   const { a1, a2 } = ik(sx, sy, tx, ty, L1, L2, a.bend ?? -side);
   const p = limb(g, sx, sy, L1, L2, a1, a2, 8.5, 7, C.bodyShade, C.line);
   // hand (the wrist bends a little toward the gesture; presets give palmDir so the thumb sits where anatomy puts it)
@@ -288,7 +304,7 @@ function drawArm(g, side, a, t, sh, crouch, br, whiten = 0) {
 function defaultPalm(shape, side, ang) {
   const up = -Math.sin(ang); // >0: fingers point upward
   if (shape === 'palm' || shape === 'wave') return [0, 0, 1];
-  if (shape === 'rest' || shape === 'open') return up > 0.5 ? [0, 0, -1] : [-side * 0.9, 0, -0.45];
+  if (shape === 'rest' || shape === 'open') { const w = smoothstep(0.25, 0.75, up); return [lerp(-side * 0.9, 0, w), 0, lerp(-0.45, -1, w)]; }
   if (shape === 'fist' || shape === 'grip') return [-side * 0.6, 0.2, -0.8];
   return [-side * 0.6, 0, -0.8];
 }

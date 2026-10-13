@@ -10,12 +10,12 @@
 //
 // POSE fields (all optional; full reference with ranges in docs/self.md)
 //   t, face, facing, headTilt, headTurn, headDX, headDY, lean, crouch, tremble, breathe, breathRate,
-//   armL, armR, walk {phase}, shadow, alpha                          — same semantics as fear.mjs
+//   armL, armR, walk {phase, amt}, shadow, alpha                     — same semantics as fear.mjs (amt eases a walk in/out)
 //   outfit 'sweater'|'ceo', clipboard (bool), view 'front'|'back', bodyTurn -1..1, kneel 0..1,
 //   seated (bool), shrug 0..1, hairWind -1..1, layer 'all'|'body'|'front', notebook {tilt}
 
-import { clamp, lerp, TAU, fbm, noise1, autoBlink, ik, ellipse, circle, groundShadow, rgba, shade, smoothShake } from '../engine.mjs';
-import { drawHand as drawHandShape, makeHandStyle, HUMAN, handDefaultRoll } from '../hand.mjs';
+import { clamp, lerp, TAU, fbm, noise1, autoBlink, ik, ellipse, circle, groundShadow, rgba, shade, smoothShake, breathWave, autoBlinkGated, smoothstep } from '../engine.mjs';
+import { drawHand as drawHandShape, makeHandStyle, HUMAN, handDefaultRoll, blendHand } from '../hand.mjs';
 import { drawFace, makeExpr } from '../face.mjs';
 
 export const SELF_COLORS = {
@@ -97,12 +97,16 @@ function skeleton(pose) {
   const kE = kneel * kneel * (3 - 2 * kneel);
   const walk = !seated && kneel < 0.01 && pose.walk ? pose.walk : null;
   const ph = walk ? walk.phase || 0 : 0;
-  const btScreen = pose.bodyTurn ?? (walk ? 0.4 : kE * 0.45) * facing;
+  // walk.amt (0..1, default 1) eases a walk in/out: stride, bob, lean, arm swing and the turn of the body all scale with
+  // it, so stopping is a settle rather than a one-frame drop into the standing pose
+  const wa = walk ? clamp(walk.amt ?? 1) : 0;
+  const btScreen = pose.bodyTurn ?? (walk ? 0.4 * wa : kE * 0.45) * facing;
   const bt = clamp(btScreen * facing, -1, 1); // local (mirrored) space: + = toward the facing direction
   const th = bt * 0.9;
   const trem = clamp(pose.tremble || 0);
   const breathe = pose.breathe ?? 1;
-  const br = Math.sin(t * TAU * (pose.breathRate || 0.2 + trem * 0.35)) * breathe;
+  const br = (pose.breathPhase != null ? Math.sin(pose.breathPhase)
+    : pose.breathRate ? Math.sin(t * TAU * pose.breathRate) : breathWave(t, 0.2, 0.55, trem)) * breathe;
   const shk = smoothShake(t, trem, 5);
   const shiver = [shk.x * 0.9, shk.y * 0.8];
   const crouch = clamp(pose.crouch || 0);
@@ -110,11 +114,11 @@ function skeleton(pose) {
   if (seated) hip = [0, SEAT_HIP];
   else {
     // walk: hips lowest at contact (feet apart, ph = 0, π), highest at passing
-    const bob = walk ? Math.cos(2 * ph) * 5 : 0;
+    const bob = walk ? Math.cos(2 * ph) * 5 * wa : 0;
     hip = [lerp(0, KNEEL_HIP[0], kE), lerp(HIP_Y + bob + crouch * 36, KNEEL_HIP[1], kE)];
   }
   const sway = seated ? fbm(t * 0.17, 31) * 0.006 : fbm(t * 0.19, 31) * 0.01;
-  const lean = (pose.lean || 0) + kE * 0.2 + crouch * 0.12 + (walk ? 0.045 : 0) + sway + shk.rot * 0.6;
+  const lean = (pose.lean || 0) + kE * 0.2 + crouch * 0.12 + (walk ? 0.045 * wa : 0) + sway + shk.rot * 0.6;
   const tp = (x, y) => {
     const [rx, ry] = rotP(x, y, lean);
     return [hip[0] + rx + shiver[0], hip[1] + ry + shiver[1]];
@@ -141,7 +145,7 @@ function skeleton(pose) {
   const headRot = lean * 0.45 + (pose.headTilt || 0) + kE * 0.08 + shk.head * 0.7;
   const hc = [piv[0] + Math.sin(headRot) * HEAD_UP, piv[1] - Math.cos(headRot) * HEAD_UP];
   const hp = (x, y) => { const [rx, ry] = rotP(x, y, headRot); return [hc[0] + rx, hc[1] + ry]; };
-  return { t, facing, seated, back, kneel, kE, walk, ph, bt, th, trem, br, hip, lean, tp, sh, shY, neck, piv, headRot, hc, hp, fshift, crouch, shiver, shk, turnScreen, u, over };
+  return { t, facing, seated, back, kneel, kE, walk, wa, ph, bt, th, trem, br, hip, lean, tp, sh, shY, neck, piv, headRot, hc, hp, fshift, crouch, shiver, shk, turnScreen, u, over };
 }
 
 let DEFAULT_SK = null;
@@ -153,7 +157,26 @@ const defSk = () => (DEFAULT_SK ||= skeleton({}));
 // spec: { target:[x,y] (WRIST, character-local), bend, front, layer, hand, handAngle, wrist, thumb,
 //         prop, board, palm, reach1, reach2, shake }
 export const SELF_ARMS = {
-  rest: (side, k = defSk()) => ({ target: [k.sh[side].x + side * 12, k.sh[side].y + 184], bend: side, hand: 'rest', wrist: -side * 0.08 }),
+  // hanging relaxed by the side; kneeling, the arm on the raised-knee side settles onto that knee (no hand dangling
+  // by the shoe) — the elbow changes side only while the arm is still nearly straight, so nothing pops
+  rest: (side, k = defSk()) => {
+    const base = { target: [k.sh[side].x + side * 12, k.sh[side].y + 184], bend: side, hand: 'rest', wrist: -side * 0.08 };
+    const fwd = k.th >= 0 ? 1 : -1;
+    if (!(k.kE > 0.001) || side !== fwd || k.seated) return base;
+    const kk = clamp((k.kE - 0.05) / 0.9);
+    const { a1, a2 } = ik(k.sh[side].x, k.sh[side].y, base.target[0], base.target[1], UPPER, FORE, side);
+    const ang0 = a1 + a2 - side * 0.08;
+    const u = clamp((kk - 0.15) / 0.85), e = u * u * (3 - 2 * u);
+    const r1 = kk < 0.15 ? lerp(1, 0.94, kk / 0.15) : lerp(0.94, 0.72, e);
+    const r2 = kk < 0.15 ? lerp(1, 0.94, kk / 0.15) : lerp(0.94, 0.5, e);
+    const kneeAng = side > 0 ? 1.25 : Math.PI - 1.25;
+    return { target: [lerp(base.target[0], side * 92, e), lerp(base.target[1], -176, e)], bend: kk < 0.15 ? side : -side, layer: 'back',
+      hand: blendHand('rest', 'drape', e), handAngle: lerp(ang0, kneeAng, e), reach1: r1, reach2: r2,
+      palmDir: [lerp(-side * 0.9, -side * 0.3, e), lerp(0, 0.4, e), lerp(-0.45, -0.85, e)] };
+  },
+  // kneeling: hand draped over the raised knee (fingers over the knee cap)
+  onKnee: (side) => ({ target: [side * 92, -176], bend: -side, layer: 'back', hand: 'drape', handAngle: side > 0 ? 1.25 : Math.PI - 1.25,
+    palmDir: [-side * 0.3, 0.4, -0.85], reach1: 0.72, reach2: 0.5 }),
   onShoulder: (side, k = defSk()) => ({ target: [k.sh[side].x + side * 110, k.sh[side].y + 130], bend: -side, front: true, hand: 'drape', palm: true, wrist: side * 0.75, palmDir: [0, 1, -0.3] }),
   handOnHeart: (side, k = defSk()) => {
     // flat hand over the heart (wearer's left chest = local +x), fingers toward the opposite shoulder
@@ -281,7 +304,7 @@ export function drawSelf(g, x, y, scale = 1, pose = {}) {
       const a = arms[side < 0 ? 0 : 1];
       if (a.name === 'rest' && !a.noSwing) {
         // each arm swings opposite its leg (leg -1 is forward at phase 0)
-        const sw = side * Math.cos(k.ph);
+        const sw = side * Math.cos(k.ph) * k.wa;
         a.target = [a.target[0] + sw * 30, a.target[1] - Math.abs(sw) * 6];
       }
     }
@@ -702,14 +725,14 @@ function walkLeg(ph, side) {
 }
 
 function drawLegs(g, k, outfit) {
-  const { hip, kE, walk, ph, th } = k;
+  const { hip, kE, walk, ph, th, wa } = k;
   const legs = [];
   const fwd = th >= 0 ? 1 : -1;
   // walking reads best with the legs side-on (a profile stride under a 3/4 torso: the sweater hem hides the hip
   // cheat). A near-frontal walk (|bodyTurn| < ~0.1) strides toward the camera instead.
   const prof = walk ? sstep(0.06, 0.3, Math.abs(th)) : 0;
-  const legTh = walk ? fwd * Math.max(Math.abs(th), 1.25 * prof) : th;
-  const turnAmt = Math.min(1, Math.abs(Math.sin(legTh)) * 1.6 + (walk ? 0.45 : 0) + kE);
+  const legTh = walk ? lerp(th, fwd * Math.max(Math.abs(th), 1.25 * prof), wa) : th;
+  const turnAmt = Math.min(1, Math.abs(Math.sin(legTh)) * 1.6 + (walk ? 0.45 * wa : 0) + kE);
   // knees that bend toward the camera (front view crouch, frontal walk) foreshorten instead of splaying sideways
   const fs = 0.75 * (1 - clamp(Math.abs(Math.sin(legTh)) * 1.6 + kE));
   const kn = k.kneel;
@@ -724,10 +747,10 @@ function drawLegs(g, k, outfit) {
     let shoeRot = 0;
     if (walk) {
       const w = walkLeg(ph, side);
-      ax = hx + w.f * STRIDE * prof * fwd;
-      ay = ANKLE_Y - w.lift + w.f * 8 * (1 - prof); // frontal walk: the forward foot is nearer the camera
-      kneeDir = fwd;
-      shoeRot = w.roll * fwd * prof;
+      ax = lerp(ax, hx + w.f * STRIDE * prof * fwd, wa);
+      ay = lerp(ay, ANKLE_Y - w.lift + w.f * 8 * (1 - prof), wa); // frontal walk: the forward foot is nearer the camera
+      kneeDir = wa > 0.5 ? fwd : kneeDir;
+      shoeRot = w.roll * fwd * prof * wa;
     }
     let kneelBack = 0;
     if (kn > 0) {
@@ -883,7 +906,7 @@ function drawHead(g, k, pose, back) {
   const turnScreen = k.turnScreen;
   const u = k.u; // geometric (mirrored-space) turn
   const sway = fbm(t * 0.55, 21) * 0.16 - (pose.headTilt || 0) * 0.7 - k.lean * 0.5 + (pose.hairWind || 0) * 0.5 +
-    (k.walk ? Math.sin(k.ph * 2) * 0.12 : 0) + k.shk.tuft * 1.2;
+    (k.walk ? Math.sin(k.ph * 2) * 0.12 * k.wa : 0) + k.shk.tuft * 1.2;
   g.save();
   g.translate(k.hc[0], k.hc[1]);
   g.rotate(k.headRot);
@@ -1028,7 +1051,7 @@ function drawHeadFront(g, k, pose, u, sway, turnScreen, overShoulder) {
   face.t = t;
   face.turn = turnScreen;
   face.browUp *= BROW_GAIN; face.browIn *= BROW_GAIN; face.browUpL *= BROW_GAIN; face.browUpR *= BROW_GAIN;
-  if (!face.noAutoBlink) face.blink = clamp((face.blink || 0) + autoBlink(t, 23, 0.26 + k.trem * 0.2));
+  if (!face.noAutoBlink) face.blink = clamp((face.blink || 0) + Math.max(autoBlink(t, 23, 0.26), autoBlinkGated(t, 24, 0.22, k.trem * 0.85)));
   drawFace(g, SELF_FACE, face);
   g.restore();
 
@@ -1487,8 +1510,8 @@ function handOrient(q, back) {
     const r0 = Math.min(handDefaultRoll(typeof shape === 'string' ? shape : 'open'), 1.25);
     return { chir, shape, roll: a.thumb === chir ? r0 : Math.PI - r0 };
   }
-  const up = -Math.sin(q.handAng);
-  const d = shape === 'palm' ? [0, 0, 1] : up > 0.5 ? [0, 0, -1] : [-q.side * 0.9, 0, -0.45];
+  const up = -Math.sin(q.handAng), w = smoothstep(0.25, 0.75, up);
+  const d = shape === 'palm' ? [0, 0, 1] : [lerp(-q.side * 0.9, 0, w), 0, lerp(-0.45, -1, w)];
   return { chir, shape, palmDir: back ? [d[0], d[1], -d[2]] : d };
 }
 

@@ -101,10 +101,11 @@ function dreamBloom(g, k) {
   g.restore();
 }
 
-// The rigs breathe sin(t·TAU·breathRate) on ABSOLUTE film time, so a keyed change of the rate jumps the phase: a ramp
-// of the rate at t ≈ 170 s made the breath (head and shoulders) jitter at several Hz for seconds. The keyed rate is
-// integrated into a phase once per scene, and the rig gets the rate that reproduces it: sin(t·TAU·r) = sin(φ(t)).
-// `anchor` = 'start' or 'end': where φ equals t·TAU·rate (the same breath as a neighbouring shot with a constant rate).
+// The rigs breathe sin(t·TAU·breathRate) on ABSOLUTE film time, so a change of the rate jumps the phase (at the creak
+// the old switch 0.5 → 0.2 Hz popped Fear's head and shoulders in one frame). The keyed rate is integrated into a
+// phase once per scene, and the rig gets the rate that reproduces it: sin(t·TAU·r) = sin(φ(t)).
+// `anchor` = 'start' or 'end': where φ equals t·TAU·rate (the same breath as a neighbouring shot with a constant rate;
+// 'end' here: s12 starts on 0.2 Hz with its phase anchored the same way, so the breath runs on across the cut).
 const PHASE = new Map();
 function breathRateAt(t, S, keys, anchor = 'start') {
   let e = PHASE.get(S.id);

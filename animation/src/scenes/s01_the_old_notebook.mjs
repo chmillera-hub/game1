@@ -217,12 +217,19 @@ function shotA(g, t, S) {
   drawRealRoomForeground(g, st);
   drawNotebook(g, NBK[0], NBK[1], NBK[2], { open: 1, flat: 1, rot: NB_ROT });
   drawSelfLit(g, st, pose, 'front');
-  // TITLE (world units under the camera): opaque on frame 1 (the thumbnail), fades out over the last second of the
-  // silent beat so it is gone just before the first burned-in caption fades in (play 3.52 = story 3.52, the
-  // time-warp is the identity before s01b02): the two text layers never share the screen
-  const ta = 1 - S.k(t, [['s01b02-1.1', 0], ['s01b02-0.12', 1, 'sine']]);
-  if (ta > 0.003) drawTitle(g, ta);
   g.restore();
+  // TITLE: opaque on frame 1 (the thumbnail), fades out over the last second of the silent beat so it is gone just
+  // before the first burned-in caption fades in (play 3.52 = story 3.52, the time-warp is the identity before
+  // s01b02): the two text layers never share the screen. It is drawn with the frame-1 camera, held: under the
+  // drifting camera the glyphs snapped a whole pixel at a time (7 one-frame ticks of the title in 2.5 s), and the
+  // push-in is only 0.6 % by the fade. Frame 1 is pixel-identical (that is the frame-1 camera).
+  const ta = 1 - S.k(t, [['s01b02-1.1', 0], ['s01b02-0.12', 1, 'sine']]);
+  if (ta > 0.003) {
+    g.save();
+    applyCamera(g, { x: CAM_OPEN.x, y: CAM_OPEN.y, zoom: CAM_OPEN.zoom });
+    drawTitle(g, ta);
+    g.restore();
+  }
   vignette(g, 0.25);
 }
 

@@ -112,6 +112,58 @@ export function autoBlink(t, seed = 1, rate = 0.28, dur = 0.16) {
   return v;
 }
 
+/** like autoBlink, but each blink of the schedule happens only with probability p (decided per blink, so a change
+ *  of p never makes a blink pop in or out half-way) — extra blinks of a nervous face */
+export function autoBlinkGated(t, seed, rate, p, dur = 0.16) {
+  if (!(p > 0)) return 0;
+  const period = 1 / rate;
+  const i = Math.floor(t / period);
+  let v = 0;
+  for (let j = i - 1; j <= i + 1; j++) {
+    if (rand(j, seed + 77) >= p) continue;
+    const dt = t - (j * period + rand(j, seed) * period * 0.8);
+    if (dt >= 0 && dt < dur) {
+      const k = dt / dur;
+      v = Math.max(v, k < 0.4 ? k / 0.4 : 1 - (k - 0.4) / 0.6);
+    }
+  }
+  return v;
+}
+
+/**
+ * Breathing that never jumps. The rigs breathe on absolute film time, so a rate that changes (keyed, or raised by
+ * trembling) would spin the phase from frame to frame. Here the calm and the agitated breath are two fixed-rate
+ * oscillators crossfaded by `k` (0..1), continuous for any animation of k.
+ */
+export function breathWave(t, r0, r1, k, ph = 0) {
+  k = clamp(k);
+  return Math.sin(t * TAU * r0 + ph) * (1 - k) + Math.sin(t * TAU * r1 + ph * 1.7 + 0.9) * k;
+}
+
+/**
+ * A rate (breaths/s, Hz) that changes over time, returned as the EFFECTIVE constant rate a rig expects in
+ * sin(t·TAU·rate): the phase is the integral of rateFn, so it never jumps when the rate changes.
+ *   key     cache key (unique per scene + character)     rateFn(t) the rate at time t (deterministic)
+ *   range   [t0, t1] the span it is used in;  anchorT: where the phase equals t·TAU·rateFn(t) (continuity with
+ *           neighbouring shots that use the plain formula)
+ */
+const RATE_PHASE = new Map();
+export function continuousRate(t, key, rateFn, range, anchorT = range[0]) {
+  let e = RATE_PHASE.get(key);
+  if (!e) {
+    const t0 = range[0] - 2, t1 = range[1] + 2, dt = 1 / 96, n = Math.ceil((t1 - t0) / dt) + 1;
+    const ph = new Float64Array(n);
+    for (let i = 1; i < n; i++) ph[i] = ph[i - 1] + TAU * rateFn(t0 + (i - 0.5) * dt) * dt;
+    const ia = (anchorT - t0) / dt, i0 = Math.floor(ia);
+    const off = anchorT * TAU * rateFn(anchorT) - lerp(ph[i0], ph[i0 + 1], ia - i0);
+    for (let i = 0; i < n; i++) ph[i] += off;
+    e = { t0, dt, n, ph };
+    RATE_PHASE.set(key, e);
+  }
+  const f = clamp((t - e.t0) / e.dt, 0, e.n - 1.001), i = Math.floor(f);
+  return Math.abs(t) < 1e-6 ? rateFn(t) : lerp(e.ph[i], e.ph[i + 1], f - i) / (TAU * t);
+}
+
 /** single blink shaped pulse centred at time `at` */
 export function blinkAt(t, at, dur = 0.18) {
   const dt = t - at;

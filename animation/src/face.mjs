@@ -359,7 +359,8 @@ function drawMouth(g, s, e, mx) {
   let hw = W0 * (1 + 0.32 * e.wide - 0.42 * round + 0.12 * Math.abs(smile)) * (1 - pressed * 0.12);
   const cornerY = -smile * W0 * 0.32;
   const h = W0 * 1.3 * open * (1 + 0.35 * round);
-  const trem = (k) => (e.tremble > 0 ? noise1(t * 14 + k * 3.1, 7) * e.tremble * W0 * 0.07 : 0);
+  // trembling lips: a soft quiver (~4 Hz smooth noise), not a per-frame jitter
+  const trem = (k) => (e.tremble > 0 ? noise1(t * 4.2 + k * 1.3, 7) * e.tremble * W0 * 0.06 : 0);
   const lineCol = s.lipLine || s.line;
   const lw = s.mouthLine ?? (s.lineW ?? 2.5) * 1.15;
 
@@ -474,7 +475,7 @@ function logFace(g, s) {
 /** the single tears of a sustained cry: one at a time, alternating eyes, every ~2-3.4 s; they appear as the cry
  *  builds (stream ≳ 0.15) and fade with it */
 function streamTears(e) {
-  const P = lerp(3.4, 2.2, clamp((e.stream - 0.2) / 0.8)), D = 1.8;
+  const P = 2.8, D = 1.8;   // a fixed schedule: animating `stream` changes only how visible the tears are
   const a = clamp((e.stream - 0.12) / 0.33);
   const out = [];
   const i0 = Math.floor(e.t / P) - 1;

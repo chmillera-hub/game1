@@ -584,7 +584,16 @@ function shotFront(g, S, t, which) {
     if (!ceoVis) return;
     g.save();
     if (τ < 1.6) { g.beginPath(); g.rect(leafEdge, 0, 2000, 2000); g.clip(); }
-    if (doorLit > 0.02) drawLit(g, ceoBody, { dir: [-1, -0.3], color: '#ffd9a0', strength: 0.9 * doorLit, width: 3.4, fill: '#ffcf96', fillAlpha: 0.07 * doorLit });
+    if (doorLit > 0.02) {
+      // the lit layers only need the CEO's screen box (drawLit `box`): a full-frame pass cost ~30 ms a frame
+      const m = g.getTransform(), xs = [], ys = [];
+      for (const [px, py] of [[-150, -660], [150, -660], [-150, 40], [150, 40]]) {
+        const X = w.x + px * w.sc, Y = w.y + py * w.sc;
+        xs.push(m.a * X + m.c * Y + m.e); ys.push(m.b * X + m.d * Y + m.f);
+      }
+      drawLit(g, ceoBody, { dir: [-1, -0.3], color: '#ffd9a0', strength: 0.9 * doorLit, width: 3.4, fill: '#ffcf96', fillAlpha: 0.07 * doorLit,
+        box: [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)] });
+    }
     else ceoBody(g);
     g.restore();
   };
