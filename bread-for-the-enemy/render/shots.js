@@ -516,12 +516,29 @@ S.street_asher_cu = (ctx, W, t, lt, dur, p) => {
   BG.vignette(ctx, 0.45, '#02030a');
 };
 
+// members of the house church listening to the letter: real faces, breathing and blinking, all turned
+// toward the reader (each looks the way its own seat needs to look to see her).
+// list: [style, x, neck y, scale, facing, look (gx toward the reader), seed]
+function listeners(ctx, t, list, Lt) {
+  for (const [style, x, y, s, fc, gx, seed] of list) {
+    const F = extraF(t, seed, { yaw: 0.42 * fc, gx, gy: 0.06, pitch: 0.03, glance: 0.1, pose: 'rest',
+      F: { browInner: 0.12, mouthSmile: 0.0, lid: 0.9 * F0(t, seed) } });
+    // now and then a slow nod at what is read
+    F.pitch += 0.05 * Math.max(0, Math.sin(t * 0.45 + seed * 1.7) - 0.6);
+    drawCharacter(ctx, style, F, { x, y, s, facing: fc, by: 0.4 * fc, len: 6, style }, Lt, t, { sway: [0, 0] });
+  }
+}
+const churchDim = Object.assign({}, LIGHT.church, { key: mix(LIGHT.church.key, '#5a4436', 0.3), amb: mix(LIGHT.church.amb, '#2a1e18', 0.3), rimA: 0.25 });
+
 S.church_reader = (ctx, W, t, lt, dur, p) => {
   camera(ctx, lt, dur, { zoom: [1.0, 1.03] }, [540, 900]);
   drawCached(ctx, cached('church', (x) => BG.houseChurch(x, { lampX: 620, lampY: 980 }), 0));
   const Lt = LIGHT.church;
-  // background listeners
-  BG.silhouettes(ctx, [[120, 980, 70], [300, 1010, 64], [980, 990, 72]], '#1a0e08', '#ffb060', 0.35, t);
+  // the listeners seated behind her, turned to her and looking at her as she reads
+  blurredLayer(ctx, 1.5, (o) => listeners(o, t, [
+    ['listener_m1', 125, 1215, 64, 1, 0.55, 3], ['listener_w1', 300, 1190, 56, 1, 0.5, 5],
+    ['listener_w2', 822, 1185, 54, -1, -0.5, 8], ['listener_m2', 985, 1210, 63, -1, -0.55, 11],
+  ], churchDim));
   // Phoebe reading Paul's letter from an open scroll held in both hands; now and then she lets a
   // little more of it unroll from the near roller and lifts it to the light
   const lk = looks({ gx: 0.05, gy: 0.75, yaw: 0.22, pitch: 0.24 }, { scroll: { gx: 0.05, gy: 0.8, yaw: 0.22, pitch: 0.26 } });
@@ -545,12 +562,18 @@ S.church_reader = (ctx, W, t, lt, dur, p) => {
 S.church_asher = (ctx, W, t, lt, dur, p) => {
   camera(ctx, lt, dur, p, [540, 860]);
   drawCached(ctx, bgView('church', (x) => BG.houseChurch(x, { lampX: 620, lampY: 980 }), { z: 1.6, cx: 540, cy: 900 }, 14));
-  BG.silhouettes(ctx, [[120, 760, 90], [960, 800, 96]], '#1a0e08', '#ffb060', 0.25, t);
+  // the room around him, out of focus: everyone faces the same way he does, toward the reader (off to
+  // the right), so we see their faces turned to her
+  blurredLayer(ctx, 9, (o) => listeners(o, t, [
+    ['listener_m3', 250, 985, 50, 1, 0.6, 13], ['listener_w2', 800, 965, 48, 1, 0.45, 17],
+  ], churchDim));
+  blurredLayer(ctx, 6, (o) => listeners(o, t, [
+    ['listener_w1', 115, 1150, 76, 1, 0.62, 19], ['listener_m2', 965, 1130, 72, 1, 0.42, 23],
+  ], churchDim));
   const lk = looks({ gx: 0.45, gy: -0.05, yaw: 0.28, pitch: -0.02 }, {
     reader: { gx: 0.5, gy: -0.05, yaw: 0.3, pitch: -0.03 }, down: { gx: 0.1, gy: 0.85, yaw: 0.12, pitch: 0.24 },
   });
   actor(ctx, W, 'asher', t, { x: 520, y: 1300, s: 180, facing: 1, by: 0.25, len: 5 }, LIGHT.church, lk);
-  BG.silhouettes(ctx, [[60, 1500, 150, 0.3], [1010, 1480, 140, -0.3]], '#0a0503', '#ffb060', 0.3, t);
 };
 
 // The prison door's leaf (planks, iron bands, studs, the grille), hinged on its left edge and

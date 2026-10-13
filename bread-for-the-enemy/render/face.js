@@ -42,7 +42,7 @@ const GEO = {
 function geoOf(st) {
   const G = Object.assign({}, GEO, st.geo || {});
   if (st.child) { G.jawW = Math.min(G.jawW, 0.74); G.cheekLow = 0.9; G.chinW = 0.5; return G; }
-  const fem = st.name === 'phoebe';
+  const fem = st.fem || st.name === 'phoebe';
   G.jawW = Math.min(0.82, G.jawW * (fem ? 1.04 : 1.09));
   G.jawY += 0.04; G.chinY += fem ? 0.03 : 0.06; G.mouthY += fem ? 0.02 : 0.04; G.noseY += 0.02;
   G.eyeW *= fem ? 0.95 : 0.92; G.noseLen *= fem ? 1.1 : 1.15;

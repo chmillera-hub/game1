@@ -804,4 +804,33 @@ C.phoebe = {
   cloth: { tunic: '#7e4462', mantle: '#3f6f86', trim: '#e8d9b4', neck: 'round', wrapSkirt: '#3f6f86' },
 };
 
+// members of the house church in Rome listening to the letter (extras): men and women of different
+// ages, each in their own colours, so the crowd never repeats one look
+function veiled(color, stripe) {
+  const v = headCloth({ color, stripe, band: null });
+  return {
+    hairBack: v.back, hairShadow: v.shadow,
+    hairFront(ctx, pr, st, F, Lt, extra) {
+      hairCap(ctx, pr, st, Lt, [[-0.96, -0.3, 0.3], [-0.72, -0.78, 0.6], [-0.36, -0.98, 0.84], [0, -1.04, 0.9], [0.36, -0.98, 0.84], [0.72, -0.78, 0.6], [0.96, -0.3, 0.3]], { volume: 1.06 });
+      v.front(ctx, pr, st, F, Lt, extra);
+    },
+  };
+}
+const womanBase = {
+  fem: true, line: '#3a241c', iris: '#4a3022', browColor: '#2a1a12', hair: '#2a1a12', hairLine: '#140a08',
+  lashW: 0.32, eyeScale: 1.1, irisR: 0.56, browW: 0.05, blush: 0.3, adamsApple: false, neckLen: 1.92,
+  geo: { chinY: 1.2, jawW: 0.77, jawY: 0.85, chinW: 0.6, mouthW: 0.18, mouthY: 0.8, eyeH: 1.12, browY: -0.36, noseLen: 0.84, cheekW: 0.96 },
+};
+C.listener_w1 = Object.assign({}, womanBase, veiled('#a0643c', '#e6d4ae'), {
+  name: 'listener_w1', skin: '#d6a07a', skinShadow: '#9e6a50', lips: '#b05a52', age: 0.35,
+  cloth: { tunic: '#5e6a46', mantle: '#a0643c', trim: '#e6d4ae', neck: 'round' },
+});
+C.listener_w2 = Object.assign({}, womanBase, veiled('#e2d8c4', '#8a3a3a'), {
+  name: 'listener_w2', skin: '#e6b896', skinShadow: '#b07c62', lips: '#c0645e', age: 0.1,
+  cloth: { tunic: '#8a5a2e', mantle: '#d8ccb4', trim: '#8a3a3a', neck: 'round' },
+});
+C.listener_m1 = Object.assign({}, C.companion_a, { name: 'listener_m1', cloth: { tunic: '#4c5a6a', mantle: '#7a5a3a', trim: '#2a2018', neck: 'round' } });
+C.listener_m2 = Object.assign({}, C.elder, { name: 'listener_m2', cloth: { tunic: '#9a8a6a', mantle: '#5a4632', trim: '#2f3a66', neck: 'round' } });
+C.listener_m3 = Object.assign({}, C.companion_b, { name: 'listener_m3', skin: '#b98a68', skinShadow: '#7e5640', cloth: { tunic: '#6a3a32', mantle: '#4a4234', trim: '#2a2018', neck: 'round' } });
+
 module.exports = { C, mk, shape, lit, shd, lwOf, hairCap, softShade };
