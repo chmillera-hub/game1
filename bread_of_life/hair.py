@@ -145,8 +145,8 @@ class LongHair:
         self.y_hang = y_hang
         self.tip_y = tip_y
         self.wave = wave
-        self.hairline = hairline or [(0.0, -0.99), (0.18, -0.91), (0.40, -0.80), (0.62, -0.66),
-                                     (0.80, -0.47), (0.90, -0.22), (0.93, 0.08), (0.91, 0.40)]
+        self.hairline = hairline or [(0.0, -0.93), (0.18, -0.86), (0.40, -0.76), (0.62, -0.63),
+                                     (0.80, -0.45), (0.90, -0.21), (0.93, 0.08), (0.91, 0.40)]
 
     def vol(self, y):
         return self.vol_top + (self.vol_side - self.vol_top) * min(1.0, max(0.0, (y + 1.2) / 1.5))
@@ -479,8 +479,8 @@ class ShortCurly:
         self.vol = vol
         self.y_side = y_side
         self.curl_r = curl_r
-        self.hairline = hairline or [(0.0, -0.93), (0.30, -0.91), (0.58, -0.84), (0.80, -0.66),
-                                     (0.93, -0.40), (0.97, -0.10), (0.98, 0.30)]
+        self.hairline = hairline or [(0.0, -0.88), (0.30, -0.86), (0.58, -0.8), (0.80, -0.63),
+                                     (0.93, -0.39), (0.97, -0.10), (0.98, 0.30)]
 
     def geometry(self, H, P):
         ys = list(np.linspace(-1.66, self.y_side, 14))
@@ -631,7 +631,7 @@ class HeadCloth:
         self.flare = flare
         self.stripes = stripes
         self.hair_fringe = hair_fringe
-        self.edge = edge or [(0.0, -0.92), (0.36, -0.89), (0.66, -0.77), (0.88, -0.54), (0.98, -0.23),
+        self.edge = edge or [(0.0, -0.88), (0.36, -0.85), (0.66, -0.74), (0.88, -0.52), (0.98, -0.22),
                              (1.01, 0.12), (0.98, 0.44)]
 
     def vol(self, y):
@@ -750,7 +750,7 @@ class HeadCloth:
     def draw_fringe(self, cv, H, st, P, g):
         # a little hair visible under the scarf: center part sweeping to the temples
         er, el = g["er"], g["el"]
-        hl = [(0.0, -1.04), (0.20, -0.99), (0.44, -0.88), (0.66, -0.68), (0.82, -0.40), (0.90, -0.12)]
+        hl = [(0.0, -0.99), (0.20, -0.94), (0.44, -0.84), (0.66, -0.65), (0.82, -0.39), (0.90, -0.12)]
         pr = surf_pts(H, hl, dz=0.03)
         pl = surf_pts(H, [(-x, y) for x, y in hl], dz=0.03)
         pr = clamp_inner(pr, H, 1, far_margin(H, 1, 0.05))

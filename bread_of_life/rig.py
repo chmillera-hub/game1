@@ -770,7 +770,12 @@ class Character:
         if self.outfit:
             self.outfit(cv, st, P, H, (hox, hoy))
         if arms:
-            arms(cv, st, P, "body")
+            drape = None
+            if self.outfit and getattr(self.outfit, "drape_side", None):
+                drape = (self.outfit.drape_side, lambda: self.outfit.drape(cv, st, P, H, (hox, hoy)))
+            arms(cv, st, P, "body", drape=drape)
+        elif self.outfit and getattr(self.outfit, "drape_side", None):
+            self.outfit.drape(cv, st, P, H, (hox, hoy))
         if self.outfit and hasattr(self.outfit, "collar"):
             self.outfit.collar(cv, st, P, H, (hox, hoy))
 

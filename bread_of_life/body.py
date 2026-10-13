@@ -889,7 +889,10 @@ def make_arms(arm_style=None):
     Within a layer the arm whose forearm is further from the viewer is drawn first."""
     arm_style = arm_style or {}
 
-    def arms(cv, st, P, layer):
+    def arms(cv, st, P, layer, drape=None):
+        """drape: optional (side, painter) for cloth lying over one shoulder (a mantle's fold). It is
+        drawn right after that side's arm, and the other arm comes after it, so a hand moving in
+        front of the chest is never hidden under the cloth on the opposite shoulder."""
         items = []
         for side, key in ((-1, "arm_l"), (1, "arm_r")):
             spec = P.get(key)
@@ -898,7 +901,16 @@ def make_arms(arm_style=None):
             _, E, W = arm_geometry(st, P, side, spec)
             depth = float(E[2] + W[2]) + (5.0 if (spec or {}).get("over") else 0.0)
             items.append((depth, side, spec))
-        for _, side, spec in sorted(items, key=lambda it: it[0]):
+        items.sort(key=lambda it: it[0])
+        if drape is not None:
+            dside, painter = drape
+            mine = [it for it in items if it[1] == dside]
+            others = [it for it in items if it[1] != dside]
+            for _, side, spec in mine:
+                draw_arm(cv, st, P, side, spec, arm_style.get(side, {}))
+            painter()
+            items = others
+        for _, side, spec in items:
             draw_arm(cv, st, P, side, spec, arm_style.get(side, {}))
 
     return arms

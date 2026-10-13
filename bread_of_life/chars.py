@@ -130,8 +130,6 @@ def tunic_outfit(base, base_sh, trim=None, neckline="v", mantle=None, belt=None,
     def collar(cv, st, P, H, ho):
         """Drawn after the arms: the cloth that lies over a shoulder, on top of the sleeve (the
         sash over Peter's shoulder, the fold of a mantle over its shoulder)."""
-        if mantle is not None and hasattr(mantle, "over"):
-            mantle.over(cv, st, P, H, ho)
         if not sash:
             return
         pts = body_pts(st, P)
@@ -151,6 +149,9 @@ def tunic_outfit(base, base_sh, trim=None, neckline="v", mantle=None, belt=None,
         cv.restore()
 
     outfit.collar = collar
+    if mantle is not None and hasattr(mantle, "over"):
+        outfit.drape_side = mantle.side
+        outfit.drape = mantle.over
     return outfit
 
 
@@ -190,37 +191,51 @@ def mantle_painter(col, col_sh, side=1, lining=None):
             (ncx + s * 0.22, 0.75),
         ]
         path = spline(drape, closed=True, corners=[4, 6], tension=0.45)
+        body_path = spline(outline(st, P), closed=True, corners=[6, 8], tension=0.45)
         hi = mix(col, "#ffffff", 0.3)
-        cv.drawPath(path, fill(col, alpha=0.6, blur=0.05))
-        cv.drawPath(path, fill(col))
+        # the same cloth as the mantle, continuing over the top of the arm (drawn with the mantle's
+        # own gradient, so where it lies over the mantle no edge shows)
+        cloth = fill(col, shader=lin_grad((0, -0.2), (0, 10.6 * k), [mix(col, "#ffffff", 0.14), col, mix(col, col_sh, 0.5)], [0.0, 0.35, 1.0]))
+        cv.drawPath(path, cloth)
         cv.save()
         cv.clipPath(path, skia.ClipOp.kIntersect, True)
         lx = P["light_x"]
         sx = 1.0 if lx < 0 else -1.0
-        cv.drawPath(spline([(sx * sw * 1.6, -0.5), (sx * sw * 0.65, 0.3), (sx * sw * 0.5, 2.0), (sx * sw * 1.6, 2.0)], closed=True), fill(col_sh, alpha=0.4, blur=0.15))
-        # folds curving round the shoulder and over the top of the arm
+        knee = 10.6 * k
+        cv.drawPath(spline([(sx * sw * 1.6, -0.5), (sx * sw * 0.65, 0.3), (sx * sw * 0.5, 2.0), (sx * sw * 0.55, knee + 1), (sx * sw * 1.6, knee + 1)], closed=True),
+                    fill(col_sh, alpha=0.45, blur=0.2))
+        # folds hanging from the shoulder: they run over the top of the arm and on down into the mantle
         for j in range(4):
             f = 0.2 + 0.2 * j
-            a_ = s2 - n * (hw * 0.6) + u * reach * f
-            b_ = s2 + u * reach * (f + 0.08)
-            c_ = s2 + n * (hw + 0.05) + u * reach * (f - 0.05)
-            _fold(cv, [tuple(a_), tuple(b_), tuple(c_)], col_sh, hi, w=0.05, alpha=0.65)
-        _fold(cv, [(ncx + s * 0.35, 0.0), (s * sw * 0.45, 0.35), (s * sw * 0.55, 0.85)], col_sh, hi, w=0.05, alpha=0.6)
-        cv.drawPath(tapered(sample_spline([drape[0], drape[1], drape[2]], n=10), 0.01, 0.01, wmid=0.08), fill("#ffffff", alpha=0.14))
+            a_ = s2 - n * (hw * 0.4) + u * reach * f
+            b_ = s2 + u * reach * (f + 0.1) + n * 0.05
+            c_ = s2 + n * (hw + 0.05) + u * reach * (f + 0.05)
+            _fold(cv, [tuple(a_), tuple(b_), tuple(c_)], col_sh, hi, w=0.04, alpha=0.4)
+        for j in range(3):
+            y0 = 0.25 + 0.18 * j
+            _fold(cv, [(s * sw * 0.52, y0), (s * sw * 0.78, y0 + 0.12), (s * sw * 1.0, y0 + 0.35)], col_sh, hi, w=0.045, alpha=0.6)
+        cv.drawPath(tapered(sample_spline([(ncx + s * 0.38, -0.12 + up * 0.3), (s * sw * 0.58, 0.1 + up), (s * sw * 0.92, 0.45 + up)], n=10), 0.01, 0.01, wmid=0.09),
+                    fill("#ffffff", alpha=0.16))
         cv.restore()
+        # a soft shadow where the fold's end hangs over the sleeve
+        end = [tuple(s2 + n * (hw + 0.03) + u * reach), tuple(s2 + u * (reach + 0.12)), tuple(s2 - n * (hw + 0.02) + u * reach * 0.85)]
+        cv.save()
+        cv.clipPath(body_path, skia.ClipOp.kDifference, True)
+        cv.drawPath(tapered(sample_spline([(x + u[0] * 0.06, y + u[1] * 0.06) for x, y in end], n=10), 0.03, 0.03, wmid=0.08), fill("#000000", alpha=0.18, blur=0.04))
+        # the fold's outline, only where it lies over the sleeve or the background
         cv.drawPath(path, stroke(lc, 0.024))
+        cv.restore()
 
-    def paint(cv, st, P, H, ho, pts):
+    def outline(st, P):
         by = P["byaw"] / 60.0
         s = side
         sw = st.get("shoulder_w", 2.1)
         k = st.get("body_scale", 1.0)
         up = -0.05 * P["breath"] - 0.12 * P["shrug"]
-        lc = st.get("line", "#2a1a14")
         ncx = by * 0.55
         knee = 10.6 * k
         sway = 0.06 * math.sin(P["t"] * 0.8 + 1)
-        outer = [
+        return [
             (ncx + s * 0.38, -0.12 + up * 0.3),
             (s * sw * 0.72, 0.05 + up),
             (s * sw * 1.0, 0.42 + up),
@@ -236,6 +251,17 @@ def mantle_painter(col, col_sh, side=1, lining=None):
             (ncx - s * 0.05, 1.95),
             (ncx + s * 0.22, 0.75),
         ]
+
+    def paint(cv, st, P, H, ho, pts):
+        by = P["byaw"] / 60.0
+        s = side
+        sw = st.get("shoulder_w", 2.1)
+        k = st.get("body_scale", 1.0)
+        up = -0.05 * P["breath"] - 0.12 * P["shrug"]
+        lc = st.get("line", "#2a1a14")
+        ncx = by * 0.55
+        knee = 10.6 * k
+        outer = outline(st, P)
         path = spline(outer, closed=True, corners=[6, 8], tension=0.45)
         hi = mix(col, "#ffffff", 0.3)
         cv.drawPath(path, fill(col, shader=lin_grad((0, -0.2), (0, knee), [mix(col, "#ffffff", 0.14), col, mix(col, col_sh, 0.5)], [0.0, 0.35, 1.0])))
@@ -266,6 +292,7 @@ def mantle_painter(col, col_sh, side=1, lining=None):
         cv.drawPath(path, stroke(lc, 0.024))
 
     paint.over = over
+    paint.side = side
     return paint
 
 
@@ -278,12 +305,12 @@ JESUS_ST = dict(
     iris=("#2a170a", "#80501f", "#e2b26a"), lid_shadow="#5a3020",
     hair="#432a1a", hair_sh="#28170d", hair_hl="#82593c", hair_line="#1e1009", hair_rim="#d39a63",
     beard="#4a2e1d", beard_sh="#2c180e",
-    head_xscale=0.88, eye_x=0.47, eye_y=0.10, eye_w=0.215, eye_h=0.118, eye_low=0.078, eye_tilt=-0.006,
-    iris_rx=0.098, iris_ry=0.106, sclera_shadow="#e3d6d0",
+    head_xscale=0.88, eye_x=0.49, eye_y=0.06, eye_w=0.248, eye_h=0.136, eye_low=0.09, eye_tilt=-0.006,
+    iris_rx=0.113, iris_ry=0.122, sclera_shadow="#e3d6d0",
     lash_in=0.012, lash_out=0.03, lash_mid=0.026, wing=0.01,
-    brow_x=0.47, brow_y=-0.15, brow_in=-0.23, brow_out=0.27, brow_arch=0.035,
+    brow_x=0.49, brow_y=-0.21, brow_in=-0.25, brow_out=0.30, brow_arch=0.038,
     brow_w0=0.066, brow_wm=0.056, brow_w1=0.016,
-    mouth_w=0.155, mouth_y=0.75, mouth_h=0.21, nose_y=0.45, nose_len=0.2, jaw_drop=0.07,
+    mouth_w=0.175, mouth_y=0.74, mouth_h=0.21, nose_y=0.43, nose_len=0.23, nose_w=0.058, jaw_drop=0.07,
     shoulder_w=2.1, neck_w=0.44, neck_len=1.82, neck_top=0.8, face_lw=0.02,
     hem_y=13.2, waist_w=0.80, hip_w=0.85, hem_w=0.95, upper_arm=3.15, forearm=2.8, hand_len=2.15,
     sleeve_w=(0.95, 0.9, 1.08), stance=0.72,
@@ -320,11 +347,11 @@ PETER_ST.update(
     iris=("#1d1109", "#4d3016", "#9a6a3c"), lid_shadow="#4a2a1a",
     hair="#231a15", hair_sh="#120c08", hair_hl="#5a4636", hair_line="#0d0805",
     beard="#33271f", beard_sh="#1a120d",
-    head_xscale=0.9, eye_x=0.48, eye_y=0.10, eye_w=0.21, eye_h=0.105, eye_low=0.072, eye_tilt=-0.012,
-    iris_rx=0.092, iris_ry=0.1, lash_in=0.014, lash_out=0.03, lash_mid=0.028, wing=0.006,
-    brow_x=0.48, brow_y=-0.15, brow_in=-0.25, brow_out=0.28, brow_arch=0.02,
+    head_xscale=0.9, eye_x=0.5, eye_y=0.06, eye_w=0.24, eye_h=0.121, eye_low=0.083, eye_tilt=-0.012,
+    iris_rx=0.106, iris_ry=0.115, lash_in=0.014, lash_out=0.03, lash_mid=0.028, wing=0.006,
+    brow_x=0.5, brow_y=-0.2, brow_in=-0.27, brow_out=0.31, brow_arch=0.022,
     brow_w0=0.08, brow_wm=0.07, brow_w1=0.028,
-    mouth_w=0.17, mouth_y=0.76, nose_y=0.46, nose_len=0.24, nose_w=0.075,
+    mouth_w=0.19, mouth_y=0.75, nose_y=0.44, nose_len=0.27, nose_w=0.085,
     shoulder_w=2.35, neck_w=0.52, neck_len=1.80, neck_top=0.8, hem_y=12.3, hand_len=2.3,
     upper_arm=3.2, forearm=2.85, stance=0.8,
     slices=[
@@ -356,12 +383,12 @@ MIRIAM_ST.update(
     iris=("#2b160b", "#7c4a1e", "#e8b46e"), lid_shadow="#5a2c20",
     hair="#3a2216", hair_sh="#22130b", hair_hl="#7a5236", hair_line="#1a0c06",
     cloth="#b8654e", cloth_sh="#8a4334",
-    head_xscale=0.9, eye_x=0.46, eye_y=0.11, eye_w=0.225, eye_h=0.14, eye_low=0.088, eye_tilt=0.004,
-    iris_rx=0.106, iris_ry=0.12, lash_in=0.015, lash_out=0.042, lash_mid=0.034, wing=0.035,
+    head_xscale=0.9, eye_x=0.48, eye_y=0.07, eye_w=0.255, eye_h=0.158, eye_low=0.1, eye_tilt=0.004,
+    iris_rx=0.12, iris_ry=0.136, lash_in=0.015, lash_out=0.042, lash_mid=0.034, wing=0.035,
     lash_flicks=[(0.82, 0.05), (0.95, 0.06)], lower_lash=True,
-    brow_x=0.46, brow_y=-0.14, brow_in=-0.22, brow_out=0.26, brow_arch=0.045,
+    brow_x=0.48, brow_y=-0.19, brow_in=-0.24, brow_out=0.29, brow_arch=0.048,
     brow_w0=0.038, brow_wm=0.033, brow_w1=0.009,
-    mouth_w=0.135, mouth_y=0.74, mouth_h=0.17, nose_y=0.45, nose_len=0.17, nose_w=0.045,
+    mouth_w=0.15, mouth_y=0.73, mouth_h=0.17, nose_y=0.43, nose_len=0.19, nose_w=0.05,
     lip_col="#d06a6a", shoulder_w=1.8, neck_w=0.34, neck_len=1.70, neck_top=0.78,
     hem_y=16.0, waist_w=0.74, hip_w=0.9, hem_w=1.0, upper_arm=2.95, forearm=2.6, hand_len=1.85,
     sleeve_w=(0.8, 0.76, 0.92), stance=0.5, body_scale=0.95,
@@ -379,7 +406,7 @@ MIRIAM = Character(
     outfit=tunic_outfit("#6f8197", "#4f6075", neckline="round", belt=("#d9c7a5", "#a8946e")),
     headwear_back=hair.HeadCloth(layer="back", vol=0.22, flare=0.7),
     headwear_front=hair.HeadCloth(layer="front", vol=0.22, flare=0.7, hair_fringe=True,
-                                  edge=[(0.0, -1.04), (0.38, -0.99), (0.70, -0.84), (0.92, -0.56), (1.02, -0.22), (1.04, 0.14), (1.0, 0.44)]),
+                                  edge=[(0.0, -0.98), (0.38, -0.94), (0.70, -0.8), (0.92, -0.54), (1.02, -0.21), (1.04, 0.14), (1.0, 0.44)]),
     arms=make_arms({-1: dict(sleeve="#6f8197", sleeve_sh="#4f6075"), 1: dict(sleeve="#6f8197", sleeve_sh="#4f6075")}),
 )
 
@@ -394,11 +421,11 @@ ELI_ST.update(
     hair="#a19b92", hair_sh="#6e6961", hair_hl="#e2ded6", hair_line="#3a3632",
     beard="#a8a39b", beard_sh="#6d6861",
     cloth="#e8dfca", cloth_sh="#b9ad94",
-    head_xscale=0.89, eye_x=0.46, eye_y=0.11, eye_w=0.2, eye_h=0.098, eye_low=0.07, eye_tilt=-0.016,
-    iris_rx=0.086, iris_ry=0.094, lash_in=0.012, lash_out=0.026, lash_mid=0.024, wing=0.0,
-    brow_x=0.46, brow_y=-0.15, brow_in=-0.23, brow_out=0.27, brow_arch=0.03,
+    head_xscale=0.89, eye_x=0.48, eye_y=0.07, eye_w=0.23, eye_h=0.113, eye_low=0.08, eye_tilt=-0.016,
+    iris_rx=0.099, iris_ry=0.108, lash_in=0.012, lash_out=0.026, lash_mid=0.024, wing=0.0,
+    brow_x=0.48, brow_y=-0.2, brow_in=-0.25, brow_out=0.30, brow_arch=0.032,
     brow_w0=0.075, brow_wm=0.06, brow_w1=0.03, brow_out_up=-0.02,
-    mouth_w=0.15, mouth_y=0.77, nose_y=0.47, nose_len=0.26, nose_w=0.07,
+    mouth_w=0.165, mouth_y=0.76, nose_y=0.45, nose_len=0.29, nose_w=0.078,
     shoulder_w=2.0, neck_w=0.42, neck_len=1.82, neck_top=0.8, hem_y=15.9, hand_len=2.1,
 )
 
@@ -410,7 +437,7 @@ ELI = Character(
     headwear_back=hair.HeadCloth(layer="back", col="cloth", col_sh="cloth_sh", vol=0.2, flare=0.6),
     headwear_front=hair.HeadCloth(layer="front", col="cloth", col_sh="cloth_sh", vol=0.2, flare=0.6,
                                   stripes=[(0.16, 0.22, "#3e5d86"), (0.27, 0.30, "#3e5d86")],
-                                  edge=[(0.0, -0.9), (0.38, -0.87), (0.68, -0.76), (0.90, -0.52), (1.0, -0.2), (1.03, 0.14), (1.0, 0.44)]),
+                                  edge=[(0.0, -0.86), (0.38, -0.83), (0.68, -0.73), (0.90, -0.5), (1.0, -0.19), (1.03, 0.14), (1.0, 0.44)]),
     extra_face=hair.wrinkles,
     arms=make_arms({-1: dict(sleeve="#5d6140", sleeve_sh="#40442b"), 1: dict(sleeve="#5d6140", sleeve_sh="#40442b")}),
 )
