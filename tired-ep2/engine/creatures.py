@@ -1372,6 +1372,8 @@ SPEC_WALK_CYCLE = 0.9     # s per stride cycle (pose="walk" / "lead")
 SPEC_WALK_SPEED = 120.0   # ground speed (px/s at s=1) that keeps the walking feet planted
 SPEC_WAVE_HZ = 1.7        # paw wave frequency (pose="wave" / "wave_stand")
 SPEC_RAISE = 0.3          # s for a raised paw to come up (wave / cover_mouth, from pose_t)
+FRONT_SY = math.sin(0.45 * 0.13)   # head-front ease range (|face| < 0.13), anatomy pass
+EAR_FX, EAR_FY = 40.0, -60.0    # front-view ear roots (mirrored pair), anatomy pass
 TEAR = hexc("#9fd6ff")   # anatomy pass: a light blue tear (was #e4fbff, read as white)
 
 
@@ -1946,11 +1948,11 @@ def _spec_ear_pts(m, t, seed):
     return out
 
 
-def _spec_ear(ctx, x, y, ang, m, t, col, far, lw):
+def _spec_ear(ctx, x, y, ang, m, t, col, far, lw, xs=1.0):
     ctx.save()
     ctx.translate(x, y)
     ctx.rotate(ang)
-    ctx.scale(0.9, 0.9)
+    ctx.scale(0.9 * (xs if abs(xs) > 0.02 else 0.02), 0.9)
     pts = _spec_ear_pts(m, t, 51 if far else 52)
     smooth_path(ctx, pts, closed=True)
     _fs(ctx, col, lw, m["edge"])
@@ -2096,8 +2098,13 @@ def _spec_head(ctx, A, t, R, M, E, look, bl, yaw, mirror, lw, mouth_mode=None, h
     if mirror:
         ctx.scale(-1, 1)
         look = (-look[0], look[1])
-    mx = 8 + 62 * sy
-    exn, exf = -30 + 50 * sy, 34 + 24 * sy
+    # anatomy pass: near a straight-on view (|face| < 0.13) the face eases to a centred,
+    # symmetric layout, so a head turn through face = 0 (where the head is mirrored) no longer
+    # teleports the eyes / muzzle / nose / mouth sideways in one frame. wf = 1 elsewhere, which
+    # is exactly the old layout.
+    wf = smoothstep(clamp(sy / FRONT_SY))
+    mx = 8 * wf + 62 * sy
+    exn, exf = -32 + 2 * wf + 50 * sy, 32 + 2 * wf + 24 * sy
     fsq = 1.0 - 0.28 * sy
     ears = E["ears"]
     split = E.get("split", 0.0)
@@ -2116,9 +2123,16 @@ def _spec_head(ctx, A, t, R, M, E, look, bl, yaw, mirror, lw, mouth_mode=None, h
         for wp in hw:
             smooth_path(ctx, wp, closed=True)
             _f(ctx, SHADOW)
-    # far ear (behind the skull)
-    _spec_ear(ctx, -6 + 12 * sy, -46, -0.1 - (ears - split) * 0.6 + ear_anim * 0.7, M, t,
-              M["far"], True, lw)
+    # far ear (behind the skull). anatomy pass: inside the front window it swings round to
+    # mirror the near ear (x-scale +1 -> -1, through edge-on), so the head turn through
+    # face = 0 has no ear swap.
+    a_near = -0.24 - (ears + split) * 0.6 + ear_anim
+    a_far = -0.1 - (ears - split) * 0.6 + ear_anim * 0.7
+    if wf < 1.0:
+        _spec_ear(ctx, lerp(EAR_FX, -6 + 12 * sy, wf), lerp(EAR_FY, -46, wf), lerp(-a_near, a_far, wf), M, t,
+                  mixc(body, M["far"], wf), True, lw, xs=lerp(-1.0, 1.0, wf))
+    else:
+        _spec_ear(ctx, -6 + 12 * sy, -46, a_far, M, t, M["far"], True, lw)
     # skull + jaw + muzzle (union outline)
     ins = 1.0 + 0.16 * mass
     if mass > 0.01:
@@ -2133,7 +2147,7 @@ def _spec_head(ctx, A, t, R, M, E, look, bl, yaw, mirror, lw, mouth_mode=None, h
         skull = lambda c: ellipse(c, 0, 0, 64, 56)
     mk = 1.0 - 0.45 * mass
     mrx, mry = (36 + 8 * sy) * mk, 25 * mk
-    jx = mx * 0.45 - 6
+    jx = mx * 0.45 - 6 * wf
 
     def parts(c):
         skull(c)
@@ -2162,10 +2176,12 @@ def _spec_head(ctx, A, t, R, M, E, look, bl, yaw, mirror, lw, mouth_mode=None, h
         _s(ctx, _a(GLOW, min(1.0, (0.8 + 0.6 * M["flash"]) * M["grim"])),
            (4.5 + 3 * M["flash"]) * M["rimw"])
     # near ear
-    _spec_ear(ctx, -30 + 8 * sy, -38, -0.24 - (ears + split) * 0.6 + ear_anim, M, t, body, False,
-              lw)
+    if wf < 1.0:
+        _spec_ear(ctx, lerp(-EAR_FX, -30 + 8 * sy, wf), lerp(EAR_FY, -38, wf), a_near, M, t, body, False, lw)
+    else:
+        _spec_ear(ctx, -30 + 8 * sy, -38, a_near, M, t, body, False, lw)
     A.put("head", 0, 0)
-    A.put("nose", 8 + 62 * sy + 24, 19)
+    A.put("nose", mx + 24 * wf, 19)
     # eyes
     k = M["eye"]
     closed = E.get("closed", False)
@@ -2181,8 +2197,8 @@ def _spec_head(ctx, A, t, R, M, E, look, bl, yaw, mirror, lw, mouth_mode=None, h
     sclera = mixc(GLOW, SCLERA, M["iris"])
     if M["melt"] > 0.0:
         sclera = mixc(sclera, body, smoothstep(seg(M["melt"], 0.1, 0.38)))
-    eyes = ((exn, -4.0, 29 * es, 32 * es, upt, "eA", ups[0]),
-            (exf, -6.0, 29 * es * fsq, 31 * es, -upt, "eB", ups[1]))
+    eyes = ((exn, -5.0 + wf, 29 * es, (31.5 + 0.5 * wf) * es, upt, "eA", ups[0]),
+            (exf, -5.0 - wf, 29 * es * fsq, (31.5 - 0.5 * wf) * es, -upt, "eB", ups[1]))
     g = M["glow"]
     fq = E.get("force_sq", 0.0)
     for (cx, cy, rx, ry, ut, nm, up) in eyes:
@@ -2238,10 +2254,10 @@ def _spec_head(ctx, A, t, R, M, E, look, bl, yaw, mirror, lw, mouth_mode=None, h
     mm = mouth_mode or E["mouth"]
     if M["melt"] > 0.32 and mm in ("troll", "laugh", "snarl", "grin", "o", "o_small", "hope"):
         mm = "flat"
-    _spec_mouth(ctx, A, t, M, mm, mx, mrx, lw, hold, E)
+    _spec_mouth(ctx, A, t, M, mm, mx, mrx, lw, hold, E, wf)
 
 
-def _spec_mouth(ctx, A, t, M, mm, mx, mrx, lw, hold, E=None):
+def _spec_mouth(ctx, A, t, M, mm, mx, mrx, lw, hold, E=None, wf=1.0):
     edge = M["edge"]
     mk = M["maw"]
     MAW_, TEETH_, TONGUE_ = MAW, TEETH, TONGUE
@@ -2293,7 +2309,7 @@ def _spec_mouth(ctx, A, t, M, mm, mx, mrx, lw, hold, E=None):
     # true-form mouth
     k = 1.0 - mk
     ink = _a(edge, k) if k < 1 else edge
-    bx_ = mx - 4
+    bx_ = mx - 4 * wf
     if mm == "snarl":
         ctx.move_to(bx_ - 30, 33)
         ctx.curve_to(bx_ - 10, 28, bx_ + 14, 28, bx_ + 34, 31)
@@ -2439,10 +2455,10 @@ def _spec_mouth(ctx, A, t, M, mm, mx, mrx, lw, hold, E=None):
         _s(ctx, ink, lw * 0.75)
         A.put("mouth", bx_, 40)
     # nose
-    ellipse(ctx, mx + 24, 19, 8, 6)
+    ellipse(ctx, mx + 24 * wf, 19, 8, 6)
     ctx.set_source_rgba(*PUPIL)
     ctx.fill()
-    circle(ctx, mx + 22, 17, 2.2)
+    circle(ctx, mx + 22 * wf, 17, 2.2)
     _f(ctx, _a(WHITE, 0.7 * k * M["nhl"]))
 
 

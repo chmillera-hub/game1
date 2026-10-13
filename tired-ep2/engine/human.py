@@ -566,7 +566,7 @@ def P(*parts, **kw):
 POSE_DEFAULTS = dict(
     turn=0.0, dx=0.0, dy=0.0, rot=0.0, plant=1.0, hip_h=0.0, lift=0.0, plant_hands=0.0, plant_all=0.0, plant_butt=0.0,
     lean=0.0, chest=0.0, side=0.0, twist=0.0, hip_roll=0.0, hunch=0.0, neck=0.0, nod=0.0,
-    tilt=0.0, head_yaw=0.0, breath=1.0, sway=1.0, posture=1.0, coat_trail=0.0,
+    tilt=0.0, head_yaw=0.0, breath=1.0, sway=1.0, posture=1.0, coat_trail=0.0, _loco=0.0,
     hold=0.0, hold_order=0.0, controller=0.0, counter=0.0,
     hand_top=0.0, head_face=0.0, hold_hand=1.0, pillow=0.0,
 )
@@ -926,6 +926,15 @@ STATIC_PERIOD = 0.5
 # 6. SOLVER
 # ============================================================================
 _HAND_KEYS = ("al_h", "ar_h")
+# Locomotion cycles (anatomy pass). Their ground contact is smoothed over the cycle phase: at
+# toe-off the back knee bends so fast that the body used to drop onto the front heel within ONE
+# frame (a 5-12 px hitch at 720p on every step). The contact is now a small triangle-weighted
+# average over neighbouring phases (+-LOCO_DPH of the cycle), so the same settle takes ~3 frames.
+# Every other pose has _loco = 0 and is computed exactly as before.
+LOCO_CYCLES = frozenset(("walk", "run", "run_panic", "scream_run", "tiptoe", "stumble", "sneak",
+                         "walk_eyes_closed"))
+LOCO_DPH = 0.035
+LOCO_W = ((-2, 1.0), (-1, 2.0), (1, 2.0), (2, 1.0))     # (offset in LOCO_DPH, weight); centre 3.0
 _STR_KEYS = ("al_layer", "ar_layer")
 
 
@@ -972,6 +981,8 @@ def _pose_raw(spec, who, pt):
         _ik_layer_reset(d, table)
         _overlay(d, table, (pt / period) % 1.0)
         d["_cycle"] = period
+        if name in LOCO_CYCLES:
+            d["_loco"] = 1.0
     else:
         if name not in POSES:
             raise KeyError(f"human: unknown pose {name!r}")
@@ -1137,7 +1148,27 @@ def _floor_legs(C, Q, phi):
         Q[f"l{s_}_p"] = lerp(p0, p1, fl)
 
 
-def _solve(C, Q, who, turn, t, fx, headphones, lag_Q=None, reach=None):
+def _legs_lowest(C, Q, pr):
+    """The legs' lowest point (sole / toe / heel / knee) for pose Q: the same math as the leg loop
+    in _solve, used to smooth the ground contact of locomotion cycles."""
+    lowest = -1e9
+    for s_, sgn in (("l", -1), ("r", 1)):
+        hip = (sgn * C["hip_w"] * math.cos(Q["hip_roll"]), sgn * C["hip_w"] * math.sin(Q["hip_roll"]) * -1, 0.0)
+        p, o, k = Q[f"l{s_}_p"], Q[f"l{s_}_o"], Q[f"l{s_}_k"]
+        kn = _add(hip, _dir(p, o, sgn), C["thigh"])
+        q = p - k
+        an = _add(kn, _dir(q, o + Q[f"l{s_}_ko"], sgn), C["shin"])
+        fp = q + Q[f"l{s_}_a"]
+        fdir = (sgn * 0.1, -math.sin(fp), math.cos(fp))
+        dn = (0.0, math.cos(fp), math.sin(fp))
+        sole = _add(an, dn, C["foot_h"])
+        toe = _add(sole, fdir, C["foot_len"] * 0.72)
+        heel = _add(sole, fdir, -C["foot_len"] * 0.28)
+        lowest = max(lowest, pr(sole)[1], pr(toe)[1], pr(heel)[1], pr(kn)[1] + C["leg_r"][1])
+    return lowest
+
+
+def _solve(C, Q, who, turn, t, fx, headphones, lag_Q=None, reach=None, contact_nb=None):
     """Skeleton in rig-local 2D (ground origin, y down). Returns dict J.
 
     reach: {side: (x, y, w, ang|None)} rig-local world-space hand targets (Episode 2)."""
@@ -1189,6 +1220,14 @@ def _solve(C, Q, who, turn, t, fx, headphones, lag_Q=None, reach=None):
                  fp=fp)
         legs[s_] = g
         lowest = max(lowest, g["sole"][1], g["toe"][1], g["heel"][1], g["knee"][1] + C["leg_r"][1])
+    if contact_nb and Q.get("_loco", 0.0) > 0.0:
+        # locomotion: average the legs' ground contact over neighbouring cycle phases
+        ws, acc = 3.0, 3.0 * lowest
+        for w_, Qn in contact_nb:
+            _floor_legs(C, Qn, phi)
+            acc += w_ * _legs_lowest(C, Qn, pr)
+            ws += w_
+        lowest = lerp(lowest, acc / ws, Q["_loco"])
     # seat / rear volume reduction for bent, crouched and seated poses (no butt emphasis)
     pmax = max(Q["ll_p"], Q["lr_p"])
     J["seat_flat"] = max(smoothstep((lean - 0.12) / 0.5), 0.75 * smoothstep((pmax - 0.6) / 0.6))
@@ -4214,7 +4253,16 @@ def draw_person(ctx, who, x, y, s, t, pose="stand", expr="neutral", look=(0, 0),
         sig, det = _sig_detail(pose, who, C, pt, turn, fx, hp0)
         if det is not None:
             _detour(Q, *det)
-    J = _solve(C, Q, who, turn, t, fx, hp0, lagQ, reach_l)
+    cnb = None
+    if Q.get("_loco", 0.0) > 0.0:
+        per = Q.get("_cycle", 1.0) or 1.0
+        cnb = []
+        for off, w_ in LOCO_W:
+            Qn = resolve_pose(pose, who, pt + off * LOCO_DPH * per)
+            for k, v in C["posture"].items():
+                Qn[k] = Qn[k] + v * pw
+            cnb.append((w_, Qn))
+    J = _solve(C, Q, who, turn, t, fx, hp0, lagQ, reach_l, cnb)
     J["t"] = t
     J["_lv"] = _torso_geom(C, J)
     J["_bandage"] = None if not bandage else ("r" if bandage is True else bandage)
