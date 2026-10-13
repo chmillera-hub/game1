@@ -327,7 +327,7 @@ function fearPose(t, S) {
   const hideU = S.k(t, [['s13b03+2.2', 0], ['s13b03+2.84', 1, 'inOut']]);
   const peekU = S.k(t, [['s13b05+0.4', 0], ['s13b05+0.85', 1, 'inOut']]);
   const lowerU = S.k(t, [['s13b05+1.5', 0], ['s13b05+2.3', 1, 'inOut']]);
-  const OUT = (s) => [s > 0 ? -0.8 : -Math.PI + 0.8, 100];
+  const OUT = (s) => [s > 0 ? -1.12 : -Math.PI + 1.12, 98];
   let armL = moveArm(hug(-1), onFace(-1), hideU, sh(-1), OUT(-1));
   let armR = moveArm(hug(1), onFace(1), hideU, sh(1), OUT(1));
   if (peekU > 0) armL = moveArm(armL, peekAt(-1), peekU);
@@ -382,10 +382,11 @@ function fearPose(t, S) {
   face.noAutoBlink = true;
   face.t = t;
   // crying behind its hands (the trembling comes back "faster than ever"): one tear slides out from under the right
-  // palm halfway into b03, one from under the left while the hand comes down in b04 — each one drop that runs and fades
+  // palm halfway into b03, one from under the left halfway into b04, as the huge hand comes down — each one drop that
+  // runs and fades as a whole
   const run = (a, d = 1.7) => { const k = (t - S.T(a)) / d; return k > 0 && k < 1 ? k : 0; };
   face.tearR = run('s13b03+3.0');
-  face.tearL = run('s13b04+0.5');
+  face.tearL = run('s13b04+1.7');
   // micro-life: the same tiny gaze drift as s12 (continuous across the cut), plus small darts while frozen
   const darts = sm(B.b01 + 0.8, B.b01 + 1.5, t) * (1 - sm(B.b03 + 2.0, B.b03 + 2.3, t));
   face.lookX = clamp(face.lookX + 0.03 * Math.sin(t * 1.7 + 0.4) + darts * fbm(t * 0.9, 31) * 0.05, -1, 1);

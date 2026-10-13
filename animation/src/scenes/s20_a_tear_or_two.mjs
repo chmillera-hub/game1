@@ -9,7 +9,7 @@
 // Last frame = the mirror of the film's first frame (same camera and desk, lamp off, notebook closed under the palm).
 import { W, H, clamp, lerp, ease, fbm, blinkAt, applyCamera, drift, vignette, TAU, ik } from '../engine.mjs';
 import { star, drawTear } from '../face.mjs';
-import { drawHand, makeHandStyle, HUMAN, blendHand } from '../hand.mjs';
+import { blendHand } from '../hand.mjs';
 import { drawSelf, SELF_EXPR, SELF_FACE, selfPoseAnchors, selfLocal } from '../chars/self.mjs';
 import { drawNotebook } from '../sets/props.mjs';
 import { drawRealRoom, drawRealRoomForeground, drawLitByRoom, REALROOM } from '../sets/realroom.mjs';
@@ -39,9 +39,6 @@ const CAM_OPEN = REALROOM.cameras.opening;               // {420,655,1.12}
 // trail survive the encoder (at the old 2.1 the streak vanished in the compressed film)
 const CAM_CLOSE = { x: 428, y: 704, zoom: 2.4 };
 const LEAF_RISE = 220 * 0.866;                           // a standing cover's height on screen (page units)
-// while the left hand holds the cover's edge (until it lets go at vertical), the cover is drawn between its thumb (under
-// the edge) and its palm and fingers (on the page side)
-const LIFT_LAYER = ['s20b04+0.72', 's20b04+1.45'];
 const HAND_S = 1.42;
 const PENCIL_LEN = 52;
 const PENCIL_REST = { tip: [574, 1021], ang: -0.12 };   // lying on the desk in front of the mug (ang: tip → eraser)
@@ -77,7 +74,7 @@ function tracks(t, S) {
     lampOff,
     // THE tear — one, from the lamp-lit near eye (screen-left), drawn with face.mjs drawTear (one translucent,
     // slightly blue drop with its own short wet trail): the eyes well on 'After that,' (b02), the drop gathers on the
-    // lower lid on 'shed a tear' and spills around the line's middle, on 'or two' (+1.25 of 2.64 s); it slides slowly
+    // lower lid on 'shed' and spills around the line's middle, on 'tear' (+1.25 story ≈ 47 % of the played line); it slides slowly
     // down the cheek with one small hesitation and is still there when the sleeve comes up (+2.85), under which it
     // fades out as a whole (drop and trail together). drawTear progress: 0..0.16 gathering, then the run.
     tear: k([['s20b03+0.75', 0], ['s20b03+1.25', 0.16, 'sine'], ['s20b03+1.55', 0.29, 'in'], ['s20b03+1.8', 0.33, 'out'],
@@ -308,9 +305,9 @@ function armLeft(t, S, pose, tr) {
   const back = S.k(t, [['s20b04+2.6', 0], ['s20b04+3.5', 1, 'inOut']]);
   if (take <= 0 || back >= 1) return rest;
   // the hand slides along the page to the cover's free edge and takes it: palm and fingers on the page side, the thumb
-  // under the edge (from +0.72 the cover is drawn over the hand and the palm and fingers again over the cover, so the
-  // thumb is hidden under it: see render, LIFT_LAYER); it lifts the cover with the fingers along it toward the spine;
-  // frozen at vertical once released
+  // under the edge (palm down, the 'hold' thumb is hidden behind the hand: it never shows on the page); it lifts the
+  // cover with the fingers along it toward the spine; frozen at vertical once released. (The old grip sat on the page
+  // with its thumb on top, fingers and thumb on the same side.)
   const nbH = notebookDraw({ ...tr, open: Math.max(tr.open, 0.5) });
   const ax = Math.atan2(NBK[1] - nbH.edge[1], NBK[0] - nbH.edge[0]);   // free edge → spine, along the leaf
   const holdAng = lerp(1.25, ax, take);
@@ -338,21 +335,6 @@ function armLeft(t, S, pose, tr) {
   return { target, bend: -1, front: true, hand, palmDir, handAngle: ang, ...foreshorten(pose, target, -1) };
 }
 
-// the left hand's palm and fingers once more, over the cover it is lifting (its thumb stays under the cover's edge).
-// Same hand as self.mjs draws (HUMAN, 62 px, SELF colours), at the same wrist (the arm's IK) and orientation.
-const SELF_HAND_STYLE = makeHandStyle(HUMAN, 62, { skin: '#d9a27e', light: '#f0c6a6', shade: '#bb7b5c', line: '#6e3b2e' }, 2.5);
-function drawFingersOver(g, pose, a) {
-  const shW = selfPoseAnchors(SX, SY, SS, pose).shoulderL, sh = [(shW[0] - SX) / SS, (shW[1] - SY) / SS];
-  const L1 = 100 * (a.reach1 || 1), L2 = 92 * (a.reach2 || 1);
-  const { a1, a2 } = ik(sh[0], sh[1], a.target[0], a.target[1], L1, L2, a.bend ?? -1);
-  const wx = sh[0] + Math.cos(a1) * L1 + Math.cos(a1 + a2) * L2, wy = sh[1] + Math.sin(a1) * L1 + Math.sin(a1 + a2) * L2;
-  g.save();
-  g.translate(SX + wx * SS, SY + wy * SS);
-  g.scale(SS, SS);
-  drawHand(g, SELF_HAND_STYLE, { ang: a.handAngle, shape: a.hand, palmDir: a.palmDir, chir: -1, only: ['palm', 'finger'] });
-  g.restore();
-}
-
 // the notebook's draw position (the right half stays put while it closes) and its free edge (world)
 function notebookDraw(tr) {
   const k = ease.sine(tr.open);
@@ -378,11 +360,11 @@ const minv = (A) => {
 // narrows (right for a camera looking straight down), so a cover lifted to vertical vanished. Here the book is drawn in
 // two passes: the right half as it lies (page block, right page — `onPage` draws on it), then the leaf alone, sheared so
 // its free edge rises toward camera by sin(angle) × LEAF_RISE: the cover visibly stands up and comes down over the page.
-function drawBook(g, tr, dim, onPage, beforeLeaf = null) {
+function drawBook(g, tr, dim, onPage) {
   const s = NBK[2], open = tr.open, st = { flat: 1, rot: NB_ROT, dim };
-  if (open >= 0.999 && !beforeLeaf) { drawNotebook(g, NBK[0], NBK[1], s, { ...st, open: 1 }); onPage(); return; }
+  if (open >= 0.999) { drawNotebook(g, NBK[0], NBK[1], s, { ...st, open: 1 }); onPage(); return; }
   const nb = notebookDraw(tr);
-  if (open <= 0.001) { drawNotebook(g, nb.x, nb.y, s, { ...st, open: 0 }); if (beforeLeaf) beforeLeaf(); return; }
+  if (open <= 0.001) { drawNotebook(g, nb.x, nb.y, s, { ...st, open: 0 }); return; }
   // pass 1: the right half (the open book clipped at the spine)
   g.save();
   g.translate(NBK[0], NBK[1]); g.rotate(NB_ROT);
@@ -391,8 +373,6 @@ function drawBook(g, tr, dim, onPage, beforeLeaf = null) {
   drawNotebook(g, NBK[0], NBK[1], s, { ...st, open: 1 });
   g.restore();
   onPage();
-  // (whatever goes UNDER the leaf: the fingers of the hand lifting it)
-  if (beforeLeaf) beforeLeaf();
   // pass 2: the leaf, sheared about the spine
   const a = open * Math.PI, cw = Math.cos(a), lw = Math.abs(cw) * 220;
   const u0 = lerp(-110, 0, ease.sine(open));                      // drawNotebook's local spine x
@@ -674,29 +654,10 @@ export function render(g, t, S) {
   drawEyeStars(g, pose, pose.face.sparkle, t);
   drawRealRoomForeground(g, st);
   const dim = 0.5 * tr.lampOff;
-  // the star lives on the right page (the cover comes down over it).
-  // While the left hand lifts the cover (from b04+0.72 until it lets go at +1.45) the cover comes between that hand's
-  // palm and fingers (on its page side) and its thumb (under the edge): the left arm is drawn before the leaf, its palm
-  // and fingers again after it, and the right arm on top as before. (The whole hand, thumb included, used to sit on
-  // top of the page.)
-  const lifting = t >= S.T(LIFT_LAYER[0]) && t < S.T(LIFT_LAYER[1]);
-  const only = (keep) => ({ ...pose, [keep === 'L' ? 'armR' : 'armL']: { ...(keep === 'L' ? R.arm : L), front: false, layer: 'side' } });
-  drawBook(g, tr, dim, () => drawPageStar(g, tr.star, S.k(t, [['s20b01+2.2', 0], ['s20b01+2.6', 1], ['s20b02+1.0', 0.35]])),
-    lifting ? () => drawSelfLit(g, st, only('L'), 'front') : null);
-  if (lifting) {
-    // the palm and fingers over the cover: only where the cover is (clipped to the leaf), so they never cover the cuff
-    const nb = notebookDraw(tr), h = 0.5 * NBK[2] * 147;
-    const vx = -Math.sin(NB_ROT) * h, vy = Math.cos(NB_ROT) * h;
-    g.save();
-    g.beginPath();
-    g.moveTo(nb.edge[0] - vx, nb.edge[1] - vy); g.lineTo(NBK[0] - vx, NBK[1] - vy);
-    g.lineTo(NBK[0] + vx, NBK[1] + vy); g.lineTo(nb.edge[0] + vx, nb.edge[1] + vy);
-    g.closePath(); g.clip();
-    drawFingersOver(g, base, L);
-    g.restore();
-  }
+  // the star lives on the right page (the cover comes down over it)
+  drawBook(g, tr, dim, () => drawPageStar(g, tr.star, S.k(t, [['s20b01+2.2', 0], ['s20b01+2.6', 1], ['s20b02+1.0', 0.35]])));
   if (R.pencil) drawPencil(g, R.pencil.tip, R.pencil.ang);
-  drawSelfLit(g, st, lifting ? only('R') : pose, 'front');
+  drawSelfLit(g, st, pose, 'front');
   g.restore();
 
   grade(g, 0, 0.1 * (1 - tr.lampOff));

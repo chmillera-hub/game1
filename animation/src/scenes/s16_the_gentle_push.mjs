@@ -291,14 +291,15 @@ function fearPose(t, S, shot) {
   pose.face = face;
 
   // arms (character-local; facing −1, so local +x is screen-left, the way Fear leaves). armL is the screen-RIGHT arm.
-  const CLASP_L = { target: [-14, -118], bend: -1, front: true, hand: 'fist', palmDir: [0.6, 0.2, -0.8] };   // resting together at the belly
-  const CLASP_R = { target: [12, -116], bend: 1, front: true, hand: 'fist', palmDir: [-0.6, 0.2, -0.8] };
+  const dr = (s, x, y) => [x + fbm(t * 0.29, 91 + s) * 1.2, y + fbm(t * 0.25, 97 + s) * 1.2];   // resting hands never freeze
+  const CLASP_L = { target: dr(-1, -14, -118), bend: -1, front: true, hand: 'fist', palmDir: [0.6, 0.2, -0.8] };   // resting together at the belly
+  const CLASP_R = { target: dr(1, 12, -116), bend: 1, front: true, hand: 'fist', palmDir: [-0.6, 0.2, -0.8] };
   const sw = Math.sin(P.phase) * 10, ssw = Math.sin(P.phase) * 14;
   const WALK_L = { target: [-36 + sw, -84], bend: 1, hand: 'open' }, WALK_R = { target: [36 + sw, -84], bend: -1, hand: 'open' };
   const SKIP_L = { target: [-44 + ssw, -96], bend: 1, hand: 'open' }, SKIP_R = { target: [44 + ssw, -96], bend: -1, hand: 'open' };
   // the look back OVER THE SHOULDER (QA: the frontal clasp read square to camera): the body is turned toward the exit,
   // so the near (screen-right) arm crosses the belly to its far side and the far arm hangs hidden behind the body
-  const LOOK_L = { target: [8, -114], bend: -1, front: true, hand: 'fist' }, LOOK_R = { target: [26, -92], bend: -1, hand: 'fist' };
+  const LOOK_L = { target: dr(-1, 8, -114), bend: -1, front: true, hand: 'fist' }, LOOK_R = { target: dr(1, 26, -92), bend: -1, hand: 'fist' };
   const walkW = S.k(t, [['s16b02+2.75', 0], ['s16b02+3.3', 1]]);                  // the startled arms settle into the walk
   const lookW = S.k(t, [['s16b03+0.95', 0], ['s16b03+1.55', 1, 'inOut']]);         // the stop: arms settle as the head turns back
   const skipW = S.k(t, [['scene.end-1.9', 0], ['scene.end-1.66', 1, 'inOut']]);    // swing out into the skip
