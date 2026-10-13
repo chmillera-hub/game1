@@ -93,7 +93,7 @@ HAND_POSES = {
     "fist": dict(curl=(0.97, 0.99, 1.0, 1.0), spread=0.0, mcp=0.0, thumb=(0.0, 0.41, -0.275)),
     # thinking: index finger laid along the chin, thumb toward the jaw, the other fingers curled
     "chin": dict(curl=(0.12, 0.78, 0.84, 0.88), spread=0.18, mcp=6.0, thumb=(0.27, 0.40, -0.24)),
-    # ...and drawn down the beard, thumb and finger gathering it
+    # ...and drawn down the chin, thumb and finger gathering
     "chin_pinch": dict(curl=(0.32, 0.82, 0.86, 0.9), spread=0.12, mcp=10.0, thumb=(0.22, 0.42, -0.2)),
 }
 

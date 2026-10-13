@@ -370,11 +370,11 @@ JESUS = Character(
 
 # ---------------------------------------------------------------------------
 # short curls kept to the scalp: the sides end at the top of the ears, with a short sideburn
-PETER_HAIR = hair.ShortCurly(y_side=-0.1, sideburn=(0.94, -0.16, 0.27, 0.075), side_taper=(-0.75, -0.1),
+PETER_HAIR = hair.ShortCurly(y_side=-0.1, sideburn=(0.94, -0.16, 0.12, 0.075), side_taper=(-0.75, -0.1),
                              hairline=[(0.0, -0.9), (0.30, -0.88), (0.56, -0.82), (0.76, -0.68), (0.88, -0.5),
                                        (0.93, -0.32), (0.95, -0.2), (0.96, -0.1)])
 
-# Simon Peter: broad fisherman, short curly black hair, full beard
+# Simon Peter: broad fisherman, short curly black hair, clean-shaven
 # ---------------------------------------------------------------------------
 PETER_ST = dict(JESUS_ST)
 PETER_ST.update(
@@ -394,8 +394,8 @@ PETER_ST.update(
         (-1.660, 0.020, 0.100, -0.12), (-1.580, 0.470, 0.500, -0.12), (-1.420, 0.780, 0.800, -0.13),
         (-1.150, 0.960, 0.960, -0.12), (-0.800, 1.020, 1.000, -0.10), (-0.400, 1.040, 1.010, -0.08),
         (0.000, 1.030, 0.980, -0.05), (0.314, 1.043, 0.946, -0.01), (0.582, 1.026, 0.877, 0.04),
-        (0.806, 0.935, 0.770, 0.10), (0.986, 0.770, 0.624, 0.18), (1.120, 0.572, 0.478, 0.28),
-        (1.210, 0.363, 0.343, 0.36), (1.266, 0.160, 0.220, 0.42), (1.288, 0.010, 0.100, 0.45),
+        (0.806, 0.960, 0.770, 0.10), (0.986, 0.850, 0.624, 0.18), (1.120, 0.700, 0.478, 0.28),
+        (1.210, 0.500, 0.343, 0.36), (1.266, 0.290, 0.220, 0.42), (1.288, 0.010, 0.100, 0.45),
     ],
 )
 
@@ -404,8 +404,7 @@ def peter_outfit():
 
 PETER = Character(
     "peter", PETER_ST, outfit=peter_outfit(),
-    beard=hair.CurlyBeard(vol=0.05, chin=0.12, top=0.26,
-                          inner=[(0.97, 0.28), (0.93, 0.44), (0.85, 0.58), (0.69, 0.67), (0.44, 0.73), (0.27, 0.79), (0.13, 0.85), (0.0, 0.87)]),
+    beard=None,  # clean-shaven
     headwear_front=PETER_HAIR, headwear_back=PETER_HAIR.back, ears=True,
     arms=make_arms({-1: dict(sleeve="#8a6744", sleeve_sh="#634529"), 1: dict(sleeve="#8a6744", sleeve_sh="#634529")}),
 )

@@ -56,10 +56,10 @@ G_BREAD_L = dict(target=(-0.75, 3.8, 1.6), hand="hold", palm=(-0.8, -0.5, 0.15),
 G_GIVE_R = dict(target=(2.7, 3.5, 1.6), hand="cup", palm=(0.0, -1.0, 0.2), hand_dir=(0.9, 0.0, 0.4), still=True)  # offers the half on his open palm
 G_PRAY_L = dict(target=(-0.2, 3.0, 1.4), hand="hold", palm=(0.0, -1.0, 0.0), hand_dir=(0.95, -0.2, 0.25), still=True)  # bread cradled in the hand, which comes straight out of the sleeve
 P_CHIN_R = dict(target=(0.5, 0.3, 1.5), hand="relaxed", palm=(-0.4, 0.0, -1.0), wrist=-10, layer="front", still=True)
-# thinking: index finger along the chin and thumb toward the jaw, then drawn slowly down the beard
+# thinking: index finger along the chin and thumb toward the jaw, then drawn a little way down it
 P_THINK_R = dict(target=(0.55, 0.65, 1.6), hand="chin", palm=(-0.5, -0.2, -0.85), wrist=0, layer="front",
                  hand_dir=(-0.4, -0.9, 0.12), still=True)
-P_THINK_R2 = dict(P_THINK_R, target=(0.55, 0.92, 1.6), hand="chin_pinch")
+P_THINK_R2 = dict(P_THINK_R, target=(0.55, 0.78, 1.6), hand="chin_pinch")
 P_SCRATCH_R = dict(target=(1.5, -1.5, 0.3), hand="relaxed", still=True, palm=(-1.0, 0.3, -0.4))
 P_SCRATCH_MID = dict(target=(2.7, 0.7, 1.5), hand="relaxed", still=True, palm=(-0.6, 0.3, -0.7))  # on the way up, in front of the shoulder
 P_ASK_R = dict(target=(3.1, 2.4, 1.5), hand="open", palm=(0.2, -1.0, 0.3), wrist=10)
@@ -395,7 +395,7 @@ def build_perfs():
     P.look(tp + 0.5, 0.65, -0.05, 0.15).pose(tp + 0.45, 0.4, yaw=26)
     P.expr(tp + 0.75, "knowing", 0.5, m_smile=0.4).look(tp + 1.5, 0.1, 0.35, 0.25).pose(tp + 1.4, 0.6, yaw=10, pitch=8)
     P.arm(tp + 0.5, "r", P_THINK_R, 0.5)                                    # thinking: finger and thumb on his chin...
-    P.arm(tp + 1.05, "r", P_THINK_R2, 0.45)                                 # ...drawn slowly down his beard
+    P.arm(tp + 1.05, "r", P_THINK_R2, 0.45)                                 # ...drawn slowly down his chin
     P.arm(tp + 1.55, "r", P_THINK_R, 0.35)
     P.arm(tp + 1.95, "r", P_THINK_R2, 0.45)
     P.arm(tp + 2.5, "r", P_THINK_R, 0.35)
