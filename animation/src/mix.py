@@ -6,7 +6,8 @@ Reads the audio, music and sfx entries of timeline.json and writes a 48 kHz ster
 WAV of exactly round(duration * 48000) samples:
 
 * voice lines  24 kHz mono clips (VOICES_DIR/<id>.wav, lines.json for the hushed flag),
-               resampled to 48 kHz, entry gain, centred. The on-screen characters (O, E, T,
+               resampled to 48 kHz, 5 ms edge fades, a light de-esser on the hottest
+               sibilants, entry gain, centred. The on-screen characters (O, E, T,
                K) get a faint street ambience -- early reflections and a small slap off the
                bakery's brick wall, about -20 dB wet. The narrator (N) stays dry, close and
                warm (90 Hz high-pass, a little low shelf); hushed lines are dry as well
@@ -25,9 +26,11 @@ WAV of exactly round(duration * 48000) samples:
 * ducking      music and the wind bed duck 7 dB under every voice line (80 ms attack ahead
                of the line, 350 ms release), computed from the line spans. Other sfx are not
                ducked.
-* balance      every line must sit >= 10 dB above everything else (RMS over its span). A line
-               that does not gets a deeper duck, then a local dip of the sfx under it; the
-               voice itself is never raised.
+* balance      every line must sit >= 10 dB above everything else (RMS over its span) and
+               >= 6 dB over it in its worst 400 ms of speech (a laugh or a rustle landing on a
+               word), both full band and in 300 Hz-5 kHz (what a phone speaker plays). A line
+               that does not gets a deeper duck or a dip of the sfx under it, whichever part
+               of the bed is bigger where it fails; the voice itself is never raised.
 * master       -16 LUFS integrated, true peak <= -1.5 dBTP: linear gain plus a 4x-oversampled
                look-ahead limiter for the peaks that need it, measured with ffmpeg's loudnorm
                analysis before and after.
@@ -60,6 +63,10 @@ STREET_WET_DB = -20.0
 # then the small slap off the facades across the square
 STREET_ER = [(0.007, 0.50, -0.4), (0.012, 0.42, 0.45), (0.019, 0.33, -0.2), (0.027, 0.26, 0.6),
              (0.041, 0.18, -0.55), (0.071, 0.30, 0.15), (0.117, 0.12, -0.3)]
+EDGE_FADE = 0.005         # fade at both ends of every voice clip
+DEESS_SPLIT = 4500.0      # de-esser: the band above this ...
+DEESS_THRESH = 0.0        # ... may peak (5 ms RMS) this far over the line's speech RMS ...
+DEESS_RANGE = 6.0         # ... and is turned down by at most this much where it does
 
 CUT_FADE = 0.012          # anti-click fade of a dead music stop
 LIB_CUT_FADE = 0.030      # music_lib's own fade at a cut
@@ -73,8 +80,14 @@ DUCK_DB = 7.0
 DUCK_ATTACK = 0.08
 DUCK_RELEASE = 0.35
 DUCKED_SFX = ('wind',)
-MIN_SPEECH_TO_BED = 10.0
-FIX_MARGIN = 0.5
+MIN_SPEECH_TO_BED = 10.0  # line RMS over bed RMS across the line's span
+MIN_LOCAL = 6.0           # ... and over any LOCAL_WIN stretch of its speech
+PHONE_BAND = (300.0, 5000.0)   # both are also checked in what a phone speaker plays
+FRAME = 0.02
+ACTIVE_DB = 30.0          # frames within this of a line's loudest frame count as speech
+LOCAL_WIN = 0.4
+LOCAL_SPEECH = 0.15       # a window counts when it holds this much speech
+FIX_MARGIN = 1.0          # covers the master limiter's bite on speech peaks
 MAX_EXTRA_DUCK = 12.0
 MAX_SFX_DIP = 18.0
 
@@ -188,12 +201,33 @@ def street_ir():
 
 
 def load_line(voices_dir, lid):
+    """Mono line at SR with EDGE_FADE fades: the TTS trims cut some clips mid-sound (O10
+    starts at 4 % of full scale), which would click."""
     y, sr = sf.read(os.path.join(voices_dir, lid + '.wav'), dtype='float64', always_2d=True)
     y = y.mean(axis=1)
     if sr != SR:
         g = np.gcd(SR, sr)
         y = signal.resample_poly(y, SR // g, sr // g)
+    n = min(len(y) // 2, int(EDGE_FADE * SR))
+    y[:n] *= fade_curve(n, out=False)
+    y[len(y) - n:] *= fade_curve(n)
     return y
+
+
+def deess(x):
+    """Tame the hottest TTS sibilants (some peak 5-7 dB over the line's speech RMS, with a
+    tonal 9-10 kHz whistle): the band above DEESS_SPLIT goes down, by at most DEESS_RANGE,
+    wherever its 5 ms RMS peaks over speech RMS + DEESS_THRESH. Complementary zero-phase
+    split, so a line without such peaks comes back unchanged. Returns (x, max cut dB)."""
+    lo = signal.sosfiltfilt(signal.butter(4, DEESS_SPLIT, 'lowpass', fs=SR, output='sos'), x)
+    hi = x - lo
+    fp = frame_power(x[:, None])
+    ref = np.sqrt(np.mean(fp[fp > fp.max() * 10 ** (-ACTIVE_DB / 10)]))
+    env = np.sqrt(uniform_filter1d(hi ** 2, int(0.005 * SR)))
+    g = np.clip(ref * db(DEESS_THRESH) / np.maximum(env, 1e-12), db(-DEESS_RANGE), 1.0)
+    w = int(0.004 * SR)
+    g = uniform_filter1d(minimum_filter1d(g, w), w)
+    return lo + g * hi, float(-20 * np.log10(g.min()))
 
 
 def build_voices(tl, voices_dir, N):
@@ -205,7 +239,7 @@ def build_voices(tl, voices_dir, N):
     for e in sorted((e for e in tl['audio'] if e.get('kind', 'line') == 'line'), key=lambda e: e['t']):
         lid, spk = e['id'], e.get('speaker') or meta.get(e['id'], {}).get('speaker', 'N')
         hushed = bool(meta.get(lid, {}).get('hushed', False))
-        x = load_line(voices_dir, lid)
+        x, gr = deess(load_line(voices_dir, lid))
         if spk == 'N':
             y, how = stereo(music_lib.apply_eq(x, NARRATOR_EQ)), 'narrator: dry, hp90 + warmth'
         elif hushed:
@@ -221,6 +255,8 @@ def build_voices(tl, voices_dir, N):
         dur = float(e.get('dur', len(x) / SR))
         lines.append(dict(id=lid, speaker=spk, t=e['t'], dur=dur, gain=e.get('gain', 0.0), hushed=hushed,
                           a=i0, b=min(N, i0 + int(round(dur * SR)))))
+        if gr >= 0.5:
+            how += ', de-essed (max %.1f dB)' % gr
         log('  voice %-4s %s t=%7.3f dur=%5.2f gain %+5.1f dB  %s' % (lid, spk, e['t'], dur, e.get('gain', 0.0), how))
     return V, lines
 
@@ -398,31 +434,75 @@ def span_envelope(lines, depths, N):
     return env
 
 
-def line_powers(ln, V, D, S, gd, gs):
-    """Mean power over the line's span: voice, whole bed, ducked part, sfx part."""
-    a, b = ln['a'], ln['b']
-    d, s = D[a:b] * gd[a:b, None], S[a:b] * gs[a:b, None]
-    return np.mean(V[a:b] ** 2), np.mean((d + s) ** 2), np.mean(d ** 2), np.mean(s ** 2)
+def line_segments(lines, V, D, S):
+    """Per line: its span of the voice, the ducked bed and the sfx, full band and band-passed
+    to PHONE_BAND (zero phase, filtered with 50 ms either side)."""
+    sos = signal.butter(4, PHONE_BAND, 'bandpass', fs=SR, output='sos')
+    pad = int(0.05 * SR)
+    segs = []
+    for ln in lines:
+        a, b = ln['a'], ln['b']
+        lo, hi = max(0, a - pad), min(len(V), b + pad)
+        phone = tuple(signal.sosfiltfilt(sos, x[lo:hi], axis=0)[a - lo:b - lo] for x in (V, D, S))
+        segs.append(dict(full=(V[a:b], D[a:b], S[a:b]), phone=phone))
+    return segs
 
 
-def balance(lines, V, D, S, N):
+def frame_power(x):
+    """Mean power of each FRAME of a stereo segment (a partial last frame is dropped)."""
+    n = int(FRAME * SR)
+    if len(x) < n:
+        x = np.pad(x, ((0, n - len(x)), (0, 0)))
+    m = len(x) // n
+    return np.mean(x[:m * n].reshape(m, n, -1) ** 2, axis=(1, 2))
+
+
+def line_checks(seg, gd, gs, gv=None):
+    """Speech-to-bed of one line under the duck / dip gains of its span (and the voice gain
+    gv, for measuring after mastering) -> [(what, dB, required dB, ducked-bed power, sfx
+    power, offset s)]. 'span': RMS over the whole span; 'local': the worst LOCAL_WIN window
+    holding LOCAL_SPEECH of speech, voice vs bed over the speech frames only."""
+    out = []
+    for band in ('full', 'phone'):
+        v, d, s = seg[band]
+        if gv is not None:
+            v = v * gv[:, None]
+        d, s = d * gd[:, None], s * gs[:, None]
+        out.append(('span ' + band, to_db(np.mean(v ** 2)) - to_db(np.mean((d + s) ** 2)), MIN_SPEECH_TO_BED,
+                    np.mean(d ** 2), np.mean(s ** 2), 0.0))
+        fv, fb, fd, fs = (frame_power(x) for x in (v, d + s, d, s))
+        act = fv > fv.max() * 10 ** (-ACTIVE_DB / 10)
+        k = min(int(round(LOCAL_WIN / FRAME)), len(fv))
+        win = [np.convolve(x * act, np.ones(k), 'valid') for x in (fv, fb, fd, fs, act.astype(float))]
+        counts = win[4] * FRAME >= min(LOCAL_SPEECH, act.sum() * FRAME - 1e-9)
+        r = np.where(counts, 10 * np.log10(np.maximum(win[0], 1e-20) / np.maximum(win[1], 1e-20)), np.inf)
+        j = int(np.argmin(r))
+        out.append(('local ' + band, float(r[j]), MIN_LOCAL, win[2][j], win[3][j], j * FRAME))
+    return out
+
+
+def worst_check(checks):
+    return min(checks, key=lambda c: c[1] - c[2])
+
+
+def balance(lines, segs, N):
     """Duck depths per line (music + wind) and sfx dips that keep every line >= 10 dB over
-    the bed. Returns gain curves (gd, gs) and per-line results."""
+    the bed across its span and >= 6 dB in its worst 400 ms, full band and phone band. The
+    failing measurement's bigger part (ducked bed or sfx) is taken down by the shortfall.
+    Returns gain curves (gd, gs) and the per-line depths."""
     duck = np.full(len(lines), DUCK_DB)
     dip = np.zeros(len(lines))
-    for it in range(8):
+    for it in range(12):
         gd = db(-span_envelope(lines, duck, N))
         gs = db(-span_envelope(lines, dip, N))
         short = []
-        for i, ln in enumerate(lines):
-            pv, pb, pd, ps = line_powers(ln, V, D, S, gd, gs)
-            r = to_db(pv) - to_db(pb)
-            if r < MIN_SPEECH_TO_BED:
-                short.append((i, r, pd, ps))
+        for i, (ln, sg) in enumerate(zip(lines, segs)):
+            what, r, req, pd, ps, _ = worst_check(line_checks(sg, gd[ln['a']:ln['b']], gs[ln['a']:ln['b']]))
+            if r < req:
+                short.append((i, req + FIX_MARGIN - r, pd, ps))
         if not short:
             break
-        for i, r, pd, ps in short:
-            need = MIN_SPEECH_TO_BED + FIX_MARGIN - r
+        for i, need, pd, ps in short:
             if pd >= ps and duck[i] < DUCK_DB + MAX_EXTRA_DUCK:
                 duck[i] = min(DUCK_DB + MAX_EXTRA_DUCK, duck[i] + need)
             elif dip[i] < MAX_SFX_DIP:
@@ -431,9 +511,11 @@ def balance(lines, V, D, S, N):
                 duck[i] = min(DUCK_DB + MAX_EXTRA_DUCK, duck[i] + need)
     gd = db(-span_envelope(lines, duck, N))
     gs = db(-span_envelope(lines, dip, N))
-    for i, ln in enumerate(lines):
+    for i, (ln, sg) in enumerate(zip(lines, segs)):
         if duck[i] > DUCK_DB or dip[i] > 0:
-            log('  balance %s: duck %.1f dB, sfx dip %.1f dB' % (ln['id'], duck[i], dip[i]))
+            what, r, req, _, _, off = worst_check(line_checks(sg, gd[ln['a']:ln['b']], gs[ln['a']:ln['b']]))
+            log('  balance %s: duck %.1f dB, sfx dip %.1f dB (worst now: %s %+.1f dB at %.2f s)' % (
+                ln['id'], duck[i], dip[i], what, r, ln['t'] + off))
     return gd, gs, duck, dip
 
 
@@ -503,23 +585,31 @@ def master(mix):
 # ----------------------------------------------------------------------------- main
 
 
-def report_lines(lines, V, D, S, gd, gs, duck, dip, mg):
+def report_lines(lines, segs, gd, gs, duck, dip, mg):
     """Per-line speech-to-bed table, through the mastering gain curve mg."""
     rows = []
-    log('  %-4s %s %8s %5s %6s %8s %8s %7s %6s %6s %s' % ('line', 'S', 't', 'dur', 'gain', 'voice', 'bed', 'S/B', 'duck', 'dip', ''))
-    for i, ln in enumerate(lines):
+    log('  %-4s %s %8s %5s %6s %7s %7s %6s %6s %6s %6s %8s %5s %5s %s' % (
+        'line', 'S', 't', 'dur', 'gain', 'voice', 'bed', 'span', 'phone', 'local', 'l.ph', 'worst at', 'duck', 'dip', ''))
+    for i, (ln, sg) in enumerate(zip(lines, segs)):
         a, b = ln['a'], ln['b']
-        g = mg[a:b, None]
-        v = V[a:b] * g
-        bed = (D[a:b] * gd[a:b, None] + S[a:b] * gs[a:b, None]) * g
-        pv, pb = np.mean(v ** 2), np.mean(bed ** 2)
-        r = to_db(pv) - to_db(pb)
-        flag = ('hushed ' if ln['hushed'] else '') + ('' if r >= MIN_SPEECH_TO_BED else 'SHORT')
-        log('  %-4s %s %8.3f %5.2f %+6.1f %8.1f %8.1f %+7.1f %6.1f %6.1f %s' % (
-            ln['id'], ln['speaker'], ln['t'], ln['dur'], ln['gain'], to_db(pv), to_db(pb), r, duck[i], dip[i], flag))
+        g = mg[a:b]
+        chk = {c[0]: c for c in line_checks(sg, gd[a:b] * g, gs[a:b] * g, g)}
+        v, d, s = sg['full']
+        pv = np.mean((v * g[:, None]) ** 2)
+        pb = np.mean(((d * gd[a:b, None] + s * gs[a:b, None]) * g[:, None]) ** 2)
+        worst = worst_check(chk.values())
+        flag = ('hushed ' if ln['hushed'] else '') + ('' if worst[1] >= worst[2] else 'SHORT (%s)' % worst[0])
+        loc = min((chk['local full'], chk['local phone']), key=lambda c: c[1])
+        log('  %-4s %s %8.3f %5.2f %+6.1f %7.1f %7.1f %+6.1f %+6.1f %+6.1f %+6.1f %8.2f %5.1f %5.1f %s' % (
+            ln['id'], ln['speaker'], ln['t'], ln['dur'], ln['gain'], to_db(pv), to_db(pb), chk['span full'][1],
+            chk['span phone'][1], chk['local full'][1], chk['local phone'][1], ln['t'] + loc[5], duck[i], dip[i], flag))
         rows.append(dict(id=ln['id'], speaker=ln['speaker'], t=ln['t'], dur=ln['dur'], hushed=ln['hushed'],
                          voice_rms_db=round(to_db(pv), 2), bed_rms_db=round(to_db(pb), 2),
-                         speech_to_bed_db=round(r, 2), duck_db=round(float(duck[i]), 2), sfx_dip_db=round(float(dip[i]), 2)))
+                         speech_to_bed_db=round(chk['span full'][1], 2),
+                         speech_to_bed_phone_db=round(chk['span phone'][1], 2),
+                         local_min_db=round(chk['local full'][1], 2), local_min_phone_db=round(chk['local phone'][1], 2),
+                         local_worst_t=round(ln['t'] + loc[5], 3), ok=bool(worst[1] >= worst[2]),
+                         duck_db=round(float(duck[i]), 2), sfx_dip_db=round(float(dip[i]), 2)))
     return rows
 
 
@@ -541,7 +631,8 @@ def main(timeline_path, voices_dir, out_wav):
     del M, W
 
     log('ducking + balance (%.0f dB, attack %.0f ms, release %.0f ms)' % (DUCK_DB, DUCK_ATTACK * 1e3, DUCK_RELEASE * 1e3))
-    gd, gs, duck, dip = balance(lines, V, D, S, N)
+    segs = line_segments(lines, V, D, S)
+    gd, gs, duck, dip = balance(lines, segs, N)
     mix = V + D * gd[:, None] + S * gs[:, None]
 
     log('master (target %.1f LUFS, TP <= %.1f dBTP)' % (TARGET_LUFS, TP_CEIL_DB))
@@ -553,12 +644,15 @@ def main(timeline_path, voices_dir, out_wav):
     log('  after (file): I %.2f LUFS, TP %.2f dBTP, LRA %.1f LU; sample peak %.2f dBFS; %d samples' % (
         final['input_i'], final['input_tp'], final['input_lra'], 20 * np.log10(np.abs(y).max()), len(y)))
 
-    log('speech-to-bed per line (RMS over the line span, after mastering)')
-    rows = report_lines(lines, V, D, S, gd, gs, duck, dip, mg)
-    worst = min(rows, key=lambda r: r['speech_to_bed_db'])
-    log('min speech-to-bed: %+.1f dB (%s)' % (worst['speech_to_bed_db'], worst['id']))
-    if worst['speech_to_bed_db'] < MIN_SPEECH_TO_BED:
-        warn('%d line(s) below +%.0f dB' % (sum(r['speech_to_bed_db'] < MIN_SPEECH_TO_BED for r in rows), MIN_SPEECH_TO_BED))
+    log('speech-to-bed per line after mastering (span: RMS over the line, phone: in %d-%d Hz, '
+        'local / l.ph: worst %.1f s of speech)' % (PHONE_BAND + (LOCAL_WIN,)))
+    rows = report_lines(lines, segs, gd, gs, duck, dip, mg)
+    for key, req in (('speech_to_bed_db', MIN_SPEECH_TO_BED), ('speech_to_bed_phone_db', MIN_SPEECH_TO_BED),
+                     ('local_min_db', MIN_LOCAL), ('local_min_phone_db', MIN_LOCAL)):
+        worst = min(rows, key=lambda r: r[key])
+        log('min %-22s %+.1f dB (%s, required %+.0f)' % (key, worst[key], worst['id'], req))
+    if not all(r['ok'] for r in rows):
+        warn('line(s) short of the speech-to-bed targets: %s' % ', '.join(r['id'] for r in rows if not r['ok']))
     rep = dict(out=out_wav, samples=N, sr=SR, loudness_before=before, loudness_after=final, master_gain_db=gain,
                limiter_max_db=gr, lines=rows, music=music_rep, sfx=sfx_rep, warnings=WARNINGS)
     json.dump(rep, open(os.path.splitext(out_wav)[0] + '_report.json', 'w'), indent=1)

@@ -15,7 +15,8 @@ the 540x960 frame. Layout is phone first (app UI covers the bottom ~20 %):
              rule that draws in from the left, italic description (540-560), i.e.
              52-58 %, clear of the subtitles. Fade 250 ms in, 300 ms out.
              'correct' {t, text} retypes the description from t, one character
-             every 45 ms, the original characters staying put.
+             every 45 ms, the original characters staying put; the super is held
+             1.2 s past the last keystroke (within its shot) so the change reads.
   end card   the last label, centred on the black tail as a title card.
 
 Timing: every event is snapped to the frame grid (fps from the timeline) and starts
@@ -53,6 +54,7 @@ TITLE_TOP, RULE_Y, DESC_TOP = 504, 535, 540
 RULE_COLOUR = '&H0058B4E0'      # brass, like the clock bezel
 FADE_IN, FADE_OUT = 250, 300
 TYPE_STEP = 0.045
+CORRECT_HOLD = 1.2              # the retyped description stays fully up this long before its fade
 
 CARD_SIZE, CARD_SPACING, CARD_DESC_SIZE = 44, 8, 24
 CARD_FADE_IN = 400
@@ -193,7 +195,10 @@ class Clock:
         self.fps = fps
 
     def frame(self, t):
-        return max(1, math.ceil(t * self.fps - 1e-6))
+        """First frame at or after t; times within float noise of a frame land on it."""
+        x = t * self.fps
+        n = round(x)
+        return max(1, n if abs(x - n) < 1e-3 else math.ceil(x))
 
     def stamp(self, f):
         cs = int(math.floor(f * 100.0 / self.fps + 1e-9))
@@ -221,7 +226,8 @@ def time_subs(subs, cuts, gap):
         end, stacked = want, None
         if nxt is not None:
             limit = nxt - gap
-            no_cut = not any(want < c < limit for c in cuts)
+            # closing the gap must not carry the line over a cut after its voice ended
+            no_cut = not any(t1 < c <= limit + 1e-6 for c in cuts)
             if want > limit or (limit - want < CHAIN and no_cut):
                 end = limit
             if end < t0 + MIN_SHOW:
@@ -322,6 +328,20 @@ def card_events(clock, lab):
     return events
 
 
+def hold_correction(lab, cuts, next_t0):
+    """Stretch a super whose description is retyped, so the new text can be read before the fade.
+
+    It stays at least CORRECT_HOLD after the last keystroke, but never past the next cut or the
+    next super."""
+    corr = lab.get('correct')
+    if not corr or not (lab['t0'] < corr['t'] < lab['t1']):
+        return
+    n = len(typing_steps(typeset(lab.get('desc') or ''), typeset(corr['text'])))
+    need = corr['t'] + n * TYPE_STEP + CORRECT_HOLD + FADE_OUT / 1000.0
+    stops = [c for c in cuts if c > corr['t']][:1] + ([next_t0] if next_t0 is not None else [])
+    lab['t1'] = max(lab['t1'], min([need] + stops))
+
+
 def tidy_labels(labels, cuts):
     """Sort; a super that runs into the next one ends at its start, or at a cut just before it."""
     labels = [dict(lab) for lab in sorted(labels, key=lambda lab: lab['t0'])]
@@ -331,6 +351,8 @@ def tidy_labels(labels, cuts):
             near = [c for c in cuts if b['t0'] - 0.5 <= c <= b['t0'] and c > a['t0'] + 1.0]
             if near:
                 a['t1'] = near[0]
+    for i, lab in enumerate(labels):
+        hold_correction(lab, cuts, labels[i + 1]['t0'] if i + 1 < len(labels) else None)
     return labels
 
 

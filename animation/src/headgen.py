@@ -493,8 +493,9 @@ class Head:
             corner_lift = (tilt if outer else -tilt * 0.3) * smoothstep(0.4, 1.0, t)
             if upper:
                 e_edge = p['lid_up_e'] + p['lid_up_arch'] * (1 - t ** 2) - p['lid_up_arch'] * 0.5 + corner_lift
-                elev = np.concatenate([[e_edge - 4, e_edge - 2.5, e_edge - 0.6], np.linspace(e_edge, 100, nv)])
-                radii = np.concatenate([[r * 1.004, r * 1.018, r * 1.036], np.full(nv, R)])
+                # runs well past the pole so a fully closed lid still covers the top of the eyeball
+                elev = np.concatenate([[e_edge - 4, e_edge - 2.5, e_edge - 0.6], np.linspace(e_edge, 165, nv + 6)])
+                radii = np.concatenate([[r * 1.004, r * 1.018, r * 1.036], np.full(nv + 6, R)])
             else:
                 e_edge = p['lid_lo_e'] - p['lid_lo_arch'] * (1 - t ** 2) + corner_lift * 0.6
                 elev = np.concatenate([[e_edge + 4, e_edge + 2.5, e_edge + 0.6], np.linspace(e_edge, -100, nv)])

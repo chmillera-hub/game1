@@ -54,8 +54,11 @@ def face_to_channels(f, hs=1.0):
         out_b['eye_' + side] = ('rot', q(pitch, 0, yaw))
         op = f['lid_' + side] * (1 - f['blink'])
         up = -(1 - op) * UP_CLOSE if op <= 1 else (op - 1) * 30.0
-        up += 0.55 * min(pitch, 0) + 0.25 * max(pitch, 0)
-        lo = f['lidlo_' + side] * LO_RAISE * (1 - f['blink']) + f['blink'] * 6.0
+        # the last stretch of a close overshoots so the lids seal at the centre
+        c = min(max((1 - op - 0.75) / 0.25, 0.0), 1.0)
+        up -= 11.0 * c * c * (3 - 2 * c)
+        up += 0.70 * min(pitch, 0) + 0.25 * max(pitch, 0)
+        lo = f['lidlo_' + side] * LO_RAISE * (1 - f['blink']) + f['blink'] * 8.0
         lo += 0.3 * min(pitch, 0) + 0.2 * max(pitch, 0) + max(f['smile'], 0) * 5.0
         out_b['lid_up_' + side] = ('rot', q(up))
         out_b['lid_lo_' + side] = ('rot', q(lo))
