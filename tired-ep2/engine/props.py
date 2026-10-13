@@ -1837,7 +1837,7 @@ BOSS_CHAIR_SEAT = 240     # seat top above the floor at s=1 (Boss SEAT_H 233)
 BOSS_CHAIR_TOP = 1010     # back top above the floor at s=1
 
 
-def boss_chair(ctx, x, y, s=1.0, turn=0.0, part="all", t=0.0, rim=None, dir=1, rim_a=0.85):
+def boss_chair(ctx, x, y, s=1.0, turn=0.0, part="all", t=0.0, rim=None, dir=1, rim_a=0.85, back_front=None):
     """The Boss's very tall high-backed swivel chair. ANCHOR = floor point
     under the seat centre.
 
@@ -1926,7 +1926,7 @@ def boss_chair(ctx, x, y, s=1.0, turn=0.0, part="all", t=0.0, rim=None, dir=1, r
             rect(ctx, axx - 9, seat_y - 92, 18, 76, "#4a5060", 4)
 
     with core.saved(ctx, x, y, s):
-        back_in_front = back_depth > 1.0
+        back_in_front = back_depth > 1.0 if back_front is None else bool(back_front)   # back_front: force (anatomy pass)
         if part in ("behind", "all"):
             draw_base()
             if not back_in_front:

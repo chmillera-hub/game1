@@ -226,14 +226,24 @@ def chair_turn(t, k):
 
 def boss_body_turn(ct):
     psi = math.pi * (1 - ct)                # 0 = chair facing camera
-    return -min(1.6, math.degrees(psi) / 49.0)
+    u = math.degrees(psi) / 49.0
+    # anatomy pass: a soft limit (was a hard min(1.6, u): she froze at the rig's limit, then
+    # started rotating at full speed in one frame). C1-continuous, identical for u <= 1.3.
+    return -(u if u <= 1.3 else 1.6 - 0.3 * math.exp(-(u - 1.3) / 0.3))
+
+
+# anatomy pass: from the cut into the chair shot (ct >= 0.3) the backrest is drawn behind
+# her. Near edge-on the prop drew its thick back slab in FRONT of her, slicing the back of
+# her head with a hard edge for ~5 frames and then popping it behind her in one frame.
+_BACK_BEHIND_CT = 0.299
 
 
 def _chair(ctx, ct, part):
     cx, cy = CHAIR
     ctk = round(ct, 3)
-    sets.sprite(ctx, ("s06_chair", part, ctk), cx - 330, cy - 1080 * SC, 660, 1100 * SC,
-                lambda c: props.boss_chair(c, cx, cy, SC, ctk, part=part, dir=-1))
+    bf = False if ctk >= _BACK_BEHIND_CT else None
+    sets.sprite(ctx, ("s06_chair", part, ctk, bf), cx - 330, cy - 1080 * SC, 660, 1100 * SC,
+                lambda c: props.boss_chair(c, cx, cy, SC, ctk, part=part, dir=-1, back_front=bf))
 
 
 _SHADE = {}
