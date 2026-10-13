@@ -5,6 +5,7 @@
 // 1.7 s of silence added after s07b03.
 import { clamp, lerp, ease, blinkAt, applyCamera, drift, vignette, TAU } from '../engine.mjs';
 import { EXPR, makeExpr, withSpeech } from '../face.mjs';
+import { blendHand } from '../hand.mjs';
 import { drawFear } from '../chars/fear.mjs';
 import { drawSelf, SELF_EXPR, selfLocal, selfPoseAnchors } from '../chars/self.mjs';
 import { drawHQ, drawHQForeground, drawAlarmLight, HQ_VIEWS, ALARM_REACH } from '../sets/hq.mjs';
@@ -72,7 +73,11 @@ function ceoPose(t, S) {
   const tugPull = sine((t - S.T('scene.start+1.38')) / 0.18);
   const tugOut = sine((t - S.T('scene.start+1.62')) / 0.3);
   const tug = tugIn * (1 - tugOut);
-  const lap = (side) => [side * 26, -312 + 16 * tugPull];
+  // each fist closes on its own lapel (knuckles to camera, fingers round the lapel edge toward the sweater): the
+  // wrists sit outside the lapels so the fists land on them (at ±26 the two fists met in the middle of the chest
+  // and read as clasped hands)
+  const lap = (side) => [side * 60, -300 + 16 * tugPull];
+  const lapAng = (side) => (side > 0 ? Math.PI + 0.55 : -0.55);   // the fist points in and up along the lapel edge
   const restR = [58 + 14, -382 + 184], restL = [-72, -198];
   const pushOff = sine((t - S.T('scene.start+0.2')) / 0.9);  // the fist leaves the knee as they rise
   const baseR = [lerp(KNEE[0], restR[0], pushOff), lerp(KNEE[1], restR[1], pushOff)];
@@ -86,8 +91,12 @@ function ceoPose(t, S) {
       wrist: lerp(0.75, 0.1, pushOff), front: pushOff < 0.7 };   // bend / reach: set below (elbowThrough)
     armL = 'rest';
   } else if (tug > 0.001) {
-    armR = { target: [lerp(restR[0], lap(1)[0], tug), lerp(restR[1], lap(1)[1], tug)], bend: 1, front: true, hand: tug > 0.5 ? 'grip' : 'rest' };
-    armL = { target: [lerp(restL[0], lap(-1)[0], tug), lerp(restL[1], lap(-1)[1], tug)], bend: -1, front: true, hand: tug > 0.5 ? 'grip' : 'rest' };
+    // the hand turns from hanging (fingers down, palm to the thigh) to the lapel grip through the whole move, so it
+    // never flips in one frame
+    const hold = (side) => ({ hand: blendHand('rest', 'grip', tug), handAngle: lerp(Math.PI / 2 - side * 0.1, lapAng(side), tug),
+      palmDir: [lerp(-side * 0.9, 0, tug), 0, lerp(-0.45, -1, tug)] });
+    armR = { target: [lerp(restR[0], lap(1)[0], tug), lerp(restR[1], lap(1)[1], tug)], bend: 1, front: true, ...hold(1) };
+    armL = { target: [lerp(restL[0], lap(-1)[0], tug), lerp(restL[1], lap(-1)[1], tug)], bend: -1, front: true, ...hold(-1) };
   } else {
     armR = { preset: 'rest' }; armL = 'rest';
   }

@@ -632,7 +632,7 @@ function earsArm(x, y, s, pose, side, e) {
   const L1 = Math.hypot(E[0] - sh[0], E[1] - sh[1]), L2 = Math.hypot(Wr[0] - E[0], Wr[1] - E[1]);
   const cross = (Wr[0] - sh[0]) * (E[1] - sh[1]) - (Wr[1] - sh[1]) * (E[0] - sh[0]);
   return { target: Wr, bend: cross < 0 ? 1 : -1, reach1: L1 / 100, reach2: L2 / 92, front: kk > 0.12,
-    hand: kk > 0.55 ? 'flat' : 'rest', ...(kk > 0.55 ? { handAngle: -Math.PI / 2 - side * 0.1 } : {}), thumb: -side };
+    hand: kk > 0.55 ? 'flat' : 'rest', ...(kk > 0.55 ? { handAngle: -Math.PI / 2 - side * 0.1, palmDir: [-side, 0, -0.3] } : { thumb: -side }) };
 }
 
 // pages slipping from the clipboard, and the clipboard itself dropping (front-view props)
@@ -807,7 +807,10 @@ function drawLitBox(g, drawFn, box, o) {
   const [L, T, U] = litC, gl = L.getContext('2d'), gt = T.getContext('2d'), gu = U.getContext('2d');
   for (const c of [gl, gt, gu]) { c.setTransform(1, 0, 0, 1, 0, 0); c.globalAlpha = 1; c.globalCompositeOperation = 'source-over'; c.clearRect(0, 0, bw + 2, bh + 2); }
   gl.setTransform(m.a, m.b, m.c, m.d, m.e - x0, m.f - y0);
+  // (faces drawn here are logged for caption placement in box coordinates: move them back to the frame)
+  const log = globalThis.__FACE_LOG, n0 = log ? log.length : 0;
   gl.save(); drawFn(gl); gl.restore();
+  if (log) for (let i = n0; i < log.length; i++) { const f = log[i]; f.x0 += x0; f.x1 += x0; f.y0 += y0; f.y1 += y0; }
   gl.setTransform(1, 0, 0, 1, 0, 0);
   if (o.fillAlpha > 0) {
     gl.globalCompositeOperation = 'source-atop'; gl.fillStyle = rgbaHex(o.fill, o.fillAlpha); gl.fillRect(0, 0, bw, bh);

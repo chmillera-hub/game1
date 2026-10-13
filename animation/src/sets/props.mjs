@@ -10,7 +10,7 @@
 import { createCanvas, GlobalFonts } from '@napi-rs/canvas';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { clamp, lerp, TAU, rgba, mixColor, ellipse, circle, groundShadow, smoothstep, ease } from '../engine.mjs';
+import { clamp, lerp, TAU, rgba, mixColor, shade, ellipse, circle, groundShadow, smoothstep, ease } from '../engine.mjs';
 
 // ---------------------------------------------------------------- integer-safe noise
 // (engine.mjs hrand()/vnoise() overflow float precision for larger seeds / inputs, so props use these.)
@@ -601,14 +601,49 @@ function drawGrips(g, st, state, P, dp, flip) {
       if (Math.abs(q[0] - gx) < bd && Math.abs(q[1] - gy) < 20) { bd = Math.abs(q[0] - gx); best = q[0]; }
     }
     if (best == null || bd > 26) best = gx;
-    g.fillStyle = col; g.strokeStyle = line; g.lineWidth = 2.2;
-    for (const k of [-1, 0, 1]) {
-      ellipse(g, best + 1, gy + k * 7.2 * gs, 7.8 * gs, 4.4 * gs, -0.12);
-      g.fill(); g.stroke();
-    }
-    g.fillStyle = 'rgba(255,255,255,0.25)';
-    for (const k of [-1, 0, 1]) { ellipse(g, best - 1.5, gy + k * 7.2 * gs - 1.5, 3.5 * gs, 1.6 * gs); g.fill(); }
+    drawWrappedFingers(g, best + 1, gy, gs, col, line);
   }
+}
+
+/** Fingers curled round a bar from behind it (seen from outside the cage): three fingers crossing the bar's front,
+ *  their tips turning round its far side, and the thumb tip over the top — ONE silhouette with a single outline;
+ *  the fingers are separated by a soft darker skin band (no outlined ovals). */
+function drawWrappedFingers(g, x, y, gs, col, line) {
+  const R = 3.9 * gs, Lh = 7.4 * gs;
+  const fingers = [-1, 0, 1].map((k) => ({ cx: x, cy: y + k * 7.0 * gs, r: R * (k === 1 ? 0.92 : 1) }));
+  const thumb = { x0: x - 6.5 * gs, y0: y - 11.5 * gs, x1: x + 3 * gs, y1: y - 13.5 * gs, r: R * 1.05 };
+  const cap = (x0, y0, x1, y1, r) => {
+    const a = Math.atan2(y1 - y0, x1 - x0);
+    g.moveTo(x0 + Math.cos(a + Math.PI / 2) * r, y0 + Math.sin(a + Math.PI / 2) * r);
+    g.arc(x0, y0, r, a + Math.PI / 2, a + Math.PI * 1.5);
+    g.arc(x1, y1, r, a - Math.PI / 2, a + Math.PI / 2);
+    g.closePath();
+  };
+  const finger = (f, grow) => cap(f.cx - Lh, f.cy + 0.9 * gs, f.cx + Lh, f.cy - 0.9 * gs, f.r + grow);
+  g.save();
+  // outline: the union of every part
+  g.fillStyle = line;
+  g.beginPath();
+  cap(thumb.x0, thumb.y0, thumb.x1, thumb.y1, thumb.r + 2.1);
+  for (const f of fingers) finger(f, 2.1);
+  g.fill();
+  // thumb (behind the index finger), then the fingers top to bottom; each sits on a soft darker edge
+  const edge = 'rgba(61,44,102,0.38)';
+  g.fillStyle = edge; g.beginPath(); cap(thumb.x0, thumb.y0, thumb.x1, thumb.y1, thumb.r + 1); g.fill();
+  g.fillStyle = shade(col, -0.08); g.beginPath(); cap(thumb.x0, thumb.y0, thumb.x1, thumb.y1, thumb.r); g.fill();
+  for (const f of fingers) {
+    g.fillStyle = edge; g.beginPath(); finger(f, 1); g.fill();
+    const gr = g.createLinearGradient(0, f.cy - f.r, 0, f.cy + f.r);
+    gr.addColorStop(0, shade(col, 0.16)); gr.addColorStop(1, shade(col, -0.1));
+    g.fillStyle = gr; g.beginPath(); finger(f, 0); g.fill();
+  }
+  // the tips turn away round the bar's far side: a soft shadow at the right ends
+  for (const f of fingers) {
+    const sg = g.createRadialGradient(f.cx + Lh + R * 0.4, f.cy, 0, f.cx + Lh + R * 0.4, f.cy, R * 1.6);
+    sg.addColorStop(0, 'rgba(40,28,80,0.32)'); sg.addColorStop(1, 'rgba(40,28,80,0)');
+    g.fillStyle = sg; g.beginPath(); finger(f, 0); g.fill();
+  }
+  g.restore();
 }
 
 // ---- TIME-OUT sign (cached bitmap at 2x per rust/dim step)
