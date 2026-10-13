@@ -357,15 +357,14 @@ export function drawHand(g, style, opts = {}) {
   const ux = lx / ll, uy = ly / ll;
   let lo = Infinity, hi = -Infinity;
   for (const pt of parts) for (const [x, y] of pt.kind === 'palm' ? palm2 : pt.pts) { const d = x * ux + y * uy; lo = Math.min(lo, d); hi = Math.max(hi, d); }
-  g.save();
-  g.beginPath();
-  for (const pt of parts) pathOf(pt, 0);
-  g.clip('nonzero');
+  // (filled as the silhouette path itself — no clip: inside a scene's own clip Skia could drop a nested clip and paint
+  // the whole gradient rectangle)
   const gr = g.createLinearGradient(ux * lo, uy * lo, ux * hi, uy * hi);
   gr.addColorStop(0, rgba(col.shade, 0.22)); gr.addColorStop(0.45, rgba(col.skin, 0)); gr.addColorStop(1, rgba(col.light, 0.38));
+  g.beginPath();
+  for (const pt of parts) pathOf(pt, 0);
   g.fillStyle = gr;
-  g.fillRect(-200, -200, 400, 400);
-  g.restore();
+  g.fill('nonzero');
   g.restore();
 }
 
