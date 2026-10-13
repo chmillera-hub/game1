@@ -7,7 +7,7 @@
 //                            (+0.8 → +1.45) and laid down (→ +2.0), palm on the cover, lamp click (+2.4), the room goes
 //                            blue, eyes up to the window with stars in them, star-hood + wink
 // Last frame = the mirror of the film's first frame (same camera and desk, lamp off, notebook closed under the palm).
-import { W, H, clamp, lerp, ease, fbm, blinkAt, applyCamera, drift, vignette, TAU, ik } from '../engine.mjs';
+import { W, H, clamp, lerp, ease, fbm, blinkAt, applyCamera, drift, vignette, TAU, ik, continuousRate } from '../engine.mjs';
 import { star, drawTear } from '../face.mjs';
 import { blendHand } from '../hand.mjs';
 import { drawSelf, SELF_EXPR, SELF_FACE, selfPoseAnchors, selfLocal } from '../chars/self.mjs';
@@ -470,7 +470,11 @@ function selfPose(t, S, tr) {
   const breathIn = Math.sin(clamp((t - T('s20b01+2.3')) / 1.4) * Math.PI);
   const breathe = 1.1 + breathIn * 0.6;
   return { t, seated: true, outfit: 'sweater', bodyTurn: lerp(-0.06, 0.05, up) - toLamp * 0.12, headTurn, headTilt, headDY,
-    face, breathe, breathRate: lerp(0.19, 0.15, up), shrug: 0.04 + breathIn * 0.1 + laugh * 0.1,
+    // the breath slows as they settle (0.19 → 0.15 Hz). The rig takes sin(t·TAU·rate): animating the rate itself at
+    // t ≈ 340 s swept the phase back ~13 cycles in 1.1 s (a 12 Hz flutter of shoulders and head at b04+2.7…+3.8), so the
+    // phase is integrated (engine.continuousRate; anchored at the scene start, so the opening frames are unchanged)
+    face, breathe, breathRate: continuousRate(t, 's20:self', (tt) => lerp(0.19, 0.15, S.k(tt, [['s20b04+2.7', 0], ['s20b04+3.8', 1, 'inOut']])),
+      [S.start, S.end + 1], S.start), shrug: 0.04 + breathIn * 0.1 + laugh * 0.1,
     lean: -toLamp * 0.035 };
 }
 
