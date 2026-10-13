@@ -195,6 +195,12 @@ const POSES = {
     f: { w: [2.2, 2.4], hand: 'hold', palm: { in: 0.9, fwd: 0.3 }, fdir: { fwd: 0.8, out: 0.3, up: 0.2 }, fk: 0.9 }, front: true, scroll2: { h: 1.55 }, sway: 0.03 },
   scroll: { n: { w: [-1.85, 5.04], hand: 'relax', palm: HANG }, f: { w: [2.1, 3.1], hand: 'grip', palm: { in: 0.8, up: 0.35 }, fdir: { fwd: 0.6, up: 0.45 } }, front: true, scroll: true },
   walk: { n: { w: [-1.85, 5.21], hand: 'relax', palm: HANG }, f: { w: [2.02, 5.04], hand: 'relax', palm: HANG } },
+  // young Paul ordering the guards to take Yosef away, the warrant still in his other hand: the free
+  // hand raised, then flicked outward with the back of the hand (a dismissive "away with him")
+  order_raise: { n: { w: [-0.9, 0.85], hand: 'open', palm: { fwd: 0.6, out: 0.6 }, fdir: { up: 0.9, out: 0.25 }, fk: 0.8 },
+    f: { w: [2.1, 3.1], hand: 'grip', palm: { in: 0.8, up: 0.35 }, fdir: { fwd: 0.6, up: 0.45 } }, front: true, scroll: true },
+  order_flick: { n: { w: [-2.4, 2.0], hand: 'open', palm: { down: 0.8, out: 0.45 }, fdir: { out: 0.9, down: 0.25 }, fk: 0.8 },
+    f: { w: [2.1, 3.1], hand: 'grip', palm: { in: 0.8, up: 0.35 }, fdir: { fwd: 0.6, up: 0.45 } }, front: true, scroll: true },
   // on his knees in the blinding light: the near forearm raised before his brow, palm turned toward his
   // own face, the elbow low; the other hand pressed flat on the tunic over his thigh
   kneel_shield: { n: { w: [-1.3, -0.55], hand: 'open', palm: { in: 1, back: 0.6, down: 0.2 }, fdir: { up: 0.9, in: 0.35 }, fk: 0.75, hang: 1 },

@@ -1368,10 +1368,10 @@ S.jer_crack = (ctx, W, t, lt, dur, p) => {
     actor(ctx, W, who, t, pl, sil, lk, opt);
   };
   const ph = lt * L.TAU / 0.95;
-  walker('guard', sx - 170, 925, 50, ph + 1.6, looks({ gx: -0.4, gy: 0, yaw: -0.4, pitch: 0 }),
+  walker('guard', sx - 170, 968, 50, ph + 1.6, looks({ gx: -0.4, gy: 0, yaw: -0.4, pitch: 0 }),
     { swing: true, place: { style: 'temple_guard' }, style: 'temple_guard', F: (F) => { F.pose = 'walk'; F.poseTo = 'walk'; F.poseFrom = 'walk'; F.poseK = 1; F.browFurrow = 0.6; F.mouthSmile = -0.4; } });
-  walker('yosef', sx, 930, 50, ph, looks({ gx: 0.5, gy: 0, yaw: 0.4, pitch: 0 }));
-  walker('saul', sx + 190, 905, 52, ph + 2.6, looks({ gx: -0.5, gy: 0, yaw: -0.4, pitch: 0 }));
+  walker('yosef', sx, 973, 50, ph, looks({ gx: 0.5, gy: 0, yaw: 0.4, pitch: 0 }));
+  walker('saul', sx + 190, 948, 52, ph + 2.6, looks({ gx: -0.5, gy: 0, yaw: -0.4, pitch: 0 }));
   ctx.restore();
   doorPlanks(ctx, 0, gx, t);
   doorPlanks(ctx, gx + gw, VW, t);
@@ -1434,11 +1434,7 @@ S.jer_yosef_look = (ctx, W, t, lt, dur, p) => {
   drawCached(ctx, bgView('jer', (x) => BG.jerusalemNight(x), { z: 1.8, cx: 700, cy: 800 }, 14));
   const lk = looks({ gx: -0.3, gy: 0.05, yaw: -0.16, pitch: 0.02 }, { paul: { gx: -0.32, gy: 0.06, yaw: -0.18, pitch: 0.03 },
     away: { gx: 0.5, gy: 0.1, yaw: 0.35, pitch: 0.04 }, son: { gx: -0.7, gy: 0.12, yaw: -0.45, pitch: 0.05 } });
-  // after his "Goodbye." the guards haul him away out of the frame (he is pulled, half stumbling)
-  if (W._byeEnd == null) { const ln = W.lines.find((x) => x.who === 'yosef' && /^Goodbye/.test(x.text)); W._byeEnd = ln ? ln.end : 1e9; }
-  const go = smooth(clamp((t - W._byeEnd - 0.25) / 1.4));
-  const dx = -go * 900, bob = Math.abs(Math.sin(go * 9)) * 14 * go;
-  const yp = { x: 660 + dx, y: 1330 + bob, s: 190, facing: -1, by: -0.15, len: 5, lean: -0.08 * go };
+  const yp = { x: 660, y: 1330, s: 190, facing: -1, by: -0.15, len: 5 };
   guardsBehind(ctx, W, t, yp, LIGHT.jer, { spots: [[-2.6, 1, 0.3], [2.5, -1, -0.32]] });
   actor(ctx, W, 'yosef', t, yp, LIGHT.jer, lk);
   // young Paul from behind, out of focus in the foreground: his balding head with its dark fringe, the
@@ -1515,6 +1511,9 @@ S.jer_walk = (ctx, W, t, lt, dur, p) => {
 
 // Closer, travelling with Paul as he walks behind the guards: his head turned back over his shoulder to
 // the house, his face sad; then he looks down and walks on
+// young Paul, as in his first close shot: he raises his free hand and waves Yosef away to the guards
+S.jer_saul_order = (ctx, W, t, lt, dur, p) => S.jer_saul(ctx, W, t, lt, dur, p);
+
 S.jer_saul_walk = (ctx, W, t, lt, dur, p) => {
   // the wall slides by behind him as we travel with him (one blurred background, panned)
   const img = bgView('jer', (x) => BG.jerusalemNight(x), { z: 1.7, cx: 690, cy: 1050 }, 10);

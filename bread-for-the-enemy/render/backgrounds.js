@@ -538,11 +538,14 @@ function jerusalemNight(ctx, o = {}) {
   stones(ctx, 0, 300, VW, 1600, { base: '#3a4458', var: '#46506a', bh: 100, seed: 21 });
   ctx.fillStyle = L.linear(ctx, 0, 300, 0, 1000, [[0, rgba('#040610', 0.85)], [1, rgba('#040610', 0.1)]]);
   ctx.fillRect(0, 300, VW, 800);
-  // a doorway (blue door)
-  ctx.fillStyle = '#1c3a66'; ctx.fillRect(760, 900, 220, 520);
-  ctx.fillStyle = '#060a12'; ctx.fillRect(740, 880, 20, 560); ctx.fillRect(980, 880, 20, 560);
-  ctx.fillStyle = L.linear(ctx, 0, 1600, 0, VH, [[0, '#1a1c24'], [1, '#08090c']]);
-  ctx.fillRect(0, 1600, VW, VH - 1600);
+  // a doorway (blue door), standing on the street: its sill is the foot of the wall
+  ctx.fillStyle = '#1c3a66'; ctx.fillRect(760, 900, 220, 540);
+  ctx.fillStyle = '#060a12'; ctx.fillRect(740, 880, 20, 560); ctx.fillRect(980, 880, 20, 560); ctx.fillRect(740, 870, 260, 20);
+  // the street, from the foot of the wall toward us, with a worn stone sill under the door
+  ctx.fillStyle = L.linear(ctx, 0, 1440, 0, VH, [[0, '#1e2029'], [0.4, '#14161c'], [1, '#08090c']]);
+  ctx.fillRect(0, 1440, VW, VH - 1440);
+  ctx.fillStyle = rgba('#000000', 0.35); ctx.fillRect(0, 1440, VW, 10);
+  ctx.fillStyle = '#2c3240'; ctx.fillRect(730, 1432, 280, 16);
   vignette(ctx, 0.6, '#010205');
 }
 function jerusalemDyn(ctx, t, o = {}) {
