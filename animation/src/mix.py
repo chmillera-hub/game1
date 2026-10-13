@@ -7,11 +7,11 @@ WAV of exactly round(duration * 48000) samples:
 
 * voice lines  24 kHz mono clips (VOICES_DIR/<id>.wav, lines.json for the hushed flag),
                resampled to 48 kHz, 5 ms edge fades, a light de-esser on the hottest
-               sibilants, entry gain, centred. The on-screen characters (O, E, T,
-               K) get a faint street ambience -- early reflections and a small slap off the
-               bakery's brick wall, about -20 dB wet. The narrator (N) stays dry, close and
-               warm (90 Hz high-pass, a little low shelf); hushed lines are dry as well
-               ("mix close and dry" in the screenplay).
+               sibilants, entry gain, centred. The on-screen characters (O, E, T, K) get a
+               faint street ambience -- early reflections and a small slap off the bakery's
+               brick wall, -20 dB wet (energy re the dry line). The narrator (N) stays dry,
+               close and warm (90 Hz high-pass, a little low shelf); hushed lines are dry as
+               well ("mix close and dry" in the screenplay).
 * music        music_lib.render_cue per entry, entry gain. params.cut stops the cue dead at
                t+dur with a 12 ms anti-click fade. Other cues ring out naturally, unless more
                than 0.3 s of them would run under the next cue's start -- then they fade over
@@ -64,6 +64,7 @@ STREET_WET_DB = -20.0
 STREET_ER = [(0.007, 0.50, -0.4), (0.012, 0.42, 0.45), (0.019, 0.33, -0.2), (0.027, 0.26, 0.6),
              (0.041, 0.18, -0.55), (0.071, 0.30, 0.15), (0.117, 0.12, -0.3)]
 EDGE_FADE = 0.005         # fade at both ends of every voice clip
+EQ_TAIL = 0.1             # room for the voice EQ's filter tail after the clip
 DEESS_SPLIT = 4500.0      # de-esser: the band above this ...
 DEESS_THRESH = 0.0        # ... may peak (5 ms RMS) this far over the line's speech RMS ...
 DEESS_RANGE = 6.0         # ... and is turned down by at most this much where it does
@@ -240,6 +241,8 @@ def build_voices(tl, voices_dir, N):
         lid, spk = e['id'], e.get('speaker') or meta.get(e['id'], {}).get('speaker', 'N')
         hushed = bool(meta.get(lid, {}).get('hushed', False))
         x, gr = deess(load_line(voices_dir, lid))
+        n_line = len(x)
+        x = np.concatenate([x, np.zeros(int(EQ_TAIL * SR))])
         if spk == 'N':
             y, how = stereo(music_lib.apply_eq(x, NARRATOR_EQ)), 'narrator: dry, hp90 + warmth'
         elif hushed:
@@ -247,12 +250,12 @@ def build_voices(tl, voices_dir, N):
         else:
             x = music_lib.apply_eq(x, CHARACTER_EQ)
             wet = np.stack([signal.fftconvolve(x, ir[:, c]) for c in range(2)], axis=1)
-            y = wet * (db(STREET_WET_DB) * np.sqrt(np.mean(x ** 2) / np.mean(wet ** 2)))
+            y = wet * (db(STREET_WET_DB) * np.sqrt(np.sum(x ** 2) / np.sum(wet ** 2)))
             y[:len(x)] += x[:, None]
             how = 'street ambience %+.0f dB wet' % STREET_WET_DB
         i0 = int(round(e['t'] * SR))
         a, b, _ = place(V, y, i0, db(e.get('gain', 0.0)))
-        dur = float(e.get('dur', len(x) / SR))
+        dur = float(e.get('dur', n_line / SR))
         lines.append(dict(id=lid, speaker=spk, t=e['t'], dur=dur, gain=e.get('gain', 0.0), hushed=hushed,
                           a=i0, b=min(N, i0 + int(round(dur * SR)))))
         if gr >= 0.5:
@@ -374,6 +377,12 @@ def render_sfx_entry(e, seed, cache):
     return y, info, name, note
 
 
+# level trims on top of the timeline gains, from the mix review: the beds that carry the
+# silences (tick, wind, footsteps) were well under the library targets, a few accents over
+SFX_TRIM = {'footsteps_cobble': 5.0, 'footsteps_waddle': 5.0, 'footsteps_distant': 3.0, 'tower_ticks': 4.0,
+            'tower_tick': 2.0, 'wind': 3.0, 'gas_lamp_on': -3.0, 'slide_whistle_down': -3.0, 'shop_bell': -3.0}
+
+
 def build_sfx(tl, N, cache):
     D = np.zeros((N, 2))      # ducked with the music (the wind bed)
     S = np.zeros((N, 2))      # not ducked
@@ -392,7 +401,7 @@ def build_sfx(tl, N, cache):
             pan = float(rng.choice([-1.0, 1.0]) * rng.uniform(0.4, 1.0) * LAUGH_PAN[used])
             y = balance_pan(y, pan)
         dst = D if used in DUCKED_SFX else S
-        g = float(e.get('gain', 0.0))
+        g = float(e.get('gain', 0.0)) + SFX_TRIM.get(used, 0.0)
         a, b, faded = place(dst, y, int(round((e['t'] - info['sync']) * SR)), db(g))
         lvl = (info['lufs_i'] if info['kind'] == 'bed' else info['lufs_m']) + g
         lib_target = lvl - g + info['mix_gain_db']

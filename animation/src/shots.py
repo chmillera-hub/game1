@@ -1954,6 +1954,10 @@ def build(voice_dir, out_dir, only=None):
             F.set_visible(F.props['rye'], -1, False)
             F.set_visible(F.props['rye'], F.shots[-1]['t0'], True)
     sh = {s['name']: s for s in F.shots}
+    # the rag resolves into a slowed Civic theme under 5.2-5.3, landing as the final chord sounds
+    fc = [m for m in F.music if m['name'] == 'final_chord'][0]
+    t_cs = sh['5.2']['t0'] + 0.3
+    F.cue('civic_slow', t_cs, fc['t'] - t_cs + 0.4, gain=-9.0, end='phrase')
     # extras leave after the act
     for n in ('plum', 'flatcap', 'paper'):
         far_away(F, n, sh['3.1']['t0'])
