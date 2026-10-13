@@ -729,8 +729,11 @@ function drawLegs(g, k, outfit) {
       kneeDir = fwd;
       shoeRot = w.roll * fwd * prof;
     }
+    let kneelBack = 0;
     if (kn > 0) {
-      // the leg on the facing side steps forward first (knee up); the other then folds back onto its knee
+      // the leg on the facing side steps forward first (knee up); the other then folds back onto its knee: a
+      // genuflection — that thigh drops nearly straight down so the knee rests on the floor under the hip, and the
+      // shin runs back into depth (foreshortened), hiding its foot behind it
       const front = side === fwd;
       const kk = front ? sstep(0, 0.6, kn) : sstep(0.1, 0.85, kn);
       const kx = KNEEL_HIP[0] + (front ? 108 : -100) * fwd;
@@ -738,9 +741,9 @@ function drawLegs(g, k, outfit) {
       ax = lerp(ax, kx, kk);
       ay = lerp(ay, ky, kk) - (front ? Math.sin(Math.PI * kk) * 16 : 0);
       kneeDir = fwd;
-      if (!front) shoeRot = lerp(0, fwd * 1.75, kk);
+      if (!front) { shoeRot = lerp(0, fwd * 1.75, kk); kneelBack = kk; }
     }
-    legs.push({ side, hx, hy, ax, ay, kneeDir, z, shoeRot, fs });
+    legs.push({ side, hx, hy, ax, ay, kneeDir, z, shoeRot, fs, kneelBack, fwd });
   }
   legs.sort((a, b) => a.z - b.z);
   for (const L of legs) drawLeg(g, L, outfit, turnAmt, fwd, legs.indexOf(L) === 0 && Math.abs(legTh) > 0.05);
@@ -749,7 +752,15 @@ function drawLegs(g, k, outfit) {
 function drawLeg(g, L, outfit, turnAmt, fwd, far) {
   const { a1, a2 } = ik(L.hx, L.hy, L.ax, L.ay, THIGH, SHIN, L.kneeDir);
   let kx = L.hx + Math.cos(a1) * THIGH, ky = L.hy + Math.sin(a1) * THIGH;
-  const ax = kx + Math.cos(a1 + a2) * SHIN, ay = ky + Math.sin(a1 + a2) * SHIN;
+  let ax = kx + Math.cos(a1 + a2) * SHIN, ay = ky + Math.sin(a1 + a2) * SHIN;
+  const kb = L.kneelBack || 0;
+  if (kb > 0) {
+    // kneeling leg: knee down on the floor just behind the hip line, shin foreshortened running back into depth
+    const KX = L.hx - L.fwd * 26, KY = -14;
+    const AX = KX - L.fwd * 30, AY = -24;
+    kx = lerp(kx, KX, kb); ky = lerp(ky, KY, kb);
+    ax = lerp(ax, AX, kb); ay = lerp(ay, AY, kb);
+  }
   if (L.fs > 0) {
     // knee pointing at the camera: squash its sideways offset from the hip-ankle line
     const dx = ax - L.hx, dy = ay - L.hy, u = ((kx - L.hx) * dx + (ky - L.hy) * dy) / (dx * dx + dy * dy || 1);
@@ -760,7 +771,12 @@ function drawLeg(g, L, outfit, turnAmt, fwd, far) {
   let pants = outfit === 'ceo' ? C.pantsCeo : C.pants;
   if (far) pants = shade(pants, -0.12);
   const W1 = 50, W2 = 44;
-  drawShoe(g, ax, ay, L.side, turnAmt, fwd, L.shoeRot, far);
+  // the kneeling leg's foot is behind its shin (only while it is still coming down is it seen, shrinking away)
+  if (kb < 0.75) {
+    if (kb > 0) { g.save(); g.translate(ax, ay); g.scale(1 - kb, 1 - kb); g.translate(-ax, -ay); }
+    drawShoe(g, ax, ay, L.side, turnAmt, fwd, L.shoeRot, far);
+    if (kb > 0) g.restore();
+  }
   const sl = Math.hypot(ax - kx, ay - ky) || 1;
   const ux = (ax - kx) / sl, uy = (ay - ky) / sl;
   const cx = ax - ux * 1, cy = ay - uy * 1; // trouser hem: a flat edge at the ankle, over the shoe top
@@ -804,8 +820,20 @@ function drawLeg(g, L, outfit, turnAmt, fwd, far) {
     g.arc(kx + Math.cos(n) * 4, ky + Math.sin(n) * 4, 13, n + Math.PI - 0.6, n + Math.PI + 0.6);
     g.stroke();
   }
+  // kneeling: the cloth bunches over the knee on the floor (soft folds) and the foreshortened shin ends in a
+  // rounded hem seen end-on
+  if (kb > 0.3) {
+    const a = clamp((kb - 0.3) / 0.5);
+    g.strokeStyle = rgba(C.pantsLine, 0.45 * a);
+    g.lineWidth = 2.2;
+    for (const [dx, dy, r, a0, a1] of [[6, -6, 16, 3.6, 5.2], [-4, -14, 20, 3.9, 5.0], [0, 6, 14, 0.4, 2.6]]) {
+      g.beginPath(); g.arc(kx + dx * L.fwd, ky + dy, r, a0, a1); g.stroke();
+    }
+    g.fillStyle = rgba(C.pantsLine, 0.35 * a);
+    g.beginPath(); g.ellipse(ax - L.fwd * 6, ay + 2, W2 * 0.42, W2 * 0.2, 0, 0, TAU); g.fill();
+  }
   // trouser hem fold
-  g.strokeStyle = rgba(C.pantsLine, 0.55);
+  g.strokeStyle = rgba(C.pantsLine, 0.55 * (1 - kb));
   g.lineWidth = 2;
   const nx = -uy, ny = ux;
   g.beginPath();
