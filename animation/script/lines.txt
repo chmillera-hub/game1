@@ -1,0 +1,60 @@
+# ID|SPEAKER[speed]|tts_text|subtitle|trim(first:N / last:N)|flags
+N01|N|This is Brindle Cross.|This is Brindle Cross.||
+N02|N|The clock runs slow. Thirty-one minutes, at last count.|The clock runs slow. Thirty-one minutes, at last count.||
+N03|N|Nobody's quite sure when that started.|Nobody's quite sure when that started.||
+N04|N|Somebody kept eating the rye before he'd paid.|Somebody kept eating the rye before he'd paid.||
+N05|N|Hence, the sign.|Hence, the sign.||
+N06|N|This is Tomas Brandt.|This is Tomas Brandt.||
+N07|N|This is his son, Teddy. He is eight.|This is his son, Teddy. He is eight.||
+T01|T|Teddy. Door. You're letting the heat out.|Teddy. Door. You're letting the heat out.||
+N08|N|The lamp lights itself at five.|The lamp lights itself at five.||
+N09|N|And this is Oswald Bunce.|And this is Oswald Bunce.||
+N10|N|It's a silent act.|It's a silent act.||
+K01|K|Again! Do it again!|Again!|first:1|
+T02|T|Door! Now.|Door!|first:1|
+N11|N|He has never once seen the second banana.|He has never once seen the second banana.||
+K02|K|Papa, who's that lady?|Papa, who's that lady?||
+T03|T|Missus Lusk. Walter's wife.|Mrs. Lusk. Walter's wife.||
+K03|K|What's her first name?|What's her first name?||
+T04|T|It's Margaret, I think.|It's...|first:1|
+T05|T|Door, Teddy.|Door, Teddy.||
+E01|E|Oh, I'm fine, thank you. The wall's warm. From the ovens.|Oh — I'm fine, thank you. The wall's warm. From the ovens.||
+O01|O|It's the small rye.|It's the small rye.||
+E02|E0.83|That was Walter's.|...That was Walter's.||hushed
+O02|O|Every day at four. He'd tear the end off before he'd paid.|Every day at four. He'd tear the end off before he'd paid.||
+E03|E|That sign was for him.|That sign was for him.||
+O03|O|He stood by the lamp. Laughed before I even fell.|He stood by the lamp. Laughed before I even fell.||
+E04|E|He said you lean. Right before.|He said you lean. Right before.||
+E05|E|He loved that you never fixed it.|He loved that you never fixed it.||
+E06|E|Thirty-one minutes.|Thirty-one minutes.||
+E07|E|Walter climbed up every Sunday. Set it right.|Walter climbed up every Sunday. Set it right.||
+E08|E|It loses a minute a week.|It loses a minute a week.||
+O04|O0.87|Thirty-one Sundays.|...Thirty-one Sundays.||hushed
+E09|E|I don't want it fixed.|I don't want it fixed.||
+E10|E|Isn't that awful?|Isn't that awful?||
+O05|O|No. Not at all.|No.|first:1|
+E11|E|The minister came twice.|The minister came twice.||
+E12|E|Called me Ethel. Both times.|Called me Ethel. Both times.||
+O06|O|Well. He calls me Oscar, so there's that.|Well. He calls me Oscar, so—|first:6|
+E13|E|Oh, you don't have to do that.|Oh... you don't have to do that.||
+O07|O|I saw you. Every day.|I saw you. Every day.||
+O08|O|I didn't know what to say.|I didn't know what to say.||
+E14|E|Nobody does.|Nobody does.||
+E15|E|Mister Bunce. No.|Mr. Bunce. No.||
+O09|O|There. Now we both look ridiculous, Missus Lusk.|There. Now we both look ridiculous, Mrs. Lusk.||
+E16|E0.82|My name's Edith.|Edith.|last:1|
+E17|E0.82|Please. If you would.|...Please.|first:1|
+O10|O|It's Edith.|Edith.|last:1|
+E18|E0.82|Nobody's said it since April.|Nobody's said it since April.||hushed
+O11|O|That's yours.|That's yours.||
+E19|E|You eat too, Oswald.|You eat too, Oswald.||
+E20|E|There's the lean.|There's the lean.||
+K04|K|Papa! You're letting the heat out.|Papa! You're letting the heat out.||
+T06|T|Good. Leave it open.|Good.|first:1|
+K05|K|What's your first name?|What's your first name?||
+E21|E0.92|It's Edith.|It's Edith.||
+K06|K|I'm Teddy. I'm nearly nine.|I'm Teddy. I'm nearly nine.||
+E22|E|Congratulations.|Congratulations.||
+N12|N|This is Edith Lusk.|This is Edith Lusk.||
+N13|N|She has lived here fifty-three years.|She has lived here fifty-three years.||
+N14|N|She was in the first shot.|She was in the first shot.||
