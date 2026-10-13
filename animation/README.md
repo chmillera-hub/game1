@@ -19,6 +19,8 @@ original score, sound design and burned-in subtitles — generated entirely in c
 | Lip-sync (loudness + whisper word alignment + phonemes → mouth shapes per frame) | `audio/lipsync.py` → `data/lipsync.json` |
 | Staging & continuity plan | `data/staging.md` |
 | Engine, face rig, characters, sets, cosmos | `src/engine.mjs`, `src/face.mjs`, `src/chars/`, `src/sets/`, `src/fx/` (APIs in `docs/`) |
+| Hands (one articulated hand for every character: palm, fingers, thumb by chirality + wrist roll) | `src/hand.mjs`, `docs/hands.md` |
+| Visual rules the film is reviewed against (anatomy, hands, tears, lighting, motion) | `docs/visual_rules.md` |
 | One module per scene (camera, acting keyed to beats, sound cues) | `src/scenes/sNN_*.mjs` |
 | Score (soundfont orchestra, leitmotifs, cue plan keyed to beats) | `audio/music.py`, `data/music_plan.json` |
 | Sound effects (synthesised) | `audio/sfx.py` → `audio/sfx/` |
@@ -60,6 +62,8 @@ Preview without a full render: `node src/render.mjs --sheet s14 --n 16 --out out
 - **Change or add a line / pause:** edit `data/screenplay.json`, re-run TTS for those beats, then the rest.
 - **Slower/faster speech:** `python3 tools/speed_dialogue.py <factor>` for the whole film (then the steps after
   it), or `speed`, `tempo` and `gap` per speaker in `audio/tts.py`.
+- **Hands / gestures:** pick `hand` + `palmDir` per arm (see `docs/hands.md`); shaking uses `engine.smoothShake`,
+  tears `face.drawTear` (one translucent drop per tear), rim light from a visible source `fx/rim.mjs drawLit`.
 - **Captions:** wording comes from the screenplay; placement/splits/end times can be pinned in
   `data/subtitle_overrides.json`; style (font, colours, box) in `src/subtitles.mjs`. `--nosubs` for a clean render.
 - **Music mood or intensity per scene:** `data/music_plan.json`.
