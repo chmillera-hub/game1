@@ -14,7 +14,7 @@ HOW IT WAS CHECKED
 WHOLE FILM (rig)
 - Walking: the body dropped for one frame on every step (5-12 px at 720p in closer shots). Now each step settles smoothly. Walk speeds are unchanged.
 - Creature head turns through a front view: the eyes, nose, mouth, ear fins and head tilt used to jump to the other side in one frame. The head now swings through a centred front view, with the far ear coming round. All other head angles are unchanged.
-  The 16 turns that crossed the front view in a single frame were also eased so they pass through it smoothly:
+  The 14 turns that crossed the front view in a single frame were also eased so they pass through it smoothly:
   - s01: 0:05.5, 0:10.4, 0:14.8
   - s03: 1:34.2
   - s04: 2:17.2 (close-up), 2:19.5, 2:21.3, 2:22.2, 2:44.1, 2:45.0, 2:51.1, 2:51.9
