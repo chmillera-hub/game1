@@ -171,6 +171,15 @@ function drawCharacter(ctx, who, F, place, Lt, t, opt = {}) {
     }
   }
   const loose = st.cloth.looseSleeves || 0;
+  // a full-length standing figure (adult proportions, about seven and a half heads tall) has arms to
+  // match: longer, so the hanging hands reach mid-thigh; every pose keeps its shape, reaching further
+  const armLen = place.armLen || ((place.len || 0) >= 12 ? 1.17 : 1);
+  if (armLen !== 1 && !place.reach) {
+    for (const k of ['n', 'f']) {
+      const w = pb[k].w;
+      pb[k] = Object.assign({}, pb[k], { w: [w[0] * (1 + (armLen - 1) * 0.3), 0.98 + (w[1] - 0.98) * armLen] });
+    }
+  }
 
   // ---- arm and hand geometry
   let arms = null;
@@ -181,8 +190,8 @@ function drawCharacter(ctx, who, F, place, Lt, t, opt = {}) {
     // a little beyond the chest instead of vanishing behind it
     const SF = (fc > 0 ? sj.R : sj.L).slice();
     if (Math.abs(by) >= 0.12) SF[0] += fc * 0.2 * s * Math.min(1, (Math.abs(by) - 0.12) / 0.2);
-    const gN = B.armGeom(SN, toScreen(pb.n.w), s, { bend: fc * (1 - 2 * (pb.n.flip || 0)), loose, hang: pb.n.hang || 0 });
-    const gF = B.armGeom(SF, toScreen(pb.f.w), s, { bend: -fc * (1 - 2 * (pb.f.flip || 0)), loose, hang: pb.f.hang || 0 });
+    const gN = B.armGeom(SN, toScreen(pb.n.w), s, { bend: fc * (1 - 2 * (pb.n.flip || 0)), loose, hang: pb.n.hang || 0, len: armLen });
+    const gF = B.armGeom(SF, toScreen(pb.f.w), s, { bend: -fc * (1 - 2 * (pb.f.flip || 0)), loose, hang: pb.f.hang || 0, len: armLen });
     const spec = (arm, g, right) => {
       // the forearm in 3D: when it looks shorter than it is, it points toward the camera
       const proj = Math.hypot(g.W[0] - g.E[0], g.W[1] - g.E[1]) / (2.5 * s);

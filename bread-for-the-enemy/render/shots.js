@@ -186,9 +186,9 @@ function seatedLegs(ctx, Bn, s, fc, st, Lt, o = {}) {
   });
   fold([X(3.35, 4.2), X(2.4, 4.25), X(1.3, 4.3)], 1.1);
   fold([X(2.6, 3.86), X(1.6, 3.92)], 0.6);
-  // the crossed leg ends in its ankle and sandalled foot, past his hand on the knee: the foot hangs a
-  // little forward over the ledge, toes down
-  foot(ctx, X, s, st, Lt, [3.35, 4.36], [4.3, 4.66], { h: 0.36 });
+  // the crossed leg ends in its ankle and sandalled foot, past his hand on the knee: the foot is held
+  // upright, heel down and toes pointing up to the ceiling, the sole facing away from him
+  foot(ctx, X, s, st, Lt, [3.48, 4.52], [3.7, 3.5], { h: 0.36 });
   // 2. the near leg: shin hanging down the front of the ledge, the foot on the floor before it
   foot(ctx, X, s, st, Lt, [1.75, fy + 0.12], [2.95, fy + 0.26]);
   shape([X(1.45, 4.95), X(2.55, 4.85), X(2.78, 5.5), X(2.72, fy - 0.2), X(2.3, fy - 0.08), X(1.72, fy - 0.18), X(1.55, 5.7)], () => {
@@ -784,12 +784,15 @@ S.street_door_guard = (ctx, W, t, lt, dur, p) => {
   const step = smooth((lt - 0.25) / 1.5);
   const lk = looks({ gx: 0.4, gy: 0.15, yaw: 0.25, pitch: 0.08 }, { asher: { gx: 0.45, gy: 0.2, yaw: 0.28, pitch: 0.1 } });
   const S1 = (bx, by) => [(bx - view.cx) * view.z + VW / 2, (by - view.cy) * view.z + VH / 2];
-  const sB = lerp(41, 47, step), footY = lerp(1318, 1350, step);
-  const nk = S1(lerp(566, 548, step), footY - 9.4 * sB), sc = sB * view.z;
+  // adult proportions (about seven and a half heads tall): a smaller head and body scale with full-length
+  // legs, so he stands in the doorway like a man and not like a close-up on short legs
+  const GL = 13.4;
+  const sB = lerp(32, 35.5, step), footY = lerp(1318, 1350, step);
+  const nk = S1(lerp(566, 548, step), footY - GL * sB), sc = sB * view.z;
   B.drawTorch(ctx, ...S1(712, 960), 34, t, Lt, { size: 1.1, seed: 3 });
   floorShadow(ctx, nk[0], S1(0, footY)[1] + 0.2 * sc, 2.6 * sc, 0.5);
-  actor(ctx, W, 'guard', t, { x: nk[0], y: nk[1], s: sc, facing: 1, by: 0.3, len: 9.4 }, Lt, lk,
-    { afterTorso: (o) => standFeet(ctx, o.neck, o.s, 1, 9.4, Lt, C.guard) });
+  actor(ctx, W, 'guard', t, { x: nk[0], y: nk[1], s: sc, facing: 1, by: 0.3, len: GL }, Lt, lk,
+    { afterTorso: (o) => standFeet(ctx, o.neck, o.s, 1, GL, Lt, C.guard) });
   ctx.restore();
   doorLeaf(ctx, view, a, { grille: 1 });
   BG.vignette(ctx, 0.5, '#02030a');

@@ -212,7 +212,7 @@ function armJoint(S, W, l1, l2, side, out = 0, hang = 0) {
 
 // sleeve geometry: shoulder cap + upper arm + elbow + forearm, as one union of round shapes
 function armGeom(S, Wt, s, o = {}) {
-  const l1 = 2.85 * s, l2 = 2.5 * s;
+  const l1 = 2.85 * s * (o.len || 1), l2 = 2.5 * s * (o.len || 1);
   const { E, W } = armJoint(S, Wt, l1, l2, o.bend == null ? 1 : o.bend, o.out || 0, o.hang || 0);
   const u = [W[0] - E[0], W[1] - E[1]], ul = Math.hypot(u[0], u[1]) || 1;
   const dir = [u[0] / ul, u[1] / ul];
