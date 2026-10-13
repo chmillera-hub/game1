@@ -38,7 +38,7 @@ name whenever a different character starts talking.
 - `output/a_new_commandment_i_give_you.mp4`: the film (H.264 High + AAC stereo, 720×1280, 24 fps, about 12:01, under 15 MB)
 - `output/a_new_commandment_i_give_you.srt`: a subtitle sidecar (the subtitles are also burned into the video)
 
-Compression: 2-pass x264 (`veryslow`, `tune animation`) at about 118 kbps video plus 48 kbps AAC (14.9 MB; SSIM 0.988 against the master).
+Compression: 2-pass x264 (`veryslow`, `tune animation`) at about 110 kbps video plus 48 kbps AAC (14.7 MB; SSIM 0.988 against the master).
 
 The first frame is a fully lit shot of Jesus holding the bread with the title on it,
 so previews on social media are never black.
