@@ -1,7 +1,8 @@
 // s17 · can_i_help · MIND_HQ. Fear trots back up the alarm corridor, passes under the fire alarm and does
 // NOT pull it; pops up at the console beside Consciousness — "Fear." / "Can I help?" — and everyone makes room.
-import { clamp, lerp, ease, fbm, blinkAt, applyCamera, drift, vignette } from '../engine.mjs';
+import { clamp, lerp, ease, fbm, blinkAt, applyCamera, drift, vignette, ik } from '../engine.mjs';
 import { createCanvas } from '@napi-rs/canvas';
+import { blendHand } from '../hand.mjs';
 import { drawHQ, drawHQForeground, HQ_VIEWS, hqScaleAt } from '../sets/hq.mjs';
 import { drawCage } from '../sets/props.mjs';
 import { drawVoid } from '../chars/void.mjs';
@@ -70,11 +71,23 @@ function buttonLight(g, x, y, r, k) {
   gr.addColorStop(0, `rgba(255,214,140,${0.42 * k})`); gr.addColorStop(0.5, `rgba(255,180,90,${0.16 * k})`); gr.addColorStop(1, 'rgba(255,180,90,0)');
   g.fillStyle = gr; g.fillRect(x - r, y - r, 2 * r, 2 * r); g.restore();
 }
-// the CEO's pen (no module draws it): tip on the clipboard, body up through the fist
-function drawPen(g, x, y, s, facing, wrist, wob) {
-  const wx = x + facing * wrist[0] * s, wy = y + wrist[1] * s;
-  const tip = [wx - facing * (13 - wob[0]) * s, wy - (9 - wob[1]) * s];
-  const top = [wx + facing * 14 * s, wy - 40 * s];
+// the CEO's pen (no module draws it). It sits IN the fist: its axis runs through the grip's centre (wrist + 24 along the
+// hand, the same offset s20's pencil uses), the tip down-left on the clipboard, the gold end up-right past the knuckles.
+// The caller draws the pen arm again over it, so the fingers wrap the pen and only its two ends show (it used to stick
+// out of the wrist, drawn over the whole fist).
+function penGrip(C, pose) {
+  const a = pose.armR;
+  const sh = selfPoseAnchors(C.x, C.y, C.s, pose).shoulderR;
+  const sx = (sh[0] - C.x) / C.s, sy = (sh[1] - C.y) / C.s;
+  const { a1, a2 } = ik(sx, sy, a.target[0], a.target[1], 100, 92, a.bend ?? 1);
+  const h = a1 + a2;
+  const wx = sx + Math.cos(a1) * 100 + Math.cos(h) * 92, wy = sy + Math.sin(a1) * 100 + Math.sin(h) * 92;
+  return [C.x + (wx + Math.cos(h) * 24 - Math.sin(h) * 2) * C.s, C.y + (wy + Math.sin(h) * 24 + Math.cos(h) * 2) * C.s];
+}
+function drawPen(g, grip, s, wob) {
+  const ux = 0.66, uy = -0.75;                          // tip → top: up and to the writing hand's side
+  const tip = [grip[0] - ux * 25 * s + wob[0] * 0.4 * s, grip[1] - uy * 25 * s + wob[1] * 0.4 * s];
+  const top = [grip[0] + ux * 26 * s, grip[1] + uy * 26 * s];
   g.save(); g.lineCap = 'round';
   g.strokeStyle = '#1d1c2a'; g.lineWidth = 6.2 * s;
   g.beginPath(); g.moveTo(tip[0], tip[1]); g.lineTo(top[0], top[1]); g.stroke();
@@ -203,27 +216,33 @@ function renderAlarm(g, t, S) {
     const lift = S.k(t, [['s17b01+1.25', 0], ['s17b01+1.5', 1, 'outCubic'], ['s17b01+1.8', 1], ['s17b01+2.0', 0]]);
     const breath = S.k(t, [['s17b01+1.35', 0], ['s17b01+1.65', 1], ['s17b01+2.0', 0]]);
     const release = S.k(t, [['s17b01+1.75', 0], ['s17b01+2.15', 1]]);               // a little lighter
+    // on the move the eyes (and a touch of the head) look ahead, where it is going, not into the lens
+    const ahead = S.k(t, [['scene.start+0.3', 1], ['s17b01+0.7', 1], ['s17b01+0.95', 0], ['s17b01+2.0', 0], ['s17b01+2.35', 1]]);
     const ph = (F.x / 160) * Math.PI;   // cadence follows speed: ~4 steps/s at the trot
     const pose = {
       t, facing: 1, tremble: 0,
       walk: F.moving ? { phase: ph } : undefined,
-      headTilt: 0.05 * head - 0.06 * breath, headTurn: 0.22 * head, headDY: 2 * head - 4 * breath - 4 * release * Math.abs(Math.sin(ph)),
+      headTilt: 0.05 * head - 0.06 * breath, headTurn: 0.22 * head + 0.1 * ahead, headDY: 2 * head - 4 * breath - 4 * release * Math.abs(Math.sin(ph)),
       breathe: 1 + 1.5 * breath,
       face: {
-        lookX: lerp(0.15, 0.85, look) + gx, lookY: lerp(-0.05, 0.18, look),
+        lookX: lerp(0.15 + 0.35 * ahead, 0.85, look) + gx, lookY: lerp(-0.05, 0.18, look),
         // worried pull at the handle; the brows let go during the closed-eyed breath (the choice is made)
         browIn: 0.15 + 0.5 * look * (1 - release) * (1 - 0.7 * breath) + 0.1 * breath, browUp: 0.15 * look + 0.15 * release + 0.12 * breath,
         lidU: -0.1 * look, smile: lerp(0.15, -0.05, look * (1 - release)) + 0.12 * breath + 0.25 * release, pressed: 0.2 * breath,
         blush: 0.15, noAutoBlink: t > S.T('s17b01+1.2') && t < S.T('s17b01+2.3'),
         blink: S.k(t, [['s17b01+1.5', 0], ['s17b01+1.66', 1], ['s17b01+1.84', 1], ['s17b01+1.98', 0]]),   // a breath, eyes closed: the choice
       },
-      armR: lift > 0.01 ? { target: [lerp(40, 58, lift), lerp(-78, -102, lift)], bend: -1, hand: 'open' } : 'rest',
+      // the hand lifts a few centimetres toward the handle, out of the resting hang (Fear's rest preset at lift 0, so
+      // nothing pops): loosely curled, the fingers toward it, palm down and turned toward it
+      armR: { target: [lerp(39, 58, lift), lerp(-80, -102, lift)], bend: -1, hand: blendHand('rest', 'open', 0.55 * lift),
+        handAng: lerp(Math.PI / 2 - 0.22, 0.15, lift), palmDir: [lerp(-0.9, 0.45, lift), lerp(0, 0.6, lift), lerp(-0.45, -0.65, lift)] },
       armL: 'rest',
     };
     if (F.moving) {
+      // the trot's arm swing: relaxed hands, palms to the body (spread open hands read as jazz hands)
       const sw = Math.sin(ph) * 12;
-      pose.armL = { target: [-38 - sw, -84], bend: 1, hand: 'open' };
-      if (lift <= 0.01) pose.armR = { target: [38 - sw, -84], bend: -1, hand: 'open' };
+      pose.armL = { target: [-38 - sw, -84], bend: 1, hand: blendHand('rest', 'open', 0.3), palmDir: [0.9, 0, -0.45] };
+      if (lift <= 0.01) pose.armR = { target: [38 - sw, -84], bend: -1, hand: blendHand('rest', 'open', 0.3), palmDir: [-0.9, 0, -0.45] };
     }
     drawFear(g, F.x, fy - (F.moving ? Math.abs(Math.sin(ph)) * 6 : 0), fs, pose);
   }
@@ -281,7 +300,8 @@ function fearPoseFront(t, S, shot, F) {
   pose.armL = { target: [-7, -141], bend: -1, front: true, hand: 'fist' };
   pose.armR = { target: [7, -138], bend: 1, front: true, hand: 'fist' };
   if (shot === 'B') {
-    if (F.run < 1) { face = { ...face, lookX: -0.6, lookY: 0, browIn: 0.2, browUp: 0 }; pose.headTurn = -0.3; pose.walk = { phase: (760 - F.x) / 30 * Math.PI }; }
+    // (scurrying in from the right: the feet point the way it goes, screen-left)
+    if (F.run < 1) { face = { ...face, lookX: -0.6, lookY: 0, browIn: 0.2, browUp: 0 }; pose.headTurn = -0.3; pose.walk = { phase: (760 - F.x) / 30 * Math.PI }; pose.feetTurn = -0.75; }
     const shy = seg(t, S.T('s17b02+0.9'), S.T('s17b02+1.3'));
     face.smile = lerp(0.05, 0.18, shy);
     face.blink = blinkAt(t, S.T('s17b02+1.18'), 0.18);
@@ -338,15 +358,23 @@ function fearPoseFront(t, S, shot, F) {
       smile: 0.2 + 0.5 * lit + (climbing ? 0.1 : 0), open: 0.16 * lit, lidL: 0.15 * lit, blush: 0.35 + 0.15 * lit, sparkle: 0.2 + 0.8 * lit,
     };
     // proud little climb (look at the step), shy glances, then the careful press
-    if (climbing) { pose.headTilt = 0.08; pose.walk = { phase: F.across * 2 * Math.PI + F.climb * Math.PI }; }
-    if (F.across > 0 && F.climb < 0.6) {
-      pose.armL = { target: [-40, -96], bend: 1, hand: 'open' };
-      pose.armR = { target: [40, -96], bend: -1, hand: 'open' };
-    }
-    if (F.climb >= 0.6) {
-      pose.armL = { target: [-9, -140], bend: -1, front: true, hand: 'fist' };
-      pose.armR = { target: [lerp(9, 20, reachB), lerp(-138, -114, reachB) + 12 * press], bend: 1, front: true, hand: 'open' };
-    }
+    // (the step across goes screen-left: the feet point that way, then forward again as it climbs up)
+    if (climbing) { pose.headTilt = 0.08; pose.walk = { phase: F.across * 2 * Math.PI + F.climb * Math.PI }; pose.feetTurn = -0.75 * (1 - clamp(F.climb * 3)); }
+    // the arms in one continuous move (front layer, elbows out all the way, so nothing pops — the old switch from side
+    // arms to re-clasped fists jumped in one frame at b05+3.79): the clasped fists open and go out for balance on the step
+    // across, settle on the console's rim as it tops the step (Fear's s19 pose), then the right hand lifts over the rim
+    // and comes down onto its first button, index finger first and palm down, the way the others press theirs
+    const out = ease.inOut(clamp(F.across / 0.35)), settle = ease.inOut(clamp((F.climb - 0.25) / 0.55));
+    const mix = (a, b, k) => [lerp(a[0], b[0], k), lerp(a[1], b[1], k)];
+    const lift = S.k(t, [[BIZ(2.7), 0], [BIZ(2.86), 1, 'out'], [BIZ(2.95), 0, 'in']]);
+    const tL = mix(mix([-7, -141], [-40, -98], out), [-42, -104], settle);
+    let tR = mix(mix([7, -138], [40, -98], out), [42, -106], settle);
+    tR = [tR[0] - 4 * reachB, tR[1] - 22 * lift + 14 * press];
+    const palm = (side) => [lerp(-side * 0.6, 0, out), lerp(0.2, 0.8, out), lerp(-0.8, -0.6, out)];
+    pose.armL = { target: tL, bend: -1, front: true, hand: blendHand('fist', 'open', out), palmDir: palm(-1) };
+    const { a1, a2 } = ik(27, -134, tR[0], tR[1], 46, 44, 1);
+    pose.armR = { target: tR, bend: 1, front: true, hand: blendHand(blendHand('fist', 'open', out), 'point', reachB), palmDir: palm(1),
+      handAng: lerp(a1 + a2, Math.PI / 2 + 0.12, reachB) };
     pose.headTurn = -0.12 * shyL + 0.12 * shyR;
     pose.headDY = -3 * lit;
   }
@@ -395,12 +423,13 @@ function ceoPose(t, S, shot, C) {
   // (the post-nod blink sits at the bottom of the nod, so E1 ends on open eyes, not mid-blink at the cut)
   face.blink = blinkAt(t, S.T('s17b03+0.9'), 0.2) + blinkAt(t, S.T('s17b05+1.96'), 0.24);
   face = withSpeech(face, S.lip('CONSCIOUSNESS', t));
+  // (the narrator sheds no falling tear before s20: here the eyes only glisten, tears ≤ 0.35)
   if (shot === 'D') { // soft at the frame edge: lips parted, eyes glistening, breath held
-    face = { ...face, open: 0.12, tears: 0.45 + 0.2 * well, browIn: 0.45, browUp: 0.3, lookX: 0.45, lookY: 0.7, lidU: 0.05 };
+    face = { ...face, open: 0.12, tears: 0.25 + 0.1 * well, browIn: 0.45, browUp: 0.3, lookX: 0.45, lookY: 0.7, lidU: 0.05 };
   }
   if (shot === 'E' || shot === 'E1') {
-    // tears 0.6 welling on the lower lids; the broad open smile (0.9, lidL 0.4); tender inner brows that stay up
-    face = { ...face, tears: 0.6 * well, sparkle: 0.2 + 0.35 * well, browIn: 0.55 - 0.2 * smile, browUp: 0.22 + 0.15 * laugh,
+    // a glisten on the lower lids (0.35); the broad open smile (0.9, lidL 0.4); tender inner brows that stay up
+    face = { ...face, tears: 0.35 * well, sparkle: 0.2 + 0.35 * well, browIn: 0.55 - 0.2 * smile, browUp: 0.22 + 0.15 * laugh,
       smile: 0.95 * smile, wide: 0.42 * smile, lidL: 0.4 * smile + 0.15 * laugh, lidU: 0.04 + 0.12 * laugh,
       open: 0.27 * smile + 0.14 * laugh, teeth: 0.8 * smile, blush: 0.35 * smile, pressed: 0, noAutoBlink: shot === 'E1',
       lookY: face.lookY - 0.08 * smile };
@@ -424,7 +453,7 @@ function ceoPose(t, S, shot, C) {
     pose.walk = { phase: (C.x - 450) / (WALK_ADVANCE * C.s) * 2 * Math.PI };
     pose.bodyTurn = 0.35;
   }
-  return { pose, pen: putDown < 1 ? { wrist: pose.armR.target, wob: writeWob } : null };
+  return { pose, pen: putDown < 1 ? { wob: writeWob } : null };
 }
 
 function emotionPose(name, t, S, shot) {
@@ -446,7 +475,8 @@ function emotionPose(name, t, S, shot) {
     pose.headTurn = -0.3 * notice;
     pose.armR = { preset: 'pressButton', dy: tap };
     const pat = S.k(t, [[BIZ(1.4), 0], [BIZ(1.6), 1], [BIZ(2.5), 1], [BIZ(2.7), 0]]);
-    if (pat > 0.01) pose.armL = { preset: 'pressButton', atY: -266, dx: 10, dy: 7 * Math.max(0, Math.sin((t - S.T(BIZ(1.6))) * 11)) * pat };
+    // (a flat hand, palm down, pats the space beside her — the pointing finger read as pointing)
+    if (pat > 0.01) pose.armL = { preset: 'pressButton', atY: -266, dx: 10, dy: 7 * Math.max(0, Math.sin((t - S.T(BIZ(1.6))) * 11)) * pat, hand: 'flat', palmDir: [0, 0.8, -0.6] };
   } else if (name === 'SADNESS') {
     // stops turning its dial; inner brows lift; the eyes go wet · b05 leans its shoulder against Fear's
     face = { lookX: lerp(0, -0.65, notice), lookY: lerp(0.5, 0.35, notice), browIn: 0.65 * notice, browUp: 0.15 * notice, tears: 0.6 * notice,
@@ -510,18 +540,26 @@ function renderFront(g, t, S, shot) {
     drawVoid(g, ...VOID_F, { t, ...STARE_F, idle: 0.5, cosmos: 0, shadow: false });
     drawCage(g, ...CAGE_F, { t, door: 0.9, locked: 0 });
   }
-  // cull characters outside the frame; clip everything that stands behind the console to above its hull
+  // cull characters outside the frame. Everyone behind the console is drawn unclipped: the console (drawn over them by
+  // drawHQForeground, 980 wide, down to the stage floor) covers everything below its rim. (A clip to above the hull
+  // used to sit here; under it Skia dropped a hand's own light clip on one frame (play 278.125) and painted a
+  // translucent square across CALM.)
   const vw = 360 / camera.zoom + 12, vh = 640 / camera.zoom + 40;
   const inView = (x, top, bottom, hw) => x + hw > camera.x - vw && x - hw < camera.x + vw && bottom > camera.y - vh && top < camera.y + vh;
-  const behindConsole = (c, fn) => { c.save(); c.beginPath(); c.rect(-1e4, -1e4, 2e4, 1e4 + 1290); c.clip(); fn(); c.restore(); };
   const drawCEO = (c) => {
     if (!inView(C.x, C.y - 610 * C.s, C.y, 110 * C.s)) return;
-    behindConsole(c, () => { drawSelf(c, C.x, C.y, C.s, cp); if (pen) drawPen(c, C.x, C.y, C.s, 1, pen.wrist, pen.wob); });
-    if (shot === 'E1') drawWetEyes(c, C, cp, clamp((cp.face.tears || 0) / 0.6));
+    drawSelf(c, C.x, C.y, C.s, cp);
+    if (pen) {
+      drawPen(c, penGrip(C, cp), C.s, pen.wob);
+      // the pen arm once more (front layer, the clipboard arm left out): the fist closes over the pen
+      drawSelf(c, C.x, C.y, C.s, { ...cp, layer: 'front', armL: { ...cp.armL, front: false, layer: 'side' } });
+    }
+    // a subtle glisten only (tears ≤ 0.35): the narrator's first falling tear is s20's
+    if (shot === 'E1') drawWetEyes(c, C, cp, 0.55 * clamp((cp.face.tears || 0) / 0.35));
   };
   const drawEm = (c, n) => {
     if (!inView(ems[n].x, ROW_Y - 540 * ROW_S, ROW_Y, 100 * ROW_S)) return;   // half-width ≤ 94 local (+ arms in)
-    behindConsole(c, () => drawEmotion(c, n, ems[n].x, ROW_Y, ROW_S, ems[n].pose));
+    drawEmotion(c, n, ems[n].x, ROW_Y, ROW_S, ems[n].pose);
   };
   if (shot === 'D') {
     g.restore();
@@ -532,7 +570,7 @@ function renderFront(g, t, S, shot) {
     drawCEO(g);
     for (const n of ['CALM', 'ANGER', 'SADNESS', 'JOY']) drawEm(g, n);
   }
-  if (shot !== 'B' || t >= S.T('s17b02-0.05')) behindConsole(g, () => drawFear(g, F.x, F.y, F.s, fp));
+  if (shot !== 'B' || t >= S.T('s17b02-0.05')) drawFear(g, F.x, F.y, F.s, fp);
   // the console light on Fear's face (its first button) and the general amber spill from below
   const fx = F.x, fy = F.y - 200 * F.s;
   buttonLight(g, fx + 10, fy + 70, 130, (shot === 'D' ? 0.35 : 0.15) + 1.1 * pressGlow);

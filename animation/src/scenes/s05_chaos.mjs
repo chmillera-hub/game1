@@ -24,8 +24,8 @@
 import { createCanvas } from '@napi-rs/canvas';
 import { W, H, TAU, clamp, lerp, fbm, blinkAt, applyCamera, drift, vignette, shade, circle, roundRect } from '../engine.mjs';
 import { withSpeech } from '../face.mjs';
-import { drawFear } from '../chars/fear.mjs';
-import { drawSelf, SELF_EXPR, drawClipboard, selfPoseAnchors, selfLocal } from '../chars/self.mjs';
+import { drawFear, FEAR_ARMS } from '../chars/fear.mjs';
+import { drawSelf, SELF_EXPR, SELF_ARMS, drawClipboard, selfPoseAnchors, selfLocal } from '../chars/self.mjs';
 import { drawEmotion, EMOTION_EXPR, PANIC_FACE } from '../chars/emotions.mjs';
 import { drawVoid } from '../chars/void.mjs';
 import { drawHQ, drawHQForeground, drawAlarmLight, drawAlarmStation, HQ_VIEWS, HQ_COLORS, hqScaleAt, ALARM_REACH } from '../sets/hq.mjs';
@@ -141,6 +141,17 @@ function liveCam(cam, t, amp = 2.5) {
 const sine = (k) => -(Math.cos(Math.PI * clamp(k)) - 1) / 2;
 const pulse = (t) => 0.5 + 0.5 * Math.sin(t * 2 * Math.PI * 1.2 - Math.PI / 2);   // the set's alarm pulse
 
+// Fear's hand ON the alarm handle (alarm view; handle centre = ALARM_REACH + 26·pulled, Fear-local). The wrist goes
+// `d` px back from the point the fist should cover, along the hand's screen angle `ang` (≈ −1.2: knuckles up, the
+// fingers hooked over the top of the handle to pull it down), and the point is taken into Fear's BODY frame: drawFear
+// rotates the arms with `lean` about the feet (an unrotated target drifted the fist off the handle — below it and
+// onto the PULL DOWN label); `dx` = Fear's feet offset from the alarm anchor (local px).
+function onHandle(px, py, ang, lean, dx = 0, d = 8) {
+  const x = px - d * Math.cos(ang) - dx, y = py - d * Math.sin(ang);
+  const c = Math.cos(-lean), s = Math.sin(-lean);
+  return { target: [x * c - y * s, x * s + y * c], handAng: ang - lean };
+}
+
 // ---------------------------------------------------------------- shared state
 function setState(t, S) {
   return {
@@ -161,7 +172,9 @@ function fearAlarmPose(t, S) {
   const pulled = k([['s05b01+0.25', 0], ['s05b01+0.5', 1]]);
   const reach = k([['scene.start', 0.55], ['s05b01-0.12', 1, 'out']]);          // already lunging on frame 1
   const holding = k([['s05b01+0.56', 1], ['s05b01+0.66', 0]]);
-  const run = k([['s05b01+0.6', 0], ['s05b01+1.32', 1, 'in']]);
+  // the scurry gets going at once (sine, was a slow quadratic start): Fear is a body-width clear of the CEO's
+  // late reach (+0.8 → +1.08), which used to land on its chin and scarf
+  const run = k([['s05b01+0.6', 0], ['s05b01+1.32', 1, 'sine']]);
   const x = lerp(AFX, 1010, run);
   // gaze: on the handle → "Out!" at the others (right) → a darting look back at the hood → off to the console
   const gaze = k([
@@ -173,16 +186,24 @@ function fearAlarmPose(t, S) {
   const face = withSpeech({ ...PANIC_FACE, browIn: 0.55, browUp: 1, lidU: -0.4, pupil: 0.52, open: 0.25, wide: 0.6, smile: -0.5,
     tremble: 0.7, teeth: 0.4, ...gaze, blink: blinkAt(t, S.T('s05b01+0.27'), 0.12), noAutoBlink: true }, S.lip('FEAR', t), 1);
   const ty = ALARM_REACH[1] + 26 * pulled;
-  const armR = holding > 0.5
-    ? { target: [lerp(70, ALARM_REACH[0], reach), lerp(-150, ty, reach)], bend: 1, hand: 'grip', front: true }
-    : { target: [62 + 20 * Math.sin(t * TAU * 4.2), -150 - 30 * Math.sin(t * TAU * 4.2)], bend: 1, hand: 'open', front: true };
+  const yank = k([['s05b01+0.25', 0], ['s05b01+0.42', 1], ['s05b01+0.62', 0.2]]);
+  const lean = 0.12 - 0.2 * yank + 0.1 * run;
+  // the fist lands ON the handle (knuckles up, fingers over the top) and rides it down; the elbow drops for the pull
+  const h = onHandle(ALARM_REACH[0] + 4, ty, -1.15, lean);
+  // (letting go blends the hand off the handle into the first flap over 0.1 s instead of jumping there)
+  const flapR = [62 + 20 * Math.sin(t * TAU * 4.2), -150 - 30 * Math.sin(t * TAU * 4.2)];
+  const flapAng = -0.95 + 0.35 * Math.sin(t * TAU * 4.2 + 0.5) - lean;          // the shooing hand, fingers up
+  const armR = holding > 0.001
+    ? { target: [lerp(flapR[0], lerp(70, h.target[0], reach), holding), lerp(flapR[1], lerp(-150, h.target[1], reach), holding)],
+        bend: -1, hand: holding > 0.5 ? 'grip' : 'open', front: true, handAng: lerp(flapAng, lerp(-0.55 - lean, h.handAng, reach), holding),
+        ...(holding > 0.5 ? {} : { palmDir: [0.7, 0, 0.7] }) }
+    : { target: flapR, bend: -1, hand: 'open', front: true, handAng: flapAng, palmDir: [0.7, 0, 0.7] };   // palm out: shooing
   const armL = holding > 0.5
     ? { target: [-20 + 30 * pulled, -150 + 40 * pulled], bend: -1, hand: 'fist', front: true }     // fist pumping down with the yank
     : { target: [-60 - 18 * Math.sin(t * TAU * 4.2 + 1.6), -160 + 34 * Math.sin(t * TAU * 4.2 + 1.6)], bend: 1, hand: 'open' };
-  const yank = k([['s05b01+0.25', 0], ['s05b01+0.42', 1], ['s05b01+0.62', 0.2]]);
   return {
     x, y: AFY, s: AFS,
-    pose: { t, facing: 1, face, tremble: 0.7, crouch: 0.08 + 0.4 * yank, lean: 0.12 - 0.2 * yank + 0.1 * run,
+    pose: { t, facing: 1, face, tremble: 0.7, crouch: 0.08 + 0.4 * yank, lean,
       headTurn: lerp(0.15, 0.3, run) - 0.45 * k([['s05b01+0.46', 0], ['s05b01+0.52', 1], ['s05b01+0.66', 1], ['s05b01+0.74', 0]]),
       headTilt: -0.08 * yank, armL, armR, walk: run > 0 ? { phase: t * TAU * 4.2 } : null, breathRate: 1.4, breathe: 1.4 },
   };
@@ -233,13 +254,16 @@ function renderAlarm(g, t, S) {
 // whole body shivering so the tuft buzzes; the red beacon pulses on its cheek. The door thuds shut off-screen behind
 // the others (door_whoosh thud at s05b02+2.42): a flinch that hunches it tighter.
 const PANIC_BR = 1.9;   // breaths per second (= drawFear's own breathRate, so the extra heave below is in phase)
+// Fear stands this far nearer the station in the close (Fear-local px): from the anchor spot the far (left) arm cannot
+// reach across the body to the handle, and both fists hung below it; one small step in, both hands lock on
+const PANIC_DX = 15;
 function fearPanicPose(t, S) {
   const ph = Math.sin(t * TAU * PANIC_BR);                        // +1 = top of the in-breath
   const ts = S.T('s05b02+2.45');
   const fl = t >= ts ? Math.exp(-(t - ts) * 5) * clamp((t - ts) / 0.05) : 0;   // the slam: sharp, fast decay
   const crouch = clamp(0.26 - 0.1 * ph + 0.2 * fl);
   const handleY = ALARM_REACH[1] + 26;                            // the handle is pulled down (alarmPulled 1)
-  const sway = Math.sin(t * TAU * 0.6) * 3;                      // the weight hangs off the handle
+  const lean = 0.1 + 0.03 * fl;
   // squeezed shut (lidL < 0.4: above it the rig draws happy closed arcs), lids pinched toward the nose under knotted,
   // inner-up brows; a gasping grimace that opens on every in-breath; a sweat drop
   const face = {
@@ -248,11 +272,15 @@ function fearPanicPose(t, S) {
     open: 0.16 + 0.26 * Math.max(0, ph) - 0.08 * fl,             // gasping in; teeth clench at the slam
     lookX: 0.3, lookY: 0, noAutoBlink: true,
   };
+  // both fists locked side by side on the pulled handle, knuckles up, elbows hanging down: the weight hangs off it
+  const hR = onHandle(ALARM_REACH[0] + 12, handleY, -1.15, lean, PANIC_DX);
+  const hL = onHandle(ALARM_REACH[0] - 14, handleY + 1, -1.3, lean, PANIC_DX);
   return {
     t, facing: 1, face, crouch, tremble: 0.85, breathRate: PANIC_BR, breathe: 2,
-    headDY: -4.5 * ph + 8 * fl, headTilt: -0.05 + 0.04 * fl, headTurn: 0.14, lean: 0.07 + 0.03 * fl,
-    armR: { target: [ALARM_REACH[0], handleY + sway], bend: 1, hand: 'grip', front: true },
-    armL: { target: [80, handleY + 10 + sway], bend: 1, hand: 'grip', front: true },
+    headDY: -4.5 * ph + 8 * fl, headTilt: -0.05 + 0.04 * fl, headTurn: 0.14, lean,
+    armR: { ...hR, bend: -1, hand: 'grip', front: true },
+    armL: { ...hL, bend: -1, hand: 'grip', front: true },
+    whiten: 0.6,                                                   // knuckles paling on the grip
     scarfWind: 0.15 * ph,
   };
 }
@@ -283,8 +311,9 @@ function renderPanic(g, t, S) {
   applyCamera(g, liveCam(cam, t, 1.6));
   drawHQ(g, 'alarm', st);
   const P = fearPanicPose(t, S);
-  drawFear(g, AFX, AFY, AFS, P);
-  drawFearRedCheek(g, AFX, AFY, AFS, P, t, st.alarm);
+  const fx = AFX + PANIC_DX * AFS;
+  drawFear(g, fx, AFY, AFS, P);
+  drawFearRedCheek(g, fx, AFY, AFS, P, t, st.alarm);
   drawHQForeground(g, 'alarm', st);
   drawAlarmLight(g, 'alarm', st);
   g.restore();
@@ -365,27 +394,43 @@ function emotionState(name, t, S, shot) {
       headTurn: k([['s05b02', -0.3], ['s05b02+0.12', 0.6], ['s05b02+0.48', 0.6], ['s05b02+0.58', -0.35]]),
       armL: { preset: 'rest', hand: 'fist' }, armR: { preset: 'rest', hand: 'fist' } };
   } else if (name === 'SADNESS') {
-    // waits behind ANGER looking back over its shoulder, lower lip out, a tiny wave at the empty room; goes
-    p = path(t, S, [['s05b02', [230, 951]], ['s05b02+0.55', [214, 948]], ['s05b02+0.62', [214, 948]],
-      ['s05b02+0.86', DOOR_IN, 'inOut'], ['s05b02+1.16', DOOR_OUT, 'in']]);
-    walking = moving(t, S, [['s05b02-0.1', 's05b02+0.55'], ['s05b02+0.62', 's05b02+1.2']]);
+    // waits behind CALM looking back over its shoulder, lower lip out, a tiny wave at the empty room; then follows
+    // CALM out. (CALM, on its door side, holds its near elbow.)
+    p = path(t, S, [['s05b02', [250, 951]], ['s05b02+0.55', [238, 949]], ['s05b02+0.95', [236, 949]],
+      ['s05b02+1.25', DOOR_IN, 'inOut'], ['s05b02+1.52', DOOR_OUT, 'in']]);
+    walking = moving(t, S, [['s05b02-0.1', 's05b02+0.55'], ['s05b02+0.95', 's05b02+1.55']]);
     const back = k([['s05b02+0.7', 1], ['s05b02+0.82', 0]]);
     face = { ...EMOTION_EXPR.SADNESS, smile: -0.72, wide: -0.15, lookX: lerp(-0.3, 0.85, back), lookY: 0.12, tears: 0.35 };
+    // the tiny wave is low and out to the side (shoulder height): at the old height the hand flapped behind the head
+    // and read as scratching it
     pose = { facing: -1, headTurn: lerp(-0.2, 0.55, back), headTilt: 0.05, armR: 'rest',
-      armL: t > S.T('s05b02+0.12') && t < S.T('s05b02+0.66') ? { preset: 'wave', dy: 34, dx: -6 } : 'rest' };
+      armL: t > S.T('s05b02+0.12') && t < S.T('s05b02+0.66') ? { preset: 'wave', dy: 64, dx: 16 } : 'rest' };
   } else if (name === 'CALM') {
-    // the only unhurried body in the room: a hand at SADNESS's elbow, the other palm open toward the door; follows
-    p = path(t, S, [['s05b02', [266, 946]], ['s05b02+0.6', [254, 944]], ['s05b02+0.9', [216, 945], 'inOut'],
-      ['s05b02+1.14', DOOR_IN], ['s05b02+1.42', DOOR_OUT, 'in']]);
-    walking = moving(t, S, [['s05b02-0.1', 's05b02+1.45']]);
-    face = { smile: 0.18, lidU: 0.45, lidL: 0.12, lidTilt: 0, browIn: 0.1, lookX: -0.45, lookY: 0.15 };
+    // the only unhurried body in the room. CALM stands on SADNESS's door side, a step nearer the camera (drawn over
+    // SADNESS: from behind SADNESS the guiding hand was hidden by SADNESS's body), its near hand cupped at SADNESS's
+    // elbow while SADNESS waves at the room; once ANGER has cleared the doorway, its other palm opens toward the door;
+    // then it leads SADNESS out, the hand sliding off the elbow as it steps through.
+    p = path(t, S, [['s05b02', [194, 956]], ['s05b02+0.5', [186, 955]], ['s05b02+0.92', [186, 955]],
+      ['s05b02+1.15', DOOR_IN, 'inOut'], ['s05b02+1.4', DOOR_OUT, 'in']]);
+    walking = moving(t, S, [['s05b02-0.1', 's05b02+0.5'], ['s05b02+0.92', 's05b02+1.43']]);
+    // eyes on SADNESS (screen-right) through the wave, then to the door
+    const toDoor = k([['s05b02+0.52', 0], ['s05b02+0.68', 1]]);
+    face = { smile: 0.18, lidU: 0.45, lidL: 0.12, lidTilt: 0, browIn: 0.1, lookX: lerp(0.5, -0.45, toDoor), lookY: lerp(0.3, 0.15, toDoor) };
     const s0 = hqScaleAt('front', p.y);
     const sad = emotionState('SADNESS', t, S, 3);
-    const guide = k([['s05b02+0.62', 1], ['s05b02+0.78', 0]]);
-    const elbow = [(p.x - (sad.x + 46 * sad.s)) / s0, (sad.y - 150 * sad.s - p.y) / s0];   // facing -1: local +x = screen-left
-    pose = { facing: -1, headTurn: -0.15,
-      armR: guide > 0.5 ? { target: elbow, bend: 1, hand: 'open' } : 'rest',
-      armL: { target: [lerp(30, 74, guide), lerp(-150, -250, guide)], bend: -1, hand: 'palm', layer: 'front' } };
+    // SADNESS's screen-left elbow, in CALM-local coords (facing -1: local +x = screen-left)
+    const elbow = [(p.x - (sad.x - 66 * sad.s)) / s0, (sad.y - 182 * sad.s - p.y) / s0];
+    const rel = k([['s05b02+0.92', 0], ['s05b02+1.06', 1]]);        // the hand slides off as CALM steps ahead
+    const low = [-40, -200];
+    const guideArm = rel < 0.5
+      ? { target: [lerp(elbow[0], low[0], rel), lerp(elbow[1], low[1], rel)], bend: 1, hand: 'cup', palmDir: [-0.85, 0.2, -0.45] }
+      : { target: [lerp(elbow[0], low[0], rel), lerp(elbow[1], low[1], rel)], bend: -1, hand: 'rest', handAng: Math.PI / 2 + 0.2 };
+    // palm up toward the (now empty) doorway: "this way"
+    const ush = k([['s05b02+0.7', 0], ['s05b02+0.86', 1], ['s05b02+0.98', 1], ['s05b02+1.14', 0]]);
+    const ushArm = ush > 0.3
+      ? { target: [lerp(40, 112, ush), lerp(-200, -240, ush)], bend: -1, hand: 'palm', palmDir: [0.25, -0.85, 0.45], handAng: lerp(0.8, -0.3, ush) }
+      : 'rest';
+    pose = { facing: -1, headTurn: lerp(0.3, -0.15, toDoor), armR: ushArm, armL: guideArm };
   } else { // JOY
     // last: in the foreground, "We always come back." — the big smile thins, her eyes flick back toward Fear (screen
     // right, the alarm), brows tilt up; the alarm's red pulse on her right cheek. Then she hurries out.
@@ -398,7 +443,15 @@ function emotionState(name, t, S, shot) {
       browIn: lerp(0.05, 0.8, thin), blush: 0.25,
       lookX: k([['s05b02', -0.5], ['s05b02+0.12', -0.5], ['s05b02+0.26', 0.85], ['s05b02+1.12', 0.85], ['s05b02+1.24', -0.6]]),
       lookY: -0.08, blink: Math.max(blinkAt(t, S.T('s05b02.end+0.02'), 0.18)), noAutoBlink: true }, S.lip('JOY', t), 1);
-    pose = { facing: -1, headTurn: lerp(0.55, -0.25, turn), headTilt: 0.06 * (1 - turn), armL: 'rest', armR: 'rest', redCheek: 1 };
+    // the speaker's one small gesture: the near hand lifts a little, palm open toward Fear (screen right), on "We
+    // always come back.", and drops as she turns to go (she stood with both arms hanging through the line)
+    const lift = k([['s05b02+0.18', 0], ['s05b02+0.5', 1], ['s05b02+1.0', 1], ['s05b02+1.24', 0]]);
+    const bob = Math.sin((t - S.T('s05b02')) * TAU * 1.1) * 3 * lift;
+    pose = { facing: -1, headTurn: lerp(0.55, -0.25, turn), headTilt: 0.06 * (1 - turn), armR: 'rest', redCheek: 1,
+      armL: lift > 0.02
+        ? { target: [lerp(-64, -84, lift), lerp(-119, -186, lift) + bob], bend: -1, hand: lift > 0.4 ? 'palm' : 'rest',
+            palmDir: lift > 0.4 ? [-0.55, -0.55, 0.6] : undefined, handAng: lerp(Math.PI / 2 + 0.2, Math.PI + 0.35, lift) }
+        : 'rest' };
   }
   x = p.x; y = p.y; s = hqScaleAt('front', y);
   if (walking) pose.walk = walkPh(name === 'SADNESS' ? 0.85 : name === 'ANGER' ? 1.6 : name === 'JOY' ? 1.5 : 0.8);
@@ -440,17 +493,18 @@ function fearFrontState(t, S) {
       lookY: k([['s05b01+1.96', 0.1], ['s05b01+2.03', -0.8], ['s05b01+2.17', -0.8], ['s05b01+2.24', 0.1]]), noAutoBlink: true },
     S.lip('FEAR', t), 1);
     // arms flap high, above the console rim, shooing the others left
+    // (palms out toward the others: shooing, not waving the backs of the hands)
     const shoo = (side) => ({ target: [side * 70 + 10 * Math.sin(ph * 0.5 + side), -188 - 30 * Math.sin(ph * 0.5 + side * 1.4)],
-      bend: -side, hand: 'open', front: side < 0 });
+      bend: -side, hand: 'open', front: side < 0, palmDir: [0.6, 0, 0.8] });
+    // feet: toward the camera on the dash down-screen, along the direction of travel on the scurry left
+    const feetTurn = t < S.T(ARRIVE) ? 0.2 : 0.75;
     return { x, y, s, pose: { t, facing: -1, face, tremble: 0.6, lean: 0.06, headTurn: -0.2,
-      armL: shoo(-1), armR: shoo(1), walk: run ? { phase: ph } : null, breathRate: 1.5, breathe: 1.3 } };
+      armL: shoo(-1), armR: shoo(1), walk: run ? { phase: ph } : null, feetTurn, breathRate: 1.5, breathe: 1.3 } };
   }
   // back at the alarm (off-screen during the door shot), clinging → sliding down, hugging itself
   const [fx, fy, fs] = FEAR_ALARM_F;
   const pulled = S.k(t, [['s05b04+0.72', 1], ['s05b04+0.98', 0]]);
   const slide = k([['s05b04+0.25', 0], ['s05b04+1.35', 1, 'inOut']]);
-  const letGo = t > S.T('s05b04+0.8');
-  const hug = k([['s05b04+0.8', 0], ['s05b04+1.3', 1]]);
   const open = k([['s05b04+1.0', 0], ['s05b04+1.45', 1]]);
   const SHUT = { browIn: 1, browUp: 0.35, browSquish: 1, lidU: 1, lidL: 0.3, lidTilt: -0.7, smile: -0.7, wide: 0.7, open: 0.12, teeth: 0.7, tremble: 0.9 };
   const VOID = { browIn: 1, browUp: 0.6, browSquish: 0.3, lidU: -0.18, lidL: 0.05, lidTilt: 0.25, pupil: 0.62, smile: -0.4, wide: 0.05, open: 0, tremble: 0.5,
@@ -458,12 +512,38 @@ function fearFrontState(t, S) {
   const pant = 0.5 + 0.5 * Math.sin(t * TAU * 1.9);                     // hyperventilating
   const face = { ...(open > 0 ? mixFlat(SHUT, VOID, open) : SHUT), open: open > 0.5 ? 0.02 : 0.14 + 0.16 * pant,
     blink: blinkAt(t, S.T('s05b04+2.6'), 0.2), noAutoBlink: true };
-  const grip = { target: [ALARM_REACH[0], ALARM_REACH[1] + 26 * pulled + 22 * slide], bend: 1, hand: 'grip', front: true };
-  return { x: fx, y: fy, s: fs, pose: { t, facing: letGo ? -1 : 1, face, tremble: lerp(0.95, 0.75, open), crouch: slide, headDY: 8 * slide,
-    lean: letGo ? 0 : 0.05, headTurn: letGo ? -0.2 : 0.1, headTilt: letGo ? -0.06 : 0.04,
-    armR: letGo ? (hug > 0.3 ? 'hugSelf' : 'rest') : grip,
-    armL: letGo ? (hug > 0.3 ? 'hugSelf' : 'rest') : { target: [62, -150 + 20 * slide], bend: 1, hand: 'fist', front: true },
-    breathRate: lerp(1.9, 0.9, open), breathe: lerp(1.7, 1.2, open) } };
+  // As in the panic close: both fists locked on the pulled handle (Fear a small step nearer the station, PANIC_DX).
+  // When the bell dies the handle springs up out of its hands (+0.72): the hands come in to the chest, Fear turns
+  // from the wall to the room (the facing flip happens inside a quick squash, as in s06/s07, never as a pop), steps
+  // back onto its spot (= s06's first frame) and folds its arms around itself while sliding down.
+  const rel = k([['s05b04+0.7', 0], ['s05b04+0.86', 1]]);
+  const turnK = clamp((t - S.T('s05b04+0.8')) / 0.24);
+  const facing = turnK < 0.5 ? 1 : -1;
+  const squash = turnK > 0 && turnK < 1 ? 1 - 0.22 * Math.sin(turnK * Math.PI) : 1;
+  const hug = k([['s05b04+0.92', 0], ['s05b04+1.32', 1]]);
+  const dx = PANIC_DX * (1 - k([['s05b04+0.76', 0], ['s05b04+1.12', 1]]));
+  const lean = 0.06 * (1 - rel);
+  const hy = ALARM_REACH[1] + 26 * pulled;
+  const hR = onHandle(ALARM_REACH[0] + 12, hy, -1.15, lean, dx), hL = onHandle(ALARM_REACH[0] - 14, hy + 1, -1.3, lean, dx);
+  const CH = [6, -122];                                              // hands meet at the chest for the turn
+  let armR, armL;
+  if (facing > 0) {
+    armR = { target: [lerp(hR.target[0], CH[0], rel), lerp(hR.target[1], CH[1], rel)], bend: -1, front: true,
+      hand: rel > 0.3 ? 'open' : 'grip', handAng: lerp(hR.handAng, -1.9, rel), palmDir: rel > 0.3 ? [0, 0, -1] : undefined };
+    armL = { target: [lerp(hL.target[0], -CH[0], rel), lerp(hL.target[1], CH[1], rel)], bend: -1, front: true,
+      hand: rel > 0.3 ? 'open' : 'grip', handAng: lerp(hL.handAng, -1.4, rel), palmDir: rel > 0.3 ? [0, 0, -1] : undefined };
+  } else {
+    // (mirrored: the same screen spots as before the flip) → hugSelf
+    const toHug = (side) => {
+      const h = FEAR_ARMS.hugSelf(side);
+      const c0 = [side * CH[0], CH[1]];
+      return { ...h, target: [lerp(c0[0], h.target[0], hug), lerp(c0[1], h.target[1], hug) + 10 * slide * hug] };
+    };
+    armR = toHug(1); armL = toHug(-1);
+  }
+  return { x: fx + dx * fs, y: fy, s: fs, squash, pose: { t, facing, face, tremble: lerp(0.95, 0.75, open), crouch: slide, headDY: 8 * slide,
+    lean, headTurn: facing < 0 ? -0.2 : 0.1, headTilt: facing < 0 ? -0.06 : 0.04, armR, armL,
+    whiten: 0.6 * (1 - rel), breathRate: lerp(1.9, 0.9, open), breathe: lerp(1.7, 1.2, open) } };
 }
 function mixFlat(a, b, k) {
   const o = { ...a };
@@ -482,10 +562,16 @@ function ceoFrontState(t, S) {
     const face = { ...SELF_EXPR.worried, browUp: 0.45, lidU: -0.1, open: 0.08,
       lookX: k([['s05b01+1.3', 0.4], ['s05b01+1.5', 0.3], ['s05b01+1.74', -0.7, 'inOut']]),
       lookY: k([['s05b01+1.3', 0.5], ['s05b01+1.5', 0.72], ['s05b01+1.74', 0.35, 'inOut']]) };
+    // the useless "wait" hand sinks once they are all going (it was held up, frozen, to the end of the shot)
+    const low = k([['s05b01+2.05', 0], ['s05b01+2.8', 1, 'inOut']]);
+    const po = SELF_ARMS.palmOut(1), re = SELF_ARMS.rest(1);
+    const armR = low < 0.001 ? { preset: 'palmOut' } : low > 0.999 ? 'rest'
+      : { target: [lerp(po.target[0], re.target[0], low), lerp(po.target[1], re.target[1], low)], bend: -1, front: low < 0.6,
+          hand: low > 0.55 ? 'rest' : 'palm', handAngle: lerp(po.handAngle, Math.PI / 2 - 0.08, sine(low)),
+          ...(low > 0.55 ? {} : { palmDir: po.palmDir }) };
     return { x, y, s, pose: { t, outfit: 'ceo', facing: -1, kneel: k([['s05b01+1.3', 0.4], ['s05b01+2.0', 0, 'inOut']]),
       bodyTurn: -0.25, headTurn: k([['s05b01+1.3', -0.12], ['s05b01+1.56', -0.12], ['s05b01+1.86', -0.45, 'inOut']]),
-      face, clipboard: true, armL: 'rest',
-      armR: { preset: 'palmOut' } } };
+      face, clipboard: true, armL: 'rest', armR } };
   }
   if (t < S.T(CUT3P)) {
     // crossing to the middle of the room, off-screen during the door shot (its frame ends at x ≈ 414)
@@ -701,6 +787,46 @@ function cachedSet(key, cam, st) {
   return e;
 }
 
+// fx/rim.mjs drawLit, done on a canvas the size of the character's box instead of the whole frame (drawLit's four
+// full-frame layers cost ~22 ms per character; the door shot lights up to four of them). Same light model: a soft
+// fill where the character is, and a rim of the source's colour on the silhouette edge that faces it.
+//   box = world rect [x0, y0, x1, y1] that holds the character (in g's current transform)
+let litC = null;
+function drawLitBox(g, drawFn, box, o) {
+  const m = g.getTransform();
+  const cs = [[box[0], box[1]], [box[2], box[1]], [box[0], box[3]], [box[2], box[3]]].map(([x, y]) => [m.a * x + m.c * y + m.e, m.b * x + m.d * y + m.f]);
+  const x0 = Math.max(0, Math.floor(Math.min(...cs.map((c) => c[0]))) - 8), y0 = Math.max(0, Math.floor(Math.min(...cs.map((c) => c[1]))) - 8);
+  const x1 = Math.min(W, Math.ceil(Math.max(...cs.map((c) => c[0]))) + 8), y1 = Math.min(H, Math.ceil(Math.max(...cs.map((c) => c[1]))) + 8);
+  const bw = x1 - x0, bh = y1 - y0;
+  if (bw <= 0 || bh <= 0) return;
+  if (!litC || litC[0].width < bw || litC[0].height < bh) {
+    const cw = Math.max(bw, litC ? litC[0].width : 0), ch = Math.max(bh, litC ? litC[0].height : 0);
+    litC = [createCanvas(cw, ch), createCanvas(cw, ch), createCanvas(cw, ch)];
+    if (globalThis.__FACE_CANVASES) globalThis.__FACE_CANVASES.add(litC[0]);   // faces on it count for caption placement
+  }
+  const [L, T, U] = litC, gl = L.getContext('2d'), gt = T.getContext('2d'), gu = U.getContext('2d');
+  for (const c of [gl, gt, gu]) { c.setTransform(1, 0, 0, 1, 0, 0); c.globalAlpha = 1; c.globalCompositeOperation = 'source-over'; c.clearRect(0, 0, bw + 2, bh + 2); }
+  gl.setTransform(m.a, m.b, m.c, m.d, m.e - x0, m.f - y0);
+  gl.save(); drawFn(gl); gl.restore();
+  gl.setTransform(1, 0, 0, 1, 0, 0);
+  if (o.fillAlpha > 0) {
+    gl.globalCompositeOperation = 'source-atop'; gl.fillStyle = rgbaHex(o.fill, o.fillAlpha); gl.fillRect(0, 0, bw, bh);
+    gl.globalCompositeOperation = 'source-over';
+  }
+  const dl = Math.hypot(o.dir[0], o.dir[1]) || 1, ux = o.dir[0] / dl, uy = o.dir[1] / dl, w = o.width ?? 3.5;
+  gt.drawImage(L, 0, 0); gt.globalCompositeOperation = 'destination-out'; gt.drawImage(L, -ux * w, -uy * w);
+  gu.drawImage(L, 0, 0); gu.globalCompositeOperation = 'destination-out'; gu.drawImage(L, -ux * w * 2.6, -uy * w * 2.6);
+  gu.globalCompositeOperation = 'source-in'; gu.fillStyle = rgbaHex(o.color, 0.3); gu.fillRect(0, 0, bw, bh);
+  gt.globalCompositeOperation = 'source-in'; gt.fillStyle = rgbaHex(o.color, 1); gt.fillRect(0, 0, bw, bh);
+  gt.globalCompositeOperation = 'source-over'; gt.drawImage(U, 0, 0);
+  g.save(); g.setTransform(1, 0, 0, 1, 0, 0);
+  g.drawImage(L, 0, 0, bw, bh, x0, y0, bw, bh);
+  g.globalCompositeOperation = 'screen'; g.globalAlpha *= o.strength;
+  g.drawImage(T, 0, 0, bw, bh, x0, y0, bw, bh);
+  g.restore();
+}
+const rgbaHex = (hex, a) => `rgba(${parseInt(hex.slice(1, 3), 16)},${parseInt(hex.slice(3, 5), 16)},${parseInt(hex.slice(5, 7), 16)},${a})`;
+
 function renderFront(g, t, S, cam, drawCam, cacheKey) {
   const shot = shotOf(t, S);
   const st = setState(t, S);
@@ -728,16 +854,27 @@ function renderFront(g, t, S, cam, drawCam, cacheKey) {
   if (ceo) items.push({ y: ceo.y, draw: () => { drawSelf(g, ceo.x, ceo.y, ceo.s, ceo.pose); } });
   if (shot === 5) items.push({ y: CEO_MID[1] + 8, draw: () => drawPages(g, t, S, ceo) });
   const fear = shot === 3 ? null : fearFrontState(t, S);
-  if (fear) items.push({ y: fear.y, draw: () => drawFear(g, fear.x, fear.y, fear.s, fear.pose) });
+  if (fear) items.push({ y: fear.y, draw: () => {
+    g.save();
+    if (fear.squash && fear.squash !== 1) { g.translate(fear.x, 0); g.scale(fear.squash, 1); g.translate(-fear.x, 0); }
+    drawFear(g, fear.x, fear.y, fear.s, fear.pose);
+    g.restore();
+  } });
   for (const name of ['CALM', 'ANGER', 'SADNESS', 'JOY']) {
     const e = emotionState(name, t, S, shot);
     if (e.alpha <= 0.01) continue;
     if (e.door && e.x < 76) continue;              // fully behind the near jamb (x 115) now: nothing to draw
     // walking out: hidden by the near jamb once past the wall plane (clip only when near the doorway, x < 230)
     const clip = e.door && e.x < 230;
+    // the open EXIT door is the brightest thing in the room: whoever stands in front of / beside the doorway gets a
+    // warm rim on the edges toward it and a touch of warm fill (strength by distance from the opening)
+    const lit = shot === 3 ? clamp((268 - e.x) / 110) * clamp(st.doorOpen * 1.5) : 0;
     items.push({ y: e.y + (name === 'JOY' ? 0.5 : 0), draw: () => {
       if (clip) { g.save(); clipDoor(g); }
-      drawEmotion(g, name, e.x, e.y, e.s, e.pose);
+      if (lit > 0.02) {
+        drawLitBox(g, (g2) => drawEmotion(g2, name, e.x, e.y, e.s, e.pose), [e.x - 150 * e.s, e.y - 560 * e.s, e.x + 150 * e.s, e.y + 30 * e.s],
+          { dir: [-1, -0.25], color: '#ffe2a8', strength: 0.75 * lit, width: 3.2, fill: '#ffd9a0', fillAlpha: 0.07 * lit });
+      } else drawEmotion(g, name, e.x, e.y, e.s, e.pose);
       if (e.pose.redCheek) drawRedCheek(g, e, t, st.alarm);
       if (clip) g.restore();
     } });

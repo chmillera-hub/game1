@@ -62,26 +62,47 @@ function idleT(S, t) {
   const a = S.T('s03b02'), b = S.T('s03b03');
   return t >= a && t < b ? a + (t - a) * 0.12 : t;
 }
+// the two figures are not statues even here (visual rules: everyone but the Void keeps subtle life): their idle
+// clock only slows to half, and a shallow held breath (and Fear's faint tremble) stays under the stillness
+function lifeT(S, t) {
+  const a = S.T('s03b02'), b = S.T('s03b03');
+  return t >= a && t < b ? a + (t - a) * 0.5 : t;
+}
 
 // ---------------------------------------------------------------- Fear (front view, at the alarm)
+// s02's scarf clutch and pointing path (kept identical so the cut matches): both fists on the scarf end, the left
+// arm across the belly with its elbow DOWN at the side; between the clutch and the up-left point the arm passes
+// through a straight arm hanging at the side (where the elbow side can switch without a pop). Lowering the point
+// used to slide the fist straight in to the scarf with the elbow folded UP over the wrap (an X across the chest).
+const CLUTCH_L = [14, -106], CLUTCH_R = [16, -125];
+const POINT_D = Math.hypot(-63, -50), POINT_A = Math.atan2(-50, -63) + 2 * Math.PI;   // the up-left point (−90,−184)
+function fearPointArm(p, crouch) {
+  const sx = -27, sy = -134 + 18 * crouch, R = 95, A_HANG = 1.75, A_BEND = 3.55;
+  if (p < 0.3) {
+    const u = ease.sine(p / 0.3);
+    const o = [sx + Math.cos(A_HANG) * R, sy + Math.sin(A_HANG) * R];
+    return { target: [lerp(CLUTCH_L[0], o[0], u), lerp(CLUTCH_L[1] + 18 * crouch, o[1], u)], bend: -1 };
+  }
+  const a = lerp(A_HANG, POINT_A, ease.sine((p - 0.3) / 0.7));
+  const r = a < A_BEND ? R : lerp(R, POINT_D, (a - A_BEND) / (POINT_A - A_BEND));
+  return { target: [sx + Math.cos(a) * r, sy + Math.sin(a) * r], bend: 1 };
+}
 function fearPose(S, t) {
   const s0 = S.start;
-  // starts as s02 ended: facing 1, arm pointing up-left; lowers the arm, flinches round (facing −1) and shrinks
-  // back against the station; in b02 it freezes, not even blinking
-  const lower = S.k(t, [['scene.start+0.55', 0], ['scene.start+1.25', 1, 'inOut']]);
+  // starts as s02 ended: facing 1, arm pointing up-left; the arm drops to the side and the fist comes back to the
+  // scarf, then it flinches round (facing −1) and shrinks back against the station, hugging itself; in b02 it
+  // holds still, not even blinking (only a shallow breath and the faintest tremble)
+  const lower = S.k(t, [['scene.start+0.45', 0], ['scene.start+1.25', 1, 'linear']]);
   const flipAt = S.T('scene.start+1.3');
   const facing = t < flipAt ? 1 : -1;
   const shrink = S.k(t, [['scene.start+1.2', 0], ['scene.start+1.55', 0.35, 'outCubic'], ['s03b02-0.5', 0.6, 'inOut']]);
   const frozen = S.k(t, [['s03b02-0.2', 0], ['s03b02+0.1', 1]]);
-  const pointT = [-90, -184], scarf = [-6, -120];
   let armL, armR;
   if (facing > 0) {
-    const p = [lerp(pointT[0], -58, ease.sine(clamp(lower * 1.6))), lerp(pointT[1], -124, ease.sine(clamp(lower * 1.6)))];
-    const q = lower > 0.62 ? [lerp(-58, scarf[0], (lower - 0.62) / 0.38), lerp(-124, scarf[1], (lower - 0.62) / 0.38)] : p;
-    // the pointing finger from s02 folds back into the fist as the arm comes down
-    const fingerK = clamp(1 - lower * 2.2);
-    armL = { target: q, bend: 1, front: true, hand: blendHand('fist', 'point', fingerK), wrist: fingerK * Math.sin(t * TAU * 0.85) * 0.05 };
-    armR = { target: [10, -122], bend: 1, front: true, hand: 'fist' };
+    // the pointing finger from s02 folds back into the fist as the arm comes down (s02's unfolding, reversed)
+    const fingerK = clamp((1 - lower - 0.35) / 0.45);
+    armL = { ...fearPointArm(1 - lower, 0), front: true, hand: blendHand('fist', 'point', fingerK), wrist: fingerK * Math.sin(t * TAU * 0.85) * 0.05 };
+    armR = { target: CLUTCH_R, bend: 1, front: true, hand: 'fist' };
   } else {
     armL = 'hugSelf'; armR = 'hugSelf';
   }
@@ -97,10 +118,10 @@ function fearPose(S, t) {
   face.lidU = lerp(face.lidU, 0, bk);
   if (bk > 0) face.noAutoBlink = true;
   return {
-    t: idleT(S, t), facing, face, crouch: shrink, tremble: 0.8 * (1 - frozen),
+    t: lifeT(S, t), facing, face, crouch: shrink, tremble: lerp(0.8, 0.22, frozen),
     lean: facing < 0 ? -0.07 * shrink / 0.6 : 0.0,
     headTilt: facing < 0 ? 0.1 : -0.1, headTurn: facing < 0 ? -0.15 : -0.25,
-    headDY: shrink * 6, breathe: 1 - 0.85 * frozen,
+    headDY: shrink * 6, breathe: 1 - 0.5 * frozen,
     armL, armR, shadow: true,
   };
 }
@@ -115,9 +136,9 @@ function ceoPose(S, t) {
   const frozen = S.k(t, [['s03b02-0.1', 0], ['s03b02+0.2', 1]]);
   const [x, y, s] = CEO_AT_ALARM_F;
   const pose = {
-    t: idleT(S, t) + 0.7, outfit: 'ceo', view: 'back', kneel: 1, facing: 1, clipboard: true, armL: 'rest',
+    t: lifeT(S, t) + 0.7, outfit: 'ceo', view: 'back', kneel: 1, facing: 1, clipboard: true, armL: 'rest',
     headTurn: lerp(-0.35, -0.25, tip), headTilt: -0.04 - 0.05 * tip, headDY: 3 * tip + 2.5 * swallow + 2 * back,
-    lean: -0.05 * back, shrug: 0.15 * tip + 0.1 * swallow, breathe: 1 - 0.85 * frozen,
+    lean: -0.05 * back, shrug: 0.15 * tip + 0.1 * swallow, breathe: 1 - 0.55 * frozen,
     face: E({ noAutoBlink: true }),
   };
   if (back > 0.01) {

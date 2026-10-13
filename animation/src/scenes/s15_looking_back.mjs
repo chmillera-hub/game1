@@ -10,6 +10,8 @@ import { drawVoid } from '../chars/void.mjs';
 import { drawFear } from '../chars/fear.mjs';
 import { drawSelf } from '../chars/self.mjs';
 import { drawEmotion, LOOKBACK_SMILE } from '../chars/emotions.mjs';
+import { blendHand } from '../hand.mjs';
+import { drawLit } from '../fx/rim.mjs';
 
 export const id = 's15';
 
@@ -60,6 +62,18 @@ function starlight(g, x, y, r, k) {
   g.fillStyle = gr; g.fillRect(x - r, y - r, 2 * r, 2 * r); g.restore();
 }
 const cam = (t, c, amp = 2.5) => { const d = drift(t, amp); return { ...c, shakeX: d.dx, shakeY: d.dy, rot: d.dr }; };
+// an arm target part-way (u) from a to b that swings out through p (beyond the arm's reach from the shoulder sh): the arm
+// is straight there, so the IK's elbow side (`bend`) can change unseen; returns the target and whether u is past it
+const bez2 = (a, c, b, u) => { const v = 1 - u; return [v * v * a[0] + 2 * v * u * c[0] + u * u * b[0], v * v * a[1] + 2 * v * u * c[1] + u * u * b[1]]; };
+function swingOut(a, b, p, sh, u) {
+  const c = [2 * p[0] - (a[0] + b[0]) / 2, 2 * p[1] - (a[1] + b[1]) / 2];
+  let us = 0.5, dmax = 0;
+  for (let i = 1; i < 40; i++) {
+    const q = bez2(a, c, b, i / 40), d = Math.hypot(q[0] - sh[0], q[1] - sh[1]);
+    if (d > dmax) { dmax = d; us = i / 40; }
+  }
+  return { target: bez2(a, c, b, u), past: u >= us };
+}
 
 // ---------------------------------------------------------------- shots
 // pov (wide) → Fear → two close two-shots of the smiles (JOY+SADNESS, then ANGER+CALM, held through "They smiled")
@@ -215,10 +229,14 @@ function frontPose(name, t, S, pose, te, sm) {
     if (wave > 0.01) {
       const w = Math.sin((t - S.T('s15b02+0.3')) * Math.PI * 2 * 2.2) * 0.3 * wave;
       // the hand turns up out of the hanging rest (fingers down → out → up) as the arm rises, instead of flipping
-      // in one frame at the start and end of the wave
+      // in one frame at the start and end of the wave. QA v3: the hanging arm (elbow side +1) and the waving arm (−1)
+      // switched elbow sides in one frame at both ends of the wave (a hooked forearm at the hip): the arm now swings out
+      // to the side, straight for an instant, and up; the hand shape and palm turn blend.
       const up = clamp(wave * 1.6);
-      pose.armR = { target: [lerp(64, 112, wave), lerp(-119, -268, wave)], bend: -1, hand: up < 0.4 ? 'open' : 'palm',
-        handAng: lerp(Math.PI / 2 - 0.1, -Math.PI / 2 + 0.15, up) + w };
+      const sw = swingOut([64, -119], [112, -268], [34 + 118, -213 + 8], [34, -213], wave);
+      const pd = [lerp(-0.9, 0, up), 0, lerp(-0.45, 1, up)], pl = Math.hypot(...pd);
+      pose.armR = { target: sw.target, bend: sw.past ? -1 : 1, hand: blendHand('rest', 'palm', up), palmDir: pd.map((v) => v / pl),
+        handAng: lerp(Math.PI / 2 - 0.2, -Math.PI / 2 + 0.15, up) + w };
     }
   } else if (name === 'SADNESS') {
     pose.armL = { preset: 'clasp', dy: -10 }; pose.armR = { preset: 'clasp', dy: -10 };   // sweater paws at the chest
@@ -246,6 +264,7 @@ function ceoPose(t, S) {
   };
 }
 
+const SCREEN_RIM = { dir: [0.15, -1], color: '#ffdca6', strength: 0.5, width: 3 };
 function renderBack(g, t, S, shot) {
   const glowPress = S.k(t, [[BW(4.45), 0], [BW(4.6), 1, 'outCubic'], ['scene.end', 0.7]]);
   const st = { t, lightsDim: 0.15, consoleGlow: 1.0, mist: 0.3, screenMode: 'room', consolePress: { 0: glowPress, 13: 0.5 * S.k(t, [[BW(4.2), 0], [BW(4.9), 1]]) } };
@@ -265,11 +284,16 @@ function renderBack(g, t, S, shot) {
     gr.addColorStop(1, 'rgba(255,170,70,0)');
     g.fillStyle = gr; g.fillRect(bx - 80, by - 106, 176, 176); g.restore();
   }
-  // emotions + CEO by y (all on the same row: left → right)
+  // emotions + CEO by y (all on the same row: left → right). The bright screen of consciousness and the console glow
+  // are right behind them (from the camera): a soft warm rim along their tops and shoulders from that light (QA v3,
+  // lighting rule: a character with a light behind it gets rim light from that source)
   const SLOT = { JOY: 'consoleBack1', SADNESS: 'consoleBack2', ANGER: 'consoleBack3', CALM: 'consoleBack4' };
-  for (const name of ['JOY', 'SADNESS']) if (seen(BK[SLOT[name]][0])) drawEmotion(g, name, ...BK[SLOT[name]], emotionPose(name, t, S, shot));
-  if (seen(BK.consoleBackMid[0])) drawSelf(g, ...BK.consoleBackMid, ceoPose(t, S));
-  for (const name of ['CALM', 'ANGER']) if (seen(BK[SLOT[name]][0])) drawEmotion(g, name, ...BK[SLOT[name]], emotionPose(name, t, S, shot));
+  // (one lit layer for the whole row: one rim pass instead of five)
+  drawLit(g, (g2) => {
+    for (const name of ['JOY', 'SADNESS']) if (seen(BK[SLOT[name]][0])) drawEmotion(g2, name, ...BK[SLOT[name]], emotionPose(name, t, S, shot));
+    if (seen(BK.consoleBackMid[0])) drawSelf(g2, ...BK.consoleBackMid, ceoPose(t, S));
+    for (const name of ['CALM', 'ANGER']) if (seen(BK[SLOT[name]][0])) drawEmotion(g2, name, ...BK[SLOT[name]], emotionPose(name, t, S, shot));
+  }, SCREEN_RIM);
   drawHQForeground(g, 'back', st);
   g.restore();
   grade(g, 0, 0.2);

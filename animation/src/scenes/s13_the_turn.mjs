@@ -17,7 +17,8 @@
 
 import { W, H, TAU, clamp, lerp, ease, fbm, blinkAt, applyCamera, drift, vignette } from '../engine.mjs';
 import { makeExpr } from '../face.mjs';
-import { drawFear, FEAR_ARMS, FEAR_FACE } from '../chars/fear.mjs';
+import { blendHand } from '../hand.mjs';
+import { drawFear, drawFearFrontArms, FEAR_ARMS, FEAR_FACE, fearBodySpace, fearHeadSpace } from '../chars/fear.mjs';
 import { drawVoid, drawVoidArm, drawVoidHand, toVoidLocal, voidRig, VOID_HANDS } from '../chars/void.mjs';
 import { drawHQ, drawHQForeground } from '../sets/hq.mjs';
 import { drawCage } from '../sets/props.mjs';
@@ -34,6 +35,7 @@ const THRESH = [440, 1648, 0.97];
 const VOID_ARM_B = { bend: 1 };
 const APPROACH_SHOULDER = [120, -40];
 const SLEEVE_CLIP_Y = 1100;
+const REST_HAND = { angle: 2.3, open: 0.04, gentle: 0.5 }, REST_NUDGE = [-4, -8];   // = s14's resting hand
 
 // Fear's local geometry (src/chars/fear.mjs)
 const NECK_Y = -148, HEAD_CY = -66;
@@ -72,16 +74,40 @@ const sleeveFront = (g, pose) => {
   drawVoidArm(g, ...VOID_B, pose, 'L', 'sleeve'); g.restore();
 };
 
-// blend two Fear arm specs (preset names or objects) by k; bend/hand/front switch at the midpoint
-function arm(a, b, k, side) {
-  const A = typeof a === 'string' ? FEAR_ARMS[a](side) : a;
-  const B = typeof b === 'string' ? FEAR_ARMS[b](side) : b;
-  if (k <= 0) return A;
-  if (k >= 1) return B;
-  const o = k < 0.5 ? { ...A } : { ...B };
-  o.target = [lerp(A.target[0], B.target[0], k), lerp(A.target[1], B.target[1], k)];
+// Fear's arm rig (src/chars/fear.mjs): shoulders at (±27, −134 + 18·crouch + breath), upper arm 46 + forearm 44.
+// The IK puts the elbow where `bend` says: hands below the shoulders want bend = side (elbows down/out), hands up at the
+// face want bend = −side (elbows out). Switching with a bent arm throws the elbow across the body in one frame (QA v3:
+// the hug → face move flashed a frame with both elbows up beside the eyes), so a move that changes sides SWINGS OUT
+// through a point beyond the arm's reach — the arm is straight there, both elbow sides coincide, and the bend flips.
+const SH_X = 27, SH_Y = -134;
+const bez2 = (a, c, b, u) => { const v = 1 - u; return [v * v * a[0] + 2 * v * u * c[0] + u * u * b[0], v * v * a[1] + 2 * v * u * c[1] + u * u * b[1]]; };
+/** arm spec part-way (u 0..1) from A to B; `out` = [direction, distance] of the turning point from the shoulder `sh`
+ *  (omit it when A and B share their elbow side: a plain eased glide). The hand shape blends; palmDir is B's. */
+function moveArm(A, B, u, sh, out) {
+  if (u <= 0) return A;
+  if (u >= 1) return B;
+  let o;
+  if (!out) {
+    o = u < 0.5 ? { ...A } : { ...B };
+    o.target = [lerp(A.target[0], B.target[0], u), lerp(A.target[1], B.target[1], u)];
+  } else {
+    const P = [sh[0] + Math.cos(out[0]) * out[1], sh[1] + Math.sin(out[0]) * out[1]];
+    const C = [2 * P[0] - (A.target[0] + B.target[0]) / 2, 2 * P[1] - (A.target[1] + B.target[1]) / 2];
+    // the elbow changes sides where the path is farthest from the shoulder (the middle of the straight stretch)
+    let us = 0.5, dmax = 0;
+    for (let i = 1; i < 40; i++) {
+      const q = bez2(A.target, C, B.target, i / 40), d = Math.hypot(q[0] - sh[0], q[1] - sh[1]);
+      if (d > dmax) { dmax = d; us = i / 40; }
+    }
+    o = u < us ? { ...A } : { ...B };
+    o.target = bez2(A.target, C, B.target, u);
+  }
+  o.hand = blendHand(A.hand, B.hand, u);
+  o.spread = lerp(A.spread ?? HAND_SPREAD[A.hand] ?? 0.1, B.spread ?? HAND_SPREAD[B.hand] ?? 0.1, u);
+  o.palmDir = B.palmDir || A.palmDir;
   return o;
 }
+const HAND_SPREAD = { drape: 0.06, palm: 0.24, open: 0.15, rest: 0.05 };
 
 
 // ---------------------------------------------------------------- caches (perf)
@@ -251,7 +277,8 @@ function fearPose(t, S) {
   ]);
   let headDY = S.k(t, [
     ['scene.start', 8], ['s13b01+0.2', 7], ['s13b01+0.6', -3, 'out'],   // (s12 ends at 8) lifts
-    ['s13b01+3.22', -3], ['s13b01+3.32', 2, 'out'], ['s13b01+3.7', -2.5, 'sine'], // dry swallow (in the close)
+    // a tiny dry swallow (in the close at zoom 3.9: a 5-unit dip in 0.1 s was a 19 px two-frame jolt; now ≈2 px/frame)
+    ['s13b01+3.16', -3], ['s13b01+3.4', -0.6, 'inOut'], ['s13b01+3.78', -2.5, 'sine'],
     ['s13b03+2.2', -2.5], ['s13b03+2.8', 4, 'inOut'],        // ducks into its hands
     ['s13b03+4.8', 4], ['s13b03+4.95', 7, 'out'], ['s13b03+5.6', 5, 'sine'],         // "destroy": cringes
     ['s13b04+2.72', 5], ['s13b04+2.79', 10, 'out'], ['s13b04+3.35', 5, 'sine'],        // flinch at the touch
@@ -265,37 +292,50 @@ function fearPose(t, S) {
   const lean = S.k(t, [['s13b04+2.72', 0], ['s13b04+2.8', -0.03, 'out'], ['s13b04+3.4', 0, 'sine']]);
 
   // --- arms
-  const hideK = S.k(t, [['s13b03+2.25', 0], ['s13b03+2.85', 1, 'inOut']]);
-  const peekK = S.k(t, [['s13b05+0.4', 0], ['s13b05+0.85', 1, 'inOut']]);
-  const lowerK = S.k(t, [['s13b05+1.5', 0], ['s13b05+2.3', 1, 'inOut']]);
   // Fear's arm targets are raw local points: they do NOT follow crouch / headDY, but the head does (crouch 1
   // drops it 20). The 'handsOnFace' preset (y −192) therefore left the palms on the FOREHEAD with the squeezed
   // lids showing underneath. Aim the wrists just under the eyes instead, so the palms cover them (brows stay
-  // visible above the fingers, the trembling mouth below).
+  // visible above the fingers, the trembling mouth below). Every hand near the face turns its PALM TO THE FACE
+  // (the back of the hand to the camera).
   const eyeLY = NECK_Y + 20 * crouch + headDY + HEAD_CY + 8 + FEAR_FACE.eyeY;   // local y of the eyes
-  const onFace = (side) => ({ target: [side * 28, eyeLY + 12], bend: -side, front: true, hand: 'palm' });
-  // the hands uncross outward first (under the chin), then rise to the face (one eased move through a waypoint)
-  let armL = arm('hugSelf', { target: [-36, -134], bend: 1, front: true, hand: 'palm' }, clamp(hideK * 2), -1);
-  let armR = arm('hugSelf', { target: [36, -134], bend: -1, front: true, hand: 'palm' }, clamp(hideK * 2), 1);
-  armL = arm(armL, onFace(-1), clamp(hideK * 2 - 1), -1);
-  armR = arm(armR, onFace(1), clamp(hideK * 2 - 1), 1);
-  // the left palm (away from the Void's hand) slides down off its eye: one eye peeks across at the hand
-  if (peekK > 0) armL = arm(armL, { target: [-44, eyeLY + 40], bend: 1, front: true, hand: 'palm' }, peekK, -1);
-  if (lowerK > 0) {
-    armL = arm(armL, 'chest', lowerK, -1);
-    armR = arm(armR, { target: [14, -118], bend: 1, front: true, hand: 'open' }, lowerK, 1);
+  const br = Math.sin(t * TAU * breathRate) * breathe;
+  const sh = (s) => [s * SH_X, SH_Y + 18 * crouch + br];
+  const idle = (s) => [fbm(t * 0.31, 61 + s) * 1.2, fbm(t * 0.27, 67 + s) * 1.2];   // the resting hands never freeze
+  const hug = (s) => FEAR_ARMS.hugSelf(s);                                   // = s12's last frame
+  const onFace = (s) => ({ target: [s * 28, eyeLY + 12], bend: -s, front: true, hand: 'palm', palmDir: [0, 0, -1] });
+  // ONE eye peeks over the spread fingers: the left palm (away from the Void's hand) slides down to the lower lid
+  const peekAt = (s) => ({ target: [s * 30 + idle(s)[0], eyeLY + 34 + idle(s)[1]], bend: -s, front: true, hand: 'palm', spread: 0.42, palmDir: [0, 0, -1] });
+  // the hands lower to its cheeks and stay there (awe: "it stares at the huge, gentle hand... up, up"); the elbows keep
+  // their side, so the lowering is one smooth glide
+  const onCheek = (s) => ({ target: [s * 45 + idle(s)[0], eyeLY + 50 + idle(s)[1]], bend: -s, front: true, hand: 'open', spread: 0.3, palmDir: [0, 0, -1] });
+  // hug → hands over the eyes: a startled jerk of the arms out and up (straight: the elbows change sides there), then
+  // the palms come in onto the eyes
+  const hideU = S.k(t, [['s13b03+2.2', 0], ['s13b03+2.84', 1, 'inOut']]);
+  const peekU = S.k(t, [['s13b05+0.4', 0], ['s13b05+0.85', 1, 'inOut']]);
+  const lowerU = S.k(t, [['s13b05+1.5', 0], ['s13b05+2.3', 1, 'inOut']]);
+  const OUT = (s) => [s > 0 ? -0.8 : -Math.PI + 0.8, 100];
+  let armL = moveArm(hug(-1), onFace(-1), hideU, sh(-1), OUT(-1));
+  let armR = moveArm(hug(1), onFace(1), hideU, sh(1), OUT(1));
+  if (peekU > 0) armL = moveArm(armL, peekAt(-1), peekU);
+  if (lowerU > 0) {
+    armL = moveArm(armL, onCheek(-1), lowerU);
+    armR = moveArm(armR, onCheek(1), lowerU);
   }
 
   // --- face
-  const sad = { browIn: 0.78, browUp: 0.1, lidTilt: 0.7, lidU: 0.42, lidL: 0.15, smile: -0.45, tremble: 0.3, tears: 0.7, stream: 0.75, pupil: 0.9, lookX: 0.05, lookY: 0.62 }; // = s12's SPENT
-  const frozen = { browIn: 0.95, browUp: 0.85, lidU: -0.4, pupil: 0.45, smile: -0.35, wide: 0.2, lookX: 0.35, lookY: -1, tears: 0.7, stream: 0.6 };
+  // Tears (QA v3): wet, brimming eyes all through (`tears` = welling on the lower lids), but no falling tears. s12's
+  // crying stops with the freeze (no tear is in flight at the cut), so s14's tears of wonder are the next ones. (The
+  // old animated `stream` values also re-timed the face rig's alternating tears every frame they changed: drops popped
+  // in and out mid-cheek in b01, b03 and b05–b06.)
+  const sad = { browIn: 0.78, browUp: 0.1, lidTilt: 0.7, lidU: 0.42, lidL: 0.15, smile: -0.45, tremble: 0.3, tears: 0.7, pupil: 0.9, lookX: 0.05, lookY: 0.62 }; // = s12's SPENT
+  const frozen = { browIn: 0.95, browUp: 0.85, lidU: -0.4, pupil: 0.45, smile: -0.35, wide: 0.2, lookX: 0.35, lookY: -1, tears: 0.7 };
   const ecu = { ...frozen, tears: 0.75, lidL: 0.1 };
   const atLens = { ...frozen, lookX: 0.1, lookY: -0.6, tears: 0.7 };
   const wince = { ...atLens, browIn: 1, browUp: 0.1, browSquish: 0.8, lidU: 0.05, lidL: 0.5, lidTilt: 0.35, pupil: 0.5, smile: -0.7, open: 0.16, wide: 0.4, tremble: 0.5, lookX: 0.05, lookY: -0.2 };
-  const squeeze = { browIn: 1, browUp: -0.05, browSquish: 0.7, lidU: 1, lidL: 0.6, lidTilt: 0.2, smile: -0.7, open: 0.12, wide: 0.4, tremble: 0.7, tears: 0.6, stream: 0.45, pupil: 0.45 };
-  const peek = { browIn: 0.9, browUp: 0.35, lidU: -0.05, lidL: 0.1, pupil: 0.7, smile: -0.4, wide: 0.1, lookX: 0.8, lookY: 0.5, tears: 0.65, stream: 0.45 };
-  const stare = { browIn: 0.7, browUp: 0.6, lidU: -0.25, pupil: 1.0, smile: -0.12, open: 0.07, round: 0.3, lookX: 0.8, lookY: 0.45, tears: 0.7, stream: 0.45 };
-  const up = { browIn: 0.5, browUp: 0.7, lidU: -0.32, pupil: 1.15, smile: -0.05, open: 0.22, round: 0.35, lookX: 0.3, lookY: -1, tears: 0.85, stream: 0.4 };
+  const squeeze = { browIn: 1, browUp: -0.05, browSquish: 0.7, lidU: 1, lidL: 0.6, lidTilt: 0.2, smile: -0.7, open: 0.12, wide: 0.4, tremble: 0.7, tears: 0.6, pupil: 0.45 };
+  const peek = { browIn: 0.9, browUp: 0.35, lidU: -0.05, lidL: 0.1, pupil: 0.7, smile: -0.4, wide: 0.1, lookX: 0.8, lookY: 0.5, tears: 0.65 };
+  const stare = { browIn: 0.7, browUp: 0.6, lidU: -0.25, pupil: 1.0, smile: -0.12, open: 0.07, round: 0.3, lookX: 0.8, lookY: 0.45, tears: 0.7 };
+  const up = { browIn: 0.5, browUp: 0.7, lidU: -0.32, pupil: 1.15, smile: -0.05, open: 0.22, round: 0.35, lookX: 0.3, lookY: -1, tears: 0.85 };
   let face = S.k(t, [
     ['scene.start', sad],
     ['s13b01+0.12', sad],
@@ -306,7 +346,7 @@ function fearPose(t, S) {
     ['s13b01+2.75', { ...frozen, lookX: 0.3, pupil: 0.3, lidU: -0.45, browUp: 0.95 }],
     ['s13b01+3.0', { ...frozen, lookX: 0.3, pupil: 0.3, lidU: -0.45, browUp: 0.95, open: 0.22 }, 'sine'], // lips part as the hood arrives
     ['s13b01+3.22', { ...frozen, lookX: 0.3, pupil: 0.3, lidU: -0.45, browUp: 0.95, open: 0.22 }],
-    ['s13b01+3.32', { ...frozen, lookX: 0.3, pupil: 0.3, lidU: -0.42, browUp: 0.95, open: 0, pressed: 0.7 }, 'out'], // tiny dry swallow
+    ['s13b01+3.38', { ...frozen, lookX: 0.3, pupil: 0.3, lidU: -0.42, browUp: 0.95, open: 0, pressed: 0.7 }, 'inOut'], // tiny dry swallow
     ['s13b01+3.7', { ...frozen, lookX: 0.3, pupil: 0.32, open: 0.07 }, 'sine'],
     ['s13b01+5.0', { ...frozen, lookX: 0.3, pupil: 0.35, open: 0.07 }],
     ['s13b02', { ...ecu, lookX: 0.3, open: 0.07 }, 'sine'],
@@ -327,6 +367,11 @@ function fearPose(t, S) {
   face = makeExpr(face);
   face.noAutoBlink = true;
   face.t = t;
+  // crying behind its hands (the trembling comes back "faster than ever"): one tear slides out from under the right
+  // palm halfway into b03, one from under the left while the hand comes down in b04 — each one drop that runs and fades
+  const run = (a, d = 1.7) => { const k = (t - S.T(a)) / d; return k > 0 && k < 1 ? k : 0; };
+  face.tearR = run('s13b03+3.0');
+  face.tearL = run('s13b04+0.5');
   // micro-life: the same tiny gaze drift as s12 (continuous across the cut), plus small darts while frozen
   const darts = sm(B.b01 + 0.8, B.b01 + 1.5, t) * (1 - sm(B.b03 + 2.0, B.b03 + 2.3, t));
   face.lookX = clamp(face.lookX + 0.03 * Math.sin(t * 1.7 + 0.4) + darts * fbm(t * 0.9, 31) * 0.05, -1, 1);
@@ -344,6 +389,18 @@ function fearPose(t, S) {
   // hands lower; drawn as a second, eye-clipped pass in render()
   const rightClosed = S.k(t, [['s13b05+0.35', 0], ['s13b05+0.4', 1], ['s13b05+1.5', 1], ['s13b05+1.8', 0, 'inOut']]);
   return { crouch, tremble, breathe, breathRate, lean, headTilt, headTurn, headDX, headDY, armL, armR, face, rightClosed };
+}
+
+/** Fear's head outline (drawFear's own transform chain, shake and breath included) as a path in the current space,
+ *  grown by `grow` units — to keep the Void's resting hand behind the head */
+function headPath(g, fx, fy, fs, pose, grow = 0) {
+  g.save();
+  const shk = fearBodySpace(g, fx, fy, fs, pose);
+  fearHeadSpace(g, pose, shk);
+  const turn = clamp(pose.headTurn ?? 0, -1, 1) * (pose.facing || 1);
+  g.moveTo(turn * 3 + 74 + grow, HEAD_CY);
+  g.ellipse(turn * 3, HEAD_CY, 74 + grow, 68 + grow, 0, 0, TAU);
+  g.restore();
 }
 
 // ---------------------------------------------------------------- the eye reflection (ECU)
@@ -529,17 +586,22 @@ export function render(g, t, S) {
   const kGrade = S.k(t, [['scene.start', 0], ['s13b01+2.0', 1, 'sine']]);
   const st = { t, lightsDim: lerp(0.35, 0.4, kGrade), mist: 0.6 };
 
-  // the hand (only from s13b04)
+  // the hand (only from s13b04). It settles the way s14 holds it (REST_HAND there): fingers together and only softly
+  // curved, coming DOWN onto the top of the shoulder (fingertip contact nudged up/in), behind Fear's big head (the hand
+  // is clipped out of the head below). QA v3: the preset's curled, splayed fingers lay across Fear's arm and scarf like
+  // a claw, with the open padlock framed between them.
   const [fx, fy, fs] = THRESH;
-  const sh = [fx + 36 * fs, fy - (130 - 20 * P.crouch) * fs];
+  const sh = [fx + (36 + REST_NUDGE[0]) * fs, fy - (130 - 20 * P.crouch - REST_NUDGE[1]) * fs];
   const ap = [sh[0] + APPROACH_SHOULDER[0] * fs, sh[1] + APPROACH_SHOULDER[1] * fs];
   const WP1 = [ap[0] + 15, ap[1] - 235];                  // beside the cage's right bars, hand hanging
   const tA = [lerp(WP1[0], ap[0], V.descend), lerp(WP1[1], ap[1], V.descend)];
   const tgt = [lerp(tA[0], sh[0], V.settle), lerp(tA[1], sh[1], V.settle)];
-  const angle = lerp(Math.PI / 2 + 0.3, Math.PI - 0.38, ease.sine(clamp(V.descend * 1.15)));
+  const relax = ease.sine(clamp(V.descend * 1.15));
+  const angle = lerp(Math.PI / 2 + 0.3, REST_HAND.angle, relax);
   const handOut = V.show > 0 || V.reach > 0;
   const handL = handOut
-    ? { ...VOID_HANDS.shoulder(toVoidLocal(...VOID_B, ...tgt), -1), ...VOID_ARM_B, angle, elbow: 0.8 * V.reach, show: V.show, reach: V.reach, defer: 'hand' }
+    ? { ...VOID_HANDS.shoulder(toVoidLocal(...VOID_B, ...tgt), -1), ...VOID_ARM_B, angle, elbow: 0.8 * V.reach, show: V.show, reach: V.reach, defer: 'hand',
+      open: lerp(0.12, REST_HAND.open, relax), gentle: lerp(0.3, REST_HAND.gentle, relax) }
     : { ...VOID_ARM_B, show: 0, defer: 'hand' };
   const vpose = { t, ...V.head, idle: 0, cosmos: 0, shadowSpread: 1, handL };
 
@@ -586,7 +648,15 @@ export function render(g, t, S) {
     drawFear(g, fx, fy, fs, fearDraw);
   }
   if (ecu) hoodReflection(g, fx, fy, fs, P, t, 1);
-  if (handOut) drawVoidHand(g, ...VOID_B, vpose, 'L');
+  if (handOut) {
+    // the hand rests on the shoulder BEHIND Fear's head: clipped out of the head (grown by half its outline width)
+    g.save();
+    g.beginPath(); g.rect(-1e4, -1e4, 3e4, 3e4); headPath(g, fx, fy, fs, fearDraw, 1.6); g.clip('evenodd');
+    drawVoidHand(g, ...VOID_B, vpose, 'L');
+    g.restore();
+    // the hand comes from behind Fear: its raised near arm (hand at the face, elbow out) stays in front of the fingers
+    if (V.descend > 0.5) drawFearFrontArms(g, fx, fy, fs, { ...fearDraw, armL: { ...P.armL, front: false } });
+  }
   drawHQForeground(g, 'backOfMind', st);
   g.restore();
   // the rim swell: in the wide (rising with the turn) and in the POV on the hood (held through the bow); the ECU cuts away

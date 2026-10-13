@@ -25,6 +25,7 @@ import { drawVoid } from '../chars/void.mjs';
 import { drawHQ, drawHQForeground, drawAlarmLight, HQ_VIEWS, HQ_STATIONS, hqScaleAt, ALARM_REACH } from '../sets/hq.mjs';
 import { drawCage } from '../sets/props.mjs';
 import { loadTimeline, timeline, resolveAnchor } from '../timeline.mjs';
+import { drawLit } from '../fx/rim.mjs';
 
 export const id = 's02';
 
@@ -199,10 +200,14 @@ function emotionsBack(g, S, t) {
     const tt = t + OFF.ANGER;
     const back = S.k(t, [['s02b02+2.55', 0], ['s02b02+2.95', 1, 'out'], ['s02b03+0.0', 1], ['s02b03+0.6', 0.2]]);
     const exhale = S.k(t, [['s02b02+2.95', 0], ['s02b02+3.35', 1], ['s02b03+0.3', 0]]);
+    // arms folded in front of the chest: from behind only the elbows show, poking out at the sides under the wide
+    // head (the 'hugSelf' preset's elbows stay inside the body silhouette, so he read as armless from the back);
+    // they rise a little with the long exhale and settle
+    const fold = (side) => ({ target: [side * 35, -165 - 3 * exhale + 1.5 * Math.sin(tt * 0.7 + side)], bend: side, layer: 'front', hand: 'fist' });
     drawEmotion(g, 'ANGER', x, y, s, {
       t: tt, view: 'back', heat: 0.25 + 0.45 * exhale, headDY: back * 7 - exhale * 2, lean: -0.02 * back,
       breathe: 1 + exhale, headTilt: 0.04 * back,
-      armL: 'hugSelf', armR: 'hugSelf',
+      armL: fold(-1), armR: fold(1),
     });
   }
   // CALM: eases a lever forward with two fingers; at the bell, a practised hand settles on the evacuation lever
@@ -295,6 +300,27 @@ function emotionsFront(g, S, t, vis = () => true) {
 }
 
 // ---------------------------------------------------------------- Fear
+// Both fists clutch the scarf END (it hangs down the body's right side, local x ≈ 10..30): the right fist at its top,
+// the left one lower, its arm across the belly with the elbow DOWN at the left side (bend −1). The old left target
+// (−8,−112) with bend +1 folded that elbow UP over the scarf wrap into an X with the other arm. The fists ride down
+// with the crouch (the scarf drops 18·crouch).
+const CLUTCH_L = [14, -106], CLUTCH_R = [16, -125];
+const POINT_D = Math.hypot(-63, -50), POINT_A = Math.atan2(-50, -63) + 2 * Math.PI;   // the up-left point (−90,−184)
+// the left arm from the scarf clutch (p = 0) to the up-left point (p = 1): the fist lets go and drops to arm's length
+// at the side (bend −1, the elbow unfolding out-left), then the STRAIGHT arm swings out and up and only near the top
+// bends a little under the pointing hand (bend +1). The elbow-side switch happens while the arm is straight (target
+// beyond reach on a 95 px circle round the shoulder), so nothing pops.
+function fearPointArm(p, crouch) {
+  const sx = -27, sy = -134 + 18 * crouch, R = 95, A_HANG = 1.75, A_BEND = 3.55;
+  if (p < 0.3) {
+    const u = ease.sine(p / 0.3);
+    const o = [sx + Math.cos(A_HANG) * R, sy + Math.sin(A_HANG) * R];
+    return { target: [lerp(CLUTCH_L[0], o[0], u), lerp(CLUTCH_L[1] + 18 * crouch, o[1], u)], bend: -1 };
+  }
+  const a = lerp(A_HANG, POINT_A, ease.sine((p - 0.3) / 0.7));
+  const r = a < A_BEND ? R : lerp(R, POINT_D, (a - A_BEND) / (POINT_A - A_BEND));
+  return { target: [sx + Math.cos(a) * r, sy + Math.sin(a) * r], bend: 1 };
+}
 // at the alarm (alarm view: fearAtAlarm, scale 1.8 / front view: FEAR_ALARM_F, scale 0.42) — one pose model
 function fearPose(S, t) {
   const st = alarmState(S, t);
@@ -306,30 +332,26 @@ function fearPose(S, t) {
   let armR;
   const handle = [ALARM_REACH[0], ALARM_REACH[1] + 26 * st.alarmPulled];
   const letGo = S.k(t, [[`${b4}+2.3`, 0], [`${b4}+2.7`, 1, 'inOut']]);
-  if (t < S.T(`${b2}+1.05`) - 0.0) armR = { target: [10, -122], bend: 1, front: true, hand: 'fist' };
-  else {
-    const gx = lerp(10, handle[0], grope) + fumble * 10 * Math.sin((t - pull) * 9);
-    const gy = lerp(-122, handle[1], grope) - fumble * 14 * Math.sin((t - pull) * 7 + 1);
-    const on = [lerp(gx, 10, letGo), lerp(gy, -122, letGo)];
-    armR = { target: on, bend: 1, front: true, hand: grope > 0.97 && letGo < 0.5 ? 'grip' : grope > 0.6 && letGo < 0.5 ? 'open' : 'fist' };
-  }
   // weight: on tiptoe reaching, then hanging on the pulled handle; stands up when it lets go
   const hang = st.alarmPulled * (1 - letGo);
   const yank = pulseEnv(t, pull, 0.08, 0.05, 0.4);
   const crouch = clamp(0.32 * hang + 0.25 * yank);
-  // left hand: scarf clutch → (b04) lifts and points up-left past the CEO's shoulder, finger shaking.
-  // The clutching fist rides down with the crouch (the head drops 20·crouch): it stays on the scarf ends, under
+  const clR = [CLUTCH_R[0], CLUTCH_R[1] + 18 * crouch];
+  if (t < S.T(`${b2}+1.05`) - 0.0) armR = { target: clR, bend: 1, front: true, hand: 'fist' };
+  else {
+    const gx = lerp(clR[0], handle[0], grope) + fumble * 10 * Math.sin((t - pull) * 9);
+    const gy = lerp(clR[1], handle[1], grope) - fumble * 14 * Math.sin((t - pull) * 7 + 1);
+    const on = [lerp(gx, clR[0], letGo), lerp(gy, clR[1], letGo)];
+    armR = { target: on, bend: 1, front: true, hand: grope > 0.97 && letGo < 0.5 ? 'grip' : grope > 0.6 && letGo < 0.5 ? 'open' : 'fist' };
+  }
+  // left hand: scarf clutch → (b04) lets go, drops to the side and lifts to point up-left past the CEO's shoulder,
+  // finger shaking (fearPointArm). The clutching fist rides down with the crouch: it stays on the scarf end, under
   // the mouth, so the pressed, trembling lips of the pull stay visible.
-  const point = S.k(t, [[`${b4}+2.75`, 0], [`${b4}+3.4`, 1, 'inOut']]);
-  // the arm swings out to the side first (never across the face), then lifts to point up-left, past the CEO
-  const path = [[-8, -112 + 20 * crouch], [-58, -122], [-90, -184]];
-  const seg = point < 0.45 ? [path[0], path[1], point / 0.45] : [path[1], path[2], (point - 0.45) / 0.55];
-  const pt = [lerp(seg[0][0], seg[1][0], ease.sine(seg[2])), lerp(seg[0][1], seg[1][1], ease.sine(seg[2]))];
+  const point = S.k(t, [[`${b4}+2.65`, 0], [`${b4}+3.5`, 1, 'linear']]);
   // the fist opens into a pointing index finger as the arm lifts; the wrist wavers slowly (fear, not a jitter)
-  const fingerK = clamp(point * 3 - 0.6);
-  const armL = point > 0.01
-    ? { target: pt, bend: 1, front: true, hand: blendHand('fist', 'point', fingerK), wrist: fingerK * Math.sin(t * TAU * 0.85) * 0.05 }
-    : { target: path[0], bend: 1, front: true, hand: 'fist' };
+  const fingerK = clamp((point - 0.35) / 0.45);
+  const armL = { ...fearPointArm(point, crouch), front: true, hand: blendHand('fist', 'point', fingerK),
+    wrist: fingerK * Math.sin(t * TAU * 0.85) * 0.05 };
   // eyes: fixed up-left on the dark the whole time, except: squeezed shut at the pull, and (front view, b03)
   // little fast glances over the shoulder that it cannot stop
   const squeeze = S.k(t, [[`${b2}+2.35`, 0], [`${b2}+2.45`, 1], [`${b2}+3.6`, 1], [`${b2}+4.2`, 0.35], [`s02b03+2.5`, 0.35], [`s02b03+3.0`, 0]]);
@@ -373,6 +395,25 @@ function fearPose(S, t) {
 }
 
 // ---------------------------------------------------------------- CEO
+// As the CEO kneels, the FAR arm (armR, behind the torso in the 3/4 turn) settles onto the raised knee — the same
+// pose s04 opens on — instead of hanging past the knee with the hand dangling by the front shoe (two-shot G). The
+// bones foreshorten (reach1/reach2) so the elbow only bends like a relaxed arm, and it stays in the 'back' layer
+// (the upper arm behind the torso, the CEO badge clear). The hanging 'rest' arm bends the other way: the elbow
+// side switches at k = 0.15, while the shortened arm is still straight (target beyond reach), so nothing pops.
+const KNEE_W = [92, -176], KNEE_R = [0.72, 0.5], KNEE_ANG = 1.25, KNEE_PALM = [-0.3, 0.4, -0.85];   // = s04's knee pose
+function kneeArm(kneel, sh) {   // sh = the far (right) shoulder in local coords
+  const k = sstep(0.15, 0.95, kneel);
+  const rest = [sh[0] + 12, sh[1] + 184];
+  // the 'rest' preset's hand angle (forearm + wrist −0.08), so the hand does not turn when this spec takes over
+  const { a1, a2 } = ik(sh[0], sh[1], rest[0], rest[1], 100, 92, 1);
+  const ang0 = a1 + a2 - 0.08;
+  const u = clamp((k - 0.15) / 0.85), e = u * u * (3 - 2 * u);
+  const r1 = k < 0.15 ? lerp(1, 0.94, k / 0.15) : lerp(0.94, KNEE_R[0], e);
+  const r2 = k < 0.15 ? lerp(1, 0.94, k / 0.15) : lerp(0.94, KNEE_R[1], e);
+  return { target: [lerp(rest[0], KNEE_W[0], e), lerp(rest[1], KNEE_W[1], e)], bend: k < 0.15 ? 1 : -1, layer: 'back',
+    hand: blendHand('rest', 'drape', e), handAngle: lerp(ang0, KNEE_ANG, e), reach1: r1, reach2: r2,
+    palmDir: [lerp(-0.9, KNEE_PALM[0], e), lerp(0, KNEE_PALM[1], e), lerp(-0.45, KNEE_PALM[2], e)] };
+}
 function ceoFace(S, t) {
   const b3 = 's02b03';
   // performed confidence → flicker → looking around → up at the bell, kneeling beside it. The landing on Fear (and
@@ -506,12 +547,20 @@ function shotFront(g, S, t, which) {
     const lap = [badge[0] + 4, badge[1] + 34 + 14 * tugDown];
     ceoPose.armR = { target: [lerp(rest[0], lap[0], tug), lerp(rest[1], lap[1], tug)], bend: 1, front: tug > 0.3, hand: tug > 0.5 ? 'grip' : 'rest',
       handAngle: tug > 0.5 ? -Math.PI / 2 - 0.3 : undefined, reach2: lerp(1, 0.55, tug) };
-  }
+  } else if (kneel > 0) ceoPose.armR = kneeArm(kneel, sr);
   // the CEO comes through the doorway: everything left of the swinging leaf's free edge is still behind it
+  // the open doorway is a bright warm source just behind-left of the CEO stepping out of it: a warm rim on the
+  // door-side edge plus a little fill, fading as they walk away from it and as the door swings shut. (The leaf clip
+  // is applied outside the lit layer, so the rim follows the CEO's silhouette, not the door's edge.)
+  const doorLit = door * clamp(1 - (w.x - 190) / 230);
+  const ceoBody = (c) => drawSelf(c, w.x, w.y, w.sc, ceoPose);
   const ceoDraw = () => {
     if (!ceoVis) return;
-    if (τ < 1.6) { g.save(); g.beginPath(); g.rect(leafEdge, 0, 2000, 2000); g.clip(); drawSelf(g, w.x, w.y, w.sc, ceoPose); g.restore(); }
-    else drawSelf(g, w.x, w.y, w.sc, ceoPose);
+    g.save();
+    if (τ < 1.6) { g.beginPath(); g.rect(leafEdge, 0, 2000, 2000); g.clip(); }
+    if (doorLit > 0.02) drawLit(g, ceoBody, { dir: [-1, -0.3], color: '#ffd9a0', strength: 0.9 * doorLit, width: 3.4, fill: '#ffcf96', fillAlpha: 0.07 * doorLit });
+    else ceoBody(g);
+    g.restore();
   };
   // draw by depth: Fear (y 973) behind the CEO (y ≥ 934 → mostly in front)
   if (w.y < FEAR_ALARM_F[1]) { ceoDraw(); fearDraw(); }
@@ -592,8 +641,9 @@ function shotTwo(g, S, t) {
     [`${b4}+3.85`, finger], [`${b4}+4.2`, behind]]);
   const said = withSpeech(face, S.lip('CONSCIOUSNESS', t));
   said.blink = Math.max(blinkAt(t, S.T(`${e3}+0.3`), 0.28), blinkAt(t, S.T(`${b4}+1.05`), 0.16), blinkAt(t, S.T(`${b4}+3.1`), 0.16));
-  // deliberate blinks only in the close; the breath stops after the line: nothing blinks then
-  said.noAutoBlink = t < S.T(CU_TO) || t > S.T(`${b4}+3.0`);
+  // deliberate blinks only (the close, the line, and the breath that stops after it). A random auto-blink used to
+  // land at b04+2.86, 0.24 s before the deliberate one at b04+3.1: a double blink right on the turn to the finger
+  said.noAutoBlink = true;
   const turn = S.k(t, [[CU_FROM, 0.42], [`${e3}+0.12`, 0.42], [`${e3}+0.55`, 0.16, 'inOut'], [`${b4}+2.6`, 0.2],
     [`${b4}+4.05`, 0.2], ['scene.end+0.3', -0.75, 'inOut']]);
   const tilt = S.k(t, [[CU_FROM, 0.0], [`${e3}+0.2`, 0.0], [`${b4}+0.1`, 0.1], [`${b4}+1.4`, 0.17], [`${b4}+4.0`, 0.17], ['scene.end', -0.02]]);
@@ -601,11 +651,14 @@ function shotTwo(g, S, t) {
   const kneel = S.k(t, [['s02b03.end-0.8', 0], ['s02b03.end', 1, 'inOut']]);
   // the out-breath as the composure goes (head and shoulders settle)
   const sigh = pulseEnv(t, S.T(`${e3}+0.35`), 0.3, 0.15, 0.6);
-  drawSelf(g, cx, cy, cs, {
+  const ceo = {
     t: t + 0.7, outfit: 'ceo', kneel, facing: 1, clipboard: true, armL: 'rest',
     face: said, headTurn: turn, headTilt: tilt, headDX: 6 * (1 - held), headDY: 4 * sigh,
     breathe: 1 - 0.85 * held + 0.6 * sigh, shrug: 0.12 * held,
-  });
+  };
+  // the far hand rests on the raised knee (it used to hang past the knee, the hand dangling by the front shoe)
+  ceo.armR = kneeArm(kneel, selfLocal(cx, cy, cs, 1, ...selfPoseAnchors(cx, cy, cs, ceo).shoulderR));
+  drawSelf(g, cx, cy, cs, ceo);
   drawHQForeground(g, 'alarm', st);
   drawAlarmLight(g, 'alarm', st);
   g.restore();

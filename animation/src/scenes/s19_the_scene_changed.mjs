@@ -19,6 +19,7 @@ import { drawEmotion } from '../chars/emotions.mjs';
 import { drawVoid, voidRig } from '../chars/void.mjs';
 import { drawCage, CAGE_PRESETS } from '../sets/props.mjs';
 import { drawHQ, drawHQForeground, HQ_PRESETS, HQ_STATIONS } from '../sets/hq.mjs';
+import { blendHand } from '../hand.mjs';
 
 export const id = 's19';
 
@@ -214,7 +215,8 @@ export function render(g, t, S) {
   // ================= FEAR =================
   const fearT = t;
   let fFace, fHeadTurn = 0, fHeadTilt = 0, fLean = 0, fHeadDX = 0, fHeadDY = 0;
-  let armR, armL = { target: [-42, -104], bend: -1, front: true, hand: 'open' };
+  // the left hand rests on the console's rim, palm down
+  let armR, armL = { target: [-42, -104], bend: -1, front: true, hand: 'open', palmDir: [0, 0.8, -0.6] };
   let tongue = 0, fearPress = 0;
   if (!shotB) {
     // --- A: press → light → glance at JOY + proud wiggle → giggle → back to work
@@ -244,15 +246,19 @@ export function render(g, t, S) {
     fHeadDY = -4 * Math.abs(Math.sin((t - T('s19b01+2.55')) * TAU * 1.9)) * gig;
     fHeadTilt += 0.05 * gig;
     // the pressing hand: hover → tiny lift (anticipation) → press (behind the rim) → rest → covers the mouth
-    // (the lift brings the hand up over the rim so the press reads: it dips out of sight onto the button)
+    // (the lift brings the hand up over the rim so the press reads: it dips out of sight onto the button). It presses
+    // the way the others do: index finger out, fingertip down, palm toward the console (an open hand raised by the face
+    // read as a wave)
     const press = S.k(t, [['s19b01-0.08', 0], ['s19b01+0.18', -1, 'inOut'], ['s19b01+0.3', 1, 'in'], ['s19b01+0.55', 1], ['s19b01+0.8', 0]]);
     const rx = 42, ry = -106 + (press > 0 ? press * 16 : press * 26);
     const cover = S.k(t, [['s19b01+2.36', 0], ['s19b01+2.64', 1, 'out'], ['s19b01+3.6', 1], ['s19b01+3.95', 0]]);
-    // the palm lands ON the mouth (wrist under the chin, fingers up over the lips); the old target (10,−164) put
-    // the hand beside the mouth corner, where it read as a little wave next to the smile
+    const pointK = S.k(t, [['scene.start', 1], ['s19b01+0.55', 1], ['s19b01+0.85', 0]]);
+    // the palm lands ON the mouth (wrist under the chin, fingers up over the lips, the BACK of the hand to us: the palm
+    // is on the face); it used to stop at the left mouth corner, palm out
     armR = cover > 0.001
-      ? { target: [lerp(rx, -5, cover), lerp(-108, -157, cover)], bend: 1, front: true, hand: cover > 0.5 ? 'palm' : 'open' }
-      : { target: [rx, ry], bend: 1, front: true, hand: 'open' };
+      ? { target: [lerp(rx, 4, cover), lerp(ry, -156, cover)], bend: 1, front: true, hand: blendHand('open', 'flat', cover),
+        palmDir: [0, lerp(0.8, 0, cover), lerp(-0.6, -1, cover)], handAng: lerp(Math.PI / 2 + 0.12, -Math.PI / 2 + 0.28, ease.inOut(cover)) }
+      : { target: [rx, ry], bend: 1, front: true, hand: blendHand('open', 'point', pointK), palmDir: [0, 0.8, -0.6], handAng: Math.PI / 2 + 0.12 };
     tongue = S.k(t, [['scene.start', 1], ['s19b01+0.33', 1], ['s19b01+0.45', 0]]);
     fearPress = S.k(t, [['s19b01+0.28', 0], ['s19b01+0.36', 1, 'out'], ['s19b01+1.6', 0.15, 'sine'], ['s19b01+3.0', 0]]);
   } else {
@@ -280,7 +286,10 @@ export function render(g, t, S) {
     fHeadDX = 7 * lean;
     fLean = 0.055 * lean;
     const press = bumps(t, [T('s19b02+2.3'), T('s19b03+1.05')], 0.1, 0.25);
-    armR = { target: [42 + 4 * lean, -106 + press * 16], bend: 1, front: true, hand: 'open' };
+    // the index finger comes out for each press (fingertip down, palm to the console) and relaxes after
+    const pointB = clamp(1.6 * bumps(t, [T('s19b02+2.3'), T('s19b03+1.05')], 0.35, 0.6));
+    armR = { target: [42 + 4 * lean, -106 + press * 16], bend: 1, front: true, hand: blendHand('open', 'point', pointB), palmDir: [0, 0.8, -0.6],
+      handAng: Math.PI / 2 + 0.12 };
     fearPress = S.k(t, [['s19b03+1.0', 0], ['s19b03+1.1', 1, 'out'], ['s19b03+2.4', 0, 'sine']]) + 0.5 * bumps(t, [T('s19b02+2.33')], 0.08, 0.6);
   }
   const fearPose = {

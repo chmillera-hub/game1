@@ -126,11 +126,14 @@ export function render(g, t, S) {
   g.save();
   applyCamera(g, cam);
   drawHQ(g, 'backOfMind', st);
-  // the Void: only the robe and its left sleeve cuff in frame (the hood is far above, out of frame)
+  // the Void: only its robe in frame, at the frame's right edge (the hood is far above, out of frame). Its left arm
+  // hangs behind the robe here: at rest the sleeve's open cuff hung right above the cage and, dark on dark, read as a
+  // black disc floating in the air. (No hand shows; nothing of the Void moves.)
   drawVoid(g, ...VOID_B, {
     t, ...STARE_B, idle: 0.3, shadowSpread: 0.4,
     cosmos: COSMOS_RESIDUE, cosmosOpts: { seed: 7, glyphs: 0 },
     foldStar,
+    handL: { target: [-170, -620], reach: 1, show: 0, front: false },
   });
   drawCage(g, ...CAGE_B, {
     t, ...CAGE_PRESETS.rustedOpen, door,

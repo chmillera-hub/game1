@@ -1,9 +1,10 @@
 // s12 · why_are_you_doing_this — Fear's accusations meet absolute silence and collapse into pleas.
 // backOfMind throughout. The Void never moves (STARE_B, idle 0, hand hidden with bend 1). The camera keeps
 // changing sizes around a stillness that gives nothing back; Fear does all the moving.
-import { W, H, TAU, clamp, lerp, ease, noise1, blinkAt, applyCamera, drift, vignette, smoothstep } from '../engine.mjs';
+import { W, H, TAU, clamp, lerp, ease, noise1, blinkAt, applyCamera, drift, vignette, smoothstep, ik } from '../engine.mjs';
+import { blendHand } from '../hand.mjs';
 import { makeExpr, withSpeech } from '../face.mjs';
-import { drawFear, fearShake } from '../chars/fear.mjs';
+import { drawFear, fearBodySpace, fearHeadSpace, drawFearFrontArms } from '../chars/fear.mjs';
 import { drawVoid } from '../chars/void.mjs';
 import { drawHQ, drawHQForeground } from '../sets/hq.mjs';
 import { drawCage } from '../sets/props.mjs';
@@ -39,6 +40,25 @@ const JAMB_GRIP = [505, 1478];
 // the reach path (Fear-local): chin → hip (arm almost straight, 87 of 90 long) → up onto the jamb
 const REACH_C0 = [20, -70], REACH_OUT = [66, -56], REACH_C1 = [98, -98];
 const quad = (a, c, b, u) => [(1 - u) * (1 - u) * a[0] + 2 * (1 - u) * u * c[0] + u * u * b[0], (1 - u) * (1 - u) * a[1] + 2 * (1 - u) * u * c[1] + u * u * b[1]];
+// Fear's arm (fear.mjs drawArm): shoulder (±27, -134 + crouch·18), bones 46 / 44 — to know where a hand points
+const F_SH = [27, -134], F_L1 = 46, F_L2 = 44;
+const mix3 = (a, b, k) => [lerp(a[0], b[0], k), lerp(a[1], b[1], k), lerp(a[2], b[2], k)];
+/** the rig's default palm direction (open: back of the hand to us when raised, palm to the body when hanging; fist:
+ *  thumb up), made continuous — fear.mjs switches it in one frame as the forearm passes 'up > 0.5' */
+const foreAng = (a, side, crouch) => {
+  const { a1, a2 } = ik(side * F_SH[0], F_SH[1] + crouch * 18, a.target[0], a.target[1], F_L1, F_L2, a.bend ?? -side);
+  return a1 + a2;
+};
+function fearPalm(a, side, crouch, fistK) {
+  const w = smoothstep(0.25, 0.75, -Math.sin(foreAng(a, side, crouch)));
+  return mix3([lerp(-side * 0.9, 0, w), 0, lerp(-0.45, -1, w)], [-side * 0.6, 0.2, -0.8], fistK);
+}
+/** wrist bend that turns the fingers from the forearm's direction toward `ang` (by k) */
+function wristTo(a, side, crouch, ang, k) {
+  let d = ang - foreAng(a, side, crouch);
+  d = Math.atan2(Math.sin(d), Math.cos(d));
+  return d * k;
+}
 
 export const sfx = [
   { at: 'scene.start+0.564', name: 'footsteps', gain: -19, rate: 1.31, until: 'scene.start+1.25', fade: 0.12 }, // two tiny shuffles back: steps land on the contacts (+0.63, +1.05)
@@ -70,18 +90,37 @@ const lerp2 = (a, b, k) => [lerp(a[0], b[0], k), lerp(a[1], b[1], k)];
 const sobHitch = (t, at, catches = 1) => bump(t, at + 0.07, 0.07) + bump(t, at + 0.23, 0.07) + bump(t, at + 0.37, 0.07)
   + catches * (0.6 * bump(t, at + 0.58, 0.09) + 0.5 * bump(t, at + 0.85, 0.09));
 
-// Fear's face transform: replicates drawFear → drawFearHead up to drawFace's origin (facing 1), so overlays
-// (the chin crumple, the head mask of the lock strip) sit exactly on the drawn face, tremble included.
-function faceXform(g, F, t) {
-  const trem = clamp(F.tremble || 0), crouch = clamp(F.crouch || 0);
-  const br = Math.sin(t * TAU * (F.breathRate || (0.28 + trem * 0.5))) * (F.breathe ?? 1);
-  g.translate(F.pos[0], F.pos[1]); g.scale(F.scale, F.scale);
-  const sh = fearShake(t, trem);
-  g.translate(sh.x, sh.y);
-  g.rotate((F.lean || 0) + sh.rot);
-  g.translate(F.headDX || 0, NECK_Y + crouch * 20 + br * 1.2 + (F.headDY || 0));
-  g.rotate((F.headTilt || 0) + sh.head);
-  g.translate(0, HEAD_CY + 8);
+// The rigs breathe sin(t·TAU·breathRate) on ABSOLUTE film time, so a keyed change of the rate jumps the phase: a ramp
+// of the rate at t ≈ 170 s made the breath (head and shoulders) jitter at several Hz for seconds. The keyed rate is
+// integrated into a phase once per scene, and the rig gets the rate that reproduces it: sin(t·TAU·r) = sin(φ(t)).
+// `anchor` = 'start' or 'end': where φ equals t·TAU·rate (the same breath as a neighbouring shot with a constant rate).
+const PHASE = new Map();
+function breathRateAt(t, S, keys, anchor = 'start') {
+  let e = PHASE.get(S.id);
+  if (!e) {
+    const t0 = S.start - 2, t1 = S.end + 2, dt = 1 / 96, n = Math.ceil((t1 - t0) / dt) + 1;
+    const ph = new Float64Array(n);
+    for (let i = 1; i < n; i++) ph[i] = ph[i - 1] + TAU * S.k(t0 + (i - 0.5) * dt, keys) * dt;
+    const ta = anchor === 'end' ? S.end : S.start, ia = (ta - t0) / dt;
+    const off = ta * TAU * S.k(ta, keys) - lerp(ph[Math.floor(ia)], ph[Math.floor(ia) + 1], ia - Math.floor(ia));
+    for (let i = 0; i < n; i++) ph[i] += off;
+    e = { t0, dt, n, ph };
+    PHASE.set(S.id, e);
+  }
+  const f = clamp((t - e.t0) / e.dt, 0, e.n - 1.001), i = Math.floor(f);
+  return lerp(e.ph[i], e.ph[i + 1], f - i) / (TAU * t);
+}
+
+// Fear's face transform: the rig's own body and head frames (fear.mjs fearBodySpace / fearHeadSpace: shake, lean,
+// breath, crouch, head offset and tilt), then drawFearHead's face origin — so overlays (the chin crumple, the head
+// mask of the lock strip) sit exactly on the drawn face. `head: false` stops at the body frame.
+const fearOverlayPose = (F, t) => ({ t, facing: 1, tremble: F.tremble, lean: F.lean, crouch: F.crouch, headDY: F.headDY,
+  headTilt: F.headTilt, breathe: F.breathe, breathRate: F.breathRate });
+function faceXform(g, F, t, head = true) {
+  const pose = fearOverlayPose(F, t);
+  const sh = fearBodySpace(g, F.pos[0], F.pos[1], F.scale, pose);
+  if (head) { fearHeadSpace(g, pose, sh); g.translate(0, HEAD_CY + 8); }
+  return { pose, sh };
 }
 // world point of the face origin, smooth (no breath / shiver): used to frame the closes
 function faceAt(F) {
@@ -103,7 +142,16 @@ function chinCrumple(g, F, k, t) {
   const y0 = Math.min(my + under + 4.5 + q * 0.5 * k, 52);
   const hw = 9 + 2 * k;
   g.save();
-  faceXform(g, F, t);
+  // it is skin on the face: clipped to the head and kept off the scarf wrap that covers the jaw (with the mouth open
+  // the old drawing slid down onto the scarf)
+  const { pose, sh } = faceXform(g, F, t, false);
+  const crouch = clamp(F.crouch || 0), br = Math.sin(t * TAU * (F.breathRate || (0.28 + clamp(F.tremble || 0) * 0.5))) * (F.breathe ?? 1);
+  g.beginPath(); g.rect(-1e4, -1e4, 2e4, 2e4);
+  g.ellipse(0, NECK_Y + crouch * 20 + br * 1.2 + 4, 32.5, 13.5, 0, 0, TAU);
+  g.clip('evenodd');
+  fearHeadSpace(g, pose, sh);
+  g.translate(0, HEAD_CY + 8);
+  g.beginPath(); g.ellipse(clamp(F.headTurn, -1, 1) * 3, -8, HEAD_RX - 2, HEAD_RY - 2, 0, 0, TAU); g.clip();
   g.lineCap = 'round';
   // the ball of the chin: a soft shaded cup under the lip
   const gr = g.createRadialGradient(mx, y0 + 1, 0, mx, y0 + 1, hw);
@@ -122,6 +170,15 @@ function chinCrumple(g, F, k, t) {
   g.fillStyle = `rgba(61,44,102,${0.4 * k})`;
   for (const [dx, dy] of [[-4.2, 1.6], [0.6, 2.6], [4.8, 1.4]]) { g.beginPath(); g.arc(mx + dx, y0 + dy + 0.3 * q, 0.95, 0, TAU); g.fill(); }
   g.restore();
+}
+
+/** Fear, the chin crumple on its face, and its front arms laid back over the crumple (a hand at the chin stays in
+ *  front of it: the crumple's contour used to cross the fingers) */
+function drawFearChin(g, F, fearPose, t) {
+  drawFear(g, F.pos[0], F.pos[1], F.scale, fearPose);
+  if (F.chin <= 0.01) return;
+  chinCrumple(g, F, F.chin, t);
+  drawFearFrontArms(g, F.pos[0], F.pos[1], F.scale, fearPose);
 }
 
 // the inside-cage closes: only the right (lock) jamb and the popped padlock of the front layer, masked out
@@ -231,6 +288,9 @@ function fearState(t, S) {
   const sh = clamp((t - T('scene.start+0.2')) / (T('s12b01+0.6') - T('scene.start+0.2')));
   let pos = lerp2(OCC_SIDE, OCC_BACK, ease.sine(sh));
   let walk = sh > 0 && sh < 1 ? sh * 2 * Math.PI : 0;
+  // feet: front-on when it steps to and through the gate (toward the lens); turned a little toward the Void as it
+  // shuffles back (the walk's default 0.75 pointed them sideways and snapped on/off with each walk)
+  const feetTurn = 0.2 * Math.sin(clamp(sh) * Math.PI);
   let scale = FS;
   // b06: one step forward to the gate (occupantFront)
   const st6 = clamp((t - T('s12b06+0.4')) / 0.6);
@@ -250,8 +310,10 @@ function fearState(t, S) {
   // ---------------- face (keyed through the beats)
   const faceK = S.k(t, [
     ['scene.start-1', FROZEN], ['s12b01-0.1', FROZEN], ['s12b01+0.25', ACCUSE], ['s12b01+0.82', ACCUSE], ['s12b01+1.0', CRACK, 'out'],
-    ['s12b01.end+0.15', CRACK], ['s12b01.end+0.6', ACCUSE],
-    ['s12b02-0.2', CERTAIN], ['s12b02.end+0.2', CERTAIN],
+    // (the settle back from the crack starts before the cut to the b02 close, and CERTAIN eases in across it: it used to
+    // switch over 0.1 s right after the cut, the brows dropping in two frames)
+    ['s12b01.end+0.15', CRACK], ['s12b01.end+0.45', ACCUSE],
+    ['s12b02-0.05', CERTAIN], ['s12b02.end+0.2', CERTAIN],
     ['s12b03-0.15', SUSPECT, 'out'], ['s12b03.end+0.1', SUSPECT],
     ['s12b04+0.05', CONFUSED], ['s12b04.end+0.2', E(CONFUSED, { browUpL: 0.75, browUpR: -0.35, browIn: 0.55 })],
     ['s12b05+0.25', WAITING], ['s12b05+2.1', WAITING], ['s12b05+2.95', CRUMBLE],
@@ -274,14 +336,15 @@ function fearState(t, S) {
   } else if (t >= T('s12b03-0.25') && t < T('s12b04-0.2')) {
     // suspicious: the eyes dart to the fold where the hand went, then back to the hood
     const HOOD_SQ = { lookX: 0.85, lookY: -0.5 }, FOLD_SQ = { lookX: 0.06, lookY: -0.86 };   // side-eye at the hood; the fold is straight above
-    gz = gaze([['s12b03-0.25', HOOD], ['s12b03+0.12', HOOD_SQ], ['s12b03+0.22', FOLD_SQ, 'out'], ['s12b03+0.5', FOLD_SQ], ['s12b03+0.6', HOOD_SQ, 'out'], ['s12b03+0.95', HOOD_SQ], ['s12b03+1.03', { lookX: 0.12, lookY: -0.84 }, 'out'], ['s12b03+1.2', HOOD_SQ, 'out'], ['s12b04-0.2', HOOD, 'sine']]);
+    // (one dart to the fold and back: a second quick dart 0.4 s later read as a nervous double take)
+    gz = gaze([['s12b03-0.25', HOOD], ['s12b03+0.12', HOOD_SQ], ['s12b03+0.28', FOLD_SQ, 'out'], ['s12b03+0.6', FOLD_SQ], ['s12b03+0.78', HOOD_SQ, 'out'], ['s12b04-0.2', HOOD, 'sine']]);
   } else if (t >= T('s12b04-0.2') && t < T('s12b05+0.25')) {
     // the glance at the gate again, longer this time
     gz = gaze([['s12b04+0.5', HOOD], ['s12b04+0.66', GATE, 'out'], ['s12b05-0.05', GATE], ['s12b05+0.2', HOOD, 'out']]);
   } else if (t >= T('s12b05+0.25') && t < T('s12b06')) {
     // searching the hood for any sign; following its stare into the distance; back up
-    gz = gaze([['s12b05+0.3', HOOD], ['s12b05+0.4', { lookX: 0.27, lookY: -0.9 }, 'out'], ['s12b05+0.7', { lookX: 0.27, lookY: -0.9 }],
-      ['s12b05+0.8', { lookX: 0.5, lookY: -1 }, 'out'], ['s12b05+1.1', { lookX: 0.5, lookY: -1 }], ['s12b05+1.2', { lookX: 0.33, lookY: -0.82 }, 'out'],
+    gz = gaze([['s12b05+0.3', HOOD], ['s12b05+0.45', { lookX: 0.27, lookY: -0.9 }, 'out'], ['s12b05+0.7', { lookX: 0.27, lookY: -0.9 }],
+      ['s12b05+0.85', { lookX: 0.5, lookY: -1 }, 'out'], ['s12b05+1.1', { lookX: 0.5, lookY: -1 }], ['s12b05+1.25', { lookX: 0.33, lookY: -0.82 }, 'out'],
       ['s12b05+1.5', { lookX: 0.33, lookY: -0.82 }], ['s12b05+2.05', { lookX: -0.2, lookY: -0.88 }, 'sine'],   // along its stare to the far glow
       ['s12b05+2.35', { lookX: -0.2, lookY: -0.88 }], ['s12b05+2.6', HOOD, 'sine']]);
   } else if (t >= T('s12b06') && t < T('s12b07')) {
@@ -313,12 +376,15 @@ function fearState(t, S) {
     face.lidU += 0.06 * w * Math.sin(t * 2 * Math.PI * 1.6 + 1);
   }
 
-  // tears: the hanging tear from s11 falls; spills on 'sense'; a new pair on 'forever'
-  face.tearR = Math.max(S.k(t, [['scene.start-0.5', 0.07], ['scene.start+0.4', 1, 'in'], ['scene.start+0.41', 0]]),
-    S.k(t, [['s12b06+1.0', 0], ['s12b06+2.7', 1], ['s12b06+2.71', 0]]),
-    S.k(t, [['s12b09+1.7', 0], ['s12b09+3.4', 1], ['s12b09+3.41', 0]]));
-  face.tearL = Math.max(S.k(t, [['s12b06+0.45', 0], ['s12b06+2.1', 1], ['s12b06+2.11', 0]]),
-    S.k(t, [['s12b09+1.2', 0], ['s12b09+2.7', 1], ['s12b09+2.71', 0]]));
+  // tears: Fear stopped crying at the creak (s11: its one hanging tear has fallen before the cut); through the
+  // accusations the eyes stay wet (tears welling) and nothing falls. It starts crying again on 'This doesn't make any
+  // sense': single tears, one at a time, from the middle of that line (b06), one under the shout (b08) and a pair on
+  // 'forever' (b09). Explicit tears rather than the rig's `stream`: stream tears re-time themselves whenever stream
+  // changes, and every expression blend here changed it (tears blinked in and out at random spots on ~80 frames).
+  const drop = (a, b) => (t > T(a) && t < T(b) ? (t - T(a)) / (T(b) - T(a)) : 0);
+  face.stream = 0;
+  face.tearL = Math.max(drop('s12b06+0.9', 's12b06+2.6'), drop('s12b08+0.9', 's12b08+2.5'), drop('s12b09+1.2', 's12b09+2.7'));
+  face.tearR = Math.max(drop('s12b06+1.6', 's12b06+3.3'), drop('s12b09+1.7', 's12b09+3.4'));
   if (t > T('s12b06+0.2') && t < T('s12b07')) face.tears = 1;
 
   // blinks: frozen (no blinks) at the start; then deliberate ones on the shifts
@@ -371,7 +437,7 @@ function fearState(t, S) {
   // breath: held in b05 (barely moving), then the shaky leak; small uneven breaths at the end
   const breathe = S.k(t, [['scene.start', 0.12], ['scene.start+0.6', 1], ['s12b05+0.2', 1], ['s12b05+0.45', 0.08], ['s12b05+1.8', 0.08], ['s12b05+2.1', 1.7], ['s12b06+0.3', 1.3],
     ['s12b10', 1.4], ['s12b11', 1.1]]) * (1 + 0.35 * live * Math.sin(t * 2.9));
-  const breathRate = S.k(t, [['scene.start', 0.2], ['scene.start+0.6', 0.42], ['s12b05+1.9', 0.42], ['s12b05+2.1', 0.75], ['s12b06+0.5', 0.5], ['s12b10', 0.42], ['s12b11', 0.34]]);
+  const breathRate = breathRateAt(t, S, [['scene.start', 0.2], ['scene.start+0.6', 0.42], ['s12b05+1.9', 0.42], ['s12b05+2.1', 0.75], ['s12b06+0.5', 0.5], ['s12b10', 0.42], ['s12b11', 0.34]]);
 
   // ---------------- arms
   const P = (a, b, k) => lerp2(a, b, clamp(k));
@@ -387,15 +453,30 @@ function fearState(t, S) {
     return S.k(t, keys.map(([a, v]) => [a, { x: v[0], y: v[1] }]));
   };
   let L = armK(-1), R = armK(1);
-  let armL = { target: [L.x, L.y], bend: -1, front: true, hand: 'open' };   // = s11's last frame (chest, elbows out)
-  let armR = { target: [R.x, R.y], bend: 1, front: true, hand: 'open' };
-  const fistOn = (t > T('s12b01+0.55') && t < T('s12b05+0.3')) || (t > T('s12b07+0.4') && t < T('s12b09+0.6'));
-  if (fistOn) { armL.hand = 'fist'; armR.hand = 'fist'; }
-  if (t > T('s12b05+0.5') && t < T('s12b06+0.5')) { armL.hand = 'fist'; armR.hand = 'fist'; }
-  // fists hanging at the sides: the elbows bend in like the rest pose (the arms are nearly straight when it flips)
-  if (t > T('s12b07+0.5') && t < T('s12b09+0.3')) { armL.bend = 1; armR.bend = -1; }
+  let armL = { target: [L.x, L.y], bend: -1, front: true };   // = s11's last frame (chest, elbows out)
+  let armR = { target: [R.x, R.y], bend: 1, front: true };
+  // fists hanging at the sides: the elbows bend in like the rest pose. The elbow swings across through a straight arm
+  // (a continuous bend: the arm extends for a moment, then folds the other way) instead of flipping in one frame
+  // (at b09+0.3 the fist hung 78 of the arm's 90 from the shoulder: the elbow jumped ~25 px in the close)
+  const inK = S.k(t, [['s12b07+0.4', 0], ['s12b07+0.62', 1], ['s12b09+0.3', 1], ['s12b09+0.85', 0]]);
+  armL.bend = lerp(-1, 1, inK); armR.bend = lerp(1, -1, inK);
   // the stamp: the fists jab down with the foot
   if (stampHit > 0) { armL.target = [armL.target[0], armL.target[1] + 7 * stampHit]; armR.target = [armR.target[0], armR.target[1] + 7 * stampHit]; }
+  // the hands: fists from 'Why are you doing this' through the wait (b01 → b06), open as it goes to the gate, fists
+  // again stepping out (b07 → b09) and open on the plea ('Fists open'), then they clutch the scarf in the hug. Each
+  // change is a short blend of the hand pose and its palm direction (they switched in one frame, flickered
+  // fist → open → fist at b05+0.3, and the open hands in the hug showed their backs flat to the lens like palms)
+  const fistK = S.k(t, [['s12b01+0.45', 0], ['s12b01+0.7', 1], ['s12b06+0.4', 1], ['s12b06+0.65', 0],
+    ['s12b07+0.3', 0], ['s12b07+0.55', 1], ['s12b09+0.45', 1], ['s12b09+0.9', 0]]);
+  const hugK = S.k(t, [['s12b09+1.5', 0], ['s12b09+2.4', 1]]);
+  const baseHand = blendHand(blendHand('open', 'fist', fistK), 'drape', hugK);
+  // in the hug each hand lies over the opposite shoulder, fingers curled round it (pointing outward), not up the
+  // line of the forearm (they read as two hands raised beside the chin)
+  const setHand = (a, side) => {
+    a.hand = baseHand; a.palmDir = mix3(fearPalm(a, side, crouch, fistK), [0, 0, -1], hugK);
+    a.wrist = wristTo(a, side, crouch, side < 0 ? 0.45 : Math.PI - 0.45, hugK);
+  };
+  setHand(armL, -1); setHand(armR, 1);
 
   // b06/b07: "one step to the open gate; a small hand grips its edge": the right hand finds the edge of the open doorway
   // (the lock jamb, just above the dangling padlock), holds it through the line, lets go as Fear steps out (b07)
@@ -416,21 +497,29 @@ function fearState(t, S) {
       // letting go (b07, the wide): straight down to the arms' pose, elbow down (as the b07 fists pose that follows)
       tgt = P(armR.target, loc, reachK); bend = -1;
     }
-    armR = { target: tgt, bend, front: true, hand: reachK > 0.85 ? 'grip' : 'open' };
+    // the fingers close round the jamb as the hand arrives (and open again as it lets go)
+    const gk = smoothstep(0.7, 1, reachK), a = { target: tgt, bend, front: true };
+    a.hand = blendHand(armR.hand, 'grip', gk);
+    a.palmDir = mix3(fearPalm(a, 1, crouch, fistK), [-0.6, 0.2, -0.8], gk);
+    armR = a;
     if (reachK > 0.85 && t < T('s12b07+0.3')) grips = [[(h[0] - CAGE_B[0]) / FS, (h[1] - CAGE_B[1]) / FS]];
   }
-  // b10: wipes its nose on the scarf (right hand), then folds back into the hug
+  // b10: wipes its nose on the scarf (right hand: the fingers close into a soft fist), then folds back into the hug
   const wipe = S.k(t, [['s12b10+0.05', 0], ['s12b10+0.35', 1, 'out'], ['s12b10+0.95', 1], ['s12b10+1.3', 0, 'sine']]);
   if (wipe > 0) {
     const sweep = Math.sin((t - T('s12b10+0.35')) * 2 * Math.PI * 1.7) * clamp((t - T('s12b10+0.35')) / 0.1);
-    armR = { target: P(armR.target, [6 + 12 * sweep, -158], wipe), bend: -1, front: true, hand: 'fist' };
+    const a = { target: P(armR.target, [6 + 12 * sweep, -158], wipe), bend: armR.bend, front: true };
+    a.hand = blendHand(armR.hand, 'fist', wipe);
+    a.palmDir = mix3(armR.palmDir, [-0.6, 0.2, -0.8], wipe);
+    a.wrist = wristTo(a, 1, crouch, Math.PI - 0.45, hugK * (1 - wipe));
+    armR = a;
   }
 
   // the chin: trembles under 'certain', starts to go in the silence, crumples in the plea
   const chin = S.k(t, [['s12b02-0.3', 0], ['s12b02', 0.5], ['s12b02.end+0.2', 0.5], ['s12b03-0.1', 0],
     ['s12b05+2.4', 0], ['s12b05+2.95', 0.45], ['s12b06+0.3', 0.6], ['s12b07-0.1', 0.6], ['s12b07+0.2', 0.15], ['s12b08-0.2', 0],
     ['s12b09+0.1', 0], ['s12b09+0.5', 1, 'out'], ['s12b10+0.5', 0.8], ['s12b11', 0.4]]);
-  return { pos, scale, walk, chin, face: spoken, headDY, headTilt, headTurn, lean, crouch, tremble, breathe, breathRate, armL, armR, grips, door };
+  return { pos, scale, walk, feetTurn, chin, face: spoken, headDY, headTilt, headTurn, lean, crouch, tremble, breathe, breathRate, armL, armR, grips, door };
 }
 
 // ---------------------------------------------------------------- baked backgrounds (perf)
@@ -464,7 +553,7 @@ export function render(g, t, S) {
   const inside = F.pos[1] <= DOORWAY_Y;
   const fearPose = { t, facing: 1, headTurn: F.headTurn, headTilt: F.headTilt, headDY: F.headDY, lean: F.lean, crouch: F.crouch,
     tremble: F.tremble, breathe: F.breathe, breathRate: F.breathRate, face: F.face, armL: F.armL, armR: F.armR,
-    walk: F.walk ? { phase: F.walk } : undefined };
+    walk: F.walk ? { phase: F.walk } : undefined, feetTurn: F.feetTurn };
 
   g.save();
   applyCamera(g, cam);
@@ -481,11 +570,10 @@ export function render(g, t, S) {
     drawVoid(g, ...VOID_B, vpose);
     drawCage(g, ...CAGE_B, { ...cst, layer: 'back' });
   }
-  if (inside) drawFear(g, F.pos[0], F.pos[1], F.scale, fearPose);
-  if (inside) chinCrumple(g, F, F.chin, t);
+  if (inside) drawFearChin(g, F, fearPose, t);
   if (cage === 'full' && !(bake && bake.front)) drawCage(g, ...CAGE_B, { ...cst, layer: 'front', grips: F.grips });
   else if (cage === 'cheatLock') lockStrip(g, cst, F, t);
-  if (!inside) { drawFear(g, F.pos[0], F.pos[1], F.scale, fearPose); chinCrumple(g, F, F.chin, t); }
+  if (!inside) drawFearChin(g, F, fearPose, t);
   drawHQForeground(g, 'backOfMind', st);
   g.restore();
   // b08–b09 close from above: the darkness of the hood edges the top of the frame (and swallows the sign's end)

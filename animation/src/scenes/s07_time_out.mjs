@@ -6,7 +6,7 @@
 import { clamp, lerp, ease, blinkAt, applyCamera, drift, vignette, TAU } from '../engine.mjs';
 import { EXPR, makeExpr, withSpeech } from '../face.mjs';
 import { drawFear } from '../chars/fear.mjs';
-import { drawSelf, SELF_EXPR, selfLocal } from '../chars/self.mjs';
+import { drawSelf, SELF_EXPR, selfLocal, selfPoseAnchors } from '../chars/self.mjs';
 import { drawHQ, drawHQForeground, drawAlarmLight, HQ_VIEWS, ALARM_REACH } from '../sets/hq.mjs';
 
 export const id = 's07';
@@ -28,6 +28,17 @@ const CUT_CEO = 's07b03.end+1.88';   // Fear's reaction → Consciousness's reac
 
 const X = (...p) => makeExpr(...p);
 const sine = (k) => ease.sine(clamp(k));
+// the narrator sheds no tear before the last scene: the CEO's lower lids only glisten (tears ≤ 0.35), keeping the
+// build-up of the beat's welling (.6 → .26, .85 → .32, 1 → .35)
+const glisten = (x) => 0.35 * Math.pow(clamp(x || 0), 0.6);
+// Fear's fist ON the alarm handle (as in s06's yank): wrist `d` px back from the covered point along the hand angle,
+// in Fear's body frame (drawFear rotates arms with `lean`); `dx` = feet offset from FX (local px)
+function onHandle(px, py, ang, lean, dx = 0, d = 8) {
+  const x = px - d * Math.cos(ang) - dx, y = py - d * Math.sin(ang);
+  const c = Math.cos(-lean), s = Math.sin(-lean);
+  return { target: [x * c - y * s, x * s + y * c], handAng: ang - lean };
+}
+const YANK_DX = 15;   // = s06: Fear stepped in to the station for the yank; it steps back as it turns round
 
 function grade(g, cold, warm) {
   g.save(); g.setTransform(1, 0, 0, 1, 0, 0);
@@ -69,8 +80,10 @@ function ceoPose(t, S) {
   let armR, armL;
   if (!tugStarted) {
     // = s06's last pose (fist on the knee), then the arm comes down to the side as they rise
+    // (foreshortened on the knee as at the end of s06, the arm lengthening as it comes off: no "<" fold across the
+    // jacket front on the way up)
     armR = { preset: 'onShoulder', target: baseR, shake: 0.12 * (1 - pushOff), hand: pushOff < 0.55 ? 'fist' : 'rest',
-      wrist: lerp(0.75, 0.1, pushOff), front: pushOff < 0.7 };
+      wrist: lerp(0.75, 0.1, pushOff), front: pushOff < 0.7 };   // bend / reach: set below (elbowThrough)
     armL = 'rest';
   } else if (tug > 0.001) {
     armR = { target: [lerp(restR[0], lap(1)[0], tug), lerp(restR[1], lap(1)[1], tug)], bend: 1, front: true, hand: tug > 0.5 ? 'grip' : 'rest' };
@@ -120,7 +133,7 @@ function ceoPose(t, S) {
     ['scene.end+0.4', X(SELF_EXPR.holdingBackTears, { browIn: 0.9, browSquish: 0.5, lidU: 0.36, lidL: 0.12, lidTilt: 0.48, tears: 0.95,
       pressed: 0.95, smile: -0.3, tremble: 0.45, lookX: 0.1, lookY: 0.95 })],
   ]);
-  face = { ...face };
+  face = { ...face, tears: glisten(face.tears) };
   // the eyes follow Fear as the head rises (kneeling eyeline → standing eyeline)
   face.noAutoBlink = t > S.T('s07b02-0.4') && t < S.T('s07b03+1.2') || t > S.T('s07b03.end+1.4');
   face.blink = blinkAt(t, S.T('s07b01+1.0'), 0.36)           // resolve: a slow blink as they straighten
@@ -138,7 +151,26 @@ function ceoPose(t, S) {
   const headTilt = S.k(t, [['scene.start', 0.06], ['s07b01+0.9', 0.04], ['s07b01+1.3', -0.02], ['s07b03', 0.03], ['s07b03.end+1.95', 0.03], ['s07b03.end+2.2', 0.0], ['s07b03.end+2.9', 0.05]]);
   const headTurn = S.k(t, [['s07b01+0.6', 0.2], ['s07b01+1.2', 0.14], ['s07b03+1.3', 0.14], ['s07b03+1.45', 0.02], ['s07b03+1.9', 0.12],
     ['s07b03.end+2.5', 0.12], ['s07b03.end+2.95', 0.04]]);                                   // turns a little away
-  return { t, outfit: 'ceo', kneel, facing: 1, face, headDY, headTilt, headTurn, shrug, breathe, armR, armL, lean: S.k(t, [['s07b01+1.0', 0], ['s07b01+1.3', -0.015]]) };
+  const pose = { t, outfit: 'ceo', kneel, facing: 1, face, headDY, headTilt, headTurn, shrug, breathe, armR, armL, lean: S.k(t, [['s07b01+1.0', 0], ['s07b01+1.3', -0.015]]) };
+  if (!tugStarted) Object.assign(armR, elbowThrough(pose, armR.target, pushOff));
+  return pose;
+}
+// The rising arm's elbow changes sides: on the knee (= s06's last frame) it points in and toward the camera
+// (foreshortened, bend −1); hanging at the side, and for the lapel tug, it points out (bend +1). Flipping `bend` on
+// a bent arm pops the elbow across the body (it did, at the tug), so the arm first straightens (its bones shortened
+// to just under the shoulder→wrist distance: a straight, foreshortened arm, where both bends coincide), flips there,
+// and lengthens again with the elbow out.
+function elbowThrough(pose, target, p) {
+  const A = selfPoseAnchors(CX, CY, CS, pose);
+  const [sx, sy] = selfLocal(CX, CY, CS, 1, ...A.shoulderR);
+  const dt = Math.hypot(target[0] - sx, target[1] - sy);
+  const dw = Math.max(40, dt - 17 * 1.42);                     // onShoulder lands the palm: the wrist sits back
+  const rS = Math.min(1, (0.985 * dw) / 192);                  // straight (L1 + L2 = 192 at reach 1)
+  // (after the flip the arm stays straight as the body rises (rS grows with the distance) and only takes its full
+  // length, the elbow just off the side, at the very end: lengthened early it stuck out akimbo)
+  const a = clamp(p / 0.45), b = clamp((p - 0.8) / 0.2);
+  if (p < 0.45) return { bend: -1, reach1: lerp(0.66, rS, sine(a)), reach2: lerp(0.6, rS, sine(a)) };
+  return { bend: 1, reach1: lerp(rS, 1, sine(b)), reach2: lerp(rS, 1, sine(b)) };
 }
 
 // ------------------------------------------------------------------ FEAR: clinging → frozen at its name → turns → betrayed
@@ -156,17 +188,21 @@ function fearPose(t, S, L) {
   // "why?": the open hands lift slowly to waist height (not a flick), hold through the head shake, then fall
   const palms = S.k(t, [['s07b03.end+0.35', 0], ['s07b03.end+0.9', 1, 'inOut'], ['s07b03.end+1.42', 1], ['s07b03.end+1.85', 0, 'inOut']]);
   let armL, armR;
+  const lean = facing > 0 ? S.k(t, [['scene.start', 0.08], ['s07b02+0.2', 0.03]]) : 0;
+  const dx = YANK_DX * (1 - sine((t - S.T('s07b02+0.2')) / 0.45));
   if (facing > 0) {
-    // the hands let go and FALL: each target swings down on an arc around its own shoulder at near-full arm length,
-    // so the elbows never fold up into an "M" (the old straight lerp passed right next to the shoulders)
+    // both fists on the pulled handle (= s06's last frame); the hands let go and FALL: each target swings down on an
+    // arc around its own shoulder at near-full arm length, so the elbows never fold up into an "M" (the old straight
+    // lerp passed right next to the shoulders)
     const sy = -134 + crouch * 18;
     const swing = (sx, tx, ty, aEnd) => {
       const a0 = Math.atan2(ty - sy, tx - sx), r0 = Math.min(88, Math.hypot(tx - sx, ty - sy));
       const a = lerp(a0, aEnd, off), r = lerp(r0, 70, off);
       return [sx + Math.cos(a) * r, sy + Math.sin(a) * r];
     };
-    armR = { target: swing(27, ALARM_REACH[0], handleY, 1.2), bend: -1, front: true, hand: off > 0.35 ? 'open' : 'grip' };
-    armL = { target: swing(-27, 80, handleY + 8, 1.95), bend: -1, front: true, hand: off > 0.35 ? 'open' : 'grip' };
+    const hR = onHandle(ALARM_REACH[0] + 12, handleY, -1.15, lean, dx), hL = onHandle(ALARM_REACH[0] - 14, handleY + 1, -1.3, lean, dx);
+    armR = { target: swing(27, ...hR.target, 1.2), bend: -1, front: true, hand: off > 0.35 ? 'open' : 'grip', handAng: lerp(hR.handAng, Math.PI / 2 - 0.35, off) };
+    armL = { target: swing(-27, ...hL.target, 1.95), bend: -1, front: true, hand: off > 0.35 ? 'open' : 'grip', handAng: lerp(hL.handAng, Math.PI / 2 + 0.35, off) };
   } else {
     // arms hanging where they fell (mirrored across the flip so the hands do not jump), stiffening at its sides;
     // then palms up and out ("why?"), then they drop
@@ -215,8 +251,10 @@ function fearPose(t, S, L) {
   // one blink before the dread sets in; then none until the hands have dropped: a slow one, letting it sink in
   // (the cut to Consciousness comes right out of it)
   face.blink = blinkAt(t, S.T('s07b01+0.18'), 0.18) + blinkAt(t, S.T('s07b03.end+1.5'), 0.38);
-  // a tear finally leaves the lid as the hands drop
-  face.tearR = t > S.T('s07b03.end+1.5') ? Math.min(1, (t - S.T('s07b03.end+1.5')) / 1.7) : 0;
+  // one tear, from one eye: it gathers on the lid halfway through the reaction shot (through the head shake) and
+  // leaves it as the hands drop, so it is seen running before the cut (it started 0.4 s before the cut and was only
+  // ever a bead on the lid)
+  face.tearR = t > S.T('s07b03.end+0.95') ? Math.min(1, (t - S.T('s07b03.end+0.95')) / 1.7) : 0;
   // ONE slow head shake (left, right, back to centre) over 0.8 s; the eyes stay locked on the CEO through it
   const shk = clamp((t - S.T('s07b03.end+0.72')) / 0.8);
   const shakeW = Math.sin(shk * TAU) * Math.sin(shk * Math.PI);
@@ -229,13 +267,15 @@ function fearPose(t, S, L) {
   const headDX = shakeW * 3;
   // breath held through the line; a catch of breath as the face forms, then shallow
   const breathe = S.k(t, [['s07b02', 1], ['s07b02+0.2', 0.2], ['s07b03.end+0.15', 0.2], ['s07b03.end+0.35', 1.4], ['s07b03.end+0.7', 0.4], ['s07b03.end+1.6', 0.5], ['s07b03.end+2.0', 1.1]]);
-  return { t, face, facing, crouch, tremble, armL, armR, headTurn, headDY, headDX: facing > 0 ? 0 : headDX, headTilt: facing > 0 ? -0.05 : 0, squash, breathe, lean: facing > 0 ? S.k(t, [['scene.start', 0.08], ['s07b02+0.2', 0.03]]) : 0 };
+  return { t, face, facing, crouch, tremble, armL, armR, headTurn, headDY, headDX: facing > 0 ? 0 : headDX, headTilt: facing > 0 ? -0.05 : 0, squash, breathe, lean, dx,
+    whiten: facing > 0 ? 0.55 * L.pulled : 0 };
 }
 
 function drawFearAt(g, F) {
   g.save();
-  if (F.squash !== 1) { g.translate(FX, 0); g.scale(F.squash, 1); g.translate(-FX, 0); }
-  drawFear(g, FX, FY, FS, F);
+  const x = FX + (F.dx || 0) * FS;
+  if (F.squash !== 1) { g.translate(x, 0); g.scale(F.squash, 1); g.translate(-x, 0); }
+  drawFear(g, x, FY, FS, F);
   g.restore();
 }
 

@@ -19,8 +19,9 @@
 import { createCanvas } from '@napi-rs/canvas';
 import { W, H, TAU, clamp, lerp, noise1, fbm, blinkAt, applyCamera, drift, vignette, ik, limb } from '../engine.mjs';
 import { withSpeech } from '../face.mjs';
+import { blendHand } from '../hand.mjs';
 import { drawFear, FEAR_COLORS, fearBodySpace, fearHeadSpace, drawFearFrontArms } from '../chars/fear.mjs';
-import { drawSelf, SELF_EXPR, selfLocal, drawClipboard } from '../chars/self.mjs';
+import { drawSelf, SELF_EXPR, drawClipboard } from '../chars/self.mjs';
 import { drawVoid } from '../chars/void.mjs';
 import { drawHQ, drawHQForeground, drawAlarmStation, HQ_VIEWS } from '../sets/hq.mjs';
 import { drawCage } from '../sets/props.mjs';
@@ -124,9 +125,12 @@ function drawBackdrop(g, bg, haze, t) {
 
 // --------------------------------------------------------------- FEAR (alarm coords, facing -1, toward the CEO)
 // eyelines (staging §1.2): Fear → Void up-left; Fear → CEO left, flatter.
-const F_HOOD = { lookX: -0.6, lookY: -0.74 };
-const F_CEO = { lookX: -0.66, lookY: -0.22 };
-const F_FLICK = { lookX: -0.62, lookY: -0.36 };     // its eyes ride the CEO's flick up a hair
+// (measured on screen: from Fear's eyes the CEO's eyes lie ≈ 44° above the horizontal, up-left, in every shot; the
+// hood ≈ 70° up. The old F_CEO aimed 21° up — at the CEO's collar — so "turns its eyes to Consciousness" read as
+// a look at the CEO's chest. Gaze angle = atan(lookY·28.5 / lookX·24.5).)
+const F_HOOD = { lookX: -0.5, lookY: -0.85 };      // ≈ 63° up-left: high, past the CEO's head
+const F_CEO = { lookX: -0.6, lookY: -0.5 };        // ≈ 44° up-left: the CEO's eyes
+const F_FLICK = { lookX: -0.56, lookY: -0.64 };    // its eyes ride the CEO's flick up a hair
 const E_FROZEN = { browIn: 1, browUp: 0.62, browSquish: 0.35, lidU: -0.34, lidL: 0, lidTilt: 0, pupil: 0.56, smile: -0.32, wide: 0.08, tears: 0.12, tremble: 0.35 };
 const E_PLEAD = { browIn: 1, browUp: 0.8, browSquish: 0.18, lidU: -0.1, lidL: 0.05, lidTilt: 0.28, pupil: 1.18, smile: -0.52, wide: 0.05, tears: 0.42, tremble: 0.5 };
 const E_NOTSAFE = { browIn: 1, browUp: 0.72, browSquish: 0.42, lidU: -0.3, lidL: 0, lidTilt: 0.12, pupil: 0.62, smile: -0.5, wide: 0.1, tears: 0.5, tremble: 0.7 };
@@ -155,7 +159,8 @@ function fearPose(t, S) {
     ['s04b06+1.4', E_WATCH], ['s04b06+1.95', E_BACK],
   ]);
   // a dry swallow before speaking; the defeated shrug after "You don't know that."
-  const swallow = k([['scene.start+0.1', 0], ['scene.start+0.24', 1], ['scene.start+0.5', 0]]);
+  // (eased over 5 frames down / 8 up: in 3 frames the dip read as a jolt on the opening close-up)
+  const swallow = k([['scene.start+0.08', 0], ['scene.start+0.3', 1], ['scene.start+0.62', 0]]);
   const shrugUp = k([['s04b05+1.0', 0], ['s04b05+1.2', 1], ['s04b05+1.42', 0]]);
   const crouch = k([['scene.start', 0.3], ['s04b03+2.75', 0.3], ['s04b03+3.1', 0.42], ['s04b04+0.8', 0.42], ['s04b04+1.6', 0.34],
     ['s04b05+1.25', 0.3], ['s04b05+1.75', 0.44]]);
@@ -181,7 +186,7 @@ function fearPose(t, S) {
     const p = [lerp(lerp(scarf[0], mouth[0], up), belly[0], slump), lerp(lerp(scarf[1], mouth[1], up), belly[1], slump)];
     return { target: p, bend: side, front: true, hand: 'fist' };
   };
-  const turn = lerp(-0.16, -0.26, clamp((gaze.lookY + 0.74) / 0.52));
+  const turn = lerp(-0.16, -0.26, clamp((gaze.lookY + 0.85) / 0.35));
   return {
     t, facing: -1, crouch, tremble, face,
     headTurn: turn, headTilt: -0.04 + 0.03 * Math.sin(t * 0.7),
@@ -227,9 +232,12 @@ function drawFearNow(g, t, S, [ox, oy] = [0, 0]) {
 }
 
 // --------------------------------------------------------------- CONSCIOUSNESS (alarm coords, kneeling, facing 1)
-const C_FEAR = { lookX: 0.6, lookY: 0.42 };
-const C_HOOD = { lookX: -0.85, lookY: -0.82 };
-const C_HOODSTAY = { lookX: -0.72, lookY: -0.86 };
+// (on screen Fear's eyes lie ≈ 40° below the CEO's, to the right; the hood is UP — straight above the CEO's head in
+// the two-shots, a little left of it in the closes. The old C_HOOD (−0.85,−0.82) aimed 37° up to the LEFT, past the
+// hood; the script says "up to the hood", "a glance up at the Void", "eyes drift up". Angle = atan(lookY·12.6 / lookX·16).)
+const C_FEAR = { lookX: 0.58, lookY: 0.55 };
+const C_HOOD = { lookX: -0.42, lookY: -0.95 };
+const C_HOODSTAY = { lookX: -0.36, lookY: -0.95 };
 const CE_WORRY = { ...SELF_EXPR.worried, browIn: 0.7, smile: -0.12, pressed: 0 };
 const CE_DREAD = { browIn: 0.85, browUp: 0.38, browSquish: 0.3, lidTilt: 0.15, lidU: -0.12, lidL: 0, smile: -0.2, pressed: 0, pupil: 0.85 };
 const CE_HALF = { browIn: 0.9, browUp: 0.16, browSquish: 0.1, lidTilt: 0.3, lidU: 0.06, lidL: 0, smile: 0.24, pressed: 0 };
@@ -238,8 +246,17 @@ const CE_FIRM = { browIn: -0.12, browUp: 0.02, browSquish: 0.32, lidTilt: 0.04, 
 const CE_CRACK = { browIn: 0.9, browUp: 0.15, browSquish: 0.32, lidTilt: 0.35, lidU: 0.16, lidL: 0.05, smile: -0.18, pressed: 0.15 };
 const CE_KNIT = { browIn: 0.55, browUp: -0.05, browSquish: 0.7, lidTilt: 0.28, lidU: 0.2, lidL: 0.1, smile: -0.22, pressed: 0.8, tears: 0.2 };
 
-const KNEE = [58, -150];                                          // palm resting on the front thigh, above the knee (local)
-const HOVER = selfLocal(CX, CY, CS, 1, 336, 1182);                // in the air, short of Fear's shoulder (433,1170)
+// The near-to-Fear hand is the FAR arm of the 3/4 kneel. It used to be drawn over the chest as a full-length arm to a
+// wrist 80 px under the shoulder, which folded the elbow back across the torso into a Z (in every two-shot and CEO
+// close). Now the bones are foreshortened (reach1/reach2) so the elbow only bends like a relaxed arm, and it is drawn
+// in the 'back' layer like any far arm: the upper arm stays behind the torso (the CEO badge stays visible), the
+// forearm comes out from behind the torso's front edge and the hand rests on top of the raised knee.
+const KNEE_W = [92, -176], KNEE_R = [0.72, 0.5], KNEE_ANG = 1.25, KNEE_PALM = [-0.3, 0.4, -0.85];   // fingers over the knee cap, clear of Fear
+// the aborted reach: the forearm swings forward and the open hand stops in the air beside Fear's shoulder, fingers
+// angled up, palm toward Fear, the fingertips short of its arm and head (it used to land the fingers on Fear's
+// cheek, which read as a touch: "Neither of them touches the other yet")
+const HOVER_W = [64, -166], HOVER_R = [0.68, 0.48], HOVER_ANG = -0.6, HOVER_PALM = [0.8, 0.2, -0.55];
+const KNEE_ARM = { target: KNEE_W, bend: -1, layer: 'back', hand: 'drape', handAngle: KNEE_ANG, palmDir: KNEE_PALM, reach1: KNEE_R[0], reach2: KNEE_R[1] };
 
 function ceoPose(t, S) {
   const k = (keys, e) => S.k(t, keys, e);
@@ -285,20 +302,27 @@ function ceoPose(t, S) {
   const upK = k([['s04b06+1.05', 0], ['s04b06+1.8', 1, 'sine']]);
   ex.lidU = lerp(ex.lidU || 0, -0.1, upK); ex.lidTilt = (ex.lidTilt || 0) * (1 - 0.45 * upK); ex.lidL = (ex.lidL || 0) * (1 - 0.6 * upK);
   const lip = S.lip('CONSCIOUSNESS', t);
-  const blink = Math.max(blinkAt(t, S.T('s04b01+2.0'), 0.2), blinkAt(t, S.T('s04b03+2.35'), 0.46),
-    blinkAt(t, S.T('s04b05+1.0'), 0.2), blinkAt(t, S.T('s04b06+1.0'), 0.22));
-  const quiet = t > S.T('s04b04-0.1') && t < S.T('s04b04+0.8');
+  // every blink is placed (no random auto-blinks: they landed 0.6–0.75 s before/after the deliberate ones, reading
+  // as double blinks — e.g. right after the b06 blink, mid-stare at the hood)
+  const blink = Math.max(blinkAt(t, S.T('s04b01+2.0'), 0.2), blinkAt(t, S.T('s04b02+1.69'), 0.16), blinkAt(t, S.T('s04b03+2.35'), 0.46),
+    blinkAt(t, S.T('s04b04+1.3'), 0.16), blinkAt(t, S.T('s04b05+1.0'), 0.2), blinkAt(t, S.T('s04b06+1.0'), 0.22));
   const micro = { x: fbm(t * 0.5, 31) * 0.05, y: fbm(t * 0.42, 32) * 0.04 };
   const face = withSpeech({ ...ex, ...gaze, lookX: gaze.lookX + micro.x, lookY: gaze.lookY + micro.y,
-    open: (ex.open || 0) + opens, pressed: Math.max(ex.pressed || 0, 0.6 * swallow), blink, noAutoBlink: quiet }, lip, 0.9);
+    open: (ex.open || 0) + opens, pressed: Math.max(ex.pressed || 0, 0.6 * swallow), blink, noAutoBlink: true }, lip, 0.9);
   // the hand: off the knee toward Fear, stops in the air, returns ("not yet")
   const reach = k([['s04b01+1.4', 0], ['s04b01+1.84', 0.62, 'cubic'], ['s04b01+2.16', 0.6], ['s04b02+0.3', 0, 'cubic']]);
-  // palm stops in the air beside Fear's shoulder, fingers up (never touching), then sinks back to the knee
+  // the hand lifts off the knee in a small arc, the fingers swing round from draped-down to pointing at Fear, the
+  // open hand stops in the air (never touching), the fingers curl a little, and it sinks back onto the knee
   const rp = clamp(reach / 0.62);
   const curl = k([['s04b01+1.86', 0], ['s04b01+2.1', 1]]);
-  const armR = { target: [lerp(KNEE[0], HOVER[0], rp), lerp(KNEE[1], HOVER[1], rp)], bend: -1, front: true, palm: true,
-    hand: rp > 0.08 ? (curl > 0.5 && rp > 0.5 ? 'rest' : 'open') : 'drape',
-    ...(rp > 0.08 ? { handAngle: lerp(-0.2, -0.62, rp) } : { wrist: 0.75 }), thumb: -1 };
+  const open = clamp((rp - 0.1) / 0.45);
+  let hand = blendHand('drape', 'open', open * open * (3 - 2 * open));
+  if (curl > 0) hand = blendHand(hand, 'rest', 0.65 * curl * open);
+  // the wrist draws back and up while the fingers swing up (their tips never sweep into Fear)
+  const arc = Math.sin(rp * Math.PI);
+  const armR = { ...KNEE_ARM, target: [lerp(KNEE_W[0], HOVER_W[0], rp) - 18 * arc, lerp(KNEE_W[1], HOVER_W[1], rp) - 14 * arc], hand,
+    handAngle: lerp(KNEE_ANG, HOVER_ANG, rp), palmDir: KNEE_PALM.map((v, i) => lerp(v, HOVER_PALM[i], rp)),
+    reach1: lerp(KNEE_R[0], HOVER_R[0], rp), reach2: lerp(KNEE_R[1], HOVER_R[1], rp) };
   const inhale = k([['s04b06+0.2', 0], ['s04b06+0.55', 1], ['s04b06+0.95', 1], ['s04b06+1.5', 0]]);  // breath for words that never come
   return { t, outfit: 'ceo', kneel: 1, facing: 1, face, headTurn, headTilt, lean, shrug: 0.22 * inhale,
     headDY: 5 * swallow - 4 * chin + 6 * nod - 2 * inhale - 4 * upK, armR };

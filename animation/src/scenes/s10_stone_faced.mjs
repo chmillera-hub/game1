@@ -1,9 +1,10 @@
 // s10 · stone_faced · backOfMind (dissolve in)
 // NARRATOR: "And the Void stood there, stone-faced, its shadow filling half the room." / silent: Fear turns its back.
 import { createCanvas } from '@napi-rs/canvas';
-import { W, H, clamp, lerp, ease, fbm, blinkAt, applyCamera, drift, vignette, TAU } from '../engine.mjs';
-import { EXPR } from '../face.mjs';
-import { drawFear } from '../chars/fear.mjs';
+import { W, H, clamp, lerp, ease, fbm, blinkAt, applyCamera, drift, vignette, TAU, mix } from '../engine.mjs';
+import { EXPR, makeExpr } from '../face.mjs';
+import { drawFear, FEAR_ARMS } from '../chars/fear.mjs';
+import { blendHand } from '../hand.mjs';
 import { drawVoid } from '../chars/void.mjs';
 import { drawHQ, drawHQForeground } from '../sets/hq.mjs';
 import { drawCage, cagePoint } from '../sets/props.mjs';
@@ -34,6 +35,7 @@ function grade(g, cold, warm) {
   g.restore();
 }
 const sstep = (a, b, x) => { const k = clamp((x - a) / (b - a)); return k * k * (3 - 2 * k); };
+const bump = (t, c, w) => { const d = Math.abs(t - c) / w; return d >= 1 ? 0 : 0.5 + 0.5 * Math.cos(Math.PI * d); };
 /** irregular little after-sob hiccups: 0..1 pulses */
 function hiccup(t, times, dur = 0.32) {
   let v = 0;
@@ -147,7 +149,12 @@ export function render(g, t, S) {
   const xeAtFear = edgeX(xe, 1500);
   const touch = sstep(430, 360, xeAtFear) * (1 - sstep(360, 290, xeAtFear));
   const fp = fearPose(t, S, cst, fx, fy, fs, facing, pull, touch);
+  // the turn in place: a brief horizontal squash around the facing flip reads as the little body rotating (the body
+  // is mirrored at the flip; without it the scarf and arms jumped sides in one frame)
+  const squash = 1 - 0.22 * bump(t, S.T('s10b02+1.2'), 0.17);
+  if (squash < 0.999) { lg.save(); lg.translate(fx, 0); lg.scale(squash, 1); lg.translate(-fx, 0); }
   drawFear(lg, fx, fy, fs, fp);
+  if (squash < 0.999) lg.restore();
   drawCage(lg, ...CAGE_B, { ...cst, layer: 'front', grips: fp.gripping ? ['gripL'] : undefined, gripScale: 1 });
   // dims Fear's lavender and the cage's rim light as it passes (kept readable: Fear's face must still read)
   layerShadow(lg, xe - 25, 0.34 * clamp(shA / 0.82));
@@ -166,58 +173,81 @@ export function render(g, t, S) {
 }
 
 function fearPose(t, S, cst, fx, fy, fs, facing, pull, touch = 0) {
+  const b2 = S.T('s10b02'), tFlip = b2 + 1.2;
+  // The turn in place (b02+1.2): the body flips facing under a brief squash (render); the face, head and body values
+  // blend over +1.0 → +1.45 in SCREEN space (tilt and lean mirror with facing), so nothing jumps at the flip (the face
+  // used to snap from the scared stare to the crying face in one frame). The hug is symmetric: mirrored with the arms
+  // swapped it is the same picture, so the turned body starts from the same hugSelf presets.
+  const pre = preTurn(t, S, touch), post = postTurn(t, S, cst, fx, fy, fs, pull, -1);
+  const k = sstep(b2 + 1.0, b2 + 1.45, t);
+  const face = mix(pre.face, post.face, k);
+  face.noAutoBlink = k < 0.5 ? pre.face.noAutoBlink : false;
+  const P = t < tFlip ? pre : post;
+  return {
+    t, facing, crouch: lerp(pre.crouch, post.crouch, k), tremble: lerp(pre.tremble, post.tremble, k),
+    lean: lerp(pre.lean, post.lean, k) * facing, headDY: lerp(pre.headDY, post.headDY, k),
+    headTilt: lerp(pre.headTilt, post.headTilt, k) * facing, headTurn: lerp(pre.headTurn, post.headTurn, k),
+    breathe: 1.4, breathRate: 0.6, face, armL: P.armL, armR: P.armR, gripping: t >= tFlip && post.gk > 0.7,
+  };
+}
+
+// (tilt / lean in screen space; stream held at one value on both sides of the turn — the single tears' schedule
+// follows it, and a change re-times them)
+function preTurn(t, S, touch) {
   const b2 = S.T('s10b02');
-  const loc = (p) => [((p[0] - fx) / fs) * facing, (p[1] - fy) / fs];
   // ---------- b01: curled at the far side, knees up, peeking up-right at the hood; hiccups; eyes never leave it
   const hic = hiccup(t, [0.4, 2.15, 3.0, 4.6, 6.4].map((x) => S.T('s10b01') + x));
   // the shadow's edge reaches it on 'half the' (+4.9 → +5.4): it shrinks into itself, a shiver as the dark touches
   const sink = S.k(t, [['s10b01+4.75', 0], ['s10b01+5.6', 1], ['s10b01+6.6', 0.6]]);
-  let face, armL, armR, crouch = 1, headDY = 0, headTilt = 0, headTurn = 0, tremble = 0.5, lean = 0;
-  if (t < b2 + 1.2) {
-    // eyes dart over the hood (b02), one deliberate blink; then nothing comes and the brows crumple
-    const dart = S.k(t, [['s10b02', 0.36], ['s10b02+0.22', 0.5], ['s10b02+0.45', 0.28], ['s10b02+0.7', 0.44], ['s10b02+0.9', 0.36]], 'outCubic');
-    const crumple = sstep(b2 + 0.85, b2 + 1.15, t);
-    face = {
-      ...EXPR.scared, browIn: 0.95, browUp: 0.45 - 0.25 * crumple, lidU: -0.12 - 0.15 * sink + 0.2 * crumple, pupil: 0.7, smile: -0.5 - 0.2 * crumple,
-      open: 0.06 + 0.3 * hic, wide: 0.1, tears: 0.75, stream: 0.45, lidTilt: 0.2 + 0.4 * crumple,
-      lookX: (t < b2 ? 0.38 + fbm(t * 0.5, 21) * 0.05 : dart), lookY: lerp(-1, -0.55, crumple),
-      blink: Math.max(blinkAt(t, S.T('s10b02+0.58'), 0.32), blinkAt(t, S.T('s10b01+5.05'), 0.2)),
-    };
-    face.noAutoBlink = t > b2 - 0.2;                                          // the waiting stare
-    armL = 'hugSelf'; armR = 'hugSelf';
-    headDY = -9 * hic + 4 * sink; headTilt = -0.05 + 0.04 * hic; headTurn = 0.12;
-    crouch = 1 - 0.22 * hic;                                                  // the little hiccup lifts the shoulders
-    tremble = 0.5 - 0.15 * sstep(b2, b2 + 0.8, t) + 0.3 * touch;
-    // anticipation of the turn: the head goes first (to screen-left), the body gathers
-    const ant = sstep(b2 + 0.95, b2 + 1.2, t);
-    headTurn = lerp(0.12, -0.45, ant);
-    face.lookX = lerp(face.lookX, -0.6, ant);
-    crouch = Math.min(crouch, 1 - 0.15 * ant);
-  } else {
-    // ---------- turned: back to the Void, both hands on the left jamb bar, face lifted to the far glow, crying
-    const u = sstep(b2 + 1.2, b2 + 1.55, t);                                 // rises out of the crouch
-    const gk = sstep(b2 + 1.3, b2 + 1.65, t);                                // hands up to the bar
-    const gl = loc(cagePoint('gripL', ...CAGE_B, cst));
-    const glHi = loc([cagePoint('gripL', ...CAGE_B, cst)[0], cagePoint('gripL', ...CAGE_B, cst)[1] - 20 * fs]);
-    const hitch = hiccup(t, [1.75, 2.15, 2.5, 2.85, 3.2].map((x) => b2 + x), 0.26);
-    crouch = lerp(0.85, 0.3, u);
-    armL = { target: [lerp(10, glHi[0] - 6, gk), lerp(-110, glHi[1] + 3 * pull, gk)], bend: 1, front: true, hand: gk > 0.7 ? 'grip' : 'fist' };
-    armR = { target: [lerp(-10, gl[0] + 6, gk), lerp(-110, gl[1] + 3 * pull, gk)], bend: -1, front: true, hand: gk > 0.7 ? 'grip' : 'fist' };
-    const up = sstep(b2 + 1.35, b2 + 1.9, t);
-    face = {
-      ...EXPR.crying, browUp: 0.35 + 0.15 * up, lidU: 0.2, lidL: 0.25, open: 0.18 + 0.2 * hitch, tears: 1, stream: 0.6,
-      lookX: -0.15 + fbm(t * 0.6, 23) * 0.04, lookY: lerp(-0.4, -0.85, up),
-      tearL: S.k(t, [['s10b02+1.8', 0], ['s10b02+3.3', 1, 'linear']]),
-      tearR: S.k(t, [['s10b02+2.25', 0], ['s10b02+3.75', 1, 'linear']]),
-    };
-    if (t < S.T('s10b02+1.8')) face.tearL = 0;
-    if (t < S.T('s10b02+2.25')) face.tearR = 0;
-    headTilt = 0.12 * up; headDY = -5 * up - 2 * hitch; headTurn = lerp(-0.3, -0.1, up);
-    tremble = 0.55 + 0.15 * hitch;
-    lean = -0.04 * pull;
-  }
+  // eyes dart over the hood (b02), one deliberate blink; then nothing comes and the brows crumple
+  const dart = S.k(t, [['s10b02', 0.36], ['s10b02+0.22', 0.5], ['s10b02+0.45', 0.28], ['s10b02+0.7', 0.44], ['s10b02+0.9', 0.36]], 'outCubic');
+  const crumple = sstep(b2 + 0.85, b2 + 1.15, t);
+  const face = makeExpr(EXPR.scared, {
+    browIn: 0.95, browUp: 0.45 - 0.25 * crumple, lidU: -0.12 - 0.15 * sink + 0.2 * crumple, pupil: 0.7, smile: -0.5 - 0.2 * crumple,
+    open: 0.06 + 0.3 * hic, wide: 0.1, tears: 0.75, stream: 0.5, lidTilt: 0.2 + 0.4 * crumple,
+    lookX: (t < b2 ? 0.38 + fbm(t * 0.5, 21) * 0.05 : dart), lookY: lerp(-1, -0.55, crumple),
+    blink: Math.max(blinkAt(t, S.T('s10b02+0.58'), 0.32), blinkAt(t, S.T('s10b01+5.05'), 0.2)),
+  });
+  face.noAutoBlink = t > b2 - 0.2;                                          // the waiting stare
+  // anticipation of the turn: the head goes first (to screen-left), the body gathers
+  const ant = sstep(b2 + 0.95, b2 + 1.2, t);
+  face.lookX = lerp(face.lookX, -0.6, ant);
   return {
-    t, facing, crouch, tremble, lean, headDY, headTilt, headTurn, breathe: 1.4, breathRate: 0.6,
-    face, armL, armR, gripping: t >= b2 + 1.2 && sstep(b2 + 1.3, b2 + 1.65, t) > 0.7,
+    face, armL: 'hugSelf', armR: 'hugSelf',
+    headDY: -9 * hic + 4 * sink, headTilt: -0.05 + 0.04 * hic, headTurn: lerp(0.12, -0.45, ant),
+    crouch: Math.min(1 - 0.22 * hic, 1 - 0.15 * ant),                       // the little hiccup lifts the shoulders
+    tremble: 0.5 - 0.15 * sstep(b2, b2 + 0.8, t) + 0.3 * touch, lean: 0,
+  };
+}
+
+function postTurn(t, S, cst, fx, fy, fs, pull, facing) {
+  const b2 = S.T('s10b02');
+  const loc = (p) => [((p[0] - fx) / fs) * facing, (p[1] - fy) / fs];
+  // ---------- turned: back to the Void, both hands on the left jamb bar, face lifted to the far glow, crying
+  const u = sstep(b2 + 1.2, b2 + 1.55, t);                                 // rises out of the crouch
+  const gk = sstep(b2 + 1.3, b2 + 1.65, t);                                // hands up to the bar
+  const gl = loc(cagePoint('gripL', ...CAGE_B, cst));
+  const glHi = loc([cagePoint('gripL', ...CAGE_B, cst)[0], cagePoint('gripL', ...CAGE_B, cst)[1] - 20 * fs]);
+  const hitch = hiccup(t, [1.75, 2.15, 2.5, 2.85, 3.2].map((x) => b2 + x), 0.26);
+  // from the hug (the presets' targets and draped hands) up onto the bar; the hands close round it. The elbows take
+  // their gripping sides at the flip itself, inside the squash, as the body turns (bent the hug's way, the forearms
+  // came up from below and the upper fist stood on end beside the eye)
+  const hugL = FEAR_ARMS.hugSelf(-1), hugR = FEAR_ARMS.hugSelf(1);
+  const hand = blendHand('drape', 'grip', sstep(0.35, 0.85, gk));
+  const palm = (side) => [lerp(0, -side * 0.6, gk), lerp(0, 0.2, gk), lerp(-1, -0.8, gk)];
+  const armL = { target: [lerp(hugL.target[0], glHi[0] - 6, gk), lerp(hugL.target[1], glHi[1] + 3 * pull, gk)], bend: 1, front: true, hand, palmDir: palm(-1) };
+  const armR = { target: [lerp(hugR.target[0], gl[0] + 6, gk), lerp(hugR.target[1], gl[1] + 3 * pull, gk)], bend: -1, front: true, hand, palmDir: palm(1) };
+  const up = sstep(b2 + 1.35, b2 + 1.9, t);
+  const face = makeExpr(EXPR.crying, {
+    browUp: 0.35 + 0.15 * up, lidU: 0.2, lidL: 0.25, open: 0.18 + 0.2 * hitch, tears: 1, stream: 0.5,
+    lookX: -0.15 + fbm(t * 0.6, 23) * 0.04, lookY: lerp(-0.4, -0.85, up),
+    // fresh tears well and spill, one from each eye, past the middle of the beat
+    tearL: t < S.T('s10b02+1.8') ? 0 : S.k(t, [['s10b02+1.8', 0], ['s10b02+3.3', 1, 'linear']]),
+    tearR: t < S.T('s10b02+2.25') ? 0 : S.k(t, [['s10b02+2.25', 0], ['s10b02+3.75', 1, 'linear']]),
+  });
+  return {
+    face, armL, armR, gk,
+    headTilt: -0.12 * up, headDY: -5 * up - 2 * hitch, headTurn: lerp(-0.3, -0.1, up),
+    crouch: lerp(0.85, 0.3, u), tremble: 0.55 + 0.15 * hitch, lean: 0.04 * pull,
   };
 }

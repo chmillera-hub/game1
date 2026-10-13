@@ -8,6 +8,7 @@ import { W, H, clamp, lerp, ease, fbm, blinkAt, applyCamera, drift, vignette, TA
 import { drawSelf, SELF_EXPR, selfPoseAnchors, selfLocal } from '../chars/self.mjs';
 import { drawNotebook } from '../sets/props.mjs';
 import { drawRealRoom, drawRealRoomForeground, drawLitByRoom, REALROOM } from '../sets/realroom.mjs';
+import { drawHand, makeHandStyle, HUMAN, blendHand } from '../hand.mjs';
 
 export const id = 's01';
 
@@ -142,6 +143,16 @@ function foreshorten(t, S, target, side, bentK = 1.1) {
   return { reach1: r, reach2: r };
 }
 
+// the resting flat hand opens/closes into the pointing hand as one smooth blend (it used to switch shape in one frame
+// at reach 0.55 / away 0.45). k = 0 is exactly the old 'flat' spec (thumb 1 ⇒ roll π − 0.1), so frame 1 is unchanged;
+// k = 1 is the old 'point' spec (roll π − 0.95)
+const sstep = (a, b, x) => { const q = clamp((x - a) / (b - a)); return q * q * (3 - 2 * q); };
+function flatToPoint(k) {
+  if (k <= 0) return { hand: 'flat', thumb: 1 };
+  if (k >= 1) return { hand: 'point', thumb: 1 };
+  return { hand: blendHand('flat', 'point', k), roll: Math.PI - lerp(0.1, 0.95, k) };
+}
+
 // arms in shot A: SELF's own right hand (armL, screen-left) has a fingertip on the crayon Fear and slides up to the
 // hood; reaching across from the left keeps both crayon figures visible. The other hand holds the right page flat.
 // After the fond half-laugh on 'memory' the pointing hand lifts off the hood and settles flat on the far part of the
@@ -170,7 +181,7 @@ function armsA(t, S) {
     const toW = [SX + target[0] * SS, SY + target[1] * SS];
     const w = [lerp(restW[0], toW[0], reach), lerp(restW[1], toW[1], reach) - Math.sin(reach * Math.PI) * 14];
     target = selfLocal(SX, SY, SS, 1, w[0], w[1]);
-    armL = { target, bend: -1, front: true, hand: reach > 0.55 ? 'point' : 'flat', handAngle: lerp(restAng, ang, reach), thumb: 1,
+    armL = { target, bend: -1, front: true, ...flatToPoint(sstep(0.3, 0.8, reach)), handAngle: lerp(restAng, ang, reach),
       ...foreshorten(t, S, target, -1) };
   }
   if (away > 0) {
@@ -178,7 +189,7 @@ function armsA(t, S) {
     const fromW = [SX + target[0] * SS, SY + target[1] * SS];
     const w = [lerp(fromW[0], restW[0], away), lerp(fromW[1], restW[1], away) - Math.sin(away * Math.PI) * 14];
     target = selfLocal(SX, SY, SS, 1, w[0], w[1]);
-    armL = { target, bend: -1, front: true, hand: away < 0.45 ? 'point' : 'flat', handAngle: lerp(ang, restAng, away), thumb: 1,
+    armL = { target, bend: -1, front: true, ...flatToPoint(1 - sstep(0.2, 0.7, away)), handAngle: lerp(ang, restAng, away),
       ...foreshorten(t, S, target, -1) };
   }
   // the page hand holds the dog-eared bottom corner down; just before the cut it shifts onto the fold to smooth it
@@ -305,8 +316,13 @@ function drawDogEar(g, k) {
 
 // SELF's page hand (screen-right in the wide, where it holds this bottom corner) is already on the dog-ear at the
 // cut, seen from the back from the bottom-right of this POV; the thumb presses the fold and smooths it flat, then the
-// hand withdraws. Drawn locally: at this size the character's mitten hands read as fists, and only the
-// hand and sweater cuff are in frame.
+// hand withdraws. Only the hand and the sweater cuff are in frame. The hand is the shared articulated hand
+// (hand.mjs HUMAN: palm, separate fingers, thumb, ONE outer outline, soft interior separations): the right hand
+// seen from the back, fingers lying relaxed on the page, the thumb out to the side pressing the fold. (It used to
+// be a local stubby five-stroke paw whose back-of-hand outline cut across the finger roots, with dotted knuckles.)
+const POV_HAND = makeHandStyle(HUMAN, 125, { skin: '#d9a27e', light: '#f0c6a6', shade: '#bb7b5c', line: '#6e3b2e' }, 2.6);
+const POV_POSE = { f: [[0.12, 0.18, 0.1], [0.1, 0.16, 0.1], [0.12, 0.18, 0.1], [0.16, 0.22, 0.12]], spread: 0.06, thumb: [0.75, 0.1, 0.12] };
+const POV_THUMB = [43.3 * 1.25, -36.8 * 1.25];   // the thumb pad in hand-local px (ang 0, right hand, back to camera)
 function drawInsertHand(g, t, S, smooth) {
   const enter = S.k(t, [['s01b02+3.04', 1], ['s01b02+5.5', 1], ['s01b02+6.5', 0, 'inOut']]);
   if (enter <= 0.001) return;
@@ -316,58 +332,35 @@ function drawInsertHand(g, t, S, smooth) {
   const tip = [lerp(fold[0], corner[0] - 14, e), lerp(fold[1], corner[1] - 10, e)];
   const ang = -2.2 + 0.08 * Math.sin(e * Math.PI) + fbm(t * 0.5, 41) * 0.015;
   const off = (1 - enter) * 330;
-  const sc = 1.25;
-  // thumb tip in hand-local coords (see drawPOVHand) → wrist position
-  const lt = [58 * sc, -40 * sc];
+  // thumb pad in hand-local coords → wrist position
   const c = Math.cos(ang), sn = Math.sin(ang);
-  const wx = tip[0] - (lt[0] * c - lt[1] * sn) - c * off, wy = tip[1] - (lt[0] * sn + lt[1] * c) - sn * off;
-  drawPOVHand(g, wx, wy, ang, sc, t);
+  const wx = tip[0] - (POV_THUMB[0] * c - POV_THUMB[1] * sn) - c * off, wy = tip[1] - (POV_THUMB[0] * sn + POV_THUMB[1] * c) - sn * off;
+  // the thumb presses (a touch more bend while it pushes the fold flat), the fingers relax as the hand withdraws
+  const press = Math.sin(e * Math.PI);
+  const pose = { ...POV_POSE, thumb: [0.75, 0.1, 0.12 + 0.1 * press], f: POV_POSE.f.map(([a, b, d]) => [a + 0.12 * (1 - enter), b + 0.1 * (1 - enter), d]) };
+  drawPOVHand(g, wx, wy, ang, pose);
 }
 
-function drawPOVHand(g, x, y, ang, sc, t) {
-  const SK = '#d9a27e', SKL = '#f0c6a6', SKS = '#bb7b5c', LN = '#6e3b2e';
+function drawPOVHand(g, x, y, ang, pose) {
   const SW = '#4f8c8a', SWL = '#78b2ad', SWS = '#386a69', SWN = '#1c393b';
   g.save();
-  g.translate(x, y); g.rotate(ang); g.scale(sc, sc);
+  g.translate(x, y); g.rotate(ang);
   g.lineJoin = 'round'; g.lineCap = 'round';
   // soft contact shadow on the paper/desk
-  const gsh = g.createRadialGradient(40, 14, 10, 40, 14, 80);
-  gsh.addColorStop(0, 'rgba(40,20,10,0.28)'); gsh.addColorStop(1, 'rgba(40,20,10,0)');
-  g.fillStyle = gsh; g.beginPath(); g.ellipse(40, 14, 80, 50, 0, 0, TAU); g.fill();
-  // fingers (index nearest the thumb = -y), lying slightly curled on the page
-  const F = [[-19, 44], [-6, 50], [7, 47], [19, 39]];
-  const fingerPath = () => { g.beginPath(); for (const [fy, len] of F) { g.moveTo(52, fy * 0.9); g.lineTo(52 + len, fy * 1.05); } };
-  g.strokeStyle = LN; g.lineWidth = 17; fingerPath(); g.stroke();
-  g.strokeStyle = SK; g.lineWidth = 12.5; fingerPath(); g.stroke();
-  // nails
-  g.fillStyle = 'rgba(250,215,195,0.9)';
-  for (const [fy, len] of F) { g.beginPath(); g.ellipse(52 + len - 3, fy * 1.05, 4, 3.4, 0, 0, TAU); g.fill(); }
-  // thumb, pressing down at the side
-  g.strokeStyle = LN; g.lineWidth = 19;
-  g.beginPath(); g.moveTo(16, -22); g.quadraticCurveTo(40, -36, 58, -40); g.stroke();
-  g.strokeStyle = SK; g.lineWidth = 14.5;
-  g.beginPath(); g.moveTo(16, -22); g.quadraticCurveTo(40, -36, 58, -40); g.stroke();
-  // back of the hand
-  g.beginPath();
-  g.moveTo(-4, -22); g.bezierCurveTo(16, -30, 44, -30, 60, -22);
-  g.bezierCurveTo(68, -8, 68, 12, 60, 26);
-  g.bezierCurveTo(40, 32, 14, 30, -4, 22); g.closePath();
-  const gr = g.createLinearGradient(0, -28, 0, 30);
-  gr.addColorStop(0, SKL); gr.addColorStop(0.5, SK); gr.addColorStop(1, SKS);
-  g.fillStyle = gr; g.fill();
-  g.strokeStyle = LN; g.lineWidth = 2.6; g.stroke();
-  // knuckle hints
-  g.fillStyle = 'rgba(255,236,220,0.28)';
-  for (const [fy] of F) { g.beginPath(); g.ellipse(54, fy * 0.9, 4.5, 3.5, 0, 0, TAU); g.fill(); }
+  const gsh = g.createRadialGradient(56, 14, 12, 56, 14, 100);
+  gsh.addColorStop(0, 'rgba(40,20,10,0.26)'); gsh.addColorStop(1, 'rgba(40,20,10,0)');
+  g.fillStyle = gsh; g.beginPath(); g.ellipse(56, 14, 100, 62, 0, 0, TAU); g.fill();
+  drawHand(g, POV_HAND, { ang: 0, shape: pose, roll: 0, chir: -1 });
   // sleeve (off-frame toward the body) + ribbed cuff over the wrist ("sweater paw")
+  g.scale(1.25, 1.25);
   const sl = g.createLinearGradient(0, -40, 0, 40);
   sl.addColorStop(0, SWL); sl.addColorStop(0.45, SW); sl.addColorStop(1, SWS);
   g.fillStyle = sl; g.strokeStyle = SWN; g.lineWidth = 3.2;
-  g.beginPath(); g.moveTo(-600, -44); g.lineTo(-30, -38); g.lineTo(-30, 38); g.lineTo(-600, 46); g.closePath(); g.fill(); g.stroke();
+  g.beginPath(); g.moveTo(-600, -44); g.lineTo(-26, -36); g.lineTo(-26, 36); g.lineTo(-600, 46); g.closePath(); g.fill(); g.stroke();
   g.fillStyle = SWS;
-  g.beginPath(); g.roundRect(-34, -37, 34, 74, 10); g.fill(); g.stroke();
+  g.beginPath(); g.roundRect(-30, -33, 36, 66, 10); g.fill(); g.stroke();
   g.strokeStyle = 'rgba(28,57,59,0.55)'; g.lineWidth = 1.8;
-  for (let i = -28; i <= 28; i += 8) { g.beginPath(); g.moveTo(-30, i); g.lineTo(-4, i * 1.02); g.stroke(); }
+  for (let i = -24; i <= 24; i += 8) { g.beginPath(); g.moveTo(-26, i); g.lineTo(2, i * 1.02); g.stroke(); }
   g.restore();
 }
 

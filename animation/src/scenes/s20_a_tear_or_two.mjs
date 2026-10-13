@@ -8,8 +8,9 @@
 //                            blue, eyes up to the window with stars in them, star-hood + wink
 // Last frame = the mirror of the film's first frame (same camera and desk, lamp off, notebook closed under the palm).
 import { W, H, clamp, lerp, ease, fbm, blinkAt, applyCamera, drift, vignette, TAU, ik } from '../engine.mjs';
-import { star } from '../face.mjs';
-import { drawSelf, SELF_EXPR, selfPoseAnchors, selfLocal } from '../chars/self.mjs';
+import { star, drawTear } from '../face.mjs';
+import { drawHand, makeHandStyle, HUMAN, blendHand } from '../hand.mjs';
+import { drawSelf, SELF_EXPR, SELF_FACE, selfPoseAnchors, selfLocal } from '../chars/self.mjs';
 import { drawNotebook } from '../sets/props.mjs';
 import { drawRealRoom, drawRealRoomForeground, drawLitByRoom, REALROOM } from '../sets/realroom.mjs';
 
@@ -37,7 +38,10 @@ const CAM_OPEN = REALROOM.cameras.opening;               // {420,655,1.12}
 // the tear close-up: the face fills ~41 % of the width (centre ≈ screen y 655), so the welling, the drop and its wet
 // trail survive the encoder (at the old 2.1 the streak vanished in the compressed film)
 const CAM_CLOSE = { x: 428, y: 704, zoom: 2.4 };
-const LEAF_RISE = 220 * 0.866;                           // a standing cover's height on screen (page units)
+const LEAF_RISE = 220 * 0.866;
+// the left hand's fingers are under the cover (it is drawn over them) from when they reach its edge until it lets go at
+// vertical
+const LIFT_LAYER = ['s20b04+0.72', 's20b04+1.45'];                           // a standing cover's height on screen (page units)
 const HAND_S = 1.42;
 const PENCIL_LEN = 52;
 const PENCIL_REST = { tip: [574, 1021], ang: -0.12 };   // lying on the desk in front of the mug (ang: tip → eraser)
@@ -71,13 +75,14 @@ function tracks(t, S) {
     open: k([['s20b04+0.8', 1], ['s20b04+1.45', 0.5, 'inOut'], ['s20b04+2.0', 0, 'inOut']]),
     star: k([['s20b01+0.8', 0], ['s20b01+2.4', 1, 'linear']]),
     lampOff,
-    // THE tear (drawn locally, bigger than the rig's, on the lamp-lit near cheek — screen-left): a bead gathers on the
-    // lower lid while the eyes well (b02 → b03), squeezes out with the slow blink and spills on 'tear' (+0.86); it slides
-    // slowly with one stutter, stops on the cheek (+2.2) and hangs there at face size until the sleeve takes it (+3.0)
-    bead: k([['s20b02+0.6', 0], ['s20b03+0.5', 0.8, 'sine'], ['s20b03+0.85', 1, 'inOut']]),
-    drop: k([['s20b03+0.85', 0], ['s20b03+1.45', 0.42, 'inOut'], ['s20b03+1.65', 0.47], ['s20b03+2.25', 1, 'inOut']]),
-    wiped: k([['s20b03+2.9', 0], ['s20b03+3.08', 1, 'inOut']]),
-    trailOff: k([['s20b03+3.0', 0], ['s20b03+3.3', 0.7], ['s20b04+1.0', 1]]),
+    // THE tear — one, from the lamp-lit near eye (screen-left), drawn with face.mjs drawTear (one translucent,
+    // slightly blue drop with its own short wet trail): the eyes well on 'After that,' (b02), the drop gathers on the
+    // lower lid on 'shed a tear' and spills around the line's middle, on 'or two' (+1.25 of 2.64 s); it slides slowly
+    // down the cheek with one small hesitation and is still there when the sleeve comes up (+2.85), under which it
+    // fades out as a whole (drop and trail together). drawTear progress: 0..0.16 gathering, then the run.
+    tear: k([['s20b03+0.75', 0], ['s20b03+1.25', 0.16, 'sine'], ['s20b03+1.55', 0.29, 'in'], ['s20b03+1.8', 0.33, 'out'],
+      ['s20b03+2.75', 0.6, 'inOut'], ['s20b03+3.1', 0.64]]),
+    wiped: k([['s20b03+2.88', 0], ['s20b03+3.05', 1, 'inOut']]),
   };
 }
 
@@ -161,6 +166,17 @@ function wristForPalm(pW, ang) {
 }
 const toW = (l) => [SX + l[0] * SS, SY + l[1] * SS];
 
+// Palm directions (hand.mjs palmDir: x right, y down, z toward camera). Every hand gets one explicitly: the old specs
+// only named the thumb's side (thumb: ±1), which turned the PALM to the camera on the hands resting flat on the page,
+// desk and cover; and they switched hand shapes in one frame (flat → grip, grip → flat, flat → point), which popped
+// the fingers and rolled the wrist. Shapes and palm directions now blend.
+const P_DOWN = [0, 0.8, -0.6];                  // flat on the page / desk / cover: the back of the hand to camera
+const P_PENCIL = [-0.5, 0.55, -0.65];          // writing: palm down and in, knuckles to camera
+const P_WIPE = [0.45, 0, -0.9];                 // the knuckle at the cheek: palm toward the face (self.mjs wipeTear)
+const P_EDGE = [0.15, -0.55, 0.8];              // under the cover's edge: palm up against its underside, thumb on top
+const mixP = (a, b, k) => [lerp(a[0], b[0], k), lerp(a[1], b[1], k), lerp(a[2], b[2], k)];
+const sm = (k) => ease.inOut(clamp(k));
+
 // armR: rests by the pencil → picks it up → draws the star → lays it down → takes the cover → palm on the cover
 // returns { arm, pencil: {tip, ang} | null }
 function armRight(t, S, pose, tr) {
@@ -170,8 +186,9 @@ function armRight(t, S, pose, tr) {
   // pencil states
   const pRestTip = PENCIL_REST.tip;
   const restAngP = PENCIL_REST.ang;
-  // writing: the pencil stands up from the tip (its gold end shows above the fist)
-  const drawAngP = -1.5;
+  // writing: the pencil stands up from the tip, leaning back up-left out of the fist so its gold body and eraser show
+  // above the knuckles (straight up, -1.5, it ran under the sleeve's cuff and the gold pencil never showed)
+  const drawAngP = -1.85;
   const starK = tr.star;
   const writeTip = starTip(starK);
   // phases
@@ -187,22 +204,23 @@ function armRight(t, S, pose, tr) {
     const gripRest = [pRestTip[0] + Math.cos(restAngP) * 18, pRestTip[1] + Math.sin(restAngP) * 18];
     pencil = { tip: pRestTip, ang: restAngP };
     if (!after) {
+      // the fingers close round the pencil as the hand arrives (flat → grip, palm turning in)
       const p = [lerp(restPalm[0], gripRest[0], pick), lerp(restPalm[1], gripRest[1], pick)];
-      const ang = lerp(restHandAng, 2.3, pick);
-      const target = wristForGrip(p, ang);
-      arm = { target, bend: 1, front: true, hand: pick < 0.6 ? 'flat' : 'grip', handAngle: ang, thumb: -1, ...foreshorten(pose, target, 1) };
+      const ang = lerp(restHandAng, 2.3, pick), g = sm((pick - 0.35) / 0.65);
+      const target = wristForGrip(p, ang, g);
+      arm = { target, bend: 1, front: true, hand: blendHand('flat', 'grip', g), palmDir: mixP(P_DOWN, P_PENCIL, g), handAngle: ang, ...foreshorten(pose, target, 1) };
     } else {
       // pencil released; the hand rests, rises to meet the standing cover's top edge, lays it down and rests on it
       const nb = notebookDraw(tr);
       const meet = S.k(t, [['s20b04+0.95', 0], ['s20b04+1.45', 1, 'inOut']]);     // up to the cover's edge
       const settle = S.k(t, [['s20b04+2.0', 0], ['s20b04+2.45', 1, 'inOut']]);   // palm settles flat on the cover
       const restP = [restPalm[0] - 4, restPalm[1] + 4];
-      let p, ang, hand = 'flat';
+      let p, ang;
       let grip = 0;
       if (meet <= 0) {
         // fingers open off the pencil and the hand settles beside it
         p = [lerp(gripRest[0], restP[0], release), lerp(gripRest[1], restP[1], release)];
-        ang = lerp(2.3, 2.1, release); grip = 1 - release; hand = release < 0.5 ? 'grip' : 'flat';
+        ang = lerp(2.3, 2.1, release); grip = 1 - sm(release);
       } else if (t < T('s20b04+1.45')) {
         // rising to the cover's top edge as it comes up to vertical (fingers toward the spine)
         const e = [nb.edge[0] + 12, nb.edge[1] + 6];
@@ -216,7 +234,7 @@ function armRight(t, S, pose, tr) {
         ang = lerp(2.75, 1.7, ease.inOut(clamp((t - T('s20b04+1.6')) / 0.75)));
       }
       const target = grip > 0 ? wristForGrip(p, ang, grip) : wristForPalm(p, ang);
-      arm = { target, bend: 1, front: true, hand, handAngle: ang, thumb: -1, ...foreshorten(pose, target, 1) };
+      arm = { target, bend: 1, front: true, hand: blendHand('flat', 'grip', grip), palmDir: mixP(P_DOWN, P_PENCIL, grip), handAngle: ang, ...foreshorten(pose, target, 1) };
       pencil = { tip: pRestTip, ang: restAngP };
     }
     return { arm, pencil };
@@ -239,7 +257,7 @@ function armRight(t, S, pose, tr) {
   const grip = [tip[0] + Math.cos(pang) * 18, tip[1] + Math.sin(pang) * 18];
   const hAng = 2.3 + writing * fbm(t * 3, 51) * 0.04;
   const target = wristForGrip(grip, hAng);
-  arm = { target, bend: 1, front: true, hand: 'grip', handAngle: hAng, thumb: -1, ...foreshorten(pose, target, 1) };
+  arm = { target, bend: 1, front: true, hand: 'grip', palmDir: P_PENCIL, handAngle: hAng, ...foreshorten(pose, target, 1) };
   pencil = { tip, ang: pang };
   return { arm, pencil };
 }
@@ -249,9 +267,9 @@ function armRight(t, S, pose, tr) {
 function armLeft(t, S, pose, tr) {
   const T = (a) => S.T(a);
   const restPalm = [356, 962];
-  const rest = { target: wristForPalm(restPalm, 1.25), bend: -1, front: true, hand: 'flat', handAngle: 1.25, thumb: 1 };
+  const rest = { target: wristForPalm(restPalm, 1.25), bend: -1, front: true, hand: 'flat', handAngle: 1.25, palmDir: P_DOWN };
   rest.reach1 = rest.reach2 = foreshorten(pose, rest.target, -1).reach1;
-  // after the hold on the hanging drop: up to the cheek, one stroke over the drop, back down to the page just before
+  // after the hold on the drop: up to the cheek, one stroke over the drop, back down to the page just before
   // the hand takes the cover (b04+0.5)
   const wipe = S.k(t, [['s20b03+2.5', 0], ['s20b03+2.92', 1, 'inOut'], ['s20b03+3.18', 1], ['s20b04+0.46', 0, 'inOut']]);
   if (t < T('s20b04+0.5')) {
@@ -278,35 +296,61 @@ function armLeft(t, S, pose, tr) {
     const el = [lerp(eRest[0], eTuck[0], ek), lerp(eRest[1], eTuck[1], ek)];
     const l1 = Math.hypot(el[0] - sh[0], el[1] - sh[1]), l2 = Math.hypot(target[0] - el[0], target[1] - el[1]);
     const cross = (target[0] - sh[0]) * (el[1] - sh[1]) - (target[1] - sh[1]) * (el[0] - sh[0]);
-    return { target, bend: cross > 0 ? -1 : 1, front: true, hand: wipe > 0.5 ? 'fist' : 'flat',
-      handAngle: lerp(1.25, rot - Math.PI / 2 + 0.32, ease.inOut(wipe)), thumb: 1, reach1: (l1 + 0.02) / 100, reach2: (l2 + 0.02) / 92 };
+    const f = sm((wipe - 0.25) / 0.5);              // the fingers curl into the sweater-paw fist on the way up
+    return { target, bend: cross > 0 ? -1 : 1, front: true, hand: blendHand('flat', 'fist', f), palmDir: mixP(P_DOWN, P_WIPE, f),
+      handAngle: lerp(1.25, rot - Math.PI / 2 + 0.32, ease.inOut(wipe)), reach1: (l1 + 0.02) / 100, reach2: (l2 + 0.02) / 92 };
   }
-  const nb = notebookDraw(tr);
   // take the cover's free edge (the left page's outer edge) and lift it up to vertical (open 1 → 0.5); let go there
   // and reach straight on to the lamp (the right hand lays the cover down meanwhile); click; back to the desk
-  const take = S.k(t, [['s20b04+0.5', 0], ['s20b04+0.8', 1, 'inOut']]);
+  const take = S.k(t, [['s20b04+0.5', 0], ['s20b04+0.72', 1, 'inOut']]);
   const toLamp = S.k(t, [['s20b04+1.5', 0], ['s20b04+2.25', 1, 'inOut'], ['s20b04+2.6', 1], ['s20b04+3.5', 0, 'inOut']]);
   const press = Math.sin(clamp((t - T('s20b04+2.3')) / 0.2) * Math.PI);
   const back = S.k(t, [['s20b04+2.6', 0], ['s20b04+3.5', 1, 'inOut']]);
   if (take <= 0 || back >= 1) return rest;
-  // the hand on the cover's edge (fingers over the edge, pointing toward the spine); frozen at vertical once released
+  // the hand at the cover's free edge: it arrives with its fingertips at the edge (+0.72), the fingers slip under the
+  // cover (from here the cover is drawn over them: see render, LIFT_LAYER) and the thumb comes onto the page; it lifts
+  // the cover with the fingers along its back toward the spine, the thumb on the page side; frozen at vertical once
+  // released
   const nbH = notebookDraw({ ...tr, open: Math.max(tr.open, 0.5) });
-  const e = [nbH.edge[0] - 8, nbH.edge[1] + 4];
+  const under = S.k(t, [['s20b04+0.72', 0], ['s20b04+0.9', 1, 'inOut']]);
+  const ax = Math.atan2(NBK[1] - nbH.edge[1], NBK[0] - nbH.edge[0]);   // free edge → spine, along the leaf
+  const holdAng = lerp(1.25, ax, take);
+  const inset = lerp(-38, 10, under);  // grip centre: 38 px outside the edge (fingertips at it) → 10 px inside
+  const e = [nbH.edge[0] + Math.cos(ax) * inset, nbH.edge[1] + Math.sin(ax) * inset];
   const holdP = [lerp(restPalm[0], e[0], take), lerp(restPalm[1], e[1], take) - Math.sin(take * Math.PI) * 8];
-  const holdAng = lerp(1.25, 0.35, take);
+  const hk = sm(take);
+  const holdHand = blendHand('flat', 'hold', hk), holdPalm = mixP(P_DOWN, P_EDGE, sm((take - 0.3) / 0.7));
   if (toLamp <= 0) {
-    const target = wristForGrip(holdP, holdAng);
-    return { target, bend: -1, front: true, hand: take > 0.5 ? 'grip' : 'flat', handAngle: holdAng, thumb: 1, ...foreshorten(pose, target, -1) };
+    const target = wristForGrip(holdP, holdAng, hk);
+    return { target, bend: -1, front: true, hand: holdHand, palmDir: holdPalm, handAngle: holdAng, ...foreshorten(pose, target, -1) };
   }
-  // out to the lamp shade from where it let go of the cover; back to the bare desk afterwards (the book has closed)
+  // out to the lamp shade from where it let go of the cover (the hand flattens, then points at the switch); back to
+  // the bare desk afterwards (the book has closed)
   const from = back > 0 ? restPalm : holdP;
   const lampP = [196, 806 + press * 3];
   const u = toLamp;
   const p = [lerp(from[0], lampP[0], u), lerp(from[1], lampP[1], u) - Math.sin(u * Math.PI) * 14];
   const ang = lerp(back > 0 ? 1.25 : holdAng, Math.PI - 0.2, u);
-  const target = wristForPalm(p, ang);
-  return { target, bend: -1, front: true, hand: u > 0.7 ? 'point' : 'flat', handAngle: ang, thumb: 1, ...foreshorten(pose, target, -1) };
-  return rest;
+  const gk = back > 0 ? 0 : 1 - sm(u / 0.35);      // the grip offset fades out as the hand leaves the cover
+  const target = gk > 0 ? wristForGrip(p, ang, gk) : wristForPalm(p, ang);
+  const hand = back > 0 ? blendHand('flat', 'point', sm((u - 0.5) / 0.4)) : blendHand(blendHand('flat', 'hold', gk), 'point', sm((u - 0.5) / 0.4));
+  const palmDir = back > 0 ? P_DOWN : mixP(P_DOWN, P_EDGE, gk);
+  return { target, bend: -1, front: true, hand, palmDir, handAngle: ang, ...foreshorten(pose, target, -1) };
+}
+
+// the left hand's thumb once more, over the cover it is lifting (the palm and fingers are under the cover's edge).
+// Same hand as self.mjs draws (HUMAN, 62 px, SELF colours), at the same wrist (the arm's IK) and orientation.
+const SELF_HAND_STYLE = makeHandStyle(HUMAN, 62, { skin: '#d9a27e', light: '#f0c6a6', shade: '#bb7b5c', line: '#6e3b2e' }, 2.5);
+function drawThumbOver(g, pose, a) {
+  const shW = selfPoseAnchors(SX, SY, SS, pose).shoulderL, sh = [(shW[0] - SX) / SS, (shW[1] - SY) / SS];
+  const L1 = 100 * (a.reach1 || 1), L2 = 92 * (a.reach2 || 1);
+  const { a1, a2 } = ik(sh[0], sh[1], a.target[0], a.target[1], L1, L2, a.bend ?? -1);
+  const wx = sh[0] + Math.cos(a1) * L1 + Math.cos(a1 + a2) * L2, wy = sh[1] + Math.sin(a1) * L1 + Math.sin(a1 + a2) * L2;
+  g.save();
+  g.translate(SX + wx * SS, SY + wy * SS);
+  g.scale(SS, SS);
+  drawHand(g, SELF_HAND_STYLE, { ang: a.handAngle, shape: a.hand, palmDir: a.palmDir, chir: -1, only: ['thumb'] });
+  g.restore();
 }
 
 // the notebook's draw position (the right half stays put while it closes) and its free edge (world)
@@ -334,11 +378,11 @@ const minv = (A) => {
 // narrows (right for a camera looking straight down), so a cover lifted to vertical vanished. Here the book is drawn in
 // two passes: the right half as it lies (page block, right page — `onPage` draws on it), then the leaf alone, sheared so
 // its free edge rises toward camera by sin(angle) × LEAF_RISE: the cover visibly stands up and comes down over the page.
-function drawBook(g, tr, dim, onPage) {
+function drawBook(g, tr, dim, onPage, beforeLeaf = null) {
   const s = NBK[2], open = tr.open, st = { flat: 1, rot: NB_ROT, dim };
-  if (open >= 0.999) { drawNotebook(g, NBK[0], NBK[1], s, { ...st, open: 1 }); onPage(); return; }
+  if (open >= 0.999 && !beforeLeaf) { drawNotebook(g, NBK[0], NBK[1], s, { ...st, open: 1 }); onPage(); return; }
   const nb = notebookDraw(tr);
-  if (open <= 0.001) { drawNotebook(g, nb.x, nb.y, s, { ...st, open: 0 }); return; }
+  if (open <= 0.001) { drawNotebook(g, nb.x, nb.y, s, { ...st, open: 0 }); if (beforeLeaf) beforeLeaf(); return; }
   // pass 1: the right half (the open book clipped at the spine)
   g.save();
   g.translate(NBK[0], NBK[1]); g.rotate(NB_ROT);
@@ -347,6 +391,8 @@ function drawBook(g, tr, dim, onPage) {
   drawNotebook(g, NBK[0], NBK[1], s, { ...st, open: 1 });
   g.restore();
   onPage();
+  // (whatever goes UNDER the leaf: the fingers of the hand lifting it)
+  if (beforeLeaf) beforeLeaf();
   // pass 2: the leaf, sheared about the spine
   const a = open * Math.PI, cw = Math.cos(a), lw = Math.abs(cw) * 220;
   const u0 = lerp(-110, 0, ease.sine(open));                      // drawNotebook's local spine x
@@ -414,12 +460,11 @@ function selfPose(t, S, tr) {
     ['s20b03.end', 0.5], ['s20b04+2.6', 0.42], ['s20b04+4.0', 0.5]]);
   const pressed = k([['scene.start', 0.2], ['s20b02+0.6', 0.26], ['s20b02+1.4', 0.42], ['s20b03+0.9', 0.7], ['s20b03+1.9', 0.6], ['s20b03+2.2', 0.1], ['s20b03.end', 0.2],
     ['s20b04+2.6', 0.25], ['s20b04+3.6', 0.05]]);
-  // tears: glistening → welling on 'After that,' (the rig's band + drawWetEyes' bright water line) → the drop (drawn
-  // locally, tracks.drop) spills on 'tear' (+0.86) → the eyes stay wet through the hold → wiped → dry-ish
+  // tears: glistening → welling on 'After that,' (the rig's band + drawWetEyes' bright water line) → the one drop
+  // (drawWetEyes, tracks.tear) spills around the middle of the next line → the eyes stay wet through the hold → wiped →
+  // dry-ish. No `stream`: the rig's sustained-cry tears would add more drops, alternating eyes; one tear reads best.
   const tears = k([['scene.start', 0.42], ['s20b02', 0.45], ['s20b02+1.2', 0.9], ['s20b03+0.8', 1], ['s20b03+2.8', 0.85],
     ['s20b03+3.25', 0.45], ['s20b04+0.4', 0.3], ['s20b04+2.6', 0.28], ['s20b04+4', 0.4]]);
-  // the rig's symmetric streaks stay faint: the one tear on the near cheek carries its own wet trail (drawWetEyes)
-  const stream = k([['s20b03+1.3', 0], ['s20b03+2.4', 0.22], ['s20b03+3.2', 0.1], ['s20b04+0.6', 0]]);
   const tremble = k([['s20b02+0.8', 0], ['s20b03+0.6', 0.18], ['s20b03+1.9', 0.12], ['s20b03+2.2', 0]]);
   const sparkle = k([['s20b04+2.7', 0], ['s20b04+3.8', 0.75]]);
   // deliberate blinks (auto-blink off: an intimate held portrait)
@@ -432,7 +477,7 @@ function selfPose(t, S, tr) {
     blinkAt(t, T('s20b04+2.75'), 0.25),         // as the room goes blue
     blinkAt(t, T('s20b04+5.1'), 0.62),          // one slow, contented blink
   ) + laugh * 0.25;
-  const face = { ...SELF_EXPR.tenderSmile, lookX, lookY, browIn, browUp, lidU, lidL, smile, pressed, tears, stream,
+  const face = { ...SELF_EXPR.tenderSmile, lookX, lookY, browIn, browUp, lidU, lidL, smile, pressed, tears,
     tremble, sparkle, blink, noAutoBlink: true, blush: 0.28, pupil: 1 + sparkle * 0.15, open: laugh * 0.08 };
   // head: inclined toward the page; on the laugh a soft double bob; the chin lifts to the window at the end
   const up = k([['s20b04+2.7', 0], ['s20b04+3.8', 1, 'inOut']]);
@@ -484,10 +529,10 @@ function drawEyeStars(g, pose, k, t) {
   }
 }
 
-// ---- the tear (drawn over the lit body pass, under the wiping sleeve). The rig's welling band sits under SELF's raised
-// lower lids and its drop is small, so after the encoder only the drop survived: here the water pools ON the lower lid
-// (a bright line with a specular stripe and a catch-light on the iris), a bead gathers at the near eye's outer corner,
-// spills as a large slow drop with a bright highlight and a wet trail, and hangs on the cheek until the wipe.
+// ---- the wet eyes and the tear (drawn over the lit body pass, under the wiping sleeve). The rig's welling band sits
+// under SELF's raised lower lids, so after the encoder it did not read: here the water pools ON the lower lid (a bright
+// line with a specular stripe and a catch-light on the iris), and the one tear (face.mjs drawTear, the film's tear)
+// gathers on the near eye's lower lid, spills, runs down the cheek and fades out as a whole under the sleeve.
 // Geometry mirrors face.mjs drawEye (SELF_FACE: eyeSpacing 27, eyeY 2, eyeRx 16, eyeRy 12.6, restLid 0.15).
 function eyeGeom(pose, side) {
   const f = pose.face, turn = clamp(pose.headTurn ?? 0, -1, 1), at = Math.abs(turn);
@@ -507,34 +552,10 @@ function eyeGeom(pose, side) {
   const ix = cx + clamp(f.lookX || 0, -1, 1) * rx * 0.42, iy = cy + clamp(f.lookY || 0, -1, 1) * ry * 0.36 + ry * 0.04;
   return { cx, cy, rx, ry, up, lowY, upY, ix, iy, irisR: rx * 0.6 };
 }
-function teardrop(g, x, y, sz, stretch, a) {
-  // soft contact shadow on the skin (volume), the drop, a bright highlight with a glow that survives compression
-  g.fillStyle = `rgba(110,50,35,${0.16 * a})`;
-  g.beginPath(); g.ellipse(x + sz * 0.3, y + sz * 0.55, sz * 1.0, sz * 0.75, 0, 0, TAU); g.fill();
-  const top = sz * (1.9 + stretch);
-  g.fillStyle = `rgba(214,238,255,${0.94 * a})`;
-  g.strokeStyle = `rgba(86,138,198,${0.85 * a})`;
-  g.lineWidth = 1.3;
-  g.beginPath();
-  g.moveTo(x, y - top);
-  g.bezierCurveTo(x + sz * 1.12, y - sz * 0.25, x + sz * 1.02, y + sz, x, y + sz);
-  g.bezierCurveTo(x - sz * 1.02, y + sz, x - sz * 1.12, y - sz * 0.25, x, y - top);
-  g.fill(); g.stroke();
-  // a cooler belly (refraction) and the lamp's highlight on the upper-left
-  g.fillStyle = `rgba(150,195,240,${0.45 * a})`;
-  g.beginPath(); g.ellipse(x + sz * 0.15, y + sz * 0.45, sz * 0.62, sz * 0.38, 0, 0, TAU); g.fill();
-  const hx = x - sz * 0.36, hy = y - sz * 0.15;
-  const gl = g.createRadialGradient(hx, hy, 0, hx, hy, sz * 1.15);
-  gl.addColorStop(0, `rgba(255,255,250,${0.55 * a})`); gl.addColorStop(1, 'rgba(255,255,250,0)');
-  g.fillStyle = gl; g.fillRect(hx - sz * 1.2, hy - sz * 1.2, sz * 2.4, sz * 2.4);
-  g.fillStyle = `rgba(255,255,255,${a})`;
-  g.beginPath(); g.ellipse(hx, hy, sz * 0.3, sz * 0.38, -0.3, 0, TAU); g.fill();
-  g.fillStyle = `rgba(255,255,255,${0.7 * a})`;
-  g.beginPath(); g.arc(x + sz * 0.42, y + sz * 0.5, sz * 0.13, 0, TAU); g.fill();
-}
 function drawWetEyes(g, pose, tr, well) {
-  const drop = tr.drop, alive = 1 - tr.wiped, trailA = 1 - tr.trailOff;
-  if (well <= 0.01 && (drop <= 0 || trailA <= 0.01)) return;
+  const tear = tr.tear, alive = 1 - tr.wiped;
+  const tearOn = tear > 0 && tear < 1 && alive > 0.01;
+  if (well <= 0.01 && !tearOn) return;
   const a = selfPoseAnchors(SX, SY, SS, pose);
   const hc = a.headCenter, ht = a.headTop;
   const rot = Math.atan2(ht[0] - hc[0], -(ht[1] - hc[1]));
@@ -572,37 +593,12 @@ function drawWetEyes(g, pose, tr, well) {
         g.beginPath(); g.arc(e.ix + e.irisR * 0.34, e.iy + e.irisR * 0.3, e.irisR * 0.12, 0, TAU); g.fill();
       }
     }
-    if (side > 0) continue;
-    // ---- the near eye's tear: bead on the lid → spill → slow slide (one stutter) → hangs on the cheek → wiped
-    const dx0 = side * e.rx * 0.5, x0 = e.cx + dx0, y0 = e.lowY(dx0) + 1.2;
-    const bead = tr.bead * (drop > 0 ? 0 : 1);
-    if (bead > 0.01 && well > 0.01) {
-      // a swelling lens of water clinging to the lid (not yet a drop): it rounds and sags just before it lets go
-      const r = lerp(1.4, 3.6, bead), sag = clamp((bead - 0.75) * 4), ba = Math.min(1, bead * 1.6) * alive;
-      const by = y0 - 0.6 + r * lerp(0.25, 0.6, sag), rxB = r * lerp(1.35, 1.05, sag), ryB = r * lerp(0.62, 1.0, sag);
-      g.fillStyle = `rgba(214,238,255,${0.94 * ba})`; g.strokeStyle = `rgba(86,138,198,${0.8 * ba})`; g.lineWidth = 1.1;
-      g.beginPath(); g.ellipse(x0, by, rxB, ryB, 0, 0, TAU); g.fill(); g.stroke();
-      g.fillStyle = `rgba(255,255,255,${ba})`;
-      g.beginPath(); g.ellipse(x0 - rxB * 0.38, by - ryB * 0.2, r * 0.32, r * 0.26, -0.3, 0, TAU); g.fill();
-    }
-    if (drop <= 0) continue;
-    const L = 31;                                         // lid → the cheek beside the mouth corner
-    const px = (p) => x0 + side * (Math.sin(p * Math.PI) * 2.6 + p * 1.4), py = (p) => y0 + 3 + p * L;
-    const tx = px(drop), ty = py(drop);
-    const sz = lerp(3.8, 6.6, clamp(drop * 3)) + 0.5 * clamp((drop - 0.9) * 10);
-    const moving = clamp(Math.abs(drop - 0.47) > 0.03 && drop < 0.99 ? 1 : 0);
-    // the wet trail it leaves (a wide glossy body, a specular stripe on the lamp side)
-    if (trailA > 0.01 && drop > 0.04) {
-      const path = () => {
-        g.beginPath(); g.moveTo(px(0), py(0) - 2);
-        for (let i = 1; i <= 8; i++) { const p = drop * i / 8; g.lineTo(px(p), py(p) - (i === 8 ? sz * 1.5 : 0)); }
-      };
-      g.strokeStyle = `rgba(198,232,255,${0.5 * trailA})`; g.lineWidth = 3.6; path(); g.stroke();
-      g.save(); g.translate(-1.1, 0);
-      g.strokeStyle = `rgba(255,255,255,${0.62 * trailA})`; g.lineWidth = 1.2; path(); g.stroke();
-      g.restore();
-    }
-    if (alive > 0.01) teardrop(g, tx, ty, sz, 0.35 * moving, alive);
+    if (side > 0 || !tearOn) continue;
+    // ---- the near eye's one tear, in the film's tear style (face.mjs drawTear: a translucent, slightly blue drop with
+    // its own short trail; gathers on the lid, runs down the cheek, and the whole of it fades with `alive` under the
+    // sleeve). Sized a touch up from the rig's SELF tear for this close-up.
+    const dx0 = side * e.rx * 0.45, x0 = e.cx + dx0, y0 = e.lowY(dx0) + 0.8;
+    drawTear(g, x0, y0, SELF_FACE.tearRun, tear, SELF_FACE.tearSize * 1.15, side, alive);
   }
   g.restore();
 }
@@ -635,7 +631,7 @@ export function render(g, t, S) {
   const tr = tracks(t, S);
   // camera
   let cam;
-  // the push arrives as the drop comes to rest on the cheek (+2.25); a held close-up on the hanging drop and the wipe;
+  // the push arrives while the drop slides down the cheek (+2.3); a held close-up on the drop and the wipe;
   // the pull-back starts once the sleeve has left the face
   const tPullA = S.T('s20b03+3.15'), tPullB = S.T('s20b04+2.6');
   if (t < S.T('s20b02')) cam = { ...CAM_DESK };
@@ -678,10 +674,28 @@ export function render(g, t, S) {
   drawEyeStars(g, pose, pose.face.sparkle, t);
   drawRealRoomForeground(g, st);
   const dim = 0.5 * tr.lampOff;
-  // the star lives on the right page (the cover comes down over it)
-  drawBook(g, tr, dim, () => drawPageStar(g, tr.star, S.k(t, [['s20b01+2.2', 0], ['s20b01+2.6', 1], ['s20b02+1.0', 0.35]])));
+  // the star lives on the right page (the cover comes down over it).
+  // While the left hand lifts the cover (from b04+0.8 until it lets go at +1.45) the cover comes between that hand's
+  // palm and fingers (under its edge) and its thumb (over the page): the left arm is drawn before the leaf, its thumb
+  // again after it, and the right arm on top as before. (The whole hand used to sit on top of the page.)
+  const lifting = t >= S.T(LIFT_LAYER[0]) && t < S.T(LIFT_LAYER[1]);
+  const only = (keep) => ({ ...pose, [keep === 'L' ? 'armR' : 'armL']: { ...(keep === 'L' ? R.arm : L), front: false, layer: 'side' } });
+  drawBook(g, tr, dim, () => drawPageStar(g, tr.star, S.k(t, [['s20b01+2.2', 0], ['s20b01+2.6', 1], ['s20b02+1.0', 0.35]])),
+    lifting ? () => drawSelfLit(g, st, only('L'), 'front') : null);
+  if (lifting) {
+    // the thumb over the cover: only where the cover is (clipped to the leaf), so it never covers the sleeve's cuff
+    const nb = notebookDraw(tr), h = 0.5 * NBK[2] * 147;
+    const vx = -Math.sin(NB_ROT) * h, vy = Math.cos(NB_ROT) * h;
+    g.save();
+    g.beginPath();
+    g.moveTo(nb.edge[0] - vx, nb.edge[1] - vy); g.lineTo(NBK[0] - vx, NBK[1] - vy);
+    g.lineTo(NBK[0] + vx, NBK[1] + vy); g.lineTo(nb.edge[0] + vx, nb.edge[1] + vy);
+    g.closePath(); g.clip();
+    drawThumbOver(g, base, L);
+    g.restore();
+  }
   if (R.pencil) drawPencil(g, R.pencil.tip, R.pencil.ang);
-  drawSelfLit(g, st, pose, 'front');
+  drawSelfLit(g, st, lifting ? only('R') : pose, 'front');
   g.restore();
 
   grade(g, 0, 0.1 * (1 - tr.lampOff));

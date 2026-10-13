@@ -43,6 +43,20 @@ const KNEE = [100, -150];              // CEO-local wrist target resting on the 
 
 const X = (...p) => makeExpr(...p);
 const sine = (k) => ease.sine(clamp(k));
+// The narrator sheds no tear before the last scene: whatever the beat's tear welling, the CEO's lower lids only
+// glisten (tears ≤ 0.35); the curve keeps the build-up (0.35 → .19, .85 → .32, 1 → .35)
+const glisten = (x) => 0.35 * Math.pow(clamp(x || 0), 0.6);
+// Fear's fist ON the alarm handle (alarm view, Fear-local at facing 1): the wrist sits `d` px back from the point the
+// fist covers along the hand's screen angle (≈ −1.2: knuckles up, fingers hooked over the handle to pull it down),
+// taken into Fear's body frame (drawFear rotates the arms with `lean`); `dx` = Fear's feet offset from FX (local px)
+function onHandle(px, py, ang, lean, dx = 0, d = 8) {
+  const x = px - d * Math.cos(ang) - dx, y = py - d * Math.sin(ang);
+  const c = Math.cos(-lean), s = Math.sin(-lean);
+  return { target: [x * c - y * s, x * s + y * c], handAng: ang - lean };
+}
+// for the yank Fear steps in toward the station (Fear-local px): from FX its far arm cannot reach the handle and the
+// second fist hung below it, on the PULL DOWN label. s07 starts here and steps back as it turns round.
+const YANK_DX = 15;
 
 function grade(g, cold, warm) {
   g.save(); g.setTransform(1, 0, 0, 1, 0, 0);
@@ -186,33 +200,44 @@ function fearPose(t, S, L) {
   let armL, armR;
   if (facing < 0) {
     // local coords (mirrored): the scarf tail hangs at local x 12..30, y -110..-60
-    const onHandle = [-ALARM_REACH[0], handleY];
+    const handle0 = [-ALARM_REACH[0], handleY];
     const atScarfL = [-6 - w1 * 0.5, -100 + w2 * 0.5];
-    armL = { target: [lerp(onHandle[0], atScarfL[0], off), lerp(onHandle[1], atScarfL[1], off)], bend: off > 0.6 ? -1 : 1, front: true, hand: off > 0.3 ? 'fist' : 'grip' };
+    armL = { target: [lerp(handle0[0], atScarfL[0], off), lerp(handle0[1], atScarfL[1], off)], bend: off > 0.6 ? -1 : 1, front: true, hand: off > 0.3 ? 'fist' : 'grip' };
     const hug = [-14, -116];                     // hugging itself (as s05 ended), clear of the CEO's hand
     const atScarfR = [6 + w2 * 0.5, -104 - w1 * 0.5];
-    armR = { target: [lerp(hug[0], atScarfR[0], off), lerp(hug[1], atScarfR[1], off)], bend: 1, front: true, hand: off > 0.4 ? 'fist' : 'open' };
+    // (the hugging hand lies over the far upper arm, palm on it: an open hand there stood up in front of the chin)
+    armR = { target: [lerp(hug[0], atScarfR[0], off), lerp(hug[1], atScarfR[1], off)], bend: 1, front: true,
+      hand: off > 0.4 ? 'fist' : 'drape', ...(off > 0.4 ? {} : { palmDir: [0, 0, -1], handAng: Math.PI + 0.35 }) };
     if (twist > 0) { // pulls its arms in as it turns (they reach for the handle after the turn)
       const k = clamp(twist * 2);
       armR = { target: [lerp(armR.target[0], 14, k), lerp(armR.target[1], -112, k)], bend: 1, front: true, hand: 'fist' };
       armL = { target: [lerp(armL.target[0], -14, k), lerp(armL.target[1], -116, k)], bend: -1, front: true, hand: 'fist' };
     }
-  } else {
-    const reach = sine((t - S.T('s06b08+0.31')) / 0.29);
-    armR = { target: [lerp(14, ALARM_REACH[0], reach), lerp(-112, handleY, reach)], bend: 1, front: true, hand: reach > 0.7 ? 'grip' : 'open' };
-    armL = { target: [lerp(-14, 80, reach), lerp(-116, handleY + 8, reach)], bend: 1, front: true, hand: reach > 0.7 ? 'grip' : 'open' };
   }
   const lean = facing > 0 ? S.k(t, [['s06b08+0.6', 0], ['s06b08+0.9', 0.12, 'out'], ['scene.end', 0.08]]) : 0;
+  const dx = YANK_DX * sine((t - S.T('s06b08+0.14')) / 0.42);
+  if (facing > 0) {
+    // reaches up and locks both fists on the handle (knuckles up, elbows down), then hangs its weight off it
+    const reach = sine((t - S.T('s06b08+0.31')) / 0.29);
+    const hR = onHandle(ALARM_REACH[0] + 12, handleY, -1.15, lean, dx), hL = onHandle(ALARM_REACH[0] - 14, handleY + 1, -1.3, lean, dx);
+    armR = { target: [lerp(14, hR.target[0], reach), lerp(-112, hR.target[1], reach)], bend: -1, front: true,
+      hand: reach > 0.7 ? 'grip' : 'open', handAng: lerp(-1.6, hR.handAng, reach) };
+    armL = { target: [lerp(-14, hL.target[0], reach), lerp(-116, hL.target[1], reach)], bend: -1, front: true,
+      hand: reach > 0.7 ? 'grip' : 'open', handAng: lerp(-1.6, hL.handAng, reach) };
+  }
   const squash = twist > 0 && twist < 1 ? 1 - 0.22 * Math.sin(twist * Math.PI) : 1;
-  return { face, facing, crouch, headDY, headDX, headTilt, headTurn, tremble, armL, armR, lean, squash,
+  return { face, facing, crouch, headDY, headDX, headTilt, headTurn, tremble, armL, armR, lean, squash, dx,
+    whiten: facing > 0 ? 0.55 * L.pulled : 0,
     breathRate: pant > 0.2 ? 1.5 : undefined, breathe: pant > 0.2 ? 1.2 : undefined, fl };
 }
 function shoulderPt(crouch) { return [FX - 36 * FS, FY - (131 - 20 * crouch) * FS]; }
 function drawFearAt(g, x, y, s, t, P, extra = {}) {
   g.save();
+  x += (P.dx || 0) * s;
   if (P.squash !== 1) { g.translate(x, 0); g.scale(P.squash, 1); g.translate(-x, 0); }
   drawFear(g, x, y, s, { t, face: P.face, facing: P.facing, crouch: P.crouch, headDY: P.headDY, headDX: P.headDX, headTilt: P.headTilt,
-    headTurn: P.headTurn, tremble: P.tremble, armL: P.armL, armR: P.armR, lean: P.lean, breathRate: P.breathRate, breathe: P.breathe, ...extra });
+    headTurn: P.headTurn, tremble: P.tremble, armL: P.armL, armR: P.armR, lean: P.lean, breathRate: P.breathRate, breathe: P.breathe,
+    whiten: P.whiten, ...extra });
   g.restore();
 }
 
@@ -247,6 +272,9 @@ function ceoPose(t, S, F) {
   let handShape = settle > 0.6 ? 'drape' : lift > 0.3 ? (curl ? 'rest' : 'drape') : 'rest';
   let wrist = lerp(0.75, 0.35, lift * (1 - settle)) + back * 0.25 + slack * 0.35;
   let preset = 'onShoulder';
+  // resting on the raised knee the arm is foreshortened (the elbow toward the camera, the forearm forward along the
+  // thigh): at full length the far arm folded across the jacket front into a sharp "<" to reach the knee
+  let onKnee = 1 - lift;
   if (t >= tw) {
     // the shoulder slides out from under the hand: a small reflexive give, then it just hangs there
     const sh0 = shoulderPt(0.96);
@@ -258,9 +286,11 @@ function ceoPose(t, S, F) {
     const fist = clamp((t - S.T('s06b08+0.75')) / 0.3);
     handShape = fist > 0.5 ? 'fist' : 'open';
     wrist = 0.75;
+    onKnee = down;
   }
   const shakeAmt = t >= tw ? 0.12 : settle * 0.4 * (1 - slack * 0.6);
-  const armR = { preset, target: selfLocal(CX, CY, CS, 1, hand[0], hand[1]), shake: shakeAmt, hand: handShape, wrist };
+  const armR = { preset, target: selfLocal(CX, CY, CS, 1, hand[0], hand[1]), shake: shakeAmt, hand: handShape, wrist,
+    reach1: lerp(1, 0.66, onKnee), reach2: lerp(1, 0.6, onKnee) };
 
   // ---- face
   const atFear = { lookX: 0.6, lookY: 0.42 };
@@ -298,7 +328,7 @@ function ceoPose(t, S, F) {
     ['s06b09+0.65', X(SELF_EXPR.sad, { browIn: 0.95, browSquish: 0.35, lidU: 0.2, lidTilt: 0.5, tears: 0.75, pressed: 0.3, smile: -0.35, lookX: 0.3, lookY: 0.6 }), 'out'],
     ['scene.end', X(SELF_EXPR.sad, { browIn: 0.9, browSquish: 0.3, lidU: 0.28, lidTilt: 0.5, tears: 0.7, pressed: 0.25, smile: -0.35, lookX: 0.28, lookY: 0.62 })],
   ]);
-  face = { ...face };
+  face = { ...face, tears: glisten(face.tears) };
   // a single exhale on the last line: lips part
   const exhale = S.k(t, [['s06b09+0.9', 0], ['s06b09+1.2', 1], ['s06b09+2.2', 0]]);
   face.open = Math.max(face.open, 0.08 * exhale); face.pressed *= 1 - exhale;

@@ -1,13 +1,15 @@
 // s09 · responsible · front view
 // NARRATOR: "I told myself it was the responsible thing to do." / "And I felt sadness."
-import { clamp, lerp, ease, fbm, blinkAt, applyCamera, drift, vignette, TAU } from '../engine.mjs';
-import { EXPR } from '../face.mjs';
+import { clamp, lerp, ease, fbm, blinkAt, applyCamera, drift, vignette, TAU, ik } from '../engine.mjs';
+import { EXPR, makeExpr } from '../face.mjs';
 import { drawFear } from '../chars/fear.mjs';
-import { drawSelf, SELF_EXPR, selfLocal, WALK_ADVANCE } from '../chars/self.mjs';
+import { drawSelf, SELF_EXPR, selfLocal, selfPoseAnchors, WALK_ADVANCE } from '../chars/self.mjs';
 import { drawVoid } from '../chars/void.mjs';
-import { drawEmotion } from '../chars/emotions.mjs';
+import { drawEmotion, EMOTION_ARMS, EMOTION_ANCHORS } from '../chars/emotions.mjs';
 import { drawHQ, drawHQForeground, hqScaleAt } from '../sets/hq.mjs';
 import { drawCage, cagePoint } from '../sets/props.mjs';
+import { blendHand } from '../hand.mjs';
+import { drawLit } from '../fx/rim.mjs';
 
 export const id = 's09';
 
@@ -93,7 +95,11 @@ export function render(g, t, S) {
   // ---- characters back to front
   const list = [];
   const c = ceoState(t, S);
-  list.push({ y: c.y, draw: () => drawCEO(g, t, S, c) });
+  // the open EXIT door behind-left of the CEO as they walk in: a warm rim on the edge facing it, fading as it shuts
+  const doorLight = close ? 0 : clamp(doorOpen / 0.6);
+  list.push({ y: c.y, draw: () => (doorLight > 0.02
+    ? drawLit(g, (g2) => drawCEO(g2, t, S, c), { dir: [-1, -0.35], color: '#ffe6bd', strength: 0.55 * doorLight, width: 3 })
+    : drawCEO(g, t, S, c)) });
   // CALM finishes its walk in from the door to slot 1
   const calmK = sstep(S.start, S.T('scene.start+1.2'), t);
   const calm = [lerp(120, 165, calmK), lerp(1262, 1384, calmK)];
@@ -120,42 +126,34 @@ function drawCEO(g, t, S, c) {
   // (the board is still in the lowered hand at the rim when we cut to the close: it never pops out of the hand on screen)
   const lift = sstep(S.T('scene.start+2.0'), S.T('scene.start+2.55'), t) * (1 - sstep(S.T('s09b01.end'), S.T('s09b02+0.05'), t));
   const holding = t < S.T('s09b02') && reach > 0;
-  // b02: the left hand presses over the mouth; after the eyes reopen it slides down to the console rim
-  const toMouth = sstep(S.T('s09b02-0.1'), S.T('s09b02+0.45'), t);
+  // b02: the left hand presses over the mouth; after the eyes reopen it slides down to rest beside the right one, its
+  // fingers behind the console rim. The move starts on the cut (it used to start 0.1 s before it, and for the last
+  // frames of the medium the board jumped below the rising hand).
+  const close = t >= S.T('s09b02');
+  const toMouth = sstep(S.T('s09b02'), S.T('s09b02+0.5'), t);
   const lower = sstep(S.T('s09b02+2.7'), S.T('s09b02+3.6'), t);
   const k = c.s;
-  let armL = 'rest';
-  if (toMouth > 0) {
-    if (lower > 0) {
-      // the hand slides down off the mouth, in front of the chest, and comes to rest on the console rim
-      const k = ease.sine(lower);
-      const p = k < 0.5 ? [lerp(-34, -14, k * 2), lerp(-455, -335, k * 2)] : [lerp(-14, -58, k * 2 - 1), lerp(-335, -222, k * 2 - 1)];
-      armL = { preset: 'coverMouth', target: p, reach1: lerp(0.45, 1, k), hand: lower > 0.5 ? 'open' : 'flat',
-        handAngle: lerp(-0.19, 1.45, k) };
-    }
-    else if (toMouth < 1) armL = { preset: 'coverMouth', target: [lerp(-70, -34, ease.out(toMouth)), lerp(-215, -455, ease.out(toMouth))] };
-    else armL = 'coverMouth';
-  } else if (holding && lift > 0) armL = { preset: 'holdClipboard', target: [lerp(-60, -30, lift), lerp(-180, -290, ease.out(lift))] };
-  else if (reach > 0) armL = { target: [lerp(-75, -50, reach), lerp(-205, -175, reach)], bend: -1, front: true, hand: 'open' };
-  const armR = 'rest';
-  // face
-  const flat = { ...SELF_EXPR.tired, lidU: 0.5, lookY: 0.72, lookX: 0.05, smile: -0.1, pressed: 0.35, browIn: 0.35 };
+  // face (every key a complete expression: a field missing from the next key used to hold, then drop to 0 in one
+  // frame — the lower lids, pressed lips and the tear gloss popped at +1.0 / +2.2)
+  // The narrator sheds no tear before the last scene: the sadness stays in the lids, the pressed mouth, the hand and
+  // the shoulders, with at most a glisten on the lower lids (tears ≤ 0.35).
+  const X = (...p) => makeExpr(...p);
+  const flat = X(SELF_EXPR.tired, { lidU: 0.5, lookY: 0.72, lookX: 0.05, smile: -0.1, pressed: 0.35, browIn: 0.35, tears: 0.12 });
   let face = S.k(t, [
-    ['scene.start', { ...SELF_EXPR.holdingBackTears, tears: 0.6, lookY: 0.2 }],
-    ['scene.start+1.0', { ...SELF_EXPR.tired, lookY: 0.35, tears: 0.45 }],
+    ['scene.start', X(SELF_EXPR.holdingBackTears, { tears: 0.32, lookY: 0.2 })],
+    ['scene.start+1.0', X(SELF_EXPR.tired, { lookY: 0.35, tears: 0.25, pressed: 0.3 })],
     ['scene.start+2.2', flat],
     // 'responsible' — the jaw sets a fraction, a slow blink (they don't believe it)
-    ['s09b01+2.4', flat], ['s09b01+3.0', { ...flat, pressed: 0.7, browIn: 0.5, lidU: 0.56 }],
-    ['s09b02-0.1', { ...flat, pressed: 0.7, browIn: 0.6, lidU: 0.56, tears: 0.5 }],
-    // the eyes close behind the hand; a single tear on 'sadness'
-    ['s09b02+0.55', { ...SELF_EXPR.holdingBackTears, lidU: 1, tears: 0.9, lookY: 0.4 }],
-    ['s09b02+1.9', { ...SELF_EXPR.holdingBackTears, lidU: 1, tears: 0.9, lookY: 0.4 }],
-    // they open again, heavy, gaze low
-    ['s09b02+2.6', { ...SELF_EXPR.sad, lidU: 0.55, lidTilt: 0.55, tears: 0.7, lookY: 0.6, lookX: 0.12, pressed: 0.5, smile: -0.3 }],
+    ['s09b01+2.4', flat], ['s09b01+3.0', X(flat, { pressed: 0.7, browIn: 0.5, lidU: 0.56 })],
+    ['s09b02-0.1', X(flat, { pressed: 0.7, browIn: 0.6, lidU: 0.56, tears: 0.3 })],
+    // the eyes close behind the hand on 'sadness'
+    ['s09b02+0.55', X(SELF_EXPR.holdingBackTears, { lidU: 1, tears: 0.35, lookY: 0.4 })],
+    ['s09b02+1.9', X(SELF_EXPR.holdingBackTears, { lidU: 1, tears: 0.35, lookY: 0.4 })],
+    // they open again, heavy, gaze low; the lower lids just glisten
+    ['s09b02+2.6', X(SELF_EXPR.sad, { lidU: 0.55, lidTilt: 0.55, tears: 0.33, lookY: 0.6, lookX: 0.12, pressed: 0.5, smile: -0.3 })],
   ]);
-  const tearR = S.k(t, [['s09b02+0.64', 0], ['s09b02+2.2', 1, 'linear']]);
   face = {
-    ...face, tearR: t > S.T('s09b02+0.64') ? tearR : 0,
+    ...face,
     lookX: (face.lookX || 0) + life(t, 41, 0.05),
     blink: blinkAt(t, S.T('s09b01+2.75'), 0.42),
   };
@@ -163,14 +161,54 @@ function drawCEO(g, t, S, c) {
   // shoulders round forward after the eyes reopen; a small catch of breath before 'sadness'
   const round = sstep(S.T('s09b02+1.9'), S.T('s09b02+3.0'), t);
   const kat = Math.sin(clamp((t - S.T('s09b02+0.48')) / 0.3) * Math.PI);
-  drawSelf(g, c.x, c.y, k, {
+  // arriving: the walk ends on a passing pose (hips 5 units up, the walk's 0.045 forward lean); settle both out over
+  // ~0.45 s instead of dropping them in one frame (the head jumped ~5 px sideways at +1.6)
+  const settle = c.walking ? 0 : ease.sine(clamp((t - S.T('scene.start+1.6')) / 0.45));
+  const x = c.x, y = c.y - (c.walking ? 0 : 5 * k * (1 - settle));
+  const pose = {
     t, outfit: 'ceo', facing: 1, clipboard: holding && lift > 0,
     walk: c.walking ? { phase } : null, bodyTurn: c.walking || turn > 0 ? 0.4 * turn : 0,
-    headTurn: (c.walking ? 0.2 * turn : 0) + 0.02,
+    lean: c.walking ? 0 : 0.045 * (1 - settle),
+    headTurn: 0.2 * turn + 0.02,
     headTilt: 0.05 + 0.04 * round, headDY: 2 + 5 * round + 2 * kat,
     shrug: 0.3 * round + 0.25 * kat,
-    face, armL, armR,
-  });
+    face,
+  };
+
+  // ---- arms
+  let armL = 'rest';
+  if (close) {
+    // the coverMouth preset's own target, head point (-34, 47) — the mouth (the old fixed [-34,-455] sat ~20 units
+    // higher: the hand popped down onto the mouth as the move ended and jumped back up to the eyes as it began to lower)
+    const A = selfPoseAnchors(x, y, k, pose);
+    const m = selfLocal(x, y, k, 1, A.mouth[0], A.mouth[1]), ch = selfLocal(x, y, k, 1, A.chin[0], A.chin[1]);
+    const th = Math.atan2(-(ch[0] - m[0]), ch[1] - m[1]), cs = Math.cos(th), sn = Math.sin(th);
+    const cover = [m[0] - 34 * cs - 10 * sn, m[1] - 34 * sn + 10 * cs];
+    if (lower > 0) {
+      // the hand slides down off the mouth, in front of the chest, into the resting pose of the other arm (wrist
+      // above the rim, the relaxed fingers behind it, palm to the body)
+      const e = ease.sine(lower), kh = sstep(0.35, 0.9, e);
+      const p = e < 0.5 ? [lerp(cover[0], -14, e * 2), lerp(cover[1], -335, e * 2)] : [lerp(-14, -70, e * 2 - 1), lerp(-335, -198, e * 2 - 1)];
+      armL = { preset: 'coverMouth', target: p, reach1: lerp(0.45, 1, e), hand: blendHand('flat', 'rest', kh),
+        handAngle: lerp(th - 0.19, 1.62, e), palmDir: [lerp(0, 0.9, kh), 0, lerp(-1, -0.45, kh)] };
+    } else {
+      const e = ease.out(toMouth);
+      armL = { preset: 'coverMouth', target: [lerp(-70, cover[0], e), lerp(-215, cover[1], e)] };
+    }
+  } else if (holding && lift > 0) {
+    // the lift: gripped by its top edge below the rim (hidden behind the console), the board rises into view and the
+    // grip comes round to its side, in front of the chest; the forearm foreshortens as the board comes toward us.
+    // (The board used to appear in front of the chest in one frame, with the elbow jumping as the forearm shortened.)
+    const e = ease.sine(lift), eh = sstep(0, 0.45, lift);
+    armL = { preset: 'holdClipboard', target: [lerp(-55, -30, lift), lerp(-178, -290, ease.out(lift))], reach2: lerp(1, 0.55, e),
+      board: [lerp(6, 24, e), lerp(45, -38, e), lerp(-0.08, 0.12, e)],
+      hand: blendHand('rest', 'hold', eh), handAngle: lerp(1.35, -0.25, eh), palmDir: [lerp(0.9, 0, eh), 0, lerp(-0.45, 1, eh)] };
+  } else if (reach > 0) {
+    // reaching down over the console deck: the hand goes behind the rim (the relaxed 'rest' hand, as it hangs)
+    armL = { target: [lerp(-70, -55, reach), lerp(-198, -178, reach)], bend: -1, front: true, hand: 'rest',
+      handAngle: lerp(1.62, 1.35, reach) };
+  }
+  drawSelf(g, x, y, k, { ...pose, armL, armR: 'rest' });
 }
 
 function drawCalm(g, t, S, p, k) {
@@ -183,11 +221,45 @@ function drawCalm(g, t, S, p, k) {
     lookY: S.k(t, [['scene.start+1.8', 0], ['s09b01+2.5', 0.15]]),
     blink: blinkAt(t, S.T('s09b01+3.1'), 0.5),
   };
+  // three steps that land with the feet together as it stops (phase 3π), and the hands come up onto the console over
+  // the last steps (the walk used to stop mid-stride and both arms snapped from the sides to the console in a frame)
+  const reachK = sstep(0.55, 1, k);
   drawEmotion(g, 'CALM', p[0], p[1], s, {
     t: tt, face, headTurn: S.k(t, [['scene.start+1.3', 0.05], ['scene.start+2.0', 0.22]]), headTilt: S.k(t, [['scene.start+2.0', 0], ['s09b01+1.0', 0.07]]),
-    walk: k < 1 ? { phase: t * TAU * 1.1 } : null,
-    armL: k < 1 ? 'rest' : 'pressButton', armR: k < 1 ? 'rest' : 'pressButton',
+    walk: k < 1 ? { phase: k * 3 * Math.PI } : null,
+    armL: emotionArmBlend('CALM', -1, 'rest', 'pressButton', reachK), armR: emotionArmBlend('CALM', 1, 'rest', 'pressButton', reachK),
   });
+}
+
+// emotions' arm bones (emotions.mjs SPECS L1/L2) — to know where a preset's hand points (the forearm direction)
+const ARM_LEN = { JOY: [54, 52], SADNESS: [50, 50], ANGER: [50, 48], CALM: [66, 62] };
+function presetHandAng(name, side, spec) {
+  if (spec.handAng != null) return spec.handAng;
+  const [L1, L2] = ARM_LEN[name], f = clamp(spec.fore || 0);
+  const sh = EMOTION_ANCHORS[name][side < 0 ? 'shoulderL' : 'shoulderR'];
+  const { a1, a2 } = ik(sh[0], sh[1], spec.target[0], spec.target[1], L1 * (1 - 0.32 * f), L2 * (1 - 0.45 * f), spec.bend ?? side);
+  return a1 + a2 + (spec.wrist || 0);
+}
+/** an emotion's arm part-way between two arm specs (front view; preset names or {target,...} specs): target,
+ *  foreshortening, hand shape, palm direction and hand angle all move together */
+function emotionArmBlend(name, side, a, b, k, bendAt = 0.5, layerAt = 0.5) {
+  if (k <= 0) return a;
+  if (k >= 1) return b;
+  const spec = (s) => (typeof s === 'string' ? EMOTION_ARMS[name][s](side, 'front', 0) : s);
+  const A = spec(a), B = spec(b);
+  const pd = (s) => s.palmDir || [-side * 0.9, 0, -0.45];
+  const PA = pd(A), PB = pd(B);
+  let ha = presetHandAng(name, side, A), hb = presetHandAng(name, side, B);
+  while (hb - ha > Math.PI) hb -= 2 * Math.PI;
+  while (ha - hb > Math.PI) hb += 2 * Math.PI;
+  return {
+    preset: typeof (k < layerAt ? a : b) === 'string' ? (k < layerAt ? a : b) : undefined,
+    target: [lerp(A.target[0], B.target[0], k), lerp(A.target[1], B.target[1], k)],
+    bend: k < bendAt ? (A.bend ?? side) : (B.bend ?? side), fore: lerp(A.fore || 0, B.fore || 0, k),
+    layer: k < layerAt ? (A.layer || 'back') : (B.layer || 'back'),
+    hand: blendHand(A.hand || 'open', B.hand || 'open', k), palmDir: [0, 1, 2].map((i) => lerp(PA[i], PB[i], k)),
+    handAng: lerp(ha, hb, k),
+  };
 }
 
 function drawAnger(g, t, S) {
@@ -249,17 +321,20 @@ function drawSadness(g, t, S, c) {
     ...EXPR.sad, browIn: 0.95, browUp: 0.15, lidU: 0.2, smile: -0.35, pressed: 0.55, lookX: look.x + life(t, 81, 0.04), lookY: look.y,
     tears: 0.35, blink: blinkAt(t, S.T('s09b02+0.62'), 0.35),
   };
-  // the hand on the CEO's sleeve (the elbow of the arm at the mouth, then the forearm on the rim)
+  // the hand on the CEO's sleeve: it comes up off the console (from the pressing pose, out of sight below the rim)
+  // and settles on the CEO's right forearm, the back of the hand to us (it used to appear on the sleeve in a frame)
   const touch = sstep(S.T('s09b02+1.0'), S.T('s09b02+1.7'), t);
-  const lower = sstep(S.T('s09b02+2.7'), S.T('s09b02+3.6'), t);
   const s = 0.8;
   const sleeve = [508, 1212];                                   // the CEO's right forearm (arm hanging at rest)
   const loc = [(sleeve[0] - x) / s, (sleeve[1] - SAD_AT[1]) / s];
-  const armL = touch > 0
-    ? { target: [lerp(-55, loc[0], touch), lerp(-170, loc[1], ease.out(touch))], bend: 1, layer: 'over', hand: 'open', handAng: lerp(-1.9, -Math.PI - 0.45, ease.out(touch)) }
-    : 'pressButton';
+  const onSleeve = { target: loc, bend: 1, layer: 'over', hand: 'open', handAng: -Math.PI - 0.45, palmDir: [0.3, 0.35, -0.9] };
+  // (in the close the pressing arm already bends its elbow down-and-out like the arm on the sleeve: the blend then
+  // never flips the elbow; the cut hides the change from the medium's pose)
+  const press = close ? { ...EMOTION_ARMS.SADNESS.pressButton(-1, 'front', 0), bend: 1 } : 'pressButton';
+  const armL = emotionArmBlend('SADNESS', -1, press, onSleeve, ease.out(touch), 0.5, 0.12);
   drawEmotion(g, 'SADNESS', x, SAD_AT[1], s, {
-    t: t + OFF.SADNESS, face, headTurn: look.ht, headTilt: close ? -0.06 : 0, walk: walkK < 1 && walkK > 0 ? { phase: t * TAU * 1.1 } : null,
+    // two small shuffle steps that end with the feet together (phase 2π) instead of stopping mid-stride
+    t: t + OFF.SADNESS, face, headTurn: look.ht, headTilt: close ? -0.06 : 0, walk: walkK < 1 && walkK > 0 ? { phase: walkK * 2 * Math.PI } : null,
     armL, armR: 'pressButton',
   });
 }

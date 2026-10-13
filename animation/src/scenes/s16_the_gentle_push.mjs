@@ -1,12 +1,13 @@
 // s16 · the_gentle_push · backOfMind. Fear wipes its tears; the Void's enormous hand gives the gentlest
 // push; Fear stops, looks back at the stars in the dark hood, smiles for real, and skips off toward the HQ.
 import fs from 'fs';
-import { clamp, lerp, ease, fbm, blinkAt, applyCamera, drift, vignette } from '../engine.mjs';
+import { TAU, clamp, lerp, ease, fbm, blinkAt, applyCamera, drift, vignette } from '../engine.mjs';
 import { star } from '../face.mjs';
+import { blendHand } from '../hand.mjs';
 import { drawHQ, drawHQForeground, hqScaleAt } from '../sets/hq.mjs';
 import { drawCage } from '../sets/props.mjs';
 import { drawVoid, drawVoidArm, drawVoidHand, drawVoidGlow, voidRig, toVoidLocal, VOID_HANDS } from '../chars/void.mjs';
-import { drawFear, FEAR_COLORS } from '../chars/fear.mjs';
+import { drawFear, drawFearFrontArms, FEAR_COLORS } from '../chars/fear.mjs';
 
 export const id = 's16';
 
@@ -108,16 +109,45 @@ function armMix(a, b, k, side) {
   return { ...(k < 0.5 ? a : b), target: [lerp(lin[0], straight[0], s), lerp(lin[1], straight[1], s)] };
 }
 
+// A move between two arm poses whose elbows sit on different sides (the IK's `bend`) or that change draw layer
+// (front/back): the path SWINGS OUT through a point beyond the arm's reach (`out` = [direction, distance] from the
+// shoulder `sh`, Fear-local), where the arm is straight, so the bend/layer switch there is unseen. Hand shapes and palm
+// directions blend (no one-frame flips of the hand). Without `out`, a plain glide (same elbow side).
+const bez2 = (a, c, b, u) => { const v = 1 - u; return [v * v * a[0] + 2 * v * u * c[0] + u * u * b[0], v * v * a[1] + 2 * v * u * c[1] + u * u * b[1]]; };
+const nrm3 = (v) => { const l = Math.hypot(v[0], v[1], v[2]) || 1; return [v[0] / l, v[1] / l, v[2] / l]; };
+function moveArm(A, B, u, sh, out) {
+  if (u <= 0) return A;
+  if (u >= 1) return B;
+  let us = 0.5, target = [lerp(A.target[0], B.target[0], u), lerp(A.target[1], B.target[1], u)];
+  if (out) {
+    const P = [sh[0] + Math.cos(out[0]) * out[1], sh[1] + Math.sin(out[0]) * out[1]];
+    const C = [2 * P[0] - (A.target[0] + B.target[0]) / 2, 2 * P[1] - (A.target[1] + B.target[1]) / 2];
+    let dmax = 0;
+    for (let i = 1; i < 40; i++) {
+      const q = bez2(A.target, C, B.target, i / 40), d = Math.hypot(q[0] - sh[0], q[1] - sh[1]);
+      if (d > dmax) { dmax = d; us = i / 40; }
+    }
+    target = bez2(A.target, C, B.target, u);
+  }
+  const o = u < us ? { ...A } : { ...B };
+  o.target = target;
+  o.hand = blendHand(A.hand, B.hand, u);
+  if (A.palmDir && B.palmDir) o.palmDir = nrm3([lerp(A.palmDir[0], B.palmDir[0], u), lerp(A.palmDir[1], B.palmDir[1], u), lerp(A.palmDir[2], B.palmDir[2], u)]);
+  return o;
+}
+
 // the scarf end that Fear wipes its eyes with: a knitted strip from the scarf knot up into the fist (world
-// coords), then the fist redrawn over it so the cloth is held, not stuck on the face
+// coords); the scene then redraws Fear's front arms over it, so the articulated fist holds the cloth
 function scarfEnd(g, fx, fy, fs, facing, hand, k) {
   if (k <= 0.01) return;
-  const [hx, hy] = hand;
-  const side = hx > fx ? 1 : -1;                                     // the end on the wiping hand's side
+  const side = hand[0] > fx ? 1 : -1;                                // the end on the wiping hand's side
   const nx = fx + side * 16 * fs, ny = fy - 140 * fs;                 // where the end leaves the wrap
-  const mx = lerp(nx, hx, 0.45) + side * 10 * fs, my = lerp(ny, hy, 0.45) + 14 * fs;
+  // held: the end is in the fist; let go (k → 0): it drops back and hangs from the wrap (no translucent cloth)
+  const e = ease.sine(k), rest = [nx + side * 7 * fs, ny + 42 * fs];
+  const hx = lerp(rest[0], hand[0], e), hy = lerp(rest[1], hand[1], e);
+  const mx = lerp(nx, hx, 0.45) + side * 10 * fs * e, my = lerp(ny, hy, 0.45) + 14 * fs * e;
   g.save();
-  g.globalAlpha = k;
+  g.globalAlpha = clamp(k * 6);
   g.lineCap = 'round'; g.lineJoin = 'round';
   g.strokeStyle = FEAR_COLORS.line; g.lineWidth = 13 * fs;
   g.beginPath(); g.moveTo(nx, ny); g.quadraticCurveTo(mx, my, hx, hy + 4 * fs); g.stroke();
@@ -128,10 +158,6 @@ function scarfEnd(g, fx, fy, fs, facing, hand, k) {
     const ax = (1 - q) * (1 - q) * nx + 2 * (1 - q) * q * mx + q * q * hx, ay = (1 - q) * (1 - q) * ny + 2 * (1 - q) * q * my + q * q * (hy + 4 * fs);
     g.beginPath(); g.moveTo(ax - 3.5 * fs, ay - 2 * fs); g.lineTo(ax + 3.5 * fs, ay + 2 * fs); g.stroke();
   }
-  // the fist closed around it
-  g.fillStyle = FEAR_COLORS.body; g.strokeStyle = FEAR_COLORS.line; g.lineWidth = 2.4 * fs;
-  g.beginPath(); g.ellipse(hx, hy, 10.5 * fs, 9.5 * fs, 0, 0, Math.PI * 2); g.fill(); g.stroke();
-  g.beginPath(); g.moveTo(hx - facing * 3 * fs, hy - 5 * fs); g.lineTo(hx + facing * 1 * fs, hy + 4 * fs); g.stroke();
   g.restore();
 }
 
@@ -177,6 +203,11 @@ function fearPose(t, S, shot) {
   const P = fearPlace(t, S);
   const pose = { t, facing: -1, tremble: 0, scarfWind: 0 };
   if (P.walking) pose.walk = { phase: P.phase };
+  // feet point where the body faces (QA v3): front-on at the gate; toward the exit (local +x) from the first step on —
+  // also in the pauses between the steps, where they used to snap back to front-on — and, once it has stopped and looks
+  // back over its shoulder, still angled the way the body points; along the way again for the skip
+  pose.feetTurn = S.k(t, [['s16b02+1.94', 0], ['s16b02+2.12', 0.75], ['s16b03+1.0', 0.75], ['s16b03+1.5', 0.42, 'inOut'],
+    ['scene.end-1.9', 0.42], ['scene.end-1.7', 0.75]]);
   let face;
 
   // ---- b01: the wipes (one eye, then the other), a big wet sniff, a shaky breath out that is almost a laugh
@@ -205,7 +236,8 @@ function fearPose(t, S, shot) {
   const eyeSmile = S.k(t, [['s16b04+0.2', 0], ['s16b04+0.9', 1]]);
   const blush = S.k(t, [['s16b04+0.4', 0], ['s16b04+1.1', 1]]);
   const mouth = S.k(t, [['s16b04+0.75', 0], ['s16b04+1.5', 1, 'sine']]);
-  const tearDrop = S.k(t, [['s16b04+0.9', 0], ['s16b04+2.1', 1, 'linear']]);
+  // one last tear, after the smile has reached the mouth (script order: smile, the tear, the nod)
+  const tearDrop = S.k(t, [['s16b04+1.1', 0], ['s16b04+2.3', 1, 'linear']]);
   const nod = S.k(t, [['s16b04+1.7', 0], ['s16b04+1.88', 1], ['s16b04+2.12', 0]]);
   const turnFwd = S.k(t, [['scene.end-1.9', 0], ['scene.end-1.62', 1, 'inOut']]);
   const eyesFwd = S.k(t, [['scene.end-2.02', 0], ['scene.end-1.88', 1]]);
@@ -257,8 +289,8 @@ function fearPose(t, S, shot) {
   pose.face = face;
 
   // arms (character-local; facing −1, so local +x is screen-left, the way Fear leaves). armL is the screen-RIGHT arm.
-  const CLASP_L = { target: [-14, -118], bend: -1, front: true, hand: 'fist' };   // resting together at the belly
-  const CLASP_R = { target: [12, -116], bend: 1, front: true, hand: 'fist' };
+  const CLASP_L = { target: [-14, -118], bend: -1, front: true, hand: 'fist', palmDir: [0.6, 0.2, -0.8] };   // resting together at the belly
+  const CLASP_R = { target: [12, -116], bend: 1, front: true, hand: 'fist', palmDir: [-0.6, 0.2, -0.8] };
   const sw = Math.sin(P.phase) * 10, ssw = Math.sin(P.phase) * 14;
   const WALK_L = { target: [-36 + sw, -84], bend: 1, hand: 'open' }, WALK_R = { target: [36 + sw, -84], bend: -1, hand: 'open' };
   const SKIP_L = { target: [-44 + ssw, -96], bend: 1, hand: 'open' }, SKIP_R = { target: [44 + ssw, -96], bend: -1, hand: 'open' };
@@ -268,15 +300,31 @@ function fearPose(t, S, shot) {
   const walkW = S.k(t, [['s16b02+2.75', 0], ['s16b02+3.3', 1]]);                  // the startled arms settle into the walk
   const lookW = S.k(t, [['s16b03+0.95', 0], ['s16b03+1.55', 1, 'inOut']]);         // the stop: arms settle as the head turns back
   const skipW = S.k(t, [['scene.end-1.9', 0], ['scene.end-1.66', 1, 'inOut']]);    // swing out into the skip
-  pose.armL = CLASP_L; pose.armR = CLASP_R;
-  if (w1 > 0.01) pose.armR = { target: [lerp(12, 30, w1) + 0.6 * rub('scene.start') * w1, lerp(-116, -198, w1) + 0.5 * rub('scene.start') * w1], bend: -1, front: true, hand: 'fist' };
-  if (w2 > 0.01) pose.armL = { target: [lerp(-14, -30, w2) + 0.6 * rub('s16b01+0.55') * w2, lerp(-118, -198, w2) + 0.5 * rub('s16b01+0.55') * w2], bend: 1, front: true, hand: 'fist' };
+  // b01 (QA v3: the wiping fist was a small outlined oval; the arms flipped their elbows between the belly and the eyes):
+  // both hands stay up at the face, elbows out — one fist wipes its eye with the scarf end, PALM TO THE FACE, while the
+  // other rests open on its cheek; then they swap; for the sniff and the half-laugh both rest on the cheeks. In shot B the
+  // hands drop (the arms hang straight for an instant, so the elbows change sides unseen) and fold at the belly.
+  const br = Math.sin(t * TAU * 0.28) * pose.breathe;
+  const sh = (s) => [s * 27, -134 + br];
+  const eyeLY = -212 + pose.headDY;                                              // local y of the eyes (crouch 0)
+  const WIPE = (s, r) => ({ target: [s * 30 + 0.6 * r, eyeLY + 14 + 0.5 * r], bend: -s, front: true, hand: 'fist', palmDir: [-s * 0.3, 0, -1] });
+  const CHEEK = (s) => ({ target: [s * 45 + fbm(t * 0.31, 81 + s) * 1.2, eyeLY + 50 + fbm(t * 0.27, 87 + s)], bend: -s, front: true, hand: 'open', palmDir: [0, 0, -1] });
+  const drop = S.k(t, [['s16b02+0.15', 0], ['s16b02+1.0', 1, 'inOut']]);
+  const DROP = (s) => [Math.PI / 2 - s * 0.17, 98];                              // straight down, a touch out
+  pose.armR = moveArm(moveArm(CHEEK(1), WIPE(1, rub('scene.start')), w1), CLASP_R, drop, sh(1), DROP(1));
+  pose.armL = moveArm(moveArm(CHEEK(-1), WIPE(-1, rub('s16b01+0.55')), w2), CLASP_L, drop, sh(-1), DROP(-1));
   if (arms > 0.01) {
-    // the arms fly out from the clasp and, as they come down, settle toward the walk pose (not back to the clasp, which
-    // flashed for two frames between them)
-    const bL = lerp3([...CLASP_L.target, 0], [...WALK_L.target, 0], walkW), bR = lerp3([...CLASP_R.target, 0], [...WALK_R.target, 0], walkW);
-    pose.armL = { target: [lerp(bL[0], -78, arms), lerp(bL[1], -112, arms)], bend: 1, hand: 'open' };
-    pose.armR = { target: [lerp(bR[0], 80, arms), lerp(bR[1], -108, arms)], bend: -1, hand: 'open' };
+    // the arms fly out from the clasp (straight for an instant: the elbows change sides and the arms go behind the body
+    // unseen) and, as they come down, settle toward the walk pose (not back to the clasp, which flashed for two frames)
+    if (t < S.T('s16b02+2.1')) {
+      const OUT = (s) => [s > 0 ? 0.3 : Math.PI - 0.3, 100];
+      pose.armL = moveArm(CLASP_L, { target: [-78, -112], bend: 1, hand: 'open' }, arms, sh(-1), OUT(-1));
+      pose.armR = moveArm(CLASP_R, { target: [80, -108], bend: -1, hand: 'open' }, arms, sh(1), OUT(1));
+    } else {
+      const bL = lerp3([...CLASP_L.target, 0], [...WALK_L.target, 0], walkW), bR = lerp3([...CLASP_R.target, 0], [...WALK_R.target, 0], walkW);
+      pose.armL = { target: [lerp(bL[0], -78, arms), lerp(bL[1], -112, arms)], bend: 1, hand: 'open' };
+      pose.armR = { target: [lerp(bR[0], 80, arms), lerp(bR[1], -108, arms)], bend: -1, hand: 'open' };
+    }
   } else if (walkW > 0) {
     // walk → (the stop) the look back → the skip, each a blend (the stop used to snap the walk arms into the clasp)
     pose.armL = armMix(armMix(WALK_L, LOOK_L, lookW, -1), SKIP_L, skipW, -1);
@@ -354,6 +402,11 @@ export function render(g, t, S) {
       const hand = (arm) => [P.x + f * arm.target[0] * fs, P.y + arm.target[1] * fs];
       if (wipe.w1 > 0.01) scarfEnd(g, P.x, P.y, fs, f, hand(fp.armR), clamp(wipe.w1 * 1.5));
       if (wipe.w2 > 0.01) scarfEnd(g, P.x, P.y, fs, f, hand(fp.armL), clamp(wipe.w2 * 1.5));
+      // the wiping arm again over the cloth: the articulated fist closes on the scarf end (palm to the face)
+      if (wipe.w1 > 0.01 || wipe.w2 > 0.01) {
+        drawFearFrontArms(g, P.x, P.y, fs, { ...fp, armL: wipe.w2 > 0.01 ? fp.armL : { ...fp.armL, front: false },
+          armR: wipe.w1 > 0.01 ? fp.armR : { ...fp.armR, front: false } });
+      }
     }
     starlight(g, P.x + 25 * P.s, P.y - 250 * P.s, 190 * P.s, 0.45);
   }

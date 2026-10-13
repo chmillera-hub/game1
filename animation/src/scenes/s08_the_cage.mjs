@@ -7,6 +7,7 @@ import { drawSelf, SELF_EXPR, selfLocal, WALK_ADVANCE } from '../chars/self.mjs'
 import { drawVoid } from '../chars/void.mjs';
 import { drawHQ, drawHQForeground, hqScaleAt } from '../sets/hq.mjs';
 import { drawCage, cagePoint } from '../sets/props.mjs';
+import { drawLit } from '../fx/rim.mjs';
 
 export const id = 's08';
 
@@ -69,6 +70,11 @@ function cam(g, c, t, amp = 2.5) {
   applyCamera(g, { x: c.x + d.dx / c.zoom, y: c.y + d.dy / c.zoom, zoom: c.zoom, rot: d.dr * 0.5 });
 }
 const sstep = (a, b, x) => { const k = clamp((x - a) / (b - a)); return k * k * (3 - 2 * k); };
+// the narrator sheds no tear before the last scene: the CEO's lower lids only glisten (tears ≤ 0.35)
+const glisten = (x) => 0.35 * Math.pow(clamp(x || 0), 0.6);
+// Fear's hands on the bars from inside the cage: palms toward the bars (and us), the fingers curling round the front
+// of each bar (drawCage's `grips` draws the fingers that come round in front of it); the bar hides the palm behind it
+const BAR_PALM = [0, 0, 1];
 /** Sobbing: returns 0..1 hitch pulses (3 quick catches per sob), sob every `period` s. */
 function sobHitch(t, period = 1.7, phase = 0) {
   const u = ((t + phase) % period + period) % period;
@@ -209,8 +215,8 @@ function fearPoseB(t, S, T, cst, fx, fy, fs) {
   // head craned back toward the hood, settling level as it turns to the bars
   const crane = S.k(t, [['s08b01+1.6', 1], ['s08b01+2.0', 0]]);
   const gripK = sstep(T.inside, T.grip, t);
-  const armL = gripK > 0 ? { target: [lerp(-34, gl[0], gripK), lerp(-82, gl[1], gripK)], bend: 1, front: gripK > 0.5, hand: gripK > 0.6 ? 'grip' : 'fist' } : { target: [-34, -82], bend: 1, hand: 'fist' };
-  const armR = gripK > 0 ? { target: [lerp(34, gr[0], gripK), lerp(-82, gr[1], gripK)], bend: -1, front: gripK > 0.5, hand: gripK > 0.6 ? 'grip' : 'fist' } : { target: [34, -82], bend: -1, hand: 'fist' };
+  const armL = gripK > 0 ? { target: [lerp(-34, gl[0], gripK), lerp(-82, gl[1], gripK)], bend: 1, front: gripK > 0.5, hand: gripK > 0.6 ? 'grip' : 'fist', ...(gripK > 0.6 ? { palmDir: BAR_PALM } : {}) } : { target: [-34, -82], bend: 1, hand: 'fist' };
+  const armR = gripK > 0 ? { target: [lerp(34, gr[0], gripK), lerp(-82, gr[1], gripK)], bend: -1, front: gripK > 0.5, hand: gripK > 0.6 ? 'grip' : 'fist', ...(gripK > 0.6 ? { palmDir: BAR_PALM } : {}) } : { target: [34, -82], bend: -1, hand: 'fist' };
   return {
     t, facing: 1, tremble, crouch: 0,
     headTurn: 0.3 * crane, headDY: -9 * crane, headTilt: 0.11 * crane,
@@ -320,18 +326,23 @@ function shotInsert(g, t, S, T) {
   const out = 0;
   const bow = [kh[0] + Math.cos(KANG) * (10 + out) * KS, kh[1] + Math.sin(KANG) * (10 + out) * KS];
   const handAng = 0.42 + 0.25 * spin;                                    // the wrist rolls with the turn
-  const pinchOff = 33;                                                   // wrist → thumb/index pinch (world px)
-  const pinch = [bow[0] - Math.cos(handAng) * pinchOff, bow[1] - Math.sin(handAng) * pinchOff + 6];
+  // The key is held in a pinch: its bow between the curled index finger and the thumb, the back of the hand to us,
+  // so the hand hides the bow and only the shank shows, running from the fingertips into the keyhole (the key used
+  // to be drawn over a fist, the bow lying on the knuckles). The turn rolls the hand about the key's own axis: the
+  // wrist circles the bow.
+  const pinchOff = 40;                                                   // wrist → the bow inside the pinch (world px)
+  const pinch = [bow[0] - Math.cos(handAng) * pinchOff, bow[1] - Math.sin(handAng) * pinchOff];
   const hasp = cagePoint('doorHandle', ...CAGE_B, cst);
   const onHasp = [hasp[0] - Math.cos(0.42) * 30, hasp[1] - Math.sin(0.42) * 30 + 2];
   let wr = [lerp(onHasp[0], pinch[0], toLock), lerp(onHasp[1], pinch[1], toLock)];
   const slide = [-150 * leave, 26 * leave];                              // slides left along the middle rail
   wr = [wr[0] + slide[0], wr[1] + slide[1]];
-  const armR = { target: L(...wr), bend: -1, front: true, hand: 'grip', handAngle: handAng, thumb: -1, shake: 0.4 * hes };
-  drawSelf(g, cx, cy, cs, { t, outfit: 'ceo', facing: 1, kneel: 1, face: { ...SELF_EXPR.resolve, lookX: 0.8, lookY: 0.5 }, armR, armL: 'rest' });
-  // the key: produced in the fingers as the hand drops, turned, then drawn out with the hand
+  // the key: produced in the fingers as the hand drops, turned, then drawn out with the hand (behind the hand)
   const keyIn = sstep(T.shut + 0.08, S.T('s08b01+2.55'), t);
   drawKey(g, kh[0] + Math.cos(KANG) * out * KS + slide[0], kh[1] + Math.sin(KANG) * out * KS + slide[1], KANG, KS, keyIn * (1 - sstep(0.3, 0.7, leave)), spin);
+  const armR = { target: L(...wr), bend: -1, front: true, hand: toLock > 0.5 && leave < 0.5 ? 'pinch' : 'grip', handAngle: handAng,
+    palmDir: [0, 0, -1], shake: 0.4 * hes };
+  drawSelf(g, cx, cy, cs, { t, outfit: 'ceo', facing: 1, kneel: 1, face: { ...SELF_EXPR.resolve, lookX: 0.8, lookY: 0.5 }, armR, armL: 'rest' });
 
   drawHQForeground(g, 'backOfMind', st);
   g.restore();
@@ -361,10 +372,13 @@ function shotClose(g, t, S, T) {
   const lookX = S.k(t, [['s08b02+1.42', -0.62], ['s08b02+1.62', 0.42], ['s08b02+1.98', 0.42], ['s08b02+2.25', -0.62]]);
   const lookY = S.k(t, [['s08b02+1.42', toCEO], ['s08b02+1.62', -1], ['s08b02+1.98', -1], ['s08b02+2.25', -0.6]]);
   const beg = S.k(t, [['s08b02+1.9', 0], ['s08b02+2.3', 1]]);
-  const tearL = S.k(t, [['s08b02+0.15', 0], ['s08b02+1.8', 1, 'linear']]);
-  const tearR = S.k(t, [['s08b02+0.95', 0], ['s08b02+2.6', 1, 'linear']]);
-  const base = { ...EXPR.crying, open: 0.06, wide: 0.15, stream: S.k(t, [['s08b02', 0.05], ['s08b02.end', 0.45]]), tears: 1,
-    lookX, lookY: t < S.T('s08b02+1.42') ? toCEO : lookY, browUp: 0.3 + 0.35 * beg, lidU: 0.2 - 0.15 * beg, tearL, tearR: t > S.T('s08b02+0.95') ? tearR : 0 };
+  // "A tear finally spills, then another": exactly two, one from each eye: the first gathers a third of the way into
+  // the line and spills on its middle, the second follows on 'with it' (no `stream` on top: it added a third drop and
+  // the first one started on the line's first frame)
+  const tearL = S.k(t, [['s08b02+0.75', 0], ['s08b02+2.45', 1, 'linear']]);
+  const tearR = S.k(t, [['s08b02+1.45', 0], ['s08b02+3.15', 1, 'linear']]);
+  const base = { ...EXPR.crying, open: 0.06, wide: 0.15, stream: 0, tears: 1,
+    lookX, lookY: t < S.T('s08b02+1.42') ? toCEO : lookY, browUp: 0.3 + 0.35 * beg, lidU: 0.2 - 0.15 * beg, tearL, tearR };
   const face = withSpeech(base, S.lip('FEAR', t), 0.85);
   // pressed to the bars: a small lean in, pulls on 'leave'
   const pull = S.k(t, [['s08b02+1.0', 0], ['s08b02+1.2', 1], ['s08b02+1.6', 0.3]]);
@@ -377,8 +391,8 @@ function shotClose(g, t, S, T) {
     headTurn: 0.12 * roll, headTilt: ph.headTilt,
     breathe: 1.4, breathRate: 0.85,
     face,
-    armL: { target: [gl[0], gl[1] + 3 * pull], bend: 1, front: true, hand: 'grip' },
-    armR: { target: [gr[0], gr[1] + 3 * pull], bend: -1, front: true, hand: 'grip' },
+    armL: { target: [gl[0], gl[1] + 3 * pull], bend: 1, front: true, hand: 'grip', palmDir: BAR_PALM },
+    armR: { target: [gr[0], gr[1] + 3 * pull], bend: -1, front: true, hand: 'grip', palmDir: BAR_PALM },
   });
   drawCage(g, ...CAGE_B, { ...cst, layer: 'front', grips: ['gripL', 'gripR'], shake: 0.25 * pull });
 
@@ -391,7 +405,7 @@ function shotClose(g, t, S, T) {
   const target = selfLocal(cx, cy, cs, 1, 262 - 4 * tight - 120 * off, barY + 30 * off);
   drawSelf(g, cx, cy, cs, {
     t, outfit: 'ceo', facing: 1, kneel, layer: 'front',   // only the arm: the body and head are off-frame left (x < 180)
-    face: { ...SELF_EXPR.holdingBackTears, lookX: 0.7, lookY: 0.6 },
+    face: { ...SELF_EXPR.holdingBackTears, tears: glisten(SELF_EXPR.holdingBackTears.tears), lookX: 0.7, lookY: 0.6 },
     armR: { target, bend: -1, front: true, hand: off > 0.2 ? 'open' : tight > 0.5 ? 'fist' : 'grip', handAngle: -0.05 - 0.12 * tight, thumb: -1, shake: 0.3 * tight },
     armL: 'rest',
   });
@@ -434,9 +448,11 @@ function shotFront(g, t, S, T) {
   const hitch = sobHitch(t, 1.6, 0.2);
   drawFear(g, fx, fy, fs, {
     t, facing: 1, tremble: 0.7, lean: -0.05 * pullK, headDY: -3 * hitch, breathe: 1.9, breathRate: 0.8,
-    face: { ...EXPR.crying, open: 0.3 + 0.2 * hitch, lidU: 0.45, stream: 0.75, tearL: ((t - S.T('s08b03')) / 1.6) % 1, lookY: -0.2, lookX: -0.3 },
-    armL: { target: [gl[0] + 3 * pullK, gl[1] + 4 * pullK], bend: 1, front: true, hand: 'grip' },
-    armR: { target: [gr[0] - 3 * pullK, gr[1] + 4 * pullK], bend: -1, front: true, hand: 'grip' },
+    // crying hard now: the rig's sustained cry (single tears, alternating eyes) — the extra tear restarted every 1.6 s
+    // on the left eye (from the shot's first frame) is gone
+    face: { ...EXPR.crying, open: 0.3 + 0.2 * hitch, lidU: 0.45, stream: 0.9, lookY: -0.2, lookX: -0.3 },
+    armL: { target: [gl[0] + 3 * pullK, gl[1] + 4 * pullK], bend: 1, front: true, hand: 'grip', palmDir: BAR_PALM },
+    armR: { target: [gr[0] - 3 * pullK, gr[1] + 4 * pullK], bend: -1, front: true, hand: 'grip', palmDir: BAR_PALM },
   });
   drawCage(g, ...CAGE_F, { ...cst, layer: 'front', grips: ['gripL', 'gripR'] });
 
@@ -469,16 +485,15 @@ function shotFront(g, t, S, T) {
   for (const r of rattles) { const d = t - r; if (d > 0.04 && d < 0.4) flinch = Math.max(flinch, Math.sin(((d - 0.04) / 0.36) * Math.PI)); }
   const clench = (t > b + 1.4 && t < b + 1.75) || (t > b + 2.05 && t < b + 2.45) || t > b + 2.75;
   // In the medium close the lips must visibly tremble: the rig's own lip tremble is ~1 px at this size, so the mouth
-  // corners also quiver (smile/wide noise) once the face is toward us. The eyes are wet (full glossy rims) and a tear
-  // brims on the right lower lid during the stop without falling (it falls in s09, on 'sadness'). Each rattle makes
-  // the eye corners flinch: lower lids jump up, upper lids drop, brows pinch.
+  // corners also quiver (smile/wide noise) once the face is toward us. The lower lids glisten, no more: the narrator
+  // sheds no tear before the last scene (no drop brimming on the lid either; s09 opens on the same glisten). Each
+  // rattle makes the eye corners flinch: lower lids jump up, upper lids drop, brows pinch.
   const qK = sstep(b + 0.9, b + 1.45, t);
   const quiver = noise1((t - b) * 9, 31) * 0.6 + noise1((t - b) * 17, 37) * 0.4;
   const face = {
-    ...SELF_EXPR.holdingBackTears, tears: lerp(0.85, 1, qK), lookY: 0.15 + 0.15 * swallow, lookX: back ? -0.3 : lerp(-0.35, -0.08, bodyK),
+    ...SELF_EXPR.holdingBackTears, tears: glisten(lerp(0.85, 1, qK)), lookY: 0.15 + 0.15 * swallow, lookX: back ? -0.3 : lerp(-0.35, -0.08, bodyK),
     lidL: 0.3 + 0.5 * flinch, lidU: 0.24 + 0.26 * flinch, browSquish: 0.3 + 0.4 * flinch, browIn: 1 + 0.12 * flinch,
     pressed: 0.95, tremble: lerp(0.55, 1, qK), smile: -0.42 + 0.13 * qK * quiver - 0.08 * flinch, wide: -0.06 + 0.1 * qK * quiver,
-    tearR: S.k(t, [['s08b03+1.2', 0], ['s08b03+2.2', 0.03, 'sine']]),
     blink: Math.max(blinkAt(t, b + 1.36, 0.32), blinkAt(t, b + 0.5, 0.16)),
   };
   let armL, armR;
@@ -491,7 +506,7 @@ function shotFront(g, t, S, T) {
     armL = { preset: 'rest', hand: clench ? 'fist' : 'rest' };
     armR = { preset: 'rest', hand: clench ? 'fist' : 'rest' };
   }
-  drawSelf(g, pos.x, pos.y, cs, {
+  const ceoPose = {
     t, outfit: 'ceo', facing: 1,
     view: back ? 'back' : 'front',
     headTurn: back ? -0.5 * headK - 0.3 * overK : lerp(-0.62, 0, bodyK) + 0.03 * flinch,
@@ -500,7 +515,14 @@ function shotFront(g, t, S, T) {
     shrug: 0.55 * breathIn + 0.12 * flinch, headDY: 3 * swallow - 2 * breathIn + 1.5 * flinch,
     lean: -0.02 * breathIn,
     face, armL, armR,
-  });
+  };
+  // the EXIT door opening behind the CEO's right (screen-left) shoulder floods warm light past them: a warm rim on the
+  // edges that face the doorway and a little fill, growing with the opening (the dark blazer went flat against it)
+  const doorLit = clamp(st.doorOpen / 0.45);
+  if (doorLit > 0.01) {
+    drawLit(g, (g2) => drawSelf(g2, pos.x, pos.y, cs, ceoPose),
+      { dir: [-1, -0.55], color: '#ffe2a8', strength: 0.85 * doorLit, width: 4, fill: '#ffd9a0', fillAlpha: 0.08 * doorLit });
+  } else drawSelf(g, pos.x, pos.y, cs, ceoPose);
   drawHQForeground(g, 'front', st);
   g.restore();
   grade(g, COLD, 0);

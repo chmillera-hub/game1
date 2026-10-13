@@ -3,15 +3,16 @@
 // the Void's hand unlocks the cage while Fear cries with its eyes shut → the gate creaks open →
 // Fear's eyes climb the withdrawing hand to the hood (low angle, matched cut into s12).
 import { createCanvas } from '@napi-rs/canvas';
-import { W, H, clamp, lerp, ease, blinkAt, applyCamera, drift, vignette, fbm, mixColor } from '../engine.mjs';
-import { EXPR, makeExpr } from '../face.mjs';
-import { drawFear } from '../chars/fear.mjs';
+import { W, H, TAU, clamp, lerp, ease, blinkAt, applyCamera, drift, vignette, fbm, mixColor } from '../engine.mjs';
+import { EXPR, makeExpr, drawTear } from '../face.mjs';
+import { drawFear, fearBodySpace, fearHeadSpace, FEAR_FACE } from '../chars/fear.mjs';
 import { drawSelf } from '../chars/self.mjs';
 import { drawEmotion } from '../chars/emotions.mjs';
 import { drawVoid, drawVoidArm, drawVoidHand, toVoidLocal, VOID_HANDS } from '../chars/void.mjs';
 import { drawHQ, drawHQForeground, HQ_VIEWS } from '../sets/hq.mjs';
 import { drawCage, cagePoint } from '../sets/props.mjs';
 import { drawClipboard } from '../chars/self.mjs';
+import { drawLit } from '../fx/rim.mjs';
 
 export const id = 's11';
 
@@ -100,6 +101,27 @@ function dreamBloom(g, k) {
   g.restore();
 }
 
+// The rigs breathe sin(t·TAU·breathRate) on ABSOLUTE film time, so a keyed change of the rate jumps the phase: a ramp
+// of the rate at t ≈ 170 s made the breath (head and shoulders) jitter at several Hz for seconds. The keyed rate is
+// integrated into a phase once per scene, and the rig gets the rate that reproduces it: sin(t·TAU·r) = sin(φ(t)).
+// `anchor` = 'start' or 'end': where φ equals t·TAU·rate (the same breath as a neighbouring shot with a constant rate).
+const PHASE = new Map();
+function breathRateAt(t, S, keys, anchor = 'start') {
+  let e = PHASE.get(S.id);
+  if (!e) {
+    const t0 = S.start - 2, t1 = S.end + 2, dt = 1 / 96, n = Math.ceil((t1 - t0) / dt) + 1;
+    const ph = new Float64Array(n);
+    for (let i = 1; i < n; i++) ph[i] = ph[i - 1] + TAU * S.k(t0 + (i - 0.5) * dt, keys) * dt;
+    const ta = anchor === 'end' ? S.end : S.start, ia = (ta - t0) / dt;
+    const off = ta * TAU * S.k(ta, keys) - lerp(ph[Math.floor(ia)], ph[Math.floor(ia) + 1], ia - Math.floor(ia));
+    for (let i = 0; i < n; i++) ph[i] += off;
+    e = { t0, dt, n, ph };
+    PHASE.set(S.id, e);
+  }
+  const f = clamp((t - e.t0) / e.dt, 0, e.n - 1.001), i = Math.floor(f);
+  return lerp(e.ph[i], e.ph[i + 1], f - i) / (TAU * t);
+}
+
 // ================================================================ SHOT A — back view, the console
 function drawBack(g, t, S, base = 1) {
   const T = (a) => S.T(a);
@@ -120,39 +142,43 @@ function drawBack(g, t, S, base = 1) {
   drawClipboard(g);
   g.restore();
 
-  // ---- the emotions, backs to us (stations left→right: JOY, SADNESS, ANGER, CALM)
-  // JOY glances at the CEO (screen-right): brows inner-up, the smile gone flat; then back to the screen
-  const joyK = S.k(t, [['s11b01+0.6', 0], ['s11b01+1.1', 0.64, 'cubic'], ['s11b01+2.4', 0.64], ['s11b01+3.0', 0, 'cubic']]);
-  const joyFace = E({ browIn: 0.55, browUp: 0.15, smile: -0.2, lidU: 0.12, lookX: 0.35, lookY: 0.15,
-    blink: blinkAt(t, T('s11b01+1.85'), 0.2) });
-  drawEmotion(g, 'JOY', ...A.consoleBack1, { t: t + OFF.JOY, view: 'back', lookBack: joyK, lookSide: 1, face: joyFace,
-    armL: 'pressButton', armR: { preset: 'pressButton', dy: 5 * bump(t, T('s11b01+3.6'), 0.18) } });
+  // ---- the five of them stand in front of the bright screen of consciousness: one lit layer gives their top edges
+  // a warm rim from it and lifts the darks a touch (the CEO's charcoal back read near-black against the screen)
+  drawLit(g, (cg) => {
+    // ---- the emotions, backs to us (stations left→right: JOY, SADNESS, ANGER, CALM)
+    // JOY glances at the CEO (screen-right): brows inner-up, the smile gone flat; then back to the screen
+    const joyK = S.k(t, [['s11b01+0.6', 0], ['s11b01+1.1', 0.64, 'cubic'], ['s11b01+2.4', 0.64], ['s11b01+3.0', 0, 'cubic']]);
+    const joyFace = E({ browIn: 0.55, browUp: 0.15, smile: -0.2, lidU: 0.12, lookX: 0.35, lookY: 0.15,
+      blink: blinkAt(t, T('s11b01+1.85'), 0.2) });
+    drawEmotion(cg, 'JOY', ...A.consoleBack1, { t: t + OFF.JOY, view: 'back', lookBack: joyK, lookSide: 1, face: joyFace,
+      armL: 'pressButton', armR: { preset: 'pressButton', dy: 5 * bump(t, T('s11b01+3.6'), 0.18) } });
 
-  // SADNESS glances back toward the cage (behind the camera, right of centre) for a moment, then down
-  const sadK = S.k(t, [['s11b01+1.4', 0], ['s11b01+1.95', 0.62, 'cubic'], ['s11b01+2.9', 0.62], ['s11b01+3.5', 0.28, 'sine'], ['s11b01+4.6', 0.2]]);
-  const sadDown = S.k(t, [['s11b01+2.8', 0], ['s11b01+3.4', 1]]);
-  const sadFace = E({ browIn: 0.7, lidTilt: 0.4, lidU: lerp(0.15, 0.5, sadDown), smile: -0.2, lookX: lerp(0.05, -0.1, sadDown), lookY: lerp(-0.05, 0.75, sadDown),
-    blink: blinkAt(t, T('s11b01+2.55'), 0.22) });
-  drawEmotion(g, 'SADNESS', ...A.consoleBack2, { t: t + OFF.SADNESS, view: 'back', lookBack: sadK, lookSide: 1, face: sadFace,
-    headDY: 4 * sadDown, armL: 'pressButton', armR: 'pressButton' });
+    // SADNESS glances back toward the cage (behind the camera, right of centre) for a moment, then down
+    const sadK = S.k(t, [['s11b01+1.4', 0], ['s11b01+1.95', 0.62, 'cubic'], ['s11b01+2.9', 0.62], ['s11b01+3.5', 0.28, 'sine'], ['s11b01+4.6', 0.2]]);
+    const sadDown = S.k(t, [['s11b01+2.8', 0], ['s11b01+3.4', 1]]);
+    const sadFace = E({ browIn: 0.7, lidTilt: 0.4, lidU: lerp(0.15, 0.5, sadDown), smile: -0.2, lookX: lerp(0.05, -0.1, sadDown), lookY: lerp(-0.05, 0.75, sadDown),
+      blink: blinkAt(t, T('s11b01+2.55'), 0.22) });
+    drawEmotion(cg, 'SADNESS', ...A.consoleBack2, { t: t + OFF.SADNESS, view: 'back', lookBack: sadK, lookSide: 1, face: sadFace,
+      headDY: 4 * sadDown, armL: 'pressButton', armR: 'pressButton' });
 
-  // CEO: slumped at the console, heels of the hands rubbing the eyes, never looks back
-  const rub = Math.sin((t - S.start) * 2 * Math.PI * 0.9);
-  drawSelf(g, ...A.consoleBackMid, {
-    t, outfit: 'ceo', view: 'back', armL: 'rubEyes', armR: 'rubEyes',
-    shrug: 0.4 + 0.06 * Math.sin((t - S.start) * 1.3), headTilt: 0.1 + 0.035 * rub, headDX: 2.5 * rub, headDY: 7, breathe: 1.3,
-  });
+    // CEO: slumped at the console, heels of the hands rubbing the eyes, never looks back
+    const rub = Math.sin((t - S.start) * 2 * Math.PI * 0.9);
+    drawSelf(cg, ...A.consoleBackMid, {
+      t, outfit: 'ceo', view: 'back', armL: 'rubEyes', armR: 'rubEyes',
+      shrug: 0.4 + 0.06 * Math.sin((t - S.start) * 1.3), headTilt: 0.1 + 0.035 * rub, headDX: 2.5 * rub, headDY: 7, breathe: 1.3,
+    });
 
-  // ANGER works a lever harder than it needs, not looking back
-  const pump = Math.max(0, Math.sin((t - S.start) * 2 * Math.PI * 1.05)) ** 2;
-  drawEmotion(g, 'ANGER', ...A.consoleBack3, { t: t + OFF.ANGER, view: 'back', heat: 0.45 + 0.1 * pump,
-    lean: -0.02 * pump, armL: 'pressButton', armR: { preset: 'pressButton', dy: 11 * pump } });
+    // ANGER works a lever harder than it needs, not looking back
+    const pump = Math.max(0, Math.sin((t - S.start) * 2 * Math.PI * 1.05)) ** 2;
+    drawEmotion(cg, 'ANGER', ...A.consoleBack3, { t: t + OFF.ANGER, view: 'back', heat: 0.45 + 0.1 * pump,
+      lean: -0.02 * pump, armL: 'pressButton', armR: { preset: 'pressButton', dy: 11 * pump } });
 
-  // CALM, lids level at half: glances at the CEO's slumped back (screen-left), then slowly back to its lever
-  const calmK = S.k(t, [['s11b01-0.1', 0], ['s11b01+0.5', 0.46, 'cubic'], ['s11b01+1.7', 0.46], ['s11b01+2.7', 0, 'sine']]);
-  const calmFace = E({ lidU: 0.3, browIn: 0.25, smile: -0.1, lookX: -0.35, lookY: 0.2, blink: blinkAt(t, T('s11b01+1.1'), 0.3) });
-  drawEmotion(g, 'CALM', ...A.consoleBack4, { t: t + OFF.CALM, view: 'back', lookBack: calmK, lookSide: -1, face: calmFace,
-    armL: { preset: 'pressButton', dy: 4 * bump(t, T('s11b01+3.2'), 0.3) }, armR: 'pressButton' });
+    // CALM, lids level at half: glances at the CEO's slumped back (screen-left), then slowly back to its lever
+    const calmK = S.k(t, [['s11b01-0.1', 0], ['s11b01+0.5', 0.46, 'cubic'], ['s11b01+1.7', 0.46], ['s11b01+2.7', 0, 'sine']]);
+    const calmFace = E({ lidU: 0.3, browIn: 0.25, smile: -0.1, lookX: -0.35, lookY: 0.2, blink: blinkAt(t, T('s11b01+1.1'), 0.3) });
+    drawEmotion(cg, 'CALM', ...A.consoleBack4, { t: t + OFF.CALM, view: 'back', lookBack: calmK, lookSide: -1, face: calmFace,
+      armL: { preset: 'pressButton', dy: 4 * bump(t, T('s11b01+3.2'), 0.3) }, armR: 'pressButton' });
+  }, { dir: [0.1, -1], color: '#ffdcae', strength: 0.55, width: 3, fill: '#ffe6c8', fillAlpha: 0.05 });
 
   drawHQForeground(g, 'back', st);
   g.restore();
@@ -231,7 +257,7 @@ function drawBoM(g, t, S) {
   drawVoid(g, ...VOID_B, vpose);
   drawCage(g, ...CAGE_B, { ...cst, layer: 'back' });
   drawFearTurning(g, fear.x, fear.y, FS, fear.pose, fear.squash);
-  if (t >= tB3) hangingTear(g, fear.x, fear.y, FS, fear.pose, fear.squash);
+  hangingTear(g, fear.x, fear.y, FS, fear.pose, fear.squash, fear.hang);
   drawCage(g, ...CAGE_B, { ...cst, layer: 'front', grips: fear.grips });
   if (handOut) { sleeveFront(g, vpose); drawVoidHand(g, ...VOID_B, vpose, 'L'); }
   drawHQForeground(g, 'backOfMind', st);
@@ -246,54 +272,29 @@ function drawBoM(g, t, S) {
   finish(g, lerp(0.5, 0.6, out), lerp(0.15, 0, out), lerp(0.45, 0.5, out), mixColor('#2a1408', '#000000', out));
 }
 
-// ---- the hanging tear, large and catch-lit for the close (drawn over the rig's own small drop, behind the bars)
-const F_HEAD_CY = -66, F_NECK_Y = -148, F_EYE = { sp: 32, y: -6, rx: 24.5, ry: 28.5 };   // fear.mjs / FEAR_FACE geometry
-const rot = (x, y, a) => [x * Math.cos(a) - y * Math.sin(a), x * Math.sin(a) + y * Math.cos(a)];
-/** world point of a face-local point (u, v) of Fear drawn at (x, y, s) with `pose` (mirrors drawFear's chain; the
- *  shiver terms are left out: the tear is drawn only after the tremble has stopped) */
-function fearFacePoint(x, y, s, pose, u, v) {
-  const f = pose.facing || 1;
-  const br = Math.sin(pose.t * 2 * Math.PI * (pose.breathRate || 0.28)) * (pose.breathe ?? 1);
-  let [px, py] = rot(f * u, v + F_HEAD_CY + 8, pose.headTilt || 0);
-  px += pose.headDX || 0; py += F_NECK_Y + (pose.crouch || 0) * 20 + br * 1.2 + (pose.headDY || 0);
-  [px, py] = rot(px, py, pose.lean || 0);
-  return [x + s * f * px, y + s * py];
-}
-function hangingTear(g, x, y, s, pose, squash = 1) {
-  const k = clamp(pose.face.tearR || 0);
-  if (k <= 0.001) return;
-  const turn = clamp(pose.headTurn || 0, -1, 1), at = Math.abs(turn);
-  const rx = F_EYE.rx * (turn > 0 ? 1 - at * 0.38 : 1 + at * 0.06);
-  const cx = F_EYE.sp * (1 - at * 0.3) + turn * F_EYE.sp * 0.55;
-  // (0.23 rx instead of the rig's 0.45: a touch toward the nose, so the gate's centre stile at rest does not cut it)
-  const u = cx + rx * 0.23 + Math.sin(k * 5) * 2, v = F_EYE.y + F_EYE.ry * 0.9 + k * F_EYE.ry * 2.6;
-  let [tx, ty] = fearFacePoint(x, y, s, pose, u, v);
-  tx = x + (tx - x) * squash;
-  const grow = clamp(k / 0.07);                         // swells on the lid as it gathers (tearR 0 → 0.07)
-  const a = k < 0.85 ? 1 : 1 - (k - 0.85) / 0.15;
-  const sz = s * rx * 0.17 * 1.75 * (0.55 + 0.45 * grow);
+// ---- the hanging tear (b03): face.mjs's own tear (drawTear: one translucent, slightly blue drop with a soft rim and
+// highlight, and a short wet trail that fades with it), drawn in Fear's face frame a little larger than the rig's
+// stream tears (the close is ~2.4× and it is the shot's one tear). It gathers on the lower lid of the right eye as
+// the eyes snap open, hangs there through the stare (k ≤ 0.12 of drawTear's 0.16 gathering phase), and falls in the
+// frozen hold at the end, running down the cheek and fading out before the cut — the only thing that moves.
+const F_HEAD_CY = -66;                                    // fear.mjs head centre (local to the neck pivot)
+const TEAR_SIZE = 1.3;                                    // × the rig's tear (FEAR_FACE.eyeRx × 0.19)
+function hangingTear(g, x, y, s, pose, squash, k) {
+  if (k <= 0.001 || k >= 1) return;
+  const F = FEAR_FACE, side = 1;
+  const turn = clamp(pose.headTurn || 0, -1, 1);
+  // the eye geometry exactly as drawFace places it (the same spot the rig's own tears start from)
+  const squeeze = side * turn > 0 ? 1 - Math.abs(turn) * 0.38 : 1 + Math.abs(turn) * 0.06;
+  const ex = side * F.eyeSpacing * (1 - Math.abs(turn) * 0.3) + turn * F.eyeSpacing * 0.55;
+  const rx = F.eyeRx * squeeze, ry = F.eyeRy, y0 = F.eyeY + ry * 0.82;
+  const len = clamp(F.mouthY + ry * 0.25 - y0, ry * 1.3, ry * 2.4) * (1 - 0.3 * Math.max(0, side * turn));
   g.save();
-  g.translate(tx, ty);
-  g.rotate(pose.headTilt || 0);
-  // a faint cool glow around it (it catches the far light)
-  g.globalCompositeOperation = 'screen';
-  const gl = g.createRadialGradient(0, 0, 0, 0, 0, sz * 3.2);
-  gl.addColorStop(0, `rgba(170,215,255,${0.35 * a})`); gl.addColorStop(1, 'rgba(170,215,255,0)');
-  g.fillStyle = gl; g.fillRect(-sz * 3.2, -sz * 3.2, sz * 6.4, sz * 6.4);
-  g.globalCompositeOperation = 'source-over';
-  const drop = () => {
-    g.beginPath(); g.moveTo(0, -sz * 1.9);
-    g.bezierCurveTo(sz * 1.1, -sz * 0.2, sz, sz, 0, sz);
-    g.bezierCurveTo(-sz, sz, -sz * 1.1, -sz * 0.2, 0, -sz * 1.9);
-  };
-  const body = g.createLinearGradient(-sz, -sz, sz, sz);
-  body.addColorStop(0, `rgba(235,247,255,${0.95 * a})`); body.addColorStop(1, `rgba(150,200,245,${0.9 * a})`);
-  g.fillStyle = body; g.strokeStyle = `rgba(90,130,200,${0.75 * a})`; g.lineWidth = Math.max(1, sz * 0.14);
-  drop(); g.fill(); g.stroke();
-  // catch-light: a bright crescent upper-left (toward the far glow) and a pin-point
-  g.fillStyle = `rgba(255,255,255,${0.95 * a})`;
-  g.beginPath(); g.ellipse(-sz * 0.38, -sz * 0.15, sz * 0.22, sz * 0.5, 0.35, 0, 2 * Math.PI); g.fill();
-  g.beginPath(); g.arc(sz * 0.32, sz * 0.48, sz * 0.12, 0, 2 * Math.PI); g.fill();
+  if (Math.abs(squash - 1) > 0.002) { g.translate(x, 0); g.scale(squash, 1); g.translate(-x, 0); }
+  const sh = fearBodySpace(g, x, y, s, pose);
+  fearHeadSpace(g, pose, sh);
+  g.translate(0, F_HEAD_CY + 8);
+  g.scale(pose.facing || 1, 1);
+  drawTear(g, ex + side * rx * 0.42, y0, len, k, rx * 0.19 * TEAR_SIZE, side);
   g.restore();
 }
 
@@ -354,7 +355,7 @@ function fearPose(t, S, pull) {
   // ---------------- face
   // crying, eyes squeezed shut (dream / b02)
   const cry = E(EXPR.crying, { lidU: 1, lidL: 0.45, browIn: 1, browUp: 0.15, browSquish: 0.5, smile: -0.75, open: 0.18 + 0.2 * clamp(hitch), wide: 0.4,
-    tremble: 0.8, tears: 1, stream: 0.75, lookX: 0, lookY: 0.2 });
+    tremble: 0.8, tears: 1, stream: 0, lookX: 0, lookY: 0.2 });
   // the creak: sob stops dead, eyes snap open, then the long look up
   const gaze = S.k(t, [
     ['s11b03+0.2', { lookX: -0.1, lookY: 0.1 }],
@@ -365,11 +366,17 @@ function fearPose(t, S, pull) {
     ['s11b03+2.9', { lookX: 0.36, lookY: -1 }, 'sine'],           // up the cloak, to the hood
   ]);
   const shock = E({ browIn: 0.8, browUp: 0.65, lidU: -0.22, lidL: 0, pupil: 0.62, smile: -0.35, open: 0.12, wide: 0.05,
-    tears: 0.85, stream: 0.6, tremble: 0, ...gaze });
+    tears: 0.85, stream: 0, tremble: 0, ...gaze });
   const snap = S.k(t, [['s11b03+0.2', 0], ['s11b03+0.3', 1, 'out']]);
   const face = snap <= 0 ? cry : snap >= 1 ? shock : mixFace(cry, shock, snap);
-  // a hanging tear on the right lid; it finally falls at the very end (continues into s12)
-  face.tearR = S.k(t, [['s11b03+0.3', 0], ['s11b03+0.6', 0.07], ['scene.end-0.5', 0.07], ['scene.end+0.4', 1, 'in']]);
+  // tears: while it cries (eyes shut) single tears run, one at a time, alternating eyes (explicit, so that none is in
+  // flight when the sob stops dead at the creak: the rig's sustained-cry tears re-time themselves whenever `stream`
+  // changes, and stopping them would have cut a running tear off). After the creak only the hanging tear (drawn in
+  // render: hangingTear) moves; it falls in the final frozen hold and is gone before the cut.
+  const drop = (a, b) => (t > T(a) && t < T(b) ? (t - T(a)) / (T(b) - T(a)) : 0);
+  face.tearL = Math.max(drop('s11b01+3.9', 's11b01+5.6'), drop('s11b02+2.5', 's11b02+4.2'));
+  face.tearR = drop('s11b02+0.9', 's11b02+2.6');
+  const hang = S.k(t, [['s11b03+0.3', 0], ['s11b03+0.6', 0.12], ['scene.end-0.95', 0.12], ['scene.end-0.08', 1, 'in']]);
   face.noAutoBlink = true;
   // squeezed eyes: a little flutter of the shut lids with each hitch
   if (snap <= 0) face.lidL = clamp(face.lidL + 0.15 * hitch);
@@ -379,12 +386,17 @@ function fearPose(t, S, pull) {
   const headDY = S.k(t, [['s11b03+0.1', 4], ['s11b03+0.3', -2, 'out'], ['s11b03+1.4', -2], ['s11b03+3.0', -7, 'sine']]) - 3.5 * hitch * (crying ? 1 : 0);
   const headTilt = S.k(t, [['s11b03+0.1', 0.1], ['s11b03+0.35', 0.0, 'out'], ['s11b03+1.6', 0], ['s11b03+2.6', -0.06, 'sine']]);
   const crouch = crying ? 0.08 + 0.1 * clamp(hitch) : S.k(t, [['s11b03+0.12', 0.08], ['s11b03+0.3', 0, 'out']]);
-  const breathe = crying ? 1.5 : 0.12;
+  // the sob stops dead at the creak: the breath is held (amplitude and rate ease down over a few frames, phase-continuous)
+  const breathe = S.k(t, [['s11b03', 1.5], ['s11b03+0.22', 0.12, 'out']]);
+  const breathRate = breathRateAt(t, S, [['s11b03', 0.5], ['s11b03+0.22', 0.2, 'out']], 'end');
 
   // headDX is local (mirrors with facing): −18 with facing −1 moves the face screen-right
-  const pose = { t, facing, lean, headDX, headDY, headTilt, headTurn, crouch, tremble,
-    breathe, breathRate: crying ? 0.5 : 0.2, face, armL, armR, walk: walk ? { phase: walk } : undefined };
-  return { x, y, pose, grips, squash };
+  // the one shuffle step goes screen-right: the feet ease round that way and back (the walk's default feetTurn 0.75
+  // snapped on and off with the step)
+  const feetTurn = 0.35 * Math.sin(stepK * Math.PI) * facing;
+  const pose = { t, facing, lean, headDX, headDY, headTilt, headTurn, crouch, tremble, feetTurn,
+    breathe, breathRate, face, armL, armR, walk: walk ? { phase: walk } : undefined };
+  return { x, y, pose, grips, squash, hang };
 }
 
 function mixFace(a, b, k) {

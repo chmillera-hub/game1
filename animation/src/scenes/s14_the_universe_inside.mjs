@@ -7,8 +7,9 @@
 // then body) to look where the Void looks.
 
 import { createCanvas } from '@napi-rs/canvas';
-import { W, H, clamp, lerp, ease, smoothstep, blinkAt, applyCamera, drift, vignette, fbm } from '../engine.mjs';
+import { W, H, TAU, clamp, lerp, ease, smoothstep, blinkAt, applyCamera, drift, vignette, fbm } from '../engine.mjs';
 import { withSpeech, star } from '../face.mjs';
+import { blendHand } from '../hand.mjs';
 import { drawFear } from '../chars/fear.mjs';
 import { drawVoid, drawVoidGlow, drawVoidArm, drawVoidHand, toVoidLocal, voidRig, VOID_HANDS } from '../chars/void.mjs';
 import { drawCosmos, drawCosmosGlyph, vfbm, hrand } from '../fx/cosmos.mjs';
@@ -145,6 +146,49 @@ const MO = (open, smile, round, wide, pressed, tremble) => ({ open, smile, round
 const GZ = (lookX, lookY) => ({ lookX, lookY });
 const AR = (lx, ly, rx, ry) => ({ lx, ly, rx, ry });
 
+// ---------------------------------------------------------------- Fear's arms
+// Fear's rig (src/chars/fear.mjs): shoulders at (±27, −134 + 18·crouch + breath), upper arm 46 + forearm 44. The IK puts
+// the elbow on the side `bend` says; hands low in front want bend = side (elbows down/out), a hand lifted out to the side
+// wants bend = −side (the elbow under it). A move that changes sides SWINGS OUT through a point beyond the arm's reach:
+// the arm is straight there, both elbow sides coincide and the bend flips unseen (no elbow ever jumps). Hand shapes and
+// palm directions blend continuously (no one-frame flips of the hand).
+const bez2 = (a, c, b, u) => { const v = 1 - u; return [v * v * a[0] + 2 * v * u * c[0] + u * u * b[0], v * v * a[1] + 2 * v * u * c[1] + u * u * b[1]]; };
+const nrm3 = (v) => { const l = Math.hypot(v[0], v[1], v[2]) || 1; return [v[0] / l, v[1] / l, v[2] / l]; };
+function moveArm(A, B, u, sh, out) {
+  if (u <= 0) return A;
+  if (u >= 1) return B;
+  let o, us = 0.5;
+  let target = [lerp(A.target[0], B.target[0], u), lerp(A.target[1], B.target[1], u)];
+  if (out) {
+    const P = [sh[0] + Math.cos(out[0]) * out[1], sh[1] + Math.sin(out[0]) * out[1]];
+    const C = [2 * P[0] - (A.target[0] + B.target[0]) / 2, 2 * P[1] - (A.target[1] + B.target[1]) / 2];
+    let dmax = 0;                                       // the elbow changes sides where the path is farthest out
+    for (let i = 1; i < 40; i++) {
+      const q = bez2(A.target, C, B.target, i / 40), d = Math.hypot(q[0] - sh[0], q[1] - sh[1]);
+      if (d > dmax) { dmax = d; us = i / 40; }
+    }
+    target = bez2(A.target, C, B.target, u);
+  }
+  o = u < us ? { ...A } : { ...B };
+  o.target = target;
+  o.hand = blendHand(A.hand, B.hand, u);
+  if (A.palmDir && B.palmDir) o.palmDir = nrm3([lerp(A.palmDir[0], B.palmDir[0], u), lerp(A.palmDir[1], B.palmDir[1], u), lerp(A.palmDir[2], B.palmDir[2], u)]);
+  return o;
+}
+/** keys: [[anchor, spec, ease?, out?], ...] — `out` (optional) is the straight turning point of the move INTO that key */
+function armTrack(t, S, keys, sh) {
+  if (t <= S.T(keys[0][0])) return keys[0][1];
+  for (let i = 1; i < keys.length; i++) {
+    const t1 = S.T(keys[i][0]);
+    if (t <= t1) {
+      const t0 = S.T(keys[i - 1][0]);
+      const u = ease[keys[i][2] || 'inOut'](clamp(t1 > t0 ? (t - t0) / (t1 - t0) : 1));
+      return moveArm(keys[i - 1][1], keys[i][1], u, sh, keys[i][3]);
+    }
+  }
+  return keys[keys.length - 1][1];
+}
+
 /** Fear on the threshold: body + face for this instant. */
 function fearState(t, S) {
   const K = (keys, e) => S.k(t, keys, e);
@@ -174,6 +218,7 @@ function fearState(t, S) {
   ]);
   const tiltScreen = K([
     ['s14b05', -0.15],
+    ['s14b05+0.35', -0.15], ['s14b05+0.7', -0.1], ['s14b05+1.05', -0.1], ['s14b05+1.5', -0.15],
     ['s14b06+2.6', -0.15], ['s14b06+3.3', -0.12],
     ['s14b06+4.9', -0.12], ['s14b06+5.9', -0.18],                            // the head tips up toward the light
     ['s14b07+1.2', -0.14],
@@ -183,6 +228,7 @@ function fearState(t, S) {
     ['s14b10+2.15', -0.14], ['s14b10+3.0', 0.05, 'inOut'],                 // crown tips away: chin up, over its shoulder
   ]) + fbm(t * 0.35, 21) * 0.015;
   const headDY = K([
+    ['s14b05+0.35', 0], ['s14b05+0.7', 2.2], ['s14b05+1.05', 2.2], ['s14b05+1.5', 0],   // dips with the glance away
     ['s14b06+2.75', 0], ['s14b06+2.95', -3], ['s14b06+3.2', -0.5], ['s14b06+3.4', -2.5], ['s14b06+3.7', 0], // breath of a laugh
     ['s14b06+4.9', 0], ['s14b06+5.9', -3], ['s14b07+0.6', -3.4], ['s14b07+1.5', 0],                         // lifts on 'wonder'
     ['s14b07+2.0', 0], ['s14b07+2.12', 3.2], ['s14b07+2.3', 0],             // swallow
@@ -190,49 +236,54 @@ function fearState(t, S) {
     ['s14b10+2.42', 0], ['s14b10+2.52', 2.5], ['s14b10+2.72', 0],           // weight shift on the turn
   ]);
 
-  // arms (first seen at b05, 17 s after s13's last view of Fear): the self-hug from s13 relaxes a little; on
-  // 'wasn't afraid' the arms uncross and drop, hanging loose; on 'wonder' they open out from the sides, palms out,
-  // and rise a little more on 'amazement' (held through the cut); for the question the hands meet low in front.
-  // At the end the hands clasp at the scarf (= s15). The elbow sides (IK bends) change only while both arms hang
-  // dead straight (b06+3.1, and b07+1.05 in the two-shot), so no elbow ever flips on screen: the hug keeps s13's
-  // bends, the open arms have both elbows down, the hands-in-front pose has both elbows out.
-  // (The padlock hangs at Fear-local ≈ (72,−106): the right hand stays clear of it.)
-  const A = K([
-    ['s14b05', AR(-20, -106, 14, -118)],
-    ['s14b05+3.8', AR(-24, -100, 19, -103)],
-    ['s14b06+1.5', AR(-24, -100, 19, -103)],
-    ['s14b06+3.1', AR(-39, -36, 37, -36)],                                  // 'wasn't afraid': uncross, drop loose
-    ['s14b06+4.9', AR(-39, -37, 37, -37)],
-    // (the right one opens less: its side is under the Void's hand, and its palm must stay below the padlock)
-    ['s14b06+5.9', AR(-68, -80, 50, -56), 'inOut'],                         // 'wonder': arms open out, palms out
-    ['s14b06+6.4', AR(-69, -81, 51, -57)],
-    ['s14b06+7.2', AR(-73, -91, 55, -63)],                                  // 'amazement': they rise a little
-    ['s14b07+0.6', AR(-74, -93, 56, -64)],
-    ['s14b07+1.05', AR(-39, -36, 37, -36), 'inOut'],                        // (two-shot) down, straight: the elbows
-    ['s14b07+1.6', AR(-12, -67, 12, -67), 'inOut'],                         // switch sides; the hands meet low in front
-    ['s14b09+0.5', AR(-12, -67, 12, -67)],
-    ['s14b09+1.1', AR(-16, -69, 20, -70), 'inOut'],                         // part a little as it leans after the hand
-    ['s14b09+2.4', AR(-12, -67, 12, -67), 'inOut'],
-  ]);
+  // arms (first seen at b05, 17 s after s13's last view of Fear). QA v3: the old b05 pose crossed one forearm flat over
+  // the belly, and after 'wasn't afraid' both arms hung dead straight to the knees for 1.8 s (the elbows changed sides
+  // there). Now: b05 the hands are held together at the chest, elbows down; on 'wasn't afraid' they drop and rest
+  // together low in front; on 'wonder' the left hand (clear of the padlock and the Void's hand) lifts a little toward
+  // the light, palm up, "without meaning to", and rises a touch more on 'amazement'; it comes back down in the two-shot.
+  // The hands rest low in front for the question, part as it leans after the hand, and clasp at the scarf (= s15).
+  const br = Math.sin(t * TAU * 0.28) * 0.9;                                 // drawFear's breath (breathe 0.9)
+  const sh = (s) => [s * 27, -134 + 18 * crouch + br];
+  const drift = (s) => [fbm(t * 0.29, 71 + s) * 1.3, fbm(t * 0.25, 77 + s) * 1.3];   // the resting hands never freeze
+  const at = (s, x, y) => [x + drift(s)[0], y + drift(s)[1]];
+  const CHEST = (s, dy = 0) => ({ target: at(s, s * 6, -113 + dy), bend: s, front: true, hand: 'cup', palmDir: [-s, 0, -0.4] });
+  const LOW = (s) => ({ target: at(s, s * 12, -67), bend: s, front: true, hand: 'open', palmDir: [-s * 0.9, 0, -0.45] });
+  const PART = (s) => ({ target: at(s, s * (s < 0 ? 16 : 20), s < 0 ? -69 : -70), bend: s, front: true, hand: 'open', palmDir: [-s * 0.9, 0, -0.45] });
+  const LIFT = (dy) => ({ target: at(-1, -62 - dy * 0.5, -100 - dy), bend: 1, front: true, hand: 'palm', palmDir: [-0.3, -1, 0.45] });
+  const OUT_L = [Math.PI * 110 / 180, 97];
+  const trackL = [
+    ['s14b05', CHEST(-1)], ['s14b05+2.6', CHEST(-1, 4)], ['s14b06+2.7', CHEST(-1, 4)],
+    ['s14b06+3.5', LOW(-1)],                                                // 'wasn't afraid': the hands drop, rest low
+    ['s14b06+4.75', LOW(-1)], ['s14b06+5.85', LIFT(0), 'inOut', OUT_L],     // 'wonder': lifts toward the light
+    ['s14b06+6.4', LIFT(0)], ['s14b06+7.2', LIFT(8)],                       // 'amazement': a touch higher
+    ['s14b07+0.6', LIFT(8)], ['s14b07+1.6', LOW(-1), 'inOut', OUT_L],       // (two-shot) back down
+    ['s14b09+0.5', LOW(-1)], ['s14b09+1.1', PART(-1)], ['s14b09+2.4', LOW(-1)],   // part a little, leaning after the hand
+  ];
+  const trackR = [
+    ['s14b05', CHEST(1)], ['s14b05+2.6', CHEST(1, 4)], ['s14b06+2.7', CHEST(1, 4)],
+    ['s14b06+3.5', LOW(1)], ['s14b09+0.5', LOW(1)], ['s14b09+1.1', PART(1)], ['s14b09+2.4', LOW(1)],
+  ];
   const clasp = K([['s14b10+3.2', 0], ['s14b10+4.0', 1, 'inOut']]);
-  const palm = K([['s14b06+5.0', 0], ['s14b06+5.5', 1], ['s14b07+0.9', 1], ['s14b07+1.2', 0]]) > 0.5;
   let armL, armR;
   if (facing > 0) {
-    // elbow sides switch only at the two instants when both arms hang dead straight (b06+3.1, b07+1.05)
-    const open = t >= S.T('s14b06+3.1') && t < S.T('s14b07+1.05');
-    const out = t >= S.T('s14b07+1.05');
-    armL = { target: [A.lx, A.ly], bend: out ? -1 : 1, front: true, hand: palm ? 'palm' : 'open' };
-    armR = { target: [A.rx, A.ry], bend: open ? -1 : 1, front: true, hand: palm ? 'palm' : 'open' };
+    armL = armTrack(t, S, trackL, sh(-1));
+    armR = armTrack(t, S, trackR, sh(1));
   } else {
-    armL = { target: [lerp(-12, -7, clasp), lerp(-67, -127, clasp)], bend: -1, front: true, hand: clasp > 0.5 ? 'fist' : 'open' };
-    armR = { target: [lerp(12, 7, clasp), lerp(-67, -124, clasp)], bend: 1, front: true, hand: clasp > 0.5 ? 'fist' : 'open' };
+    // (mirrored body after the turn: the same symmetric hands-low pose, then the clasp at the scarf)
+    // (the clasped fists end on the rig's default fist orientation, as s15 draws them)
+    const hand = blendHand('open', 'fist', clasp);
+    const pd = (s) => nrm3([lerp(-s * 0.9, -s * 0.6, clasp), lerp(0, 0.2, clasp), lerp(-0.45, -0.8, clasp)]);
+    armL = { target: [lerp(-12, -7, clasp), lerp(-67, -127, clasp)], bend: -1, front: true, hand, palmDir: pd(-1) };
+    armR = { target: [lerp(12, 7, clasp), lerp(-67, -124, clasp)], bend: 1, front: true, hand, palmDir: pd(1) };
   }
 
   // ---------- face channels
   const brows = K([
     ['s14b05', BR(0.12, 0.85, 0.45)],
-    ['s14b05+0.4', BR(0.12, 0.85, 0.45)],
-    ['s14b05+1.9', BR(0.48, 0.38)],                                         // un-knot, open
+    ['s14b05+0.35', BR(0.12, 0.85, 0.45)],
+    ['s14b05+0.65', BR(0.06, 0.98, 0.6)],                                   // the fearful glance away: the knot tightens
+    ['s14b05+1.1', BR(0.08, 0.95, 0.55)],
+    ['s14b05+2.2', BR(0.48, 0.38)],                                         // eyes back on the stars: un-knot, open
     ['s14b06+1.4', BR(0.5, 0.34)],
     ['s14b06+2.6', BR(0.6, 0.24)],                                          // 'wasn't afraid': the knot is gone
     ['s14b06+3.1', BR(0.62, 0.18)],
@@ -255,7 +306,10 @@ function fearState(t, S) {
   ]);
   const lids = K([
     ['s14b05', LD(0.1, 0.14, 0.34)],
-    ['s14b05+1.2', LD(0.12, 0.14, 0.3)],
+    ['s14b05+0.35', LD(0.1, 0.14, 0.34)],
+    ['s14b05+0.65', LD(0.32, 0.12, 0.36)],                                  // the lids follow the eyes down
+    ['s14b05+1.05', LD(0.3, 0.12, 0.36)],
+    ['s14b05+1.45', LD(0.12, 0.14, 0.3)],
     ['s14b05+2.7', LD(-0.12, 0.05, 0.08)],                                  // heavy lids rise, softly
     ['s14b06+2.8', LD(-0.12, 0.05, 0.08)],
     ['s14b06+3.2', LD(-0.08, 0.16, 0.05)],                                  // the breath of a laugh lifts the cheeks
@@ -312,7 +366,10 @@ function fearState(t, S) {
   ]);
   const eyes = K([
     ['s14b05', { pupil: 0.82, sparkle: 0.85 }],
-    ['s14b05+0.5', { pupil: 0.82, sparkle: 0.9 }],
+    ['s14b05+0.35', { pupil: 0.82, sparkle: 0.85 }],
+    ['s14b05+0.7', { pupil: 0.72, sparkle: 0.7 }],                          // looking away from the light
+    ['s14b05+1.1', { pupil: 0.74, sparkle: 0.7 }],
+    ['s14b05+1.5', { pupil: 0.86, sparkle: 0.9 }],
     ['s14b05+2.6', { pupil: 1.32, sparkle: 1 }],
     ['s14b06+4.6', { pupil: 1.32, sparkle: 1 }],
     ['s14b06+5.4', { pupil: 1.45, sparkle: 1 }],                            // 'wonder': the pupils bloom
@@ -323,8 +380,13 @@ function fearState(t, S) {
     ['s14b10+3.85', { pupil: 1.3, sparkle: 0.6 }],
   ]);
   // gaze (with micro-saccades that "search the stars")
+  // awe mixed with fear (QA v3, visual rules): the reverse opens on the eyes up in the stars, then ONE fearful glance
+  // away and down (brows knotting, lids following the eyes) — it cannot hold the sight — and the eyes creep back up;
+  // only then does the face open into wonder
   const gaze = K([
     ['s14b05', GZ(0.35, -1)],
+    ['s14b05+0.35', GZ(0.35, -1)], ['s14b05+0.65', GZ(0.1, 0.25), 'inOut'],
+    ['s14b05+1.05', GZ(0.13, 0.2)], ['s14b05+1.45', GZ(0.35, -1), 'inOut'],
     ['s14b08+0.5', GZ(0.35, -1)], ['s14b08+0.58', GZ(0.5, -0.92)],
     ['s14b08+1.32', GZ(0.5, -0.92)], ['s14b08+1.4', GZ(0.26, -1)],
     ['s14b08.end+0.6', GZ(0.26, -1)], ['s14b08.end+0.68', GZ(0.38, -0.98)],
@@ -344,11 +406,15 @@ function fearState(t, S) {
   const d1 = drop('s14b05+2.45', 's14b05+4.15'), d2 = drop('s14b05+4.25', 's14b05+5.95');
   const tearL = t < S.T('s14b05+4.2') ? d1 : d2;
   const tearR = 0;
-  const stream = K([['s14b05+2.7', 0], ['s14b05+4.6', 0.32], ['s14b09', 0.3], ['s14b10.end', 0.24]]);
+  // QA v3: no sustained `stream` after the two drops — tears of wonder are two single drops, then the eyes stay
+  // brimming (`tears`). (The slowly changing stream value also re-timed the rig's alternating tears every frame: drops
+  // popped in and out, and one hung mid-cheek, creeping up and down, through b09–b10.)
+  const stream = 0;
   const blush = K([['s14b06+5.3', 0], ['s14b06+6.4', 0.6], ['s14b07+0.5', 0.6], ['s14b08.end', 0.45], ['s14b10', 0.3]]);
   // wide eyes through the wonder: no slow blinks (they read as sleepy) — one quick blink squeezes out the first
   // tear, one rides the breath of a laugh, one after 'amazement' while the smile holds
   const blink = Math.max(
+    blinkAt(t, S.T('s14b05+0.5'), 0.15),      // the glance away
     blinkAt(t, S.T('s14b05+2.3'), 0.16),
     blinkAt(t, S.T('s14b06+3.55'), 0.16),
     blinkAt(t, S.T('s14b06+7.45'), 0.18),
