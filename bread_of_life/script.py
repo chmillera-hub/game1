@@ -223,7 +223,7 @@ SCENES = [
                 ("I am giving them what you sent me to give.", 0.45, {"speed": 0.66}),
                 ("In your holy name, / I glorify you.", 0.5, {"speed": 0.66}),
                 ("And even if they leave me...", 0.45, {"speed": 0.64}),
-                ("I believe they have left / with a part of me in them.", 0.2, {"speed": 0.64}),
+                ("I believe they have left / with a part of me within them.", 0.2, {"speed": 0.64}),
             ], gap=5.6),
         ],
         "tail": 5.0,  # closing image after the last line

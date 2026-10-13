@@ -27,7 +27,8 @@ def arm_dims(st):
 def shoulder_pt(st, P, side):
     sw = st.get("shoulder_w", 2.1)
     by = P["byaw"] / 60.0
-    far = 1 - 0.18 * abs(by) if side * by < 0 else 1.0
+    # a turned body: the far shoulder swings in behind, the near one comes round a little
+    far = 1 - 0.36 * abs(by) if side * by < 0 else 1 - 0.06 * abs(by)
     up = -0.05 * P["breath"] - 0.12 * P["shrug"]
     return np.array([side * sw * 0.84 * far, 0.62 + up, -0.05])
 
@@ -83,13 +84,17 @@ HAND_POSES = {
     # finger curls (index, middle, ring, pinky: 0 straight .. 1 tight fist), finger spread,
     # extra knuckle bend (deg), thumb tip position (hand frame)
     "open": dict(curl=(0.05, 0.05, 0.08, 0.12), spread=0.75, mcp=0.0, thumb=(0.39, 0.37, -0.08)),
-    "relaxed": dict(curl=(0.26, 0.32, 0.38, 0.44), spread=0.35, mcp=4.0, thumb=(0.27, 0.41, -0.16)),
+    "relaxed": dict(curl=(0.26, 0.32, 0.38, 0.44), spread=0.35, mcp=4.0, thumb=(0.19, 0.44, -0.11)),  # thumb resting along the hand
     "flat": dict(curl=(0.01, 0.01, 0.02, 0.03), spread=0.06, mcp=0.0, thumb=(0.175, 0.46, -0.08)),
     "soft": dict(curl=(0.10, 0.13, 0.16, 0.20), spread=0.14, mcp=3.0, thumb=(0.175, 0.43, -0.07)),
     "point": dict(curl=(0.0, 0.93, 0.96, 0.98), spread=0.12, mcp=0.0, thumb=(0.035, 0.43, -0.265)),
     "hold": dict(curl=(0.24, 0.27, 0.30, 0.33), spread=0.22, mcp=14.0, thumb=(0.10, 0.57, -0.25)),
     "cup": dict(curl=(0.20, 0.22, 0.25, 0.28), spread=0.12, mcp=8.0, thumb=(0.25, 0.46, -0.15)),
     "fist": dict(curl=(0.97, 0.99, 1.0, 1.0), spread=0.0, mcp=0.0, thumb=(0.0, 0.41, -0.275)),
+    # thinking: index finger laid along the chin, thumb toward the jaw, the other fingers curled
+    "chin": dict(curl=(0.12, 0.78, 0.84, 0.88), spread=0.18, mcp=6.0, thumb=(0.27, 0.40, -0.24)),
+    # ...and drawn down the beard, thumb and finger gathering it
+    "chin_pinch": dict(curl=(0.32, 0.82, 0.86, 0.9), spread=0.12, mcp=10.0, thumb=(0.22, 0.42, -0.2)),
 }
 
 FINGERS = [  # knuckle (x, y), phalanx lengths, radii at knuckle / middle joint / end joint / tip, spread (deg)
@@ -624,8 +629,9 @@ def arm_geometry(st, P, side, spec):
 CAM_DIR = np.array([0.0, -0.26, 0.966])
 
 # Palm orientation hints (outward-relative x: + away from the body's midline; y: + down;
-# z: + toward the viewer). A relaxed hanging hand faces the thigh, turned partly backward.
-REST_PALM = (-0.7, 0.0, -0.7)
+# z: + toward the viewer). A relaxed hanging hand faces the thigh, turned a little backward, so
+# from the front the thumb side of the hand shows, the thumb lying along the index finger.
+REST_PALM = (-0.88, 0.0, -0.48)
 PALM_HINTS = {"up": (0.0, -1.0, 0.0), "down": (0.0, 1.0, 0.0), "fwd": (0.0, 0.0, 1.0), "body": (0.0, 0.0, -1.0),
               "in": (-1.0, 0.0, 0.0), "out": (1.0, 0.0, 0.0)}
 
@@ -800,9 +806,10 @@ def hand_anchor(st, P, side, spec, which="grip"):
     return wrist[0] + x, wrist[1] + y
 
 
-def draw_arm(cv, st, P, side, spec, sty):
+def draw_arm(cv, st, P, side, spec, sty, lower_only=False):
     """Sleeved arm (upper arm and forearm drawn in depth order, so the nearer part hides the
-    one behind it) plus an anatomically oriented hand."""
+    one behind it) plus an anatomically oriented hand. lower_only draws just the forearm, cuff and
+    hand (laid back over cloth that covers the shoulder)."""
     S, E, W = arm_geometry(st, P, side, spec)
     lc = st.get("line", "#2a1a14")
     scol = sty.get("sleeve", st.get("sleeve", "#efe5d3"))
@@ -841,7 +848,9 @@ def draw_arm(cv, st, P, side, spec, sty):
         layers = [(up_closed, up_open, s2, e2, w_el, fade), (fo_closed, fo_open, e2, w2, w_el, None)]
     else:
         layers = [(fo_closed, fo_closed, e2, w2, w_el, None), (up_closed, up_open, s2, e2, w_el, fade)]
-    for closed, outline, a, b_, w, fd in layers:
+    if lower_only:
+        layers = [(fo_closed, fo_open, e2, w2, w_el, None)] * 2
+    for closed, outline, a, b_, w, fd in (layers[1:] if lower_only else layers):
         under = stroke(lc, 0.05)
         line = stroke(lc, 0.022, alpha=0.9)
         if fd is not None:
@@ -888,6 +897,18 @@ def draw_arm(cv, st, P, side, spec, sty):
     return E, W
 
 
+def _over_fold(st, P, side, spec):
+    """0..1: how far a forearm has come up (wrist above the elbow) or forward (hand toward the
+    viewer) - out from under cloth lying over that shoulder."""
+    if spec is None:
+        return 0.0
+    _, E, W = arm_geometry(st, P, side, spec)
+    l2 = max(float(np.linalg.norm(W - E)), 1e-6)
+    rise = float(E[1] - W[1]) / l2
+    fwd = float(W[2] - E[2]) / l2
+    return max(_smooth((rise + 0.55) / 0.5), _smooth((fwd - 0.25) / 0.4))
+
+
 def make_arms(arm_style=None):
     """Arms painter for Character.draw; P['arm_l'] / P['arm_r'] hold gesture specs (None = at rest).
     Within a layer the arm whose forearm is further from the viewer is drawn first."""
@@ -913,6 +934,16 @@ def make_arms(arm_style=None):
             for _, side, spec in mine:
                 draw_arm(cv, st, P, side, spec, arm_style.get(side, {}))
             painter()
+            # the fold covers the shoulder and upper arm only: once that arm's hand comes up or
+            # forward, its forearm and hand are laid back over the cloth so the hand stays in front
+            for _, side, spec in mine:
+                a = _over_fold(st, P, side, spec)
+                if a > 0.01:
+                    if a < 0.99:
+                        cv.saveLayerAlpha(None, int(round(255 * a)))
+                    draw_arm(cv, st, P, side, spec, arm_style.get(side, {}), lower_only=True)
+                    if a < 0.99:
+                        cv.restore()
             items = others
         for _, side, spec in items:
             draw_arm(cv, st, P, side, spec, arm_style.get(side, {}))

@@ -56,6 +56,10 @@ G_BREAD_L = dict(target=(-0.75, 3.8, 1.6), hand="hold", palm=(-0.8, -0.5, 0.15),
 G_GIVE_R = dict(target=(2.7, 3.5, 1.6), hand="cup", palm=(0.0, -1.0, 0.2), hand_dir=(0.9, 0.0, 0.4), still=True)  # offers the half on his open palm
 G_PRAY_L = dict(target=(-0.2, 3.0, 1.4), hand="hold", palm=(0.0, -1.0, 0.0), hand_dir=(0.95, -0.2, 0.25), still=True)  # bread cradled in the hand, which comes straight out of the sleeve
 P_CHIN_R = dict(target=(0.5, 0.3, 1.5), hand="relaxed", palm=(-0.4, 0.0, -1.0), wrist=-10, layer="front", still=True)
+# thinking: index finger along the chin and thumb toward the jaw, then drawn slowly down the beard
+P_THINK_R = dict(target=(0.55, 0.65, 1.6), hand="chin", palm=(-0.5, -0.2, -0.85), wrist=0, layer="front",
+                 hand_dir=(-0.4, -0.9, 0.12), still=True)
+P_THINK_R2 = dict(P_THINK_R, target=(0.55, 0.92, 1.6), hand="chin_pinch")
 P_SCRATCH_R = dict(target=(1.5, -1.5, 0.3), hand="relaxed", still=True, palm=(-1.0, 0.3, -0.4))
 P_SCRATCH_MID = dict(target=(2.7, 0.7, 1.5), hand="relaxed", still=True, palm=(-0.6, 0.3, -0.7))  # on the way up, in front of the shoulder
 P_ASK_R = dict(target=(3.1, 2.4, 1.5), hand="open", palm=(0.2, -1.0, 0.3), wrist=10)
@@ -105,9 +109,10 @@ SHORE_BACK = [(201, 70, 815, 15, 0), (202, 205, 800, 13, 0), (203, 610, 830, 16,
 SYN_BACK = [(301, 60, 1090, 24, 0), (302, 205, 1075, 22, 0), (303, 560, 1095, 25, 0), (304, 690, 1080, 23, 0),
             (305, 130, 1040, 19, 0), (306, 640, 1035, 19, 0)]
 # the synagogue crowd stands to Jesus' right (screen-right), turned toward him
-SYN_WIDE = [(401, 400, 925, 26, -24), (402, 505, 920, 25.8, -26), (403, 615, 928, 26.2, -28), (413, 455, 880, 24, -25),
-            (404, 360, 1015, 29.8, -22), (405, 470, 1010, 29.6, -27), (406, 585, 1018, 30, -28), (407, 700, 1012, 29.7, -30),
-            (408, 420, 1150, 35.4, -24), (409, 545, 1145, 35.2, -26), (410, 675, 1152, 35.5, -30)]
+# the congregation stands to the right of Jesus, who is nearest the camera, and faces him
+SYN_WIDE = [(401, 440, 905, 23.5, -30), (402, 540, 900, 23.3, -32), (403, 640, 908, 23.7, -34), (413, 490, 862, 21.8, -31),
+            (404, 400, 985, 26.6, -28), (405, 505, 980, 26.4, -31), (406, 610, 988, 26.8, -33), (407, 715, 982, 26.5, -35),
+            (408, 470, 1085, 30.6, -29), (409, 585, 1080, 30.4, -32), (410, 700, 1088, 30.7, -35)]
 SYN_UPROAR = [(501, 90, 1000, 25, 0), (502, 250, 990, 24, 0), (503, 410, 1005, 25, 0), (504, 570, 995, 24, 0),
               (505, 700, 1000, 25, 0), (506, 160, 1120, 31, 0), (507, 340, 1130, 32, 0), (508, 520, 1115, 31, 0),
               (509, 680, 1125, 32, 0), (510, 70, 1270, 39, 0), (511, 280, 1285, 40, 0), (512, 470, 1275, 39, 0),
@@ -213,7 +218,7 @@ shot(T("L14", "end") - 1.2, "ms_two_shot_end1", "lake_morning", (0.45, 0.43, 0.9
 # SCENE 2 - SYNAGOGUE
 # =============================================================================
 shot(s1_end + 1.1, "syn_wide", "syn_side", (0.5, 0.48, 0.80),
-     [stand("jesus", 150, 900, 25)], blur=0.8, cam=dict(z0=1.0, z1=1.06, fx=260, fy=600),
+     [stand("jesus", 165, 1228, 40, z=100)], blur=0.8, cam=dict(z0=1.0, z1=1.06, fx=300, fy=640),
      light=L_SYN_J, fx=["beams", "dust"], grade="synagogue", trans=("dissolve", 1.6),
      crowd=[crowd(SYN_WIDE, mood=[(s1_end, "listen"), (T("L15", word="murmur") - 0.2, "murmur")],
                   focus=-1.5, blur=0.0, z=40, light=L_SYN_C)])
@@ -351,6 +356,7 @@ def build_perfs():
     for pf in (J, P, M, E, X):
         pf.speaking_lines = [l for l in T.order if T.lines[l]["speaker"] == pf.name.upper()]
         pf.wind = [(0.0, 0.5), (T.scene_end["shore"], 0.05), (T.scene_end["synagogue"], 0.6)]
+    J.lip_smooth = 0.065  # his quicker delivery: the mouth flows through the syllables instead of snapping to every sound
 
     # ---------------- SCENE 1 ----------------
     # Jesus: opening - looking out over the water, peaceful
@@ -388,8 +394,12 @@ def build_perfs():
     P.pose(tp - 0.2, 0.01, yaw=16, pitch=0, roll=0).look(tp - 0.2, 0.45, 0.0).expr(tp - 0.2, "neutral", 0.01)
     P.look(tp + 0.5, 0.65, -0.05, 0.15).pose(tp + 0.45, 0.4, yaw=26)
     P.expr(tp + 0.75, "knowing", 0.5, m_smile=0.4).look(tp + 1.5, 0.1, 0.35, 0.25).pose(tp + 1.4, 0.6, yaw=10, pitch=8)
-    P.arm(tp + 0.6, "r", P_CHIN_R, 0.6)                                     # rubs his beard
-    P.arm(tp + 2.6, "r", None, 0.7)
+    P.arm(tp + 0.5, "r", P_THINK_R, 0.5)                                    # thinking: finger and thumb on his chin...
+    P.arm(tp + 1.05, "r", P_THINK_R2, 0.45)                                 # ...drawn slowly down his beard
+    P.arm(tp + 1.55, "r", P_THINK_R, 0.35)
+    P.arm(tp + 1.95, "r", P_THINK_R2, 0.45)
+    P.arm(tp + 2.5, "r", P_THINK_R, 0.35)
+    P.arm(tp + 3.0, "r", None, 0.7)
     P.nod(tp + 1.9, 2.5, 0.5)
     # L03b Jesus: mysterious, serene - "my Father has willed it"
     t3b = T("L03b") - 0.55
@@ -630,6 +640,10 @@ def build_perfs():
     P.pose(tps, 0.01, yaw=-18, pitch=1, roll=0).look(tps, -0.42, 0.0).expr(tps, "confused", 0.01, bfur=0.2, br_l=0.2, br_r=0.0, bi_l=0.1, eo_l=1.0, eo_r=0.95)
     P.expr(tps + 0.25, "confused", 0.45, bfur=0.45, br_l=1.65, br_r=-0.45, bi_l=0.3, bi_r=-0.35, eo_l=1.16, eo_r=0.8, m_smirk=-0.3)
     P.pose(tps + 0.2, 1.0, roll=5, pitch=-1)
+    # brow still raised, he glances round the room - is everyone hearing what I'm hearing? - and back
+    P.look(tps + 0.55, 0.38, 0.04, 0.2).pose(tps + 0.5, 0.35, yaw=-6)
+    P.look(tps + 0.98, -0.62, 0.06, 0.22).pose(tps + 0.92, 0.4, yaw=-27)
+    P.look(tps + 1.42, -0.42, 0.0, 0.2).pose(tps + 1.38, 0.4, yaw=-18)
     P.expr(tps + 1.9, "resolute", 0.7, bfur=0.3)
     P.nod(tps + 2.15, 1.5, 0.8)
     M.arm(T("L26"), "l", None, 1.0)

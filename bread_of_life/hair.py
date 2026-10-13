@@ -399,7 +399,8 @@ class Beard:
     """Short trimmed beard hugging the jaw, plus a mustache."""
 
     def __init__(self, vol=0.035, chin=0.07, inner=None, col="beard", col_sh="beard_sh", grey=0.0,
-                 alpha=0.92, mustache=True, tuft_len=0.035):
+                 alpha=0.92, mustache=True, tuft_len=0.035, top=0.0):
+        self.top = top
         self.vol_ = vol
         self.chin = chin
         self.inner = inner or [(0.97, 0.10), (0.95, 0.35), (0.87, 0.54), (0.69, 0.66), (0.44, 0.73),
@@ -420,10 +421,13 @@ class Beard:
 
     def geometry(self, H, P):
         jaw = H.jaw
-        ys = list(np.linspace(0.0, H.sl[-1][0] - 0.01, 11))
+        ys = list(np.linspace(self.top, H.sl[-1][0] - 0.01, 11))
 
         def vol(y):
-            return self.vol_ + self.chin * max(0.0, (y - 0.6) / 0.5) ** 1.5
+            v = self.vol_ + self.chin * max(0.0, (y - 0.6) / 0.5) ** 1.5
+            if self.top > 0.0:  # a beard that starts low on the cheek thickens toward the jaw
+                v *= 0.25 + 0.75 * float(np.clip((y - self.top) / 0.35, 0, 1))
+            return v
         R, L = extents(H, ys, vol, jaw=jaw)
         chin_y = H.sl[-1][0] + self.chin * 1.1
         _, _, zc_end = _interp_slices(H, H.sl[-1][0])
@@ -510,16 +514,22 @@ class Beard:
 class ShortCurly:
     """Short curly hair cap (Peter): scalloped outline made of curls."""
 
-    def __init__(self, vol=0.13, hairline=None, y_side=0.30, curl_r=0.062):
+    def __init__(self, vol=0.13, hairline=None, y_side=0.30, curl_r=0.062, sideburn=None, side_taper=None):
+        self.side_taper = side_taper  # (y_full, y_tucked): below y_full the sides thin toward the ear
         self.vol = vol
         self.y_side = y_side
         self.curl_r = curl_r
+        self.sideburn = sideburn  # (x, y_top, y_bottom, width): short strip in front of the ear
         self.hairline = hairline or [(0.0, -0.88), (0.30, -0.86), (0.58, -0.8), (0.80, -0.63),
                                      (0.93, -0.39), (0.97, -0.10), (0.98, 0.30)]
 
     def geometry(self, H, P):
         ys = list(np.linspace(-1.66, self.y_side, 14))
-        R, L = extents(H, ys, self.vol)
+        vol = self.vol
+        if self.side_taper:
+            y0, y1 = self.side_taper
+            vol = lambda y: self.vol * (1.0 - 0.85 * float(np.clip((y - y0) / (y1 - y0), 0, 1)) ** 1.5)
+        R, L = extents(H, ys, vol)
         top = top_point(H, self.vol)
         hl_r = surf_pts(H, self.hairline, dz=0.04)
         hl_l = surf_pts(H, [(-x, y) for x, y in self.hairline], dz=0.04)
@@ -551,6 +561,17 @@ class ShortCurly:
         outer = wavy_edge(R[::-1] + [top] + L[1:], 5, r * 1.1, face_c)
         line = wavy_edge(hl_r[::-1] + [((hl_r[0][0] + hl_l[0][0]) / 2, (hl_r[0][1] + hl_l[0][1]) / 2)] + hl_l[1:], 9, r * 0.75, face_c, outward=False)
         mass = spline(outer + line[::-1], closed=True, corners=[0, len(outer) - 1, len(outer), len(outer) + len(line) - 1], tension=0.4)
+        if self.sideburn:
+            # a short sideburn in front of each ear, thinning out downward: the hair stops here and
+            # the beard begins lower down, so the two read as separate growths
+            sbx, y0, y1, sbw = self.sideburn
+            for s_ in (1, -1):
+                ex = interp_x(R if s_ > 0 else L, y0)
+                pts = surf_pts(H, [(s_ * sbx, y0), (s_ * sbx, (y0 + y1) / 2), (s_ * (sbx + 0.01), y1)], dz=0.03)
+                pts = [(min(x, ex - 0.01) if s_ > 0 else max(x, ex + 0.01), y) for x, y in pts]
+                strip = tapered(sample_spline(pts, n=10), sbw, sbw * 0.25, wmid=sbw * 0.85)
+                cv.drawPath(strip, fill(col, alpha=0.9))
+                cv.drawPath(strip, fill(sh, alpha=0.3, blur=0.01))
         cv.drawPath(mass, stroke(lc, 0.028, alpha=0.9))
         cv.drawPath(mass, fill(col))
         cv.save()

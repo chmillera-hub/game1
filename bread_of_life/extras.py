@@ -223,6 +223,11 @@ def draw_crowd(cv, t, members, mood="listen", focus=-1.0, t0=0.0, light=None, bl
         P = behavior(seed, mood, focus, t0).params(t)
         P["yaw"] = max(-44.0, min(44.0, P["yaw"] * 0.8 + yb))
         P["byaw"] = max(-36.0, min(36.0, 0.6 * (20 * focus + yb)))  # the body stays turned toward the speaker
+        if abs(P["byaw"]) > 18.0:
+            # turned well round: the far arm hangs behind the body, as it does seen three-quarters on
+            far_key = "arm_r" if P["byaw"] < 0 else "arm_l"
+            if P.get(far_key) is None:
+                P[far_key] = dict(target=(0.0, 0.0, 0.0), rest_blend=1.0, layer="behind", hand="relaxed")
         if light:
             P.update(light)
         y = fy - 16.95 * S * ch.st.get("body_scale", 1.0)

@@ -163,10 +163,33 @@ def tunic_outfit(base, base_sh, trim=None, neckline="v", mantle=None, belt=None,
     return outfit
 
 
-def mantle_painter(col, col_sh, side=1, lining=None):
+def mantle_painter(col, col_sh, side=1, lining=None, stripe=None):
     """A himation wrapped round the body: over one shoulder (side=+1 screen-right), across the
     chest and hanging to the knees. The arm on that side keeps its tunic sleeve; the cloth over
-    the shoulder (paint.over, drawn after the arms) lies over the top of that arm and moves with it."""
+    the shoulder (paint.over, drawn after the arms) lies over the top of that arm and moves with it.
+    stripe: colour of a thin woven stripe running up the cloth, parallel to its front edge, to the
+    top of the shoulder."""
+
+    def stripe_path(st, P):
+        """The stripe as one band from near the hem, up across the chest, to the top of the shoulder
+        (the same band is drawn on the mantle and on the fold over the shoulder, so it runs on)."""
+        s = side
+        by = P["byaw"] / 60.0
+        sw = st.get("shoulder_w", 2.1)
+        up = -0.05 * P["breath"] - 0.12 * P["shrug"]
+        ncx = by * 0.55
+        o = outline(st, P)
+        inset = 0.34
+        pts = [(o[i][0] + s * inset, o[i][1]) for i in (8, 9, 10, 11, 12)]
+        pts += [(o[13][0] + s * inset * 0.95, o[13][1] - 0.05), (ncx + s * 0.78, 0.2 + up), (s * sw * 0.74, 0.02 + up)]
+        return tapered(sample_spline(pts, n=40), 0.075, 0.075)
+
+    def draw_stripe(cv, st, P):
+        if not stripe:
+            return
+        band = stripe_path(st, P)
+        cv.drawPath(band, fill(stripe))
+        cv.drawPath(band, stroke(mix(stripe, "#000000", 0.35), 0.012, alpha=0.6))
 
     def over(cv, st, P, H, ho):
         import body as _body
@@ -207,6 +230,7 @@ def mantle_painter(col, col_sh, side=1, lining=None):
         cv.drawPath(path, cloth)
         cv.save()
         cv.clipPath(path, skia.ClipOp.kIntersect, True)
+        draw_stripe(cv, st, P)
         lx = P["light_x"]
         sx = 1.0 if lx < 0 else -1.0
         knee = 10.6 * k
@@ -275,6 +299,7 @@ def mantle_painter(col, col_sh, side=1, lining=None):
         cv.drawPath(path, fill(col, shader=lin_grad((0, -0.2), (0, knee), [mix(col, "#ffffff", 0.14), col, mix(col, col_sh, 0.5)], [0.0, 0.35, 1.0])))
         cv.save()
         cv.clipPath(path, skia.ClipOp.kIntersect, True)
+        draw_stripe(cv, st, P)
         # long folds following the drape
         for j in range(7):
             t = 0.08 + j * 0.13
@@ -335,7 +360,7 @@ JESUS_ST = dict(
 JESUS = Character(
     "jesus", JESUS_ST,
     outfit=tunic_outfit("#efe5d3", "#c9b89c", neckline="v", trim="#d6c9ae", clavi="#9a5a44", belt=("#8a6a3e", "#5e4426"),
-                        mantle=mantle_painter("#2f557c", "#1f3b5a", side=1)),
+                        mantle=mantle_painter("#a3302b", "#621b1a", side=1, stripe="#e2b33f")),
     beard=hair.Beard(),
     headwear_back=hair.LongHair(layer="back"),
     headwear_front=hair.LongHair(layer="front"),
@@ -344,7 +369,10 @@ JESUS = Character(
 
 
 # ---------------------------------------------------------------------------
-PETER_HAIR = hair.ShortCurly()
+# short curls kept to the scalp: the sides end at the top of the ears, with a short sideburn
+PETER_HAIR = hair.ShortCurly(y_side=-0.1, sideburn=(0.94, -0.16, 0.27, 0.075), side_taper=(-0.75, -0.1),
+                             hairline=[(0.0, -0.9), (0.30, -0.88), (0.56, -0.82), (0.76, -0.68), (0.88, -0.5),
+                                       (0.93, -0.32), (0.95, -0.2), (0.96, -0.1)])
 
 # Simon Peter: broad fisherman, short curly black hair, full beard
 # ---------------------------------------------------------------------------
@@ -353,8 +381,8 @@ PETER_ST.update(
     skin="#d39a6e", skin_sh="#b0744f", skin_sh2="#8e5a3d", blush_col="#d0705a", blush_base=0.10,
     line="#2c1910", lash="#1e110a", brow_col="#1d140f", lower_col="#6b4030", crease_col="#93604a",
     iris=("#1d1109", "#4d3016", "#9a6a3c"), lid_shadow="#4a2a1a",
-    hair="#231a15", hair_sh="#120c08", hair_hl="#5a4636", hair_line="#0d0805",
-    beard="#33271f", beard_sh="#1a120d",
+    hair="#1f1813", hair_sh="#100b08", hair_hl="#55443a", hair_line="#0d0805",
+    beard="#45301f", beard_sh="#24170e",
     head_xscale=0.9, eye_x=0.5, eye_y=0.06, eye_w=0.24, eye_h=0.121, eye_low=0.083, eye_tilt=-0.012,
     iris_rx=0.106, iris_ry=0.115, lash_in=0.014, lash_out=0.03, lash_mid=0.028, wing=0.006,
     brow_x=0.5, brow_y=-0.2, brow_in=-0.27, brow_out=0.31, brow_arch=0.022,
@@ -376,7 +404,8 @@ def peter_outfit():
 
 PETER = Character(
     "peter", PETER_ST, outfit=peter_outfit(),
-    beard=hair.CurlyBeard(vol=0.06, chin=0.14, inner=[(1.0, 0.09), (0.97, 0.37), (0.88, 0.56), (0.69, 0.67), (0.44, 0.73), (0.27, 0.79), (0.13, 0.85), (0.0, 0.87)]),
+    beard=hair.CurlyBeard(vol=0.05, chin=0.12, top=0.26,
+                          inner=[(0.97, 0.28), (0.93, 0.44), (0.85, 0.58), (0.69, 0.67), (0.44, 0.73), (0.27, 0.79), (0.13, 0.85), (0.0, 0.87)]),
     headwear_front=PETER_HAIR, headwear_back=PETER_HAIR.back, ears=True,
     arms=make_arms({-1: dict(sleeve="#8a6744", sleeve_sh="#634529"), 1: dict(sleeve="#8a6744", sleeve_sh="#634529")}),
 )

@@ -118,6 +118,7 @@ class Perf:
         self.listen_nods = True
         self.wind = [(0.0, 0.0)]
         self.lip_gain = 1.5
+        self.lip_smooth = 0.028  # coarticulation: how much neighbouring sounds blend (s)
 
     # --- authoring API ---
     def expr(self, t, name, dur=0.5, **over):
@@ -406,7 +407,7 @@ class Perf:
             w = np.zeros(N)
             r = np.zeros(N)
             te = np.zeros(N)
-            closed = np.zeros(N, dtype=bool)
+            closed = np.zeros(N)
             for p in m["phonemes"]:
                 c = p["p"]
                 a = int(p["s"] * hi)
@@ -417,20 +418,30 @@ class Perf:
                     r[a:b] = V_ROUND.get(c, 0.0)
                     te[a:b] = V_TEETH.get(c, 0.0)
                     if c in CLOSURE:
-                        closed[a:b] = True
+                        closed[a:b] = 1.0
             # coarticulation smoothing
             def smooth(x, sig):
+                sig = max(1, sig)
                 k = np.exp(-0.5 * (np.arange(-3 * sig, 3 * sig + 1) / sig) ** 2)
                 k /= k.sum()
                 return np.convolve(x, k, mode="same")
-            sig = int(0.028 * hi)
+            sig = int(self.lip_smooth * hi)
             o = smooth(o, sig)
             w = smooth(w, sig)
-            r = smooth(r, int(0.04 * hi))
+            r = smooth(r, int(max(0.04, self.lip_smooth * 1.3) * hi))
             te = smooth(te, sig)
             e = np.interp(th, env_t, env)
             o = o * (0.35 + 0.75 * np.clip(e, 0, 1)) * np.clip(e * 4, 0, 1)
-            o[closed] = np.minimum(o[closed], 0.02)
+            # lips meet on p/b/m: fully when the closure is held, partly when it is a quick one
+            cl = np.clip(smooth(closed, int(0.6 * sig)) * 1.6, 0.0, 1.0)
+            o = o * (1.0 - cl) + np.minimum(o, 0.02) * cl
+            # what a 24 fps frame shows is the mouth over its whole exposure, not one instant:
+            # average over a frame so quick sounds do not flicker from one shape to the next
+            box = np.ones(int(hi / 24)) / int(hi / 24)
+            o = np.convolve(o, box, mode="same")
+            w = np.convolve(w, box, mode="same")
+            r = np.convolve(r, box, mode="same")
+            te = np.convolve(te, box, mode="same")
             # sample at frame times with a slight lead
             lead = 0.035
             ft = t - t0 + lead

@@ -557,7 +557,7 @@ def accents():
         swell("swell_l29", T("L29") + 0.15, [62, 69, 74, 81], dur=4.6, peak=2.0, gain=0.4),       # eyes to heaven: "the living Father"
         deep("deep_l34", T("L34") - 0.2, root=26, timp=False, vel=64, gain=0.32),        # "You do not want to leave too?"
         swell("swell_l37a", T("L37") - 0.2, [62, 66, 69, 74, 78], dur=4.0, gain=0.36),  # "Father..."
-        swell("swell_l37b", T("L37", word="with") - 0.2, [74, 78, 81, 86], dur=4.4, gain=0.4),  # "...with a part of me in them"
+        swell("swell_l37b", T("L37", word="with") - 0.2, [74, 78, 81, 86], dur=4.4, gain=0.4),  # "...with a part of me within them"
         deep("deep_l37", T("L37", word="them#1") - 0.1, root=26, timp=False, vel=62, gain=0.6),
     ]
 

@@ -579,9 +579,10 @@ def body_pts(st, P):
     by = P["byaw"] / 60.0
     br = P["breath"]
     up = -0.05 * br - 0.12 * P["shrug"]
-    far = 1 - 0.18 * abs(by)
-    l = -sw * (far if by > 0 else 1.0)
-    r = sw * (far if by < 0 else 1.0)
+    far = 1 - 0.36 * abs(by)   # the far side of a turned body narrows (it swings away from us)...
+    near = 1 - 0.06 * abs(by)  # ...and the near side only a little
+    l = -sw * (far if by > 0 else near)
+    r = sw * (far if by < 0 else near)
     ww, hw, hm = st.get("waist_w", 0.80), st.get("hip_w", 0.86), st.get("hem_w", 0.93)
     sway = 0.06 * math.sin(P["t"] * 0.8)
     return [
@@ -804,7 +805,11 @@ class Character:
                 draw_shape(cv, H, P, sh, st)
         face = H.face_path()
         if self.ears:
-            draw_ears(cv, H, st, P)
+            # ears on the side turned away (or seen edge-on from the front) sit behind the face's
+            # outline and only show where they stand out from the head
+            for side in (-1, 1):
+                if -side * math.sin(H.yaw) <= 0.02:
+                    draw_ear_side(cv, H, st, P, side)
         cv.drawPath(face, fill(st["skin"]))
         # cel shading: crescent opposite to light
         cv.save()
@@ -864,6 +869,12 @@ class Character:
             cv.drawPath(inner, fill(st.get("rim_col", "#ffe2b8"), alpha=P["rim"]))
             cv.restore()
         cv.drawPath(face, stroke(st.get("line", "#2a1a14"), st.get("face_lw", 0.022), alpha=0.95))
+        if self.ears:
+            # the ear on the side of the head that is turned toward us sits on the head, in front
+            # of its outline (hair and beard are drawn after it and lap over its edges)
+            for side in (-1, 1):
+                if -side * math.sin(H.yaw) > 0.02:
+                    draw_ear_side(cv, H, st, P, side)
 
         if self.beard:
             self.beard(cv, H, st, P)
@@ -887,6 +898,31 @@ class Character:
         if arms:
             arms(cv, st, P, "front")
         cv.restore()
+
+
+def draw_ear_side(cv, H, st, P, side):
+    """An ear modelled on the side of the head (rim, lobe and the hollow inside), projected with the
+    head so it foreshortens as the head turns."""
+    ys = [s[0] for s in H.sl]
+    w = float(np.interp(0.2, ys, [s[1] for s in H.sl]))
+    zc = float(np.interp(0.2, ys, [s[3] for s in H.sl]))
+    bx, by_, bz = side * w * 0.97, 0.2, zc - 0.12
+    # rim (dy, dz, out): from the front of the top, over the top and down the back to the lobe
+    rim = [(-0.15, 0.07, 0.01), (-0.21, -0.02, 0.05), (-0.18, -0.13, 0.09), (-0.05, -0.18, 0.11), (0.09, -0.15, 0.09),
+           (0.19, -0.07, 0.05), (0.23, 0.01, 0.02), (0.15, 0.07, 0.0), (0.03, 0.09, -0.01)]
+    R = H.p3([(bx + side * o, by_ + dy, bz + dz) for dy, dz, o in rim])[:, :2]
+    path = spline([tuple(map(float, p)) for p in R], closed=True)
+    sh2 = st.get("skin_sh2", st["skin_sh"])
+    cv.drawPath(path, fill(st["skin"]))
+    cv.drawPath(path, fill(st["skin_sh"], alpha=0.3))
+    # the hollow (concha) and the fold of the rim inside it
+    hol = [(-0.1, 0.03, 0.02), (-0.13, -0.05, 0.04), (-0.06, -0.11, 0.06), (0.06, -0.09, 0.05), (0.1, -0.02, 0.03), (0.04, 0.04, 0.01)]
+    Rh = H.p3([(bx + side * o, by_ + dy, bz + dz) for dy, dz, o in hol])[:, :2]
+    cv.drawPath(spline([tuple(map(float, p)) for p in Rh], closed=True), fill(sh2, alpha=0.45, blur=0.012))
+    fold = [(-0.16, 0.0, 0.05), (-0.14, -0.1, 0.08), (-0.02, -0.14, 0.09), (0.1, -0.1, 0.07)]
+    Rf = H.p3([(bx + side * o, by_ + dy, bz + dz) for dy, dz, o in fold])[:, :2]
+    cv.drawPath(spline([tuple(map(float, p)) for p in Rf], closed=False), stroke(sh2, 0.016, alpha=0.7))
+    cv.drawPath(path, stroke(st.get("line", "#2a1a14"), 0.018, alpha=0.9))
 
 
 def draw_ears(cv, H, st, P):
