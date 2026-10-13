@@ -57,9 +57,12 @@ def face_to_channels(f, hs=1.0):
         # the last stretch of a close overshoots so the lids seal at the centre
         c = min(max((1 - op - 0.75) / 0.25, 0.0), 1.0)
         up -= 11.0 * c * c * (3 - 2 * c)
-        up += 0.70 * min(pitch, 0) + 0.25 * max(pitch, 0)
+        # lids follow the gaze up/down so the iris stays framed; the coupling fades out as the lid
+        # closes, so a blink (or shut eyes) seals the same way whatever the eyes are doing
+        g = min(max(op, 0.0), 1.0)
+        up += (0.50 * min(pitch, 0) + 0.65 * max(pitch, 0)) * g
         lo = f['lidlo_' + side] * LO_RAISE * (1 - f['blink']) + f['blink'] * 8.0
-        lo += 0.3 * min(pitch, 0) + 0.2 * max(pitch, 0) + max(f['smile'], 0) * 5.0
+        lo += (0.3 * min(pitch, 0) + 0.2 * max(pitch, 0)) * g + max(f['smile'], 0) * 5.0
         out_b['lid_up_' + side] = ('rot', q(up))
         out_b['lid_lo_' + side] = ('rot', q(lo))
     return out_b, out_s

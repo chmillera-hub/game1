@@ -474,7 +474,7 @@ class Head:
         c = self.mouth_c - self.u0 * 0.026 - self.t_up * 0.012
         return c, np.array([hw, 0.024, 0.008])
 
-    def lid(self, key, upper=True, nu=40, nv=14):
+    def lid(self, key, upper=True, nu=48, nv=14):
         """Eyelid shell in EYE-LOCAL space (eye centre at origin, forward -Y, up +Z).
 
         The rim edge is arched; rotating about local X closes/opens the lid."""
@@ -483,7 +483,8 @@ class Head:
         side = self.eyes[key]['side']
         R = r * 1.035
         azc = p['lid_corner_az']
-        az = np.linspace(-azc - 25, azc + 25, nu)
+        # runs well past the corners so the shell still wraps the sides of the eyeball when rotated shut
+        az = np.linspace(-azc - 40, azc + 40, nu)
         tilt = p['canthus_tilt']
         verts = []
         for a in az:

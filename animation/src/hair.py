@@ -47,11 +47,11 @@ STYLES = {
     # count, length, segs, lift, clump, offset, radius root
     'short': dict(n=5000, L=0.045, segs=7, clumps=140, clump=0.55, off=0.006, r=0.00065, curl=0.25),
     'messy': dict(n=5500, L=0.055, segs=8, clumps=110, clump=0.6, off=0.008, r=0.0007, curl=0.5),
-    'old_sides': dict(n=5200, L=0.034, segs=7, clumps=160, clump=0.45, off=0.004, r=0.0007, curl=0.25),
+    'old_sides': dict(n=5200, L=0.034, segs=7, clumps=160, clump=0.65, off=0.002, r=0.0007, curl=0.06),
     'bun': dict(n=5000, L=0.16, segs=10, clumps=90, clump=0.65, off=0.004, r=0.0006, curl=0.02),
     'bob': dict(n=6500, L=0.11, segs=9, clumps=120, clump=0.6, off=0.007, r=0.0006, curl=0.05),
     'stubble': dict(n=3500, L=0.006, segs=3, clumps=0, clump=0.0, off=0.0, r=0.00035, curl=0.0),
-    'beard': dict(n=4000, L=0.018, segs=4, clumps=200, clump=0.4, off=0.0, r=0.00045, curl=0.3),
+    'beard': dict(n=9000, L=0.026, segs=4, clumps=200, clump=0.4, off=0.0, r=0.00045, curl=0.15),
 }
 
 
@@ -68,8 +68,11 @@ def groom(H, hg, style, seed=0, under_hat=False, bun=None, keep_top=False):
     lipmask = hg['colors'][:, 0]
     mc = hg['mouth_c']
 
+    # under a hat the temples come lower, so some hair still shows below the brim
+    hl_z = [0.072, 0.048, 0.015, -0.030, -0.055, -0.068] if under_hat else [0.072, 0.064, 0.030, -0.030, -0.055, -0.068]
+
     def hairline(y):
-        return np.interp(y, [-0.12, -0.05, -0.01, 0.03, 0.06, 0.12], [0.072, 0.064, 0.030, -0.030, -0.055, -0.068])
+        return np.interp(y, [-0.12, -0.05, -0.01, 0.03, 0.06, 0.12], hl_z)
 
     if style in ('stubble', 'beard'):
         def mask(c, n):
@@ -136,8 +139,15 @@ def groom(H, hg, style, seed=0, under_hat=False, bun=None, keep_top=False):
         d = nr.copy()
         for k in range(1, segs):
             t = k / (segs - 1)
-            lift = (1 - t) ** 2 * (0.15 if style == 'bun' else 0.6)
+            lift = (1 - t) ** 2 * (0.15 if style in ('bun', 'old_sides') else (0.2 if under_hat else 0.6))
             d = comb * (1 - lift) + nr * lift
+            if style == 'bun':
+                # re-aim every step at the bun so strands wrap the skull instead of leaving it on a tangent
+                to = tb - q
+                dist = np.linalg.norm(to)
+                if dist < step:
+                    step = max(dist, 1e-5)
+                d = to / max(dist, 1e-6) * (1 - lift) + nr * lift
             if style in ('bob', 'messy', 'old_sides'):
                 d = d + down * t * (0.6 if style == 'bob' else 0.25)
             if st['curl']:

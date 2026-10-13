@@ -17,6 +17,7 @@ from blib import _nodes, mix_rgb
 SIDEWALK_Z = 0.14
 FACADE_Y = 4.0
 LAMP_XY = (1.9, 4.0 - 1.15)
+LAMP_EXPOSURE = 1.5             # lamp_light power scale (2^x) over the watts film.lamp keys
 SILL_X = None
 SILL_H = 0.0
 TOWER = (2.6, 9.0, 13.2)      # x, y, dial-centre height (cheated per shot)
@@ -61,72 +62,172 @@ def cyl(coll, name, r, depth, loc, mat, verts=24, rot=(0, 0, 0), smooth=True):
 
 
 # ------------------------------------------------------------------ materials
-def brick_mat(name, base=(0.36, 0.15, 0.10), mortar=(0.38, 0.35, 0.31), scale=1.0):
+def _math(N, L, op, a, b=None, c=None):
+    """Math node; a/b/c are sockets or numbers."""
+    m = N.new('ShaderNodeMath')
+    m.operation = op
+    for i, v in enumerate((a, b, c)):
+        if v is None:
+            continue
+        if isinstance(v, (int, float)):
+            m.inputs[i].default_value = v
+        else:
+            L.new(v, m.inputs[i])
+    return m.outputs[0]
+
+
+def _remap(N, L, sock, a, b, c, d, smooth=True):
+    """Map Range sock [a, b] -> [c, d] (clamped)."""
+    m = N.new('ShaderNodeMapRange')
+    if smooth:
+        m.interpolation_type = 'SMOOTHSTEP'
+    for k, v in (('From Min', a), ('From Max', b), ('To Min', c), ('To Max', d)):
+        m.inputs[k].default_value = v
+    L.new(sock, m.inputs['Value'])
+    return m.outputs['Result']
+
+
+def _noise(N, L, vec, scale, detail=2.0, rough=0.5):
+    n = N.new('ShaderNodeTexNoise')
+    n.inputs['Scale'].default_value = scale
+    n.inputs['Detail'].default_value = detail
+    n.inputs['Roughness'].default_value = rough
+    L.new(vec, n.inputs['Vector'])
+    return n
+
+
+def _mul(N, L, col, other, fac=1.0):
+    """Multiply-blend a colour socket by another colour/float socket (or a constant colour)."""
+    m = N.new('ShaderNodeMix')
+    m.data_type = 'RGBA'
+    m.blend_type = 'MULTIPLY'
+    if isinstance(fac, (int, float)):
+        m.inputs['Factor'].default_value = fac
+    else:
+        L.new(fac, m.inputs['Factor'])
+    L.new(col, m.inputs[6])
+    if isinstance(other, tuple):
+        m.inputs[7].default_value = (*other[:3], 1)
+    else:
+        L.new(other, m.inputs[7])
+    return m.outputs[2]
+
+
+def brick_mat(name, base=(0.34, 0.15, 0.10), mortar=(0.19, 0.175, 0.155), scale=1.0):
+    """Weathered brick in world space (facade plane x+y / z): per-brick tone and height, hand-laid
+    courses, mottling, broad soot, faint rain streaks and rising damp above the pavement."""
     mat = bpy.data.materials.new(name)
     nt, N, L = _nodes(mat)
     b = N['Principled BSDF']
-    b.inputs['Roughness'].default_value = 0.92
     geo = N.new('ShaderNodeNewGeometry')
     mp = N.new('ShaderNodeMapping')
     mp.inputs['Scale'].default_value = (scale, scale, scale)
     L.new(geo.outputs['Position'], mp.inputs['Vector'])
+    P = mp.outputs['Vector']
     # brick texture works in XY: map the facade plane (x, z) -> (x, y)
     sep = N.new('ShaderNodeSeparateXYZ')
-    L.new(mp.outputs['Vector'], sep.inputs[0])
+    L.new(P, sep.inputs[0])
     comb = N.new('ShaderNodeCombineXYZ')
-    add = N.new('ShaderNodeMath')
-    add.operation = 'ADD'
-    L.new(sep.outputs['X'], add.inputs[0])
-    L.new(sep.outputs['Y'], add.inputs[1])
-    L.new(add.outputs[0], comb.inputs['X'])
+    L.new(_math(N, L, 'ADD', sep.outputs['X'], sep.outputs['Y']), comb.inputs['X'])
     L.new(sep.outputs['Z'], comb.inputs['Y'])
-    br = N.new('ShaderNodeTexBrick')
-    br.inputs['Scale'].default_value = 2.0
-    br.inputs['Mortar Size'].default_value = 0.012
-    br.inputs['Mortar Smooth'].default_value = 0.3
-    br.inputs['Bias'].default_value = 0.0
-    br.inputs['Brick Width'].default_value = 0.42
-    br.inputs['Row Height'].default_value = 0.13
-    br.offset = 0.5
-    br.inputs['Color1'].default_value = (*base, 1)
-    br.inputs['Color2'].default_value = (*(np.array(base) * 0.72), 1)
-    br.inputs['Mortar'].default_value = (*mortar, 1)
-    L.new(comb.outputs[0], br.inputs['Vector'])
-    noise = N.new('ShaderNodeTexNoise')
-    noise.inputs['Scale'].default_value = 3.0
-    noise.inputs['Detail'].default_value = 8.0
-    L.new(mp.outputs['Vector'], noise.inputs['Vector'])
-    grime = mix_rgb(N, L, noise.outputs['Fac'], (0, 0, 0), (0.08, 0.07, 0.06), x=-300, y=-200)
-    dark = N.new('ShaderNodeMix')
-    dark.data_type = 'RGBA'
-    dark.blend_type = 'MULTIPLY'
-    dark.inputs['Factor'].default_value = 0.55
-    L.new(br.outputs['Color'], dark.inputs[6])
-    ramp = N.new('ShaderNodeValToRGB')
-    ramp.color_ramp.elements[0].position = 0.35
-    ramp.color_ramp.elements[0].color = (0.55, 0.52, 0.5, 1)
-    ramp.color_ramp.elements[1].position = 0.75
-    ramp.color_ramp.elements[1].color = (1, 1, 1, 1)
-    L.new(noise.outputs['Fac'], ramp.inputs[0])
-    L.new(ramp.outputs[0], dark.inputs[7])
-    L.new(dark.outputs[2], b.inputs['Base Color'])
-    fine = N.new('ShaderNodeTexNoise')
-    fine.inputs['Scale'].default_value = 60.0
-    fine.inputs['Detail'].default_value = 6.0
-    L.new(mp.outputs['Vector'], fine.inputs['Vector'])
-    h = N.new('ShaderNodeMath')
-    h.operation = 'ADD'
-    L.new(br.outputs['Fac'], h.inputs[0])
-    hm = N.new('ShaderNodeMath')
-    hm.operation = 'MULTIPLY'
-    hm.inputs[1].default_value = 0.25
-    L.new(fine.outputs['Fac'], hm.inputs[0])
-    L.new(hm.outputs[0], h.inputs[1])
+    # hand-laid courses: the joints wander by a few millimetres
+    wob = _noise(N, L, comb.outputs[0], 7.0, 1.0)
+    bv = N.new('ShaderNodeVectorMath')
+    bv.operation = 'MULTIPLY_ADD'
+    L.new(wob.outputs['Color'], bv.inputs[0])
+    bv.inputs[1].default_value = (0.007, 0.004, 0.0)
+    L.new(comb.outputs[0], bv.inputs[2])
+
+    def bricks(vec, c1, c2, mort):
+        br = N.new('ShaderNodeTexBrick')
+        br.inputs['Scale'].default_value = 2.0
+        br.inputs['Mortar Size'].default_value = 0.014
+        br.inputs['Mortar Smooth'].default_value = 0.25
+        br.inputs['Bias'].default_value = 0.0
+        br.inputs['Brick Width'].default_value = 0.42
+        br.inputs['Row Height'].default_value = 0.13
+        br.offset = 0.5
+        br.inputs['Color1'].default_value = (*c1, 1)
+        br.inputs['Color2'].default_value = (*c2, 1)
+        br.inputs['Mortar'].default_value = (*mort, 1)
+        L.new(vec, br.inputs['Vector'])
+        return br
+    br = bricks(bv.outputs[0], base, tuple(np.array(base) * (0.80, 0.70, 0.68)), mortar)
+    # a second, independent random value per brick: the same grid shifted by whole bricks
+    # (5 bricks across, an even 6 courses up, so the half-brick bond stays aligned)
+    sh = N.new('ShaderNodeVectorMath')
+    sh.operation = 'ADD'
+    L.new(bv.outputs[0], sh.inputs[0])
+    sh.inputs[1].default_value = (5 * 0.21, 6 * 0.065, 0.0)
+    rnd = bricks(sh.outputs[0], (0, 0, 0), (1, 1, 1), (0.5, 0.5, 0.5))
+    tone = N.new('ShaderNodeValToRGB')
+    cr = tone.color_ramp
+    cr.elements[0].position = 0.0
+    cr.elements[0].color = (0.45, 0.40, 0.42, 1)      # over-fired, purple-brown
+    cr.elements[1].position = 1.0
+    cr.elements[1].color = (1.12, 1.0, 0.80, 1)       # paler, sandier
+    for pos, c in ((0.10, (0.66, 0.60, 0.60)), (0.40, (0.90, 0.88, 0.86)), (0.80, (1.0, 0.95, 0.88))):
+        e = cr.elements.new(pos)
+        e.color = (*c, 1)
+    L.new(rnd.outputs['Color'], tone.inputs['Fac'])
+    tone_b = mix_rgb(N, L, br.outputs['Fac'], tone.outputs['Color'], (1, 1, 1))   # mortar keeps its own colour
+    col = _mul(N, L, br.outputs['Color'], tone_b.outputs[2])
+    # mottling inside each brick
+    mot = _noise(N, L, P, 18.0, 4.0, 0.6)
+    col = _mul(N, L, col, _remap(N, L, mot.outputs['Fac'], 0.3, 0.7, 0.78, 1.08, smooth=False))
+    # soot / grime: patchy at hand scale, broad over the facade
+    dirt = _noise(N, L, P, 4.5, 4.0, 0.6)
+    dr = N.new('ShaderNodeValToRGB')
+    dr.color_ramp.elements[0].position = 0.42
+    dr.color_ramp.elements[0].color = (0.56, 0.53, 0.51, 1)
+    dr.color_ramp.elements[1].position = 0.68
+    dr.color_ramp.elements[1].color = (1, 1, 1, 1)
+    L.new(dirt.outputs['Fac'], dr.inputs['Fac'])
+    col = _mul(N, L, col, dr.outputs['Color'], 0.8)
+    grime = _noise(N, L, P, 1.4, 5.0, 0.6)
+    gr = N.new('ShaderNodeValToRGB')
+    gr.color_ramp.elements[0].position = 0.38
+    gr.color_ramp.elements[0].color = (0.52, 0.49, 0.47, 1)
+    gr.color_ramp.elements[1].position = 0.70
+    gr.color_ramp.elements[1].color = (1, 1, 1, 1)
+    L.new(grime.outputs['Fac'], gr.inputs['Fac'])
+    col = _mul(N, L, col, gr.outputs['Color'], 0.75)
+    # rain streaks: noise stretched vertically, patchy
+    st = N.new('ShaderNodeMapping')
+    st.inputs['Scale'].default_value = (11.0, 0.7, 1.0)
+    L.new(comb.outputs[0], st.inputs['Vector'])
+    stn = _noise(N, L, st.outputs['Vector'], 1.0, 3.0)
+    patch = _noise(N, L, P, 0.7, 1.0)
+    sfac = _math(N, L, 'MULTIPLY', _remap(N, L, stn.outputs['Fac'], 0.50, 0.70, 0.0, 0.55),
+                 _remap(N, L, patch.outputs['Fac'], 0.42, 0.62, 0.0, 1.0))
+    col = _mul(N, L, col, (0.62, 0.58, 0.56), sfac)
+    # rising damp: darker, a little glossier, ragged tide line ~0.4-0.7 m above the pavement
+    dn = _noise(N, L, P, 2.4, 3.0)
+    zz = _math(N, L, 'MULTIPLY_ADD', dn.outputs['Fac'], 0.32, sep.outputs['Z'])
+    damp = _remap(N, L, zz, 0.42, 0.92, 1.0, 0.0)
+    col = _mul(N, L, col, (0.58, 0.56, 0.56), _math(N, L, 'MULTIPLY', damp, 0.85))
+    tide = N.new('ShaderNodeValToRGB')
+    tide.color_ramp.elements[0].position = 0.0
+    tide.color_ramp.elements[0].color = (0, 0, 0, 1)
+    tide.color_ramp.elements[1].position = 0.55
+    tide.color_ramp.elements[1].color = (0, 0, 0, 1)
+    e = tide.color_ramp.elements.new(0.18)
+    e.color = (0.16, 0.16, 0.16, 1)
+    L.new(damp, tide.inputs['Fac'])
+    salt = mix_rgb(N, L, tide.outputs['Color'], (0, 0, 0), (0.46, 0.41, 0.35))
+    L.new(col, salt.inputs[6])
+    L.new(salt.outputs[2], b.inputs['Base Color'])
+    L.new(_remap(N, L, damp, 0.0, 1.0, 0.92, 0.72, smooth=False), b.inputs['Roughness'])
+    # relief: recessed joints, some bricks proud, fine pitting
+    fine = _noise(N, L, P, 60.0, 4.0)
+    h = _math(N, L, 'ADD', br.outputs['Fac'], _math(N, L, 'MULTIPLY', fine.outputs['Fac'], 0.25))
+    h = _math(N, L, 'ADD', h, _math(N, L, 'MULTIPLY', _math(N, L, 'SUBTRACT', 1.0, br.outputs['Fac']),
+                                    _math(N, L, 'MULTIPLY', rnd.outputs['Color'], 0.10)))
     bump = N.new('ShaderNodeBump')
-    bump.inputs['Strength'].default_value = 0.6
+    bump.inputs['Strength'].default_value = 1.0
     bump.inputs['Distance'].default_value = 0.01
     bump.invert = True
-    L.new(h.outputs[0], bump.inputs['Height'])
+    L.new(h, bump.inputs['Height'])
     L.new(bump.outputs['Normal'], b.inputs['Normal'])
     return mat
 
@@ -289,8 +390,103 @@ def glass_mat(name, interior=None, strength=0.0, tint=(0.05, 0.06, 0.07)):
     b.inputs['Roughness'].default_value = 0.05
     b.inputs['Specular IOR Level'].default_value = 0.9
     if interior is not None:
-        b.inputs['Emission Color'].default_value = (*interior, 1)
-        b.inputs['Emission Strength'].default_value = strength
+        # a room behind the glass, not a flat card: lit back wall, darker floor band,
+        # curtains at the sides, a little furniture mottling (Generated coords of the pane)
+        tc = N.new('ShaderNodeTexCoord')
+        sep = N.new('ShaderNodeSeparateXYZ')
+        L.new(tc.outputs['Generated'], sep.inputs[0])
+        dx = _math(N, L, 'ABSOLUTE', _math(N, L, 'SUBTRACT', sep.outputs['X'], 0.5))
+        cur = _remap(N, L, dx, 0.28, 0.42, 1.0, 0.35)
+        vert = N.new('ShaderNodeValToRGB')
+        cr = vert.color_ramp
+        cr.elements[0].position = 0.0
+        cr.elements[0].color = (0.30, 0.30, 0.30, 1)
+        cr.elements[1].position = 1.0
+        cr.elements[1].color = (0.80, 0.80, 0.80, 1)
+        for pos, v in ((0.32, 0.50), (0.55, 1.0)):
+            e = cr.elements.new(pos)
+            e.color = (v, v, v, 1)
+        L.new(sep.outputs['Z'], vert.inputs['Fac'])
+        blot = _noise(N, L, tc.outputs['Generated'], 2.5, 2.0)
+        pat = _mul(N, L, vert.outputs['Color'], _math(N, L, 'MULTIPLY', cur, _remap(N, L, blot.outputs['Fac'], 0.4, 0.65, 0.72, 1.0)))
+        L.new(_mul(N, L, pat, tuple(interior)), b.inputs['Emission Color'])
+        b.inputs['Emission Strength'].default_value = strength * 1.25
+    return mat
+
+
+def pane_mat(name, tint=(0.86, 0.84, 0.76), dirt=(0.36, 0.33, 0.28)):
+    """Clear shop-door glass: see-through to the real interior (Transparent BSDF, so no
+    refraction cost), Fresnel reflection of the street, a faint film of grime."""
+    mat = bpy.data.materials.new(name)
+    nt, N, L = _nodes(mat)
+    for n in list(N):
+        if n.type == 'BSDF_PRINCIPLED':
+            N.remove(n)
+    tr = N.new('ShaderNodeBsdfTransparent')
+    tr.inputs['Color'].default_value = (*tint, 1)
+    gl = N.new('ShaderNodeBsdfGlossy')
+    gl.inputs['Roughness'].default_value = 0.04
+    fr = N.new('ShaderNodeFresnel')
+    fr.inputs['IOR'].default_value = 1.6
+    mx = N.new('ShaderNodeMixShader')
+    L.new(fr.outputs[0], mx.inputs[0])
+    L.new(tr.outputs[0], mx.inputs[1])
+    L.new(gl.outputs[0], mx.inputs[2])
+    tc = N.new('ShaderNodeTexCoord')
+    n = _noise(N, L, tc.outputs['Object'], 9.0, 3.0)
+    df = N.new('ShaderNodeBsdfDiffuse')
+    df.inputs['Color'].default_value = (*dirt, 1)
+    mx2 = N.new('ShaderNodeMixShader')
+    L.new(_remap(N, L, n.outputs['Fac'], 0.35, 0.7, 0.03, 0.12), mx2.inputs[0])
+    L.new(mx.outputs[0], mx2.inputs[1])
+    L.new(df.outputs[0], mx2.inputs[2])
+    L.new(mx2.outputs[0], N['Material Output'].inputs['Surface'])
+    return mat
+
+
+def lamp_glass_mat(name, hot=(1.0, 0.62, 0.26), edge=(1.0, 0.38, 0.10), gain=0.11):
+    """Lantern panes: dark glass when unlit; lit (strength of node 'Emission', keyed 0 -> 9 by
+    film.lamp) they glow amber, hottest at mantle height in the middle of each pane.  gain scales
+    the keyed strength so 9 lands at ~1.0 in the hot core (amber, not clipped white)."""
+    mat = bpy.data.materials.new(name)
+    nt, N, L = _nodes(mat)
+    for n in list(N):
+        if n.type == 'BSDF_PRINCIPLED':
+            N.remove(n)
+    tc = N.new('ShaderNodeTexCoord')
+    sep = N.new('ShaderNodeSeparateXYZ')
+    L.new(tc.outputs['Object'], sep.inputs[0])
+    rr = _math(N, L, 'SQRT', _math(N, L, 'ADD', _math(N, L, 'MULTIPLY', sep.outputs['X'], sep.outputs['X']),
+                                   _math(N, L, 'MULTIPLY', sep.outputs['Y'], sep.outputs['Y'])))
+    rad = _remap(N, L, rr, 0.147, 0.17, 1.0, 0.45)
+    ver = _remap(N, L, _math(N, L, 'ABSOLUTE', sep.outputs['Z']), 0.03, 0.21, 1.0, 0.35)
+    k = _math(N, L, 'MULTIPLY', rad, ver)
+    ramp = N.new('ShaderNodeValToRGB')
+    ramp.color_ramp.elements[0].position = 0.15
+    ramp.color_ramp.elements[0].color = (*edge, 1)
+    ramp.color_ramp.elements[1].position = 1.0
+    ramp.color_ramp.elements[1].color = (*hot, 1)
+    L.new(k, ramp.inputs['Fac'])
+    ec = _mul(N, L, ramp.outputs['Color'], _math(N, L, 'MULTIPLY', k, gain))
+    e = N.new('ShaderNodeEmission')
+    e.name = 'Emission'
+    L.new(ec, e.inputs['Color'])
+    e.inputs['Strength'].default_value = 0.0
+    # unlit: smoky dark glass with a sharp reflection
+    df = N.new('ShaderNodeBsdfDiffuse')
+    df.inputs['Color'].default_value = (0.03, 0.028, 0.025, 1)
+    gl = N.new('ShaderNodeBsdfGlossy')
+    gl.inputs['Roughness'].default_value = 0.06
+    fr = N.new('ShaderNodeFresnel')
+    fr.inputs['IOR'].default_value = 1.5
+    mx = N.new('ShaderNodeMixShader')
+    L.new(fr.outputs[0], mx.inputs[0])
+    L.new(df.outputs[0], mx.inputs[1])
+    L.new(gl.outputs[0], mx.inputs[2])
+    ad = N.new('ShaderNodeAddShader')
+    L.new(mx.outputs[0], ad.inputs[0])
+    L.new(e.outputs[0], ad.inputs[1])
+    L.new(ad.outputs[0], N['Material Output'].inputs['Surface'])
     return mat
 
 
@@ -437,7 +633,8 @@ def build_set(font_path='/usr/share/fonts/truetype/dejavu/DejaVuSerif-Bold.ttf',
     M['sign'] = blib.principled('sign', (0.08, 0.16, 0.12), rough=0.5)
     M['gold'] = blib.principled('gold', (0.8, 0.55, 0.18), rough=0.35, metallic=1.0)
     M['bread'] = blib.principled('bread', (0.55, 0.28, 0.08), rough=0.55, coat=0.2)
-    M['lampglass'] = emission_mat('lampglass', (1.0, 0.72, 0.40), 0.0)
+    M['lampglass'] = lamp_glass_mat('lampglass')
+    M['door_glass'] = pane_mat('door_glass')
     M['clockface'] = blib.principled('clockface', (0.85, 0.82, 0.72), rough=0.5)
 
     # ground
@@ -519,10 +716,23 @@ def build_set(font_path='/usr/share/fonts/truetype/dejavu/DejaVuSerif-Bold.ttf',
     hinge = bpy.data.objects.new('door_hinge', None)
     coll.objects.link(hinge)
     hinge.location = (dx - dw / 2, FACADE_Y + 0.02, SIDEWALK_Z)
-    door = box(coll, 'door', (dw, 0.05, dh), (dw / 2, 0, dh / 2), M['wood_door'], bevel=0.01)
-    door.parent = hinge
-    dwin = box(coll, 'door_window', (dw * 0.6, 0.06, 0.7), (dw / 2, 0, dh * 0.68), M['glass_warm'])
+    # stiles and rails around a real glass pane (the shop shows through it)
+    gw, gh, gz = dw * 0.6, 0.7, dh * 0.68
+    gx0, gx1, gz0, gz1 = (dw - gw) / 2, (dw + gw) / 2, gz - gh / 2, gz + gh / 2
+    for (xa, xb, za, zb) in ((0, gx0, 0, dh), (gx1, dw, 0, dh), (gx0, gx1, 0, gz0), (gx0, gx1, gz1, dh)):
+        door = box(coll, 'door', (xb - xa, 0.05, zb - za), ((xa + xb) / 2, 0, (za + zb) / 2), M['wood_door'], bevel=0.01)
+        door.parent = hinge
+    dwin = box(coll, 'door_window', (gw, 0.012, gh), (dw / 2, 0, gz), M['door_glass'])
     dwin.parent = hinge
+    bw = 0.025
+    for sy in (-1, 1):
+        for (sx, sz, px, pz) in ((gw + 2 * bw, bw, dw / 2, gz1), (gw + 2 * bw, bw, dw / 2, gz0), (bw, gh, gx0, gz), (bw, gh, gx1, gz)):
+            bead = box(coll, 'door_bead', (sx, 0.014, sz), (px, sy * 0.028, pz), M['wood_door'])
+            bead.parent = hinge
+    # gold-leaf name on the glass
+    M['gold_leaf'] = blib.principled('gold_leaf', (0.85, 0.58, 0.20), rough=0.3, metallic=0.45)
+    gl_txt = text_obj(coll, 'BRANDT & SON', (dw / 2, -0.008, gz + 0.16), 0.06, M['gold_leaf'], font_path=font_path, extrude=0.0004)
+    gl_txt.parent = hinge
     for (pz, ph) in ((dh * 0.25, dh * 0.32),):
         pnl = box(coll, 'door_panel', (dw * 0.62, 0.03, ph), (dw / 2, -0.03, pz), M['wood_door'], bevel=0.01)
         pnl.parent = hinge
@@ -603,17 +813,21 @@ def build_set(font_path='/usr/share/fonts/truetype/dejavu/DejaVuSerif-Bold.ttf',
     lpos = tip + Vector((0, 0, -0.42))
     cyl(coll, 'lp_hanger', 0.012, 0.14, tuple(tip + Vector((0, 0, -0.07))), M['iron'], verts=8)
     lz = lpos.z
-    cyl(coll, 'lp_cage', 0.17, 0.42, (lpos.x, lpos.y, lz), M['lampglass'], verts=6, smooth=False)
+    # the light sits inside the glass: panes, base plate and bars must not shadow it
+    # (only the smoke cap above does, so the glow falls down and out, not up the facade)
+    cage = cyl(coll, 'lp_cage', 0.17, 0.42, (lpos.x, lpos.y, lz), M['lampglass'], verts=6, smooth=False)
+    cage.visible_shadow = False
     bpy.ops.mesh.primitive_cone_add(radius1=0.26, radius2=0.03, depth=0.24, vertices=6, location=(lpos.x, lpos.y, lz + 0.32))
     blib.assign(_obj_from_ops(coll), M['iron'])
-    cyl(coll, 'lp_bottom', 0.13, 0.06, (lpos.x, lpos.y, lz - 0.24), M['iron'], verts=6, smooth=False)
+    cyl(coll, 'lp_bottom', 0.13, 0.06, (lpos.x, lpos.y, lz - 0.24), M['iron'], verts=6, smooth=False).visible_shadow = False
     for k in range(6):
         a = k * math.pi / 3 + math.pi / 6
-        cyl(coll, 'lp_bar', 0.011, 0.44, (lpos.x + 0.165 * math.cos(a), lpos.y + 0.165 * math.sin(a), lz), M['iron'], verts=6)
+        cyl(coll, 'lp_bar', 0.011, 0.44, (lpos.x + 0.165 * math.cos(a), lpos.y + 0.165 * math.sin(a), lz), M['iron'], verts=6).visible_shadow = False
     ll = bpy.data.lights.new('lamp_light', 'POINT')
-    ll.energy = 0.0
-    ll.color = (1.0, 0.68, 0.38)
-    ll.shadow_soft_size = 0.12
+    ll.energy = 0.0             # keyed by film.lamp (0 -> 60 W)
+    ll.exposure = LAMP_EXPOSURE  # x2^exposure on top of the keyed watts
+    ll.color = (1.0, 0.64, 0.34)
+    ll.shadow_soft_size = 0.15
     llo = bpy.data.objects.new('lamp_light', ll)
     coll.objects.link(llo)
     llo.location = (lpos.x, lpos.y, lz - 0.02)

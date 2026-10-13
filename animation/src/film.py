@@ -232,10 +232,17 @@ class Film:
                         self._set(owner, path, value, index)
                         owner.keyframe_insert(path, frame=0, index=index)
                         continue
+                # a change shorter than a frame lands on fr(t + dur); the hold key goes one
+                # frame earlier so the two never collapse onto one frame (which would leave
+                # a ramp from the previous key instead of a cut)
+                f0 = fr(t)
+                f1 = fr(t + dur) if dur > 0 else f0 + 1
+                if f1 <= f0:
+                    f0 = f1 - 1
                 self._set(owner, path, cur, index)
-                owner.keyframe_insert(path, frame=fr(t), index=index)
+                owner.keyframe_insert(path, frame=f0, index=index)
                 self._set(owner, path, value, index)
-                owner.keyframe_insert(path, frame=fr(t + dur) if dur > 0 else fr(t) + 1, index=index)
+                owner.keyframe_insert(path, frame=f1, index=index)
                 cur = value
 
     @staticmethod
@@ -293,16 +300,18 @@ class Film:
         by = {}
         for (ob, t, v) in self.vis_keys:
             by.setdefault(ob.name, (ob, []))[1].append((t, v))
-        for name, (ob, ks) in by.items():
+        for name, (ob0, ks) in by.items():
             ks.sort(key=lambda k: k[0])
-            ob.hide_render = not ks[0][1]
-            ob.keyframe_insert('hide_render', frame=0)
-            for (t, v) in ks:
-                ob.hide_render = not v
-                ob.keyframe_insert('hide_render', frame=fr(t))
-            fc = ob.animation_data.action.fcurves.find('hide_render')
-            for kp in fc.keyframe_points:
-                kp.interpolation = 'CONSTANT'
+            # children (e.g. a loaf's paper) follow their parent's visibility
+            for ob in [ob0, *ob0.children_recursive]:
+                ob.hide_render = not ks[0][1]
+                ob.keyframe_insert('hide_render', frame=0)
+                for (t, v) in ks:
+                    ob.hide_render = not v
+                    ob.keyframe_insert('hide_render', frame=fr(t))
+                fc = ob.animation_data.action.fcurves.find('hide_render')
+                for kp in fc.keyframe_points:
+                    kp.interpolation = 'CONSTANT'
 
     # ------------------------------------------------------------ props
     def prop(self, name, ob):

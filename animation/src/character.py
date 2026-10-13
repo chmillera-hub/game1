@@ -376,6 +376,13 @@ class Character:
         self.m_shirt = blib.cloth_material(n + '_shirt', s['shirt'], rough=0.7, sheen=0.2, scale=400, bump_str=0.08)
         self.m_cuff = blib.cloth_material(n + '_cuff', s['cuff'], rough=0.7, sheen=0.2, scale=400, bump_str=0.08)
         self.m_inner = blib.principled(n + '_inner', tuple(np.array(s['coat']) * 0.35), rough=0.9)
+        # lining of the coat hem / sleeve ends: follows the coat-off swap so no mustard lip stays behind
+        self.m_coat_inner = self.m_sleeve_inner = self.m_inner
+        if s['coat_swap']:
+            dk = lambda c: tuple(np.array(c) * 0.35)
+            self.m_coat_inner = self._swap_material(n + '_coat_inner', dk(s['coat']), dk(s['coat']), dk(s['coat_swap']), use_mask=False)
+            self.m_sleeve_inner = self._swap_material(n + '_sleeve_inner', dk(s['coat']), dk(s['coat']), tuple(np.array(s['shirt']) * 0.6), use_mask=False)
+        self.m_sock = blib.cloth_material(n + '_sock', tuple(np.array(s['stockings'] or s['trousers']) * 0.55), rough=0.9, sheen=0.3)
         self.m_hair = blib.hair_material(n + '_hair', s['hair_color'])
         self.m_hand = self.m_skin
         if s['gloves']:
@@ -629,8 +636,12 @@ class Character:
         inner = hem.copy()
         inner[:, 0] *= 0.93
         inner[:, 1] *= 0.93
-        inner2 = inner.copy()
-        inner2[:, 2] += 0.12
+        # the lining runs up a short way inside the shell; take it from the shell ring at that
+        # height (scaled in) so it can never cross the outside where the coat narrows above the hem
+        i2 = int(np.argmin(np.abs(zs - (h0 + 0.06))))
+        inner2 = P[i2 * K:(i2 + 1) * K].copy()
+        inner2[:, 0] *= 0.84
+        inner2[:, 1] *= 0.84
         base = len(P)
         P = np.concatenate([P, inner, inner2])
         for k in range(K):
@@ -658,7 +669,7 @@ class Character:
         for k in W:
             W[k] = W[k] / tot
         nhem = 2 * K
-        mats = [self.m_coat, self.m_inner]
+        mats = [self.m_coat, self.m_coat_inner]
         ob = self._mesh('coat', P, faces, None, weights=W, sub=1, mats=mats)
         # V-neck: waistcoat/shirt showing at the chest front, under the collar
         top = self.neckZ
@@ -699,7 +710,7 @@ class Character:
             for sgn in (1, -1):
                 line = np.radians(18 + (110 - 18) * t) * sgn
                 da = np.angle(np.exp(1j * (ang - line)))
-                rr += 0.0032 * np.exp(-(da / 0.30) ** 2) * (0.4 + 0.6 * np.sin(np.pi * np.clip(t * 1.1, 0, 1)))
+                rr += 0.0050 * np.exp(-(da / 0.24) ** 2) * (0.4 + 0.6 * np.sin(np.pi * np.clip(t * 1.1, 0, 1)))
             # trachea/front softness and slightly flatter back
             rr *= 1 - 0.06 * np.cos(ang) ** 2 * (np.cos(ang) < 0)
             sec = np.stack([np.sin(ang) * rr, -np.cos(ang) * rr], -1)
@@ -714,7 +725,7 @@ class Character:
         c = np.array([0, 0.002, self.neckZ + 0.004])
         R2, K2 = 4, 40
         cs, ss = [], []
-        for i, dz in enumerate((-0.02, 0.0, 0.018, 0.026)):
+        for i, dz in enumerate((-0.02, 0.0, 0.010, 0.014)):
             r = s['neck_r'] + (0.014, 0.010, 0.007, 0.0045)[i]
             cs.append(c + np.array([0, 0, dz]))
             ang = np.linspace(0, 2 * np.pi, K2, endpoint=False)
@@ -772,7 +783,7 @@ class Character:
             nreal = len(pts)
             segs = {'upperarm.' + side: (sh, el), 'forearm.' + side: (el, wr), 'clavicle.' + side: (np.array(self.J['clavicle.' + side][0]), sh)}
             W = proximity_weights(Vv, segs, power=6)
-            ob = self._mesh('sleeve_' + side, Vv, F, None, weights=W, sub=1, mats=[self.m_sleeve, self.m_inner])
+            ob = self._mesh('sleeve_' + side, Vv, F, None, weights=W, sub=1, mats=[self.m_sleeve, self.m_sleeve_inner])
             K = 24
             for i, poly in enumerate(ob.data.polygons):
                 if i >= (nreal + 1) * K and i < (nreal + 2) * K:
@@ -890,11 +901,11 @@ class Character:
             # shoes
             Vs, Fs, Ws = self._shoe(side, sx)
             self._mesh('shoe_' + side, Vs, Fs, self.m_shoes, weights=Ws, sub=1)
-            # skin ankle so no gap is visible between hem and shoe
+            # sock/ankle filling the cuff, so a leg seen end-on has no empty tube
             ab = ankle + np.array([0, 0, 0.0])
             Va, Fa, ra = loft([ab - np.array([0, 0, 0.02]), ab + np.array([0, 0, 0.06])],
-                              [ellipse(16, 0.032, 0.032)] * 2, up_hint=(1, 0, 0))
-            self._mesh('sock_' + side, Va, Fa, self.m_inner, weights={'shin.' + side: np.ones(len(Va))}, sub=0)
+                              [ellipse(16, s['hem_r'] * 0.84, s['hem_r'] * 0.84)] * 2, up_hint=(1, 0, 0))
+            self._mesh('sock_' + side, Va, Fa, self.m_sock, weights={'shin.' + side: np.ones(len(Va))}, sub=0)
 
     def _shoe(self, side, sx):
         s = self.s
@@ -1116,7 +1127,7 @@ class Character:
         hp = self.H.p
         ez = hp['eye_z'] + hp['eye_r'] * 1.7
         if kind == 'cloche':
-            dome, az = self._hat_rings(ez + 0.020, 0.028, -0.030, scale=1.05)
+            dome, az = self._hat_rings(ez + 0.032, 0.030, -0.030, scale=1.05)
         else:
             dome, az = self._hat_rings(ez + 0.028, 0.030, -0.020, scale=1.05)
         R, K = dome.shape[0], dome.shape[1]
@@ -1340,7 +1351,15 @@ class Character:
             return
         pts = pts * hs + self.head_origin
         rad = rad * hs
-        self._hair_objects('hair', pts, rad)
+        self.hair_under_hat = self._hair_objects('hair', pts, rad)
+        self.hair_hatless = []
+        if s['hat'] and s.get('hair_top'):
+            # a full groom for the hatless beats (hidden; the shot toggles it against the under-hat one)
+            fp, fr = hair.groom(self.H, self.hg, style, seed=sum(map(ord, self.name)) + 1, under_hat=False)
+            self.hair_hatless = self._hair_objects('hairfree', fp * hs + self.head_origin, fr * hs)
+            for ob in self.hair_hatless:
+                ob.hide_render = True
+                ob.hide_viewport = True
         if s.get('beard'):
             bp, br = hair.groom(self.H, self.hg, s['beard'], seed=7)
             bp = bp * hs + self.head_origin
@@ -1358,9 +1377,12 @@ class Character:
             parts.append((pts[sel], rad[sel], self.m_hair2))
         else:
             parts = [(pts, rad, self.m_hair)]
+        obs = []
         for i, (p, r, m) in enumerate(parts):
             if len(p) == 0:
                 continue
             ob = hair.make_curves('%s_%s%d' % (self.name, nm, i), p, r, self.coll)
             ob.data.materials.append(m)
             self._rigid(ob, 'head')
+            obs.append(ob)
+        return obs
