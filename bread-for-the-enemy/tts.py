@@ -10,12 +10,12 @@ Casting (Kokoro voice ids):
   paul      bm_lewis    deep, weathered British (old Paul)
   saul      bm_lewis    same man 34 years younger: brighter, faster, harder
   asher     am_fenrir   intense, mid-range
-  yosef     bm_fable    a gentle father, lowered and given a fuller chest (F0 about 105 Hz)
+  yosef     bm_fable    a gentle father: lowered a little for a man's weight, but kept clear (F0 about 112 Hz)
   phoebe    bf_emma     warm, clear reader of Paul's letter in Rome
   guard     am_onyx     gruff and low
   child     a blend of af_heart and am_puck, lifted into a boy's register (F0 about 195 Hz)
             with only a small formant lift, so it sounds young rather than sped-up
-  epic      bm_daniel   the closing voice: a deep, warm British reader (F0 about 113 Hz)
+  epic      bm_daniel   (unused: the closing words are now spoken by Jesus himself)
 """
 import hashlib
 import json
@@ -37,7 +37,7 @@ CAST = {
     "paul": dict(voice="bm_lewis"),
     "saul": dict(voice="bm_lewis", pitch=1.06, speed_mul=1.06),
     "asher": dict(voice="am_fenrir"),
-    "yosef": dict(voice="bm_fable", pitch=0.84, formant=0.93),
+    "yosef": dict(voice="bm_fable", pitch=0.9, formant=0.97),
     "phoebe": dict(voice="bf_emma"),
     "guard": dict(voice="am_onyx", pitch=0.97),
     "child": dict(voice="af_heart*0.55+am_puck*0.45", pitch=1.08, formant=1.04, speed_mul=0.92),

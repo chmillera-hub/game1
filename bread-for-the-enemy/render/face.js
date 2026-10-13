@@ -46,7 +46,7 @@ function geoOf(st) {
   G.jawW = Math.min(0.82, G.jawW * (fem ? 1.04 : 1.09));
   G.jawY += 0.04; G.chinY += fem ? 0.03 : 0.06; G.mouthY += fem ? 0.02 : 0.04; G.noseY += 0.02;
   G.eyeW *= fem ? 0.95 : 0.92; G.noseLen *= fem ? 1.1 : 1.15;
-  G.cheekLow = fem ? 0.94 : 0.93; G.chinW = fem ? 0.47 : 0.48;
+  G.cheekLow = fem ? 0.94 : 0.93; G.chinW = (st.geo && st.geo.chinW) || (fem ? 0.47 : 0.48);
   return G;
 }
 

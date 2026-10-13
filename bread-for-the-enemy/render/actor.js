@@ -213,13 +213,23 @@ function drawCharacter(ctx, who, F, place, Lt, t, opt = {}) {
     if (pb.bread && pb.bread.arm) attach(pb.bread.arm, pb.bread.arm === 'f' ? FAR : 0, pb.bread.r * s * 0.3, (g) => B.drawBread(ctx, g[0], g[1], pb.bread.r * s, Lt, { rot: 0.05 * fc }));
     if (pb.half && pb.half.arm) attach(pb.half.arm, pb.half.arm === 'f' ? FAR : 0, pb.half.r * s * 0.7, (g, ag) => B.drawHalfBread(ctx, g[0], g[1], pb.half.r * s, Lt, { face: -fc, rot: clamp(ag.ang - Math.PI / 2, -0.5, 0.5) * 0.4 }));
     if (pb.half2 && pb.half2.arm) attach(pb.half2.arm, pb.half2.arm === 'f' ? FAR : 0, pb.half2.r * s * 0.7, (g) => B.drawHalfBread(ctx, g[0], g[1], pb.half2.r * s, Lt, { face: fc, rot: 0.15 * fc }));
+    // breaking a loaf held in both hands: it parts into its two halves where it lay, and each half goes
+    // with its hand (the whole loaf is not drawn once the break begins, so nothing pops)
+    const fromP = typeof pb.from === 'string' ? POSES[pb.from] : null;
+    const breaking = !!(pb.halves && fromP && fromP.bread && fromP.bread.at && pb.k < 1);
+    const kb = breaking ? L.smooth(clamp(pb.k / 0.9)) : 1;
+    const loafAt = breaking ? toScreen(fromP.bread.at) : null;
     if (pb.halves) {
-      attach('n', 0, pb.halves.r0 * s * 0.7, (g) => B.drawHalfBread(ctx, g[0], g[1], pb.halves.r0 * s, Lt, { face: fc, rot: -0.1 * fc }));
-      attach('f', FAR, pb.halves.r0 * s * 0.7, (g) => B.drawHalfBread(ctx, g[0], g[1], pb.halves.r0 * s, Lt, { face: -fc, rot: 0.1 * fc }));
+      const half = (which, face, rot, depthBase) => attach(which, depthBase, pb.halves.r0 * s * 0.7, (g) => {
+        const x = breaking ? lerp(loafAt[0], g[0], kb) : g[0], y = breaking ? lerp(loafAt[1], g[1], kb) : g[1];
+        B.drawHalfBread(ctx, x, y, pb.halves.r0 * s, Lt, { face, rot: rot * kb });
+      });
+      half('n', fc, -0.1 * fc, 0);
+      half('f', -fc, 0.1 * fc, FAR);
     }
     if (pb.jar) attach(pb.jar.arm, pb.jar.arm === 'f' ? FAR : 0, s * 0.18, (g) => B.drawJar(ctx, g[0], g[1] + pb.jar.h * s * 0.98, pb.jar.h * s, Lt));
     if (pb.spear) attach(pb.spear.arm, pb.spear.arm === 'f' ? FAR : 0, s * 0.12, (g) => drawSpear(ctx, g, s, Lt));
-    if (pb.bread && pb.bread.at) {
+    if (pb.bread && pb.bread.at && !breaking) {
       const p = toScreen(pb.bread.at);
       props.push({ arm: null, depth: (arms.hN.gripAt(0)[2] + FAR + arms.hF.gripAt(0)[2]) / 2 + s * 0.05, draw: () => B.drawBread(ctx, p[0], p[1], pb.bread.r * s, Lt, { rot: 0.05 * fc }) });
     }
@@ -250,13 +260,13 @@ function drawCharacter(ctx, who, F, place, Lt, t, opt = {}) {
       if (rest.length) drawHandsAndProps(rest);
       return;
     }
-    // an open scroll held in both hands: the thumbs on the reader's side of the rollers (behind the
-    // parchment, so they never show through it), the curled fingers on our side, in front
+    // an open scroll held up in both hands: each hand grips its roller from behind, so the palm and
+    // fingers are behind the parchment and only the thumb lies on its front, beside the roller
     if (pb.scroll2 && which.length === 2) {
       const notThumb = (q) => q.kind !== 'thumb';
-      arms.hF.draw(ctx, (q) => q.kind === 'thumb'); arms.hN.draw(ctx, (q) => q.kind === 'thumb');
-      B.drawOpenScroll(ctx, arms.hN.gripAt(s * 0.05), arms.hF.gripAt(s * 0.05), s, pb.scroll2, Lt, fc);
       arms.hF.draw(ctx, notThumb); arms.hN.draw(ctx, notThumb);
+      B.drawOpenScroll(ctx, arms.hN.gripAt(s * 0.05), arms.hF.gripAt(s * 0.05), s, pb.scroll2, Lt, fc);
+      arms.hF.draw(ctx, (q) => q.kind === 'thumb'); arms.hN.draw(ctx, (q) => q.kind === 'thumb');
       return;
     }
     const mine = props.filter((p) => (p.arm === null ? which.includes('n') : which.includes(p.arm)));

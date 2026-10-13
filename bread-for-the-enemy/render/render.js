@@ -95,6 +95,14 @@ function spaced(ctx, text, x, y, spacing) {
   let cx = x - w / 2;
   for (const ch of text) { ctx.fillText(ch, cx, y); cx += ctx.measureText(ch).width + spacing; }
 }
+// A text shadow of the given strength, scaled by the current opacity. (This canvas draws shadows at
+// their full colour even when the text itself is faded out, which leaves dark "ghost" letters during
+// every fade unless the shadow fades with it.)
+function shadowAt(ctx, a0, blur) {
+  const g = ctx.globalAlpha;
+  ctx.shadowColor = rgba('#000000', a0 * g);
+  ctx.shadowBlur = g > 0.004 ? blur : 0;
+}
 function drawTexts(ctx, t, heads = {}) {
   for (const tx of tl.texts) {
     const lt = t - tx.t;
@@ -107,7 +115,7 @@ function drawTexts(ctx, t, heads = {}) {
       ctx.fillStyle = L.radial(ctx, 540, 330, 50, 620, [[0, rgba('#000000', 0.55)], [1, rgba('#000000', 0)]]);
       ctx.fillRect(0, 60, VW, 560);
       ctx.font = `700 84px Cinzel`;
-      ctx.shadowColor = 'rgba(0,0,0,0.85)'; ctx.shadowBlur = 18;
+      shadowAt(ctx, 0.85, 18);
       ctx.fillStyle = L.linear(ctx, 0, 260, 0, 360, [[0, '#fff3cf'], [0.5, '#f0c868'], [1, '#c8902e']]);
       const words = (tx.text || '').toUpperCase().split(' ');
       spaced(ctx, words.slice(0, -1).join(' '), 540, 300, 6);
@@ -124,18 +132,22 @@ function drawTexts(ctx, t, heads = {}) {
       ctx.fillStyle = L.linear(ctx, 0, 170, 0, 310, [[0, rgba('#000000', 0)], [0.5, rgba('#000000', 0.38)], [1, rgba('#000000', 0)]]);
       ctx.fillRect(0, 170, VW, 140);
       ctx.font = `600 38px Cinzel`;
-      ctx.shadowColor = 'rgba(0,0,0,0.9)'; ctx.shadowBlur = 14;
+      shadowAt(ctx, 0.9, 14);
       ctx.fillStyle = '#efe4cc';
       spaced(ctx, tx.text, 540, 250, 4);
     } else if (tx.style === 'end') {
       ctx.globalAlpha = Math.min(smooth(lt / 1.2), 1);
-      ctx.shadowColor = 'rgba(0,0,0,0.8)'; ctx.shadowBlur = 16;
-      ctx.font = `italic 500 62px Lora`;
-      ctx.fillStyle = '#fff6e4';
+      ctx.font = `italic 600 64px Lora`;
       const lines = tx.text.split('\n').flatMap((part) => wrap(ctx, part.trim(), 860));
       const y0 = 700 - (lines.length - 1) * 44;
-      // each line comes up as the closing voice speaks it (the last voice line carries the last two)
-      const ep = tl.lines.filter((l) => l.who === 'epic' && l.start >= tx.t - 0.5);
+      // a soft dark band behind the words keeps them clear of the bright sky and the light behind them
+      const yA = y0 - 120, yB = y0 + (lines.length - 1) * 88 + 70;
+      ctx.fillStyle = L.linear(ctx, 0, yA, 0, yB, [[0, rgba('#0a0604', 0)], [0.22, rgba('#0a0604', 0.55)], [0.78, rgba('#0a0604', 0.55)], [1, rgba('#0a0604', 0)]]);
+      ctx.fillRect(0, yA, VW, yB - yA);
+      ctx.lineJoin = 'round'; ctx.lineWidth = 7; ctx.strokeStyle = 'rgba(16,10,6,0.85)';
+      ctx.fillStyle = '#fff8ea';
+      // each line comes up as Jesus speaks it (His last line carries the last two)
+      const ep = tl.lines.filter((l) => (l.who === 'epic' || (l.who === 'jesus' && l.nosub)) && l.start >= tx.t - 0.5);
       const startOf = (i) => {
         if (!ep.length) return tx.t;
         if (i < ep.length - 1) return ep[i].start;
@@ -145,7 +157,9 @@ function drawTexts(ctx, t, heads = {}) {
       const base = ctx.globalAlpha;
       lines.forEach((ln, i) => {
         ctx.globalAlpha = base * (ep.length ? smooth((t - startOf(i) + 0.4) / 0.8) : 1);
-        ctx.textAlign = 'center'; ctx.fillText(ln, 540, y0 + i * 88);
+        if (ctx.globalAlpha < 0.004) return;
+        shadowAt(ctx, 0.9, 18);
+        ctx.textAlign = 'center'; ctx.strokeText(ln, 540, y0 + i * 88); ctx.fillText(ln, 540, y0 + i * 88);
       });
     } else if (tx.style === 'name') {
       const hp = heads[tx.who];
@@ -260,7 +274,7 @@ function drawSubs(ctx, t) {
       const pw = k === 0 ? lay.pw : 0;
       let x = 525 - (tw + pw) / 2;
       ctx.lineJoin = 'round';
-      ctx.shadowColor = 'rgba(0,0,0,0.6)'; ctx.shadowBlur = 10;
+      shadowAt(ctx, 0.6, 10);
       if (pw) {
         ctx.font = NAME_FONT(size);
         ctx.strokeStyle = 'rgba(0,0,0,0.92)'; ctx.lineWidth = size * 0.27;
@@ -269,7 +283,7 @@ function drawSubs(ctx, t) {
         ctx.fillStyle = '#f0c868';
         ctx.fillText(prefix, x, y);
         x += pw;
-        ctx.shadowBlur = 10;
+        shadowAt(ctx, 0.6, 10);
       }
       ctx.font = st.font(size);
       // a thick, solid outline so every word reads over bright skies and light robes

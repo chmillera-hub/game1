@@ -84,6 +84,21 @@ function hairCap(ctx, pr, st, Lt, hairline, opt = {}) {
   ctx.save();
   disk();
   ctx.clip();
+  if (opt.curls) {
+    // short hair stops at the temple on the side the face is turned to: below it, beside the far cheek,
+    // there is no head left for hair to lie on (it would float there as a dark band down to the beard)
+    const nose = P(0, 0.45, 1.1), side = Math.sign(nose[0] - c[0]) || 1;
+    const sx = Math.sign(Pc(0.96 * cw, -0.3, 0.12)[0] - c[0]) === side ? 1 : -1;
+    const far = [[0.96 * cw, -0.3, 0.12], [0.98 * cw, 0.2, 0.2], [(G.cheekLow + 0.02) * cw, 0.6, 0.2], [G.jawW, G.jawY, 0.24]].map(([x, y, z]) => Pc(sx * x, y, z));
+    const out = c[0] + side * R * 3;
+    ctx.beginPath();
+    ctx.rect(c[0] - R * 4, c[1] - R * 4, R * 8, R * 8);
+    ctx.moveTo(far[0][0], far[0][1]);
+    far.forEach((q) => ctx.lineTo(q[0], q[1]));
+    ctx.lineTo(out, far[far.length - 1][1] + R); ctx.lineTo(out, far[0][1]);
+    ctx.closePath();
+    ctx.clip('evenodd');
+  }
   ctx.beginPath();
   ctx.rect(c[0] - R * 2, c[1] - R * 2, R * 4, R * 4);
   L.crPath(ctx, face, true, 0.4);
@@ -702,18 +717,17 @@ C.yosef = {
   beardHidesFolds: true,
   cloth: { tunic: '#8b6f4f', mantle: '#5a4632', trim: '#3a2c22', neck: 'round' },
 };
-// young Paul (Saul) must never be mistaken for Asher: a white head cloth with blue stripes (a
-// Pharisee's), a lean long face, heavy straight brows, a short trimmed beard that leaves the cheeks
-// bare, and a blue tunic under a white mantle
-const saulTravel = headCloth({ color: '#e4ddcc', stripe: '#2d4f8a', band: '#2a2020' });
+// young Paul (Saul) is old Paul thirty-four years earlier: the same face, the same balding head with its
+// fringe and the same long beard, but dark-haired and with few lines, and no head cloth, so he is known
+// at a glance (and never taken for Asher, with his curls and short beard). An olive tunic, unlike anyone
+// else's, under a white Pharisee's mantle with a blue stripe.
 C.saul = {
-  name: 'saul', skin: '#d2a07c', skinShadow: '#9a6650', line: '#2e1c16', iris: '#3a2a20', browColor: '#140c0a',
-  hair: '#17110f', hairLine: '#050303', beardColor: '#17110f', age: 0.1, browW: 0.1,
-  geo: { chinY: 1.42, jawW: 0.64, mouthW: 0.21, cheekW: 0.93 },
-  hairBack: saulTravel.back, hairFront: saulTravel.front, hairShadow: saulTravel.shadow, beard: beardFull({ len: -0.02, cheek: 0.62, thick: 0.8 }),
-  beardHidesFolds: true,
-  // a traveller's light linen tunic under the white mantle (no dark layer), blue woven trim
-  cloth: { tunic: '#cdc3ad', mantle: '#e2dccd', trim: '#2d4f8a', neck: 'round', skirt: '#c6bca6' },
+  name: 'saul', skin: '#dcaa86', skinShadow: '#a6705a', line: '#33201a', iris: '#4e3a2c', browColor: '#1e1410',
+  hair: '#2a1d16', hairLine: '#120a07', beardColor: '#2e2018', bald: true, age: 0.2, browW: 0.09,
+  neckLen: 2.0,
+  geo: { chinY: 1.3, jawW: 0.7, mouthW: 0.21, craniumR: 1.03 },
+  hairBack: paulHairBack, hairFront: paulHairFront, beard: paulBeard, beardHidesFolds: false,
+  cloth: { tunic: '#6b6c3e', mantle: '#e2dccd', trim: '#2d4f8a', neck: 'round', skirt: '#646536' },
 };
 C.saul_travel = Object.assign({}, C.saul);
 const childCap = curlyCap({ hairline: -0.62 });
@@ -721,8 +735,8 @@ C.child = {
   // a boy: the body smaller than a man's under a head of nearly adult size
   bodyScale: 0.8,
   name: 'child', skin: '#ecbf9c', skinShadow: '#b98068', line: '#3a241c', iris: '#4a3020', browColor: '#2a1c14',
-  hair: '#2d1e16', hairLine: '#120a07', child: true, blush: 0.35, browW: 0.06, lashW: 0.3, eyeScale: 1.42, irisR: 0.6, neckLen: 1.8,
-  geo: { chinY: 1.08, jawW: 0.8, jawY: 0.78, mouthY: 0.7, mouthW: 0.14, eyeY: 0.12, eyeH: 1.35, eyeX: 0.47, noseY: 0.4, noseLen: 0.7, cheekW: 1.0 },
+  hair: '#2d1e16', hairLine: '#120a07', child: true, blush: 0.35, browW: 0.06, lashW: 0.3, eyeScale: 1.42, irisR: 0.6, neckLen: 1.5,
+  geo: { chinY: 1.08, jawW: 0.8, jawY: 0.78, mouthY: 0.7, mouthW: 0.14, eyeY: 0.12, eyeH: 1.35, eyeX: 0.47, noseY: 0.4, noseLen: 0.7, cheekW: 1.0, neckW: 0.43 },
   hairBack: childCap.back, hairFront: childCap.front, hairShadow: childCap.shadow,
   cloth: { tunic: '#c7b08a', mantle: '#8a6e50', trim: '#6a5440', neck: 'round' },
 };
@@ -777,14 +791,16 @@ C.phoebe = {
   name: 'phoebe', skin: '#e9bb98', skinShadow: '#bb826a', line: '#3a241c', iris: '#5a3a22', browColor: '#2a1a12',
   hair: '#2c1b14', hairLine: '#140a08', lashW: 0.34, eyeScale: 1.12, irisR: 0.56, browW: 0.05, blush: 0.34, lips: '#c76a64',
   adamsApple: false, age: 0.15, neckLen: 1.92,
-  geo: { chinY: 1.24, jawW: 0.74, jawY: 0.96, mouthW: 0.18, mouthY: 0.8, eyeH: 1.15, browY: -0.37, noseLen: 0.82, cheekW: 0.96 },
+  // a soft oval jaw that narrows smoothly to a rounded chin (no shelf under the jaw, no jutting point)
+  geo: { chinY: 1.19, jawW: 0.77, jawY: 0.84, chinW: 0.6, mouthW: 0.18, mouthY: 0.8, eyeH: 1.15, browY: -0.37, noseLen: 0.82, cheekW: 0.96 },
   hairBack: phoebeVeil.back,
   hairFront(ctx, pr, st, F, Lt, extra) {
     hairCap(ctx, pr, st, Lt, [[-0.96, -0.3, 0.3], [-0.72, -0.78, 0.6], [-0.36, -0.98, 0.84], [0, -1.04, 0.9], [0.36, -0.98, 0.84], [0.72, -0.78, 0.6], [0.96, -0.3, 0.3]], { volume: 1.06 });
     phoebeVeil.front(ctx, pr, st, F, Lt, extra);
   },
   hairShadow: phoebeVeil.shadow,
-  cloth: { tunic: '#b49a72', mantle: '#3f6f86', trim: '#e8d9b4', neck: 'round' },
+  // her own colours: a plum dress that stands out from the lamplit room, under the teal mantle and veil
+  cloth: { tunic: '#7e4462', mantle: '#3f6f86', trim: '#e8d9b4', neck: 'round' },
 };
 
 module.exports = { C, mk, shape, lit, shd, lwOf, hairCap, softShade };

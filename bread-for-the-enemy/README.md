@@ -1,6 +1,6 @@
 # A New Commandment
 
-A portrait (9:16) animated short film, about 10 minutes long, built entirely from
+A portrait (9:16) animated short film, about 12 minutes long, built entirely from
 code: anime-style characters, voice acting, an original score, sound design and
 burned-in subtitles.
 
@@ -8,7 +8,7 @@ It weaves four passages into one story:
 
 | Passage | Where it lands in the film |
 |---|---|
-| John 13:34 / 15:12 – "A new commandment I give you… love one another as I have loved you" | Jesus at the Last Supper (prologue, in full); remembered by Asher before he breaks the bread; the closing card, read by a deep, warm British voice in step with the words on screen |
+| John 13:34 / 15:12 – "A new commandment I give you… love one another as I have loved you" | Jesus at the Last Supper (prologue, in full); remembered by Asher before he breaks the bread; the closing card, spoken by Jesus Himself in step with the words on screen |
 | Romans 12:17–21 – "If your enemy is hungry, feed him… overcome evil with good" | Paul's letter read aloud by Phoebe to the believers in Rome; Asher quotes it at Paul; the narrator closes the bread scene with v.21 |
 | 1 Timothy 1:12–16 – "I was once a blasphemer and a persecutor and a violent man… the worst of sinners" | Paul's confession in the cell and his memory of the road to Damascus |
 | Romans 8:35–39 – "Who shall separate us from the love of Christ?" | Paul's answer on the night before his execution, while Asher listens |
@@ -25,12 +25,17 @@ hate does not vanish in one night. He says so more than once, and Paul answers h
 time without hating back, and respects that love can only be grown, never forced. Asher
 breaks the bread anyway: "I don't forgive you. Not yet."
 
+Young Paul in the memories is recognisably the same man as old Paul in the cell: the same
+balding head and long beard, but dark, with an olive tunic and no head cloth. After Yosef's
+farewell the guards march him out of the town; Paul follows and looks back at the boy, who
+stands in the doorway with his face in his hands.
+
 Characters are introduced with floating name tags. The subtitles show the speaker's
 name whenever a different character starts talking.
 
 ## Outputs
 
-- `output/a_new_commandment_i_give_you.mp4`: the film (H.264 High + AAC stereo, 720×1280, 24 fps, about 11:35, under 15 MB)
+- `output/a_new_commandment_i_give_you.mp4`: the film (H.264 High + AAC stereo, 720×1280, 24 fps, about 12:01, under 15 MB)
 - `output/a_new_commandment_i_give_you.srt`: a subtitle sidecar (the subtitles are also burned into the video)
 
 Compression: 2-pass x264 (`veryslow`, `tune animation`) at about 118 kbps video plus 48 kbps AAC (14.9 MB; SSIM 0.988 against the master).
@@ -69,7 +74,7 @@ python3 music.py               # music.wav
 python3 sfx.py                 # sfx.wav
 python3 mix.py                 # mix.wav
 python3 render_video.py master # frames -> master.mkv
-python3 render_video.py h264 a_new_commandment_i_give_you.mp4 118 48
+python3 render_video.py h264 a_new_commandment_i_give_you.mp4 110 48
 ```
 
 To get under 15 MB, choose the video kbps as about `14.6e6 * 8 / seconds / 1000 - audio kbps`.

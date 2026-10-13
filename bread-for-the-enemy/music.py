@@ -255,10 +255,15 @@ def compose(tl):
     s.chord(3, ["D1", "A1"], t_s, 1.2, 100)
     s.chord(8, ["D3", "Eb3", "A3"], t_s, 1.1, 82)
     t_lk = SH("jer_yosef_look")
-    s.chord(1, ["A4", "A5"], t_lk + 0.1, SH("jer_saul", 1) - t_lk, 40)
+    s.chord(1, ["A4", "A5"], t_lk + 0.1, SH("jer_walk") - t_lk, 40)
     s.ramp(1, 30, 70, t_lk + 0.1, t_lk + 1.7)
     s.chord(4, ["A5", "E6"], LN("yosef", "May God be the light"), 2.0, 34)
-    s.note(2, "D2", SH("jer_saul", 1), 2.0, 44)
+    # they march him away; Paul looks back at the boy: a low D under a quiet, falling line
+    t_wk = SH("jer_walk")
+    t_we = SH("jer_saul_walk", end=True)
+    s.note(2, "D2", t_wk, t_we - t_wk, 44)
+    s.chord(1, ["D3", "F3", "A3"], t_wk, t_we - t_wk + 0.4, 34)
+    s.melody(14, [("A4", 1.4), ("G4", 0.8), ("F4", 1.6), ("E4", 1.0), ("D4", 2.2)], t_wk + 0.6, 0.9, vel=38)
 
     # ------------------------------------------------------------- CELL (Paul answers; the confession)
     t_rm = LN("paul", "I remember him because")
@@ -273,7 +278,7 @@ def compose(tl):
     for k, p in enumerate(["D3", "A3", "F4", "E4", "Bb2", "F3", "D4", "C4", "G2", "D3", "Bb3", "A3", "A2", "E3", "C#4", "E4"]):
         s.note(5, p, t_kn + 0.1 + k * 0.95, 2.6, 40 if k % 4 == 0 else 32)
     s.chord(1, ["D2", "A2", "F3"], LN("paul", "I was a blasphemer"), 9.0, 30)
-    t_hu = LN("paul", "I was hunting His sheep")
+    t_hu = LN("paul", "But I was hunting His sheep")
     s.note(5, "E4", t_hu + 0.2, 3.0, 30)
     s.note(5, "Bb2", t_hu + 0.2, 3.0, 30)
 
@@ -332,7 +337,7 @@ def compose(tl):
     t_ha = LN("asher", "I came here to hate you")
     for k, p in enumerate(["D3", "F3", "E3", "A2"]):
         s.note(2, p, t_ha + 0.4 + k * 3.0, 3.1, 36)
-    t_kn2 = LN("paul", "I know.")
+    t_kn2 = LN("paul", "I understand.")
     for name, a, b in spread(["F", "C", "Dm", "Bb", "F", "C", "Gm", "A"], t_kn2, LN("paul", "I tell you, the Lord has been patient", True)):
         s.chord(1, CH[name], a, b - a + 0.2, 30)
     s.note(1, "A5", LN("asher", "I brought the bread") - 0.2, 2.6, 30)
@@ -470,7 +475,7 @@ def compose_swells(tl):
 
     # (who, line prefix, root, peak position within the line 0..1, strength 0..1)
     cues = [
-        ("narrator", "His name is Paul", "D", 0.75, 0.7),
+        ("narrator", "This man persecuted Jesus", "D", 0.75, 0.7),
         ("narrator", "When he was a boy", "Bb", 0.8, 0.75),
         ("phoebe", "If your enemy", "D", 0.6, 0.6),
         ("asher", "You dragged a man", "D", 1.0, 0.8),

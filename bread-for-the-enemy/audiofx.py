@@ -69,7 +69,10 @@ ENV = {
     "room_warm": dict(wet=0.20, rt60=0.7, predelay=0.008, damp=5000, early=((0.011, 0.5), (0.019, 0.35))),
     "street": dict(wet=0.16, rt60=0.9, predelay=0.02, damp=5000, early=((0.045, 0.45), (0.09, 0.25))),
     "cell": dict(wet=0.30, rt60=1.05, predelay=0.006, damp=4200, early=((0.007, 0.6), (0.013, 0.5), (0.021, 0.35))),
-    "memory": dict(wet=0.32, rt60=1.6, predelay=0.03, damp=3800),
+    # the Jerusalem memories: a small stone street at night, close and clear (no hallway echo)
+    "memory": dict(wet=0.11, rt60=0.7, predelay=0.012, damp=5200),
+    # the remembered voice of Jesus in the cell: further off, filtered and more spacious
+    "memory_vo": dict(wet=0.3, rt60=1.5, predelay=0.03, damp=3800),
     "desert": dict(wet=0.10, rt60=0.5, predelay=0.03, damp=6000),
     # the voice of Jesus: a spacious but clear room. A long pre-delay keeps the words in front
     # of the reverb, and the tail is kept low so nothing smears the consonants.
@@ -85,9 +88,14 @@ def place_voice(x, sr, env, fx=None):
     """Return stereo voice with environment treatment."""
     kw = dict(ENV.get(env, ENV["dry"]))
     wet = kw.pop("wet")
+    if env == "memory" and not fx:
+        # voices in the remembered street: no boom in the low end, and a little presence so every
+        # word is clear
+        x = butter(x, sr, "highpass", 110)
+        x = x + 0.25 * butter(x, sr, "bandpass", (1900, 4200))
     if fx == "memory":
         x = butter(x, sr, "bandpass", (260, 4200))
-        kw = dict(ENV["memory"]); wet = kw.pop("wet")
+        kw = dict(ENV["memory_vo"]); wet = kw.pop("wet")
         x = x * 0.8
     if fx in ("divine", "soft_divine", "epic"):
         kw = dict(ENV[fx]); wet = kw.pop("wet")

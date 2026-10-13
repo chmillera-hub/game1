@@ -65,6 +65,14 @@ const EMO = {
   triumph: { browHeight: 0.5, lid: 1.0, mouthSmile: 0.4, pupil: 1.12, pitchOff: -0.05 },
   stern: { browFurrow: 0.5, lid: 0.8, mouthSmile: -0.2, mouthPress: 0.4 },
   // a bored, irritated night guard: heavy lids, knitted brows, the mouth turned down
+  // Asher hearing Paul's name praised: narrowed eyes, one brow down, the jaw set
+  suspicious: { browFurrow: 0.65, browInner: -0.3, browHL: 0.2, lid: 0.66, lidLower: 0.32, mouthPress: 0.5, mouthSmile: -0.3, mouthAsym: 0.2, pitchOff: -0.04, saccade: 0.6 },
+  irritated: { browFurrow: 0.55, browInner: -0.15, lid: 0.76, lidLower: 0.22, mouthPress: 0.4, mouthSmile: -0.28, mouthAsym: 0.12, blinkRate: 0.8 },
+  // fear of being struck down: brows pinched up, eyes wide, the mouth pulled down and a little open
+  dread: { shoulder: 0.2, browInner: 1.0, browFurrow: 0.3, browHeight: 0.35, lid: 1.06, lidLower: 0.2, pupil: 0.8, mouthSmile: -0.55, mouthBase: 0.12, mouthWide: 0.15, tremble: 0.3, breath: 2.0 },
+  // worried for someone who is suffering: brows up in the middle, eyes open on him, mouth turned down
+  concern: { browInner: 0.75, browHeight: 0.12, lid: 0.94, lidLower: 0.08, mouthSmile: -0.4, mouthPress: 0.15, pitchOff: 0.02 },
+  sob: { shoulder: -0.2, browInner: 1.0, lid: 0.4, lidLower: 0.5, mouthSmile: -0.5, mouthBase: 0.1, mouthTremble: 0.5, tears: 1, tearFlow: 0.6, breath: 1.9, pitchOff: 0.25, tremble: 0.25 },
   gruff: { browFurrow: 0.6, browInner: -0.25, browHeight: -0.1, lid: 0.66, lidLower: 0.2, mouthSmile: -0.42, mouthPress: 0.35, blinkRate: 0.8 },
   unsettled: { browInner: 0.5, browFurrow: 0.4, lid: 0.95, mouthSmile: -0.2, saccade: 2.2 },
   uneasy: { browInner: 0.5, lid: 0.72, mouthSmile: -0.15, saccade: 1.5 },
@@ -109,8 +117,10 @@ const POSES = {
   give_bread: { n: { w: [-1.01, 4.70], hand: 'relax', palm: HANG }, f: { w: [2.94, 2.52], hand: 'pinch', palm: { up: 1 }, fdir: { fwd: 0.7, in: 0.4 } }, front: true },
   reach: { n: { w: [-1.85, 5.21], hand: 'relax', palm: HANG }, f: { w: [3.02, 3.02], hand: 'open', palm: { up: 0.8, fwd: 0.5 } }, front: true },
   // the classic open stance: both arms out from the body, palms up, offering
-  open_palms: { n: { w: [-2.5, 3.95], hand: 'offer', palm: { up: 0.85, fwd: 0.35 }, fdir: { fwd: 0.75, out: 0.4, down: 0.25 }, fk: 0.6 },
-    f: { w: [2.5, 3.95], hand: 'offer', palm: { up: 0.85, fwd: 0.35 }, fdir: { fwd: 0.75, out: 0.4, down: 0.25 }, fk: 0.6 }, front: true },
+  // arms open at His sides, palms up: the hands out wide enough that the elbows stay beside the body
+  // (the forearms never bulge across the tunic)
+  open_palms: { n: { w: [-3.2, 4.2], hand: 'offer', palm: { up: 0.85, fwd: 0.35 }, fdir: { fwd: 0.5, out: 0.7, down: 0.2 }, fk: 0.6 },
+    f: { w: [3.2, 4.2], hand: 'offer', palm: { up: 0.85, fwd: 0.35 }, fdir: { fwd: 0.5, out: 0.7, down: 0.2 }, fk: 0.6 }, front: true },
   open_arms: { n: { w: [-2.6, 4.15], hand: 'offer', palm: { up: 0.8, fwd: 0.4 }, fdir: { fwd: 0.7, out: 0.45, down: 0.25 }, fk: 0.6 },
     f: { w: [2.6, 4.15], hand: 'offer', palm: { up: 0.8, fwd: 0.4 }, fdir: { fwd: 0.7, out: 0.45, down: 0.25 }, fk: 0.6 }, front: true },
   open_low: { n: { w: [-2.3, 4.55], hand: 'offer', palm: { up: 0.75, fwd: 0.5 }, fdir: { out: 0.4, fwd: 0.7, down: 0.3 }, fk: 0.6 },
@@ -119,6 +129,10 @@ const POSES = {
   // the near side. The other hand hangs free (it knocks on the prison door).
   hold: { n: { w: [-0.35, 2.85], hand: 'cup', palm: { up: 0.9, fwd: 0.2 }, fdir: { in: 0.8, back: 0.25 }, fk: 0.8 },
     f: { w: [1.93, 5.3], hand: 'relax', palm: HANG }, bread: { arm: 'n', r: 0.78 } },
+  // the loaf held against the chest: the hand in front of it, palm toward him, fingers wrapped over its
+  // front (their backs to us) and the thumb underneath, out of sight
+  hold_chest: { n: { w: [0.1, 3.0], hand: 'hold', palm: { back: 1, in: 0.2 }, fdir: { in: 0.75, up: 0.55 }, fk: 0.85 },
+    f: { w: [1.93, 5.3], hand: 'relax', palm: { in: 1, back: 0.15 }, fdir: { down: 1 }, fk: 0.6 }, bread: { arm: 'n', r: 0.78 } },
   hold_nervous: { n: { w: [-0.35, 2.8], hand: 'cup', palm: { up: 0.9, fwd: 0.2 }, fdir: { in: 0.8, back: 0.25 }, fk: 0.8 },
     f: { w: [1.93, 5.3], hand: 'relax', palm: HANG }, bread: { arm: 'n', r: 0.78 }, fidget: { arm: 'n', amp: [0.08, 0.22], period: 3.4, pats: 2 }, sway: 0.02 },
   hold_half: { n: { w: [-1.85, 5.12], hand: 'relax', palm: HANG }, f: { w: [0.85, 3.7], hand: 'cup', palm: { in: 0.75, up: 0.55, back: 0.1 }, fdir: { in: 0.75, fwd: 0.4 } }, front: true,
@@ -133,8 +147,9 @@ const POSES = {
     bread: { arm: 'n', r: 0.78 } },
   knock: { n: { w: [-1.93, 5.21], hand: 'relax', palm: HANG }, f: { w: [3.36, 1.18], hand: 'fist', palm: { in: 0.6, down: 0.5 }, fdir: { fwd: 1, up: 0.3 } }, front: true },
   // standing empty-handed: the hands at rest against the thighs
-  empty: { n: { w: [-1.62, 5.05], hand: 'relax', palm: { in: 1, back: 0.15 }, fdir: { down: 1, fwd: 0.1 }, fk: 0.6 }, f: { w: [1.55, 5.1], hand: 'relax', palm: { in: 1, back: 0.15 }, fdir: { down: 1, fwd: 0.1 }, fk: 0.6 }, front: false },
-  drop_bread: { n: { w: [-1.62, 5.05], hand: 'relax', palm: { in: 1, back: 0.15 }, fdir: { down: 1, fwd: 0.1 }, fk: 0.6 }, f: { w: [1.55, 5.1], hand: 'relax', palm: { in: 1, back: 0.15 }, fdir: { down: 1, fwd: 0.1 }, fk: 0.6 }, front: false },
+  // empty-handed: one hand hangs at his side, the other rests at his belt (both in sight)
+  empty: { n: { w: [-1.62, 5.05], hand: 'relax', palm: { in: 1, back: 0.15 }, fdir: { down: 1, fwd: 0.1 }, fk: 0.6 }, f: { w: [1.2, 3.95], hand: 'relax', palm: { back: 0.8, in: 0.4 }, fdir: { in: 0.7, down: 0.5 }, fk: 0.7 }, front: true },
+  drop_bread: { n: { w: [-1.62, 5.05], hand: 'relax', palm: { in: 1, back: 0.15 }, fdir: { down: 1, fwd: 0.1 }, fk: 0.6 }, f: { w: [1.2, 3.95], hand: 'relax', palm: { back: 0.8, in: 0.4 }, fdir: { in: 0.7, down: 0.5 }, fk: 0.7 }, front: true },
   kneel: { n: { w: [-1.25, 4.4], hand: 'relax', palm: LAP, fdir: LAPDIR }, f: { w: [1.45, 4.35], hand: 'relax', palm: LAP, fdir: LAPDIR }, front: true },
   kneel_offer: { n: { w: [-1.15, 4.15], hand: 'cup', palm: { up: 0.65, in: 0.6 }, fdir: { in: 0.6, fwd: 0.5 } },
     f: { w: [3.45, 3.05], hand: 'offer', palm: { up: 1.0, fwd: 0.15 }, fdir: { fwd: 0.85, in: 0.35 }, fk: 0.5 }, front: true, half: { arm: 'f', r: 0.9 }, half2: { arm: 'n', r: 0.85 } },
@@ -182,8 +197,14 @@ const POSES = {
   // own face, the elbow low; the other hand pressed flat on the tunic over his thigh
   kneel_shield: { n: { w: [-1.3, -0.55], hand: 'open', palm: { in: 1, back: 0.6, down: 0.2 }, fdir: { up: 0.9, in: 0.35 }, fk: 0.75, hang: 1 },
     f: { w: [1.35, 4.35], hand: 'relax', palm: { down: 1, in: 0.15 }, fdir: { fwd: 1, down: 0.35 }, fk: 0.8 }, front: true },
+  // on his knees, both hands resting on his thighs, palms down
+  kneel_rest: { n: { w: [-0.95, 4.5], hand: 'relax', palm: { down: 1, in: 0.2 }, fdir: { fwd: 1, down: 0.35 }, fk: 0.8 },
+    f: { w: [1.25, 4.4], hand: 'relax', palm: { down: 1, in: 0.15 }, fdir: { fwd: 1, down: 0.35 }, fk: 0.8 }, front: true },
   kneel_up: { n: { w: [-1.75, 3.9], hand: 'offer', palm: { up: 0.85, fwd: 0.4 }, fdir: { fwd: 0.6, out: 0.45 } }, f: { w: [2.05, 3.75], hand: 'offer', palm: { up: 0.85, fwd: 0.4 }, fdir: { fwd: 0.6, out: 0.45 } }, front: true },
   peek: { n: { w: [-1.85, 5.21], hand: 'relax', palm: HANG }, f: { w: [1.85, 5.21], hand: 'relax', palm: HANG } },
+  // a boy with his face buried in his hands, elbows in against his chest
+  head_in_hands: { n: { w: [-0.3, -1.05], hand: 'relax', palm: { back: 1, in: 0.2 }, fdir: { up: 1, in: 0.2 }, fk: 0.8, hang: 1 },
+    f: { w: [0.6, -1.05], hand: 'relax', palm: { back: 1, in: 0.2 }, fdir: { up: 1, in: 0.2 }, fk: 0.8, hang: 1 }, front: true, sway: 0.02 },
   // a guard holding a spear in the near hand
   guard_spear: { n: { w: [-1.6, 4.4], hand: 'grip', palm: { in: 0.9, fwd: 0.3 }, fdir: { fwd: 0.8, in: 0.3 } }, f: { w: [1.9, 5.2], hand: 'relax', palm: HANG }, front: true, spear: { arm: 'n' } },
   // ...and shoving a door open with the other
