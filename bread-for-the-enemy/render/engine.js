@@ -68,8 +68,9 @@ const EMO = {
   // Asher hearing Paul's name praised: narrowed eyes, one brow down, the jaw set
   suspicious: { browFurrow: 0.65, browInner: -0.3, browHL: 0.2, lid: 0.66, lidLower: 0.32, mouthPress: 0.5, mouthSmile: -0.3, mouthAsym: 0.2, pitchOff: -0.04, saccade: 0.6 },
   irritated: { browFurrow: 0.55, browInner: -0.15, lid: 0.76, lidLower: 0.22, mouthPress: 0.4, mouthSmile: -0.28, mouthAsym: 0.12, blinkRate: 0.8 },
-  // fear of being struck down: brows pinched up, eyes wide, the mouth pulled down and a little open
-  dread: { shoulder: 0.2, browInner: 1.0, browFurrow: 0.3, browHeight: 0.35, lid: 1.06, lidLower: 0.2, pupil: 0.8, mouthSmile: -0.55, mouthBase: 0.12, mouthWide: 0.15, tremble: 0.3, breath: 2.0 },
+  // fear of being struck down (young Paul in the light): brows pinched up, eyes wide, the mouth pulled
+  // down and only a little open, never a grin
+  fear_unsettled: { shoulder: 0.2, browInner: 1.0, browFurrow: 0.3, browHeight: 0.35, lid: 1.06, lidLower: 0.2, pupil: 0.8, mouthSmile: -0.55, mouthBase: 0.12, mouthWide: 0.15, tremble: 0.3, breath: 2.0 },
   // worried for someone who is suffering: brows up in the middle, eyes open on him, mouth turned down
   concern: { browInner: 0.75, browHeight: 0.12, lid: 0.94, lidLower: 0.08, mouthSmile: -0.4, mouthPress: 0.15, pitchOff: 0.02 },
   sob: { shoulder: -0.2, browInner: 1.0, lid: 0.4, lidLower: 0.5, mouthSmile: -0.5, mouthBase: 0.1, mouthTremble: 0.5, tears: 1, tearFlow: 0.6, breath: 1.9, pitchOff: 0.25, tremble: 0.25 },
