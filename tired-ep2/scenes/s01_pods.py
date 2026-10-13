@@ -1146,6 +1146,9 @@ def _switch_on(t, T):
     return 1.0 - ease_in(seg(t, T["click"], T["click"] + 0.12))
 
 
+SW_FINGER_LOW = 1289.0     # lowest fingertip y she reaches on the toggle's line (pivot cap top)
+
+
 def boss_kw(t, T, info):
     face = {}
     LENS = (0.08, -0.06)                  # into our lens (= the shaft camera: she is watching)
@@ -1179,6 +1182,12 @@ def boss_kw(t, T, info):
     a_pt = 1.95                                  # index finger aimed down-left at the knob
     if kr > 0.0:
         gx, gy = tip[0] + 2, tip[1] - 7          # "point": the grip point is the fingertip
+        # anat pass: the knob at OFF (y 1336) is out of her reach, and the clamped arm slid the
+        # finger off the bat to the right (S12, from the frame after the click). The finger now
+        # follows the knob down to the lowest point it can reach on the toggle's line (the top
+        # of the pivot cap) and stays there while the toggle snaps over. Before the click the
+        # target (y 1258.8) is untouched.
+        gy = min(gy, SW_FINGER_LOW)
         reach = {"l": (gx, gy, kr, a_pt)}
     lean = 0.1 * kr
     pose = {"base": "sit_chair", "al_h": "point", "lean": lean} if kr > 0.5 else \

@@ -1105,7 +1105,9 @@ def _ep(**kw):
 
 
 EMB_BASE = _ep()
-EMB_WALK = dict(_E, base="walk")
+# (the far arm holds the torch out in front by reach: it only swings forward. The walk's back
+# swing pushed that upper arm (mid layer) across his chest; the forward half is unchanged)
+EMB_WALK = dict(_E, base="walk", ar_p=human.W(0.02, 0.36, 0.0, r=1))
 EMB_JOLT = _ep(al_h="open", hunch=0.75, lean=-0.12, lift=14)
 EMB_NERV = _ep(hunch=0.25)
 EMB_WIDE = _ep(al_h="open", hunch=0.35, lean=-0.07)
@@ -1712,7 +1714,10 @@ def cur_opening(t, k, d):
             d["tilt"] = tw(t, [(k["c_relief"], 0.1), (k["c_relief"] + 0.3, 0.0)])
             d["tail_curl"] = tw(t, [(k["c_relief"], 0.0), (k["c_relief"] + 0.5, 0.3)])
         if t >= k["c_rise"]:
-            d.update(pose="stand", pose_from="crouch", pose_mix=seg(t, k["c_rise"], k["c_rise"] + 0.4))
+            # rise from the crouch it is holding (crouch<-stand at cr_mix == stand<-crouch at 1-cr_mix),
+            # not from a full crouch: that restart was a one-frame drop just before the rise
+            d.update(pose="stand", pose_from="crouch",
+                     pose_mix=lerp(1.0 - cr_mix, 1.0, smoothstep(seg(t, k["c_rise"], k["c_rise"] + 0.4))))
         return
     # ---- T4 cut: it has turned to him (faces right), standing, hopeful; trots to his leg, sits
     if t < k["W5d"]:

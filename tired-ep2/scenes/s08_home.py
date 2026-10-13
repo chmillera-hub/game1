@@ -194,6 +194,13 @@ def _tired(t, T, info):
         pose = (stand, LEAN, k) if k > 0 else stand
         kw["pose_t"] = max(0.0, d / v)
         turn = tween(t, [(T.D1, 0.12), (T.D1 + 0.25, 0.4), (T.W0, 0.45), (T.W0 + 0.3, 0.85)])
+        if 0 < k < 1:
+            # anatomy pass: both ends of the blend get the same explicit arm layers (the turn
+            # changes inside this blend, so the rig classified his far arm differently per side
+            # for one frame and swung it out around the body). The far (r) arm goes behind the
+            # body at turn ~0.47, where the rig's own stand classification puts it.
+            lay = {"al_layer": "mid", "ar_layer": "back" if turn > 0.47 else "mid"}
+            pose = (dict(stand, **lay), dict(LEAN, **lay), k)
         look = tween(t, [(T.D1 + 0.05, (0.0, 0.05)), (T.D1 + 0.2, (0.85, 0.12)), (T.W0 + 0.4, (0.85, 0.12)),
                          (T.W0 + 0.7, (0.25, 0.05))])
         face["lid"] = 0.08 * sig
@@ -301,8 +308,11 @@ def _tired(t, T, info):
         # phone, taps (in the insert), then slides back to the pillow
         if t < T.DROP + 0.55:
             tgt = tween(t, [(T.GROPE, R_REST), (T.GROPE + 0.2, (1052, 1098)), (T.PAT - 0.1, (1040, 1126)),
-                            (T.PAT, (1036, 1150)), (T.PAT + 0.09, (1038, 1141)), (T.TOUCH - 0.1, (1030, 1110)),
-                            (T.TOUCH, R_PHONE)])
+                            (T.PAT, (1036, 1150)), (T.PAT + 0.09, (1038, 1141)), (T.TOUCH, R_PHONE)])
+            if T.PAT + 0.09 < t < T.TOUCH:
+                # anatomy pass: the little lift onto the phone is an arc over these 0.13 s (it was
+                # a key 0.03 s after the pat: the hand snapped up in a single frame)
+                tgt = (tgt[0], tgt[1] - 12 * math.sin(math.pi * seg(t, T.PAT + 0.09, T.TOUCH)))
             pat = 5 * math.sin(math.pi * seg(t, T.TOUCH - 0.02, T.TOUCH + 0.14))
             w = smoothstep(seg(t, T.GROPE, T.GROPE + 0.2))
             if t >= T.DROP:
@@ -321,8 +331,15 @@ def _draw_tired(ctx, t, T, info):
     if t >= T.I and t < T.I + 0.12:
         # squash on impact (about the mattress contact line)
         k = math.sin(math.pi * seg(t, T.I, T.I + 0.12))
-        with core.saved(ctx, x, BED_Y, (1 + 0.04 * k, 1 - 0.07 * k)):
-            return human.draw_person(ctx, "tired", 0, (y - BED_Y) / (1 - 0.07 * k), S_T, t, **kw)
+        sx, sy = 1 + 0.04 * k, 1 - 0.07 * k
+        with core.saved(ctx, x, BED_Y, (sx, sy)):
+            a = human.draw_person(ctx, "tired", 0, (y - BED_Y) / sy, S_T, t, **kw)
+        # anatomy pass: hand his anchors back in world coordinates. They came back in the
+        # squash-local frame, so for these 3 frames the duvet strip cut its hole for his
+        # hanging arm in the wrong place and the arm vanished under the duvet.
+        return {n: (x + sx * v[0], BED_Y + sy * v[1]) + tuple(v[2:])
+                if isinstance(v, tuple) and len(v) >= 2 and isinstance(v[0], (int, float)) else v
+                for n, v in a.items()}
     return human.draw_person(ctx, "tired", x, y, S_T, t, **kw)
 
 
@@ -384,9 +401,14 @@ def _cur(t, T):
         kw["_squash"] = math.sin(math.pi * seg(t, T.C2, T.C3))
         return x, y, kw
     m = smoothstep(seg(t, T.C3, T.C3 + 0.55))
+    # anatomy pass: the happy tail curl grows in just after the rig's mid-blend tail switch
+    # (crouch -> perch flips the tail to the front and reverses its curl at mix 0.5, i.e. at
+    # C3 + 0.275 s). Starting at full curl on C3 snapped the tail into a hook in one frame,
+    # and the hook then flipped over at the switch.
+    cu = smoothstep(seg(t, T.C3 + 0.29, T.C3 + 0.6))
     kw.update(pose="perch", pose_from="crouch" if m < 1 else None, pose_mix=m,
               expr="content" if t < T.S + 0.6 else "calm",
-              tail_curl=0.45 * (1 - smoothstep(seg(t, T.S, T.S + 1.0))))
+              tail_curl=0.45 * cu * (1 - smoothstep(seg(t, T.S, T.S + 1.0))))
     return x, y, kw
 
 

@@ -236,7 +236,10 @@ def stair_y(x):
 
 def walk_y(x):
     if x >= 700:
-        return lerp(T_GSEAT, FEET, smoothstep(seg(x, T_X, 700)))
+        # from the plinth's foot (back of the deck) diagonally forward to the deck's front edge as
+        # he strides off (anat fix: the bounds were reversed, seg(x, T_X, 700), and core.seg makes
+        # that a step: he dropped 125 px in one frame on the first stride)
+        return lerp(T_GSEAT, FEET, smoothstep(1.0 - seg(x, 700, T_X)))
     return stair_y(x)
 
 
@@ -432,6 +435,19 @@ def tired_state(t, k, info, noarm=False):
         f["brow"] = lerp(0.3, 0.0, smoothstep(kk))
         f["head_tilt"] = kf(t, [(k.stand1, 0.0), (k.stand1 + 0.4, 0.05)])
         f["head_nod"] = -0.06 * (1 - smoothstep(kk)) - 0.04 * smoothstep(seg(t, k.L5 + 0.4, k.L5 + 0.9))
+        # anat fix: the face eases over from the seated beat in 0.25 s instead of popping on the
+        # first frame of the stand-up (head turn -0.62 -> -0.4, the open mouth shut, neutral ->
+        # deadpan, the smirk on, all in one frame)
+        bl = smoothstep(seg(t, k.stand0, k.stand0 + 0.25))
+        if bl < 1.0:
+            s0 = tired_state(k.stand0 - 1e-6, k, info, noarm=True)
+            f0 = s0["face"]
+            for key in set(f0) | set(f):
+                f[key] = lerp(f0.get(key, 0.0), f.get(key, 0.0), bl)
+            e0 = s0["expr"]
+            if isinstance(e0, tuple):
+                e0 = e0[1] if e0[2] >= 0.5 else e0[0]
+            st["expr"] = (e0, "deadpan", bl)
         return st
     f.update({"smirk": 0.4, "curve": 0.12})
     st["expr"] = "deadpan"
@@ -441,6 +457,12 @@ def tired_state(t, k, info, noarm=False):
         st["pose"] = PROUD
         st["turn"] = lerp(0.1, -1.0, ease_in_out(kk))
         f["head_nod"] = -0.04
+        # anat fix: the face eases from the stand's (head turn 0.12, tilt, smirk 0.5) through the
+        # turn instead of snapping on its first frame
+        f0 = tired_state(k.turn0 - 1e-6, k, info)["face"]
+        e = ease_in_out(kk)
+        for key in set(f0) | set(f):
+            f[key] = lerp(f0.get(key, 0.0), f.get(key, 0.0), e)
         return st
     if t < k.BONK:                                      # the confident stride
         x = T_X - k.v * (t - k.tgo)
@@ -448,6 +470,12 @@ def tired_state(t, k, info, noarm=False):
         st["pose"] = "walk_eyes_closed"
         st["pose_t"] = t - k.tgo
         st["turn"] = -1.0
+        # anat fix: the first stride grows out of the stance in 0.2 s (it popped: the back foot
+        # jumped ~90 px in one frame); both poses use auto arm layers, so no detour switch
+        w = smoothstep(seg(t, k.tgo, k.tgo + 0.2))
+        if w < 1.0:
+            st["pose"] = (PROUD, "walk_eyes_closed", w)
+            f["head_nod"] = -0.04 * (1.0 - w)
         return st
     # ---------------- BONK: no anticipation; whiplash back, a stunned hold, slow settle
     tb = t - k.BONK
@@ -1161,14 +1189,19 @@ def _shots(k):
     add(k.SMUG, k.WALK, "relief", lambda t: (C_XS2 + 60, 1090, 2.5))
     walk_end = k.BONK + 1.25
 
-    def walk_cam(t):
+    def walk_cam(t, path_v1=False):
         # lead room: the camera runs a little ahead of him, so the pipe comes into view
         x = T_X - k.v * clamp(t - k.tgo, 0.0, k.BONK - k.tgo)
         cx = lerp(T_X - 60, x - 90, smoothstep(seg(t, k.tgo - 0.3, k.tgo + 0.9)))
         cx = max(cx, -124.0)
-        cy = lerp(1000, 1260, smoothstep(seg(x, 760, 60)))
+        # anat fix: the framing holds cy 1260 down to the bonk. The old smoothstep(seg(x, 760, 60))
+        # had reversed bounds (core.seg -> a step): 1260 the whole walk, then a 260 px snap up in
+        # one frame 0.3 s before the bonk (x < 60). path_v1 = that old path, kept only for the
+        # sense bake's rect below (a superset of the new one), so its echo bake stays the same
+        cy = lerp(1000, 1260, smoothstep(seg(x, 760, 60))) if path_v1 else 1260.0
         dx, dy = core.shake(t, k.BONK, 0.5, 14, seed=5)
         return (cx - dx / 1.3, cy - dy / 1.3, 1.3)
+    walk_cam.rect_cam = lambda t: walk_cam(t, path_v1=True)
     add(k.WALK, walk_end, "walk", walk_cam)
     add(walk_end, k.giggle0, "bonk", lambda t: (-70, lerp(1205, 1195, seg(t, walk_end, k.giggle0)), 2.2))
     sx_, sy_ = M["stair_steps"][STEP_C]
@@ -1186,6 +1219,7 @@ def shot_at(k, t):
 def shot_rect(k, sh):
     """World rect covering a shot's whole camera path (for the sense bake)."""
     t0, t1, name, cam, _ = sh
+    cam = getattr(cam, "rect_cam", cam)
     x0 = y0 = 1e9
     x1 = y1 = -1e9
     n = 12
