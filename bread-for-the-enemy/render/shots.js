@@ -243,7 +243,7 @@ function stoneBench(ctx, Bn, s, fc, Lt, o = {}) {
 // Legs from standing (k=0) to kneeling (k=1) as one continuous shape, so kneeling down never pops.
 // The torso is drawn to the hips (len 4.2); FY is the floor on screen. Kneeling: thighs down to the
 // knees on the floor, shins along the floor behind, toes tucked under.
-function legsBlend(ctx, Bn, s, fc, st, Lt, k, FY) {
+function legsBlend(ctx, Bn, s, fc, st, Lt, k, FY, o = {}) {
   const X = (x, y) => [Bn[0] + x * s * fc, Bn[1] + y * s];
   const fy = (FY - Bn[1]) / s;
   const col = st.cloth.skirt || mix(st.cloth.tunic, st.cloth.mantle || st.cloth.tunic, 0.2), shC = B.clothShadow(col, Lt);
@@ -256,7 +256,7 @@ function legsBlend(ctx, Bn, s, fc, st, Lt, k, FY) {
   // feet: standing, both point out toward us (turned a little the way he faces) under the hem;
   // kneeling, they are behind him with the toes tucked under
   const f1 = [[-1.55, fy - 0.15], [-2.55, fy - 0.05]], f2 = [[-1.1, fy - 0.23], [-2.05, fy - 0.13]];
-  if (kk > 0.5) { foot(ctx, X, s, st, Lt, f1[0], f1[1], { h: 0.3 }); foot(ctx, X, s, st, Lt, f2[0], f2[1], { h: 0.3 }); }
+  if (kk > 0.5 && !o.noFeet) { foot(ctx, X, s, st, Lt, f1[0], f1[1], { h: 0.3 }); foot(ctx, X, s, st, Lt, f2[0], f2[1], { h: 0.3 }); }
   ctx.beginPath(); L.crPath(ctx, robe, true, 0.42);
   ctx.fillStyle = L.mul(col, Lt.key || '#fff'); ctx.fill();
   ctx.save(); ctx.clip();
@@ -293,6 +293,15 @@ function legsBlend(ctx, Bn, s, fc, st, Lt, k, FY) {
     ctx.fillStyle = L.radial(ctx, kp[0], kp[1], 0, s * 0.7, [[0, rgba('#ffffff', 0.07 * kk)], [1, rgba('#ffffff', 0)]]);
     ctx.fillRect(kp[0] - s * 0.8, kp[1] - s * 0.8, s * 1.6, s * 1.6);
     for (const [a, b] of [[0.6, 1.6], [-0.2, 1.1], [-1.2, 0.2]]) L.strokeSmooth(ctx, [X(a, 4.4), X((a + b) / 2 + 0.2, lerp(4.4, fy, 0.5)), X(b, fy - 0.2)], rgba(shade(col, 0.45), 0.5 * kk), lw * 0.8);
+    // the cloth drawn tight from the hip over the thigh to the knee, and pooling on the ground
+    // round the knees in soft folds
+    L.strokeSmooth(ctx, [X(-1.4, 4.6), X(0.2, 5.0), X(1.5, fy - 0.9)], rgba(shade(col, 0.45), 0.45 * kk), lw * 0.9);
+    L.strokeSmooth(ctx, [X(-1.6, 5.3), X(-0.2, 5.8), X(1.1, fy - 0.45)], rgba(shade(col, 0.45), 0.35 * kk), lw * 0.8);
+    for (const u of [-1.8, -1.1, -0.4, 0.4, 1.2, 1.8]) {
+      L.strokeSmooth(ctx, [X(u, fy - 0.45), X(u + 0.12, fy - 0.12)], rgba(shade(col, 0.45), 0.4 * kk), lw * 0.7);
+    }
+    const g2 = ctx.createLinearGradient(...X(0, fy - 0.5), ...X(0, fy + 0.05));
+    g2.addColorStop(0, rgba(shC, 0)); g2.addColorStop(1, rgba(shC, 0.35 * kk)); ctx.fillStyle = g2; ctx.fillRect(Bn[0] - 10 * s, Bn[1], 20 * s, 14 * s);
   }
   ctx.restore();
   ctx.beginPath(); L.crPath(ctx, robe, true, 0.42); ctx.strokeStyle = st.line; ctx.lineWidth = lw; ctx.stroke();
@@ -308,7 +317,7 @@ function legsBlend(ctx, Bn, s, fc, st, Lt, k, FY) {
   }
 }
 function kneelLegs(ctx, Bn, s, fc, st, Lt, o = {}) {
-  legsBlend(ctx, Bn, s, fc, st, Lt, 1, Bn[1] + (o.floor || 7.0) * s);
+  legsBlend(ctx, Bn, s, fc, st, Lt, 1, Bn[1] + (o.floor || 7.0) * s, o);
 }
 function standFeet(ctx, Bn, s, fc, len, Lt, st) {
   const style = st || C.asher;
@@ -1119,28 +1128,41 @@ function gapGlow(ctx, edgeX, dir, t, a = 1) {
   ctx.fillRect(Math.min(edgeX, edgeX + dir * 90), 0, 90, VH);
 }
 
-// temple guards standing behind Yosef, each gripping one of his arms
-function guardsBehind(ctx, W, t, yx, yy, ys, Lt, o = {}) {
+// temple guards standing behind Yosef, each with his inner hand closed round one of Yosef's upper
+// arms (their own arms: the reach is from each guard's shoulder) and a spear in the other hand. Tired,
+// irritated men doing a job they don't care for. y: Yosef's place, so the grips land on his arms.
+function yosefGrips(y) {
+  const sj = B.shoulderJoints([y.x, y.y], y.s, y.by, 0);
+  return [[sj.L[0] - y.s * 0.28, sj.L[1] + y.s * 1.45], [sj.R[0] + y.s * 0.28, sj.R[1] + y.s * 1.45]];
+}
+function guardsBehind(ctx, W, t, yp, Lt, o = {}) {
   const dark = Object.assign({}, Lt, { key: mix(Lt.key || '#ffffff', '#40404a', 0.35) });
+  const grips = yosefGrips(yp);
   const res = [];
-  for (const [dx, fc, yaw] of o.spots || [[-2.7, 1, 0.35], [2.9, -1, -0.38]]) {
-    const pl = { x: yx + dx * ys, y: yy - 0.35 * ys, s: ys * 0.96, facing: fc, by: 0.3 * fc, len: 6, style: 'temple_guard' };
+  const spots = o.spots || [[-2.7, 1, 0.35], [2.9, -1, -0.38]];
+  spots.forEach(([dx, fc, yaw]) => {
+    const ys = yp.s;
+    const pl = { x: yp.x + dx * ys, y: yp.y - 0.35 * ys, s: ys * 0.96, facing: fc, by: 0.3 * fc, len: 6, style: 'temple_guard' };
     const seed = dx > 0 ? 3 : 7;
-    res.push(drawCharacter(ctx, 'guard', extraF(t, seed, { yaw, gx: 0.3 * fc, gy: 0.2, pitch: 0.06, glance: 0.3, pose: 'guard_spear',
-      F: { browFurrow: 0.35 + 0.15 * seed / 7, mouthPress: 0.35 } }), pl, dark, t, { sway: [0, 0] }));
-  }
+    const F = extraF(t, seed, { yaw, gx: 0.3 * fc, gy: 0.2, pitch: 0.06, glance: 0.3, pose: 'guard_spear',
+      F: { browFurrow: 0.62, browInner: -0.3, browHeight: -0.08, lid: 0.64 * F0(t, seed), lidLower: 0.22, mouthSmile: -0.42, mouthPress: 0.42 } });
+    // the inner arm goes round behind Yosef: the shot draws only its forearm and hand, over him
+    drawCharacter(ctx, 'guard', F, pl, dark, t, { sway: [0, 0], hideFar: true });
+    res.push({ grip: grips[fc > 0 ? 0 : 1], out: -fc, ys, dark });
+  });
   return res;
 }
-// their hands closing around Yosef's upper arms (drawn over him)
-function guardGrips(ctx, yres, ys, Lt) {
-  if (!yres || !yres.arms) return;
+// blinks for the extras' heavy-lidded faces (keeps the lid value from extraF's blink)
+function F0(t, seed) { const ph = (t * 0.27 + seed * 0.37) % 1; return ph < 0.04 ? 1 - Math.sin(ph / 0.04 * Math.PI) : 1; }
+// each guard's inner forearm comes round from his side, outside Yosef's arm, and his hand closes over
+// Yosef's upper arm (the back of the hand toward us, fingers wrapped round the front of the arm)
+function guardGrips(ctx, gres) {
+  if (!gres) return;
   const st = C.temple_guard;
-  const sides = [[yres.arms.near, -yres.fc], [yres.arms.far, yres.fc]];
-  for (const [g, out] of sides) {
-    const grip = [lerp(g.S[0], g.E[0], 0.42) + out * ys * 0.42, lerp(g.S[1], g.E[1], 0.42)];
-    const E = [grip[0] + out * ys * 1.15, grip[1] - ys * 0.55];
-    const f = [-out * 0.45, -0.05, 0.9], n = [-out * 0.9, 0.05, -0.3];
-    closeArm(ctx, E, grip, ys * 0.92, st, Lt, { hand: 'grip', f, n, right: out < 0, sleeve: st.cloth.tunic });
+  for (const { grip, out, ys, dark } of gres) {
+    const E = [grip[0] + out * 1.05 * ys, grip[1] + 0.5 * ys];
+    const f = [-out * 0.82, 0.12, 0.5], n = [-out * 0.25, 0.05, -0.97];
+    closeArm(ctx, E, grip, ys * 0.92, st, dark, { hand: 'grip', f, n, right: out > 0, sleeve: st.cloth.tunic });
   }
 }
 
@@ -1170,10 +1192,22 @@ S.jer_crack = (ctx, W, t, lt, dur, p) => {
   ctx.beginPath(); ctx.rect(gx, 0, gw, VH); ctx.clip();
   drawCached(ctx, cached('jer', (x) => BG.jerusalemNight(x)));
   BG.jerusalemDyn(ctx, t, { torches: [[540, 740, 1]] });
-  const sx = lerp(760, 300, smooth(lt / dur));
+  // a guard leading, Yosef with his hands bound being pulled along, Saul following with his warrant:
+  // all walking (feet stepping, bodies bobbing and swaying, arms swinging where they are free)
+  const sx = lerp(820, 240, lt / dur);
   const sil = { side: 1, key: '#9a7a6a', amb: '#3a3048', shadow: 0.8, rim: '#ff9a50', rimA: 0.8, rimSide: 1, wrap: 0.35 };
-  actor(ctx, W, 'yosef', t, { x: sx, y: 930, s: 50, facing: -1, by: -0.4, len: 9.5 }, sil, looks({ gx: 0.5, gy: 0, yaw: 0.4, pitch: 0 }), { noTag: true });
-  actor(ctx, W, 'saul', t, { x: sx + 190, y: 905, s: 52, facing: -1, by: -0.4, len: 9.5 }, sil, looks({ gx: -0.5, gy: 0, yaw: -0.4, pitch: 0 }), { noTag: true });
+  const walker = (who, x, y, s, ph, lk, o = {}) => {
+    const bob = Math.abs(Math.cos(ph)) * 0.09 * s;
+    const pl = Object.assign({ x, y: y - bob, s, facing: -1, by: -0.4, len: 9.5, swing: o.swing ? [0.25, ph] : null, lean: 0.03 * Math.sin(ph) }, o.place || {});
+    const opt = { noTag: true, afterTorso: (q) => stepFeet(ctx, q.neck, q.s, -1, 9.15, sil, C[o.style || who], ph, 1) };
+    if (o.F) opt.mod = o.F;
+    actor(ctx, W, who, t, pl, sil, lk, opt);
+  };
+  const ph = lt * L.TAU / 0.95;
+  walker('guard', sx - 170, 925, 50, ph + 1.6, looks({ gx: -0.4, gy: 0, yaw: -0.4, pitch: 0 }),
+    { swing: true, place: { style: 'temple_guard' }, style: 'temple_guard', F: (F) => { F.pose = 'walk'; F.poseTo = 'walk'; F.poseFrom = 'walk'; F.poseK = 1; F.browFurrow = 0.6; F.mouthSmile = -0.4; } });
+  walker('yosef', sx, 930, 50, ph, looks({ gx: 0.5, gy: 0, yaw: 0.4, pitch: 0 }));
+  walker('saul', sx + 190, 905, 52, ph + 2.6, looks({ gx: -0.5, gy: 0, yaw: -0.4, pitch: 0 }));
   ctx.restore();
   doorPlanks(ctx, 0, gx, t);
   doorPlanks(ctx, gx + gw, VW, t);
@@ -1211,9 +1245,10 @@ S.jer_yosef = (ctx, W, t, lt, dur, p) => {
   drawCached(ctx, bgView('jer', (x) => BG.jerusalemNight(x), { z: 1.4, cx: 540, cy: 900 }, 8));
   BG.jerusalemDyn(ctx, t, { torches: [[220, 700, 1], [900, 640, 2]] });
   const lk = looks({ gx: -0.6, gy: 0.0, yaw: -0.42, pitch: 0.0 }, { back: { gx: -0.75, gy: 0.05, yaw: -0.48, pitch: 0.02 }, away: { gx: 0.4, gy: 0, yaw: 0.3, pitch: 0 } });
-  guardsBehind(ctx, W, t, 560, 1220, 150, LIGHT.jer);
-  const yres = actor(ctx, W, 'yosef', t, { x: 560, y: 1220, s: 150, facing: 1, by: 0.55, len: 6 }, LIGHT.jer, lk);
-  guardGrips(ctx, yres, 150, LIGHT.jer);
+  const yp = { x: 560, y: 1220, s: 150, facing: 1, by: 0.55, len: 6 };
+  const gres = guardsBehind(ctx, W, t, yp, LIGHT.jer);
+  actor(ctx, W, 'yosef', t, yp, LIGHT.jer, lk);
+  guardGrips(ctx, gres);
   BG.vignette(ctx, 0.5, '#010205');
 };
 
@@ -1233,10 +1268,16 @@ S.jer_yosef_look = (ctx, W, t, lt, dur, p) => {
   // over young Paul's shoulder: Yosef, bound, turns and looks at him without hatred
   camera(ctx, lt, dur, p, [640, 840]);
   drawCached(ctx, bgView('jer', (x) => BG.jerusalemNight(x), { z: 1.8, cx: 700, cy: 800 }, 14));
-  const lk = looks({ gx: -0.3, gy: 0.05, yaw: -0.16, pitch: 0.02 }, { paul: { gx: -0.32, gy: 0.06, yaw: -0.18, pitch: 0.03 } });
-  guardsBehind(ctx, W, t, 660, 1330, 190, LIGHT.jer, { spots: [[-2.6, 1, 0.3], [2.5, -1, -0.32]] });
-  const yres = actor(ctx, W, 'yosef', t, { x: 660, y: 1330, s: 190, facing: -1, by: -0.15, len: 5 }, LIGHT.jer, lk);
-  guardGrips(ctx, yres, 190, LIGHT.jer);
+  const lk = looks({ gx: -0.3, gy: 0.05, yaw: -0.16, pitch: 0.02 }, { paul: { gx: -0.32, gy: 0.06, yaw: -0.18, pitch: 0.03 },
+    away: { gx: 0.5, gy: 0.1, yaw: 0.35, pitch: 0.04 } });
+  // after his "Goodbye." the guards haul him away out of the frame (he is pulled, half stumbling)
+  if (W._byeEnd == null) { const ln = W.lines.find((x) => x.who === 'yosef' && /^Goodbye/.test(x.text)); W._byeEnd = ln ? ln.end : 1e9; }
+  const go = smooth(clamp((t - W._byeEnd - 0.25) / 1.4));
+  const dx = -go * 900, bob = Math.abs(Math.sin(go * 9)) * 14 * go;
+  const yp = { x: 660 + dx, y: 1330 + bob, s: 190, facing: -1, by: -0.15, len: 5, lean: -0.08 * go };
+  const gres = guardsBehind(ctx, W, t, yp, LIGHT.jer, { spots: [[-2.6, 1, 0.3], [2.5, -1, -0.32]] });
+  actor(ctx, W, 'yosef', t, yp, LIGHT.jer, lk);
+  guardGrips(ctx, gres);
   // young Paul from behind, out of focus in the foreground: dark curls, white mantle with its blue stripe
   ctx.save();
   ctx.filter = 'blur(5px)';
@@ -1319,7 +1360,7 @@ S.dam_saul_kneel = (ctx, W, t, lt, dur, p) => {
   const shake = 4 * L.noise1(t * 1.4, 3);
   pS.x += shake;
   actor(ctx, W, 'saul', t, pS, Lt, looks({ gx: 0, gy: 0.7, yaw: 0.1, pitch: 0.28 }, { down: { gx: 0, gy: 0.8, yaw: 0.1, pitch: 0.3 }, up: { gx: 0.1, gy: -0.7, yaw: 0.14, pitch: -0.16 } }),
-    { afterTorso: (o) => kneelLegs(ctx, o.neck, o.s, 1, C.saul, Lt) });
+    { afterTorso: (o) => kneelLegs(ctx, o.neck, o.s, 1, C.saul, Lt, { noFeet: true }) });
   BG.dust(ctx, t, { x: 100, y: 900, w: 880, h: 900 }, 24, '#fff4d0', 33, 0.6, 3.5);
 };
 
@@ -1352,14 +1393,16 @@ S.dam_saul_up = (ctx, W, t, lt, dur, p) => {
 S.dam_hands = (ctx, W, t, lt, dur, p) => {
   BG.heavenLight(ctx, t, { x: 540, y: 300 });
   const Lt = LIGHT.divine;
-  const k = smooth(lt / 2.0);
-  // Saul's right hand reaches up, palm open toward the light; Jesus' right hand reaches down to meet it
-  closeArm(ctx, [250, 2100], [lerp(420, 455, k), lerp(1380, 1210, k)], 200, C.saul, LIGHT.lightUp,
-    { hand: 'offer', f: [0.18, 1, -0.2], n: [0.1, 0.35, 0.93], right: true, sleeve: '#2c2838' });
-  closeArm(ctx, [860, -300], [lerp(690, 640, k), lerp(560, 690, k)], 200, C.jesus, Lt,
+  // Saul's right hand reaches up, palm open toward the light; Jesus' right hand reaches down toward it.
+  // They draw closer through the whole of Paul's words, slower and slower, and the shot ends with the
+  // smallest gap still between their fingertips: they never touch
+  const u = clamp(lt / dur), k = 1 - Math.pow(1 - u, 1.7);
+  closeArm(ctx, [250, 2100], [lerp(400, 462, k), lerp(1640, 1342, k)], 200, C.saul, LIGHT.lightUp,
+    { hand: 'offer', f: [0.18, 1, -0.2], n: [0.1, 0.35, 0.93], right: true, sleeve: C.saul.cloth.tunic });
+  closeArm(ctx, [860, -300], [lerp(720, 600, k), lerp(300, 678, k)], 200, C.jesus, Lt,
     { hand: 'offer', f: [-0.25, -1, 0.2], n: [0.1, -0.35, 0.93], right: true, sleeve: C.jesus.cloth.tunic, loose: 1 });
   ctx.save(); ctx.globalCompositeOperation = 'lighter';
-  L.glow(ctx, 540, 960, 420 + 60 * k, '#ffffff', 0.55 * k);
+  L.glow(ctx, 528, 1012, 340 + 120 * k, '#ffffff', 0.22 + 0.36 * k);
   ctx.restore();
 };
 
@@ -1368,31 +1411,55 @@ S.dawn_road = (ctx, W, t, lt, dur, p) => {
   camera(ctx, lt, dur, { zoom: [1.0, 1.04] }, [600, 1050]);
   drawCached(ctx, cached('dawn', (x) => BG.dawnRoad(x)));
   BG.dawnDyn(ctx, t);
-  // a small group walking away down the road, into the sunrise
-  for (let i = 0; i < 7; i++) {
-    const depth = 1 - lt / dur * 0.12;
-    const x = 560 + (i - 3) * 13 * depth + (i % 2) * 4, y = 1112 - lt * 0.9 + (i % 3) * 3;
-    const h = (24 + (i % 3) * 3) * depth;
-    const ph = lt * 5.4 + i * 1.3;
-    const bob = Math.abs(Math.cos(ph)) * 1.2;
-    ctx.fillStyle = '#1e1016';
-    ctx.beginPath(); ctx.ellipse(x, y - h - bob, h * 0.17, h * 0.2, 0, 0, L.TAU); ctx.fill();
-    // robe to the shins, legs stepping under it (walking away: the planted foot is the lower one)
-    ctx.beginPath(); ctx.moveTo(x - h * 0.2, y - h * 0.82 - bob); ctx.lineTo(x + h * 0.2, y - h * 0.82 - bob); ctx.lineTo(x + h * 0.25, y - h * 0.16 - bob); ctx.lineTo(x - h * 0.25, y - h * 0.16 - bob); ctx.closePath(); ctx.fill();
-    ctx.strokeStyle = '#1e1016'; ctx.lineCap = 'round'; ctx.lineWidth = Math.max(1.2, h * 0.09);
-    for (const sd of [-1, 1]) {
-      const st2 = Math.sin(ph) * sd, lift = Math.max(0, -Math.cos(ph) * sd) * h * 0.08;
-      ctx.beginPath(); ctx.moveTo(x + sd * h * 0.08, y - h * 0.2 - bob); ctx.lineTo(x + sd * h * 0.09, y - st2 * h * 0.05 - lift); ctx.stroke();
-      // arms swinging against the legs
-      ctx.beginPath(); ctx.moveTo(x + sd * h * 0.2, y - h * 0.78 - bob); ctx.lineTo(x + sd * h * 0.27, y - h * 0.42 - bob + st2 * h * 0.06); ctx.stroke();
-    }
-    ctx.strokeStyle = rgba('#ffc070', 0.5); ctx.lineWidth = 1.5;
-    ctx.beginPath(); ctx.ellipse(x, y - h - bob, h * 0.17, h * 0.2, 0, -1.6, 0.2); ctx.stroke();
+  // the soldiers leading Paul away down the road into the sunrise: they start near and walk away,
+  // growing smaller, all through the narration
+  const hz = 1080, u = clamp(lt / dur);
+  const group = [[-0.9, 0.0, 1.0], [0.85, 0.15, 1.0], [0.0, 0.35, 0.92, true], [-0.6, 0.9, 1.0], [0.7, 1.05, 1.0], [-0.15, 1.6, 0.97], [0.45, 1.9, 1.0]];
+  const fig = [];
+  for (let i = 0; i < group.length; i++) {
+    const [lat, back, hk, paul] = group[i];
+    const d = 3.6 + back + u * 13;
+    fig.push({ i, lat, d, hk, paul });
   }
-  // Asher from behind, watching them go: hopeful, the half loaf in his hand
-  const sil = { side: 1, key: '#6a4a52', amb: '#24161e', shadow: 0.85, rim: '#ffc070', rimA: 0.9, rimSide: 1, wrap: 0.2 };
-  floorShadow(ctx, 380, 1890, 210, 0.5);
-  backFigure(ctx, 380, 1225, 70, C.asher, sil, t, { turn: 0.3, len: 9.3, half: true });
+  fig.sort((a, b) => b.d - a.d);
+  for (const f of fig) {
+    const y = hz + 820 / f.d, h = 330 / f.d * f.hk, x = 600 + f.lat * 260 / f.d;
+    const ph = lt * 5.0 + f.i * 1.3;
+    const bob = Math.abs(Math.cos(ph)) * h * 0.03;
+    const body = f.paul ? '#3a2a2c' : '#1e1016', rim = rgba('#ffc070', 0.55);
+    ctx.fillStyle = body;
+    // head (Paul bare-headed and bowed; the soldiers helmeted)
+    ctx.beginPath(); ctx.ellipse(x, y - h - bob, h * 0.15, h * 0.18, 0, 0, L.TAU); ctx.fill();
+    if (!f.paul) { ctx.beginPath(); ctx.ellipse(x, y - h * 1.06 - bob, h * 0.17, h * 0.09, 0, Math.PI, 0); ctx.fill(); }
+    // robe to the shins over legs stepping under it (walking away: the planted foot is the lower one)
+    ctx.beginPath(); ctx.moveTo(x - h * 0.19, y - h * 0.84 - bob); ctx.lineTo(x + h * 0.19, y - h * 0.84 - bob); ctx.lineTo(x + h * 0.24, y - h * 0.18 - bob); ctx.lineTo(x - h * 0.24, y - h * 0.18 - bob); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = body; ctx.lineCap = 'round'; ctx.lineWidth = Math.max(1.5, h * 0.085);
+    for (const sd of [-1, 1]) {
+      const st2 = Math.sin(ph) * sd, lift = Math.max(0, -Math.cos(ph) * sd) * h * 0.07;
+      ctx.beginPath(); ctx.moveTo(x + sd * h * 0.08, y - h * 0.22 - bob); ctx.lineTo(x + sd * h * 0.09, y - st2 * h * 0.045 - lift); ctx.stroke();
+      if (!(f.paul)) { ctx.beginPath(); ctx.moveTo(x + sd * h * 0.2, y - h * 0.78 - bob); ctx.lineTo(x + sd * h * 0.26, y - h * 0.42 - bob + st2 * h * 0.05); ctx.stroke(); }
+    }
+    if (f.paul) {
+      // Paul's hands bound in front; his white hair and beard catch the dawn
+      ctx.fillStyle = rgba('#d8d0c8', 0.75); ctx.beginPath(); ctx.ellipse(x, y - h * 0.96 - bob, h * 0.1, h * 0.07, 0, 0, Math.PI); ctx.fill();
+    } else {
+      // a spear over the shoulder
+      ctx.strokeStyle = body; ctx.lineWidth = Math.max(1, h * 0.03);
+      ctx.beginPath(); ctx.moveTo(x + h * 0.22, y - h * 0.5 - bob); ctx.lineTo(x + h * 0.32, y - h * 1.55 - bob); ctx.stroke();
+    }
+    ctx.strokeStyle = rim; ctx.lineWidth = Math.max(1, h * 0.03);
+    ctx.beginPath(); ctx.ellipse(x, y - h - bob, h * 0.15, h * 0.18, 0, -1.7, 0.2); ctx.stroke();
+    // long shadows falling back toward us down the road
+    ctx.fillStyle = rgba('#140a08', 0.35);
+    ctx.beginPath(); ctx.moveTo(x - h * 0.15, y); ctx.lineTo(x + h * 0.15, y); ctx.lineTo(x + h * 0.25, y + h * 0.9); ctx.lineTo(x - h * 0.25, y + h * 0.9); ctx.closePath(); ctx.fill();
+  }
+  // Asher in the foreground, turned three-quarters toward the road so his face shows in profile,
+  // watching them go; the half loaf rests in his palm
+  const FY = 1895, s0 = 78;
+  const pA = { x: 345, y: FY - 9.65 * s0, s: s0, facing: 1, by: 0.5, len: 4.2 };
+  floorShadow(ctx, 375, FY, 230, 0.5);
+  actor(ctx, W, 'asher', t, pA, LIGHT.dawn, looks({ gx: 0.6, gy: -0.05, yaw: 0.55, pitch: -0.02 }, { far: { gx: 0.62, gy: -0.02, yaw: 0.58, pitch: -0.03 } }),
+    { afterTorso: (o) => legsBlend(ctx, o.neck, o.s, 1, C.asher, LIGHT.dawn, 0, FY) });
 };
 
 // a figure seen from behind: back of the head, shoulders, arms at the sides, robe to the feet

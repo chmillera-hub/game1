@@ -165,7 +165,7 @@ function ik(S, W, l1, l2, bend) {
   return { E, W };
 }
 
-function armJoint(S, W, l1, l2, side, out = 0) {
+function armJoint(S, W, l1, l2, side, out = 0, hang = 0) {
   // Two solutions blended smoothly: a "hanging elbow" (forearm foreshortens toward the
   // camera) for hands held near the body, and plain IK for reaching/raised arms.
   // The blend weight is continuous, so breathing or small target changes never make
@@ -184,14 +184,15 @@ function armJoint(S, W, l1, l2, side, out = 0) {
   }
   const wReach = smooth((d - (l1 + l2 * 0.4)) / (l2 * 0.35));
   const wRaise = smooth((-dy / l1 - 0.05) / 0.3);
-  const w = Math.max(wReach, wRaise);
+  // hang: keep the elbow down under a raised forearm (a hand lifted before the face, elbow low)
+  const w = Math.max(wReach, wRaise) * (1 - hang);
   return { E: [lerp(E[0], sol.E[0], w), lerp(E[1], sol.E[1], w)], W: sol.W };
 }
 
 // sleeve geometry: shoulder cap + upper arm + elbow + forearm, as one union of round shapes
 function armGeom(S, Wt, s, o = {}) {
   const l1 = 2.85 * s, l2 = 2.5 * s;
-  const { E, W } = armJoint(S, Wt, l1, l2, o.bend == null ? 1 : o.bend, o.out || 0);
+  const { E, W } = armJoint(S, Wt, l1, l2, o.bend == null ? 1 : o.bend, o.out || 0, o.hang || 0);
   const u = [W[0] - E[0], W[1] - E[1]], ul = Math.hypot(u[0], u[1]) || 1;
   const dir = [u[0] / ul, u[1] / ul];
   const loose = o.loose || 0;

@@ -123,6 +123,9 @@ const POSES = {
     f: { w: [1.93, 5.3], hand: 'relax', palm: HANG }, bread: { arm: 'n', r: 0.78 }, fidget: { arm: 'n', amp: [0.08, 0.22], period: 3.4, pats: 2 }, sway: 0.02 },
   hold_half: { n: { w: [-1.85, 5.12], hand: 'relax', palm: HANG }, f: { w: [0.85, 3.7], hand: 'cup', palm: { in: 0.75, up: 0.55, back: 0.1 }, fdir: { in: 0.75, fwd: 0.4 } }, front: true,
     half: { arm: 'f', r: 0.9 } },
+  // the half loaf resting on the near palm, held a little out in front (thumb along its side)
+  hold_half_n: { n: { w: [0.95, 4.6], hand: 'cup', palm: { up: 0.9, fwd: 0.2 }, fdir: { fwd: 0.85, in: 0.3 }, fk: 0.75 },
+    f: { w: [1.75, 5.1], hand: 'relax', palm: { in: 1, back: 0.15 }, fdir: { down: 1, fwd: 0.1 }, fk: 0.6 }, front: true, half: { arm: 'n', r: 0.8 }, sway: 0.015 },
   // at the prison door: the loaf stays in the near hand; the far hand rises in a fist to knock
   walk_bread: { n: { w: [-0.35, 2.85], hand: 'cup', palm: { up: 0.9, fwd: 0.2 }, fdir: { in: 0.8, back: 0.25 }, fk: 0.8 },
     f: { w: [1.93, 5.3], hand: 'relax', palm: HANG }, bread: { arm: 'n', r: 0.78 } },
@@ -167,8 +170,10 @@ const POSES = {
     f: { w: [2.2, 2.4], hand: 'grip', palm: { in: 1, back: 0.25 }, fdir: { up: 1, fwd: 0.2 }, fk: 0.55 }, front: true, scroll2: { h: 1.55 }, sway: 0.03 },
   scroll: { n: { w: [-1.85, 5.04], hand: 'relax', palm: HANG }, f: { w: [2.1, 3.1], hand: 'grip', palm: { in: 0.8, up: 0.35 }, fdir: { fwd: 0.6, up: 0.45 } }, front: true, scroll: true },
   walk: { n: { w: [-1.85, 5.21], hand: 'relax', palm: HANG }, f: { w: [2.02, 5.04], hand: 'relax', palm: HANG } },
-  kneel_shield: { n: { w: [-1.05, -0.55], hand: 'open', palm: { fwd: 0.75, up: 0.45, out: 0.2 }, fdir: { up: 0.8, in: 0.45 } },
-    f: { w: [2.15, 4.75], hand: 'open', palm: { down: 1 }, fdir: { fwd: 0.85, out: 0.25 }, fk: 0.7 }, front: true },
+  // on his knees in the blinding light: the near forearm raised before his brow, palm turned toward his
+  // own face, the elbow low; the other hand pressed flat on the tunic over his thigh
+  kneel_shield: { n: { w: [-1.35, 0.15], hand: 'open', palm: { back: 0.8, in: 0.5 }, fdir: { up: 0.9, in: 0.3 }, fk: 0.75, hang: 1 },
+    f: { w: [1.35, 4.35], hand: 'relax', palm: { down: 1, in: 0.15 }, fdir: { fwd: 1, down: 0.35 }, fk: 0.8 }, front: true },
   kneel_up: { n: { w: [-1.75, 3.9], hand: 'offer', palm: { up: 0.85, fwd: 0.4 }, fdir: { fwd: 0.6, out: 0.45 } }, f: { w: [2.05, 3.75], hand: 'offer', palm: { up: 0.85, fwd: 0.4 }, fdir: { fwd: 0.6, out: 0.45 } }, front: true },
   peek: { n: { w: [-1.85, 5.21], hand: 'relax', palm: HANG }, f: { w: [1.85, 5.21], hand: 'relax', palm: HANG } },
   // a guard holding a spear in the near hand

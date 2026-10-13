@@ -511,17 +511,39 @@ function headCloth(opts) {
       const c = opts.color, lw = lwOf(pr, Lt);
       const side = Lt.side || -1;
       const hi = shade(lit(c, Lt), 1.18), lo = shade(c, 0.55);
+      // ONE piece of cloth over the head (no seam down the middle): its outline runs from the crown
+      // down one side, round the hanging end, up the edge along the face, across the forehead and
+      // down the other side; the light falls across it as one soft gradient
+      const half = (sd) => [q([sd * 0.48, -1.04, 0.8]), q([sd * 0.88, -0.8, 0.55]), q([sd * 1.07, -0.4, 0.34]),
+        q([sd * 1.11, 0.3, 0.2]), q({ a: [sd * 1.07, 0.7, 0.1], d: [sd * 0.1, 0.8], k: 0.6 }),
+        q({ a: [sd * 1.07, 0.7, 0.1], d: [sd * 0.25, 1.6], k: 0.9 }), q({ a: [sd * 1.07, 0.7, 0.1], d: [sd * 0.62, 1.5], k: 0.9 }),
+        q({ a: [sd * 1.07, 0.7, 0.1], d: [sd * 0.52, 0.6], k: 0.6 }), q([sd * 1.28, 0.0, -0.05]), q([sd * 1.22, -0.8, 0.0]),
+        q([sd * 0.78, -1.4, 0.1])];
+      const R = half(1), Lh = half(-1);
+      const outline = [q([0, -1.52, 0.05]), ...R.slice().reverse(), q([0, -1.1, 0.9]), ...Lh];
+      ctx.beginPath(); L.crPath(ctx, outline, true, 0.5);
+      ctx.fillStyle = lit(c, Lt); ctx.fill();
+      ctx.save(); ctx.clip();
+      {
+        const H = pr.H, s2 = pr.s;
+        const xt = FACE.terminatorX(H, Lt);
+        const ga = pr.P(xt + side * 0.35, -0.6, 0.9), gb = pr.P(xt - side * 0.9, -0.6, 0.9);
+        const dark = mix(lit(c, Lt), shd(c, Lt), 0.62);
+        const g = ctx.createLinearGradient(ga[0], ga[1], gb[0], gb[1]);
+        g.addColorStop(0, rgba(dark, 0)); g.addColorStop(1, rgba(dark, 0.75));
+        ctx.fillStyle = g; ctx.fillRect(H.x - s2 * 4, H.y - s2 * 4, s2 * 8, s2 * 9);
+        // the drape darkens as it falls past the ears into the shadow of the head
+        const d0 = pr.P(0, 0.1, 0.3), d1 = pr.P(0, 1.2, 0.3);
+        const g2 = ctx.createLinearGradient(d0[0], d0[1], d1[0], d1[1]);
+        g2.addColorStop(0, rgba(dark, 0)); g2.addColorStop(1, rgba(dark, 0.45));
+        ctx.fillStyle = g2; ctx.fillRect(H.x - s2 * 4, H.y - s2 * 4, s2 * 8, s2 * 9);
+        // light on the dome of the crown
+        const cr = pr.P(-side * 0.25, -1.25, 0.7);
+        ctx.fillStyle = L.radial(ctx, cr[0], cr[1], 0, s2 * 0.8, [[0, rgba(hi, 0.35)], [1, rgba(hi, 0)]]);
+        ctx.fillRect(H.x - s2 * 4, H.y - s2 * 4, s2 * 8, s2 * 9);
+      }
+      ctx.lineCap = 'round';
       for (const sd of [-1, 1]) {
-        const pts = [q([0, -1.1, 0.9]), q([sd * 0.48, -1.04, 0.8]), q([sd * 0.88, -0.8, 0.55]), q([sd * 1.07, -0.4, 0.34]),
-          q([sd * 1.11, 0.3, 0.2]), q({ a: [sd * 1.07, 0.7, 0.1], d: [sd * 0.1, 0.8], k: 0.6 }),
-          q({ a: [sd * 1.07, 0.7, 0.1], d: [sd * 0.25, 1.6], k: 0.9 }), q({ a: [sd * 1.07, 0.7, 0.1], d: [sd * 0.62, 1.5], k: 0.9 }),
-          q({ a: [sd * 1.07, 0.7, 0.1], d: [sd * 0.52, 0.6], k: 0.6 }), q([sd * 1.28, 0.0, -0.05]), q([sd * 1.22, -0.8, 0.0]),
-          q([sd * 0.78, -1.4, 0.1]), q([0, -1.52, 0.05])];
-        // one cloth: the side away from the light is a softer shade of the same colour
-        shape(ctx, pts, sd === -side ? mix(lit(c, Lt), shd(c, Lt), 0.42) : lit(c, Lt), st.hairLine, lw);
-        ctx.save();
-        ctx.beginPath(); L.crPath(ctx, pts, true); ctx.clip();
-        ctx.lineCap = 'round';
         // the hem along the face: the cloth's thickness turning under, in shadow
         const hem = [q([sd * 0.05, -1.07, 0.9]), q([sd * 0.48, -1.0, 0.8]), q([sd * 0.86, -0.77, 0.55]), q([sd * 1.04, -0.4, 0.35]),
           q([sd * 1.07, 0.3, 0.22]), q({ a: [sd * 1.07, 0.7, 0.1], d: [sd * 0.12, 0.85], k: 0.6 })];
@@ -534,18 +556,19 @@ function headCloth(opts) {
             L.strokeSmooth(ctx, sp, rgba(opts.stripe, 0.8), pr.s * 0.045);
           }
         }
-        // folds of the drape: a shadow line with light on the raised side of each
+        // folds of the drape: a soft shadow with light on the raised side of each
         for (const [o, k] of [[0.3, 0.9], [0.55, 1.0], [0.8, 0.85]]) {
           const fp = [q([sd * (0.3 + o * 0.6), -1.25 + o * 0.25, 0.6]), q([sd * (0.95 + o * 0.22), -0.6, 0.3]),
             q([sd * (1.1 + o * 0.12), 0.2, 0.15]), q({ a: [sd * 1.07, 0.7, 0.1], d: [sd * (0.18 + o * 0.4), 0.7 + o * 0.6], k: 0.8 })];
-          L.strokeSmooth(ctx, fp, rgba(st.hairLine, 0.28 * k), lw * 0.7);
-          L.strokeSmooth(ctx, fp.map((p) => [p[0] - sd * pr.s * 0.05, p[1]]), rgba(hi, (sd === side ? 0.32 : 0.16) * k), pr.s * 0.035);
+          L.strokeSmooth(ctx, fp, rgba(st.hairLine, 0.2 * k), lw * 0.7);
+          L.strokeSmooth(ctx, fp.map((p) => [p[0] - sd * pr.s * 0.05, p[1]]), rgba(hi, (sd === side ? 0.3 : 0.14) * k), pr.s * 0.035);
         }
-        // a little shade where the cloth rests on the crown
-        const cr = q([sd * 0.45, -1.42, 0.3]);
-        ctx.fillStyle = L.radial(ctx, cr[0], cr[1], 0, pr.s * 0.5, [[0, rgba(lo, 0.0)], [1, rgba(lo, 0.0)]]);
-        ctx.restore();
       }
+      // a soft crease where the cloth is pulled over the crown from the front
+      L.strokeSmooth(ctx, [q([0, -1.12, 0.9]), q([0.02, -1.35, 0.6]), q([0, -1.5, 0.2])], rgba(st.hairLine, 0.12), lw * 0.8);
+      ctx.restore();
+      ctx.beginPath(); L.crPath(ctx, outline, true, 0.5);
+      ctx.strokeStyle = st.hairLine; ctx.lineWidth = lw; ctx.stroke();
       // the cord holding it on the head, at the crown
       if (opts.band) {
         const bp = [q([-1.0, -0.86, 0.45]), q([-0.5, -1.1, 0.8]), q([0, -1.16, 0.9]), q([0.5, -1.1, 0.8]), q([1.0, -0.86, 0.45])];
@@ -683,11 +706,14 @@ C.saul = {
   geo: { chinY: 1.42, jawW: 0.64, mouthW: 0.21, cheekW: 0.93 },
   hairBack: saulTravel.back, hairFront: saulTravel.front, hairShadow: saulTravel.shadow, beard: beardFull({ len: -0.02, cheek: 0.62, thick: 0.8 }),
   beardHidesFolds: true,
-  cloth: { tunic: '#3e5276', mantle: '#ddd6c6', trim: '#2d4f8a', neck: 'round', skirt: '#cbc4b2' },
+  // a traveller's light linen tunic under the white mantle (no dark layer), blue woven trim
+  cloth: { tunic: '#cdc3ad', mantle: '#e2dccd', trim: '#2d4f8a', neck: 'round', skirt: '#c6bca6' },
 };
 C.saul_travel = Object.assign({}, C.saul);
 const childCap = curlyCap({ hairline: -0.62 });
 C.child = {
+  // a boy: the body smaller than a man's under a head of nearly adult size
+  bodyScale: 0.8,
   name: 'child', skin: '#ecbf9c', skinShadow: '#b98068', line: '#3a241c', iris: '#4a3020', browColor: '#2a1c14',
   hair: '#2d1e16', hairLine: '#120a07', child: true, blush: 0.35, browW: 0.06, lashW: 0.3, eyeScale: 1.42, irisR: 0.6, neckLen: 1.8,
   geo: { chinY: 1.08, jawW: 0.8, jawY: 0.78, mouthY: 0.7, mouthW: 0.14, eyeY: 0.12, eyeH: 1.35, eyeX: 0.47, noseY: 0.4, noseLen: 0.7, cheekW: 1.0 },

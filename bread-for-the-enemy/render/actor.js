@@ -45,7 +45,7 @@ function poseOf(p) {
       hand: H.blendPreset(x.hand || 'relax', y.hand || 'relax', k),
       palm: blendSpec(x.palm || HANG, y.palm || HANG, k),
       fdir: (x.fdir || y.fdir) ? blendSpec(x.fdir || {}, y.fdir || {}, k) : null,
-      fk: lerp(fkx, fky, k), fz: lerp(x.fz || 0, y.fz || 0, k), flip: lerp(x.flip || 0, y.flip || 0, k),
+      fk: lerp(fkx, fky, k), fz: lerp(x.fz || 0, y.fz || 0, k), flip: lerp(x.flip || 0, y.flip || 0, k), hang: lerp(x.hang || 0, y.hang || 0, k),
     };
   };
   const out = { n: arm(A.n, Bp.n), f: arm(A.f, Bp.f), front: k < 0.5 ? A.front : Bp.front,
@@ -71,6 +71,7 @@ function poseBlend(F) {
       // flip: 0 = the elbow bends its usual way, 1 = the other way (an arm raised on the far side);
       // blended, so the elbow swings through rather than snapping across
       flip: lerp(x.flip || 0, y.flip || 0, k),
+      hang: lerp(x.hang || 0, y.hang || 0, k),
     };
   };
   // props cannot blend: they appear as soon as a pose that holds them starts, and stay until the
@@ -95,7 +96,8 @@ function poseBlend(F) {
 // place: {x, y, s, facing, by, len, style, mantleSide, noArms, headOnly, lean}
 function drawCharacter(ctx, who, F, place, Lt, t, opt = {}) {
   const st = C[place.style || who];
-  const s = place.s;
+  // the head keeps its scale; the body can be smaller (a child: narrower shoulders, shorter trunk)
+  const hs = place.s, s = place.s * (st.bodyScale || 1);
   const fc = place.facing || 1;
   const pb = poseBlend(F);
   // a shot can take a prop out of the hands (it has been tossed or set down and is drawn by the shot)
@@ -137,14 +139,21 @@ function drawCharacter(ctx, who, F, place, Lt, t, opt = {}) {
   const neck = [Bx, By];
   // the head sits on a neck of the character's own length (a little shorter for the boy and Phoebe)
   const nl = st.neckLen || 2.1;
-  const headX = Bx + Math.sin(lean) * s * nl * fc + (F.headDX || 0) * s + (st.headFwd || 0) * s * fc;
-  const headY = By - s * nl * Math.cos(lean) + (F.headDY || 0) * s - breathe * s * 0.015;
-  const Hd = { x: headX, y: headY, s, yaw: F.yaw, pitch: F.pitch, roll: F.roll * fc + lean * 0.25 * fc, neckDX: Bx - headX };
+  const headX = Bx + Math.sin(lean) * hs * nl * fc + (F.headDX || 0) * hs + (st.headFwd || 0) * hs * fc;
+  const headY = By - hs * nl * Math.cos(lean) + (F.headDY || 0) * hs - breathe * hs * 0.015;
+  const Hd = { x: headX, y: headY, s: hs, yaw: F.yaw, pitch: F.pitch, roll: F.roll * fc + lean * 0.25 * fc, neckDX: Bx - headX };
   // the body turns a little with the gaze (from the look target only, never from speech wobble)
   const yawBody = F.yawLook == null ? F.yaw : F.yawLook;
   const by = (place.by == null ? 0.3 * fc : place.by) + 0.2 * (yawBody - (place.by || 0));
   const sh = (F.shoulder || 0) + breathe * 0.03;
   const toScreen = (p) => [Bx + p[0] * fc * s, By + p[1] * s];
+  // a shot can send a hand to a point on screen (a guard's hand closing on a prisoner's arm)
+  if (place.reach) {
+    for (const k of ['n', 'f']) {
+      const r = place.reach[k];
+      if (r) pb[k] = Object.assign({}, pb[k], { w: [(r[0] - Bx) / (s * fc), (r[1] - By) / s], shape: H.preset(r[2] || 'grip') });
+    }
+  }
   const loose = st.cloth.looseSleeves || 0;
 
   // ---- arm and hand geometry
@@ -156,8 +165,8 @@ function drawCharacter(ctx, who, F, place, Lt, t, opt = {}) {
     // a little beyond the chest instead of vanishing behind it
     const SF = (fc > 0 ? sj.R : sj.L).slice();
     if (Math.abs(by) >= 0.12) SF[0] += fc * 0.2 * s * Math.min(1, (Math.abs(by) - 0.12) / 0.2);
-    const gN = B.armGeom(SN, toScreen(pb.n.w), s, { bend: fc * (1 - 2 * (pb.n.flip || 0)), loose });
-    const gF = B.armGeom(SF, toScreen(pb.f.w), s, { bend: -fc * (1 - 2 * (pb.f.flip || 0)), loose });
+    const gN = B.armGeom(SN, toScreen(pb.n.w), s, { bend: fc * (1 - 2 * (pb.n.flip || 0)), loose, hang: pb.n.hang || 0 });
+    const gF = B.armGeom(SF, toScreen(pb.f.w), s, { bend: -fc * (1 - 2 * (pb.f.flip || 0)), loose, hang: pb.f.hang || 0 });
     const spec = (arm, g, right) => {
       // the forearm in 3D: when it looks shorter than it is, it points toward the camera
       const proj = Math.hypot(g.W[0] - g.E[0], g.W[1] - g.E[1]) / (2.5 * s);
@@ -193,7 +202,6 @@ function drawCharacter(ctx, who, F, place, Lt, t, opt = {}) {
       attach('f', FAR, pb.halves.r0 * s * 0.7, (g) => B.drawHalfBread(ctx, g[0], g[1], pb.halves.r0 * s, Lt, { face: -fc, rot: 0.1 * fc }));
     }
     if (pb.jar) attach(pb.jar.arm, pb.jar.arm === 'f' ? FAR : 0, s * 0.18, (g) => B.drawJar(ctx, g[0], g[1] + pb.jar.h * s * 0.98, pb.jar.h * s, Lt));
-    if (pb.scroll) attach('f', FAR, s * 0.3, (g) => B.drawScroll(ctx, g[0], g[1], s * 0.75, s * 2.1, Lt, { rot: 0.15 * fc }));
     if (pb.spear) attach(pb.spear.arm, pb.spear.arm === 'f' ? FAR : 0, s * 0.12, (g) => drawSpear(ctx, g, s, Lt));
     if (pb.bread && pb.bread.at) {
       const p = toScreen(pb.bread.at);
@@ -202,6 +210,7 @@ function drawCharacter(ctx, who, F, place, Lt, t, opt = {}) {
   }
 
   const drawSleeveAndWrist = (which, part, torso) => {
+    if (which === 'f' && opt.hideFar) return;
     const g = which === 'f' ? arms.gF : arms.gN;
     if (part !== 'upper') H.drawWrist(ctx, g.W, g.dir, s, st, Lt);
     B.drawSleeve(ctx, g, st, Lt, { part, torso: torso && torso.poly, far: which === 'f', sleeve: st.cloth.sleeve });
@@ -210,7 +219,21 @@ function drawCharacter(ctx, who, F, place, Lt, t, opt = {}) {
   // hand parts and props of the given arms, back to front
   // each hand is drawn as whole layers (one outline for palm and fingers), split only where one of
   // its props sits among the fingers
-  const drawHandsAndProps = (which) => {
+  const drawHandsAndProps = (which0) => {
+    // a shot can leave out the far arm (it is hidden behind someone and drawn by the shot)
+    const which = opt.hideFar ? which0.filter((w) => w !== 'f') : which0;
+    if (!which.length) return;
+    // a scroll held upright in the far hand: the thumb on the far side of it (hidden), the fingers
+    // curled round the front
+    if (pb.scroll && which.includes('f')) {
+      arms.hF.draw(ctx, (q) => q.kind === 'thumb');
+      const g = arms.hF.gripAt(s * 0.3);
+      B.drawScroll(ctx, g[0], g[1], s * 0.75, s * 2.1, Lt, { rot: 0.15 * fc });
+      arms.hF.draw(ctx, (q) => q.kind !== 'thumb');
+      const rest = which.filter((w) => w !== 'f');
+      if (rest.length) drawHandsAndProps(rest);
+      return;
+    }
     // an open scroll held in both hands: the thumbs on the reader's side of the rollers (behind the
     // parchment, so they never show through it), the curled fingers on our side, in front
     if (pb.scroll2 && which.length === 2) {
@@ -285,11 +308,22 @@ function drawCharacter(ctx, who, F, place, Lt, t, opt = {}) {
       // sleeve comes out from under its edge
       if (st.cloth.mantle && !st.cloth.armor && (place.mantleSide || fc) === fc) B.drawMantleDrape(ctx, arms.gF, st, Lt);
     }
+    // facing us squarely, both upper arms hang from shoulders that belong to the body: they are drawn
+    // behind the chest (only their outer sides show), the forearms come in front later. A mantle over
+    // one shoulder drapes over the top of that arm.
+    if (arms && frontal) {
+      drawSleeveAndWrist('f', 'upper', null); drawSleeveAndWrist('n', 'upper', null);
+      if (st.cloth.mantle && !st.cloth.armor) B.drawMantleDrape(ctx, (place.mantleSide || fc) === fc ? arms.gF : arms.gN, st, Lt);
+    }
     if (opt.beforeTorso) opt.beforeTorso({ neck, s, fc, st, by });
     torso = B.drawTorso(ctx, neck, s, st, Lt, { by, shoulder: sh, len: place.len || 9, mantleSide: place.mantleSide || fc, belt: place.belt });
     if (opt.afterTorso) opt.afterTorso({ neck, s, fc, st, by });
     if (arms && pb.parchment) drawParchment(ctx, toScreen([1.0, 4.02]), s, Lt, fc);
-    if (arms && frontal && !pb.front) { drawSleeveAndWrist('f', 'all', torso); drawHandsAndProps(['f']); }
+    if (arms && frontal && !pb.front) {
+      drawSleeveAndWrist('f', 'lower', torso); drawHandsAndProps(['f']);
+      drawSleeveAndWrist('n', 'lower', torso); drawHandsAndProps(['n']);
+      return;
+    }
     if (arms && !pb.front) {
       if (farIn && !frontal) { drawSleeveAndWrist('f', 'lower', torso); drawHandsAndProps(['f']); }
       drawSleeveAndWrist('n', 'all', torso); drawHandsAndProps(['n']);
@@ -300,14 +334,16 @@ function drawCharacter(ctx, who, F, place, Lt, t, opt = {}) {
   const tpS = B.torsoPts(neck, s, by, sh, place.len || 9);
   drawHead(ctx, Hd, st, F, Lt, { drawBody, t, sway, noNeck: place.noNeck, neckBase: nb, collar, shoulderL: tpS.left.slice(0, 3), shoulderR: tpS.right.slice(0, 3) });
   if (arms && pb.front) {
-    if (frontal) drawSleeveAndWrist('f', 'all', torso);
-    else if (farIn) drawSleeveAndWrist('f', 'lower', torso);
-    drawSleeveAndWrist('n', 'all', torso);
+    if (frontal) { drawSleeveAndWrist('f', 'lower', torso); drawSleeveAndWrist('n', 'lower', torso); }
+    else {
+      if (farIn) drawSleeveAndWrist('f', 'lower', torso);
+      drawSleeveAndWrist('n', 'all', torso);
+    }
     drawRope();
     drawHandsAndProps(farIn || frontal ? ['f', 'n'] : ['n']);
   }
   if (arms && opt.afterArms) opt.afterArms({ armN: { W: arms.gN.W, ang: arms.gN.ang }, armF: { W: arms.gF.W, ang: arms.gF.ang }, toScreen });
-  return { H: Hd, neck, arms: arms ? { near: arms.gN, far: arms.gF } : null, s, fc };
+  return { H: Hd, neck, arms: arms ? { near: arms.gN, far: arms.gF } : null, s, hs, fc };
 }
 
 // a spear held upright through the fist
