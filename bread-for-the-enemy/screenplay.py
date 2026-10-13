@@ -442,6 +442,7 @@ P(0.6)
 L("jesus", "You are precious to me, Paul.", speed=0.8, fx="divine", gap=0.4)
 E("jesus", look="sky", at=-0.1, dur=1.2)
 L("jesus", "Open your heart to me... and carry the Holy Spirit, with me and my Father.", speed=0.8, fx="divine", gap=0.8)
+E("jesus", look="down", ls=2.2, dur=1.1)
 L("paul", "I had a sense that my destruction was deserved...", speed=0.84, vo=True, gap=0.5)
 L("paul", "and yet He looked at me... the same way Yosef had.", speed=0.82, vo=True, gap=0.7)
 
