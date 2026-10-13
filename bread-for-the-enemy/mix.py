@@ -50,6 +50,14 @@ def main(work):
     venv = envelope(voice.mean(1))
     duck = np.clip(venv / 0.035, 0, 1)  # 1 while someone speaks
     music_gain = 0.8 * (1 - 0.5 * duck)  # about -6 dB under dialogue, fuller between lines
+    # a little more score (+15%) under Paul's long Damascus voice-over, from the light on his face to the
+    # reaching hands, so the music carries the moment and not only his voice
+    sh = {x["id"]: x for x in tl["shots"]}
+    if "dam_saul_up" in sh and "dam_hands" in sh:
+        t = np.arange(n) / SR
+        a, b = sh["dam_saul_up"]["start"], sh["dam_hands"]["end"]
+        w = np.clip((t - (a - 1.5)) / 1.5, 0, 1) * np.clip(((b + 1.5) - t) / 1.5, 0, 1)
+        music_gain = music_gain * (1 + 0.15 * w)
     sfx_gain = 0.85 * (1 - 0.3 * duck)
     mix = voice * 1.0 + music * music_gain[:, None] + sfx * sfx_gain[:, None]
 

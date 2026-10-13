@@ -516,6 +516,26 @@ def compose_swells(tl):
     for j in range(n8):
         tt = pk8 + 1.5 - 2.6 + j * 0.08
         s.note(cti, r2, tt, 0.07, int(30 + 70 * (j / n8)))
+    # Paul's Damascus memories (his long voice-over, from the light on his face to the reaching hands):
+    # one deep swell under the whole passage, cresting as he says "He chose me"
+    aD, bD = LN("paul", "I was shown mercy"), LN("paul", "He chose me", True)
+    pkD = LN("paul", "He chose me")
+    cb, cc, cs, ct, cti = sets[0]
+    for ch in (cb, cc, cs, ct):
+        s.cc(ch, 11, 0, aD - 2.05)
+        s.ramp(ch, 10, 100, aD - 2.0, pkD + 1.0)
+        s.ramp(ch, 100, 60, pkD + 1.0, bD)
+        s.ramp(ch, 60, 0, bD, bD + 2.5)
+    r1, r2 = P("D1"), P("D2")
+    dD = bD + 2.5 - (aD - 2.0)
+    s.note(cb, r1, aD - 2.0, dD, 100)
+    s.note(cb, r2, aD - 2.0, dD, 84)
+    s.chord(cc, [r2, r2 + 7], aD - 2.0, dD, 86)
+    s.chord(cs, [r2, r2 + 12], aD - 2.0, dD, 72)
+    s.note(ct, r2, aD - 1.5, dD - 0.5, 66)
+    nD = int(2.2 / 0.08)
+    for j in range(nD):
+        s.note(cti, r2, pkD + 1.0 - 2.2 + j * 0.08, 0.07, int(28 + 64 * (j / nD)))
     for i, (who, pre, root, pk, k) in enumerate(cues):
         a, b = LN(who, pre), LN(who, pre, True)
         t0 = a - 1.6
