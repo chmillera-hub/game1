@@ -305,7 +305,7 @@ JESUS_ST = dict(
     iris=("#2a170a", "#80501f", "#e2b26a"), lid_shadow="#5a3020",
     hair="#432a1a", hair_sh="#28170d", hair_hl="#82593c", hair_line="#1e1009", hair_rim="#d39a63",
     beard="#4a2e1d", beard_sh="#2c180e",
-    head_xscale=0.88, eye_x=0.49, eye_y=0.06, eye_w=0.248, eye_h=0.136, eye_low=0.09, eye_tilt=-0.006,
+    head_xscale=0.88, crown_scale=0.66, eye_x=0.49, eye_y=0.06, eye_w=0.248, eye_h=0.136, eye_low=0.09, eye_tilt=-0.006,
     iris_rx=0.113, iris_ry=0.122, sclera_shadow="#e3d6d0",
     lash_in=0.012, lash_out=0.03, lash_mid=0.026, wing=0.01,
     brow_x=0.49, brow_y=-0.21, brow_in=-0.25, brow_out=0.30, brow_arch=0.038,

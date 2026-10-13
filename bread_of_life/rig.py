@@ -76,6 +76,11 @@ class Head:
         # the whole head (face, hair, ears, beard) can be drawn a little narrower than it is deep,
         # for a longer, more grown-up face
         self.xs = st.get("head_xscale", 1.0)
+        # the skull above the brows can be shortened (smoothly, starting just above the brows), so
+        # the eyes sit near the middle of the head as they do on a real one; hair, head cloths and
+        # everything else on the head follow, since they are all placed through p3
+        self.cs = st.get("crown_scale", 1.0)
+        self.cref = st.get("crown_ref", -0.25)
 
     def surf_z(self, x, y):
         ys = [s[0] for s in self.sl]
@@ -85,11 +90,23 @@ class Head:
         u = min(abs(x) / max(w, 1e-3), 1.0)
         return zc + d * (1 - u * u) ** 0.42
 
+    def crown_y(self, y):
+        """Vertical position after shortening the skull: unchanged below crown_ref, then compressed
+        toward crown_scale with a smooth (kink-free) start."""
+        if self.cs == 1.0:
+            return y
+        c, yr, b = self.cs, self.cref, 0.2
+        t = np.maximum(yr - y, 0.0)
+        g = c * t + (1.0 - c) * b * (1.0 - np.exp(-t / b))
+        return np.where(y < yr, yr - g, y)
+
     def p3(self, pts):
         """3D anchors -> projected 2D (N,2) plus rotated z."""
         P3 = np.array(pts, dtype=float)
         if self.xs != 1.0:
             P3[:, 0] *= self.xs
+        if self.cs != 1.0:
+            P3[:, 1] = self.crown_y(P3[:, 1])
         R = rot_points(P3, self.yaw, self.pitch)
         return R
 
