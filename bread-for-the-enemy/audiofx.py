@@ -75,8 +75,8 @@ ENV = {
     # of the reverb, and the tail is kept low so nothing smears the consonants.
     "divine": dict(wet=0.2, rt60=2.0, predelay=0.075, damp=5200, width=1.2),
     "soft_divine": dict(wet=0.15, rt60=1.7, predelay=0.06, damp=5600, width=1.15),
-    # the closing voice: a large hall, still with the words clearly in front
-    "epic": dict(wet=0.24, rt60=2.8, predelay=0.09, damp=4200, width=1.3),
+    # the closing voice: a warm hall, with the words clearly in front (never cavernous)
+    "epic": dict(wet=0.16, rt60=1.9, predelay=0.06, damp=5200, width=1.15),
     "outdoor": dict(wet=0.12, rt60=0.8, predelay=0.03, damp=6000),
 }
 
@@ -94,5 +94,5 @@ def place_voice(x, sr, env, fx=None):
         # presence lift (2-4 kHz) for intelligibility, and a little body in the low mids
         x = x + 0.35 * butter(x, sr, "bandpass", (1900, 4200))
         if fx == "epic":
-            x = x + 0.3 * butter(x, sr, "lowpass", 220)
+            x = x + 0.12 * butter(x, sr, "lowpass", 200)
     return reverb(x, sr, wet=wet, **kw)

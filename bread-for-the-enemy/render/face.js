@@ -188,7 +188,7 @@ function drawHead(ctx, H, st, F, Lt, extra = {}) {
   for (const sd of [-1, 1]) drawEye(ctx, pr, G, st, F, Lt, sd, line, lw);
   // tears on cheeks
   if ((F.tearFlow || 0) > 0.01) drawTears(ctx, pr, G, F, extra.t || 0);
-  if (F.tearDrop != null) drawSingleTear(ctx, pr, G, F);
+  if (F.tearDrop != null && F.tearDrop > -1) drawSingleTear(ctx, pr, G, F);
 
   // ---------------- brows
   for (const sd of [-1, 1]) drawBrow(ctx, pr, G, st, F, sd, line, lw);
@@ -217,19 +217,41 @@ function drawCraniumLine(ctx, pr, G, line, lw) {
 
 function drawNeck(ctx, pr, st, F, Lt, skin, skinSh, line, lw, G, extra = {}) {
   const { P, s, H } = pr;
-  // neck is mostly vertical in screen space regardless of head pitch/yaw; its base sits in the
-  // middle of the collar opening of the clothes
+  // The neck is a column standing on the body's own axis, straight under the head (it never leans
+  // toward the front of the collar, which shifts as the body turns). Its two sides are built once
+  // and used both to fill it and to outline it, so no line can stray off its edge.
+  const PathC = require('@napi-rs/canvas').Path2D;
+  const nw = G.neckW * s;
+  const ax = H.x + (H.neckDX || 0);
+  const by = extra.neckBase ? extra.neckBase[1] : H.y + s * 2.25;
   const top = P(0, 0.95, -0.25);
-  const nw = (G.neckW) * s;
-  const base = extra.neckBase || [H.x + (H.neckDX || 0), H.y + s * 2.25];
   const side = -(Lt.side || -1);
-  const shape = new (require('@napi-rs/canvas').Path2D)();
-  shape.moveTo(top[0] - nw * 0.95, top[1] - s * 0.3);
-  shape.lineTo(base[0] - nw * 1.06, base[1] - s * 0.25);
-  shape.lineTo(base[0] - nw * 1.3, base[1] + s * 0.7);
-  shape.lineTo(base[0] + nw * 1.3, base[1] + s * 0.7);
-  shape.lineTo(base[0] + nw * 1.06, base[1] - s * 0.25);
-  shape.lineTo(top[0] + nw * 0.95, top[1] - s * 0.3);
+  const sideOf = (sd) => {
+    const t0 = [top[0] + sd * nw * 0.95, top[1] - s * 0.35];
+    const t1 = [ax + sd * nw * 1.0, by - s * 0.2];
+    return {
+      t0, t1,
+      c1: [lerp(t0[0], t1[0], 0.35) - sd * nw * 0.05, lerp(t0[1], t1[1], 0.35)],
+      c2: [lerp(t0[0], t1[0], 0.75) - sd * nw * 0.02, lerp(t0[1], t1[1], 0.75)],
+      sh: [ax + sd * nw * 1.55, by + s * 0.42],
+    };
+  };
+  const Ls = sideOf(-1), Rs = sideOf(1);
+  const shape = new PathC();
+  shape.moveTo(Ls.t0[0], Ls.t0[1]);
+  shape.bezierCurveTo(Ls.c1[0], Ls.c1[1], Ls.c2[0], Ls.c2[1], Ls.t1[0], Ls.t1[1]);
+  // below the collar line the skin runs out under the clothes along the slope of the shoulders
+  // (just under the cloth's own shoulder line), so the collar opening never shows anything but
+  // skin whichever way the body turns, and no skin pokes out above the shoulders
+  const cL = extra.collar ? extra.collar[0] : [Ls.t1[0], Ls.t1[1]];
+  const cR = extra.collar ? extra.collar[extra.collar.length - 1] : [Rs.t1[0], Rs.t1[1]];
+  const xl = Math.min(cL[0], Ls.t1[0]), xr = Math.max(cR[0], Rs.t1[0]);
+  shape.quadraticCurveTo(xl, cL[1] + s * 0.05, xl - s * 0.7, cL[1] + s * 0.44);
+  shape.lineTo(xl - s * 0.7, by + s * 0.9);
+  shape.lineTo(xr + s * 0.7, by + s * 0.9);
+  shape.lineTo(xr + s * 0.7, cR[1] + s * 0.44);
+  shape.quadraticCurveTo(xr, cR[1] + s * 0.05, Rs.t1[0], Rs.t1[1]);
+  shape.bezierCurveTo(Rs.c2[0], Rs.c2[1], Rs.c1[0], Rs.c1[1], Rs.t0[0], Rs.t0[1]);
   shape.closePath();
   if (extra.collar) {
     // the chest skin visible inside the neck hole (slightly larger than the hole, under its edge)
@@ -242,34 +264,47 @@ function drawNeck(ctx, pr, st, F, Lt, skin, skinSh, line, lw, G, extra = {}) {
   ctx.fillStyle = skin;
   ctx.fill(shape, 'nonzero');
   ctx.clip(shape, 'nonzero');
-  // jaw shadow on the neck
-  const ch = P(0, 1.2, 0.3);
-  ctx.fillStyle = rgba(skinSh, 0.95);
-  ctx.beginPath();
-  ctx.ellipse(ch[0], ch[1] + s * 0.05, nw * 1.4, s * 0.55, 0, 0, L.TAU);
-  ctx.fill();
+  // shadow under the jaw: deepest right under it, softly falling off down the neck
+  const ch = P(0, 1.12, 0.3);
+  const gj = ctx.createLinearGradient(0, ch[1] - s * 0.1, 0, ch[1] + s * 0.62);
+  gj.addColorStop(0, rgba(skinSh, 0.82)); gj.addColorStop(0.55, rgba(skinSh, 0.35)); gj.addColorStop(1, rgba(skinSh, 0));
+  ctx.fillStyle = gj;
+  ctx.fillRect(ax - nw * 3, ch[1] - s * 1.2, nw * 6, s * 1.85);
   // side shadow down the neck and onto the chest
-  const g = ctx.createLinearGradient(base[0] - side * nw * 0.1, 0, base[0] + side * nw * 1.0, 0);
-  g.addColorStop(0, rgba(skinSh, 0)); g.addColorStop(0.35, rgba(skinSh, 0.75)); g.addColorStop(1, rgba(skinSh, 0.85));
+  const g = ctx.createLinearGradient(ax - side * nw * 0.1, 0, ax + side * nw * 1.0, 0);
+  g.addColorStop(0, rgba(skinSh, 0)); g.addColorStop(0.4, rgba(skinSh, 0.6)); g.addColorStop(1, rgba(skinSh, 0.75));
   ctx.fillStyle = g;
-  ctx.fillRect(base[0] - nw * 3, top[1] - s * 0.5, nw * 6, s * 4);
-  // soft shading where the neck meets the chest (the notch between the collarbones)
-  ctx.fillStyle = L.radial(ctx, base[0], base[1] + s * 0.22, 0, s * 0.42, [[0, rgba(skinSh, 0.5)], [1, rgba(skinSh, 0)]]);
-  ctx.fillRect(base[0] - s, base[1] - s * 0.3, s * 2, s);
-  ctx.restore();
-  // neck lines (stop at the collar)
-  ctx.strokeStyle = line;
-  ctx.lineWidth = lw * 0.9;
+  ctx.fillRect(ax - nw * 3, top[1] - s * 0.5, nw * 6, s * 4);
+  // the two neck muscles (sterno-cleido-mastoid): a soft V from behind each ear down to the notch
+  // between the collarbones, a gentle shadow line with a little light beside it
   ctx.lineCap = 'round';
-  ctx.beginPath();
-  ctx.moveTo(top[0] - nw * 0.92, top[1] + s * 0.05);
-  ctx.quadraticCurveTo(lerp(top[0], base[0], 0.55) - nw * 0.98, (top[1] + base[1]) / 2, base[0] - nw * 1.05, base[1] - s * 0.22);
-  ctx.moveTo(top[0] + nw * 0.92, top[1] + s * 0.05);
-  ctx.quadraticCurveTo(lerp(top[0], base[0], 0.55) + nw * 0.98, (top[1] + base[1]) / 2, base[0] + nw * 1.05, base[1] - s * 0.22);
-  ctx.stroke();
+  for (const sd of [-1, 1]) {
+    const m0 = P(sd * 0.6, 0.78, -0.18), m1 = [ax + sd * s * 0.1, by - s * 0.04];
+    const mc = [lerp(m0[0], m1[0], 0.5) + sd * s * 0.05, lerp(m0[1], m1[1], 0.5)];
+    const gm = ctx.createLinearGradient(m0[0], m0[1], m1[0], m1[1]);
+    gm.addColorStop(0, rgba(skinSh, 0)); gm.addColorStop(0.3, rgba(skinSh, st.child ? 0.18 : 0.4)); gm.addColorStop(1, rgba(skinSh, 0.15));
+    ctx.strokeStyle = gm; ctx.lineWidth = lw * 1.3;
+    ctx.beginPath(); ctx.moveTo(m0[0], m0[1]); ctx.quadraticCurveTo(mc[0], mc[1], m1[0], m1[1]); ctx.stroke();
+    const gl = ctx.createLinearGradient(m0[0], m0[1], m1[0], m1[1]);
+    gl.addColorStop(0, rgba('#fff4ea', 0)); gl.addColorStop(0.4, rgba('#fff4ea', sd === -side ? 0.05 : 0.13)); gl.addColorStop(1, rgba('#fff4ea', 0));
+    ctx.strokeStyle = gl; ctx.lineWidth = lw * 2.6;
+    ctx.beginPath(); ctx.moveTo(m0[0] - sd * s * 0.07, m0[1]); ctx.quadraticCurveTo(mc[0] - sd * s * 0.08, mc[1], m1[0] - sd * s * 0.07, m1[1] - s * 0.04); ctx.stroke();
+  }
+  // soft shading at the notch between the collarbones
+  ctx.fillStyle = L.radial(ctx, ax, by + s * 0.12, 0, s * 0.36, [[0, rgba(skinSh, 0.45)], [1, rgba(skinSh, 0)]]);
+  ctx.fillRect(ax - s, by - s * 0.4, s * 2, s);
+  ctx.restore();
+  // outline: the same sides, fading in below the jaw so nothing pokes out from under it
+  for (const S2 of [Ls, Rs]) {
+    const go = ctx.createLinearGradient(S2.t0[0], S2.t0[1], S2.t1[0], S2.t1[1]);
+    go.addColorStop(0, rgba(line, 0)); go.addColorStop(0.35, rgba(line, 0.9)); go.addColorStop(1, rgba(line, 0.9));
+    ctx.strokeStyle = go; ctx.lineWidth = lw * 0.85;
+    ctx.beginPath(); ctx.moveTo(S2.t0[0], S2.t0[1]); ctx.bezierCurveTo(S2.c1[0], S2.c1[1], S2.c2[0], S2.c2[1], S2.t1[0], S2.t1[1]); ctx.stroke();
+  }
   if (st.adamsApple !== false && !st.child) {
-    const a = [lerp(top[0], base[0], 0.45), lerp(top[1], base[1], 0.45)];
-    ctx.globalAlpha = 0.5;
+    const a = [lerp(top[0], ax, 0.5), lerp(top[1], by, 0.42)];
+    ctx.globalAlpha = 0.4;
+    ctx.strokeStyle = line;
     ctx.beginPath();
     ctx.moveTo(a[0] - s * 0.04, a[1]);
     ctx.quadraticCurveTo(a[0], a[1] + s * 0.06, a[0] + s * 0.05, a[1] - s * 0.01);
@@ -699,7 +734,7 @@ function drawEye(ctx, pr, G, st, F, Lt, sd, line, lw) {
     }
     // wet lower rim
     if ((F.tears || 0) > 0.05) {
-      ctx.strokeStyle = rgba('#d8ecff', 0.75 * F.tears);
+      ctx.strokeStyle = rgba('#a6d2f6', 0.75 * F.tears);
       ctx.lineWidth = 0.13;
       ctx.beginPath();
       L.crPath(ctx, lo.map(([u, v]) => [u, v - 0.05]), false);
@@ -737,38 +772,43 @@ function drawEye(ctx, pr, G, st, F, Lt, sd, line, lw) {
   ctx.restore();
 }
 
-// tear streams down the cheeks (two per eye side, deterministic in time)
+// Tear streaks down the cheeks: each is one whole streak that fades as a whole as the tears dry
+// (never shortening in pieces), tinted a watery blue so it reads against skin and a white beard.
+// A drop runs down it now and then, fading out before it leaves the cheek.
 function drawTears(ctx, pr, G, F, t) {
   const { P, s } = pr;
   const fl = clamp(F.tearFlow);
   for (const sd of [-1, 1]) {
     const x0 = sd * (G.eyeX - 0.08);
     const pts = [P(x0, 0.2, 0.84), P(x0 + sd * 0.03, 0.45, 0.82), P(x0 + sd * 0.05, 0.75, 0.74), P(x0 + sd * 0.02, 1.02, 0.66)];
-    // stream (thin translucent)
-    const len = fl;
     const dense = L.sampleCR(pts, 6);
-    const n = Math.max(2, Math.floor(dense.length * len));
-    const seg = dense.slice(0, n);
+    const a = Math.min(1, fl * 1.6);
     ctx.save();
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
-    ctx.strokeStyle = rgba('#cfe6ff', 0.55);
+    // the streak tapers off toward its end so it has no blunt tip
+    const g = ctx.createLinearGradient(dense[0][0], dense[0][1], dense[dense.length - 1][0], dense[dense.length - 1][1]);
+    g.addColorStop(0, rgba('#8ec4f2', 0.62 * a)); g.addColorStop(0.75, rgba('#8ec4f2', 0.45 * a)); g.addColorStop(1, rgba('#8ec4f2', 0));
+    ctx.strokeStyle = g;
     ctx.lineWidth = s * 0.03;
     ctx.beginPath();
-    seg.forEach((p, i) => (i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1])));
+    dense.forEach((p, i) => (i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1])));
     ctx.stroke();
-    ctx.strokeStyle = rgba('#ffffff', 0.7);
+    const g2 = ctx.createLinearGradient(dense[0][0], dense[0][1], dense[dense.length - 1][0], dense[dense.length - 1][1]);
+    g2.addColorStop(0, rgba('#e8f6ff', 0.7 * a)); g2.addColorStop(0.7, rgba('#e8f6ff', 0.4 * a)); g2.addColorStop(1, rgba('#e8f6ff', 0));
+    ctx.strokeStyle = g2;
     ctx.lineWidth = s * 0.009;
     ctx.stroke();
-    // a drop travelling down
+    // a drop travelling down, fading as it goes
     const ph = ((t * 0.32 + (sd > 0 ? 0.47 : 0)) % 1);
     const di = Math.floor(ph * (dense.length - 1));
-    if (fl > 0.5 && di < n) {
+    if (fl > 0.35) {
       const p = dense[di];
-      ctx.fillStyle = rgba('#e6f3ff', 0.85);
+      const k = Math.min(1, (fl - 0.35) / 0.3) * (1 - ph);
+      ctx.fillStyle = rgba('#a8d4fa', 0.85 * k);
       L.ellipse(ctx, p[0], p[1] + s * 0.01, s * 0.022, s * 0.03);
       ctx.fill();
-      ctx.fillStyle = rgba('#ffffff', 0.95);
+      ctx.fillStyle = rgba('#ffffff', 0.9 * k);
       L.ellipse(ctx, p[0] - s * 0.006, p[1], s * 0.007, s * 0.009);
       ctx.fill();
     }
@@ -778,6 +818,7 @@ function drawTears(ctx, pr, G, F, t) {
 
 // One tear: it wells on the lower lid (tearDrop < 0), rolls down the cheek (0..1) leaving a thin wet
 // trail, and the trail then dries (tearTrail fades to 0). tearSide picks the eye.
+function smoothstep01(x) { const v = clamp(x); return v * v * (3 - 2 * v); }
 function drawSingleTear(ctx, pr, G, F) {
   const { P, s } = pr;
   const sd = F.tearSide || 1, p = F.tearDrop, trail = F.tearTrail == null ? 1 : F.tearTrail;
@@ -789,19 +830,21 @@ function drawSingleTear(ctx, pr, G, F) {
     // welling on the lid: a growing bead of light
     const k = clamp(1 + p);
     const b = path[0];
-    ctx.fillStyle = rgba('#eaf6ff', 0.8 * k);
+    ctx.fillStyle = rgba('#b4dafa', 0.85 * k);
     L.ellipse(ctx, b[0], b[1] - s * 0.01, s * 0.02 * k + 0.5, s * 0.016 * k + 0.5); ctx.fill();
   } else {
     const n = Math.max(2, Math.round(clamp(p) * (path.length - 1)) + 1);
     const seg = path.slice(0, n);
     if (trail > 0.01) {
-      ctx.strokeStyle = rgba('#d6ecff', 0.45 * trail); ctx.lineWidth = s * 0.022;
+      ctx.strokeStyle = rgba('#8ec4f2', 0.5 * trail); ctx.lineWidth = s * 0.022;
       ctx.beginPath(); seg.forEach((q, i) => (i ? ctx.lineTo(q[0], q[1]) : ctx.moveTo(q[0], q[1]))); ctx.stroke();
       ctx.strokeStyle = rgba('#ffffff', 0.55 * trail); ctx.lineWidth = s * 0.007; ctx.stroke();
     }
     if (p < 1) {
       const q = seg[seg.length - 1];
-      ctx.fillStyle = rgba('#e6f3ff', 0.9);
+      const fade = 1 - smoothstep01((p - 0.7) / 0.3);
+      ctx.globalAlpha *= fade;
+      ctx.fillStyle = rgba('#a8d4fa', 0.9);
       L.ellipse(ctx, q[0], q[1] + s * 0.01, s * 0.022, s * 0.03); ctx.fill();
       ctx.fillStyle = rgba('#ffffff', 0.95);
       L.ellipse(ctx, q[0] - s * 0.006, q[1], s * 0.007, s * 0.009); ctx.fill();

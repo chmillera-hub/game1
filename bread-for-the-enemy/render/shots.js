@@ -436,45 +436,153 @@ S.church_asher = (ctx, W, t, lt, dur, p) => {
   BG.silhouettes(ctx, [[60, 1500, 150, 0.3], [1010, 1480, 140, -0.3]], '#0a0503', '#ffb060', 0.3, t);
 };
 
-S.street_knock = (ctx, W, t, lt, dur, p) => {
-  // door close-up: each knock shudders the frame and shakes dust loose; then the grille opens on a pair of eyes
-  const kn = [0.3, 0.75, 1.2];
-  let hit = 0;
-  for (const k of kn) { const d = lt - k; if (d >= 0 && d < 0.25) hit = Math.max(hit, 1 - d / 0.25); }
+// The prison door's leaf (planks, iron bands, studs, the grille), hinged on its left edge and
+// swung inward by angle a (0 = shut), drawn through a background view {z, cx, cy}. The far edge
+// recedes in perspective and the leaf darkens as it turns from the torchlight; its thickness shows
+// along the free edge. o.grille: 0..1 how far the grille's iron slot has slid open; o.eyes(ctx,
+// rect) draws whoever looks out through it.
+function doorLeaf(ctx, view, a, o = {}) {
+  const dx = 540, dy = 1020, dw = 400, dh = 700, rr = 180;
+  const S = (bx, by) => [(bx - view.cx) * view.z + VW / 2, (by - view.cy) * view.z + VH / 2];
+  const ca = Math.cos(a), sa = Math.sin(a);
+  const M = (u, y) => { const f = 1 / (1 + (u * sa) / 1800); return S(dx - dw / 2 + u * ca, dy + (y - dy) * f); };
+  const topY = (u) => { const e = Math.min(u, dw - u); return e >= rr ? dy - dh / 2 : dy - dh / 2 + rr - Math.sqrt(Math.max(0, rr * rr - (rr - e) * (rr - e))); };
+  const leaf = [];
+  for (let i = 0; i <= 20; i++) { const u = dw * i / 20; leaf.push(M(u, topY(u))); }
+  leaf.push(M(dw, dy + dh / 2), M(0, dy + dh / 2));
+  const shadeK = 1 - 0.55 * sa;
+  const wood = (c) => L.mul(c, mix('#ffffff', '#40384a', 1 - shadeK));
   ctx.save();
-  ctx.translate(Math.sin(lt * 90) * 5 * hit, Math.cos(lt * 70) * 3 * hit);
-  drawCached(ctx, bgView('street', (x) => BG.streetNight(x), { z: 3.0, cx: 540, cy: 760 }, 0));
-  // grille slot sliding open (after the knocks)
-  const op = smooth((lt - 1.6) / 0.35);
-  const gx = 540, gy = 880;
-  ctx.fillStyle = '#050403'; ctx.fillRect(gx - 175, gy - 105, 350, 210);
-  if (op > 0) {
-    ctx.save(); ctx.beginPath(); ctx.rect(gx - 175, gy - 105, 350 * op, 210); ctx.clip();
-    // torchlit eyes of the guard inside
-    ctx.fillStyle = '#1a0e08'; ctx.fillRect(gx - 175, gy - 105, 350, 210);
-    const Lt = { side: 1, key: '#ffb070', amb: '#3a2a3a', shadow: 0.8, wrap: 0.6 };
-    const F = W.state('guard', t, { default: { gx: 0.05, gy: 0.05, yaw: 0.05, pitch: 0.02 } });
-    drawHead(ctx, { x: gx + 10, y: gy + 25, s: 230, yaw: 0.05, pitch: 0.02, roll: 0 }, C.guard, Object.assign({}, F, { mouthOpen: 0 }), Lt, { t });
+  // the leaf's thickness, seen along the free edge once it turns
+  if (sa > 0.04) {
+    const th = 28 * sa;
+    const e0 = M(dw, topY(dw - 1)), e1 = M(dw, dy + dh / 2);
+    ctx.fillStyle = wood('#1e120a');
+    ctx.beginPath(); ctx.moveTo(e0[0], e0[1]); ctx.lineTo(e0[0] + th * view.z * 0.6, e0[1] + 4); ctx.lineTo(e1[0] + th * view.z * 0.6, e1[1] - 4); ctx.lineTo(e1[0], e1[1]); ctx.closePath(); ctx.fill();
+  }
+  ctx.beginPath(); leaf.forEach((p, i) => (i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]))); ctx.closePath();
+  const l0 = M(0, dy), l1 = M(dw, dy);
+  ctx.fillStyle = L.linear(ctx, l0[0], 0, l1[0], 0, [[0, wood('#4a3020')], [0.5, wood('#3a2416')], [1, wood('#2a180e')]]);
+  ctx.fill();
+  ctx.save(); ctx.clip();
+  // planks
+  ctx.strokeStyle = rgba('#140a04', 0.8); ctx.lineWidth = 5 * view.z * 0.8;
+  for (let i = 1; i < 5; i++) { const u = dw * i / 5; const a0 = M(u, topY(u) + 10), a1 = M(u, dy + dh / 2); ctx.beginPath(); ctx.moveTo(a0[0], a0[1]); ctx.lineTo(a1[0], a1[1]); ctx.stroke(); }
+  // grain and weathering
+  const rw = L.rng(23);
+  for (let i = 0; i < 46; i++) {
+    const u = rw() * dw, y = dy - dh / 2 + rw() * dh, len = 30 + rw() * 90;
+    const p0 = M(u, y), p1 = M(u + (rw() - 0.5) * 6, y + len);
+    ctx.strokeStyle = rgba(rw() < 0.5 ? '#0e0804' : '#6a4a32', 0.25); ctx.lineWidth = (1 + rw() * 2) * view.z * 0.8;
+    ctx.beginPath(); ctx.moveTo(p0[0], p0[1]); ctx.lineTo(p1[0], p1[1]); ctx.stroke();
+  }
+  // iron bands and studs
+  for (const by of [dy - dh * 0.28, dy + dh * 0.05, dy + dh * 0.36]) {
+    const b = [M(0, by - 16), M(dw, by - 16), M(dw, by + 16), M(0, by + 16)];
+    ctx.fillStyle = L.mul('#1c1c20', mix('#ffffff', '#50505a', 1 - shadeK));
+    ctx.beginPath(); b.forEach((p, i) => (i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]))); ctx.closePath(); ctx.fill();
+    const h0 = M(0, by - 16), h1 = M(dw, by - 16), h2 = M(dw, by - 10), h3 = M(0, by - 10);
+    ctx.fillStyle = rgba('#9aa6c8', 0.25 * shadeK);
+    ctx.beginPath(); ctx.moveTo(h0[0], h0[1]); ctx.lineTo(h1[0], h1[1]); ctx.lineTo(h2[0], h2[1]); ctx.lineTo(h3[0], h3[1]); ctx.closePath(); ctx.fill();
+    for (let i = 0; i < 7; i++) { const c = M(30 + i * (dw - 60) / 6, by); ctx.fillStyle = '#2c2c30'; ctx.beginPath(); ctx.ellipse(c[0], c[1], 9 * view.z * Math.max(0.3, ca), 9 * view.z, 0, 0, L.TAU); ctx.fill(); }
+  }
+  // the grille in the door
+  const gx0 = dw / 2 - 60, gx1 = dw / 2 + 60, gy0 = dy - dh * 0.42, gy1 = gy0 + 70;
+  const G = [M(gx0, gy0), M(gx1, gy0), M(gx1, gy1), M(gx0, gy1)];
+  ctx.fillStyle = '#050403';
+  ctx.beginPath(); G.forEach((p, i) => (i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]))); ctx.closePath(); ctx.fill();
+  if (o.eyes && (o.grille || 0) > 0) {
+    ctx.save(); ctx.beginPath(); G.forEach((p, i) => (i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]))); ctx.closePath(); ctx.clip();
+    o.eyes(ctx, { x0: G[0][0], y0: G[0][1], x1: G[2][0], y1: G[2][1] });
     ctx.restore();
   }
-  // slot cover (iron plate sliding right)
-  ctx.fillStyle = L.linear(ctx, 0, gy - 105, 0, gy + 105, [[0, '#2c2c30'], [1, '#18181c']]);
-  ctx.fillRect(gx - 175 + 350 * op, gy - 105, 350, 210);
-  ctx.strokeStyle = '#0c0c0e'; ctx.lineWidth = 10; ctx.strokeRect(gx - 180, gy - 110, 360, 220);
+  // the iron slot cover sliding aside
+  const gs = o.grille || 0;
+  if (gs < 1) {
+    const C0 = M(gx0 + 120 * gs, gy0), C1 = M(gx1 + 120 * gs, gy0), C2 = M(gx1 + 120 * gs, gy1), C3 = M(gx0 + 120 * gs, gy1);
+    ctx.fillStyle = L.linear(ctx, 0, C0[1], 0, C3[1], [[0, '#2c2c30'], [1, '#18181c']]);
+    ctx.beginPath(); ctx.moveTo(C0[0], C0[1]); ctx.lineTo(C1[0], C1[1]); ctx.lineTo(C2[0], C2[1]); ctx.lineTo(C3[0], C3[1]); ctx.closePath(); ctx.fill();
+  }
+  ctx.strokeStyle = '#2a2a2e'; ctx.lineWidth = 7 * view.z * 0.8;
+  for (let i = 0; i < 4; i++) { const p0 = M(gx0 + 15 + i * 30, gy0), p1 = M(gx0 + 15 + i * 30, gy1); ctx.beginPath(); ctx.moveTo(p0[0], p0[1]); ctx.lineTo(p1[0], p1[1]); ctx.stroke(); }
+  // grime toward the bottom
+  const g0 = M(0, dy + dh * 0.2), g1 = M(0, dy + dh / 2);
+  ctx.fillStyle = L.linear(ctx, 0, g0[1], 0, g1[1], [[0, rgba('#0a0604', 0)], [1, rgba('#0a0604', 0.5)]]);
+  ctx.fillRect(0, g0[1], VW, g1[1] - g0[1] + 10);
   ctx.restore();
-  // dust shaken loose
+  ctx.beginPath(); leaf.forEach((p, i) => (i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]))); ctx.closePath();
+  ctx.strokeStyle = rgba('#0a0604', 0.9); ctx.lineWidth = 3 * view.z; ctx.stroke();
+  ctx.restore();
+  return { doorway: () => { const p = []; for (let i = 0; i <= 20; i++) { const u = dw * i / 20; p.push(S(dx - dw / 2 + u, topY(u))); } p.push(S(dx + dw / 2, dy + dh / 2), S(dx - dw / 2, dy + dh / 2)); return p; } };
+}
+function viewDyn(ctx, view, fn) {
+  ctx.save(); ctx.translate(VW / 2, VH / 2); ctx.scale(view.z, view.z); ctx.translate(-view.cx, -view.cy); fn(); ctx.restore();
+}
+// side-view sandalled feet that step while walking (amt = how much the figure is walking, 0..1)
+function stepFeet(ctx, Bn, s, fc, len, Lt, st, ph, amt) {
+  const fy = len + 0.25;
+  const X = (x, y) => [Bn[0] + x * s * fc, Bn[1] + y * s];
+  const feet = [[-0.9, 0.35, 0, ph], [0.25, 1.45, 0.1, ph + Math.PI]];
+  for (const [a, b, dy, p] of feet) {
+    const fwd = Math.sin(p) * 0.55 * amt, lift = Math.max(0, Math.cos(p)) * 0.3 * amt;
+    foot(ctx, X, s, st, Lt, [a + fwd, fy + dy - lift], [b + fwd, fy + dy + 0.15 - lift * 0.6], { h: 0.34 });
+  }
+}
+
+S.street_knock = (ctx, W, t, lt, dur, p) => {
+  // outside the prison: Asher steps up to the door, sets his jar down, raises his fist and knocks
+  // three times (the door shudders and dust falls); then the grille slides open on the guard's eyes
+  const view = { z: 1.25, cx: 640, cy: 1100 };
+  const kn = [1.9, 2.35, 2.8];
+  let hit = 0, pulse = 0;
+  for (const k of kn) {
+    const d = lt - k;
+    if (d >= 0 && d < 0.22) hit = Math.max(hit, 1 - d / 0.22);
+    if (d > -0.2 && d <= 0) pulse = Math.max(pulse, 1 + d / 0.2);
+    else if (d > 0 && d < 0.16) pulse = Math.max(pulse, 1 - d / 0.16);
+  }
+  drawCached(ctx, bgView('streetnd', (x) => BG.streetNight(x, { noDoor: true }), view, 2));
+  viewDyn(ctx, view, () => BG.streetNightDyn(ctx, t));
+  const f = 0.85 + 0.15 * L.fbm1(t * 3.3, 2);
+  const sil = { key: mix('#9a7a6a', '#b08a72', f), amb: '#3a3e5a', side: -1, shadow: 0.8, rim: '#ffb070', rimA: 0.75, rimSide: -1, wrap: 0.45 };
+  // the door (shuddering under each knock) and, at the end, the guard's eyes in the grille
+  const gr = smooth((lt - 3.35) / 0.4);
+  ctx.save();
+  ctx.translate(Math.sin(lt * 90) * 4 * hit, Math.cos(lt * 70) * 2 * hit);
+  doorLeaf(ctx, view, 0, {
+    grille: gr,
+    eyes: (c, r) => {
+      c.fillStyle = '#1a0e08'; c.fillRect(r.x0, r.y0, r.x1 - r.x0, r.y1 - r.y0);
+      const Lg = { side: 1, key: '#ffb070', amb: '#3a2a3a', shadow: 0.8, wrap: 0.6 };
+      const F = W.state('guard', t, { default: { gx: 0.35, gy: 0.05, yaw: 0.2, pitch: 0.02 } });
+      const hs = (r.x1 - r.x0) * 0.42;
+      drawHead(c, { x: (r.x0 + r.x1) / 2, y: r.y0 + (r.y1 - r.y0) * 0.62, s: hs, yaw: 0.2, pitch: 0.02, roll: 0 }, C.guard, Object.assign({}, F, { mouthOpen: 0 }), Lg, { t, noNeck: true });
+    },
+  });
+  ctx.restore();
+  // dust shaken loose from the door
   for (let i = 0; i < 26; i++) {
     const k = kn[i % 3], tt = lt - k - L.hash01(i) * 0.1;
-    if (tt < 0 || tt > 1.6) continue;
-    const x = 200 + L.hash01(i * 7) * 680, y = 300 + tt * tt * 700 + L.hash01(i * 3) * 80;
-    ctx.fillStyle = rgba('#d8c8a8', 0.6 * (1 - tt / 1.6));
+    if (tt < 0 || tt > 1.4) continue;
+    const x = 200 + L.hash01(i * 7) * 460, y = 430 + tt * tt * 700 + L.hash01(i * 3) * 80;
+    ctx.fillStyle = rgba('#d8c8a8', 0.55 * (1 - tt / 1.4));
     ctx.beginPath(); ctx.arc(x, y, 2 + 2 * L.hash01(i * 5), 0, L.TAU); ctx.fill();
   }
-  const f = 0.85 + 0.15 * L.fbm1(t * 3.3, 2);
-  ctx.save(); ctx.globalCompositeOperation = 'lighter';
-  L.glow(ctx, -100, 600, 800, '#ff8a30', 0.28 * f);
-  ctx.restore();
-  BG.vignette(ctx, 0.55, '#02030a');
+  // Asher walks the last steps to the door, then knocks
+  const walk = smooth(clamp(lt / 1.15));
+  const moving = 1 - smooth(clamp((lt - 0.8) / 0.4));
+  const bx = lerp(980, 800, walk);
+  const S2 = (x, y) => [(x - view.cx) * view.z + VW / 2, (y - view.cy) * view.z + VH / 2];
+  const nk = S2(bx, 1080), sc = 70 * view.z;
+  const ph = lt * L.TAU / 1.0;
+  const bob = Math.abs(Math.cos(ph)) * 0.08 * sc * moving;
+  floorShadow(ctx, nk[0], S2(0, 1745)[1], 200, 0.55);
+  // his jar, set down by the door
+  B.drawJar(ctx, S2(860, 1745)[0], S2(0, 1745)[1] - 4, 1.9 * sc, sil);
+  const lk = looks({ gx: -0.6, gy: -0.1, yaw: -0.5, pitch: -0.05 }, { door: { gx: -0.65, gy: -0.12, yaw: -0.52, pitch: -0.05 } });
+  actor(ctx, W, 'asher', t, { x: nk[0], y: nk[1] - bob, s: sc, facing: -1, by: -0.55, len: 9.2, swing: moving > 0.05 ? [0.22 * moving, ph] : null, armOffset: { f: [0.32 * pulse, -0.04 * pulse] } }, sil, lk,
+    { afterTorso: (o) => stepFeet(ctx, o.neck, o.s, -1, 9.2, sil, C.asher, ph, moving) });
+  BG.vignette(ctx, 0.5, '#02030a');
 };
 
 // forearm + hand for extreme close-ups. o: { hand: preset, f: finger dir (world, y up), n: palm normal,
@@ -500,22 +608,37 @@ function closeArm(ctx, E, Wr, s, st, Lt, o = {}) {
 }
 
 S.street_door_guard = (ctx, W, t, lt, dur, p) => {
-  drawCached(ctx, bgView('street', (x) => BG.streetNight(x), { z: 1.7, cx: 540, cy: 900 }, 4));
-  // door opening reveals interior darkness + guard
-  const open = smooth(lt / 0.9);
-  ctx.fillStyle = '#050403';
-  ctx.fillRect(340, 330, 400 * open + 10, 1500);
-  const lk = looks({ gx: 0.4, gy: 0.15, yaw: 0.25, pitch: 0.08 }, { asher: { gx: 0.45, gy: 0.2, yaw: 0.28, pitch: 0.1 } });
+  // the bolt slides, the heavy door swings inward on its hinges, and the guard steps up into the
+  // torchlit doorway
+  const view = { z: 1.7, cx: 540, cy: 900 };
+  drawCached(ctx, bgView('streetnd', (x) => BG.streetNight(x, { noDoor: true }), view, 4));
+  const a = 1.32 * smooth((lt - 0.3) / 1.4);
+  // the doorway: dark inside, warm with the guard's torch
+  const dw = [];
+  {
+    const S = (bx, by) => [(bx - view.cx) * view.z + VW / 2, (by - view.cy) * view.z + VH / 2];
+    const rr = 180;
+    for (let i = 0; i <= 20; i++) {
+      const u = 400 * i / 20, e = Math.min(u, 400 - u);
+      const y = e >= rr ? 670 : 670 + rr - Math.sqrt(Math.max(0, rr * rr - (rr - e) * (rr - e)));
+      dw.push(S(340 + u, y));
+    }
+    dw.push(S(740, 1370), S(340, 1370));
+  }
   ctx.save();
-  ctx.beginPath(); ctx.rect(330, 300, 420 * open + 20, 1700); ctx.clip();
+  ctx.beginPath(); dw.forEach((q, i) => (i ? ctx.lineTo(q[0], q[1]) : ctx.moveTo(q[0], q[1]))); ctx.closePath();
+  ctx.fillStyle = '#070503'; ctx.fill();
+  ctx.clip();
   const f = 0.85 + 0.15 * L.fbm1(t * 3, 6);
+  ctx.fillStyle = L.radial(ctx, 760, 1080, 20, 700, [[0, rgba('#ff9a50', 0.45 * f)], [1, rgba('#ff9a50', 0)]]);
+  ctx.fillRect(0, 0, VW, VH);
   const Lt = { side: 1, key: mix('#ffb070', '#ffd8b0', f), amb: '#4a3a5a', shadow: 0.8, rim: '#a8c0ff', rimA: 0.3, rimSide: -1, wrap: 0.6 };
-  actor(ctx, W, 'guard', t, { x: 520, y: 1250, s: 150, facing: 1, by: 0.3, len: 5 }, Lt, lk);
+  const step = smooth((lt - 0.25) / 1.5);
+  const lk = looks({ gx: 0.4, gy: 0.15, yaw: 0.25, pitch: 0.08 }, { asher: { gx: 0.45, gy: 0.2, yaw: 0.28, pitch: 0.1 } });
+  actor(ctx, W, 'guard', t, { x: lerp(560, 520, step), y: lerp(1215, 1250, step), s: lerp(128, 150, step), facing: 1, by: 0.3, len: 5 }, Lt, lk);
   B.drawTorch(ctx, 760, 1080, 40, t, Lt, { size: 1.2, seed: 3 });
   ctx.restore();
-  // door leaf
-  ctx.fillStyle = L.linear(ctx, 0, 0, 400, 0, [[0, '#3a2416'], [1, '#22140a']]);
-  ctx.fillRect(330 + 420 * open, 300, 420 * (1 - open) + 300, 1700);
+  doorLeaf(ctx, view, a, { grille: 1 });
   BG.vignette(ctx, 0.5, '#02030a');
 };
 
@@ -538,7 +661,7 @@ const paulLook = (ex) => looks({ gx: 0.45, gy: -0.35, yaw: 0.3, pitch: -0.1 }, O
   away: { gx: -0.5, gy: 0.2, yaw: -0.1, pitch: 0.05 },
 }, ex || {}));
 const asherLook = (ex) => looks({ gx: -0.4, gy: 0.35, yaw: -0.3, pitch: 0.12 }, Object.assign({
-  paul: { gx: -0.45, gy: 0.4, yaw: -0.32, pitch: 0.14 }, bread: { gx: -0.2, gy: 0.9, yaw: -0.2, pitch: 0.3 },
+  paul: { gx: -0.58, gy: 0.22, yaw: -0.36, pitch: 0.08 }, bread: { gx: -0.2, gy: 0.9, yaw: -0.2, pitch: 0.3 },
   away: { gx: 0.55, gy: 0.1, yaw: 0.25, pitch: 0.02 }, away_down: { gx: 0.45, gy: 0.7, yaw: 0.2, pitch: 0.22 },
   guard: { gx: 0.75, gy: -0.1, yaw: 0.4, pitch: -0.03 }, down: { gx: -0.1, gy: 0.85, yaw: -0.15, pitch: 0.26 },
 }, ex || {}));
@@ -994,7 +1117,7 @@ S.dam_saul_kneel = (ctx, W, t, lt, dur, p) => {
   const pS = { x: 560, y: 1140, s: 110, facing: 1, by: 0.3, len: 4.2, style: 'saul_travel' };
   const shake = 4 * L.noise1(t * 1.4, 3);
   pS.x += shake;
-  actor(ctx, W, 'saul', t, pS, Lt, looks({ gx: 0, gy: 0.7, yaw: 0.1, pitch: 0.28 }, { down: { gx: 0, gy: 0.8, yaw: 0.1, pitch: 0.3 } }),
+  actor(ctx, W, 'saul', t, pS, Lt, looks({ gx: 0, gy: 0.7, yaw: 0.1, pitch: 0.28 }, { down: { gx: 0, gy: 0.8, yaw: 0.1, pitch: 0.3 }, up: { gx: 0.1, gy: -0.7, yaw: 0.14, pitch: -0.16 } }),
     { afterTorso: (o) => kneelLegs(ctx, o.neck, o.s, 1, C.saul, Lt) });
   BG.dust(ctx, t, { x: 100, y: 900, w: 880, h: 900 }, 24, '#fff4d0', 33, 0.6, 3.5);
 };

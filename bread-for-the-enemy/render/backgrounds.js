@@ -150,13 +150,23 @@ function streetNight(ctx, o = {}) {
   ctx.save();
   ctx.beginPath(); ctx.rect(0, 260, VW, VH);
   ctx.clip();
-  stones(ctx, 0, 260, VW, 1650, { base: '#3a4252', var: '#48505e', bh: 120, seed: 11 });
+  grimyStones(ctx, -40, 260, VW + 40, 1660, { base: '#343b48', var: '#444a54', bh: 120, seed: 11 });
+  // soot blackening above the torch, and grime gathered where the wall meets the street
+  ctx.fillStyle = L.radial(ctx, 195, 560, 0, 260, [[0, rgba('#020203', 0.55)], [1, rgba('#020203', 0)]]);
+  ctx.fillRect(0, 300, 460, 520);
+  ctx.fillStyle = L.linear(ctx, 0, 1450, 0, 1660, [[0, rgba('#0a0806', 0)], [1, rgba('#0a0806', 0.55)]]);
+  ctx.fillRect(0, 1450, VW, 210);
   ctx.restore();
   // wall darkening toward top
   ctx.fillStyle = L.linear(ctx, 0, 260, 0, 900, [[0, rgba('#05070e', 0.75)], [1, rgba('#05070e', 0)]]);
   ctx.fillRect(0, 260, VW, 700);
   // door
   const dx = 540, dy = 1020, dw = 400, dh = 700;
+  if (o.noDoor) {
+    // only the dark frame of the doorway: the leaf is drawn by the shot (so it can swing open)
+    ctx.fillStyle = '#0a0806';
+    ctx.beginPath(); ctx.roundRect(dx - dw / 2 - 30, dy - dh / 2 - 30, dw + 60, dh + 60, [200, 200, 0, 0]); ctx.fill();
+  } else {
   ctx.fillStyle = '#0a0806';
   ctx.beginPath(); ctx.roundRect(dx - dw / 2 - 30, dy - dh / 2 - 30, dw + 60, dh + 60, [200, 200, 0, 0]); ctx.fill();
   ctx.fillStyle = L.linear(ctx, dx - dw / 2, 0, dx + dw / 2, 0, [[0, '#4a3020'], [0.5, '#3a2416'], [1, '#2a180e']]);
@@ -173,6 +183,18 @@ function streetNight(ctx, o = {}) {
   ctx.fillStyle = '#050403'; ctx.fillRect(dx - 60, dy - dh * 0.42, 120, 70);
   ctx.strokeStyle = '#2a2a2e'; ctx.lineWidth = 7;
   for (let i = 0; i < 4; i++) { ctx.beginPath(); ctx.moveTo(dx - 45 + i * 30, dy - dh * 0.42); ctx.lineTo(dx - 45 + i * 30, dy - dh * 0.42 + 70); ctx.stroke(); }
+  // weathering on the planks
+  ctx.save(); ctx.beginPath(); ctx.roundRect(dx - dw / 2, dy - dh / 2, dw, dh, [180, 180, 0, 0]); ctx.clip();
+  const rw = L.rng(23);
+  for (let i = 0; i < 40; i++) {
+    const x = dx - dw / 2 + rw() * dw, y = dy - dh / 2 + rw() * dh;
+    ctx.strokeStyle = rgba(rw() < 0.5 ? '#0e0804' : '#6a4a32', 0.25); ctx.lineWidth = 1 + rw() * 2;
+    ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + (rw() - 0.5) * 6, y + 30 + rw() * 90); ctx.stroke();
+  }
+  ctx.fillStyle = L.linear(ctx, 0, dy + dh * 0.2, 0, dy + dh / 2, [[0, rgba('#0a0604', 0)], [1, rgba('#0a0604', 0.5)]]);
+  ctx.fillRect(dx - dw / 2, dy, dw, dh / 2);
+  ctx.restore();
+  }
   // ground cobbles
   ctx.fillStyle = L.linear(ctx, 0, 1650, 0, VH, [[0, '#1c2030'], [1, '#0c0e16']]);
   ctx.fillRect(0, 1650, VW, VH - 1650);

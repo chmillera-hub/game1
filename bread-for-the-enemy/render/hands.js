@@ -222,7 +222,7 @@ function handParts(W, s, st, Lt, spec) {
   const skinSh = L.mul(st.skinShadow, Lt.amb || '#ffffff');
   const skinHi = mix(skin, '#fff2e8', 0.35);
   const palmCol = mix(skin, '#f4c0b0', 0.12);
-  const nailCol = mix(skin, '#ffe6e2', 0.5);
+  const nailCol = mix(skin, '#ffe4dc', 0.38);
   const side = Lt.side || -1; // light from screen-left when -1
   const lightDir = [-side, 0]; // screen direction toward the light
   const facing = N[2]; // >0: palm toward the viewer
@@ -408,15 +408,18 @@ function drawHandGroups(ctx, parts, ink) {
   }
 }
 
-// an arched nail on the end of a finger, clipped to the finger so it reaches its edges
+// An arched nail on the end of a finger, clipped to the finger so it reaches its edges. It is a
+// soft change of tone, not a stuck-on shape: no outline, its base melting into the finger, and only
+// a faint shine. Very small hands get none (it would only read as a blob).
 function drawNail(ctx, fingerPath, tip, prev, r, dorsal, col, line, lw) {
+  if (r < 3.2) return;
   const ux0 = tip[0] - prev[0], uy0 = tip[1] - prev[1], ul = Math.hypot(ux0, uy0);
   if (ul < r * 0.15) return;
   const ux = ux0 / ul, uy = uy0 / ul, vx = -uy, vy = ux;
   const k = clamp(dorsal[2] * 1.1, 0.35, 1); // narrower when we see it at an angle
   const off = [dorsal[0] * r * 0.3 * (1 - k), -dorsal[1] * r * 0.3 * (1 - k)];
   const cx = tip[0] + off[0], cy = tip[1] + off[1];
-  const w = r * 0.8 * k;
+  const w = r * 0.78 * k;
   const back = r * (0.55 + 0.5 * Math.min(1, ul / (r * 2)));
   const A = [cx - ux * back + vx * w, cy - uy * back + vy * w], Bp = [cx - ux * back - vx * w, cy - uy * back - vy * w];
   const arch = [cx - ux * (back + r * 0.35), cy - uy * (back + r * 0.35)];
@@ -428,12 +431,14 @@ function drawNail(ctx, fingerPath, tip, prev, r, dorsal, col, line, lw) {
   ctx.lineTo(cx + ux * r * 1.3 - vx * w, cy + uy * r * 1.3 - vy * w);
   ctx.lineTo(cx + ux * r * 1.3 + vx * w, cy + uy * r * 1.3 + vy * w);
   ctx.closePath();
-  ctx.fillStyle = rgba(col, 0.92); ctx.fill();
-  // the cuticle arch, and a little shine
-  ctx.strokeStyle = rgba(line, 0.28); ctx.lineWidth = lw * 0.55;
-  ctx.beginPath(); ctx.moveTo(A[0], A[1]); ctx.quadraticCurveTo(arch[0], arch[1], Bp[0], Bp[1]); ctx.stroke();
-  ctx.strokeStyle = rgba('#ffffff', 0.45); ctx.lineWidth = lw * 0.7; ctx.lineCap = 'round';
-  ctx.beginPath(); ctx.moveTo(cx - ux * back * 0.6 + vx * w * 0.45, cy - uy * back * 0.6 + vy * w * 0.45); ctx.lineTo(cx + ux * r * 0.3 + vx * w * 0.45, cy + uy * r * 0.3 + vy * w * 0.45); ctx.stroke();
+  // the nail's colour rises gently from its base (no hard cuticle edge)
+  const b0 = [cx - ux * (back + r * 0.35), cy - uy * (back + r * 0.35)], b1 = [cx - ux * back * 0.25, cy - uy * back * 0.25];
+  const g = ctx.createLinearGradient(b0[0], b0[1], b1[0], b1[1]);
+  g.addColorStop(0, rgba(col, 0)); g.addColorStop(1, rgba(col, 0.62));
+  ctx.fillStyle = g; ctx.fill();
+  // a faint shine along it
+  ctx.strokeStyle = rgba('#ffffff', 0.22); ctx.lineWidth = lw * 0.6; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(cx - ux * back * 0.5 + vx * w * 0.4, cy - uy * back * 0.5 + vy * w * 0.4); ctx.lineTo(cx + ux * r * 0.2 + vx * w * 0.4, cy + uy * r * 0.2 + vy * w * 0.4); ctx.stroke();
   ctx.restore();
 }
 

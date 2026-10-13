@@ -132,7 +132,13 @@ function hairCap(ctx, pr, st, Lt, hairline, opt = {}) {
   // hairline edge
   ctx.strokeStyle = rgba(st.hairLine, 0.8); ctx.lineWidth = lw * 0.8;
   ctx.beginPath(); L.crPath(ctx, hl, false); ctx.stroke();
-  return { c, R, hl };
+  // the area the cap covers (for hair laid over it that should not show seams on top of it)
+  const capArea = (p) => {
+    p.rect(c[0] - R * 3, c[1] - R * 3, R * 6, R * 6);
+    p.moveTo(c[0] + R, c[1]); p.ellipse(c[0], c[1], R, R * 1.03, H.roll, 0, L.TAU);
+    L.crPath(p, face, true, 0.4);
+  };
+  return { c, R, hl, face, capArea };
 }
 
 // ======================================================================= JESUS
@@ -176,7 +182,7 @@ function jesusHairFront(ctx, pr, st, F, Lt, extra) {
   const c = st.hair, lw = lwOf(pr, Lt);
   const side = Lt.side || -1;
   // full head of hair: centre-parted cap over the whole skull
-  hairCap(ctx, pr, st, Lt, [[-0.98, -0.42, 0.3], [-0.78, -0.82, 0.58], [-0.42, -1.02, 0.82], [0, -1.08, 0.9], [0.42, -1.02, 0.82], [0.78, -0.82, 0.58], [0.98, -0.42, 0.3]], {
+  const cap = hairCap(ctx, pr, st, Lt, [[-0.98, -0.42, 0.3], [-0.78, -0.82, 0.58], [-0.42, -1.02, 0.82], [0, -1.08, 0.9], [0.42, -1.02, 0.82], [0.78, -0.82, 0.58], [0.98, -0.42, 0.3]], {
     volume: 1.09,
     inner: (cx) => {
       // flowing strands from the part toward the temples, and a soft sheen
@@ -194,8 +200,13 @@ function jesusHairFront(ctx, pr, st, F, Lt, extra) {
       }
     },
   });
-  // centre part
-  L.strokeSmooth(ctx, [q([0, -1.1, 0.9]), q([0, -1.32, 0.55]), q([0, -1.45, 0.15])], rgba(shade(lit(c, Lt), 0.55), 0.9), lw * 0.9);
+  // centre part: a soft line where the hair divides, fading out toward the crown
+  {
+    const a = q([0, -1.1, 0.9]), b = q([0, -1.42, 0.25]);
+    const gp = ctx.createLinearGradient(a[0], a[1], b[0], b[1]);
+    gp.addColorStop(0, rgba(shade(lit(c, Lt), 0.6), 0.7)); gp.addColorStop(1, rgba(shade(lit(c, Lt), 0.6), 0));
+    L.strokeSmooth(ctx, [a, q([0, -1.3, 0.62]), b], gp, lw * 0.6);
+  }
   for (const sd of [-1, 1]) {
     const pts = [
       q([sd * 0.02, -1.36, 0.42]),
@@ -209,7 +220,16 @@ function jesusHairFront(ctx, pr, st, F, Lt, extra) {
       q([sd * 1.3, 0.2, -0.05]), q([sd * 1.22, -0.55, 0.05]), q([sd * 0.98, -1.08, 0.1]), q([sd * 0.5, -1.4, 0.15]),
     ];
     const isShadow = sd === -side; // side away from light
-    shape(ctx, pts, isShadow ? mix(lit(c, Lt), shd(c, Lt), 0.5) : lit(c, Lt), st.hairLine, lw);
+    // the locks are part of the same head of hair: no outline where they lie over the top of the
+    // head (that read as separate pieces stuck on), only along their own edges below it
+    shape(ctx, pts, isShadow ? mix(lit(c, Lt), shd(c, Lt), 0.5) : lit(c, Lt), null, 0);
+    {
+      const PathC = require('@napi-rs/canvas').Path2D;
+      const outside = new PathC(); cap.capArea(outside);
+      ctx.save(); ctx.clip(outside, 'evenodd');
+      ctx.beginPath(); L.crPath(ctx, pts, true); ctx.strokeStyle = st.hairLine; ctx.lineWidth = lw; ctx.lineJoin = 'round'; ctx.stroke();
+      ctx.restore();
+    }
     // inner shadow along face edge
     ctx.save();
     ctx.beginPath(); L.crPath(ctx, pts, true); ctx.clip();
@@ -302,13 +322,15 @@ function beardFull(opts) {
 
 // ========================================================================= PAUL
 function paulHairBack(ctx, pr, st, F, Lt, extra) {
-  // beard hangs behind nothing; fringe behind ears
+  // the hair that remains round the back of a bald head: it lies against the skull behind the ears
+  // and down to the nape (seen only at the edge of the head and behind the ears)
   const q = mk(pr, extra);
-  const c = st.hair;
+  const c = st.hair, lw = lwOf(pr, Lt);
   for (const sd of [-1, 1]) {
-    const pts = [q([sd * 0.9, -0.55, -0.1]), q([sd * 1.1, -0.2, -0.2]), q([sd * 1.14, 0.25, -0.25]),
-      q([sd * 0.95, 0.65, -0.35]), q([sd * 0.7, 0.4, -0.6]), q([sd * 0.85, -0.3, -0.5])];
-    shape(ctx, pts, shd(c, Lt), st.hairLine, lwOf(pr, Lt) * 0.8);
+    const pts = [q([sd * 0.97, -0.62, -0.12]), q([sd * 1.06, -0.25, -0.2]), q([sd * 1.08, 0.15, -0.28]), q([sd * 1.0, 0.58, -0.38]),
+      q([sd * 0.78, 0.78, -0.55]), q([sd * 0.7, 0.3, -0.62]), q([sd * 0.82, -0.3, -0.55])];
+    shape(ctx, pts, mix(lit(c, Lt), shd(c, Lt), 0.45), st.hairLine, lw * 0.7);
+    strands(ctx, [[q([sd * 1.0, -0.45, -0.2]), q([sd * 1.05, 0.0, -0.3]), q([sd * 0.95, 0.5, -0.42])]], rgba(st.hairLine, 0.3), lw * 0.5);
   }
 }
 function paulHairFront(ctx, pr, st, F, Lt, extra) {
@@ -316,16 +338,17 @@ function paulHairFront(ctx, pr, st, F, Lt, extra) {
   const c = st.hair, lw = lwOf(pr, Lt);
   const side = Lt.side || -1;
   for (const sd of [-1, 1]) {
-    // the far fringe turns out of sight gradually (no popping)
+    // the far side turns out of sight gradually (no popping)
     const far = Math.sign(sd) === Math.sign(pr.H.yaw);
     const vis = far ? clamp((0.48 - Math.abs(pr.H.yaw)) / 0.18) : 1;
     if (vis <= 0.01) continue;
     ctx.save(); ctx.globalAlpha *= vis;
-    // wispy fringe above/behind the ear
-    const pts = [q([sd * 0.86, -0.72, 0.18]), q([sd * 1.02, -0.5, 0.08]), q([sd * 1.1, -0.15, 0.0]), q([sd * 1.06, 0.12, -0.02]),
-      q([sd * 1.17, -0.05, -0.12]), q([sd * 1.18, -0.4, -0.1]), q([sd * 1.08, -0.68, -0.05])];
-    shape(ctx, pts, sd === -side ? mix(lit(c, Lt), shd(c, Lt), 0.3) : lit(c, Lt), st.hairLine, lw * 0.8);
-    strands(ctx, [[q([sd * 0.95, -0.6, 0.1]), q([sd * 1.1, -0.2, 0.0]), q([sd * 1.1, 0.05, -0.05])]], rgba(st.hairLine, 0.4), lw * 0.5);
+    // a band of thin hair lying flat on the side of the head, from the temple back over the top of
+    // the ear (it hugs the skull: never sticking out or floating above the ear)
+    const pts = [q([sd * 0.8, -0.78, 0.3]), q([sd * 0.93, -0.6, 0.16]), q([sd * 1.0, -0.32, 0.06]), q([sd * 1.03, -0.08, -0.02]),
+      q([sd * 0.99, -0.02, 0.02]), q([sd * 0.95, -0.24, 0.1]), q([sd * 0.88, -0.48, 0.2]), q([sd * 0.78, -0.66, 0.3])];
+    shape(ctx, pts, sd === -side ? mix(lit(c, Lt), shd(c, Lt), 0.3) : lit(c, Lt), st.hairLine, lw * 0.6);
+    strands(ctx, [[q([sd * 0.84, -0.68, 0.24]), q([sd * 0.96, -0.4, 0.1]), q([sd * 1.0, -0.1, 0.0])]], rgba(st.hairLine, 0.35), lw * 0.45);
     ctx.restore();
   }
   // scalp shine
@@ -460,15 +483,18 @@ function curlyCap(opts) {
 
 // ============================================================ HEAD CLOTH (Yosef, Elder, Saul travel)
 function headCloth(opts) {
+  // A head cloth that sits ON the head: it rests on the crown (only the thickness of the cloth above
+  // the scalp), falls past the ears to the shoulders, and is held by a cord at the crown. It has a
+  // hem along the face, soft folds following the drape and light on the raised folds.
   return {
     back(ctx, pr, st, F, Lt, extra) {
       const q = mk(pr, extra);
       const c = opts.color;
-      const pts = [q([0, -1.55, -0.1]), q([1.15, -1.0, -0.2]), q([1.32, 0.0, -0.3]),
-        q({ a: [1.2, 0.6, -0.3], d: [0.35, 1.3], k: 0.6 }), q({ a: [1.2, 0.6, -0.3], d: [0.55, 2.4], k: 0.9 }),
+      const pts = [q([0, -1.47, -0.1]), q([1.08, -1.0, -0.2]), q([1.25, 0.0, -0.3]),
+        q({ a: [1.15, 0.6, -0.3], d: [0.32, 1.3], k: 0.6 }), q({ a: [1.15, 0.6, -0.3], d: [0.5, 2.4], k: 0.9 }),
         q({ a: [0, 0.6, -0.5], d: [0, 2.5], k: 0.6 }),
-        q({ a: [-1.2, 0.6, -0.3], d: [-0.55, 2.4], k: 0.9 }), q({ a: [-1.2, 0.6, -0.3], d: [-0.35, 1.3], k: 0.6 }),
-        q([-1.32, 0.0, -0.3]), q([-1.15, -1.0, -0.2])];
+        q({ a: [-1.15, 0.6, -0.3], d: [-0.5, 2.4], k: 0.9 }), q({ a: [-1.15, 0.6, -0.3], d: [-0.32, 1.3], k: 0.6 }),
+        q([-1.25, 0.0, -0.3]), q([-1.08, -1.0, -0.2])];
       // the inside of the hood: in shadow, but still the same cloth
       shape(ctx, pts, mix(lit(c, Lt), shd(c, Lt), 0.68), st.hairLine, lwOf(pr, Lt));
     },
@@ -476,38 +502,53 @@ function headCloth(opts) {
       const q = mk(pr, extra);
       const c = opts.color, lw = lwOf(pr, Lt);
       const side = Lt.side || -1;
+      const hi = shade(lit(c, Lt), 1.18), lo = shade(c, 0.55);
       for (const sd of [-1, 1]) {
-        const pts = [q([0, -1.5, 0.25]), q([sd * 0.5, -1.4, 0.45]), q([sd * 0.95, -1.0, 0.45]), q([sd * 1.12, -0.4, 0.3]),
-          q([sd * 1.14, 0.3, 0.2]), q({ a: [sd * 1.1, 0.7, 0.1], d: [sd * 0.1, 0.8], k: 0.6 }),
-          q({ a: [sd * 1.1, 0.7, 0.1], d: [sd * 0.25, 1.6], k: 0.9 }), q({ a: [sd * 1.1, 0.7, 0.1], d: [sd * 0.65, 1.5], k: 0.9 }),
-          q({ a: [sd * 1.1, 0.7, 0.1], d: [sd * 0.55, 0.6], k: 0.6 }), q([sd * 1.38, 0.0, -0.05]), q([sd * 1.3, -0.8, 0.0]),
-          q([sd * 0.8, -1.5, 0.1]), q([0, -1.68, 0.05])];
+        const pts = [q([0, -1.1, 0.9]), q([sd * 0.48, -1.04, 0.8]), q([sd * 0.88, -0.8, 0.55]), q([sd * 1.07, -0.4, 0.34]),
+          q([sd * 1.11, 0.3, 0.2]), q({ a: [sd * 1.07, 0.7, 0.1], d: [sd * 0.1, 0.8], k: 0.6 }),
+          q({ a: [sd * 1.07, 0.7, 0.1], d: [sd * 0.25, 1.6], k: 0.9 }), q({ a: [sd * 1.07, 0.7, 0.1], d: [sd * 0.62, 1.5], k: 0.9 }),
+          q({ a: [sd * 1.07, 0.7, 0.1], d: [sd * 0.52, 0.6], k: 0.6 }), q([sd * 1.28, 0.0, -0.05]), q([sd * 1.22, -0.8, 0.0]),
+          q([sd * 0.78, -1.4, 0.1]), q([0, -1.52, 0.05])];
         // one cloth: the side away from the light is a softer shade of the same colour
         shape(ctx, pts, sd === -side ? mix(lit(c, Lt), shd(c, Lt), 0.42) : lit(c, Lt), st.hairLine, lw);
-        // stripes
+        ctx.save();
+        ctx.beginPath(); L.crPath(ctx, pts, true); ctx.clip();
+        ctx.lineCap = 'round';
+        // the hem along the face: the cloth's thickness turning under, in shadow
+        const hem = [q([sd * 0.05, -1.07, 0.9]), q([sd * 0.48, -1.0, 0.8]), q([sd * 0.86, -0.77, 0.55]), q([sd * 1.04, -0.4, 0.35]),
+          q([sd * 1.07, 0.3, 0.22]), q({ a: [sd * 1.07, 0.7, 0.1], d: [sd * 0.12, 0.85], k: 0.6 })];
+        L.strokeSmooth(ctx, hem, rgba(lo, 0.45), pr.s * 0.07);
+        // stripes woven into the cloth
         if (opts.stripe) {
-          ctx.save();
-          ctx.beginPath(); L.crPath(ctx, pts, true); ctx.clip();
-          for (const off of [0.12, 0.2]) {
-            const sp = [q([sd * (0.5 + off), -1.45 + off * 0.2, 0.4]), q([sd * (1.0 + off), -0.95, 0.35]), q([sd * (1.18 + off), -0.3, 0.2]),
-              q([sd * (1.2 + off), 0.35, 0.1]), q({ a: [sd * 1.1, 0.7, 0.1], d: [sd * (0.22 + off), 1.0], k: 0.7 })];
-            L.strokeSmooth(ctx, sp, rgba(opts.stripe, 0.85), pr.s * 0.05);
+          for (const off of [0.14, 0.22]) {
+            const sp = [q([sd * (0.45 + off), -1.06 + off * 0.1, 0.78]), q([sd * (0.9 + off), -0.78, 0.5]), q([sd * (1.12 + off), -0.3, 0.2]),
+              q([sd * (1.16 + off), 0.35, 0.1]), q({ a: [sd * 1.07, 0.7, 0.1], d: [sd * (0.22 + off), 1.0], k: 0.7 })];
+            L.strokeSmooth(ctx, sp, rgba(opts.stripe, 0.8), pr.s * 0.045);
           }
-          ctx.restore();
         }
-        // folds
-        strands(ctx, [[q([sd * 0.6, -1.3, 0.45]), q([sd * 1.05, -0.6, 0.3]), q([sd * 1.15, 0.2, 0.15])]], rgba(st.hairLine, 0.35), lw * 0.6);
+        // folds of the drape: a shadow line with light on the raised side of each
+        for (const [o, k] of [[0.3, 0.9], [0.55, 1.0], [0.8, 0.85]]) {
+          const fp = [q([sd * (0.3 + o * 0.6), -1.25 + o * 0.25, 0.6]), q([sd * (0.95 + o * 0.22), -0.6, 0.3]),
+            q([sd * (1.1 + o * 0.12), 0.2, 0.15]), q({ a: [sd * 1.07, 0.7, 0.1], d: [sd * (0.18 + o * 0.4), 0.7 + o * 0.6], k: 0.8 })];
+          L.strokeSmooth(ctx, fp, rgba(st.hairLine, 0.28 * k), lw * 0.7);
+          L.strokeSmooth(ctx, fp.map((p) => [p[0] - sd * pr.s * 0.05, p[1]]), rgba(hi, (sd === side ? 0.32 : 0.16) * k), pr.s * 0.035);
+        }
+        // a little shade where the cloth rests on the crown
+        const cr = q([sd * 0.45, -1.42, 0.3]);
+        ctx.fillStyle = L.radial(ctx, cr[0], cr[1], 0, pr.s * 0.5, [[0, rgba(lo, 0.0)], [1, rgba(lo, 0.0)]]);
+        ctx.restore();
       }
-      // band / cord over forehead
+      // the cord holding it on the head, at the crown
       if (opts.band) {
-        const bp = [q([-1.05, -0.95, 0.4]), q([-0.5, -1.22, 0.75]), q([0, -1.28, 0.82]), q([0.5, -1.22, 0.75]), q([1.05, -0.95, 0.4])];
+        const bp = [q([-1.0, -0.86, 0.45]), q([-0.5, -1.1, 0.8]), q([0, -1.16, 0.9]), q([0.5, -1.1, 0.8]), q([1.0, -0.86, 0.45])];
         L.strokeSmooth(ctx, bp, lit(opts.band, Lt), pr.s * 0.09);
+        L.strokeSmooth(ctx, bp.map((p) => [p[0], p[1] - pr.s * 0.02]), rgba(shade(lit(opts.band, Lt), 1.6), 0.35), pr.s * 0.025);
         L.strokeSmooth(ctx, bp, rgba(st.hairLine, 0.5), lw * 0.5);
       }
     },
     shadow(ctx, pr, st, F, Lt, skinSh) {
       const q = mk(pr, null);
-      const pts = [q([-1.05, -0.6, 0.4]), q([-0.5, -0.98, 0.8]), q([0, -1.05, 0.9]), q([0.5, -0.98, 0.8]), q([1.05, -0.6, 0.4]),
+      const pts = [q([-1.02, -0.55, 0.4]), q([-0.5, -0.86, 0.8]), q([0, -0.92, 0.9]), q([0.5, -0.86, 0.8]), q([1.02, -0.55, 0.4]),
         q([1.2, -1.8, 0]), q([-1.2, -1.8, 0])];
       shape(ctx, pts, rgba(skinSh, 0.9), null, 0);
       for (const sd of [-1, 1]) {
@@ -595,7 +636,7 @@ C.jesus = {
   geo: { chinY: 1.36, jawW: 0.66, mouthW: 0.21 },
   hairBack: jesusHairBack, hairFront: jesusHairFront, hairShadow: jesusHairShadow, beard: beardFull({ len: 0.12, cheek: 0.25 }),
   beardHidesFolds: true,
-  cloth: { tunic: '#efe5d3', mantle: '#8e2b2e', trim: '#a5804a', mantleTrim: false, neck: 'v', looseSleeves: 1 },
+  cloth: { tunic: '#efe5d3', mantle: '#8e2b2e', trim: '#a5804a', edge: '#d8b25c', neck: 'v', looseSleeves: 1 },
 };
 C.paul = {
   name: 'paul', skin: '#dfae8a', skinShadow: '#a9725a', line: '#3a221a', iris: '#4e3a2c', browColor: '#c9c1b6',
@@ -622,21 +663,23 @@ C.yosef = {
   beardHidesFolds: true,
   cloth: { tunic: '#8b6f4f', mantle: '#5a4632', trim: '#3a2c22', neck: 'round' },
 };
-const saulCap = curlyCap({ hairline: -0.9 });
+// young Paul (Saul) must never be mistaken for Asher: a white head cloth with blue stripes (a
+// Pharisee's), a lean long face, heavy straight brows, a short trimmed beard that leaves the cheeks
+// bare, and a blue tunic under a white mantle
+const saulTravel = headCloth({ color: '#e4ddcc', stripe: '#2d4f8a', band: '#2a2020' });
 C.saul = {
-  name: 'saul', skin: '#dcaa86', skinShadow: '#a26c55', line: '#2e1c16', iris: '#3a2a20', browColor: '#140c0a',
-  hair: '#17110f', hairLine: '#050303', beardColor: '#17110f', age: 0.1, browW: 0.095,
-  geo: { chinY: 1.32, jawW: 0.72, mouthW: 0.22 },
-  hairBack: saulCap.back, hairFront: saulCap.front, hairShadow: saulCap.shadow, beard: beardFull({ len: 0.16, cheek: 0.28 }),
+  name: 'saul', skin: '#d2a07c', skinShadow: '#9a6650', line: '#2e1c16', iris: '#3a2a20', browColor: '#140c0a',
+  hair: '#17110f', hairLine: '#050303', beardColor: '#17110f', age: 0.1, browW: 0.1,
+  geo: { chinY: 1.42, jawW: 0.64, mouthW: 0.21, cheekW: 0.93 },
+  hairBack: saulTravel.back, hairFront: saulTravel.front, hairShadow: saulTravel.shadow, beard: beardFull({ len: -0.02, cheek: 0.62, thick: 0.8 }),
   beardHidesFolds: true,
-  cloth: { tunic: '#2c2838', mantle: '#d8d2c2', trim: '#2d4f8a', neck: 'round', skirt: '#cbc4b2' },
+  cloth: { tunic: '#3e5276', mantle: '#ddd6c6', trim: '#2d4f8a', neck: 'round', skirt: '#cbc4b2' },
 };
-const saulTravel = headCloth({ color: '#c8b79a', stripe: '#2d4f8a', band: '#2a2020' });
-C.saul_travel = Object.assign({}, C.saul, { hairBack: saulTravel.back, hairFront: saulTravel.front, hairShadow: saulTravel.shadow });
+C.saul_travel = Object.assign({}, C.saul);
 const childCap = curlyCap({ hairline: -0.62 });
 C.child = {
   name: 'child', skin: '#ecbf9c', skinShadow: '#b98068', line: '#3a241c', iris: '#4a3020', browColor: '#2a1c14',
-  hair: '#2d1e16', hairLine: '#120a07', child: true, blush: 0.35, browW: 0.06, lashW: 0.3, eyeScale: 1.42, irisR: 0.6,
+  hair: '#2d1e16', hairLine: '#120a07', child: true, blush: 0.35, browW: 0.06, lashW: 0.3, eyeScale: 1.42, irisR: 0.6, neckLen: 1.8,
   geo: { chinY: 1.08, jawW: 0.8, jawY: 0.78, mouthY: 0.7, mouthW: 0.14, eyeY: 0.12, eyeH: 1.35, eyeX: 0.47, noseY: 0.4, noseLen: 0.7, cheekW: 1.0 },
   hairBack: childCap.back, hairFront: childCap.front, hairShadow: childCap.shadow,
   cloth: { tunic: '#c7b08a', mantle: '#8a6e50', trim: '#6a5440', neck: 'round' },
@@ -691,8 +734,8 @@ const phoebeVeil = headCloth({ color: '#3f6f86', stripe: '#e8d9b4', band: null }
 C.phoebe = {
   name: 'phoebe', skin: '#e9bb98', skinShadow: '#bb826a', line: '#3a241c', iris: '#5a3a22', browColor: '#2a1a12',
   hair: '#2c1b14', hairLine: '#140a08', lashW: 0.34, eyeScale: 1.12, irisR: 0.56, browW: 0.05, blush: 0.34, lips: '#c76a64',
-  adamsApple: false, age: 0.15,
-  geo: { chinY: 1.22, jawW: 0.6, jawY: 0.86, mouthW: 0.18, mouthY: 0.8, eyeH: 1.15, browY: -0.37, noseLen: 0.82, cheekW: 0.95 },
+  adamsApple: false, age: 0.15, neckLen: 1.92,
+  geo: { chinY: 1.22, jawW: 0.68, jawY: 0.9, mouthW: 0.18, mouthY: 0.8, eyeH: 1.15, browY: -0.37, noseLen: 0.82, cheekW: 0.95 },
   hairBack: phoebeVeil.back,
   hairFront(ctx, pr, st, F, Lt, extra) {
     hairCap(ctx, pr, st, Lt, [[-0.96, -0.3, 0.3], [-0.72, -0.78, 0.6], [-0.36, -0.98, 0.84], [0, -1.04, 0.9], [0.36, -0.98, 0.84], [0.72, -0.78, 0.6], [0.96, -0.3, 0.3]], { volume: 1.06 });

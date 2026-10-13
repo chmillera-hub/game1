@@ -11,6 +11,8 @@ const D = {
   mouthSmile: 0, mouthBase: 0, mouthWide: 0, mouthPress: 0, mouthAsym: 0, mouthTremble: 0,
   cheekRaise: 0, tears: 0, tearFlow: 0, blush: 0, pale: 0, tremble: 0,
   pitchOff: 0, rollOff: 0, yawOff: 0, breath: 1, blinkRate: 1, saccade: 1, blind: 0, lean: 0, shoulder: 0,
+  // a single tear: -2 none, -1..0 welling on the lid, 0..1 rolling down; its trail then dries
+  tearDrop: -2, tearTrail: 0, tearSide: 1,
 };
 const EMO = {
   neutral: {},
@@ -111,12 +113,18 @@ const POSES = {
     f: { w: [2.6, 4.15], hand: 'offer', palm: { up: 0.8, fwd: 0.4 }, fdir: { fwd: 0.7, out: 0.45, down: 0.25 }, fk: 0.6 }, front: true },
   open_low: { n: { w: [-2.3, 4.55], hand: 'offer', palm: { up: 0.75, fwd: 0.5 }, fdir: { out: 0.4, fwd: 0.7, down: 0.3 }, fk: 0.6 },
     f: { w: [2.3, 4.55], hand: 'offer', palm: { up: 0.75, fwd: 0.5 }, fdir: { out: 0.4, fwd: 0.7, down: 0.3 }, fk: 0.6 }, front: true },
-  hold: { n: { w: [-1.68, 5.04], hand: 'grip', palm: HANG }, f: { w: [0.7, 3.25], hand: 'cup', palm: { up: 0.75, in: 0.6 }, fdir: { in: 0.8, fwd: 0.35 } }, front: true,
+  // the loaf rests in the palm, held up at the chest: fingers curled round its far side, thumb on the near side
+  hold: { n: { w: [-1.68, 5.04], hand: 'grip', palm: HANG }, f: { w: [0.6, 3.0], hand: 'cup', palm: { up: 0.9, fwd: 0.25 }, fdir: { in: 0.85, back: 0.3 }, fk: 0.8 }, front: true,
     jar: { arm: 'n', h: 1.9 }, bread: { arm: 'f', r: 1.0 } },
-  hold_nervous: { n: { w: [-1.68, 5.04], hand: 'grip', palm: HANG }, f: { w: [0.62, 3.55], hand: 'cup', palm: { up: 0.75, in: 0.6 }, fdir: { in: 0.8, fwd: 0.35 } }, front: true,
+  hold_nervous: { n: { w: [-1.68, 5.04], hand: 'grip', palm: HANG }, f: { w: [0.55, 3.15], hand: 'cup', palm: { up: 0.9, fwd: 0.25 }, fdir: { in: 0.85, back: 0.3 }, fk: 0.8 }, front: true,
     jar: { arm: 'n', h: 1.9 }, bread: { arm: 'f', r: 0.95 }, fidget: { arm: 'f', amp: [0.1, 0.3], period: 3.4, pats: 2 }, sway: 0.02 },
   hold_half: { n: { w: [-1.85, 5.12], hand: 'relax', palm: HANG }, f: { w: [0.85, 3.7], hand: 'cup', palm: { in: 0.75, up: 0.55, back: 0.1 }, fdir: { in: 0.75, fwd: 0.4 } }, front: true,
     half: { arm: 'f', r: 0.9 } },
+  // at the prison door: the loaf in the near hand, the far hand raised in a fist to knock
+  walk_bread: { n: { w: [-1.8, 5.1], hand: 'relax', palm: HANG }, f: { w: [0.55, 3.15], hand: 'cup', palm: { up: 0.9, fwd: 0.25 }, fdir: { in: 0.85, back: 0.3 }, fk: 0.8 }, front: true,
+    bread: { arm: 'f', r: 0.9 } },
+  knock2: { n: { w: [-0.45, 3.7], hand: 'cup', palm: { up: 0.9, fwd: 0.2 }, fdir: { in: 0.8, back: 0.25 }, fk: 0.8 }, f: { w: [3.15, 1.3], hand: 'fist', palm: { in: 0.6, down: 0.5 }, fdir: { fwd: 1, up: 0.3 } }, front: true,
+    bread: { arm: 'n', r: 0.85 } },
   knock: { n: { w: [-1.93, 5.21], hand: 'relax', palm: HANG }, f: { w: [3.36, 1.18], hand: 'fist', palm: { in: 0.6, down: 0.5 }, fdir: { fwd: 1, up: 0.3 } }, front: true },
   empty: { n: { w: [-1.8, 5.2], hand: 'relax', palm: HANG }, f: { w: [1.9, 5.2], hand: 'relax', palm: HANG }, front: false },
   drop_bread: { n: { w: [-1.93, 5.21], hand: 'open', palm: HANG }, f: { w: [1.34, 5.04], hand: 'open', palm: { in: 0.8, back: 0.4 } }, front: true },
@@ -168,22 +176,35 @@ class Actor {
   }
   // Tears appear as fast as the acting asks, but once the crying stops they dry slowly
   // (streaks fade over ~7 s, wet eyes over ~5 s) instead of vanishing or lingering forever.
-  dried(t, raw) {
+  // Also integrates the breathing and eye-saccade phases over time: their rates change with the
+  // emotion, and a phase computed as time x rate would race (a rapid jolt of the body) whenever
+  // the rate changes late in the film.
+  tables() {
     if (!this.dry) {
       const dt = 0.05, n = Math.ceil((this.duration || 900) / dt) + 2;
-      const tf = new Float32Array(n), te = new Float32Array(n);
-      let a = 0, b = 0;
+      const tf = new Float32Array(n), te = new Float32Array(n), bc = new Float64Array(n), sc = new Float64Array(n);
+      let a = 0, b = 0, cb = 0, cs = 0;
       for (let i = 0; i < n; i++) {
         const v = this.eval(i * dt, null, true);
         a = Math.max(v.tearFlow, a - dt / 7.0);
         b = Math.max(v.tears, b - dt / 5.0);
-        tf[i] = a; te[i] = b;
+        tf[i] = a; te[i] = b; bc[i] = cb; sc[i] = cs;
+        cb += 0.26 * v.breath * dt;
+        cs += (0.9 + 0.6 * v.saccade) * dt;
       }
-      this.dry = { dt, tf, te };
+      this.dry = { dt, tf, te, bc, sc };
     }
-    const d = this.dry, x = clamp(t / d.dt, 0, d.tf.length - 1.001), i = Math.floor(x), f = x - i;
+    return this.dry;
+  }
+  dried(t, raw) {
+    const d = this.tables(), x = clamp(t / d.dt, 0, d.tf.length - 1.001), i = Math.floor(x), f = x - i;
     raw.tearFlow = lerp(d.tf[i], d.tf[i + 1], f);
     raw.tears = lerp(d.te[i], d.te[i + 1], f);
+  }
+  // cumulative breathing cycles and saccade steps at time t
+  phase(t) {
+    const d = this.tables(), x = clamp(t / d.dt, 0, d.bc.length - 1.001), i = Math.floor(x), f = x - i;
+    return { breath: lerp(d.bc[i], d.bc[i + 1], f), sacc: lerp(d.sc[i], d.sc[i + 1], f) };
   }
   // evaluate numeric channels + discrete look/pose with blend info
   eval(t, lookMap, rawOnly) {
@@ -207,12 +228,20 @@ class Actor {
       };
       if (target) for (const n of NUM) if (s[n] === undefined) setCh(n, target[n]);
       for (const n of NUM) if (s[n] !== undefined) setCh(n, s[n]);
-      if (s.look) {
-        const p = ease((k.t - look.t0) / look.dur) >= 1 ? look.to : look.to; // snap from current target
-        look = { from: p === s.look ? look.from : look.to, to: s.look, t0: k.t, dur: dur <= 0.002 ? 0.001 : Math.max(0.15, dur * 0.8) };
+      // A new look or pose starts from wherever the previous change had got to (a blend of its
+      // two ends), never snapping back to an earlier target; repeating the current one changes nothing.
+      const blendOf = (c) => {
+        const kk = c.dur <= 0.002 ? 1 : ease(clamp((k.t - c.t0) / c.dur));
+        if (kk >= 0.999) return c.to;
+        const depth = (x) => (x && typeof x === 'object' ? 1 + Math.max(depth(x.a), depth(x.b)) : 0);
+        const a = depth(c.from) > 3 ? (c.from.k < 0.5 ? c.from.a : c.from.b) : c.from;
+        return { a, b: c.to, k: kk, name: kk < 0.5 ? String(a) : String(c.to), toString() { return this.name; } };
+      };
+      if (s.look && s.look !== look.to) {
+        look = { from: blendOf(look), to: s.look, t0: k.t, dur: dur <= 0.002 ? 0.001 : Math.max(0.15, dur * 0.8) };
       }
-      if (s.pose) {
-        pose = { from: pose.to, to: s.pose, t0: k.t, dur };
+      if (s.pose && s.pose !== pose.to) {
+        pose = { from: blendOf(pose), to: s.pose, t0: k.t, dur };
       }
     }
     const out = { emo: emoName };
@@ -317,21 +346,27 @@ class World {
     for (const k of NUM) F[k] = e[k];
     // gaze & head from look targets (resolved via shot map)
     const resolve = (name) => shotLook[name] || shotLook.default || { gx: 0, gy: 0, yaw: 0, pitch: 0 };
-    const a = resolve(e.lookFrom), b = resolve(e.lookTo);
+    const mixL = (p, q, k) => ({ gx: lerp(p.gx || 0, q.gx || 0, k), gy: lerp(p.gy || 0, q.gy || 0, k), yaw: lerp(p.yaw || 0, q.yaw || 0, k),
+      pitch: lerp(p.pitch || 0, q.pitch || 0, k), roll: lerp(p.roll || 0, q.roll || 0, k) });
+    // a look that was itself still changing: the eyes and the head had each got so far
+    const eyesOf = (x) => (x && typeof x === 'object' ? mixL(eyesOf(x.a), eyesOf(x.b), clamp(x.k * 2.2)) : resolve(x));
+    const headOf = (x) => (x && typeof x === 'object' ? mixL(headOf(x.a), headOf(x.b), smooth(x.k)) : resolve(x));
+    const ae = eyesOf(e.lookFrom), ah = headOf(e.lookFrom), b = resolve(e.lookTo);
     const k = e.lookK;
     // eyes lead, head follows (eyes faster)
     const ke = clamp(k * 2.2), kh = smooth(k);
-    F.gazeX = lerp(a.gx, b.gx, ke);
-    F.gazeY = lerp(a.gy, b.gy, ke);
-    F.yaw = lerp(a.yaw || 0, b.yaw || 0, kh) + F.yawOff;
+    F.gazeX = lerp(ae.gx || 0, b.gx || 0, ke);
+    F.gazeY = lerp(ae.gy || 0, b.gy || 0, ke);
+    F.yaw = lerp(ah.yaw || 0, b.yaw || 0, kh) + F.yawOff;
     F.yawLook = F.yaw;
-    F.pitch = lerp(a.pitch || 0, b.pitch || 0, kh) + F.pitchOff;
-    F.roll = F.rollOff + lerp(a.roll || 0, b.roll || 0, kh);
+    F.pitch = lerp(ah.pitch || 0, b.pitch || 0, kh) + F.pitchOff;
+    F.roll = F.rollOff + lerp(ah.roll || 0, b.roll || 0, kh);
     // saccades
     const sr = F.saccade;
     if (sr > 0.05) {
-      const seg = Math.floor(t * (0.9 + 0.6 * sr) + A.seed * 3.1);
-      const fr = (t * (0.9 + 0.6 * sr) + A.seed * 3.1) - seg;
+      const ps = A.phase(t).sacc + A.seed * 3.1;
+      const seg = Math.floor(ps);
+      const fr = ps - seg;
       const prev = [L.hash(seg * 31 + A.seed), L.hash(seg * 17 + A.seed * 5)];
       const cur = [L.hash((seg + 1) * 31 + A.seed), L.hash((seg + 1) * 17 + A.seed * 5)];
       const m = clamp((fr - 0.85) / 0.15);
@@ -401,7 +436,7 @@ class World {
     F.headDY = tr * 0.02 * L.noise1(t * 2.2, A.seed + 23);
     F.roll += tr * 0.018 * L.noise1(t * 1.9, A.seed + 5);
     const br = F.breath;
-    const bphase = t * (0.26 * br) * L.TAU + A.seed;
+    const bphase = A.phase(t).breath * L.TAU + A.seed;
     F.breathV = Math.sin(bphase) * (0.5 + 0.5 * clamp(br - 1)) + (F.breathInhale || 0) * 0.8;
     F._trem = L.noise1(t * 6.5, A.seed + 41) * 1.0;
     F._irisShake = F.tears * L.noise1(t * 3.0, A.seed + 3);

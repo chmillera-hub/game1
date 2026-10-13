@@ -10,12 +10,12 @@ Casting (Kokoro voice ids):
   paul      bm_lewis    deep, weathered British (old Paul)
   saul      bm_lewis    same man 34 years younger: brighter, faster, harder
   asher     am_fenrir   intense, mid-range
-  yosef     bm_fable    gentle, warm father
+  yosef     bm_fable    a gentle father, lowered and given a fuller chest (F0 about 105 Hz)
   phoebe    bf_emma     warm, clear reader of Paul's letter in Rome
   guard     am_onyx     gruff and low
-  child     a blend of af_heart and am_puck, lifted into a boy's register (F0 about 230 Hz)
+  child     a blend of af_heart and am_puck, lifted into a boy's register (F0 about 195 Hz)
             with only a small formant lift, so it sounds young rather than sped-up
-  epic      am_michael  the closing voice: Jesus' voice made deeper and larger
+  epic      bm_daniel   the closing voice: a deep, warm British reader (F0 about 113 Hz)
 """
 import hashlib
 import json
@@ -37,11 +37,11 @@ CAST = {
     "paul": dict(voice="bm_lewis"),
     "saul": dict(voice="bm_lewis", pitch=1.06, speed_mul=1.06),
     "asher": dict(voice="am_fenrir"),
-    "yosef": dict(voice="bm_fable"),
+    "yosef": dict(voice="bm_fable", pitch=0.84, formant=0.93),
     "phoebe": dict(voice="bf_emma"),
     "guard": dict(voice="am_onyx", pitch=0.97),
-    "child": dict(voice="af_heart*0.55+am_puck*0.45", pitch=1.35, formant=1.08, speed_mul=0.92),
-    "epic": dict(voice="am_michael", pitch=0.78, formant=0.9),
+    "child": dict(voice="af_heart*0.55+am_puck*0.45", pitch=1.08, formant=1.04, speed_mul=0.92),
+    "epic": dict(voice="bm_daniel", pitch=0.88, formant=0.95),
 }
 
 _kokoro = None
@@ -116,11 +116,6 @@ def synth(who, text, speed=1.0, fx=None):
         if abs(rest - 1.0) > 1e-3:
             x = _ffmpeg_filter(x, f"rubberband=pitch={rest}:formant=preserved:transients=smooth")
 
-    if fx == "epic":
-        # a faint voice an octave below, for weight (kept low so it never sounds artificial)
-        low = _ffmpeg_filter(x, "rubberband=pitch=0.5:formant=preserved:transients=smooth")
-        n = min(len(x), len(low))
-        x = x[:n] + 0.14 * low[:n]
     if fx == "tremble":
         # held-back tears: slow pitch waver + slight amplitude flutter
         x = _ffmpeg_filter(x, "vibrato=f=5.2:d=0.06,tremolo=f=4.6:d=0.12")

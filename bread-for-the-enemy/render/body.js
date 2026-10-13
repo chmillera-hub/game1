@@ -103,8 +103,11 @@ function drawTorso(ctx, B, s, st, Lt, o) {
     ctx.restore();
     ctx.beginPath(); L.crPath(ctx, pts, true, 0.45); // the folds replaced the path: outline the mantle itself
     ctx.strokeStyle = st.line; ctx.lineWidth = lw; ctx.stroke();
-    if (cl.trim && cl.mantleTrim !== false) {
-      L.strokeSmooth(ctx, [Xc(ms * 0.58, 0.5), X(ms * 0.25, 2.2), X(-ms * 0.9, 3.6), X(-ms * 1.85, 4.55)], lit(cl.trim, Lt), s * 0.1);
+    if (cl.edge) {
+      // a thin gold edge along the mantle, from the waist up to the shoulder
+      const ep = [X(-ms * 1.85, 4.55), X(-ms * 0.9, 3.6), X(ms * 0.25, 2.2), Xc(ms * 0.58, 0.5), Xc(ms * 0.66, -0.12)];
+      L.strokeSmooth(ctx, ep, lit(cl.edge, Lt), s * 0.055);
+      L.strokeSmooth(ctx, ep.map((p) => [p[0] - s * 0.012, p[1]]), rgba(shade(lit(cl.edge, Lt), 1.25), 0.5), s * 0.015);
     }
   }
   // tunic folds
@@ -128,11 +131,15 @@ function drawTorso(ctx, B, s, st, Lt, o) {
   ctx.beginPath(); L.crPath(ctx, left, false, 0.45);
   ctx.strokeStyle = st.line; ctx.lineWidth = lw * 1.1; ctx.stroke();
   ctx.beginPath(); L.crPath(ctx, right, false, 0.45); ctx.stroke();
-  // rim light on body
+  // rim light on the body: a fine line of light that fades in and out along the edge (never a
+  // band of colour sitting on the shoulder)
   if (Lt.rim && (Lt.rimA || 0) > 0) {
-    const pts = Lt.rimSide > 0 ? right : left;
+    const pts = (Lt.rimSide > 0 ? right : left).slice(1, 6);
+    const a = pts[0], b = pts[pts.length - 1];
+    const g = ctx.createLinearGradient(a[0], a[1], b[0], b[1]);
+    g.addColorStop(0, rgba(Lt.rim, 0)); g.addColorStop(0.3, rgba(Lt.rim, Lt.rimA * 0.45)); g.addColorStop(0.7, rgba(Lt.rim, Lt.rimA * 0.45)); g.addColorStop(1, rgba(Lt.rim, 0));
     ctx.save(); ctx.globalCompositeOperation = 'lighter';
-    L.strokeSmooth(ctx, pts.slice(1, 6), rgba(Lt.rim, Lt.rimA * 0.8), s * 0.06);
+    L.strokeSmooth(ctx, pts, g, s * 0.03);
     ctx.restore();
   }
   const poly = outline.concat([left[0]]);
@@ -315,15 +322,6 @@ function drawSleeve(ctx, g, st, Lt, o = {}) {
         [a[0] + g.dir[0] * s * (k + 0.18), a[1] + g.dir[1] * s * (k + 0.18)],
         [a[0] - nx * g.rE * 0.5 + g.dir[0] * s * (k + 0.05), a[1] - ny * g.rE * 0.5 + g.dir[1] * s * (k + 0.05)]], rgba(shade(col, 0.45), 0.5), lw * 0.8);
     }
-  }
-  // rim light along the outer edge on the rim side
-  if (Lt.rim && (Lt.rimA || 0) > 0.05 && part !== 'upper') {
-    ctx.globalCompositeOperation = 'lighter';
-    const rs = Lt.rimSide || 1;
-    const nx = -g.dir[1], ny = g.dir[0];
-    const sg = nx * rs > 0 ? 1 : -1;
-    L.strokeSmooth(ctx, [[g.E[0] + nx * g.rE * 0.92 * sg, g.E[1] + ny * g.rE * 0.92 * sg], [g.C[0] + nx * g.rC * 0.92 * sg, g.C[1] + ny * g.rC * 0.92 * sg]], rgba(Lt.rim, Lt.rimA * 0.45), s * 0.05);
-    ctx.globalCompositeOperation = 'source-over';
   }
   ctx.restore();
   // cuff: the opening of the sleeve around the wrist
