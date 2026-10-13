@@ -105,6 +105,9 @@ G2_WAVE = {"base": "stand", "period": 0.6, "al_p": 0.9, "al_o": 0.5, "al_e": 2.3
            "al_tf": -1.0, "hunch": 0.35}
 G2_ANTIC = {"base": "stand", "hunch": 1.2, "lean": -0.06, "nod": -0.05}
 G2_LEAP = {"base": "leap_scared", "ar_h": "grip"}     # keeps hold of his flashlight
+# the gruff guard's one-armed shrug: the flashlight (r) hand keeps the grip it has everywhere else
+# (the plain shrug's open, palm-out r hand lay flat over the torch)
+G1_SHRUG = {"base": "shrug", "ar_h": "relaxed", "ar_tf": 1.0}
 
 # the key ring: clipped at the belt on the wearer's right hip toward the back
 # (the near side while he faces screen-right), drawn in the l arm's z-slot so it
@@ -447,7 +450,9 @@ def _g1(t, T):
                                                                                     T["shrug"] + 0.85)))
     reach_w = 1.0
     if ks > 0.001:
-        pose = ("stand", "shrug", ks)
+        # blended over whatever he is doing: the walk-off starts before the shrug has released, and a
+        # plain ("stand", shrug) blend there slid his feet, then snapped them into a full stride
+        pose = (pose, G1_SHRUG, ks)
         # one-handed shrug: the free hand palm-up + shoulders + head; the flashlight hand
         # stays on its IK target (held low at his side) so it never jumps
     # face
@@ -465,6 +470,11 @@ def _g1(t, T):
         k = smoothstep(seg(t, T["fr0"], T["fr0"] + 0.2))
         look = (lerp(0.6, -0.85, k), 0.35 * k)
         expr = "squint"
+        face = {"head_turn": -0.35 * k}
+    elif T["fr1"] <= t < T["fr1"] + 0.12:
+        # head and eyes come back round WITH the body's whip-turn (fr1-0.15..fr1+0.12), not in one frame
+        k = 1 - smoothstep(seg(t, T["fr1"], T["fr1"] + 0.12))
+        look = (lerp(0.6, -0.85, k), lerp(0.15, 0.35, k))
         face = {"head_turn": -0.35 * k}
     if t >= TR - 0.5:
         expr = "bored"
@@ -496,6 +506,11 @@ def _g1(t, T):
         else:
             look = (-0.6, -0.25)         # the pipes
         face = {"brow_l": 0.15, "head_nod": 0.1 if t < land + 0.6 else 0.0}
+        # finish the head's turn back from the floor over the turn branch's own release window
+        # (ML+0.3..ML+0.6; this branch starts at land-0.25 = ML+0.3) instead of dropping it in one frame
+        ht = -0.4 * (1 - smoothstep(seg(t, ML + 0.3, ML + 0.6)))
+        if ht < -1e-4:
+            face["head_turn"] = ht
     if t >= T["l4s"] - 0.1:
         expr = "deadpan"
         look = (-0.6, -0.1)
