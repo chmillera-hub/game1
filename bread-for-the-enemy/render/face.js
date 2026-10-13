@@ -46,7 +46,7 @@ function geoOf(st) {
   G.jawW = Math.min(0.82, G.jawW * (fem ? 1.04 : 1.09));
   G.jawY += 0.04; G.chinY += fem ? 0.03 : 0.06; G.mouthY += fem ? 0.02 : 0.04; G.noseY += 0.02;
   G.eyeW *= fem ? 0.95 : 0.92; G.noseLen *= fem ? 1.1 : 1.15;
-  G.cheekLow = fem ? 0.9 : 0.93; G.chinW = fem ? 0.45 : 0.48;
+  G.cheekLow = fem ? 0.94 : 0.93; G.chinW = fem ? 0.47 : 0.48;
   return G;
 }
 
@@ -246,10 +246,21 @@ function drawNeck(ctx, pr, st, F, Lt, skin, skinSh, line, lw, G, extra = {}) {
   const cL = extra.collar ? extra.collar[0] : [Ls.t1[0], Ls.t1[1]];
   const cR = extra.collar ? extra.collar[extra.collar.length - 1] : [Rs.t1[0], Rs.t1[1]];
   const xl = Math.min(cL[0], Ls.t1[0]), xr = Math.max(cR[0], Rs.t1[0]);
-  shape.quadraticCurveTo(xl, cL[1] + s * 0.05, xl - s * 0.7, cL[1] + s * 0.44);
-  shape.lineTo(xl - s * 0.7, by + s * 0.9);
-  shape.lineTo(xr + s * 0.7, by + s * 0.9);
-  shape.lineTo(xr + s * 0.7, cR[1] + s * 0.44);
+  const SL = extra.shoulderL, SR = extra.shoulderR;
+  if (SL && SR) {
+    // follow the clothes' own shoulder lines a little below them, whichever way the body turns
+    shape.quadraticCurveTo(xl, cL[1] + s * 0.05, SL[1][0], SL[1][1] + s * 0.16);
+    shape.lineTo(SL[2][0], SL[2][1] + s * 0.2);
+    shape.lineTo(SL[2][0], by + s * 0.9);
+    shape.lineTo(SR[2][0], by + s * 0.9);
+    shape.lineTo(SR[2][0], SR[2][1] + s * 0.2);
+    shape.lineTo(SR[1][0], SR[1][1] + s * 0.16);
+  } else {
+    shape.quadraticCurveTo(xl, cL[1] + s * 0.05, xl - s * 0.7, cL[1] + s * 0.44);
+    shape.lineTo(xl - s * 0.7, by + s * 0.9);
+    shape.lineTo(xr + s * 0.7, by + s * 0.9);
+    shape.lineTo(xr + s * 0.7, cR[1] + s * 0.44);
+  }
   shape.quadraticCurveTo(xr, cR[1] + s * 0.05, Rs.t1[0], Rs.t1[1]);
   shape.bezierCurveTo(Rs.c2[0], Rs.c2[1], Rs.c1[0], Rs.c1[1], Rs.t0[0], Rs.t0[1]);
   shape.closePath();

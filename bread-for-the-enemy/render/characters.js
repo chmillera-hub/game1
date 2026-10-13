@@ -338,17 +338,25 @@ function paulHairFront(ctx, pr, st, F, Lt, extra) {
   const c = st.hair, lw = lwOf(pr, Lt);
   const side = Lt.side || -1;
   for (const sd of [-1, 1]) {
-    // the far side turns out of sight gradually (no popping)
+    // the far side's fringe lies on the back of the head, out of sight once he turns (the hair at the
+    // head's silhouette is drawn behind it); it fades out as the head turns, never popping
     const far = Math.sign(sd) === Math.sign(pr.H.yaw);
-    const vis = far ? clamp((0.48 - Math.abs(pr.H.yaw)) / 0.18) : 1;
+    const vis = far ? clamp((0.2 - Math.abs(pr.H.yaw)) / 0.12) : 1;
     if (vis <= 0.01) continue;
     ctx.save(); ctx.globalAlpha *= vis;
-    // a band of thin hair lying flat on the side of the head, from the temple back over the top of
-    // the ear (it hugs the skull: never sticking out or floating above the ear)
-    const pts = [q([sd * 0.8, -0.78, 0.3]), q([sd * 0.93, -0.6, 0.16]), q([sd * 1.0, -0.32, 0.06]), q([sd * 1.03, -0.08, -0.02]),
-      q([sd * 0.99, -0.02, 0.02]), q([sd * 0.95, -0.24, 0.1]), q([sd * 0.88, -0.48, 0.2]), q([sd * 0.78, -0.66, 0.3])];
-    shape(ctx, pts, sd === -side ? mix(lit(c, Lt), shd(c, Lt), 0.3) : lit(c, Lt), st.hairLine, lw * 0.6);
-    strands(ctx, [[q([sd * 0.84, -0.68, 0.24]), q([sd * 0.96, -0.4, 0.1]), q([sd * 1.0, -0.1, 0.0])]], rgba(st.hairLine, 0.35), lw * 0.45);
+    // the fringe left round a bald head: close-cropped hair lying against the skull from the temple,
+    // over the top of the ear and down behind it to the nape, one soft band with no outline
+    const pts = [q([sd * 0.93, -0.64, 0.02]), q([sd * 1.0, -0.42, -0.3]), q([sd * 0.98, 0.0, -0.56]), q([sd * 0.9, 0.45, -0.68]), q([sd * 0.78, 0.86, -0.7]),
+      q([sd * 0.8, 0.86, -0.44]), q([sd * 0.94, 0.45, -0.4]), q([sd * 1.02, 0.05, -0.3]), q([sd * 1.05, -0.13, -0.12]),
+      q([sd * 1.0, -0.2, 0.05]), q([sd * 0.95, -0.36, 0.08])];
+    const col = sd === -side ? mix(lit(c, Lt), shd(c, Lt), 0.3) : lit(c, Lt);
+    ctx.beginPath(); L.crPath(ctx, pts, true, 0.5);
+    ctx.fillStyle = rgba(col, 0.9); ctx.fill();
+    // fine strands combed back along the band, and a little shadow under its lower edge
+    strands(ctx, [[q([sd * 0.95, -0.52, 0.0]), q([sd * 1.0, -0.25, -0.3]), q([sd * 0.97, 0.15, -0.5]), q([sd * 0.86, 0.66, -0.6])],
+      [q([sd * 0.97, -0.3, -0.05]), q([sd * 1.02, -0.05, -0.32]), q([sd * 0.93, 0.4, -0.52])],
+      [q([sd * 1.0, -0.22, 0.0]), q([sd * 1.03, -0.1, -0.2])]], rgba(st.hairLine, 0.22), lw * 0.4);
+    strands(ctx, [[q([sd * 1.0, -0.19, 0.05]), q([sd * 1.04, -0.12, -0.14]), q([sd * 1.01, 0.06, -0.32]), q([sd * 0.93, 0.46, -0.42])]], rgba(shd(st.skin, Lt), 0.35), lw * 0.8);
     ctx.restore();
   }
   // scalp shine
@@ -641,6 +649,8 @@ C.jesus = {
 C.paul = {
   name: 'paul', skin: '#dfae8a', skinShadow: '#a9725a', line: '#3a221a', iris: '#4e3a2c', browColor: '#c9c1b6',
   hair: '#d6d0c8', hairLine: '#4a3a32', beardColor: '#dcd6ce', bald: true, age: 1, bushyBrows: true, browW: 0.095,
+  // an old man's head sits a little lower and further forward on the neck
+  neckLen: 1.95, headFwd: 0.12,
   geo: { chinY: 1.3, jawW: 0.7, mouthW: 0.21, craniumR: 1.03 },
   hairBack: paulHairBack, hairFront: paulHairFront, beard: paulBeard, beardHidesFolds: false,
   cloth: { tunic: '#7d6b57', mantle: '#4f4336', trim: '#5f5244', neck: 'round' },
@@ -735,7 +745,7 @@ C.phoebe = {
   name: 'phoebe', skin: '#e9bb98', skinShadow: '#bb826a', line: '#3a241c', iris: '#5a3a22', browColor: '#2a1a12',
   hair: '#2c1b14', hairLine: '#140a08', lashW: 0.34, eyeScale: 1.12, irisR: 0.56, browW: 0.05, blush: 0.34, lips: '#c76a64',
   adamsApple: false, age: 0.15, neckLen: 1.92,
-  geo: { chinY: 1.22, jawW: 0.68, jawY: 0.9, mouthW: 0.18, mouthY: 0.8, eyeH: 1.15, browY: -0.37, noseLen: 0.82, cheekW: 0.95 },
+  geo: { chinY: 1.24, jawW: 0.74, jawY: 0.96, mouthW: 0.18, mouthY: 0.8, eyeH: 1.15, browY: -0.37, noseLen: 0.82, cheekW: 0.96 },
   hairBack: phoebeVeil.back,
   hairFront(ctx, pr, st, F, Lt, extra) {
     hairCap(ctx, pr, st, Lt, [[-0.96, -0.3, 0.3], [-0.72, -0.78, 0.6], [-0.36, -0.98, 0.84], [0, -1.04, 0.9], [0.36, -0.98, 0.84], [0.72, -0.78, 0.6], [0.96, -0.3, 0.3]], { volume: 1.06 });

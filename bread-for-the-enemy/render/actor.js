@@ -45,12 +45,12 @@ function poseOf(p) {
       hand: H.blendPreset(x.hand || 'relax', y.hand || 'relax', k),
       palm: blendSpec(x.palm || HANG, y.palm || HANG, k),
       fdir: (x.fdir || y.fdir) ? blendSpec(x.fdir || {}, y.fdir || {}, k) : null,
-      fk: lerp(fkx, fky, k), fz: lerp(x.fz || 0, y.fz || 0, k),
+      fk: lerp(fkx, fky, k), fz: lerp(x.fz || 0, y.fz || 0, k), flip: lerp(x.flip || 0, y.flip || 0, k),
     };
   };
   const out = { n: arm(A.n, Bp.n), f: arm(A.f, Bp.f), front: k < 0.5 ? A.front : Bp.front,
     shackles: A.shackles || Bp.shackles, sway: lerp(A.sway || 0, Bp.sway || 0, k), lean: lerp(A.lean || 0, Bp.lean || 0, k) };
-  for (const key of ['bread', 'halves', 'half', 'half2', 'jar', 'scroll', 'parchment', 'rope', 'spear', 'fidget']) {
+  for (const key of ['bread', 'halves', 'half', 'half2', 'jar', 'scroll', 'scroll2', 'parchment', 'rope', 'spear', 'fidget']) {
     const v = k < 0.5 ? A[key] : Bp[key];
     if (v) out[key] = v;
   }
@@ -68,6 +68,9 @@ function poseBlend(F) {
       fdir: (x.fdir || y.fdir) ? blendSpec(x.fdir || {}, y.fdir || {}, k) : null,
       fk: lerp(fkx, fky, k),
       fz: lerp(x.fz || 0, y.fz || 0, k),
+      // flip: 0 = the elbow bends its usual way, 1 = the other way (an arm raised on the far side);
+      // blended, so the elbow swings through rather than snapping across
+      flip: lerp(x.flip || 0, y.flip || 0, k),
     };
   };
   // props cannot blend: they appear as soon as a pose that holds them starts, and stay until the
@@ -82,7 +85,7 @@ function poseBlend(F) {
     n: arm(a.n, b.n), f: arm(a.f, b.f),
     front: k < 0.5 ? !!a.front : !!b.front, frontA: !!a.front, frontB: !!b.front, fwA: a.f.w, fwB: b.f.w,
     bread: pick('bread'), halves: pick('halves'), half: pick('half'), half2: pick('half2'), jar: pick('jar'),
-    scroll: pick('scroll'), parchment: pick('parchment'), rope: pick('rope'), spear: pick('spear'),
+    scroll: pick('scroll'), scroll2: pick('scroll2'), parchment: pick('parchment'), rope: pick('rope'), spear: pick('spear'),
     shackles: a.shackles || b.shackles, fidget: pick('fidget'), sway: lerp(a.sway || 0, b.sway || 0, k),
     lean: lerp(a.lean || 0, b.lean || 0, k),
     k, from: F.poseFrom, to: F.poseTo,
@@ -95,6 +98,8 @@ function drawCharacter(ctx, who, F, place, Lt, t, opt = {}) {
   const s = place.s;
   const fc = place.facing || 1;
   const pb = poseBlend(F);
+  // a shot can take a prop out of the hands (it has been tossed or set down and is drawn by the shot)
+  if (opt.hideProps) for (const k of opt.hideProps) pb[k] = null;
   // a shot can move a hand a little on top of the pose (knocking, unrolling a scroll): place.armOffset
   if (place.armOffset) {
     for (const k of ['n', 'f']) {
@@ -132,7 +137,7 @@ function drawCharacter(ctx, who, F, place, Lt, t, opt = {}) {
   const neck = [Bx, By];
   // the head sits on a neck of the character's own length (a little shorter for the boy and Phoebe)
   const nl = st.neckLen || 2.1;
-  const headX = Bx + Math.sin(lean) * s * nl * fc + (F.headDX || 0) * s;
+  const headX = Bx + Math.sin(lean) * s * nl * fc + (F.headDX || 0) * s + (st.headFwd || 0) * s * fc;
   const headY = By - s * nl * Math.cos(lean) + (F.headDY || 0) * s - breathe * s * 0.015;
   const Hd = { x: headX, y: headY, s, yaw: F.yaw, pitch: F.pitch, roll: F.roll * fc + lean * 0.25 * fc, neckDX: Bx - headX };
   // the body turns a little with the gaze (from the look target only, never from speech wobble)
@@ -146,9 +151,13 @@ function drawCharacter(ctx, who, F, place, Lt, t, opt = {}) {
   let arms = null;
   if (!place.noArms && !place.headOnly) {
     const sj = B.shoulderJoints(neck, s, by, sh);
-    const SN = fc > 0 ? sj.L : sj.R, SF = fc > 0 ? sj.R : sj.L;
-    const gN = B.armGeom(SN, toScreen(pb.n.w), s, { bend: fc, loose });
-    const gF = B.armGeom(SF, toScreen(pb.f.w), s, { bend: -fc, loose });
+    const SN = fc > 0 ? sj.L : sj.R;
+    // turned three-quarters, the far shoulder sits right at the body's far edge, so the far arm shows
+    // a little beyond the chest instead of vanishing behind it
+    const SF = (fc > 0 ? sj.R : sj.L).slice();
+    if (Math.abs(by) >= 0.12) SF[0] += fc * 0.2 * s * Math.min(1, (Math.abs(by) - 0.12) / 0.2);
+    const gN = B.armGeom(SN, toScreen(pb.n.w), s, { bend: fc * (1 - 2 * (pb.n.flip || 0)), loose });
+    const gF = B.armGeom(SF, toScreen(pb.f.w), s, { bend: -fc * (1 - 2 * (pb.f.flip || 0)), loose });
     const spec = (arm, g, right) => {
       // the forearm in 3D: when it looks shorter than it is, it points toward the camera
       const proj = Math.hypot(g.W[0] - g.E[0], g.W[1] - g.E[1]) / (2.5 * s);
@@ -176,7 +185,7 @@ function drawCharacter(ctx, who, F, place, Lt, t, opt = {}) {
   };
   const FAR = -s * 0.6; // the far hand sits a little deeper than the near one
   if (arms) {
-    if (pb.bread && pb.bread.arm) attach(pb.bread.arm, pb.bread.arm === 'f' ? FAR : 0, pb.bread.r * s * 0.95, (g) => B.drawBread(ctx, g[0], g[1], pb.bread.r * s, Lt, { rot: 0.05 * fc }));
+    if (pb.bread && pb.bread.arm) attach(pb.bread.arm, pb.bread.arm === 'f' ? FAR : 0, pb.bread.r * s * 0.3, (g) => B.drawBread(ctx, g[0], g[1], pb.bread.r * s, Lt, { rot: 0.05 * fc }));
     if (pb.half && pb.half.arm) attach(pb.half.arm, pb.half.arm === 'f' ? FAR : 0, pb.half.r * s * 0.7, (g, ag) => B.drawHalfBread(ctx, g[0], g[1], pb.half.r * s, Lt, { face: -fc, rot: clamp(ag.ang - Math.PI / 2, -0.5, 0.5) * 0.4 }));
     if (pb.half2 && pb.half2.arm) attach(pb.half2.arm, pb.half2.arm === 'f' ? FAR : 0, pb.half2.r * s * 0.7, (g) => B.drawHalfBread(ctx, g[0], g[1], pb.half2.r * s, Lt, { face: fc, rot: 0.15 * fc }));
     if (pb.halves) {
@@ -202,6 +211,15 @@ function drawCharacter(ctx, who, F, place, Lt, t, opt = {}) {
   // each hand is drawn as whole layers (one outline for palm and fingers), split only where one of
   // its props sits among the fingers
   const drawHandsAndProps = (which) => {
+    // an open scroll held in both hands: the thumbs on the reader's side of the rollers (behind the
+    // parchment, so they never show through it), the curled fingers on our side, in front
+    if (pb.scroll2 && which.length === 2) {
+      const notThumb = (q) => q.kind !== 'thumb';
+      arms.hF.draw(ctx, (q) => q.kind === 'thumb'); arms.hN.draw(ctx, (q) => q.kind === 'thumb');
+      B.drawOpenScroll(ctx, arms.hN.gripAt(s * 0.05), arms.hF.gripAt(s * 0.05), s, pb.scroll2, Lt, fc);
+      arms.hF.draw(ctx, notThumb); arms.hN.draw(ctx, notThumb);
+      return;
+    }
     const mine = props.filter((p) => (p.arm === null ? which.includes('n') : which.includes(p.arm)));
     const items = mine.slice();
     for (const w of which) {
@@ -263,11 +281,14 @@ function drawCharacter(ctx, who, F, place, Lt, t, opt = {}) {
     if (arms && !frontal) {
       if (farIn) drawSleeveAndWrist('f', 'upper', null);
       else { drawSleeveAndWrist('f', 'all', null); drawHandsAndProps(['f']); }
+      // a mantle worn over the far shoulder drapes over that shoulder and the top of the arm; the
+      // sleeve comes out from under its edge
+      if (st.cloth.mantle && !st.cloth.armor && (place.mantleSide || fc) === fc) B.drawMantleDrape(ctx, arms.gF, st, Lt);
     }
     if (opt.beforeTorso) opt.beforeTorso({ neck, s, fc, st, by });
     torso = B.drawTorso(ctx, neck, s, st, Lt, { by, shoulder: sh, len: place.len || 9, mantleSide: place.mantleSide || fc, belt: place.belt });
     if (opt.afterTorso) opt.afterTorso({ neck, s, fc, st, by });
-    if (arms && pb.parchment) drawParchment(ctx, toScreen([0.55, 4.55]), s, Lt, fc);
+    if (arms && pb.parchment) drawParchment(ctx, toScreen([1.0, 4.02]), s, Lt, fc);
     if (arms && frontal && !pb.front) { drawSleeveAndWrist('f', 'all', torso); drawHandsAndProps(['f']); }
     if (arms && !pb.front) {
       if (farIn && !frontal) { drawSleeveAndWrist('f', 'lower', torso); drawHandsAndProps(['f']); }
@@ -276,7 +297,8 @@ function drawCharacter(ctx, who, F, place, Lt, t, opt = {}) {
   };
 
   const sway = opt.sway || [0, 0];
-  drawHead(ctx, Hd, st, F, Lt, { drawBody, t, sway, noNeck: place.noNeck, neckBase: nb, collar });
+  const tpS = B.torsoPts(neck, s, by, sh, place.len || 9);
+  drawHead(ctx, Hd, st, F, Lt, { drawBody, t, sway, noNeck: place.noNeck, neckBase: nb, collar, shoulderL: tpS.left.slice(0, 3), shoulderR: tpS.right.slice(0, 3) });
   if (arms && pb.front) {
     if (frontal) drawSleeveAndWrist('f', 'all', torso);
     else if (farIn) drawSleeveAndWrist('f', 'lower', torso);

@@ -191,7 +191,7 @@ function armJoint(S, W, l1, l2, side, out = 0) {
 // sleeve geometry: shoulder cap + upper arm + elbow + forearm, as one union of round shapes
 function armGeom(S, Wt, s, o = {}) {
   const l1 = 2.85 * s, l2 = 2.5 * s;
-  const { E, W } = armJoint(S, Wt, l1, l2, o.bend || 1, o.out || 0);
+  const { E, W } = armJoint(S, Wt, l1, l2, o.bend == null ? 1 : o.bend, o.out || 0);
   const u = [W[0] - E[0], W[1] - E[1]], ul = Math.hypot(u[0], u[1]) || 1;
   const dir = [u[0] / ul, u[1] / ul];
   const loose = o.loose || 0;
@@ -268,6 +268,22 @@ function drawSleeve(ctx, g, st, Lt, o = {}) {
     ctx.clip(inZone); if (part === 'lower') ctx.stroke(path); ctx.restore();
   }
   ctx.restore();
+  // an arm lying across the body casts a soft shadow onto the tunic beside it (away from the light),
+  // so a sleeve of the tunic's own cloth still reads as an arm in front of the chest
+  if (o.torso) {
+    const side0 = Lt.side || -1;
+    const off = [-side0 * s * 0.13, s * 0.17];
+    const pts = part === 'lower' ? [g.E, g.C] : part === 'upper' ? [g.S, g.E] : [g.S, g.E, g.C];
+    const shp = pts.map((q) => [q[0] + off[0], q[1] + off[1]]);
+    const outT = new PathC(); L.crPath(outT, o.torso, true, 0.45);
+    ctx.save(); ctx.clip(outT);
+    ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    for (const [w, a] of [[1.5, 0.08], [1.25, 0.1], [1.02, 0.12]]) {
+      ctx.strokeStyle = rgba('#05040a', a); ctx.lineWidth = (g.rE + g.rC) * w;
+      ctx.beginPath(); shp.forEach((q, i) => (i ? ctx.lineTo(q[0], q[1]) : ctx.moveTo(q[0], q[1]))); ctx.stroke();
+    }
+    ctx.restore();
+  }
   // fill: the same lit cloth colour on both arms; the far arm only sits a little deeper in shadow
   ctx.fillStyle = lit(col, Lt);
   ctx.fill(path, 'nonzero');
@@ -323,6 +339,25 @@ function drawSleeve(ctx, g, st, Lt, o = {}) {
         [a[0] - nx * g.rE * 0.5 + g.dir[0] * s * (k + 0.05), a[1] - ny * g.rE * 0.5 + g.dir[1] * s * (k + 0.05)]], rgba(shade(col, 0.45), 0.5), lw * 0.8);
     }
   }
+  // light catching the sleeve along its lit side: a soft band hugging the silhouette edge (the stroke
+  // is centred on the edge and clipped to the sleeve), tapering out at both ends
+  if (!o.far || o.torso) {
+    const segs = [];
+    if (part !== 'lower') segs.push([g.S, g.E, upperProf(g), 0.3]);
+    if (part !== 'upper') segs.push([g.E, g.C, foreProf(g), 0.05]);
+    for (const [A, B2, prof, t0] of segs) {
+      const dx = B2[0] - A[0], dy = B2[1] - A[1], d = Math.hypot(dx, dy) || 1;
+      let nx = -dy / d, ny = dx / d;
+      if (nx * -side < 0 || (Math.abs(nx) < 0.2 && ny > 0)) { nx = -nx; ny = -ny; }
+      const rr = (t) => { const f = t * (prof.length - 1), i = Math.min(prof.length - 2, Math.floor(f)), k = f - i; return lerp(prof[i], prof[i + 1], k * k * (3 - 2 * k)); };
+      const pts = [];
+      for (let i = 0; i <= 8; i++) { const t = t0 + (0.95 - t0) * i / 8, r = rr(t); pts.push([A[0] + dx * t + nx * r, A[1] + dy * t + ny * r]); }
+      const gr = ctx.createLinearGradient(pts[0][0], pts[0][1], pts[8][0], pts[8][1]);
+      const hc = mix(lit(col, Lt), '#ffffff', 0.3);
+      gr.addColorStop(0, rgba(hc, 0)); gr.addColorStop(0.25, rgba(hc, 0.3)); gr.addColorStop(0.75, rgba(hc, 0.3)); gr.addColorStop(1, rgba(hc, 0));
+      L.strokeSmooth(ctx, pts, gr, s * 0.13);
+    }
+  }
   ctx.restore();
   // cuff: the opening of the sleeve around the wrist
   if (part !== 'upper') {
@@ -332,6 +367,31 @@ function drawSleeve(ctx, g, st, Lt, o = {}) {
   }
 }
 
+// The end of a mantle worn over the far shoulder: it caps the shoulder and hangs over the top of the
+// upper arm, its hem curving round the arm; below it the sleeve continues to the elbow.
+function drawMantleDrape(ctx, g, st, Lt) {
+  const s = g.s, col = st.cloth.mantle;
+  const lw = (Lt.lineW || 1) * s * 0.02;
+  const u = [g.E[0] - g.S[0], g.E[1] - g.S[1]], l = Math.hypot(u[0], u[1]) || 1;
+  const d = [u[0] / l, u[1] / l], n = [-d[1], d[0]];
+  const at = (t, w) => [g.S[0] + u[0] * t + n[0] * w, g.S[1] + u[1] * t + n[1] * w];
+  const r = g.rS * 1.12, hem = 0.42;
+  const pts = [at(-0.05, -r * 1.05), at(-0.12, 0), at(-0.05, r * 1.05), at(hem * 0.6, r * 1.12), at(hem + 0.04, r * 1.05),
+    at(hem + 0.1, r * 0.2), at(hem + 0.02, -r * 0.7), at(hem * 0.6, -r * 1.1)];
+  ctx.save();
+  ctx.beginPath(); L.crPath(ctx, pts, true, 0.45);
+  ctx.fillStyle = lit(col, Lt); ctx.fill();
+  ctx.save(); ctx.clip();
+  const sh = clothShadow(col, Lt);
+  const gr = ctx.createLinearGradient(...at(0, 0), ...at(hem + 0.1, 0));
+  gr.addColorStop(0, rgba(sh, 0.15)); gr.addColorStop(1, rgba(sh, 0.6)); ctx.fillStyle = gr; ctx.fillRect(g.S[0] - 4 * s, g.S[1] - 4 * s, 8 * s, 8 * s);
+  for (const k of [-0.5, 0.15, 0.6]) L.strokeSmooth(ctx, [at(0.05, k * r), at(hem * 0.55, k * r * 1.05), at(hem + 0.02, k * r * 0.9)], rgba(shade(col, 0.45), 0.5), lw * 0.8);
+  ctx.restore();
+  // outline only round the hem and the outer edge (it merges with the mantle on the body above)
+  ctx.strokeStyle = st.line; ctx.lineWidth = lw;
+  ctx.beginPath(); L.crPath(ctx, pts.slice(2), false, 0.45); ctx.stroke();
+  ctx.restore();
+}
 // compatibility wrapper: a whole arm with its hand (used by simple callers)
 function drawArm(ctx, S, W, s, st, Lt, o) {
   const g = armGeom(S, W, s, o);
@@ -530,6 +590,78 @@ function drawScroll(ctx, x, y, w, h, Lt, o = {}) {
   }
   ctx.restore();
 }
+// an open scroll held up between two hands: GN, GF = the two grips (screen), one roller in each;
+// the parchment between them is seen from the back (the writing faces the reader, its ink showing
+// faintly through), sagging a little, with the rolled-up ends wound round each roller
+function drawOpenScroll(ctx, GN, GF, s, o, Lt, fc) {
+  const h = (o.h || 1.6) * s;
+  const paper = lit('#e6d6b0', Lt), paperSh = mix(paper, L.mul('#8a7450', Lt.amb || '#fff'), 0.55);
+  const hN = h, hF = h * 0.9;
+  const top = (u) => [lerp(GN[0], GF[0], u), lerp(GN[1] - hN * 0.5, GF[1] - hF * 0.5, u) + Math.sin(u * Math.PI) * h * 0.05];
+  const bot = (u) => [lerp(GN[0], GF[0], u), lerp(GN[1] + hN * 0.5, GF[1] + hF * 0.5, u) + Math.sin(u * Math.PI) * h * 0.08];
+  ctx.save();
+  ctx.beginPath();
+  for (let i = 0; i <= 12; i++) { const p = top(i / 12); i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]); }
+  for (let i = 12; i >= 0; i--) { const p = bot(i / 12); ctx.lineTo(p[0], p[1]); }
+  ctx.closePath();
+  const t0 = top(0.5), b0 = bot(0.5);
+  ctx.fillStyle = L.linear(ctx, 0, t0[1], 0, b0[1], [[0, mix(paper, '#fff6e0', 0.15)], [0.6, paper], [1, paperSh]]);
+  ctx.fill();
+  ctx.save(); ctx.clip();
+  // the ink of the columns of writing, faint and mirrored from the other side
+  ctx.strokeStyle = rgba('#3a2a1a', 0.13); ctx.lineWidth = h * 0.022;
+  for (let c = 0; c < 2; c++) {
+    for (let i = 0; i < 9; i++) {
+      const v = 0.14 + i * 0.085;
+      const u0 = 0.1 + c * 0.45, u1 = u0 + 0.34 - 0.08 * L.hash01(i * 13 + c * 7);
+      const a = top(u0), b = bot(u0), a2 = top(u1), b2 = bot(u1);
+      ctx.beginPath(); ctx.moveTo(lerp(a[0], b[0], v), lerp(a[1], b[1], v)); ctx.lineTo(lerp(a2[0], b2[0], v), lerp(a2[1], b2[1], v)); ctx.stroke();
+    }
+  }
+  // the sheet curves: a soft shadow down its middle, light on the far half
+  const m0 = top(0.5);
+  ctx.fillStyle = L.linear(ctx, GN[0], 0, GF[0], 0, [[0, rgba(paperSh, 0.35)], [0.35, rgba(paperSh, 0)], [0.7, rgba('#fff4d8', 0.12)], [1, rgba(paperSh, 0.3)]]);
+  ctx.fillRect(Math.min(GN[0], GF[0]) - s, m0[1] - h, Math.abs(GF[0] - GN[0]) + 2 * s, h * 3);
+  ctx.restore();
+  ctx.strokeStyle = rgba('#4a3420', 0.7); ctx.lineWidth = s * 0.025; ctx.stroke();
+  // the rolled ends and the rollers through them
+  for (const [G, hh, k] of [[GN, hN, 0], [GF, hF, 1]]) {
+    const rw = s * 0.17, x = G[0] + (k ? 1 : -1) * rw * 0.2 * Math.sign(GF[0] - GN[0]);
+    // the wooden roller, longer than the sheet, with turned knobs
+    ctx.fillStyle = lit('#6a4428', Lt);
+    ctx.beginPath(); ctx.roundRect(x - s * 0.05, G[1] - hh * 0.5 - s * 0.32, s * 0.1, hh + s * 0.64, s * 0.04); ctx.fill();
+    for (const e of [-1, 1]) {
+      ctx.beginPath(); ctx.ellipse(x, G[1] + e * (hh * 0.5 + s * 0.3), s * 0.085, s * 0.06, 0, 0, L.TAU); ctx.fill();
+      ctx.strokeStyle = '#2a1a10'; ctx.lineWidth = s * 0.015; ctx.stroke();
+    }
+    // the roll of parchment wound round it
+    ctx.fillStyle = L.linear(ctx, x - rw, 0, x + rw, 0, [[0, paperSh], [0.4, mix(paper, '#fff6e0', 0.2)], [1, paperSh]]);
+    ctx.beginPath(); ctx.roundRect(x - rw, G[1] - hh * 0.5 - s * 0.02, rw * 2, hh + s * 0.04, rw * 0.5); ctx.fill();
+    ctx.strokeStyle = rgba('#4a3420', 0.7); ctx.lineWidth = s * 0.022; ctx.stroke();
+    ctx.strokeStyle = rgba('#4a3420', 0.25); ctx.lineWidth = s * 0.012;
+    for (const f of [-0.45, 0.1, 0.55]) { ctx.beginPath(); ctx.moveTo(x + f * rw, G[1] - hh * 0.45); ctx.lineTo(x + f * rw, G[1] + hh * 0.45); ctx.stroke(); }
+  }
+  ctx.restore();
+}
+// a small clay oil lamp seen from the side: the round body, a filling hole, the spout to the right
+// (the flame is drawn at its tip by the caller), a loop handle on the left
+function drawLamp(ctx, x, y, s, Lt) {
+  ctx.save();
+  const clay = lit('#9a5a32', Lt), clayD = L.mul('#4a2614', Lt.amb || '#fff');
+  ctx.fillStyle = L.linear(ctx, 0, y - s * 0.55, 0, y, [[0, mix(clay, '#ffd8a0', 0.25)], [1, clayD]]);
+  ctx.beginPath();
+  ctx.moveTo(x - s * 0.75, y - s * 0.12);
+  ctx.bezierCurveTo(x - s * 0.8, y - s * 0.55, x + s * 0.25, y - s * 0.62, x + s * 0.45, y - s * 0.4);
+  ctx.lineTo(x + s * 0.68, y - s * 0.62); ctx.quadraticCurveTo(x + s * 0.78, y - s * 0.62, x + s * 0.72, y - s * 0.5);
+  ctx.lineTo(x + s * 0.45, y - s * 0.12); ctx.quadraticCurveTo(x, y + s * 0.02, x - s * 0.75, y - s * 0.12);
+  ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = '#2a140a'; ctx.lineWidth = s * 0.04; ctx.stroke();
+  ctx.fillStyle = '#1a0c06';
+  ctx.beginPath(); ctx.ellipse(x - s * 0.15, y - s * 0.47, s * 0.16, s * 0.05, 0, 0, L.TAU); ctx.fill();
+  ctx.strokeStyle = clay; ctx.lineWidth = s * 0.09;
+  ctx.beginPath(); ctx.arc(x - s * 0.82, y - s * 0.3, s * 0.13, Math.PI * 0.5, Math.PI * 1.5); ctx.stroke();
+  ctx.restore();
+}
 function drawTorch(ctx, x, y, s, t, Lt, o = {}) {
   ctx.save();
   ctx.translate(x, y);
@@ -567,4 +699,5 @@ function drawCup(ctx, x, y, h, Lt) {
   ctx.restore();
 }
 
-module.exports = { limbPath, armJoint, armGeom, drawSleeve, drawTorso, drawArm, drawHand, drawBread, drawHalfBread, drawJar, drawChain, drawScroll, drawTorch, drawFlame, drawCup, drawShackle, ik, torsoPts, collarPts, neckBase, shoulderJoints, clothShadow };
+module.exports = {
+  drawOpenScroll, drawLamp, drawMantleDrape, limbPath, armJoint, armGeom, drawSleeve, drawTorso, drawArm, drawHand, drawBread, drawHalfBread, drawJar, drawChain, drawScroll, drawTorch, drawFlame, drawCup, drawShackle, ik, torsoPts, collarPts, neckBase, shoulderJoints, clothShadow };

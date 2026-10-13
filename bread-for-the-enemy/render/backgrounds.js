@@ -147,15 +147,23 @@ function streetNight(ctx, o = {}) {
   ctx.fillStyle = '#eef3ff';
   ctx.beginPath(); ctx.arc(900, 160, 46, 0, L.TAU); ctx.fill();
   // prison wall (big stone)
+  // the wall stands on the street: the door's sill is level with the cobbles (y = GROUND)
+  const GROUND = 1370;
   ctx.save();
-  ctx.beginPath(); ctx.rect(0, 260, VW, VH);
+  ctx.beginPath(); ctx.rect(0, 260, VW, GROUND - 260);
   ctx.clip();
-  grimyStones(ctx, -40, 260, VW + 40, 1660, { base: '#343b48', var: '#444a54', bh: 120, seed: 11 });
-  // soot blackening above the torch, and grime gathered where the wall meets the street
+  grimyStones(ctx, -40, 260, VW + 40, GROUND + 20, { base: '#343b48', var: '#444a54', bh: 120, seed: 11 });
+  // soot blackening above the torch, and grime and splashed mud gathered where the wall meets the street
   ctx.fillStyle = L.radial(ctx, 195, 560, 0, 260, [[0, rgba('#020203', 0.55)], [1, rgba('#020203', 0)]]);
   ctx.fillRect(0, 300, 460, 520);
-  ctx.fillStyle = L.linear(ctx, 0, 1450, 0, 1660, [[0, rgba('#0a0806', 0)], [1, rgba('#0a0806', 0.55)]]);
-  ctx.fillRect(0, 1450, VW, 210);
+  ctx.fillStyle = L.linear(ctx, 0, GROUND - 190, 0, GROUND, [[0, rgba('#0a0806', 0)], [0.7, rgba('#140e08', 0.4)], [1, rgba('#0a0806', 0.7)]]);
+  ctx.fillRect(0, GROUND - 190, VW, 190);
+  const rs = L.rng(77);
+  for (let i = 0; i < 60; i++) {
+    const x = rs() * VW, y = GROUND - rs() * 120, r = 4 + rs() * 16;
+    ctx.fillStyle = rgba(rs() < 0.5 ? '#1e140a' : '#0c0a08', 0.25 + rs() * 0.3);
+    ctx.beginPath(); ctx.ellipse(x, y, r, r * (0.5 + rs() * 0.5), 0, 0, L.TAU); ctx.fill();
+  }
   ctx.restore();
   // wall darkening toward top
   ctx.fillStyle = L.linear(ctx, 0, 260, 0, 900, [[0, rgba('#05070e', 0.75)], [1, rgba('#05070e', 0)]]);
@@ -195,14 +203,35 @@ function streetNight(ctx, o = {}) {
   ctx.fillRect(dx - dw / 2, dy, dw, dh / 2);
   ctx.restore();
   }
-  // ground cobbles
-  ctx.fillStyle = L.linear(ctx, 0, 1650, 0, VH, [[0, '#1c2030'], [1, '#0c0e16']]);
-  ctx.fillRect(0, 1650, VW, VH - 1650);
-  for (let r = 0; r < 6; r++) {
-    for (let i = 0; i < 12; i++) {
-      const x = i * 100 + (r % 2) * 50 + L.hash(r * 31 + i) * 10, y = 1680 + r * 42;
-      ctx.fillStyle = rgba('#3a4256', 0.5 + 0.3 * L.hash01(r * 7 + i));
-      ctx.beginPath(); ctx.ellipse(x, y, 42 + r * 4, 14 + r * 2, 0, 0, L.TAU); ctx.fill();
+  // the street: worn cobbles in perspective, from the foot of the wall toward the camera (eye level at
+  // HZ; rows at even steps of depth grow toward the bottom of the frame), puddles catching the torch
+  {
+    const HZ = 837, K = (GROUND - HZ) * 4.0;
+    ctx.fillStyle = L.linear(ctx, 0, GROUND, 0, VH + 400, [[0, '#121622'], [1, '#0a0c14']]);
+    ctx.fillRect(0, GROUND, VW, VH + 400 - GROUND);
+    const rc = L.rng(91);
+    for (let d = 4.0; d > 0.9; d -= 0.24) {
+      const y0 = HZ + K / d, y1 = HZ + K / (d - 0.24), sc = K / d / (GROUND - HZ);
+      const w = 0.3 * 333 * sc, off = rc() * w;
+      for (let x = -off - w; x < VW + w; x += w * (0.85 + rc() * 0.3)) {
+        const cx = x + w / 2, cy = (y0 + y1) / 2, rx = w * (0.42 + rc() * 0.06), ry = (y1 - y0) * (0.4 + rc() * 0.06);
+        ctx.fillStyle = mix('#2a3040', '#3c4456', rc());
+        ctx.beginPath(); ctx.ellipse(cx, cy, rx, ry, (rc() - 0.5) * 0.1, 0, L.TAU); ctx.fill();
+        ctx.fillStyle = rgba('#8090b0', 0.08 + rc() * 0.06);
+        ctx.beginPath(); ctx.ellipse(cx - rx * 0.1, cy - ry * 0.35, rx * 0.7, ry * 0.4, 0, 0, L.TAU); ctx.fill();
+        ctx.fillStyle = rgba('#05060a', 0.35);
+        ctx.beginPath(); ctx.ellipse(cx, cy + ry * 0.55, rx * 0.85, ry * 0.35, 0, 0, L.TAU); ctx.fill();
+      }
+    }
+    // a gutter of dark wet mud along the base of the wall
+    ctx.fillStyle = L.linear(ctx, 0, GROUND - 6, 0, GROUND + 40, [[0, rgba('#05060a', 0.9)], [1, rgba('#05060a', 0)]]);
+    ctx.fillRect(0, GROUND - 6, VW, 46);
+    // puddles with the torchlight in them
+    for (const [px, py, pr] of [[230, 1460, 120], [760, 1640, 170]]) {
+      ctx.fillStyle = rgba('#0a0e18', 0.8);
+      ctx.beginPath(); ctx.ellipse(px, py, pr, pr * 0.16, 0, 0, L.TAU); ctx.fill();
+      ctx.fillStyle = L.radial(ctx, px - pr * 0.2, py, 0, pr, [[0, rgba('#ff9a50', 0.22)], [1, rgba('#ff9a50', 0)]]);
+      ctx.beginPath(); ctx.ellipse(px, py, pr, pr * 0.16, 0, 0, L.TAU); ctx.fill();
     }
   }
   // torch bracket left of door
