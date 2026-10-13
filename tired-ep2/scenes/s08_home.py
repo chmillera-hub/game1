@@ -340,6 +340,18 @@ def _draw_tired(ctx, t, T, info):
         return {n: (x + sx * v[0], BED_Y + sy * v[1]) + tuple(v[2:])
                 if isinstance(v, tuple) and len(v) >= 2 and isinstance(v[0], (int, float)) else v
                 for n, v in a.items()}
+    if t >= T.Z:
+        # anatomy pass: a slow sleeping breath in the final wide (S6). The lying pose's own
+        # breath is ~1 px here, so he read as a statue for 6.5 s: his back now rises and falls
+        # gently (about the mattress line, like the impact squash), fading in from the cut.
+        k = smoothstep(seg(t, T.Z, T.Z + 0.8))
+        b = 0.5 - 0.5 * math.cos(math.tau * (t - T.Z) / 3.8)
+        sx, sy = 1 - 0.006 * k * b, 1 + 0.03 * k * b
+        with core.saved(ctx, x, BED_Y, (sx, sy)):
+            a = human.draw_person(ctx, "tired", 0, (y - BED_Y) / sy, S_T, t, **kw)
+        return {n: (x + sx * v[0], BED_Y + sy * v[1]) + tuple(v[2:])
+                if isinstance(v, tuple) and len(v) >= 2 and isinstance(v[0], (int, float)) else v
+                for n, v in a.items()}
     return human.draw_person(ctx, "tired", x, y, S_T, t, **kw)
 
 

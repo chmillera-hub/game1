@@ -894,7 +894,7 @@ def tired_state(t, k):
         else:               # slips the card into his hoodie pocket as he turns to go
             w = 1 - smoothstep(seg(t, k["go_turn"] - 0.1, k["go_turn"] + 0.2))
             d["reach"] = {"r": (hold_pt[0], hold_pt[1], w)}
-        d["card"] = kt <= t < k["go_turn"] + 0.12
+        d["card"] = kt <= t < k["go_turn"] + 0.2     # (until the hand is in the pocket)
     # ---- expression: bored / deadpan all the way (super chill); the faintest smile
     d["expr"] = state_at(t, [(0, "bored"), (k["l2"] - 0.2, "deadpan"), (k["l3d"] - 0.3, "bored"),
                              (k["E6"], "bored"), (k["T18"] - 0.05, "soft_smile"), (k["W19"], "bored")], 0.3)
@@ -1275,6 +1275,23 @@ def embar_state(t, k):
         gx += tr * math.sin(t * 37)
         gy += tr * math.sin(t * 29 + 1)
     ang = math.atan2(aim[1] - gy, aim[0] - gx)
+    # hands flying up to his head / coming back down: the aim point passes through the torch
+    # hand, so the aim->hand angle flipped ~160 deg in one or two frames (torch + beam whipped
+    # round). In those moves ease the ANGLE between the two ends instead (same ease as the hand),
+    # the torch tipping up in front of him and back down the same way; the beam length eases too.
+    for a0, a1, ez, sgn in ((k["fr_up0"], k["fr_up1"], ease_out, -1.0),
+                            (k["fr_dn0"], k["fr_dn1"], ease_in_out, 1.0)):
+        if a0 < t < a1:
+            e0, e1 = embar_state(a0, k), embar_state(a1, k)
+            g0, g1 = e0["reach"]["r"], e1["reach"]["r"]
+            dth = (e1["aim_ang"] - e0["aim_ang"]) % (2 * math.pi)
+            if sgn < 0:
+                dth -= 2 * math.pi
+            u = ez(seg(t, a0, a1))
+            ang = e0["aim_ang"] + dth * u
+            rr = lerp(math.hypot(e0["aim"][0] - g0[0], e0["aim"][1] - g0[1]),
+                      math.hypot(e1["aim"][0] - g1[0], e1["aim"][1] - g1[1]), u)
+            aim = (gx + rr * math.cos(ang), gy + rr * math.sin(ang))
     d["aim"] = aim
     d["aim_ang"] = ang
     d["reach"] = {"r": (gx, gy, 1.0, ang)}
@@ -1909,6 +1926,7 @@ def draw_B(ctx, t, k, cam, shot_name, info):
     Cr = cur_state(t, k)
     b_bg(ctx)
     lens = {}
+    handoff = {}
     anchors = {}
     vr = view_rect(cam, pad=30)
     # the torch's spill on the wall right behind him while he is backed against it (the wall reads)
@@ -1981,6 +1999,7 @@ def draw_B(ctx, t, k, cam, shot_name, info):
             _thumb(ctx, hx, hy, r, t, k)
         if E["card"] is not None:
             props.keycard(ctx, hx + 4, hy - 7, E["card"]["s"], rot=E["card"]["rot"])
+        handoff["emb"] = (hx + 4, hy - 7)        # where his card sits (the hand-off starts here)
 
     pk = tired_pocket(T, t)
     reach_t = dict(T["reach"] or {})
@@ -2002,11 +2021,21 @@ def draw_B(ctx, t, k, cam, shot_name, info):
                 ctx, "tired", T["x"], T["y"], S, t, pose=T["pose"], expr=T["expr"], look=T["look"],
                 mouth=info.mouth("tired", t), face=T["face"], turn=T["turn"], blink=T["blink"],
                 pose_t=T["pose_t"], reach=reach_t, drift=T["drift"], **TK)
+        into = T["card"] and t >= k["go_turn"] + 0.12 and pk is not None
+        if into:            # the card goes INTO the pocket with his hand: under the pocket's front panel
+            hx, hy, _ = anchors["tired"]["hand_r"]
+            props.keycard(ctx, hx - 6, hy - 6, 0.19, rot=-0.18)
         if pk is not None:
             pocket_overlay(ctx, T, pk, anchors["tired"])
-        if T["card"]:
+        if T["card"] and not into:
             hx, hy, _ = anchors["tired"]["hand_r"]
-            props.keycard(ctx, hx - 6, hy - 6, 0.19, rot=tw(t, [(k["k_take"], 0.08), (k["k_take"] + 0.45, -0.18)]))
+            cx_, cy_ = hx - 6, hy - 6
+            # the hand-off: their outstretched hands stay ~90 px apart, so the card slides from
+            # Emb's fingers into his palm over 0.3 s instead of jumping across the gap in one frame
+            hw = smoothstep(seg(t, k["k_take"], k["k_take"] + 0.3))
+            if hw < 1.0 and "emb" in handoff:
+                cx_, cy_ = lerp(handoff["emb"][0], cx_, hw), lerp(handoff["emb"][1], cy_, hw)
+            props.keycard(ctx, cx_, cy_, 0.19, rot=tw(t, [(k["k_take"], 0.08), (k["k_take"] + 0.45, -0.18)]))
 
     # torch state
     pw = 1.0 if E["visible"] else 0.0
