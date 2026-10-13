@@ -16,6 +16,7 @@ from body import REST_PALM, palm_vec
 from rig import DEFAULT_P
 
 NUM_PARAMS = [k for k, v in DEFAULT_P.items() if isinstance(v, float)]
+INSTANT = 0.05  # keys at least this quick are cuts: they apply fully on their first frame
 
 EXPR_KEYS = ["eo_l", "eo_r", "lo_l", "lo_r", "br_l", "br_r", "bi_l", "bi_r", "bfur", "m_smile", "m_smirk",
              "m_press", "m_open", "m_wide", "m_round", "m_teeth", "pupil", "wet", "blush", "shrug", "glint"]
@@ -184,8 +185,10 @@ class Perf:
         for p in params:
             seq = [(kt, kw[p], d) for kt, kw, d in hk if p in kw]
             out[p] = self._keyed(t, seq, DEFAULT_P.get(p, 0.0))
-        # 3) gaze
-        gk = sorted(self.gkeys, key=lambda k: k[0])
+        # 3) gaze (a look given with an instant pose key, i.e. at a cut, is already there on the cut)
+        instant_t = [kt for kt, _, d in self.hkeys if d <= INSTANT]
+        gk = sorted(((kt, gx, gy, 0.01 if any(abs(kt - it) < 1e-6 for it in instant_t) else d)
+                     for kt, gx, gy, d in self.gkeys), key=lambda k: k[0])
         out["gx"] = self._keyed(t, [(kt, gx, d) for kt, gx, gy, d in gk], 0.0)
         out["gy"] = self._keyed(t, [(kt, gy, d) for kt, gx, gy, d in gk], 0.0)
         # 4) speech
@@ -195,10 +198,11 @@ class Perf:
         rng = np.random.default_rng(self.seed + 17)
         # idle sway (less while speaking? a bit more expressive while speaking)
         amp = 1.0 + 0.5 * speak
-        out["yaw"] += 1.3 * noise1(t * 0.32, self.seed + 1) * amp
-        out["pitch"] += 0.9 * noise1(t * 0.41, self.seed + 2) * amp
-        out["roll"] += 0.9 * noise1(t * 0.27, self.seed + 3)
+        out["yaw"] += 1.5 * noise1(t * 0.32, self.seed + 1) * amp
+        out["pitch"] += 1.0 * noise1(t * 0.41, self.seed + 2) * amp
+        out["roll"] += 1.1 * noise1(t * 0.27, self.seed + 3)
         out["bx"] += 0.03 * noise1(t * 0.2, self.seed + 4)
+        out["byaw"] += 2.4 * noise1(t * 0.16, self.seed + 5)  # the torso turns a little as weight shifts
         # breathing
         period = 4.2
         out["breath"] += 0.5 + 0.5 * np.sin(2 * np.pi * t / period + self.seed)
@@ -255,6 +259,8 @@ class Perf:
         for side, t0, t1, dry in self.tears:
             k = "tear_l" if side == "l" else "tear_r"
             dk = "tear_dry_l" if side == "l" else "tear_dry_r"
+            if dry is None:
+                dry = t1 + 1.6  # every tear dries naturally once it has run its course
             prog = np.clip((t - t0) / max(t1 - t0, 1e-3), 0, None)
             val = np.where(t >= t0, np.minimum(prog * 1.4, 1.6), 0.0)
             if dry is not None:
@@ -303,17 +309,19 @@ class Perf:
             return out
         seq = sorted(seq, key=lambda s: s[0])
         cur = float(default)
-        fr = np.arange(len(t))
         for i, (kt, v, d) in enumerate(seq):
-            i0 = int(round(kt * FPS))
+            i0 = int(math.ceil(kt * FPS - 1e-3))
             if i0 >= len(t):
                 break
             i0 = max(i0, 0)
             start_val = out[i0] if i0 < len(t) else cur
-            d = max(d, 1e-3)
             seg = slice(i0, len(t))
-            x = (t[seg] - kt) / d
-            out[seg] = start_val + (v - start_val) * smoothstep(x)
+            if d <= INSTANT:
+                # an instant key (set at a cut) is fully in place on the cut frame itself
+                out[seg] = v
+            else:
+                x = (t[seg] - kt) / d
+                out[seg] = start_val + (v - start_val) * smoothstep(x)
             cur = v
         return out
 
@@ -359,14 +367,13 @@ class Perf:
         if not keys:
             return res
         keys = sorted(keys, key=lambda k: k[0])
-        rest_cache = {}
         prev = None
         for i, (kt, spec, d) in enumerate(keys):
             t_end = keys[i + 1][0] if i + 1 < len(keys) else t[-1] + 1
-            i0 = max(0, int(round(kt * FPS)))
-            i1 = min(n, int(round(t_end * FPS)))
+            i0 = max(0, int(math.ceil(kt * FPS - 1e-3)))
+            i1 = min(n, int(math.ceil(t_end * FPS - 1e-3)))
             for f in range(i0, i1):
-                x = smoothstep((t[f] - kt) / max(d, 1e-3))
+                x = 1.0 if d <= INSTANT else float(smoothstep((t[f] - kt) / d))
                 res[f] = _blend_arm(prev, spec, x)
             prev = _blend_arm(prev, spec, 1.0) if spec else None
         return res

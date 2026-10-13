@@ -61,7 +61,8 @@ def tunic_outfit(base, base_sh, trim=None, neckline="v", mantle=None, belt=None,
         lx = P["light_x"]
         sx = 1.0 if lx < 0 else -1.0
         sw = st.get("shoulder_w", 2.1)
-        cv.drawPath(spline([(sx * sw * 1.4, -0.5), (sx * sw * 0.55, 0.2), (sx * sw * 0.42, 2.0), (sx * sw * 0.5, hem + 1), (sx * sw * 1.4, hem + 1)], closed=True), fill(base_sh, alpha=0.8))
+        cv.drawPath(spline([(sx * sw * 1.4, -0.5), (sx * sw * 0.55, 0.2), (sx * sw * 0.42, 2.0), (sx * sw * 0.5, hem + 1), (sx * sw * 1.4, hem + 1)], closed=True),
+                    fill(base_sh, alpha=0.62, blur=0.22))
         if clavi:
             for s_ in (-1, 1):
                 x = s_ * sw * 0.40 + by * 0.4
@@ -196,7 +197,7 @@ def mantle_painter(col, col_sh, side=1, lining=None):
         cv.clipPath(path, skia.ClipOp.kIntersect, True)
         lx = P["light_x"]
         sx = 1.0 if lx < 0 else -1.0
-        cv.drawPath(spline([(sx * sw * 1.6, -0.5), (sx * sw * 0.65, 0.3), (sx * sw * 0.5, 2.0), (sx * sw * 1.6, 2.0)], closed=True), fill(col_sh, alpha=0.45))
+        cv.drawPath(spline([(sx * sw * 1.6, -0.5), (sx * sw * 0.65, 0.3), (sx * sw * 0.5, 2.0), (sx * sw * 1.6, 2.0)], closed=True), fill(col_sh, alpha=0.4, blur=0.15))
         # folds curving round the shoulder and over the top of the arm
         for j in range(4):
             f = 0.2 + 0.2 * j
@@ -252,7 +253,8 @@ def mantle_painter(col, col_sh, side=1, lining=None):
             _fold(cv, [(s * sw * 0.52, y0), (s * sw * 0.78, y0 + 0.12), (s * sw * 1.0, y0 + 0.35)], col_sh, hi, w=0.045, alpha=0.6)
         lx = P["light_x"]
         sx = 1.0 if lx < 0 else -1.0
-        cv.drawPath(spline([(sx * sw * 1.6, -0.5), (sx * sw * 0.65, 0.3), (sx * sw * 0.5, 2.0), (sx * sw * 0.55, knee + 1), (sx * sw * 1.6, knee + 1)], closed=True), fill(col_sh, alpha=0.5))
+        cv.drawPath(spline([(sx * sw * 1.6, -0.5), (sx * sw * 0.65, 0.3), (sx * sw * 0.5, 2.0), (sx * sw * 0.55, knee + 1), (sx * sw * 1.6, knee + 1)], closed=True),
+                    fill(col_sh, alpha=0.45, blur=0.2))
         edge = [outer[13], outer[12], outer[11], outer[10], outer[9], outer[8]]
         cv.drawPath(tapered(sample_spline([(x + s * 0.14, y) for x, y in edge], n=20), 0.12, 0.16, wmid=0.16), fill(col_sh, alpha=0.6, blur=0.03))
         cv.drawPath(tapered(sample_spline([outer[0], (s * sw * 0.58, 0.1 + up), (s * sw * 0.92, 0.45 + up)], n=10), 0.01, 0.01, wmid=0.09), fill("#ffffff", alpha=0.16))

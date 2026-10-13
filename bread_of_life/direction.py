@@ -528,8 +528,8 @@ def build_perfs():
     tg = T("L16") - 0.6
     E.pose(tg, 0.01, yaw=14, pitch=3, roll=4).look(tg, 0.45, 0.05).expr(tg, "grumble", 0.01)
     X.pose(tg, 0.01, yaw=-26, pitch=2).look(tg, -0.4, 0.0).expr(tg, "suspicious", 0.01)
-    E.look(T("L16", word="joseph") - 0.2, -0.4, 0.0, 0.2).pose(T("L16", word="joseph") - 0.3, 0.6, yaw=-18)
-    E.look(T("L16", "end") + 0.1, 0.45, 0.05, 0.2).pose(T("L16", "end"), 0.5, yaw=14)
+    E.look(T("L16", word="joseph") - 0.2, -0.4, 0.0, 0.2).pose(T("L16", word="joseph") - 0.45, 0.9, yaw=-18)
+    E.look(T("L16", "end") + 0.1, 0.45, 0.05, 0.2).pose(T("L16", "end"), 0.8, yaw=14)
     X.expr(T("L17") - 0.1, "indignant", 0.3).nod(T("L17") + 0.3, 3.0, 0.5)
     E.nod(T("L17") + 0.5, 3.0, 0.6)
     E.expr(T("L18"), "indignant", 0.4)
@@ -596,7 +596,7 @@ def build_perfs():
     E.pose(T("L24", seg=1), 0.5, pitch=-6, roll=-4)
     E.arm(T("L24", "end") + 0.4, "l", None, 0.7)
     X.pose(t24, 0.01, yaw=-22).look(t24, -0.45, 0.0).expr(t24, "shocked", 0.01)
-    X.pose(T("L24", seg=1) + 0.5, 0.4, yaw=18).look(T("L24", seg=1) + 0.5, 0.5, 0.0).expr(T("L24", seg=1) + 0.5, "confused", 0.4)
+    X.pose(T("L24", seg=1) + 0.5, 0.8, yaw=18).look(T("L24", seg=1) + 0.5, 0.5, 0.0).expr(T("L24", seg=1) + 0.5, "confused", 0.4)
     # L25 Jesus intense; a slight shake of the head on "you have no life in you"
     t25 = T("L25") - 1.6
     J.pose(t25, 0.01, yaw=17, pitch=2, roll=0).look(t25, 0.35, 0.05).expr(t25, "compassion", 0.01)
@@ -604,7 +604,7 @@ def build_perfs():
     J.hold_eyes(T("L25"), T("L25", "end"))
     J.pose(T("L25", seg=1), 1.2, pitch=-1, hx=0.06)
     J.expr(T("L25", seg=2), "intense", 0.6, bi_l=-0.2, bi_r=-0.2)
-    J.shake(T("L25", seg=2) + 0.05, amp=4.5, dur=1.15, cycles=2)
+    J.shake(T("L25", seg=2) + 0.05, amp=4.5, dur=1.5, cycles=2)
     # reactions
     tmg = T("L25", "end") + 0.15
     M.pose(tmg, 0.01, yaw=-18, pitch=0, roll=0).look(tmg, -0.4, 0.0).expr(tmg, "shocked", 0.01)
@@ -640,7 +640,7 @@ def build_perfs():
     te29 = T("L29", seg=1) - 0.1
     E.pose(te29, 0.01, yaw=-18, pitch=1, roll=0).look(te29, -0.35, 0.0).expr(te29, "suspicious", 0.01)
     E.expr(te29 + 0.3, "anxious", 0.7, eo_l=1.12, eo_r=1.12, bfur=0.35, m_press=0.45, m_smile=-0.25)  # unsettled, staring
-    E.shake(te29 + 0.9, amp=2.2, dur=1.0, cycles=1.5)                      # a small "no" to himself
+    E.shake(te29 + 0.9, amp=2.2, dur=1.3, cycles=1.5)                      # a small "no" to himself
     E.pose(te29 + 1.0, 0.8, pitch=-2, roll=2)
     # Eli at "Your ancestors ate manna, and died..."
     te30 = T("L30", seg=1) - 0.15

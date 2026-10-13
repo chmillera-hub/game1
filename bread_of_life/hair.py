@@ -229,8 +229,9 @@ class LongHair:
         cv.clipPath(path, skia.ClipOp.kIntersect, True)
         lx = P["light_x"]
         sx = 1.0 if lx < 0 else -1.0
-        # broad shadow on the side away from the key light + darker toward the bottom
-        cv.drawPath(spline([(sx * 0.1, -2.2), (sx * 2.3, -2.2), (sx * 2.3, 3.0), (sx * 0.85, 3.0), (sx * 0.8, 0.2), (sx * 0.45, -1.2)], closed=True), fill(st["hair_sh"], alpha=0.5))
+        # broad, soft shadow on the side away from the key light + darker toward the bottom
+        cv.drawPath(spline([(sx * 0.1, -2.2), (sx * 2.3, -2.2), (sx * 2.3, 3.0), (sx * 0.85, 3.0), (sx * 0.8, 0.2), (sx * 0.45, -1.2)], closed=True),
+                    fill(st["hair_sh"], alpha=0.45, blur=0.18))
         cv.drawRect(skia.Rect.MakeLTRB(-3, 0.6, 3, 3.2), fill("#000000", shader=lin_grad((0, 0.6), (0, 2.6), [(0, 0, 0, 0), (0.05, 0.02, 0.0, 0.35)])))
         # inner shadow along the hairline
         for hl in (g["hl_r"], g["hl_l"]):
@@ -275,8 +276,8 @@ class LongHair:
             side = g["R"] if s > 0 else g["L"]
             p0 = side[4]
             dx2, dy2 = sway_offset(P, 1.0, k=0.25)
-            strand = [p0, (p0[0] + s * 0.12, p0[1] + 0.35), (p0[0] + s * 0.10 + dx2, p0[1] + 0.8)]
-            cv.drawPath(spline(strand, closed=False), stroke(lc, 0.007, alpha=0.6))
+            strand = [(p0[0] - s * 0.03, p0[1]), (p0[0] - s * 0.01, p0[1] + 0.35), (p0[0] - s * 0.02 + dx2 * 0.5, p0[1] + 0.8)]
+            cv.drawPath(spline(strand, closed=False), stroke(lc, 0.006, alpha=0.45))
 
     def cast_shadow(self, cv, H, st, P):
         """Shadow the front hair casts onto the face (call while clipped to the face)."""
@@ -529,20 +530,29 @@ class ShortCurly:
             cv.drawPath(tapered(sample_spline(hl_edge, n=14), 0.05, 0.08, wmid=0.1), fill(sh, alpha=0.55, blur=0.04))
         crown = [surf_pts(H, [(u, -1.5 + 0.35 * u * u)], dz=self.vol + 0.03)[0] for u in np.linspace(-0.75, 0.75, 9)]
         cv.drawPath(tapered(sample_spline(crown, n=20), 0.02, 0.02, wmid=0.12), fill(hl, alpha=0.32, blur=0.05))
-        # the texture of tight curls: small coils, dark in the hollows and catching light on top
+        # the texture of tight curls, built up softly: clumps of shade and light first, then short open
+        # curl strokes (no closed loops, which read as little circles)
         rng = np.random.default_rng(3)
-        for k in range(78):
+        for k in range(26):
+            u = rng.uniform(-0.95, 0.95)
+            v = rng.uniform(-1.7, -0.95 + 0.9 * abs(u) ** 2)
+            p = surf_pts(H, [(u, v)], dz=self.vol + 0.02)[0]
+            rr = rng.uniform(0.07, 0.13)
+            light = k % 3 == 0
+            cv.drawPath(ellipse(p[0], p[1], rr, rr * 0.75, rng.uniform(0, 180)),
+                        fill(hl if light else sh, alpha=0.18 if light else 0.32, blur=rr * 0.5))
+        for k in range(70):
             u = rng.uniform(-0.98, 0.98)
             v = rng.uniform(-1.72, -0.9 + 0.95 * abs(u) ** 2)
             p = surf_pts(H, [(u, v)], dz=self.vol + 0.02)[0]
-            rc = rng.uniform(0.018, 0.034)
-            ph = rng.uniform(0, 6.28)
-            turns = rng.uniform(0.55, 0.95)
-            cv.drawPath(coil(p[0], p[1], rc, turns=turns, phase=ph), stroke(sh, rng.uniform(0.007, 0.012), alpha=0.6))
-            if k % 2 == 0:
+            rc = rng.uniform(0.022, 0.038)
+            arc = skia.Path()
+            arc.addArc(skia.Rect.MakeXYWH(p[0] - rc, p[1] - rc * 0.8, rc * 2, rc * 1.6), rng.uniform(0, 360), rng.uniform(110, 190))
+            cv.drawPath(arc, stroke(sh, rng.uniform(0.006, 0.01), alpha=0.45))
+            if k % 3 == 0:
                 hp = skia.Path()
-                hp.addArc(skia.Rect.MakeXYWH(p[0] - rc * 0.9, p[1] - rc, rc * 1.8, rc * 1.5), rng.uniform(190, 230), rng.uniform(70, 120))
-                cv.drawPath(hp, stroke(hl, 0.008, alpha=0.45))
+                hp.addArc(skia.Rect.MakeXYWH(p[0] - rc * 0.9, p[1] - rc, rc * 1.8, rc * 1.5), rng.uniform(190, 230), rng.uniform(60, 100))
+                cv.drawPath(hp, stroke(hl, 0.007, alpha=0.35))
         cv.restore()
 
     def back(self, cv, H, st, P):
@@ -597,12 +607,13 @@ class CurlyBeard(Beard):
             q = (p[0] + math.sin(ang) * ln, p[1] + math.cos(ang) * ln)
             mid = ((p[0] + q[0]) / 2 + 0.008 * math.cos(ang), (p[1] + q[1]) / 2)
             cv.drawPath(tapered([p, mid, q], 0.008, 0.002), fill(sh if k % 3 else mix(col, "#ffffff", 0.18), alpha=0.75))
-        # a few tighter curls where the beard is fullest, at the chin
-        for k in range(12):
-            u = rng.uniform(-0.45, 0.45)
-            v = rng.uniform(1.05, 1.42)
+        # soft clumps where the beard is fullest, at the chin and along the jaw
+        for k in range(10):
+            u = rng.uniform(-0.8, 0.8)
+            v = rng.uniform(0.7, 1.4)
             p = surf_pts(H, [(u, v)], dz=0.1)[0]
-            cv.drawPath(coil(p[0], p[1], rng.uniform(0.018, 0.028), phase=rng.uniform(0, 6.28)), stroke(sh, 0.009, alpha=0.7))
+            rr = rng.uniform(0.06, 0.1)
+            cv.drawPath(ellipse(p[0], p[1], rr, rr * 0.7), fill(sh if k % 2 else mix(col, "#ffffff", 0.12), alpha=0.25, blur=rr * 0.5))
         cv.restore()
 
 
@@ -624,7 +635,9 @@ class HeadCloth:
                              (1.01, 0.12), (0.98, 0.44)]
 
     def vol(self, y):
-        return self.vol_ + 0.06 * min(1.0, max(0.0, (y + 0.6) / 1.0))
+        # the cloth lies close over the crown and stands off the head more where it falls past the ears
+        crown = 0.5 + 0.5 * min(1.0, max(0.0, (y + 1.6) / 1.2))
+        return self.vol_ * crown + 0.06 * min(1.0, max(0.0, (y + 0.6) / 1.0))
 
     def __call__(self, cv, H, st, P):
         if self.layer == "back":
@@ -635,7 +648,7 @@ class HeadCloth:
     def geometry(self, H, P):
         ys = list(np.linspace(-1.66, self.y_hang, 14))
         R, L = extents(H, ys, self.vol)
-        top = top_point(H, self.vol_)
+        top = top_point(H, self.vol_ * 0.5)
         er = surf_pts(H, self.edge, dz=0.05)
         el = surf_pts(H, [(-x, y) for x, y in self.edge], dz=0.05)
         er = clamp_inner(er, H, 1, far_margin(H, 1, 0.05))
@@ -700,14 +713,18 @@ class HeadCloth:
         cv.clipPath(path, skia.ClipOp.kIntersect, True)
         lx = P["light_x"]
         sx = 1.0 if lx < 0 else -1.0
-        cv.drawPath(spline([(sx * 0.2, -2.4), (sx * 2.6, -2.4), (sx * 2.6, 3.0), (sx * 1.0, 3.0), (sx * 0.9, 0.2), (sx * 0.6, -1.2)], closed=True), fill(sh, alpha=0.55))
+        shade = spline([(sx * 0.2, -2.4), (sx * 2.6, -2.4), (sx * 2.6, 3.0), (sx * 1.0, 3.0), (sx * 0.9, 0.2), (sx * 0.6, -1.2)], closed=True)
+        # soft, rounded shading: the cloth turns away from the light, it is not split into two colours
+        cv.drawPath(shade, fill(sh, alpha=0.45, blur=0.16))
+        cv.drawPath(ellipse(-sx * 0.25, -1.25, 0.55, 0.32), fill(mix(col, "#ffffff", 0.4), alpha=0.28, blur=0.12))
         if self.stripes:
             ep = self.edge_path(g)
             for (d0, d1, scol) in self.stripes:
                 cv.drawPath(ep, stroke(scol, 2 * d1, cap="butt"))
                 cv.drawPath(ep, stroke(col, 2 * d0, cap="butt"))
-            cv.drawPath(spline([(sx * 0.2, -2.4), (sx * 2.6, -2.4), (sx * 2.6, 3.0), (sx * 1.0, 3.0), (sx * 0.9, 0.2), (sx * 0.6, -1.2)], closed=True), fill(sh, alpha=0.35))
-        # folds
+            cv.drawPath(shade, fill(sh, alpha=0.3, blur=0.16))
+        # folds: soft creases where the cloth gathers over the crown and falls past the ears
+        hi = mix(col, "#ffffff", 0.35)
         for s in (1, -1):
             out, bot, inn = g["r"] if s > 0 else g["l"]
             side = g["R"] if s > 0 else g["L"]
@@ -715,9 +732,18 @@ class HeadCloth:
                 a = side[5 + k * 2]
                 b = out[min(len(out) - 1, 1 + k)]
                 a2 = (a[0] - s * 0.15, a[1])
-                cv.drawPath(tapered(sample_spline([a2, ((a2[0] + b[0]) / 2 - s * 0.05, (a2[1] + b[1]) / 2), (b[0] - s * 0.12, b[1])], n=14), 0.004, 0.01, wmid=0.04), fill(sh, alpha=0.6))
-        # inner shadow along the face opening
-        cv.drawPath(self.edge_path(g), stroke(sh, 0.10, alpha=0.5, blur=0.03))
+                pts = [a2, ((a2[0] + b[0]) / 2 - s * 0.05, (a2[1] + b[1]) / 2), (b[0] - s * 0.12, b[1])]
+                cv.drawPath(tapered(sample_spline(pts, n=14), 0.004, 0.01, wmid=0.04), fill(sh, alpha=0.5, blur=0.012))
+                cv.drawPath(tapered(sample_spline([(x + s * 0.05, y) for x, y in pts], n=14), 0.003, 0.006, wmid=0.025), fill(hi, alpha=0.3, blur=0.01))
+            for k in range(2):
+                c0 = surf_pts(H, [(s * (0.15 + 0.2 * k), -1.62 + 0.05 * k)], dz=self.vol_ * 0.5 + 0.02)[0]
+                c1 = surf_pts(H, [(s * (0.42 + 0.22 * k), -1.2 + 0.1 * k)], dz=self.vol_ * 0.8)[0]
+                c2 = surf_pts(H, [(s * (0.7 + 0.18 * k), -0.75 + 0.12 * k)], dz=self.vol_)[0]
+                cv.drawPath(tapered(sample_spline([c0, c1, c2], n=14), 0.002, 0.004, wmid=0.022), fill(sh, alpha=0.32, blur=0.01))
+        # the folded hem round the face: a band of shade with a light edge, so the cloth has thickness
+        ep = self.edge_path(g)
+        cv.drawPath(ep, stroke(sh, 0.12, alpha=0.45, blur=0.03))
+        cv.drawPath(ep, stroke(hi, 0.02, alpha=0.5))
         cv.restore()
         cv.drawPath(path, stroke(lc, 0.02))
 

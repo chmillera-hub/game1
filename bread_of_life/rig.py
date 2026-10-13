@@ -297,19 +297,27 @@ def draw_eye(cv, H, st, P, side):
 
 
 def draw_tear(cv, H, st, cx, cy, f, side, k, P, fade=1.0):
-    # a drop that forms at the lower lid and runs down the cheek; `fade` < 1 as it dries
+    """A tear that wells at the lower lid and runs down the cheek: one clear, faintly blue drop and
+    its wet trail, drawn as a single layer so that as it dries the whole tear fades out together."""
+    if fade <= 0.01:
+        return
     start = (cx + side * 0.05 * f, cy + 0.08)
     run = min(1.0, k) * 0.42
     x0, y0 = start
     path_pts = [(x0, y0), (x0 + side * 0.012, y0 + run * 0.5), (x0 + side * 0.02, y0 + run)]
+    cv.saveLayerAlpha(None, int(255 * min(1.0, fade)))
     if run > 0.02:
-        cv.drawPath(tapered(sample_spline(path_pts, n=10), 0.008, 0.018), fill("#d8f0ff", alpha=0.55 * fade))
-        cv.drawPath(tapered(sample_spline(path_pts, n=10), 0.003, 0.007), fill("#ffffff", alpha=0.7 * fade))
+        trail = sample_spline(path_pts, n=10)
+        cv.drawPath(tapered(trail, 0.01, 0.02), fill("#7fb3dc", alpha=0.35))
+        cv.drawPath(tapered(trail, 0.006, 0.012), fill("#bfe0f7", alpha=0.6))
+        cv.drawPath(tapered([(x - side * 0.004, y) for x, y in trail], 0.002, 0.004), fill("#ffffff", alpha=0.75))
     dx, dy = path_pts[-1]
     r = 0.018 + 0.008 * min(1, k)
-    drop = fade * fade  # the drop itself falls away first
-    cv.drawPath(ellipse(dx, dy, r * 0.8, r), fill("#cfeaff", alpha=0.75 * drop))
-    cv.drawPath(ellipse(dx - 0.005, dy - 0.006, r * 0.3, r * 0.35), fill("#ffffff", alpha=0.9 * drop))
+    drop = ellipse(dx, dy, r * 0.8, r)
+    cv.drawPath(drop, fill("#a9d2f2", alpha=0.8))
+    cv.drawPath(drop, stroke("#5f93bf", 0.004, alpha=0.6))
+    cv.drawPath(ellipse(dx - 0.005, dy - 0.006, r * 0.3, r * 0.35), fill("#ffffff", alpha=0.9))
+    cv.restore()
 
 
 def draw_brow(cv, H, st, P, side):
@@ -711,9 +719,15 @@ class Character:
         nw = st.get("neck_w", 0.40)
         nt = hoy + st.get("neck_top", 0.75)
         lc = st.get("line", "#2a1a14")
-        top_l, top_r = (hox * 0.8 - nw * 0.92, nt), (hox * 0.8 + nw * 0.92, nt)
-        skin_shape = spline([top_l, (-nw * 1.0, -0.5), (-nw * 1.12, -0.16), (-nw * 1.5, 0.06), (-1.0, 0.3), (-1.0, 1.4),
-                             (1.0, 1.4), (1.0, 0.3), (nw * 1.5, 0.06), (nw * 1.12, -0.16), (nw * 1.0, -0.5), top_r],
+        # the neck runs in a straight line from where the turned chest holds it to where the head sits
+        nb = P["byaw"] / 60.0 * 0.5          # base of the neck moves with the body (as the collar does)
+        ntx = hox * 0.8
+        def nx_(x0, y):
+            u = min(1.0, max(0.0, (y - nt) / (0.06 - nt)))  # 0 at the top of the neck, 1 at its base
+            return x0 + ntx * (1 - u) + nb * u
+        top_l, top_r = (ntx - nw * 0.92, nt), (ntx + nw * 0.92, nt)
+        skin_shape = spline([top_l, (nx_(-nw * 1.0, -0.5), -0.5), (nx_(-nw * 1.12, -0.16), -0.16), (nb - nw * 1.5, 0.06), (nb - 1.0, 0.3), (nb - 1.0, 1.4),
+                             (nb + 1.0, 1.4), (nb + 1.0, 0.3), (nb + nw * 1.5, 0.06), (nx_(nw * 1.12, -0.16), -0.16), (nx_(nw * 1.0, -0.5), -0.5), top_r],
                             closed=True, corners=[0, 5, 6, 11], tension=0.4)
         # the throat sits in the shadow of the head and the chest catches the light
         cv.drawPath(skin_shape, fill(st["skin"], shader=lin_grad((0, nt), (0, 0.75), [
@@ -730,10 +744,25 @@ class Character:
         jaw_sh.transform(m)
         cv.drawPath(jaw_sh, fill(st.get("skin_sh2", st["skin_sh"]), alpha=0.9))
         cv.restore()
+        # the two neck muscles (sternocleidomastoids) running from behind the ears down to the notch
+        # between the collarbones, in a soft V; shaded, not outlined
+        cv.save()
+        cv.clipPath(skin_shape, skia.ClipOp.kIntersect, True)
+        sh2 = st.get("skin_sh2", st["skin_sh"])
+        for s_ in (-1, 1):
+            m0 = (ntx + s_ * nw * 0.72, nt + 0.12)
+            m1 = (nx_(s_ * nw * 0.55, -0.45), -0.45)
+            m2 = (nb + s_ * 0.07, 0.12)
+            cv.drawPath(tapered(sample_spline([m0, m1, m2], n=14), 0.02, 0.012, wmid=0.05), fill(sh2, alpha=0.22, blur=0.03))
+            # light along the front edge of each muscle
+            cv.drawPath(tapered(sample_spline([(m0[0] - s_ * 0.06, m0[1] + 0.05), (m1[0] - s_ * 0.07, m1[1]), (m2[0] - s_ * 0.03, m2[1] - 0.04)], n=14),
+                                0.01, 0.006, wmid=0.025), fill(mix(st["skin"], "#ffffff", 0.25), alpha=0.2, blur=0.02))
+        cv.drawPath(ellipse(nb, 0.16, 0.07, 0.05), fill(sh2, alpha=0.2, blur=0.03))  # the notch at the base of the throat
+        cv.restore()
         # outlines down the sides of the throat only, easing out toward the shoulders
         for s_ in (-1, 1):
-            edge = [(hox * 0.8 + s_ * nw * 0.92, nt), (s_ * nw * 1.0, -0.5), (s_ * nw * 1.1, -0.2), (s_ * (nw * 1.12 + 0.14), -0.04)]
-            cv.drawPath(tapered(sample_spline(edge, n=14), 0.024, 0.006, wmid=0.024), fill(lc, alpha=0.9))
+            edge = [(ntx + s_ * nw * 0.92, nt), (nx_(s_ * nw * 1.0, -0.5), -0.5), (nx_(s_ * nw * 1.1, -0.2), -0.2), (nb + s_ * (nw * 1.12 + 0.1), -0.06)]
+            cv.drawPath(tapered(sample_spline(edge, n=14), 0.024, 0.004, wmid=0.022), fill(lc, alpha=0.9))
 
         # --- body
         if arms:
