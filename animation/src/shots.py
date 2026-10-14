@@ -268,19 +268,20 @@ def make_tear(F):
     m.use_nodes = True
     N = m.node_tree.nodes
     b = N['Principled BSDF']
-    b.inputs['Base Color'].default_value = (0.70, 0.85, 1.0, 1)
+    b.inputs['Base Color'].default_value = (0.60, 0.80, 1.0, 1)
     b.inputs['Roughness'].default_value = 0.02
     b.inputs['Transmission Weight'].default_value = 0.6
     b.inputs['Coat Weight'].default_value = 1.0
     b.inputs['Emission Color'].default_value = (0.55, 0.75, 1.0, 1)
-    b.inputs['Emission Strength'].default_value = 0.25
+    b.inputs['Emission Strength'].default_value = 0.4
     bpy.ops.mesh.primitive_uv_sphere_add(radius=1, segments=16, ring_count=10)
     t = bpy.context.object
     for c in t.users_collection:
         c.objects.unlink(t)
     F.pc.objects.link(t)
     t.name = 'tear'
-    t.data.transform(Matrix.Diagonal((0.0026, 0.0018, 0.0036, 1)))
+    # large enough to read on a phone in the 78 mm close-up (about 8 x 12 mm)
+    t.data.transform(Matrix.Diagonal((0.0042, 0.0028, 0.0058, 1)))
     bpy.ops.object.shade_smooth()
     blib.assign(t, m)
     return t
