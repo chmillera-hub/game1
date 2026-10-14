@@ -236,13 +236,15 @@ class Film:
                         self._set(owner, path, value, index)
                         owner.keyframe_insert(path, frame=0, index=index)
                         continue
-                # a change shorter than a frame lands on fr(t + dur); the hold key goes one
-                # frame earlier so the two never collapse onto one frame (which would leave
-                # a ramp from the previous key instead of a cut)
-                f0 = fr(t)
-                f1 = fr(t + dur) if dur > 0 else f0 + 1
-                if f1 <= f0:
+                if dur * FPS < 1.0:
+                    # a cut: the new value lands on the first frame at or after t + dur, the hold
+                    # key one frame before (so a light switched at a shot start is right on the
+                    # shot's first frame, and the two keys never collapse into a long ramp)
+                    f1 = math.ceil((t + dur) * FPS - 1e-6)
                     f0 = f1 - 1
+                else:
+                    f0 = fr(t)
+                    f1 = max(fr(t + dur), f0 + 1)
                 self._set(owner, path, cur, index)
                 owner.keyframe_insert(path, frame=f0, index=index)
                 self._set(owner, path, value, index)
