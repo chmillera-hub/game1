@@ -472,17 +472,19 @@ SKY_PRESETS = {
                  tint=(1.0, 0.98, 0.94), sat=0.95, sun_tint=(1.0, 0.97, 0.92), sun_angle=0.8,
                  haze_density=0.0003, haze_tint=(1.0, 1.0, 1.0), fog=(0.9, 0.88, 0.85), fog_density=0.0012,
                  exposure=-0.3, grade="neutral", clouds=0.0),
-    "eclipse": dict(hdri="kloofendal_overcast_puresky", sun_az=165, sun_el=24.0, key=0.07, strength=0.7, bg=1.0,
+    "eclipse": dict(hdri="kloofendal_overcast_puresky", sun_az=165, sun_el=24.0, key=0.07, strength=0.45, bg=1.0,
                     sun_energy=0.35, tint=(0.82, 0.52, 0.38), sat=0.45, sun_tint=(1.0, 0.45, 0.2), sun_angle=2.5,
                     haze_density=0.0012, haze_tint=(1.0, 0.9, 0.8), fog=(0.6, 0.32, 0.18), fog_density=0.006,
                     exposure=0.35, grade="eclipse", clouds=0.65,
                     cloud_opts=dict(color=(0.55, 0.38, 0.3), shadow=(0.1, 0.07, 0.06), opacity=0.85, sun_glow=0.6,
                                     speed=(9.0, 3.0)),
                     sun_disk=dict(el=24, size=2.2, color=(1.0, 0.3, 0.08), strength=14.0, glow=0.35)),
-    "storm": dict(hdri="kloppenheim_03_puresky", sun_az=120, sun_el=30.0, key=0.24, strength=1.0, bg=1.0,
-                  sun_energy=0.7, tint=(0.8, 0.84, 0.95), sat=0.5, sun_tint=(0.85, 0.88, 1.0), sun_angle=6.0,
+    "storm": dict(hdri="kloppenheim_03_puresky", sun_az=120, sun_el=30.0, key=0.17, strength=0.8, bg=1.0,
+                  sun_energy=0.6, tint=(0.8, 0.84, 0.95), sat=0.45, sun_tint=(0.85, 0.88, 1.0), sun_angle=6.0,
                   haze_density=0.0009, haze_tint=(1.0, 1.0, 1.0), fog=(0.5, 0.52, 0.58), fog_density=0.004,
-                  exposure=0.0, grade="cold", clouds=0.0, clamp_sun=True),
+                  exposure=0.15, grade="cold", clouds=0.55, clamp_sun=4.0,
+                  cloud_opts=dict(color=(0.42, 0.44, 0.5), shadow=(0.06, 0.065, 0.08), opacity=0.9, sun_glow=0.3,
+                                  speed=(14.0, 5.0), scale=0.0005)),
     "dawn": dict(hdri="qwantani_dawn_puresky", sun_az=100, key=0.55, strength=1.0, bg=1.0, sun_mult=0.0,
                  tint=(1.0, 0.95, 1.0), sat=1.2, sun_tint=(1.0, 0.7, 0.55), sun_angle=2.0,
                  haze_density=0.0005, haze_tint=(1.0, 1.0, 1.0), fog=(0.85, 0.75, 0.8), fog_density=0.004,
@@ -762,7 +764,7 @@ def sky(mood="golden", sun_az=None, rotation=None, clouds=None, stars=None, moon
         cc.blend_type = "DARKEN"
         cc.inputs[0].default_value = 1.0
         T.link(sky_col, cc.inputs[6])
-        cv = max(clamp_v, 1e-3) * 0.6
+        cv = max(clamp_v, 1e-3) * float(p["clamp_sun"] if not isinstance(p["clamp_sun"], bool) else 2.0)
         cc.inputs[7].default_value = (cv, cv, cv, 1)
         T.link(cc.outputs[2], bg_cam.inputs[0])
     else:
