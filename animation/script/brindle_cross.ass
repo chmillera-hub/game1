@@ -1,0 +1,114 @@
+[Script Info]
+Title: Brindle Cross - A Sunday in November
+ScriptType: v4.00+
+PlayResX: 540
+PlayResY: 960
+WrapStyle: 0
+ScaledBorderAndShadow: yes
+YCbCr Matrix: None
+
+[V4+ Styles]
+Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
+Style: Narr,Inter,31,&H00D8E8F2,&H000000FF,&H30000000,&HA0000000,0,-1,0,0,100,100,0,0,1,2,1.2,2,36,36,248,1
+Style: Dlg,Inter,31,&H00FFFFFF,&H000000FF,&H30000000,&HA0000000,0,0,0,0,100,100,0,0,1,2,1.2,2,36,36,248,1
+Style: Title,Inter SemiBold,26,&H00F8F8F8,&H000000FF,&H30000000,&HA0000000,0,0,0,0,100,100,3,0,1,1.6,1,7,36,36,0,1
+Style: Desc,Inter,20,&H00D8E8F2,&H000000FF,&H30000000,&HA0000000,0,-1,0,0,100,100,0,0,1,1.4,1,7,36,36,0,1
+Style: Rule,Inter,20,&H0058B4E0,&H000000FF,&H30000000,&HA0000000,0,0,0,0,100,100,0,0,1,0.8,0.8,7,36,36,0,1
+Style: Card,Inter Display SemiBold,44,&H00F8F8F8,&H000000FF,&H30000000,&HA0000000,0,0,0,0,100,100,8,0,1,1.5,1,2,36,36,0,1
+Style: CardDesc,Inter,24,&H00D8E8F2,&H000000FF,&H30000000,&HA0000000,0,-1,0,0,100,100,0,0,1,1.2,1,8,36,36,0,1
+
+[Events]
+Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
+Dialogue: 0,0:00:00.70,0:00:02.83,Narr,,0,0,248,,{\blur0.8}This is Brindle Cross.
+Dialogue: 0,0:00:04.91,0:00:09.00,Narr,,0,0,248,,{\blur0.8}The clock runs slow.\NThirty-one minutes, at last count.
+Dialogue: 0,0:00:09.54,0:00:12.12,Narr,,0,0,248,,{\blur0.8}Nobody’s quite sure\Nwhen that started.
+Dialogue: 0,0:00:12.62,0:00:16.16,Narr,,0,0,248,,{\blur0.8}Somebody kept eating\Nthe rye before he’d paid.
+Dialogue: 0,0:00:16.25,0:00:18.00,Narr,,0,0,248,,{\blur0.8}Hence, the sign.
+Dialogue: 0,0:00:18.08,0:00:20.16,Narr,,0,0,248,,{\blur0.8}This is Tomas Brandt.
+Dialogue: 0,0:00:20.70,0:00:23.58,Narr,,0,0,248,,{\blur0.8}This is his son, Teddy. He is eight.
+Dialogue: 0,0:00:25.25,0:00:28.00,Dlg,,0,0,248,,{\blur0.8}Teddy. Door.\NYou’re letting the heat out.
+Dialogue: 0,0:00:29.33,0:00:31.79,Narr,,0,0,248,,{\blur0.8}The lamp lights itself at five.
+Dialogue: 0,0:00:33.33,0:00:35.79,Narr,,0,0,248,,{\blur0.8}And this is Oswald Bunce.
+Dialogue: 0,0:00:37.83,0:00:39.62,Narr,,0,0,248,,{\blur0.8}It’s a silent act.
+Dialogue: 0,0:00:56.00,0:00:56.62,Dlg,,0,0,248,,{\blur0.8}Again!
+Dialogue: 0,0:00:56.62,0:00:57.91,Dlg,,0,0,248,,{\blur0.8}Door!
+Dialogue: 0,0:00:58.00,0:01:00.87,Narr,,0,0,248,,{\blur0.8}He has never once\Nseen the second banana.
+Dialogue: 0,0:01:02.70,0:01:04.16,Dlg,,0,0,248,,{\blur0.8}Papa, who’s that lady?
+Dialogue: 0,0:01:04.25,0:01:06.08,Dlg,,0,0,248,,{\blur0.8}Mrs. Lusk. Walter’s wife.
+Dialogue: 0,0:01:06.16,0:01:07.45,Dlg,,0,0,248,,{\blur0.8}What’s her first name?
+Dialogue: 0,0:01:07.79,0:01:08.79,Dlg,,0,0,248,,{\blur0.8}It’s…
+Dialogue: 0,0:01:12.79,0:01:13.95,Dlg,,0,0,248,,{\blur0.8}Door, Teddy.
+Dialogue: 0,0:01:24.37,0:01:28.25,Dlg,,0,0,248,,{\blur0.8}Oh — I’m fine, thank you.\NThe wall’s warm. From the ovens.
+Dialogue: 0,0:01:29.29,0:01:30.87,Dlg,,0,0,248,,{\blur0.8}It’s the small rye.
+Dialogue: 0,0:01:31.70,0:01:33.50,Dlg,,0,0,248,,{\blur0.8}…That was Walter’s.
+Dialogue: 0,0:01:33.58,0:01:37.79,Dlg,,0,0,248,,{\blur0.8}Every day at four.\NHe’d tear the end off before he’d paid.
+Dialogue: 0,0:01:37.87,0:01:39.58,Dlg,,0,0,248,,{\blur0.8}That sign was for him.
+Dialogue: 0,0:01:40.75,0:01:44.33,Dlg,,0,0,248,,{\blur0.8}He stood by the lamp.\NLaughed before I even fell.
+Dialogue: 0,0:01:44.41,0:01:47.08,Dlg,,0,0,248,,{\blur0.8}He said you lean. Right before.
+Dialogue: 0,0:01:47.16,0:01:49.41,Dlg,,0,0,248,,{\blur0.8}He loved that you never fixed it.
+Dialogue: 0,0:01:51.70,0:01:53.25,Dlg,,0,0,248,,{\blur0.8}Thirty-one minutes.
+Dialogue: 0,0:01:53.79,0:01:57.04,Dlg,,0,0,248,,{\blur0.8}Walter climbed up every Sunday.\NSet it right.
+Dialogue: 0,0:01:57.12,0:01:59.04,Dlg,,0,0,248,,{\blur0.8}It loses a minute a week.
+Dialogue: 0,0:02:00.62,0:02:02.33,Dlg,,0,0,248,,{\blur0.8}…Thirty-one Sundays.
+Dialogue: 0,0:02:02.95,0:02:04.54,Dlg,,0,0,248,,{\blur0.8}I don’t want it fixed.
+Dialogue: 0,0:02:04.62,0:02:06.00,Dlg,,0,0,248,,{\blur0.8}Isn’t that awful?
+Dialogue: 0,0:02:06.08,0:02:07.08,Dlg,,0,0,248,,{\blur0.8}No.
+Dialogue: 0,0:02:08.16,0:02:10.04,Dlg,,0,0,248,,{\blur0.8}The minister came twice.
+Dialogue: 0,0:02:10.12,0:02:12.45,Dlg,,0,0,248,,{\blur0.8}Called me Ethel. Both times.
+Dialogue: 0,0:02:13.33,0:02:15.00,Dlg,,0,0,248,,{\blur0.8}Well. He calls me Oscar, so—
+Dialogue: 0,0:02:15.08,0:02:17.20,Dlg,,0,0,248,,{\blur0.8}Oh… you don’t have to do that.
+Dialogue: 0,0:02:18.66,0:02:20.33,Dlg,,0,0,248,,{\blur0.8}I saw you. Every day.
+Dialogue: 0,0:02:20.45,0:02:22.16,Dlg,,0,0,248,,{\blur0.8}I didn’t know what to say.
+Dialogue: 0,0:02:22.25,0:02:23.62,Dlg,,0,0,248,,{\blur0.8}Nobody does.
+Dialogue: 0,0:02:25.75,0:02:27.58,Dlg,,0,0,248,,{\blur0.8}Mr. Bunce. No.
+Dialogue: 0,0:02:31.37,0:02:34.62,Dlg,,0,0,248,,{\blur0.8}There. Now we both\Nlook ridiculous, Mrs. Lusk.
+Dialogue: 0,0:02:35.75,0:02:36.75,Dlg,,0,0,248,,{\blur0.8}Edith.
+Dialogue: 0,0:02:37.41,0:02:38.41,Dlg,,0,0,248,,{\blur0.8}…Please.
+Dialogue: 0,0:02:40.20,0:02:41.20,Dlg,,0,0,248,,{\blur0.8}Edith.
+Dialogue: 0,0:02:43.04,0:02:45.20,Dlg,,0,0,248,,{\blur0.8}Nobody’s said it since April.
+Dialogue: 0,0:02:52.91,0:02:54.37,Dlg,,0,0,248,,{\blur0.8}That’s yours.
+Dialogue: 0,0:02:54.45,0:02:56.12,Dlg,,0,0,248,,{\blur0.8}You eat too, Oswald.
+Dialogue: 0,0:03:03.70,0:03:05.04,Dlg,,0,0,248,,{\blur0.8}There’s the lean.
+Dialogue: 0,0:03:11.33,0:03:12.91,Dlg,,0,0,248,,{\blur0.8}Papa! You’re letting the heat out.
+Dialogue: 0,0:03:13.00,0:03:13.91,Dlg,,0,0,248,,{\blur0.8}Good.
+Dialogue: 0,0:03:16.29,0:03:17.70,Dlg,,0,0,248,,{\blur0.8}What’s your first name?
+Dialogue: 0,0:03:17.79,0:03:19.00,Dlg,,0,0,248,,{\blur0.8}It’s Edith.
+Dialogue: 0,0:03:19.08,0:03:20.95,Dlg,,0,0,248,,{\blur0.8}I’m Teddy. I’m nearly nine.
+Dialogue: 0,0:03:21.04,0:03:22.66,Dlg,,0,0,248,,{\blur0.8}Congratulations.
+Dialogue: 0,0:03:23.87,0:03:26.20,Narr,,0,0,600,,{\blur0.8}This is Edith Lusk.
+Dialogue: 0,0:03:26.29,0:03:29.16,Narr,,0,0,600,,{\blur0.8}She has lived here fifty-three years.
+Dialogue: 0,0:03:29.66,0:03:31.45,Narr,,0,0,600,,{\blur0.8}She was in the first shot.
+Dialogue: 2,0:00:00.25,0:00:04.25,Title,,0,0,0,,{\pos(36,504)\fad(250,300)\blur0.6}BRINDLE CROSS
+Dialogue: 1,0:00:00.25,0:00:04.25,Rule,,0,0,0,,{\an7\pos(36,535)\p1\fscx0\t(0,450,0.6,\fscx100)\fad(250,300)}m 0 0 l 207 0 207 2 0 2{\p0}
+Dialogue: 2,0:00:00.25,0:00:04.25,Desc,,0,0,0,,{\pos(36,540)\blur0.6\fad(250,300)}A Sunday in November
+Dialogue: 2,0:00:05.00,0:00:08.41,Title,,0,0,0,,{\pos(36,504)\fad(250,300)\blur0.6}THE CLOCK
+Dialogue: 1,0:00:05.00,0:00:08.41,Rule,,0,0,0,,{\an7\pos(36,535)\p1\fscx0\t(0,450,0.6,\fscx100)\fad(250,300)}m 0 0 l 148 0 148 2 0 2{\p0}
+Dialogue: 2,0:00:05.00,0:00:08.41,Desc,,0,0,0,,{\pos(36,540)\blur0.6\fad(250,300)}Tower, 1871
+Dialogue: 2,0:00:18.08,0:00:20.37,Title,,0,0,0,,{\pos(36,504)\fad(250,300)\blur0.6}TOMAS BRANDT
+Dialogue: 1,0:00:18.08,0:00:20.37,Rule,,0,0,0,,{\an7\pos(36,535)\p1\fscx0\t(0,450,0.6,\fscx100)\fad(250,300)}m 0 0 l 207 0 207 2 0 2{\p0}
+Dialogue: 2,0:00:18.08,0:00:20.37,Desc,,0,0,0,,{\pos(36,540)\blur0.6\fad(250,300)}Baker
+Dialogue: 2,0:00:20.70,0:00:25.83,Title,,0,0,0,,{\pos(36,504)\fad(250,300)\blur0.6}TEDDY BRANDT
+Dialogue: 1,0:00:20.70,0:00:25.83,Rule,,0,0,0,,{\an7\pos(36,535)\p1\fscx0\t(0,450,0.6,\fscx100)\fad(250,300)}m 0 0 l 200 0 200 2 0 2{\p0}
+Dialogue: 2,0:00:20.70,0:00:23.83,Desc,,0,0,0,,{\pos(36,540)\blur0.6\fad(250,0)}Age 8
+Dialogue: 2,0:00:23.83,0:00:23.87,Desc,,0,0,0,,{\pos(36,540)\blur0.6}Age 8 
+Dialogue: 2,0:00:23.87,0:00:23.91,Desc,,0,0,0,,{\pos(36,540)\blur0.6}Age 8 (
+Dialogue: 2,0:00:23.91,0:00:23.95,Desc,,0,0,0,,{\pos(36,540)\blur0.6}Age 8 (n
+Dialogue: 2,0:00:23.95,0:00:24.00,Desc,,0,0,0,,{\pos(36,540)\blur0.6}Age 8 (ne
+Dialogue: 2,0:00:24.00,0:00:24.04,Desc,,0,0,0,,{\pos(36,540)\blur0.6}Age 8 (nea
+Dialogue: 2,0:00:24.04,0:00:24.08,Desc,,0,0,0,,{\pos(36,540)\blur0.6}Age 8 (near
+Dialogue: 2,0:00:24.08,0:00:24.12,Desc,,0,0,0,,{\pos(36,540)\blur0.6}Age 8 (nearl
+Dialogue: 2,0:00:24.12,0:00:24.16,Desc,,0,0,0,,{\pos(36,540)\blur0.6}Age 8 (nearly
+Dialogue: 2,0:00:24.16,0:00:24.20,Desc,,0,0,0,,{\pos(36,540)\blur0.6}Age 8 (nearly 
+Dialogue: 2,0:00:24.20,0:00:24.25,Desc,,0,0,0,,{\pos(36,540)\blur0.6}Age 8 (nearly 9
+Dialogue: 2,0:00:24.25,0:00:25.83,Desc,,0,0,0,,{\pos(36,540)\blur0.6\fad(0,300)}Age 8 (nearly 9)
+Dialogue: 2,0:00:29.33,0:00:32.33,Title,,0,0,0,,{\pos(36,504)\fad(250,300)\blur0.6}THE LAMP
+Dialogue: 1,0:00:29.33,0:00:32.33,Rule,,0,0,0,,{\an7\pos(36,535)\p1\fscx0\t(0,450,0.6,\fscx100)\fad(250,300)}m 0 0 l 131 0 131 2 0 2{\p0}
+Dialogue: 2,0:00:29.33,0:00:32.33,Desc,,0,0,0,,{\pos(36,540)\blur0.6\fad(250,300)}Automatic, 1926
+Dialogue: 2,0:00:33.33,0:00:36.33,Title,,0,0,0,,{\pos(36,504)\fad(250,300)\blur0.6}OSWALD BUNCE
+Dialogue: 1,0:00:33.33,0:00:36.33,Rule,,0,0,0,,{\an7\pos(36,535)\p1\fscx0\t(0,450,0.6,\fscx100)\fad(250,300)}m 0 0 l 208 0 208 2 0 2{\p0}
+Dialogue: 2,0:00:33.33,0:00:36.33,Desc,,0,0,0,,{\pos(36,540)\blur0.6\fad(250,300)}Entertainer
+Dialogue: 2,0:03:23.87,0:03:30.87,Title,,0,0,0,,{\pos(36,504)\fad(250,300)\blur0.6}EDITH LUSK
+Dialogue: 1,0:03:23.87,0:03:30.87,Rule,,0,0,0,,{\an7\pos(36,535)\p1\fscx0\t(0,450,0.6,\fscx100)\fad(250,300)}m 0 0 l 154 0 154 2 0 2{\p0}
+Dialogue: 2,0:03:31.79,0:03:33.41,Card,,0,0,0,,{\pos(274,478)\fs44\fad(400,300)\blur0.8}BRINDLE CROSS
+Dialogue: 1,0:03:31.79,0:03:33.41,Rule,,0,0,0,,{\an5\pos(270,491)\p1\fscx0\t(0,450,0.6,\fscx100)\fad(400,300)}m 0 0 l 40 0 40 2 0 2{\p0}
+Dialogue: 2,0:03:31.79,0:03:33.41,CardDesc,,0,0,0,,{\pos(270,502)\fad(400,300)\blur0.8}A Sunday in November
