@@ -9,7 +9,7 @@ groups + armature modifier) and .height. Every garment is built in the rig's RES
 body shape (so it fits any MPFB phenotype), parented to person.rig and deformed by an Armature modifier
 with weights transferred from the body / MPFB clothing helpers. See docs/wardrobe.md for the full API.
 """
-import bpy, bmesh, math, os, random, time, json, hashlib
+import bpy, bmesh, math, os, random, time
 import numpy as np
 from mathutils import Vector, Matrix, Euler, noise
 from mathutils.bvhtree import BVHTree
@@ -301,9 +301,14 @@ _BODY_CACHE = {}
 
 
 def body_info(person):
-    key = person.body.name
+    """Cached rest-pose analysis of person.body (also holds the garment layers built so far)."""
+    key = person.body.as_pointer()
     b = _BODY_CACHE.get(key)
-    if b is None or b.body != person.body:
+    try:
+        ok = b is not None and b.body.as_pointer() == key and b.body.name == person.body.name
+    except ReferenceError:
+        ok = False
+    if not ok:
         b = Body(person)
         _BODY_CACHE[key] = b
     return b
@@ -1181,7 +1186,7 @@ def _coll_of(person):
 
 
 def finish_garment(person, B, name, V, F, part, material, rgb, weights=None, uv=None, attrs=None,
-                   thickness=0.003, subdiv=0, detail="hero", pin=None, skirt=None):
+                   thickness=0.003, subdiv=None, detail="hero", pin=None, skirt=None):
     """Create the garment object in armature space, parent to rig, armature modifier, solidify."""
     rig = person.rig
     ob = make_mesh("%s_%s" % (person.body.name, name), V, F, _coll_of(person))
@@ -1233,10 +1238,11 @@ def finish_garment(person, B, name, V, F, part, material, rgb, weights=None, uv=
     if thickness:
         so = ob.modifiers.new("Solidify", "SOLIDIFY")
         so.thickness = thickness
-        so.offset = -1
+        so.offset = 1        # grow OUTWARD: the fitted surface is the inner face (never cuts body/inner layers)
         so.use_even_offset = False       # even offset explodes on sliver faces at cut edges
         so.use_quality_normals = True
         so.use_rim = True
+    subdiv = SUBDIV if subdiv is None else subdiv
     if subdiv and detail == "hero":
         sd = ob.modifiers.new("Subdivision", "SUBSURF")
         sd.levels = 0
@@ -1293,7 +1299,6 @@ def tunic_shell(B, rnd, hem_z, top_z=None, belt_z=None, ease=0.03, flare=0.08, b
         regs |= ARM_L | ARM_R
     P = B.pts(regs, zmax=top_z + 0.02)
     # neck points only below the neck base (+ a bit)
-    neckm = np.isin(B.breg, [RID["neck"], RID["head"]])
     P = P[~((P[:, 2] > neck_base[2] + 0.03) & (np.abs(P[:, 0]) < 0.09))]
     if B.layers:
         Lp = layer_points(B)
@@ -1736,6 +1741,7 @@ _DEBUG = bool(os.environ.get("WARDROBE_DEBUG"))
 _T0 = [time.time()]
 ANG = np.linspace(-math.pi, math.pi, K_ANG, endpoint=False)
 MASK_LAYERS = True        # hide inner-garment areas fully covered by outer garments (no poke-through)
+SUBDIV = 0                # render subdivision on hero garments (1 = smoother close-ups; costs RAM + render time)
 CORE = {RID[r] for r in ("torso", "hips", "neck", "shoulder_L", "shoulder_R", "thigh_L", "thigh_R", "shin_L", "shin_R")}
 
 
@@ -2054,6 +2060,17 @@ def hide_body(person, idx):
             pass
 
 
+def unmask(person, garments=None):
+    """Remove every wardrobe visibility mask (skin under clothes, inner layers, hair under hats) from the
+    person's body, hair and the given garments (default: all of person.garments)."""
+    objs = [person.body] + list(getattr(person, "garments", []) if garments is None else garments)
+    objs += [o for o in person.rig.children_recursive if o.type == "MESH"]
+    for o in set(objs):
+        m = o.modifiers.get("WardrobeHide")
+        if m is not None:
+            o.modifiers.remove(m)
+
+
 def hide_hair_above(person, B, point, normal):
     """Hide hair vertices on the positive side of a plane (hair under a turban / helmet / tight hood)."""
     p0, n = np.asarray(point, float), np.asarray(normal, float)
@@ -2257,10 +2274,10 @@ def _waist_z(B):
 
 
 def part_mantle(person, B, rnd, rgb, detail="hero", style="himation", length="calf", fabric="wool", name="mantle",
-                voxel=None, fold=0.016, wear=1.0, side="L", embroidery=False, roll=True, mask=True, layer_gap=0.007):
+                voxel=None, fold=0.016, wear=1.0, side="L", embroidery=False, roll=True, mask=True, layer_gap=0.009):
     """Outer mantle. style 'himation' (wrapped diagonally: over the `side` shoulder, under the other arm,
     rolled diagonal edge), 'cloak' (hangs from both shoulders, open at the front), 'cape' (back + shoulders)."""
-    voxel = voxel or (0.014 if detail == "hero" else 0.026)
+    voxel = voxel or (0.016 if detail == "hero" else 0.026)
     sc = _sc(B)
     hem = _hem_height(B, length)
     nb = B.head("neck01")
@@ -2580,10 +2597,6 @@ def part_turban(person, B, rnd, rgb, detail="hero", name="turban", fabric="fine_
         zk = z0 + k * (top + 0.02 - z0) / wraps * 0.85
         tilt = (0.25 + 0.12 * rnd.uniform(-1, 1)) * (1 if k % 2 == 0 else 0.6)
         c = np.array(cf(zk))
-        rr = []
-        for a in ANG:
-            S = HP[np.abs(HP[:, 2] - (zk - tilt * 0.08 * math.sin(a))) < 0.012]
-            rr.append(a)
         Cs, R = slice_rings(HP, np.array([zk]), ANG, center_fn=cf, dz=0.014)
         R = circ_smooth(R[0], 3) + 0.010 + 0.004 * math.sin(math.pi * k / max(1, wraps - 1)) + 0.002 * k
         rings = []
@@ -3446,7 +3459,7 @@ def _add_cloth(ob, fabric="linen", quality=5, frame_start=1, frame_end=60, self_
     cs = m.collision_settings
     cs.use_collision = True
     cs.distance_min = 0.004
-    cs.collision_quality = 3
+    cs.collision_quality = 2
     cs.use_self_collision = self_collision
     cs.self_distance_min = 0.003
     m.point_cache.frame_start = frame_start
@@ -3499,7 +3512,7 @@ def _unskin(rig, ob, P):
     return R
 
 
-def drape(person, garments, frames=30, ramp=20, quality=5, keep_rig=True, self_collision=False, sequential=True,
+def drape(person, garments, frames=30, ramp=20, quality=5, keep_rig=True, self_collision=False, sequential=False,
           ground=True, verbose=True):
     """Cloth-simulate garments onto the person's CURRENT pose (static drape with body collision).
 
@@ -3507,8 +3520,9 @@ def drape(person, garments, frames=30, ramp=20, quality=5, keep_rig=True, self_c
     frames so the cloth settles under gravity. Rigid items (crown, helmet, belts, sandals...) are skipped.
     keep_rig=True bakes the result back into the rest shape by inverse skinning, so the garment still follows
     small pose changes (breathing, head turns) and exactly reproduces the drape at this pose; keep_rig=False
-    freezes the garment (Armature modifier removed). Inner layers are simulated first and become colliders
-    for the outer ones (sequential=True). ground: True = temporary floor collider under the posed body,
+    freezes the garment (Armature modifier removed). Layers are simulated together, every inner layer
+    being a collider for the outer ones (sequential=True: one after the other - faster per step but the
+    inner layer's unskinned rest shape can intersect the outer one at the start of its sim). ground: True = temporary floor collider under the posed body,
     a float = floor at that world z, None = no floor. Returns the list of draped objects."""
     t0 = time.time()
     rig, body = person.rig, person.body
@@ -3527,6 +3541,13 @@ def drape(person, garments, frames=30, ramp=20, quality=5, keep_rig=True, self_c
     F0 = 1
     sc.frame_start, sc.frame_end = F0, F0 + total
     _add_collision(body)
+    # masks were computed for the skinned rest fit; a draped garment moves, so show everything again
+    # (the simulation itself keeps cloth outside the body / inner layers)
+    unmask = [body] + [g for g in garments if g.type == "MESH"]
+    for o in unmask:
+        m = o.modifiers.get("WardrobeHide")
+        if m is not None:
+            o.modifiers.remove(m)
     floor = None
     if ground is not None:
         # temporary floor collider at the lowest point of the posed body (or the given world z)
@@ -3552,6 +3573,12 @@ def drape(person, garments, frames=30, ramp=20, quality=5, keep_rig=True, self_c
             for m in g.modifiers:
                 if m.type in ("SOLIDIFY", "SUBSURF", "MASK"):
                     m.show_viewport = False
+            if len(grp) > 1 and g is not grp[-1]:
+                # simultaneous layers: inner cloth is also a collider for the outer cloth (evaluated after Cloth)
+                g.modifiers.new("WardrobeCollision", "COLLISION")
+                so = next((x for x in g.modifiers if x.type == "SOLIDIFY"), None)
+                g.collision.thickness_outer = 0.002 + (so.thickness if so else 0.0)
+                g.collision.cloth_friction = 10
         for f in range(F0, F0 + total + 1):
             _apply_snapshot(rig, snap, min(1.0, (f - F0) / max(1, ramp)))
             sc.frame_set(f)
@@ -3579,8 +3606,10 @@ def drape(person, garments, frames=30, ramp=20, quality=5, keep_rig=True, self_c
                     mm.show_viewport = True
             # it is now a collider for the next layers
             if sequential and g is not soft[-1]:
-                cm = g.modifiers.new("WardrobeCollision", "COLLISION")
-                g.collision.thickness_outer = 0.003
+                g.modifiers.new("WardrobeCollision", "COLLISION")
+                so = next((x for x in g.modifiers if x.type == "SOLIDIFY"), None)
+                g.collision.thickness_outer = 0.002 + (so.thickness if so else 0.0)
+                g.collision.cloth_friction = 10
             done.append(g)
         if verbose:
             print("  [wardrobe] drape %s %.1fs" % ([x.name for x in grp], time.time() - t0), flush=True)

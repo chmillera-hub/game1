@@ -466,9 +466,9 @@ SKY_PRESETS = {
     # exposure (scales both lighting `strength` and visible `bg`). sun_energy = absolute sun lamp W/m2.
     "golden": dict(hdri="table_mountain_2_puresky", sun_az=165, sun_el=26.0, key=0.85, strength=1.0, bg=1.0,
                    sun_energy=4.2, tint=(1.0, 0.86, 0.66), sat=1.12, sun_tint=(1.0, 0.8, 0.55), sun_angle=1.2,
-                   haze_density=0.00035, haze_tint=(1.0, 0.95, 0.88), fog=(1.0, 0.84, 0.62), fog_density=0.004,
-                   exposure=0.0, grade="warm", clouds=0.0, clamp_sun=3.0, ray_coverage=0.5,
-                   sun_disk=dict(el=26, size=0.9, color=(1.0, 0.82, 0.55), strength=60.0, glow=0.5)),
+                   haze_density=0.00035, haze_tint=(1.0, 0.95, 0.88), fog=(1.0, 0.84, 0.62), fog_density=0.0022,
+                   exposure=0.0, grade="warm", clouds=0.0, clamp_sun=1.5, ray_coverage=0.55,
+                   sun_disk=dict(el=26, size=0.9, color=(1.0, 0.82, 0.55), strength=60.0, glow=0.12)),
     "noon": dict(hdri="kloofendal_48d_partly_cloudy_puresky", sun_az=200, strength=1.0, bg=1.0, sun_mult=1.0,
                  tint=(1.0, 0.98, 0.94), sat=0.95, sun_tint=(1.0, 0.97, 0.92), sun_angle=0.8,
                  haze_density=0.0003, haze_tint=(1.0, 1.0, 1.0), fog=(0.9, 0.88, 0.85), fog_density=0.0012,
@@ -656,7 +656,7 @@ class _NT:
 
 
 def sky(mood="golden", sun_az=None, rotation=None, clouds=None, stars=None, moon=None, cfg=None, ctx=None,
-        keep_sun=False, **over):
+        keep_sun=False, _chain=None, **over):
     """Build the world sky + sun light + haze colours for a mood (see SKY_PRESETS):
     'golden' | 'noon' | 'eclipse' | 'storm' | 'dawn' | 'sunrise' | 'night'.
     sun_az: azimuth for the sun in core.sun convention (0 = sun at -Y, 180 = sun at +Y). The HDRI is
@@ -675,13 +675,16 @@ def sky(mood="golden", sun_az=None, rotation=None, clouds=None, stars=None, moon
     if sc.eevee.shadow_pool_size == "512":
         sc.eevee.shadow_pool_size = "256"
     w.use_sun_shadow = False
-    nt = w.node_tree
-    for n in list(nt.nodes):
-        nt.nodes.remove(n)
-    T = _NT(nt)
-    out = T.node("ShaderNodeOutputWorld")
-    tc = T.node("ShaderNodeTexCoord")
-    view = tc.outputs["Generated"]          # world: view direction
+    if _chain is None:
+        nt = w.node_tree
+        for n in list(nt.nodes):
+            nt.nodes.remove(n)
+        T = _NT(nt)
+        out = T.node("ShaderNodeOutputWorld")
+        tc = T.node("ShaderNodeTexCoord")
+        view = tc.outputs["Generated"]          # world: view direction
+    else:
+        T, view = _chain
     res = dict(preset=p, nodes={})
     if p.get("hdri"):
         info = hdri_info(p["hdri"])
@@ -741,7 +744,7 @@ def sky(mood="golden", sun_az=None, rotation=None, clouds=None, stars=None, moon
     if p.get("moon") if moon is None else moon:
         mdir = _dir_from_az_el(p.get("moon_az", p["sun_az"]), p.get("moon_el", 28.0))
         sky_col = _disk(T, view, sky_col, mdir, size=p.get("moon_size", 0.75), color=p.get("moon_color", (0.9, 0.93, 1.0)),
-                        strength=p.get("moon_strength", 12.0), glow=p.get("moon_glow", 0.06), res=res, key="moon")
+                        strength=p.get("moon_strength", 12.0), glow=p.get("moon_glow", 0.02), res=res, key="moon")
         res["moon_dir"] = mdir
     if p.get("sun_disk"):
         sd = p["sun_disk"]
@@ -753,6 +756,24 @@ def sky(mood="golden", sun_az=None, rotation=None, clouds=None, stars=None, moon
     if cl:
         sky_col = _cloud_layer(T, view, sky_col, coverage=cl, ctx=ctx, res=res, sun_dir=sun_dir,
                                **p.get("cloud_opts", {}))
+
+    if _chain is not None:
+        sun_dir_c = _dir_from_az_el(p["sun_az"], sun_el)
+        energy = min(sun_irr * p.get("strength", 1.0) * p.get("sun_mult", 1.0), p.get("sun_max", 12.0))
+        if p.get("sun_energy") is not None:
+            energy = p["sun_energy"]
+        scol = [sun_rgb[i] * p.get("sun_tint", (1, 1, 1))[i] for i in range(3)]
+        mx = max(scol) or 1.0
+        if p["name"] == "night" or (p.get("moon") and not p.get("hdri")):
+            sun_dir_c = res.get("moon_dir", _dir_from_az_el(p["sun_az"], 30))
+            energy = p.get("moon_light", 0.35)
+            scol = list(p.get("moon_light_color", (0.55, 0.68, 1.0)))
+            mx = 1.0
+        ht = p.get("haze_tint", (1, 1, 1))
+        hcol = [hz[i] * ht[i] * p.get("bg", 1.0) for i in range(3)]
+        return dict(col=sky_col, p=p, clamp=clamp_v, bg=p.get("bg", 1.0), strength=p.get("strength", 1.0),
+                    sun_dir=sun_dir_c, energy=energy, sun_color=[c / mx for c in scol], haze=hcol,
+                    haze_density=p.get("haze_density", 0.0015), exposure=p.get("exposure", 0.0), res=res)
 
     # --- background vs lighting branches ------------------------------------------------------
     lp = T.node("ShaderNodeLightPath")
@@ -831,6 +852,7 @@ def sky(mood="golden", sun_az=None, rotation=None, clouds=None, stars=None, moon
     res["haze_color"] = hcol
     if ctx is not None:
         ctx.post.setdefault("grade", p.get("grade", "neutral"))
+        ctx.post["sun_dir"] = [round(float(x), 4) for x in res["sun_dir"]]
         if p.get("exposure"):
             ctx.render_opts.setdefault("exposure", p["exposure"])
     st["sky"] = res
@@ -1040,12 +1062,12 @@ def ground_material(name="EnvGround", style="golgotha", scale=0.33, macro=1.0, r
     geo = T.node("ShaderNodeNewGeometry")
     nz = T.sep(geo.outputs["Normal"])[2]
     # masks -------------------------------------------------------------------------------
-    n_at = T.noise(co, scale=0.11, detail=3, rough=0.5, dist=0.4)
+    n_at = T.noise(co, scale=0.11, detail=2, rough=0.5, dist=0.4)
     at = T.node("ShaderNodeMapRange")
     T.link(n_at.outputs["Fac"], at.inputs[0])
     at.inputs[1].default_value, at.inputs[2].default_value = 0.44, 0.56
     at_mask = at.outputs[0]
-    n_cr = T.noise(co, scale=0.035, detail=5, rough=0.62, dist=0.6)
+    n_cr = T.noise(co, scale=0.035, detail=3, rough=0.62, dist=0.6)
     crm = T.node("ShaderNodeMapRange")
     T.link(n_cr.outputs["Fac"], crm.inputs[0])
     thr = 0.62 - 0.25 * S["crust_amt"]
@@ -1060,7 +1082,7 @@ def ground_material(name="EnvGround", style="golgotha", scale=0.33, macro=1.0, r
     attr_dust = T.node("ShaderNodeAttribute")
     attr_dust.attribute_name = "dust"
     # slope rock: normal.z below rock_slope -> rock, broken by noise
-    n_sl = T.noise(co, scale=0.6, detail=3)
+    n_sl = T.noise(co, scale=0.6, detail=1)
     slope = T.math("SUBTRACT", rock_slope, nz)
     slope = T.math("MULTIPLY", T.math("ADD", slope, T.math("MULTIPLY", T.math("SUBTRACT", n_sl.outputs["Fac"], 0.5), 0.25)), 9.0, clamp=True)
     rock_mask = T.math("MAXIMUM", slope, T.math("MULTIPLY", T.math("SUBTRACT", attr_rock.outputs["Fac"],
@@ -1069,7 +1091,8 @@ def ground_material(name="EnvGround", style="golgotha", scale=0.33, macro=1.0, r
     crust_mask = T.math("MAXIMUM", crust_mask, T.math("MULTIPLY", attr_dust.outputs["Fac"], 0.8))
     # layers ------------------------------------------------------------------------------
     base = _antitile_maps(T, S["base"], co, scale, mask=at_mask, res=res)
-    crust = _antitile_maps(T, S["crust"], co, scale * 0.8, rot2=2.1, scale2=0.83, mask=at_mask, res="1k")
+    crust = _antitile_maps(T, S["crust"], co, scale * 0.8, rot2=2.1, scale2=0.83, mask=at_mask, res="1k",
+                           keys=("diff", "nor"))
     rock = _antitile_maps(T, S["rock"], co, scale * 0.6, mask=None, res="1k", proj="BOX")
     pth = _antitile_maps(T, S["path"], co, scale * 1.4, mask=None, res="1k", keys=("diff", "nor"))
     bcol = T.mix(1.0, base["diff"], S["base_tint"], blend="MULTIPLY")
@@ -1086,11 +1109,11 @@ def ground_material(name="EnvGround", style="golgotha", scale=0.33, macro=1.0, r
     nor = T.mix(crust_mask, base["nor"], crust["nor"])
     nor = T.mix(path_mask, nor, pth["nor"])
     nor = T.mix(rock_mask, nor, rock["nor"])
-    rgh = T.mix(crust_mask, base.get("rough", (0.85, 0.85, 0.85)), crust.get("rough", (0.85, 0.85, 0.85)))
+    rgh = T.mix(crust_mask, base.get("rough", (0.85, 0.85, 0.85)), (0.88, 0.88, 0.88))
     rgh = T.mix(rock_mask, rgh, rock.get("rough", (0.8, 0.8, 0.8)))
     # macro variation ----------------------------------------------------------------------
-    n_m1 = T.noise(co, scale=0.012, detail=4, rough=0.55)
-    n_m2 = T.noise(co, scale=0.0025, detail=3, rough=0.5)
+    n_m1 = T.noise(co, scale=0.012, detail=2, rough=0.55)
+    n_m2 = T.noise(co, scale=0.0025, detail=2, rough=0.5)
     mv = T.ramp(n_m1.outputs["Fac"], [(0.3, (0.78, 0.74, 0.70)), (0.5, (1.0, 1.0, 1.0)), (0.72, (1.12, 1.08, 1.02))])
     mv2 = T.ramp(n_m2.outputs["Fac"], [(0.3, (0.9, 0.86, 0.8)), (0.7, (1.08, 1.04, 0.98))])
     col = T.mix(macro, col, mv.outputs[0], blend="MULTIPLY")
@@ -1187,7 +1210,7 @@ def tint_material(mat, sat=None, tint=None, value=None, rand=0.0, rough_add=0.0,
 
 
 def limestone_material(name="EnvLimestone", scale=0.5, tint=(1.0, 0.95, 0.86), dark=0.0, streaks=0.5, strata=0.0,
-                       cav_dark=0.85):
+                       cav_dark=0.85, layers=2, res="2k"):
     """Pale Jerusalem limestone (box-projected, object space) with vertical weathering streaks;
     uses 'cav' point attribute (0..1) when present for crevice darkening."""
     m = bpy.data.materials.new(name)
@@ -1197,21 +1220,24 @@ def limestone_material(name="EnvLimestone", scale=0.5, tint=(1.0, 0.95, 0.86), d
     bs = nt.nodes["Principled BSDF"]
     tc = T.node("ShaderNodeTexCoord")
     co = tc.outputs["Object"]
-    a = _antitile_maps(T, "rock_boulder_dry", co, scale, mask=None, res="2k", proj="BOX")
-    b = _antitile_maps(T, "rock_face_03", co, scale * 0.7, mask=None, res="1k", proj="BOX", keys=("diff", "nor"))
-    nmix = T.noise(co, scale=0.15, detail=3, dist=0.5)
-    mk = T.node("ShaderNodeMapRange")
-    T.link(nmix.outputs["Fac"], mk.inputs[0])
-    mk.inputs[1].default_value, mk.inputs[2].default_value = 0.45, 0.62
-    col = T.mix(T.math("MULTIPLY", mk.outputs[0], 0.6), a["diff"], b["diff"])
-    nor = T.mix(T.math("MULTIPLY", mk.outputs[0], 0.6), a["nor"], b["nor"])
+    a = _antitile_maps(T, "rock_boulder_dry", co, scale, mask=None, res=res, proj="BOX")
+    if layers > 1:
+        b = _antitile_maps(T, "rock_face_03", co, scale * 0.7, mask=None, res="1k", proj="BOX", keys=("diff", "nor"))
+        nmix = T.noise(co, scale=0.15, detail=2, dist=0.5)
+        mk = T.node("ShaderNodeMapRange")
+        T.link(nmix.outputs["Fac"], mk.inputs[0])
+        mk.inputs[1].default_value, mk.inputs[2].default_value = 0.45, 0.62
+        col = T.mix(T.math("MULTIPLY", mk.outputs[0], 0.6), a["diff"], b["diff"])
+        nor = T.mix(T.math("MULTIPLY", mk.outputs[0], 0.6), a["nor"], b["nor"])
+    else:
+        col, nor = a["diff"], a["nor"]
     col = T.mix(1.0, col, tuple(tint), blend="MULTIPLY")
     if streaks:
         # vertical dark weathering streaks: noise stretched along Z
         mp = T.node("ShaderNodeMapping")
         mp.inputs["Scale"].default_value = (1.6, 1.6, 0.12)
         T.link(co, mp.inputs["Vector"])
-        sn = T.noise(mp.outputs[0], scale=1.0, detail=5, rough=0.6)
+        sn = T.noise(mp.outputs[0], scale=1.0, detail=3, rough=0.6)
         sm = T.node("ShaderNodeMapRange")
         T.link(sn.outputs["Fac"], sm.inputs[0])
         sm.inputs[1].default_value, sm.inputs[2].default_value = 0.5, 0.75
@@ -1373,11 +1399,12 @@ def ph_protos(asset, max_polys=12000, res="1k", min_size=0.0):
 # =============================================================================================
 # Scatter (Geometry Nodes instancing of prototypes on raycast points)
 # =============================================================================================
-def _scatter_group():
-    ng = bpy.data.node_groups.get("ENV_ScatterGN")
+def _scatter_group(realize=False):
+    gname = "ENV_ScatterGN_R" if realize else "ENV_ScatterGN"
+    ng = bpy.data.node_groups.get(gname)
     if ng:
         return ng
-    ng = bpy.data.node_groups.new("ENV_ScatterGN", "GeometryNodeTree")
+    ng = bpy.data.node_groups.new(gname, "GeometryNodeTree")
     ng.interface.new_socket("Geometry", in_out="INPUT", socket_type="NodeSocketGeometry")
     ng.interface.new_socket("Collection", in_out="INPUT", socket_type="NodeSocketCollection")
     ng.interface.new_socket("Geometry", in_out="OUTPUT", socket_type="NodeSocketGeometry")
@@ -1404,11 +1431,28 @@ def _scatter_group():
     L.new(na("rot", "FLOAT_VECTOR").outputs["Attribute"], e2r.inputs[0])
     L.new(e2r.outputs[0], iop.inputs["Rotation"])
     L.new(na("scl", "FLOAT_VECTOR").outputs["Attribute"], iop.inputs["Scale"])
-    L.new(iop.outputs[0], go.inputs[0])
+    if realize:
+        # one realized mesh = one draw call per pass (thousands of GN instances cost ~1 ms each per TAA
+        # sample on llvmpipe); keep a per-instance random value for material variation
+        rv = N.new("FunctionNodeRandomValue")
+        rv.data_type = "FLOAT"
+        idn = N.new("GeometryNodeInputIndex")
+        L.new(idn.outputs[0], rv.inputs["ID"])
+        sna = N.new("GeometryNodeStoreNamedAttribute")
+        sna.data_type = "FLOAT"
+        sna.domain = "INSTANCE"
+        sna.inputs["Name"].default_value = "inst_rand"
+        L.new(iop.outputs[0], sna.inputs["Geometry"])
+        L.new(rv.outputs[1], sna.inputs["Value"])
+        ri = N.new("GeometryNodeRealizeInstances")
+        L.new(sna.outputs[0], ri.inputs[0])
+        L.new(ri.outputs[0], go.inputs[0])
+    else:
+        L.new(iop.outputs[0], go.inputs[0])
     return ng
 
 
-def instancer(name, protos, pos, rot, scl, idx, coll=None):
+def instancer(name, protos, pos, rot, scl, idx, coll=None, realize=False, shadows=True):
     """Create a GN instancer object: points `pos` (N,3) get prototype `idx` (N,) with euler `rot` (N,3)
     and scale `scl` (N,3). protos: list of prototype objects (instanced via a hidden collection)."""
     pc = bpy.data.collections.new(name + "_protos")
@@ -1432,10 +1476,11 @@ def instancer(name, protos, pos, rot, scl, idx, coll=None):
     set_attr(ob, "rot", np.asarray(rot, np.float32).reshape(-1, 3), "FLOAT_VECTOR")
     set_attr(ob, "scl", np.asarray(scl, np.float32).reshape(-1, 3), "FLOAT_VECTOR")
     md = ob.modifiers.new("scatter", "NODES")
-    md.node_group = _scatter_group()
+    md.node_group = _scatter_group(realize)
     ident = md.node_group.interface.items_tree["Collection"].identifier
     md[ident] = pc
     ob["n_instances"] = len(pos)
+    ob.visible_shadow = shadows
     return ob
 
 
@@ -1460,7 +1505,8 @@ def _region_points(region, n, rnd):
 
 def scatter(objects, terrain=None, count=100, region=(-50, -50, 50, 50), seed=0, scale=(0.7, 1.3), align=0.3,
             sink=0.05, max_slope=None, min_slope=None, zrange=None, density=None, exclude=(), min_dist=0.0,
-            tilt=0.0, weights=None, name="Scatter", coll=None, zscale=None, yaw=(0, 360), return_points=False):
+            tilt=0.0, weights=None, name="Scatter", coll=None, zscale=None, yaw=(0, 360), return_points=False,
+            realize=False, shadows=True, view=None):
     """Scatter prototype objects on the ground with raycast placement (GN instances, cheap).
       objects: list of prototype objects, or Poly Haven asset names (decimated automatically), or a mix.
       terrain: object(s) to raycast (default: all env grounds registered so far).
@@ -1481,6 +1527,9 @@ def scatter(objects, terrain=None, count=100, region=(-50, -50, 50, 50), seed=0,
             protos.append(o)
     rnd = np.random.default_rng(seed)
     pts = _region_points(region, count, rnd)
+    vw = view if view is not None else _state().get("view")
+    if vw is not None and len(pts):
+        pts = pts[_in_view(pts[:, 0], pts[:, 1], vw)]
     if density is not None:
         keep = rnd.uniform(0, 1, len(pts)) < np.clip(density(pts[:, 0], pts[:, 1]), 0, 1)
         pts = pts[keep]
@@ -1541,10 +1590,35 @@ def scatter(objects, terrain=None, count=100, region=(-50, -50, 50, 50), seed=0,
         I.append(i)
     if not P:
         P, R, S, I = [(0, 0, -10000)], [(0, 0, 0)], [(0.0, 0.0, 0.0)], [0]
-    ob = instancer(name, protos, P, R, S, I, coll)
+    ob = instancer(name, protos, P, R, S, I, coll, realize=realize, shadows=shadows)
     if return_points:
         return ob, np.array(P), np.array(I)
     return ob
+
+
+def set_view(view):
+    """Restrict all following scatters to what a camera can see (big render-time saver: EEVEE syncs and
+    shadows every instance each frame). view = dict(loc=(x,y,z), target=(x,y,z), lens=35, margin=25)
+    or a list of such dicts (camera path keyframes); None disables. Points within `near` m (default 8)
+    of a camera are always kept."""
+    _state()["view"] = view
+
+
+def _in_view(X, Y, view):
+    views = view if isinstance(view, (list, tuple)) else [view]
+    keep = np.zeros(len(X), bool)
+    for v in views:
+        lx, ly = v["loc"][0], v["loc"][1]
+        fx, fy = v["target"][0] - lx, v["target"][1] - ly
+        fl = math.hypot(fx, fy) or 1.0
+        fx, fy = fx / fl, fy / fl
+        lens = v.get("lens", 35.0)
+        half = math.degrees(math.atan(18.0 * 9.0 / 16.0 / lens)) + v.get("margin", 25.0)
+        dx, dy = X - lx, Y - ly
+        d = np.sqrt(dx * dx + dy * dy) + 1e-6
+        cosang = (dx * fx + dy * fy) / d
+        keep |= (cosang > math.cos(math.radians(min(half, 179)))) | (d < v.get("near", 8.0))
+    return keep
 
 
 def place(proto, loc, rot=(0, 0, 0), scale=1.0, name=None, coll=None):
@@ -1561,10 +1635,10 @@ def rock_protos(kind="boulders", tint=(1.0, 0.95, 0.86), sat=0.35, value=1.15, d
     # decimate: optional max_polys override per asset
     """Limestone-tinted Poly Haven rock prototypes. kind: 'boulders' (0.7-3 m), 'rocks' (0.1-0.6 m),
     'stones' (pebbles), 'cliff'. Returns list of prototype objects (materials tinted + hazed)."""
-    sets = {"boulders": [("namaqualand_boulder_05", 12000), ("namaqualand_boulder_06", 14000), ("boulder_01", 9000),
-                         ("namaqualand_boulder_02", 13000), ("namaqualand_boulder_03", 9000)],
-            "rocks": [("namaqualand_rocks_01", 3500), ("namaqualand_boulders_01", 3500), ("stone_01", 1700)],
-            "stones": [("namaqualand_stones_01", 1500), ("rock_09", 1600)],
+    sets = {"boulders": [("namaqualand_boulder_05", 6000), ("namaqualand_boulder_06", 7000), ("boulder_01", 5000),
+                         ("namaqualand_boulder_02", 7000), ("namaqualand_boulder_03", 5000)],
+            "rocks": [("namaqualand_rocks_01", 1000), ("namaqualand_boulders_01", 1600), ("stone_01", 900)],
+            "stones": [("namaqualand_stones_01", 500), ("rock_09", 800)],
             "cliff": [("rock_face_01", 21000), ("namaqualand_cliff_02", 25000)]}
     st = _state()
     key = ("rocks", kind, tuple(tint), sat, value)
@@ -1574,7 +1648,7 @@ def rock_protos(kind="boulders", tint=(1.0, 0.95, 0.86), sat=0.35, value=1.15, d
     mkey = ("rockmat", tuple(tint), value)
     if mkey not in st["protos"]:
         st["protos"][mkey] = limestone_material("EnvRockStone", scale=0.9, tint=tuple(t * value * 0.9 for t in tint),
-                                                streaks=0.35)
+                                                streaks=0.35, layers=1, res="1k")
     rm = st["protos"][mkey]
     for asset, mp in sets[kind]:
         for p in ph_protos(asset, decimate if decimate else mp):
@@ -1648,9 +1722,11 @@ def grass_material(name="EnvGrass", color=(0.62, 0.5, 0.3), root=(0.25, 0.2, 0.1
     at = T.node("ShaderNodeAttribute")
     at.attribute_name = "h"          # 0 at root .. 1 at tip
     oi = T.node("ShaderNodeObjectInfo")
+    ir = T.node("ShaderNodeAttribute")
+    ir.attribute_name = "inst_rand"  # per tuft when the scatter is realized
     col = T.mix(T.math("POWER", at.outputs["Fac"], 0.6), tuple(root), tuple(color))
     # per-instance hue/brightness variation (some greener, some bleached)
-    r = oi.outputs["Random"]
+    r = T.math("FRACT", T.math("ADD", oi.outputs["Random"], ir.outputs["Fac"]))
     col = T.mix(T.math("MULTIPLY", r, var * 0.5), col, (0.4, 0.4, 0.26))
     col = T.mix(T.math("MULTIPLY", T.math("SUBTRACT", 1.0, r), var * 0.8), col, (0.85, 0.76, 0.56))
     T.link(col, bs.inputs["Base Color"])
@@ -1719,7 +1795,7 @@ def grass_protos(kind="dry", n=4, height=0.4):
         st["protos"][key] = grass_material("EnvGrass_" + kind, color=col,
                                            root=(0.2, 0.18, 0.1) if kind != "green" else (0.12, 0.13, 0.06))
     m = st["protos"][key]
-    return [grass_tuft(seed=i + (100 if kind == "green" else 0), blades=50 + 12 * i, height=h * (0.8 + 0.15 * i),
+    return [grass_tuft(seed=i + (100 if kind == "green" else 0), blades=30 + 8 * i, height=h * (0.8 + 0.15 * i),
                        droop=0.35 + 0.15 * (i % 3), material=m) for i in range(n)]
 
 
@@ -2231,6 +2307,38 @@ THORN_SPEC = dict(
     leaf_levels=(1, 2), twig_density=6.0, twig_up=0.2, twig_scale=(0.35, 0.6))
 
 
+def shrub_blob(seed=0, size=1.0, dry=0.3):
+    """Very cheap distant shrub (3-4 lumpy low-poly blobs, ~200 tris) for scatter beyond ~40 m."""
+    key = "blob_%d_%d_%d" % (seed, int(size * 100), int(dry * 100))
+
+    def build(nm):
+        rnd = random.Random(seed + 77)
+        bm = bmesh.new()
+        lvl = bm.verts.layers.float.new("lv")
+        for k in range(rnd.randint(3, 4)):
+            c = Vector((rnd.uniform(-0.35, 0.35), rnd.uniform(-0.35, 0.35), rnd.uniform(0.25, 0.45))) * size
+            r = rnd.uniform(0.3, 0.5) * size
+            ret = bmesh.ops.create_icosphere(bm, subdivisions=1, radius=1.0)
+            lv = rnd.random()
+            for v in ret["verts"]:
+                n = C.noise.noise(v.co * 2.1 + Vector((seed, k, 0)))
+                v.co = c + Vector((v.co.x * r, v.co.y * r, v.co.z * r * 0.8)) * (1 + 0.3 * n)
+                v[lvl] = lv
+        for f in bm.faces:
+            f.smooth = True
+        me = bpy.data.meshes.new(nm)
+        bm.to_mesh(me)
+        bm.free()
+        ob = bpy.data.objects.new(nm, me)
+        me.materials.append(leaf_material("EnvThornLeaf", top=(0.16, 0.16, 0.08), under=(0.3, 0.3, 0.2), dry=dry))
+        co = np.empty(len(me.vertices) * 3)
+        me.vertices.foreach_get("co", co)
+        co = co.reshape(-1, 3)
+        ob["dims"] = [float(x) for x in co.max(0) - co.min(0)]
+        return ob
+    return _cached_proto(key, build)
+
+
 def thorn_bush(seed=0, size=1.0, leafy=0.5, name=None):
     """Dry thorny shrub (twiggy, few small grey-green leaves). ~0.6-1.0 m tall at size=1."""
     key = "thorn2_%d_%d_%d" % (seed, int(size * 100), int(leafy * 100))
@@ -2551,7 +2659,8 @@ def skull_cliff(center=(0.0, -12.0), width=30.0, base_z=3.0, top_z=10.0, lean=0.
     D = D * endf - (1 - endf) * 3.0
     # lean back with height + plan curvature; above hh the sheet folds back horizontally (cap)
     X = cx + U
-    hh_u = hh + 0.55 * fbm(U * 0.08, 0 * U + 3.0, 3, seed=seed + 15)      # ragged skyline of the cliff top
+    hh_u = hh + 0.9 * fbm(U * 0.05, 0 * U + 3.0, 3, seed=seed + 15) \
+        - 0.8 * np.clip(ridged(U * 0.11, 0 * U + 7.0, 2, seed=seed + 16) - 0.3, 0, 1)   # ragged skyline + notches
     vc = np.minimum(Vv, hh_u)
     over = np.clip(Vv - hh_u, 0, None)
     capf = smoothstep(hh_u - 0.6, hh_u + 0.8, Vv)
@@ -2817,6 +2926,23 @@ def jerusalem(center=(170.0, 640.0), rot=0.0, seed=0, detail=1.0, houses=True, n
 GOLGOTHA = dict(top=11.0, cliff_y=-11.0, cliff_base=3.2, cliff_w=30.0, city=(170.0, 640.0))
 
 
+def _resolve_view(view, env):
+    """view may be a dict / list of dicts (see set_view) or a camera-preset name of this env."""
+    if view is None:
+        return None
+    if isinstance(view, str):
+        presets = {"golgotha": _GOLG_CAMS}.get(env, {})
+        return dict(presets[view]) if view in presets else None
+    return view
+
+
+_GOLG_CAMS = {
+    "wide": dict(loc=(-4.0, -54.0, 5.0), target=(0.0, 0.0, 13.0), lens=42),
+    "wide_low": dict(loc=(-3.0, -40.0, 3.2), target=(0.0, 0.0, 15.0), lens=26),
+    "skull": dict(loc=(4.0, -36.0, 4.5), target=(0.0, -12.0, 7.5), lens=45),
+}
+
+
 def golgotha_height(city=True, seed=0):
     """Vectorised height function H(X, Y) of the Golgotha terrain (hill top ~11 m at the origin,
     skull scarp facing -Y at y~-11, plain at ~0, Jerusalem plateau +Y, mountains far away)."""
@@ -2916,7 +3042,8 @@ def _cross_anchors(root, height, beam, thick, cross_at, base):
 
 def golgotha(ctx, mood="golden", crosses=3, center_occupied=True, sign=True, city=True, seed=0, sun_az=None,
              grass=1.0, rocks=1.0, bushes=1.0, rays=None, dust=None, clouds=None, skull=1.0,
-             cross_height=4.4, side_cross_height=4.0, cross_material=None, near_detail=1.0, sky_over=None, fog=True):
+             cross_height=4.4, side_cross_height=4.0, cross_material=None, near_detail=1.0, sky_over=None, fog=False,
+             view=None):
     """Golgotha: rocky skull-faced hill outside Jerusalem with up to three crosses (core.wooden_cross,
     centre one with the placard), scattered limestone boulders/rocks, dry grass, thorn bushes, the
     city walls / towers / Temple in the hazy distance, and the sky + light for `mood`
@@ -2924,11 +3051,14 @@ def golgotha(ctx, mood="golden", crosses=3, center_occupied=True, sign=True, cit
 
     World layout: hill top ~ (0, 0, 11); crosses on the top facing -Y (the default camera side);
     the skull cliff faces -Y below them (y ~ -11 .. -14); Jerusalem lies towards +Y (behind the hill).
+    view = camera preset name ('wide', 'wide_low', 'skull') or dict(loc, target, lens) / list of dicts:
+    scatter is only created inside that view cone (faster renders). rays / fog are opt-in (slow).
     Returns anchors dict (see docs/env.md): crosses {center,left,right}, hill_top, ground(x, y),
-    ground_z(x, y), cams {wide, medium, low, from_cross, skull}, crowd_region, sky (sky() result), ..."""
+    ground_z(x, y), cams {wide, wide_low, skull, medium, low, from_cross, aerial}, crowd_region, sky, ..."""
     t0 = time.time()
     st = _state()
     rnd = random.Random(seed)
+    set_view(_resolve_view(view, "golgotha"))
     p = sky_preset(mood, **(sky_over or {}))
     if sun_az is not None:
         p["sun_az"] = sun_az
@@ -2993,13 +3123,13 @@ def golgotha(ctx, mood="golden", crosses=3, center_occupied=True, sign=True, cit
         scatter(boulders, count=int(90 * rocks), seed=seed + 2, scale=(0.4, 1.2), align=0.7, sink=-0.35, tilt=10,
                 region=("circle", 0, 0, 55), density=hill_mask, exclude=keep_out + [(0, -5, 6)], name="EnvBoulders",
                 min_dist=2.5)
-        scatter(small, count=int(900 * rocks), seed=seed + 3, scale=(0.6, 1.8), align=0.9, sink=-0.3, tilt=12,
-                region=("circle", 0, 0, 45), exclude=keep_out, name="EnvRocks",
+        scatter(small, count=int(600 * rocks), seed=seed + 3, scale=(0.6, 1.8), align=0.9, sink=-0.3, tilt=12,
+                region=("circle", 0, 0, 45), exclude=keep_out, name="EnvRocks", realize=False, shadows=True,
                 density=lambda X, Y: 0.35 + 0.65 * smoothstep(6, 18, np.sqrt(X ** 2 + Y ** 2)))
         if near_detail:
             scatter(pebbles + small[:4], count=int(700 * near_detail), seed=seed + 4, scale=(0.4, 1.1), align=1.0,
                     sink=-0.35, region=("circle", 0, -1, 14), exclude=[(x, y, 0.3) for x, y, _ in keep_out],
-                    name="EnvPebbles")
+                    name="EnvPebbles", realize=False, shadows=False)
             # wedge stones at each cross foot
             for k in use:
                 x, y, _, _ = positions[k]
@@ -3010,11 +3140,11 @@ def golgotha(ctx, mood="golden", crosses=3, center_occupied=True, sign=True, cit
         gr = grass_protos("dry")
         gmask = lambda X, Y: (0.25 + 0.75 * smoothstep(7, 16, np.sqrt(X ** 2 + (Y + 2) ** 2))) * \
             (0.4 + 0.6 * (fbm(X * 0.05, Y * 0.05, 3, seed=21) > -0.1))
-        scatter(gr, count=int(16000 * grass), seed=seed + 5, scale=(0.6, 1.5), align=0.6, sink=0.02,
+        scatter(gr, count=int(10000 * grass), seed=seed + 5, scale=(0.7, 1.6), align=0.6, sink=0.02,
                 region=("circle", 0, -10, 70), density=gmask, max_slope=40, exclude=keep_out + [(0, -2, 3.5)],
-                name="EnvGrass")
-        scatter(gr, count=int(5000 * grass), seed=seed + 6, scale=(0.7, 1.4), align=0.5, sink=0.02,
-                region=("ring", 0, 0, 60, 200), max_slope=35, name="EnvGrassFar",
+                name="EnvGrass", realize=False, shadows=False)
+        scatter(gr, count=int(2500 * grass), seed=seed + 6, scale=(0.9, 1.6), align=0.5, sink=0.02,
+                region=("ring", 0, 0, 60, 200), max_slope=35, name="EnvGrassFar", realize=False, shadows=False,
                 density=lambda X, Y: 0.5 + 0.5 * (fbm(X * 0.02, Y * 0.02, 2, seed=22) > 0))
     _dbg("g:grass")
     if bushes:
@@ -3025,10 +3155,11 @@ def golgotha(ctx, mood="golden", crosses=3, center_occupied=True, sign=True, cit
         # a few olive trees on the plain + far scattered shrubs for scale
         ol = [olive_tree(seed=i, age=0.6 + 0.3 * i, size=0.9, lod=2) for i in range(2)]
         scatter(ol, count=int(18 * bushes), seed=seed + 8, scale=(0.8, 1.1), align=0.0, sink=0.1,
-                region=("ring", 0, 0, 80, 400), name="EnvOlivesFar", max_slope=20,
+                region=("ring", 0, 0, 80, 400), name="EnvOlivesFar", realize=False, shadows=True, max_slope=20,
                 density=lambda X, Y: (np.abs(X) > 40) * 1.0)
-        scatter(th, count=int(500 * bushes), seed=seed + 9, scale=(1.0, 2.0), align=0.3, sink=0.1,
-                region=("ring", 0, 0, 60, 500), name="EnvShrubsFar", max_slope=35)
+        blobs = [shrub_blob(seed=i, size=0.8 + 0.3 * i) for i in range(3)]
+        scatter(blobs, count=int(350 * bushes), seed=seed + 9, scale=(0.8, 1.6), align=0.3, sink=0.1,
+                region=("ring", 0, 0, 60, 500), name="EnvShrubsFar", realize=False, shadows=False, max_slope=35)
     _dbg("g:bushes")
     # Jerusalem ----------------------------------------------------------------------------------
     if city:
@@ -3038,7 +3169,7 @@ def golgotha(ctx, mood="golden", crosses=3, center_occupied=True, sign=True, cit
     top = ground_z(0, 0)
     A["hill_top"] = (0.0, 0.0, top)
     if rays is None:
-        rays = p.get("rays", mood in ("golden", "sunrise", "eclipse", "storm"))
+        rays = p.get("rays", False)          # volumetric shafts are opt-in (they ~double render time)
     fog_col = tuple(p.get("fog", (0.9, 0.8, 0.7)))
     if rays:
         A["rays"] = god_rays(center=(0, -10, 0), size=(220, 220, 60), density=p.get("fog_density", 0.004),
@@ -3058,16 +3189,17 @@ def golgotha(ctx, mood="golden", crosses=3, center_occupied=True, sign=True, cit
     c = A["crosses"].get("center") or next(iter(A["crosses"].values()))
     cz = c["base"][2]
     A["cams"] = {
-        "wide": dict(loc=(-6.0, -64.0, 7.5), target=(0.0, 0.0, cz + 3.0), lens=30),
-        "wide_low": dict(loc=(-3.0, -40.0, 3.2), target=(0.0, 0.0, cz + 4.0), lens=26),
+        "wide": dict(_GOLG_CAMS["wide"]),
+        "wide_low": dict(_GOLG_CAMS["wide_low"]),
         "medium": dict(loc=(-2.6, -8.6, cz + 1.65), target=(0.0, 0.6, cz + 3.0), lens=40),
         "low": dict(loc=(1.4, -4.2, cz + 0.35), target=(0.0, 0.6, cz + 3.7), lens=22),
         "from_cross": dict(loc=c["head"], target=(0.0, -6.5, cz + 0.6), lens=28),
-        "skull": dict(loc=(4.0, -36.0, 4.5), target=(0.0, -12.0, 7.5), lens=45),
+        "skull": dict(_GOLG_CAMS["skull"]),
         "aerial": dict(loc=(-60.0, -140.0, 70.0), target=(0.0, 0.0, cz), lens=35),
     }
     _dbg("g:atmos")
     release_bvh()
+    set_view(None)
     A["build_time"] = time.time() - t0
     if ctx is not None:
         ctx.post.setdefault("grade", p.get("grade", "warm"))
@@ -3077,6 +3209,84 @@ def golgotha(ctx, mood="golden", crosses=3, center_occupied=True, sign=True, cit
 # =============================================================================================
 # Public sky helpers
 # =============================================================================================
+def sky_transition(ctx, mood_a="golden", mood_b="eclipse", f0=1, f1=None, over_a=None, over_b=None, ease=True):
+    """Cross-fade the whole sky + sun + haze + exposure from mood_a to mood_b between frames f0..f1
+    (e.g. s01a 'the light dims' golden -> eclipse, s14a 'light breaks' eclipse -> golden). Both skies are
+    built into one world and mixed through the scene property env_sky_mix (uniform: cheap per frame).
+    Returns dict(sun, a, b) - call it INSTEAD of sky() (environment builders accept mood=...; call this
+    afterwards to replace their sky)."""
+    sc = bpy.context.scene
+    f1 = f1 or sc.frame_end
+    st = _state()
+    pa = sky_preset(mood_a, **(over_a or {}))
+    pb = sky_preset(mood_b, **(over_b or {}))
+    if mood_a == mood_b:
+        pb["name"] = pb["name"] + "_b"
+    w = sc.world
+    nt = w.node_tree
+    for n in list(nt.nodes):
+        nt.nodes.remove(n)
+    T = _NT(nt)
+    out = T.node("ShaderNodeOutputWorld")
+    tc = T.node("ShaderNodeTexCoord")
+    view = tc.outputs["Generated"]
+    A = sky(cfg=pa, _chain=(T, view))
+    B = sky(cfg=pb, _chain=(T, view))
+    fac = _lattr(T, "env_sky_mix", 0.0)
+
+    def scaled(col, k):
+        return T.mix(1.0, col, (k, k, k), blend="MULTIPLY")
+
+    def clamped(col, cv, k):
+        n = T.node("ShaderNodeMix")
+        n.data_type = "RGBA"
+        n.blend_type = "DARKEN"
+        n.inputs[0].default_value = 1.0
+        T.link(col, n.inputs[6])
+        n.inputs[7].default_value = (cv, cv, cv, 1)
+        return scaled(n.outputs[2], k)
+    cam = T.mix(fac, scaled(A["col"], A["bg"]), scaled(B["col"], B["bg"]))
+    lit = T.mix(fac, clamped(A["col"], A["clamp"], A["strength"]), clamped(B["col"], B["clamp"], B["strength"]))
+    lp = T.node("ShaderNodeLightPath")
+    bgc, bgl = T.node("ShaderNodeBackground"), T.node("ShaderNodeBackground")
+    T.link(cam, bgc.inputs[0])
+    T.link(lit, bgl.inputs[0])
+    ms = T.node("ShaderNodeMixShader")
+    T.link(lp.outputs["Is Camera Ray"], ms.inputs[0])
+    T.link(bgl.outputs[0], ms.inputs[1])
+    T.link(bgc.outputs[0], ms.inputs[2])
+    T.link(ms.outputs[0], out.inputs["Surface"])
+    old = st.get("sun_obj")
+    if old is not None and old.name in bpy.data.objects:
+        bpy.data.objects.remove(old, do_unlink=True)
+    sun = C.sun(elevation=30, azimuth=0, energy=1.0, angle=1.2)
+    sun.data.shadow_maximum_resolution = 0.002
+    for f, X, v in ((f0, A, 0.0), (f1, B, 1.0)):
+        d = Vector(X["sun_dir"])
+        sun.rotation_euler = (-d).to_track_quat("-Z", "Y").to_euler()
+        sun.data.energy = X["energy"]
+        sun.data.color = X["sun_color"]
+        for prop, obj in (("rotation_euler", sun), ("energy", sun.data), ("color", sun.data)):
+            obj.keyframe_insert(prop, frame=f)
+        scene_prop("env_sky_mix", v, f)
+        set_haze(color=X["haze"], density=X["haze_density"], sun_dir=tuple(d),
+                 sun_color=[X["haze"][i] * (0.6 + 1.4 * X["sun_color"][i]) for i in range(3)], frame=f)
+        sc.view_settings.exposure = X["exposure"]
+        sc.view_settings.keyframe_insert("exposure", frame=f)
+    C._unwrap_euler(sun)
+    if not ease:
+        for idb in (sun, sun.data, sc):
+            _linear_keys(idb)
+    st["sun_obj"] = sun
+    st["sky"] = dict(preset=pb, nodes={}, sun=sun, sun_dir=Vector(B["sun_dir"]))
+    if ctx is not None:
+        ctx.post["grade"] = pb.get("grade", "neutral")
+        ctx.post["grade_from"] = pa.get("grade", "neutral")
+        ctx.post["sun_dir"] = [round(float(x), 4) for x in B["sun_dir"]]
+    return dict(sun=sun, a=A, b=B)
+
+
+
 def night_sky(stars=True, moon=True, moon_az=210.0, moon_el=32.0, moon_light=0.35, strength=1.0, ctx=None,
               horizon=(0.012, 0.018, 0.032), zenith=(0.0015, 0.0025, 0.006), star_strength=1.0, clouds=0.0, **over):
     """Procedural night: deep-blue gradient sky + star field + moon disk with glow + cool moonlight lamp
@@ -3376,17 +3586,17 @@ def judean_hills(ctx, mood="noon", timelapse=False, hour0=13.0, hour1=21.0, seed
                 region=("circle", 0, 0, 45), name="EnvHillBoulders", exclude=[(tp.x, tp.y, 1.5), (-fwd.x * 8, -fwd.y * 8, 3)],
                 min_dist=3)
         scatter(small, count=int(900 * rocks), seed=seed + 2, scale=(0.6, 2.0), align=0.9, sink=-0.3, tilt=12,
-                region=("circle", 0, 0, 60), name="EnvHillRocks")
+                region=("circle", 0, 0, 60), name="EnvHillRocks", realize=False, shadows=True)
         scatter(rock_protos("boulders", decimate=2500), count=int(300 * rocks), seed=seed + 3, scale=(1.0, 2.6), align=0.7,
-                sink=-0.4, region=("ring", 0, 0, 45, 500), name="EnvHillBouldersFar", min_dist=8)
+                sink=-0.4, region=("ring", 0, 0, 45, 500), name="EnvHillBouldersFar", realize=False, shadows=False, min_dist=8)
     if grass:
         gr = grass_protos("dry")
         scatter(gr, count=int(14000 * grass), seed=seed + 4, scale=(0.6, 1.5), align=0.6, sink=0.02,
-                region=("circle", 0, 0, 45), max_slope=35, name="EnvHillGrass", exclude=[(tp.x, tp.y, 0.8)],
+                region=("circle", 0, 0, 45), max_slope=35, name="EnvHillGrass", realize=False, shadows=False, exclude=[(tp.x, tp.y, 0.8)],
                 density=lambda X, Y: 0.3 + 0.7 * (fbm(X * 0.04, Y * 0.04, 2, seed=41) > -0.15))
-        th = [thorn_bush(seed=i, size=0.8 + 0.3 * i) for i in range(3)]
-        scatter(th, count=int(150 * grass), seed=seed + 5, scale=(0.8, 1.6), align=0.3, sink=0.05,
-                region=("circle", 0, 0, 400), max_slope=35, name="EnvHillShrubs", exclude=[(0, 0, 8)])
+        th = [shrub_blob(seed=i, size=0.8 + 0.3 * i) for i in range(3)]
+        scatter(th, count=int(400 * grass), seed=seed + 5, scale=(0.8, 1.6), align=0.3, sink=0.05,
+                region=("circle", 0, 0, 400), max_slope=35, name="EnvHillShrubs", realize=False, shadows=False, exclude=[(0, 0, 8)])
     if olives:
         ol = [olive_tree(seed=10 + i, age=0.6 + 0.35 * i, size=1.2, lod=2) for i in range(3)]
         # olive groves in clusters on the terraced slopes + scattered single trees
@@ -3416,9 +3626,40 @@ def judean_hills(ctx, mood="noon", timelapse=False, hour0=13.0, hour1=21.0, seed
 # =============================================================================================
 # GETHSEMANE OLIVE GROVE (night)
 # =============================================================================================
-def prayer_rock(loc=(0.0, 1.25, 0.0), size=(2.7, 1.7, 1.0), seed=0, material=None, name="PrayerRock"):
+def prayer_rock(loc=(0.0, 1.25, 0.0), size=(2.7, 1.7, 1.0), seed=0, material=None, name="PrayerRock",
+                scanned=True):
     """Large flat-topped limestone rock (for kneeling prayer). loc = ground point under its centre.
-    Returns (obj, anchors): top (hand rest point on the near (-Y) edge), kneel (in front, -Y side)."""
+    scanned=True uses the Poly Haven 'namaqualand_boulder_03' scan (angular, flat top), else a procedural
+    rock. Returns (obj, anchors): top (hand rest point on the near (-Y) edge), kneel (in front, -Y side)."""
+    if scanned:
+        protos = ph_protos("namaqualand_boulder_03", 17000)
+        pr = protos[0]
+        d = pr["dims"]
+        # boulder_03 is ~2.4 x 3.06 x 1.47 m: long axis along Y -> rotate 90 deg, scale to `size`
+        sxy = (size[0] / d[1], size[1] / d[0], size[2] / d[2])
+        o = bpy.data.objects.new(name, pr.data)
+        C.link(o)
+        o.location = (loc[0], loc[1], loc[2] - 0.22 * size[2])
+        o.rotation_euler = (0, 0, math.radians(90))
+        o.scale = (sxy[1], sxy[0], sxy[2])
+        o.data.materials.clear()
+        o.data.materials.append(material or limestone_material("EnvPrayerRock", scale=0.6, tint=(0.8, 0.78, 0.74),
+                                                               streaks=0.4))
+        add_ground(o)
+        bpy.context.view_layer.update()
+        x0, y0, z0 = loc
+        hy = size[1] / 2
+        best = None
+        for yy in np.linspace(y0 - hy * 0.75, y0 - hy * 0.25, 6):
+            hit = _bvh([o]).ray_cast(Vector((x0, yy, z0 + 10)), Vector((0, 0, -1)))
+            if hit[0] is not None and hit[0].z > z0 + 0.5 * size[2]:
+                best = hit[0]
+                break
+        top = tuple(best) if best is not None else (x0, y0 - hy * 0.5, z0 + 0.8 * size[2])
+        hc = _bvh([o]).ray_cast(Vector((x0, y0, z0 + 10)), Vector((0, 0, -1)))
+        topc = tuple(hc[0]) if hc[0] is not None else (x0, y0, top[2])
+        release_bvh()
+        return o, dict(top=top, top_center=topc, kneel=(x0, top[1] - 0.75, z0), facing=(0.0, 1.0, 0.0))
     bm = bmesh.new()
     bmesh.ops.create_uvsphere(bm, u_segments=48, v_segments=24, radius=1.0)
     rnd = random.Random(seed)
@@ -3461,7 +3702,7 @@ def _grove_height(seed=0):
         Y = np.asarray(Y, float)
         r = np.sqrt(X ** 2 + Y ** 2)
         # Mount of Olives: rises towards +X (east); Kidron valley + city towards -X
-        h = 0.07 * X + 0.012 * X * np.abs(X) * 0.01
+        h = 0.07 * np.clip(X, -150, 150) + 70.0 * smoothstep(100.0, 900.0, X)
         h += 1.2 * fbm(X * 0.02, Y * 0.02, 3, seed=seed + 1) + 0.25 * fbm(X * 0.12, Y * 0.12, 3, seed=seed + 2)
         # soft terraces along contours (steps of 1.2 m), weaker in the clearing
         q = h / 1.2
@@ -3488,7 +3729,8 @@ def olive_grove(ctx, mood="night", seed=0, trees=14, moon_az=200.0, moon_el=40.0
     t0 = time.time()
     A = dict(mood=mood)
     if mood == "night":
-        A["sky"] = night_sky(moon_az=moon_az, moon_el=moon_el, moon_light=0.45, ctx=ctx, star_strength=1.2)
+        A["sky"] = night_sky(moon_az=moon_az, moon_el=moon_el, moon_light=0.7, ctx=ctx, star_strength=1.2,
+                             horizon=(0.04, 0.05, 0.085), zenith=(0.004, 0.007, 0.016), moon_glow=0.015)
     else:
         A["sky"] = sky(mood, ctx=ctx)
     H = _grove_height(seed)
@@ -3498,7 +3740,7 @@ def olive_grove(ctx, mood="night", seed=0, trees=14, moon_az=200.0, moon_el=40.0
                                                       path=smoothstep(5.0, 1.0, np.sqrt(X ** 2 + (Y + 0.5) ** 2)) * 0.5,
                                                       cav=np.zeros_like(Z), dust=np.zeros_like(Z)))
     A["terrain"] = terr
-    rock, ra = prayer_rock(loc=(0.0, 1.25, ground_z(0.0, 1.25)), seed=seed)
+    rock, ra = prayer_rock(loc=(0.0, 1.25, ground_z(0.0, 1.25)), seed=seed, size=(2.6, 1.6, 1.05))
     A["rock"] = rock
     A["rock_top"] = ra["top"]
     A["rock_top_center"] = ra["top_center"]
@@ -3512,7 +3754,10 @@ def olive_grove(ctx, mood="night", seed=0, trees=14, moon_az=200.0, moon_el=40.0
     for gx in np.arange(-40, 41, 8.5):
         for gy in np.arange(-40, 41, 8.5):
             x, y = gx + rnd.uniform(-2.5, 2.5), gy + rnd.uniform(-2.5, 2.5)
-            if math.hypot(x, y - 0.6) < 5.0:
+            if math.hypot(x, y - 0.6) < 5.5:
+                continue
+            ang = math.degrees(math.atan2(y, x))
+            if -150 < ang < -70 and math.hypot(x, y) < 16:      # camera side (south-west) kept open
                 continue
             if abs(y - (-0.15 * x - 2)) < 2.2 and x < -4:     # path from the west (mob approach)
                 continue
@@ -3538,19 +3783,19 @@ def olive_grove(ctx, mood="night", seed=0, trees=14, moon_az=200.0, moon_el=40.0
     A["trees"] = tposs
     # far grove (cheap) on the slopes around
     scatter(far, count=int(260 * detail), seed=seed + 6, scale=(0.8, 1.15), align=0.0, sink=0.1,
-            region=("ring", 0, 0, 45, 260), min_dist=8, name="EnvGroveFar2", max_slope=25)
+            region=("ring", 0, 0, 45, 260), min_dist=8, name="EnvGroveFar2", realize=False, shadows=True, max_slope=25)
     # terrace walls: chains of stones along contour steps + rocks + litter
     small = rock_protos("rocks", tint=(0.85, 0.83, 0.78), value=0.9)
     boulders = rock_protos("boulders", tint=(0.85, 0.83, 0.78), value=0.9)
     scatter(boulders, count=int(40 * detail), seed=seed + 7, scale=(0.35, 0.8), align=0.7, sink=-0.35, tilt=10,
             region=("circle", 0, 0, 35), exclude=[(0, 0.6, 4.5)], name="EnvGroveBoulders", min_dist=3)
     scatter(small, count=int(1600 * detail), seed=seed + 8, scale=(1.0, 2.6), align=0.8, sink=-0.3, tilt=12,
-            region=("circle", 0, 0, 40), exclude=[(0, 0.2, 2.0)], name="EnvGroveWallStones", min_slope=12)
+            region=("circle", 0, 0, 40), exclude=[(0, 0.2, 2.0)], name="EnvGroveWallStones", realize=False, shadows=True, min_slope=12)
     scatter(small, count=int(500 * detail), seed=seed + 9, scale=(0.5, 1.4), align=0.9, sink=-0.3,
-            region=("circle", 0, 0, 30), exclude=[(0, 0.2, 1.4)], name="EnvGroveStones")
+            region=("circle", 0, 0, 30), exclude=[(0, 0.2, 1.4)], name="EnvGroveStones", realize=False, shadows=False)
     gr = grass_protos("green", height=0.3)
     scatter(gr, count=int(5000 * detail), seed=seed + 10, scale=(0.5, 1.1), align=0.6, sink=0.02,
-            region=("circle", 0, 0, 40), exclude=[(0, 0.4, 2.2)], name="EnvGroveGrass", max_slope=30,
+            region=("circle", 0, 0, 40), exclude=[(0, 0.4, 2.2)], name="EnvGroveGrass", realize=False, shadows=False, max_slope=30,
             density=lambda X, Y: 0.35 + 0.65 * (fbm(X * 0.08, Y * 0.08, 2, seed=71) > 0.0))
     # atmosphere ---------------------------------------------------------------------------------
     if mist:
@@ -3631,7 +3876,7 @@ def _city_lights(center=(-650.0, -60.0), seed=0, n=90, width=700.0):
 # PLAIN AT DAWN (crowds)
 # =============================================================================================
 def plain_dawn(ctx, time_of_day="sunrise", seed=0, cross_hill=True, hillside=0.6, hills=0.5, grass_kind="mixed",
-               sun_az=None, procession=False, grass=1.0, rays=True, cross_sheet=False):
+               sun_az=None, procession=False, grass=1.0, rays=False, cross_sheet=False):
     """Vast plain / hillside at sunrise for crowds (s16a, s18b, s20b). The crowd stands on a broad gentle
     slope around the origin facing +Y; the sun rises towards +Y (slightly right). cross_hill=True puts
     a distant hill with an EMPTY cross at ~(25, 330) lit by the rising sun. time_of_day: 'sunrise' |
@@ -3688,18 +3933,18 @@ def plain_dawn(ctx, time_of_day="sunrise", seed=0, cross_hill=True, hillside=0.6
         gr += grass_protos(k)
     if grass:
         scatter(gr, count=int(14000 * grass), seed=seed + 4, scale=(0.6, 1.4), align=0.6, sink=0.02,
-                region=(-45, -40, 45, 70), max_slope=30, name="EnvPlainGrass",
+                region=(-45, -40, 45, 70), max_slope=30, name="EnvPlainGrass", realize=False, shadows=False,
                 density=lambda X, Y: 0.4 + 0.6 * (fbm(X * 0.03, Y * 0.03, 2, seed=91) > -0.2))
         scatter(gr, count=int(9000 * grass), seed=seed + 5, scale=(0.9, 1.8), align=0.5, sink=0.02,
-                region=("ring", 0, 20, 60, 260), max_slope=30, name="EnvPlainGrassFar")
-        th = [thorn_bush(seed=i, size=0.9 + 0.3 * i) for i in range(3)]
-        scatter(th, count=int(260 * grass), seed=seed + 6, scale=(0.8, 1.6), align=0.3, sink=0.05,
-                region=("ring", 0, 20, 40, 500), name="EnvPlainShrubs", max_slope=30)
+                region=("ring", 0, 20, 60, 260), max_slope=30, name="EnvPlainGrassFar", realize=False, shadows=False)
+        th = [shrub_blob(seed=i, size=0.9 + 0.3 * i) for i in range(3)]
+        scatter(th, count=int(400 * grass), seed=seed + 6, scale=(0.8, 1.6), align=0.3, sink=0.05,
+                region=("ring", 0, 20, 40, 500), name="EnvPlainShrubs", realize=False, shadows=False, max_slope=30)
         ol = [olive_tree(seed=50 + i, age=0.6 + 0.3 * i, size=0.9, lod=2) for i in range(2)]
         scatter(ol, count=int(60 * grass), seed=seed + 7, scale=(0.8, 1.2), align=0.0, sink=0.1,
                 region=("ring", 0, 20, 90, 700), name="EnvPlainOlives", min_dist=15, max_slope=20)
     scatter(rock_protos("rocks"), count=600, seed=seed + 8, scale=(0.5, 1.6), align=0.9, sink=-0.3,
-            region=(-45, -40, 45, 70), name="EnvPlainRocks")
+            region=(-45, -40, 45, 70), name="EnvPlainRocks", realize=False, shadows=False)
     p = A["sky"]["preset"]
     if rays and time_of_day != "predawn":
         A["rays"] = god_rays(center=(0, 120, 0), size=(300, 360, 70), density=p.get("fog_density", 0.003) * 0.6,
