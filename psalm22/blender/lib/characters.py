@@ -119,7 +119,7 @@ BEARDS = {        # length (m), strand count, points per strand, stiffness (0 dr
     "none": None,
     "stubble": None,
     "short": dict(length=0.012, count=9000, points=5, stiff=0.75, curl=0.0012, lift=0.45),
-    "full": dict(length=0.034, count=13000, points=7, stiff=0.45, curl=0.0026, lift=0.35),
+    "full": dict(length=0.034, count=11000, points=7, stiff=0.45, curl=0.0026, lift=0.35),
     "long": dict(length=0.11, count=14000, points=11, stiff=0.18, curl=0.007, lift=0.3),
 }
 
@@ -165,7 +165,7 @@ ELDER = dict(gender=1.0, age_years=72, build="frail", height_cm=168, ethnicity="
 CHILD = dict(gender=1.0, age_years=7, build="lean", ethnicity="judean", hair="short04", hair_color="dark_brown",
              eye_color="brown", eyebrows="eyebrow009", expression="awe", outfit=["tunic"], pose="stand", redness=0.4)
 BABY = dict(gender=0.5, age_years=0.0, build="average", height_cm=52, ethnicity="judean", hair="none", eye_color="dark_brown",
-            eyebrows="none", expression="peace", outfit=["swaddle"], pose="baby", redness=0.6)
+            eyebrows="none", expression="sleep", outfit=["swaddle"], pose="baby", redness=0.6)
 SOLDIER = dict(gender=1.0, age_years=28, build="muscular", height_cm=176, ethnicity="european", skin_tone=0.45,
                hair="short02", hair_color="dark_brown", beard="stubble", eye_color="brown", eyebrows="eyebrow002",
                expression="neutral", outfit=["roman_soldier"], pose="stand", dirt=0.25, sweat=0.2)
@@ -394,9 +394,19 @@ def make_person(name, preset=None, **spec):
     ds["subdiv_levels"] = 1 if hero else 0
     # Height: measure the macro body first, then rebuild at the scale that hits height_cm
     if s.get("height_cm"):
-        probe = HS.create_human(mask_helpers=False, detailed_helpers=False, extra_vertex_groups=False,
+        probe = HS.create_human(mask_helpers=False, detailed_helpers=True, extra_vertex_groups=True,
                                 feet_on_ground=True, scale=0.1, macro_detail_dict=dict(hi["phenotype"]))
-        h0 = probe.dimensions.z
+        pw = _vgroup_weights(probe, ["body"])["body"] > 0.5
+        pc = _coords(probe.data)
+        # shape keys hold the macro shape: evaluate the mix
+        if probe.data.shape_keys:
+            pc = np.zeros(len(probe.data.vertices) * 3, np.float32)
+            dg = bpy.context.evaluated_depsgraph_get()
+            pe = probe.evaluated_get(dg).to_mesh()
+            pe.vertices.foreach_get("co", pc)
+            pc = pc.reshape(-1, 3)
+            probe.evaluated_get(dg).to_mesh_clear()
+        h0 = float(pc[pw, 2].max() - pc[pw, 2].min()) if pw.any() else probe.dimensions.z
         me = probe.data
         bpy.data.objects.remove(probe)
         bpy.data.meshes.remove(me)
@@ -432,8 +442,8 @@ def make_person(name, preset=None, **spec):
         pb.rotation_mode = "QUATERNION"
     body.add_rest_position_attribute = True
     p = Person(name, rig, body, parts, s)
-    p.height = body.dimensions.z
     _landmarks(p)
+    p.height = p.lm["head_top"]
     T.append(("landmarks", time.time()))
     _compute_masks(p)
     T.append(("masks", time.time()))
@@ -875,15 +885,15 @@ def skin_material(p, name=None):
         # drips: 1D voronoi across the forehead, random length per drip
         sx = T.n("ShaderNodeSeparateXYZ")
         T.link(rest, sx.inputs[0])
-        v1 = T.n("ShaderNodeTexVoronoi", _voronoi_dimensions="1D", Scale=55.0, Randomness=0.9)
+        v1 = T.n("ShaderNodeTexVoronoi", _voronoi_dimensions="1D", Scale=75.0, Randomness=0.9)
         T.link(T.math("ADD", sx.outputs[0], T.math("MULTIPLY", n_mid.outputs["Fac"], 0.004)), v1.inputs["W"])
         rnd = T.sep(v1.outputs["Color"])
         # drip extends from the crown (zone=1) down to 1-len
-        length = T.math("MULTIPLY", T.math("POWER", rnd[0], 2.0), 0.85 * min(1.0, blood * 1.3))
+        length = T.math("MULTIPLY", T.math("POWER", rnd[0], 1.3), 1.25 * min(1.0, blood * 1.3))
         reach = T.math("GREATER_THAN", T.math("SUBTRACT", zone_m, T.math("SUBTRACT", 1.0, length)), 0.0)
-        width = T.math("MULTIPLY", T.math("ADD", T.math("SUBTRACT", zone_m, T.math("SUBTRACT", 1.0, length)), 0.15), 0.09)
+        width = T.math("MULTIPLY", T.math("ADD", T.math("SUBTRACT", zone_m, T.math("SUBTRACT", 1.0, length)), 0.25), 0.2)
         line = T.math("LESS_THAN", v1.outputs["Distance"], width)
-        has = T.math("GREATER_THAN", rnd[1], 0.42)
+        has = T.math("GREATER_THAN", rnd[1], 0.45)
         drip = T.math("MULTIPLY", T.math("MULTIPLY", T.math("MULTIPLY", reach, line), has), T.math("GREATER_THAN", zone_m, 0.02))
         # punctures along the crown line
         v3 = T.n("ShaderNodeTexVoronoi", Scale=140.0, Randomness=1.0)
@@ -1231,20 +1241,20 @@ def make_beard(p, style=None, length=None, density=1.0, color=None, grey=None, s
     # --- growth direction field
     d = np.tile(np.array([0.0, -0.15, -1.0]), (N, 1))
     must = (z > lm["mouth_top"] - 0.003 * sc) & (lat < mw + 0.012 * sc)
-    d[must] = np.stack([np.sign(x[must]) * 0.5, np.full(must.sum(), -0.05), np.full(must.sum(), -1.0)], 1)
+    d[must] = np.stack([np.sign(x[must]) * 0.9, np.full(must.sum(), -0.1), np.full(must.sum(), -1.0)], 1)
     under = nrm[:, 2] < -0.35
     d[under] = np.array([0.0, -0.8, -0.6])
     d = _norm(d)
     dt = _norm(d - nrm * (d * nrm).sum(1, keepdims=True))
     lift = cfg["lift"] * 0.6 + rng.normal(0, 0.08, N)
-    lift[must] *= 0.4
+    lift[must] *= 0.8
     d0 = _norm(dt * np.cos(lift)[:, None] + nrm * np.sin(lift)[:, None])
     # --- length field: longest at the chin, short on the cheeks and moustache
     chinc = np.exp(-(lat / (0.028 * sc)) ** 2)
     lenf = np.full(N, 0.55)
     lenf += 0.45 * chinc * (z < lm["mouth_bot"])
     lenf = np.where(z > lm["mouth_bot"], 0.42, lenf)            # cheeks / jaw above the mouth line
-    lenf = np.where(must, 0.36, lenf)
+    lenf = np.where(must, 0.24, lenf)
     lenf = np.where(under, 0.8, lenf)
     side = np.clip((lat - 0.04 * sc) / (0.03 * sc), 0, 1)
     lenf *= 1 - 0.35 * side
@@ -2005,6 +2015,24 @@ def _pose_cradle(P, p, **k):
     P.cradle = (chest + Vector((-0.02 * h, -0.24 * h, -0.07 * h)))
 
 
+def place_baby(baby, holder):
+    """Lay a swaddled BABY person in the arms of a holder posed with 'cradle' (head in the holder's
+    left elbow crook, face up towards the holder)."""
+    loc, rot = cradle_anchor(holder)
+    hm = holder.rig.matrix_world.to_3x3()
+    head_dir = (hm @ Vector((1, 0.15, 0.12))).normalized()       # towards the holder's left elbow
+    face_dir = (hm @ Vector((0, 0.35, 1))).normalized()          # up, slightly towards the holder
+    side = face_dir.cross(head_dir).normalized()
+    face_dir = head_dir.cross(side).normalized()
+    # baby rig space: +Z = head, -Y = face
+    R = Matrix((side, -face_dir, head_dir)).transposed()
+    centre = baby.height * 0.42
+    M = Matrix.Translation(loc - R @ Vector((0, 0, centre))) @ R.to_4x4()
+    baby.rig.matrix_world = M
+    baby.update()
+    return M
+
+
 def cradle_anchor(person):
     """World (location, rotation_euler) for a swaddled baby held in the 'cradle' pose: the bundle's
     local +X points to its head (towards the holder's left elbow), +Z up."""
@@ -2328,7 +2356,7 @@ def walk(person, points, f0, f1, speed=None, run=False, ground_z=None, step=1, h
     rig = p.rig
     prev_yaw = None
     # ground offset from a standing pose
-    P0 = _build_pose(p, "stand")
+    P0 = _build_pose(p, "stand", {})
     mz = float(lbs_points(p, P0)[:, 2].min())
     f = f0
     while f <= f1:
@@ -2443,6 +2471,7 @@ EXPRESSIONS = {
              "mouth-retraction": 0.3, "mouth-open": 0.04, "neck-platysma": 0.5, "jaw": 4},
     "exhausted": {"eye-closure": 0.6, "eyebrows-inner-up": 0.35, "mouth-open": 0.06, "jaw": 7},
     "dead": {"eye-closure": 0.9, "mouth-open": 0.05, "jaw": 9},
+    "sleep": {"eye-closure": 1.0, "mouth-corner-puller": 0.1},
 }
 
 
@@ -2710,7 +2739,29 @@ def place_on_cross(person, cross_root, head="up", strain=0.6, knee_side=1.0, han
 # ============================================================================================
 # Baking & crowds
 # ============================================================================================
-def bake_static(person, name=None, delete=True, coll=None):
+def _objcolor_material(m):
+    """Copy of a material whose Object Info colour (e.g. wardrobe fabrics: colour = obj.color) is
+    replaced by the 'obj_rgb' colour attribute written at bake time."""
+    if m is None or not m.use_nodes:
+        return m
+    oi = [n for n in m.node_tree.nodes if n.bl_idname == "ShaderNodeObjectInfo" and n.outputs["Color"].is_linked]
+    if not oi:
+        return m
+    name = m.name + ".baked"
+    if name in bpy.data.materials:
+        return bpy.data.materials[name]
+    c = m.copy()
+    c.name = name
+    nt = c.node_tree
+    for n in [n for n in nt.nodes if n.bl_idname == "ShaderNodeObjectInfo"]:
+        at = nt.nodes.new("ShaderNodeAttribute")
+        at.attribute_name = "obj_rgb"
+        for l in list(n.outputs["Color"].links):
+            nt.links.new(at.outputs["Color"], l.to_socket)
+    return c
+
+
+def bake_static(person, name=None, delete=True, coll=None, decimate=None):
     """Freeze a posed (and dressed) person into ONE mesh object (pose + modifiers applied, materials
     kept, world transform baked into the object transform = the rig's). Hair curves (beard) are kept
     as a child curves object with the deformation applied. Returns the mesh object."""
@@ -2732,6 +2783,12 @@ def bake_static(person, name=None, delete=True, coll=None):
                 bpy.data.meshes.remove(me)
                 continue
             me.transform(inv @ o.matrix_world)
+            # keep per-object colours (wardrobe fabrics use obj.color) as an attribute
+            if any(m and m.use_nodes and any(n.bl_idname == "ShaderNodeObjectInfo" for n in m.node_tree.nodes) for m in me.materials):
+                ca = me.color_attributes.new("obj_rgb", "FLOAT_COLOR", "POINT")
+                ca.data.foreach_set("color", np.tile(np.array(o.color, np.float32), len(me.vertices)))
+                for i, m in enumerate(me.materials):
+                    me.materials[i] = _objcolor_material(m)
             t = bpy.data.objects.new(o.name + ".tmp", me)
             coll.objects.link(t)
             temps.append(t)
@@ -2746,6 +2803,11 @@ def bake_static(person, name=None, delete=True, coll=None):
     base.name = name or (p.name + ".baked")
     base.data.name = base.name
     base.matrix_world = rig_mw
+    if decimate and decimate < 1.0:
+        dm = base.modifiers.new("decimate", "DECIMATE")
+        dm.ratio = decimate
+        with bpy.context.temp_override(object=base, active_object=base):
+            bpy.ops.object.modifier_apply(modifier=dm.name)
     keep = []
     for cobj in curves:
         oe = cobj.evaluated_get(dg)
@@ -2829,13 +2891,13 @@ def crowd(n, positions=None, area=None, seed=0, variety=6, pose="stand_relaxed",
         else:
             pn = pose[i % len(pose)] if isinstance(pose, (list, tuple)) else pose
             if isinstance(pn, tuple):
-                pose(per, pn[0], **pn[1])
+                globals()["pose"](per, pn[0], **pn[1])
             elif pn:
                 globals()["pose"](per, pn)
         ex = per.spec.get("expression")
         if ex and ex != "neutral" and lod != "far":
             expression(per, ex)
-        b = bake_static(per, name="%s_src%d" % (name, i), coll=src_coll)
+        b = bake_static(per, name="%s_src%d" % (name, i), coll=src_coll, decimate=0.4 if lod == "far" else None)
         if b is None:
             continue
         b.location = (0, 0, -500)   # sources live far below the set
@@ -2966,7 +3028,7 @@ def make_hair_strands(p, count=None, points=16, length_scale=1.0, depth=(-0.001,
         return None
     rng = np.random.default_rng(seed if seed is not None else s.get("seed", 0) + 101)
     co, tv, tl, uv = _shell_data(shell)
-    N = int(count or (13000 if s["hair"] == "long01" else 8000))
+    N = int(count or (11000 if s["hair"] == "long01" else 7000))
     key = hashlib.md5(co.tobytes() + uv.tobytes() + str((STRAND_VERSION, N, points, depth, clump, frizz, length_scale, flyaways)).encode()).hexdigest()[:16]
     cp = _hair_cache_path(key)
     if os.path.exists(cp):

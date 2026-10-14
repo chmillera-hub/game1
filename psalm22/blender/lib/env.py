@@ -462,34 +462,39 @@ def hazify(material):
 # Mood presets. sun_az = azimuth of the sun in core.sun convention (0 = sun at -Y, i.e. behind a
 # camera looking +Y; 180 = sun at +Y, backlight). The HDRI is rotated so its sun matches sun_az.
 SKY_PRESETS = {
-    "golden": dict(hdri="table_mountain_2_puresky", sun_az=165, strength=1.0, bg=1.0, sun_mult=1.0,
-                   tint=(1.0, 0.86, 0.66), sat=1.1, sun_temp=None, sun_tint=(1.0, 0.8, 0.55), sun_angle=1.2,
+    # key = target luminance of the (tinted) HDRI horizon: normalises very different HDRIs to a consistent
+    # exposure (scales both lighting `strength` and visible `bg`). sun_energy = absolute sun lamp W/m2.
+    "golden": dict(hdri="table_mountain_2_puresky", sun_az=165, key=0.85, strength=1.0, bg=1.0, sun_mult=1.0,
+                   tint=(1.0, 0.86, 0.66), sat=1.12, sun_tint=(1.0, 0.8, 0.55), sun_angle=1.2,
                    haze_density=0.00035, haze_tint=(1.0, 0.95, 0.88), fog=(1.0, 0.82, 0.62), fog_density=0.0015,
                    exposure=0.0, grade="warm", clouds=0.0),
     "noon": dict(hdri="kloofendal_48d_partly_cloudy_puresky", sun_az=200, strength=1.0, bg=1.0, sun_mult=1.0,
                  tint=(1.0, 0.98, 0.94), sat=0.95, sun_tint=(1.0, 0.97, 0.92), sun_angle=0.8,
                  haze_density=0.0003, haze_tint=(1.0, 1.0, 1.0), fog=(0.9, 0.88, 0.85), fog_density=0.0012,
                  exposure=-0.3, grade="neutral", clouds=0.0),
-    "eclipse": dict(hdri="kloppenheim_01_puresky", sun_az=165, strength=0.35, bg=0.35, sun_mult=0.06,
-                    tint=(1.0, 0.42, 0.2), sat=0.5, sun_tint=(1.0, 0.35, 0.12), sun_angle=1.0,
-                    haze_density=0.0012, haze_tint=(1.0, 0.9, 0.8), fog=(0.65, 0.32, 0.17), fog_density=0.006,
-                    exposure=0.3, grade="eclipse", clouds=0.7, sun_disk=dict(el=24, size=2.2, color=(1.0, 0.28, 0.08),
-                                                                            strength=6.0)),
-    "storm": dict(hdri="kloofendal_overcast_puresky", sun_az=120, strength=0.55, bg=0.55, sun_mult=0.25,
-                  tint=(0.78, 0.82, 0.92), sat=0.55, sun_tint=(0.85, 0.88, 1.0), sun_angle=8.0,
-                  haze_density=0.0009, haze_tint=(1.0, 1.0, 1.0), fog=(0.55, 0.57, 0.62), fog_density=0.004,
-                  exposure=0.2, grade="cold", clouds=0.85),
-    "dawn": dict(hdri="qwantani_dawn_puresky", sun_az=100, strength=1.4, bg=1.4, sun_mult=0.0,
-                 tint=(1.0, 0.96, 1.0), sat=1.15, sun_tint=(1.0, 0.7, 0.55), sun_angle=2.0,
+    "eclipse": dict(hdri="kloofendal_overcast_puresky", sun_az=165, sun_el=24.0, key=0.11, strength=1.0, bg=1.0,
+                    sun_energy=0.45, tint=(0.9, 0.5, 0.3), sat=0.55, sun_tint=(1.0, 0.42, 0.16), sun_angle=2.5,
+                    haze_density=0.0012, haze_tint=(1.0, 0.9, 0.8), fog=(0.6, 0.32, 0.18), fog_density=0.006,
+                    exposure=0.6, grade="eclipse", clouds=0.6,
+                    cloud_opts=dict(color=(0.55, 0.38, 0.3), shadow=(0.1, 0.07, 0.06), opacity=0.85, sun_glow=0.6,
+                                    speed=(9.0, 3.0)),
+                    sun_disk=dict(el=24, size=2.2, color=(1.0, 0.3, 0.08), strength=14.0, glow=0.35)),
+    "storm": dict(hdri="kloppenheim_03_puresky", sun_az=120, sun_el=30.0, key=0.32, strength=1.0, bg=1.0,
+                  sun_energy=0.7, tint=(0.8, 0.84, 0.95), sat=0.5, sun_tint=(0.85, 0.88, 1.0), sun_angle=6.0,
+                  haze_density=0.0009, haze_tint=(1.0, 1.0, 1.0), fog=(0.5, 0.52, 0.58), fog_density=0.004,
+                  exposure=0.2, grade="cold", clouds=0.0, clamp_sun=True),
+    "dawn": dict(hdri="qwantani_dawn_puresky", sun_az=100, key=0.55, strength=1.0, bg=1.0, sun_mult=0.0,
+                 tint=(1.0, 0.95, 1.0), sat=1.2, sun_tint=(1.0, 0.7, 0.55), sun_angle=2.0,
                  haze_density=0.0005, haze_tint=(1.0, 1.0, 1.0), fog=(0.85, 0.75, 0.8), fog_density=0.004,
-                 exposure=0.5, grade="dawn", clouds=0.0),
-    "sunrise": dict(hdri="qwantani_sunrise_puresky", sun_az=160, strength=1.0, bg=1.0, sun_mult=1.0,
-                    tint=(1.0, 0.95, 0.9), sat=1.1, sun_tint=(1.0, 0.75, 0.5), sun_angle=1.5,
+                 exposure=0.0, grade="dawn", clouds=0.0),
+    "sunrise": dict(hdri="qwantani_sunset_puresky", sun_az=160, key=0.75, strength=1.0, bg=1.0, sun_mult=1.0,
+                    tint=(1.0, 0.92, 0.84), sat=1.15, sun_tint=(1.0, 0.75, 0.5), sun_angle=1.5,
                     haze_density=0.00045, haze_tint=(1.0, 0.97, 0.93), fog=(1.0, 0.8, 0.62), fog_density=0.004,
-                    exposure=0.2, grade="warm", clouds=0.0),
-    "night": dict(hdri=None, sun_az=210, strength=1.0, bg=1.0, sun_mult=1.0, moon=True, stars=True,
+                    exposure=0.0, grade="warm", clouds=0.0),
+    "night": dict(hdri=None, sun_az=210, strength=1.0, bg=1.0, sun_mult=1.0, moon=True, stars=True, moon_light=0.6,
+                  horizon=(0.018, 0.026, 0.045), zenith=(0.002, 0.0035, 0.008),
                   haze_density=0.0004, haze_tint=(1.0, 1.0, 1.0), fog=(0.25, 0.32, 0.45), fog_density=0.004,
-                  exposure=0.0, grade="night", clouds=0.0),
+                  exposure=1.0, grade="night", clouds=0.0),
 }
 
 
@@ -695,12 +700,16 @@ def sky(mood="golden", sun_az=None, rotation=None, clouds=None, stars=None, moon
         if tint:
             col = T.mix(1.0, col, tint, blend="MULTIPLY")
         hz = Vector(info["horizon_rgb"])
-        hz_avg = hz.copy()
         if tint:
             hz = Vector([hz[i] * tint[i] for i in range(3)])
         # desaturate horizon like the sky
         lum = 0.2126 * hz.x + 0.7152 * hz.y + 0.0722 * hz.z
         hz = Vector([lum + (c - lum) * p.get("sat", 1.0) for c in hz])
+        if p.get("key"):
+            kf = max(0.05, min(4.0, p["key"] / max(lum, 1e-4)))
+            p["strength"] = p.get("strength", 1.0) * kf
+            p["bg"] = p.get("bg", 1.0) * kf
+            res["key_factor"] = kf
         # below the horizon: replace the HDRI's fake ground by the horizon colour (seamless with haze)
         vz = T.sep(view)[2]
         below = T.math("MULTIPLY", T.math("SUBTRACT", 0.01, vz), 60.0, clamp=True)
@@ -746,7 +755,18 @@ def sky(mood="golden", sun_az=None, rotation=None, clouds=None, stars=None, moon
     lp = T.node("ShaderNodeLightPath")
     bg_cam = T.node("ShaderNodeBackground")
     bg_cam.inputs[1].default_value = p.get("bg", 1.0)
-    T.link(sky_col, bg_cam.inputs[0])
+    if p.get("clamp_sun"):
+        # hide the HDRI's own sun disk from the camera too (e.g. overcast moods with a moved sun)
+        cc = T.node("ShaderNodeMix")
+        cc.data_type = "RGBA"
+        cc.blend_type = "DARKEN"
+        cc.inputs[0].default_value = 1.0
+        T.link(sky_col, cc.inputs[6])
+        cv = max(clamp_v, 1e-3) * 0.6
+        cc.inputs[7].default_value = (cv, cv, cv, 1)
+        T.link(cc.outputs[2], bg_cam.inputs[0])
+    else:
+        T.link(sky_col, bg_cam.inputs[0])
     clamp_n = T.node("ShaderNodeMix")
     clamp_n.data_type = "RGBA"
     clamp_n.blend_type = "DARKEN"
@@ -782,6 +802,8 @@ def sky(mood="golden", sun_az=None, rotation=None, clouds=None, stars=None, moon
     else:
         energy = sun_irr * p.get("strength", 1.0) * p.get("sun_mult", 1.0)
         energy = min(energy, p.get("sun_max", 12.0))
+        if p.get("sun_energy") is not None:
+            energy = p["sun_energy"]
         col = [sun_rgb[i] * p.get("sun_tint", (1, 1, 1))[i] for i in range(3)]
         m = max(col)
         col = [c / m for c in col]
@@ -828,15 +850,8 @@ def _stars(T, view, col, strength, res):
     sel = T.math("GREATER_THAN", rnd[0], 0.62)
     bright = T.math("POWER", rnd[1], 7.0)
     s = T.math("MULTIPLY", T.math("MULTIPLY", core, sel), T.math("MULTIPLY_ADD", bright, 25.0, 0.6))
-    # second, denser layer of faint stars
-    vor2 = T.node("ShaderNodeTexVoronoi")
-    vor2.inputs["Scale"].default_value = 420.0
-    T.link(vn, vor2.inputs["Vector"])
-    core2 = T.math("POWER", T.math("SUBTRACT", 1.0, T.math("MULTIPLY", vor2.outputs["Distance"], 4.0), clamp=True), 3.0)
-    sel2 = T.math("GREATER_THAN", T.sep(vor2.outputs["Color"])[0], 0.55)
-    s = T.math("ADD", s, T.math("MULTIPLY", T.math("MULTIPLY", core2, sel2), 0.35))
-    # milky-way-ish band of faint glow
-    mw = T.noise(vn, scale=3.0, detail=6, rough=0.6)
+    # faint milky glow
+    mw = T.noise(vn, scale=3.0, detail=3, rough=0.6)
     band = T.math("MULTIPLY", T.math("POWER", mw.outputs["Fac"], 4.0), 0.004)
     vz = T.sep(vn)[2]
     hfade = T.math("POWER", T.math("MULTIPLY", vz, 4.0, clamp=True), 1.5)
@@ -878,10 +893,11 @@ def _cloud_layer(T, view, col, coverage=0.5, ctx=None, res=None, sun_dir=None, h
     px = T.math("MULTIPLY", vx, t)
     py = T.math("MULTIPLY", vy, t)
     off = _lattr(T, "env_cloud_offset", (0.0, 0.0, 0.0))
+    tw = _lattr(T, "env_cloud_time", 0.0)
     p = T.vmath("ADD", T.comb(px, py, 0.0), off)
     p = T.vmath("SCALE", p, scale=scale)
-    tw = _lattr(T, "env_cloud_time", 0.0)
-    n = T.noise(p, scale=1.0, detail=detail, rough=0.62, dist=0.15, w=tw, dims="4D")
+    p = T.vmath("ADD", p, T.comb(0.0, 0.0, tw))           # evolution through the 3rd dimension (cheaper than 4D)
+    n = T.noise(p, scale=1.0, detail=min(detail, 5.0), rough=0.62, dist=0.15)
     lo = 0.68 - 0.36 * coverage
     mr = T.node("ShaderNodeMapRange")
     T.link(n.outputs["Fac"], mr.inputs[0])
@@ -894,7 +910,7 @@ def _cloud_layer(T, view, col, coverage=0.5, ctx=None, res=None, sun_dir=None, h
     sd = Vector(sun_dir or (0, 1, 0.3))
     sh_off = (sd.x * 600 * scale, sd.y * 600 * scale, 0.0)
     p2 = T.vmath("ADD", p, sh_off)
-    n2 = T.noise(p2, scale=1.0, detail=4.0, rough=0.62, dist=0.15, w=tw, dims="4D")
+    n2 = T.noise(p2, scale=1.0, detail=2.0, rough=0.62, dist=0.15)
     mr2 = T.node("ShaderNodeMapRange")
     T.link(n2.outputs["Fac"], mr2.inputs[0])
     mr2.inputs[1].default_value = lo
@@ -986,7 +1002,7 @@ def _antitile_maps(T, asset, coord, scale, rot2=1.13, scale2=0.71, mask=None, re
 
 
 def ground_material(name="EnvGround", style="golgotha", scale=0.33, macro=1.0, res="1k", rock_slope=0.72,
-                    tint=None, grass_tint=None, wet=0.0):
+                    tint=None, grass_tint=None, wet=0.0, scrub=0.0):
     """Layered terrain material (no UVs; uses object XY):
       base soil (anti-tiled), pale cracked crust patches, limestone on steep slopes / 'rock' attribute,
       trodden 'path' attribute, macro colour variation, cavity darkening ('cav' attribute), distance
@@ -996,8 +1012,8 @@ def ground_material(name="EnvGround", style="golgotha", scale=0.33, macro=1.0, r
                          base_tint=(1.0, 0.93, 0.8), crust_tint=(0.95, 0.9, 0.8), rock_tint=(1.0, 0.95, 0.86),
                          crust_amt=0.55, far=(0.5, 0.43, 0.33), sat=0.55, val=1.45),
         "hills": dict(base="dry_ground_rocks", crust="dry_ground_01", rock="rock_boulder_dry", path="gravelly_sand",
-                      base_tint=(1.0, 0.86, 0.72), crust_tint=(1.0, 0.93, 0.82), rock_tint=(1.0, 0.96, 0.88),
-                      crust_amt=0.35, far=(0.45, 0.37, 0.28)),
+                      base_tint=(1.0, 0.92, 0.8), crust_tint=(1.0, 0.94, 0.84), rock_tint=(1.0, 0.96, 0.88),
+                      crust_amt=0.45, far=(0.5, 0.44, 0.34), sat=0.5, val=1.4),
         "plain": dict(base="dry_ground_rocks", crust="gravelly_sand", rock="rock_boulder_dry", path="gravelly_sand",
                       base_tint=(1.0, 0.9, 0.76), crust_tint=(1.0, 0.92, 0.8), rock_tint=(1.0, 0.96, 0.88),
                       crust_amt=0.4, far=(0.46, 0.38, 0.27)),
@@ -1084,12 +1100,30 @@ def ground_material(name="EnvGround", style="golgotha", scale=0.33, macro=1.0, r
         attr_g.attribute_name = "grass"
         gm = T.math("MULTIPLY", attr_g.outputs["Fac"], 0.6, clamp=True)
         col = T.mix(gm, col, tuple(grass_tint), blend="MULTIPLY")
-    # distance fade of fine detail -> average colour (kills far tiling + shimmering)
+    # distance fade of fine detail -> macro-varied average colour (kills far tiling + shimmering);
+    # outcrops / terrace risers / scrub stay visible at any distance
     cam = T.node("ShaderNodeCameraData")
     fd = T.smooth(60.0, 400.0, cam.outputs["View Distance"])
     farc = T.mix(1.0, tuple(S["far"]), mv2.outputs[0], blend="MULTIPLY")
     farc = T.mix(macro, farc, mv.outputs[0], blend="MULTIPLY")
     col = T.mix(T.math("MULTIPLY", fd, 0.85), col, farc)
+    col = T.mix(T.math("MULTIPLY", rock_mask, T.math("MULTIPLY", fd, 0.45)), col, tuple(S.get("rock_far", (0.5, 0.47, 0.42))))
+    if scrub:
+        # garrigue: dark grey-green shrub spots in patches (scrubby hillsides at distance)
+        vor = T.node("ShaderNodeTexVoronoi")
+        vor.inputs["Scale"].default_value = 0.3
+        vor.inputs["Randomness"].default_value = 1.0
+        T.link(co, vor.inputs["Vector"])
+        spot = T.smooth(0.5, 0.2, vor.outputs["Distance"])
+        rnd_ = T.sep(vor.outputs["Color"])[0]
+        n_sc = T.noise(co, scale=0.012, detail=3, dist=0.5)
+        patch = T.smooth(0.4, 0.6, n_sc.outputs["Fac"])
+        sm = T.math("MULTIPLY", T.math("MULTIPLY", spot, T.math("GREATER_THAN", rnd_, 0.35)),
+                    T.math("MULTIPLY", patch, scrub))
+        # at distance the spots average out -> blend towards a patch tint instead (no shimmer)
+        sm = T.mixf(fd, sm, T.math("MULTIPLY", patch, 0.55 * scrub))
+        sm = T.math("MULTIPLY", sm, T.math("SUBTRACT", 1.0, rock_mask), clamp=True)
+        col = T.mix(T.math("MULTIPLY", sm, 1.2, clamp=True), col, (0.09, 0.09, 0.06))
     T.link(col, bs.inputs["Base Color"])
     rg = T.node("ShaderNodeRGBToBW")
     T.link(rgh, rg.inputs[0])
@@ -1553,6 +1587,31 @@ def rock_protos(kind="boulders", tint=(1.0, 0.95, 0.86), sat=0.35, value=1.15, d
 # =============================================================================================
 # Procedural plants: grass tufts, branching trees (olive / dead tree / thorn bush)
 # =============================================================================================
+def _dedupe_mats(objs):
+    """Share identical generated materials between prototypes: 'EnvOliveBark.003' -> 'EnvOliveBark'.
+    Every unique material costs a shader compile (~seconds + ~100 MB on llvmpipe)."""
+    import re
+    st = _state()
+    mats = st.setdefault("mats", {})
+    for o in objs:
+        me = getattr(o, "data", None)
+        if me is None or not hasattr(me, "materials"):
+            continue
+        for i, m in enumerate(me.materials):
+            if m is None or not m.name.startswith("Env"):
+                continue
+            base = re.sub(r"\.\d{3}$", "", m.name)
+            keep = mats.get(base)
+            if keep is not None and keep.name not in bpy.data.materials:
+                keep = None
+            if keep is None:
+                mats[base] = m
+            elif keep != m:
+                me.materials[i] = keep
+                if m.users == 0:
+                    bpy.data.materials.remove(m)
+
+
 def _cached_proto(key, builder):
     """Build-or-load a generated prototype object (cached in /opt/assets/env/protos/gen_<key>.blend)."""
     st = _state()
@@ -1573,6 +1632,7 @@ def _cached_proto(key, builder):
             _save_cached(path, [obj])
         except Exception as e:
             print("env: gen cache save failed", e)
+    _dedupe_mats([obj])
     st["protos"][key] = obj
     return obj
 
@@ -1695,7 +1755,7 @@ def bark_material(name="EnvBark", asset="tree_bark_03", tint=(0.62, 0.6, 0.55), 
     return m
 
 
-def leaf_material(name="EnvOliveLeaf", top=(0.10, 0.13, 0.065), under=(0.36, 0.40, 0.31), trans=0.25, dry=0.0):
+def leaf_material(name="EnvOliveLeaf", top=(0.075, 0.09, 0.05), under=(0.26, 0.29, 0.23), trans=0.15, dry=0.0):
     """Olive leaf: dark grey-green top, silvery underside (Backfacing), slight translucency."""
     m = bpy.data.materials.new(name)
     m.use_nodes = True
@@ -2004,6 +2064,49 @@ class _TreeBuilder:
         return ob
 
 
+def _add_blob_crown(ob, twigs, rnd, radius=0.4, max_blobs=70):
+    """Append lumpy icosphere 'leaf blobs' (material slot 1) at a subset of twig positions."""
+    if not twigs:
+        return
+    bm = bmesh.new()
+    bm.from_mesh(ob.data)
+    ico = bmesh.new()
+    bmesh.ops.create_icosphere(ico, subdivisions=2, radius=1.0)
+    base_v = [v.co.copy() for v in ico.verts]
+    base_f = [[v.index for v in f.verts] for f in ico.faces]
+    ico.free()
+    pts = [Vector(m.col[3][:3]) for m in twigs]
+    rnd.shuffle(pts)
+    # cluster: greedy pick far-apart points
+    chosen = []
+    for p in pts:
+        if all((p - q).length > radius * 1.3 for q in chosen):
+            chosen.append(p)
+        if len(chosen) >= max_blobs:
+            break
+    lvl = bm.verts.layers.float.get("lv") or bm.verts.layers.float.new("lv")
+    for c in chosen:
+        r = radius * rnd.uniform(0.9, 1.5)
+        vs = []
+        lv = rnd.random()
+        for co in base_v:
+            n = C.noise.noise(co * 1.7 + c * 3.0)
+            q = c + Vector((co.x * r * (1 + 0.35 * n), co.y * r * (1 + 0.35 * n), co.z * r * 0.75 * (1 + 0.35 * n)))
+            v = bm.verts.new(q)
+            v[lvl] = lv
+            vs.append(v)
+        for f in base_f:
+            try:
+                nf = bm.faces.new([vs[i] for i in f])
+                nf.material_index = 1
+                nf.smooth = True
+            except ValueError:
+                pass
+    bm.to_mesh(ob.data)
+    bm.free()
+    ob.data.update()
+
+
 OLIVE_SPEC = dict(
     levels=[
         dict(seg=0.22, gnarl=0.12, up=0.0, taper=0.6, sides=10, bump=0.2, spread=0.1),               # main limbs
@@ -2071,7 +2174,13 @@ def olive_tree(seed=0, age=1.0, size=1.0, leaves=True, name=None, leaf_density=1
             tb.grow(pts[-1] - (pts[-1] - pts[-2]).normalized() * 0.05, d, L, rads[-1] * 0.85, 0, spec)
         bark = bark_material("EnvOliveBark", "bark_willow_02", tint=(0.7, 0.68, 0.64), sat=0.3, scale=1.0)
         leaf = leaf_material() if leaves else None
-        if lod >= 1:
+        if lod >= 2:
+            # distant version: leaf clumps replaced by lumpy low-poly blobs (~4-8k polygons per tree)
+            twigs = tb.twigs
+            tb.twigs = []
+            ob = tb.build(nm, bark, leaf)
+            _add_blob_crown(ob, twigs, rnd, radius=0.42 * size)
+        elif lod >= 1:
             # far version: fewer, bigger leaves per twig + fewer twigs (~1/4 of the polygons)
             ob = tb.build(nm, bark, leaf, twig_variants=2,
                           twig_kw=dict(n_leaves=8, length=0.34, leaf_len=0.13 * max(0.8, size), leaf_w=0.03))
@@ -2906,7 +3015,7 @@ def golgotha(ctx, mood="golden", crosses=3, center_occupied=True, sign=True, cit
                 region=("circle", 0, 0, 60), exclude=keep_out + [(0, -4, 7)], max_slope=40, name="EnvThorns",
                 density=lambda X, Y: smoothstep(8, 20, np.sqrt(X ** 2 + Y ** 2)))
         # a few olive trees on the plain + far scattered shrubs for scale
-        ol = [olive_tree(seed=i, age=0.6 + 0.3 * i, size=0.9, lod=1) for i in range(2)]
+        ol = [olive_tree(seed=i, age=0.6 + 0.3 * i, size=0.9, lod=2) for i in range(2)]
         scatter(ol, count=int(18 * bushes), seed=seed + 8, scale=(0.8, 1.1), align=0.0, sink=0.1,
                 region=("ring", 0, 0, 80, 400), name="EnvOlivesFar", max_slope=20,
                 density=lambda X, Y: (np.abs(X) > 40) * 1.0)
@@ -2963,8 +3072,9 @@ def night_sky(stars=True, moon=True, moon_az=210.0, moon_el=32.0, moon_light=0.3
               horizon=(0.012, 0.018, 0.032), zenith=(0.0015, 0.0025, 0.006), star_strength=1.0, clouds=0.0, **over):
     """Procedural night: deep-blue gradient sky + star field + moon disk with glow + cool moonlight lamp
     (sun object named 'Moon'). Returns the sky() result dict (res['nodes']['stars'] / ['moon'] keyable)."""
+    over.setdefault("sun_az", moon_az)
     p = sky_preset("night", stars=stars, moon=moon, moon_az=moon_az, moon_el=moon_el, moon_light=moon_light,
-                   horizon=horizon, zenith=zenith, star_strength=star_strength, clouds=clouds, sun_az=moon_az, **over)
+                   horizon=horizon, zenith=zenith, star_strength=star_strength, clouds=clouds, **over)
     p["bg"] = strength
     return sky(cfg=p, ctx=ctx)
 
@@ -2992,8 +3102,30 @@ def clouds_layer(coverage=0.5, height=1500.0, scale=0.00035, speed=(6.0, 2.0), c
 # JUDEAN HILLS (+ day -> dusk -> night time-lapse)
 # =============================================================================================
 def _hills_height(seed=0, terraces=0.6, view_az=250.0):
+    """Designed vista along the view direction: rocky spur (camera) -> drop -> valley -> rolling hills."""
     va = math.radians(view_az)
     fx, fy = math.sin(va), math.cos(va)
+
+    def base(X, Y):
+        X = np.asarray(X, float)
+        Y = np.asarray(Y, float)
+        r = np.sqrt(X ** 2 + Y ** 2)
+        al = X * fx + Y * fy                 # along the view direction
+        pe = -X * fy + Y * fx                # across
+        corridor = np.exp(-(pe / np.maximum(60.0, 0.6 * np.abs(al))) ** 2)
+        rough = 26 * fbm(X / 300.0, Y / 300.0, 4, gain=0.45, seed=seed + 1) + 16 * ridged(X / 450.0, Y / 450.0, 3, seed=seed + 2)
+        prof = 12.0 * smoothstep(25.0, -5.0, al) - 16.0 * smoothstep(20.0, 140.0, al) * smoothstep(450.0, 260.0, al) \
+            + 30.0 * smoothstep(300.0, 1000.0, al) + 10.0 * smoothstep(1000.0, 2200.0, al)
+        side = 22.0 * smoothstep(80.0, 300.0, np.abs(pe)) * smoothstep(-50.0, 150.0, al)
+        return prof + side + rough * (1 - 0.65 * corridor) * smoothstep(30.0, 140.0, r), r
+
+    def tmask(X, Y, r):
+        return smoothstep(-0.1, 0.35, fbm(X / 180.0, Y / 180.0, 2, seed=seed + 3)) * smoothstep(40, 90, r) * terraces
+
+    def riser(X, Y):
+        h, r = base(X, Y)
+        fr = h / 1.6 - np.floor(h / 1.6)
+        return smoothstep(0.74, 0.86, fr) * smoothstep(1.02, 0.96, fr) * np.clip(tmask(X, Y, r) * 1.5, 0, 1)
 
     def H(X, Y):
         X = np.asarray(X, float)
@@ -3001,14 +3133,12 @@ def _hills_height(seed=0, terraces=0.6, view_az=250.0):
         r = np.sqrt(X ** 2 + Y ** 2)
         al = X * fx + Y * fy                 # along the view direction
         pe = -X * fy + Y * fx                # across
-        # rounded limestone hills: smooth fbm + a broad ridge system
-        h = 34 * fbm(X / 260.0, Y / 260.0, 4, gain=0.45, seed=seed + 1) + 22 * ridged(X / 420.0, Y / 420.0, 3, seed=seed + 2)
-        # valley ahead of the camera, rising hills beyond it
-        h = h - 26 * np.exp(-((al - 170) / 80.0) ** 2) * smoothstep(500, 100, np.abs(pe)) + 20 * smoothstep(250, 600, al)
-        # the knoll the camera stands on: a rocky spur ending in a drop just ahead of the dead tree
-        spur = 9.0 * smoothstep(14.0, 2.0, al) * smoothstep(-80.0, -30.0, al) * np.exp(-(pe / 45.0) ** 2)
-        flat = np.exp(-((al + 10) / 45.0) ** 2 - (pe / 45.0) ** 2)
-        h = h * (1 - 0.85 * flat) + spur
+        corridor = np.exp(-(pe / np.maximum(60.0, 0.6 * np.abs(al))) ** 2)
+        rough = 26 * fbm(X / 300.0, Y / 300.0, 4, gain=0.45, seed=seed + 1) + 16 * ridged(X / 450.0, Y / 450.0, 3, seed=seed + 2)
+        prof = 12.0 * smoothstep(25.0, -5.0, al) - 16.0 * smoothstep(20.0, 140.0, al) * smoothstep(450.0, 260.0, al) \
+            + 30.0 * smoothstep(300.0, 1000.0, al) + 10.0 * smoothstep(1000.0, 2200.0, al)
+        side = 22.0 * smoothstep(80.0, 300.0, np.abs(pe)) * smoothstep(-50.0, 150.0, al)
+        h = prof + side + rough * (1 - 0.65 * corridor) * smoothstep(30.0, 140.0, r)
         if terraces:
             step = 1.6
             q = h / step
@@ -3017,8 +3147,9 @@ def _hills_height(seed=0, terraces=0.6, view_az=250.0):
             tm = smoothstep(-0.1, 0.35, fbm(X / 180.0, Y / 180.0, 2, seed=seed + 3)) * smoothstep(40, 90, r) * terraces
             h = h + (tread - h) * tm
         h += 0.35 * fbm(X * 0.08, Y * 0.08, 3, seed=seed + 4) + 0.08 * fbm(X * 0.5, Y * 0.5, 2, seed=seed + 5)
-        h += smoothstep(1500, 3800, r) * (60 + 80 * fbm(X / 1200, Y / 1200, 3, seed=seed + 6))
+        h += smoothstep(1800, 3800, r) * (60 + 80 * fbm(X / 1200, Y / 1200, 3, seed=seed + 6))
         return h
+    H.riser = riser
     return H
 
 
@@ -3029,9 +3160,8 @@ def _hills_attrs(H, terraces):
         cav = np.zeros_like(Z)
         lap = (Z[:-2, 1:-1] + Z[2:, 1:-1] + Z[1:-1, :-2] + Z[1:-1, 2:] - 4 * Z[1:-1, 1:-1])
         cav[1:-1, 1:-1] = np.clip(lap * 1.5, 0, 1)
-        # terrace risers -> exposed stone walls (high slope relative to neighbours)
-        gy, gx = np.gradient(Z)
-        riser = np.clip((np.abs(gx) + np.abs(gy)) * 0.8 - 0.5, 0, 1) * (terraces > 0)
+        # terrace risers (dry-stone walls) -> exposed pale stone
+        riser = H.riser(X, Y) if hasattr(H, "riser") else np.zeros_like(Z)
         return dict(rock=np.maximum(rock, riser), cav=cav, path=np.zeros_like(Z), dust=np.zeros_like(Z))
     return A
 
@@ -3216,14 +3346,14 @@ def judean_hills(ctx, mood="noon", timelapse=False, hour0=13.0, hour1=21.0, seed
             p["sun_az"] = sun_az
         A["sky"] = sky(cfg=p, ctx=ctx)
     H = _hills_height(seed, terraces, view_az)
-    gm = ground_material("EnvHillsGround", style="hills")
+    gm = ground_material("EnvHillsGround", style="hills", scrub=0.8)
     terr = terrain_grid("JudeanHills", H, center=(0, 20), core=120, cell=0.5, extent=4200, growth=1.07, mat_=gm,
                         attrs_fn=_hills_attrs(H, terraces))
     A["terrain"] = terr
     va = math.radians(view_az)
     fwd = Vector((math.sin(va), math.cos(va), 0))
     side = Vector((fwd.y, -fwd.x, 0))
-    tp = fwd * 0.5 + side * 2.2                       # dead tree near the spur edge, right of frame centre
+    tp = fwd * 0.5 + side * 1.2                       # dead tree near the spur edge, right of frame centre
     if dead_tree_:
         dt = dead_tree(seed=seed + 3, size=1.15)
         z = ground_z(tp.x, tp.y)
@@ -3238,36 +3368,364 @@ def judean_hills(ctx, mood="noon", timelapse=False, hour0=13.0, hour1=21.0, seed
                 min_dist=3)
         scatter(small, count=int(900 * rocks), seed=seed + 2, scale=(0.6, 2.0), align=0.9, sink=-0.3, tilt=12,
                 region=("circle", 0, 0, 60), name="EnvHillRocks")
-        scatter(boulders, count=int(400 * rocks), seed=seed + 3, scale=(0.6, 1.6), align=0.7, sink=-0.35,
-                region=("ring", 0, 0, 45, 400), name="EnvHillBouldersFar", min_dist=6)
+        scatter(rock_protos("boulders", decimate=2500), count=int(300 * rocks), seed=seed + 3, scale=(1.0, 2.6), align=0.7,
+                sink=-0.4, region=("ring", 0, 0, 45, 500), name="EnvHillBouldersFar", min_dist=8)
     if grass:
         gr = grass_protos("dry")
-        scatter(gr, count=int(12000 * grass), seed=seed + 4, scale=(0.5, 1.3), align=0.6, sink=0.02,
-                region=("circle", 0, 0, 70), max_slope=35, name="EnvHillGrass", exclude=[(tp.x, tp.y, 0.8)],
+        scatter(gr, count=int(14000 * grass), seed=seed + 4, scale=(0.6, 1.5), align=0.6, sink=0.02,
+                region=("circle", 0, 0, 45), max_slope=35, name="EnvHillGrass", exclude=[(tp.x, tp.y, 0.8)],
                 density=lambda X, Y: 0.3 + 0.7 * (fbm(X * 0.04, Y * 0.04, 2, seed=41) > -0.15))
         th = [thorn_bush(seed=i, size=0.8 + 0.3 * i) for i in range(3)]
-        scatter(th, count=int(300 * grass), seed=seed + 5, scale=(0.8, 1.6), align=0.3, sink=0.05,
+        scatter(th, count=int(150 * grass), seed=seed + 5, scale=(0.8, 1.6), align=0.3, sink=0.05,
                 region=("circle", 0, 0, 400), max_slope=35, name="EnvHillShrubs", exclude=[(0, 0, 8)])
     if olives:
-        ol = [olive_tree(seed=10 + i, age=0.5 + 0.35 * i, size=0.9, lod=1) for i in range(3)]
-        # sparse olives, mostly on terraces in the valley / slopes
-        scatter(ol, count=int(160 * olives), seed=seed + 6, scale=(0.75, 1.15), align=0.0, sink=0.1,
-                region=("ring", 0, 0, 35, 650), max_slope=22, name="EnvHillOlives", min_dist=9,
-                density=lambda X, Y: 0.25 + 0.75 * (fbm(X / 150, Y / 150, 2, seed=51) > 0.05))
-    A["fog"] = fog_volume((0, 150, 30), (500, 600, 70), 0.0012, (0.85, 0.82, 0.8), 0.4, height_falloff=0.03,
+        ol = [olive_tree(seed=10 + i, age=0.6 + 0.35 * i, size=1.2, lod=2) for i in range(3)]
+        # olive groves in clusters on the terraced slopes + scattered single trees
+        scatter(ol, count=int(1400 * olives), seed=seed + 6, scale=(0.8, 1.2), align=0.0, sink=0.1,
+                region=("ring", 0, 0, 35, 900), max_slope=24, name="EnvHillOlives", min_dist=9,
+                density=lambda X, Y: 0.04 + 0.9 * (fbm(X / 140, Y / 140, 2, seed=51) > 0.1))
+    fc = fwd * 250
+    A["fog"] = fog_volume((fc.x, fc.y, 30), (500, 500, 70), 0.0008, (0.85, 0.82, 0.8), 0.4, height_falloff=0.03,
                           name="EnvHillAir")
     _set_volume_range(600)
     release_bvh()
     A["ground"] = _scalar(H)
     A["ground_z"] = ground_z
     kz = A["knoll"][2]
-    eye = tp - fwd * 8.0 - side * 2.5
-    eye.z = ground_z(eye.x, eye.y) + 1.7
+    eye = tp - fwd * 6.0 - side * 2.8
+    eye.z = ground_z(eye.x, eye.y) + 2.6
     tgt = tp + fwd * 150
-    tgt.z = eye.z + 4.0
+    tgt.z = eye.z - 4.0
     A["cams"] = {"wide": dict(loc=tuple(eye), target=tuple(tgt), lens=24),
                  "low": dict(loc=tuple(tp - fwd * 4.0 - side * 1.2 + Vector((0, 0, ground_z(*(tp - fwd * 4.0 - side * 1.2).xy) + 0.4))),
                              target=tuple(tp + Vector((0, 0, A["dead_tree_pos"][2] + 3.0))), lens=20),
                  "high": dict(loc=tuple(tp - fwd * 40 + Vector((0, 0, kz + 30))), target=tuple(tp + fwd * 250), lens=28)}
+    A["build_time"] = time.time() - t0
+    return A
+
+
+# =============================================================================================
+# GETHSEMANE OLIVE GROVE (night)
+# =============================================================================================
+def prayer_rock(loc=(0.0, 1.25, 0.0), size=(2.7, 1.7, 1.0), seed=0, material=None, name="PrayerRock"):
+    """Large flat-topped limestone rock (for kneeling prayer). loc = ground point under its centre.
+    Returns (obj, anchors): top (hand rest point on the near (-Y) edge), kneel (in front, -Y side)."""
+    bm = bmesh.new()
+    bmesh.ops.create_uvsphere(bm, u_segments=48, v_segments=24, radius=1.0)
+    rnd = random.Random(seed)
+    sx, sy, sz = size[0] / 2, size[1] / 2, size[2]
+    for v in bm.verts:
+        x, y, z = v.co
+        n1 = C.noise.noise(Vector((x * 1.3 + seed, y * 1.3, z * 1.3)))
+        n2 = C.noise.noise(Vector((x * 4.0, y * 4.0 + seed, z * 4.0)))
+        r = 1.0 + 0.12 * n1 + 0.035 * n2
+        x, y, z = x * r * sx, y * r * sy, z * r
+        # flattened, slightly sloping top + buried bottom
+        top = 0.78 * sz + 0.06 * x / sx + 0.03 * n2
+        z = (z * 0.55 + 0.42) * sz
+        if z > top:
+            z = top + (z - top) * 0.15
+        v.co = Vector((x, y, z - 0.18))
+    me = bpy.data.meshes.new(name)
+    bm.to_mesh(me)
+    bm.free()
+    for p in me.polygons:
+        p.use_smooth = True
+    o = C.link(bpy.data.objects.new(name, me))
+    o.location = loc
+    C.assign(o, material or limestone_material("EnvPrayerRock", scale=0.6, tint=(0.82, 0.8, 0.76), streaks=0.4))
+    add_ground(o)
+    bpy.context.view_layer.update()
+    # anchors by raycast on the rock
+    x0, y0, z0 = loc
+    hit = _bvh([o]).ray_cast(Vector((x0, y0 - sy * 0.55, z0 + 10)), Vector((0, 0, -1)))
+    topz = hit[0].z if hit[0] else z0 + 0.8 * sz
+    A = dict(top=(x0, y0 - sy * 0.55, topz), top_center=(x0, y0, topz), kneel=(x0, y0 - sy - 0.55, z0),
+             facing=(0.0, 1.0, 0.0))
+    release_bvh()
+    return o, A
+
+
+def _grove_height(seed=0):
+    def H(X, Y):
+        X = np.asarray(X, float)
+        Y = np.asarray(Y, float)
+        r = np.sqrt(X ** 2 + Y ** 2)
+        # Mount of Olives: rises towards +X (east); Kidron valley + city towards -X
+        h = 0.07 * X + 0.012 * X * np.abs(X) * 0.01
+        h += 1.2 * fbm(X * 0.02, Y * 0.02, 3, seed=seed + 1) + 0.25 * fbm(X * 0.12, Y * 0.12, 3, seed=seed + 2)
+        # soft terraces along contours (steps of 1.2 m), weaker in the clearing
+        q = h / 1.2
+        fr = q - np.floor(q)
+        tread = np.floor(q) * 1.2 + 1.2 * smoothstep(0.82, 1.0, fr)
+        h = h + (tread - h) * 0.65 * smoothstep(6, 14, r)
+        # clearing around the origin
+        h = h * (1 - 0.6 * np.exp(-(r / 8.0) ** 2))
+        # Kidron valley and the city beyond (west, -X)
+        h = h - 45 * smoothstep(-120, -350, X) + 40 * smoothstep(-450, -700, X)
+        h += smoothstep(1200, 3500, r) * 80
+        return h
+    return H
+
+
+def olive_grove(ctx, mood="night", seed=0, trees=14, moon_az=200.0, moon_el=40.0, mist=True, rays=True,
+                city_lights=True, motes=True, detail=1.0):
+    """Gethsemane at night: gnarled olive trees on low stone terraces, leaf-littered ground, the large
+    prayer rock in a small clearing at the origin, cold moonlight (+ optional volumetric moon shafts and
+    drifting mist), stars, distant lamp-lit Jerusalem across the Kidron (-X). mood: 'night' (default) or
+    any SKY_PRESETS name. Returns anchors: rock, rock_top (hands), kneel (+facing), clearing, mob_path
+    (torch mob approach, list of (x, y, z)), flee_dir, trees [(x, y, z)], cams {wide, medium, dolly_a,
+    dolly_b, low, mob}, ground/ground_z."""
+    t0 = time.time()
+    A = dict(mood=mood)
+    if mood == "night":
+        A["sky"] = night_sky(moon_az=moon_az, moon_el=moon_el, moon_light=0.45, ctx=ctx, star_strength=1.2)
+    else:
+        A["sky"] = sky(mood, ctx=ctx)
+    H = _grove_height(seed)
+    gm = ground_material("EnvGroveGround", style="grove", scale=0.45)
+    terr = terrain_grid("Gethsemane", H, center=(0, 0), core=80, cell=0.35, extent=3800, growth=1.08, mat_=gm,
+                        attrs_fn=lambda X, Y, Z: dict(rock=np.clip((fbm(X * 0.1, Y * 0.1, 3, seed=61) - 0.3) * 2, 0, 1) * 0.6,
+                                                      path=smoothstep(5.0, 1.0, np.sqrt(X ** 2 + (Y + 0.5) ** 2)) * 0.5,
+                                                      cav=np.zeros_like(Z), dust=np.zeros_like(Z)))
+    A["terrain"] = terr
+    rock, ra = prayer_rock(loc=(0.0, 1.25, ground_z(0.0, 1.25)), seed=seed)
+    A["rock"] = rock
+    A["rock_top"] = ra["top"]
+    A["rock_top_center"] = ra["top_center"]
+    kx, ky, _ = ra["kneel"]
+    A["kneel"] = (kx, ky, ground_z(kx, ky))
+    A["kneel_facing"] = ra["facing"]
+    A["clearing"] = (0.0, 0.0, ground_z(0, 0))
+    # trees: jittered grid, keep the clearing + the mob path open
+    rnd = np.random.default_rng(seed + 5)
+    pts = []
+    for gx in np.arange(-40, 41, 8.5):
+        for gy in np.arange(-40, 41, 8.5):
+            x, y = gx + rnd.uniform(-2.5, 2.5), gy + rnd.uniform(-2.5, 2.5)
+            if math.hypot(x, y - 0.6) < 5.0:
+                continue
+            if abs(y - (-0.15 * x - 2)) < 2.2 and x < -4:     # path from the west (mob approach)
+                continue
+            pts.append((x, y, math.hypot(x, y)))
+    pts.sort(key=lambda p: p[2])
+    pts = pts[: max(trees * 4, 1)]
+    near = [olive_tree(seed=20 + i, age=1.0 + 0.2 * i, size=1.0 + 0.1 * (i % 2)) for i in range(2)]
+    mid = [olive_tree(seed=30 + i, age=0.8 + 0.25 * i, size=0.95, lod=1) for i in range(3)]
+    far = [olive_tree(seed=40 + i, age=0.7 + 0.3 * i, size=0.95, lod=2) for i in range(2)]
+    tposs = []
+    Pn, Pm, Pf = [], [], []
+    for i, (x, y, d) in enumerate(pts):
+        z = ground_z(x, y) - 0.1
+        rot = (0, 0, float(rnd.uniform(0, 360)))
+        sc_ = float(rnd.uniform(0.85, 1.15))
+        tposs.append((x, y, z))
+        (Pn if i < min(trees, 6) else Pm if i < trees else Pf).append((x, y, z, rot, sc_))
+    for group, protos, nm in ((Pn, near, "EnvGroveNear"), (Pm, mid, "EnvGroveMid"), (Pf, far, "EnvGroveFar")):
+        if group:
+            idx = [i % len(protos) for i in range(len(group))]
+            instancer(nm, protos, [g[:3] for g in group], [tuple(math.radians(a) for a in g[3]) for g in group],
+                      [(g[4],) * 3 for g in group], idx)
+    A["trees"] = tposs
+    # far grove (cheap) on the slopes around
+    scatter(far, count=int(260 * detail), seed=seed + 6, scale=(0.8, 1.15), align=0.0, sink=0.1,
+            region=("ring", 0, 0, 45, 260), min_dist=8, name="EnvGroveFar2", max_slope=25)
+    # terrace walls: chains of stones along contour steps + rocks + litter
+    small = rock_protos("rocks", tint=(0.85, 0.83, 0.78), value=0.9)
+    boulders = rock_protos("boulders", tint=(0.85, 0.83, 0.78), value=0.9)
+    scatter(boulders, count=int(40 * detail), seed=seed + 7, scale=(0.35, 0.8), align=0.7, sink=-0.35, tilt=10,
+            region=("circle", 0, 0, 35), exclude=[(0, 0.6, 4.5)], name="EnvGroveBoulders", min_dist=3)
+    scatter(small, count=int(1600 * detail), seed=seed + 8, scale=(1.0, 2.6), align=0.8, sink=-0.3, tilt=12,
+            region=("circle", 0, 0, 40), exclude=[(0, 0.2, 2.0)], name="EnvGroveWallStones", min_slope=12)
+    scatter(small, count=int(500 * detail), seed=seed + 9, scale=(0.5, 1.4), align=0.9, sink=-0.3,
+            region=("circle", 0, 0, 30), exclude=[(0, 0.2, 1.4)], name="EnvGroveStones")
+    gr = grass_protos("green", height=0.3)
+    scatter(gr, count=int(5000 * detail), seed=seed + 10, scale=(0.5, 1.1), align=0.6, sink=0.02,
+            region=("circle", 0, 0, 40), exclude=[(0, 0.4, 2.2)], name="EnvGroveGrass", max_slope=30,
+            density=lambda X, Y: 0.35 + 0.65 * (fbm(X * 0.08, Y * 0.08, 2, seed=71) > 0.0))
+    # atmosphere ---------------------------------------------------------------------------------
+    if mist:
+        A["mist"] = fog_volume((0, 0, 1.8), (90, 90, 6.0), 0.035, (0.6, 0.68, 0.8), 0.35, noise_scale=0.06,
+                               noise_amount=0.8, height_falloff=0.45, name="EnvGroveMist", wind=(0.25, 0.08, 0))
+    if rays:
+        A["rays"] = fog_volume((0, 0, 7), (70, 70, 16), 0.012, (0.65, 0.72, 0.85), 0.55, name="EnvGroveRays",
+                               height_falloff=0.08)
+    _set_volume_range(140)
+    if motes:
+        A["motes"] = dust_motes(center=(0, 0.5, 1.5), size=(10, 10, 3), count=500, radius=0.003,
+                                color=(0.75, 0.85, 1.0), emission=0.5, drift=(0.05, 0.02, 0.01), turbulence=0.25,
+                                seed=seed, name="EnvGroveMotes")
+    if city_lights:
+        A["city"] = _city_lights(center=(-650.0, -60.0), seed=seed)
+    # anchors -------------------------------------------------------------------------------------
+    path = []
+    for t in np.linspace(0, 1, 24):
+        x = -60 + 56 * t
+        y = -0.15 * x - 2 + 1.5 * math.sin(t * 5)
+        path.append((x, y, ground_z(x, y)))
+    A["mob_path"] = path
+    A["flee_dir"] = (0.6, 0.8, 0.0)
+    A["ground"] = _scalar(H)
+    A["ground_z"] = ground_z
+    kz = A["kneel"][2]
+    A["cams"] = {
+        "wide": dict(loc=(-7.5, -7.5, kz + 1.8), target=(0.0, 0.8, kz + 1.0), lens=28),
+        "medium": dict(loc=(-2.6, -2.4, kz + 1.25), target=(0.0, 0.6, kz + 0.9), lens=40),
+        "dolly_a": dict(loc=(-4.5, -1.8, kz + 1.2), target=(0.0, 0.4, kz + 0.9), lens=35),
+        "dolly_b": dict(loc=(-1.0, -4.6, kz + 1.2), target=(0.0, 0.4, kz + 0.9), lens=35),
+        "low": dict(loc=(1.6, -2.2, kz + 0.35), target=(0.0, 0.5, kz + 1.4), lens=24),
+        "mob": dict(loc=(2.5, 1.5, kz + 1.6), target=path[6], lens=32),
+    }
+    release_bvh()
+    A["build_time"] = time.time() - t0
+    if ctx is not None:
+        ctx.post.setdefault("grade", "night")
+    return A
+
+
+def _city_lights(center=(-650.0, -60.0), seed=0, n=90, width=700.0):
+    """Very cheap distant lamp-lit city silhouette at night: dark wall/house boxes + warm light points."""
+    rnd = np.random.default_rng(seed + 3)
+    cx, cy = center
+    xs = cx + rnd.uniform(-60, 60, 260)
+    ys = cy + rnd.uniform(-width / 2, width / 2, 260)
+    zs = np.array([ground_z(float(x), float(y), default=0.0) for x, y in zip(xs, ys)])
+    V, F = _box_arrays(xs, ys, zs - 1, rnd.uniform(6, 14, 260), rnd.uniform(6, 14, 260), rnd.uniform(4, 11, 260),
+                       rnd.uniform(-0.1, 0.1, 260))
+    wx = np.full(30, cx + 70.0)
+    wy = cy + np.linspace(-width / 2, width / 2, 30)
+    wz = np.array([ground_z(float(x), float(y), default=0.0) for x, y in zip(wx, wy)])
+    V2, F2 = _box_arrays(wx, wy, wz - 2, 3.5, width / 29 + 0.5, 12.0)
+    V, F = _merge([(V, F), (V2, F2)])
+    city = mesh_from_numpy("EnvCityNight", V, F, smooth=False)
+    C.assign(city, city_material("EnvCityNightStone", base=(0.45, 0.42, 0.38)))
+    # lights
+    lx = cx + rnd.uniform(-50, 75, n)
+    ly = cy + rnd.uniform(-width / 2, width / 2, n)
+    lz = np.array([ground_z(float(x), float(y), default=0.0) for x, y in zip(lx, ly)]) + rnd.uniform(2, 13, n)
+    me = bpy.data.meshes.new("EnvCityLightPts")
+    me.vertices.add(n)
+    me.vertices.foreach_set("co", np.c_[lx, ly, lz].astype(np.float32).ravel())
+    pts = C.link(bpy.data.objects.new("EnvCityLights", me))
+    sp = mesh_from_numpy("EnvLampDot", *_box_arrays(0, 0, -0.6, 1.2, 1.2, 1.2), smooth=False)
+    bpy.context.scene.collection.objects.unlink(sp)
+    lm = C.mat_emission("EnvLampGlow", (1.0, 0.55, 0.2), 25.0)
+    sp.data.materials.append(lm)
+    ob = instancer("EnvCityLamps", [sp], np.c_[lx, ly, lz], np.zeros((n, 3)), np.ones((n, 3)) * rnd.uniform(0.6, 1.4, (n, 1)),
+                   [0] * n)
+    bpy.data.objects.remove(pts, do_unlink=True)
+    ob.visible_shadow = False
+    return dict(objects=[city, ob])
+
+
+# =============================================================================================
+# PLAIN AT DAWN (crowds)
+# =============================================================================================
+def plain_dawn(ctx, time_of_day="sunrise", seed=0, cross_hill=True, hillside=0.6, hills=0.5, grass_kind="mixed",
+               sun_az=None, procession=False, grass=1.0, rays=True, cross_sheet=False):
+    """Vast plain / hillside at sunrise for crowds (s16a, s18b, s20b). The crowd stands on a broad gentle
+    slope around the origin facing +Y; the sun rises towards +Y (slightly right). cross_hill=True puts
+    a distant hill with an EMPTY cross at ~(25, 330) lit by the rising sun. time_of_day: 'sunrise' |
+    'dawn' | 'predawn' (deep blue, stars fading, horizon glow - for the river of lamps). hillside 0..1
+    tilts the crowd area (s16a); hills 0..1 sets how rolling the land is. procession=True returns a
+    winding 'procession' path across the hills (s20b). Returns anchors: crowd_region (x0, y0, x1, y1),
+    crowd_points(n, seed) -> [(x, y, z)], cross (anchors), cross_hill_top, procession, cams, ground."""
+    t0 = time.time()
+    A = dict(time=time_of_day)
+    if time_of_day == "predawn":
+        A["sky"] = night_sky(moon=False, horizon=(0.05, 0.05, 0.09), zenith=(0.004, 0.007, 0.02), star_strength=0.5,
+                             ctx=ctx, sun_az=sun_az or 175)
+        # horizon glow where the sun will rise
+        set_haze(color=(0.04, 0.04, 0.07), density=0.0006)
+    else:
+        mood = "sunrise" if time_of_day == "sunrise" else "dawn"
+        p = sky_preset(mood)
+        p["sun_az"] = sun_az if sun_az is not None else 172.0
+        A["sky"] = sky(cfg=p, ctx=ctx)
+    hx, hy = 25.0, 330.0
+
+    def H(X, Y):
+        X = np.asarray(X, float)
+        Y = np.asarray(Y, float)
+        r = np.sqrt(X ** 2 + Y ** 2)
+        h = -hillside * 0.12 * Y * smoothstep(-120, 0, Y) * smoothstep(160, 40, Y)      # slope down towards +Y
+        h += hills * (14 * fbm(X / 220.0, Y / 220.0, 4, seed=seed + 1) + 6 * fbm(X / 70.0, Y / 70.0, 3, seed=seed + 2)) \
+            * smoothstep(30, 120, r)
+        h += 0.5 * fbm(X * 0.04, Y * 0.04, 3, seed=seed + 3) + 0.1 * fbm(X * 0.3, Y * 0.3, 2, seed=seed + 4)
+        if cross_hill:
+            d2 = ((X - hx) / 90.0) ** 2 + ((Y - hy) / 70.0) ** 2
+            h += 34 * np.exp(-np.power(d2 * 1.4, 1.3))
+        h += smoothstep(1300, 3600, r) * (70 + 90 * fbm(X / 1300, Y / 1300, 3, seed=seed + 5))
+        return h
+    gm = ground_material("EnvPlainGround", style="plain")
+    terr = terrain_grid("Plain", H, center=(0, 20), core=150, cell=0.6, extent=4000, growth=1.07, mat_=gm,
+                        attrs_fn=lambda X, Y, Z: dict(rock=np.clip((fbm(X * 0.06, Y * 0.06, 3, seed=81) - 0.35) * 2, 0, 1) * 0.6,
+                                                      path=np.zeros_like(Z), cav=np.zeros_like(Z), dust=np.zeros_like(Z)))
+    A["terrain"] = terr
+    if cross_hill:
+        top = ground_z(hx, hy)
+        root = C.wooden_cross(loc=(hx, hy, top - 0.5), height=5.6, beam=2.5, thick=0.26, rot_z=-8, name="Cross_far")
+        for ch in root.children:
+            for ms in ch.data.materials:
+                hazify(ms)
+        bpy.context.view_layer.update()
+        A["cross"] = _cross_anchors(root, 5.6, 2.5, 0.26, 0.78, (hx, hy, top))
+        A["cross_hill_top"] = (hx, hy, top)
+        scatter(rock_protos("boulders"), count=40, seed=seed + 3, scale=(0.6, 1.5), align=0.7, sink=-0.35,
+                region=("circle", hx, hy, 40), name="EnvCrossHillRocks", exclude=[(hx, hy, 3)])
+    kinds = {"mixed": ["dry", "green"], "dry": ["dry"], "green": ["green"]}[grass_kind]
+    gr = []
+    for k in kinds:
+        gr += grass_protos(k)
+    if grass:
+        scatter(gr, count=int(14000 * grass), seed=seed + 4, scale=(0.6, 1.4), align=0.6, sink=0.02,
+                region=(-45, -40, 45, 70), max_slope=30, name="EnvPlainGrass",
+                density=lambda X, Y: 0.4 + 0.6 * (fbm(X * 0.03, Y * 0.03, 2, seed=91) > -0.2))
+        scatter(gr, count=int(9000 * grass), seed=seed + 5, scale=(0.9, 1.8), align=0.5, sink=0.02,
+                region=("ring", 0, 20, 60, 260), max_slope=30, name="EnvPlainGrassFar")
+        th = [thorn_bush(seed=i, size=0.9 + 0.3 * i) for i in range(3)]
+        scatter(th, count=int(260 * grass), seed=seed + 6, scale=(0.8, 1.6), align=0.3, sink=0.05,
+                region=("ring", 0, 20, 40, 500), name="EnvPlainShrubs", max_slope=30)
+        ol = [olive_tree(seed=50 + i, age=0.6 + 0.3 * i, size=0.9, lod=2) for i in range(2)]
+        scatter(ol, count=int(60 * grass), seed=seed + 7, scale=(0.8, 1.2), align=0.0, sink=0.1,
+                region=("ring", 0, 20, 90, 700), name="EnvPlainOlives", min_dist=15, max_slope=20)
+    scatter(rock_protos("rocks"), count=600, seed=seed + 8, scale=(0.5, 1.6), align=0.9, sink=-0.3,
+            region=(-45, -40, 45, 70), name="EnvPlainRocks")
+    p = A["sky"]["preset"]
+    if rays and time_of_day != "predawn":
+        A["rays"] = god_rays(center=(0, 120, 0), size=(300, 360, 70), density=p.get("fog_density", 0.003) * 0.6,
+                             color=tuple(p.get("fog", (1, 0.8, 0.6))), coverage=0.45, seed=seed)
+    if procession:
+        pts = []
+        for t in np.linspace(0, 1, 60):
+            x = 8 + 140 * math.sin(t * 2.6) * (0.3 + t)
+            y = -10 + 900 * t ** 1.15
+            pts.append((x, y, ground_z(x, y)))
+        A["procession"] = pts
+    A["crowd_region"] = (-30.0, -25.0, 30.0, 35.0)
+
+    def crowd_points(n=200, seed_=0, region=None, spacing=0.9):
+        x0, y0, x1, y1 = region or A["crowd_region"]
+        rr = np.random.default_rng(seed_)
+        out = []
+        tries = 0
+        while len(out) < n and tries < n * 30:
+            tries += 1
+            x, y = rr.uniform(x0, x1), rr.uniform(y0, y1)
+            if any((x - a) ** 2 + (y - b) ** 2 < spacing ** 2 for a, b, _ in out[-300:]):
+                continue
+            out.append((x, y, ground_z(x, y)))
+        return out
+    A["crowd_points"] = crowd_points
+    A["ground"] = _scalar(H)
+    A["ground_z"] = ground_z
+    z0 = ground_z(0, -20)
+    A["cams"] = {
+        "behind_crowd": dict(loc=(0.0, -32.0, z0 + 2.2), target=(hx * 0.6, hy, ground_z(hx, hy) + 8), lens=35),
+        "crane_low": dict(loc=(0.0, -18.0, ground_z(0, -18) + 1.6), target=(0.0, 60.0, 6.0), lens=24),
+        "crane_high": dict(loc=(0.0, -26.0, ground_z(0, -26) + 18.0), target=(5.0, 200.0, 10.0), lens=24),
+        "wide": dict(loc=(-30.0, -60.0, z0 + 8.0), target=(10.0, 120.0, 4.0), lens=30),
+    }
+    release_bvh()
     A["build_time"] = time.time() - t0
     return A

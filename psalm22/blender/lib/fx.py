@@ -697,6 +697,8 @@ def _flame_material(kind="candle", temp=1850, strength=1.0, name=None):
         tK = nb.madd(z, -450.0, temp + 250.0)
         bb = nb.n("ShaderNodeBlackbody", {"Temperature": tK})
         inten = nb.mul(nb.mul(core, body), 28.0 * strength)
+        bst = nb.m("MAXIMUM", nb.out(nb.sattr("fx_boost", "INSTANCER"), "Fac"), 1.0)
+        inten = nb.div(inten, nb.m("POWER", bst, 1.5))
         em = nb.n("ShaderNodeEmission", {"Color": bb, "Strength": inten})
     elif kind in ("candle", "gutter"):
         T = _time_value(nb, scale=1.0)
@@ -797,12 +799,14 @@ def flame(loc=(0, 0, 0), size=0.03, color_temp=1850, flicker=True, seed=0, light
 
 
 def lamp_field(points, size=0.035, color_temp=1850, flicker=True, lights=16, light_energy=None, shadow=False,
-               strength=1.0, seed=0, name="LampField", coll=None):
+               strength=1.0, min_angle=0.0025, seed=0, name="LampField", coll=None):
     """Hundreds of cheap distant lamp flames as ONE geometry-nodes instancer (+ a few cluster lights).
 
     points       list of world positions (flame bases) or a mesh object whose vertices are used
     lights       number of cluster point lights (0 = none). Each represents a group of lamps.
     light_energy W per lamp (summed per cluster); default 1.5 * (size/0.035)^2
+    min_angle    far flames are scaled up to stay >= this angular height (rad; 0.0025 ~ 2.5 px at 35 mm
+                 portrait) and dimmed by boost^1.5, so distant lamps read as glowing points. 0 = off
     Returns FX(root, obj, lights=[...], material).
     """
     if isinstance(points, bpy.types.Object):
@@ -821,7 +825,8 @@ def lamp_field(points, size=0.035, color_temp=1850, flicker=True, lights=16, lig
     if tname not in bpy.data.node_groups:
         t, nb, gi, go = _gn_tree(tname, [("Geometry", "NodeSocketGeometry"), ("Instance", "NodeSocketObject"),
                                          ("Size", "NodeSocketFloat", 0.035), ("Flicker", "NodeSocketFloat", 1.0),
-                                         ("FPS", "NodeSocketFloat", 24.0), ("Material", "NodeSocketMaterial")])
+                                         ("FPS", "NodeSocketFloat", 24.0), ("Min Angle", "NodeSocketFloat", 0.0025),
+                                         ("Material", "NodeSocketMaterial")])
         G = lambda k: gi.outputs[k]
         st = nb.n("GeometryNodeInputSceneTime")
         T = nb.div(st.outputs["Frame"], G("FPS"))
@@ -829,19 +834,25 @@ def lamp_field(points, size=0.035, color_temp=1850, flicker=True, lights=16, lig
         nz = nb.noise(nb.xyz(nb.mul(r, 91.0), nb.mul(r, 17.0), 0.0), scale=1.0, detail=1.0, w=nb.mul(T, 2.5))
         cs = nb.sep(nb.v("SUBTRACT", nb.out(nz, "Color"), (0.5, 0.5, 0.5)))
         fl = G("Flicker")
-        sz = nb.mul(G("Size"), nb.madd(r, 0.3, 0.85))
+        # distance boost: keep far flames >= Min Angle (radians) tall so they don't vanish / alias;
+        # the shader divides the brightness by boost^1.5 (attribute fx_boost)
+        cam = nb.n("GeometryNodeObjectInfo", {"Object": nb.out(nb.n("GeometryNodeInputActiveCamera"))}, transform_space="RELATIVE")
+        dist = nb.v("DISTANCE", nb.out(cam, "Location"), nb.out(nb.n("GeometryNodeInputPosition")))
+        boost = nb.m("MAXIMUM", nb.div(nb.mul(dist, G("Min Angle")), G("Size")), 1.0)
+        sz = nb.mul(nb.mul(G("Size"), nb.madd(r, 0.3, 0.85)), boost)
         sc = nb.xyz(sz, sz, nb.mul(sz, nb.add(1.0, nb.mul(nb.out(cs, "Z"), nb.mul(fl, 0.5)))))
         rot = nb.out(nb.n("FunctionNodeEulerToRotation", {"Euler": nb.xyz(nb.mul(nb.out(cs, "X"), nb.mul(fl, 0.35)),
                                                                          nb.mul(nb.out(cs, "Y"), nb.mul(fl, 0.35)), nb.mul(r, 6.28))}))
         io = nb.n("GeometryNodeObjectInfo", {"Object": G("Instance"), "As Instance": True})
         g = nb.out(nb.n("GeometryNodeStoreNamedAttribute", {"Geometry": G("Geometry"), "Name": "fx_rnd", "Value": r}, data_type="FLOAT", domain="POINT"))
+        g = nb.out(nb.n("GeometryNodeStoreNamedAttribute", {"Geometry": g, "Name": "fx_boost", "Value": boost}, data_type="FLOAT", domain="POINT"))
         inst = nb.out(nb.n("GeometryNodeInstanceOnPoints", {"Points": g, "Instance": nb.out(io, "Geometry"), "Rotation": rot, "Scale": sc}))
         inst = nb.out(nb.n("GeometryNodeSetMaterial", {"Geometry": inst, "Material": G("Material")}))
         nb.links.new(inst, go.inputs[0])
     amt = 0.0 if not flicker else (1.0 if flicker is True else float(flicker))
     mat = _flame_material("far", color_temp, strength)
     mod = _mod(obj, bpy.data.node_groups[tname], "LampField", Instance=src, Size=float(size), Flicker=amt,
-               FPS=float(_fps()), Material=mat)
+               FPS=float(_fps()), Min_Angle=float(min_angle), Material=mat)
     _no_shadow(obj)
     los = []
     if lights and n:
@@ -1160,7 +1171,7 @@ def campfire(loc=(0, 0, 0), size=1.0, color_temp=1700, frame_start=1, frame_end=
     parts["logs"] = lg
     # stones ring
     if stones:
-        rock = C.mat_pbr("rock_boulder_dry", scale=4.0, name="FX_campfire_rock", tint=(0.55, 0.5, 0.45))
+        rock = C.mat_pbr("rock_boulder_dry", scale=4.0, name="FX_campfire_rock", tint=(0.42, 0.4, 0.38))
         sto = []
         n = 11
         for i in range(n):
@@ -1168,10 +1179,10 @@ def campfire(loc=(0, 0, 0), size=1.0, color_temp=1700, frame_start=1, frame_end=
             rr = 0.48 * s
             sz = (0.07 + 0.04 * rnd.random()) * s
             st = C.prim("ico_sphere", name="%s_stone%d" % (name, i), subdivisions=2, radius=sz, loc=(0, 0, 0))
-            st.scale = (1.3, 1.0, 0.7)
+            st.scale = (rnd.uniform(1.0, 1.6), rnd.uniform(0.8, 1.1), rnd.uniform(0.5, 0.85))
             st.location = (rr * math.cos(a), rr * math.sin(a), sz * 0.25)
             st.rotation_euler = (0, 0, a + rnd.uniform(-0.4, 0.4))
-            C.displace(st, strength=0.3 * sz, scale=0.4 * sz)
+            C.displace(st, strength=0.45 * sz, scale=0.35 * sz, texture="VORONOI" if i % 2 else "CLOUDS")
             C.assign(st, rock)
             C.shade_smooth(st)
             _parent(st, root)
@@ -1637,7 +1648,7 @@ class _SeaFloor:
         up = max(ss((y - (y1 - sl)) / sl), ss(((y0 + sl) - y) / sl))
         z = (H + self.land) * up
         # gentle cross-profile: slightly lower in the middle, small undulation
-        z += 0.25 * (abs(x) / 30.0) ** 2 + 0.35 * math.sin(x * 0.11 + y * 0.037) * math.sin(y * 0.021)
+        z += 0.25 * (min(abs(x), 45.0) / 30.0) ** 2 + 0.35 * math.sin(x * 0.11 + y * 0.037) * math.sin(y * 0.021)
         return z
 
 
@@ -1796,7 +1807,7 @@ def _sea_wall_mesh(name, side, floor, W2, H, y0, y1, dy=1.25, coll=None):
 def red_sea(ctx=None, length=640.0, width=36.0, height=45.0, center_y=0.0, shore_slope=150.0, lighting=True,
             sun_elevation=7.0, spray=True, spray_rate=0.12, mist=True, mist_density=0.0022, haze=0.0006, collapse=None,
             zipper=(None, 60.0), seabed="coast_sand_rocks_02", seabed_scale=0.25, puddles=0.12, glow=1.0, foam=1.0,
-            frame_start=1, frame_end=None, wind=(0.0, 2.0, 0.6), seed=0, name="RedSea", coll=None):
+            frame_start=1, frame_end=None, wind=(0.0, 2.0, 0.6), wall_shadows=True, seed=0, name="RedSea", coll=None):
     """The parted Red Sea (s04a / s04b). Corridor along +Y (toward the far shore and the dawn sun),
     centred on x = 0, seabed z = 0 at the deepest point, walls `height` m (top = sea level).
 
@@ -1804,7 +1815,8 @@ def red_sea(ctx=None, length=640.0, width=36.0, height=45.0, center_y=0.0, shore
     width        corridor width at the floor (m)
     lighting     True: sunrise HDRI (sun low over the far shore, +Y) + matching sun lamp
     spray        crest spray billboards blown into the corridor (spray_rate: puffs per metre of crest per s)
-    mist         low fog volume along the corridor (core.fog_box)
+    mist / haze  one volume box: dense low mist along the seabed (mist_density) + thin aerial haze (haze)
+    wall_shadows False = walls cast no sun shadows (~15 % faster)
     collapse     None or (start_frame, duration_frames): walls crash together (s04b). zipper = (y_start, m/s)
                  makes the collapse start at y_start and travel along the corridor (y_start None = far end).
     Returns FX(root, walls=[L, R], seabed, sea, spray, mist, sun, floor_at(x, y) -> z, corridor dict).
@@ -1819,17 +1831,25 @@ def red_sea(ctx=None, length=640.0, width=36.0, height=45.0, center_y=0.0, shore
     floor = _SeaFloor(H, y0, y1, shore_slope)
     parts = {}
     # ---- seabed (corridor + under walls + dry land beyond both shores)
-    xs = np.concatenate([np.linspace(-W2 - 70, -W2 - 6, 12), np.arange(-W2 - 6, W2 + 6.01, 1.0), np.linspace(W2 + 6, W2 + 70, 12)[1:]])
+    # dense in / near the corridor, coarse far out (the land beyond the shores reaches the horizon)
+    far = 2500.0
+    xs = np.concatenate([-np.geomspace(far, W2 + 70, 14), np.linspace(-W2 - 70, -W2 - 6, 12), np.arange(-W2 - 6, W2 + 6.01, 1.0),
+                         np.linspace(W2 + 6, W2 + 70, 12), np.geomspace(W2 + 70, far, 14)])
     xs = np.unique(np.round(xs, 3))
-    ys = np.arange(y0 - 120, y1 + 120.01, 1.5)
+    ys = np.concatenate([y0 - 120 - np.geomspace(far, 1.0, 16), np.arange(y0 - 120, y1 + 120.01, 1.5),
+                         y1 + 120 + np.geomspace(1.0, far, 16)])
+    ys = np.unique(np.round(ys, 3))
     V = [(x, y, floor(x, y)) for y in ys for x in xs]
     nx = len(xs)
     F = [(j * nx + i, j * nx + i + 1, (j + 1) * nx + i + 1, (j + 1) * nx + i) for j in range(len(ys) - 1) for i in range(nx - 1)]
     bed = _mesh_obj(name + "_seabed", V, F, coll, smooth=True)
     bm = C.mat_pbr(seabed, scale=seabed_scale, name="FX_seabed", tint=(0.5, 0.44, 0.36), bump=1.0)
     _macro_variation(bm, scale=0.012, amount=0.45, tint=(0.75, 0.8, 0.85))
+    def below_sea(nb, _H=H):        # dry land above sea level (far / near shore beyond the waterline)
+        z = nb.out(nb.sep(nb.out(nb.n("ShaderNodeNewGeometry"), "Position")), "Z")
+        return nb.sub(1.0, nb.smooth(z, _H - 2.0, _H + 0.5))
     wet_material(bm, wetness=0.9, puddles=puddles, puddle_scale=0.16, ripples=1.0, ripple_dir=(1.0, 0.15), ripple_len=0.6,
-                 darken=0.4)
+                 darken=0.4, mask=below_sea)
     C.assign(bed, bm)
     _parent(bed, root)
     parts["seabed"] = bed
@@ -1849,6 +1869,8 @@ def red_sea(ctx=None, length=640.0, width=36.0, height=45.0, center_y=0.0, shore
                   Material=wm)
         C.assign(w, wm)
         _parent(w, root)
+        if not wall_shadows:          # speed lever: deforming casters re-render the sun shadow maps each frame
+            w.visible_shadow = False
         walls.append(w)
     parts["walls"] = walls
     # ---- open sea beyond the walls (sea level plane with gentle waves)
@@ -1901,18 +1923,18 @@ def red_sea(ctx=None, length=640.0, width=36.0, height=45.0, center_y=0.0, shore
     if collapse:
         f0c, dc = collapse
         tc0 = (f0c - frame_start) / fps
-        n = 2500
+        n = 3000
         yy = rng.uniform(y0 + shore_slope * 0.4, y1 - shore_slope * 0.4, n)
         zy = zip_y if zip_y is not None else center_y - length * 0.2
         # moment the two walls meet at y (c ~ 0.75)
         meet = tc0 + np.abs(yy - zy) / (zip_v or 1e6) + 0.8 * dc / fps
         fz = np.array([floor(0, y) for y in yy])
         hh = np.maximum(H - fz, 0)
-        p0 = np.stack([rng.normal(0, W2 * 0.3, n), yy, fz + hh * rng.uniform(0.2, 0.7, n)], 1)
-        v0 = np.stack([rng.normal(0, 6, n), rng.normal(0, 4, n), rng.uniform(8, 26, n) * np.clip(hh / 40, 0.3, 1.0)], 1)
-        birth = meet + rng.uniform(-0.2, 0.6, n)
-        life = rng.uniform(3.0, 6.0, n)
-        size = rng.uniform(4.0, 9.0, n) * np.clip(hh / 40.0, 0.3, 1.0)
+        p0 = np.stack([rng.normal(0, W2 * 0.3, n), yy, fz + hh * rng.uniform(0.2, 0.8, n)], 1)
+        v0 = np.stack([rng.normal(0, 7, n), rng.normal(0, 5, n), rng.uniform(12, 36, n) * np.clip(hh / 40, 0.3, 1.0)], 1)
+        birth = meet + rng.uniform(-0.2, 0.8, n)
+        life = rng.uniform(3.5, 7.0, n)
+        size = rng.uniform(7.0, 16.0, n) * np.clip(hh / 40.0, 0.3, 1.0)
         src = _cached_src("FX_src_quad", lambda: _quad("FX_src_quad"))
         bo, bmd = _particles(name + "_crash", p0, v0, birth, life, size, _spray_material("FX_spray_dense", opacity=0.75),
                              frame0=frame_start, gravity=(0, 0, -4.0), drag=0.5, wind=wind, turb=3.0, turb_scale=0.05,
@@ -1920,17 +1942,23 @@ def red_sea(ctx=None, length=640.0, width=36.0, height=45.0, center_y=0.0, shore
                              spin=0.2, seed=seed + 2, coll=coll)
         _parent(bo, root)
         parts["crash"] = bo
-    # ---- mist
-    if mist:
-        mo = C.fog_box(center=(0, center_y, 5.0), size=(width + 16, length - shore_slope, 12.0), density=mist_density,
-                       color=(0.85, 0.9, 0.95), anisotropy=0.4, noise_scale=0.06, name=name + "_mist", coll=coll)
+    # ---- air: ONE volume box = thin aerial haze everywhere + dense low mist hugging the seabed
+    if mist or haze:
+        sz = (width + 160.0, length * 1.7, H * 1.6 + 40.0)
+        ctr = (0.0, center_y + length * 0.2, sz[2] / 2 - 2.0)
+        mo = C.box(name + "_air", sz, ctr, coll=coll)
+        am, anb, aout = _new_mat(name + "_air_vol")
+        pos = anb.out(anb.n("ShaderNodeNewGeometry"), "Position")
+        z = anb.out(anb.sep(pos), "Z")
+        nz = anb.out(anb.noise(anb.v("MULTIPLY", pos, (0.05, 0.02, 0.08)), scale=1.0, detail=2.0), "Fac")
+        low = anb.m("EXPONENT", anb.mul(anb.m("MAXIMUM", z, 0.0), -1.0 / 5.0))
+        dens = anb.add(float(haze or 0.0), anb.mul(anb.mul(low, anb.smooth(nz, 0.3, 0.7)), float(mist_density if mist else 0.0) * 2.2))
+        vol = anb.n("ShaderNodeVolumePrincipled", {"Color": (0.87, 0.9, 0.95), "Density": dens, "Anisotropy": 0.45})
+        anb.links.new(anb.out(vol), aout.inputs["Volume"])
+        C.assign(mo, am)
         _parent(mo, root)
+        _no_shadow(mo)
         parts["mist"] = mo
-    if haze:
-        ho = C.fog_box(center=(0, center_y + length * 0.25, H * 0.75), size=(width + 140, length * 1.6, H * 1.5 + 30),
-                       density=haze, color=(0.9, 0.88, 0.85), anisotropy=0.5, name=name + "_haze", coll=coll)
-        _parent(ho, root)
-        parts["haze"] = ho
     # ---- lighting
     if lighting:
         el = sun_elevation if sun_elevation is not None else 2.1
@@ -2181,8 +2209,8 @@ def dust_burst(loc, start_frame, size=1.0, color=(0.72, 0.62, 0.5), count=60, gr
     return FX(root, **parts)
 
 
-def dust_pour(hand_location, start_frame, end_frame=None, rate=2500, opening=0.03, wind=(1.2, 0.0, 0.1),
-              color=(0.62, 0.55, 0.46), haze=True, floor=0.0, grain_size=0.0012, life=4.0, gusts=0.25, seed=0,
+def dust_pour(hand_location, start_frame, end_frame=None, rate=4500, opening=0.03, wind=(1.2, 0.0, 0.1),
+              color=(0.62, 0.55, 0.46), haze=True, floor=0.0, grain_size=0.0018, life=4.0, gusts=0.25, seed=0,
               name="DustPour", coll=None):
     """Fine dust trickling from an opening hand and carried off by the wind (s11b).
     hand_location  world position of the opening between the fingers
@@ -2214,14 +2242,14 @@ def dust_pour(hand_location, start_frame, end_frame=None, rate=2500, opening=0.0
     _parent(go_, root)
     parts["grains"] = go_
     if haze:
-        m = int(n / 60) + 10
+        m = int(n / 40) + 10
         tt2 = rng.uniform(t0, t1, m)
         drop = rng.uniform(0.05, 1.0, m)
         p0 = np.stack([rng.normal(0, 0.03, m) + drop * 0.1 * wind[0], rng.normal(0, 0.03, m), -drop * max(0.05, -fl) * 0.9], 1)
         v0 = np.stack([rng.normal(0.3, 0.2, m), rng.normal(0, 0.1, m), rng.uniform(-0.2, 0.1, m)], 1)
         src = _cached_src("FX_src_quad", lambda: _quad("FX_src_quad"))
         ho, _ = _particles(name + "_haze", p0, v0, tt2, rng.uniform(1.5, 3.0, m), rng.uniform(0.05, 0.12, m),
-                           _dust_material("FX_pourhaze_%d" % seed, color, 0.18), gravity=(0, 0, -0.05), drag=1.5, wind=wind,
+                           _dust_material("FX_pourhaze_%d" % seed, color, 0.3), gravity=(0, 0, -0.05), drag=1.5, wind=wind,
                            turb=0.15, turb_scale=1.0, turb_speed=0.5, grow=4.0, fade_in=0.2, fade_out=0.6, mode=3,
                            instance=src, spin=0.3, floor=fl + 0.02, floor_mode=1, seed=seed + 2, coll=coll)
         _parent(ho, root)

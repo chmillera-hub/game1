@@ -35,7 +35,7 @@ CACHE = os.path.join(MODELS, "cache")
 TEX = os.path.join(MODELS, "textures")
 FONTS = os.path.join(MODELS, "fonts")
 OBJAVERSE = os.path.join(MODELS, "objaverse", "glbs")
-BUILD_VERSION = 4            # bump to invalidate cached normalised animal blends
+BUILD_VERSION = 5            # bump to invalidate cached normalised animal blends
 
 # --------------------------------------------------------------------------------------------
 # Catalog
@@ -43,22 +43,20 @@ BUILD_VERSION = 4            # bump to invalidate cached normalised animal blend
 # size = approximate (x, y, z) extent in metres at scale 1 for variant 0.
 CATALOG = {
     # ---------------- animals ----------------
-    "lion": dict(kind="animal", desc="Adult male lion with mane (variant 0) / lioness (variant 1). Rigged; "
-                 "the sculpt has a roaring open mouth, idle/walk close it.", variants=2, size=(0.55, 2.45, 1.15),
-                 source="objaverse"),
-    "bull": dict(kind="animal", desc="Massive dark bull (Cape-buffalo build, 'bull of Bashan'). Variant 1 = "
-                 "dark wildebeest-like wild ox (lighter build).", variants=2, size=(0.9, 3.0, 1.55), source="objaverse"),
-    "ox": dict(kind="animal", desc="Domestic brown ox / cow for the nativity stable (short horns).", variants=1,
-               size=(0.6, 2.3, 1.45), source="objaverse"),
-    "dog": dict(kind="animal", desc="Wild dog for the pack: variant 0 African wild dog (mottled), variant 1 grey "
-                "wolf, variants 2.. = colour/size variations of 0/1 for pack variety.", variants=4,
-                size=(0.3, 1.1, 0.75), source="objaverse"),
-    "donkey": dict(kind="animal", desc="Grey donkey (wild-ass build) for the nativity.", variants=1,
-                   size=(0.45, 1.95, 1.35), source="objaverse"),
-    "sheep": dict(kind="animal", desc="Woolly sheep (static sculpt, rigged for idle/walk).", variants=1,
-                  size=(0.45, 1.2, 0.85), source="objaverse"),
-    "dove": dict(kind="animal", desc="Dove: variant 0 white dove (CC0 museum scan, perched, static), variant 1 "
-                 "rock pigeon with spread wings (static).", variants=2, size=(0.15, 0.32, 0.25), source="objaverse"),
+    "lion": dict(kind="animal", desc="v0 adult male lion (rigged: idle/walk/stalk/run/roar; hair-curve mane fringe). "
+                 "v1 lioness (static roaring pose).", variants=2, size=(0.78, 2.5, 1.38), source="objaverse"),
+    "bull": dict(kind="animal", desc="v0 massive black Cape-buffalo bull, 'bull of Bashan' (rigged: idle/walk/run/toss/paw). "
+                 "v1 dark wildebeest-like wild ox (static).", variants=2, size=(1.4, 3.0, 1.6), source="objaverse"),
+    "ox": dict(kind="animal", desc="Domestic brown ox/cow for the nativity (rigged: idle/walk/graze).", variants=1,
+               size=(0.8, 3.0, 1.45), source="objaverse"),
+    "dog": dict(kind="animal", desc="Wolf / wild dog for the pack (rigged: idle/walk/prowl/trot/run/snarl). Use tint, "
+                "scale and offset for pack variety.", variants=1, size=(0.36, 1.4, 0.85), source="objaverse"),
+    "donkey": dict(kind="animal", desc="Grey donkey for the nativity (rigged: idle/walk/graze).", variants=1,
+                   size=(0.6, 2.1, 1.4), source="objaverse"),
+    "sheep": dict(kind="animal", desc="Woolly sheep (rigged: idle/walk/graze).", variants=1, size=(0.4, 1.26, 0.8),
+                  source="objaverse"),
+    "dove": dict(kind="animal", desc="v0 white dove perched (CC0 museum scan, static), v1 rock pigeon with spread "
+                 "wings (static).", variants=2, size=(0.15, 0.32, 0.25), source="objaverse"),
     # ---------------- props ----------------
     "gladius": dict(kind="prop", desc="Roman gladius (Pompeii type): steel blade, wooden guard/pommel, bone grip. "
                     "Lying flat, tip toward +X. opts: upright=True (pommel on ground, tip up).",
@@ -778,9 +776,9 @@ def mat_gem(kind="ruby"):
 
 def mat_bone(tone=0.0, scale=80.0):
     """Polished bone / ivory (tone 0 = pale, 1 = darker, handled & stained)."""
-    return _pmat("A_bone_%d_%d" % (int(tone * 10), int(scale)), (0.56 - 0.12 * tone, 0.47 - 0.12 * tone, 0.33 - 0.11 * tone),
-                 (0.66 - 0.08 * tone, 0.58 - 0.09 * tone, 0.43 - 0.1 * tone), scale=scale, rough=0.36, rough2=0.5,
-                 bump=0.2, bump_scale=scale * 8, bump_dist=0.0001, sss=0.3, sss_radius=(1.0, 0.7, 0.45),
+    return _pmat("A_bone_%d_%d" % (int(tone * 10), int(scale)), (0.44 - 0.1 * tone, 0.35 - 0.1 * tone, 0.22 - 0.08 * tone),
+                 (0.56 - 0.08 * tone, 0.47 - 0.09 * tone, 0.32 - 0.08 * tone), scale=scale, rough=0.36, rough2=0.5,
+                 bump=0.2, bump_scale=scale * 8, bump_dist=0.0001, sss=0.12, sss_radius=(1.0, 0.7, 0.45),
                  sss_scale=0.003, c3=(0.30, 0.20, 0.10), c3_scale=scale * 0.8, c3_amount=0.18, c3_rough=0.55, spec=0.5)
 
 
@@ -811,8 +809,8 @@ def mat_wood_pbr(asset="rough_wood", scale=2.0, tint=(0.8, 0.68, 0.55)):
 
 
 def mat_rope():
-    return _pmat("A_rope", (0.24, 0.17, 0.10), (0.36, 0.27, 0.16), scale=60.0, rough=0.9, bump=0.6,
-                 bump_scale=400.0, bump_dist=0.0005, sheen=0.4, spec=0.3)
+    return _pmat("A_rope", (0.22, 0.155, 0.09), (0.33, 0.25, 0.15), scale=60.0, rough=0.9, bump=0.6,
+                 bump_scale=400.0, bump_dist=0.0005, sheen=0.12, spec=0.25)
 
 
 def mat_sponge():
@@ -1339,30 +1337,53 @@ def _metaball_mesh(name, elements, resolution, coll, threshold=0.6):
 
 
 def _build_astragalus(variant=0, rnd=None, coll=None, root=None, **o):
-    """Sheep astragalus (knucklebone) ~27x18x15 mm: blocky bone with pulley-shaped (trochlear) ends,
-    a waist, a concave plantar face and a deep lateral pit; metaball-sculpted, polished-bone material."""
+    """Sheep astragalus (knucklebone) ~27x18x15 mm: blocky bone with pulley-shaped (trochlear) ends, a
+    waist, a concave plantar face and a deep lateral pit. Union of primitives -> voxel remesh -> smooth ->
+    analytic grooves/pits -> fine noise; polished-bone material."""
+    import numpy as np
     rnd = rnd or random.Random(variant)
-    j = lambda a: a * (1 + rnd.uniform(-0.08, 0.08))
-    mm = 0.001
-    els = [
-        ("ELLIPSOID", (0, 0, 0), j(9.5 * mm), (1.35, 0.95, 0.78), None, False),
-        ("CAPSULE", (j(8.5 * mm), 0, j(1.5 * mm)), j(5.2 * mm), (j(4.5 * mm), 1, 1), (0, 0, 90), False),
-        ("CAPSULE", (-j(9 * mm), 0, -j(1.0 * mm)), j(4.8 * mm), (j(4.0 * mm), 1, 1), (0, 0, 90), False),
-        ("BALL", (j(10.5 * mm), j(0.5 * mm), j(6.8 * mm)), j(3.6 * mm), None, None, True),        # proximal groove
-        ("CAPSULE", (j(11.5 * mm), 0, j(0.5 * mm)), j(2.2 * mm), (j(2.5 * mm), 1, 1), (0, 90, 0), True),
-        ("BALL", (-j(11 * mm), 0, -j(5.5 * mm)), j(3.2 * mm), None, None, True),                # distal groove
-        ("ELLIPSOID", (j(1 * mm), -j(10.5 * mm), j(0.5 * mm)), j(4.6 * mm), (1.5, 0.55, 0.9), None, True),  # lateral pit
-        ("ELLIPSOID", (j(0.5 * mm), 0, -j(9 * mm)), j(5 * mm), (1.7, 1.0, 0.45), None, True),   # concave face
-        ("ELLIPSOID", (-j(2 * mm), j(8.5 * mm), j(2.5 * mm)), j(3.2 * mm), (1.6, 0.6, 0.8), None, False),  # ridge
-        ("BALL", (j(3 * mm), j(6 * mm), -j(6 * mm)), j(2.0 * mm), None, None, True),
-    ]
-    o_ = _metaball_mesh("astragalus", els, 0.0006, coll)
-    _noise_displace(o_, 0.00025, 600.0, seed=variant + 0.5)
-    _noise_displace(o_, 0.0004, 150.0, seed=variant + 1.5)
-    _assign(o_, mat_bone(0.2 + 0.25 * (variant % 3), scale=300.0))
-    o_.rotation_euler = (0, 0, rnd.uniform(-0.3, 0.3))
-    _ground([o_])
-    return [o_]
+    j = lambda a: a * (1 + rnd.uniform(-0.07, 0.07))
+    bm = bmesh.new()
+    bmesh.ops.create_cube(bm, size=1.0)
+    bmesh.ops.scale(bm, vec=(j(0.0235), j(0.0165), j(0.0135)), verts=bm.verts)
+    for (cx, cz, r, ln) in ((j(0.0085), j(0.0015), j(0.0061), j(0.0172)), (-j(0.009), -j(0.001), j(0.0053), j(0.015))):
+        g = bmesh.ops.create_cone(bm, cap_ends=True, segments=24, radius1=r, radius2=r, depth=ln)
+        vs = g["verts"]
+        bmesh.ops.rotate(bm, verts=vs, cent=(0, 0, 0), matrix=Matrix.Rotation(math.radians(90), 3, "X"))
+        bmesh.ops.translate(bm, verts=vs, vec=(cx, 0, cz))
+    ob = _bm_to_obj("astragalus", bm, coll)
+    _remesh(ob, 0.00035)
+    sm = ob.modifiers.new("smooth", "SMOOTH")
+    sm.factor = 0.8
+    sm.iterations = 8
+    _apply_mods(ob)
+    me = ob.data
+    n = len(me.vertices)
+    co = np.empty(n * 3, np.float32)
+    me.vertices.foreach_get("co", co)
+    co = co.reshape(-1, 3)
+    nr = np.empty(n * 3, np.float32)
+    me.vertices.foreach_get("normal", nr)
+    nr = nr.reshape(-1, 3)
+    x, y, z = co[:, 0], co[:, 1], co[:, 2]
+    d = np.zeros(n, np.float32)
+    g = lambda v, s: np.exp(-(v / s) ** 2)
+    d += j(0.0019) * g(y, 0.0026) * np.clip((x - 0.003) / 0.004, 0, 1) * (z > 0)          # proximal trochlear groove
+    d += j(0.0015) * g(y, 0.0024) * np.clip((-x - 0.004) / 0.004, 0, 1) * (z < 0)         # distal groove
+    d += j(0.0024) * g(x - 0.001, 0.0042) * g(y + 0.0095, 0.004) * g(z - 0.0005, 0.0035)  # lateral pit
+    d += j(0.0014) * g(x, 0.0068) * g(y, 0.0052) * g(z + 0.0075, 0.003)                     # concave plantar face
+    d += j(0.0008) * g(x + 0.001, 0.003) * g(np.abs(y) - 0.008, 0.002)                       # waist
+    d -= j(0.0009) * g(x + 0.002, 0.004) * g(y - 0.0085, 0.0025) * g(z - 0.003, 0.003)    # medial ridge
+    co -= nr * d[:, None]
+    me.vertices.foreach_set("co", co.ravel())
+    me.update()
+    _noise_displace(ob, 0.00006, 900.0, seed=variant + 0.5)
+    _noise_displace(ob, 0.00016, 180.0, seed=variant + 1.5)
+    _smooth(ob)
+    _assign(ob, mat_bone(0.2 + 0.25 * (variant % 3), scale=300.0))
+    ob.rotation_euler = (0, 0, rnd.uniform(-0.3, 0.3))
+    _ground([ob])
+    return [ob]
 
 
 def _build_dice(variant=0, rnd=None, coll=None, root=None, top=None, size=0.016, **o):
@@ -1553,9 +1574,10 @@ def _build_oil_lamp(variant=0, rnd=None, coll=None, root=None, **o):
     """Herodian lamp: round wheel-made body, flat-ish top with large filling hole, spatulate nozzle (-Y)."""
     R, H = 0.036, 0.028
     # body as lathe (closed, then remesh union with nozzle, then cut holes)
-    prof = [(0, 0.0), (0.016, 0.0), (0.02, 0.0015), (0.03, 0.006), (R, 0.014), (R * 0.97, 0.021),
-            (0.031, 0.025), (0.024, 0.0265), (0.018, 0.024), (0, 0.022)]
-    body = _lathe("lamp_body", prof, 48, coll)
+    prof = [(0, 0.0), (0.017, 0.0), (0.02, 0.0018), (0.029, 0.0065), (0.0345, 0.0125), (0.036, 0.0168),
+            (0.0352, 0.0208), (0.0325, 0.0236), (0.026, 0.0247), (0.0145, 0.0249), (0.0112, 0.0262),
+            (0.0094, 0.0255), (0.0082, 0.0238), (0, 0.022)]
+    body = _lathe("lamp_body", prof, 64, coll)
     # nozzle loft (along -Y)
     secs = []
     n = 12
@@ -1580,7 +1602,7 @@ def _build_oil_lamp(variant=0, rnd=None, coll=None, root=None, **o):
     bm = bmesh.new()
     bm.from_mesh(lamp.data)
     wick = Vector((0, -0.057, 0.0185))
-    kill = [v for v in bm.verts if (math.hypot(v.co.x, v.co.y) < 0.0078 and v.co.z > 0.015)
+    kill = [v for v in bm.verts if (math.hypot(v.co.x, v.co.y) < 0.0083 and v.co.z > 0.0225)
             or ((Vector((v.co.x, v.co.y, 0)) - Vector((wick.x, wick.y, 0))).length < 0.0045 and v.co.z > 0.014)]
     bmesh.ops.delete(bm, geom=kill, context="VERTS")
     # thicken: solidify later
@@ -1696,8 +1718,8 @@ def _build_candle(variant=0, rnd=None, coll=None, root=None, height=0.22, radius
 def melt_candle(root, f0, f1, amount=0.75, ease=True):
     """Animate a load('candle') instance melting between frames f0..f1: the body shortens by `amount`
     (fraction of its height), the top cup (with wick and drips) follows, the puddle spreads. Updates
-    nothing else - re-read A.anchor(root, 'flame') per frame for the flame (or parent the flame to the
-    child object named 'top*', whose origin is the wax surface centre)."""
+    root['flame'] is keyframed too, so A.anchor(root, 'flame') follows after scene.frame_set(f); or simply
+    parent the flame to the child object named 'top*' (origin = wax surface centre, wick tip at +12.5 mm)."""
     body = next(c for c in root.children if c.name.startswith("body"))
     top = next(c for c in root.children if c.name.startswith("top"))
     pud = next(c for c in root.children if c.name.startswith("puddle"))
@@ -1711,6 +1733,9 @@ def melt_candle(root, f0, f1, amount=0.75, ease=True):
         body.keyframe_insert("scale", frame=f)
         top.location = (0, 0, z0 + h * k)
         top.keyframe_insert("location", frame=f)
+        fl = list(root["flame"])
+        root["flame"] = [fl[0], fl[1], z0 + h * k + 0.0125]
+        root.keyframe_insert('["flame"]', frame=f)
         s = 0.45 + 1.1 * e
         pud.scale = (s, s * (1 + 0.1 * math.sin(e * 3)), 0.6 + 0.8 * e)
         pud.keyframe_insert("scale", frame=f)
@@ -1719,8 +1744,8 @@ def melt_candle(root, f0, f1, amount=0.75, ease=True):
 def _build_potsherd(variant=0, rnd=None, coll=None, root=None, size=0.08, **o):
     """Curved shard cut from a jar wall; fresh break edges get the lighter 'break' clay."""
     rnd = rnd or random.Random(variant * 7 + 1)
-    R = rnd.uniform(0.12, 0.2)                 # vessel radius at the shard
-    th = rnd.uniform(0.006, 0.009)
+    R = rnd.uniform(0.07, 0.13)                 # vessel radius at the shard
+    th = rnd.uniform(0.0045, 0.0068)
     # irregular outline polygon in (s, t) metres
     nv = rnd.randint(5, 8)
     outline = []
@@ -1753,7 +1778,7 @@ def _build_potsherd(variant=0, rnd=None, coll=None, root=None, size=0.08, **o):
     bmesh.ops.subdivide_edges(bm, edges=[e for e in bm.edges if not (e.verts[0].co.z != e.verts[1].co.z)],
                               cuts=3, use_grid_fill=False)
     # bend onto the vessel radius (cylinder around Y axis at z=-R) plus vertical curvature
-    curv_v = rnd.uniform(-0.6, 1.2) / R
+    curv_v = rnd.uniform(-0.2, 1.6) / R
     for v in bm.verts:
         x, y, z = v.co
         ang = x / R
@@ -1842,7 +1867,7 @@ def _place_on_band(obj, r, ang, z, tilt=0.0):
 
 def _build_crown(variant=0, rnd=None, coll=None, root=None, **o):
     rnd = rnd or random.Random(variant + 21)
-    gold = mat_gold("yellow" if variant != 2 else "pale")
+    gold = mat_gold("yellow")
     parts = []
     R = 0.092
     gems = ["ruby", "emerald", "sapphire", "ruby", "amethyst", "emerald", "garnet", "sapphire"]
@@ -2188,9 +2213,10 @@ def _build_flatbread(variant=0, rnd=None, coll=None, root=None, radius=0.11, **o
     if variant == 1:
         a_, b_ = _split_bread(o_, rnd, coll)
         a_.name, b_.name = "half_a", "half_b"
-        a_.location.x -= 0.004
-        b_.location.x += 0.004
-        b_.rotation_euler.z = math.radians(-4)
+        a_.location.x -= 0.007
+        b_.location.x += 0.007
+        a_.rotation_euler.z = math.radians(3)
+        b_.rotation_euler.z = math.radians(-5)
         for p in (a_, b_):
             _ground([p])
         return [a_, b_]
@@ -2207,14 +2233,16 @@ def _split_bread(o_, rnd, coll):
         C.link(d, coll)
         # cutter: big box on the opposite side with a jagged face at x ~ 0
         bm = bmesh.new()
-        ny, nz = 26, 6
+        ny, nz = 64, 12
         verts = []
+        rs = random.Random(77)
         for j in range(nz + 1):
             row = []
             for i in range(ny + 1):
                 y = -0.2 + 0.4 * i / ny
                 z = -0.05 + 0.12 * j / nz
-                x = 0.006 * math.sin(y * 70 + rnd.random()) + 0.004 * (rnd.random() - 0.5) + 0.01 * math.sin(y * 18)
+                x = (0.006 * math.sin(y * 70 + 1.3) + 0.01 * math.sin(y * 18) + 0.004 * math.sin(z * 90 + y * 40)
+                     + 0.003 * (rs.random() - 0.5))
                 row.append(bm.verts.new((x, y, z)))
             verts.append(row)
         far = [[bm.verts.new((side * 0.3, -0.2 + 0.4 * i / ny, -0.05 + 0.12 * j / nz)) for i in range(ny + 1)]
@@ -2254,7 +2282,7 @@ def _split_bread(o_, rnd, coll):
                         v.co.x += 0.0025 * noise.noise(v.co * 160) * (-side)
         pieces.append(d)
     bpy.data.objects.remove(o_)
-    return pieces[0], pieces[1]
+    return pieces[1], pieces[0]          # (-X half, +X half): side=-1 removed the -X region
 
 
 def _build_table(variant=0, rnd=None, coll=None, root=None, **o):
@@ -2264,7 +2292,7 @@ def _build_table(variant=0, rnd=None, coll=None, root=None, **o):
     else:
         W, D, H, top_t = 1.4, 0.7, 0.42, 0.05
     wood = mat_wood_pbr("rough_wood", 2.0, (0.72, 0.6, 0.48))
-    wood2 = mat_wood_pbr("wood_table_worn", 1.5, (0.8, 0.7, 0.6))
+    wood2 = mat_wood_pbr("wood_table_worn", 1.5, (0.62, 0.55, 0.5))
     parts = []
     nplank = 4
     pw = D / nplank
@@ -2280,7 +2308,7 @@ def _build_table(variant=0, rnd=None, coll=None, root=None, **o):
         # warp + worn edges
         for v in pl.data.vertices:
             v.co.z += 0.004 * math.sin(v.co.x * 2.1 + k) * (1 if v.co.z > 0 else 1)
-        _assign(pl, wood if k % 2 == 0 else wood2)
+        _assign(pl, wood)
         _smooth(pl, 35)
         pl.rotation_euler.z = rnd.uniform(-0.004, 0.004)
         parts.append(pl)
@@ -2473,7 +2501,7 @@ def ground_speed(name, action, variant=0, speed=1.0):
 
 
 def animal(name, action="idle", loc=(0, 0, 0), rot_z=0.0, start_frame=1, speed=1.0, coll=None, variant=0,
-           scale=1.0, move=False, path=None, end_frame=None, eye_glow=0.0, tint=None, offset=0.0, **opts):
+           scale=1.0, move=False, path=None, end_frame=None, eye_glow=0.0, tint=None, offset=0.0, fur=None, **opts):
     """Create a rigged animal playing a looping action.
     action: one of list_actions(name). start_frame: scene frame where the cycle starts (earlier frames
     hold the first pose). speed: playback speed multiplier (2.0 = twice as fast).
@@ -2482,7 +2510,7 @@ def animal(name, action="idle", loc=(0, 0, 0), rot_z=0.0, start_frame=1, speed=1
     of travel (overrides move). offset: cycle phase offset in seconds (pack variety).
     eye_glow: 0..1 eyeshine strength (glinting eyes in the dark). tint: (r, g, b) colour multiplier offset,
     e.g. (-0.3, -0.3, -0.3) darker. Returns the armature object (root)."""
-    arm = load(name, loc=loc, rot_z=rot_z, scale=scale, coll=coll, variant=variant)
+    arm = load(name, loc=loc, rot_z=rot_z, scale=scale, coll=coll, variant=variant, fur=fur)
     if eye_glow:
         set_eye_glow(arm, eye_glow)
     if tint is not None:
@@ -2514,10 +2542,9 @@ def play(arm, action, start_frame=1, speed=1.0, offset=0.0, blend_in=0, replace=
     name = arm["asset"]
     act = _get_action(arm, action)
     ad = arm.animation_data or arm.animation_data_create()
-    if replace:
+    if replace:                     # (the active action, if any, holds root motion keys: keep it)
         for t in list(ad.nla_tracks):
             ad.nla_tracks.remove(t)
-        ad.action = None
     tr = ad.nla_tracks.new()
     tr.name = action
     fr = act.frame_range
@@ -2740,7 +2767,31 @@ def _glb_path(uid):
     return p
 
 
-def _animal_instance(name, variant, coll, **o):
+def set_fur(arm, enable=True, density=1.0):
+    """Toggle / thin the hair-curve fur of an animal instance (lion v0 has a fur mane by default).
+    density multiplies the strand count (0.3 = cheaper background animals)."""
+    for c in arm.children:
+        md = c.modifiers.get("Fur") if c.type == "CURVES" else None
+        if md is None:
+            continue
+        c.hide_render = not enable
+        md.show_render = md.show_viewport = bool(enable)
+        ids = {sk.name: sk.identifier for sk in md.node_group.interface.items_tree if getattr(sk, "in_out", "") == "INPUT"}
+        base = md.get("_density0")
+        if base is None:
+            base = md[ids["Density"]]
+            md["_density0"] = base
+        md[ids["Density"]] = float(base) * density
+
+
+def _animal_instance(name, variant, coll, fur=None, **o):
+    arm = _animal_instance0(name, variant, coll)
+    if fur is not None:
+        set_fur(arm, enable=bool(fur), density=(fur if not isinstance(fur, bool) else 1.0))
+    return arm
+
+
+def _animal_instance0(name, variant, coll):
     a, vi = _variant(name, variant)
     key = (name, vi)
     m = _MASTERS.get(key)
@@ -2771,15 +2822,27 @@ def _animal_instance(name, variant, coll, **o):
         if k.startswith("_"):
             del arm[k]
     C.link(arm, coll)
+    remap = {}
+    new = []
     for k in kids:
         d = k.copy()
         d.animation_data_clear()
         C.link(d, coll)
         d.parent = arm
+        if k.parent_type == "BONE":
+            d.parent_type, d.parent_bone = "BONE", k.parent_bone
         d.matrix_parent_inverse = k.matrix_parent_inverse.copy()
+        remap[k] = d
+        new.append(d)
+    for d in new:
         for md in d.modifiers:
             if md.type == "ARMATURE":
                 md.object = arm
+            elif md.type == "NODES":
+                for key in list(md.keys()):
+                    v = md[key]
+                    if isinstance(v, bpy.types.Object) and v in remap:
+                        md[key] = remap[v]
     return arm
 
 
@@ -2829,6 +2892,18 @@ def _build_animal_cache(name, vi):
         ob = bpy.data.objects.new("tmp", me)
         tmpc.objects.link(ob)
         _join([body, ob])
+    # glTF splits vertices along UV/normal seams: weld them (UVs are per-loop, kept) so skinning,
+    # corrective smooth and island detection see one connected surface; drop imported custom normals.
+    with bpy.context.temp_override(object=body, active_object=body, selected_objects=[body]):
+        try:
+            bpy.ops.mesh.customdata_custom_splitnormals_clear()
+        except Exception as e:
+            print("assets: custom normals clear failed:", e)
+    bm = bmesh.new()
+    bm.from_mesh(body.data)
+    bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=a.get("weld", 1e-5) * 1.0)
+    bm.to_mesh(body.data)
+    bm.free()
     me = body.data
     # normalise: rotate to face -Y, scale to target height, base at z=0, centred
     me.transform(Matrix.Rotation(math.radians(a.get("rot", 0.0)), 4, "Z"))
@@ -2857,6 +2932,14 @@ def _build_animal_cache(name, vi):
                  Matrix.Diagonal((s, s, s, 1)) @ Matrix.Translation((-float(np.median(co[:, 0])), -(mn[1] + mx[1]) / 2, -mn[2])))
     me.update()
     a = _xf_landmarks(a)
+    for (c, r, zt) in a.get("flatten", []):        # e.g. tuck the cow's udder up into the belly (ox)
+        c = Vector(c)
+        for v in me.vertices:
+            d = (Vector((v.co.x, v.co.y, 0)) - Vector((c.x, c.y, 0))).length
+            if d < r and v.co.z < zt and v.co.z > c.z - r:
+                f = (1 - d / r) ** 0.5
+                v.co.z = v.co.z + (zt - v.co.z) * 0.9 * f
+        me.update()
     for p in me.polygons:
         p.use_smooth = True
     _fix_animal_materials(me, a)
@@ -3095,6 +3178,8 @@ def _make_rig(name, vi, a, body, coll):
     cs.iterations = a.get("smooth_iter", 6)
     cs.factor = 0.5
     cs.use_only_smooth = False
+    if a.get("fur"):
+        _add_fur(body, a)
     if a.get("eyes"):
         _add_eyes(arm, a, "head", coll)
     arm["ik_bones"] = ["IK_FL", "IK_FR", "IK_HL", "IK_HR"]
@@ -3436,6 +3521,11 @@ _def_animal(
     "lion", uid="48fc306182ea411a92eb10ceb32a7ca9", title="Lion", author="hendrikReyneke (Sketchfab)",
     license="CC-BY-4.0", rot=0.0, height=1.38, sheen=0.45, rough_min=0.6,
     eyes=(0.095, -1.0, 1.265), eye_r=0.017, jaw_closed=-30.0,
+    fur=dict(regions=[((0, -0.78, 1.12), 0.4, 1.0), ((0, -0.64, 0.82), 0.26, 0.55), ((0, -0.92, 1.3), 0.2, 0.6),
+                      ((-0.45, 1.2, 0.07), 0.12, 0.7)],
+             exclude=[((0, -1.13, 1.13), 0.2), ((0, -1.1, 0.97), 0.13)], base=0.0,
+             density=45000, length=0.075, base_length=0.006, radius=0.0009, gravity=0.45, back=0.7, noise=0.3,
+             tint=(0.85, 0.72, 0.55)),
     rig=dict(
         spine=[(0, 0.68, 0.98), (0, 0.05, 0.86), (0, -0.52, 0.98)],
         neck=[(0, -0.52, 1.0), (0, -0.86, 1.15)],
@@ -3508,7 +3598,7 @@ _def_animal(
 _def_animal(
     "ox", uid="dc8185e4e21747fb8b394e40d3ec125a", title="Cow", author="hendrikReyneke (Sketchfab)",
     license="CC-BY-4.0", rot=0.0, height=1.45, plot_height=1.55, sheen=0.25, rough_min=0.6,
-    hsv=(0.5, 0.72, 0.62), eyes=(0.12, -1.3, 1.29), eye_r=0.017,
+    hsv=(0.5, 0.72, 0.62), eyes=(0.12, -1.3, 1.29), eye_r=0.017, flatten=[((0, 0.47, 0.52), 0.2, 0.63)],
     rig=dict(
         spine=[(0, 0.75, 1.32), (0, 0.1, 1.3), (0, -0.6, 1.35)],
         neck=[(0, -0.6, 1.3), (0, -1.25, 1.35)],
@@ -3525,7 +3615,7 @@ _def_animal(
 _def_animal(
     "donkey", uid="54b3933b79a84b608c6e498c072061a9", title="Wild Ass", author="hendrikReyneke (Sketchfab)",
     license="CC-BY-4.0", rot=0.0, height=1.4, plot_height=1.5, x_shift=0.06, sheen=0.35, rough_min=0.6,
-    hsv=(0.505, 0.9, 0.62), eyes=(0.16, -0.84, 1.2), eye_r=0.016,
+    hsv=(0.505, 0.85, 0.42), eyes=(0.16, -0.84, 1.2), eye_r=0.016,
     rig=dict(
         spine=[(0.06, 0.8, 1.2), (0.06, 0.2, 1.15), (0.06, -0.35, 1.25)],
         neck=[(0.06, -0.35, 1.2), (0.06, -0.82, 1.35)],
@@ -3565,3 +3655,237 @@ _def_animal(
 _def_animal(
     "dove", uid="8cdbd8890ed84c228191cbe6241b420d", title="Pigeon", author="hendrikReyneke (Sketchfab)",
     license="CC-BY-4.0", rot=0.0, height=0.3, static=True)
+
+
+# --------------------------------------------------------------------------------------------
+# Fur (hair curves via Geometry Nodes, deforms with the rig)
+# --------------------------------------------------------------------------------------------
+def _fur_group():
+    g = bpy.data.node_groups.get("A_Fur")
+    if g:
+        return g
+    g = bpy.data.node_groups.new("A_Fur", "GeometryNodeTree")
+    I = g.interface
+    I.new_socket("Geometry", in_out="INPUT", socket_type="NodeSocketGeometry")
+    for nm, dv in (("Density", 20000.0), ("Length", 0.08), ("Base Length", 0.01), ("Radius", 0.0012),
+                   ("Gravity", 0.5), ("Back", 0.4), ("Noise", 0.25), ("Seed", 0.0)):
+        sk = I.new_socket(nm, in_out="INPUT", socket_type="NodeSocketFloat")
+        sk.default_value = dv
+    sk = I.new_socket("Material", in_out="INPUT", socket_type="NodeSocketMaterial")
+    I.new_socket("Surface", in_out="INPUT", socket_type="NodeSocketObject")
+    I.new_socket("Geometry", in_out="OUTPUT", socket_type="NodeSocketGeometry")
+    N, L = g.nodes, g.links
+    gi, go = N.new("NodeGroupInput"), N.new("NodeGroupOutput")
+    oi = N.new("GeometryNodeObjectInfo")
+    oi.transform_space = "RELATIVE"
+    L.new(gi.outputs["Surface"], oi.inputs["Object"])
+    w = N.new("GeometryNodeInputNamedAttribute")
+    w.data_type = "FLOAT"
+    w.inputs["Name"].default_value = "fur"
+    dmul = N.new("ShaderNodeMath")
+    dmul.operation = "MULTIPLY"
+    L.new(gi.outputs["Density"], dmul.inputs[0])
+    L.new(w.outputs["Attribute"], dmul.inputs[1])
+    dist = N.new("GeometryNodeDistributePointsOnFaces")
+    dist.distribute_method = "RANDOM"
+    L.new(oi.outputs["Geometry"], dist.inputs["Mesh"])
+    L.new(dmul.outputs[0], dist.inputs["Density"])
+    line = N.new("GeometryNodeCurvePrimitiveLine")
+    line.inputs["Start"].default_value = (0, 0, 0)
+    line.inputs["End"].default_value = (0, 0, 1)
+    rs = N.new("GeometryNodeResampleCurve")
+    rs.inputs["Count"].default_value = 5
+    L.new(line.outputs["Curve"], rs.inputs["Curve"])
+    # per-point length = base + (length - base) * w, randomised
+    rnd = N.new("FunctionNodeRandomValue")
+    rnd.data_type = "FLOAT"
+    rnd.inputs[2].default_value = 0.55
+    rnd.inputs[3].default_value = 1.3
+    wl = N.new("ShaderNodeMapRange")
+    L.new(w.outputs["Attribute"], wl.inputs["Value"])
+    L.new(gi.outputs["Base Length"], wl.inputs["To Min"])
+    L.new(gi.outputs["Length"], wl.inputs["To Max"])
+    lm = N.new("ShaderNodeMath")
+    lm.operation = "MULTIPLY"
+    L.new(wl.outputs["Result"], lm.inputs[0])
+    L.new(rnd.outputs[1], lm.inputs[1])
+    # strand direction: surface normal combed backward/down (lies on the coat instead of bristling)
+    comb = N.new("ShaderNodeCombineXYZ")
+    L.new(gi.outputs["Back"], comb.inputs["Y"])
+    ng = N.new("ShaderNodeMath")
+    ng.operation = "MULTIPLY"
+    ng.inputs[1].default_value = -1.0
+    L.new(gi.outputs["Gravity"], ng.inputs[0])
+    L.new(ng.outputs[0], comb.inputs["Z"])
+    dsum = N.new("ShaderNodeVectorMath")
+    dsum.operation = "ADD"
+    L.new(dist.outputs["Normal"], dsum.inputs[0])
+    L.new(comb.outputs[0], dsum.inputs[1])
+    alr = N.new("FunctionNodeAlignRotationToVector")
+    alr.axis = "Z"
+    L.new(dsum.outputs[0], alr.inputs["Vector"])
+    inst = N.new("GeometryNodeInstanceOnPoints")
+    L.new(dist.outputs["Points"], inst.inputs["Points"])
+    L.new(rs.outputs["Curve"], inst.inputs["Instance"])
+    L.new(alr.outputs[0], inst.inputs["Rotation"])
+    L.new(lm.outputs[0], inst.inputs["Scale"])
+    st = N.new("GeometryNodeStoreNamedAttribute")       # remember strand length on the instances
+    st.data_type = "FLOAT"
+    st.domain = "INSTANCE"
+    st.inputs["Name"].default_value = "fur_len"
+    L.new(inst.outputs["Instances"], st.inputs["Geometry"])
+    L.new(lm.outputs[0], st.inputs["Value"])
+    real = N.new("GeometryNodeRealizeInstances")
+    L.new(st.outputs["Geometry"], real.inputs["Geometry"])
+    # droop: gravity (-Z) + backward (+Y) growing with parameter^2, plus noise
+    sp = N.new("GeometryNodeSplineParameter")
+    sq = N.new("ShaderNodeMath")
+    sq.operation = "POWER"
+    sq.inputs[1].default_value = 2.0
+    L.new(sp.outputs["Factor"], sq.inputs[0])
+    fl = N.new("GeometryNodeInputNamedAttribute")
+    fl.data_type = "FLOAT"
+    fl.inputs["Name"].default_value = "fur_len"
+    k = N.new("ShaderNodeMath")
+    k.operation = "MULTIPLY"
+    L.new(sq.outputs[0], k.inputs[0])
+    L.new(fl.outputs["Attribute"], k.inputs[1])
+    dirv = N.new("ShaderNodeCombineXYZ")
+    L.new(gi.outputs["Back"], dirv.inputs["Y"])
+    neg = N.new("ShaderNodeMath")
+    neg.operation = "MULTIPLY"
+    neg.inputs[1].default_value = -1.0
+    L.new(gi.outputs["Gravity"], neg.inputs[0])
+    L.new(neg.outputs[0], dirv.inputs["Z"])
+    pos = N.new("GeometryNodeInputPosition")
+    nzt = N.new("ShaderNodeTexNoise")
+    nzt.inputs["Scale"].default_value = 18.0
+    L.new(pos.outputs["Position"], nzt.inputs["Vector"])
+    nsub = N.new("ShaderNodeVectorMath")
+    nsub.operation = "SUBTRACT"
+    nsub.inputs[1].default_value = (0.5, 0.5, 0.5)
+    L.new(nzt.outputs["Color"], nsub.inputs[0])
+    nsc = N.new("ShaderNodeVectorMath")
+    nsc.operation = "SCALE"
+    L.new(nsub.outputs[0], nsc.inputs[0])
+    L.new(gi.outputs["Noise"], nsc.inputs["Scale"])
+    tot = N.new("ShaderNodeVectorMath")
+    tot.operation = "ADD"
+    L.new(dirv.outputs[0], tot.inputs[0])
+    L.new(nsc.outputs[0], tot.inputs[1])
+    off = N.new("ShaderNodeVectorMath")
+    off.operation = "SCALE"
+    L.new(tot.outputs[0], off.inputs[0])
+    L.new(k.outputs[0], off.inputs["Scale"])
+    setp = N.new("GeometryNodeSetPosition")
+    L.new(real.outputs["Geometry"], setp.inputs["Geometry"])
+    L.new(off.outputs[0], setp.inputs["Offset"])
+    # taper
+    tap = N.new("ShaderNodeMapRange")
+    L.new(sp.outputs["Factor"], tap.inputs["Value"])
+    L.new(gi.outputs["Radius"], tap.inputs["To Min"])
+    tap.inputs["To Max"].default_value = 0.00008
+    srad = N.new("GeometryNodeSetCurveRadius")
+    L.new(setp.outputs["Geometry"], srad.inputs["Curve"])
+    L.new(tap.outputs["Result"], srad.inputs["Radius"])
+    smat = N.new("GeometryNodeSetMaterial")
+    L.new(srad.outputs["Curve"], smat.inputs["Geometry"])
+    L.new(gi.outputs["Material"], smat.inputs["Material"])
+    L.new(smat.outputs["Geometry"], go.inputs["Geometry"])
+    return g
+
+
+def _fur_material(body_mat, name, tint=(1.0, 1.0, 1.0), root_dark=0.55):
+    """Strand material sampling the body's base-colour texture at the root UV (attribute 'UVMap')."""
+    m = bpy.data.materials.get(name)
+    if m:
+        return m
+    m, N, L, b = _new_mat(name)
+    img = None
+    for n in body_mat.node_tree.nodes:
+        if n.type == "TEX_IMAGE" and n.image and n.image.colorspace_settings.name != "Non-Color":
+            img = n.image
+            break
+    at = N.new("ShaderNodeAttribute")
+    at.attribute_type = "GEOMETRY"
+    at.attribute_name = "UVMap"
+    col = None
+    if img:
+        t = N.new("ShaderNodeTexImage")
+        t.image = img
+        L.new(at.outputs["Vector"], t.inputs["Vector"])
+        col = t.outputs["Color"]
+    hi = N.new("ShaderNodeHairInfo")
+    mr = N.new("ShaderNodeMapRange")
+    mr.inputs["To Min"].default_value = root_dark
+    mr.inputs["To Max"].default_value = 1.15
+    L.new(hi.outputs["Intercept"], mr.inputs["Value"])
+    mul = N.new("ShaderNodeMix")
+    mul.data_type = "RGBA"
+    mul.blend_type = "MULTIPLY"
+    mul.inputs[0].default_value = 1.0
+    if col is not None:
+        L.new(col, mul.inputs[6])
+    else:
+        mul.inputs[6].default_value = (0.4, 0.28, 0.15, 1)
+    cmb = N.new("ShaderNodeCombineXYZ")
+    for i in range(3):
+        L.new(mr.outputs["Result"], cmb.inputs[i])
+    tn = N.new("ShaderNodeMix")
+    tn.data_type = "RGBA"
+    tn.blend_type = "MULTIPLY"
+    tn.inputs[0].default_value = 1.0
+    L.new(cmb.outputs[0], tn.inputs[6])
+    tn.inputs[7].default_value = (*tint, 1)
+    L.new(tn.outputs[2], mul.inputs[7])
+    L.new(mul.outputs[2], b.inputs["Base Color"])
+    b.inputs["Roughness"].default_value = 0.78
+    b.inputs["Sheen Weight"].default_value = 0.2
+    b.inputs["Specular IOR Level"].default_value = 0.1
+    b.inputs["Subsurface Weight"].default_value = 0.2
+    b.inputs["Subsurface Radius"].default_value = (1.0, 0.6, 0.3)
+    b.inputs["Subsurface Scale"].default_value = 0.01
+    return m
+
+
+def _add_fur(body, a):
+    """Weight-painted fur: a['fur'] = dict(regions=[(centre, radius, weight)], exclude=[(centre, radius)],
+    base=0.0..1 (weight everywhere), density, length, base_length, radius, gravity, back, noise)."""
+    F = a["fur"]
+    me = body.data
+    vg = body.vertex_groups.get("fur") or body.vertex_groups.new(name="fur")
+    regs = [(Vector(c), r, w) for (c, r, w) in F.get("regions", [])]
+    exc = [(Vector(c), r) for (c, r) in F.get("exclude", [])]
+    base = F.get("base", 0.0)
+    for v in me.vertices:
+        p = v.co
+        w = base
+        for c, r, wt in regs:
+            d = (p - c).length / r
+            if d < 1.0:
+                w = max(w, wt * min(1.0, 1.6 * (1 - d * d)))
+        for c, r in exc:
+            d = (p - c).length / r
+            if d < 1.0:
+                w *= d ** 2
+        if w > 0.001:
+            vg.add([v.index], min(1.0, w), "REPLACE")
+    # hair lives on its own Curves object (EEVEE renders Curves objects), generated from the deformed body
+    hc = bpy.data.hair_curves.new("fur_" + body.name)
+    fo = bpy.data.objects.new("fur", hc)
+    for c in body.users_collection:
+        c.objects.link(fo)
+    fo.parent = body.parent
+    fo.matrix_parent_inverse = body.matrix_parent_inverse.copy()
+    md = fo.modifiers.new("Fur", "NODES")
+    md.node_group = _fur_group()
+    ids = {s.name: s.identifier for s in md.node_group.interface.items_tree if getattr(s, "in_out", "") == "INPUT"}
+    for key, sock in (("density", "Density"), ("length", "Length"), ("base_length", "Base Length"),
+                      ("radius", "Radius"), ("gravity", "Gravity"), ("back", "Back"), ("noise", "Noise")):
+        if key in F:
+            md[ids[sock]] = float(F[key])
+    fm = _fur_material(me.materials[0], "A_fur_%s" % a["uid"][:6], F.get("tint", (1, 1, 1)))
+    md[ids["Material"]] = fm
+    md[ids["Surface"]] = body
+    hc.materials.append(fm)
+    return md

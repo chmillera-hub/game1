@@ -209,73 +209,91 @@ def _boulder(name, size, loc, b, mat, seed=0.0, rot_z=0.0, rough=0.18, flat=0.35
     return o
 
 
-def _add_straw_layer(m, attr="straw", strength=1.0):
-    """Blend a procedural straw-litter fibre layer into a (PBR) floor material, masked by the float
-    mesh attribute `attr` (0..1). Modifies `m` in place."""
+def straw_litter_texture(force=False, size=1024, strokes=5200, seed=5):
+    """Tileable straw-litter colour+coverage map (RGBA PNG, one tile ~1.2 m). Cached in WORK/cache/sets."""
+    path = os.path.join(CACHE_DIR, "straw_litter_v1.png")
+    if os.path.exists(path) and not force:
+        return path
+    os.makedirs(CACHE_DIR, exist_ok=True)
+    import numpy as np
+    rng = random.Random(seed)
+    cv = _Canvas(size, size)
+    rgb = np.zeros((size, size, 3), np.float32)
+    cov = np.zeros((size, size), np.float32)
+    pal = np.array([(0.78, 0.62, 0.33), (0.66, 0.5, 0.24), (0.55, 0.4, 0.18), (0.85, 0.72, 0.42),
+                    (0.45, 0.33, 0.16)], np.float32)
+    n = size
+    for k in range(strokes):
+        x, y = rng.random() * n, rng.random() * n
+        a = rng.uniform(0, math.pi)
+        ln = rng.uniform(0.02, 0.07) * n
+        w = rng.uniform(1.2, 2.7) * n / 1024
+        col = pal[rng.randrange(len(pal))] * rng.uniform(0.75, 1.1)
+        dx, dy = math.cos(a), math.sin(a)
+        r = int(ln / 2 + w + 2)
+        i0, j0 = int(x) - r, int(y) - r
+        ii = (np.arange(i0, i0 + 2 * r + 1) % n)
+        jj = (np.arange(j0, j0 + 2 * r + 1) % n)
+        X, Y = np.meshgrid(np.arange(i0, i0 + 2 * r + 1) - x, np.arange(j0, j0 + 2 * r + 1) - y)
+        t = np.clip(X * dx + Y * dy, -ln / 2, ln / 2)
+        px, py = X - t * dx, Y - t * dy
+        bend = 0.04 * ln * (1 - (2 * t / ln) ** 2) * rng.uniform(-1, 1)
+        d = np.sqrt(px * px + (py - bend * dx) ** 2)
+        prof = np.clip(1 - (d / w) ** 2, 0, 1) ** 0.6
+        sub_c = cov[np.ix_(jj, ii)]
+        sub_rgb = rgb[np.ix_(jj, ii)]
+        m = prof > 0.05
+        sub_rgb[m] = col * (0.55 + 0.45 * prof[m])[..., None]
+        rgb[np.ix_(jj, ii)] = sub_rgb
+        cov[np.ix_(jj, ii)] = np.maximum(sub_c, prof)
+    img = bpy.data.images.new("straw_litter", size, size, alpha=True)
+    rgba = np.ones((size, size, 4), np.float32)
+    rgba[..., :3] = rgb
+    rgba[..., 3] = np.clip(cov * 1.6, 0, 1)
+    img.pixels.foreach_set(rgba.ravel())
+    img.filepath_raw = path
+    img.file_format = "PNG"
+    img.save()
+    bpy.data.images.remove(img)
+    return path
+
+
+def _add_straw_layer(m, attr="straw", strength=1.0, tile=1.2):
+    """Blend straw litter (generated texture, UV/object XY mapped, one lookup) into a floor material,
+    masked by the float mesh attribute `attr` (0..1). Modifies `m` in place."""
     nt = m.node_tree
     b, src = _base_color_socket(m)
     tc = nt.nodes.new("ShaderNodeTexCoord")
-    fib = None
-    for k, ang in enumerate((0.3, 1.4, 2.4, 3.0)):
-        mp = nt.nodes.new("ShaderNodeMapping")
-        mp.inputs["Rotation"].default_value = (0, 0, ang)
-        mp.inputs["Scale"].default_value = (1, 1, 1)
-        nt.links.new(tc.outputs["Object"], mp.inputs["Vector"])
-        mp2 = nt.nodes.new("ShaderNodeMapping")
-        mp2.inputs["Scale"].default_value = (3.0, 55.0, 4.0)
-        mp2.inputs["Location"].default_value = (k * 3.1, k * 1.7, 0)
-        nt.links.new(mp.outputs[0], mp2.inputs["Vector"])
-        nz = nt.nodes.new("ShaderNodeTexNoise")
-        nz.inputs["Scale"].default_value = 1.0
-        nz.inputs["Detail"].default_value = 1.0
-        nt.links.new(mp2.outputs[0], nz.inputs["Vector"])
-        mr = nt.nodes.new("ShaderNodeMapRange")
-        mr.inputs["From Min"].default_value = 0.56
-        mr.inputs["From Max"].default_value = 0.68
-        nt.links.new(nz.outputs["Fac"], mr.inputs["Value"])
-        if fib is None:
-            fib = mr.outputs["Result"]
-        else:
-            mx = nt.nodes.new("ShaderNodeMath")
-            mx.operation = "MAXIMUM"
-            nt.links.new(fib, mx.inputs[0])
-            nt.links.new(mr.outputs["Result"], mx.inputs[1])
-            fib = mx.outputs[0]
+    mp = nt.nodes.new("ShaderNodeMapping")
+    mp.inputs["Scale"].default_value = (1 / tile, 1 / tile, 1)
+    nt.links.new(tc.outputs["Object"], mp.inputs["Vector"])
+    im = nt.nodes.new("ShaderNodeTexImage")
+    im.image = bpy.data.images.load(straw_litter_texture(), check_existing=True)
+    im.image.alpha_mode = "STRAIGHT"
+    nt.links.new(mp.outputs[0], im.inputs["Vector"])
     at = nt.nodes.new("ShaderNodeAttribute")
     at.attribute_type = "GEOMETRY"
     at.attribute_name = attr
-    # coverage = mask, with fibres poking through at lower mask values
+    # coverage: litter alpha everywhere the mask is >0, solid straw bed where the mask is high
     cov = nt.nodes.new("ShaderNodeMath")
     cov.operation = "MULTIPLY_ADD"
-    nt.links.new(fib, cov.inputs[0])
+    nt.links.new(im.outputs["Alpha"], cov.inputs[0])
     nt.links.new(at.outputs["Fac"], cov.inputs[1])
     nt.links.new(at.outputs["Fac"], cov.inputs[2])
     cl = nt.nodes.new("ShaderNodeMath")
     cl.operation = "MULTIPLY"
     cl.use_clamp = True
-    cl.inputs[1].default_value = strength * 0.75
+    cl.inputs[1].default_value = strength * 0.8
     nt.links.new(cov.outputs[0], cl.inputs[0])
-    vn = nt.nodes.new("ShaderNodeTexNoise")
-    vn.inputs["Scale"].default_value = 9.0
-    nt.links.new(tc.outputs["Object"], vn.inputs["Vector"])
-    ramp = nt.nodes.new("ShaderNodeValToRGB")
-    ramp.color_ramp.elements[0].color = (0.30, 0.20, 0.09, 1)
-    ramp.color_ramp.elements[1].color = (0.70, 0.55, 0.28, 1)
-    nt.links.new(vn.outputs["Fac"], ramp.inputs["Fac"])
-    dark = nt.nodes.new("ShaderNodeMixRGB")
-    dark.blend_type = "MULTIPLY"
-    dark.inputs[0].default_value = 1.0
-    nt.links.new(ramp.outputs["Color"], dark.inputs[1])
-    dark.inputs[2].default_value = (0.4, 0.36, 0.3, 1)
-    shade = nt.nodes.new("ShaderNodeMixRGB")
-    nt.links.new(fib, shade.inputs[0])
-    nt.links.new(dark.outputs[0], shade.inputs[1])
-    nt.links.new(ramp.outputs["Color"], shade.inputs[2])
+    bed = nt.nodes.new("ShaderNodeMixRGB")       # gaps between visible strands = darker straw
+    nt.links.new(im.outputs["Alpha"], bed.inputs[0])
+    bed.inputs[1].default_value = (0.26, 0.18, 0.08, 1)
+    nt.links.new(im.outputs["Color"], bed.inputs[2])
     mix = nt.nodes.new("ShaderNodeMixRGB")
     nt.links.new(cl.outputs[0], mix.inputs[0])
     if src is not None:
         nt.links.new(src, mix.inputs[1])
-    nt.links.new(shade.outputs[0], mix.inputs[2])
+    nt.links.new(bed.outputs[0], mix.inputs[2])
     nt.links.new(mix.outputs[0], b.inputs["Base Color"])
     return m
 
@@ -418,6 +436,29 @@ def _grime(m, axis="z", lo=1.6, hi=2.8, color=(0.12, 0.09, 0.07), amount=0.7, in
     return m
 
 
+def _grime_attr(m, attr, color, amount=1.0):
+    """Darken/tint a material's base colour by a float mesh attribute (0..1) — cheap per-pixel
+    alternative to _grime() (the mask is computed per vertex in Python)."""
+    nt = m.node_tree
+    b, src = _base_color_socket(m)
+    at = nt.nodes.new("ShaderNodeAttribute")
+    at.attribute_type = "GEOMETRY"
+    at.attribute_name = attr
+    mul = nt.nodes.new("ShaderNodeMath")
+    mul.operation = "MULTIPLY"
+    mul.inputs[1].default_value = amount
+    nt.links.new(at.outputs["Fac"], mul.inputs[0])
+    mix = nt.nodes.new("ShaderNodeMixRGB")
+    nt.links.new(mul.outputs[0], mix.inputs[0])
+    if src is not None:
+        nt.links.new(src, mix.inputs[1])
+    else:
+        mix.inputs[1].default_value = b.inputs["Base Color"].default_value
+    mix.inputs[2].default_value = (*color, 1)
+    nt.links.new(mix.outputs[0], b.inputs["Base Color"])
+    return m
+
+
 def _mat_simple(name, color, rough=0.6, metal=0.0, bump=0.0, bump_scale=30.0, var=0.0, var_scale=4.0, sheen=0.0,
                 coat=0.0, spec=0.5, sss=0.0, sss_radius=(1.0, 0.4, 0.2)):
     """Principled material with optional procedural bump + colour variation (object coords)."""
@@ -490,12 +531,19 @@ def _flame_material(name="lamp_flame", strength=18.0, flicker=None):
         st.outputs[0].default_value = strength
         # per-instance flicker: noise(time + random)
         oi = nt.nodes.new("ShaderNodeObjectInfo")
+        lr = nt.nodes.new("ShaderNodeAttribute")
+        lr.attribute_type = "GEOMETRY"
+        lr.attribute_name = "lamp_rand"
+        rsum = nt.nodes.new("ShaderNodeMath")
+        rsum.operation = "ADD"
+        nt.links.new(oi.outputs["Random"], rsum.inputs[0])
+        nt.links.new(lr.outputs["Fac"], rsum.inputs[1])
         tval = nt.nodes.new("ShaderNodeValue")
         tval.name = "time"
         tval.outputs[0].default_value = 0.0
         madd = nt.nodes.new("ShaderNodeMath")
         madd.operation = "MULTIPLY_ADD"
-        nt.links.new(oi.outputs["Random"], madd.inputs[0])
+        nt.links.new(rsum.outputs[0], madd.inputs[0])
         madd.inputs[1].default_value = 97.0
         nt.links.new(tval.outputs[0], madd.inputs[2])
         nz = nt.nodes.new("ShaderNodeTexNoise")
@@ -1035,13 +1083,13 @@ def _add_chisel(m, strength=0.35, scale=9.0):
 # ============================================================================================
 # Oil lamp (Herodian clay lamp) + many-lamp instancing
 # ============================================================================================
-def _lamp_body_mesh(name="oil_lamp_body"):
+def _lamp_body_mesh(name="oil_lamp_body", segs=(20, 10)):
     me = bpy.data.meshes.get(name)
     if me:
         return me
     bm = bmesh.new()
     # body: squashed sphere
-    bmesh.ops.create_uvsphere(bm, u_segments=20, v_segments=10, radius=1.0)
+    bmesh.ops.create_uvsphere(bm, u_segments=segs[0], v_segments=segs[1], radius=1.0)
     for v in bm.verts:
         x, y, z = v.co
         z = z * 0.42 + 0.42 * 0.95
@@ -1063,18 +1111,16 @@ def _lamp_body_mesh(name="oil_lamp_body"):
     return me
 
 
-def _flame_mesh(name="oil_lamp_flame", h=0.034, r=0.0055):
+def _flame_mesh(name="oil_lamp_flame", h=0.034, r=0.0055, n=12, segs=10):
     me = bpy.data.meshes.get(name)
     if me:
         return me
     prof = []
-    n = 12
     for j in range(n + 1):
         t = j / n
         rr = r * (math.sin(math.pi * min(1.0, t * 1.25)) ** 0.6) * (1 - t) ** 0.35 if t < 1 else 0.0
         prof.append((max(rr, 1e-4 if 0 < t < 1 else 0.0), t * h))
     verts, faces = [], []
-    segs = 10
     for i in range(segs):
         a = TAU * i / segs
         for rr, z in prof:
@@ -1160,13 +1206,13 @@ def lamp_field(points, b=None, name="lamp_field", scale=1.0, flame_strength=16.0
     _coll = coll or bpy.context.scene.collection
     (b.add(o) if b else _coll.objects.link(o))
     # source lamp (body + flame joined as one instance geometry with 2 materials)
-    src_name = "lamp_inst_src"
+    src_name = "lamp_inst_src_lod"
     src = bpy.data.objects.get(src_name)
     if src is None:
         bm = bmesh.new()
-        bm.from_mesh(_lamp_body_mesh())
+        bm.from_mesh(_lamp_body_mesh("oil_lamp_body_lod", (10, 6)))
         fl = bmesh.new()
-        fl.from_mesh(_flame_mesh())
+        fl.from_mesh(_flame_mesh("oil_lamp_flame_lod", n=6, segs=6))
         bmesh.ops.translate(fl, vec=LAMP_TIP + Vector((0.002, 0, -0.002)), verts=fl.verts)
         tmp = bpy.data.meshes.new("_tmpflame")
         fl.to_mesh(tmp)
@@ -1207,9 +1253,20 @@ def lamp_field(points, b=None, name="lamp_field", scale=1.0, flame_strength=16.0
     ng.links.new(ce.outputs[0], inst.inputs["Rotation"])
     sc = _rand(ng, "FLOAT", 0.9 * scale, 1.1 * scale, seed + 3)
     ng.links.new(sc, inst.inputs["Scale"])
-    ng.links.new(inst.outputs[0], go.inputs[0])
+    # realize into one mesh (far cheaper to sync/draw than hundreds of instances); keep a per-lamp
+    # random value for the flame flicker
+    st = ng.nodes.new("GeometryNodeStoreNamedAttribute")
+    st.data_type = "FLOAT"
+    st.domain = "INSTANCE"
+    st.inputs["Name"].default_value = "lamp_rand"
+    ng.links.new(_rand(ng, "FLOAT", 0.0, 1.0, seed + 4), st.inputs["Value"])
+    ng.links.new(inst.outputs[0], st.inputs["Geometry"])
+    rl = ng.nodes.new("GeometryNodeRealizeInstances")
+    ng.links.new(st.outputs[0], rl.inputs["Geometry"])
+    ng.links.new(rl.outputs[0], go.inputs[0])
     mod = o.modifiers.new("lamps", "NODES")
     mod.node_group = ng
+    o.visible_shadow = False
     if cluster_lights:
         # cheap shadowless point lights, one per cluster of lamps, so the lamps pool warm light
         cells = {}
@@ -1382,6 +1439,29 @@ def _shell(b, name, rx, ry, H, cx, cy, mat, seed, nt_=192, np_=52, amp=0.32, z_f
     if (Vector((cx, cy, H * 0.4)) - p0.center).dot(p0.normal) < 0:
         me.flip_normals()
     o["shell_thickness"] = thickness
+    # cylindrical UVs in metres (u = arc length, v = height) -> single-lookup textures
+    R = (rx + ry) * 0.5
+    uvl = me.uv_layers.new(name="UVMap")
+    for poly in me.polygons:
+        ths = []
+        for li in poly.loop_indices:
+            co = me.vertices[me.loops[li].vertex_index].co
+            ths.append(math.atan2(co.y - cy, co.x - cx))
+        lo_, hi_ = min(ths), max(ths)
+        for k, li in enumerate(poly.loop_indices):
+            co = me.vertices[me.loops[li].vertex_index].co
+            th = ths[k] + (TAU if (hi_ - lo_ > math.pi and ths[k] < 0) else 0.0)
+            uvl.data[li].uv = (th * R, co.z + 0.35 * math.hypot(co.x - cx, co.y - cy) * (co.z / H) ** 4)
+    # per-vertex grime masks: soot on the upper vault, damp/dirt at the wall foot
+    soot, damp = [], []
+    for v in me.vertices:
+        z = v.co.z + 0.35 * noise.noise(v.co * 1.5 + so)
+        soot.append(max(0.0, min(1.0, (z - 1.5) / 1.3)) ** 1.2)
+        damp.append(max(0.0, min(1.0, (0.45 - (v.co.z + 0.15 * noise.noise(v.co * 2.0 + so))) / 0.5)))
+    a1 = me.attributes.new("soot", "FLOAT", "POINT")
+    a1.data.foreach_set("value", soot)
+    a2 = me.attributes.new("damp", "FLOAT", "POINT")
+    a2.data.foreach_set("value", damp)
 
     def wall_fn(th, z):
         z = max(0.0, min(H * 0.98, z))
@@ -1427,6 +1507,48 @@ def _arch_cutter(name, b, center, out_dir, half_w, height, depth=(-0.7, 1.3), se
     return o
 
 
+def _uvify(objs, name_suffix="_uv"):
+    """Give box-like objects dominant-axis planar UVs (metres) and switch their Poly Haven BOX
+    materials to single-lookup UV projection (a copy of the material, so other users keep BOX).
+    ~3x fewer texture fetches per pixel on llvmpipe."""
+    conv = {}
+    for o in objs:
+        if o is None or o.type != "MESH" or not o.data.materials:
+            continue
+        _uv_box_mapping(o)
+        for i, m in enumerate(o.data.materials):
+            if m is None or "ph_maps" not in m:
+                continue
+            if m.name not in conv:
+                mu = m.copy()
+                mu.name = m.name + name_suffix
+                nt = mu.node_tree
+                tc = next((n for n in nt.nodes if n.type == "TEX_COORD"), None)
+                for n in nt.nodes:
+                    if n.type == "TEX_IMAGE":
+                        n.projection = "FLAT"
+                    if n.type == "MAPPING" and tc is not None and n.inputs["Vector"].links and \
+                            n.inputs["Vector"].links[0].from_node == tc:
+                        nt.links.new(tc.outputs["UV"], n.inputs["Vector"])
+                conv[m.name] = mu
+            o.data.materials[i] = conv[m.name]
+    return conv
+
+
+def _planar_uv(o, axis="z"):
+    """UVs = object-space XY (metres) for floors/terrains so PBR maps can use projection='UV'."""
+    me = o.data
+    uvl = me.uv_layers.new(name="UVMap")
+    co = [0.0] * (len(me.vertices) * 3)
+    me.vertices.foreach_get("co", co)
+    vi = [0] * len(me.loops)
+    me.loops.foreach_get("vertex_index", vi)
+    uv = []
+    for k in vi:
+        uv += [co[3 * k], co[3 * k + 1]]
+    uvl.data.foreach_set("uv", uv)
+
+
 def _cut(target, cutter, solver="EXACT", hole_tolerant=True):
     m = target.modifiers.new("cut_" + cutter.name, "BOOLEAN")
     m.operation = "DIFFERENCE"
@@ -1466,11 +1588,13 @@ def stable_cave(ctx, loc=(0, 0, 0), rot_z=0.0, coll=None, world=True, lamps=2, s
     rnd = b.rnd
     cx, cy, rx, ry, H = 0.0, 1.6, 3.3, 3.7, 2.75
     door_th = math.radians(104)            # back-left
-    rock = _cached(("cave_rock",), lambda: _grime(_grime(
-        C.mat_pbr("worn_rock_natural_01", scale=0.9, tint=(0.95, 0.9, 0.84), name="set_cave_rock", bump=1.5,
-                  hue_sat_val=(0.5, 0.75, 1.0)),
-        "z", 1.55, 2.9, (0.035, 0.028, 0.024), 0.88), "z", 0.4, -0.05, (0.16, 0.11, 0.07), 0.45, noise_scale=2.0))
-    shell, wall = _shell(b, "cave_shell", rx, ry, H, cx, cy, rock, seed, door=(door_th, 0.62, 1.85))
+    rock = _pbr("worn_rock_natural_01", scale=0.9, tint=(0.95, 0.9, 0.84), name="set_cave_rock", bump=1.5,
+                hsv=(0.5, 0.75, 1.0))
+    rock_uv = _cached(("cave_rock_uv",), lambda: _grime_attr(_grime_attr(
+        C.mat_pbr("worn_rock_natural_01", scale=0.9, tint=(0.95, 0.9, 0.84), name="set_cave_shell", bump=1.5,
+                  hue_sat_val=(0.5, 0.75, 1.0), projection="UV"),
+        "soot", (0.035, 0.028, 0.024), 0.9), "damp", (0.16, 0.11, 0.07), 0.45))
+    shell, wall = _shell(b, "cave_shell", rx, ry, H, cx, cy, rock_uv, seed, door=(door_th, 0.62, 1.85))
     _solidify(shell, 0.45)
     b.info.objects["shell"] = shell
     dp, dn = wall(door_th, 0.0)
@@ -1485,7 +1609,7 @@ def stable_cave(ctx, loc=(0, 0, 0), rot_z=0.0, coll=None, world=True, lamps=2, s
             d = max(d, 1.0 - math.hypot(x - px, y - py) / rad)
         return max(0.0, min(1.0, d * 1.5 + 0.4 * noise.noise(Vector((x * 1.7, y * 1.7, 5.0))) - 0.05))
     floor_m = _cached(("cave_floor",), lambda: _add_straw_layer(
-        C.mat_pbr("dirt", scale=0.8, tint=(0.6, 0.48, 0.36), name="set_cave_floor")))
+        C.mat_pbr("dirt", scale=0.8, tint=(0.6, 0.48, 0.36), name="set_cave_floor", projection="UV")))
     n = 150
     S_, ox_, oy_ = 15.0, 0.0, 3.0
     verts, faces, mask = [], [], []
@@ -1502,6 +1626,7 @@ def stable_cave(ctx, loc=(0, 0, 0), rot_z=0.0, coll=None, world=True, lamps=2, s
             a = j * (n + 1) + i
             faces.append((a, a + 1, a + n + 2, a + n + 1))
     fl = _mesh_obj("cave_floor", verts, faces, b, True, floor_m)
+    _planar_uv(fl)
     at = fl.data.attributes.new("straw", "FLOAT", "POINT")
     at.data.foreach_set("value", mask)
     b.info.objects["floor"] = fl
@@ -1584,7 +1709,7 @@ def stable_cave(ctx, loc=(0, 0, 0), rot_z=0.0, coll=None, world=True, lamps=2, s
         _rock_block("lamp_stone", (0.36, 0.3, 0.13), lamp_floor_pos + Vector((0, 0, 0.055)), b, stone_m,
                     noise_amp=0.012, seed=13.0, bevel=0.035, rot=(0, 0, 25))
         lamp_f = oil_lamp(lamp_floor_pos + Vector((0, 0, 0.12)), rot_z=115, light=True, energy=35.0 * lamp_energy,
-                          seed=2, b=b, name="lamp_floor")
+                          seed=2, b=b, name="lamp_floor", shadow=False)
         b.info.lights["lamp_floor"] = lamp_f[2]
 
     # ---------- starlight through the doorway ----------
@@ -1677,14 +1802,17 @@ def stable_cave(ctx, loc=(0, 0, 0), rot_z=0.0, coll=None, world=True, lamps=2, s
     b.cam("manger_close", (1.1, 1.1, 1.2), (0.5, 2.35, 0.62), 45)
     b.cam("doorway_view", (1.5, 0.4, 1.3), tuple(door_c + Vector((0, 0, 1.1))), 32)
     b.cam("low_straw", (0.95, 0.15, 0.28), (-0.3, 2.5, 0.75), 30)
+    _uvify([o for o in b.coll.objects if o.name.startswith(("manger", "lamp_ledge", "lamp_stone"))
+            and o.name != "manger_straw"])
     return b.finish()
 
 
 # ============================================================================================
 # 2. GARDEN TOMB (s15 resurrection morning)
 # ============================================================================================
-def _grid_obj(name, nu, nv, fn, b, mat=None, smooth=True, keep=None):
-    """Mesh from a parametric grid: fn(u, v) -> Vector with u, v in 0..1. keep(u, v) -> bool for faces."""
+def _grid_obj(name, nu, nv, fn, b, mat=None, smooth=True, keep=None, uv_fn=None):
+    """Mesh from a parametric grid: fn(u, v) -> Vector with u, v in 0..1. keep(u, v) -> bool for faces.
+    uv_fn(u, v, point) -> (U, V) adds a UV map (metres) so PBR materials can use projection='UV'."""
     verts = [fn(i / nu, j / nv) for j in range(nv + 1) for i in range(nu + 1)]
     faces = []
     for j in range(nv):
@@ -1694,6 +1822,14 @@ def _grid_obj(name, nu, nv, fn, b, mat=None, smooth=True, keep=None):
             a = j * (nu + 1) + i
             faces.append((a, a + 1, a + nu + 2, a + nu + 1))
     o = _mesh_obj(name, verts, faces, b, smooth, mat)
+    if uv_fn:
+        me = o.data
+        uvl = me.uv_layers.new(name="UVMap")
+        for poly in me.polygons:
+            for li in poly.loop_indices:
+                vi = me.loops[li].vertex_index
+                j, i = divmod(vi, nu + 1)
+                uvl.data[li].uv = uv_fn(i / nu, j / nv, verts[vi])
     _loose_cleanup(o)
     return o
 
@@ -1737,7 +1873,7 @@ def _box_room(name, x0, x1, y0, y1, z0, z1, b, mat, open_face=None, cuts=8, roug
 
 
 def _cloth_sheet(name, length, width, b, mat, fold_amp=0.012, droop=0.05, seed=0, nu=72, nv=20, thickness=0.004,
-                 hollow=0.0):
+                 hollow=0.0, ridges=0.0):
     """Linen sheet lying flat (origin centre, along X), soft wrinkles, edges drooping."""
     so = Vector((seed, 2.0, 0.3))
 
@@ -1750,6 +1886,8 @@ def _cloth_sheet(name, length, width, b, mat, fold_amp=0.012, droop=0.05, seed=0
         e = min(u, 1 - u, v, 1 - v)
         z -= droop * max(0.0, 1 - e / 0.08) ** 2
         z -= hollow * math.sin(math.pi * v) * math.sin(math.pi * u) ** 0.3
+        if ridges:      # lengthwise folds of a collapsed shroud
+            z += ridges * (0.5 + 0.5 * math.sin(v * math.pi * 4.0 + 2.0 * noise.noise(Vector((u * 2.5, 0.5, 3.0)) + so))) ** 2
         return Vector((x, y, z))
     o = _grid_obj(name, nu, nv, fn, b, mat)
     so_ = o.modifiers.new("thick", "SOLIDIFY")
@@ -1780,9 +1918,10 @@ def _folded_cloth(name, size, b, mat, layers=4, seed=0):
     return _bm_obj(name, bm, b, True, mat)
 
 
-def _grass_tufts(carrier, density=60, seed=0, height=0.25, color=(0.22, 0.25, 0.1), dry=0.5):
+def _grass_tufts(carrier, density=60, seed=0, height=0.25, color=(0.22, 0.25, 0.1), dry=0.5, center=None,
+                 radius=None):
     """Sparse grass/weed tufts scattered on `carrier` (GN instances of a blade fan)."""
-    name = "grass_tuft_src2"
+    name = "grass_tuft_src3"
     src = bpy.data.objects.get(name)
     if src is None:
         verts, faces = [], []
@@ -1818,6 +1957,23 @@ def _grass_tufts(carrier, density=60, seed=0, height=0.25, color=(0.22, 0.25, 0.
     dist.inputs["Density"].default_value = density
     dist.inputs["Seed"].default_value = seed
     ng.links.new(gi.outputs[0], dist.inputs["Mesh"])
+    if radius:      # only near the action: density fades to 0 at `radius` from `center`
+        pc = ng.nodes.new("GeometryNodeInputPosition")
+        dv = ng.nodes.new("ShaderNodeVectorMath")
+        dv.operation = "DISTANCE"
+        dv.inputs[1].default_value = (center[0], center[1], 0.0)
+        msk = ng.nodes.new("ShaderNodeVectorMath")
+        msk.operation = "MULTIPLY"
+        msk.inputs[1].default_value = (1.0, 1.0, 0.0)
+        ng.links.new(pc.outputs[0], msk.inputs[0])
+        ng.links.new(msk.outputs[0], dv.inputs[0])
+        fr = ng.nodes.new("ShaderNodeMapRange")
+        fr.inputs["From Min"].default_value = radius * 0.6
+        fr.inputs["From Max"].default_value = radius
+        fr.inputs["To Min"].default_value = density
+        fr.inputs["To Max"].default_value = 0.0
+        ng.links.new(dv.outputs["Value"], fr.inputs["Value"])
+        ng.links.new(fr.outputs["Result"], dist.inputs["Density"])
     dn = ng.nodes.new("ShaderNodeTexNoise")       # clumping: only where noise is high
     dn.inputs["Scale"].default_value = 0.35
     pin = ng.nodes.new("GeometryNodeInputPosition")
@@ -1837,12 +1993,21 @@ def _grass_tufts(carrier, density=60, seed=0, height=0.25, color=(0.22, 0.25, 0.
     ng.links.new(rot, inst.inputs["Rotation"])
     sc = _rand(ng, "FLOAT", height * 0.5, height * 1.3, seed + 2)
     ng.links.new(sc, inst.inputs["Scale"])
+    st = ng.nodes.new("GeometryNodeStoreNamedAttribute")
+    st.data_type = "FLOAT"
+    st.domain = "INSTANCE"
+    st.inputs["Name"].default_value = "strand_rand"
+    ng.links.new(_rand(ng, "FLOAT", 0.0, 1.0, seed + 6), st.inputs["Value"])
+    ng.links.new(inst.outputs[0], st.inputs["Geometry"])
+    rl = ng.nodes.new("GeometryNodeRealizeInstances")
+    ng.links.new(st.outputs[0], rl.inputs["Geometry"])
     join = ng.nodes.new("GeometryNodeJoinGeometry")
     ng.links.new(gi.outputs[0], join.inputs[0])
-    ng.links.new(inst.outputs[0], join.inputs[0])
+    ng.links.new(rl.outputs[0], join.inputs[0])
     ng.links.new(join.outputs[0], go.inputs[0])
     mod = carrier.modifiers.new("grass", "NODES")
     mod.node_group = ng
+    carrier.visible_shadow = False       # grass + ground in shadow maps is expensive and barely visible
     return mod
 
 
@@ -1850,12 +2015,14 @@ def _grass_mat(color, dry):
     m = C.mat("set_grass", color, rough=0.6, sss=0.1, sss_radius=(0.3, 0.5, 0.1))
     nt = m.node_tree
     b = C.bsdf(m)
-    oi = nt.nodes.new("ShaderNodeObjectInfo")
+    at = nt.nodes.new("ShaderNodeAttribute")
+    at.attribute_type = "GEOMETRY"
+    at.attribute_name = "strand_rand"
     ramp = nt.nodes.new("ShaderNodeValToRGB")
     ramp.color_ramp.elements[0].color = (*color, 1)
     ramp.color_ramp.elements[1].color = (0.45, 0.38, 0.2, 1)
     ramp.color_ramp.elements[0].position = 1.0 - dry
-    nt.links.new(oi.outputs["Random"], ramp.inputs["Fac"])
+    nt.links.new(at.outputs["Fac"], ramp.inputs["Fac"])
     nt.links.new(ramp.outputs["Color"], b.inputs["Base Color"])
     try:
         m.use_backface_culling = False
@@ -1883,17 +2050,20 @@ def garden_tomb(ctx, loc=(0, 0, 0), rot_z=0.0, coll=None, stone_open=0.0, world=
     """
     b = _B("GardenTomb", loc, rot_z, coll, seed)
     rnd = b.rnd
-    face_m = _cached(("tomb_face",), lambda: _grime(
+    face_m = _pbr("worn_rock_natural_01", scale=0.85, tint=(0.97, 0.94, 0.88), name="set_tomb_rock", bump=1.6,
+                  hsv=(0.5, 0.45, 1.12))
+    cliff_m = _cached(("tomb_cliff",), lambda: _grime_attr(
         C.mat_pbr("worn_rock_natural_01", scale=0.85, tint=(0.97, 0.94, 0.88), name="set_tomb_face", bump=1.6,
-                  hue_sat_val=(0.5, 0.45, 1.12)), "z", 0.5, -0.2, (0.3, 0.27, 0.22), 0.45))
+                  hue_sat_val=(0.5, 0.45, 1.12), projection="UV"), "damp", (0.3, 0.27, 0.22), 0.45))
     cut_m = _cached(("tomb_cut",), lambda: _add_chisel(C.mat_pbr(
         "worn_rock_natural_01", scale=0.9, tint=(0.97, 0.94, 0.88), name="set_tomb_cut", bump=0.8,
         hue_sat_val=(0.5, 0.55, 1.1)), 0.3, 7.0))
     stone_m = _cached(("tomb_stone",), lambda: _add_chisel(C.mat_pbr(
         "rock_boulder_dry", scale=0.9, tint=(0.93, 0.9, 0.84), name="set_tomb_stone", bump=1.3,
         hue_sat_val=(0.5, 0.55, 1.05)), 0.25, 5.0))
-    ground_m = _pbr("rocky_trail_02", scale=0.45, tint=(0.95, 0.9, 0.82), name="set_tomb_ground",
-                    hsv=(0.5, 0.55, 1.15))
+    ground_m = _cached(("tomb_ground",), lambda: C.mat_pbr(
+        "rocky_trail_02", scale=0.45, tint=(0.95, 0.9, 0.82), name="set_tomb_ground", hue_sat_val=(0.5, 0.55, 1.15),
+        projection="UV"))
     DW, DH, PASS = 0.95, 1.4, 0.55          # door width, height, passage depth
     R, TH = 1.0, 0.32                         # stone radius, thickness
     GY = -0.27                                # stone centre-plane y
@@ -1936,7 +2106,11 @@ def garden_tomb(ctx, loc=(0, 0, 0), rot_z=0.0, coll=None, stone_open=0.0, world=
     def keep(u, v):
         p = cliff(u, v)
         return not (abs(p.x) < DW / 2 and -0.5 < p.z < DH and v < 0.62)
-    face = _grid_obj("tomb_cliff", 180, 110, cliff, b, face_m, keep=keep)
+    def cliff_uv(u, v, p):
+        return (p.x, p.z if v < 0.62 else 5.5 + (p.y - 0.25))
+    face = _grid_obj("tomb_cliff", 180, 110, cliff, b, cliff_m, keep=keep, uv_fn=cliff_uv)
+    damp = [max(0.0, min(1.0, (0.5 - (v.co.z + 0.2 * noise.noise(v.co * 1.5 + so))) / 0.7)) for v in face.data.vertices]
+    face.data.attributes.new("damp", "FLOAT", "POINT").data.foreach_set("value", damp)
     # snap doorway hole boundary onto a crisp (slightly irregular) rectangle
     me = face.data
     bm = bmesh.new()
@@ -2002,7 +2176,8 @@ def garden_tomb(ctx, loc=(0, 0, 0), rot_z=0.0, coll=None, stone_open=0.0, world=
     b.info.objects["bench"] = bench
     # ---------- grave cloths ----------
     lin_m = linen_material()
-    sheet = _cloth_sheet("grave_linen", 1.75, 0.5, b, lin_m, fold_amp=0.01, droop=0.03, seed=seed, hollow=0.012)
+    sheet = _cloth_sheet("grave_linen", 1.75, 0.5, b, lin_m, fold_amp=0.009, droop=0.03, seed=seed, hollow=0.012,
+                         nv=32, ridges=0.022)
     sheet.location = ((BX0 + BX1) / 2 + 0.02, (BY0 + BY1) / 2 + 0.2, BZ + 0.035)
     sheet.rotation_euler = (0, 0, math.radians(90 + 2))
     # wrapping strips lying collapsed on the sheet
@@ -2053,10 +2228,10 @@ def garden_tomb(ctx, loc=(0, 0, 0), rot_z=0.0, coll=None, stone_open=0.0, world=
             z *= 0.2
         return Vector((x, y, z))
 
-    gnd = _grid_obj("tomb_ground", 120, 70, gfn, b, ground_m)
+    gnd = _grid_obj("tomb_ground", 120, 70, gfn, b, ground_m, uv_fn=lambda u, v, p: (p.x, p.y))
     b.info.objects["ground"] = gnd
     if garden:
-        _grass_tufts(gnd, density=26.0, seed=seed, height=0.32)
+        _grass_tufts(gnd, density=26.0, seed=seed, height=0.32, center=(0.0, -4.0), radius=9.0)
         for k in range(9):
             side = -1 if k % 2 else 1
             x = side * rnd.uniform(2.8, 8.5)
@@ -2119,6 +2294,8 @@ def garden_tomb(ctx, loc=(0, 0, 0), rot_z=0.0, coll=None, stone_open=0.0, world=
     waypoints = [((0.3, -4.5, 1.3), (0.0, 1.0, 0.8)), ((0.1, -1.6, 0.95), (0.1, 1.5, 0.6)),
                  ((0.0, 0.2, 0.75), (0.6, 2.3, BZ)), ((-0.2, PASS + 0.6, 0.85), (1.1, CY1 - 0.9, BZ))]
     b.info.extra["move_in"] = [(b.w(l), b.w(t)) for l, t in waypoints]
+    _uvify([o for o in b.coll.objects if o.name.startswith(("tomb_bench", "tomb_step", "groove_floor", "tomb_chamber",
+            "tomb_passage"))])
     return b.finish()
 
 
@@ -3056,7 +3233,7 @@ def _glory_material(name="set_glory", strength=40.0, color=(1.0, 0.9, 0.7)):
 
 
 def holy_of_holies(ctx, loc=(0, 0, 0), rot_z=0.0, coll=None, veil_open=0.0, glory=1.0, smoke=True, shafts=True,
-                   holy_place=True, room=9.0, probe=True, seed=3):
+                   holy_place=True, room=9.0, probe=False, seed=3):
     """Temple inner sanctuary (s03). Local layout (metres):
         Veil (two halves, blue/purple/scarlet with embroidered gold cherubim) hangs across y=0,
         x -4.5..4.5, up to z 8.6. The Holy of Holies is the cube y 0..9 behind it with gold-overlaid
@@ -3152,9 +3329,9 @@ def holy_of_holies(ctx, loc=(0, 0, 0), rot_z=0.0, coll=None, veil_open=0.0, glor
     gl = bpy.data.objects.new("glory_volume", None)
     gbox = C.box("glory_volume", (1.1, 1.1, 1.1), (ark_c.x, ark_c.y, gz), coll=b.coll)
     b.add(gbox, "glory_volume")
-    gbox.data.materials.append(_glory_material(strength=22.0 * glory))
+    gbox.data.materials.append(_glory_material(strength=15.0 * glory))
     gbox.visible_shadow = False
-    glight = b.light("glory", "POINT", (ark_c.x, ark_c.y, gz), 450.0 * glory, temp=6200, size=0.2)
+    glight = b.light("glory", "POINT", (ark_c.x, ark_c.y, gz), 380.0 * glory, temp=6200, size=0.2)
     glight.data.volume_factor = 1.0
     gfill = b.light("glory_fill", "AREA", (ark_c.x, ark_c.y, S_ - 0.5), 90.0 * glory, temp=5600,
                     target=(ark_c.x, ark_c.y, 0), size=6.0, shadow=False)
@@ -3196,7 +3373,8 @@ def holy_of_holies(ctx, loc=(0, 0, 0), rot_z=0.0, coll=None, veil_open=0.0, glor
             po = bpy.data.objects.new("hoh_probe%d" % k, pd)
             b.add(po)
             po.location = (0, py, 2.0)
-    world_bg = C.world_color((0.03, 0.018, 0.008), 1.0)
+    # the world doubles as the (uniform) reflection environment of the gold when probes are off
+    world_bg = C.world_color((0.03, 0.018, 0.008) if probe else (0.11, 0.065, 0.025), 1.0)
     # ---------- veil animation ----------
     if isinstance(veil_open, (list, tuple)):
         animate_veil(b.info, veil_open)
@@ -3285,15 +3463,17 @@ def courtyard_assembly(ctx, loc=(0, 0, 0), rot_z=0.0, coll=None, lamps=480, worl
     """
     b = _B("CourtyardAssembly", loc, rot_z, coll, seed)
     rnd = b.rnd
-    floor_m = _pbr("sandstone_blocks_08", scale=0.22, tint=(0.82, 0.76, 0.68), name="set_court_floor",
-                   hsv=(0.5, 0.75, 0.95), rough_add=0.05)
+    floor_m = _cached(("court_floor",), lambda: C.mat_pbr(
+        "sandstone_blocks_08", scale=0.22, tint=(0.82, 0.76, 0.68), name="set_court_floor", hue_sat_val=(0.5, 0.75, 0.95),
+        rough_add=0.05, projection="UV"))
     wall_m = _pbr("sandstone_blocks_08", scale=0.45, tint=(0.9, 0.82, 0.7), name="set_court_wall", hsv=(0.5, 0.8, 1.0))
     col_m = _pbr("worn_rock_natural_01", scale=1.2, tint=(0.95, 0.9, 0.82), name="set_court_column",
                  hsv=(0.5, 0.6, 1.1))
     bronze = _cached(("bronze",), lambda: C.mat("set_bronze", (0.55, 0.36, 0.18), rough=0.35, metal=1.0))
     X0, X1, Y0, Y1 = -9.0, 9.0, -6.0, 22.0
     CX = 7.3                                  # colonnade line
-    _mesh_obj("court_floor", [(X0, Y0, 0), (X1, Y0, 0), (X1, Y1, 0), (X0, Y1, 0)], [(0, 1, 2, 3)], b, False, floor_m)
+    cfl = _mesh_obj("court_floor", [(X0, Y0, 0), (X1, Y0, 0), (X1, Y1, 0), (X0, Y1, 0)], [(0, 1, 2, 3)], b, False, floor_m)
+    _planar_uv(cfl)
     lamp_pts = []
     sy0 = 15.6                                # first step
     steps = 6
@@ -3408,6 +3588,7 @@ def courtyard_assembly(ctx, loc=(0, 0, 0), rot_z=0.0, coll=None, lamps=480, worl
     ck.data.size, ck.data.size_y = 14.0, 2.0
     ck.data.volume_factor = 0.0
     mn = C.sun(elevation=25, azimuth=150, energy=0.15, temp=9000, angle=1.0)
+    mn.data.use_shadow = False
     b.add(mn)
     b.info.lights["moon"] = mn
     if haze:
@@ -3429,6 +3610,9 @@ def courtyard_assembly(ctx, loc=(0, 0, 0), rot_z=0.0, coll=None, lamps=480, worl
     b.cam("lamps_close", (-2.6, sy0 - 1.4, 0.55), (0.5, sy0 + 0.6, 0.5), 50)
     b.info.extra["glide"] = [(b.w(l), b.w(t)) for l, t in (((0, -3.5, 3.6), (0, 9.0, 1.3)), ((0, 3.0, 3.3), (0, 13.0, 1.5)),
                                                             ((0, 9.5, 3.0), (0, 19.0, 2.0)))]
+    _uvify([o for o in b.coll.objects if o.name.startswith(("court_wall", "court_coping", "court_stylobate",
+            "court_stoa_roof", "court_front", "court_step", "court_platform", "court_back", "court_entablature",
+            "court_roof"))])
     return b.finish()
 
 
@@ -3546,7 +3730,10 @@ def table_interior(ctx, loc=(0, 0, 0), rot_z=0.0, coll=None, world=True, use_ass
     b.add(win)
     winglass = _mesh_obj("window_sky", [(-1.6, RY1 - 0.26, 1.38), (-1.0, RY1 - 0.26, 1.38), (-1.0, RY1 - 0.26, 1.92),
                                         (-1.6, RY1 - 0.26, 1.92)], [(0, 1, 2, 3)], b, False,
-                         C.mat_emission("set_window_night", (0.03, 0.05, 0.12), 0.35))
+                         C.mat_emission("set_window_night", (0.02, 0.035, 0.085), 0.15))
+    for k in range(3):      # wooden window bars
+        bar = C.box("window_bar", (0.035, 0.05, 0.56), (-1.45 + 0.15 * k, RY1 - 0.22, 1.65), mat_=beam_m, coll=b.coll)
+        b.add(bar)
     # niche with lamp (right wall)
     niche = C.box("niche", (0.25, 0.5, 0.45), (RX1 - 0.1, 0.9, 1.5), mat_=_mat_simple("set_niche", (0.1, 0.075, 0.06),
                                                                                          rough=0.9), coll=b.coll)
@@ -3628,13 +3815,14 @@ def table_interior(ctx, loc=(0, 0, 0), rot_z=0.0, coll=None, world=True, use_ass
         cb.data.materials.append(crm)
         b.add(cb)
     # lamps
-    lt = oil_lamp((-0.42, -0.2, TZ), rot_z=20, energy=22.0 * lamp_energy, seed=3, b=b, name="lamp_table")
+    lt = oil_lamp((-0.42, -0.2, TZ), rot_z=20, energy=16.0 * lamp_energy, seed=3, b=b, name="lamp_table")
     b.info.lights["lamp_table"] = lt[2]
     if lamps >= 2:
         lt2 = oil_lamp((0.78, -0.14, TZ), rot_z=160, energy=20.0 * lamp_energy, seed=4, b=b, name="lamp_table2")
         b.info.lights["lamp_table2"] = lt2[2]
     if lamps >= 3:
-        ln_ = oil_lamp((RX1 - 0.18, 0.9, 1.28), rot_z=180, energy=25.0 * lamp_energy, seed=5, b=b, name="lamp_niche")
+        ln_ = oil_lamp((RX1 - 0.18, 0.9, 1.28), rot_z=180, energy=25.0 * lamp_energy, seed=5, b=b, name="lamp_niche",
+                       shadow=False)
         b.info.lights["lamp_niche"] = ln_[2]
     bo = b.light("bounce", "AREA", (0, 0, RH - 0.25), 35.0 * lamp_energy, temp=2600, target=(0, 0, 0), size=2.5,
                  shadow=False)
@@ -3643,7 +3831,7 @@ def table_interior(ctx, loc=(0, 0, 0), rot_z=0.0, coll=None, world=True, use_ass
                  shadow=False)
     wf.data.volume_factor = 0.0
     wl = b.light("window", "AREA", (-1.3, RY1 - 0.3, 1.65), 12.0, temp=12000, target=(0, 0, 0.6), size=0.6,
-                 shadow=True)
+                 shadow=False)
     wl.data.volume_factor = 0.3
     if haze:
         hz = C.fog_box(center=(0, 0.1, 1.35), size=(RX1 - RX0 - 0.1, RY1 - RY0 - 0.1, RH - 0.05), density=0.025,
@@ -3670,6 +3858,8 @@ def table_interior(ctx, loc=(0, 0, 0), rot_z=0.0, coll=None, world=True, use_ass
     b.cam("bread_close", (0.25, -0.62, 1.28), (0.0, -0.04, TZ + 0.02), 50)
     b.cam("table_wide", (1.9, -2.1, 1.65), (0.0, 0.1, 0.85), 30)
     b.cam("low_side", (-1.05, -0.5, 0.92), (0.1, 0.0, TZ + 0.05), 40)
+    _uvify([o for o in b.coll.objects if o.name.startswith(("table_plank", "table_leg", "table_apron",
+            "table_stretcher", "bench", "room", "ceiling_beam", "window_frame"))])
     return b.finish()
 
 
@@ -3734,7 +3924,9 @@ def camp_night(ctx, loc=(0, 0, 0), rot_z=0.0, coll=None, world=True, fire=True, 
     """
     b = _B("CampNight", loc, rot_z, coll, seed)
     rnd = b.rnd
-    ground_m = _pbr("rocky_trail_02", scale=0.5, tint=(0.62, 0.56, 0.48), name="set_camp_ground", hsv=(0.5, 0.7, 1.0))
+    ground_m = _cached(("camp_ground",), lambda: C.mat_pbr(
+        "rocky_trail_02", scale=0.5, tint=(0.62, 0.56, 0.48), name="set_camp_ground", hue_sat_val=(0.5, 0.7, 1.0),
+        projection="UV"))
     rock_m = _pbr("rock_boulder_dry", scale=1.2, tint=(0.5, 0.46, 0.4), name="set_camp_rock", hsv=(0.5, 0.6, 0.9),
                   bump=1.4)
 
@@ -3745,9 +3937,10 @@ def camp_night(ctx, loc=(0, 0, 0), rot_z=0.0, coll=None, world=True, fire=True, 
         z = 0.06 * C.fbm(x * 0.6, y * 0.6, 3, seed=seed) + 2.2 * max(0.0, (d - 8) / 22.0) ** 1.6 * (
             0.6 + 0.4 * C.fbm(x * 0.05, y * 0.05, 3, seed=seed + 1))
         return Vector((x, y, z))
-    gnd = _grid_obj("camp_ground", 120, 120, gfn, b, ground_m)
+    gnd = _grid_obj("camp_ground", 120, 120, gfn, b, ground_m, uv_fn=lambda u, v, p: (p.x, p.y))
     if grass:
-        _grass_tufts(gnd, density=6.0, seed=seed, height=0.28, color=(0.3, 0.27, 0.15), dry=0.8)
+        _grass_tufts(gnd, density=7.0, seed=seed, height=0.28, color=(0.3, 0.27, 0.15), dry=0.8, center=(0.0, 0.5),
+                     radius=9.0)
     hv, hf = [], []
     for i in range(81):
         a = math.radians(-30 + 240 * i / 80)

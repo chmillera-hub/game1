@@ -57,11 +57,14 @@ lamp = ...                                   # your clay lamp prop
 f = FX.flame((0.06, 0, 0.035), size=0.04, flicker=1.2, parent=lamp, light_energy=3.0)
 ```
 
-### `lamp_field(points, size=0.035, color_temp=1850, flicker=True, lights=16, light_energy=None, shadow=False, strength=1.0, seed=0, name="LampField", coll=None) -> FX`
+### `lamp_field(points, size=0.035, color_temp=1850, flicker=True, lights=16, light_energy=None, shadow=False, strength=1.0, min_angle=0.0025, seed=0, name="LampField", coll=None) -> FX`
 Hundreds of distant lamp flames as **one** GN instancer (far-LOD flame mesh, per-instance random
 flicker in scale/tilt) + `lights` cluster point lights (k-means of the lamp positions, energy =
 sum of members, soft radius = cluster spread, shadowless by default).
 `points`: list of world positions (flame bases) or a mesh object (its vertices).
+`min_angle` (radians): distant flames are scaled up (relative to the active camera) so they stay at
+least this tall on screen (0.0025 ≈ 2.5 px at 35 mm portrait) and dimmed by boost^1.5, so a lamp
+500 m away still reads as a glowing point instead of vanishing / aliasing (s20b). 0 = physical size.
 Returns `FX(root, obj, lights=[...], material, modifier)`.
 Use for s17a (assembly with hundreds of lamps) and s20b (river of lights). Lamps nearer than ~3 m
 from camera should use `flame()` instead.
@@ -93,7 +96,7 @@ Low level: your own cluster of procedural fire cards. `cards = [(x, y, z, width,
 
 ---
 
-## 2. `red_sea(ctx=None, length=640, width=36, height=45, center_y=0, shore_slope=150, lighting=True, sun_elevation=7.0, spray=True, spray_rate=0.12, mist=True, mist_density=0.0022, haze=0.0006, collapse=None, zipper=(None, 60.0), seabed="coast_sand_rocks_02", seabed_scale=0.25, puddles=0.12, glow=1.0, foam=1.0, frame_start=1, frame_end=None, wind=(0, 2.0, 0.6), seed=0, name="RedSea", coll=None) -> FX`
+## 2. `red_sea(ctx=None, length=640, width=36, height=45, center_y=0, shore_slope=150, lighting=True, sun_elevation=7.0, spray=True, spray_rate=0.12, mist=True, mist_density=0.0022, haze=0.0006, collapse=None, zipper=(None, 60.0), seabed="coast_sand_rocks_02", seabed_scale=0.25, puddles=0.12, glow=1.0, foam=1.0, frame_start=1, frame_end=None, wind=(0, 2.0, 0.6), wall_shadows=True, seed=0, name="RedSea", coll=None) -> FX`
 
 The parted Red Sea for s04a / s04b.
 
@@ -107,17 +110,19 @@ The parted Red Sea for s04a / s04b.
   with swirling depth variation, crest / foot foam, sparse face foam. Wall noise is stretched along
   Y on purpose (walls are seen foreshortened from inside the corridor).
 * **Seabed:** Poly Haven texture + `wet_material` (darkened, glossy, sand ripples, mirror puddles)
-  + macro variation to hide tiling.
+  + macro variation to hide tiling. Above sea level (the shores / dry land beyond) it is dry.
 * **Spray:** camera-facing translucent puffs lifting off both crests and drifting with `wind`.
-* **Mist / haze:** a low fog box along the corridor + a large thin haze box (aerial perspective).
+* **Mist / haze:** ONE volume box: dense low mist hugging the seabed (`mist_density`, noisy) plus a
+  thin aerial haze (`haze`) that fades the far shore. `mist=False, haze=0` removes it.
 * **Lighting** (`lighting=True`): `qwantani_sunrise_puresky` HDRI rotated so its sun is over the far
   shore (+Y) + sun lamp at `sun_elevation` from +Y (backlight). Set `lighting=False` to do your own.
+* `glow` (emerald translucency), `foam` (amount), `wall_shadows=False` (~15 % faster, walls cast no sun shadow).
 * **Collapse** (`collapse=(start_frame, duration_frames)`): walls lean in (tops first), slump and
   meet; whitewater churn; a dense spray burst where they meet. `zipper=(y_start, speed m/s)`:
   collapse starts at `y_start` (default: 20 % of the length before the centre, i.e. away from the
   destination shore) and spreads both ways at `speed`.
 
-Returns `FX(root, seabed, walls=[L, R], sea=[L, R], spray, crash (if collapse), mist, haze, sun)`
+Returns `FX(root, seabed, walls=[L, R], sea=[L, R], spray, crash (if collapse), mist (the air volume), sun (if lighting))`
 plus **`fx.floor_at(x, y) -> z`** (place people / props on the seabed) and
 **`fx.corridor = {"x": (-w/2, w/2), "y": (y0, y1), "H": height, "shore_slope": ...}`**.
 
@@ -202,7 +207,7 @@ that settle and drift with `wind`, plus grains thrown out ballistically. `size` 
 ~1 s. `floor` = ground z (default `loc.z`). Returns `FX(root, puffs, grains)`.
 Call it once per impact (cheap: 60 quads + 1500 points).
 
-### `dust_pour(hand_location, start_frame, end_frame=None, rate=2500, opening=0.03, wind=(1.2,0,0.1), color=(0.62,0.55,0.46), haze=True, floor=0.0, grain_size=0.0012, life=4.0, gusts=0.25, seed=0, name="DustPour", coll=None) -> FX`
+### `dust_pour(hand_location, start_frame, end_frame=None, rate=4500, opening=0.03, wind=(1.2,0,0.1), color=(0.62,0.55,0.46), haze=True, floor=0.0, grain_size=0.0018, life=4.0, gusts=0.25, seed=0, name="DustPour", coll=None) -> FX`
 Fine dust trickling from an opening hand (s11b): grains emitted from an ellipse of radius `opening`
 at `hand_location` (more at first, tapering as the hand empties), falling with drag, pushed by
 `wind`, skating along the ground (`floor` z) and fading; `haze` adds soft dust wisps peeling off the
@@ -271,7 +276,31 @@ def build(ctx):
 
 ## PERF
 
-See the report section (timings were measured on a heavily loaded shared machine; see notes there).
+Measured on the shared 4-core box **while 2–3 other renders were running** (load 6–10), final
+quality 540x960, 8 spp, steady state (animation render, frames 3+). Absolute numbers are therefore
+~2–2.5x slower than an idle machine; compare with the references measured the same way:
+
+| scene | s/frame (load) | vs `s00` |
+|---|---|---|
+| trivial (cube + sun) | 7.1 (5.3) | 0.75x |
+| **`s00` reference shot** | 9.5 (6.0) | 1x |
+| `melting_candle` close-up | 15.4 (7.4) | ~1.4x |
+| `earth_from_space` | 17.8 (10.2) | ~1.3x |
+| `campfire` + `torch` | 20.2 (9.6) | ~1.6x |
+| `ash_disintegrate` 25k flakes + `dust_burst` + `dust_pour` | 25.9 (7.0) | ~2.3x |
+| `water_pour` (raytracing on, 68k-vert cracked ground) | 29.9 (7.8) | ~2.6x |
+| `red_sea` corridor, no RT | 27.5 (8.6) | ~2.2x |
+| `red_sea` corridor, raytracing | 30.8 (10.0) | ~2.2x |
+
+Red Sea component profile (draft 3 spp, load 6.5): full 9.9 s; walls not casting shadows 8.3 s
+(`wall_shadows=False`); no spray 9.2 s. Raytracing adds ~10–15 %.
+Build times: all < 3 s (Earth 2 s: per-frame sun keys). No bake. Peak RSS per process 1.8–2.6 GB
+(EEVEE's 2nd frame adds ~0.5 GB regardless of scene).
+
+**Levers:** `ctx.samples = 6`; `ctx.render_opts["volumetrics"] = "low"` (Red Sea uses one volume
+box); `red_sea(wall_shadows=False, spray_rate=0.08, haze=0, mist=False)`; lower `count` in
+`ash_disintegrate` / `mode="points"`; `cracked_ground(res=180)`; skip raytracing for wide shots.
+Flames are cheap (one additive mesh / a few cards each); 150 far lamps in `lamp_field` cost ~nothing.
 
 ## Gotchas
 

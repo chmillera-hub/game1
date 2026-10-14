@@ -151,8 +151,9 @@ class Body:
         self.tris_all = tris
         self.vnormal = nrm @ M[:3, :3].T
         self.bvh = {}
-        armreg = np.isin(self.region, [RID[r] for r in ("upperarm_L", "upperarm_R", "forearm_L", "forearm_R",
-                                                         "hand_L", "hand_R")])
+        # 'core' = body without forearms/hands: in the A rest pose the hands hang next to the hips, so hems,
+        # belts and skirts must never sample them (upper arms are fine: they sit at shoulder height)
+        armreg = np.isin(self.region, [RID[r] for r in ("forearm_L", "forearm_R", "hand_L", "hand_R")])
         self.layers = []             # rest-pose garments already built on this person (outer layers hug them)
         for key, mask in (("body", isb), ("core", isb & ~armreg), ("skirt", isk), ("tights", ist)):
             tm = tris[mask[tris].all(1)]
@@ -558,30 +559,34 @@ def bm_remove_loose(bm):
         bmesh.ops.delete(bm, geom=loose, context="VERTS")
 
 
-def boundary_mask(nv, F, E=None):
-    """Vertices on open boundaries (edges used by one face)."""
-    from collections import Counter
-    cnt = Counter()
+def _face_edges(F):
+    a, b = [], []
     for f in F:
         n = len(f)
         for i in range(n):
-            a, b = f[i], f[(i + 1) % n]
-            cnt[(min(a, b), max(a, b))] += 1
+            a.append(f[i])
+            b.append(f[(i + 1) % n])
+    a, b = np.array(a, np.int64), np.array(b, np.int64)
+    return np.minimum(a, b), np.maximum(a, b)
+
+
+def boundary_mask(nv, F, E=None):
+    """Vertices on open boundaries (edges used by one face)."""
+    lo, hi = _face_edges(F)
+    key = lo * (nv + 1) + hi
+    u, cnt = np.unique(key, return_counts=True)
+    be = u[cnt == 1]
     m = np.zeros(nv, bool)
-    for (a, b), c in cnt.items():
-        if c == 1:
-            m[a] = m[b] = True
+    m[be // (nv + 1)] = True
+    m[be % (nv + 1)] = True
     return m
 
 
 def edges_of(F):
-    s = set()
-    for f in F:
-        n = len(f)
-        for i in range(n):
-            a, b = f[i], f[(i + 1) % n]
-            s.add((min(a, b), max(a, b)))
-    return np.array(sorted(s), np.int64).reshape(-1, 2)
+    lo, hi = _face_edges(F)
+    nv = int(hi.max()) + 1 if len(hi) else 1
+    u = np.unique(lo * (nv + 1) + hi)
+    return np.stack([u // (nv + 1), u % (nv + 1)], 1).astype(np.int64)
 
 
 def laplacian(V, E, iters=4, lam=0.5, mu=-0.53, fixed=None, weight=None):
@@ -646,18 +651,20 @@ def push_out(V, B, gap=0.005, normals=None, surface="body", layers=True, layer_g
     """Move vertices that are inside the body (or closer than gap) out along the body normal; then the
     same against garments already built on this person (B.layers) so outer layers never cut inner ones."""
     V = V.copy()
-    surfs = [(B.bvh[surface][0], gap)]
+    surfs = [(B.bvh[surface][0], gap, 0.08)]
     if layers:
         lg = layer_gap if layer_gap is not None else max(gap, 0.006)
-        surfs += [(bvh, lg) for bvh in [L["bvh"] for L in B.layers]]
+        surfs += [(bvh, lg, 0.035) for bvh in [L["bvh"] for L in B.layers]]
     moved = 0
-    for bvh, g in surfs:
+    for bvh, g, reach in surfs:
         for i, p in enumerate(V):
-            loc, nrm, fi, d = bvh.find_nearest(Vector(p), 0.25)
+            # only nearby surfaces: a far-away nearest point (e.g. an inner garment's neck edge seen from a
+            # turban) has a meaningless normal and would yank the vertex into a long spike
+            loc, nrm, fi, d = bvh.find_nearest(Vector(p), reach)
             if loc is None:
                 continue
             s_ = (Vector(p) - loc).dot(nrm)
-            if s_ < g and s_ > -0.12:
+            if s_ < g and s_ > -min(reach, 0.06):
                 V[i] = np.array(loc + nrm * g)
                 moved += 1
     return V, moved
@@ -670,7 +677,7 @@ def add_layer(B, V, F, name, W=None, ob=None):
     L = dict(name=name, V=np.asarray(V), T=T, W=W, ob=ob,
              bvh=BVHTree.FromPolygons([tuple(p) for p in V], T.tolist(), all_triangles=True))
     if W is not None:
-        armb = np.isin(B.reg_of_bone, list(ARM_L | ARM_R))
+        armb = np.isin(B.reg_of_bone, [RID[r] for r in ("forearm_L", "forearm_R", "hand_L", "hand_R")])
         armv = W[:, armb].sum(1) > 0.3
         Tc = T[~armv[T].any(1)]
         L["Tc"] = Tc
@@ -688,6 +695,7 @@ def sample_layers(B, P, maxd=0.05, core=None):
     for L in B.layers:
         if L.get("W") is None:
             continue
+        hits = []
         for i, p in enumerate(P):
             if core[i]:
                 if L.get("bvh_core") is None:
@@ -699,10 +707,18 @@ def sample_layers(B, P, maxd=0.05, core=None):
                 tri = L["T"]
             if loc is None or d >= best[i]:
                 continue
-            a, b, c = tri[fi]
-            bc = bary_v(np.array([loc]), L["V"][[a]], L["V"][[b]], L["V"][[c]])[0]
-            W[i] = bc[0] * L["W"][a] + bc[1] * L["W"][b] + bc[2] * L["W"][c]
+            hits.append((i, fi, loc[0], loc[1], loc[2], 1 if core[i] else 0))
             best[i] = d
+        if hits:
+            H = np.array(hits)
+            ii = H[:, 0].astype(np.int64)
+            fi = H[:, 1].astype(np.int64)
+            loc = H[:, 2:5]
+            tri = np.where(H[:, 5:6] > 0, L["Tc"][np.minimum(fi, len(L["Tc"]) - 1)] if len(L.get("Tc", [])) else L["T"][fi], L["T"][np.minimum(fi, len(L["T"]) - 1)])
+            bc = bary_v(loc, L["V"][tri[:, 0]], L["V"][tri[:, 1]], L["V"][tri[:, 2]])
+            Wl = bc[:, 0:1] * L["W"][tri[:, 0]] + bc[:, 1:2] * L["W"][tri[:, 1]] + bc[:, 2:3] * L["W"][tri[:, 2]]
+            # later (closer) hits overwrite earlier ones in order
+            W[ii] = Wl
     return W, best
 
 
@@ -1093,8 +1109,8 @@ def mail_material():
     L.new(t.outputs["Color"], sep.inputs["Color"])
     # gaps between rings are dark; rings are worn bright on the tops
     col = nt.nodes.new("ShaderNodeMapRange")
-    col.inputs["To Min"].default_value = 0.05
-    col.inputs["To Max"].default_value = 0.62
+    col.inputs["To Min"].default_value = 0.10
+    col.inputs["To Max"].default_value = 0.50
     L.new(sep.outputs["Red"], col.inputs["Value"])
     wa = nt.nodes.new("ShaderNodeAttribute")
     wa.attribute_name = "wear"
@@ -1110,13 +1126,13 @@ def mail_material():
     L.new(rust.outputs["Result"], b.inputs["Base Color"])
     b.inputs["Metallic"].default_value = 0.85
     rgh = nt.nodes.new("ShaderNodeMapRange")
-    rgh.inputs["To Min"].default_value = 0.62
-    rgh.inputs["To Max"].default_value = 0.32
+    rgh.inputs["To Min"].default_value = 0.70
+    rgh.inputs["To Max"].default_value = 0.45
     L.new(sep.outputs["Red"], rgh.inputs["Value"])
     L.new(rgh.outputs["Result"], b.inputs["Roughness"])
     bp = nt.nodes.new("ShaderNodeBump")
-    bp.inputs["Strength"].default_value = 1.0
-    bp.inputs["Distance"].default_value = 0.004
+    bp.inputs["Strength"].default_value = 0.55
+    bp.inputs["Distance"].default_value = 0.003
     L.new(sep.outputs["Red"], bp.inputs["Height"])
     L.new(bp.outputs["Normal"], b.inputs["Normal"])
     _MATS[key] = m
@@ -1192,10 +1208,14 @@ def finish_garment(person, B, name, V, F, part, material, rgb, weights=None, uv=
         for bi in used:
             g = ob.vertex_groups.new(name=names[bi])
             col = weights[:, bi]
-            nz = np.nonzero(col > 0.001)[0]
-            for w in np.unique(np.round(col[nz], 3)):
-                idx = nz[np.round(col[nz], 3) == w]
-                g.add(idx.tolist(), float(w), "REPLACE")
+            nz = np.nonzero(col > 0.004)[0]
+            q = np.round(col[nz] * 100).astype(np.int32)
+            order = np.argsort(q, kind="stable")
+            qs = q[order]
+            cuts = np.nonzero(np.diff(qs))[0] + 1
+            for grp in np.split(order, cuts):
+                if len(grp):
+                    g.add(nz[grp].tolist(), float(q[grp[0]]) / 100.0, "REPLACE")
     if pin is not None:
         g = ob.vertex_groups.new(name="pin")
         for w in np.unique(np.round(pin, 2)):
@@ -1501,6 +1521,7 @@ def garment_post(B, G, rnd, fold_amp=0.014, pleat_amp=0.006, sleeve_fold=0.006, 
     G["T"] = T
     bnd = boundary_mask(len(V), F)
     V = laplacian(V, E, iters=smooth_iters, weight=np.where(bnd, 0.3, 1.0))
+    V = smooth_boundary(V, F, 3)
     reg, dist = B.nearest_region(V)
     G["region"] = reg
     is_arm = np.isin(reg, list(ARM_L | ARM_R))
@@ -1550,7 +1571,7 @@ def garment_post(B, G, rnd, fold_amp=0.014, pleat_amp=0.006, sleeve_fold=0.006, 
     return G
 
 
-def garment_weights(B, G, skirt_below=None, smooth=6, skirt_smooth=14, arms=True, only=None, layers=True):
+def garment_weights(B, G, skirt_below=None, smooth=5, skirt_smooth=10, arms=True, only=None, layers=True):
     """Bone weights. Arm-region verts (sleeves) sample the full body; everything else samples the body
     WITHOUT arms ('core'), so hems/belts never follow the hands. Verts below `skirt_below` (z) blend to
     MPFB's helper-skirt weights (no stretching between the legs). only: restrict to a bone-name subset."""
@@ -2236,7 +2257,7 @@ def _waist_z(B):
 
 
 def part_mantle(person, B, rnd, rgb, detail="hero", style="himation", length="calf", fabric="wool", name="mantle",
-                voxel=None, fold=0.016, wear=1.0, side="L", embroidery=False, roll=True, mask=True):
+                voxel=None, fold=0.016, wear=1.0, side="L", embroidery=False, roll=True, mask=True, layer_gap=0.007):
     """Outer mantle. style 'himation' (wrapped diagonally: over the `side` shoulder, under the other arm,
     rolled diagonal edge), 'cloak' (hangs from both shoulders, open at the front), 'cape' (back + shoulders)."""
     voxel = voxel or (0.014 if detail == "hero" else 0.026)
@@ -2263,7 +2284,7 @@ def part_mantle(person, B, rnd, rgb, detail="hero", style="himation", length="ca
     sleeves = {}
     sides = [side] if style == "himation" else (["L", "R"] if style == "cloak" else [])
     for sd in sides:
-        sp = _sleeve_solid(B, sd, "short", 0.03, 0.05)
+        sp = _sleeve_solid(B, sd, "short", 0.03, 0.05) if style == "himation" else _sleeve_solid(B, sd, "elbow", 0.02, 0.06)
         parts.append((sp["V"], sp["F"]))
         sleeves[sd] = sp
     sx = 1 if side == "L" else -1
@@ -2297,7 +2318,10 @@ def part_mantle(person, B, rnd, rgb, detail="hero", style="himation", length="ca
                 cf = _column_center(B)
                 cy = np.array([cf(z)[1] for z in co[:, 2]])
                 th = np.arctan2(co[:, 1] - cy, co[:, 0])
-                return (np.sin(th) < 0.30) & (co[:, 2] < zc)
+                below = (np.sin(th) < 0.30) & (co[:, 2] < zc)
+                # the front only covers the shoulder tops (no collar across the chest)
+                chest = (co[:, 1] < cy - 0.02) & (np.abs(co[:, 0]) < 0.11 * sc)
+                return below | chest
 
             def cape_snap(co):
                 out = np.full_like(co, np.nan)
@@ -2318,7 +2342,7 @@ def part_mantle(person, B, rnd, rgb, detail="hero", style="himation", length="ca
         folds.append(fold_along(rnd, plane[1], plane[0], 0.008, wave=0.055, zmin=waist - 0.05, zmax=top + 0.05))
     else:
         folds.append(fold_crumple(rnd, 0.003, 10, zmin=waist))
-    G = post_shell(B, G, rnd, folds=folds, smooth_iters=5, gap=0.008, layer_gap=0.007, bsmooth=4)
+    G = post_shell(B, G, rnd, folds=folds, smooth_iters=5, gap=0.008, layer_gap=layer_gap, bsmooth=4)
     _tick("post")
     extra = []
     if style == "himation" and roll:
@@ -2661,33 +2685,51 @@ def part_crown(person, B, rnd, detail="hero", name="crown_of_thorns", strands=4,
     return [ob]
 
 
-def part_loincloth(person, B, rnd, rgb, detail="hero", name="loincloth", knot_side=None, fold=0.010, voxel=None,
-                   wear=0.8):
-    """Linen wrap around the hips knotted at one hip, tails hanging; folds radiate from the knot."""
-    voxel = voxel or (0.010 if detail == "hero" else 0.018)
+def fold_swag(rnd, cy, half_w, sag, amp, wave=0.045, zmin=-9.0, zmax=9.0, front=True):
+    """Catenary 'swag' folds: arcs sagging between the hips (front or back of a wrap)."""
+    seed = rnd.random() * 100
+
+    def f(V, N, reg):
+        out = np.zeros(len(V))
+        side = (V[:, 1] < cy) if front else (V[:, 1] >= cy)
+        for i in np.nonzero(side)[0]:
+            x, z = V[i, 0], V[i, 2]
+            if not (zmin <= z <= zmax):
+                continue
+            u = min(1.0, abs(x) / half_w)
+            k = (1 - u * u)
+            ph = (z + sag * k) / wave + 0.25 * _n1(x * 9, seed)
+            out[i] = amp * (0.25 + 0.75 * k) * math.cos(2 * math.pi * ph) * min(1.0, (zmax - z) / 0.03 + 0.3)
+        return out
+    return f
+
+
+def part_loincloth(person, B, rnd, rgb, detail="hero", name="loincloth", knot_side=None, fold=0.006, voxel=None,
+                   wear=0.8, flap=True):
+    """Linen perizoma: wrapped low around the hips, swag folds sagging between the hips, the wrapped end
+    overlapping in front as a flap, a twisted knot at one hip with two hanging ends."""
+    voxel = voxel or (0.009 if detail == "hero" else 0.016)
     sc = _sc(B)
     ks = knot_side if knot_side is not None else rnd.choice((-1, 1))
     pel = B.head("spine05")
     crotch = B.head("upperleg02.L")[2]
     knee = B.head("lowerleg01.L")[2]
-    ztop = pel[2] + 0.035 * sc
-    zbot = crotch - 0.30 * (crotch - knee)
+    ztop = pel[2] + 0.030 * sc
+    zbot = crotch - 0.40 * (crotch - knee)
     P = B.pts({RID["hips"], RID["torso"], RID["thigh_L"], RID["thigh_R"]}, zmin=zbot - 0.08, zmax=ztop + 0.05)
 
     def ease(zs):
-        return 0.010 + 0.022 * np.clip((ztop - zs) / (ztop - zbot), 0, 1) ** 1.2
-    Vc, Fc, info = column_solid(B, P, zbot - 0.06, ztop + 0.04, ease, drape_below=crotch + 0.04, loose=0.9, step=0.010)
+        return 0.007 + 0.026 * np.clip((ztop - 0.03 - zs) / (ztop - zbot), 0, 1) ** 1.3
+    Vc, Fc, info = column_solid(B, P, zbot - 0.07, ztop + 0.04, ease, drape_below=crotch + 0.05, loose=1.0, step=0.010,
+                                zsm=3, asm=2)
     cy = info["Cs"][:, 1].mean()
-    # top edge: low in front (below the navel), higher at the back; bottom edge higher at the knot side
-    ntop = np.array([0, 0.22, 1.0])
+    ntop = np.array([0, 0.25, 1.0])
     ntop /= np.linalg.norm(ntop)
-    nbot = np.array([-ks * 0.30, 0.08, -1.0])
-    nbot /= np.linalg.norm(nbot)
-    w_sw = 0.16 * sc
+    w_sw = 0.17 * sc
 
     def z_hem(co):
-        # side-to-side slant (higher at the knot) + a swag dipping in the centre front and back
-        return zbot + 0.022 + 0.30 * ks * co[:, 0] * 0.35 - 0.045 * sc * np.clip(1 - (co[:, 0] / w_sw) ** 2, 0, 1)
+        # higher at the knot side, a swag dipping in the centre front and back
+        return zbot + 0.03 * sc + 0.10 * ks * co[:, 0] - 0.05 * sc * np.clip(1 - (co[:, 0] / w_sw) ** 2, 0, 1)
 
     def cut_hem(co):
         return co[:, 2] < z_hem(co)
@@ -2701,44 +2743,82 @@ def part_loincloth(person, B, rnd, rgb, detail="hero", name="loincloth", knot_si
         return out
     G = shell([(Vc, Fc)], voxel, [lambda bm: bm_cut_plane(bm, (0, cy, ztop - 0.005), ntop),
                                   lambda bm: bm_delete_where(bm, cut_hem), lambda bm: bm_snap_boundary(bm, snap_hem)])
-    knot = np.array([ks * 0.165 * sc, cy - 0.055 * sc, ztop - 0.045 * sc])
-    folds = [fold_radial(rnd, knot, fold * 1.6, wave=0.16, reach=0.45, axes=((0, -1, 0), (0, 0, 1))),
-             fold_radial(rnd, knot, fold * 1.1, wave=0.13, reach=0.45, axes=((1, 0, 0), (0, 0, 1))),
-             fold_hanging(B, rnd, crotch + 0.04, zbot, fold * 0.9, wave=0.06, min_frac=0.3)]
-    G = post_shell(B, G, rnd, folds=folds, smooth_iters=3, gap=0.005, bsmooth=4)
-    # knot + tails
+    knot = np.array([ks * 0.160 * sc, cy - 0.050 * sc, ztop - 0.050 * sc])
+    folds = [fold_swag(rnd, cy, 0.17 * sc, 0.06 * sc, fold * 0.55, wave=0.075 * sc, zmin=zbot - 0.06, zmax=ztop - 0.03),
+             fold_swag(rnd, cy, 0.17 * sc, 0.04 * sc, fold * 0.4, wave=0.08 * sc, zmin=zbot - 0.06, zmax=ztop - 0.03,
+                       front=False),
+             fold_radial(rnd, knot, fold * 0.7, wave=0.30, reach=0.26, axes=((0, -1, 0), (0, 0, 1))),
+             fold_hanging(B, rnd, crotch + 0.02, zbot - 0.05, fold * 0.45, wave=0.09, min_frac=0.2)]
+    G = post_shell(B, G, rnd, folds=folds, smooth_iters=5, gap=0.005, bsmooth=5)
+    parts = [(G["V"], G["F"])]
+    if flap:
+        # the overlapping end of the wrap: front panel from the centre to the knot, 7 mm outside
+        V, F = G["V"], G["F"]
+        N = vertex_normals(V, F, G.get("T"))
+        x0 = -ks * 0.03 * sc
+        keep = (V[:, 1] < cy + 0.02) & (ks * (V[:, 0] - x0) > 0) & (V[:, 2] < ztop - 0.012)
+        Ff = [f for f in F if keep[list(f)].all()]
+        if len(Ff) > 20:
+            used = sorted({i for f in Ff for i in f})
+            remap = {o: n for n, o in enumerate(used)}
+            Vf = V[used] + N[used] * 0.007
+            Ff2 = [tuple(remap[i] for i in f) for f in Ff]
+            Vf = smooth_boundary(Vf, Ff2, 10)
+            Ef = edges_of(Ff2)
+            Vf = laplacian(Vf, Ef, iters=2)
+            parts.append((Vf, Ff2))
+    # knot: a twisted bunch of cloth (several squashed ellipsoids)
     c = np.array(_column_center(B)(knot[2]))
     th0 = math.atan2(knot[1] - c[1], knot[0] - c[0])
-    r0 = _surface_radius(G["V"], c, knot[2], th0) + 0.010
+    r0 = _surface_radius(G["V"], c, knot[2], th0) + 0.012
     kc = np.array([c[0] + r0 * math.cos(th0), c[1] + r0 * math.sin(th0), knot[2]])
     tdir = np.array([-math.sin(th0), math.cos(th0), 0])
     ndir = np.array([math.cos(th0), math.sin(th0), 0])
     Mk = np.stack([tdir, ndir, [0, 0, 1]], 1)
-    extra = []
-    for off, rad in ((np.zeros(3), np.array([0.030, 0.018, 0.024])), (np.array([0.012, 0.004, -0.012]), np.array([0.02, 0.014, 0.018]))):
+    lobes = [(np.zeros(3), (0.026, 0.017, 0.020), 0.0), (np.array([0.016, 0.002, 0.006]), (0.016, 0.012, 0.014), 0.7),
+             (np.array([-0.014, 0.003, -0.008]), (0.015, 0.012, 0.016), -0.6), (np.array([0.0, 0.006, -0.018]), (0.012, 0.010, 0.012), 0.3)]
+    kparts = []
+    for off, rad, rot in lobes:
         rows = []
+        Rz = np.array([[math.cos(rot), -math.sin(rot), 0], [math.sin(rot), math.cos(rot), 0], [0, 0, 1]])
         for a in np.linspace(0, math.pi, 9)[1:-1]:
-            rows.append(np.array([[math.sin(a) * math.cos(b_), math.sin(a) * math.sin(b_), math.cos(a)] for b_ in np.linspace(-math.pi, math.pi, 14, endpoint=False)]))
-        extra.append(loft_closed([kc + Mk @ off + (row * rad * sc) @ Mk.T for row in rows]))
+            row = np.array([[math.sin(a) * math.cos(b_), math.sin(a) * math.sin(b_), math.cos(a)]
+                            for b_ in np.linspace(-math.pi, math.pi, 14, endpoint=False)])
+            row = row * np.array(rad) * sc
+            row = row @ Rz.T
+            rows.append(kc + (Mk @ off) * sc + row @ Mk.T)
+        kparts.append(loft_closed(rows))
+    Vk, Fk = _merge(kparts)
+    Gk = shell([(Vk, Fk)], 0.004)
+    Gk = post_shell(B, Gk, rnd, folds=[fold_crumple(rnd, 0.002, 60)], smooth_iters=2, gap=0.004, push=False)
+    parts.append((Gk["V"], Gk["F"]))
+    # two hanging ends (tapered, slightly twisted) down the side of the thigh
     cf = _column_center(B)
-    for e, (dth, ln) in enumerate(((-0.10 * ks, 0.20), (0.06 * ks, 0.27))):
+    thigh = B.pts({RID["thigh_L"], RID["thigh_R"]})
+    ref = np.vstack([G["V"], thigh])
+    for e, (dth, ln, wd) in enumerate(((-0.12 * ks, 0.22, 0.055), (0.05 * ks, 0.30, 0.065))):
         rows = []
-        for k in range(12):
-            t = k / 11
-            zz = knot[2] - 0.015 - t * ln * sc
-            th = th0 + dth * (0.2 + t) + 0.06 * math.sin(t * 4 + e)
+        nseg = 14
+        for k in range(nseg):
+            t = k / (nseg - 1)
+            zz = knot[2] - 0.012 - t * ln * sc
+            th = th0 + dth * (0.25 + t) + 0.05 * math.sin(t * 4 + e)
             cc = np.array(cf(zz))
-            rr = _surface_radius(np.vstack([G["V"], B.pts({RID["thigh_L"], RID["thigh_R"]})]), cc, zz, th) + 0.006 + 0.003 * e
+            rr = _surface_radius(ref, cc, zz, th) + 0.010 + 0.005 * e
             p0 = np.array([cc[0] + rr * math.cos(th), cc[1] + rr * math.sin(th), zz])
             td = np.array([-math.sin(th), math.cos(th), 0])
-            w = (0.05 - 0.02 * t) * sc
-            rows.append(np.array([p0 - td * w / 2, p0 - td * w / 6 + ndir * 0.003, p0 + td * w / 6 + ndir * 0.003, p0 + td * w / 2]))
-        extra.append(loft_open(rows, closed_u=False))
-    V, F = _merge([(G["V"], G["F"])] + extra)
+            nd = np.array([math.cos(th), math.sin(th), 0])
+            tw = 0.25 * math.sin(t * 2.0 + e)                    # gentle twist
+            td2 = td * math.cos(tw) + nd * math.sin(tw)
+            w = wd * sc * (1 - 0.35 * t)
+            row = [p0 + td2 * w * (j / 4 - 0.5) + nd * 0.003 * math.sin(math.pi * j / 4) for j in range(5)]
+            rows.append(np.array(row))
+        parts.append(loft_open(rows, closed_u=False))
+    V, F = _merge(parts)
     reg, _ = B.nearest_region(V)
     G2 = dict(V=V, F=F, E=edges_of(F), region=reg, T=tri_fan(F))
     ob = finalize(person, B, G2, rnd, name, fabric_material("linen"), rgb, detail, skirt_below=ztop - 0.02, hem_z=zbot,
-                  wear=wear, wear_band=0.12, thickness=0.003, uv=column_uv(B, G2))
+                  wear=wear, wear_band=0.12, thickness=0.0025, uv=column_uv(B, G2))
     # hide the genitals + the skin well under the cloth
     gi = person.body.vertex_groups.get("genitals")
     hide = []
@@ -2750,39 +2830,55 @@ def part_loincloth(person, B, rnd, rgb, detail="hero", name="loincloth", knot_si
     return [ob], G
 
 
-def part_swaddle(person, B, rnd, rgb, detail="hero", name="swaddle", voxel=None):
-    """Baby wrapped in linen bands: a cocoon from the neck to below the feet with criss-cross band ridges.
-    The whole body except head/neck is hidden (arms are inside)."""
-    voxel = voxel or (0.007 if detail == "hero" else 0.012)
+def part_swaddle(person, B, rnd, rgb, detail="hero", name="swaddle", voxel=None, hood=True):
+    """Baby wrapped in linen bands: a cocoon from below the feet up to a collar behind the head, with
+    overlapping diagonal band edges. The whole body except head/neck is hidden (arms are inside)."""
+    voxel = voxel or (0.006 if detail == "hero" else 0.011)
     sc = _sc(B)
     nb = B.head("neck01")
+    eye_z = B.head("oculi01.L")[2]
     P = B.pts(CORE | {RID["foot_L"], RID["foot_R"]}, zmax=nb[2] + 0.01)
     if len(P) < 10:
         P = B.bco[B.bco[:, 2] < nb[2]]
+    HP = _head_points(B)
     zlo = float(P[:, 2].min()) - 0.02 * sc
-    top = nb[2] + 0.005
+    top = (eye_z + 0.01 * sc) if hood else nb[2] + 0.005
+    if hood:
+        P = np.vstack([P, HP[HP[:, 2] < top + 0.02]])
     hgt = top - zlo
+    sh = B.head("upperarm01.L")[2]
 
     def ease(zs):
-        return (0.012 + 0.012 * np.sin(np.clip((zs - zlo) / hgt, 0, 1) * math.pi)) * sc
-    Vc, Fc, info = column_solid(B, P, zlo - 0.0, top, ease, drape_below=None, step=0.006 * sc)
-    G = shell([(Vc, Fc)], voxel, [lambda bm: _cut_neck(bm, B, 0.004 * sc, 0.006 * sc)])
-    cf = _column_center(B)
+        e = 0.012 + 0.010 * np.sin(np.clip((zs - zlo) / hgt, 0, 1) * math.pi)
+        e = e * np.clip((sh + 0.02 - zs) / 0.05, 0.45, 1)            # rounded shoulders
+        return e * sc
+    cf = _head_axis(B)
+    Vc, Fc, info = column_solid(B, P, zlo, top, ease, center_fn=cf, drape_below=None, step=0.006 * sc, zsm=3, asm=2)
+
+    def face_cut(co):
+        cy = np.array([cf(z)[1] for z in co[:, 2]])
+        return (co[:, 1] < cy + 0.012 * sc) & (co[:, 2] > nb[2] - 0.004)
+    cuts = [lambda bm: bm_delete_where(bm, face_cut)] if hood else [lambda bm: _cut_neck(bm, B, 0.004 * sc, 0.006 * sc)]
+    G = shell([(Vc, Fc)], voxel, cuts)
     seed = rnd.random() * 10
 
     def bands(V, N, reg):
-        th, r, c = _cyl_coords(V, B, cf)
+        cfb = _column_center(B)
+        th, r, c = _cyl_coords(V, B, cfb)
         s_ = th * 0.08 * sc
         out = np.zeros(len(V))
-        pitch = 0.045 * sc
+        pitch = 0.05 * sc
         for i in range(len(V)):
             z = (V[i, 2] - zlo) / hgt
-            al = 0.45 if z > 0.5 else -0.45
-            q = (V[i, 2] * math.cos(al) + s_[i] * math.sin(al)) / pitch + 0.2 * _n1(z * 6, seed)
+            if V[i, 2] > nb[2]:
+                continue
+            al = 0.5 if z > 0.45 else -0.5
+            q = (V[i, 2] * math.cos(al) + s_[i] * math.sin(al)) / pitch + 0.25 * _n1(z * 6, seed)
             fr = q - math.floor(q)
-            out[i] = 0.0035 * sc * (math.sin(fr * math.pi) ** 0.5 - 0.6) + 0.0012 * _n3(V[i] * 40, seed)
+            saw = fr / 0.85 if fr < 0.85 else (1 - fr) / 0.15
+            out[i] = 0.0045 * sc * (saw - 0.5) + 0.0012 * _n3(V[i] * 40, seed)
         return out
-    G = post_shell(B, G, rnd, folds=[bands], smooth_iters=3, gap=0.004)
+    G = post_shell(B, G, rnd, folds=[bands], smooth_iters=3, gap=0.004, bsmooth=3)
     ob = finalize(person, B, G, rnd, name, fabric_material("linen"), rgb, detail, skirt_below=B.head("spine05")[2],
                   hem_z=zlo, wear=0.3, wear_band=0.05, thickness=0.002, uv=column_uv(B, G))
     hide = B.bidx[~np.isin(B.breg, [RID["head"], RID["neck"]]) | (B.bco[:, 2] < nb[2] - 0.01)]
@@ -3020,7 +3116,8 @@ def part_apron(person, B, rnd, Vref, z, detail="hero", name="apron", straps=6):
     return [a, b]
 
 
-def outfit_roman_soldier(person, B, rnd, colors, detail="hero", armor="hamata", helmet=True, cloak=True, metal="iron"):
+def outfit_roman_soldier(person, B, rnd, colors, detail="hero", armor="hamata", helmet=True, cloak=True, metal="iron",
+                         humeralia=False):
     out = []
     red = _pick(colors, "tunic", rnd, "roman_red")
     gs, G = part_tunic(person, B, rnd, red, fabric="wool", length="knee", sleeves="short", belt=None, detail=detail,
@@ -3036,6 +3133,7 @@ def outfit_roman_soldier(person, B, rnd, colors, detail="hero", armor="hamata", 
                             ease=0.010, flare=0.012, name="lorica_hamata", fold=0.004, wear=0.8, loose=0.35,
                             mat=mail_material(), thickness=0.006, layer_gap=0.009)
         out += gs
+    if armor != "segmentata" and humeralia:
         # humeralia (shoulder doubling) as a short cape of mail
         gs2, _ = part_mantle(person, B, rnd, color("iron"), detail=detail, style="cape", length=B.head("spine01")[2] - 0.04,
                              fabric="wool", name="humeralia", fold=0.002, roll=False, mask=False)
@@ -3049,13 +3147,38 @@ def outfit_roman_soldier(person, B, rnd, colors, detail="hero", armor="hamata", 
     out.append(belt)
     out += part_apron(person, B, rnd, Vref, zb, detail=detail)
     if cloak:
-        gs3, _ = part_mantle(person, B, rnd, _pick(colors, "cloak", rnd, "madder"), detail=detail, style="cape",
-                             length="knee", fabric="wool", name="sagum", fold=0.014, roll=False)
+        gs3, Gs = part_mantle(person, B, rnd, _pick(colors, "cloak", rnd, "madder"), detail=detail, style="cape",
+                              length="knee", fabric="wool", name="sagum", fold=0.014, roll=False, layer_gap=0.011)
         out += gs3
+        out += part_fibula(person, B, Gs, detail=detail)
     if helmet:
         out += part_helmet(person, B, rnd, detail=detail, metal="iron" if metal == "iron" else "bronze")
     out += part_sandals(person, B, rnd, color("leather"), detail=detail, style="caligae", name="caligae")
     return out
+
+
+def part_fibula(person, B, G, side="R", detail="hero", name="fibula", metal="bronze"):
+    """Round brooch pinning a cloak at the front of the shoulder."""
+    sc = _sc(B)
+    sx = 1 if side == "L" else -1
+    sh = B.head("upperarm01." + side)
+    cf = _column_center(B)
+    target = np.array([sx * 0.12 * sc, cf(sh[2])[1] - 0.08 * sc, sh[2] - 0.01])
+    V = G["V"]
+    i = int(np.argmin(np.linalg.norm(V - target, axis=1)))
+    N = vertex_normals(V, G["F"], G.get("T"))
+    p, n = V[i], N[i]
+    u, v = frame_of(n)
+    rings = []
+    for h, r in ((0.0, 0.019), (0.004, 0.019), (0.006, 0.014), (0.008, 0.006)):
+        rings.append(np.array([p + n * (h + 0.002) + r * sc * (math.cos(a) * u + math.sin(a) * v)
+                               for a in np.linspace(0, 2 * math.pi, 16, endpoint=False)]))
+    Vf, Ff = loft_closed(rings)
+    W = _weights_simple(B, Vf, Ff, smooth=1)
+    uv = uv_builder([Vf[:, :2] * 10], np.zeros(len(Vf), np.int64), [1e9])
+    ob = finish_garment(person, B, name, Vf, Ff, name, metal_material(metal), color(metal), weights=W, uv=uv,
+                        attrs={"wear": np.full(len(Vf), 0.4), "hem": np.zeros(len(Vf))}, thickness=0, detail=detail)
+    return [ob]
 
 
 def part_segmentata(person, B, rnd, detail="hero", metal="iron", name="lorica_segmentata"):
