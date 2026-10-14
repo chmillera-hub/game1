@@ -68,6 +68,7 @@ def _hoof_dust(events, fps, wind, seed=0):
 
 
 def build(ctx):
+    bpy.context.preferences.system.use_gpu_subdivision = False   # CPU subdiv (GPU path on llvmpipe is a RAM hog)
     NR = ctx.render_frames
     fps = ctx.fps
     # layout is relative to the eclipse sun (camera looks into it); known before the env is built

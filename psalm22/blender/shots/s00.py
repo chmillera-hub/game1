@@ -196,7 +196,7 @@ def build(ctx):
     info = E.hdri_info(HDRI)
     vis_el = VIS_SUN_OFF[1] if VIS_SUN_OFF[1] is not None else info["sun_el"]
     vis_az = _az(view0) - VIS_SUN_OFF[0]
-    over = dict(hdri=HDRI, sun_el=LAMP[1], key=0.42, strength=0.55, clamp_sun=1.5, sat=1.25, tint=(1.0, 0.8, 0.55),
+    over = dict(hdri=HDRI, sun_el=LAMP[1], key=0.42, strength=0.38, clamp_sun=1.5, sat=1.25, tint=(1.0, 0.8, 0.55),
                 sun_disk=dict(el=vis_el, size=0.75, color=(1.0, 0.86, 0.62), strength=60.0, glow=0.10))
     cams = [dict(loc=l0, target=t0, lens=lens0), dict(loc=l1, target=t1, lens=lens1)]
     A = E.golgotha(ctx, mood="golden", sun_az=vis_az, sky_over=over, view=cams, near_detail=0.3,
@@ -215,7 +215,7 @@ def build(ctx):
     E.set_haze(sun_dir=tuple(sun_vis), sun_mix=0.85, sun_power=5.0)
     # faint warm bounce from the sunlit plain behind the camera: models the shadowed skull cliff
     # (light-linked to the cliff + terrain only: crosses and figures stay backlit silhouettes)
-    fill = C.sun(elevation=18, azimuth=-20, energy=0.2, color=(1.0, 0.78, 0.55), angle=8)
+    fill = C.sun(elevation=18, azimuth=-20, energy=0.3, color=(1.0, 0.78, 0.55), angle=8)
     fill.data.use_shadow = False
     fill.name = "S00Bounce"
     recv = bpy.data.collections.new("S00BounceRecv")

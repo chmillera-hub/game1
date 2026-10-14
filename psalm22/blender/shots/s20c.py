@@ -28,48 +28,47 @@ def _az(d):
 # ------------------------------------------------------------------------------------------------
 # The linen cloth
 # ------------------------------------------------------------------------------------------------
-def _drape_mesh(length=4.4, width=0.5, swag=0.95, pin_x=(0.5, 0.72), z0=3.885, y0=-0.01, step=0.02, nw=24,
-                gather=0.3, gather_len=0.3, front=-0.13):
-    """Initial (pre-simulation) linen piece in the cross root's local frame (core.wooden_cross: beam top
-    z = 3.868, beam y = -0.10..0.08, upright |x| < 0.1), lying flat and horizontal at beam-top height.
-    Rows run along x. Outside the tie points it is a strip lying along the arms (and sticking out past the
-    arm tips); between the ties it is a crescent (cut like a window swag): the inner edge runs just in
-    front of the beam (little slack -> the top edge hangs nearly straight), the outer edge bulges `swag` m
-    forward (lots of slack -> the deep curve of the swag). At the ties the width is gathered into accordion
-    pleats (edge lengths preserved) so folds fan out of them. The tie zones on the beam top are pinned.
-    Returns verts (n, nw+1, 3), pin (n, nw+1), row arc length, column offsets."""
-    xs = np.linspace(-length / 2, length / 2, int(length / step) + 1)
-    xm = 0.5 * (pin_x[0] + pin_x[1])
-    xb = pin_x[0]
-    d = np.minimum(np.abs(xs - xm), np.abs(xs + xm))
-    g = 1.0 - (1.0 - gather) * np.clip(1.0 - d / gather_len, 0.0, 1.0) ** 1.5
-    inside = np.abs(xs) < xb
-    t = np.where(inside, 0.5 + 0.5 * np.cos(np.pi * xs / xb), 0.0)          # 0 at the ties, 1 at the centre
-    w = width * g
-    y_in = y0 + 0.5 * w
-    y_out = y0 - 0.5 * w
-    k = np.clip(t / 0.55, 0.0, 1.0)
-    k = k * k * (3 - 2 * k)
-    y_in = np.where(inside, (1 - k) * y_in + k * front, y_in)
-    y_out = np.where(inside, np.minimum(y_in - w, y_out) - swag * t ** 0.85, y_out)
-    us = np.linspace(0.0, 1.0, nw + 1)
-    V = np.zeros((len(xs), nw + 1, 3))
-    V[..., 0] = xs[:, None]
-    V[..., 1] = y_in[:, None] + (y_out - y_in)[:, None] * us[None, :]
-    # accordion pleats across the gathered tie zones (keep each cross edge about its ungathered length)
-    du = (width / nw)
-    span = np.abs(y_out - y_in) / nw
-    amp = 0.5 * np.sqrt(np.clip(du * du - span * span, 0.0, None)) * (g < 0.999)
+def _drape_mesh(width=0.46, tail=1.25, back_y=0.155, z0=3.885, step=0.02, nw=22, gather=0.22, spread=0.2):
+    """Initial (pre-simulation) linen strip in the cross root's local frame (core.wooden_cross: beam top
+    z = 3.868, beam y = -0.10..0.08, upright |x| < 0.1, |y| < 0.095), lying flat at beam-top height:
+    its middle is gathered into a narrow band behind the upright (pinned), from there it runs round both
+    sides of the upright over the beam top and sticks out horizontally in front of the beam. In the
+    pre-roll the two halves fall over the front edge of the beam and hang as two panels either side of
+    the upright, the cloth fanning out of the gathered middle in folds (the classic shroud on the empty
+    cross). Returns verts (n, nw+1, 3), pin (n, nw+1), row arc length, column offsets."""
+    # plan-view centerline for the right half (x >= 0), mirrored for the left
+    ctrl = np.array([(0.0, back_y), (0.10, back_y + 0.005), (0.17, 0.10), (0.22, 0.0), (0.26, -0.12),
+                     (0.29, -0.30)] + [(0.29 + spread * (k / 6.0), -0.30 - tail * k / 6.0) for k in range(1, 7)])
+    seg = np.r_[0.0, np.cumsum(np.linalg.norm(np.diff(ctrl, axis=0), axis=1))]
+    sn_h = np.linspace(0.0, seg[-1], int(seg[-1] / step) + 1)
+    hx = np.interp(sn_h, seg, ctrl[:, 0])
+    hy = np.interp(sn_h, seg, ctrl[:, 1])
+    # light smoothing of the polyline
+    for _ in range(6):
+        hx[1:-1] = 0.25 * hx[:-2] + 0.5 * hx[1:-1] + 0.25 * hx[2:]
+        hy[1:-1] = 0.25 * hy[:-2] + 0.5 * hy[1:-1] + 0.25 * hy[2:]
+    px = np.r_[-hx[::-1], hx[1:]]
+    py = np.r_[hy[::-1], hy[1:]]
+    sn = np.r_[-sn_h[::-1], sn_h[1:]]
+    P = np.stack([px, py], 1)
+    Tg = np.gradient(P, axis=0)
+    Tg /= np.linalg.norm(Tg, axis=1, keepdims=True)
+    Wd = np.stack([-Tg[:, 1], Tg[:, 0]], 1)
+    # width: gathered behind the upright, opening out over the beam top
+    g = gather + (1.0 - gather) * np.clip((np.abs(sn) - 0.12) / 0.45, 0.0, 1.0) ** 1.2
+    us = np.linspace(-0.5, 0.5, nw + 1) * width
+    du = width / nw
+    amp = 0.5 * du * np.sqrt(np.clip(1.0 - g * g, 0.0, 1.0))
     alt = np.where(np.arange(nw + 1) % 2 == 0, 1.0, -1.0)
-    V[..., 2] = z0 + 0.012 + amp[:, None] * alt[None, :]
-    ax = np.abs(V[..., 0])
-    on_beam = np.abs(V[..., 1] - y0) < 0.085
-    pin = ((ax > pin_x[0] + 0.03) & (ax < pin_x[1] - 0.03) & on_beam).astype(float)
-    sn = xs - xs[0]
-    return V, pin, sn, (us - 0.5) * width
+    V = np.zeros((len(P), nw + 1, 3))
+    V[..., 0] = P[:, None, 0] + Wd[:, None, 0] * us[None, :] * g[:, None]
+    V[..., 1] = P[:, None, 1] + Wd[:, None, 1] * us[None, :] * g[:, None]
+    V[..., 2] = z0 + 0.012 + amp[:, None] * alt[None, :] + 0.03 * (np.abs(sn) < 0.3)[:, None] * 0.0
+    pin = ((np.abs(sn) < 0.10)[:, None] & np.ones((1, nw + 1), bool)).astype(float)
+    return V, pin, sn - sn[0], us
 
 
-def linen_swag(ctx, cross_root, width=0.48, preroll=60, wind=None, name="Linen", **drape):
+def linen_swag(ctx, cross_root, width=0.46, preroll=60, wind=None, name="Linen", **drape):
     """Build the linen cloth on a core.wooden_cross root (any location / rot_z): a strip (_drape_mesh)
     simulated with a Cloth modifier pinned at two tie points on the beam top, the cross parts as colliders
     and a gusting wind field. The cache starts at 1 - preroll so the drape has settled by frame 1."""
@@ -229,7 +228,7 @@ def build(ctx):
         print("s20c: sky_fx unavailable (%s)" % e)
 
     cross = A["crosses"]["center"]
-    cl = linen_swag(ctx, cross["root"], preroll=60, width=0.5, length=4.4, swag=0.95, pin_x=(0.5, 0.72), gather=0.3,
+    cl = linen_swag(ctx, cross["root"], preroll=60, width=0.46, tail=1.25,
                     wind=dict(strength=9.0, noise=0.7, dir=(-0.75, 0.55, 0.12)))
     bake_cloth(ctx)
 

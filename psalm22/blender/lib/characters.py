@@ -72,8 +72,8 @@ def _asset_path(kind, name):
 # Tables
 # ============================================================================================
 HAIR_COLORS = {   # linear RGB base albedo of a strand
-    "black": (0.011, 0.0085, 0.0068),
-    "dark_brown": (0.030, 0.017, 0.0095),
+    "black": (0.014, 0.011, 0.009),
+    "dark_brown": (0.038, 0.022, 0.013),
     "brown": (0.075, 0.042, 0.020),
     "light_brown": (0.16, 0.10, 0.052),
     "auburn": (0.13, 0.045, 0.018),
@@ -120,7 +120,7 @@ BEARDS = {        # length (m), strand count, points per strand, stiffness (0 dr
     "stubble": None,
     "short": dict(length=0.012, count=9000, points=5, stiff=0.75, curl=0.0012, lift=0.45),
     "full": dict(length=0.034, count=11000, points=7, stiff=0.45, curl=0.0026, lift=0.35),
-    "long": dict(length=0.11, count=14000, points=11, stiff=0.18, curl=0.007, lift=0.3),
+    "long": dict(length=0.11, count=14000, points=11, stiff=0.18, curl=0.011, lift=0.3),
 }
 
 DEFAULT_SPEC = dict(
@@ -706,7 +706,7 @@ def _compute_masks(p):
         red = np.maximum(red, 0.8 * (1 - _smooth(np.linalg.norm(co - cheek, axis=1), 0.005 * sc, 0.03 * sc)))
     red = np.maximum(red, 0.8 * (w["ears"] > 0.5))
     eyez = np.exp(-(((z - E.z) / (0.012 * sc)) ** 2)) * np.exp(-(((lat - 0.032 * sc) / (0.022 * sc)) ** 2)) * head
-    red = np.maximum(red, 0.45 * eyez)
+    red = np.maximum(red, 0.25 * eyez)
     red = np.maximum(red, 0.5 * np.clip(w["fingernails"] * 0 + (1 - _smooth(zr, 0.0, 0.06)), 0, 1))
     # ---------------- sweat ----------------
     sweat = 0.25 + 0.75 * np.clip(head * (z > E.z + 0.008 * sc) * 1.0, 0, 1)
@@ -1341,7 +1341,7 @@ def make_beard(p, style=None, length=None, density=1.0, color=None, grey=None, s
     q = np.clip(lenf * rng.uniform(0.75, 1.08, N), 0.12, 1.0)
     T = np.linspace(0, 1, K)
     pts = np.zeros((N, K, 3))
-    clump = 0.45 + 0.3 * rng.random(N)
+    clump = (0.62 if L > 0.06 else 0.45) + 0.3 * rng.random(N)     # long beards fall in locks
     for k in range(K):
         tk = T[k] * q                                   # sample the guide polyline at fraction tk
         fk = tk * (K - 1)
@@ -1354,7 +1354,7 @@ def make_beard(p, style=None, length=None, density=1.0, color=None, grey=None, s
     pts += frizz
     if L > 0.06:      # long beards taper to a soft point below the chin
         below = np.clip((lm["chin_bot"] - pts[:, :, 2]) / L, 0, 1)
-        pts[:, :, 0] *= 1 - 0.55 * below
+        pts[:, :, 0] *= 1 - 0.68 * below
     pts[:, 0] = roots
     # cheap collision for the children: keep every point above the tangent plane at its root
     for k in range(1, K):
@@ -1417,8 +1417,8 @@ def curve_hair_material(name, color, grey=0.0, translucency=0.35):
         col = T.mix(col, T.mix(tuple(Vector(gcol) * 0.9), var.outputs[0], 1.0, "MULTIPLY"), isg)
     b = T.n("ShaderNodeBsdfPrincipled")
     T.set(b.inputs["Base Color"], col)
-    b.inputs["Roughness"].default_value = 0.8
-    b.inputs["Specular IOR Level"].default_value = 0.08
+    b.inputs["Roughness"].default_value = 0.6       # some sheen (a flat 0.8/0.08 read as a black mass)
+    b.inputs["Specular IOR Level"].default_value = 0.18
     # backlit glow: hair is translucent (forward scattering) - EEVEE's Principled alone only sparkles
     tl = T.n("ShaderNodeBsdfTranslucent")
     T.set(tl.inputs["Color"], T.mix(col, (2.5, 2.2, 1.9), 1.0, "MULTIPLY"))
@@ -2408,10 +2408,82 @@ GROUNDED = {"stand", "stand_relaxed", "kneel", "kneel_pray", "kneel_bow", "prost
             "cradle", "mourn", "crouch", "hammer", "walk", "run", "rest", "sit", "staff", "staff_raised"}
 
 
-def pose(person, name, ground_z=None, ground=True, **params):
+DRAPE_POSES = {"crouch", "sit", "kneel", "kneel_pray", "kneel_bow", "prostrate"}
+AUTO_DRAPE = True          # pose(): cloth-settle skirts of hero people in DRAPE_POSES (see pose(drape=...))
+_REST_CO = {}
+
+
+def _skirt_garments(p):
+    return [g for g in p.garments if g.type == "MESH" and "skirt_below" in g and
+            not any(k in str(g.get("wardrobe", g.name)) for k in ("loincloth", "swaddle", "lorica"))]
+
+
+def drape_skirts(person, ground_z=None, frames=22, ramp=14):
+    """Cloth-settle the person's skirted garments (tunic / robe / mantle / cape) on the CURRENT static pose
+    with lib.wardrobe.drape (body + floor collision, result inverse-skinned so it stays rigged).
+    pose() calls it automatically for hero people in DRAPE_POSES. ~30-90 s per person on this CPU."""
+    p = person
+    gs = _skirt_garments(p)
+    if not gs:
+        return []
+    from . import wardrobe as W
+    for g in gs:
+        k = g.as_pointer()
+        if k not in _REST_CO:
+            co = np.zeros(len(g.data.vertices) * 3, np.float32)
+            g.data.vertices.foreach_get("co", co)
+            _REST_CO[k] = co
+    gz = p.rig.matrix_world.translation.z if ground_z is None else ground_z
+    # wardrobe.drape drops the visibility masks (skin under clothes, inner layers under outer ones) of the
+    # body and the draped garments; above the skirts the cloth is pinned, so those masks are restored there
+    zcut = max(float(g["skirt_below"]) for g in gs) + 0.03
+    saved = {}
+    for o in [p.body] + [g for g in p.garments if g.type == "MESH"]:
+        vg = o.vertex_groups.get("wardrobe_hide")
+        if vg is None or o.modifiers.get("WardrobeHide") is None:
+            continue
+        gi = vg.index
+        idx = np.array([v.index for v in o.data.vertices if any(x.group == gi and x.weight > 0.5 for x in v.groups)], np.int64)
+        if len(idx):
+            co = p._co if o == p.body else _coords(o.data)
+            saved[o] = idx[co[idx, 2] > zcut]
+    t = time.time()
+    out = W.drape(p, gs, frames=frames, ramp=ramp, ground=gz, verbose=False)
+    for o, idx in saved.items():
+        if o.modifiers.get("WardrobeHide") is not None or not len(idx):
+            continue
+        vg = o.vertex_groups.get("wardrobe_hide")
+        if vg is not None:
+            o.vertex_groups.remove(vg)
+        if o == p.body:
+            W.hide_body(p, idx)
+        else:
+            W.hide_verts(o, idx)
+    if saved:
+        _protect_beard_region(p)
+    p._draped = True
+    _log("drape_skirts %s %d garments %.1fs" % (p.name, len(out), time.time() - t))
+    return out
+
+
+def _undrape(p):
+    """Restore the fitted (standing) rest shape of garments draped for an earlier pose."""
+    if not getattr(p, "_draped", False):
+        return
+    for g in _skirt_garments(p):
+        co = _REST_CO.get(g.as_pointer())
+        if co is not None and len(co) == len(g.data.vertices) * 3:
+            g.data.vertices.foreach_set("co", co)
+            g.data.update()
+    p._draped = False
+
+
+def pose(person, name, ground_z=None, ground=True, drape="auto", **params):
     """Static pose. name in POSES; params per pose (head, strain, target, side, hands, rock, look...).
     ground: keep the lowest body point on ground_z (world z; default = the rig's own origin height).
-    Returns the internal pose state."""
+    drape: 'auto' = cloth-settle the skirts (drape_skirts) when the person is lod 'hero', dressed and the pose
+    is in DRAPE_POSES (crouch / sit / kneel* / prostrate: skinned skirts balloon there); True / False force it.
+    A later standing pose restores the fitted garments. Returns the internal pose state."""
     p = person
     P = _build_pose(p, name, params)
     if ground and name in GROUNDED:
@@ -2423,6 +2495,17 @@ def pose(person, name, ground_z=None, ground=True, **params):
     if getattr(p, "staff", None) is not None:
         hold_staff(p, ground_z=ground_z)
     p.update()
+    if drape == "auto":
+        drape = AUTO_DRAPE and name in DRAPE_POSES and p.spec.get("lod") == "hero"
+    if getattr(p, "_draped", False):
+        _undrape(p)
+        p.update()
+    if drape and p.garments:
+        try:
+            drape_skirts(p, ground_z)
+        except Exception as e:     # never fail a pose on the cloth settle
+            _log("drape failed for %s: %s" % (p.name, e))
+        p.update()
     return P
 
 

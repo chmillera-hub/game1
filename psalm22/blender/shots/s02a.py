@@ -58,25 +58,37 @@ def tint_clouds_by_sky():
 
 def build(ctx):
     N, NR = ctx.nframes, ctx.render_frames
-    A = E.judean_hills(ctx, timelapse=True, hour0=15.1, hour1=20.7, view_az=VIEW_AZ, clouds=0.5)
-    tint_clouds_by_sky()
-
     va = math.radians(VIEW_AZ)
     fwd = Vector((math.sin(va), math.cos(va), 0))
     side = Vector((fwd.y, -fwd.x, 0))
-    tp = Vector(A["dead_tree_pos"])
-    gz = A["ground_z"]
-    # low, a few metres behind the tree, a little left of it: the tree stands on the right third against the sky
-    base0 = tp - fwd * 5.2 - side * 2.0
-    base1 = tp - fwd * 4.7 - side * 1.15
-    eye0 = Vector((base0.x, base0.y, gz(base0.x, base0.y) + 1.35))
-    eye1 = Vector((base1.x, base1.y, gz(base1.x, base1.y) + 1.5))
+    tp = fwd * 0.5 + side * 1.2                    # judean_hills puts the dead tree here (spur edge)
+    # low on the spur, ~11 m behind the tree and left of it: the tree stands on the right third, against the sky
+    base0 = tp - fwd * 9.5 - side * 3.6
+    base1 = tp - fwd * 8.6 - side * 2.5
     far = tp + fwd * 400.0
+    E.set_view([dict(loc=tuple(base0), target=tuple(far), lens=22, margin=12, near=14),
+                dict(loc=tuple(base1), target=tuple(far), lens=22, margin=12, near=14)])
+    A = E.judean_hills(ctx, timelapse=True, hour0=15.1, hour1=20.7, view_az=VIEW_AZ, clouds=0.6, olives=0.6, grass=0.55)
+    E.set_view(None)
+    # render cost: the sun moves every frame, so EEVEE re-renders every shadow page of every caster each frame.
+    # Far olives / far rocks cast no visible shadows from here, the air box only adds a little depth (the env
+    # haze shader already gives the aerial perspective).
+    for o in bpy.context.scene.objects:
+        if o.name.startswith(("EnvHillOlives", "EnvHillBouldersFar", "EnvHillShrubs")):
+            o.visible_shadow = False
+        if o.name.startswith("EnvHillAir"):
+            o.hide_render = True
+    A["timelapse"]["sun"].data.shadow_maximum_resolution = 0.005
+    tint_clouds_by_sky()
+    gz = A["ground_z"]
+    # standing on the rock outcrop of the spur (~3.8 m up) so the view clears the spur edge into the valley
+    eye0 = Vector((base0.x, base0.y, gz(base0.x, base0.y) + 3.7))
+    eye1 = Vector((base1.x, base1.y, gz(base1.x, base1.y) + 3.9))
 
     def path(f):
-        u = C.smoothstep(0.1 + 0.8 * (f - 1) / float(NR - 1)) * 1.25 - 0.125   # constant-ish slider speed
+        u = (f - 1) / float(NR - 1)                       # constant slider speed
         loc = eye0.lerp(eye1, u)
-        tgt = Vector((far.x, far.y, loc.z + 400.0 * math.tan(math.radians(7.0))))
+        tgt = Vector((far.x, far.y, loc.z + 400.0 * math.tan(math.radians(-0.5))))
         return (loc, tgt, 0.0, 22.0)
 
     cam = C.camera(loc=tuple(eye0), target=tuple(far), lens=22)

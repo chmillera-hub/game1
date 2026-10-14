@@ -7,8 +7,9 @@ touches them they burn at the edge and crumble into ash that blows away - the li
 the ox on the second. The camera trucks left with the light, then rises towards the lit cross and the
 sun (victory).
 
-Light sweep: an invisible cloud-shadow occluder plane (shadow only) high above slides along `n`; the
-ash front of each beast is computed from the exact time the sun-shadow edge reaches each vertex.
+Light sweep: an invisible cloud-shadow occluder plane (shadow only) high above slides along `n` (screen
+right -> left, perpendicular to the backlight, so the edge is a vertical plane on the beasts); its keyed
+motion is solved so the shadow edge crosses each beast exactly while the ash front does.
 """
 import math
 import numpy as np
@@ -69,15 +70,17 @@ def _world_verts(obj):
 
 
 def _occluder(name, n, H, L=900.0, seed=0):
-    """Huge horizontal plane (local +X = motion direction n, edge at local x ~ 0 with a soft cloud-like
-    wobble) casting the cloud shadow; invisible to camera/rays except shadows."""
+    """Huge horizontal plane (local +X = motion direction n, edge at local x = wob(local y): a soft,
+    slightly wavy cloud edge) casting the cloud shadow; invisible to camera/rays except shadows.
+    Returns (object, wob function of the local y)."""
     rng = np.random.default_rng(seed)
-    ys = np.linspace(-L, L, 241)
-    wob = np.zeros_like(ys)
-    for k, amp in ((0.012, 6.0), (0.05, 1.8), (0.17, 0.5)):
-        ph = rng.uniform(0, 6.28)
-        wob += amp * np.sin(ys * k + ph)
-    verts = [(float(w), float(y), 0.0) for w, y in zip(wob, ys)] + [(2 * L, float(y), 0.0) for y in ys]
+    terms = [(k, amp, rng.uniform(0, 6.28)) for k, amp in ((0.012, 5.0), (0.05, 1.2), (0.17, 0.35))]
+
+    def wob(y):
+        return sum(amp * np.sin(np.asarray(y) * k + ph) for k, amp, ph in terms)
+    ys = np.linspace(-L, L, 481)
+    w = wob(ys)
+    verts = [(float(a), float(y), 0.0) for a, y in zip(w, ys)] + [(2 * L, float(y), 0.0) for y in ys]
     N = len(ys)
     faces = [(i, i + 1, N + i + 1, N + i) for i in range(N - 1)]
     me = bpy.data.meshes.new(name)
@@ -92,9 +95,8 @@ def _occluder(name, n, H, L=900.0, seed=0):
     o.visible_transmission = False
     o.visible_volume_scatter = False
     o.visible_shadow = True
-    m = C.mat("s14c_cloud", (0.1, 0.1, 0.1), rough=1.0)
-    C.assign(o, m)
-    return o
+    C.assign(o, C.mat("s14c_cloud", (0.1, 0.1, 0.1), rough=1.0))
+    return o, wob
 
 
 def build(ctx):
@@ -142,38 +144,44 @@ def build(ctx):
     bpy.context.view_layer.update()
 
     # ------------------------------------------------------------------ the light front (cloud shadow edge)
-    H = 26.0
-    n = (-right * 0.86 - hv * 0.5).normalized()             # front travels right -> left and towards camera
-    c_ = sdir.dot(n) / sdir.z
-    D = n - Vector((0, 0, c_))                              # arrival-distance gradient (see module doc)
-    Dn = D.normalized()
+    # The front sweeps screen right -> left (n = -right, perpendicular to the backlight), so on the beasts
+    # it is a vertical plane: it reaches the lion's open mouth and the ox's horns first.
+    top = G["hill_top"][2]
+    H = top + 16.0
+    n = -right
+    Y = Vector((-n.y, n.x, 0))                              # occluder local +Y in world
 
-    def arrival(obj):                                        # (min, max) of the arrival distance over the mesh
+    def arrival(obj):
         W = _world_verts(obj)
-        a = W @ np.array(D, np.float32) + H * c_
-        return float(a.min()), float(a.max()), W
+        return float((W @ np.array(n, np.float32)).min()), float((W @ np.array(n, np.float32)).max()), W
 
+    def wob_at(W, wob):                                      # edge offset at the beast (sun-projected centre)
+        c = Vector(W.mean(axis=0))
+        q = c + sdir * ((H - c.z) / sdir.z)
+        return float(wob(q.dot(Y)))
+
+    occ, wob = _occluder("CloudShadow", n, H, seed=ctx.seed)
     lb, ob = _body(lion), _body(ox)
     la0, la1, Wl = arrival(lb)
     oa0, oa1, Wo = arrival(ob)
-    # front schedule: (frame, edge position along n)
+    wl, wo = wob_at(Wl, wob), wob_at(Wo, wob)
     fL0, fL1 = ctx.frame(p0["start"] + 0.05), ctx.frame(p0["end"] - 0.1)
     fO0, fO1 = ctx.frame(p1["start"] + 0.05), ctx.frame(p1["end"] - 0.1)
     vL = (la1 - la0) / (fL1 - fL0)
     vO = (oa1 - oa0) / (fO1 - fO0)
-    sched = [(1 - 40, la0 - 40 * vL), (fL0, la0), (fL1, la1), (fO0, oa0), (fO1, oa1), (NR + 40, oa1 + (NR + 40 - fO1) * vO * 1.6)]
-    occ = _occluder("CloudShadow", n, H, seed=ctx.seed)
+    # (frame, edge position along n): lit where P.n < e + wob
+    sched = [(1 - 60, la0 - wl - 60 * vL), (fL0, la0 - wl), (fL1, la1 - wl), (fO0, oa0 - wo), (fO1, oa1 - wo),
+             (NR + 40, oa1 - wo + (NR + 40 - fO1) * vO * 1.5)]
     for f, e in sched:
         occ.location = n * e + Vector((0, 0, H))
         occ.keyframe_insert("location", frame=f)
     C._set_interp(occ, "location", "LINEAR")
-    # ash: release follows the arrival distance exactly (lib maps d linearly over [dmin, dmax] along Dn)
-    for body, (a0, a1), (f0, f1), cnt, fs, seed in ((lb, (la0, la1), (fL0, fL1), 30000, 0.011, 1),
-                                                   (ob, (oa0, oa1), (fO0, fO1), 36000, 0.013, 2)):
-        wind = tuple(-right * 1.9 + hv * 0.9 + Vector((0, 0, 1.35)))
-        FX.ash_disintegrate(body, start_frame=f0, duration=(f1 - f0), direction=tuple(Dn), wind=wind, count=cnt,
-                            flake_size=fs, life=3.2, jitter=0.12, glow_color=GOLD, glow=5.0, ash_color=(0.03, 0.027, 0.024),
-                            turbulence=0.5, gravity=-0.15, seed=seed)
+    # ash: the lib releases linearly along n over [min, max] of the mesh -> same schedule as the shadow edge
+    wind = tuple(-right * 1.9 + hv * 0.9 + Vector((0, 0, 1.35)))
+    for body, (f0, f1), cnt, fs, seed in ((lb, (fL0, fL1), 30000, 0.011, 1), (ob, (fO0, fO1), 36000, 0.013, 2)):
+        FX.ash_disintegrate(body, start_frame=f0, duration=(f1 - f0), direction=tuple(n), wind=wind, count=cnt,
+                            flake_size=fs, life=3.2, jitter=0.12, glow_color=GOLD, glow=5.0,
+                            ash_color=(0.03, 0.027, 0.024), turbulence=0.5, gravity=-0.15, seed=seed)
 
     # ------------------------------------------------------------------ camera: truck left with the light, rise
     look_l = at(1.0, -4.4) + Vector((0, 0, 1.0))

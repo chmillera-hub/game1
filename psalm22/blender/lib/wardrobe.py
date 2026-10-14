@@ -740,7 +740,7 @@ FABRICS = {
     # kind: (polyhaven asset, repeats per metre (asset is ~0.27 m wide), bump, rough_base, sheen, value_range)
     "linen": ("rough_linen", 3.7, 0.50, 0.82, 0.30, (0.84, 1.10)),
     "fine_linen": ("rough_linen", 6.0, 0.30, 0.72, 0.40, (0.92, 1.05)),
-    "wool": ("poly_wool_herringbone", 3.6, 0.55, 0.90, 0.55, (0.82, 1.12)),
+    "wool": ("poly_wool_herringbone", 3.6, 0.55, 0.92, 0.28, (0.82, 1.12)),
     "homespun": ("hessian_380", 3.7, 0.60, 0.92, 0.30, (0.84, 1.12)),
     "sackcloth": ("hessian_230", 3.7, 0.70, 0.94, 0.20, (0.75, 1.18)),
     "leather": ("brown_leather", 2.5, 0.55, 0.55, 0.0, (0.75, 1.20)),
@@ -892,10 +892,7 @@ def fabric_material(kind="linen", embroidery=False, stripes=False):
     b.inputs["Specular IOR Level"].default_value = 0.35 if kind != "leather" else 0.5
     b.inputs["Sheen Weight"].default_value = sheen
     b.inputs["Sheen Roughness"].default_value = 0.45
-    if kind in ("linen", "fine_linen"):
-        # thin linen: a touch of translucency in backlight
-        b.inputs["Subsurface Weight"].default_value = 0.08
-        b.inputs["Subsurface Radius"].default_value = (0.02, 0.02, 0.02)
+    # (no subsurface on cloth: EEVEE's screen-space SSS on thin shells renders as grainy speckle at 3-8 spp)
     _MATS[key] = m
     return m
 
@@ -2046,6 +2043,9 @@ def finalize(person, B, G, rnd, name, mat, rgb, detail, skirt_below=None, hem_z=
         A.update(attrs)
     ob = finish_garment(person, B, name, G["V"], G["F"], name, mat, rgb, weights=weights, uv=uv, attrs=A,
                         thickness=thickness, detail=detail)
+    if skirt_below is not None:
+        # tags skirted garments (characters.drape_skirts settles them in crouch / sit / kneel poses)
+        ob["skirt_below"] = float(skirt_below)
     if mask_inner and B.layers and MASK_LAYERS:
         mask_inner_layers(B, G)
     if layer:
@@ -2597,17 +2597,12 @@ def part_headcover(person, B, rnd, rgb, kind="veil", detail="hero", length=None,
     ob = finalize(person, B, G, rnd, name, mat, rgb, detail, hem_z=z_low, wear=wear, wear_band=0.2,
                   thickness=0.003 if fabric != "wool" else 0.005, uv=column_uv(B, G, cf), arms=True)
     out = [ob]
-    # the covering hides the hair: keep only the hairline that shows in the face window (the veil is
-    # fitted close to the skull, so the rest of the hair shell would poke through or read as a helmet)
+    # the covering hides the hair shell completely: it is fitted close to the skull, so the shell would poke
+    # through (or show as dark fragments in the face window). The characters skin shader paints the hairline
+    # on the scalp, which is what shows at the edge of the veil.
     for ho in getattr(B, "hair_objs", []):
-        if ho.type != "MESH":
-            continue
-        Mo = np.array(person.rig.matrix_world.inverted() @ ho.matrix_world)
-        hco = _np_co(ho.data) @ Mo[:3, :3].T + Mo[:3, 3]
-        cyh = np.array([cf(z)[1] for z in hco[:, 2]])
-        win = (hco[:, 1] < cyh - 0.02 * sc) & (np.abs(hco[:, 0]) < w_open(hco[:, 2]) - 0.006 * sc) & \
-              (hco[:, 2] < z_open - 0.004 * sc) & (hco[:, 2] > eye_z + 0.012 * sc)
-        hide_verts(ho, np.nonzero(~win)[0])
+        if ho.type == "MESH":
+            hide_verts(ho, np.arange(len(ho.data.vertices)))
     if kind == "headcloth" or band:
         bz = eye_z + 0.045 * sc
         rings, _ = band_rings(B, G["V"], bz, 0.016, gap=0.002, center_fn=cf, tilt=-0.35, bulge=0.003)

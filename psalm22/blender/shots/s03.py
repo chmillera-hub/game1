@@ -1,11 +1,18 @@
 """s03 - "Yet you are enthroned as the Holy One; you are the one Israel praises."
 
-Holy of Holies (flashback / symbolic). Low-key Holy Place: the great embroidered veil glows from
-behind, a hairline of gold light at its seam, incense rising from the golden altar. On "Yet you are
-enthroned" the veil parts and the light floods out through the smoke; the camera glides past the
-altar and through the opening towards the Ark - the cherubim kneel in silhouette against the glory
-between their wings, rays fanning through the incense. On "Israel praises" the glory swells; at the
-end the camera rises into it and the frame blooms to near-white (flash cut to s04a).
+Holy of Holies (symbolic flashback), built on lib/sets.holy_of_holies.
+Low-key Holy Place: the great embroidered veil, raked by lamplight, a slit of light at its seam with
+the glory glimpsed through it and incense curling in front. On "Yet you are enthroned" the slit widens
+and the camera glides through the parting (the curtain edges slide past the frame); inside, the Ark
+with two kneeling cherubim, their gilded wings rising into a pointed arch over the mercy seat, the
+cherubim in silhouette rim-lit by the glory and wrapped in a glowing incense cloud. On "Israel praises"
+the glory swells; then the camera rises into it and the frame blooms to near-white (flash cut to s04a).
+
+Changes to the set made here (no lib edits): rebuilt wings (S._wing, upswept, feathers outward) instead
+of the forward-arched ones that read as a heart from the front; light linking keeps the glory's pool of
+light off the floor and the fills off the cherubim; altar box and censer hidden (smoke kept); darker
+satin floor; calmer veil material; extra lights: wing kicker, glory-up (volume only), slit spill,
+veil backlight, end whiteout.
 """
 import math
 from mathutils import Vector, Matrix
