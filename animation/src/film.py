@@ -332,6 +332,7 @@ class Film:
         names = [n for n in self.props if self.prop_segs[n]]
         if not names:
             return
+        s0 = {n: tuple(self.props[n].scale) for n in names}     # keep each prop's own proportions
         hidden = []
         for ob in bpy.data.objects:
             if ob.type in ('MESH', 'CURVES', 'FONT', 'CURVE') and not ob.hide_viewport:
@@ -380,7 +381,7 @@ class Film:
                 prevq = r
                 for i in range(3):
                     rows[('location', i)].append((f, l[i]))
-                    rows[('scale', i)].append((f, s_[i]))
+                    rows[('scale', i)].append((f, s_[i] * s0[n][i]))
                 for i in range(4):
                     rows[('rotation_quaternion', i)].append((f, r[i]))
             for k, fc in curves.items():
@@ -422,8 +423,9 @@ class Film:
                 perf.bake(a, 0, f1)
         self._bake_cameras()
         self._bake_keys()
-        self._bake_vis()
+        # props first: _bake_props gives each prop a fresh action, and the visibility keys must land in it
         self._bake_props(0, f1)
+        self._bake_vis()
         out = dict(fps=FPS, duration=T, shots=[dict(name=s['name'], t0=s['t0'], t1=s['t1'], note=s.get('note', ''))
                                                for s in self.shots],
                    audio=self.audio, subs=self.subs, labels=self.labels, music=self.music, sfx=self.sfx_ev)

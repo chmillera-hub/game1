@@ -726,7 +726,7 @@ class Character:
             # the cloth between the knees sagging into the lap, while the back stays with the pelvis
             skirt = smoothstep(self.hipZ - 0.02, self.hipZ - 0.10, z)
             front = smoothstep(0.08, 0.02, P[:, 1])
-            front = front * (0.2 + 0.8 * smoothstep(0.01, 0.08, np.abs(P[:, 0])))   # centre sags into the lap
+            front = front * (0.7 + 0.3 * smoothstep(0.01, 0.08, np.abs(P[:, 0])))   # centre spans the knees like a web
             for side, sg in (('L', 1.0), ('R', -1.0)):
                 W['thigh.' + side] = np.maximum(W['thigh.' + side], 4.0 * skirt * front * smoothstep(-0.03, 0.03, sg * P[:, 0]))
         tot = sum(W.values())
@@ -744,6 +744,27 @@ class Character:
         blib.set_color_attr(ob, 'vneck', np.stack([vm] * 3, -1))
         if s['vneck']:
             self._vneck_shader(self.m_coat, ob, P, top)
+        if s['coat_swap']:
+            # once the coat is off, the shell below the belt reads as the trouser seat (a waistcoat, not a tunic)
+            lo, hi = P.min(0), P.max(0)
+            cut = (self.hipZ + 0.06 - lo[2]) / (hi[2] - lo[2])
+            for mat in (self.m_coat, self.m_coat_inner):
+                N, L = mat.node_tree.nodes, mat.node_tree.links
+                b = N['Principled BSDF']
+                src = b.inputs['Base Color'].links[0].from_socket
+                tc = N.new('ShaderNodeTexCoord')
+                sep = N.new('ShaderNodeSeparateXYZ')
+                L.new(tc.outputs['Generated'], sep.inputs[0])
+                lt = N.new('ShaderNodeMath')
+                lt.operation = 'LESS_THAN'
+                L.new(sep.outputs['Z'], lt.inputs[0])
+                lt.inputs[1].default_value = cut
+                mul = N.new('ShaderNodeMath')
+                mul.operation = 'MULTIPLY'
+                L.new(lt.outputs[0], mul.inputs[0])
+                L.new([v for (m_, v) in self.coat_off_nodes if m_ is mat][0].outputs[0], mul.inputs[1])
+                mx = blib.mix_rgb(N, L, mul.outputs[0], src, s['trousers'], x=50, y=200)
+                L.new(mx.outputs[2], b.inputs['Base Color'])
         # 'slim' shape key: the garment without its bulk (coat removed)
         c = np.array([0, 0.0, 0])
         slim = P.copy()
@@ -1024,6 +1045,8 @@ class Character:
             mb = blib.principled(self.name + '_button', s['buttons'], rough=0.3, coat=0.5)
             for i, frac in enumerate((0.30, 0.45, 0.60)):
                 z = self.hipZ + s['coat_hem'] + (self.neckZ - self.hipZ - s['coat_hem']) * frac
+                if s.get('skirt_thigh') and z < self.hipZ + 0.06:
+                    continue            # a seated character's lap button would float on the leg tubes
                 a, b, yoff, n = self._torso_profile(z)
                 bpy.ops.mesh.primitive_uv_sphere_add(radius=0.009, segments=16, ring_count=8, location=(0, yoff - b - 0.002, z))
                 bo = bpy.context.object
@@ -1108,7 +1131,9 @@ class Character:
         Vv = Vv @ Ry.T
         Vv = Vv + np.array([0, 0.004, zb])
         Vv = Vv * hs + self.head_origin
-        m = blib.cloth_material(self.name + '_hat', s['hat_color'], rough=0.7, sheen=0.08, scale=600, bump_str=0.05)
+        m = blib.cloth_material(self.name + '_hat', s['hat_color'], rough=0.85, sheen=0.0, scale=600, bump_str=0.05)
+        # dark felt stays dark under a warm light just above it
+        m.node_tree.nodes['Principled BSDF'].inputs['Specular IOR Level'].default_value = 0.05
         ob = blib.make_mesh(self.name + '_hat', Vv, faces, coll=self.coll)
         blib.assign(ob, m)
         blib.subsurf(ob, 1)

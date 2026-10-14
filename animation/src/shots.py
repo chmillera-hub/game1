@@ -135,22 +135,46 @@ def make_tray(F):
 
 
 def make_held_coat(F):
+    """Oswald's coat held up by the collar for the swing in 3.17: a body that widens to the hem,
+    wraps forward at the sides, folds, and two empty sleeves hanging from the shoulders."""
     O = F.C['oswald']
     V_, Fc = [], []
-    nu, nv = 14, 10
+    nu, nv = 22, 14
     for i in range(nv):
+        v = i / (nv - 1)
+        hw = 0.17 + 0.16 * v
         for j in range(nu):
             u = j / (nu - 1) - 0.5
-            v = i / (nv - 1)
-            V_.append([u * 0.62 + 0.03 * math.sin(v * 3), 0.05 * math.cos(u * 5) * v, -v * 0.62])
+            x = 2 * u * hw
+            y = 0.12 * (2 * u) ** 2 * (0.4 + 0.6 * v) + 0.03 * math.sin(2 * math.pi * 3 * u + 1.3) * v
+            z = -v * 0.70 + 0.02 * math.sin(2 * math.pi * 2 * u + 0.4) * v
+            V_.append([x, y, z])
     for i in range(nv - 1):
         for j in range(nu - 1):
             a = i * nu + j
             Fc.append((a, a + 1, a + nu + 1, a + nu))
+    # sleeves: tapered tubes from the shoulder points, hanging a little forward
+    nr, ns = 10, 8
+    for sx in (1, -1):
+        base = len(V_)
+        p0 = np.array([sx * 0.19, 0.06, -0.03])
+        p1 = np.array([sx * 0.25, 0.12, -0.50])
+        for k in range(ns):
+            t = k / (ns - 1)
+            c = p0 + (p1 - p0) * t
+            r = 0.055 - 0.012 * t
+            for q in range(nr):
+                a = 2 * math.pi * q / nr
+                V_.append([c[0] + r * math.cos(a), c[1] + r * math.sin(a), c[2]])
+        for k in range(ns - 1):
+            for q in range(nr):
+                a = base + k * nr + q
+                b = base + k * nr + (q + 1) % nr
+                Fc.append((a, b, b + nr, a + nr))
     ob = blib.make_mesh('held_coat', np.array(V_), Fc, coll=F.pc)
-    blib.assign(ob, blib.cloth_material('held_mustard', O.s['coat']))
+    blib.assign(ob, blib.cloth_material('held_mustard', O.s['coat'], sheen=0.15))
     s = ob.modifiers.new('sol', 'SOLIDIFY')
-    s.thickness = 0.01
+    s.thickness = 0.012
     blib.subsurf(ob, 1)
     return ob
 
@@ -165,12 +189,12 @@ def make_drape(F):
     rings = []
     for i in range(R):
         u = i / (R - 1)                      # 0 at collar, 1 at hem
-        z = top + 0.05 - u * 0.62
+        z = top + 0.05 - u * 0.50 - (0.04 if i == 0 else 0.0)
         a, b, yoff, n = Ed._torso_profile(min(max(z, Ed.hipZ + s['coat_hem']), top))
         # wide enough to sit over her shoulders and upper arms, not between them and the torso
         arm_w = s['shoulder_w'] + 2 * s['upperarm_r']
-        ww = np.interp(u, [0, 0.12, 0.3, 1.0], [s['neck_r'] + 0.035, arm_w + 0.03, arm_w + 0.05, a + 0.16])
-        dd = np.interp(u, [0, 0.12, 0.3, 1.0], [s['neck_r'] + 0.03, b + 0.07, b + 0.09, b + 0.10])
+        ww = np.interp(u, [0, 0.12, 0.3, 0.55, 1.0], [s['neck_r'] + 0.035, arm_w + 0.03, arm_w + 0.06, arm_w + 0.10, a + 0.20])
+        dd = np.interp(u, [0, 0.12, 0.3, 0.55, 1.0], [s['neck_r'] + 0.03, b + 0.07, b + 0.09, b + 0.11, b + 0.12])
         ang = np.linspace(np.radians(-165 + 40 * u), np.radians(165 - 40 * u), K)
         x = ww * np.sin(ang)
         y = yoff + dd * np.cos(ang) * 1.0
@@ -191,6 +215,10 @@ def make_drape(F):
         m_ = (sg * P[:, 0] > s['shoulder_w'] * 0.8) & (P[:, 2] > Ed.J['upperarm.' + sd][1][2])
         for n in W:
             W[n][m_] = 1.0 if n == 'upperarm.' + sd else 0.0
+        elb = Ed.J['upperarm.' + sd][1][2]
+        mb = (sg * P[:, 0] > s['shoulder_w'] * 0.8) & (P[:, 2] <= elb) & (P[:, 2] > elb - 0.10)
+        for n in W:
+            W[n][mb] = 0.65 if n == 'upperarm.' + sd else (0.35 if n == 'chest' else 0.0)
     m = blib.cloth_material('drape_mustard', O.s['coat'], sheen=0.15)
     ob = Ed._mesh('drape', P, Fc, m, weights=W, sub=1)
     sol = ob.modifiers.new('sol', 'SOLIDIFY')
@@ -793,7 +821,8 @@ def s2_1(F):
     landings = [((2.15, 2.45, 0), (2.55, 2.35, 0)), ((2.3, 2.3, 0), (2.85, 2.15, 0)), ((2.05, 2.2, 0), (2.4, 1.95, 0))]
     for i in range(3):
         F.attach('ball%d' % i, T, T + 5.2, ('fn', ball_fn(F, i, tj, t_clong, landings[i])))
-    F.set_visible(F.props['ball0'], T, True)
+    for i in range(3):
+        F.set_visible(F.props['ball%d' % i], T, True)
     for i in range(3):
         F.set_visible(F.props['ball%d' % i], T + 5.25, False)
     # CLONG: head snaps back, recoil
@@ -964,19 +993,19 @@ def s2_4(F):
     tg = T + 3.0
     for sd, sx in (('L', 1), ('R', -1)):
         pass
-    O.gesture(tg, 'L', ('chest', (0.10, -0.30, O.B.hipZ + 0.22), (-0.4, -1, 0), (0, 0, -1)), dur=0.3)
+    O.gesture(tg, 'L', ('arm', (0.10, 0.05, 0.40), (-0.35, -0.9, 0.15), (0, 0, -1)), dur=0.3)
     O.fingers(tg, 'L', 0.25, thumb=0.1, dur=0.2)
     O.look_at(tg, ('actor', 'oswald', 'hand_L', (0, 0, 0)), dur=0.3)
     O.expr(tg + 0.3, smile=0.9, smirk=0.7, brow=0.4, brow_asym=0.5, lid_L=0.75, lid_R=0.75, dur=0.3)
     for k in range(4):
         O.nod(tg + 0.4 + k * 0.22, amt=5, dur=0.2)
-    O.gesture(tg + 0.4, 'R', ('chest', (-0.02, -0.32, O.B.hipZ + 0.27), (0.6, -0.6, -0.4), (0, 0.2, 1)), dur=0.2)
+    O.gesture(tg + 0.4, 'R', ('arm', (-0.03, 0.08, 0.56), (0.45, -0.5, -0.75), (-0.3, 0.6, 0.75)), dur=0.2)
     O.fingers(tg + 0.4, 'R', 0.85, per={'index': 0.0, 'middle': 0.9, 'ring': 0.9, 'pinky': 0.9}, thumb=0.7, dur=0.2)
     # rub hands together
     for k in range(4):
         tt = tg + 1.3 + k * 0.15
         for sd, sx in (('L', 1), ('R', -1)):
-            O.gesture(tt, sd, ('chest', (sx * (0.03 + 0.015 * (k % 2)), -0.30, O.B.hipZ + 0.22 + 0.02 * (k % 2)), (-sx * 0.8, -0.5, 0.3), (0, -0.3, 1) if sd == 'L' else (0, -0.3, 1)), dur=0.12)
+            O.gesture(tt, sd, ('arm', (sx * (0.03 + 0.015 * (k % 2)), 0.05, 0.42 + 0.02 * (k % 2)), (-sx * 0.8, -0.5, 0.3), (0, -0.3, 1)), dur=0.12)
         O.fingers(tt, 'L', 0.2, dur=0.1)
         O.fingers(tt, 'R', 0.2, dur=0.1)
     # claps the bowler back on
@@ -1031,6 +1060,10 @@ SETUP = {
 }
 
 
+# Edith's look at Oswald in the street-side two-shot, cheated toward the lens (world offset)
+ED_B = (0.35, -0.40, 0.0)
+
+
 def cam_setup(F, key, **kw):
     s = dict(SETUP[key])
     s.update(kw)
@@ -1054,7 +1087,7 @@ def edith_lap_loaf(F):
 def s3_1(F):
     T = F.begin('3.1', 'Doorway deep staging: the question')
     O, Te, To, Ed = F.A['oswald'], F.A['teddy'], F.A['tomas'], F.A['edith']
-    F.camera((2.40, 3.00, SZ + 1.40), (-0.70, 3.46, SZ + 1.20), 32,
+    F.camera((2.40, 3.00, SZ + 1.40), (-0.70, 3.32, SZ + 1.20), 32,
              focus=('actor', 'oswald', 'head'), fstop=3.5)
     for n in ('plum', 'flatcap', 'paper'):
         far_away(F, n, T)
@@ -1104,6 +1137,8 @@ def s3_1(F):
     Te.place(T, DOOR_X + 0.05, FY + 0.9, 0.0, z=SZ - 0.02)
     Te.posture(T, 'stand', dur=0.01, splay=8)
     Te.walk(T + 1.0, T + 1.6, [(DOOR_X + 0.05, FY + 0.9), (DOOR_X + 0.10, FY - 0.02)], stride=0.28, z=SZ)
+    # steps out past the jamb so his face is in the clear for his question
+    Te.walk(T + 2.4, T + 2.9, [(DOOR_X + 0.10, FY - 0.02), (DOOR_X + 0.10, FY - 0.24)], stride=0.28, z=SZ)
     Te.look_at(T + 1.2, ('actor', 'oswald', 'head'), dur=0.3)
     Te.tilt(T + 1.9, amt=10, dur=0.5)
     Te.expr(T + 1.6, brow=0.3, jaw=0.1, dur=0.3)
@@ -1111,13 +1146,13 @@ def s3_1(F):
     Te.look_at(b2 + 0.1, ('actor', 'tomas', 'head'), dur=0.2)
     To.place(T, DOOR_X - 0.25, FY + 1.2, 0.0, z=SZ - 0.02)
     To.posture(T, 'stand', dur=0.01, splay=10)
-    To.walk(T + 1.6, T + 2.5, [(DOOR_X - 0.25, FY + 1.2), (DOOR_X - 0.18, FY + 0.20)], stride=0.45, z=SZ - 0.01)
+    To.walk(T + 1.6, T + 2.5, [(DOOR_X - 0.25, FY + 1.2), (DOOR_X - 0.20, FY - 0.04)], stride=0.45, z=SZ - 0.01)
     To.look_at(T + 1.6, ('actor', 'oswald', 'head'), dur=0.4)
     To.expr(T, lid_L=0.65, lid_R=0.65, press=0.3, dur=0.01)
     for k in range(6):
         tt = T + 1.7 + k * 0.4
         for sd, sx in (('L', 1), ('R', -1)):
-            To.gesture(tt, sd, ('chest', (sx * (0.05 + 0.03 * (k % 2)), -0.22, To.B.hipZ - 0.04 + 0.02 * ((k + (sd == 'L')) % 2)), (-sx * 0.7, -0.5, -0.1), (0, 0.2, 1)), dur=0.18)
+            To.gesture(tt, sd, ('chest', (sx * (0.05 + 0.03 * (k % 2)), -0.22, To.B.hipZ + 0.28 + 0.02 * ((k + (sd == 'L')) % 2)), (-sx * 0.7, -0.5, -0.1), (0, 0.2, 1)), dur=0.18)
     F.cue_stop = None
     F.end(b3 + 0.3)
 
@@ -1133,7 +1168,8 @@ def s3_2(F):
     for sd in 'LR':
         To.release(b + 0.15, sd, dur=0.5)
     To.look_at(b + 0.35, ('actor', 'edith', 'head'), dur=0.5, weight=0.65)
-    To.expr(b + 0.35, lid_L=1.05, lid_R=1.05, brow=0.35, brow_in=0.85, press=0.1, smile=-0.1, dur=0.5)
+    To.blinks.pop()     # drop the blink the look change adds: the slow blink below is the only one
+    To.expr(b + 0.35, lid_L=1.4, lid_R=1.4, brow=0.35, brow_in=0.85, press=0.1, smile=-0.1, dur=0.5)
     To.expr(b + 1.05, blink=1.0, dur=0.22)
     To.expr(b + 1.32, blink=0.0, dur=0.35)
     To.hold_eyes(T, T + 2.6)
@@ -1156,19 +1192,19 @@ def s3_3(F):
 def s3_4(F):
     T = F.begin('3.4', 'Door, Teddy. The bite never happens.')
     O, Te, To = F.A['oswald'], F.A['teddy'], F.A['tomas']
-    F.camera((2.40, 3.00, SZ + 1.40), (-0.70, 3.46, SZ + 1.20), 32,
+    F.camera((2.40, 3.00, SZ + 1.40), (-0.70, 3.32, SZ + 1.20), 32,
              focus=('actor', 'oswald', 'head'), fstop=3.5)
     To.release(T, 'R', dur=0.3)
     To.look_at(T + 0.2, V(DOOR_X, FY + 1.5, SZ + 1.0), dur=0.5)
     To.expr(T + 0.2, lid_L=0.6, lid_R=0.6, brow_in=0.3, brow=-0.1, smile=-0.25, dur=0.4)
-    To.gesture(T + 0.3, 'L', ('world', (DOOR_X - 0.06, FY + 0.07, SZ + 0.83), (0.35, -0.6, -0.7), (0.2, -0.65, 0.7)), dur=0.35)
+    To.gesture(T + 0.3, 'L', ('world', (DOOR_X - 0.06, FY - 0.15, SZ + 0.83), (0.35, -0.6, -0.7), (0.2, -0.65, 0.7)), dur=0.35)
     To.fingers(T + 0.3, 'L', 0.35, thumb=0.3, dur=0.3)
     To.release(T + 1.0, 'L', dur=0.3)
     To.turn(T + 1.0, 160.0, dur=0.5)
     a, b = F.say('T05', T + 0.8)
-    To.walk(T + 1.3, T + 2.2, [(DOOR_X - 0.18, FY + 0.20), (DOOR_X - 0.15, FY + 1.1)], stride=0.45, z=SZ - 0.01)
+    To.walk(T + 1.3, T + 2.2, [(DOOR_X - 0.20, FY - 0.04), (DOOR_X - 0.15, FY + 1.1)], stride=0.45, z=SZ - 0.01)
     Te.turn(T + 0.9, 170.0, dur=0.4)
-    Te.walk(T + 1.25, T + 2.0, [(DOOR_X + 0.10, FY - 0.02), (DOOR_X + 0.05, FY + 0.85)], stride=0.28, z=SZ)
+    Te.walk(T + 1.25, T + 2.0, [(DOOR_X + 0.10, FY - 0.24), (DOOR_X + 0.05, FY + 0.85)], stride=0.28, z=SZ)
     F.door(T + 1.75, 0, 0.55)
     F.sfx('shop_bell', T + 2.3, gain=-16.0)
     F.sfx('door_thunk', T + 2.32, gain=-12.0)
@@ -1196,7 +1232,7 @@ def s3_5(F):
     O.posture(t1, 'stand', dur=1.1, splay=4, knee=0.0, stoop=0)
     O.shoulders(t1 + 0.2, -9, dur=0.8)
     # cane under his arm, the loaf into both hands
-    F.attach('cane', t1 + 0.4, T + 40, ('bone', 'oswald', 'upperarm.R', hand_hold(0.06, 0.06, 0.03, 0, 35, -90)))
+    F.attach('cane', t1 + 0.4, T + 40, ('bone', 'oswald', 'upperarm.R', hand_hold(0.06, 0.06, 0.03, 0, 145, -90)))
     O.gesture(t1 + 0.3, 'R', ('chest', (-0.07, -0.30, O.B.hipZ + 0.10), (0.4, -0.7, 0.3), (0, 0.4, -1)), dur=0.6)
     O.gesture(t1 + 0.3, 'L', ('chest', (0.08, -0.30, O.B.hipZ + 0.10), (-0.4, -0.7, 0.3), (0, 0.4, -1)), dur=0.6)
     O.walk(T + 1.9, T + 4.0, [(0.25, FY - 1.06), (1.15, FY - 0.98), (2.05, FY - 0.92)], stride=0.55, splay=4,
@@ -1342,7 +1378,7 @@ def s3_9(F):
     a, b = F.say('O03', T + 0.8, gain=-2.0)
     O.nod(a + 0.2, amt=6, dur=0.6)
     O.look_at(a + 1.3, ('actor', 'edith', 'eyes'), dur=0.4)
-    Ed.look_at(T + 0.3, ('actor', 'oswald', 'eyes'), dur=0.5)
+    Ed.look_at(T + 0.3, ('actor', 'oswald', 'eyes', ED_B), dur=0.5)
     Ed.expr(T + 0.3, smile=0.2, brow_in=0.4, dur=0.5)
     # her cap tilts, teasing
     Ed.tilt(b + 0.15, amt=-9, dur=0.45)
@@ -1425,7 +1461,7 @@ def s3_13(F):
     Ed.look_at(T + 0.35, ('actor', 'edith', 'root', (0, -0.25, SZ + 0.38)), dur=0.4)
     a, b = F.say('E09', T + 0.6)
     Ed.expr(a, press=0.0, dur=0.2)
-    Ed.look_at(b + 0.12, ('actor', 'oswald', 'eyes'), dur=0.35)
+    Ed.look_at(b + 0.12, ('actor', 'oswald', 'eyes'), dur=0.35, weight=0.8)
     Ed.head(b + 0.12, pitch=4, yaw=-8, dur=0.4)
     Ed.expr(b + 0.12, brow=0.25, brow_in=0.3, brow_asym=-0.3, lid_L=0.95, lid_R=0.9, smile=-0.05, dur=0.35)
     a2, b2 = F.say('E10', b + 0.4)
@@ -1434,7 +1470,7 @@ def s3_13(F):
     O.expr(a3 - 0.1, smile=0.0, brow_in=0.5, brow=0.0, dur=0.2)
     Ed.hold_eyes(b2, b3 + 1.0)
     Ed.shoulders(b3 + 0.35, -7, dur=0.6)
-    Ed.expr(b3 + 0.35, brow_asym=0.0, brow_in=0.55, lid_L=0.9, lid_R=0.9, dur=0.6)
+    Ed.expr(b3 + 0.35, brow_asym=0.0, brow_in=0.65, lid_L=1.0, lid_R=1.0, dur=0.6)
     Ed.head(b3 + 0.35, pitch=2, yaw=0, dur=0.6)
     F.end(b3 + 0.8)
 
@@ -1476,19 +1512,19 @@ def s3_15(F):
     O.pulses_head.add(b2 + 0.4, 0.4, lambda u: np.array([5 * math.sin(math.pi * u), 0, 0]))
     O.look_at(b2 + 1.35, ('actor', 'edith', 'eyes'), dur=0.5)
     O.expr(b2 + 1.35, brow_in=0.4, brow=0.05, lid_L=1.0, lid_R=1.0, dur=0.5)
-    Ed.look_at(T, ('actor', 'oswald', 'eyes'), dur=0.3)
+    Ed.look_at(T, ('actor', 'oswald', 'eyes'), dur=0.3, weight=0.8)
     Ed.expr(a2, smile=0.2, brow_in=0.4, brow=0.1, dur=0.4)
     a3, b3 = F.say('O07', b2 + 1.85, gain=-2.0)
     F.end(b3 + 0.25)
     T2 = F.begin('3.15b', 'I didn\'t know what to say. / Nobody does.')
     cam_setup(F, 'C')
     a4, b4 = F.say('O08', T2 + 0.1, gain=-2.0)
-    Ed.expr(a4 + 0.5, lid_L=0.78, lid_R=0.78, brow_in=0.45, brow=0.0, smile=0.22, smirk=0.0, dur=0.8)
+    Ed.expr(a4 + 0.5, lid_L=0.86, lid_R=0.86, brow_in=0.6, brow=0.0, smile=0.15, smirk=0.0, dur=0.8)
     Ed.breath_pulse(a4 + 0.7, dur=1.2, amt=1.4)
     F.sfx('breath_exhale', a4 + 1.1, gain=-18.0)
     a5, b5 = F.say('E14', b4 + 0.45)
     Ed.nod(a5 + 0.1, amt=3, dur=0.5)
-    Ed.expr(a5, lid_L=0.9, lid_R=0.9, lidlo_L=0.2, lidlo_R=0.2, smile=0.3, dur=0.5)
+    Ed.expr(a5, lid_L=0.95, lid_R=0.95, lidlo_L=0.2, lidlo_R=0.2, smile=0.3, dur=0.5)
     Ed.tilt(a5, amt=-4, dur=0.6)
     F.end(b5 + 0.5)
 
@@ -1507,22 +1543,22 @@ def s3_16(F):
     F.set_visible(F.snowline[0], T + 0.75, False)
     F.set_visible(F.snowline[1], T + 1.05, False)
     osw_rest(F, T + 1.25, dur=0.3, sides='L')
-    Ed.look_at(T + 0.35, ('actor', 'oswald', 'hand_L'), dur=0.25)
+    Ed.look_at(T + 0.35, ('actor', 'oswald', 'hand_L', (0.15, -0.20, 0.0)), dur=0.25)
     Ed.expr(T + 0.35, lid_L=1.1, lid_R=1.1, brow=0.3, brow_in=0.4, smile=0.0, dur=0.25)
     # takes hold of his own lapels
     for sd, sx in (('L', 1), ('R', -1)):
-        O.gesture(T + 1.4, sd, ('chest', (sx * 0.08, -0.15, O.B.hipZ + 0.33), (-sx * 0.45, -0.15, 0.88), (sx * 0.35, -0.94, 0.0)), dur=0.35)
+        O.gesture(T + 1.4, sd, ('chest', (sx * 0.07, -0.115, O.B.hipZ + 0.34), (-sx * 0.45, -0.15, 0.88), (sx * 0.35, -0.94, 0.0)), dur=0.35)
         O.fingers(T + 1.4, sd, 0.8, thumb=0.25, dur=0.3)
     O.look_at(T + 1.4, ('actor', 'edith', 'eyes'), dur=0.3)
     O.expr(T + 1.4, brow=0.3, press=0.5, dur=0.3)
-    Ed.look_at(T + 1.5, ('actor', 'oswald', 'eyes'), dur=0.25)
+    Ed.look_at(T + 1.5, ('actor', 'oswald', 'eyes', ED_B), dur=0.25)
     Ed.expr(T + 1.6, brow=1.0, brow_in=-0.3, lid_L=1.15, lid_R=1.15, press=0.4, smile=-0.1, dur=0.2)
     a, b = F.say('E15', T + 1.9)
     Ed.nod(a + 0.55, amt=4, dur=0.3)
     # one two-handed tug: the middle button pings off; he rocks back on his heel
     tg = b + 0.1
     for sd, sx in (('L', 1), ('R', -1)):
-        O.gesture(tg, sd, ('chest', (sx * 0.11, -0.22, O.B.hipZ + 0.31), (-sx * 0.45, -0.15, 0.88), (sx * 0.35, -0.94, 0.0)), dur=0.12)
+        O.gesture(tg, sd, ('chest', (sx * 0.08, -0.15, O.B.hipZ + 0.32), (-sx * 0.45, -0.15, 0.88), (sx * 0.35, -0.94, 0.0)), dur=0.12)
     F.sfx('wool_strain_ping', tg - 0.25, gain=-8.0)
     btn = [o for o in F.C['oswald'].coll.objects if o.name.startswith('oswald') and 'button' in o.data.materials[0].name] if False else []
     O.posture(tg + 0.1, 'sit_heel', dur=0.35, down='R')
@@ -1558,13 +1594,13 @@ def s3_17(F):
     F.set_visible(F.drape, T + 0.68, True)
     F.sfx('cloth_rustle', T + 0.15, gain=-8.0)
     O.look_at(T, ('actor', 'edith', 'chest', (0, 0, 0.15)), dur=0.3)
-    Ed.look_at(T + 0.7, ('actor', 'oswald', 'hand_R'), dur=0.3)
+    Ed.look_at(T + 0.7, ('actor', 'oswald', 'hand_R', (0.15, -0.20, 0.0)), dur=0.3)
     Ed.expr(T + 0.7, smile=0.0, jaw=0.0, brow=0.2, brow_in=0.5, lid_L=0.9, lid_R=0.9, dur=0.3)
     Ed.hold_eyes(T + 0.7, T + 2.2)
     # tucks the collar up under her chin with both hands
     for sd, sx in (('L', 1), ('R', -1)):
-        O.gesture(T + 1.0, sd, ('world', tuple(V(EDITH[0], EDITH[1], 0) + V(sx * 0.06, -0.15, SZ + 0.66)), (-sx * 0.3, 0.6, 0.6), (0, -0.8, 0.4)), dur=0.5)
-        O.gesture(T + 1.6, sd, ('world', tuple(V(EDITH[0], EDITH[1], 0) + V(sx * 0.05, -0.17, SZ + 0.69)), (-sx * 0.3, 0.6, 0.6), (0, -0.8, 0.4)), dur=0.3)
+        O.gesture(T + 1.0, sd, ('world', tuple(V(EDITH[0], EDITH[1], 0) + V(sx * 0.06, -0.15, SZ + 0.62)), (-sx * 0.3, 0.6, 0.6), (0, -0.8, 0.4)), dur=0.5)
+        O.gesture(T + 1.6, sd, ('world', tuple(V(EDITH[0], EDITH[1], 0) + V(sx * 0.05, -0.17, SZ + 0.65)), (-sx * 0.3, 0.6, 0.6), (0, -0.8, 0.4)), dur=0.3)
     Ed.head(T + 1.6, pitch=12, dur=0.5)
     osw_rest(F, T + 2.1, dur=0.5)
     # sits back on his heel, suddenly half his size; a pleased eyebrow flourish
@@ -1573,7 +1609,7 @@ def s3_17(F):
     O.expr(T + 2.5, brow=0.9, smile=0.45, smirk=0.3, dur=0.15)
     O.expr(T + 2.75, brow=0.25, dur=0.3)
     a, b = F.say('O09', T + 2.6, gain=-2.0)
-    Ed.look_at(a + 0.2, ('actor', 'oswald', 'eyes'), dur=0.4)
+    Ed.look_at(a + 0.2, ('actor', 'oswald', 'eyes', ED_B), dur=0.4)
     Ed.head(a + 0.2, pitch=4, dur=0.5)
     tr = a + 1.65
     Ed.expr(tr, blink=1.0, smile=0.75, lidlo_L=0.8, lidlo_R=0.8, jaw=0.12, dur=0.15)
@@ -1587,13 +1623,14 @@ def s3_18(F):
     T = F.begin('3.18', 'Edith. ...Please.')
     Ed, O = F.A['edith'], F.A['oswald']
     cam_setup(F, 'D')
+    Ed.look_at(T, ('actor', 'oswald', 'eyes'), dur=0.01)
     Ed.expr(T + 0.2, smile=0.0, lidlo_L=0.0, lidlo_R=0.0, lid_L=1.02, lid_R=1.02, brow_in=0.65, brow=0.15, dur=0.7)
     Ed.look_at(T + 0.3, ('actor', 'oswald', 'eyes'), dur=0.4)
-    Ed.head(T + 0.3, pitch=0, dur=0.6)
+    Ed.head(T + 0.3, pitch=-4, dur=0.6)
     Ed.hold_eyes(T, T + 4.5)
     a, b = F.say('E16', T + 1.0)
-    Ed.look_at(b + 0.15, ('actor', 'edith', 'root', (-0.25, -0.6, 0.30)), dur=0.45)
-    Ed.head(b + 0.15, pitch=3, dur=0.5)
+    Ed.look_at(b + 0.15, ('actor', 'edith', 'root', (-0.25, -1.0, 0.45)), dur=0.45, weight=0.7)
+    Ed.head(b + 0.15, pitch=0, dur=0.5)
     Ed.expr(b + 0.15, lid_L=0.95, lid_R=0.95, brow_in=0.8, press=0.2, dur=0.5)
     a2, b2 = F.say('E17', b + 1.15)
     Ed.expr(a2, press=0.0, dur=0.1)
@@ -1656,7 +1693,8 @@ def s3_20(F):
     Ed = F.A['edith']
     cam_setup(F, 'D', loc2=(2.70, 2.78, SZ + 0.89), target2=('actor', 'edith', 'eyes', (0.0, 0.0, -0.15)),
               t_move=(T, T + 6.8), ease='linear')
-    Ed.head(T + 0.3, pitch=2, dur=0.8)
+    Ed.look_at(T + 0.3, ('actor', 'edith', 'root', (-0.20, -1.0, 0.45)), dur=0.8)
+    Ed.head(T + 0.3, pitch=-4, dur=0.8)
     Ed.expr(T + 0.3, blink=1.0, dur=0.6)
     Ed.hold_eyes(T, T + 7.0)
     # the chin trembles once; she presses her lips together to stop it
@@ -1712,11 +1750,11 @@ def s3_21(F):
     F.set_visible(F.props['rye_main'], tt + 0.5, True)
     F.set_visible(F.props['rye_end'], tt + 0.5, True)
     F.attach('rye_main', tt + 0.5, T + 200, ('fn', lambda t: lap_loaf_matrix(F, t) @ Matrix.Translation((0.02, 0, 0))))
-    F.attach('rye_end', tt + 0.5, tt + 4.3, ('hand', 'edith', 'R', Matrix(((0, 0, 1, -0.0), (1, 0, 0, 0.07), (0, 1, 0, -0.03), (0, 0, 0, 1)))))
-    hold_out = lambda t: ('world', tuple(V(EDITH[0], EDITH[1], 0) + V(-0.34, -0.33, SZ + 0.58)), (-0.7, -0.6, 0.1), (0, 0, 1))
+    hold_out = lambda t: ('world', tuple(V(EDITH[0], EDITH[1], 0) + V(-0.34, -0.33, SZ + 0.58)), (-0.7, -0.6, 0.1), (0, 0, -1))
     Ed.gesture(tt + 0.9, 'R', hold_out, dur=0.45)
+    Ed.fingers(tt + 0.9, 'R', 0.3, thumb=0.45, dur=0.3)
     Ed.release(tt + 0.9, 'L', dur=0.5)
-    Ed.look_at(tt + 0.95, ('actor', 'oswald', 'eyes'), dur=0.35)
+    Ed.look_at(tt + 0.95, ('actor', 'oswald', 'eyes', ED_B), dur=0.35)
     Ed.expr(tt + 0.95, smile=0.0, brow=0.1, brow_in=0.0, lid_L=0.9, lid_R=0.9, press=0.25, dur=0.35)
     a, b = F.say('O11', T + 5.0, gain=-2.0)
     for sd, sx in (('L', 1), ('R', -1)):
@@ -1732,9 +1770,21 @@ def s3_21(F):
     O.expr(tn + 0.52, blink=0.0, dur=0.18)
     # then he takes the bread
     tk = b2 + 0.35
-    O.gesture(tk, 'R', ('world', tuple(V(EDITH[0], EDITH[1], 0) + V(-0.36, -0.36, SZ + 0.57)), (0.6, 0.6, 0.0), (0, 0, -1)), dur=0.35)
+    O.gesture(tk, 'R', ('hips', (0.02, -0.34, O.B.hipZ + 0.05), (0.25, -0.95, 0.0), (0, 0, -1)), dur=0.35)
     O.fingers(tk, 'R', 0.45, thumb=0.3, dur=0.3)
-    F.attach('rye_end', tt + 4.3, T + 200, ('hand', 'oswald', 'R', LOAF_PALM @ Matrix.Translation((0, 0, 0.0))))
+    # the torn end lies on her upturned palm, then passes to his: blend between the two posed hands
+    M_ED = Matrix(((0, 1, 0, 0.0), (1, 0, 0, 0.07), (0, 0, -1, -0.035), (0, 0, 0, 1)))
+
+    def end_handoff(t, a=tk + 0.1, b=tk + 0.4):
+        A = F._src_matrix(('hand', 'edith', 'R', M_ED), t)
+        B = F._src_matrix(('hand', 'oswald', 'R', LOAF_PALM), t)
+        u = perf.ease(min(max((t - a) / (b - a), 0.0), 1.0))
+        la, ra, sa = A.decompose()
+        lb, rb, sb = B.decompose()
+        return Matrix.LocRotScale(la.lerp(lb, u), ra.slerp(rb, u), sa.lerp(sb, u))
+    F.attach('rye_end', tt + 0.5, tk + 0.1, ('hand', 'edith', 'R', M_ED))
+    F.attach('rye_end', tk + 0.1, tk + 0.4, ('fn', end_handoff))
+    F.attach('rye_end', tk + 0.4, T + 200, ('hand', 'oswald', 'R', LOAF_PALM))
     O.gesture(tk + 0.5, 'R', ('chest', (-0.08, -0.36, O.B.hipZ + 0.10), (0.5, -0.7, 0.2), (0, 0.3, -1)), dur=0.6)
     for sd, sx in (('L', 1), ('R', -1)):
         Ed.gesture(tk + 0.4, sd, ('world', tuple(V(EDITH[0], EDITH[1], 0) + V(sx * 0.10, 0.02, SZ + 0.36)), (-sx * 0.3, -0.9, -0.3), (sx * 0.9, 0.0, 0.4)), dur=0.6)
@@ -1795,12 +1845,13 @@ def s4_1(F):
 def s4_2(F):
     T = F.begin('4.2', "There's the lean (she laughs first)")
     O, Ed = F.A['oswald'], F.A['edith']
-    F.camera((1.05, 1.35, 1.35), (2.79, 3.15, 1.10), 35, fstop=2.8,
+    F.camera((1.50, -1.00, 1.00), (2.12, 2.60, 0.90), 45, fstop=2.8,
              focus_keys=[(-1e9, -1e9, ('actor', 'edith', 'eyes')),
                          (T + 1.2, T + 1.6, ('actor', 'oswald', 'head')),
                          (T + 3.15, T + 3.5, ('actor', 'edith', 'eyes'))])
-    O.place(T, LEAN_SPOT[0], LEAN_SPOT[1], heading_to(LEAN_SPOT, EDITH) + 160, z=0.0, dur=0.01)
-    O.turn(T + 1.3, heading_to(LEAN_SPOT, EDITH), dur=0.45)
+    spot = (2.0, 2.3)     # cheated 0.34 m from LEAN_SPOT so his arms clear the post in this framing
+    O.place(T, spot[0], spot[1], heading_to(spot, EDITH) + 160, z=0.0, dur=0.01)
+    O.turn(T + 1.3, heading_to(spot, EDITH), dur=0.45)
     O.look_at(T + 1.3, ('actor', 'edith', 'eyes'), dur=0.4)
     Ed.look_at(T, ('actor', 'oswald', 'head'), dur=0.01)
     Ed.expr(T + 0.3, lid_L=0.82, lid_R=0.82, lidlo_L=0.5, lidlo_R=0.5, smile=0.25, dur=0.5)
@@ -1834,10 +1885,10 @@ def s4_3(F):
     for sd in 'LR':
         O.release(T, sd, dur=0.2)
     t_post = T + 1.6
-    hug = (LAMP[0] + 0.02, LAMP[1] - 0.24)
+    hug = (LAMP[0] + 0.02, LAMP[1] - 0.62)
     O.walk(T + 0.3, T + 0.75, [LEAN_SPOT, (2.18, 2.28)], stride=0.3, splay=24, style='waddle')
     # boot catches a cobble: stumble, arms windmilling
-    O.walk(T + 0.8, t_post, [(2.18, 2.28), (2.10, 2.45), hug], stride=0.32, splay=10, bob=0.04, sway=0.03, lift=0.07)
+    O.walk(T + 0.8, t_post, [(2.18, 2.28), (2.06, 2.34), hug], stride=0.32, splay=10, bob=0.04, sway=0.03, lift=0.07)
     O.posture(T + 0.75, 'stand', dur=0.2, splay=10, lean=24, knee=0.4)
     for k in range(3):
         tt = T + 0.8 + k * 0.26
@@ -1849,9 +1900,9 @@ def s4_3(F):
     F.attach('cane', T + 1.0, T + 30, ('world', world_m((2.4, 2.0, 0.012), (0, 90, -40))))
     F.sfx('thump_soft', T + 1.1, gain=-12.0)
     # catches the post with one arm
-    O.posture(t_post, 'stand', dur=0.15, splay=10, lean=10, knee=0.2)
+    O.posture(t_post, 'stand', dur=0.15, splay=10, lean=18, knee=0.2)
     O.turn(t_post - 0.1, heading_to(hug, LAMP), dur=0.15)
-    O.gesture(t_post - 0.05, 'L', ('world', (LAMP[0] + 0.06, LAMP[1] + 0.05, 1.25), (-0.5, 0.6, 0.3), (0.5, -0.6, 0.4)), dur=0.12)
+    O.gesture(t_post - 0.05, 'L', ('world', (LAMP[0] + 0.03, LAMP[1] - 0.09, 1.30), (-0.5, 0.6, 0.3), (0.5, -0.6, 0.4)), dur=0.12)
     O.release(t_post, 'R', dur=0.2)
     O.fingers(t_post, 'L', 0.8, thumb=0.6, dur=0.1)
     F.lamp(t_post, True, 0.2)
@@ -1880,7 +1931,7 @@ def s4_3(F):
 def s5_1(F):
     T = F.begin('5.1', 'Good.')
     To, Te = F.A['tomas'], F.A['teddy']
-    F.camera((-0.25, FY - 1.55, SZ + 1.40), (DOOR_X - 0.05, FY - 0.05, SZ + 1.25), 38)
+    F.camera((-0.25, FY - 1.55, SZ + 1.40), (DOOR_X + 0.15, FY - 0.05, SZ + 1.20), 32)
     To.place(T, DOOR_X - 0.1, FY + 0.8, 0.0, z=SZ - 0.01)
     To.posture(T, 'stand', dur=0.01, splay=10)
     for sd in 'LR':
@@ -1894,8 +1945,14 @@ def s5_1(F):
     To.fingers(T + 1.1, 'R', 0.05, spread=0.3, dur=0.2)
     F.door(T + 1.3, 100, 0.5)
     To.release(T + 1.8, 'R', dur=0.4)
+    # his free hand rests at the front of the apron, so the forearm never crosses Teddy's face
+    To.gesture(T + 1.1, 'L', ('chest', (0.05, -0.22, To.B.hipZ - 0.02), (-0.7, -0.5, -0.1), (0, 0.2, 1)), dur=0.4)
+    To.fingers(T + 1.1, 'L', 0.45, thumb=0.3, dur=0.3)
     Te.place(T, DOOR_X + 0.15, FY + 0.95, 0.0, z=SZ - 0.01)
     Te.posture(T, 'stand', dur=0.01, splay=8)
+    # clear the slump and tilt carried over from earlier shots (hidden by the cut)
+    Te.chest(T, pitch=0, dur=0.01)
+    Te.head(T, pitch=0, yaw=0, roll=0, dur=0.01)
     Te.walk(T + 0.5, T + 1.25, [(DOOR_X + 0.15, FY + 0.95), (DOOR_X + 0.24, FY + 0.36)], stride=0.28, z=SZ - 0.01)
     Te.look_at(T + 1.3, ('actor', 'tomas', 'eyes'), dur=0.3)
     Te.expr(T + 1.3, jaw=0.45, brow=1.0, lid_L=1.25, lid_R=1.25, round=0.4, dur=0.2)
@@ -1904,7 +1961,7 @@ def s5_1(F):
     To.tilt(b2 - 0.1, amt=-10, dur=0.3)
     To.nod(b2 + 0.05, amt=6, dur=0.4)
     Te.expr(b2 + 0.1, jaw=0.1, round=0.0, smile=0.8, brow=0.6, dur=0.2)
-    Te.look_at(b2 + 0.2, ('actor', 'edith', 'head'), dur=0.25)
+    Te.look_at(b2 + 0.35, ('actor', 'edith', 'head'), dur=0.3, weight=0.6)
     Te.walk(b2 + 0.35, b2 + 1.4, [(DOOR_X + 0.24, FY + 0.36), (DOOR_X + 0.31, FY - 0.12), (0.6, FY - 0.55), (1.3, FY - 0.6)], stride=0.42, z=SZ)
     F.sfx('footsteps_cobble', b2 + 0.4, gain=-14.0, n=4, interval=0.25)
     pool_light(F, T + 1.5, 170, 2.6, 1.5, reach=0.5)
@@ -1923,11 +1980,15 @@ def s5_2(F):
     Te.place(T + 1.05, seat[0], seat[1], seat_h, z=SZ, dur=0.35)
     Te.posture(T + 1.15, 'sit_wall', dur=0.45, sill=0.0, knees=0.95, back=0.10, hands='knees')
     Te.chest(T + 1.15, pitch=0, dur=0.45)
+    for sd, sx in (('L', 1), ('R', -1)):
+        Te.gesture(T + 1.15, sd, ('arm', (sx * 0.08, 0.06, 0.21), (sx * 0.15, -0.65, 0.74), (sx * 0.1, 0.75, 0.66)), dur=0.45)
+        Te.fingers(T + 1.15, sd, 0.3, spread=0.1, thumb=0.2, dur=0.4)
     Te.head(T + 1.6, pitch=4, yaw=0, roll=-4, dur=0.4)
     F.sfx('thump_soft', T + 1.55, gain=-14.0)
-    Te.look_at(T + 1.9, ('actor', 'edith', 'eyes', (0, -0.30, 0)), dur=0.3, weight=0.7)
+    Te.look_at(T + 1.9, ('actor', 'edith', 'eyes', (0, -0.30, 0)), dur=0.3, weight=0.9)
     Te.expr(T + 1.9, brow=0.35, jaw=0.05, smile=0.1, lid_L=1.1, lid_R=1.1, dur=0.3)
-    Ed.look_at(T + 1.95, ('actor', 'teddy', 'eyes', (0, -0.30, 0)), dur=0.5)
+    Ed.look_at(T + 1.95, ('actor', 'teddy', 'eyes', (0.05, -0.60, 0.05)), dur=0.5)
+    Ed.head(T + 1.95, pitch=-5, dur=0.5)
     Ed.expr(T + 1.95, smile=0.1, brow=0.1, brow_in=0.0, lid_L=0.95, lid_R=0.95, dur=0.5)
     a, b = F.say('K05', T + 2.35)
     a2, b2 = F.say('E21', b + 0.5)
@@ -1937,7 +1998,7 @@ def s5_2(F):
     a4, b4 = F.say('E22', b3 + 0.4)
     Ed.expr(a4, smile=0.0, brow=0.15, press=0.15, dur=0.2)
     Ed.expr(b4 - 0.3, smile=0.55, smirk=0.3, lidlo_L=0.5, lidlo_R=0.5, press=0.0, dur=0.5)
-    Te.expr(b4 - 0.05, smile=1.0, lidlo_L=0.7, lidlo_R=0.7, brow=0.4, jaw=0.15, dur=0.3)
+    Te.expr(b4 - 0.05, smile=1.0, lidlo_L=0.45, lidlo_R=0.45, brow=0.4, jaw=0.15, dur=0.3)
     Te.bounce(b4, dur=0.5, amt=0.006, n=1)
     # Oswald, under the lit lamp, a slow cane twirl for an audience of two
     O.place(T, LAMP[0] + 0.1, LAMP[1] - 0.42, heading_to((LAMP[0] + 0.1, LAMP[1] - 0.42), EDITH), z=0.0, dur=0.01)
@@ -2026,8 +2087,10 @@ def build(voice_dir, out_dir, only=None):
     for n in ('plum', 'flatcap', 'paper'):
         far_away(F, n, sh['3.1']['t0'])
     face_lights(F, sh['3.3']['t0'] - 0.01, sh['4.1']['t0'])
-    F.light('key_window2', 'AREA', loc=(1.55, 2.95, SZ + 1.25), target=(2.75, 3.45, SZ + 0.70), energy=30, size=0.9,
-            color=(1.0, 0.70, 0.45), t0=sh['4.2']['t0'] - 0.01, t1=sh['4.3']['t0'])
+    # warm key on Edith from 4.1 (she was near-black there); the lamp itself is out of shot in 4.2
+    kw2 = F.light('key_window2', 'AREA', loc=(1.55, 2.95, SZ + 1.25), target=(2.75, 3.45, SZ + 0.70), energy=30, size=0.9,
+                  color=(1.0, 0.70, 0.45), t0=sh['4.1']['t0'] - 0.01, t1=sh['4.3']['t0'])
+    kw2.visible_camera = False
     F.light('key_window3', 'AREA', loc=(1.9, 2.8, SZ + 1.1), target=(2.7, 3.6, SZ + 0.55), energy=26, size=1.2,
             color=(1.0, 0.70, 0.45), t0=sh['5.2']['t0'] - 0.01, t1=F.t)
     F.light('fill_front_teddy', 'AREA', loc=(DOOR_X - 1.2, FY - 1.6, SZ + 1.4), target=(DOOR_X, FY - 0.1, SZ + 0.9),

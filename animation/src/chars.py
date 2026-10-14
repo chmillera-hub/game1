@@ -12,7 +12,7 @@ SPECS = {
         head_scale=1.22, leg_len=0.86, torso_len=0.50, neck_len=0.055, neck_r=0.042,
         shoulder_w=0.150, chest_a=0.132, chest_b=0.095, waist_a=0.118, waist_b=0.088, hip_a=0.136, hip_b=0.096,
         upper_arm=0.29, fore_arm=0.27, hand_scale=1.08,
-        hat='bowler', hat_color=(0.07, 0.07, 0.075), hair_style='messy', hair_top=True, hair_color=(0.30, 0.085, 0.025),
+        hat='bowler', hat_color=(0.05, 0.05, 0.056), hair_style='messy', hair_top=True, hair_color=(0.30, 0.085, 0.025),
         brow_color=(0.20, 0.06, 0.02), brow_thick=1.35, freckles=0.55,
         coat=(0.62, 0.42, 0.05), vneck=(0.05, 0.16, 0.08), coat_swap=(0.05, 0.16, 0.08), shirt=(0.80, 0.74, 0.60),
         cuff=(0.80, 0.74, 0.60), sleeve_end=0.62, under_sleeve='shirt',

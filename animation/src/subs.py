@@ -39,6 +39,7 @@ SIDE = 36
 
 SUB_SIZE = 31
 SUB_BOTTOM = 712
+SUB_HIGH_BOTTOM = 360     # the final shot's narration, above the shopfront
 NARR_COLOUR = '&H00D8E8F2'      # warm cream (ASS colours are &HAABBGGRR)
 DLG_COLOUR = '&H00FFFFFF'
 OUTLINE = '&H30000000'
@@ -246,11 +247,14 @@ def sub_lines(sub):
     return style, layout(typeset(sub['text']), 'Inter Italic' if style == 'Narr' else 'Inter', SUB_SIZE)
 
 
-def subtitle_events(clock, subs, cuts):
+def subtitle_events(clock, subs, cuts, t_high=None):
+    """t_high: narration from this time on sits high over the facades (the closing push-in onto Edith)."""
     events = []
     for s, t0, t1, stacked in time_subs(subs, cuts, GAP_FRAMES / clock.fps):
         style, lines = sub_lines(s)
         mv = H - SUB_BOTTOM
+        if t_high is not None and s.get('style') == 'narr' and s['t0'] >= t_high - 1e-6:
+            mv = H - SUB_HIGH_BOTTOM
         if stacked is not None:
             mv += len(sub_lines(stacked)[1]) * SUB_SIZE + 6
         events.append(clock.event(0, clock.frame(t0), clock.frame(t1), style,
@@ -360,7 +364,8 @@ def tidy_labels(labels, cuts):
 def build(tl):
     clock = Clock(tl.get('fps', 24))
     cuts = sorted({round(s['t0'], 6) for s in tl.get('shots', []) if s['t0'] > 0})
-    events = subtitle_events(clock, tl.get('subs', []), cuts)
+    t53 = next((s['t0'] for s in tl.get('shots', []) if s['name'] == '5.3'), None)
+    events = subtitle_events(clock, tl.get('subs', []), cuts, t53)
     labels = tidy_labels(tl.get('labels', []), cuts)
     for i, lab in enumerate(labels):
         if i == len(labels) - 1:
