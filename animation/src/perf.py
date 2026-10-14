@@ -81,7 +81,9 @@ class Track:
         if i < 0:
             return self.init
         s, d, v, e = self.keys[i]
-        if t >= s + d:
+        # a change shorter than a frame is a cut: it holds from its start, so the first frame
+        # of a shot (whose start is frame-aligned) already shows the new value
+        if t >= s + d or d < 0.5 / FPS:
             return v
         return self._mix(self._sv[i], v, ease((t - s) / d, e))
 
