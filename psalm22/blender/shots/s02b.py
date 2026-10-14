@@ -73,8 +73,8 @@ def build(ctx):
     j.rig.parent = piv
     j.rig.matrix_parent_inverse = piv.matrix_world.inverted()
     j.rig.matrix_world = mw
-    back = Vector((1, 0, 0))     # pitch axis: his left-right (world X, he faces +Y)
-    for f, a in ((1, 0.0), (f_lift, -1.2), (f_sink, 0.3), (NR, 0.0)):
+    # + about world X tips the top towards -Y = backwards (he faces +Y)
+    for f, a in ((1, 0.0), (f_lift, 1.2), (f_sink, -0.3), (NR, 0.0)):
         piv.rotation_euler = (math.radians(a), 0, 0)
         piv.keyframe_insert("rotation_euler", frame=f)
 
@@ -100,7 +100,7 @@ def build(ctx):
     cam = C.camera(loc=tuple(c0), target=tuple(aim), lens=45, fstop=2.2, focus=(c0 - head).length)
     C.animate_camera(cam, cam_path, 1, NR)
 
-    ctx.samples = 6
+    ctx.samples = 5
     ctx.render_opts.update({"volumetrics": "low"})
     ctx.interp = True
     ctx.post.update({"grade": ["flashback", "night"], "vignette": 0.3, "bloom": 0.3})

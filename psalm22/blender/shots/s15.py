@@ -158,64 +158,89 @@ def _shroud(tomb, frames=56):
     return shroud
 
 
+def _lower_cliff(cliff, z0=2.9, k=0.62):
+    """Lower the set's 5.5 m cliff to a ~4.3 m garden outcrop (sky visible above it)."""
+    me = cliff.data
+    for v in me.vertices:
+        if v.co.z > z0:
+            v.co.z = z0 + (v.co.z - z0) * k
+    me.update()
+
+
+def _hide_after(objs, f):
+    for o in objs:
+        o.hide_render = False
+        o.keyframe_insert("hide_render", frame=1)
+        o.hide_render = True
+        o.keyframe_insert("hide_render", frame=f)
+        o.hide_render = False
+
+
 def build(ctx):
     n = ctx.nframes
     NR = ctx.render_frames
     fr = ctx.frame
     # ---------------- timing ----------------
     f_roll0 = 5                    # stone starts to move (just after the flash peak)
-    f_roll1 = int(fr(2.1))         # stone at rest against the stop
-    p2s, p2e = ctx.phrase_frames(1)
+    f_roll1 = int(fr(2.2))         # stone at rest against the stop
+    f_move0 = int(fr(0.3))
+    f_move1 = int(fr(6.4))
 
-    tomb = S.garden_tomb(ctx, stone_open=[(1, 0.0), (f_roll0, 0.0), (f_roll1, 1.0)], sun_elevation=5.0,
-                         sun_azimuth=-38.0)
+    SUN_AZ, SUN_EL = -44.0, 9.0
+    tomb = S.garden_tomb(ctx, stone_open=[(1, 0.0), (f_roll0, 0.0), (f_roll1, 1.0)], sun_elevation=SUN_EL,
+                         sun_azimuth=SUN_AZ, dust_motes=True)
+    cliff = tomb.objects["cliff"]
+    _lower_cliff(cliff)
+    lime = E.limestone_material("s15_limestone", scale=0.55, tint=(1.0, 0.95, 0.87), streaks=0.7, strata=0.4,
+                                layers=2, res="1k")
+    cliff.data.materials.clear()
+    cliff.data.materials.append(lime)
+    sun = tomb.lights["sun"]
+    sun.data.energy = 5.0
+    sun.data.angle = math.radians(0.8)
+    shaft = tomb.lights["dawn_shaft"]
+    # the real sun now shines through the doorway: keep the spot as a gentle booster along the same line
+    lin = tomb["linen"]
+    sdir = Vector((math.sin(math.radians(SUN_AZ)) * math.cos(math.radians(SUN_EL)),
+                   -math.cos(math.radians(SUN_AZ)) * math.cos(math.radians(SUN_EL)),
+                   math.sin(math.radians(SUN_EL))))           # towards the sun
     _shroud(tomb)
 
-    # ---------------- vegetation: olive trees + scrub ----------------
+    # ---------------- vegetation: olive trees, scrub on the outcrop, spring grass ----------------
     rnd = random.Random(15)
-    olive_a = E.olive_tree(seed=4, age=1.1, size=0.95, lod=0)
-    olive_b = E.olive_tree(seed=7, age=0.8, size=0.85, lod=1)
-    E.place(olive_a, (-4.3, -2.6, -0.05), rot=(0, 0, 40))
-    E.place(olive_b, (4.8, -3.6, -0.05), rot=(0, 0, 200))
-    bush = [E.thorn_bush(seed=k, size=0.8 + 0.2 * k, leafy=0.8) for k in range(3)]
-    # shrubs along the cliff top and on ledges: ray-cast the cliff from the front
-    cliff = tomb.objects["cliff"]
-    dg = bpy.context.evaluated_depsgraph_get()
-    inv = cliff.matrix_world.inverted()
-    placed = 0
-    for k in range(60):
-        x = rnd.uniform(-8.0, 8.0)
-        z = rnd.uniform(2.2, 7.5)
-        if abs(x) < 2.2 and z < 3.2:
-            continue
-        o = Vector((x, -4.0, z))
-        ok, loc, nor, idx = cliff.ray_cast(inv @ o, inv.to_3x3() @ Vector((0, 1, 0)))
-        if not ok:
-            continue
-        wn = (cliff.matrix_world.to_3x3() @ nor).normalized()
-        if wn.z < 0.35:           # only on ledges / the top
-            continue
-        wl = cliff.matrix_world @ loc
-        E.place(bush[k % 3], wl + Vector((0, 0, -0.05)), rot=(0, 0, rnd.uniform(0, 360)),
-                scale=rnd.uniform(0.6, 1.2))
-        placed += 1
-    print("s15: shrubs on cliff", placed)
+    olive_a = E.olive_tree(seed=4, age=1.1, size=0.95, lod=1)
+    olive_b = E.olive_tree(seed=7, age=0.8, size=0.8, lod=1)
+    veg = [E.place(olive_a, (-4.6, -2.4, -0.05), rot=(0, 0, 40)),
+           E.place(olive_b, (5.2, -3.9, -0.05), rot=(0, 0, 200))]
+    bushes = [E.thorn_bush(seed=k, size=0.9 + 0.25 * k, leafy=1.0) for k in range(3)]
+    E.add_ground(cliff)
+    veg.append(E.scatter(bushes, terrain=cliff, count=260, region=(-9, -1, 9, 9), seed=3, scale=(0.6, 1.3),
+                         align=0.4, max_slope=55, zrange=(2.0, 8.0), sink=0.05, name="s15_cliff_scrub"))
+    gr_dry = E.grass_protos("dry", n=4, height=0.45)
+    gr_green = E.grass_protos("green", n=4, height=0.4)
+    veg.append(E.scatter(gr_dry + gr_green, terrain=cliff, count=900, region=(-9, -1, 9, 9), seed=4,
+                         scale=(0.7, 1.4), align=0.6, max_slope=60, zrange=(1.5, 8.0), name="s15_cliff_grass",
+                         shadows=False))
+    gnd = tomb.objects["ground"]
+    E.add_ground(gnd)
+    veg.append(E.scatter(gr_green + gr_dry, terrain=gnd, count=1400, region=(-7, -8, 7, -0.7), seed=5,
+                         scale=(0.6, 1.3), align=0.5, exclude=[(0.0, -0.6, 0.8), (1.3, -0.6, 1.4)],
+                         weights=[1, 1, 1, 1, 0.6, 0.6, 0.6, 0.6], name="s15_ground_grass", shadows=False))
 
     # ---------------- earthquake dust ----------------
-    FX.dust_pour((0.25, -0.12, 1.55), f_roll0 - 2, end_frame=f_roll0 + 30, rate=2500, opening=0.35,
-                 wind=(0.3, -0.2, 0.0), color=(0.78, 0.7, 0.6), floor=0.0, life=3.0, seed=3)
-    FX.dust_burst((0.5, -0.4, 0.02), f_roll0 + 2, size=0.9, color=(0.8, 0.72, 0.62), count=40, grains=900,
-                  wind=(0.5, -0.3, 0.05), floor=0.0, opacity=0.7, seed=5)
-    FX.dust_burst((2.25 + 0.95, -0.35, 0.05), f_roll1 - 3, size=0.7, color=(0.8, 0.72, 0.62), count=30,
-                  grains=500, wind=(0.4, -0.3, 0.05), floor=0.0, opacity=0.6, seed=6)
+    FX.dust_burst((0.1, -0.2, 1.62), f_roll0, size=0.55, color=(0.82, 0.75, 0.66), count=26, grains=700,
+                  direction=(0.0, -0.4, -1.0), wind=(0.25, -0.15, -0.1), floor=0.0, opacity=0.5, seed=4)
+    FX.dust_burst((0.55, -0.45, 0.04), f_roll0 + 3, size=0.85, color=(0.8, 0.72, 0.62), count=36, grains=700,
+                  wind=(0.5, -0.35, 0.05), floor=0.0, opacity=0.6, seed=5)
+    FX.dust_burst((2.25 + 0.95, -0.4, 0.06), f_roll1 - 2, size=0.6, color=(0.8, 0.72, 0.62), count=26,
+                  grains=400, wind=(0.4, -0.3, 0.05), floor=0.0, opacity=0.55, seed=6)
 
     # ---------------- camera ----------------
-    L = [Vector(v) for v in ((-2.3, -5.6, 0.62), (-1.6, -4.2, 0.72), (-0.5, -2.2, 0.82), (-0.02, -0.55, 0.8),
-                              (0.04, 0.55, 0.78), (0.22, 1.2, 0.8))]
-    T = [Vector(v) for v in ((0.25, 0.0, 1.5), (0.2, 0.0, 1.15), (0.05, 1.0, 0.8), (0.1, 2.0, 0.65),
-                              (0.9, 2.5, 0.4), (1.2, 2.55, 0.33))]
-    f_move0 = int(fr(0.4))
-    f_move1 = int(fr(6.3))
+    bz = tomb["bench"].z
+    L = [Vector(v) for v in ((-2.9, -5.2, 0.5), (-1.7, -3.1, 0.66), (-0.3, -1.25, 0.8), (0.0, 0.05, 0.8),
+                              (0.18, 0.85, 0.7), (0.4, 1.4, 0.6))]
+    T = [Vector(v) for v in ((0.15, 0.0, 1.5), (0.15, 0.2, 1.05), (0.15, 1.4, 0.75), (0.55, 2.3, 0.5),
+                              (1.05, 2.25, bz + 0.05), (1.22, 2.3, bz + 0.02))]
 
     def path(f):
         u = (f - f_move0) / float(f_move1 - f_move0)
@@ -224,17 +249,41 @@ def build(ctx):
         tgt = _spline(T, u)
         # earthquake: strong at the cut, decays over ~1.8 s
         q = max(0.0, 1.0 - (f - 1) / fr(1.8)) ** 2
-        loc = loc + C.shake(f, amp=0.035 * q, freq=9.0, seed=2) + C.shake(f, amp=0.006, freq=0.5, seed=7)
+        loc = loc + C.shake(f, amp=0.03 * q, freq=9.0, seed=2) + C.shake(f, amp=0.006, freq=0.5, seed=7)
         return loc, tgt
 
     cam = C.camera(loc=L[0], target=T[0], lens=24, fstop=4.0, focus=5.0, name="s15_cam")
     C.animate_camera(cam, path)
-    # focus pull: door -> linen
-    for f in range(1, NR + 1, 4):
+    f_door = None
+    for f in range(1, NR + 1, 2):
         loc, tgt = path(f)
         cam.data.dof.focus_distance = max(0.4, (tgt - loc).length)
         cam.data.dof.keyframe_insert("focus_distance", frame=f)
+        if f_door is None and loc.y > 0.2:
+            f_door = f
+    f_door = f_door or NR
+    # aperture opens up for the close interior (shallow DOF on the cloths)
+    cam.data.dof.aperture_fstop = 5.6
+    cam.data.dof.keyframe_insert("aperture_fstop", frame=f_door)
+    cam.data.dof.aperture_fstop = 2.8
+    cam.data.dof.keyframe_insert("aperture_fstop", frame=min(NR, f_door + 30))
 
-    ctx.samples = 6
+    # ---------------- interior light ----------------
+    # once inside, the exterior is behind the camera: drop the (shadowed, noisy) sky fill + exterior plants
+    skf = tomb.lights["sky_fill"]
+    e0 = skf.data.energy
+    skf.data.keyframe_insert("energy", frame=max(1, f_door - 6))
+    skf.data.energy = e0 * 0.12
+    skf.data.keyframe_insert("energy", frame=f_door + 8)
+    _hide_after(veg, f_door + 8)
+    # warm bounce off the sunlit grave cloths / floor (no GI in EEVEE): soft, shadowless
+    bnc = C.light("AREA", loc=(lin.x - 0.25, lin.y - 0.6, bz + 0.05), energy=0.0, temp=3200,
+                  target=(lin.x - 1.5, lin.y - 0.2, bz + 1.0), size=1.4, name="s15_cloth_bounce", shadow=False)
+    bnc.data.volume_factor = 0.0
+    bnc.data.keyframe_insert("energy", frame=f_roll0 + 10)
+    bnc.data.energy = 30.0
+    bnc.data.keyframe_insert("energy", frame=f_roll1 + 20)
+
+    ctx.samples = 5
     ctx.render_opts = {"volumetrics": "low"}
-    ctx.post = {"grade": "dawn", "bloom": 0.3}
+    ctx.post = {"grade": "dawn", "bloom": 0.3, "caption": {"y": 0.72, "halo": 1.2}}

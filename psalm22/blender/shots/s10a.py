@@ -54,6 +54,14 @@ def _fall_time(h, vz_down):
     return (vz_down + math.sqrt(vz_down * vz_down + 19.62 * h)) / 9.81
 
 
+def _lean_material(m):
+    for nd in m.node_tree.nodes:
+        if nd.type == "TEX_IMAGE" and nd.projection == "BOX":
+            nd.projection = "FLAT"
+        elif nd.type == "TEX_NOISE":
+            nd.inputs["Detail"].default_value = min(nd.inputs["Detail"].default_value, 1.0)
+
+
 def build(ctx):
     NR = ctx.render_frames
     p0, p1 = ctx.phrases[0], ctx.phrases[1]
@@ -178,6 +186,10 @@ def build(ctx):
     for nd in gp.active_material.node_tree.nodes:
         if nd.type == "NORMAL_MAP":
             nd.inputs["Strength"].default_value *= 0.5
+    # render cost (llvmpipe): the ground fills the frame; top-down texture projection instead of
+    # 3-way box mapping and 1-octave procedural noise cut its per-pixel cost a lot (looks the same here)
+    for m in (gp.active_material, far_m):
+        _lean_material(m)
     sun.data.angle = math.radians(6.0)    # hazy eclipse sun: broader, softer highlights
 
     # soft warm fill on the jar from camera-left so the clay reads (it is backlit by the sun)
@@ -256,7 +268,7 @@ def build(ctx):
             for kp in fc.keyframe_points:
                 kp.interpolation = "CONSTANT"
 
-    ctx.samples = 6
-    ctx.render_opts.update({"raytracing": True, "volumetrics": "low"})
+    ctx.samples = 4
+    ctx.render_opts.update({"raytracing": False, "volumetrics": "low", "shadow_scale": 0.5})
     ctx.interp = False
     ctx.post.update({"grade": "eclipse", "caption": {"y": 0.74}})

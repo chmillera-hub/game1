@@ -1185,7 +1185,8 @@ def _materials(p):
         em.surface_render_method = "DITHERED"
         p.mats["eyes"] = em
         p.mats["cornea"] = _split_cornea(p, p.parts["eyes"])
-    for key, tint, rough, sss in (("teeth", (0.55, 0.5, 0.42), 0.35, 0.15), ("tongue", (0.62, 0.36, 0.34), 0.38, 0.3)):
+    # mouth interior: darker + rougher (the open mouth otherwise shows bright pink gums and sky-blue teeth)
+    for key, tint, rough, sss in (("teeth", (0.40, 0.36, 0.30), 0.5, 0.0), ("tongue", (0.36, 0.17, 0.16), 0.6, 0.0)):
         if key in p.parts:
             o = p.parts[key]
             mt = o.data.materials[0]

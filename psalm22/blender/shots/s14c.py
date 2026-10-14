@@ -14,7 +14,7 @@ motion is solved so the shadow edge crosses each beast exactly while the ash fro
 import math
 import numpy as np
 import bpy
-from mathutils import Vector, Matrix
+from mathutils import Vector
 from lib import core as C
 from lib import env as E
 from lib import assets as A
@@ -202,7 +202,7 @@ def build(ctx):
     cam = C.camera(tuple(cam0 + Vector((0, 0, 1.05))), tuple(look_l), lens=32, name="Cam")
     C.animate_camera(cam, cam_fn, 1, NR)
 
-    ctx.samples = 6
-    ctx.render_opts.update({"volumetrics": "low"})
+    ctx.samples = 5
+    ctx.render_opts.update({"volumetrics": "low", "shadow_scale": 0.5})
     ctx.interp = False
     ctx.post.update({"grade": "gold", "bloom": 0.42, "exposure": -0.25, "end": {"exposure": 0.05, "bloom": 0.5}})

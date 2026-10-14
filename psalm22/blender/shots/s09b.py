@@ -16,6 +16,7 @@ from lib import assets as A
 from lib import fx as FX
 
 DUST = (0.5, 0.33, 0.22)
+DUST_DARK = (0.3, 0.19, 0.13)
 
 
 def _hide_eyes(arm):
@@ -34,7 +35,7 @@ def build(ctx):
     p0, p1 = ctx.phrases[0], ctx.phrases[1]
 
     # ------------------------------------------------------------------ world: the darkened sun, dust
-    sky = E.sky("eclipse", ctx=ctx)
+    sky = E.sky("eclipse", ctx=ctx, bg=0.3)       # darker visible sky: the lions come out of the dark
     sun = sky["sun"]
     sun.data.energy = 0.25
     sdir = Vector(sky["sun_dir"])
@@ -62,51 +63,58 @@ def build(ctx):
     cats = bpy.data.collections.new("s09b_cats")
     bpy.context.scene.collection.children.link(cats)
     ROAR = int(round(ctx.frame(p1["start"] - 1.05)))     # jaw fully open ~0.45 s after the phrase starts
-    hero_start = P(0.05, 5.6)
-    hero = A.animal("lion", "stalk", loc=tuple(hero_start), rot_z=yaw, speed=1.9, start_frame=1, move=True,
-                    end_frame=ROAR + 4, eye_glow=0.55)
+    hero_start = P(0.25, 5.3)
+    hero = A.animal("lion", "stalk", loc=tuple(hero_start), rot_z=yaw + 12, speed=2.5, start_frame=1, move=True,
+                    end_frame=ROAR + 4, eye_glow=0.55, fur=0.8)
     st = A.play(hero, "roar", start_frame=ROAR, replace=False)
     st.repeat = 1.0
     hero_end = hero.location.copy()
 
     # second male, left, half in the dust; roars later
-    l2 = A.animal("lion", "stalk", loc=tuple(P(-2.3, 8.2)), rot_z=yaw - 18, speed=1.6, start_frame=1, move=True,
-                  end_frame=int(ctx.frame(3.2)), eye_glow=0.9, fur=0.35, offset=0.7)
+    l2 = A.animal("lion", "stalk", loc=tuple(P(-1.9, 8.4)), rot_z=yaw - 14, speed=1.8, start_frame=1, move=True,
+                  end_frame=int(ctx.frame(3.2)), eye_glow=1.0, fur=False, offset=0.7)
     s2 = A.play(l2, "roar", start_frame=int(ctx.frame(2.9)), replace=False)
     s2.repeat = 1.0
     # third, right, further back, walking in
-    l3 = A.animal("lion", "stalk", loc=tuple(P(2.6, 10.5)), rot_z=yaw + 24, speed=1.7, start_frame=1, move=True,
-                  eye_glow=1.0, fur=0.3, offset=1.3)
+    l3 = A.animal("lion", "stalk", loc=tuple(P(2.1, 10.2)), rot_z=yaw + 20, speed=1.8, start_frame=1, move=True,
+                  eye_glow=1.0, fur=False, offset=1.3)
     # lioness (static roaring pose) further back right
-    l4 = A.load("lion", variant=1, loc=tuple(P(4.2, 13.5)), rot_z=yaw + 35, scale=1.0)
+    l4 = A.load("lion", variant=1, loc=tuple(P(3.4, 13.0)), rot_z=yaw + 35, scale=1.0)
     for a in (hero, l2, l3, l4):
         for o in _cat_parts(a):
             cats.objects.link(o)
 
     # ------------------------------------------------------------------ light
-    # hard warm rims from the dim sun through the dust (linked to the cats only)
-    rimL = C.light("AREA", tuple(P(-2.2, 9.0) + Vector((0, 0, 2.6))), 650, color=(1.0, 0.5, 0.25), size=1.6,
-                   target=tuple(P(0, 3.0) + Vector((0, 0, 1.1))), name="RimL")
-    rimR = C.light("AREA", tuple(P(2.6, 8.5) + Vector((0, 0, 2.0))), 480, color=(1.0, 0.45, 0.22), size=1.4,
-                   target=tuple(P(0, 3.0) + Vector((0, 0, 1.1))), name="RimR")
-    rimS = C.light("SUN", (0, 0, 20), 2.4, color=(1.0, 0.42, 0.2), name="RimSun", shadow=True)
+    # hard warm rims from the dim sun through the dust (linked to the cats only; little fog glow)
+    tg = P(0.2, 3.4) + Vector((0, 0, 1.0))
+    rimL = C.light("AREA", tuple(P(-1.8, 7.5) + Vector((0, 0, 2.4))), 700, color=(1.0, 0.5, 0.25), size=1.2,
+                   target=tuple(tg), name="RimL", volume=0.15)
+    rimR = C.light("AREA", tuple(P(2.2, 7.2) + Vector((0, 0, 2.0))), 520, color=(1.0, 0.45, 0.22), size=1.0,
+                   target=tuple(tg), name="RimR", volume=0.15)
+    rimS = C.light("SUN", (0, 0, 20), 2.4, color=(1.0, 0.42, 0.2), name="RimSun", shadow=False, volume=0.3)
     rd = (fwd * math.cos(math.radians(18)) + Vector((0, 0, math.sin(math.radians(18))))).normalized()
     rimS.rotation_euler = (-rd).to_track_quat("-Z", "Y").to_euler()
     for L in (rimL, rimR, rimS):
         L.light_linking.receiver_collection = cats
-    # faint red-brown fill from low camera-left (sky bounce) so the open mouth and teeth read
-    fill = C.light("AREA", tuple(P(-1.6, -0.6) + Vector((0, 0, 0.6))), 26, color=(1.0, 0.62, 0.45), size=2.5,
-                   target=tuple(P(0, 3.0) + Vector((0, 0, 1.1))), name="Fill", shadow=False)
+    # the cats walk out of the dark into the light
+    for L, e in ((rimL, 700), (rimR, 520), (rimS, 2.4)):
+        L.data.energy = e * 0.25
+        L.data.keyframe_insert("energy", frame=1)
+        L.data.energy = e
+        L.data.keyframe_insert("energy", frame=int(ctx.frame(1.4)))
+    # dim red-brown fill from low camera-left (sky bounce) so the open mouth and teeth read
+    fill = C.light("AREA", tuple(P(-1.2, 0.4) + Vector((0, 0, 0.5))), 70, color=(1.0, 0.6, 0.42), size=1.5,
+                   target=tuple(tg + Vector((0, 0, 0.2))), name="Fill", shadow=False, volume=0.0)
     fill.light_linking.receiver_collection = cats
 
     # ------------------------------------------------------------------ dust
     wind = right * -1.6 + Vector((0, 0, 0.1))
-    E.fog_volume(tuple(P(0, 12) + Vector((0, 0, 4))), (40, 34, 8), 0.06, DUST, 0.55, noise_scale=0.18,
+    E.fog_volume(tuple(P(0, 12) + Vector((0, 0, 4))), (40, 34, 8), 0.07, DUST_DARK, 0.55, noise_scale=0.18,
                  noise_amount=0.9, height_falloff=0.12, name="DustFar", wind=tuple(wind * 2))
-    E.fog_volume(tuple(P(0, 4) + Vector((0, 0, 1.0))), (14, 12, 2.0), 0.05, DUST, 0.4, noise_scale=0.6,
+    E.fog_volume(tuple(P(0, 6) + Vector((0, 0, 1.0))), (14, 10, 2.0), 0.035, DUST, 0.4, noise_scale=0.6,
                  noise_amount=1.0, height_falloff=1.2, name="DustLow", wind=tuple(wind * 3))
     E._set_volume_range(60)
-    E.dust_motes(center=tuple(P(0, 3.2) + Vector((0, 0, 1.4))), size=(5, 6, 2.8), count=1800, radius=0.0022,
+    E.dust_motes(center=tuple(P(0, 4.2) + Vector((0, 0, 1.4))), size=(5, 5, 2.8), count=700, radius=0.0016,
                  color=(1.0, 0.75, 0.5), emission=0.25, drift=tuple(wind), turbulence=0.5, seed=5, name="Motes")
     # roar breath blasts the dust in front of the mouth
     mouth_ground = Vector(hero_end) - fwd * 1.3
@@ -115,29 +123,37 @@ def build(ctx):
                   wind=tuple(-fwd * 0.6 + wind * 0.5), opacity=0.5, life=2.4, seed=11, name="RoarDust")
 
     # ------------------------------------------------------------------ camera: low, slight push, roar shake
-    cam_base = P(0.0, -0.2) + Vector((0, 0, 0.95))
+    cam_base = P(0.0, -0.2) + Vector((0, 0, 0.72))
 
     def cam_fn(f):
         u = C.ease_in_out(min(1.0, ctx.u(f)))
-        loc = cam_base + fwd * (0.35 * u)
-        tgt = P(0.0, 4.0) + Vector((0, 0, 1.16 + 0.05 * u))
+        loc = cam_base + fwd * (0.3 * u)
+        tgt = P(0.12, 3.6) + Vector((0, 0, 1.12 + 0.06 * u))
         # tremor while the lion roars
         t = ctx.sec(f)
         k = max(0.0, min(1.0, (t - p1["start"]) / 0.25)) * max(0.0, min(1.0, (p1["start"] + 1.6 - t) / 0.5))
-        loc = loc + C.shake(f, 0.006 + 0.012 * k, 0.9 + 3.0 * k, 9)
-        return (loc, tgt, 0.0, 42, 2.6)
+        loc = loc + C.shake(f, 0.005 + 0.01 * k, 0.9 + 3.0 * k, 9)
+        return (loc, tgt, 0.0, 40)
 
-    cam = C.camera(tuple(cam_base), tuple(P(0, 4) + Vector((0, 0, 1.15))), lens=42, fstop=2.8, focus=2.6, name="Cam")
+    cam = C.camera(tuple(cam_base), tuple(P(0, 4) + Vector((0, 0, 1.15))), lens=40, fstop=2.8, focus=2.6, name="Cam")
     C.animate_camera(cam, cam_fn, 1, NR)
     # focus follows the hero's head
     dof = cam.data.dof
-    for f in range(1, NR + 1, 4):
-        hl = Vector(hero_start).lerp(hero_end, min(1.0, (f - 1) / max(1, ROAR + 3)))
-        loc = cam_base + fwd * (0.35 * C.ease_in_out(min(1.0, ctx.u(f))))
+    for f in range(1, NR + 1, 3):
+        hl = Vector(hero_start).lerp(Vector(hero_end), min(1.0, (f - 1) / max(1, ROAR + 3)))
+        loc = cam_base + fwd * (0.3 * C.ease_in_out(min(1.0, ctx.u(f))))
         dof.focus_distance = max(0.5, (hl - fwd * 1.0 + Vector((0, 0, 1.15)) - loc).length)
         dof.keyframe_insert("focus_distance", frame=f)
+    # during the roar the head turns towards the lens (mouth wide straight at us)
+    hb = hero.pose.bones["head"]
+    tr = hb.constraints.new("DAMPED_TRACK")
+    tr.target = cam
+    tr.track_axis = "TRACK_Y"
+    for f, v in ((1, 0.0), (ROAR + 6, 0.0), (ROAR + 18, 0.6), (ROAR + 62, 0.6), (ROAR + 80, 0.25)):
+        tr.influence = v
+        hb.keyframe_insert('constraints["%s"].influence' % tr.name, frame=f)
 
-    ctx.samples = 6
-    ctx.render_opts.update({"volumetrics": "low"})
+    ctx.samples = 5
+    ctx.render_opts.update({"volumetrics": "low", "shadow_scale": 0.5})
     ctx.interp = False
     ctx.post.update({"grade": "eclipse", "bloom": 0.3, "vignette": 0.34})

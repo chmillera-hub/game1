@@ -1,7 +1,7 @@
 """s09a - Bulls of Bashan: "Many bulls surround me; strong bulls of Bashan encircle me."
 
 Symbolic nightmare. A red-brown dust storm on Golgotha under the darkened sun: massive black bulls
-(Cape-buffalo 'bulls of Bashan') circle the lone cross on the hill top. The camera sits almost on the
+(Cape-buffalo 'bulls of Bashan') circle the crosses on the hill top. The camera sits almost on the
 ground on the plateau, looking up at the cross with the dull red sun disk behind the crossbeam, and
 slowly orbits (with a slow roll) against the herd's direction. Near bulls walk heavily through the
 foreground (horns cutting across the red disk), an outer ring gallops in the haze behind the cross;
@@ -18,7 +18,7 @@ from lib import characters as P
 from lib import fx as FX
 
 DUST = (0.5, 0.33, 0.22)
-R_CAM = 7.2
+R_CAM = 9.2
 
 
 def _loc_at(obj, f):
@@ -68,7 +68,6 @@ def _hoof_dust(events, fps, wind, seed=0):
 
 
 def build(ctx):
-    bpy.context.preferences.system.use_gpu_subdivision = False   # CPU subdiv (GPU path on llvmpipe is a RAM hog)
     NR = ctx.render_frames
     fps = ctx.fps
     # layout is relative to the eclipse sun (camera looks into it); known before the env is built
@@ -80,8 +79,8 @@ def build(ctx):
     for da in (15, 0, -15):
         a = math.radians(side0 + da)
         lo = c0 + Vector((math.cos(a), math.sin(a))) * R_CAM
-        views.append(dict(loc=(lo.x, lo.y, 11.0), target=(c0.x, c0.y, 13.0), lens=26, margin=22, near=6.0))
-    G = E.golgotha(ctx, mood="eclipse", crosses=1, grass=0.6, bushes=0.5, rocks=0.45, near_detail=0.0,
+        views.append(dict(loc=(lo.x, lo.y, 11.0), target=(c0.x, c0.y, 13.0), lens=30, margin=22, near=6.0))
+    G = E.golgotha(ctx, mood="eclipse", crosses=3, grass=0.6, bushes=0.5, rocks=0.45, near_detail=0.0,
                    city=True, view=views,
                    sky_over=dict(sun_disk=dict(el=24, size=3.2, color=(1.0, 0.28, 0.07), strength=40.0, glow=0.5)))
     ground = G["ground"]
@@ -108,7 +107,7 @@ def build(ctx):
     bpy.context.scene.collection.children.link(bull_coll)
     bulls = []
     cam_side = math.degrees(math.atan2(-hv.y, -hv.x))      # angle of the camera side (opposite the sun)
-    R1 = 4.6
+    R1 = 6.4                                     # outside the side crosses (~4.7 m)
     inner = [(cam_side - 62, 1.25, 1.18), (cam_side + 2, 1.35, 1.25), (cam_side + 68, 1.2, 1.12),
              (cam_side + 128, 1.3, 1.2), (cam_side + 185, 1.25, 1.15), (cam_side - 122, 1.3, 1.16)]
     for i, (a0, spd, scl) in enumerate(inner):
@@ -116,12 +115,9 @@ def build(ctx):
         v = A.ground_speed("bull", "walk", 0, spd) * scl
         A.follow_path(arm, _ring(cxy, R1 + 0.3 * (i % 2), a0, True), v, 1, NR, ground=gz)
         bulls.append((arm, "walk", spd, scl))
-        body = next(c for c in arm.children if c.type == "MESH" and not c.name.startswith("eyes"))
-        sd = body.modifiers.new("Subsurf", "SUBSURF")         # near bulls: smooth the low-poly silhouette
-        sd.levels, sd.render_levels = 0, 1
-    R2 = 9.5
-    outer = [(cam_side + 150, 0.8, 1.15), (cam_side + 200, 0.75, 1.1), (cam_side + 112, 0.8, 1.2),
-             (cam_side + 238, 0.78, 1.12), (cam_side + 80, 0.76, 1.16)]
+    R2 = 11.0
+    outer = [(cam_side + 160, 0.8, 1.15), (cam_side + 205, 0.75, 1.1), (cam_side + 250, 0.8, 1.2),
+             (cam_side + 295, 0.78, 1.12)]                 # far side only (the near side is the cliff edge)
     for i, (a0, spd, scl) in enumerate(outer):
         arm = A.animal("bull", "run", speed=spd, scale=scl, tint=(-0.35, -0.35, -0.33), offset=i * 0.17)
         v = A.ground_speed("bull", "run", 0, spd) * scl
@@ -173,12 +169,12 @@ def build(ctx):
         tgt = Vector((cxy.x, cxy.y, look_z - 0.3))
         loc = loc + C.shake(f, 0.012, 0.7, 3)
         roll = -4.0 + 8.0 * u
-        return (loc, tgt, roll, 26)
+        return (loc, tgt, roll, 30)
 
-    cam = C.camera((0, -8, top), (0, 0, top + 3), lens=26, name="Cam")
+    cam = C.camera((0, -8, top), (0, 0, top + 3), lens=30, name="Cam")
     C.animate_camera(cam, cam_fn, 1, NR)
 
-    ctx.samples = 6
-    ctx.render_opts.update({"volumetrics": "low"})
+    ctx.samples = 5
+    ctx.render_opts.update({"volumetrics": "low", "shadow_scale": 0.5})
     ctx.interp = False
     ctx.post.update({"grade": "eclipse", "bloom": 0.25, "vignette": 0.3})

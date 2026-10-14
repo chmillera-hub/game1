@@ -20,10 +20,14 @@ from lib import env as E
 from lib import characters as P
 from lib import assets as AS
 
-SUN_AZ = 176.0
-SUN_EL = 27.0
+SUN_AZ = 172.0      # dull disk just right of the cross top, behind it: figure + priest backlit
+SUN_EL = 22.0
 SUN_E = 0.9
 LENS = 45.0
+CAM_R = 3.2         # camera distance from the priest
+AZ0, AZ1 = -16.0, 0.0
+CAM_H = 1.18        # camera height above the ground at the priest
+AIM_PITCH = 6.0     # deg up
 
 FONT_DIRS = ["/usr/share/fonts/truetype", "/home/user/game1/psalm22/comp/fonts"]
 TITULUS = [
@@ -59,6 +63,17 @@ def _preload(p, names):
     for n in names:
         P.expression(p, n, 1.0)
     P.expression(p, "neutral", 0.0)
+
+
+def talk(p, f0, f1, base="mock", weight=1.0, seed=0, step=3):
+    """Mouth moving as if speaking (jaw + lips) on top of a base expression, keyed every `step` frames."""
+    r = random.Random(seed)
+    f = f0
+    while f <= f1:
+        o = r.random()
+        P.expression(p, base, weight, frame=f, extra={"jaw": 2.0 + 9.0 * o, "mouth-open": 0.05 + 0.22 * o})
+        f += step + r.choice((0, 0, 1))
+    P.expression(p, base, weight, frame=f1 + step)
 
 
 def titulus(cross_root, scale=(1.3, 1.0, 1.45)):
@@ -135,15 +150,17 @@ def build(ctx):
     (a1, b1), (a2, b2), (a3, b3) = ph[0], ph[1], ph[2]
 
     # ------------------------------------------------------------------ set
+    # The priest stands 4.3 m in front of the centre cross; the camera orbits him at CAM_R, low, from
+    # bearing AZ0 to AZ1 (0 = straight -Y of him): the cross swings in behind him and ends directly above.
     priest_xy = Vector((0.55, -3.7))
-    cam_r = 5.3
-    az0, az1 = math.radians(-26.0), math.radians(-6.0)    # camera bearing around the priest (0 = straight -Y)
+    cam_r = CAM_R
+    az0, az1 = math.radians(AZ0), math.radians(AZ1)
     views = []
     for k in range(3):
         a = az0 + (az1 - az0) * k / 2.0
         loc = (priest_xy.x + cam_r * math.sin(a), priest_xy.y - cam_r * math.cos(a), 12.2)
         views.append(dict(loc=loc, target=(0.0, 0.6, 13.5), lens=LENS, margin=25))
-    A = E.golgotha(ctx, mood="eclipse", sun_az=SUN_AZ, view=views, near_detail=0.7, grass=0.8,
+    A = E.golgotha(ctx, mood="eclipse", sun_az=SUN_AZ, view=views, near_detail=0.7, grass=0.8, dust=False,
                    sky_over=dict(sun_el=SUN_EL, sun_disk=dict(E.SKY_PRESETS["eclipse"]["sun_disk"], el=SUN_EL)))
     gzf = A["ground_z"]
     cx = A["crosses"]
@@ -172,7 +189,7 @@ def build(ctx):
         return z
 
     cam_mid = Vector((priest_xy.x + cam_r * math.sin((az0 + az1) / 2), priest_xy.y - cam_r * math.cos((az0 + az1) / 2),
-                      cz + 1.15))
+                      cz + CAM_H))
     jesus_head = Vector(j.head_pos())
     sky_pt = Vector((priest_xy.x - 1.2, priest_xy.y + 2.0, cz + 9.0))
 
@@ -202,10 +219,13 @@ def build(ctx):
         P.look_at(pr, tuple(tgt), frame=f)
     bpy.context.scene.frame_set(1)
     P.expression(pr, "sneer", 0.8, frame=1)
-    P.expression(pr, "mock", 0.9, frame=a1 + 18)
-    P.expression(pr, "sneer", 1.0, frame=a2 + 6)
-    P.expression(pr, "mock", 1.0, frame=a3 + 10)
+    talk(pr, a1, b1 - 10, "mock", 0.9, seed=1)
+    P.expression(pr, "sneer", 1.0, frame=a2 - 2)
+    talk(pr, a2 + 2, b2 - 2, "sneer", 0.9, seed=2)
+    talk(pr, a3, a3 + 36, "mock", 1.0, seed=3)
     P.laugh(pr, a3 + 46, min(NR - 6, b3 + 30), amount=0.8)
+    P.expression(pr, "mock", 1.0, frame=a3 + 42)    # replaces the zero key laugh() sets at f0 - 4
+    P.expression(pr, "sneer", 0.9, frame=NR)
     P.blink(pr, a1 + 30)
     P.blink(pr, a3 + 2)
     _hazify_person(pr)
@@ -213,10 +233,10 @@ def build(ctx):
     # ------------------------------------------------------------------ the other leaders (nodding)
     leaders = []
     for k, (xy, spec, nodf) in enumerate([
-            ((priest_xy.x - 1.35, priest_xy.y + 0.55), dict(seed=31, outfit=["robe_rich", "turban"], age_years=62,
+            ((priest_xy.x - 0.85, priest_xy.y + 1.9), dict(seed=31, outfit=["robe_rich", "turban"], age_years=62,
                                                          beard="long", build="heavy",
                                                          outfit_colors={"mantle": "indigo", "turban": "linen"}), 0),
-            ((priest_xy.x + 1.25, priest_xy.y + 0.9), dict(seed=44, outfit=["robe", "headcloth"], age_years=50,
+            ((priest_xy.x + 0.7, priest_xy.y + 1.6), dict(seed=44, outfit=["robe", "headcloth"], age_years=50,
                                                         beard="full", outfit_colors={"tunic": "white_linen",
                                                                                      "mantle": "blue_grey",
                                                                                      "headcloth": "white_linen"}), 1)]):
@@ -242,8 +262,8 @@ def build(ctx):
     # ------------------------------------------------------------------ Roman soldiers laughing at the cross foot
     soldiers = []
     for k, (xy, spec, lf) in enumerate([
-            ((-1.25, -0.45), dict(), (a1 + 20, b3 + 10)),
-            ((1.45, -0.75), dict(age_years=36, skin_tone=0.55, beard="short",
+            ((-0.8, -0.3), dict(), (a1 + 20, b3 + 10)),
+            ((1.75, -0.6), dict(age_years=36, skin_tone=0.55, beard="short",
                                  face={"nose/nose-hump-decr|incr": 0.4, "head/head-square": 0.4,
                                        "chin/chin-width-decr|incr": 0.3}), (a2 + 4, b3 + 20))]):
         sp = dict(lod="mid", pose=None, expression=None, hair_strands=False)
@@ -260,7 +280,8 @@ def build(ctx):
         soldiers.append(S)
     # a spear planted by the first soldier
     try:
-        sp_root = AS.load("spear", loc=(-1.6, -0.25, ground(-1.6, -0.25) - 0.15), rot_z=0, variant=0, upright=True)
+        sp_root = AS.load("spear", loc=(-1.12, -0.1, ground(-1.12, -0.1) - 0.15), rot_z=0, variant=0, upright=True)
+        sp_root.rotation_euler = (math.radians(4), math.radians(-6), 0)
         for o in AS.children_recursive(sp_root):
             if o.type == "MESH":
                 for m in o.data.materials:
@@ -270,17 +291,16 @@ def build(ctx):
 
     # ------------------------------------------------------------------ onlookers (baked, edges of frame)
     pts = []
-    for k in range(40):
-        x = rnd.uniform(-6.5, 6.5)
-        y = rnd.uniform(-8.5, -2.2)
-        if (Vector((x, y)) - priest_xy).length < 1.3:
-            continue
-        # keep the camera corridor clear (camera ~ (priest + 5.3 m towards -Y))
-        if y < priest_xy.y - 1.0 and abs(x - (priest_xy.x - 1.2)) < 2.4:
-            continue
-        if any((x - q[0]) ** 2 + (y - q[1]) ** 2 < 0.7 ** 2 for q in pts):
+    avoid = [tuple(priest_xy), (priest_xy.x - 0.85, priest_xy.y + 1.9), (priest_xy.x + 0.7, priest_xy.y + 1.6),
+             (-0.8, -0.3), (1.75, -0.6), (0.0, 0.6), (-1.12, -0.1)]
+    for k in range(300):
+        x = rnd.uniform(-3.2, 3.6)
+        y = rnd.uniform(-3.0, 0.2)
+        if any((x - q[0]) ** 2 + (y - q[1]) ** 2 < 0.75 ** 2 for q in avoid + pts):
             continue
         pts.append((x, y))
+        if len(pts) >= 12:
+            break
     cposes = [("stand", {"look": (0.0, -5.0, 3.6)}), ("stand_relaxed", {"look": (0.5, -4.0, 2.4)}),
               ("mourn", {}), ("stand", {"head": "up"})]
     cexpr = ["sneer", "mock", "sorrow", "neutral"]
@@ -298,29 +318,35 @@ def build(ctx):
         _hazify_person(o)
 
     # ------------------------------------------------------------------ light: soft bounce fill on the priest's face
-    fill = C.light("AREA", tuple(cam_mid + Vector((-1.0, 0.6, 0.9))), 40.0, temp=3400, target=tuple(pr.head_pos()),
+    fill = C.light("AREA", tuple(cam_mid + Vector((-1.2, 0.4, 0.8))), 30.0, temp=3400, target=tuple(pr.head_pos()),
                    size=2.5, name="FaceFill", shadow=False)
 
     # ------------------------------------------------------------------ camera: slow orbit, rack focus to the cross
     head0 = Vector(pr.head_pos())
-    cross_focus = Vector(c["chest"]) + Vector((0, 0, 0.6))
-    f_rack0, f_rack1 = a3 + 52, min(NR - 8, b3 + 6)
+    cross_focus = Vector(c["chest"]) + Vector((0, 0, 0.5))
+    cross_xy = Vector((c["base"][0], c["base"][1]))
+    f_rack0, f_rack1 = a3 + 48, min(NR - 10, b3 + 4)
     cam = C.camera(loc=tuple(cam_mid), target=tuple(head0), lens=LENS, fstop=2.8)
+
+    def bearing(frm, to):
+        return math.atan2(to[0] - frm[0], to[1] - frm[1])
 
     def path(f):
         u = C.ease_in_out((f - 1) / float(NR - 1))
         a = az0 + (az1 - az0) * u
-        loc = Vector((priest_xy.x + cam_r * math.sin(a), priest_xy.y - cam_r * math.cos(a), cz + 1.12 + 0.12 * u))
-        loc += C.shake(f, 0.006, 0.35, 11)
-        # aim between the priest's head and the placard
-        tgt = head0.lerp(Vector(c["sign"]), 0.42) + Vector((0.0, 0.0, -0.2))
+        loc = Vector((priest_xy.x + cam_r * math.sin(a), priest_xy.y - cam_r * math.cos(a), cz + CAM_H + 0.1 * u))
+        loc += C.shake(f, 0.005, 0.35, 11)
+        bp, bc = bearing(loc, head0), bearing(loc, cross_xy)
         r = C.smoothstep((f - f_rack0) / float(max(1, f_rack1 - f_rack0)))
+        b = bp + (bc - bp) * (0.42 + 0.1 * r)
+        pitch = math.radians(AIM_PITCH + 2.5 * r)
+        tgt = loc + Vector((math.sin(b) * math.cos(pitch), math.cos(b) * math.cos(pitch), math.sin(pitch))) * 5.0
         foc = (head0 - loc).length * (1 - r) + (cross_focus - loc).length * r
         return (loc, tgt, 0.0, LENS, foc)
 
     C.animate_camera(cam, path, 1, NR)
 
-    ctx.samples = 6
+    ctx.samples = 5
     ctx.render_opts.update({"volumetrics": "low"})
     ctx.interp = False
     ctx.post.update({"grade": "eclipse", "vignette": 0.24, "bloom": 0.22, "caption": {"y": 0.72}})
