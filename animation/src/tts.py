@@ -138,7 +138,9 @@ def visemes(timings, wav, fps=24, n_frames=None):
     t = np.arange(n) / fps
     # loudness envelope (per frame, 30 ms window)
     win = int(0.03 * SR)
-    rms = np.array([np.sqrt(np.mean(wav[max(0, int(x * SR) - win):int(x * SR) + win] ** 2) + 1e-12) for x in t])
+    # the last frame can fall past the end of the audio: an empty window is silence, not NaN
+    rms = np.array([np.sqrt(np.mean(seg ** 2) + 1e-12) if len(seg := wav[max(0, int(x * SR) - win):int(x * SR) + win]) else 0.0
+                    for x in t])
     rms = rms / (np.percentile(rms[rms > 1e-4], 90) + 1e-9) if np.any(rms > 1e-4) else rms
     loud = np.clip(rms, 0, 1.3)
     out = {c: np.zeros(n) for c in CHANNELS}
@@ -178,7 +180,7 @@ def visemes(timings, wav, fps=24, n_frames=None):
     k = np.array([0.25, 0.5, 0.25])
     for c in CHANNELS:
         out[c] = np.convolve(np.pad(out[c], 1, mode='edge'), k, mode='valid')
-    return {c: out[c].tolist() for c in CHANNELS}
+    return {c: np.nan_to_num(out[c]).tolist() for c in CHANNELS}
 
 
 def word_spans(tim):
