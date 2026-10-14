@@ -10,14 +10,14 @@ SPECS = {
                   mouth_halfw=0.31, lip_up=0.0036, lip_lo=0.0048, eye_r=0.0225, eye_x=0.040, brow_ridge=0.008, blush=(0.72, 0.22, 0.18), blush_amt=0.42,
                   cheek=0.006, ear_size=1.05),
         head_scale=1.22, leg_len=0.86, torso_len=0.50, neck_len=0.055, neck_r=0.042,
-        shoulder_w=0.150, chest_a=0.132, chest_b=0.095, waist_a=0.118, waist_b=0.088, hip_a=0.128, hip_b=0.094,
+        shoulder_w=0.150, chest_a=0.132, chest_b=0.095, waist_a=0.118, waist_b=0.088, hip_a=0.136, hip_b=0.096,
         upper_arm=0.29, fore_arm=0.27, hand_scale=1.08,
         hat='bowler', hat_color=(0.07, 0.07, 0.075), hair_style='messy', hair_top=True, hair_color=(0.30, 0.085, 0.025),
         brow_color=(0.20, 0.06, 0.02), brow_thick=1.35, freckles=0.55,
         coat=(0.62, 0.42, 0.05), vneck=(0.05, 0.16, 0.08), coat_swap=(0.05, 0.16, 0.08), shirt=(0.80, 0.74, 0.60),
         cuff=(0.80, 0.74, 0.60), sleeve_end=0.62, under_sleeve='shirt',
         trousers=(0.30, 0.20, 0.12), shoes=(0.18, 0.03, 0.03), shoe_scale=1.5,
-        thigh_r=0.082, calf_r=0.074, hem_r=0.078, coat_hem=-0.03, coat_flare=0.010,
+        thigh_r=0.078, calf_r=0.072, hem_r=0.076, coat_hem=-0.03, coat_flare=0.030,
         upperarm_r=0.046, forearm_r=0.040, cuff_r=0.036,
         iris=(0.20, 0.12, 0.05), buttons=(0.35, 0.25, 0.10), bowtie=None,
     ),
@@ -34,11 +34,12 @@ SPECS = {
         upper_arm=0.24, fore_arm=0.22, hand_scale=0.92, hip_w=0.085,
         hat='cloche', hat_color=(0.11, 0.035, 0.05), hat_band=(0.28, 0.19, 0.07), hair_style='bun', hair_color=(0.62, 0.60, 0.58), bun=(0.088, -0.035, 0.034),
         brow_color=(0.50, 0.48, 0.46), brow_thick=1.3,
-        coat=(0.19, 0.055, 0.05), scarf=(0.42, 0.16, 0.07), gloves=(0.32, 0.32, 0.33),
+        coat=(0.19, 0.055, 0.05), coat_sheen=0.12, scarf=(0.42, 0.16, 0.07), gloves=(0.32, 0.32, 0.33),
         stockings=(0.30, 0.30, 0.31), shoes=(0.16, 0.08, 0.04), shoe_scale=0.92,
         thigh_r=0.070, calf_r=0.050, hem_r=0.044, coat_hem=-0.20, coat_flare=0.02,
         upperarm_r=0.050, forearm_r=0.044, cuff_r=0.040,
         iris=(0.10, 0.05, 0.025), buttons=(0.15, 0.08, 0.05), bowtie=None, shirt=(0.30, 0.13, 0.07), cuff=(0.30, 0.30, 0.31),
+        skirt_thigh=1.0, shawl=True,
     ),
     # TOMAS BRANDT, 52: barrel-chested baker, bald crown with dark fringe, salt-and-pepper beard.
     'tomas': dict(
@@ -77,6 +78,7 @@ SPECS = {
         thigh_r=0.056, calf_r=0.048, hem_r=0.050, coat_hem=-0.08, coat_flare=0.015,
         upperarm_r=0.040, forearm_r=0.036, cuff_r=0.033,
         iris=(0.14, 0.09, 0.05), buttons=(0.75, 0.62, 0.40), bowtie=None, shirt=(0.8, 0.8, 0.78),
+        skirt_thigh=0.4,
     ),
     # Extras (desaturated)
     'plum': dict(

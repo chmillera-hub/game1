@@ -650,6 +650,13 @@ def s1_6(F):
     O.fingers(T + 5.0, 'R', 0.6, thumb=0.6, dur=0.2)
     O.gesture(T + 5.35, 'R', ('chest', (-0.18, -0.36, O.B.hipZ + 0.10), (0, -0.3, -1), (-1, 0, 0)), dur=0.3)
     F.hat_plan.append((T + 5.15, T + 5.6, 'hand', ('hand', 'oswald', 'R', hand_hold(0.0, 0.08, -0.11, 180, 0, 0))))
+    # hat off: the full hatless groom replaces the under-hat hair
+    for ob in F.C['oswald'].hair_hatless:
+        F.set_visible(ob, -1, False)
+        F.set_visible(ob, T + 5.15, True)
+    for ob in F.C['oswald'].hair_under_hat:
+        F.set_visible(ob, -1, True)
+        F.set_visible(ob, T + 5.15, False)
     F.hat_plan.append((T + 5.6, T + 5.85, 'drop', hat_ground))
     F.hat_plan.append((T + 5.85, 1e9, 'world', ('world', hat_ground)))
     O.release(T + 5.75, 'R', dur=0.3)
@@ -979,6 +986,10 @@ def s2_4(F):
     F.hat_plan.append((tp + 0.3, tp + 0.55, 'lift', ('hand', 'oswald', 'R', hand_hold(0.0, 0.08, -0.11, 0, 0, 0))))
     F.hat_plan.append((tp + 0.55, tp + 0.95, 'to_head', None))
     F.hat_plan.append((tp + 0.95, 1e9, 'head', None))
+    for ob in F.C['oswald'].hair_hatless:
+        F.set_visible(ob, tp + 0.75, False)
+    for ob in F.C['oswald'].hair_under_hat:
+        F.set_visible(ob, tp + 0.75, True)
     hp = F.C['oswald'].H.p
     brim_top = F.C['oswald'].hp((0.0, -hp['ry'] * 0.2, 0.17))
     O.gesture(tp + 0.5, 'R', ('head', brim_top, (0, 0.3, 1), (-1, 0, 0)), dur=0.4)
@@ -1010,9 +1021,9 @@ OS_FACE = V(KNEEL[0] + 0.02, KNEEL[1] + 0.02, SZ + 0.92)
 SETUP = {
     'A': dict(loc=(4.15, 1.95, SZ + 0.80), target=(2.55, 3.42, SZ + 0.66), lens=32),
     # two-shot from the street side, in front of them both: both faces three-quarter
-    'B': dict(loc=(3.50, 2.70, SZ + 0.88), target=(2.86, 3.47, SZ + 0.80), lens=24, fstop=4.0),
+    'B': dict(loc=(3.70, 2.45, SZ + 0.95), target=(3.06, 3.22, SZ + 0.82), lens=22, fstop=4.0),
     # over Oswald's shoulder, close to her eyeline
-    'C': dict(loc=(1.92, 3.52, SZ + 0.92), target=('actor', 'edith', 'eyes', (0.0, 0.0, -0.05)), lens=48),
+    'C': dict(loc=(1.92, 3.52, SZ + 0.92), target=('actor', 'edith', 'eyes', (0.0, 0.0, -0.10)), lens=60),
     # her close-up: eyes high in frame, mouth clear of the knees and the subtitles
     'D': dict(loc=(2.66, 2.66, SZ + 0.90), target=('actor', 'edith', 'eyes', (0.0, 0.0, -0.15)), lens=78),
     # his close-up, aimed at the face rather than the skull centre, with lead room toward her

@@ -364,7 +364,7 @@ class Character:
         self.m_teeth = blib.principled(n + '_teeth', (0.90, 0.88, 0.80), rough=0.3)
         self.m_tongue = blib.principled(n + '_tongue', (0.55, 0.18, 0.18), rough=0.4)
         self.m_brow = blib.cloth_material(n + '_brow', s['brow_color'], rough=0.6, scale=900, bump_str=0.4, sheen=0.2)
-        self.m_coat = blib.cloth_material(n + '_coat', s['coat'])
+        self.m_coat = blib.cloth_material(n + '_coat', s['coat'], sheen=s.get('coat_sheen', 0.4))
         self.coat_off_nodes = []
         if s['vneck'] or s['coat_swap']:
             self.m_coat = self._swap_material(n + '_coat', s['coat'], s['vneck'] or s['coat'], s['coat_swap'] or s['coat'], use_mask=bool(s['vneck']))
@@ -420,6 +420,46 @@ class Character:
             m2 = blib.mix_rgb(N, L, fac, src, swapped, x=-50, y=200)
         L.new(m2.outputs[2], b.inputs['Base Color'])
         return mat
+
+    def _vneck_shader(self, mat, ob, P, top):
+        """Same V as the 'vneck' attribute, but evaluated per pixel from the undeformed (generated)
+        coordinates, so its edges are clean lines instead of following the coarse vertex grid."""
+        me = ob.data
+        lo, hi = P.min(0), P.max(0)
+        me.use_auto_texspace = False
+        me.texspace_location = tuple((lo + hi) / 2)
+        me.texspace_size = tuple((hi - lo) / 2)
+        N = mat.node_tree.nodes
+        L = mat.node_tree.links
+
+        def math(op, a, b=None, c=None, clamp=False):
+            m = N.new('ShaderNodeMath')
+            m.operation = op
+            m.use_clamp = clamp
+            for i, v in enumerate((a, b, c)):
+                if v is None:
+                    continue
+                if isinstance(v, (int, float)):
+                    m.inputs[i].default_value = float(v)
+                else:
+                    L.new(v, m.inputs[i])
+            return m.outputs[0]
+
+        tc = N.new('ShaderNodeTexCoord')
+        sep = N.new('ShaderNodeSeparateXYZ')
+        L.new(tc.outputs['Generated'], sep.inputs[0])
+        x = math('MULTIPLY_ADD', sep.outputs['X'], float(hi[0] - lo[0]), float(lo[0]))
+        y = math('MULTIPLY_ADD', sep.outputs['Y'], float(hi[1] - lo[1]), float(lo[1]))
+        z = math('MULTIPLY_ADD', sep.outputs['Z'], float(hi[2] - lo[2]), float(lo[2]))
+        vz = math('MULTIPLY_ADD', z, 5.0, -(top - 0.20) * 5.0)
+        w = math('MULTIPLY_ADD', math('ADD', vz, 0.0, clamp=True), 0.06, 0.012)
+        vx = math('DIVIDE', math('ABSOLUTE', x), w)
+        edge = math('MULTIPLY_ADD', vx, -10.0, 10.0, clamp=True)
+        mask = math('MULTIPLY', math('MULTIPLY', edge, math('LESS_THAN', y, -0.02)), math('GREATER_THAN', vz, 0.0))
+        for lk in list(L):
+            fn = lk.from_node
+            if fn.type == 'ATTRIBUTE' and fn.attribute_name == 'vneck' and lk.to_node.type == 'MIX':
+                L.new(mask, lk.to_socket)
 
     def _skin_extras(self, mat, freckles, flour):
         N = mat.node_tree.nodes
@@ -625,6 +665,22 @@ class Character:
             pts[:, 2] -= slope
             verts.append(pts)
         P = np.concatenate(verts)
+        if s.get('skirt_thigh'):
+            # seated long coats: bring the front of the skirt in onto the thighs, so that when it rides
+            # up with them (weights below) it lies on the lap instead of standing off it
+            # (the front and sides close in to a snug hull round both thighs; the back is left alone)
+            yt = -(s['thigh_r'] + 0.014)
+            xt = s['hip_w'] + s['thigh_r'] + 0.014
+            w = smoothstep(self.hipZ - 0.01, self.hipZ - 0.10, P[:, 2]) * float(s['skirt_thigh'])
+            wf = w * smoothstep(0.0, -0.05, P[:, 1])
+            ws = w * smoothstep(0.08, 0.02, P[:, 1])
+            P[:, 1] = np.where(P[:, 1] < yt, P[:, 1] + (yt - P[:, 1]) * wf, P[:, 1])
+            ax = np.abs(P[:, 0])
+            P[:, 0] = np.where(ax > xt, np.sign(P[:, 0]) * (ax + (xt - ax) * ws), P[:, 0])
+            # sides and back are cut short (they would only bunch under her); the front stays long
+            zc = self.hipZ - 0.02
+            wb = smoothstep(-0.07, 0.0, P[:, 1]) * float(s['skirt_thigh'])
+            P[:, 2] = np.where(P[:, 2] < zc, zc + (P[:, 2] - zc) * (1 - 0.6 * wb), P[:, 2])
         faces = []
         for i in range(R - 1):
             for k in range(K):
@@ -665,6 +721,14 @@ class Character:
         for side in ('L', 'R'):
             W['thigh.' + side] *= smoothstep(self.hipZ + 0.02, self.hipZ - 0.06, z) * 0.6
             W['clavicle.' + side] *= smoothstep(self.neckZ - 0.12, self.neckZ - 0.04, z)
+        if s.get('skirt_thigh'):
+            # long coats on seated characters: the front and sides of the skirt ride up with each thigh,
+            # the cloth between the knees sagging into the lap, while the back stays with the pelvis
+            skirt = smoothstep(self.hipZ - 0.02, self.hipZ - 0.10, z)
+            front = smoothstep(0.08, 0.02, P[:, 1])
+            front = front * (0.2 + 0.8 * smoothstep(0.01, 0.08, np.abs(P[:, 0])))   # centre sags into the lap
+            for side, sg in (('L', 1.0), ('R', -1.0)):
+                W['thigh.' + side] = np.maximum(W['thigh.' + side], 4.0 * skirt * front * smoothstep(-0.03, 0.03, sg * P[:, 0]))
         tot = sum(W.values())
         for k in W:
             W[k] = W[k] / tot
@@ -678,11 +742,15 @@ class Character:
         vm = ((vz > 0) & (vx < 1.0) & (P[:, 1] < -0.02)).astype(float)
         vm = vm * np.clip((1 - vx) * 4, 0, 1)
         blib.set_color_attr(ob, 'vneck', np.stack([vm] * 3, -1))
+        if s['vneck']:
+            self._vneck_shader(self.m_coat, ob, P, top)
         # 'slim' shape key: the garment without its bulk (coat removed)
         c = np.array([0, 0.0, 0])
         slim = P.copy()
-        slim[:, 0] *= 0.92
-        slim[:, 1] = slim[:, 1] * 0.92
+        # keep the bottom edge nearly full width so the trouser tops stay inside it
+        k = 0.92 + 0.06 * smoothstep(self.hipZ + 0.10, self.hipZ - 0.01, P[:, 2])
+        slim[:, 0] *= k
+        slim[:, 1] = slim[:, 1] * k
         blib.set_shape_keys(ob, {'slim': slim})
         # inner faces -> material 1
         nf = len(faces)
@@ -710,7 +778,7 @@ class Character:
             for sgn in (1, -1):
                 line = np.radians(18 + (110 - 18) * t) * sgn
                 da = np.angle(np.exp(1j * (ang - line)))
-                rr += 0.0050 * np.exp(-(da / 0.24) ** 2) * (0.4 + 0.6 * np.sin(np.pi * np.clip(t * 1.1, 0, 1)))
+                rr += 0.0060 * np.exp(-(da / 0.22) ** 2) * (0.4 + 0.6 * np.sin(np.pi * np.clip(t * 1.1, 0, 1)))
             # trachea/front softness and slightly flatter back
             rr *= 1 - 0.06 * np.cos(ang) ** 2 * (np.cos(ang) < 0)
             sec = np.stack([np.sin(ang) * rr, -np.cos(ang) * rr], -1)
@@ -761,7 +829,8 @@ class Character:
             sh, el = self.J['upperarm.' + side]
             _, wr = self.J['forearm.' + side]
             sh, el, wr = np.array(sh), np.array(el), np.array(wr)
-            start = sh + (sh - el) / np.linalg.norm(sh - el) * 0.045 + np.array([-sx * 0.015, 0, 0.0])
+            # the cap starts just above the joint so it does not stand proud of the shoulder line
+            start = sh + (sh - el) / np.linalg.norm(sh - el) * 0.03 + np.array([-sx * 0.015, 0, -0.012])
             n1, n2 = 10, 9
             pts, radii = [], []
             for i in range(n1):
@@ -801,7 +870,8 @@ class Character:
                     blib.set_color_attr(fo, 'mask', np.zeros((len(Vc), 3)))
                 else:
                     cpts = [a, el + (wr - el) * 0.75, wr - d * 0.03, wr + d * 0.006]
-                    crad = [s['forearm_r'] * 0.86, s['forearm_r'] * 0.80, s['cuff_r'] * 0.86, s['cuff_r'] * 0.84]
+                    # fills the opening of the outer sleeve (no dark gap at its lip)
+                    crad = [s['forearm_r'] * 0.92, s['forearm_r'] * 0.90, s['cuff_r'] * 0.86, s['cuff_r'] * 0.84]
                     Vc, Fc, rc = self._limb(cpts, crad, K=20, open_end=True)
                     Wc = {'forearm.' + side: np.ones(len(Vc))}
                     self._mesh('shirtsleeve_' + side, Vc, Fc, self.m_cuff, weights=Wc, sub=1)
@@ -820,7 +890,7 @@ class Character:
             parts_v, parts_f, weights = [], [], []
             off = 0
             # palm: loft along canonical Y from inside the cuff to the knuckles
-            ys = np.linspace(-0.045, 0.092, 12)
+            ys = np.linspace(-0.025, 0.092, 12)
             secs, cents = [], []
             for y in ys:
                 t = (y + 0.045) / 0.137
@@ -879,15 +949,18 @@ class Character:
         for side, sx in (('L', 1), ('R', -1)):
             hip, knee = [np.array(v) for v in self.J['thigh.' + side]]
             _, ankle = [np.array(v) for v in self.J['shin.' + side]]
-            top = hip + np.array([-sx * 0.03, 0, 0.10])
+            # the seat of the trousers sits a little inside the hip joints, so the tops stay under the
+            # coat and the two legs meet at the crotch instead of bulging out at the hips
+            inset = np.array([-sx * 0.035, 0, 0])
+            top = hip + inset + np.array([0, 0, 0.10])
             pts, radii = [], []
             for i in range(6):
                 t = i / 6
-                pts.append(top + (hip - top) * t)
-                radii.append(s['thigh_r'] * (0.80 + 0.20 * t))
+                pts.append(top + (hip + inset - top) * t)
+                radii.append(s['thigh_r'] * (0.76 + 0.24 * t))
             for i in range(7):
                 t = i / 7
-                pts.append(hip + (knee - hip) * t)
+                pts.append(hip + (knee - hip) * t + inset * (1 - smoothstep(0.0, 0.3, t)))
                 radii.append(s['thigh_r'] + (s['calf_r'] * 1.02 - s['thigh_r']) * t)
             for i in range(8):
                 t = i / 7
@@ -1035,7 +1108,7 @@ class Character:
         Vv = Vv @ Ry.T
         Vv = Vv + np.array([0, 0.004, zb])
         Vv = Vv * hs + self.head_origin
-        m = blib.cloth_material(self.name + '_hat', s['hat_color'], rough=0.55, sheen=0.5, scale=600, bump_str=0.05)
+        m = blib.cloth_material(self.name + '_hat', s['hat_color'], rough=0.7, sheen=0.08, scale=600, bump_str=0.05)
         ob = blib.make_mesh(self.name + '_hat', Vv, faces, coll=self.coll)
         blib.assign(ob, m)
         blib.subsurf(ob, 1)
@@ -1236,59 +1309,143 @@ class Character:
         self.coll.objects.link(b)
         b.scale = (1.15, 0.85, 0.9)
         bpy.ops.object.shade_smooth()
-        m = blib.cloth_material(self.name + '_bunm', s['hair_color'], rough=0.45, sheen=0.3, scale=900, bump_str=0.5)
+        m = blib.cloth_material(self.name + '_bunm', s['hair_color'], rough=0.7, sheen=0.3, scale=900, bump_str=0.5)
         blib.assign(b, m)
         self._rigid(b, 'head')
 
+    def _torso_surface_y(self, x, z, front=True):
+        """y of the coat surface at (x, z) on the front (or back) of the torso."""
+        a, b, yoff, n = self._torso_profile(np.minimum(z, self.neckZ))
+        r = np.clip(1 - (np.abs(x) / a) ** n, 0, 1) ** (1.0 / n)
+        return yoff - b * r if front else yoff + b * r
+
     def _towel(self):
         s = self.s
-        m = blib.principled(self.name + '_towelm', (0.6, 0.6, 0.6), rough=0.9)
+        # cream tea towel with one broad red stripe across the hanging ends (no check)
+        m = blib.principled(self.name + '_towelm', (0.82, 0.80, 0.74), rough=0.9, sheen=0.4)
         N = m.node_tree.nodes
         L = m.node_tree.links
-        ch = N.new('ShaderNodeTexChecker')
-        ch.inputs['Scale'].default_value = 7.0
-        ch.inputs['Color1'].default_value = (*s['towel'], 1)
-        ch.inputs['Color2'].default_value = (0.82, 0.80, 0.74, 1)
+        # rest-pose height from the generated (undeformed) coordinates, so the stripe stays put
         tc = N.new('ShaderNodeTexCoord')
-        L.new(tc.outputs['UV'] if False else tc.outputs['Object'], ch.inputs['Vector'])
-        L.new(ch.outputs['Color'], N['Principled BSDF'].inputs['Base Color'])
+        sep = N.new('ShaderNodeSeparateXYZ')
+        L.new(tc.outputs['Generated'], sep.inputs[0])
+        zr = N.new('ShaderNodeMath')
+        zr.operation = 'MULTIPLY_ADD'
+        L.new(sep.outputs['Z'], zr.inputs[0])
+        top = self.neckZ + 0.012
+        g1 = N.new('ShaderNodeMath')
+        g1.operation = 'GREATER_THAN'
+        g1.inputs[1].default_value = top - 0.175
+        g2 = N.new('ShaderNodeMath')
+        g2.operation = 'LESS_THAN'
+        g2.inputs[1].default_value = top - 0.115
+        for g in (g1, g2):
+            L.new(zr.outputs[0], g.inputs[0])
+        band = N.new('ShaderNodeMath')
+        band.operation = 'MULTIPLY'
+        L.new(g1.outputs[0], band.inputs[0])
+        L.new(g2.outputs[0], band.inputs[1])
+        mix = blib.mix_rgb(N, L, band.outputs[0], (0.82, 0.80, 0.74), tuple(s['towel']), x=-300, y=100)
+        L.new(mix.outputs[2], N['Principled BSDF'].inputs['Base Color'])
         sx = 1
         x0 = sx * s['shoulder_w'] * 0.55
-        top = self.neckZ + 0.012
-        a0, b0, y0, n0 = self._torso_profile(self.neckZ - 0.22)
         a1, b1, y1, n1 = self._torso_profile(self.neckZ - 0.02)
-        path = []
-        for t in np.linspace(0, 1, 16):
+        path, nrm, hang = [], [], []
+        for t in np.linspace(0, 1, 20):
             ang = np.pi * t   # front (0) -> over the top -> back (pi)
             yy = -np.cos(ang) * (b1 + 0.012)
             zz = top - 0.005 + np.sin(ang) * 0.0 - (1 - np.sin(ang)) * 0.20
             path.append([x0, yy, zz])
-        path = np.array(path)
+            nrm.append([0.0, -np.cos(ang), np.sin(ang)])
+            hang.append(1 - np.sin(ang))
+        path, nrm, hang = np.array(path), np.array(nrm), np.array(hang)
         W_ = 0.13
+        NW = 9
         Vv = []
-        for p in path:
-            for w in (-W_ / 2, -W_ / 4, 0, W_ / 4, W_ / 2):
-                Vv.append(p + np.array([w, 0, 0]) * np.array([1, 1, 1]))
+        for p, nv, hg in zip(path, nrm, hang):
+            for u in np.linspace(-1, 1, NW):
+                q = p + np.array([u * W_ / 2, 0, 0])
+                # soft lengthwise folds where it hangs, edges rolling in toward the body
+                q = q + nv * (0.008 * np.sin(np.pi * 1.5 * u + 0.6) * hg ** 0.7 - 0.010 * u * u)
+                Vv.append(q)
         Vv = np.array(Vv)
         # follow the shoulder slope
         Vv[:, 2] -= np.clip(np.abs(Vv[:, 0]) - s['shoulder_w'] * 0.4, 0, 1) * 0.35
+        # lie on the chest/back (over an apron bib) rather than inside it
+        fy = self._torso_surface_y(Vv[:, 0], Vv[:, 2], True) - 0.020
+        by = self._torso_surface_y(Vv[:, 0], Vv[:, 2], False) + 0.012
+        Vv[:, 1] = np.where(Vv[:, 1] < 0, np.minimum(Vv[:, 1], fy), np.maximum(Vv[:, 1], by))
         F = []
         for i in range(len(path) - 1):
-            for k in range(4):
-                a = i * 5 + k
-                F.append((a, a + 1, a + 6, a + 5))
+            for k in range(NW - 1):
+                a = i * NW + k
+                F.append((a, a + 1, a + NW + 1, a + NW))
         segs = {'chest': (np.array(self.J['chest'][0]), np.array(self.J['chest'][1])),
                 'clavicle.L': (np.array(self.J['clavicle.L'][0]), np.array(self.J['clavicle.L'][1]))}
         Wt = proximity_weights(Vv, segs, power=3)
         ob = self._mesh('towel', Vv, F, m, weights=Wt, sub=1)
+        lo, hi = Vv.min(0) - 0.01, Vv.max(0) + 0.01
+        ob.data.use_auto_texspace = False
+        ob.data.texspace_location = tuple((lo + hi) / 2)
+        ob.data.texspace_size = tuple((hi - lo) / 2)
+        zr.inputs[1].default_value = float(hi[2] - lo[2])
+        zr.inputs[2].default_value = float(lo[2])
+        sol = ob.modifiers.new('sol', 'SOLIDIFY')
+        sol.thickness = 0.008
+        sol.offset = 0.0
+        ob.modifiers.move(len(ob.modifiers) - 1, 1)
+
+    def _shawl(self, m):
+        """Shawl round the shoulders: lies on the coat over the back and both shoulders, open at the
+        throat, its two ends hanging down the chest."""
+        s = self.s
+        h0 = self.hipZ + s['coat_hem']
+        top = self.neckZ + 0.012
+        tf = -np.pi / 2                       # superellipse parameter of the front centre
+        R, K = 12, 64
+        zt = self.neckZ + 0.016
+        rows = []
+        for i in range(R):
+            v = i / (R - 1)
+            gap = np.radians(24 - 16 * v)
+            u = np.linspace(0, 1, K)
+            t = tf + gap + u * (2 * np.pi - 2 * gap)
+            front = smoothstep(np.cos(np.radians(80)), np.cos(np.radians(20)), np.cos(t - tf))
+            z = zt - v * (0.10 + 0.13 * front)
+            a, b, yoff, n = self._torso_profile(np.minimum(z, self.neckZ))
+            c, sn = np.cos(t), np.sin(t)
+            x = a * np.sign(c) * np.abs(c) ** (2.0 / n)
+            y = b * np.sign(sn) * np.abs(sn) ** (2.0 / n)
+            tt = (z - h0) / (top - h0)
+            zz = z - smoothstep(0.80, 1.0, tt) * (np.abs(x) / np.maximum(a, 1e-3)) ** 2 * 0.035
+            nx, ny = x / a ** 2, y / b ** 2
+            nl = np.sqrt(nx ** 2 + ny ** 2) + 1e-9
+            off = 0.011 + 0.006 * (1 - v) ** 2    # a little fuller where it rolls round the neck
+            rows.append(np.stack([x + nx / nl * off, y + yoff + ny / nl * off, zz + 0.004], -1))
+        Vv = np.concatenate(rows)
+        # clear the sleeve caps, which stand a little proud of the coat's shoulder line
+        for side, sx in (('L', 1), ('R', -1)):
+            sh, el = [np.array(p) for p in self.J['upperarm.' + side]]
+            st = sh + (sh - el) / np.linalg.norm(sh - el) * 0.03 + np.array([-sx * 0.015, 0, -0.012])
+            d, tq = seg_dist(Vv, st, el)
+            cp = st + tq[:, None] * (el - st)
+            rmin = s['upperarm_r'] * 1.12 + 0.009
+            push = np.clip(rmin - d, 0, None)
+            Vv = Vv + (Vv - cp) / np.maximum(d, 1e-6)[:, None] * push[:, None]
+        F = self._grid_faces(R, K, wrap=False)
+        segs = {nm: (np.array(self.J[nm][0]), np.array(self.J[nm][1])) for nm in ('spine', 'chest', 'clavicle.L', 'clavicle.R')}
+        W = proximity_weights(Vv, segs, power=4)
+        ob = self._mesh('scarf', Vv, F, m, weights=W, sub=1)
         sol = ob.modifiers.new('sol', 'SOLIDIFY')
         sol.thickness = 0.006
-        sol.offset = 1.0
+        sol.offset = 0.0
         ob.modifiers.move(len(ob.modifiers) - 1, 1)
 
     def _scarf(self):
         s = self.s
         m = blib.cloth_material(self.name + '_scarf', s['scarf'], rough=0.95, sheen=0.6, scale=120, bump_str=0.5)
+        if s.get('shawl'):
+            return self._shawl(m)
         c = np.array([0, 0.004, self.neckZ + 0.012])
         cs, ss = [], []
         for i, dz in enumerate((-0.02, -0.005, 0.012, 0.03, 0.04)):
@@ -1321,8 +1478,10 @@ class Character:
                 a = a + (self.hipZ + s['coat_hem'] - z) * 0.18
             half = np.interp(z, [z0, self.hipZ, self.hipZ + 0.2, z1], [0.85, 0.8, 0.55, 0.45])
             ang = np.linspace(-half * np.pi / 2, half * np.pi / 2, K)
-            x = (a + 0.006) * np.sin(ang)
-            y = yoff - (b + 0.008) * np.cos(ang)
+            # same superellipse as the coat (an ellipse let the boxier shirt poke through at the sides)
+            sn, cs = np.sin(ang), np.cos(ang)
+            x = (a + 0.010) * np.sign(sn) * np.abs(sn) ** (2.0 / n)
+            y = yoff - (b + 0.012) * np.abs(cs) ** (2.0 / n)
             verts.append(np.stack([x, y, np.full(K, z)], -1))
         Vv = np.concatenate(verts)
         F = []
@@ -1336,11 +1495,35 @@ class Character:
         sol = ob.modifiers.new('Solidify', 'SOLIDIFY')
         sol.thickness = 0.004
         ob.modifiers.move(len(ob.modifiers) - 1, 1)
+        # neck strap: from the bib's top corners up over the shoulders and round the back of the neck
+        c0, c1 = Vv[(R - 1) * K], Vv[R * K - 1]
+        rn = s['neck_r'] + 0.020
+        pts = []
+        for c in (c0, c1):
+            sx = np.sign(c[0])
+            pts.append([c + np.array([0, 0, 0.004]),
+                        np.array([sx * (abs(c[0]) * 0.55 + rn * 0.45), c[1] * 0.55, self.neckZ - 0.022]),
+                        np.array([sx * rn * 0.98, 0.0, self.neckZ - 0.002]),
+                        np.array([sx * rn * 0.62, rn * 0.80, self.neckZ + 0.006])])
+        path = pts[0] + [np.array([0.0, rn * 1.02, self.neckZ + 0.008])] + pts[1][::-1]
+        P = []
+        for i in range(len(path) - 1):
+            for t in np.linspace(0, 1, 5, endpoint=False):
+                P.append(path[i] + (path[i + 1] - path[i]) * t)
+        P.append(path[-1])
+        P = np.array(P)
+        fy = self._torso_surface_y(P[:, 0], P[:, 2], True) - 0.006
+        by = self._torso_surface_y(P[:, 0], P[:, 2], False) + 0.006
+        P[:, 1] = np.where(P[:, 1] < 0, np.minimum(P[:, 1], fy), np.maximum(P[:, 1], by))
+        Vs, Fs, rs = loft(P, [ellipse(10, 0.0045, 0.0045)] * len(P), up_hint=(0, 0, 1))
+        Ws = proximity_weights(Vs, {nm: (np.array(self.J[nm][0]), np.array(self.J[nm][1])) for nm in ('chest', 'neck')}, power=4)
+        self._mesh('apronstrap', Vs, Fs, m, weights=Ws, sub=1)
 
     # ---------------------------------------------------------------- hair
     def _build_hair(self):
         s = self.s
         style = s['hair_style']
+        self.hair_under_hat, self.hair_hatless = [], []
         if not style:
             return
         import hair
@@ -1352,7 +1535,6 @@ class Character:
         pts = pts * hs + self.head_origin
         rad = rad * hs
         self.hair_under_hat = self._hair_objects('hair', pts, rad)
-        self.hair_hatless = []
         if s['hat'] and s.get('hair_top'):
             # a full groom for the hatless beats (hidden; the shot toggles it against the under-hat one)
             fp, fr = hair.groom(self.H, self.hg, style, seed=sum(map(ord, self.name)) + 1, under_hat=False)

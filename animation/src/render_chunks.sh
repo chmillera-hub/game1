@@ -14,7 +14,7 @@ fps = d['fps']
 n = int(math.ceil(d['duration'] * fps))
 rows = []
 for s in d['shots']:
-    f0 = int(round(s['t0'] * fps)) + 1
+    f0 = int(round(s['t0'] * fps)) + 1 if s['t0'] > 0 else 0    # frame N is t = N / fps
     f1 = min(n, int(round(s['t1'] * fps)))
     if f1 >= f0:
         rows.append('%s %d %d' % (s['name'], f0, f1))

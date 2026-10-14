@@ -230,8 +230,9 @@ def eye_material(name, iris=(0.25, 0.42, 0.20), iris_ang=0.70, pupil_ang=0.30):
     fm.location = (-600, -450)
     L.new(noise.outputs['Fac'], fm.inputs[0])
     L.new(fm.outputs[0], ic2.inputs['Factor'])
-    # sclera slightly warmer toward the back
-    white = mix_rgb(N, L, ramp(-0.2, 0.6, -800, 400), (0.82, 0.70, 0.66), (0.95, 0.94, 0.91), x=-600, y=300)
+    # sclera warmer and a little shaded toward the corners/back, so the white at the corners of a
+    # lowered lid sits back instead of glaring
+    white = mix_rgb(N, L, ramp(0.35, 0.92, -800, 400), (0.74, 0.60, 0.56), (0.95, 0.94, 0.91), x=-600, y=300)
     e1 = mix_rgb(N, L, iris_m, white.outputs[2], ic2.outputs[2], x=-300, y=100)
     e2 = mix_rgb(N, L, pupil_m, e1.outputs[2], (0.01, 0.01, 0.012), x=-150, y=100)
     L.new(e2.outputs[2], b.inputs['Base Color'])

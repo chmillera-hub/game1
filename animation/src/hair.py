@@ -132,6 +132,8 @@ def groom(H, hg, style, seed=0, under_hat=False, bun=None, keep_top=False):
         pts[i, 0] = q
         if under_hat and keep_top and z > 0.035:
             L[i] *= 0.35
+        if style == 'beard' and z > mc[2] - 0.004:
+            L[i] *= 0.4   # moustache stays a band above the lip instead of curtaining the mouth
         if style == 'bun':
             tb = np.array([0, bun[0], bun[1]]) if bun else np.array([0, 0.09, 0.07])
             L[i] = min(L[i], np.linalg.norm(tb - r) * 1.05)

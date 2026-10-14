@@ -314,8 +314,9 @@ def P_kneel(B, down='R', lean=6.0, hands='hang'):
         pos0, rq = B.foot_rest[sd]
         if sd == down:
             # knee on ground under the hip, shin back, toes tucked
-            pos = Vector((sx * 0.10, 0.06 + B.shin * 0.92, 0.07))
-            p['foot_' + sd] = (pos, E(-48) @ rq)
+            # boot lies behind the shin, instep down (not sticking out of the calf)
+            pos = Vector((sx * 0.10, 0.06 + B.shin * 0.95, 0.07))
+            p['foot_' + sd] = (pos, E(150) @ rq)
             p['kpole_' + sd] = Vector((sx * 0.12, -0.6, 0.0))
         else:
             pos = Vector((sx * 0.13, 0.06 - B.thigh * 0.95, pos0.z))

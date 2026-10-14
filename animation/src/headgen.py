@@ -477,35 +477,42 @@ class Head:
     def lid(self, key, upper=True, nu=48, nv=14):
         """Eyelid shell in EYE-LOCAL space (eye centre at origin, forward -Y, up +Z).
 
-        The rim edge is arched; rotating about local X closes/opens the lid."""
+        The rim edge is arched; rotating about local X closes/opens the lid.  The shell is laid
+        out in rings around the X axis (the hinge), so its sides stay at the sides of the eyeball
+        however far it rotates, and there is no pole on top to show as a seam when the lid is shut."""
         p = self.p
         r = p['eye_r']
         side = self.eyes[key]['side']
         R = r * 1.035
         azc = p['lid_corner_az']
-        # runs well past the corners so the shell still wraps the sides of the eyeball when rotated shut
-        az = np.linspace(-azc - 40, azc + 40, nu)
         tilt = p['canthus_tilt']
+        # rim edge as elevation over azimuth (the authored lid shape) ...
+        a = np.linspace(-azc - 25, azc + 25, 161)
+        t = np.clip(np.abs(a) / azc, 0, 1)
+        outer = (a * side) > 0
+        corner_lift = np.where(outer, tilt, -tilt * 0.3) * smoothstep(0.4, 1.0, t)
+        if upper:
+            e = p['lid_up_e'] + p['lid_up_arch'] * (1 - t ** 2) - p['lid_up_arch'] * 0.5 + corner_lift
+        else:
+            e = p['lid_lo_e'] - p['lid_lo_arch'] * (1 - t ** 2) + corner_lift * 0.6
+        ar, er = np.radians(a), np.radians(e)
+        ex, ey, ez = np.sin(ar) * np.cos(er), -np.cos(ar) * np.cos(er), np.sin(er)
+        # ... re-expressed as (angle from the hinge plane, angle about the hinge)
+        h_dense = np.degrees(np.arcsin(np.clip(ex, -1, 1)))
+        v_dense = np.degrees(np.arctan2(ez, -ey))
+        hs_ = np.linspace(-84.0, 84.0, nu)
         verts = []
-        for a in az:
-            t = np.clip(np.abs(a) / azc, 0, 1)
-            # the outer corner (az>0 is the character's outer side for that eye)
-            outer = (a * side) > 0
-            corner_lift = (tilt if outer else -tilt * 0.3) * smoothstep(0.4, 1.0, t)
+        for h in hs_:
+            e_edge = float(np.interp(h, h_dense, v_dense))
             if upper:
-                e_edge = p['lid_up_e'] + p['lid_up_arch'] * (1 - t ** 2) - p['lid_up_arch'] * 0.5 + corner_lift
-                # runs well past the pole so a fully closed lid still covers the top of the eyeball
-                elev = np.concatenate([[e_edge - 4, e_edge - 2.5, e_edge - 0.6], np.linspace(e_edge, 165, nv + 6)])
+                # runs over the top and down the back so a fully closed lid still covers the eyeball
+                elev = np.concatenate([[e_edge - 4, e_edge - 2.5, e_edge - 0.6], np.linspace(e_edge, 185, nv + 6)])
                 radii = np.concatenate([[r * 1.004, r * 1.018, r * 1.036], np.full(nv + 6, R)])
             else:
-                e_edge = p['lid_lo_e'] - p['lid_lo_arch'] * (1 - t ** 2) + corner_lift * 0.6
                 elev = np.concatenate([[e_edge + 4, e_edge + 2.5, e_edge + 0.6], np.linspace(e_edge, -100, nv)])
                 radii = np.concatenate([[r * 1.004, r * 1.018, r * 1.032], np.full(nv, R * 0.995)])
-            col = []
-            for el, rr in zip(elev, radii):
-                ae, ee = np.radians(a), np.radians(el)
-                v = np.array([np.sin(ae) * np.cos(ee), -np.cos(ae) * np.cos(ee), np.sin(ee)]) * rr
-                col.append(v)
+            hh, vv = np.radians(h), np.radians(elev)
+            col = np.stack([np.full(len(vv), np.sin(hh)), -np.cos(hh) * np.cos(vv), np.cos(hh) * np.sin(vv)], -1) * radii[:, None]
             verts.append(col)
         V = np.array(verts)  # (nu, nrow, 3)
         nrow = V.shape[1]
