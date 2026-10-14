@@ -56,6 +56,18 @@ def load():
         final_chord=by_id["end"]["pages"][-1]["end"] + 0.12,
         transitions=[s["t0"] for s in scenes[1:] if s["id"] != "poof"],
     )
+    # extra moments acted out in the cartoon version
+    first = lambda sid, word: _word_times(by_id[sid], lambda w: low(w) == word)[0]  # noqa: E731
+    spot, laugh, shy = first("invisible", "spot"), first("invisible", "laugh"), first("invisible", "shy")
+    ev.update(
+        idea=first("hug", "idea"),
+        tiptoe=(spot - 0.75, spot - 0.05),
+        catches=[laugh - 0.35 + 0.62 * i + 0.55 for i in range(4) if laugh - 0.35 + 0.62 * i < shy - 0.4],
+        rain_on=first("family", "in"),
+        snow_on=first("family", "weather"),
+        photo=first("family", "family") - 0.1,
+        wolf_dash=2.30,
+    )
     return dict(scenes=scenes, duration_video=duration, events=ev)
 
 

@@ -6,9 +6,11 @@ per scene. The tune drops out on "And suddenly...", a drum roll builds, and
 a crash + new section starts on "POOF!". Sound effects land on the words
 (boings on "Hop!", pops on the dog names, a harp on "hug!", ...).
 
-Writes build/mix.wav (48 kHz stereo, loudness-normalised).
+Writes build/mix.wav (48 kHz stereo, loudness-normalised); with --cartoon,
+build/mix_cartoon.wav with extra effects for the cartoon version's actions.
 Needs: fluidsynth + FluidR3_GM.sf2, mido, numpy, scipy, soundfile, ffmpeg.
 """
+import argparse
 import json
 import os
 import subprocess
@@ -258,7 +260,54 @@ def fit(a, n):
     return out
 
 
+def sfx_click(seed=9):
+    """Camera shutter: two short filtered clicks."""
+    rng = np.random.default_rng(seed)
+    out = np.zeros(int(0.16 * SR))
+    for t0, g in ((0.0, 1.0), (0.07, 0.7)):
+        n = int(0.025 * SR)
+        burst = bandpass(rng.normal(0, 1, n), 1500, 7000) * env_exp(n, 0.006, 0.0005) * g
+        i = int(t0 * SR)
+        out[i:i + n] += burst
+    return out * 0.8
+
+
+def sfx_rain(dur, seed=12):
+    rng = np.random.default_rng(seed)
+    n = int(dur * SR)
+    x = bandpass(rng.normal(0, 1, n), 1200, 9000) * 0.12
+    drops = np.zeros(n)
+    for _ in range(int(dur * 40)):
+        i = rng.integers(0, n - 2000)
+        drops[i:i + 2000] += np.sin(2 * np.pi * rng.uniform(2500, 5000) * np.arange(2000) / SR) * env_exp(2000, 0.004) * 0.15
+    k = np.minimum(1, np.minimum(np.arange(n), n - np.arange(n)) / (0.12 * SR))
+    return (x + drops) * k
+
+
+def cartoon_sfx(ev, fx, synth):
+    """Extra sounds for actions that only happen in the cartoon version."""
+    fx.program(0, CH_BRASS, PIZZ)
+    for j, n in enumerate((84, 88, 91, 96, 100)):             # idea! "ding"
+        fx.note(ev["idea"] - 0.1 + j * 0.05, CH_FX, n, 92, 0.9)
+    t0, t1 = ev["tiptoe"]                                     # tiptoeing to the bush
+    for j, n in enumerate((67, 71, 74, 79, 74, 79)):
+        fx.note(t0 + j * (t1 - t0) / 6, CH_BRASS, n, 72, 0.12)
+    for t in ev["catches"]:                                   # ball caught
+        fx.note(t, DRUM_CH, WOOD, 70, 0.1)
+    t = ev["snow_on"]                                         # snowflake twinkles
+    for j, n in enumerate((96, 91, 98, 93, 100, 95)):
+        fx.note(t + 0.02 + j * 0.11, CH_PAD, n, 62, 0.5)
+    fx.note(ev["wolf_dash"], DRUM_CH, WOOD, 60, 0.1)
+    place(synth, sfx_pop(), ev["peekaboo"] - 0.18, 0.55, pan=0.4)    # he pops up
+    place(synth, sfx_pop(), ev["rain_on"] - 0.08, 0.4, pan=-0.2)     # umbrella opens
+    place(synth, sfx_rain(ev["snow_on"] - ev["rain_on"] + 0.15), ev["rain_on"] - 0.05, 0.7)
+    place(synth, sfx_click(), ev["photo"], 0.9)
+
+
 def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--cartoon", action="store_true", help="add the cartoon version's extra sound effects")
+    args = ap.parse_args()
     tl = timeline.load()
     T = tl["duration_video"]
     N = int(T * SR)
@@ -315,11 +364,13 @@ def main():
     for j, n in enumerate((72, 76, 79, 84, 88)):
         fx.note(t + j * 0.06, CH_FX, n, 86, 0.8)
     fx.note(t, DRUM_CH, SPLASH, 70, 1.0)
+    synth = np.zeros((N, 2), np.float32)
+    if args.cartoon:
+        cartoon_sfx(ev, fx, synth)
     fx.save(os.path.join(BUILD, "fx.mid"))
     fx_audio = render(os.path.join(BUILD, "fx.mid"), os.path.join(BUILD, "fx.wav"))
 
     # ---- synth sound effects
-    synth = np.zeros((N, 2), np.float32)
     for j, t in enumerate(ev["hops"]):
         place(synth, sfx_boing() * (1 + 0.1 * j), t - 0.03, 0.55, pan=-0.2 + 0.2 * j)
     for j, t in enumerate(ev["dog_names"]):
@@ -367,11 +418,12 @@ def main():
     fx_audio = fit(fx_audio, N) * (rms_of(speech) * 0.5 / m_ref)
     mix = voice + music + fx_audio + synth * 0.8
     mix /= max(1.0, np.abs(mix).max() / 0.95)
-    raw = os.path.join(BUILD, "mix_raw.wav")
+    tag = "_cartoon" if args.cartoon else ""
+    raw = os.path.join(BUILD, f"mix{tag}_raw.wav")
     sf.write(raw, mix, SR, subtype="PCM_24")
 
     # loudness: -14 LUFS, true peak -1.5 dB (typical for Reels/TikTok/Shorts)
-    out = os.path.join(BUILD, "mix.wav")
+    out = os.path.join(BUILD, f"mix{tag}.wav")
     p = subprocess.run(["ffmpeg", "-hide_banner", "-nostats", "-i", raw, "-af",
                         "loudnorm=I=-14:TP=-1.5:LRA=11:print_format=json", "-f", "null", "-"],
                        capture_output=True, text=True, check=True)
