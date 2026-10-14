@@ -206,16 +206,29 @@ def build(ctx):
 
     # --------------------------------------------------------------------- the light
     gold = (1.0, 0.8, 0.52)
-    target = Vector((c["base"][0], c["base"][1] + 0.2, cz + 2.0))
-    spot_d = 160.0
-    spot = C.light("SPOT", tuple(target + sun_dir * spot_d), 0.0, color=gold, target=tuple(target), size=1.5,
-                   name="ShaftKey", spot_size=2 * math.degrees(math.atan(2.1 / spot_d)), spot_blend=0.9)
-    spot.data.volume_factor = 0.0
-    spot.data.shadow_maximum_resolution = 0.004
-    E_cross = 3.0                                     # W/m2 at the cross (eclipse sun 0.35, golden sun 4.2)
-    P_cross = E_cross * 4 * math.pi * spot_d ** 2
     a0, a1 = fr(p1s) + 8, fr(p1e) - 4
-    C.keys(spot.data, "energy", [(1, 0.0), (a0, 0.0), (a1, P_cross), (NR, P_cross * 1.15)])
+    # key: a narrow strong shaft light-linked to the centre cross + figure (rim / back light)
+    target = Vector((c["base"][0], c["base"][1] + 0.1, cz + 2.7))
+    spot_d = 160.0
+    key = C.light("SPOT", tuple(target + sun_dir * spot_d), 0.0, color=gold, target=tuple(target), size=1.0,
+                  name="ShaftKey", spot_size=2 * math.degrees(math.atan(2.0 / spot_d)), spot_blend=0.6)
+    key.data.volume_factor = 0.0
+    recv = bpy.data.collections.new("s14a_shaft_recv")
+    for o in [ch for ch in c["root"].children] + j.objects():
+        if o.type in ("MESH", "CURVES", "CURVE"):
+            recv.objects.link(o)
+    key.light_linking.receiver_collection = recv
+    E_key = 4.5                                        # W/m2 (eclipse sun 0.35, golden sun 4.2)
+    P_key = E_key * 4 * math.pi * spot_d ** 2
+    C.keys(key.data, "energy", [(1, 0.0), (a0, 0.0), (a1, P_key), (NR, P_key * 1.1)])
+    # the light pool on the ground (the shaft is broader than the cross): softer, casts the long cross shadow
+    gtarget = Vector((c["base"][0], c["base"][1] - 1.5, cz + 0.3))
+    pool = C.light("SPOT", tuple(gtarget + sun_dir * spot_d), 0.0, color=gold, target=tuple(gtarget), size=2.5,
+                   name="ShaftPool", spot_size=2 * math.degrees(math.atan(2.4 / spot_d)), spot_blend=1.0)
+    pool.data.volume_factor = 0.0
+    E_pool = 1.3
+    P_pool = E_pool * 4 * math.pi * spot_d ** 2
+    C.keys(pool.data, "energy", [(1, 0.0), (a0 + 4, 0.0), (a1 + 4, P_pool), (NR, P_pool * 1.2)])
     foot = Vector((c["base"][0], c["base"][1] + 0.2, cz - 0.4))
     beam("ShaftMain", foot, sun_dir, 2.3, 260.0, beam_material("ShaftMain", color=gold, seed=0.2),
          [(1, 0.0), (a0 - 4, 0.0), (a1, 0.2), (fr(p2s), 0.17), (NR, 0.2)])

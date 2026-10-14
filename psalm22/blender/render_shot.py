@@ -6,7 +6,8 @@
 
 --frames: 'all' | 'sheet<N>' (N evenly spaced frames + contact sheet) | '1,40,80' | 'a-b'
           | 'odd' / 'odd:a-b' (odd frames only = 12 fps; fill the evens with comp/interp.py)
-          | 'auto' (= 'odd' if the shot sets ctx.interp = True, else 'all')
+          | 'auto' / 'auto:a-b' (= 'odd[:a-b]' if the shot sets ctx.interp = True, else 'all' / 'a-b')
+--skip-existing: only render frames whose PNG doesn't exist yet (resume). Writes meta.json (interp, needs_bake).
 --quality: preview (270x480, 3 spp) | draft (540x960, 3 spp) | final (540x960, ctx.samples or 8 spp)
 --save-blend: also write the built scene to WORK/blend/<shot>.blend for inspection.
 Output: WORK/frames/<shot>/<quality>/NNNN.png (NNNN = 1-based shot frame) + post.json (+ sheet.png)
@@ -18,11 +19,11 @@ sys.path.insert(0, HERE)
 from lib import core  # noqa: E402
 
 argv = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
-opts = {"--quality": "preview", "--frames": "sheet6", "--save-blend": False}
+opts = {"--quality": "preview", "--frames": "sheet6", "--save-blend": False, "--skip-existing": False}
 i = 0
 while i < len(argv):
     a = argv[i]
-    if a == "--save-blend":
+    if a in ("--save-blend", "--skip-existing"):
         opts[a] = True
         i += 1
     else:
@@ -42,9 +43,13 @@ core.configure_render(ctx, **ctx.render_opts)
 print("BUILD_TIME %.1fs" % (time.time() - t0))
 
 spec = opts["--frames"]
-if spec == "auto":
+if spec == "auto" or spec.startswith("auto:"):
     # the shot decides: ctx.interp = True -> half-rate render, evens filled by comp/interp.py
-    spec = "odd" if getattr(ctx, "interp", False) else "all"
+    rng = spec[5:] if ":" in spec else ""
+    if getattr(ctx, "interp", False):
+        spec = "odd:" + rng if rng else "odd"
+    else:
+        spec = rng if rng else "all"
     print("AUTO_FRAMES", spec)
 N = ctx.render_frames
 sheet = None
@@ -66,6 +71,19 @@ else:
 
 out = os.path.join(core.WORK, "frames", shot_id, quality)
 os.makedirs(out, exist_ok=True)
+json.dump({"interp": bool(getattr(ctx, "interp", False)), "needs_bake": bool(ctx.needs_bake),
+           "render_frames": N, "samples": ctx.samples, "render_opts": ctx.render_opts},
+          open(os.path.join(out, "meta.json"), "w"), indent=1)
+if opts["--skip-existing"]:
+    have = lambda f: os.path.exists(os.path.join(out, "%04d.png" % f)) and os.path.getsize(os.path.join(out, "%04d.png" % f)) > 0
+    todo = [f for f in frames if not have(f)]
+    print("SKIP_EXISTING %d of %d frames already rendered" % (len(frames) - len(todo), len(frames)))
+    if not todo:
+        core.save_post(ctx, os.path.join(out, "post.json"))
+        sys.exit(0)
+    if spec.startswith("odd") and todo != frames:
+        spec = "list"   # fall back to per-frame renders for the remaining odd frames
+    frames = todo
 if ctx.needs_bake and (frames != list(range(1, N + 1))):
     tb = time.time()
     core.bake_all(ctx)
@@ -80,7 +98,7 @@ if frames == list(range(frames[0], frames[-1] + 1)) and len(frames) > 1:
     sc.frame_start, sc.frame_end = frames[0], frames[-1]
     sc.render.filepath = os.path.join(out, "####")
     bpy.ops.render.render(animation=True)
-elif spec.startswith("odd") and len(frames) > 1:
+elif spec.startswith("odd") and len(frames) > 1 and frames == list(range(frames[0], frames[-1] + 1, 2)):
     # every other frame via the animation path (random access -> baked above when ctx.needs_bake)
     sc.frame_start, sc.frame_end, sc.frame_step = frames[0], frames[-1], 2
     sc.render.filepath = os.path.join(out, "####")
