@@ -122,7 +122,7 @@ for c in 'tdnlszɾ':
     CH[c] = 'T'
 for c in 'ʃʒʧʤ':
     CH[c] = 'SH'
-for c in 'kgŋhx':
+for c in 'kgɡŋhx':          # both the ASCII g and the IPA ɡ (U+0261) the phonemizer emits
     CH[c] = 'K'
 CH['w'] = 'W'
 CH['ɹ'] = 'R'
@@ -180,6 +180,9 @@ def visemes(timings, wav, fps=24, n_frames=None):
     k = np.array([0.25, 0.5, 0.25])
     for c in CHANNELS:
         out[c] = np.convolve(np.pad(out[c], 1, mode='edge'), k, mode='valid')
+    # closures are re-applied after smoothing so the lips really meet on p/b/m
+    out['press'] = np.maximum(out['press'], press_max)
+    out['jaw'] = out['jaw'] * (1 - 0.85 * press_max)
     return {c: np.nan_to_num(out[c]).tolist() for c in CHANNELS}
 
 

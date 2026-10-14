@@ -112,14 +112,13 @@ A blank cell means 0. Spaces, punctuation and the length mark ː add nothing. A 
   - Soft words and trailing syllables shrink on their own.
 - **Smoothing.** A [0.25, 0.5, 0.25] filter removes single-frame pops.
 
-Three caveats from the generated data:
+Three problems turned up when we checked the generated data against the code, and all three are now fixed. They are common traps, so they are worth knowing about:
 
-- **Short closures get softened.** Smoothing runs after the closures. Across the 53 p/b/m in the 59 lines (39 of them in character lines):
-  - `press` peaks at a median of 0.82 (minimum 0.62), and only 14 of the 53 reach 1.0.
-  - At the frame where `press` peaks, the jaw is 0.16 or less.
-  - The resting mouth is already a nearly shut slit (`mouth_sy0 = 0.07` in the `headgen.py` defaults, not overridden in `chars.py`), so the lips get close to sealing.
-- **Hushed lines are not visually quieter.** Loudness is normalised per line. The hushed lines' −8 dB is a gain that `film.say` stores and the mix applies later. So hushed lines move the mouth as much as normal ones: jaw peaks of 0.33–0.45, against 0.19–0.72 for the other character lines.
-- **The /g/ sound gets no shape.** `CH` maps the ASCII letter `g`, but the phonemizer emits the IPA `ɡ` (U+0261). The three /g/ sounds in the film ("Again!", "Good." and "Congratulations.") add no mouth shape. Check your phoneme inventory against your mapping table.
+- **Smoothing softened the closures.** The closure rule originally ran before the smoothing filter, so the filter blurred short p/b/m sounds. Across the 53 p/b/m in the 59 lines, `press` peaked at a median of 0.82 and only 14 reached 1.0: the lips often stopped just short of meeting. `tts.py:visemes` now applies the closure again after smoothing (`press = max(press, closure)`, jaw cut by 85%), and all 53 closures reach 1.0.
+- **Hushed lines looked as loud as normal ones.** Loudness is normalised per line, and the hushed lines' −8 dB is applied later in the mix, so the mouth moved as much as on a normal line. `film.py:say` now scales jaw, wide and round by 0.75 on hushed lines, so a whisper uses less mouth.
+- **The /g/ sound had no shape.** `CH` mapped the ASCII letter `g`, but the phonemizer emits the IPA `ɡ` (U+0261), which looks identical. Four lines contain it ("Again!", "Good.", "Congratulations." and Tomas's "It's..." take). `CH` now maps both. Check your phoneme inventory against your mapping table; look-alike characters fail silently.
+
+`revisemes.py` recomputes every line's mouth curves from the stored audio and timings, so changes like these do not need the voices to be synthesised again.
 
 ### Layering speech on the acting
 
@@ -164,7 +163,7 @@ The jaw opens the mouth; the shape keys shape the lips.
 
 - Give each sound a soft influence (sigma at least ~45 ms) that overlaps its neighbours, and blend them. Let the mouth relax in the gaps rather than holding one shape per sound.
 - Make p/b/m hard rules that override everything else. Apply them after any smoothing so the lips really meet.
-- Size the mouth by loudness. To make whispers look whispered, use the level the audience hears, not each clip's own level.
+- Size the mouth by loudness. To make whispers look whispered, use the level the audience hears, not each clip's own level (we scale hushed lines' mouths by 0.75).
 - Check that every symbol your speech engine emits is in your mouth-shape table. Look-alike characters such as `g` and `ɡ` fail without any error.
 - Let speech drive only the jaw and lips, and leave the brows, lids and mouth corners to the emotion. Release any held lip press on the first syllable.
 - Start the face 0.2–0.5 s before the sound: a brow, parted lips, a breath or a nod. Let a swallow or a pressed mouth answer a line after it ends.
@@ -684,7 +683,7 @@ In 4.1 the waddle comes back with his chest puffed out (`chest(pitch=−8)`, wal
 |---|---|---|
 | Voice | Speaking speed | 0.88–1.05 (only Teddy above 1.0) |
 | Voice | Adult pitch shift (formants kept) | −0.5 to −1 semitone |
-| Voice | Hushed line | 0.05–0.06 slower; −4 dB shelf at 6 kHz; placed −8 dB; exhale 0.35 s before at −14 dB |
+| Voice | Hushed line | 0.05–0.06 slower; −4 dB shelf at 6 kHz; placed −8 dB; exhale 0.35 s before at −14 dB; mouth ×0.75 |
 | Lip-sync | Median phoneme symbol | 54 ms (≈1.3 frames at 24 fps) |
 | Lip-sync | Coarticulation width (gaussian sigma) | max(45 ms, 0.75 × phoneme duration) |
 | Lip-sync | Relax in gaps | divide by max(total weight, 0.6) |

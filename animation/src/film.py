@@ -190,7 +190,11 @@ class Film:
         if sub:
             self.subs.append(dict(t0=t, t1=t + dur, text=r['subtitle'], style='narr' if r['speaker'] == 'N' else 'dlg'))
         if who and who in self.A:
-            self.A[who].say(t, r['visemes'])
+            vis = r['visemes']
+            if r.get('hushed'):
+                # a hushed line is spoken with less mouth, not just less level
+                vis = dict(vis, **{c: [v * 0.75 for v in vis[c]] for c in ('jaw', 'wide', 'round')})
+            self.A[who].say(t, vis)
         return t, t + dur
 
     def dur(self, lid):
