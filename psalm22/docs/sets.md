@@ -67,16 +67,16 @@ def build(ctx):
 
 ---------------------------------------------------------------------------------------------------
 
-## 1. `stable_cave(ctx, loc=(0,0,0), rot_z=0, coll=None, world=True, lamps=2, starlight=1.0, lamp_energy=1.0, fog=True, dust_motes=True, straw=True, straw_density=900, manger="stone", seed=7, props=True, straw_shadows=False)`
+## 1. `stable_cave(ctx, loc=(0,0,0), rot_z=0, coll=None, world=True, lamps=2, starlight=1.0, lamp_energy=1.0, fog=True, dust_motes=True, straw=True, straw_density=650, manger="stone", seed=7, props=True, straw_shadows=False)`
 
 Irregular limestone cave (~6.6 x 7.4 m, ceiling ~2.75 m, soot-darkened above, bedding strata),
 arched doorway in the back-left wall (night sky with stars + the Bethlehem star visible through it),
-straw-littered floor (procedural litter texture + ~10k realized 3D strands, denser around manger /
+straw-littered floor (generated litter texture + realized 3D strands, denser around manger /
 Mary / animals), rough-hewn stone manger heaped with straw on two stones, a rock seat for Mary,
 oil lamp on a rock ledge (right wall) + one on a flat stone by Mary, clay jars, hay heap,
 shepherd's staff by the door, boulders outside.
 
-* `lamps` 1 or 2 (floor lamp by Mary). `lamp_energy` scales both lamps + warm bounce fills.
+* `lamps` 1 or 2 (floor lamp by Mary, unshadowed for speed). `lamp_energy` scales both lamps + warm bounce fills.
 * `starlight` scales the cool volumetric spot through the door (0 disables it and the door fill).
 * `manger="wood"` builds a wooden trough on splayed legs instead of the stone one.
 * `fog` cave haze + denser beam haze (makes the starlight shaft visible). `dust_motes` GN specks in the shaft.
@@ -134,7 +134,7 @@ def path(f):
 C.animate_camera(tomb.camera("approach"), path)
 ```
 
-## 3. `holy_of_holies(ctx, loc=(0,0,0), rot_z=0, coll=None, veil_open=0.0, glory=1.0, smoke=True, shafts=True, holy_place=True, room=9.0, probe=True, seed=3)`
+## 3. `holy_of_holies(ctx, loc=(0,0,0), rot_z=0, coll=None, veil_open=0.0, glory=1.0, smoke=True, shafts=True, holy_place=True, room=9.0, probe=False, seed=3)`
 
 A 9 m cube (`room`) of gold-overlaid cedar: walls/ceiling carry a generated relief (framed panels
 with palm trees and cherubim over a band of open flowers, 1 Kings 6:29; 2.25 m tile) with cavity
@@ -150,7 +150,8 @@ emissive spherical volume + 6200 K point light (volumetric rays through the ince
 Incense: room-wide animated smoke volume + a rising column from a censer in front of the Ark;
 2 narrow volumetric spots from the upper corners (`shafts`). `holy_place=True` adds 7 m of the Holy
 Place in front of the veil with the golden incense altar (smoke column, glowing coals) lit by an
-off-screen menorah. Two sphere reflection probes make the gold reflect the room.
+off-screen menorah. The gold reflects a warm uniform world by default; `probe=True` adds two sphere
+reflection probes (gold reflects the actual room — nicer for static hero stills, but ~+5 s/frame).
 
 * `veil_open`: float 0..1 or `[(frame, value), ...]`; later `S.animate_veil(info, pairs)`.
   0 = closed, 1 = each half drawn aside (gathered to its outer edge, most at the bottom, still
@@ -231,7 +232,8 @@ fx.FX handle when used.
 | `sky_world(sun_elevation, sun_rotation, strength, light_strength=None, air, dust, ozone, tint=None)` | lighting Background node | Nishita sky; camera sees `strength`, lighting uses `light_strength`. |
 | `world_light_keys([(f, strength), ...])` | – | key `sky_world`'s lighting strength (e.g. dim when the camera enters a room). |
 | `dust(center, size, count=600, radius=0.0035, color, emission=0, speed=0.08, amp=0.25, seed=0, name="dust", coll=None)` | object | GN dust motes drifting with scene time — **no bake**, lit by scene lights (sparkle in shafts). |
-| `straw_scatter(carrier, density=1500, seed=0, keep_surface=True, tilt=0.35, density_attr=None, realize=True)` | modifier | straw strands on any mesh (density per m², optional float attribute/vertex group mask). |
+| `straw_scatter(carrier, density=1500, seed=0, keep_surface=True, tilt=0.35, density_attr=None, realize=True)` | modifier | straw strands on any mesh (density per m², optional float attribute/vertex group mask). Set `carrier.visible_shadow = False` for floors. |
+| `straw_litter_texture()` | path | cached RGBA straw-litter tile (used by the cave floor; handy for any stable/barn floor). |
 | `flicker_light(light_obj, base=None, amount=0.18, speed=9, seed=0)` | light | keyed candle flicker on `.data.energy`. |
 | `clay_jar(loc, height=0.55, ...)`, `clay_cup(loc, wine=True, ...)` | object | lathe props. |
 | `gold_material(name, color, rough, relief=None, relief_scale, relief_strength, patina, hammered)` | material | burnished gold (+ optional relief map bump/patina). |
@@ -241,25 +243,37 @@ fx.FX handle when used.
 
 ---------------------------------------------------------------------------------------------------
 
-## PERF (measured; see report for the exact numbers)
+## PERF (measured)
 
-All sets build in < 7 s (holy_of_holies ~4–7 s the first time it generates its textures, < 1 s after).
-Render cost is dominated by: realized straw (stable), volumes (every set has haze; holy has 4
-volume boxes), shadowed lights (each point light = 6 shadow views), and the many cluster lights in
-the courtyard. Recommended shot settings:
+Metric: process CPU-seconds / 4 per frame (≈ wall time on the idle 4-core box; robust to the heavy
+machine load during development). Same metric on the lead's `s00` = **4.6–4.8 s** at 8 spp.
+All at 540x960 final, `ctx.samples = 6`, `ctx.render_opts = {"volumetrics": "low"}`, frame ≥ 2.
 
-| set | `ctx.samples` | `ctx.render_opts` |
+| set (camera) | s/frame | notes |
 |---|---|---|
-| stable_cave | 6 | `{"volumetrics": "low"}` |
-| garden_tomb | 6 | `{"volumetrics": "low"}` |
-| holy_of_holies | 6 | `{"volumetrics": "low"}` (use `"medium"` only for the close glory end) |
-| courtyard_assembly | 6 | `{"volumetrics": "low"}` |
-| table_interior | 6–8 | `{"volumetrics": "low"}` |
-| camp_night | 6 | `{"volumetrics": "low"}` |
+| holy_of_holies (ark_wide) | **4.6** | `probe=True` adds ~5 s (2 sphere probes re-captured every frame) |
+| garden_tomb (approach) | **5.5** | |
+| courtyard_assembly (wide) | **5.5** | was 43 s before: lamps realized into one mesh, no lamp/moon shadows, cluster lights non-volumetric |
+| camp_night (two_shot) | **6.3** | incl. `fx.campfire` (sparks/smoke) |
+| table_interior (bread_close) | **6.4** | 2 shadowed table lamps |
+| stable_cave (wide) | **6.7–7.2** | ~0.8 s per sample; `ctx.samples = 5` ≈ 5.8 s |
 
-Cheaper knobs: `stable_cave(straw_density=500)`, `fog=False`/`dust_motes=False`,
+Build time: 0.1–2.5 s per set. The first run on a machine generates cached textures in
+`$WORK/cache/sets/` (relief + veil ≈ 4–7 s, straw litter ≈ 10 s); later runs just load them.
+Draft quality (3 spp) renders are ~2.5–3.7 s/frame.
+
+Recommended shot settings: `ctx.samples = 6` (5 for the stable if the budget is tight) and
+`ctx.render_opts = {"volumetrics": "low"}` for every set (use `"medium"` only for a hero close-up of
+a light shaft). Cheaper knobs: `stable_cave(straw_density=400, dust_motes=False)`,
 `holy_of_holies(smoke=False, shafts=False, holy_place=False)` for shots that never see the Holy
-Place, `courtyard_assembly(lamps=250, stands=4)`, `table_interior(haze=False, steam=False)`.
+Place, `courtyard_assembly(lamps=250, stands=4)`, `table_interior(haze=False, steam=False, lamps=2)`,
+`camp_night(grass=False)`.
+
+What was optimised (so you don't undo it): GN instances are realized into single meshes (straw,
+grass, courtyard lamps) and don't cast shadows; large surfaces use UV mapping (one texture fetch
+instead of BOX projection's three); grime/soot masks are per-vertex attributes, not per-pixel noise;
+fill/cluster lights are shadowless and non-volumetric; the straw litter on the cave floor is a
+generated texture instead of procedural noise.
 
 ## Gotchas
 
@@ -267,8 +281,8 @@ Place, `courtyard_assembly(lamps=250, stands=4)`, `table_interior(haze=False, st
 * EEVEE Next **world light leaks into closed rooms**. The tomb therefore uses near-zero world
   lighting + a shadowed sky-fill area light; if you swap the world, keep its lighting strength low or
   the chamber will look lit. The interiors (stable, table) use dark night worlds, so they are fine.
-* Gold needs something to reflect: keep `probe=True` in the Holy of Holies, and keep at least some
-  light in the room — with all lights off the gold reads black.
+* Gold needs something to reflect: the Holy of Holies sets a warm world colour for that (keep it if
+  you replace the world, or use `probe=True`); with all lights off the gold reads black.
 * The veil halves are shape-keyed meshes with a Solidify; don't apply modifiers or the "open" shape
   key breaks. The veil only parts; it does not tear.
 * `info.facing` is +Y-forward yaw. lib/assets rigs face -Y → add 180°.
@@ -278,4 +292,6 @@ Place, `courtyard_assembly(lamps=250, stands=4)`, `table_interior(haze=False, st
   `oil_lamp(...)` (with light) parented to the hand for close shots.
 * Never add a world volume (core rule) — every set uses finite `fog_box` volumes already.
 * Generated textures live in `$WORK/cache/sets/` (`temple_relief_v4.png`, `veil_color_v4.png`,
-  `veil_height_v4.png`); delete them to force regeneration.
+  `veil_height_v4.png`, `straw_litter_v1.png`); delete them to force regeneration.
+* Lights from `oil_lamp(..., shadow=False)` are much cheaper; the stable's floor lamp and the
+  table's niche lamp are unshadowed for speed. Every shadowed point light ≈ +0.5–1 s/frame.
