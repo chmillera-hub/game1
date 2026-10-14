@@ -3541,13 +3541,7 @@ def drape(person, garments, frames=30, ramp=20, quality=5, keep_rig=True, self_c
         else:
             gz = float(ground)
             cx, cy = rig.matrix_world.translation[:2]
-        fm = bpy.data.meshes.new("wardrobe_floor")
-        fm.from_pydata([(cx - 3, cy - 3, gz), (cx + 3, cy - 3, gz), (cx + 3, cy + 3, gz), (cx - 3, cy + 3, gz)], [], [(0, 1, 2, 3)])
-        floor = bpy.data.objects.new("wardrobe_floor", fm)
-        sc.collection.objects.link(floor)
-        floor.modifiers.new("col", "COLLISION")
-        floor.collision.thickness_outer = 0.004
-        floor.collision.cloth_friction = 20
+        floor = _floor_collider(gz, (cx, cy), 6.0)
     done = []
     groups = [[g] for g in soft] if sequential else [soft]
     for grp in groups:
@@ -3610,20 +3604,37 @@ def drape(person, garments, frames=30, ramp=20, quality=5, keep_rig=True, self_c
     return done
 
 
-def cloth_sim(person, garments, ctx=None, preroll=20, frame_end=None, quality=5, self_collision=False):
-    """Live cloth simulation for ANIMATED hero shots (bake through the shot runner).
+def _floor_collider(z, center=(0, 0), size=40.0, name="wardrobe_floor"):
+    fm = bpy.data.meshes.new(name)
+    cx, cy = center
+    h = size / 2
+    fm.from_pydata([(cx - h, cy - h, z), (cx + h, cy - h, z), (cx + h, cy + h, z), (cx - h, cy + h, z)], [], [(0, 1, 2, 3)])
+    ob = bpy.data.objects.new(name, fm)
+    bpy.context.scene.collection.objects.link(ob)
+    ob.modifiers.new("col", "COLLISION")
+    ob.collision.thickness_outer = 0.004
+    ob.collision.cloth_friction = 20
+    ob.hide_render = True
+    return ob
+
+
+def cloth_sim(person, garments, ctx=None, preroll=20, frame_end=None, quality=5, self_collision=False, ground=None,
+              bake=True):
+    """Live cloth simulation for ANIMATED hero shots.
 
     Adds a Cloth modifier (after the Armature, pinned by the 'pin' group) to every soft garment and a
     Collision modifier to the body. The cloth cache starts `preroll` frames before frame 1 and the rig gets
-    rest-pose keys at frame 1-preroll, so the cloth starts from the rest fit and is carried into the first
-    pose. Sets ctx.needs_bake = True (render_shot.py then bakes via core.bake_all before random-access
-    renders). Call AFTER the character's animation has been keyed. Returns the cloth modifiers."""
+    rest-pose keys at frame 1-preroll, so the cloth starts from its rest fit and is carried into the first
+    pose. ground: None, a world z (temporary invisible floor collider) or a mesh object (gets a Collision
+    modifier, e.g. the terrain). bake=True bakes right away (bpy.ops.ptcache.bake_all, in memory), which is
+    REQUIRED for the pre-roll (scene.frame_start can't go below 0, so a sequential render from frame 1 would
+    never visit it); bake=False only sets ctx.needs_bake. Call AFTER the character's animation is keyed.
+    Returns the cloth modifiers."""
     rig, body = person.rig, person.body
     sc = bpy.context.scene
     B = body_info(person)
     f0 = 1 - preroll
     fe = frame_end or sc.frame_end
-    # rest pose keys at the preroll start (existing action keeps its own keys from frame 1 on)
     for pb in rig.pose.bones:
         mode = pb.rotation_mode
         snap = (pb.location.copy(), pb.rotation_quaternion.copy(), pb.rotation_euler.copy(), pb.scale.copy())
@@ -3635,6 +3646,12 @@ def cloth_sim(person, garments, ctx=None, preroll=20, frame_end=None, quality=5,
         pb.keyframe_insert("rotation_quaternion" if mode == "QUATERNION" else "rotation_euler", frame=f0)
         pb.location, pb.rotation_quaternion, pb.rotation_euler, pb.scale = snap
     _add_collision(body)
+    if ground is not None:
+        if isinstance(ground, bpy.types.Object):
+            if not any(m.type == "COLLISION" for m in ground.modifiers):
+                ground.modifiers.new("WardrobeCollision", "COLLISION")
+        else:
+            _floor_collider(float(ground), tuple(rig.matrix_world.translation[:2]))
     mods = []
     for g in garments:
         if g.type != "MESH" or not _is_soft(g):
@@ -3642,9 +3659,17 @@ def cloth_sim(person, garments, ctx=None, preroll=20, frame_end=None, quality=5,
         if g.vertex_groups.get("pin") is None:
             auto_pin(person, g, B)
         mods.append(_add_cloth(g, _fabric_of(g), quality, f0, fe, self_collision))
-    if sc.frame_start > f0:
-        sc.frame_start = f0       # so core.bake_all steps through the preroll (render ranges are explicit)
-    if ctx is not None:
+    if bake and mods:
+        t = time.time()
+        fc = sc.frame_current
+        try:
+            with bpy.context.temp_override(scene=sc):
+                bpy.ops.ptcache.bake_all(bake=True)
+        except Exception as e:
+            print("wardrobe.cloth_sim bake warning:", e)
+        sc.frame_set(fc)
+        print("wardrobe.cloth_sim baked %d garments %d frames in %.1fs" % (len(mods), fe - f0 + 1, time.time() - t), flush=True)
+    elif ctx is not None:
         ctx.needs_bake = True
     return mods
 

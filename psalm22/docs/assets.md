@@ -119,7 +119,7 @@ the body). Static animals are an EMPTY root with the mesh child (no actions) –
 | `spear` | 0 hasta, 1 pilum | `upright`, `length` | lying along X, head at +X; ash shaft. |
 | `nail` | 0–3 (lengths/bends) | `upright` (tip at origin pointing down, head up), `length=0.17`, `bend` | forged square shank, hammered head, rusty iron. Lying: head at x=0, tip → +X. |
 | `hammer` | 0 iron hammer, 1 wooden mallet | `upright` (handle down, head up, face → −Y) | lying: handle along X, head at +X. |
-| `astragalus` | 0–3 | – | sheep knucklebone ~27 mm, polished bone (metaball sculpt). |
+| `astragalus` | 0–3 | – | sheep knucklebone ~30×19×15 mm with trochlear grooves, lateral pit and concave face; polished bone (tone varies by variant). |
 | `dice` | 0–3 | `top=1..6`, `size=0.016` | bone cube die, dot-and-circle pips, opposite faces sum to 7. |
 | `water_jar` | 0 storage jar 0.48 m (2 handles), 1 pitcher 0.30 m (spout −Y, handle +Y), 2 round jug 0.22 m | – | terracotta/buff/dark clay with wheel rings, fire clouds, grime at the base. `mouth` anchor. |
 | `amphora` | 1 | – | 0.93 m, pointed toe (lean it or bury the toe). |
