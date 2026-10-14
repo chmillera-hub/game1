@@ -2,20 +2,20 @@
 
 *Brindle Cross* is a 213-second portrait 3D short film. A deadpan narrator introduces a town. Oswald, a silent clown, does slapstick, and then he quietly kneels and gives his supper and coat to Edith, an elderly widow whose first name nobody knows. The other speakers are Teddy, a child, and Tomas, the baker.
 
-Nothing was keyed by hand. Python code in Blender 4.5 generates every voice, mouth shape, glance, blink, expression and posture. This page explains the rules behind that acting: how the mouth follows the audio, how the eyes and lids move, how expressions are built and timed against the words, and how bodies listen. Each technique comes with the numbers we used and where to see it.
+Nothing was keyed by hand. Python code (Kokoro for the voices, Blender 4.5 for everything else) generates every voice, mouth shape, glance, blink, expression and posture. This page explains the rules behind that acting: how the mouth follows the audio, how the eyes and lids move, how expressions are built and timed against the words, and how bodies listen. Each technique comes with the numbers we used and where to see it.
 
 ## The conversation loop
 
 A single line of dialogue passes through six stages:
 
-1. **Voice.** Each line is a blend of Kokoro voices at a chosen speed. It is rendered long and then cut to the words. `film.py:Film.say` places it relative to the previous line and returns its start and end, so every other key can be written against the words.
+1. **Voice.** Each line is one Kokoro voice, or a blend of several, at a chosen speed. It is rendered long and then cut to the words. `film.py:Film.say` places it at a start time that the shot writes relative to the previous line, and returns its start and end, so every other key can be written against the words.
 2. **Mouth.** The phoneme timings become overlapping mouth shapes. Loudness sets their size, and p, b and m are forced shut (*Voice acting and lip-sync*).
 3. **Eyes.** The eyes move before the sound. A look target is shared down the chest, neck and head, a blink comes with the shift, and saccades and lid coupling run underneath (*Eyes, eyelids and gaze*).
 4. **Face.** The expression starts 0.25–1 s before the audio. Speech is added on top of it, so the character talks through the feeling, and the face settles after the line ends (*Facial expression, brows and micro-acting*).
 5. **Body.** The body holds an attitude, adds beats such as nods and shrugs, and keeps breathing. The listener reacts when the speaker says something that matters (*Body language and staging for conversation*).
 6. **Camera.** The camera setup and the eyeline cheats decide what the audience can read (the staging notes at the end of that section).
 
-`perf.py:evaluate` combines all of these layers on every frame.
+`perf.py:evaluate` combines the mouth, eye, face and body layers on every frame.
 
 *How to read this page.* Every shot is a function in `shots.py`. For example, shot 3.20 is `shots.py:s3_20`, and shots 3.15a and 3.15b share `s3_15`. All times are seconds on the film timeline.
 
@@ -89,7 +89,7 @@ Across the 59 generated lines, the median symbol lasts 54 ms, about 1.3 frames a
 | TH | θ ð | .16 | .20 | | | |
 | T | t d n l s z ɾ | .16 | .30 | | | |
 | SH | ʃ ʒ ʧ ʤ | .14 | | .55 | | |
-| K | k g ŋ h x | .28 | .10 | | | |
+| K | k g ɡ ŋ h x | .28 | .10 | | | |
 | W | w | .08 | | 1.0 | | |
 | R | ɹ r | .20 | | .40 | | |
 | Y | j | .14 | .50 | | | |
@@ -116,7 +116,7 @@ Three problems turned up when we checked the generated data against the code, an
 
 - **Smoothing softened the closures.** The closure rule originally ran before the smoothing filter, so the filter blurred short p/b/m sounds. Across the 53 p/b/m in the 59 lines, `press` peaked at a median of 0.82 and only 14 reached 1.0: the lips often stopped just short of meeting. `tts.py:visemes` now applies the closure again after smoothing (`press = max(press, closure)`, jaw cut by 85%), and all 53 closures reach 1.0.
 - **Hushed lines looked as loud as normal ones.** Loudness is normalised per line, and the hushed lines' −8 dB is applied later in the mix, so the mouth moved as much as on a normal line. `film.py:say` now scales jaw, wide and round by 0.75 on hushed lines, so a whisper uses less mouth.
-- **The /g/ sound had no shape.** `CH` mapped the ASCII letter `g`, but the phonemizer emits the IPA `ɡ` (U+0261), which looks identical. Four lines contain it ("Again!", "Good.", "Congratulations." and Tomas's "It's..." take). `CH` now maps both. Check your phoneme inventory against your mapping table; look-alike characters fail silently.
+- **The /g/ sound had no shape.** `CH` mapped the ASCII letter `g`, but the phonemizer emits the IPA `ɡ` (U+0261), which looks identical. Four takes contain it ("Again!", "Good.", "Congratulations." and the "It's Margaret, I think." take behind Tomas's "It's...", though that cut keeps only "It's"). `CH` now maps both. Check your phoneme inventory against your mapping table; look-alike characters fail silently.
 
 `revisemes.py` recomputes every line's mouth curves from the stored audio and timings, so changes like these do not need the voices to be synthesised again.
 
@@ -213,7 +213,7 @@ How far the head may look up is a character choice (`shots.py:build`):
   - As he does, he gets `chest(yaw=-25)`, a 25° upper-body turn to his right, split 40% spine and 60% chest.
   - The code comment reads: "his shoulders turn with the look so the head is not owl-like" (`shots.py:s3_21`).
 
-A `weight` below 1 scales down both the head's share and the eye correction, so the look stops short of the target. The film uses weights from 0.5 to 0.8. Ignoring the limits and treating each turn as a simple fraction of the angle, that stops roughly 25% short at 0.5, 10% short at 0.7 and 5% short at 0.8.
+A `weight` below 1 scales down both the head's share and the eye correction, so the look stops short of the target. The film uses weights from 0.5 to 0.9. Ignoring the limits and treating each turn as a simple fraction of the angle, that stops roughly 25% short at 0.5, 10% short at 0.7, 5% short at 0.8 and about 1.5% short at 0.9.
 
 That reads as looking *toward* something, and the film uses it for memory and half-attention. One example is Oswald's look drifting to the empty patch by the lamp where Walter stood (3.9, ~100.1 s, weight 0.6).
 
@@ -253,7 +253,7 @@ Every automatic blink has the same shape (`perf.py:_blink_val`): 0.07 s to close
 Blinks come from four rules:
 
 - **Automatic:** the first comes 0.3–2.0 s into the film, then one every 2.2–5.0 s (`blink_rate`), about 17 a minute.
-- **On every look change:** each `look_at` call adds a blink 0.02 s after it starts, the way people blink during a big shift of gaze. This includes small looks and a `look_at` that sets the same target again. Oswald's freeze in 3.1 starts with one (~66.7 s).
+- **On every look change:** each `look_at` call adds a blink 0.02 s after it starts, the way people blink during a big shift of gaze. This includes small looks and a `look_at` that sets the same target again. Oswald's freeze in 3.1 starts with one (~66.7 s). The one exception is 3.2: the shot takes back the blink Tomas's look adds (`To.blinks.pop()`), so his slow blink is the only one.
 - **On a story beat:** `blink(t)`.
   - At the CLONG (2.1, ~42.4 s), Edith gives one startled blink and a 3° head flinch, and she still doesn't look up.
   - At "He said you lean" (3.9), Oswald gives a caught double blink at ~105.0 s and ~105.35 s.
@@ -300,25 +300,25 @@ A lowered lid and a closed eye read differently. For "Nobody's said it since Apr
 | Upper-lid value | Lid moves | Reads as | In the film |
 |---|---|---|---|
 | 0.55–0.7 | 21–14° lower | heavy, bored, irritated | Tomas at work at 0.7 (1.1). In 1.3 he slides the tray onto the window shelf at 0.62, then drops to 0.55 for his glare at the open door (~19.1 s) |
-| 0.78–0.85 | 10–7° lower | tired, sad, turned inward | Edith in Scenes 1–2 (0.85, then 0.82 in 2.4). Edith softening to 0.78 while Oswald says "I didn't know what to say" (3.15b, ~140.9 s) |
+| 0.82–0.86 | 8.3–6.4° lower | tired, sad, turned inward | Edith in Scenes 1–2 (0.85, then 0.82 in 2.4). Edith softening to 0.86 while Oswald says "I didn't know what to say" (3.15b, ~140.9 s) |
 | 0.88–0.95 | 5.5–2.3° lower | soft, paying attention | most of the listening in Scene 3. Oswald easing to 0.88 before "Edith." (3.19, ~159.3 s) |
-| 1.05–1.15 | 1.5–4.5° higher | interest, really seeing someone | Tomas finally looking toward her at 1.05 (3.2, ~68.4 s). Edith at 1.12 as her eyes reach Oswald's face (3.7, ~83.7 s). Edith at 1.15 just before "Mr. Bunce. No." (3.16, ~145.4 s) |
-| 1.25–1.3 | 7.5–9° higher | shock | Oswald at the CLONG at 1.25 (2.1, ~42.3 s). Spotting the first peel at 1.25 (2.2, ~46.3 s). Falling on the second at 1.3 (2.3, ~50.8 s) |
+| 1.05–1.15 | 1.5–4.5° higher | interest, really seeing someone | Edith at 1.05 searching his face on "Every day at four..." (3.8, ~94.0 s). Edith at 1.12 as her eyes reach Oswald's face (3.7, ~83.7 s). Edith at 1.15 just before "Mr. Bunce. No." (3.16, ~145.4 s) |
+| 1.25–1.4 | 7.5–12° higher | shock | Oswald at the CLONG at 1.25 (2.1, ~42.3 s). Spotting the first peel at 1.25 (2.2, ~46.3 s). Falling on the second at 1.3 (2.3, ~50.8 s). Tomas finally looking toward her at 1.4 (3.2, ~68.4 s) |
 | 0.6, lower lid 0.7–1.0 | upper lid 18° lower; lower lid 10–14° up, plus up to 5° from the smile | laughing, crinkled eyes | the crowd's laugh at 0.6 / 0.7 with smile 1.0 (2.1, ~42.5 s). Edith at 0.6 / 1.0 with smile 0.9 after "There's the lean" (4.2, ~184.8 s) |
 | `blink` held at 1 | 57° down, lower lid 8° up | closed: pulling inward | Edith, 3.20–3.21 |
 
 ### Eyeline cheats
 
-When two people sit side by side facing the camera, a true eyeline puts both faces in profile. In 5.2, each looks at a point 0.30 m in front of the other's eyes. The offset is world −Y, which in this setup points toward the lens:
+When two people sit side by side facing the camera, a true eyeline puts both faces in profile. In 5.2, each looks at a point in front of the other's eyes. The offsets run mostly along world −Y, which in this setup points toward the lens:
 
-- Teddy at ~195.8 s: `('actor', 'edith', 'eyes', (0, -0.30, 0))`, weight 0.7.
-- Edith at ~195.9 s: the same offset on Teddy's eyes.
+- Teddy at ~195.8 s: `('actor', 'edith', 'eyes', (0, -0.30, 0))`, 0.30 m in front of her eyes, weight 0.9.
+- Edith at ~195.9 s: `('actor', 'teddy', 'eyes', (0.05, -0.60, 0.05))`, 0.60 m in front of his eyes and a few centimetres across and up. Her head also lifts 5° (`head(pitch=-5)`).
 
 Their faces open toward the camera instead of turning to profile.
 
-In Scene 3 the cheat is in the camera instead (`shots.py:SETUP`). Setup C sits "over Oswald's shoulder, close to her eyeline", so Edith's eye contact with him plays close to the lens.
+In Scene 3 part of the cheat is in the camera (`shots.py:SETUP`). Setup C sits "over Oswald's shoulder, close to her eyeline", so Edith's eye contact with him plays close to the lens. In the street-side two-shot (setup B), her look itself is cheated. When she looks at his eyes in 3.9, 3.16, 3.17 and 3.21, she aims at `('actor', 'oswald', 'eyes', ED_B)`, where `ED_B = (0.35, -0.40, 0.0)` is a world offset "cheated toward the lens". Her looks at his hands in 3.16 and 3.17 get a smaller offset, `(0.15, -0.20, 0.0)`.
 
-In 1.4 (~22.9 s), on "He is eight", Teddy glances at his own name label. His look target is built from the camera's position: 1.2 m in front of the lens, 0.35 m to screen-left and 0.25 m down, toward the left-aligned label. So he appears to look at the on-screen text. He glances again at ~24.2 s, after the label corrects itself to "Age 8 (nearly 9)".
+In 1.4 (~22.8 s), on "He is eight", Teddy glances at his own name label. His look target is built from the camera's position: 1.2 m in front of the lens, 0.35 m to screen-left and 0.25 m down, toward the left-aligned label. So he appears to look at the on-screen text. He glances again at ~24.1 s, after the label corrects itself to "Age 8 (nearly 9)".
 
 ### The conversation rules the shots follow
 
@@ -336,7 +336,7 @@ In 1.4 (~22.9 s), on "He is eight", Teddy glances at his own name label. His loo
   - He comes back to her eyes 1.3 s later.
   - Edith's eyes come up to his 0.4 s into the line (~94.0 s), lids at 1.05, searching his face.
 - **Look away to deflect.** Edith looks out at the empty square (3.14, ~127.5 s) just before "The minister came twice". Her eyes don't come back for the rest of the shot.
-- **Look down to confess, up to test.** She says "I don't want it fixed" looking down toward the loaf in her lap. Just before "Isn't that awful?" (3.13, ~124.3 s), her eyes come up to his. Her head turns 8°, and her lids are uneven (0.95 and 0.9).
+- **Look down to confess, up to test.** She says "I don't want it fixed" looking down toward the loaf in her lap. Just before "Isn't that awful?" (3.13, ~124.3 s), her eyes come up toward his, at weight 0.8. Her head turns 8°, and her lids are uneven (0.95 and 0.9).
 - **Share attention.**
   - In 3.10, Oswald's look follows hers to the tower 0.6 s later, at weight 0.7.
   - In 3.8, Oswald turns his head toward the sign in the window (~96.5 s), and Edith's look follows 0.25 s later (~96.7 s).
@@ -480,7 +480,7 @@ No `expr` call in `shots.py` changes the curve. The duration carries the meaning
 
 **The chin tremble and the tear (3.20, from 161.42 s)**
 
-1. At 161.72 s her eyes close (blink 1.0 over 0.6 s). The grief brow comes in (brow_in 0.95, brow −0.1, smile −0.25 over 0.8 s) with a 2° head dip. `hold_eyes` stops auto-blinks for the whole shot.
+1. At 161.72 s her eyes close (blink 1.0 over 0.6 s). The grief brow comes in (brow_in 0.95, brow −0.1, smile −0.25 over 0.8 s). Over the same 0.8 s her look settles on a spot about a metre in front of her at knee height, and `head` pitch goes to −4, which lifts the chin a little against the downward look. `hold_eyes` stops auto-blinks for the whole shot, and the blink that a `look_at` normally adds is removed (`Ed.blinks.pop()`), so the slow close is the only lid movement.
 2. At 162.42, 162.54 and 162.67 s, three keys 3 frames apart go press 0.5, then pout 0.6 with jaw 0.03 (0.5°), then press 0.5 again. Each change takes 0.05 s.
    - `pout` pushes the lower lip out (`lip_lo 1.6`) and `press` pulls it in.
    - Alternating them reads as a trembling chin, although the rig has no chin control.
@@ -560,7 +560,7 @@ Oswald says nothing until 89.3 s ("It's the small rye."), so for most of the fil
   - Then he shuffles in on the knee, a 0.65 s glide from 81.3 s, to about 0.6 m from her, on the diagonal.
 - **Back on the heel** (`P_sit_heel`: the kneel at lean 2, hips 10 cm back and 12 cm lower, spine −4°): smaller and off duty. The code comment says "suddenly half his size".
   - He rocks back into it just after his button pings off (3.16, 147.4 s) and returns to the kneel 0.5 s later.
-  - He settles into it for good once the coat is on her (3.17, 150.9 s).
+  - He settles into it once the coat is on her (3.17, 150.9 s) and stays there until 3.21, where he comes back up onto the knee (167.9 s) to reach for her shoulder.
 
 ### Never a statue: breathing and idle sway
 
@@ -630,7 +630,7 @@ The screenplay calls this "the most important body-language note in the film." I
 
 3.5 changes one part at a time, with the face nearly still:
 
-1. He looks toward Edith (75.0 s): head and eyes together at look weight 0.7 over 0.8 s. His brows draw in (brow_in 0.45), and the 28° sideways eye offset from 3.1 resets to 0.
+1. He looks toward Edith (75.0 s): head and eyes together at look weight 0.7 over 0.8 s. His brows draw in (brow_in 0.45), and the sideways eye offset resets to 0. That offset was 28° from 3.1, already eased down to 10° in 3.4.
 2. His toes turn in from 26° to 4° and his knees straighten (0.2 → 0) over 1.1 s (75.7 s).
 3. His shoulders drop 9° (75.9 s).
 4. The loaf goes into both hands and the cane goes under his arm (76.0–76.1 s).
@@ -652,7 +652,7 @@ In 4.1 the waddle comes back with his chest puffed out (`chest(pitch=−8)`, wal
   - laughs through her nose (97.5 s)
 - **Freeze, then let go.** Caught out by "He said you lean" (3.9), Oswald freezes: smile gone, lids wide (104.9 s). He blinks twice (105.0 and 105.35 s), then breaks into a sheepish grin and dips his head (pitch 10, roll −5, 106.1 s).
 - **A speaker's body leads their own line.** Edith's teasing −9° tilt comes 0.3 s before her "He said you lean". Oswald's 6° nod comes 0.45 s before "Edith." (3.19, 159.7 s).
-- **Mirror.** Teddy sits beside Edith in `sit_wall` with her exact parameters (5.2, 195.1 s).
+- **Mirror.** Teddy sits beside Edith in `sit_wall` with her exact parameters (5.2, 195.1 s). Only his hands differ: a `gesture` places them separately.
 
 ### Staging and camera
 
@@ -666,7 +666,7 @@ In 4.1 the waddle comes back with his chest puffed out (`chest(pitch=−8)`, wal
 - **Heads placed, mouths clear.** Setups C, D and E aim 10, 15 and 12 cm below the eyes.
   - That puts the eyes high in frame and keeps the mouth above the subtitles, which sit between 68% and 74% of the way down the frame (subs.py).
   - Setup E is also aimed 10 cm toward her, to leave lead room.
-- **Cheat eyelines.** In 5.2 both faces open to the lens and it still reads as eye contact. Each looks 30 cm toward the camera from the other's eyes (see *Eyeline cheats*).
+- **Cheat eyelines.** In 5.2 both faces open to the lens and it still reads as eye contact. Teddy looks 30 cm toward the camera from her eyes, and Edith looks about 60 cm toward it from his (see *Eyeline cheats*).
 
 ### Try this in your own animation
 
@@ -681,14 +681,14 @@ In 4.1 the waddle comes back with his chest puffed out (`chest(pitch=−8)`, wal
 
 | Area | Parameter | Value |
 |---|---|---|
-| Voice | Speaking speed | 0.88–1.05 (only Teddy above 1.0) |
+| Voice | Speaking speed | 0.82–1.05 (defaults 0.88–1.05; only Teddy above 1.0) |
 | Voice | Adult pitch shift (formants kept) | −0.5 to −1 semitone |
 | Voice | Hushed line | 0.05–0.06 slower; −4 dB shelf at 6 kHz; placed −8 dB; exhale 0.35 s before at −14 dB; mouth ×0.75 |
 | Lip-sync | Median phoneme symbol | 54 ms (≈1.3 frames at 24 fps) |
 | Lip-sync | Coarticulation width (gaussian sigma) | max(45 ms, 0.75 × phoneme duration) |
 | Lip-sync | Relax in gaps | divide by max(total weight, 0.6) |
 | Lip-sync | Stressed-vowel jaw | ×1.25 |
-| Lip-sync | p/b/m closure | press 1.0, jaw −85%, 15 ms before to 10 ms after |
+| Lip-sync | p/b/m closure | press 1.0, jaw −85%, 15 ms before to 10 ms after; applied again after smoothing |
 | Lip-sync | Loudness gate | clip(1.6 × loudness, 0, 1)^0.7; fully open above 0.625 |
 | Lip-sync | Speech added to acting | jaw 0.95, round 0.8, wide 0.7, lip_raise 0.5; brow +0.10 × jaw |
 | Face | Jaw rotation | 18° per unit; typical line peak ≈7.5°, max 12.3° |
@@ -703,11 +703,11 @@ In 4.1 the waddle comes back with his chest puffed out (`chest(pitch=−8)`, wal
 | Gaze | "Looking toward" weight | 0.5–0.8 |
 | Saccades | Interval / size / duration | every 0.5–1.7 s; SD 1.6° yaw, 0.9° pitch; 0.05 s |
 | Blinks | Shape | close 0.07 s, shut 0.04 s, open 0.19 s (0.30 s total) |
-| Blinks | Rate | every 2.2–5.0 s (≈17/min), plus one 0.02 s into every look change |
+| Blinks | Rate | every 2.2–5.0 s (≈17/min), plus one 0.02 s into every look change (3.2 drops Tomas's by hand) |
 | Blinks | Minimum gap | 0.35 s (key at least 0.4 s apart) |
 | Blinks | Slow "thought" blink | close 0.15–0.3 s, open 0.18–0.45 s |
-| Lids | Upper lid follows gaze | 0.50° per degree down, 0.65° per degree up |
-| Lids | Lower lid follows gaze | 0.3° per degree down, 0.2° per degree up |
+| Lids | Upper lid follows gaze | 0.50° per degree down, 0.65° per degree up, × openness (0–1) |
+| Lids | Lower lid follows gaze | 0.3° per degree down, 0.2° per degree up, × openness (0–1) |
 | Lids | Upper-lid travel | 46° closed at openness 0; +30° per unit above 1; +11° seal below openness 0.25 |
 | Lids | Lower-lid raise | lidlo 14° per unit; blink +8°; smile +5° per unit |
 | Timing | Face leads the audio | 0.25–1 s |
@@ -721,8 +721,8 @@ In 4.1 the waddle comes back with his chest puffed out (`chest(pitch=−8)`, wal
 | Body | Nod size | 3–7° in the quiet scene; 13° for a child insisting |
 | Body | Walk: clown vs man | step 0.38 m / 0.24 s vs 0.45 m / 0.42 s; sway 0.024 vs 0.008 m |
 | Staging | Camera height at her eye level | 0.80 m (vs 1.45 m looking down) |
-| Staging | Close-up aim | 10–15 cm below the eyes; subtitles at 68–74% down the frame |
-| Staging | Two-shot eyeline cheat | 0.30 m toward the lens |
+| Staging | Close-up aim | 10–15 cm below the eyes; subtitles at 68–74% down the frame (the final shot's narration sits high, bottom at 37.5%) |
+| Staging | Two-shot eyeline cheat | toward the lens: in 5.2, 0.30 m for Teddy and 0.60 m for Edith; 0.53 m for Edith in setup B (`ED_B`) |
 
 ## Where to look in the film
 
@@ -759,7 +759,7 @@ In 4.1 the waddle comes back with his chest puffed out (`chest(pitch=−8)`, wal
    - *Techniques:* listening; reacting after the line ends.
 8. **3.12, ~119.3–120.6 s: counting.**
    - His eyes make five keyed darts 0.2 s apart (−4°, +3°, −3°, +4°, −2°) while his brows rise.
-   - His brows then fall into grief and his lips part (jaw 0.06), and his look reaches her eyes (~120.4 s) before "...Thirty-one Sundays." (~120.6 s).
+   - His brows then fall into grief and his lips part (jaw 0.06), and his look goes to her eyes (~120.4 s) before "...Thirty-one Sundays." (~120.6 s).
    - *Techniques:* hand-keyed saccades; face before the voice.
 9. **3.13, ~122.4–126.9 s: confess, test, relief.**
    - Edith presses her lips (0.6) and nods 7°. She releases the press as "I don't want it fixed." starts (~122.9 s), looking down.
@@ -768,7 +768,7 @@ In 4.1 the waddle comes back with his chest puffed out (`chest(pitch=−8)`, wal
    - *Techniques:* look down to confess, up to test; head before the voice; releasing the lip seal.
 10. **3.14, ~127.5–132.8 s: armour, then the slip.**
     - She looks away to the empty square (127.5 s) and puts on the wry one-brow look (smirk 0.8, brow_asym 0.8) before "The minister came twice."
-    - A 9° shrug lands on "Both" (131.48 s). Then the armour slips over 0.6 s (smile 0.35→0.1, brow_in 0.2→0.5) as the shot ends.
+    - A 9° shrug starts on "Both" (131.48 s). Then the armour slips over 0.6 s (smile 0.35→0.1, brow_in 0.2→0.5) as the shot ends.
     - *Techniques:* looking away to deflect; hold, then slip.
 11. **3.20, ~161.7–167.2 s: the closed eyes and the tear.**
     - Her eyes close on the blink channel, so the lids seal.
@@ -776,6 +776,6 @@ In 4.1 the waddle comes back with his chest puffed out (`chest(pitch=−8)`, wal
     - The tear wells from 164.27 s and runs from 165.17 to 167.22 s, with no music.
     - *Techniques:* micro-acting; removing motion at the peak.
 12. **5.2, ~195.8–202.3 s: the bench.**
-    - Teddy (195.8 s, weight 0.7) and Edith (195.9 s) each look 0.30 m in front of the other's eyes, so both faces open to the camera. Teddy mirrors her `sit_wall` pose.
+    - Teddy (195.8 s, weight 0.9) looks 0.30 m, and Edith (195.9 s) 0.60 m, in front of the other's eyes, so both faces open to the camera. Teddy mirrors her `sit_wall` pose.
     - She says "Congratulations." through slightly tight lips (press 0.15). Her smile starts at 202.06 s, and Teddy beams 6 frames later.
     - *Techniques:* eyeline cheat; mirroring; listener lag.

@@ -1694,6 +1694,7 @@ def s3_20(F):
     cam_setup(F, 'D', loc2=(2.70, 2.78, SZ + 0.89), target2=('actor', 'edith', 'eyes', (0.0, 0.0, -0.15)),
               t_move=(T, T + 6.8), ease='linear')
     Ed.look_at(T + 0.3, ('actor', 'edith', 'root', (-0.20, -1.0, 0.45)), dur=0.8)
+    Ed.blinks.pop()     # no look-change blink: her slow close is the only lid movement
     Ed.head(T + 0.3, pitch=-4, dur=0.8)
     Ed.expr(T + 0.3, blink=1.0, dur=0.6)
     Ed.hold_eyes(T, T + 7.0)
