@@ -801,9 +801,14 @@ _WOOD = {}
 
 def wood_material(kind="rough_wood", scale=1.2, tint=(0.75, 0.62, 0.5)):
     key = (kind, scale, tint)
-    if key not in _WOOD:
-        _WOOD[key] = mat_pbr(kind, scale=scale, tint=tint, name="wood_" + kind)
-    return _WOOD[key]
+    m = _WOOD.get(key)
+    try:
+        m = m if (m is not None and m.name in bpy.data.materials) else None
+    except ReferenceError:  # material freed by a scene reset (several scenes built in one process)
+        m = None
+    if m is None:
+        _WOOD[key] = m = mat_pbr(kind, scale=scale, tint=tint, name="wood_" + kind)
+    return m
 
 
 def wooden_cross(loc=(0, 0, 0), height=4.3, beam=2.0, thick=0.2, cross_at=0.78, rot_z=0, name="Cross",
