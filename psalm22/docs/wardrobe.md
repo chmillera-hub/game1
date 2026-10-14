@@ -53,7 +53,7 @@ no new shader compile).
 | `headcloth` | `headcloth` + `headcloth_band` (cord at the brow) | `headcloth` | `length="shoulder"`, `band=<colour>` |
 | `hood` | `hood` (peaked wool hood + short cape) | `hood` | `length="chest"` |
 | `turban` | `turban` (wrapped linen, bone‑parented to `head`) | `turban` | `wraps=6`, `fabric="fine_linen"`, `hide_hair=True` |
-| `roman_soldier` | `tunic` (red wool, knee), `lorica_hamata` (ring mail) or `lorica_segmentata`, `cingulum` + `apron` + `apron_studs`, `sagum` (red cape) + `fibula`, `galea` (helmet, bone‑parented), `caligae` | `tunic`, `cloak` | `armor="hamata"`/`"segmentata"`, `helmet=True`, `cloak=True`, `metal="iron"`/`"bronze"`, `humeralia=False` |
+| `roman_soldier` | `tunic` (red wool, knee), `lorica_hamata` (ring mail, short sleeves) or `lorica_segmentata` (iron hoops + shoulder guards), `cingulum` + `apron` + `apron_studs`, `sagum` (red cape hanging from the shoulder line down the back) + `fibula`, `galea` (helmet with brow ridge, neck guard, cheek guards; bone‑parented), `caligae` (hob‑soled lattice boots) | `tunic`, `cloak` | `armor="hamata"`/`"segmentata"`, `helmet=True`, `cloak=True`, `metal="iron"`/`"bronze"`, `humeralia=False` |
 | `swaddle` | `swaddle` (cocoon with criss‑cross bands, collar behind the head); hides the whole body except head/neck | `swaddle` | `hood=True` |
 | `crown_of_thorns` | `crown_of_thorns` (4 twisted vines, ~170 thorns, sized to head+hair, lower at the back; bone‑parented to `head`) | – | `strands=4`, `thorns=None` |
 | `loincloth` | `loincloth` (low wrap, swag folds, overlapping front flap, twisted knot, 2 hanging ends) | `loincloth` | `knot_side=±1` (+1 = character's left), `fold=0.006`, `flap=True` |
@@ -122,20 +122,24 @@ modifier, e.g. the terrain).
 * Hair: turban/helmet hide the hair cards above the brim (`WardrobeHide` on the hair object).
 * Nothing on the rig. Characters' grounding (`lbs_points`) ignores these masks.
 
-## Performance (4 shared cores, heavily loaded machine; per person)
+## Performance (per person; 4 shared cores, other agents rendering; `WARDROBE_DEBUG=1` prints stages)
 | item | hero | crowd |
 |---|---|---|
-| body analysis (cached per body) | 0.3–0.8 s | same |
-| tunic (+belt) | 2–3.5 s, ~15k verts | ~1 s |
-| tunic + mantle (CROWD_MAN) | 5.4 s | 2.4 s |
-| veil / headcloth / hood | 1–1.5 s | <1 s |
-| robe_rich + turban (priest) | 9–12 s | – |
-| roman_soldier (9 objects) | 7–9 s | – |
-| loincloth / crown / sandals / swaddle | 2–5 / 0.8 / <0.1 / 1.5–2 s | |
-| drape: loincloth on the cross | 12–18 s | |
-| drape: tunic (15k verts, 45 frames) | 27–55 s | |
-| drape: tunic + himation, kneel (simultaneous layers) | ~45 s | |
-| cloth_sim bake | ~1 s per frame per 15k‑vert robe | |
+| body analysis (cached per body, shared by all its garments) | 0.3–0.8 s | same |
+| tunic (+belt) | 1.9–3.5 s, ~15k verts | 0.9 s, ~5k verts |
+| robe (tunic + himation) | 4.2 s, 29k verts | 1.8 s, 10k verts |
+| tunic + mantle + sandals (CROWD_MAN) | 3.8–5.4 s | 1.7–2.4 s |
+| robe + veil (MARY) | 5.8 s | 2.6 s |
+| mantle / veil / headcloth / hood | 1.0–1.6 s | ~0.8 s |
+| turban / crown_of_thorns / sandals | 0.6 / 1.1 / 0.3 s | 0.5 / 1.1 / 0.3 s |
+| loincloth | 1.0–2.5 s | 0.6 s |
+| robe_rich (priest, 4 objects) | 5.7–11 s | 2.3 s |
+| roman_soldier (9 objects) | 4.3–9 s | 2.1 s |
+| swaddle (baby ~0.6 m) | 1.5–2 s | <1 s |
+| drape: loincloth on the cross (25+15 frames) | 12–18 s | |
+| drape: tunic alone (15k verts, 50 frames) | 27–55 s | |
+| drape: tunic + himation kneeling (layers together) | ~45 s | |
+| cloth_sim bake (animated) | ~1 s / frame for a 15k‑vert robe | |
 
 Render cost is small without subdivision. **Subdivision on garments is expensive on this CPU/llvmpipe
 EEVEE: +~1.2 GB RAM and +60 % render time for one dressed person** — keep `W.SUBDIV = 0` (default).

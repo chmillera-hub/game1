@@ -12,6 +12,7 @@ screen, and one camera jumps between them at the cut.
 """
 import math
 import bpy
+import numpy as np
 from mathutils import Vector, Matrix
 from lib import core as C
 from lib import fx as FX
@@ -19,8 +20,9 @@ from lib import env as E
 from lib import assets as A
 from lib import characters as P
 
-SUN_AZ = 300.0        # cheated for the close-ups: dull sun from front-left of the cross, 24 deg up
-SUN_E = 0.8           # eclipse preset is 0.35; a bit more so form and water glints read
+SUN_AZ = 245.0        # dull eclipse sun behind the figure's right hand (seen from the shoulder in setup B)
+SUN_EL = 36.0         # raised from the preset's 24 so the disk sits beside the hand in the upward view
+SUN_E = 0.8           # eclipse preset is 0.35; a bit more so rims and water glints read
 OA = Vector((30.0, 0.0, 0.0))   # setup A origin (ground level)
 
 
@@ -47,52 +49,81 @@ def _hide_keys(objs, visible_from=None, hidden_from=None):
     return allo
 
 
+def _fall_time(h, vz_down):
+    """Seconds for water leaving the lip with downward speed vz_down to fall h metres."""
+    return (vz_down + math.sqrt(vz_down * vz_down + 19.62 * h)) / 9.81
+
+
 def build(ctx):
     NR = ctx.render_frames
     p0, p1 = ctx.phrases[0], ctx.phrases[1]
     CUT = int(ctx.frame(p1["start"]))            # first frame of setup B (~2.7 s, on "and all my bones")
 
     # ------------------------------------------------------------------ sky / sun (eclipse, shared)
-    sky = E.sky("eclipse", ctx=ctx, sun_az=SUN_AZ)
+    sd = dict(E.SKY_PRESETS["eclipse"]["sun_disk"])
+    sd["el"] = SUN_EL
+    sky = E.sky("eclipse", ctx=ctx, sun_az=SUN_AZ, sun_el=SUN_EL, sun_disk=sd)
     sun = sky["sun"]
     sun.data.energy = SUN_E
     sdir = Vector(sky["sun_dir"])
 
     # ================================================================== SETUP A: the pour
-    vh = Vector((sdir.x, sdir.y, 0)).normalized()         # camera looks towards the sun (backlight)
+    # camera looks 22 deg off the sun (back-side light): rim on the stream and sheen on the wet crust, but the
+    # sun's mirror image in the flat water film stays out of frame (it read as an orange blob)
+    vh = Matrix.Rotation(math.radians(22), 3, "Z") @ Vector((sdir.x, sdir.y, 0)).normalized()
     right = Vector((vh.y, -vh.x, 0))                        # screen right
     d = right                                               # water flows to screen right
-    lip_h = 0.52
+    lip_h = 0.45
     L = OA + Vector((0, 0, lip_h)) - d * 0.08
-    f_start, f_end = -14, 21                                 # pour (effect frames); stream already falling at f1
+    f_start, f_end = -8, 27                                  # pour (effect frames); stream already falling at f1
     # hero cracked-earth patch (bigger than the FX default so the frame never sees its edge in focus)
     gp = FX.cracked_ground((L.x + d.x * 0.12, L.y + d.y * 0.12, OA.z), size=3.6, res=330, seed=1, name="Cracked")
     # clear, neutral water (FX default is faintly blue; reads as grey plastic in this warm light)
     FX.water_material("FX_water_1", rough=0.015, tint=(1.0, 1.0, 1.0), raytrace=True)
-    pour = FX.water_pour(lip=tuple(L), direction=(d.x, d.y), speed=0.5, stream_radius=0.012,
-                         start_frame=f_start, end_frame=f_end, time_scale=0.25, ground_z=OA.z, jar=False,
-                         ground=None, ground_material=gp.active_material, puddle_radius=0.26, drain_time=0.6,
+    pour = FX.water_pour(lip=tuple(L), direction=(d.x, d.y), speed=0.38, stream_radius=0.014,
+                         start_frame=f_start, end_frame=f_end, time_scale=0.35, ground_z=OA.z, jar=False,
+                         ground=None, ground_material=gp.active_material, puddle_radius=0.26, drain_time=0.5,
                          seed=1, name="Pour")
     imp = Vector(pour.impact)
     # surrounding parched ground (below the crack grooves of the hero patch), darker so it doesn't glow
-    far_m = C.mat_pbr("brown_mud_dry", scale=1.0 / 0.48, tint=(0.6, 0.5, 0.42), rough_add=0.15, name="s10a_mud")
+    far_m = C.mat_pbr("brown_mud_dry", scale=1.0 / 0.48, tint=(0.6, 0.5, 0.42), rough_add=0.5, name="s10a_mud")
     far = C.ground_plane(size=40, mat_=far_m, z=OA.z - 0.03, name="MudFar")
     far.location.x, far.location.y = OA.x, OA.y
 
-    # earthen pitcher: spout at the lip, body tilted towards the pour direction (held off-screen)
+    # camera A: low, looking towards the sun, down onto the impact, stream in profile
+    a_tgt0 = imp.lerp(L, 0.42) - right * 0.03 - Vector((0, 0, 0.03))
+    pitch = math.radians(24)
+
+    def camA(f):
+        u = C.ease_in_out((f - 1) / float(CUT - 1))
+        tgt = a_tgt0 + Vector((0, 0, -0.09 * u))
+        dist = 1.12 - 0.06 * u
+        loc = tgt + (-vh * math.cos(pitch) + Vector((0, 0, math.sin(pitch)))) * dist - right * (0.02 + 0.04 * u)
+        loc = loc + C.shake(f, 0.002, 0.5, 11)
+        foc = (imp.lerp(L, 0.3) - loc).length
+        return (loc, tgt, 0.0, 45, foc)
+
+
+    # earthen pitcher: spout at the lip, body tilted towards the pour direction (held off-screen).
+    # NB assets water_jar v1: the spout pinch is at root +X but the handle comes out at -Y (and the
+    # 'mouth' anchor sits over the handle) -> put the handle back opposite the spout, pour from +X.
     jar = A.load("water_jar", variant=1)
     clay = A.mat_clay("terracotta")
+    jar_meshes = []
     for o in A.children_recursive(jar):
         if o.type == "MESH":
             o.data.materials.clear()
             o.data.materials.append(clay)
-    spout = Vector(jar["mouth"])
+            jar_meshes.append(o)
+            if o.name.startswith("handle"):
+                o.rotation_euler.z = 0.0
+    spout = Vector((0.064, 0.0, 0.305))
     piv = bpy.data.objects.new("JarPivot", None)
     C.link(piv)
     jar.parent = piv
     jar.location = -spout
     jar.rotation_euler = (0, 0, 0)
-    yaw = math.atan2(d.x, -d.y)
+    yaw = math.atan2(d.y, d.x)
     axis = Vector((0, 0, 1)).cross(d).normalized()
 
     def jar_rot(f):
@@ -101,18 +132,62 @@ def build(ctx):
         return (Matrix.Rotation(tilt, 3, axis) @ Matrix.Rotation(yaw, 3, "Z")).to_euler()
     piv.location = L
     C.key_fn(piv, "rotation_euler", jar_rot, 1, CUT, step=2)
-    # glint light: a big soft source low at camera-left, light-linked to the water only, so the stream
-    # carries a specular stripe, the beads sparkle and the film shows a sheen (the dull backlit sun alone
-    # leaves a thin stream nearly invisible against the ground)
-    wl = C.light("AREA", tuple(imp - right * 0.75 - vh * 0.55 + Vector((0, 0, 0.55))), 260, temp=4200,
-                 target=tuple(imp.lerp(L, 0.4)), size=0.9, name="WaterGlint", shadow=False)
+    # glint lights (light-linked to the water only): two low soft strips at the front-left / front-right.
+    # Seen from above, a near-vertical stream mirrors the ground below it, so with only the dull sun it
+    # reads as a dark rod; low strips give it the two bright edge highlights of a liquid, sparkle on the
+    # beads and a sheen on the film.
     wrecv = bpy.data.collections.new("s10a_water_recv")
     for k in ("stream", "droplets", "puddle"):
         o = getattr(pour, k, None)
         if o is not None:
             wrecv.objects.link(o)
-    wl.light_linking.receiver_collection = wrecv
-    setA = [pour.root, far, piv, gp, wl]
+    mid = imp.lerp(L, 0.45)
+    glints = []
+    for side, e, k in ((-1, 220, 4600), (1, 110, 3600)):
+        wl = C.light("AREA", tuple(imp + right * (0.55 * side) - vh * 0.55 + Vector((0, 0, 0.06))), e, temp=k,
+                     target=tuple(mid), size=0.6, name="WaterGlint%d" % (side + 1), shadow=False)
+        wl.data.shape = "RECTANGLE"
+        wl.data.size, wl.data.size_y = 0.12, 0.9
+        wl.light_linking.receiver_collection = wrecv
+        glints.append(wl)
+
+    # smoother stream (the default bead ripple reads as a dashed rod at this size)
+    FX._mod_set(pour.stream.modifiers["Stream"], Ripple=0.09)
+    # a fuller splash crown at the impact (the FX splash is fine spray only)
+    ts = 0.35
+    T_hit = _fall_time(L.z - OA.z, 0.15)
+    T_stop = (f_end - f_start) / 24.0 * ts
+    rng = np.random.default_rng(5)
+    n = 300
+    birth = np.where(rng.random(n) < 0.35, T_hit + rng.uniform(0.0, 0.06, n), rng.uniform(T_hit, T_hit + T_stop, n))
+    ang = rng.uniform(0, 2 * math.pi, n)
+    up = rng.uniform(0.5, 1.7, n)
+    out = rng.uniform(0.25, 1.1, n)
+    p0, v0 = [], []
+    for a, u_, o_ in zip(ang, up, out):
+        rr = Vector((math.cos(a), math.sin(a), 0))
+        p0.append(tuple(imp + rr * rng.uniform(0.004, 0.018) + Vector((0, 0, 0.004))))
+        v0.append(tuple(rr * o_ + Vector((0, 0, u_)) + d * 0.3))
+    crown, _ = FX._particles("PourCrown", np.array(p0), np.array(v0), birth, np.full(n, 1.0),
+                             rng.uniform(0.0012, 0.0034, n), bpy.data.materials["FX_water_1"], frame0=f_start,
+                             time_scale=ts, gravity=(0, 0, -9.81), drag=0.05, floor=OA.z, floor_mode=2, fade_in=0.0,
+                             fade_out=0.0, mode=2, stretch=0.0025,
+                             instance=FX._cached_src("FX_src_ico", lambda: FX._ico("FX_src_ico", 1)), seed=6)
+    wrecv.objects.link(crown)
+    # less glitter on the wet crust: halve the normal-map relief of the cracked-ground texture
+    for nd in gp.active_material.node_tree.nodes:
+        if nd.type == "NORMAL_MAP":
+            nd.inputs["Strength"].default_value *= 0.5
+    sun.data.angle = math.radians(6.0)    # hazy eclipse sun: broader, softer highlights
+
+    # soft warm fill on the jar from camera-left so the clay reads (it is backlit by the sun)
+    jf = C.light("AREA", tuple(L - right * 0.7 - vh * 0.6 + Vector((0, 0, 0.35))), 3.0, temp=3200,
+                 target=tuple(L), size=0.8, name="JarFill", shadow=False)
+    jrecv = bpy.data.collections.new("s10a_jar_recv")
+    for o in jar_meshes:
+        jrecv.objects.link(o)
+    jf.light_linking.receiver_collection = jrecv
+    setA = [pour.root, far, piv, gp, jf, crown] + glints
     for k in ("stream", "droplets", "puddle", "ground"):
         o = getattr(pour, k, None)
         if o is not None:
@@ -136,6 +211,11 @@ def build(ctx):
             if bn not in j.rig.pose.bones:
                 continue
             pb = j.rig.pose.bones[bn]
+            # the 'cross' hand leaves thumb + index nearly straight: from this POV it reads as pointing
+            if i == 2:
+                P.rotate_bone(j, bn, ((34, 44, 28)[k - 1], 0, 0), mode="ADD")
+            elif i == 1:
+                P.rotate_bone(j, bn, ((30, 30, 20)[k - 1], 0, 0), mode="ADD")
             q0 = pb.rotation_quaternion.copy()
             pb.keyframe_insert("rotation_quaternion", frame=fA)
             amt = (10, 16, 12)[k - 1] if i > 1 else (4, 6, 6)[k - 1]
@@ -149,27 +229,17 @@ def build(ctx):
 
     # ================================================================== camera
     cam = C.camera((0, -1, 1), (0, 0, 1), lens=50, fstop=2.8, name="Cam")
-    # A: low, looking towards the sun, down onto the impact, stream in profile
-    a_tgt0 = imp.lerp(L, 0.5) - right * 0.03
-    pitch = math.radians(24)
-
-    def camA(f):
-        u = C.ease_in_out((f - 1) / float(CUT - 1))
-        tgt = a_tgt0 + Vector((0, 0, -0.04 * u))
-        dist = 1.12 - 0.1 * u
-        loc = tgt + (-vh * math.cos(pitch) + Vector((0, 0, math.sin(pitch)))) * dist - right * (0.02 + 0.04 * u)
-        loc = loc + C.shake(f, 0.002, 0.5, 11)
-        foc = (imp.lerp(L, 0.3) - loc).length
-        return (loc, tgt, 0.0, 60, foc)
-
-    # B: under the right shoulder, wide lens up along the arm to the hand on the beam
+    # B: from just in front of the right shoulder/chest, looking up and out along the stretched arm to
+    # the hand at the end of the beam, the darkened sun glowing beside it. Slow push towards the hand and a
+    # rack focus from the shoulder (near) to the hand on "out of joint".
     def camB(f):
         u = C.ease_in_out((f - CUT) / float(NR - CUT))
-        loc = sh + Vector((-0.02, -0.5, -0.62)).lerp(Vector((-0.09, -0.44, -0.52)), u)
-        tgt = sh.lerp(hand, 0.52) + Vector((0, 0, 0.07))
-        loc = loc + C.shake(f, 0.0015, 0.4, 5)
-        foc = (elbow - loc).length
-        return (loc, tgt, -2.0 + 3.0 * u, 28, foc)
+        loc = sh + Vector((0.12, -0.31, -0.33)).lerp(Vector((0.07, -0.27, -0.27)), u)
+        tgt = hand.lerp(elbow, 0.12) + Vector((0, 0, -0.02))
+        loc = loc + C.shake(f, 0.0012, 0.4, 5)
+        r = C.smoothstep((f - CUT - 6) / 40.0)
+        foc = (sh.lerp(elbow, 0.35) - loc).length * (1 - r) + (hand - loc).length * r
+        return (loc, tgt, -4.0 + 2.0 * u, 32, foc)
 
     C.animate_camera(cam, lambda f: camA(f) if f < CUT else camB(f), 1, NR)
     cam.data.dof.aperture_fstop = 2.8

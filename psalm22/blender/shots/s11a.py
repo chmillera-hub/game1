@@ -1,19 +1,19 @@
 """s11a - Potsherd: "My mouth is dried up like a potsherd, and my tongue sticks to the roof of my mouth;"
 
-Macro, harsh white noon sun. A broken rim-sherd of a terracotta storage jar (shoulder, neck and part of
-the everted lip, modelled here) lies on parched, polygonally cracked mud. Behind it a dead acacia twig
-with paired white thorns lies across the ground, its thorns standing against the bleached, shimmering
-horizon. While the first line is spoken a craze of hairline cracks creeps across the clay; on the second
-line the mud itself splits: new crack grooves run out from under the sherd across the ground and open.
-Heat haze ripples the distant ground and sky (Blender compositor displacement, depth-masked).
-Low camera (~5 cm), 50 mm, f/4, slow push-in with a slight rise; focus stays on the sherd.
+Macro, harsh white noon sun. A body sherd of a terracotta cooking pot (modelled here: curved 7-8 mm wall,
+fresh break faces with a grey under-fired core) lies hollow side up on parched, polygonally cracked mud.
+Behind it the dead branches of an acacia-like thorn bush stand against the bleached, shimmering sky,
+a broken-off thorn twig lies on the mud. While the first line is spoken cracks creep across the clay;
+on the second line the mud itself splits: crack grooves run out from under the sherd and open wide.
+Heat haze ripples the mid-ground, the thorns and the horizon (Blender compositor displacement, depth-masked).
+Low camera (~6 cm), 50 mm, f/7.1 (~2 cm depth of field at 0.35 m), slow push-in; focus stays on the sherd.
 """
 import math
 import random
 import bpy
 import bmesh
 import numpy as np
-from mathutils import Vector, Matrix, Euler, Quaternion, geometry as mgeo, noise as mnoise
+from mathutils import Vector, Matrix, Quaternion, geometry as mgeo
 from lib import core as C
 from lib import fx as FX
 
@@ -65,8 +65,8 @@ def _point_in_poly(x, y, poly):
 
 
 def build_sherd(name="Sherd", seed=SEED, coll=None):
-    """Rim sherd: closed solid (outer wall, inner wall, fresh break faces, lip). Materials:
-    0 outer slip, 1 break, 2 inner wall. Returns the object (origin at its centroid)."""
+    """Body sherd: closed solid (outer wall, inner wall, fresh break faces). Materials:
+    0 outer slip, 1 break, 2 inner wall. Returns (object with origin at its centroid, crack origin)."""
     rnd = random.Random(seed)
     prof, smax = _profile_fn()
     # ---- 2D outline in (u = circumferential arc length, s = profile arc length)
@@ -171,12 +171,11 @@ def build_sherd(name="Sherd", seed=SEED, coll=None):
             continue
         lip = outline[i][2] == "lip" and outline[j][2] == "lip"
         f.material_index = 0 if lip else 1
-        f.smooth = lip
+        f.smooth = True
         side.append(f)
     bmesh.ops.recalc_face_normals(bm, faces=bm.faces[:])
     for f in bm.faces:
-        if f.material_index != 1:
-            f.smooth = True
+        f.smooth = True
     for f in side:
         for e in f.edges:
             if any(lf.material_index != f.material_index for lf in e.link_faces):
@@ -203,12 +202,14 @@ def sherd_material(name, kind, craze=False, crack_origin=(0, 0, 0)):
     n1 = nb.out(nb.noise(nb.v("SCALE", oc, scale=18.0), scale=1.0, detail=5.0, rough=0.6), "Fac")
     n2 = nb.out(nb.noise(nb.v("SCALE", oc, scale=140.0), scale=1.0, detail=3.0), "Fac")
     if kind == "slip":
-        c0, c1 = (0.24, 0.105, 0.055), (0.36, 0.17, 0.09)
+        c0, c1 = (0.26, 0.12, 0.055), (0.36, 0.185, 0.09)
     elif kind == "inner":
-        c0, c1 = (0.20, 0.10, 0.06), (0.30, 0.15, 0.085)
+        c0, c1 = (0.25, 0.125, 0.06), (0.34, 0.18, 0.09)
     else:
         c0, c1 = (0.40, 0.21, 0.12), (0.48, 0.28, 0.16)
-    col = nb.mixc(nb.smooth(n1, 0.3, 0.7), c0, c1)
+    col = nb.mixc(nb.smooth(n1, 0.25, 0.75), c0, c1)
+    mott = nb.out(nb.noise(nb.v("SCALE", oc, scale=55.0), scale=1.0, detail=4.0, rough=0.65), "Fac")
+    col = nb.mixc(nb.mul(nb.smooth(mott, 0.5, 0.75), 0.45), col, nb.v("SCALE", col, scale=0.62))
     # grey fire-clouding on the outside
     if kind == "slip":
         cloud = nb.smooth(nb.out(nb.noise(nb.v("SCALE", oc, scale=7.0), scale=1.0, detail=3.0), "Fac"), 0.55, 0.72)
@@ -216,29 +217,34 @@ def sherd_material(name, kind, craze=False, crack_origin=(0, 0, 0)):
     col = nb.mixc(nb.mul(nb.smooth(n2, 0.45, 0.8), 0.35), col, nb.v("SCALE", col, scale=0.72))
     # white temper grit specks + patchy lime encrustation (sherds that lay long in dry soil)
     spk = nb.out(nb.n("ShaderNodeTexVoronoi", {"Vector": nb.v("SCALE", oc, scale=420.0), "Randomness": 1.0}, feature="F1"), "Distance")
-    col = nb.mixc(nb.mul(nb.sub(1.0, nb.smooth(spk, 0.05, 0.16)), 0.55), col, (0.62, 0.58, 0.5))
+    col = nb.mixc(nb.mul(nb.sub(1.0, nb.smooth(spk, 0.05, 0.14)), 0.5), col, (0.55, 0.52, 0.46))
     if kind != "break":
         lime = nb.smooth(nb.out(nb.noise(nb.v("SCALE", oc, scale=26.0), scale=1.0, detail=6.0, rough=0.7), "Fac"), 0.58, 0.66)
-        col = nb.mixc(nb.mul(lime, 0.6), col, (0.58, 0.54, 0.47))
+        col = nb.mixc(nb.mul(lime, 0.28), col, (0.52, 0.47, 0.4))
     # pale dust settled on up-facing surfaces (world normal z)
     nz = nb.out(nb.sep(nb.out(nb.n("ShaderNodeNewGeometry"), "Normal")), "Z")
-    dust = nb.mul(nb.smooth(nz, 0.35, 0.9), nb.madd(nb.smooth(n1, 0.25, 0.8), 0.32, 0.12))
-    col = nb.mixc(dust, col, (0.66, 0.55, 0.42))
-    rough = nb.madd(n2, 0.12, 0.8)
+    dust = nb.mul(nb.smooth(nz, 0.4, 0.95), nb.madd(nb.smooth(n1, 0.3, 0.8), 0.25, 0.05))
+    col = nb.mixc(dust, col, (0.5, 0.39, 0.27))
+    rough = nb.madd(n2, 0.06, 0.92)
     height = nb.mul(n2, 0.4)
     if kind != "break":
         # throwing rings along the profile (attribute pv = profile parameter)
         pv = nb.out(nb.sattr("pv"), "Fac")
         ring = nb.m("SINE", nb.add(nb.mul(pv, 120.0), nb.mul(n1, 4.0)))
-        height = nb.add(height, nb.mul(ring, 0.07))
+        height = nb.add(height, nb.mul(ring, 0.16 if kind == "inner" else 0.06))
+        if kind == "inner":
+            # fine soil caught in the hollow of the sherd + darker water/soil stains
+            stain = nb.smooth(nb.out(nb.noise(nb.v("SCALE", oc, scale=9.0), scale=1.0, detail=5.0, rough=0.6), "Fac"), 0.45, 0.7)
+            col = nb.mixc(nb.mul(stain, 0.7), col, nb.v("MULTIPLY", col, (0.55, 0.5, 0.47)))
     else:
-        grit = nb.out(nb.n("ShaderNodeTexVoronoi", {"Vector": oc, "Scale": 900.0}, feature="F1"), "Distance")
-        height = nb.add(height, nb.mul(grit, 0.8))
-        # grey 'sandwich' core of under-fired clay between the oxidised outer layers
+        grit = nb.out(nb.noise(nb.v("SCALE", oc, scale=700.0), scale=1.0, detail=2.0, rough=0.7), "Fac")
+        height = nb.add(height, nb.mul(grit, 0.5))
+        # grey 'sandwich' core of under-fired clay between the oxidised outer layers (ragged edges)
         thk = nb.out(nb.sattr("thk"), "Fac")
-        cw = nb.add(0.12, nb.mul(nb.sub(n1, 0.5), 0.1))
-        core = nb.sub(1.0, nb.smooth(nb.m("ABSOLUTE", nb.sub(thk, 0.55)), cw, nb.add(cw, 0.1)))
-        col = nb.mixc(nb.mul(core, 0.7), col, (0.26, 0.23, 0.21))
+        n3 = nb.out(nb.noise(nb.v("SCALE", oc, scale=260.0), scale=1.0, detail=3.0), "Fac")
+        cw = nb.add(0.1, nb.add(nb.mul(nb.sub(n1, 0.5), 0.16), nb.mul(nb.sub(n3, 0.5), 0.14)))
+        core = nb.sub(1.0, nb.smooth(nb.m("ABSOLUTE", nb.sub(thk, nb.add(0.55, nb.mul(nb.sub(n3, 0.5), 0.1)))), cw, nb.add(cw, 0.06)))
+        col = nb.mixc(nb.mul(core, 0.5), col, (0.22, 0.16, 0.12))
     crack = None
     if craze:
         cv = nb.n("ShaderNodeValue")
@@ -258,14 +264,14 @@ def sherd_material(name, kind, craze=False, crack_origin=(0, 0, 0)):
         col = nb.mixc(nb.mul(crack, 0.72), col, (0.07, 0.04, 0.025))
         height = nb.sub(height, nb.mul(crack, 0.9))
     bump = nb.n("ShaderNodeBump", {"Height": height, "Distance": 0.0006, "Strength": 0.6})
-    b = nb.n("ShaderNodeBsdfPrincipled", {"Base Color": col, "Roughness": rough, "Specular IOR Level": 0.3,
+    b = nb.n("ShaderNodeBsdfPrincipled", {"Base Color": col, "Roughness": rough, "Specular IOR Level": 0.18,
                                            "Normal": bump})
     nb.links.new(nb.out(b), out.inputs["Surface"])
     return m
 
 
 # =============================================================================================
-# thorn twig (dead acacia, paired white spines)
+# thorn branches (dead acacia, paired white spines)
 # =============================================================================================
 def build_thorns(name="ThornBush", stems=(), seed=5, view=(0.0, 1.0, 0.0), coll=None):
     """Dead acacia-like thorn branches: zig-zag stems (curve, tapered) with paired white spines at the
@@ -433,7 +439,6 @@ def _focus_grid(name, x=(-1, 1), y=(-1, 1), n=(200, 200), a=0.35):
     gx, gy = np.meshgrid(np.array(xs, np.float32), np.array(ys, np.float32))
     co[:, 0] = gx.ravel()
     co[:, 1] = gy.ravel()
-    faces = []
     ii = np.arange(len(ys) * nx).reshape(len(ys), nx)
     q = np.stack([ii[:-1, :-1], ii[:-1, 1:], ii[1:, 1:], ii[1:, :-1]], -1).reshape(-1, 4)
     me = bpy.data.meshes.new(name)
@@ -450,20 +455,36 @@ def _focus_grid(name, x=(-1, 1), y=(-1, 1), n=(200, 200), a=0.35):
 # =============================================================================================
 # heat haze (compositor): tileable noise image scrolled upward, depth-masked displacement
 # =============================================================================================
-def _noise_image(name, size=256, seed=0, aniso=(1.0, 2.2)):
+def _noise_image(name, size=(270, 480), seed=0, cutoff=0.1, aniso=(1.0, 2.4)):
+    """Tileable smooth 2-channel noise (R, G = displacement x, y around 0.5); FFT-filtered white noise.
+    aniso > 1 on y squashes the features vertically -> horizontal heat ripples."""
+    w_, h_ = size
     rng = np.random.default_rng(seed)
-    w = rng.standard_normal((size, size, 2))
-    fy = np.fft.fftfreq(size)[:, None] * aniso[1]
-    fx = np.fft.fftfreq(size)[None, :] * aniso[0]
+    wn = rng.standard_normal((h_, w_, 2))
+    fy = np.fft.fftfreq(h_)[:, None] * aniso[1]
+    fx = np.fft.fftfreq(w_)[None, :] * aniso[0]
     f = np.sqrt(fx * fx + fy * fy)
-    filt = np.exp(-(f / 0.035) ** 2)
-    out = np.zeros((size, size, 4), np.float32)
+    filt = np.exp(-(f / cutoff) ** 2)
+    out = np.zeros((h_, w_, 4), np.float32)
     for c in range(2):
-        v = np.real(np.fft.ifft2(np.fft.fft2(w[..., c]) * filt))
-        v = v / (np.abs(v).max() + 1e-9)
-        out[..., c] = 0.5 + 0.5 * v
+        v = np.real(np.fft.ifft2(np.fft.fft2(wn[..., c]) * filt))
+        v = v / (3.0 * v.std() + 1e-9)
+        out[..., c] = np.clip(0.5 + 0.5 * v, 0.0, 1.0)
     out[..., 3] = 1.0
-    im = bpy.data.images.new(name, size, size, alpha=True, float_buffer=True)
+    im = bpy.data.images.new(name, w_, h_, alpha=True, float_buffer=True)
+    im.pixels.foreach_set(out.ravel())
+    im.pack()
+    return im
+
+
+def _edge_image(name, size=(270, 480), margin=0.05):
+    w_, h_ = size
+    x = np.minimum(np.arange(w_), w_ - 1 - np.arange(w_)) / (margin * w_)
+    y = np.minimum(np.arange(h_), h_ - 1 - np.arange(h_)) / (margin * w_)
+    m = np.clip(np.minimum(x[None, :], y[:, None]), 0, 1).astype(np.float32)
+    m = m * m * (3 - 2 * m)
+    out = np.stack([m, m, m, np.ones_like(m)], -1)
+    im = bpy.data.images.new(name, w_, h_, alpha=True, float_buffer=True)
     im.pixels.foreach_set(out.ravel())
     im.pack()
     return im
@@ -481,9 +502,9 @@ def heat_haze_compositor(amount_px=3.0, near=0.7, far=3.5):
     rl = N.new("CompositorNodeRLayers")
     time = N.new("CompositorNodeSceneTime")
     layers = []
-    for i, (spd, seed, sx) in enumerate(((2.2, 1, 1.0), (3.4, 2, 1.6))):
+    for i, (spd, seed, cut) in enumerate(((1.6, 1, 0.09), (2.6, 2, 0.045))):
         img = N.new("CompositorNodeImage")
-        img.image = _noise_image("s11a_haze%d" % i, 256, seed)
+        img.image = _noise_image("s11a_haze%d" % i, (270, 480), seed, cutoff=cut)
         tr = N.new("CompositorNodeTranslate")
         tr.wrap_axis = "BOTH"
         mul = N.new("CompositorNodeMath")
@@ -515,11 +536,22 @@ def heat_haze_compositor(amount_px=3.0, near=0.7, far=3.5):
     mr.inputs["To Max"].default_value = 1.0
     mr.use_clamp = True
     L.new(rl.outputs["Depth"], mr.inputs["Value"])
+    # frame-edge falloff (displacement must not pull in black from outside the frame)
+    eimg = N.new("CompositorNodeImage")
+    eimg.image = _edge_image("s11a_haze_edge")
+    esc = N.new("CompositorNodeScale")
+    esc.space = "RENDER_SIZE"
+    esc.frame_method = "STRETCH"
+    L.new(eimg.outputs["Image"], esc.inputs["Image"])
+    emul = N.new("CompositorNodeMath")
+    emul.operation = "MULTIPLY"
+    L.new(mr.outputs[0], emul.inputs[0])
+    L.new(esc.outputs[0], emul.inputs[1])
     mask = N.new("CompositorNodeMixRGB")
     mask.blend_type = "MULTIPLY"
     mask.inputs[0].default_value = 1.0
     L.new(centre.outputs[0], mask.inputs[1])
-    L.new(mr.outputs[0], mask.inputs[2])
+    L.new(emul.outputs[0], mask.inputs[2])
     disp = N.new("CompositorNodeDisplace")
     disp.inputs["X Scale"].default_value = amount_px * 0.6
     disp.inputs["Y Scale"].default_value = amount_px
@@ -539,10 +571,10 @@ def build(ctx):
     p2s, p2e = ctx.phrase_frames(1)
 
     # ---------------------------------------------------------------- light: harsh white noon sun
-    sun_az, sun_el = 118.0, 57.0
+    sun_az, sun_el = 78.0, 56.0
     d = Vector((math.sin(math.radians(sun_az)), -math.cos(math.radians(sun_az)), 0))
-    C.world_hdri("qwantani_noon_puresky", strength=0.75, saturation=0.4, tint=(1.0, 0.97, 0.92),
-                 rotation=FX.hdri_rotation_for_sun((d.x, d.y)), background_strength=3.0)
+    C.world_hdri("qwantani_noon_puresky", strength=0.75, saturation=0.28, tint=(1.0, 0.95, 0.86),
+                 rotation=FX.hdri_rotation_for_sun((d.x, d.y)), background_strength=3.6)
     C.sun(elevation=sun_el, azimuth=sun_az, energy=4.6, temp=6300, angle=0.5)
 
     # ---------------------------------------------------------------- ground: parched, cracking mud
@@ -567,7 +599,7 @@ def build(ctx):
     bf = C.bsdf(far_m)
     src = bf.inputs["Base Color"].links[0].from_socket
     vd = nbf.out(nbf.n("ShaderNodeCameraData"), "View Distance")
-    nbf.links.new(nbf.mixc(nbf.smooth(vd, 3.0, 45.0), src, (0.95, 0.9, 0.82)), bf.inputs["Base Color"])
+    nbf.links.new(nbf.mixc(nbf.mul(nbf.smooth(vd, 2.0, 90.0), 0.85), src, (0.62, 0.58, 0.52)), bf.inputs["Base Color"])
     C.ground_plane(size=300, mat_=far_m, z=-0.016, name="FarGround")
 
     # ---------------------------------------------------------------- the sherd
@@ -581,13 +613,13 @@ def build(ctx):
         for s in craze_vals:
             s.default_value = r
             s.keyframe_insert("default_value", frame=f)
-    # pose: convex side up, tipped toward the camera, lip to the back-left; resting on the mud
+    # pose: concave (inner, wheel-ridged) side up, tipped toward the camera; resting on the mud
     me = sherd.data
     nsum = Vector()
     for poly in me.polygons:
         if poly.material_index == 0:
             nsum += poly.normal * poly.area
-    want = Vector((0.0, -math.sin(math.radians(SHERD_TIP)), math.cos(math.radians(SHERD_TIP))))
+    want = Vector((0.0, math.sin(math.radians(SHERD_TIP)), -math.cos(math.radians(SHERD_TIP))))   # outer face down
     q = nsum.normalized().rotation_difference(want)
     u_dir = q @ Vector((0.0, 1.0, 0.0))             # circumferential direction of the sherd
     yaw0 = -math.atan2(u_dir.y, u_dir.x)
@@ -623,19 +655,19 @@ def build(ctx):
 
     # ---------------------------------------------------------------- camera: low, slow push
     focus = C.link(bpy.data.objects.new("Focus", None))
-    focus.location = sherd.location + Vector((0, -0.01, 0.01))
-    cam = C.camera((0, -0.46, 0.065), (0, 0, 0.0), lens=50, fstop=5.6, focus=focus)
+    focus.location = sherd.location + Vector((0, -0.022, 0.012))
+    cam = C.camera((0, -0.46, 0.065), (0, 0, 0.0), lens=50, fstop=7.1, focus=focus)
 
     def path(f):
         u = C.ease_in_out((f - 1) / (N - 1))
-        loc = Vector((0.016 - 0.024 * u, -0.46 + 0.08 * u, 0.064 + 0.01 * u))
-        tgt = Vector((0.0, 0.1, 0.034))
+        loc = Vector((0.02 - 0.03 * u, -0.40 + 0.085 * u, 0.062 + 0.008 * u))
+        tgt = Vector((0.003 * u, 0.07, 0.016))
         return loc + C.shake(f, 0.0010, 0.35, 3), tgt
     C.animate_camera(cam, path)
 
-    heat_haze_compositor(amount_px=2.6, near=0.75, far=3.0)
-    ctx.samples = 6
+    heat_haze_compositor(amount_px=4.0, near=0.5, far=1.6)
+    ctx.samples = 4          # 4 vs 6 spp indistinguishable here (DOF + bright light), saves ~3 s/frame
     ctx.render_opts.update({"volumetrics": "low", "exposure": 0.0})
     ctx.post.update({"grade": "warm", "saturation": 0.82, "contrast": 1.02, "lift": 0.012, "exposure": 0.08,
                      "highlights": [0.02, 0.015, 0.0], "bloom": 0.3, "bloom_threshold": 0.72, "halation": 0.08,
-                     "vignette": 0.14, "caption": {"halo": 1.3}})
+                     "vignette": 0.14, "caption": {"y": 0.72, "ink": "dark", "halo": 0.8}})

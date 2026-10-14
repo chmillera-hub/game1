@@ -22,16 +22,16 @@ CACHE = os.path.join(C.WORK, "cache", "wardrobe")
 # Palette (sRGB, natural dyes) - pass names or RGB tuples in `colors`
 # ----------------------------------------------------------------------------------------------
 PALETTE = {
-    "undyed": (0.80, 0.74, 0.62), "cream": (0.84, 0.79, 0.68), "linen": (0.82, 0.78, 0.69),
-    "white_linen": (0.90, 0.88, 0.83), "bleached": (0.93, 0.92, 0.88),
+    "undyed": (0.75, 0.69, 0.57), "cream": (0.79, 0.74, 0.63), "linen": (0.77, 0.73, 0.64),
+    "white_linen": (0.82, 0.80, 0.75), "bleached": (0.86, 0.85, 0.81),
     "oatmeal": (0.70, 0.63, 0.52), "sand": (0.68, 0.59, 0.46), "camel": (0.58, 0.45, 0.30),
     "brown": (0.38, 0.27, 0.18), "dark_brown": (0.22, 0.15, 0.10), "umber": (0.30, 0.22, 0.15),
     "grey": (0.47, 0.45, 0.42), "charcoal": (0.17, 0.16, 0.15), "black_wool": (0.08, 0.075, 0.07),
     "indigo": (0.13, 0.18, 0.31), "blue_grey": (0.33, 0.38, 0.44), "woad": (0.27, 0.34, 0.45),
-    "tekhelet": (0.10, 0.20, 0.45), "mary_blue": (0.22, 0.31, 0.46),
-    "madder": (0.52, 0.15, 0.10), "roman_red": (0.56, 0.09, 0.06), "rust": (0.47, 0.23, 0.13),
+    "tekhelet": (0.12, 0.20, 0.40), "mary_blue": (0.24, 0.31, 0.42),
+    "madder": (0.45, 0.15, 0.12), "roman_red": (0.50, 0.11, 0.08), "rust": (0.45, 0.23, 0.14),
     "ochre": (0.64, 0.46, 0.21), "saffron": (0.76, 0.56, 0.19), "olive": (0.38, 0.37, 0.22),
-    "purple": (0.28, 0.11, 0.24), "plum": (0.33, 0.17, 0.24), "scarlet": (0.62, 0.10, 0.08),
+    "purple": (0.28, 0.11, 0.24), "plum": (0.33, 0.17, 0.24), "scarlet": (0.55, 0.12, 0.09),
     "leather": (0.36, 0.22, 0.12), "dark_leather": (0.17, 0.10, 0.06),
     "iron": (0.42, 0.42, 0.43), "bronze": (0.62, 0.42, 0.20), "brass": (0.72, 0.56, 0.28),
     "gold": (0.85, 0.66, 0.30), "thorn": (0.30, 0.24, 0.17),
@@ -748,6 +748,16 @@ FABRICS = {
 _MATS = {}
 
 
+def _alive(idb, coll):
+    """True if a cached datablock still exists (a factory reset / file load frees it)."""
+    if idb is None:
+        return False
+    try:
+        return coll.get(idb.name) == idb
+    except ReferenceError:
+        return False
+
+
 def _tex(nt, path, vec, noncolor=False):
     t = nt.nodes.new("ShaderNodeTexImage")
     t.image = bpy.data.images.load(path, check_existing=True)
@@ -761,7 +771,7 @@ def fabric_material(kind="linen", embroidery=False, stripes=False):
     """Shared fabric material. Colour = object colour (obj.color). Reads vertex attributes
     'wear' (0..1 dust/dirt) and 'hem' (metres from the hem, for embroidered bands)."""
     key = (kind, embroidery, stripes)
-    if key in _MATS and _MATS[key].name in bpy.data.materials:
+    if _alive(_MATS.get(key), bpy.data.materials):
         return _MATS[key]
     asset, rep, bump, rough0, sheen, (v0, v1) = FABRICS[kind]
     from . import polyhaven as ph
@@ -827,7 +837,7 @@ def fabric_material(kind="linen", embroidery=False, stripes=False):
     wm2 = nt.nodes.new("ShaderNodeMath")
     wm2.operation = "MULTIPLY"
     wm2.use_clamp = True
-    wm2.inputs[1].default_value = 0.9
+    wm2.inputs[1].default_value = 0.5
     L.new(wm.outputs[0], wm2.inputs[0])
     mix = nt.nodes.new("ShaderNodeMix")
     mix.data_type = "RGBA"
@@ -851,12 +861,34 @@ def fabric_material(kind="linen", embroidery=False, stripes=False):
         L.new(ra.outputs[0], b.inputs["Roughness"])
     else:
         b.inputs["Roughness"].default_value = rough0
+    nrm_out = None
     if "nor" in maps and bump > 0:
         n = _tex(nt, maps["nor"], mp.outputs["Vector"], True)
         nm = nt.nodes.new("ShaderNodeNormalMap")
         nm.inputs["Strength"].default_value = bump
         L.new(n.outputs["Color"], nm.inputs["Color"])
-        L.new(nm.outputs["Normal"], b.inputs["Normal"])
+        nrm_out = nm.outputs["Normal"]
+    if kind != "leather":
+        # soft creases: noise stretched along the garment's vertical (UVs are metres, v = up), so hanging
+        # cloth gets long shallow wrinkles and does not read as smooth plastic
+        for sc_uv, strength, dist in (((16.0, 2.6, 1.0), 0.28, 0.006), ((42.0, 7.0, 1.0), 0.14, 0.002)):
+            mpw = nt.nodes.new("ShaderNodeMapping")
+            mpw.inputs["Scale"].default_value = sc_uv
+            L.new(uv.outputs["UV"], mpw.inputs["Vector"])
+            nzw = nt.nodes.new("ShaderNodeTexNoise")
+            nzw.inputs["Scale"].default_value = 1.0
+            nzw.inputs["Detail"].default_value = 2.0
+            nzw.inputs["Distortion"].default_value = 0.35
+            L.new(mpw.outputs["Vector"], nzw.inputs["Vector"])
+            bp = nt.nodes.new("ShaderNodeBump")
+            bp.inputs["Strength"].default_value = strength
+            bp.inputs["Distance"].default_value = dist
+            L.new(nzw.outputs["Fac"], bp.inputs["Height"])
+            if nrm_out is not None:
+                L.new(nrm_out, bp.inputs["Normal"])
+            nrm_out = bp.outputs["Normal"]
+    if nrm_out is not None:
+        L.new(nrm_out, b.inputs["Normal"])
     b.inputs["Specular IOR Level"].default_value = 0.35 if kind != "leather" else 0.5
     b.inputs["Sheen Weight"].default_value = sheen
     b.inputs["Sheen Roughness"].default_value = 0.45
@@ -875,7 +907,7 @@ _IMGS = {}
 def _np_image(name, arr, noncolor=False):
     """numpy (H,W,4) float 0..1 -> packed Blender image (cached per session)."""
     im = _IMGS.get(name)
-    if im is not None and im.name in bpy.data.images:
+    if _alive(im, bpy.data.images):
         return im
     h, w = arr.shape[:2]
     im = bpy.data.images.new(name, w, h, alpha=True, float_buffer=False)
@@ -1037,7 +1069,7 @@ def _stripes(nt, col, length=0.32):
 def metal_material(kind="iron"):
     """Hand-worked metal (iron / bronze / brass / gold): hammer dents, tarnish, dirt from 'wear'."""
     key = ("metal", kind)
-    if key in _MATS and _MATS[key].name in bpy.data.materials:
+    if _alive(_MATS.get(key), bpy.data.materials):
         return _MATS[key]
     base = {"iron": (0.40, 0.40, 0.41), "bronze": (0.62, 0.43, 0.22), "brass": (0.75, 0.58, 0.30),
             "gold": (0.90, 0.70, 0.32)}[kind]
@@ -1093,7 +1125,7 @@ def metal_material(kind="iron"):
 def mail_material():
     """Riveted ring mail (lorica hamata): tileable ring height map at 8 mm ring pitch on the UVs."""
     key = ("mail",)
-    if key in _MATS and _MATS[key].name in bpy.data.materials:
+    if _alive(_MATS.get(key), bpy.data.materials):
         return _MATS[key]
     m = bpy.data.materials.new("W_mail")
     m.use_nodes = True
@@ -1146,7 +1178,7 @@ def mail_material():
 
 def thorn_material():
     key = ("thorn",)
-    if key in _MATS and _MATS[key].name in bpy.data.materials:
+    if _alive(_MATS.get(key), bpy.data.materials):
         return _MATS[key]
     m = bpy.data.materials.new("W_thornwood")
     m.use_nodes = True
@@ -2274,7 +2306,8 @@ def _waist_z(B):
 
 
 def part_mantle(person, B, rnd, rgb, detail="hero", style="himation", length="calf", fabric="wool", name="mantle",
-                voxel=None, fold=0.016, wear=1.0, side="L", embroidery=False, roll=True, mask=True, layer_gap=0.009):
+                voxel=None, fold=0.016, wear=1.0, side="L", embroidery=False, roll=True, mask=True, layer_gap=0.009,
+                cape_front=True):
     """Outer mantle. style 'himation' (wrapped diagonally: over the `side` shoulder, under the other arm,
     rolled diagonal edge), 'cloak' (hangs from both shoulders, open at the front), 'cape' (back + shoulders)."""
     voxel = voxel or (0.016 if detail == "hero" else 0.026)
@@ -2293,10 +2326,10 @@ def part_mantle(person, B, rnd, rgb, detail="hero", style="himation", length="ca
         P = np.vstack([P, Lp[~np.isin(Lreg, list(ARM_L | ARM_R)) & (Lp[:, 2] < top)]])
 
     def ease(zs):
-        e = 0.016 + 0.045 * np.clip((chest - zs) / max(0.1, chest - hem), 0, 1)
+        e = 0.014 + 0.026 * np.clip((chest - zs) / max(0.1, chest - hem), 0, 1)
         return e * np.clip((top - zs) / (top - sh_z + 0.06), 0.18, 1)
     _tick("start " + name)
-    Vc, Fc, info = column_solid(B, P, hem - 0.06, top, ease, drape_below=chest + 0.06, loose=0.85)
+    Vc, Fc, info = column_solid(B, P, hem - 0.06, top, ease, drape_below=chest + 0.06, loose=0.55)
     parts = [(Vc, Fc)]
     sleeves = {}
     sides = [side] if style == "himation" else (["L", "R"] if style == "cloak" else [])
@@ -2338,6 +2371,8 @@ def part_mantle(person, B, rnd, rgb, detail="hero", style="himation", length="ca
                 below = (np.sin(th) < 0.30) & (co[:, 2] < zc)
                 # the front only covers the shoulder tops (no collar across the chest)
                 chest = (co[:, 1] < cy - 0.02) & (np.abs(co[:, 0]) < 0.11 * sc)
+                if not cape_front:     # hangs from the shoulder line down the back only
+                    chest = chest | (np.sin(th) < 0.05)
                 return below | chest
 
             def cape_snap(co):
@@ -2448,10 +2483,21 @@ def _head_axis(B):
     return cf
 
 
-def _head_points(B, with_hair=True):
+def _head_points(B, with_hair=True, hair_cap=None):
+    """Head + neck surface points (+ hair). hair_cap (m): hair points further than this from the skin are
+    pulled in to that distance (a veil/hood compresses the hair; big shells such as braids or buns must
+    not inflate the cloth into a helmet)."""
     P = B.pts({RID["head"], RID["neck"]})
     if with_hair and len(B.hair):
-        P = np.vstack([P, B.hair])
+        H = B.hair
+        if hair_cap is not None:
+            H = H.copy()
+            bvh = B.bvh["body"][0]
+            for i in range(len(H)):
+                loc, nrm, _, d = bvh.find_nearest(Vector(H[i]))
+                if loc is not None and d > hair_cap:
+                    H[i] = np.array(loc) + (H[i] - np.array(loc)) * (hair_cap / d)
+        P = np.vstack([P, H])
     return P
 
 
@@ -2467,7 +2513,7 @@ def part_headcover(person, B, rnd, rgb, kind="veil", detail="hero", length=None,
     nb = B.head("neck01")
     eye_z = B.head("oculi01.L")[2]
     chin = B.tail("jaw")
-    HP = _head_points(B)
+    HP = _head_points(B, hair_cap=0.013 if kind != "hood" else 0.02)
     top = float(HP[:, 2].max())
     chest = B.head("spine01")[2]
     sh_z = B.head("upperarm01.L")[2]
@@ -2497,7 +2543,7 @@ def part_headcover(person, B, rnd, rgb, kind="veil", detail="hero", length=None,
     W0 = 0.074 * sc if kind != "hood" else 0.085 * sc
     z_mid = eye_z - 0.01 * sc
     z_open = eye_z + {"veil": 0.058, "headcloth": 0.050, "hood": 0.075}[kind] * sc
-    k_open = {"veil": 0.95, "headcloth": 0.9, "hood": 0.35}[kind]
+    k_open = {"veil": 0.42, "headcloth": 0.75, "hood": 0.35}[kind]
 
     def w_open(z):
         up = W0 * np.sqrt(np.clip(1 - ((z - z_mid) / (z_open - z_mid)) ** 2, 0, 1))
@@ -2551,6 +2597,17 @@ def part_headcover(person, B, rnd, rgb, kind="veil", detail="hero", length=None,
     ob = finalize(person, B, G, rnd, name, mat, rgb, detail, hem_z=z_low, wear=wear, wear_band=0.2,
                   thickness=0.003 if fabric != "wool" else 0.005, uv=column_uv(B, G, cf), arms=True)
     out = [ob]
+    # the covering hides the hair: keep only the hairline that shows in the face window (the veil is
+    # fitted close to the skull, so the rest of the hair shell would poke through or read as a helmet)
+    for ho in getattr(B, "hair_objs", []):
+        if ho.type != "MESH":
+            continue
+        Mo = np.array(person.rig.matrix_world.inverted() @ ho.matrix_world)
+        hco = _np_co(ho.data) @ Mo[:3, :3].T + Mo[:3, 3]
+        cyh = np.array([cf(z)[1] for z in hco[:, 2]])
+        win = (hco[:, 1] < cyh - 0.02 * sc) & (np.abs(hco[:, 0]) < w_open(hco[:, 2]) - 0.006 * sc) & \
+              (hco[:, 2] < z_open - 0.004 * sc) & (hco[:, 2] > eye_z + 0.012 * sc)
+        hide_verts(ho, np.nonzero(~win)[0])
     if kind == "headcloth" or band:
         bz = eye_z + 0.045 * sc
         rings, _ = band_rings(B, G["V"], bz, 0.016, gap=0.002, center_fn=cf, tilt=-0.35, bulge=0.003)
@@ -2846,8 +2903,8 @@ def part_loincloth(person, B, rnd, rgb, detail="hero", name="loincloth", knot_si
 def part_swaddle(person, B, rnd, rgb, detail="hero", name="swaddle", voxel=None, hood=True):
     """Baby wrapped in linen bands: a cocoon from below the feet up to a collar behind the head, with
     overlapping diagonal band edges. The whole body except head/neck is hidden (arms are inside)."""
-    voxel = voxel or (0.006 if detail == "hero" else 0.011)
     sc = _sc(B)
+    voxel = voxel or (max(0.006, 0.010 * sc) if detail == "hero" else max(0.011, 0.018 * sc))
     nb = B.head("neck01")
     eye_z = B.head("oculi01.L")[2]
     P = B.pts(CORE | {RID["foot_L"], RID["foot_R"]}, zmax=nb[2] + 0.01)
@@ -3161,7 +3218,8 @@ def outfit_roman_soldier(person, B, rnd, colors, detail="hero", armor="hamata", 
     out += part_apron(person, B, rnd, Vref, zb, detail=detail)
     if cloak:
         gs3, Gs = part_mantle(person, B, rnd, _pick(colors, "cloak", rnd, "madder"), detail=detail, style="cape",
-                              length="knee", fabric="wool", name="sagum", fold=0.014, roll=False, layer_gap=0.011)
+                              length="knee", fabric="wool", name="sagum", fold=0.014, roll=False, layer_gap=0.011,
+                              cape_front=False)
         out += gs3
         out += part_fibula(person, B, Gs, detail=detail)
     if helmet:
@@ -3176,7 +3234,7 @@ def part_fibula(person, B, G, side="R", detail="hero", name="fibula", metal="bro
     sx = 1 if side == "L" else -1
     sh = B.head("upperarm01." + side)
     cf = _column_center(B)
-    target = np.array([sx * 0.12 * sc, cf(sh[2])[1] - 0.08 * sc, sh[2] - 0.01])
+    target = np.array([sx * 0.13 * sc, cf(sh[2])[1] - 0.01 * sc, sh[2] + 0.04 * sc])
     V = G["V"]
     i = int(np.argmin(np.linalg.norm(V - target, axis=1)))
     N = vertex_normals(V, G["F"], G.get("T"))
@@ -3682,12 +3740,22 @@ def cloth_sim(person, garments, ctx=None, preroll=20, frame_end=None, quality=5,
         else:
             _floor_collider(float(ground), tuple(rig.matrix_world.translation[:2]))
     mods = []
-    for g in garments:
-        if g.type != "MESH" or not _is_soft(g):
-            continue
+    soft = [g for g in garments if g.type == "MESH" and _is_soft(g)]
+    for g in soft:
         if g.vertex_groups.get("pin") is None:
             auto_pin(person, g, B)
         mods.append(_add_cloth(g, _fabric_of(g), quality, f0, fe, self_collision))
+        if g is not soft[-1]:
+            # inner layers collide with the outer ones (garments are built inner -> outer)
+            g.modifiers.new("WardrobeCollision", "COLLISION")
+            so = next((x for x in g.modifiers if x.type == "SOLIDIFY"), None)
+            g.collision.thickness_outer = 0.002 + (so.thickness if so else 0.0)
+            g.collision.cloth_friction = 10
+    # the moving cloth can uncover skin / inner layers that were masked for the fitted rest shape
+    for o in [body] + soft:
+        mm = o.modifiers.get("WardrobeHide")
+        if mm is not None:
+            o.modifiers.remove(mm)
     if bake and mods:
         t = time.time()
         fc = sc.frame_current

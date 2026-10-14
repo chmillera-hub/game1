@@ -172,7 +172,7 @@ SOLDIER = dict(gender=1.0, age_years=28, build="muscular", height_cm=176, ethnic
 MOSES = dict(gender=1.0, age_years=80, build="lean", height_cm=174, ethnicity="judean", hair="long01",
              hair_color="white", grey=1.0, beard="long", beard_length=0.24, eye_color="brown", eyebrows="eyebrow003",
              expression="awe", outfit=["robe", "sandals"], outfit_colors={"tunic": "oatmeal", "mantle": "camel"},
-             pose="stand", wrinkles=1.0, dirt=0.25, staff=True)
+             pose="staff", wrinkles=1.0, dirt=0.25, staff=True)
 CROWD_MAN = dict(gender=1.0, crowd=True, outfit=["tunic", "mantle"], pose="stand_relaxed")
 CROWD_WOMAN = dict(gender=0.0, crowd=True, outfit=["tunic", "veil"], pose="stand_relaxed", hair_strands=False)
 
@@ -459,13 +459,16 @@ def make_person(name, preset=None, **spec):
     if hero and s.get("hair_strands", (not covered) and s["hair"] in ("long01", "bob01", "bob02", "ponytail01", "braid01")) and "hair" in parts:
         make_hair_strands(p)
         T.append(("strands", time.time()))
+    elif hero and s.get("hair_strands", not covered) and s["hair"] in SHORT_HAIR and "hair" in parts:
+        make_short_hair(p)
+        T.append(("strands", time.time()))
     if s.get("staff"):
         make_staff(p)
     p.build_time = time.time() - t0
     # wardrobe
     if s.get("outfit"):
         dress(p, s["outfit"], s.get("outfit_colors"), s.get("outfit_seed", 0) or s.get("seed", 0),
-              "hero" if hero else "crowd")
+              "hero" if hero else "crowd", opts=s.get("outfit_opts"))
     if s.get("pose"):
         try:
             pose(p, s["pose"])
@@ -480,8 +483,9 @@ def make_person(name, preset=None, **spec):
     return p
 
 
-def dress(person, outfit, colors=None, seed=0, detail="hero"):
-    """Call lib.wardrobe.dress if available. Returns list of garments (also appended to person.garments)."""
+def dress(person, outfit, colors=None, seed=0, detail="hero", opts=None):
+    """Call lib.wardrobe.dress if available (whole outfit list in one call). opts: per-outfit option dicts,
+    e.g. {"tunic": {"sleeves": "long"}}. Returns list of garments (also appended to person.garments)."""
     try:
         from . import wardrobe
     except ImportError as e:
@@ -489,11 +493,20 @@ def dress(person, outfit, colors=None, seed=0, detail="hero"):
         return []
     items = [outfit] if isinstance(outfit, str) else list(outfit)
     g = []
-    for it in items:
-        try:
-            g += list(wardrobe.dress(person, it, colors=colors, seed=seed, detail=detail) or [])
-        except Exception as e:
-            _log("WARNING: wardrobe.dress(%s, %r) failed: %s" % (person.name, it, e))
+    opts = dict(opts or {})
+    try:
+        # one call with the whole list: wardrobe resolves duplicates (robe+mantle ...) and builds inner -> outer
+        g = list(wardrobe.dress(person, items if len(items) > 1 else items[0], colors=colors, seed=seed, detail=detail,
+                                **(opts if len(items) > 1 else opts.get(items[0], {}))) or [])
+    except Exception as e:
+        _log("WARNING: wardrobe.dress(%s, %r) failed (%s) - retrying item by item" % (person.name, items, e))
+        for it in items:
+            if any(str(o.get("outfit", "")) == it for o in getattr(person, "garments", [])):
+                continue
+            try:
+                g += list(wardrobe.dress(person, it, colors=colors, seed=seed, detail=detail, **opts.get(it, {})) or [])
+            except Exception as e2:
+                _log("WARNING: wardrobe.dress(%s, %r) failed: %s" % (person.name, it, e2))
     for o in g:
         if o not in person.garments:
             person.garments.append(o)
@@ -508,7 +521,11 @@ def _protect_beard_region(p):
     g = p.body.vertex_groups.get("wardrobe_hide")
     if g is None or not hasattr(p, "masks"):
         return
-    keep = np.nonzero(p.masks["beard"] > 0.0)[0]
+    m = p.masks["beard"] > 0.0
+    hs = p.parts.get("hair_strands")
+    if hs is not None and hs.type == "CURVES" and getattr(hs.data, "surface", None) == p.body:
+        m = m | (p.masks["hair"] > 0.0)       # short hair strands are rooted on the scalp too
+    keep = np.nonzero(m)[0]
     if len(keep) == 0:
         return
     # dilate by one ring so faces touching the region keep all their vertices
@@ -697,8 +714,18 @@ def _compute_masks(p):
     chest = np.exp(-(((zr - 0.72) / 0.08) ** 2)) * _smooth(f, 0.02, 0.1)
     sweat = np.maximum(sweat, 0.7 * chest)
     lipsm = (1 - _smooth(lips_d, 0.0, 0.002 * sc)) * (w["lips"] > 0.2)
-    scalp = np.clip(w["scalp"], 0, 1)
-    p.masks = dict(beard=beard, zone=zone, wounds=wounds, dirt=dirt, red=red, sweat=sweat, lips=lipsm, scalp=scalp)
+    # ---------------- hair-bearing scalp (hairline: forehead, temples, above the ears, nape) ---------
+    front_line = E.z + 0.066 * sc - 0.016 * sc * np.clip((lat - 0.02 * sc) / (0.045 * sc), 0, 1)
+    side_line = lm["ear_top"] - 0.002 * sc
+    back_line = lm["ear_bot"] - 0.02 * sc
+    wf = _smooth(f, earf + 0.0, earf + 0.03 * sc)                       # 1 = in front of the ear (temples, forehead)
+    wb = 1 - _smooth(f, earf - 0.05 * sc, earf - 0.012 * sc)            # 1 = well behind the ear (nape)
+    line = wf * front_line + (1 - wf) * side_line
+    line = wb * back_line + (1 - wb) * line
+    hairm = _smooth(z, line - 0.002 * sc, line + 0.007 * sc) * (z > menton) * (w["body"] > 0.5) * (1 - np.clip(w["ears"] * 3, 0, 1))
+    scalp = np.maximum(np.clip(w["scalp"], 0, 1) * 0.0, hairm)
+    p.masks = dict(beard=beard, zone=zone, wounds=wounds, dirt=dirt, red=red, sweat=sweat, lips=lipsm, scalp=scalp,
+                   hair=hairm)
     me = p.body.data
     for nm, chans in (("cmask_a", (beard, zone, wounds, dirt)), ("cmask_b", (red, sweat, lipsm, scalp))):
         if nm in me.color_attributes:
@@ -859,6 +886,16 @@ def skin_material(p, name=None):
         g = float(s.get("grey", 0))
         hc = hc.lerp(Vector(HAIR_COLORS["grey"]), g * 0.8)
         col = T.mix(col, tuple(hc * 1.6), bf)
+    # --- hair-coloured scalp under the hair shell / strands (short hair no longer reads as a cap on skin)
+    if s.get("hair") and s["hair"] != "none":
+        scalp_m = T.n("ShaderNodeAttribute", _attribute_name="cmask_b").outputs["Alpha"]
+        hcs = Vector(HAIR_COLORS.get(s["hair_color"], HAIR_COLORS["dark_brown"])) if isinstance(s["hair_color"], str) \
+            else Vector(s["hair_color"][:3])
+        hcs = hcs.lerp(Vector(HAIR_COLORS["grey"] if s.get("grey", 0) < 0.75 else HAIR_COLORS["white"]), float(s.get("grey", 0)) * 0.85)
+        sbr = T.n("ShaderNodeMapRange", **{"From Min": 0.3, "From Max": 0.7, "To Min": 0.55, "To Max": 1.0})
+        T.link(n_mid.outputs["Fac"], sbr.inputs["Value"])
+        sf = T.math("MULTIPLY", T.math("POWER", scalp_m, 0.7), sbr.outputs[0])
+        col = T.mix(col, tuple(hcs * 1.15), T.math("MULTIPLY", sf, 0.92, True))
     # --- dirt / dust
     dirt = float(s.get("dirt", 0))
     dirtf = None
@@ -1019,7 +1056,7 @@ def card_hair_material(p, obj, color, grey=0.0, name=None, alpha_gain=1.0, kind=
     return m
 
 
-EYE_TEX = {"brown": ("brown", 0.52, 0.8, 0.85), "dark_brown": ("brown", 0.52, 0.75, 0.55), "hazel": ("brownlight", 0.5, 0.85, 0.75),
+EYE_TEX = {"brown": ("brown", 0.52, 0.85, 0.62), "dark_brown": ("brown", 0.52, 0.8, 0.42), "hazel": ("brownlight", 0.5, 0.85, 0.75),
            "green": ("green", 0.5, 0.8, 0.8), "blue": ("blue", 0.5, 0.85, 0.85), "grey": ("blue", 0.5, 0.25, 0.9)}
 
 
@@ -1039,15 +1076,15 @@ def eye_material(name, color="brown"):
     T.link(im.outputs["Color"], sep.inputs[0])
     irism = T.n("ShaderNodeMapRange", **{"From Min": 0.12, "From Max": 0.3, "To Min": 0.0, "To Max": 1.0})
     T.link(sep.outputs[1], irism.inputs["Value"])
-    scl = T.mix(im.outputs["Color"], (0.92, 0.86, 0.8), 1.0, "MULTIPLY")
+    # sclera: ivory, a little darker than the texture (a pure white sclera glows on screen)
+    scl = T.mix(im.outputs["Color"], (0.80, 0.70, 0.62), 1.0, "MULTIPLY")
     col = T.mix(scl, hs.outputs[0], irism.outputs[0])
     b = T.n("ShaderNodeBsdfPrincipled")
     T.set(b.inputs["Base Color"], col)
     b.inputs["Roughness"].default_value = 0.35
     b.inputs["Specular IOR Level"].default_value = 0.3
-    b.inputs["Subsurface Weight"].default_value = 0.15
-    b.inputs["Subsurface Radius"].default_value = (1.0, 0.4, 0.3)
-    b.inputs["Subsurface Scale"].default_value = 0.002
+    # no subsurface: EEVEE's screen-space SSS bleeds the bright sclera into the iris (brown eyes read grey)
+    b.inputs["Subsurface Weight"].default_value = 0.0
     T.link(b.outputs[0], out.inputs["Surface"])
     m.surface_render_method = "DITHERED"
     return m
@@ -1061,7 +1098,7 @@ def cornea_material(name="PS22_cornea"):
     out = T.n("ShaderNodeOutputMaterial")
     fr = T.n("ShaderNodeFresnel", IOR=1.38)
     gl = T.n("ShaderNodeBsdfGlossy", Roughness=0.015)
-    T.link(T.math("MULTIPLY", fr.outputs[0], 0.6), gl.inputs["Color"])
+    T.link(T.math("MULTIPLY", fr.outputs[0], 0.4), gl.inputs["Color"])
     tr = T.n("ShaderNodeBsdfTransparent")
     add = T.n("ShaderNodeAddShader")
     T.link(tr.outputs[0], add.inputs[0])
@@ -1393,22 +1430,34 @@ def curve_hair_material(name, color, grey=0.0, translucency=0.35):
     return m
 
 
-def make_staff(p, side="R", length=None):
-    """A gnarled wooden staff held in the hand (bone-parented to the wrist). Returns the object."""
+def make_staff(p, side="R", length=None, seed=5):
+    """A gnarled wooden staff (Moses, shepherds). The mesh origin is the foot of the staff, local +Z runs
+    to the knob. It is attached to the hand by hold_staff() (called by every pose()/key_pose()):
+    use the poses 'staff' (planted beside the feet) or 'staff_raised' (held aloft). Returns the object."""
     L = length or p.height * 1.08
     sc = p.height / 1.75
     verts, faces = [], []
-    seg, ring = 18, 8
-    rnd = random.Random(5)
+    seg, ring = 44, 10
+    rnd = random.Random(seed)
+    knots = [(rnd.uniform(0.1, 0.92), rnd.uniform(0, 2 * math.pi), rnd.uniform(0.002, 0.005)) for _ in range(9)]
     for i in range(seg + 1):
         t = i / seg
-        z = -L * 0.62 + L * t
-        r = (0.017 + 0.004 * math.sin(t * 9.0) + 0.006 * (1 - t)) * sc
-        cx = 0.012 * math.sin(t * 5.3 + 1) * sc
-        cy = 0.012 * math.cos(t * 4.1) * sc
+        z = L * t
+        r = (0.0145 + 0.0035 * (1 - t) + 0.0016 * math.sin(t * 23.0)) * sc
+        if t > 0.94:                                    # worn knob at the top
+            r *= 1.0 + 0.55 * math.sin(min(1.0, (t - 0.94) / 0.06) * math.pi * 0.75)
+        if t > 0.995:
+            r *= 0.55
+        cx = (0.010 * math.sin(t * 5.3 + 1) + 0.004 * math.sin(t * 17.0)) * sc
+        cy = (0.010 * math.cos(t * 4.1) + 0.003 * math.cos(t * 13.0)) * sc
         for j in range(ring):
             a = 2 * math.pi * j / ring
-            rr = r * (1 + 0.08 * rnd.uniform(-1, 1))
+            rr = r * (1 + 0.06 * rnd.uniform(-1, 1))
+            for kt, ka, kr in knots:                    # knots / branch stubs
+                d = abs(t - kt) * L
+                if d < 0.03:
+                    da = math.cos(a - ka)
+                    rr += kr * sc * max(0.0, da) ** 3 * (1 - d / 0.03)
             verts.append((cx + rr * math.cos(a), cy + rr * math.sin(a), z))
     for i in range(seg):
         for j in range(ring):
@@ -1429,10 +1478,89 @@ def make_staff(p, side="R", length=None):
     except Exception:
         ob.data.materials.append(C.mat("staff_wood", (0.22, 0.15, 0.09), rough=0.7))
     ob["staff_side"] = _side(side)
+    ob["staff_length"] = L
     ob.parent = p.rig
     p.props.append(ob)
     p.staff = ob
     return ob
+
+
+def _grip_frame(P, s):
+    """Fist frame of hand s for pose state P (armature space): (centre of the grip channel, axis from the
+    little-finger side to the index side)."""
+    k2, k5 = P.head("finger2-1." + s), P.head("finger5-1." + s)
+    axis = (k2 - k5).normalized()
+    fwd = _perp(((k2 + k5) * 0.5) - P.head("wrist." + s), axis)
+    tip = P.tail("finger3-3." + s)
+    palm = _perp(tip - (k2 + k5) * 0.5, axis)
+    palm = _perp(palm - fwd * palm.dot(fwd) * 0.5, axis)
+    sc = P.an["hand_len" + s] / 0.095
+    centre = (k2 * 0.45 + k5 * 0.55) + palm.normalized() * 0.019 * sc - fwd * 0.004 * sc
+    return centre, axis
+
+
+def _staff_arm(P, s, T, pole, want, flex=0.0, shrug=0.0):
+    """IK the arm to put the fist at T and search forearm pronation / wrist deviation so the fist axis
+    (grip channel) lines up with direction `want` (the staff). Returns the angle error (deg)."""
+    want = Vector(want).normalized()
+    best = None
+    snap = {n: m.copy() for n, m in P.rot.items()}
+    for pron in range(-40, 181, 20):
+        for dev in (-20, 0, 20):
+            P.rot = {n: m.copy() for n, m in snap.items()}
+            P._c.clear()
+            _arm_ik(P, s, T, pole, pron=pron, flex=flex, dev=dev, shrug=shrug)
+            _hand(P, s, "grip")
+            ang = math.degrees(_grip_frame(P, s)[1].angle(want))
+            if best is None or ang < best[0]:
+                best = (ang, pron, dev)
+    _, pron, dev = best
+    for pr in (pron - 10, pron - 5, pron + 5, pron + 10):   # refine
+        for dv in (dev - 8, dev, dev + 8):
+            P.rot = {n: m.copy() for n, m in snap.items()}
+            P._c.clear()
+            _arm_ik(P, s, T, pole, pron=pr, flex=flex, dev=dv, shrug=shrug)
+            _hand(P, s, "grip")
+            ang = math.degrees(_grip_frame(P, s)[1].angle(want))
+            if ang < best[0]:
+                best = (ang, pr, dv)
+    P.rot = {n: m.copy() for n, m in snap.items()}
+    P._c.clear()
+    _arm_ik(P, s, T, pole, pron=best[1], flex=flex, dev=best[2], shrug=shrug)
+    _hand(P, s, "grip")
+    return best[0]
+
+
+def hold_staff(person, grip=None, ground_z=None):
+    """Attach person.staff to its hand (bone-parented to the wrist, so it follows later animation).
+    The staff runs through the fist along the grip channel. grip: fraction of the staff length below the
+    hand (None = planted on the ground when the hand is low enough, else 0.38). Called by pose()."""
+    st = getattr(person, "staff", None)
+    if st is None or person._pose is None:
+        return None
+    P = person._pose
+    s = st.get("staff_side", "R")
+    L = float(st.get("staff_length", person.height * 1.08))
+    rig = person.rig
+    mw = rig.matrix_world
+    c, ax = _grip_frame(P, s)
+    cw = mw @ c
+    aw = (mw.to_3x3() @ ax).normalized()
+    if aw.z < 0:
+        aw = -aw
+    gz = mw.translation.z if ground_z is None else ground_z
+    if grip is None:
+        planted = (cw.z - gz) / max(aw.z, 0.2)
+        grip = planted / L if (aw.z > 0.6 and planted < 0.7 * L) else 0.38
+    base = cw - aw * grip * L
+    R = Vector((0, 0, 1)).rotation_difference(aw).to_matrix().to_4x4()
+    st.parent = rig
+    st.parent_type = "BONE"
+    st.parent_bone = "wrist." + s
+    st.matrix_parent_inverse = Matrix.Identity(4)
+    pbm = mw @ P.pm("wrist." + s) @ Matrix.Translation((0, rig.data.bones["wrist." + s].length, 0))
+    st.matrix_basis = pbm.inverted() @ (Matrix.Translation(base) @ R)
+    return st
 
 
 # ============================================================================================
@@ -2121,6 +2249,45 @@ def _pose_sit(P, p, seat_z=None, **k):
     _apply_head(P, "level")
 
 
+def _pose_staff(P, p, head="level", side="R", lean=6.0, **k):
+    """Standing, holding the staff (make_staff / spec staff=True) planted on the ground beside the foot."""
+    h = p.height / 1.75
+    s = _side(side)
+    o = "L" if s == "R" else "R"
+    lat = _lateral(s)
+    _hips_shift(P, dx=-lat.x * 0.010 * h)
+    _spine_bend(P, bend=4, side=2 * lat.x)
+    _std_legs(P, knee=(4, 9) if s == "R" else (9, 4), spread=0.045, out=6)
+    S = P.head("upperarm01." + s)
+    T = S + Vector((lat.x * 0.13 * h, -0.20 * h, -0.36 * h))
+    want = (UP + lat * math.tan(math.radians(lean)) * 0.4 + FWD * math.tan(math.radians(lean)) * 0.2).normalized()
+    _staff_arm(P, s, T, pole=(lat * 1.0 + Vector((0, 0.3, -0.8))).normalized(), want=want)
+    lo = _lateral(o)
+    _arm(P, o, Vector((lo.x * 0.12, 0.03, -1)), FWD, 16, 80)
+    _hand(P, o, k.get("hands", "relaxed"))
+    _apply_head(P, head, tilt=2, turn=k.get("turn", 0))
+
+
+def _pose_staff_raised(P, p, head="up", side="R", reach=1.0, **k):
+    """Moses at the sea: staff held high in the right hand, the other hand stretched out, palm down."""
+    h = p.height / 1.75
+    s = _side(side)
+    o = "L" if s == "R" else "R"
+    lat, lo = _lateral(s), _lateral(o)
+    _hips_shift(P, dy=0.01 * h)
+    _spine_bend(P, bend=-7, side=-3 * lat.x, twist=4 * lat.x)
+    _std_legs(P, knee=(6, 10), spread=0.07, out=8)
+    S = P.head("upperarm01." + s)
+    u = Vector((lat.x * 0.32, -0.42 * reach, 0.85)).normalized()
+    T = S + u * (P.an["ua_len" + s] + P.an["fa_len" + s]) * 0.93
+    want = Vector((lat.x * 0.18, -0.30, 1.0)).normalized()
+    _staff_arm(P, s, T, pole=(lat + Vector((0, 0.3, -0.6))).normalized(), want=want, shrug=16)
+    uo = Vector((lo.x * 0.55, -0.80, 0.18)).normalized()
+    _arm(P, o, uo, None, 12, 175, flex=-18, shrug=8)
+    _hand(P, o, "open")
+    _apply_head(P, head, amount=0.55)
+
+
 def _pose_walk_frame(P, p, ph, speed=1.0, lean=4.0, arm_amp=16.0, stride_amp=24.0):
     """One frame of a walk/run cycle at phase ph (radians)."""
     run = speed > 1.6
@@ -2161,6 +2328,8 @@ POSES = {
     "crouch": _pose_crouch,
     "hammer": _pose_hammer,
     "sit": _pose_sit,
+    "staff": _pose_staff,
+    "staff_raised": _pose_staff_raised,
     "walk": lambda P, p, phase=0.0, **k: _pose_walk_frame(P, p, phase, 1.0),
     "run": lambda P, p, phase=0.0, **k: _pose_walk_frame(P, p, phase, 2.2),
 }
@@ -2236,7 +2405,7 @@ def _mesh_min_z(p):
 
 
 GROUNDED = {"stand", "stand_relaxed", "kneel", "kneel_pray", "kneel_bow", "prostrate", "arms_raised", "point", "reach",
-            "cradle", "mourn", "crouch", "hammer", "walk", "run", "rest", "sit"}
+            "cradle", "mourn", "crouch", "hammer", "walk", "run", "rest", "sit", "staff", "staff_raised"}
 
 
 def pose(person, name, ground_z=None, ground=True, **params):
@@ -2251,6 +2420,8 @@ def pose(person, name, ground_z=None, ground=True, **params):
     p._pose = P
     p._pose_name = name
     _apply_face_bones(p)
+    if getattr(p, "staff", None) is not None:
+        hold_staff(p, ground_z=ground_z)
     p.update()
     return P
 
@@ -2876,9 +3047,14 @@ def crowd(n, positions=None, area=None, seed=0, variety=6, pose="stand_relaxed",
     cr.collection = coll
     src_coll = C.collection(name + "_src")
     lodmap = {"near": "hero", "mid": "mid", "far": "far"}
-    # unique people
+    # unique people: a deterministic share of women (round(variety * women)), shuffled by the seed
+    nw = int(round(variety * women)) if len(presets) > 1 else 0
+    if len(presets) > 1 and women > 0 and variety >= 2:
+        nw = max(1, min(variety - 1, nw)) if 0 < women < 1 else nw
+    kinds = [1] * nw + [0] * (variety - nw)
+    rng.shuffle(kinds)
     for i in range(variety):
-        pr = presets[1] if (len(presets) > 1 and rng.random() < women) else presets[0]
+        pr = presets[min(kinds[i], len(presets) - 1)]
         sp = dict(spec)
         sp.update(seed=seed * 100 + i, lod=lodmap.get(lod, lod), pose=None, expression=None)
         if outfit:
@@ -3067,11 +3243,173 @@ def make_hair_strands(p, count=None, points=16, length_scale=1.0, depth=(-0.001,
         if m.type == "SUBSURF":
             shell.modifiers.remove(m)
     # the shell becomes a darker, matte under-layer that fills the gaps between strands
-    if "hair" in p.mats:
-        b = p.mats["hair"].node_tree.nodes.get("Principled BSDF")
-        if b:
-            b.inputs["Roughness"].default_value = 0.6
-            b.inputs["Specular IOR Level"].default_value = 0.25
+    _shell_underlayer(p, 0.7, rough=0.6, spec=0.25)
+    return ob
+
+
+def _shell_underlayer(p, value=0.6, rough=0.65, spec=0.2):
+    """Make the MPFB hair shell a darker, matte under-layer below hair curves (keeps its alpha)."""
+    m = p.mats.get("hair")
+    if m is None or m.get("ps22_under"):
+        return
+    nt = m.node_tree
+    b = nt.nodes.get("Principled BSDF") or next((n for n in nt.nodes if n.bl_idname == "ShaderNodeBsdfPrincipled"), None)
+    if b is None:
+        return
+    b.inputs["Roughness"].default_value = rough
+    b.inputs["Specular IOR Level"].default_value = spec
+    ln = b.inputs["Base Color"].links
+    if ln:
+        mx = nt.nodes.new("ShaderNodeMix")
+        mx.data_type = "RGBA"
+        mx.blend_type = "MULTIPLY"
+        mx.inputs["Factor"].default_value = 1.0
+        nt.links.new(ln[0].from_socket, mx.inputs[6])
+        mx.inputs[7].default_value = (value, value, value, 1)
+        nt.links.new(mx.outputs[2], b.inputs["Base Color"])
+    m["ps22_under"] = 1
+
+
+SHORT_HAIR = {   # MPFB short shells -> strand length (m), wave amplitude, lift (rad), count
+    "short01": dict(length=0.022, wave=0.0010, lift=0.22, count=22000, fringe=0.0, sweep=0.3),
+    "short02": dict(length=0.040, wave=0.0018, lift=0.16, count=24000, fringe=-0.15, sweep=0.55),
+    "short03": dict(length=0.050, wave=0.0040, lift=0.20, count=24000, fringe=-0.1, sweep=0.5),
+    "short04": dict(length=0.030, wave=0.0015, lift=0.18, count=20000, fringe=0.25, sweep=0.35),
+    "afro01": dict(length=0.035, wave=0.0060, lift=0.55, count=24000, fringe=0.0, sweep=0.2),
+}
+
+
+def make_short_hair(p, length=None, count=None, points=6, seed=None, color=None, grey=None, part_side=1.0):
+    """Short hero hair: hair curves rooted on the scalp (hair-bearing mask), combed along a crown-whorl
+    direction field, lying in a layer up to the MPFB hair shell (which stays as a dark under-layer that
+    gives the haircut its volume). Deformed with the body (Deform Curves on Surface), like the beard.
+    Returns the curves object (p.parts['hair_strands'])."""
+    s = p.spec
+    shell = p.parts.get("hair")
+    cfg = dict(SHORT_HAIR.get(s["hair"], SHORT_HAIR["short02"]))
+    L = float(length or cfg["length"]) * (p.lm["io"] / 0.062)
+    N = int(count or cfg["count"])
+    K = int(points)
+    rng = np.random.default_rng(seed if seed is not None else s.get("seed", 0) * 17 + 3)
+    co, lm = p._co, p.lm
+    sc = lm["io"] / 0.062
+    hm = p.masks["hair"]
+    tv, tl, area, uv, vn = _surface_data(p.body)
+    inb = p._w["body"] > 0.5
+    key = hashlib.md5(co.tobytes() + str((STRAND_VERSION, "short", s["hair"], N, K, L, sorted(cfg.items()),
+                                           part_side, seed, s.get("seed", 0))).encode()).hexdigest()[:16]
+    cp = _hair_cache_path(key)
+    if os.path.exists(cp):
+        dat = np.load(cp)
+        pts, ruv = dat["pts"], dat["ruv"]
+    else:
+        tm = hm[tv].mean(1) * inb[tv].all(1)
+        sel = np.nonzero(tm > 0.05)[0]
+        wts = area[sel] * tm[sel] ** 1.5
+        ti = sel[rng.choice(len(sel), N, p=wts / wts.sum())]
+        r1, r2 = rng.random(N), rng.random(N)
+        s1 = np.sqrt(r1)
+        bary = np.stack([1 - s1, s1 * (1 - r2), s1 * r2], 1)
+        roots = (co[tv[ti]] * bary[:, :, None]).sum(1)
+        ruv = (uv[tl[ti]] * bary[:, :, None]).sum(1)
+        nrm = _norm((vn[tv[ti]] * bary[:, :, None]).sum(1))
+        rm = (hm[tv[ti]] * bary).sum(1)
+        # hair layer thickness at the root: distance from the scalp to the MPFB shell along the normal
+        thick = np.full(N, 0.006 * sc)
+        if shell is not None:
+            sco = _coords(shell.data)
+            sbvh = BVHTree.FromPolygons([tuple(c) for c in sco], [tuple(pl.vertices) for pl in shell.data.polygons])
+            for i in range(N):
+                hit = sbvh.ray_cast(Vector(roots[i]) + Vector(nrm[i]) * 0.0005, Vector(nrm[i]), 0.05)
+                if hit[0] is not None:
+                    thick[i] = min(0.03 * sc, max(0.002, hit[3]))
+        thick = np.minimum(thick, 0.012 * sc) * (0.55 + 0.45 * np.clip(rm, 0, 1))
+        # crown whorl + parting: radial from the whorl, combed down by gravity, fringe forward + to the side
+        E = np.array(lm["eyes"])
+        W = np.array([0.012 * sc * part_side, E[1] + 0.105 * sc, lm["head_top"] - 0.018 * sc])
+        rad_ = roots - W
+        grav = np.array([0.0, 0.0, -1.0])
+        fwd = np.array([0.0, -1.0, 0.0])
+        frontness = np.clip((E[1] + 0.06 * sc - roots[:, 1]) / (0.06 * sc), 0, 1)       # 1 = front of the head
+        d = _norm(rad_) * 0.7 + grav * (0.45 - 0.3 * frontness * (cfg["fringe"] < 0))[:, None] + \
+            fwd * (cfg["fringe"] * frontness)[:, None]
+        d[:, 0] += cfg["sweep"] * part_side * frontness
+        d = d - nrm * (d * nrm).sum(1, keepdims=True)
+        d = _norm(d)
+        me = p.body.data
+        polys = [tuple(pl.vertices) for pl in me.polygons if all(inb[v] for v in pl.vertices)]
+        bvh = BVHTree.FromPolygons([tuple(c) for c in co], polys, all_triangles=False)
+        pmask = np.array([hm[list(pv)].mean() for pv in polys])
+        stop_at_hairline = cfg["fringe"] < 0.1
+        layer = rng.random(N)
+        seg = L / (K - 1)
+        pts = np.zeros((N, K, 3))
+        pts[:, 0] = roots
+        pos = roots.copy()
+        dirs = d.copy()
+        lift = cfg["lift"]
+        phase = rng.random(N) * 6.283
+        lens = np.clip(rng.normal(1.0, 0.15, N), 0.55, 1.3) * (0.6 + 0.4 * np.clip(rm, 0, 1))
+        if cfg["fringe"] < 0.1:      # men: the front is shorter (no curtain over the forehead)
+            lens *= 1.0 - 0.35 * frontness
+        for k in range(1, K):
+            t = k / (K - 1)
+            for i in range(N):
+                q = pos[i] + dirs[i] * seg * lens[i]
+                loc, nn, fi, dist = bvh.find_nearest(Vector(q))
+                if loc is None:
+                    pos[i] = q
+                    continue
+                if stop_at_hairline and pmask[fi] < 0.2 and lens[i] > 0.05:
+                    lens[i] = 0.04          # reached the forehead / face: stop (no curtain over the brow)
+                    q = pos[i] + dirs[i] * seg * lens[i]
+                    loc, nn, fi, dist = bvh.find_nearest(Vector(q))
+                nn = np.array(nn)
+                h = 0.0006 * sc + thick[i] * (0.55 + 0.6 * layer[i]) * min(1.0, t / 0.35) ** 0.8 + lift * 0.004 * t
+                newp = np.array(loc) + nn * h
+                tdir = newp - pos[i]
+                nd = np.linalg.norm(tdir)
+                if nd > 1e-9:
+                    # keep combing along the field, re-projected to the local tangent plane
+                    dd = dirs[i] - nn * dirs[i].dot(nn)
+                    dl = np.linalg.norm(dd)
+                    if dl > 1e-9:
+                        dirs[i] = dd / dl * 0.8 + (grav - nn * grav.dot(nn)) * 0.2
+                        dirs[i] /= max(1e-9, np.linalg.norm(dirs[i]))
+                side = np.cross(dirs[i], nn)
+                newp = newp + side * math.sin(phase[i] + t * 5.0) * cfg["wave"] * t
+                pos[i] = newp
+                pts[i, k] = newp
+        fz = rng.normal(0, 1, pts.shape) * 0.0004 * sc * (np.linspace(0, 1, K) ** 1.5)[None, :, None]
+        pts += fz
+        pts[:, 0] = roots
+        np.savez(cp, pts=pts, ruv=ruv)
+    cv = bpy.data.hair_curves.new(p.name + ".hair_strands")
+    cv.add_curves([K] * len(pts))
+    cv.position_data.foreach_set("vector", pts.astype(np.float32).ravel())
+    rad = np.tile(np.linspace(1.0, 0.5, K), len(pts)) * 0.00011 * sc
+    if "radius" not in cv.attributes:
+        cv.attributes.new("radius", "FLOAT", "POINT")
+    cv.attributes["radius"].data.foreach_set("value", rad.astype(np.float32))
+    a = cv.attributes.new("surface_uv_coordinate", "FLOAT2", "CURVE")
+    a.data.foreach_set("vector", ruv.astype(np.float32).ravel())
+    cv.surface = p.body
+    cv.surface_uv_map = p.body.data.uv_layers[0].name
+    ob = bpy.data.objects.new(p.name + ".hair_strands", cv)
+    for c in p.body.users_collection:
+        c.objects.link(ob)
+    ob.parent = p.rig
+    ob.modifiers.new("deform", "NODES").node_group = _deform_on_surface_group()
+    hc = hair_color_rgb(color or s["hair_color"], 0.0)
+    mat = curve_hair_material(p.name + ".strand_mat", hc, grey if grey is not None else s.get("grey", 0))
+    cv.materials.append(mat)
+    p.parts["hair_strands"] = ob
+    p.mats["hair_strands"] = mat
+    if shell is not None:
+        # the painted scalp + strands replace the MPFB card shell (it read as a rubber cap); the shell object
+        # stays (hidden) because head garments are fitted over it
+        shell.hide_render = True
+        shell.hide_viewport = True
     return ob
 
 
