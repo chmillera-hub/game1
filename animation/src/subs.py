@@ -8,7 +8,8 @@ the 540x960 frame. Layout is phone first (app UI covers the bottom ~20 %):
 
   subtitles  centred, side margins 36 px, Inter 31, bottom of the last line at
              y=712 (74 %), so one line sits at 71-74 % and two at 68-74 % (below the
-             mouths in the low close-ups of Edith).
+             mouths in the low close-ups of Edith). The final shot's narration sits
+             high (bottom at y=360) over the facades, clear of the push-in onto her.
              'narr' is cream italic, 'dlg' white regular; soft 2 px outline plus a
              faint shadow, no box. Lines are broken here, at the most natural
              balanced point that fits (sentence ends and commas first).
