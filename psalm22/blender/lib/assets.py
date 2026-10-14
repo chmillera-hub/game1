@@ -20,7 +20,7 @@ Conventions (every asset):
   rebuilt automatically when missing).
 Full reference: psalm22/docs/assets.md.
 """
-import math, os, random, json, time, subprocess, sys
+import math, os, random, json, time, subprocess, sys, zlib
 
 try:
     import bpy, bmesh
@@ -35,7 +35,7 @@ CACHE = os.path.join(MODELS, "cache")
 TEX = os.path.join(MODELS, "textures")
 FONTS = os.path.join(MODELS, "fonts")
 OBJAVERSE = os.path.join(MODELS, "objaverse", "glbs")
-BUILD_VERSION = 3            # bump to invalidate cached normalised animal blends
+BUILD_VERSION = 4            # bump to invalidate cached normalised animal blends
 
 # --------------------------------------------------------------------------------------------
 # Catalog
@@ -154,13 +154,23 @@ def load(name, loc=(0, 0, 0), rot_z=0.0, scale=1.0, coll=None, variant=0, **opts
     elif name in ANIMALS:
         root = _animal_instance(name, variant, coll, **opts)
     elif name in CATALOG:
-        builder = globals()["_build_" + name]
-        rnd = random.Random(hash((name, variant)) & 0xffffffff)
-        root = _new_root(name, coll)
-        parts = builder(variant=variant, rnd=rnd, coll=coll, root=root, **opts)
-        for p in parts:
-            if p.parent is None:
-                p.parent = root
+        key = (name, variant, json.dumps(opts, sort_keys=True, default=str))
+        src = _PROP_CACHE.get(key)
+        try:
+            ok = src is not None and bpy.data.objects.get(src.name) is src and src.users > 0
+        except ReferenceError:
+            ok = False
+        if ok:
+            root = _copy_hierarchy(src, coll)       # linked duplicate: shares meshes/materials
+        else:
+            builder = globals()["_build_" + name]
+            rnd = random.Random(zlib.crc32(("%s|%d" % (name, variant)).encode()))
+            root = _new_root(name, coll)
+            parts = builder(variant=variant, rnd=rnd, coll=coll, root=root, **opts)
+            for p in parts:
+                if p.parent is None:
+                    p.parent = root
+            _PROP_CACHE[key] = root
     else:
         raise KeyError("unknown asset %r; see assets.names()" % name)
     root["asset"] = name
@@ -170,6 +180,28 @@ def load(name, loc=(0, 0, 0), rot_z=0.0, scale=1.0, coll=None, variant=0, **opts
     s = scale if isinstance(scale, (tuple, list)) else (scale, scale, scale)
     root.scale = s
     return root
+
+
+_PROP_CACHE = {}
+
+
+def _copy_hierarchy(src, coll):
+    """Duplicate an asset hierarchy (objects copied, mesh data shared) keeping custom properties."""
+    def cp(o, parent):
+        d = o.copy()
+        d.animation_data_clear()
+        C.link(d, coll)
+        if parent is not None:
+            d.parent = parent
+            d.matrix_parent_inverse = o.matrix_parent_inverse.copy()
+        for c in o.children:
+            cp(c, d)
+        return d
+    r = cp(src, None)
+    r.location = (0, 0, 0)
+    r.rotation_euler = (0, 0, 0)
+    r.scale = (1, 1, 1)
+    return r
 
 
 def _new_root(name, coll):
@@ -2425,7 +2457,7 @@ def _def_animal(name, **v):
 
 def list_actions(name, variant=0):
     """Names of the actions available for an animal (procedural cycles built on its rig)."""
-    a = ANIMALS[name][min(variant, len(ANIMALS[name]) - 1)]
+    a = ANIMALS[name][variant % len(ANIMALS[name])]
     if a.get("static"):
         return ["static"]
     return sorted(_gaits(a).keys())
@@ -2433,7 +2465,7 @@ def list_actions(name, variant=0):
 
 def ground_speed(name, action, variant=0, speed=1.0):
     """Ground speed (m/s) of a locomotion action at the given playback speed (0 for in-place actions)."""
-    a = ANIMALS[name][min(variant, len(ANIMALS[name]) - 1)]
+    a = ANIMALS[name][variant % len(ANIMALS[name])]
     g = _gaits(a).get(action)
     if not g or not g.get("stride"):
         return 0.0
@@ -2504,7 +2536,7 @@ def play(arm, action, start_frame=1, speed=1.0, offset=0.0, blend_in=0, replace=
         st.action_frame_start = fr[0] + off_frames
         st.action_frame_end = fr[1] + off_frames
     st.repeat = max(1.0, need / max(1.0, L))
-    st.extrapolation = "HOLD"
+    st.extrapolation = "HOLD" if replace else "HOLD_FORWARD"
     st.blend_type = "REPLACE"
     if blend_in:
         st.blend_in = blend_in
@@ -2712,7 +2744,11 @@ def _animal_instance(name, variant, coll, **o):
     a, vi = _variant(name, variant)
     key = (name, vi)
     m = _MASTERS.get(key)
-    if m is None or m[0].name not in bpy.data.objects:
+    try:
+        alive = m is not None and bpy.data.objects.get(m[0].name) is m[0] and all(bpy.data.objects.get(k.name) is k for k in m[1])
+    except ReferenceError:
+        alive = False
+    if not alive:
         path = _cache_path(name, vi)
         if not os.path.exists(path):
             _build_animal_cache(name, vi)
@@ -3053,6 +3089,12 @@ def _make_rig(name, vi, a, body, coll):
         md = body.modifiers.new("Armature", "ARMATURE")
         md.object = arm
     _repair_weights(body, arm, a)
+    cs = body.modifiers.new("CorrectiveSmooth", "CORRECTIVE_SMOOTH")
+    cs.rest_source = "ORCO"
+    cs.smooth_type = "LENGTH_WEIGHTED"
+    cs.iterations = a.get("smooth_iter", 6)
+    cs.factor = 0.5
+    cs.use_only_smooth = False
     if a.get("eyes"):
         _add_eyes(arm, a, "head", coll)
     arm["ik_bones"] = ["IK_FL", "IK_FR", "IK_HL", "IK_HR"]
@@ -3103,6 +3145,52 @@ def _repair_weights(body, arm, a):
             p = v.co
             n = min(segs, key=lambda s_: seg_dist(p, s_[1], s_[2]))[0]
             vg[n].add([v.index], 1.0, "REPLACE")
+    _island_weights(body)
+
+
+def _island_weights(body, frac=0.04):
+    """Small disconnected parts (eyes, teeth, claws, tufts) copy the weights of the nearest vertex of the
+    big islands so they ride along rigidly instead of flying off with a wrong bone."""
+    import numpy as np
+    from mathutils.kdtree import KDTree
+    me = body.data
+    n = len(me.vertices)
+    parent = np.arange(n)
+
+    def find(i):
+        r = i
+        while parent[r] != r:
+            r = parent[r]
+        while parent[i] != r:
+            parent[i], i = r, parent[i]
+        return r
+    ev = np.empty(len(me.edges) * 2, np.int64)
+    me.edges.foreach_get("vertices", ev)
+    for a_, b_ in ev.reshape(-1, 2):
+        ra, rb = find(a_), find(b_)
+        if ra != rb:
+            parent[ra] = rb
+    roots = np.array([find(i) for i in range(n)])
+    ids, counts = np.unique(roots, return_counts=True)
+    big = set(ids[counts >= frac * n])
+    if not big:
+        return
+    kd_idx = [i for i in range(n) if roots[i] in big]
+    kd = KDTree(len(kd_idx))
+    for j, i in enumerate(kd_idx):
+        kd.insert(me.vertices[i].co, j)
+    kd.balance()
+    vg = body.vertex_groups
+    for i in range(n):
+        if roots[i] in big:
+            continue
+        v = me.vertices[i]
+        _, j, _ = kd.find(v.co)
+        src = me.vertices[kd_idx[j]]
+        for g in list(v.groups):
+            vg[g.group].remove([i])
+        for g in src.groups:
+            vg[g.group].add([i], g.weight, "REPLACE")
 
 
 def _add_eyes(arm, a, bone, coll):
@@ -3394,7 +3482,7 @@ _def_animal(
     ))
 _def_animal(
     "bull", uid="f01175538f7b4ffe8e2648d772e94c5c", title="Wildebeest", author="hendrikReyneke (Sketchfab)",
-    license="CC-BY-4.0", rot=0.0, height=1.5, static=True, hsv=(0.5, 0.6, 0.8))
+    license="CC-BY-4.0", rot=0.0, height=1.5, static=True, hsv=(0.5, 0.5, 0.55))
 _def_animal(
     "dog", uid="1de9441cb0744c0d8459ce957b8d0a57", title="Italian White Wolf", author="sdpm (Sketchfab)",
     license="CC-BY-4.0", rot=0.0, height=0.85, sheen=0.5, rough_min=0.6, hsv=(0.5, 1.0, 0.85),
@@ -3420,7 +3508,7 @@ _def_animal(
 _def_animal(
     "ox", uid="dc8185e4e21747fb8b394e40d3ec125a", title="Cow", author="hendrikReyneke (Sketchfab)",
     license="CC-BY-4.0", rot=0.0, height=1.45, plot_height=1.55, sheen=0.25, rough_min=0.6,
-    eyes=(0.12, -1.3, 1.29), eye_r=0.017,
+    hsv=(0.5, 0.72, 0.62), eyes=(0.12, -1.3, 1.29), eye_r=0.017,
     rig=dict(
         spine=[(0, 0.75, 1.32), (0, 0.1, 1.3), (0, -0.6, 1.35)],
         neck=[(0, -0.6, 1.3), (0, -1.25, 1.35)],
@@ -3437,7 +3525,7 @@ _def_animal(
 _def_animal(
     "donkey", uid="54b3933b79a84b608c6e498c072061a9", title="Wild Ass", author="hendrikReyneke (Sketchfab)",
     license="CC-BY-4.0", rot=0.0, height=1.4, plot_height=1.5, x_shift=0.06, sheen=0.35, rough_min=0.6,
-    hsv=(0.5, 0.75, 0.82), eyes=(0.16, -0.84, 1.2), eye_r=0.016,
+    hsv=(0.505, 0.9, 0.62), eyes=(0.16, -0.84, 1.2), eye_r=0.016,
     rig=dict(
         spine=[(0.06, 0.8, 1.2), (0.06, 0.2, 1.15), (0.06, -0.35, 1.25)],
         neck=[(0.06, -0.35, 1.2), (0.06, -0.82, 1.35)],

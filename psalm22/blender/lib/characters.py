@@ -79,7 +79,7 @@ HAIR_COLORS = {   # linear RGB base albedo of a strand
     "auburn": (0.13, 0.045, 0.018),
     "blonde": (0.38, 0.27, 0.14),
     "grey": (0.26, 0.25, 0.24),
-    "white": (0.62, 0.60, 0.57),
+    "white": (0.50, 0.48, 0.44),
 }
 EYE_COLORS = {    # (major, minor, border)
     "brown": ((0.095, 0.042, 0.014), (0.032, 0.014, 0.006), (0.012, 0.007, 0.004)),
@@ -120,7 +120,7 @@ BEARDS = {        # length (m), strand count, points per strand, stiffness (0 dr
     "stubble": None,
     "short": dict(length=0.012, count=9000, points=5, stiff=0.75, curl=0.0012, lift=0.45),
     "full": dict(length=0.034, count=13000, points=7, stiff=0.45, curl=0.0026, lift=0.35),
-    "long": dict(length=0.11, count=14000, points=11, stiff=0.18, curl=0.004, lift=0.3),
+    "long": dict(length=0.11, count=14000, points=11, stiff=0.18, curl=0.007, lift=0.3),
 }
 
 DEFAULT_SPEC = dict(
@@ -142,24 +142,25 @@ _JESUS = dict(gender=1.0, age_years=33, build="lean", height_cm=176, ethnicity="
                     "cheek/l-cheek-inner-decr|incr": 0.3, "cheek/r-cheek-inner-decr|incr": 0.3})
 JESUS_CROSS = dict(_JESUS, sweat=0.75, dirt=0.5, blood=0.55, expression="anguish", outfit=["loincloth", "crown_of_thorns"],
                    pose="crucified", redness=0.45)
-JESUS_ROBED = dict(_JESUS, sweat=0.35, dirt=0.15, expression="sorrow", outfit=["tunic", "mantle", "sandals"], pose="stand")
+JESUS_ROBED = dict(_JESUS, sweat=0.35, dirt=0.15, expression="sorrow", outfit=["robe", "sandals"],
+                   outfit_colors={"tunic": "cream", "mantle": "madder"}, pose="stand")
 JESUS_RISEN = dict(_JESUS, sweat=0.0, dirt=0.0, blood=0.0, scars=1.0, expression="peace", redness=0.3,
-                   outfit=["robe", "mantle", "sandals"], outfit_colors={"robe": (0.92, 0.9, 0.85), "mantle": (0.95, 0.94, 0.9)},
+                   outfit=["robe", "sandals"], outfit_colors={"tunic": "bleached", "mantle": "white_linen"},
                    pose="stand")
-MARY_YOUNG = dict(gender=0.0, age_years=17, build="lean", height_cm=157, ethnicity="judean", hair="bob02",
+MARY_YOUNG = dict(gender=0.0, age_years=17, build="lean", height_cm=157, ethnicity="judean", hair="braid01",
                   hair_color="dark_brown", eye_color="brown", eyebrows="eyebrow010", expression="peace",
-                  outfit=["tunic", "veil"], outfit_colors={"veil": (0.25, 0.33, 0.48)}, pose="stand", redness=0.4,
+                  outfit=["tunic", "veil"], outfit_colors={"tunic": "linen", "veil": "mary_blue"}, pose="stand", redness=0.4,
                   face={"nose/nose-scale-horiz-decr|incr": -0.15, "mouth/mouth-scale-horiz-decr|incr": -0.1})
-MARY_OLD = dict(gender=0.0, age_years=48, build="average", height_cm=156, ethnicity="judean", hair="bob02",
+MARY_OLD = dict(gender=0.0, age_years=48, build="average", height_cm=156, ethnicity="judean", hair="braid01",
                 hair_color="dark_brown", grey=0.2, eye_color="brown", eyebrows="eyebrow010", expression="sorrow",
-                outfit=["robe", "veil"], outfit_colors={"veil": (0.30, 0.34, 0.40), "robe": (0.35, 0.30, 0.26)},
+                outfit=["tunic", "veil"], outfit_colors={"tunic": "umber", "veil": "blue_grey"},
                 pose="mourn", dirt=0.15, wrinkles=0.6, redness=0.5)
 PRIEST = dict(gender=1.0, age_years=56, build="heavy", height_cm=172, ethnicity="judean", hair="short02",
               hair_color="black", grey=0.55, beard="full", eye_color="dark_brown", eyebrows="eyebrow003",
               expression="sneer", outfit=["robe_rich", "turban"], pose="stand", wrinkles=0.7)
 ELDER = dict(gender=1.0, age_years=72, build="frail", height_cm=168, ethnicity="judean", hair="short01",
              hair_color="white", grey=0.9, beard="long", beard_length=0.16, eye_color="brown", eyebrows="eyebrow003",
-             expression="neutral", outfit=["robe", "mantle"], outfit_colors={"robe": (0.42, 0.36, 0.28)},
+             expression="neutral", outfit=["robe"], outfit_colors={"tunic": "oatmeal", "mantle": "brown"},
              pose="stand_relaxed", dirt=0.2, wrinkles=1.0)
 CHILD = dict(gender=1.0, age_years=7, build="lean", ethnicity="judean", hair="short04", hair_color="dark_brown",
              eye_color="brown", eyebrows="eyebrow009", expression="awe", outfit=["tunic"], pose="stand", redness=0.4)
@@ -170,10 +171,10 @@ SOLDIER = dict(gender=1.0, age_years=28, build="muscular", height_cm=176, ethnic
                expression="neutral", outfit=["roman_soldier"], pose="stand", dirt=0.25, sweat=0.2)
 MOSES = dict(gender=1.0, age_years=80, build="lean", height_cm=174, ethnicity="judean", hair="long01",
              hair_color="white", grey=1.0, beard="long", beard_length=0.24, eye_color="brown", eyebrows="eyebrow003",
-             expression="awe", outfit=["robe", "mantle", "sandals"], outfit_colors={"robe": (0.45, 0.38, 0.30), "mantle": (0.55, 0.50, 0.40)},
+             expression="awe", outfit=["robe", "sandals"], outfit_colors={"tunic": "oatmeal", "mantle": "camel"},
              pose="stand", wrinkles=1.0, dirt=0.25, staff=True)
 CROWD_MAN = dict(gender=1.0, crowd=True, outfit=["tunic", "mantle"], pose="stand_relaxed")
-CROWD_WOMAN = dict(gender=0.0, crowd=True, outfit=["tunic", "veil"], pose="stand_relaxed")
+CROWD_WOMAN = dict(gender=0.0, crowd=True, outfit=["tunic", "veil"], pose="stand_relaxed", hair_strands=False)
 
 PRESETS = dict(JESUS_CROSS=JESUS_CROSS, JESUS_ROBED=JESUS_ROBED, JESUS_RISEN=JESUS_RISEN, MARY_YOUNG=MARY_YOUNG,
                MARY_OLD=MARY_OLD, PRIEST=PRIEST, ELDER=ELDER, CHILD=CHILD, BABY=BABY, SOLDIER=SOLDIER, MOSES=MOSES,
@@ -198,7 +199,7 @@ def _crowd_variant(spec, seed):
         out["beard"] = r.choice(["full", "full", "short", "stubble", "long"] if age > 22 else ["stubble", "short", "none"])
         out["eyebrows"] = r.choice(["eyebrow001", "eyebrow002", "eyebrow003", "eyebrow004", "eyebrow005"])
     else:
-        out["hair"] = r.choice(["bob01", "bob02", "ponytail01", "braid01"])
+        out["hair"] = r.choice(["braid01", "ponytail01", "braid01"])
         out["beard"] = "none"
         out["eyebrows"] = r.choice(["eyebrow008", "eyebrow009", "eyebrow010", "eyebrow011"])
     out["eye_color"] = r.choice(["brown", "dark_brown", "dark_brown", "hazel"])
@@ -486,7 +487,29 @@ def dress(person, outfit, colors=None, seed=0, detail="hero"):
     for o in g:
         if o not in person.garments:
             person.garments.append(o)
+    _protect_beard_region(person)
     return g
+
+
+def _protect_beard_region(p):
+    """Wardrobe hides body skin under garments with a MASK modifier (vertex group 'wardrobe_hide').
+    Hair curves attached to the body (beard) need their root faces to survive the mask, so the
+    beard region (dilated) is removed from that group."""
+    g = p.body.vertex_groups.get("wardrobe_hide")
+    if g is None or not hasattr(p, "masks"):
+        return
+    keep = np.nonzero(p.masks["beard"] > 0.0)[0]
+    if len(keep) == 0:
+        return
+    # dilate by one ring so faces touching the region keep all their vertices
+    me = p.body.data
+    ks = set(int(i) for i in keep)
+    extra = set()
+    for pl in me.polygons:
+        vs = pl.vertices
+        if any(v in ks for v in vs):
+            extra.update(vs)
+    g.remove(list(ks | extra))
 
 
 def _apply_face_targets(body, face):
@@ -646,7 +669,7 @@ def _compute_masks(p):
     for s in "LR":
         d = np.linalg.norm(co - np.array(lm["palm" + s]), axis=1)
         dirt = np.maximum(dirt, 0.65 * (1 - _smooth(d, 0.05, 0.25)))
-    dirt = np.maximum(dirt, 0.35 * head)
+    dirt = np.maximum(dirt, 0.22 * head)
     # ---------------- redness ----------------
     red = np.zeros(n, np.float32)
     nt = lm["nose_tip"]
@@ -965,14 +988,8 @@ def card_hair_material(p, obj, color, grey=0.0, name=None, alpha_gain=1.0, kind=
     T.link(lum.outputs[0], var.inputs["Value"])
     col = T.mix(tuple(base), var.outputs[0], 1.0, "MULTIPLY")
     if grey > 0.02 and kind == "hair":
-        # salt & pepper: noise in object space picks grey strands
-        tc = T.n("ShaderNodeTexCoord")
-        nz = T.n("ShaderNodeTexNoise", Scale=180.0, Detail=1.0)
-        T.link(tc.outputs["UV"], nz.inputs["Vector"])
-        g = T.n("ShaderNodeMapRange", **{"From Min": 0.62 - 0.3 * grey, "From Max": 0.66 - 0.3 * grey, "To Min": 0.0, "To Max": 1.0})
-        T.link(nz.outputs["Fac"], g.inputs["Value"])
-        col = T.mix(col, T.mix(tuple(Vector(HAIR_COLORS["white"]) * 0.9), var.outputs[0], 1.0, "MULTIPLY"),
-                    T.math("MULTIPLY", g.outputs[0], min(1.0, grey * 1.2), True))
+        gcol = Vector(HAIR_COLORS["white"] if grey > 0.75 else HAIR_COLORS["grey"])
+        col = T.mix(col, T.mix(tuple(gcol), var.outputs[0], 1.0, "MULTIPLY"), min(1.0, grey * 0.9))
     b = T.n("ShaderNodeBsdfPrincipled")
     T.set(b.inputs["Base Color"], col)
     b.inputs["Roughness"].default_value = 0.42 if kind == "hair" else 0.55
@@ -1121,7 +1138,7 @@ def _materials(p):
         em.surface_render_method = "DITHERED"
         p.mats["eyes"] = em
         p.mats["cornea"] = _split_cornea(p, p.parts["eyes"])
-    for key, tint, rough, sss in (("teeth", (0.72, 0.66, 0.56), 0.32, 0.15), ("tongue", (0.62, 0.36, 0.34), 0.38, 0.3)):
+    for key, tint, rough, sss in (("teeth", (0.55, 0.5, 0.42), 0.35, 0.15), ("tongue", (0.62, 0.36, 0.34), 0.38, 0.3)):
         if key in p.parts:
             o = p.parts[key]
             mt = o.data.materials[0]
@@ -1214,12 +1231,13 @@ def make_beard(p, style=None, length=None, density=1.0, color=None, grey=None, s
     # --- growth direction field
     d = np.tile(np.array([0.0, -0.15, -1.0]), (N, 1))
     must = (z > lm["mouth_top"] - 0.003 * sc) & (lat < mw + 0.012 * sc)
-    d[must] = np.stack([np.sign(x[must]) * 1.1, np.full(must.sum(), -0.15), np.full(must.sum(), -1.0)], 1)
+    d[must] = np.stack([np.sign(x[must]) * 0.5, np.full(must.sum(), -0.05), np.full(must.sum(), -1.0)], 1)
     under = nrm[:, 2] < -0.35
     d[under] = np.array([0.0, -0.8, -0.6])
     d = _norm(d)
     dt = _norm(d - nrm * (d * nrm).sum(1, keepdims=True))
     lift = cfg["lift"] * 0.6 + rng.normal(0, 0.08, N)
+    lift[must] *= 0.4
     d0 = _norm(dt * np.cos(lift)[:, None] + nrm * np.sin(lift)[:, None])
     # --- length field: longest at the chin, short on the cheeks and moustache
     chinc = np.exp(-(lat / (0.028 * sc)) ** 2)
@@ -1258,11 +1276,11 @@ def make_beard(p, style=None, length=None, density=1.0, color=None, grey=None, s
             dr = dr * (1 - bend) + grav * bend + d0[g] * cfg["stiff"] * 0.35
             dr = dr / np.linalg.norm(dr)
             pos = pos + dr * seg
-            # wave
+            # wave (about one period every 3.5 cm of length)
             side = np.cross(dr, nrm[g])
             if np.linalg.norm(side) > 1e-6:
                 side = side / np.linalg.norm(side)
-                pos = pos + side * math.sin(phase + t * 7.0) * cfg["curl"] * t
+                pos = pos + side * math.sin(phase + t * max(7.0, L / 0.035 * 6.283)) * cfg["curl"] * min(1.0, 3 * t)
             loc, nn, _, dist = bvh.find_nearest(Vector(pos))
             if loc is not None:
                 off = (0.0012 + 0.0025 * t) * sc
@@ -1276,7 +1294,7 @@ def make_beard(p, style=None, length=None, density=1.0, color=None, grey=None, s
     q = np.clip(lenf * rng.uniform(0.75, 1.08, N), 0.12, 1.0)
     T = np.linspace(0, 1, K)
     pts = np.zeros((N, K, 3))
-    clump = 0.6 + 0.3 * rng.random(N)
+    clump = 0.45 + 0.3 * rng.random(N)
     for k in range(K):
         tk = T[k] * q                                   # sample the guide polyline at fraction tk
         fk = tk * (K - 1)
@@ -1287,6 +1305,9 @@ def make_beard(p, style=None, length=None, density=1.0, color=None, grey=None, s
         pts[:, k] = gpos + off
     frizz = rng.normal(0, 1, (N, K, 3)) * (0.0009 * sc) * (T ** 1.5)[None, :, None]
     pts += frizz
+    if L > 0.06:      # long beards taper to a soft point below the chin
+        below = np.clip((lm["chin_bot"] - pts[:, :, 2]) / L, 0, 1)
+        pts[:, :, 0] *= 1 - 0.55 * below
     pts[:, 0] = roots
     # cheap collision for the children: keep every point above the tangent plane at its root
     for k in range(1, K):
@@ -2584,8 +2605,10 @@ def blink(person, frame, duration=5):
     eyes_closed(p, base, frame + duration - duration // 2)
 
 
-def eyes_look(person, target, frame=None, limit=32.0):
-    """Aim both eyes at a world point (call after posing; uses the evaluated pose)."""
+def eyes_look(person, target, frame=None, limit=28.0, up_limit=12.0, down_limit=22.0):
+    """Aim both eyes at a world point (call after posing; uses the evaluated pose). Yaw is clamped to
+    `limit`, pitch to up_limit / down_limit degrees (the lids do not follow the eyeball, so looking
+    far up would hide the iris - tilt the head instead)."""
     p = person
     p.update()
     mw = p.rig.matrix_world
@@ -2597,9 +2620,19 @@ def eyes_look(person, target, frame=None, limit=32.0):
         M0 = par.matrix @ (par.bone.matrix_local.inverted() @ b.matrix_local)
         y0 = M0.to_3x3().col[1].normalized()
         want = (tgt - M0.translation).normalized()
-        q = y0.rotation_difference(want)
-        ang = min(q.angle, math.radians(limit))
-        R = Matrix.Rotation(ang, 3, q.axis) @ M0.to_3x3().normalized()
+        # clamp in the head frame: yaw about the head's up, pitch about its left axis
+        Hm = p.rig.pose.bones["head"].matrix.to_3x3().normalized()
+        hup, hleft = Hm @ (p.rig.pose.bones["head"].bone.matrix_local.to_3x3().inverted() @ UP), None
+        hfwd = y0
+        hleft = hup.cross(hfwd).normalized()
+        hup = hfwd.cross(hleft).normalized()
+        x, yv, z = want.dot(hleft), want.dot(hfwd), want.dot(hup)
+        yaw = max(-math.radians(limit), min(math.radians(limit), math.atan2(x, yv)))
+        pitch = math.atan2(z, math.hypot(x, yv))
+        pitch = max(-math.radians(down_limit), min(math.radians(up_limit), pitch))
+        want = (hfwd * math.cos(yaw) + hleft * math.sin(yaw)) * math.cos(pitch) + hup * math.sin(pitch)
+        q = y0.rotation_difference(want.normalized())
+        R = q.to_matrix() @ M0.to_3x3().normalized()
         basis = M0.to_3x3().normalized().inverted() @ R
         pb.rotation_quaternion = basis.to_quaternion()
         if frame is not None:
@@ -2913,7 +2946,7 @@ def _tri_grad_v(P3, UV):
     return dPdv
 
 
-STRAND_VERSION = 3
+STRAND_VERSION = 6
 
 
 def _hair_cache_path(key):
@@ -2923,7 +2956,7 @@ def _hair_cache_path(key):
 
 
 def make_hair_strands(p, count=None, points=16, length_scale=1.0, depth=(-0.001, 0.006), clump=0.55, frizz=0.0012,
-                      seed=None, color=None, grey=None, flyaways=0.015):
+                      seed=None, color=None, grey=None, flyaways=0.006):
     """Hero head hair: hair-curve strands that flow along the MPFB hair shell (root -> tip = UV v
     direction), bound per point to the shell's UV so they follow its armature deformation exactly.
     The shell stays as a dark under-layer. Returns the curves object (p.parts['hair_strands'])."""
@@ -2938,10 +2971,10 @@ def make_hair_strands(p, count=None, points=16, length_scale=1.0, depth=(-0.001,
     cp = _hair_cache_path(key)
     if os.path.exists(cp):
         dat = np.load(cp)
-        pts, puv, pdep, rad = dat["pts"], dat["puv"], dat["pdep"], dat["rad"]
+        pts, bidx, bw, pdep, rad = dat["pts"], dat["bidx"], dat["bw"], dat["pdep"], dat["rad"]
     else:
-        pts, puv, pdep, rad = _grow_shell_strands(p, shell, co, tv, tl, uv, N, points, length_scale, depth, clump, frizz, rng, flyaways)
-        np.savez(cp, pts=pts, puv=puv, pdep=pdep, rad=rad)
+        pts, (bidx, bw), pdep, rad = _grow_shell_strands(p, shell, co, tv, tl, uv, N, points, length_scale, depth, clump, frizz, rng, flyaways)
+        np.savez(cp, pts=pts, bidx=bidx, bw=bw, pdep=pdep, rad=rad)
     K = points
     cv = bpy.data.hair_curves.new(p.name + ".hair_strands")
     cv.add_curves([K] * len(pts))
@@ -2949,8 +2982,11 @@ def make_hair_strands(p, count=None, points=16, length_scale=1.0, depth=(-0.001,
     if "radius" not in cv.attributes:
         cv.attributes.new("radius", "FLOAT", "POINT")
     cv.attributes["radius"].data.foreach_set("value", rad.astype(np.float32).ravel())
-    a = cv.attributes.new("shell_uv", "FLOAT2", "POINT")
-    a.data.foreach_set("vector", puv.astype(np.float32).ravel())
+    for i in range(3):
+        a = cv.attributes.new("bv%d" % i, "INT", "POINT")
+        a.data.foreach_set("value", bidx[:, i].astype(np.int32))
+        a = cv.attributes.new("bw%d" % i, "FLOAT", "POINT")
+        a.data.foreach_set("value", bw[:, i].astype(np.float32))
     a = cv.attributes.new("shell_depth", "FLOAT", "POINT")
     a.data.foreach_set("value", pdep.astype(np.float32).ravel())
     ob = bpy.data.objects.new(p.name + ".hair_strands", cv)
@@ -2965,6 +3001,9 @@ def make_hair_strands(p, count=None, points=16, length_scale=1.0, depth=(-0.001,
     cv.materials.append(mat)
     p.parts["hair_strands"] = ob
     p.mats["hair_strands"] = mat
+    for m in list(shell.modifiers):          # strands are bound by vertex index: keep the shell topology
+        if m.type == "SUBSURF":
+            shell.modifiers.remove(m)
     # the shell becomes a darker, matte under-layer that fills the gaps between strands
     if "hair" in p.mats:
         b = p.mats["hair"].node_tree.nodes.get("Principled BSDF")
@@ -2995,7 +3034,27 @@ def _grow_shell_strands(p, shell, co, tv, tl, uv, N, K, length_scale, depth, clu
     down = -gv
     if (down[:, 2] * area).sum() > 0:            # majority would point up: flip
         down = -down
-    bvh = BVHTree.FromPolygons([tuple(c) for c in co], [tuple(t) for t in tv])
+    # connected shell islands (layers / strips): strands stay on the island of their root
+    par = list(range(len(co)))
+
+    def _f(a):
+        while par[a] != a:
+            par[a] = par[par[a]]
+            a = par[a]
+        return a
+    for t in tv:
+        a, b, c = _f(int(t[0])), _f(int(t[1])), _f(int(t[2]))
+        par[b] = a
+        par[_f(c)] = a
+    tri_isl = np.array([_f(int(t[0])) for t in tv])
+    isl_ids = {r: i for i, r in enumerate(np.unique(tri_isl))}
+    tri_isl = np.array([isl_ids[r] for r in tri_isl])
+    cl = [tuple(c) for c in co]
+    bvhs, tmaps = [], []
+    for i in range(len(isl_ids)):
+        ti = np.nonzero(tri_isl == i)[0]
+        bvhs.append(BVHTree.FromPolygons(cl, [tuple(tv[t]) for t in ti]))
+        tmaps.append(ti)
     # roots: points on the shell near the top of each UV column = high "v rank".
     vt = UV[:, :, 1].mean(1)
     if (down[:, 2] * area).sum() > 0:
@@ -3015,6 +3074,7 @@ def _grow_shell_strands(p, shell, co, tv, tl, uv, N, K, length_scale, depth, clu
     s1 = np.sqrt(r1)
     bary = np.stack([1 - s1, s1 * (1 - r2), s1 * r2], 1)
     groots = (P3[gi] * bary[:, :, None]).sum(1)
+    gisl = tri_isl[gi]
     sc = p.height / 1.75
     Lmax = {"long01": 0.62, "ponytail01": 0.4, "braid01": 0.45, "bob01": 0.25, "bob02": 0.25}.get(p.spec["hair"], 0.12) * sc * length_scale
     seg = Lmax / (K - 1)
@@ -3027,9 +3087,11 @@ def _grow_shell_strands(p, shell, co, tv, tl, uv, N, K, length_scale, depth, clu
     alive = np.ones((G, K), bool)
     for i in range(G):
         pos = Vector(groots[i])
-        loc, nn, fi, _ = bvh.find_nearest(pos)
+        bvh, tmap = bvhs[gisl[i]], tmaps[gisl[i]]
         for k in range(K):
             loc, nn, fi, dist = bvh.find_nearest(pos)
+            if fi is not None:
+                fi = int(tmap[fi])
             if fi is None:
                 alive[i, k:] = False
                 break
@@ -3051,7 +3113,7 @@ def _grow_shell_strands(p, shell, co, tv, tl, uv, N, K, length_scale, depth, clu
     # guide length = number of alive points
     glen = alive.sum(1)
     ok = glen >= 3
-    guides, gnorm, alive, glen = guides[ok], gnorm[ok], alive[ok], glen[ok]
+    guides, gnorm, alive, glen, gisl = guides[ok], gnorm[ok], alive[ok], glen[ok], gisl[ok]
     G = len(guides)
     # children around guides
     owner = rng.integers(0, G, N)
@@ -3063,7 +3125,7 @@ def _grow_shell_strands(p, shell, co, tv, tl, uv, N, K, length_scale, depth, clu
     tang = _norm(tang - n0 * (tang * n0).sum(1, keepdims=True)) * rng.uniform(0, 0.012 * sc, (N, 1))
     dep = rng.uniform(depth[0], depth[1], N) * sc
     fly = rng.random(N) < flyaways
-    dep[fly] += rng.uniform(0.004, 0.02, fly.sum()) * sc
+    dep[fly] += rng.uniform(0.003, 0.01, fly.sum()) * sc
     lfrac = np.clip(rng.uniform(0.55, 1.02, N), 0, 1)
     cl = clump * rng.uniform(0.6, 1.2, N)
     pts = np.zeros((N, K, 3))
@@ -3084,20 +3146,29 @@ def _grow_shell_strands(p, shell, co, tv, tl, uv, N, K, length_scale, depth, clu
         pdep[:, k] = d
     fz = rng.normal(0, 1, pts.shape) * frizz * sc * (T ** 1.3)[None, :, None]
     pts += fz
-    # UV binding of every point via its surface foot point (avoids snapping to another shell layer)
-    puv = np.zeros((N, K, 2))
+    # bind every point to a shell triangle (vertex indices + barycentric weights) on its root's island,
+    # found from its surface foot point; depth along the triangle's winding normal
     flat = (surf + fz).reshape(-1, 3)
-    fuv = puv.reshape(-1, 2)
-    fdep = pdep.reshape(-1)
     fpts = pts.reshape(-1, 3)
-    for i in range(len(flat)):
-        loc, nn, fi, dist = bvh.find_nearest(Vector(flat[i]))
+    nP = len(flat)
+    bidx = np.zeros((nP, 3), np.int32)
+    bw = np.zeros((nP, 3), np.float32)
+    fdep = pdep.reshape(-1).copy()
+    pisl = np.repeat(gisl[owner], K)
+    wn = _norm(np.cross(P3[:, 1] - P3[:, 0], P3[:, 2] - P3[:, 0]))
+    for i in range(nP):
+        loc, nn, fi, dist = bvhs[pisl[i]].find_nearest(Vector(flat[i]))
         if fi is None:
             continue
+        fi = int(tmaps[pisl[i]][fi])
         a, b, c = P3[fi]
-        bc = _bary_np(np.array(loc), a, b, c)
-        fuv[i] = bc @ UV[fi]
-        fdep[i] = (fpts[i] - np.array(loc)).dot(tn[fi])
+        bc = np.clip(_bary_np(np.array(loc), a, b, c), 0, 1)
+        bc /= max(1e-9, bc.sum())
+        bidx[i] = tv[fi]
+        bw[i] = bc
+        fdep[i] = (fpts[i] - bc @ P3[fi]).dot(wn[fi])
+    puv = (bidx, bw)
+    pdep = fdep
     rad = np.tile(np.linspace(1.0, 0.55, K), (N, 1)) * 0.00009 * sc * rng.uniform(0.8, 1.25, (N, 1))
     return pts, puv, pdep, rad
 
@@ -3115,55 +3186,54 @@ def _bary_np(pt, a, b, c):
 
 
 def _follow_shell_group():
-    ng = bpy.data.node_groups.get("PS22_FollowShell")
+    """GN: every strand point = barycentric point of its bound shell triangle (by vertex index)
+    + depth * triangle normal, evaluated on the deformed shell."""
+    ng = bpy.data.node_groups.get("PS22_FollowShell2")
     if ng:
         return ng
-    ng = bpy.data.node_groups.new("PS22_FollowShell", "GeometryNodeTree")
+    ng = bpy.data.node_groups.new("PS22_FollowShell2", "GeometryNodeTree")
     ng.interface.new_socket("Geometry", in_out="INPUT", socket_type="NodeSocketGeometry")
     ng.interface.new_socket("Shell", in_out="INPUT", socket_type="NodeSocketObject")
     ng.interface.new_socket("Geometry", in_out="OUTPUT", socket_type="NodeSocketGeometry")
-    N = ng.nodes
-    L = ng.links
+    N, L = ng.nodes, ng.links
     gi = N.new("NodeGroupInput")
     go = N.new("NodeGroupOutput")
     oi = N.new("GeometryNodeObjectInfo")
     oi.transform_space = "RELATIVE"
     L.new(gi.outputs["Shell"], oi.inputs["Object"])
-    uvmap = N.new("GeometryNodeInputNamedAttribute")
-    uvmap.data_type = "FLOAT_VECTOR"
-    uvmap.inputs["Name"].default_value = "UVMap"
-    suv = N.new("GeometryNodeInputNamedAttribute")
-    suv.data_type = "FLOAT_VECTOR"
-    suv.inputs["Name"].default_value = "shell_uv"
-    sdep = N.new("GeometryNodeInputNamedAttribute")
-    sdep.data_type = "FLOAT"
-    sdep.inputs["Name"].default_value = "shell_depth"
     pos = N.new("GeometryNodeInputPosition")
-    nrm = N.new("GeometryNodeInputNormal")
-    s1 = N.new("GeometryNodeSampleUVSurface")
-    s1.data_type = "FLOAT_VECTOR"
-    s2 = N.new("GeometryNodeSampleUVSurface")
-    s2.data_type = "FLOAT_VECTOR"
-    for sn, val in ((s1, pos), (s2, nrm)):
-        L.new(oi.outputs["Geometry"], sn.inputs["Mesh"])
-        L.new(val.outputs[0], sn.inputs["Value"])
-        L.new(uvmap.outputs["Attribute"], sn.inputs["Source UV Map"] if "Source UV Map" in sn.inputs else sn.inputs[2])
-        L.new(suv.outputs["Attribute"], sn.inputs["Sample UV"])
-    sc = N.new("ShaderNodeVectorMath")
-    sc.operation = "SCALE"
-    L.new(s2.outputs["Value"], sc.inputs[0])
-    L.new(sdep.outputs["Attribute"], sc.inputs["Scale"])
-    add = N.new("ShaderNodeVectorMath")
-    add.operation = "ADD"
-    L.new(s1.outputs["Value"], add.inputs[0])
-    L.new(sc.outputs[0], add.inputs[1])
-    sw = N.new("GeometryNodeSwitch")
-    sw.input_type = "VECTOR"
-    L.new(s1.outputs["Is Valid"], sw.inputs["Switch"])
-    L.new(pos.outputs[0], sw.inputs["False"])
-    L.new(add.outputs[0], sw.inputs["True"])
+
+    def attr(name, kind):
+        a = N.new("GeometryNodeInputNamedAttribute")
+        a.data_type = kind
+        a.inputs["Name"].default_value = name
+        return a.outputs["Attribute"]
+
+    def vm(op, a, b=None, scale=None):
+        n = N.new("ShaderNodeVectorMath")
+        n.operation = op
+        L.new(a, n.inputs[0])
+        if b is not None:
+            L.new(b, n.inputs[1])
+        if scale is not None:
+            L.new(scale, n.inputs["Scale"])
+        return n.outputs[0]
+    P = []
+    for i in range(3):
+        si = N.new("GeometryNodeSampleIndex")
+        si.data_type = "FLOAT_VECTOR"
+        si.domain = "POINT"
+        L.new(oi.outputs["Geometry"], si.inputs["Geometry"])
+        L.new(pos.outputs[0], si.inputs["Value"])
+        L.new(attr("bv%d" % i, "INT"), si.inputs["Index"])
+        P.append(si.outputs[0])
+    acc = vm("SCALE", P[0], scale=attr("bw0", "FLOAT"))
+    acc = vm("ADD", acc, vm("SCALE", P[1], scale=attr("bw1", "FLOAT")))
+    acc = vm("ADD", acc, vm("SCALE", P[2], scale=attr("bw2", "FLOAT")))
+    nrm = vm("NORMALIZE", vm("CROSS_PRODUCT", vm("SUBTRACT", P[1], P[0]), vm("SUBTRACT", P[2], P[0])))
+    final = vm("ADD", acc, vm("SCALE", nrm, scale=attr("shell_depth", "FLOAT")))
     sp = N.new("GeometryNodeSetPosition")
     L.new(gi.outputs["Geometry"], sp.inputs["Geometry"])
-    L.new(sw.outputs[0], sp.inputs["Position"])
+    L.new(final, sp.inputs["Position"])
     L.new(sp.outputs[0], go.inputs[0])
     return ng

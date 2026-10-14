@@ -10,6 +10,7 @@ Inputs ($WORK/audio): narration.wav, phrases.json, music.wav, stems/sfx_*.wav
 Outputs:
   $WORK/audio/mix.wav                 48 kHz stereo PCM 24-bit, final soundtrack (timing = narration)
   $WORK/audio/stems/mix_{narration,music,sfx}.wav   post-fader stems (pre-limiter, same gain staging)
+  $WORK/audio/mix.m4a                 AAC-LC (AAC_KBPS, default 96k) with verified decoded TP <= -1 dBTP
   $WORK/audio/mix_report.json         loudness, true peak, per-phrase voice/music margins
   $WORK/dev/audio/excerpt.mp3         first 90 s
   $WORK/dev/audio/mix_overview.png    waveform/levels/spectrogram (for visual QA)
@@ -25,7 +26,8 @@ OUT = dsp.AUDIO
 TARGET_LUFS = -14.0
 CEILING_DB = -2.0          # limiter ceiling: leaves ~1 dB for AAC (64-96 kbps) decoder overshoot so the
                            # final MP4 stays <= -1 dBTP as well (measured: +0.8..1 dB with a 15.5 kHz LP)
-MASTER_LP_HZ = 15500       # AAC at these bitrates drops >15 kHz anyway; band-limiting first avoids overshoot
+MASTER_LP_HZ = 15500
+AAC_KBPS = int(os.environ.get("AAC_KBPS", "96"))   # mix.m4a: ready-to-mux AAC, decoded TP <= -1 dBTP       # AAC at these bitrates drops >15 kHz anyway; band-limiting first avoids overshoot
 # ducking
 PRE, POST, BRIDGE = .30, .55, 1.0     # s before phrase / after phrase / merge gaps shorter than this
 MUSIC_DUCK_DB = -6.0                  # minimum duck under narration
@@ -75,8 +77,8 @@ def process_narration(v):
     v = dsp.hp(v, 75, order=2)
     v = dsp.filt(v, "peak", 220, q=1.0, gain_db=-1.5)      # a little less boom/boxiness
     v = dsp.filt(v, "peak", 3200, q=.9, gain_db=2.0)       # presence
-    v = dsp.filt(v, "highshelf", 9500, gain_db=1.0)        # air
-    v, ds = deesser(v)
+    v = dsp.filt(v, "peak", 6000, q=2.0, gain_db=-2.0)     # the TTS voice has a sibilance peak at ~6 kHz
+    v, ds = deesser(v, thresh_db=-32)
     v, gr = compressor(v)
     # peak control so the master limiter barely works: peaks <= mono loudness + 14 dB
     lim_ceiling = dsp.loudness(v) + NARR_PEAK_OVER_LUFS
@@ -201,6 +203,19 @@ def ffmpeg_loudness(path):
     return out
 
 
+def encode_aac(wav, out, kbps, max_tp=-1.2):
+    """AAC-LC encode with ffmpeg; low-bitrate AAC adds ~1-3 dB of overshoot on transients, so the
+    decoded true peak is measured and the gain stepped down until it is <= max_tp."""
+    for gain_db in (0.0, -.15, -.3, -.45, -.6, -.8, -1.0, -1.3, -1.6, -2.0):
+        subprocess.run(["ffmpeg", "-y", "-hide_banner", "-loglevel", "error", "-i", wav, "-af",
+                        "volume=%.2fdB" % gain_db, "-c:a", "aac", "-b:a", "%dk" % kbps, out], check=True)
+        m = ffmpeg_loudness(out)
+        if m.get("TP", 0.0) <= max_tp:
+            break
+    return {"path": out, "kbps": kbps, "gain_db": round(gain_db, 2), "I": m.get("I"), "TP": m.get("TP"),
+            "bytes": os.path.getsize(out)}
+
+
 def overview_png(path, mix, narr, music, sfx, T):
     import matplotlib
     matplotlib.use("Agg")
@@ -288,6 +303,7 @@ def main():
 
     # ---- bus levels (before ducking)
     music = fit(dsp.read(os.path.join(OUT, "music.wav")), n)
+    music = dsp.hp(music, 30, order=2).astype(np.float32)
     music, _ = leveler(music)
     vb_st = short_term_max(narr)
     g_music = dsp.undb(vb_st + MUSIC_PEAK_OVER_VOICE - short_term_max(music))
@@ -312,7 +328,7 @@ def main():
     sfx_d = np.zeros_like(music)
     s_rows = {}
     for k, x in sfx_st.items():
-        x *= np.float32(g_sfx)
+        x = dsp.hp(x, 38, order=2).astype(np.float32) * np.float32(g_sfx)   # no sub rumble below 38 Hz
         base, margin = SFX_DUCK[k]
         d, s_rows[k] = plan_ducks(narr, x, ivs, base, margin)
         sfx_d += x * dsp.undb(duck_curve(n, ivs, d)).astype(np.float32)[:, None]
@@ -365,6 +381,7 @@ def main():
         overview_png(os.path.join(dev, "mix_overview.png"), mix, narr * gl, music_d * gl, sfx_d * gl, T)
         subprocess.run(["ffmpeg", "-y", "-hide_banner", "-loglevel", "error", "-i", os.path.join(OUT, "mix.wav"),
                         "-t", "90", "-c:a", "libmp3lame", "-b:a", "192k", os.path.join(dev, "excerpt.mp3")], check=True)
+        rep["aac"] = encode_aac(os.path.join(OUT, "mix.wav"), os.path.join(OUT, "mix.m4a"), AAC_KBPS)
         if a.whisper:
             rep["whisper"] = whisper_check(os.path.join(OUT, "mix.wav"), phrases)
     json.dump(rep, open(os.path.join(OUT, "mix_report.json"), "w"), indent=1)

@@ -17,8 +17,8 @@ DEV = os.path.join(WORK, "dev", "audio")
 # ----------------------------------------------------------------------------- timing
 def load_timing():
     """Read timeline.json + phrases.json and return a dict with shots, blocks, phrases (seconds)."""
-    tl = json.load(open(os.path.join(ROOT, "timeline.json")))
-    ph = json.load(open(os.path.join(AUDIO, "phrases.json")))
+    tl = json.load(open(os.environ.get("TIMELINE", os.path.join(ROOT, "timeline.json"))))
+    ph = json.load(open(os.environ.get("PHRASES", os.path.join(AUDIO, "phrases.json"))))
     fps = tl["fps"]
     total = tl["total_frames"] / fps
     shots = []
@@ -286,7 +286,7 @@ def limiter(x, ceiling_db=-1.2, lookahead=0.004, release=0.12, os_factor=4):
     del H, sm
     k = np.hanning(2 * la + 1); k /= k.sum()
     from scipy.signal import oaconvolve
-    gain = oaconvolve(G0, k, mode="same")              # smooth attack across the look-ahead
+    gain = oaconvolve(np.pad(G0, la, mode="edge"), k, mode="valid")   # smooth attack (look-ahead)
     y = (x * gain[:, None]).astype(np.float32)
     return y, gain.astype(np.float32)
 

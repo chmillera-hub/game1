@@ -11,7 +11,7 @@ with weights transferred from the body / MPFB clothing helpers. See docs/wardrob
 """
 import bpy, bmesh, math, os, random, time, json, hashlib
 import numpy as np
-from mathutils import Vector, Matrix, noise
+from mathutils import Vector, Matrix, Euler, noise
 from mathutils.bvhtree import BVHTree
 from mathutils.kdtree import KDTree
 from . import core as C
@@ -858,9 +858,10 @@ def _np_image(name, arr, noncolor=False):
         return im
     h, w = arr.shape[:2]
     im = bpy.data.images.new(name, w, h, alpha=True, float_buffer=False)
-    im.pixels.foreach_set(np.ascontiguousarray(arr[::-1].astype(np.float32)).ravel())
-    if noncolor:
+    if noncolor:   # must be set BEFORE writing pixels (changing it regenerates a generated image)
         im.colorspace_settings.name = "Non-Color"
+    im.pixels.foreach_set(np.ascontiguousarray(arr[::-1].astype(np.float32)).ravel())
+    im.update()
     im.pack()
     _IMGS[name] = im
     return im
@@ -1141,8 +1142,8 @@ def thorn_material():
     nz.inputs["Distortion"].default_value = 0.6
     L.new(mp.outputs["Vector"], nz.inputs["Vector"])
     cr = nt.nodes.new("ShaderNodeValToRGB")
-    cr.color_ramp.elements[0].color = (*_LIN((0.16, 0.11, 0.07)), 1)
-    cr.color_ramp.elements[1].color = (*_LIN((0.42, 0.34, 0.25)), 1)
+    cr.color_ramp.elements[0].color = (*_LIN((0.11, 0.08, 0.055)), 1)
+    cr.color_ramp.elements[1].color = (*_LIN((0.33, 0.27, 0.20)), 1)
     L.new(nz.outputs["Fac"], cr.inputs["Fac"])
     L.new(cr.outputs["Color"], b.inputs["Base Color"])
     b.inputs["Roughness"].default_value = 0.72
@@ -2032,6 +2033,18 @@ def hide_body(person, idx):
             pass
 
 
+def hide_hair_above(person, B, point, normal):
+    """Hide hair vertices on the positive side of a plane (hair under a turban / helmet / tight hood)."""
+    p0, n = np.asarray(point, float), np.asarray(normal, float)
+    for o in getattr(B, "hair_objs", []):
+        if o.type != "MESH":
+            continue
+        Mo = np.array(person.rig.matrix_world.inverted() @ o.matrix_world)
+        co = _np_co(o.data) @ Mo[:3, :3].T + Mo[:3, 3]
+        idx = np.nonzero((co - p0) @ n > 0)[0]
+        hide_verts(o, idx)
+
+
 def hide_verts(ob, idx, group="wardrobe_hide"):
     """Hide vertices of a garment (or body) with an inverted MASK modifier placed after the Armature."""
     idx = [int(i) for i in idx]
@@ -2278,14 +2291,25 @@ def part_mantle(person, B, rnd, rgb, detail="hero", style="himation", length="ca
                 return (co[:, 1] < cy) & (np.abs(co[:, 0]) < w) & (co[:, 2] < nb[2] + 0.01)
             cuts.append(lambda bm: bm_delete_where(bm, front_open))
         elif style == "cape":
+            zc = sh_z - 0.03 * sc
+
             def cape_cut(co):
                 cf = _column_center(B)
                 cy = np.array([cf(z)[1] for z in co[:, 2]])
                 th = np.arctan2(co[:, 1] - cy, co[:, 0])
-                back = np.sin(th)
-                lim = sh_z - 0.02 - 0.10 * np.clip(back + 0.2, 0, 1) * 0
-                return (back < 0.30) & (co[:, 2] < sh_z - 0.03)
+                return (np.sin(th) < 0.30) & (co[:, 2] < zc)
+
+            def cape_snap(co):
+                out = np.full_like(co, np.nan)
+                cf = _column_center(B)
+                cy = np.array([cf(z)[1] for z in co[:, 2]])
+                th = np.arctan2(co[:, 1] - cy, co[:, 0])
+                m = (np.sin(th) < 0.36) & (np.abs(co[:, 2] - zc) < voxel * 1.6)
+                out[m] = co[m]
+                out[m, 2] = zc
+                return out
             cuts.append(lambda bm: bm_delete_where(bm, cape_cut))
+            cuts.append(lambda bm: bm_snap_boundary(bm, cape_snap))
     G = shell(parts, voxel, cuts)
     G["sleeves"] = sleeves
     _tick("shell")
@@ -2294,7 +2318,7 @@ def part_mantle(person, B, rnd, rgb, detail="hero", style="himation", length="ca
         folds.append(fold_along(rnd, plane[1], plane[0], 0.008, wave=0.055, zmin=waist - 0.05, zmax=top + 0.05))
     else:
         folds.append(fold_crumple(rnd, 0.003, 10, zmin=waist))
-    G = post_shell(B, G, rnd, folds=folds, smooth_iters=5, gap=0.008, layer_gap=0.007)
+    G = post_shell(B, G, rnd, folds=folds, smooth_iters=5, gap=0.008, layer_gap=0.007, bsmooth=4)
     _tick("post")
     extra = []
     if style == "himation" and roll:
@@ -2516,7 +2540,8 @@ def _loft_torus(rings):
     return V, F
 
 
-def part_turban(person, B, rnd, rgb, detail="hero", name="turban", fabric="fine_linen", wraps=6, voxel=None):
+def part_turban(person, B, rnd, rgb, detail="hero", name="turban", fabric="fine_linen", wraps=6, voxel=None,
+                hide_hair=True):
     """Priestly wrapped turban (mitznefet): several wraps of linen + a domed crown."""
     voxel = voxel or (0.008 if detail == "hero" else 0.014)
     sc = _sc(B)
@@ -2558,17 +2583,19 @@ def part_turban(person, B, rnd, rgb, detail="hero", name="turban", fabric="fine_
     ob = finalize(person, B, G, rnd, name, fabric_material(fabric), rgb, detail, hem_z=z0, wear=0.2, wear_band=0.05,
                   thickness=0, uv=column_uv(B, G, cf), weights=W)
     parent_to_bone(ob, person.rig, "head")
+    if hide_hair:
+        hide_hair_above(person, B, (0, 0, z0 - 0.005), (0, 0, 1))
     return [ob], G
 
 
-def part_crown(person, B, rnd, detail="hero", name="crown_of_thorns", strands=3, thorns=None):
+def part_crown(person, B, rnd, detail="hero", name="crown_of_thorns", strands=4, thorns=None):
     """Crown of twisted thorny vines sized to the head, sitting on the hair, slightly tilted (lower at the back)."""
     sc = _sc(B)
     eye_z = B.head("oculi01.L")[2]
     cf = _head_axis(B)
     HP = _head_points(B)
-    zf = eye_z + 0.040 * sc         # front height (forehead, above the brows)
-    zb = eye_z + 0.005 * sc         # back height (occiput)
+    zf = eye_z + 0.030 * sc         # front height (forehead, just above the brows)
+    zb = eye_z + 0.000 * sc         # back height (occiput)
     c0 = np.array(cf(eye_z + 0.03))
     M = 120
     path = []
@@ -2579,7 +2606,7 @@ def part_crown(person, B, rnd, detail="hero", name="crown_of_thorns", strands=3,
         r = ray_radii(hull2d(S[:, :2]), c0, np.array([a]))[0] if len(S) > 5 else 0.09
         path.append((a, z, r))
     path = np.array(path)
-    path[:, 2] = circ_smooth(path[:, 2], 3) + 0.004 * sc
+    path[:, 2] = circ_smooth(path[:, 2], 3) + 0.002 * sc
     P = np.stack([c0[0] + path[:, 2] * np.cos(path[:, 0]), c0[1] + path[:, 2] * np.sin(path[:, 0]), path[:, 1]], 1)
     parts = []
     thorn_pts = []
@@ -2598,7 +2625,7 @@ def part_crown(person, B, rnd, detail="hero", name="crown_of_thorns", strands=3,
             phi = 2 * math.pi * turns * t + ph + 0.6 * _n1(t * 9 + s, 3.3)
             off = 0.008 * sc * (math.cos(phi) * radial * 0.8 + math.sin(phi) * up * 1.3)
             cen = P[i] + off + radial * 0.006
-            rad = (0.0034 + 0.0012 * _n1(t * 23 + s * 7, 1.1)) * sc
+            rad = (0.0042 + 0.0016 * _n1(t * 23 + s * 7, 1.1)) * sc
             nrm2 = np.cross(tg, up)
             ring = [cen + rad * (math.cos(b_) * nrm2 + math.sin(b_) * up) for b_ in np.linspace(0, 2 * math.pi, 6, endpoint=False)]
             rings.append(np.array(ring))
@@ -2606,7 +2633,7 @@ def part_crown(person, B, rnd, detail="hero", name="crown_of_thorns", strands=3,
         parts.append(_loft_torus(rings))
         thorn_pts.append(pts_s)
     # thorns
-    nth = thorns or (110 if detail == "hero" else 50)
+    nth = thorns or (170 if detail == "hero" else 60)
     for k in range(nth):
         s = rnd.randrange(strands)
         i = rnd.randrange(M)
@@ -2656,13 +2683,29 @@ def part_loincloth(person, B, rnd, rgb, detail="hero", name="loincloth", knot_si
     ntop /= np.linalg.norm(ntop)
     nbot = np.array([-ks * 0.30, 0.08, -1.0])
     nbot /= np.linalg.norm(nbot)
+    w_sw = 0.16 * sc
+
+    def z_hem(co):
+        # side-to-side slant (higher at the knot) + a swag dipping in the centre front and back
+        return zbot + 0.022 + 0.30 * ks * co[:, 0] * 0.35 - 0.045 * sc * np.clip(1 - (co[:, 0] / w_sw) ** 2, 0, 1)
+
+    def cut_hem(co):
+        return co[:, 2] < z_hem(co)
+
+    def snap_hem(co):
+        out = np.full_like(co, np.nan)
+        zh = z_hem(co)
+        m = np.abs(co[:, 2] - zh) < voxel * 1.6
+        out[m] = co[m]
+        out[m, 2] = zh[m]
+        return out
     G = shell([(Vc, Fc)], voxel, [lambda bm: bm_cut_plane(bm, (0, cy, ztop - 0.005), ntop),
-                                  lambda bm: bm_cut_plane(bm, (0, cy, zbot), nbot)])
+                                  lambda bm: bm_delete_where(bm, cut_hem), lambda bm: bm_snap_boundary(bm, snap_hem)])
     knot = np.array([ks * 0.165 * sc, cy - 0.055 * sc, ztop - 0.045 * sc])
-    folds = [fold_radial(rnd, knot, fold * 1.2, wave=0.22, reach=0.42, axes=((0, -1, 0), (0, 0, 1))),
-             fold_radial(rnd, knot, fold * 0.8, wave=0.18, reach=0.42, axes=((1, 0, 0), (0, 0, 1))),
-             fold_hanging(B, rnd, crotch + 0.04, zbot, fold * 0.6, wave=0.07, min_frac=0.3)]
-    G = post_shell(B, G, rnd, folds=folds, smooth_iters=4, gap=0.005)
+    folds = [fold_radial(rnd, knot, fold * 1.6, wave=0.16, reach=0.45, axes=((0, -1, 0), (0, 0, 1))),
+             fold_radial(rnd, knot, fold * 1.1, wave=0.13, reach=0.45, axes=((1, 0, 0), (0, 0, 1))),
+             fold_hanging(B, rnd, crotch + 0.04, zbot, fold * 0.9, wave=0.06, min_frac=0.3)]
+    G = post_shell(B, G, rnd, folds=folds, smooth_iters=3, gap=0.005, bsmooth=4)
     # knot + tails
     c = np.array(_column_center(B)(knot[2]))
     th0 = math.atan2(knot[1] - c[1], knot[0] - c[0])
@@ -2810,12 +2853,15 @@ def part_sandals(person, B, rnd, rgb, detail="hero", name="sandals", style="sand
                 straps.append(((0, toe_y + Lf * t, 0), (0.25 * (-1) ** k, 1, -0.7 + 0.05 * k), 0.012))
             for k in range(3):
                 straps.append(((ank[0], ank[1] + 0.005, ank[2] - 0.02 + 0.03 * k), (0.15 * (-1) ** k, 0.15, 1), 0.012))
+        ankle_pts = np.vstack([F_[F_[:, 1] > toe_y + Lf * 0.55], Lw[Lw[:, 2] < ank[2] + 0.06]])
         for (ox, oy, oz), nrm, w in straps:
-            o = np.array([ox if ox else float(allp[:, 0].mean()), oy, oz if oz else ground + 0.03])
-            # place the plane through the foot centre at that y
-            if not oz:
-                o[2] = ground + 0.03
-            b = _plane_band(allp, o, nrm, w * sc, 0.003 * sc, zmin=zmin)
+            if oz:      # ankle straps wrap the ankle / lower shin
+                o = np.array([ox, oy, oz])
+                src = ankle_pts
+            else:       # straps over the foot use only foot points (no shin => no tall loops)
+                o = np.array([float(F_[:, 0].mean()), oy, ground + 0.03])
+                src = F_
+            b = _plane_band(src, o, nrm, w * sc, 0.0025 * sc, zmin=zmin)
             if b is not None:
                 parts.append(b)
         # toe thong between the big toe and second toe up to the instep strap
@@ -2851,7 +2897,7 @@ def part_sandals(person, B, rnd, rgb, detail="hero", name="sandals", style="sand
     return [ob]
 
 
-def part_helmet(person, B, rnd, detail="hero", metal="iron", name="galea", crest=False):
+def part_helmet(person, B, rnd, detail="hero", metal="iron", name="galea", crest=False, hide_hair=True):
     """Roman galea (Imperial-Gallic style): bowl, brow ridge, flared neck guard, hinged cheek guards."""
     sc = _sc(B)
     eye_z = B.head("oculi01.L")[2]
@@ -2931,6 +2977,8 @@ def part_helmet(person, B, rnd, detail="hero", metal="iron", name="galea", crest
                         attrs={"wear": np.clip(0.3 + 0.4 * np.array([_n3(p * 8, 2.0) for p in Vall]), 0, 1),
                                "hem": np.zeros(len(Vall))}, thickness=0.0025, detail=detail)
     parent_to_bone(ob, person.rig, "head")
+    if hide_hair:
+        hide_hair_above(person, B, Fp - n * 0.004, n)
     return [ob]
 
 
@@ -3095,9 +3143,30 @@ def part_tallit(person, B, rnd, rgb, detail="hero", name="prayer_shawl"):
         bad_front = front & ((ax < x_in + np.clip(nb[2] - co[:, 2], 0, 1) * 0.04) | ((ax > x_out) & (co[:, 2] < sh_z - 0.02)))
         bad_back = (~front) & (co[:, 2] < z_back)
         return bad_front | bad_back
-    G = shell([(Vc, Fc)], voxel, [lambda bm: bm_delete_where(bm, cut), lambda bm: _cut_neck(bm, B, 0.025, 0.02)])
+    def snap(co):
+        out = np.full_like(co, np.nan)
+        cy = np.array([cf(z)[1] for z in co[:, 2]])
+        front = co[:, 1] < cy
+        ax = np.abs(co[:, 0])
+        xin = x_in + np.clip(nb[2] - co[:, 2], 0, 1) * 0.04
+        m1 = front & (np.abs(ax - xin) < voxel * 1.5) & (co[:, 2] < nb[2])
+        out[m1] = co[m1]
+        out[m1, 0] = np.sign(co[m1, 0]) * xin[m1]
+        m2 = front & (np.abs(ax - x_out) < voxel * 1.5) & (co[:, 2] < sh_z - 0.02) & ~m1
+        out[m2] = co[m2]
+        out[m2, 0] = np.sign(co[m2, 0]) * x_out
+        m3 = (~front) & (np.abs(co[:, 2] - z_back) < voxel * 1.5)
+        out[m3] = co[m3]
+        out[m3, 2] = z_back
+        m4 = front & (np.abs(co[:, 2] - z_front) < voxel * 1.5) & ~m1 & ~m2
+        out[m4] = co[m4]
+        out[m4, 2] = z_front
+        return out
+    G = shell([(Vc, Fc)], voxel, [lambda bm: bm_delete_where(bm, cut), lambda bm: _cut_neck(bm, B, 0.025, 0.02),
+                                  lambda bm: bm_cut_plane(bm, (0, 0, z_front), (0, 0, -1)),
+                                  lambda bm: bm_snap_boundary(bm, snap)])
     G = post_shell(B, G, rnd, folds=[fold_hanging(B, rnd, chest, z_front, 0.006, wave=0.07, min_frac=0.3)],
-                   smooth_iters=4, gap=0.007, layer_gap=0.007)
+                   smooth_iters=4, gap=0.007, layer_gap=0.007, bsmooth=4)
     V = G["V"]
     # hem distance for the stripes: front panels measure from their bottom, the back from its bottom
     cy = np.array([cf(z)[1] for z in V[:, 2]])
@@ -3139,6 +3208,322 @@ def part_tallit(person, B, rnd, rgb, detail="hero", name="prayer_shawl"):
                         thickness=0.003, detail=detail)
     add_layer(B, V, G["F"], name, W[:len(V)])
     return [ob]
+
+
+# ----------------------------------------------------------------------------------------------
+# Cloth simulation (hero stills / hero shots)
+# ----------------------------------------------------------------------------------------------
+CLOTH = {   # fabric kind -> (mass kg/m2-ish, tension, bending, air damping)
+    "linen": (0.15, 15.0, 0.05, 1.0), "fine_linen": (0.12, 12.0, 0.03, 1.0), "wool": (0.30, 18.0, 0.4, 1.0),
+    "homespun": (0.25, 20.0, 0.3, 1.0), "sackcloth": (0.3, 25.0, 0.6, 1.0), "leather": (0.5, 40.0, 3.0, 1.0),
+}
+RIGID_PARTS = ("crown", "galea", "turban", "sandals", "caligae", "belt", "cingulum", "sash", "apron", "band",
+               "studs", "segmentata", "fibula")
+
+
+def _is_soft(ob):
+    n = ob.get("wardrobe", ob.name)
+    return not any(k in n for k in RIGID_PARTS) and ob.parent_type != "BONE"
+
+
+def auto_pin(person, ob, B=None):
+    """(Re)create the 'pin' vertex group of a garment: vertices that stay glued to the skinned shape during
+    cloth simulation (neck/shoulder band, belt line, head part of head coverings, loincloth waistband)."""
+    B = B or body_info(person)
+    me = ob.data
+    V = _np_co(me)
+    part = ob.get("wardrobe", "")
+    nb = B.head("neck01")
+    sh_z = B.head("upperarm01.L")[2]
+    pin = np.zeros(len(V))
+    if any(k in part for k in ("veil", "headcloth", "hood")):
+        chin = B.tail("jaw")[2]
+        pin = np.clip((V[:, 2] - (chin - 0.02)) / 0.05, 0, 1)
+    elif "loincloth" in part:
+        top = V[:, 2].max()
+        pin = np.clip((V[:, 2] - (top - 0.07)) / 0.04, 0, 1)
+    else:
+        d_neck = np.linalg.norm(V[:, :2] - nb[:2], axis=1)
+        pin = np.clip((V[:, 2] - (sh_z - 0.01)) / 0.04, 0, 1) * np.clip((0.20 - d_neck) / 0.05, 0, 1)
+        if "tunic" in part or "hamata" in part:
+            bz = B.head("spine04")[2] + 0.005
+            pin = np.maximum(pin, np.clip(1 - np.abs(V[:, 2] - bz) / 0.025, 0, 1) * float(ob.get("belted", 1)))
+        if "mantle" in part or "prayer" in part or "sagum" in part or "robe_outer" in part or "humeralia" in part:
+            pin = np.clip((V[:, 2] - (sh_z - 0.04)) / 0.05, 0, 1)
+    g = ob.vertex_groups.get("pin")
+    if g is not None:
+        ob.vertex_groups.remove(g)
+    g = ob.vertex_groups.new(name="pin")
+    for w in np.unique(np.round(pin, 2)):
+        if w <= 0:
+            continue
+        g.add(np.nonzero(np.round(pin, 2) == w)[0].tolist(), float(w), "REPLACE")
+    return g
+
+
+def _pose_snapshot(rig):
+    return {pb.name: (pb.rotation_mode, pb.location.copy(), pb.rotation_quaternion.copy(), pb.rotation_euler.copy(),
+                      pb.scale.copy()) for pb in rig.pose.bones}
+
+
+def _apply_snapshot(rig, snap, t=1.0):
+    from mathutils import Quaternion
+    for pb in rig.pose.bones:
+        mode, loc, q, e, sc = snap[pb.name]
+        pb.location = loc * t
+        pb.scale = Vector((1, 1, 1)).lerp(sc, t)
+        if mode == "QUATERNION":
+            pb.rotation_quaternion = Quaternion((1, 0, 0, 0)).slerp(q, t)
+        elif mode == "AXIS_ANGLE":
+            pass
+        else:
+            pb.rotation_euler = Euler((e.x * t, e.y * t, e.z * t), mode)
+
+
+def _add_collision(body):
+    m = body.modifiers.get("WardrobeCollision")
+    if m is None:
+        m = body.modifiers.new("WardrobeCollision", "COLLISION")
+        # right after the armature + helper mask, before our hide mask / subdivision
+        n = len(body.modifiers)
+        tgt = next((i for i, x in enumerate(body.modifiers) if x.name == "WardrobeHide" or x.type == "SUBSURF"), n - 1)
+        try:
+            body.modifiers.move(n - 1, tgt)
+        except Exception:
+            pass
+    c = body.collision
+    c.thickness_outer = 0.004
+    c.thickness_inner = 0.01
+    c.cloth_friction = 8.0
+    c.damping = 0.4
+    return m
+
+
+def _add_cloth(ob, fabric="linen", quality=5, frame_start=1, frame_end=60, self_collision=False):
+    mass, tension, bend, air = CLOTH.get(fabric, CLOTH["linen"])
+    n = len(ob.modifiers)
+    m = ob.modifiers.new("WardrobeCloth", "CLOTH")
+    tgt = next((i for i, x in enumerate(ob.modifiers) if x.type == "ARMATURE"), -1) + 1
+    try:
+        ob.modifiers.move(n, tgt)
+    except Exception:
+        pass
+    st = m.settings
+    st.quality = quality
+    st.mass = mass
+    st.tension_stiffness = st.compression_stiffness = tension
+    st.shear_stiffness = tension * 0.5
+    st.bending_stiffness = bend
+    st.air_damping = air
+    st.tension_damping = st.compression_damping = 5
+    st.bending_damping = 0.5
+    if ob.vertex_groups.get("pin"):
+        st.vertex_group_mass = "pin"
+        st.pin_stiffness = 1.0
+    cs = m.collision_settings
+    cs.use_collision = True
+    cs.distance_min = 0.004
+    cs.collision_quality = 3
+    cs.use_self_collision = self_collision
+    cs.self_distance_min = 0.003
+    m.point_cache.frame_start = frame_start
+    m.point_cache.frame_end = frame_end
+    return m
+
+
+def _fabric_of(ob):
+    m = ob.data.materials[0] if ob.data.materials else None
+    n = m.name if m else ""
+    for k in ("fine_linen", "linen", "wool", "homespun", "sackcloth", "leather"):
+        if k in n:
+            return k
+    return "linen"
+
+
+def _skin_matrices(rig, ob):
+    """Per vertex-group 4x4 deform matrices (armature space) for the current pose: pose @ rest^-1."""
+    out = {}
+    for g in ob.vertex_groups:
+        pb = rig.pose.bones.get(g.name)
+        if pb is None:
+            continue
+        out[g.index] = np.array(pb.matrix @ pb.bone.matrix_local.inverted())
+    return out
+
+
+def _unskin(rig, ob, P):
+    """Inverse linear-blend skinning: posed armature-space points -> rest-space points for this mesh."""
+    mats = _skin_matrices(rig, ob)
+    me = ob.data
+    R = P.copy()
+    for v in me.vertices:
+        S = np.zeros((4, 4))
+        tw = 0.0
+        for g in v.groups:
+            M = mats.get(g.group)
+            if M is None:
+                continue
+            S += g.weight * M
+            tw += g.weight
+        if tw < 1e-6:
+            continue
+        S /= tw
+        try:
+            q = np.linalg.solve(S, np.append(P[v.index], 1.0))
+            R[v.index] = q[:3] / q[3]
+        except np.linalg.LinAlgError:
+            pass
+    return R
+
+
+def drape(person, garments, frames=30, ramp=20, quality=5, keep_rig=True, self_collision=False, sequential=True,
+          ground=True, verbose=True):
+    """Cloth-simulate garments onto the person's CURRENT pose (static drape with body collision).
+
+    The rig is animated from the rest pose to the current pose over `ramp` frames, then held for `frames`
+    frames so the cloth settles under gravity. Rigid items (crown, helmet, belts, sandals...) are skipped.
+    keep_rig=True bakes the result back into the rest shape by inverse skinning, so the garment still follows
+    small pose changes (breathing, head turns) and exactly reproduces the drape at this pose; keep_rig=False
+    freezes the garment (Armature modifier removed). Inner layers are simulated first and become colliders
+    for the outer ones (sequential=True). ground: True = temporary floor collider under the posed body,
+    a float = floor at that world z, None = no floor. Returns the list of draped objects."""
+    t0 = time.time()
+    rig, body = person.rig, person.body
+    sc = bpy.context.scene
+    B = body_info(person)
+    soft = [g for g in garments if g.type == "MESH" and _is_soft(g)]
+    if not soft:
+        return []
+    f_save, fs_save, fe_save = sc.frame_current, sc.frame_start, sc.frame_end
+    ad = rig.animation_data
+    act_save = ad.action if ad else None
+    snap = _pose_snapshot(rig)
+    if ad:
+        ad.action = None
+    total = ramp + frames
+    F0 = 1
+    sc.frame_start, sc.frame_end = F0, F0 + total
+    _add_collision(body)
+    floor = None
+    if ground is not None:
+        # temporary floor collider at the lowest point of the posed body (or the given world z)
+        if ground is True:
+            dg = bpy.context.evaluated_depsgraph_get()
+            ev = body.evaluated_get(dg)
+            me = ev.to_mesh()
+            Pw = _np_co(me) @ np.array(body.matrix_world)[:3, :3].T + np.array(body.matrix_world)[:3, 3]
+            ev.to_mesh_clear()
+            gz = float(Pw[:, 2].min())
+            cx, cy = Pw[:, 0].mean(), Pw[:, 1].mean()
+        else:
+            gz = float(ground)
+            cx, cy = rig.matrix_world.translation[:2]
+        fm = bpy.data.meshes.new("wardrobe_floor")
+        fm.from_pydata([(cx - 3, cy - 3, gz), (cx + 3, cy - 3, gz), (cx + 3, cy + 3, gz), (cx - 3, cy + 3, gz)], [], [(0, 1, 2, 3)])
+        floor = bpy.data.objects.new("wardrobe_floor", fm)
+        sc.collection.objects.link(floor)
+        floor.modifiers.new("col", "COLLISION")
+        floor.collision.thickness_outer = 0.004
+        floor.collision.cloth_friction = 20
+    done = []
+    groups = [[g] for g in soft] if sequential else [soft]
+    for grp in groups:
+        for g in grp:
+            if g.vertex_groups.get("pin") is None:
+                auto_pin(person, g, B)
+            _add_cloth(g, _fabric_of(g), quality, F0, F0 + total, self_collision)
+            for m in g.modifiers:
+                if m.type in ("SOLIDIFY", "SUBSURF", "MASK"):
+                    m.show_viewport = False
+        for f in range(F0, F0 + total + 1):
+            _apply_snapshot(rig, snap, min(1.0, (f - F0) / max(1, ramp)))
+            sc.frame_set(f)
+        dg = bpy.context.evaluated_depsgraph_get()
+        for g in grp:
+            ev = g.evaluated_get(dg)
+            me = ev.to_mesh()
+            P = _np_co(me)
+            ev.to_mesh_clear()
+            # cloth output is in object space == armature space (garments sit at identity under the rig)
+            m = g.modifiers.get("WardrobeCloth")
+            if m:
+                g.modifiers.remove(m)
+            if keep_rig:
+                R = _unskin(rig, g, P)
+            else:
+                R = P
+                am = g.modifiers.get("Armature")
+                if am:
+                    g.modifiers.remove(am)
+            g.data.vertices.foreach_set("co", R.ravel())
+            g.data.update()
+            for mm in g.modifiers:
+                if mm.type in ("SOLIDIFY", "SUBSURF", "MASK"):
+                    mm.show_viewport = True
+            # it is now a collider for the next layers
+            if sequential and g is not soft[-1]:
+                cm = g.modifiers.new("WardrobeCollision", "COLLISION")
+                g.collision.thickness_outer = 0.003
+            done.append(g)
+        if verbose:
+            print("  [wardrobe] drape %s %.1fs" % ([x.name for x in grp], time.time() - t0), flush=True)
+    for g in soft:
+        m = g.modifiers.get("WardrobeCollision")
+        if m:
+            g.modifiers.remove(m)
+    m = body.modifiers.get("WardrobeCollision")
+    if m:
+        body.modifiers.remove(m)
+    if floor is not None:
+        me = floor.data
+        bpy.data.objects.remove(floor)
+        bpy.data.meshes.remove(me)
+    _apply_snapshot(rig, snap, 1.0)
+    if ad:
+        ad.action = act_save
+    sc.frame_start, sc.frame_end = fs_save, fe_save
+    sc.frame_set(f_save)
+    print("wardrobe.drape(%s) %d garments %.1fs" % (person.body.name, len(done), time.time() - t0), flush=True)
+    return done
+
+
+def cloth_sim(person, garments, ctx=None, preroll=20, frame_end=None, quality=5, self_collision=False):
+    """Live cloth simulation for ANIMATED hero shots (bake through the shot runner).
+
+    Adds a Cloth modifier (after the Armature, pinned by the 'pin' group) to every soft garment and a
+    Collision modifier to the body. The cloth cache starts `preroll` frames before frame 1 and the rig gets
+    rest-pose keys at frame 1-preroll, so the cloth starts from the rest fit and is carried into the first
+    pose. Sets ctx.needs_bake = True (render_shot.py then bakes via core.bake_all before random-access
+    renders). Call AFTER the character's animation has been keyed. Returns the cloth modifiers."""
+    rig, body = person.rig, person.body
+    sc = bpy.context.scene
+    B = body_info(person)
+    f0 = 1 - preroll
+    fe = frame_end or sc.frame_end
+    # rest pose keys at the preroll start (existing action keeps its own keys from frame 1 on)
+    for pb in rig.pose.bones:
+        mode = pb.rotation_mode
+        snap = (pb.location.copy(), pb.rotation_quaternion.copy(), pb.rotation_euler.copy(), pb.scale.copy())
+        pb.location = (0, 0, 0)
+        pb.scale = (1, 1, 1)
+        pb.rotation_quaternion = (1, 0, 0, 0)
+        pb.rotation_euler = (0, 0, 0)
+        pb.keyframe_insert("location", frame=f0)
+        pb.keyframe_insert("rotation_quaternion" if mode == "QUATERNION" else "rotation_euler", frame=f0)
+        pb.location, pb.rotation_quaternion, pb.rotation_euler, pb.scale = snap
+    _add_collision(body)
+    mods = []
+    for g in garments:
+        if g.type != "MESH" or not _is_soft(g):
+            continue
+        if g.vertex_groups.get("pin") is None:
+            auto_pin(person, g, B)
+        mods.append(_add_cloth(g, _fabric_of(g), quality, f0, fe, self_collision))
+    if sc.frame_start > f0:
+        sc.frame_start = f0       # so core.bake_all steps through the preroll (render ranges are explicit)
+    if ctx is not None:
+        ctx.needs_bake = True
+    return mods
 
 
 # ----------------------------------------------------------------------------------------------

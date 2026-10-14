@@ -159,34 +159,6 @@ def _add_noise(fc, scale=8.0, strength=1.0, phase=0.0, depth=1, offset=0.0):
     return m
 
 
-def _flicker_prop(id_data, path, base, amount, scale, phase, depth=1, index=-1):
-    """Key `path` = base and add an f-curve noise of +-amount/2 (normalised noise is ~[-0.5, 0.5])."""
-    if index >= 0:
-        getattr(id_data, path)[index] = base
-        id_data.keyframe_insert(path, index=index, frame=1)
-        fc = _find_fcurve(id_data, path, index)
-    else:
-        id_data.path_resolve(path)
-        _set_by_path(id_data, path, base)
-        id_data.keyframe_insert(path, frame=1)
-        fc = _find_fcurve(id_data, path, 0)
-    if fc is not None and amount:
-        _add_noise(fc, scale=scale, strength=amount, phase=phase, depth=depth)
-    return fc
-
-
-def _set_by_path(id_data, path, v):
-    if path.startswith("["):
-        id_data[path[2:-2]] = v
-    elif path.startswith("modifiers["):
-        # modifiers["Name"]["Socket_2"]
-        mname = path.split('"')[1]
-        key = path.split('"')[3]
-        id_data.modifiers[mname][key] = v
-    else:
-        setattr(id_data, path, v)
-
-
 # ---------------------------------------------------------------------------------------------
 # Node builder (works for shader and geometry node trees)
 # ---------------------------------------------------------------------------------------------
@@ -1265,15 +1237,38 @@ def _earth_file(key):
         return p
     os.makedirs(EARTH_DIR, exist_ok=True)
     from . import polyhaven as ph
+    if key == "water":
+        return _make_water_mask(p)
     src = {"day": "world.topo.bathy.200404.3x5400x2700.jpg", "night": "dnb_land_ocean_ice.2012.3600x1800.jpg",
            "clouds": "cloud_combined_2048.jpg"}.get(key)
-    if src is None:
-        return None          # water mask: optional
     q = os.path.join(EARTH_DIR, src)
     try:
         return ph._download(EARTH_URLS[src], q)
     except Exception as e:  # offline: earth renders without this layer
         print("fx.earth: missing texture", key, e)
+        return None
+
+
+def _make_water_mask(dst):
+    """Derive an ocean mask (white = water) from the Blue Marble day map (ocean = dark, blue-dominant)."""
+    try:
+        day = _earth_file("day")
+        im = bpy.data.images.load(day, check_existing=True)
+        w, h = im.size
+        a = np.empty(w * h * 4, np.float32)
+        im.pixels.foreach_get(a)
+        a = a.reshape(h, w, 4)
+        r, g, b = a[..., 0], a[..., 1], a[..., 2]
+        m = ((b > r * 1.15) & (b > g * 0.95) & (r < 0.25)).astype(np.float32)   # byte image -> sRGB-encoded values
+        out = bpy.data.images.new("FX_water_mask", w, h, alpha=False)
+        px = np.stack([m, m, m, np.ones_like(m)], -1).ravel()
+        out.pixels.foreach_set(px)
+        out.filepath_raw = dst
+        out.file_format = "PNG"
+        out.save()
+        return dst
+    except Exception as e:
+        print("fx.earth: could not derive water mask:", e)
         return None
 
 
@@ -1880,8 +1875,8 @@ def red_sea(ctx=None, length=640.0, width=36.0, height=45.0, center_y=0.0, shore
     parts["sea"] = seas
     # ---- spray off the crests
     if spray:
-        t_a = (frame_start - 1) / fps - 4.0
-        t_b = (frame_end - 1) / fps + 0.5
+        t_a = -4.0                                   # effect time is relative to frame_start
+        t_b = (frame_end - frame_start) / fps + 0.5
         crest_len = (y1 - y0) - 2 * shore_slope * 0.6
         n = int(spray_rate * crest_len * (t_b - t_a) * 2)
         n = min(n, 14000)
@@ -2108,13 +2103,14 @@ def ash_disintegrate(obj, start_frame, duration, direction=(1, 0, 0), wind=None,
     w_obj = Rinv @ Vector(wind)
     g_obj = Rinv @ Vector((0, 0, gravity))
     extent = max(dmax - dmin, 1e-3)
-    mat = _ash_material("FX_ash_%d" % seed, ash_color, glow_color, glow)
+    mat = _ash_material("FX_ash_%d_%s" % (seed, "_".join("%.2f" % c for c in tuple(ash_color) + tuple(glow_color) + (glow,))),
+                        ash_color, glow_color, glow)
     md = obj.modifiers.new("Ash", "NODES")
     md.node_group = _ash_tree()
     _mod_set(md, Frame0=1.0, FPS=float(fps), T0=float((start_frame - 1) / fps), Dur=float(duration / fps),
              Dir=tuple(d_obj), Dmin=dmin, Dmax=dmax, Jitter=float(jitter), Noise_Scale=float(noise_scale or 4.0 / extent),
              Density=float(density), Seed=int(seed), Life=float(life), Size=float(size_obj), Kick=0.6 / max(sc_len, 1e-6),
-             Gravity=tuple(g_obj), Drag=1.2, Wind=tuple(w_obj), Turb_Amp=float(turbulence) / max(sc_len, 1e-6) * 0 + float(turbulence),
+             Gravity=tuple(g_obj), Drag=1.2, Wind=tuple(w_obj), Turb_Amp=float(turbulence),
              Turb_Scale=1.5, Turb_Speed=0.6, Keep_Mesh=bool(keep_mesh), Mode=0 if mode == "points" else 1,
              Spin=4.0, Instance=_flake_src(), Material=mat)
     if edge_glow:
@@ -2230,4 +2226,608 @@ def dust_pour(hand_location, start_frame, end_frame=None, rate=2500, opening=0.0
                            instance=src, spin=0.3, floor=fl + 0.02, floor_mode=1, seed=seed + 2, coll=coll)
         _parent(ho, root)
         parts["haze"] = ho
+    return FX(root, **parts)
+
+
+# =============================================================================================
+# 6. MELTING CANDLE
+# =============================================================================================
+def _melt_u(nb, gi):
+    """GN: melt progress u (0..1) from scene frame, Frame0/Frame1 inputs."""
+    st = nb.n("GeometryNodeInputSceneTime")
+    u = nb.div(nb.sub(st.outputs["Frame"], gi.outputs["Frame0"]), nb.m("MAXIMUM", nb.sub(gi.outputs["Frame1"], gi.outputs["Frame0"]), 1.0))
+    return nb.m("MINIMUM", nb.m("MAXIMUM", u, 0.0), 1.0)
+
+
+def _candle_trees():
+    common = [("Geometry", "NodeSocketGeometry"), ("Frame0", "NodeSocketFloat", 1.0), ("Frame1", "NodeSocketFloat", 100.0),
+              ("H0", "NodeSocketFloat", 0.14), ("H1", "NodeSocketFloat", 0.03), ("R", "NodeSocketFloat", 0.022),
+              ("Pool R", "NodeSocketFloat", 0.07), ("Seed", "NodeSocketFloat", 0.0)]
+    out = {}
+    # ---- body
+    name = "FX_CandleBody"
+    if name not in bpy.data.node_groups:
+        t, nb, gi, go = _gn_tree(name, common)
+        u = _melt_u(nb, gi)
+        h = nb.mixf(u, gi.outputs["H0"], gi.outputs["H1"])
+        ps = nb.sep(nb.out(nb.n("GeometryNodeInputPosition")))
+        s_, dz = nb.attr("fx_s"), nb.attr("fx_dz")
+        z = nb.add(nb.mul(s_, h), dz)
+        # slight sag / irregular rim as it melts
+        ang = nb.m("ARCTAN2", nb.out(ps, "Y"), nb.out(ps, "X"))
+        rimn = nb.out(nb.noise(nb.xyz(nb.m("COSINE", ang), nb.m("SINE", ang), nb.mul(u, 3.0)), scale=1.5, detail=2.0), "Fac")
+        top = nb.smooth(s_, 0.97, 1.0)
+        z = nb.add(z, nb.mul(nb.mul(top, nb.sub(rimn, 0.5)), nb.mul(gi.outputs["R"], 0.25)))
+        g = nb.out(nb.n("GeometryNodeSetPosition", {"Geometry": gi.outputs["Geometry"], "Position": nb.xyz(nb.out(ps, "X"), nb.out(ps, "Y"), z)}))
+        g = nb.out(nb.n("GeometryNodeStoreNamedAttribute", {"Geometry": g, "Name": "fx_below", "Value": nb.sub(h, z)}, data_type="FLOAT", domain="POINT"))
+        nb.links.new(g, go.inputs[0])
+    out["body"] = bpy.data.node_groups[name]
+    # ---- drips
+    name = "FX_CandleDrips"
+    if name not in bpy.data.node_groups:
+        t, nb, gi, go = _gn_tree(name, common)
+        u = _melt_u(nb, gi)
+        H0, H1, R = gi.outputs["H0"], gi.outputs["H1"], gi.outputs["R"]
+        h = nb.mixf(u, H0, H1)
+        th, ub, vf, w = nb.attr("d_th"), nb.attr("d_ub"), nb.attr("d_v"), nb.attr("d_w")
+        f, ox, oy, cap = nb.attr("d_f"), nb.attr("d_ox"), nb.attr("d_oy"), nb.attr("d_cap")
+        hb = nb.mixf(ub, H0, H1)
+        grow = nb.m("MAXIMUM", nb.sub(u, ub), 0.0)
+        # a drip runs down fast, then stays on the wall as a solidified ridge; its upper part melts away
+        # with the sinking top (ztop = min(current top, birth height)); gone once the top passes its end
+        ztop = nb.sub(nb.m("MINIMUM", h, hb), 0.002)
+        zbot = nb.m("MAXIMUM", nb.sub(nb.sub(hb, 0.004), nb.mul(vf, grow)), 0.002)
+        alive = nb.mul(nb.m("GREATER_THAN", u, ub), nb.m("LESS_THAN", nb.add(zbot, 0.003), ztop))
+        swell = nb.m("MINIMUM", nb.mul(grow, 12.0), 1.0)
+        rad = nb.mul(nb.mul(w, nb.madd(f, 0.9, 0.45)), nb.mul(swell, alive))
+        zc = nb.add(nb.mixf(f, ztop, zbot), nb.mul(cap, nb.mul(rad, -1.0)))
+        c, s_ = nb.m("COSINE", th), nb.m("SINE", th)
+        rr = nb.add(R, nb.mul(rad, 0.45))
+        x = nb.add(nb.mul(c, nb.add(rr, nb.mul(ox, rad))), nb.mul(nb.mul(s_, -1.0), nb.mul(oy, rad)))
+        y = nb.add(nb.mul(s_, nb.add(rr, nb.mul(ox, rad))), nb.mul(c, nb.mul(oy, rad)))
+        g = nb.out(nb.n("GeometryNodeSetPosition", {"Geometry": gi.outputs["Geometry"], "Position": nb.xyz(x, y, zc)}))
+        g = nb.out(nb.n("GeometryNodeStoreNamedAttribute", {"Geometry": g, "Name": "fx_below", "Value": nb.sub(h, zc)}, data_type="FLOAT", domain="POINT"))
+        g = nb.out(nb.n("GeometryNodeDeleteGeometry", {"Geometry": g, "Selection": nb.m("LESS_THAN", alive, 0.5)}, domain="POINT"))
+        nb.links.new(g, go.inputs[0])
+    out["drips"] = bpy.data.node_groups[name]
+    # ---- pool
+    name = "FX_CandlePool"
+    if name not in bpy.data.node_groups:
+        t, nb, gi, go = _gn_tree(name, common)
+        u = _melt_u(nb, gi)
+        R, PR = gi.outputs["R"], gi.outputs["Pool R"]
+        pr, pa = nb.attr("p_r"), nb.attr("p_a")
+        grow = nb.m("POWER", nb.smooth(u, 0.05, 1.0), 0.6)
+        rpool = nb.mixf(grow, nb.mul(R, 0.9), PR)
+        lob = nb.out(nb.noise(nb.xyz(nb.m("COSINE", pa), nb.m("SINE", pa), gi.outputs["Seed"]), scale=1.3, detail=2.0), "Fac")
+        rr = nb.mul(nb.mul(pr, rpool), nb.madd(nb.sub(lob, 0.5), 0.7, 1.0))
+        hgt = nb.mul(nb.sub(1.0, nb.m("POWER", pr, 4.0)), nb.madd(grow, 0.0035, 0.0008))
+        g = nb.out(nb.n("GeometryNodeSetPosition", {"Geometry": gi.outputs["Geometry"],
+                                                     "Position": nb.xyz(nb.mul(nb.m("COSINE", pa), rr), nb.mul(nb.m("SINE", pa), rr), hgt)}))
+        g = nb.out(nb.n("GeometryNodeStoreNamedAttribute", {"Geometry": g, "Name": "fx_below", "Value": nb.mul(pr, 0.05)}, data_type="FLOAT", domain="POINT"))
+        nb.links.new(g, go.inputs[0])
+    out["pool"] = bpy.data.node_groups[name]
+    return out
+
+
+def wax_material(name="FX_beeswax", color=(0.8, 0.46, 0.1), glow_color=(1.0, 0.5, 0.12), glow=0.9, glow_depth=0.012,
+                 rough=0.38, sss=0.35):
+    """Beeswax: warm amber, soft subsurface, subtle honeycomb-ish bump, glows near the flame
+    (attribute fx_below = metres below the current top, written by melting_candle)."""
+    if name in bpy.data.materials:
+        return bpy.data.materials[name]
+    m, nb, out = _new_mat(name)
+    oc = nb.n("ShaderNodeTexCoord").outputs["Object"]
+    below = nb.out(nb.sattr("fx_below"), "Fac")
+    g = nb.m("EXPONENT", nb.mul(nb.m("MAXIMUM", below, 0.0), -1.0 / glow_depth))
+    n = nb.out(nb.noise(nb.v("SCALE", oc, scale=180.0), scale=1.0, detail=3.0), "Fac")
+    vor = nb.n("ShaderNodeTexVoronoi", {"Vector": oc, "Scale": 220.0}, feature="DISTANCE_TO_EDGE")
+    hex_ = nb.smooth(nb.out(vor, "Distance"), 0.0, 0.08)
+    var = nb.out(nb.noise(nb.v("SCALE", oc, scale=25.0), scale=1.0, detail=2.0), "Fac")
+    base = nb.mixc(nb.mul(var, 0.4), color, nb.v("SCALE", color, scale=0.8))
+    b = nb.n("ShaderNodeBsdfPrincipled", {"Base Color": base, "Roughness": nb.madd(n, 0.15, rough - 0.07),
+                                           "Subsurface Weight": sss, "Subsurface Radius": (1.0, 0.45, 0.15),
+                                           "Subsurface Scale": 0.004, "Emission Color": glow_color,
+                                           "Emission Strength": nb.mul(g, glow), "Coat Weight": 0.15, "Coat Roughness": 0.2})
+    bump = nb.n("ShaderNodeBump", {"Height": nb.add(nb.mul(hex_, 0.4), n), "Distance": 0.0004, "Strength": 0.35})
+    nb.links.new(nb.out(bump), b.inputs["Normal"])
+    nb.links.new(nb.out(b), out.inputs["Surface"])
+    return m
+
+
+def melting_candle(loc=(0, 0, 0), start_frame=1, end_frame=None, height=(0.14, 0.035), radius=0.022, drips=9,
+                   pool_radius=0.075, flame_size=0.03, flicker=2.4, light_energy=None, color=(0.78, 0.38, 0.07),
+                   seed=0, name="MeltCandle", coll=None):
+    """Time-lapse beeswax candle (s10b): the top sinks from height[0] to height[1] (m) between
+    start_frame and end_frame, drips run down the sides and spread into a pool, the flame gutters.
+    Returns FX(root, body, drips, pool, wick, flame (FX of flame()), height_at(frame) -> m)."""
+    end_frame = end_frame or bpy.context.scene.frame_end
+    rng = np.random.default_rng(seed)
+    H0, H1 = height
+    R = radius
+    root = _empty(name, loc, coll, size=0.05)
+    trees = _candle_trees()
+    vals = dict(Frame0=float(start_frame), Frame1=float(end_frame), H0=float(H0), H1=float(H1), R=float(R),
+                Pool_R=float(pool_radius), Seed=float(seed))
+    wax = wax_material("FX_beeswax_%d" % seed, color)
+
+    def height_at(f):
+        u = min(1.0, max(0.0, (f - start_frame) / max(1.0, end_frame - start_frame)))
+        return H0 + (H1 - H0) * u
+
+    # ---- body: wall rows (fx_s 0..1) + rim + shallow molten cup (fx_s = 1, fx_dz offsets)
+    segs = 40
+    prof = [(R * 0.97, 0.0, 0.0)]
+    for i in range(0, 31):
+        prof.append((R, (i / 30) ** 0.8, 0.0))
+    prof += [(R * 0.985, 1.0, 0.0015), (R * 0.93, 1.0, 0.0022), (R * 0.85, 1.0, 0.0005), (R * 0.7, 1.0, -0.003),
+             (R * 0.45, 1.0, -0.0045), (R * 0.2, 1.0, -0.005), (0.0, 1.0, -0.005)]
+    verts, ss, dzs, faces, rings = [], [], [], [], []
+    for r, s_, dz in prof:
+        idx = []
+        n = 1 if r == 0 else segs
+        for i in range(n):
+            a = 2 * math.pi * i / segs
+            idx.append(len(verts))
+            verts.append((r * math.cos(a), r * math.sin(a), 0.0))
+            ss.append(s_)
+            dzs.append(dz)
+        rings.append(idx)
+    for a, b in zip(rings[:-1], rings[1:]):
+        if len(b) == 1:
+            for i in range(segs):
+                faces.append((a[i], a[(i + 1) % segs], b[0]))
+        else:
+            for i in range(segs):
+                j = (i + 1) % segs
+                faces.append((a[i], a[j], b[j], b[i]))
+    faces.append(tuple(reversed(rings[0])))
+    body = _mesh_obj(name + "_body", verts, faces, coll, smooth=True)
+    for nm, arr in (("fx_s", ss), ("fx_dz", dzs)):
+        at = body.data.attributes.new(nm, "FLOAT", "POINT")
+        at.data.foreach_set("value", np.asarray(arr, np.float32))
+    _mod(body, trees["body"], "Melt", **vals)
+    C.assign(body, wax)
+    _parent(body, root)
+    # ---- drips (tubes with bulb caps)
+    dv, dfaces, A = [], [], {k: [] for k in ("d_th", "d_ub", "d_v", "d_w", "d_f", "d_ox", "d_oy", "d_cap")}
+    nseg, nring = 7, 12
+    for d in range(drips):
+        th = rng.uniform(0, 2 * math.pi)
+        ub = rng.uniform(0.0, 0.85)
+        vflow = rng.uniform(0.6, 4.0) * (H0 - H1)
+        w = rng.uniform(0.0012, 0.0026) * R / 0.022
+        base = len(dv)
+        rows = [(i / (nring - 1), 0.0, 1.0) for i in range(nring)] + [(1.0, 0.55, 0.8), (1.0, 0.9, 0.45)]
+        for f, cap, sc in rows:
+            for k in range(nseg):
+                a = 2 * math.pi * k / nseg
+                dv.append((0, 0, 0))
+                for key, val in (("d_th", th), ("d_ub", ub), ("d_v", vflow), ("d_w", w), ("d_f", f),
+                                 ("d_ox", math.cos(a) * sc), ("d_oy", math.sin(a) * sc), ("d_cap", cap)):
+                    A[key].append(val)
+        dv.append((0, 0, 0))   # bottom pole
+        for key, val in (("d_th", th), ("d_ub", ub), ("d_v", vflow), ("d_w", w), ("d_f", 1.0), ("d_ox", 0.0), ("d_oy", 0.0), ("d_cap", 1.05)):
+            A[key].append(val)
+        nr = len(rows)
+        for r in range(nr - 1):
+            for k in range(nseg):
+                a0 = base + r * nseg + k
+                a1 = base + r * nseg + (k + 1) % nseg
+                dfaces.append((a0, a1, a1 + nseg, a0 + nseg))
+        pole = base + nr * nseg
+        for k in range(nseg):
+            dfaces.append((base + (nr - 1) * nseg + k, base + (nr - 1) * nseg + (k + 1) % nseg, pole))
+    dr = _mesh_obj(name + "_drips", dv, dfaces, coll, smooth=True)
+    for key, arr in A.items():
+        at = dr.data.attributes.new(key, "FLOAT", "POINT")
+        at.data.foreach_set("value", np.asarray(arr, np.float32))
+    _mod(dr, trees["drips"], "Drips", **vals)
+    C.assign(dr, wax)
+    _parent(dr, root)
+    # ---- pool
+    pv, pf, PRs, PAs = [(0, 0, 0)], [], [0.0], [0.0]
+    pr_n, pa_n = 10, 48
+    for i in range(1, pr_n + 1):
+        for k in range(pa_n):
+            pv.append((0, 0, 0))
+            PRs.append((i / pr_n) ** 0.7)
+            PAs.append(2 * math.pi * k / pa_n)
+    for k in range(pa_n):
+        pf.append((0, 1 + k, 1 + (k + 1) % pa_n))
+    for i in range(pr_n - 1):
+        for k in range(pa_n):
+            a = 1 + i * pa_n + k
+            b = 1 + i * pa_n + (k + 1) % pa_n
+            pf.append((a, a + pa_n, b + pa_n, b) if False else (a, b, b + pa_n, a + pa_n))
+    pool = _mesh_obj(name + "_pool", pv, pf, coll, smooth=True)
+    for nm, arr in (("p_r", PRs), ("p_a", PAs)):
+        at = pool.data.attributes.new(nm, "FLOAT", "POINT")
+        at.data.foreach_set("value", np.asarray(arr, np.float32))
+    _mod(pool, trees["pool"], "Pool", **vals)
+    pwax = wax_material("FX_beeswax_pool_%d" % seed, color, glow=0.5, glow_depth=0.004, rough=0.12)
+    C.assign(pool, pwax)
+    _parent(pool, root)
+    # ---- wick + flame riding the sinking top
+    top = _empty(name + "_top", (0, 0, H0), coll, size=0.01)
+    _parent(top, root)
+    C.key_fn(top, "location", lambda f: Vector((0, 0, height_at(f) - 0.004)), 1, bpy.context.scene.frame_end)
+    wk = _lathe(name + "_wick", [(0.0007, 0.0), (0.0007, 0.006), (0.0006, 0.009), (0.0, 0.0105)], segs=6, coll=coll)
+    wk.rotation_euler = (0.25, 0.1, 0)
+    wm, wnb, wout = _new_mat("FX_wick")
+    oc = wnb.n("ShaderNodeTexCoord").outputs["Object"]
+    tip = wnb.smooth(wnb.out(wnb.sep(oc), "Z"), 0.006, 0.0105)
+    wb = wnb.n("ShaderNodeBsdfPrincipled", {"Base Color": (0.015, 0.012, 0.01), "Roughness": 0.8, "Emission Color": (1.0, 0.35, 0.05),
+                                            "Emission Strength": wnb.mul(tip, 12.0)})
+    wnb.links.new(wnb.out(wb), wout.inputs["Surface"])
+    C.assign(wk, wm)
+    _parent(wk, top)
+    fl = flame((0, 0, 0.007), size=flame_size, color_temp=1850, flicker=flicker, seed=seed, light_energy=light_energy,
+               light_radius=0.008, name=name + "_flame", coll=coll, parent=top)
+    # light leaking through the translucent wax onto the pool / table (the body would otherwise shadow it)
+    e = fl.light.data.energy if fl.light else 1.2
+    glow_l = _point_light(name + "_waxglow", (0, 0, H0 * 0.6), e * 0.18, 1700, R * 0.9, False, coll)
+    glow_l.data.use_soft_falloff = True
+    _parent(glow_l, root)
+    C.key_fn(glow_l, "location", lambda f: Vector((0, 0, max(0.006, height_at(f) - 0.012))), 1, bpy.context.scene.frame_end, step=2)
+    return FX(root, body=body, drips=dr, pool=pool, wick=wk, flame=fl, top=top, height_at=height_at, material=wax,
+              glow_light=glow_l)
+
+
+# =============================================================================================
+# 5. WATER POUR
+# =============================================================================================
+def water_material(name="FX_water", rough=0.02, tint=(0.92, 0.97, 1.0), raytrace=True):
+    """Clear water (transmission, IOR 1.333). Best with ctx.render_opts['raytracing'] = True."""
+    if name in bpy.data.materials:
+        return bpy.data.materials[name]
+    m = C.mat(name, tint, rough=rough, ior=1.333, transmission=1.0, spec=0.6)
+    try:
+        m.use_raytrace_refraction = raytrace
+        m.thickness_mode = "SPHERE"
+    except Exception:
+        pass
+    return m
+
+
+def _terracotta_material(name="FX_terracotta", color=(0.5, 0.25, 0.14), wet_lip=True):
+    if name in bpy.data.materials:
+        return bpy.data.materials[name]
+    m, nb, out = _new_mat(name)
+    oc = nb.n("ShaderNodeTexCoord").outputs["Object"]
+    n1 = nb.out(nb.noise(nb.v("SCALE", oc, scale=6.0), scale=1.0, detail=4.0), "Fac")
+    n2 = nb.out(nb.noise(nb.v("SCALE", oc, scale=60.0), scale=1.0, detail=3.0), "Fac")
+    ring = nb.m("SINE", nb.add(nb.mul(nb.out(nb.sep(oc), "Z"), 260.0), nb.mul(n1, 4.0)))   # faint wheel-throwing rings
+    col = nb.mixc(nb.mul(n1, 0.6), color, nb.v("MULTIPLY", color, (1.2, 1.1, 0.95)))
+    col = nb.mixc(nb.mul(n2, 0.25), col, nb.v("SCALE", col, scale=0.7))
+    rough = nb.madd(n2, 0.15, 0.75)
+    if wet_lip:
+        # darker, glossier where water runs over the lip (object z near the top, wet streaks)
+        z = nb.out(nb.sep(oc), "Z")
+        wet = nb.mul(nb.smooth(z, 0.24, 0.31), nb.smooth(nb.out(nb.noise(nb.v("MULTIPLY", oc, (30.0, 30.0, 4.0)), scale=1.0, detail=2.0), "Fac"), 0.4, 0.6))
+        col = nb.mixc(wet, col, nb.v("SCALE", col, scale=0.5))
+        rough = nb.mixf(wet, rough, 0.2)
+    b = nb.n("ShaderNodeBsdfPrincipled", {"Base Color": col, "Roughness": rough})
+    bump = nb.n("ShaderNodeBump", {"Height": nb.add(nb.mul(ring, 0.15), n2), "Distance": 0.0008, "Strength": 0.5})
+    nb.links.new(nb.out(bump), b.inputs["Normal"])
+    nb.links.new(nb.out(b), out.inputs["Surface"])
+    return m
+
+
+def clay_jar(height=0.32, name="ClayJar", coll=None, material=None):
+    """Simple wheel-thrown earthen jar (lathe), base at z=0, mouth at z=height. Returns object.
+    The lip centre is at (0, 0, height)."""
+    k = height / 0.32
+    prof = [(0.0, 0.0), (0.055, 0.0), (0.065, 0.01), (0.1, 0.06), (0.122, 0.12), (0.124, 0.15), (0.112, 0.2),
+            (0.08, 0.245), (0.048, 0.27), (0.041, 0.29), (0.044, 0.307), (0.052, 0.316), (0.05, 0.322), (0.043, 0.32),
+            (0.036, 0.305), (0.035, 0.28), (0.05, 0.255), (0.0, 0.25)]
+    o = _lathe(name, [(r * k, z * k) for r, z in prof], segs=36, coll=coll)
+    C.assign(o, material or _terracotta_material())
+    return o
+
+
+def _stream_tree():
+    name = "FX_WaterStream"
+    if name in bpy.data.node_groups:
+        return bpy.data.node_groups[name]
+    t, nb, gi, go = _gn_tree(name, [
+        ("Geometry", "NodeSocketGeometry"), ("Frame0", "NodeSocketFloat", 1.0), ("FPS", "NodeSocketFloat", 24.0),
+        ("Time Scale", "NodeSocketFloat", 0.25), ("Lip", "NodeSocketVector", (0, 0, 0.6)), ("V0", "NodeSocketVector", (0.5, 0, 0)),
+        ("Gravity", "NodeSocketVector", (0, 0, -9.81)), ("Smax", "NodeSocketFloat", 0.35), ("R0", "NodeSocketFloat", 0.012),
+        ("Stop", "NodeSocketFloat", 3.0), ("Ripple", "NodeSocketFloat", 0.25), ("Ground", "NodeSocketFloat", 0.0),
+        ("Material", "NodeSocketMaterial")])
+    G = lambda k: gi.outputs[k]
+    st = nb.n("GeometryNodeInputSceneTime")
+    T = nb.mul(nb.div(nb.sub(st.outputs["Frame"], G("Frame0")), G("FPS")), G("Time Scale"))
+    sn, ang = nb.attr("w_s"), nb.attr("w_a")
+    s_ = nb.mul(sn, G("Smax"))
+    emit = nb.sub(T, s_)                              # when this slice of water left the lip
+    env = nb.mul(nb.smooth(emit, 0.0, 0.06), nb.sub(1.0, nb.smooth(emit, nb.sub(G("Stop"), 0.25), G("Stop"))))
+    # thinning as the flow eases off at the end
+    env = nb.mul(env, nb.madd(nb.sub(1.0, nb.smooth(emit, nb.sub(G("Stop"), 1.0), G("Stop"))), 0.5, 0.5))
+    vel = nb.v("ADD", G("V0"), nb.v("SCALE", G("Gravity"), scale=s_))
+    c = nb.v("ADD", nb.v("ADD", G("Lip"), nb.v("SCALE", G("V0"), scale=s_)), nb.v("SCALE", G("Gravity"), scale=nb.mul(nb.mul(s_, s_), 0.5)))
+    # lateral wobble growing with distance (travels with the water)
+    wob = nb.noise(nb.xyz(emit, 0.0, 0.0), scale=6.0, detail=1.0)
+    wv = nb.v("SCALE", nb.v("SUBTRACT", nb.out(wob, "Color"), (0.5, 0.5, 0.5)), scale=nb.mul(sn, 0.03))
+    c = nb.v("ADD", c, nb.v("MULTIPLY", wv, (1.0, 1.0, 0.0)))
+    tng = nb.v("NORMALIZE", vel)
+    ref = nb.v("NORMALIZE", nb.v("CROSS_PRODUCT", G("V0"), G("Gravity")))
+    n2 = nb.v("NORMALIZE", nb.v("CROSS_PRODUCT", tng, ref))
+    spd0 = nb.v("LENGTH", G("V0"))
+    spd = nb.m("MAXIMUM", nb.v("LENGTH", vel), 0.01)
+    r = nb.mul(G("R0"), nb.m("SQRT", nb.div(nb.m("MAXIMUM", spd0, 0.05), spd)))
+    # ripples / beads travelling with the flow + twisting elliptical section
+    rip = nb.out(nb.noise(nb.xyz(nb.mul(emit, 9.0), nb.mul(nb.m("COSINE", ang), 0.6), nb.mul(nb.m("SINE", ang), 0.6)), scale=1.0, detail=3.0), "Fac")
+    r = nb.mul(r, nb.madd(nb.sub(rip, 0.5), nb.mul(G("Ripple"), nb.madd(sn, 2.5, 1.0)), 1.0))
+    twist = nb.add(nb.mul(emit, 7.0), nb.mul(sn, 5.0))
+    ell = nb.madd(nb.m("COSINE", nb.mul(nb.sub(ang, twist), 2.0)), nb.mul(sn, 0.35), 1.0)
+    r = nb.mul(nb.mul(r, ell), env)
+    below = nb.m("LESS_THAN", nb.out(nb.sep(c), "Z"), G("Ground"))
+    r = nb.mul(r, nb.sub(1.0, below))
+    off = nb.v("ADD", nb.v("SCALE", ref, scale=nb.mul(nb.m("COSINE", ang), r)), nb.v("SCALE", n2, scale=nb.mul(nb.m("SINE", ang), r)))
+    g = nb.out(nb.n("GeometryNodeSetPosition", {"Geometry": G("Geometry"), "Position": nb.v("ADD", c, off)}))
+    g = nb.out(nb.n("GeometryNodeSetMaterial", {"Geometry": g, "Material": G("Material")}))
+    g = nb.out(nb.n("GeometryNodeSetShadeSmooth", {"Geometry": g, "Shade Smooth": True}))
+    nb.links.new(g, go.inputs[0])
+    return t
+
+
+def _puddle_tree():
+    name = "FX_Puddle"
+    if name in bpy.data.node_groups:
+        return bpy.data.node_groups[name]
+    t, nb, gi, go = _gn_tree(name, [
+        ("Geometry", "NodeSocketGeometry"), ("Frame0", "NodeSocketFloat", 1.0), ("FPS", "NodeSocketFloat", 24.0),
+        ("Time Scale", "NodeSocketFloat", 0.25), ("T Hit", "NodeSocketFloat", 0.3), ("T Stop", "NodeSocketFloat", 3.0),
+        ("Rmax", "NodeSocketFloat", 0.25), ("Drain", "NodeSocketFloat", 1.5), ("Seed", "NodeSocketFloat", 0.0)])
+    G = lambda k: gi.outputs[k]
+    st = nb.n("GeometryNodeInputSceneTime")
+    T = nb.mul(nb.div(nb.sub(st.outputs["Frame"], G("Frame0")), G("FPS")), G("Time Scale"))
+    pr, pa = nb.attr("p_r"), nb.attr("p_a")
+    grow = nb.m("POWER", nb.smooth(T, G("T Hit"), G("T Stop")), 0.55)
+    drain = nb.sub(1.0, nb.smooth(T, G("T Stop"), nb.add(G("T Stop"), G("Drain"))))
+    rr = nb.mul(G("Rmax"), nb.mul(grow, nb.madd(drain, 0.85, 0.15)))
+    rr = nb.mul(rr, nb.m("MINIMUM", nb.mul(drain, 4.0), 1.0))
+    lob = nb.out(nb.noise(nb.xyz(nb.m("COSINE", pa), nb.m("SINE", pa), nb.add(G("Seed"), nb.mul(T, 0.05))), scale=2.0, detail=3.0), "Fac")
+    rad = nb.mul(nb.mul(pr, rr), nb.madd(nb.sub(lob, 0.5), 0.9, 1.0))
+    g = nb.out(nb.n("GeometryNodeSetPosition", {"Geometry": G("Geometry"), "Position": nb.xyz(nb.mul(nb.m("COSINE", pa), rad), nb.mul(nb.m("SINE", pa), rad), 0.0)}))
+    nb.links.new(g, go.inputs[0])
+    return t
+
+
+def _puddle_material(name="FX_puddle", impact=(0, 0), fps=24, f0=1, ts=0.25, t_hit=0.3, t_stop=3.0, murk=(0.72, 0.6, 0.48)):
+    """Clear (slightly muddy) water film: fresnel mix of transparent (tinted) and mirror gloss with
+    irregular ripples spreading from the impact while pouring."""
+    m, nb, out = _new_mat(name)
+    T = _time_value(nb, scale=ts, f0=f0)
+    pos = nb.out(nb.n("ShaderNodeNewGeometry"), "Position")
+    d = nb.v("LENGTH", nb.v("MULTIPLY", nb.v("SUBTRACT", pos, (impact[0], impact[1], 0.0)), (1.0, 1.0, 0.0)))
+    act = nb.sub(1.0, nb.smooth(T, t_stop, t_stop + 0.6))
+    nz = nb.out(nb.noise(nb.v("SCALE", pos, scale=40.0), scale=1.0, detail=2.0, w=nb.mul(T, 2.0)), "Fac")
+    dj = nb.add(d, nb.mul(nb.sub(nz, 0.5), 0.012))                   # irregular rings
+    rip = nb.mul(nb.m("SINE", nb.sub(nb.mul(dj, 140.0), nb.mul(T, 40.0))), nb.mul(nb.m("EXPONENT", nb.mul(d, -18.0)), act))
+    bump = nb.n("ShaderNodeBump", {"Height": nb.add(nb.mul(rip, 0.6), nb.mul(nz, 0.35)), "Distance": 0.001, "Strength": 0.5})
+    gl = nb.n("ShaderNodeBsdfGlossy", {"Roughness": 0.02})
+    nb.links.new(nb.out(bump), gl.inputs["Normal"])
+    fr = nb.n("ShaderNodeFresnel", {"IOR": 1.333})
+    nb.links.new(nb.out(bump), fr.inputs["Normal"])
+    tr = nb.n("ShaderNodeBsdfTransparent", {"Color": murk})
+    mx = nb.n("ShaderNodeMixShader", {0: fr, 1: tr, 2: gl})
+    nb.links.new(nb.out(mx), out.inputs["Surface"])
+    _blended(m, backface=False)
+    return m
+
+
+def _cracks_tree():
+    name = "FX_Cracks"
+    if name in bpy.data.node_groups:
+        return bpy.data.node_groups[name]
+    t, nb, gi, go = _gn_tree(name, [("Geometry", "NodeSocketGeometry"), ("Cell", "NodeSocketFloat", 0.12),
+                                    ("Width", "NodeSocketFloat", 0.08), ("Depth", "NodeSocketFloat", 0.018),
+                                    ("Curl", "NodeSocketFloat", 0.004), ("Seed", "NodeSocketFloat", 0.0)])
+    G = lambda k: gi.outputs[k]
+    pos = nb.out(nb.n("GeometryNodeInputPosition"))
+    q = nb.v("ADD", nb.v("SCALE", pos, scale=nb.div(1.0, G("Cell"))), nb.xyz(G("Seed"), nb.mul(G("Seed"), 0.7), 0.0))
+    q = nb.v("ADD", q, nb.v("SCALE", nb.v("SUBTRACT", nb.out(nb.noise(q, scale=0.6, detail=2.0), "Color"), (0.5, 0.5, 0.5)), scale=0.35))
+    vor = nb.n("ShaderNodeTexVoronoi", {"Vector": nb.v("MULTIPLY", q, (1.0, 1.0, 0.0)), "Scale": 1.0, "Randomness": 0.9},
+               feature="DISTANCE_TO_EDGE")
+    dist = nb.out(vor, "Distance")
+    groove = nb.sub(1.0, nb.smooth(dist, 0.0, G("Width")))
+    curl = nb.mul(nb.sub(1.0, nb.smooth(dist, G("Width"), nb.mul(G("Width"), 3.0))), nb.sub(1.0, groove))
+    dz = nb.add(nb.mul(groove, nb.mul(G("Depth"), -1.0)), nb.mul(curl, G("Curl")))
+    g = nb.out(nb.n("GeometryNodeSetPosition", {"Geometry": G("Geometry"), "Offset": nb.xyz(0.0, 0.0, dz)}))
+    g = nb.out(nb.n("GeometryNodeStoreNamedAttribute", {"Geometry": g, "Name": "fx_crack", "Value": groove}, data_type="FLOAT", domain="POINT"))
+    g = nb.out(nb.n("GeometryNodeSetShadeSmooth", {"Geometry": g, "Shade Smooth": True}))
+    nb.links.new(g, go.inputs[0])
+    return t
+
+
+def cracked_ground(loc=(0, 0, 0), size=2.4, res=260, cell=0.12, depth=0.018, width=0.08, texture="brown_mud_dry",
+                   tint=(1.05, 0.92, 0.78), seed=0, name="CrackedGround", coll=None):
+    """Parched, polygonally cracked earth patch (s10a / s11a): grid displaced by GN voronoi crack
+    grooves (cells ~`cell` m, grooves `depth` m) with slightly curled plate edges; PBR texture with
+    darkened crack interiors (attribute fx_crack). Returns the object (material = obj.active_material)."""
+    bpy.ops.mesh.primitive_grid_add(x_subdivisions=res, y_subdivisions=res, size=size, location=loc)
+    o = bpy.context.active_object
+    o.name = name
+    _mod(o, _cracks_tree(), "Cracks", Cell=float(cell), Width=float(width), Depth=float(depth), Curl=float(depth * 0.25),
+         Seed=float(seed * 13.1))
+    m = C.mat_pbr(texture, scale=1.0 / max(cell * 4, 0.05), name="FX_cracked_" + texture, tint=tint, bump=1.0)
+    nb = NB(m.node_tree)
+    b = C.bsdf(m)
+    cr = nb.out(nb.sattr("fx_crack"), "Fac")
+    src = b.inputs["Base Color"].links[0].from_socket
+    nb.links.new(nb.mixc(nb.mul(cr, 0.85), src, nb.v("SCALE", src, scale=0.25)), b.inputs["Base Color"])
+    _macro_variation(m, scale=0.6, amount=0.3, tint=(0.85, 0.8, 0.75))
+    C.assign(o, m)
+    return o
+
+
+def water_pour(lip=(0.0, 0.0, 0.7), direction=(1.0, 0.0), speed=0.55, stream_radius=0.009, start_frame=1,
+               end_frame=None, time_scale=0.25, ground_z=0.0, jar=True, jar_tilt=(95.0, 118.0), ground=None,
+               ground_material=None, puddle_radius=0.32, drain_time=2.0, splash=True, droplets=True, seed=0,
+               name="WaterPour", coll=None):
+    """Slow-motion water poured from a tilted clay jar onto (cracked) ground (s10a).
+
+    lip            world position where the water leaves the jar lip
+    direction      (x, y) horizontal pour direction; speed = lip exit speed (m/s, real time)
+    time_scale     slow motion factor (0.25 = 4x slower than real)
+    start_frame / end_frame   pour starts / stops (the stream tail then falls, the puddle drains)
+    jar            build an earthen jar whose lip sits at `lip`, tilting jar_tilt[0] -> [1] degrees
+    ground         True: build a cracked-earth patch (dry_mud_field_001, displaced) at ground_z;
+                   or pass ground_material to get the animated wet patch injected into your material
+    Returns FX(root, jar, stream, puddle, droplets, splash, ground, impact (x, y, z)).
+    Render with ctx.render_opts['raytracing'] = True for real refraction / reflections.
+    """
+    fps = _fps()
+    end_frame = end_frame or bpy.context.scene.frame_end
+    rng = np.random.default_rng(seed)
+    root = _empty(name, (0, 0, 0), coll, size=0.1)
+    d = Vector((direction[0], direction[1], 0.0)).normalized()
+    V0 = d * speed + Vector((0, 0, -0.15))
+    g = Vector((0, 0, -9.81))
+    L = Vector(lip)
+    hgt = L.z - ground_z
+    # travel time to the ground: hgt = -V0z*s + 4.905 s^2
+    a_, b_, c_ = 4.905, -(-V0.z), -hgt
+    smax = (-b_ + math.sqrt(b_ * b_ - 4 * a_ * c_)) / (2 * a_)
+    impact = L + V0 * smax + 0.5 * g * smax * smax
+    impact.z = ground_z
+    ts = time_scale
+    T_stop = (end_frame - start_frame) / fps * ts
+    T_hit = smax
+    parts = {"impact": tuple(impact)}
+    wm = water_material("FX_water_%d" % seed)
+    # ---- stream tube
+    nr, segs = 90, 14
+    verts, faces, ws, wa = [], [], [], []
+    for i in range(nr):
+        for k in range(segs):
+            verts.append((0, 0, 0))
+            ws.append((i / (nr - 1)) ** 0.9)
+            wa.append(2 * math.pi * k / segs)
+    for i in range(nr - 1):
+        for k in range(segs):
+            a0 = i * segs + k
+            a1 = i * segs + (k + 1) % segs
+            faces.append((a0, a1, a1 + segs, a0 + segs))
+    st = _mesh_obj(name + "_stream", verts, faces, coll, smooth=True)
+    for nm, arr in (("w_s", ws), ("w_a", wa)):
+        at = st.data.attributes.new(nm, "FLOAT", "POINT")
+        at.data.foreach_set("value", np.asarray(arr, np.float32))
+    _mod(st, _stream_tree(), "Stream", Frame0=float(start_frame), FPS=float(fps), Time_Scale=float(ts), Lip=tuple(L),
+         V0=tuple(V0), Gravity=tuple(g), Smax=float(smax * 1.04), R0=float(stream_radius), Stop=float(T_stop),
+         Ripple=0.22, Ground=float(ground_z - 0.002), Material=wm)
+    _parent(st, root)
+    parts["stream"] = st
+    # ---- droplets peeling off the lower stream + splash at the impact
+    if droplets or splash:
+        P, Vv, B, Lf, S = [], [], [], [], []
+        if droplets:
+            n = int(60 * T_stop) + 20
+            te = rng.uniform(0.0, T_stop, n)               # emission time at the lip
+            sd = smax * rng.uniform(0.45, 0.95, n)         # where it detaches along the stream
+            for e, s_ in zip(te, sd):
+                pos = L + V0 * s_ + 0.5 * g * s_ * s_
+                vel = V0 + g * s_
+                side = Vector(rng.normal(0, 1, 3)) * 0.12
+                P.append(tuple(pos + side * 0.08))
+                Vv.append(tuple(vel + side))
+                B.append(e + s_)
+                Lf.append(2.0)
+                S.append(rng.uniform(0.0012, 0.0035))
+        if splash:
+            n = int(420 * T_stop) + 50
+            th = rng.uniform(T_hit, T_stop + T_hit, n)
+            ang = rng.uniform(0, 2 * math.pi, n)
+            up = rng.uniform(0.4, 1.9, n)
+            out_ = rng.uniform(0.3, 1.4, n)
+            fwd = Vector((d.x, d.y, 0)) * 0.35
+            for t_, a, u_, o_ in zip(th, ang, up, out_):
+                P.append(tuple(impact + Vector((math.cos(a), math.sin(a), 0)) * rng.uniform(0.003, 0.02) + Vector((0, 0, 0.003))))
+                Vv.append(tuple(Vector((math.cos(a) * o_, math.sin(a) * o_, u_)) + fwd))
+                B.append(t_)
+                Lf.append(1.2)
+                S.append(rng.uniform(0.0008, 0.003))
+        dob, _ = _particles(name + "_drops", np.array(P), np.array(Vv), np.array(B), np.array(Lf), np.array(S), wm,
+                            frame0=start_frame, time_scale=ts, gravity=tuple(g), drag=0.05, floor=ground_z, floor_mode=2,
+                            fade_in=0.0, fade_out=0.0, mode=1, instance=_cached_src("FX_src_ico", lambda: _ico("FX_src_ico", 1)),
+                            seed=seed + 1, coll=coll)
+        _parent(dob, root)
+        parts["droplets"] = dob
+    # ---- puddle film
+    pv, pf, PRs, PAs = [(0, 0, 0)], [], [0.0], [0.0]
+    pr_n, pa_n = 14, 64
+    for i in range(1, pr_n + 1):
+        for k in range(pa_n):
+            pv.append((0, 0, 0))
+            PRs.append(i / pr_n)
+            PAs.append(2 * math.pi * k / pa_n)
+    for k in range(pa_n):
+        pf.append((0, 1 + k, 1 + (k + 1) % pa_n))
+    for i in range(pr_n - 1):
+        for k in range(pa_n):
+            a0 = 1 + i * pa_n + k
+            a1 = 1 + i * pa_n + (k + 1) % pa_n
+            pf.append((a0, a1, a1 + pa_n, a0 + pa_n))
+    pud = _mesh_obj(name + "_puddle", pv, pf, coll, smooth=True)
+    for nm, arr in (("p_r", PRs), ("p_a", PAs)):
+        at = pud.data.attributes.new(nm, "FLOAT", "POINT")
+        at.data.foreach_set("value", np.asarray(arr, np.float32))
+    pud.location = (impact.x + d.x * puddle_radius * 0.3, impact.y + d.y * puddle_radius * 0.3, ground_z + 0.0025)
+    _mod(pud, _puddle_tree(), "Puddle", Frame0=float(start_frame), FPS=float(fps), Time_Scale=float(ts), T_Hit=float(T_hit),
+         T_Stop=float(T_stop + T_hit), Rmax=float(puddle_radius), Drain=float(drain_time * ts * 2.5), Seed=float(seed))
+    # draining: the film sinks below the plate tops so water lingers only in the cracks
+    f_stop = start_frame + (T_stop + T_hit) / ts * fps
+    f_dry = f_stop + drain_time * fps
+    z_hi, z_lo = ground_z + 0.0025, ground_z - 0.012
+    C.key_fn(pud, "location", lambda f: Vector((pud.location.x, pud.location.y,
+                                                  z_hi + (z_lo - z_hi) * C.smoothstep((f - f_stop) / max(1.0, f_dry - f_stop)))),
+             1, bpy.context.scene.frame_end, step=2)
+    C.assign(pud, _puddle_material("FX_puddle_%d" % seed, (impact.x, impact.y), fps, start_frame, ts, T_hit, T_stop + T_hit))
+    _parent(pud, root)
+    parts["puddle"] = pud
+    # ---- ground (optional) + wet patch
+    gm = ground_material
+    if ground is True:
+        gp = cracked_ground((impact.x, impact.y, ground_z), size=2.4, seed=seed, name=name + "_ground", coll=coll)
+        gm = gm or gp.active_material
+        parts["ground"] = gp
+    if gm is not None:
+        ix, iy = impact.x + d.x * puddle_radius * 0.3, impact.y + d.y * puddle_radius * 0.3
+
+        def wetmask(nb):
+            T = _time_value(nb, scale=ts, f0=start_frame)
+            pos = nb.out(nb.n("ShaderNodeNewGeometry"), "Position")
+            dd = nb.v("LENGTH", nb.v("MULTIPLY", nb.v("SUBTRACT", pos, (ix, iy, 0.0)), (1.0, 1.0, 0.0)))
+            n = nb.out(nb.noise(nb.v("SCALE", pos, scale=9.0), scale=1.0, detail=3.0), "Fac")
+            grow = nb.m("POWER", nb.smooth(T, T_hit, T_stop + T_hit + 0.4), 0.55)
+            R_ = nb.mul(grow, puddle_radius * 1.35)
+            wet = nb.smooth(nb.sub(R_, nb.mul(dd, nb.madd(n, 0.8, 0.6))), 0.0, 0.04)
+            # plates dry a little after the film drains, cracks stay wet
+            dry = nb.mul(nb.smooth(T, T_stop + T_hit + drain_time * ts, T_stop + T_hit + drain_time * ts * 3.0), 0.45)
+            cr = nb.out(nb.sattr("fx_crack"), "Fac")
+            return nb.mul(wet, nb.sub(1.0, nb.mul(dry, nb.sub(1.0, cr))))
+        wet_material(gm, wetness=0.95, puddles=0.0, mask=wetmask, darken=0.5)
+    # ---- jar
+    if jar:
+        jr = _empty(name + "_jar_pivot", tuple(L), coll, size=0.1)
+        _parent(jr, root)
+        jo = clay_jar(name=name + "_jar", coll=coll)
+        h_ = 0.32
+        # lip edge (pour spout side) at the pivot: jar axis along +Z, lip rim point at (r_lip, 0, h)
+        jo.location = (-0.05, 0, -h_)
+        _parent(jo, jr)
+        jr.location = L
+        az = math.atan2(d.y, d.x)
+
+        def rot(f):
+            u = min(1.0, max(0.0, (f - start_frame + 20) / max(1.0, end_frame - start_frame + 20)))
+            tl = math.radians(jar_tilt[0] + (jar_tilt[1] - jar_tilt[0]) * u)
+            return (Matrix.Rotation(az, 3, "Z") @ Matrix.Rotation(tl, 3, "Y")).to_euler()
+        C.key_fn(jr, "rotation_euler", rot, 1, bpy.context.scene.frame_end, step=4)
+        jr.location = L
+        parts["jar"] = jo
+        parts["jar_pivot"] = jr
     return FX(root, **parts)

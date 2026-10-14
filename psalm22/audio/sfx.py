@@ -840,9 +840,12 @@ def make_fx(kind, rng, clips):
         y += dsp.lp(rng.standard_normal(n), 250) * np.exp(-np.maximum(0, t - .6) / .05) * (t > .6) * .8
         y += grains(1.2, rng, 60, 800, 4000, (.002, .01), (.1, .4)) * (t > .6)
         return dsp.stereo(norm(y, 1.))
-    if kind == "linen":
+    if kind == "linen":                      # cloth on the crossbeam moving in the breeze
         n = N(5)
-        y = dsp.bp(rng.standard_normal(n), 1100, .5) * (.5 + .5 * np.abs(np.sin(2 * np.pi * 1.7 * np.arange(n) / SR))) ** 3
+        rate = 1.6 * (1 + .35 * dsp.smooth(rng.standard_normal(n), .4) * 8)
+        flap = np.abs(np.sin(np.pi * np.cumsum(np.clip(rate, .6, 3.0)) / SR)) ** 3
+        gust = slow_random(n, rng, .8, .3, 1.0)
+        y = dsp.bp(rng.standard_normal(n), 1100, .5) * (.25 + .75 * flap * gust)
         return dsp.stereo(dsp.fade(norm(y, 1.), 1.0, 1.5))
     raise ValueError(kind)
 

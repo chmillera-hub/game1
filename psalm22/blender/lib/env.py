@@ -337,9 +337,34 @@ HAZE_DEFAULT = dict(color=(0.75, 0.72, 0.68), density=0.0012, falloff=0.012, sta
                     sun_color=(1.0, 0.8, 0.55), sun_dir=(0, 1, 0.2), sun_mix=0.6, sun_power=6.0, max=1.0)
 
 
+def scene_prop(name, value=None, frame=None):
+    """Get/set a scene custom property used as a *uniform* by env shaders (Attribute node, View Layer
+    type). Animating these (frame=...) is cheap: EEVEE updates a uniform buffer instead of
+    re-evaluating every material that uses a node group (which costs seconds per frame)."""
+    sc = bpy.context.scene
+    if value is not None:
+        sc[name] = tuple(float(v) for v in value) if isinstance(value, (tuple, list, Vector)) else float(value)
+        if frame is not None:
+            sc.keyframe_insert(data_path='["%s"]' % name, frame=frame)
+    return sc.get(name)
+
+
+def _lattr(T, name, default):
+    """Attribute node reading scene property `name` (VIEW_LAYER lookup); returns the socket
+    ('Vector' for 3-tuples, 'Fac' for floats) and initialises the property when missing."""
+    sc = bpy.context.scene
+    if name not in sc.keys():
+        scene_prop(name, default)
+    n = T.node("ShaderNodeAttribute")
+    n.attribute_type = "VIEW_LAYER"
+    n.attribute_name = name
+    n.name = n.label = name
+    return n.outputs["Vector"] if isinstance(default, (tuple, list)) else n.outputs["Fac"]
+
+
 def haze_group():
     """The shared 'ENV_Haze' shader group: Shader in -> Shader out (mixes towards haze colour with
-    view distance). Parameters live inside the group (see set_haze / key_haze)."""
+    view distance). Parameters are scene properties env_haze_* (see set_haze / get_haze)."""
     st = _state()
     g = st.get("haze")
     if g is not None and g.name in bpy.data.node_groups:
@@ -347,118 +372,68 @@ def haze_group():
     g = bpy.data.node_groups.get("ENV_Haze")
     if g is not None:
         st["haze"] = g
+        for k, v in HAZE_DEFAULT.items():
+            if "env_haze_" + k not in bpy.context.scene.keys():
+                scene_prop("env_haze_" + k, v)
         return g
     g = bpy.data.node_groups.new("ENV_Haze", "ShaderNodeTree")
     g.interface.new_socket("Shader", in_out="INPUT", socket_type="NodeSocketShader")
     g.interface.new_socket("Shader", in_out="OUTPUT", socket_type="NodeSocketShader")
-    N, L = g.nodes, g.links
-    gi, go = N.new("NodeGroupInput"), N.new("NodeGroupOutput")
-
-    def val(name, v):
-        n = N.new("ShaderNodeValue")
-        n.name = n.label = name
-        n.outputs[0].default_value = v
-        return n
-
-    def rgb(name, c):
-        n = N.new("ShaderNodeRGB")
-        n.name = n.label = name
-        n.outputs[0].default_value = (*c, 1)
-        return n
-
-    def math_(op, a, b=None, clamp=False):
-        n = N.new("ShaderNodeMath")
-        n.operation = op
-        n.use_clamp = clamp
-        for i, x in enumerate((a, b)):
-            if x is None:
-                continue
-            if isinstance(x, (int, float)):
-                n.inputs[i].default_value = x
-            else:
-                L.new(x, n.inputs[i])
-        return n.outputs[0]
-
+    T = _NT(g)
+    gi, go = T.node("NodeGroupInput"), T.node("NodeGroupOutput")
     d = HAZE_DEFAULT
-    c_col, c_den, c_fall = rgb("color", d["color"]), val("density", d["density"]), val("falloff", d["falloff"])
-    c_start, c_scol = val("start", d["start"]), rgb("sun_color", d["sun_color"])
-    c_mix, c_pow, c_max = val("sun_mix", d["sun_mix"]), val("sun_power", d["sun_power"]), val("max", d["max"])
-    c_dir = N.new("ShaderNodeCombineXYZ")
-    c_dir.name = c_dir.label = "sun_dir"
-    for i in range(3):
-        c_dir.inputs[i].default_value = d["sun_dir"][i]
-    cam = N.new("ShaderNodeCameraData")
-    geo = N.new("ShaderNodeNewGeometry")
-    sep = N.new("ShaderNodeSeparateXYZ")
-    L.new(geo.outputs["Position"], sep.inputs[0])
-    # height attenuation exp(-max(z,0)*falloff)
-    zpos = math_("MAXIMUM", sep.outputs[2], 0.0)
-    hfac = math_("EXPONENT", math_("MULTIPLY", math_("MULTIPLY", zpos, c_fall.outputs[0]), -1.0))
-    dist = math_("MAXIMUM", math_("SUBTRACT", cam.outputs["View Distance"], c_start.outputs[0]), 0.0)
-    od = math_("MULTIPLY", math_("MULTIPLY", dist, c_den.outputs[0]), hfac)
-    fac = math_("MINIMUM", math_("SUBTRACT", 1.0, math_("EXPONENT", math_("MULTIPLY", od, -1.0))), c_max.outputs[0])
-    # colour toward the sun
-    neg = N.new("ShaderNodeVectorMath")
-    neg.operation = "SCALE"
-    neg.inputs["Scale"].default_value = -1.0
-    L.new(geo.outputs["Incoming"], neg.inputs[0])
-    nrm = N.new("ShaderNodeVectorMath")
-    nrm.operation = "NORMALIZE"
-    L.new(c_dir.outputs[0], nrm.inputs[0])
-    dot = N.new("ShaderNodeVectorMath")
-    dot.operation = "DOT_PRODUCT"
-    L.new(neg.outputs[0], dot.inputs[0])
-    L.new(nrm.outputs[0], dot.inputs[1])
-    sd = math_("POWER", math_("MAXIMUM", dot.outputs["Value"], 0.0), c_pow.outputs[0])
-    sf = math_("MULTIPLY", sd, c_mix.outputs[0], clamp=True)
-    mixc = N.new("ShaderNodeMix")
-    mixc.data_type = "RGBA"
-    L.new(sf, mixc.inputs[0])
-    L.new(c_col.outputs[0], mixc.inputs[6])
-    L.new(c_scol.outputs[0], mixc.inputs[7])
-    em = N.new("ShaderNodeEmission")
-    L.new(mixc.outputs[2], em.inputs[0])
-    ms = N.new("ShaderNodeMixShader")
-    L.new(fac, ms.inputs[0])
-    L.new(gi.outputs[0], ms.inputs[1])
-    L.new(em.outputs[0], ms.inputs[2])
-    L.new(ms.outputs[0], go.inputs[0])
+    c_col = _lattr(T, "env_haze_color", d["color"])
+    c_den = _lattr(T, "env_haze_density", d["density"])
+    c_fall = _lattr(T, "env_haze_falloff", d["falloff"])
+    c_start = _lattr(T, "env_haze_start", d["start"])
+    c_scol = _lattr(T, "env_haze_sun_color", d["sun_color"])
+    c_dir = _lattr(T, "env_haze_sun_dir", d["sun_dir"])
+    c_mix = _lattr(T, "env_haze_sun_mix", d["sun_mix"])
+    c_pow = _lattr(T, "env_haze_sun_power", d["sun_power"])
+    c_max = _lattr(T, "env_haze_max", d["max"])
+    cam = T.node("ShaderNodeCameraData")
+    geo = T.node("ShaderNodeNewGeometry")
+    z = T.sep(geo.outputs["Position"])[2]
+    hfac = T.math("EXPONENT", T.math("MULTIPLY", T.math("MULTIPLY", T.math("MAXIMUM", z, 0.0), c_fall), -1.0))
+    dist = T.math("MAXIMUM", T.math("SUBTRACT", cam.outputs["View Distance"], c_start), 0.0)
+    od = T.math("MULTIPLY", T.math("MULTIPLY", dist, c_den), hfac)
+    fac = T.math("MINIMUM", T.math("SUBTRACT", 1.0, T.math("EXPONENT", T.math("MULTIPLY", od, -1.0))), c_max)
+    neg = T.vmath("SCALE", geo.outputs["Incoming"], scale=-1.0)
+    dot = T.vmath("DOT_PRODUCT", neg, T.vmath("NORMALIZE", c_dir))
+    sd = T.math("POWER", T.math("MAXIMUM", dot, 0.0), c_pow)
+    sf = T.math("MULTIPLY", sd, c_mix, clamp=True)
+    mixc = T.mix(sf, c_col, c_scol)
+    em = T.node("ShaderNodeEmission")
+    T.link(mixc, em.inputs[0])
+    ms = T.node("ShaderNodeMixShader")
+    T.link(fac, ms.inputs[0])
+    T.link(gi.outputs[0], ms.inputs[1])
+    T.link(em.outputs[0], ms.inputs[2])
+    T.link(ms.outputs[0], go.inputs[0])
     st["haze"] = g
     return g
 
 
 def set_haze(color=None, density=None, falloff=None, start=None, sun_color=None, sun_dir=None, sun_mix=None,
              sun_power=None, max=None, frame=None):
-    """Set the global aerial-perspective haze. density ~ 1/visibility (0.0005 clear .. 0.01 dusty);
-    falloff = exponential height falloff per metre; start = haze-free distance near the camera.
-    sun_dir = world direction TOWARDS the sun. frame != None also inserts a keyframe (animated haze)."""
-    g = haze_group()
-    N = g.nodes
-    vals = dict(density=density, falloff=falloff, start=start, sun_mix=sun_mix, sun_power=sun_power, max=max)
+    """Set the global aerial-perspective haze (scene properties env_haze_*, read as uniforms by every env
+    material). density ~ 1/visibility in metres (0.0002 clear .. 0.002 dusty); falloff = exponential height
+    falloff per metre; start = haze-free distance near the camera; sun_dir = world direction TOWARDS the
+    sun (haze turns sun_color looking towards it). frame != None also inserts keyframes (animated haze)."""
+    haze_group()
+    vals = dict(color=color, density=density, falloff=falloff, start=start, sun_color=sun_color,
+                sun_dir=(tuple(Vector(sun_dir).normalized()) if sun_dir is not None else None), sun_mix=sun_mix,
+                sun_power=sun_power, max=max)
     for k, v in vals.items():
         if v is not None:
-            N[k].outputs[0].default_value = v
-            if frame is not None:
-                N[k].outputs[0].keyframe_insert("default_value", frame=frame)
-    for k, v in (("color", color), ("sun_color", sun_color)):
-        if v is not None:
-            N[k].outputs[0].default_value = (*v[:3], 1)
-            if frame is not None:
-                N[k].outputs[0].keyframe_insert("default_value", frame=frame)
-    if sun_dir is not None:
-        d = Vector(sun_dir).normalized()
-        for i in range(3):
-            N["sun_dir"].inputs[i].default_value = d[i]
-            if frame is not None:
-                N["sun_dir"].inputs[i].keyframe_insert("default_value", frame=frame)
-    return g
+            scene_prop("env_haze_" + k, tuple(v[:3]) if isinstance(v, (tuple, list, Vector)) else v, frame)
 
 
 def get_haze():
-    g = haze_group()
-    N = g.nodes
-    return dict(color=tuple(N["color"].outputs[0].default_value[:3]), density=N["density"].outputs[0].default_value,
-                falloff=N["falloff"].outputs[0].default_value, start=N["start"].outputs[0].default_value)
+    haze_group()
+    sc = bpy.context.scene
+    return dict(color=tuple(sc["env_haze_color"]), density=sc["env_haze_density"], falloff=sc["env_haze_falloff"],
+                start=sc["env_haze_start"], sun_dir=tuple(sc["env_haze_sun_dir"]))
 
 
 def hazify(material):
@@ -843,32 +818,33 @@ def _stars(T, view, col, strength, res):
     vor = T.node("ShaderNodeTexVoronoi")
     vor.feature = "F1"
     vor.voronoi_dimensions = "3D"
-    vor.inputs["Scale"].default_value = 420.0
+    vor.inputs["Scale"].default_value = 160.0
     vor.inputs["Randomness"].default_value = 1.0
     T.link(vn, vor.inputs["Vector"])
     d = vor.outputs["Distance"]
     rnd = T.sep(vor.outputs["Color"])
-    # point star: bright when distance tiny; only a fraction of cells have a visible star
-    core = T.math("POWER", T.math("SUBTRACT", 1.0, T.math("MULTIPLY", d, 9.0), clamp=True), 18.0)
-    sel = T.math("GREATER_THAN", rnd[0], 0.55)
-    bright = T.math("POWER", rnd[1], 6.0)
-    s = T.math("MULTIPLY", T.math("MULTIPLY", core, sel), T.math("MULTIPLY_ADD", bright, 30.0, 1.0))
-    # second finer layer of faint stars
+    # point star (~1 px at 540x960 / 35 mm): only a fraction of cells hold a visible star
+    core = T.math("POWER", T.math("SUBTRACT", 1.0, T.math("MULTIPLY", d, 5.0), clamp=True), 3.0)
+    sel = T.math("GREATER_THAN", rnd[0], 0.62)
+    bright = T.math("POWER", rnd[1], 7.0)
+    s = T.math("MULTIPLY", T.math("MULTIPLY", core, sel), T.math("MULTIPLY_ADD", bright, 25.0, 0.6))
+    # second, denser layer of faint stars
     vor2 = T.node("ShaderNodeTexVoronoi")
-    vor2.inputs["Scale"].default_value = 1100.0
+    vor2.inputs["Scale"].default_value = 420.0
     T.link(vn, vor2.inputs["Vector"])
-    core2 = T.math("POWER", T.math("SUBTRACT", 1.0, T.math("MULTIPLY", vor2.outputs["Distance"], 7.0), clamp=True), 24.0)
-    sel2 = T.math("GREATER_THAN", T.sep(vor2.outputs["Color"])[0], 0.6)
-    s = T.math("ADD", s, T.math("MULTIPLY", T.math("MULTIPLY", core2, sel2), 0.8))
+    core2 = T.math("POWER", T.math("SUBTRACT", 1.0, T.math("MULTIPLY", vor2.outputs["Distance"], 4.0), clamp=True), 3.0)
+    sel2 = T.math("GREATER_THAN", T.sep(vor2.outputs["Color"])[0], 0.55)
+    s = T.math("ADD", s, T.math("MULTIPLY", T.math("MULTIPLY", core2, sel2), 0.35))
     # milky-way-ish band of faint glow
     mw = T.noise(vn, scale=3.0, detail=6, rough=0.6)
     band = T.math("MULTIPLY", T.math("POWER", mw.outputs["Fac"], 4.0), 0.004)
     vz = T.sep(vn)[2]
     hfade = T.math("POWER", T.math("MULTIPLY", vz, 4.0, clamp=True), 1.5)
-    k = T.value(strength, "stars")
-    amt = T.math("MULTIPLY", T.math("MULTIPLY", T.math("ADD", T.math("MULTIPLY", s, 0.08), band), hfade), k.outputs[0])
+    scene_prop("env_stars", strength)
+    k = _lattr(T, "env_stars", strength)
+    amt = T.math("MULTIPLY", T.math("MULTIPLY", T.math("ADD", T.math("MULTIPLY", s, 0.08), band), hfade), k)
     tintc = T.comb(T.math("MULTIPLY", amt, 0.9), T.math("MULTIPLY", amt, 0.95), amt)
-    res["nodes"]["stars"] = k
+    res["nodes"]["stars"] = "env_stars"
     return T.mix(1.0, col, tintc, blend="ADD")
 
 
@@ -901,12 +877,11 @@ def _cloud_layer(T, view, col, coverage=0.5, ctx=None, res=None, sun_dir=None, h
     t = T.math("DIVIDE", height, T.math("MAXIMUM", vz, 0.03))
     px = T.math("MULTIPLY", vx, t)
     py = T.math("MULTIPLY", vy, t)
-    off = T.node("ShaderNodeCombineXYZ")
-    off.name = off.label = "cloud_offset"
-    p = T.vmath("ADD", T.comb(px, py, 0.0), off.outputs[0])
+    off = _lattr(T, "env_cloud_offset", (0.0, 0.0, 0.0))
+    p = T.vmath("ADD", T.comb(px, py, 0.0), off)
     p = T.vmath("SCALE", p, scale=scale)
-    tw = T.value(0.0, "cloud_time")
-    n = T.noise(p, scale=1.0, detail=detail, rough=0.62, dist=0.15, w=tw.outputs[0], dims="4D")
+    tw = _lattr(T, "env_cloud_time", 0.0)
+    n = T.noise(p, scale=1.0, detail=detail, rough=0.62, dist=0.15, w=tw, dims="4D")
     lo = 0.68 - 0.36 * coverage
     mr = T.node("ShaderNodeMapRange")
     T.link(n.outputs["Fac"], mr.inputs[0])
@@ -919,7 +894,7 @@ def _cloud_layer(T, view, col, coverage=0.5, ctx=None, res=None, sun_dir=None, h
     sd = Vector(sun_dir or (0, 1, 0.3))
     sh_off = (sd.x * 600 * scale, sd.y * 600 * scale, 0.0)
     p2 = T.vmath("ADD", p, sh_off)
-    n2 = T.noise(p2, scale=1.0, detail=4.0, rough=0.62, dist=0.15, w=tw.outputs[0], dims="4D")
+    n2 = T.noise(p2, scale=1.0, detail=4.0, rough=0.62, dist=0.15, w=tw, dims="4D")
     mr2 = T.node("ShaderNodeMapRange")
     T.link(n2.outputs["Fac"], mr2.inputs[0])
     mr2.inputs[1].default_value = lo
@@ -936,30 +911,33 @@ def _cloud_layer(T, view, col, coverage=0.5, ctx=None, res=None, sun_dir=None, h
     lumb = T.math("ADD", T.math("MULTIPLY", lum.outputs[0], 1.1), 0.02)
     ccol = T.mix(1.0, ccol, T.comb(lumb, lumb, lumb), blend="MULTIPLY")
     hf = T.math("MULTIPLY", T.math("SUBTRACT", vz, 0.03), 8.0, clamp=True)
-    k = T.value(opacity, "cloud_opacity")
-    a = T.math("MULTIPLY", T.math("MULTIPLY", dens, hf), k.outputs[0])
+    scene_prop("env_cloud_opacity", opacity)
+    k = _lattr(T, "env_cloud_opacity", opacity)
+    a = T.math("MULTIPLY", T.math("MULTIPLY", dens, hf), k)
     if res is not None:
-        res["nodes"].update(cloud_offset=off, cloud_time=tw, cloud_opacity=k)
-    # animate drift over the whole scene range
+        res["nodes"].update(cloud_offset="env_cloud_offset", cloud_time="env_cloud_time", cloud_opacity="env_cloud_opacity")
+    # animate drift over the whole scene range (scene props = uniforms, cheap)
     sc = bpy.context.scene
     f0, f1 = sc.frame_start, sc.frame_end
     for f in (f0, f1 + 1):
         tsec = (f - 1) / 24.0
-        off.inputs[0].default_value = speed[0] * tsec
-        off.inputs[1].default_value = speed[1] * tsec
-        off.inputs[0].keyframe_insert("default_value", frame=f)
-        off.inputs[1].keyframe_insert("default_value", frame=f)
-        tw.outputs[0].default_value = evolve * tsec
-        tw.outputs[0].keyframe_insert("default_value", frame=f)
-    _linear_keys(bpy.context.scene.world.node_tree)
+        scene_prop("env_cloud_offset", (speed[0] * tsec, speed[1] * tsec, 0.0), f)
+        scene_prop("env_cloud_time", evolve * tsec, f)
+    _linear_keys(sc)
     return T.mix(a, col, ccol)
 
 
-def _linear_keys(idblock):
+def _linear_keys(idblock, prefix=None):
+    """Linear interpolation + extrapolation on an ID's fcurves. For the scene only env-owned curves
+    (custom props '["env_...', exposure) are touched unless a prefix is given."""
     ad = getattr(idblock, "animation_data", None)
     if not ad or not ad.action:
         return
+    if prefix is None and isinstance(idblock, bpy.types.Scene):
+        prefix = ('["env_', "view_settings.exposure")
     for fc in C._fcurves(ad.action):
+        if prefix and not fc.data_path.startswith(prefix):
+            continue
         for kp in fc.keyframe_points:
             kp.interpolation = "LINEAR"
         fc.extrapolation = "LINEAR"
@@ -2184,9 +2162,11 @@ def fog_volume(center=(0, 0, 20), size=(300, 300, 60), density=0.004, color=(0.9
         zb = T.math("ADD", z, size[2] / 2)
         dens = T.math("MULTIPLY", dens, T.math("EXPONENT", T.math("MULTIPLY", zb, -height_falloff)))
     if noise_scale:
-        off = T.node("ShaderNodeCombineXYZ")
-        off.name = off.label = "wind_offset"
-        p = T.vmath("ADD", tc.outputs["Object"], off.outputs[0])
+        o["env_wind"] = (0.0, 0.0, 0.0)
+        offn = T.node("ShaderNodeAttribute")
+        offn.attribute_type = "OBJECT"
+        offn.attribute_name = "env_wind"
+        p = T.vmath("ADD", tc.outputs["Object"], offn.outputs["Vector"])
         n = T.noise(p, scale=noise_scale, detail=3, rough=0.55, dist=0.3)
         mr = T.node("ShaderNodeMapRange")
         T.link(n.outputs["Fac"], mr.inputs[0])
@@ -2195,13 +2175,13 @@ def fog_volume(center=(0, 0, 20), size=(300, 300, 60), density=0.004, color=(0.9
         mr.inputs[4].default_value = 1.0 + noise_amount * 0.6
         dens = T.math("MULTIPLY", dens, mr.outputs[0])
         if any(wind):
+            # object custom property read as a uniform (no per-frame material re-evaluation)
             sc = bpy.context.scene
             for f in (sc.frame_start, sc.frame_end + 1):
                 t = (f - 1) / 24.0
-                for i in range(3):
-                    off.inputs[i].default_value = -wind[i] * t
-                    off.inputs[i].keyframe_insert("default_value", frame=f)
-            _linear_keys(nt)
+                o["env_wind"] = tuple(-wind[i] * t for i in range(3))
+                o.keyframe_insert('["env_wind"]', frame=f)
+            _linear_keys(o)
     T.link(dens, v.inputs["Density"])
     T.link(v.outputs[0], nt.nodes["Material Output"].inputs["Volume"])
     C.assign(o, m)
@@ -2228,9 +2208,11 @@ def cloud_shadows(height=180.0, size=1600.0, coverage=0.45, scale=0.006, center=
     T = _NT(nt)
     bs = nt.nodes["Principled BSDF"]
     tc = T.node("ShaderNodeTexCoord")
-    off = T.node("ShaderNodeCombineXYZ")
-    off.name = off.label = "drift"
-    p = T.vmath("ADD", tc.outputs["Object"], off.outputs[0])
+    o["env_drift"] = (0.0, 0.0, 0.0)
+    offn = T.node("ShaderNodeAttribute")
+    offn.attribute_type = "OBJECT"
+    offn.attribute_name = "env_drift"
+    p = T.vmath("ADD", tc.outputs["Object"], offn.outputs["Vector"])
     n = T.noise(p, scale=scale * size / 2, detail=5, rough=0.6, dist=0.25, w=seed, dims="4D")
     thr = 0.62 - 0.3 * coverage
     a = T.smooth(thr - softness, thr + softness, n.outputs["Fac"])
@@ -2246,11 +2228,9 @@ def cloud_shadows(height=180.0, size=1600.0, coverage=0.45, scale=0.006, center=
     sc = bpy.context.scene
     for f in (sc.frame_start, sc.frame_end + 1):
         t = (f - 1) / 24.0
-        off.inputs[0].default_value = -speed[0] * t / (size / 2)
-        off.inputs[1].default_value = -speed[1] * t / (size / 2)
-        off.inputs[0].keyframe_insert("default_value", frame=f)
-        off.inputs[1].keyframe_insert("default_value", frame=f)
-    _linear_keys(nt)
+        o["env_drift"] = (-speed[0] * t / (size / 2), -speed[1] * t / (size / 2), 0.0)
+        o.keyframe_insert('["env_drift"]', frame=f)
+    _linear_keys(o)
     return o
 
 
@@ -3011,17 +2991,24 @@ def clouds_layer(coverage=0.5, height=1500.0, scale=0.00035, speed=(6.0, 2.0), c
 # =============================================================================================
 # JUDEAN HILLS (+ day -> dusk -> night time-lapse)
 # =============================================================================================
-def _hills_height(seed=0, terraces=0.6):
+def _hills_height(seed=0, terraces=0.6, view_az=250.0):
+    va = math.radians(view_az)
+    fx, fy = math.sin(va), math.cos(va)
+
     def H(X, Y):
         X = np.asarray(X, float)
         Y = np.asarray(Y, float)
         r = np.sqrt(X ** 2 + Y ** 2)
+        al = X * fx + Y * fy                 # along the view direction
+        pe = -X * fy + Y * fx                # across
         # rounded limestone hills: smooth fbm + a broad ridge system
-        h = 38 * fbm(X / 260.0, Y / 260.0, 4, gain=0.45, seed=seed + 1) + 20 * ridged(X / 420.0, Y / 420.0, 3, seed=seed + 2)
-        # the foreground knoll (camera stands near it) and a valley beyond it
-        h = h - 18 * np.exp(-((Y - 160) / 90.0) ** 2) * smoothstep(400, 0, np.abs(X))
-        knoll = 6.0 * np.exp(-((X / 22.0) ** 2 + (Y / 18.0) ** 2))
-        h = h - h * np.exp(-(r / 60.0) ** 2) * 0.85 + knoll          # flatten around the origin
+        h = 34 * fbm(X / 260.0, Y / 260.0, 4, gain=0.45, seed=seed + 1) + 22 * ridged(X / 420.0, Y / 420.0, 3, seed=seed + 2)
+        # valley ahead of the camera, rising hills beyond it
+        h = h - 26 * np.exp(-((al - 170) / 80.0) ** 2) * smoothstep(500, 100, np.abs(pe)) + 20 * smoothstep(250, 600, al)
+        # the knoll the camera stands on: a rocky spur ending in a drop just ahead of the dead tree
+        spur = 9.0 * smoothstep(14.0, 2.0, al) * smoothstep(-80.0, -30.0, al) * np.exp(-(pe / 45.0) ** 2)
+        flat = np.exp(-((al + 10) / 45.0) ** 2 - (pe / 45.0) ** 2)
+        h = h * (1 - 0.85 * flat) + spur
         if terraces:
             step = 1.6
             q = h / step
@@ -3064,8 +3051,32 @@ def _compass_to_core(az):
     return (180.0 - az) % 360
 
 
+_SKY_PAL = [  # (elevation, zenith, horizon, sun-side glow) linear RGB
+    (-90, (0.0012, 0.002, 0.005), (0.006, 0.009, 0.018), (0.0, 0.0, 0.0)),
+    (-15, (0.0015, 0.0025, 0.006), (0.01, 0.014, 0.028), (0.0, 0.0, 0.0)),
+    (-8, (0.005, 0.009, 0.024), (0.03, 0.032, 0.055), (0.05, 0.022, 0.012)),
+    (-3, (0.02, 0.035, 0.09), (0.25, 0.15, 0.13), (0.7, 0.22, 0.06)),
+    (1, (0.06, 0.1, 0.24), (0.8, 0.45, 0.24), (2.0, 0.75, 0.2)),
+    (6, (0.1, 0.18, 0.4), (0.85, 0.62, 0.42), (1.6, 0.85, 0.35)),
+    (15, (0.12, 0.24, 0.52), (0.7, 0.72, 0.75), (0.7, 0.5, 0.25)),
+    (35, (0.13, 0.28, 0.62), (0.6, 0.7, 0.85), (0.35, 0.3, 0.2)),
+    (90, (0.12, 0.27, 0.62), (0.55, 0.66, 0.84), (0.3, 0.28, 0.2)),
+]
+
+
+def sky_palette(el):
+    """Zenith / horizon / sun-glow colours for a solar elevation (deg), used by the analytic sky."""
+    P = _SKY_PAL
+    for i in range(len(P) - 1):
+        if P[i][0] <= el <= P[i + 1][0]:
+            t = (el - P[i][0]) / (P[i + 1][0] - P[i][0])
+            t = t * t * (3 - 2 * t)
+            return tuple(tuple(P[i][k][j] + (P[i + 1][k][j] - P[i][k][j]) * t for j in range(3)) for k in (1, 2, 3))
+    return P[-1][1], P[-1][2], P[-1][3]
+
+
 def timelapse_sky(ctx, hour0=13.0, hour1=21.0, f0=1, f1=None, clouds=0.35, cloud_speed=(90.0, 30.0), stars=True,
-                  moon=True, ease=True, sun_max=4.5, exposure_night=1.2, step=1):
+                  moon=True, ease=True, sun_max=4.5, exposure_night=1.2, step=1, animate_haze=True, animate_world=True):
     """Animated day -> golden hour -> dusk -> night sky over frames f0..f1 (Nishita sky + star field +
     fast clouds + keyed sun lamp + moonlight + haze + exposure). Returns dict(sun, moon, keys...)."""
     sc = bpy.context.scene
@@ -3080,42 +3091,40 @@ def timelapse_sky(ctx, hour0=13.0, hour1=21.0, f0=1, f1=None, clouds=0.35, cloud
     out = T.node("ShaderNodeOutputWorld")
     tc = T.node("ShaderNodeTexCoord")
     view = tc.outputs["Generated"]
-    sky_n = T.node("ShaderNodeTexSky")
-    sky_n.sky_type = "NISHITA"
-    sky_n.sun_disc = False
-    sky_n.air_density, sky_n.dust_density, sky_n.ozone_density = 1.0, 2.5, 1.0
-    sky_n.altitude = 800
-    sky_k = T.value(0.12, "sky_gain")
-    col = T.mix(1.0, sky_n.outputs[0], T.comb(sky_k.outputs[0], sky_k.outputs[0], sky_k.outputs[0]), blend="MULTIPLY")
-    # night gradient underneath (never fully black)
-    vz = T.sep(view)[2]
-    g = T.math("POWER", T.math("MAXIMUM", vz, 0.0), 0.45)
-    night = T.mix(g, (0.010, 0.016, 0.03), (0.0015, 0.0025, 0.006))
-    col = T.mix(1.0, col, night, blend="ADD")
+    vn = T.vmath("NORMALIZE", view)
+    vz = T.sep(vn)[2]
+    # analytic sky driven only by keyed socket values (uniforms -> no shader recompiles per frame;
+    # animating Nishita properties recompiles the world every frame: 3x slower and +3 GB RAM)
+    c_zen = _lattr(T, "env_tl_zenith", (0.1, 0.22, 0.55))
+    c_hor = _lattr(T, "env_tl_horizon", (0.55, 0.65, 0.8))
+    c_glow = _lattr(T, "env_tl_glow", (0.3, 0.25, 0.15))
+    sdir = _lattr(T, "env_tl_sun_dir", (0.0, 1.0, 0.5))
+    g = T.math("POWER", T.math("MAXIMUM", vz, 0.0), 0.42)
+    col = T.mix(g, c_hor, c_zen)
+    dot = T.vmath("DOT_PRODUCT", vn, sdir)
+    ang = T.math("ARCCOSINE", T.math("MINIMUM", T.math("MAXIMUM", dot, -1.0), 1.0))
+    low = T.math("POWER", T.math("SUBTRACT", 1.0, T.math("MAXIMUM", vz, 0.0)), 5.0)
+    glow = T.math("ADD", T.math("MULTIPLY", T.math("EXPONENT", T.math("MULTIPLY", ang, -2.2)), low),
+                  T.math("MULTIPLY", T.math("EXPONENT", T.math("MULTIPLY", ang, -9.0)), 0.6))
+    col = T.mix(1.0, col, T.mix(1.0, c_glow, T.comb(glow, glow, glow), blend="MULTIPLY"), blend="ADD")
     res = dict(nodes={})
     if stars:
         col = _stars(T, view, col, 0.0, res)
-    # sun disk (keyed direction) + glow
-    sd = T.node("ShaderNodeCombineXYZ")
-    sd.name = sd.label = "sun_dir"
-    vn = T.vmath("NORMALIZE", view)
-    dot = T.vmath("DOT_PRODUCT", vn, sd.outputs[0])
-    ang = T.math("ARCCOSINE", T.math("MINIMUM", dot, 1.0))
+    # sun disk + glow
     r = math.radians(0.6)
     disk = T.math("SUBTRACT", 1.0, T.math("MULTIPLY", T.math("SUBTRACT", ang, r), 1.0 / (r * 0.15)), clamp=True)
-    halo = T.math("ADD", T.math("MULTIPLY", T.math("EXPONENT", T.math("MULTIPLY", ang, -12.0)), 0.6),
-                  T.math("MULTIPLY", T.math("EXPONENT", T.math("MULTIPLY", ang, -3.0)), 0.15))
-    sc_col = T.rgb((1.0, 0.8, 0.5), "sun_color")
-    sk = T.value(1.0, "sun_disk")
-    amt = T.math("MULTIPLY", T.math("ADD", T.math("MULTIPLY", disk, 40.0), halo), sk.outputs[0])
-    col = T.mix(1.0, col, T.mix(1.0, sc_col.outputs[0], T.comb(amt, amt, amt), blend="MULTIPLY"), blend="ADD")
+    halo = T.math("MULTIPLY", T.math("EXPONENT", T.math("MULTIPLY", ang, -14.0)), 0.8)
+    sc_col = _lattr(T, "env_tl_sun_color", (1.0, 0.8, 0.5))
+    sk = _lattr(T, "env_tl_sun_disk", 1.0)
+    amt = T.math("MULTIPLY", T.math("ADD", T.math("MULTIPLY", disk, 40.0), halo), sk)
+    col = T.mix(1.0, col, T.mix(1.0, sc_col, T.comb(amt, amt, amt), blend="MULTIPLY"), blend="ADD")
     if clouds:
         col = _cloud_layer(T, view, col, coverage=clouds, res=res, sun_dir=(0, 1, 0.2), speed=cloud_speed, evolve=0.6,
                            height=1800.0)
     # below horizon -> haze colour
-    hz = T.rgb((0.5, 0.5, 0.5), "horizon")
+    hz = _lattr(T, "env_tl_below", (0.5, 0.5, 0.5))
     below = T.math("MULTIPLY", T.math("SUBTRACT", 0.01, vz), 60.0, clamp=True)
-    col = T.mix(below, col, hz.outputs[0])
+    col = T.mix(below, col, hz)
     bg = T.node("ShaderNodeBackground")
     T.link(col, bg.inputs[0])
     T.link(bg.outputs[0], out.inputs["Surface"])
@@ -3125,7 +3134,6 @@ def timelapse_sky(ctx, hour0=13.0, hour1=21.0, f0=1, f1=None, clouds=0.35, cloud
     if moon:
         moon_o = C.sun(elevation=35, azimuth=_compass_to_core(110), energy=0.0, color=(0.55, 0.68, 1.0), angle=0.6)
         moon_o.name = "Moon"
-    nk = res["nodes"].get("stars")
     N = f1 - f0
     keys = []
     for f in range(f0, f1 + 2, step):
@@ -3136,27 +3144,21 @@ def timelapse_sky(ctx, hour0=13.0, hour1=21.0, f0=1, f1=None, clouds=0.35, cloud
         el, az = sun_dir_at(hour)
         caz = _compass_to_core(az)
         d = _dir_from_az_el(caz, el)
-        # sky
-        sky_n.sun_elevation = math.radians(el)
-        sky_n.sun_rotation = math.radians((180.0 - az) % 360)
-        sky_n.keyframe_insert("sun_elevation", frame=f)
-        sky_n.keyframe_insert("sun_rotation", frame=f)
+        # sky palette for this solar elevation
         day = C.smoothstep((el + 6) / 12.0)                  # 0 at -6 deg (civil dusk) .. 1 at +6
-        sky_k.outputs[0].default_value = 0.12 * (0.15 + 0.85 * day) + 0.0
-        sky_k.outputs[0].keyframe_insert("default_value", frame=f)
-        for i in range(3):
-            sd.inputs[i].default_value = d[i]
-            sd.inputs[i].keyframe_insert("default_value", frame=f)
+        zc, hc, gc = sky_palette(el)
+        kf = f if animate_world else None
+        if animate_world or f == f0:
+            for nm_, c in (("env_tl_zenith", zc), ("env_tl_horizon", hc), ("env_tl_glow", gc)):
+                scene_prop(nm_, c, kf)
+        scene_prop("env_tl_sun_dir", tuple(d), kf)
         temp = 1900 + 3600 * C.smoothstep(el / 35.0)
         kc = C.kelvin(temp)
         m = max(kc)
-        sc_col.outputs[0].default_value = (*[c / m for c in kc], 1)
-        sc_col.outputs[0].keyframe_insert("default_value", frame=f)
-        sk.outputs[0].default_value = 1.0 * C.smoothstep((el + 1.0) / 2.0)
-        sk.outputs[0].keyframe_insert("default_value", frame=f)
-        if nk is not None:
-            nk.outputs[0].default_value = 1.6 * (1 - C.smoothstep((el + 9) / 7.0))
-            nk.outputs[0].keyframe_insert("default_value", frame=f)
+        scene_prop("env_tl_sun_color", [c / m for c in kc], kf)
+        scene_prop("env_tl_sun_disk", 1.0 * C.smoothstep((el + 1.0) / 2.0), kf)
+        if stars:
+            scene_prop("env_stars", 1.6 * (1 - C.smoothstep((el + 9) / 7.0)), kf)
         # sun lamp
         sun.rotation_euler = (-d).to_track_quat("-Z", "Y").to_euler()
         sun.keyframe_insert("rotation_euler", frame=f)
@@ -3168,18 +3170,19 @@ def timelapse_sky(ctx, hour0=13.0, hour1=21.0, f0=1, f1=None, clouds=0.35, cloud
             moon_o.data.energy = 0.3 * (1 - C.smoothstep((el + 8) / 8.0))
             moon_o.data.keyframe_insert("energy", frame=f)
         # haze + horizon colour follows the sky
-        hzc = [0.55 * day + 0.012, 0.52 * day + 0.016, 0.5 * day * (0.9 + 0.1 * C.smoothstep(el / 20)) + 0.03]
         warm = (1 - C.smoothstep(el / 12.0)) * day
-        hzc = [hzc[0] * (1 + 0.6 * warm), hzc[1] * (1 + 0.1 * warm), hzc[2] * (1 - 0.35 * warm)]
-        hz.outputs[0].default_value = (*hzc, 1)
-        hz.outputs[0].keyframe_insert("default_value", frame=f)
-        set_haze(color=hzc, density=0.0004, sun_dir=d, sun_color=[hzc[i] * (1 + 2 * warm * kc[i] / m) for i in range(3)],
-                 frame=f)
+        hzc = [hc[i] * 0.85 + gc[i] * 0.15 for i in range(3)]
+        scene_prop("env_tl_below", hzc, kf)
+        if animate_haze:
+            set_haze(color=hzc, density=0.0004, sun_dir=d, sun_color=[hzc[i] * (1 + 2 * warm * kc[i] / m) for i in range(3)],
+                     frame=f)
+        elif f == f0:
+            set_haze(color=hzc, density=0.0004, sun_dir=d)
         if exposure_night:
             sc.view_settings.exposure = exposure_night * (1 - day)
             sc.view_settings.keyframe_insert("exposure", frame=f)
         keys.append((f, hour, el, az))
-    for idb in (nt, sun, sun.data, haze_group(), sc):
+    for idb in (sun, sun.data, sc):
         _linear_keys(idb)
     if moon_o:
         _linear_keys(moon_o.data)
@@ -3212,23 +3215,27 @@ def judean_hills(ctx, mood="noon", timelapse=False, hour0=13.0, hour1=21.0, seed
         if sun_az is not None:
             p["sun_az"] = sun_az
         A["sky"] = sky(cfg=p, ctx=ctx)
-    H = _hills_height(seed, terraces)
+    H = _hills_height(seed, terraces, view_az)
     gm = ground_material("EnvHillsGround", style="hills")
     terr = terrain_grid("JudeanHills", H, center=(0, 20), core=120, cell=0.5, extent=4200, growth=1.07, mat_=gm,
                         attrs_fn=_hills_attrs(H, terraces))
     A["terrain"] = terr
-    # lone dead tree on the knoll
+    va = math.radians(view_az)
+    fwd = Vector((math.sin(va), math.cos(va), 0))
+    side = Vector((fwd.y, -fwd.x, 0))
+    tp = fwd * 0.5 + side * 2.2                       # dead tree near the spur edge, right of frame centre
     if dead_tree_:
         dt = dead_tree(seed=seed + 3, size=1.15)
-        z = ground_z(1.5, 3.0)
-        A["dead_tree"] = place(dt, (1.5, 3.0, z - 0.15), rot=(0, 0, 40))
-        A["dead_tree_pos"] = (1.5, 3.0, z)
+        z = ground_z(tp.x, tp.y)
+        A["dead_tree"] = place(dt, (tp.x, tp.y, z - 0.15), rot=(0, 0, 40))
+    A["dead_tree_pos"] = (tp.x, tp.y, ground_z(tp.x, tp.y))
     A["knoll"] = (0.0, 0.0, ground_z(0, 0))
     boulders = rock_protos("boulders")
     small = rock_protos("rocks")
     if rocks:
         scatter(boulders, count=int(60 * rocks), seed=seed + 1, scale=(0.4, 1.3), align=0.7, sink=-0.35, tilt=8,
-                region=("circle", 0, 0, 45), name="EnvHillBoulders", exclude=[(1.5, 3.0, 1.5)], min_dist=3)
+                region=("circle", 0, 0, 45), name="EnvHillBoulders", exclude=[(tp.x, tp.y, 1.5), (-fwd.x * 8, -fwd.y * 8, 3)],
+                min_dist=3)
         scatter(small, count=int(900 * rocks), seed=seed + 2, scale=(0.6, 2.0), align=0.9, sink=-0.3, tilt=12,
                 region=("circle", 0, 0, 60), name="EnvHillRocks")
         scatter(boulders, count=int(400 * rocks), seed=seed + 3, scale=(0.6, 1.6), align=0.7, sink=-0.35,
@@ -3236,7 +3243,7 @@ def judean_hills(ctx, mood="noon", timelapse=False, hour0=13.0, hour1=21.0, seed
     if grass:
         gr = grass_protos("dry")
         scatter(gr, count=int(12000 * grass), seed=seed + 4, scale=(0.5, 1.3), align=0.6, sink=0.02,
-                region=("circle", 0, 0, 70), max_slope=35, name="EnvHillGrass", exclude=[(1.5, 3.0, 0.8)],
+                region=("circle", 0, 0, 70), max_slope=35, name="EnvHillGrass", exclude=[(tp.x, tp.y, 0.8)],
                 density=lambda X, Y: 0.3 + 0.7 * (fbm(X * 0.04, Y * 0.04, 2, seed=41) > -0.15))
         th = [thorn_bush(seed=i, size=0.8 + 0.3 * i) for i in range(3)]
         scatter(th, count=int(300 * grass), seed=seed + 5, scale=(0.8, 1.6), align=0.3, sink=0.05,
@@ -3253,16 +3260,14 @@ def judean_hills(ctx, mood="noon", timelapse=False, hour0=13.0, hour1=21.0, seed
     release_bvh()
     A["ground"] = _scalar(H)
     A["ground_z"] = ground_z
-    va = math.radians(view_az)
-    fwd = Vector((math.sin(va), math.cos(va), 0))
     kz = A["knoll"][2]
-    eye = Vector((1.5, 3.0, 0)) - fwd * 9.0 + Vector((fwd.y, -fwd.x, 0)) * 2.0
-    eye.z = ground_z(eye.x, eye.y) + 1.4
-    tgt = Vector((1.5, 3.0, 0)) + fwd * 120
-    tgt.z = kz + 6.0
+    eye = tp - fwd * 8.0 - side * 2.5
+    eye.z = ground_z(eye.x, eye.y) + 1.7
+    tgt = tp + fwd * 150
+    tgt.z = eye.z + 4.0
     A["cams"] = {"wide": dict(loc=tuple(eye), target=tuple(tgt), lens=24),
-                 "low": dict(loc=tuple(eye + Vector((0, 0, -1.1))), target=tuple(Vector((1.5, 3.0, kz + 2.5))), lens=20),
-                 "high": dict(loc=tuple(Vector((1.5, 3.0, 0)) - fwd * 40 + Vector((0, 0, kz + 25))),
-                              target=tuple(Vector((1.5, 3.0, kz)) + fwd * 200), lens=28)}
+                 "low": dict(loc=tuple(tp - fwd * 4.0 - side * 1.2 + Vector((0, 0, ground_z(*(tp - fwd * 4.0 - side * 1.2).xy) + 0.4))),
+                             target=tuple(tp + Vector((0, 0, A["dead_tree_pos"][2] + 3.0))), lens=20),
+                 "high": dict(loc=tuple(tp - fwd * 40 + Vector((0, 0, kz + 30))), target=tuple(tp + fwd * 250), lens=28)}
     A["build_time"] = time.time() - t0
     return A

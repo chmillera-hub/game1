@@ -1,0 +1,210 @@
+# `lib/assets.py` — animals & props (API reference)
+
+Catalog + loader for every non-human model in the film: rigged animals with procedural motion cycles,
+and period props (procedural or from Poly Haven). Everything comes out at **real-world size**, Z-up,
+**origin at the base** (sits on z = 0 when `loc` has z = 0), **front facing −Y** (toward a default
+camera at −Y looking +Y). `rot_z` is in **degrees** (same convention as `core.py`).
+
+```python
+import sys; sys.path.insert(0, "/home/user/game1/psalm22/blender")
+from lib import core as C
+from lib import assets as A
+
+A.names()            # all names;  A.names("animal") / A.names("prop")
+A.info("crown")      # dict: desc, size, variants, (animals: actions, source model + licence)
+```
+
+## 1. Loading anything
+
+```python
+root = A.load(name, loc=(0, 0, 0), rot_z=0.0, scale=1.0, coll=None, variant=0, **opts)
+```
+| arg | meaning |
+|---|---|
+| `name` | catalog name (`A.names()`), a Poly Haven alias (`"ph_jug"`, see §5) or `"ph:<polyhaven_asset>"` |
+| `loc` | world position of the base/origin |
+| `rot_z` | heading in degrees (0 = front toward −Y) |
+| `scale` | uniform multiplier of the real size (or an (x, y, z) tuple) |
+| `coll` | collection to link into (default scene collection) |
+| `variant` | integer; see the tables below (animals wrap around modulo the number of variants) |
+| `**opts` | per-asset options (tables below) |
+
+Returns the **root object**: an EMPTY for props and static animals, an **ARMATURE** for rigged animals.
+Parts are children of the root (move/rotate/scale/keyframe the root only). Useful custom properties on the
+root (root-local coordinates, use `A.anchor(root, key)` to get the world position at the current frame):
+
+| key | on | meaning |
+|---|---|---|
+| `flame` | oil_lamp, candle | wick tip – put the flame / point light here |
+| `grip` | gladius, spear, hammer | where a hand holds it |
+| `tip` | gladius, spear, nail, hyssop | point / sponge |
+| `head`, `face` | nail / hammer | nail head; hammer striking face |
+| `mouth` | water_jar, amphora, goblet, clay_cup | rim centre (pour point) |
+| `top` | table | table-top height in metres |
+| `height` | candle | wax height |
+
+Repeated `load()` calls with the same `(name, variant, opts)` in one Blender session reuse the first
+instance's meshes (linked duplicates) – 300 oil lamps cost one build (~1 s) plus cheap object copies.
+Procedural props are deterministic (same shape in every render process).
+
+Helpers: `A.bounds(root)` → world (min, max) Vectors; `A.children_recursive(root)`;
+`A.set_visible_frames(root, f_in=None, f_out=None)` keys `hide_render` on the whole hierarchy.
+
+## 2. Animals
+
+```python
+arm = A.animal(name, action="idle", loc=(0, 0, 0), rot_z=0.0, start_frame=1, speed=1.0, coll=None,
+               variant=0, scale=1.0, move=False, path=None, end_frame=None, eye_glow=0.0,
+               tint=None, offset=0.0)
+```
+* `action`: a looping action from `A.list_actions(name, variant)`. Before `start_frame` the first pose
+  is held. `speed` scales playback (2.0 = twice as fast; ground speed scales with it).
+* `move=True`: walks straight forward (−Y of the animal, turned by `rot_z`) at `A.ground_speed()`, from
+  `start_frame` to `end_frame` (default scene end). Feet do not slide at that speed.
+* `path=[(x, y), …]` (or (x, y, z)): follows the polyline at ground speed, heading along the path
+  (overrides `move`). Use `A.circle_path(center, radius, start_deg=0, turns=1, clockwise=False)` for circling.
+* `offset` (seconds) de-synchronises pack members; `scale` changes size (ground speed follows it).
+* `eye_glow` 0..1: eyeshine on small glossy eye spheres (glinting eyes in dust/darkness).
+* `tint=(dr, dg, db)`: per-instance colour multiplier offset (`base * (1 + tint)`); `(-0.4,-0.4,-0.4)`
+  = 40 % darker. Works on copies without new materials.
+
+| name | v | source model | rigged actions (ground speed at speed=1) | size (bbox h) |
+|---|---|---|---|---|
+| `lion` | 0 | male lion with mane, sculpted roaring mouth | `idle` (mouth almost closed, breathing, looking around), `walk` (1.08 m/s), `stalk` (crouched, head low, 0.42 m/s), `run` (gallop, 6.8 m/s), `roar` (3.2 s: draws back, thrusts head, jaw wide open, tremor, closes) | 1.38 m |
+| `lion` | 1 | lioness, static roaring pose | `static` | 1.15 m |
+| `bull` | 0 | massive black Cape-buffalo bull (bull of Bashan) | `idle`, `walk` (1.08 m/s), `run` (charging gallop, 5.8 m/s), `toss` (head/horn toss), `paw` (scrapes the ground with the right fore-hoof) | 1.6 m |
+| `bull` | 1 | dark wildebeest-type wild ox, static | `static` | 1.5 m |
+| `dog` | 0 | wolf (grey-white; darken with `tint`) | `idle` (panting), `walk` (0.81 m/s), `prowl` (low, head down, tail low, 0.34 m/s), `trot` (1.98 m/s), `run` (gallop, 5.3 m/s), `snarl` (head low, jaw opens) | 0.85 m |
+| `ox` | 0 | domestic brown ox/cow, short horns | `idle` (chewing, tail swish), `walk` (0.92 m/s), `graze` (head to the ground) | 1.45 m |
+| `donkey` | 0 | grey donkey (wild-ass build) | `idle`, `walk` (0.94 m/s), `graze` | 1.4 m |
+| `sheep` | 0 | woolly sheep | `idle` (chewing), `walk` (0.68 m/s), `graze` | 0.8 m |
+| `dove` | 0 | white dove, perched (CC0 museum scan) | `static` | 0.25 m |
+| `dove` | 1 | rock pigeon, wings spread | `static` | 0.3 m |
+
+Sequencing / switching actions on one animal:
+```python
+arm = A.animal("lion", "stalk", loc=(0, 8, 0), rot_z=0, move=True)        # stalks toward camera
+A.play(arm, "roar", start_frame=60, replace=False)    # from frame 60 the roar overrides the stalk
+# stop the forward motion at 60: re-key arm.location yourself (move=True keyed a linear path)
+```
+`A.play(arm, action, start_frame=1, speed=1.0, offset=0.0, blend_in=0, replace=True)` returns the NLA
+strip. With `replace=False` the new strip goes on a higher NLA track and wins from its start frame on
+(`blend_in` frames cross-fade). `A.follow_path(obj, points, speed, f0=1, f1=None, ground=None)` keys
+location + heading along a polyline (use `ground=lambda x, y: C.height_at("Terrain", x, y)` on terrain).
+`A.ground_speed(name, action, variant=0, speed=1.0)` → m/s.
+`A.set_eye_glow(arm, strength=1.0, color=(1, .85, .45))` changes eyeshine later.
+
+Rig (for custom posing): bones `root`, `body` (move/rotate the whole torso), `spine1`, `spine2`,
+`neck1`, `neck2`, `head`, `jaw` (lion/dog/ox/sheep), `tail1..4`, legs `FL1-3 FR1-3 HL1-3 HR1-3` driven by
+IK targets `IK_FL IK_FR IK_HL IK_HR` (pose-space offsets from the standing foot position; local axes =
+armature axes, i.e. y+ = backward, z+ = up). Bone local X = world X, so `rotation_euler.x` pitches
+(+ = nose/head down for neck/head/jaw: jaw + = open; tail + = up). Poses are keyed with XYZ eulers.
+Deformation = automatic weights + Corrective Smooth; jaw region re-weighted; eyes are separate spheres
+parented to `head`.
+
+Static animals are an EMPTY root with the mesh child (no actions) – animate the root.
+
+## 3. Props
+
+| name | variants | opts | notes |
+|---|---|---|---|
+| `gladius` | 1 | `upright=False` | Pompeii-type, 0.71 m; lying flat (blade flat), tip → +X. Upright: pommel at z=0, tip up. Steel blade, boxwood guard/pommel, bone grip. |
+| `spear` | 0 hasta, 1 pilum | `upright`, `length` | lying along X, head at +X; ash shaft. |
+| `nail` | 0–3 (lengths/bends) | `upright` (tip at origin pointing down, head up), `length=0.17`, `bend` | forged square shank, hammered head, rusty iron. Lying: head at x=0, tip → +X. |
+| `hammer` | 0 iron hammer, 1 wooden mallet | `upright` (handle down, head up, face → −Y) | lying: handle along X, head at +X. |
+| `astragalus` | 0–3 | – | sheep knucklebone ~27 mm, polished bone (metaball sculpt). |
+| `dice` | 0–3 | `top=1..6`, `size=0.016` | bone cube die, dot-and-circle pips, opposite faces sum to 7. |
+| `water_jar` | 0 storage jar 0.48 m (2 handles), 1 pitcher 0.30 m (spout −Y, handle +Y), 2 round jug 0.22 m | – | terracotta/buff/dark clay with wheel rings, fire clouds, grime at the base. `mouth` anchor. |
+| `amphora` | 1 | – | 0.93 m, pointed toe (lean it or bury the toe). |
+| `oil_lamp` | 0 buff, 1 grey | – | Herodian wheel-made lamp 7×11 cm, nozzle → −Y, soot at the wick. `flame` anchor. |
+| `candle` | 1 | `height=0.22`, `radius=0.011`, `drips=True`, `holder=False` | beeswax (SSS). Children `body`, `top` (crater+wick+drips), `puddle`. `A.melt_candle(root, f0, f1, amount=0.75)` keys a melt-down (body shortens, top follows, puddle spreads); re-read `A.anchor(root, "flame")` per frame or parent the flame to the `top*` child. |
+| `potsherd` | 0–11 random shards | `size=0.08` | curved wall pieces, lighter fresh-break edges; lies stably on the ground. Scatter variants with random `rot_z`. |
+| `crown` | 0 radiate spikes + gems, 1 fleuron points, 2 Roman gold laurel wreath, 3 arched royal crown with red velvet cap | – | Ø ~0.2 m, gold + cabochon/faceted gems + pearls. |
+| `goblet` | 0 tall chalice, 1 wide goblet, 2 two-handled kantharos, 3 squat jewelled cup | `wine=False` | gold, gem band. |
+| `clay_cup` | 0 beaker, 1 slip-ware bowl-cup | `wine=False` | 8–9 cm. |
+| `scroll` | 1 | `open_width=0.32`, `lying=False`, `closed=False` | two olive-wood rollers with turned handles; parchment with Psalm 22 in Hebrew Stam script (generated texture `/opt/assets/models/textures/scroll_psalm22.png`). Rollers upright, text faces −Y. `lying=True` puts it on a table. |
+| `flatbread` | 0 whole loaf Ø22 cm, 1 broken (children `half_a` −X, `half_b` +X – animate them apart; torn crumb faces), 2 flatter/charred | `radius=0.11` | crust with blisters/char/flour, crumb material inside. |
+| `table` | 0 dining 1.7×0.8×0.75 m, 1 low 1.4×0.7×0.42 m | – | rough planks (Poly Haven wood scans). `top` = surface height. |
+| `rope` | 0 coil on the ground, 1 straight 1.2 m along X | `radius=0.009`, `length` | 3-strand hemp. `A.rope_curve(points, radius=0.009, coll=None)` makes rope through any 3D points (e.g. binding wrists, hanging from the beam). |
+| `hyssop` | 1 | `upright` | 1.15 m reed with a sponge (+ hyssop sprigs); lying along X, sponge at +X. |
+
+Shared materials you can reuse on your own meshes: `A.mat_clay(kind)` (`terracotta|buff|grey|dark|break|slip`),
+`A.mat_iron(rust=0.5, scale=60)`, `A.mat_steel()`, `A.mat_gold(tone="yellow"|"red"|"pale")`,
+`A.mat_gem("ruby"|"emerald"|"sapphire"|"amethyst"|"garnet"|"topaz"|"pearl")`, `A.mat_bone(tone, scale)`,
+`A.mat_wax()`, `A.mat_wood("boxwood"|"ash"|"olive"|"dark")`, `A.mat_rope()`, `A.mat_bread("crust"|"crumb")`,
+`A.mat_parchment(text=True)` (needs UVs), `A.mat_wine()`, `A.mat_water()`, `A.mat_velvet()`.
+Procedural ones use **object-space** coordinates, so they need no UVs and keep their scale relative to
+the object (they do NOT stretch with object scale).
+
+## 4. Usage examples
+
+```python
+# s09b: lion emerges from dust and roars at camera
+lion = A.animal("lion", "stalk", loc=(0, 9, 0), rot_z=0, start_frame=1, move=True, end_frame=70, eye_glow=0.5)
+A.play(lion, "roar", start_frame=70, replace=False)
+lion.keyframe_insert("location", frame=70)          # (move keyed frames 1 and 70 only: stops there)
+
+# s12a: pack of wild dogs prowling around the camera at dusk
+for i in range(6):
+    pts = A.circle_path((0, 0), 4.0 + 0.3 * i, start_deg=i * 60, turns=0.6, clockwise=i % 2 == 0)
+    A.animal("dog", "prowl", path=pts, offset=i * 0.37, eye_glow=0.6, tint=(-0.45, -0.5, -0.55),
+             scale=0.85 + 0.03 * i)
+
+# s09a: bulls circling the cross
+for i in range(5):
+    A.animal("bull", "run" if i % 2 else "walk", path=A.circle_path((0, 0), 9 + i, start_deg=i * 72),
+             offset=i * 0.2, tint=(-0.2, -0.2, -0.2))
+
+# s13b: dice + knucklebones on the tunic
+for i in range(3):
+    A.load("dice", loc=(0.05 * i, 0, 0.002), rot_z=30 * i, variant=i, top=(i % 6) + 1)
+A.load("astragalus", loc=(0.12, 0.03, 0.002), variant=1)
+
+# s20a: lit oil lamp in a hand / s17a: hundreds of lamps (shared meshes)
+lamp = A.load("oil_lamp", loc=(0, 0, 0.9), rot_z=90)
+flame_pos = A.anchor(lamp, "flame")
+for i in range(300):
+    A.load("oil_lamp", loc=(i * 0.3, 0, 0), rot_z=i * 37)
+
+# s10b: melting candle
+c = A.load("candle", height=0.24, holder=True)
+A.melt_candle(c, 1, ctx.nframes, amount=0.8)
+
+# s17b: bread broken over the table
+t = A.load("table", variant=0)
+b = A.load("flatbread", loc=(0, 0, t["top"]), variant=1)
+ha, hb = [o for o in b.children if o.name.startswith("half_a")][0], [o for o in b.children if o.name.startswith("half_b")][0]
+C.keys(ha, "location", [(1, ha.location.copy()), (40, ha.location + Vector((-0.06, 0, 0.02)))])
+```
+
+## 5. Poly Haven props (CC0) through the same API
+`A.load("ph:<asset>")` appends any Poly Haven model (1k textures) re-centred so its base sits at the
+origin. Aliases checked for this film: `ph_hammer` (cross_pein_hammer), `ph_mallet` (wooden_hammer_01),
+`ph_pot` (ceramic_pot), `ph_jug` (jug_01), `ph_goblets` (brass_goblets), `ph_candlestick`,
+`ph_diya` (brass_diya_lantern), `ph_bowl` (wooden_bowl_01), `ph_plate`, `ph_bucket`, `ph_lion_head`,
+`ph_bull_head`. Facing is as authored by Poly Haven (check with a quick render).
+
+## 6. Performance
+* Animal first use in a session appends a cached, pre-rigged `.blend` from `/opt/assets/models/cache/`
+  (~0.2–1 s). If a cache is missing it is rebuilt automatically from the Objaverse `.glb`
+  (`/opt/assets/models/objaverse/glbs/`, downloaded on demand) in ~1 s. Further instances share mesh,
+  armature and action data.
+* Mesh sizes: lion 5k verts, bull 5k, wolf 17k, ox 3.5k, donkey 14k, sheep 2.4k (+ Corrective Smooth,
+  6 iterations). A pack of 6 wolves + a lion adds ~0.5 s/frame in EEVEE preview on this CPU.
+* Procedural props build in 0.01–3 s each (flatbread halves ~3 s: exact boolean; oil lamp ~1 s:
+  voxel remesh); repeated loads are copies.
+* Textures: animals 1k (base/normal/ORM), Poly Haven wood 1k.
+
+## 7. Gotchas
+* Animals are **in-place cycles**: without `move`/`path`/your own root keys they walk on the spot.
+  If you move the root yourself, match `A.ground_speed()` or feet will skate.
+* `move=True` keys only `start_frame` and `end_frame` linearly; to stop, add your own keys.
+* `scale` on an animal changes its ground speed proportionally (handled by `animal()`).
+* The lion's sculpt has an open roaring mouth; every action except `roar` closes it with the jaw bone.
+  Extreme close-ups of the mouth in idle show a slight lip gap (it reads as a snarl).
+* Fur is texture + sheen, not hair: fine in dust/rim light and medium shots, less so in macro shots.
+* Eye spheres are tiny glossy balls; with `eye_glow` they emit (bloom in the comp makes them glint).
+* `potsherd`, `astragalus`, `nail`, `dice` are small: use `scale` only for stylisation.
+* Static animals (`lion` v1, `bull` v1, `dove`) have no rig – keyframe the root.
+* Remove instances with `bpy.data.objects.remove(o)` for the root **and** `A.children_recursive(root)`.
+* Credits: every non-CC0 model the catalog loads is listed in `psalm22/CREDITS.md` (`A.credits()`).

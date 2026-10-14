@@ -789,7 +789,7 @@ def straw_scatter(carrier, density=1500, seed=0, mat=None, length=0.16, keep_sur
 
 
 def dust(center=(0, 0, 1.5), size=(3, 3, 2), count=600, radius=0.0035, color=(1.0, 0.93, 0.82),
-         emission=0.0, speed=0.08, amp=0.25, seed=0, b=None, name="dust"):
+         emission=0.0, speed=0.08, amp=0.25, seed=0, b=None, name="dust", coll=None):
     """Floating dust motes with Geometry Nodes (no particle bake needed; drift is driven by scene
     time). They are lit by scene lights, so they sparkle inside light shafts. emission > 0 makes
     them self-lit (use ~0.5-3 for a magical glitter). Returns the object."""
@@ -798,7 +798,7 @@ def dust(center=(0, 0, 1.5), size=(3, 3, 2), count=600, radius=0.0035, color=(1.
     if b:
         b.add(o)
     else:
-        bpy.context.scene.collection.objects.link(o)
+        (coll or bpy.context.scene.collection).objects.link(o)
     o.location = center
     m = C.mat(name + "_mat", color, rough=0.9, emission=color if emission else None, emission_strength=emission)
     ng, gi, go = _gn_group(name + "_gn")
@@ -1095,7 +1095,7 @@ LAMP_TIP = Vector((0.0655, 0.0, 0.026))   # nozzle tip (flame root) in lamp-loca
 
 
 def oil_lamp(loc=(0, 0, 0), rot_z=0.0, scale=1.0, light=True, energy=12.0, temp=2300, flame_strength=18.0,
-             flicker=0.18, seed=0, b=None, name="oil_lamp", shadow=True, light_radius=0.012, parent=None):
+             flicker=0.18, seed=0, b=None, name="oil_lamp", shadow=True, light_radius=0.012, parent=None, coll=None):
     """Clay oil lamp with a flickering flame (+ optional warm point light at the flame).
     Returns (lamp_obj, flame_obj, light_obj_or_None). The lamp origin is its base; the flame sits at
     the nozzle tip (+X). Animate by moving/parenting `lamp_obj` (flame + light are its children)."""
@@ -1103,7 +1103,8 @@ def oil_lamp(loc=(0, 0, 0), rot_z=0.0, scale=1.0, light=True, energy=12.0, temp=
     body = bpy.data.objects.new(name, _lamp_body_mesh())
     if not body.data.materials:
         body.data.materials.append(clay)
-    (b.add(body, parent=parent) if b else bpy.context.scene.collection.objects.link(body))
+    _coll = coll or bpy.context.scene.collection
+    (b.add(body, parent=parent) if b else _coll.objects.link(body))
     if parent is not None and not b:
         body.parent = parent
     body.location = loc
@@ -1113,7 +1114,7 @@ def oil_lamp(loc=(0, 0, 0), rot_z=0.0, scale=1.0, light=True, energy=12.0, temp=
     fl = bpy.data.objects.new(name + "_flame", _flame_mesh())
     if not fl.data.materials:
         fl.data.materials.append(fm)
-    (b.add(fl, parent=body) if b else bpy.context.scene.collection.objects.link(fl))
+    (b.add(fl, parent=body) if b else _coll.objects.link(fl))
     fl.parent = body
     fl.location = LAMP_TIP + Vector((0.002, 0, -0.002))
     fl.visible_shadow = False
@@ -1125,7 +1126,7 @@ def oil_lamp(loc=(0, 0, 0), rot_z=0.0, scale=1.0, light=True, energy=12.0, temp=
         ld.shadow_soft_size = light_radius
         ld.use_shadow = shadow
         lo = bpy.data.objects.new(name + "_light", ld)
-        (b.add(lo, parent=body) if b else bpy.context.scene.collection.objects.link(lo))
+        (b.add(lo, parent=body) if b else _coll.objects.link(lo))
         lo.parent = body
         lo.location = LAMP_TIP + Vector((0.0, 0, 0.022))
         if flicker:
@@ -1140,7 +1141,7 @@ def oil_lamp(loc=(0, 0, 0), rot_z=0.0, scale=1.0, light=True, energy=12.0, temp=
 
 
 def lamp_field(points, b=None, name="lamp_field", scale=1.0, flame_strength=16.0, yaw_random=True, seed=0,
-               cluster_lights=0.0, cluster_size=3.0, light_per_lamp=2.0, temp=2000):
+               cluster_lights=0.0, cluster_size=3.0, light_per_lamp=2.0, temp=2000, coll=None):
     """Hundreds of instanced (geometry-nodes) clay lamps with flickering emissive flames and NO
     lights (cheap). points = list of (x, y, z) or (x, y, z, yaw_deg) in the parent's local space.
     Returns the carrier object. Light the area with a few area/point lights to fake their glow."""
@@ -1156,7 +1157,8 @@ def lamp_field(points, b=None, name="lamp_field", scale=1.0, flame_strength=16.0
     attr.data.foreach_set("value", yaws)
     me.update()
     o = bpy.data.objects.new(name, me)
-    (b.add(o) if b else bpy.context.scene.collection.objects.link(o))
+    _coll = coll or bpy.context.scene.collection
+    (b.add(o) if b else _coll.objects.link(o))
     # source lamp (body + flame joined as one instance geometry with 2 materials)
     src_name = "lamp_inst_src"
     src = bpy.data.objects.get(src_name)
@@ -1223,9 +1225,9 @@ def lamp_field(points, b=None, name="lamp_field", scale=1.0, flame_strength=16.0
             ld.color = C.kelvin(temp)
             ld.shadow_soft_size = min(1.0, cluster_size * 0.3)
             ld.use_shadow = False
-            ld.volume_factor = 0.4
+            ld.volume_factor = 0.0          # many lights x volume froxels is very expensive
             lo = bpy.data.objects.new("%s_glow" % name, ld)
-            (b.add(lo) if b else bpy.context.scene.collection.objects.link(lo))
+            (b.add(lo) if b else _coll.objects.link(lo))
             lo.location = c + Vector((0, 0, 0.18))
             lights.append(lo)
         o["cluster_lights"] = len(lights)
@@ -1444,7 +1446,7 @@ def _solidify(o, thickness, offset=-1.0):
 
 
 def stable_cave(ctx, loc=(0, 0, 0), rot_z=0.0, coll=None, world=True, lamps=2, starlight=1.0, lamp_energy=1.0,
-                fog=True, dust_motes=True, straw=True, straw_density=900, manger="stone", seed=7, props=True,
+                fog=True, dust_motes=True, straw=True, straw_density=650, manger="stone", seed=7, props=True,
                 straw_shadows=False):
     """Bethlehem stable cave at night (s07a). Local layout (metres, floor z=0):
         cave interior ~6.6 x 7.4 m, ceiling ~2.75 m, soot-darkened; arched doorway in the back-left
@@ -1562,7 +1564,7 @@ def stable_cave(ctx, loc=(0, 0, 0), rot_z=0.0, coll=None, world=True, lamps=2, s
     mound.location = mound_c
     mound.rotation_euler = (0, 0, math.radians(-6))
     if straw:
-        straw_scatter(mound, density=4500, seed=seed + 11, tilt=0.95)
+        straw_scatter(mound, density=3200, seed=seed + 11, tilt=0.95)
         mound.visible_shadow = straw_shadows
 
     # ---------- Mary's seat, wall ledge, lamps ----------
@@ -1579,8 +1581,9 @@ def stable_cave(ctx, loc=(0, 0, 0), rot_z=0.0, coll=None, world=True, lamps=2, s
     b.info.lights["lamp_ledge"] = lamp_l[2]
     lamp_floor_pos = Vector((-0.02, 1.5, 0.0))
     if lamps >= 2:
-        _boulder("lamp_stone", (0.3, 0.28, 0.2), lamp_floor_pos + Vector((0, 0, -0.01)), b, stone_m, seed=13.0)
-        lamp_f = oil_lamp(lamp_floor_pos + Vector((0, 0, 0.185)), rot_z=115, light=True, energy=35.0 * lamp_energy,
+        _rock_block("lamp_stone", (0.36, 0.3, 0.13), lamp_floor_pos + Vector((0, 0, 0.055)), b, stone_m,
+                    noise_amp=0.012, seed=13.0, bevel=0.035, rot=(0, 0, 25))
+        lamp_f = oil_lamp(lamp_floor_pos + Vector((0, 0, 0.12)), rot_z=115, light=True, energy=35.0 * lamp_energy,
                           seed=2, b=b, name="lamp_floor")
         b.info.lights["lamp_floor"] = lamp_f[2]
 
@@ -1606,6 +1609,12 @@ def stable_cave(ctx, loc=(0, 0, 0), rot_z=0.0, coll=None, world=True, lamps=2, s
         f = C.fog_box(center=(cx, cy - 0.3, 1.4), size=(rx * 2 + 0.6, ry * 2 + 0.2, 2.9), density=0.022,
                       color=(0.85, 0.82, 0.78), anisotropy=0.3, noise_scale=1.2, name="cave_haze", coll=b.coll)
         b.add(f, "fog")
+        if starlight:     # denser dusty air along the starlight beam so the shaft reads
+            mid = door_c * 0.55 + tgt * 0.45
+            bf = C.fog_box(center=(mid.x, mid.y, 0.95), size=(1.6, 2.6, 1.9), density=0.06, color=(0.9, 0.92, 1.0),
+                           anisotropy=0.35, noise_scale=2.2, name="beam_haze", coll=b.coll)
+            b.add(bf)
+            bf.rotation_euler = (0, 0, math.atan2(out_dir.y, out_dir.x) - math.pi / 2)
     if dust_motes:
         mid = (door_c + tgt) * 0.5
         dust(center=(mid.x, mid.y, 1.0), size=(2.0, 3.0, 2.0), count=500, radius=0.0022, seed=seed, b=b,
@@ -1627,7 +1636,7 @@ def stable_cave(ctx, loc=(0, 0, 0), rot_z=0.0, coll=None, world=True, lamps=2, s
         heap.location = Vector((hp.x, hp.y, 0)) + Vector((hn.x, hn.y, 0)).normalized() * 0.8
         heap.rotation_euler = (0, 0, math.atan2(hn.y, hn.x) + math.pi / 2)
         if straw:
-            straw_scatter(heap, density=3000, seed=seed + 21, tilt=0.9)
+            straw_scatter(heap, density=1800, seed=seed + 21, tilt=0.9)
             heap.visible_shadow = straw_shadows
         for k, (th, sz) in enumerate(((math.radians(160), (0.7, 0.5, 0.45)), (math.radians(235), (0.9, 0.6, 0.5)),
                                       (math.radians(20), (0.6, 0.6, 0.35)))):
@@ -1659,7 +1668,7 @@ def stable_cave(ctx, loc=(0, 0, 0), rot_z=0.0, coll=None, world=True, lamps=2, s
     b.anchor("donkey", (-1.75, 3.6, 0.0), yaw=-115)
     b.anchor("doorway", tuple(door_c))
     b.anchor("lamp_ledge", tuple(ledge_pos + nrm * 0.02 + Vector((0, 0, 0.05))))
-    b.anchor("lamp_floor", tuple(lamp_floor_pos + Vector((0, 0, 0.23))))
+    b.anchor("lamp_floor", tuple(lamp_floor_pos + Vector((0, 0, 0.17))))
     b.anchor("star", tuple(door_c + star_dir * 200))
     R = b.M.to_3x3()
     b.info.extra.update({"door_dir": R @ out_dir, "star_dir": R @ star_dir, "wall_fn_local": wall})
@@ -1685,11 +1694,11 @@ def _grid_obj(name, nu, nv, fn, b, mat=None, smooth=True, keep=None):
             a = j * (nu + 1) + i
             faces.append((a, a + 1, a + nu + 2, a + nu + 1))
     o = _mesh_obj(name, verts, faces, b, smooth, mat)
-    loose_cleanup(o)
+    _loose_cleanup(o)
     return o
 
 
-def loose_cleanup(o):
+def _loose_cleanup(o):
     me = o.data
     bm = bmesh.new()
     bm.from_mesh(me)
@@ -1875,8 +1884,8 @@ def garden_tomb(ctx, loc=(0, 0, 0), rot_z=0.0, coll=None, stone_open=0.0, world=
     b = _B("GardenTomb", loc, rot_z, coll, seed)
     rnd = b.rnd
     face_m = _cached(("tomb_face",), lambda: _grime(
-        C.mat_pbr("worn_rock_natural_01", scale=0.4, tint=(0.97, 0.93, 0.86), name="set_tomb_face", bump=1.5,
-                  hue_sat_val=(0.5, 0.7, 1.08)), "z", 0.5, -0.2, (0.3, 0.27, 0.22), 0.45))
+        C.mat_pbr("worn_rock_natural_01", scale=0.85, tint=(0.97, 0.94, 0.88), name="set_tomb_face", bump=1.6,
+                  hue_sat_val=(0.5, 0.45, 1.12)), "z", 0.5, -0.2, (0.3, 0.27, 0.22), 0.45))
     cut_m = _cached(("tomb_cut",), lambda: _add_chisel(C.mat_pbr(
         "worn_rock_natural_01", scale=0.9, tint=(0.97, 0.94, 0.88), name="set_tomb_cut", bump=0.8,
         hue_sat_val=(0.5, 0.55, 1.1)), 0.3, 7.0))
@@ -1909,7 +1918,7 @@ def garden_tomb(ctx, loc=(0, 0, 0), rot_z=0.0, coll=None, stone_open=0.0, world=
         dressed = max(0.0, 1.0 - max(abs(x) / 1.9, abs(z - 1.1) / 1.8))    # flat chiselled facade
         rough = 1.0 - min(1.0, dressed * 2.5)
         q = p * 0.3 + so
-        d = 1.5 * C.fbm(q.x, q.z + q.y * 0.5, 5, seed=so.z) + 0.25 * noise.noise(p * 1.1 + so)
+        d = 1.5 * C.fbm(q.x, q.z + q.y * 0.5, 4, seed=so.z) + 0.12 * noise.noise(p * 1.1 + so)
         d += 0.45 * abs(noise.noise(Vector((x * 0.8, z * 0.15, 4.0)) + so))      # vertical fractures
         zz = z + 0.4 * noise.noise(Vector((x * 0.3, 2.0, 1.0)) + so)
         d += 0.35 * (zz / 1.6 - math.floor(zz / 1.6)) ** 3                        # stepped ledges
@@ -1920,7 +1929,7 @@ def garden_tomb(ctx, loc=(0, 0, 0), rot_z=0.0, coll=None, stone_open=0.0, world=
             p.y += (-d + plan) * rough - 0.25 * (abs(x) / 9.0) ** 1.4 * rough
             p.y += 0.05 * dressed
         else:
-            p.z += d * 0.9
+            p.z += d * 0.35
             p.y += plan * 0.5
         return p
 
@@ -2062,8 +2071,15 @@ def garden_tomb(ctx, loc=(0, 0, 0), rot_z=0.0, coll=None, stone_open=0.0, world=
     cf = b.light("chamber_fill", "AREA", (0.0, PASS + 0.4, 1.6), 12.0 * interior_fill, temp=3400, target=(1.0, 2.6, 0.0),
                  size=1.2, shadow=False)
     cf.data.volume_factor = 0.0
+    # cinematic dawn shaft through the doorway onto the grave cloths (keyed with the stone opening)
+    lin_c = Vector(((BX0 + BX1) / 2, (BY0 + BY1) / 2 + 0.2, BZ))
+    door_p = Vector((0.0, 0.25, 0.72))
+    sh_dir = (lin_c - door_p).normalized()
+    dsh = b.light("dawn_shaft", "SPOT", tuple(door_p - sh_dir * 2.0), 450.0, temp=3000, target=tuple(lin_c),
+                  size=0.05, spot_size=21, spot_blend=0.35)
+    dsh.data.volume_factor = 1.0
     # sky fill as a big SHADOWED area light (world lighting is kept tiny so it can't leak into the chamber)
-    skf = b.light("sky_fill", "AREA", (2.0, -9.0, 8.0), 1400.0, temp=8500, target=(0, 0, 1.0), size=12.0, shadow=True)
+    skf = b.light("sky_fill", "AREA", (2.0, -9.0, 8.0), 1300.0, temp=6800, target=(0, 0, 1.0), size=12.0, shadow=True)
     skf.data.volume_factor = 0.0
     if fog:
         f1 = C.fog_box(center=(0.1, (CY0 + CY1) / 2 - 0.25, 0.75), size=(CX1 - CX0 + 0.2, CY1 - CY0 + 0.9, 2.2),
@@ -2077,8 +2093,8 @@ def garden_tomb(ctx, loc=(0, 0, 0), rot_z=0.0, coll=None, stone_open=0.0, world=
         dust(center=(0.2, PASS + 1.2, 0.8), size=(1.6, 2.6, 1.5), count=450, radius=0.0025, seed=seed, b=b,
              name="tomb_dust_motes")
     if world:
-        sky_world(sun_elevation=sun_elevation - 1.0, sun_rotation=180 + sun_azimuth, strength=0.32, light_strength=0.03,
-                  air=1.6, dust=3.0, ozone=1.2, tint=(1.0, 0.8, 0.64))
+        sky_world(sun_elevation=sun_elevation - 1.0, sun_rotation=180 + sun_azimuth, strength=0.45, light_strength=0.03,
+                  air=1.2, dust=1.2, ozone=1.5, tint=(1.0, 0.9, 0.8))
     # ---------- animation ----------
     if isinstance(stone_open, (list, tuple)):
         animate_tomb_stone(b.info, stone_open, _local=True)
@@ -2107,6 +2123,11 @@ def garden_tomb(ctx, loc=(0, 0, 0), rot_z=0.0, coll=None, stone_open=0.0, world=
 
 
 def _place_stone(info, u):
+    shaft = info.lights.get("dawn_shaft")
+    if shaft is not None and not shaft.data.animation_data:
+        e0 = shaft.data.get("base_e", shaft.data.energy)
+        shaft.data["base_e"] = e0
+        shaft.data.energy = e0 * max(0.0, min(1.0, (u - 0.25) / 0.6)) ** 1.5
     st = info.objects["stone"]
     p = info.extra["stone_params"]
     x = max(0.0, min(1.0, u)) * p["roll"]
@@ -2123,6 +2144,13 @@ def animate_tomb_stone(info, pairs, interp="BEZIER", _local=False):
         st.keyframe_insert("rotation_euler", frame=f)
     C._set_interp(st, "location", interp)
     C._set_interp(st, "rotation_euler", interp)
+    shaft = info.lights.get("dawn_shaft")
+    if shaft is not None:
+        e0 = shaft.data.get("base_e", shaft.data.energy)
+        shaft.data["base_e"] = e0
+        for f, u in pairs:
+            shaft.data.energy = e0 * max(0.0, min(1.0, (u - 0.25) / 0.6)) ** 1.5
+            shaft.data.keyframe_insert("energy", frame=f)
     fill = info.lights.get("chamber_fill")
     if fill is not None:
         e = fill.data.energy if not fill.data.animation_data else fill.data["base_e"]
@@ -3109,12 +3137,13 @@ def holy_of_holies(ctx, loc=(0, 0, 0), rot_z=0.0, coll=None, veil_open=0.0, glor
         coal = C.box("incense_coals", (0.3, 0.3, 0.02), (0, -1.6, 0.9),
                      mat_=C.mat_emission("set_coals", (1.0, 0.35, 0.08), 6.0), coll=b.coll)
         b.add(coal)
-        ml = b.light("menorah", "POINT", (-3.2, -3.5, 1.9), 350.0, temp=2300, size=0.3)
+        ml = b.light("menorah", "POINT", (-3.2, -3.5, 1.9), 350.0, temp=2300, size=0.3, shadow=False)
         vf = b.light("veil_front", "AREA", (1.5, -4.0, 3.5), 120.0, temp=4500, target=(0, 0, 3.0), size=3.0,
                      shadow=False)
         vf.data.volume_factor = 0.0
         ml.data.volume_factor = 1.0
-        al = b.light("altar_glow", "POINT", (0, -1.6, 1.0), 25.0, temp=1800, size=0.15)
+        al = b.light("altar_glow", "POINT", (0, -1.6, 1.0), 25.0, temp=1800, size=0.15, shadow=False)
+        al.data.volume_factor = 0.0
         b.anchor("altar", (0, -1.6, 0.9))
     # ---------- Ark, cherubim, glory ----------
     ark_c = Vector((0, S_ / 2, 0))
@@ -3122,7 +3151,7 @@ def holy_of_holies(ctx, loc=(0, 0, 0), rot_z=0.0, coll=None, veil_open=0.0, glor
     gz = lid_top + 0.45
     gl = bpy.data.objects.new("glory_volume", None)
     gbox = C.box("glory_volume", (1.1, 1.1, 1.1), (ark_c.x, ark_c.y, gz), coll=b.coll)
-    b.add(gbox)
+    b.add(gbox, "glory_volume")
     gbox.data.materials.append(_glory_material(strength=22.0 * glory))
     gbox.visible_shadow = False
     glight = b.light("glory", "POINT", (ark_c.x, ark_c.y, gz), 450.0 * glory, temp=6200, size=0.2)
@@ -3135,7 +3164,8 @@ def holy_of_holies(ctx, loc=(0, 0, 0), rot_z=0.0, coll=None, veil_open=0.0, glor
     if shafts:
         for k, sx in enumerate((-1, 1)):
             sp = b.light("shaft%d" % k, "SPOT", (sx * 3.6, S_ - 1.0, S_ - 0.3), 1500.0, temp=5800,
-                         target=(sx * 0.35, S_ / 2 + 0.1, 1.0), size=0.15, spot_size=8, spot_blend=0.35)
+                         target=(sx * 0.35, S_ / 2 + 0.1, 1.0), size=0.15, spot_size=8, spot_blend=0.35,
+                         shadow=False)
     # ---------- incense smoke ----------
     if smoke:
         fz = C.box("hoh_incense", (S_ - 0.2, S_ - 0.2, S_ * 0.85), (0, S_ / 2, S_ * 0.85 / 2), coll=b.coll)
@@ -3190,14 +3220,27 @@ def holy_of_holies(ctx, loc=(0, 0, 0), rot_z=0.0, coll=None, veil_open=0.0, glor
 
 
 def set_glory(info, pairs):
-    """Key the glory brightness multiplier: pairs = [(frame, mult), ...] (1 = default)."""
-    gl = info.lights.get("glory")
-    base = gl.data.get("base_e", gl.data.energy)
-    gl.data["base_e"] = base
-    for f, v in pairs:
-        gl.data.energy = base * v
-        gl.data.keyframe_insert("energy", frame=f)
-    core = info.coll.objects.get("glory_core") if hasattr(info.coll.objects, "get") else None
+    """Key the glory brightness: pairs = [(frame, mult), ...] (1 = the build-time level).
+    Keys the glory point light, the glory fill light and the emissive glory volume together."""
+    for key in ("glory", "glory_fill"):
+        gl = info.lights.get(key)
+        if gl is None:
+            continue
+        base = gl.data.get("base_e", gl.data.energy)
+        gl.data["base_e"] = base
+        for f, v in pairs:
+            gl.data.energy = base * v
+            gl.data.keyframe_insert("energy", frame=f)
+    vol = info.objects.get("glory_volume")
+    if vol is not None and vol.active_material:
+        nd = vol.active_material.node_tree.nodes.get("glory_strength")
+        if nd is not None:
+            sock = nd.inputs[1]
+            base = vol.active_material.get("base_s", sock.default_value)
+            vol.active_material["base_s"] = base
+            for f, v in pairs:
+                sock.default_value = base * v
+                sock.keyframe_insert("default_value", frame=f)
 
 
 # ============================================================================================
@@ -3327,7 +3370,7 @@ def courtyard_assembly(ctx, loc=(0, 0, 0), rot_z=0.0, coll=None, lamps=480, worl
             lamp_pts.append((sx * 0.55, 0.3 + k * 0.5, 0.0, 90))
     lamp_pts = lamp_pts[:lamps] if lamps else []
     lf = lamp_field(lamp_pts, b=b, name="court_lamps", seed=seed, flame_strength=24.0, scale=1.5,
-                    cluster_lights=glow, cluster_size=3.0, light_per_lamp=2.2)
+                    cluster_lights=glow, cluster_size=4.0, light_per_lamp=2.2)
     b.info.objects["lamps"] = lf
     b.info.extra["lamp_points"] = [b.w(p[:3]) for p in lamp_pts]
     b.info.extra["add_lamps"] = lambda points, name="court_lamps_extra": lamp_field(points, b=b, name=name, seed=seed + 1,
@@ -3345,7 +3388,9 @@ def courtyard_assembly(ctx, loc=(0, 0, 0), rot_z=0.0, coll=None, lamps=480, worl
         fl.location = top
         fl.scale = (3.0, 3.0, 3.2)
         fl.visible_shadow = False
-        lo = b.light("stand%d" % k, "POINT", tuple(top + Vector((0, 0, 0.08))), 90.0 * glow, temp=1900, size=0.05)
+        lo = b.light("stand%d" % k, "POINT", tuple(top + Vector((0, 0, 0.08))), 90.0 * glow, temp=1900, size=0.05,
+                     shadow=False)
+        lo.data.volume_factor = 0.0
         flicker_light(lo, 90.0 * glow, amount=0.2, seed=k + 7)
     # ---------- lighting ----------
     g = glow
@@ -3361,7 +3406,7 @@ def courtyard_assembly(ctx, loc=(0, 0, 0), rot_z=0.0, coll=None, lamps=480, worl
     ck = b.light("crowd_key", "AREA", (0, sy0 - 0.5, 2.2), 450.0 * g, temp=2200, target=(0, 6.0, 1.5), size=1.0, shadow=False)
     ck.data.shape = "RECTANGLE"
     ck.data.size, ck.data.size_y = 14.0, 2.0
-    ck.data.volume_factor = 0.2
+    ck.data.volume_factor = 0.0
     mn = C.sun(elevation=25, azimuth=150, energy=0.15, temp=9000, angle=1.0)
     b.add(mn)
     b.info.lights["moon"] = mn
@@ -3732,6 +3777,9 @@ def camp_night(ctx, loc=(0, 0, 0), rot_z=0.0, coll=None, world=True, fire=True, 
                 if fire_obj is not None:
                     b.add(fire_obj)
                 b.info.extra["fx"] = fxr
+                lts = getattr(fxr, "lights", None) or []
+                if lts:
+                    b.info.lights["fire"] = lts[0]
             except Exception as e:
                 print("sets.camp_night: fx.campfire unavailable (%s) - using fallback fire" % e)
                 fire_obj = None

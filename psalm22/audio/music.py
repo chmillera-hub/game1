@@ -184,7 +184,8 @@ SCORE = {
                      ("duduk", 8.75, "A4:.5 G4:.25 F4:.25 E4:.5 D4:1.5~", .8)]),
     # -- dogs / they pierce: fast heartbeat; sudden drop when the hammer rises; impact
     "b12": dict(N=8, chords="Dm:2 Eb/D:1 Dm:1 Eb/D:1 Gm/D:2 A7/C#:1",
-                dyn=[(0, .56), (4.3, .68), (4.42, .1), (4.98, .1), (5.02, .78), (6.5, .42), (8, .4)],
+                dyn=[(0, .56), (("shot", "s12b", -.12), .68), (("shot", "s12b", 0), .1),
+                     (("hammer", -.04), .1), (("hammer", 0), .78), (6.5, .42), (8, .4)],
                 layers=dict(bass=.85, celli=.7, trem=(.85, 0, 4.45), upper=.4),
                 mel=[("tbn", 0, "D2:2 Eb2:1 D2:1.4 r:.6 D2:2 C#2:1", .7)],
                 perc=[("heart", 0, 4.3, 76, 60, 80), ("boom", "hammer", 112, "D2")]),
@@ -329,6 +330,8 @@ class Plan:
                 print("WARNING: %s beat length %.2f s is far from the planned ~1 s" % (name, bl))
             self.segs.append({"name": name, "t0": t0, "t1": t1, "N": N, "bl": bl, "sc": sc})
         self.index = {s["name"]: i for i, s in enumerate(self.segs)}
+        for si, s in enumerate(self.segs):
+            s["dyn"] = sorted((self.resolve_beat(si, b), v) for b, v in s["sc"]["dyn"])
 
     def tb(self, si, b):
         """Beat b of segment si -> seconds (beats beyond the segment spill into the next ones)."""
@@ -353,8 +356,21 @@ class Plan:
         return si, (t - s["t0"]) / s["bl"]
 
     def dyn(self, si, b):
-        d = self.segs[si]["sc"]["dyn"]
+        d = self.segs[si]["dyn"]
         return float(np.interp(b, [p[0] for p in d], [p[1] for p in d]))
+
+    def resolve_beat(self, si, b):
+        """Beat number, or an anchor: ("shot", id, offset_s) / ("hammer", offset_s)."""
+        if isinstance(b, (int, float)):
+            return float(b)
+        s = self.segs[si]
+        if b[0] == "shot":
+            t = self.T["shot"][b[1]]["t0"] + b[2] if b[1] in self.T["shot"] else s["t0"]
+        elif b[0] == "hammer":
+            t = s["t0"] + self.anchor(si, "hammer") * s["bl"] + b[1]
+        else:
+            raise ValueError(b)
+        return (t - s["t0"]) / s["bl"]
 
     def top(self, si, b):
         """Planned pitch of the highest string voice (None = free voice-leading)."""
