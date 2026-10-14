@@ -64,7 +64,7 @@ dark_brown, umber, grey, charcoal, black_wool, indigo, blue_grey, woad, tekhelet
 roman_red, rust, ochre, saffron, olive, purple, plum, scarlet, leather, dark_leather, iron, bronze, brass, gold, thorn.
 `W.color(name_or_srgb)` → linear RGB.
 
-## drape(person, garments, frames=30, ramp=20, quality=5, keep_rig=True, self_collision=False, sequential=True, ground=True) -> list
+## drape(person, garments, frames=30, ramp=20, quality=5, keep_rig=True, self_collision=False, sequential=False, ground=True) -> list
 
 Cloth‑simulates the soft garments onto the person's **current** pose (for stills / near‑static hero
 shots: kneeling, crouching, sitting, on the cross). The rig is animated rest → current pose over
@@ -74,7 +74,10 @@ Rigid parts (crown, helmet, turban, belts, sandals, studs, fibula) are skipped.
 * `keep_rig=True`: the result is written back into the rest shape by **inverse skinning**, so the
   garment still has its Armature modifier, reproduces the drape exactly at this pose and follows small
   motions (breathing, head turns, slow camera‑time movement). `False`: frozen mesh (Armature removed).
-* `sequential=True`: inner layers first; each draped layer becomes a collider for the next.
+* Layers are simulated **together** (default `sequential=False`): every inner soft garment also gets a
+  Collision modifier after its Cloth, so the outer one rests on it (tested: tunic + himation kneeling, clean,
+  43 s). `sequential=True` (inner first, then outer) is NOT recommended: the inner layer's inverse‑skinned
+  rest shape can intersect the outer layer at the start of its sim → inner cloth shows through.
 * `ground`: `True` = temporary floor under the lowest posed body point, a float = world z, `None` = no floor
   (use `None` on the cross).
 * Removes the `WardrobeHide` masks of the body and of these garments (cloth moved; the sim keeps it
@@ -131,8 +134,7 @@ modifier, e.g. the terrain).
 | loincloth / crown / sandals / swaddle | 2–5 / 0.8 / <0.1 / 1.5–2 s | |
 | drape: loincloth on the cross | 12–18 s | |
 | drape: tunic (15k verts, 45 frames) | 27–55 s | |
-| drape: tunic + veil (kneel) | ~90 s | |
-| drape: tunic + himation (crouch) | 3–8 min (multi‑layer collisions are expensive) | |
+| drape: tunic + himation, kneel (simultaneous layers) | ~45 s | |
 | cloth_sim bake | ~1 s per frame per 15k‑vert robe | |
 
 Render cost is small without subdivision. **Subdivision on garments is expensive on this CPU/llvmpipe
@@ -148,8 +150,8 @@ Body + garments for 3–4 people at 960x640 took ~2.5–3 GB RAM per Blender pro
   but if a pose pushes the hands into a robe they will intersect it (as in reality – keep hands slightly off
   the body or drape).
 * Colours in presets/dicts are **sRGB** (palette‑like), not linear.
-* Multi‑layer `drape()` (tunic + himation) is slow and in very deep poses can still show the inner layer
-  through the outer one; drape only the visible outer garment (`W.drape(p, [mantle])`) when that's enough.
+* `drape()` cost grows with vertex count × frames; for crowds never drape (use poses where skinning works:
+  stand, walk, point, arms_raised, mourn, light kneel). Drape the 1–3 hero characters of a shot.
 * Masks are computed for the fitted rest shape. After `drape()` they are removed for the draped garments
   and the body. If you delete/hide a garment, call `W.unmask(person)`.
 * A garment object sits at identity under the rig: its mesh coordinates are rig (armature) space.

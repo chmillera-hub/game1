@@ -22,7 +22,7 @@ CELL = 0.085                      # mud plate size (m)
 SHARD_AT = Vector((0.0, 0.0, 0.0))
 GROUND_TEX = "dry_ground_01"      # pale, finely cracked mud scan (Poly Haven CC0)
 GROUND_TINT = (0.9, 0.77, 0.6)
-SHERD_TIP, SHERD_YAW = 32.0, 35.0  # deg: outer face tipped toward camera, then turned
+SHERD_TIP, SHERD_YAW = 14.0, 18.0  # deg: outer face tipped toward camera, then turned
 BUSH_AT = (-0.16, 0.26, 0.0)
 
 
@@ -30,8 +30,8 @@ BUSH_AT = (-0.16, 0.26, 0.0)
 # hero sherd
 # =============================================================================================
 # outer profile of a storage-jar shoulder -> neck -> everted lip, (r, z) metres, bottom to top
-_PROFILE = [(0.212, 0.060), (0.214, 0.090), (0.212, 0.120), (0.205, 0.150), (0.193, 0.178), (0.177, 0.203),
-            (0.158, 0.225), (0.138, 0.243)]
+_PROFILE = [(0.095, 0.030), (0.106, 0.050), (0.113, 0.070), (0.116, 0.090), (0.114, 0.110), (0.108, 0.130),
+            (0.098, 0.150), (0.085, 0.165)]
 
 
 def _profile_fn():
@@ -71,13 +71,14 @@ def build_sherd(name="Sherd", seed=SEED, coll=None):
     prof, smax = _profile_fn()
     # ---- 2D outline in (u = circumferential arc length, s = profile arc length)
     sm = smax * 0.5
-    ctrl = [(-0.046, sm + 0.010), (-0.040, sm - 0.028), (-0.018, sm - 0.050), (0.012, sm - 0.044),
-            (0.036, sm - 0.050), (0.050, sm - 0.012), (0.044, sm + 0.024), (0.030, sm + 0.046),
-            (0.004, sm + 0.040), (-0.020, sm + 0.052), (-0.038, sm + 0.034)]
+    ctrl = [(-0.050, sm + 0.006), (-0.044, sm - 0.024), (-0.020, sm - 0.042), (0.010, sm - 0.036),
+            (0.034, sm - 0.044), (0.052, sm - 0.010), (0.046, sm + 0.020), (0.030, sm + 0.040),
+            (0.006, sm + 0.034), (-0.018, sm + 0.044), (-0.040, sm + 0.030)]
     ctrl = ctrl + [ctrl[0]]
     outline = []
     for (x0, y0), (x1, y1) in zip(ctrl, ctrl[1:]):
         L = math.hypot(x1 - x0, y1 - y0)
+        ph = rnd.random() * 6.28
         k = max(2, int(L / 0.003))
         for j in range(k):
             t = j / k
@@ -85,7 +86,7 @@ def build_sherd(name="Sherd", seed=SEED, coll=None):
             y = y0 + (y1 - y0) * t
             if j > 0:
                 nx, ny = -(y1 - y0) / L, (x1 - x0) / L
-                off = rnd.uniform(-1, 1) * 0.0012 + 0.0014 * math.sin(t * 7.0 + rnd.random() * 6)
+                off = rnd.uniform(-1, 1) * 0.0005 + 0.0009 * math.sin(t * 5.0 + ph)
                 x += nx * off
                 y += ny * off
             outline.append((x, y, "brk"))
@@ -114,8 +115,8 @@ def build_sherd(name="Sherd", seed=SEED, coll=None):
     orig_index = res[3]                    # output vert -> input verts
 
     def thick(si):
-        # 8-9 mm wall
-        return 0.0082 + 0.001 * math.sin(si * 40.0)
+        # 7-8 mm wall
+        return 0.0072 + 0.0008 * math.sin(si * 40.0)
 
     def to3d(u, si, inner=False):
         p, n = prof(si)
@@ -202,17 +203,23 @@ def sherd_material(name, kind, craze=False, crack_origin=(0, 0, 0)):
     n1 = nb.out(nb.noise(nb.v("SCALE", oc, scale=18.0), scale=1.0, detail=5.0, rough=0.6), "Fac")
     n2 = nb.out(nb.noise(nb.v("SCALE", oc, scale=140.0), scale=1.0, detail=3.0), "Fac")
     if kind == "slip":
-        c0, c1 = (0.36, 0.13, 0.06), (0.50, 0.22, 0.11)
+        c0, c1 = (0.24, 0.105, 0.055), (0.36, 0.17, 0.09)
     elif kind == "inner":
-        c0, c1 = (0.30, 0.14, 0.07), (0.42, 0.21, 0.11)
+        c0, c1 = (0.20, 0.10, 0.06), (0.30, 0.15, 0.085)
     else:
-        c0, c1 = (0.55, 0.28, 0.15), (0.64, 0.37, 0.21)
+        c0, c1 = (0.40, 0.21, 0.12), (0.48, 0.28, 0.16)
     col = nb.mixc(nb.smooth(n1, 0.3, 0.7), c0, c1)
     # grey fire-clouding on the outside
     if kind == "slip":
         cloud = nb.smooth(nb.out(nb.noise(nb.v("SCALE", oc, scale=7.0), scale=1.0, detail=3.0), "Fac"), 0.55, 0.72)
         col = nb.mixc(nb.mul(cloud, 0.55), col, (0.30, 0.25, 0.22))
     col = nb.mixc(nb.mul(nb.smooth(n2, 0.45, 0.8), 0.35), col, nb.v("SCALE", col, scale=0.72))
+    # white temper grit specks + patchy lime encrustation (sherds that lay long in dry soil)
+    spk = nb.out(nb.n("ShaderNodeTexVoronoi", {"Vector": nb.v("SCALE", oc, scale=420.0), "Randomness": 1.0}, feature="F1"), "Distance")
+    col = nb.mixc(nb.mul(nb.sub(1.0, nb.smooth(spk, 0.05, 0.16)), 0.55), col, (0.62, 0.58, 0.5))
+    if kind != "break":
+        lime = nb.smooth(nb.out(nb.noise(nb.v("SCALE", oc, scale=26.0), scale=1.0, detail=6.0, rough=0.7), "Fac"), 0.58, 0.66)
+        col = nb.mixc(nb.mul(lime, 0.6), col, (0.58, 0.54, 0.47))
     # pale dust settled on up-facing surfaces (world normal z)
     nz = nb.out(nb.sep(nb.out(nb.n("ShaderNodeNewGeometry"), "Normal")), "Z")
     dust = nb.mul(nb.smooth(nz, 0.35, 0.9), nb.madd(nb.smooth(n1, 0.25, 0.8), 0.32, 0.12))
@@ -246,9 +253,9 @@ def sherd_material(name, kind, craze=False, crack_origin=(0, 0, 0)):
         dist = nb.v("DISTANCE", oc, crack_origin)
         front = nb.sub(nb.add(crack_val, nb.mul(nb.sub(n1, 0.5), 0.03)), dist)
         reveal = nb.smooth(front, 0.0, 0.03)
-        width = nb.mul(reveal, 0.022)
+        width = nb.mul(reveal, 0.014)
         crack = nb.mul(nb.sub(1.0, nb.smooth(de, 0.0, nb.add(width, 0.0001))), nb.smooth(reveal, 0.0, 0.1))
-        col = nb.mixc(nb.mul(crack, 0.8), col, (0.08, 0.045, 0.03))
+        col = nb.mixc(nb.mul(crack, 0.72), col, (0.07, 0.04, 0.025))
         height = nb.sub(height, nb.mul(crack, 0.9))
     bump = nb.n("ShaderNodeBump", {"Height": height, "Distance": 0.0006, "Strength": 0.6})
     b = nb.n("ShaderNodeBsdfPrincipled", {"Base Color": col, "Roughness": rough, "Specular IOR Level": 0.3,
@@ -535,7 +542,7 @@ def build(ctx):
     sun_az, sun_el = 118.0, 57.0
     d = Vector((math.sin(math.radians(sun_az)), -math.cos(math.radians(sun_az)), 0))
     C.world_hdri("qwantani_noon_puresky", strength=0.75, saturation=0.4, tint=(1.0, 0.97, 0.92),
-                 rotation=FX.hdri_rotation_for_sun((d.x, d.y)), background_strength=2.2)
+                 rotation=FX.hdri_rotation_for_sun((d.x, d.y)), background_strength=3.0)
     C.sun(elevation=sun_el, azimuth=sun_az, energy=4.6, temp=6300, angle=0.5)
 
     # ---------------------------------------------------------------- ground: parched, cracking mud
@@ -582,7 +589,9 @@ def build(ctx):
             nsum += poly.normal * poly.area
     want = Vector((0.0, -math.sin(math.radians(SHERD_TIP)), math.cos(math.radians(SHERD_TIP))))
     q = nsum.normalized().rotation_difference(want)
-    q = Quaternion(want, math.radians(SHERD_YAW)) @ q
+    u_dir = q @ Vector((0.0, 1.0, 0.0))             # circumferential direction of the sherd
+    yaw0 = -math.atan2(u_dir.y, u_dir.x)
+    q = Quaternion(want, yaw0 + math.radians(SHERD_YAW)) @ q
     sherd.rotation_mode = "QUATERNION"
     sherd.rotation_quaternion = q
     bpy.context.view_layer.update()

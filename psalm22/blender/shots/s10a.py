@@ -67,7 +67,9 @@ def build(ctx):
     f_start, f_end = -14, 21                                 # pour (effect frames); stream already falling at f1
     # hero cracked-earth patch (bigger than the FX default so the frame never sees its edge in focus)
     gp = FX.cracked_ground((L.x + d.x * 0.12, L.y + d.y * 0.12, OA.z), size=3.6, res=330, seed=1, name="Cracked")
-    pour = FX.water_pour(lip=tuple(L), direction=(d.x, d.y), speed=0.5, stream_radius=0.010,
+    # clear, neutral water (FX default is faintly blue; reads as grey plastic in this warm light)
+    FX.water_material("FX_water_1", rough=0.015, tint=(1.0, 1.0, 1.0), raytrace=True)
+    pour = FX.water_pour(lip=tuple(L), direction=(d.x, d.y), speed=0.5, stream_radius=0.012,
                          start_frame=f_start, end_frame=f_end, time_scale=0.25, ground_z=OA.z, jar=False,
                          ground=None, ground_material=gp.active_material, puddle_radius=0.26, drain_time=0.6,
                          seed=1, name="Pour")
@@ -99,7 +101,18 @@ def build(ctx):
         return (Matrix.Rotation(tilt, 3, axis) @ Matrix.Rotation(yaw, 3, "Z")).to_euler()
     piv.location = L
     C.key_fn(piv, "rotation_euler", jar_rot, 1, CUT, step=2)
-    setA = [pour.root, far, piv, gp]
+    # glint light: a big soft source low at camera-left, light-linked to the water only, so the stream
+    # carries a specular stripe, the beads sparkle and the film shows a sheen (the dull backlit sun alone
+    # leaves a thin stream nearly invisible against the ground)
+    wl = C.light("AREA", tuple(imp - right * 0.75 - vh * 0.55 + Vector((0, 0, 0.55))), 260, temp=4200,
+                 target=tuple(imp.lerp(L, 0.4)), size=0.9, name="WaterGlint", shadow=False)
+    wrecv = bpy.data.collections.new("s10a_water_recv")
+    for k in ("stream", "droplets", "puddle"):
+        o = getattr(pour, k, None)
+        if o is not None:
+            wrecv.objects.link(o)
+    wl.light_linking.receiver_collection = wrecv
+    setA = [pour.root, far, piv, gp, wl]
     for k in ("stream", "droplets", "puddle", "ground"):
         o = getattr(pour, k, None)
         if o is not None:
@@ -137,17 +150,17 @@ def build(ctx):
     # ================================================================== camera
     cam = C.camera((0, -1, 1), (0, 0, 1), lens=50, fstop=2.8, name="Cam")
     # A: low, looking towards the sun, down onto the impact, stream in profile
-    a_tgt0 = imp.lerp(L, 0.45)
-    pitch = math.radians(35)
+    a_tgt0 = imp.lerp(L, 0.5) - right * 0.03
+    pitch = math.radians(24)
 
     def camA(f):
         u = C.ease_in_out((f - 1) / float(CUT - 1))
-        tgt = a_tgt0 + Vector((0, 0, -0.05 * u))
-        dist = 1.15 - 0.1 * u
-        loc = tgt + (-vh * math.cos(pitch) + Vector((0, 0, math.sin(pitch)))) * dist - right * (0.03 + 0.04 * u)
+        tgt = a_tgt0 + Vector((0, 0, -0.04 * u))
+        dist = 1.12 - 0.1 * u
+        loc = tgt + (-vh * math.cos(pitch) + Vector((0, 0, math.sin(pitch)))) * dist - right * (0.02 + 0.04 * u)
         loc = loc + C.shake(f, 0.002, 0.5, 11)
-        foc = (imp.lerp(L, 0.25) - loc).length
-        return (loc, tgt, 0.0, 50, foc)
+        foc = (imp.lerp(L, 0.3) - loc).length
+        return (loc, tgt, 0.0, 60, foc)
 
     # B: under the right shoulder, wide lens up along the arm to the hand on the beam
     def camB(f):
@@ -176,4 +189,4 @@ def build(ctx):
     ctx.samples = 6
     ctx.render_opts.update({"raytracing": True, "volumetrics": "low"})
     ctx.interp = False
-    ctx.post.update({"grade": "eclipse"})
+    ctx.post.update({"grade": "eclipse", "caption": {"y": 0.74}})
