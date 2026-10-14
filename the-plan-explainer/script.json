@@ -1,0 +1,55 @@
+{
+  "_readme": "Narration for THE PLAN. Edit 'text' (what the captions show) and re-run ./make.sh. 'say' overrides what the voice speaks, 'pause' is silence after the line in seconds, 'bleep' covers a word with a censor tone and 'cut' chops the line off partway into a word; their 'at' values are seconds into that line's audio, measured by ear, so drop 'at' if you change the line and the word timing from speech recognition is used instead. Scene timing follows these lines automatically. If you rename, add or remove a line id, update the matching L('id') references in src/scenes.js.",
+  "voices": {
+    "SYS": { "name": "The System", "voice": "af_bella", "speed": 1.08 },
+    "YOU": { "name": "You", "voice": "am_michael", "speed": 0.95 }
+  },
+  "preroll": 3.4,
+  "tail": 1.6,
+  "lines": [
+    { "id": "s01", "who": "SYS", "text": "Hi there! Welcome to Life! I'm The System, and I'll be walking you through The Plan.", "pause": 0.5 },
+
+    { "id": "s02", "who": "SYS", "text": "Step one: make money.", "pause": 0.35 },
+    { "id": "s03", "who": "SYS", "text": "Then, keep making more money! And things will be fine.", "pause": 0.35 },
+    { "id": "s04", "who": "SYS", "text": "Save for retirement. That's your number one priority!", "pause": 0.4 },
+    { "id": "s05", "who": "SYS", "text": "I mean, you don't want to be homeless, or starve. Right?", "pause": 0.3 },
+    { "id": "y01", "who": "YOU", "text": "Right.", "pause": 0.6 },
+    { "id": "s06", "who": "SYS", "text": "And don't worry, we'll help! You get calculators. Advisors. An employer match. Tax breaks. And a statement every quarter, telling you exactly how you're doing!", "pause": 0.6 },
+
+    { "id": "s07", "who": "SYS", "text": "Oh, and love? Family? Community? Sure! Look for those on the side.", "pause": 0.3 },
+    { "id": "s08", "who": "SYS", "text": "Try the online dating websites! Or a hobby group!", "pause": 0.3 },
+    { "id": "s09", "who": "SYS", "text": "But you're not going to get any fucking help with that. Good luck!", "bleep": [{ "word": "fucking", "at": [1.02, 1.45] }], "pause": 0.9 },
+
+    { "id": "y02", "who": "YOU", "text": "So I tried. For twenty years. To find a family. A community. A village.", "pause": 0.5 },
+    { "id": "s10", "who": "SYS", "text": "What do you mean, twenty years? Well, at least you've got your retirement savings. Right, my guy?", "pause": 0.6 },
+    { "id": "y03", "who": "YOU", "text": "I never found love.", "pause": 0.9 },
+    { "id": "s11", "who": "SYS", "text": "Oh. That's too bad. Maybe, I don't know... get a hobby?", "pause": 0.5 },
+    { "id": "y04", "who": "YOU", "text": "I have hobbies.", "pause": 0.6 },
+    { "id": "s12", "who": "SYS", "text": "Get even more hobbies! Have you tried hobbies? Come on. Hobbies, bro!", "pause": 0.3 },
+    { "id": "s13", "who": "SYS", "text": "Keep doing the hobby groups! Keep going to the gym! Keep doing the online dating! It could happen when you least expect it!", "pause": 0.2 },
+    { "id": "s14", "who": "SYS", "text": "Keep going, buddy!", "pause": 1.3 },
+
+    { "id": "y05", "who": "YOU", "text": "And now I'm mostly just... sitting in a waiting room. For the grave.", "pause": 0.9 },
+    { "id": "s15", "who": "SYS", "text": "Oh, it didn't happen? Well, that sucks. Anyway! Goodbye now!", "pause": 2.0 },
+
+    { "id": "y06", "who": "YOU", "text": "Hold on.", "pause": 0.8 },
+    { "id": "y07", "who": "YOU", "text": "My retirement account has to tell me its odds. Expected returns. Risks. Fees. In writing, every quarter.", "pause": 0.6 },
+    { "id": "y08", "who": "YOU", "text": "But the advice for love, family, community, connection? It never tells you how often it actually works.", "pause": 0.7 },
+    { "id": "y09", "who": "YOU", "text": "The System isn't being honest about the probabilities.", "pause": 1.0 },
+
+    { "id": "y10", "who": "YOU", "text": "So let's guess. Say a hundred people follow the advice exactly. Hobbies. Gym. Apps. All of it.", "pause": 0.5 },
+    { "id": "y11", "who": "YOU", "text": "Maybe fifty of them find love. A family. A village.", "pause": 0.7 },
+    { "id": "y12", "who": "YOU", "text": "Fifty is just my guess. Nobody publishes the real number. But in 2023, the U.S. Surgeon General reported that about half of American adults experience loneliness.", "say": "Fifty is just my guess. Nobody publishes the real number. But in twenty twenty-three, the US Surgeon General reported that about half of American adults experience loneliness.", "pause": 0.7 },
+    { "id": "y13", "who": "YOU", "text": "So what about the other fifty?", "pause": 0.5 },
+    { "id": "s16", "who": "SYS", "text": "Well, that sucks! Have you tried having lots of money?", "pause": 0.7 },
+    { "id": "s17", "who": "SYS", "text": "Oh, that's still only fifty percent? Well, that's life! Too bad.", "pause": 0.4 },
+    { "id": "s18", "who": "SYS", "text": "At least you have food and a home, right?", "say": "At least you have food, and a home, right?", "pause": 0.9 },
+
+    { "id": "s19", "who": "SYS", "text": "You mean food and a home isn't enough to fulfill all of your emotional needs, as a complex lived experience called a human being?", "say": "You mean food, and a home, isn't enough to fulfill all of your emotional needs, as a complex lived experience called a human being?", "pause": 0.4 },
+    { "id": "s20", "who": "SYS", "text": "Too bad! Goodbye now!", "pause": 1.6 },
+
+    { "id": "y14", "who": "YOU", "text": "Money comes with a prospectus. Love comes with... have you tried hobbies?", "pause": 0.7 },
+    { "id": "y15", "who": "YOU", "text": "If the advice really works, show us the success rate.", "pause": 1.4 },
+    { "id": "s21", "who": "SYS", "text": "Thank you for choosing Life! Goodbye now!", "cut": { "word": "now", "at": 1.83 }, "pause": 0.0 }
+  ]
+}

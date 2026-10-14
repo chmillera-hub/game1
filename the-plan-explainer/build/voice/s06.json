@@ -1,0 +1,131 @@
+{
+ "key": "6dd764d66ad97b6c",
+ "heard": "And don't worry, we'll help. You get calculators, advisors, an employer match, tax breaks, and a statement every quarter telling you exactly how you're doing.",
+ "asr": [
+  {
+   "w": "And",
+   "s": 0.0,
+   "e": 0.1
+  },
+  {
+   "w": "don't",
+   "s": 0.1,
+   "e": 0.3
+  },
+  {
+   "w": "worry,",
+   "s": 0.3,
+   "e": 0.5
+  },
+  {
+   "w": "we'll",
+   "s": 0.58,
+   "e": 0.78
+  },
+  {
+   "w": "help.",
+   "s": 0.78,
+   "e": 1.02
+  },
+  {
+   "w": "You",
+   "s": 1.38,
+   "e": 1.44
+  },
+  {
+   "w": "get",
+   "s": 1.44,
+   "e": 1.6
+  },
+  {
+   "w": "calculators,",
+   "s": 1.6,
+   "e": 2.46
+  },
+  {
+   "w": "advisors,",
+   "s": 3.08,
+   "e": 3.38
+  },
+  {
+   "w": "an",
+   "s": 3.7,
+   "e": 3.78
+  },
+  {
+   "w": "employer",
+   "s": 3.78,
+   "e": 4.18
+  },
+  {
+   "w": "match,",
+   "s": 4.18,
+   "e": 4.58
+  },
+  {
+   "w": "tax",
+   "s": 5.0,
+   "e": 5.22
+  },
+  {
+   "w": "breaks,",
+   "s": 5.22,
+   "e": 5.62
+  },
+  {
+   "w": "and",
+   "s": 6.16,
+   "e": 6.28
+  },
+  {
+   "w": "a",
+   "s": 6.28,
+   "e": 6.4
+  },
+  {
+   "w": "statement",
+   "s": 6.4,
+   "e": 6.66
+  },
+  {
+   "w": "every",
+   "s": 6.66,
+   "e": 7.0
+  },
+  {
+   "w": "quarter",
+   "s": 7.0,
+   "e": 7.38
+  },
+  {
+   "w": "telling",
+   "s": 7.38,
+   "e": 7.72
+  },
+  {
+   "w": "you",
+   "s": 7.72,
+   "e": 7.98
+  },
+  {
+   "w": "exactly",
+   "s": 7.98,
+   "e": 8.32
+  },
+  {
+   "w": "how",
+   "s": 8.32,
+   "e": 8.7
+  },
+  {
+   "w": "you're",
+   "s": 8.7,
+   "e": 8.92
+  },
+  {
+   "w": "doing.",
+   "s": 8.92,
+   "e": 9.18
+  }
+ ]
+}

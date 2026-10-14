@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Plan — explainer (preview)</title>
+<link rel="stylesheet" href="fonts/fonts.css">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #0d0e12; color: #e8e6e3; min-height: 100vh;
+    font-family: "Inter", system-ui, sans-serif;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; padding: 16px;
+  }
+  canvas { width: min(100%, calc((100vh - 120px) * 16 / 9)); aspect-ratio: 16 / 9; display: block; border-radius: 10px; background: #000; box-shadow: 0 20px 60px rgba(0,0,0,.5); }
+  .bar { width: min(100%, calc((100vh - 120px) * 16 / 9)); display: flex; align-items: center; gap: 12px; font-size: 14px; }
+  .bar button { background: #262833; color: #fff; border: 0; border-radius: 8px; padding: 8px 14px; font: inherit; cursor: pointer; }
+  .bar button:hover { background: #33364a; }
+  .bar input[type=range] { flex: 1; accent-color: #ff6b6b; }
+  .bar .time { font-variant-numeric: tabular-nums; min-width: 128px; text-align: right; color: #aab; }
+  .hint { font-size: 12px; color: #778; }
+  body.render { padding: 0; display: block; background: #000; }
+  body.render canvas { width: 1920px; height: 1080px; border-radius: 0; box-shadow: none; }
+  body.render .bar, body.render .hint { display: none; }
+</style>
+</head>
+<body>
+<canvas id="stage" width="1920" height="1080"></canvas>
+<div class="bar">
+  <button id="play">Play</button>
+  <input id="scrub" type="range" min="0" max="1000" step="1" value="0">
+  <span class="time" id="time">0:00.0</span>
+  <button id="cc">CC on</button>
+</div>
+<p class="hint">Space play/pause · ←/→ seek 2s · ,/. step one frame · C captions · D shows line ids</p>
+
+<audio id="audio" src="build/preview.mp3" preload="auto"></audio>
+<script src="build/timeline.js"></script>
+<script src="src/engine.js"></script>
+<script src="src/scenes.js"></script>
+<script>
+(function () {
+  const RENDER = /[?&]render\b/.test(location.search);
+  if (RENDER) document.body.classList.add('render');
+  const canvas = document.getElementById('stage');
+  const ctx = canvas.getContext('2d');
+  const D = PLAN.TL.duration;
+
+  const fontLoads = [
+    '600 40px "Fredoka"', '700 40px "Fredoka"', '600 40px "Inter"', '800 40px "Inter"',
+    '400 40px "DM Serif Display"', '400 40px "IBM Plex Mono"', '600 40px "IBM Plex Mono"',
+    '700 40px "Caveat"', '40px "Noto Color Emoji"',
+  ].map((f) => document.fonts.load(f, 'AaBb❤️🏠'));
+  window.ready = Promise.all(fontLoads).then(() => document.fonts.ready);
+
+  // renderer hooks used by tools/render.mjs
+  window.renderAt = (t) => PLAN.renderAt(ctx, t);
+  window.collectCues = () => PLAN.collectCues();
+  if (RENDER) return;
+
+  const audio = document.getElementById('audio');
+  let audioOk = false;
+  audio.addEventListener('canplay', () => (audioOk = true));
+  const playBtn = document.getElementById('play');
+  const scrub = document.getElementById('scrub');
+  const time = document.getElementById('time');
+  const ccBtn = document.getElementById('cc');
+  let playing = false, cur = 0, wall0 = 0, t0 = 0, debug = false, cc = true;
+
+  function now() {
+    if (!playing) return cur;
+    if (audioOk && !audio.paused) return audio.currentTime;
+    return t0 + (performance.now() - wall0) / 1000;
+  }
+  function seek(t) {
+    cur = Math.max(0, Math.min(D, t));
+    t0 = cur; wall0 = performance.now();
+    if (audioOk) audio.currentTime = cur;
+  }
+  function setPlaying(p) {
+    playing = p;
+    playBtn.textContent = p ? 'Pause' : 'Play';
+    if (p) { t0 = cur; wall0 = performance.now(); if (audioOk) audio.play().catch(() => {}); }
+    else { cur = now(); audio.pause(); }
+  }
+  playBtn.onclick = () => setPlaying(!playing);
+  scrub.oninput = () => seek((scrub.value / 1000) * D);
+  ccBtn.onclick = () => { cc = !cc; PLAN.setCaptions(cc); ccBtn.textContent = cc ? 'CC on' : 'CC off'; };
+  addEventListener('keydown', (e) => {
+    if (e.code === 'Space') { e.preventDefault(); setPlaying(!playing); }
+    if (e.key === 'ArrowRight') seek(now() + 2);
+    if (e.key === 'ArrowLeft') seek(now() - 2);
+    if (e.key === '.') { setPlaying(false); seek(cur + 1 / 30); }
+    if (e.key === ',') { setPlaying(false); seek(cur - 1 / 30); }
+    if (e.key === 'c' || e.key === 'C') ccBtn.onclick();
+    if (e.key === 'd' || e.key === 'D') debug = !debug;
+  });
+
+  const fmt = (t) => `${Math.floor(t / 60)}:${(t % 60).toFixed(1).padStart(4, '0')}`;
+  function lineAt(t) {
+    for (const id of PLAN.TL.order) { const l = PLAN.TL.lines[id]; if (t >= l.start && t < l.end + 0.4) return id; }
+    return '';
+  }
+  function frame() {
+    let t = now();
+    if (t >= D) { t = D; if (playing) setPlaying(false); cur = D; }
+    if (playing) cur = t;
+    PLAN.renderAt(ctx, t);
+    if (debug) {
+      ctx.fillStyle = 'rgba(0,0,0,.6)'; ctx.fillRect(20, 20, 380, 60);
+      ctx.fillStyle = '#0f0'; ctx.font = '600 30px monospace';
+      ctx.fillText(`t=${t.toFixed(2)}  f=${Math.round(t * 30)}  ${lineAt(t)}`, 34, 60);
+    }
+    scrub.value = Math.round((t / D) * 1000);
+    time.textContent = `${fmt(t)} / ${fmt(D)}`;
+    requestAnimationFrame(frame);
+  }
+  window.ready.then(() => requestAnimationFrame(frame));
+})();
+</script>
+</body>
+</html>

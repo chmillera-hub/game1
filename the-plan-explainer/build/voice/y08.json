@@ -1,0 +1,91 @@
+{
+ "key": "c9a5a18273f3fd1a",
+ "heard": "but the advice for love, family, community connection. It never tells you how often it actually works.",
+ "asr": [
+  {
+   "w": "but",
+   "s": 0.0,
+   "e": 0.12
+  },
+  {
+   "w": "the",
+   "s": 0.12,
+   "e": 0.26
+  },
+  {
+   "w": "advice",
+   "s": 0.26,
+   "e": 0.6
+  },
+  {
+   "w": "for",
+   "s": 0.6,
+   "e": 0.84
+  },
+  {
+   "w": "love,",
+   "s": 0.84,
+   "e": 1.22
+  },
+  {
+   "w": "family,",
+   "s": 1.58,
+   "e": 2.04
+  },
+  {
+   "w": "community",
+   "s": 2.56,
+   "e": 2.88
+  },
+  {
+   "w": "connection.",
+   "s": 2.88,
+   "e": 3.54
+  },
+  {
+   "w": "It",
+   "s": 4.2,
+   "e": 4.42
+  },
+  {
+   "w": "never",
+   "s": 4.42,
+   "e": 4.64
+  },
+  {
+   "w": "tells",
+   "s": 4.64,
+   "e": 4.94
+  },
+  {
+   "w": "you",
+   "s": 4.94,
+   "e": 5.22
+  },
+  {
+   "w": "how",
+   "s": 5.22,
+   "e": 5.4
+  },
+  {
+   "w": "often",
+   "s": 5.4,
+   "e": 5.84
+  },
+  {
+   "w": "it",
+   "s": 5.84,
+   "e": 6.04
+  },
+  {
+   "w": "actually",
+   "s": 6.04,
+   "e": 6.46
+  },
+  {
+   "w": "works.",
+   "s": 6.46,
+   "e": 6.82
+  }
+ ]
+}

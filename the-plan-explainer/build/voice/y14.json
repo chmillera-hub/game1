@@ -1,0 +1,66 @@
+{
+ "key": "1a0bfd0d5eff7981",
+ "heard": "Money comes with a prospectus. Love comes with. Have you tried hobbies?",
+ "asr": [
+  {
+   "w": "Money",
+   "s": 0.0,
+   "e": 0.3
+  },
+  {
+   "w": "comes",
+   "s": 0.3,
+   "e": 0.6
+  },
+  {
+   "w": "with",
+   "s": 0.6,
+   "e": 0.84
+  },
+  {
+   "w": "a",
+   "s": 0.84,
+   "e": 0.96
+  },
+  {
+   "w": "prospectus.",
+   "s": 0.96,
+   "e": 1.66
+  },
+  {
+   "w": "Love",
+   "s": 2.16,
+   "e": 2.24
+  },
+  {
+   "w": "comes",
+   "s": 2.24,
+   "e": 2.56
+  },
+  {
+   "w": "with.",
+   "s": 2.56,
+   "e": 2.94
+  },
+  {
+   "w": "Have",
+   "s": 3.36,
+   "e": 3.42
+  },
+  {
+   "w": "you",
+   "s": 3.42,
+   "e": 3.56
+  },
+  {
+   "w": "tried",
+   "s": 3.56,
+   "e": 3.84
+  },
+  {
+   "w": "hobbies?",
+   "s": 3.84,
+   "e": 4.2
+  }
+ ]
+}

@@ -1,0 +1,46 @@
+{
+ "key": "514a1edab4a22750",
+ "heard": "Save for retirement. That's your number one priority.",
+ "asr": [
+  {
+   "w": "Save",
+   "s": 0.0,
+   "e": 0.3
+  },
+  {
+   "w": "for",
+   "s": 0.3,
+   "e": 0.52
+  },
+  {
+   "w": "retirement.",
+   "s": 0.52,
+   "e": 1.06
+  },
+  {
+   "w": "That's",
+   "s": 1.6,
+   "e": 1.8
+  },
+  {
+   "w": "your",
+   "s": 1.8,
+   "e": 1.9
+  },
+  {
+   "w": "number",
+   "s": 1.9,
+   "e": 2.02
+  },
+  {
+   "w": "one",
+   "s": 2.02,
+   "e": 2.28
+  },
+  {
+   "w": "priority.",
+   "s": 2.28,
+   "e": 2.72
+  }
+ ]
+}
