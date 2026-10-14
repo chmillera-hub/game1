@@ -2086,7 +2086,7 @@ def hide_verts(ob, idx, group="wardrobe_hide"):
             pass
 
 
-def mask_inner_layers(B, G, margin=0.07, reach=0.08):
+def mask_inner_layers(B, G, margin=0.12, reach=0.05):
     """Hide the parts of inner garment layers that are covered by the new garment G (kills poke-through
     of e.g. the tunic's shoulders through a veil or mantle when posed)."""
     V, T = G["V"], G.get("T")

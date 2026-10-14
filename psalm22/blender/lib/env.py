@@ -464,10 +464,11 @@ def hazify(material):
 SKY_PRESETS = {
     # key = target luminance of the (tinted) HDRI horizon: normalises very different HDRIs to a consistent
     # exposure (scales both lighting `strength` and visible `bg`). sun_energy = absolute sun lamp W/m2.
-    "golden": dict(hdri="table_mountain_2_puresky", sun_az=165, key=0.85, strength=1.0, bg=1.0, sun_mult=1.0,
-                   tint=(1.0, 0.86, 0.66), sat=1.12, sun_tint=(1.0, 0.8, 0.55), sun_angle=1.2,
-                   haze_density=0.00035, haze_tint=(1.0, 0.95, 0.88), fog=(1.0, 0.82, 0.62), fog_density=0.0015,
-                   exposure=0.0, grade="warm", clouds=0.0),
+    "golden": dict(hdri="table_mountain_2_puresky", sun_az=165, sun_el=26.0, key=0.85, strength=1.0, bg=1.0,
+                   sun_energy=4.2, tint=(1.0, 0.86, 0.66), sat=1.12, sun_tint=(1.0, 0.8, 0.55), sun_angle=1.2,
+                   haze_density=0.00035, haze_tint=(1.0, 0.95, 0.88), fog=(1.0, 0.84, 0.62), fog_density=0.004,
+                   exposure=0.0, grade="warm", clouds=0.0, clamp_sun=3.0, ray_coverage=0.5,
+                   sun_disk=dict(el=26, size=0.9, color=(1.0, 0.82, 0.55), strength=60.0, glow=0.5)),
     "noon": dict(hdri="kloofendal_48d_partly_cloudy_puresky", sun_az=200, strength=1.0, bg=1.0, sun_mult=1.0,
                  tint=(1.0, 0.98, 0.94), sat=0.95, sun_tint=(1.0, 0.97, 0.92), sun_angle=0.8,
                  haze_density=0.0003, haze_tint=(1.0, 1.0, 1.0), fog=(0.9, 0.88, 0.85), fog_density=0.0012,
@@ -2355,8 +2356,13 @@ def god_rays(center=(0, 0, 0), size=(220, 220, 70), density=0.006, color=(1.0, 0
                      height_falloff=0.02)
     g = None
     if gobo:
-        g = cloud_shadows(height=cz + (gobo_height or size[2] + 40), size=max(size[0], size[1]) * 6, coverage=coverage,
-                          center=(cx, cy), speed=speed, seed=seed)
+        gh = gobo_height or size[2] + 40
+        st = _state()
+        sd = Vector(st["sky"]["sun_dir"]) if st.get("sky") and st["sky"].get("sun_dir") is not None else Vector((0, 0, 1))
+        # shift the plane towards the sun so its shadow pattern lands on the fog box
+        off = Vector((sd.x, sd.y, 0)) * (gh / max(0.15, sd.z)) if sd.z < 0.999 else Vector((0, 0, 0))
+        g = cloud_shadows(height=cz + gh, size=max(size[0], size[1]) * 4 + off.length * 1.5, coverage=coverage,
+                          center=(cx + off.x, cy + off.y), speed=speed, seed=seed)
     _set_volume_range(max(size[0], size[1]) * 1.6)
     return dict(fog=fog, gobo=g)
 
@@ -3035,8 +3041,9 @@ def golgotha(ctx, mood="golden", crosses=3, center_occupied=True, sign=True, cit
         rays = p.get("rays", mood in ("golden", "sunrise", "eclipse", "storm"))
     fog_col = tuple(p.get("fog", (0.9, 0.8, 0.7)))
     if rays:
-        A["rays"] = god_rays(center=(0, 20, 0), size=(260, 300, 80), density=p.get("fog_density", 0.004),
-                             color=fog_col, coverage=p.get("ray_coverage", 0.5), speed=(2.0, 0.6), seed=seed)
+        A["rays"] = god_rays(center=(0, -10, 0), size=(220, 220, 60), density=p.get("fog_density", 0.004),
+                             color=fog_col, coverage=p.get("ray_coverage", 0.5), speed=(2.0, 0.6), seed=seed,
+                             gobo_height=70)
     elif fog:
         A["fog"] = fog_volume((0, 20, 35), (260, 300, 80), p.get("fog_density", 0.002) * 0.6, fog_col, 0.4,
                               height_falloff=0.03, name="EnvAirFog")
