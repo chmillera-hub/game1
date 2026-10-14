@@ -38,6 +38,7 @@ class Ctx:
         self.post = {}               # hints for the compositor (grade, bloom, vignette, ...)
         self.needs_bake = False      # set True when physics/particles need baking
         self.render_opts = {}        # passed to configure_render
+        self.interp = False          # True: final render at 12 fps (odd frames) + RIFE fills evens (see docs/interp.md)
         random.seed(self.seed)
 
     @property

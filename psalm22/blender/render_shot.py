@@ -6,6 +6,7 @@
 
 --frames: 'all' | 'sheet<N>' (N evenly spaced frames + contact sheet) | '1,40,80' | 'a-b'
           | 'odd' / 'odd:a-b' (odd frames only = 12 fps; fill the evens with comp/interp.py)
+          | 'auto' (= 'odd' if the shot sets ctx.interp = True, else 'all')
 --quality: preview (270x480, 3 spp) | draft (540x960, 3 spp) | final (540x960, ctx.samples or 8 spp)
 --save-blend: also write the built scene to WORK/blend/<shot>.blend for inspection.
 Output: WORK/frames/<shot>/<quality>/NNNN.png (NNNN = 1-based shot frame) + post.json (+ sheet.png)
@@ -41,6 +42,10 @@ core.configure_render(ctx, **ctx.render_opts)
 print("BUILD_TIME %.1fs" % (time.time() - t0))
 
 spec = opts["--frames"]
+if spec == "auto":
+    # the shot decides: ctx.interp = True -> half-rate render, evens filled by comp/interp.py
+    spec = "odd" if getattr(ctx, "interp", False) else "all"
+    print("AUTO_FRAMES", spec)
 N = ctx.render_frames
 sheet = None
 if spec == "all":

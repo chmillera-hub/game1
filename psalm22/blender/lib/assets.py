@@ -634,16 +634,61 @@ def _mix_sock(N, L, a_sock, bval, f):
 
 def mat_clay(kind="terracotta"):
     """Fired clay: 'terracotta' (orange-red), 'buff' (pale), 'grey' (grey-buff), 'dark' (sooty brown),
-    'break' (fresh broken edge, lighter), 'slip' (burnished red slip)."""
-    P = {"terracotta": ((0.42, 0.17, 0.08), (0.55, 0.26, 0.13), (0.16, 0.08, 0.05)),
-         "buff": ((0.58, 0.40, 0.25), (0.68, 0.50, 0.33), (0.25, 0.17, 0.11)),
-         "grey": ((0.36, 0.30, 0.25), (0.47, 0.40, 0.33), (0.13, 0.11, 0.10)),
-         "dark": ((0.24, 0.12, 0.07), (0.33, 0.18, 0.10), (0.07, 0.05, 0.04)),
-         "break": ((0.60, 0.33, 0.18), (0.70, 0.42, 0.24), (0.45, 0.25, 0.14)),
-         "slip": ((0.38, 0.11, 0.05), (0.47, 0.16, 0.07), (0.15, 0.06, 0.04))}[kind]
-    return _pmat("A_clay_" + kind, P[0], P[1], scale=6.0, rough=0.82 if kind != "slip" else 0.55, rough2=0.9,
-                 bump=0.35, bump_scale=90.0, bump_dist=0.0006, c3=P[2], c3_scale=1.6, c3_amount=0.18, c3_rough=0.95,
-                 voronoi_bump=0.15, voronoi_scale=160.0, spec=0.35)
+    'break' (fresh broken edge, lighter), 'slip' (burnished red slip). Includes fire-clouding, throwing
+    rings (bump bands along Z), and grime toward the base (object z < 8 cm)."""
+    name = "A_clay_" + kind
+    m = bpy.data.materials.get(name)
+    if m:
+        return m
+    P = {"terracotta": ((0.36, 0.14, 0.065), (0.50, 0.23, 0.11), (0.13, 0.065, 0.04)),
+         "buff": ((0.45, 0.30, 0.18), (0.58, 0.42, 0.27), (0.20, 0.13, 0.08)),
+         "grey": ((0.27, 0.23, 0.19), (0.38, 0.33, 0.27), (0.10, 0.09, 0.08)),
+         "dark": ((0.20, 0.10, 0.055), (0.29, 0.155, 0.085), (0.06, 0.045, 0.035)),
+         "break": ((0.55, 0.30, 0.16), (0.66, 0.40, 0.22), (0.42, 0.23, 0.12)),
+         "slip": ((0.32, 0.085, 0.04), (0.42, 0.13, 0.06), (0.12, 0.05, 0.03))}[kind]
+    m = _pmat(name, P[0], P[1], scale=9.0, rough=0.8 if kind != "slip" else 0.5, rough2=0.92,
+              bump=0.35, bump_scale=110.0, bump_dist=0.0006, c3=P[2], c3_scale=2.2, c3_amount=0.3, c3_rough=0.95,
+              voronoi_bump=0.12, voronoi_scale=220.0, spec=0.35, ramp=(0.25, 0.75))
+    N, L = m.node_tree.nodes, m.node_tree.links
+    b = N["Principled BSDF"]
+    tc = next(n for n in N if n.type == "TEX_COORD")
+    # grime toward the base
+    sep = N.new("ShaderNodeSeparateXYZ")
+    L.new(tc.outputs["Object"], sep.inputs[0])
+    mr = N.new("ShaderNodeMapRange")
+    mr.inputs["From Min"].default_value = 0.0
+    mr.inputs["From Max"].default_value = 0.09
+    mr.inputs["To Min"].default_value = 0.55
+    mr.inputs["To Max"].default_value = 1.0
+    L.new(sep.outputs["Z"], mr.inputs["Value"])
+    src = b.inputs["Base Color"].links[0].from_socket
+    mul = N.new("ShaderNodeMix")
+    mul.data_type = "RGBA"
+    mul.blend_type = "MULTIPLY"
+    mul.inputs[0].default_value = 1.0
+    L.new(src, mul.inputs[6])
+    cmb = N.new("ShaderNodeCombineXYZ")
+    for i in range(3):
+        L.new(mr.outputs["Result"], cmb.inputs[i])
+    L.new(cmb.outputs[0], mul.inputs[7])
+    L.new(mul.outputs[2], b.inputs["Base Color"])
+    # throwing rings: wave bands along Z added to the bump height
+    bp = b.inputs["Normal"].links[0].from_node if b.inputs["Normal"].links else None
+    if bp is not None and bp.type == "BUMP":
+        wv = N.new("ShaderNodeTexWave")
+        wv.wave_type = "BANDS"
+        wv.bands_direction = "Z"
+        wv.inputs["Scale"].default_value = 40.0
+        wv.inputs["Distortion"].default_value = 2.0
+        wv.inputs["Detail"].default_value = 1.0
+        L.new(tc.outputs["Object"], wv.inputs["Vector"])
+        add = N.new("ShaderNodeMath")
+        add.operation = "MULTIPLY_ADD"
+        add.inputs[1].default_value = 0.6
+        L.new(wv.outputs["Fac"], add.inputs[0])
+        L.new(bp.inputs["Height"].links[0].from_socket, add.inputs[2])
+        L.new(add.outputs[0], bp.inputs["Height"])
+    return m
 
 
 def mat_iron(rust=0.5, scale=60.0):
@@ -663,8 +708,8 @@ def mat_steel(worn=0.3):
 
 
 def mat_gold(tone="yellow"):
-    c = {"yellow": ((1.0, 0.70, 0.28), (0.93, 0.60, 0.22)), "red": ((0.98, 0.58, 0.30), (0.9, 0.5, 0.25)),
-         "pale": ((0.98, 0.80, 0.45), (0.9, 0.72, 0.38))}[tone]
+    c = {"yellow": ((1.0, 0.66, 0.22), (0.95, 0.56, 0.15)), "red": ((1.0, 0.55, 0.24), (0.92, 0.46, 0.18)),
+         "pale": ((1.0, 0.74, 0.34), (0.95, 0.66, 0.26))}[tone]
     return _pmat("A_gold_" + tone, c[0], c[1], scale=4.0, rough=0.16, rough2=0.3, metal=1.0, bump=0.1,
                  bump_scale=45.0, bump_dist=0.0003, c3=(0.35, 0.22, 0.10), c3_scale=8.0, c3_amount=0.08,
                  c3_rough=0.55)
@@ -717,7 +762,7 @@ def mat_wood(kind="boxwood"):
     """Small-prop woods from Poly Haven scans (box-projected, no UVs needed):
     boxwood (pale), ash (light brown), olive (warm, figured), dark (dark brown)."""
     P = {"boxwood": ("fine_grained_wood", 5.0, (1.05, 0.88, 0.62)), "ash": ("fine_grained_wood", 3.5, (0.78, 0.66, 0.52)),
-         "olive": ("dark_wood", 3.0, (1.25, 1.0, 0.75)), "dark": ("dark_wood", 3.0, (0.8, 0.7, 0.6))}[kind]
+         "olive": ("fine_grained_wood", 3.0, (0.62, 0.48, 0.34)), "dark": ("dark_wood", 3.0, (0.8, 0.7, 0.6))}[kind]
     name = "A_wood_" + kind
     m = bpy.data.materials.get(name)
     if m:
@@ -734,7 +779,7 @@ def mat_wood_pbr(asset="rough_wood", scale=2.0, tint=(0.8, 0.68, 0.55)):
 
 
 def mat_rope():
-    return _pmat("A_rope", (0.40, 0.31, 0.19), (0.55, 0.45, 0.30), scale=60.0, rough=0.9, bump=0.6,
+    return _pmat("A_rope", (0.24, 0.17, 0.10), (0.36, 0.27, 0.16), scale=60.0, rough=0.9, bump=0.6,
                  bump_scale=400.0, bump_dist=0.0005, sheen=0.4, spec=0.3)
 
 
@@ -792,8 +837,8 @@ def mat_bread(part="crust", char=0.25):
     m = bpy.data.materials.get(name)
     if m:
         return m
-    m = _pmat(name, (0.52, 0.28, 0.09), (0.74, 0.52, 0.27), scale=7.0, rough=0.7, rough2=0.82, bump=0.7,
-              bump_scale=55.0, bump_dist=0.0015, c3=(0.12, 0.055, 0.02), c3_scale=11.0, c3_amount=char * 0.6,
+    m = _pmat(name, (0.36, 0.16, 0.045), (0.62, 0.36, 0.12), scale=9.0, rough=0.62, rough2=0.8, bump=0.7,
+              bump_scale=55.0, bump_dist=0.0015, c3=(0.09, 0.035, 0.012), c3_scale=14.0, c3_amount=0.18 + char * 0.5,
               c3_rough=0.9, sss=0.2, sss_radius=(1.0, 0.6, 0.3), sss_scale=0.004, spec=0.3)
     # flour dusting: pale patches on top surfaces (normal.z)
     N, L = m.node_tree.nodes, m.node_tree.links
@@ -806,8 +851,8 @@ def mat_bread(part="crust", char=0.25):
     nzf.inputs["Scale"].default_value = 18.0
     nzf.inputs["Detail"].default_value = 6
     crf = N.new("ShaderNodeValToRGB")
-    crf.color_ramp.elements[0].position = 0.55
-    crf.color_ramp.elements[1].position = 0.75
+    crf.color_ramp.elements[0].position = 0.68
+    crf.color_ramp.elements[1].position = 0.8
     L.new(nzf.outputs["Fac"], crf.inputs["Fac"])
     mul = N.new("ShaderNodeMath")
     mul.operation = "MULTIPLY"
@@ -817,7 +862,7 @@ def mat_bread(part="crust", char=0.25):
     mx.data_type = "RGBA"
     L.new(mul.outputs[0], mx.inputs[0])
     L.new(src, mx.inputs[6])
-    mx.inputs[7].default_value = (0.88, 0.84, 0.76, 1)
+    mx.inputs[7].default_value = (0.80, 0.72, 0.60, 1)
     L.new(mx.outputs[2], b.inputs["Base Color"])
     return m
 
@@ -1230,42 +1275,59 @@ def _build_hammer(variant=0, rnd=None, coll=None, root=None, upright=False, **o)
     return parts
 
 
+def _metaball_mesh(name, elements, resolution, coll, threshold=0.6):
+    """Metaball blend of elements -> mesh object. element: (type, co, radius, size_xyz, rot_euler_deg,
+    negative[, stiffness]). type in BALL, CAPSULE, ELLIPSOID, CUBE, PLANE."""
+    mb = bpy.data.metaballs.new("A_mb_tmp")
+    mb.resolution = mb.render_resolution = resolution
+    mb.threshold = threshold
+    for e in elements:
+        typ, co, r, sz, rot, neg = e[:6]
+        el = mb.elements.new(type=typ)
+        el.co = co
+        el.radius = r
+        if sz is not None:
+            el.size_x, el.size_y, el.size_z = sz
+        if rot:
+            el.rotation = Euler([math.radians(x) for x in rot]).to_quaternion()
+        el.use_negative = neg
+        if len(e) > 6:
+            el.stiffness = e[6]
+    ob = bpy.data.objects.new("A_mb_tmp_%d" % random.randint(0, 10 ** 9), mb)
+    C.link(ob, coll)
+    bpy.context.view_layer.update()
+    dg = bpy.context.evaluated_depsgraph_get()
+    me = bpy.data.meshes.new_from_object(ob.evaluated_get(dg))
+    bpy.data.objects.remove(ob)
+    bpy.data.metaballs.remove(mb)
+    me.name = name
+    o = _obj(name, me, coll)
+    _smooth(o)
+    return o
+
+
 def _build_astragalus(variant=0, rnd=None, coll=None, root=None, **o):
-    """Sheep astragalus: rectangular block ~28x19x16 mm with a pulley-like trochlea, a concave side and
-    a waist; modelled by deforming a subdivided cube, then polished-bone material."""
+    """Sheep astragalus (knucklebone) ~27x18x15 mm: blocky bone with pulley-shaped (trochlear) ends,
+    a waist, a concave plantar face and a deep lateral pit; metaball-sculpted, polished-bone material."""
     rnd = rnd or random.Random(variant)
-    bm = bmesh.new()
-    bmesh.ops.create_cube(bm, size=1.0)
-    bmesh.ops.subdivide_edges(bm, edges=bm.edges[:], cuts=7, use_grid_fill=True)
-    sx, sy, sz = 0.014, 0.0095, 0.008
-    s1 = rnd.uniform(-1, 1)
-    for v in bm.verts:
-        x, y, z = v.co.x * 2, v.co.y * 2, v.co.z * 2          # -1..1
-        # rounded box
-        p = Vector((x, y, z))
-        m = max(abs(x), abs(y), abs(z))
-        sph = p.normalized() * m
-        q = p.lerp(sph, 0.35)
-        x, y, z = q.x, q.y, q.z
-        # trochlea: groove across the top at the +x end
-        if x > 0.2:
-            k = (x - 0.2) / 0.8
-            z -= 0.32 * k * math.exp(-(y * 2.2) ** 2) * (1 if z > 0 else 0.3)
-        # waist in the middle
-        w = 1 - 0.18 * math.exp(-((x + 0.05) * 2.4) ** 2)
-        y *= w
-        # concave face (-z) with a ridge
-        if z < 0:
-            z += 0.28 * math.exp(-(x * 1.6) ** 2 - (y * 1.3) ** 2) * (-z)
-        # skew / asymmetry
-        z += 0.12 * x * y + 0.08 * s1 * x
-        y += 0.10 * x * z
-        v.co = Vector((x * sx, y * sy, z * sz))
-    o_ = _bm_to_obj("astragalus", bm, coll)
-    _subsurf(o_, 2)
-    _apply_mods(o_)
-    _noise_displace(o_, 0.00045, 400.0, seed=variant + 0.5)
-    _assign(o_, mat_bone(0.15 * (variant % 3)))
+    j = lambda a: a * (1 + rnd.uniform(-0.08, 0.08))
+    mm = 0.001
+    els = [
+        ("ELLIPSOID", (0, 0, 0), j(9.5 * mm), (1.35, 0.95, 0.78), None, False),
+        ("CAPSULE", (j(8.5 * mm), 0, j(1.5 * mm)), j(5.2 * mm), (j(4.5 * mm), 1, 1), (0, 0, 90), False),
+        ("CAPSULE", (-j(9 * mm), 0, -j(1.0 * mm)), j(4.8 * mm), (j(4.0 * mm), 1, 1), (0, 0, 90), False),
+        ("BALL", (j(10.5 * mm), j(0.5 * mm), j(6.8 * mm)), j(3.6 * mm), None, None, True),        # proximal groove
+        ("CAPSULE", (j(11.5 * mm), 0, j(0.5 * mm)), j(2.2 * mm), (j(2.5 * mm), 1, 1), (0, 90, 0), True),
+        ("BALL", (-j(11 * mm), 0, -j(5.5 * mm)), j(3.2 * mm), None, None, True),                # distal groove
+        ("ELLIPSOID", (j(1 * mm), -j(10.5 * mm), j(0.5 * mm)), j(4.6 * mm), (1.5, 0.55, 0.9), None, True),  # lateral pit
+        ("ELLIPSOID", (j(0.5 * mm), 0, -j(9 * mm)), j(5 * mm), (1.7, 1.0, 0.45), None, True),   # concave face
+        ("ELLIPSOID", (-j(2 * mm), j(8.5 * mm), j(2.5 * mm)), j(3.2 * mm), (1.6, 0.6, 0.8), None, False),  # ridge
+        ("BALL", (j(3 * mm), j(6 * mm), -j(6 * mm)), j(2.0 * mm), None, None, True),
+    ]
+    o_ = _metaball_mesh("astragalus", els, 0.0006, coll)
+    _noise_displace(o_, 0.00025, 600.0, seed=variant + 0.5)
+    _noise_displace(o_, 0.0004, 150.0, seed=variant + 1.5)
+    _assign(o_, mat_bone(0.2 + 0.25 * (variant % 3), scale=300.0))
     o_.rotation_euler = (0, 0, rnd.uniform(-0.3, 0.3))
     _ground([o_])
     return [o_]
@@ -1486,7 +1548,7 @@ def _build_oil_lamp(variant=0, rnd=None, coll=None, root=None, **o):
     bm = bmesh.new()
     bm.from_mesh(lamp.data)
     wick = Vector((0, -0.057, 0.0185))
-    kill = [v for v in bm.verts if (math.hypot(v.co.x, v.co.y) < 0.0105 and v.co.z > 0.015)
+    kill = [v for v in bm.verts if (math.hypot(v.co.x, v.co.y) < 0.0078 and v.co.z > 0.015)
             or ((Vector((v.co.x, v.co.y, 0)) - Vector((wick.x, wick.y, 0))).length < 0.0045 and v.co.z > 0.014)]
     bmesh.ops.delete(bm, geom=kill, context="VERTS")
     # thicken: solidify later
@@ -1855,36 +1917,49 @@ def _build_crown(variant=0, rnd=None, coll=None, root=None, **o):
                                                                 for t in [i / 10 for i in range(11)]], 48, coll)
             _assign(cap, mat_velvet())
             parts.append(cap)
-    elif variant == 2:    # gold laurel wreath (Roman corona)
+    elif variant == 2:    # gold laurel wreath (Roman corona): two branches meeting at the front (-Y)
         leaf_m = gold
-        n = 26
+        n = 15
+        z0 = 0.016
+        Z = Vector((0, 0, 1))
         for side in (-1, 1):
+            stem_pts = []
             for k in range(n):
                 t = k / (n - 1)
-                a = math.pi / 2 + side * (math.radians(14) + t * math.radians(150))
-                rr = R * (1.02 - 0.06 * t)
-                for layer in (-1, 1):
-                    lf = _leaf("laurel", 0.034 * (1 - 0.35 * t), 0.011 * (1 - 0.3 * t), coll)
+                phi = math.radians(90) - side * math.radians(8 + 160 * t)     # back (+Y) -> front (-Y)
+                p0 = Vector((math.cos(phi) * R, math.sin(phi) * R, z0))
+                T = Vector((math.sin(phi), -math.cos(phi), 0)) * side
+                Nout = Vector((math.cos(phi), math.sin(phi), 0))
+                for j, alpha in enumerate((32, -28)):
+                    sz = 1.0 - 0.3 * t
+                    lf = _leaf("laurel", 0.036 * sz, 0.0085 * sz, coll)
                     _assign(lf, leaf_m)
-                    lf.location = (math.cos(a) * rr, math.sin(a) * rr, 0.012 + 0.004 * layer)
-                    # leaf points backward along the wreath, tilted outward/up
-                    lf.rotation_euler = (math.radians(70 + 15 * layer), 0, a + (side * math.pi / 2) + math.pi + side * 0.2)
-                    lf.rotation_euler.rotate_axis("Y", math.radians(25 * layer))
+                    a_ = math.radians(alpha + rnd.uniform(-6, 6))
+                    d = (T * math.cos(a_) + Z * math.sin(a_)).normalized()
+                    nrm = (Nout + Z * (0.25 if alpha > 0 else -0.1)).normalized()
+                    w = d.cross(nrm).normalized()
+                    nrm = w.cross(d).normalized()
+                    M = Matrix((w, d, nrm)).transposed().to_4x4()
+                    lf.matrix_basis = Matrix.Translation(p0 + Nout * 0.002 * j) @ M
                     parts.append(lf)
-            stem_pts = [(math.cos(math.pi / 2 + side * (math.radians(10) + t * math.radians(155))) * R * (1.02 - 0.06 * t),
-                         math.sin(math.pi / 2 + side * (math.radians(10) + t * math.radians(155))) * R * (1.02 - 0.06 * t), 0.012)
-                        for t in [i / 30 for i in range(31)]]
+                stem_pts.append(p0 - Nout * 0.001)
             st = _tube("laurel_stem", stem_pts, 0.0022, coll, seg=8)
             _assign(st, gold)
             parts.append(st)
-        for k in range(10):
-            a = math.pi / 2 + (k - 4.5) * 0.55
-            if abs(k - 4.5) < 1:
+        for k in range(8):
+            phi = math.radians(90 + (k - 3.5) * 22)
+            if abs(k - 3.5) < 1:
                 continue
             b_ = C.prim("uv_sphere", name="berry", radius=0.0035, segments=10, ring_count=6)
-            b_.location = (math.cos(a) * R * 1.08, math.sin(a) * R * 1.08, 0.016)
+            b_.location = (math.cos(phi) * R * 1.06, math.sin(phi) * R * 1.06, z0 + 0.004)
             _assign(b_, gold)
             parts.append(b_)
+        # ribbon tie at the back
+        for side in (-1, 1):
+            rb = _tube("ribbon", [(side * 0.004, R, z0), (side * 0.012, R + 0.02, z0 - 0.02), (side * 0.016, R + 0.026, z0 - 0.05)],
+                       0.0025, coll, seg=8)
+            _assign(rb, gold)
+            parts.append(rb)
     for p in parts:
         if p.type == "MESH" and p.name.startswith(("crown_", "spike", "fleuron", "arch")):
             _smooth(p)
@@ -1893,13 +1968,15 @@ def _build_crown(variant=0, rnd=None, coll=None, root=None, **o):
 
 
 def _leaf(name, length, width, coll):
+    """Lanceolate leaf along +Y (width X, normal +Z) with a midrib fold and slight curl."""
     secs = []
-    for i in range(9):
-        t = i / 8
-        w = width * math.sin(math.pi * min(1, t * 1.05)) ** 0.8 + 0.0002
+    for i in range(11):
+        t = i / 10
+        w = width * math.sin(math.pi * min(1.0, t * 1.02)) ** 0.75 + 0.0002
         y = length * t
-        c = 0.0012 * math.sin(math.pi * t)
-        secs.append([(-w, y, c * 0.3), (0, y, c + 0.0008), (w, y, c * 0.3), (0, y, c - 0.0006)])
+        c = 0.0025 * math.sin(math.pi * t) - 0.002 * t * t
+        secs.append([(-w, y, c - 0.0012 * (w / width)), (0, y, c + 0.0009), (w, y, c - 0.0012 * (w / width)),
+                     (0, y, c - 0.0003)])
     lf = _loft(name, secs, coll)
     return lf
 
@@ -2056,7 +2133,7 @@ def _build_scroll(variant=0, rnd=None, coll=None, root=None, open_width=0.32, ly
 def _build_flatbread(variant=0, rnd=None, coll=None, root=None, radius=0.11, **o):
     rnd = rnd or random.Random(variant + 31)
     R = radius
-    T = 0.03 if variant != 2 else 0.02
+    T = 0.036 if variant != 2 else 0.024
     bm = bmesh.new()
     bmesh.ops.create_uvsphere(bm, u_segments=48, v_segments=24, radius=1.0)
     ph1 = rnd.random() * 6
@@ -2065,7 +2142,8 @@ def _build_flatbread(variant=0, rnd=None, coll=None, root=None, radius=0.11, **o
         a = math.atan2(y, x)
         rr = R * (1 + 0.04 * math.sin(3 * a + ph1) + 0.025 * math.sin(5 * a + 2 * ph1))
         # domed top, flat bottom with rounded edge
-        zz = T * (0.62 * z if z > 0 else 0.25 * z)
+        rad = math.sqrt(x * x + y * y)
+        zz = T * ((0.55 + 0.35 * (1 - rad) ** 0.5) * z if z > 0 else 0.28 * z)
         v.co = Vector((x * rr, y * rr, zz))
     o_ = _bm_to_obj("bread", bm, coll)
     _remesh(o_, 0.0028)
@@ -2078,6 +2156,9 @@ def _build_flatbread(variant=0, rnd=None, coll=None, root=None, radius=0.11, **o
     if variant == 1:
         a_, b_ = _split_bread(o_, rnd, coll)
         a_.name, b_.name = "half_a", "half_b"
+        a_.location.x -= 0.004
+        b_.location.x += 0.004
+        b_.rotation_euler.z = math.radians(-4)
         for p in (a_, b_):
             _ground([p])
         return [a_, b_]
@@ -2677,49 +2758,40 @@ def _get_action(arm, action):
 
 
 def _build_animal_cache(name, vi):
-    """Import the source model into a clean temporary scene, normalise, rig, animate, write cache."""
+    """Import the source model into a temporary collection of the current scene, normalise, rig,
+    animate, write the cache .blend, then delete the temporary objects."""
     a = ANIMALS[name][vi]
     t0 = time.time()
     os.makedirs(CACHE, exist_ok=True)
-    main_scene = bpy.context.window.scene if bpy.context.window else bpy.context.scene
-    tmp = bpy.data.scenes.new("_asset_build")
-    vl_scene = bpy.context.scene
-    try:
-        bpy.context.window.scene = tmp
-    except Exception:
-        pass
+    sc = bpy.context.scene
+    vl = bpy.context.view_layer
+    tmpc = bpy.data.collections.new("_asset_build")
+    sc.collection.children.link(tmpc)
+    prev_alc = vl.active_layer_collection
+    vl.active_layer_collection = vl.layer_collection.children[tmpc.name]
     before = set(bpy.data.objects)
-    with bpy.context.temp_override(scene=tmp, view_layer=tmp.view_layers[0]):
-        bpy.ops.import_scene.gltf(filepath=_glb_path(a["uid"]))
+    bpy.ops.import_scene.gltf(filepath=_glb_path(a["uid"]))
+    vl.active_layer_collection = prev_alc
     new = [o for o in bpy.data.objects if o not in before]
-    for o in new:
-        if o.name not in tmp.collection.all_objects:
-            try:
-                tmp.collection.objects.link(o)
-            except Exception:
-                pass
-    bpy.context.view_layer.update()
-    meshes = [o for o in new if o.type == "MESH" and not o.name.startswith("Icosphere")
-              and o.visible_get() is not None]
     for o in new:            # drop source rigs / animation: we build our own
         o.animation_data_clear()
+    vl.update()
+    meshes = [o for o in new if o.type == "MESH" and not o.name.startswith("Icosphere")]
     dg = bpy.context.evaluated_depsgraph_get()
-    # bake each mesh in world space, join
     parts = []
     for o in meshes:
-        if a.get("drop") and any(s in o.name for s in a["drop"]):
+        if a.get("drop") and any(x in o.name for x in a["drop"]):
             continue
         me = bpy.data.meshes.new_from_object(o.evaluated_get(dg), preserve_all_data_layers=True, depsgraph=dg)
         me.transform(o.matrix_world)
-        me.shape_keys and None
         parts.append(me)
     for o in new:
         bpy.data.objects.remove(o, do_unlink=True)
     body = bpy.data.objects.new("%s%d_body" % (name, vi), parts[0])
-    tmp.collection.objects.link(body)
+    tmpc.objects.link(body)
     for me in parts[1:]:
         ob = bpy.data.objects.new("tmp", me)
-        tmp.collection.objects.link(ob)
+        tmpc.objects.link(ob)
         _join([body, ob])
     me = body.data
     # normalise: rotate to face -Y, scale to target height, base at z=0, centred
@@ -2742,21 +2814,25 @@ def _build_animal_cache(name, vi):
         me.vertices.foreach_get("co", co)
         co = co.reshape(-1, 3)
     mn, mx = co.min(0), co.max(0)
-    s = a["height"] / (mx[2] - mn[2])
-    me.transform(Matrix.Diagonal((s, s, s, 1)) @ Matrix.Translation((-float(np.median(co[:, 0])), -(mn[1] + mx[1]) / 2, -mn[2])))
+    ph_ = a.get("plot_height", a["height"])
+    s = ph_ / (mx[2] - mn[2])
+    k = a["height"] / ph_
+    me.transform(Matrix.Diagonal((k, k, k, 1)) @ Matrix.Translation((-a.get("x_shift", 0.0), 0, 0)) @
+                 Matrix.Diagonal((s, s, s, 1)) @ Matrix.Translation((-float(np.median(co[:, 0])), -(mn[1] + mx[1]) / 2, -mn[2])))
     me.update()
+    a = _xf_landmarks(a)
     for p in me.polygons:
         p.use_smooth = True
     _fix_animal_materials(me, a)
     root_obj = None
     if a.get("static") or not a.get("rig"):
         root_obj = bpy.data.objects.new("%s%d" % (name, vi), None)
-        tmp.collection.objects.link(root_obj)
+        tmpc.objects.link(root_obj)
         body.parent = root_obj
         if a.get("eyes"):
-            _add_eyes(root_obj, a, None, tmp.collection)
+            _add_eyes(root_obj, a, None, tmpc)
     else:
-        root_obj = _make_rig(name, vi, a, body, tmp)
+        root_obj = _make_rig(name, vi, a, body, tmpc)
         _make_actions(name, vi, a, root_obj)
     root_obj["variant_index"] = vi
     root_obj["source_uid"] = a["uid"]
@@ -2766,18 +2842,42 @@ def _build_animal_cache(name, vi):
     tmpfile = _cache_path(name, vi) + ".part%d" % os.getpid()
     bpy.data.libraries.write(tmpfile, set(objs) | set(acts), fake_user=True, compress=True)
     os.replace(tmpfile, _cache_path(name, vi))
-    # clean up the temporary scene (we append from the cache afterwards)
+    # clean up (instances are appended from the cache afterwards)
     for o in objs:
-        d = o.data
         bpy.data.objects.remove(o, do_unlink=True)
     for x in acts:
         bpy.data.actions.remove(x)
-    try:
-        bpy.context.window.scene = main_scene
-    except Exception:
-        pass
-    bpy.data.scenes.remove(tmp)
+    bpy.data.collections.remove(tmpc)
     print("assets: built %s v%d cache in %.1fs" % (name, vi, time.time() - t0))
+
+
+def _xf_landmarks(a):
+    """Landmarks are measured in the plot frame (median-x centred, scaled to plot_height); map them to
+    the final frame (x shifted by x_shift, scaled to height)."""
+    a = dict(a)
+    ph_ = a.get("plot_height", a["height"])
+    k = a["height"] / ph_
+    xs = a.get("x_shift", 0.0)
+
+    def f(p):
+        return ((p[0] - xs) * k, p[1] * k, p[2] * k)
+    if a.get("eyes"):
+        a["eyes"] = f(a["eyes"])
+        a["eye_x_shift"] = 0.0
+    if a.get("rig"):
+        R = dict(a["rig"])
+        for key in ("spine", "neck", "head", "jaw", "tail"):
+            if R.get(key):
+                R[key] = [f(p) for p in R[key]]
+        R["legs"] = {lk: [f(p) for p in pts] for lk, pts in R["legs"].items()}
+        if R.get("stance"):
+            R["stance"] = {lk: (v[0] * k, v[1] * k) for lk, v in R["stance"].items()}
+        if R.get("mouth_z") is not None:
+            R["mouth_z"] = R["mouth_z"] * k
+        if R.get("jaw_halfwidth"):
+            R["jaw_halfwidth"] = R["jaw_halfwidth"] * k
+        a["rig"] = R
+    return a
 
 
 def _fix_animal_materials(me, a):
@@ -2847,16 +2947,16 @@ def _mirror(p):
     return (-p[0], p[1], p[2])
 
 
-def _make_rig(name, vi, a, body, scene):
+def _make_rig(name, vi, a, body, coll):
     """Build a quadruped armature from landmarks, skin the body with automatic weights (plus a clean
     jaw region), add eye spheres. Returns the armature object."""
     R = a["rig"]
     ad = bpy.data.armatures.new("%s%d_rig" % (name, vi))
     arm = bpy.data.objects.new("%s%d" % (name, vi), ad)
-    scene.collection.objects.link(arm)
+    coll.objects.link(arm)
     ad.display_type = "STICK"
-    vl = scene.view_layers[0]
-    with bpy.context.temp_override(scene=scene, view_layer=vl, active_object=arm, object=arm,
+    vl = bpy.context.view_layer
+    with bpy.context.temp_override(active_object=arm, object=arm,
                                    selected_objects=[arm], selected_editable_objects=[arm]):
         vl.objects.active = arm
         bpy.ops.object.mode_set(mode="EDIT")
@@ -2909,7 +3009,7 @@ def _make_rig(name, vi, a, body, scene):
             eb["IK_" + leg].roll = 0
         bpy.ops.object.mode_set(mode="OBJECT")
     # fix leg rolls so that local X == world +X for planar IK (compute in object mode via edit again)
-    with bpy.context.temp_override(scene=scene, view_layer=vl, active_object=arm, object=arm,
+    with bpy.context.temp_override(active_object=arm, object=arm,
                                    selected_objects=[arm], selected_editable_objects=[arm]):
         bpy.ops.object.mode_set(mode="EDIT")
         for b in ad.edit_bones:
@@ -2940,9 +3040,9 @@ def _make_rig(name, vi, a, body, scene):
         pb.rotation_mode = "XYZ"
     # skin
     body.parent = arm
-    with bpy.context.temp_override(scene=scene, view_layer=vl, active_object=arm, object=arm,
+    with bpy.context.temp_override(active_object=arm, object=arm,
                                    selected_objects=[arm, body], selected_editable_objects=[arm, body]):
-        for o in scene.objects:
+        for o in vl.objects:
             o.select_set(o in (arm, body))
         vl.objects.active = arm
         try:
@@ -2954,7 +3054,7 @@ def _make_rig(name, vi, a, body, scene):
         md.object = arm
     _repair_weights(body, arm, a)
     if a.get("eyes"):
-        _add_eyes(arm, a, "head", scene.collection)
+        _add_eyes(arm, a, "head", coll)
     arm["ik_bones"] = ["IK_FL", "IK_FR", "IK_HL", "IK_HR"]
     return arm
 
@@ -3292,3 +3392,88 @@ _def_animal(
         toss=dict(type="toss", T=2.2),
         paw=dict(type="paw", T=1.6),
     ))
+_def_animal(
+    "bull", uid="f01175538f7b4ffe8e2648d772e94c5c", title="Wildebeest", author="hendrikReyneke (Sketchfab)",
+    license="CC-BY-4.0", rot=0.0, height=1.5, static=True, hsv=(0.5, 0.6, 0.8))
+_def_animal(
+    "dog", uid="1de9441cb0744c0d8459ce957b8d0a57", title="Italian White Wolf", author="sdpm (Sketchfab)",
+    license="CC-BY-4.0", rot=0.0, height=0.85, sheen=0.5, rough_min=0.6, hsv=(0.5, 1.0, 0.85),
+    eyes=(0.042, -0.6, 0.715), eye_r=0.009,
+    rig=dict(
+        spine=[(0, 0.4, 0.62), (0, 0.0, 0.6), (0, -0.3, 0.65)],
+        neck=[(0, -0.3, 0.65), (0, -0.48, 0.75)],
+        head=[(0, -0.48, 0.75), (0, -0.69, 0.64)],
+        jaw=[(0, -0.52, 0.66), (0, -0.66, 0.6)], mouth_z=0.62, jaw_halfwidth=0.06,
+        tail=[(0, 0.48, 0.6), (0, 0.55, 0.5), (0, 0.62, 0.38), (0, 0.67, 0.27), (0, 0.7, 0.2)],
+        legs=dict(FL=[(0.09, -0.25, 0.55), (0.09, -0.2, 0.36), (0.09, -0.22, 0.1), (0.09, -0.29, 0.02)],
+                  HL=[(0.095, 0.33, 0.55), (0.095, 0.24, 0.36), (0.095, 0.37, 0.19), (0.095, 0.3, 0.02)])),
+    actions=dict(
+        idle=dict(type="idle", T=5.0, look=14.0, tail=6.0, pant=6.0),
+        walk=dict(T=0.9, duty=0.62, stride=0.45, lift=0.08, bob=0.01, head_bob=3.0, tail=8.0),
+        prowl=dict(base="walk", T=1.5, duty=0.7, stride=0.36, lift=0.07, crouch=0.07, neck=16.0, head=-12.0,
+                   bob=0.006, head_bob=1.5, tail=4.0, tail_lift=-12.0),
+        trot=dict(base="walk", T=0.56, duty=0.45, stride=0.5, lift=0.09, bob=0.012,
+                  phase=dict(HL=0.0, FR=0.0, HR=0.5, FL=0.5), head_bob=2.0, tail=6.0),
+        run=dict(T=0.38, duty=0.3, stride=0.6, lift=0.13, bob=0.035, pitch=6.0, flex=12.0, head_bob=5.0, tail=8.0),
+        snarl=dict(type="roar", T=2.6, neck=10.0, head=-6.0, jaw_extra=22.0),
+    ))
+_def_animal(
+    "ox", uid="dc8185e4e21747fb8b394e40d3ec125a", title="Cow", author="hendrikReyneke (Sketchfab)",
+    license="CC-BY-4.0", rot=0.0, height=1.45, plot_height=1.55, sheen=0.25, rough_min=0.6,
+    eyes=(0.12, -1.3, 1.29), eye_r=0.017,
+    rig=dict(
+        spine=[(0, 0.75, 1.32), (0, 0.1, 1.3), (0, -0.6, 1.35)],
+        neck=[(0, -0.6, 1.3), (0, -1.25, 1.35)],
+        head=[(0, -1.25, 1.35), (0, -1.52, 1.05)],
+        jaw=[(0, -1.28, 1.15), (0, -1.45, 0.97)], mouth_z=1.02, jaw_halfwidth=0.1,
+        tail=[(0, 0.82, 1.38), (0, 1.0, 1.25), (0, 1.2, 1.05), (0, 1.45, 0.88), (0, 1.7, 0.75)],
+        legs=dict(FL=[(0.144, -0.45, 1.05), (0.144, -0.4, 0.68), (0.144, -0.43, 0.3), (0.144, -0.55, 0.03)],
+                  HL=[(0.3, 0.75, 1.15), (0.3, 0.68, 0.72), (0.33, 0.82, 0.42), (0.354, 0.67, 0.03)])),
+    actions=dict(
+        idle=dict(type="idle", T=8.0, look=8.0, tail=8.0, tail_lift=-42.0, chew=5.0),
+        walk=dict(T=1.5, duty=0.65, stride=0.9, lift=0.12, bob=0.012, head_bob=3.0, tail=5.0, tail_lift=-42.0),
+        graze=dict(type="graze", T=6.0, neck=38.0, neck2=12.0, head=8.0),
+    ), no_actions=["run"])
+_def_animal(
+    "donkey", uid="54b3933b79a84b608c6e498c072061a9", title="Wild Ass", author="hendrikReyneke (Sketchfab)",
+    license="CC-BY-4.0", rot=0.0, height=1.4, plot_height=1.5, x_shift=0.06, sheen=0.35, rough_min=0.6,
+    hsv=(0.5, 0.75, 0.82), eyes=(0.16, -0.84, 1.2), eye_r=0.016,
+    rig=dict(
+        spine=[(0.06, 0.8, 1.2), (0.06, 0.2, 1.15), (0.06, -0.35, 1.25)],
+        neck=[(0.06, -0.35, 1.2), (0.06, -0.82, 1.35)],
+        head=[(0.06, -0.82, 1.35), (0.06, -0.9, 0.82)],
+        tail=[(0.06, 0.95, 1.2), (0.06, 1.02, 1.0), (0.06, 1.05, 0.85), (0.06, 1.08, 0.7)],
+        legs=dict(FL=[(0.25, -0.25, 1.0), (0.25, -0.15, 0.72), (0.25, -0.22, 0.3), (0.25, -0.36, 0.03)],
+                  FR=[(-0.13, -0.2, 1.0), (-0.13, -0.1, 0.72), (-0.13, -0.12, 0.3), (-0.13, -0.16, 0.03)],
+                  HL=[(0.25, 0.85, 1.05), (0.25, 0.75, 0.68), (0.25, 0.98, 0.45), (0.25, 0.8, 0.03)],
+                  HR=[(-0.13, 0.85, 1.05), (-0.13, 0.72, 0.68), (-0.13, 0.88, 0.45), (-0.13, 0.63, 0.03)]),
+        stance=dict(FL=(-0.27, 0.03), FR=(-0.27, 0.03), HL=(0.72, 0.03), HR=(0.72, 0.03))),
+    actions=dict(
+        idle=dict(type="idle", T=7.0, look=10.0, tail=10.0, neck=-6.0),
+        walk=dict(T=1.25, duty=0.64, stride=0.75, lift=0.1, bob=0.012, head_bob=4.0, tail=5.0, neck=-6.0),
+        graze=dict(type="graze", T=6.0, neck=30.0, neck2=8.0, head=0.0),
+    ), no_actions=["run"])
+_def_animal(
+    "sheep", uid="67abff7459f34afca11e3effab62c761", title="Sheep", author="hendrikReyneke (Sketchfab)",
+    license="CC-BY-4.0", rot=0.0, height=0.8, plot_height=0.85, sheen=0.6, rough_min=0.7,
+    eyes=(0.05, -0.52, 0.76), eye_r=0.008,
+    rig=dict(
+        spine=[(0, 0.45, 0.68), (0, 0.05, 0.65), (0, -0.25, 0.68)],
+        neck=[(0, -0.25, 0.66), (0, -0.45, 0.78)],
+        head=[(0, -0.45, 0.78), (0, -0.62, 0.66)],
+        jaw=[(0, -0.47, 0.66), (0, -0.6, 0.6)], mouth_z=0.64, jaw_halfwidth=0.05,
+        tail=[(0, 0.52, 0.62), (0, 0.58, 0.58), (0, 0.65, 0.53), (0, 0.7, 0.51)],
+        legs=dict(FL=[(0.086, -0.15, 0.48), (0.086, -0.1, 0.3), (0.086, -0.13, 0.1), (0.086, -0.19, 0.02)],
+                  HL=[(0.093, 0.4, 0.5), (0.093, 0.33, 0.32), (0.093, 0.45, 0.17), (0.093, 0.39, 0.02)])),
+    actions=dict(
+        idle=dict(type="idle", T=6.0, look=12.0, tail=10.0, chew=4.0),
+        walk=dict(T=0.95, duty=0.62, stride=0.4, lift=0.06, bob=0.008, head_bob=3.0, tail=6.0),
+        graze=dict(type="graze", T=5.0, neck=34.0, neck2=10.0, head=10.0),
+    ), no_actions=["run"])
+_def_animal(
+    "dove", uid="cc36e7c5445a4270b301f7ef938e671a", title="Dove Roman white (Columba livia)",
+    author="darwinmuseum.ru (State Darwin Museum)", license="CC0-1.0", rot=0.0, height=0.25, static=True,
+    crop_z=0.1)
+_def_animal(
+    "dove", uid="8cdbd8890ed84c228191cbe6241b420d", title="Pigeon", author="hendrikReyneke (Sketchfab)",
+    license="CC-BY-4.0", rot=0.0, height=0.3, static=True)

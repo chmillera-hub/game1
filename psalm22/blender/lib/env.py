@@ -489,31 +489,31 @@ def hazify(material):
 SKY_PRESETS = {
     "golden": dict(hdri="table_mountain_2_puresky", sun_az=165, strength=1.0, bg=1.0, sun_mult=1.0,
                    tint=(1.0, 0.86, 0.66), sat=1.1, sun_temp=None, sun_tint=(1.0, 0.8, 0.55), sun_angle=1.2,
-                   haze_density=0.0009, haze_tint=(1.0, 0.95, 0.88), fog=(1.0, 0.82, 0.62), fog_density=0.0015,
+                   haze_density=0.00035, haze_tint=(1.0, 0.95, 0.88), fog=(1.0, 0.82, 0.62), fog_density=0.0015,
                    exposure=0.0, grade="warm", clouds=0.0),
     "noon": dict(hdri="kloofendal_48d_partly_cloudy_puresky", sun_az=200, strength=1.0, bg=1.0, sun_mult=1.0,
                  tint=(1.0, 0.98, 0.94), sat=0.95, sun_tint=(1.0, 0.97, 0.92), sun_angle=0.8,
-                 haze_density=0.0012, haze_tint=(1.0, 1.0, 1.0), fog=(0.9, 0.88, 0.85), fog_density=0.0012,
+                 haze_density=0.0003, haze_tint=(1.0, 1.0, 1.0), fog=(0.9, 0.88, 0.85), fog_density=0.0012,
                  exposure=-0.3, grade="neutral", clouds=0.0),
     "eclipse": dict(hdri="kloppenheim_01_puresky", sun_az=165, strength=0.35, bg=0.35, sun_mult=0.06,
                     tint=(1.0, 0.42, 0.2), sat=0.5, sun_tint=(1.0, 0.35, 0.12), sun_angle=1.0,
-                    haze_density=0.004, haze_tint=(1.0, 0.9, 0.8), fog=(0.65, 0.32, 0.17), fog_density=0.006,
+                    haze_density=0.0012, haze_tint=(1.0, 0.9, 0.8), fog=(0.65, 0.32, 0.17), fog_density=0.006,
                     exposure=0.3, grade="eclipse", clouds=0.7, sun_disk=dict(el=24, size=2.2, color=(1.0, 0.28, 0.08),
                                                                             strength=6.0)),
     "storm": dict(hdri="kloofendal_overcast_puresky", sun_az=120, strength=0.55, bg=0.55, sun_mult=0.25,
                   tint=(0.78, 0.82, 0.92), sat=0.55, sun_tint=(0.85, 0.88, 1.0), sun_angle=8.0,
-                  haze_density=0.003, haze_tint=(1.0, 1.0, 1.0), fog=(0.55, 0.57, 0.62), fog_density=0.004,
+                  haze_density=0.0009, haze_tint=(1.0, 1.0, 1.0), fog=(0.55, 0.57, 0.62), fog_density=0.004,
                   exposure=0.2, grade="cold", clouds=0.85),
     "dawn": dict(hdri="qwantani_dawn_puresky", sun_az=100, strength=1.4, bg=1.4, sun_mult=0.0,
                  tint=(1.0, 0.96, 1.0), sat=1.15, sun_tint=(1.0, 0.7, 0.55), sun_angle=2.0,
-                 haze_density=0.002, haze_tint=(1.0, 1.0, 1.0), fog=(0.85, 0.75, 0.8), fog_density=0.004,
+                 haze_density=0.0005, haze_tint=(1.0, 1.0, 1.0), fog=(0.85, 0.75, 0.8), fog_density=0.004,
                  exposure=0.5, grade="dawn", clouds=0.0),
     "sunrise": dict(hdri="qwantani_sunrise_puresky", sun_az=160, strength=1.0, bg=1.0, sun_mult=1.0,
                     tint=(1.0, 0.95, 0.9), sat=1.1, sun_tint=(1.0, 0.75, 0.5), sun_angle=1.5,
-                    haze_density=0.0018, haze_tint=(1.0, 0.97, 0.93), fog=(1.0, 0.8, 0.62), fog_density=0.004,
+                    haze_density=0.00045, haze_tint=(1.0, 0.97, 0.93), fog=(1.0, 0.8, 0.62), fog_density=0.004,
                     exposure=0.2, grade="warm", clouds=0.0),
     "night": dict(hdri=None, sun_az=210, strength=1.0, bg=1.0, sun_mult=1.0, moon=True, stars=True,
-                  haze_density=0.0015, haze_tint=(1.0, 1.0, 1.0), fog=(0.25, 0.32, 0.45), fog_density=0.004,
+                  haze_density=0.0004, haze_tint=(1.0, 1.0, 1.0), fog=(0.25, 0.32, 0.45), fog_density=0.004,
                   exposure=0.0, grade="night", clouds=0.0),
 }
 
@@ -790,8 +790,10 @@ def sky(mood="golden", sun_az=None, rotation=None, clouds=None, stars=None, moon
 
     # --- sun / moon lamp ----------------------------------------------------------------------
     old = st.get("sun_obj")
-    if old is not None and old.name in bpy.data.objects and not keep_sun:
-        bpy.data.objects.remove(old, do_unlink=True)
+    if old is not None and old.name in bpy.data.objects:
+        if keep_sun:
+            res["sun"] = old
+        bpy.data.objects.remove(old, do_unlink=True) if not keep_sun else None
     sun_obj = None
     if p["name"] == "night" or (p.get("moon") and not p.get("hdri")):
         mdir = res.get("moon_dir", _dir_from_az_el(p["sun_az"], 30))
@@ -1014,7 +1016,7 @@ def ground_material(name="EnvGround", style="golgotha", scale=0.33, macro=1.0, r
     styles = {
         "golgotha": dict(base="dry_ground_rocks", crust="sandstone_cracks", rock="rock_boulder_dry", path="gravelly_sand",
                          base_tint=(1.0, 0.93, 0.8), crust_tint=(0.95, 0.9, 0.8), rock_tint=(1.0, 0.95, 0.86),
-                         crust_amt=0.55, far=(0.42, 0.36, 0.27), sat=0.5, val=1.1),
+                         crust_amt=0.55, far=(0.5, 0.43, 0.33), sat=0.55, val=1.45),
         "hills": dict(base="dry_ground_rocks", crust="dry_ground_01", rock="rock_boulder_dry", path="gravelly_sand",
                       base_tint=(1.0, 0.86, 0.72), crust_tint=(1.0, 0.93, 0.82), rock_tint=(1.0, 0.96, 0.88),
                       crust_amt=0.35, far=(0.45, 0.37, 0.28)),
@@ -2883,7 +2885,7 @@ def golgotha(ctx, mood="golden", crosses=3, center_occupied=True, sign=True, cit
     _dbg("g:crosses")
     boulders = rock_protos("boulders")
     small = rock_protos("rocks")
-    pebbles = rock_protos("stones")
+    pebbles = rock_protos("stones", tint=(0.9, 0.82, 0.7), value=0.85)
     _dbg("g:rockprotos")
     if rocks:
         # talus at the cliff foot + hill flanks
@@ -2898,7 +2900,7 @@ def golgotha(ctx, mood="golden", crosses=3, center_occupied=True, sign=True, cit
                 region=("circle", 0, 0, 45), exclude=keep_out, name="EnvRocks",
                 density=lambda X, Y: 0.35 + 0.65 * smoothstep(6, 18, np.sqrt(X ** 2 + Y ** 2)))
         if near_detail:
-            scatter(pebbles + small[:4], count=int(1400 * near_detail), seed=seed + 4, scale=(0.5, 1.4), align=1.0,
+            scatter(pebbles + small[:4], count=int(700 * near_detail), seed=seed + 4, scale=(0.4, 1.1), align=1.0,
                     sink=-0.35, region=("circle", 0, -1, 14), exclude=[(x, y, 0.3) for x, y, _ in keep_out],
                     name="EnvPebbles")
             # wedge stones at each cross foot
@@ -2949,9 +2951,9 @@ def golgotha(ctx, mood="golden", crosses=3, center_occupied=True, sign=True, cit
                               height_falloff=0.03, name="EnvAirFog")
         _set_volume_range(400)
     if dust if dust is not None else (mood in ("golden", "eclipse", "storm", "sunrise", "noon")):
-        A["dust"] = dust_motes(center=(0, -4, top + 2.0), size=(16, 16, 5), count=1800,
+        A["dust"] = dust_motes(center=(0, -4, top + 2.0), size=(16, 16, 5), count=900,
                                color=(1.0, 0.9, 0.75) if mood != "eclipse" else (0.9, 0.55, 0.35),
-                               emission=0.25 if mood in ("golden", "sunrise") else 0.05, seed=seed)
+                               emission=0.06 if mood in ("golden", "sunrise") else 0.0, seed=seed)
     # anchors ---------------------------------------------------------------------------------------
     A["ground"] = _scalar(H)
     A["ground_z"] = ground_z
@@ -2971,4 +2973,296 @@ def golgotha(ctx, mood="golden", crosses=3, center_occupied=True, sign=True, cit
     A["build_time"] = time.time() - t0
     if ctx is not None:
         ctx.post.setdefault("grade", p.get("grade", "warm"))
+    return A
+
+
+# =============================================================================================
+# Public sky helpers
+# =============================================================================================
+def night_sky(stars=True, moon=True, moon_az=210.0, moon_el=32.0, moon_light=0.35, strength=1.0, ctx=None,
+              horizon=(0.012, 0.018, 0.032), zenith=(0.0015, 0.0025, 0.006), star_strength=1.0, clouds=0.0, **over):
+    """Procedural night: deep-blue gradient sky + star field + moon disk with glow + cool moonlight lamp
+    (sun object named 'Moon'). Returns the sky() result dict (res['nodes']['stars'] / ['moon'] keyable)."""
+    p = sky_preset("night", stars=stars, moon=moon, moon_az=moon_az, moon_el=moon_el, moon_light=moon_light,
+                   horizon=horizon, zenith=zenith, star_strength=star_strength, clouds=clouds, sun_az=moon_az, **over)
+    p["bg"] = strength
+    return sky(cfg=p, ctx=ctx)
+
+
+def clouds_layer(coverage=0.5, height=1500.0, scale=0.00035, speed=(6.0, 2.0), color=(1.0, 0.97, 0.94),
+                 shadow=(0.35, 0.33, 0.33), opacity=0.92, evolve=0.05, ctx=None):
+    """Add/replace an animated procedural cloud layer (world shader, flat layer at `height` m) over the
+    current sky (rebuilds the world from the last sky() config, keeps the sun lamp). speed in m/s
+    (use ~60-200 for time-lapse streaks). Returns the sky() result."""
+    st = _state()
+    prev = st.get("sky")
+    p = dict(prev["preset"]) if prev else sky_preset("noon")
+    p["clouds"] = coverage
+    p["cloud_opts"] = dict(height=height, scale=scale, speed=speed, color=color, shadow=shadow, opacity=opacity,
+                           evolve=evolve)
+    sun = prev.get("sun") if prev else None
+    r = sky(cfg=p, ctx=ctx, keep_sun=sun is not None)
+    if sun is not None:
+        r["sun"] = sun
+        st["sun_obj"] = sun
+    return r
+
+
+# =============================================================================================
+# JUDEAN HILLS (+ day -> dusk -> night time-lapse)
+# =============================================================================================
+def _hills_height(seed=0, terraces=0.6):
+    def H(X, Y):
+        X = np.asarray(X, float)
+        Y = np.asarray(Y, float)
+        r = np.sqrt(X ** 2 + Y ** 2)
+        # rounded limestone hills: smooth fbm + a broad ridge system
+        h = 38 * fbm(X / 260.0, Y / 260.0, 4, gain=0.45, seed=seed + 1) + 20 * ridged(X / 420.0, Y / 420.0, 3, seed=seed + 2)
+        # the foreground knoll (camera stands near it) and a valley beyond it
+        h = h - 18 * np.exp(-((Y - 160) / 90.0) ** 2) * smoothstep(400, 0, np.abs(X))
+        knoll = 6.0 * np.exp(-((X / 22.0) ** 2 + (Y / 18.0) ** 2))
+        h = h - h * np.exp(-(r / 60.0) ** 2) * 0.85 + knoll          # flatten around the origin
+        if terraces:
+            step = 1.6
+            q = h / step
+            fr = q - np.floor(q)
+            tread = np.floor(q) * step + step * smoothstep(0.78, 1.0, fr)
+            tm = smoothstep(-0.1, 0.35, fbm(X / 180.0, Y / 180.0, 2, seed=seed + 3)) * smoothstep(40, 90, r) * terraces
+            h = h + (tread - h) * tm
+        h += 0.35 * fbm(X * 0.08, Y * 0.08, 3, seed=seed + 4) + 0.08 * fbm(X * 0.5, Y * 0.5, 2, seed=seed + 5)
+        h += smoothstep(1500, 3800, r) * (60 + 80 * fbm(X / 1200, Y / 1200, 3, seed=seed + 6))
+        return h
+    return H
+
+
+def _hills_attrs(H, terraces):
+    def A(X, Y, Z):
+        n1 = fbm(X * 0.05, Y * 0.05, 3, seed=31)
+        rock = np.clip((n1 - 0.15) * 2.0, 0, 1) * 0.8
+        cav = np.zeros_like(Z)
+        lap = (Z[:-2, 1:-1] + Z[2:, 1:-1] + Z[1:-1, :-2] + Z[1:-1, 2:] - 4 * Z[1:-1, 1:-1])
+        cav[1:-1, 1:-1] = np.clip(lap * 1.5, 0, 1)
+        # terrace risers -> exposed stone walls (high slope relative to neighbours)
+        gy, gx = np.gradient(Z)
+        riser = np.clip((np.abs(gx) + np.abs(gy)) * 0.8 - 0.5, 0, 1) * (terraces > 0)
+        return dict(rock=np.maximum(rock, riser), cav=cav, path=np.zeros_like(Z), dust=np.zeros_like(Z))
+    return A
+
+
+def sun_dir_at(hour, lat=31.8, decl=9.0):
+    """Approximate solar (elevation, compass azimuth) in degrees for a local solar hour (Jerusalem, April).
+    Compass azimuth: 0 = north, 90 = east."""
+    h = math.radians((hour - 12.0) * 15.0)
+    la, de = math.radians(lat), math.radians(decl)
+    el = math.asin(math.sin(la) * math.sin(de) + math.cos(la) * math.cos(de) * math.cos(h))
+    az = math.atan2(-math.sin(h), math.tan(de) * math.cos(la) - math.sin(la) * math.cos(h))
+    return math.degrees(el), (math.degrees(az) + 360) % 360
+
+
+def _compass_to_core(az):
+    """Compass azimuth (0 = north = +Y, 90 = east = +X) -> core.sun azimuth (0 = sun at -Y)."""
+    return (180.0 - az) % 360
+
+
+def timelapse_sky(ctx, hour0=13.0, hour1=21.0, f0=1, f1=None, clouds=0.35, cloud_speed=(90.0, 30.0), stars=True,
+                  moon=True, ease=True, sun_max=4.5, exposure_night=1.2, step=1):
+    """Animated day -> golden hour -> dusk -> night sky over frames f0..f1 (Nishita sky + star field +
+    fast clouds + keyed sun lamp + moonlight + haze + exposure). Returns dict(sun, moon, keys...)."""
+    sc = bpy.context.scene
+    f1 = f1 or sc.frame_end
+    st = _state()
+    w = sc.world
+    w.sun_threshold = 1e6
+    nt = w.node_tree
+    for n in list(nt.nodes):
+        nt.nodes.remove(n)
+    T = _NT(nt)
+    out = T.node("ShaderNodeOutputWorld")
+    tc = T.node("ShaderNodeTexCoord")
+    view = tc.outputs["Generated"]
+    sky_n = T.node("ShaderNodeTexSky")
+    sky_n.sky_type = "NISHITA"
+    sky_n.sun_disc = False
+    sky_n.air_density, sky_n.dust_density, sky_n.ozone_density = 1.0, 2.5, 1.0
+    sky_n.altitude = 800
+    sky_k = T.value(0.12, "sky_gain")
+    col = T.mix(1.0, sky_n.outputs[0], T.comb(sky_k.outputs[0], sky_k.outputs[0], sky_k.outputs[0]), blend="MULTIPLY")
+    # night gradient underneath (never fully black)
+    vz = T.sep(view)[2]
+    g = T.math("POWER", T.math("MAXIMUM", vz, 0.0), 0.45)
+    night = T.mix(g, (0.010, 0.016, 0.03), (0.0015, 0.0025, 0.006))
+    col = T.mix(1.0, col, night, blend="ADD")
+    res = dict(nodes={})
+    if stars:
+        col = _stars(T, view, col, 0.0, res)
+    # sun disk (keyed direction) + glow
+    sd = T.node("ShaderNodeCombineXYZ")
+    sd.name = sd.label = "sun_dir"
+    vn = T.vmath("NORMALIZE", view)
+    dot = T.vmath("DOT_PRODUCT", vn, sd.outputs[0])
+    ang = T.math("ARCCOSINE", T.math("MINIMUM", dot, 1.0))
+    r = math.radians(0.6)
+    disk = T.math("SUBTRACT", 1.0, T.math("MULTIPLY", T.math("SUBTRACT", ang, r), 1.0 / (r * 0.15)), clamp=True)
+    halo = T.math("ADD", T.math("MULTIPLY", T.math("EXPONENT", T.math("MULTIPLY", ang, -12.0)), 0.6),
+                  T.math("MULTIPLY", T.math("EXPONENT", T.math("MULTIPLY", ang, -3.0)), 0.15))
+    sc_col = T.rgb((1.0, 0.8, 0.5), "sun_color")
+    sk = T.value(1.0, "sun_disk")
+    amt = T.math("MULTIPLY", T.math("ADD", T.math("MULTIPLY", disk, 40.0), halo), sk.outputs[0])
+    col = T.mix(1.0, col, T.mix(1.0, sc_col.outputs[0], T.comb(amt, amt, amt), blend="MULTIPLY"), blend="ADD")
+    if clouds:
+        col = _cloud_layer(T, view, col, coverage=clouds, res=res, sun_dir=(0, 1, 0.2), speed=cloud_speed, evolve=0.6,
+                           height=1800.0)
+    # below horizon -> haze colour
+    hz = T.rgb((0.5, 0.5, 0.5), "horizon")
+    below = T.math("MULTIPLY", T.math("SUBTRACT", 0.01, vz), 60.0, clamp=True)
+    col = T.mix(below, col, hz.outputs[0])
+    bg = T.node("ShaderNodeBackground")
+    T.link(col, bg.inputs[0])
+    T.link(bg.outputs[0], out.inputs["Surface"])
+    sun = C.sun(elevation=30, azimuth=0, energy=sun_max, temp=5000, angle=1.0)
+    sun.data.shadow_maximum_resolution = 0.002
+    moon_o = None
+    if moon:
+        moon_o = C.sun(elevation=35, azimuth=_compass_to_core(110), energy=0.0, color=(0.55, 0.68, 1.0), angle=0.6)
+        moon_o.name = "Moon"
+    nk = res["nodes"].get("stars")
+    N = f1 - f0
+    keys = []
+    for f in range(f0, f1 + 2, step):
+        u = min(1.0, max(0.0, (f - f0) / max(1, N)))
+        if ease:
+            u = 0.5 - 0.5 * math.cos(math.pi * u) * 0.25 + (u - 0.5) * 0.75   # mild ease
+        hour = hour0 + (hour1 - hour0) * u
+        el, az = sun_dir_at(hour)
+        caz = _compass_to_core(az)
+        d = _dir_from_az_el(caz, el)
+        # sky
+        sky_n.sun_elevation = math.radians(el)
+        sky_n.sun_rotation = math.radians((180.0 - az) % 360)
+        sky_n.keyframe_insert("sun_elevation", frame=f)
+        sky_n.keyframe_insert("sun_rotation", frame=f)
+        day = C.smoothstep((el + 6) / 12.0)                  # 0 at -6 deg (civil dusk) .. 1 at +6
+        sky_k.outputs[0].default_value = 0.12 * (0.15 + 0.85 * day) + 0.0
+        sky_k.outputs[0].keyframe_insert("default_value", frame=f)
+        for i in range(3):
+            sd.inputs[i].default_value = d[i]
+            sd.inputs[i].keyframe_insert("default_value", frame=f)
+        temp = 1900 + 3600 * C.smoothstep(el / 35.0)
+        kc = C.kelvin(temp)
+        m = max(kc)
+        sc_col.outputs[0].default_value = (*[c / m for c in kc], 1)
+        sc_col.outputs[0].keyframe_insert("default_value", frame=f)
+        sk.outputs[0].default_value = 1.0 * C.smoothstep((el + 1.0) / 2.0)
+        sk.outputs[0].keyframe_insert("default_value", frame=f)
+        if nk is not None:
+            nk.outputs[0].default_value = 1.6 * (1 - C.smoothstep((el + 9) / 7.0))
+            nk.outputs[0].keyframe_insert("default_value", frame=f)
+        # sun lamp
+        sun.rotation_euler = (-d).to_track_quat("-Z", "Y").to_euler()
+        sun.keyframe_insert("rotation_euler", frame=f)
+        sun.data.energy = sun_max * C.smoothstep((el + 0.5) / 7.0) * (0.55 + 0.45 * C.smoothstep(el / 25.0))
+        sun.data.keyframe_insert("energy", frame=f)
+        sun.data.color = [c / m for c in kc]
+        sun.data.keyframe_insert("color", frame=f)
+        if moon_o:
+            moon_o.data.energy = 0.3 * (1 - C.smoothstep((el + 8) / 8.0))
+            moon_o.data.keyframe_insert("energy", frame=f)
+        # haze + horizon colour follows the sky
+        hzc = [0.55 * day + 0.012, 0.52 * day + 0.016, 0.5 * day * (0.9 + 0.1 * C.smoothstep(el / 20)) + 0.03]
+        warm = (1 - C.smoothstep(el / 12.0)) * day
+        hzc = [hzc[0] * (1 + 0.6 * warm), hzc[1] * (1 + 0.1 * warm), hzc[2] * (1 - 0.35 * warm)]
+        hz.outputs[0].default_value = (*hzc, 1)
+        hz.outputs[0].keyframe_insert("default_value", frame=f)
+        set_haze(color=hzc, density=0.0004, sun_dir=d, sun_color=[hzc[i] * (1 + 2 * warm * kc[i] / m) for i in range(3)],
+                 frame=f)
+        if exposure_night:
+            sc.view_settings.exposure = exposure_night * (1 - day)
+            sc.view_settings.keyframe_insert("exposure", frame=f)
+        keys.append((f, hour, el, az))
+    for idb in (nt, sun, sun.data, haze_group(), sc):
+        _linear_keys(idb)
+    if moon_o:
+        _linear_keys(moon_o.data)
+    res.update(sun=sun, moon=moon_o, keys=keys, sun_dir=_dir_from_az_el(_compass_to_core(sun_dir_at(hour0)[1]),
+                                                                        sun_dir_at(hour0)[0]))
+    st["sun_obj"] = sun
+    st["sky"] = dict(preset=sky_preset("noon"), nodes=res["nodes"], sun=sun)
+    if ctx is not None:
+        ctx.post.setdefault("grade", "neutral")
+    return res
+
+
+def judean_hills(ctx, mood="noon", timelapse=False, hour0=13.0, hour1=21.0, seed=0, terraces=0.6, olives=1.0,
+                 dead_tree_=True, rocks=1.0, grass=1.0, view_az=250.0, sun_az=None, clouds=None):
+    """Rolling Judean limestone hills: terraced slopes, sparse olive trees, rocks, dry grass and a lone
+    dead tree on a rocky knoll near the origin (camera stands south-east of it looking `view_az`, compass,
+    default WSW towards the sunset). timelapse=True animates day -> dusk -> night over the shot
+    (hour0 -> hour1, local solar time) for s02a; otherwise the static sky `mood` is used.
+    Returns anchors: dead_tree, knoll, ground(x, y), ground_z, cams {wide, low, high}, sky/timelapse."""
+    t0 = time.time()
+    rnd = np.random.default_rng(seed)
+    A = dict(mood=mood)
+    if timelapse:
+        A["timelapse"] = timelapse_sky(ctx, hour0=hour0, hour1=hour1, f1=ctx.render_frames if ctx else None,
+                                       clouds=0.35 if clouds is None else clouds)
+    else:
+        p = sky_preset(mood)
+        if clouds is not None:
+            p["clouds"] = clouds
+        if sun_az is not None:
+            p["sun_az"] = sun_az
+        A["sky"] = sky(cfg=p, ctx=ctx)
+    H = _hills_height(seed, terraces)
+    gm = ground_material("EnvHillsGround", style="hills")
+    terr = terrain_grid("JudeanHills", H, center=(0, 20), core=120, cell=0.5, extent=4200, growth=1.07, mat_=gm,
+                        attrs_fn=_hills_attrs(H, terraces))
+    A["terrain"] = terr
+    # lone dead tree on the knoll
+    if dead_tree_:
+        dt = dead_tree(seed=seed + 3, size=1.15)
+        z = ground_z(1.5, 3.0)
+        A["dead_tree"] = place(dt, (1.5, 3.0, z - 0.15), rot=(0, 0, 40))
+        A["dead_tree_pos"] = (1.5, 3.0, z)
+    A["knoll"] = (0.0, 0.0, ground_z(0, 0))
+    boulders = rock_protos("boulders")
+    small = rock_protos("rocks")
+    if rocks:
+        scatter(boulders, count=int(60 * rocks), seed=seed + 1, scale=(0.4, 1.3), align=0.7, sink=-0.35, tilt=8,
+                region=("circle", 0, 0, 45), name="EnvHillBoulders", exclude=[(1.5, 3.0, 1.5)], min_dist=3)
+        scatter(small, count=int(900 * rocks), seed=seed + 2, scale=(0.6, 2.0), align=0.9, sink=-0.3, tilt=12,
+                region=("circle", 0, 0, 60), name="EnvHillRocks")
+        scatter(boulders, count=int(400 * rocks), seed=seed + 3, scale=(0.6, 1.6), align=0.7, sink=-0.35,
+                region=("ring", 0, 0, 45, 400), name="EnvHillBouldersFar", min_dist=6)
+    if grass:
+        gr = grass_protos("dry")
+        scatter(gr, count=int(12000 * grass), seed=seed + 4, scale=(0.5, 1.3), align=0.6, sink=0.02,
+                region=("circle", 0, 0, 70), max_slope=35, name="EnvHillGrass", exclude=[(1.5, 3.0, 0.8)],
+                density=lambda X, Y: 0.3 + 0.7 * (fbm(X * 0.04, Y * 0.04, 2, seed=41) > -0.15))
+        th = [thorn_bush(seed=i, size=0.8 + 0.3 * i) for i in range(3)]
+        scatter(th, count=int(300 * grass), seed=seed + 5, scale=(0.8, 1.6), align=0.3, sink=0.05,
+                region=("circle", 0, 0, 400), max_slope=35, name="EnvHillShrubs", exclude=[(0, 0, 8)])
+    if olives:
+        ol = [olive_tree(seed=10 + i, age=0.5 + 0.35 * i, size=0.9, lod=1) for i in range(3)]
+        # sparse olives, mostly on terraces in the valley / slopes
+        scatter(ol, count=int(160 * olives), seed=seed + 6, scale=(0.75, 1.15), align=0.0, sink=0.1,
+                region=("ring", 0, 0, 35, 650), max_slope=22, name="EnvHillOlives", min_dist=9,
+                density=lambda X, Y: 0.25 + 0.75 * (fbm(X / 150, Y / 150, 2, seed=51) > 0.05))
+    A["fog"] = fog_volume((0, 150, 30), (500, 600, 70), 0.0012, (0.85, 0.82, 0.8), 0.4, height_falloff=0.03,
+                          name="EnvHillAir")
+    _set_volume_range(600)
+    release_bvh()
+    A["ground"] = _scalar(H)
+    A["ground_z"] = ground_z
+    va = math.radians(view_az)
+    fwd = Vector((math.sin(va), math.cos(va), 0))
+    kz = A["knoll"][2]
+    eye = Vector((1.5, 3.0, 0)) - fwd * 9.0 + Vector((fwd.y, -fwd.x, 0)) * 2.0
+    eye.z = ground_z(eye.x, eye.y) + 1.4
+    tgt = Vector((1.5, 3.0, 0)) + fwd * 120
+    tgt.z = kz + 6.0
+    A["cams"] = {"wide": dict(loc=tuple(eye), target=tuple(tgt), lens=24),
+                 "low": dict(loc=tuple(eye + Vector((0, 0, -1.1))), target=tuple(Vector((1.5, 3.0, kz + 2.5))), lens=20),
+                 "high": dict(loc=tuple(Vector((1.5, 3.0, 0)) - fwd * 40 + Vector((0, 0, kz + 25))),
+                              target=tuple(Vector((1.5, 3.0, kz)) + fwd * 200), lens=28)}
+    A["build_time"] = time.time() - t0
     return A

@@ -1139,7 +1139,8 @@ def oil_lamp(loc=(0, 0, 0), rot_z=0.0, scale=1.0, light=True, energy=12.0, temp=
     return body, fl, lo
 
 
-def lamp_field(points, b=None, name="lamp_field", scale=1.0, flame_strength=16.0, yaw_random=True, seed=0):
+def lamp_field(points, b=None, name="lamp_field", scale=1.0, flame_strength=16.0, yaw_random=True, seed=0,
+               cluster_lights=0.0, cluster_size=3.0, light_per_lamp=2.0, temp=2000):
     """Hundreds of instanced (geometry-nodes) clay lamps with flickering emissive flames and NO
     lights (cheap). points = list of (x, y, z) or (x, y, z, yaw_deg) in the parent's local space.
     Returns the carrier object. Light the area with a few area/point lights to fake their glow."""
@@ -1207,6 +1208,27 @@ def lamp_field(points, b=None, name="lamp_field", scale=1.0, flame_strength=16.0
     ng.links.new(inst.outputs[0], go.inputs[0])
     mod = o.modifiers.new("lamps", "NODES")
     mod.node_group = ng
+    if cluster_lights:
+        # cheap shadowless point lights, one per cluster of lamps, so the lamps pool warm light
+        cells = {}
+        for p in points:
+            k = (int(math.floor(p[0] / cluster_size)), int(math.floor(p[1] / cluster_size)),
+                 int(math.floor(p[2] / 1.5)))
+            cells.setdefault(k, []).append(p)
+        lights = []
+        for k, ps in cells.items():
+            c = Vector((sum(q[0] for q in ps), sum(q[1] for q in ps), sum(q[2] for q in ps))) / len(ps)
+            ld = bpy.data.lights.new("%s_glow" % name, "POINT")
+            ld.energy = light_per_lamp * len(ps) * cluster_lights
+            ld.color = C.kelvin(temp)
+            ld.shadow_soft_size = min(1.0, cluster_size * 0.3)
+            ld.use_shadow = False
+            ld.volume_factor = 0.4
+            lo = bpy.data.objects.new("%s_glow" % name, ld)
+            (b.add(lo) if b else bpy.context.scene.collection.objects.link(lo))
+            lo.location = c + Vector((0, 0, 0.18))
+            lights.append(lo)
+        o["cluster_lights"] = len(lights)
     return o
 
 
@@ -1751,16 +1773,16 @@ def _folded_cloth(name, size, b, mat, layers=4, seed=0):
 
 def _grass_tufts(carrier, density=60, seed=0, height=0.25, color=(0.22, 0.25, 0.1), dry=0.5):
     """Sparse grass/weed tufts scattered on `carrier` (GN instances of a blade fan)."""
-    name = "grass_tuft_src"
+    name = "grass_tuft_src2"
     src = bpy.data.objects.get(name)
     if src is None:
         verts, faces = [], []
         rnd = random.Random(3)
-        for k in range(9):
+        for k in range(18):
             a = rnd.uniform(0, TAU)
-            lean = rnd.uniform(0.15, 0.6)
+            lean = rnd.uniform(0.15, 0.7)
             hgt = rnd.uniform(0.6, 1.0)
-            w = 0.012
+            w = 0.006
             base = len(verts)
             dx, dy = math.cos(a), math.sin(a)
             px, py = -dy, dx
@@ -1833,8 +1855,8 @@ def _grass_mat(color, dry):
     return m
 
 
-def garden_tomb(ctx, loc=(0, 0, 0), rot_z=0.0, coll=None, stone_open=0.0, world=True, sun=True, sun_elevation=8.0,
-                sun_azimuth=-40.0, fog=True, interior_fill=1.0, garden=True, dust_motes=True, seed=11, roll_dist=2.25):
+def garden_tomb(ctx, loc=(0, 0, 0), rot_z=0.0, coll=None, stone_open=0.0, world=True, sun=True, sun_elevation=4.5,
+                sun_azimuth=-32.0, fog=True, interior_fill=1.0, garden=True, dust_motes=True, seed=11, roll_dist=2.25):
     """Rock-cut garden tomb at dawn (s15). Local layout (metres, ground z=0, face at y~0 facing -Y):
         limestone cliff 16 m wide x ~5.5 m high with a dressed facade; low doorway (0.95 x 1.4 m)
         at x=0; round rolling stone (r=1.0 m, 0.32 m thick) in a carved groove in front of the face,
@@ -1861,8 +1883,8 @@ def garden_tomb(ctx, loc=(0, 0, 0), rot_z=0.0, coll=None, stone_open=0.0, world=
     stone_m = _cached(("tomb_stone",), lambda: _add_chisel(C.mat_pbr(
         "rock_boulder_dry", scale=0.9, tint=(0.93, 0.9, 0.84), name="set_tomb_stone", bump=1.3,
         hue_sat_val=(0.5, 0.55, 1.05)), 0.25, 5.0))
-    ground_m = _pbr("rocky_trail_02", scale=0.45, tint=(0.8, 0.76, 0.68), name="set_tomb_ground",
-                    hsv=(0.5, 0.65, 1.0))
+    ground_m = _pbr("rocky_trail_02", scale=0.45, tint=(0.95, 0.9, 0.82), name="set_tomb_ground",
+                    hsv=(0.5, 0.55, 1.15))
     DW, DH, PASS = 0.95, 1.4, 0.55          # door width, height, passage depth
     R, TH = 1.0, 0.32                         # stone radius, thickness
     GY = -0.27                                # stone centre-plane y
@@ -1887,8 +1909,10 @@ def garden_tomb(ctx, loc=(0, 0, 0), rot_z=0.0, coll=None, stone_open=0.0, world=
         dressed = max(0.0, 1.0 - max(abs(x) / 1.9, abs(z - 1.1) / 1.8))    # flat chiselled facade
         rough = 1.0 - min(1.0, dressed * 2.5)
         q = p * 0.3 + so
-        d = 0.95 * C.fbm(q.x, q.z + q.y * 0.5, 5, seed=so.z) + 0.18 * noise.noise(p * 1.1 + so)
-        d += 0.35 * abs(noise.noise(Vector((x * 0.9, z * 0.18, 4.0)) + so))      # vertical fractures
+        d = 1.5 * C.fbm(q.x, q.z + q.y * 0.5, 5, seed=so.z) + 0.25 * noise.noise(p * 1.1 + so)
+        d += 0.45 * abs(noise.noise(Vector((x * 0.8, z * 0.15, 4.0)) + so))      # vertical fractures
+        zz = z + 0.4 * noise.noise(Vector((x * 0.3, 2.0, 1.0)) + so)
+        d += 0.35 * (zz / 1.6 - math.floor(zz / 1.6)) ** 3                        # stepped ledges
         d += 0.05 * math.sin(z * 3.1 + 2.5 * noise.noise(p * 0.4 + so))     # bedding
         d += 0.03 * noise.noise(p * 4 + so)
         plan = 0.9 * C.fbm(x * 0.12 + 7, 0.5, 3, seed=so.x)                # face undulates in plan
@@ -1989,8 +2013,8 @@ def garden_tomb(ctx, loc=(0, 0, 0), rot_z=0.0, coll=None, stone_open=0.0, world=
     gr = C.box("groove_floor", (gx1 - gx0, 0.5, 0.05), ((gx0 + gx1) / 2, GY, -GROOVE - 0.025), (0, 0, 0), cut_m, 0.0,
                b.coll)
     b.add(gr)
-    lip = _rock_block("groove_lip", (gx1 - gx0 + 0.5, 0.35, 0.3), ((gx0 + gx1) / 2, GY - 0.43, 0.02), b, cut_m,
-                      noise_amp=0.015, cuts=8, seed=5, bevel=0.03)
+    lip = _rock_block("groove_lip", (gx1 - gx0 + 0.5, 0.5, 0.24), ((gx0 + gx1) / 2, GY - 0.5, -0.03), b, face_m,
+                      noise_amp=0.03, cuts=10, seed=5, bevel=0.05)
     stop = _rock_block("groove_stop", (0.35, 0.6, 0.45), (gx1 + 0.12, GY, 0.1), b, cut_m, noise_amp=0.02, seed=6,
                        bevel=0.04)
     bm = bmesh.new()
@@ -2023,7 +2047,7 @@ def garden_tomb(ctx, loc=(0, 0, 0), rot_z=0.0, coll=None, stone_open=0.0, world=
     gnd = _grid_obj("tomb_ground", 120, 70, gfn, b, ground_m)
     b.info.objects["ground"] = gnd
     if garden:
-        _grass_tufts(gnd, density=9.0, seed=seed, height=0.3)
+        _grass_tufts(gnd, density=26.0, seed=seed, height=0.32)
         for k in range(9):
             side = -1 if k % 2 else 1
             x = side * rnd.uniform(2.8, 8.5)
@@ -2032,12 +2056,15 @@ def garden_tomb(ctx, loc=(0, 0, 0), rot_z=0.0, coll=None, stone_open=0.0, world=
                      (x, y, -0.1), b, face_m, seed=50 + k, rot_z=rnd.uniform(0, 360))
     # ---------- light ----------
     if sun:
-        s_ = C.sun(elevation=sun_elevation, azimuth=sun_azimuth, energy=5.0, temp=3000, angle=1.0)
+        s_ = C.sun(elevation=sun_elevation, azimuth=sun_azimuth, energy=6.0, temp=2900, angle=1.0)
         b.add(s_)
         b.info.lights["sun"] = s_
     cf = b.light("chamber_fill", "AREA", (0.0, PASS + 0.4, 1.6), 12.0 * interior_fill, temp=3400, target=(1.0, 2.6, 0.0),
                  size=1.2, shadow=False)
     cf.data.volume_factor = 0.0
+    # sky fill as a big SHADOWED area light (world lighting is kept tiny so it can't leak into the chamber)
+    skf = b.light("sky_fill", "AREA", (2.0, -9.0, 8.0), 1400.0, temp=8500, target=(0, 0, 1.0), size=12.0, shadow=True)
+    skf.data.volume_factor = 0.0
     if fog:
         f1 = C.fog_box(center=(0.1, (CY0 + CY1) / 2 - 0.25, 0.75), size=(CX1 - CX0 + 0.2, CY1 - CY0 + 0.9, 2.2),
                        density=0.05, color=(0.95, 0.9, 0.85), anisotropy=0.5, noise_scale=2.0, name="tomb_dust",
@@ -2050,8 +2077,8 @@ def garden_tomb(ctx, loc=(0, 0, 0), rot_z=0.0, coll=None, stone_open=0.0, world=
         dust(center=(0.2, PASS + 1.2, 0.8), size=(1.6, 2.6, 1.5), count=450, radius=0.0025, seed=seed, b=b,
              name="tomb_dust_motes")
     if world:
-        sky_world(sun_elevation=sun_elevation, sun_rotation=180 + sun_azimuth, strength=0.3, light_strength=0.3,
-                  air=1.6, dust=3.0, ozone=1.2)
+        sky_world(sun_elevation=sun_elevation - 1.0, sun_rotation=180 + sun_azimuth, strength=0.32, light_strength=0.03,
+                  air=1.6, dust=3.0, ozone=1.2, tint=(1.0, 0.8, 0.64))
     # ---------- animation ----------
     if isinstance(stone_open, (list, tuple)):
         animate_tomb_stone(b.info, stone_open, _local=True)
@@ -3187,128 +3214,155 @@ def _column(name, b, mat, loc, height=5.5, radius=0.32):
     return o
 
 
-def courtyard_assembly(ctx, loc=(0, 0, 0), rot_z=0.0, coll=None, lamps=420, world=True, crowd_rows=14, crowd_cols=18,
-                       glow=1.0, haze=True, seed=21, columns=True, sun_elevation=-2.5, sun_azimuth=200.0):
+def _lampstand(name, b, mat, loc, height=1.45):
+    """Bronze lampstand (lathe) with a wide oil bowl on top. Returns (obj, flame_base_world_local)."""
+    prof = [(0.0, 0.0), (0.16, 0.0), (0.17, 0.03), (0.1, 0.06), (0.06, 0.1), (0.03, 0.2), (0.022, height - 0.12),
+            (0.04, height - 0.1), (0.03, height - 0.07), (0.11, height - 0.02), (0.12, height), (0.1, height),
+            (0.0, height - 0.03)]
+    o = _lathe(prof, 20, name, b, mat)
+    o.location = loc
+    return o, Vector(loc) + Vector((0, 0, height + 0.01))
+
+
+def courtyard_assembly(ctx, loc=(0, 0, 0), rot_z=0.0, coll=None, lamps=480, world=True, crowd_rows=14, crowd_cols=14,
+                       glow=1.0, haze=True, seed=21, columns=True, sun_elevation=-3.0, sun_azimuth=200.0, stands=8):
     """Stone courtyard at dusk with hundreds of small oil-lamp flames (s17a). Local layout:
-        flagstone court x -13..13, y -8..24; portico of columns on a stepped platform at the back
-        (y ~ 19..23); ashlar side walls with a parapet; lamps (instanced, emissive, flickering, no
-        lights) line the steps, parapets, wall niches and the crowd perimeter. The crowd area is
-        x -7.5..7.5, y 0..14 (people stand facing +Y towards the portico).
-    Anchors: crowd_center, portico (top of the steps centre), steps_front, leader (spot on the
-    steps facing the crowd). extra['crowd_spots'] = [(Vector world, yaw_deg), ...] jittered grid
-    (crowd_rows x crowd_cols); extra['lamp_points'] = list of world lamp positions;
-    extra['add_lamps'](points) adds more instanced lamps (points in set-local coords).
+        flagstone court x -9..9, y -6..22 framed by roofed colonnades (x = +-7.3) and ashlar walls
+        (x = +-9); a six-step platform with a columned portico at the back (y ~ 17..22); lamps
+        (instanced, emissive, flickering) line the steps, colonnade stylobates and wall niches and
+        are scattered on the ground among the crowd; shadowless cluster lights make them pool warm
+        light; bronze lampstands (real flickering lights) flank the central aisle.
+        The crowd area is x -5.5..5.5, y 0..13.5 (people face +Y towards the portico).
+    Anchors: crowd_center, portico (top of the steps centre), steps_front, leader (on the steps
+    facing the crowd). extra['crowd_spots'] = [(Vector world, yaw_deg), ...] jittered grid;
+    extra['lamp_points'] = world lamp positions; extra['add_lamps'](points_local) adds lamps.
     Cameras: wide, glide_start, glide_end, faces, lamps_close. extra['glide'] = waypoints.
-    Lights: sky (dusk), wall_glow_L/R/B (warm areas), crowd_glow (upward warm area at hand height),
-    crowd_key (warm front), moon (cool rim).
+    Lights: stand0..N (flickering points), crowd_glow (upward warm area at hand height), crowd_key,
+    wall_glow_L/R, moon; plus the lamp cluster lights (objects named court_lamps_glow*).
     """
     b = _B("CourtyardAssembly", loc, rot_z, coll, seed)
     rnd = b.rnd
-    floor_m = _pbr("stone_floor", scale=0.35, tint=(0.82, 0.76, 0.68), name="set_court_floor", hsv=(0.5, 0.75, 1.0))
+    floor_m = _pbr("sandstone_blocks_08", scale=0.22, tint=(0.82, 0.76, 0.68), name="set_court_floor",
+                   hsv=(0.5, 0.75, 0.95), rough_add=0.05)
     wall_m = _pbr("sandstone_blocks_08", scale=0.45, tint=(0.9, 0.82, 0.7), name="set_court_wall", hsv=(0.5, 0.8, 1.0))
     col_m = _pbr("worn_rock_natural_01", scale=1.2, tint=(0.95, 0.9, 0.82), name="set_court_column",
                  hsv=(0.5, 0.6, 1.1))
-    X0, X1, Y0, Y1 = -13.0, 13.0, -8.0, 24.0
-    fl = _mesh_obj("court_floor", [(X0, Y0, 0), (X1, Y0, 0), (X1, Y1, 0), (X0, Y1, 0)], [(0, 1, 2, 3)], b, False,
-                   floor_m)
+    bronze = _cached(("bronze",), lambda: C.mat("set_bronze", (0.55, 0.36, 0.18), rough=0.35, metal=1.0))
+    X0, X1, Y0, Y1 = -9.0, 9.0, -6.0, 22.0
+    CX = 7.3                                  # colonnade line
+    _mesh_obj("court_floor", [(X0, Y0, 0), (X1, Y0, 0), (X1, Y1, 0), (X0, Y1, 0)], [(0, 1, 2, 3)], b, False, floor_m)
     lamp_pts = []
-    # side walls with parapet + niches
+    sy0 = 15.6                                # first step
+    steps = 6
     for sx in (-1, 1):
-        w = C.box("court_wall", (1.0, Y1 - Y0, 4.2), (sx * (X1 + 0.5), (Y0 + Y1) / 2, 2.1), mat_=wall_m, bevel=0.02,
+        w = C.box("court_wall", (1.0, Y1 - Y0, 6.5), (sx * (X1 + 0.5), (Y0 + Y1) / 2, 3.25), mat_=wall_m, bevel=0.02,
                   coll=b.coll)
         b.add(w)
-        cp = C.box("court_coping", (1.2, Y1 - Y0, 0.18), (sx * (X1 + 0.5), (Y0 + Y1) / 2, 4.29), mat_=wall_m, bevel=0.03,
-                   coll=b.coll)
-        b.add(cp)
-        bench = C.box("court_bench", (0.6, Y1 - Y0 - 4, 0.45), (sx * (X1 - 0.3), (Y0 + Y1) / 2 - 1, 0.225), mat_=wall_m,
-                      bevel=0.02, coll=b.coll)
-        b.add(bench)
-        for k in range(int((Y1 - Y0 - 4) / 0.55)):
-            y = Y0 + 1.0 + k * 0.55 + rnd.uniform(-0.08, 0.08)
-            lamp_pts.append((sx * (X1 - 0.3 + rnd.uniform(-0.12, 0.12)), y, 0.45, 90 * -sx + rnd.uniform(-30, 30)))
-        for k in range(int((Y1 - Y0) / 2.2)):
-            y = Y0 + 1.1 + k * 2.2
-            nz = 1.7
-            n = C.box("court_niche", (0.3, 0.6, 0.7), (sx * X1 + sx * 0.12, y, nz + 0.35),
+        sty = C.box("court_stylobate", (X1 - CX + 0.6, sy0 - Y0, 0.3), (sx * (CX + (X1 - CX) / 2 - 0.3), (Y0 + sy0) / 2, 0.15),
+                    mat_=wall_m, bevel=0.02, coll=b.coll)
+        b.add(sty)
+        if columns:
+            for k in range(7):
+                y = Y0 + 1.2 + k * 2.75
+                _column("court_scol", b, col_m, (sx * CX, y, 0.3), height=4.6, radius=0.26)
+            rf = C.box("court_stoa_roof", (X1 - CX + 1.0, sy0 - Y0, 0.55), (sx * (CX + (X1 - CX) / 2 - 0.5), (Y0 + sy0) / 2,
+                       4.9 + 0.3 + 0.27), mat_=col_m, bevel=0.03, coll=b.coll)
+            b.add(rf)
+        for k in range(int((sy0 - Y0 - 1) / 0.42)):
+            y = Y0 + 0.8 + k * 0.42 + rnd.uniform(-0.06, 0.06)
+            lamp_pts.append((sx * (CX - 0.45 + rnd.uniform(-0.05, 0.05)), y, 0.3, 90 * -sx + rnd.uniform(-40, 40)))
+        for k in range(int((Y1 - Y0 - 2) / 2.2)):
+            y = Y0 + 1.6 + k * 2.2
+            n = C.box("court_niche", (0.3, 0.55, 0.65), (sx * X1 + sx * 0.12, y, 2.0),
                       mat_=_mat_simple("set_niche_dark", (0.08, 0.06, 0.05), rough=0.9), coll=b.coll)
             b.add(n)
-            lamp_pts.append((sx * (X1 - 0.05), y, nz, 90 * -sx))
-    # front wall (behind the camera side) low
-    fw = C.box("court_front", (X1 - X0 + 2, 1.0, 3.0), (0, Y0 - 0.5, 1.5), mat_=wall_m, bevel=0.02, coll=b.coll)
+            lamp_pts.append((sx * (X1 - 0.02), y, 1.68, 90 * -sx))
+    fw = C.box("court_front", (X1 - X0 + 2, 1.0, 4.0), (0, Y0 - 0.5, 2.0), mat_=wall_m, bevel=0.02, coll=b.coll)
     b.add(fw)
-    # stepped platform + portico at the back
-    steps = 6
-    sy0 = 17.5
+    # stepped platform + portico
     for k in range(steps):
-        st = C.box("court_step", (X1 - X0, 0.42 * (steps - k), 0.18), (0, sy0 + 0.21 * (steps + k) + 0.0, 0.09 + 0.18 * k),
-                   mat_=wall_m, bevel=0.015, coll=b.coll)
+        st = C.box("court_step", (X1 - X0, 0.42 * (steps - k) + 0.1, 0.18), (0, sy0 + 0.21 * (steps + k) + 0.05,
+                   0.09 + 0.18 * k), mat_=wall_m, bevel=0.015, coll=b.coll)
         b.add(st)
-        nl = int((X1 - X0 - 2) / 0.45)
+        nl = int((X1 - X0 - 1) / 0.36)
         for i in range(nl):
-            if rnd.random() < 0.82:
-                x = X0 + 1 + i * 0.45 + rnd.uniform(-0.1, 0.1)
-                lamp_pts.append((x, sy0 + 0.42 * k + 0.15 + rnd.uniform(-0.05, 0.05), 0.18 * (k + 1), 90 + rnd.uniform(-40, 40)))
+            if rnd.random() < 0.85:
+                x = X0 + 0.5 + i * 0.36 + rnd.uniform(-0.07, 0.07)
+                lamp_pts.append((x, sy0 + 0.42 * k + 0.14 + rnd.uniform(-0.04, 0.04), 0.18 * (k + 1), 90 + rnd.uniform(-40, 40)))
     plat_z = 0.18 * steps
-    plat = C.box("court_platform", (X1 - X0, Y1 - (sy0 + 0.42 * steps), plat_z), (0, (Y1 + sy0 + 0.42 * steps) / 2,
-                 plat_z / 2), mat_=wall_m, coll=b.coll)
+    pd0 = sy0 + 0.42 * steps
+    plat = C.box("court_platform", (X1 - X0, Y1 - pd0, plat_z), (0, (Y1 + pd0) / 2, plat_z / 2), mat_=wall_m, coll=b.coll)
     b.add(plat)
-    back = C.box("court_back", (X1 - X0 + 2, 1.0, 9.0), (0, Y1 + 0.5, 4.5), mat_=wall_m, bevel=0.02, coll=b.coll)
+    back = C.box("court_back", (X1 - X0 + 2, 1.0, 10.0), (0, Y1 + 0.5, 5.0), mat_=wall_m, bevel=0.02, coll=b.coll)
     b.add(back)
+    door = C.box("court_gate", (2.6, 0.2, 4.2), (0, Y1 - 0.02, plat_z + 2.1),
+                 mat_=_mat_simple("set_gate_dark", (0.05, 0.035, 0.025), rough=0.8), coll=b.coll)
+    b.add(door)
     if columns:
-        cy = sy0 + 0.42 * steps + 1.0
-        for i in range(9):
-            x = -10.4 + i * 2.6
-            _column("court_col", b, col_m, (x, cy, plat_z), height=6.0)
-            lamp_pts.append((x + 0.55, cy - 0.5, plat_z, 90))
-            lamp_pts.append((x - 0.55, cy - 0.5, plat_z, 90))
-        ent = C.box("court_entablature", (X1 - X0, 1.6, 1.0), (0, cy, plat_z + 6.5), mat_=col_m, bevel=0.03, coll=b.coll)
+        cy = pd0 + 1.1
+        for i in range(7):
+            x = -7.8 + i * 2.6
+            _column("court_col", b, col_m, (x, cy, plat_z), height=6.2)
+            lamp_pts.append((x + 0.5, cy - 0.55, plat_z, 90))
+            lamp_pts.append((x - 0.5, cy - 0.55, plat_z, 90))
+        ent = C.box("court_entablature", (X1 - X0, 1.6, 1.0), (0, cy, plat_z + 6.7), mat_=col_m, bevel=0.03, coll=b.coll)
         b.add(ent)
-        roof = C.box("court_roof", (X1 - X0, Y1 - cy + 1, 0.4), (0, (cy + Y1) / 2, plat_z + 7.2), mat_=wall_m,
-                     coll=b.coll)
+        roof = C.box("court_roof", (X1 - X0, Y1 - cy + 1, 0.4), (0, (cy + Y1) / 2, plat_z + 7.4), mat_=wall_m, coll=b.coll)
         b.add(roof)
-    # perimeter lamps around the crowd area + scattered clusters
-    for k in range(70):
-        a = TAU * k / 70
-        x, y = 8.6 * math.cos(a), 7.0 + 8.4 * math.sin(a)
-        if Y0 + 1 < y < sy0 - 0.3:
-            lamp_pts.append((x + rnd.uniform(-0.2, 0.2), y + rnd.uniform(-0.2, 0.2), 0.0, rnd.uniform(0, 360)))
-    while len(lamp_pts) < lamps:
-        x, y = rnd.uniform(X0 + 1.5, X1 - 1.5), rnd.uniform(Y0 + 1, sy0 - 0.5)
-        if abs(x) > 8.0 or y < -1.0:
-            lamp_pts.append((x, y, 0.0, rnd.uniform(0, 360)))
-    lf = lamp_field(lamp_pts[:max(lamps, 1)] if lamps else [], b=b, name="court_lamps", seed=seed, flame_strength=22.0)
-    b.info.objects["lamps"] = lf
-    b.info.extra["lamp_points"] = [b.w(p[:3]) for p in lamp_pts]
-
-    def add_lamps(points, name="court_lamps_extra"):
-        return lamp_field(points, b=None, name=name, seed=seed + 1)
-    b.info.extra["add_lamps"] = add_lamps
-    # crowd spots
+    # crowd spots + lamps on the ground among them
     spots = []
     for r in range(crowd_rows):
         for c_ in range(crowd_cols):
-            x = -7.0 + 14.0 * c_ / max(1, crowd_cols - 1) + rnd.uniform(-0.22, 0.22)
-            y = 0.5 + 13.0 * r / max(1, crowd_rows - 1) + rnd.uniform(-0.22, 0.22)
-            spots.append((b.w((x, y, 0.0)), (rnd.uniform(-12, 12) + math.degrees(b.rot_z)) % 360))
-    b.info.extra["crowd_spots"] = spots
+            x = -5.5 + 11.0 * c_ / max(1, crowd_cols - 1) + rnd.uniform(-0.2, 0.2)
+            y = 0.3 + 13.2 * r / max(1, crowd_rows - 1) + rnd.uniform(-0.2, 0.2)
+            if abs(x) < 0.6:          # central aisle
+                x += 0.9 * (1 if x >= 0 else -1)
+            spots.append(((x, y, 0.0), rnd.uniform(-12, 12)))
+    b.info.extra["crowd_spots"] = [(b.w(p), (yw + math.degrees(b.rot_z)) % 360) for p, yw in spots]
+    for (x, y, _), _yw in spots:
+        if rnd.random() < 0.55:
+            lamp_pts.append((x + rnd.uniform(-0.45, 0.45), y + rnd.uniform(0.3, 0.45), 0.0, rnd.uniform(0, 360)))
+    for k in range(int(13.5 / 0.5)):                          # aisle borders
+        for sx in (-1, 1):
+            lamp_pts.append((sx * 0.55, 0.3 + k * 0.5, 0.0, 90))
+    lamp_pts = lamp_pts[:lamps] if lamps else []
+    lf = lamp_field(lamp_pts, b=b, name="court_lamps", seed=seed, flame_strength=24.0, scale=1.5,
+                    cluster_lights=glow, cluster_size=3.0, light_per_lamp=2.2)
+    b.info.objects["lamps"] = lf
+    b.info.extra["lamp_points"] = [b.w(p[:3]) for p in lamp_pts]
+    b.info.extra["add_lamps"] = lambda points, name="court_lamps_extra": lamp_field(points, b=b, name=name, seed=seed + 1,
+                                                                                   scale=1.5, cluster_lights=glow)
+    # bronze lampstands flanking the aisle
+    for k in range(stands):
+        sx = -1 if k % 2 else 1
+        y = 1.0 + (k // 2) * 4.0
+        _, top = _lampstand("lampstand%d" % k, b, bronze, (sx * 1.3, y, 0.0))
+        fm = _flame_material(strength=22.0)
+        fl = bpy.data.objects.new("lampstand_flame%d" % k, _flame_mesh())
+        if not fl.data.materials:
+            fl.data.materials.append(fm)
+        b.add(fl)
+        fl.location = top
+        fl.scale = (3.0, 3.0, 3.2)
+        fl.visible_shadow = False
+        lo = b.light("stand%d" % k, "POINT", tuple(top + Vector((0, 0, 0.08))), 90.0 * glow, temp=1900, size=0.05)
+        flicker_light(lo, 90.0 * glow, amount=0.2, seed=k + 7)
     # ---------- lighting ----------
     g = glow
-    for key, lpos, tgt, size, e in (("wall_glow_L", (X0 + 2.0, 6, 0.6), (X0 - 1, 6, 2.5), (3.0, Y1 - Y0 - 6), 300),
-                                     ("wall_glow_R", (X1 - 2.0, 6, 0.6), (X1 + 1, 6, 2.5), (3.0, Y1 - Y0 - 6), 300),
-                                     ("wall_glow_B", (0, sy0 - 1.2, 0.3), (0, Y1, 3.5), (X1 - X0 - 2, 2.0), 450)):
-        lo = b.light(key, "AREA", lpos, e * g, temp=2000, target=tgt, size=1.0, shadow=False)
+    for key, lpos, tgt in (("wall_glow_L", (X0 + 1.2, 6, 0.4), (X0 - 1, 6, 3.0)), ("wall_glow_R", (X1 - 1.2, 6, 0.4), (X1 + 1, 6, 3.0))):
+        lo = b.light(key, "AREA", lpos, 250 * g, temp=2000, target=tgt, size=1.0, shadow=False)
         lo.data.shape = "RECTANGLE"
-        lo.data.size, lo.data.size_y = size
+        lo.data.size, lo.data.size_y = 2.0, Y1 - Y0 - 4
         lo.data.volume_factor = 0.0
-    cg = b.light("crowd_glow", "AREA", (0, 7.0, 1.0), 900.0 * g, temp=2100, target=(0, 7.0, 3.0), size=1.0, shadow=False)
+    cg = b.light("crowd_glow", "AREA", (0, 7.0, 0.9), 500.0 * g, temp=2100, target=(0, 7.0, 3.0), size=1.0, shadow=False)
     cg.data.shape = "RECTANGLE"
-    cg.data.size, cg.data.size_y = 15.0, 14.0
+    cg.data.size, cg.data.size_y = 12.0, 14.0
     cg.data.volume_factor = 0.0
-    ck = b.light("crowd_key", "AREA", (0, 17.0, 2.0), 700.0 * g, temp=2200, target=(0, 6.0, 1.5), size=1.0, shadow=False)
+    ck = b.light("crowd_key", "AREA", (0, sy0 - 0.5, 2.2), 450.0 * g, temp=2200, target=(0, 6.0, 1.5), size=1.0, shadow=False)
     ck.data.shape = "RECTANGLE"
-    ck.data.size, ck.data.size_y = 18.0, 2.0
-    ck.data.volume_factor = 0.3
-    mn = C.sun(elevation=25, azimuth=150, energy=0.12, temp=9000, angle=1.0)
+    ck.data.size, ck.data.size_y = 14.0, 2.0
+    ck.data.volume_factor = 0.2
+    mn = C.sun(elevation=25, azimuth=150, energy=0.15, temp=9000, angle=1.0)
     b.add(mn)
     b.info.lights["moon"] = mn
     if haze:
@@ -3316,20 +3370,20 @@ def courtyard_assembly(ctx, loc=(0, 0, 0), rot_z=0.0, coll=None, lamps=420, worl
                        anisotropy=0.4, noise_scale=0.3, name="court_haze", coll=b.coll)
         b.add(hz)
     if world:
-        sky_world(sun_elevation=sun_elevation, sun_rotation=sun_azimuth, strength=1.6, light_strength=0.6, air=1.0,
+        sky_world(sun_elevation=sun_elevation, sun_rotation=sun_azimuth, strength=1.0, light_strength=0.5, air=1.0,
                   dust=1.5, ozone=2.5)
     # ---------- anchors / cameras ----------
     b.anchor("crowd_center", (0, 7.0, 0), yaw=0)
-    b.anchor("portico", (0, sy0 + 0.42 * steps + 0.4, plat_z), yaw=180)
+    b.anchor("portico", (0, pd0 + 0.4, plat_z), yaw=180)
     b.anchor("steps_front", (0, sy0 - 0.2, 0))
     b.anchor("leader", (0, sy0 + 0.42 * 3 + 0.2, 0.18 * 3), yaw=180)
-    b.cam("wide", (0.0, -6.5, 5.5), (0, 12.0, 1.5), 26)
-    b.cam("glide_start", (0.0, -4.0, 4.2), (0, 9.0, 1.4), 28)
-    b.cam("glide_end", (0.0, 9.0, 3.4), (0, 20.0, 2.0), 28)
-    b.cam("faces", (1.2, 15.8, 1.75), (0.4, 9.0, 1.55), 45)
-    b.cam("lamps_close", (-3.0, sy0 - 1.6, 0.6), (0.5, sy0 + 0.6, 0.5), 50)
-    b.info.extra["glide"] = [(b.w(l), b.w(t)) for l, t in (((0, -4.0, 4.2), (0, 9.0, 1.4)), ((0, 3.0, 3.8), (0, 13.0, 1.6)),
-                                                            ((0, 9.0, 3.4), (0, 20.0, 2.0)))]
+    b.cam("wide", (0.0, -5.0, 4.6), (0, 11.0, 1.4), 24)
+    b.cam("glide_start", (0.0, -3.5, 3.6), (0, 9.0, 1.3), 26)
+    b.cam("glide_end", (0.0, 9.5, 3.0), (0, 19.0, 2.0), 26)
+    b.cam("faces", (0.9, 14.6, 1.7), (0.3, 8.0, 1.5), 40)
+    b.cam("lamps_close", (-2.6, sy0 - 1.4, 0.55), (0.5, sy0 + 0.6, 0.5), 50)
+    b.info.extra["glide"] = [(b.w(l), b.w(t)) for l, t in (((0, -3.5, 3.6), (0, 9.0, 1.3)), ((0, 3.0, 3.3), (0, 13.0, 1.5)),
+                                                            ((0, 9.5, 3.0), (0, 19.0, 2.0)))]
     return b.finish()
 
 
@@ -3447,7 +3501,7 @@ def table_interior(ctx, loc=(0, 0, 0), rot_z=0.0, coll=None, world=True, use_ass
     b.add(win)
     winglass = _mesh_obj("window_sky", [(-1.6, RY1 - 0.26, 1.38), (-1.0, RY1 - 0.26, 1.38), (-1.0, RY1 - 0.26, 1.92),
                                         (-1.6, RY1 - 0.26, 1.92)], [(0, 1, 2, 3)], b, False,
-                         C.mat_emission("set_window_night", (0.05, 0.08, 0.18), 1.0))
+                         C.mat_emission("set_window_night", (0.03, 0.05, 0.12), 0.35))
     # niche with lamp (right wall)
     niche = C.box("niche", (0.25, 0.5, 0.45), (RX1 - 0.1, 0.9, 1.5), mat_=_mat_simple("set_niche", (0.1, 0.075, 0.06),
                                                                                          rough=0.9), coll=b.coll)
@@ -3529,17 +3583,20 @@ def table_interior(ctx, loc=(0, 0, 0), rot_z=0.0, coll=None, world=True, use_ass
         cb.data.materials.append(crm)
         b.add(cb)
     # lamps
-    lt = oil_lamp((-0.32, -0.16, TZ), rot_z=20, energy=40.0 * lamp_energy, seed=3, b=b, name="lamp_table")
+    lt = oil_lamp((-0.42, -0.2, TZ), rot_z=20, energy=22.0 * lamp_energy, seed=3, b=b, name="lamp_table")
     b.info.lights["lamp_table"] = lt[2]
     if lamps >= 2:
-        lt2 = oil_lamp((0.75, -0.12, TZ), rot_z=160, energy=30.0 * lamp_energy, seed=4, b=b, name="lamp_table2")
+        lt2 = oil_lamp((0.78, -0.14, TZ), rot_z=160, energy=20.0 * lamp_energy, seed=4, b=b, name="lamp_table2")
         b.info.lights["lamp_table2"] = lt2[2]
     if lamps >= 3:
         ln_ = oil_lamp((RX1 - 0.18, 0.9, 1.28), rot_z=180, energy=25.0 * lamp_energy, seed=5, b=b, name="lamp_niche")
         b.info.lights["lamp_niche"] = ln_[2]
-    bo = b.light("bounce", "AREA", (0, 0, RH - 0.25), 45.0 * lamp_energy, temp=2400, target=(0, 0, 0), size=2.5,
+    bo = b.light("bounce", "AREA", (0, 0, RH - 0.25), 35.0 * lamp_energy, temp=2600, target=(0, 0, 0), size=2.5,
                  shadow=False)
     bo.data.volume_factor = 0.0
+    wf = b.light("wall_fill", "AREA", (0, 0, 0.8), 40.0 * lamp_energy, temp=2400, target=(0, 0, 3.0), size=3.5,
+                 shadow=False)
+    wf.data.volume_factor = 0.0
     wl = b.light("window", "AREA", (-1.3, RY1 - 0.3, 1.65), 12.0, temp=12000, target=(0, 0, 0.6), size=0.6,
                  shadow=True)
     wl.data.volume_factor = 0.3
@@ -3560,7 +3617,7 @@ def table_interior(ctx, loc=(0, 0, 0), rot_z=0.0, coll=None, world=True, use_ass
     b.anchor("bread", tuple(bread_loc))
     b.anchor("cup", tuple(cup_loc))
     b.anchor("jug", tuple(jug_loc))
-    b.anchor("lamp_table", (-0.32, -0.16, TZ + 0.05))
+    b.anchor("lamp_table", (-0.42, -0.2, TZ + 0.05))
     b.anchor("hands_zone", (bread_loc.x, bread_loc.y, TZ + 0.12))
     for k, x in enumerate((-0.65, 0.0, 0.65)):
         b.anchor("seat_N%d" % k, (x, 0.78, 0.475), yaw=180)
@@ -3633,7 +3690,8 @@ def camp_night(ctx, loc=(0, 0, 0), rot_z=0.0, coll=None, world=True, fire=True, 
     b = _B("CampNight", loc, rot_z, coll, seed)
     rnd = b.rnd
     ground_m = _pbr("rocky_trail_02", scale=0.5, tint=(0.62, 0.56, 0.48), name="set_camp_ground", hsv=(0.5, 0.7, 1.0))
-    rock_m = _pbr("rock_boulder_dry", scale=1.2, tint=(0.75, 0.7, 0.62), name="set_camp_rock", hsv=(0.5, 0.6, 1.0))
+    rock_m = _pbr("rock_boulder_dry", scale=1.2, tint=(0.5, 0.46, 0.4), name="set_camp_rock", hsv=(0.5, 0.6, 0.9),
+                  bump=1.4)
 
     def gfn(u, v):
         x = (u - 0.5) * 60

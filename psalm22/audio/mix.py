@@ -23,15 +23,20 @@ from dsp import SR  # noqa: E402
 
 OUT = dsp.AUDIO
 TARGET_LUFS = -14.0
-CEILING_DB = -1.3          # limiter ceiling (true-peak measured afterwards must be <= -1.0 dBTP)
+CEILING_DB = -2.0          # limiter ceiling: leaves ~1 dB for AAC (64-96 kbps) decoder overshoot so the
+                           # final MP4 stays <= -1 dBTP as well (measured: +0.8..1 dB with a 15.5 kHz LP)
+MASTER_LP_HZ = 15500       # AAC at these bitrates drops >15 kHz anyway; band-limiting first avoids overshoot
 # ducking
 PRE, POST, BRIDGE = .30, .55, 1.0     # s before phrase / after phrase / merge gaps shorter than this
 MUSIC_DUCK_DB = -6.0                  # minimum duck under narration
 MUSIC_MARGIN_DB = 12.5                # music must sit at least this far below the voice (speech band)
 # sfx stems: (minimum duck, margin) - beds are ducked like music, short spot effects much less
-SFX_DUCK = {"amb": (-4.0, 15.0), "fx": (-1.5, 7.0), "trans": (-3.0, 10.0)}
-LAST_PHRASE_MARGIN_DB = 9.0           # "He has done it!" - let the climax through a little more
-NARR_PEAK_OVER_LUFS = 14.0            # narration peak limiter ceiling relative to its loudness
+SFX_DUCK = {"amb": (-4.0, 15.0), "fx": (-1.5, 9.5), "trans": (-3.0, 10.0)}
+LAST_PHRASE_MARGIN_DB = 6.0           # "He has done it!" - the climax lands on this phrase
+# lighter ducking for the resurrection, and a margin that shrinks phrase by phrase through the final
+# build so the crescendo is heard under the voice (list = per phrase of the block)
+MUSIC_MARGIN_BLOCK = {"b15": 10.0, "b20": [12.0, 11.0, 9.5, 8.5]}
+NARR_PEAK_OVER_LUFS = 13.0            # narration peak limiter ceiling relative to its loudness
 MUSIC_PEAK_OVER_VOICE = 1.0           # loudest music passage vs voice loudness (short-term, speech band)
 AMB_BELOW_VOICE = 21.0                # ambience bed integrated loudness below the voice
 
@@ -114,6 +119,7 @@ def rms_db(x):
 
 
 def intervals(phrases):
+    """Merge phrases separated by less than BRIDGE seconds into speech runs [start, end, [phrases]]."""
     iv = []
     for p in phrases:
         a, b = p["start"], p["end"]
@@ -126,37 +132,55 @@ def intervals(phrases):
 
 
 def duck_curve(n, ivs, depths_db):
-    """Gain curve (dB): cosine ramps PRE before / POST after every interval, max-combined."""
-    t = np.arange(n) / SR
+    """Gain curve (dB). depths_db: per run, a list with one depth per phrase.
+
+    Cosine ramp from 0 dB to the first phrase's depth over PRE seconds, linear moves between
+    phrase depths inside a run (across the short gaps), cosine release over POST after the run.
+    """
     g = np.zeros(n)
-    for (a, b, _), d in zip(ivs, depths_db):
-        i0, i1 = int((a - PRE) * SR), int((b + POST) * SR)
-        i0, i1 = max(0, i0), min(n, i1)
-        tt = t[i0:i1]
+    for (a, b, ps), ds in zip(ivs, depths_db):
+        pts_t, pts_v = [], []
+        for p, d in zip(ps, ds):
+            pts_t += [p["start"], p["end"]]
+            pts_v += [d, d]
+        i0, i1 = max(0, int((a - PRE) * SR)), min(n, int((b + POST) * SR))
+        tt = np.arange(i0, i1) / SR
+        core = np.interp(tt, pts_t, pts_v)
         w = np.ones_like(tt)
         up = tt < a
         w[up] = .5 - .5 * np.cos(np.pi * (tt[up] - (a - PRE)) / PRE)
         dn = tt > b
         w[dn] = .5 + .5 * np.cos(np.pi * (tt[dn] - b) / POST)
-        g[i0:i1] = np.minimum(g[i0:i1], d * w)
+        g[i0:i1] = np.minimum(g[i0:i1], core * w)
     return g
 
 
-def plan_ducks(voice, bus, ivs, base_db, margin_db, last_margin=None):
-    """Per interval: duck = min(base, (voice - margin) - bus) measured in the speech band."""
+def plan_ducks(voice, bus, ivs, base_db, margin_db, margins=None):
+    """Per phrase: duck = min(base, (voice - margin) - bus), measured in the speech band.
+
+    bus level = loudest 1 s window from PRE before the phrase to its end (safe for swells).
+    margins: optional {phrase_index_in_film or block_id: margin_db} overrides.
+    """
     vb, mb = speech_band(voice), speech_band(bus)
     depths, rows = [], []
-    for k, (a, b, ps) in enumerate(ivs):
-        i0, i1 = int(a * SR), int(b * SR)
-        vdb = rms_db(vb[i0:i1])
-        # loudest 1 s of the bus inside the interval (not the average) -> safe for swells
-        mdb = movavg_max_db(mb[i0:i1] ** 2, SR, SR // 50)
-        m = margin_db if (last_margin is None or k < len(ivs) - 1) else last_margin
-        d = min(base_db, (vdb - m) - mdb)
-        d = max(d, -30.0)
-        depths.append(d)
-        rows.append({"start": round(a, 2), "end": round(b, 2), "voice_db": round(vdb, 1),
-                     "bus_db": round(mdb, 1), "duck_db": round(d, 1)})
+    k = 0
+    for (a, b, ps) in ivs:
+        ds = []
+        for p in ps:
+            i0, i1 = int(p["start"] * SR), int(p["end"] * SR)
+            vdb = rms_db(vb[i0:i1])
+            mdb = movavg_max_db(mb[max(0, i0 - int(PRE * SR)):i1] ** 2, SR, SR // 50)
+            m = margin_db
+            if margins:
+                m = margins.get(k, margins.get(p["block"], m))
+                if isinstance(m, (list, tuple)):
+                    m = m[min(p["index"], len(m) - 1)]
+            d = max(min(base_db, (vdb - m) - mdb), -30.0)
+            ds.append(d)
+            rows.append({"phrase": k, "block": p["block"], "start": round(p["start"], 2),
+                         "voice_db": round(vdb, 1), "bus_db": round(mdb, 1), "margin": m, "duck_db": round(d, 1)})
+            k += 1
+        depths.append(ds)
     return depths, rows
 
 
@@ -273,7 +297,9 @@ def main():
 
     # ---- ducking (phrase driven, guaranteed margins)
     ivs = intervals(phrases)
-    m_depth, m_rows = plan_ducks(narr, music, ivs, MUSIC_DUCK_DB, MUSIC_MARGIN_DB, LAST_PHRASE_MARGIN_DB)
+    mmar = dict(MUSIC_MARGIN_BLOCK)
+    mmar[len(phrases) - 1] = LAST_PHRASE_MARGIN_DB
+    m_depth, m_rows = plan_ducks(narr, music, ivs, MUSIC_DUCK_DB, MUSIC_MARGIN_DB, mmar)
     gm = duck_curve(n, ivs, m_depth)
     # extra speech-band carve on the music while the voice speaks (dynamic EQ via crossfade)
     w = np.clip(gm / MUSIC_DUCK_DB, 0, 1).astype(np.float32)
@@ -288,12 +314,13 @@ def main():
     for k, x in sfx_st.items():
         x *= np.float32(g_sfx)
         base, margin = SFX_DUCK[k]
-        d, s_rows[k] = plan_ducks(narr, x, ivs, base, margin, margin)
+        d, s_rows[k] = plan_ducks(narr, x, ivs, base, margin)
         sfx_d += x * dsp.undb(duck_curve(n, ivs, d)).astype(np.float32)[:, None]
     del sfx_st
 
     # ---- master: loudness to target, true-peak limiting (iterate for the limiter's loss)
     pre = narr + music_d + sfx_d
+    pre = dsp.filt(pre, "lp", MASTER_LP_HZ, order=2).astype(np.float32)
     gain = TARGET_LUFS - dsp.loudness(pre)
     for _ in range(4):
         y, glim = dsp.limiter(pre * np.float32(dsp.undb(gain)), CEILING_DB)

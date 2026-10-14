@@ -992,6 +992,40 @@ def card_hair_material(p, obj, color, grey=0.0, name=None, alpha_gain=1.0, kind=
     return m
 
 
+EYE_TEX = {"brown": ("brown", 0.52, 0.8, 0.85), "dark_brown": ("brown", 0.52, 0.75, 0.55), "hazel": ("brownlight", 0.5, 0.85, 0.75),
+           "green": ("green", 0.5, 0.8, 0.8), "blue": ("blue", 0.5, 0.85, 0.85), "grey": ("blue", 0.5, 0.25, 0.9)}
+
+
+def eye_material(name, color="brown"):
+    """Photo-textured eyeball (MakeHuman CC0 eye maps) with a separate clear cornea (see _split_cornea)."""
+    tex, hue, sat, val = EYE_TEX.get(color, EYE_TEX["brown"])
+    m, T = _new_mat(name)
+    out = T.n("ShaderNodeOutputMaterial")
+    tc = T.n("ShaderNodeTexCoord")
+    im = T.n("ShaderNodeTexImage")
+    im.image = _img(os.path.join(MPFB_DATA, "eyes", "materials", tex + "_eye.png"))
+    T.link(tc.outputs["UV"], im.inputs["Vector"])
+    # iris = saturated part of the map; adjust only the iris hue/value, keep the sclera
+    hs = T.n("ShaderNodeHueSaturation", Hue=hue, Saturation=sat, Value=val)
+    T.link(im.outputs["Color"], hs.inputs["Color"])
+    sep = T.n("ShaderNodeSeparateColor", _mode="HSV")
+    T.link(im.outputs["Color"], sep.inputs[0])
+    irism = T.n("ShaderNodeMapRange", **{"From Min": 0.12, "From Max": 0.3, "To Min": 0.0, "To Max": 1.0})
+    T.link(sep.outputs[1], irism.inputs["Value"])
+    scl = T.mix(im.outputs["Color"], (0.92, 0.86, 0.8), 1.0, "MULTIPLY")
+    col = T.mix(scl, hs.outputs[0], irism.outputs[0])
+    b = T.n("ShaderNodeBsdfPrincipled")
+    T.set(b.inputs["Base Color"], col)
+    b.inputs["Roughness"].default_value = 0.35
+    b.inputs["Specular IOR Level"].default_value = 0.3
+    b.inputs["Subsurface Weight"].default_value = 0.15
+    b.inputs["Subsurface Radius"].default_value = (1.0, 0.4, 0.3)
+    b.inputs["Subsurface Scale"].default_value = 0.002
+    T.link(b.outputs[0], out.inputs["Surface"])
+    m.surface_render_method = "DITHERED"
+    return m
+
+
 def cornea_material(name="PS22_cornea"):
     m = bpy.data.materials.get(name)
     if m:
@@ -1000,7 +1034,7 @@ def cornea_material(name="PS22_cornea"):
     out = T.n("ShaderNodeOutputMaterial")
     fr = T.n("ShaderNodeFresnel", IOR=1.38)
     gl = T.n("ShaderNodeBsdfGlossy", Roughness=0.015)
-    T.link(fr.outputs[0], gl.inputs["Color"])
+    T.link(T.math("MULTIPLY", fr.outputs[0], 0.6), gl.inputs["Color"])
     tr = T.n("ShaderNodeBsdfTransparent")
     add = T.n("ShaderNodeAddShader")
     T.link(tr.outputs[0], add.inputs[0])
@@ -1065,7 +1099,13 @@ def _materials(p):
         p.mats["brows"] = card_hair_material(p, p.parts["eyebrows"], tuple(bc * 0.9), kind="brow", alpha_gain=1.2)
     if "eyelashes" in p.parts:
         p.mats["lashes"] = card_hair_material(p, p.parts["eyelashes"], (0.012, 0.009, 0.008), kind="lash", alpha_gain=1.4)
-    if "eyes" in p.parts:
+    if "eyes" in p.parts and len(p.parts["eyes"].data.vertices) >= 400:
+        p.mats["eyes"] = eye_material(p.name + ".eye", s["eye_color"])
+        eo = p.parts["eyes"]
+        eo.data.materials.clear()
+        eo.data.materials.append(p.mats["eyes"])
+        p.mats["cornea"] = _split_cornea(p, eo)
+    elif "eyes" in p.parts:
         em = p.parts["eyes"].data.materials[0]
         maj, mnr, bor = EYE_COLORS.get(s["eye_color"], EYE_COLORS["brown"])
         _set_group_input(em, "IrisMajorColor", (*maj, 1))
@@ -1258,7 +1298,7 @@ def make_beard(p, style=None, length=None, density=1.0, color=None, grey=None, s
     cv = bpy.data.hair_curves.new(p.name + ".beard")
     cv.add_curves([K] * N)
     cv.position_data.foreach_set("vector", pts.astype(np.float32).ravel())
-    rad = np.tile(np.linspace(1.0, 0.4, K), N) * 0.0001 * (0.8 + 0.4 * rng.random(N)).repeat(K)
+    rad = np.tile(np.linspace(1.0, 0.45, K), N) * 0.00012 * (0.8 + 0.4 * rng.random(N)).repeat(K)
     if "radius" not in cv.attributes:
         cv.attributes.new("radius", "FLOAT", "POINT")
     cv.attributes["radius"].data.foreach_set("value", rad.astype(np.float32))
@@ -1294,7 +1334,7 @@ def _deform_on_surface_group():
     return ng
 
 
-def curve_hair_material(name, color, grey=0.0):
+def curve_hair_material(name, color, grey=0.0, translucency=0.35):
     m, T = _new_mat(name)
     out = T.n("ShaderNodeOutputMaterial")
     hi = T.n("ShaderNodeHairInfo")
@@ -1309,9 +1349,16 @@ def curve_hair_material(name, color, grey=0.0):
         col = T.mix(col, T.mix(tuple(Vector(gcol) * 0.9), var.outputs[0], 1.0, "MULTIPLY"), isg)
     b = T.n("ShaderNodeBsdfPrincipled")
     T.set(b.inputs["Base Color"], col)
-    b.inputs["Roughness"].default_value = 0.52
-    b.inputs["Specular IOR Level"].default_value = 0.32
-    T.link(b.outputs[0], out.inputs["Surface"])
+    b.inputs["Roughness"].default_value = 0.8
+    b.inputs["Specular IOR Level"].default_value = 0.08
+    # backlit glow: hair is translucent (forward scattering) - EEVEE's Principled alone only sparkles
+    tl = T.n("ShaderNodeBsdfTranslucent")
+    T.set(tl.inputs["Color"], T.mix(col, (2.5, 2.2, 1.9), 1.0, "MULTIPLY"))
+    mx = T.n("ShaderNodeMixShader")
+    mx.inputs["Fac"].default_value = translucency
+    T.link(b.outputs[0], mx.inputs[1])
+    T.link(tl.outputs[0], mx.inputs[2])
+    T.link(mx.outputs[0], out.inputs["Surface"])
     return m
 
 
@@ -1519,6 +1566,13 @@ def _anatomy(p, P):
         an["th_len" + s] = (P.head("lowerleg01." + s) - P.head("upperleg01." + s)).length
         an["sh_len" + s] = (P.head("foot." + s) - P.head("lowerleg01." + s)).length
         an["hand_len" + s] = (P.tail("metacarpal2." + s) - P.head("wrist." + s)).length
+        # rest pronation (deg, + = towards medial) in the convention used by _arm
+        uan, fan = ua.normalized(), fa.normalized()
+        e = uan.angle(fan)
+        af = _perp(-uan * math.sin(e) + an["crease" + s] * math.cos(e), fan)
+        pl = _perp(an["palm" + s], fan)
+        ang = math.degrees(af.angle(pl)) if af.length > 1e-6 and pl.length > 1e-6 else 90.0
+        an["rest_pron" + s] = ang
     an["knee"] = Vector(FWD)
     p._anat = an
     P.an = an
@@ -1541,7 +1595,12 @@ def _arm(P, s, u, crease, elbow, pron=60.0, flex=0.0, dev=0.0, shrug=0.0, twist_
     if shrug:
         P.bend_toward("clavicle." + s, UP, math.radians(shrug))
     u = Vector(u).normalized()
-    c = _perp(crease, u)
+    if crease is None:
+        # minimal-twist humerus: swing the rest crease along with the arm (no axial rotation)
+        r0 = (P.rest["lowerarm01." + s].translation - P.rest["upperarm01." + s].translation).normalized()
+        c = _perp(r0.rotation_difference(u).to_matrix() @ an["crease" + s], u)
+    else:
+        c = _perp(crease, u)
     if c.length < 1e-6:
         c = _perp(FWD, u)
     for b in ("upperarm01.", "upperarm02."):
@@ -1549,13 +1608,12 @@ def _arm(P, s, u, crease, elbow, pron=60.0, flex=0.0, dev=0.0, shrug=0.0, twist_
     e = math.radians(max(0.0, min(150.0, elbow)))
     f = u * math.cos(e) + c * math.sin(e)
     af = -u * math.sin(e) + c * math.cos(e)
-    med = _medial(s)
-    sign = 1.0 if f.cross(af).dot(med) > 0 else -1.0
-    if abs(f.cross(af).dot(med)) < 0.2:   # forearm pointing medially/laterally: use the up vector instead
-        sign = 1.0 if f.cross(af).dot(-UP) > 0 else -1.0
+    sign = 1.0 if s == "L" else -1.0       # pronation = +rotation about elbow->wrist for the left arm
     pr = math.radians(pron) * sign
     palm = Matrix.Rotation(pr, 3, f) @ af
-    P.orient("lowerarm01." + s, f, Matrix.Rotation(pr * twist_split, 3, f) @ af, an["palm" + s])
+    rp = an.get("rest_pron" + s, 90.0)
+    pr01 = math.radians(rp + (pron - rp) * twist_split) * sign      # spread the twist from rest over both forearm bones
+    P.orient("lowerarm01." + s, f, Matrix.Rotation(pr01, 3, f) @ af, an["palm" + s])
     P.orient("lowerarm02." + s, f, palm, an["palm" + s])
     if flex:
         pc = P.carry("wrist." + s, an["palm" + s])
@@ -1777,11 +1835,11 @@ def _pose_crucified(P, p, head="up", strain=0.6, hands="cross", hand_targets=Non
     for s in "LR":
         lat = _lateral(s)
         if hand_targets:
-            _arm_ik(P, s, hand_targets[s], pole=Vector((0, 0.35, -1)), pron=8, flex=-8, shrug=10 + 12 * st)
+            _arm_ik(P, s, hand_targets[s], pole=Vector((0, 1.0, -0.3)), pron=40, flex=-6, shrug=10 + 12 * st)
         else:
             P.bend_toward("clavicle." + s, UP, math.radians(10 + 12 * st))
             u = Vector((lat.x * math.cos(th), 0.03, math.sin(th)))
-            _arm(P, s, u, FWD, 6, 5, flex=-8)
+            _arm(P, s, u, FWD, 6, 40, flex=-6)
         _hand(P, s, hands)
     # legs: knees bent and turned, feet together / overlapping
     if feet_targets:
@@ -1874,7 +1932,7 @@ def _pose_arms_raised(P, p, spread=35.0, head="up", hands="open", **k):
         lat = _lateral(s)
         a = math.radians(spread)
         u = Vector((lat.x * math.sin(a), -0.12, math.cos(a)))
-        _arm(P, s, u, (-FWD + _medial(s) * 0.3), 18, 10, flex=-10, shrug=18)
+        _arm(P, s, u, None, 18, 35, flex=-10, shrug=18)
         _hand(P, s, hands)
     _apply_head(P, head, amount=0.6)
 
@@ -2340,29 +2398,30 @@ UNITS = ["eye-left-closure", "eye-left-opened-up", "eye-left-slit", "eye-right-c
 # 'both' shorthands: eye-*, eyebrows-*, nose-* without side apply to left and right
 EXPRESSIONS = {
     "neutral": {},
-    "anguish": {"eyebrows-inner-up": 0.95, "eyebrows-down": 0.3, "eye-slit": 0.35, "nose-elevation": 0.35,
-                "mouth-depression": 0.25, "mouth-retraction": 0.3, "mouth-open": 0.15, "neck-platysma": 0.35, "jaw": 5},
+    "anguish": {"eyebrows-inner-up": 0.95, "eyebrows-down": 0.3, "eye-slit": 0.35, "nose-elevation": 0.3,
+                "mouth-depression": 0.22, "mouth-open": 0.07, "neck-platysma": 0.3, "jaw": 6},
     "sorrow": {"eyebrows-inner-up": 0.8, "eye-slit": 0.12, "eye-closure": 0.12, "mouth-depression": 0.55,
                "mouth-compression": 0.15},
-    "crying": {"eyebrows-inner-up": 1.0, "eyebrows-down": 0.2, "eye-slit": 0.55, "nose-elevation": 0.4,
-               "mouth-depression-retraction": 0.6, "mouth-open": 0.2, "neck-platysma": 0.5, "jaw": 5},
-    "peace": {"eye-closure": 0.12, "eyebrows-up": 0.08, "mouth-corner-puller": 0.25},
+    "crying": {"eyebrows-inner-up": 1.0, "eyebrows-down": 0.2, "eye-slit": 0.55, "nose-elevation": 0.35,
+               "mouth-depression-retraction": 0.35, "mouth-depression": 0.3, "mouth-open": 0.08, "neck-platysma": 0.4, "jaw": 4},
+    "peace": {"eye-closure": 0.12, "eyebrows-up": 0.08, "mouth-corner-puller": 0.3},
     "smile": {"eye-slit": 0.25, "mouth-corner-puller": 0.6, "mouth-elevation": 0.1},
-    "sneer": {"nose-left-elevation": 0.8, "mouth-upward-retraction": 0.45, "eyebrows-down": 0.5, "eye-slit": 0.35,
-              "eyebrows-left-extern-up": 0.35, "mouth-corner-puller": 0.12},
-    "mock": {"nose-left-elevation": 0.5, "mouth-corner-puller": 0.55, "mouth-upward-retraction": 0.3, "eye-slit": 0.4,
-             "eyebrows-left-up": 0.4, "mouth-open": 0.2, "jaw": 4},
+    "sneer": {"nose-left-elevation": 0.7, "mouth-upward-retraction": 0.22, "eyebrows-down": 0.45, "eye-slit": 0.3,
+              "eyebrows-left-extern-up": 0.35, "mouth-corner-puller": 0.1},
+    "mock": {"nose-left-elevation": 0.45, "mouth-corner-puller": 0.5, "mouth-upward-retraction": 0.2, "eye-slit": 0.4,
+             "eyebrows-left-up": 0.4, "mouth-open": 0.12, "jaw": 4},
     "laugh": {"mouth-corner-puller": 1.0, "mouth-open": 0.35, "eye-slit": 0.55, "nose-elevation": 0.2,
               "eyebrows-up": 0.15, "jaw": 12},
-    "cry_out": {"mouth-open": 0.7, "eyebrows-inner-up": 1.0, "eyebrows-down": 0.25, "eye-slit": 0.45,
-                "mouth-retraction": 0.4, "nose-elevation": 0.35, "neck-platysma": 0.6, "jaw": 20},
-    "awe": {"eyebrows-up": 0.7, "eyebrows-inner-up": 0.3, "eye-opened-up": 0.45, "mouth-open": 0.25, "jaw": 7},
+    "cry_out": {"mouth-open": 0.6, "eyebrows-inner-up": 1.0, "eyebrows-down": 0.25, "eye-slit": 0.45,
+                "mouth-retraction": 0.25, "nose-elevation": 0.3, "neck-platysma": 0.6, "jaw": 20},
+    "awe": {"eyebrows-up": 0.6, "eyebrows-inner-up": 0.3, "eye-opened-up": 0.4, "mouth-open": 0.04, "jaw": 9},
     "anger": {"eyebrows-down": 1.0, "eye-slit": 0.3, "nose-elevation": 0.4, "mouth-compression": 0.5},
-    "fear": {"eyebrows-inner-up": 0.8, "eyebrows-up": 0.5, "eye-opened-up": 0.6, "mouth-retraction": 0.5, "jaw": 6},
-    "pain": {"eyebrows-inner-up": 0.7, "eyebrows-down": 0.6, "eye-closure": 0.45, "eye-slit": 0.5, "nose-elevation": 0.5,
-             "mouth-retraction": 0.5, "mouth-open": 0.15, "neck-platysma": 0.5, "jaw": 4},
-    "exhausted": {"eye-closure": 0.65, "eyebrows-inner-up": 0.35, "mouth-open": 0.2, "jaw": 7},
-    "dead": {"eye-closure": 0.9, "mouth-open": 0.15, "jaw": 9},
+    "fear": {"eyebrows-inner-up": 0.8, "eyebrows-up": 0.5, "eye-opened-up": 0.6, "mouth-retraction": 0.3,
+             "mouth-open": 0.08, "jaw": 7},
+    "pain": {"eyebrows-inner-up": 0.7, "eyebrows-down": 0.6, "eye-closure": 0.45, "eye-slit": 0.5, "nose-elevation": 0.45,
+             "mouth-retraction": 0.3, "mouth-open": 0.04, "neck-platysma": 0.5, "jaw": 4},
+    "exhausted": {"eye-closure": 0.6, "eyebrows-inner-up": 0.35, "mouth-open": 0.06, "jaw": 7},
+    "dead": {"eye-closure": 0.9, "mouth-open": 0.05, "jaw": 9},
 }
 
 
@@ -2452,6 +2511,8 @@ def _shape_objects(p):
 def _set_units(p, weights, frame=None, only=None):
     _ensure_units(p, [u for u, w in weights.items() if w > 0.0])
     for o in _shape_objects(p):
+        if o.data.shape_keys is None:
+            continue
         kbs = o.data.shape_keys.key_blocks
         for u in p.expr_keys:
             if only is not None and u not in only:
@@ -2852,6 +2913,9 @@ def _tri_grad_v(P3, UV):
     return dPdv
 
 
+STRAND_VERSION = 3
+
+
 def _hair_cache_path(key):
     d = os.path.join(C.WORK, "cache", "characters")
     os.makedirs(d, exist_ok=True)
@@ -2870,7 +2934,7 @@ def make_hair_strands(p, count=None, points=16, length_scale=1.0, depth=(-0.001,
     rng = np.random.default_rng(seed if seed is not None else s.get("seed", 0) + 101)
     co, tv, tl, uv = _shell_data(shell)
     N = int(count or (13000 if s["hair"] == "long01" else 8000))
-    key = hashlib.md5(co.tobytes() + uv.tobytes() + str((N, points, depth, clump, frizz, length_scale, flyaways)).encode()).hexdigest()[:16]
+    key = hashlib.md5(co.tobytes() + uv.tobytes() + str((STRAND_VERSION, N, points, depth, clump, frizz, length_scale, flyaways)).encode()).hexdigest()[:16]
     cp = _hair_cache_path(key)
     if os.path.exists(cp):
         dat = np.load(cp)
@@ -2954,6 +3018,10 @@ def _grow_shell_strands(p, shell, co, tv, tl, uv, N, K, length_scale, depth, clu
     sc = p.height / 1.75
     Lmax = {"long01": 0.62, "ponytail01": 0.4, "braid01": 0.45, "bob01": 0.25, "bob02": 0.25}.get(p.spec["hair"], 0.12) * sc * length_scale
     seg = Lmax / (K - 1)
+    E = p.lm["eyes"]
+
+    def _in_face(q):   # keep strands off the face (forehead / cheeks in front of the ears)
+        return abs(q.x) < 0.064 * sc and q.y < E.y + 0.06 * sc and p.lm["chin_bot"] - 0.04 * sc < q.z < E.z + 0.05 * sc
     guides = np.zeros((G, K, 3))
     gnorm = np.zeros((G, K, 3))
     alive = np.ones((G, K), bool)
@@ -2976,7 +3044,7 @@ def _grow_shell_strands(p, shell, co, tv, tl, uv, N, K, length_scale, depth, clu
             nxt = loc + dvec * seg
             # stop at the shell's boundary (the tip edge): projecting jumps far or v stops changing
             loc2, nn2, fi2, d2 = bvh.find_nearest(nxt)
-            if fi2 is None or d2 > seg * 0.8:
+            if fi2 is None or d2 > seg * 0.8 or _in_face(loc2):
                 alive[i, k + 1:] = False
                 break
             pos = loc2
@@ -3030,7 +3098,7 @@ def _grow_shell_strands(p, shell, co, tv, tl, uv, N, K, length_scale, depth, clu
         bc = _bary_np(np.array(loc), a, b, c)
         fuv[i] = bc @ UV[fi]
         fdep[i] = (fpts[i] - np.array(loc)).dot(tn[fi])
-    rad = np.tile(np.linspace(1.0, 0.5, K), (N, 1)) * 0.00006 * sc * rng.uniform(0.8, 1.25, (N, 1))
+    rad = np.tile(np.linspace(1.0, 0.55, K), (N, 1)) * 0.00009 * sc * rng.uniform(0.8, 1.25, (N, 1))
     return pts, puv, pdep, rad
 
 

@@ -169,11 +169,21 @@ class Body:
         self.bone = {b.name: (np.array(b.head_local), np.array(b.tail_local)) for b in bones}
         # extra meshes (hair etc.) for head garments
         self.hair = np.zeros((0, 3))
+        hair_objs = []
+        parts = getattr(person, "parts", None) or {}
+        if parts.get("hair") is not None:
+            hair_objs.append(parts["hair"])
         for o in rig.children_recursive:
-            if o.type == "MESH" and o is not body and "hair" in o.name.lower() and not o.get("wardrobe"):
-                hc, _, _ = self._rest_mesh(o)
+            if o.type == "MESH" and o is not body and not o.get("wardrobe") and o not in hair_objs and \
+                    (o.get("MPFB_GEN_object_type") == "Hair" or "hair" in o.name.lower()):
+                hair_objs.append(o)
+        self.hair_objs = hair_objs
+        for o in hair_objs:
+            if o.type == "MESH":
+                hc, _, ht = self._rest_mesh(o)
                 Mo = np.array(rig.matrix_world.inverted() @ o.matrix_world)
-                self.hair = np.vstack([self.hair, hc @ Mo[:3, :3].T + Mo[:3, 3]])
+                hc = hc @ Mo[:3, :3].T + Mo[:3, 3]
+                self.hair = np.vstack([self.hair, hc, sample_surface(hc, ht, 1.5e-5)])
         self.height = float(co[isb, 2].max() - co[isb, 2].min())
         self.ground = float(co[isb, 2].min())
         self.build_time = time.time() - t0
@@ -254,6 +264,22 @@ def bary_v(p, a, b, c):
     w = (d00 * d21 - d01 * d20) / den
     r = np.clip(np.stack([1 - v - w, v, w], 1), 0, 1)
     return r / np.maximum(1e-9, r.sum(1))[:, None]
+
+
+def sample_surface(co, tris, area_per_point=2e-5, max_pts=60000, seed=1):
+    """Random points on a triangle mesh (hair cards are big quads: their vertices alone miss the surface)."""
+    if not len(tris):
+        return np.zeros((0, 3))
+    a, b, c = co[tris[:, 0]], co[tris[:, 1]], co[tris[:, 2]]
+    ar = 0.5 * np.linalg.norm(np.cross(b - a, c - a), axis=1)
+    n = int(min(max_pts, ar.sum() / area_per_point))
+    if n <= 0:
+        return np.zeros((0, 3))
+    rng = np.random.default_rng(seed)
+    idx = rng.choice(len(tris), n, p=ar / ar.sum())
+    r1, r2 = rng.random(n), rng.random(n)
+    s1 = np.sqrt(r1)
+    return a[idx] * (1 - s1)[:, None] + b[idx] * (s1 * (1 - r2))[:, None] + c[idx] * (s1 * r2)[:, None]
 
 
 def _bary(p, a, b, c):
@@ -637,10 +663,47 @@ def push_out(V, B, gap=0.005, normals=None, surface="body", layers=True, layer_g
     return V, moved
 
 
-def add_layer(B, V, F, name):
-    """Register a built garment (rest verts/faces) so later garments are pushed outside it."""
+def add_layer(B, V, F, name, W=None, ob=None):
+    """Register a built garment (rest verts/faces + bone weights) so later garments are pushed outside it
+    and inherit its weights where they lie on top of it (layers then deform together)."""
     T = tri_fan(F)
-    B.layers.append(dict(name=name, V=V, bvh=BVHTree.FromPolygons([tuple(p) for p in V], T.tolist(), all_triangles=True)))
+    L = dict(name=name, V=np.asarray(V), T=T, W=W, ob=ob,
+             bvh=BVHTree.FromPolygons([tuple(p) for p in V], T.tolist(), all_triangles=True))
+    if W is not None:
+        armb = np.isin(B.reg_of_bone, list(ARM_L | ARM_R))
+        armv = W[:, armb].sum(1) > 0.3
+        Tc = T[~armv[T].any(1)]
+        L["Tc"] = Tc
+        L["bvh_core"] = BVHTree.FromPolygons([tuple(p) for p in V], Tc.tolist(), all_triangles=True) if len(Tc) else None
+    B.layers.append(L)
+
+
+def sample_layers(B, P, maxd=0.05, core=None):
+    """Weights interpolated from the nearest inner garment layer (dist 9 where no layer within maxd).
+    core: bool mask of P that must ignore the inner layers' sleeve parts (arm-weighted triangles)."""
+    n = len(P)
+    best = np.full(n, 9.0)
+    W = np.zeros((n, len(B.bone_names)), np.float32)
+    core = np.zeros(n, bool) if core is None else core
+    for L in B.layers:
+        if L.get("W") is None:
+            continue
+        for i, p in enumerate(P):
+            if core[i]:
+                if L.get("bvh_core") is None:
+                    continue
+                loc, nrm, fi, d = L["bvh_core"].find_nearest(Vector(p), maxd)
+                tri = L["Tc"]
+            else:
+                loc, nrm, fi, d = L["bvh"].find_nearest(Vector(p), maxd)
+                tri = L["T"]
+            if loc is None or d >= best[i]:
+                continue
+            a, b, c = tri[fi]
+            bc = bary_v(np.array([loc]), L["V"][[a]], L["V"][[b]], L["V"][[c]])[0]
+            W[i] = bc[0] * L["W"][a] + bc[1] * L["W"][b] + bc[2] * L["W"][c]
+            best[i] = d
+    return W, best
 
 
 def layer_points(B, step=3):
@@ -653,12 +716,13 @@ def layer_points(B, step=3):
 # Materials (shared per fabric kind; colour per object via Object Info > Color)
 # ----------------------------------------------------------------------------------------------
 FABRICS = {
-    # kind: (polyhaven asset, repeats per metre, bump, rough_base, sheen, value_range)
-    "linen": ("rough_linen", 3.0, 0.45, 0.82, 0.35, (0.80, 1.12)),
-    "fine_linen": ("rough_linen", 5.0, 0.25, 0.70, 0.45, (0.90, 1.06)),
-    "wool": ("caban", 2.2, 0.55, 0.88, 0.55, (0.82, 1.10)),
-    "homespun": ("hessian_230", 2.5, 0.60, 0.92, 0.30, (0.78, 1.15)),
-    "leather": ("brown_leather", 2.0, 0.50, 0.55, 0.0, (0.70, 1.20)),
+    # kind: (polyhaven asset, repeats per metre (asset is ~0.27 m wide), bump, rough_base, sheen, value_range)
+    "linen": ("rough_linen", 3.7, 0.50, 0.82, 0.30, (0.84, 1.10)),
+    "fine_linen": ("rough_linen", 6.0, 0.30, 0.72, 0.40, (0.92, 1.05)),
+    "wool": ("poly_wool_herringbone", 3.6, 0.55, 0.90, 0.55, (0.82, 1.12)),
+    "homespun": ("hessian_380", 3.7, 0.60, 0.92, 0.30, (0.84, 1.12)),
+    "sackcloth": ("hessian_230", 3.7, 0.70, 0.94, 0.20, (0.75, 1.18)),
+    "leather": ("brown_leather", 2.5, 0.55, 0.55, 0.0, (0.75, 1.20)),
 }
 _MATS = {}
 
@@ -716,8 +780,8 @@ def fabric_material(kind="linen", embroidery=False, stripes=False):
     nz.inputs["Detail"].default_value = 3
     L.new(tc.outputs["Generated"], nz.inputs["Vector"])
     nmr = nt.nodes.new("ShaderNodeMapRange")
-    nmr.inputs["To Min"].default_value = 0.88
-    nmr.inputs["To Max"].default_value = 1.10
+    nmr.inputs["To Min"].default_value = 0.93
+    nmr.inputs["To Max"].default_value = 1.05
     L.new(nz.outputs["Fac"], nmr.inputs["Value"])
     mul2 = nt.nodes.new("ShaderNodeVectorMath")
     mul2.operation = "MULTIPLY"
@@ -732,8 +796,8 @@ def fabric_material(kind="linen", embroidery=False, stripes=False):
     wa = nt.nodes.new("ShaderNodeAttribute")
     wa.attribute_name = "wear"
     nz2 = nt.nodes.new("ShaderNodeTexNoise")
-    nz2.inputs["Scale"].default_value = 9.0
-    nz2.inputs["Detail"].default_value = 4
+    nz2.inputs["Scale"].default_value = 22.0
+    nz2.inputs["Detail"].default_value = 5
     L.new(tc.outputs["Generated"], nz2.inputs["Vector"])
     wm = nt.nodes.new("ShaderNodeMath")
     wm.operation = "MULTIPLY"
@@ -742,7 +806,7 @@ def fabric_material(kind="linen", embroidery=False, stripes=False):
     wm2 = nt.nodes.new("ShaderNodeMath")
     wm2.operation = "MULTIPLY"
     wm2.use_clamp = True
-    wm2.inputs[1].default_value = 1.6
+    wm2.inputs[1].default_value = 0.9
     L.new(wm.outputs[0], wm2.inputs[0])
     mix = nt.nodes.new("ShaderNodeMix")
     mix.data_type = "RGBA"
@@ -1028,8 +1092,8 @@ def mail_material():
     L.new(t.outputs["Color"], sep.inputs["Color"])
     # gaps between rings are dark; rings are worn bright on the tops
     col = nt.nodes.new("ShaderNodeMapRange")
-    col.inputs["To Min"].default_value = 0.03
-    col.inputs["To Max"].default_value = 0.42
+    col.inputs["To Min"].default_value = 0.05
+    col.inputs["To Max"].default_value = 0.62
     L.new(sep.outputs["Red"], col.inputs["Value"])
     wa = nt.nodes.new("ShaderNodeAttribute")
     wa.attribute_name = "wear"
@@ -1043,11 +1107,15 @@ def mail_material():
     L.new(wa.outputs["Fac"], fm.inputs[0])
     L.new(fm.outputs[0], rust.inputs["Factor"])
     L.new(rust.outputs["Result"], b.inputs["Base Color"])
-    b.inputs["Metallic"].default_value = 0.9
-    b.inputs["Roughness"].default_value = 0.42
+    b.inputs["Metallic"].default_value = 0.85
+    rgh = nt.nodes.new("ShaderNodeMapRange")
+    rgh.inputs["To Min"].default_value = 0.62
+    rgh.inputs["To Max"].default_value = 0.32
+    L.new(sep.outputs["Red"], rgh.inputs["Value"])
+    L.new(rgh.outputs["Result"], b.inputs["Roughness"])
     bp = nt.nodes.new("ShaderNodeBump")
-    bp.inputs["Strength"].default_value = 0.9
-    bp.inputs["Distance"].default_value = 0.003
+    bp.inputs["Strength"].default_value = 1.0
+    bp.inputs["Distance"].default_value = 0.004
     L.new(sep.outputs["Red"], bp.inputs["Height"])
     L.new(bp.outputs["Normal"], b.inputs["Normal"])
     _MATS[key] = m
@@ -1481,7 +1549,7 @@ def garment_post(B, G, rnd, fold_amp=0.014, pleat_amp=0.006, sleeve_fold=0.006, 
     return G
 
 
-def garment_weights(B, G, skirt_below=None, smooth=6, skirt_smooth=14, arms=True, only=None):
+def garment_weights(B, G, skirt_below=None, smooth=6, skirt_smooth=14, arms=True, only=None, layers=True):
     """Bone weights. Arm-region verts (sleeves) sample the full body; everything else samples the body
     WITHOUT arms ('core'), so hems/belts never follow the hands. Verts below `skirt_below` (z) blend to
     MPFB's helper-skirt weights (no stretching between the legs). only: restrict to a bone-name subset."""
@@ -1504,6 +1572,14 @@ def garment_weights(B, G, skirt_below=None, smooth=6, skirt_smooth=14, arms=True
         wgt = np.where(V[:, 2] < skirt_below, 1.0, 0.35)
         cols = np.nonzero(W.max(0) > 1e-4)[0]
         W[:, cols] = smooth_field(W[:, cols], E, iters=skirt_smooth, weight=wgt)
+    if B.layers and layers:
+        # on top of an inner garment: follow it (same weights => no interpenetration when posed)
+        bd = np.array([B.bvh["body"][0].find_nearest(Vector(p))[3] or 9.0 for p in V])
+        Wl, dl = sample_layers(B, V, core=~arm)
+        use = (dl < 0.05) & (dl < bd + 0.01)
+        if use.any():
+            t = np.clip((0.05 - dl[use]) / 0.02, 0, 1)[:, None]
+            W[use] = W[use] * (1 - t) + Wl[use] * t
     if only is not None:
         keep = np.array([n in only for n in B.bone_names])
         W[:, ~keep] = 0
@@ -1637,6 +1713,7 @@ def loft_open(rings, closed_u=True):
 _DEBUG = bool(os.environ.get("WARDROBE_DEBUG"))
 _T0 = [time.time()]
 ANG = np.linspace(-math.pi, math.pi, K_ANG, endpoint=False)
+MASK_LAYERS = True        # hide inner-garment areas fully covered by outer garments (no poke-through)
 CORE = {RID[r] for r in ("torso", "hips", "neck", "shoulder_L", "shoulder_R", "thigh_L", "thigh_R", "shin_L", "shin_R")}
 
 
@@ -1897,7 +1974,8 @@ def column_uv(B, G, cf=None):
 
 
 def finalize(person, B, G, rnd, name, mat, rgb, detail, skirt_below=None, hem_z=None, wear=1.0, wear_band=0.35,
-             thickness=0.003, uv=None, attrs=None, layer=True, only=None, smooth=6, arms=True, weights=None):
+             thickness=0.003, uv=None, attrs=None, layer=True, only=None, smooth=6, arms=True, weights=None,
+             mask_inner=True):
     if weights is None:
         weights = garment_weights(B, G, skirt_below=skirt_below, smooth=smooth, arms=arms, only=only)
     if uv is None:
@@ -1908,8 +1986,10 @@ def finalize(person, B, G, rnd, name, mat, rgb, detail, skirt_below=None, hem_z=
         A.update(attrs)
     ob = finish_garment(person, B, name, G["V"], G["F"], name, mat, rgb, weights=weights, uv=uv, attrs=A,
                         thickness=thickness, detail=detail)
+    if mask_inner and B.layers and MASK_LAYERS:
+        mask_inner_layers(B, G)
     if layer:
-        add_layer(B, G["V"], G["F"], name)
+        add_layer(B, G["V"], G["F"], name, weights, ob)
     return ob
 
 
@@ -1952,6 +2032,61 @@ def hide_body(person, idx):
             pass
 
 
+def hide_verts(ob, idx, group="wardrobe_hide"):
+    """Hide vertices of a garment (or body) with an inverted MASK modifier placed after the Armature."""
+    idx = [int(i) for i in idx]
+    if not idx:
+        return
+    g = ob.vertex_groups.get(group) or ob.vertex_groups.new(name=group)
+    g.add(idx, 1.0, "REPLACE")
+    m = ob.modifiers.get("WardrobeHide")
+    if m is None:
+        m = ob.modifiers.new("WardrobeHide", "MASK")
+        m.vertex_group = group
+        m.invert_vertex_group = True
+        n = len(ob.modifiers)
+        tgt = next((i for i, x in enumerate(ob.modifiers) if x.type in ("SOLIDIFY", "SUBSURF", "CLOTH")), n - 1)
+        try:
+            ob.modifiers.move(n - 1, tgt)
+        except Exception:
+            pass
+
+
+def mask_inner_layers(B, G, margin=0.07, reach=0.08):
+    """Hide the parts of inner garment layers that are covered by the new garment G (kills poke-through
+    of e.g. the tunic's shoulders through a veil or mantle when posed)."""
+    V, T = G["V"], G.get("T")
+    if T is None:
+        T = tri_fan(G["F"])
+    bvh = BVHTree.FromPolygons([tuple(p) for p in V], T.tolist(), all_triangles=True)
+    bnd = G.get("bnd")
+    if bnd is None:
+        bnd = boundary_mask(len(V), G["F"])
+    bv = V[bnd]
+    kd = KDTree(max(1, len(bv)))
+    for i, p in enumerate(bv):
+        kd.insert(p, i)
+    kd.balance()
+    for L in B.layers:
+        ob = L.get("ob")
+        if ob is None or L["V"] is V:
+            continue
+        LV = L["V"]
+        LN = vertex_normals(LV, None, L["T"])
+        hide = []
+        for i in range(len(LV)):
+            p, n = Vector(LV[i]), Vector(LN[i])
+            hit = bvh.ray_cast(p + n * 0.001, n, reach)
+            if hit[0] is None:
+                continue
+            if len(bv) and kd.find(p)[2] < margin:
+                continue
+            hide.append(i)
+        # only hide if it is a sizeable region (avoid speckle holes)
+        if len(hide) > 30:
+            hide_verts(ob, hide)
+
+
 def mask_covered(person, B, G, margin=0.08, reach=0.20, regions=None):
     """Hide body verts that lie well inside garment G (a ray along the body normal hits the garment and the
     vertex is >= margin from any garment opening). Prevents skin poking through and saves render time."""
@@ -1991,6 +2126,10 @@ def part_belt(person, B, rnd, rgb, Vref, z, kind="sash", detail="hero", knot_the
     and two hanging ends), 'leather' (strap), 'cord' (thin rope)."""
     width = {"sash": 0.05, "leather": 0.036, "cord": 0.012}[kind]
     cf = _column_center(B)
+    Vref = np.asarray(Vref)
+    Vref = Vref[np.abs(Vref[:, 2] - z) < 0.12]
+    rr, _ = B.nearest_region(Vref)
+    Vref = Vref[~np.isin(rr, list(ARM_L | ARM_R))]
     rings, ang = band_rings(B, Vref, z, width, gap=0.0025, bulge=0.003 if kind == "sash" else 0.001)
     V, F = loft_open(rings)
     hemv = [np.full(len(V), 0.0) + np.repeat(np.linspace(0, width, len(rings)), len(rings[0]))]
@@ -2334,7 +2473,7 @@ def part_headcover(person, B, rnd, rgb, kind="veil", detail="hero", length=None,
              fold_crumple(rnd, 0.0025, 14, zmin=chin[2] - 0.05)]
     if kind == "hood":
         folds.append(fold_crumple(rnd, 0.004, 7))
-    G = post_shell(B, G, rnd, folds=folds, smooth_iters=4, gap=0.006, layer_gap=0.006)
+    G = post_shell(B, G, rnd, folds=folds, smooth_iters=4, gap=0.006, layer_gap=0.007, bsmooth=5)
     if kind == "hood":
         # peaked crown at the back
         V = G["V"]
@@ -2902,7 +3041,7 @@ def part_segmentata(person, B, rnd, detail="hero", metal="iron", name="lorica_se
     uv = uv_builder([np.stack([th * 0.2, V[:, 2]], 1)], np.zeros(len(V), np.int64), [2 * math.pi * 0.2])
     ob = finish_garment(person, B, name, V, F, name, metal_material(metal), color(metal), weights=W, uv=uv,
                         attrs={"wear": np.full(len(V), 0.5), "hem": np.zeros(len(V))}, thickness=0.003, detail=detail)
-    add_layer(B, V, F, name)
+    add_layer(B, V, F, name, W)
     return [ob]
 
 
@@ -2914,14 +3053,13 @@ def outfit_robe_rich(person, B, rnd, colors, detail="hero"):
                        sleeves="long", belt=None, detail=detail, ease=0.028, flare=0.06, name="tunic", fold=0.012,
                        wear=0.6, embroidery=True)
     out += gs
+    zb = _waist_z(B) + 0.01
+    out.append(part_belt(person, B, rnd, _pick(colors, "belt", rnd, "madder"), G["V"], zb, kind="sash",
+                         detail=detail, name="sash", stripes=True))
     gs, G2 = part_mantle(person, B, rnd, _pick(colors, "mantle", rnd, rnd.choice(["tekhelet", "purple", "indigo", "plum"])),
                          detail=detail, style="cloak", length="calf", fabric="wool", name="robe_outer", fold=0.014,
                          embroidery=True, wear=0.6)
     out += gs
-    sc = _sc(B)
-    zb = _waist_z(B) + 0.01
-    out.append(part_belt(person, B, rnd, _pick(colors, "belt", rnd, "madder"), layer_points(B, 1), zb, kind="sash",
-                         detail=detail, name="sash", stripes=True))
     out += part_tallit(person, B, rnd, _pick(colors, "shawl", rnd, "bleached"), detail=detail)
     return out
 
@@ -2999,7 +3137,7 @@ def part_tallit(person, B, rnd, rgb, detail="hero", name="prayer_shawl"):
     ob = finish_garment(person, B, name, Vall, Fall, name, fabric_material("fine_linen", stripes=True), rgb,
                         weights=W, uv=column_uv(B, G2), attrs={"wear": np.full(len(Vall), 0.15), "hem": hem_all},
                         thickness=0.003, detail=detail)
-    add_layer(B, V, G["F"], name)
+    add_layer(B, V, G["F"], name, W[:len(V)])
     return [ob]
 
 

@@ -468,6 +468,7 @@ def _particle_tree():
         ("Mode", "NodeSocketInt", 0),               # 0 points, 1 instances, 2 velocity-aligned, 3 camera billboards
         ("Instance", "NodeSocketObject"),
         ("Camera", "NodeSocketObject"),
+        ("Use Active Camera", "NodeSocketBool", True),
         ("Stretch", "NodeSocketFloat", 0.0),        # streak length = |v| * Stretch (mode 2)
         ("Spin", "NodeSocketFloat", 0.0),           # rad/s random roll (modes 1/3)
         ("Material", "NodeSocketMaterial"),
@@ -534,7 +535,9 @@ def _particle_tree():
     spin = nb.mul(nb.add(nb.mul(T, G("Spin")), nb.mul(rnd, 6.283)), 1.0)
     rot_rand = nb.out(nb.n("FunctionNodeEulerToRotation", {"Euler": nb.xyz(nb.mul(rnd, 17.0), nb.mul(rnd, 29.0), spin)}))
     rot_vel = nb.out(nb.n("FunctionNodeAlignRotationToVector", {"Vector": vel}, axis="Z", pivot_axis="AUTO"))
-    cam = nb.n("GeometryNodeObjectInfo", {"Object": G("Camera")}, transform_space="RELATIVE")
+    camobj = nb.out(nb.n("GeometryNodeSwitch", {"Switch": G("Use Active Camera"), "False": G("Camera"),
+                                                  "True": nb.out(nb.n("GeometryNodeInputActiveCamera"))}, input_type="OBJECT"))
+    cam = nb.n("GeometryNodeObjectInfo", {"Object": camobj}, transform_space="RELATIVE")
     # camera location in this object's space -> direction from each point to the camera
     to_cam = nb.v("SUBTRACT", nb.out(cam, "Location"), nb.out(nb.n("GeometryNodeInputPosition")))
     rot_cam0 = nb.out(nb.n("FunctionNodeAlignRotationToVector", {"Vector": to_cam}, axis="Z", pivot_axis="AUTO"))
@@ -567,8 +570,6 @@ def _particles(name, p0, v0, birth, life, size, material, frame0=1, time_scale=1
     rng = np.random.default_rng(seed)
     rnd = rng.random(n) if rnd is None else rnd
     o = _points_obj(name, p0, {"v0": np.asarray(v0, np.float32), "birth": birth, "life": life, "size": size, "rnd": rnd}, coll)
-    if mode == 3 and camera is None:
-        camera = bpy.context.scene.camera
     vals = dict(Frame0=float(frame0), FPS=float(_fps()), Time_Scale=float(time_scale), Gravity=tuple(gravity),
                 Drag=float(drag), Wind=tuple(wind), Turb_Amp=float(turb), Turb_Scale=float(turb_scale),
                 Turb_Speed=float(turb_speed), Turb_Ramp=float(turb_ramp), Floor=float(floor), Floor_Mode=int(floor_mode),
@@ -576,8 +577,9 @@ def _particles(name, p0, v0, birth, life, size, material, frame0=1, time_scale=1
                 Stretch=float(stretch), Spin=float(spin), Material=material)
     if instance is not None:
         vals["Instance"] = instance
-    if camera is not None:
+    if camera is not None:            # default: the scene's active camera at render time
         vals["Camera"] = camera
+        vals["Use_Active_Camera"] = False
     m = _mod(o, _particle_tree(), "Particles", **vals)
     _no_shadow(o)
     return o, m
@@ -1006,7 +1008,8 @@ def _fire_card_tree():
     if name in bpy.data.node_groups:
         return bpy.data.node_groups[name]
     t, nb, gi, go = _gn_tree(name, [("Geometry", "NodeSocketGeometry"), ("Instance", "NodeSocketObject"),
-                                    ("Camera", "NodeSocketObject"), ("FPS", "NodeSocketFloat", 24.0),
+                                    ("Camera", "NodeSocketObject"), ("Use Active Camera", "NodeSocketBool", True),
+                                    ("FPS", "NodeSocketFloat", 24.0),
                                     ("Flicker", "NodeSocketFloat", 1.0), ("Lean", "NodeSocketVector", (0, 0, 0)),
                                     ("Material", "NodeSocketMaterial")])
     G = lambda k: gi.outputs[k]
@@ -1017,7 +1020,9 @@ def _fire_card_tree():
     nz = nb.noise(nb.xyz(nb.mul(r, 71.0), 0.0, 0.0), scale=1.0, detail=1.0, w=nb.mul(T, 2.2))
     cs = nb.sep(nb.v("SUBTRACT", nb.out(nz, "Color"), (0.5, 0.5, 0.5)))
     hh = nb.mul(h, nb.add(1.0, nb.mul(nb.out(cs, "Z"), nb.mul(G("Flicker"), 0.45))))
-    cam = nb.n("GeometryNodeObjectInfo", {"Object": G("Camera")}, transform_space="RELATIVE")
+    camobj = nb.out(nb.n("GeometryNodeSwitch", {"Switch": G("Use Active Camera"), "False": G("Camera"),
+                                                  "True": nb.out(nb.n("GeometryNodeInputActiveCamera"))}, input_type="OBJECT"))
+    cam = nb.n("GeometryNodeObjectInfo", {"Object": camobj}, transform_space="RELATIVE")
     d = nb.v("SUBTRACT", nb.out(cam, "Location"), nb.out(nb.n("GeometryNodeInputPosition")))
     d = nb.v("MULTIPLY", d, (-1.0, -1.0, 0.0))
     rot = nb.out(nb.n("FunctionNodeAlignRotationToVector", {"Vector": d}, axis="Y", pivot_axis="Z"))
@@ -1053,8 +1058,9 @@ def fire_cards(name, cards, temp=1800, strength=1.0, flicker=1.0, lean=(0, 0, 0)
     o = _points_obj(name, P, {"w": [c[3] for c in cards], "h": [c[4] for c in cards], "rnd": rng.random(len(cards))}, coll)
     if parent is not None:
         _parent(o, parent)
-    _mod(o, _fire_card_tree(), "FireCards", Instance=_card_src(), Camera=camera or bpy.context.scene.camera,
-         FPS=float(_fps()), Flicker=float(flicker), Lean=tuple(lean), Material=_fire_card_material(temp, strength))
+    kw = {"Camera": camera, "Use_Active_Camera": False} if camera is not None else {}
+    _mod(o, _fire_card_tree(), "FireCards", Instance=_card_src(), FPS=float(_fps()), Flicker=float(flicker),
+         Lean=tuple(lean), Material=_fire_card_material(temp, strength), **kw)
     _no_shadow(o)
     return o
 
@@ -1600,8 +1606,10 @@ def _spray_material(name="FX_spray", color=(0.92, 0.95, 1.0), opacity=0.55, glow
     age = nb.out(nb.sattr("fx_age", "INSTANCER"), "Fac")
     nq = nb.v("ADD", nb.v("SCALE", uv, scale=3.0), nb.xyz(nb.mul(rr, 31.0), nb.mul(age, 0.8), nb.mul(rr, 7.0)))
     n = nb.out(nb.noise(nq, scale=1.4, detail=5.0, rough=0.6, distortion=0.3), "Fac")
-    blob = nb.sub(1.0, nb.smooth(r, 0.15 * soft, 1.0))
-    a = nb.mul(nb.smooth(nb.add(nb.mul(blob, 0.9), nb.mul(nb.sub(n, 0.5), 1.3)), 0.25, 0.85), nb.mul(fade, opacity))
+    blob = nb.sub(1.0, nb.smooth(r, 0.0, 1.0))
+    blob = nb.mul(blob, blob)                                  # ~gaussian falloff
+    wisp = nb.madd(nb.sub(n, 0.5), 1.1 * soft, 1.0)            # noisy density, never hard-edged
+    a = nb.mul(nb.m("MAXIMUM", nb.mul(blob, wisp), 0.0), nb.mul(fade, opacity))
     dif = nb.n("ShaderNodeBsdfDiffuse", {"Color": color})
     trl = nb.n("ShaderNodeBsdfTranslucent", {"Color": color})
     mx = nb.n("ShaderNodeMixShader", {0: 0.55, 1: dif, 2: trl})
@@ -1663,15 +1671,16 @@ def _sea_wall_tree():
     face = nb.sub(1.0, top)
     crest = nb.mul(nb.smooth(k, 0.7, 0.98), nb.sub(1.0, nb.smooth(top, 0.3, 1.0)))
     # big slow bulges + medium churn (flowing upward on the face)
-    q1 = nb.v("ADD", nb.v("MULTIPLY", pos, (0.035, 0.035, 0.05)), nb.xyz(0.0, nb.mul(T, 0.02), nb.mul(T, -0.08)))
-    n1 = nb.out(nb.noise(q1, scale=1.0, detail=1.0, w=nb.mul(T, 0.07)), "Fac")
-    q2 = nb.v("ADD", nb.v("MULTIPLY", pos, (0.14, 0.14, 0.18)), nb.xyz(0.0, 0.0, nb.mul(T, -0.45)))
-    n2 = nb.out(nb.noise(q2, scale=1.0, detail=2.0, w=nb.mul(T, 0.3)), "Fac")
+    # noise stretched along Y (corridor axis): features are seen foreshortened from inside the corridor
+    q1 = nb.v("ADD", nb.v("MULTIPLY", pos, (0.035, 0.012, 0.05)), nb.xyz(0.0, nb.mul(T, 0.01), nb.mul(T, -0.08)))
+    n1 = nb.out(nb.noise(q1, scale=1.0, detail=1.0, w=nb.mul(T, 0.12)), "Fac")
+    q2 = nb.v("ADD", nb.v("MULTIPLY", pos, (0.14, 0.04, 0.16)), nb.xyz(0.0, 0.0, nb.mul(T, -0.45)))
+    n2 = nb.out(nb.noise(q2, scale=1.0, detail=2.0, w=nb.mul(T, 0.45)), "Fac")
     scale_h = nb.m("MINIMUM", nb.div(hgt, 30.0), 1.0)
     dface = nb.mul(nb.add(nb.mul(nb.sub(n1, 0.5), 2.0), nb.mul(nb.sub(n2, 0.5), 0.9)), nb.mul(G("Amp"), nb.mul(face, scale_h)))
     dface = nb.mul(dface, nb.madd(crest, 1.2, 0.5))
     # crest: rolling, heaving lip
-    q3 = nb.v("ADD", nb.v("MULTIPLY", pos, (0.06, 0.06, 0.06)), nb.xyz(0.0, nb.mul(T, 0.35), 0.0))
+    q3 = nb.v("ADD", nb.v("MULTIPLY", pos, (0.06, 0.025, 0.06)), nb.xyz(0.0, nb.mul(T, 0.12), 0.0))
     n3 = nb.out(nb.noise(q3, scale=1.0, detail=2.0, w=nb.mul(T, 0.25)), "Fac")
     dz = nb.mul(nb.mul(nb.sub(n3, 0.5), 2.0), nb.mul(G("Crest Amp"), nb.mul(crest, scale_h)))
     dx = nb.mul(G("Side"), nb.add(dface, nb.mul(nb.mul(nb.sub(n3, 0.45), -1.6), nb.mul(crest, scale_h))))
@@ -1693,7 +1702,7 @@ def _sea_wall_tree():
     return t
 
 
-def _sea_wall_material(name="FX_seawall", glow=1.0, foam=1.0, deep=(0.002, 0.016, 0.02), teal=(0.02, 0.4, 0.33)):
+def _sea_wall_material(name="FX_seawall", glow=1.0, foam=1.0, deep=(0.002, 0.016, 0.02), teal=(0.03, 0.55, 0.45)):
     """Water-wall shader: dark deep body, glossy large-scale chop, emerald translucency near the crest with
     vertical light shafts, crest / foot foam and sparse foam streaks. (Kept to 4 noise lookups for speed.)"""
     m, nb, out = _new_mat(name)
@@ -1705,17 +1714,19 @@ def _sea_wall_material(name="FX_seawall", glow=1.0, foam=1.0, deep=(0.002, 0.016
     kk = nb.m("MINIMUM", k, 1.0)
     face = nb.sub(1.0, top)
     # large-scale chop (bump), flowing upward slowly
-    q = nb.v("ADD", nb.v("SCALE", pos, scale=0.28), nb.xyz(0.0, 0.0, nb.mul(T, -0.25)))
+    # NB: walls are mostly seen at grazing angles along the corridor (Y) -> features are stretched along Y
+    # so that perspective foreshortening doesn't turn them into vertical streaks
+    q = nb.v("ADD", nb.v("MULTIPLY", pos, (0.28, 0.09, 0.28)), nb.xyz(0.0, 0.0, nb.mul(T, -0.25)))
     h1 = nb.out(nb.noise(q, scale=1.0, detail=3.0, rough=0.5), "Fac")
     # foam / bubbles: one noise for blotches, one vertically stretched for streaks
-    fq2 = nb.v("ADD", nb.v("MULTIPLY", pos, (0.45, 0.45, 0.45)), nb.xyz(0.0, nb.mul(T, 0.25), nb.mul(T, -0.35)))
+    fq2 = nb.v("ADD", nb.v("MULTIPLY", pos, (0.45, 0.15, 0.45)), nb.xyz(0.0, nb.mul(T, 0.08), nb.mul(T, -0.35)))
     blot = nb.out(nb.noise(fq2, scale=1.0, detail=3.0, rough=0.6), "Fac")
-    fq = nb.v("ADD", nb.v("SCALE", pos, scale=0.09), nb.xyz(0.0, nb.mul(T, 0.03), nb.mul(T, -0.05)))
+    fq = nb.v("ADD", nb.v("MULTIPLY", pos, (0.09, 0.03, 0.08)), nb.xyz(0.0, nb.mul(T, 0.01), nb.mul(T, -0.05)))
     streak = nb.out(nb.noise(fq, scale=1.0, detail=3.0, rough=0.55, distortion=1.2), "Fac")
-    crest_f = nb.mul(nb.smooth(kk, 0.86, 0.98), nb.smooth(blot, 0.38, 0.55))
+    crest_f = nb.mul(nb.smooth(kk, 0.91, 0.985), nb.smooth(blot, 0.36, 0.52))
     crest_f = nb.mul(crest_f, nb.sub(1.0, nb.smooth(top, 0.5, 1.0)))
     foot_f = nb.mul(nb.sub(1.0, nb.smooth(kk, 0.0, 0.06)), nb.smooth(blot, 0.42, 0.55))
-    face_f = nb.mul(nb.mul(nb.mul(nb.smooth(streak, 0.66, 0.7), nb.smooth(blot, 0.5, 0.6)), face), nb.mul(nb.smooth(kk, 0.3, 0.9), 0.6))
+    face_f = nb.mul(nb.mul(nb.mul(nb.smooth(streak, 0.7, 0.74), nb.smooth(blot, 0.55, 0.62)), face), nb.mul(nb.smooth(kk, 0.4, 0.9), 0.35))
     top_f = nb.mul(top, nb.smooth(blot, 0.62, 0.72))
     # collapse whitewater: leading crest + lower half as the walls meet
     churn = nb.mul(nb.smooth(c, 0.1, 0.7), nb.smooth(blot, 0.36, 0.5))
@@ -1732,7 +1743,7 @@ def _sea_wall_material(name="FX_seawall", glow=1.0, foam=1.0, deep=(0.002, 0.016
     rough = nb.mixf(fm, 0.1, 0.6)
     # without ray tracing the probe reflects only the bright sky; the lower wall would really mirror the
     # dark opposite wall + seabed -> fade the specular toward the foot (set raytracing for true reflections)
-    spec = nb.mixf(fm, nb.mixf(top, nb.madd(nb.smooth(kk, 0.15, 0.95), 0.36, 0.05), 0.5), 0.5)
+    spec = nb.mixf(fm, nb.mixf(top, nb.madd(nb.smooth(kk, 0.15, 0.95), 0.26, 0.05), 0.5), 0.5)
     b = nb.n("ShaderNodeBsdfPrincipled", {"Base Color": base, "Roughness": rough, "IOR": 1.33, "Specular IOR Level": spec,
                                            "Emission Color": ecol, "Emission Strength": nb.sub(1.0, nb.mul(fm, 0.8))})
     bump = nb.n("ShaderNodeBump", {"Height": h1, "Distance": 0.4, "Strength": 0.3})
@@ -1935,3 +1946,288 @@ def red_sea(ctx=None, length=640.0, width=36.0, height=45.0, center_y=0.0, shore
     fx.floor_at = floor
     fx.corridor = {"x": (-W2, W2), "y": (y0, y1), "H": H, "shore_slope": shore_slope}
     return fx
+
+
+# =============================================================================================
+# 4. ASH / DUST
+# =============================================================================================
+def _flake_src():
+    def mk():
+        return _mesh_obj("FX_src_flake", [(-1, -0.6, 0), (0.9, -0.9, 0.1), (1.0, 0.7, -0.1), (-0.7, 1.0, 0.05)], [(0, 1, 2, 3)])
+    return _cached_src("FX_src_flake", mk)
+
+
+def _ash_material(name="FX_ash", color=(0.05, 0.045, 0.04), glow_color=(1.0, 0.55, 0.18), glow=6.0, glow_age=0.12):
+    """Ash flakes: dark matte, young flakes glow (ember / golden light) and cool down with age."""
+    if name in bpy.data.materials:
+        return bpy.data.materials[name]
+    m, nb, out = _new_mat(name)
+    age = nb.add(nb.out(nb.sattr("fx_age"), "Fac"), nb.out(nb.sattr("fx_age", "INSTANCER"), "Fac"))
+    fade = nb.add(nb.out(nb.sattr("fx_fade"), "Fac"), nb.out(nb.sattr("fx_fade", "INSTANCER"), "Fac"))
+    r = nb.add(nb.out(nb.sattr("fx_rnd"), "Fac"), nb.out(nb.sattr("fx_rnd", "INSTANCER"), "Fac"))
+    hot = nb.mul(nb.sub(1.0, nb.smooth(age, 0.0, glow_age)), nb.madd(r, 0.8, 0.4))
+    b = nb.n("ShaderNodeBsdfPrincipled", {"Base Color": nb.v("SCALE", color, scale=nb.madd(r, 0.8, 0.6)), "Roughness": 0.9,
+                                           "Emission Color": glow_color, "Emission Strength": nb.mul(hot, glow)})
+    tr = nb.n("ShaderNodeBsdfTransparent")
+    mx = nb.n("ShaderNodeMixShader", {0: nb.m("MINIMUM", nb.mul(fade, 1.5), 1.0), 1: tr, 2: b})
+    nb.links.new(nb.out(mx), out.inputs["Surface"])
+    m.surface_render_method = "DITHERED"
+    return m
+
+
+def _ash_tree():
+    name = "FX_Ash"
+    if name in bpy.data.node_groups:
+        return bpy.data.node_groups[name]
+    t, nb, gi, go = _gn_tree(name, [
+        ("Geometry", "NodeSocketGeometry"),
+        ("Frame0", "NodeSocketFloat", 1.0), ("FPS", "NodeSocketFloat", 24.0),
+        ("T0", "NodeSocketFloat", 0.0), ("Dur", "NodeSocketFloat", 3.0),
+        ("Dir", "NodeSocketVector", (1, 0, 0)), ("Dmin", "NodeSocketFloat", 0.0), ("Dmax", "NodeSocketFloat", 1.0),
+        ("Jitter", "NodeSocketFloat", 0.25), ("Noise Scale", "NodeSocketFloat", 2.0),
+        ("Density", "NodeSocketFloat", 3000.0), ("Seed", "NodeSocketInt", 0),
+        ("Life", "NodeSocketFloat", 2.5), ("Size", "NodeSocketFloat", 0.006), ("Kick", "NodeSocketFloat", 0.4),
+        ("Gravity", "NodeSocketVector", (0, 0, -0.5)), ("Drag", "NodeSocketFloat", 1.2), ("Wind", "NodeSocketVector", (2, 0, 0.5)),
+        ("Turb Amp", "NodeSocketFloat", 0.4), ("Turb Scale", "NodeSocketFloat", 1.5), ("Turb Speed", "NodeSocketFloat", 0.6),
+        ("Keep Mesh", "NodeSocketBool", True), ("Mode", "NodeSocketInt", 1), ("Spin", "NodeSocketFloat", 4.0),
+        ("Instance", "NodeSocketObject"), ("Material", "NodeSocketMaterial"),
+    ])
+    G = lambda k: gi.outputs[k]
+    st = nb.n("GeometryNodeInputSceneTime")
+    T = nb.div(nb.sub(st.outputs["Frame"], G("Frame0")), G("FPS"))
+
+    def release():
+        pos = nb.out(nb.n("GeometryNodeInputPosition"))
+        d = nb.div(nb.sub(nb.v("DOT_PRODUCT", pos, G("Dir")), G("Dmin")), nb.m("MAXIMUM", nb.sub(G("Dmax"), G("Dmin")), 1e-4))
+        n = nb.out(nb.noise(nb.v("SCALE", pos, scale=G("Noise Scale")), scale=1.0, detail=3.0), "Fac")
+        d = nb.add(d, nb.mul(nb.sub(n, 0.5), G("Jitter")))
+        d = nb.m("MINIMUM", nb.m("MAXIMUM", d, 0.0), 1.0)
+        return nb.madd(d, G("Dur"), G("T0"))
+
+    geo = G("Geometry")
+    # mesh: time since release per point; delete faces behind the front
+    dis = nb.sub(T, release())
+    mesh = nb.out(nb.n("GeometryNodeStoreNamedAttribute", {"Geometry": geo, "Name": "fx_dis", "Value": dis}, data_type="FLOAT", domain="POINT"))
+    gone = nb.m("GREATER_THAN", nb.attr("fx_dis"), 0.0)
+    mesh = nb.out(nb.n("GeometryNodeDeleteGeometry", {"Geometry": mesh, "Selection": gone}, domain="FACE"))
+    # particles from the surface
+    dist = nb.n("GeometryNodeDistributePointsOnFaces", {"Mesh": geo, "Density": G("Density"), "Seed": G("Seed")}, distribute_method="RANDOM")
+    pts = nb.out(dist, "Points")
+    nrm = nb.out(dist, "Normal")
+    rv = nb.n("FunctionNodeRandomValue", {"Min": 0.0, "Max": 1.0, "Seed": nb.add(G("Seed"), 3)}, data_type="FLOAT")
+    rvec = nb.n("FunctionNodeRandomValue", {"Min": (-1, -1, -1), "Max": (1, 1, 1), "Seed": nb.add(G("Seed"), 7)}, data_type="FLOAT_VECTOR")
+    pts = nb.out(nb.n("GeometryNodeStoreNamedAttribute", {"Geometry": pts, "Name": "v0",
+                  "Value": nb.v("SCALE", nb.v("ADD", nrm, nb.out(rvec)), scale=G("Kick"))}, data_type="FLOAT_VECTOR", domain="POINT"))
+    pts = nb.out(nb.n("GeometryNodeStoreNamedAttribute", {"Geometry": pts, "Name": "rnd", "Value": nb.out(rv)}, data_type="FLOAT", domain="POINT"))
+    pts = nb.out(nb.n("GeometryNodeStoreNamedAttribute", {"Geometry": pts, "Name": "birth", "Value": nb.add(release(), nb.mul(nb.attr("rnd"), 0.08))}, data_type="FLOAT", domain="POINT"))
+    pts = nb.out(nb.n("GeometryNodeStoreNamedAttribute", {"Geometry": pts, "Name": "life", "Value": nb.mul(G("Life"), nb.madd(nb.attr("rnd"), 0.8, 0.6))}, data_type="FLOAT", domain="POINT"))
+    pts = nb.out(nb.n("GeometryNodeStoreNamedAttribute", {"Geometry": pts, "Name": "size", "Value": nb.mul(G("Size"), nb.madd(nb.attr("rnd"), 1.0, 0.5))}, data_type="FLOAT", domain="POINT"))
+    # only points released before now and not long dead -> fewer instances
+    alive = nb.mul(nb.m("LESS_THAN", nb.attr("birth"), T), nb.m("GREATER_THAN", nb.add(nb.attr("birth"), nb.attr("life")), T))
+    pts = nb.out(nb.n("GeometryNodeDeleteGeometry", {"Geometry": pts, "Selection": nb.m("LESS_THAN", alive, 0.5)}, domain="POINT"))
+    pts = nb.out(nb.n("GeometryNodePointsToVertices", {"Points": pts}))
+    pg = nb.n("GeometryNodeGroup")
+    pg.node_tree = _particle_tree()
+    nb.links.new(pts, pg.inputs["Geometry"])
+    for k_in, k_src in (("Frame0", "Frame0"), ("FPS", "FPS"), ("Gravity", "Gravity"), ("Drag", "Drag"), ("Wind", "Wind"),
+                        ("Turb Amp", "Turb Amp"), ("Turb Scale", "Turb Scale"), ("Turb Speed", "Turb Speed"), ("Mode", "Mode"),
+                        ("Instance", "Instance"), ("Material", "Material"), ("Spin", "Spin")):
+        nb.links.new(G(k_src), pg.inputs[k_in])
+    nb.set(pg, "Turb Ramp", 0.8)
+    nb.set(pg, "Grow", 0.6)
+    nb.set(pg, "Fade In", 0.0)
+    nb.set(pg, "Fade Out", 0.5)
+    nb.set(pg, "Shrink", True)
+    sw = nb.n("GeometryNodeSwitch", {"Switch": G("Keep Mesh"), "True": mesh}, input_type="GEOMETRY")
+    j = nb.n("GeometryNodeJoinGeometry")
+    nb.links.new(nb.out(sw), j.inputs[0])
+    nb.links.new(nb.out(pg), j.inputs[0])
+    nb.links.new(nb.out(j), go.inputs[0])
+    return t
+
+
+def _inject_edge_glow(m, color=(1.0, 0.6, 0.2), strength=8.0, width=0.25, char=0.5):
+    """Material add-on for ash_disintegrate: glowing rim along the advancing front (attribute fx_dis =
+    seconds since release, negative = intact) and darkening just ahead of it."""
+    if m is None or m.get("fx_edge_glow"):
+        return m
+    nt = m.node_tree
+    nb = NB(nt)
+    b = next((n for n in nt.nodes if n.bl_idname == "ShaderNodeBsdfPrincipled"), None)
+    if b is None:
+        return m
+    d = nb.out(nb.sattr("fx_dis"), "Fac")
+    rim = nb.smooth(d, -width, 0.0)
+    pre = nb.smooth(d, -width * 3, -width * 0.5)
+    s = b.inputs["Base Color"]
+    src = s.links[0].from_socket if s.is_linked else tuple(s.default_value)
+    nb.links.new(nb.mixc(nb.mul(pre, char), src, (0.02, 0.018, 0.016)), s)
+    nb.set(b, "Emission Color", color)
+    nb.links.new(nb.mul(rim, strength), b.inputs["Emission Strength"])
+    m["fx_edge_glow"] = 1
+    return m
+
+
+def ash_disintegrate(obj, start_frame, duration, direction=(1, 0, 0), wind=None, count=30000, flake_size=0.01,
+                     life=2.5, jitter=0.25, noise_scale=None, edge_glow=True, glow_color=(1.0, 0.62, 0.22), glow=4.0,
+                     ash_color=(0.05, 0.045, 0.04), keep_mesh=True, mode="flakes", turbulence=0.4, gravity=-0.4,
+                     seed=0):
+    """Blow a mesh away as ash behind a front sweeping along `direction` (world space).
+
+    obj           mesh object (works on top of its existing modifiers, e.g. an armature)
+    start_frame   frame the front starts; duration (frames) for it to cross the whole object
+    direction     travel direction of the front (e.g. the advancing light): (1, 0, 0) = from -X to +X
+    wind          world-space m/s for the released ash (default: direction * 1.6 + up 0.5)
+    count         approximate number of flakes for the whole surface
+    mode          'flakes' (tumbling instanced flakes) | 'points' (point cloud, cheapest)
+    edge_glow     inject a glowing rim + charring into the object's materials (glow_color, glow)
+    Returns FX(root=obj, modifier, material).  The object's faces are deleted as the front passes.
+    """
+    fps = _fps()
+    mw = obj.matrix_world
+    R = mw.to_3x3()
+    Rinv = R.inverted()
+    dvec = Vector(direction).normalized()
+    d_obj = (Rinv @ dvec)
+    sc_len = d_obj.length
+    d_obj = d_obj.normalized()
+    me = obj.data
+    co = np.empty(len(me.vertices) * 3, np.float32)
+    me.vertices.foreach_get("co", co)
+    co = co.reshape(-1, 3)
+    proj = co @ np.array(d_obj, np.float32)
+    dmin, dmax = float(proj.min()), float(proj.max())
+    # surface area (object space) -> density
+    area = sum(p.area for p in me.polygons) or 1.0
+    density = count / area
+    size_obj = flake_size / max(1e-6, (mw.to_scale()[0] + mw.to_scale()[1] + mw.to_scale()[2]) / 3)
+    if wind is None:
+        # faster than the front and lifting, so the ash streams away instead of piling up at the front
+        front_speed = (dmax - dmin) * sc_len / max(duration / fps, 1e-3)
+        wind = tuple(dvec * max(2.5, front_speed * 2.2) + Vector((0, 0, 1.2)))
+    w_obj = Rinv @ Vector(wind)
+    g_obj = Rinv @ Vector((0, 0, gravity))
+    extent = max(dmax - dmin, 1e-3)
+    mat = _ash_material("FX_ash_%d" % seed, ash_color, glow_color, glow)
+    md = obj.modifiers.new("Ash", "NODES")
+    md.node_group = _ash_tree()
+    _mod_set(md, Frame0=1.0, FPS=float(fps), T0=float((start_frame - 1) / fps), Dur=float(duration / fps),
+             Dir=tuple(d_obj), Dmin=dmin, Dmax=dmax, Jitter=float(jitter), Noise_Scale=float(noise_scale or 4.0 / extent),
+             Density=float(density), Seed=int(seed), Life=float(life), Size=float(size_obj), Kick=0.6 / max(sc_len, 1e-6),
+             Gravity=tuple(g_obj), Drag=1.2, Wind=tuple(w_obj), Turb_Amp=float(turbulence) / max(sc_len, 1e-6) * 0 + float(turbulence),
+             Turb_Scale=1.5, Turb_Speed=0.6, Keep_Mesh=bool(keep_mesh), Mode=0 if mode == "points" else 1,
+             Spin=4.0, Instance=_flake_src(), Material=mat)
+    if edge_glow:
+        for slot in obj.material_slots:
+            _inject_edge_glow(slot.material, glow_color, glow, width=0.03 * duration / fps)
+    return FX(obj, modifier=md, material=mat)
+
+
+def _dust_material(name="FX_dust", color=(0.55, 0.45, 0.35), opacity=0.5):
+    return _spray_material(name, color=color, opacity=opacity, soft=1.3)
+
+
+def _grain_material(name="FX_grain", color=(0.45, 0.38, 0.3)):
+    if name in bpy.data.materials:
+        return bpy.data.materials[name]
+    m, nb, out = _new_mat(name)
+    fade = nb.add(nb.out(nb.sattr("fx_fade"), "Fac"), nb.out(nb.sattr("fx_fade", "INSTANCER"), "Fac"))
+    r = nb.out(nb.sattr("fx_rnd"), "Fac")
+    b = nb.n("ShaderNodeBsdfPrincipled", {"Base Color": nb.v("SCALE", color, scale=nb.madd(r, 0.7, 0.65)), "Roughness": 0.8})
+    tr = nb.n("ShaderNodeBsdfTransparent")
+    mx = nb.n("ShaderNodeMixShader", {0: nb.m("MINIMUM", nb.mul(fade, 2.0), 1.0), 1: tr, 2: b})
+    nb.links.new(nb.out(mx), out.inputs["Surface"])
+    m.surface_render_method = "DITHERED"
+    return m
+
+
+def dust_burst(loc, start_frame, size=1.0, color=(0.72, 0.62, 0.5), count=60, grains=1500, direction=(0, 0, 1),
+               wind=(0.6, 0.0, 0.0), floor=None, opacity=0.9, life=3.0, seed=0, name="DustBurst", coll=None):
+    """One-shot dust puff at `loc` (e.g. a hoof impact): expanding soft billboard puffs + fine grains
+    thrown out and falling back. size ~ cloud radius (m) after ~1 s. direction biases the throw.
+    Returns FX(root, puffs, grains)."""
+    fps = _fps()
+    rng = np.random.default_rng(seed)
+    root = _empty(name, loc, coll, size=size)
+    t0 = (start_frame - 1) / fps
+    fl = (floor - loc[2]) if floor is not None else -0.02
+    dvec = np.array(direction, np.float32)
+    dvec = dvec / max(1e-6, np.linalg.norm(dvec))
+    parts = {}
+    # puffs
+    n = count
+    rd = rng.normal(0, 1, (n, 3))
+    rd /= np.linalg.norm(rd, axis=1, keepdims=True)
+    rd[:, 2] = np.abs(rd[:, 2]) * 0.6 + 0.15
+    v0 = (rd * rng.uniform(1.5, 4.0, (n, 1)) + dvec * 1.2) * size
+    p0 = rng.normal(0, 0.1 * size, (n, 3))
+    p0[:, 2] = np.abs(p0[:, 2])
+    src = _cached_src("FX_src_quad", lambda: _quad("FX_src_quad"))
+    po, _ = _particles(name + "_puffs", p0, v0, t0 + rng.uniform(0, 0.15, n), rng.uniform(0.6, 1.0, n) * life,
+                       rng.uniform(0.25, 0.55, n) * size, _dust_material("FX_dust_%d" % seed, color, opacity),
+                       gravity=(0, 0, -0.3), drag=2.5, wind=wind, turb=0.35 * size, turb_scale=0.8 / size, turb_speed=0.4,
+                       grow=3.5, fade_in=0.05, fade_out=0.7, mode=3, instance=src, spin=0.4, floor=fl, floor_mode=1,
+                       seed=seed + 1, coll=coll)
+    _parent(po, root)
+    parts["puffs"] = po
+    if grains:
+        n = grains
+        rd = rng.normal(0, 1, (n, 3))
+        rd /= np.linalg.norm(rd, axis=1, keepdims=True)
+        rd[:, 2] = np.abs(rd[:, 2]) + 0.3
+        v0 = (rd * rng.uniform(1.0, 5.0, (n, 1)) + dvec) * size ** 0.5
+        go_, _ = _particles(name + "_grains", np.zeros((n, 3)), v0, t0 + rng.uniform(0, 0.1, n), rng.uniform(0.6, 1.6, n),
+                            rng.uniform(0.0015, 0.004, n), _grain_material("FX_grain_%d" % seed, tuple(c * 0.8 for c in color)),
+                            gravity=(0, 0, -9.81), drag=0.6, wind=wind, floor=fl, floor_mode=2, fade_out=0.2, mode=0,
+                            seed=seed + 2, coll=coll)
+        _parent(go_, root)
+        parts["grains"] = go_
+    return FX(root, **parts)
+
+
+def dust_pour(hand_location, start_frame, end_frame=None, rate=2500, opening=0.03, wind=(1.2, 0.0, 0.1),
+              color=(0.62, 0.55, 0.46), haze=True, floor=0.0, grain_size=0.0012, life=4.0, gusts=0.25, seed=0,
+              name="DustPour", coll=None):
+    """Fine dust trickling from an opening hand and carried off by the wind (s11b).
+    hand_location  world position of the opening between the fingers
+    rate           grains per second (falls off toward end_frame); opening = emitter radius (m)
+    wind           m/s; grains accelerate sideways as they fall, then skate along the ground (floor z)
+    haze           adds soft drifting dust billboards that peel off the stream
+    Returns FX(root, grains, haze)."""
+    fps = _fps()
+    end_frame = end_frame or bpy.context.scene.frame_end
+    rng = np.random.default_rng(seed)
+    root = _empty(name, hand_location, coll, size=0.05)
+    t0 = (start_frame - 1) / fps
+    t1 = (end_frame - 1) / fps
+    dur = max(0.1, t1 - t0)
+    # emission density: quick ramp-up, slow taper (hand emptying)
+    n = int(rate * dur * 0.7)
+    u = rng.random(n)
+    tt = t0 + dur * (1 - np.sqrt(1 - u)) * 0.98     # more early, fewer late
+    a = rng.uniform(0, 2 * math.pi, n)
+    r = opening * np.sqrt(rng.random(n))
+    p0 = np.stack([r * np.cos(a) * 1.6, r * np.sin(a) * 0.6, rng.uniform(-0.005, 0.005, n)], 1)
+    v0 = np.stack([rng.normal(0.05, 0.05, n), rng.normal(0, 0.04, n), rng.uniform(-0.25, -0.05, n)], 1)
+    fl = floor - hand_location[2]
+    parts = {}
+    go_, _ = _particles(name + "_grains", p0, v0, tt, rng.uniform(0.6, 1.0, n) * life, rng.uniform(0.5, 1.4, n) * grain_size,
+                        _grain_material("FX_pourgrain_%d" % seed, color), gravity=(0, 0, -9.81), drag=3.0, wind=wind,
+                        turb=gusts, turb_scale=1.2, turb_speed=0.8, turb_ramp=0.6, floor=fl, floor_mode=1,
+                        fade_in=0.0, fade_out=0.35, mode=0, seed=seed + 1, coll=coll)
+    _parent(go_, root)
+    parts["grains"] = go_
+    if haze:
+        m = int(n / 60) + 10
+        tt2 = rng.uniform(t0, t1, m)
+        drop = rng.uniform(0.05, 1.0, m)
+        p0 = np.stack([rng.normal(0, 0.03, m) + drop * 0.1 * wind[0], rng.normal(0, 0.03, m), -drop * max(0.05, -fl) * 0.9], 1)
+        v0 = np.stack([rng.normal(0.3, 0.2, m), rng.normal(0, 0.1, m), rng.uniform(-0.2, 0.1, m)], 1)
+        src = _cached_src("FX_src_quad", lambda: _quad("FX_src_quad"))
+        ho, _ = _particles(name + "_haze", p0, v0, tt2, rng.uniform(1.5, 3.0, m), rng.uniform(0.05, 0.12, m),
+                           _dust_material("FX_pourhaze_%d" % seed, color, 0.18), gravity=(0, 0, -0.05), drag=1.5, wind=wind,
+                           turb=0.15, turb_scale=1.0, turb_speed=0.5, grow=4.0, fade_in=0.2, fade_out=0.6, mode=3,
+                           instance=src, spin=0.3, floor=fl + 0.02, floor_mode=1, seed=seed + 2, coll=coll)
+        _parent(ho, root)
+        parts["haze"] = ho
+    return FX(root, **parts)

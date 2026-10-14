@@ -34,7 +34,6 @@ import re
 import shutil
 import subprocess
 import sys
-import threading
 import time
 import zipfile
 from concurrent.futures import ThreadPoolExecutor
@@ -44,6 +43,7 @@ from PIL import Image, PngImagePlugin
 
 # Shared 4-core box: spinning OpenMP workers collapse when Blender/ffmpeg also run (measured at load ~20:
 # 20 s/frame with the default policy vs 1.3 s/frame PASSIVE). Must be set before torch is imported.
+_TORCH_PREIMPORTED = "torch" in sys.modules
 os.environ.setdefault("OMP_WAIT_POLICY", "PASSIVE")
 import torch
 import torch.nn as nn
@@ -222,6 +222,17 @@ class Interpolator:
     """RIFE v4.26 on CPU. All images are uint8 HxWx3 (RGB) numpy arrays."""
 
     def __init__(self, model=DEFAULT_MODEL, threads=None, precision="bf16", scale=1.0):
+        if not threads and _TORCH_PREIMPORTED and os.environ.get("OMP_WAIT_POLICY", "").upper() != "PASSIVE":
+            # torch was loaded before us with spinning OpenMP workers: on a busy box 4 threads can be ~10x
+            # slower than 1 (measured 10.9 s vs 1.1 s/frame at load 12). Import interp first, or export
+            # OMP_WAIT_POLICY=PASSIVE, to use all cores safely.
+            try:
+                busy = os.getloadavg()[0] > (os.cpu_count() or 4)
+            except OSError:
+                busy = True
+            threads = 1 if busy else None
+            print("[interp] note: torch imported before interp without OMP_WAIT_POLICY=PASSIVE; threads=%s"
+                  % (threads or torch.get_num_threads()), file=sys.stderr)
         if threads:
             torch.set_num_threads(int(threads))
         try:
@@ -366,8 +377,8 @@ def _load(path):
 def _save(path, arr, note, level):
     info = PngImagePlugin.PngInfo()
     info.add_text(TAG, note)
-    tmp = path + ".tmp.png"
-    Image.fromarray(arr).save(tmp, pnginfo=info, compress_level=level)
+    tmp = path + ".tmp"                                         # not *.png: invisible to frame globs
+    Image.fromarray(arr).save(tmp, format="PNG", pnginfo=info, compress_level=level)
     os.replace(tmp, path)                                       # atomic: compositor never sees half files
 
 
