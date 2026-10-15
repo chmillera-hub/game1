@@ -276,7 +276,7 @@ def build(ctx):
 
     def path(f):
         u = C.ease_in_out(min(1.0, (f - 1) / max(1, N - 1)))
-        sh = Vector((C.shake(f, 0.004, 0.25, 3), 0, C.shake(f, 0.003, 0.22, 9)))
+        sh = Vector((C.shake(f, 0.004, 0.25, 3).x, 0, C.shake(f, 0.003, 0.22, 9).z))
         return a0.lerp(a1, u) + sh, t0v.lerp(t1v, u)
     C.animate_camera(cam, path, 1, N)
 
@@ -285,7 +285,7 @@ def build(ctx):
                   name="rim_moon", shadow=False)
     rim.data.volume_factor = 0.0
 
-    ctx.samples = 5
+    ctx.samples = 4
     ctx.render_opts = {"volumetrics": "low"}
-    ctx.interp = False
+    ctx.interp = True   # lead: half-rate to fit the render budget (sparks may soften slightly)
     ctx.post = {"grade": "candle", "vignette": 0.32, "bloom": 0.3, "caption": {"ink": "light"}}

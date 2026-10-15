@@ -773,10 +773,10 @@
    "visual": "Earth seen from space: the sunrise terminator sweeps across the globe, the atmosphere glowing, light spreading over the continents (Middle East/Africa/Europe first).",
    "mood": "global, majestic",
    "start_frame": 5044,
-   "nframes": 228,
+   "nframes": 649,
    "tail": 14,
-   "render_frames": 242,
-   "seconds": 9.5,
+   "render_frames": 663,
+   "seconds": 27.04,
    "phrases": [
     {
      "text": "All the ends of the earth will remember",
@@ -792,47 +792,31 @@
      "text": "and all the families of the nations will bow down before him,",
      "start": 5.149,
      "end": 9.464
-    }
-   ]
-  },
-  {
-   "id": "s18b",
-   "block": "b18",
-   "from": 3,
-   "transition_in": "dissolve",
-   "title": "Nations bow",
-   "visual": "People of many nations, diverse in skin tone and dress, kneel on a vast plain at dawn facing a distant hill where an empty cross is lit by the rising sun. Camera slowly rises behind them.",
-   "mood": "worship, unity",
-   "start_frame": 5272,
-   "nframes": 421,
-   "tail": 14,
-   "render_frames": 435,
-   "seconds": 17.54,
-   "phrases": [
+    },
     {
      "text": "for dominion belongs to the Lord",
-     "start": 0.184,
-     "end": 2.442
+     "start": 9.684,
+     "end": 11.942
     },
     {
      "text": "and he rules over the nations.",
-     "start": 2.742,
-     "end": 4.942
+     "start": 12.242,
+     "end": 14.442
     },
     {
      "text": "All the rich of the earth will feast and worship;",
-     "start": 6.742,
-     "end": 9.73
+     "start": 16.242,
+     "end": 19.23
     },
     {
      "text": "all who go down to the dust will kneel before him—",
-     "start": 10.15,
-     "end": 13.359
+     "start": 19.65,
+     "end": 22.859
     },
     {
      "text": "those who cannot keep themselves alive.",
-     "start": 13.659,
-     "end": 16.321
+     "start": 23.159,
+     "end": 25.821
     }
    ]
   },
