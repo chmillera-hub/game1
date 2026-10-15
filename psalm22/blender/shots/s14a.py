@@ -112,10 +112,21 @@ def beam(name, foot, sun_dir, radius, top_height, mat_, keys, drift=0.25):
     o.visible_diffuse = o.visible_glossy = o.visible_transmission = o.visible_volume_scatter = False
     o["beam_r"] = float(radius)
     _key_prop(o, "beam", keys)
+    _show_from(o, min(f for f, v in keys if v > 0) - 1)
     sc = bpy.context.scene
     _key_prop(o, "beam_t", [(sc.frame_start, 0.0), (sc.frame_end + 1, drift * (sc.frame_end + 1 - sc.frame_start) / 24.0)],
               interp="LINEAR")
     return o
+
+
+def _show_from(o, f):
+    """Not rendered before frame f (an invisible blended beam / dark lamp still costs render time)."""
+    if f <= 1:
+        return
+    o.hide_render = True
+    o.keyframe_insert("hide_render", frame=1)
+    o.hide_render = False
+    o.keyframe_insert("hide_render", frame=f)
 
 
 def sky_hole(sun_dir, seed=0.3):
@@ -225,6 +236,7 @@ def build(ctx):
     E_key = 4.5                                        # W/m2 (eclipse sun 0.35, golden sun 4.2)
     P_key = E_key * 4 * math.pi * spot_d ** 2
     C.keys(key.data, "energy", [(1, 0.0), (a0, 0.0), (a1, P_key), (NR, P_key * 1.1)])
+    _show_from(key, a0)
     # the light pool on the ground (the shaft is broader than the cross): softer, casts the long cross shadow
     gtarget = Vector((c["base"][0], c["base"][1] - 1.5, cz + 0.3))
     pool = C.light("SPOT", tuple(gtarget + sun_dir * spot_d), 0.0, color=gold, target=tuple(gtarget), size=0.6,
@@ -235,6 +247,7 @@ def build(ctx):
     E_pool = 1.3
     P_pool = E_pool * 4 * math.pi * spot_d ** 2
     C.keys(pool.data, "energy", [(1, 0.0), (a0 + 4, 0.0), (a1 + 4, P_pool), (NR, P_pool * 1.2)])
+    _show_from(pool, a0 + 4)
     foot = Vector((c["base"][0], c["base"][1] + 0.2, cz - 0.4))
     beam("ShaftMain", foot, sun_dir, 2.3, 260.0, beam_material("ShaftMain", color=gold, seed=0.2),
          [(1, 0.0), (a0 - 4, 0.0), (a1, 0.2), (fr(p2s), 0.17), (NR, 0.2)])
@@ -254,6 +267,7 @@ def build(ctx):
         sp.data.volume_factor = 0.0
         pw = 1.2 * 4 * math.pi * 400.0 ** 2
         C.keys(sp.data, "energy", [(1, 0.0), (s0, 0.0), (s0 + 30, pw), (NR, pw)])
+        _show_from(sp, s0)
 
     # --------------------------------------------------------------------- camera: look up, then rise toward the light
     head = Vector(c["head"])

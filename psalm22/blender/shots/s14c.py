@@ -180,7 +180,7 @@ def build(ctx):
 
     # ------------------------------------------------------------------ the ash beasts
     ashm = _ash_material()
-    lion = A.animal("lion", "roar", loc=tuple(at(1.2, -3.6)), rot_z=yaw_facing((right * 0.7 - hv * 0.7).normalized()),
+    lion = A.animal("lion", "roar", loc=tuple(at(0.95, -3.6)), rot_z=yaw_facing((right * 0.7 - hv * 0.7).normalized()),
                     fur=False, scale=1.05)
     A.play(lion, "roar", start_frame=1, speed=0.001, offset=1.75)        # frozen mid-roar, jaw wide
     ox = A.animal("bull", "toss", loc=tuple(at(-1.15, -3.3)), rot_z=yaw_facing((right * 0.75 - hv * 0.66).normalized()),
@@ -223,8 +223,11 @@ def build(ctx):
     vL = (la1 - la0) / (fL1 - fL0)
     vO = (oa1 - oa0) / (fO1 - fO0)
     # (frame, edge position along n): lit where P.n < e + wob
+    # after the ox the front runs on out of frame, then stops (a static occluder lets EEVEE keep its
+    # sun shadow pages -> cheaper last ~40 frames)
+    fS = min(NR - 10, fO1 + 36)
     sched = [(1 - 60, la0 - wl - 60 * vL), (fL0, la0 - wl), (fL1, la1 - wl), (fO0, oa0 - wo), (fO1, oa1 - wo),
-             (NR + 40, oa1 - wo + (NR + 40 - fO1) * vO * 1.5)]
+             (fS, oa1 - wo + (fS - fO1) * vO * 1.5), (NR + 40, oa1 - wo + (fS - fO1) * vO * 1.5)]
     for f, e in sched:
         occ.location = n * e + Vector((0, 0, H))
         occ.keyframe_insert("location", frame=f)
@@ -241,7 +244,7 @@ def build(ctx):
                             turbulence=0.55, gravity=-0.1, seed=seed)
 
     # ------------------------------------------------------------------ camera: truck left with the light, rise
-    look0 = at(0.0, -4.2) + Vector((0, 0, 0.75))           # slightly down: beasts mid-frame, crosses above
+    look0 = at(0.15, -4.2) + Vector((0, 0, 0.75))           # slightly down: beasts mid-frame, crosses above
     look1 = Vector(cr["beam"]) + Vector((0, 0, 0.2))
 
     def cam_fn(f):

@@ -1109,7 +1109,8 @@ def cornea_material(name="PS22_cornea"):
     T.link(tr.outputs[0], add.inputs[0])
     T.link(gl.outputs[0], add.inputs[1])
     T.link(add.outputs[0], out.inputs["Surface"])
-    m.surface_render_method = "BLENDED"
+    # DITHERED: visually identical here and far cheaper than BLENDED in EEVEE (big win with many people)
+    m.surface_render_method = "DITHERED"
     m.use_backface_culling = True
     return m
 
@@ -2555,6 +2556,7 @@ def pose(person, name, ground_z=None, ground=True, drape="auto", **params):
     is in DRAPE_POSES (crouch / sit / kneel* / prostrate: skinned skirts balloon there); True / False force it.
     A later standing pose restores the fitted garments. Returns the internal pose state."""
     p = person
+    p.update()   # refresh matrix_world after the caller moved the rig (grounding reads it)
     P = _build_pose(p, name, params)
     if ground and name in GROUNDED:
         _ground(p, P, ground_z, write=False)
@@ -2599,6 +2601,7 @@ def key_pose(person, frame, name, ground_z=None, ground=True, **params):
     between keys. Returns the pose state."""
     p = person
     sc = bpy.context.scene
+    p.update()   # refresh matrix_world after the caller moved the rig (grounding reads it)
     P = _build_pose(p, name, params)
     if ground and name in GROUNDED:
         _ground(p, P, ground_z, write=False)

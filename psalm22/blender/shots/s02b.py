@@ -137,12 +137,13 @@ def build(ctx):
                   name="S02b_key", volume=0.0)
     # moon rim from behind (same direction as the scene's moon): hair, shoulders, the edge of the mantle
     md = E._dir_from_az_el(MOON_AZ, MOON_EL + 6.0)
-    rim = C.light("SPOT", loc=tuple(head + md * 4.5), energy=1100.0, color=(0.7, 0.8, 1.0), target=tuple(head),
-                  size=0.25, spot_size=22, spot_blend=0.6, name="S02b_rim", volume=0.0, shadow=False)
+    rim = C.light("SPOT", loc=tuple(head + md * 4.5), energy=1100.0, color=(0.7, 0.8, 1.0),
+                  target=tuple(head + Vector((0, 0, -0.12))),
+                  size=0.25, spot_size=12, spot_blend=0.7, name="S02b_rim", volume=0.0, shadow=False)
     # a shaft of moonlight falling through the branches into the mist behind him (seen against the dark grove)
-    sh_tgt = Vector((kx - 2.6, ky - 3.6, kz))
-    shaft = C.light("SPOT", loc=tuple(sh_tgt + E._dir_from_az_el(MOON_AZ + 15.0, 58.0) * 11.0), energy=9000.0,
-                    color=(0.62, 0.74, 1.0), target=tuple(sh_tgt), size=0.3, spot_size=16, spot_blend=0.6,
+    sh_tgt = Vector((kx - 3.6, ky - 5.2, kz))
+    shaft = C.light("SPOT", loc=tuple(sh_tgt + E._dir_from_az_el(MOON_AZ + 15.0, 58.0) * 11.0), energy=4000.0,
+                    color=(0.62, 0.74, 1.0), target=tuple(sh_tgt), size=0.3, spot_size=20, spot_blend=1.0,
                     name="S02b_shaft", volume=1.0, shadow=False)
 
     # a few motes hanging in the moonlight behind him (env motes would drift right in front of the long lens)

@@ -838,7 +838,7 @@ def sky(mood="golden", sun_az=None, rotation=None, clouds=None, stars=None, moon
         res["sun_el"] = sun_el
         res["sun_energy"] = energy
     if sun_obj is not None:
-        sun_obj.data.shadow_maximum_resolution = 0.002
+        sun_obj.data.shadow_maximum_resolution = 0.006
         sun_obj.data.use_shadow_jitter = False
     st["sun_obj"] = sun_obj
     res["sun"] = sun_obj
@@ -3260,7 +3260,7 @@ def sky_transition(ctx, mood_a="golden", mood_b="eclipse", f0=1, f1=None, over_a
     if old is not None and old.name in bpy.data.objects:
         bpy.data.objects.remove(old, do_unlink=True)
     sun = C.sun(elevation=30, azimuth=0, energy=1.0, angle=1.2)
-    sun.data.shadow_maximum_resolution = 0.002
+    sun.data.shadow_maximum_resolution = 0.006
     for f, X, v in ((f0, A, 0.0), (f1, B, 1.0)):
         d = Vector(X["sun_dir"])
         sun.rotation_euler = (-d).to_track_quat("-Z", "Y").to_euler()
@@ -3478,7 +3478,7 @@ def timelapse_sky(ctx, hour0=13.0, hour1=21.0, f0=1, f1=None, clouds=0.35, cloud
     T.link(col, bg.inputs[0])
     T.link(bg.outputs[0], out.inputs["Surface"])
     sun = C.sun(elevation=30, azimuth=0, energy=sun_max, temp=5000, angle=1.0)
-    sun.data.shadow_maximum_resolution = 0.002
+    sun.data.shadow_maximum_resolution = 0.006
     moon_o = None
     if moon:
         moon_o = C.sun(elevation=35, azimuth=_compass_to_core(110), energy=0.0, color=(0.55, 0.68, 1.0), angle=0.6)

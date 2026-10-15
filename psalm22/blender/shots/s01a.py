@@ -198,7 +198,7 @@ def build(ctx):
     bpy.context.view_layer.update()
 
     # ------------------------------------------------------------------ Jesus
-    j = P.make_person("jesus", "JESUS_CROSS", pose=None, blood=0.65)
+    j = P.make_person("jesus", "JESUS_CROSS", pose=None, blood=0.65, dirt=0.25, sweat=0.5)   # less grain on the big chest
     P.place_on_cross(j, root, head="level", strain=0.6)
     _lean(j)
     base = j._pose.copy()
