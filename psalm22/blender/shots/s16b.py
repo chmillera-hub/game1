@@ -244,7 +244,7 @@ def _scar_and_creases(person, side="R"):
     col = M.mix(M.m("MULTIPLY", cr, 0.16), src, (0.72, 0.52, 0.46), "MULTIPLY")
     col = M.mix(M.m("MULTIPLY", ring, 0.5), col, (0.8, 0.56, 0.54), "MULTIPLY")
     col = M.mix(M.m("MULTIPLY", core, 0.42), col, (0.78, 0.55, 0.52))
-    col = M.mix(M.m("MULTIPLY", rad, 0.25), col, (0.8, 0.62, 0.6), "MULTIPLY")
+    col = M.mix(M.m("MULTIPLY", rad, 0.15), col, (0.82, 0.64, 0.6), "MULTIPLY")
     nt.links.new(col, bsdf.inputs["Base Color"])
     # ---- roughness: glossy scar tissue ----
     if bsdf.inputs["Roughness"].is_linked:
@@ -297,7 +297,8 @@ def build(ctx):
     # ---------------- the risen Christ ----------------
     if "s16b_show" not in P.POSES:
         P.POSES["s16b_show"] = _show_pose_fn()
-    j = P.make_person("jesus", "JESUS_RISEN", hair_strands=False, pose=None)
+    j = P.make_person("jesus", "JESUS_RISEN", hair_strands=False, pose=None,
+                      outfit_opts={"robe": {"sleeves": "3q"}})       # white linen sleeve at the bottom of frame
     j.rig.location = (0, 0, 0)
     j.update()
     sh = j.bone_world("upperarm01.R")
@@ -313,9 +314,9 @@ def build(ctx):
     P.key_pose(j, 1, "s16b_show", target=t0, side="R", hand="relaxed", curl=0.9, face=face_in,
                up=(0.0, 0.0, 1.0), ground=False)
     f_open = int(p1e - 4)
-    P.key_pose(j, f_open, "s16b_show", target=tgt, side="R", hand="relaxed", curl=0.32, face=face0, up=up0,
+    P.key_pose(j, f_open, "s16b_show", target=tgt, side="R", hand="relaxed", curl=0.2, face=face0, up=up0,
                ground=False)
-    P.key_pose(j, NR, "s16b_show", target=tgt + Vector((0.0, -0.012, 0.008)), side="R", hand="relaxed", curl=0.26,
+    P.key_pose(j, NR, "s16b_show", target=tgt + Vector((0.0, -0.012, 0.008)), side="R", hand="relaxed", curl=0.15,
                face=face0, up=up0, ground=False)
     P.expression(j, "peace")
     _scar_and_creases(j, "R")
@@ -392,7 +393,7 @@ def build(ctx):
 
     # ---------------- light ----------------
     # warm bounce (gold reflector) raking the palm from screen right: close + narrow so the robe stays darker
-    bl = C.light("AREA", loc=tuple(tgt + Vector((0.38, -0.42, -0.32))), energy=10.0, temp=3300, target=tuple(tgt),
+    bl = C.light("AREA", loc=tuple(tgt + Vector((0.38, -0.42, -0.32))), energy=10.0, temp=4300, target=tuple(tgt),
                  size=0.4, name="s16b_bounce", shadow=False)
     bl.data.spread = math.radians(50)
     fl = C.light("AREA", loc=tuple(tgt + Vector((-0.3, -0.6, -0.3))), energy=1.5, temp=5200, target=tuple(tgt),
@@ -409,4 +410,5 @@ def build(ctx):
     ctx.samples = 5
     ctx.render_opts = {"volumetrics": "low"}
     ctx.interp = True
-    ctx.post = {"grade": "warm", "bloom": 0.32, "exposure": -0.1, "vignette": 0.22}
+    ctx.post = {"grade": "warm", "bloom": 0.36, "bloom_threshold": 0.62, "exposure": -0.08, "contrast": 1.06,
+                "saturation": 0.94, "vignette": 0.24}

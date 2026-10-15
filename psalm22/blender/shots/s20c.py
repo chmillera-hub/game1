@@ -33,8 +33,8 @@ def _az(d):
 # ------------------------------------------------------------------------------------------------
 # The linen cloth
 # ------------------------------------------------------------------------------------------------
-def _drape_mesh(width=0.46, tail=1.25, back_y=0.155, z0=3.885, step=0.02, nw=22, gather=0.22, spread=0.2,
-                trim_left=0.0):
+def _drape_mesh(width=0.46, tail=1.25, back_y=0.155, z0=3.885, step=0.016, nw=28, gather=0.16, spread=0.2,
+                trim_left=0.0, panel_gather=0.72, pleat_cols=8):
     """Initial (pre-simulation) linen strip in the cross root's local frame (core.wooden_cross: beam top
     z = 3.868, beam y = -0.10..0.08, upright |x| < 0.1, |y| < 0.095), lying flat at beam-top height:
     its middle is gathered into a narrow band behind the upright (pinned), from there it runs round both
@@ -61,15 +61,18 @@ def _drape_mesh(width=0.46, tail=1.25, back_y=0.155, z0=3.885, step=0.02, nw=22,
     Tg /= np.linalg.norm(Tg, axis=1, keepdims=True)
     Wd = np.stack([-Tg[:, 1], Tg[:, 0]], 1)
     # width: gathered behind the upright, opening out over the beam top
-    g = gather + (1.0 - gather) * np.clip((np.abs(sn) - 0.12) / 0.45, 0.0, 1.0) ** 1.2
+    # the panels stay partly gathered too (panel_gather < 1): their extra width is stored in soft sine pleats
+    # (period pleat_cols columns, phase wandering along the strip), so they hang in real vertical folds
+    g = gather + (panel_gather - gather) * np.clip((np.abs(sn) - 0.12) / 0.45, 0.0, 1.0) ** 1.2
     us = np.linspace(-0.5, 0.5, nw + 1) * width
-    du = width / nw
-    amp = 0.5 * du * np.sqrt(np.clip(1.0 - g * g, 0.0, 1.0))
-    alt = np.where(np.arange(nw + 1) % 2 == 0, 1.0, -1.0)
+    lam = pleat_cols * width / nw
+    amp = (g * lam / np.pi) * np.sqrt(np.clip(1.0 / g - 1.0, 0.0, None))      # keeps the arc length ~ width
+    ph = 2 * np.pi * np.arange(nw + 1)[None, :] / pleat_cols + 0.9 * np.sin(sn * 2.7)[:, None] \
+        + 0.5 * np.sin(sn * 7.3 + 1.0)[:, None]
     V = np.zeros((len(P), nw + 1, 3))
     V[..., 0] = P[:, None, 0] + Wd[:, None, 0] * us[None, :] * g[:, None]
     V[..., 1] = P[:, None, 1] + Wd[:, None, 1] * us[None, :] * g[:, None]
-    V[..., 2] = z0 + 0.012 + amp[:, None] * alt[None, :] + 0.03 * (np.abs(sn) < 0.3)[:, None] * 0.0
+    V[..., 2] = z0 + 0.03 + amp[:, None] * np.sin(ph)
     pin = ((np.abs(sn) < 0.10)[:, None] & np.ones((1, nw + 1), bool)).astype(float)
     k = int(round(trim_left / step))            # shorter left half: hangs asymmetrically, less "apron"-like
     if k > 0:
@@ -118,11 +121,11 @@ def linen_swag(ctx, cross_root, width=0.46, preroll=60, wind=None, name="Linen",
     sc = bpy.context.scene
     m = ob.modifiers.new("Cloth", "CLOTH")
     st = m.settings
-    st.quality = 7
-    st.mass = 0.15
+    st.quality = 6
+    st.mass = 0.26
     st.tension_stiffness = st.compression_stiffness = 15.0
-    st.shear_stiffness = 5.0
-    st.bending_stiffness = 0.08
+    st.shear_stiffness = 3.0
+    st.bending_stiffness = 0.025
     st.air_damping = 1.0
     st.tension_damping = st.compression_damping = 5.0
     st.bending_damping = 0.5
@@ -250,7 +253,7 @@ def build(ctx):
     over = dict(hdri=HDRI, sun_el=LAMP_EL, sun_energy=3.4, key=0.58, strength=0.5, tint=(1.0, 0.88, 0.72), sat=1.3,
                 sun_tint=(1.0, 0.72, 0.45), sun_angle=1.2, clamp_sun=None)
     A = E.golgotha(ctx, mood="sunrise", sun_az=SUN_AZ, crosses=1, center_occupied=False, sign=False,
-                   sky_over=over, view=views, dust=False, near_detail=0.0, grass=1.0, bushes=0.6,
+                   sky_over=over, view=views, dust=False, near_detail=0.0, grass=1.0, bushes=0.6, city=False,
                    skull=0.0)                          # the skull cliff is behind the camera all shot
     S = A["sky"]
     info = E.hdri_info(HDRI)
