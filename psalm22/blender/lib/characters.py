@@ -168,7 +168,8 @@ BABY = dict(gender=0.5, age_years=0.0, build="average", height_cm=52, ethnicity=
             eyebrows="none", expression="sleep", outfit=["swaddle"], pose="baby", redness=0.6)
 SOLDIER = dict(gender=1.0, age_years=28, build="muscular", height_cm=176, ethnicity="european", skin_tone=0.45,
                hair="short02", hair_color="dark_brown", beard="stubble", eye_color="brown", eyebrows="eyebrow002",
-               expression="neutral", outfit=["roman_soldier"], pose="stand", dirt=0.25, sweat=0.2)
+               expression="neutral", outfit=["loincloth", "roman_soldier"], outfit_colors={"loincloth": "undyed"},
+               pose="stand", dirt=0.25, sweat=0.2)
 MOSES = dict(gender=1.0, age_years=80, build="lean", height_cm=174, ethnicity="judean", hair="long01",
              hair_color="white", grey=1.0, beard="long", beard_length=0.24, eye_color="brown", eyebrows="eyebrow003",
              expression="awe", outfit=["robe", "sandals"], outfit_colors={"tunic": "oatmeal", "mantle": "camel"},
@@ -448,6 +449,8 @@ def make_person(name, preset=None, **spec):
     _compute_masks(p)
     T.append(("masks", time.time()))
     _materials(p)
+    if not far and "teeth" in parts:
+        _mouth_occluder(p)
     T.append(("materials", time.time()))
     if s["beard"] in BEARDS and BEARDS[s["beard"]]:
         if hero:
@@ -715,15 +718,15 @@ def _compute_masks(p):
     sweat = np.maximum(sweat, 0.7 * chest)
     lipsm = (1 - _smooth(lips_d, 0.0, 0.002 * sc)) * (w["lips"] > 0.2)
     # ---------------- hair-bearing scalp (hairline: forehead, temples, above the ears, nape) ---------
-    front_line = E.z + 0.066 * sc - 0.016 * sc * np.clip((lat - 0.02 * sc) / (0.045 * sc), 0, 1)
+    front_line = E.z + 0.076 * sc - 0.018 * sc * np.clip((lat - 0.02 * sc) / (0.045 * sc), 0, 1)
     side_line = lm["ear_top"] - 0.002 * sc
     back_line = lm["ear_bot"] - 0.02 * sc
     wf = _smooth(f, earf + 0.0, earf + 0.03 * sc)                       # 1 = in front of the ear (temples, forehead)
     wb = 1 - _smooth(f, earf - 0.05 * sc, earf - 0.012 * sc)            # 1 = well behind the ear (nape)
     line = wf * front_line + (1 - wf) * side_line
     line = wb * back_line + (1 - wb) * line
-    hairm = _smooth(z, line - 0.002 * sc, line + 0.007 * sc) * (z > menton) * (w["body"] > 0.5) * (1 - np.clip(w["ears"] * 3, 0, 1))
-    scalp = np.maximum(np.clip(w["scalp"], 0, 1) * 0.0, hairm)
+    hairm = _smooth(z, line - 0.003 * sc, line + 0.012 * sc) * (z > menton) * (w["body"] > 0.5) * (1 - np.clip(w["ears"] * 3, 0, 1))
+    scalp = hairm            # (MPFB's own 'scalp' group stops short of the hairline; the hair mask is used instead)
     p.masks = dict(beard=beard, zone=zone, wounds=wounds, dirt=dirt, red=red, sweat=sweat, lips=lipsm, scalp=scalp,
                    hair=hairm)
     me = p.body.data
@@ -1081,8 +1084,10 @@ def eye_material(name, color="brown"):
     col = T.mix(scl, hs.outputs[0], irism.outputs[0])
     b = T.n("ShaderNodeBsdfPrincipled")
     T.set(b.inputs["Base Color"], col)
-    b.inputs["Roughness"].default_value = 0.35
-    b.inputs["Specular IOR Level"].default_value = 0.3
+    b.inputs["Roughness"].default_value = 0.5
+    # the clear cornea shell carries the reflection; a glossy eyeball under it doubled the sky sheen and
+    # turned brown irises blue-grey in daylight
+    b.inputs["Specular IOR Level"].default_value = 0.0
     # no subsurface: EEVEE's screen-space SSS bleeds the bright sclera into the iris (brown eyes read grey)
     b.inputs["Subsurface Weight"].default_value = 0.0
     T.link(b.outputs[0], out.inputs["Surface"])
@@ -1186,7 +1191,7 @@ def _materials(p):
         p.mats["eyes"] = em
         p.mats["cornea"] = _split_cornea(p, p.parts["eyes"])
     # mouth interior: darker + rougher (the open mouth otherwise shows bright pink gums and sky-blue teeth)
-    for key, tint, rough, sss in (("teeth", (0.40, 0.36, 0.30), 0.5, 0.0), ("tongue", (0.36, 0.17, 0.16), 0.6, 0.0)):
+    for key, tint, rough, sss in (("teeth", (0.54, 0.49, 0.41), 0.45, 0.0), ("tongue", (0.42, 0.20, 0.19), 0.6, 0.0)):
         if key in p.parts:
             o = p.parts[key]
             mt = o.data.materials[0]
@@ -1204,10 +1209,51 @@ def _materials(p):
                     mt.node_tree.links.new(mx.outputs[2], b.inputs["Base Color"])
                 b.inputs["Roughness"].default_value = rough
                 b.inputs["Subsurface Weight"].default_value = sss
+                b.inputs["Specular IOR Level"].default_value = 0.25
+                # opaque: the MPFB texture alpha let the background show through the teeth
+                for l in list(b.inputs["Alpha"].links):
+                    mt.node_tree.links.remove(l)
+                b.inputs["Alpha"].default_value = 1.0
                 b.inputs["Subsurface Radius"].default_value = (1.0, 0.5, 0.3)
                 b.inputs["Subsurface Scale"].default_value = 0.003
                 mt.surface_render_method = "DITHERED"
             p.mats[key] = mt
+
+
+def _mouth_occluder(p):
+    """Dark mouth cavity behind the teeth (bone-parented to the head). The MPFB head is open behind the
+    mouth, so an open mouth (anguish, cry_out, laugh, awe) showed the sky through the throat."""
+    lm = p.lm
+    sc = lm["io"] / 0.062
+    m = bpy.data.materials.get("PS22_mouth_cavity")
+    if m is None:
+        m = C.mat("PS22_mouth_cavity", (0.035, 0.012, 0.010), rough=0.9, spec=0.1)
+    me = bpy.data.meshes.new(p.name + ".mouth")
+    import bmesh
+    bm = bmesh.new()
+    bmesh.ops.create_icosphere(bm, subdivisions=2, radius=1.0)
+    bm.to_mesh(me)
+    bm.free()
+    for pl in me.polygons:
+        pl.use_smooth = True
+    me.materials.append(m)
+    ob = bpy.data.objects.new(p.name + ".mouth", me)
+    for c in p.body.users_collection:
+        c.objects.link(ob)
+    mo = Vector(lm["mouth"])
+    loc = Vector((0.0, mo.y + 0.036 * sc, mo.z - 0.004 * sc))
+    M = Matrix.Translation(loc) @ Matrix.Diagonal((0.019 * sc, 0.025 * sc, 0.016 * sc, 1.0))
+    rig = p.rig
+    b = rig.data.bones["head"]
+    ob.parent = rig
+    ob.parent_type = "BONE"
+    ob.parent_bone = "head"
+    tail = b.matrix_local @ Matrix.Translation((0, b.length, 0))
+    ob.matrix_parent_inverse = tail.inverted()
+    ob.matrix_basis = M
+    ob.visible_shadow = False
+    p.parts["mouth"] = ob
+    return ob
 
 
 # ============================================================================================
@@ -1413,9 +1459,12 @@ def curve_hair_material(name, color, grey=0.0, translucency=0.35):
     T.link(hi.outputs["Intercept"], tip.inputs["Value"])
     col = T.mix(tuple(color), T.math("MULTIPLY", var.outputs[0], tip.outputs[0]), 1.0, "MULTIPLY")
     if grey > 0.01:
-        isg = T.math("LESS_THAN", T.math("FRACT", T.math("MULTIPLY", hi.outputs["Random"], 7.31)), min(0.97, grey))
+        # salt and pepper: every strand is partly grey (a binary white/dark choice per strand rendered as
+        # speckle noise at film distance); the per-strand random only spreads the amount around `grey`
+        rg = T.math("FRACT", T.math("MULTIPLY", hi.outputs["Random"], 7.31))
+        amt = T.math("ADD", T.math("MULTIPLY", T.math("SUBTRACT", rg, 0.5), 0.55), min(0.97, grey), True)
         gcol = HAIR_COLORS["white"] if grey > 0.6 else HAIR_COLORS["grey"]
-        col = T.mix(col, T.mix(tuple(Vector(gcol) * 0.9), var.outputs[0], 1.0, "MULTIPLY"), isg)
+        col = T.mix(col, T.mix(tuple(Vector(gcol) * 0.9), var.outputs[0], 1.0, "MULTIPLY"), amt)
     b = T.n("ShaderNodeBsdfPrincipled")
     T.set(b.inputs["Base Color"], col)
     b.inputs["Roughness"].default_value = 0.6       # some sheen (a flat 0.8/0.08 read as a black mass)
@@ -2448,6 +2497,26 @@ def drape_skirts(person, ground_z=None, frames=22, ramp=14):
         if len(idx):
             co = p._co if o == p.body else _coords(o.data)
             saved[o] = idx[co[idx, 2] > zcut]
+    # only the skirts settle: everything above the skirt line is pinned to its skinned shape (a free upper body
+    # let the tunic's sleeves/shoulders drift through the mail shirt or mantle during the settle)
+    for g in gs:
+        if g.vertex_groups.get("pin") is None:
+            W.auto_pin(p, g)
+        vg = g.vertex_groups["pin"]
+        co = _coords(g.data)
+        zb = float(g["skirt_below"])
+        w = np.clip((co[:, 2] - (zb - 0.08)) / 0.10, 0.0, 1.0)
+        cur = np.zeros(len(co), np.float32)
+        gi = vg.index
+        for v in g.data.vertices:
+            for x in v.groups:
+                if x.group == gi:
+                    cur[v.index] = x.weight
+        w = np.maximum(w, cur)
+        q = np.round(w, 2)
+        for val in np.unique(q):
+            if val > 0:
+                vg.add(np.nonzero(q == val)[0].tolist(), float(val), "REPLACE")
     t = time.time()
     out = W.drape(p, gs, frames=frames, ramp=ramp, ground=gz, verbose=False)
     for o, idx in saved.items():
@@ -3181,6 +3250,12 @@ def crowd(n, positions=None, area=None, seed=0, variety=6, pose="stand_relaxed",
             y = cy + lx * math.sin(ang) + ly * math.cos(ang)
             if all((x - q[0]) ** 2 + (y - q[1]) ** 2 > spacing ** 2 for q in pts):
                 pts.append((x, y))
+    # balanced use of the variants (every source appears before any repeats), shuffled by the seed
+    order = []
+    while len(order) < len(pts) and cr.sources:
+        blk = list(range(len(cr.sources)))
+        rng.shuffle(blk)
+        order += blk
     for i, q in enumerate(pts):
         x, y = q[0], q[1]
         z = q[2] if len(q) > 2 else (height_fn(x, y) if height_fn else ground_z)
@@ -3191,7 +3266,7 @@ def crowd(n, positions=None, area=None, seed=0, variety=6, pose="stand_relaxed",
         else:
             yw = rng.uniform(-math.pi, math.pi)
         yw += math.radians(rng.uniform(-yaw_jitter, yaw_jitter))
-        src = cr.sources[rng.randrange(len(cr.sources))]
+        src = cr.sources[order[i]]
         inst = _instance(src, (x, y, z), yw, rng.uniform(0.95, 1.05), coll)
         inst.hide_render = False
         inst.hide_viewport = False
@@ -3380,7 +3455,7 @@ def make_short_hair(p, length=None, count=None, points=6, seed=None, color=None,
     hm = p.masks["hair"]
     tv, tl, area, uv, vn = _surface_data(p.body)
     inb = p._w["body"] > 0.5
-    key = hashlib.md5(co.tobytes() + str((STRAND_VERSION, "short", s["hair"], N, K, L, sorted(cfg.items()),
+    key = hashlib.md5(co.tobytes() + str((STRAND_VERSION, "short2", s["hair"], N, K, L, sorted(cfg.items()),
                                            part_side, seed, s.get("seed", 0))).encode()).hexdigest()[:16]
     cp = _hair_cache_path(key)
     if os.path.exists(cp):

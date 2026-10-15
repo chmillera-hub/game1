@@ -47,9 +47,9 @@ no new shader compile).
 |---|---|---|---|
 | `tunic` | `tunic`, `tunic_belt` | `tunic`, `belt` | `length="calf"` (`thigh, knee, below_knee, calf, ankle, floor` or a rig‑space z), `sleeves="elbow"` (`none, short, elbow, 3q, long`), `belt="sash"` (`sash, leather, cord, None`), `fabric="linen"` (`linen, fine_linen, wool, homespun, sackcloth`), `ease=0.03`, `flare=0.07`, `fold=0.014`, `wear=1.0`, `embroidery=False`, `loose=0.7` (0 = follows the body, 1 = hangs straight from chest/shoulder blades), `mask=True` |
 | `robe` | tunic (ankle, long/elbow sleeves, sash) + `mantle` (himation) | `tunic` (alias `robe`), `belt`, `mantle` | tunic options |
-| `mantle` | `mantle` | `mantle` (alias `main`) | `style="himation"` (diagonal wrap over `side` shoulder, rolled edge) / `"cloak"` (both shoulders, open front, wide elbow sleeves) / `"cape"` (back + shoulder tops), `side="L"`, `length="calf"`, `fabric="wool"`, `fold=0.016`, `embroidery=False`, `roll=True` |
+| `mantle` | `mantle` | `mantle` (alias `main`) | `style="himation"` (diagonal wrap over `side` shoulder, rolled edge) / `"cloak"` (both shoulders, open front, wide elbow sleeves) / `"cape"` (back + shoulder tops), `side="L"`, `length="calf"`, `fabric="wool"`, `fold=0.016`, `embroidery=False`, `roll=True`. Ease 1.4 cm at the chest growing to 4 cm at the hem, hangs 55 % straight from the chest (slimmer than the first version, which made lean men look heavy) |
 | `robe_rich` | priest: `tunic` (fine white linen, embroidered hem, long sleeves), `sash` (striped), `robe_outer` (open cloak, rich dye, embroidered), `prayer_shawl` (striped, fringe + 4 tzitzit) | `tunic`, `belt`, `mantle`, `shawl` | – |
-| `veil` | `veil` (frames the face, over shoulders and back) | `veil` | `length="back"` (`shoulder, chest, back, waist`), `fabric="linen"`, `band=None` |
+| `veil` | `veil` (frames the face, falls over the shoulders, front panels to the chest, back to below the shoulder blades) | `veil` | `length="back"` (`shoulder, chest, back, waist`), `fabric="linen"`, `band=None` |
 | `headcloth` | `headcloth` + `headcloth_band` (cord at the brow) | `headcloth` | `length="shoulder"`, `band=<colour>` |
 | `hood` | `hood` (peaked wool hood + short cape) | `hood` | `length="chest"` |
 | `turban` | `turban` (wrapped linen, bone‑parented to `head`) | `turban` | `wraps=6`, `fabric="fine_linen"`, `hide_hair=True` |
@@ -59,7 +59,9 @@ no new shader compile).
 | `loincloth` | `loincloth` (low wrap, swag folds, overlapping front flap, twisted knot, 2 hanging ends) | `loincloth` | `knot_side=±1` (+1 = character's left), `fold=0.006`, `flap=True` |
 | `sandals` | `sandals` (sole + instep/mid/ankle straps + toe thong + heel strap, both feet) | `sandals` | `style="sandal"`/`"caligae"`, `sole=None` (thickness m) |
 
-Palette names (sRGB): undyed, cream, linen, white_linen, bleached, oatmeal, sand, camel, brown,
+Palette names (sRGB; whites are kept below ~0.86 and the reds/blues are muted so nothing glows or reads
+as a costume party under a warm sun – `madder` (0.42, 0.17, 0.14), `bleached` (0.86, 0.85, 0.81)):
+undyed, cream, linen, white_linen, bleached, oatmeal, sand, camel, brown,
 dark_brown, umber, grey, charcoal, black_wool, indigo, blue_grey, woad, tekhelet, mary_blue, madder,
 roman_red, rust, ochre, saffron, olive, purple, plum, scarlet, leather, dark_leather, iron, bronze, brass, gold, thorn.
 `W.color(name_or_srgb)` → linear RGB.
@@ -108,11 +110,22 @@ modifier, e.g. the terrain).
 * `hide_body(person, idx)`, `hide_verts(ob, idx)` – add vertices to the inverted `WardrobeHide` mask.
 * `fabric_material(kind, embroidery=False, stripes=False)`, `metal_material("iron"|"bronze"|"brass"|"gold")`,
   `mail_material()`, `thorn_material()` – shared materials (one per kind; colour from `ob.color`).
+  Fabrics: Poly Haven weave (diffuse luminance x dye, roughness, normal) + two **crease bumps** (noise stretched
+  along the garment's vertical in the metre UVs: long soft wrinkles, 0.6 cm and 0.2 cm) so un-simulated cloth
+  does not read as smooth plastic; dust/wear at hems (x0.5); wool sheen 0.28; **no subsurface** (EEVEE's
+  screen-space SSS on thin shells rendered as grainy speckle).
 * `W.SUBDIV = 1` before `dress()` – render‑time Subdivision on hero garments for extreme close‑ups only
   (see performance). `W.MASK_LAYERS = False` disables inner‑layer masking.
 * Garment vertex attributes: `wear` (0‑1 dust/dirt, strongest at hems) and `hem` (metres above the hem;
   drives embroidery bands and prayer‑shawl stripes). UVs (`UVMap`) are cylindrical **in metres**
   (column around the body axis, seam at the back; sleeves around the arm, seam underneath).
+
+## Head coverings and hair
+`veil`, `headcloth` and `hood` are fitted to the skull plus the hair **compressed to 1.3 cm** (2 cm for the
+hood) – big shells such as `braid01` no longer inflate the cloth into a helmet – and they hide the person's
+whole MPFB hair shell (`WardrobeHide` mask, all vertices). The characters skin shader paints the hairline on
+the scalp, which is what shows at the edge of the veil. The veil's face opening widens 0.42 m per metre
+below the chin (headcloth 0.75, hood 0.35), so the panels fall over the shoulders instead of leaving shoulder caps.
 
 ## What dress() changes on the person
 * Body: vertex group `wardrobe_hide` + MASK modifier `WardrobeHide` (inverted, before the
@@ -120,6 +133,10 @@ modifier, e.g. the terrain).
   through, cheaper renders. Loincloth also hides the `genitals` group. Swaddle hides everything but head/neck.
 * Inner garments: `WardrobeHide` masks where an outer garment fully covers them (no tunic poking through a mantle).
 * Hair: turban/helmet hide the hair cards above the brim (`WardrobeHide` on the hair object).
+* Hair: veil / headcloth / hood hide the whole hair shell (see above).
+* Skirted garments (tunic, robe, mantle, cape, loincloth, swaddle, mail shirt) get `ob["skirt_below"]` (rig z where
+  the skirt weights start). `characters.drape_skirts()` uses it to pick the garments it cloth-settles for
+  crouch / sit / kneel poses (not the loincloth, swaddle or mail).
 * Nothing on the rig. Characters' grounding (`lbs_points`) ignores these masks.
 
 ## Performance (per person; 4 shared cores, other agents rendering; `WARDROBE_DEBUG=1` prints stages)
@@ -149,7 +166,9 @@ Body + garments for 3–4 people at 960x640 took ~2.5–3 GB RAM per Blender pro
 * Build garments **before** changing body shape; posing before/after `dress()` is fine (everything is
   computed in the rest pose; `dress()` temporarily sets `pose_position="REST"` on the rig).
 * Skinned long skirts look wrong in extreme poses (crouch, sit, deep kneel: the hem follows the shins
-  and balloons). Use `drape()` for such stills and `cloth_sim()` for such animations.
+  and balloons). `characters.pose()` now cloth-settles hero skirts automatically for those poses
+  (`drape_skirts`, upper body pinned); call `drape()` yourself only for other garments / custom poses, and
+  `cloth_sim()` for animations. Do not call `drape()` again after such a `pose()` (double cost, same result).
 * Rest A‑pose: hands hang next to the hips. Belts, hems and outer layers never take forearm/hand weights,
   but if a pose pushes the hands into a robe they will intersect it (as in reality – keep hands slightly off
   the body or drape).
@@ -164,3 +183,27 @@ Body + garments for 3–4 people at 960x640 took ~2.5–3 GB RAM per Blender pro
   hessian_230, brown_leather; downloaded on first use to /opt/assets/polyhaven); ring mail, embroidery
   and stripes are generated in numpy at runtime (packed images, no files).
 * `WARDROBE_DEBUG=1` prints per‑stage timings and peak RSS.
+
+## Cast sheet (what each character preset wears – integration-tested)
+Built through `characters.make_person(preset)` (which calls `dress()` once with the whole list) and rendered
+at draft quality in daylight: `/opt/work/psalm22/dev/cast/cast_sheet_final.jpg` (before: `cast_sheet_v1.jpg`).
+
+| preset | outfit list (colours) | dress() time (hero) | notes |
+|---|---|---|---|
+| `JESUS_CROSS` | `loincloth`, `crown_of_thorns` | ~2.3 s | skinned loincloth on the cross (drape() only for extreme close-ups) |
+| `JESUS_ROBED` | `robe` (tunic cream, mantle madder), `sandals` | ~4.9 s | kneel_pray: tunic + himation cloth-settled by characters.pose (~60 s) |
+| `JESUS_RISEN` | `robe` (bleached / white_linen), `sandals` | ~4.9 s | |
+| `MARY_YOUNG` | `tunic` (linen), `veil` (mary_blue) | ~3.9 s | veil hides the braid shell |
+| `MARY_OLD` | `tunic` (umber), `veil` (blue_grey) | ~2.9 s | |
+| `PRIEST` | `robe_rich`, `turban` | ~6.3 s | |
+| `ELDER` | `robe` (oatmeal / brown) | ~3.8 s | kneel: settled (~50 s) |
+| `CHILD` | `tunic` | ~1.6 s | |
+| `BABY` | `swaddle` | ~1.7 s | |
+| `SOLDIER` | `loincloth` (undyed subligaculum) + `roman_soldier` | ~5–6 s | crouch: tunic + sagum settled with the upper body pinned (~18–30 s); the loincloth keeps the crouch decent when the skirt falls between the knees |
+| `MOSES` | `robe` (oatmeal / camel), `sandals` | ~4.8 s | + characters staff |
+| `CROWD_MAN` / `CROWD_WOMAN` | `tunic` + `mantle` / `tunic` + `veil`, seeded colours | 1.7–2.4 s (`detail="crowd"`) | never draped |
+
+Known limitations after the integration pass: standing garments are skinned with procedural folds + crease
+bumps (convincing at medium distance, a little thick and smooth in extreme close-ups); veils still flare at the
+shoulder edge like a short hood; the turban is a plain wrapped dome; ring mail can shimmer at mid distance;
+crowd garments (`detail="crowd"`) read as simple sacks up close.

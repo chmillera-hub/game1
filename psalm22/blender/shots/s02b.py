@@ -33,12 +33,62 @@ def _hazify_person(p):
                     pass
 
 
+
+def cull_instancers(names, cam_xy, aim_xy, half_deg, keep_r=6.0):
+    """Delete GN-instancer points (env grid trees) outside a horizontal cone around the camera view
+    (render-time saver: every tree instance is synced and drawn into the moon's shadow map each frame)."""
+    import bmesh
+    fwd = (Vector(aim_xy) - Vector(cam_xy)).normalized()
+    c = math.cos(math.radians(half_deg))
+    n = 0
+    for name in names:
+        ob = bpy.data.objects.get(name)
+        if ob is None or ob.type != "MESH":
+            continue
+        bm = bmesh.new()
+        bm.from_mesh(ob.data)
+        mw = ob.matrix_world
+        kill = []
+        for v in bm.verts:
+            p = mw @ v.co
+            d = Vector((p.x - cam_xy[0], p.y - cam_xy[1]))
+            if d.length > keep_r and d.normalized().dot(fwd) < c:
+                kill.append(v)
+        bmesh.ops.delete(bm, geom=kill, context="VERTS")
+        bm.to_mesh(ob.data)
+        bm.free()
+        ob.data.update()
+        n += len(kill)
+    return n
+
+
 def build(ctx):
     N, NR = ctx.nframes, ctx.render_frames
     sc = bpy.context.scene
-    A = E.olive_grove(ctx, moon_az=MOON_AZ, moon_el=MOON_EL)
+    # cull the grove's scatter (far trees, stones, grass) to the camera cone (the rock top is at ~(0, 0.65))
+    E.set_view([dict(loc=(3.7, 5.1, 1.35), target=(0.0, 0.5, 0.9), lens=85, margin=22),
+                dict(loc=(2.6, 5.7, 1.35), target=(0.0, 0.5, 0.9), lens=85, margin=22)])
+    A = E.olive_grove(ctx, moon_az=MOON_AZ, moon_el=MOON_EL, trees=24, motes=False, city_lights=False)
+    E.set_view(None)
+    # trees behind / far beside the camera: gone (moon shadows from the trees left of frame are kept)
+    cull_instancers(["EnvGroveNear", "EnvGroveMid", "EnvGroveFar"], (3.1, 5.4), (0.0, 0.5), 60.0)
     gz = A["ground_z"]
-    rt = Vector(A["rock_top"])
+    # the env's prayer rock (2.6 x 1.6 m) hides a kneeling man from any front camera: scale it to a
+    # waist-high boulder (~1.45 x 1.0 m) he can lean on. It is rotated 90 deg: local X = world Y.
+    rock = A["rock"]
+    rock.scale = (rock.scale.x * 0.62, rock.scale.y * 0.55, rock.scale.z * 0.92)
+    bpy.context.view_layer.update()
+    E.release_bvh()
+    rc = Vector(A["rock_top_center"])
+    edge = None
+    for k in range(80):
+        y = rc.y - 0.9 + k * 0.02
+        z, _ = E.ground_hit(rc.x, y, [rock])
+        if z is not None and z > A["ground"](rc.x, y - 0.6) + 0.5:
+            edge = Vector((rc.x, y, z))
+            break
+    rt = edge if edge is not None else Vector(A["rock_top"])
+    print("s02b rock edge", tuple(rt))
 
     # ------------------------------------------------------------------ Jesus at the rock
     j = P.make_person("jesus", "JESUS_ROBED", pose=None)
@@ -81,26 +131,45 @@ def build(ctx):
     # ------------------------------------------------------------------ light
     j.update()
     head = Vector(j.head_pos())
-    # soft cool "sky" key from the front-left, high (moonlight through a gap in the canopy)
-    key = C.light("AREA", loc=(head.x - 1.6, head.y + 2.6, head.z + 2.4), energy=40.0, color=(0.62, 0.74, 1.0),
-                  target=tuple(head), size=1.6, name="S02b_key")
-    # rim from behind (the moon's direction, a touch stronger on him than the scene's moonlight)
+    # soft cool "sky" key from the front-left, high (moonlight through a gap in the canopy): face, hands, rock top
+    key = C.light("SPOT", loc=(head.x - 1.7, head.y + 2.4, head.z + 2.6), energy=26.0, color=(0.62, 0.74, 1.0),
+                  target=(head.x, head.y + 0.1, head.z - 0.05), size=0.5, spot_size=26, spot_blend=0.8,
+                  name="S02b_key", volume=0.0)
+    # moon rim from behind (same direction as the scene's moon): hair, shoulders, the edge of the mantle
+    md = E._dir_from_az_el(MOON_AZ, MOON_EL + 6.0)
+    rim = C.light("SPOT", loc=tuple(head + md * 4.5), energy=1100.0, color=(0.7, 0.8, 1.0), target=tuple(head),
+                  size=0.25, spot_size=22, spot_blend=0.6, name="S02b_rim", volume=0.0, shadow=False)
+    # a shaft of moonlight falling through the branches into the mist behind him (seen against the dark grove)
+    sh_tgt = Vector((kx - 2.6, ky - 3.6, kz))
+    shaft = C.light("SPOT", loc=tuple(sh_tgt + E._dir_from_az_el(MOON_AZ + 15.0, 58.0) * 11.0), energy=9000.0,
+                    color=(0.62, 0.74, 1.0), target=tuple(sh_tgt), size=0.3, spot_size=16, spot_blend=0.6,
+                    name="S02b_shaft", volume=1.0, shadow=False)
+
+    # a few motes hanging in the moonlight behind him (env motes would drift right in front of the long lens)
+    E.dust_motes(center=(kx - 0.3, ky - 1.9, kz + 1.3), size=(3.6, 2.6, 1.8), count=45, radius=0.003,
+                 color=(0.75, 0.85, 1.0), emission=0.5, drift=(0.04, 0.015, 0.01), turbulence=0.15, seed=7,
+                 name="S02b_motes")
 
     # ------------------------------------------------------------------ camera: slow lateral dolly
-    c0 = Vector((kx + 2.1, ky + 2.25, kz + 1.0))
-    c1 = Vector((kx + 1.15, ky + 2.75, kz + 1.0))
-    aim = Vector((kx, ky + 0.15, kz + 0.98))
+    # long lens from ~6 m: the rock sits with him instead of swelling in the foreground; the grove compresses
+    # behind him. Lateral dolly from 38 to 26 deg off his facing (towards his front), level with his eyes.
+    D, TH0, TH1 = 6.0, 38.0, 26.0
+    hb = Vector((kx, ky + 0.1, 0.0))
+    c0 = hb + Vector((math.sin(math.radians(TH0)), math.cos(math.radians(TH0)), 0)) * D
+    c1 = hb + Vector((math.sin(math.radians(TH1)), math.cos(math.radians(TH1)), 0)) * D
+    c0.z = c1.z = kz + 1.35
+    aim = Vector((kx, ky + 0.35, kz + 0.92))
 
     def cam_path(f):
         u = C.smoothstep(0.08 + 0.84 * (f - 1) / float(NR - 1))
         loc = c0.lerp(c1, (u - C.smoothstep(0.08)) / (C.smoothstep(0.92) - C.smoothstep(0.08)))
         loc = loc + C.shake(f, 0.004, 0.3, 2)
-        return (loc, aim, 0.0, 45.0, (loc - head).length)
+        return (loc, aim, 0.0, 85.0, (loc - head).length)
 
-    cam = C.camera(loc=tuple(c0), target=tuple(aim), lens=45, fstop=2.2, focus=(c0 - head).length)
+    cam = C.camera(loc=tuple(c0), target=tuple(aim), lens=85, fstop=2.8, focus=(c0 - head).length)
     C.animate_camera(cam, cam_path, 1, NR)
 
     ctx.samples = 5
-    ctx.render_opts.update({"volumetrics": "low"})
+    ctx.render_opts.update({"volumetrics": "low", "vol_shadows": False})
     ctx.interp = True
     ctx.post.update({"grade": ["flashback", "night"], "vignette": 0.3, "bloom": 0.3})

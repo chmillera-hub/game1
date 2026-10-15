@@ -68,6 +68,9 @@ def build(ctx):
     c0 = Vector((CAM_XY[0], CAM_XY[1], 0.0))
     view = dict(loc=(c0.x, c0.y, 11.0), target=tuple(c0 + fwd * 30 + Vector((0, 0, 10.5))), lens=LENS - 2, margin=40)
     G = E.golgotha(ctx, mood="eclipse", view=view, grass=0.7, near_detail=1.0)
+    for k_, c_ in G["crosses"].items():                    # behind the camera's back: not rendered
+        for o in [c_["root"]] + list(c_["root"].children_recursive):
+            o.hide_render = True
     ground = G["ground"]
     gz = lambda x, y: float(ground(x, y))
     cz = gz(c0.x, c0.y)
@@ -84,13 +87,13 @@ def build(ctx):
     sc.collection.children.link(pack)
     JACKAL, DARK, GREY = (-0.32, -0.48, -0.66), (-0.66, -0.68, -0.7), (-0.5, -0.54, -0.58)
     # (radius, angle rel. to the view at frame 1 (+ = left), action, speed, scale, tint, eye glow, offset, r drift)
-    dogs = [(2.8, -8, "prowl", 1.5, 0.92, JACKAL, 0.9, 0.0, -0.35),
-            (3.7, -22, "prowl", 1.35, 1.0, DARK, 1.0, 0.4, -0.2),
-            (4.5, 6, "walk", 0.9, 0.9, GREY, 0.8, 0.9, 0.0),
-            (3.3, -40, "prowl", 1.45, 0.95, JACKAL, 0.9, 0.2, -0.3),
-            (5.4, -35, "trot", 0.7, 1.0, DARK, 0.9, 1.3, 0.0),
-            (4.0, -55, "walk", 1.0, 0.88, JACKAL, 0.8, 0.6, -0.2),
-            (2.9, 14, "prowl", 1.4, 0.9, GREY, 0.9, 1.7, -0.2),
+    dogs = [(2.7, -8, "prowl", 1.5, 0.92, JACKAL, 0.9, 0.0, -0.35),
+            (3.9, -24, "prowl", 1.35, 1.0, DARK, 1.0, 0.4, -0.2),
+            (5.6, 4, "walk", 0.9, 0.9, GREY, 0.8, 0.9, 0.0),
+            (3.2, -44, "prowl", 1.45, 0.95, JACKAL, 0.9, 0.2, -0.3),
+            (7.2, -30, "trot", 0.7, 1.0, DARK, 0.9, 1.3, 0.0),
+            (4.6, -58, "walk", 1.0, 0.88, JACKAL, 0.8, 0.6, -0.2),
+            (2.5, 15, "prowl", 1.4, 0.9, GREY, 0.9, 1.7, -0.2),
             (1.6, -138, "walk", 1.25, 1.0, DARK, 1.0, 0.8, 0.0)]
     for i, (r, a1, act, spd, scl, tint, glow, off, dr) in enumerate(dogs):
         v = A.ground_speed("dog", act, 0, spd) * scl
@@ -126,6 +129,30 @@ def build(ctx):
             return Vector((fc[0].evaluate(f), fc[1].evaluate(f), 0))
         _cull([arm] + kids, pos, ctx, c0)
 
+    # one dog stands its ground right of centre and snarls into the lens
+    a = view_az - math.radians(12)
+    sp = Vector((c0.x + math.cos(a) * 3.4, c0.y + math.sin(a) * 3.4, 0))
+    to_c = c0 - sp
+    sn = A.animal("dog", "snarl", loc=(sp.x, sp.y, gz(sp.x, sp.y)), rot_z=math.degrees(math.atan2(to_c.x, -to_c.y)) + 18,
+                  scale=1.02, eye_glow=1.0, tint=DARK, offset=0.5, start_frame=1)
+    A.set_eye_glow(sn, 1.0, color=(1.0, 0.86, 0.5))
+    pb = sn.pose.bones.get("head")
+    if pb is not None:
+        con = pb.constraints.new("DAMPED_TRACK")
+        con.target = cam_target
+        con.track_axis = "TRACK_Y"
+        con.influence = 0.4
+    for o in A.children_recursive(sn):
+        if o.type == "MESH":
+            pack.objects.link(o)
+    # out-of-focus stones in the near foreground (depth layering below the pack)
+    rocks = E.rock_protos("rocks")
+    for k, (dl, dr_, sc_, rz) in enumerate(((0.95, -0.42, 0.9, 20), (1.15, 0.38, 1.3, 140), (0.8, 0.18, 0.55, 75))):
+        x, y = c0.x + fwd.x * dl + fwd.y * dr_, c0.y + fwd.y * dl - fwd.x * dr_
+        pr = rocks[(k * 2 + 1) % len(rocks)]
+        s_ = 0.16 * sc_ / max(1e-3, max(pr.dimensions))
+        E.place(pr, (x, y, gz(x, y) - 0.25 * pr.dimensions.z * s_), rot=(0, 0, rz), scale=s_, name="FgRock%d" % k)
+
     # ------------------------------------------------------------------ soldiers (CW ring = left-to-right, close)
     sold_coll = bpy.data.collections.new("s12a_legs")
     sc.collection.children.link(sold_coll)
@@ -139,6 +166,16 @@ def build(ctx):
         for k in ("_co", "_w", "_anat", "_lbs", "_ground_offset", "mats", "expr_keys"):
             if hasattr(base, k):
                 setattr(q, k, getattr(base, k))
+        # workaround: clone() re-assigns .parent, which resets matrix_parent_inverse -> bone-parented parts
+        # (helmet, studs) float away. Restore them from the source objects (matched by shared data).
+        src = {o.data: o for o in base.objects()[1:] if o.data is not None}
+        for c in q.objects()[1:]:
+            o = src.get(c.data)
+            if o is not None and o.parent_type == "BONE":
+                c.parent_type = "BONE"
+                c.parent_bone = o.parent_bone
+                c.matrix_parent_inverse = o.matrix_parent_inverse.copy()
+                c.matrix_basis = o.matrix_basis.copy()
         if q.rig.animation_data is None:
             q.rig.animation_data_create()
         q.rig.animation_data.action = None
@@ -168,7 +205,7 @@ def build(ctx):
             fc = {fc.array_index: fc for fc in C._fcurves(rig.animation_data.action) if fc.data_path == "location"}
             return Vector((fc[0].evaluate(f), fc[1].evaluate(f), 0))
         _cull(objs, spos, ctx, c0, margin=22.0)
-    if ctx.quality == "preview" and __import__("os").environ.get("S12A_DEBUG"):
+    if __import__("os").environ.get("S12A_DEBUG"):
         for f in (1, 22, 44, 65, 87, 108):
             sc.frame_set(f)
             for o in bpy.data.objects:
@@ -184,7 +221,7 @@ def build(ctx):
     for o in list(pack.objects) + list(sold_coll.objects):
         recv.objects.link(o)
     # warm rim from the low sun side (linked to animals + legs only)
-    rim = C.light("SUN", (0, 0, 20), 3.2, color=(1.0, 0.4, 0.16), name="Rim", shadow=True)
+    rim = C.light("SUN", (0, 0, 20), 3.2, color=(1.0, 0.4, 0.16), name="Rim", shadow=False)   # shadowless: -5 s/frame
     rd = (Vector((sun_dir.x, sun_dir.y, 0)).normalized() * math.cos(math.radians(12)) +
           Vector((0, 0, math.sin(math.radians(12))))).normalized()
     rim.rotation_euler = (-rd).to_track_quat("-Z", "Y").to_euler()
@@ -194,11 +231,6 @@ def build(ctx):
     fill = C.light("AREA", tuple(cam_base + Vector((0, 0, 0.5)) - fwd * 1.0), 9, color=(1.0, 0.62, 0.42), size=3.0,
                    target=tuple(cam_base + fwd * 4), name="Fill", shadow=False)
     fill.light_linking.receiver_collection = recv
-
-    # low ground dust drifting through the pack
-    E.fog_volume(tuple(cam_base + fwd * 6 + Vector((0, 0, 0.2))), (18, 18, 1.6), 0.05, (0.55, 0.32, 0.2), 0.5,
-                 noise_scale=0.5, noise_amount=0.9, height_falloff=1.4, name="GroundDust",
-                 wind=tuple(_az_vec(LOOK_AZ - 90) * 1.2))
 
     # ------------------------------------------------------------------ camera: low, handheld, slow counter-pan
     def cam_fn(f):

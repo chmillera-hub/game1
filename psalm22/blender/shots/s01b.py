@@ -4,8 +4,9 @@ Cut in from s01a (close-up of the face on the cross as the light dims). The came
 medium-wide of the crucified figure, low on the plateau and directly down-sun, so the figure hangs
 against the dimming sun; it then pulls straight away from the sun - rising and receding (log-distance,
 i.e. a constant rate of shrinking) over the skull cliff until the three crosses are a speck on the hill
-beneath a vast sky. The sky keeps darkening (golden -> eclipse cross-fade, already ~1/3 through at the
-cut) and the sun ends as a dull red disk behind clouds, straight above the tiny crosses.
+beneath a vast sky, standing above the city skyline. The sky keeps darkening (a veiled-sun -> eclipse
+cross-fade, already ~1/3 through at the cut, complete at the end of the second phrase) and the sun ends as a
+dull red disk behind clouds above the tiny crosses.
 """
 import math
 import bpy
@@ -31,35 +32,55 @@ def _hazify_person(p):
                 E.hazify(m)
 
 
-def clamp_camera_sky(tr, side="a", mult=1.5):
-    """sky_transition() does not apply the presets' clamp_sun to the camera branch, so the golden HDRI's
-    own (low, 7 deg) sun shows next to the procedural disk. Insert the same DARKEN clamp sky() uses."""
-    nt = bpy.context.scene.world.node_tree
-    ms = next(n for n in nt.nodes if n.type == "MIX_SHADER" and n.inputs[2].is_linked)
-    bgc = ms.inputs[2].links[0].from_node
-    cam_mix = bgc.inputs[0].links[0].from_node
-    scaled = cam_mix.inputs[6 if side == "a" else 7].links[0].from_node
-    src = scaled.inputs[6].links[0].from_socket
-    cc = nt.nodes.new("ShaderNodeMix")
-    cc.data_type = "RGBA"
-    cc.blend_type = "DARKEN"
-    cc.inputs[0].default_value = 1.0
-    cv = max(tr[side]["clamp"], 1e-3) * mult
-    cc.inputs[7].default_value = (cv, cv, cv, 1)
-    nt.links.new(src, cc.inputs[6])
-    nt.links.new(cc.outputs[2], scaled.inputs[6])
-    return cc
-
-
 def _dressed(p, part="loincloth"):
     return any(str(o.get("wardrobe", "")) == part or part in o.name for o in p.garments)
+
+
+CENTER = Vector((0.0, 0.6, 0.0))      # env.golgotha layout: centre cross
+
+
+def make_path(N, cz, sun_dir, d0, chest, top):
+    """Camera path f -> (loc, target, roll, lens): pull straight away from the sun (log distance)."""
+    sun_h = math.atan2(sun_dir.x, -sun_dir.y)                    # core azimuth of the sun (radians)
+    d1 = 88.0
+    lens0, lens1 = 34.0, 20.0
+    f_end = N + 6
+
+    def path(f):
+        u = min(1.0, max(0.0, (f - 1) / float(f_end - 1)))
+        # log-distance (constant shrink rate) with a soft start (cut on motion) and a long glide out
+        s = 0.2 * u + 0.8 * C.smoothstep(1.0 - (1.0 - u) ** 1.6)
+        d = d0 * (d1 / d0) ** s
+        az = sun_h + math.radians(7.0) * (1.0 - C.smoothstep(min(1.0, s * 1.4)))   # 3/4 -> straight down-sun
+        away = -Vector((math.sin(az), -math.cos(az), 0))
+        loc = CENTER + away * d
+        # off the edge of the plateau (the ground falls away 11 m beneath the camera, a sudden rise),
+        # then sinking towards the plain so the three crosses end up above the city skyline, against the sky
+        rise = 1.0 * C.smoothstep((d - d0) / 9.0)
+        drop = (cz + 2.6 - 4.6) * C.smoothstep((d - 15.0) / (d1 - 15.0))
+        loc.z = cz + 1.6 + rise - drop
+        lens = lens0 + (lens1 - lens0) * C.smoothstep(s)
+        w = C.smoothstep(min(1.0, s * 2.2))
+        tgt = chest.lerp(top, w)
+        # lift the aim so the crosses settle low in the frame (~0.6 H) under a vast sky
+        tgt = tgt + Vector((0, 0, (loc - tgt).length * 0.17 * C.smoothstep(s)))
+        loc = loc + C.shake(f, 0.008 + 0.04 * s, 0.3, 3)
+        return (loc, tgt, 0.0, lens)
+    return path
 
 
 def build(ctx):
     N, NR = ctx.nframes, ctx.render_frames
 
     # ------------------------------------------------------------------ environment + sky
-    A = E.golgotha(ctx, mood="eclipse", grass=0.6, dust=False, near_detail=0.4)
+    sun_dir = E._dir_from_az_el(SUN_AZ, SUN_EL)
+    # scatter only inside the camera path's view cones (xy of the path does not depend on the hill height)
+    pv = make_path(N, 11.0, sun_dir, 6.3, Vector((0, 0.6, 13.5)), Vector((0, 0.6, 14.2)))
+    view = []
+    for f in (1, N // 6, N // 3, N // 2, (3 * N) // 4, NR):
+        loc, tgt, _, lens = pv(f)
+        view.append(dict(loc=tuple(loc), target=tuple(tgt), lens=lens, margin=12, near=10))
+    A = E.golgotha(ctx, mood="eclipse", grass=0.6, dust=False, near_detail=0.4, view=view)
     # The darkening is built as eclipse -> eclipse: side A is the same overcast HDRI + cloud layer, but bright,
     # warm and thin (the veiled sun at the end of s01a); side B is the env 'eclipse' preset. One HDRI and one
     # cloud pattern for both sides: the clouds thicken in place and there is only ever one sun disk
@@ -77,11 +98,11 @@ def build(ctx):
     f_dark = int(ctx.frame(ctx.phrases[-1]["end"])) + 2
     f0 = int(round((1 - 0.40 * f_dark) / 0.60))
     E.sky_transition(ctx, "eclipse", "eclipse", f0, f_dark, over_a=over_a, over_b=over_b)
-    sun_dir = E._dir_from_az_el(SUN_AZ, SUN_EL)
 
     # ------------------------------------------------------------------ the crucified
     cx = A["crosses"]
-    j = P.make_person("jesus", "JESUS_CROSS", pose=None, hair_strands=False)
+    # lod "mid" (no subdivision): the figure is medium-wide only for the first second (hero costs ~10 s/frame)
+    j = P.make_person("jesus", "JESUS_CROSS", pose=None, hair_strands=False, lod="mid")
     P.place_on_cross(j, cx["center"]["root"], head="up", strain=0.65)
     try:   # settle the loincloth on the hanging pose (the skinned rest fit pokes the crossed thigh through)
         W.drape(j, [g for g in j.garments if "loincloth" in g.name], frames=25, ramp=15, ground=None)
@@ -105,41 +126,14 @@ def build(ctx):
     # ------------------------------------------------------------------ camera: pull away from the sun
     c = cx["center"]
     cz = c["base"][2]
-    base = Vector((c["base"][0], c["base"][1], 0))
     chest = Vector(c["chest"]) + Vector((0, 0, 0.2))
     top = Vector((c["base"][0], c["base"][1], cz + 3.2))
-    sun_h = math.atan2(sun_dir.x, -sun_dir.y)                    # core azimuth of the sun (radians)
-    d0 = 6.3 if dressed else 18.0
-    d1 = 88.0
-    lens0, lens1 = 34.0, 20.0
-    f_end = N + 6
-
-    def path(f):
-        u = min(1.0, max(0.0, (f - 1) / float(f_end - 1)))
-        # log-distance (constant shrink rate) with a soft start (cut on motion) and a long glide out
-        s = 0.2 * u + 0.8 * C.smoothstep(1.0 - (1.0 - u) ** 1.6)
-        d = d0 * (d1 / d0) ** s
-        az = sun_h + math.radians(7.0) * (1.0 - C.smoothstep(min(1.0, s * 1.4)))   # 3/4 -> straight down-sun
-        away = -Vector((math.sin(az), -math.cos(az), 0))
-        loc = base + away * d
-        # off the edge of the plateau (the ground falls away 11 m beneath the camera, a sudden rise),
-        # then sinking towards the plain so the three crosses end up above the city skyline, against the sky
-        rise = 1.0 * C.smoothstep((d - d0) / 9.0)
-        drop = (cz + 2.6 - 4.6) * C.smoothstep((d - 15.0) / (d1 - 15.0))
-        loc.z = cz + 1.6 + rise - drop
-        lens = lens0 + (lens1 - lens0) * C.smoothstep(s)
-        w = C.smoothstep(min(1.0, s * 2.2))
-        tgt = chest.lerp(top, w)
-        # lift the aim so the crosses settle low in the frame (~0.6 H) under a vast sky
-        tgt = tgt + Vector((0, 0, (loc - tgt).length * 0.17 * C.smoothstep(s)))
-        loc = loc + C.shake(f, 0.008 + 0.04 * s, 0.3, 3)
-        return (loc, tgt, 0.0, lens)
-
-    cam = C.camera(loc=(0, -6, cz + 1), target=tuple(chest), lens=lens0, clip_end=20000)
+    path = make_path(N, cz, sun_dir, 6.3 if dressed else 18.0, chest, top)
+    cam = C.camera(loc=(0, -6, cz + 1), target=tuple(chest), lens=34.0, clip_end=20000)
     C.animate_camera(cam, path, 1, NR)
 
-    ctx.samples = 5
-    ctx.render_opts.update({"volumetrics": "low"})
+    ctx.samples = 4
+    ctx.render_opts.update({"volumetrics": "low", "shadow_scale": 0.5})
     ctx.interp = True
     ctx.post.update({"grade": "eclipse", "saturation": 0.85, "vignette": 0.2, "bloom": 0.25,
                      "end": {"saturation": 0.62, "vignette": 0.32, "bloom": 0.16},

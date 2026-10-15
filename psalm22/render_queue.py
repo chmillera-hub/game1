@@ -35,9 +35,9 @@ def meta(sid, q):
     return json.load(open(p)) if os.path.exists(p) else None
 
 
-def missing(sid, q, n, interp):
+def missing(sid, q, n, interp, keep=()):
     d = frames_dir(sid, q)
-    want = range(1, n + 1, 2) if interp else range(1, n + 1)
+    want = sorted(set(range(1, n + 1, 2)) | set(keep)) if interp else range(1, n + 1)
     return [f for f in want if not (os.path.exists(os.path.join(d, "%04d.png" % f)) and os.path.getsize(os.path.join(d, "%04d.png" % f)) > 0)]
 
 
@@ -60,9 +60,10 @@ def render_shot(shot, q, env):
             log("FAIL %s first chunk rc=%s (see logs/%s_%s.log)" % (sid, rc, sid, q))
             return False
     interp, bake = m.get("interp", False), m.get("needs_bake", False)
+    keep = [f for f in m.get("interp_keep", []) if 1 <= f <= n]
     tries = 0
     while True:
-        todo = missing(sid, q, n, interp)
+        todo = missing(sid, q, n, interp, keep)
         if not todo:
             break
         tries += 1
@@ -72,7 +73,7 @@ def render_shot(shot, q, env):
         a = todo[0]
         b = n if bake else min(n, a + CHUNK - 1)   # bake shots: one process (bake once)
         rc, dt = run_chunk(sid, q, a, b, env)
-        done = len(todo) - len(missing(sid, q, n, interp))
+        done = len(todo) - len(missing(sid, q, n, interp, keep))
         log("%s %s frames %d-%d rc=%d %.0fs (%d new, %.1fs/frame)" % (sid, q, a, b, rc, dt, done, dt / max(1, done)))
         if done:
             tries = 0

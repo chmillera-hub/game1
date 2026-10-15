@@ -20,12 +20,13 @@ from lib import core as C
 from lib import env as E
 from lib import characters as P
 
-FACE_SCREEN_Y = 0.36       # eyes at 36 % from the top (same as the end of s07a)
+FACE_Y = 0.30              # eyes at 30 % from the top (same as the end of s07a)
+CUT_FRAME_H = 0.78         # frame height (m) at her eyes on frame 1 (= s07a's last frames)
 LENS = 135.0
 FSTOP = 2.0
-CAM_ANGLE = 30.0           # camera off her left shoulder (deg from her facing), as in s07a
-STAND = 1.30               # metres in front of the cross
-UPRIGHT_OFF = 0.10         # upright centre beside the camera line where it crosses the cross plane
+CAM_ANGLE = 18.0           # camera off her left shoulder (deg from her facing), as in s07a
+STAND = 1.90               # metres in front of the cross
+UPRIGHT_OFF = 0.15         # upright centre beside the camera line where it crosses the cross plane
 
 
 def _mat_tear():
@@ -76,7 +77,7 @@ def _tear(person, side, f0, f1, steps=13, step=0.0042, name="tear"):
     if hit[0] is None:
         return None
     p = hit[0]
-    pts = [p + hit[1] * 0.0007]
+    pts = [p + hit[1] * 0.0009]
     grav = Vector((0, 0, -1))
     for i in range(steps):
         loc, nrm, idx, dist = bvh.find_nearest(p)
@@ -86,7 +87,7 @@ def _tear(person, side, f0, f1, steps=13, step=0.0042, name="tear"):
         q = p + d * step
         loc, nrm, idx, dist = bvh.find_nearest(q)
         p = loc
-        pts.append(loc + nrm * 0.0007)
+        pts.append(loc + nrm * 0.0009)
     cd = bpy.data.curves.new(name, "CURVE")
     cd.dimensions = "3D"
     cd.bevel_depth = 0.00085
@@ -148,15 +149,21 @@ def build(ctx):
     p1s, p1e = ctx.phrase_frames(1)
     # layout: the cross faces -Y; Mary stands on its -Y side, facing it, looking up at her son. The camera is
     # behind the upright, off her left shoulder, on a long lens: the upright passes through the near foreground.
+    # (env.golgotha layout is fixed: centre cross at (0, 0.6) facing -Y; pre-compute the camera cone for culling)
+    _a = math.radians(CAM_ANGLE)
+    _m = Vector((STAND * math.tan(_a) - UPRIGHT_OFF, 0.6 - STAND, 12.4))
+    _c = _m + Vector((-math.sin(_a), math.cos(_a), 0)) * (CUT_FRAME_H / (2 * 18.0 / LENS))
     A = E.golgotha(ctx, mood="eclipse", city=False, grass=0.6, bushes=0.5, rocks=0.8, near_detail=0.6,
-                   view={"loc": (-1.2, 2.2, 12.4), "target": (0.6, -1.2, 12.0), "lens": 35.0})
+                   view={"loc": tuple(_c), "target": tuple(_m), "lens": 30.0})
     cc = A["crosses"]["center"]
     base = Vector(cc["base"])
     front = Vector(cc["front"])
     front.z = 0
     front.normalize()
     head_j = Vector(cc["head"])
-    gz = A["ground_z"]
+    # NB: A["ground_z"] (raycast) returned ~21.5 m here (hits something above the plateau); use the analytic
+    # terrain height near the cross instead (the trodden plateau has no big rocks).
+    gz = lambda x, y: float(np.asarray(A["ground"](x, y)).reshape(-1)[0])
     fw = -front                                           # Mary faces the cross
     left = Vector((-fw.y, fw.x, 0))                       # her left
     ang = math.radians(CAM_ANGLE)
@@ -172,37 +179,60 @@ def build(ctx):
     cross_d = STAND / math.cos(ang)
     off = -(cdir * cross_d).dot(left) + UPRIGHT_OFF
     mp = mary_at(off)
+    print("S07B mary ground analytic %.3f raycast %.3f cross base %s" % (mp.z, A["ground_z"](mp.x, mp.y), tuple(base)))
     mary = P.make_person("mary", "MARY_OLD", pose=None)
     mary.rig.location = mp
     mary.rig.rotation_euler.z = math.atan2(fw.x, -fw.y) + math.radians(6)
+    mary.update()                          # pose() grounds via rig.matrix_world: it must be current
     P.pose(mary, "mourn", ground_z=mp.z)
     look_pt = head_j + Vector((0, 0, -0.1))
     P.look_at(mary, look_pt, amount=1.0)
     P.expression(mary, "sorrow", frame=1)
     P.expression(mary, {"eyebrows-inner-up": 0.95, "eye-slit": 0.25, "mouth-depression": 0.45,
                         "mouth-compression": 0.1, "nose-elevation": 0.12}, frame=int(p0e))
-    P.expression(mary, {"eyebrows-inner-up": 1.0, "eyebrows-down": 0.15, "eye-slit": 0.45, "nose-elevation": 0.3,
-                        "mouth-depression-retraction": 0.3, "mouth-depression": 0.3, "mouth-open": 0.05,
-                        "neck-platysma": 0.3, "jaw": 3}, frame=int(p1s + 30))
+    # restrained weeping: brows knitted up, lids narrowed, lips pressed with the corners pulled down
+    P.expression(mary, {"eyebrows-inner-up": 1.0, "eyebrows-down": 0.12, "eye-slit": 0.35, "nose-elevation": 0.18,
+                        "mouth-depression": 0.6, "mouth-compression": 0.3, "neck-platysma": 0.25}, frame=int(p1s + 30))
     P.eyes_look(mary, look_pt, frame=1, up_limit=14)
     P.blink(mary, int(ctx.frame(2.75)), duration=7)
     mary.update()
 
     # ---------------------------------------------------------------- tears
+    bpy.context.scene.frame_set(int(p1s + 30))           # build it on the crying face (cheeks raised)
+    mary.update()
     t1 = _tear(mary, "L", int(p1s - 6), int(p1e + 6), name="tear_L")
+    bpy.context.scene.frame_set(1)
+
+    # ---------------------------------------------------------------- onlookers behind her (lost in the blur)
+    import random
+    rnd = random.Random(7)
+    perp = Vector((-cdir.y, cdir.x, 0))
+    pts = []
+    for i in range(9):
+        dist = 2.6 + i * 1.25 + rnd.uniform(-0.3, 0.3)
+        lat_ = rnd.choice((-1, 1)) * (0.45 + rnd.random() * (0.6 + 0.25 * i))
+        q = mp - cdir * dist + perp * lat_
+        pts.append((q.x, q.y, gz(q.x, q.y)))
+    cr = P.crowd(len(pts), positions=pts, seed=11, variety=3, lod="far", face=tuple(head_j),
+                 pose=["mourn", "stand_relaxed", "stand"], yaw_jitter=15, women=0.6)
 
     # ---------------------------------------------------------------- camera
     eye = mary.eye_pos()
     vh = 2 * math.tan(math.atan(18.0 / LENS))            # frame height per metre of distance
-    d0 = cross_d + 0.75
-    d1 = d0 - 0.28
+    d0 = CUT_FRAME_H / vh
+    d1 = d0 - 0.32
 
     def cam(f):
         u = C.ease_in_out(min(1.0, ctx.u(f)))
         dist = d0 + (d1 - d0) * u
         loc = eye + cdir * dist + Vector((0, 0, -0.05)) + C.shake(f, 0.0025, 0.3, 3)
-        tgt = eye - Vector((0, 0, (0.5 - FACE_SCREEN_Y) * vh * dist)) - Vector((0, 0, 0.05))
+        tgt = eye - Vector((0, 0, (0.5 - FACE_Y) * vh * dist)) - Vector((0, 0, 0.05))
         return (loc, tgt, 0.0, LENS, (eye - loc).length)
+
+    # cold sky fill from above the camera side (the darkened afternoon), shadowless; also puts a glint in the tears
+    C.light("AREA", tuple(eye + cdir * 1.1 + left * 0.35 + Vector((0, 0, 0.9))), 14.0, temp=9000, target=tuple(eye),
+            size=1.4, name="SkyFill", shadow=False)
+    bpy.context.scene.eevee.bokeh_max_size = 160.0      # the near upright needs a big blur radius
 
     camo = C.camera(lens=LENS, fstop=FSTOP, name="Cam")
     dbg = os.environ.get("S07_DEBUG", "")

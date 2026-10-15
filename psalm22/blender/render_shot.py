@@ -63,6 +63,9 @@ elif spec == "odd" or spec.startswith("odd:"):
     # half-rate render (odd frames only); comp/interp.py synthesises the even frames afterwards
     a, b = spec[4:].split("-") if ":" in spec else (1, N)
     frames = [f for f in range(int(a), min(N, int(b)) + 1) if f % 2 == 1]
+    # in-shot hard cuts: RIFE can't bridge a cut, so a shot lists the even frame(s) next to the cut in
+    # ctx.interp_keep and they are rendered too (interp.py only fills frames that are missing)
+    frames = sorted(set(frames) | {int(f) for f in getattr(ctx, "interp_keep", ()) if int(a) <= int(f) <= min(N, int(b))})
 elif "-" in spec and "," not in spec:
     a, b = spec.split("-")
     frames = list(range(int(a), min(N, int(b)) + 1))
@@ -72,6 +75,7 @@ else:
 out = os.path.join(core.WORK, "frames", shot_id, quality)
 os.makedirs(out, exist_ok=True)
 json.dump({"interp": bool(getattr(ctx, "interp", False)), "needs_bake": bool(ctx.needs_bake),
+           "interp_keep": sorted(int(f) for f in getattr(ctx, "interp_keep", ())),
            "render_frames": N, "samples": ctx.samples, "render_opts": ctx.render_opts},
           open(os.path.join(out, "meta.json"), "w"), indent=1)
 if opts["--skip-existing"]:

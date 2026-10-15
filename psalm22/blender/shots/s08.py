@@ -15,9 +15,9 @@ from lib import env as E
 from lib import characters as P
 from lib import fx as FX
 
-MOON_AZ, MOON_EL = 245.0, 38.0       # shared with s02b: moon in the west-north-west, behind the mob
+MOON_AZ, MOON_EL = 245.0, 38.0       # moon in the west-north-west, behind the mob (backlight)
 XLOD = "far"                          # extras: silhouettes at 5-20 m
-WALK_SPEED = 1.5                      # m/s (fx torches: keep < 2 m/s, embers are emitted in local space)
+WALK_SPEED = 1.4                      # m/s (fx torches: keep < 2 m/s, embers are emitted in local space)
 
 
 # --------------------------------------------------------------------------------------------- helpers
@@ -175,42 +175,81 @@ def club(name, mat_wood=None):
     return c
 
 
+
+
+def cull_instancers(names, cam_xy, aim_xy, half_deg, keep_r=6.0):
+    """Delete GN-instancer points (env grid trees) outside a horizontal cone around the camera view
+    (render-time saver: every tree instance is synced and drawn into the moon's shadow map each frame)."""
+    import bmesh
+    fwd = (Vector(aim_xy) - Vector(cam_xy)).normalized()
+    c = math.cos(math.radians(half_deg))
+    n = 0
+    for name in names:
+        ob = bpy.data.objects.get(name)
+        if ob is None or ob.type != "MESH":
+            continue
+        bm = bmesh.new()
+        bm.from_mesh(ob.data)
+        mw = ob.matrix_world
+        kill = []
+        for v in bm.verts:
+            p = mw @ v.co
+            d = Vector((p.x - cam_xy[0], p.y - cam_xy[1]))
+            if d.length > keep_r and d.normalized().dot(fwd) < c:
+                kill.append(v)
+        bmesh.ops.delete(bm, geom=kill, context="VERTS")
+        bm.to_mesh(ob.data)
+        bm.free()
+        ob.data.update()
+        n += len(kill)
+    return n
+
 # --------------------------------------------------------------------------------------------- build
 def build(ctx):
     N, NR = ctx.nframes, ctx.render_frames
     sc = bpy.context.scene
-    A = E.olive_grove(ctx, moon_az=MOON_AZ, moon_el=MOON_EL)
+    # trees=24: the ring of trees the torches light up is mid LOD (real branches) instead of far blob crowns
+    E.set_view(dict(loc=(0.45, -0.7, 1.5), target=(-10.0, -0.9, 0.5), lens=50, margin=25))   # cull scatter to the camera
+    A = E.olive_grove(ctx, moon_az=MOON_AZ, moon_el=MOON_EL, trees=24, rays=False, motes=False, city_lights=False)
+    E.set_view(None)
     gz = A["ground_z"]
     path = Poly([(q[0], q[1]) for q in A["mob_path"]])
 
     # ---- where things are
     J = Vector((-2.2, -1.3))                       # Jesus stands in the clearing, west of the rock
-    # lead torch arc length: x ~ -23 at frame 1, ~ -14 at the end
-    s_lead0 = None
-    for k in range(400):
-        s = k * 0.25
-        if path.at(s)[0].x >= -24.5:
-            s_lead0 = s
-            break
-    s_lead0 = s_lead0 if s_lead0 is not None else path.L * 0.6
+    # the lead torch comes up the path from x ~ -19.5 to ~ -10 (7 m from him at the end)
+    s_lead0 = next((k * 0.25 for k in range(400) if path.at(k * 0.25)[0].x >= -19.5), path.L * 0.6)
     dist = WALK_SPEED * (NR - 1) / ctx.fps
     mob_mid, _ = path.at(s_lead0 + dist * 0.5 - 1.5)
     Fv = (mob_mid - J).normalized()                 # Jesus faces the mob
     Rv = Vector((Fv.y, -Fv.x))                      # his right
+    hz = gz(J.x, J.y)
+
+    cull_instancers(["EnvGroveNear", "EnvGroveMid"], (0.45, -0.7), (-10.0, -0.9), 50.0)
+    # the far-LOD blob crowns read as orange balls once the torches light them: drop that ring
+    if bpy.data.objects.get("EnvGroveFar") is not None:
+        bpy.data.objects["EnvGroveFar"].hide_render = True
+
+    # ---- two old twisted olive trees flanking the path: the torches come between them
+    protos = [E.olive_tree(seed=21, age=1.2, size=1.1, lod=1), E.olive_tree(seed=30, age=0.8, size=0.95, lod=1)]
+    for (x, y, rz, scl, k) in ((-14.5, -5.0, 40.0, 0.95, 0), (-18.5, 3.4, 200.0, 1.0, 1)):
+        E.place(protos[k], (x, y, gz(x, y) - 0.12), rot=(0, 0, rz), scale=scl, name="S08_olive%d" % k)
 
     # ---- Jesus
     j = P.make_person("jesus", "JESUS_ROBED", pose=None)
-    j.rig.location = (J.x, J.y, gz(J.x, J.y))
+    j.rig.location = (J.x, J.y, hz)
     j.rig.rotation_euler.z = math.atan2(Fv.x, -Fv.y)
     j.update()
     look0 = (mob_mid.x, mob_mid.y, gz(mob_mid.x, mob_mid.y) + 1.8)
     lead_end, _ = path.at(s_lead0 + dist)
-    look1 = (lead_end.x, lead_end.y, gz(lead_end.x, lead_end.y) + 1.6)
+    look1 = (lead_end.x, lead_end.y, gz(lead_end.x, lead_end.y) + 1.7)
     P.key_pose(j, 1, "stand", look=look0)
     P.key_pose(j, NR, "stand", look=look1)
     P.expression(j, "sorrow", weight=0.7)
+    if j.parts.get("beard") is not None:          # seen from behind: the beard never shows, skip its cost
+        j.parts["beard"].hide_render = True
 
-    # ---- the mob: 3 sources (soldier + two townsmen), linked clones with their own walk
+    # ---- the mob: 3 sources (soldier + two townsmen, far LOD), linked clones with their own walk
     sol = P.make_person("guard", "SOLDIER", pose=None, lod=XLOD, hair_strands=False)
     ma = P.make_person("mobA", "CROWD_MAN", seed=11, pose=None, lod=XLOD, hair_strands=False,
                        outfit_colors={"tunic": "umber", "mantle": "charcoal"})
@@ -218,23 +257,23 @@ def build(ctx):
                        outfit_colors={"tunic": "oatmeal", "mantle": "brown"})
     srcs = {"S": sol, "A": ma, "B": mb}
     mz = {k: _stand_offset(v) for k, v in srcs.items()}
-    # (source, lag m behind the lead, lateral m (+ = left of the path heading), prop, torch shadow)
-    plan = [("S", 0.0, 0.5, "torch", True), ("A", 0.9, -0.9, "torch", True), ("S", 1.7, 1.3, "spear", False),
-            ("B", 2.3, -0.1, "torch", True), ("S", 3.1, 0.8, "torch_spear", False), ("A", 3.7, -1.4, "club", False),
-            ("B", 4.6, 0.3, "torch", False), ("S", 5.4, -0.6, "spear", False)]
+    # (source, lag m behind the lead, lateral m (+ = left of the path heading), prop)
+    # the front rank carries spears/clubs and reads as silhouettes against the torches of the men behind
+    plan = [("S", 0.0, 0.5, "spear"), ("A", 0.7, -0.9, "club"), ("S", 1.3, 1.3, "spear"),
+            ("B", 2.1, -0.2, "torch"), ("S", 2.8, 0.8, "torch"), ("A", 3.5, -1.3, "torch"),
+            ("B", 4.4, 0.4, "torch_spear")]
     used = {k: False for k in srcs}
     members = []
-    for i, (k, lag, lat, prop, shadow) in enumerate(plan):
+    for i, (k, lag, lat, prop) in enumerate(plan):
         if not used[k]:
             p = srcs[k]
             used[k] = True
         else:
             p = _clone(srcs[k], "%s_m%d" % (srcs[k].name, i))
-        members.append((p, k, lag, lat, prop, shadow))
+        members.append((p, k, lag, lat, prop))
     wood = C.wood_material()
     iron = C.mat("S08_iron", color=(0.05, 0.05, 0.055), rough=0.35, metal=1.0)
-    torches = []
-    for i, (p, k, lag, lat, prop, shadow) in enumerate(members):
+    for i, (p, k, lag, lat, prop) in enumerate(members):
         pts = path.offset_points(s_lead0 - lag, s_lead0 - lag + dist, lat, n=24)
         arms = []
         if "torch" in prop:
@@ -242,13 +281,13 @@ def build(ctx):
         if "spear" in prop or prop == "club":
             arms.append(lambda Q: _arm_spear(Q, "L"))
         walk_keys(p, pts, 1, NR, mz[k], gz, arms=arms, phase=1.7 * i)
-    sc.frame_set(1)
-    for i, (p, k, lag, lat, prop, shadow) in enumerate(members):
+    torches = []
+    for i, (p, k, lag, lat, prop) in enumerate(members):
         sc.frame_set(1)
         p.update()
         if "torch" in prop:
             hp = Vector(p.hand_pos("R"))
-            t = FX.torch(loc=(0, 0, 0), flame_height=0.42, light_energy=110.0 if shadow else 70.0, shadow=shadow,
+            t = FX.torch(loc=(0, 0, 0), flame_height=0.42, light_energy=45.0, shadow=False, smoke=len(torches) < 3,
                          wind=(-1.2, 0.25, 0.0), seed=11 + i, name="Torch%d" % i, frame_end=NR)
             attach(t.root, p, "wrist.R", Matrix.Translation(hp + Vector((0, 0, 0.42))), 1)
             torches.append(t)
@@ -256,8 +295,33 @@ def build(ctx):
             hp = Vector(p.hand_pos("L"))
             o = spear("Spear%d" % i, mat_wood=wood, mat_iron=iron) if "spear" in prop else club("Club%d" % i, mat_wood=wood)
             attach(o, p, "wrist.L", Matrix.Translation(hp), 1)
+    # the combined spill of the torches: a soft warm light just behind the leading men lights the ground
+    # and trunks around them from behind (keeps the men as silhouettes), no shadow
+    glow = C.light("AREA", loc=(0, 0, 0), energy=45.0, color=C.kelvin(1800), size=3.0, name="S08_mobglow",
+                   shadow=False, volume=0.0)
+    for f in range(1, NR + 1, 6):
+        q, d = path.at(s_lead0 - 3.4 + dist * (f - 1) / (NR - 1))
+        loc = Vector((q.x, q.y, gz(q.x, q.y) + 1.7))
+        glow.location = loc
+        glow.rotation_euler = C.look_rot(loc, loc + d.to_3d() * 3.0 + Vector((0, 0, -1.7)))
+        glow.keyframe_insert("location", frame=f)
+        glow.keyframe_insert("rotation_euler", frame=f)
+    # torchlight finding him: a narrow warm spot from the leading torches onto his figure, growing as they come
+    # (the one shadow-casting local light: his shadow stretches back towards the camera)
+    tl = C.light("SPOT", loc=(0, 0, 0), energy=0.0, color=C.kelvin(1850), size=0.6, spot_size=16.0, spot_blend=0.9,
+                 name="S08_torch_on_him", volume=0.0, shadow=True)
+    for f in range(1, NR + 1, 4):
+        q, _ = path.at(s_lead0 - 2.5 + dist * (f - 1) / (NR - 1))     # the first torches
+        loc = Vector((q.x, q.y, gz(q.x, q.y) + 2.0))
+        tl.location = loc
+        tl.rotation_euler = C.look_rot(loc, (J.x, J.y, hz + 1.25))
+        dd = (loc - Vector((J.x, J.y, hz + 1.25))).length
+        tl.data.energy = 2600.0 * (9.0 / dd) ** 2 * C.smoothstep(min(1.0, (f - 1) / (NR * 0.6)))
+        tl.keyframe_insert("location", frame=f)
+        tl.keyframe_insert("rotation_euler", frame=f)
+        tl.data.keyframe_insert("energy", frame=f)
 
-    # ---- the disciples flee (run away from the torches into the dark)
+    # ---- the disciples flee: from in front of the torches, past him on either side, into the dark
     d1 = P.make_person("disc1", "CROWD_MAN", seed=31, pose=None, lod=XLOD, hair_strands=False,
                        outfit_colors={"tunic": "sand", "mantle": "olive"})
     d2 = P.make_person("disc2", "CROWD_MAN", seed=47, pose=None, lod=XLOD, hair_strands=False,
@@ -266,43 +330,45 @@ def build(ctx):
     mzd = _stand_offset(d1)
     mzd2 = _stand_offset(d2)
     runs = [
-        (d1, mzd, [(-6.0, 0.4), (-3.5, 3.5), (0.5, 8.0), (4.0, 12.5)], 1, 90),
-        (d2, mzd2, [(-5.0, -3.2), (-3.0, -6.5), (0.5, -10.5), (3.0, -14.0)], 8, 95),
-        (d3, mzd, [(-8.5, 2.4), (-7.0, 6.5), (-5.0, 11.0), (-3.5, 16.0)], 18, 110),
+        (d1, mzd, [(-11.0, 0.3), (-5.0, -3.0), (0.0, -5.5)], 1, 70),     # towards camera-left, past his left side
+        (d2, mzd2, [(-13.0, -1.8), (-8.0, -4.5), (-3.0, -8.0)], 1, 80),  # deeper, off to the left
+        (d3, mzd, [(-12.0, 0.8), (-7.0, 2.0), (-2.0, 3.5)], 1, 65),      # off to the right
     ]
     for i, (p, m, pts, f0, f1) in enumerate(runs):
         walk_keys(p, pts, f0, f1, m, gz, run=True, phase=2.3 * i)
         p.set_visible(True, frame=1)
         p.set_visible(False, frame=f1 + 1)
-
-    # ---- fill: faint cool bounce from the camera side so his back reads
-    fill = C.light("AREA", loc=(J.x - Fv.x * 4.0 + Rv.x * 2.0, J.y - Fv.y * 4.0 + Rv.y * 2.0, gz(J.x, J.y) + 2.2),
-                   energy=12.0, color=(0.6, 0.72, 1.0), target=(J.x, J.y, gz(J.x, J.y) + 1.2), size=3.0, name="S08_fill",
-                   shadow=False)
     for p in [j, d1, d2] + list(srcs.values()):
         _hazify_person(p)
 
-    # ---- camera: over his right shoulder, creeping in on the lost profile
-    hz = gz(J.x, J.y)
+    # ---- camera: over his right shoulder, creeping in; focus racks from the torches to him
     head = Vector((J.x, J.y, hz + 1.62))
-    c0 = Vector((J.x, J.y, 0)) - Fv.to_3d() * 3.4 + Rv.to_3d() * 1.35
-    c1 = Vector((J.x, J.y, 0)) - Fv.to_3d() * 2.4 + Rv.to_3d() * 1.0
-    c0.z = hz + 1.68
-    c1.z = hz + 1.62
-    aim0 = head + Fv.to_3d() * 6.0 - Rv.to_3d() * 1.4 + Vector((0, 0, -0.15))
-    aim1 = head + Fv.to_3d() * 6.0 - Rv.to_3d() * 1.0 + Vector((0, 0, -0.1))
+    c0 = Vector((J.x, J.y, 0)) - Fv.to_3d() * 2.6 + Rv.to_3d() * 0.75
+    c1 = Vector((J.x, J.y, 0)) - Fv.to_3d() * 2.25 + Rv.to_3d() * 0.6
+    c0.z = hz + 1.52
+    c1.z = hz + 1.5
+    aim0 = head + Fv.to_3d() * 8.0 - Rv.to_3d() * 0.9 + Vector((0, 0, -0.75))
+    aim1 = head + Fv.to_3d() * 8.0 - Rv.to_3d() * 0.45 + Vector((0, 0, -0.7))
+    f_rack0 = ctx.frame(ctx.phrases[0]["end"] - 0.4) if ctx.phrases else NR * 0.5
+    f_rack1 = ctx.frame(ctx.phrases[1]["start"] + 0.3) if len(ctx.phrases) > 1 else NR * 0.6
 
     def cam_path(f):
         u = C.ease_in_out(min(1.0, (f - 1) / float(NR - 1)))
-        loc = c0.lerp(c1, u) + C.shake(f, 0.012, 0.45, 5)
+        loc = c0.lerp(c1, u) + C.shake(f, 0.01, 0.45, 5)
         tgt = aim0.lerp(aim1, u)
-        return (loc, tgt, 0.0, 35.0, (loc - head).length)
+        q, _ = path.at(s_lead0 - 1.0 + dist * (f - 1) / (NR - 1))
+        d_mob = (Vector((q.x, q.y, hz + 1.5)) - loc).length
+        d_him = (head - loc).length
+        r = C.smoothstep(min(1.0, max(0.0, (f - f_rack0) / max(1.0, f_rack1 - f_rack0))))
+        return (loc, tgt, 0.0, 50.0, d_mob + (d_him - d_mob) * r)
 
-    cam = C.camera(loc=tuple(c0), target=tuple(aim0), lens=35, fstop=2.8, focus=(c0 - head).length)
+    cam = C.camera(loc=tuple(c0), target=tuple(aim0), lens=50, fstop=2.8, focus=10.0)
     C.animate_camera(cam, cam_path, 1, NR)
 
-    ctx.samples = 6
-    ctx.render_opts.update({"volumetrics": "low"})
-    ctx.interp = False
+    # render budget (profiled): shadow-casting point lights cost ~2/3 of the frame here -> torches cast no
+    # shadows (the moon does); no moon-shaft fog layer; no volumetric shadows
+    ctx.samples = 4
+    ctx.render_opts.update({"volumetrics": "low", "vol_shadows": False})
+    ctx.interp = False            # torch flicker + embers: 24 fps
     ctx.post.update({"grade": ["flashback", "night"], "bloom": 0.4, "bloom_threshold": 0.55, "vignette": 0.3,
-                     "temperature": -0.35})
+                     "temperature": -0.3})

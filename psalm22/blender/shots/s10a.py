@@ -1,14 +1,18 @@
 """s10a - Poured out like water: "I am poured out like water, and all my bones are out of joint."
 
 Two setups in one shot, hard cut on the second phrase (both under the darkened eclipse sky):
-  A (phrase 1)  slow motion: water pours from the spout of a tilted earthen jar onto parched, cracked
-                ground, splashes, spreads, and sinks away into the cracks. Low, backlit by the dull sun
-                so the stream, beads and splash glint.
-  B (phrase 2)  low wide-angle close-up under the right shoulder of the crucified figure, looking up
-                along the arm stretched to the end of the crossbeam against the dim red-brown sky; a slow
-                push, fingers slowly tightening. No face in frame.
+  A (phrase 1)  slow motion (0.35x): water pours from the spout of a tilted earthen pitcher onto parched,
+                cracked ground, splashes and soaks away into the cracks (the wet patch darkens and
+                spreads; plates dry again while the cracks stay wet). Low camera looking towards the
+                dull sun; light-linked strip lights give the stream its liquid edge highlights.
+  B (phrase 2)  from just in front of the crucified figure's right shoulder, looking up and out along the
+                stretched arm to the clenched hand at the end of the crossbeam, silhouetted against the
+                dim red-brown sky with the darkened sun beside it; slow push, rack focus shoulder -> hand,
+                fingers slowly tightening. No face in frame.
 Setup A lives 30 m east of the cross; each setup is hidden (keyed hide_render) while the other is on
 screen, and one camera jumps between them at the cut.
+Render: 12 fps + RIFE (ctx.interp) with the splash window and the frame before the cut kept at full
+rate via ctx.interp_keep (honoured by render_shot.py in odd/auto mode).
 """
 import math
 import bpy
@@ -24,6 +28,7 @@ SUN_AZ = 245.0        # dull eclipse sun behind the figure's right hand (seen fr
 SUN_EL = 36.0         # raised from the preset's 24 so the disk sits beside the hand in the upward view
 SUN_E = 0.8           # eclipse preset is 0.35; a bit more so rims and water glints read
 OA = Vector((30.0, 0.0, 0.0))   # setup A origin (ground level)
+LOD = "mid"           # person LOD for the arm close-up
 
 
 def _hide_keys(objs, visible_from=None, hidden_from=None):
@@ -93,6 +98,11 @@ def build(ctx):
                          ground=None, ground_material=gp.active_material, puddle_radius=0.26, drain_time=0.5,
                          seed=1, name="Pour")
     imp = Vector(pour.impact)
+    # the FX water film is mostly hidden under the curled plates here, mirrors the sun as a blob and costs
+    # ~40% of the frame (blended 4D-noise ripples): the wet-patch in the ground material carries the look
+    if getattr(pour, "puddle", None) is not None:
+        bpy.data.objects.remove(pour.puddle, do_unlink=True)
+        pour.puddle = None
     # surrounding parched ground (below the crack grooves of the hero patch), darker so it doesn't glow
     far_m = C.mat_pbr("brown_mud_dry", scale=1.0 / 0.48, tint=(0.6, 0.5, 0.42), rough_add=0.5, name="s10a_mud")
     far = C.ground_plane(size=40, mat_=far_m, z=OA.z - 0.03, name="MudFar")
@@ -110,7 +120,6 @@ def build(ctx):
         loc = loc + C.shake(f, 0.002, 0.5, 11)
         foc = (imp.lerp(L, 0.3) - loc).length
         return (loc, tgt, 0.0, 45, foc)
-
 
     # earthen pitcher: spout at the lip, body tilted towards the pour direction (held off-screen).
     # NB assets water_jar v1: the spout pinch is at root +X but the handle comes out at -Y (and the
@@ -142,8 +151,8 @@ def build(ctx):
     C.key_fn(piv, "rotation_euler", jar_rot, 1, CUT, step=2)
     # glint lights (light-linked to the water only): two low soft strips at the front-left / front-right.
     # Seen from above, a near-vertical stream mirrors the ground below it, so with only the dull sun it
-    # reads as a dark rod; low strips give it the two bright edge highlights of a liquid, sparkle on the
-    # beads and a sheen on the film.
+    # reads as a dark rod; low strips give it the two bright edge highlights of a liquid and sparkle on
+    # the splash beads.
     wrecv = bpy.data.collections.new("s10a_water_recv")
     for k in ("stream", "droplets", "puddle"):
         o = getattr(pour, k, None)
@@ -208,7 +217,10 @@ def build(ctx):
     # ================================================================== SETUP B: the arm on the cross
     cm = C.wood_material("rough_wood", scale=1.2, tint=(0.62, 0.52, 0.42))
     cross = C.wooden_cross(loc=(0, 0, -0.45), height=4.85, material=cm, name="Cross")
-    j = P.make_person("jesus", "JESUS_CROSS", pose=None, hair_strands=False)
+    # only the right arm/shoulder is ever in frame: no beard/hair strands/crown (off camera), and the
+    # head parts are hidden below (render cost: the person was ~6 s of a 15 s frame)
+    j = P.make_person("jesus", "JESUS_CROSS", pose=None, hair_strands=False, beard="none", outfit=["loincloth"],
+                      lod=LOD)
     cont = P.place_on_cross(j, cross, head="down", strain=0.8)
     P.expression(j, "exhausted")
     j.update()
@@ -233,7 +245,11 @@ def build(ctx):
             amt = (10, 16, 12)[k - 1] if i > 1 else (4, 6, 6)[k - 1]
             P.rotate_bone(j, bn, (amt, 0, 0), frame=fB, mode="ADD")
             pb.rotation_quaternion = q0
-    setB = [cross] + j.objects()
+    for key in ("eyes", "eyebrows", "eyelashes", "teeth", "tongue", "hair"):
+        o = j.parts.get(key)
+        if o is not None:
+            o.hide_render = True
+    setB = [cross] + [o for o in j.objects() if not o.hide_render]
 
     # visibility per setup
     _hide_keys(setA, hidden_from=CUT)
@@ -270,5 +286,11 @@ def build(ctx):
 
     ctx.samples = 4
     ctx.render_opts.update({"raytracing": False, "volumetrics": "low", "shadow_scale": 0.5})
-    ctx.interp = False
+    # 12 fps + RIFE: slow-motion stream / slow camera moves. The hard cut can't be bridged by RIFE, so the
+    # even frame beside it is rendered too (render_shot.py honours ctx.interp_keep in odd/auto mode).
+    ctx.interp = True
+    # the splash crown's small droplets twinkle when synthesised: keep the splash window at 24 fps too
+    f_hit = int(f_start + T_hit / ts * 24)
+    f_last = min(CUT - 1, int(f_end + T_hit / ts * 24) + 2)
+    ctx.interp_keep = sorted(set([f for f in range(f_hit, f_last + 1) if f % 2 == 0] + [CUT - 1 if CUT % 2 else CUT]))
     ctx.post.update({"grade": "eclipse", "caption": {"y": 0.74}})

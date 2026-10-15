@@ -44,7 +44,7 @@ def build(ctx):
     # stone block; its front edge runs just in front of the candle so the lower frame (captions) is the
     # dark, rough front face of the block falling away into darkness
     ledge = C.box("Ledge", (1.3, 1.25, 0.5), (0.05, -0.115 + 0.625, -0.25), mat_=ledge_mat, bevel=0.015)
-    C.displace(ledge, strength=0.016, scale=0.12, subdiv=5)
+    C.displace(ledge, strength=0.016, scale=0.12, subdiv=4)
     set_objs.append(ledge)
     wood = C.wood_material("rough_wood", scale=2.0, tint=(0.42, 0.32, 0.24))
     upright = C.box("CrossUpright", (0.21, 0.2, 2.2), (-0.15, 0.62, 0.9), rot=(0, 0, 6), mat_=wood, bevel=0.012)
@@ -74,7 +74,7 @@ def build(ctx):
     # pre-create the wax materials (melting_candle reuses materials by name): redder amber, softer glow
     FX.wax_material("FX_beeswax_%d" % SEED, WAX, glow_color=(1.0, 0.42, 0.08), glow=0.4, glow_depth=0.009,
                     rough=0.36, sss=0.4)
-    FX.wax_material("FX_beeswax_pool_%d" % SEED, (0.6, 0.34, 0.08), glow_color=(1.0, 0.4, 0.08), glow=0.04,
+    FX.wax_material("FX_beeswax_pool_%d" % SEED, (0.45, 0.23, 0.045), glow_color=(1.0, 0.4, 0.08), glow=0.04,
                     glow_depth=0.004, rough=0.07, sss=0.08)
     f_end = N - 6
     e_flame = 1.8
@@ -127,7 +127,9 @@ def build(ctx):
         return (loc, tgt, 0.0, None, (Vector((0, 0, h)) - loc).length - 0.004)
     C.animate_camera(cam, path, 1, ctx.render_frames)
 
-    ctx.samples = 6
-    ctx.render_opts = {"volumetrics": "low", "exposure": 0.0}
-    ctx.interp = False   # per-frame flame flicker + time-lapse drips: render 24 fps
+    ctx.samples = 4
+    ctx.render_opts = {"volumetrics": "low", "exposure": 0.0, "shadow_scale": 0.5}
+    # 12 fps + RIFE: the flame/lamp flicker is smooth f-curve noise (~5 Hz) and the melt is slow; validated
+    # on a full-rate draft range (frames 41-55): mean 43.0 dB / SSIM 0.994 vs the real even frames, warp_err < 2
+    ctx.interp = True
     ctx.post = {"grade": "candle", "bloom": 0.3, "vignette": 0.32, "caption": {"y": 0.72}}

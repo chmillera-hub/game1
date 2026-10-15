@@ -17,6 +17,7 @@ from lib import fx as FX
 
 DUST = (0.5, 0.33, 0.22)
 DUST_DARK = (0.3, 0.19, 0.13)
+TINT = (-0.3, -0.34, -0.36)          # darker, dustier coats in the gloom
 
 
 def _hide_eyes(arm):
@@ -38,6 +39,7 @@ def build(ctx):
     sky = E.sky("eclipse", ctx=ctx, bg=0.3)       # darker visible sky: the lions come out of the dark
     sun = sky["sun"]
     sun.data.energy = 0.25
+    sun.data.use_shadow = False          # dim; its shadows don't read in the dust (saves a lot of frame time)
     sdir = Vector(sky["sun_dir"])
     hv = Vector((sdir.x, sdir.y)).normalized()
     # camera looks along +Y-ish towards the sun (lions backlit); rotate the layout so that holds exactly
@@ -63,21 +65,21 @@ def build(ctx):
     cats = bpy.data.collections.new("s09b_cats")
     bpy.context.scene.collection.children.link(cats)
     ROAR = int(round(ctx.frame(p1["start"] - 1.05)))     # jaw fully open ~0.45 s after the phrase starts
-    hero_start = P(0.25, 5.3)
-    hero = A.animal("lion", "stalk", loc=tuple(hero_start), rot_z=yaw + 12, speed=2.5, start_frame=1, move=True,
-                    end_frame=ROAR + 4, eye_glow=0.55, fur=0.8)
+    hero_start = P(0.1, 5.3)
+    hero = A.animal("lion", "stalk", loc=tuple(hero_start), rot_z=yaw, speed=2.5, start_frame=1, move=True,
+                    end_frame=ROAR + 4, eye_glow=0.55, fur=0.65, tint=TINT)
     st = A.play(hero, "roar", start_frame=ROAR, replace=False)
     st.repeat = 1.0
     hero_end = hero.location.copy()
 
     # second male, left, half in the dust; roars later
     l2 = A.animal("lion", "stalk", loc=tuple(P(-1.9, 8.4)), rot_z=yaw - 14, speed=1.8, start_frame=1, move=True,
-                  end_frame=int(ctx.frame(3.2)), eye_glow=1.0, fur=False, offset=0.7)
+                  end_frame=int(ctx.frame(3.2)), eye_glow=1.0, fur=False, offset=0.7, tint=TINT)
     s2 = A.play(l2, "roar", start_frame=int(ctx.frame(2.9)), replace=False)
     s2.repeat = 1.0
     # third, right, further back, walking in
     l3 = A.animal("lion", "stalk", loc=tuple(P(2.1, 10.2)), rot_z=yaw + 20, speed=1.8, start_frame=1, move=True,
-                  eye_glow=1.0, fur=False, offset=1.3)
+                  eye_glow=1.0, fur=False, offset=1.3, tint=TINT)
     # lioness (static roaring pose) further back right
     l4 = A.load("lion", variant=1, loc=tuple(P(3.4, 13.0)), rot_z=yaw + 35, scale=1.0)
     for a in (hero, l2, l3, l4):
@@ -88,9 +90,9 @@ def build(ctx):
     # hard warm rims from the dim sun through the dust (linked to the cats only; little fog glow)
     tg = P(0.2, 3.4) + Vector((0, 0, 1.0))
     rimL = C.light("AREA", tuple(P(-1.8, 7.5) + Vector((0, 0, 2.4))), 700, color=(1.0, 0.5, 0.25), size=1.2,
-                   target=tuple(tg), name="RimL", volume=0.15)
+                   target=tuple(tg), name="RimL", volume=0.0, shadow=False)
     rimR = C.light("AREA", tuple(P(2.2, 7.2) + Vector((0, 0, 2.0))), 520, color=(1.0, 0.45, 0.22), size=1.0,
-                   target=tuple(tg), name="RimR", volume=0.15)
+                   target=tuple(tg), name="RimR", volume=0.0, shadow=False)
     rimS = C.light("SUN", (0, 0, 20), 2.4, color=(1.0, 0.42, 0.2), name="RimSun", shadow=False, volume=0.3)
     rd = (fwd * math.cos(math.radians(18)) + Vector((0, 0, math.sin(math.radians(18))))).normalized()
     rimS.rotation_euler = (-rd).to_track_quat("-Z", "Y").to_euler()
@@ -103,9 +105,13 @@ def build(ctx):
         L.data.energy = e
         L.data.keyframe_insert("energy", frame=int(ctx.frame(1.4)))
     # dim red-brown fill from low camera-left (sky bounce) so the open mouth and teeth read
-    fill = C.light("AREA", tuple(P(-1.2, 0.4) + Vector((0, 0, 0.5))), 70, color=(1.0, 0.6, 0.42), size=1.5,
+    fill = C.light("AREA", tuple(P(-1.2, 0.6) + Vector((0, 0, 0.45))), 14, color=(1.0, 0.6, 0.42), size=1.5,
                    target=tuple(tg + Vector((0, 0, 0.2))), name="Fill", shadow=False, volume=0.0)
     fill.light_linking.receiver_collection = cats
+    fill.data.energy = 3
+    fill.data.keyframe_insert("energy", frame=1)
+    fill.data.energy = 14
+    fill.data.keyframe_insert("energy", frame=int(ctx.frame(1.6)))
 
     # ------------------------------------------------------------------ dust
     wind = right * -1.6 + Vector((0, 0, 0.1))
@@ -119,16 +125,16 @@ def build(ctx):
     # roar breath blasts the dust in front of the mouth
     mouth_ground = Vector(hero_end) - fwd * 1.3
     FX.dust_burst((mouth_ground.x, mouth_ground.y, 0.02), int(ctx.frame(p1["start"] - 0.1)), size=0.9,
-                  color=DUST, count=40, grains=600, direction=tuple(-fwd * 0.8 + Vector((0, 0, 0.4))),
+                  color=DUST, count=40, grains=0, direction=tuple(-fwd * 0.8 + Vector((0, 0, 0.4))),
                   wind=tuple(-fwd * 0.6 + wind * 0.5), opacity=0.5, life=2.4, seed=11, name="RoarDust")
 
     # ------------------------------------------------------------------ camera: low, slight push, roar shake
-    cam_base = P(0.0, -0.2) + Vector((0, 0, 0.72))
+    cam_base = P(-0.38, -0.2) + Vector((0, 0, 0.72))         # a little left: the lion comes in 3/4
 
     def cam_fn(f):
         u = C.ease_in_out(min(1.0, ctx.u(f)))
         loc = cam_base + fwd * (0.3 * u)
-        tgt = P(0.12, 3.6) + Vector((0, 0, 1.12 + 0.06 * u))
+        tgt = P(0.02, 3.6) + Vector((0, 0, 1.12 + 0.06 * u))
         # tremor while the lion roars
         t = ctx.sec(f)
         k = max(0.0, min(1.0, (t - p1["start"]) / 0.25)) * max(0.0, min(1.0, (p1["start"] + 1.6 - t) / 0.5))
@@ -151,9 +157,9 @@ def build(ctx):
     tr.track_axis = "TRACK_Y"
     for f, v in ((1, 0.0), (ROAR + 6, 0.0), (ROAR + 18, 0.6), (ROAR + 62, 0.6), (ROAR + 80, 0.25)):
         tr.influence = v
-        hb.keyframe_insert('constraints["%s"].influence' % tr.name, frame=f)
+        tr.keyframe_insert("influence", frame=f)
 
     ctx.samples = 5
     ctx.render_opts.update({"volumetrics": "low", "shadow_scale": 0.5})
-    ctx.interp = False
-    ctx.post.update({"grade": "eclipse", "bloom": 0.3, "vignette": 0.34})
+    ctx.interp = True        # validated: RIFE on draft 41-65 (stalk + roar) warp_err 1.3-1.8, 37.7 dB mean
+    ctx.post.update({"grade": "eclipse", "exposure": 0.0, "bloom": 0.3, "vignette": 0.34})

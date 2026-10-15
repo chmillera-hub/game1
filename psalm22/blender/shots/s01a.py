@@ -20,14 +20,17 @@ from lib import env as E
 from lib import characters as P
 
 SUN_AZ, SUN_EL = 140.0, 30.0      # = s01b (the cut continues on the same axis)
-SKYLIGHT = 0.4                    # world (sky dome) lighting multiplier: the lamps shape the face
+SKYLIGHT = 0.12                   # world (sky dome) lighting multiplier: the lamps shape the face
 CAM_AZ = 22.0                     # camera bearing around the face, degrees towards the character's RIGHT (-X)
-CAM_EL = -10.0                    # degrees below the eyes
+CAM_EL = -5.0                     # degrees below the eyes
 D0, D1 = 1.0, 0.8                 # camera distance (m) start -> end (push-in)
 LENS0, LENS1 = 60.0, 62.0
 FSTOP = 2.4
+EYE_UP = 8.0                      # eye pitch limit (deg, head frame): more and the iris rolls under the lid
 AIM_DZ = -0.06                    # aim point below the eyes (puts the eyes at ~0.42 H)
-LIGHTS = dict(key=55.0, rim=70.0, fill=20.0, bounce=8.0)
+HAIR_N, BEARD_D = 6000, 0.75      # hero strands thinned (cost) - indistinguishable at this size
+LIGHTS = dict(key=300.0, rim=320.0, fill=60.0, bounce=4.0, cross=70.0)
+SHADOW_RES = 0.004               # coarse shadow texels (m): soft area shadows need no detail, hair shadows are costly
 LAST = {}                         # handles for dev tools
 
 
@@ -57,6 +60,31 @@ def _sky(ctx):
     f0, f1 = _s01b_dark_window()
     tr = E.sky_transition(ctx, "eclipse", "eclipse", f0, f1, over_a=over_a, over_b=over_b)
     return tr, f0, f1
+
+
+def _lean(j):
+    """Render-cost trims for the close-up (measured: hair strands + shadows dominate)."""
+    for g in j.garments:                       # off-screen below the chest
+        if "loincloth" in g.name:
+            g.hide_render = True
+    for m in j.body.modifiers:                 # the beard hides the jaw line; -10 % frame time
+        if m.type == "SUBSURF":
+            m.render_levels = 0
+    try:
+        old = j.parts.pop("hair_strands", None)
+        if old is not None:
+            bpy.data.objects.remove(old, do_unlink=True)
+        P.make_hair_strands(j, count=HAIR_N, points=10, flyaways=0.0)
+        old = j.parts.pop("beard", None)
+        if old is not None:
+            bpy.data.objects.remove(old, do_unlink=True)
+        P.make_beard(j, density=BEARD_D)
+    except Exception as e:                     # library in flux: keep whatever exists
+        print("s01a WARNING: hair/beard rebuild failed:", e)
+    # mouth: the lit MPFB teeth read as dentures/braces at this size; without them the open mouth is a
+    # dark cavity (tongue kept), which reads as a cry
+    if "teeth" in j.parts:
+        j.parts["teeth"].hide_render = True
 
 
 def _ease(a, b, f):
@@ -96,34 +124,71 @@ def _expr_keys(j, keys):
         P.expression(j, d, w, frame=f)
 
 
-def _lights(face_c, df0, df1, N, NR):
+def _lights(face_c, df0, df1, N, NR, person):
     L = LIGHTS
-    # key: soft, warm, from the far (+X, character's left) side, high - short lighting
-    key = C.light("AREA", face_c + Vector((1.25, -1.2, 1.3)), L["key"], color=(1.0, 0.8, 0.6), target=face_c,
-                  size=1.0, name="KeyWarm")
-    # rim: cheat of the veiled sun behind the head (far cheek, beard edge, crown)
-    rim = C.light("AREA", face_c + Vector((0.95, 1.05, 0.8)), L["rim"], color=(1.0, 0.72, 0.45), target=face_c,
-                  size=0.6, name="RimSun")
+    # key: the bright overcast above him - a big soft top-front light (cool-neutral). Lifting his face to
+    # the sky turns it into this light. Spot, so it falls off on the chest; lights the person only.
+    key = C.light("SPOT", face_c + Vector((0.45, -1.25, 1.55)), L["key"], color=(0.86, 0.9, 1.0),
+                  target=face_c + Vector((0, 0, 0.1)), size=0.35, spot_size=34, spot_blend=1.0, name="KeySky")
+    # kicker: the veiled sun from behind his left (screen right): far cheek, beard edge, hair, shoulder
+    rim = C.light("SPOT", face_c + Vector((1.15, 0.28, 0.5)), L["rim"], color=(1.0, 0.72, 0.45), target=face_c,
+                  size=0.25, spot_size=40, spot_blend=0.8, name="KickSun", shadow=False)
     # fill: cool sky from the camera side, broad, no shadows
-    fill = C.light("AREA", face_c + Vector((-1.5, -1.5, 0.5)), L["fill"], color=(0.62, 0.74, 1.0), target=face_c,
-                   size=2.5, name="FillSky", shadow=False)
+    fill = C.light("SPOT", face_c + Vector((-1.5, -1.5, 0.3)), L["fill"], color=(0.62, 0.74, 1.0), target=face_c,
+                   size=0.8, spot_size=36, spot_blend=1.0, name="FillSky", shadow=False)
     # warm bounce from the sunlit hill below
     bounce = C.light("AREA", face_c + Vector((-0.3, -1.0, -1.4)), L["bounce"], color=(1.0, 0.72, 0.5),
                      target=face_c, size=1.5, name="Bounce", shadow=False)
-    # the light dims with the sky (key/rim/bounce follow the sun, fill stays)
+    # the wood of the cross: soft sky light only (no key), so it reads as dark weathered wood, not a cut-out
+    xfill = C.light("AREA", face_c + Vector((-0.8, -1.6, 0.9)), L["cross"], color=(0.9, 0.85, 0.8),
+                    target=face_c + Vector((0, 0.3, 0)), size=2.0, name="CrossFill", shadow=False)
+    xr = bpy.data.collections.new("S01aCrossRecv")
+    for o in bpy.data.objects:
+        if o.name.startswith("Cross_center"):
+            xr.objects.link(o)
+    xfill.light_linking.receiver_collection = xr
+    recv = bpy.data.collections.new("S01aKeyRecv")
+    for o in person.objects():
+        if o.type in ("MESH", "CURVES"):
+            recv.objects.link(o)
+    for ob in (key, rim):
+        ob.light_linking.receiver_collection = recv
+    # the light dims with the sky (key/kicker/bounce follow the sun, fill stays)
     for f in sorted(set((1, max(1, int(df0)), N, NR))):
         d = C.smoothstep(min(1.0, max(0.0, (f - df0) / float(df1 - df0))))
-        for ob, e0 in ((key, L["key"]), (rim, L["rim"]), (bounce, L["bounce"])):
-            ob.data.energy = e0 * (1.0 - 1.4 * d)
+        for ob, e0, k in ((key, L["key"], 1.7), (rim, L["rim"], 1.8), (bounce, L["bounce"], 1.4)):
+            ob.data.energy = e0 * max(0.0, 1.0 - k * d)
             ob.data.keyframe_insert("energy", frame=f)
-        rim.data.color = Vector((1.0, 0.72, 0.45)).lerp(Vector((1.0, 0.45, 0.22)), min(1.0, 2.2 * d))
+        rim.data.color = Vector((1.0, 0.72, 0.45)).lerp(Vector((1.0, 0.42, 0.2)), min(1.0, 2.2 * d))
         rim.data.keyframe_insert("color", frame=f)
-    return dict(key=key, rim=rim, fill=fill, bounce=bounce)
+    key.data.shadow_maximum_resolution = SHADOW_RES
+    flag = _flag(key.location, face_c + Vector((0, 0, -0.16)))
+    return dict(key=key, rim=rim, fill=fill, bounce=bounce, xfill=xfill, flag=flag)
+
+
+def _flag(light_pos, edge_pt, dist=0.35, w=1.2, h=0.8):
+    """Camera-invisible black flag that cuts the key off below `edge_pt` (the chin): the chest falls
+    into a soft shadow instead of being the brightest skin in the frame."""
+    d = (Vector(light_pos) - Vector(edge_pt)).normalized()
+    side = d.cross(Vector((0, 0, 1))).normalized()
+    up = side.cross(d).normalized()                    # 'up' in the flag plane
+    if up.z < 0:
+        up = -up
+    o = C.prim("plane", name="KeyFlag", size=1.0)
+    o.scale = (w, h, 1.0)
+    from mathutils import Matrix
+    R = Matrix((side, up, d)).transposed()
+    o.matrix_world = Matrix.Translation(Vector(edge_pt) + d * dist - up * (h / 2)) @ R.to_4x4() @ Matrix.Diagonal((w, h, 1, 1))
+    C.assign(o, C.mat("KeyFlag_mat", (0, 0, 0), rough=1.0))
+    for k in ("visible_camera", "visible_diffuse", "visible_glossy", "visible_volume_scatter", "visible_transmission"):
+        setattr(o, k, False)
+    return o
 
 
 def build(ctx):
     N, NR = ctx.nframes, ctx.render_frames
     tr, df0, df1 = _sky(ctx)
+    tr["sun"].data.use_shadow = False          # back light only (faces away from it); saves ~2 s/frame
 
     # ------------------------------------------------------------------ the centre cross of Golgotha
     H = E.golgotha_height(city=True, seed=0)
@@ -133,11 +198,9 @@ def build(ctx):
     bpy.context.view_layer.update()
 
     # ------------------------------------------------------------------ Jesus
-    j = P.make_person("jesus", "JESUS_CROSS", pose=None)
+    j = P.make_person("jesus", "JESUS_CROSS", pose=None, blood=0.65)
     P.place_on_cross(j, root, head="level", strain=0.6)
-    for g in j.garments:                       # off-screen below the chest
-        if "loincloth" in g.name:
-            g.hide_render = True
+    _lean(j)
     base = j._pose.copy()
     j.update()
 
@@ -151,7 +214,7 @@ def build(ctx):
 
     def body_fn(f):
         lift = _ease(f_lift0, f_lift1, f)
-        pitch = 7.0 - 39.0 * lift - 3.0 * _ease(f_lift1, NR, f)          # + = chin down
+        pitch = 7.0 - 34.0 * lift - 3.0 * _ease(f_lift1, NR, f)          # + = chin down
         breath = 0.5 - 0.5 * math.cos(2 * math.pi * (f - 1) / 58.0)        # laboured, ~2.4 s
         nz = C.shake(f, 1.0, 0.5, 7)
         return dict(pitch=pitch + 0.9 * nz.x - 0.8 * breath, tilt=-2.0 + 3.0 * lift + 0.7 * nz.y,
@@ -159,13 +222,13 @@ def build(ctx):
     _key_body(j, base, list(range(1, NR + 1, 2)) + ([NR] if NR % 2 == 0 else []), body_fn)
 
     # expressions (dicts of MakeHuman units, see characters.EXPRESSIONS)
-    low = {"eyebrows-inner-up": 0.55, "eyebrows-down": 0.25, "eye-closure": 0.38, "eye-slit": 0.2,
+    low = {"eyebrows-inner-up": 0.55, "eyebrows-down": 0.25, "eye-closure": 0.22, "eye-slit": 0.12,
            "mouth-depression": 0.18, "mouth-open": 0.04, "nose-elevation": 0.15, "neck-platysma": 0.2, "jaw": 4}
-    cry = {"eyebrows-inner-up": 1.0, "eyebrows-down": 0.28, "eye-slit": 0.25, "eye-opened-up": 0.15,
+    cry = {"eyebrows-inner-up": 1.0, "eyebrows-down": 0.28, "eye-slit": 0.2, "eye-opened-up": 0.25,
            "mouth-open": 0.18, "mouth-retraction": 0.12, "mouth-depression": 0.12, "nose-elevation": 0.3,
            "neck-platysma": 0.5, "jaw": 8}
-    ang = {"eyebrows-inner-up": 0.95, "eyebrows-down": 0.3, "eye-slit": 0.22, "eye-opened-up": 0.2,
-           "nose-elevation": 0.25, "mouth-depression": 0.22, "mouth-open": 0.07, "neck-platysma": 0.32, "jaw": 5}
+    ang = {"eyebrows-inner-up": 0.95, "eyebrows-down": 0.3, "eye-slit": 0.15, "eye-opened-up": 0.35,
+           "nose-elevation": 0.25, "mouth-depression": 0.22, "mouth-open": 0.04, "neck-platysma": 0.32, "jaw": 4}
     keys = [(1, low, 1.0), (int(f_cry0) - 2, low, 1.0), (int(f_cry0) + 8, cry, 0.85),
             (int((f_cry0 + f_cry1) / 2), cry, 0.7), (int(f_cry1) - 2, cry, 1.0), (int(f_cry1) + 9, ang, 1.0),
             (int(f_why0) + 6, ang, 1.15), (int(f_why0) + 22, ang, 1.0), (NR, ang, 1.05)]
@@ -183,14 +246,14 @@ def build(ctx):
         u = _ease(f_eye0, f_eye1, f)
         tgt_low = e + Vector((0.4, -3.0, -1.3))
         tgt_up = e + Vector((0.5, -2.0, 3.0))
-        P.eyes_look(j, tgt_low.lerp(tgt_up, u), frame=f)
+        P.eyes_look(j, tgt_low.lerp(tgt_up, u), frame=f, up_limit=EYE_UP)
     sc.frame_set(1)
     e_start = j.eye_pos()
     sc.frame_set(int(f_lift1))
     e_end = j.eye_pos()
     sc.frame_set(1)
 
-    lights = _lights((e_start + e_end) * 0.5, df0, df1, N, NR)
+    lights = _lights((e_start + e_end) * 0.5, df0, df1, N, NR, j)
 
     # ------------------------------------------------------------------ camera
     cam_dir = Vector((-math.sin(math.radians(CAM_AZ)), -math.cos(math.radians(CAM_AZ)), 0.0))
@@ -214,7 +277,7 @@ def build(ctx):
 
     LAST.update(j=j, cam=cam, root=root, sky=tr, e_start=e_start, e_end=e_end, **lights)
 
-    ctx.samples = 6
+    ctx.samples = 5
     ctx.render_opts.update({"volumetrics": "low"})
     ctx.interp = True
     ctx.post.update({"grade": "warm", "bloom": 0.22, "vignette": 0.24,

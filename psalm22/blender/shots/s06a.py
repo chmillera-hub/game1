@@ -17,12 +17,14 @@ from lib import core as C
 from lib import env as E
 from lib import characters as P
 
-SUN_AZ = 215.0     # behind the cross, off to the camera's right: faces lit 3/4 from screen right
+SUN_AZ = 255.0     # low side light from screen right (behind-right of the cross): faces half in shadow
 SUN_EL = 28.0
-SUN_E = 1.0        # eclipse preset 0.35: harsher, so faces and shadows read (graded dim in comp)
-LENS = 40.0
-PITCH0, PITCH1 = -32.5, -36.0     # gaze sinks
-YAW0, YAW1 = 3.0, -3.5            # and drifts across the crowd (deg, + = screen left)
+SUN_E = 1.5        # eclipse preset 0.35: harsher, so faces and shadows read (graded dim in comp)
+LENS = 50.0
+PITCH0, PITCH1 = -34.0, -37.5     # gaze sinks
+YAW0, YAW1 = 2.5, -3.0            # and drifts across the crowd (deg, + = screen left)
+N_BAKED = 24
+SHADOW_RES = 0.01  # sun shadow_maximum_resolution (env sets 2 mm: far too costly with ~20 people close by)
 
 
 def _hazify_person(p):
@@ -44,6 +46,21 @@ def _preload(p, names):
     P.expression(p, "neutral", 0.0)
 
 
+def shrink_textures(skin=1024, other=512):
+    """MPFB skin/hair/teeth/eye maps are 2k; at these face sizes 1k/0.5k is plenty (saves ~0.4 GB RAM)."""
+    for im in bpy.data.images:
+        fp = (im.filepath or "").lower()
+        if "mpfb" not in fp and "makehuman" not in fp:
+            continue
+        try:
+            w, h = im.size
+            mx = skin if ("skinned" in im.name or "skin" in fp) else other
+            if max(w, h) > mx and w > 0:
+                im.scale(mx, max(1, int(round(mx * h / w))))
+        except Exception as e:
+            print("shrink_textures:", im.name, e)
+
+
 def _cam_dir(pitch_deg, yaw_deg):
     pi, yw = math.radians(pitch_deg), math.radians(yaw_deg)
     return Vector((math.sin(yw) * math.cos(pi), -math.cos(yw) * math.cos(pi), math.sin(pi)))
@@ -51,26 +68,21 @@ def _cam_dir(pitch_deg, yaw_deg):
 
 # (key, preset, spec, screen x (-1..1), screen y of the face (0 top .. 1 bottom), behaviour)
 CAST = [
-    ("chief", "PRIEST", dict(lod="hero"), 0.22, 0.47, "shake"),
-    ("shout", "CROWD_MAN", dict(seed=21, outfit=["tunic", "mantle", "headcloth"], age_years=34,
+    ("chief", "PRIEST", dict(outfit_colors={"mantle": "purple", "turban": "white_linen"}), 0.3, 0.41, "shake"),
+    ("shout", "CROWD_MAN", dict(seed=21, outfit=["tunic", "mantle", "headcloth"], age_years=34, beard_color="brown",
                                 outfit_colors={"tunic": "oatmeal", "mantle": "umber", "headcloth": "sand"}),
-     -0.5, 0.53, "point"),
+     -0.55, 0.47, "point"),
     ("lead2", "CROWD_MAN", dict(seed=31, outfit=["robe_rich", "turban"], age_years=60, beard="long", build="heavy",
-                                outfit_colors={"mantle": "indigo", "turban": "linen"}), -0.12, 0.35, "shake"),
-    ("woman1", "CROWD_WOMAN", dict(seed=5, outfit_colors={"tunic": "linen", "veil": "madder"}), 0.72, 0.39, "laugh"),
-    ("fist", "CROWD_MAN", dict(seed=8, age_years=27, outfit_colors={"tunic": "brown", "mantle": "charcoal"}),
-     -0.8, 0.32, "fist"),
-    ("phar", "CROWD_MAN", dict(seed=44, outfit=["robe", "headcloth"], age_years=50, beard="full",
+                                outfit_colors={"mantle": "camel", "turban": "oatmeal", "shawl": "linen"}), -0.18, 0.28, "shake"),
+    ("woman1", "CROWD_WOMAN", dict(seed=5, outfit_colors={"tunic": "linen", "veil": "madder"}), 0.62, 0.25, "laugh"),
+    ("fist", "CROWD_MAN", dict(seed=8, age_years=27, beard="short", beard_color="dark_brown",
+                               outfit_colors={"tunic": "brown", "mantle": "charcoal"}), -0.85, 0.20, "fist"),
+    ("phar", "CROWD_MAN", dict(seed=44, outfit=["robe", "headcloth"], age_years=50, beard="full", beard_color="grey",
                                outfit_colors={"tunic": "white_linen", "mantle": "blue_grey", "headcloth": "white_linen"}),
-     0.4, 0.25, "shake"),
-    ("laugh2", "CROWD_MAN", dict(seed=12, outfit_colors={"tunic": "sand", "mantle": "olive"}), -0.42, 0.21, "laugh"),
-    ("woman2", "CROWD_WOMAN", dict(seed=17, outfit_colors={"tunic": "umber", "veil": "oatmeal"}), 0.85, 0.2, "mock"),
-    ("point2", "CROWD_MAN", dict(seed=3, outfit=["tunic", "mantle", "headcloth"],
-                                 outfit_colors={"tunic": "linen", "mantle": "rust", "headcloth": "oatmeal"}),
-     0.05, 0.15, "point"),
-    ("near", "CROWD_MAN", dict(seed=61, outfit=["tunic", "mantle", "headcloth"], age_years=41,
-                               outfit_colors={"tunic": "camel", "mantle": "dark_brown", "headcloth": "linen"}),
-     -0.15, 0.7, "shake"),
+     0.2, 0.15, "shake"),
+    ("laugh2", "CROWD_MAN", dict(seed=12, beard_color="brown", outfit_colors={"tunic": "sand", "mantle": "olive"}),
+     -0.42, 0.10, "laugh"),
+    ("woman2", "CROWD_WOMAN", dict(seed=17, outfit_colors={"tunic": "umber", "veil": "oatmeal"}), 0.78, 0.06, "mock"),
 ]
 
 
@@ -84,7 +96,8 @@ def build(ctx):
     # ------------------------------------------------------------------ set + the eye on the cross
     # centre cross at (0, 0.6) facing -Y, head anchor ~ (0, 0.38, cz + 3.45), hill top cz ~ 11
     view = dict(loc=(0.0, 0.25, 14.4), target=(0.0, -6.0, 10.6), lens=LENS, margin=22)
-    A = E.golgotha(ctx, mood="eclipse", sun_az=SUN_AZ, view=view, near_detail=0.6, grass=0.6, bushes=0.6,
+    A = E.golgotha(ctx, mood="eclipse", sun_az=SUN_AZ, view=view, near_detail=0.4, grass=0.4, bushes=0.0, dust=False,
+                   city=False,
                    sky_over=dict(sun_el=SUN_EL, sun_disk=dict(E.SKY_PRESETS["eclipse"]["sun_disk"], el=SUN_EL)))
     gzf = A["ground_z"]
     c = A["crosses"]["center"]
@@ -92,16 +105,11 @@ def build(ctx):
     sun = A["sky"]["sun"]
     sun.data.energy = SUN_E
     sun.data.angle = math.radians(1.8)
+    sun.data.shadow_maximum_resolution = SHADOW_RES
 
-    # the crucified: never seen (the camera is at his eyes) but he casts his shadow
-    j = P.make_person("jesus", "JESUS_CROSS", pose=None, lod="mid", hair_strands=False)
-    P.place_on_cross(j, c["root"], head="down", strain=0.6)
-    P.expression(j, "exhausted")
-    j.update()
-    eye = Vector(j.eye_pos())
-    for o in j.objects():
-        o.visible_camera = False
-
+    # his eyes: the head anchor of the centre cross (the figure itself is never seen; its shadow falls
+    # behind the crowd, out of frame, so it is not built)
+    eye = Vector(c["head"]) + Vector((0, 0, -0.06))
     cam0 = eye + Vector((0, -0.12, 0.02))
     dmid = _cam_dir(0.5 * (PITCH0 + PITCH1), 0.5 * (YAW0 + YAW1))
     rgt = dmid.cross(Vector((0, 0, 1))).normalized()
@@ -131,6 +139,7 @@ def build(ctx):
         p.rig.location = loc
         yaw = math.atan2(cam0.x - loc.x, -(cam0.y - loc.y)) + math.radians(rnd.uniform(-14, 14))
         p.rig.rotation_euler = (0, 0, yaw)
+        p.update()          # key_pose() grounds with rig.matrix_world: it must be current
         built.append((p, sx, sy, beh, i))
 
     for p, sx, sy, beh, i in built:
@@ -145,10 +154,10 @@ def build(ctx):
             P.key_pose(p, t_look, stand, ground_z=gz)
             fp = t_look + 12
             P.key_pose(p, fp, "point", ground_z=gz, target=tuple(look_pt + lift))
-            P.key_pose(p, a2 + 4, "point", ground_z=gz, target=tuple(look_pt + lift + Vector((0.3, 0, 0.9))))
-            P.key_pose(p, a2 + 11, "point", ground_z=gz, target=tuple(look_pt + lift))
-            P.key_pose(p, a2 + 30, "point", ground_z=gz, target=tuple(look_pt + lift + Vector((-0.2, 0, 0.7))))
-            P.key_pose(p, a2 + 37, "point", ground_z=gz, target=tuple(look_pt + lift))
+            P.key_pose(p, a2 + 6, "point", ground_z=gz, target=tuple(look_pt + lift + Vector((0.3, 0, 0.9))))
+            P.key_pose(p, a2 + 17, "point", ground_z=gz, target=tuple(look_pt + lift))
+            P.key_pose(p, a2 + 34, "point", ground_z=gz, target=tuple(look_pt + lift + Vector((-0.2, 0, 0.7))))
+            P.key_pose(p, a2 + 45, "point", ground_z=gz, target=tuple(look_pt + lift))
             P.key_pose(p, NR, "point", ground_z=gz, target=tuple(look_pt + lift + Vector((0.1, 0, 0.2))))
             looks = [(1, None), (t_look, None)]
         else:
@@ -185,15 +194,17 @@ def build(ctx):
     pts = []
     taken = [(p.rig.location.x, p.rig.location.y) for p, *_ in built] + [(c["base"][0], c["base"][1])]
     for k in range(400):
-        sx = rnd.uniform(-1.5, 1.5)
-        sy = rnd.uniform(-0.25, 0.95)
+        sx = rnd.uniform(-1.4, 1.4)
+        sy = rnd.uniform(-0.75, 0.75)
+        if sy > 0.6 and abs(sx) < 0.55:      # keep the lower middle (under the captions) to the cast + ground
+            continue
         q = ground_from_screen(sx, sy, 1.5)
         if q.y < -9.8 or q.y > -0.9 or abs(q.x) > 7.5:
             continue
-        if any((q.x - a[0]) ** 2 + (q.y - a[1]) ** 2 < 0.66 ** 2 for a in taken + pts):
+        if any((q.x - a[0]) ** 2 + (q.y - a[1]) ** 2 < 0.62 ** 2 for a in taken + pts):
             continue
         pts.append((q.x, q.y))
-        if len(pts) >= 46:
+        if len(pts) >= N_BAKED:
             break
     look_up = (0.0, -6.0, 3.6)        # relative to a source built at the origin facing -Y
     cposes = [("stand", {"look": look_up}), ("point", {"target": (0.3, -4.0, 4.4)}),
@@ -204,13 +215,21 @@ def build(ctx):
     def cpose(per, i):
         nm, kw = cposes[i % len(cposes)]
         P.pose(per, nm, **kw)
-        P.expression(per, cexpr[i % len(cexpr)], 0.85)
+        try:
+            P.expression(per, cexpr[i % len(cexpr)], 0.85)
+        except Exception as e:
+            print("s06a: crowd expression skipped", e)
 
-    cr = P.crowd(len(pts), positions=pts, seed=ctx.seed % 97, variety=6, lod="mid",
+    cr = P.crowd(len(pts), positions=pts, seed=ctx.seed % 97, variety=4, lod="mid",
                  face=(c["base"][0], c["base"][1] - 1.0, cz), yaw_jitter=16, height_fn=lambda x, y: gzf(x, y),
                  pose_fn=cpose, name="MockCrowd")
     for o in cr.sources:
         _hazify_person(o)
+    for inst in cr.instances:
+        if (Vector((inst.location.x, inst.location.y)) - Vector((cam0.x, cam0.y))).length > 6.0:
+            inst.visible_shadow = False
+            for ch in inst.children:
+                ch.visible_shadow = False
     # slow weight shifts on the instances (a static crowd reads as a photo)
     for inst in cr.instances:
         z0 = inst.rotation_euler.z
@@ -223,6 +242,11 @@ def build(ctx):
         bpy.data.orphans_purge(do_local_ids=True, do_linked_ids=True, do_recursive=True)
     except Exception as e:
         print("s06a: purge failed", e)
+    shrink_textures()
+    # the cornea (BLENDED) costs a forward pass per person (~35 % of the frame here); dithered looks the same
+    for m in bpy.data.materials:
+        if m.surface_render_method == "BLENDED":
+            m.surface_render_method = "DITHERED"
 
     # ------------------------------------------------------------------ camera (his POV)
     chief = built[0][0]
@@ -240,7 +264,7 @@ def build(ctx):
 
     C.animate_camera(cam, path, 1, NR)
 
-    ctx.samples = 6
+    ctx.samples = 4
     ctx.render_opts.update({"volumetrics": "low"})
-    ctx.interp = False
-    ctx.post.update({"grade": "eclipse", "vignette": 0.26, "caption": {"y": 0.70}})
+    ctx.interp = True       # head shakes / laughs / slow POV drift: 12 fps + RIFE is clean (no particles, no flicker)
+    ctx.post.update({"grade": "eclipse", "exposure": 0.0, "vignette": 0.26, "caption": {"y": 0.70}})

@@ -18,7 +18,7 @@ from lib import characters as P
 from lib import fx as FX
 
 DUST = (0.5, 0.33, 0.22)
-R_CAM = 9.2
+R_CAM = 9.0
 
 
 def _loc_at(obj, f):
@@ -59,13 +59,28 @@ def _hoof_dust(events, fps, wind, seed=0):
         S.append(rng.uniform(0.25, 0.5, n) * size)
     P0, V0 = np.concatenate(P0), np.concatenate(V0)
     B, L, S = np.concatenate(B), np.concatenate(L), np.concatenate(S)
-    mat = FX._spray_material("s09a_dust", color=DUST, opacity=0.45, glow=0.3, soft=1.4)
+    mat = FX._spray_material("s09a_dust", color=DUST, opacity=0.55, glow=0.14, soft=1.4)
     src = FX._cached_src("FX_src_quad", lambda: FX._quad("FX_src_quad"))
     o, _ = FX._particles("HoofDust", P0, V0, B, L, S, mat, gravity=(0, 0, 0.05), drag=2.2, wind=wind,
                          turb=0.45, turb_scale=0.6, turb_speed=0.4, grow=3.2, fade_in=0.08, fade_out=0.65,
                          mode=3, instance=src, spin=0.3, seed=seed + 1)
     return o
 
+
+
+def _lean_baked(obj):
+    """Distant baked figure: drop the frozen beard curves child and the skin SSS (screen-space pass)."""
+    if obj is None:
+        return
+    for c in list(obj.children):
+        if c.type == "CURVES":
+            bpy.data.objects.remove(c)
+    for m in obj.data.materials:
+        if m and m.use_nodes:
+            for n in m.node_tree.nodes:
+                if n.bl_idname == "ShaderNodeBsdfPrincipled" and "Subsurface Weight" in n.inputs:
+                    if not n.inputs["Subsurface Weight"].is_linked:
+                        n.inputs["Subsurface Weight"].default_value = 0.0
 
 def build(ctx):
     NR = ctx.render_frames
@@ -80,8 +95,9 @@ def build(ctx):
         a = math.radians(side0 + da)
         lo = c0 + Vector((math.cos(a), math.sin(a))) * R_CAM
         views.append(dict(loc=(lo.x, lo.y, 11.0), target=(c0.x, c0.y, 13.0), lens=30, margin=22, near=6.0))
-    G = E.golgotha(ctx, mood="eclipse", crosses=3, grass=0.6, bushes=0.5, rocks=0.45, near_detail=0.0,
-                   city=True, view=views,
+    # the storm hides everything beyond ~30 m: no city, no far shrubs/olives, sparse grass
+    G = E.golgotha(ctx, mood="eclipse", crosses=3, grass=0.4, bushes=0.0, rocks=0.45, near_detail=0.0,
+                   city=False, view=views,
                    sky_over=dict(sun_disk=dict(el=24, size=3.2, color=(1.0, 0.28, 0.07), strength=40.0, glow=0.5)))
     ground = G["ground"]
     cr = G["crosses"]["center"]
@@ -95,11 +111,12 @@ def build(ctx):
     # ------------------------------------------------------------------ the crucified figure (silhouette)
     j = P.make_person("jesus", "JESUS_CROSS", lod="mid", hair_strands=False)
     P.place_on_cross(j, cr["root"], head="side", strain=0.75)
+    _lean_baked(P.bake_static(j, decimate=0.5))   # distant: one frozen mesh, no rig/garments/beard/SSS
 
     # ------------------------------------------------------------------ dust storm
     top = G["hill_top"][2]
     wdir = Vector((1.0, 0.35, 0.0)).normalized()
-    E.dust_storm(ctx, color=DUST, density=0.03, speed=7.0, center=(0, -5, top - 6), size=(120, 120, 30),
+    E.dust_storm(ctx, color=DUST, density=0.036, speed=7.0, center=(0, -5, top - 6), size=(120, 120, 30),
                  direction=tuple(wdir), motes=False)
 
     # ------------------------------------------------------------------ bulls
@@ -108,8 +125,9 @@ def build(ctx):
     bulls = []
     cam_side = math.degrees(math.atan2(-hv.y, -hv.x))      # angle of the camera side (opposite the sun)
     R1 = 6.4                                     # outside the side crosses (~4.7 m)
-    inner = [(cam_side - 62, 1.25, 1.18), (cam_side + 2, 1.35, 1.25), (cam_side + 68, 1.2, 1.12),
-             (cam_side + 128, 1.3, 1.2), (cam_side + 185, 1.25, 1.15), (cam_side - 122, 1.3, 1.16)]
+    # phases: the shot opens on the cross + sun, the first bull crosses close on "many bulls"
+    inner = [(cam_side - 84, 1.25, 1.18), (cam_side - 26, 1.35, 1.25), (cam_side + 40, 1.2, 1.12),
+             (cam_side + 104, 1.3, 1.2), (cam_side + 165, 1.25, 1.15), (cam_side - 144, 1.3, 1.16)]
     for i, (a0, spd, scl) in enumerate(inner):
         arm = A.animal("bull", "walk", speed=spd, scale=scl, tint=(-0.35, -0.35, -0.33), offset=i * 0.31)
         v = A.ground_speed("bull", "walk", 0, spd) * scl
@@ -143,7 +161,7 @@ def build(ctx):
             fwd = fwd.normalized() if fwd.length > 1e-6 else Vector((0, -1, 0))
             if f < 1:
                 p = p - fwd * (1 - f) / fps * A.ground_speed("bull", act, 0, spd) * scl
-            events.append((p.x, p.y, gz(p.x, p.y) + 0.05, f, 0.6 if act == "walk" else 0.85, tuple(fwd)))
+            events.append((p.x, p.y, gz(p.x, p.y) + 0.05, f, 0.8 if act == "walk" else 1.0, tuple(fwd)))
             t += step
     _hoof_dust(events, fps, wind, seed=ctx.seed)
 
@@ -161,11 +179,13 @@ def build(ctx):
     look_z = cr["beam_z"] + 0.05
     R_cam = R_CAM
 
+    gzx = lambda x, y: float(G["ground_z"](x, y))           # exact (terrain + cliff top) for the camera
+
     def cam_fn(f):
         u = C.ease_in_out(min(1.0, max(0.0, ctx.u(f))))
         a = math.radians(cam_side + 15 - 30 * u)
         loc = Vector((cxy.x + math.cos(a) * R_cam, cxy.y + math.sin(a) * R_cam, 0))
-        loc.z = gz(loc.x, loc.y) + 0.42
+        loc.z = gzx(loc.x, loc.y) + 0.42
         tgt = Vector((cxy.x, cxy.y, look_z - 0.3))
         loc = loc + C.shake(f, 0.012, 0.7, 3)
         roll = -4.0 + 8.0 * u
@@ -174,7 +194,7 @@ def build(ctx):
     cam = C.camera((0, -8, top), (0, 0, top + 3), lens=30, name="Cam")
     C.animate_camera(cam, cam_fn, 1, NR)
 
-    ctx.samples = 5
+    ctx.samples = 4
     ctx.render_opts.update({"volumetrics": "low", "shadow_scale": 0.5})
     ctx.interp = False
     ctx.post.update({"grade": "eclipse", "bloom": 0.25, "vignette": 0.3})

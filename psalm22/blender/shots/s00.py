@@ -8,14 +8,15 @@ through the haze, towering clouds stand to the left and a dark storm front creep
 """
 import math
 import bpy
+import numpy as np
 from mathutils import Vector
 from lib import core as C, env as E
 
 HDRI = "table_mountain_2_puresky"
 VIS_SUN_OFF = (2.6, None)        # visible sun: degrees right of the view axis, elevation (None = HDRI's)
 LAMP = (152.0, 13.0)             # sun lamp (core az, el): back-right, low -> rims + raking light on the cliff
-CAM0 = ((0.0, -59.5, 7.5), (0.0, 0.6, 14.85), 70.0)    # loc, target, lens at frame 1
-CAM1 = ((0.0, -53.0, 8.6), (0.0, 0.6, 15.15), 70.0)     # at the end of the tail
+CAM0 = ((0.0, -59.5, 7.5), (0.0, 0.6, 16.7), 70.0)    # loc, target, lens at frame 1
+CAM1 = ((0.0, -53.0, 8.6), (0.0, 0.6, 17.0), 70.0)     # at the end of the tail
 GOLD_MAP = [(0.0, (0.85, 0.95, 1.35)), (0.2, (1.0, 0.98, 1.05)), (0.4, (1.35, 0.95, 0.55)),
             (0.6, (1.4, 0.93, 0.45)), (0.8, (1.25, 0.97, 0.65)), (1.0, (1.05, 1.0, 0.92))]
 
@@ -135,27 +136,85 @@ def sky_fx(S, sun_vis, rays=0.55, ray_keys=None, storm=0.0, storm_keys=None, sto
 
 
 def cull_scatter(names, pred):
-    """Hide GN-scattered instances (scale -> 0) of env scatter objects whose name starts with one of
-    `names` where pred(x, y, z, size) is True (numpy arrays, world = object space here)."""
+    """Delete GN-scattered instances (env.scatter point clouds) of objects whose name starts with one of
+    `names` where pred(x, y, z, size) is True (numpy arrays, world space). Returns the number removed."""
     import numpy as np
-    n_hidden = 0
-    for ob in bpy.data.objects:
+    removed = 0
+    for ob in list(bpy.data.objects):
         if "n_instances" not in ob.keys() or not any(ob.name.startswith(n) for n in names):
             continue
         me = ob.data
-        co = np.zeros(len(me.vertices) * 3, np.float32)
+        nv = len(me.vertices)
+        if nv == 0:
+            continue
+        co = np.zeros(nv * 3, np.float32)
         me.vertices.foreach_get("co", co)
-        co = co.reshape(-1, 3) @ np.array(ob.matrix_world.to_3x3()).T + np.array(ob.matrix_world.translation)
-        at = me.attributes.get("scl")
-        sc = np.zeros(len(me.vertices) * 3, np.float32)
-        at.data.foreach_get("vector", sc)
-        sc = sc.reshape(-1, 3)
-        kill = pred(co[:, 0], co[:, 1], co[:, 2], sc.max(axis=1))
-        sc[kill] = 0.0
-        at.data.foreach_set("vector", sc.ravel())
-        me.update()
-        n_hidden += int(kill.sum())
-    return n_hidden
+        co = co.reshape(-1, 3)
+        M = np.array(ob.matrix_world)
+        wc = co @ M[:3, :3].T + M[:3, 3]
+        attrs = {}
+        for at in me.attributes:
+            if at.domain != "POINT" or at.name == "position" or at.name.startswith("."):
+                continue
+            if at.data_type == "FLOAT_VECTOR":
+                arr = np.zeros(nv * 3, np.float32)
+                at.data.foreach_get("vector", arr)
+                arr = arr.reshape(-1, 3)
+            elif at.data_type == "INT":
+                arr = np.zeros(nv, np.int32)
+                at.data.foreach_get("value", arr)
+            elif at.data_type == "FLOAT":
+                arr = np.zeros(nv, np.float32)
+                at.data.foreach_get("value", arr)
+            else:
+                continue
+            attrs[at.name] = (at.data_type, arr)
+        size = attrs["scl"][1].max(axis=1) if "scl" in attrs else np.ones(nv, np.float32)
+        keep = ~pred(wc[:, 0], wc[:, 1], wc[:, 2], size)
+        k = int(keep.sum())
+        if k == nv:
+            continue
+        removed += nv - k
+        nm = bpy.data.meshes.new(me.name + "_cull")
+        nm.vertices.add(k)
+        nm.vertices.foreach_set("co", co[keep].ravel())
+        for name, (dt, arr) in attrs.items():
+            at = nm.attributes.new(name, dt, "POINT")
+            if dt == "FLOAT_VECTOR":
+                at.data.foreach_set("vector", arr[keep].ravel())
+            else:
+                at.data.foreach_set("value", arr[keep])
+        nm.update()
+        ob.data = nm
+        ob["n_instances"] = k
+        if k == 0:
+            ob.hide_render = True
+    return removed
+
+
+def _occluded_fn(cams, edge=(-11.0, 10.2), margin_deg=2.5):
+    """Predicate for cull_scatter: True where an instance is invisible from every camera key: behind
+    the skull-cliff crest below the line of sight, outside the horizontal frustum, or under the frame."""
+    import numpy as np
+
+    def pred(x, y, z, size):
+        hidden = np.ones(len(x), bool)
+        for (loc, tgt, lens) in cams:
+            cx, cy, cz = loc
+            fx, fy = tgt[0] - cx, tgt[1] - cy
+            yaw = math.atan2(fx, fy)
+            half = math.atan(18.0 * 9.0 / 16.0 / lens) + math.radians(margin_deg)
+            ang = np.arctan2(x - cx, y - cy) - yaw
+            out_side = np.abs(ang) > half
+            slope = (edge[1] - cz) / (edge[0] - cy)
+            behind = (y > edge[0] + 0.5) & (z + 2.0 * size < cz + slope * (y - cy))
+            pitch = math.atan2(tgt[2] - cz, math.hypot(fx, fy))
+            low = math.atan(18.0 / lens) - pitch + math.radians(margin_deg)       # bottom ray below horizon
+            d = np.hypot(x - cx, y - cy)
+            under = (y < edge[0]) & ((cz - (z + 2.0 * size)) / np.maximum(d, 0.1) > math.tan(low))
+            hidden &= out_side | behind | under
+        return hidden
+    return pred
 
 
 def figures(A, lod="mid"):
@@ -181,12 +240,42 @@ def figures(A, lod="mid"):
             t = P.make_person("thief_" + k, "CROWD_MAN", outfit=None, **kw)
         P.place_on_cross(t, A["crosses"][k]["root"], head=head, strain=0.85, knee_side=side)
         out.append(t)
-    for p in out:
-        for o in p.objects():
-            if o.type == "MESH":
-                for m in o.data.materials:
-                    E.hazify(m)
-    return out
+    return [simplify_person(p) for p in out]
+
+
+def _simple_mat(name, color, rough=0.7, sheen=0.0):
+    m = bpy.data.materials.get(name) or C.mat(name, color=color, rough=rough, sheen=sheen)
+    E.hazify(m)
+    return m
+
+
+def simplify_person(p):
+    """At ~50 px tall the figures are silhouettes: freeze each into one mesh (bake_static) and swap the
+    hero shaders (SSS skin, layered eyes, blended lashes, hair curves) for plain opaque materials.
+    Measured: the three live people cost ~19 s/frame at final quality, baked + simple ~1-2 s."""
+    from lib import characters as P
+    ob = P.bake_static(p, delete=True)
+    for ch in list(ob.children):
+        if ch.type != "MESH":
+            bpy.data.objects.remove(ch, do_unlink=True)
+    skin = _simple_mat("S00_Skin", (0.30, 0.19, 0.13), 0.55)
+    hair = _simple_mat("S00_Hair", (0.025, 0.018, 0.013), 0.7)
+    cloth = _simple_mat("S00_Cloth", (0.55, 0.48, 0.38), 0.9, sheen=0.3)
+    thorn = _simple_mat("S00_Thorn", (0.10, 0.07, 0.045), 0.9)
+    names = []
+    for i, m in enumerate(ob.data.materials):
+        n = (m.name if m else "").lower()
+        names.append(n)
+        if any(k in n for k in ("hair", "brow", "lash", "beard")):
+            ob.data.materials[i] = hair
+        elif any(k in n for k in ("thorn", "crown")):
+            ob.data.materials[i] = thorn
+        elif any(k in n for k in ("linen", "fabric", "cloth", "wool", "loin", "garment", "tunic", "hessian")):
+            ob.data.materials[i] = cloth
+        else:
+            ob.data.materials[i] = skin
+    print("s00: simplified %s materials: %s" % (ob.name, ", ".join(names)))
+    return ob
 
 
 def build(ctx):
@@ -199,23 +288,22 @@ def build(ctx):
     over = dict(hdri=HDRI, sun_el=LAMP[1], key=0.42, strength=0.38, clamp_sun=1.5, sat=1.25, tint=(1.0, 0.8, 0.55),
                 sun_disk=dict(el=vis_el, size=0.75, color=(1.0, 0.86, 0.62), strength=60.0, glow=0.10))
     cams = [dict(loc=l0, target=t0, lens=lens0), dict(loc=l1, target=t1, lens=lens1)]
-    A = E.golgotha(ctx, mood="golden", sun_az=vis_az, sky_over=over, view=cams, near_detail=0.3,
-                   city=False, dust=False)
+    A = E.golgotha(ctx, mood="golden", sun_az=vis_az, sky_over=over, view=cams, near_detail=0.0,
+                   city=False, dust=False, skull=0.8)
     # boulders on the plateau would silhouette as blobs on the hill line next to the crosses
-    k = cull_scatter(("EnvBoulders", "EnvTalus"), lambda x, y, z, s: (abs(x) < 16) & (y > -10.5) & (y < 14) & (z > 8.5))
+    k = cull_scatter(("EnvBoulders", "EnvTalus"), lambda x, y, z, s: (np.abs(x) < 16) & (y > -10.5) & (y < 14) & (z > 8.5))
     print("s00: culled %d plateau boulders" % k)
-    # drifting dust veil over the plateau (behind the cliff edge), backlit by the low sun
-    E.fog_volume((0.0, 4.0, 13.2), (70.0, 30.0, 5.0), 0.035, (1.0, 0.86, 0.66), 0.75, noise_scale=0.09,
-                 noise_amount=0.85, height_falloff=0.6, name="S00Dust", wind=(2.2, 0.6, 0.15))
-    E._set_volume_range(110.0, start=30.0)
+    # everything the camera cannot see (behind the crest, outside the narrow 70 mm frustum, under the frame)
+    k = cull_scatter(("Env",), _occluded_fn([CAM0, CAM1]))
+    print("s00: culled %d hidden scatter instances" % k)
     S = A["sky"]
     sun_vis = _dir(vis_az, vis_el)
     # lamp cheated to the back-right; haze glow stays on the visible sun
     S["sun"].rotation_euler = (-_dir(*LAMP)).to_track_quat("-Z", "Y").to_euler()
-    E.set_haze(sun_dir=tuple(sun_vis), sun_mix=0.85, sun_power=5.0)
+    E.set_haze(sun_dir=tuple(sun_vis), sun_mix=0.9, sun_power=4.0, density=0.0014, start=20.0)
     # faint warm bounce from the sunlit plain behind the camera: models the shadowed skull cliff
     # (light-linked to the cliff + terrain only: crosses and figures stay backlit silhouettes)
-    fill = C.sun(elevation=18, azimuth=-20, energy=0.3, color=(1.0, 0.78, 0.55), angle=8)
+    fill = C.sun(elevation=18, azimuth=-20, energy=0.22, color=(1.0, 0.78, 0.55), angle=8)
     fill.data.use_shadow = False
     fill.name = "S00Bounce"
     recv = bpy.data.collections.new("S00BounceRecv")
@@ -223,7 +311,7 @@ def build(ctx):
         if o is not None:
             recv.objects.link(o)
     fill.light_linking.receiver_collection = recv
-    sky_fx(S, sun_vis, rays=0.35, veil=0.8, ray_keys=[(1, 0.0), (N, 0.35)], storm=0.9,
+    sky_fx(S, sun_vis, rays=0.45, veil=0.8, ray_keys=[(1, 0.0), (N, 0.35)], storm=0.9,
            storm_keys=[(1, 0.16), (N, 0.10)], storm_tint=(0.3, 0.3, 0.32), gmap=GOLD_MAP, gmix=0.8)
     E.scene_prop("sfx_storm_time", 0.0, 1)
     E.scene_prop("sfx_storm_time", 0.25, N)
@@ -240,7 +328,8 @@ def build(ctx):
         return (loc, tgt, 0.0)
     C.animate_camera(cam, path, 1, N)
 
-    ctx.samples = 6
-    ctx.render_opts.update({"volumetrics": "low"})
+    ctx.samples = 4
+    ctx.render_opts.update({"volumetrics": "low", "shadow_scale": 0.5})
     ctx.interp = True
-    ctx.post.update({"grade": "gold", "bloom": 0.42, "vignette": 0.18})
+    ctx.post.update({"grade": "gold", "bloom": 0.42, "vignette": 0.18,
+                     "title": {"ink": "dark"}})          # verified: umber title over the bright golden sky

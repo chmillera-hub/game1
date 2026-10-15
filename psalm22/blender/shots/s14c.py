@@ -1,11 +1,11 @@
 """s14c - Beasts to dust: "Rescue me from the mouth of the lions; save me from the horns of the wild oxen."
 
-Golgotha, the light has broken. On the plateau stand two silhouettes made of dark ash: a lion roaring
-(right, further) and a great wild ox with its horns lowered (left, nearer), both facing the coming
+Golgotha, the light has broken. On the plateau below the three crosses stand two silhouettes made of dark
+ash: a lion roaring (right) and a great wild ox tossing its horns (left), both facing the coming
 light. The edge of the clouds' shadow sweeps across the ground from the right; where the golden sun
 touches them they burn at the edge and crumble into ash that blows away - the lion on the first phrase,
-the ox on the second. The camera trucks left with the light, then rises towards the lit cross and the
-sun (victory).
+the ox on the second; the crosses catch the light in turn. Low camera, slow push-in, finally tilting up
+to the centre cross in the golden light (victory).
 
 Light sweep: an invisible cloud-shadow occluder plane (shadow only) high above slides along `n` (screen
 right -> left, perpendicular to the backlight, so the edge is a vertical plane on the beasts); its keyed
@@ -23,6 +23,11 @@ from lib import fx as FX
 
 ASH = (0.022, 0.02, 0.019)
 GOLD = (1.0, 0.72, 0.36)
+FLAKE_GLOW = (1.0, 0.55, 0.2)
+EDGE_GLOW = 3.2
+GOLD_SUN = (1.0, 0.78, 0.5)            # = s14b
+SUN_AZ, SUN_EL = 165.0, 30.0           # = s14a / s14b (the light that broke through)
+CAM_D0, CAM_D1 = 10.4, 9.2          # camera distance in front of the centre cross (start, end of the push)
 
 
 def _ash_material(name="s14c_ash"):
@@ -49,9 +54,10 @@ def _ash_material(name="s14c_ash"):
     bump.inputs["Distance"].default_value = 0.01
     nt.links.new(nz.outputs["Fac"], bump.inputs["Height"])
     nt.links.new(bump.outputs["Normal"], b.inputs["Normal"])
-    b.inputs["Roughness"].default_value = 0.92
-    b.inputs["Sheen Weight"].default_value = 0.5
-    b.inputs["Sheen Roughness"].default_value = 0.35
+    b.inputs["Roughness"].default_value = 0.9
+    b.inputs["Specular IOR Level"].default_value = 0.3
+    b.inputs["Sheen Weight"].default_value = 0.15
+    b.inputs["Sheen Roughness"].default_value = 0.5
     b.inputs["Sheen Tint"].default_value = (1.0, 0.8, 0.55, 1)
     return m
 
@@ -99,17 +105,63 @@ def _occluder(name, n, H, L=900.0, seed=0):
     return o, wob
 
 
+
+def _lean_baked(obj):
+    """Distant baked figure: drop the frozen beard curves child and the skin SSS (screen-space pass)."""
+    if obj is None:
+        return
+    for c in list(obj.children):
+        if c.type == "CURVES":
+            bpy.data.objects.remove(c)
+    for m in obj.data.materials:
+        if m and m.use_nodes:
+            for n in m.node_tree.nodes:
+                if n.bl_idname == "ShaderNodeBsdfPrincipled" and "Subsurface Weight" in n.inputs:
+                    if not n.inputs["Subsurface Weight"].is_linked:
+                        n.inputs["Subsurface Weight"].default_value = 0.0
+
 def build(ctx):
     NR = ctx.render_frames
     fps = ctx.fps
     p0, p1 = ctx.phrases[0], ctx.phrases[1]
-    G = E.golgotha(ctx, mood="golden", crosses=3, grass=0.8, near_detail=0.6)
+    az = math.radians(SUN_AZ)
+    hv0 = Vector((math.sin(az), -math.cos(az), 0))
+    r0 = Vector((hv0.y, -hv0.x, 0))
+    c0 = Vector((0.0, 0.6, 0))
+    views = [dict(loc=tuple(c0 - hv0 * d + r0 * 0.3 + Vector((0, 0, 11.5))), target=tuple(c0 + Vector((0, 0, 12.5))),
+                  lens=30, margin=15, near=5.0) for d in (CAM_D0, CAM_D1)]
+    G = E.golgotha(ctx, mood="eclipse", dust=False, grass=0.45, bushes=0.3, rocks=0.45, near_detail=0.0, view=views)
     gz = G["ground_z"]
     cr = G["crosses"]["center"]
     base = Vector(cr["base"])
-    sky = G["sky"]
-    sun = sky["sun"]
-    sdir = Vector(sky["sun_dir"]).normalized()
+    # sky: continue the s14a/s14b transition (eclipse -> warm golden break, same overrides) to its end
+    disk_a = dict(E.SKY_PRESETS["eclipse"]["sun_disk"], el=SUN_EL)
+    over_b = dict(sun_az=SUN_AZ, sun_el=SUN_EL, key=0.22, strength=0.45, sun_energy=1.6, tint=(1.0, 0.84, 0.6),
+                  sat=1.1, sun_tint=(1.0, 0.78, 0.5), sun_angle=1.0, haze_density=0.0009,
+                  haze_tint=(1.0, 0.92, 0.8), exposure=0.3, grade="warm", clouds=0.5,
+                  cloud_opts=dict(color=(0.95, 0.78, 0.55), shadow=(0.3, 0.2, 0.14), opacity=0.85, sun_glow=1.2,
+                                  speed=(9.0, 3.0)),
+                  sun_disk=dict(el=SUN_EL, size=1.0, color=(1.0, 0.88, 0.66), strength=40.0, glow=0.2))
+    m0 = 0.72                                    # where s14b ends; fully golden ~75 % into this shot
+    f1 = int(NR * 0.75)
+    f0 = 1 - m0 * (f1 - 1) / (1 - m0)
+    T = E.sky_transition(ctx, "eclipse", "eclipse", f0, f1, over_a=dict(sun_az=SUN_AZ, sun_el=SUN_EL, sun_disk=disk_a),
+                         over_b=over_b, ease=False)
+    sun = T["sun"]
+    # the sun is the golden key everywhere; the cloud plane masks it (as in s14b)
+    ad = sun.data.animation_data
+    if ad and ad.action:
+        for fc in C._fcurves(ad.action):
+            if fc.data_path == "energy":
+                for kp in fc.keyframe_points:
+                    kp.co[1] = kp.handle_left[1] = kp.handle_right[1] = 3.2
+            elif fc.data_path == "color":
+                for kp in fc.keyframe_points:
+                    kp.co[1] = kp.handle_left[1] = kp.handle_right[1] = GOLD_SUN[fc.array_index]
+    sun.data.energy = 3.2
+    sun.data.color = GOLD_SUN
+    sun.data.angle = math.radians(2.5)
+    sdir = Vector(T["b"]["sun_dir"]).normalized()
     hv = Vector((sdir.x, sdir.y, 0)).normalized()        # camera looks towards the sun (backlight)
     right = Vector((hv.y, -hv.x, 0))
 
@@ -124,15 +176,16 @@ def build(ctx):
     # ------------------------------------------------------------------ the figure on the cross (distant)
     j = P.make_person("jesus", "JESUS_CROSS", lod="mid", hair_strands=False)
     P.place_on_cross(j, cr["root"], head="up", strain=0.6)
+    _lean_baked(P.bake_static(j, decimate=0.5))   # distant: one frozen mesh, no rig/garments/beard/SSS
 
     # ------------------------------------------------------------------ the ash beasts
     ashm = _ash_material()
-    face_light = (right * 0.82 - hv * 0.57).normalized()
-    lion = A.animal("lion", "roar", loc=tuple(at(1.15, -4.3)), rot_z=yaw_facing(face_light), fur=False)
-    st = A.play(lion, "roar", start_frame=1, speed=0.001, offset=1.75)        # frozen mid-roar, jaw wide
-    ox = A.animal("bull", "toss", loc=tuple(at(-1.55, -5.9)), rot_z=yaw_facing((right * 0.9 - hv * 0.44).normalized()),
-                  scale=1.18)
-    A.play(ox, "toss", start_frame=1, speed=0.001, offset=0.42)               # frozen: horns lowered
+    lion = A.animal("lion", "roar", loc=tuple(at(1.2, -3.6)), rot_z=yaw_facing((right * 0.7 - hv * 0.7).normalized()),
+                    fur=False, scale=1.05)
+    A.play(lion, "roar", start_frame=1, speed=0.001, offset=1.75)        # frozen mid-roar, jaw wide
+    ox = A.animal("bull", "toss", loc=tuple(at(-1.15, -3.3)), rot_z=yaw_facing((right * 0.75 - hv * 0.66).normalized()),
+                  scale=1.0)
+    A.play(ox, "toss", start_frame=1, speed=0.001, offset=1.3)                # frozen: head up, horns hooking high
     for a in (lion, ox):
         for c in a.children:
             if c.name.startswith("eyes"):
@@ -177,32 +230,34 @@ def build(ctx):
         occ.keyframe_insert("location", frame=f)
     C._set_interp(occ, "location", "LINEAR")
     # ash: the lib releases linearly along n over [min, max] of the mesh -> same schedule as the shadow edge
-    wind = tuple(-right * 1.9 + hv * 0.9 + Vector((0, 0, 1.35)))
-    for body, (f0, f1), cnt, fs, seed in ((lb, (fL0, fL1), 30000, 0.011, 1), (ob, (fO0, fO1), 36000, 0.013, 2)):
-        FX.ash_disintegrate(body, start_frame=f0, duration=(f1 - f0), direction=tuple(n), wind=wind, count=cnt,
-                            flake_size=fs, life=3.2, jitter=0.12, glow_color=GOLD, glow=5.0,
-                            ash_color=(0.03, 0.027, 0.024), turbulence=0.5, gravity=-0.15, seed=seed)
+    wind = (-right * 1.7 + hv * 1.1 + Vector((0, 0, 1.4)))
+    ash_col = (0.06, 0.052, 0.046)
+    for body, (f0, f1), cnt, fs, seed in ((lb, (fL0, fL1), 14000, 0.009, 1), (ob, (fO0, fO1), 17000, 0.01, 2)):
+        # pre-build the flake material under the lib's name so the gold glow lasts ~45 % of a flake's life
+        nm = "FX_ash_%d_%s" % (seed, "_".join("%.2f" % c for c in tuple(ash_col) + tuple(GOLD) + (EDGE_GLOW,)))
+        FX._ash_material(nm, ash_col, FLAKE_GLOW, 1.4, glow_age=0.3)   # embers: orange, not white sparks
+        FX.ash_disintegrate(body, start_frame=f0, duration=(f1 - f0), direction=tuple(n), wind=tuple(wind), count=cnt,
+                            flake_size=fs, life=3.0, jitter=0.12, glow_color=GOLD, glow=EDGE_GLOW, ash_color=ash_col,
+                            turbulence=0.55, gravity=-0.1, seed=seed)
 
     # ------------------------------------------------------------------ camera: truck left with the light, rise
-    look_l = at(1.0, -4.4) + Vector((0, 0, 1.0))
-    look_o = at(-1.4, -5.9) + Vector((0, 0, 1.0))
-    look_c = Vector(cr["beam"]) + Vector((0, 0, 0.6))
-    cam0 = at(0.9, -10.0)
+    look0 = at(0.0, -4.2) + Vector((0, 0, 0.75))           # slightly down: beasts mid-frame, crosses above
+    look1 = Vector(cr["beam"]) + Vector((0, 0, 0.2))
 
     def cam_fn(f):
-        t = (f - 1) / float(NR - 1)
-        a = C.smoothstep(min(1.0, max(0.0, (f - fL0 + 10) / (fO0 + 25 - fL0))))      # lion -> ox
-        b = C.ease_in_out(min(1.0, max(0.0, (f - (fO1 - 20)) / (NR - (fO1 - 20)))))  # ox -> cross / sun
-        loc = cam0 - right * (2.1 * a) + right * (1.0 * b) - hv * 0.3 * t
-        loc = loc + Vector((0, 0, 1.05 + 0.9 * b))
-        tgt = look_l.lerp(look_o, a).lerp(look_c, b)
-        loc = loc + C.shake(f, 0.006, 0.5, 21)
-        return (loc, tgt, 0.0, 32)
+        u = C.ease_in_out(min(1.0, max(0.0, ctx.u(f))))
+        b = C.ease_in_out(min(1.0, max(0.0, (f - (fO1 - 10)) / float(NR - (fO1 - 10)))))  # after the ox: tilt up
+        d = CAM_D0 + (CAM_D1 - CAM_D0) * u
+        loc = at(0.1 - 0.1 * u, -d) + Vector((0, 0, 1.0 + 0.35 * b))
+        tgt = look0.lerp(look1, 0.55 * b)
+        loc = loc + C.shake(f, 0.005, 0.45, 21)
+        return (loc, tgt, 0.0, 30)
 
-    cam = C.camera(tuple(cam0 + Vector((0, 0, 1.05))), tuple(look_l), lens=32, name="Cam")
+    cam = C.camera(tuple(at(0.1, -CAM_D0) + Vector((0, 0, 1.0))), tuple(look0), lens=30, name="Cam")
     C.animate_camera(cam, cam_fn, 1, NR)
 
-    ctx.samples = 5
+    ctx.samples = 4
     ctx.render_opts.update({"volumetrics": "low", "shadow_scale": 0.5})
     ctx.interp = False
-    ctx.post.update({"grade": "gold", "bloom": 0.42, "exposure": -0.25, "end": {"exposure": 0.05, "bloom": 0.5}})
+    ctx.post.update({"grade": "warm", "bloom": 0.38, "bloom_threshold": 0.62, "halation": 0.1, "caption": {"y": 0.72},
+                     "end": {"grade": "gold", "bloom": 0.48}})

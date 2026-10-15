@@ -1,11 +1,16 @@
 """s20c - "He has done it!" - finale under the end card.
 
 The EMPTY cross on Golgotha at sunrise (bookend of s00: same hill, same cross, the light transformed).
-A long white linen cloth is draped over the crossbeam - a swag in front of the upright, both ends hanging
-behind the arms - and stirs in the morning breeze (short cloth simulation, baked in build()). The sun
-breaks through a cloud bank behind the cross with rays bursting upward. The camera starts low at the foot
-of the cross looking up at the beam and the cloth, then cranes up past the crossbeam into the light: the
-sunrise over Jerusalem fills the frame for the end card ('Psalm 22 . NIV' / 'It is finished.').
+A long white linen cloth is draped over the crossbeam - gathered behind the upright, both halves falling
+in front of the beam either side of it - and stirs in the morning breeze. The sun breaks through a cloud
+bank over Jerusalem with rays bursting upward. The camera starts low at the foot of the cross looking up
+at the beam and the cloth ("He has done it!"), then cranes up past the crossbeam and settles (frame ~150)
+level with the top of the cross, the sunburst straight above it and the frame centre clear for the end
+card ('Psalm 22 . NIV' / 'It is finished.', from ~frame 97).
+
+Cloth: a real cloth simulation with a 60-frame pre-roll, baked in memory inside build() (~50 s), so any
+frame list renders correctly; ctx.needs_bake stays False on purpose (a second bake_all would only cost
+time). Sky helpers (sky_fx, cull_scatter) are shared with shots/s00.py.
 """
 import math
 import bpy
@@ -28,7 +33,8 @@ def _az(d):
 # ------------------------------------------------------------------------------------------------
 # The linen cloth
 # ------------------------------------------------------------------------------------------------
-def _drape_mesh(width=0.46, tail=1.25, back_y=0.155, z0=3.885, step=0.02, nw=22, gather=0.22, spread=0.2):
+def _drape_mesh(width=0.46, tail=1.25, back_y=0.155, z0=3.885, step=0.02, nw=22, gather=0.22, spread=0.2,
+                trim_left=0.0):
     """Initial (pre-simulation) linen strip in the cross root's local frame (core.wooden_cross: beam top
     z = 3.868, beam y = -0.10..0.08, upright |x| < 0.1, |y| < 0.095), lying flat at beam-top height:
     its middle is gathered into a narrow band behind the upright (pinned), from there it runs round both
@@ -65,13 +71,17 @@ def _drape_mesh(width=0.46, tail=1.25, back_y=0.155, z0=3.885, step=0.02, nw=22,
     V[..., 1] = P[:, None, 1] + Wd[:, None, 1] * us[None, :] * g[:, None]
     V[..., 2] = z0 + 0.012 + amp[:, None] * alt[None, :] + 0.03 * (np.abs(sn) < 0.3)[:, None] * 0.0
     pin = ((np.abs(sn) < 0.10)[:, None] & np.ones((1, nw + 1), bool)).astype(float)
+    k = int(round(trim_left / step))            # shorter left half: hangs asymmetrically, less "apron"-like
+    if k > 0:
+        V, pin, sn = V[k:], pin[k:], sn[k:]
     return V, pin, sn - sn[0], us
 
 
 def linen_swag(ctx, cross_root, width=0.46, preroll=60, wind=None, name="Linen", **drape):
     """Build the linen cloth on a core.wooden_cross root (any location / rot_z): a strip (_drape_mesh)
-    simulated with a Cloth modifier pinned at two tie points on the beam top, the cross parts as colliders
-    and a gusting wind field. The cache starts at 1 - preroll so the drape has settled by frame 1."""
+    simulated with a Cloth modifier (pinned where it is gathered behind the upright), the cross parts as
+    colliders and a gusting wind field. The cache starts at 1 - preroll so the drape has settled by frame 1
+    (bake_cloth() must run after the scene is complete)."""
     V, pin, sn, us = _drape_mesh(width=width, **drape)
     n, nw1 = V.shape[0], V.shape[1]
     nw = nw1 - 1
@@ -195,13 +205,38 @@ def bake_cloth(ctx):
     print("s20c: cloth baked in %.1fs" % (__import__("time").time() - t), flush=True)
 
 
+def _frustum_fn(keys, lens, margin_deg=3.0):
+    """cull_scatter predicate: True where an instance is outside the frustum of every camera key
+    (key = (loc, target, ...)); portrait frame, vertical sensor 36 mm."""
+    hh = math.atan(18.0 * 9.0 / 16.0 / lens) + math.radians(margin_deg)
+    hv = math.atan(18.0 / lens) + math.radians(margin_deg)
+
+    def pred(x, y, z, size):
+        hidden = np.ones(len(x), bool)
+        for k in keys:
+            loc, tgt = Vector(k[0]), Vector(k[1])
+            f = (tgt - loc).normalized()
+            r = f.cross(Vector((0, 0, 1))).normalized()
+            u = r.cross(f)
+            dx, dy, dz = x - loc.x, y - loc.y, z + 0.6 * size - loc.z
+            df = dx * f.x + dy * f.y + dz * f.z
+            dr = dx * r.x + dy * r.y + dz * r.z
+            du = dx * u.x + dy * u.y + dz * u.z
+            ext = 1.0 * size
+            inside = (df > 0.05) & (np.abs(dr) - ext < df * math.tan(hh)) & (np.abs(du) - ext < df * math.tan(hv))
+            hidden &= ~inside
+        return hidden
+    return pred
+
+
 SUN_AZ = 170.0                      # sunrise behind the cross, over Jerusalem (core az; 180 = +Y)
 LAMP_EL = 7.0                       # sun lamp elevation (HDRI sun ~4.7 deg, hidden in the cloud bank)
 CAM0 = ((-1.3, -4.4, 12.05), (0.0, 0.6, 14.45), 28.0)     # low at the foot of the cross, up at the beam
-CAM1 = ((-0.9, -4.6, 15.9), (172.0, 7.0), 28.0)           # above the crossbeam: (core az, pitch) into the sun
+CAM1 = ((-1.08, -5.5, 15.6), (170.0, 8.0), 28.0)         # level with the top of the cross, (core az, pitch):
+                                                           # the sun breaks out straight above it
 SUNRISE_MAP = [(0.0, (0.9, 0.92, 1.3)), (0.25, (1.05, 0.97, 1.05)), (0.45, (1.3, 0.96, 0.62)),
                (0.65, (1.3, 0.97, 0.62)), (0.85, (1.15, 1.0, 0.8)), (1.0, (1.03, 1.0, 0.95))]
-MOVE_END = 0.93                     # fraction of the shot where the crane settles
+MOVE_F = 150                        # the crane settles here (end card fades in ~frame 97: frame clear by then)
 
 
 def build(ctx):
@@ -212,40 +247,54 @@ def build(ctx):
     pitch0 = math.degrees(math.atan2(d0.z, d0.xy.length))
     t1 = tuple(Vector(l1) + _dir(az1, pitch1) * 30.0)
     views = [dict(loc=l0, target=t0, lens=lens0, near=12.0), dict(loc=l1, target=t1, lens=lens1, near=12.0)]
-    over = dict(hdri=HDRI, sun_el=LAMP_EL, sun_energy=3.4, key=0.62, tint=(1.0, 0.88, 0.72), sat=1.2,
+    over = dict(hdri=HDRI, sun_el=LAMP_EL, sun_energy=3.4, key=0.58, strength=0.5, tint=(1.0, 0.88, 0.72), sat=1.3,
                 sun_tint=(1.0, 0.72, 0.45), sun_angle=1.2, clamp_sun=None)
     A = E.golgotha(ctx, mood="sunrise", sun_az=SUN_AZ, crosses=1, center_occupied=False, sign=False,
-                   sky_over=over, view=views, dust=False, near_detail=1.0)
+                   sky_over=over, view=views, dust=False, near_detail=0.0, grass=1.0, bushes=0.6,
+                   skull=0.0)                          # the skull cliff is behind the camera all shot
     S = A["sky"]
     info = E.hdri_info(HDRI)
     sun_vis = _dir(SUN_AZ, info["sun_el"])
-    E.set_haze(sun_dir=tuple(sun_vis), sun_mix=0.9, sun_power=4.0)
+    # low-lying golden morning haze: softens the plain and the distant city into the sunrise
+    E.set_haze(sun_dir=tuple(sun_vis), sun_mix=0.95, sun_power=3.0, density=0.0035, falloff=0.025, start=8.0)
     try:
         from shots.s00 import sky_fx
         sky_fx(S, sun_vis, rays=0.16, ray_keys=[(1, 0.0), (N, 0.5)], grad=0.25, grad_tint=(0.72, 0.66, 0.7),
-               glow=0.55, glow_color=(1.45, 1.0, 0.6), glow_width=0.4, gmap=SUNRISE_MAP, gmix=0.45, prefix="sfx20")
+               glow=0.9, glow_color=(1.55, 1.0, 0.5), glow_width=0.45, gmap=SUNRISE_MAP, gmix=0.3, prefix="sfx20")
     except Exception as e:
         print("s20c: sky_fx unavailable (%s)" % e)
 
     cross = A["crosses"]["center"]
-    cl = linen_swag(ctx, cross["root"], preroll=60, width=0.46, tail=1.25,
-                    wind=dict(strength=9.0, noise=0.7, dir=(-0.75, 0.55, 0.12)))
-    bake_cloth(ctx)
-
-    cam = C.camera(loc=l0, target=t0, lens=lens0, name="Cam", fstop=5.6, focus=4.8)
     beam = Vector(cross["beam"])
 
     def path(f):
-        u = C.ease_in_out((f - 1) / max(1.0, (N - 1) * MOVE_END))
+        x = (f - 1) / float(MOVE_F - 1)
+        drift = 0.05 * max(0.0, (f - MOVE_F) / float(max(1, N - MOVE_F)))     # keeps drifting after it settles
+        u = 0.95 * C.ease_in_out(x) + drift
         loc = Vector(l0).lerp(Vector(l1), u)
         # rise first, tilt down a little later (the cross sinks through the frame, the sunrise opens up)
-        ut = C.ease_in_out(min(1.0, max(0.0, ((f - 1) / max(1.0, (N - 1) * MOVE_END) - 0.08) / 0.92)))
+        ut = 0.95 * C.ease_in_out(min(1.0, max(0.0, (x - 0.08) / 0.92))) + drift
         tgt = loc + _dir(az0 + (az1 - az0) * ut, pitch0 + (pitch1 - pitch0) * ut) * 10.0
-        foc = (beam - loc).length + 25.0 * max(0.0, ut - 0.55)
+        foc = (beam - loc).length
         return (loc, tgt, 0.0, lens0, foc)
+
+    # drop scattered instances the moving camera never sees (frustum test along the whole path)
+    try:
+        from shots.s00 import cull_scatter
+        keys = [path(f) for f in range(1, N + 1, 8)] + [path(N)]
+        k = cull_scatter(("Env",), _frustum_fn(keys, lens0))
+        print("s20c: culled %d unseen scatter instances" % k)
+    except Exception as e:
+        print("s20c: scatter cull skipped (%s)" % e)
+
+    cl = linen_swag(ctx, cross["root"], preroll=60, width=0.6, tail=1.45, spread=0.45, gather=0.16, trim_left=0.4,
+                    wind=dict(strength=7.0, noise=0.7, dir=(-0.75, 0.55, 0.12)))
+    bake_cloth(ctx)
+
+    cam = C.camera(loc=l0, target=t0, lens=lens0, name="Cam", fstop=5.6, focus=4.8)
     C.animate_camera(cam, path, 1, N)
 
-    ctx.samples = 6
-    ctx.render_opts.update({"volumetrics": "low"})
+    ctx.samples = 4
+    ctx.render_opts.update({"volumetrics": "low", "shadow_scale": 0.5})
     ctx.interp = True
-    ctx.post.update({"grade": "glory", "bloom": 0.5, "vignette": 0.12})
+    ctx.post.update({"grade": "gold", "bloom": 0.48, "bloom_threshold": 0.6, "contrast": 1.06, "vignette": 0.12})

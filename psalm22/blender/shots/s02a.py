@@ -43,8 +43,11 @@ def tint_clouds_by_sky():
     if mul is None:
         return False
     node, sock = mul
-    boost = T.mix(1.0, sky_src, (1.35, 1.25, 1.2), blend="MULTIPLY")
-    boost = T.mix(1.0, boost, (0.012, 0.012, 0.014), blend="ADD")
+    # sky colour (night: dark, day: bright) + the sun-side glow colour of the time-lapse palette (blazing at dusk)
+    glow = E._lattr(T, "env_tl_glow", (0.3, 0.25, 0.15))
+    boost = T.mix(1.0, sky_src, (1.3, 1.25, 1.2), blend="MULTIPLY")
+    boost = T.mix(1.0, boost, T.mix(1.0, glow, (0.55, 0.5, 0.5), blend="MULTIPLY"), blend="ADD")
+    boost = T.mix(1.0, boost, (0.01, 0.01, 0.012), blend="ADD")
     nt.links.new(boost, sock)
     # silver lining / forward scatter: follow the animated sun direction
     sd = E._lattr(T, "env_tl_sun_dir", (0.0, 1.0, 0.5))
@@ -63,39 +66,38 @@ def build(ctx):
     side = Vector((fwd.y, -fwd.x, 0))
     tp = fwd * 0.5 + side * 1.2                    # judean_hills puts the dead tree here (spur edge)
     # low on the spur, ~11 m behind the tree and left of it: the tree stands on the right third, against the sky
-    base0 = tp - fwd * 9.5 - side * 3.6
-    base1 = tp - fwd * 8.6 - side * 2.5
+    base0 = tp - fwd * 6.6 - side * 3.1
+    base1 = tp - fwd * 6.0 - side * 2.2
     far = tp + fwd * 400.0
     E.set_view([dict(loc=tuple(base0), target=tuple(far), lens=22, margin=12, near=14),
                 dict(loc=tuple(base1), target=tuple(far), lens=22, margin=12, near=14)])
-    A = E.judean_hills(ctx, timelapse=True, hour0=15.1, hour1=20.7, view_az=VIEW_AZ, clouds=0.6, olives=0.6, grass=0.55)
+    A = E.judean_hills(ctx, timelapse=True, hour0=15.1, hour1=20.7, view_az=VIEW_AZ, clouds=0.6, olives=0.2, grass=0.3)
     E.set_view(None)
     # render cost: the sun moves every frame, so EEVEE re-renders every shadow page of every caster each frame.
     # Far olives / far rocks cast no visible shadows from here, the air box only adds a little depth (the env
     # haze shader already gives the aerial perspective).
     for o in bpy.context.scene.objects:
-        if o.name.startswith(("EnvHillOlives", "EnvHillBouldersFar", "EnvHillShrubs")):
+        if o.name.startswith(("EnvHillOlives", "EnvHillShrubs")):
             o.visible_shadow = False
-        if o.name.startswith("EnvHillAir"):
+        if o.name.startswith(("EnvHillAir", "EnvHillBouldersFar")):     # far boulders: invisible from this low eye
             o.hide_render = True
-    A["timelapse"]["sun"].data.shadow_maximum_resolution = 0.005
+    A["timelapse"]["sun"].data.shadow_maximum_resolution = 0.02     # coarser pages: identical here, -1.5 s/frame
     tint_clouds_by_sky()
     gz = A["ground_z"]
-    # standing on the rock outcrop of the spur (~3.8 m up) so the view clears the spur edge into the valley
-    eye0 = Vector((base0.x, base0.y, gz(base0.x, base0.y) + 3.7))
-    eye1 = Vector((base1.x, base1.y, gz(base1.x, base1.y) + 3.9))
+    eye0 = Vector((base0.x, base0.y, gz(base0.x, base0.y) + 1.15))
+    eye1 = Vector((base1.x, base1.y, gz(base1.x, base1.y) + 1.25))
 
     def path(f):
         u = (f - 1) / float(NR - 1)                       # constant slider speed
         loc = eye0.lerp(eye1, u)
-        tgt = Vector((far.x, far.y, loc.z + 400.0 * math.tan(math.radians(-0.5))))
+        tgt = Vector((far.x, far.y, loc.z + 400.0 * math.tan(math.radians(6.0))))
         return (loc, tgt, 0.0, 22.0)
 
     cam = C.camera(loc=tuple(eye0), target=tuple(far), lens=22)
     C.animate_camera(cam, path, 1, NR)
 
-    ctx.samples = 5
-    ctx.render_opts.update({"volumetrics": "low"})
+    ctx.samples = 4
+    ctx.render_opts.update({"volumetrics": "low", "shadow_scale": 0.5})
     ctx.interp = False        # time-lapse: the sky, clouds and shadows change every frame -> render 24 fps
     ctx.post.update({"grade": "neutral", "saturation": 1.05, "bloom": 0.3, "vignette": 0.2,
                      "end": {"grade": "night", "vignette": 0.28}})

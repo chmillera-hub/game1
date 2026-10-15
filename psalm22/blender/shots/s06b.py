@@ -26,8 +26,8 @@ SUN_E = 0.9
 LENS = 45.0
 CAM_R = 3.2         # camera distance from the priest
 AZ0, AZ1 = -16.0, 0.0
-CAM_H = 1.18        # camera height above the ground at the priest
-AIM_PITCH = 6.0     # deg up
+CAM_H = 0.95        # camera height above the priest's ground (low: he looms, the cross above him)
+AIM_PITCH = 11.0    # deg up
 
 FONT_DIRS = ["/usr/share/fonts/truetype", "/home/user/game1/psalm22/comp/fonts"]
 TITULUS = [
@@ -59,6 +59,21 @@ def _hazify_person(p):
                 E.hazify(m)
 
 
+def shrink_textures(skin=1024, other=512):
+    """MPFB skin/hair/teeth/eye maps are 2k; at these face sizes 1k/0.5k is plenty (saves ~0.4 GB RAM)."""
+    for im in bpy.data.images:
+        fp = (im.filepath or "").lower()
+        if "mpfb" not in fp and "makehuman" not in fp:
+            continue
+        try:
+            w, h = im.size
+            mx = skin if ("skinned" in im.name or "skin" in fp) else other
+            if max(w, h) > mx and w > 0:
+                im.scale(mx, max(1, int(round(mx * h / w))))
+        except Exception as e:
+            print("shrink_textures:", im.name, e)
+
+
 def _preload(p, names):
     for n in names:
         P.expression(p, n, 1.0)
@@ -76,7 +91,7 @@ def talk(p, f0, f1, base="mock", weight=1.0, seed=0, step=3):
     P.expression(p, base, weight, frame=f1 + step)
 
 
-def titulus(cross_root, scale=(1.3, 1.0, 1.45)):
+def titulus(cross_root, scale=(1.55, 1.1, 1.6)):
     """Limewashed placard with the trilingual title painted on (text curves on the front face).
     Returns the sign object (or None)."""
     sign = next((o for o in cross_root.children if o.name.endswith("_sign")), None)
@@ -97,14 +112,14 @@ def titulus(cross_root, scale=(1.3, 1.0, 1.45)):
     nz.inputs["Detail"].default_value = 6.0
     nt.links.new(tc.outputs["Object"], nz.inputs["Vector"])
     ramp = nt.nodes.new("ShaderNodeValToRGB")
-    ramp.color_ramp.elements[0].position = 0.38
-    ramp.color_ramp.elements[0].color = (0.25, 0.25, 0.25, 1)
-    ramp.color_ramp.elements[1].position = 0.62
-    ramp.color_ramp.elements[1].color = (0.85, 0.85, 0.85, 1)
+    ramp.color_ramp.elements[0].position = 0.3
+    ramp.color_ramp.elements[0].color = (0.55, 0.55, 0.55, 1)
+    ramp.color_ramp.elements[1].position = 0.6
+    ramp.color_ramp.elements[1].color = (0.95, 0.95, 0.95, 1)
     nt.links.new(nz.outputs["Fac"], ramp.inputs["Fac"])
     mix = nt.nodes.new("ShaderNodeMix")
     mix.data_type = "RGBA"
-    mix.inputs[7].default_value = (0.56, 0.52, 0.45, 1)       # limewash (dusty)
+    mix.inputs[7].default_value = (0.74, 0.69, 0.6, 1)        # limewash (dusty)
     if src is not None:
         nt.links.new(src, mix.inputs[6])
     else:
@@ -117,7 +132,7 @@ def titulus(cross_root, scale=(1.3, 1.0, 1.45)):
     Wd, Hd = W * scale[0], H * scale[2]
     sl = sign.location
     rows = len(TITULUS)
-    margin_x, margin_y = 0.04, 0.035
+    margin_x, margin_y = 0.035, 0.03
     avail_w = Wd - 2 * margin_x
     row_h = (Hd - 2 * margin_y) / rows
     for i, (txt, fonts, rel) in enumerate(TITULUS):
@@ -160,7 +175,8 @@ def build(ctx):
         a = az0 + (az1 - az0) * k / 2.0
         loc = (priest_xy.x + cam_r * math.sin(a), priest_xy.y - cam_r * math.cos(a), 12.2)
         views.append(dict(loc=loc, target=(0.0, 0.6, 13.5), lens=LENS, margin=25))
-    A = E.golgotha(ctx, mood="eclipse", sun_az=SUN_AZ, view=views, near_detail=0.7, grass=0.8, dust=False,
+    A = E.golgotha(ctx, mood="eclipse", sun_az=SUN_AZ, view=views, near_detail=0.4, grass=0.5, bushes=0.4, dust=False,
+                   city=False,
                    sky_over=dict(sun_el=SUN_EL, sun_disk=dict(E.SKY_PRESETS["eclipse"]["sun_disk"], el=SUN_EL)))
     gzf = A["ground_z"]
     cx = A["crosses"]
@@ -168,6 +184,7 @@ def build(ctx):
     cz = c["base"][2]
     sun = A["sky"]["sun"]
     sun.data.energy = SUN_E
+    sun.data.shadow_maximum_resolution = 0.006   # env sets 2 mm: costly with several people near the camera
     sign = titulus(c["root"])
 
     # ------------------------------------------------------------------ the crucified (backlit, mid LOD)
@@ -186,15 +203,18 @@ def build(ctx):
         else:
             yaw = math.radians(yaw_deg or 0.0)
         p.rig.rotation_euler = (0, 0, yaw)
+        p.update()          # pose()/key_pose() ground with rig.matrix_world: it must be current
         return z
 
+    gzp = ground(priest_xy.x, priest_xy.y)          # the hill falls away towards -Y: heights relative to the priest
     cam_mid = Vector((priest_xy.x + cam_r * math.sin((az0 + az1) / 2), priest_xy.y - cam_r * math.cos((az0 + az1) / 2),
-                      cz + CAM_H))
+                      gzp + CAM_H))
     jesus_head = Vector(j.head_pos())
     sky_pt = Vector((priest_xy.x - 1.2, priest_xy.y + 2.0, cz + 9.0))
 
     # ------------------------------------------------------------------ chief priest (hero)
-    pr = P.make_person("chief", "PRIEST", pose=None, expression=None, lod="hero")
+    pr = P.make_person("chief", "PRIEST", pose=None, expression=None, lod="hero",
+                       outfit_colors={"mantle": "purple", "turban": "white_linen"})
     crowd_pt = Vector((priest_xy.x - 6.0, priest_xy.y - 4.0, cz + 1.6))     # the onlookers to his front-left
     gz = place(pr, priest_xy, face_to=(priest_xy.x - 3.0, priest_xy.y - 2.4))
     _preload(pr, ["sneer", "mock", "laugh"])
@@ -202,14 +222,14 @@ def build(ctx):
     to_cross = (Vector((c["chest"][0], c["chest"][1], sh.z + 0.25)) - sh).normalized()
     present = sh + to_cross * 0.55 + Vector((0, 0, -0.05))
     heaven = sh + (Vector((-0.15, 0.25, 1.0)).normalized()) * 0.62
+    # slow, deliberate gestures (also keeps 12 fps + RIFE clean)
     P.key_pose(pr, 1, "reach", ground_z=gz, target=tuple(present), side="R", hand="open")
-    P.key_pose(pr, a1 + 4, "reach", ground_z=gz, target=tuple(present + Vector((0.0, 0.05, 0.08))), side="R", hand="open")
-    P.key_pose(pr, b1 + 2, "stand_relaxed", ground_z=gz)
-    P.key_pose(pr, a2 + 6, "reach", ground_z=gz, target=tuple(heaven), side="R", hand="open")
+    P.key_pose(pr, a1 + 22, "reach", ground_z=gz, target=tuple(present + Vector((0.0, 0.05, 0.08))), side="R", hand="open")
+    P.key_pose(pr, a2 + 8, "reach", ground_z=gz, target=tuple(heaven), side="R", hand="open")
     P.key_pose(pr, b2, "reach", ground_z=gz, target=tuple(heaven + Vector((0.02, 0.05, 0.03))), side="R", hand="open")
-    P.key_pose(pr, a3 + 8, "arms_raised", ground_z=gz, spread=58, head="up", hands="open")
+    P.key_pose(pr, a3 + 12, "arms_raised", ground_z=gz, spread=58, head="up", hands="open")
     P.key_pose(pr, a3 + 40, "arms_raised", ground_z=gz, spread=62, head="up", hands="open")
-    P.key_pose(pr, b3 + 4, "stand_relaxed", ground_z=gz)
+    P.key_pose(pr, b3 + 10, "stand_relaxed", ground_z=gz)
     P.key_pose(pr, NR, "stand_relaxed", ground_z=gz)
     # head: to the crowd on "they say", up to the sky, back to the crowd for the jibe
     looks = [(1, jesus_head), (a1 + 22, crowd_pt), (b1 + 4, crowd_pt), (a2 + 10, sky_pt), (b2 - 4, sky_pt),
@@ -235,7 +255,8 @@ def build(ctx):
     for k, (xy, spec, nodf) in enumerate([
             ((priest_xy.x - 0.85, priest_xy.y + 1.9), dict(seed=31, outfit=["robe_rich", "turban"], age_years=62,
                                                          beard="long", build="heavy",
-                                                         outfit_colors={"mantle": "indigo", "turban": "linen"}), 0),
+                                                         outfit_colors={"mantle": "camel", "turban": "oatmeal",
+                                                                       "shawl": "linen"}), 0),
             ((priest_xy.x + 0.7, priest_xy.y + 1.6), dict(seed=44, outfit=["robe", "headcloth"], age_years=50,
                                                         beard="full", outfit_colors={"tunic": "white_linen",
                                                                                      "mantle": "blue_grey",
@@ -299,7 +320,7 @@ def build(ctx):
         if any((x - q[0]) ** 2 + (y - q[1]) ** 2 < 0.75 ** 2 for q in avoid + pts):
             continue
         pts.append((x, y))
-        if len(pts) >= 12:
+        if len(pts) >= 6:
             break
     cposes = [("stand", {"look": (0.0, -5.0, 3.6)}), ("stand_relaxed", {"look": (0.5, -4.0, 2.4)}),
               ("mourn", {}), ("stand", {"head": "up"})]
@@ -309,13 +330,25 @@ def build(ctx):
         nm, kw = cposes[i % len(cposes)]
         P.pose(per, nm, **kw)
         if cexpr[i % len(cexpr)] != "neutral":
-            P.expression(per, cexpr[i % len(cexpr)], 0.8)
+            try:
+                P.expression(per, cexpr[i % len(cexpr)], 0.8)
+            except Exception as e:
+                print("s06b: crowd expression skipped", e)
 
-    cr = P.crowd(len(pts), positions=pts, seed=ctx.seed % 89, variety=4, lod="mid",
+    cr = P.crowd(len(pts), positions=pts, seed=ctx.seed % 89, variety=3, lod="mid",
                  face=(0.0, 0.6, cz), yaw_jitter=25, height_fn=lambda x, y: ground(x, y),
                  pose_fn=cpose, name="OnlookersB")
     for o in cr.sources:
         _hazify_person(o)
+    try:
+        bpy.data.orphans_purge(do_local_ids=True, do_linked_ids=True, do_recursive=True)
+    except Exception as e:
+        print("s06b: purge failed", e)
+    shrink_textures()
+    # the cornea (BLENDED) costs a forward pass per person; dithered looks the same at these sizes
+    for m in bpy.data.materials:
+        if m.surface_render_method == "BLENDED":
+            m.surface_render_method = "DITHERED"
 
     # ------------------------------------------------------------------ light: soft bounce fill on the priest's face
     fill = C.light("AREA", tuple(cam_mid + Vector((-1.2, 0.4, 0.8))), 30.0, temp=3400, target=tuple(pr.head_pos()),
@@ -334,7 +367,7 @@ def build(ctx):
     def path(f):
         u = C.ease_in_out((f - 1) / float(NR - 1))
         a = az0 + (az1 - az0) * u
-        loc = Vector((priest_xy.x + cam_r * math.sin(a), priest_xy.y - cam_r * math.cos(a), cz + CAM_H + 0.1 * u))
+        loc = Vector((priest_xy.x + cam_r * math.sin(a), priest_xy.y - cam_r * math.cos(a), gzp + CAM_H + 0.08 * u))
         loc += C.shake(f, 0.005, 0.35, 11)
         bp, bc = bearing(loc, head0), bearing(loc, cross_xy)
         r = C.smoothstep((f - f_rack0) / float(max(1, f_rack1 - f_rack0)))
@@ -346,7 +379,7 @@ def build(ctx):
 
     C.animate_camera(cam, path, 1, NR)
 
-    ctx.samples = 5
+    ctx.samples = 4
     ctx.render_opts.update({"volumetrics": "low"})
-    ctx.interp = False
-    ctx.post.update({"grade": "eclipse", "vignette": 0.24, "bloom": 0.22, "caption": {"y": 0.72}})
+    ctx.interp = True       # slow orbit, deliberate gestures, laughs: 12 fps + RIFE
+    ctx.post.update({"grade": "eclipse", "vignette": 0.24, "bloom": 0.22, "caption": {"y": 0.72, "halo": 1.3}})

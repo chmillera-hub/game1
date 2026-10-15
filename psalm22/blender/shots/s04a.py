@@ -10,7 +10,7 @@ from lib import env as E
 EV = os.environ.get
 
 
-def wall_material(name="S04_wall", glow=1.0, foam=1.0, spec=0.35):
+def wall_material(name="S04_wall", glow=1.3, foam=1.0, spec=0.35):
     """Water-wall shader (replaces fx's): deep blue-green body, emerald light entering through the crest
     with slow swirling internal masses, churning bump (two scales), foam at crest / foot / top and
     streaks running down the face. Reads the fx GN attributes fx_k (0 foot .. 1 crest), fx_top, fx_c."""
@@ -47,8 +47,8 @@ def wall_material(name="S04_wall", glow=1.0, foam=1.0, spec=0.35):
     churn = nb.mul(churn, nb.add(nb.smooth(kk, 0.7, 0.95), nb.mul(nb.smooth(c, 0.6, 0.95), 0.8)))
     fm = nb.m("MINIMUM", nb.mul(nb.add(nb.add(nb.add(crest_f, foot_f), nb.add(st_f, top_f)), churn), foam), 1.0)
     # colour
-    deep = (0.0015, 0.010, 0.016)
-    body = (0.004, 0.045, 0.052)
+    deep = (0.003, 0.018, 0.024)
+    body = (0.007, 0.058, 0.064)
     d = nb.mul(nb.m("POWER", kk, 1.6), nb.madd(sw, 0.9, 0.4))
     base = nb.mixc(nb.m("MINIMUM", d, 1.0), deep, body)
     base = nb.mixc(fm, base, (0.62, 0.70, 0.70))
@@ -59,7 +59,7 @@ def wall_material(name="S04_wall", glow=1.0, foam=1.0, spec=0.35):
     teal = (0.035, 0.42, 0.33)
     ecol = nb.v("SCALE", teal, scale=nb.mul(g, glow))
     rough = nb.mixf(fm, nb.madd(h2, 0.12, 0.06), 0.55)
-    sp = nb.mixf(fm, spec, 0.4)
+    sp = nb.mixf(fm, nb.mul(spec, nb.madd(nb.smooth(kk, 0.08, 0.55), 0.65, 0.35)), 0.4)
     b = nb.n("ShaderNodeBsdfPrincipled", {"Base Color": base, "Roughness": rough, "IOR": 1.33,
                                           "Specular IOR Level": sp, "Emission Color": ecol, "Emission Strength": 1.0})
     bump = nb.n("ShaderNodeBump", {"Height": hgt, "Distance": 0.9, "Strength": float(EV("BUMP", "0.55"))})
@@ -68,33 +68,91 @@ def wall_material(name="S04_wall", glow=1.0, foam=1.0, spec=0.35):
     return m
 
 
+def spray_opacity(value=0.45, name="FX_spray"):
+    """The fx spray puffs are faint (opacity 0.25): raise it (the material is shared by all puffs)."""
+    m = bpy.data.materials.get(name)
+    if not m:
+        return
+    for nd in m.node_tree.nodes:
+        if nd.type == "MATH" and nd.operation == "MULTIPLY" and abs(nd.inputs[1].default_value - 0.25) < 1e-4:
+            nd.inputs[1].default_value = value
+
+
+def glow_spray(sea, opacity=0.42, glow=1.1, color=(0.9, 0.92, 0.94), size=1.0):
+    """Brighter, self-lit spray puffs (fx's are lit only by the sun from behind and read as dark smoke
+    against the bright dawn sky). Also used for the collapse burst."""
+    sm = FX._spray_material("S04_spray", color=color, opacity=opacity, glow=glow)
+    cm = FX._spray_material("S04_crash", color=color, opacity=min(0.85, opacity * 1.7), glow=glow * 0.9)
+    for key, m in (("spray", sm), ("crash", cm)):
+        o = getattr(sea, key, None)
+        if o is None:
+            continue
+        if size != 1.0 and key == "spray" and "size" in o.data.attributes:
+            at = o.data.attributes["size"]
+            v = np.zeros(len(at.data), np.float32)
+            at.data.foreach_get("value", v)
+            at.data.foreach_set("value", v * size)
+        for md in o.modifiers:
+            if md.type == "NODES":
+                try:
+                    FX._mod_set(md, Material=m)
+                except KeyError:
+                    pass
+
+
+def hazify_sea(sea):
+    """Aerial perspective for the fx Red Sea surfaces via the env haze group (cheap, no volume)."""
+    objs = [sea.seabed] + list(sea.walls) + list(getattr(sea, "sea", []) or [])
+    done = set()
+    for o in objs:
+        for m in o.data.materials:
+            if m and m.name not in done:
+                done.add(m.name)
+                E.hazify(m)
+
+
 def build(ctx):
     W, H = 34.0, 52.0
-    sea = FX.red_sea(ctx, width=W, height=H, lighting=False, spray=True, spray_rate=0.2,
-                     seabed=EV("SEABED", "coast_sand_rocks_02"), seed=4)
+    mist = EV("MIST", "0") == "1"
+    sea = FX.red_sea(ctx, width=W, height=H, lighting=False, spray=True, spray_rate=float(EV("SPRAY", "0.35")),
+                     seabed=EV("SEABED", "coast_sand_rocks_02"), seed=4, wall_shadows=EV("WSH", "0") == "1",
+                     mist=mist, haze=0.0006 if mist else 0.0)
     if EV("WALL", "1") == "1":
-        wm = wall_material(glow=float(EV("GLOW", "1.0")))
+        wm = wall_material(glow=float(EV("GLOW", "1.3")), spec=float(EV("SPEC", "0.35")))
         for w in sea.walls:
             w.data.materials.clear()
             w.data.materials.append(wm)
             for md in w.modifiers:
                 if md.type == "NODES":
                     FX._mod_set(md, Material=wm)
-    sky = E.sky("sunrise", sun_az=180, hdri=EV("HDRI", "qwantani_sunrise_puresky"), ctx=ctx,
-                sun_el=float(EV("SUNEL", "5.0")),
-                sun_disk=dict(el=float(EV("SUNEL", "5.0")), size=1.2, color=(1.0, 0.72, 0.42), strength=80.0, glow=0.15))
+    sky = E.sky("sunrise", sun_az=180, hdri=EV("HDRI", "kloppenheim_06_puresky"), ctx=ctx,
+                sun_el=float(EV("SUNEL", "7.6")),
+                sun_disk=dict(el=float(EV("SUNEL", "7.6")), size=1.2, color=(1.0, 0.72, 0.42), strength=80.0, glow=0.15))
+    glow_spray(sea, opacity=float(EV("SPRAYOP", "0.6")), glow=float(EV("SPRAYGLOW", "0.45")),
+               color=(0.8, 0.85, 0.9), size=float(EV("SPRAYSIZE", "1.7")))
+    if EV("HAZIFY", "1") == "1":
+        hazify_sea(sea)
+        E.set_haze(density=float(EV("HAZE", "0.0013")), color=(1.1, 1.0, 0.92))
+    if sky.get("sun") is not None and EV("SHRES"):
+        sky["sun"].data.shadow_maximum_resolution = float(EV("SHRES"))
+    if EV("MTN", "1") == "1":
+        far_mountains(sea.corridor["y"][1], toward=1.0)
     y0 = -120.0
     z0 = sea.floor_at(0, y0)
     lens = float(EV("LENS", "22"))
     cam = C.camera((0, y0, z0 + 1.5), (0, y0 + 100, z0 + 14), lens=lens)
     vcam = 0.85
 
+    p2a = ctx.phrases[1]["start"] if len(ctx.phrases) > 1 else 3.7
+    rise = float(EV("RISE", "1.4"))
+
     def campath(f):
         t = (f - 1) / ctx.fps
         y = y0 + vcam * t
         sh = C.shake(f, amp=0.02, freq=0.35, seed=3)
-        loc = Vector((0.0 + sh[0], y, sea.floor_at(0, y) + 1.45 + 0.03 * math.sin(t * 2.4) + sh[2] * 0.5))
-        tgt = Vector((0.0, y + 100.0, z0 + 13.0))
+        up = rise * C.smoothstep((t - (p2a - 0.6)) / 3.2)          # "...you delivered them": gentle crane up
+        loc = Vector((0.0 + sh[0], y, sea.floor_at(0, y) + 1.45 + up + 0.03 * math.sin(t * 2.4) + sh[2] * 0.5))
+        tgt = Vector((0.0, y + 100.0, z0 + 13.0 + up * 0.4))
         return loc, tgt
     C.animate_camera(cam, campath, 1, ctx.render_frames)
 
@@ -102,29 +160,40 @@ def build(ctx):
         rnd = random.Random(11)
         near = [(-1.5, 5.5, 0), (1.3, 7.0, 1), (0.55, 6.6, 3), (2.9, 10.0, 2), (-3.4, 11.5, 5), (-0.6, 13.5, 4),
                 (4.4, 15.0, 0), (-5.6, 17.0, 1), (1.8, 18.5, 5), (-2.2, 20.0, 2)]
-        far = []
+        mid, far = [], []
         y = 22.0
-        while y < 420.0:
-            dens = 0.8 + 2.2 * min(1.0, (y - 22.0) / 150.0)
-            for _ in range(int(dens * 1.0 + rnd.random())):
-                x = max(-11.5, min(11.5, rnd.gauss(0.0, 5.5)))
-                far.append((x, y + rnd.uniform(-0.5, 0.5), rnd.randrange(len(VARIANTS))))
+        while y < 560.0:
+            dens = 0.7 + 1.0 * min(1.0, (y - 22.0) / 120.0) - 0.9 * min(1.0, max(0.0, (y - 300.0) / 120.0))
+            for _ in range(int(dens * float(EV("DENS", "0.85")) + rnd.random())):
+                x = max(-11.0, min(11.0, rnd.gauss(0.0, 5.0)))
+                (mid if y < 90.0 else far).append((x, y + rnd.uniform(-0.5, 0.5), rnd.randrange(len(VARIANTS))))
             y += 1.0
-        lod_n = EV("NEARLOD", "mid")
-        cn, sn = walker_protos(lod_n, None, "WKN")
         cf, sf = walker_protos("far", 0.5, "WKF")
-        tint_instances(cn)
-        tint_instances(cf)
-        ppl_n = [dict(x=x, y=y0 + dy, var=v, dir=math.radians(rnd.uniform(-3, 3)), scl=rnd.uniform(0.96, 1.04))
-                 for x, dy, v in near]
-        ppl_f = [dict(x=x, y=y0 + dy, var=v, dir=math.radians(rnd.uniform(-4, 4)), scl=rnd.uniform(0.95, 1.05))
-                 for x, dy, v in far]
-        walker_field("WalkersNear", cn, sn, ppl_n, sea.seabed)
-        walker_field("WalkersFar", cf, sf, ppl_f, sea.seabed)
+        cl = walker_lowres(cf, 0.3, "WKL")
+        cu = walker_lowres(cf, 0.08, "WKU")
+        for c_ in (cf, cl, cu):
+            tint_instances(c_)
+            hazify_protos(c_)
+        mk = lambda pts, j: [dict(x=x, y=y0 + dy, var=v, dir=math.radians(rnd.uniform(-j, j)),
+                                  scl=rnd.uniform(0.95, 1.05)) for x, dy, v in pts]
+        nearp = near + [q for q in mid if q[1] < 26.0]
+        midp = [q for q in mid if q[1] >= 26.0]
+        walker_field("WalkersNear", cf, sf, mk(nearp, 3), sea.seabed)
+        walker_field("WalkersMid", cl, sf, mk(midp, 3), sea.seabed)
+        if EV("FAR", "1") == "1":
+            walker_field("WalkersFar", cu, sf, mk(far, 4), sea.seabed)
+        print("[s04a] walkers near %d mid %d far %d" % (len(nearp), len(midp), len(far)))
+        for o in list(cl.objects) + list(cu.objects):   # mid / far people: no shadow casting
+            o.visible_shadow = False
+        if EV("WKSHADOW", "0") != "1":                # walker shadows: ~2x render cost, invisible in this backlight
+            for o in cf.objects:
+                o.visible_shadow = False
 
-    ctx.samples = 6
+    ctx.samples = int(EV("SAMPLES", "4"))
     ctx.render_opts = {"volumetrics": "low", "raytracing": EV("RT", "1") == "1"}
-    ctx.post = {"grade": "flashback"}
+    ctx.interp = EV("INTERP", "1") == "1"
+    ctx.post = {"grade": ["dawn", "flashback"], "saturation": 0.95, "bloom": 0.36, "vignette": 0.22,
+                "caption": {"halo": 1.2}}
 
 
 # =============================================================================================
@@ -138,10 +207,11 @@ import hashlib
 import numpy as np
 
 WALK_K = 22                     # baked phases per cycle: one walk cycle = WALK_K frames at 24 fps
+CACHE_VERSION = 8
 CACHE_DIR = os.path.join(C.WORK, "cache", "s04")
 VARIANTS = [   # (name, preset, spec)
     ("man_staff", "CROWD_MAN", dict(seed=21, staff=True)),
-    ("woman_head", "CROWD_WOMAN", dict(seed=22, bundle="head")),
+    ("woman_head", "CROWD_WOMAN", dict(seed=22, bundle="jar")),
     ("man_back", "CROWD_MAN", dict(seed=23, bundle="back")),
     ("child", "CHILD", dict(seed=24)),
     ("woman", "CROWD_WOMAN", dict(seed=25)),
@@ -149,15 +219,39 @@ VARIANTS = [   # (name, preset, spec)
 ]
 
 
+def _head_jar(person, seed=0):
+    """Clay pitcher carried on the head (bone-parented to 'head')."""
+    from lib import assets as A
+    from mathutils import Matrix
+    root = A.load("water_jar", variant=1, scale=0.85)
+    person.update()
+    top = max(person.lm.get("head_top", person.height), person.height * 0.97)
+    hp = person.head_pos()
+    root.parent = person.rig
+    root.parent_type = "BONE"
+    root.parent_bone = "head"
+    person.update()
+    root.matrix_world = Matrix.Translation((hp.x, hp.y + 0.01, top - 0.015)) @ Matrix.Rotation(math.radians(10), 4, "Z")
+    for o in [root] + list(root.children_recursive):
+        for c in o.users_collection:
+            c.objects.unlink(o)
+        for c in person.rig.users_collection:
+            c.objects.link(o)
+    person.props.append(root)
+    return root
+
+
 def _bundle(person, kind, seed=0):
     """Cloth bundle (sack) bone-parented to the head ('head') or the upper back ('back')."""
+    if kind == "jar":
+        return _head_jar(person, seed)
     import bmesh
     from lib import wardrobe as W
     rnd = random.Random(seed)
     bm = bmesh.new()
     bmesh.ops.create_uvsphere(bm, u_segments=14, v_segments=9, radius=1.0)
     if kind == "head":
-        sx, sy, sz = 0.24, 0.19, 0.12
+        sx, sy, sz = 0.19, 0.16, 0.12
     else:
         sx, sy, sz = 0.21, 0.15, 0.27
     for v in bm.verts:
@@ -174,7 +268,7 @@ def _bundle(person, kind, seed=0):
     for c in person.rig.users_collection:
         c.objects.link(ob)
     ob.data.materials.append(W.fabric_material("homespun"))
-    ob.color = (*W.color(rnd.choice(["oatmeal", "sand", "camel", "brown", "linen", "umber"])), 1.0)
+    ob.color = (*W.color(rnd.choice(["umber", "brown", "camel", "dark_brown"])), 1.0)
     person.update()
     if kind == "head":
         bone = "head"
@@ -195,6 +289,25 @@ def _bundle(person, kind, seed=0):
     return ob
 
 
+def _staff_walk(person, i):
+    """Walking with a staff: held near-vertical in the right hand, tip a little ahead (the pose engine's
+    grip axis of a swinging relaxed hand would aim it like a spear)."""
+    from mathutils import Matrix
+    st = person.staff
+    L = float(st.get("staff_length", person.height * 1.08))
+    person.update()
+    h = person.hand_pos("R")
+    ph = 2 * math.pi * i / WALK_K
+    ax = Vector((0.05, -0.10 - 0.06 * math.sin(ph), 1.0)).normalized()
+    base = h - ax * 0.66 * L
+    if base.z < 0.0:
+        base = base - ax * (base.z / ax.z)
+    R = Vector((0, 0, 1)).rotation_difference(ax).to_matrix().to_4x4()
+    st.parent = person.rig
+    st.parent_type = "OBJECT"
+    st.matrix_world = Matrix.Translation(base) @ R
+
+
 def _cache_key(lod, decimate):
     h = hashlib.md5()
     for f in ("characters.py", "wardrobe.py"):
@@ -202,7 +315,7 @@ def _cache_key(lod, decimate):
             h.update(open(os.path.join(C.BLENDER_DIR, "lib", f), "rb").read())
         except OSError:
             pass
-    h.update(repr((VARIANTS, WALK_K, lod, decimate, 3)).encode())
+    h.update(repr((VARIANTS, WALK_K, lod, decimate)).encode())
     return h.hexdigest()[:12]
 
 
@@ -211,7 +324,13 @@ def walker_protos(lod="far", decimate=None, name="WK"):
     Returns (collection, [stride per variant])."""
     from lib import characters as P
     key = _cache_key(lod, decimate)
-    path = os.path.join(CACHE_DIR, "walkers_%s_%s.blend" % (lod, key))
+    path = os.path.join(CACHE_DIR, "walkers_%s_%s_v%d.blend" % (lod, key, CACHE_VERSION))
+    if not os.path.exists(path) and os.environ.get("S04_CACHE_ANY"):     # dev: ignore lib edits
+        import glob
+        cands = sorted(glob.glob(os.path.join(CACHE_DIR, "walkers_%s_*_v%d.blend" % (lod, CACHE_VERSION))),
+                       key=os.path.getmtime)
+        if cands:
+            path = cands[-1]
     coll = C.collection(name + "_protos")
     if os.path.exists(path):
         with bpy.data.libraries.load(path, link=False) as (src, dst):
@@ -231,15 +350,23 @@ def walker_protos(lod="far", decimate=None, name="WK"):
         sp = dict(spec)
         bundle = sp.pop("bundle", None)
         per = P.make_person("wk_%s" % vn, preset, lod=lod, pose=None, expression=None, **sp)
+        px = per.parts.get("proxy")
+        if px is not None and per.mats.get("skin") is not None:
+            # lib workaround: the far-LOD proxy body keeps MPFB's default (white) material
+            px.data.materials.clear()
+            px.data.materials.append(per.mats["skin"])
         if bundle:
             _bundle(per, bundle, seed=vi)
         stride = per.height * 0.5 * 1.35
         for i in range(WALK_K):
             P.pose(per, "walk", ground_z=0.0, phase=2 * math.pi * i / WALK_K)
+            if getattr(per, "staff", None) is not None:
+                _staff_walk(per, i)
             b = P.bake_static(per, name="WKP_v%02d_p%02d" % (vi, i), delete=False, coll=coll, decimate=decimate)
             for ch in list(b.children):          # beard curves: not instanced (one object per phase)
                 bpy.data.objects.remove(ch, do_unlink=True)
             b.matrix_world = __import__("mathutils").Matrix.Identity(4)
+            _slim(b)
             b["wk_stride"] = stride
             objs.append(b)
         strides.append(stride)
@@ -257,6 +384,26 @@ def walker_protos(lod="far", decimate=None, name="WK"):
     return coll, strides
 
 
+def _slim(o):
+    """Drop mesh data the far crowd shaders don't need (keeps obj_rgb, UVs, wear/hem, skin masks)."""
+    me = o.data
+    keep = {"obj_rgb", "wear", "hem", "cmask_a", "cmask_b", "rest_position", "position", ".edge_verts", ".corner_vert",
+            ".corner_edge", "material_index", "sharp_face"}
+    for a in list(me.attributes):
+        if a.name.startswith(".") or a.name in keep or a.name in me.uv_layers:
+            continue
+        try:
+            me.attributes.remove(a)
+        except Exception:
+            pass
+    for v in list(me.color_attributes):
+        if v.name != "obj_rgb":
+            try:
+                me.color_attributes.remove(v)
+            except Exception:
+                pass
+
+
 def _exclude(coll):
     """Prototype collection: excluded from the view layer (only instanced)."""
     def find(lc):
@@ -271,15 +418,42 @@ def _exclude(coll):
         lc.exclude = True
 
 
+def walker_lowres(coll, ratio, name):
+    """Decimated copies of a prototype collection (same order / names with a new prefix)."""
+    out = C.collection(name + "_protos")
+    for o in sorted(coll.objects, key=lambda o: o.name):
+        c = o.copy()
+        c.data = o.data.copy()
+        c.name = name + o.name[o.name.index("_v"):]
+        out.objects.link(c)
+        md = c.modifiers.new("dec", "DECIMATE")
+        md.ratio = ratio
+        with bpy.context.temp_override(object=c, active_object=c):
+            bpy.ops.object.modifier_apply(modifier=md.name)
+    _exclude(out)
+    return out
+
+
+def hazify_protos(coll):
+    """Route the walkers' materials through the env haze (distant people fade into the dawn air)."""
+    done = set()
+    for o in coll.objects:
+        for m in o.data.materials:
+            if m and m.name not in done:
+                done.add(m.name)
+                E.hazify(m)
+
+
 def tint_instances(coll):
     """Per-instance clothing colour variation: the baked fabric colour (obj_rgb) is shifted in hue /
     saturation / value by the instancer attribute 'wk_tint' (xyz in 0..1)."""
     done = set()
     for o in coll.objects:
         for m in o.data.materials:
-            if m is None or m.name in done or not m.use_nodes:
+            if m is None or m.name in done or not m.use_nodes or m.get("wk_tinted"):
                 continue
             done.add(m.name)
+            m["wk_tinted"] = 1
             nt = m.node_tree
             for at in [n for n in nt.nodes if n.bl_idname == "ShaderNodeAttribute" and n.attribute_name == "obj_rgb"]:
                 links = list(at.outputs["Color"].links)
