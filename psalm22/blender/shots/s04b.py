@@ -106,7 +106,7 @@ def build(ctx):
     else:
         P.pose(moses, "staff_raised", ground_z=top)
     if EV("CROWD", "1") == "1":
-        cf, sf = A4.walker_protos("far", 0.5, "WKF")
+        cf, sf = A4.walker_protos("far", 0.35, "WKF")
         A4.tint_instances(cf)
         A4.hazify_protos(cf)
         for o in cf.objects:                    # no walker shadows (cost ~2x, invisible against the sun)
@@ -123,7 +123,7 @@ def build(ctx):
             tx = xx * 2.2 + rnd.gauss(0.0, 6.0) - (6.0 if xx > -2.0 else 0.0)
             hd = math.atan2(tx - xx, (y1 + 80.0) - yy)
             v = rnd.randrange(len(A4.VARIANTS))
-            sp = sf[v] * fps / A4.WALK_K
+            sp = sf[v] * fps / (A4.WALK_K * A4.PH_STEP)
             ok = True
             for k in range(0, 9):
                 t = T * k / 8.0

@@ -168,9 +168,9 @@ def build(ctx):
                 x = max(-11.0, min(11.0, rnd.gauss(0.0, 5.0)))
                 (mid if y < 90.0 else far).append((x, y + rnd.uniform(-0.5, 0.5), rnd.randrange(len(VARIANTS))))
             y += 1.0
-        cf, sf = walker_protos("far", 0.5, "WKF")
-        cl = walker_lowres(cf, 0.3, "WKL")
-        cu = walker_lowres(cf, 0.08, "WKU")
+        cf, sf = walker_protos("far", 0.35, "WKF")
+        cl = walker_lowres(cf, 0.35, "WKL")
+        cu = walker_lowres(cf, 0.1, "WKU")
         for c_ in (cf, cl, cu):
             tint_instances(c_)
             hazify_protos(c_)
@@ -206,8 +206,10 @@ import random
 import hashlib
 import numpy as np
 
-WALK_K = 22                     # baked phases per cycle: one walk cycle = WALK_K frames at 24 fps
-CACHE_VERSION = 8
+WALK_K = 11                     # baked phases per walk cycle ...
+PH_STEP = 2                     # ... each shown for 2 frames: one cycle = 22 frames (legs update at 12 Hz, matching
+                                # the 12 fps interp render; halves the proto memory)
+CACHE_VERSION = 9
 CACHE_DIR = os.path.join(C.WORK, "cache", "s04")
 VARIANTS = [   # (name, preset, spec)
     ("man_staff", "CROWD_MAN", dict(seed=21, staff=True)),
@@ -315,7 +317,7 @@ def _cache_key(lod, decimate):
             h.update(open(os.path.join(C.BLENDER_DIR, "lib", f), "rb").read())
         except OSError:
             pass
-    h.update(repr((VARIANTS, WALK_K, lod, decimate)).encode())
+    h.update(repr((VARIANTS, WALK_K, PH_STEP, lod, decimate)).encode())
     return h.hexdigest()[:12]
 
 
@@ -504,7 +506,7 @@ def _walker_tree():
     z = nb.mixf(rc.outputs["Is Hit"], nb.out(ps, "Z"), hz)
     newp = nb.xyz(nb.out(ps, "X"), nb.out(ps, "Y"), z)
     g = nb.out(nb.n("GeometryNodeSetPosition", {"Geometry": G("Geometry"), "Position": newp}))
-    m = nb.add(fr, nb.attr("ph0"))
+    m = nb.m("FLOOR", nb.div(nb.add(fr, nb.attr("ph0")), float(PH_STEP)))
     ph = nb.sub(m, nb.mul(G("K"), nb.m("FLOOR", nb.div(m, G("K")))))
     idx = nb.add(nb.mul(nb.attr("var"), G("K")), nb.m("FLOOR", nb.add(ph, 0.001)))
     ci = nb.n("GeometryNodeCollectionInfo", {"Collection": G("Collection"), "Separate Children": True,
@@ -525,14 +527,14 @@ def walker_field(name, coll, strides, people, ground, coll_out=None):
     rnd = random.Random(7)
     for q in people:
         v = q["var"]
-        sp = strides[v] * fps / WALK_K
+        sp = strides[v] * fps / (WALK_K * PH_STEP)
         d = q.get("dir", 0.0)
         pos.append((q["x"], q["y"], q.get("z", 0.0)))
         vel.append((math.sin(d) * sp, math.cos(d) * sp, 0.0))
         var.append(v)
         yaw.append(math.pi - d)            # people face -Y at yaw 0
         scl.append(q.get("scl", 1.0))
-        ph0.append(q.get("ph0", rnd.randrange(WALK_K)))
+        ph0.append(q.get("ph0", rnd.randrange(WALK_K * PH_STEP)))
         tint.append(q.get("tint", (rnd.random(), rnd.random(), rnd.random())))
     o = FX._points_obj(name, pos, {"vel": np.array(vel), "var": np.array(var, np.float32), "yaw": np.array(yaw),
                                    "scl": np.array(scl), "ph0": np.array(ph0, np.float32),
