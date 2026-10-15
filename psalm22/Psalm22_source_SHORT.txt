@@ -1,0 +1,2322 @@
+PSALM 22 — 3D ANIMATED PORTRAIT FILM: COMPLETE SOURCE CODE
+===========================================================
+How this video was made (for another AI/chatbot to learn from):
+
+TOOLS: Blender 4.5 (EEVEE renderer, headless via xvfb, CPU only), MPFB2 / MakeHuman (CC0 realistic humans),
+Poly Haven (CC0 skies, textures, rocks), Objaverse/Sketchfab (CC-BY animals), Kokoro TTS (narration voice),
+FluidSynth + MuseScore_General soundfont (procedural orchestral score), RIFE (frame interpolation), ffmpeg.
+
+PIPELINE (run in this order):
+ 1. text/psalm22.json      - the text split into caption phrases, grouped in blocks
+ 2. text/shots.json        - creative blueprint: one visual scene per block of text
+ 3. audio/tts.py           - narration per phrase -> narration.wav + exact phrase timings
+ 4. timeline.py            - turns phrase timings into frame ranges for every shot (24 fps)
+ 5. blender/shots/<id>.py  - one Blender Python script per shot: def build(ctx) builds the scene + animation
+    blender/lib/*.py       - shared libraries: core (camera/light/sky/materials), characters (people, poses,
+                             faces), wardrobe (robes), assets (animals/props), env (Golgotha, hills), sets
+                             (interiors), fx (fire, water, Red Sea, Earth, dust)
+    blender/render_shot.py - renders one shot; render_queue.py renders all shots in chunks (resumable)
+ 6. comp/interp.py         - renders slow shots at 12 fps and fills in-between frames with RIFE (halves render time)
+ 7. audio/music.py, sfx.py, mix.py - original score, sound effects, final mix ducked under the voice
+ 8. comp/composite.py, captions.py, encode.py - colour grade, transitions, captions, title, two-pass
+    H.264 encode sized to stay under 15 MB, with a bright first frame (social-media thumbnail)
+
+KEY LESSONS: render portrait 540x960 and upscale to 720x1280; keep render cost ~5-10 s/frame on CPU;
+never use a world volume in EEVEE (blacks out the sky) - use finite fog boxes; use frame interpolation
+for slow shots; make frame 1 bright; size the bitrate from the duration to hit the file-size limit.
+
+SHORT VERSION: overview + core pipeline + 3 example shots. Files follow, each starting with a "===== FILE: path =====" line.
+
+===== FILE: psalm22/DEV.md =====
+# Psalm 22 — production pipeline (developer notes)
+
+Goal: a lifelike 3D-animated portrait (9:16) short film of the crucifixion that visualises Psalm 22
+(NIV) block by block — flashbacks and symbolic scenes, not talking heads. Style target: realistic
+CG like *The Polar Express* / *Final Fantasy: The Spirits Within*. Narration (AI voice) + captions
++ score. Final file: MP4 under 15 MB. The first frame must be a bright, readable shot (it's the
+social-media thumbnail), never black.
+
+## Layout
+```
+
+===== FILE: psalm22/text/shots.json =====
+{
+ "notes": "Creative blueprint. Each shot starts at phrase `from` of its block (s00 is the title before narration). Durations come from the narration timeline (timeline.json). transition_in: cut | dissolve | flash (white) | fade_black.",
+ "shots": [
+  {"id": "s00", "block": "intro", "from": 0, "transition_in": "cut",
+   "title": "Golgotha - title",
+   "visual": "Wide cinematic shot of three wooden crosses on the rocky, skull-faced hill of Golgotha outside Jerusalem's walls. Vast dramatic sky at the sixth hour: bright golden sun partly veiled by towering clouds, crepuscular rays fanning down, a dark storm front creeping in from one side. Dust drifting. Camera slow push-in and gentle rise. MUST BE BRIGHT AND READABLE FROM FRAME 1 (this frame is the social-media thumbnail): the central cross centered in the middle square of the portrait frame, warm golden light, no fade from black. Leave the upper-middle area calm for the title text overlay.",
+   "mood": "epic, golden, foreboding"},
+
+  {"id": "s01a", "block": "b01", "from": 0, "transition_in": "dissolve",
+   "title": "Face on the cross",
+   "visual": "Close-up of Jesus on the cross: crown of thorns, long dark hair, beard, sweat and dust, a little blood at the brow (tasteful). He lifts his eyes to the sky as the light dims (the sun is darkening). Slow push-in. Backlit rim light from the dimming sun, cool fill.",
+   "mood": "anguish, intimate"},
+  {"id": "s01b", "block": "b01", "from": 1, "transition_in": "cut",
+   "title": "So far",
+   "visual": "The camera pulls away from the cross, rising and receding until the cross is a tiny speck on the hill beneath a vast sky that turns dark at midday; the sun dims to a dull red disk behind clouds. Emphasize distance and loneliness.",
+   "mood": "vast, desolate"},
+
+  {"id": "s02a", "block": "b02", "from": 0, "transition_in": "cut",
+   "title": "Day and night timelapse",
+   "visual": "Time-lapse over the Judean hills: the sun races across the sky, shadows of rocks and a lone dead tree sweep across the ground, clouds streak, the sky turns from day to blazing dusk to night with stars emerging.",
+   "mood": "relentless time"},
+  {"id": "s02b", "block": "b02", "from": 1, "transition_in": "dissolve",
+   "title": "Gethsemane prayer",
+   "visual": "Flashback: the garden of Gethsemane at night. Jesus (in a simple robe) kneels at a large rock among gnarled olive trees, praying with head bowed and hands clasped on the rock. Cold blue moonlight through the branches, drifting mist, a few fireflies of dust in the light. Slow lateral dolly.",
+   "mood": "restless night, sorrow"},
+
+  {"id": "s03", "block": "b03", "from": 0, "transition_in": "dissolve",
+   "title": "Enthroned - Holy of Holies",
+   "visual": "Inside the temple's Holy of Holies: the camera glides through a parting embroidered curtain toward the golden Ark of the Covenant, two golden cherubim on its lid with wings arched toward each other; between them an intense radiant light (the glory) pours out, incense smoke curling through light shafts. End rising into the blinding light.",
+   "mood": "holy, awe, gold"},
+
+  {"id": "s04a", "block": "b04", "from": 0, "transition_in": "flash",
+   "title": "Red Sea crossing",
+   "visual": "Flashback: the Red Sea parted at dawn. Towering walls of churning blue-green water rise on both sides, spray blowing off their tops; a multitude of Israelites (robed figures with staffs, bundles, some with children and animals) walk across the wet seabed toward the light. Camera low behind them, slowly following.",
+   "mood": "deliverance, epic"},
+  {"id": "s04b", "block": "b04", "from": 2, "transition_in": "cut",
+   "title": "Moses with staff",
+   "visual": "Moses stands on a rock at the far shore, staff raised high, silhouetted against the sunrise, as the people stream past below and reach safety; behind them the walls of water crash together in spray.",
+   "mood": "triumph, saved"},
+
+  {"id": "s05", "block": "b05", "from": 0, "transition_in": "fade_black",
+   "title": "The worm",
+   "visual": "Macro ground-level shot in the dust at the foot of the cross: a small crimson worm crawls across cracked earth and pebbles. Sandaled feet of passers-by stride past kicking up dust. The camera tilts and rises up the rough wooden upright of the cross toward the crucified figure, silhouetted against the dim sky, while people turn away.",
+   "mood": "lowly, humiliated"},
+
+  {"id": "s06a", "block": "b06", "from": 0, "transition_in": "cut",
+   "title": "Mocking crowd",
+   "visual": "High angle from the cross looking down at a crowd of onlookers and religious leaders in robes, prayer shawls and head coverings; they shake their heads, point and sneer up at the camera. Harsh dim light of the darkened sun, dust in the air.",
+   "mood": "scorn, cruelty"},
+  {"id": "s06b", "block": "b06", "from": 2, "transition_in": "cut",
+   "title": "He trusts in the Lord",
+   "visual": "A chief priest in rich robes and turban gestures mockingly toward the sky, other leaders nod; Roman soldiers laugh behind. Above the cross the wooden placard 'Jesus of Nazareth, King of the Jews' is visible. Camera slowly orbits.",
+   "mood": "mockery"},
+
+  {"id": "s07a", "block": "b07", "from": 0, "transition_in": "dissolve",
+   "title": "Nativity",
+   "visual": "Flashback in warm golden light: a Bethlehem stable cave at night, straw and a wooden manger, an oil lamp glowing; young Mary cradles the newborn wrapped in swaddling cloths against her, gazing down tenderly; an ox and a donkey rest nearby; silver starlight streams through the doorway.",
+   "mood": "tender, warm, holy"},
+  {"id": "s07b", "block": "b07", "from": 2, "transition_in": "dissolve",
+   "title": "Mary at the cross",
+   "visual": "Match: Mary's face, now older, veiled in blue-grey, at the foot of the cross, looking up with tears; the dim cold light of the darkened afternoon; the wooden upright of the cross out of focus in the foreground. Slow push-in.",
+   "mood": "grief, faithfulness"},
+
+  {"id": "s08", "block": "b08", "from": 0, "transition_in": "cut",
+   "title": "Trouble is near",
+   "visual": "Flashback: Gethsemane at night. Torches of an armed mob advance through the twisted olive trees (trouble is near) while the disciples' silhouettes flee into the darkness; Jesus stands alone in the growing torchlight. Smoke and embers.",
+   "mood": "danger, abandonment"},
+
+  {"id": "s09a", "block": "b09", "from": 0, "transition_in": "cut",
+   "title": "Bulls of Bashan",
+   "visual": "Symbolic nightmare: in a red-brown dust storm, massive dark bulls circle the cross on the hill. Camera near ground level slowly rotating as hooves pound and dust bursts; horns silhouetted against a dim red sun.",
+   "mood": "menace, oppressive"},
+  {"id": "s09b", "block": "b09", "from": 2, "transition_in": "cut",
+   "title": "Roaring lions",
+   "visual": "Out of the darkness and dust, lions emerge with glinting eyes; one lion advances and roars straight at the camera, mouth wide. Dramatic rim light, dust.",
+   "mood": "terror"},
+
+  {"id": "s10a", "block": "b10", "from": 0, "transition_in": "cut",
+   "title": "Poured out like water",
+   "visual": "Slow motion: water poured from a tilted earthen clay jar splashes onto cracked parched ground and drains away into the cracks. Then the strained arms stretched along the crossbeam (bones out of joint).",
+   "mood": "exhaustion, emptying"},
+  {"id": "s10b", "block": "b10", "from": 2, "transition_in": "dissolve",
+   "title": "Heart of wax",
+   "visual": "In darkness, a single beeswax candle melts down in time-lapse, the flame guttering, wax running down its sides and pooling into a spreading puddle.",
+   "mood": "melting, fragile"},
+
+  {"id": "s11a", "block": "b11", "from": 0, "transition_in": "cut",
+   "title": "Potsherd",
+   "visual": "Harsh white sun: a broken clay potsherd lies on dry, cracked earth; heat haze shimmers; cracks spread across the clay and the ground; a dry thorn branch nearby.",
+   "mood": "thirst, dryness"},
+  {"id": "s11b", "block": "b11", "from": 2, "transition_in": "cut",
+   "title": "Dust of death",
+   "visual": "A hand opens and fine dust pours from it, carried away by the wind across the ground; behind, the skull-like rock face of Golgotha in fading light.",
+   "mood": "mortality"},
+
+  {"id": "s12a", "block": "b12", "from": 0, "transition_in": "cut",
+   "title": "Dogs surround",
+   "visual": "Dusk: a pack of wild dogs prowls in a circle around the camera, eyes glinting; behind them the legs and sandals of Roman soldiers also circle. Low, menacing, handheld feel.",
+   "mood": "hunted"},
+  {"id": "s12b", "block": "b12", "from": 1, "transition_in": "cut",
+   "title": "They pierce",
+   "visual": "Close: an iron spike held against rough wood; a hammer is raised high against the darkened sky - cut at the moment of impact to a single drop of blood running along the wood grain. Tasteful, no gore.",
+   "mood": "piercing, sacrifice"},
+
+  {"id": "s13a", "block": "b13", "from": 0, "transition_in": "cut",
+   "title": "They stare",
+   "visual": "From behind the crowd: heads and shoulders of onlookers silhouetted in the foreground, staring up at the crucified figure on the cross in the dim eclipse light; one gloats, arms crossed.",
+   "mood": "exposure"},
+  {"id": "s13b", "block": "b13", "from": 2, "transition_in": "cut",
+   "title": "Casting lots",
+   "visual": "Roman soldiers kneel around a cloth on the rocky ground at the foot of the cross; bone dice tumble in slow motion across the folded seamless tunic; a hand snatches the garment.",
+   "mood": "callous"},
+
+  {"id": "s14a", "block": "b14", "from": 0, "transition_in": "fade_black",
+   "title": "Light breaks",
+   "visual": "The turn: in the darkness a single shaft of light breaks through the clouds and falls on the cross; more rays follow; the camera rises toward the light.",
+   "mood": "hope dawning"},
+  {"id": "s14b", "block": "b14", "from": 2, "transition_in": "cut",
+   "title": "Sword falls",
+   "visual": "A Roman sword lies in the dust catching the new light; a soldier's hand lets go of it; the dogs scatter into the darkness as the light spreads across the ground.",
+   "mood": "deliverance"},
+  {"id": "s14c", "block": "b14", "from": 4, "transition_in": "cut",
+   "title": "Beasts to dust",
+   "visual": "Silhouettes of a lion and a great wild ox made of dark ash disintegrate into particles that blow away as the advancing golden light touches them.",
+   "mood": "victory"},
+
+  {"id": "s15", "block": "b15", "from": 0, "transition_in": "flash",
+   "title": "Empty tomb",
+   "visual": "Resurrection morning: the great round stone rolls aside from a rock-cut tomb, dawn light floods in; inside, the folded linen grave cloths lie on the stone bench; the tomb is empty. Camera moves in.",
+   "mood": "glory, wonder"},
+
+  {"id": "s16a", "block": "b16", "from": 0, "transition_in": "cut",
+   "title": "Praise him",
+   "visual": "A multitude on a hillside at sunrise raise their hands in praise, robes and scarves moving in the wind; the camera cranes up over them toward the sun.",
+   "mood": "jubilant"},
+  {"id": "s16b", "block": "b16", "from": 3, "transition_in": "dissolve",
+   "title": "Scarred hand",
+   "visual": "Close: the open, nail-scarred hand of the risen Christ in warm sunlight; the healed wound visible in the palm; dust motes glitter.",
+   "mood": "compassion"},
+  {"id": "s16c", "block": "b16", "from": 5, "transition_in": "dissolve",
+   "title": "His face in the light",
+   "visual": "The sun emerges fully from the clouds and warm light washes over the face of the risen Jesus, peaceful, eyes opening and lifting (bookend of the opening close-up), no crown of thorns.",
+   "mood": "peace, answered"},
+
+  {"id": "s17a", "block": "b17", "from": 0, "transition_in": "dissolve",
+   "title": "Great assembly",
+   "visual": "A great assembly gathered in a stone courtyard at dusk, hundreds of oil lamps glowing, people standing and singing, faces lit warmly; camera glides over them.",
+   "mood": "communal praise"},
+  {"id": "s17b", "block": "b17", "from": 2, "transition_in": "dissolve",
+   "title": "Bread broken",
+   "visual": "Close: hands break a round loaf of flatbread at a rough wooden table in warm lamplight, steam rising; many hands reach in and receive pieces; a clay cup of wine.",
+   "mood": "satisfied, grace"},
+
+  {"id": "s18a", "block": "b18", "from": 0, "transition_in": "dissolve",
+   "title": "Ends of the earth",
+   "visual": "Earth seen from space: the sunrise terminator sweeps across the globe, the atmosphere glowing, light spreading over the continents (Middle East/Africa/Europe first).",
+   "mood": "global, majestic"},
+  {"id": "s18b", "block": "b18", "from": 3, "transition_in": "dissolve",
+   "title": "Nations bow",
+   "visual": "People of many nations, diverse in skin tone and dress, kneel on a vast plain at dawn facing a distant hill where an empty cross is lit by the rising sun. Camera slowly rises behind them.",
+   "mood": "worship, unity"},
+
+  {"id": "s19a", "block": "b19", "from": 0, "transition_in": "cut",
+   "title": "Crowns laid down",
+   "visual": "Golden crowns and jeweled goblets are laid down on the rocky ground at the foot of the empty cross by hands in rich embroidered sleeves; morning sun glints on the gold.",
+   "mood": "humility of the powerful"},
+  {"id": "s19b", "block": "b19", "from": 1, "transition_in": "cut",
+   "title": "Kneeling in the dust",
+   "visual": "An old man in a worn robe slowly kneels down in the dust and bows, dust motes floating in a shaft of sunlight.",
+   "mood": "humility of the mortal"},
+
+  {"id": "s20a", "block": "b20", "from": 0, "transition_in": "dissolve",
+   "title": "Told to the next generation",
+   "visual": "Night, by a small fire: a grandfather holds an open scroll and tells a young child the story; he passes a lit clay oil lamp into the child's hands. Warm firelight, sparks rising.",
+   "mood": "legacy, intimate"},
+  {"id": "s20b", "block": "b20", "from": 2, "transition_in": "dissolve",
+   "title": "River of lights",
+   "visual": "The flame is passed on: a long line of people stretching into the distance across dark hills, each holding a lit oil lamp, forming a winding river of lights under the pre-dawn sky.",
+   "mood": "proclamation, hope"},
+  {"id": "s20c", "block": "b20", "from": 4, "transition_in": "flash",
+   "title": "He has done it",
+   "visual": "Final: the empty cross on Golgotha at glorious sunrise, a white linen cloth draped over the crossbeam moving in the breeze, golden rays bursting through clouds, the camera rises past the cross into the light. Bright, triumphant. Continues through the outro (end title).",
+   "mood": "triumph, finished"}
+ ]
+}
+
+===== FILE: psalm22/audio/tts.py =====
+"""Generate the Psalm 22 narration with Kokoro TTS and write phrase timings.
+
+Usage: /opt/venv/bin/python psalm22/audio/tts.py
+Outputs (in $WORK/audio, default /opt/work/psalm22/audio):
+  narration.wav      48 kHz mono narration track on the final timeline
+  phrases.json       per-phrase start/end seconds on the final timeline
+"""
+import json, os, re
+import numpy as np
+import soundfile as sf
+from scipy.signal import resample_poly
+from kokoro_onnx import Kokoro
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+ROOT = os.path.dirname(HERE)
+WORK = os.environ.get("WORK", "/opt/work/psalm22")
+OUT = os.path.join(WORK, "audio")
+os.makedirs(os.path.join(OUT, "phr"), exist_ok=True)
+
+VOICE = os.environ.get("VOICE", "am_michael")
+SPEED = float(os.environ.get("SPEED", "0.84"))
+SR = 48000
+
+INTRO = 5.0          # title shot before the first words
+OUTRO = 8.0          # after "He has done it!"
+GAP_BLOCK = 1.8      # between blocks
+GAP_EXTRA = {"b14": 2.6, "b15": 3.4}   # longer breath before the turn / resurrection
+GAP_PUNCT = {",": 0.22, ";": 0.42, ":": 0.38, ".": 0.55, "?": 0.6, "!": 0.6, "—": 0.3}
+
+# pronunciation helpers (display text is unchanged)
+RESPELL = {"Bashan": "Bayshan"}
+# phoneme fixes applied after espeak phonemization
+PHONEME_FIX = [("lˈaɪv fɚɹˈɛvɚ", "lˈɪv fɚɹˈɛvɚ"), ("həznɑːt", "hˈæz nˈɑːt")]
+
+
+def speakable(text):
+    t = text.replace("“", "").replace("”", "").replace("’", "'")
+    t = t.replace("—", ",")
+    for k, v in RESPELL.items():
+        t = re.sub(r"\b%s\b" % k, v, t)
+    return t.strip()
+
+
+def trim(x, thr=0.006, pad=0.03, sr=24000):
+    idx = np.where(np.abs(x) > thr)[0]
+    if len(idx) == 0:
+        return x
+    a = max(0, idx[0] - int(pad * sr))
+    b = min(len(x), idx[-1] + int(pad * 2 * sr))
+    return x[a:b]
+
+
+def main():
+    data = json.load(open(os.path.join(ROOT, "text", "psalm22.json")))
+    k = Kokoro("/opt/assets/tts/kokoro-v1.0.onnx", "/opt/assets/tts/voices-v1.0.bin")
+    t = INTRO
+    pieces, phrases = [], []
+    for bi, block in enumerate(data["blocks"]):
+        if bi > 0:
+            t += GAP_EXTRA.get(block["id"], GAP_BLOCK)
+        bstart = t
+        for pi, text in enumerate(block["phrases"]):
+            cache = os.path.join(OUT, "phr", "%s_%02d_%s_%.2f.wav" % (block["id"], pi, VOICE, SPEED))
+            if os.path.exists(cache):
+                y, _ = sf.read(cache)
+            else:
+                ph = k.tokenizer.phonemize(speakable(text), "en-us")
+                for a, b in PHONEME_FIX:
+                    ph = ph.replace(a, b)
+                s, sr = k.create(ph, voice=VOICE, speed=SPEED, is_phonemes=True)
+                y = resample_poly(trim(np.asarray(s, dtype=np.float64), sr=sr), SR, sr)
+                sf.write(cache, y, SR)
+            dur = len(y) / SR
+            pieces.append((t, y))
+            phrases.append({"block": block["id"], "index": pi, "text": text,
+                            "start": round(t, 3), "end": round(t + dur, 3)})
+            t += dur
+            if pi < len(block["phrases"]) - 1:
+                last = text.rstrip("”\"")[-1]
+                t += GAP_PUNCT.get(last, 0.3)
+        for p in phrases:
+            if p["block"] == block["id"]:
+                p["block_start"] = round(bstart, 3)
+    total = t + OUTRO
+    track = np.zeros(int(total * SR) + SR)
+    for start, y in pieces:
+        i = int(start * SR)
+        track[i:i + len(y)] += y
+    peak = np.max(np.abs(track)) or 1
+    track = track / peak * 0.89
+    sf.write(os.path.join(OUT, "narration.wav"), track[: int(total * SR)], SR, subtype="PCM_16")
+    json.dump({"voice": VOICE, "speed": SPEED, "intro": INTRO, "outro": OUTRO,
+               "total": round(total, 3), "phrases": phrases},
+              open(os.path.join(OUT, "phrases.json"), "w"), indent=1)
+    print("total %.1f s, %d phrases" % (total, len(phrases)))
+
+
+if __name__ == "__main__":
+    main()
+
+===== FILE: psalm22/timeline.py =====
+"""Build timeline.json: global frame ranges for every shot, synced to the narration.
+
+Usage: python3 psalm22/timeline.py   (after audio/tts.py)
+"""
+import json, os
+
+ROOT = os.path.dirname(os.path.abspath(__file__))
+WORK = os.environ.get("WORK", "/opt/work/psalm22")
+FPS = 24
+LEAD_BLOCK = 0.6      # cut this many seconds before a block's first phrase
+DISSOLVE = 14         # frames of overlap for dissolves (rendered as tail of the previous shot)
+
+
+def main():
+    ph = json.load(open(os.path.join(WORK, "audio", "phrases.json")))
+    shots = json.load(open(os.path.join(ROOT, "text", "shots.json")))["shots"]
+    # shots without a script are folded into the previous shot (it simply runs longer)
+    have = lambda sid: os.path.exists(os.path.join(ROOT, "blender", "shots", sid + ".py"))
+    dropped = [s["id"] for s in shots if not have(s["id"])]
+    if dropped and os.environ.get("KEEP_MISSING") != "1":
+        print("folding shots without scripts into the previous shot:", " ".join(dropped))
+        shots = [s for s in shots if have(s["id"])]
+    phrases = ph["phrases"]
+    total = ph["total"]
+    by_block = {}
+    for p in phrases:
+        by_block.setdefault(p["block"], []).append(p)
+
+    cuts = []
+    for s in shots:
+        if s["block"] == "intro":
+            cuts.append(0.0)
+            continue
+        bp = by_block[s["block"]]
+        i = s["from"]
+        if i == 0:
+            cuts.append(bp[0]["start"] - LEAD_BLOCK)
+        else:
+            cuts.append((bp[i - 1]["end"] + bp[i]["start"]) / 2 - 0.08)
+    total_frames = int(round(total * FPS))
+    starts = [int(round(c * FPS)) for c in cuts]
+    out = []
+    for k, s in enumerate(shots):
+        f0 = starts[k]
+        f1 = starts[k + 1] if k + 1 < len(shots) else total_frames
+        nxt = shots[k + 1]["transition_in"] if k + 1 < len(shots) else None
+        tail = DISSOLVE if nxt == "dissolve" else 0
+        t0 = f0 / FPS
+        rel = [{"text": p["text"], "start": round(p["start"] - t0, 3), "end": round(p["end"] - t0, 3)}
+               for p in phrases if p["end"] > t0 and p["start"] < f1 / FPS]
+        e = dict(s)
+        e.update({"start_frame": f0, "nframes": f1 - f0, "tail": tail,
+                  "render_frames": f1 - f0 + tail, "seconds": round((f1 - f0) / FPS, 2),
+                  "phrases": rel})
+        out.append(e)
+    tl = {"fps": FPS, "total_frames": total_frames, "total_seconds": total,
+          "dissolve_frames": DISSOLVE, "render_resolution": [540, 960],
+          "final_resolution": [720, 1280], "shots": out}
+    json.dump(tl, open(os.path.join(ROOT, "timeline.json"), "w"), indent=1, ensure_ascii=False)
+    for e in out:
+        print("%-5s %5d +%4d (%5.2fs) tail %2d  %s" % (e["id"], e["start_frame"], e["nframes"], e["seconds"], e["tail"], e["title"]))
+    print("total frames", total_frames, "render frames", sum(e["render_frames"] for e in out))
+
+
+if __name__ == "__main__":
+    main()
+
+===== FILE: psalm22/blender/run.sh =====
+#!/bin/bash
+# Render a shot headless: psalm22/blender/run.sh --shot s01a --quality preview --frames sheet6
+# Waits for one of RENDER_SLOTS machine-wide Blender slots (see slot.sh).
+HERE="$(cd "$(dirname "$0")" && pwd)"
+BLENDER="${BLENDER:-/opt/tools/blender-4.5.14-linux-x64/blender}"
+source "$HERE/slot.sh"
+exec xvfb-run -a -s "-screen 0 1280x1024x24" "$BLENDER" -b -noaudio -P "$HERE/render_shot.py" -- "$@"
+
+===== FILE: psalm22/blender/slot.sh =====
+#!/bin/bash
+# Counting semaphore for Blender processes (shared by all agents). Source this, then exec your command.
+# RENDER_SLOTS (default 3) concurrent Blender renders machine-wide; waits for a free slot.
+SLOTS="${RENDER_SLOTS:-3}"
+while :; do
+  for i in $(seq 1 "$SLOTS"); do
+    exec {SLOT_FD}>"/tmp/psalm22_render_slot_${SLOT_PREFIX:-}$i.lock"
+    if flock -n "$SLOT_FD"; then export PSALM22_SLOT=$i; break 2; fi
+    exec {SLOT_FD}>&-
+  done
+  sleep 3
+done
+
+===== FILE: psalm22/blender/render_shot.py =====
+"""Render one shot. Run through ./run.sh (wraps xvfb-run + Blender):
+
+    psalm22/blender/run.sh --shot s01a --quality preview --frames sheet6
+    psalm22/blender/run.sh --shot s01a --quality final   --frames all
+    psalm22/blender/run.sh --shot s01a --quality final   --frames 1-120
+
+--frames: 'all' | 'sheet<N>' (N evenly spaced frames + contact sheet) | '1,40,80' | 'a-b'
+          | 'odd' / 'odd:a-b' (odd frames only = 12 fps; fill the evens with comp/interp.py)
+          | 'auto' / 'auto:a-b' (= 'odd[:a-b]' if the shot sets ctx.interp = True, else 'all' / 'a-b')
+--skip-existing: only render frames whose PNG doesn't exist yet (resume). Writes meta.json (interp, needs_bake).
+--quality: preview (270x480, 3 spp) | draft (540x960, 3 spp) | final (540x960, ctx.samples or 8 spp)
+--save-blend: also write the built scene to WORK/blend/<shot>.blend for inspection.
+Output: WORK/frames/<shot>/<quality>/NNNN.png (NNNN = 1-based shot frame) + post.json (+ sheet.png)
+"""
+import bpy, sys, os, json, time, importlib
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, HERE)
+from lib import core  # noqa: E402
+
+argv = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
+opts = {"--quality": "preview", "--frames": "sheet6", "--save-blend": False, "--skip-existing": False}
+i = 0
+while i < len(argv):
+    a = argv[i]
+    if a in ("--save-blend", "--skip-existing"):
+        opts[a] = True
+        i += 1
+    else:
+        opts[a] = argv[i + 1]
+        i += 2
+shot_id = opts["--shot"]
+quality = opts["--quality"]
+
+tl = json.load(open(os.path.join(core.ROOT, "timeline.json")))
+shot = next(s for s in tl["shots"] if s["id"] == shot_id)
+ctx = core.Ctx(shot, quality, tl["fps"])
+core.reset_scene(ctx)
+mod = importlib.import_module("shots." + shot_id)
+t0 = time.time()
+mod.build(ctx)
+core.configure_render(ctx, **ctx.render_opts)
+print("BUILD_TIME %.1fs" % (time.time() - t0))
+
+spec = opts["--frames"]
+if spec == "auto" or spec.startswith("auto:"):
+    # the shot decides: ctx.interp = True -> half-rate render, evens filled by comp/interp.py
+    rng = spec[5:] if ":" in spec else ""
+    if getattr(ctx, "interp", False):
+        spec = "odd:" + rng if rng else "odd"
+    else:
+        spec = rng if rng else "all"
+    print("AUTO_FRAMES", spec)
+N = ctx.render_frames
+sheet = None
+if spec == "all":
+    frames = list(range(1, N + 1))
+elif spec.startswith("sheet"):
+    k = int(spec[5:] or 6)
+    frames = sorted(set(max(1, min(N, round(1 + (N - 1) * j / (k - 1)))) for j in range(k)))
+    sheet = frames
+elif spec == "odd" or spec.startswith("odd:"):
+    # half-rate render (odd frames only); comp/interp.py synthesises the even frames afterwards
+    a, b = spec[4:].split("-") if ":" in spec else (1, N)
+    frames = [f for f in range(int(a), min(N, int(b)) + 1) if f % 2 == 1]
+    # in-shot hard cuts: RIFE can't bridge a cut, so a shot lists the even frame(s) next to the cut in
+    # ctx.interp_keep and they are rendered too (interp.py only fills frames that are missing)
+    frames = sorted(set(frames) | {int(f) for f in getattr(ctx, "interp_keep", ()) if int(a) <= int(f) <= min(N, int(b))})
+elif "-" in spec and "," not in spec:
+    a, b = spec.split("-")
+    frames = list(range(int(a), min(N, int(b)) + 1))
+else:
+    frames = [int(x) for x in spec.split(",")]
+
+out = os.path.join(core.WORK, "frames", shot_id, quality)
+os.makedirs(out, exist_ok=True)
+json.dump({"interp": bool(getattr(ctx, "interp", False)), "needs_bake": bool(ctx.needs_bake),
+           "interp_keep": sorted(int(f) for f in getattr(ctx, "interp_keep", ())),
+           "render_frames": N, "samples": ctx.samples, "render_opts": ctx.render_opts},
+          open(os.path.join(out, "meta.json"), "w"), indent=1)
+if opts["--skip-existing"]:
+    have = lambda f: os.path.exists(os.path.join(out, "%04d.png" % f)) and os.path.getsize(os.path.join(out, "%04d.png" % f)) > 0
+    todo = [f for f in frames if not have(f)]
+    print("SKIP_EXISTING %d of %d frames already rendered" % (len(frames) - len(todo), len(frames)))
+    if not todo:
+        core.save_post(ctx, os.path.join(out, "post.json"))
+        sys.exit(0)
+    if spec.startswith("odd") and todo != frames:
+        spec = "list"   # fall back to per-frame renders for the remaining odd frames
+    frames = todo
+if ctx.needs_bake and (frames != list(range(1, N + 1))):
+    tb = time.time()
+    core.bake_all(ctx)
+    print("BAKE_TIME %.1fs" % (time.time() - tb))
+if opts["--save-blend"]:
+    os.makedirs(os.path.join(core.WORK, "blend"), exist_ok=True)
+    bpy.ops.wm.save_as_mainfile(filepath=os.path.join(core.WORK, "blend", shot_id + ".blend"), copy=True)
+
+sc = bpy.context.scene
+tr = time.time()
+if frames == list(range(frames[0], frames[-1] + 1)) and len(frames) > 1:
+    sc.frame_start, sc.frame_end = frames[0], frames[-1]
+    sc.render.filepath = os.path.join(out, "####")
+    bpy.ops.render.render(animation=True)
+elif spec.startswith("odd") and len(frames) > 1 and frames == list(range(frames[0], frames[-1] + 1, 2)):
+    # every other frame via the animation path (random access -> baked above when ctx.needs_bake)
+    sc.frame_start, sc.frame_end, sc.frame_step = frames[0], frames[-1], 2
+    sc.render.filepath = os.path.join(out, "####")
+    bpy.ops.render.render(animation=True)
+else:
+    for f in frames:
+        sc.frame_set(f)
+        sc.render.filepath = os.path.join(out, "%04d.png" % f)
+        bpy.ops.render.render(write_still=True)
+dt = time.time() - tr
+print("RENDER_TIME %.1fs for %d frames (%.2fs/frame)" % (dt, len(frames), dt / max(1, len(frames))))
+core.save_post(ctx, os.path.join(out, "post.json"))
+
+if sheet:
+    import subprocess
+    files = [os.path.join(out, "%04d.png" % f) for f in sheet]
+    dst = os.path.join(out, "sheet.png")
+    labels = []
+    for f, p in zip(sheet, files):
+        labels += ["-label", "f%d" % f, p]
+    subprocess.run(["montage", *labels, "-tile", "%dx" % min(len(files), 6), "-geometry", "+3+3",
+                    "-background", "#222", "-fill", "white", "-pointsize", "14", dst], check=False)
+    print("SHEET", dst)
+
+===== FILE: psalm22/blender/lib/core.py =====
+"""Core helpers shared by every shot script (runs inside Blender 4.5, EEVEE Next).
+
+Conventions
+- Units: metres. Z is up. A standing adult is ~1.75 m. Ground at z=0 unless a terrain says otherwise.
+- Portrait frame: render 540x960 (final), 270x480 (preview). Compose for 9:16 - keep key subjects in
+  the centre square (the social-media preview crop) and leave the lower ~30% calm-ish for captions.
+- Animate with explicit per-frame keys (`key_fn`) or a few eased keys (`keys`). Everything must be
+  parameterised by ctx.nframes / ctx.render_frames so the timing can change without edits.
+- Frames are 1-based: the shot's first frame is 1, last rendered frame is ctx.render_frames.
+"""
+import bpy, math, os, random, json
+from mathutils import Vector, Euler, Matrix, Color, noise
+from . import polyhaven as ph
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+BLENDER_DIR = os.path.dirname(HERE)
+ROOT = os.path.dirname(BLENDER_DIR)
+WORK = os.environ.get("WORK", "/opt/work/psalm22")
+ASSETS = "/opt/assets"
+
+
+# --------------------------------------------------------------------------------------------
+# Context
+# --------------------------------------------------------------------------------------------
+class Ctx:
+    """Shot context handed to build(ctx)."""
+
+    def __init__(self, shot, quality="preview", fps=24):
+        self.shot = shot
+        self.id = shot["id"]
+        self.fps = fps
+        self.quality = quality
+        self.nframes = shot["nframes"]              # frames on the final timeline
+        self.render_frames = shot["render_frames"]  # nframes + dissolve tail
+        self.phrases = shot.get("phrases", [])      # [{"text","start","end"}] seconds relative to shot start
+        self.seed = sum(ord(c) for c in self.id)
+        self.samples = None          # override EEVEE samples for final quality
+        self.post = {}               # hints for the compositor (grade, bloom, vignette, ...)
+        self.needs_bake = False      # set True when physics/particles need baking
+        self.render_opts = {}        # passed to configure_render
+        self.interp = False          # True: final render at 12 fps (odd frames) + RIFE fills evens (see docs/interp.md)
+        random.seed(self.seed)
+
+    @property
+    def end(self):
+        return self.render_frames
+
+    def frame(self, seconds):
+        """Seconds (relative to shot start) -> 1-based frame."""
+        return 1 + seconds * self.fps
+
+    def sec(self, frame):
+        return (frame - 1) / self.fps
+
+    def phrase_frames(self, i):
+        p = self.phrases[i]
+        return self.frame(p["start"]), self.frame(p["end"])
+
+    def u(self, frame):
+        """Normalised progress 0..1 across the timeline part of the shot (tail continues > 1)."""
+        return (frame - 1) / max(1, self.nframes - 1)
+
+
+# --------------------------------------------------------------------------------------------
+# Scene / render
+# --------------------------------------------------------------------------------------------
+def reset_scene(ctx):
+    bpy.ops.wm.read_factory_settings(use_empty=True)
+    sc = bpy.context.scene
+    sc.render.fps = ctx.fps
+    sc.frame_start = 1
+    sc.frame_end = ctx.render_frames
+    sc.frame_set(1)
+    w = bpy.data.worlds.new("World")
+    sc.world = w
+    w.use_nodes = True
+    sc.render.engine = "BLENDER_EEVEE_NEXT"
+    sc.view_settings.view_transform = "AgX"
+    sc.view_settings.look = "AgX - Medium High Contrast"
+    sc.unit_settings.system = "METRIC"
+    return sc
+
+
+def configure_render(ctx, samples=None, raytracing=False, volumetrics="medium", vol_shadows=True,
+                     motion_blur=False, gtao=True, shadow_scale=1.0, film_transparent=False,
+                     look=None, exposure=0.0, fast_gi=False):
+    """Final render configuration. Called by the runner after build(); shots pass options through
+    ctx.render_opts (same keyword names)."""
+    sc = bpy.context.scene
+    r = sc.render
+    if ctx.quality == "final":
+        r.resolution_x, r.resolution_y = 540, 960
+        n = samples or ctx.samples or 8
+    elif ctx.quality == "draft":
+        r.resolution_x, r.resolution_y = 540, 960
+        n = 3
+    else:
+        r.resolution_x, r.resolution_y = 270, 480
+        n = 3
+    r.resolution_percentage = 100
+    r.film_transparent = film_transparent
+    r.use_motion_blur = motion_blur
+    r.motion_blur_shutter = 0.5
+    ee = sc.eevee
+    ee.taa_render_samples = n
+    ee.use_raytracing = raytracing
+    if raytracing:
+        ee.ray_tracing_method = "SCREEN"
+        ee.ray_tracing_options.resolution_scale = "2"
+    ee.use_fast_gi = fast_gi
+    ee.use_gtao = gtao
+    ee.gtao_distance = 0.8
+    ee.use_shadows = True
+    ee.shadow_ray_count = 1
+    ee.shadow_step_count = 6
+    ee.shadow_resolution_scale = shadow_scale
+    ee.use_volumetric_shadows = vol_shadows
+    q = {"low": ("16", 32), "medium": ("8", 48), "high": ("4", 64)}[volumetrics]
+    ee.volumetric_tile_size, ee.volumetric_samples = q
+    ee.volumetric_shadow_samples = 12
+    ee.motion_blur_steps = 1
+    r.filter_size = 1.5
+    sc.view_settings.view_transform = "AgX"
+    if look:
+        sc.view_settings.look = look
+    sc.view_settings.exposure = exposure
+    r.image_settings.file_format = "PNG"
+    r.image_settings.color_mode = "RGB"
+    r.image_settings.color_depth = "8"
+    r.image_settings.compression = 15
+
+
+# --------------------------------------------------------------------------------------------
+# Animation helpers
+# --------------------------------------------------------------------------------------------
+def smoothstep(x):
+    x = min(1.0, max(0.0, x))
+    return x * x * (3 - 2 * x)
+
+
+def smootherstep(x):
+    x = min(1.0, max(0.0, x))
+    return x * x * x * (x * (x * 6 - 15) + 10)
+
+
+def ease_in_out(x):
+    x = min(1.0, max(0.0, x))
+    return 0.5 - 0.5 * math.cos(math.pi * x)
+
+
+def ease_out(x):
+    x = min(1.0, max(0.0, x))
+    return 1 - (1 - x) ** 3
+
+
+def ease_in(x):
+    x = min(1.0, max(0.0, x))
+    return x ** 3
+
+
+def lerp(a, b, t):
+    if isinstance(a, (tuple, list, Vector)):
+        return type(a)([a[i] + (b[i] - a[i]) * t for i in range(len(a))]) if not isinstance(a, Vector) else a.lerp(b, t)
+    return a + (b - a) * t
+
+
+def keys(target, path, pairs, interp="BEZIER", index=-1):
+    """Insert keyframes: pairs = [(frame, value), ...]. Bezier with auto-clamped handles = eased."""
+    for f, v in pairs:
+        _set_path(target, path, v, index)
+        target.keyframe_insert(data_path=path, frame=f, index=index)
+    _set_interp(target, path, interp)
+
+
+def key_fn(target, path, fn, f0=1, f1=None, step=1, index=-1):
+    """Key every `step` frames from f0..f1 with value fn(frame). Linear interpolation."""
+    f1 = f1 if f1 is not None else bpy.context.scene.frame_end
+    f = f0
+    while f <= f1:
+        _set_path(target, path, fn(f), index)
+        target.keyframe_insert(data_path=path, frame=f, index=index)
+        f += step
+    _set_interp(target, path, "LINEAR")
+
+
+def _set_path(target, path, v, index):
+    if index >= 0:
+        getattr(target, path)[index] = v
+    else:
+        try:
+            setattr(target, path, v)
+        except (AttributeError, TypeError):
+            # node socket default_value etc. accessed by path_resolve
+            target.path_resolve(path)
+            exec("target.%s = v" % path)
+
+
+def _set_interp(target, path, interp):
+    ad = target.animation_data if hasattr(target, "animation_data") else None
+    if ad is None and hasattr(target, "id_data"):
+        ad = target.id_data.animation_data
+    if not ad or not ad.action:
+        return
+    for fc in _fcurves(ad.action):
+        if fc.data_path.endswith(path):
+            for kp in fc.keyframe_points:
+                kp.interpolation = interp
+                if interp == "BEZIER":
+                    kp.handle_left_type = kp.handle_right_type = "AUTO_CLAMPED"
+
+
+def _fcurves(action):
+    if hasattr(action, "fcurves") and len(action.fcurves):
+        return action.fcurves
+    out = []
+    for layer in getattr(action, "layers", []):
+        for strip in layer.strips:
+            for cb in strip.channelbags:
+                out.extend(cb.fcurves)
+    return out
+
+
+def shake(f, amp=0.01, freq=0.6, seed=0):
+    """Smooth handheld noise vector for frame f (add to a camera location/rotation)."""
+    t = f * freq / 24.0
+    return Vector((noise.noise(Vector((t, seed, 0.3))), noise.noise(Vector((seed, t, 1.7))),
+                   noise.noise(Vector((2.1, seed, t))))) * amp
+
+
+# --------------------------------------------------------------------------------------------
+# Objects / camera / lights
+# --------------------------------------------------------------------------------------------
+def link(obj, coll=None):
+    (coll or bpy.context.scene.collection).objects.link(obj)
+    return obj
+
+
+def collection(name, parent=None):
+    c = bpy.data.collections.new(name)
+    (parent or bpy.context.scene.collection).children.link(c)
+    return c
+
+
+def look_at(obj, target, roll=0.0):
+    d = Vector(target) - obj.location
+    q = d.to_track_quat("-Z", "Y")
+    obj.rotation_euler = q.to_euler()
+    if roll:
+        obj.rotation_euler.rotate_axis("Z", math.radians(roll))
+    return obj.rotation_euler.copy()
+
+
+def look_rot(loc, target, roll=0.0):
+    e = (Vector(target) - Vector(loc)).to_track_quat("-Z", "Y").to_euler()
+    if roll:
+        e.rotate_axis("Z", math.radians(roll))
+    return e
+
+
+def camera(loc=(0, -6, 1.6), target=(0, 0, 1.5), lens=35, name="Camera", fstop=None, focus=None,
+           sensor=36, clip_end=20000):
+    """Create + activate a camera. fstop enables DOF; focus = distance (float) or object."""
+    cd = bpy.data.cameras.new(name)
+    cd.lens = lens
+    cd.sensor_fit = "VERTICAL"
+    cd.sensor_height = sensor   # vertical sensor so lens values feel like full-frame on a portrait frame
+    cd.clip_start = 0.02
+    cd.clip_end = clip_end
+    cam = link(bpy.data.objects.new(name, cd))
+    cam.location = loc
+    look_at(cam, target)
+    if fstop:
+        cd.dof.use_dof = True
+        cd.dof.aperture_fstop = fstop
+        if isinstance(focus, bpy.types.Object):
+            cd.dof.focus_object = focus
+        elif focus is not None:
+            cd.dof.focus_distance = focus
+        else:
+            cd.dof.focus_distance = (Vector(target) - Vector(loc)).length
+    bpy.context.scene.camera = cam
+    return cam
+
+
+def animate_camera(cam, fn, f0=1, f1=None, step=1):
+    """fn(frame) -> (location, target[, roll_deg[, lens]]). Keys every frame (smooth, exact)."""
+    f1 = f1 or bpy.context.scene.frame_end
+    f = f0
+    while f <= f1:
+        r = fn(f)
+        loc, tgt = Vector(r[0]), Vector(r[1])
+        roll = r[2] if len(r) > 2 else 0.0
+        cam.location = loc
+        cam.rotation_euler = look_rot(loc, tgt, roll)
+        cam.keyframe_insert("location", frame=f)
+        cam.keyframe_insert("rotation_euler", frame=f)
+        if len(r) > 3 and r[3]:
+            cam.data.lens = r[3]
+            cam.data.keyframe_insert("lens", frame=f)
+        if cam.data.dof.use_dof and cam.data.dof.focus_object is None and len(r) > 4 and r[4]:
+            cam.data.dof.focus_distance = r[4]
+            cam.data.dof.keyframe_insert("focus_distance", frame=f)
+        f += step
+    _set_interp(cam, "location", "LINEAR")
+    _set_interp(cam, "rotation_euler", "LINEAR")
+    _unwrap_euler(cam)
+
+
+def _unwrap_euler(obj):
+    ad = obj.animation_data
+    if not ad or not ad.action:
+        return
+    for fc in _fcurves(ad.action):
+        if fc.data_path == "rotation_euler":
+            prev = None
+            for kp in fc.keyframe_points:
+                v = kp.co[1]
+                if prev is not None:
+                    while v - prev > math.pi:
+                        v -= 2 * math.pi
+                    while v - prev < -math.pi:
+                        v += 2 * math.pi
+                kp.co[1] = v
+                kp.handle_left[1] = kp.handle_right[1] = v
+                prev = v
+
+
+def kelvin(k):
+    """Approximate blackbody colour (linear-ish RGB) for colour temperature k."""
+    t = k / 100.0
+    if t <= 66:
+        r = 255
+        g = 99.4708025861 * math.log(t) - 161.1195681661
+        b = 0 if t <= 19 else 138.5177312231 * math.log(t - 10) - 305.0447927307
+    else:
+        r = 329.698727446 * ((t - 60) ** -0.1332047592)
+        g = 288.1221695283 * ((t - 60) ** -0.0755148492)
+        b = 255
+    c = [min(255, max(0, x)) / 255.0 for x in (r, g, b)]
+    return tuple(x ** 2.2 for x in c)
+
+
+def light(kind="AREA", loc=(0, 0, 5), energy=100, color=(1, 1, 1), target=None, size=1.0, name=None,
+          spot_size=45, spot_blend=0.3, shadow=True, temp=None, volume=1.0, rot=None):
+    """kind: SUN (energy = W/m2 ~1-10), AREA/POINT/SPOT (energy in W)."""
+    ld = bpy.data.lights.new(name or kind.lower(), kind)
+    ld.energy = energy
+    ld.color = kelvin(temp) if temp else color
+    ld.use_shadow = shadow
+    ld.volume_factor = volume
+    if kind == "AREA":
+        ld.size = size
+    elif kind == "SUN":
+        ld.angle = math.radians(size if size != 1.0 else 1.0)
+    else:
+        ld.shadow_soft_size = size if kind in ("POINT", "SPOT") else ld.shadow_soft_size
+    if kind == "SPOT":
+        ld.spot_size = math.radians(spot_size)
+        ld.spot_blend = spot_blend
+    ob = link(bpy.data.objects.new(ld.name, ld))
+    ob.location = loc
+    if rot is not None:
+        ob.rotation_euler = [math.radians(a) for a in rot]
+    elif target is not None:
+        look_at(ob, target)
+    return ob
+
+
+def sun(elevation=30, azimuth=0, energy=4, color=None, temp=5500, angle=1.0, volume=1.0):
+    """Sun light. azimuth 0 = light comes FROM -Y (in front of a camera looking +Y). Degrees."""
+    ld = bpy.data.lights.new("Sun", "SUN")
+    ld.energy = energy
+    ld.color = color if color else kelvin(temp)
+    ld.angle = math.radians(angle)
+    ld.volume_factor = volume
+    ob = link(bpy.data.objects.new("Sun", ld))
+    el, az = math.radians(elevation), math.radians(azimuth)
+    d = Vector((math.sin(az) * math.cos(el), -math.cos(az) * math.cos(el), math.sin(el)))  # towards the sun
+    ob.rotation_euler = (-d).to_track_quat("-Z", "Y").to_euler()
+    ob.location = d * 50
+    return ob
+
+
+# --------------------------------------------------------------------------------------------
+# World
+# --------------------------------------------------------------------------------------------
+def _world():
+    w = bpy.context.scene.world
+    nt = w.node_tree
+    for n in list(nt.nodes):
+        nt.nodes.remove(n)
+    out = nt.nodes.new("ShaderNodeOutputWorld")
+    return w, nt, out
+
+
+def world_color(color=(0.02, 0.025, 0.035), strength=1.0):
+    w, nt, out = _world()
+    bg = nt.nodes.new("ShaderNodeBackground")
+    bg.inputs[0].default_value = (*color, 1)
+    bg.inputs[1].default_value = strength
+    nt.links.new(bg.outputs[0], out.inputs["Surface"])
+    return bg
+
+
+def world_sky(sun_elevation=20, sun_rotation=0, strength=1.0, air=1.0, dust=1.0, ozone=1.0,
+              altitude=0, sun_disc=True, sun_size=0.545, sun_intensity=1.0, tint=None):
+    """Nishita physical sky. sun_rotation 0 => sun toward -Y? (Blender: rotation around Z from +Y)."""
+    w, nt, out = _world()
+    sky = nt.nodes.new("ShaderNodeTexSky")
+    sky.sky_type = "NISHITA"
+    sky.sun_elevation = math.radians(sun_elevation)
+    sky.sun_rotation = math.radians(sun_rotation)
+    sky.air_density, sky.dust_density, sky.ozone_density = air, dust, ozone
+    sky.altitude = altitude
+    sky.sun_disc = sun_disc
+    sky.sun_size = math.radians(sun_size)
+    sky.sun_intensity = sun_intensity
+    bg = nt.nodes.new("ShaderNodeBackground")
+    bg.inputs[1].default_value = strength
+    if tint:
+        mix = nt.nodes.new("ShaderNodeMixRGB")
+        mix.blend_type = "MULTIPLY"
+        mix.inputs[0].default_value = 1
+        mix.inputs[2].default_value = (*tint, 1)
+        nt.links.new(sky.outputs[0], mix.inputs[1])
+        nt.links.new(mix.outputs[0], bg.inputs[0])
+    else:
+        nt.links.new(sky.outputs[0], bg.inputs[0])
+    nt.links.new(bg.outputs[0], out.inputs["Surface"])
+    return sky, bg
+
+
+def world_hdri(asset, strength=1.0, rotation=0.0, res="2k", tint=None, saturation=1.0, path=None,
+               background_strength=None):
+    """Poly Haven HDRI as world. rotation in degrees around Z. Optional tint (rgb multiply) and
+    saturation. background_strength lets the visible sky differ from the lighting strength."""
+    p = path or ph.hdri_path(asset, res)
+    w, nt, out = _world()
+    tc = nt.nodes.new("ShaderNodeTexCoord")
+    mp = nt.nodes.new("ShaderNodeMapping")
+    mp.inputs["Rotation"].default_value[2] = math.radians(rotation)
+    env = nt.nodes.new("ShaderNodeTexEnvironment")
+    env.image = bpy.data.images.load(p, check_existing=True)
+    nt.links.new(tc.outputs["Generated"], mp.inputs["Vector"])
+    nt.links.new(mp.outputs["Vector"], env.inputs["Vector"])
+    col = env.outputs["Color"]
+    if saturation != 1.0:
+        hs = nt.nodes.new("ShaderNodeHueSaturation")
+        hs.inputs["Saturation"].default_value = saturation
+        nt.links.new(col, hs.inputs["Color"])
+        col = hs.outputs["Color"]
+    if tint:
+        mix = nt.nodes.new("ShaderNodeMixRGB")
+        mix.blend_type = "MULTIPLY"
+        mix.inputs[0].default_value = 1
+        mix.inputs[2].default_value = (*tint, 1)
+        nt.links.new(col, mix.inputs[1])
+        col = mix.outputs[0]
+    bg = nt.nodes.new("ShaderNodeBackground")
+    bg.inputs[1].default_value = strength
+    nt.links.new(col, bg.inputs[0])
+    if background_strength is not None:
+        lp = nt.nodes.new("ShaderNodeLightPath")
+        bg2 = nt.nodes.new("ShaderNodeBackground")
+        bg2.inputs[1].default_value = background_strength
+        nt.links.new(col, bg2.inputs[0])
+        ms = nt.nodes.new("ShaderNodeMixShader")
+        nt.links.new(lp.outputs["Is Camera Ray"], ms.inputs[0])
+        nt.links.new(bg.outputs[0], ms.inputs[1])
+        nt.links.new(bg2.outputs[0], ms.inputs[2])
+        nt.links.new(ms.outputs[0], out.inputs["Surface"])
+    else:
+        nt.links.new(bg.outputs[0], out.inputs["Surface"])
+    return env, bg, mp
+
+
+def world_volume(*a, **k):
+    raise RuntimeError("Do not use a world volume: in EEVEE Next it is infinite and blacks out the sky "
+                       "and sun. Use core.atmosphere(...) or core.fog_box(...) instead.")
+
+
+def atmosphere(density=0.002, color=(0.8, 0.75, 0.7), anisotropy=0.3, size=(600, 600, 150), center=(0, 0, 60),
+               noise_scale=None, name="Atmosphere"):
+    """Large finite fog volume for aerial perspective + god rays (with sun volume shadows). Keep
+    density small (0.0005-0.01). The sky (world) stays visible through it."""
+    return fog_box(center=center, size=size, density=density, color=color, anisotropy=anisotropy,
+                   noise_scale=noise_scale, name=name)
+
+
+# --------------------------------------------------------------------------------------------
+# Materials
+# --------------------------------------------------------------------------------------------
+def mat(name, color=(0.8, 0.8, 0.8), rough=0.5, metal=0.0, spec=0.5, emission=None, emission_strength=0.0,
+        alpha=1.0, sss=0.0, sss_radius=(1.0, 0.4, 0.2), transmission=0.0, ior=1.45, coat=0.0, sheen=0.0):
+    m = bpy.data.materials.new(name)
+    m.use_nodes = True
+    b = m.node_tree.nodes["Principled BSDF"]
+    b.inputs["Base Color"].default_value = (*color[:3], 1)
+    b.inputs["Roughness"].default_value = rough
+    b.inputs["Metallic"].default_value = metal
+    b.inputs["Specular IOR Level"].default_value = spec
+    b.inputs["IOR"].default_value = ior
+    if emission is not None:
+        b.inputs["Emission Color"].default_value = (*emission[:3], 1)
+        b.inputs["Emission Strength"].default_value = emission_strength
+    if alpha < 1:
+        b.inputs["Alpha"].default_value = alpha
+        m.surface_render_method = "BLENDED"
+    if sss:
+        b.inputs["Subsurface Weight"].default_value = sss
+        b.inputs["Subsurface Radius"].default_value = sss_radius
+    if transmission:
+        b.inputs["Transmission Weight"].default_value = transmission
+    if coat:
+        b.inputs["Coat Weight"].default_value = coat
+    if sheen:
+        b.inputs["Sheen Weight"].default_value = sheen
+    return m
+
+
+def bsdf(m):
+    return m.node_tree.nodes.get("Principled BSDF")
+
+
+def mat_emission(name, color=(1, 0.8, 0.5), strength=10.0):
+    m = bpy.data.materials.new(name)
+    m.use_nodes = True
+    nt = m.node_tree
+    nt.nodes.remove(nt.nodes["Principled BSDF"])
+    e = nt.nodes.new("ShaderNodeEmission")
+    e.inputs[0].default_value = (*color, 1)
+    e.inputs[1].default_value = strength
+    nt.links.new(e.outputs[0], nt.nodes["Material Output"].inputs[0])
+    return m
+
+
+def mat_volume(name, density=0.1, color=(0.8, 0.8, 0.8), anisotropy=0.2, noise_scale=None, noise_contrast=1.0,
+               emission=None, emission_strength=0.0):
+    """Volume material for fog boxes / smoke. noise_scale adds wispy density variation."""
+    m = bpy.data.materials.new(name)
+    m.use_nodes = True
+    nt = m.node_tree
+    nt.nodes.remove(nt.nodes["Principled BSDF"])
+    v = nt.nodes.new("ShaderNodeVolumePrincipled")
+    v.inputs["Color"].default_value = (*color, 1)
+    v.inputs["Anisotropy"].default_value = anisotropy
+    if emission:
+        v.inputs["Emission Color"].default_value = (*emission, 1)
+        v.inputs["Emission Strength"].default_value = emission_strength
+    if noise_scale:
+        tex = nt.nodes.new("ShaderNodeTexNoise")
+        tex.inputs["Scale"].default_value = noise_scale
+        tex.inputs["Detail"].default_value = 3
+        mr = nt.nodes.new("ShaderNodeMapRange")
+        mr.inputs["From Min"].default_value = 0.35 + 0.1 * (noise_contrast - 1)
+        mr.inputs["From Max"].default_value = 0.75
+        mr.inputs["To Max"].default_value = density
+        nt.links.new(tex.outputs["Fac"], mr.inputs["Value"])
+        nt.links.new(mr.outputs["Result"], v.inputs["Density"])
+        m["noise_node"] = tex.name
+    else:
+        v.inputs["Density"].default_value = density
+    nt.links.new(v.outputs[0], nt.nodes["Material Output"].inputs["Volume"])
+    return m
+
+
+def mat_pbr(asset, scale=1.0, res="1k", projection="BOX", tint=None, rough_mult=1.0, rough_add=0.0,
+            bump=1.0, name=None, hue_sat_val=None, blend=0.25):
+    """Poly Haven texture set as a material. projection 'BOX' uses object coordinates (no UVs needed,
+    `scale` = repeats per metre); 'UV' uses the mesh UVs (scale = UV repeat)."""
+    maps = ph.texture_maps(asset, res)
+    m = bpy.data.materials.new(name or asset)
+    m.use_nodes = True
+    nt = m.node_tree
+    b = nt.nodes["Principled BSDF"]
+    tc = nt.nodes.new("ShaderNodeTexCoord")
+    mp = nt.nodes.new("ShaderNodeMapping")
+    mp.inputs["Scale"].default_value = (scale, scale, scale)
+    nt.links.new(tc.outputs["Object" if projection == "BOX" else "UV"], mp.inputs["Vector"])
+
+    def img(path, noncolor=False):
+        t = nt.nodes.new("ShaderNodeTexImage")
+        t.image = bpy.data.images.load(path, check_existing=True)
+        if noncolor:
+            t.image.colorspace_settings.name = "Non-Color"
+        if projection == "BOX":
+            t.projection = "BOX"
+            t.projection_blend = blend
+        nt.links.new(mp.outputs["Vector"], t.inputs["Vector"])
+        return t
+
+    if "diff" in maps:
+        d = img(maps["diff"])
+        col = d.outputs["Color"]
+        if hue_sat_val:
+            hs = nt.nodes.new("ShaderNodeHueSaturation")
+            hs.inputs["Hue"].default_value, hs.inputs["Saturation"].default_value, hs.inputs["Value"].default_value = hue_sat_val
+            nt.links.new(col, hs.inputs["Color"])
+            col = hs.outputs["Color"]
+        if tint:
+            mx = nt.nodes.new("ShaderNodeMixRGB")
+            mx.blend_type = "MULTIPLY"
+            mx.inputs[0].default_value = 1
+            mx.inputs[2].default_value = (*tint, 1)
+            nt.links.new(col, mx.inputs[1])
+            col = mx.outputs[0]
+        nt.links.new(col, b.inputs["Base Color"])
+    if "rough" in maps:
+        r = img(maps["rough"], True)
+        mth = nt.nodes.new("ShaderNodeMath")
+        mth.operation = "MULTIPLY_ADD"
+        mth.inputs[1].default_value = rough_mult
+        mth.inputs[2].default_value = rough_add
+        mth.use_clamp = True
+        nt.links.new(r.outputs["Color"], mth.inputs[0])
+        nt.links.new(mth.outputs[0], b.inputs["Roughness"])
+    if "nor" in maps and bump > 0:
+        n = img(maps["nor"], True)
+        nm = nt.nodes.new("ShaderNodeNormalMap")
+        nm.inputs["Strength"].default_value = bump
+        nt.links.new(n.outputs["Color"], nm.inputs["Color"])
+        nt.links.new(nm.outputs["Normal"], b.inputs["Normal"])
+    m["ph_maps"] = json.dumps(maps)
+    return m
+
+
+def assign(obj, material, slot=None):
+    if obj.data.materials and slot is None:
+        obj.data.materials[0] = material
+    else:
+        obj.data.materials.append(material)
+    return obj
+
+
+# --------------------------------------------------------------------------------------------
+# Geometry
+# --------------------------------------------------------------------------------------------
+def _new_mesh_obj(name, verts, faces, coll=None):
+    me = bpy.data.meshes.new(name)
+    me.from_pydata(verts, [], faces)
+    me.update()
+    return link(bpy.data.objects.new(name, me), coll)
+
+
+def shade_smooth(obj, angle=None):
+    for p in obj.data.polygons:
+        p.use_smooth = True
+    if angle is not None and hasattr(obj, "modifiers"):
+        try:
+            bpy.context.view_layer.objects.active = obj
+            obj.select_set(True)
+            bpy.ops.object.shade_auto_smooth(angle=math.radians(angle))
+        except Exception:
+            pass
+    return obj
+
+
+def box(name="Box", size=(1, 1, 1), loc=(0, 0, 0), rot=(0, 0, 0), mat_=None, bevel=0.0, coll=None):
+    sx, sy, sz = [s / 2 for s in size]
+    v = [(-sx, -sy, -sz), (sx, -sy, -sz), (sx, sy, -sz), (-sx, sy, -sz), (-sx, -sy, sz), (sx, -sy, sz), (sx, sy, sz), (-sx, sy, sz)]
+    f = [(0, 3, 2, 1), (4, 5, 6, 7), (0, 1, 5, 4), (1, 2, 6, 5), (2, 3, 7, 6), (3, 0, 4, 7)]
+    o = _new_mesh_obj(name, v, f, coll)
+    o.location = loc
+    o.rotation_euler = [math.radians(a) for a in rot]
+    if bevel:
+        bm = o.modifiers.new("bevel", "BEVEL")
+        bm.width = bevel
+        bm.segments = 2
+    if mat_:
+        assign(o, mat_)
+    return o
+
+
+def prim(kind, name=None, loc=(0, 0, 0), rot=(0, 0, 0), scale=(1, 1, 1), mat_=None, **kw):
+    """bpy.ops primitive wrapper: kind in plane, cube, uv_sphere, ico_sphere, cylinder, cone, torus, circle, grid."""
+    fn = getattr(bpy.ops.mesh, "primitive_%s_add" % kind)
+    fn(location=loc, rotation=[math.radians(a) for a in rot], **kw)
+    o = bpy.context.active_object
+    o.scale = scale
+    if name:
+        o.name = name
+    if mat_:
+        assign(o, mat_)
+    return o
+
+
+def fbm(x, y, octaves=5, lac=2.0, gain=0.5, seed=0.0):
+    a, f, s = 1.0, 1.0, 0.0
+    for i in range(octaves):
+        s += a * noise.noise(Vector((x * f, y * f, seed + i * 7.31)))
+        a *= gain
+        f *= lac
+    return s
+
+
+def terrain(name="Terrain", size=200.0, res=160, height=1.5, scale=0.04, seed=0.0, mat_=None,
+            height_fn=None, sizey=None, coll=None):
+    """Grid terrain. Height = fbm noise * height (+ height_fn(x, y) if given). Returns object with
+    .height_at(x, y) helper stored in core.TERRAIN for prop placement."""
+    sx, sy = size, (sizey or size)
+    nx, ny = res, int(res * sy / sx)
+    verts, faces = [], []
+    for j in range(ny + 1):
+        for i in range(nx + 1):
+            x = -sx / 2 + sx * i / nx
+            y = -sy / 2 + sy * j / ny
+            z = fbm(x * scale, y * scale, seed=seed) * height
+            if height_fn:
+                z += height_fn(x, y)
+            verts.append((x, y, z))
+    for j in range(ny):
+        for i in range(nx):
+            a = j * (nx + 1) + i
+            faces.append((a, a + 1, a + nx + 2, a + nx + 1))
+    o = _new_mesh_obj(name, verts, faces, coll)
+    shade_smooth(o)
+    if mat_:
+        assign(o, mat_)
+    TERRAINS[name] = (sx, sy, height, scale, seed, height_fn)
+    return o
+
+
+TERRAINS = {}
+
+
+def height_at(name, x, y):
+    sx, sy, height, scale, seed, height_fn = TERRAINS[name]
+    z = fbm(x * scale, y * scale, seed=seed) * height
+    if height_fn:
+        z += height_fn(x, y)
+    return z
+
+
+def golgotha_hill(peak=9.0, radius=38.0, cx=0.0, cy=0.0):
+    """Height function for a rounded rocky hill (add to terrain via height_fn)."""
+    def f(x, y):
+        d2 = ((x - cx) ** 2 + (y - cy) ** 2) / (radius ** 2)
+        return peak * math.exp(-d2 * 2.2)
+    return f
+
+
+def displace(obj, strength=0.2, scale=1.0, texture="CLOUDS", subdiv=0, midlevel=0.5, coords="LOCAL"):
+    if subdiv:
+        s = obj.modifiers.new("subdiv", "SUBSURF")
+        s.levels = s.render_levels = subdiv
+    t = bpy.data.textures.new(obj.name + "_disp", texture)
+    if hasattr(t, "noise_scale"):
+        t.noise_scale = scale
+    m = obj.modifiers.new("displace", "DISPLACE")
+    m.texture = t
+    m.strength = strength
+    m.mid_level = midlevel
+    m.texture_coords = coords
+    return m
+
+
+def append_blend(path, names=None, kind="objects", coll=None):
+    """Append datablocks from a .blend. Returns appended objects (linked to coll / scene)."""
+    with bpy.data.libraries.load(path, link=False) as (src, dst):
+        avail = getattr(src, kind)
+        setattr(dst, kind, [n for n in avail if (names is None or n in names)])
+    got = list(getattr(dst, kind))
+    if kind == "objects":
+        for o in got:
+            if o is not None:
+                link(o, coll)
+    return got
+
+
+def ph_model(asset, loc=(0, 0, 0), rot=(0, 0, 0), scale=1.0, res="1k", coll=None, name=None):
+    """Append a Poly Haven model (all its mesh objects), parented to an empty you can move."""
+    path = ph.model_blend(asset, res)
+    objs = [o for o in append_blend(path, kind="objects", coll=coll) if o is not None]
+    root = link(bpy.data.objects.new(name or asset, None), coll)
+    for o in objs:
+        if o.parent is None:
+            o.parent = root
+    root.location = loc
+    root.rotation_euler = [math.radians(a) for a in rot]
+    root.scale = (scale, scale, scale)
+    return root, objs
+
+
+def instance(src_root, loc, rot=(0, 0, 0), scale=1.0, coll=None):
+    """Cheap linked duplicate of a hierarchy (meshes shared)."""
+    root = link(bpy.data.objects.new(src_root.name + "_inst", None), coll)
+    for ch in src_root.children:
+        d = ch.copy()
+        link(d, coll)
+        d.parent = root
+    root.location = loc
+    root.rotation_euler = [math.radians(a) for a in rot]
+    root.scale = (scale, scale, scale) if not isinstance(scale, (tuple, list)) else scale
+    return root
+
+
+# --------------------------------------------------------------------------------------------
+# Common props
+# --------------------------------------------------------------------------------------------
+_WOOD = {}
+
+
+def wood_material(kind="rough_wood", scale=1.2, tint=(0.75, 0.62, 0.5)):
+    key = (kind, scale, tint)
+    m = _WOOD.get(key)
+    try:
+        m = m if (m is not None and m.name in bpy.data.materials) else None
+    except ReferenceError:  # material freed by a scene reset (several scenes built in one process)
+        m = None
+    if m is None:
+        _WOOD[key] = m = mat_pbr(kind, scale=scale, tint=tint, name="wood_" + kind)
+    return m
+
+
+def wooden_cross(loc=(0, 0, 0), height=4.3, beam=2.0, thick=0.2, cross_at=0.78, rot_z=0, name="Cross",
+                 material=None, sign=False, coll=None):
+    """Rough-hewn cross. loc = base on the ground. Returns root empty; child objects 'upright',
+    'beam' (and 'sign'). The crossbeam centre is at z = height*cross_at."""
+    material = material or wood_material()
+    root = link(bpy.data.objects.new(name, None), coll)
+    up = box(name + "_upright", (thick, thick * 0.95, height), (0, 0, height / 2), mat_=material, bevel=0.01, coll=coll)
+    bm = box(name + "_beam", (beam, thick * 0.9, thick * 0.85), (0, -thick * 0.05, height * cross_at), mat_=material, bevel=0.01, coll=coll)
+    for o in (up, bm):
+        o.parent = root
+        displace(o, strength=0.012, scale=0.08, subdiv=0)
+    parts = [up, bm]
+    if sign:
+        s = box(name + "_sign", (0.55, 0.03, 0.22), (0, -thick * 0.55, height * cross_at + 0.42),
+                mat_=mat_pbr("wood_table_worn", scale=2, tint=(0.9, 0.85, 0.75), name="sign_wood"), coll=coll)
+        s.parent = root
+        parts.append(s)
+    root.location = loc
+    root.rotation_euler = (0, 0, math.radians(rot_z))
+    return root
+
+
+def dust_motes(center=(0, 0, 1.5), size=(6, 6, 3), count=400, radius=0.004, color=(1.0, 0.92, 0.8),
+               emission=0.0, drift=(0.05, 0.02, 0.01), brownian=0.03, seed=0, coll=None, start=-60):
+    """Floating dust particles (backlit specks). Uses a particle system; sets ctx bake need via caller."""
+    v = []
+    rnd = random.Random(seed)
+    cx, cy, cz = center
+    for _ in range(count):
+        v.append((cx + (rnd.random() - 0.5) * size[0], cy + (rnd.random() - 0.5) * size[1], cz + (rnd.random() - 0.5) * size[2]))
+    em = _new_mesh_obj("dust_emitter", v, [], coll)
+    sp = prim("ico_sphere", name="dust_speck", subdivisions=1, radius=radius)
+    m = mat("dust", color, rough=1.0, emission=color if emission else None, emission_strength=emission)
+    assign(sp, m)
+    sp.hide_render = False
+    sp.location = (0, 0, -1000)
+    ps = em.modifiers.new("dust", "PARTICLE_SYSTEM").particle_system
+    st = ps.settings
+    st.count = count
+    st.emit_from = "VERT"
+    st.use_emit_random = False
+    st.frame_start = st.frame_end = start
+    st.lifetime = 100000
+    st.normal_factor = 0
+    st.object_align_factor = drift
+    st.brownian_factor = brownian
+    st.effector_weights.gravity = 0
+    st.render_type = "OBJECT"
+    st.instance_object = sp
+    st.particle_size = 1.0
+    st.size_random = 0.6
+    st.physics_type = "NEWTON"
+    em.show_instancer_for_render = False
+    return em
+
+
+def fog_box(center=(0, 0, 2), size=(20, 20, 4), density=0.03, color=(0.8, 0.78, 0.75), anisotropy=0.3,
+            noise_scale=None, name="Fog", coll=None):
+    o = box(name, size, center, coll=coll)
+    assign(o, mat_volume(name + "_vol", density, color, anisotropy, noise_scale))
+    return o
+
+
+def ground_plane(size=400, mat_=None, z=0.0, name="Ground"):
+    o = prim("plane", name=name, size=size, loc=(0, 0, z))
+    if mat_:
+        assign(o, mat_)
+    return o
+
+
+# --------------------------------------------------------------------------------------------
+# Baking / misc
+# --------------------------------------------------------------------------------------------
+def bake_all(ctx):
+    """Bake particles / cloth / rigid bodies sequentially so random-access frame renders work."""
+    sc = bpy.context.scene
+    cache_dir = os.path.join(WORK, "cache", ctx.id)
+    os.makedirs(cache_dir, exist_ok=True)
+    # Step the timeline once: particle systems and cloth without disk cache get evaluated in memory.
+    for f in range(sc.frame_start, sc.frame_end + 1):
+        sc.frame_set(f)
+    try:
+        with bpy.context.temp_override(scene=sc):
+            bpy.ops.ptcache.bake_all(bake=True)
+    except Exception as e:
+        print("bake_all warning:", e)
+    sc.frame_set(1)
+
+
+def save_post(ctx, path):
+    data = dict(ctx.post)
+    data["id"] = ctx.id
+    json.dump(data, open(path, "w"), indent=1)
+
+===== FILE: psalm22/blender/lib/polyhaven.py =====
+"""Download + cache CC0 assets from Poly Haven (works inside Blender or plain Python).
+
+    hdri_path("qwantani_sunset_puresky", "2k")            -> local .hdr path
+    texture_maps("dry_ground_01", "1k")                    -> {"diff":..., "rough":..., "nor":..., "disp":..., "arm":...}
+    model_blend("boulder_01", "1k")                        -> local .blend path (with textures beside it)
+
+Catalogs (names + categories): /opt/assets/polyhaven/{hdris,textures,models}_catalog.txt
+"""
+import json, os, ssl, time, urllib.request
+
+CACHE = "/opt/assets/polyhaven"
+API = "https://api.polyhaven.com"
+
+
+def _ctx():
+    ca = os.environ.get("SSL_CERT_FILE") or "/root/.ccr/ca-bundle.crt"
+    return ssl.create_default_context(cafile=ca) if os.path.exists(ca) else ssl.create_default_context()
+
+
+def _get(url, tries=4):
+    err = None
+    for i in range(tries):
+        try:
+            req = urllib.request.Request(url, headers={"User-Agent": "psalm22-film-pipeline/1.0 (blender)"})
+            with urllib.request.urlopen(req, context=_ctx(), timeout=120) as r:
+                return r.read()
+        except Exception as e:  # network hiccup: retry with backoff
+            err = e
+            time.sleep(2 ** (i + 1))
+    raise RuntimeError("download failed %s: %s" % (url, err))
+
+
+def _download(url, dest):
+    if os.path.exists(dest) and os.path.getsize(dest) > 0:
+        return dest
+    os.makedirs(os.path.dirname(dest), exist_ok=True)
+    tmp = dest + ".part%d" % os.getpid()
+    with open(tmp, "wb") as f:
+        f.write(_get(url))
+    os.replace(tmp, dest)
+    return dest
+
+
+def files(asset):
+    p = os.path.join(CACHE, "_files", asset + ".json")
+    if not os.path.exists(p):
+        os.makedirs(os.path.dirname(p), exist_ok=True)
+        data = _get("%s/files/%s" % (API, asset))
+        tmp = p + ".part%d" % os.getpid()
+        open(tmp, "wb").write(data)
+        os.replace(tmp, p)
+    return json.load(open(p))
+
+
+def hdri_path(asset, res="2k"):
+    f = files(asset)["hdri"][res]["hdr"]
+    return _download(f["url"], os.path.join(CACHE, "hdris", asset, os.path.basename(f["url"])))
+
+
+def texture_maps(asset, res="1k"):
+    """Return dict of local map paths. Keys: diff, rough, nor, disp, ao, arm (when available)."""
+    f = files(asset)
+    want = {"diff": ("Diffuse", "jpg"), "rough": ("Rough", "jpg"), "nor": ("nor_gl", "jpg"),
+            "disp": ("Displacement", "png"), "ao": ("AO", "jpg"), "arm": ("arm", "jpg")}
+    out = {}
+    for key, (name, fmt) in want.items():
+        if name in f and res in f[name]:
+            entry = f[name][res].get(fmt) or f[name][res].get("jpg") or f[name][res].get("png")
+            if entry:
+                out[key] = _download(entry["url"], os.path.join(CACHE, "textures", asset, res, os.path.basename(entry["url"])))
+    return out
+
+
+def model_blend(asset, res="1k"):
+    f = files(asset)["blend"][res]["blend"]
+    base = os.path.join(CACHE, "models", asset, res)
+    for rel, inc in f.get("include", {}).items():
+        _download(inc["url"], os.path.join(base, rel))
+    return _download(f["url"], os.path.join(base, os.path.basename(f["url"])))
+
+
+def catalog(kind):
+    return open(os.path.join(CACHE, kind + "_catalog.txt")).read().splitlines()
+
+===== FILE: psalm22/blender/shots/s00.py =====
+"""s00 - Golgotha, title shot (frame 1 = the social-media thumbnail).
+
+Three crosses with small crucified silhouettes on the skull-faced hill, seen from the plain at golden
+light. The sun hangs low just right of the centre cross, partly veiled; crepuscular rays fan out of it
+through the haze, towering clouds stand to the left and a dark storm front creeps in from the left
+(the darkness of s01a+ is coming). Slow push-in and gentle rise. The upper-middle sky stays calm for the
+'PSALM 22 / A Psalm of David' title (added by the compositor).
+"""
+import math
+import bpy
+import numpy as np
+from mathutils import Vector
+from lib import core as C, env as E
+
+HDRI = "table_mountain_2_puresky"
+VIS_SUN_OFF = (2.6, None)        # visible sun: degrees right of the view axis, elevation (None = HDRI's)
+LAMP = (152.0, 13.0)             # sun lamp (core az, el): back-right, low -> rims + raking light on the cliff
+CAM0 = ((0.0, -59.5, 7.5), (0.0, 0.6, 16.7), 70.0)    # loc, target, lens at frame 1
+CAM1 = ((0.0, -53.0, 8.6), (0.0, 0.6, 17.0), 70.0)     # at the end of the tail
+GOLD_MAP = [(0.0, (0.85, 0.95, 1.35)), (0.2, (1.0, 0.98, 1.05)), (0.4, (1.35, 0.95, 0.55)),
+            (0.6, (1.4, 0.93, 0.45)), (0.8, (1.25, 0.97, 0.65)), (1.0, (1.05, 1.0, 0.92))]
+
+
+def _dir(az, el):
+    a, e = math.radians(az), math.radians(el)
+    return Vector((math.sin(a) * math.cos(e), -math.cos(a) * math.cos(e), math.sin(e)))
+
+
+def _az(d):
+    return math.degrees(math.atan2(d.x, -d.y))
+
+
+def _uniform(T, name, value, keys=None):
+    """Scene-property uniform (cheap to animate). keys = [(frame, value), ...] -> linear."""
+    E.scene_prop(name, value)
+    if keys:
+        for f, v in keys:
+            E.scene_prop(name, v, f)
+        E._linear_keys(bpy.context.scene)
+    return E._lattr(T, name, value)
+
+
+def sky_fx(S, sun_vis, rays=0.55, ray_keys=None, storm=0.0, storm_keys=None, storm_tint=(0.30, 0.27, 0.29),
+           grad=0.35, grad_tint=(0.62, 0.55, 0.52), veil=0.0, gmap=None, gmix=0.75, gk=0.5, glow=0.0,
+           glow_color=(1.5, 1.0, 0.55), glow_width=0.35, prefix="sfx"):
+    """Camera-only sky treatment spliced in front of the env sky's background shader:
+    crepuscular rays radiating from sun_vis, a graduated darkening of the upper sky, and a dark storm
+    front from screen-left (edge animated through `storm_keys` = [(frame, edge)])."""
+    nt = bpy.context.scene.world.node_tree
+    T = E._NT(nt)
+    bg = S["nodes"]["bg"]
+    src = bg.inputs[0].links[0].from_socket
+    tc = T.node("ShaderNodeTexCoord")
+    vn = T.vmath("NORMALIZE", tc.outputs["Generated"])
+    vx, vy, vz = T.sep(vn)
+    s = Vector(sun_vis).normalized()
+    a = s.cross(Vector((0, 0, 1))).normalized()          # screen-right around the sun
+    b = a.cross(s).normalized()                           # up around the sun
+    da = T.vmath("DOT_PRODUCT", vn, tuple(a))
+    db = T.vmath("DOT_PRODUCT", vn, tuple(b))
+    ds = T.vmath("DOT_PRODUCT", vn, tuple(s))
+    col = src
+    # --- crepuscular rays ----------------------------------------------------------------------
+    if rays:
+        # seamless: noise sampled on a circle around the sun (angle only -> radial shafts)
+        q = T.vmath("NORMALIZE", T.comb(da, T.math("MULTIPLY", db, -1.0), 0.0))
+        th = T.math("ARCCOSINE", T.math("MINIMUM", T.math("MAXIMUM", ds, -1.0), 1.0))
+        drift = _uniform(T, prefix + "_ray_drift", 0.0, ray_keys)
+        n1 = T.noise(T.vmath("ADD", T.vmath("SCALE", q, scale=2.2), T.comb(0.0, 0.0, drift)),
+                     scale=1.0, detail=1.0, rough=0.5)
+        n2 = T.noise(T.vmath("ADD", T.vmath("SCALE", q, scale=6.5), T.comb(3.1, 0.0, T.math("MULTIPLY", drift, 1.7))),
+                     scale=1.0, detail=0.0, rough=0.5)
+        r1 = T.smooth(0.36, 0.64, n1.outputs["Fac"])
+        r2 = T.smooth(0.36, 0.66, n2.outputs["Fac"])
+        r = T.math("ADD", T.math("MULTIPLY", r1, 0.62), T.math("MULTIPLY", r2, 0.38))
+        f_in = T.smooth(0.015, 0.09, th)
+        f_out = T.math("SUBTRACT", 1.0, T.smooth(0.25, 0.95, th))
+        fall = T.math("MULTIPLY", f_in, f_out)
+        amt = _uniform(T, prefix + "_rays", rays)
+        m = T.math("ADD", 1.0, T.math("MULTIPLY", T.math("MULTIPLY", T.math("SUBTRACT", r, 0.42), fall), amt))
+        warm = T.comb(m, T.math("MULTIPLY_ADD", m, 0.97, 0.03), T.math("MULTIPLY_ADD", m, 0.9, 0.1))
+        col = T.mix(1.0, col, warm, blend="MULTIPLY")
+    # --- veil: thin cloud streaks crossing the sun ------------------------------------------------
+    if veil:
+        # coordinates on a plane through the sun: (da, db) ~ angular offsets (radians)
+        pv = T.comb(T.math("MULTIPLY", da, 3.0), T.math("MULTIPLY", db, 22.0), 0.0)
+        nv = T.noise(pv, scale=1.0, detail=4.0, rough=0.55, dist=0.3)
+        dens = T.math("MULTIPLY", T.smooth(0.46, 0.70, nv.outputs["Fac"]),
+                      T.math("SUBTRACT", 1.0, T.smooth(0.03, 0.10, T.math("ABSOLUTE", db))))
+        dens = T.math("MULTIPLY", dens, T.math("SUBTRACT", 1.0, T.smooth(0.10, 0.25, T.math("ABSOLUTE", da))))
+        dens = T.math("MULTIPLY", dens, veil)
+        vc = T.mix(T.math("MULTIPLY", dens, 0.85), col, (0.55, 0.36, 0.22), blend="MULTIPLY")
+        col = vc
+    # --- graduated darkening of the upper sky -------------------------------------------------
+    if grad:
+        g = T.math("MULTIPLY", T.smooth(0.10, 0.48, vz), grad)
+        col = T.mix(g, col, tuple(grad_tint), blend="MULTIPLY")
+    # --- storm front from screen-left ------------------------------------------------------------
+    if storm:
+        t = T.math("DIVIDE", 1.0, T.math("MAXIMUM", vz, 0.035))
+        pc = T.comb(T.math("MULTIPLY", vx, t), T.math("MULTIPLY", vy, t), 0.0)
+        tw = _uniform(T, prefix + "_storm_time", 0.0, None)
+        pc = T.vmath("ADD", T.vmath("SCALE", pc, scale=0.9), T.comb(tw, 0.0, T.math("MULTIPLY", tw, 0.3)))
+        cn = T.noise(pc, scale=1.0, detail=6.0, rough=0.6, dist=0.25).outputs["Fac"]
+        edge = _uniform(T, prefix + "_storm_edge", 0.1, storm_keys)
+        x = T.math("ADD", T.math("MULTIPLY", da, -1.0), T.math("MULTIPLY", vz, 0.45))
+        x = T.math("ADD", x, T.math("MULTIPLY", T.math("SUBTRACT", cn, 0.5), 0.22))
+        # smoothstep with an animated edge: (x - edge) / width
+        u = T.math("DIVIDE", T.math("SUBTRACT", x, edge), 0.09)
+        sm = T.smooth(0.0, 1.0, u)
+        sm = T.math("MULTIPLY", sm, storm)
+        dark = T.mix(T.smooth(0.35, 0.75, cn), tuple(storm_tint), tuple(c * 1.9 for c in storm_tint))
+        sat = T.node("ShaderNodeHueSaturation")
+        sat.inputs["Saturation"].default_value = 0.55
+        T.link(col, sat.inputs["Color"])
+        dcol = T.mix(1.0, sat.outputs["Color"], dark, blend="MULTIPLY")
+        col = T.mix(sm, col, dcol)
+    # --- warm glow around the sun (golden-hour air) ------------------------------------------------
+    if glow:
+        th2 = T.math("ARCCOSINE", T.math("MINIMUM", T.math("MAXIMUM", ds, -1.0), 1.0))
+        gf = T.math("MULTIPLY", T.math("EXPONENT", T.math("MULTIPLY", th2, -1.0 / glow_width)), glow)
+        col = T.mix(gf, col, tuple(glow_color), blend="MULTIPLY")
+    # --- gradient map: recolour the sky by its own (display) luminance, keeping its tonal structure ----
+    if gmap:
+        bgv = float(bg.inputs[1].default_value)
+        lum = T.node("ShaderNodeRGBToBW")
+        T.link(col, lum.inputs[0])
+        L = lum.outputs[0]
+        Ld = T.math("MULTIPLY", L, bgv)
+        x = T.math("DIVIDE", Ld, T.math("ADD", Ld, gk))
+        rp = T.ramp(x, gmap, interp="B_SPLINE" if len(gmap) > 3 else "LINEAR")
+        cg = T.mix(1.0, rp.outputs["Color"], T.comb(L, L, L), blend="MULTIPLY")
+        col = T.mix(gmix, col, cg)
+    T.link(col, bg.inputs[0])
+    return T
+
+
+def cull_scatter(names, pred):
+    """Delete GN-scattered instances (env.scatter point clouds) of objects whose name starts with one of
+    `names` where pred(x, y, z, size) is True (numpy arrays, world space). Returns the number removed."""
+    import numpy as np
+    removed = 0
+    for ob in list(bpy.data.objects):
+        if "n_instances" not in ob.keys() or not any(ob.name.startswith(n) for n in names):
+            continue
+        me = ob.data
+        nv = len(me.vertices)
+        if nv == 0:
+            continue
+        co = np.zeros(nv * 3, np.float32)
+        me.vertices.foreach_get("co", co)
+        co = co.reshape(-1, 3)
+        M = np.array(ob.matrix_world)
+        wc = co @ M[:3, :3].T + M[:3, 3]
+        attrs = {}
+        for at in me.attributes:
+            if at.domain != "POINT" or at.name == "position" or at.name.startswith("."):
+                continue
+            if at.data_type == "FLOAT_VECTOR":
+                arr = np.zeros(nv * 3, np.float32)
+                at.data.foreach_get("vector", arr)
+                arr = arr.reshape(-1, 3)
+            elif at.data_type == "INT":
+                arr = np.zeros(nv, np.int32)
+                at.data.foreach_get("value", arr)
+            elif at.data_type == "FLOAT":
+                arr = np.zeros(nv, np.float32)
+                at.data.foreach_get("value", arr)
+            else:
+                continue
+            attrs[at.name] = (at.data_type, arr)
+        size = attrs["scl"][1].max(axis=1) if "scl" in attrs else np.ones(nv, np.float32)
+        keep = ~pred(wc[:, 0], wc[:, 1], wc[:, 2], size)
+        k = int(keep.sum())
+        if k == nv:
+            continue
+        removed += nv - k
+        nm = bpy.data.meshes.new(me.name + "_cull")
+        nm.vertices.add(k)
+        nm.vertices.foreach_set("co", co[keep].ravel())
+        for name, (dt, arr) in attrs.items():
+            at = nm.attributes.new(name, dt, "POINT")
+            if dt == "FLOAT_VECTOR":
+                at.data.foreach_set("vector", arr[keep].ravel())
+            else:
+                at.data.foreach_set("value", arr[keep])
+        nm.update()
+        ob.data = nm
+        ob["n_instances"] = k
+        if k == 0:
+            ob.hide_render = True
+    return removed
+
+
+def _occluded_fn(cams, edge=(-11.0, 10.2), margin_deg=2.5):
+    """Predicate for cull_scatter: True where an instance is invisible from every camera key: behind
+    the skull-cliff crest below the line of sight, outside the horizontal frustum, or under the frame."""
+    import numpy as np
+
+    def pred(x, y, z, size):
+        hidden = np.ones(len(x), bool)
+        for (loc, tgt, lens) in cams:
+            cx, cy, cz = loc
+            fx, fy = tgt[0] - cx, tgt[1] - cy
+            yaw = math.atan2(fx, fy)
+            half = math.atan(18.0 * 9.0 / 16.0 / lens) + math.radians(margin_deg)
+            ang = np.arctan2(x - cx, y - cy) - yaw
+            out_side = np.abs(ang) > half
+            slope = (edge[1] - cz) / (edge[0] - cy)
+            behind = (y > edge[0] + 0.5) & (z + 2.0 * size < cz + slope * (y - cy))
+            pitch = math.atan2(tgt[2] - cz, math.hypot(fx, fy))
+            low = math.atan(18.0 / lens) - pitch + math.radians(margin_deg)       # bottom ray below horizon
+            d = np.hypot(x - cx, y - cy)
+            under = (y < edge[0]) & ((cz - (z + 2.0 * size)) / np.maximum(d, 0.1) > math.tan(low))
+            hidden &= out_side | behind | under
+        return hidden
+    return pred
+
+
+def figures(A, lod="mid"):
+    """Jesus on the centre cross, the two thieves (CROWD_MAN variants) on the side crosses."""
+    from lib import characters as P
+    out = []
+    try:
+        j = P.make_person("jesus", "JESUS_CROSS", pose=None, lod=lod, hair_strands=False)
+    except Exception as e:                     # wardrobe in flux: fall back to an undressed figure
+        print("s00: dressed JESUS_CROSS failed (%s) - undressed" % e)
+        j = P.make_person("jesus", "JESUS_CROSS", pose=None, lod=lod, hair_strands=False, outfit=None)
+    P.place_on_cross(j, A["crosses"]["center"]["root"], head="down", strain=0.55)
+    P.expression(j, "anguish")
+    out.append(j)
+    for k, seed, side, head in (("left", 5, 1.0, "side"), ("right", 11, -1.0, "down")):
+        if k not in A["crosses"]:
+            continue
+        kw = dict(seed=seed, pose=None, lod="far", hair_strands=False)
+        try:
+            t = P.make_person("thief_" + k, "CROWD_MAN", outfit=["loincloth"], **kw)
+        except Exception as e:
+            print("s00: dressed thief failed (%s) - undressed" % e)
+            t = P.make_person("thief_" + k, "CROWD_MAN", outfit=None, **kw)
+        P.place_on_cross(t, A["crosses"][k]["root"], head=head, strain=0.85, knee_side=side)
+        out.append(t)
+    return [simplify_person(p) for p in out]
+
+
+def _simple_mat(name, color, rough=0.7, sheen=0.0):
+    m = bpy.data.materials.get(name) or C.mat(name, color=color, rough=rough, sheen=sheen)
+    E.hazify(m)
+    return m
+
+
+def simplify_person(p):
+    """At ~50 px tall the figures are silhouettes: freeze each into one mesh (bake_static) and swap the
+    hero shaders (SSS skin, layered eyes, blended lashes, hair curves) for plain opaque materials.
+    Measured: the three live people cost ~19 s/frame at final quality, baked + simple ~1-2 s."""
+    from lib import characters as P
+    ob = P.bake_static(p, delete=True)
+    for ch in list(ob.children):
+        if ch.type != "MESH":
+            bpy.data.objects.remove(ch, do_unlink=True)
+    skin = _simple_mat("S00_Skin", (0.30, 0.19, 0.13), 0.55)
+    hair = _simple_mat("S00_Hair", (0.025, 0.018, 0.013), 0.7)
+    cloth = _simple_mat("S00_Cloth", (0.55, 0.48, 0.38), 0.9, sheen=0.3)
+    thorn = _simple_mat("S00_Thorn", (0.10, 0.07, 0.045), 0.9)
+    names = []
+    for i, m in enumerate(ob.data.materials):
+        n = (m.name if m else "").lower()
+        names.append(n)
+        if any(k in n for k in ("hair", "brow", "lash", "beard")):
+            ob.data.materials[i] = hair
+        elif any(k in n for k in ("thorn", "crown")):
+            ob.data.materials[i] = thorn
+        elif any(k in n for k in ("linen", "fabric", "cloth", "wool", "loin", "garment", "tunic", "hessian")):
+            ob.data.materials[i] = cloth
+        else:
+            ob.data.materials[i] = skin
+    print("s00: simplified %s materials: %s" % (ob.name, ", ".join(names)))
+    return ob
+
+
+def build(ctx):
+    N = ctx.render_frames
+    (l0, t0, lens0), (l1, t1, lens1) = CAM0, CAM1
+    view0 = Vector(t0) - Vector(l0)
+    info = E.hdri_info(HDRI)
+    vis_el = VIS_SUN_OFF[1] if VIS_SUN_OFF[1] is not None else info["sun_el"]
+    vis_az = _az(view0) - VIS_SUN_OFF[0]
+    over = dict(hdri=HDRI, sun_el=LAMP[1], key=0.42, strength=0.38, clamp_sun=1.5, sat=1.25, tint=(1.0, 0.8, 0.55),
+                sun_disk=dict(el=vis_el, size=0.75, color=(1.0, 0.86, 0.62), strength=60.0, glow=0.10))
+    cams = [dict(loc=l0, target=t0, lens=lens0), dict(loc=l1, target=t1, lens=lens1)]
+    A = E.golgotha(ctx, mood="golden", sun_az=vis_az, sky_over=over, view=cams, near_detail=0.0,
+                   city=False, dust=False, skull=0.8)
+    # boulders on the plateau would silhouette as blobs on the hill line next to the crosses
+    k = cull_scatter(("EnvBoulders", "EnvTalus"), lambda x, y, z, s: (np.abs(x) < 16) & (y > -10.5) & (y < 14) & (z > 8.5))
+    print("s00: culled %d plateau boulders" % k)
+    # everything the camera cannot see (behind the crest, outside the narrow 70 mm frustum, under the frame)
+    k = cull_scatter(("Env",), _occluded_fn([CAM0, CAM1]))
+    print("s00: culled %d hidden scatter instances" % k)
+    S = A["sky"]
+    sun_vis = _dir(vis_az, vis_el)
+    # lamp cheated to the back-right; haze glow stays on the visible sun
+    S["sun"].rotation_euler = (-_dir(*LAMP)).to_track_quat("-Z", "Y").to_euler()
+    E.set_haze(sun_dir=tuple(sun_vis), sun_mix=0.9, sun_power=4.0, density=0.0014, start=20.0)
+    # faint warm bounce from the sunlit plain behind the camera: models the shadowed skull cliff
+    # (light-linked to the cliff + terrain only: crosses and figures stay backlit silhouettes)
+    fill = C.sun(elevation=18, azimuth=-20, energy=0.22, color=(1.0, 0.78, 0.55), angle=8)
+    fill.data.use_shadow = False
+    fill.name = "S00Bounce"
+    recv = bpy.data.collections.new("S00BounceRecv")
+    for o in (A.get("cliff"), A.get("terrain")):
+        if o is not None:
+            recv.objects.link(o)
+    fill.light_linking.receiver_collection = recv
+    sky_fx(S, sun_vis, rays=0.45, veil=0.8, ray_keys=[(1, 0.0), (N, 0.35)], storm=0.9,
+           storm_keys=[(1, 0.16), (N, 0.10)], storm_tint=(0.3, 0.3, 0.32), gmap=GOLD_MAP, gmix=0.8)
+    E.scene_prop("sfx_storm_time", 0.0, 1)
+    E.scene_prop("sfx_storm_time", 0.25, N)
+    E._linear_keys(bpy.context.scene)
+
+    figures(A)
+
+    cam = C.camera(loc=l0, target=t0, lens=lens0, name="Cam")
+
+    def path(f):
+        u = C.ease_in_out((f - 1) / max(1, N - 1))
+        loc = Vector(l0).lerp(Vector(l1), u)
+        tgt = Vector(t0).lerp(Vector(t1), u)
+        return (loc, tgt, 0.0)
+    C.animate_camera(cam, path, 1, N)
+
+    ctx.samples = 4
+    ctx.render_opts.update({"volumetrics": "low", "shadow_scale": 0.5})
+    ctx.interp = True
+    ctx.post.update({"grade": "gold", "bloom": 0.42, "vignette": 0.18,
+                     "title": {"ink": "dark"}})          # verified: umber title over the bright golden sky
+
+===== FILE: psalm22/blender/shots/s10b.py =====
+"""s10b - Heart of wax: "My heart has turned to wax; it has melted within me."
+
+Time-lapse: a single beeswax pillar candle melts down in deep darkness on a rough limestone ledge at
+the foot of the cross. The guttering flame sinks with the top, drips run down the sides and the wax
+spreads into a pool. Behind it, out of focus, the rough-hewn upright of the cross catches the warm
+flicker so the frame is never a void. Slow push-in / tilt that keeps the sinking flame in place.
+
+Lighting: the candle's own flickering flame lamp (FX) lights everything; a second lamp at the flame,
+light-linked to the set only and flickering in sync, lifts the stone + wood without blowing out the
+wax; a weak warm bounce (linked to the wax only) gives the body volume; a tiny shadowless lamp low
+inside the candle imitates light leaking through the wax onto the pool.
+"""
+import math
+import random
+import bpy
+from mathutils import Vector
+from lib import core as C
+from lib import fx as FX
+
+SEED = 3
+H0, H1 = 0.15, 0.04          # candle height start / end (m)
+WAX = (0.78, 0.40, 0.085)    # honey beeswax
+LIGHT_K = 3000               # lamp colour "as white-balanced by the camera" (the flame mesh keeps its own
+                             # 1850 K blackbody); 1850 K lamps x orange wax went deep red -> salmon in AgX
+FLICKER = 2.4                # guttering
+
+
+def _linked(light, objs, name):
+    coll = bpy.data.collections.new(name)
+    for o in objs:
+        coll.objects.link(o)
+    light.light_linking.receiver_collection = coll
+    return coll
+
+
+def build(ctx):
+    N = ctx.nframes
+    # ---------------------------------------------------------------- world: near black, faintly warm
+    C.world_color((0.0012, 0.0010, 0.0009), 1.0)
+
+    # ---------------------------------------------------------------- set: stone ledge + cross upright
+    set_objs = []
+    ledge_mat = C.mat_pbr("rock_boulder_dry", scale=2.2, tint=(0.32, 0.27, 0.21), bump=1.0, name="s10b_ledge")
+    # stone block; its front edge runs just in front of the candle so the lower frame (captions) is the
+    # dark, rough front face of the block falling away into darkness
+    ledge = C.box("Ledge", (1.3, 1.25, 0.5), (0.05, -0.115 + 0.625, -0.25), mat_=ledge_mat, bevel=0.015)
+    C.displace(ledge, strength=0.016, scale=0.12, subdiv=4)
+    set_objs.append(ledge)
+    wood = C.wood_material("rough_wood", scale=2.0, tint=(0.42, 0.32, 0.24))
+    upright = C.box("CrossUpright", (0.21, 0.2, 2.2), (-0.15, 0.62, 0.9), rot=(0, 0, 6), mat_=wood, bevel=0.012)
+    C.displace(upright, strength=0.006, scale=0.06, subdiv=0)
+    set_objs.append(upright)
+    # a few loose stones / grit on the ledge so the surface reads as real
+    stone_m = C.mat_pbr("rock_face_03", scale=12.0, tint=(0.5, 0.43, 0.36), name="s10b_pebble")
+    rnd = random.Random(7)
+    placed = 0
+    while placed < 12:
+        a = rnd.uniform(0, 2 * math.pi)
+        r = rnd.uniform(0.11, 0.45)
+        x, y = math.cos(a) * r, math.sin(a) * r * 0.9 + 0.05
+        if y < -0.085:
+            continue
+        placed += 1
+        i = placed
+        s = rnd.uniform(0.005, 0.015)
+        p = C.prim("ico_sphere", name="Pebble%d" % i, subdivisions=2, radius=1.0, loc=(x, y, s * 0.25))
+        p.scale = (s * rnd.uniform(0.9, 1.6), s * rnd.uniform(0.8, 1.3), s * rnd.uniform(0.45, 0.8))
+        p.rotation_euler = (0, 0, rnd.uniform(0, 6.28))
+        C.assign(p, stone_m)
+        C.shade_smooth(p)
+        set_objs.append(p)
+
+    # ---------------------------------------------------------------- the candle
+    # pre-create the wax materials (melting_candle reuses materials by name): redder amber, softer glow
+    FX.wax_material("FX_beeswax_%d" % SEED, WAX, glow_color=(1.0, 0.42, 0.08), glow=0.4, glow_depth=0.009,
+                    rough=0.36, sss=0.4)
+    FX.wax_material("FX_beeswax_pool_%d" % SEED, (0.45, 0.23, 0.045), glow_color=(1.0, 0.4, 0.08), glow=0.04,
+                    glow_depth=0.004, rough=0.07, sss=0.08)
+    f_end = N - 6
+    e_flame = 1.8
+    cand = FX.melting_candle((0, 0, 0), start_frame=1, end_frame=f_end, height=(H0, H1), radius=0.024,
+                             drips=7, pool_radius=0.066, flame_size=0.032, flicker=FLICKER, light_energy=e_flame,
+                             color=WAX, seed=SEED)
+
+    # set lamp: rides with the flame, flickers in sync (same f-curve noise params as flame()), set only
+    # (shadowless: a real flame is a big soft emitter and the wax is translucent, so the shadow ring the
+    #  point lamp throws around the candle must stay soft and filled)
+    cand.flame.light.data.shadow_soft_size = 0.010
+    cand.flame.light.data.color = C.kelvin(LIGHT_K)
+    # the wax body/drips don't block the flame lamp: a point lamp 2 cm above the rim would throw a hard
+    # 20 cm black ring around the base that a real (tall, soft) flame through translucent wax never does
+    for o in (cand.body, cand.drips):
+        o.visible_shadow = False
+    env_l = FX._point_light("SetLight", (0, 0, 0.032 * 0.42), 1.4, LIGHT_K, 0.02, False)
+    FX._parent(env_l, cand.flame.root)
+    env_l.location = (0, 0, 0.032 * 0.42)
+    FX._light_flicker(env_l, 1.4, amount=min(0.45, 0.16 * FLICKER + 0.06), scale=4.0 + 2.0 / max(FLICKER, 0.3),
+                      phase=SEED * 13.7 + 1)
+    _linked(env_l, [upright], "s10b_set_recv")
+
+    # warm bounce off the lit ledge onto the front of the wax (otherwise a black slab)
+    bounce = C.light("AREA", (0.04, -0.3, 0.02), 0.22, temp=LIGHT_K - 400, target=(0, 0, 0.05), size=0.3, name="Bounce",
+                     shadow=False)
+    _linked(bounce, [cand.body, cand.drips, cand.pool], "s10b_wax_recv")
+    # light through the wax: low inside the candle, weak, soft (the FX default is too hot at the base)
+    gl = cand.glow_light
+    if gl.animation_data:
+        gl.animation_data_clear()
+    gl.location = (0, 0, 0.012)
+    gl.data.energy = 0.02
+    gl.data.color = C.kelvin(LIGHT_K - 600)
+    gl.data.shadow_soft_size = 0.02
+
+    # ---------------------------------------------------------------- camera: push + tilt with the top
+    cam = C.camera((0, -0.72, 0.16), (0, 0, 0.06), lens=60, fstop=4.0)
+
+    def path(f):
+        h = cand.height_at(min(f, f_end))
+        m = (H0 - h) / (H0 - H1)                     # melt progress 0..1 (linear in time)
+        u = C.ease_in_out(min(1.0, ctx.u(f))) * 0.6 + m * 0.4
+        dist = 0.72 + (0.43 - 0.72) * u
+        cz = 0.16 + (0.10 - 0.16) * u
+        tz = 0.047 + (0.006 - 0.047) * u             # block edge stays above the caption band
+        loc = Vector((0.015 * math.sin(u * 2.2), -dist, cz)) + C.shake(f, 0.0012, 0.4, 3)
+        tgt = Vector((0, 0, tz))
+        # focus on the flame / wick (the candle axis), slightly in front
+        return (loc, tgt, 0.0, None, (Vector((0, 0, h)) - loc).length - 0.004)
+    C.animate_camera(cam, path, 1, ctx.render_frames)
+
+    ctx.samples = 4
+    ctx.render_opts = {"volumetrics": "low", "exposure": 0.0, "shadow_scale": 0.5}
+    # 12 fps + RIFE: the flame/lamp flicker is smooth f-curve noise (~5 Hz) and the melt is slow; validated
+    # on a full-rate draft range (frames 41-55): mean 43.0 dB / SSIM 0.994 vs the real even frames, warp_err < 2
+    ctx.interp = True
+    ctx.post = {"grade": "candle", "bloom": 0.3, "vignette": 0.32, "caption": {"y": 0.72}}
+
+===== FILE: psalm22/blender/shots/s20c.py =====
+"""s20c - "He has done it!" - finale under the end card.
+
+The EMPTY cross on Golgotha at sunrise (bookend of s00: same hill, same cross, the light transformed).
+A long white linen cloth is draped over the crossbeam - gathered behind the upright, both halves falling
+in front of the beam either side of it - and stirs in the morning breeze. The sun breaks through a cloud
+bank over Jerusalem with rays bursting upward. The camera starts low at the foot of the cross looking up
+at the beam and the cloth ("He has done it!"), then cranes up past the crossbeam and settles (frame ~150)
+level with the top of the cross, the sunburst straight above it and the frame centre clear for the end
+card ('Psalm 22 . NIV' / 'It is finished.', from ~frame 97).
+
+Cloth: a real cloth simulation with a 60-frame pre-roll, baked in memory inside build() (~50 s), so any
+frame list renders correctly; ctx.needs_bake stays False on purpose (a second bake_all would only cost
+time). Sky helpers (sky_fx, cull_scatter) are shared with shots/s00.py.
+"""
+import math
+import bpy
+import numpy as np
+from mathutils import Vector
+from lib import core as C, env as E
+
+HDRI = "kloppenheim_06_puresky"
+
+
+def _dir(az, el):
+    a, e = math.radians(az), math.radians(el)
+    return Vector((math.sin(a) * math.cos(e), -math.cos(a) * math.cos(e), math.sin(e)))
+
+
+def _az(d):
+    return math.degrees(math.atan2(d.x, -d.y))
+
+
+# ------------------------------------------------------------------------------------------------
+# The linen cloth
+# ------------------------------------------------------------------------------------------------
+def _drape_mesh(width=0.46, tail=1.25, back_y=0.155, z0=3.885, step=0.016, nw=28, gather=0.16, spread=0.2,
+                trim_left=0.0, panel_gather=0.72, pleat_cols=8):
+    """Initial (pre-simulation) linen strip in the cross root's local frame (core.wooden_cross: beam top
+    z = 3.868, beam y = -0.10..0.08, upright |x| < 0.1, |y| < 0.095), lying flat at beam-top height:
+    its middle is gathered into a narrow band behind the upright (pinned), from there it runs round both
+    sides of the upright over the beam top and sticks out horizontally in front of the beam. In the
+    pre-roll the two halves fall over the front edge of the beam and hang as two panels either side of
+    the upright, the cloth fanning out of the gathered middle in folds (the classic shroud on the empty
+    cross). Returns verts (n, nw+1, 3), pin (n, nw+1), row arc length, column offsets."""
+    # plan-view centerline for the right half (x >= 0), mirrored for the left
+    ctrl = np.array([(0.0, back_y), (0.10, back_y + 0.005), (0.17, 0.10), (0.22, 0.0), (0.26, -0.12),
+                     (0.29, -0.30)] + [(0.29 + spread * (k / 6.0), -0.30 - tail * k / 6.0) for k in range(1, 7)])
+    seg = np.r_[0.0, np.cumsum(np.linalg.norm(np.diff(ctrl, axis=0), axis=1))]
+    sn_h = np.linspace(0.0, seg[-1], int(seg[-1] / step) + 1)
+    hx = np.interp(sn_h, seg, ctrl[:, 0])
+    hy = np.interp(sn_h, seg, ctrl[:, 1])
+    # light smoothing of the polyline
+    for _ in range(6):
+        hx[1:-1] = 0.25 * hx[:-2] + 0.5 * hx[1:-1] + 0.25 * hx[2:]
+        hy[1:-1] = 0.25 * hy[:-2] + 0.5 * hy[1:-1] + 0.25 * hy[2:]
+    px = np.r_[-hx[::-1], hx[1:]]
+    py = np.r_[hy[::-1], hy[1:]]
+    sn = np.r_[-sn_h[::-1], sn_h[1:]]
+    P = np.stack([px, py], 1)
+    Tg = np.gradient(P, axis=0)
+    Tg /= np.linalg.norm(Tg, axis=1, keepdims=True)
+    Wd = np.stack([-Tg[:, 1], Tg[:, 0]], 1)
+    # width: gathered behind the upright, opening out over the beam top
+    # the panels stay partly gathered too (panel_gather < 1): their extra width is stored in soft sine pleats
+    # (period pleat_cols columns, phase wandering along the strip), so they hang in real vertical folds
+    g = gather + (panel_gather - gather) * np.clip((np.abs(sn) - 0.12) / 0.45, 0.0, 1.0) ** 1.2
+    us = np.linspace(-0.5, 0.5, nw + 1) * width
+    lam = pleat_cols * width / nw
+    amp = (g * lam / np.pi) * np.sqrt(np.clip(1.0 / g - 1.0, 0.0, None))      # keeps the arc length ~ width
+    ph = 2 * np.pi * np.arange(nw + 1)[None, :] / pleat_cols + 0.9 * np.sin(sn * 2.7)[:, None] \
+        + 0.5 * np.sin(sn * 7.3 + 1.0)[:, None]
+    V = np.zeros((len(P), nw + 1, 3))
+    V[..., 0] = P[:, None, 0] + Wd[:, None, 0] * us[None, :] * g[:, None]
+    V[..., 1] = P[:, None, 1] + Wd[:, None, 1] * us[None, :] * g[:, None]
+    V[..., 2] = z0 + 0.03 + amp[:, None] * np.sin(ph)
+    pin = ((np.abs(sn) < 0.10)[:, None] & np.ones((1, nw + 1), bool)).astype(float)
+    k = int(round(trim_left / step))            # shorter left half: hangs asymmetrically, less "apron"-like
+    if k > 0:
+        V, pin, sn = V[k:], pin[k:], sn[k:]
+    return V, pin, sn - sn[0], us
+
+
+def linen_swag(ctx, cross_root, width=0.46, preroll=60, wind=None, name="Linen", **drape):
+    """Build the linen cloth on a core.wooden_cross root (any location / rot_z): a strip (_drape_mesh)
+    simulated with a Cloth modifier (pinned where it is gathered behind the upright), the cross parts as
+    colliders and a gusting wind field. The cache starts at 1 - preroll so the drape has settled by frame 1
+    (bake_cloth() must run after the scene is complete)."""
+    V, pin, sn, us = _drape_mesh(width=width, **drape)
+    n, nw1 = V.shape[0], V.shape[1]
+    nw = nw1 - 1
+    verts = V.reshape(-1, 3)
+    faces = []
+    for i in range(n - 1):
+        for j in range(nw):
+            a = i * nw1 + j
+            faces.append((a, a + nw1, a + nw1 + 1, a + 1))
+    me = bpy.data.meshes.new(name)
+    me.from_pydata([tuple(v) for v in verts], [], faces)
+    me.update()
+    uv = me.uv_layers.new(name="UVMap")
+    lo = np.array([l.vertex_index for l in me.loops])
+    vi, vj = lo // nw1, lo % nw1
+    uvs = np.stack([us[vj], sn[vi]], 1).astype(np.float32)
+    uv.data.foreach_set("uv", uvs.ravel())
+    ob = C.link(bpy.data.objects.new(name, me))
+    ob.parent = cross_root
+    for p in me.polygons:
+        p.use_smooth = True
+    vg = ob.vertex_groups.new(name="pin")
+    pw = pin.reshape(-1)
+    idx = [int(i) for i in np.nonzero(pw > 0)[0]]
+    if idx:
+        vg.add(idx, 1.0, "REPLACE")
+    ob.data.materials.append(linen_material())
+    # colliders: the cross parts
+    for ch in cross_root.children:
+        if ch.type == "MESH" and not any(m.type == "COLLISION" for m in ch.modifiers):
+            ch.modifiers.new("Collision", "COLLISION")
+            ch.collision.thickness_outer = 0.012
+            ch.collision.cloth_friction = 8.0
+    sc = bpy.context.scene
+    m = ob.modifiers.new("Cloth", "CLOTH")
+    st = m.settings
+    st.quality = 6
+    st.mass = 0.26
+    st.tension_stiffness = st.compression_stiffness = 15.0
+    st.shear_stiffness = 3.0
+    st.bending_stiffness = 0.025
+    st.air_damping = 1.0
+    st.tension_damping = st.compression_damping = 5.0
+    st.bending_damping = 0.5
+    st.vertex_group_mass = "pin"
+    st.pin_stiffness = 1.0
+    st.effector_weights.gravity = 1.0
+    cs = m.collision_settings
+    cs.use_collision = True
+    cs.distance_min = 0.006
+    cs.collision_quality = 3
+    cs.use_self_collision = False
+    m.point_cache.frame_start = 1 - preroll
+    m.point_cache.frame_end = ctx.render_frames
+    so = ob.modifiers.new("Thick", "SOLIDIFY")
+    so.thickness = 0.0025
+    so.offset = 0.0
+    sub = ob.modifiers.new("Smooth", "SUBSURF")
+    sub.levels = sub.render_levels = 1
+    # breeze: a wind field with turbulence, gusting slowly (strength keyed with a smooth noise)
+    w = wind or dict(strength=9.0, noise=0.6, dir=(-0.8, 0.45, 0.1))
+    bpy.ops.object.effector_add(type="WIND", location=(0, 0, 0))
+    fo = bpy.context.active_object
+    fo.name = name + "_Wind"
+    fo.field.shape = "PLANE"
+    fo.field.noise = w["noise"]
+    fo.field.seed = 7
+    fo.field.flow = 0.6
+    d = Vector(w["dir"]).normalized()
+    fo.rotation_euler = d.to_track_quat("Z", "Y").to_euler()
+    fo.location = cross_root.matrix_world @ Vector((0, 0, 3.6)) - d * 3.0
+    fo.field.falloff_type = "SPHERE"
+    fo.field.use_max_distance = True
+    fo.field.distance_max = 4.0
+    fs = fo.field
+    for f in range(1 - preroll, ctx.render_frames + 1, 6):
+        g = 0.65 + 0.35 * math.sin(f * 0.045) + 0.25 * math.sin(f * 0.11 + 1.3)
+        fs.strength = w["strength"] * max(0.25, g)
+        fs.keyframe_insert("strength", frame=f)
+    return ob
+
+
+def linen_material():
+    """Bleached linen: rough, faint weave bump, strong translucency (glows when backlit)."""
+    m = bpy.data.materials.get("S20c_Linen")
+    if m:
+        return m
+    try:
+        m = C.mat_pbr("rough_linen", scale=2.2, projection="UV", tint=(1.0, 1.0, 1.0), name="S20c_Linen", bump=0.6,
+                      hue_sat_val=(0.5, 0.15, 1.35))
+    except Exception as e:
+        print("s20c: linen texture unavailable (%s)" % e)
+        m = C.mat("S20c_Linen", color=(0.86, 0.84, 0.78), rough=0.85)
+    nt = m.node_tree
+    b = nt.nodes["Principled BSDF"]
+    b.inputs["Sheen Weight"].default_value = 0.35
+    b.inputs["Specular IOR Level"].default_value = 0.25
+    out = nt.nodes["Material Output"]
+    tr = nt.nodes.new("ShaderNodeBsdfTranslucent")
+    tr.inputs["Color"].default_value = (0.95, 0.88, 0.74, 1)
+    mix = nt.nodes.new("ShaderNodeMixShader")
+    mix.inputs[0].default_value = 0.38
+    nt.links.new(b.outputs[0], mix.inputs[1])
+    nt.links.new(tr.outputs[0], mix.inputs[2])
+    nt.links.new(mix.outputs[0], out.inputs["Surface"])
+    m.use_backface_culling = False
+    E.hazify(m)
+    return m
+
+
+def bake_cloth(ctx):
+    sc = bpy.context.scene
+    fc = sc.frame_current
+    t = __import__("time").time()
+    try:
+        with bpy.context.temp_override(scene=sc):
+            bpy.ops.ptcache.bake_all(bake=True)
+    except Exception as e:
+        print("s20c: cloth bake warning:", e)
+    sc.frame_set(fc)
+    print("s20c: cloth baked in %.1fs" % (__import__("time").time() - t), flush=True)
+
+
+def _frustum_fn(keys, lens, margin_deg=3.0):
+    """cull_scatter predicate: True where an instance is outside the frustum of every camera key
+    (key = (loc, target, ...)); portrait frame, vertical sensor 36 mm."""
+    hh = math.atan(18.0 * 9.0 / 16.0 / lens) + math.radians(margin_deg)
+    hv = math.atan(18.0 / lens) + math.radians(margin_deg)
+
+    def pred(x, y, z, size):
+        hidden = np.ones(len(x), bool)
+        for k in keys:
+            loc, tgt = Vector(k[0]), Vector(k[1])
+            f = (tgt - loc).normalized()
+            r = f.cross(Vector((0, 0, 1))).normalized()
+            u = r.cross(f)
+            dx, dy, dz = x - loc.x, y - loc.y, z + 0.6 * size - loc.z
+            df = dx * f.x + dy * f.y + dz * f.z
+            dr = dx * r.x + dy * r.y + dz * r.z
+            du = dx * u.x + dy * u.y + dz * u.z
+            ext = 1.0 * size
+            inside = (df > 0.05) & (np.abs(dr) - ext < df * math.tan(hh)) & (np.abs(du) - ext < df * math.tan(hv))
+            hidden &= ~inside
+        return hidden
+    return pred
+
+
+SUN_AZ = 170.0                      # sunrise behind the cross, over Jerusalem (core az; 180 = +Y)
+LAMP_EL = 7.0                       # sun lamp elevation (HDRI sun ~4.7 deg, hidden in the cloud bank)
+CAM0 = ((-1.3, -4.4, 12.05), (0.0, 0.6, 14.45), 28.0)     # low at the foot of the cross, up at the beam
+CAM1 = ((-1.08, -5.5, 15.6), (170.0, 8.0), 28.0)         # level with the top of the cross, (core az, pitch):
+                                                           # the sun breaks out straight above it
+SUNRISE_MAP = [(0.0, (0.9, 0.92, 1.3)), (0.25, (1.05, 0.97, 1.05)), (0.45, (1.3, 0.96, 0.62)),
+               (0.65, (1.3, 0.97, 0.62)), (0.85, (1.15, 1.0, 0.8)), (1.0, (1.03, 1.0, 0.95))]
+MOVE_F = 150                        # the crane settles here (end card fades in ~frame 97: frame clear by then)
+
+
+def build(ctx):
+    N = ctx.render_frames
+    (l0, t0, lens0), (l1, (az1, pitch1), lens1) = CAM0, CAM1
+    d0 = Vector(t0) - Vector(l0)
+    az0 = _az(d0)
+    pitch0 = math.degrees(math.atan2(d0.z, d0.xy.length))
+    t1 = tuple(Vector(l1) + _dir(az1, pitch1) * 30.0)
+    views = [dict(loc=l0, target=t0, lens=lens0, near=12.0), dict(loc=l1, target=t1, lens=lens1, near=12.0)]
+    over = dict(hdri=HDRI, sun_el=LAMP_EL, sun_energy=3.4, key=0.58, strength=0.5, tint=(1.0, 0.88, 0.72), sat=1.3,
+                sun_tint=(1.0, 0.72, 0.45), sun_angle=1.2, clamp_sun=None)
+    A = E.golgotha(ctx, mood="sunrise", sun_az=SUN_AZ, crosses=1, center_occupied=False, sign=False,
+                   sky_over=over, view=views, dust=False, near_detail=0.0, grass=1.0, bushes=0.6, city=False,
+                   skull=0.0)                          # the skull cliff is behind the camera all shot
+    S = A["sky"]
+    info = E.hdri_info(HDRI)
+    sun_vis = _dir(SUN_AZ, info["sun_el"])
+    # low-lying golden morning haze: softens the plain and the distant city into the sunrise
+    E.set_haze(sun_dir=tuple(sun_vis), sun_mix=0.95, sun_power=3.0, density=0.0035, falloff=0.025, start=8.0)
+    try:
+        from shots.s00 import sky_fx
+        sky_fx(S, sun_vis, rays=0.16, ray_keys=[(1, 0.0), (N, 0.5)], grad=0.25, grad_tint=(0.72, 0.66, 0.7),
+               glow=0.9, glow_color=(1.55, 1.0, 0.5), glow_width=0.45, gmap=SUNRISE_MAP, gmix=0.3, prefix="sfx20")
+    except Exception as e:
+        print("s20c: sky_fx unavailable (%s)" % e)
+
+    cross = A["crosses"]["center"]
+    beam = Vector(cross["beam"])
+
+    def path(f):
+        x = (f - 1) / float(MOVE_F - 1)
+        drift = 0.05 * max(0.0, (f - MOVE_F) / float(max(1, N - MOVE_F)))     # keeps drifting after it settles
+        u = 0.95 * C.ease_in_out(x) + drift
+        loc = Vector(l0).lerp(Vector(l1), u)
+        # rise first, tilt down a little later (the cross sinks through the frame, the sunrise opens up)
+        ut = 0.95 * C.ease_in_out(min(1.0, max(0.0, (x - 0.08) / 0.92))) + drift
+        tgt = loc + _dir(az0 + (az1 - az0) * ut, pitch0 + (pitch1 - pitch0) * ut) * 10.0
+        foc = (beam - loc).length
+        return (loc, tgt, 0.0, lens0, foc)
+
+    # drop scattered instances the moving camera never sees (frustum test along the whole path)
+    try:
+        from shots.s00 import cull_scatter
+        keys = [path(f) for f in range(1, N + 1, 8)] + [path(N)]
+        k = cull_scatter(("Env",), _frustum_fn(keys, lens0))
+        print("s20c: culled %d unseen scatter instances" % k)
+    except Exception as e:
+        print("s20c: scatter cull skipped (%s)" % e)
+
+    cl = linen_swag(ctx, cross["root"], preroll=60, width=0.6, tail=1.45, spread=0.45, gather=0.16, trim_left=0.4,
+                    wind=dict(strength=7.0, noise=0.7, dir=(-0.75, 0.55, 0.12)))
+    bake_cloth(ctx)
+
+    cam = C.camera(loc=l0, target=t0, lens=lens0, name="Cam", fstop=5.6, focus=4.8)
+    C.animate_camera(cam, path, 1, N)
+
+    ctx.samples = 4
+    ctx.render_opts.update({"volumetrics": "low", "shadow_scale": 0.5})
+    ctx.interp = True
+    ctx.post.update({"grade": "gold", "bloom": 0.48, "bloom_threshold": 0.6, "contrast": 1.06, "vignette": 0.12})
