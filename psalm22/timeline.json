@@ -468,10 +468,10 @@
    "visual": "Harsh white sun: a broken clay potsherd lies on dry, cracked earth; heat haze shimmers; cracks spread across the clay and the ground; a dry thorn branch nearby.",
    "mood": "thirst, dryness",
    "start_frame": 2648,
-   "nframes": 149,
+   "nframes": 237,
    "tail": 0,
-   "render_frames": 149,
-   "seconds": 6.21,
+   "render_frames": 237,
+   "seconds": 9.88,
    "phrases": [
     {
      "text": "My mouth is dried up like a potsherd,",
@@ -482,27 +482,11 @@
      "text": "and my tongue sticks to the roof of my mouth;",
      "start": 3.406,
      "end": 6.058
-    }
-   ]
-  },
-  {
-   "id": "s11b",
-   "block": "b11",
-   "from": 2,
-   "transition_in": "cut",
-   "title": "Dust of death",
-   "visual": "A hand opens and fine dust pours from it, carried away by the wind across the ground; behind, the skull-like rock face of Golgotha in fading light.",
-   "mood": "mortality",
-   "start_frame": 2797,
-   "nframes": 88,
-   "tail": 0,
-   "render_frames": 88,
-   "seconds": 3.67,
-   "phrases": [
+    },
     {
      "text": "you lay me in the dust of death.",
-     "start": 0.269,
-     "end": 2.453
+     "start": 6.478,
+     "end": 8.662
     }
    ]
   },
@@ -515,36 +499,20 @@
    "visual": "Dusk: a pack of wild dogs prowls in a circle around the camera, eyes glinting; behind them the legs and sandals of Roman soldiers also circle. Low, menacing, handheld feel.",
    "mood": "hunted",
    "start_frame": 2885,
-   "nframes": 108,
+   "nframes": 198,
    "tail": 0,
-   "render_frames": 108,
-   "seconds": 4.5,
+   "render_frames": 198,
+   "seconds": 8.25,
    "phrases": [
     {
      "text": "Dogs surround me, a pack of villains encircles me;",
      "start": 0.587,
      "end": 4.378
-    }
-   ]
-  },
-  {
-   "id": "s12b",
-   "block": "b12",
-   "from": 1,
-   "transition_in": "cut",
-   "title": "They pierce",
-   "visual": "Close: an iron spike held against rough wood; a hammer is raised high against the darkened sky - cut at the moment of impact to a single drop of blood running along the wood grain. Tasteful, no gore.",
-   "mood": "piercing, sacrifice",
-   "start_frame": 2993,
-   "nframes": 90,
-   "tail": 0,
-   "render_frames": 90,
-   "seconds": 3.75,
-   "phrases": [
+    },
     {
      "text": "they pierce my hands and my feet.",
-     "start": 0.298,
-     "end": 2.544
+     "start": 4.798,
+     "end": 7.044
     }
    ]
   },
@@ -687,10 +655,10 @@
    "visual": "Resurrection morning: the great round stone rolls aside from a rock-cut tomb, dawn light floods in; inside, the folded linen grave cloths lie on the stone bench; the tomb is empty. Camera moves in.",
    "mood": "glory, wonder",
    "start_frame": 3906,
-   "nframes": 171,
-   "tail": 0,
-   "render_frames": 171,
-   "seconds": 7.12,
+   "nframes": 419,
+   "tail": 14,
+   "render_frames": 433,
+   "seconds": 17.46,
    "phrases": [
     {
      "text": "I will declare your name to my people;",
@@ -701,37 +669,21 @@
      "text": "in the assembly I will praise you.",
      "start": 3.463,
      "end": 5.907
-    }
-   ]
-  },
-  {
-   "id": "s16a",
-   "block": "b16",
-   "from": 0,
-   "transition_in": "cut",
-   "title": "Praise him",
-   "visual": "A multitude on a hillside at sunrise raise their hands in praise, robes and scarves moving in the wind; the camera cranes up over them toward the sun.",
-   "mood": "jubilant",
-   "start_frame": 4077,
-   "nframes": 248,
-   "tail": 14,
-   "render_frames": 262,
-   "seconds": 10.33,
-   "phrases": [
+    },
     {
      "text": "You who fear the Lord, praise him!",
-     "start": 0.582,
-     "end": 2.653
+     "start": 7.707,
+     "end": 9.778
     },
     {
      "text": "All you descendants of Jacob, honor him!",
-     "start": 3.253,
-     "end": 6.275
+     "start": 10.378,
+     "end": 13.4
     },
     {
      "text": "Revere him, all you descendants of Israel!",
-     "start": 6.875,
-     "end": 10.098
+     "start": 14.0,
+     "end": 17.223
     }
    ]
   },
@@ -770,10 +722,10 @@
    "visual": "The sun emerges fully from the clouds and warm light washes over the face of the risen Jesus, peaceful, eyes opening and lifting (bookend of the opening close-up), no crown of thorns.",
    "mood": "peace, answered",
    "start_frame": 4458,
-   "nframes": 150,
+   "nframes": 586,
    "tail": 14,
-   "render_frames": 164,
-   "seconds": 6.25,
+   "render_frames": 600,
+   "seconds": 24.42,
    "phrases": [
     {
      "text": "he has not hidden his face from him",
@@ -784,63 +736,31 @@
      "text": "but has listened to his cry for help.",
      "start": 2.804,
      "end": 5.036
-    }
-   ]
-  },
-  {
-   "id": "s17a",
-   "block": "b17",
-   "from": 0,
-   "transition_in": "dissolve",
-   "title": "Great assembly",
-   "visual": "A great assembly gathered in a stone courtyard at dusk, hundreds of oil lamps glowing, people standing and singing, faces lit warmly; camera glides over them.",
-   "mood": "communal praise",
-   "start_frame": 4608,
-   "nframes": 218,
-   "tail": 14,
-   "render_frames": 232,
-   "seconds": 9.08,
-   "phrases": [
+    },
     {
      "text": "From you comes the theme of my praise in the great assembly;",
-     "start": 0.586,
-     "end": 4.673
+     "start": 6.836,
+     "end": 10.923
     },
     {
      "text": "before those who fear you I will fulfill my vows.",
-     "start": 5.093,
-     "end": 8.903
-    }
-   ]
-  },
-  {
-   "id": "s17b",
-   "block": "b17",
-   "from": 2,
-   "transition_in": "dissolve",
-   "title": "Bread broken",
-   "visual": "Close: hands break a round loaf of flatbread at a rough wooden table in warm lamplight, steam rising; many hands reach in and receive pieces; a clay cup of wine.",
-   "mood": "satisfied, grace",
-   "start_frame": 4826,
-   "nframes": 218,
-   "tail": 14,
-   "render_frames": 232,
-   "seconds": 9.08,
-   "phrases": [
+     "start": 11.343,
+     "end": 15.153
+    },
     {
      "text": "The poor will eat and be satisfied;",
-     "start": 0.37,
-     "end": 2.794
+     "start": 15.703,
+     "end": 18.127
     },
     {
      "text": "those who seek the Lord will praise him—",
-     "start": 3.214,
-     "end": 5.684
+     "start": 18.547,
+     "end": 21.017
     },
     {
      "text": "may your hearts live forever!",
-     "start": 5.984,
-     "end": 7.899
+     "start": 21.317,
+     "end": 23.232
     }
    ]
   },
@@ -884,10 +804,10 @@
    "visual": "People of many nations, diverse in skin tone and dress, kneel on a vast plain at dawn facing a distant hill where an empty cross is lit by the rising sun. Camera slowly rises behind them.",
    "mood": "worship, unity",
    "start_frame": 5272,
-   "nframes": 147,
-   "tail": 0,
-   "render_frames": 147,
-   "seconds": 6.12,
+   "nframes": 421,
+   "tail": 14,
+   "render_frames": 435,
+   "seconds": 17.54,
    "phrases": [
     {
      "text": "for dominion belongs to the Lord",
@@ -898,53 +818,21 @@
      "text": "and he rules over the nations.",
      "start": 2.742,
      "end": 4.942
-    }
-   ]
-  },
-  {
-   "id": "s19a",
-   "block": "b19",
-   "from": 0,
-   "transition_in": "cut",
-   "title": "Crowns laid down",
-   "visual": "Golden crowns and jeweled goblets are laid down on the rocky ground at the foot of the empty cross by hands in rich embroidered sleeves; morning sun glints on the gold.",
-   "mood": "humility of the powerful",
-   "start_frame": 5419,
-   "nframes": 90,
-   "tail": 0,
-   "render_frames": 90,
-   "seconds": 3.75,
-   "phrases": [
+    },
     {
      "text": "All the rich of the earth will feast and worship;",
-     "start": 0.617,
-     "end": 3.605
-    }
-   ]
-  },
-  {
-   "id": "s19b",
-   "block": "b19",
-   "from": 1,
-   "transition_in": "cut",
-   "title": "Kneeling in the dust",
-   "visual": "An old man in a worn robe slowly kneels down in the dust and bows, dust motes floating in a shaft of sunlight.",
-   "mood": "humility of the mortal",
-   "start_frame": 5509,
-   "nframes": 184,
-   "tail": 14,
-   "render_frames": 198,
-   "seconds": 7.67,
-   "phrases": [
+     "start": 6.742,
+     "end": 9.73
+    },
     {
      "text": "all who go down to the dust will kneel before him—",
-     "start": 0.275,
-     "end": 3.484
+     "start": 10.15,
+     "end": 13.359
     },
     {
      "text": "those who cannot keep themselves alive.",
-     "start": 3.784,
-     "end": 6.446
+     "start": 13.659,
+     "end": 16.321
     }
    ]
   },
@@ -957,10 +845,10 @@
    "visual": "Night, by a small fire: a grandfather holds an open scroll and tells a young child the story; he passes a lit clay oil lamp into the child's hands. Warm firelight, sparks rising.",
    "mood": "legacy, intimate",
    "start_frame": 5693,
-   "nframes": 157,
-   "tail": 14,
-   "render_frames": 171,
-   "seconds": 6.54,
+   "nframes": 294,
+   "tail": 0,
+   "render_frames": 294,
+   "seconds": 12.25,
    "phrases": [
     {
      "text": "Posterity will serve him;",
@@ -971,32 +859,16 @@
      "text": "future generations will be told about the Lord.",
      "start": 2.752,
      "end": 6.352
-    }
-   ]
-  },
-  {
-   "id": "s20b",
-   "block": "b20",
-   "from": 2,
-   "transition_in": "dissolve",
-   "title": "River of lights",
-   "visual": "The flame is passed on: a long line of people stretching into the distance across dark hills, each holding a lit oil lamp, forming a winding river of lights under the pre-dawn sky.",
-   "mood": "proclamation, hope",
-   "start_frame": 5850,
-   "nframes": 137,
-   "tail": 0,
-   "render_frames": 137,
-   "seconds": 5.71,
-   "phrases": [
+    },
     {
      "text": "They will proclaim his righteousness,",
-     "start": 0.36,
-     "end": 2.722
+     "start": 6.902,
+     "end": 9.264
     },
     {
      "text": "declaring to a people yet unborn:",
-     "start": 2.942,
-     "end": 5.61
+     "start": 9.484,
+     "end": 12.152
     }
    ]
   },

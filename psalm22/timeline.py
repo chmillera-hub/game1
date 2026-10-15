@@ -14,6 +14,12 @@ DISSOLVE = 14         # frames of overlap for dissolves (rendered as tail of the
 def main():
     ph = json.load(open(os.path.join(WORK, "audio", "phrases.json")))
     shots = json.load(open(os.path.join(ROOT, "text", "shots.json")))["shots"]
+    # shots without a script are folded into the previous shot (it simply runs longer)
+    have = lambda sid: os.path.exists(os.path.join(ROOT, "blender", "shots", sid + ".py"))
+    dropped = [s["id"] for s in shots if not have(s["id"])]
+    if dropped and os.environ.get("KEEP_MISSING") != "1":
+        print("folding shots without scripts into the previous shot:", " ".join(dropped))
+        shots = [s for s in shots if have(s["id"])]
     phrases = ph["phrases"]
     total = ph["total"]
     by_block = {}
