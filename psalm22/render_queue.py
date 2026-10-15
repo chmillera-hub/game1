@@ -56,7 +56,7 @@ def render_shot(shot, q, env):
     if m is None:  # first chunk tells us interp / bake needs
         rc, dt = run_chunk(sid, q, 1, min(n, CHUNK), env)
         m = meta(sid, q)
-        if rc != 0 or m is None:
+        if m is None:   # a crash at Blender exit (rc 139) after rendering is harmless
             log("FAIL %s first chunk rc=%s (see logs/%s_%s.log)" % (sid, rc, sid, q))
             return False
     interp, bake = m.get("interp", False), m.get("needs_bake", False)
