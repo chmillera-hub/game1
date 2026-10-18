@@ -1,0 +1,956 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Open Gate Explainer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #0b0c12;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            font-family: 'Inter', system-ui, sans-serif;
+            color: #9aa0b4;
+        }
+
+        canvas {
+            width: min(100vw, 177.78vh);
+            height: auto;
+            aspect-ratio: 16 / 9;
+            display: block;
+        }
+
+        .hint {
+            margin-top: 10px;
+            font-size: 13px;
+        }
+
+        body.render .hint {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="stage" width="1920" height="1080"></canvas>
+    <p class="hint">Space: pause / play &nbsp;·&nbsp; ← →: skip 5s &nbsp;·&nbsp; R: restart</p>
+
+    <script>
+        // Every frame is a pure function of time, so render.mjs can step
+        // through it frame by frame to export a video.
+        const W = 1920, H = 1080;
+        const DURATION = 97;
+        const canvas = document.getElementById('stage');
+        const ctx = canvas.getContext('2d');
+        const FONT = "'Inter', 'Inter Display', system-ui, sans-serif";
+
+        const C = {
+            bg1: '#12141d', bg2: '#1c2030', cream: '#f4ecdc', amber: '#f2b84b',
+            teal: '#4fc3a1', coral: '#ef6f5e', sky: '#7fb0e8', violet: '#c792ea',
+            muted: '#9aa0b4', stone: '#4a5070', stoneDark: '#343850', gold: '#d9a441',
+            ink: '#1a1c26', grass: '#2b4637'
+        };
+        const VCOL = [C.amber, C.teal, C.coral, C.sky, C.violet, '#f7c59f'];
+
+        // ---------- math helpers ----------
+        const clamp = (v, a = 0, b = 1) => Math.max(a, Math.min(b, v));
+        const lerp = (a, b, u) => a + (b - a) * u;
+        const prog = (t, a, b) => clamp((t - a) / (b - a));
+        const easeOut = u => 1 - Math.pow(1 - u, 3);
+        const easeInOut = u => u < 0.5 ? 4 * u * u * u : 1 - Math.pow(-2 * u + 2, 3) / 2;
+        const backOut = u => { const c = 1.7; return 1 + (c + 1) * Math.pow(u - 1, 3) + c * Math.pow(u - 1, 2); };
+
+        function hexToRgb(h) {
+            const n = parseInt(h.slice(1), 16);
+            return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+        }
+        function mix(a, b, u) {
+            const x = hexToRgb(a), y = hexToRgb(b);
+            return `rgb(${x.map((v, i) => Math.round(lerp(v, y[i], u))).join(',')})`;
+        }
+        function rgba(h, a) {
+            const [r, g, b] = hexToRgb(h);
+            return `rgba(${r},${g},${b},${a})`;
+        }
+
+        // ---------- drawing helpers ----------
+        function rr(x, y, w, h, r) {
+            ctx.beginPath();
+            ctx.roundRect(x, y, w, h, r);
+        }
+
+        function circle(x, y, r) {
+            ctx.beginPath();
+            ctx.arc(x, y, r, 0, Math.PI * 2);
+        }
+
+        function text(str, x, y, o = {}) {
+            const size = o.size || 48;
+            ctx.save();
+            ctx.globalAlpha *= (o.alpha ?? 1);
+            ctx.font = `${o.weight || 700} ${size}px ${FONT}`;
+            ctx.fillStyle = o.color || C.cream;
+            ctx.textAlign = o.align || 'center';
+            ctx.textBaseline = 'middle';
+            ctx.letterSpacing = (o.spacing || 0) + 'px';
+            const lines = o.maxWidth ? wrap(str, o.maxWidth) : [str];
+            const lh = size * (o.lineHeight || 1.2);
+            const y0 = y - (lines.length - 1) * lh / 2;
+            lines.forEach((ln, i) => ctx.fillText(ln, x, y0 + i * lh));
+            ctx.restore();
+        }
+
+        function wrap(str, maxW) {
+            const words = str.split(' ');
+            const lines = [];
+            let cur = '';
+            for (const w of words) {
+                const test = cur ? cur + ' ' + w : w;
+                if (ctx.measureText(test).width > maxW && cur) {
+                    lines.push(cur);
+                    cur = w;
+                } else {
+                    cur = test;
+                }
+            }
+            if (cur) lines.push(cur);
+            return lines;
+        }
+
+        // Shows the latest caption whose start time has passed, fading between them.
+        function captions(t, items, y, o = {}) {
+            for (let i = 0; i < items.length; i++) {
+                const [t0, str, color] = items[i];
+                const t1 = i + 1 < items.length ? items[i + 1][0] : Infinity;
+                if (t < t0 || t > t1) continue;
+                const a = easeOut(prog(t, t0, t0 + 0.45)) * (1 - prog(t, t1 - 0.3, t1));
+                text(str, W / 2, y + (1 - easeOut(prog(t, t0, t0 + 0.45))) * 24,
+                    { ...o, color: color || o.color, alpha: a });
+            }
+        }
+
+        function villager(x, y, s, col, o = {}) {
+            const ph = o.walk;
+            const bob = ph == null ? 0 : -Math.abs(Math.sin(ph)) * 5;
+            ctx.save();
+            ctx.globalAlpha *= (o.alpha ?? 1);
+            ctx.translate(x, y + bob * s);
+            ctx.scale(s * (o.flip ? -1 : 1), s);
+            if (o.glow) {
+                const g = ctx.createRadialGradient(0, -60, 0, 0, -60, 110);
+                g.addColorStop(0, rgba(col, 0.55 * o.glow));
+                g.addColorStop(1, rgba(col, 0));
+                ctx.fillStyle = g;
+                circle(0, -60, 110);
+                ctx.fill();
+            }
+            const sw = ph == null ? 0 : Math.sin(ph) * 14;
+            ctx.strokeStyle = mix(col, '#000000', 0.35);
+            ctx.lineWidth = 11;
+            ctx.lineCap = 'round';
+            ctx.beginPath();
+            ctx.moveTo(-9, -32); ctx.lineTo(-9 + sw, 0);
+            ctx.moveTo(9, -32); ctx.lineTo(9 - sw, 0);
+            ctx.stroke();
+            ctx.fillStyle = col;
+            rr(-24, -84, 48, 60, 22);
+            ctx.fill();
+            circle(0, -106, 20);
+            ctx.fill();
+            ctx.fillStyle = C.ink;
+            circle(-7, -108, 2.8); ctx.fill();
+            circle(7, -108, 2.8); ctx.fill();
+            ctx.strokeStyle = C.ink;
+            ctx.lineWidth = 2.5;
+            ctx.beginPath();
+            if (o.sad) ctx.arc(0, -92, 6, 1.15 * Math.PI, 1.85 * Math.PI);
+            else ctx.arc(0, -102, 6, 0.15 * Math.PI, 0.85 * Math.PI);
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        function gate(x, y, s, o = {}) {
+            const closed = o.closed || 0;
+            const glow = o.glow ?? 0.6;
+            ctx.save();
+            ctx.globalAlpha *= (o.alpha ?? 1);
+            ctx.translate(x, y);
+            ctx.scale(s, s);
+            if (glow > 0) {
+                const g = ctx.createRadialGradient(0, -170, 0, 0, -170, 320);
+                g.addColorStop(0, rgba(C.amber, 0.45 * glow));
+                g.addColorStop(1, rgba(C.amber, 0));
+                ctx.fillStyle = g;
+                circle(0, -170, 320);
+                ctx.fill();
+            }
+            // opening
+            ctx.beginPath();
+            ctx.moveTo(-80, 0);
+            ctx.lineTo(-80, -260);
+            ctx.arc(0, -260, 80, Math.PI, 0);
+            ctx.lineTo(80, 0);
+            ctx.closePath();
+            ctx.fillStyle = rgba(C.amber, 0.12 + 0.18 * glow * (1 - closed));
+            ctx.fill();
+            if (closed > 0) {
+                ctx.save();
+                ctx.clip();
+                ctx.strokeStyle = '#8a8fa3';
+                ctx.lineWidth = 9;
+                ctx.lineCap = 'round';
+                for (let bx = -60; bx <= 60; bx += 30) {
+                    const top = -260 - Math.sqrt(Math.max(0, 80 * 80 - bx * bx));
+                    ctx.beginPath();
+                    ctx.moveTo(bx, top);
+                    ctx.lineTo(bx, lerp(top, 0, closed));
+                    ctx.stroke();
+                }
+                ctx.restore();
+            }
+            // pillars and arch
+            ctx.fillStyle = C.stone;
+            rr(-132, -262, 52, 262, 6); ctx.fill();
+            rr(80, -262, 52, 262, 6); ctx.fill();
+            ctx.fillStyle = C.stoneDark;
+            rr(-142, -284, 72, 26, 6); ctx.fill();
+            rr(70, -284, 72, 26, 6); ctx.fill();
+            ctx.strokeStyle = C.stone;
+            ctx.lineWidth = 50;
+            ctx.beginPath();
+            ctx.arc(0, -262, 106, Math.PI, 0);
+            ctx.stroke();
+            ctx.fillStyle = C.amber;
+            rr(-16, -392, 32, 34, 5);
+            ctx.fill();
+            ctx.restore();
+        }
+
+        function house(x, y, s, col, o = {}) {
+            ctx.save();
+            ctx.globalAlpha *= (o.alpha ?? 1);
+            ctx.translate(x, y);
+            ctx.scale(s, s);
+            ctx.fillStyle = col;
+            if (o.outline) {
+                ctx.setLineDash([14, 12]);
+                ctx.strokeStyle = col;
+                ctx.lineWidth = 6;
+            }
+            ctx.beginPath();
+            ctx.moveTo(-70, 0); ctx.lineTo(-70, -90); ctx.lineTo(0, -150);
+            ctx.lineTo(70, -90); ctx.lineTo(70, 0); ctx.closePath();
+            o.outline ? ctx.stroke() : ctx.fill();
+            ctx.setLineDash([]);
+            ctx.fillStyle = o.outline ? col : rgba(C.ink, 0.55);
+            rr(-18, -56, 36, 56, 4);
+            ctx.fill();
+            if (!o.outline) {
+                ctx.fillStyle = rgba(C.amber, 0.85);
+                rr(30, -74, 24, 22, 3);
+                ctx.fill();
+            }
+            ctx.restore();
+        }
+
+        function lock(x, y, s, alpha = 1) {
+            ctx.save();
+            ctx.globalAlpha *= alpha;
+            ctx.translate(x, y);
+            ctx.scale(s, s);
+            ctx.strokeStyle = C.gold;
+            ctx.lineWidth = 7;
+            ctx.beginPath();
+            ctx.arc(0, -14, 14, Math.PI, 0);
+            ctx.lineTo(14, 0);
+            ctx.moveTo(-14, 0);
+            ctx.lineTo(-14, -14);
+            ctx.stroke();
+            ctx.fillStyle = C.gold;
+            rr(-22, -2, 44, 34, 6);
+            ctx.fill();
+            ctx.fillStyle = C.ink;
+            circle(0, 13, 5);
+            ctx.fill();
+            ctx.restore();
+        }
+
+        function background(t, warm = 0) {
+            const g = ctx.createLinearGradient(0, 0, 0, H);
+            g.addColorStop(0, mix(C.bg1, '#3a2a2a', warm));
+            g.addColorStop(1, mix(C.bg2, '#5a3a2a', warm));
+            ctx.fillStyle = g;
+            ctx.fillRect(0, 0, W, H);
+            // slow drifting motes
+            for (let i = 0; i < 40; i++) {
+                const sx = (i * 397) % W;
+                const sy = (i * 211) % H;
+                const x = (sx + t * (8 + (i % 5) * 4)) % W;
+                const y = (sy - t * (5 + (i % 3) * 3) + H * 4) % H;
+                const a = 0.08 + 0.08 * Math.sin(t * 0.7 + i);
+                ctx.fillStyle = rgba(i % 4 === 0 ? C.amber : C.cream, a);
+                circle(x, y, 2 + (i % 3));
+                ctx.fill();
+            }
+        }
+
+        function ground(y, col = C.grass, alpha = 1) {
+            ctx.save();
+            ctx.globalAlpha *= alpha;
+            ctx.fillStyle = col;
+            ctx.fillRect(0, y, W, H - y);
+            ctx.fillStyle = rgba('#000000', 0.18);
+            ctx.fillRect(0, y, W, 6);
+            ctx.restore();
+        }
+
+        function meter(x, y, w, h, value, col, o = {}) {
+            ctx.save();
+            ctx.globalAlpha *= (o.alpha ?? 1);
+            ctx.fillStyle = rgba(C.cream, 0.1);
+            rr(x, y, w, h, h / 2);
+            ctx.fill();
+            ctx.fillStyle = col;
+            rr(x, y, Math.max(h, w * clamp(value)), h, h / 2);
+            ctx.fill();
+            ctx.restore();
+        }
+
+        // ---------- scenes ----------
+        const scenes = [];
+        const scene = (start, end, draw) => scenes.push({ start, end, draw });
+
+        // 1. Title
+        scene(0, 6, t => {
+            const a = easeOut(prog(t, 0.2, 1.4));
+            gate(W / 2, 640, 1.25 * lerp(0.9, 1, a), { alpha: a, glow: 0.4 + 0.3 * Math.sin(t * 1.5) * 0.5 + 0.3 });
+            ground(640, C.grass, a);
+            const wx = lerp(300, 1650, prog(t, 2.2, 6));
+            villager(wx, 640, 0.9, C.teal, { walk: t * 7, alpha: prog(t, 2.2, 2.6) });
+            const ta = easeOut(prog(t, 1.0, 2.0));
+            text('OPEN GATE', W / 2, 800 - (1 - ta) * 30, { size: 132, weight: 800, spacing: 18, alpha: ta });
+            text('A society sim where nobody can be forced.', W / 2, 910,
+                { size: 44, weight: 500, color: C.muted, alpha: easeOut(prog(t, 2.0, 2.8)) });
+        });
+
+        // 2. No whip
+        scene(6, 15, t => {
+            text('Most strategy games hand you a whip.', W / 2, 140, { size: 64, alpha: easeOut(prog(t, 0.2, 0.8)) });
+            const items = [
+                { x: 520, label: 'THE CAGE', sub: 'obey, or be locked up' },
+                { x: 960, label: 'STARVATION', sub: 'obey, or go hungry' },
+                { x: 1400, label: 'THE STREET', sub: 'obey, or lose your home' }
+            ];
+            items.forEach((it, i) => {
+                const u = backOut(prog(t, 1.2 + i * 0.8, 1.8 + i * 0.8));
+                const a = prog(t, 1.2 + i * 0.8, 1.6 + i * 0.8);
+                ctx.save();
+                ctx.globalAlpha *= a;
+                ctx.translate(it.x, 500);
+                ctx.scale(u, u);
+                ctx.fillStyle = rgba(C.cream, 0.05);
+                rr(-170, -200, 340, 330, 28);
+                ctx.fill();
+                if (i === 0) {
+                    villager(0, 90, 1, C.sky, { sad: true });
+                    ctx.strokeStyle = '#8a8fa3';
+                    ctx.lineWidth = 8;
+                    rr(-95, -150, 190, 250, 14);
+                    ctx.stroke();
+                    for (let bx = -60; bx <= 60; bx += 30) {
+                        ctx.beginPath(); ctx.moveTo(bx, -150); ctx.lineTo(bx, 100); ctx.stroke();
+                    }
+                } else if (i === 1) {
+                    villager(-60, 90, 1, C.amber, { sad: true });
+                    ctx.fillStyle = '#8a8fa3';
+                    ctx.beginPath();
+                    ctx.ellipse(70, 30, 70, 18, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.beginPath();
+                    ctx.moveTo(0, 30);
+                    ctx.quadraticCurveTo(0, 95, 70, 95);
+                    ctx.quadraticCurveTo(140, 95, 140, 30);
+                    ctx.fill();
+                    ctx.fillStyle = C.bg1;
+                    ctx.beginPath();
+                    ctx.ellipse(70, 30, 58, 11, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                } else {
+                    house(30, 60, 0.9, '#8a8fa3', { outline: true });
+                    villager(-90, 100, 1, C.coral, { sad: true });
+                    ctx.strokeStyle = rgba(C.sky, 0.5);
+                    ctx.lineWidth = 3;
+                    for (let r = 0; r < 14; r++) {
+                        const rx = -150 + ((r * 53) % 300);
+                        const ry = -180 + ((r * 97 + t * 400) % 260);
+                        ctx.beginPath(); ctx.moveTo(rx, ry); ctx.lineTo(rx - 6, ry + 22); ctx.stroke();
+                    }
+                }
+                ctx.restore();
+                text(it.label, it.x, 690, { size: 38, weight: 800, spacing: 4, alpha: a });
+                text(it.sub, it.x, 738, { size: 28, weight: 500, color: C.muted, alpha: a });
+                // strike-through
+                const s = easeInOut(prog(t, 4.4 + i * 0.25, 4.9 + i * 0.25));
+                if (s > 0) {
+                    ctx.save();
+                    ctx.strokeStyle = C.coral;
+                    ctx.lineWidth = 14;
+                    ctx.lineCap = 'round';
+                    ctx.beginPath();
+                    ctx.moveTo(it.x - 150, 315);
+                    ctx.lineTo(lerp(it.x - 150, it.x + 150, s), lerp(315, 615, s));
+                    ctx.stroke();
+                    ctx.restore();
+                }
+            });
+            captions(t, [
+                [5.5, "In Open Gate, these tools don't exist.", C.amber],
+                [7.2, 'Not hidden. Not nerfed. Gone.', C.amber]
+            ], 880, { size: 56 });
+        });
+
+        // 3. Premise
+        scene(15, 24, t => {
+            const gy = 800;
+            ground(gy);
+            house(220, gy, 1, '#5b6488');
+            house(420, gy, 0.85, '#6b5b88');
+            house(610, gy, 1.1, '#5b7888');
+            gate(1330, gy, 1.1, { glow: 0.6 + 0.2 * Math.sin(t * 2) });
+            for (let i = 0; i < 5; i++) {
+                const base = 260 + i * 150;
+                const x = base + Math.sin(t * 0.6 + i * 1.7) * 60;
+                const dir = Math.cos(t * 0.6 + i * 1.7) < 0;
+                villager(x, gy, 0.85, VCOL[(i + 1) % 6], { walk: t * 6 + i, flip: dir });
+            }
+            // the leaver
+            const u = prog(t, 3.2, 7.6);
+            const lx = lerp(1000, 1850, u);
+            villager(lx, gy, 0.9, C.coral, { walk: u > 0 && u < 1 ? t * 7 : null });
+            captions(t, [
+                [0.3, 'You steward a small settlement.'],
+                [2.6, 'Every citizen can walk out the gate, any time, for any reason.'],
+                [6.4, 'The gate never closes.', C.amber]
+            ], 170, { size: 60, maxWidth: 1500 });
+        });
+
+        // 4. Core loop
+        scene(24, 35, t => {
+            text('THE CORE LOOP', W / 2, 90, { size: 40, weight: 800, spacing: 10, color: C.muted, alpha: prog(t, 0.2, 0.7) });
+            const cx = W / 2, cy = 560, R = 300;
+            const nodes = [
+                { a: -Math.PI / 2, label: 'NURTURE', sub: 'food, rest, safety: free', col: C.teal, dx: 140, dy: 0, al: 'left' },
+                { a: 0, label: 'CHOOSE', sub: 'people pick their roles', col: C.amber, dx: 130, dy: 0, al: 'left' },
+                { a: Math.PI / 2, label: 'CONTRIBUTE', sub: 'work worth doing', col: C.sky, dx: 140, dy: 0, al: 'left' },
+                { a: Math.PI, label: 'FLOURISH', sub: 'the settlement thrives', col: C.coral, dx: -130, dy: 0, al: 'right' }
+            ];
+            // arcs
+            nodes.forEach((n, i) => {
+                const d = easeInOut(prog(t, 1.2 + i * 0.6, 1.9 + i * 0.6));
+                if (d <= 0) return;
+                const a0 = n.a + 0.36, a1 = n.a + Math.PI / 2 - 0.36;
+                ctx.save();
+                ctx.strokeStyle = rgba(C.cream, 0.35);
+                ctx.lineWidth = 8;
+                ctx.lineCap = 'round';
+                ctx.beginPath();
+                ctx.arc(cx, cy, R, a0, lerp(a0, a1, d));
+                ctx.stroke();
+                if (d >= 1) {
+                    const ex = cx + Math.cos(a1) * R, ey = cy + Math.sin(a1) * R;
+                    const ang = a1 + Math.PI / 2;
+                    ctx.fillStyle = rgba(C.cream, 0.6);
+                    ctx.beginPath();
+                    ctx.moveTo(ex + Math.cos(ang) * 18, ey + Math.sin(ang) * 18);
+                    ctx.lineTo(ex + Math.cos(ang + 2.5) * 16, ey + Math.sin(ang + 2.5) * 16);
+                    ctx.lineTo(ex + Math.cos(ang - 2.5) * 16, ey + Math.sin(ang - 2.5) * 16);
+                    ctx.fill();
+                }
+                ctx.restore();
+            });
+            // travelling spark
+            if (t > 4) {
+                const a = -Math.PI / 2 + (t - 4) * 1.4;
+                const sx = cx + Math.cos(a) * R, sy = cy + Math.sin(a) * R;
+                const g = ctx.createRadialGradient(sx, sy, 0, sx, sy, 40);
+                g.addColorStop(0, rgba(C.cream, 0.9 * prog(t, 4, 4.5)));
+                g.addColorStop(1, rgba(C.cream, 0));
+                ctx.fillStyle = g;
+                circle(sx, sy, 40);
+                ctx.fill();
+            }
+            nodes.forEach((n, i) => {
+                const u = backOut(prog(t, 0.5 + i * 0.6, 1.1 + i * 0.6));
+                const x = cx + Math.cos(n.a) * R, y = cy + Math.sin(n.a) * R;
+                const active = Math.floor(((t - 4) * 1.4) / (Math.PI / 2) + 0.5) % 4 === i && t > 4;
+                ctx.save();
+                ctx.globalAlpha *= prog(t, 0.5 + i * 0.6, 0.9 + i * 0.6);
+                ctx.translate(x, y);
+                ctx.scale(u * (active ? 1.06 : 1), u * (active ? 1.06 : 1));
+                ctx.fillStyle = n.col;
+                circle(0, 0, 100);
+                ctx.fill();
+                ctx.restore();
+                text(n.label, x, y, { size: n.label.length > 8 ? 23 : 30, weight: 800, spacing: 2, color: C.ink,
+                    alpha: prog(t, 0.7 + i * 0.6, 1.1 + i * 0.6) });
+                const sx = x + n.dx;
+                text(n.sub, sx, y + n.dy, { size: 30, weight: 500, color: C.muted, align: n.al,
+                    alpha: prog(t, 1.4 + i * 0.6, 1.8 + i * 0.6) });
+            });
+            text('Make the work', cx, cy - 30, { size: 44, weight: 800, alpha: easeOut(prog(t, 5.5, 6.2)) });
+            text('worth choosing.', cx, cy + 26, { size: 44, weight: 800, color: C.amber, alpha: easeOut(prog(t, 5.9, 6.6)) });
+        });
+
+        // 5. Consent
+        scene(35, 47, t => {
+            text('Every role runs on consent.', W / 2, 110, { size: 64, alpha: easeOut(prog(t, 0.2, 0.8)) });
+            const roles = [
+                { name: 'FARMING', col: C.amber, v: 0.86 },
+                { name: 'CAREGIVING', col: C.teal, v: 0.8 },
+                { name: 'PARENTING', col: C.violet, v: 0.9 },
+                { name: 'BUILDING', col: C.sky, v: 0.82 }
+            ];
+            const drop = easeInOut(prog(t, 2.0, 4.0));
+            const fix = easeInOut(prog(t, 8.2, 10.2));
+            roles.forEach((r, i) => {
+                const x = 280 + i * 453, y = 210, w = 400, h = 470;
+                const a = easeOut(prog(t, 0.4 + i * 0.2, 0.9 + i * 0.2));
+                let v = r.v + Math.sin(t * 1.3 + i) * 0.03;
+                let border = rgba(C.cream, 0.12);
+                let workers = 3;
+                let sad = false;
+                if (i === 1) {
+                    v = lerp(lerp(0.8, 0.14, drop), 0.92, fix);
+                    border = fix > 0.5 ? C.teal : (drop > 0.3 ? C.coral : border);
+                    workers = 3;
+                    sad = drop > 0.3 && fix < 0.5;
+                }
+                ctx.save();
+                ctx.globalAlpha *= a;
+                ctx.fillStyle = rgba(C.cream, 0.05);
+                rr(x - w / 2, y, w, h, 24);
+                ctx.fill();
+                ctx.strokeStyle = border;
+                ctx.lineWidth = 4;
+                rr(x - w / 2, y, w, h, 24);
+                ctx.stroke();
+                ctx.restore();
+                text(r.name, x, y + 50, { size: 34, weight: 800, spacing: 4, color: r.col, alpha: a });
+                text('CONSENT', x - 160, y + 108, { size: 22, weight: 700, spacing: 3, color: C.muted, align: 'left', alpha: a });
+                text(Math.round(clamp(v) * 100) + '%', x + 160, y + 108, { size: 26, weight: 800, align: 'right', alpha: a,
+                    color: v < 0.4 ? C.coral : C.cream });
+                meter(x - 160, y + 128, 320, 18, v, v < 0.4 ? C.coral : r.col, { alpha: a });
+                for (let k = 0; k < workers; k++) {
+                    let wx = x - 110 + k * 110, wy = y + h - 40;
+                    let wa = a, walk = null;
+                    if (i === 1) {
+                        const leave = easeInOut(prog(t, 2.4 + k * 0.3, 4.2 + k * 0.3));
+                        const back = easeInOut(prog(t, 9.0 + k * 0.3, 10.6 + k * 0.3));
+                        const off = 420 * leave * (1 - back);
+                        wy += off;
+                        wa *= 1 - clamp(off / 300);
+                        if ((leave > 0 && leave < 1) || (back > 0 && back < 1)) walk = t * 7 + k;
+                    }
+                    ctx.save();
+                    ctx.beginPath();
+                    ctx.rect(x - w / 2, y, w, h);
+                    ctx.clip();
+                    villager(wx, wy, 0.95, VCOL[(i + k * 2) % 6], { alpha: wa, walk, sad });
+                    ctx.restore();
+                }
+                if (i === 1) {
+                    ['+ REST', '+ SUPPORT', '+ COMMUNITY'].forEach((chip, c) => {
+                        const u = backOut(prog(t, 7.4 + c * 0.35, 7.9 + c * 0.35));
+                        const ca = prog(t, 7.4 + c * 0.35, 7.7 + c * 0.35);
+                        if (ca <= 0) return;
+                        const cy2 = y + 200 + c * 60;
+                        ctx.save();
+                        ctx.globalAlpha *= ca;
+                        ctx.translate(x, cy2);
+                        ctx.scale(u, u);
+                        ctx.fillStyle = rgba(C.teal, 0.22);
+                        rr(-120, -22, 240, 44, 22);
+                        ctx.fill();
+                        ctx.restore();
+                        text(chip, x, cy2, { size: 24, weight: 800, spacing: 2, color: C.teal, alpha: ca });
+                    });
+                }
+            });
+            captions(t, [
+                [1.0, 'Make a role miserable, and people walk away from it.'],
+                [4.4, "That's not laziness. It's feedback: the structure is toxic.", C.coral],
+                [7.2, 'Fix the structure: rest, support, real community...'],
+                [9.6, '...and people choose it again.', C.teal]
+            ], 840, { size: 52, maxWidth: 1700 });
+        });
+
+        // 6. Commons
+        scene(47, 56, t => {
+            const gy = 880;
+            const open = easeInOut(prog(t, 5.4, 6.6));
+            const tiles = [
+                { name: 'LAND', col: '#4f7a52' },
+                { name: 'FARMS', col: '#a8883a' },
+                { name: 'WATER', col: '#3f78a8' },
+                { name: 'MATERIALS', col: '#8a6248' }
+            ];
+            tiles.forEach((tl, i) => {
+                const x = 330 + i * 420, y = 450, w = 330, h = 250;
+                const a = easeOut(prog(t, 0.3 + i * 0.2, 0.8 + i * 0.2));
+                ctx.save();
+                ctx.globalAlpha *= a;
+                ctx.fillStyle = mix(tl.col, C.bg1, 0.45 * (1 - open));
+                rr(x - w / 2, y - h / 2, w, h, 20);
+                ctx.fill();
+                ctx.translate(x, y - 10);
+                ctx.strokeStyle = rgba(C.cream, 0.75);
+                ctx.fillStyle = rgba(C.cream, 0.75);
+                ctx.lineWidth = 6;
+                ctx.lineCap = 'round';
+                if (i === 0) {
+                    ctx.beginPath();
+                    ctx.moveTo(-110, 50); ctx.quadraticCurveTo(-50, -50, 10, 30);
+                    ctx.quadraticCurveTo(60, -40, 110, 50); ctx.stroke();
+                } else if (i === 1) {
+                    for (let s = -2; s <= 2; s++) {
+                        ctx.beginPath(); ctx.moveTo(s * 40, 60); ctx.lineTo(s * 40, -30); ctx.stroke();
+                        for (let k = 0; k < 3; k++) {
+                            ctx.beginPath(); ctx.ellipse(s * 40 - 7, -30 + k * 20, 6, 11, -0.5, 0, Math.PI * 2); ctx.fill();
+                            ctx.beginPath(); ctx.ellipse(s * 40 + 7, -30 + k * 20, 6, 11, 0.5, 0, Math.PI * 2); ctx.fill();
+                        }
+                    }
+                } else if (i === 2) {
+                    for (let k = 0; k < 3; k++) {
+                        ctx.beginPath();
+                        for (let px = -110; px <= 110; px += 4) {
+                            const py = -30 + k * 40 + Math.sin(px / 22 + t * 2 + k) * 10;
+                            px === -110 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
+                        }
+                        ctx.stroke();
+                    }
+                } else {
+                    for (let row = 0; row < 3; row++) {
+                        for (let b = 0; b < 3 - row; b++) {
+                            rr(-90 + row * 30 + b * 62, 30 - row * 38, 56, 32, 4);
+                            ctx.stroke();
+                        }
+                    }
+                }
+                ctx.restore();
+                text(tl.name, x, y + h / 2 + 44, { size: 32, weight: 800, spacing: 4, alpha: a });
+                // fence
+                const fa = a * (1 - open);
+                if (fa > 0) {
+                    ctx.save();
+                    ctx.globalAlpha *= fa;
+                    ctx.translate(0, open * 60);
+                    ctx.strokeStyle = C.gold;
+                    ctx.lineWidth = 7;
+                    for (let fx = x - w / 2 - 14; fx <= x + w / 2 + 14; fx += 30) {
+                        ctx.beginPath(); ctx.moveTo(fx, y - h / 2 - 20); ctx.lineTo(fx, y + h / 2 + 10); ctx.stroke();
+                    }
+                    ctx.lineWidth = 6;
+                    [y - h / 2, y + h / 2 - 20].forEach(ry => {
+                        ctx.beginPath(); ctx.moveTo(x - w / 2 - 20, ry); ctx.lineTo(x + w / 2 + 20, ry); ctx.stroke();
+                    });
+                    ctx.restore();
+                    lock(x, y + h / 2 - 30 + open * 60, 1.3, fa);
+                    text('OWNED', x, y - h / 2 - 46, { size: 22, weight: 800, spacing: 4, color: C.gold, alpha: fa });
+                }
+            });
+            ground(gy, C.grass, 0.9);
+            for (let i = 0; i < 8; i++) {
+                const x0 = 220 + i * 210;
+                const move = easeInOut(prog(t, 6.2 + i * 0.08, 7.8 + i * 0.08));
+                villager(x0 + (330 + Math.floor(i / 2) * 420 - x0) * move * 0.3, gy, 0.9, VCOL[i % 6], {
+                    alpha: prog(t, 0.8, 1.4), sad: open < 0.5,
+                    walk: move > 0 && move < 1 ? t * 7 + i : null, glow: move * 0.6
+                });
+            }
+            captions(t, [
+                [0.3, 'At the start, everything you need is fenced off.'],
+                [2.8, 'When the food is behind a fence, "freedom of choice" is a cruel joke.', C.gold],
+                [5.6, 'So you unlock the commons, for everyone.', C.teal]
+            ], 160, { size: 54, maxWidth: 1600 });
+        });
+
+        // 7. Lenses
+        scene(56, 69, t => {
+            captions(t, [[0.2, 'Your only tool is your voice.']], 90, { size: 54, color: C.muted });
+            const ma = easeOut(prog(t, 0.8, 1.5));
+            ctx.save();
+            ctx.globalAlpha *= ma;
+            ctx.fillStyle = rgba(C.amber, 0.14);
+            rr(W / 2 - 560, 180, 1120, 130, 65);
+            ctx.fill();
+            ctx.strokeStyle = C.amber;
+            ctx.lineWidth = 4;
+            rr(W / 2 - 560, 180, 1120, 130, 65);
+            ctx.stroke();
+            ctx.restore();
+            text('Help each other. Harm no one.', W / 2, 245, { size: 60, weight: 800, alpha: ma });
+            const lenses = [
+                { tag: 'ECONOMIC', line: 'Share the harvest.' },
+                { tag: 'CARE', line: 'Look after the vulnerable.' },
+                { tag: 'BUILDER', line: "Build, don't break." },
+                { tag: 'FAMILY', line: 'Raise kids in safety, not fear.' },
+                { tag: 'JUSTICE', line: 'No cages. No threats.' },
+                { tag: 'EVERYDAY', line: 'Be kind. Then be kind again.' }
+            ];
+            lenses.forEach((l, i) => {
+                const t0 = 2.4 + i * 0.95;
+                const u = backOut(prog(t, t0, t0 + 0.5));
+                const a = prog(t, t0, t0 + 0.3);
+                const col = VCOL[i];
+                const x = 400 + (i % 3) * 560, y = 440 + Math.floor(i / 3) * 150;
+                if (a > 0) {
+                    ctx.save();
+                    ctx.globalAlpha *= a;
+                    ctx.translate(x, y);
+                    ctx.scale(u, u);
+                    ctx.fillStyle = rgba(col, 0.12);
+                    rr(-250, -55, 500, 110, 20);
+                    ctx.fill();
+                    ctx.fillStyle = col;
+                    circle(-205, 0, 22);
+                    ctx.fill();
+                    ctx.fillStyle = C.bg1;
+                    circle(-205, 0, 11);
+                    ctx.fill();
+                    ctx.restore();
+                    text(l.tag + ' LENS', x - 165, y - 22, { size: 20, weight: 800, spacing: 3, color: col, align: 'left', alpha: a });
+                    text(l.line, x - 165, y + 16, { size: 32, weight: 700, align: 'left', alpha: a });
+                }
+                const vx = 460 + i * 200;
+                const lit = prog(t, t0 + 0.2, t0 + 0.6);
+                const jump = Math.sin(clamp((t - t0 - 0.2) / 0.5) * Math.PI) * 30;
+                villager(vx, 880 - jump, 0.9, col, { glow: lit, alpha: 0.35 + 0.65 * lit, sad: lit < 0.5 });
+            });
+            captions(t, [
+                [8.6, 'Repeat it. Rephrase it. Use every word under the sun.', C.amber],
+                [11.0, 'One message. Six lenses. Six people reached.', C.teal]
+            ], 1000, { size: 48 });
+        });
+
+        // 8. Force
+        scene(69, 81, t => {
+            captions(t, [
+                [0.3, "There's one more button."],
+                [1.6, 'FORCE: make everyone obey.', C.coral]
+            ], 110, { size: 60 });
+            const bx = 520, by = 520;
+            const press = t > 3.8 ? Math.max(0, 1 - (t - 3.8) * 4) : 0;
+            const ba = easeOut(prog(t, 1.4, 2.0));
+            ctx.save();
+            ctx.globalAlpha *= ba;
+            ctx.fillStyle = '#7a2c25';
+            rr(bx - 200, by + 40, 400, 70, 20);
+            ctx.fill();
+            ctx.fillStyle = mix(C.coral, '#c0392b', 0.5);
+            ctx.beginPath();
+            ctx.ellipse(bx, by + 40 - 30 + press * 22, 160, 60, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillRect(bx - 160, by - 30 + press * 22, 320, 70 - press * 22);
+            ctx.fillStyle = C.coral;
+            ctx.beginPath();
+            ctx.ellipse(bx, by - 30 + press * 22, 160, 60, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+            text('FORCE', bx, by - 30 + press * 22, { size: 52, weight: 800, spacing: 8, color: C.cream, alpha: ba });
+            // shockwave
+            if (t > 3.8 && t < 5) {
+                const s = (t - 3.8) / 1.2;
+                ctx.strokeStyle = rgba(C.coral, 1 - s);
+                ctx.lineWidth = 10;
+                ctx.beginPath();
+                ctx.ellipse(bx, by, 160 + s * 500, 60 + s * 200, 0, 0, Math.PI * 2);
+                ctx.stroke();
+            }
+            // cursor
+            const ca = prog(t, 2.4, 2.7) * (1 - prog(t, 4.6, 5));
+            if (ca > 0) {
+                const m = easeInOut(prog(t, 2.5, 3.7));
+                const cx = lerp(900, bx + 30, m), cy = lerp(900, by - 20, m) + press * 10;
+                ctx.save();
+                ctx.globalAlpha *= ca;
+                ctx.translate(cx, cy);
+                ctx.fillStyle = C.cream;
+                ctx.strokeStyle = C.ink;
+                ctx.lineWidth = 4;
+                ctx.beginPath();
+                ctx.moveTo(0, 0); ctx.lineTo(0, 60); ctx.lineTo(16, 46); ctx.lineTo(28, 72);
+                ctx.lineTo(38, 67); ctx.lineTo(26, 42); ctx.lineTo(46, 42); ctx.closePath();
+                ctx.fill(); ctx.stroke();
+                ctx.restore();
+            }
+            // output chart
+            const gx = 960, gyTop = 280, gw = 760, gh = 400;
+            const chA = easeOut(prog(t, 2.0, 2.6));
+            ctx.save();
+            ctx.globalAlpha *= chA;
+            ctx.strokeStyle = rgba(C.cream, 0.3);
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(gx, gyTop); ctx.lineTo(gx, gyTop + gh); ctx.lineTo(gx + gw, gyTop + gh);
+            ctx.stroke();
+            ctx.restore();
+            text('OUTPUT', gx, gyTop - 30, { size: 24, weight: 800, spacing: 4, color: C.muted, align: 'left', alpha: chA });
+            const f = u => {
+                if (u < 0.35) return 0.5 + Math.sin(u * 30) * 0.02;
+                if (u < 0.5) return lerp(0.5, 0.92, easeOut((u - 0.35) / 0.15));
+                if (u < 0.8) return lerp(0.92, 0.05, easeInOut((u - 0.5) / 0.3));
+                return 0.05;
+            };
+            const shown = clamp(prog(t, 2.0, 3.8) * 0.35 + prog(t, 3.8, 8.5) * 0.65);
+            ctx.save();
+            ctx.globalAlpha *= chA;
+            ctx.lineWidth = 8;
+            ctx.lineJoin = 'round';
+            ctx.lineCap = 'round';
+            ctx.strokeStyle = shown > 0.55 ? C.coral : C.amber;
+            ctx.beginPath();
+            for (let u = 0; u <= shown; u += 0.004) {
+                const px = gx + u * gw, py = gyTop + gh - f(u) * gh;
+                u === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
+            }
+            ctx.stroke();
+            ctx.restore();
+            if (shown > 0.42) {
+                text('+40%  short-term', gx + 0.48 * gw, gyTop + gh - 0.92 * gh - 40,
+                    { size: 26, weight: 800, color: C.amber, alpha: prog(shown, 0.42, 0.48) * chA });
+            }
+            if (shown > 0.85) {
+                text('collapse', gx + 0.88 * gw, gyTop + gh - 50, { size: 26, weight: 800, color: C.coral, alpha: prog(shown, 0.85, 0.9) });
+            }
+            // the world drains of colour
+            const desat = easeInOut(prog(t, 5.2, 7.5));
+            if (desat > 0) {
+                ctx.save();
+                ctx.globalCompositeOperation = 'saturation';
+                ctx.globalAlpha = desat;
+                ctx.fillStyle = '#808080';
+                ctx.fillRect(0, 0, W, H);
+                ctx.restore();
+            }
+            // stamp
+            const st = prog(t, 6.6, 6.9);
+            if (st > 0) {
+                const sc = lerp(1.8, 1, easeOut(st));
+                ctx.save();
+                ctx.globalAlpha *= st;
+                ctx.translate(W / 2, 560);
+                ctx.rotate(-0.08);
+                ctx.scale(sc, sc);
+                ctx.fillStyle = rgba(C.bg1, 0.85);
+                rr(-420, -110, 840, 220, 18);
+                ctx.fill();
+                ctx.strokeStyle = C.coral;
+                ctx.lineWidth = 10;
+                rr(-420, -110, 840, 220, 18);
+                ctx.stroke();
+                ctx.restore();
+                ctx.save();
+                ctx.translate(W / 2, 560);
+                ctx.rotate(-0.08);
+                ctx.scale(sc, sc);
+                text('LABOR CAMP', 0, -28, { size: 104, weight: 800, spacing: 10, color: C.coral, alpha: st });
+                text('(with a PR department)', 0, 58, { size: 38, weight: 600, color: C.cream, alpha: st });
+                ctx.restore();
+            }
+            captions(t, [
+                [8.0, 'Any drop of force poisons the run. Game over.', C.coral],
+                [9.8, 'You stopped solving "how do we live together?" and started solving "how do we keep them in the pen?"']
+            ], 900, { size: 46, maxWidth: 1500 });
+        });
+
+        // 9. Winning
+        scene(81, 90, t => {
+            const sun = easeOut(prog(t, 0, 4));
+            const sg = ctx.createRadialGradient(W / 2, 760 - sun * 200, 0, W / 2, 760 - sun * 200, 700);
+            sg.addColorStop(0, rgba('#ffcf7a', 0.55));
+            sg.addColorStop(1, rgba('#ffcf7a', 0));
+            ctx.fillStyle = sg;
+            ctx.fillRect(0, 0, W, H);
+            const gy = 820;
+            gate(W / 2, gy, 1.15, { glow: 1 });
+            ground(gy, '#35573f');
+            for (let i = 0; i < 12; i++) {
+                const fromLeft = i % 2 === 0;
+                const delay = (i >> 1) * 0.5;
+                const u = easeOut(prog(t, 0.5 + delay, 6 + delay));
+                const target = fromLeft ? 220 + (i >> 1) * 90 : 1700 - (i >> 1) * 90;
+                const start = fromLeft ? -80 - (i >> 1) * 40 : W + 80 + (i >> 1) * 40;
+                const x = lerp(start, target, u);
+                villager(x, gy, 0.85, VCOL[i % 6], { walk: u < 0.98 ? t * 7 + i : null, flip: !fromLeft, glow: u * 0.4 });
+            }
+            text('FLOURISHING', 560, 80, { size: 26, weight: 800, spacing: 5, color: C.muted, align: 'left', alpha: prog(t, 0.6, 1) });
+            meter(560, 108, 800, 26, easeInOut(prog(t, 1, 7.5)), C.teal, { alpha: prog(t, 0.6, 1) });
+            captions(t, [
+                [0.5, "The win condition isn't output."],
+                [3.0, 'You win when people stay because they want to.', C.amber]
+            ], 240, { size: 60 });
+        });
+
+        // 10. End card
+        scene(90, 97, t => {
+            gate(W / 2, 520, 0.9, { alpha: easeOut(prog(t, 0.2, 1)), glow: 0.8 });
+            text('OPEN GATE', W / 2, 640, { size: 120, weight: 800, spacing: 18, alpha: easeOut(prog(t, 0.5, 1.3)) });
+            const parts = [['Pro-human', C.teal], ['Non-violent', C.amber], ['Consensual', C.coral]];
+            parts.forEach(([p, col], i) => {
+                text(p, W / 2 + (i - 1) * 380, 770, { size: 46, weight: 800, color: col, alpha: easeOut(prog(t, 1.4 + i * 0.4, 2 + i * 0.4)) });
+            });
+            text('Every second of every run.', W / 2, 860, { size: 34, weight: 500, color: C.muted, alpha: easeOut(prog(t, 3, 3.8)) });
+        });
+
+        function render(t) {
+            ctx.save();
+            ctx.globalCompositeOperation = 'source-over';
+            ctx.globalAlpha = 1;
+            const warm = t > 81 && t < 90 ? 0.5 * prog(t, 81, 83) * (1 - prog(t, 89.5, 90)) : 0;
+            background(t, warm);
+            for (const s of scenes) {
+                if (t < s.start || t >= s.end) continue;
+                const lt = t - s.start;
+                const fadeOut = s.end === DURATION ? 1.2 : 0.45;
+                ctx.save();
+                ctx.globalAlpha = prog(lt, 0, 0.45) * (1 - prog(t, s.end - fadeOut, s.end));
+                s.draw(lt);
+                ctx.restore();
+            }
+            ctx.restore();
+        }
+
+        window.render = render;
+        window.DURATION = DURATION;
+
+        // Interactive preview (skipped when render.mjs drives the page).
+        if (!location.search.includes('render')) {
+            let t = 0, playing = true, last = performance.now();
+            const loop = now => {
+                if (playing) t = (t + (now - last) / 1000) % DURATION;
+                last = now;
+                render(t);
+                requestAnimationFrame(loop);
+            };
+            addEventListener('keydown', e => {
+                if (e.code === 'Space') { playing = !playing; e.preventDefault(); }
+                if (e.code === 'ArrowRight') t = Math.min(DURATION - 0.01, t + 5);
+                if (e.code === 'ArrowLeft') t = Math.max(0, t - 5);
+                if (e.key === 'r' || e.key === 'R') t = 0;
+            });
+            canvas.addEventListener('click', () => { playing = !playing; });
+            document.fonts.ready.then(() => requestAnimationFrame(loop));
+        } else {
+            document.body.classList.add('render');
+        }
+    </script>
+</body>
+</html>
