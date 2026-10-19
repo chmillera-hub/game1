@@ -87,6 +87,19 @@ def harmonic_tone(f, dur, amp, a, r, nh=10, tilt=1.2, vib=0.0, vibf=5.0, cutoff=
     return y * env_adsr(n, a, r) * amp
 
 
+def xylo(f, amp=1.0):
+    n = int(0.6 * SR); t = tt(n)
+    y = (np.sin(2 * np.pi * f * t) * np.exp(-t / 0.2) + 0.4 * np.sin(2 * np.pi * f * 3.93 * t) * np.exp(-t / 0.07)
+         + 0.15 * np.sin(2 * np.pi * f * 9.0 * t) * np.exp(-t / 0.03))
+    return y * np.minimum(1, t / 0.001) * amp * 0.5
+
+
+def tuba(f, dur=0.32, amp=1.0):
+    form = [(230, 150, 1.0), (520, 220, 0.5), (1100, 300, 0.12)]
+    y = harmonic_tone(f, dur, amp * 0.55, 0.03, dur * 0.6, nh=12, formants=form, detune=(0,))
+    return y
+
+
 def pad(f, dur, amp=1.0):
     return harmonic_tone(f, dur, amp * 0.22, min(1.4, dur * 0.4), min(1.6, dur * 0.4), nh=10, tilt=1.0,
                          cutoff=900, detune=(-7, 0, 7), vib=0.002, vibf=0.3)
@@ -136,8 +149,8 @@ def slow_lfo(n, rate, seed):
 # ---------------------------------------------------------------- moods
 MOODS = {
     #           chords (midi), chord seconds
-    'mystery': ([[50, 57, 64, 65], [46, 53, 57, 62], [43, 50, 52, 58], [45, 52, 55, 61]], 6.0),
-    'comic':   ([[50, 57, 62, 65], [43, 55, 58, 62], [45, 57, 61, 64], [50, 57, 62, 65]], 1.85),
+    'mystery': ([[50, 57, 64, 65], [46, 53, 57, 62], [43, 50, 52, 58], [45, 52, 55, 61]], 5.4),
+    'comic':   ([[50, 57, 62, 65], [50, 57, 62, 65], [43, 55, 58, 62], [45, 57, 61, 64]], 1.25),
     'tender':  ([[41, 57, 60, 65], [40, 55, 60, 64], [38, 57, 62, 65], [46, 58, 62, 65]], 4.0),
     'sad':     ([[38, 57, 62, 65], [34, 58, 62, 65], [43, 55, 58, 62], [45, 57, 61, 64]], 5.0),
     'wonder':  ([[46, 58, 62, 65], [45, 57, 60, 65], [43, 58, 62, 67], [50, 57, 62, 66]], 4.0),
@@ -174,23 +187,38 @@ def render_mood(name, t0, t1, total_n):
         root = ch[0]
         d = cd + 0.6
         if name == 'mystery':
+            # slow, eerie lullaby waltz: choir + pizzicato "oom" + celesta "pah pah"
             for m in ch[1:]:
-                add(buf, choir(mtof(m), d + 1.0, 0.55), t, pan=r.uniform(-.5, .5))
-            add(buf, cello(mtof(root - 12 if root > 45 else root), d + 1.0, 0.6, a=1.2), t)
-            for k in range(4):
-                if r.random() < 0.7:
+                add(buf, choir(mtof(m), d + 1.0, 0.5), t, pan=r.uniform(-.5, .5))
+            add(buf, cello(mtof(root - 12 if root > 45 else root), d + 1.0, 0.45, a=1.2), t)
+            bar = cd / 3
+            for b in range(3):
+                t0 = t + b * bar
+                add(buf, pluck(mtof(root - 12 if b % 2 == 0 else root - 5), 0.8, 0.55, 0.25), t0)
+                for beat in (1, 2):
+                    for m in (ch[2], ch[3]):
+                        add(buf, celesta(mtof(m + 12), 0.9, 0.09), t0 + beat * bar / 3, pan=0.3)
+                if r.random() < 0.75:
                     m = r.choice(scale_min) + 12
-                    add(buf, musicbox(mtof(m), 2.5, 0.35), t + k * cd / 4 + r.uniform(0, .2), pan=r.uniform(-.6, .6))
+                    add(buf, musicbox(mtof(m), 2.5, 0.28), t0 + r.choice([0, bar / 3, 2 * bar / 3]), pan=r.uniform(-.6, .6))
         elif name == 'comic':
-            beat = cd / 4
-            for k in range(4):
-                bm = root - 12 if k % 2 == 0 else root - 5
-                add(buf, pluck(mtof(bm), 0.5, 0.9, 0.3), t + k * beat)
-                add(buf, pluck(mtof(ch[1 + k % 3]), 0.3, 0.35, 0.8), t + k * beat + beat / 2, pan=0.4)
-            if r.random() < 0.8:
-                run = sorted(r.choice(scale_min, 3, replace=False))
-                for j, m in enumerate(run):
-                    add(buf, celesta(mtof(m + 12), 1.0, 0.28), t + cd * 0.5 + j * beat / 2, pan=-0.3)
+            # macabre oom-pah-pah waltz with xylophone
+            bar = cd
+            beat = bar / 3
+            add(buf, tuba(mtof(root - 12), 0.34, 0.9), t)
+            add(buf, pluck(mtof(root - 12), 0.4, 0.5, 0.3), t)
+            for k in (1, 2):
+                for m in ch[1:]:
+                    add(buf, pluck(mtof(m), 0.22, 0.22, 0.85), t + k * beat, pan=0.35)
+            hm = [62, 64, 65, 67, 69, 70, 73, 74, 76, 77]
+            idx = getattr(render_mood, '_xi', 4)
+            for k in range(3 if r.random() < 0.6 else 6):
+                idx = int(np.clip(idx + r.choice([-2, -1, 1, 1, 2, 3, -3]), 0, len(hm) - 1))
+                step = beat if k < 3 else beat / 2
+                tk = t + (k * beat if r.random() < 0.6 else k * beat / 2)
+                if r.random() < 0.85:
+                    add(buf, xylo(mtof(hm[idx] + 12), 0.42), tk, pan=-0.3)
+            render_mood._xi = idx
         elif name == 'tender':
             for m in ch[1:]:
                 add(buf, pad(mtof(m), d + 0.8, 0.8), t, pan=r.uniform(-.4, .4))

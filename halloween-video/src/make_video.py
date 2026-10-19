@@ -9,11 +9,14 @@ def work(i, states):
     p = subprocess.Popen(['ffmpeg', '-v', 'error', '-y', '-f', 'rawvideo', '-pix_fmt', 'bgr0', '-s', '1080x1920',
                           '-r', '24', '-i', 'pipe:0', '-c:v', 'libx264', '-preset', 'fast', '-crf', '8',
                           '-pix_fmt', 'yuv420p', os.path.join(HERE, f'seg{i}.mp4')], stdin=subprocess.PIPE)
-    surf = None
+    # stop-motion: animate "on twos" (each pose held for two frames)
+    data = None
     for k in range(lo, hi):
-        surf = render.render(states[k], None)
-        surf.flush()
-        p.stdin.write(bytes(surf.get_data()))
+        if data is None or k % 2 == 0:
+            surf = render.render(states[k - k % 2], None)
+            surf.flush()
+            data = bytes(surf.get_data())
+        p.stdin.write(data)
         if (k - lo) % 200 == 0:
             print(f'w{i} {k - lo}/{hi - lo}', flush=True)
     p.stdin.close(); p.wait()
