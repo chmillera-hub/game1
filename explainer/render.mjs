@@ -1,6 +1,6 @@
-// Renders open-gate-explainer.html to an MP4 by stepping time frame by frame.
-//   node explainer/render.mjs                 -> explainer/open-gate-explainer.mp4
-//   node explainer/render.mjs --stills 3,10   -> PNG stills at those seconds
+// Renders <name>-explainer.html to an MP4 by stepping time frame by frame.
+//   node explainer/render.mjs open-gate                -> explainer/video-only.mp4
+//   node explainer/render.mjs open-gate --stills 3,10  -> PNG stills at those seconds
 import { createRequire } from 'node:module';
 import { spawn } from 'node:child_process';
 import { writeFileSync } from 'node:fs';
@@ -16,9 +16,10 @@ try {
 }
 
 const dir = path.dirname(fileURLToPath(import.meta.url));
-const page_url = pathToFileURL(path.join(dir, 'open-gate-explainer.html')).href + '?render';
-const FPS = 30;
 const args = process.argv.slice(2);
+const name = args[0] && !args[0].startsWith('--') ? args.shift() : 'open-gate';
+const page_url = pathToFileURL(path.join(dir, `${name}-explainer.html`)).href + '?render';
+const FPS = 30;
 const stillsArg = args.indexOf('--stills');
 
 const browser = await playwright.chromium.launch();

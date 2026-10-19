@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Strangers by Design</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #0b0c12;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            font-family: 'Inter', system-ui, sans-serif;
+            color: #9aa0b4;
+        }
+
+        canvas {
+            width: min(100vw, 177.78vh);
+            height: auto;
+            aspect-ratio: 16 / 9;
+            display: block;
+        }
+
+        .hint {
+            margin-top: 10px;
+            font-size: 13px;
+        }
+
+        body.render .hint {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="stage" width="1920" height="1080"></canvas>
+    <p class="hint">Space: pause / play &nbsp;·&nbsp; ← →: skip 5s &nbsp;·&nbsp; R: restart</p>
+
+    <script src="lib.js"></script>
+    <script>
+        const DURATION = 122;
+        const MAN = C.sky, WOMAN = C.coral;
+        const SERIF = "'DejaVu Serif', Georgia, serif";
+
+        function heart(x, y, s, col, alpha = 1) {
+            ctx.save();
+            ctx.globalAlpha *= alpha;
+            ctx.translate(x, y);
+            ctx.scale(s, s);
+            ctx.fillStyle = col;
+            ctx.beginPath();
+            ctx.moveTo(0, 12);
+            ctx.bezierCurveTo(-26, -6, -14, -26, 0, -12);
+            ctx.bezierCurveTo(14, -26, 26, -6, 0, 12);
+            ctx.fill();
+            ctx.restore();
+        }
+
+        function pill(str, x, y, col, alpha = 1, size = 28) {
+            ctx.save();
+            ctx.font = `800 ${size}px ${FONT}`;
+            const w = ctx.measureText(str).width + size * 1.4;
+            ctx.globalAlpha *= alpha;
+            ctx.fillStyle = rgba(col, 0.16);
+            rr(x - w / 2, y - size * 0.95, w, size * 1.9, size * 0.95);
+            ctx.fill();
+            ctx.strokeStyle = col;
+            ctx.lineWidth = 3;
+            rr(x - w / 2, y - size * 0.95, w, size * 1.9, size * 0.95);
+            ctx.stroke();
+            ctx.restore();
+            text(str, x, y, { size, weight: 800, color: col, alpha });
+            return w;
+        }
+
+        function bubble(str, x, y, alpha, tailLeft = true) {
+            ctx.save();
+            ctx.font = `700 40px ${FONT}`;
+            const w = ctx.measureText(str).width + 70;
+            ctx.globalAlpha *= alpha;
+            ctx.fillStyle = C.cream;
+            rr(x - w / 2, y - 45, w, 90, 30);
+            ctx.fill();
+            ctx.beginPath();
+            const tx = tailLeft ? x - w / 4 : x + w / 4;
+            ctx.moveTo(tx - 18, y + 40);
+            ctx.lineTo(tx + (tailLeft ? -10 : 10), y + 85);
+            ctx.lineTo(tx + 18, y + 40);
+            ctx.fill();
+            ctx.restore();
+            text(str, x, y, { size: 40, weight: 700, color: C.ink, alpha });
+        }
+
+        // A row of consequence chips, revealed one by one.
+        function chain(items, x, y, t0, t, col) {
+            const gap = 300;
+            items.forEach((it, i) => {
+                const a = easeOut(prog(t, t0 + i * 0.7, t0 + i * 0.7 + 0.4));
+                const cx = x + (i - (items.length - 1) / 2) * gap;
+                pill(it, cx, y, col, a, 26);
+                if (i > 0) text('→', cx - gap / 2, y, { size: 34, color: C.muted, alpha: a });
+            });
+        }
+
+        // ---------- scenes ----------
+
+        // 1. Title
+        scene(0, 6, t => {
+            const gy = 820;
+            ground(gy, C.grass, easeOut(prog(t, 0, 1)));
+            const apart = easeInOut(prog(t, 1.5, 5));
+            villager(lerp(820, 340, apart), gy, 1, MAN, { walk: apart > 0 && apart < 1 ? t * 6 : null, flip: true });
+            villager(lerp(1100, 1580, apart), gy, 1, WOMAN, { walk: apart > 0 && apart < 1 ? t * 6 + 1 : null });
+            const da = prog(t, 2.5, 3.5);
+            ctx.save();
+            ctx.globalAlpha *= da;
+            ctx.setLineDash([16, 14]);
+            ctx.strokeStyle = rgba(C.cream, 0.35);
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.moveTo(lerp(820, 340, apart) + 60, gy - 60);
+            ctx.lineTo(lerp(1100, 1580, apart) - 60, gy - 60);
+            ctx.stroke();
+            ctx.restore();
+            text('years apart', W / 2, gy - 95, { size: 28, weight: 600, color: C.muted, alpha: da });
+            const ta = easeOut(prog(t, 0.6, 1.6));
+            text('STRANGERS BY DESIGN', W / 2, 330 - (1 - ta) * 30, { size: 112, weight: 800, spacing: 12, alpha: ta });
+            text('Society keeps asking why men and women feel so far apart.', W / 2, 450,
+                { size: 42, weight: 500, color: C.muted, alpha: easeOut(prog(t, 1.8, 2.6)) });
+        });
+
+        // 2. Headlines
+        scene(6, 15, t => {
+            const heads = [
+                'WHY ARE MEN AND WOMEN SO DISCONNECTED?',
+                'THE GROWING DIVIDE BETWEEN THE SEXES',
+                "WHY DON'T THEY CARE ABOUT EACH OTHER ANYMORE?"
+            ];
+            heads.forEach((h, i) => {
+                const t0 = 0.4 + i * 1.3;
+                const u = easeOut(prog(t, t0, t0 + 0.6));
+                if (u <= 0) return;
+                const x = 960 + (i - 1) * 90, y = 250 + i * 190;
+                ctx.save();
+                ctx.translate(x + (1 - u) * (i % 2 ? 900 : -900), y);
+                ctx.rotate((i - 1) * 0.035);
+                ctx.fillStyle = '#efe6d2';
+                rr(-640, -80, 1280, 160, 10);
+                ctx.fill();
+                ctx.fillStyle = rgba(C.ink, 0.6);
+                ctx.fillRect(-600, -38, 1200, 3);
+                ctx.restore();
+                ctx.save();
+                ctx.translate(x + (1 - u) * (i % 2 ? 900 : -900), y);
+                ctx.rotate((i - 1) * 0.035);
+                ctx.font = `700 20px ${SERIF}`;
+                ctx.fillStyle = rgba(C.ink, 0.7);
+                ctx.textAlign = 'left';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('THE DAILY CONCERN', -600, -56);
+                ctx.font = `700 36px ${SERIF}`;
+                ctx.fillStyle = C.ink;
+                ctx.fillText(h, -600, 18);
+                ctx.restore();
+            });
+            captions(t, [
+                [4.6, 'Every few months, the same shocked headline.'],
+                [6.8, 'As if men and women were already close.', C.amber]
+            ], 900, { size: 54 });
+        });
+
+        // 3. The reality
+        scene(15, 27, t => {
+            const swap = prog(t, 6.2, 6.8);
+            const who = swap < 0.5 ? 'man' : 'woman';
+            const local = who === 'man' ? t : t - 6.5;
+            const pa = 1 - Math.sin(swap * Math.PI);
+            // the room
+            ctx.save();
+            ctx.globalAlpha *= easeOut(prog(t, 0.2, 0.8));
+            ctx.fillStyle = rgba(C.cream, 0.05);
+            rr(220, 300, 560, 520, 24);
+            ctx.fill();
+            ctx.fillStyle = rgba(C.sky, 0.18);
+            rr(300, 380, 150, 120, 8);
+            ctx.fill();
+            ctx.strokeStyle = rgba(C.cream, 0.25);
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.moveTo(375, 380); ctx.lineTo(375, 500);
+            ctx.moveTo(300, 440); ctx.lineTo(450, 440);
+            ctx.stroke();
+            ctx.restore();
+            villager(560, 760, 1.4, who === 'man' ? MAN : WOMAN, { sad: true, alpha: pa * easeOut(prog(t, 0.2, 0.8)) });
+            text(who === 'man' ? 'MANY MEN' : 'MANY WOMEN', 500, 860, { size: 30, weight: 800, spacing: 5,
+                color: who === 'man' ? MAN : WOMAN, alpha: pa * prog(t, 0.4, 0.9) });
+            const rows = [
+                { label: who === 'man' ? 'LAST HUG FROM A WOMAN' : 'LAST HUG FROM A MAN', target: who === 'man' ? 6 : 9 },
+                { label: 'LAST DEEP CONVERSATION', target: who === 'man' ? 11 : 13 },
+                { label: 'LAST RELATIONSHIP', target: who === 'man' ? 17 : 21 }
+            ];
+            rows.forEach((r, i) => {
+                const y = 380 + i * 170;
+                const a = pa * easeOut(prog(local, 0.8 + i * 0.4, 1.3 + i * 0.4));
+                const yrs = Math.floor(r.target * easeOut(prog(local, 1.2 + i * 0.4, 5 + i * 0.3)));
+                text(r.label, 920, y - 30, { size: 26, weight: 800, spacing: 3, color: C.muted, align: 'left', alpha: a });
+                text(yrs === 0 ? '...' : `${yrs} year${yrs === 1 ? '' : 's'} ago`, 920, y + 30,
+                    { size: 64, weight: 800, align: 'left', alpha: a, color: yrs >= 10 ? C.coral : C.cream });
+            });
+            captions(t, [
+                [0.4, "Meanwhile, many men haven't shared a hug, a deep talk or any intimacy with a woman in years."],
+                [6.5, 'Sometimes decades. And the same goes for many women, toward men.', C.coral]
+            ], 130, { size: 48, maxWidth: 1600 });
+        });
+
+        // 4. Proximity is not connection
+        scene(27, 38, t => {
+            text('WHAT SOCIETY SEES', 500, 200, { size: 30, weight: 800, spacing: 5, color: C.muted, alpha: prog(t, 0.3, 0.8) });
+            text("WHAT'S ACTUALLY SHARED", 1400, 200, { size: 30, weight: 800, spacing: 5, color: C.muted, alpha: prog(t, 2.2, 2.7) });
+            const la = easeOut(prog(t, 0.4, 1.0));
+            for (let i = 0; i < 4; i++) villager(320 + i * 120, 710, 1.2, i % 2 ? WOMAN : MAN, { alpha: la });
+            ctx.save();
+            ctx.globalAlpha *= la;
+            ctx.fillStyle = '#5b4a3a';
+            rr(240, 664, 520, 90, 8);
+            ctx.fill();
+            ctx.fillStyle = '#7a634c';
+            rr(220, 650, 560, 24, 6);
+            ctx.fill();
+            ctx.restore();
+            text('Same office. Same street. Same block.', 500, 800, { size: 30, weight: 600, color: C.muted, alpha: la });
+            const shared = ['Vulnerability', 'Emotional safety', 'Trust', 'Belonging', 'Support', 'Shared rituals'];
+            shared.forEach((s, i) => {
+                const y = 290 + i * 80;
+                const a = easeOut(prog(t, 2.6 + i * 0.45, 3.0 + i * 0.45));
+                ctx.save();
+                ctx.globalAlpha *= a;
+                ctx.fillStyle = rgba(C.coral, 0.2);
+                circle(1180, y, 24);
+                ctx.fill();
+                ctx.strokeStyle = C.coral;
+                ctx.lineWidth = 5;
+                ctx.lineCap = 'round';
+                ctx.beginPath();
+                ctx.moveTo(1170, y - 10); ctx.lineTo(1190, y + 10);
+                ctx.moveTo(1190, y - 10); ctx.lineTo(1170, y + 10);
+                ctx.stroke();
+                ctx.restore();
+                text(s, 1230, y, { size: 38, weight: 700, align: 'left', color: rgba(C.cream, 0.75), alpha: a });
+            });
+            captions(t, [
+                [0.3, 'Society mistakes physical proximity for relational proximity.'],
+                [6.4, 'Not enemies. Not opposites. Just strangers.', C.amber],
+                [8.7, 'Not out of cruelty. Care simply needs contact.', C.teal]
+            ], 920, { size: 52, maxWidth: 1700 });
+        });
+
+        // 5. The neighbor in another state
+        scene(38, 51, t => {
+            const states = [{ x: 480, col: '#3b4a68' }, { x: 1440, col: '#4a3b58' }];
+            states.forEach((s, i) => {
+                ctx.save();
+                ctx.globalAlpha *= easeOut(prog(t, 0.2 + i * 0.3, 0.8 + i * 0.3));
+                ctx.fillStyle = s.col;
+                ctx.beginPath();
+                ctx.moveTo(s.x - 260, 420); ctx.lineTo(s.x + 180, 380); ctx.lineTo(s.x + 260, 520);
+                ctx.lineTo(s.x + 220, 780); ctx.lineTo(s.x - 200, 800); ctx.lineTo(s.x - 280, 600);
+                ctx.closePath();
+                ctx.fill();
+                ctx.restore();
+            });
+            const swap = prog(t, 8.6, 9.2);
+            const da = prog(t, 1, 1.6);
+            ctx.save();
+            ctx.globalAlpha *= da;
+            ctx.setLineDash([16, 14]);
+            ctx.strokeStyle = rgba(C.cream, 0.35);
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.moveTo(620, 620); ctx.lineTo(1300, 620);
+            ctx.stroke();
+            ctx.restore();
+            text('900 miles', W / 2, 585, { size: 30, weight: 600, color: C.muted, alpha: da });
+            const youCol = swap < 0.5 ? C.amber : MAN;
+            const nCol = swap < 0.5 ? '#8a8fa3' : WOMAN;
+            const fa = 1 - Math.sin(swap * Math.PI) * 0.8;
+            villager(480, 700, 1.2, youCol, { alpha: fa * prog(t, 0.6, 1) });
+            villager(1440, 700, 1.2, nCol, { alpha: fa * prog(t, 0.9, 1.3) });
+            text(swap < 0.5 ? 'YOU' : 'MEN', 480, 750, { size: 30, weight: 800, spacing: 5, color: youCol, alpha: fa * prog(t, 0.6, 1) });
+            text(swap < 0.5 ? 'A "NEIGHBOR"' : 'WOMEN', 1440, 750, { size: 30, weight: 800, spacing: 5, color: nCol, alpha: fa * prog(t, 0.9, 1.3) });
+            // what you know about each other
+            const ca = easeOut(prog(t, 3.2, 3.8));
+            ctx.save();
+            ctx.globalAlpha *= ca;
+            ctx.fillStyle = rgba(C.bg1, 0.85);
+            rr(1180, 230, 520, 120, 18);
+            ctx.fill();
+            ctx.restore();
+            text('NAME: ???', 1220, 270, { size: 30, weight: 800, align: 'left', alpha: ca });
+            text('KNOWS YOU EXIST: NO', 1220, 315, { size: 30, weight: 800, align: 'left', color: C.coral, alpha: ca });
+            captions(t, [
+                [0.3, 'Do you care deeply about a neighbor who lives in another state?'],
+                [3.2, "You don't know their name. They don't know you exist."],
+                [6.0, "Nobody is shocked that you don't care.", C.amber],
+                [8.6, 'Now swap in "men" and "women".'],
+                [10.6, 'Same distance. Same result.', C.coral]
+            ], 130, { size: 54, maxWidth: 1600 });
+        });
+
+        // 6. Transactions under threat
+        scene(51, 67, t => {
+            const gy = 860;
+            ground(gy, '#2a2d3d');
+            villager(560, gy, 1.3, MAN, { alpha: prog(t, 0.3, 0.8) });
+            villager(1380, gy - 110, 1.3, WOMAN, { alpha: prog(t, 0.3, 0.8), flip: true });
+            // cap
+            ctx.save();
+            ctx.globalAlpha *= prog(t, 0.3, 0.8);
+            ctx.fillStyle = C.amber;
+            rr(1350, gy - 110 - 1.3 * 128, 60, 16, 6);
+            ctx.fill();
+            ctx.restore();
+            // counter
+            ctx.fillStyle = '#5b4a3a';
+            rr(1150, gy - 150, 480, 150, 8);
+            ctx.fill();
+            ctx.fillStyle = '#7a634c';
+            rr(1130, gy - 168, 520, 26, 6);
+            ctx.fill();
+            text('ORDER HERE', 1390, gy - 70, { size: 26, weight: 800, spacing: 4, color: rgba(C.cream, 0.6) });
+            bubble('Make me a burger.', 600, 540, easeOut(prog(t, 1.0, 1.4)) * (1 - prog(t, 6.2, 6.6)), true);
+            chain(['or: fired', 'hungry', 'homeless'], 1390, 350, 2.4, t, C.coral);
+            text('THE CASHIER', 1390, 270, { size: 24, weight: 800, spacing: 4, color: C.muted, alpha: prog(t, 2.2, 2.6) });
+            bubble('That\'ll be $9.', 1250, 470, easeOut(prog(t, 6.4, 6.8)), false);
+            chain(['or: get out', 'police', 'concrete cell'], 540, 350, 7.4, t, C.coral);
+            text('THE CUSTOMER', 540, 270, { size: 24, weight: 800, spacing: 4, color: C.muted, alpha: prog(t, 7.2, 7.6) });
+            captions(t, [
+                [0.3, 'Most of our daily contact looks like this.', C.muted],
+                [10.2, 'Transactions between strangers, each one backed by a threat.', C.cream],
+                [13.0, 'Not exactly a recipe for closeness.', C.amber]
+            ], 130, { size: 52, maxWidth: 1700 });
+        });
+
+        // 7. Village vs supply chain
+        scene(67, 79, t => {
+            const cols = [
+                { x: 520, title: 'A VILLAGE', col: C.teal, t0: 0.4,
+                  items: ['shared meals', 'shared grief', 'shared joy', 'shared labor', 'shared protection', 'belonging'] },
+                { x: 1400, title: 'A SUPPLY CHAIN', col: C.coral, t0: 2.8,
+                  items: ['transactions', 'punishments', 'deadlines', 'quotas', 'surveillance', 'compliance'] }
+            ];
+            cols.forEach(c => {
+                const a = easeOut(prog(t, c.t0, c.t0 + 0.5));
+                ctx.save();
+                ctx.globalAlpha *= a;
+                ctx.fillStyle = rgba(c.col, 0.08);
+                rr(c.x - 330, 150, 660, 600, 28);
+                ctx.fill();
+                ctx.strokeStyle = rgba(c.col, 0.5);
+                ctx.lineWidth = 3;
+                rr(c.x - 330, 150, 660, 600, 28);
+                ctx.stroke();
+                ctx.restore();
+                text(c.title, c.x, 220, { size: 44, weight: 800, spacing: 5, color: c.col, alpha: a });
+                c.items.forEach((it, i) => {
+                    const ia = easeOut(prog(t, c.t0 + 0.4 + i * 0.25, c.t0 + 0.7 + i * 0.25));
+                    const y = 310 + i * 72;
+                    ctx.save();
+                    ctx.globalAlpha *= ia;
+                    ctx.fillStyle = c.col;
+                    circle(c.x - 190, y, 8);
+                    ctx.fill();
+                    ctx.restore();
+                    text(it, c.x - 160, y, { size: 36, weight: 600, align: 'left', alpha: ia });
+                });
+            });
+            captions(t, [
+                [6.0, 'Villages create connection. Supply chains destroy it.'],
+                [8.6, 'Society is a supply chain pretending to be a village.', C.amber]
+            ], 880, { size: 54 });
+        });
+
+        // 8. "Best society ever"
+        scene(79, 93, t => {
+            const reveal = prog(t, 5.9, 6.2);
+            if (reveal < 1) {
+                ctx.save();
+                ctx.globalAlpha *= 1 - reveal;
+                ctx.fillStyle = rgba('#ffd6e0', 0.18);
+                ctx.fillRect(0, 0, W, H);
+                ground(820, '#4f8a5b');
+                const ba = easeOut(prog(t, 0.3, 0.9));
+                ctx.save();
+                ctx.globalAlpha *= ba;
+                ctx.fillStyle = '#f7d6e0';
+                rr(460, 210, 1000, 140, 70);
+                ctx.fill();
+                ctx.strokeStyle = C.amber;
+                ctx.lineWidth = 6;
+                ctx.beginPath();
+                ctx.ellipse(960, 180, 120, 22, 0, 0, Math.PI * 2);
+                ctx.stroke();
+                ctx.restore();
+                text('BEST SOCIETY EVER', 960, 280, { size: 64, weight: 800, spacing: 6, color: '#b0405a', alpha: ba });
+                const xs = [];
+                for (let i = 0; i < 8; i++) xs.push(330 + i * 180);
+                ctx.strokeStyle = '#f4d0a0';
+                ctx.lineWidth = 8;
+                ctx.beginPath();
+                ctx.moveTo(xs[0], 820 - 62);
+                xs.forEach(x => ctx.lineTo(x, 820 - 62 + Math.sin(t * 4 + x) * 3));
+                ctx.stroke();
+                xs.forEach((x, i) => villager(x, 820 - Math.abs(Math.sin(t * 3 + i)) * 10, 1, i % 2 ? WOMAN : MAN));
+                for (let h = 0; h < 10; h++) {
+                    const hy = 700 - ((t * 60 + h * 70) % 500);
+                    heart(260 + h * 150, hy, 1.4, '#ff8fab', 0.8 * clamp((hy - 200) / 200));
+                }
+                ctx.restore();
+            }
+            if (reveal > 0) {
+                ctx.save();
+                ctx.globalAlpha *= reveal;
+                for (let r = 0; r < 2; r++) {
+                    for (let c = 0; c < 4; c++) {
+                        const x = 270 + c * 360, y = 300 + r * 300;
+                        const i = r * 4 + c;
+                        const a = prog(t, 6.2 + i * 0.12, 6.6 + i * 0.12);
+                        ctx.save();
+                        ctx.globalAlpha *= a;
+                        ctx.fillStyle = rgba(C.cream, 0.05);
+                        rr(x, y, 300, 250, 14);
+                        ctx.fill();
+                        ctx.strokeStyle = rgba(C.cream, 0.15);
+                        ctx.lineWidth = 3;
+                        rr(x, y, 300, 250, 14);
+                        ctx.stroke();
+                        const g = ctx.createRadialGradient(x + 200, y + 150, 0, x + 200, y + 150, 80);
+                        g.addColorStop(0, rgba(C.sky, 0.3));
+                        g.addColorStop(1, rgba(C.sky, 0));
+                        ctx.fillStyle = g;
+                        ctx.fillRect(x, y, 300, 250);
+                        ctx.restore();
+                        villager(x + 130, y + 230, 0.85, i % 2 ? WOMAN : MAN, { sad: true, alpha: a });
+                        ctx.save();
+                        ctx.globalAlpha *= a;
+                        ctx.fillStyle = C.sky;
+                        rr(x + 168, y + 135, 18, 28, 4);
+                        ctx.fill();
+                        ctx.restore();
+                    }
+                }
+                ctx.restore();
+            }
+            captions(t, [
+                [0.4, "Society acts like we're already close.", '#ffd6e0'],
+                [2.8, 'All those deep, meaningful conversations. Teehee.', '#ffd6e0'],
+                [6.3, 'The reality may be the exact opposite.', C.coral],
+                [8.8, 'Isolated homes. Isolated work. Isolated routines. Isolated screens.'],
+                [11.2, 'Then everyone acts shocked by an outcome they designed.', C.amber]
+            ], 950, { size: 54 });
+        });
+
+        // 9. Closeness without the conditions for it
+        scene(93, 104, t => {
+            const rows = [['Trust', 'time'], ['Care', 'contact'], ['Intimacy', 'vulnerability'], ['Connection', 'community']];
+            rows.forEach(([a, b], i) => {
+                const y = 300 + i * 115;
+                const u = easeOut(prog(t, 1.0 + i * 0.8, 1.5 + i * 0.8));
+                text(a, 840, y, { size: 60, weight: 800, align: 'right', alpha: u });
+                text('without', 960, y, { size: 34, weight: 600, color: C.muted, alpha: u });
+                text(b, 1080, y, { size: 60, weight: 800, align: 'left', color: C.coral, alpha: u });
+            });
+            captions(t, [[0.3, 'Society expects closeness without the conditions for it.']], 150, { size: 52, color: C.muted });
+            captions(t, [
+                [5.0, 'Like expecting plants to grow without soil.', C.amber],
+                [7.6, 'Or love without presence.', C.amber]
+            ], 860, { size: 56 });
+        });
+
+        // 10. A better question
+        scene(104, 115, t => {
+            const gy = 840;
+            ground(gy, '#35573f');
+            const close = easeInOut(prog(t, 3.0, 8.5));
+            const mx = lerp(360, 880, close), wx = lerp(1560, 1040, close);
+            const walking = close > 0 && close < 1;
+            villager(mx, gy, 1.1, MAN, { walk: walking ? t * 6 : null, glow: close * 0.6 });
+            villager(wx, gy, 1.1, WOMAN, { walk: walking ? t * 6 + 1 : null, flip: true, glow: close * 0.6 });
+            const ga = prog(t, 8.2, 9);
+            if (ga > 0) heart(960, gy - 190 - Math.sin(t * 3) * 6, 2, '#ff8fab', ga);
+            const chips = ['Time', 'Safety', 'Shared spaces', "Contact that isn't a transaction"];
+            ctx.font = `800 30px ${FONT}`;
+            const ws = chips.map(c => ctx.measureText(c).width + 42);
+            let cx = W / 2 - (ws.reduce((a, b) => a + b) + 36 * (chips.length - 1)) / 2;
+            chips.forEach((c, i) => {
+                pill(c, cx + ws[i] / 2, 440, C.teal, easeOut(prog(t, 5 + i * 0.5, 5.4 + i * 0.5)), 30);
+                cx += ws[i] + 36;
+            });
+            captions(t, [
+                [0.3, "So stop asking why they don't care."],
+                [2.6, 'Ask why they so rarely get the chance to connect.', C.amber]
+            ], 200, { size: 60 });
+        });
+
+        // 11. End card
+        scene(115, 122, t => {
+            text('STRANGERS BY DESIGN', W / 2, 420, { size: 108, weight: 800, spacing: 12, alpha: easeOut(prog(t, 0.3, 1.1)) });
+            text('Care grows out of connection.', W / 2, 580, { size: 54, weight: 800, color: C.amber, alpha: easeOut(prog(t, 1.4, 2.1)) });
+            text('Build the connection first.', W / 2, 660, { size: 54, weight: 800, color: C.teal, alpha: easeOut(prog(t, 2.2, 2.9)) });
+        });
+
+        startTimeline(DURATION, t => t > 104 ? 0.45 * prog(t, 104, 106) : 0);
+    </script>
+</body>
+</html>
