@@ -124,7 +124,8 @@ def vec3(v):
     return np.asarray(v if isinstance(v, (list, tuple, np.ndarray)) else [v] * 3, np.float32)
 
 
-SHADOW_LIFT = float(os.environ.get("SHADOW_LIFT", "0.10"))
+SHADOW_LIFT = float(os.environ.get("SHADOW_LIFT", "0.05"))
+SHADOW_STRETCH = float(os.environ.get("SHADOW_STRETCH", "1.8"))
 
 
 def grade(F, p):
@@ -165,6 +166,11 @@ def grade(F, p):
     a = float(p.get("shadow_lift", SHADOW_LIFT)) if hasattr(p, "get") else SHADOW_LIFT
     if a > 0:
         F += a * np.power(np.clip(1.0 - F, 0, 1), 6)
+    # shadow stretch: brightens dark detail (zero at pure black, so no milky blacks), fades out by the mids
+    st = float(p.get("shadow_stretch", SHADOW_STRETCH)) if hasattr(p, "get") else SHADOW_STRETCH
+    if st > 0:
+        G = np.clip(F, 0, 1)
+        F += st * G * np.power(1.0 - G, 4)
     m = F > 0.86
     if m.any():
         F[m] = 0.86 + 0.14 * np.tanh((F[m] - 0.86) / 0.14)
